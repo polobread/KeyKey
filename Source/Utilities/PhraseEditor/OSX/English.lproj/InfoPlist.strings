@@ -1,0 +1,5 @@
+﻿/* Localized versions of Info.plist keys */
+
+CFBundleName = "Phrase Editor";
+CFBundleDisplayName = "chichi77 KeyKey Phrase Editor";
+NSHumanReadableCopyright = "Not an official Yahoo product and not affiliated with Yahoo";

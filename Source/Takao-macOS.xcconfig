@@ -1,0 +1,11 @@
+OPENSSL_PREFIX = /opt/homebrew/opt/openssl@3
+
+SDKROOT = macosx
+MACOSX_DEPLOYMENT_TARGET = 15.0
+ARCHS = arm64
+ONLY_ACTIVE_ARCH = NO
+GCC_VERSION = com.apple.compilers.llvm.clang.1_0
+CLANG_CXX_LANGUAGE_STANDARD = gnu++17
+CLANG_CXX_LIBRARY = libc++
+HEADER_SEARCH_PATHS = $(inherited) $(OPENSSL_PREFIX)/include
+OTHER_LDFLAGS = $(inherited) -lsqlite3 $(OPENSSL_PREFIX)/lib/libcrypto.a

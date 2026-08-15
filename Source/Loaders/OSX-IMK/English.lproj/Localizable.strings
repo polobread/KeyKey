@@ -1,0 +1,26 @@
+"Smart Phonetic" = "Smart Phonetic";
+"Traditional Phonetic" = "Traditional Phonetic";
+"Cangjie" = "Cangjie";
+"Simplex" = "Simplex";
+"Help" = "Help";
+"Preferences..." = "Preferences...";
+"About chichi77 KeyKey" = "About chichi77 KeyKey";
+"<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>" = "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>";
+"<h2>Not Found</h2><p>Unable to find results matching %@." = "<h2>Not Found</h2><p>Unable to find anything that matches '%@'.";
+"<h2>Loading...</h2><p>Please wait</p></body></html>" = "<h2>Loading...</h2><p>Please wait</p></body></html>";
+"Dictionary" = "Dictionary";
+"Dictionary: %@" = "Dictionary: %@";
+"Speak" = "Speak";
+"Enter" = "Enter";
+"Current Input Method:" = "Current Input Method:";
+"Enable " = "Enable ";
+"Disable " = "Disable ";
+"One-Key" = "One-Key";
+"Symbols" = "Symbols";
+"The phrase you want to add is invalid." = "The phrase you want to add is invalid.";
+"Add new phrase: " = "Add new phrase: ";
+
+"Send" = "Send";
+
+"BOM-LINE" = "=== Add your own pre-defined texts after this line ===";
+"EXAMPLE-LINE" = "Hello!";

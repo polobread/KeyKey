@@ -1,0 +1,99 @@
+// [AUTO_HEADER]
+
+#import "CVAboutController.h"
+#import "CVApplicationController.h"
+#import "OpenVanillaLoader.h"
+#import "Version.h"
+
+@implementation CVAboutController
+
+- (void)dealloc
+{
+	[_wordCountController release];
+	[super dealloc];
+}
+
+- (id)init
+{
+	self = [super init];
+	if (self != nil) {
+		BOOL loaded = [NSBundle loadNibNamed:@"AboutWindow" owner:self];
+		NSAssert((loaded == YES), @"NIB did not load");	
+		_wordCountController = nil;
+	}
+	return self;
+}
+
+- (void)awakeFromNib
+{
+	[[self window] setLevel:NSFloatingWindowLevel];	
+	[[self window] setBackgroundColor:[NSColor whiteColor]];
+	defaultWindowSize = [[self window] frame].size;
+}
+
+- (void)_updateContent
+{	
+	NSArray *info = [(CVApplicationController *)[NSApp delegate] dynamicallyLoadedModulePackageInfo];
+	BOOL useWordCount = NO;
+	if ([info count]) {
+		NSEnumerator *e = [info objectEnumerator];
+		NSDictionary *d = nil;
+		while (d = [e nextObject]) {
+			if ([[d valueForKey:OVServiceLoadedModulePackageIdentifierKey] isEqualToString:@"YKAFWordCount"]) {
+				useWordCount = [[d valueForKey:OVServiceLoadedModulePackageEnabledKey] boolValue];
+				break;
+			}
+		}
+	}
+	if (useWordCount) {
+		NSRect frame = [[self window] frame];
+		frame.size = defaultWindowSize;
+		frame.size.height += 60;
+		if (!_wordCountController) {
+			_wordCountController = [[TakaoWordCount alloc] init];
+		}
+		[_wordCountController update];
+		[[self window] setFrame:frame display:NO];
+		NSView *view = [_wordCountController view];
+		[view setFrame:NSMakeRect(20, 50, defaultWindowSize.width - 40, 100)];
+		[[[self window] contentView] addSubview:view];		
+	}
+	else {
+		if (_wordCountController && [[_wordCountController view] superview]) {
+			[[_wordCountController view] removeFromSuperview];
+			NSRect frame = [[self window] frame];
+			frame.size = defaultWindowSize;
+			[[self window] setFrame:frame display:YES];
+		}
+	}
+	
+	
+	NSString *name = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
+	if (!name)
+		name = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleName"];
+	NSString *version = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+	
+	
+    VersionNumber verNum([version UTF8String]);
+	version = [NSString stringWithFormat:@"%d.%d", verNum.majorVersion(), verNum.minorVersion()];
+
+	
+	NSString *copyright = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSHumanReadableCopyright"];
+
+	[_aboutTextField setStringValue:[NSString stringWithFormat:@"%@ %@\n%@", name, version, copyright]];
+	init = YES;
+}
+
+
+#pragma mark Interface Builder actions
+
+- (IBAction)showWindow:(id)sender
+{
+	if (![[self window] isVisible]) {
+		[self _updateContent];
+		[[self window] center];
+	}
+	[[self window] orderFront:self];
+}
+
+@end

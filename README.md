@@ -1,0 +1,125 @@
+# 琦琦輸入法 / chichi77 KeyKey 1.2
+
+琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，支援 macOS 15 以上的
+Apple Silicon，以及 Windows 11 x64／ARM64。
+
+本專案以 Yahoo! Inc. 於 2012 年以 BSD 3-Clause License 釋出的原始碼為基礎，
+保留 OpenVanilla／PlainVanilla 核心，移除失效的網路服務與 Yahoo 品牌，並加入
+現代 Windows TSF frontend。
+
+**本軟體不是 Yahoo 官方產品，與 Yahoo 無隸屬關係，也未獲 Yahoo 背書或贊助。**
+
+[English](#english) · [建置、安裝與打包](BUILDING.md)
+
+## 目前功能
+
+### macOS
+
+- InputMethodKit frontend，目前支援 arm64、macOS 15 以上
+- 預設使用傳統注音，並保留倉頡、簡易等既有模組
+- 支援候選字、關聯詞、自訂詞與偏好設定
+
+### Windows 11
+
+- 原生 TSF frontend，支援 x64 與 ARM64
+- 支援注音組字、候選字、關聯詞、送字與游標定位
+- 預設為中文注音、半形模式
+- `Shift` 或 `Ctrl+Space` 切換中文／英文，`Shift+Space` 切換半形／全形
+- 語言列顯示「琦」、「ㄅ／英」與「半／全」，並提供詞庫設定入口
+
+## 文件
+
+- [BUILDING.md](BUILDING.md)：macOS／Windows 中英文建置、測試、安裝與打包
+- [Windows TSF README](Source/Loaders/Windows-TSF/README.md)：Windows frontend
+  的實作、部署及驗證細節
+- [Installer README](Installer/README.md)：macOS 安裝包、簽署及 notarization
+- [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)：第三方素材與授權
+
+## 詞庫與限制
+
+公開 repository 內含 McBopomofo 以 MIT License 釋出的字音對照及詞頻資料，供
+注音候選與關聯詞使用。私人 `chichi77Collection` 在獨立 repository 維護，不屬於
+本 repository，也不包含在本專案的開源授權內。
+
+智慧注音（Smart Mandarin）需要的中研院 unigram／bigram 語料未包含在 Yahoo
+的開源釋出中，因此目前不啟用。Yahoo 1.1 的 CEROD 字典、SEE 加密使用者資料，
+以及已停止的 Yahoo／MobileMe 網路服務也不包含在目前版本中。
+
+<a id="english"></a>
+
+## English
+
+chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
+method. It supports macOS 15 or later on Apple Silicon and Windows 11 on x64
+and ARM64.
+
+The project retains the OpenVanilla/PlainVanilla core, removes obsolete online
+services and Yahoo branding, and adds a modern Windows TSF frontend.
+
+**This is not an official Yahoo product. It is not affiliated with, endorsed
+by, or sponsored by Yahoo.**
+
+### Current features
+
+- macOS uses InputMethodKit. Traditional Phonetic is the default, with
+  candidates, associated phrases, user phrases, and preferences.
+- Windows uses a native TSF frontend with Bopomofo composition and candidates,
+  associated phrases, caret-aware commit, mode indicators, and dictionary
+  settings.
+- Windows starts in Chinese Bopomofo and half-width mode. Press `Shift` or
+  `Ctrl+Space` to switch Chinese/English, and `Shift+Space` to switch width.
+
+### Documentation
+
+- [BUILDING.md](BUILDING.md): bilingual macOS/Windows build, test,
+  installation, and packaging instructions
+- [Windows TSF README](Source/Loaders/Windows-TSF/README.md): frontend
+  implementation, deployment, and verification details
+- [Installer README](Installer/README.md): macOS packaging, signing, and
+  notarization
+- [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md): third-party material and
+  licenses
+
+### Data and limitations
+
+The public repository vendors McBopomofo mappings and frequency data under the
+MIT License. The private `chichi77Collection` is maintained separately and is
+not covered by this repository's open-source license.
+
+Smart Mandarin remains disabled because the required Sinica unigram/bigram
+corpus was not included in Yahoo's source release. Yahoo's CEROD dictionary,
+SEE-encrypted user data, and obsolete Yahoo/MobileMe services are also absent.
+
+## License
+
+The Yahoo! KeyKey source is distributed under the BSD 3-Clause License below.
+Third-party material is covered by
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+### BSD 3-Clause License — Yahoo! KeyKey source
+
+Copyright (c) 2012, Yahoo! Inc. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+3. Neither the name of Yahoo! Inc. nor the names of its contributors may be
+   used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

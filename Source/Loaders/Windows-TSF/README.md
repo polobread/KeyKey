@@ -1,0 +1,133 @@
+# 琦琦輸入法 Windows TSF frontend
+
+This directory contains the modern Windows 11 Text Services Framework (TSF)
+frontend. It is separate from `Windows-IMM`, so the existing macOS IMK target
+and its Xcode project remain unchanged.
+
+## Current milestone
+
+- Traditional Mandarin/Bopomofo input through the existing OpenVanilla and
+  PlainVanilla core
+- TSF composition, caret placement, commit, and candidate-window flow
+- Immersive TSF registration for modern Windows text hosts such as Start/Search
+- Taskbar language-bar indicators for Chinese/English (`ㄅ`/`英`) and
+  half-/full-width (`半`/`全`) modes
+- `ITfFnConfigure` keyboard-options entry and a standalone associated-phrase
+  dictionary selector
+- Traditional Chinese (`zh-TW`) language profile registration
+- x64 and ARM64 CMake presets
+
+Smart Mandarin is intentionally not enabled yet because its language-model
+corpus is not present in this repository. The old IMM32 loader is retained as
+historical reference and is not linked into this DLL.
+
+## Prerequisites
+
+- Windows 11
+- Visual Studio 2026 with **Desktop development with C++** (a Visual Studio
+  2022 compatibility preset is also included)
+- CMake 3.25 or newer
+
+No Ruby, GNU Make, `awk`, `sed`, or standalone `sqlite3` program is required.
+When the legacy cooked database is absent, CMake builds the new native C++
+`KeyKeyDatabaseCooker` and creates `Databases\KeyKey.db` from the repository's
+CIN tables and open associated-phrase source. If the private
+`chichi77Collection` repository is checked out beside KeyKey, its phrase files
+are included automatically. The legacy cooker remains unchanged.
+
+The private collection defaults to `..\chichi77Collection`. Override it with
+`-DKEYKEY_CHICHI77_COLLECTION_DIR=C:\path\to\chichi77Collection`, or point it at a
+nonexistent directory to build only from open data. Private collection data is
+not part of this repository or its open-source licence.
+
+To deploy a database cooked elsewhere instead, pass
+`-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.
+
+## Build and register (x64)
+
+Open an **x64 Native Tools Command Prompt/PowerShell for Visual Studio**, then
+run from this directory:
+
+```powershell
+cmake --preset windows-x64
+cmake --build --preset windows-x64-release
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
+  -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
+```
+
+The build creates `KeyKeyTsf.dll`, `KeyKeySettings.exe`, and
+`out\build\x64-ninja\Databases\KeyKey.db`. Keep the executable beside the DLL;
+Windows Keyboard options and the language-bar settings button both launch it.
+Re-run the build after changing a source CIN, plist, or phrase file; CMake will
+automatically recook the database.
+
+To verify the Traditional Bopomofo core independently of TSF, run:
+
+```powershell
+ctest --test-dir .\out\build\x64-ninja --output-on-failure
+```
+
+The smoke test sends the Standard-layout `1`, `u`, `3` sequence and fails if
+the engine passes those keys through as ASCII instead of producing a Bopomofo
+reading and candidates.
+
+The registration script adds **琦琦輸入法** to the current user's Traditional
+Chinese input-method list. Sign out and sign in if it does not immediately
+appear in `Win+Space`. Registration needs elevation because the COM server is
+registered machine-wide.
+
+To unregister:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
+  -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll -Unregister
+```
+
+The DLL and the hosting application must have matching architectures. Build
+and register both x64 and ARM64 variants when distributing to both device types.
+
+## Package for another Windows PC
+
+`Register-Tip.ps1` registers a DLL at its current location, so it is intended
+for development. To create a self-contained home installation package after a
+successful build and test, run:
+
+```powershell
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja
+```
+
+The result is `out\package\chichi77-KeyKey-1.2-windows-x64.zip`. On the other
+PC, extract the entire ZIP and run `Install.cmd`. The elevated installer:
+
+- copies the DLL, settings app, database, and notices to
+  `C:\Program Files\chichi77 KeyKey`;
+- registers the TSF from that permanent location; and
+- adds **琦琦輸入法** to Windows Installed apps for uninstallation.
+
+The installer adds the input method to the current user's `Win+Space` list;
+sign out and back in if it does not appear immediately. The package is unsigned
+and is intended for trusted home testing; Windows may warn after a download. Build
+an ARM64 binary and pass `-Architecture arm64` for an ARM64 PC. A package whose
+database includes `chichi77Collection` must only be shared with authorized
+users.
+
+## Deployment layout
+
+```text
+KeyKeyTsf.dll
+KeyKeySettings.exe
+Databases/
+  KeyKey.db
+```
+
+Runtime preferences are stored in the user's application-data directory by the
+existing PlainVanilla loader. `KeyKey.db` remains external runtime data rather
+than being compiled into the TSF DLL.
+
+## Verification checklist
+
+Test at least Notepad, Windows Terminal, Edge, Word, the lock/sign-in boundary,
+and an elevated desktop application. Verify Bopomofo input, backspace, arrow
+navigation, candidate paging/selection, commit with Enter/Space, focus changes,
+and repeated enable/disable cycles. Secure desktop and Microsoft Store app
+coverage should be treated as release gates, not assumed from registration.

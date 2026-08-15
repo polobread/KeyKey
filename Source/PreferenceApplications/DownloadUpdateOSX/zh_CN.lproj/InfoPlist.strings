@@ -1,0 +1,5 @@
+/* Localized versions of Info.plist keys */
+
+CFBundleName = "下载更新";
+CFBundleDisplayName = "琦琦輸入法下载更新程式";
+NSHumanReadableCopyright = "非 Yahoo 官方产品，与 Yahoo 无隶属关系";

@@ -1,0 +1,5 @@
+/* Localized versions of Info.plist keys */
+
+CFBundleName = "琦琦输入法偏好设置";
+CFBundleDisplayName = "琦琦输入法偏好设置";
+NSHumanReadableCopyright = "非 Yahoo 官方产品，与 Yahoo 无隶属关系";

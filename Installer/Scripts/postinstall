@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Replacing the bundle leaves the running input method holding file descriptors
+# for the files that were just swapped out, including the dictionary, so it
+# stops producing candidates. Ending it lets Text Input Services start the
+# version that was just installed.
+/usr/bin/pkill -f "/Library/Input Methods/chichi77 KeyKey.app/Contents/MacOS/chichi77 KeyKey"
+
+exit 0

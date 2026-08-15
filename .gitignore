@@ -1,0 +1,8 @@
+.DS_Store
+._*
+*.pkg
+*.pkg.zip
+.idea/
+.vs/
+DataSource/chichi77Collection/
+Source/Loaders/Windows-TSF/out/

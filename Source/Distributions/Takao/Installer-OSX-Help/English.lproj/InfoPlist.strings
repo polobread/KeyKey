@@ -1,0 +1,5 @@
+﻿/* Localized versions of Info.plist keys */
+
+CFBundleName = "chichi77 KeyKey Activation Help";
+CFBundleDisplayName = "chichi77 KeyKey Activation Help";
+NSHumanReadableCopyright = "Not an official Yahoo product and not affiliated with Yahoo";

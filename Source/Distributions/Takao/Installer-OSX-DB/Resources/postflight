@@ -1,0 +1,17 @@
+#!/bin/bash
+echo "Start postflight script"
+
+IMK="/Library/Input Methods/chichi77 KeyKey.app/Contents/MacOS/chichi77 KeyKey"
+TSM="/Library/Components/chichi77 KeyKey.bundle/Contents/SharedSupport/KeyKeyServer.app/Contents/MacOS/KeyKeyServer"
+
+if [ -e "$IMK" ]
+then
+    "$IMK" reload
+else
+    if [ -e "$TSM" ]
+    then
+        "$TSM" reload
+    fi    
+fi
+
+exit 0

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>${EXECUTABLE_NAME}</string>
+	<key>CFBundleIconFile</key>
+	<string>chichi77</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.polobread.inputmethod.chichi77</string>
+	<key>CFBundleName</key>
+	<string>${PRODUCT_NAME}</string>	
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>YHOO</string>
+	<key>CFBundleVersion</key>
+    <string>1.2</string>
+	<key>CFBundleShortVersionString</key>
+    <string>1.2</string>
+	<key>InputMethodConnectionName</key>
+	<string>chichi77_1_Connection</string>
+	<key>InputMethodServerControllerClass</key>
+	<string>OpenVanillaController</string>
+	<key>InputMethodServerDelegateClass</key>
+	<string>OpenVanillaController</string>
+	<key>LSBackgroundOnly</key>
+	<string>1</string>
+	<key>LSHasLocalizedDisplayName</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>All Rights Reserved.</string>
+	<key>NSMainNibFile</key>
+	<string>MainMenu</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>TISInputSourceID</key>
+	<string>io.github.polobread.inputmethod.chichi77</string>
+	<key>TISIntendedLanguage</key>
+	<string>zh-Hant</string>
+	<key>tsInputMethodCharacterRepertoireKey</key>
+	<array>
+		<string>Hant</string>
+		<string>Hans</string>
+	</array>
+	<key>tsInputMethodIconFileKey</key>
+	<string>chichi7716.icns</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>chichi77 KeyKey</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ykeykey</string>
+			</array>
+		</dict>
+	</array>	
+	<key>LSMinimumSystemVersion</key>
+	<string>15.0</string>
+</dict>
+</plist>

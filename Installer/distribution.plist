@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-gui-script minSpecVersion="1">
+    <title>chichi77 KeyKey</title>
+    <organization>io.github.polobread</organization>
+    <domains enable_localSystem="true"/>
+    <options customize="never" rootVolumeOnly="true" />
+    <volume-check>
+        <allowed-os-versions>
+            <os-version min="15.0"/>
+        </allowed-os-versions>
+    </volume-check>
+    <!-- Define documents displayed at various steps -->
+    <license    file="License.rtf"       mime-type="application/rtf" />
+    <conclusion file="Conclusion.html" mime-type="text/html" />
+    <!-- List all component packages -->
+    <pkg-ref id="io.github.polobread.chichi77.installerpackage"
+             version="0"
+             auth="root">chichi77KeyKeyApp.pkg</pkg-ref>
+    <!-- List them again here. They can now be organized
+         as a hierarchy if you want. -->
+    <choices-outline>
+        <line choice="io.github.polobread.chichi77.installerpackage"/>
+    </choices-outline>
+    <!-- Define each choice above -->
+    <choice
+        id="io.github.polobread.chichi77.installerpackage"
+        visible="false"
+        title="chichi77 KeyKey"
+        description="chichi77 KeyKey"
+        start_selected="true">
+      <pkg-ref id="io.github.polobread.chichi77.installerpackage" onConclusion="RequireLogout"/>
+    </choice>
+</installer-gui-script>

@@ -1,0 +1,5 @@
+﻿/* Localized versions of Info.plist keys */
+
+CFBundleName = "DownloadUpdate";
+CFBundleDisplayName = "chichi77 KeyKey DownloadUpdate";
+NSHumanReadableCopyright = "Not an official Yahoo product and not affiliated with Yahoo";
