@@ -15,7 +15,8 @@ and its Xcode project remain unchanged.
 - `ITfFnConfigure` keyboard-options entry and a standalone associated-phrase
   dictionary selector
 - Traditional Chinese (`zh-TW`) language profile registration
-- x64 and ARM64 CMake presets
+- verified x86 and x64 builds; an unverified ARM64 CMake preset is retained for
+  future bring-up
 
 Smart Mandarin is intentionally not enabled yet because its language-model
 corpus is not present in this repository. The old IMM32 loader is retained as
@@ -43,7 +44,7 @@ not part of this repository or its open-source licence.
 To deploy a database cooked elsewhere instead, pass
 `-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.
 
-## Build and register (x64)
+## Build and register (x64 and x86)
 
 Open an **x64 Native Tools Command Prompt/PowerShell for Visual Studio**, then
 run from this directory:
@@ -51,8 +52,12 @@ run from this directory:
 ```powershell
 cmake --preset windows-x64
 cmake --build --preset windows-x64-release
+cmake --preset windows-x86
+cmake --build --preset windows-x86-release --target KeyKeyTsf
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
+  -DllPath .\out\build\x86\Release\KeyKeyTsf.dll
 ```
 
 The build creates `KeyKeyTsf.dll`, `KeyKeySettings.exe`, and
@@ -81,10 +86,13 @@ To unregister:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll -Unregister
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
+  -DllPath .\out\build\x86\Release\KeyKeyTsf.dll -Unregister
 ```
 
-The DLL and the hosting application must have matching architectures. Build
-and register both x64 and ARM64 variants when distributing to both device types.
+The DLL and the hosting application must have matching architectures. In
+particular, 32-bit Office cannot load the x64 TIP even on x64 Windows. The x64
+package therefore includes and registers both x64 and x86 DLLs.
 
 ## Package for another Windows PC
 
@@ -93,28 +101,35 @@ for development. To create a self-contained home installation package after a
 successful build and test, run:
 
 ```powershell
-.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86
 ```
 
-The result is `out\package\chichi77-KeyKey-1.2-windows-x64.zip`. On the other
-PC, extract the entire ZIP and run `Install.cmd`. The elevated installer:
+The result is `out\package\chichi77-KeyKey-1.2.1-windows-x64.zip`. On the other
+PC, extract the entire ZIP, copy the complete extracted folder to a local
+`C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd` there. Do not
+install directly from a mapped network drive, NAS, or UNC path: it can become
+inaccessible after UAC elevation and the installer window can close
+immediately. Failures are recorded in `%TEMP%\chichi77-keykey-install.log`.
+The elevated installer:
 
-- copies the DLL, settings app, database, and notices to
+- copies the x64 and x86 DLLs, settings app, database, and notices to
   `C:\Program Files\chichi77 KeyKey`;
 - registers the TSF from that permanent location; and
 - adds **琦琦輸入法** to Windows Installed apps for uninstallation.
 
 The installer adds the input method to the current user's `Win+Space` list;
 sign out and back in if it does not appear immediately. The package is unsigned
-and is intended for trusted home testing; Windows may warn after a download. Build
-an ARM64 binary and pass `-Architecture arm64` for an ARM64 PC. A package whose
-database includes `chichi77Collection` must only be shared with authorized
-users.
+and is intended for trusted home testing; Windows may warn after a download.
+ARM64 is not part of the currently verified or published package. Its preset
+and packaging option are retained for future bring-up. A package whose database
+includes `chichi77Collection` must only be shared with authorized users.
 
 ## Deployment layout
 
 ```text
-KeyKeyTsf.dll
+KeyKeyTsf_x64.dll
+KeyKeyTsf_x86.dll
 KeyKeySettings.exe
 Databases/
   KeyKey.db

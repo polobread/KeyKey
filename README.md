@@ -1,7 +1,7 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.2
+# 琦琦輸入法 / chichi77 KeyKey 1.2.1
 
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，支援 macOS 15 以上的
-Apple Silicon，以及 Windows 11 x64／ARM64。
+Apple Silicon，以及 Windows 11 x64；Windows 套件同時支援 32-bit Office。
 
 本專案以 Yahoo! Inc. 於 2012 年以 BSD 3-Clause License 釋出的原始碼為基礎，
 保留 OpenVanilla／PlainVanilla 核心，移除失效的網路服務與 Yahoo 品牌，並加入
@@ -21,11 +21,16 @@ Apple Silicon，以及 Windows 11 x64／ARM64。
 
 ### Windows 11
 
-- 原生 TSF frontend，支援 x64 與 ARM64
+- 原生 TSF frontend，支援 x86 與 x64 host process
 - 支援注音組字、候選字、關聯詞、送字與游標定位
 - 預設為中文注音、半形模式
 - `Shift` 或 `Ctrl+Space` 切換中文／英文，`Shift+Space` 切換半形／全形
 - 語言列顯示「琦」、「ㄅ／英」與「半／全」，並提供詞庫設定入口
+
+> **安裝注意：** 請先完整解壓縮 ZIP，再把整個解壓縮資料夾複製到本機
+> `C:\`（例如 `C:\KeyKeyInstaller`），最後才執行 `Install.cmd`。請勿直接從
+> 網路磁碟、NAS 或 UNC 路徑安裝；UAC 提升權限後可能無法存取原路徑，且安裝
+> 視窗可能立即關閉。
 
 ## 文件
 
@@ -50,8 +55,8 @@ Apple Silicon，以及 Windows 11 x64／ARM64。
 ## English
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
-method. It supports macOS 15 or later on Apple Silicon and Windows 11 on x64
-and ARM64.
+method. It supports macOS 15 or later on Apple Silicon and Windows 11 on x64.
+The Windows package also supports 32-bit Office processes.
 
 The project retains the OpenVanilla/PlainVanilla core, removes obsolete online
 services and Yahoo branding, and adds a modern Windows TSF frontend.
@@ -68,6 +73,11 @@ by, or sponsored by Yahoo.**
   settings.
 - Windows starts in Chinese Bopomofo and half-width mode. Press `Shift` or
   `Ctrl+Space` to switch Chinese/English, and `Shift+Space` to switch width.
+
+> **Windows installation:** Extract the complete ZIP, copy the entire extracted
+> folder to a local `C:\` path such as `C:\KeyKeyInstaller`, and only then run
+> `Install.cmd`. Do not install directly from a mapped network drive, NAS, or
+> UNC path; the source can become inaccessible after UAC elevation.
 
 ### Documentation
 

@@ -9,13 +9,82 @@ function Test-Administrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-if (-not (Test-Administrator)) {
-    $arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $PSCommandPath
-    $process = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments `
-        -Verb RunAs -Wait -PassThru
-    exit $process.ExitCode
+function Test-NetworkSource {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    if ($Path.StartsWith('\\')) {
+        return $true
+    }
+    try {
+        $root = [IO.Path]::GetPathRoot($Path)
+        if (-not $root) {
+            return $false
+        }
+        $drive = New-Object IO.DriveInfo($root)
+        return $drive.DriveType -eq [IO.DriveType]::Network
+    }
+    catch {
+        return $false
+    }
 }
 
+function Invoke-Regsvr32 {
+    param(
+        [Parameter(Mandatory = $true)][string] $Tool,
+        [Parameter(Mandatory = $true)][string] $Dll,
+        [switch] $Unregister
+    )
+
+    $arguments = '/s'
+    if ($Unregister) {
+        $arguments += ' /u'
+    }
+    $arguments += ' "{0}"' -f $Dll
+    $process = Start-Process -FilePath $Tool -ArgumentList $arguments `
+        -WindowStyle Hidden -Wait -PassThru
+    return $process.ExitCode
+}
+
+if (-not (Test-Administrator)) {
+    $launchScript = $PSCommandPath
+    $stagingDirectory = $null
+    if (Test-NetworkSource -Path $PSCommandPath) {
+        $stagingDirectory = Join-Path ([IO.Path]::GetTempPath()) (
+            'chichi77-keykey-install-' + [Guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $stagingDirectory | Out-Null
+        Get-ChildItem -LiteralPath $PSScriptRoot -Force |
+            Copy-Item -Destination $stagingDirectory -Recurse -Force
+        $launchScript = Join-Path $stagingDirectory 'Install.ps1'
+        Write-Host 'Network source detected; copied the installer to a local temporary directory.'
+    }
+
+    try {
+        $arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}"' `
+            -f $launchScript
+        $process = Start-Process -FilePath 'powershell.exe' `
+            -ArgumentList $arguments -Verb RunAs -Wait -PassThru
+        exit $process.ExitCode
+    }
+    finally {
+        if ($stagingDirectory -and
+            (Test-Path -LiteralPath $stagingDirectory -PathType Container)) {
+            Remove-Item -LiteralPath $stagingDirectory -Recurse -Force
+        }
+    }
+}
+
+$installLogPath = Join-Path ([IO.Path]::GetTempPath()) `
+    'chichi77-keykey-install.log'
+$transcriptStarted = $false
+try {
+    Start-Transcript -Path $installLogPath -Force | Out-Null
+    $transcriptStarted = $true
+}
+catch {
+    # Installation must remain possible if transcription is unavailable.
+}
+
+try {
 $packageInfoPath = Join-Path $PSScriptRoot 'PackageInfo.json'
 $payloadDirectory = Join-Path $PSScriptRoot 'Payload'
 if (-not (Test-Path -LiteralPath $packageInfoPath -PathType Leaf)) {
@@ -34,8 +103,15 @@ if ($packageInfo.architecture -eq 'arm64' -and $nativeArchitecture -ne 'ARM64') 
     throw "This is an ARM64 package, but Windows reports $nativeArchitecture."
 }
 
-foreach ($relativePath in 'KeyKeyTsf.dll', 'KeyKeySettings.exe',
-         'Databases\KeyKey.db') {
+$tipDllNames = if ($packageInfo.architecture -eq 'x64') {
+    @('KeyKeyTsf_x64.dll', 'KeyKeyTsf_x86.dll')
+}
+else {
+    @('KeyKeyTsf_arm64.dll')
+}
+
+foreach ($relativePath in @($tipDllNames) + @('KeyKeySettings.exe',
+         'Databases\KeyKey.db')) {
     $sourcePath = Join-Path $payloadDirectory $relativePath
     if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
         throw "The installation payload is incomplete: $relativePath"
@@ -43,23 +119,32 @@ foreach ($relativePath in 'KeyKeyTsf.dll', 'KeyKeySettings.exe',
 }
 
 $installDirectory = Join-Path $env:ProgramFiles 'chichi77 KeyKey'
-$classId = '{828E3CF0-11E9-45FC-A5DB-394991AD0093}'
-$classRegistryPath = "Registry::HKEY_CLASSES_ROOT\CLSID\$classId\InprocServer32"
-$regsvr32 = Join-Path ([Environment]::SystemDirectory) 'regsvr32.exe'
+$nativeRegsvr32 = Join-Path $env:SystemRoot 'System32\regsvr32.exe'
+$x86Regsvr32 = Join-Path $env:SystemRoot 'SysWOW64\regsvr32.exe'
 
-if (Test-Path -LiteralPath $classRegistryPath) {
-    $registeredDll = (Get-Item -LiteralPath $classRegistryPath).GetValue('')
-    if ($registeredDll -and (Test-Path -LiteralPath $registeredDll -PathType Leaf)) {
-        & $regsvr32 /s /u $registeredDll
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not unregister the previous installation: $registeredDll"
+# Remove both registry views before replacing an earlier single- or
+# dual-architecture installation. A 32-bit Office process can only load the
+# x86 in-process TSF DLL, while native Windows applications load the x64 DLL.
+foreach ($oldRegistration in @(
+    @{ Dll = (Join-Path $installDirectory 'KeyKeyTsf_x86.dll'); Tool = $x86Regsvr32 },
+    @{ Dll = (Join-Path $installDirectory 'KeyKeyTsf_x64.dll'); Tool = $nativeRegsvr32 },
+    @{ Dll = (Join-Path $installDirectory 'KeyKeyTsf_arm64.dll'); Tool = $nativeRegsvr32 },
+    @{ Dll = (Join-Path $installDirectory 'KeyKeyTsf.dll'); Tool = $nativeRegsvr32 }
+)) {
+    if (Test-Path -LiteralPath $oldRegistration.Dll -PathType Leaf) {
+        $registrationExitCode = Invoke-Regsvr32 `
+            -Tool $oldRegistration.Tool -Dll $oldRegistration.Dll -Unregister
+        if ($registrationExitCode -ne 0) {
+            throw "Could not unregister the previous installation ($registrationExitCode): $($oldRegistration.Dll)"
         }
     }
 }
 
 New-Item -ItemType Directory -Path $installDirectory -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $payloadDirectory 'KeyKeyTsf.dll') `
-    -Destination $installDirectory -Force
+foreach ($dllName in $tipDllNames) {
+    Copy-Item -LiteralPath (Join-Path $payloadDirectory $dllName) `
+        -Destination $installDirectory -Force
+}
 Copy-Item -LiteralPath (Join-Path $payloadDirectory 'KeyKeySettings.exe') `
     -Destination $installDirectory -Force
 Copy-Item -LiteralPath (Join-Path $payloadDirectory 'Databases') `
@@ -82,10 +167,22 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Could not grant app-container read access to the installation.'
 }
 
-$installedDll = Join-Path $installDirectory 'KeyKeyTsf.dll'
-& $regsvr32 /s $installedDll
-if ($LASTEXITCODE -ne 0) {
-    throw "TSF registration failed with exit code $LASTEXITCODE."
+$registrations = if ($packageInfo.architecture -eq 'x64') {
+    @(
+        @{ Dll = 'KeyKeyTsf_x64.dll'; Tool = $nativeRegsvr32 },
+        @{ Dll = 'KeyKeyTsf_x86.dll'; Tool = $x86Regsvr32 }
+    )
+}
+else {
+    @(@{ Dll = 'KeyKeyTsf_arm64.dll'; Tool = $nativeRegsvr32 })
+}
+foreach ($registration in $registrations) {
+    $installedDll = Join-Path $installDirectory $registration.Dll
+    $registrationExitCode = Invoke-Regsvr32 `
+        -Tool $registration.Tool -Dll $installedDll
+    if ($registrationExitCode -ne 0) {
+        throw "TSF registration failed for $($registration.Dll) with exit code $registrationExitCode."
+    }
 }
 
 $tip = '0404:{828E3CF0-11E9-45FC-A5DB-394991AD0093}{BED5C2CB-27F6-455D-AB13-CD2BB19B670B}'
@@ -132,3 +229,16 @@ Write-Host 'chichi77 KeyKey was installed successfully.'
 Write-Host "Location: $installDirectory"
 Write-Host 'Sign out and sign back in, then add the input method under'
 Write-Host 'Settings > Time & language > Language & region > Chinese (Traditional).'
+}
+catch {
+    Write-Host ''
+    Write-Host "Installation failed: $($_.Exception.Message)" `
+        -ForegroundColor Red
+    Write-Host "Diagnostic log: $installLogPath"
+    exit 1
+}
+finally {
+    if ($transcriptStarted) {
+        Stop-Transcript | Out-Null
+    }
+}

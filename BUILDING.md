@@ -69,6 +69,8 @@ cd Source\Loaders\Windows-TSF
 cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
+cmake --preset windows-x86
+cmake --build --preset windows-x86-release --target KeyKeyTsf
 ```
 
 輸出檔案為：
@@ -108,21 +110,27 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 完成建置及測試後，在 `Source\Loaders\Windows-TSF` 執行：
 
 ```powershell
-.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86
 ```
 
-會產生 `out\package\chichi77-KeyKey-1.2-windows-x64.zip`。把 ZIP 複製到另一台
-x64 Windows 11 電腦，完整解壓縮後執行 `Install.cmd` 並允許 UAC。安裝程式會：
+會產生 `out\package\chichi77-KeyKey-1.2.1-windows-x64.zip`。在另一台 x64 Windows
+11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
+`C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
 - 將檔案複製到 `C:\Program Files\chichi77 KeyKey`
 - 從固定路徑註冊 TSF
 - 在 Windows「已安裝的應用程式」加入解除安裝項目
 
+請勿直接從網路磁碟、NAS 或 UNC 路徑安裝；UAC 後可能無法存取原路徑，且安裝
+視窗可能立即關閉。失敗記錄位於 `%TEMP%\chichi77-keykey-install.log`。
+
 安裝腳本會自動加入目前使用者的 `Win+Space` 輸入法清單；若沒有立即出現，請登出
 再登入。這是未簽署的家用測試套件，因此從網路下載時 Windows 可能顯示安全警告。
 
-ARM64 請改用 `windows-arm64` 與 `windows-arm64-release` preset，並在打包時加入
-`-Architecture arm64`。DLL 架構必須和載入它的應用程式架構相同。若資料庫含有
+Windows x64 套件會同時安裝 x64 與 x86 TSF DLL，因此也可在 32-bit Office 中輸入。
+ARM64 preset 與打包選項目前僅保留供未來移植，尚未驗證，也不在目前發佈套件內。
+DLL 架構必須和載入它的應用程式架構相同。若資料庫含有
 私人 `chichi77Collection`，只應交給有權使用該資料的人。
 
 Windows frontend 的部署及驗證細節見
@@ -190,6 +198,8 @@ cd Source\Loaders\Windows-TSF
 cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
+cmake --preset windows-x86
+cmake --build --preset windows-x86-release --target KeyKeyTsf
 ```
 
 The outputs are:
@@ -230,19 +240,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 After building and testing, run from `Source\Loaders\Windows-TSF`:
 
 ```powershell
-.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86
 ```
 
-This creates `out\package\chichi77-KeyKey-1.2-windows-x64.zip`. Copy it to the
-other x64 Windows 11 PC, extract the entire ZIP, and run `Install.cmd`. The
-installer copies the runtime to `C:\Program Files\chichi77 KeyKey`, registers
-the TSF, adds it to the current user's `Win+Space` list, and creates an entry in
-Windows Installed apps. Sign out and back in if it does not appear immediately.
+This creates `out\package\chichi77-KeyKey-1.2.1-windows-x64.zip`. On the other
+x64 Windows 11 PC, extract the complete ZIP, copy the entire extracted folder
+to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
+there. Do not install directly from a mapped drive, NAS, or UNC path; it may
+become inaccessible after UAC elevation and the installer window can close
+immediately. Failures are logged to `%TEMP%\chichi77-keykey-install.log`. It copies the runtime to
+`C:\Program Files\chichi77 KeyKey`, registers
+both x64 and x86 TSF DLLs (including support for 32-bit Office), adds it to the
+current user's `Win+Space` list, and creates an entry in Windows Installed apps.
+Sign out and back in if it does not appear immediately.
 
 The home-testing package is unsigned, so Windows may warn about a downloaded
-copy. For ARM64, use the `windows-arm64` build presets and pass
-`-Architecture arm64` when packaging. Distribute a database containing the
-private `chichi77Collection` only to authorized users.
+copy. The ARM64 preset and packaging option are retained for future bring-up,
+but ARM64 is not currently verified or published. Distribute a database
+containing the private `chichi77Collection` only to authorized users.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.

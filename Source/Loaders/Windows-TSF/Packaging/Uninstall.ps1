@@ -9,6 +9,18 @@ function Test-Administrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function Invoke-Regsvr32 {
+    param(
+        [Parameter(Mandatory = $true)][string] $Tool,
+        [Parameter(Mandatory = $true)][string] $Dll
+    )
+
+    $arguments = '/s /u "{0}"' -f $Dll
+    $process = Start-Process -FilePath $Tool -ArgumentList $arguments `
+        -WindowStyle Hidden -Wait -PassThru
+    return $process.ExitCode
+}
+
 if (-not (Test-Administrator)) {
     $arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $PSCommandPath
     $process = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments `
@@ -27,12 +39,23 @@ if (Test-Path -LiteralPath $uninstallRegistryPath) {
     }
 }
 
-$installedDll = Join-Path $installDirectory 'KeyKeyTsf.dll'
-if (Test-Path -LiteralPath $installedDll -PathType Leaf) {
-    $regsvr32 = Join-Path ([Environment]::SystemDirectory) 'regsvr32.exe'
-    & $regsvr32 /s /u $installedDll
-    if ($LASTEXITCODE -ne 0) {
-        throw "TSF unregistration failed with exit code $LASTEXITCODE."
+$nativeRegsvr32 = Join-Path $env:SystemRoot 'System32\regsvr32.exe'
+$x86Regsvr32 = Join-Path $env:SystemRoot 'SysWOW64\regsvr32.exe'
+$registrations = @(
+    @{ Dll = 'KeyKeyTsf_x86.dll'; Tool = $x86Regsvr32 },
+    @{ Dll = 'KeyKeyTsf_x64.dll'; Tool = $nativeRegsvr32 },
+    @{ Dll = 'KeyKeyTsf_arm64.dll'; Tool = $nativeRegsvr32 },
+    @{ Dll = 'KeyKeyTsf.dll'; Tool = $nativeRegsvr32 }
+)
+foreach ($registration in $registrations) {
+    $installedDll = Join-Path $installDirectory $registration.Dll
+    if (-not (Test-Path -LiteralPath $installedDll -PathType Leaf)) {
+        continue
+    }
+    $registrationExitCode = Invoke-Regsvr32 `
+        -Tool $registration.Tool -Dll $installedDll
+    if ($registrationExitCode -ne 0) {
+        throw "TSF unregistration failed for $($registration.Dll) with exit code $registrationExitCode."
     }
 }
 

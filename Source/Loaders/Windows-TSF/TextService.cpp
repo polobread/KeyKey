@@ -1,6 +1,7 @@
 #include "TextService.h"
 
 #include <algorithm>
+#include <cwchar>
 #include <iterator>
 #include <new>
 #include <shellapi.h>
@@ -157,6 +158,27 @@ std::wstring ToFullWidth(std::wstring text) {
     return text;
 }
 
+const wchar_t* BuildArchitecture() {
+#if defined(_M_IX86)
+    return L"x86";
+#elif defined(_M_X64)
+    return L"x64";
+#elif defined(_M_ARM64)
+    return L"arm64";
+#else
+    return L"unknown";
+#endif
+}
+
+std::wstring CurrentProcessName() {
+    wchar_t path[MAX_PATH]{};
+    const DWORD length = GetModuleFileNameW(nullptr, path,
+                                            static_cast<DWORD>(std::size(path)));
+    if (!length || length >= std::size(path)) return L"unknown";
+    const wchar_t* name = wcsrchr(path, L'\\');
+    return name ? name + 1 : path;
+}
+
 }  // namespace
 
 TextService::TextService() { ++g_objectCount; }
@@ -217,8 +239,9 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
     threadManager_ = threadManager;
     clientId_ = clientId;
     engine_ = KeyKeyEngineSession::Create();
-    Trace("Activate client=%lu engineReady=%d", static_cast<unsigned long>(clientId_),
-          engine_ && engine_->ready());
+    Trace("Activate process=%ls arch=%ls client=%lu engineReady=%d",
+          CurrentProcessName().c_str(), BuildArchitecture(),
+          static_cast<unsigned long>(clientId_), engine_ && engine_->ready());
     const HRESULT langBarResult = initializeLangBar();
     Trace("InitializeLangBar hr=0x%08lX",
           static_cast<unsigned long>(langBarResult));
