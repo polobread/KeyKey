@@ -238,6 +238,26 @@ namespace OpenVanilla {
                 return PVCandidateState::CandidateChosen;
             }
 
+            // Home and End address the entire candidate list, rather than
+            // only the currently visible page. Modified variants remain
+            // available to the host application or an input-method-specific
+            // handler.
+            if (!key.isCombinedFunctionKey() && !key.isShiftPressed() &&
+                key.keyCode() == OVKeyCode::Home) {
+                goToPage(0);
+                m_currentHighlightedCandidateIndex = 0;
+                return PVCandidateState::UpdateCandidateHighlight;
+            }
+
+            if (!key.isCombinedFunctionKey() && !key.isShiftPressed() &&
+                key.keyCode() == OVKeyCode::End) {
+                if (pageCount()) {
+                    goToPage(pageCount() - 1);
+                    m_currentHighlightedCandidateIndex = lastCurrentPageCandidateIndex();
+                }
+                return PVCandidateState::UpdateCandidateHighlight;
+            }
+
             bool directionForward = false;
             bool changeHighlight = false;
             size_t oldCandidateIndex = m_currentHighlightedCandidateIndex;

@@ -338,11 +338,14 @@ bool KeyKeyEngineSession::hasComposition() const {
 
 bool KeyKeyEngineSession::wantsKey(const KeyEvent& event) const {
     if (!context_) return false;
+    // Application shortcuts must keep working while a candidate list or
+    // reading composition is active. TextService handles the explicit
+    // input-method shortcuts (such as Ctrl+Space) before asking the engine.
+    if (event.control || event.alt) return false;
     if (hasComposition()) {
         return IsNavigationOrEditingKey(event.virtualKey) ||
                PrintableAsciiFromVirtualKey(event) != 0 || !event.text.empty();
     }
-    if (event.control || event.alt) return false;
     // Like production TSF implementations, accept ordinary virtual keys even
     // when ToUnicodeEx returns no character for the active keyboard layout.
     // Otherwise TSF skips OnKeyDown and sends the raw key to the application.

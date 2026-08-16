@@ -670,7 +670,14 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
     Trace("Engine vk=%u handled=%d commitLen=%zu compositionLen=%zu candidates=%zu",
           event.virtualKey, result.handled, result.committedText.size(),
           result.compositionText.size(), result.candidates.size());
-    if (!result.handled) return S_OK;
+    if (!result.handled) {
+        // Around filters can dismiss a candidate panel while deliberately
+        // passing the key through to the host (for example, an arrow key that
+        // closes associated-phrase suggestions). Keep the native candidate
+        // window in sync even though no composition edit is required.
+        updateCandidateWindow(editCookie, context, result);
+        return S_OK;
+    }
     if (result.beep) MessageBeep(MB_OK);
     const HRESULT status = updateComposition(editCookie, context, result);
     Trace("UpdateComposition hr=0x%08lX", static_cast<unsigned long>(status));

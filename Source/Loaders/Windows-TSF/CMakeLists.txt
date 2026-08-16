@@ -247,6 +247,31 @@ if(BUILD_TESTING)
         add_dependencies(KeyKeyEngineSmokeTest keykey_database)
     endif()
     add_test(NAME KeyKeyEngineBopomofo COMMAND KeyKeyEngineSmokeTest)
+
+    add_executable(KeyKeyCandidateStateTest CandidateStateTest.cpp)
+    target_compile_features(KeyKeyCandidateStateTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeyCandidateStateTest PRIVATE
+        UNICODE
+        _UNICODE
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+    )
+    if(MSVC)
+        target_compile_options(KeyKeyCandidateStateTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeyCandidateStateTest PRIVATE
+        keykey_core
+        advapi32
+        gdi32
+        ole32
+        shell32
+        user32
+        uuid
+    )
+    if(TARGET keykey_database)
+        add_dependencies(KeyKeyCandidateStateTest keykey_database)
+    endif()
+    add_test(NAME KeyKeyCandidateKeyStateMachine COMMAND KeyKeyCandidateStateTest)
 endif()
 
 install(TARGETS KeyKeyTsf RUNTIME DESTINATION . LIBRARY DESTINATION .)
