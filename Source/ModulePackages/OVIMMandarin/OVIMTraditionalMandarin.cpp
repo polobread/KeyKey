@@ -175,6 +175,10 @@ bool OVIMTraditionalMandarinContext::handleKey(OVKey* key, OVTextBuffer* reading
     // handles ctrl-0 and ctrl-1
     if ((key->receivedString() == "0" || key->receivedString() == "1") && key->isCtrlPressed() && readingText->isEmpty())
         return queryAndCompose(m_module->m_punctuationTable, string("_punctuation_list"), readingText, composingText, candidateService, loaderService);
+
+    // handles ctrl-[punctuation]
+    if (key->isCtrlPressed() && key->isPrintable() && readingText->isEmpty())
+        return queryAndCompose(m_module->m_punctuationTable, string("_ctrl_") + key->receivedString(), readingText, composingText, candidateService, loaderService);
     
     // if it's non-printable key and the composing text is empty, we return the event
     if (!key->receivedString().size() && readingText->isEmpty()) {
@@ -336,6 +340,14 @@ bool OVIMTraditionalMandarinContext::candidateNonPanelKeyReceived(OVCandidateSer
     
     OVCandidateList* candidates = panel->candidateList();            
     string currentString = candidates->candidateAtIndex(panel->currentHightlightIndexInCandidateList());
+    
+    // A key carrying Ctrl, Alt, Opt or Command is neither a reading key nor a
+    // punctuation key, even when its key code happens to be one of those. Half
+    // the punctuation row doubles as Bopomofo (',' is E, '.' is OU, ';' is
+    // ANG), so without this the chord would commit the highlighted candidate
+    // and start a new reading with it.
+    if (key->isCombinedFunctionKey())
+        return false;
     
     if (key->keyCode() == OVKeyCode::Backspace) {
         panel->hide();

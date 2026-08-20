@@ -3,7 +3,6 @@
 #import "CVAboutController.h"
 #import "CVApplicationController.h"
 #import "OpenVanillaLoader.h"
-#import "Version.h"
 
 @implementation CVAboutController
 
@@ -71,13 +70,8 @@
 	NSString *name = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
 	if (!name)
 		name = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleName"];
-	NSString *version = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
-	
-	
-    VersionNumber verNum([version UTF8String]);
-	version = [NSString stringWithFormat:@"%d.%d", verNum.majorVersion(), verNum.minorVersion()];
+	NSString *version = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
 
-	
 	NSString *copyright = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSHumanReadableCopyright"];
 
 	[_aboutTextField setStringValue:[NSString stringWithFormat:@"%@ %@\n%@", name, version, copyright]];

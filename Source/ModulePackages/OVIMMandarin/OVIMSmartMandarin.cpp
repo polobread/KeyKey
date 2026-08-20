@@ -136,24 +136,6 @@ bool OVIMSmartMandarinContext::handleKey(OVKey* key, OVTextBuffer* readingText, 
         return false;
     }
 
-    // flush cache key
-    if ((key->receivedString() == "2") && key->isCtrlPressed() && readingText->isEmpty() && composingText->isEmpty()) {
-        m_module->m_cacheFlushKeyCounter++;
-        
-        if (m_module->m_cacheFlushKeyCounter > 10) {
-            m_module->m_cacheFlushKeyCounter = 0;
-            m_module->m_LM->flushCache();
-            m_module->m_LM->flushUserCache();
-            m_module->m_LM->saveUserBigramCacheAndCandidateOverrideCache(true, true);
-            
-            composingText->showToolTip("All caches flushed.");
-        }
-        return false;
-    }        
-    else {
-        m_module->m_cacheFlushKeyCounter = 0;
-    }
-	
 	bool capsLockFilter = true;
 	
 #if defined(__APPLE__)
@@ -833,7 +815,6 @@ bool OVIMSmartMandarinContext::candidateNonPanelKeyReceived(OVCandidateService* 
 
 OVIMSmartMandarin::OVIMSmartMandarin()
     : m_LM(0)
-    , m_cacheFlushKeyCounter(0)
 //    , m_BPMFDB(0)
     , m_cfgCandidateCursorAtEndOfTargetBlock(false)
     , m_cfgComposingTextBufferSize(10)    

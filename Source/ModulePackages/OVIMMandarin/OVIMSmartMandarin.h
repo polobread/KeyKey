@@ -333,8 +333,6 @@ namespace OpenVanilla {
         LanguageModel* m_LM;
         // OVSQLiteConnection* m_BPMFDB;        
         
-        size_t m_cacheFlushKeyCounter;
-        
         // configurable items
         string m_cfgKeyboardLayout;
         string m_cfgCandidateSelectionKeys;        

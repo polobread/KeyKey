@@ -19,6 +19,11 @@ Apple Silicon，以及 Windows 11 x64；Windows 套件同時支援 32-bit Office
 - 預設使用傳統注音，並保留倉頡、簡易等既有模組
 - 支援候選字、關聯詞、自訂詞與偏好設定
 
+> **安裝注意：** 首次安裝後請登出再重新登入，Text Input Services 只在登入時
+> 掃描 `/Library/Input Methods`；重新登入後於「系統設定 → 鍵盤 → 輸入來源」
+> 加入琦琦輸入法。覆蓋既有版本不需要登出，安裝程式會結束執行中的輸入法，並由
+> 系統接上新版。
+
 ### Windows 11
 
 - 原生 TSF frontend，支援 x86 與 x64 host process
@@ -50,6 +55,13 @@ Apple Silicon，以及 Windows 11 x64；Windows 套件同時支援 32-bit Office
 的開源釋出中，因此目前不啟用。Yahoo 1.1 的 CEROD 字典、SEE 加密使用者資料，
 以及已停止的 Yahoo／MobileMe 網路服務也不包含在目前版本中。
 
+## 參考資料
+
+- [McBopomofo](https://github.com/openvanilla/McBopomofo)
+- [win-mcbopomofo](https://github.com/openvanilla/win-mcbopomofo)
+- [McBopomofo Text Pool](https://mcbopomofo.openvanilla.org/textpool.html)
+- [詞庫開發說明](https://github.com/openvanilla/McBopomofo/wiki/%E8%A9%9E%E5%BA%AB%E9%96%8B%E7%99%BC%E8%AA%AA%E6%98%8E)
+
 <a id="english"></a>
 
 ## English
@@ -73,6 +85,12 @@ by, or sponsored by Yahoo.**
   settings.
 - Windows starts in Chinese Bopomofo and half-width mode. Press `Shift` or
   `Ctrl+Space` to switch Chinese/English, and `Shift+Space` to switch width.
+
+> **macOS installation:** After a first install, log out and back in. Text
+> Input Services only scans `/Library/Input Methods` at login. Then add the
+> input source under System Settings, Keyboard, Input Sources. Upgrading over
+> an already installed version needs neither step; the installer ends the
+> running input method and the system starts the new one in its place.
 
 > **Windows installation:** Extract the complete ZIP, copy the entire extracted
 > folder to a local `C:\` path such as `C:\KeyKeyInstaller`, and only then run
@@ -99,6 +117,13 @@ not covered by this repository's open-source license.
 Smart Mandarin remains disabled because the required Sinica unigram/bigram
 corpus was not included in Yahoo's source release. Yahoo's CEROD dictionary,
 SEE-encrypted user data, and obsolete Yahoo/MobileMe services are also absent.
+
+### Reference
+
+- [McBopomofo](https://github.com/openvanilla/McBopomofo)
+- [win-mcbopomofo](https://github.com/openvanilla/win-mcbopomofo)
+- [McBopomofo Text Pool](https://mcbopomofo.openvanilla.org/textpool.html)
+- [Dictionary development guide](https://github.com/openvanilla/McBopomofo/wiki/%E8%A9%9E%E5%BA%AB%E9%96%8B%E7%99%BC%E8%AA%AA%E6%98%8E)
 
 ## License
 

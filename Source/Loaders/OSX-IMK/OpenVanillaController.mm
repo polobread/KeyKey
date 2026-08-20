@@ -16,12 +16,73 @@
 static OpenVanillaController* OVCActiveContext = nil;
 static id OVCActiveContextSender = nil;
 
+// The Ctrl combinations that belong to the input method, all defined in
+// Source/DataTables/bpmf-punctuations.cin: _ctrl_opt_* for symbols, _ctrl_* for
+// full-width punctuation, and Ctrl-0/Ctrl-1 for the punctuation list. Ctrl with
+// a letter is deliberately absent -- the table has no such entry, and macOS uses
+// those for its own text bindings (Ctrl-A, Ctrl-E, Ctrl-K and friends).
+//
+// Platform limit: macOS never hands an input method the shifted variant of a
+// Ctrl-punctuation chord. Ctrl-, and Ctrl-Shift-, both arrive as ',', and
+// -charactersIgnoringModifiers reports the same, so the table's _ctrl_:
+// _ctrl_" _ctrl_< _ctrl_> and _ctrl_? entries cannot be reached from here.
+// Ctrl-[ and Ctrl-] do not arrive at all. Every one of them stays usable on
+// Windows, where the TSF loader derives the character from the virtual key
+// rather than from a translated string. Only the chords that do arrive are
+// listed below.
+static BOOL OVCIsInputMethodCtrlKey(const OVKey& key)
+{
+    unsigned int keyCode = key.keyCode();
+
+    if (key.isOptPressed() || key.isAltPressed()) {
+        if (keyCode >= 'a' && keyCode <= 'z')
+            return YES;
+
+        switch (keyCode) {
+            case '\'': case ',': case '.': case '/': case ';':
+                return YES;
+        }
+
+        return NO;
+    }
+
+    switch (keyCode) {
+        // _ctrl_<punctuation>
+        case '\'': case ',': case '.': case ';':
+        // the punctuation list
+        case '0': case '1':
+            return YES;
+    }
+
+    return NO;
+}
+
+// Decides whether a key event is ours before the engine sees it. Returning NO
+// leaves the reading, composing buffer and candidate panel exactly as they are
+// and lets the client have the key, which is what a client shortcut expects.
+static BOOL OVCShouldEnterEngine(const OVKey& key)
+{
+    if (key.isCommandPressed())
+        return NO;
+
+    if (key.isCtrlPressed())
+        return OVCIsInputMethodCtrlKey(key);
+
+    // Option composes characters of its own and macOS uses it for word-wise
+    // navigation; neither belongs to us.
+    if (key.isOptPressed() || key.isAltPressed())
+        return NO;
+
+    return YES;
+}
+
 @implementation OpenVanillaController
 - (void)dealloc
 {
     // delete C++ objects here
     delete _context;
     [_composingBuffer release];
+    [_handledKeyCodes release];
     [super dealloc];
 }
 
@@ -34,6 +95,7 @@ static id OVCActiveContextSender = nil;
         _updateCommitStringBeforeCommit = NO;
         _commitFromOurselves = NO;
         _composingBuffer = [NSMutableString new];
+        _handledKeyCodes = [NSMutableIndexSet new];
 		
 		[[OpenVanillaLoader sharedLock] lock];
 		_context = [OpenVanillaLoader sharedLoader]->createContext();
@@ -177,10 +239,10 @@ static id OVCActiveContextSender = nil;
 }
 
 
-- (unsigned int)recognizedEvents:(id)sender
+- (NSUInteger)recognizedEvents:(id)sender
 {
 //	NSLog(@"recognizedEvents (client %08x)", sender);
-    return NSKeyDownMask | NSKeyUpMask | NSFlagsChangedMask | NSMouseEnteredMask | NSLeftMouseDownMask | NSLeftMouseDragged;
+    return NSKeyDownMask | NSKeyUpMask | NSFlagsChangedMask;
 }
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
 - (NSString *)currentKeyboardLayout
@@ -264,6 +326,8 @@ static id OVCActiveContextSender = nil;
 	// NSLog(@"deactivateServer (client %08x), identifier: %@", sender, [sender bundleIdentifier]);
 	
     [OpenVanillaController setActiveContext:nil sender:nil];
+
+    [_handledKeyCodes removeAllIndexes];
 
     // force commit
     _commitFromOurselves = YES;
@@ -357,6 +421,13 @@ static id OVCActiveContextSender = nil;
 			}
 		}
 #endif
+    }
+    else if ([event type] == NSKeyUp) {
+        NSUInteger keyCode = [event keyCode];
+        if ([_handledKeyCodes containsIndex:keyCode]) {
+            [_handledKeyCodes removeIndex:keyCode];
+            return YES;
+        }
     }
     else if ([event type] == NSKeyDown) {
         bool isHandled = false;
@@ -483,6 +554,7 @@ static id OVCActiveContextSender = nil;
 				
 				[[appDelegate inputMethodToggleWindowController] useScreenOfPoint:cursorPosition];
 				[[appDelegate inputMethodToggleWindowController] moveToNextInputMethod];
+				[_handledKeyCodes addIndex:[event keyCode]];
 				return YES;
 			}
 		}
@@ -490,6 +562,9 @@ static id OVCActiveContextSender = nil;
 
         // NSLog(@"hanlding event, code = %d (%d or %x), modifiers = %x, vkeycode = %x", unicharCode, (char)unicharCode, (char)unicharCode, vanillaModifiers, virtualKeyCode);
         
+        if (!OVCShouldEnterEngine(key))
+            return NO;
+
         isHandled = _context->handleKeyEvent(&key);
         
         if (_context->composingText()->isCommitted()) {
@@ -662,6 +737,9 @@ static id OVCActiveContextSender = nil;
 		loaderService->setPrompt(savedPrompt);
 		loaderService->setPromptDescription(savedPromptDescription);
 		loaderService->setLog(savedLog);
+
+        if (isHandled)
+            [_handledKeyCodes addIndex:[event keyCode]];
 
         return isHandled;    
     }    

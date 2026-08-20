@@ -16,6 +16,11 @@ using namespace OpenVanilla;
     PVLoaderContext* _context;
     NSMutableString *_composingBuffer;
     BOOL _commitFromOurselves;
+
+    // Key codes whose key-down we consumed. IMK also hands us the key-up, and
+    // a key-up we leave unhandled reaches the client on its own--enough for a
+    // web-based client to act on Esc after we already cancelled the reading.
+    NSMutableIndexSet *_handledKeyCodes;
 	
     // application-specific fixes
     BOOL _doNotClearContextStateEvenWithForcedCommit;
