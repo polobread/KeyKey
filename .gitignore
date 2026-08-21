@@ -6,3 +6,7 @@
 .vs/
 DataSource/chichi77Collection/
 Source/Loaders/Windows-TSF/out/
+Source/Loaders/Android-IME/.gradle/
+Source/Loaders/Android-IME/build/
+Source/Loaders/Android-IME/app/build/
+Source/Loaders/Android-IME/local.properties

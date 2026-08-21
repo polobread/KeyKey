@@ -1,6 +1,6 @@
 # 建置、安裝與打包 / Building, installation, and packaging
 
-本文件集中說明琦琦輸入法的 macOS 與 Windows 建置流程。
+本文件集中說明琦琦輸入法的 macOS、Windows 與 Android 建置流程。
 
 [English](#english)
 
@@ -136,6 +136,25 @@ DLL 架構必須和載入它的應用程式架構相同。若資料庫含有
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
 
+## Android
+
+### 需求與建置
+
+- Android Studio
+- JDK 17 以上
+- Android SDK 36.1 與 Build Tools 36.0.0
+
+```powershell
+cd Source\Loaders\Android-IME
+.\gradlew.bat lintDebug testDebugUnitTest assembleDebug
+```
+
+建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
+`bpmf-punctuations.cin` 到 APK assets。Debug APK 位於
+`app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
+啟用並選擇輸入法。Android frontend 的配置與操作方式見
+[Source/Loaders/Android-IME/README.md](Source/Loaders/Android-IME/README.md)。
+
 <a id="english"></a>
 
 ## English
@@ -262,3 +281,19 @@ containing the private `chichi77Collection` only to authorized users.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.
+
+### Android
+
+Requirements: Android Studio, JDK 17 or later, Android SDK 36.1, and Build
+Tools 36.0.0.
+
+```powershell
+cd Source\Loaders\Android-IME
+.\gradlew.bat lintDebug testDebugUnitTest assembleDebug
+```
+
+The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
+`Source/DataTables` directory into the APK assets. The debug APK is written to
+`app/build/outputs/apk/debug/app-debug.apk`. See the
+[Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
+details.

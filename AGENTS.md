@@ -1,6 +1,6 @@
 # AGENTS.md — 開發交接
 
-macOS 與 Windows 由不同的 AI 代理輪流開發，這份檔案是兩邊的交接點。
+macOS、Windows 與 Android 由不同環境輪流開發，這份檔案是各平台的交接點。
 
 **接手時：** 先讀完本檔，再讀 [BUILDING.md](BUILDING.md)。動任何 `Source/Frameworks`
 或 `Source/ModulePackages` 底下的檔案前，先看「跨平台影響」。
@@ -75,6 +75,7 @@ grep -n 'Version = ' Source/Loaders/Windows-TSF/Package-Windows.ps1
 | `Source/DataTables/*.cin` | 兩平台（各自的 DatabaseCooker） |
 | `Source/Loaders/OSX-IMK/` | 僅 macOS |
 | `Source/Loaders/Windows-TSF/` | 僅 Windows |
+| `Source/Loaders/Android-IME/` | 僅 Android；建置時唯讀 `Source/DataTables` 字表 |
 
 模組註冊不對稱，看共用模組時要記得：
 
@@ -82,6 +83,8 @@ grep -n 'Version = ' Source/Loaders/Windows-TSF/Package-Windows.ps1
   FullWidthCharacter、HanConvert、BopomofoCorrection、YKAFOneKey、OVAFEval
 - **Windows** 只載入 TraditionalMandarin 與 AssociatedPhrase（SmartMandarin 需要
   的中研院語料不在開源釋出內）
+- **Android** 以 Java 重作 TraditionalMandarin 的單音節組字與選字，直接解析
+  `bpmf-ext.cin`；目前不載入 C++ framework、SmartMandarin 或 AssociatedPhrase
 
 所以「SmartMandarin 裡的某段邏輯」在 Windows 上是死碼，反之 TraditionalMandarin
 沒實作的功能在 Windows 就不存在。
@@ -120,6 +123,19 @@ cmake --build --preset windows-x86-release --target KeyKeyTsf
 
 x86 也必須建，32-bit Office 需要。
 
+### Android
+
+```powershell
+cd Source\Loaders\Android-IME
+.\gradlew.bat lintDebug testDebugUnitTest assembleDebug
+```
+
+- 使用 Android SDK 36.1 時，`compileSdk` 必須用 `release(36)` 加
+  `minorApiLevel = 1` 的區塊寫法；寫成 `compileSdk = 36` 會另找未安裝的
+  `platforms;android-36`。
+- `bpmf-ext.cin` 與 `bpmf-punctuations.cin` 由 `generateBopomofoAssets` 在建置時
+  從共用 `Source/DataTables` 複製，不要在 app 內另存一份。
+
 ---
 
 ## 已知陷阱（不要重複調查）
@@ -137,6 +153,32 @@ x86 也必須建，32-bit Office 需要。
   `ls -ld "/Library/Input Methods/chichi77 KeyKey.app"` 確認。
 - **Windows 安裝**：必須先完整解壓縮、複製到本機 `C:\` 路徑，才執行 `Install.cmd`。
   UAC 提升權限後可能存取不到網路磁碟／NAS／UNC 來源。
+- **Android 主程式不要用 Java `record`**：AGP 9.2.0 曾把 record 轉譯成
+  `com.android.tools.r8.RecordTag`，卻未把該合成類別包進 debug APK；Android 17
+  會在建立 `BopomofoImeService` 時以 `NoClassDefFoundError` 崩潰。`assembleDebug`
+  與 JVM 單元測試都不會發現。現行程式改用一般 immutable class；工具鏈修正並經
+  實機驗證前不要改回 record。
+- **Android 選字不可先結束 composing**：`InputConnection.finishComposingText()` 會把
+  當前注音讀音直接確定送出；若再 `commitText()` 候選字，輸入區會變成
+  `ㄋㄧˇ你`。選字時應直接以 `commitText()` 取代 composing region，之後再依引擎
+  狀態更新或結束組字。
+- **Android 候選翻頁是循環式**：候選開啟時，▲、▼、左右滑動、`Page Up`、
+  `Page Down` 與空白鍵都共用 `changePage()`；第一頁的上一頁是最後一頁，最後一頁
+  的下一頁是第一頁。空白只有在尚未開啟候選時才用來查詢讀音或輸入空格。
+- **Android TraditionalMandarin 選字鍵是 `1–9`**：與共用模組
+  `OVIMTraditionalMandarin.cpp` 的 `setCandidateKeys("123456789")` 一致，每頁 9 個。
+  候選顯示時軟體與實體數字鍵都優先選字；無候選時才把數字交給標準注音鍵位。
+  `0` 不是選字鍵，Android 目前也沒有 AssociatedPhrase 關聯詞狀態。
+- **Android 軟體鍵盤要保留底部系統區**：targetSdk 36 的 IME 視窗會延伸到導覽區，
+  系統的多國語系地球鍵與手勢橫條可能蓋住最底列。繪製內容須靠上，底部空白留給
+  系統控制項；直式固定保留 46dp、橫式固定保留 35dp，不要把按鍵重新畫滿整個
+  view 高度。
+- **Android 橫式鍵盤使用 155dp 精簡內容**：每列約 31dp，比 115dp 半高版增加約
+  35%；底部系統安全區為 35dp，讓底列比半高版下移約 11dp，同時避開地球鍵。
+  橫式的英數與注音採 `1 ㄅ` 左右並排，候選字、選字序號與特殊鍵文字使用橫式字級。
+- **Android 右下角是 Emoji 鍵**：ASD 列右側仍保留 Enter；最底列右側改為 Emoji，
+  開啟固定 45 個常用表情符號，依每頁 9 個分成 5 頁。Emoji 與文字候選共用翻頁、
+  空白循環及 `1–9` 選取邏輯，不是 AssociatedPhrase 關聯詞。
 - **macOS 拿不到 Ctrl+Shift+標點**：macOS 不會把 Ctrl 組合的 shift 變體交給輸入法，
   `Ctrl+,` 與 `Ctrl+Shift+,` 都以 `,` 送達，`charactersIgnoringModifiers` 也一樣。
   所以 `bpmf-punctuations.cin` 的 `_ctrl_:`、`_ctrl_"`、`_ctrl_<`、`_ctrl_>`、
@@ -195,3 +237,11 @@ x86 也必須建，32-bit Office 需要。
 - [ ] Ctrl／Alt 快捷鍵放行時，候選或聯想詞面板會留在畫面上（引擎收不到該鍵，
       `updateCandidateWindow` 不會被呼叫）。**與 macOS 現行行為對稱**，屬「快捷鍵
       不改動組字狀態」的設計決定。要改請兩個平台一起改，不要單邊處理。
+
+### Android
+
+- [ ] 增加會在模擬器或實機啟動 `BopomofoImeService`，並驗證組字、`1–9` 選字取代、
+      Emoji 候選與循環翻頁的
+      smoke test；目前 JVM 單元測試與 APK 建置無法攔截 D8／R8 合成類別漏包及
+      `InputConnection` 互動之類的執行期問題；也應截圖檢查底列沒有與系統導覽區重疊，
+      並確認橫式半高鍵盤的文字沒有裁切。

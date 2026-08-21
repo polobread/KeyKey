@@ -1,7 +1,8 @@
 # 琦琦輸入法 / chichi77 KeyKey 1.2.1
 
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，支援 macOS 15 以上的
-Apple Silicon，以及 Windows 11 x64；Windows 套件同時支援 32-bit Office。
+Apple Silicon、Windows 11 x64，以及 Android 8 以上；Windows 套件同時支援
+32-bit Office。
 
 本專案以 Yahoo! Inc. 於 2012 年以 BSD 3-Clause License 釋出的原始碼為基礎，
 保留 OpenVanilla／PlainVanilla 核心，移除失效的網路服務與 Yahoo 品牌，並加入
@@ -37,11 +38,21 @@ Apple Silicon，以及 Windows 11 x64；Windows 套件同時支援 32-bit Office
 > 網路磁碟、NAS 或 UNC 路徑安裝；UAC 提升權限後可能無法存取原路徑，且安裝
 > 視窗可能立即關閉。
 
+### Android
+
+- 原生 Android IME，支援 Android 8 以上
+- 直式六排鍵盤：候選列加上與電腦相同的五排標準注音鍵位
+- 橫式五排鍵盤：中央為兩欄候選字（左 1–5、右 6–0）
+- USB／藍牙鍵盤模式只顯示單行候選字，可用數字鍵選字
+- 使用 repository 內相同的 `bpmf-ext.cin` 傳統注音字表，不需要網路權限
+
 ## 文件
 
 - [BUILDING.md](BUILDING.md)：macOS／Windows 中英文建置、測試、安裝與打包
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md)：Windows frontend
   的實作、部署及驗證細節
+- [Android IME README](Source/Loaders/Android-IME/README.md)：Android 鍵盤配置、
+  建置與啟用方式
 - [Installer README](Installer/README.md)：macOS 安裝包、簽署及 notarization
 - [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)：第三方素材與授權
 
@@ -67,8 +78,8 @@ Apple Silicon，以及 Windows 11 x64；Windows 套件同時支援 32-bit Office
 ## English
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
-method. It supports macOS 15 or later on Apple Silicon and Windows 11 on x64.
-The Windows package also supports 32-bit Office processes.
+method. It supports macOS 15 or later on Apple Silicon, Windows 11 on x64,
+and Android 8 or later. The Windows package also supports 32-bit Office processes.
 
 The project retains the OpenVanilla/PlainVanilla core, removes obsolete online
 services and Yahoo branding, and adds a modern Windows TSF frontend.
@@ -85,6 +96,10 @@ by, or sponsored by Yahoo.**
   settings.
 - Windows starts in Chinese Bopomofo and half-width mode. Press `Shift` or
   `Ctrl+Space` to switch Chinese/English, and `Shift+Space` to switch width.
+- Android uses a native IME with a six-row portrait layout, a five-row
+  landscape layout with two center candidate columns, and a candidate-only
+  layout for USB or Bluetooth keyboards. It uses the shared `bpmf-ext.cin`
+  dictionary and requests no network permission.
 
 > **macOS installation:** After a first install, log out and back in. Text
 > Input Services only scans `/Library/Input Methods` at login. Then add the
@@ -103,6 +118,8 @@ by, or sponsored by Yahoo.**
   installation, and packaging instructions
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md): frontend
   implementation, deployment, and verification details
+- [Android IME README](Source/Loaders/Android-IME/README.md): layouts, build,
+  and setup instructions
 - [Installer README](Installer/README.md): macOS packaging, signing, and
   notarization
 - [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md): third-party material and

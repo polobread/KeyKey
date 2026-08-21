@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">琦琦注音</string>
+    <string name="ime_name">琦琦注音輸入法</string>
+    <string name="ime_subtype_name">繁體中文（標準注音）</string>
+    <string name="setup_title">琦琦注音輸入法</string>
+    <string name="setup_description">使用與電腦相同的標準注音鍵位，支援直式、橫式以及 USB／藍牙實體鍵盤。</string>
+    <string name="enable_ime">1. 啟用輸入法</string>
+    <string name="choose_ime">2. 選擇琦琦注音</string>
+    <string name="privacy_note">字典與選字均在裝置上執行，不需要網路權限。</string>
+</resources>
