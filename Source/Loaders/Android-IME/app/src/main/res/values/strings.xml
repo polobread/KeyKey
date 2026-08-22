@@ -4,8 +4,26 @@
     <string name="ime_name">琦琦注音輸入法</string>
     <string name="ime_subtype_name">繁體中文（標準注音）</string>
     <string name="setup_title">琦琦注音輸入法</string>
-    <string name="setup_description">使用與電腦相同的標準注音鍵位，支援直式、橫式以及 USB／藍牙實體鍵盤。</string>
+    <string name="setup_description">使用與電腦相同的標準注音鍵位，支援可選關聯詞詞庫、直式、橫式以及 USB／藍牙實體鍵盤。</string>
     <string name="enable_ime">1. 啟用輸入法</string>
     <string name="choose_ime">2. 選擇琦琦注音</string>
+    <string name="open_settings">3. 調整設定</string>
+    <string name="settings_title">琦琦注音設定</string>
+    <string name="haptic_feedback_title">按鍵震動回饋</string>
+    <string name="haptic_feedback_description">拉桿共有 9 段：0、0.01、0.02、0.03、0.05、0.08、0.1、0.15、0.2 秒。設定為 0 秒時關閉震動。</string>
+    <string name="haptic_off">0 秒（關閉）</string>
+    <string name="haptic_maximum">0.2 秒</string>
+    <string name="haptic_value_off">震動時間：關閉</string>
+    <string name="haptic_value_seconds">震動時間：%1$s 秒</string>
+    <string name="phrase_collections_title">關聯詞詞庫（%1$d）</string>
+    <string name="phrase_collections_title_unavailable">關聯詞詞庫</string>
+    <string name="phrase_collections_description">選擇要啟用的關聯詞詞庫，變更會在下次顯示輸入鍵盤時生效。完全不選代表不使用任何關聯詞詞庫。</string>
+    <string name="phrase_select_all">全部啟用</string>
+    <string name="phrase_base_only">僅小麥</string>
+    <string name="phrase_select_none">全部關閉</string>
+    <string name="phrase_status_count">已啟用 %1$d／%2$d 個詞庫</string>
+    <string name="phrase_status_none">未啟用詞庫（%1$d／%2$d）</string>
+    <string name="phrase_collections_unavailable">找不到詞庫資料</string>
+    <string name="phrase_collection_item">%1$s　%2$s</string>
     <string name="privacy_note">字典與選字均在裝置上執行，不需要網路權限。</string>
 </resources>

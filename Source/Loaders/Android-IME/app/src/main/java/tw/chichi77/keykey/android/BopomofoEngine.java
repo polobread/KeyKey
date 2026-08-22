@@ -4,14 +4,29 @@ import java.util.List;
 
 final class BopomofoEngine {
     static final int CANDIDATES_PER_PAGE = 9;
-    private static final List<String> SYMBOLS =
-            List.of("，", "。", "、", "？", "！", "：", "；", "「", "」", "…");
+    enum InputMode { BOPOMOFO, ENGLISH, NUMBER }
+    private static final List<String> SYMBOLS = List.of(
+            "，", "。", "、", "？", "！", "：", "；", "「", "」",
+            "『", "』", "（", "）", "【", "】", "〔", "〕", "…",
+            "—", "～", "·", "‧", "‥", "※", "＊", "＃", "＠",
+            "＆", "％", "＋", "－", "×", "÷", "＝", "≠", "±",
+            "＜", "＞", "≤", "≥", "≈", "∞", "√", "∑", "∫",
+            "°", "℃", "℉", "㎜", "㎝", "㎞", "㎎", "㎏", "㎡",
+            "＄", "￠", "￡", "￥", "€", "₩", "₹", "₽", "¢",
+            "←", "→", "↑", "↓", "↔", "↕", "↖", "↗", "↘",
+            "↙", "⇒", "⇔", "✓", "✔", "✕", "✖", "★", "☆",
+            "●", "○", "■", "□", "▲", "△", "▼", "▽", "◆");
     private static final List<String> EMOJIS = List.of(
             "😀", "😃", "😄", "😁", "😆", "😅", "😂", "😊", "😍",
             "🥰", "😘", "😎", "🤩", "🥳", "🙂", "😉", "😋", "🤔",
             "😭", "😢", "😡", "😱", "😴", "🤢", "🤮", "🥺", "🤣",
             "👍", "👎", "👌", "✌️", "🤞", "👏", "🙏", "💪", "👋",
-            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "💯", "🎉");
+            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "💯", "🎉",
+            "🍎", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍒",
+            "🍔", "🍟", "🍕", "🌭", "🍿", "🍩", "🍪", "🎂", "☕",
+            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨",
+            "🌞", "🌙", "⭐", "🌈", "🔥", "💧", "🌸", "🌹", "🍀",
+            "🚗", "🚌", "🚆", "✈️", "🚀", "🏠", "🎁", "🎈", "🔔");
 
     static final class Result {
         private final String committedText;
@@ -36,31 +51,70 @@ final class BopomofoEngine {
 
     private final CinDictionary dictionary;
     private final BopomofoReading reading = new BopomofoReading();
+    private AssociatedPhraseDictionary associatedPhrases = AssociatedPhraseDictionary.empty();
     private List<String> candidates = List.of();
     private int page;
-    private boolean englishMode;
+    private InputMode inputMode = InputMode.BOPOMOFO;
     private boolean shifted;
+    private boolean temporaryEnglish;
+    private boolean showingAssociatedPhrases;
 
     BopomofoEngine(CinDictionary dictionary) {
         this.dictionary = dictionary;
     }
 
+    void setAssociatedPhraseDictionary(AssociatedPhraseDictionary dictionary) {
+        associatedPhrases = dictionary == null ? AssociatedPhraseDictionary.empty() : dictionary;
+        if (showingAssociatedPhrases) clearComposition();
+    }
+
     Result handleSoftKey(String key) {
-        return switch (key) {
-            case "MODE" -> toggleLanguage();
-            case "SHIFT" -> toggleShift();
+        boolean restoreBopomofo = temporaryEnglish
+                && !key.equals("SHIFT") && !key.equals("MODE");
+        Result result = switch (key) {
+            case "MODE" -> cycleInputMode();
+            case "SHIFT" -> touchShift();
             case "BACKSPACE" -> backspace();
             case "SPACE" -> space();
             case "ENTER" -> enter();
             case "ESCAPE" -> escape();
             case "SYMBOL" -> symbols();
             case "EMOJI" -> emojis();
-            default -> key.length() == 1 ? character(key.charAt(0)) : Result.update();
+            default -> key.length() == 1 ? character(key.charAt(0), true) : Result.update();
         };
+        if (restoreBopomofo) endTemporaryEnglish();
+        return result;
     }
 
     Result handleHardwareCharacter(char key) {
-        return character(key);
+        prepareForHardwareInput();
+        return character(key, false);
+    }
+
+    Result toggleHardwareLanguage() {
+        prepareForHardwareInput();
+        clearComposition();
+        inputMode = inputMode == InputMode.BOPOMOFO
+                ? InputMode.ENGLISH : InputMode.BOPOMOFO;
+        shifted = false;
+        return Result.update();
+    }
+
+    Result commitHardwarePunctuation(String punctuation) {
+        prepareForHardwareInput();
+        if (!reading.isEmpty()) return Result.update();
+        clearComposition();
+        return Result.commit(punctuation);
+    }
+
+    Result showHardwareSymbols() {
+        prepareForHardwareInput();
+        if (!reading.isEmpty()) return Result.update();
+        return symbols();
+    }
+
+    void prepareForHardwareInput() {
+        if (temporaryEnglish) endTemporaryEnglish();
     }
 
     Result space() {
@@ -68,7 +122,7 @@ final class BopomofoEngine {
             changePage(1);
             return Result.update();
         }
-        if (englishMode || reading.isEmpty()) return Result.commit(" ");
+        if (inputMode != InputMode.BOPOMOFO || reading.isEmpty()) return Result.commit(" ");
         return query();
     }
 
@@ -79,7 +133,10 @@ final class BopomofoEngine {
     }
 
     Result backspace() {
-        if (!candidates.isEmpty()) candidates = List.of();
+        if (!candidates.isEmpty()) {
+            candidates = List.of();
+            showingAssociatedPhrases = false;
+        }
         if (!reading.isEmpty()) {
             reading.backspace();
             page = 0;
@@ -97,7 +154,19 @@ final class BopomofoEngine {
         int absoluteIndex = page * CANDIDATES_PER_PAGE + displayedIndex;
         if (absoluteIndex < 0 || absoluteIndex >= candidates.size()) return Result.update();
         String selected = candidates.get(absoluteIndex);
+        if (showingAssociatedPhrases) {
+            clearComposition();
+            return Result.commit(selected);
+        }
+        return commitPrimaryCandidate(selected, true);
+    }
+
+    private Result commitPrimaryCandidate(String selected, boolean showAssociatedPhrases) {
         clearComposition();
+        if (showAssociatedPhrases) {
+            candidates = associatedPhrases.candidates(selected);
+            this.showingAssociatedPhrases = !candidates.isEmpty();
+        }
         return Result.commit(selected);
     }
 
@@ -112,6 +181,8 @@ final class BopomofoEngine {
 
     void reset() {
         clearComposition();
+        if (temporaryEnglish) inputMode = InputMode.BOPOMOFO;
+        temporaryEnglish = false;
         shifted = false;
     }
 
@@ -134,22 +205,36 @@ final class BopomofoEngine {
     }
 
     boolean isEnglishMode() {
-        return englishMode;
+        return inputMode == InputMode.ENGLISH;
+    }
+
+    InputMode inputMode() {
+        return inputMode;
     }
 
     boolean isShifted() {
         return shifted;
     }
 
-    private Result character(char rawKey) {
+    boolean isTemporaryEnglish() {
+        return temporaryEnglish;
+    }
+
+    boolean isShowingAssociatedPhrases() {
+        return showingAssociatedPhrases;
+    }
+
+    private Result character(char rawKey, boolean fromTouch) {
         char key = Character.toLowerCase(rawKey);
-        if (englishMode) {
-            char output = shifted ? Character.toUpperCase(rawKey) : rawKey;
-            shifted = false;
+        if (inputMode == InputMode.ENGLISH) {
+            char output = fromTouch && shifted && Character.isLetter(rawKey)
+                    ? Character.toUpperCase(rawKey) : rawKey;
             return Result.commit(String.valueOf(output));
         }
+        if (inputMode == InputMode.NUMBER) return Result.commit(String.valueOf(rawKey));
 
-        if (!candidates.isEmpty() && key >= '1' && key <= '9') {
+        if (!fromTouch && !showingAssociatedPhrases
+                && !candidates.isEmpty() && key >= '1' && key <= '9') {
             return selectDisplayedCandidate(key - '1');
         }
 
@@ -173,49 +258,75 @@ final class BopomofoEngine {
 
     private Result query() {
         candidates = dictionary.candidates(reading.queryKey());
+        showingAssociatedPhrases = false;
         page = 0;
         if (candidates.size() == 1) {
             String only = candidates.get(0);
-            clearComposition();
-            return Result.commit(only);
+            return commitPrimaryCandidate(only, true);
         }
         return Result.update();
     }
 
     private String commitFirstCandidateIfNeeded() {
         if (candidates.isEmpty()) return "";
+        if (showingAssociatedPhrases) {
+            clearComposition();
+            return "";
+        }
         String first = candidates.get(page * CANDIDATES_PER_PAGE);
         clearComposition();
         return first;
     }
 
-    private Result toggleLanguage() {
+    private Result cycleInputMode() {
         clearComposition();
-        englishMode = !englishMode;
+        if (temporaryEnglish) {
+            temporaryEnglish = false;
+            shifted = false;
+            return Result.update();
+        }
+        inputMode = switch (inputMode) {
+            case BOPOMOFO -> InputMode.ENGLISH;
+            case ENGLISH -> InputMode.NUMBER;
+            case NUMBER -> InputMode.BOPOMOFO;
+        };
         shifted = false;
         return Result.update();
     }
 
-    private Result toggleShift() {
-        shifted = !shifted;
+    private Result touchShift() {
+        clearComposition();
+        if (temporaryEnglish) {
+            endTemporaryEnglish();
+        } else if (inputMode == InputMode.BOPOMOFO) {
+            inputMode = InputMode.ENGLISH;
+            temporaryEnglish = true;
+            shifted = false;
+        } else if (inputMode == InputMode.ENGLISH) {
+            shifted = !shifted;
+        } else {
+            shifted = !shifted;
+        }
         return Result.update();
     }
 
-    private Result commitLiteral(String text) {
-        String prefix = commitFirstCandidateIfNeeded();
-        if (!reading.isEmpty()) return Result.update();
-        return Result.commit(prefix + text);
+    private void endTemporaryEnglish() {
+        inputMode = InputMode.BOPOMOFO;
+        temporaryEnglish = false;
+        shifted = false;
     }
 
     private Result symbols() {
         clearComposition();
         candidates = SYMBOLS;
+        showingAssociatedPhrases = false;
         return Result.update();
     }
 
     private Result emojis() {
         clearComposition();
         candidates = EMOJIS;
+        showingAssociatedPhrases = false;
         return Result.update();
     }
 
@@ -223,5 +334,6 @@ final class BopomofoEngine {
         reading.clear();
         candidates = List.of();
         page = 0;
+        showingAssociatedPhrases = false;
     }
 }

@@ -75,7 +75,7 @@ grep -n 'Version = ' Source/Loaders/Windows-TSF/Package-Windows.ps1
 | `Source/DataTables/*.cin` | 兩平台（各自的 DatabaseCooker） |
 | `Source/Loaders/OSX-IMK/` | 僅 macOS |
 | `Source/Loaders/Windows-TSF/` | 僅 Windows |
-| `Source/Loaders/Android-IME/` | 僅 Android；建置時唯讀 `Source/DataTables` 字表 |
+| `Source/Loaders/Android-IME/` | 僅 Android；建置時唯讀 `Source/DataTables`、`DataSource/McBopomofo` 與可選的相鄰私人詞庫 |
 
 模組註冊不對稱，看共用模組時要記得：
 
@@ -83,8 +83,9 @@ grep -n 'Version = ' Source/Loaders/Windows-TSF/Package-Windows.ps1
   FullWidthCharacter、HanConvert、BopomofoCorrection、YKAFOneKey、OVAFEval
 - **Windows** 只載入 TraditionalMandarin 與 AssociatedPhrase（SmartMandarin 需要
   的中研院語料不在開源釋出內）
-- **Android** 以 Java 重作 TraditionalMandarin 的單音節組字與選字，直接解析
-  `bpmf-ext.cin`；目前不載入 C++ framework、SmartMandarin 或 AssociatedPhrase
+- **Android** 以 Java 重作 TraditionalMandarin 的單音節組字、選字與 AssociatedPhrase
+  關聯詞，直接解析 `bpmf-ext.cin` 與詞庫文字資產；目前不載入 C++ framework 或
+  SmartMandarin
 
 所以「SmartMandarin 裡的某段邏輯」在 Windows 上是死碼，反之 TraditionalMandarin
 沒實作的功能在 Windows 就不存在。
@@ -135,6 +136,9 @@ cd Source\Loaders\Android-IME
   `platforms;android-36`。
 - `bpmf-ext.cin` 與 `bpmf-punctuations.cin` 由 `generateBopomofoAssets` 在建置時
   從共用 `Source/DataTables` 複製，不要在 app 內另存一份。
+- 關聯詞由 `generateAssociatedPhraseAssets` 從 `DataSource/McBopomofo/phrase.occ`
+  與可選的相鄰 `chichi77Collection/phrase.*.tsv` 複製到 generated assets；私人詞庫
+  不在 KeyKey 版控內，含私人資料的 APK 只能交給有權使用的人。
 
 ---
 
@@ -167,18 +171,53 @@ cd Source\Loaders\Android-IME
   的下一頁是第一頁。空白只有在尚未開啟候選時才用來查詢讀音或輸入空格。
 - **Android TraditionalMandarin 選字鍵是 `1–9`**：與共用模組
   `OVIMTraditionalMandarin.cpp` 的 `setCandidateKeys("123456789")` 一致，每頁 9 個。
-  候選顯示時軟體與實體數字鍵都優先選字；無候選時才把數字交給標準注音鍵位。
-  `0` 不是選字鍵，Android 目前也沒有 AssociatedPhrase 關聯詞狀態。
+  觸控版有獨立候選列，必須直接點候選，四排注音鍵即使候選開啟也仍是注音輸入；
+  外接鍵盤的一般候選才用 `1–9`。關聯詞依 Windows 行為用外接鍵盤 `Shift+1–9`
+  選取，未按 Shift 的數字須關閉關聯詞並交給標準注音鍵位；`0` 不是選字鍵。
 - **Android 軟體鍵盤要保留底部系統區**：targetSdk 36 的 IME 視窗會延伸到導覽區，
   系統的多國語系地球鍵與手勢橫條可能蓋住最底列。繪製內容須靠上，底部空白留給
-  系統控制項；直式固定保留 46dp、橫式固定保留 35dp，不要把按鍵重新畫滿整個
+  系統控制項；直式固定保留 40dp、橫式固定保留 35dp，不要把按鍵重新畫滿整個
   view 高度。
-- **Android 橫式鍵盤使用 155dp 精簡內容**：每列約 31dp，比 115dp 半高版增加約
-  35%；底部系統安全區為 35dp，讓底列比半高版下移約 11dp，同時避開地球鍵。
-  橫式的英數與注音採 `1 ㄅ` 左右並排，候選字、選字序號與特殊鍵文字使用橫式字級。
-- **Android 右下角是 Emoji 鍵**：ASD 列右側仍保留 Enter；最底列右側改為 Emoji，
-  開啟固定 45 個常用表情符號，依每頁 9 個分成 5 頁。Emoji 與文字候選共用翻頁、
-  空白循環及 `1–9` 選取邏輯，不是 AssociatedPhrase 關聯詞。
+- **Android 觸控鍵盤是 11 欄注音版面**：直橫式都由候選列、四排 11 個等寬輸入鍵與
+  一排功能鍵組成；四排依序結束於 `ㄦ`、`@`、Emoji、Shift。功能列的長空白是刻意
+  的唯一寬鍵。注音鍵必須同時顯示注音與實體鍵位（如 `ㄅ／1`、`ㄉ／2`）。橫式內容
+  仍固定 155dp，六排使用橫式小字級，不要恢復舊的左右分割候選。
+- **Android 觸控 Shift 不等於實體 Shift**：注音版按 Shift 只暫時顯示英文小寫，
+  並把雙標籤從「注音在上、鍵位在下」交換成「鍵位在上、注音在下」，輸入下一個
+  觸控字元後立即回注音；由功能列切入的英文版按 Shift 才會持續切換大小寫，且大寫時
+  數字排換成 `!@#…`。數字符號模式的 Shift 不離開該模式，只切換兩套各 44 鍵的
+  符號頁。實體 Shift 只當該次硬體按鍵的修飾鍵，不能改變觸控版面。
+- **Android 符號與 Emoji 候選各固定 10 頁**：「符」開啟 90 個標點、括號、數學、
+  單位、貨幣、箭頭及圖形符號；第三排 Emoji 開啟 90 個常用表情，兩者每頁 9 個。
+  與文字候選共用翻頁與空白循環；觸控直接點候選，外接鍵盤一般候選仍可用 `1–9`
+  選取，不是 AssociatedPhrase 關聯詞。
+- **Android 首頁與設定頁要避開前相機挖孔**：targetSdk 36 的 Activity 會 edge-to-edge，
+  兩頁由 `UiInsets` 把 system bars 與 display cutout 加到既有 padding；不要改回固定
+  上邊距。首頁第三個按鈕開啟震動設定，`HapticSettings` 固定使用
+  `0/10/20/30/50/80/100/150/200ms` 九段並以 SharedPreferences 共用給 IME；`0`
+  表示關閉，震動需要 manifest 的 `VIBRATE` 權限。
+- **Android Backspace 要以完整文字圖形為單位**：有注音 reading 時由引擎逐步刪除
+  聲調、韻母、介音、聲母，候選開啟也不可只關候選而不退音；reading 為空時才由
+  `TextDeletion` 計算游標前完整 grapheme 的 UTF-16 長度，讓代理字元、變體選擇符、
+  膚色與 ZWJ Emoji 一次刪乾淨，不要改回固定 `deleteSurroundingText(1, 0)`。
+- **Android 外接鍵盤候選列也要保留底部系統區**：候選列依序為 ▲、9 個候選、▼、
+  Emoji，直式／橫式分別在下方保留 40dp／35dp，避免 Android 的多國語系地球鍵
+  遮住控制項。Emoji 必須在沒有中文字候選時仍可按。所有候選角標都固定顯示 `1–9`；
+  關聯詞雖以 Windows 式 `Shift+1–9` 選取，也不可把角標改成 `!@#$%^&*(`。
+- **Android 外接鍵盤的 Ctrl 快捷鍵要先於修飾鍵攔截判斷**：`Ctrl+Space` 只在注音與
+  英文間切換，`Ctrl+,`／`Ctrl+.` 輸入全型 `，`／`。`；`Ctrl+0` 與 `Ctrl+1` 則比照
+  macOS `OVIMTraditionalMandarin.cpp` 的 `_punctuation_list`，開啟與觸控「符」相同的
+  90 個符號候選。組字 reading 尚未清空時，標點與符號快捷鍵須保留 reading，不可
+  丟掉使用者正在組的注音。快捷鍵的 keydown 與 keyup 都要吃掉，長按不可重複觸發。
+- **Android 關聯詞庫是可選的 30 個文字資產**：`generateAssociatedPhraseAssets` 固定
+  從 `DataSource/McBopomofo/phrase.occ` 加入小麥；若 KeyKey 同層存在經授權的
+  `chichi77Collection`，再加入 29 個 `phrase.*.tsv`。不要把私人資料複製進 KeyKey
+  原始碼。設定首次預設小麥，但 SharedPreferences 已存在空集合時代表使用者刻意
+  全部關閉，不能偷偷恢復預設。小麥中與三個 `people-*` 詞庫重疊的人名必須先排除，
+  否則關閉人名詞庫仍會漏出候選。
+- **Android 關聯詞只在確定單一中文字後開啟**：候選內容是已輸入首字後的詞尾，
+  選取時只 commit 詞尾；輸入下一個注音鍵會關閉關聯詞但不可自動送出第一個詞尾。
+  30 個全不選時 `AssociatedPhraseDictionary.load` 必須直接回空詞庫，不解析資產。
 - **macOS 拿不到 Ctrl+Shift+標點**：macOS 不會把 Ctrl 組合的 shift 變體交給輸入法，
   `Ctrl+,` 與 `Ctrl+Shift+,` 都以 `,` 送達，`charactersIgnoringModifiers` 也一樣。
   所以 `bpmf-punctuations.cin` 的 `_ctrl_:`、`_ctrl_"`、`_ctrl_<`、`_ctrl_>`、
@@ -240,8 +279,11 @@ cd Source\Loaders\Android-IME
 
 ### Android
 
-- [ ] 增加會在模擬器或實機啟動 `BopomofoImeService`，並驗證組字、`1–9` 選字取代、
-      Emoji 候選與循環翻頁的
+- [ ] 增加會在模擬器或實機啟動 `BopomofoImeService`，並驗證組字、觸控候選列、
+      外接鍵盤一般候選 `1–9`／關聯詞 `Shift+1–9`、一次性注音 Shift、英文大小寫與
+      兩套數字符號版面、`ㄋㄧˇ` Backspace 退音及複合 Emoji 一次刪除、
+      關聯詞接續與全部關閉、符號／Emoji 各 10 頁及循環翻頁、外接鍵盤
+      `Ctrl+Space`／`Ctrl+,`／`Ctrl+.`／`Ctrl+0`／`Ctrl+1` 的
       smoke test；目前 JVM 單元測試與 APK 建置無法攔截 D8／R8 合成類別漏包及
       `InputConnection` 互動之類的執行期問題；也應截圖檢查底列沒有與系統導覽區重疊，
-      並確認橫式半高鍵盤的文字沒有裁切。
+      並確認直橫式 11 欄按鍵等寬、橫式文字沒有裁切。

@@ -150,7 +150,9 @@ cd Source\Loaders\Android-IME
 ```
 
 建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
-`bpmf-punctuations.cin` 到 APK assets。Debug APK 位於
+`bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫。
+若 KeyKey 同層有經授權的 `chichi77Collection`，也會加入其中 29 個分類詞庫。
+Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
 [Source/Loaders/Android-IME/README.md](Source/Loaders/Android-IME/README.md)。
@@ -293,7 +295,9 @@ cd Source\Loaders\Android-IME
 ```
 
 The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
-`Source/DataTables` directory into the APK assets. The debug APK is written to
+`Source/DataTables` directory and adds the base associated-phrase collection
+from `DataSource/McBopomofo`. When an authorized sibling `chichi77Collection`
+checkout is present, its 29 categorized collections are included as well. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.

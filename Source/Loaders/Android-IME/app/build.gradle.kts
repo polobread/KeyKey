@@ -41,15 +41,35 @@ val generateBopomofoAssets by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("generated/bopomofoAssets"))
 }
 
+val privateCollectionDirectory = layout.projectDirectory.dir("../../../../../chichi77Collection")
+val generatedCollectionDirectory =
+    layout.buildDirectory.dir("generated/bopomofoAssets/collections")
+
+val generateAssociatedPhraseAssets by tasks.registering(Sync::class) {
+    from(layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ")) {
+        rename { "McBopomofo.occ" }
+    }
+    from(privateCollectionDirectory) {
+        include("phrase.*.tsv")
+    }
+    into(generatedCollectionDirectory)
+}
+
 tasks.named("preBuild").configure {
     dependsOn(generateBopomofoAssets)
+    dependsOn(generateAssociatedPhraseAssets)
 }
 
 tasks.withType<Test>().configureEach {
     dependsOn(generateBopomofoAssets)
+    dependsOn(generateAssociatedPhraseAssets)
     systemProperty(
         "keykey.bopomofo.cin",
         layout.buildDirectory.file("generated/bopomofoAssets/bpmf-ext.cin").get().asFile.absolutePath
+    )
+    systemProperty(
+        "keykey.associated.collections",
+        generatedCollectionDirectory.get().asFile.absolutePath
     )
 }
 

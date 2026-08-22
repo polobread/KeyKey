@@ -21,8 +21,8 @@ public final class MainActivity extends Activity {
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
         content.setGravity(Gravity.CENTER_HORIZONTAL);
-        content.setPadding(padding, padding, padding, padding);
         content.setBackgroundColor(getColor(R.color.keykey_surface));
+        UiInsets.applySystemPadding(content, padding, padding, padding, padding);
 
         TextView title = new TextView(this);
         title.setText(R.string.setup_title);
@@ -52,7 +52,14 @@ public final class MainActivity extends Activity {
             InputMethodManager manager = getSystemService(InputMethodManager.class);
             if (manager != null) manager.showInputMethodPicker();
         });
-        content.addView(choose, matchWrap(dp(0), dp(24)));
+        content.addView(choose, matchWrap(dp(0), dp(12)));
+
+        Button settings = new Button(this);
+        settings.setText(R.string.open_settings);
+        settings.setAllCaps(false);
+        settings.setOnClickListener(view ->
+                startActivity(new Intent(this, SettingsActivity.class)));
+        content.addView(settings, matchWrap(dp(0), dp(24)));
 
         TextView privacy = new TextView(this);
         privacy.setText(R.string.privacy_note);
