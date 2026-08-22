@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(KeyKeyWindowsTsf VERSION 1.2.1 LANGUAGES C CXX)
+project(KeyKeyWindowsTsf VERSION 1.2.2 LANGUAGES C CXX)
 
 include(CTest)
 
@@ -137,6 +137,7 @@ add_library(KeyKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp
     Diagnostics.cpp
+    FrontendSettings.cpp
     LangBarButton.cpp
     KeyKeyTsf.rc
     TextService.cpp
@@ -164,6 +165,7 @@ target_link_libraries(KeyKeyTsf PRIVATE
 )
 
 add_executable(KeyKeySettings WIN32
+    FrontendSettings.cpp
     SettingsApp.cpp
     KeyKeySettings.rc
 )

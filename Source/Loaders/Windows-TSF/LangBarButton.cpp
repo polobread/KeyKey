@@ -134,7 +134,7 @@ STDMETHODIMP LangBarButton::GetTooltipString(BSTR* tooltip) {
         value = service_->isFullWidthMode() ? L"全形（Shift+Space 切換）"
                                             : L"半形（Shift+Space 切換）";
     } else if (kind_ == Kind::Settings) {
-        value = L"琦琦輸入法詞庫設定";
+        value = L"琦琦輸入法設定";
     }
     *tooltip = SysAllocString(value);
     return *tooltip ? S_OK : E_OUTOFMEMORY;
@@ -152,7 +152,7 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
         AppendMenuW(menu, MF_STRING | (service_->isFullWidthMode() ? MF_CHECKED : 0),
                     kMenuFullWidth, L"全形");
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-        AppendMenuW(menu, MF_STRING, kMenuSettings, L"詞庫設定…");
+        AppendMenuW(menu, MF_STRING, kMenuSettings, L"輸入法設定…");
         HWND owner = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 0, 0,
                                      HWND_DESKTOP, nullptr, nullptr, nullptr);
         const UINT selected = TrackPopupMenu(
@@ -192,7 +192,7 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
     result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr,
                                nullptr, 0, nullptr);
     if (FAILED(result)) return result;
-    return menu->AddMenuItem(kMenuSettings, 0, nullptr, nullptr, L"詞庫設定…", 5,
+    return menu->AddMenuItem(kMenuSettings, 0, nullptr, nullptr, L"輸入法設定…", 6,
                              nullptr);
 }
 

@@ -18,6 +18,7 @@ class LangBarButton;
 class TextService final : public ITfTextInputProcessorEx,
                           public ITfKeyEventSink,
                           public ITfCompositionSink,
+                          public ITfTextEditSink,
                           public ITfThreadMgrEventSink,
                           public ITfCompartmentEventSink,
                           public ITfFunctionProvider,
@@ -47,6 +48,10 @@ public:
 
     // ITfCompositionSink
     STDMETHODIMP OnCompositionTerminated(TfEditCookie editCookie, ITfComposition* composition) override;
+
+    // ITfTextEditSink
+    STDMETHODIMP OnEndEdit(ITfContext* context, TfEditCookie editCookie,
+                           ITfEditRecord* editRecord) override;
 
     // ITfThreadMgrEventSink
     STDMETHODIMP OnInitDocumentMgr(ITfDocumentMgr* documentManager) override;
@@ -85,6 +90,8 @@ private:
     bool isFullWidthCharacterKey(const KeyEvent& event) const;
     HRESULT adviseInputModeSink();
     void unadviseInputModeSink();
+    HRESULT adviseTextEditSink(ITfContext* context);
+    void unadviseTextEditSink();
     HRESULT adviseFunctionProvider();
     void unadviseFunctionProvider();
     HRESULT initializeLangBar();
@@ -106,6 +113,8 @@ private:
     void abandonComposition();
     void updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
                                const EngineResult& result);
+    bool selectionMatchesTrackedState(TfEditCookie editCookie,
+                                      ITfContext* context) const;
 
     std::atomic<ULONG> referenceCount_{1};
     Microsoft::WRL::ComPtr<ITfThreadMgr> threadManager_;
@@ -113,13 +122,17 @@ private:
     DWORD threadManagerCookie_ = TF_INVALID_COOKIE;
     DWORD inputModeCookie_ = TF_INVALID_COOKIE;
     DWORD conversionModeCookie_ = TF_INVALID_COOKIE;
+    DWORD textEditCookie_ = TF_INVALID_COOKIE;
     bool chineseMode_ = true;
     bool fullWidthMode_ = false;
     bool shiftTogglePending_ = false;
+    DWORD shiftPressedAt_ = 0;
     bool candidateActive_ = false;
     bool endingComposition_ = false;
     Microsoft::WRL::ComPtr<ITfComposition> composition_;
     Microsoft::WRL::ComPtr<ITfContext> compositionContext_;
+    Microsoft::WRL::ComPtr<ITfContext> textEditContext_;
+    Microsoft::WRL::ComPtr<ITfRange> candidateAnchor_;
     std::unique_ptr<KeyKeyEngineSession> engine_;
     CandidateWindow candidateWindow_;
     LangBarButton* modeIconButton_ = nullptr;

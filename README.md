@@ -1,4 +1,4 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.2.1
+# 琦琦輸入法 / chichi77 KeyKey 1.2.2
 
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，支援 macOS 15 以上的
 Apple Silicon、Windows 11 x64，以及 Android 8 以上；Windows 套件同時支援
@@ -31,7 +31,7 @@ Apple Silicon、Windows 11 x64，以及 Android 8 以上；Windows 套件同時�
 - 支援注音組字、候選字、關聯詞、送字與游標定位
 - 預設為中文注音、半形模式
 - `Shift` 或 `Ctrl+Space` 切換中文／英文，`Shift+Space` 切換半形／全形
-- 語言列顯示「琦」、「ㄅ／英」與「半／全」，並提供詞庫設定入口
+- 語言列顯示「琦」、「ㄅ／英」與「半／全」，並提供一般、注音與關聯詞設定入口
 
 > **安裝注意：** 請先完整解壓縮 ZIP，再把整個解壓縮資料夾複製到本機
 > `C:\`（例如 `C:\KeyKeyInstaller`），最後才執行 `Install.cmd`。請勿直接從

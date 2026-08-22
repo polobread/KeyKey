@@ -19,9 +19,9 @@
 	<key>CFBundleSignature</key>
 	<string>YHOO</string>
 	<key>CFBundleVersion</key>
-    <string>1.2.1</string>
+    <string>1.2.2</string>
 	<key>CFBundleShortVersionString</key>
-    <string>1.2.1</string>
+    <string>1.2.2</string>
 	<key>InputMethodConnectionName</key>
 	<string>chichi77_1_Connection</string>
 	<key>InputMethodServerControllerClass</key>

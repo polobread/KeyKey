@@ -157,6 +157,32 @@ cd Source\Loaders\Android-IME
   `ls -ld "/Library/Input Methods/chichi77 KeyKey.app"` 確認。
 - **Windows 安裝**：必須先完整解壓縮、複製到本機 `C:\` 路徑，才執行 `Install.cmd`。
   UAC 提升權限後可能存取不到網路磁碟／NAS／UNC 來源。
+- **Android Studio agent shell 的 x86 preset 可能撞到重複環境變數**：這個環境同時
+  傳入 `Path` 與 `PATH` 時，Visual Studio generator 的 MSBuild 會以 MSB6001／
+  `ArgumentException` 停在編譯器偵測。不是 x86 原始碼錯誤；用
+  `VsDevCmd.bat -arch=x86 -host_arch=x64` 後以 Ninja 設定 `out/build/x86-ninja`
+  可正常完成 DLL、測試與連結。
+- **Windows TSF 的 Ctrl 白名單必須精確**：`IsInputMethodControlKey` 只放行
+  `bpmf-punctuations.cin` 保證存在的 Ctrl+0／Ctrl+1、Ctrl+標點，以及
+  Ctrl+Alt+字母／五個標點；一般 Ctrl+C、Ctrl+方向鍵、Alt 快捷鍵仍交給應用程式。
+  Ctrl+0／Ctrl+1 會與瀏覽器縮放／分頁及 Excel 快捷鍵衝突，這是目前依產品需求
+  選擇由輸入法優先處理的行為。不要把白名單擴成所有 Ctrl／Alt 鍵，否則
+  `OnTestKeyDown` 與實際引擎處理結果不一致時，某些 host 會把按鍵吃掉。
+- **Windows TSF 必須監看外部游標移動**：`ITfTextEditSink::OnEndEdit` 在 selection
+  離開 composition range 或無組字候選的 anchor 時清掉引擎狀態。移除這個 sink
+  會讓滑鼠／應用程式移動游標後仍沿用舊 range，Enter 可能只移動游標而文字留在
+  原行。切換 document context 時也必須同步重掛 sink。
+- **Windows TSF 單按 Shift 依賴 key-up opt-in**：`OnTestKeyUp` 必須先回 TRUE，TSF
+  才會呼叫 `OnKeyUp`；目前採 Windows-IMM 相同的 300ms 單按判定。Shift 與其他鍵
+  組合時要取消 pending，不能誤切中英文模式。
+- **Windows 設定共用 PlainVanilla plist**：一般設定寫在
+  `%APPDATA%\chichi77 KeyKey\org.openvanilla.chichi77-keykey.windows.plist`，必須保留
+  loader 已有的 `PrimaryInputMethod`、`ActivatedAroundFilters` 等陣列，不能整檔覆寫。
+  注音與關聯詞則各自使用 `TraditionalMandarin.plist`、`AssociatedPhrase.plist`。
+- **Windows 的 Big-5 候選限制需要自訂 encoding service**：舊的
+  `PVDefaultEncodingService` 只宣告 UTF-8，會把 TraditionalMandarin 設定的 `BIG-5`
+  清空，讓「使用全字庫罕用字」永遠無法關閉。Windows TSF 現在用 CP950 搭配
+  `WC_NO_BEST_FIT_CHARS` 判斷候選是否真能以 Big-5 表示，不要改回預設 service。
 - **Android 主程式不要用 Java `record`**：AGP 9.2.0 曾把 record 轉譯成
   `com.android.tools.r8.RecordTag`，卻未把該合成類別包進 debug APK；Android 17
   會在建立 `BopomofoImeService` 時以 `NoClassDefFoundError` 崩潰。`assembleDebug`
@@ -258,21 +284,11 @@ cd Source\Loaders\Android-IME
 
 ### Windows
 
-- [ ] `KeyKeyEngine.cpp` 的 `wantsKey()` 對 `event.control || event.alt` 一刀回
-      false，導致 TraditionalMandarin 自己的 `_ctrl_opt_*`（Ctrl+Alt+字母／標點）
-      與 Ctrl+0／Ctrl+1 標點列表從 port 第一版起就沒生效。修法是在
-      `TextService::isPotentialKey` 呼叫 `wantsKey` 之前加白名單，但有三個前提：
-    - **白名單只能放資料庫保證命中的組合。** `queryAndCompose` 在查不到且 reading
-      為空時回 `false`，會造成 `OnTestKeyDown` 回 TRUE 但 `OnKeyDown` 回 FALSE，
-      某些 host 會直接吃掉該鍵。
-    - 白名單的真實來源是 `Source/DataTables/bpmf-punctuations.cin`（不是 KeyKey.db），
-      灌進 `Mandarin-bpmf-cin` 這張表。`_ctrl_opt_*`、`_ctrl_<標點>` 與
-      `_punctuation_list` 都由 TraditionalMandarin 實作，Windows 可以全數放行
-      （含 macOS 收不到的 `:` `"` `<` `>` `?` `[` `]`，見「已知陷阱」）。
-    - Ctrl+0／Ctrl+1 在 Windows 與瀏覽器縮放／切分頁、Excel 儲存格格式衝突，建議
-      不放行，標點列表另尋入口。
 - [ ] `Package-Windows.ps1` 的 `$Version` 與 `CMakeLists.txt` 重複，可改成從
       `CMakeLists.txt` regex 讀取。
+- [ ] 為 `KeyKeySettings.exe` 增加 UI automation：目前只有啟動 smoke test，仍需人工
+      驗證一般／注音／關聯詞三頁、五種注音鍵盤、直橫選字窗、四種配色、Ctrl+\\、
+      提示聲與 CNS11643 開關在實際 TSF host 中會即時套用。
 - [ ] Ctrl／Alt 快捷鍵放行時，候選或聯想詞面板會留在畫面上（引擎收不到該鍵，
       `updateCandidateWindow` 不會被呼叫）。**與 macOS 現行行為對稱**，屬「快捷鍵
       不改動組字狀態」的設計決定。要改請兩個平台一起改，不要單邊處理。

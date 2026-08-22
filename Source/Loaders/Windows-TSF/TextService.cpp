@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "Diagnostics.h"
+#include "FrontendSettings.h"
 #include "Guids.h"
 #include "LangBarButton.h"
 #include "ModuleState.h"
@@ -16,6 +17,8 @@ namespace KeyKey::WindowsTsf {
 namespace {
 
 using Microsoft::WRL::ComPtr;
+
+constexpr DWORD kShiftTapTimeoutMilliseconds = 300;
 
 class KeyEditSession final : public ITfEditSession {
 public:
@@ -92,6 +95,11 @@ private:
 
 bool IsKeyDown(UINT virtualKey) {
     return (GetKeyState(static_cast<int>(virtualKey)) & 0x8000) != 0;
+}
+
+bool IsShiftKey(UINT virtualKey) {
+    return virtualKey == VK_SHIFT || virtualKey == VK_LSHIFT ||
+           virtualKey == VK_RSHIFT;
 }
 
 bool IsHostEditingKey(UINT virtualKey) {
@@ -205,6 +213,8 @@ STDMETHODIMP TextService::QueryInterface(REFIID iid, void** object) {
         *object = static_cast<ITfKeyEventSink*>(this);
     } else if (iid == IID_ITfCompositionSink) {
         *object = static_cast<ITfCompositionSink*>(this);
+    } else if (iid == IID_ITfTextEditSink) {
+        *object = static_cast<ITfTextEditSink*>(this);
     } else if (iid == IID_ITfThreadMgrEventSink) {
         *object = static_cast<ITfThreadMgrEventSink*>(this);
     } else if (iid == IID_ITfCompartmentEventSink) {
@@ -247,6 +257,14 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
           static_cast<unsigned long>(langBarResult));
     HRESULT result = adviseSinks();
     if (SUCCEEDED(result)) {
+        ComPtr<ITfDocumentMgr> focused;
+        ComPtr<ITfContext> context;
+        if (SUCCEEDED(threadManager_->GetFocus(&focused)) && focused &&
+            SUCCEEDED(focused->GetTop(&context)) && context) {
+            const HRESULT textEditResult = adviseTextEditSink(context.Get());
+            Trace("AdviseTextEdit hr=0x%08lX",
+                  static_cast<unsigned long>(textEditResult));
+        }
         const HRESULT providerResult = adviseFunctionProvider();
         Trace("AdviseFunctionProvider hr=0x%08lX",
               static_cast<unsigned long>(providerResult));
@@ -305,6 +323,7 @@ HRESULT TextService::adviseSinks() {
 
 void TextService::unadviseSinks() {
     if (!threadManager_) return;
+    unadviseTextEditSink();
     unadviseInputModeSink();
     ComPtr<ITfKeystrokeMgr> keystrokes;
     if (SUCCEEDED(threadManager_.As(&keystrokes)) && clientId_ != TF_CLIENTID_NULL) {
@@ -317,6 +336,35 @@ void TextService::unadviseSinks() {
         }
         threadManagerCookie_ = TF_INVALID_COOKIE;
     }
+}
+
+HRESULT TextService::adviseTextEditSink(ITfContext* context) {
+    if (textEditContext_.Get() == context &&
+        textEditCookie_ != TF_INVALID_COOKIE) {
+        return S_OK;
+    }
+    unadviseTextEditSink();
+    if (!context) return S_OK;
+
+    ComPtr<ITfSource> source;
+    HRESULT result = context->QueryInterface(IID_PPV_ARGS(&source));
+    if (FAILED(result)) return result;
+    result = source->AdviseSink(IID_ITfTextEditSink,
+                                static_cast<ITfTextEditSink*>(this),
+                                &textEditCookie_);
+    if (SUCCEEDED(result)) textEditContext_ = context;
+    return result;
+}
+
+void TextService::unadviseTextEditSink() {
+    if (textEditContext_ && textEditCookie_ != TF_INVALID_COOKIE) {
+        ComPtr<ITfSource> source;
+        if (SUCCEEDED(textEditContext_.As(&source))) {
+            source->UnadviseSink(textEditCookie_);
+        }
+    }
+    textEditCookie_ = TF_INVALID_COOKIE;
+    textEditContext_.Reset();
 }
 
 HRESULT TextService::adviseInputModeSink() {
@@ -447,6 +495,7 @@ void TextService::refreshLangBar() {
 void TextService::setChineseMode(bool enabled) {
     chineseMode_ = enabled;
     shiftTogglePending_ = false;
+    shiftPressedAt_ = 0;
     if (!enabled) abandonComposition();
 
     HRESULT result = E_FAIL;
@@ -530,11 +579,15 @@ bool TextService::isPotentialKey(const KeyEvent& event) const {
     if (!composition_ && !candidateActive_ && IsHostEditingKey(event.virtualKey)) {
         return false;
     }
+    if (IsInputMethodControlKey(event)) return true;
     return engine_->wantsKey(event);
 }
 
 bool TextService::isModeToggleKey(const KeyEvent& event) const {
-    return event.virtualKey == VK_SPACE && event.control && !event.alt;
+    if (!event.control || event.alt) return false;
+    if (event.virtualKey == VK_SPACE) return true;
+    return event.virtualKey == VK_OEM_5 && !event.shift &&
+           LoadFrontendSettings().toggleWithControlBackslash;
 }
 
 bool TextService::isWidthToggleKey(const KeyEvent& event) const {
@@ -559,6 +612,16 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lpara
                                         BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     const KeyEvent event = translateKey(wparam, lparam);
+    if (!IsShiftKey(event.virtualKey)) {
+        shiftTogglePending_ = false;
+        shiftPressedAt_ = 0;
+    }
+    if (IsShiftKey(event.virtualKey) && !event.control && !event.alt) {
+        // TestKeyDown must opt in before TSF calls OnKeyDown. OnKeyDown itself
+        // leaves the modifier uneaten so Shift remains available to the host.
+        *eaten = TRUE;
+        return S_OK;
+    }
     *eaten = isModeToggleKey(event) || isWidthToggleKey(event) ||
              isPotentialKey(event);
     Trace("TestKeyDown vk=%u textLen=%zu shift=%d ctrl=%d alt=%d caps=%d mode=%d eaten=%d",
@@ -567,9 +630,16 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lpara
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnTestKeyUp(ITfContext*, WPARAM, LPARAM, BOOL* eaten) {
+STDMETHODIMP TextService::OnTestKeyUp(ITfContext*, WPARAM wparam, LPARAM,
+                                      BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
-    *eaten = FALSE;
+    *eaten = IsShiftKey(static_cast<UINT>(wparam)) && shiftTogglePending_ &&
+              !IsKeyDown(VK_CONTROL) && !IsKeyDown(VK_MENU) &&
+              GetTickCount() - shiftPressedAt_ <= kShiftTapTimeoutMilliseconds;
+    if (IsShiftKey(static_cast<UINT>(wparam)) && !*eaten) {
+        shiftTogglePending_ = false;
+        shiftPressedAt_ = 0;
+    }
     return S_OK;
 }
 
@@ -578,9 +648,8 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     if (!context || !eaten) return E_INVALIDARG;
     *eaten = FALSE;
     KeyEvent event = translateKey(wparam, lparam);
-    if ((event.virtualKey == VK_SHIFT || event.virtualKey == VK_LSHIFT ||
-         event.virtualKey == VK_RSHIFT) &&
-        !event.control && !event.alt) {
+    if (IsShiftKey(event.virtualKey) && !event.control && !event.alt) {
+        if (!shiftTogglePending_) shiftPressedAt_ = GetTickCount();
         shiftTogglePending_ = true;
         return S_OK;
     }
@@ -631,11 +700,16 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
 STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
-    if ((wparam == VK_SHIFT || wparam == VK_LSHIFT || wparam == VK_RSHIFT) &&
-        shiftTogglePending_ && !IsKeyDown(VK_CONTROL) && !IsKeyDown(VK_MENU)) {
+    if (IsShiftKey(static_cast<UINT>(wparam)) && shiftTogglePending_ &&
+        !IsKeyDown(VK_CONTROL) && !IsKeyDown(VK_MENU) &&
+        GetTickCount() - shiftPressedAt_ <= kShiftTapTimeoutMilliseconds) {
         shiftTogglePending_ = false;
+        shiftPressedAt_ = 0;
         toggleChineseMode();
         *eaten = TRUE;
+    } else if (IsShiftKey(static_cast<UINT>(wparam))) {
+        shiftTogglePending_ = false;
+        shiftPressedAt_ = 0;
     }
     return S_OK;
 }
@@ -678,7 +752,9 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
         updateCandidateWindow(editCookie, context, result);
         return S_OK;
     }
-    if (result.beep) MessageBeep(MB_OK);
+    if (result.beep && LoadFrontendSettings().playSoundOnTypingError) {
+        MessageBeep(MB_OK);
+    }
     const HRESULT status = updateComposition(editCookie, context, result);
     Trace("UpdateComposition hr=0x%08lX", static_cast<unsigned long>(status));
     if (FAILED(status)) {
@@ -828,6 +904,7 @@ HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
 HRESULT TextService::terminateComposition(TfEditCookie editCookie) {
     candidateWindow_.hide();
     candidateActive_ = false;
+    candidateAnchor_.Reset();
     if (engine_) engine_->reset();
     return endComposition(editCookie, true);
 }
@@ -835,6 +912,7 @@ HRESULT TextService::terminateComposition(TfEditCookie editCookie) {
 void TextService::abandonComposition() {
     candidateWindow_.hide();
     candidateActive_ = false;
+    candidateAnchor_.Reset();
     if (engine_) engine_->reset();
 
     ComPtr<ITfComposition> oldComposition = composition_;
@@ -873,6 +951,7 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
     if (!result.candidatesVisible || result.candidates.empty()) {
         candidateWindow_.hide();
         candidateActive_ = false;
+        candidateAnchor_.Reset();
         Trace("Candidate active=0");
         return;
     }
@@ -886,6 +965,7 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
                                          &selection, &fetched)) || !fetched) {
             candidateWindow_.hide();
             candidateActive_ = false;
+            candidateAnchor_.Reset();
             return;
         }
         range.Attach(selection.range);
@@ -895,6 +975,7 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
     if (FAILED(context->GetActiveView(&view))) {
         candidateWindow_.hide();
         candidateActive_ = false;
+        candidateAnchor_.Reset();
         return;
     }
     RECT textRect{};
@@ -904,12 +985,76 @@ void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* con
         FAILED(view->GetWnd(&owner))) {
         candidateWindow_.hide();
         candidateActive_ = false;
+        candidateAnchor_.Reset();
         return;
     }
     candidateWindow_.show(owner, textRect, result.candidates,
                           result.highlightedCandidate);
     candidateActive_ = true;
+    candidateAnchor_.Reset();
+    if (!composition_ && SUCCEEDED(range->Clone(&candidateAnchor_))) {
+        candidateAnchor_->Collapse(editCookie, TF_ANCHOR_END);
+    }
     Trace("Candidate active=1 count=%zu", result.candidates.size());
+}
+
+bool TextService::selectionMatchesTrackedState(TfEditCookie editCookie,
+                                               ITfContext* context) const {
+    if (!context) return false;
+
+    TF_SELECTION selection{};
+    ULONG fetched = 0;
+    if (FAILED(context->GetSelection(editCookie, TF_DEFAULT_SELECTION, 1,
+                                     &selection, &fetched)) || !fetched) {
+        return false;
+    }
+    ComPtr<ITfRange> selected;
+    selected.Attach(selection.range);
+    BOOL empty = FALSE;
+    if (FAILED(selected->IsEmpty(editCookie, &empty)) || !empty) return false;
+
+    ComPtr<ITfRange> tracked;
+    bool allowsPositionInsideRange = false;
+    if (composition_ && compositionContext_.Get() == context) {
+        if (FAILED(composition_->GetRange(&tracked)) || !tracked) return false;
+        allowsPositionInsideRange = true;
+    } else if (candidateActive_ && candidateAnchor_) {
+        tracked = candidateAnchor_;
+    } else {
+        return true;
+    }
+
+    LONG comparedWithStart = 0;
+    LONG comparedWithEnd = 0;
+    if (FAILED(selected->CompareStart(editCookie, tracked.Get(), TF_ANCHOR_START,
+                                      &comparedWithStart)) ||
+        FAILED(selected->CompareStart(editCookie, tracked.Get(), TF_ANCHOR_END,
+                                      &comparedWithEnd))) {
+        return false;
+    }
+    if (allowsPositionInsideRange) {
+        return comparedWithStart >= 0 && comparedWithEnd <= 0;
+    }
+    return comparedWithStart == 0;
+}
+
+STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie,
+                                    ITfEditRecord* editRecord) {
+    if (!context || !editRecord ||
+        (!composition_ && !candidateActive_)) {
+        return S_OK;
+    }
+
+    BOOL selectionChanged = FALSE;
+    if (FAILED(editRecord->GetSelectionStatus(&selectionChanged)) ||
+        !selectionChanged) {
+        return S_OK;
+    }
+    if (!selectionMatchesTrackedState(editCookie, context)) {
+        Trace("Selection left active input state; abandoning composition");
+        abandonComposition();
+    }
+    return S_OK;
 }
 
 STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie,
@@ -920,6 +1065,7 @@ STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie,
         if (!endingComposition_) {
             candidateWindow_.hide();
             candidateActive_ = false;
+            candidateAnchor_.Reset();
             if (engine_) engine_->reset();
         }
     }
@@ -935,28 +1081,62 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
             abandonComposition();
         }
     }
+    if (textEditContext_) {
+        ComPtr<ITfDocumentMgr> owner;
+        if (SUCCEEDED(textEditContext_->GetDocumentMgr(&owner)) &&
+            owner.Get() == documentManager) {
+            abandonComposition();
+            unadviseTextEditSink();
+        }
+    }
     return S_OK;
 }
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
     ComPtr<ITfContext> focusedContext;
     if (focused) focused->GetTop(&focusedContext);
-    if (composition_ && compositionContext_.Get() != focusedContext.Get()) {
+    if ((composition_ || candidateActive_) &&
+        textEditContext_.Get() != focusedContext.Get()) {
         abandonComposition();
-    } else if (!focused) {
+    }
+    const HRESULT textEditResult = adviseTextEditSink(focusedContext.Get());
+    Trace("Focus AdviseTextEdit hr=0x%08lX",
+          static_cast<unsigned long>(textEditResult));
+    if (!focused) {
         candidateWindow_.hide();
         candidateActive_ = false;
+        candidateAnchor_.Reset();
         if (engine_) engine_->reset();
     }
     return S_OK;
 }
-STDMETHODIMP TextService::OnPushContext(ITfContext*) { return S_OK; }
+STDMETHODIMP TextService::OnPushContext(ITfContext* context) {
+    if ((composition_ || candidateActive_) && textEditContext_.Get() != context) {
+        abandonComposition();
+    }
+    const HRESULT result = adviseTextEditSink(context);
+    Trace("PushContext AdviseTextEdit hr=0x%08lX",
+          static_cast<unsigned long>(result));
+    // A host that does not expose ITfSource still needs the context push to
+    // complete; key processing remains usable without selection tracking.
+    return S_OK;
+}
 STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
     if (compositionContext_.Get() == context) {
         abandonComposition();
     } else {
         candidateWindow_.hide();
         candidateActive_ = false;
+        candidateAnchor_.Reset();
         if (engine_) engine_->reset();
+    }
+    if (textEditContext_.Get() == context) {
+        unadviseTextEditSink();
+        ComPtr<ITfDocumentMgr> focused;
+        ComPtr<ITfContext> top;
+        if (threadManager_ && SUCCEEDED(threadManager_->GetFocus(&focused)) &&
+            focused && SUCCEEDED(focused->GetTop(&top)) && top.Get() != context) {
+            adviseTextEditSink(top.Get());
+        }
     }
     return S_OK;
 }
@@ -1027,7 +1207,7 @@ STDMETHODIMP TextService::GetFunction(REFGUID guid, REFIID iid,
 
 STDMETHODIMP TextService::GetDisplayName(BSTR* name) {
     if (!name) return E_INVALIDARG;
-    *name = SysAllocString(L"琦琦輸入法詞庫設定");
+    *name = SysAllocString(L"琦琦輸入法設定");
     return *name ? S_OK : E_OUTOFMEMORY;
 }
 

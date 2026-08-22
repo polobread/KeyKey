@@ -12,15 +12,20 @@ and its Xcode project remain unchanged.
 - Immersive TSF registration for modern Windows text hosts such as Start/Search
 - Taskbar language-bar indicators for Chinese/English (`ㄅ`/`英`) and
   half-/full-width (`半`/`全`) modes
-- `ITfFnConfigure` keyboard-options entry and a standalone associated-phrase
-  dictionary selector
+- `ITfFnConfigure` keyboard-options entry and a standalone three-page settings
+  app for general, Traditional Bopomofo, and associated-phrase options
+- vertical or horizontal candidate windows with purple, green, yellow, or red
+  highlighting; optional typing-error sound and `Ctrl+\` mode switching
+- Standard, ETen, ETen 26, Hsu, and Hanyu Pinyin Bopomofo layouts, plus a
+  switch between Big-5-only candidates and the full CNS11643 character set
 - Traditional Chinese (`zh-TW`) language profile registration
 - verified x86 and x64 builds; an unverified ARM64 CMake preset is retained for
   future bring-up
 
-Smart Mandarin is intentionally not enabled yet because its language-model
-corpus is not present in this repository. The old IMM32 loader is retained as
-historical reference and is not linked into this DLL.
+Smart Mandarin is intentionally not enabled because its language-model corpus
+is not present in this repository. Cangjie and Simplex are also outside this
+Windows package. The old IMM32 loader is retained as historical reference and
+is not linked into this DLL.
 
 ## Prerequisites
 
@@ -105,7 +110,7 @@ successful build and test, run:
   -X86BuildDirectory .\out\build\x86
 ```
 
-The result is `out\package\chichi77-KeyKey-1.2.1-windows-x64.zip`. On the other
+The result is `out\package\chichi77-KeyKey-1.2.2-windows-x64.zip`. On the other
 PC, extract the entire ZIP, copy the complete extracted folder to a local
 `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd` there. Do not
 install directly from a mapped network drive, NAS, or UNC path: it can become
@@ -135,14 +140,18 @@ Databases/
   KeyKey.db
 ```
 
-Runtime preferences are stored in the user's application-data directory by the
-existing PlainVanilla loader. `KeyKey.db` remains external runtime data rather
-than being compiled into the TSF DLL.
+Runtime preferences are stored under `%APPDATA%\chichi77 KeyKey`. General
+frontend settings share the PlainVanilla loader plist, while Traditional
+Mandarin and associated-phrase options use their module plists. Settings are
+picked up on the next key or candidate-window update. `KeyKey.db` remains
+external runtime data rather than being compiled into the TSF DLL.
 
 ## Verification checklist
 
 Test at least Notepad, Windows Terminal, Edge, Word, the lock/sign-in boundary,
 and an elevated desktop application. Verify Bopomofo input, backspace, arrow
 navigation, candidate paging/selection, commit with Enter/Space, focus changes,
-and repeated enable/disable cycles. Secure desktop and Microsoft Store app
-coverage should be treated as release gates, not assumed from registration.
+and repeated enable/disable cycles. Also verify every Bopomofo layout, both
+candidate-window orientations, all four colors, `Ctrl+\`, disabled error sound,
+and the CNS11643 switch. Secure desktop and Microsoft Store app coverage should
+be treated as release gates, not assumed from registration.

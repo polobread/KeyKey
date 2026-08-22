@@ -51,15 +51,21 @@ int wmain() {
     if (FAILED(result) || !displayName || !SysStringLen(displayName)) return 5;
     SysFreeString(displayName);
 
+    ITfTextEditSink* textEditSink = nullptr;
+    result = configure->QueryInterface(IID_ITfTextEditSink,
+                                       reinterpret_cast<void**>(&textEditSink));
+    if (FAILED(result) || !textEditSink) return 6;
+    textEditSink->Release();
+
     ITfFunctionProvider* provider = nullptr;
     result = configure->QueryInterface(IID_ITfFunctionProvider,
                                        reinterpret_cast<void**>(&provider));
-    if (FAILED(result) || !provider) return 6;
+    if (FAILED(result) || !provider) return 7;
     IUnknown* function = nullptr;
     result = provider->GetFunction(GUID_NULL, IID_ITfFnConfigure, &function);
     provider->Release();
     configure->Release();
-    if (FAILED(result) || !function) return 7;
+    if (FAILED(result) || !function) return 8;
     function->Release();
     FreeLibrary(module);
     std::cout << "TSF configure interface smoke test passed.\n";

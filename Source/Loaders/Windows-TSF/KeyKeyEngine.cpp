@@ -18,6 +18,50 @@ using namespace OpenVanilla;
 constexpr char kPrimaryInputMethod[] = OVIMTRADITIONALMANDARIN_IDENTIFIER;
 constexpr char kAssociatedPhraseFilter[] = OVAFASSOCIATEDPHRASE_IDENTIFIER;
 
+class WindowsEncodingService final : public OVEncodingService {
+public:
+    bool codepointSupportedByEncoding(const std::string& codepoint,
+                                      const std::string& encoding) override {
+        if (encoding == "UTF-8") return true;
+        if (encoding != "BIG-5") return false;
+
+        const int wideLength = MultiByteToWideChar(
+            CP_UTF8, MB_ERR_INVALID_CHARS, codepoint.data(),
+            static_cast<int>(codepoint.size()), nullptr, 0);
+        if (wideLength <= 0) return false;
+        std::wstring wide(static_cast<size_t>(wideLength), L'\0');
+        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, codepoint.data(),
+                            static_cast<int>(codepoint.size()), wide.data(),
+                            wideLength);
+
+        BOOL usedDefault = FALSE;
+        const int encodedLength = WideCharToMultiByte(
+            950, WC_NO_BEST_FIT_CHARS, wide.data(), wideLength, nullptr, 0,
+            nullptr, &usedDefault);
+        return encodedLength > 0 && !usedDefault;
+    }
+
+    bool codepointSupportedBySystem(const std::string&) override { return true; }
+
+    const std::vector<std::string> supportedEncodings() override {
+        return {"UTF-8", "BIG-5"};
+    }
+
+    bool isEncodingSupported(const std::string& encoding) override {
+        return encoding == "UTF-8" || encoding == "BIG-5";
+    }
+
+    bool isEncodingConversionSupported(const std::string&,
+                                       const std::string&) override {
+        return false;
+    }
+
+    const std::pair<bool, std::string> convertEncoding(
+        const std::string&, const std::string&, const std::string&) override {
+        return {false, {}};
+    }
+};
+
 class WindowsLoaderPolicy final : public PVLoaderPolicy {
 public:
     WindowsLoaderPolicy() : PVLoaderPolicy(std::vector<std::string>()) {}
@@ -94,7 +138,8 @@ public:
         OVDirectoryHelper::CheckDirectory(pathInfo.writablePath);
 
         policy_ = std::make_unique<WindowsLoaderPolicy>();
-        service_ = std::make_unique<PVLoaderService>("zh_TW", nullptr, database_.get());
+        service_ = std::make_unique<PVLoaderService>(
+            "zh_TW", nullptr, database_.get(), nullptr, &encodingService_);
         packages_ = std::make_unique<PVStaticModulePackageLoadingSystem>(pathInfo, true);
 
         auto* mandarin = new WindowsMandarinPackage();
@@ -129,6 +174,7 @@ public:
 private:
     std::recursive_mutex mutex_;
     std::unique_ptr<OVSQLiteDatabaseService> database_;
+    WindowsEncodingService encodingService_;
     std::unique_ptr<WindowsLoaderPolicy> policy_;
     std::unique_ptr<PVLoaderService> service_;
     std::unique_ptr<PVStaticModulePackageLoadingSystem> packages_;
@@ -306,6 +352,41 @@ void Snapshot(PVLoaderContext* context, EngineResult& result) {
 }
 
 }  // namespace
+
+bool IsInputMethodControlKey(const KeyEvent& event) {
+    if (!event.control) return false;
+
+    const char character = PrintableAsciiFromVirtualKey(event);
+    if (event.alt) {
+        // _ctrl_opt_a through _ctrl_opt_z are all present. MakeKey normalizes
+        // Ctrl+letter to lower case, including its Shift and Caps Lock forms.
+        if (event.virtualKey >= 'A' && event.virtualKey <= 'Z') return true;
+
+        // These are the only non-letter _ctrl_opt_* entries in the table.
+        switch (character) {
+            case ';':
+            case '\'':
+            case ',':
+            case '.':
+            case '/':
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    switch (character) {
+        // _ctrl_<punctuation>, including shifted variants that Windows can
+        // distinguish by virtual key even though macOS cannot.
+        case ',': case '.': case '<': case '>': case '?':
+        case ';': case ':': case '\'': case '"': case '[': case ']':
+        // Ctrl+0 and Ctrl+1 both open _punctuation_list.
+        case '0': case '1':
+            return true;
+        default:
+            return false;
+    }
+}
 
 std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::Create() {
     return std::unique_ptr<KeyKeyEngineSession>(

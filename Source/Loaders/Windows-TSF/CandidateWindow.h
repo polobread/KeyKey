@@ -31,7 +31,11 @@ private:
 
     HWND window_ = nullptr;
     std::vector<EngineCandidate> candidates_;
+    std::vector<int> cellWidths_;
     size_t highlightedIndex_ = 0;
+    int rowHeight_ = 0;
+    bool horizontal_ = false;
+    COLORREF highlightColor_ = RGB(128, 0, 128);
 };
 
 }  // namespace KeyKey::WindowsTsf

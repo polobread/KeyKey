@@ -10,6 +10,8 @@ $requiredFiles = @(
     'Diagnostics.cpp',
     'Diagnostics.h',
     'EngineSmokeTest.cpp',
+    'FrontendSettings.cpp',
+    'FrontendSettings.h',
     'Guids.h',
     'KeyKeyEngine.cpp',
     'KeyKeySettings.rc',
@@ -39,7 +41,7 @@ foreach ($file in $requiredBinaryFiles) {
 
 $textService = Get-Content -LiteralPath (Join-Path $frontend 'TextService.h') -Raw
 foreach ($interface in 'ITfTextInputProcessorEx', 'ITfKeyEventSink', 'ITfCompositionSink',
-                        'ITfFunctionProvider', 'ITfFnConfigure') {
+                        'ITfTextEditSink', 'ITfFunctionProvider', 'ITfFnConfigure') {
     if ($textService -notmatch [regex]::Escape($interface)) {
         $errors.Add("TextService does not declare $interface")
     }

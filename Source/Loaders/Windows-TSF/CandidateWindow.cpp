@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <mutex>
 
+#include "FrontendSettings.h"
 #include "ModuleState.h"
 
 namespace KeyKey::WindowsTsf {
@@ -64,6 +65,9 @@ void CandidateWindow::show(HWND owner, const RECT& textRect,
                            size_t highlightedIndex) {
     candidates_ = candidates;
     highlightedIndex_ = highlightedIndex;
+    const FrontendSettings settings = LoadFrontendSettings();
+    horizontal_ = settings.candidateLayout == CandidateLayout::Horizontal;
+    highlightColor_ = HighlightColorValue(settings.highlightColor);
     ensureWindow(owner);
     if (!window_ || candidates_.empty()) {
         hide();
@@ -78,22 +82,35 @@ void CandidateWindow::show(HWND owner, const RECT& textRect,
 
     TEXTMETRICW metrics{};
     GetTextMetricsW(dc, &metrics);
-    const int rowHeight = metrics.tmHeight + (kVerticalPadding * 2);
+    rowHeight_ = metrics.tmHeight + (kVerticalPadding * 2);
     int contentWidth = 80;
+    cellWidths_.clear();
     for (const auto& candidate : candidates_) {
         const std::wstring row = candidate.selectionKey + L"  " + candidate.text;
         SIZE extent{};
         GetTextExtentPoint32W(dc, row.c_str(), static_cast<int>(row.size()), &extent);
-        contentWidth = std::max(contentWidth,
-                                static_cast<int>(extent.cx) + (kHorizontalPadding * 2));
+        const int cellWidth =
+            static_cast<int>(extent.cx) + (kHorizontalPadding * 2);
+        cellWidths_.push_back(cellWidth);
+        if (horizontal_) {
+            contentWidth += cellWidth + kRowGap;
+        } else {
+            contentWidth = std::max(contentWidth, cellWidth);
+        }
+    }
+    if (horizontal_) {
+        contentWidth -= 80 + kRowGap;
     }
 
     SelectObject(dc, oldFont);
     ReleaseDC(window_, dc);
 
     const int width = contentWidth;
-    const int height = static_cast<int>(candidates_.size()) * rowHeight +
-                       static_cast<int>(candidates_.size() - 1) * kRowGap;
+    const int height = horizontal_
+                           ? rowHeight_
+                           : static_cast<int>(candidates_.size()) * rowHeight_ +
+                                 static_cast<int>(candidates_.size() - 1) *
+                                     kRowGap;
 
     int x = textRect.left;
     int y = textRect.bottom + 2;
@@ -122,6 +139,7 @@ void CandidateWindow::hide() {
         NotifyWinEvent(EVENT_OBJECT_IME_HIDE, window_, OBJID_CLIENT, CHILDID_SELF);
     }
     candidates_.clear();
+    cellWidths_.clear();
 }
 
 LRESULT CALLBACK CandidateWindow::WindowProc(HWND window, UINT message,
@@ -171,19 +189,30 @@ void CandidateWindow::paint() {
     HGDIOBJ oldFont = SelectObject(dc, font);
     SetBkMode(dc, TRANSPARENT);
 
-    TEXTMETRICW metrics{};
-    GetTextMetricsW(dc, &metrics);
-    const int rowHeight = metrics.tmHeight + (kVerticalPadding * 2);
-
+    int horizontalOffset = 0;
     for (size_t index = 0; index < candidates_.size(); ++index) {
-        RECT row{0,
-                 static_cast<LONG>(index * (rowHeight + kRowGap)),
-                 client.right,
-                 static_cast<LONG>(index * (rowHeight + kRowGap) + rowHeight)};
+        RECT row{};
+        if (horizontal_) {
+            const int width = index < cellWidths_.size() ? cellWidths_[index] : 80;
+            row = {horizontalOffset, 0, horizontalOffset + width, rowHeight_};
+            horizontalOffset += width + kRowGap;
+        } else {
+            row = {0,
+                   static_cast<LONG>(index * (rowHeight_ + kRowGap)),
+                   client.right,
+                   static_cast<LONG>(index * (rowHeight_ + kRowGap) +
+                                     rowHeight_)};
+        }
         const bool highlighted = index == highlightedIndex_;
         if (highlighted) {
-            FillRect(dc, &row, GetSysColorBrush(COLOR_HIGHLIGHT));
-            SetTextColor(dc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+            HBRUSH brush = CreateSolidBrush(highlightColor_);
+            FillRect(dc, &row, brush);
+            DeleteObject(brush);
+            const int luminance = GetRValue(highlightColor_) * 299 +
+                                  GetGValue(highlightColor_) * 587 +
+                                  GetBValue(highlightColor_) * 114;
+            SetTextColor(dc, luminance >= 150000 ? RGB(0, 0, 0)
+                                                  : RGB(255, 255, 255));
         } else {
             SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
         }

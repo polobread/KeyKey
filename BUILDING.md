@@ -114,7 +114,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -X86BuildDirectory .\out\build\x86
 ```
 
-會產生 `out\package\chichi77-KeyKey-1.2.1-windows-x64.zip`。在另一台 x64 Windows
+會產生 `out\package\chichi77-KeyKey-1.2.2-windows-x64.zip`。在另一台 x64 Windows
 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
@@ -265,7 +265,7 @@ After building and testing, run from `Source\Loaders\Windows-TSF`:
   -X86BuildDirectory .\out\build\x86
 ```
 
-This creates `out\package\chichi77-KeyKey-1.2.1-windows-x64.zip`. On the other
+This creates `out\package\chichi77-KeyKey-1.2.2-windows-x64.zip`. On the other
 x64 Windows 11 PC, extract the complete ZIP, copy the entire extracted folder
 to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
