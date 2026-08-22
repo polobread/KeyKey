@@ -16,6 +16,21 @@ import org.junit.Test;
 
 public final class AssociatedPhraseDictionaryTest {
     @Test
+    public void generatedDisplayNameMappingContainsProductLabels() throws Exception {
+        File directory = new File(System.getProperty("keykey.associated.collections"));
+        File mapping = new File(directory, "display-names.tsv");
+        assertTrue(mapping.isFile());
+
+        Map<String, String> names;
+        try (FileInputStream stream = new FileInputStream(mapping)) {
+            names = AssociatedPhraseDictionary.parseDisplayNames(stream);
+        }
+        assertEquals("小麥注音", names.get("McBopomofo"));
+        assertEquals("中文文學", names.get("chinese"));
+        assertEquals("一般生活", names.get("general"));
+    }
+
+    @Test
     public void parserFiltersRareRowsAndSortsByFrequency() throws Exception {
         String source = "詞\t詞頻\t注音\t分類\n"
                 + "甲乙\t2000000\t-\t測試\n"

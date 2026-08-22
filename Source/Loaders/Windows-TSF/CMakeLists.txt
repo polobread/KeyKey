@@ -92,6 +92,7 @@ if(NOT EXISTS "${KEYKEY_DATABASE_PATH}")
     endif()
 
     set(KEYKEY_COLLECTION_INPUTS
+        "${KEYKEY_ROOT}/DataSource/AssociatedPhraseCollectionNames.tsv"
         "${KEYKEY_ROOT}/DataSource/McBopomofo/phrase.occ")
     if(IS_DIRECTORY "${KEYKEY_CHICHI77_COLLECTION_DIR}")
         file(GLOB KEYKEY_PRIVATE_COLLECTION_INPUTS CONFIGURE_DEPENDS

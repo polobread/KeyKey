@@ -348,8 +348,38 @@ std::string CollectionName(const fs::path& path, bool isMcBopomofo) {
     return name;
 }
 
-std::string CollectionDisplayName(const fs::path& path, bool isMcBopomofo) {
-    if (isMcBopomofo) return "小麥";
+std::map<std::string, std::string> LoadCollectionDisplayNames(const fs::path& path) {
+    std::ifstream input(path, std::ios::binary);
+    if (!input) throw std::runtime_error("Cannot open " + path.u8string());
+
+    std::map<std::string, std::string> names;
+    std::string line;
+    bool header = true;
+    while (std::getline(input, line)) {
+        line = TrimLine(std::move(line));
+        if (header) {
+            header = false;
+            continue;
+        }
+        const auto fields = Split(line, '\t');
+        if (fields.size() < 2) continue;
+        const std::string source = TrimAscii(fields[0]);
+        const std::string display = TrimAscii(fields[1]);
+        if (!source.empty() && !display.empty()) names[source] = display;
+    }
+    if (names.empty()) {
+        throw std::runtime_error("No collection display names in " + path.u8string());
+    }
+    return names;
+}
+
+std::string CollectionDisplayName(
+    const fs::path& path, bool isMcBopomofo,
+    const std::map<std::string, std::string>& displayNames) {
+    const std::string collection = CollectionName(path, isMcBopomofo);
+    const auto override = displayNames.find(collection);
+    if (override != displayNames.end()) return override->second;
+    if (isMcBopomofo) return collection;
     std::ifstream input(path, std::ios::binary);
     std::string line;
     bool header = true;
@@ -365,12 +395,13 @@ std::string CollectionDisplayName(const fs::path& path, bool isMcBopomofo) {
             if (!display.empty()) return display;
         }
     }
-    return "小麥";
+    return collection;
 }
 
 std::size_t ImportCollection(Database& database, const fs::path& path,
                              bool isMcBopomofo,
-                             const std::set<std::string>& exclusions) {
+                             const std::set<std::string>& exclusions,
+                             const std::map<std::string, std::string>& displayNames) {
     std::ifstream input(path, std::ios::binary);
     if (!input) throw std::runtime_error("Cannot open " + path.u8string());
 
@@ -440,7 +471,7 @@ std::size_t ImportCollection(Database& database, const fs::path& path,
         }
 
         insertName.bindText(1, collection);
-        insertName.bindText(2, CollectionDisplayName(path, isMcBopomofo));
+        insertName.bindText(2, CollectionDisplayName(path, isMcBopomofo, displayNames));
         insertName.bindInteger(3, isMcBopomofo ? 0 : 1);
         insertName.run();
         database.execute("COMMIT");
@@ -469,7 +500,38 @@ std::int64_t ScalarInteger(sqlite3* database, const char* sql) {
     return value;
 }
 
-void Verify(Database& database) {
+void VerifyCollectionDisplayNames(
+    sqlite3* database, const std::map<std::string, std::string>& displayNames) {
+    sqlite3_stmt* statement = nullptr;
+    const char* sql = "SELECT display FROM collection_names WHERE source = ?";
+    if (sqlite3_prepare_v2(database, sql, -1, &statement, nullptr) != SQLITE_OK) {
+        throw DatabaseError(sqlite3_errmsg(database));
+    }
+    try {
+        for (const auto& [source, expected] : displayNames) {
+            sqlite3_bind_text(statement, 1, source.data(), static_cast<int>(source.size()),
+                              SQLITE_TRANSIENT);
+            const int step = sqlite3_step(statement);
+            if (step == SQLITE_ROW) {
+                const unsigned char* value = sqlite3_column_text(statement, 0);
+                if (!value || reinterpret_cast<const char*>(value) != expected) {
+                    throw DatabaseError("Incorrect collection display name for " + source);
+                }
+            } else if (step != SQLITE_DONE) {
+                throw DatabaseError(sqlite3_errmsg(database));
+            }
+            sqlite3_reset(statement);
+            sqlite3_clear_bindings(statement);
+        }
+    } catch (...) {
+        sqlite3_finalize(statement);
+        throw;
+    }
+    sqlite3_finalize(statement);
+}
+
+void Verify(Database& database,
+            const std::map<std::string, std::string>& displayNames) {
     sqlite3_stmt* statement = nullptr;
     if (sqlite3_prepare_v2(database.get(), "PRAGMA integrity_check", -1,
                            &statement, nullptr) != SQLITE_OK ||
@@ -489,6 +551,7 @@ void Verify(Database& database) {
     if (mandarin < 90000 || associated == 0 || collections == 0) {
         throw DatabaseError("Generated database is missing required data");
     }
+    VerifyCollectionDisplayNames(database.get(), displayNames);
     std::cout << "Verified database: " << mandarin << " Mandarin rows, "
               << associated << " associated-phrase heads, " << collections
               << " collections\n";
@@ -544,15 +607,18 @@ void Cook(const fs::path& sourceRoot, const fs::path& dataRoot,
     InsertFile(database, "onekey_services", online / "OneKey.plist");
     InsertFile(database, "canned_messages", online / "CannedMessages.plist");
 
+    const auto displayNames = LoadCollectionDisplayNames(
+        dataRoot / "AssociatedPhraseCollectionNames.tsv");
     const std::set<std::string> exclusions = LoadExclusions(privateCollectionRoot);
     for (const fs::path& collection : CollectionPaths(dataRoot, privateCollectionRoot)) {
         const bool isMcBopomofo = collection.parent_path().filename() == "McBopomofo";
         ImportCollection(database, collection, isMcBopomofo,
-                         isMcBopomofo ? exclusions : std::set<std::string>());
+                         isMcBopomofo ? exclusions : std::set<std::string>(),
+                         displayNames);
     }
 
     database.execute("ANALYZE");
-    Verify(database);
+    Verify(database, displayNames);
 }
 
 }  // namespace

@@ -21,10 +21,10 @@ NATIVE_BOPOMOFO_MAKEFILE = $(NATIVE_BOPOMOFO_DIR)/Makefile
 ASSOC_COOKER = ./AssociatedPhraseCooker.rb
 OCC_TO_LM = ./phrase-occ-to-lm.rb
 
-# One collection per file. The name the user sees in Preferences is derived
-# from the file name, so McBopomofo/phrase.occ becomes "McBopomofo" and
-# chichi77Collection/phrase.anime.329.tsv becomes "anime".
+# One collection per file. Stable source identifiers come from the path;
+# product display-name overrides come from COLLECTION_DISPLAY_NAMES.
 COLLECTION_DIR = ../../../../DataSource
+COLLECTION_DISPLAY_NAMES = $(COLLECTION_DIR)/AssociatedPhraseCollectionNames.tsv
 COLLECTIONS = $(COLLECTION_DIR)/McBopomofo/phrase.occ \
 	$(wildcard $(COLLECTION_DIR)/chichi77Collection/phrase.*.tsv)
 
@@ -45,7 +45,7 @@ all: createdir $(DB)
 createdir:
 	mkdir -p $(TMPDIR)
 
-$(DB): $(SRC) $(COLLECTIONS) $(OCC_TO_LM) $(ASSOC_COOKER)
+$(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_COOKER) collection-name.rb
 	rm -f $(DB)
 	cat Schema.sql | $(SQLITE3) $(DB)
 	$(TOOL) $(TMPDIR)/bpmf-ext-absorder.cin Mandarin-bpmf-cin | $(SQLITE3) $(DB)
@@ -68,7 +68,7 @@ $(DB): $(SRC) $(COLLECTIONS) $(OCC_TO_LM) $(ASSOC_COOKER)
 		ruby -E UTF-8 $(OCC_TO_LM) $$f $$exclude > $(TMPDIR)/assoc-$$name.lm && \
 		ruby -E UTF-8 $(ASSOC_COOKER) $(TMPDIR)/assoc-$$name.lm $(TMPDIR)/assoc-$$name.sql $$name && \
 		$(SQLITE3) $(DB) < $(TMPDIR)/assoc-$$name.sql && \
-		ruby -E UTF-8 ./collection-name.rb $$f $$name | $(SQLITE3) $(DB) || exit 1; \
+		ruby -E UTF-8 ./collection-name.rb $$f $$name $(COLLECTION_DISPLAY_NAMES) | $(SQLITE3) $(DB) || exit 1; \
 	done
 
 $(TMPDIR)/bpmf-ext-absorder.cin: createdir $(SOURCEDIR)/bpmf-ext.cin $(CONVERT_TOOL) $(NATIVE_BOPOMOFO_BUNDLE)

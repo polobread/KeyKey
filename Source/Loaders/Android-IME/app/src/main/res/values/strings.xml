@@ -19,7 +19,7 @@
     <string name="phrase_collections_title_unavailable">關聯詞詞庫</string>
     <string name="phrase_collections_description">選擇要啟用的關聯詞詞庫，變更會在下次顯示輸入鍵盤時生效。完全不選代表不使用任何關聯詞詞庫。</string>
     <string name="phrase_select_all">全部啟用</string>
-    <string name="phrase_base_only">僅小麥</string>
+    <string name="phrase_base_only">僅小麥注音</string>
     <string name="phrase_select_none">全部關閉</string>
     <string name="phrase_status_count">已啟用 %1$d／%2$d 個詞庫</string>
     <string name="phrase_status_none">未啟用詞庫（%1$d／%2$d）</string>

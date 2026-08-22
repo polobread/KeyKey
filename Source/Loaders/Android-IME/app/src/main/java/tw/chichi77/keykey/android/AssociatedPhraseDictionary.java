@@ -46,9 +46,9 @@ final class AssociatedPhraseDictionary {
     }
 
     private static final String ASSET_DIRECTORY = "collections";
+    private static final String DISPLAY_NAMES_ASSET = "display-names.tsv";
     private static final String BASE_ASSET = "McBopomofo.occ";
     private static final String BASE_SOURCE = "McBopomofo";
-    private static final String BASE_DISPLAY_NAME = "小麥";
 
     private final Map<String, List<String>> entries;
 
@@ -100,15 +100,22 @@ final class AssociatedPhraseDictionary {
     static List<CollectionInfo> availableCollections(AssetManager assets) throws IOException {
         String[] names = assets.list(ASSET_DIRECTORY);
         if (names == null) return List.of();
+        Map<String, String> displayNames;
+        try (InputStream stream = assets.open(
+                ASSET_DIRECTORY + "/" + DISPLAY_NAMES_ASSET)) {
+            displayNames = parseDisplayNames(stream);
+        }
 
         ArrayList<CollectionInfo> result = new ArrayList<>();
         for (String name : names) {
             if (BASE_ASSET.equals(name)) {
-                result.add(new CollectionInfo(BASE_SOURCE, BASE_DISPLAY_NAME, name));
+                result.add(new CollectionInfo(BASE_SOURCE,
+                        displayNames.getOrDefault(BASE_SOURCE, BASE_SOURCE), name));
             } else if (name.startsWith("phrase.") && name.endsWith(".tsv")) {
                 String source = name.substring("phrase.".length(), name.length() - ".tsv".length());
                 try (InputStream stream = assets.open(ASSET_DIRECTORY + "/" + name)) {
-                    result.add(new CollectionInfo(source, readDisplayName(stream), name));
+                    result.add(new CollectionInfo(
+                            source, displayNames.getOrDefault(source, readDisplayName(stream)), name));
                 }
             }
         }
@@ -213,6 +220,27 @@ final class AssociatedPhraseDictionary {
             }
         }
         return "詞庫";
+    }
+
+    static Map<String, String> parseDisplayNames(InputStream stream) throws IOException {
+        LinkedHashMap<String, String> result = new LinkedHashMap<>();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            String line;
+            boolean header = true;
+            while ((line = reader.readLine()) != null) {
+                if (header) {
+                    header = false;
+                    continue;
+                }
+                String[] fields = line.split("\\t", -1);
+                if (fields.length < 2) continue;
+                String source = fields[0].trim();
+                String display = fields[1].trim();
+                if (!source.isEmpty() && !display.isEmpty()) result.put(source, display);
+            }
+        }
+        return Collections.unmodifiableMap(result);
     }
 
     private static long parseCount(String value) {

@@ -183,6 +183,11 @@ cd Source\Loaders\Android-IME
   `PVDefaultEncodingService` 只宣告 UTF-8，會把 TraditionalMandarin 設定的 `BIG-5`
   清空，讓「使用全字庫罕用字」永遠無法關閉。Windows TSF 現在用 CP950 搭配
   `WC_NO_BEST_FIT_CHARS` 判斷候選是否真能以 Big-5 表示，不要改回預設 service。
+- **三平台詞庫顯示名稱以共用 mapping 為準**：唯一來源是
+  `DataSource/AssociatedPhraseCollectionNames.tsv`，目前把 `McBopomofo`、`chinese`、
+  `general` 顯示為「小麥注音」、「中文文學」、「一般生活」。macOS 的
+  `collection-name.rb`、Windows 的 `DatabaseCooker.cpp` 與 Android generated assets
+  都必須讀同一檔；不要修改私人 TSV 的分類欄位，也不要在 frontend 另寫名稱常數。
 - **Android 主程式不要用 Java `record`**：AGP 9.2.0 曾把 record 轉譯成
   `com.android.tools.r8.RecordTag`，卻未把該合成類別包進 debug APK；Android 17
   會在建立 `BopomofoImeService` 時以 `NoClassDefFoundError` 崩潰。`assembleDebug`
@@ -236,10 +241,11 @@ cd Source\Loaders\Android-IME
   90 個符號候選。組字 reading 尚未清空時，標點與符號快捷鍵須保留 reading，不可
   丟掉使用者正在組的注音。快捷鍵的 keydown 與 keyup 都要吃掉，長按不可重複觸發。
 - **Android 關聯詞庫是可選的 30 個文字資產**：`generateAssociatedPhraseAssets` 固定
-  從 `DataSource/McBopomofo/phrase.occ` 加入小麥；若 KeyKey 同層存在經授權的
+  從 `DataSource/McBopomofo/phrase.occ` 加入顯示為「小麥注音」的基本詞庫；若
+  KeyKey 同層存在經授權的
   `chichi77Collection`，再加入 29 個 `phrase.*.tsv`。不要把私人資料複製進 KeyKey
-  原始碼。設定首次預設小麥，但 SharedPreferences 已存在空集合時代表使用者刻意
-  全部關閉，不能偷偷恢復預設。小麥中與三個 `people-*` 詞庫重疊的人名必須先排除，
+  原始碼。設定首次預設 `McBopomofo`，但 SharedPreferences 已存在空集合時代表使用者
+  刻意全部關閉，不能偷偷恢復預設。基本詞庫中與三個 `people-*` 詞庫重疊的人名必須先排除，
   否則關閉人名詞庫仍會漏出候選。
 - **Android 關聯詞只在確定單一中文字後開啟**：候選內容是已輸入首字後的詞尾，
   選取時只 commit 詞尾；輸入下一個注音鍵會關閉關聯詞但不可自動送出第一個詞尾。

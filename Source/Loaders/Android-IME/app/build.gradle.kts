@@ -46,6 +46,9 @@ val generatedCollectionDirectory =
     layout.buildDirectory.dir("generated/bopomofoAssets/collections")
 
 val generateAssociatedPhraseAssets by tasks.registering(Sync::class) {
+    from(layout.projectDirectory.file("../../../../DataSource/AssociatedPhraseCollectionNames.tsv")) {
+        rename { "display-names.tsv" }
+    }
     from(layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ")) {
         rename { "McBopomofo.occ" }
     }
