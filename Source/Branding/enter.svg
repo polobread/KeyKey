@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!--
+    The Enter key glyph for the touch keyboards.
+
+    The font character U+21B5 draws thin and differs between the Android and
+    iOS system faces, so both keyboards stroke this path instead of typesetting
+    a character:
+
+      Android  Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/
+               android/BopomofoKeyboardView.java  (drawEnterKey)
+      iOS      Source/Loaders/iOS-Keyboard/Keyboard/EnterGlyph.swift
+
+    Keep the three in step: same coordinates in a 24x24 box, 2-unit stroke,
+    round caps and joins. The colour is the keyboard palette's primary text,
+    applied at runtime, so the value below matters only when the file is
+    viewed on its own.
+
+    macOS and Windows have no on-screen keyboard and no Enter key to draw.
+  -->
+  <path d="M18 6 V13 H6 M11 9 L6 13 L11 17"
+        fill="none" stroke="#181F2C" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

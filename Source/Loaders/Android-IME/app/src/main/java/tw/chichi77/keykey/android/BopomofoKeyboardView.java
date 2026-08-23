@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
@@ -83,6 +84,8 @@ final class BopomofoKeyboardView extends View {
     private final Paint candidatePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint hintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint enterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path enterPath = new Path();
     private final ArrayList<Hit> hits = new ArrayList<>();
 
     private Listener listener;
@@ -111,6 +114,10 @@ final class BopomofoKeyboardView extends View {
         textPaint.setTextAlign(Paint.Align.CENTER);
         hintPaint.setColor(Color.rgb(92, 102, 119));
         hintPaint.setTextAlign(Paint.Align.CENTER);
+        enterPaint.setColor(Color.rgb(24, 31, 44));
+        enterPaint.setStyle(Paint.Style.STROKE);
+        enterPaint.setStrokeCap(Paint.Cap.ROUND);
+        enterPaint.setStrokeJoin(Paint.Join.ROUND);
     }
 
     void setListener(Listener listener) {
@@ -311,6 +318,12 @@ final class BopomofoKeyboardView extends View {
             return;
         }
 
+        if (key.equals("ENTER")) {
+            drawEnterKey(canvas, bounds);
+            hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+            return;
+        }
+
         String label = keyLabel(key);
         textPaint.setFakeBoldText(false);
         int textSize = mode == Mode.LANDSCAPE ? (label.length() > 3 ? 9 : 12)
@@ -320,6 +333,22 @@ final class BopomofoKeyboardView extends View {
                 || (inputMode == BopomofoEngine.InputMode.BOPOMOFO && !special));
         canvas.drawText(label, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
         hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+    }
+
+    private void drawEnterKey(Canvas canvas, RectF bounds) {
+        float side = dp(mode == Mode.LANDSCAPE ? 14 : 20);
+        float unit = side / 24f;
+        float left = bounds.centerX() - side / 2f;
+        float top = bounds.centerY() - side / 2f;
+        enterPath.reset();
+        enterPath.moveTo(left + 18 * unit, top + 6 * unit);
+        enterPath.lineTo(left + 18 * unit, top + 13 * unit);
+        enterPath.lineTo(left + 6 * unit, top + 13 * unit);
+        enterPath.moveTo(left + 11 * unit, top + 9 * unit);
+        enterPath.lineTo(left + 6 * unit, top + 13 * unit);
+        enterPath.lineTo(left + 11 * unit, top + 17 * unit);
+        enterPaint.setStrokeWidth(2 * unit);
+        canvas.drawPath(enterPath, enterPaint);
     }
 
     private void drawBopomofoKey(Canvas canvas, RectF bounds, String symbol, String key,
@@ -406,7 +435,6 @@ final class BopomofoKeyboardView extends View {
             };
             case "SHIFT" -> shifted ? "⇧" : "⇧";
             case "BACKSPACE" -> "⌫";
-            case "ENTER" -> "↵";
             case "SPACE" -> "空白";
             case "SYMBOL" -> "符";
             case "SETTINGS" -> "設";
