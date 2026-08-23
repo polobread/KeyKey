@@ -155,3 +155,11 @@ and repeated enable/disable cycles. Also verify every Bopomofo layout, both
 candidate-window orientations, all four colors, `Ctrl+\`, disabled error sound,
 and the CNS11643 switch. Secure desktop and Microsoft Store app coverage should
 be treated as release gates, not assumed from registration.
+
+## License
+
+Original Windows TSF frontend code in this directory is Copyright (c) 2026
+Chui-Ping Cheng and distributed under the MIT License. OpenVanilla,
+PlainVanilla, input-method modules, and the packaged database retain their
+respective licenses. See `LICENSE.txt` in this directory and `LICENSING.md` at
+the repository root for the complete scope map.

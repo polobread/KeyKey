@@ -1,0 +1,13 @@
+Original source code in this directory
+======================================
+
+Copyright (c) 2026 Chui-Ping Cheng
+
+Except for files and material identified below or carrying another notice,
+the original source code, tests, project configuration, and documentation in
+this directory are licensed under the MIT License. The license text is at
+../../../LICENSES/MIT.txt.
+
+A bundled KeyKey.db retains the licenses of its input data. Product names,
+logos, and application icons are not licensed by this notice. See
+../../../LICENSING.md for the repository-wide scope map.

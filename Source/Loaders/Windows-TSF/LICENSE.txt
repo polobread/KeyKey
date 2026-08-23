@@ -1,0 +1,14 @@
+Original source code in this directory
+======================================
+
+Copyright (c) 2026 Chui-Ping Cheng
+
+Except for files and material identified below or carrying another notice,
+the original source code, tests, project configuration, packaging scripts,
+and documentation in this directory are licensed under the MIT License. The
+license text is at ../../../LICENSES/MIT.txt.
+
+OpenVanilla, PlainVanilla, the input-method modules, a packaged KeyKey.db, and
+all other linked or bundled third-party material retain their own licenses.
+Product names, logos, and application icons are not licensed by this notice.
+See ../../../LICENSING.md for the repository-wide scope map.

@@ -85,6 +85,12 @@ try {
 
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'README.md') `
         -Destination (Join-Path $licenseDirectory 'KeyKey-README.md')
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSE.txt') `
+        -Destination (Join-Path $licenseDirectory 'KeyKey-LICENSE.txt')
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSING.md') `
+        -Destination $licenseDirectory
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSES\MIT.txt') `
+        -Destination (Join-Path $licenseDirectory 'MIT-Chui-Ping-Cheng.txt')
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'THIRD-PARTY-NOTICES.md') `
         -Destination $licenseDirectory
 

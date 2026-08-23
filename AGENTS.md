@@ -22,6 +22,10 @@ macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是�
 5. 以下是 BSD 條款要求，**移除會違反授權**：各原始檔的
    `Copyright (c) 2012, Yahoo! Inc.` 標頭、`LICENSE.txt`、README 的 BSD 全文、
    About 視窗的出處標示、Info.plist 的「非 Yahoo 官方產品」聲明。
+6. 本專案是混合授權：Android、iOS 與 Windows TSF 目錄內的原創 frontend 以目錄級
+   MIT License 授權；Yahoo 舊碼與其衍生修改仍是 BSD 3-Clause，第三方素材維持各自
+   授權。範圍以 `LICENSING.md` 為準，不要逐檔補 MIT 標頭，也不要把整個
+   `Source/Loaders/OSX-IMK` 改標成 MIT。
 
 ---
 
@@ -179,6 +183,13 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ## 已知陷阱（不要重複調查）
 
+- **授權按來源而不是路徑歷史判斷**：`Source/Loaders/Android-IME`、
+  `Source/Loaders/iOS-Keyboard` 與 `Source/Loaders/Windows-TSF` 的原創 frontend
+  由各目錄 `LICENSE.txt` 套用 MIT，不需逐檔標頭；其中引用、複製或打包的 Yahoo、
+  OpenVanilla、McBopomofo、Gradle wrapper 與資料庫不會因此變成 MIT。
+  `Source/Loaders/OSX-IMK` 雖在 2026 重整路徑，但大量檔案與 Yahoo 原碼相同或由其
+  修改，整體仍維持 BSD。全新且未含舊碼的 macOS 檔案若要用 MIT，必須逐項加入
+  `LICENSING.md`，不能用整個目錄覆蓋。
 - **macOS codesign**：`codesign --verify --deep --strict` 會失敗（framework 的
   `Headers` 目錄是空的、封印卻記錄了那些檔案）。**不影響本機安裝與使用**，裝不
   起來時不要往這裡查；但對外 notarize 會被卡。

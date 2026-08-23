@@ -42,3 +42,10 @@ cd KeyKeyEngine && swift test
 
 `KeyKeyiOS.xcodeproj/xcshareddata/xcschemes` 內的 scheme 必須保留在版控中 ——
 Swift Package 依賴只有透過 scheme 才會被建置，`-target` 不會。
+
+## 授權
+
+本目錄的原創 iOS frontend 程式碼以 MIT License 釋出，著作權為
+Copyright (c) 2026 Chui-Ping Cheng。打包進 extension 的 `KeyKey.db` 維持其
+輸入資料的原授權。完整範圍見本目錄的 `LICENSE.txt` 與 repository 根目錄的
+`LICENSING.md`。

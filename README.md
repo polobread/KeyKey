@@ -54,6 +54,7 @@ Apple Silicon、Windows 11 x64，以及 Android 8 以上；Windows 套件同時�
 - [Android IME README](Source/Loaders/Android-IME/README.md)：Android 鍵盤配置、
   建置與啟用方式
 - [Installer README](Installer/README.md)：macOS 安裝包、簽署及 notarization
+- [LICENSING.md](LICENSING.md)：Yahoo BSD、原創 frontend MIT 與第三方授權範圍
 - [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)：第三方素材與授權
 
 ## 詞庫與限制
@@ -144,9 +145,12 @@ SEE-encrypted user data, and obsolete Yahoo/MobileMe services are also absent.
 
 ## License
 
-The Yahoo! KeyKey source is distributed under the BSD 3-Clause License below.
-Third-party material is covered by
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+This is a mixed-license repository. Original Android, iOS, and Windows TSF
+frontend material is Copyright (c) 2026 Chui-Ping Cheng and distributed under
+the [MIT License](LICENSES/MIT.txt). The original Yahoo! KeyKey source and
+modifications derived from it remain under the BSD 3-Clause License below.
+See [LICENSING.md](LICENSING.md) for the scope map and
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for third-party material.
 
 ### BSD 3-Clause License — Yahoo! KeyKey source
 

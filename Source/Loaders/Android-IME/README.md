@@ -92,3 +92,10 @@ APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。
 4. 如需震動回饋或實體鍵盤浮動候選字窗，點「調整設定」進行選擇。
 
 輸入法沒有宣告網路權限；查字與選字都在裝置本機進行。
+
+## 授權
+
+本目錄的原創 Android frontend 程式碼以 MIT License 釋出，著作權為
+Copyright (c) 2026 Chui-Ping Cheng。Gradle wrapper、建置時複製的共用字表、
+McBopomofo 詞庫及私人詞庫維持各自原授權。完整範圍見本目錄的 `LICENSE.txt`
+與 repository 根目錄的 `LICENSING.md`。

@@ -1,8 +1,9 @@
 # Third-party notices
 
 chichi77 KeyKey carries the following third-party material.
-Everything else it links is either part of macOS or is in this repository
-under the BSD 3-Clause License reproduced in `README.md`.
+This file records third-party notices and does not define the license of
+original chichi77 KeyKey frontend code. See `LICENSING.md` for the complete
+repository scope map.
 
 ## McBopomofo data
 
