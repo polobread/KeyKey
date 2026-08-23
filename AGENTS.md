@@ -20,8 +20,9 @@ macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是�
 4. `git add` **逐檔指定**，不要用 `git add -A` 或 `git add .`。工作區常有未追蹤的
    編輯器暫存檔。
 5. 以下是 BSD 條款要求，**移除會違反授權**：各原始檔的
-   `Copyright (c) 2012, Yahoo! Inc.` 標頭、`LICENSE.txt`、README 的 BSD 全文、
-   About 視窗的出處標示、Info.plist 的「非 Yahoo 官方產品」聲明。
+   `Copyright (c) 2012, Yahoo! Inc.` 標頭、`LICENSE.txt`、About 視窗的出處標示、
+   Info.plist 的「非 Yahoo 官方產品」聲明。README 只需連到 `LICENSE.txt`，不重複
+   收錄 BSD 全文。
 6. 本專案是混合授權：Android、iOS 與 Windows TSF 目錄內的原創 frontend 以目錄級
    MIT License 授權；Yahoo 舊碼與其衍生修改仍是 BSD 3-Clause，第三方素材維持各自
    授權。範圍以 `LICENSING.md` 為準，不要逐檔補 MIT 標頭，也不要把整個
