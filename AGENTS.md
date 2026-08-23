@@ -1,6 +1,6 @@
 # AGENTS.md — 開發交接
 
-macOS、Windows 與 Android 由不同環境輪流開發，這份檔案是各平台的交接點。
+macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是各平台的交接點。
 
 **接手時：** 先讀完本檔，再讀 [BUILDING.md](BUILDING.md)。動任何 `Source/Frameworks`
 或 `Source/ModulePackages` 底下的檔案前，先看「跨平台影響」。
@@ -15,7 +15,8 @@ macOS、Windows 與 Android 由不同環境輪流開發，這份檔案是各平�
 1. commit 訊息與任何檔案內容都**不得出現 AI 工具或模型名稱**，也不要加
    `Co-Authored-By` trailer。
 2. 產品內（UI、About 視窗、字串資源）**不得出現開發者或工具署名**。
-3. commit author／committer 必須是 `Polo <polobread@yahoo.com.tw>`。
+3. commit author／committer 沿用 repo 既有 commit 的身分
+   （`git log -1 --format='%an <%ae>'`），**不可用公司信箱**。
 4. `git add` **逐檔指定**，不要用 `git add -A` 或 `git add .`。工作區常有未追蹤的
    編輯器暫存檔。
 5. 以下是 BSD 條款要求，**移除會違反授權**：各原始檔的
@@ -47,6 +48,12 @@ macOS、Windows 與 Android 由不同環境輪流開發，這份檔案是各平�
 | `Source/Loaders/Windows-TSF/CMakeLists.txt` | `project(... VERSION x.y.z)` |
 | `Source/Loaders/Windows-TSF/Package-Windows.ps1` | `$Version` 參數預設值 |
 
+### iOS — 1 處
+
+| 檔案 | 位置 |
+|---|---|
+| `Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj/project.pbxproj` | 兩個 target 共用的 `MARKETING_VERSION` |
+
 ### 文件 — 非建置輸入，但會過期
 
 `README.md` 標題、`BUILDING.md` 與 `Source/Loaders/Windows-TSF/README.md` 裡的範例
@@ -76,6 +83,8 @@ grep -n 'Version = ' Source/Loaders/Windows-TSF/Package-Windows.ps1
 | `Source/Loaders/OSX-IMK/` | 僅 macOS |
 | `Source/Loaders/Windows-TSF/` | 僅 Windows |
 | `Source/Loaders/Android-IME/` | 僅 Android；建置時唯讀 `Source/DataTables`、`DataSource/McBopomofo` 與可選的相鄰私人詞庫 |
+| `Source/Loaders/iOS-Keyboard/` | 僅 iOS；建置時把已 cook 好的 `KeyKey.db` 打包進 extension |
+| `Source/Branding/enter.svg` | Android 與 iOS 兩個觸控鍵盤（各自照座標描邊，不直接讀檔） |
 
 模組註冊不對稱，看共用模組時要記得：
 
@@ -86,6 +95,8 @@ grep -n 'Version = ' Source/Loaders/Windows-TSF/Package-Windows.ps1
 - **Android** 以 Java 重作 TraditionalMandarin 的單音節組字、選字與 AssociatedPhrase
   關聯詞，直接解析 `bpmf-ext.cin` 與詞庫文字資產；目前不載入 C++ framework 或
   SmartMandarin
+- **iOS** 以 Swift 重作同一組行為，但**資料層走已 cook 好的 `KeyKey.db`**（系統
+  `libsqlite3`），不在執行時解析 `.cin`；同樣不載入 C++ framework
 
 所以「SmartMandarin 裡的某段邏輯」在 Windows 上是死碼，反之 TraditionalMandarin
 沒實作的功能在 Windows 就不存在。
@@ -139,6 +150,30 @@ cd Source\Loaders\Android-IME
 - 關聯詞由 `generateAssociatedPhraseAssets` 從 `DataSource/McBopomofo/phrase.occ`
   與可選的相鄰 `chichi77Collection/phrase.*.tsv` 複製到 generated assets；私人詞庫
   不在 KeyKey 版控內，含私人資料的 APK 只能交給有權使用的人。
+
+### iOS
+
+```sh
+cd Source/Loaders/iOS-Keyboard
+xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
+  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  CODE_SIGNING_ALLOWED=NO build
+```
+
+- 引擎測試不需要模擬器：`cd KeyKeyEngine && swift test`。
+- **必須用 `-scheme`，不能用 `-target`** —— Swift Package 依賴只有透過 scheme 才會
+  被建置。`xcshareddata/xcschemes` 內的 shared scheme 因此必須留在版控中；缺了它，
+  新 clone 會由 xcodebuild 自動產生到 gitignore 的 `xcuserdata`，換機就壞。
+- 新機器要先取得模擬器 runtime：`xcodebuild -downloadPlatform iOS`（約 8.5 GB）。
+- 需要先有 cook 好的 `KeyKey.db`；它會被複製進 **extension** bundle，不要放進容器
+  App，否則 10 MB 會打包兩次。
+- 配色只在 `Keyboard/Palette.swift`，全部是 `UIColor(dynamicProvider:)`，深色模式
+  跟著系統走。淺色值與 Android 相同，深色值只有 iOS 有。
+- App 圖示來自 `Source/Branding/chichi77.png`，縮成 1024×1024 放在
+  `ContainerApp/Assets.xcassets/AppIcon.appiconset`（單一尺寸，Xcode 自行衍生）。
+- 兩個 target 各有 `PrivacyInfo.xcprivacy`。extension 宣告 `UserDefaults`
+  （required reason `CA92.1`，關聯詞詞庫開關）；容器 App 沒有 required-reason API。
+  兩份都宣告不追蹤、不收集。
 
 ---
 
@@ -270,6 +305,62 @@ cd Source\Loaders\Android-IME
   `overrideKeyboardWithKeyboardNamed:`（預設 `com.apple.keylayout.US`），Windows 靠
   `PrintableAsciiFromVirtualKey` 的 `")!@#$%^&*("` VK 對照。三處必須一致但彼此看
   不到對方，改任一處要一併檢查。目前是正確的，不要當成 bug 去「修」。
+- **iOS extension 收不到實體鍵盤按鍵**：`UIInputViewController` 的
+  `pressesBegan`／`pressesEnded` 不會被呼叫，第三方鍵盤也只能在自己的 input view 內
+  繪製。Android 的實體鍵盤支援與浮動候選窗在 iOS **做不到**，不要再嘗試。
+- **iOS 沒有 inline 組字**：`UITextDocumentProxy` 只有 `insertText`／`deleteBackward`
+  ／`documentContextBefore/AfterInput`，**沒有 marked text API**。注音讀音必須顯示在
+  鍵盤自己的畫面，不能出現在目標 App 的文字欄位。副作用是 Android 那個「先
+  `finishComposingText` 會變成 `ㄋㄧˇ你`」的陷阱在 iOS 不存在。
+- **iOS `deleteBackward()` 已經是 grapheme 感知，不要移植 `TextDeletion`**：
+  2026-08-23 在模擬器實測，一次 `deleteBackward()` 可完整刪除 👍🏻（膚色修飾符，
+  4 個 UTF-16 unit）與 👨‍👩‍👧（ZWJ 家庭序列，8 個 unit／5 個 scalar），沒有殘骸。
+  Android 需要 `TextDeletion` 是因為 `deleteSurroundingText(1, 0)` 刪的是**一個
+  UTF-16 碼元**；`deleteBackward()` 是「刪除鍵」動作，層級不同。自己再算長度補刪會
+  **刪過頭**。
+- **iOS 按鍵震動需要 Full Access**：`UIFeedbackGenerator` 在 extension 內被
+  `RequestsOpenAccess` 把關，沒開就靜靜失效。本專案選擇不開，改用
+  `UIDevice.playInputClick()`（聲音，不需權限）。設定值本身存在 extension 自己的
+  `UserDefaults`，那不需要任何權限 —— 別把「存設定」和「產生震動」混為一談。
+- **iOS 鍵盤約 60 MB 就會被 jetsam 終止，且沒有 crash log**：不要學 Android 把
+  1.2 MB／98k 行的 `.cin` 解析進記憶體。實測 SQLite 只映射查詢用到的頁，資料層常駐
+  足跡不到 1 MB。
+- **`Mandarin-bpmf-cin` 的 key 是 absolute-order 編碼，不是鍵盤按鍵**：兩個桌面
+  cooker 都透過 Formosa 把 `1ji6` 這種按鍵序列轉成 2 字元 base-79 碼，所以 iOS 的
+  `BopomofoSyllable` 必須實作同一套編碼（`Mandarin.h:190-227`）才查得到東西。附帶
+  好處是與鍵盤佈局無關。
+- **Simulator 的 Connect Hardware Keyboard 會讓軟體鍵盤整個消失**：連地球鍵一起，
+  看起來像鍵盤掛掉。關法是 Simulator 的 Cmd+Shift+K，或寫
+  `defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false`
+  再重開 Simulator 視窗。注意 `killall Simulator` 會把 booted 的裝置一起關掉。
+- **iOS 按鍵標籤是兩個 UILabel，不是一個兩行的 attributed title**：注音鍵要同時顯示
+  注音與鍵位，而聲調符號（ˊ ˇ ˋ ˙）是 spacing modifier letter，字級要放大約 1.8 倍
+  才看得清。放大後若用兩行 label，第二行的鍵位數字會被推出按鍵外；改用
+  `.baselineOffset` 想把符號往下拉也一樣 —— TextKit 會連帶把行框加高，結果照樣裁掉。
+  所以兩個 label 各自用固定高度定位（`KeyboardView.configure`），鍵位數字才會與同排
+  其他鍵齊高。改這段一定要截圖檢查整排數字是否對齊。
+- **Enter 鍵是描邊畫出來的，不是字元**：`↵` 在 Android 與 iOS 系統字體下都偏細且不
+  一致。座標在 `Source/Branding/enter.svg`，兩個平台各自照抄同一組數字描邊
+  （`EnterGlyph.swift`／`BopomofoKeyboardView.drawEnterKey`）。**三個檔要一起改。**
+  Android 端不從 SVG 讀檔 —— 該 View 全部是 Canvas 手繪，多帶一個 drawable 反而不一致。
+- **iPad 不會替鍵盤畫地球鍵，iPhone 會**：iPhone 由系統在 input view 下方另外畫一排
+  地球＋聽寫，iPad 沒有那一排。`TARGETED_DEVICE_FAMILY = "1,2"`，所以這支在 iPad 上
+  是原生安裝、跑得起來 —— 但少了地球鍵就**出不去鍵盤**（只能去「設定」關掉它）。
+  判斷依據是 `UIInputViewController.needsInputModeSwitchKey`，iPhone false／iPad true，
+  照它決定功能列要不要多一顆。按鍵要用
+  `addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)`
+  接到 controller，才會有系統行為（點一下換下一個、長按出鍵盤清單）；自己呼叫
+  `advanceToNextInputMode()` 只有點一下。接對了的話系統第一次會自己跳出
+  「快速更改鍵盤」說明卡。
+- **iPad 橫式不會進 compact 版面**：iPad 全螢幕時 `verticalSizeClass` 兩個方向都是
+  `.regular`，所以 `KeyboardMetrics.forCompactHeight` 永遠拿到直式那組（330pt）。
+  版面比例是照 iPhone 調的，iPad 上 11 欄會被拉寬（11 吋直式約 71pt／欄，橫式約
+  104pt），能用但不好看。
+- **在乾淨的模擬器上啟用第三方鍵盤不必手動點設定**：啟用清單是
+  `.GlobalPreferences.plist` 的 `AppleKeyboards`，第三方項目就是 extension 的
+  bundle ID。
+  `xcrun simctl spawn <udid> defaults write -g AppleKeyboards -array "zh_Hant-Zhuyin@sw=Zhuyin;hw=Automatic" "en_US@sw=QWERTY;hw=Automatic" "emoji@sw=Emoji" "io.github.polobread.inputmethod.chichi77.ios.keyboard"`
+  重裝 App 會把選中的鍵盤重設回系統的，每次重裝都要重選一次。
 - **Slack／Electron 按 ESC 會多送一個 Escape**：組字中按 ESC，Slack 取消組字後
   editor 又收到 Escape。**macOS 內建注音行為完全相同**，而原生 app（Line、
   TextEdit）正常，所以這是 Chromium 端行為：keydown 會被 mask 成 `keyCode 229` +
@@ -306,8 +397,39 @@ cd Source\Loaders\Android-IME
       `updateCandidateWindow` 不會被呼叫）。**與 macOS 現行行為對稱**，屬「快捷鍵
       不改動組字狀態」的設計決定。要改請兩個平台一起改，不要單邊處理。
 
+### iOS
+
+- [ ] 版號集中：`MARKETING_VERSION` 目前寫在 pbxproj 的四個 configuration 裡，
+      可抽成 xcconfig（4 處 → 1 處）。
+- [ ] VoiceOver：**元素樹已驗證，朗讀本身還沒聽過。** 2026-08-23 用臨時的
+      hierarchy dump（模擬 VoiceOver 遇到 accessibility element 就停止下探的走法）
+      確認直式共 57 個元素，順序為狀態列 →候選列（上一頁／「第 n 個候選，字」／下一頁）
+      →四排注音鍵→功能列，每個都有中文標籤，聲調鍵唸注音符號而不是鍵位數字，
+      空候選格已排除。**尚未做的**：實際開 VoiceOver 聽朗讀與 rotor 行為、
+      accessibility audit。
+- [ ] 設定面板每列的文字與開關是兩個獨立元素，VoiceOver 會把詞庫名稱唸兩次
+      （系統「設定」App 是合併成一個元素）。要修就把整列包成一個
+      `UIAccessibilityElement`，或改用 `UITableViewCell`。
+- [ ] iPad 版面沒有調過：目前兩個方向都吃直式的 330pt 與 iPhone 字級，按鍵被拉成
+      寬扁形。要做就得加一組 iPad metrics（judgement：高度拉到約 380–420pt、字級放大、
+      或改成不佔滿寬度的分段版面）。功能面已可用，地球鍵也有了。
+- [ ] 直式聲調符號放大 1.8 倍，**橫式刻意沒放大** —— 橫式把注音與鍵位併成一行
+      （`ㄅ 1`），只放大其中一個字會高低不齊，且橫式那排只有 26pt。要改的話得先
+      拆成兩個 label。
+
 ### Android
 
+- [ ] 聲調符號（ˊ ˇ ˋ ˙）字級是否比照 iOS 放大 —— 目前 Android 與其他注音同字級
+      （`drawBopomofoKey` 的 `dp(18)`），iOS 直式放大 1.8 倍
+      （`KeyboardLayout.glyphPointScale`）。兩個觸控鍵盤現在長得不一樣，要不要對齊
+      請一起決定。**Android 這邊改起來比 iOS 單純**：`drawText` 的兩個基線都是從
+      `bounds.centerY()` 固定偏移（`- dp(4)`／`+ dp(17)`），放大上面那個字不會推動
+      下面的鍵位數字，沒有 iOS 那個 TextKit 行框問題。橫式是
+      `primary + " " + secondary` 一行帶過，iOS 橫式也刻意沒放大，要動得先拆成兩次
+      `drawText`。
+- [ ] **Enter 鍵改為描邊繪製（`drawEnterKey`）未經編譯驗證** —— 該變更是在沒有
+      Android SDK 的機器上寫的，只有肉眼檢查。下一位動 Android 的人請先
+      `./gradlew assembleDebug` 確認，並截圖比對 Enter 鍵外觀與 iOS 一致。
 - [ ] 增加會在模擬器或實機啟動 `BopomofoImeService`，並驗證組字、觸控候選列、
       外接鍵盤一般候選 `1–9`／關聯詞 `Shift+1–9`、一次性注音 Shift、英文大小寫與
       兩套數字符號版面、`ㄋㄧˇ` Backspace 退音及複合 Emoji 一次刪除、
