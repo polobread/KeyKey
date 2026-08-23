@@ -61,10 +61,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
-          cache-dependency-path: |
-            Source/Loaders/Android-IME/*.gradle.kts
-            Source/Loaders/Android-IME/gradle/wrapper/gradle-wrapper.properties
 
       - name: Ensure Android SDK packages are installed
         shell: bash

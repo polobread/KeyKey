@@ -389,6 +389,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   generator 會立即回報找不到 Visual Studio。hosted workflow 必須使用
   `windows-x64-vs2026` 與 `windows-x86` preset；VS2022 presets 只留給仍安裝
   Visual Studio 2022 的本機環境。
+- **Android workflow 不可啟用 `setup-java` 的 Gradle cache**：repo 內歷史檔案
+  `Source/ExternalLibraries/UnitTest++/UnitTest++` 在 Unix checkout 是指向自己的 symlink；
+  `setup-java@v5` 的 cache dependency 掃描會跟隨它並以 `ELOOP` 失敗，早於 Gradle
+  建置。Android 不讀該目錄，目前刻意不啟用這層 cache；不要在未排除循環 symlink
+  前加回 `cache: gradle`。
 - **公開 macOS／iOS cooker 不可假設私人 people 詞庫存在**：
   `DatabaseCooker/Makefile` 只有在 `phrase.people-*.tsv` 存在時才產生人名 exclusion；
   乾淨公開 checkout 必須建立空 exclusion 檔並只匯入 McBopomofo。不要恢復無條件
@@ -403,7 +408,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - [ ] 合併後從 GitHub Actions 頁面各手動跑一次 macOS、Windows、Android 與 iOS
       Simulator workflow，確認 hosted runner 的工具版本及四個 7 天 artifact；本機已用
       actionlint 1.7.12 驗證 YAML，並完成 Windows x64 測試／x86 建置／ZIP 封裝及
-      Android lint／unit test／APK 建置。
+      Android lint／unit test／APK 建置。第一次 hosted Windows run 因 runner 已改為
+      VS2026 失敗，第一次 Android run 因 `setup-java` cache 掃到循環 symlink 失敗；
+      兩項 workflow 修正後都尚待重跑。
 
 ### macOS
 
