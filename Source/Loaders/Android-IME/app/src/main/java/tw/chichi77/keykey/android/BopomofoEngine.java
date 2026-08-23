@@ -54,6 +54,7 @@ final class BopomofoEngine {
     private AssociatedPhraseDictionary associatedPhrases = AssociatedPhraseDictionary.empty();
     private List<String> candidates = List.of();
     private int page;
+    private int highlightedIndex;
     private InputMode inputMode = InputMode.BOPOMOFO;
     private boolean shifted;
     private boolean temporaryEnglish;
@@ -127,7 +128,7 @@ final class BopomofoEngine {
     }
 
     Result enter() {
-        if (!candidates.isEmpty()) return selectDisplayedCandidate(0);
+        if (!candidates.isEmpty()) return selectHighlightedCandidate();
         if (!reading.isEmpty()) return query();
         return Result.enter();
     }
@@ -136,6 +137,7 @@ final class BopomofoEngine {
         if (!candidates.isEmpty()) {
             candidates = List.of();
             showingAssociatedPhrases = false;
+            highlightedIndex = 0;
         }
         if (!reading.isEmpty()) {
             reading.backspace();
@@ -161,6 +163,18 @@ final class BopomofoEngine {
         return commitPrimaryCandidate(selected, true);
     }
 
+    Result selectHighlightedCandidate() {
+        return selectDisplayedCandidate(highlightedIndex);
+    }
+
+    void moveHighlight(int delta) {
+        if (candidates.isEmpty() || delta == 0) return;
+        int absoluteIndex = page * CANDIDATES_PER_PAGE + highlightedIndex;
+        int nextIndex = Math.floorMod(absoluteIndex + delta, candidates.size());
+        page = nextIndex / CANDIDATES_PER_PAGE;
+        highlightedIndex = nextIndex % CANDIDATES_PER_PAGE;
+    }
+
     private Result commitPrimaryCandidate(String selected, boolean showAssociatedPhrases) {
         clearComposition();
         if (showAssociatedPhrases) {
@@ -174,9 +188,11 @@ final class BopomofoEngine {
         int pages = pageCount();
         if (pages == 0) {
             page = 0;
+            highlightedIndex = 0;
             return;
         }
         page = Math.floorMod(page + delta, pages);
+        highlightedIndex = 0;
     }
 
     void reset() {
@@ -202,6 +218,11 @@ final class BopomofoEngine {
 
     int pageCount() {
         return (candidates.size() + CANDIDATES_PER_PAGE - 1) / CANDIDATES_PER_PAGE;
+    }
+
+    int highlightedIndex() {
+        int displayedCount = displayedCandidates().size();
+        return displayedCount == 0 ? -1 : Math.min(highlightedIndex, displayedCount - 1);
     }
 
     boolean isEnglishMode() {
@@ -260,6 +281,7 @@ final class BopomofoEngine {
         candidates = dictionary.candidates(reading.queryKey());
         showingAssociatedPhrases = false;
         page = 0;
+        highlightedIndex = 0;
         if (candidates.size() == 1) {
             String only = candidates.get(0);
             return commitPrimaryCandidate(only, true);
@@ -320,6 +342,7 @@ final class BopomofoEngine {
         clearComposition();
         candidates = SYMBOLS;
         showingAssociatedPhrases = false;
+        highlightedIndex = 0;
         return Result.update();
     }
 
@@ -327,6 +350,7 @@ final class BopomofoEngine {
         clearComposition();
         candidates = EMOJIS;
         showingAssociatedPhrases = false;
+        highlightedIndex = 0;
         return Result.update();
     }
 
@@ -334,6 +358,7 @@ final class BopomofoEngine {
         reading.clear();
         candidates = List.of();
         page = 0;
+        highlightedIndex = 0;
         showingAssociatedPhrases = false;
     }
 }

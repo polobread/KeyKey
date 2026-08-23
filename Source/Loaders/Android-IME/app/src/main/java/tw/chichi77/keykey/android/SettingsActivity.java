@@ -8,9 +8,11 @@ import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -86,7 +88,50 @@ public final class SettingsActivity extends Activity {
         description.setTextSize(14);
         description.setTextColor(Color.GRAY);
         description.setLineSpacing(0, 1.2f);
-        content.addView(description, matchWrap(dp(0), dp(36)));
+        content.addView(description, matchWrap(dp(0), dp(16)));
+
+        CheckBox floatingCandidates = new CheckBox(this);
+        floatingCandidates.setText(R.string.floating_candidates_enabled);
+        floatingCandidates.setTextSize(16);
+        floatingCandidates.setTextColor(Color.DKGRAY);
+        floatingCandidates.setMinHeight(dp(48));
+        floatingCandidates.setChecked(CandidateWindowSettings.floatingEnabled(this));
+        content.addView(floatingCandidates, matchWrap(dp(0), dp(8)));
+
+        TextView floatingLayoutLabel = new TextView(this);
+        floatingLayoutLabel.setText(R.string.floating_candidates_layout);
+        floatingLayoutLabel.setTextSize(16);
+        floatingLayoutLabel.setTextColor(Color.DKGRAY);
+        content.addView(floatingLayoutLabel, matchWrap(dp(0), dp(4)));
+
+        Spinner floatingLayout = new Spinner(this);
+        ArrayAdapter<CharSequence> layoutAdapter = ArrayAdapter.createFromResource(this,
+                R.array.floating_candidate_layouts,
+                android.R.layout.simple_spinner_item);
+        layoutAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        floatingLayout.setAdapter(layoutAdapter);
+        floatingLayout.setSelection(CandidateWindowSettings.layout(this)
+                == CandidateWindowSettings.Layout.HORIZONTAL ? 1 : 0);
+        floatingLayout.setEnabled(floatingCandidates.isChecked());
+        floatingLayoutLabel.setEnabled(floatingCandidates.isChecked());
+        content.addView(floatingLayout, matchWrap(dp(0), dp(36)));
+
+        floatingCandidates.setOnCheckedChangeListener((button, checked) -> {
+            CandidateWindowSettings.setFloatingEnabled(SettingsActivity.this, checked);
+            floatingLayout.setEnabled(checked);
+            floatingLayoutLabel.setEnabled(checked);
+        });
+        floatingLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view,
+                                       int position, long id) {
+                CandidateWindowSettings.setLayout(SettingsActivity.this,
+                        position == 1 ? CandidateWindowSettings.Layout.HORIZONTAL
+                                : CandidateWindowSettings.Layout.VERTICAL);
+            }
+
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
 
         TextView phraseTitle = new TextView(this);
         phraseTitle.setTextSize(20);

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class BopomofoKeyboardView extends View {
-    enum Mode { PORTRAIT, LANDSCAPE, HARDWARE }
+    enum Mode { PORTRAIT, LANDSCAPE, HARDWARE, HARDWARE_FLOATING }
 
     interface Listener {
         void onPress();
@@ -139,6 +139,7 @@ final class BopomofoKeyboardView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int desiredHeight = switch (mode) {
+            case HARDWARE_FLOATING -> dp(1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP) + hardwareSystemAreaHeight();
             case LANDSCAPE -> dp(LANDSCAPE_CONTENT_HEIGHT_DP + LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
             case PORTRAIT -> dp(PORTRAIT_CONTENT_HEIGHT_DP + PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
@@ -154,6 +155,7 @@ final class BopomofoKeyboardView extends View {
         hits.clear();
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
         switch (mode) {
+            case HARDWARE_FLOATING -> { }
             case HARDWARE -> drawHardware(canvas);
             case LANDSCAPE -> drawLandscape(canvas);
             case PORTRAIT -> drawPortrait(canvas);
@@ -397,7 +399,11 @@ final class BopomofoKeyboardView extends View {
 
     private String keyLabel(String key) {
         return switch (key) {
-            case "MODE" -> "中/英/數";
+            case "MODE" -> switch (inputMode) {
+                case BOPOMOFO -> "英/數";
+                case ENGLISH -> "數/中";
+                case NUMBER -> "中/英";
+            };
             case "SHIFT" -> shifted ? "⇧" : "⇧";
             case "BACKSPACE" -> "⌫";
             case "ENTER" -> "↵";
@@ -451,6 +457,7 @@ final class BopomofoKeyboardView extends View {
 
     private float contentHeight() {
         int systemAreaHeight = switch (mode) {
+            case HARDWARE_FLOATING -> 0;
             case PORTRAIT -> dp(PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
             case LANDSCAPE -> dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
             case HARDWARE -> hardwareSystemAreaHeight();

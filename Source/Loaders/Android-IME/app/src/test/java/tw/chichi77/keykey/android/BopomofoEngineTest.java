@@ -226,6 +226,53 @@ public final class BopomofoEngineTest {
     }
 
     @Test
+    public void highlightedCandidateMovesAcrossPagesAndWraps() throws Exception {
+        StringBuilder definitions = new StringBuilder();
+        for (int i = 1; i <= 12; i++) definitions.append("su3 候").append(i).append('\n');
+        BopomofoEngine engine = engineWith(definitions.toString());
+        engine.handleSoftKey("s");
+        engine.handleSoftKey("u");
+        engine.handleSoftKey("3");
+
+        assertEquals(0, engine.highlightedIndex());
+        engine.moveHighlight(-1);
+        assertEquals(1, engine.page());
+        assertEquals(2, engine.highlightedIndex());
+        assertEquals("候12", engine.selectHighlightedCandidate().committedText());
+    }
+
+    @Test
+    public void pageChangeResetsHighlightToFirstCandidate() throws Exception {
+        StringBuilder definitions = new StringBuilder();
+        for (int i = 1; i <= 12; i++) definitions.append("su3 候").append(i).append('\n');
+        BopomofoEngine engine = engineWith(definitions.toString());
+        engine.handleSoftKey("s");
+        engine.handleSoftKey("u");
+        engine.handleSoftKey("3");
+
+        engine.moveHighlight(3);
+        engine.changePage(1);
+
+        assertEquals(1, engine.page());
+        assertEquals(0, engine.highlightedIndex());
+        assertEquals("候10", engine.enter().committedText());
+    }
+
+    @Test
+    public void escapeClosesCandidatesAndClearsReading() throws Exception {
+        BopomofoEngine engine = engineWith("su3 你\nsu3 擬\n");
+        engine.handleSoftKey("s");
+        engine.handleSoftKey("u");
+        engine.handleSoftKey("3");
+
+        engine.escape();
+
+        assertTrue(engine.readingText().isEmpty());
+        assertTrue(engine.displayedCandidates().isEmpty());
+        assertEquals(-1, engine.highlightedIndex());
+    }
+
+    @Test
     public void selectingCharacterOpensAssociatedPhrasesAndTouchCommitsSuffix() throws Exception {
         BopomofoEngine engine = engineWith("su3 你\nsu3 擬\n");
         engine.setAssociatedPhraseDictionary(AssociatedPhraseDictionary.fromEntries(
@@ -240,6 +287,22 @@ public final class BopomofoEngineTest {
         assertEquals(List.of("好", "們"), engine.displayedCandidates());
         assertTrue(engine.isShowingAssociatedPhrases());
         assertEquals("們", engine.selectDisplayedCandidate(1).committedText());
+        assertTrue(engine.displayedCandidates().isEmpty());
+    }
+
+    @Test
+    public void enterSelectsHighlightedAssociatedPhrase() throws Exception {
+        BopomofoEngine engine = engineWith("su3 你\nsu3 擬\n");
+        engine.setAssociatedPhraseDictionary(AssociatedPhraseDictionary.fromEntries(
+                Map.of("你", List.of("好", "們"))));
+        engine.handleSoftKey("s");
+        engine.handleSoftKey("u");
+        engine.handleSoftKey("3");
+        engine.selectDisplayedCandidate(0);
+
+        engine.moveHighlight(1);
+
+        assertEquals("們", engine.enter().committedText());
         assertTrue(engine.displayedCandidates().isEmpty());
     }
 

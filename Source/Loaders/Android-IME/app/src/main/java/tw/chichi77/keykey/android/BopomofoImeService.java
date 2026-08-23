@@ -1,12 +1,16 @@
 package tw.chichi77.keykey.android;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.RectF;
 import android.content.res.Configuration;
 import android.inputmethodservice.InputMethodService;
+import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
@@ -16,12 +20,20 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 public final class BopomofoImeService extends InputMethodService
-        implements BopomofoKeyboardView.Listener {
+        implements BopomofoKeyboardView.Listener, FloatingCandidateWindow.Listener,
+        SharedPreferences.OnSharedPreferenceChangeListener {
     private BopomofoEngine engine;
     private BopomofoKeyboardView keyboardView;
+    private FloatingCandidateWindow floatingCandidateWindow;
     private Vibrator vibrator;
     private Set<String> loadedPhraseCollections;
+    private boolean hardwareKeyboard;
+    private boolean floatingCandidatesEnabled;
+    private CandidateWindowSettings.Layout floatingCandidateLayout =
+            CandidateWindowSettings.Layout.VERTICAL;
+    private RectF cursorAnchor;
     private final Set<Integer> pressedControlShortcutKeys = new LinkedHashSet<>();
+    private final Set<Integer> pressedCandidateKeys = new LinkedHashSet<>();
 
     @Override
     public void onCreate() {
@@ -37,6 +49,8 @@ public final class BopomofoImeService extends InputMethodService
         engine = new BopomofoEngine(dictionary);
         reloadPhraseDictionary();
         vibrator = getSystemService(Vibrator.class);
+        CandidateWindowSettings.preferences(this)
+                .registerOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -52,7 +66,9 @@ public final class BopomofoImeService extends InputMethodService
     public View onCreateInputView() {
         keyboardView = new BopomofoKeyboardView(this);
         keyboardView.setListener(this);
+        floatingCandidateWindow = new FloatingCandidateWindow(this, keyboardView, this);
         updateKeyboardMode();
+        requestCursorAnchorUpdates();
         refreshKeyboard();
         return keyboardView;
     }
@@ -71,8 +87,11 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting) {
         super.onStartInput(attribute, restarting);
+        cursorAnchor = null;
         reloadPhraseDictionary();
         if (!restarting && engine != null) engine.reset();
+        updateKeyboardMode();
+        requestCursorAnchorUpdates();
         refreshKeyboard();
     }
 
@@ -80,6 +99,8 @@ public final class BopomofoImeService extends InputMethodService
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
         reloadPhraseDictionary();
+        updateKeyboardMode();
+        requestCursorAnchorUpdates();
         refreshKeyboard();
     }
 
@@ -87,13 +108,51 @@ public final class BopomofoImeService extends InputMethodService
     public void onFinishInput() {
         if (engine != null) engine.reset();
         pressedControlShortcutKeys.clear();
+        pressedCandidateKeys.clear();
+        cursorAnchor = null;
+        hideFloatingCandidates();
         super.onFinishInput();
+    }
+
+    @Override
+    public void onWindowHidden() {
+        hideFloatingCandidates();
+        super.onWindowHidden();
+    }
+
+    @Override
+    public void onDestroy() {
+        CandidateWindowSettings.preferences(this)
+                .unregisterOnSharedPreferenceChangeListener(this);
+        hideFloatingCandidates();
+        super.onDestroy();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        cursorAnchor = null;
         updateKeyboardMode();
+        requestCursorAnchorUpdates();
+        refreshKeyboard();
+    }
+
+    @Override
+    public void onUpdateCursorAnchorInfo(CursorAnchorInfo cursorAnchorInfo) {
+        super.onUpdateCursorAnchorInfo(cursorAnchorInfo);
+        cursorAnchor = insertionMarkerBounds(cursorAnchorInfo);
+        if (floatingCandidateWindow != null) {
+            floatingCandidateWindow.updateCursorAnchor(cursorAnchor);
+        }
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
+        if (!CandidateWindowSettings.KEY_FLOATING_ENABLED.equals(key)
+                && !CandidateWindowSettings.KEY_LAYOUT.equals(key)) return;
+        updateKeyboardMode();
+        requestCursorAnchorUpdates();
+        refreshKeyboard();
     }
 
     @Override
@@ -129,25 +188,46 @@ public final class BopomofoImeService extends InputMethodService
             return super.onKeyDown(keyCode, event);
         }
         engine.prepareForHardwareInput();
+        boolean candidatesVisible = engine.pageCount() > 0;
         int candidateIndex = topRowDigitIndex(keyCode);
         if (engine.isShowingAssociatedPhrases() && event.isShiftPressed()
                 && candidateIndex >= 0) {
+            pressedCandidateKeys.add(keyCode);
             apply(engine.selectDisplayedCandidate(candidateIndex));
+            return true;
+        }
+        if (candidatesVisible && !engine.isShowingAssociatedPhrases()
+                && !event.isShiftPressed() && candidateIndex >= 0) {
+            pressedCandidateKeys.add(keyCode);
+            apply(engine.selectDisplayedCandidate(candidateIndex));
+            return true;
+        }
+        if (isFloatingCandidateMode() && candidatesVisible
+                && handleFloatingCandidateNavigation(keyCode)) {
+            pressedCandidateKeys.add(keyCode);
             return true;
         }
         switch (keyCode) {
             case KeyEvent.KEYCODE_DEL -> apply(engine.backspace());
-            case KeyEvent.KEYCODE_SPACE -> apply(engine.space());
-            case KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                if (engine.isShowingAssociatedPhrases()) apply(engine.escape());
-                else apply(engine.enter());
+            case KeyEvent.KEYCODE_SPACE -> {
+                if (candidatesVisible) pressedCandidateKeys.add(keyCode);
+                apply(engine.space());
             }
-            case KeyEvent.KEYCODE_ESCAPE -> apply(engine.escape());
+            case KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                if (candidatesVisible) pressedCandidateKeys.add(keyCode);
+                apply(engine.enter());
+            }
+            case KeyEvent.KEYCODE_ESCAPE -> {
+                if (candidatesVisible) pressedCandidateKeys.add(keyCode);
+                apply(engine.escape());
+            }
             case KeyEvent.KEYCODE_PAGE_UP -> {
+                if (candidatesVisible) pressedCandidateKeys.add(keyCode);
                 engine.changePage(-1);
                 refreshKeyboard();
             }
             case KeyEvent.KEYCODE_PAGE_DOWN -> {
+                if (candidatesVisible) pressedCandidateKeys.add(keyCode);
                 engine.changePage(1);
                 refreshKeyboard();
             }
@@ -164,6 +244,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (pressedCandidateKeys.remove(keyCode)) return true;
         if (pressedControlShortcutKeys.remove(keyCode)
                 || isHardwareControlShortcut(keyCode, event)) {
             return true;
@@ -231,6 +312,12 @@ public final class BopomofoImeService extends InputMethodService
         keyboardView.setState(engine.displayedCandidates(), engine.readingText(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
                 engine.page(), engine.pageCount());
+        if (isFloatingCandidateMode() && floatingCandidateWindow != null) {
+            floatingCandidateWindow.update(engine.displayedCandidates(),
+                    engine.highlightedIndex(), floatingCandidateLayout, cursorAnchor);
+        } else {
+            hideFloatingCandidates();
+        }
     }
 
     private void reloadPhraseDictionary() {
@@ -248,16 +335,93 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     private void updateKeyboardMode() {
-        if (keyboardView == null) return;
         Configuration configuration = getResources().getConfiguration();
-        boolean hardwareKeyboard = configuration.keyboard != Configuration.KEYBOARD_NOKEYS
+        hardwareKeyboard = configuration.keyboard != Configuration.KEYBOARD_NOKEYS
                 && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
+        floatingCandidatesEnabled = CandidateWindowSettings.floatingEnabled(this);
+        floatingCandidateLayout = CandidateWindowSettings.layout(this);
+        if (keyboardView == null) return;
         if (hardwareKeyboard) {
-            keyboardView.setMode(BopomofoKeyboardView.Mode.HARDWARE);
+            keyboardView.setMode(floatingCandidatesEnabled
+                    ? BopomofoKeyboardView.Mode.HARDWARE_FLOATING
+                    : BopomofoKeyboardView.Mode.HARDWARE);
         } else if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             keyboardView.setMode(BopomofoKeyboardView.Mode.LANDSCAPE);
         } else {
             keyboardView.setMode(BopomofoKeyboardView.Mode.PORTRAIT);
         }
+        if (!isFloatingCandidateMode()) hideFloatingCandidates();
+    }
+
+    private boolean isFloatingCandidateMode() {
+        return hardwareKeyboard && floatingCandidatesEnabled;
+    }
+
+    private boolean handleFloatingCandidateNavigation(int keyCode) {
+        boolean vertical = floatingCandidateLayout == CandidateWindowSettings.Layout.VERTICAL;
+        if ((vertical && keyCode == KeyEvent.KEYCODE_DPAD_UP)
+                || (!vertical && keyCode == KeyEvent.KEYCODE_DPAD_LEFT)) {
+            engine.moveHighlight(-1);
+            refreshKeyboard();
+            return true;
+        }
+        if ((vertical && keyCode == KeyEvent.KEYCODE_DPAD_DOWN)
+                || (!vertical && keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)) {
+            engine.moveHighlight(1);
+            refreshKeyboard();
+            return true;
+        }
+        if ((vertical && keyCode == KeyEvent.KEYCODE_DPAD_LEFT)
+                || (!vertical && keyCode == KeyEvent.KEYCODE_DPAD_UP)) {
+            engine.changePage(-1);
+            refreshKeyboard();
+            return true;
+        }
+        if ((vertical && keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
+                || (!vertical && keyCode == KeyEvent.KEYCODE_DPAD_DOWN)) {
+            engine.changePage(1);
+            refreshKeyboard();
+            return true;
+        }
+        return false;
+    }
+
+    private void requestCursorAnchorUpdates() {
+        InputConnection connection = getCurrentInputConnection();
+        if (connection == null) return;
+        if (!isFloatingCandidateMode()) {
+            connection.requestCursorUpdates(0);
+            cursorAnchor = null;
+            return;
+        }
+        int mode = InputConnection.CURSOR_UPDATE_IMMEDIATE
+                | InputConnection.CURSOR_UPDATE_MONITOR;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            connection.requestCursorUpdates(mode,
+                    InputConnection.CURSOR_UPDATE_FILTER_INSERTION_MARKER);
+        } else {
+            connection.requestCursorUpdates(mode);
+        }
+    }
+
+    private RectF insertionMarkerBounds(CursorAnchorInfo information) {
+        if (information == null) return null;
+        int flags = information.getInsertionMarkerFlags();
+        if ((flags & CursorAnchorInfo.FLAG_HAS_INVISIBLE_REGION) != 0
+                && (flags & CursorAnchorInfo.FLAG_HAS_VISIBLE_REGION) == 0) return null;
+        float horizontal = information.getInsertionMarkerHorizontal();
+        float top = information.getInsertionMarkerTop();
+        float bottom = information.getInsertionMarkerBottom();
+        if (!Float.isFinite(horizontal) || !Float.isFinite(top) || !Float.isFinite(bottom)) {
+            return null;
+        }
+        float[] points = {horizontal, top, horizontal, bottom};
+        information.getMatrix().mapPoints(points);
+        return new RectF(points[0], Math.min(points[1], points[3]),
+                points[2], Math.max(points[1], points[3]));
+    }
+
+    private void hideFloatingCandidates() {
+        if (floatingCandidateWindow != null) floatingCandidateWindow.hide();
     }
 }

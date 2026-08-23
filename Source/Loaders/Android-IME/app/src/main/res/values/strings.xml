@@ -15,6 +15,15 @@
     <string name="haptic_maximum">0.2 秒</string>
     <string name="haptic_value_off">震動時間：關閉</string>
     <string name="haptic_value_seconds">震動時間：%1$s 秒</string>
+    <string name="floating_candidates_enabled">實體鍵盤使用浮動候選字窗</string>
+    <string name="floating_candidates_layout">浮動候選字窗排列</string>
+    <string-array name="floating_candidate_layouts">
+        <item>垂直選字窗</item>
+        <item>水平選字窗</item>
+    </string-array>
+    <string name="floating_candidate_item_vertical">%1$d&#x2009;%2$s</string>
+    <string name="floating_candidate_item_horizontal">%1$d %2$s</string>
+    <string name="floating_candidate_description">第 %1$d 個候選，%2$s</string>
     <string name="phrase_collections_title">關聯詞詞庫（%1$d）</string>
     <string name="phrase_collections_title_unavailable">關聯詞詞庫</string>
     <string name="phrase_collections_description">選擇要啟用的關聯詞詞庫，變更會在下次顯示輸入鍵盤時生效。完全不選代表不使用任何關聯詞詞庫。</string>

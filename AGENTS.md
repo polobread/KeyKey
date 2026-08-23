@@ -212,7 +212,8 @@ cd Source\Loaders\Android-IME
 - **Android 觸控鍵盤是 11 欄注音版面**：直橫式都由候選列、四排 11 個等寬輸入鍵與
   一排功能鍵組成；四排依序結束於 `ㄦ`、`@`、Emoji、Shift。功能列的長空白是刻意
   的唯一寬鍵。注音鍵必須同時顯示注音與實體鍵位（如 `ㄅ／1`、`ㄉ／2`）。橫式內容
-  仍固定 155dp，六排使用橫式小字級，不要恢復舊的左右分割候選。
+  仍固定 155dp，六排使用橫式小字級，不要恢復舊的左右分割候選。左下模式鍵隨目前
+  模式分別顯示「英/數」、「數/中」、「中/英」，不要改回固定「中/英/數」。
 - **Android 觸控 Shift 不等於實體 Shift**：注音版按 Shift 只暫時顯示英文小寫，
   並把雙標籤從「注音在上、鍵位在下」交換成「鍵位在上、注音在下」，輸入下一個
   觸控字元後立即回注音；由功能列切入的英文版按 Shift 才會持續切換大小寫，且大寫時
@@ -235,6 +236,12 @@ cd Source\Loaders\Android-IME
   Emoji，直式／橫式分別在下方保留 40dp／35dp，避免 Android 的多國語系地球鍵
   遮住控制項。Emoji 必須在沒有中文字候選時仍可按。所有候選角標都固定顯示 `1–9`；
   關聯詞雖以 Windows 式 `Shift+1–9` 選取，也不可把角標改成 `!@#$%^&*(`。
+- **Android 浮動候選依賴 App 回報游標座標**：設定啟用後以
+  `requestCursorUpdates()`／`onUpdateCursorAnchorInfo()` 跟隨插入點，候選 Window
+  必須附掛 IME token、不可取得焦點，否則觸控選字會讓原文字欄位失焦。部分自訂 editor
+  不回報 `CursorAnchorInfo`，此時固定退回可用畫面底部中央，不要因此恢復底部候選列。
+  浮動模式只把 IME input view 留成 1dp 以維持 window token；這不是待清理的空白。
+  垂直窗用上下移動反白／左右換頁，水平窗相反，Enter 選反白，ESC 取消整個讀音。
 - **Android 外接鍵盤的 Ctrl 快捷鍵要先於修飾鍵攔截判斷**：`Ctrl+Space` 只在注音與
   英文間切換，`Ctrl+,`／`Ctrl+.` 輸入全型 `，`／`。`；`Ctrl+0` 與 `Ctrl+1` 則比照
   macOS `OVIMTraditionalMandarin.cpp` 的 `_punctuation_list`，開啟與觸控「符」相同的
@@ -306,6 +313,8 @@ cd Source\Loaders\Android-IME
       兩套數字符號版面、`ㄋㄧˇ` Backspace 退音及複合 Emoji 一次刪除、
       關聯詞接續與全部關閉、符號／Emoji 各 10 頁及循環翻頁、外接鍵盤
       `Ctrl+Space`／`Ctrl+,`／`Ctrl+.`／`Ctrl+0`／`Ctrl+1` 的
-      smoke test；目前 JVM 單元測試與 APK 建置無法攔截 D8／R8 合成類別漏包及
+      smoke test；另需驗證實體鍵盤浮動候選預設關閉、直橫排列、游標四邊翻轉、
+      不支援 `CursorAnchorInfo` 時的底部中央備援、觸控選字、方向鍵反白、Enter 與 ESC；
+      目前 JVM 單元測試與 APK 建置無法攔截 D8／R8 合成類別漏包及
       `InputConnection` 互動之類的執行期問題；也應截圖檢查底列沒有與系統導覽區重疊，
       並確認直橫式 11 欄按鍵等寬、橫式文字沒有裁切。
