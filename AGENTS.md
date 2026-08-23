@@ -384,6 +384,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   讀者下載。workflow 會拒絕 `chichi77Collection`，只封裝公開詞庫。macOS／Windows
   未簽章，Android 是 debug APK，iOS 只產 Apple Silicon Simulator app；正式簽章、
   notarization、TestFlight 與商店上傳都尚未處理。
+- **GitHub 的 `windows-2025` 目前是 VS2026 image**：2026-08-24 實跑得到
+  `windows-2025-vs2026`，只有 Visual Studio 18 2026；用 `Visual Studio 17 2022`
+  generator 會立即回報找不到 Visual Studio。hosted workflow 必須使用
+  `windows-x64-vs2026` 與 `windows-x86` preset；VS2022 presets 只留給仍安裝
+  Visual Studio 2022 的本機環境。
 - **公開 macOS／iOS cooker 不可假設私人 people 詞庫存在**：
   `DatabaseCooker/Makefile` 只有在 `phrase.people-*.tsv` 存在時才產生人名 exclusion；
   乾淨公開 checkout 必須建立空 exclusion 檔並只匯入 McBopomofo。不要恢復無條件

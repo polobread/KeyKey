@@ -51,25 +51,25 @@ jobs:
       - name: Configure and build x64
         working-directory: Source/Loaders/Windows-TSF
         run: |
-          cmake --preset windows-x64-vs2022 -DKEYKEY_CHICHI77_COLLECTION_DIR=
-          cmake --build --preset windows-x64-vs2022-release
+          cmake --preset windows-x64-vs2026 -DKEYKEY_CHICHI77_COLLECTION_DIR=
+          cmake --build --preset windows-x64-vs2026-release
 
       - name: Test x64
         working-directory: Source/Loaders/Windows-TSF
-        run: ctest --test-dir .\out\build\x64-vs2022 -C Release --output-on-failure
+        run: ctest --test-dir .\out\build\x64-vs2026 -C Release --output-on-failure
 
       - name: Configure and build x86
         working-directory: Source/Loaders/Windows-TSF
         run: |
-          cmake --preset windows-x86-vs2022 -DKEYKEY_CHICHI77_COLLECTION_DIR=
-          cmake --build --preset windows-x86-vs2022-release --target KeyKeyTsf
+          cmake --preset windows-x86 -DKEYKEY_CHICHI77_COLLECTION_DIR=
+          cmake --build --preset windows-x86-release --target KeyKeyTsf
 
       - name: Build unsigned installer archive
         working-directory: Source/Loaders/Windows-TSF
         run: |
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./Package-Windows.ps1 `
-            -BuildDirectory ./out/build/x64-vs2022 `
-            -X86BuildDirectory ./out/build/x86-vs2022 `
+            -BuildDirectory ./out/build/x64-vs2026 `
+            -X86BuildDirectory ./out/build/x86 `
             -Version $env:VERSION
 
       - name: Stage artifact and checksum
