@@ -157,6 +157,24 @@ Debug APK 位於
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
 [Source/Loaders/Android-IME/README.md](Source/Loaders/Android-IME/README.md)。
 
+## 手動 GitHub Actions 封裝
+
+四個 workflow 都只支援從 GitHub Actions 頁面按 **Run workflow** 手動執行；選擇
+要建置的 branch 即可，不需要先建立 tag。一般 commit、pull request 與 tag 不會
+觸發。建置完成後，以下未簽章檔案會以 Actions artifact 保留 7 天：
+
+| Workflow | 產物 | 限制 |
+|---|---|---|
+| Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 未簽章、未 notarize |
+| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip` | 未簽章；內含 x64 與 x86 TSF DLL |
+| Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
+| Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
+
+artifact 另附同名 `.sha256`。workflow 只使用 repository 的公開詞庫，不會載入相鄰
+或私人 `chichi77Collection`，也不會建立或更新 GitHub Release。正式簽章、公證、
+TestFlight 與商店上傳留待後續處理。這是公開 repository，因此 artifact 在 7 天保留
+期間仍可能被 repository 讀者下載。
+
 <a id="english"></a>
 
 ## English
@@ -301,3 +319,24 @@ checkout is present, its 29 categorized collections are included as well. The de
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.
+
+### Manual GitHub Actions packaging
+
+The four packaging workflows run only after **Run workflow** is selected on
+the GitHub Actions page. Choose the branch to build; commits, pull requests,
+and tags do not trigger a run. Successful runs retain these unsigned Actions
+artifacts for seven days:
+
+| Workflow | Output | Limitation |
+|---|---|---|
+| Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Unsigned and not notarized |
+| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip` | Unsigned; includes x64 and x86 TSF DLLs |
+| Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
+| Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
+
+Each output has a matching `.sha256` file. The workflows package only the
+public dictionaries in this repository and never load a sibling or private
+`chichi77Collection`. They do not create or modify GitHub Releases. Production
+signing, notarization, TestFlight, and store upload are intentionally deferred.
+Because the repository is public, readers may still download an artifact
+during its seven-day retention period.

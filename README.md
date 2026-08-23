@@ -23,6 +23,18 @@ Windows、Android 與 iOS 建立現代化 frontend。
 四個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
 
+## 手動 GitHub Actions 建置
+
+`.github/workflows` 內有 macOS、Windows、Android 與 iOS Simulator 四個封裝
+workflow。它們只接受 GitHub Actions 頁面的手動執行；一般 commit、pull request
+與 tag 都不會觸發。選擇要測試的 branch 後執行對應 workflow，完成的未簽章產物會
+以 Actions artifact 保留 7 天，不會建立或更新 GitHub Release。
+公開 repository 的 Actions artifact 在保留期間仍可能被 repository 讀者下載。
+
+目前 Android 產物是 debug APK，iOS 產物只供 Apple Silicon Simulator 使用；
+macOS 與 Windows 安裝包也尚未簽章。完整產物清單與限制見
+[BUILDING.md](BUILDING.md#手動-github-actions-封裝)。
+
 ## 文件
 
 - [BUILDING.md](BUILDING.md)：四平台建置、測試、安裝與打包
@@ -68,6 +80,21 @@ by, or sponsored by Yahoo.**
 
 All four platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
+
+### Manual GitHub Actions builds
+
+The four packaging workflows under `.github/workflows` run only when started
+manually from the GitHub Actions page. Commits, pull requests, and tags do not
+trigger them. Select the branch to test and run the matching workflow; its
+unsigned output is retained as an Actions artifact for seven days and is never
+added to a GitHub Release.
+Because this repository is public, readers may still download an Actions
+artifact during its retention period.
+
+The Android output is currently a debug APK, the iOS output runs only in an
+Apple Silicon Simulator, and the macOS and Windows packages are unsigned. See
+[BUILDING.md](BUILDING.md#manual-github-actions-packaging) for the artifact list
+and limitations.
 
 ### Documentation
 

@@ -30,6 +30,13 @@
       "binaryDir": "${sourceDir}/out/build/x64-vs2022"
     },
     {
+      "name": "windows-x86-vs2022",
+      "displayName": "Windows x86 (Visual Studio 2022)",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "Win32",
+      "binaryDir": "${sourceDir}/out/build/x86-vs2022"
+    },
+    {
       "name": "windows-x86",
       "displayName": "Windows x86 (Visual Studio 2026)",
       "generator": "Visual Studio 18 2026",
@@ -50,6 +57,11 @@
     {
       "name": "windows-x64-vs2022-release",
       "configurePreset": "windows-x64-vs2022",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-x86-vs2022-release",
+      "configurePreset": "windows-x86-vs2022",
       "configuration": "Release"
     },
     {

@@ -1,0 +1,98 @@
+name: Package macOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@v7
+
+      - name: Resolve and verify version
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(sed -nE '1s/^.* ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' README.md)
+          if [[ -z "$version" ]]; then
+            echo "README.md does not end its title with an x.y.z version." >&2
+            exit 1
+          fi
+
+          plists=(
+            Source/Loaders/OSX-IMK/Takao-Info.plist
+            Source/PreferenceApplications/OSX/Info.plist
+            Source/Utilities/PhraseEditor/OSX/Info.plist
+            Source/Distributions/Takao/Installer-OSX-Help/Info.plist
+          )
+          for plist in "${plists[@]}"; do
+            bundle_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")
+            short_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")
+            if [[ "$bundle_version" != "$version" || "$short_version" != "$version" ]]; then
+              echo "$plist has version $bundle_version / $short_version; expected $version." >&2
+              exit 1
+            fi
+          done
+
+          short_sha=$(git rev-parse --short=12 HEAD)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=keykey-macos-$version-$short_sha" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Ensure only public dictionaries are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -e DataSource/chichi77Collection || -e ../chichi77Collection ]]; then
+            echo "Private chichi77Collection data must not be included in public workflow artifacts." >&2
+            exit 1
+          fi
+
+      - name: Install build dependency
+        shell: bash
+        run: brew install openssl@3
+
+      - name: Cook database
+        shell: bash
+        run: make -C Source/Distributions/Takao/DatabaseCooker
+
+      - name: Build input method
+        shell: bash
+        run: |
+          cd Source
+          xcodebuild \
+            -project Takao.xcodeproj \
+            -target "Takao (Loader OSX-IMK)" \
+            -configuration Release \
+            -xcconfig Takao-macOS.xcconfig \
+            build
+
+      - name: Build unsigned installer package
+        shell: bash
+        run: |
+          cd Installer
+          ./build.sh
+
+      - name: Stage artifact and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          output="artifacts/chichi77-KeyKey-$VERSION-macos-arm64.pkg.zip"
+          cp Installer/chichi77KeyKey.pkg.zip "$output"
+          (cd artifacts && shasum -a 256 "$(basename "$output")" > "$(basename "$output").sha256")
+
+      - name: Upload packaged artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 7

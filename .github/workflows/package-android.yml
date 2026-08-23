@@ -1,0 +1,104 @@
+name: Package Android
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@v7
+
+      - name: Resolve build metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(sed -nE '1s/^.* ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' README.md)
+          if [[ -z "$version" ]]; then
+            echo "README.md does not end its title with an x.y.z version." >&2
+            exit 1
+          fi
+
+          IFS=. read -r major minor patch <<< "$version"
+          major=$((10#$major))
+          minor=$((10#$minor))
+          patch=$((10#$patch))
+          if (( major > 2100 || minor > 999 || patch > 999 )); then
+            echo "Version $version cannot be converted safely to an Android versionCode." >&2
+            exit 1
+          fi
+          version_code=$((major * 1000000 + minor * 1000 + patch))
+          if (( version_code < 1 || version_code > 2100000000 )); then
+            echo "Version $version produces an invalid Android versionCode." >&2
+            exit 1
+          fi
+          short_sha=$(git rev-parse --short=12 HEAD)
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=keykey-android-$version-$short_sha" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$version_code" >> "$GITHUB_ENV"
+
+      - name: Ensure only public dictionaries are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -e DataSource/chichi77Collection || -e ../chichi77Collection ]]; then
+            echo "Private chichi77Collection data must not be included in public workflow artifacts." >&2
+            exit 1
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: |
+            Source/Loaders/Android-IME/*.gradle.kts
+            Source/Loaders/Android-IME/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Ensure Android SDK packages are installed
+        shell: bash
+        run: >-
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          "platforms;android-36.1" "build-tools;36.0.0"
+
+      - name: Lint, test, and build debug APK
+        working-directory: Source/Loaders/Android-IME
+        shell: bash
+        run: |
+          ./gradlew --no-daemon \
+            lintDebug testDebugUnitTest assembleDebug \
+            -PkeykeyVersionName="$VERSION" \
+            -PkeykeyVersionCode="$VERSION_CODE"
+
+      - name: Stage and verify artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_apk=Source/Loaders/Android-IME/app/build/outputs/apk/debug/app-debug.apk
+          mkdir -p artifacts
+          output="artifacts/chichi77-KeyKey-$VERSION-android-debug.apk"
+          cp "$source_apk" "$output"
+
+          aapt_path="$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
+          "$aapt_path" dump badging "$output" |
+            grep -F "versionCode='$VERSION_CODE' versionName='$VERSION'" >/dev/null
+          (cd artifacts && sha256sum "$(basename "$output")" > "$(basename "$output").sha256")
+
+      - name: Upload packaged artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 7

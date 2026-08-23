@@ -378,10 +378,27 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   TextEdit）正常，所以這是 Chromium 端行為：keydown 會被 mask 成 `keyCode 229` +
   `isComposing=true`，但 keyup 不經輸入法、原樣送到 DOM，輸入法端攔不到。
   **不要再往本專案查這題。**
+- **GitHub Actions 封裝目前只供手動測包**：四個 `.github/workflows/package-*.yml`
+  都只有 `workflow_dispatch`，一般 commit、PR 與 tag 不會觸發，也不會建立或修改
+  GitHub Release。artifact 保留 7 天；repository 是公開的，所以保留期間仍可能被
+  讀者下載。workflow 會拒絕 `chichi77Collection`，只封裝公開詞庫。macOS／Windows
+  未簽章，Android 是 debug APK，iOS 只產 Apple Silicon Simulator app；正式簽章、
+  notarization、TestFlight 與商店上傳都尚未處理。
+- **公開 macOS／iOS cooker 不可假設私人 people 詞庫存在**：
+  `DatabaseCooker/Makefile` 只有在 `phrase.people-*.tsv` 存在時才產生人名 exclusion；
+  乾淨公開 checkout 必須建立空 exclusion 檔並只匯入 McBopomofo。不要恢復無條件
+  對私人 glob 執行 `awk` 的寫法，否則 hosted runner 會在 cook database 時失敗。
 
 ---
 
 ## TODO
+
+### GitHub Actions
+
+- [ ] 合併後從 GitHub Actions 頁面各手動跑一次 macOS、Windows、Android 與 iOS
+      Simulator workflow，確認 hosted runner 的工具版本及四個 7 天 artifact；本機已用
+      actionlint 1.7.12 驗證 YAML，並完成 Windows x64 測試／x86 建置／ZIP 封裝及
+      Android lint／unit test／APK 建置。
 
 ### macOS
 
@@ -439,9 +456,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       下面的鍵位數字，沒有 iOS 那個 TextKit 行框問題。橫式是
       `primary + " " + secondary` 一行帶過，iOS 橫式也刻意沒放大，要動得先拆成兩次
       `drawText`。
-- [ ] **Enter 鍵改為描邊繪製（`drawEnterKey`）未經編譯驗證** —— 該變更是在沒有
-      Android SDK 的機器上寫的，只有肉眼檢查。下一位動 Android 的人請先
-      `./gradlew assembleDebug` 確認，並截圖比對 Enter 鍵外觀與 iOS 一致。
+- [ ] Enter 鍵描邊繪製（`drawEnterKey`）已於 2026-08-24 通過
+      `lintDebug testDebugUnitTest assembleDebug` 編譯驗證；仍需在模擬器或實機截圖，
+      比對 Enter 鍵外觀與 iOS 一致。
 - [ ] 增加會在模擬器或實機啟動 `BopomofoImeService`，並驗證組字、觸控候選列、
       外接鍵盤一般候選 `1–9`／關聯詞 `Shift+1–9`、一次性注音 Shift、英文大小寫與
       兩套數字符號版面、`ㄋㄧˇ` Backspace 退音及複合 Emoji 一次刪除、

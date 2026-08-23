@@ -27,6 +27,7 @@ COLLECTION_DIR = ../../../../DataSource
 COLLECTION_DISPLAY_NAMES = $(COLLECTION_DIR)/AssociatedPhraseCollectionNames.tsv
 COLLECTIONS = $(COLLECTION_DIR)/McBopomofo/phrase.occ \
 	$(wildcard $(COLLECTION_DIR)/chichi77Collection/phrase.*.tsv)
+PEOPLE_COLLECTIONS = $(wildcard $(COLLECTION_DIR)/chichi77Collection/phrase.people-*.tsv)
 
 SOURCEDIR = ../../../DataTables
 SRC = $(TMPDIR)/bpmf-ext-absorder.cin \
@@ -57,7 +58,11 @@ $(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_CO
 	$(TOOL) $(SOURCEDIR)/bopomofo-correction.cin BopomofoCorrection-bopomofo-correction-cin | $(SQLITE3) $(DB)
 	$(INSERTER) $(DB) $(PREPOPULATE_TABLE_NAME) $(ONEKEY_SERVICE_KEY) $(ONEKEY_DATA_SOURCE)
 	$(INSERTER) $(DB) $(PREPOPULATE_TABLE_NAME) $(CMSG_SERVICE_KEY) $(CMSG_DATA_SOURCE)	
-	@awk -F'\t' 'FNR > 1 { print $$1 }' $(COLLECTION_DIR)/chichi77Collection/phrase.people-*.tsv | sort -u > $(TMPDIR)/exclusions.txt
+	@if [ -n "$(PEOPLE_COLLECTIONS)" ]; then \
+		awk -F'\t' 'FNR > 1 { print $$1 }' $(PEOPLE_COLLECTIONS) | sort -u > $(TMPDIR)/exclusions.txt; \
+	else \
+		: > $(TMPDIR)/exclusions.txt; \
+	fi
 	@for f in $(COLLECTIONS); do \
 		name=`basename $$f | sed -e 's/^phrase\.//' -e 's/\.occ$$//' -e 's/\.tsv$$//'`; \
 		case $$f in */McBopomofo/*) name=McBopomofo;; esac; \

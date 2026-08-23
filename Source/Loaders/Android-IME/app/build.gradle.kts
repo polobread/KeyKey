@@ -2,6 +2,11 @@ plugins {
     id("com.android.application")
 }
 
+val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("0.1.0")
+val keyKeyVersionCode = providers.gradleProperty("keykeyVersionCode")
+    .map(String::toInt)
+    .getOrElse(1)
+
 android {
     namespace = "tw.chichi77.keykey.android"
     compileSdk {
@@ -14,8 +19,8 @@ android {
         applicationId = "tw.chichi77.keykey.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = keyKeyVersionCode
+        versionName = keyKeyVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
