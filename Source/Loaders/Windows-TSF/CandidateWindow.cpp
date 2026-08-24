@@ -13,15 +13,25 @@ constexpr wchar_t kCandidateWindowClass[] = L"chichi77.KeyKey.TSF.CandidateWindo
 constexpr int kHorizontalPadding = 10;
 constexpr int kVerticalPadding = 5;
 constexpr int kRowGap = 2;
+constexpr int kTextGap = 12;
+constexpr int kMinimumWidth = 80;
+constexpr int kAnchorGap = 2;
 
 std::once_flag g_windowClassOnce;
 bool g_windowClassRegistered = false;
+
+int ScaleForDpi(int value, UINT dpi) {
+    return MulDiv(value, static_cast<int>(dpi), USER_DEFAULT_SCREEN_DPI);
+}
 
 }  // namespace
 
 CandidateWindow::~CandidateWindow() {
     if (window_) {
         DestroyWindow(window_);
+    }
+    if (font_) {
+        DeleteObject(font_);
     }
 }
 
@@ -76,58 +86,30 @@ void CandidateWindow::show(HWND owner, const RECT& textRect,
 
     SetWindowLongPtrW(window_, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(owner));
 
-    HDC dc = GetDC(window_);
-    HFONT font = static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
-    HGDIOBJ oldFont = SelectObject(dc, font);
-
-    TEXTMETRICW metrics{};
-    GetTextMetricsW(dc, &metrics);
-    rowHeight_ = metrics.tmHeight + (kVerticalPadding * 2);
-    int contentWidth = 80;
-    cellWidths_.clear();
-    for (const auto& candidate : candidates_) {
-        const std::wstring row = candidate.selectionKey + L"  " + candidate.text;
-        SIZE extent{};
-        GetTextExtentPoint32W(dc, row.c_str(), static_cast<int>(row.size()), &extent);
-        const int cellWidth =
-            static_cast<int>(extent.cx) + (kHorizontalPadding * 2);
-        cellWidths_.push_back(cellWidth);
-        if (horizontal_) {
-            contentWidth += cellWidth + kRowGap;
-        } else {
-            contentWidth = std::max(contentWidth, cellWidth);
-        }
+    UINT dpi = owner ? GetDpiForWindow(owner) : 0;
+    if (!dpi) {
+        dpi = GetDpiForWindow(window_);
     }
-    if (horizontal_) {
-        contentWidth -= 80 + kRowGap;
-    }
-
-    SelectObject(dc, oldFont);
-    ReleaseDC(window_, dc);
-
-    const int width = contentWidth;
-    const int height = horizontal_
-                           ? rowHeight_
-                           : static_cast<int>(candidates_.size()) * rowHeight_ +
-                                 static_cast<int>(candidates_.size() - 1) *
-                                     kRowGap;
+    updateFont(dpi ? dpi : USER_DEFAULT_SCREEN_DPI);
+    const SIZE contentSize = measureContent();
+    const SIZE windowSize = windowSizeForContent(contentSize);
 
     int x = textRect.left;
-    int y = textRect.bottom + 2;
+    int y = textRect.bottom + ScaleForDpi(kAnchorGap, dpi_);
     HMONITOR monitor = MonitorFromRect(&textRect, MONITOR_DEFAULTTONEAREST);
     MONITORINFO monitorInfo{sizeof(monitorInfo)};
     if (GetMonitorInfoW(monitor, &monitorInfo)) {
-        if (x + width > monitorInfo.rcWork.right) {
-            x = monitorInfo.rcWork.right - width;
+        if (x + windowSize.cx > monitorInfo.rcWork.right) {
+            x = monitorInfo.rcWork.right - windowSize.cx;
         }
-        if (y + height > monitorInfo.rcWork.bottom) {
-            y = textRect.top - height - 2;
+        if (y + windowSize.cy > monitorInfo.rcWork.bottom) {
+            y = textRect.top - windowSize.cy - ScaleForDpi(kAnchorGap, dpi_);
         }
         x = std::max(x, static_cast<int>(monitorInfo.rcWork.left));
         y = std::max(y, static_cast<int>(monitorInfo.rcWork.top));
     }
 
-    SetWindowPos(window_, HWND_TOPMOST, x, y, width, height,
+    SetWindowPos(window_, HWND_TOPMOST, x, y, windowSize.cx, windowSize.cy,
                  SWP_NOACTIVATE | SWP_SHOWWINDOW);
     InvalidateRect(window_, nullptr, FALSE);
     NotifyWinEvent(EVENT_OBJECT_IME_SHOW, window_, OBJID_CLIENT, CHILDID_SELF);
@@ -168,6 +150,16 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
         case WM_PAINT:
             paint();
             return 0;
+        case WM_DPICHANGED: {
+            updateFont(HIWORD(wparam));
+            const SIZE windowSize = windowSizeForContent(measureContent());
+            const auto* suggested = reinterpret_cast<const RECT*>(lparam);
+            SetWindowPos(window_, nullptr, suggested->left, suggested->top,
+                         windowSize.cx, windowSize.cy,
+                         SWP_NOACTIVATE | SWP_NOZORDER);
+            InvalidateRect(window_, nullptr, FALSE);
+            return 0;
+        }
         case WM_NCDESTROY: {
             HWND destroyedWindow = window_;
             window_ = nullptr;
@@ -178,6 +170,83 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
     }
 }
 
+void CandidateWindow::updateFont(UINT dpi) {
+    if (font_ && dpi_ == dpi) {
+        return;
+    }
+
+    LOGFONTW logFont{};
+    HFONT stockFont = static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
+    GetObjectW(stockFont, sizeof(logFont), &logFont);
+    logFont.lfHeight = MulDiv(logFont.lfHeight, static_cast<int>(dpi),
+                              USER_DEFAULT_SCREEN_DPI);
+    logFont.lfWidth = MulDiv(logFont.lfWidth, static_cast<int>(dpi),
+                             USER_DEFAULT_SCREEN_DPI);
+
+    HFONT newFont = CreateFontIndirectW(&logFont);
+    if (newFont) {
+        if (font_) {
+            DeleteObject(font_);
+        }
+        font_ = newFont;
+    }
+    dpi_ = dpi;
+}
+
+SIZE CandidateWindow::measureContent() {
+    HDC dc = GetDC(window_);
+    HFONT font = font_ ? font_ : static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
+    HGDIOBJ oldFont = SelectObject(dc, font);
+
+    TEXTMETRICW metrics{};
+    GetTextMetricsW(dc, &metrics);
+    const int horizontalPadding = ScaleForDpi(kHorizontalPadding, dpi_);
+    const int verticalPadding = ScaleForDpi(kVerticalPadding, dpi_);
+    const int rowGap = ScaleForDpi(kRowGap, dpi_);
+    rowHeight_ = metrics.tmHeight + (verticalPadding * 2);
+
+    int contentWidth = ScaleForDpi(kMinimumWidth, dpi_);
+    cellWidths_.clear();
+    for (const auto& candidate : candidates_) {
+        SIZE keyExtent{};
+        GetTextExtentPoint32W(dc, candidate.selectionKey.c_str(),
+                              static_cast<int>(candidate.selectionKey.size()),
+                              &keyExtent);
+        SIZE textExtent{};
+        GetTextExtentPoint32W(dc, candidate.text.c_str(),
+                              static_cast<int>(candidate.text.size()),
+                              &textExtent);
+        const int cellWidth = keyExtent.cx + ScaleForDpi(kTextGap, dpi_) +
+                              textExtent.cx + (horizontalPadding * 2);
+        cellWidths_.push_back(cellWidth);
+        if (horizontal_) {
+            contentWidth += cellWidth + rowGap;
+        } else {
+            contentWidth = std::max(contentWidth, cellWidth);
+        }
+    }
+    if (horizontal_) {
+        contentWidth -= ScaleForDpi(kMinimumWidth, dpi_) + rowGap;
+    }
+
+    SelectObject(dc, oldFont);
+    ReleaseDC(window_, dc);
+
+    const int contentHeight =
+        horizontal_ ? rowHeight_
+                    : static_cast<int>(candidates_.size()) * rowHeight_ +
+                          static_cast<int>(candidates_.size() - 1) * rowGap;
+    return {contentWidth, contentHeight};
+}
+
+SIZE CandidateWindow::windowSizeForContent(const SIZE& content) const {
+    RECT windowRect{0, 0, content.cx, content.cy};
+    AdjustWindowRectExForDpi(&windowRect, WS_POPUP | WS_BORDER, FALSE,
+                             WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, dpi_);
+    return {windowRect.right - windowRect.left,
+            windowRect.bottom - windowRect.top};
+}
+
 void CandidateWindow::paint() {
     PAINTSTRUCT paintStruct{};
     HDC dc = BeginPaint(window_, &paintStruct);
@@ -185,22 +254,25 @@ void CandidateWindow::paint() {
     GetClientRect(window_, &client);
     FillRect(dc, &client, reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1));
 
-    HFONT font = static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
+    HFONT font = font_ ? font_ : static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
     HGDIOBJ oldFont = SelectObject(dc, font);
     SetBkMode(dc, TRANSPARENT);
 
+    const int horizontalPadding = ScaleForDpi(kHorizontalPadding, dpi_);
+    const int rowGap = ScaleForDpi(kRowGap, dpi_);
+    const int textGap = ScaleForDpi(kTextGap, dpi_);
     int horizontalOffset = 0;
     for (size_t index = 0; index < candidates_.size(); ++index) {
         RECT row{};
         if (horizontal_) {
             const int width = index < cellWidths_.size() ? cellWidths_[index] : 80;
             row = {horizontalOffset, 0, horizontalOffset + width, rowHeight_};
-            horizontalOffset += width + kRowGap;
+            horizontalOffset += width + rowGap;
         } else {
             row = {0,
-                   static_cast<LONG>(index * (rowHeight_ + kRowGap)),
+                   static_cast<LONG>(index * (rowHeight_ + rowGap)),
                    client.right,
-                   static_cast<LONG>(index * (rowHeight_ + kRowGap) +
+                   static_cast<LONG>(index * (rowHeight_ + rowGap) +
                                      rowHeight_)};
         }
         const bool highlighted = index == highlightedIndex_;
@@ -218,7 +290,7 @@ void CandidateWindow::paint() {
         }
 
         RECT keyRect = row;
-        keyRect.left += kHorizontalPadding;
+        keyRect.left += horizontalPadding;
         DrawTextW(dc, candidates_[index].selectionKey.c_str(), -1, &keyRect,
                   DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
 
@@ -227,7 +299,7 @@ void CandidateWindow::paint() {
                               static_cast<int>(candidates_[index].selectionKey.size()),
                               &keyExtent);
         RECT textRect = row;
-        textRect.left += kHorizontalPadding + keyExtent.cx + 12;
+        textRect.left += horizontalPadding + keyExtent.cx + textGap;
         DrawTextW(dc, candidates_[index].text.c_str(), -1, &textRect,
                   DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     }

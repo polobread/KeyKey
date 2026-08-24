@@ -230,6 +230,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `PVDefaultEncodingService` 只宣告 UTF-8，會把 TraditionalMandarin 設定的 `BIG-5`
   清空，讓「使用全字庫罕用字」永遠無法關閉。Windows TSF 現在用 CP950 搭配
   `WC_NO_BEST_FIT_CHARS` 判斷候選是否真能以 Big-5 表示，不要改回預設 service。
+- **Windows 候選窗的 DPI 由 host 決定**：TSF DLL 載入應用程式行程，不能呼叫
+  `SetProcessDpiAwareness*` 改掉 host 的 DPI 模式。候選窗以 owner 的
+  `GetDpiForWindow()` 建立對應字型並縮放 padding／間距／邊框，另以
+  `WM_DPICHANGED` 處理跨螢幕移動。DPI-unaware host 會回報 96 DPI 並由系統整體
+  virtualization；不要再乘一次實體螢幕比例，否則會雙重放大。
 - **三平台詞庫顯示名稱以共用 mapping 為準**：唯一來源是
   `DataSource/AssociatedPhraseCollectionNames.tsv`，目前把 `McBopomofo`、`chinese`、
   `general` 顯示為「小麥注音」、「中文文學」、「一般生活」。macOS 的
@@ -433,7 +438,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       `CMakeLists.txt` regex 讀取。
 - [ ] 為 `KeyKeySettings.exe` 增加 UI automation：目前只有啟動 smoke test，仍需人工
       驗證一般／注音／關聯詞三頁、五種注音鍵盤、直橫選字窗、四種配色、Ctrl+\\、
-      提示聲與 CNS11643 開關在實際 TSF host 中會即時套用。
+      提示聲與 CNS11643 開關在實際 TSF host 中會即時套用；候選窗另需在 100%／225%
+      與兩台不同縮放比例的螢幕間移動驗證字型、間距及游標定位。
 - [ ] Ctrl／Alt 快捷鍵放行時，候選或聯想詞面板會留在畫面上（引擎收不到該鍵，
       `updateCandidateWindow` 不會被呼叫）。**與 macOS 現行行為對稱**，屬「快捷鍵
       不改動組字狀態」的設計決定。要改請兩個平台一起改，不要單邊處理。

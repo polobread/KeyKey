@@ -28,12 +28,17 @@ private:
     LRESULT handleMessage(UINT message, WPARAM wparam, LPARAM lparam);
     void paint();
     void ensureWindow(HWND owner);
+    void updateFont(UINT dpi);
+    SIZE measureContent();
+    SIZE windowSizeForContent(const SIZE& content) const;
 
     HWND window_ = nullptr;
+    HFONT font_ = nullptr;
     std::vector<EngineCandidate> candidates_;
     std::vector<int> cellWidths_;
     size_t highlightedIndex_ = 0;
     int rowHeight_ = 0;
+    UINT dpi_ = USER_DEFAULT_SCREEN_DPI;
     bool horizontal_ = false;
     COLORREF highlightColor_ = RGB(128, 0, 128);
 };
