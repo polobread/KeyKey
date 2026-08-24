@@ -383,9 +383,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `isComposing=true`，但 keyup 不經輸入法、原樣送到 DOM，輸入法端攔不到。
   **不要再往本專案查這題。**
 - **公開分類詞庫必須維持匯入界線**：`DataSource/chichi77Collection` 是自動化生成、
-  推論與整理的資料，沒有逐筆人工校正，不可宣稱正確或完整。公開匯入只保留中文字首、
-  2–20 個 Unicode code point 的詞條；中文字首後混有拉丁字母的詞可保留。授權與免責
-  說明在該目錄的 `README.md` 與 `LICENSE.txt`，更新資料時不可覆蓋。
+  推論與整理的資料；長詞拆分於 2026-08-24 做過專項 review，但整體沒有全面逐筆人工
+  校正，不可宣稱正確或完整。公開資料只保留中文字首、2–5 個 Unicode code point 的
+  詞條；較長原詞必須依明確 review 結果選取有意義的連續片段，不可再用統計斷詞器直接
+  拆分。中文字首後混有拉丁字母的詞可保留。授權與免責說明在該目錄的 `README.md` 與
+  `LICENSE.txt`，更新資料時不可覆蓋。
 - **GitHub Actions 封裝目前只供手動測包**：四個 `.github/workflows/package-*.yml`
   都只有 `workflow_dispatch`，一般 commit、PR 與 tag 不會觸發，也不會建立或修改
   GitHub Release。artifact 保留 7 天；repository 是公開的，所以保留期間仍可能被
