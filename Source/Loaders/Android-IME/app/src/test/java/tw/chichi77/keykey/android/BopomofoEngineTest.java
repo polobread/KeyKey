@@ -92,6 +92,20 @@ public final class BopomofoEngineTest {
         assertEquals("ㄋㄧ", engine.readingText());
         assertTrue(engine.displayedCandidates().isEmpty());
         assertTrue(!result.deleteBeforeCursor());
+        assertTrue(!result.discardComposingText());
+        assertEquals("", result.committedText());
+    }
+
+    @Test
+    public void backspaceDiscardsTheLastComposingComponent() throws Exception {
+        BopomofoEngine engine = engineWith("");
+        engine.handleSoftKey("1");
+
+        BopomofoEngine.Result result = engine.backspace();
+
+        assertTrue(engine.readingText().isEmpty());
+        assertTrue(result.discardComposingText());
+        assertTrue(!result.deleteBeforeCursor());
         assertEquals("", result.committedText());
     }
 
@@ -265,11 +279,12 @@ public final class BopomofoEngineTest {
         engine.handleSoftKey("u");
         engine.handleSoftKey("3");
 
-        engine.escape();
+        BopomofoEngine.Result result = engine.escape();
 
         assertTrue(engine.readingText().isEmpty());
         assertTrue(engine.displayedCandidates().isEmpty());
         assertEquals(-1, engine.highlightedIndex());
+        assertTrue(result.discardComposingText());
     }
 
     @Test

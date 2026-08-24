@@ -295,8 +295,15 @@ public final class BopomofoImeService extends InputMethodService
             connection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
         }
 
-        if (engine.readingText().isEmpty()) connection.finishComposingText();
-        else connection.setComposingText(engine.readingText(), 1);
+        if (result.discardComposingText()) {
+            // finishComposingText() preserves the underlined text. Committing an empty
+            // replacement removes the composing region and finishes it in one operation.
+            connection.commitText("", 1);
+        } else if (engine.readingText().isEmpty()) {
+            connection.finishComposingText();
+        } else {
+            connection.setComposingText(engine.readingText(), 1);
+        }
         refreshKeyboard();
     }
 

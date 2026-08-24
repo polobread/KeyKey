@@ -295,7 +295,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **Android Backspace 要以完整文字圖形為單位**：有注音 reading 時由引擎逐步刪除
   聲調、韻母、介音、聲母，候選開啟也不可只關候選而不退音；reading 為空時才由
   `TextDeletion` 計算游標前完整 grapheme 的 UTF-16 長度，讓代理字元、變體選擇符、
-  膚色與 ZWJ Emoji 一次刪乾淨，不要改回固定 `deleteSurroundingText(1, 0)`。
+  膚色與 ZWJ Emoji 一次刪乾淨，不要改回固定 `deleteSurroundingText(1, 0)`。刪掉最後
+  一個注音 component 時也不可呼叫 `finishComposingText()`，因為它只移除 composing
+  樣式並原樣保留 `ㄅ`；引擎必須回報丟棄 composing text，讓 loader 以
+  `commitText("", 1)` 取代並結束 composing region。
 - **Android 外接鍵盤候選列也要保留底部系統區**：候選列依序為 ▲、9 個候選、▼、
   Emoji，直式／橫式分別在下方保留 40dp／35dp，避免 Android 的多國語系地球鍵
   遮住控制項。Emoji 必須在沒有中文字候選時仍可按。所有候選角標都固定顯示 `1–9`；
@@ -510,6 +513,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       `Ctrl+Space`／`Ctrl+,`／`Ctrl+.`／`Ctrl+0`／`Ctrl+1` 的
       smoke test；另需驗證實體鍵盤浮動候選預設關閉、直橫排列、游標四邊翻轉、
       不支援 `CursorAnchorInfo` 時的底部中央備援、觸控選字、方向鍵反白、Enter 與 ESC；
+      2026-08-24 已在 Pixel 9a 的 Google 搜尋欄實測單一 composing `ㄅ` 按 Backspace
+      會完整移除、不會留下失去底線的 `ㄅ`；
       目前 JVM 單元測試與 APK 建置無法攔截 D8／R8 合成類別漏包及
       `InputConnection` 互動之類的執行期問題；也應截圖檢查底列沒有與系統導覽區重疊，
       並確認直橫式 11 欄按鍵等寬、橫式文字沒有裁切。

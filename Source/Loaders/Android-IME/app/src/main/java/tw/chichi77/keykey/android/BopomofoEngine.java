@@ -32,21 +32,26 @@ final class BopomofoEngine {
         private final String committedText;
         private final boolean deleteBeforeCursor;
         private final boolean sendEnter;
+        private final boolean discardComposingText;
 
-        Result(String committedText, boolean deleteBeforeCursor, boolean sendEnter) {
+        Result(String committedText, boolean deleteBeforeCursor, boolean sendEnter,
+                boolean discardComposingText) {
             this.committedText = committedText;
             this.deleteBeforeCursor = deleteBeforeCursor;
             this.sendEnter = sendEnter;
+            this.discardComposingText = discardComposingText;
         }
 
         String committedText() { return committedText; }
         boolean deleteBeforeCursor() { return deleteBeforeCursor; }
         boolean sendEnter() { return sendEnter; }
+        boolean discardComposingText() { return discardComposingText; }
 
-        static Result update() { return new Result("", false, false); }
-        static Result commit(String text) { return new Result(text, false, false); }
-        static Result delete() { return new Result("", true, false); }
-        static Result enter() { return new Result("", false, true); }
+        static Result update() { return new Result("", false, false, false); }
+        static Result commit(String text) { return new Result(text, false, false, false); }
+        static Result delete() { return new Result("", true, false, false); }
+        static Result enter() { return new Result("", false, true, false); }
+        static Result discardComposition() { return new Result("", false, false, true); }
     }
 
     private final CinDictionary dictionary;
@@ -94,11 +99,11 @@ final class BopomofoEngine {
 
     Result toggleHardwareLanguage() {
         prepareForHardwareInput();
-        clearComposition();
+        boolean hadReading = clearComposition();
         inputMode = inputMode == InputMode.BOPOMOFO
                 ? InputMode.ENGLISH : InputMode.BOPOMOFO;
         shifted = false;
-        return Result.update();
+        return hadReading ? Result.discardComposition() : Result.update();
     }
 
     Result commitHardwarePunctuation(String punctuation) {
@@ -142,14 +147,13 @@ final class BopomofoEngine {
         if (!reading.isEmpty()) {
             reading.backspace();
             page = 0;
-            return Result.update();
+            return reading.isEmpty() ? Result.discardComposition() : Result.update();
         }
         return Result.delete();
     }
 
     Result escape() {
-        clearComposition();
-        return Result.update();
+        return clearComposition() ? Result.discardComposition() : Result.update();
     }
 
     Result selectDisplayedCandidate(int displayedIndex) {
@@ -264,7 +268,7 @@ final class BopomofoEngine {
             reading.combine(key);
             Result result = reading.hasTone() ? query() : Result.update();
             if (!prefix.isEmpty()) {
-                return new Result(prefix + result.committedText(), false, false);
+                return new Result(prefix + result.committedText(), false, false, false);
             }
             return result;
         }
@@ -301,11 +305,11 @@ final class BopomofoEngine {
     }
 
     private Result cycleInputMode() {
-        clearComposition();
+        boolean hadReading = clearComposition();
         if (temporaryEnglish) {
             temporaryEnglish = false;
             shifted = false;
-            return Result.update();
+            return hadReading ? Result.discardComposition() : Result.update();
         }
         inputMode = switch (inputMode) {
             case BOPOMOFO -> InputMode.ENGLISH;
@@ -313,11 +317,11 @@ final class BopomofoEngine {
             case NUMBER -> InputMode.BOPOMOFO;
         };
         shifted = false;
-        return Result.update();
+        return hadReading ? Result.discardComposition() : Result.update();
     }
 
     private Result touchShift() {
-        clearComposition();
+        boolean hadReading = clearComposition();
         if (temporaryEnglish) {
             endTemporaryEnglish();
         } else if (inputMode == InputMode.BOPOMOFO) {
@@ -329,7 +333,7 @@ final class BopomofoEngine {
         } else {
             shifted = !shifted;
         }
-        return Result.update();
+        return hadReading ? Result.discardComposition() : Result.update();
     }
 
     private void endTemporaryEnglish() {
@@ -339,26 +343,28 @@ final class BopomofoEngine {
     }
 
     private Result symbols() {
-        clearComposition();
+        boolean hadReading = clearComposition();
         candidates = SYMBOLS;
         showingAssociatedPhrases = false;
         highlightedIndex = 0;
-        return Result.update();
+        return hadReading ? Result.discardComposition() : Result.update();
     }
 
     private Result emojis() {
-        clearComposition();
+        boolean hadReading = clearComposition();
         candidates = EMOJIS;
         showingAssociatedPhrases = false;
         highlightedIndex = 0;
-        return Result.update();
+        return hadReading ? Result.discardComposition() : Result.update();
     }
 
-    private void clearComposition() {
+    private boolean clearComposition() {
+        boolean hadReading = !reading.isEmpty();
         reading.clear();
         candidates = List.of();
         page = 0;
         highlightedIndex = 0;
         showingAssociatedPhrases = false;
+        return hadReading;
     }
 }
