@@ -46,15 +46,6 @@ jobs:
           echo "artifact_name=keykey-macos-$version-$short_sha" >> "$GITHUB_OUTPUT"
           echo "VERSION=$version" >> "$GITHUB_ENV"
 
-      - name: Ensure only public dictionaries are present
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -e DataSource/chichi77Collection || -e ../chichi77Collection ]]; then
-            echo "Private chichi77Collection data must not be included in public workflow artifacts." >&2
-            exit 1
-          fi
-
       - name: Install build dependency
         shell: bash
         run: brew install openssl@3

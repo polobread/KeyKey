@@ -51,8 +51,14 @@ packages.
   [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) or their own license files.
 - Product names, logos, and application icons are not licensed by this map.
   Open-source software licenses do not grant trademark rights.
-- The separately maintained private `chichi77Collection` is not part of this
-  repository and is not covered by any repository license.
+- `DataSource/chichi77Collection` is released under its own MIT License. That
+  license applies only to material the copyright holder can license, including
+  original selection, classification, and arrangement where copyrightable. No
+  exclusive rights are claimed in common expressions, facts, public-domain
+  material, or other uncopyrightable content. The collection was generated,
+  inferred, and normalized automatically, has not been reviewed or corrected
+  item by item, and is provided without any guarantee of accuracy or
+  completeness.
 
 ## New macOS loader files
 

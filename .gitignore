@@ -4,7 +4,6 @@
 *.pkg.zip
 .idea/
 .vs/
-DataSource/chichi77Collection/
 Source/Loaders/Windows-TSF/out/
 Source/Loaders/Android-IME/.gradle/
 Source/Loaders/Android-IME/build/

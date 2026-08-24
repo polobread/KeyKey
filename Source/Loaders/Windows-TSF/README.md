@@ -37,14 +37,11 @@ is not linked into this DLL.
 No Ruby, GNU Make, `awk`, `sed`, or standalone `sqlite3` program is required.
 When the legacy cooked database is absent, CMake builds the new native C++
 `KeyKeyDatabaseCooker` and creates `Databases\KeyKey.db` from the repository's
-CIN tables and open associated-phrase source. If the private
-`chichi77Collection` repository is checked out beside KeyKey, its phrase files
-are included automatically. The legacy cooker remains unchanged.
-
-The private collection defaults to `..\chichi77Collection`. Override it with
-`-DKEYKEY_CHICHI77_COLLECTION_DIR=C:\path\to\chichi77Collection`, or point it at a
-nonexistent directory to build only from open data. Private collection data is
-not part of this repository or its open-source licence.
+CIN tables and public associated-phrase sources, including all 29 categorized
+collections in `DataSource\chichi77Collection`. The legacy cooker remains
+unchanged. The categorized data was generated, inferred, and normalized
+automatically, has not been reviewed item by item, and is not guaranteed to be
+accurate or complete.
 
 To deploy a database cooked elsewhere instead, pass
 `-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.
@@ -127,8 +124,7 @@ The installer adds the input method to the current user's `Win+Space` list;
 sign out and back in if it does not appear immediately. The package is unsigned
 and is intended for trusted home testing; Windows may warn after a download.
 ARM64 is not part of the currently verified or published package. Its preset
-and packaging option are retained for future bring-up. A package whose database
-includes `chichi77Collection` must only be shared with authorized users.
+and packaging option are retained for future bring-up.
 
 ## Deployment layout
 

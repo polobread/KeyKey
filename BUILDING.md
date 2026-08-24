@@ -30,17 +30,11 @@ DatabaseCooker 會產生
 目前 macOS build 僅支援 arm64。若要製作 universal binary，需要另行準備
 x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 
-### 私人詞庫
+### 分類關聯詞詞庫
 
-經授權的 build 可將獨立的 `chichi77Collection` repository 放在 KeyKey 同層，
-並從 KeyKey 根目錄建立本機 symlink：
-
-```sh
-ln -s ../../chichi77Collection DataSource/chichi77Collection
-```
-
-此 symlink 已被 Git 忽略。私人詞庫不屬於 KeyKey repository，也不包含在本專案
-的開源授權內。
+`DataSource/chichi77Collection` 已納入公開 repository，macOS DatabaseCooker 會固定
+把其中 29 份 TSV 寫入 `KeyKey.db`，不需私人 checkout、symlink 或 secret。這些資料
+由自動化方式生成、推論與整理，沒有逐筆人工校正，也不保證正確性或完整性。
 
 ### 安裝包
 
@@ -81,12 +75,8 @@ out\build\x64-ninja\KeyKeySettings.exe
 out\build\x64-ninja\Databases\KeyKey.db
 ```
 
-若 KeyKey 同層存在 `chichi77Collection`，建置時會自動納入其中的詞庫。若詞庫在
-其他位置，可在 CMake configure 時加入：
-
-```powershell
--DKEYKEY_CHICHI77_COLLECTION_DIR=C:\path\to\chichi77Collection
-```
+Windows DatabaseCooker 會固定納入公開 repository 內
+`DataSource/chichi77Collection` 的 29 份分類詞庫，不需另設 CMake 路徑。
 
 ### 本機註冊
 
@@ -130,8 +120,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 
 Windows x64 套件會同時安裝 x64 與 x86 TSF DLL，因此也可在 32-bit Office 中輸入。
 ARM64 preset 與打包選項目前僅保留供未來移植，尚未驗證，也不在目前發佈套件內。
-DLL 架構必須和載入它的應用程式架構相同。若資料庫含有
-私人 `chichi77Collection`，只應交給有權使用該資料的人。
+DLL 架構必須和載入它的應用程式架構相同。
 
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
@@ -150,8 +139,9 @@ cd Source\Loaders\Android-IME
 ```
 
 建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
-`bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫。
-若 KeyKey 同層有經授權的 `chichi77Collection`，也會加入其中 29 個分類詞庫。
+`bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫，另固定
+加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。Android 仍直接把這些
+TSV 複製為 generated assets，不另轉為專用二進位格式。
 Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
@@ -170,8 +160,8 @@ Debug APK 位於
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 
-artifact 另附同名 `.sha256`。workflow 只使用 repository 的公開詞庫，不會載入相鄰
-或私人 `chichi77Collection`，也不會建立或更新 GitHub Release。正式簽章、公證、
+artifact 另附同名 `.sha256`。workflow 會封裝 repository 內全部公開詞庫，不需要
+私人 repository 或 secret，也不會建立或更新 GitHub Release。正式簽章、公證、
 TestFlight 與商店上傳留待後續處理。這是公開 repository，因此 artifact 在 7 天保留
 期間仍可能被 repository 讀者下載。
 
@@ -203,17 +193,13 @@ is bundled into `chichi77 KeyKey.app`. The current configuration is arm64-only;
 a universal build requires a separate x86_64 OpenSSL build and an xcconfig
 change.
 
-An authorized build can expose the separately maintained private collection to
-the legacy cooker by placing `chichi77Collection` beside KeyKey and running
-this from the KeyKey repository root:
-
-```sh
-ln -s ../../chichi77Collection DataSource/chichi77Collection
-```
-
-The symlink is ignored by Git. The private collection is not part of KeyKey or
-its open-source license. See [Installer/README.md](Installer/README.md) for
-macOS packaging, local installation, signing, and notarization.
+The public `DataSource/chichi77Collection` directory is included in the
+repository. The macOS DatabaseCooker always writes its 29 TSV collections into
+`KeyKey.db`; no private checkout, symlink, or secret is required. This data was
+generated, inferred, and normalized automatically, has not been reviewed item by
+item, and is not guaranteed to be accurate or complete. See
+[Installer/README.md](Installer/README.md) for macOS packaging, local
+installation, signing, and notarization.
 
 ### Windows 11
 
@@ -249,12 +235,8 @@ out\build\x64-ninja\KeyKeySettings.exe
 out\build\x64-ninja\Databases\KeyKey.db
 ```
 
-A sibling `chichi77Collection` is detected automatically. Override its location
-during CMake configuration with:
-
-```powershell
--DKEYKEY_CHICHI77_COLLECTION_DIR=C:\path\to\chichi77Collection
-```
+The Windows DatabaseCooker always includes the 29 public categorized collections
+from `DataSource/chichi77Collection`; no separate CMake path is required.
 
 #### Register a development build
 
@@ -296,8 +278,7 @@ Sign out and back in if it does not appear immediately.
 
 The home-testing package is unsigned, so Windows may warn about a downloaded
 copy. The ARM64 preset and packaging option are retained for future bring-up,
-but ARM64 is not currently verified or published. Distribute a database
-containing the private `chichi77Collection` only to authorized users.
+but ARM64 is not currently verified or published.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.
@@ -314,8 +295,9 @@ cd Source\Loaders\Android-IME
 
 The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
 `Source/DataTables` directory and adds the base associated-phrase collection
-from `DataSource/McBopomofo`. When an authorized sibling `chichi77Collection`
-checkout is present, its 29 categorized collections are included as well. The debug APK is written to
+from `DataSource/McBopomofo` plus all 29 public categorized collections from
+`DataSource/chichi77Collection`. Android copies the TSV files as generated assets
+and does not convert them to a custom binary format. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.
@@ -334,9 +316,9 @@ artifacts for seven days:
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 
-Each output has a matching `.sha256` file. The workflows package only the
-public dictionaries in this repository and never load a sibling or private
-`chichi77Collection`. They do not create or modify GitHub Releases. Production
+Each output has a matching `.sha256` file. The workflows package all public
+dictionaries in this repository and require no private repository or secret.
+They do not create or modify GitHub Releases. Production
 signing, notarization, TestFlight, and store upload are intentionally deferred.
 Because the repository is public, readers may still download an artifact
 during its seven-day retention period.

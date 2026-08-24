@@ -50,8 +50,10 @@ macOS 與 Windows 安裝包也尚未簽章。完整產物清單與限制見
 
 ## 詞庫與限制
 
-公開 repository 內含 McBopomofo 以 MIT License 釋出的字音與詞頻資料。私人
-`chichi77Collection` 在獨立 repository 維護，不屬於本專案或其開源授權。
+公開 repository 內含 McBopomofo 的字音與詞頻資料，以及 29 份以 MIT License
+釋出的分類關聯詞詞庫。分類詞庫由自動化方式生成、推論與整理，沒有逐筆人工校正，
+可能含有錯誤；不保證正確性或完整性，詳見
+[`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
 智慧注音所需的中研院語料未包含在 Yahoo 的開源釋出中，因此目前不啟用。
 
@@ -114,11 +116,14 @@ and limitations.
 
 ### Data and limitations
 
-The public repository includes McBopomofo mappings and frequency data under
-the MIT License. The private `chichi77Collection` is maintained separately and
-is not covered by this repository's open-source license. Smart Mandarin remains
-disabled because the required Sinica corpus was not included in Yahoo's source
-release.
+The public repository includes McBopomofo mappings and frequency data and 29
+categorized associated-phrase collections under the MIT License. The categorized
+data was generated, inferred, and normalized automatically, has not been reviewed
+item by item, and may contain errors. Accuracy and completeness are not
+guaranteed; see
+[`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md).
+Smart Mandarin remains disabled because the required Sinica corpus was not
+included in Yahoo's source release.
 
 ## License
 

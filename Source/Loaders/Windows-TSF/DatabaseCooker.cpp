@@ -558,11 +558,11 @@ void Verify(Database& database,
 }
 
 std::vector<fs::path> CollectionPaths(const fs::path& dataRoot,
-                                      const fs::path& privateCollectionRoot) {
+                                      const fs::path& categorizedCollectionRoot) {
     std::vector<fs::path> paths;
     paths.push_back(dataRoot / "McBopomofo" / "phrase.occ");
-    if (fs::is_directory(privateCollectionRoot)) {
-        for (const auto& entry : fs::directory_iterator(privateCollectionRoot)) {
+    if (fs::is_directory(categorizedCollectionRoot)) {
+        for (const auto& entry : fs::directory_iterator(categorizedCollectionRoot)) {
             if (!entry.is_regular_file()) continue;
             const std::string filename = entry.path().filename().u8string();
             if (filename.rfind("phrase.", 0) == 0 && entry.path().extension() == ".tsv") {
@@ -575,7 +575,7 @@ std::vector<fs::path> CollectionPaths(const fs::path& dataRoot,
 }
 
 void Cook(const fs::path& sourceRoot, const fs::path& dataRoot,
-          const fs::path& privateCollectionRoot,
+          const fs::path& categorizedCollectionRoot,
           const fs::path& outputPath) {
     fs::create_directories(outputPath.parent_path());
     std::error_code removeError;
@@ -609,8 +609,8 @@ void Cook(const fs::path& sourceRoot, const fs::path& dataRoot,
 
     const auto displayNames = LoadCollectionDisplayNames(
         dataRoot / "AssociatedPhraseCollectionNames.tsv");
-    const std::set<std::string> exclusions = LoadExclusions(privateCollectionRoot);
-    for (const fs::path& collection : CollectionPaths(dataRoot, privateCollectionRoot)) {
+    const std::set<std::string> exclusions = LoadExclusions(categorizedCollectionRoot);
+    for (const fs::path& collection : CollectionPaths(dataRoot, categorizedCollectionRoot)) {
         const bool isMcBopomofo = collection.parent_path().filename() == "McBopomofo";
         ImportCollection(database, collection, isMcBopomofo,
                          isMcBopomofo ? exclusions : std::set<std::string>(),
@@ -626,7 +626,7 @@ void Cook(const fs::path& sourceRoot, const fs::path& dataRoot,
 int main(int argc, char* argv[]) {
     if (argc != 5) {
         std::cerr << "Usage: KeyKeyDatabaseCooker <Source directory> "
-                     "<DataSource directory> <private collection directory> "
+                     "<DataSource directory> <categorized collection directory> "
                      "<output KeyKey.db>\n";
         return 2;
     }

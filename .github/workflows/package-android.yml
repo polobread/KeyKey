@@ -47,15 +47,6 @@ jobs:
           echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "VERSION_CODE=$version_code" >> "$GITHUB_ENV"
 
-      - name: Ensure only public dictionaries are present
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -e DataSource/chichi77Collection || -e ../chichi77Collection ]]; then
-            echo "Private chichi77Collection data must not be included in public workflow artifacts." >&2
-            exit 1
-          fi
-
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:

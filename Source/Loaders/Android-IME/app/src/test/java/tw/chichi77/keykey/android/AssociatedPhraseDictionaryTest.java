@@ -65,7 +65,7 @@ public final class AssociatedPhraseDictionaryTest {
     }
 
     @Test
-    public void generatedAssetsContainBaseAndOptionalPrivateCollections() throws Exception {
+    public void generatedAssetsContainAllPublicCollections() throws Exception {
         File directory = new File(System.getProperty("keykey.associated.collections"));
         File base = new File(directory, "McBopomofo.occ");
         assertTrue(base.isFile());
@@ -73,8 +73,8 @@ public final class AssociatedPhraseDictionaryTest {
         File[] files = directory.listFiles(file ->
                 file.getName().equals("McBopomofo.occ")
                         || file.getName().matches("phrase\\..+\\.tsv"));
-        assertEquals(new File(directory, "phrase.software.tsv").isFile() ? 30 : 1,
-                files == null ? 0 : files.length);
+        assertEquals(30, files == null ? 0 : files.length);
+        assertTrue(new File(directory, "phrase.software.tsv").isFile());
 
         Map<String, List<String>> parsed;
         try (FileInputStream stream = new FileInputStream(base)) {

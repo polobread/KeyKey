@@ -78,9 +78,10 @@ cd Source\Loaders\Android-IME
 .\gradlew.bat test assembleDebug
 ```
 
-基本小麥注音詞庫取自 `DataSource/McBopomofo/phrase.occ`。若 KeyKey 同層有經授權的
-`chichi77Collection`，建置會自動再加入其中 29 個 `phrase.*.tsv`；缺少該目錄時
-仍可建置，但設定頁只會列出小麥注音。含私人分類詞庫的 APK 只能提供給有權使用資料的人。
+基本小麥注音詞庫取自 `DataSource/McBopomofo/phrase.occ`，另會固定加入
+`DataSource/chichi77Collection` 的 29 個公開分類詞庫。這些 TSV 會直接成為 generated
+assets，Android 執行時仍以文字格式解析，不另製作專用二進位格式。分類詞庫由自動化
+方式生成、推論與整理，沒有逐筆人工校正，也不保證正確性或完整性。
 
 APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。
 
@@ -97,5 +98,5 @@ APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。
 
 本目錄的原創 Android frontend 程式碼以 MIT License 釋出，著作權為
 Copyright (c) 2026 Chui-Ping Cheng。Gradle wrapper、建置時複製的共用字表、
-McBopomofo 詞庫及私人詞庫維持各自原授權。完整範圍見本目錄的 `LICENSE.txt`
+McBopomofo 詞庫及公開分類詞庫維持各自原授權。完整範圍見本目錄的 `LICENSE.txt`
 與 repository 根目錄的 `LICENSING.md`。

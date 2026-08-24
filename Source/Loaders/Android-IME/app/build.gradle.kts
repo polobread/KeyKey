@@ -46,7 +46,8 @@ val generateBopomofoAssets by tasks.registering(Copy::class) {
     into(layout.buildDirectory.dir("generated/bopomofoAssets"))
 }
 
-val privateCollectionDirectory = layout.projectDirectory.dir("../../../../../chichi77Collection")
+val categorizedCollectionDirectory =
+    layout.projectDirectory.dir("../../../../DataSource/chichi77Collection")
 val generatedCollectionDirectory =
     layout.buildDirectory.dir("generated/bopomofoAssets/collections")
 
@@ -57,7 +58,7 @@ val generateAssociatedPhraseAssets by tasks.registering(Sync::class) {
     from(layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ")) {
         rename { "McBopomofo.occ" }
     }
-    from(privateCollectionDirectory) {
+    from(categorizedCollectionDirectory) {
         include("phrase.*.tsv")
     }
     into(generatedCollectionDirectory)

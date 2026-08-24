@@ -10,6 +10,6 @@ this directory are licensed under the MIT License. The license text is at
 
 The Gradle wrapper and generated Gradle JVM criteria retain their upstream
 licenses. Generated assets copied from Source/DataTables,
-DataSource/McBopomofo, or an authorized private collection retain their source
-licenses. Product names, logos, and application icons are not licensed by
-this notice. See ../../../LICENSING.md for the repository-wide scope map.
+DataSource/McBopomofo, or DataSource/chichi77Collection retain their source
+licenses. Product names, logos, and application icons are not licensed by this
+notice. See ../../../LICENSING.md for the repository-wide scope map.

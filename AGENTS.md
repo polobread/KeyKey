@@ -87,7 +87,7 @@ grep -n 'Version = ' Source/Loaders/Windows-TSF/Package-Windows.ps1
 | `Source/DataTables/*.cin` | 兩平台（各自的 DatabaseCooker） |
 | `Source/Loaders/OSX-IMK/` | 僅 macOS |
 | `Source/Loaders/Windows-TSF/` | 僅 Windows |
-| `Source/Loaders/Android-IME/` | 僅 Android；建置時唯讀 `Source/DataTables`、`DataSource/McBopomofo` 與可選的相鄰私人詞庫 |
+| `Source/Loaders/Android-IME/` | 僅 Android；建置時唯讀 `Source/DataTables`、`DataSource/McBopomofo` 與公開的 `DataSource/chichi77Collection` |
 | `Source/Loaders/iOS-Keyboard/` | 僅 iOS；建置時把已 cook 好的 `KeyKey.db` 打包進 extension |
 | `Source/Branding/enter.svg` | Android 與 iOS 兩個觸控鍵盤（各自照座標描邊，不直接讀檔） |
 
@@ -153,8 +153,8 @@ cd Source\Loaders\Android-IME
 - `bpmf-ext.cin` 與 `bpmf-punctuations.cin` 由 `generateBopomofoAssets` 在建置時
   從共用 `Source/DataTables` 複製，不要在 app 內另存一份。
 - 關聯詞由 `generateAssociatedPhraseAssets` 從 `DataSource/McBopomofo/phrase.occ`
-  與可選的相鄰 `chichi77Collection/phrase.*.tsv` 複製到 generated assets；私人詞庫
-  不在 KeyKey 版控內，含私人資料的 APK 只能交給有權使用的人。
+  與公開的 `DataSource/chichi77Collection/phrase.*.tsv` 複製到 generated assets；
+  Android 仍在執行時解析文字資產，不另轉為專用二進位格式。
 
 ### iOS
 
@@ -239,7 +239,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `DataSource/AssociatedPhraseCollectionNames.tsv`，目前把 `McBopomofo`、`chinese`、
   `general` 顯示為「小麥注音」、「中文文學」、「一般生活」。macOS 的
   `collection-name.rb`、Windows 的 `DatabaseCooker.cpp` 與 Android generated assets
-  都必須讀同一檔；不要修改私人 TSV 的分類欄位，也不要在 frontend 另寫名稱常數。
+  都必須讀同一檔；不要修改分類 TSV 的分類欄位，也不要在 frontend 另寫名稱常數。
 - **Android 主程式不要用 Java `record`**：AGP 9.2.0 曾把 record 轉譯成
   `com.android.tools.r8.RecordTag`，卻未把該合成類別包進 debug APK；Android 17
   會在建立 `BopomofoImeService` 時以 `NoClassDefFoundError` 崩潰。`assembleDebug`
@@ -299,11 +299,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   macOS `OVIMTraditionalMandarin.cpp` 的 `_punctuation_list`，開啟與觸控「符」相同的
   90 個符號候選。組字 reading 尚未清空時，標點與符號快捷鍵須保留 reading，不可
   丟掉使用者正在組的注音。快捷鍵的 keydown 與 keyup 都要吃掉，長按不可重複觸發。
-- **Android 關聯詞庫是可選的 30 個文字資產**：`generateAssociatedPhraseAssets` 固定
-  從 `DataSource/McBopomofo/phrase.occ` 加入顯示為「小麥注音」的基本詞庫；若
-  KeyKey 同層存在經授權的
-  `chichi77Collection`，再加入 29 個 `phrase.*.tsv`。不要把私人資料複製進 KeyKey
-  原始碼。設定首次預設 `McBopomofo`，但 SharedPreferences 已存在空集合時代表使用者
+- **Android 關聯詞庫是固定 30 個文字資產**：`generateAssociatedPhraseAssets` 從
+  `DataSource/McBopomofo/phrase.occ` 加入顯示為「小麥注音」的基本詞庫，再從公開的
+  `DataSource/chichi77Collection` 加入 29 個 `phrase.*.tsv`。設定首次預設
+  `McBopomofo`，但 SharedPreferences 已存在空集合時代表使用者
   刻意全部關閉，不能偷偷恢復預設。基本詞庫中與三個 `people-*` 詞庫重疊的人名必須先排除，
   否則關閉人名詞庫仍會漏出候選。
 - **Android 關聯詞只在確定單一中文字後開啟**：候選內容是已輸入首字後的詞尾，
@@ -383,10 +382,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   TextEdit）正常，所以這是 Chromium 端行為：keydown 會被 mask 成 `keyCode 229` +
   `isComposing=true`，但 keyup 不經輸入法、原樣送到 DOM，輸入法端攔不到。
   **不要再往本專案查這題。**
+- **公開分類詞庫必須維持匯入界線**：`DataSource/chichi77Collection` 是自動化生成、
+  推論與整理的資料，沒有逐筆人工校正，不可宣稱正確或完整。公開匯入只保留中文字首、
+  2–20 個 Unicode code point 的詞條；中文字首後混有拉丁字母的詞可保留。授權與免責
+  說明在該目錄的 `README.md` 與 `LICENSE.txt`，更新資料時不可覆蓋。
 - **GitHub Actions 封裝目前只供手動測包**：四個 `.github/workflows/package-*.yml`
   都只有 `workflow_dispatch`，一般 commit、PR 與 tag 不會觸發，也不會建立或修改
   GitHub Release。artifact 保留 7 天；repository 是公開的，所以保留期間仍可能被
-  讀者下載。workflow 會拒絕 `chichi77Collection`，只封裝公開詞庫。macOS／Windows
+  讀者下載。workflow 會封裝包含 `chichi77Collection` 在內的全部公開詞庫。macOS／Windows
   未簽章，Android 是 debug APK，iOS 只產 Apple Silicon Simulator app；正式簽章、
   notarization、TestFlight 與商店上傳都尚未處理。
 - **GitHub 的 `windows-2025` 目前是 VS2026 image**：2026-08-24 實跑得到
@@ -404,10 +407,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `git ls-files -s Source/Loaders/Android-IME/gradlew` 確認模式是 `100755`。若變成
   `100644`，Ubuntu runner 執行 `./gradlew` 會立刻以 exit 126／Permission denied
   失敗；用 `git add --chmod=+x Source/Loaders/Android-IME/gradlew` 修復。
-- **公開 macOS／iOS cooker 不可假設私人 people 詞庫存在**：
-  `DatabaseCooker/Makefile` 只有在 `phrase.people-*.tsv` 存在時才產生人名 exclusion；
-  乾淨公開 checkout 必須建立空 exclusion 檔並只匯入 McBopomofo。不要恢復無條件
-  對私人 glob 執行 `awk` 的寫法，否則 hosted runner 會在 cook database 時失敗。
+- **macOS／iOS cooker 的 people exclusion 來自公開分類詞庫**：
+  `DatabaseCooker/Makefile` 會從 `DataSource/chichi77Collection/phrase.people-*.tsv`
+  產生人名 exclusion，再匯入 McBopomofo 與 29 個分類詞庫。不要移除檔案存在時才執行
+  `awk` 的保護；資料目錄暫時不完整時仍應能產生空 exclusion，避免錯誤訊息誤導。
 
 ---
 
@@ -416,7 +419,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 ### GitHub Actions
 
 - [ ] 合併後從 GitHub Actions 頁面各手動跑一次 macOS、Windows、Android 與 iOS
-      Simulator workflow，確認 hosted runner 的工具版本及四個 7 天 artifact；本機已用
+      Simulator workflow，確認 hosted runner 的工具版本、四個 7 天 artifact 與公開
+      `chichi77Collection` 都被封裝；本機已用
       actionlint 1.7.12 驗證 YAML，並完成 Windows x64 測試／x86 建置／ZIP 封裝及
       Android lint／unit test／APK 建置。第一次 hosted Windows run 因 runner 已改為
       VS2026 失敗，第一次 Android run 因 `setup-java` cache 掃到循環 symlink 失敗；

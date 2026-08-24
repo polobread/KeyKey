@@ -41,17 +41,10 @@ jobs:
           "artifact_name=keykey-windows-$version-$shortSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Ensure only public dictionaries are present
-        run: |
-          if ((Test-Path -LiteralPath DataSource/chichi77Collection) -or
-              (Test-Path -LiteralPath ../chichi77Collection)) {
-              throw 'Private chichi77Collection data must not be included in public workflow artifacts.'
-          }
-
       - name: Configure and build x64
         working-directory: Source/Loaders/Windows-TSF
         run: |
-          cmake --preset windows-x64-vs2026 -DKEYKEY_CHICHI77_COLLECTION_DIR=
+          cmake --preset windows-x64-vs2026
           cmake --build --preset windows-x64-vs2026-release
 
       - name: Test x64
@@ -61,7 +54,7 @@ jobs:
       - name: Configure and build x86
         working-directory: Source/Loaders/Windows-TSF
         run: |
-          cmake --preset windows-x86 -DKEYKEY_CHICHI77_COLLECTION_DIR=
+          cmake --preset windows-x86
           cmake --build --preset windows-x86-release --target KeyKeyTsf
 
       - name: Build unsigned installer archive

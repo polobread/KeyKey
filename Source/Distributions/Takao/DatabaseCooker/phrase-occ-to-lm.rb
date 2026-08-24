@@ -15,7 +15,7 @@ require "set"
 STDOUT.set_encoding(Encoding::UTF_8)
 
 # Two input shapes. phrase.occ is "word count" separated by spaces;
-# chichi77Collection's files are tab-separated with a header, where the first two
+# Categorized collection files are tab-separated with a header, where the first two
 # columns are the word and its count and the rest is reading and category.
 
 if ARGV.size < 1

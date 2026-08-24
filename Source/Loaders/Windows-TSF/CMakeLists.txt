@@ -19,11 +19,8 @@ set(KEYKEY_SOURCE "${KEYKEY_ROOT}/Source")
 set(KEYKEY_DATABASE_PATH
     "${KEYKEY_SOURCE}/Distributions/Takao/CookedDatabase/KeyKey.db"
     CACHE FILEPATH "Path to the cooked KeyKey SQLite database")
-get_filename_component(KEYKEY_DEFAULT_CHICHI77_COLLECTION_DIR
-    "${KEYKEY_ROOT}/../chichi77Collection" ABSOLUTE)
-set(KEYKEY_CHICHI77_COLLECTION_DIR
-    "${KEYKEY_DEFAULT_CHICHI77_COLLECTION_DIR}"
-    CACHE PATH "Optional path to the private chichi77Collection phrase data")
+set(KEYKEY_CATEGORIZED_COLLECTION_DIR
+    "${KEYKEY_ROOT}/DataSource/chichi77Collection")
 
 add_library(keykey_third_party STATIC
     "${KEYKEY_SOURCE}/ExternalLibraries/sqlite/sqlite3.c"
@@ -94,16 +91,15 @@ if(NOT EXISTS "${KEYKEY_DATABASE_PATH}")
     set(KEYKEY_COLLECTION_INPUTS
         "${KEYKEY_ROOT}/DataSource/AssociatedPhraseCollectionNames.tsv"
         "${KEYKEY_ROOT}/DataSource/McBopomofo/phrase.occ")
-    if(IS_DIRECTORY "${KEYKEY_CHICHI77_COLLECTION_DIR}")
-        file(GLOB KEYKEY_PRIVATE_COLLECTION_INPUTS CONFIGURE_DEPENDS
-            "${KEYKEY_CHICHI77_COLLECTION_DIR}/phrase.*.tsv")
-        list(APPEND KEYKEY_COLLECTION_INPUTS ${KEYKEY_PRIVATE_COLLECTION_INPUTS})
-        message(STATUS
-            "Including private chichi77Collection data from: ${KEYKEY_CHICHI77_COLLECTION_DIR}")
-    else()
-        message(STATUS
-            "Private chichi77Collection data not found; cooking the open-data database only")
+    file(GLOB KEYKEY_CATEGORIZED_COLLECTION_INPUTS CONFIGURE_DEPENDS
+        "${KEYKEY_CATEGORIZED_COLLECTION_DIR}/phrase.*.tsv")
+    if(NOT KEYKEY_CATEGORIZED_COLLECTION_INPUTS)
+        message(FATAL_ERROR
+            "Categorized associated-phrase data not found: ${KEYKEY_CATEGORIZED_COLLECTION_DIR}")
     endif()
+    list(APPEND KEYKEY_COLLECTION_INPUTS ${KEYKEY_CATEGORIZED_COLLECTION_INPUTS})
+    message(STATUS
+        "Including categorized associated-phrase data from: ${KEYKEY_CATEGORIZED_COLLECTION_DIR}")
     set(KEYKEY_NATIVE_DATABASE "${CMAKE_CURRENT_BINARY_DIR}/Databases/KeyKey.db")
     add_custom_command(
         OUTPUT "${KEYKEY_NATIVE_DATABASE}"
@@ -112,7 +108,7 @@ if(NOT EXISTS "${KEYKEY_DATABASE_PATH}")
         COMMAND "$<TARGET_FILE:KeyKeyDatabaseCooker>"
                 "${KEYKEY_SOURCE}"
                 "${KEYKEY_ROOT}/DataSource"
-                "${KEYKEY_CHICHI77_COLLECTION_DIR}"
+                "${KEYKEY_CATEGORIZED_COLLECTION_DIR}"
                 "${KEYKEY_NATIVE_DATABASE}"
         DEPENDS
             KeyKeyDatabaseCooker
