@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
@@ -77,6 +78,8 @@ final class BopomofoKeyboardView extends View {
     private static final int HARDWARE_CONTENT_HEIGHT_DP = 58;
     private static final int HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
     private static final int HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
+    private static final float TONE_SYMBOL_SCALE = 1.8f;
+    private static final String BOPOMOFO_HEIGHT_REFERENCE = "ㄅ";
 
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -86,6 +89,8 @@ final class BopomofoKeyboardView extends View {
     private final Paint hintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint enterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path enterPath = new Path();
+    private final Rect referenceGlyphBounds = new Rect();
+    private final Rect glyphBounds = new Rect();
     private final ArrayList<Hit> hits = new ArrayList<>();
 
     private Listener listener;
@@ -357,15 +362,77 @@ final class BopomofoKeyboardView extends View {
         String secondary = keyFirst ? symbol : key;
         textPaint.setFakeBoldText(true);
         if (mode == Mode.LANDSCAPE) {
-            textPaint.setTextSize(dp(11));
-            canvas.drawText(primary + " " + secondary, bounds.centerX(),
-                    textBaseline(bounds, textPaint), textPaint);
+            drawLandscapeBopomofoKey(canvas, bounds, primary, secondary);
             return;
         }
-        textPaint.setTextSize(dp(18));
-        canvas.drawText(primary, bounds.centerX(), bounds.centerY() - dp(4), textPaint);
-        hintPaint.setTextSize(dp(10));
-        canvas.drawText(secondary, bounds.centerX(), bounds.centerY() + dp(17), hintPaint);
+
+        float normalPrimarySize = dp(18);
+        float primarySize = isToneSymbol(primary)
+                ? normalPrimarySize * TONE_SYMBOL_SCALE : normalPrimarySize;
+        float primaryBaseline = bounds.centerY() - dp(4);
+        if (isToneSymbol(primary)) {
+            primaryBaseline = topAlignedBaseline(textPaint, primary, primarySize,
+                    BOPOMOFO_HEIGHT_REFERENCE, normalPrimarySize, primaryBaseline);
+        }
+        textPaint.setTextSize(primarySize);
+        canvas.drawText(primary, bounds.centerX(), primaryBaseline, textPaint);
+
+        float normalSecondarySize = dp(10);
+        float secondarySize = isToneSymbol(secondary)
+                ? normalSecondarySize * TONE_SYMBOL_SCALE : normalSecondarySize;
+        float secondaryBaseline = bounds.centerY() + dp(17);
+        if (isToneSymbol(secondary)) {
+            secondaryBaseline = topAlignedBaseline(hintPaint, secondary, secondarySize,
+                    "1", normalSecondarySize, secondaryBaseline);
+        }
+        hintPaint.setTextSize(secondarySize);
+        canvas.drawText(secondary, bounds.centerX(), secondaryBaseline, hintPaint);
+    }
+
+    private void drawLandscapeBopomofoKey(Canvas canvas, RectF bounds, String primary,
+                                           String secondary) {
+        float normalSize = dp(11);
+        float primarySize = isToneSymbol(primary) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
+        float secondarySize = isToneSymbol(secondary) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
+        float gap = dp(3);
+
+        textPaint.setTextSize(primarySize);
+        float primaryWidth = textPaint.measureText(primary);
+        textPaint.setTextSize(secondarySize);
+        float secondaryWidth = textPaint.measureText(secondary);
+        float left = bounds.centerX() - (primaryWidth + gap + secondaryWidth) / 2f;
+        textPaint.setTextSize(normalSize);
+        float normalBaseline = textBaseline(bounds, textPaint);
+
+        textPaint.setTextSize(primarySize);
+        float primaryBaseline = isToneSymbol(primary)
+                ? topAlignedBaseline(textPaint, primary, primarySize,
+                        BOPOMOFO_HEIGHT_REFERENCE, normalSize, normalBaseline)
+                : normalBaseline;
+        canvas.drawText(primary, left + primaryWidth / 2f,
+                primaryBaseline, textPaint);
+        textPaint.setTextSize(secondarySize);
+        float secondaryBaseline = isToneSymbol(secondary)
+                ? topAlignedBaseline(textPaint, secondary, secondarySize,
+                        BOPOMOFO_HEIGHT_REFERENCE, normalSize, normalBaseline)
+                : normalBaseline;
+        canvas.drawText(secondary, left + primaryWidth + gap + secondaryWidth / 2f,
+                secondaryBaseline, textPaint);
+    }
+
+    private boolean isToneSymbol(String value) {
+        return value.equals("ˊ") || value.equals("ˇ") || value.equals("ˋ")
+                || value.equals("˙");
+    }
+
+    private float topAlignedBaseline(Paint paint, String value, float textSize,
+                                     String reference, float referenceSize,
+                                     float referenceBaseline) {
+        paint.setTextSize(referenceSize);
+        paint.getTextBounds(reference, 0, reference.length(), referenceGlyphBounds);
+        paint.setTextSize(textSize);
+        paint.getTextBounds(value, 0, value.length(), glyphBounds);
+        return referenceBaseline + referenceGlyphBounds.top - glyphBounds.top;
     }
 
     private boolean isSpecialKey(String key) {

@@ -1,6 +1,7 @@
 #include "TextService.h"
 
 #include <algorithm>
+#include <array>
 #include <cwchar>
 #include <iterator>
 #include <new>
@@ -446,22 +447,27 @@ HRESULT TextService::initializeLangBar() {
     HRESULT result = threadManager_.As(&manager);
     if (FAILED(result)) return result;
 
-    modeIconButton_ = new (std::nothrow)
+    auto* modeIcon = new (std::nothrow)
         LangBarButton(this, kLangBarInputModeGuid, LangBarButton::Kind::InputMode);
-    switchLanguageButton_ = new (std::nothrow) LangBarButton(
+    auto* switchLanguage = new (std::nothrow) LangBarButton(
         this, kLangBarSwitchLanguageGuid, LangBarButton::Kind::SwitchLanguage);
-    fullHalfButton_ = new (std::nothrow)
+    auto* fullHalf = new (std::nothrow)
         LangBarButton(this, kLangBarFullHalfGuid, LangBarButton::Kind::FullHalf);
-    settingsButton_ = new (std::nothrow)
+    auto* settings = new (std::nothrow)
         LangBarButton(this, kLangBarSettingsGuid, LangBarButton::Kind::Settings);
-    if (!modeIconButton_ || !switchLanguageButton_ || !fullHalfButton_ ||
-        !settingsButton_) {
+    {
+        std::lock_guard<std::mutex> lock(langBarMutex_);
+        modeIconButton_ = modeIcon;
+        switchLanguageButton_ = switchLanguage;
+        fullHalfButton_ = fullHalf;
+        settingsButton_ = settings;
+    }
+    if (!modeIcon || !switchLanguage || !fullHalf || !settings) {
         uninitializeLangBar();
         return E_OUTOFMEMORY;
     }
 
-    LangBarButton* buttons[] = {modeIconButton_, switchLanguageButton_,
-                                fullHalfButton_, settingsButton_};
+    LangBarButton* buttons[] = {modeIcon, switchLanguage, fullHalf, settings};
     for (LangBarButton* button : buttons) {
         result = manager->AddItem(button);
         if (FAILED(result)) {
@@ -475,21 +481,38 @@ HRESULT TextService::initializeLangBar() {
 void TextService::uninitializeLangBar() {
     ComPtr<ITfLangBarItemMgr> manager;
     if (threadManager_) threadManager_.As(&manager);
-    LangBarButton** buttons[] = {&modeIconButton_, &switchLanguageButton_,
-                                 &fullHalfButton_, &settingsButton_};
-    for (LangBarButton** button : buttons) {
-        if (!*button) continue;
-        if (manager) manager->RemoveItem(*button);
-        (*button)->Release();
-        *button = nullptr;
+    std::array<LangBarButton*, 4> buttons{};
+    {
+        std::lock_guard<std::mutex> lock(langBarMutex_);
+        buttons = {modeIconButton_, switchLanguageButton_, fullHalfButton_,
+                   settingsButton_};
+        modeIconButton_ = nullptr;
+        switchLanguageButton_ = nullptr;
+        fullHalfButton_ = nullptr;
+        settingsButton_ = nullptr;
+    }
+    for (LangBarButton* button : buttons) {
+        if (!button) continue;
+        if (manager) manager->RemoveItem(button);
+        button->Release();
     }
 }
 
 void TextService::refreshLangBar() {
-    if (modeIconButton_) modeIconButton_->update();
-    if (switchLanguageButton_) switchLanguageButton_->update();
-    if (fullHalfButton_) fullHalfButton_->update();
-    if (settingsButton_) settingsButton_->update();
+    std::array<LangBarButton*, 4> buttons{};
+    {
+        std::lock_guard<std::mutex> lock(langBarMutex_);
+        buttons = {modeIconButton_, switchLanguageButton_, fullHalfButton_,
+                   settingsButton_};
+        for (LangBarButton* button : buttons) {
+            if (button) button->AddRef();
+        }
+    }
+    for (LangBarButton* button : buttons) {
+        if (!button) continue;
+        button->update();
+        button->Release();
+    }
 }
 
 void TextService::setChineseMode(bool enabled) {

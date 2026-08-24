@@ -235,6 +235,13 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `GetDpiForWindow()` 建立對應字型並縮放 padding／間距／邊框，另以
   `WM_DPICHANGED` 處理跨螢幕移動。DPI-unaware host 會回報 96 DPI 並由系統整體
   virtualization；不要再乘一次實體螢幕比例，否則會雙重放大。
+- **Windows 語言列通知可能重入或跨執行緒**：2026-08-24 的 Android Studio
+  `studio64.exe` 在 `Ctrl+Space` 切換模式時連續三次以 `0xc0000005` 崩潰；WER 的
+  faulting module 是 `KeyKeyTsf_x64.dll`，固定 offset `0xA087` 經同版 map 確認為
+  `LangBarButton::update()` 讀取已失效物件。`refreshLangBar()` 必須在鎖內取得每個
+  button 的暫時 COM reference，再於鎖外通知；button 的 sink vector 也必須同步，
+  且 `OnUpdate` 不可在持鎖時呼叫（會重入 `UnadviseSink`／`Deactivate`）。不要改回
+  未同步的 raw pointer 逐一呼叫。
 - **三平台詞庫顯示名稱以共用 mapping 為準**：唯一來源是
   `DataSource/AssociatedPhraseCollectionNames.tsv`，目前把 `McBopomofo`、`chinese`、
   `general` 顯示為「小麥注音」、「中文文學」、「一般生活」。macOS 的
@@ -271,6 +278,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   觸控字元後立即回注音；由功能列切入的英文版按 Shift 才會持續切換大小寫，且大寫時
   數字排換成 `!@#…`。數字符號模式的 Shift 不離開該模式，只切換兩套各 44 鍵的
   符號頁。實體 Shift 只當該次硬體按鍵的修飾鍵，不能改變觸控版面。
+- **Android 聲調符號要單獨放大並校正位置**：`ˊˇˋ˙` 是 spacing modifier letter，
+  在系統字型中以一般注音字級繪製會顯得過小，直接放大又會因字型 baseline 偏高而超出
+  按鍵。`drawBopomofoKey` 固定將四個聲調放大 1.8 倍，再依實際 glyph bounds 下移，
+  讓上緣與一般注音符號對齊。直式鍵位提示使用共同的固定 baseline，讓聲調鍵下方的
+  `3467` 與其他鍵的 `125890` 對齊；不要把兩個標籤重新合成單一字串繪製。
 - **Android 符號與 Emoji 候選各固定 10 頁**：「符」開啟 90 個標點、括號、數學、
   單位、貨幣、箭頭及圖形符號；第三排 Emoji 開啟 90 個常用表情，兩者每頁 9 個。
   與文字候選共用翻頁與空白循環；觸控直接點候選，外接鍵盤一般候選仍可用 `1–9`
@@ -447,6 +459,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 - [ ] `Package-Windows.ps1` 的 `$Version` 與 `CMakeLists.txt` 重複，可改成從
       `CMakeLists.txt` regex 讀取。
+- [ ] 安裝 2026-08-24 的語言列生命週期修正版後，在 Android Studio 反覆以
+      `Ctrl+Space` 切換中英文並確認不再產生 `studio64.exe`／`KeyKeyTsf_x64.dll`
+      Application Error；x64／x86 Release 已建置，x64 的 3 個 CTest 已通過。
 - [ ] 為 `KeyKeySettings.exe` 增加 UI automation：目前只有啟動 smoke test，仍需人工
       驗證一般／注音／關聯詞三頁、五種注音鍵盤、直橫選字窗、四種配色、Ctrl+\\、
       提示聲與 CNS11643 開關在實際 TSF host 中會即時套用；候選窗另需在 100%／225%

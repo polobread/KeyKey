@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cwchar>
+#include <new>
 
 #include "Guids.h"
 #include "TextService.h"
@@ -76,7 +77,12 @@ LangBarButton::LangBarButton(TextService* service, REFGUID guid, Kind kind)
 }
 
 LangBarButton::~LangBarButton() {
-    for (auto& entry : sinks_) {
+    std::vector<std::pair<DWORD, ITfLangBarItemSink*>> sinks;
+    {
+        std::lock_guard<std::mutex> lock(sinksMutex_);
+        sinks.swap(sinks_);
+    }
+    for (auto& entry : sinks) {
         if (entry.second) entry.second->Release();
     }
     if (service_) service_->Release();
@@ -234,28 +240,46 @@ STDMETHODIMP LangBarButton::AdviseSink(REFIID iid, IUnknown* unknown,
     if (iid != IID_ITfLangBarItemSink) return E_NOINTERFACE;
     ITfLangBarItemSink* sink = nullptr;
     if (FAILED(unknown->QueryInterface(IID_PPV_ARGS(&sink)))) return E_NOINTERFACE;
-    *cookie = nextCookie_++;
-    sinks_.emplace_back(*cookie, sink);
+    try {
+        std::lock_guard<std::mutex> lock(sinksMutex_);
+        *cookie = nextCookie_++;
+        sinks_.emplace_back(*cookie, sink);
+    } catch (const std::bad_alloc&) {
+        sink->Release();
+        *cookie = TF_INVALID_COOKIE;
+        return E_OUTOFMEMORY;
+    }
     return S_OK;
 }
 
 STDMETHODIMP LangBarButton::UnadviseSink(DWORD cookie) {
-    const auto found = std::find_if(sinks_.begin(), sinks_.end(),
-                                    [cookie](const auto& entry) {
-                                        return entry.first == cookie;
-                                    });
-    if (found == sinks_.end()) return E_INVALIDARG;
-    found->second->Release();
-    sinks_.erase(found);
+    ITfLangBarItemSink* sink = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(sinksMutex_);
+        const auto found = std::find_if(sinks_.begin(), sinks_.end(),
+                                        [cookie](const auto& entry) {
+                                            return entry.first == cookie;
+                                        });
+        if (found == sinks_.end()) return E_INVALIDARG;
+        sink = found->second;
+        sinks_.erase(found);
+    }
+    sink->Release();
     return S_OK;
 }
 
 void LangBarButton::update() {
     std::vector<ITfLangBarItemSink*> snapshot;
-    snapshot.reserve(sinks_.size());
-    for (const auto& entry : sinks_) {
-        entry.second->AddRef();
-        snapshot.push_back(entry.second);
+    try {
+        std::lock_guard<std::mutex> lock(sinksMutex_);
+        snapshot.reserve(sinks_.size());
+        for (const auto& entry : sinks_) {
+            snapshot.push_back(entry.second);
+            entry.second->AddRef();
+        }
+    } catch (const std::bad_alloc&) {
+        for (ITfLangBarItemSink* sink : snapshot) sink->Release();
+        return;
     }
     for (ITfLangBarItemSink* sink : snapshot) {
         sink->OnUpdate(TF_LBI_ICON | TF_LBI_TEXT | TF_LBI_TOOLTIP);

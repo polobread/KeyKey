@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
 
 #include "CandidateWindow.h"
 #include "KeyKeyEngine.h"
@@ -135,6 +136,7 @@ private:
     Microsoft::WRL::ComPtr<ITfRange> candidateAnchor_;
     std::unique_ptr<KeyKeyEngineSession> engine_;
     CandidateWindow candidateWindow_;
+    std::mutex langBarMutex_;
     LangBarButton* modeIconButton_ = nullptr;
     LangBarButton* switchLanguageButton_ = nullptr;
     LangBarButton* fullHalfButton_ = nullptr;

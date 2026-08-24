@@ -4,6 +4,7 @@
 #include <msctf.h>
 
 #include <atomic>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -55,6 +56,7 @@ private:
     GUID guid_{};
     Kind kind_;
     DWORD nextCookie_ = 1;
+    std::mutex sinksMutex_;
     std::vector<std::pair<DWORD, ITfLangBarItemSink*>> sinks_;
 };
 
