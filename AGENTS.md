@@ -399,6 +399,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `setup-java@v5` 的 cache dependency 掃描會跟隨它並以 `ELOOP` 失敗，早於 Gradle
   建置。Android 不讀該目錄，目前刻意不啟用這層 cache；不要在未排除循環 symlink
   前加回 `cache: gradle`。
+- **Android 的 `gradlew` 必須保留 Git executable bit**：Windows 工作目錄不會直接
+  顯示 Unix 執行權限，提交前以
+  `git ls-files -s Source/Loaders/Android-IME/gradlew` 確認模式是 `100755`。若變成
+  `100644`，Ubuntu runner 執行 `./gradlew` 會立刻以 exit 126／Permission denied
+  失敗；用 `git add --chmod=+x Source/Loaders/Android-IME/gradlew` 修復。
 - **公開 macOS／iOS cooker 不可假設私人 people 詞庫存在**：
   `DatabaseCooker/Makefile` 只有在 `phrase.people-*.tsv` 存在時才產生人名 exclusion；
   乾淨公開 checkout 必須建立空 exclusion 檔並只匯入 McBopomofo。不要恢復無條件
