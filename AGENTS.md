@@ -411,10 +411,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `LICENSE.txt`，更新資料時不可覆蓋。
 - **GitHub Actions 封裝與 Release**：macOS、Android 與 iOS workflow 只有
   `workflow_dispatch`；Windows 除了手動測包外，推送 `v*` tag 時會先驗證 tag 必須
-  精確等於 repository 版號（例如 `v1.2.3`），再建立公開 GitHub Release。Windows tag
-  run 需要 `contents: write`，上傳 ZIP、檔名含 `.unsigned.exe` 的 NSIS 測試安裝器及
-  各自 SHA-256；同名 Release 已存在時刻意失敗，絕不覆寫資產。手動 run 仍只保留 7 天
-  artifact；repository 是公開的，所以保留期間仍可能被讀者下載。workflow 會封裝包含
+  精確等於 repository 版號（例如 `v1.2.3`），再發布到公開 GitHub Release。Windows
+  publishing run 需要 `contents: write`，上傳 ZIP、檔名含 `.unsigned.exe` 的 NSIS 測試
+  安裝器及各自 SHA-256；Release 已存在就沿用，不存在才建立，workflow 絕不建立 tag 或
+  覆寫同名資產。手動 run 的 `release_tag` 留空時仍只保留 7 天 artifact；填入符合版號的
+  既有 tag 可補救失敗的 tag run。repository 是公開的，所以保留期間仍可能被讀者下載。
+  workflow 會封裝包含
   `chichi77Collection` 在內的全部公開詞庫。Windows 兩種產物都未簽章；macOS 也未簽章，
   Android 是 debug APK，iOS 只產 Apple Silicon Simulator app。正式簽章、notarization、
   TestFlight 與商店上傳都尚未處理。

@@ -173,10 +173,10 @@ Debug APK 位於
 ## GitHub Actions 封裝
 
 macOS、Android 與 iOS Simulator workflow 只支援從 GitHub Actions 頁面按 **Run workflow**
-手動執行。Windows workflow 也可手動執行（只保留測試 artifact）；將完全符合專案版號的
-tag 推送到 GitHub 時則會自動發布，例如目前版號為 `1.2.3` 時推送 `v1.2.3`。一般
-commit、pull request 與不符合版號的 tag 不會發布 Release。建置完成後，以下未簽章檔案
-會以 Actions artifact 保留 7 天：
+手動執行。Windows workflow 也可手動執行；`release_tag` 留空時只保留測試 artifact，填入
+完全符合專案版號的既有 tag（例如 `v1.2.3`）時則會發布到該 Release。直接將符合版號的
+tag 推送到 GitHub 也會自動發布。一般 commit、pull request 與不符合版號的 tag 不會發布
+Release。建置完成後，以下未簽章檔案會以 Actions artifact 保留 7 天：
 
 | Workflow | 產物 | 限制 |
 |---|---|---|
@@ -185,11 +185,12 @@ commit、pull request 與不符合版號的 tag 不會發布 Release。建置完
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 
-artifact 另附同名 `.sha256`。Windows 的符合版號 tag run 會另外建立公開 GitHub Release，
-上傳 ZIP、`.unsigned.exe` 及其 checksum；既有同名 Release 不會覆寫。手動 Windows run
-與其他三個 workflow 不會建立或更新 Release。workflow 會封裝 repository 內全部公開詞庫，
-不需要私人 repository 或 secret。正式簽章、公證、TestFlight 與商店上傳留待後續處理。
-這是公開 repository，因此 artifact 在 7 天保留期間仍可能被 repository 讀者下載。
+artifact 另附同名 `.sha256`。Windows 發布 run 會把 ZIP、`.unsigned.exe` 及其 checksum
+上傳到既有 Release；若 Release 尚不存在才建立。workflow 不會建立 tag，也不會覆寫同名
+資產。未填 `release_tag` 的手動 Windows run 與其他三個 workflow 不會建立或更新 Release。
+workflow 會封裝 repository 內全部公開詞庫，不需要私人 repository 或 secret。正式簽章、
+公證、TestFlight 與商店上傳留待後續處理。這是公開 repository，因此 artifact 在 7 天
+保留期間仍可能被 repository 讀者下載。
 
 <a id="english"></a>
 
@@ -354,10 +355,11 @@ details.
 
 The macOS, Android, and iOS Simulator workflows run only after **Run workflow**
 is selected on the GitHub Actions page. The Windows workflow can also be run
-manually (test artifact only), or automatically when a tag that exactly matches
-the repository version is pushed: for example, push `v1.2.3` when the version
-is `1.2.3`. Commits, pull requests, and mismatched tags do not publish a
-Release. Successful runs retain these unsigned Actions artifacts for seven days:
+manually: leave `release_tag` blank for a test artifact only, or enter an
+existing tag that exactly matches the repository version, such as `v1.2.3`, to
+publish its assets. Pushing a matching version tag also publishes automatically.
+Commits, pull requests, and mismatched tags do not publish a Release. Successful
+runs retain these unsigned Actions artifacts for seven days:
 
 | Workflow | Output | Limitation |
 |---|---|---|
@@ -366,12 +368,12 @@ Release. Successful runs retain these unsigned Actions artifacts for seven days:
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 
-Each output has a matching `.sha256` file. A matching-version Windows tag run
-also creates a public GitHub Release containing the ZIP, `.unsigned.exe`, and
-their checksums; it deliberately fails rather than overwriting an existing
-Release. Manual Windows runs and the other three workflows do not create or
-modify Releases. The workflows package all public dictionaries in this
-repository and require no private repository or secret. Production signing,
-notarization, TestFlight, and store upload are intentionally deferred. Because
-the repository is public, readers may still download an artifact during its
-seven-day retention period.
+Each output has a matching `.sha256` file. A Windows publishing run uploads the
+ZIP, `.unsigned.exe`, and their checksums to an existing Release, or creates the
+Release if it does not exist. It never creates a tag or overwrites an existing
+asset. Manual Windows runs without `release_tag` and the other three workflows
+do not create or modify Releases. The workflows package all public dictionaries
+in this repository and require no private repository or secret. Production
+signing, notarization, TestFlight, and store upload are intentionally deferred.
+Because the repository is public, readers may still download an artifact during
+its seven-day retention period.

@@ -163,10 +163,13 @@ eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
 settings executable, and the outer installer is unsigned as well.
 
 Pushing a tag that exactly matches the repository version, such as `v1.2.3`,
-automatically creates a public GitHub Release containing this unsigned EXE, the
-ZIP package, and SHA-256 files. A manual workflow run keeps the same files only
-as a seven-day Actions artifact. The unsigned EXE must never be used for Store
-submission.
+automatically publishes this unsigned EXE, the ZIP package, and SHA-256 files.
+The workflow uploads to the corresponding Release when it already exists, or
+creates the Release when needed; it never creates the tag or overwrites an
+existing asset. For recovery after a failed tag run, manually run the workflow
+from the version's branch and enter the existing tag in `release_tag`. Leave
+`release_tag` blank to keep the files only as a seven-day Actions artifact. The
+unsigned EXE must never be used for Store submission.
 
 The NSIS installer displays the licensing pages in this order: the mixed-license
 scope map (`LICENSING.md`), the MIT terms for the original Windows TSF frontend,
