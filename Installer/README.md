@@ -63,7 +63,7 @@ without one.
     ./build.sh
 
 Each variable is independent and each is a no-op when unset.
-`DEVELOPER_ID_APPLICATION` signs the two frameworks and the four helper apps
+`DEVELOPER_ID_APPLICATION` signs the two frameworks and the three helper apps
 before the outer bundle, with Hardened Runtime and a secure timestamp, both of
 which notarisation requires. `DEVELOPER_ID_INSTALLER` signs the package.
 `NOTARY_PROFILE` submits it and staples the ticket, so verification works
@@ -73,6 +73,34 @@ offline; store the profile first with
 
 Signing without notarising is not enough. A Developer ID signature alone is
 rejected on current macOS.
+
+Before any of that, `build.sh` deletes `Headers` from the staged frameworks. The
+framework targets sign their own output while those headers are still in place,
+and the app's Copy Files phase then strips them, leaving the seal listing files
+that are gone. `codesign --verify --deep --strict` fails on that and the notary
+service rejects it. Headers are of no use at runtime.
+
+## Signing in GitHub Actions
+
+The `publish` job of `.github/workflows/package-macos.yml` does the same thing
+on a version tag, from a keychain it builds and throws away. Three details are
+not obvious:
+
+  - `security set-key-partition-list` has to run after the import, or `codesign`
+    and `productbuild` wait for a GUI authorisation that never comes and the job
+    hangs until it times out.
+  - A `.p12` exported from Keychain Access holds the leaf identities but not the
+    Apple intermediate that issued them, so the job also imports
+    `https://www.apple.com/certificateauthority/DeveloperIDCA.cer`. Without it
+    `codesign` cannot build a chain.
+  - `notarytool store-credentials` writes the profile into that same keychain,
+    which is also made the default keychain, so the `--keychain-profile` lookup
+    above resolves without being passed a path.
+
+Verifying a `.p12` by hand needs one more: do not put the scratch keychain under
+`mktemp -d`. `/var` is a symlink to `private/var`, `securityd` stores the
+resolved path, and looking it up again by the `/var` spelling reports
+`The specified keychain could not be found`. Use a path under `$HOME`.
 
 ## Distributing
 

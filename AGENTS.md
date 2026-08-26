@@ -191,9 +191,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `Source/Loaders/OSX-IMK` 雖在 2026 重整路徑，但大量檔案與 Yahoo 原碼相同或由其
   修改，整體仍維持 BSD。全新且未含舊碼的 macOS 檔案若要用 MIT，必須逐項加入
   `LICENSING.md`，不能用整個目錄覆蓋。
-- **macOS codesign**：`codesign --verify --deep --strict` 會失敗（framework 的
-  `Headers` 目錄是空的、封印卻記錄了那些檔案）。**不影響本機安裝與使用**，裝不
-  起來時不要往這裡查；但對外 notarize 會被卡。
+- **macOS framework 的 Headers 封印**：framework target 在 `Headers` 還在的狀態下簽好
+  自己的產物，app 的 Copy Files phase 再把 header 砍掉，封印就留著已經不存在的檔案，
+  `codesign --verify --deep --strict` 必定回報 `a sealed resource is missing or invalid`，
+  notarize 也會被退。**不影響本機安裝與使用**，裝不起來時不要往這裡查。已由
+  `Installer/build.sh` 在 stage 之後、簽章之前刪掉 `Versions/A/Headers` 與最上層的
+  `Headers` symlink 處理掉（header 對執行期沒有用途）。修掉之前 `build.sh` 的
+  `DEVELOPER_ID_APPLICATION` 分支其實跑不完：`set -euo pipefail` 加上必定失敗的
+  `--verify --deep --strict` 會直接中斷整個腳本。
 - **舊 macOS TSM component ID 有三份同步點**：雖然 `Source/Loaders/OSX-TSM` 已不在
   目前支援的建置路徑，`io.github.polobread.inputmethod.chichi77.tsm` 仍同時出現在
   component plist、`Component.m` 與 `Source/Takao.xcodeproj/project.pbxproj`。pbxproj
@@ -409,17 +414,46 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   詞條；較長原詞必須依明確 review 結果選取有意義的連續片段，不可再用統計斷詞器直接
   拆分。中文字首後混有拉丁字母的詞可保留。授權與免責說明在該目錄的 `README.md` 與
   `LICENSE.txt`，更新資料時不可覆蓋。
-- **GitHub Actions 封裝與 Release**：macOS、Android 與 iOS workflow 只有
-  `workflow_dispatch`；Windows 除了手動測包外，推送 `v*` tag 時會先驗證 tag 必須
-  精確等於 repository 版號（例如 `v1.2.3`），再發布到公開 GitHub Release。Windows
-  publishing run 需要 `contents: write`，上傳 ZIP、檔名含 `.unsigned.exe` 的 NSIS 測試
-  安裝器及各自 SHA-256；Release 已存在就沿用，不存在才建立，workflow 絕不建立 tag 或
-  覆寫同名資產。手動 run 的 `release_tag` 留空時仍只保留 7 天 artifact；填入符合版號的
-  既有 tag 可補救失敗的 tag run。repository 是公開的，所以保留期間仍可能被讀者下載。
-  workflow 會封裝包含
-  `chichi77Collection` 在內的全部公開詞庫。Windows 兩種產物都未簽章；macOS 也未簽章，
-  Android 是 debug APK，iOS 只產 Apple Silicon Simulator app。正式簽章、notarization、
-  TestFlight 與商店上傳都尚未處理。
+- **GitHub Actions 封裝與 Release**：Android 與 iOS workflow 只有 `workflow_dispatch`；
+  macOS 與 Windows 在推送 `v*` tag 時會先驗證 tag 必須精確等於 repository 版號
+  （例如 `v1.2.3`），再發布到公開 GitHub Release。publishing run 需要 `contents: write`；
+  Release 已存在就沿用，不存在才建立，workflow 絕不建立 tag 或覆寫同名資產。
+  repository 是公開的，所以 artifact 在保留期間仍可能被讀者下載。workflow 會封裝包含
+  `chichi77Collection` 在內的全部公開詞庫。
+  - macOS 拆成兩個 job。`build` 沒有 environment 也拿不到 secret，永遠會跑，產出未簽章
+    pkg 的 7 天 artifact，另外用 `ditto` 把建好的 app 打包成保留 1 天的交棒 artifact
+    （`upload-artifact` 不保留 symlink 與執行權限，framework 會壞，一定要先 `ditto`）。
+    `publish` 只在 `github.ref_type == 'tag'` 時跑，掛 `release` environment，簽章、
+    notarize、staple 之後把 pkg zip 與 SHA-256 發布到 Release。
+  - macOS 與 iOS 沒有 Windows 那個 `release_tag` 手動輸入。`release` environment 的
+    tag rule 會擋掉在 branch 上跑的 `workflow_dispatch`；補救失敗的 tag run 要從 Actions
+    頁面 re-run（ref 仍是 tag），或用 Run workflow 直接選那個 tag。
+  - Windows 兩種產物都未簽章，`.unsigned.exe` 只供測試；Android 是 debug APK；iOS 只產
+    Apple Silicon Simulator app。iOS 的 TestFlight／商店上傳尚未處理，那需要 App Store
+    Connect API key（`xcodebuild -allowProvisioningUpdates` 只吃 API key，app-specific
+    password 餵不了），另外還有兩個前置：`ContainerApp/Info.plist` 缺
+    `ITSAppUsesNonExemptEncryption`（會卡在 Missing Compliance），以及
+    `CURRENT_PROJECT_VERSION` 寫死 `1`（App Store Connect 要求 build number 遞增）。
+- **Apple 簽章刻意把私鑰放進 GitHub Actions，Windows 不放**：這是明知的破例。hosted
+  runner 沒有 Windows 憑證存放區的對等機制，notarization 也只能在 macOS 上跑，所以
+  `Developer ID` 的 `.p12` 以 base64 存成 secret。收斂方式：secret 一律掛在 `release`
+  environment 而不是 repository secrets，該 environment 的 deployment rule 只允許
+  **ref type 為 tag** 的 `v*`（設成 branch 會讓 tag 觸發的 job 全部被擋）；所有
+  `actions/*` pin 到 commit SHA，避免上游搬動 tag 就等於私鑰外洩；`if: always()` 收尾
+  刪掉臨時 keychain。5 個 secret：`APPLE_DEVELOPER_ID_P12`、
+  `APPLE_DEVELOPER_ID_P12_PASSWORD`、`APPLE_ID`、`APPLE_APP_SPECIFIC_PASSWORD`、
+  `APPLE_TEAM_ID`。簽章身分字串含法定姓名，不進 secret，在 runner 上用
+  `security find-identity` 查——注意 `Developer ID Installer` 不是 codesigning 用途，
+  `-p codesigning` 撈不到它。
+- **臨時 keychain 有兩個一定要做的動作**：`set-key-partition-list`（不做的話 codesign
+  與 productbuild 會等 GUI 授權，job 掛到 timeout），以及匯入 Apple 的中介憑證。
+  Keychain Access 匯出的 `.p12` 只帶 leaf identity，不含簽發者，臨時 keychain 裡沒有
+  中介 codesign 就建不出憑證鏈；workflow 直接抓
+  `https://www.apple.com/certificateauthority/DeveloperIDCA.cer`，不依賴 runner image
+  剛好裝了什麼。另外，本機要驗 `.p12` 時測試用的 keychain **不要放在 `mktemp -d` 底下**：
+  `/var` 是 `private/var` 的 symlink，`securityd` 存正規化後的路徑，再用 `/var/...`
+  去找會回報 `The specified keychain could not be found`。CI 不受影響，`$RUNNER_TEMP`
+  在 `/Users/runner/work/_temp`。
 - **Windows Store EXE 採 NSIS 3.12＋本機手動簽章**：`windows-2025` image 不內建
   NSIS，workflow 會透過 Chocolatey 固定安裝 3.12；不要降回 3.11，3.12 修正 elevated
   installer 使用低 integrity 暫存目錄的安全問題。`Package-Store-Windows.ps1` 正式模式
@@ -460,13 +494,20 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 ### GitHub Actions
 
 - [ ] 合併後從 GitHub Actions 頁面各手動跑一次 macOS、Windows、Android 與 iOS
-      Simulator workflow，確認 hosted runner 的工具版本、四個 7 天 artifact 與公開
-      `chichi77Collection` 都被封裝；再於要發布的 commit 推送精確版號 tag（目前為
-      `v1.2.3`），確認 Windows 公開 Release 含 ZIP、unsigned EXE 與四個 SHA-256；本機已用
-      actionlint 1.7.12 驗證 YAML，並完成 Windows x64 測試／x86 建置／ZIP 封裝／
-      NSIS 3.12 未簽 EXE 編譯及 Android lint／unit test／APK 建置。第一次 hosted
-      Windows run 因 runner 已改為 VS2026 失敗，第一次 Android run 因 `setup-java`
-      cache 掃到循環 symlink 失敗；兩項 workflow 修正後都尚待重跑。
+      Simulator workflow，確認 hosted runner 的工具版本、7 天 artifact 與公開
+      `chichi77Collection` 都被封裝（macOS 手動 run 不會有 tag，`publish` job 會直接
+      skip，只驗 `build` 沒被拆壞）；再於要發布的 commit 推送精確版號 tag，確認
+      Windows 公開 Release 含 ZIP、unsigned EXE 與 SHA-256。第一次 hosted Windows run
+      因 runner 已改為 VS2026 失敗，第一次 Android run 因 `setup-java` cache 掃到循環
+      symlink 失敗；兩項 workflow 修正後都尚待重跑。
+- [ ] macOS `publish` job 尚未實跑過。第一次 tag run 要確認：臨時 keychain 匯入與
+      `set-key-partition-list` 沒有卡在 GUI 授權、Apple 中介憑證抓得到且憑證鏈完整、
+      notarytool 回 `Accepted`、`stapler validate` 與
+      `spctl --assess --type install -vv`（要回 `source=Notarized Developer ID`）都過、
+      Release 上的 pkg zip 下載後在另一台 Mac 上不再觸發 Gatekeeper 警告。
+- [ ] 兩張 Developer ID 憑證掛在 G1 中介之下，`notAfter` 被 CA 自己的到期日砍到
+      **2027-02-01**（不是常見的 5 年；G2 中介到 2031）。到期後簽不出新版本，已 staple
+      的舊產物仍有效。值得從 developer.apple.com 網頁重新申請，看 Apple 是否改簽在 G2。
 
 ### 舊碼清理
 
