@@ -11,6 +11,15 @@ cp -R "$APP" "$STAGE/Library/Input Methods/"
 
 STAGED="$STAGE/Library/Input Methods/$(basename "$APP")"
 
+# The framework targets sign their own output while Headers is still populated,
+# then the app's Copy Files phase strips it, so the seal keeps listing files
+# that are no longer there and every --deep --strict verify reports "a sealed
+# resource is missing or invalid". Notarisation rejects that. Headers are of no
+# use at runtime, so drop them before anything signs or seals the bundle.
+for f in "$STAGED"/Contents/Frameworks/*.framework; do
+    rm -rf "$f/Versions/A/Headers" "$f/Headers"
+done
+
 if [ -n "${DEVELOPER_ID_APPLICATION:-}" ]; then
     # Inside out: nested code carries its own signature before the enclosing
     # bundle seals it. Hardened Runtime is what the notary service requires,
