@@ -172,25 +172,42 @@ Debug APK 位於
 
 ## GitHub Actions 封裝
 
-macOS、Android 與 iOS Simulator workflow 只支援從 GitHub Actions 頁面按 **Run workflow**
-手動執行。Windows workflow 也可手動執行；`release_tag` 留空時只保留測試 artifact，填入
-完全符合專案版號的既有 tag（例如 `v1.2.3`）時則會發布到該 Release。直接將符合版號的
-tag 推送到 GitHub 也會自動發布。一般 commit、pull request 與不符合版號的 tag 不會發布
-Release。建置完成後，以下未簽章檔案會以 Actions artifact 保留 7 天：
+Android 與 iOS Simulator workflow 只支援從 GitHub Actions 頁面按 **Run workflow**
+手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag（例如 `v1.2.3`）時會自動發布到
+該 Release；兩者也都可以手動執行，Windows 額外接受 `release_tag` 輸入，留空時只保留測試
+artifact。一般 commit、pull request 與不符合版號的 tag 不會發布 Release。建置完成後，
+以下檔案會以 Actions artifact 保留 7 天：
 
 | Workflow | 產物 | 限制 |
 |---|---|---|
-| Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 未簽章、未 notarize |
+| Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 手動 run 未簽章；tag run 以 Developer ID 簽章並 notarize |
 | Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`chichi77-KeyKey-版本-windows-x64-setup.unsigned.exe` | 兩者皆未簽章；EXE 只供測試，不能送 Store |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 
-artifact 另附同名 `.sha256`。Windows 發布 run 會把 ZIP、`.unsigned.exe` 及其 checksum
-上傳到既有 Release；若 Release 尚不存在才建立。workflow 不會建立 tag，也不會覆寫同名
-資產。未填 `release_tag` 的手動 Windows run 與其他三個 workflow 不會建立或更新 Release。
-workflow 會封裝 repository 內全部公開詞庫，不需要私人 repository 或 secret。正式簽章、
-公證、TestFlight 與商店上傳留待後續處理。這是公開 repository，因此 artifact 在 7 天
-保留期間仍可能被 repository 讀者下載。
+artifact 另附同名 `.sha256`。發布 run 會把產物與 checksum 上傳到既有 Release；若 Release
+尚不存在才建立。workflow 不會建立 tag，也不會覆寫同名資產。
+
+macOS workflow 拆成兩個 job。`build` 永遠會跑、拿不到任何 secret，產出未簽章 pkg；
+`publish` 只在 tag 觸發時跑，掛 `release` environment，取得 Developer ID 憑證後簽章、
+notarize、staple，再發布到 Release。因此**從 Release 下載的 macOS pkg 不需要
+`xattr -d com.apple.quarantine`**，Gatekeeper 直接放行；手動 run 留下的 artifact 仍是
+未簽章的測試包。
+
+tag run 會留下兩個 macOS artifact，裡面的檔名相同但內容不同：`build` 的
+`keykey-macos-版本-commit` 是未簽章的，`publish` 的 `keykey-macos-signed-版本` 才是已簽章
+並 notarize 的，也就是發布到 Release 的那一份。要給別人裝就取 Release 上的資產，不要從
+artifact 抓。
+
+`publish` 需要在 repository 的 `release` environment 底下設定 5 個 secret：
+`APPLE_DEVELOPER_ID_P12`（含 `Developer ID Application` 與 `Developer ID Installer`
+的 `.p12`，base64）、`APPLE_DEVELOPER_ID_P12_PASSWORD`、`APPLE_ID`、
+`APPLE_APP_SPECIFIC_PASSWORD`、`APPLE_TEAM_ID`。該 environment 的 deployment rule 必須
+限定 ref type 為 **tag** 的 `v*`，其他 workflow 與手動 branch run 才拿不到私鑰。
+
+其餘 workflow 封裝 repository 內全部公開詞庫，不需要私人 repository 或 secret。
+Windows 正式簽章、iOS 的 TestFlight 與商店上傳留待後續處理。這是公開 repository，
+因此 artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 <a id="english"></a>
 
@@ -353,27 +370,48 @@ details.
 
 ### GitHub Actions packaging
 
-The macOS, Android, and iOS Simulator workflows run only after **Run workflow**
-is selected on the GitHub Actions page. The Windows workflow can also be run
-manually: leave `release_tag` blank for a test artifact only, or enter an
-existing tag that exactly matches the repository version, such as `v1.2.3`, to
-publish its assets. Pushing a matching version tag also publishes automatically.
-Commits, pull requests, and mismatched tags do not publish a Release. Successful
-runs retain these unsigned Actions artifacts for seven days:
+The Android and iOS Simulator workflows run only after **Run workflow** is
+selected on the GitHub Actions page. The macOS and Windows workflows publish to
+a Release when a tag that exactly matches the repository version, such as
+`v1.2.3`, is pushed. Both can also be run manually; the Windows workflow
+additionally takes a `release_tag` input, and leaving it blank produces a test
+artifact only. Commits, pull requests, and mismatched tags do not publish a
+Release. Successful runs retain these Actions artifacts for seven days:
 
 | Workflow | Output | Limitation |
 |---|---|---|
-| Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Unsigned and not notarized |
+| Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Unsigned on a manual run; signed with a Developer ID and notarized on a tag run |
 | Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `chichi77-KeyKey-VERSION-windows-x64-setup.unsigned.exe` | Both are unsigned; the EXE is test-only and cannot be submitted to the Store |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 
-Each output has a matching `.sha256` file. A Windows publishing run uploads the
-ZIP, `.unsigned.exe`, and their checksums to an existing Release, or creates the
-Release if it does not exist. It never creates a tag or overwrites an existing
-asset. Manual Windows runs without `release_tag` and the other three workflows
-do not create or modify Releases. The workflows package all public dictionaries
-in this repository and require no private repository or secret. Production
-signing, notarization, TestFlight, and store upload are intentionally deferred.
-Because the repository is public, readers may still download an artifact during
-its seven-day retention period.
+Each output has a matching `.sha256` file. A publishing run uploads its output
+and checksum to an existing Release, or creates the Release if it does not
+exist. It never creates a tag or overwrites an existing asset.
+
+The macOS workflow is split in two jobs. `build` always runs and is given no
+secrets at all, producing the unsigned package; `publish` runs only for a tag,
+uses the `release` environment, and signs, notarizes, and staples before
+publishing to the Release. A macOS package downloaded from a Release therefore
+needs no `xattr -d com.apple.quarantine`: Gatekeeper accepts it as it is. The
+artifact left behind by a manual run is still an unsigned test build.
+
+A tag run leaves two macOS artifacts whose contents differ under the same file
+name: `keykey-macos-VERSION-COMMIT` from `build` is unsigned, and
+`keykey-macos-signed-VERSION` from `publish` is the signed and notarized one
+that also goes to the Release. Take the Release asset when handing the package
+to someone else, not an artifact.
+
+`publish` needs five secrets under the repository's `release` environment:
+`APPLE_DEVELOPER_ID_P12` (base64 of a `.p12` holding both the Developer ID
+Application and Developer ID Installer identities),
+`APPLE_DEVELOPER_ID_P12_PASSWORD`, `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`. That environment's
+deployment rule must be restricted to `v*` with a ref type of **tag**, so that
+no other workflow and no manual branch run can reach the private key.
+
+The remaining workflows package all public dictionaries in this repository and
+require no private repository or secret. Windows production signing and the iOS
+TestFlight and store uploads are intentionally deferred. Because the repository
+is public, readers may still download an artifact during its seven-day
+retention period.
