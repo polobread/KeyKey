@@ -8,7 +8,7 @@ param(
     [string] $Architecture = 'x64',
 
     [ValidatePattern('^[0-9]+(?:\.[0-9]+){1,3}$')]
-    [string] $Version = '1.2.2'
+    [string] $Version = '1.2.3'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -91,6 +91,12 @@ try {
         -Destination $licenseDirectory
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSES\MIT.txt') `
         -Destination (Join-Path $licenseDirectory 'MIT-Chui-Ping-Cheng.txt')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'LICENSE.txt') `
+        -Destination (Join-Path $licenseDirectory 'Windows-TSF-LICENSE.txt')
+    Copy-Item -LiteralPath (
+        Join-Path $repositoryRoot 'DataSource\chichi77Collection\LICENSE.txt') `
+        -Destination (Join-Path $licenseDirectory `
+            'chichi77Collection-LICENSE.txt')
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'THIRD-PARTY-NOTICES.md') `
         -Destination $licenseDirectory
 

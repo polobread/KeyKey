@@ -1,10 +1,13 @@
 name: Package Windows
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   package:
@@ -36,6 +39,13 @@ jobs:
               throw "Package-Windows.ps1 does not default to version $version."
           }
 
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+              $expectedTag = "v$version"
+              if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+                  throw "Release tag must be $expectedTag, but received $env:GITHUB_REF_NAME."
+              }
+          }
+
           $shortSha = (git rev-parse --short=12 HEAD).Trim()
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "artifact_name=keykey-windows-$version-$shortSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
@@ -57,6 +67,20 @@ jobs:
           cmake --preset windows-x86
           cmake --build --preset windows-x86-release --target KeyKeyTsf
 
+      - name: Install NSIS 3.12
+        run: |
+          choco install nsis --version=3.12.0 --yes --no-progress --limit-output
+          $makensis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          if (-not (Test-Path -LiteralPath $makensis -PathType Leaf)) {
+              throw "makensis.exe was not installed at $makensis"
+          }
+          $reportedVersion = (& $makensis /VERSION 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $reportedVersion -notmatch '^v?3\.12(?:\D|$)') {
+              throw "Expected NSIS 3.12, found: $reportedVersion"
+          }
+          "MAKENSIS_PATH=$makensis" |
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Build unsigned installer archive
         working-directory: Source/Loaders/Windows-TSF
         run: |
@@ -65,15 +89,31 @@ jobs:
             -X86BuildDirectory ./out/build/x86 `
             -Version $env:VERSION
 
+      - name: Build unsigned NSIS installer
+        working-directory: Source/Loaders/Windows-TSF
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass `
+            -File ./Package-Store-Windows.ps1 `
+            -BuildDirectory ./out/build/x64-vs2026 `
+            -X86BuildDirectory ./out/build/x86 `
+            -Version $env:VERSION `
+            -MakensisPath $env:MAKENSIS_PATH `
+            -UnsignedTest
+
       - name: Stage artifact and checksum
         run: |
           $artifactDirectory = New-Item -ItemType Directory -Path artifacts -Force
-          $source = "Source/Loaders/Windows-TSF/out/package/chichi77-KeyKey-$env:VERSION-windows-x64.zip"
-          $destination = Join-Path $artifactDirectory.FullName (Split-Path -Leaf $source)
-          Copy-Item -LiteralPath $source -Destination $destination
-          $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $(Split-Path -Leaf $destination)" |
-            Set-Content -LiteralPath "$destination.sha256" -Encoding ascii
+          $sources = @(
+            "Source/Loaders/Windows-TSF/out/package/chichi77-KeyKey-$env:VERSION-windows-x64.zip",
+            "Source/Loaders/Windows-TSF/out/store-package/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe"
+          )
+          foreach ($source in $sources) {
+              $destination = Join-Path $artifactDirectory.FullName (Split-Path -Leaf $source)
+              Copy-Item -LiteralPath $source -Destination $destination
+              $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
+              "$hash  $(Split-Path -Leaf $destination)" |
+                Set-Content -LiteralPath "$destination.sha256" -Encoding ascii
+          }
 
       - name: Upload packaged artifact
         uses: actions/upload-artifact@v7
@@ -82,3 +122,23 @@ jobs:
           path: artifacts/
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish unsigned GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if ($null -eq (Get-Command gh -ErrorAction SilentlyContinue)) {
+            choco install gh --yes --no-progress --limit-output
+          }
+          & gh --version
+          gh release create $env:RELEASE_TAG `
+            --repo $env:GITHUB_REPOSITORY `
+            --verify-tag `
+            --title "chichi77 KeyKey $env:VERSION" `
+            --generate-notes `
+            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64.zip" `
+            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64.zip.sha256" `
+            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe" `
+            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe.sha256"

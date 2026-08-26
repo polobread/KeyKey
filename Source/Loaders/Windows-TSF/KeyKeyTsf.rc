@@ -1,3 +1,9 @@
 #include "Resource.h"
 
 IDI_CHICHI77 ICON "chichi77.ico"
+
+#define KEYKEY_FILE_DESCRIPTION "chichi77 KeyKey text service"
+#define KEYKEY_INTERNAL_NAME "KeyKeyTsf.dll"
+#define KEYKEY_ORIGINAL_FILENAME "KeyKeyTsf.dll"
+#define KEYKEY_FILE_TYPE 0x2L
+#include "VersionInfo.rcinc"

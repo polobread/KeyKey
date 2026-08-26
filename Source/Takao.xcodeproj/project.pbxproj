@@ -6666,7 +6666,7 @@
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = "chichi77 KeyKey";
-				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"com.yahoo.KeyKeyTiger\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"15\\\"";
+				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"io.github.polobread.inputmethod.chichi77.tsm\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"2c\\\"";
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 				WRAPPER_EXTENSION = bundle;
 			};
@@ -7992,7 +7992,7 @@
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = "chichi77 KeyKey";
-				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"com.yahoo.KeyKeyTiger\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"15\\\"";
+				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"io.github.polobread.inputmethod.chichi77.tsm\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"2c\\\"";
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 				WRAPPER_EXTENSION = bundle;
 			};
@@ -8023,7 +8023,7 @@
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = "chichi77 KeyKey";
-				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"com.yahoo.KeyKeyTiger\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"15\\\"";
+				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"io.github.polobread.inputmethod.chichi77.tsm\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"2c\\\"";
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 				WRAPPER_EXTENSION = bundle;
 				ZERO_LINK = NO;
@@ -8155,7 +8155,7 @@
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = "chichi77 KeyKey";
-				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"com.yahoo.KeyKeyTiger\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"15\\\"";
+				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"io.github.polobread.inputmethod.chichi77.tsm\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"2c\\\"";
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 				WRAPPER_EXTENSION = bundle;
 			};
@@ -9010,7 +9010,7 @@
 				);
 				PREBINDING = NO;
 				PRODUCT_NAME = "chichi77 KeyKey";
-				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"com.yahoo.KeyKeyTiger\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"15\\\"";
+				REZ_PREPROCESSOR_DEFINITIONS = "TSMC_NAME_LENGTH=$\\\"0d\\\" TSMC_NAME=\\\"Yahoo!\\ KeyKey\\\" TSMC_BUNDLE_ID=\\\"io.github.polobread.inputmethod.chichi77.tsm\\\" TSMC_BUNDLE_ID_LENGTH=$\\\"2c\\\"";
 				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
 				WRAPPER_EXTENSION = bundle;
 				ZERO_LINK = NO;

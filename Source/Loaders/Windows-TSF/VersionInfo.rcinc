@@ -1,0 +1,60 @@
+#ifndef KEYKEY_VERSION_MAJOR
+#error KEYKEY_VERSION_MAJOR must be defined by the build system.
+#endif
+#ifndef KEYKEY_VERSION_MINOR
+#error KEYKEY_VERSION_MINOR must be defined by the build system.
+#endif
+#ifndef KEYKEY_VERSION_PATCH
+#error KEYKEY_VERSION_PATCH must be defined by the build system.
+#endif
+#ifndef KEYKEY_VERSION_TWEAK
+#error KEYKEY_VERSION_TWEAK must be defined by the build system.
+#endif
+#ifndef KEYKEY_VERSION_STRING
+#error KEYKEY_VERSION_STRING must be defined by the build system.
+#endif
+#ifndef KEYKEY_FILE_DESCRIPTION
+#error KEYKEY_FILE_DESCRIPTION must be defined by the resource file.
+#endif
+#ifndef KEYKEY_INTERNAL_NAME
+#error KEYKEY_INTERNAL_NAME must be defined by the resource file.
+#endif
+#ifndef KEYKEY_ORIGINAL_FILENAME
+#error KEYKEY_ORIGINAL_FILENAME must be defined by the resource file.
+#endif
+#ifndef KEYKEY_FILE_TYPE
+#error KEYKEY_FILE_TYPE must be defined by the resource file.
+#endif
+
+1 VERSIONINFO
+ FILEVERSION KEYKEY_VERSION_MAJOR,KEYKEY_VERSION_MINOR,KEYKEY_VERSION_PATCH,KEYKEY_VERSION_TWEAK
+ PRODUCTVERSION KEYKEY_VERSION_MAJOR,KEYKEY_VERSION_MINOR,KEYKEY_VERSION_PATCH,KEYKEY_VERSION_TWEAK
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE KEYKEY_FILE_TYPE
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "chichi77 KeyKey"
+            VALUE "FileDescription", KEYKEY_FILE_DESCRIPTION
+            VALUE "FileVersion", KEYKEY_VERSION_STRING
+            VALUE "InternalName", KEYKEY_INTERNAL_NAME
+            VALUE "LegalCopyright", "See bundled license notices"
+            VALUE "OriginalFilename", KEYKEY_ORIGINAL_FILENAME
+            VALUE "ProductName", "chichi77 KeyKey"
+            VALUE "ProductVersion", KEYKEY_VERSION_STRING
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

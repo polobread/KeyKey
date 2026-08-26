@@ -49,6 +49,7 @@ x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 - Visual Studio 2026，安裝「使用 C++ 的桌面開發」workload；也提供 Visual
   Studio 2022 相容 preset
 - CMake 3.25 以上；Visual Studio 內附版本即可
+- NSIS 3.12（只有建立 Store EXE 時需要）
 
 Windows 使用獨立的原生 C++ DatabaseCooker，不需要 Ruby、GNU Make、`awk`、
 `sed` 或外部 `sqlite3` 程式，也不會修改 macOS 的既有 cooker。
@@ -104,7 +105,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -X86BuildDirectory .\out\build\x86
 ```
 
-會產生 `out\package\chichi77-KeyKey-1.2.2-windows-x64.zip`。在另一台 x64 Windows
+會產生 `out\package\chichi77-KeyKey-1.2.3-windows-x64.zip`。在另一台 x64 Windows
 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
@@ -124,6 +125,28 @@ DLL 架構必須和載入它的應用程式架構相同。
 
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
+
+### 手動簽署 Microsoft Store NSIS EXE
+
+正式商店套件不把憑證私鑰放進 GitHub Actions。先把受信任 CA 核發的程式碼簽章憑證
+安裝至 Windows 憑證存放區，安裝 NSIS 3.12，再執行：
+
+```powershell
+$thumbprint = '你的 40 字元憑證指紋'
+$timestampUrl = '憑證機構提供的 RFC 3161 時間戳記 URL'
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\Package-Store-Windows.ps1 `
+  -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 `
+  -CertificateThumbprint $thumbprint `
+  -TimestampUrl $timestampUrl
+```
+
+腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE，以 NSIS 建立離線安裝
+程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
+`out\store-package\chichi77-KeyKey-1.2.3-windows-x64-setup.exe`。完整參數、`/S`
+靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
 
 ## Android
 
@@ -147,23 +170,26 @@ Debug APK 位於
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
 [Source/Loaders/Android-IME/README.md](Source/Loaders/Android-IME/README.md)。
 
-## 手動 GitHub Actions 封裝
+## GitHub Actions 封裝
 
-四個 workflow 都只支援從 GitHub Actions 頁面按 **Run workflow** 手動執行；選擇
-要建置的 branch 即可，不需要先建立 tag。一般 commit、pull request 與 tag 不會
-觸發。建置完成後，以下未簽章檔案會以 Actions artifact 保留 7 天：
+macOS、Android 與 iOS Simulator workflow 只支援從 GitHub Actions 頁面按 **Run workflow**
+手動執行。Windows workflow 也可手動執行（只保留測試 artifact）；將完全符合專案版號的
+tag 推送到 GitHub 時則會自動發布，例如目前版號為 `1.2.3` 時推送 `v1.2.3`。一般
+commit、pull request 與不符合版號的 tag 不會發布 Release。建置完成後，以下未簽章檔案
+會以 Actions artifact 保留 7 天：
 
 | Workflow | 產物 | 限制 |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 未簽章、未 notarize |
-| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip` | 未簽章；內含 x64 與 x86 TSF DLL |
+| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`chichi77-KeyKey-版本-windows-x64-setup.unsigned.exe` | 兩者皆未簽章；EXE 只供測試，不能送 Store |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 
-artifact 另附同名 `.sha256`。workflow 會封裝 repository 內全部公開詞庫，不需要
-私人 repository 或 secret，也不會建立或更新 GitHub Release。正式簽章、公證、
-TestFlight 與商店上傳留待後續處理。這是公開 repository，因此 artifact 在 7 天保留
-期間仍可能被 repository 讀者下載。
+artifact 另附同名 `.sha256`。Windows 的符合版號 tag run 會另外建立公開 GitHub Release，
+上傳 ZIP、`.unsigned.exe` 及其 checksum；既有同名 Release 不會覆寫。手動 Windows run
+與其他三個 workflow 不會建立或更新 Release。workflow 會封裝 repository 內全部公開詞庫，
+不需要私人 repository 或 secret。正式簽章、公證、TestFlight 與商店上傳留待後續處理。
+這是公開 repository，因此 artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 <a id="english"></a>
 
@@ -209,6 +235,7 @@ installation, signing, and notarization.
 - Visual Studio 2026 with the **Desktop development with C++** workload;
   Visual Studio 2022-compatible presets are also included
 - CMake 3.25 or newer; the Visual Studio copy is sufficient
+- NSIS 3.12, only when building the Store EXE
 
 Windows uses its own native C++ database cooker. Ruby, GNU Make, `awk`, `sed`,
 and a separate `sqlite3` program are not required.
@@ -265,7 +292,7 @@ After building and testing, run from `Source\Loaders\Windows-TSF`:
   -X86BuildDirectory .\out\build\x86
 ```
 
-This creates `out\package\chichi77-KeyKey-1.2.2-windows-x64.zip`. On the other
+This creates `out\package\chichi77-KeyKey-1.2.3-windows-x64.zip`. On the other
 x64 Windows 11 PC, extract the complete ZIP, copy the entire extracted folder
 to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
@@ -282,6 +309,27 @@ but ARM64 is not currently verified or published.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.
+
+#### Manually sign a Microsoft Store NSIS EXE
+
+Production Store packaging is local and interactive, so the private key is not
+stored in GitHub Actions. After installing a CA-issued code-signing certificate
+in the Windows certificate store and installing NSIS 3.12, run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\Package-Store-Windows.ps1 `
+  -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 `
+  -CertificateThumbprint 'YOUR_40_CHARACTER_CERTIFICATE_THUMBPRINT' `
+  -TimestampUrl 'YOUR_CA_RFC3161_TIMESTAMP_URL'
+```
+
+The script signs and verifies the three PE payloads, builds an offline NSIS
+installer, then signs and verifies the outer EXE. It writes
+`out\store-package\chichi77-KeyKey-1.2.3-windows-x64-setup.exe`. See the Windows
+TSF README for all parameters, `/S` silent-install testing, and the versioned
+HTTPS URL used by Partner Center.
 
 ### Android
 
@@ -302,23 +350,28 @@ and does not convert them to a custom binary format. The debug APK is written to
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.
 
-### Manual GitHub Actions packaging
+### GitHub Actions packaging
 
-The four packaging workflows run only after **Run workflow** is selected on
-the GitHub Actions page. Choose the branch to build; commits, pull requests,
-and tags do not trigger a run. Successful runs retain these unsigned Actions
-artifacts for seven days:
+The macOS, Android, and iOS Simulator workflows run only after **Run workflow**
+is selected on the GitHub Actions page. The Windows workflow can also be run
+manually (test artifact only), or automatically when a tag that exactly matches
+the repository version is pushed: for example, push `v1.2.3` when the version
+is `1.2.3`. Commits, pull requests, and mismatched tags do not publish a
+Release. Successful runs retain these unsigned Actions artifacts for seven days:
 
 | Workflow | Output | Limitation |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Unsigned and not notarized |
-| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip` | Unsigned; includes x64 and x86 TSF DLLs |
+| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `chichi77-KeyKey-VERSION-windows-x64-setup.unsigned.exe` | Both are unsigned; the EXE is test-only and cannot be submitted to the Store |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 
-Each output has a matching `.sha256` file. The workflows package all public
-dictionaries in this repository and require no private repository or secret.
-They do not create or modify GitHub Releases. Production
-signing, notarization, TestFlight, and store upload are intentionally deferred.
-Because the repository is public, readers may still download an artifact
-during its seven-day retention period.
+Each output has a matching `.sha256` file. A matching-version Windows tag run
+also creates a public GitHub Release containing the ZIP, `.unsigned.exe`, and
+their checksums; it deliberately fails rather than overwriting an existing
+Release. Manual Windows runs and the other three workflows do not create or
+modify Releases. The workflows package all public dictionaries in this
+repository and require no private repository or secret. Production signing,
+notarization, TestFlight, and store upload are intentionally deferred. Because
+the repository is public, readers may still download an artifact during its
+seven-day retention period.

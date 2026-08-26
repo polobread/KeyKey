@@ -50,7 +50,7 @@ macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是�
 
 | 檔案 | 位置 |
 |---|---|
-| `Source/Loaders/Windows-TSF/CMakeLists.txt` | `project(... VERSION x.y.z)` |
+| `Source/Loaders/Windows-TSF/CMakeLists.txt` | `project(... VERSION x.y.z)`；同時產生 DLL／EXE 的 `VERSIONINFO` |
 | `Source/Loaders/Windows-TSF/Package-Windows.ps1` | `$Version` 參數預設值 |
 
 ### iOS — 1 處
@@ -194,6 +194,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **macOS codesign**：`codesign --verify --deep --strict` 會失敗（framework 的
   `Headers` 目錄是空的、封印卻記錄了那些檔案）。**不影響本機安裝與使用**，裝不
   起來時不要往這裡查；但對外 notarize 會被卡。
+- **舊 macOS TSM component ID 有三份同步點**：雖然 `Source/Loaders/OSX-TSM` 已不在
+  目前支援的建置路徑，`io.github.polobread.inputmethod.chichi77.tsm` 仍同時出現在
+  component plist、`Component.m` 與 `Source/Takao.xcodeproj/project.pbxproj`。pbxproj
+  的 `TSMC_BUNDLE_ID_LENGTH` 是字串長度的十六進位 byte，目前 44 bytes 必須寫成
+  `$"2c"`；只換 ID 不改長度會產生損壞的舊式 TSM 資源。
 - **macOS 首次安裝看不到輸入法**：Text Input Services 只在登入時掃
   `/Library/Input Methods`，換過 bundle id 就等於首次安裝，必須登出再登入，
   `lsregister` 手動註冊無效。確認是否註冊：
@@ -202,8 +207,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   會把 payload 寫到別處卻回報成功。已用 `Installer/build.sh` 的
   `BundleIsRelocatable false` 處理；安裝後仍務必
   `ls -ld "/Library/Input Methods/chichi77 KeyKey.app"` 確認。
-- **Windows 安裝**：必須先完整解壓縮、複製到本機 `C:\` 路徑，才執行 `Install.cmd`。
-  UAC 提升權限後可能存取不到網路磁碟／NAS／UNC 來源。
+- **Windows ZIP 安裝**：ZIP 版必須先完整解壓縮、複製到本機 `C:\` 路徑，才執行
+  `Install.cmd`；UAC 提升權限後可能存取不到網路磁碟／NAS／UNC 來源。NSIS EXE 是
+  獨立離線安裝器，不受這個解壓縮限制，也不要再包進另一層 ZIP 才交給 Partner Center。
 - **Android Studio agent shell 的 x86 preset 可能撞到重複環境變數**：這個環境同時
   傳入 `Path` 與 `PATH` 時，Visual Studio generator 的 MSBuild 會以 MSB6001／
   `ArgumentException` 停在編譯器偵測。不是 x86 原始碼錯誤；用
@@ -403,12 +409,28 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   詞條；較長原詞必須依明確 review 結果選取有意義的連續片段，不可再用統計斷詞器直接
   拆分。中文字首後混有拉丁字母的詞可保留。授權與免責說明在該目錄的 `README.md` 與
   `LICENSE.txt`，更新資料時不可覆蓋。
-- **GitHub Actions 封裝目前只供手動測包**：四個 `.github/workflows/package-*.yml`
-  都只有 `workflow_dispatch`，一般 commit、PR 與 tag 不會觸發，也不會建立或修改
-  GitHub Release。artifact 保留 7 天；repository 是公開的，所以保留期間仍可能被
-  讀者下載。workflow 會封裝包含 `chichi77Collection` 在內的全部公開詞庫。macOS／Windows
-  未簽章，Android 是 debug APK，iOS 只產 Apple Silicon Simulator app；正式簽章、
-  notarization、TestFlight 與商店上傳都尚未處理。
+- **GitHub Actions 封裝與 Release**：macOS、Android 與 iOS workflow 只有
+  `workflow_dispatch`；Windows 除了手動測包外，推送 `v*` tag 時會先驗證 tag 必須
+  精確等於 repository 版號（例如 `v1.2.3`），再建立公開 GitHub Release。Windows tag
+  run 需要 `contents: write`，上傳 ZIP、檔名含 `.unsigned.exe` 的 NSIS 測試安裝器及
+  各自 SHA-256；同名 Release 已存在時刻意失敗，絕不覆寫資產。手動 run 仍只保留 7 天
+  artifact；repository 是公開的，所以保留期間仍可能被讀者下載。workflow 會封裝包含
+  `chichi77Collection` 在內的全部公開詞庫。Windows 兩種產物都未簽章；macOS 也未簽章，
+  Android 是 debug APK，iOS 只產 Apple Silicon Simulator app。正式簽章、notarization、
+  TestFlight 與商店上傳都尚未處理。
+- **Windows Store EXE 採 NSIS 3.12＋本機手動簽章**：`windows-2025` image 不內建
+  NSIS，workflow 會透過 Chocolatey 固定安裝 3.12；不要降回 3.11，3.12 修正 elevated
+  installer 使用低 integrity 暫存目錄的安全問題。`Package-Store-Windows.ps1` 正式模式
+  只從 Windows 憑證存放區依 thumbprint 使用憑證，不把私鑰或密碼放進 GitHub Actions；
+  會先簽 x64 DLL、x86 DLL、設定 EXE，再建立並簽署 NSIS EXE。`-UnsignedTest` 只供
+  Actions／本機檢查，絕對不可上架。NSIS 使用 `/S`（大小寫有別）靜默安裝，payload
+  放在版本子目錄，避免升級時已載入的舊 TSF DLL 阻擋覆寫。Partner Center 使用不可
+  覆寫的版本化 HTTPS URL；自動 Release 只含 unsigned 測試資產，已簽 EXE 必須以不同
+  檔名手動上傳到對應版本的既有 Release；
+  ZIP 與 EXE 都必須保留 `Windows-TSF/LICENSE.txt`、
+  `chichi77Collection/LICENSE.txt` 與其餘授權告知。NSIS 的同意頁順序固定為
+  `LICENSING.md`（混合授權範圍）→ Windows frontend MIT → Yahoo BSD；不可把 MIT
+  放在範圍說明之前而誤導成整個產品只有 MIT。
 - **GitHub 的 `windows-2025` 目前是 VS2026 image**：2026-08-24 實跑得到
   `windows-2025-vs2026`，只有 Visual Studio 18 2026；用 `Visual Studio 17 2022`
   generator 會立即回報找不到 Visual Studio。hosted workflow 必須使用
@@ -437,11 +459,47 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 - [ ] 合併後從 GitHub Actions 頁面各手動跑一次 macOS、Windows、Android 與 iOS
       Simulator workflow，確認 hosted runner 的工具版本、四個 7 天 artifact 與公開
-      `chichi77Collection` 都被封裝；本機已用
-      actionlint 1.7.12 驗證 YAML，並完成 Windows x64 測試／x86 建置／ZIP 封裝及
-      Android lint／unit test／APK 建置。第一次 hosted Windows run 因 runner 已改為
-      VS2026 失敗，第一次 Android run 因 `setup-java` cache 掃到循環 symlink 失敗；
-      兩項 workflow 修正後都尚待重跑。
+      `chichi77Collection` 都被封裝；再於要發布的 commit 推送精確版號 tag（目前為
+      `v1.2.3`），確認 Windows 公開 Release 含 ZIP、unsigned EXE 與四個 SHA-256；本機已用
+      actionlint 1.7.12 驗證 YAML，並完成 Windows x64 測試／x86 建置／ZIP 封裝／
+      NSIS 3.12 未簽 EXE 編譯及 Android lint／unit test／APK 建置。第一次 hosted
+      Windows run 因 runner 已改為 VS2026 失敗，第一次 Android run 因 `setup-java`
+      cache 掃到循環 symlink 失敗；兩項 workflow 修正後都尚待重跑。
+
+### 舊碼清理
+
+- [ ] **已確認可在未來刪除的舊碼**：下列目錄不在目前支援的 macOS IMK、Windows
+      TSF、Android、iOS 建置或封裝路徑內，只屬於已淘汰的 Windows IMM／macOS TSM
+      frontend、其附屬工具或獨立實驗。刪除時必須在同一個 commit 清掉
+      `Source/Takao.sln`、`Source/Takao.xcodeproj` 的 legacy target、
+      `Source/Distributions/Takao/makeall-osx.sh` 與 `Source/Utilities/version-upper.rb`
+      等留下的失效引用，再完整驗證四平台目前的建置入口：
+      - `Source/Loaders/Windows-IMM`
+      - `Source/PreferenceApplications/Windows`
+      - `Source/Loaders/OSX-TSM`
+      - `Source/Studies`
+      - `Source/Utilities/CinInstaller`
+      - `Source/Utilities/HomophoneFilter`
+      - `Source/Utilities/PhraseEditor/Windows`（只刪 Windows 子目錄；OSX 仍在打包）
+      - `Source/Distributions/Takao/Installer-OSX-TSM`
+      - `Source/Distributions/Takao/Installer-Windows`
+- [ ] **需要再確認才能刪除**：下列目錄沒有出現在目前四平台的自動建置／封裝入口，
+      但可能仍供人工簽章、更新資料、舊式 DMG 製作或一次性維護使用。刪除前先確認
+      本機／外部發布流程沒有依賴，並追查動態路徑與預編譯工具的來源：
+      - `Source/Utilities/SignatureMaker`
+      - `Source/Utilities/TextOverlay`
+      - `Source/Utilities/VersionInfoMaker`
+      - `Source/Distributions/Takao/Installer-OSX-DB`
+      - `Source/Distributions/Takao/Installer-OSX-ExtraModules`
+      - `Source/Distributions/Takao/Installer-OSX-IMK`
+      - `Source/Distributions/Takao/OnlineDataTemplates`
+      - `Source/Distributions/Takao/PrecompiledTools`
+      - `Source/Distributions/Takao/VersionInfo`
+- `DataSource/chichi77Collection` 仍供四平台資料生成與封裝使用；
+  `Source/Loaders/CrossPlatform`、`Source/WebResources`、
+  `Source/Distributions/Takao/Installer-OSX-UI`、
+  `Source/Distributions/Takao/Installer-OSX-Help` 與 `Source/Utilities/PhraseEditor/OSX`
+  仍由目前 macOS IMK target 編譯、複製或打包。以上均**不在刪除範圍內**。
 
 ### macOS
 
@@ -454,12 +512,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - [ ] 去 Yahoo 化未完成：隨主程式打包的 Preferences、PhraseEditor、DownloadUpdate、
       InstallerHelp 仍有使用者可見的 Yahoo 字串（如「Yahoo! KeyKey is not running」、
       `NSHumanReadableCopyright`）。注意硬規則第 5 條，BSD 要求保留的部分不能動。
-- [ ] 未被任何建置引用的舊目錄仍保留（`Source/Loaders/Windows-IMM`、
-      `Source/PreferenceApplications/Windows`、`Source/Loaders/OSX-TSM`、
-      `Source/Studies`，約 700 檔）。**刻意不刪**，不要自行清理。
 
 ### Windows
 
+- [ ] 取得受信任的正式程式碼簽章憑證後，實跑 `Package-Store-Windows.ps1`，確認三個
+      PE 與 NSIS EXE 的 RFC 3161 時間戳記；目前只驗證 `-UnsignedTest` 能編譯並含完整
+      payload。還要在乾淨 Windows 11 VM 測 `/S` 安裝、靜默解除安裝、升級、x64
+      應用程式及 32-bit Office 載入，再把已簽 EXE 手動放到不可覆寫的版本化
+      GitHub Release URL 供 Partner Center 抓取。
 - [ ] `Package-Windows.ps1` 的 `$Version` 與 `CMakeLists.txt` 重複，可改成從
       `CMakeLists.txt` regex 讀取。
 - [ ] 安裝 2026-08-24 的語言列生命週期修正版後，在 Android Studio 反覆以

@@ -1,3 +1,9 @@
 #include "Resource.h"
 
 IDI_CHICHI77 ICON "chichi77.ico"
+
+#define KEYKEY_FILE_DESCRIPTION "chichi77 KeyKey settings"
+#define KEYKEY_INTERNAL_NAME "KeyKeySettings.exe"
+#define KEYKEY_ORIGINAL_FILENAME "KeyKeySettings.exe"
+#define KEYKEY_FILE_TYPE 0x1L
+#include "VersionInfo.rcinc"

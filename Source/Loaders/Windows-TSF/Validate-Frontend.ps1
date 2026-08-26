@@ -22,7 +22,8 @@ $requiredFiles = @(
     'Resource.h',
     'SettingsApp.cpp',
     'TextService.cpp',
-    'TsfInterfaceSmokeTest.cpp'
+    'TsfInterfaceSmokeTest.cpp',
+    'VersionInfo.rcinc'
 )
 
 $errors = [System.Collections.Generic.List[string]]::new()

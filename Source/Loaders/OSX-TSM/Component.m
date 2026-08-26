@@ -90,7 +90,7 @@ AppleComponent TSMCOpenComponent(ComponentInstance instance)
         #warning parameterize this part
 
         if (!_InputMethodServer) {
-        	NSString *sharedSupportPath = [[NSBundle bundleWithIdentifier:@"com.yahoo.KeyKeyTiger"] sharedSupportPath];
+            NSString *sharedSupportPath = [[NSBundle bundleWithIdentifier:@"io.github.polobread.inputmethod.chichi77.tsm"] sharedSupportPath];
         	NSString *serverPath = [sharedSupportPath stringByAppendingPathComponent:@"KeyKeyServer.app"];
 			
             NSLog(@"launching %@", serverPath);
