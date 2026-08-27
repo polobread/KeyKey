@@ -76,6 +76,25 @@ static BOOL OVCShouldEnterEngine(const OVKey& key)
     return YES;
 }
 
+static float OVCCandidateWindowScale(const string& value)
+{
+	if (value == "system" || value.empty())
+		return 1.0;
+
+	char *end = 0;
+	long percentage = strtol(value.c_str(), &end, 10);
+	if (!end || *end)
+		return 1.0;
+
+	switch (percentage) {
+		case 100: case 125: case 150: case 175: case 200:
+		case 225: case 250: case 300: case 350:
+			return (float)percentage / 100.0;
+	}
+
+	return 1.0;
+}
+
 @implementation OpenVanillaController
 - (void)dealloc
 {
@@ -295,6 +314,11 @@ static BOOL OVCShouldEnterEngine(const OVKey& key)
 	else {
         _context->candidateService()->setOneDimensionalPanelVertical(true);
 	}
+
+	float candidateWindowScale = OVCCandidateWindowScale(
+		kvm.stringValueForKey("CandidateWindowScalePercent"));
+	[[[NSApp delegate] verticalCandidateController] setCandidateWindowScale:candidateWindowScale];
+	[[[NSApp delegate] horizontalCandidateController] setCandidateWindowScale:candidateWindowScale];
     
 	if (kvm.hasKey("CandidateTextFontHeight")) {
 		float fontHeight = atof(kvm.stringValueForKey("CandidateTextFontHeight").c_str());

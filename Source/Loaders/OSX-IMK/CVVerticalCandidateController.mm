@@ -3,6 +3,29 @@
 #import "CVVerticalCandidateController.h"
 #import "NSColor+LFColorExtensions.h"
 
+static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame,
+	NSSize unscaledSize)
+{
+	NSRect unscaledFrame = scaledFrame;
+	unscaledFrame.size = unscaledSize;
+	[window setFrame:unscaledFrame display:NO];
+
+	NSView *contentView = [window contentView];
+	[contentView setBoundsSize:unscaledSize];
+	NSArray *subviews = [contentView subviews];
+	NSMutableArray *subviewFrames = [NSMutableArray arrayWithCapacity:[subviews count]];
+	NSEnumerator *enumerator = [subviews objectEnumerator];
+	NSView *subview;
+	while (subview = [enumerator nextObject])
+		[subviewFrames addObject:[NSValue valueWithRect:[subview frame]]];
+
+	[window setFrame:scaledFrame display:NO];
+	[contentView setBoundsSize:unscaledSize];
+	for (NSUInteger index = 0; index < [subviews count]; index++)
+		[[subviews objectAtIndex:index] setFrame:[[subviewFrames objectAtIndex:index] rectValue]];
+	[window display];
+}
+
 @implementation CVPageButton
 
 - (BOOL)isFlipped
@@ -54,6 +77,7 @@
 		NSAssert((loaded == YES), @"NIB did not load");
 		
 		_candidateTextHeight = 18.0;
+		_candidateWindowScale = 1.0;
 	}
 	return self;
 }
@@ -222,8 +246,9 @@
 	[_tableView sizeToFit];
 	
     NSRect windowFrame = [[self window] frame];
-	windowFrame.size.width = tableFrame.size.width;
-	windowFrame.size.height = tableFrame.size.height + 40;
+	NSSize unscaledWindowSize = NSMakeSize(tableFrame.size.width, tableFrame.size.height + 40);
+	windowFrame.size = NSMakeSize(unscaledWindowSize.width * _candidateWindowScale,
+		unscaledWindowSize.height * _candidateWindowScale);
 	windowFrame.origin.x = newPosition.x;
 
 	NSRect frame = [[NSScreen mainScreen] visibleFrame];
@@ -259,7 +284,7 @@
 
 	windowFrame.origin = newPosition;
 
-	[[self window] setFrame:windowFrame display:YES];
+	CVSetScaledCandidateWindowFrame([self window], windowFrame, unscaledWindowSize);
 
 	if (panel->isInControl()) {
 		_allowClick = YES;
@@ -325,6 +350,11 @@
 - (void)setCandidateTextHeight:(float)inTextHeight
 {
 	_candidateTextHeight = inTextHeight;
+}
+
+- (void)setCandidateWindowScale:(float)scale
+{
+	_candidateWindowScale = (scale >= 1.0 && scale <= 3.5) ? scale : 1.0;
 }
 
 #pragma mark TableView delegate

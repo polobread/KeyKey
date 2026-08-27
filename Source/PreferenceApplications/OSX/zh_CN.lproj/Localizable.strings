@@ -73,3 +73,5 @@
 "Do you really want to remove the plugin '%@'?" = "您确定要删除“%@”这个插件么？";
 "This build does not check for updates." = "此版本不会检查更新";
 "chichi77 KeyKey does not connect to the Internet." = "琦琦输入法不会连接到互联网。";
+"Candidate window scale:" = "候选窗比例：";
+"Follow display (Default)" = "跟随显示器（默认）";

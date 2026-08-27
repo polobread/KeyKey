@@ -3,6 +3,29 @@
 #import "CVHorizontalCandidateController.h"
 #import "NSColor+LFColorExtensions.h"
 
+static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame,
+	NSSize unscaledSize)
+{
+	NSRect unscaledFrame = scaledFrame;
+	unscaledFrame.size = unscaledSize;
+	[window setFrame:unscaledFrame display:NO];
+
+	NSView *contentView = [window contentView];
+	[contentView setBoundsSize:unscaledSize];
+	NSArray *subviews = [contentView subviews];
+	NSMutableArray *subviewFrames = [NSMutableArray arrayWithCapacity:[subviews count]];
+	NSEnumerator *enumerator = [subviews objectEnumerator];
+	NSView *subview;
+	while (subview = [enumerator nextObject])
+		[subviewFrames addObject:[NSValue valueWithRect:[subview frame]]];
+
+	[window setFrame:scaledFrame display:NO];
+	[contentView setBoundsSize:unscaledSize];
+	for (NSUInteger index = 0; index < [subviews count]; index++)
+		[[subviews objectAtIndex:index] setFrame:[[subviewFrames objectAtIndex:index] rectValue]];
+	[window display];
+}
+
 @implementation CVHorizontalCandidateController
 
 - (void)dealloc
@@ -18,6 +41,7 @@
 	if (self != nil) {
 		BOOL loaded = [NSBundle loadNibNamed:@"HorizontalCandidateWindow" owner:self];
 		NSAssert((loaded == YES), @"NIB did not load");
+		_candidateWindowScale = 1.0;
 	}
 	return self;
 }
@@ -168,6 +192,10 @@
 	[_nextButton setFrame:goNextFrame];
 	[_background setFrame:NSMakeRect(0, 0, windowFrame.size.width, candidateSize.height)];
 
+	NSSize unscaledWindowSize = windowFrame.size;
+	windowFrame.size = NSMakeSize(unscaledWindowSize.width * _candidateWindowScale,
+		unscaledWindowSize.height * _candidateWindowScale);
+
 	NSRect frame = [[NSScreen mainScreen] visibleFrame];
 	NSArray *screens = [NSScreen screens];
 	int i, c = [screens count];
@@ -208,7 +236,7 @@
 		[_candidateControl setClickable:NO];
 	}
 
-	[[self window] setFrame:windowFrame display:YES];
+	CVSetScaledCandidateWindowFrame([self window], windowFrame, unscaledWindowSize);
     
     if (panel->isVisible())
 		[[self window] makeKeyAndOrderFront:self];
@@ -248,6 +276,11 @@
 - (void)setCandidateTextHeight:(float)inTextHeight
 {
 	[_candidateControl setCandidateTextHeight:inTextHeight];
+}
+
+- (void)setCandidateWindowScale:(float)scale
+{
+	_candidateWindowScale = (scale >= 1.0 && scale <= 3.5) ? scale : 1.0;
 }
 
 @end

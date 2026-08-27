@@ -58,6 +58,54 @@ file for terms.
 
 @implementation TakaoGlobal
 
+- (void)setCandidateWindowScaleUI
+{
+	NSRect matrixFrame = [_candidateWindowStyleMatrix frame];
+	NSView *container = [_candidateWindowStyleMatrix superview];
+	NSRect popupFrame = NSMakeRect(matrixFrame.origin.x - 3.0,
+		NSMaxY(matrixFrame) + 7.0, 242.0, 26.0);
+
+	NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(15.0,
+		popupFrame.origin.y + 5.0, matrixFrame.origin.x - 25.0, 17.0)] autorelease];
+	[label setBezeled:NO];
+	[label setDrawsBackground:NO];
+	[label setEditable:NO];
+	[label setSelectable:NO];
+	[label setAlignment:NSRightTextAlignment];
+	[label setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
+	[label setStringValue:LFLSTR(@"Candidate window scale:")];
+	[container addSubview:label];
+
+	_candidateWindowScalePopUpButton = [[[NSPopUpButton alloc] initWithFrame:popupFrame
+		pullsDown:NO] autorelease];
+	[_candidateWindowScalePopUpButton addItemWithTitle:LFLSTR(@"Follow display (Default)")];
+	[[[_candidateWindowScalePopUpButton menu] itemAtIndex:0] setRepresentedObject:@"system"];
+
+	NSArray *percentages = [NSArray arrayWithObjects:@"100", @"125", @"150", @"175",
+		@"200", @"225", @"250", @"300", @"350", nil];
+	NSEnumerator *enumerator = [percentages objectEnumerator];
+	NSString *percentage;
+	while (percentage = [enumerator nextObject]) {
+		[_candidateWindowScalePopUpButton addItemWithTitle:[percentage stringByAppendingString:@"%"]];
+		[[[_candidateWindowScalePopUpButton menu] itemAtIndex:
+			[[_candidateWindowScalePopUpButton menu] numberOfItems] - 1]
+			setRepresentedObject:percentage];
+	}
+	[_candidateWindowScalePopUpButton setTarget:self];
+	[_candidateWindowScalePopUpButton setAction:@selector(writePreference:)];
+	[container addSubview:_candidateWindowScalePopUpButton];
+
+	NSScrollView *moduleListScrollView = [_moduleListTableView enclosingScrollView];
+	NSRect scrollFrame = [moduleListScrollView frame];
+	float minimumY = NSMaxY(popupFrame) + 8.0;
+	if (NSMinY(scrollFrame) < minimumY) {
+		float maximumY = NSMaxY(scrollFrame);
+		scrollFrame.origin.y = minimumY;
+		scrollFrame.size.height = maximumY - minimumY;
+		[moduleListScrollView setFrame:scrollFrame];
+	}
+}
+
 - (void)dealloc
 {
     if (_sound) {
@@ -195,6 +243,19 @@ file for terms.
 		[_candidateWindowStyleMatrix selectCellAtRow:0 column:1];
 	else
 		[_candidateWindowStyleMatrix selectCellAtRow:0 column:0];		
+
+	NSString *candidateWindowScale = [_takaoDictionary valueForKey:@"CandidateWindowScalePercent"];
+	NSMenuItem *scaleItem = nil;
+	NSEnumerator *scaleItems = [[_candidateWindowScalePopUpButton itemArray] objectEnumerator];
+	NSMenuItem *item;
+	while (item = [scaleItems nextObject]) {
+		if ([[item representedObject] isEqualToString:candidateWindowScale]) {
+			scaleItem = item;
+			break;
+		}
+	}
+	[_candidateWindowScalePopUpButton selectItem:scaleItem ? scaleItem :
+		[[_candidateWindowScalePopUpButton menu] itemAtIndex:0]];
 	
 	[self setSoundUI];
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)	
@@ -263,7 +324,10 @@ file for terms.
 	[_takaoDictionary setValue:@"com.apple.keylayout.US" forKey:@"KeyboardLayout"];
 	[_takaoDictionary setValue:[NSArray array] forKey:@"ModulesSuppressedFromUI"];
 	[_takaoDictionary setValue:@"vertical" forKey:@"OneDimensionalCandidatePanelStyle"];
+	[_takaoDictionary setValue:@"system" forKey:@"CandidateWindowScalePercent"];
 	[_takaoDictionary setValue:@"true" forKey:@"ToggleInputMethodWithControlBackslash"];
+
+	[self setCandidateWindowScaleUI];
 
 	LFRetainAssign(_preferenceFilePath, [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME]);
 
@@ -307,6 +371,10 @@ file for terms.
 		[_takaoDictionary setValue:@"horizontal" forKey:@"OneDimensionalCandidatePanelStyle"];
 	else
 		[_takaoDictionary setValue:@"vertical" forKey:@"OneDimensionalCandidatePanelStyle"];
+
+	NSString *candidateWindowScale = [[_candidateWindowScalePopUpButton selectedItem] representedObject];
+	[_takaoDictionary setValue:candidateWindowScale ? candidateWindowScale : @"system"
+		forKey:@"CandidateWindowScalePercent"];
 }
 - (void)doWrite
 {

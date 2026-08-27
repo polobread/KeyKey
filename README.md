@@ -1,4 +1,4 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.2.4
+# 琦琦輸入法 / chichi77 KeyKey 1.2.5
 
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，目前支援 macOS、Windows、
 Android 與 iOS 四個平台。

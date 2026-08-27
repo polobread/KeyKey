@@ -27,6 +27,7 @@ using namespace OpenVanilla;
 	
 	BOOL _allowClick;
 	BOOL _sending;
+	float _candidateWindowScale;
 }
 
 - (void)setFontHeight:(float)newHeight;
@@ -39,4 +40,5 @@ using namespace OpenVanilla;
 - (IBAction)gotoPreviousPage:(id)sender;
 
 - (void)setCandidateTextHeight:(float)inTextHeight;
+- (void)setCandidateWindowScale:(float)scale;
 @end

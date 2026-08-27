@@ -33,6 +33,7 @@ using namespace OpenVanilla;
 	BOOL _sending;
 	
 	float _candidateTextHeight;
+	float _candidateWindowScale;
 }
 
 - (void)setFontHeight:(float)newHeight;
@@ -40,6 +41,7 @@ using namespace OpenVanilla;
 - (void)hide;
 
 - (void)setCandidateTextHeight:(float)inTextHeight;
+- (void)setCandidateWindowScale:(float)scale;
 
 #pragma mark Interface Builder actions
 

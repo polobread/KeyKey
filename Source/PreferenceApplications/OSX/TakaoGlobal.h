@@ -30,6 +30,7 @@ file for terms.
 	IBOutlet id _highlightColorPopUpButton;
 	IBOutlet NSTableView *_moduleListTableView;
 	IBOutlet NSMatrix *_candidateWindowStyleMatrix;	
+	NSPopUpButton *_candidateWindowScalePopUpButton;
 	IBOutlet id _useUpdateCheckBox;
 	IBOutlet id _useCtrlBackSlashToggleInputMethod;
 	
