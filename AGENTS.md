@@ -499,18 +499,19 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### GitHub Actions
 
-- [ ] 合併後從 GitHub Actions 頁面各手動跑一次 macOS、Windows、Android 與 iOS
-      Simulator workflow，確認 hosted runner 的工具版本、7 天 artifact 與公開
-      `chichi77Collection` 都被封裝（macOS 手動 run 不會有 tag，`publish` job 會直接
-      skip，只驗 `build` 沒被拆壞）；再於要發布的 commit 推送精確版號 tag，確認
-      Windows 公開 Release 含 ZIP、unsigned EXE 與 SHA-256。第一次 hosted Windows run
-      因 runner 已改為 VS2026 失敗，第一次 Android run 因 `setup-java` cache 掃到循環
-      symlink 失敗；兩項 workflow 修正後都尚待重跑。
-- [ ] macOS `publish` job 尚未實跑過。第一次 tag run 要確認：臨時 keychain 匯入與
-      `set-key-partition-list` 沒有卡在 GUI 授權、Apple 中介憑證抓得到且憑證鏈完整、
-      notarytool 回 `Accepted`、`stapler validate` 與
-      `spctl --assess --type install -vv`（要回 `source=Notarized Developer ID`）都過、
-      Release 上的 pkg zip 下載後在另一台 Mac 上不再觸發 Gatekeeper 警告。
+- [ ] Android 與 iOS Simulator workflow 仍需從 GitHub Actions 頁面手動重跑，確認
+      hosted runner 的工具版本、7 天 artifact 與公開 `chichi77Collection` 都被封裝。
+      2026-08-27 的 `v1.2.4` tag 已實跑 macOS 與 Windows：兩個 workflow 都成功，
+      Windows 公開 Release 含 ZIP、unsigned EXE 與各自 SHA-256；macOS 的 build
+      artifact 也包含公開詞庫。先前 Windows 的 VS2026 與 Android 循環 symlink 修正中，
+      Windows 已由本次 tag run 驗證，Android 仍待重跑。
+- [x] macOS `publish` job 已於 2026-08-27 的 `v1.2.4` 首次實跑成功（run
+      `33031272995`，build 18m25s、publish 31m20s）：臨時 keychain、
+      `set-key-partition-list`、Apple 中介憑證鏈、簽章、notarytool、staple、
+      `stapler validate`、`spctl --assess --type install -vv` 與 Release 上傳全部通過；
+      Release 含 signed pkg zip 與 SHA-256。
+- [ ] 從 `v1.2.4` Release 下載 signed pkg zip，在另一台 Mac 實際安裝並確認不再觸發
+      Gatekeeper 警告。
 - [ ] 兩張 Developer ID 憑證掛在 G1 中介之下，`notAfter` 被 CA 自己的到期日砍到
       **2027-02-01**（不是常見的 5 年；G2 中介到 2031）。到期後簽不出新版本，已 staple
       的舊產物仍有效。值得從 developer.apple.com 網頁重新申請，看 Apple 是否改簽在 G2。
