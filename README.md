@@ -1,4 +1,4 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.2.5
+# 琦琦輸入法 / chichi77 KeyKey 1.2.6
 
 ## 開發初衷
 

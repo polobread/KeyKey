@@ -1477,6 +1477,7 @@
         </customView>
         <customObject id="591" customClass="TakaoGlobal">
             <connections>
+                <outlet property="_candidateWindowStyleMatrix" destination="1010" id="1051"/>
                 <outlet property="_highlightColorPopUpButton" destination="979" id="986"/>
                 <outlet property="_keyboardLayoutPopUpButton" destination="927" id="969"/>
                 <outlet property="_moduleListTableView" destination="992" id="998"/>

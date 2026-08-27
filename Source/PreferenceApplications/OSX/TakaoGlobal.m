@@ -64,6 +64,25 @@ file for terms.
 	NSView *container = [_candidateWindowStyleMatrix superview];
 	NSRect popupFrame = NSMakeRect(matrixFrame.origin.x - 3.0,
 		NSMaxY(matrixFrame) + 7.0, 242.0, 26.0);
+	NSScrollView *moduleListScrollView = [_moduleListTableView enclosingScrollView];
+
+	// The localized help text originally occupies the row where the new scale
+	// control sits. Move intersecting labels above the popup, then shorten the
+	// module list so all three rows remain visible without overlapping.
+	float occupiedMaximumY = NSMaxY(popupFrame) + 4.0;
+	NSEnumerator *existingSubviews = [[container subviews] objectEnumerator];
+	NSView *existingSubview;
+	while (existingSubview = [existingSubviews nextObject]) {
+		if (existingSubview == _candidateWindowStyleMatrix ||
+			existingSubview == moduleListScrollView ||
+			!NSIntersectsRect([existingSubview frame], popupFrame))
+			continue;
+
+		NSRect existingFrame = [existingSubview frame];
+		existingFrame.origin.y = occupiedMaximumY;
+		[existingSubview setFrame:existingFrame];
+		occupiedMaximumY = NSMaxY(existingFrame) + 4.0;
+	}
 
 	NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(15.0,
 		popupFrame.origin.y + 5.0, matrixFrame.origin.x - 25.0, 17.0)] autorelease];
@@ -81,8 +100,8 @@ file for terms.
 	[_candidateWindowScalePopUpButton addItemWithTitle:LFLSTR(@"Follow display (Default)")];
 	[[[_candidateWindowScalePopUpButton menu] itemAtIndex:0] setRepresentedObject:@"system"];
 
-	NSArray *percentages = [NSArray arrayWithObjects:@"100", @"125", @"150", @"175",
-		@"200", @"225", @"250", @"300", @"350", nil];
+	NSArray *percentages = [NSArray arrayWithObjects:@"75", @"90", @"100", @"125",
+		@"150", @"175", @"200", @"225", @"250", @"300", @"350", nil];
 	NSEnumerator *enumerator = [percentages objectEnumerator];
 	NSString *percentage;
 	while (percentage = [enumerator nextObject]) {
@@ -95,9 +114,9 @@ file for terms.
 	[_candidateWindowScalePopUpButton setAction:@selector(writePreference:)];
 	[container addSubview:_candidateWindowScalePopUpButton];
 
-	NSScrollView *moduleListScrollView = [_moduleListTableView enclosingScrollView];
 	NSRect scrollFrame = [moduleListScrollView frame];
-	float minimumY = NSMaxY(popupFrame) + 8.0;
+	float minimumY = occupiedMaximumY > NSMaxY(popupFrame) + 8.0 ?
+		occupiedMaximumY : NSMaxY(popupFrame) + 8.0;
 	if (NSMinY(scrollFrame) < minimumY) {
 		float maximumY = NSMaxY(scrollFrame);
 		scrollFrame.origin.y = minimumY;

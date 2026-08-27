@@ -40,7 +40,8 @@ int CandidateScalePercent(const std::string& value) {
     char* end = nullptr;
     const long parsed = std::strtol(value.c_str(), &end, 10);
     if (!end || end == value.c_str() || *end != '\0') return 0;
-    constexpr int allowed[] = {100, 125, 150, 175, 200, 225, 250, 300, 350};
+    constexpr int allowed[] = {75, 90, 100, 125, 150, 175,
+                               200, 225, 250, 300, 350};
     for (const int percent : allowed) {
         if (parsed == percent) return percent;
     }

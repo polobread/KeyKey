@@ -87,7 +87,7 @@ static float OVCCandidateWindowScale(const string& value)
 		return 1.0;
 
 	switch (percentage) {
-		case 100: case 125: case 150: case 175: case 200:
+		case 75: case 90: case 100: case 125: case 150: case 175: case 200:
 		case 225: case 250: case 300: case 350:
 			return (float)percentage / 100.0;
 	}

@@ -326,18 +326,19 @@ void CreateGeneralPage(HWND window, WindowState* state) {
                    {L"紫色", L"綠色", L"黃色", L"紅色"}, colorIndex);
     const std::string scale =
         PlistString(xml, "CandidateWindowScalePercent", "system");
-    const char* scaleValues[] = {"system", "100", "125", "150", "175",
-                                 "200",    "225", "250", "300", "350"};
+    const char* scaleValues[] = {"system", "75",  "90",  "100", "125", "150",
+                                 "175",    "200", "225", "250", "300", "350"};
     int scaleIndex = 0;
-    for (int index = 1; index < 10; ++index) {
+    for (int index = 1; index < 12; ++index) {
         if (scale == scaleValues[index]) {
             scaleIndex = index;
             break;
         }
     }
     AddComboValues(candidateScale,
-                   {L"跟隨 Windows（預設）", L"100%", L"125%", L"150%",
-                    L"175%", L"200%", L"225%", L"250%", L"300%", L"350%"},
+                   {L"跟隨 Windows（預設）", L"75%", L"90%", L"100%",
+                    L"125%", L"150%", L"175%", L"200%", L"225%",
+                    L"250%", L"300%", L"350%"},
                    scaleIndex);
     SendMessageW(GetDlgItem(window, kGeneralControlBackslashId), BM_SETCHECK,
                  PlistBool(xml, "ToggleInputMethodWithControlBackslash", true)
@@ -461,11 +462,11 @@ bool SaveSettings(HWND window, WindowState* state) {
                    colors[colorIndex >= 0 && colorIndex < 4 ? colorIndex : 0]);
     const int scaleIndex = static_cast<int>(SendMessageW(
         GetDlgItem(window, kGeneralCandidateScaleId), CB_GETCURSEL, 0, 0));
-    const char* scaleValues[] = {"system", "100", "125", "150", "175",
-                                 "200",    "225", "250", "300", "350"};
+    const char* scaleValues[] = {"system", "75",  "90",  "100", "125", "150",
+                                 "175",    "200", "225", "250", "300", "350"};
     SetPlistString(
         general, "CandidateWindowScalePercent",
-        scaleValues[scaleIndex >= 0 && scaleIndex < 10 ? scaleIndex : 0]);
+        scaleValues[scaleIndex >= 0 && scaleIndex < 12 ? scaleIndex : 0]);
     SetPlistString(
         general, "ToggleInputMethodWithControlBackslash",
         SendMessageW(GetDlgItem(window, kGeneralControlBackslashId),

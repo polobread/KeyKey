@@ -247,16 +247,20 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `WM_DPICHANGED` 處理跨螢幕移動。DPI-unaware host 會回報 96 DPI 並由系統整體
   virtualization；不要再乘一次實體螢幕比例，否則會雙重放大。
 - **Windows 候選窗比例可覆寫 host DPI**：一般設定的「比例」預設跟隨 Windows；
-  選擇 `100%` 到 `350%` 時是候選窗自己的絕對縮放比例，讓高 DPI 螢幕可以把候選窗
+  選擇 `75%` 到 `350%` 時是候選窗自己的絕對縮放比例，讓高 DPI 螢幕可以把候選窗
   調得比系統比例小。設定值存為 `CandidateWindowScalePercent`；只有清單內的值有效，
   缺少或無效時回到跟隨 Windows。自訂值會用 `GetScaleFactorForMonitor` 對 host 回報
   DPI 做反向正規化，抵消 DPI-unaware／system-aware host 的 bitmap virtualization；
   不可直接把自訂百分比當 DPI，也不可再和 host DPI 相乘。
 - **macOS 候選窗比例沿用同一個設定鍵與選項**：Preferences 的一般設定以程式建立
-  「跟隨顯示器、100%–350%」選單，值同樣存為 `CandidateWindowScalePercent`。AppKit
+  「跟隨顯示器、75%–350%」選單，值同樣存為 `CandidateWindowScalePercent`。AppKit
   已負責 point 到 Retina pixel 的映射，所以「跟隨顯示器」維持原本 1 倍 point 尺寸；
   指定百分比則以 content view 的 bounds 等比例放大直式與橫式候選窗，不能再乘
   `backingScaleFactor`，否則 Retina 螢幕會雙重放大。設定在下次輸入法 activate 時套用。
+  比例列與 XIB 原有的「可隱藏部分輸入法模組」說明佔用同一列；建立控制項時必須先把
+  說明移到比例列上方並縮短模組清單，否則比例 popup 會直接蓋住說明文字。
+  三份 `MainMenu.xib` 都必須把 `_candidateWindowStyleMatrix` 接到 `TakaoGlobal`；簡中曾
+  漏接，會讓程式建立的比例列使用零座標並且無法保存直／橫式選擇。
 - **Windows 語言列通知可能重入或跨執行緒**：2026-08-24 的 Android Studio
   `studio64.exe` 在 `Ctrl+Space` 切換模式時連續三次以 `0xc0000005` 崩潰；WER 的
   faulting module 是 `KeyKeyTsf_x64.dll`，固定 offset `0xA087` 經同版 map 確認為
@@ -558,8 +562,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### macOS
 
-- [ ] 在實體 Mac 截圖確認 Preferences 三種語系新增的候選窗比例列，以及直式／橫式
-      候選窗在「跟隨顯示器、100%、200%、350%」下的字體、按鍵角標、翻頁控制與點選
+- [ ] 在實體 Mac 截圖確認 Preferences 三種語系新增的候選窗比例列不再覆蓋模組說明，
+      以及直式／橫式候選窗在「跟隨顯示器、75%、90%、100%、200%、350%」下的字體、
+      按鍵角標、翻頁控制與點選
       hit testing 都一起縮放；Windows 環境只能做原始碼與 plist 靜態檢查。
 - [ ] 版號集中：`Takao-macOS.xcconfig` 設 `MARKETING_VERSION` 與
       `CURRENT_PROJECT_VERSION`，4 個 plist 改用 `$(MARKETING_VERSION)`（8 處 → 1 處）。
