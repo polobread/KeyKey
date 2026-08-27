@@ -14,8 +14,9 @@ and its Xcode project remain unchanged.
   half-/full-width (`半`/`全`) modes
 - `ITfFnConfigure` keyboard-options entry and a standalone three-page settings
   app for general, Traditional Bopomofo, and associated-phrase options
-- vertical or horizontal candidate windows with purple, green, yellow, or red
-  highlighting; optional typing-error sound and `Ctrl+\` mode switching
+- vertical or horizontal candidate windows with independent Windows-style
+  scaling choices and purple, green, yellow, or red highlighting; optional
+  typing-error sound and `Ctrl+\` mode switching
 - Standard, ETen, ETen 26, Hsu, and Hanyu Pinyin Bopomofo layouts, plus a
   switch between Big-5-only candidates and the full CNS11643 character set
 - Traditional Chinese (`zh-TW`) language profile registration
@@ -130,7 +131,7 @@ successful build and test, run:
   -X86BuildDirectory .\out\build\x86
 ```
 
-The result is `out\package\chichi77-KeyKey-1.2.3-windows-x64.zip`. On the other
+The result is `out\package\chichi77-KeyKey-1.2.4-windows-x64.zip`. On the other
 PC, extract the entire ZIP, copy the complete extracted folder to a local
 `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd` there. Do not
 install directly from a mapped network drive, NAS, or UNC path: it can become
@@ -155,14 +156,14 @@ The Windows GitHub Actions workflow installs NSIS 3.12 and emits this test-only
 installer in addition to the ZIP package:
 
 ```text
-out\store-package\chichi77-KeyKey-1.2.3-windows-x64-setup.unsigned.exe
+out\store-package\chichi77-KeyKey-1.2.4-windows-x64-setup.unsigned.exe
 ```
 
 The `.unsigned.exe` artifact supports `/S` silent installation but is not
 eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
 settings executable, and the outer installer is unsigned as well.
 
-Pushing a tag that exactly matches the repository version, such as `v1.2.3`,
+Pushing a tag that exactly matches the repository version, such as `v1.2.4`,
 automatically publishes this unsigned EXE, the ZIP package, and SHA-256 files.
 The workflow uploads to the corresponding Release when it already exists, or
 creates the Release when needed; it never creates the tag or overwrites an
@@ -207,8 +208,8 @@ edits the original build outputs and does not accept or store a PFX password.
 The output is:
 
 ```text
-out\store-package\chichi77-KeyKey-1.2.3-windows-x64-setup.exe
-out\store-package\chichi77-KeyKey-1.2.3-windows-x64-setup.exe.sha256
+out\store-package\chichi77-KeyKey-1.2.4-windows-x64-setup.exe
+out\store-package\chichi77-KeyKey-1.2.4-windows-x64-setup.exe.sha256
 ```
 
 Test the signed installer's silent installation and uninstallation on a
@@ -216,7 +217,7 @@ disposable clean Windows 11 VM before submission. NSIS treats `/S` as
 case-sensitive:
 
 ```powershell
-.\chichi77-KeyKey-1.2.3-windows-x64-setup.exe /S
+.\chichi77-KeyKey-1.2.4-windows-x64-setup.exe /S
 & "$env:ProgramFiles\chichi77 KeyKey\Uninstall.exe" /S
 ```
 
@@ -226,7 +227,7 @@ the unsigned test assets. Upload the separately signed EXE as a distinct asset
 to that existing Release, then use a URL such as:
 
 ```text
-https://github.com/polobread/KeyKey/releases/download/v1.2.3/chichi77-KeyKey-1.2.3-windows-x64-setup.exe
+https://github.com/polobread/KeyKey/releases/download/v1.2.4/chichi77-KeyKey-1.2.4-windows-x64-setup.exe
 ```
 
 Do not replace an asset after submitting its URL. In Partner Center select
@@ -247,7 +248,7 @@ Databases/
 
 The ZIP installer places this layout directly under
 `C:\Program Files\chichi77 KeyKey`. The NSIS installer places it in a versioned
-subdirectory such as `C:\Program Files\chichi77 KeyKey\1.2.3`; its uninstaller
+subdirectory such as `C:\Program Files\chichi77 KeyKey\1.2.4`; its uninstaller
 remains one level above. Versioned payload directories let an upgrade register
 new DLL paths even while an application still has the previous TSF DLL loaded.
 

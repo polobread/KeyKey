@@ -28,6 +28,7 @@ constexpr int kGeneralHorizontalId = 204;
 constexpr int kGeneralHighlightId = 205;
 constexpr int kGeneralControlBackslashId = 206;
 constexpr int kGeneralBeepId = 207;
+constexpr int kGeneralCandidateScaleId = 208;
 constexpr int kPhoneticKeyboardLayoutId = 301;
 constexpr int kPhoneticRareCharactersId = 302;
 constexpr int kPhraseListId = 401;
@@ -277,7 +278,7 @@ void CreateGeneralPage(HWND window, WindowState* state) {
                238, 176, 400, 24);
 
     AddControl(window, page, 0, L"BUTTON", L"選字窗", BS_GROUPBOX, 26,
-               236, 650, 112);
+               236, 650, 150);
     AddControl(window, page, 0, L"STATIC", L"樣式：", 0, 44, 266, 64, 22);
     AddControl(window, page, 0, L"BUTTON", L"垂直選字窗",
                BS_AUTORADIOBUTTON | WS_GROUP, 112, 263, 125, 24,
@@ -285,22 +286,29 @@ void CreateGeneralPage(HWND window, WindowState* state) {
     AddControl(window, page, 0, L"BUTTON", L"水平選字窗",
                BS_AUTORADIOBUTTON, 246, 263, 125, 24,
                kGeneralHorizontalId);
-    AddControl(window, page, 0, L"STATIC", L"配色：", 0, 44, 307, 64, 22);
+    AddControl(window, page, 0, L"STATIC", L"比例：", 0, 44, 307, 64, 22);
+    HWND candidateScale = AddControl(
+        window, page, 0, WC_COMBOBOXW, L"",
+        CBS_DROPDOWNLIST | WS_VSCROLL, 112, 303, 220, 240,
+        kGeneralCandidateScaleId);
+    AddControl(window, page, 0, L"STATIC", L"可獨立於顯示器縮放調整大小", 0,
+               344, 307, 260, 22);
+    AddControl(window, page, 0, L"STATIC", L"配色：", 0, 44, 347, 64, 22);
     HWND highlight = AddControl(window, page, 0, WC_COMBOBOXW, L"",
-                                CBS_DROPDOWNLIST | WS_VSCROLL, 112, 303, 200,
+                                CBS_DROPDOWNLIST | WS_VSCROLL, 112, 343, 200,
                                 180, kGeneralHighlightId);
 
     AddControl(window, page, 0, L"BUTTON", L"快捷鍵與提示聲", BS_GROUPBOX,
-               26, 356, 650, 124);
+               26, 394, 650, 124);
     AddControl(window, page, 0, L"BUTTON",
                L"使用 Ctrl + \\ 切換中英文模式", BS_AUTOCHECKBOX, 44,
-               382, 280, 24, kGeneralControlBackslashId);
+               420, 280, 24, kGeneralControlBackslashId);
     AddControl(window, page, 0, L"BUTTON", L"輸入錯誤時發出提示聲",
-               BS_AUTOCHECKBOX, 44, 412, 280, 24, kGeneralBeepId);
+               BS_AUTOCHECKBOX, 44, 450, 280, 24, kGeneralBeepId);
     AddControl(window, page, 0, L"STATIC",
                L"固定快捷鍵：單按 Shift 或 Ctrl+Space 切換中英文；"
                L"Shift+Space 切換全半形。",
-               0, 44, 444, 590, 24);
+               0, 44, 482, 590, 24);
 
     const std::string xml = ReadFile(LoaderPreferencesPath());
     const bool horizontal =
@@ -316,6 +324,21 @@ void CreateGeneralPage(HWND window, WindowState* state) {
                                                  : 0;
     AddComboValues(highlight,
                    {L"紫色", L"綠色", L"黃色", L"紅色"}, colorIndex);
+    const std::string scale =
+        PlistString(xml, "CandidateWindowScalePercent", "system");
+    const char* scaleValues[] = {"system", "100", "125", "150", "175",
+                                 "200",    "225", "250", "300", "350"};
+    int scaleIndex = 0;
+    for (int index = 1; index < 10; ++index) {
+        if (scale == scaleValues[index]) {
+            scaleIndex = index;
+            break;
+        }
+    }
+    AddComboValues(candidateScale,
+                   {L"跟隨 Windows（預設）", L"100%", L"125%", L"150%",
+                    L"175%", L"200%", L"225%", L"250%", L"300%", L"350%"},
+                   scaleIndex);
     SendMessageW(GetDlgItem(window, kGeneralControlBackslashId), BM_SETCHECK,
                  PlistBool(xml, "ToggleInputMethodWithControlBackslash", true)
                      ? BST_CHECKED
@@ -436,6 +459,13 @@ bool SaveSettings(HWND window, WindowState* state) {
     const char* colors[] = {"Default", "Green", "Yellow", "Red"};
     SetPlistString(general, "HighlightColor",
                    colors[colorIndex >= 0 && colorIndex < 4 ? colorIndex : 0]);
+    const int scaleIndex = static_cast<int>(SendMessageW(
+        GetDlgItem(window, kGeneralCandidateScaleId), CB_GETCURSEL, 0, 0));
+    const char* scaleValues[] = {"system", "100", "125", "150", "175",
+                                 "200",    "225", "250", "300", "350"};
+    SetPlistString(
+        general, "CandidateWindowScalePercent",
+        scaleValues[scaleIndex >= 0 && scaleIndex < 10 ? scaleIndex : 0]);
     SetPlistString(
         general, "ToggleInputMethodWithControlBackslash",
         SendMessageW(GetDlgItem(window, kGeneralControlBackslashId),

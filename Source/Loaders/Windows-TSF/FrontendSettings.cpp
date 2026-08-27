@@ -2,6 +2,7 @@
 
 #include <ShlObj.h>
 
+#include <cstdlib>
 #include <fstream>
 #include <iterator>
 
@@ -33,6 +34,17 @@ bool PlistBool(const std::string& xml, const std::string& key,
     const std::string value =
         PlistString(xml, key, defaultValue ? "true" : "false");
     return value == "true" || value == "1" || value == "YES";
+}
+
+int CandidateScalePercent(const std::string& value) {
+    char* end = nullptr;
+    const long parsed = std::strtol(value.c_str(), &end, 10);
+    if (!end || end == value.c_str() || *end != '\0') return 0;
+    constexpr int allowed[] = {100, 125, 150, 175, 200, 225, 250, 300, 350};
+    for (const int percent : allowed) {
+        if (parsed == percent) return percent;
+    }
+    return 0;
 }
 
 std::wstring Utf8ToWide(const std::string& text) {
@@ -95,6 +107,8 @@ FrontendSettings LoadFrontendSettings() {
                 "horizontal"
             ? CandidateLayout::Horizontal
             : CandidateLayout::Vertical;
+    settings.candidateScalePercent = CandidateScalePercent(
+        PlistString(xml, "CandidateWindowScalePercent", "system"));
     settings.highlightColor =
         Utf8ToWide(PlistString(xml, "HighlightColor", "Default"));
     settings.toggleWithControlBackslash = PlistBool(

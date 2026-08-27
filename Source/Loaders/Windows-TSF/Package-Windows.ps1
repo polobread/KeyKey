@@ -8,7 +8,7 @@ param(
     [string] $Architecture = 'x64',
 
     [ValidatePattern('^[0-9]+(?:\.[0-9]+){1,3}$')]
-    [string] $Version = '1.2.3'
+    [string] $Version = '1.2.4'
 )
 
 $ErrorActionPreference = 'Stop'

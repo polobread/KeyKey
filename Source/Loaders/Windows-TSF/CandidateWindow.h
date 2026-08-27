@@ -39,6 +39,7 @@ private:
     size_t highlightedIndex_ = 0;
     int rowHeight_ = 0;
     UINT dpi_ = USER_DEFAULT_SCREEN_DPI;
+    int scalePercent_ = 0;
     bool horizontal_ = false;
     COLORREF highlightColor_ = RGB(128, 0, 128);
 };

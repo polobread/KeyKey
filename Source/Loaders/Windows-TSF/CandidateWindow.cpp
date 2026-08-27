@@ -1,5 +1,7 @@
 #include "CandidateWindow.h"
 
+#include <ShellScalingApi.h>
+
 #include <algorithm>
 #include <mutex>
 
@@ -22,6 +24,19 @@ bool g_windowClassRegistered = false;
 
 int ScaleForDpi(int value, UINT dpi) {
     return MulDiv(value, static_cast<int>(dpi), USER_DEFAULT_SCREEN_DPI);
+}
+
+UINT ContentDpiForScale(UINT hostDpi, HMONITOR monitor, int scalePercent) {
+    if (scalePercent <= 0) return hostDpi;
+
+    DEVICE_SCALE_FACTOR monitorScale = SCALE_100_PERCENT;
+    if (FAILED(GetScaleFactorForMonitor(monitor, &monitorScale)) ||
+        monitorScale <= 0) {
+        monitorScale = SCALE_100_PERCENT;
+    }
+    return static_cast<UINT>(std::max(
+        1, MulDiv(static_cast<int>(hostDpi), scalePercent,
+                  static_cast<int>(monitorScale))));
 }
 
 }  // namespace
@@ -77,6 +92,7 @@ void CandidateWindow::show(HWND owner, const RECT& textRect,
     highlightedIndex_ = highlightedIndex;
     const FrontendSettings settings = LoadFrontendSettings();
     horizontal_ = settings.candidateLayout == CandidateLayout::Horizontal;
+    scalePercent_ = settings.candidateScalePercent;
     highlightColor_ = HighlightColorValue(settings.highlightColor);
     ensureWindow(owner);
     if (!window_ || candidates_.empty()) {
@@ -86,17 +102,18 @@ void CandidateWindow::show(HWND owner, const RECT& textRect,
 
     SetWindowLongPtrW(window_, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(owner));
 
-    UINT dpi = owner ? GetDpiForWindow(owner) : 0;
-    if (!dpi) {
-        dpi = GetDpiForWindow(window_);
+    UINT hostDpi = owner ? GetDpiForWindow(owner) : 0;
+    if (!hostDpi) {
+        hostDpi = GetDpiForWindow(window_);
     }
-    updateFont(dpi ? dpi : USER_DEFAULT_SCREEN_DPI);
+    hostDpi = hostDpi ? hostDpi : USER_DEFAULT_SCREEN_DPI;
+    HMONITOR monitor = MonitorFromRect(&textRect, MONITOR_DEFAULTTONEAREST);
+    updateFont(ContentDpiForScale(hostDpi, monitor, scalePercent_));
     const SIZE contentSize = measureContent();
     const SIZE windowSize = windowSizeForContent(contentSize);
 
     int x = textRect.left;
     int y = textRect.bottom + ScaleForDpi(kAnchorGap, dpi_);
-    HMONITOR monitor = MonitorFromRect(&textRect, MONITOR_DEFAULTTONEAREST);
     MONITORINFO monitorInfo{sizeof(monitorInfo)};
     if (GetMonitorInfoW(monitor, &monitorInfo)) {
         if (x + windowSize.cx > monitorInfo.rcWork.right) {
@@ -151,9 +168,12 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
             paint();
             return 0;
         case WM_DPICHANGED: {
-            updateFont(HIWORD(wparam));
-            const SIZE windowSize = windowSizeForContent(measureContent());
             const auto* suggested = reinterpret_cast<const RECT*>(lparam);
+            HMONITOR monitor =
+                MonitorFromRect(suggested, MONITOR_DEFAULTTONEAREST);
+            updateFont(
+                ContentDpiForScale(HIWORD(wparam), monitor, scalePercent_));
+            const SIZE windowSize = windowSizeForContent(measureContent());
             SetWindowPos(window_, nullptr, suggested->left, suggested->top,
                          windowSize.cx, windowSize.cy,
                          SWP_NOACTIVATE | SWP_NOZORDER);

@@ -13,6 +13,7 @@ enum class CandidateLayout {
 
 struct FrontendSettings {
     CandidateLayout candidateLayout = CandidateLayout::Vertical;
+    int candidateScalePercent = 0;
     std::wstring highlightColor = L"Default";
     bool toggleWithControlBackslash = true;
     bool playSoundOnTypingError = true;

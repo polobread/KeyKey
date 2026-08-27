@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(KeyKeyWindowsTsf VERSION 1.2.3 LANGUAGES C CXX)
+project(KeyKeyWindowsTsf VERSION 1.2.4 LANGUAGES C CXX)
 
 set(KEYKEY_VERSION_TWEAK 0)
 if(NOT "${PROJECT_VERSION_TWEAK}" STREQUAL "")
@@ -171,6 +171,7 @@ target_link_libraries(KeyKeyTsf PRIVATE
     advapi32
     gdi32
     ole32
+    shcore
     shell32
     user32
     uuid

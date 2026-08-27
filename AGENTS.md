@@ -246,6 +246,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `GetDpiForWindow()` 建立對應字型並縮放 padding／間距／邊框，另以
   `WM_DPICHANGED` 處理跨螢幕移動。DPI-unaware host 會回報 96 DPI 並由系統整體
   virtualization；不要再乘一次實體螢幕比例，否則會雙重放大。
+- **Windows 候選窗比例可覆寫 host DPI**：一般設定的「比例」預設跟隨 Windows；
+  選擇 `100%` 到 `350%` 時是候選窗自己的絕對縮放比例，讓高 DPI 螢幕可以把候選窗
+  調得比系統比例小。設定值存為 `CandidateWindowScalePercent`；只有清單內的值有效，
+  缺少或無效時回到跟隨 Windows。自訂值會用 `GetScaleFactorForMonitor` 對 host 回報
+  DPI 做反向正規化，抵消 DPI-unaware／system-aware host 的 bitmap virtualization；
+  不可直接把自訂百分比當 DPI，也不可再和 host DPI 相乘。
 - **Windows 語言列通知可能重入或跨執行緒**：2026-08-24 的 Android Studio
   `studio64.exe` 在 `Ctrl+Space` 切換模式時連續三次以 `0xc0000005` 崩潰；WER 的
   faulting module 是 `KeyKeyTsf_x64.dll`，固定 offset `0xA087` 經同版 map 確認為
@@ -416,7 +422,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `LICENSE.txt`，更新資料時不可覆蓋。
 - **GitHub Actions 封裝與 Release**：Android 與 iOS workflow 只有 `workflow_dispatch`；
   macOS 與 Windows 在推送 `v*` tag 時會先驗證 tag 必須精確等於 repository 版號
-  （例如 `v1.2.3`），再發布到公開 GitHub Release。publishing run 需要 `contents: write`；
+  （例如 `v1.2.4`），再發布到公開 GitHub Release。publishing run 需要 `contents: write`；
   Release 已存在就沿用，不存在才建立，workflow 絕不建立 tag 或覆寫同名資產。
   repository 是公開的，所以 artifact 在保留期間仍可能被讀者下載。workflow 會封裝包含
   `chichi77Collection` 在內的全部公開詞庫。
@@ -569,7 +575,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       `Ctrl+Space` 切換中英文並確認不再產生 `studio64.exe`／`KeyKeyTsf_x64.dll`
       Application Error；x64／x86 Release 已建置，x64 的 3 個 CTest 已通過。
 - [ ] 為 `KeyKeySettings.exe` 增加 UI automation：目前只有啟動 smoke test，仍需人工
-      驗證一般／注音／關聯詞三頁、五種注音鍵盤、直橫選字窗、四種配色、Ctrl+\\、
+      驗證一般／注音／關聯詞三頁、五種注音鍵盤、直橫選字窗、十種比例、四種配色、Ctrl+\\、
       提示聲與 CNS11643 開關在實際 TSF host 中會即時套用；候選窗另需在 100%／225%
       與兩台不同縮放比例的螢幕間移動驗證字型、間距及游標定位。
 - [ ] Ctrl／Alt 快捷鍵放行時，候選或聯想詞面板會留在畫面上（引擎收不到該鍵，
