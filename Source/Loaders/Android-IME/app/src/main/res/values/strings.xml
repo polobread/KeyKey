@@ -24,6 +24,14 @@
     <string name="floating_candidate_item_vertical">%1$d&#x2009;%2$s</string>
     <string name="floating_candidate_item_horizontal">%1$d %2$s</string>
     <string name="floating_candidate_description">第 %1$d 個候選，%2$s</string>
+    <string name="supporter_section_title">支持開發</string>
+    <string name="supporter_description">琦琦輸入法即使未付費也可以繼續完整使用。如果覺得好用，歡迎一次付費支持後續維護與開發。</string>
+    <string name="supporter_button">付費支持</string>
+    <string name="supporter_thank_you">謝謝支持</string>
+    <string name="supporter_checking">正在確認…</string>
+    <string name="supporter_price">一次付費支持：%1$s</string>
+    <string name="supporter_prompt">歡迎付費支持</string>
+    <string name="supporter_purchase_error">目前無法連線 Google Play 結帳服務，請稍後再試。</string>
     <string name="phrase_collections_title">關聯詞詞庫（%1$d）</string>
     <string name="phrase_collections_title_unavailable">關聯詞詞庫</string>
     <string name="phrase_collections_description">選擇要啟用的關聯詞詞庫，變更會在下次顯示輸入鍵盤時生效。完全不選代表不使用任何關聯詞詞庫。</string>
@@ -34,5 +42,5 @@
     <string name="phrase_status_none">未啟用詞庫（%1$d／%2$d）</string>
     <string name="phrase_collections_unavailable">找不到詞庫資料</string>
     <string name="phrase_collection_item">%1$s　%2$s</string>
-    <string name="privacy_note">字典與選字均在裝置上執行，不需要網路權限。</string>
+    <string name="privacy_note">字典、組字與選字均在裝置上執行；付費支持由 Google Play 結帳服務處理。輸入內容不會傳送給開發者。</string>
 </resources>

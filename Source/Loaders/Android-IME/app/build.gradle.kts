@@ -6,6 +6,22 @@ val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse(
 val keyKeyVersionCode = providers.gradleProperty("keykeyVersionCode")
     .map(String::toInt)
     .getOrElse(1)
+val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH")
+val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS")
+val releaseKeyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD")
+val releaseSigningValues = listOf(
+    releaseKeystorePath,
+    releaseKeystorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+)
+val releaseSigningValueCount = releaseSigningValues.count { it.isPresent }
+check(releaseSigningValueCount == 0 || releaseSigningValueCount == releaseSigningValues.size) {
+    "ANDROID_KEYSTORE_PATH, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, and " +
+        "ANDROID_KEY_PASSWORD must be set together."
+}
+val hasReleaseSigning = releaseSigningValueCount == releaseSigningValues.size
 
 android {
     namespace = "tw.chichi77.keykey.android"
@@ -25,8 +41,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseKeystorePath.get())
+                storePassword = releaseKeystorePassword.get()
+                keyAlias = releaseKeyAlias.get()
+                keyPassword = releaseKeyPassword.get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -83,5 +113,6 @@ tasks.withType<Test>().configureEach {
 }
 
 dependencies {
+    implementation("com.android.billingclient:billing:9.1.0")
     testImplementation("junit:junit:4.13.2")
 }

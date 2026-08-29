@@ -51,6 +51,8 @@ public final class BopomofoImeService extends InputMethodService
         vibrator = getSystemService(Vibrator.class);
         CandidateWindowSettings.preferences(this)
                 .registerOnSharedPreferenceChangeListener(this);
+        SupporterState.preferences(this)
+                .registerOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -124,6 +126,8 @@ public final class BopomofoImeService extends InputMethodService
     public void onDestroy() {
         CandidateWindowSettings.preferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
+        SupporterState.preferences(this)
+                .unregisterOnSharedPreferenceChangeListener(this);
         hideFloatingCandidates();
         super.onDestroy();
     }
@@ -148,6 +152,10 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
+        if (SupporterState.KEY_SUPPORTER.equals(key)) {
+            refreshKeyboard();
+            return;
+        }
         if (!CandidateWindowSettings.KEY_FLOATING_ENABLED.equals(key)
                 && !CandidateWindowSettings.KEY_LAYOUT.equals(key)) return;
         updateKeyboardMode();
@@ -318,6 +326,7 @@ public final class BopomofoImeService extends InputMethodService
         if (keyboardView == null || engine == null) return;
         keyboardView.setState(engine.displayedCandidates(), engine.readingText(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
+                SupporterState.shouldShowSupportPrompt(this),
                 engine.page(), engine.pageCount());
         if (isFloatingCandidateMode() && floatingCandidateWindow != null) {
             floatingCandidateWindow.update(engine.displayedCandidates(),

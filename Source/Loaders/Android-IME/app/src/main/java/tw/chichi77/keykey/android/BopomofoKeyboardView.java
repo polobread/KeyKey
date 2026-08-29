@@ -100,6 +100,7 @@ final class BopomofoKeyboardView extends View {
     private BopomofoEngine.InputMode inputMode = BopomofoEngine.InputMode.BOPOMOFO;
     private boolean shifted;
     private boolean temporaryEnglish;
+    private boolean supportPromptVisible;
     private int page;
     private int pageCount;
     private float downX;
@@ -137,12 +138,14 @@ final class BopomofoKeyboardView extends View {
     }
 
     void setState(List<String> candidates, String reading, BopomofoEngine.InputMode inputMode,
-                  boolean shifted, boolean temporaryEnglish, int page, int pageCount) {
+                  boolean shifted, boolean temporaryEnglish, boolean supportPromptVisible,
+                  int page, int pageCount) {
         this.candidates = List.copyOf(candidates);
         this.reading = reading;
         this.inputMode = inputMode;
         this.shifted = shifted;
         this.temporaryEnglish = temporaryEnglish;
+        this.supportPromptVisible = supportPromptVisible;
         this.page = page;
         this.pageCount = pageCount;
         invalidate();
@@ -280,10 +283,43 @@ final class BopomofoKeyboardView extends View {
         else if (inputMode == BopomofoEngine.InputMode.NUMBER) {
             message = shifted ? "數字與符號（二）" : "數字與符號（一）";
         }
-        else message = mode == Mode.HARDWARE
+        else {
+            if (supportPromptVisible && inputMode == BopomofoEngine.InputMode.BOPOMOFO
+                    && (mode == Mode.PORTRAIT || mode == Mode.LANDSCAPE)) {
+                drawSupportPrompt(canvas, area);
+                return;
+            }
+            message = mode == Mode.HARDWARE
                     ? "標準注音・候選 1–9・關聯詞 Shift+1–9" : "標準注音";
-        hintPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(11) : dp(14));
+        }
+        hintPaint.setTextSize(standardHintTextSize());
         canvas.drawText(message, area.centerX(), textBaseline(area, hintPaint), hintPaint);
+    }
+
+    private void drawSupportPrompt(Canvas canvas, RectF area) {
+        String primary = "標準注音";
+        String secondary = getResources().getString(R.string.supporter_prompt);
+        float primarySize = standardHintTextSize();
+        float secondarySize = primarySize * 0.70f;
+        float gap = dp(8);
+
+        hintPaint.setTextSize(primarySize);
+        float primaryWidth = hintPaint.measureText(primary);
+        float baseline = textBaseline(area, hintPaint);
+        hintPaint.setTextSize(secondarySize);
+        float secondaryWidth = hintPaint.measureText(secondary);
+        float startX = area.centerX() - (primaryWidth + gap + secondaryWidth) / 2f;
+
+        hintPaint.setTextAlign(Paint.Align.LEFT);
+        hintPaint.setTextSize(primarySize);
+        canvas.drawText(primary, startX, baseline, hintPaint);
+        hintPaint.setTextSize(secondarySize);
+        canvas.drawText(secondary, startX + primaryWidth + gap, baseline, hintPaint);
+        hintPaint.setTextAlign(Paint.Align.CENTER);
+    }
+
+    private float standardHintTextSize() {
+        return mode == Mode.LANDSCAPE ? dp(11) : dp(14);
     }
 
     private void drawEqualKeyRow(Canvas canvas, String[] keys, float left, float right,

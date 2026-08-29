@@ -497,6 +497,23 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `git ls-files -s Source/Loaders/Android-IME/gradlew` 確認模式是 `100755`。若變成
   `100644`，Ubuntu runner 執行 `./gradlew` 會立刻以 exit 126／Permission denied
   失敗；用 `git add --chmod=+x Source/Loaders/Android-IME/gradlew` 修復。
+- **Android Google Play 發布只走獨立 environment**：
+  `.github/workflows/android-play-release.yml` 使用 `google-play-release` environment 的
+  5 個 upload key／service account secrets，建 signed AAB 後只推 internal track；
+  package name 必須是 `tw.chichi77.keykey.android`，不是舊範例的
+  `com.polosoft.chichi`。tag 觸發時必須精確等於 repository 版號，manual run 則使用所選
+  ref 的版號；重跑相同 versionCode 會被 Play 拒絕。upload certificate 本來就是
+  self-signed，`jarsigner -verify -strict` 會因沒有公有 CA chain 誤判失敗，workflow
+  只能用 `jarsigner -verify` 確認 AAB 有簽章。正式 keystore 只還原到 runner temp，
+  Gradle 關閉 configuration cache，job 收尾刪除該檔。
+- **Android Supporter entitlement 與 IME 必須保持分離**：Google Play Billing 9.1.0
+  只由 `SupporterBillingManager` 在設定頁建立；`BopomofoImeService` 只能讀
+  `SupporterState` 的 SharedPreferences cache，Billing／網路失敗不得進入輸入路徑。
+  `chichi_supporter` 是非消耗性 one-time product，不可 consume；只有 `PURCHASED` 才
+  授權並補 acknowledge，`PENDING` 不授權。PBL 9 的一次性商品要從
+  `OneTimePurchaseOfferDetails` 選 `purchaseOptionId == "buy"`，並把該項的 offer token
+  傳入 `BillingFlowParams`；不要退回舊式只傳 ProductDetails 的做法。試用期固定以
+  `PackageInfo.firstInstallTime` 算 30 天，滿 30 天的邊界即 expired，解除安裝重裝重算。
 - **macOS／iOS cooker 的 people exclusion 來自公開分類詞庫**：
   `DatabaseCooker/Makefile` 會從 `DataSource/chichi77Collection/phrase.people-*.tsv`
   產生人名 exclusion，再匯入 McBopomofo 與 29 個分類詞庫。不要移除檔案存在時才執行
@@ -617,6 +634,15 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       拆成兩個 label。
 
 ### Android
+
+- [ ] 先在 Play Console 手動完成首次 app／AAB、Play App Signing 與 upload certificate
+      登記（Publishing API 不能代替首次建立 app），再把 5 個 secrets 放進
+      `google-play-release` environment 並實跑 `Android Play Release`。首次手動上傳若已
+      使用目前 versionCode，workflow 必須等下一版，不能重送相同 code。成功進 internal
+      testing 後，用 license tester 實測 purchase option `buy` 的 localized formatted
+      price、新購、取消、PENDING 轉 PURCHASED、acknowledge、清除 app data／換機後恢復
+      購買，以及離線或沒有 Play Store 時仍可完整輸入。直接 sideload 的 debug APK 無法
+      完整驗證 Play 商品設定。
 
 - [ ] 聲調符號（ˊ ˇ ˋ ˙）字級是否比照 iOS 放大 —— 目前 Android 與其他注音同字級
       （`drawBopomofoKey` 的 `dp(18)`），iOS 直式放大 1.8 倍

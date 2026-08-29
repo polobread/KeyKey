@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -14,6 +15,7 @@ import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,9 +24,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-public final class SettingsActivity extends Activity {
+public final class SettingsActivity extends Activity implements SupporterBillingManager.Listener {
     private final ArrayList<CheckBox> collectionChecks = new ArrayList<>();
     private TextView collectionStatus;
+    private TextView supporterPrice;
+    private Button supporterButton;
+    private SupporterBillingManager supporterBillingManager;
     private boolean updatingCollections;
 
     @Override
@@ -133,6 +138,33 @@ public final class SettingsActivity extends Activity {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
+        TextView supporterTitle = new TextView(this);
+        supporterTitle.setText(R.string.supporter_section_title);
+        supporterTitle.setTextSize(20);
+        supporterTitle.setTextColor(getColor(R.color.keykey_blue_dark));
+        content.addView(supporterTitle, matchWrap(dp(0), dp(8)));
+
+        TextView supporterDescription = new TextView(this);
+        supporterDescription.setText(R.string.supporter_description);
+        supporterDescription.setTextSize(14);
+        supporterDescription.setTextColor(Color.GRAY);
+        supporterDescription.setLineSpacing(0, 1.2f);
+        content.addView(supporterDescription, matchWrap(dp(0), dp(8)));
+
+        supporterPrice = new TextView(this);
+        supporterPrice.setTextSize(16);
+        supporterPrice.setTextColor(getColor(R.color.keykey_blue_dark));
+        supporterPrice.setGravity(Gravity.CENTER);
+        supporterPrice.setVisibility(View.GONE);
+        content.addView(supporterPrice, matchWrap(dp(0), dp(8)));
+
+        supporterButton = new Button(this);
+        supporterButton.setAllCaps(false);
+        supporterButton.setOnClickListener(view ->
+                supporterBillingManager.launchPurchase(SettingsActivity.this));
+        content.addView(supporterButton, matchWrap(dp(0), dp(36)));
+        updateSupporterButton(false, SupporterState.isSupporter(this));
+
         TextView phraseTitle = new TextView(this);
         phraseTitle.setTextSize(20);
         phraseTitle.setTextColor(getColor(R.color.keykey_blue_dark));
@@ -184,6 +216,48 @@ public final class SettingsActivity extends Activity {
         });
 
         setContentView(scroll);
+
+        supporterBillingManager = new SupporterBillingManager(this, this);
+        supporterBillingManager.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (supporterBillingManager != null) supporterBillingManager.close();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onStateChanged(boolean billingQueryComplete, boolean supporter,
+                               String formattedPrice) {
+        runOnUiThread(() -> {
+            updateSupporterButton(billingQueryComplete, supporter);
+            if (formattedPrice == null || formattedPrice.isEmpty()) {
+                supporterPrice.setVisibility(View.GONE);
+            } else {
+                supporterPrice.setText(getString(R.string.supporter_price, formattedPrice));
+                supporterPrice.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    @Override
+    public void onPurchaseError() {
+        runOnUiThread(() -> Toast.makeText(this, R.string.supporter_purchase_error,
+                Toast.LENGTH_SHORT).show());
+    }
+
+    private void updateSupporterButton(boolean billingQueryComplete, boolean supporter) {
+        if (!billingQueryComplete) {
+            supporterButton.setText(R.string.supporter_checking);
+            supporterButton.setEnabled(false);
+        } else if (supporter) {
+            supporterButton.setText(R.string.supporter_thank_you);
+            supporterButton.setEnabled(false);
+        } else {
+            supporterButton.setText(R.string.supporter_button);
+            supporterButton.setEnabled(true);
+        }
     }
 
     private void loadPhraseCollections(TextView title, LinearLayout list) {
