@@ -147,6 +147,47 @@ public final class BopomofoEngineTest {
 
         engine.toggleHardwareLanguage();
         assertEquals(BopomofoEngine.InputMode.BOPOMOFO, engine.inputMode());
+
+        engine.setAllowedInputModes(EnumSet.of(BopomofoEngine.InputMode.NUMBER),
+                BopomofoEngine.InputMode.NUMBER, true);
+        engine.toggleHardwareLanguage();
+        assertEquals(BopomofoEngine.InputMode.BOPOMOFO, engine.inputMode());
+        engine.toggleHardwareLanguage();
+        assertEquals(BopomofoEngine.InputMode.ENGLISH, engine.inputMode());
+    }
+
+    @Test
+    public void hardwareFullWidthConvertsAsciiLikeWindows() throws Exception {
+        BopomofoEngine engine = engineWith("");
+        engine.toggleHardwareLanguage();
+        engine.toggleHardwareWidth();
+
+        assertTrue(engine.isHardwareFullWidth());
+        assertEquals("ａ", engine.handleHardwareCharacter('a').committedText());
+        assertEquals("Ａ", engine.handleHardwareCharacter('A').committedText());
+        assertEquals("！", engine.handleHardwareCharacter('!').committedText());
+        assertEquals("　", engine.handleHardwareSpace().committedText());
+        assertEquals("é", engine.handleHardwareCharacter('é').committedText());
+
+        engine.toggleHardwareWidth();
+        assertEquals("a", engine.handleHardwareCharacter('a').committedText());
+    }
+
+    @Test
+    public void widthTogglePreservesAnActiveBopomofoReading() throws Exception {
+        BopomofoEngine engine = engineWith("");
+        engine.handleHardwareCharacter('s');
+
+        engine.toggleHardwareWidth();
+
+        assertTrue(engine.isHardwareFullWidth());
+        assertEquals("ㄋ", engine.readingText());
+    }
+
+    @Test
+    public void fullWidthConverterOnlyChangesPrintableAsciiAndSpace() {
+        assertEquals("Ａｚ０９！～　中文é",
+                BopomofoEngine.toFullWidth("Az09!~ 中文é"));
     }
 
     @Test

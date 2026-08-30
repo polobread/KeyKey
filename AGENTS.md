@@ -302,8 +302,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   當前注音讀音直接確定送出；若再 `commitText()` 候選字，輸入區會變成
   `ㄋㄧˇ你`。選字時應直接以 `commitText()` 取代 composing region，之後再依引擎
   狀態更新或結束組字。
-- **Android 候選翻頁是循環式**：候選開啟時，▲、▼、左右滑動、`Page Up`、
-  `Page Down` 與空白鍵都共用 `changePage()`；第一頁的上一頁是最後一頁，最後一頁
+- **Android 候選翻頁是循環式**：觸控鍵盤的 ▲、▼、左右滑動，以及外接鍵盤的
+  `Page Up`、`Page Down` 與空白鍵都共用 `changePage()`；第一頁的上一頁是最後一頁，最後一頁
   的下一頁是第一頁。空白只有在尚未開啟候選時才用來查詢讀音或輸入空格。
 - **Android TraditionalMandarin 選字鍵是 `1–9`**：與共用模組
   `OVIMTraditionalMandarin.cpp` 的 `setCandidateKeys("123456789")` 一致，每頁 9 個。
@@ -323,11 +323,25 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   password／phone／number（含 decimal、signed）／datetime 會轉成 `InputFieldPolicy`。
   一般、姓名、地址、搜尋與長文字保留注音；Email、URL、ASCII／password 只留英文與
   數字符號；電話、整數、小數、日期時間只留數字。限制型欄位不可移除按鍵造成版面跳動，
-  要淡化並移除 hit target；loader 也要再次拒絕 disabled key，不能只靠畫面擋。
+  要淡化並移除 hit target；觸控 callback 也要再次拒絕 disabled key，不能只靠畫面擋。
+  此限制刻意不套到 USB／藍牙實體鍵盤：為與 Windows／macOS 一致，硬體字元與快捷鍵
+  維持完整輸入，欄位內容仍由 App 驗證；不要在 `onKeyDown` 用 `inputType` 擋實體鍵。
 - **Android 軟 Enter action 與實體 Enter 必須分流**：直橫式觸控 Enter 在沒有 reading／
   候選時，依 `imeOptions & IME_MASK_ACTION` 呼叫 `performEditorAction(DONE/NEXT/SEARCH/
-  SEND/GO/PREVIOUS)`，並顯示中文 action 名；`IME_FLAG_NO_ENTER_ACTION`、無 action 或
-  App 拒絕時才送 Enter key event。外接鍵盤 Enter 永遠走 key event，不可套 editor action。
+  SEND/GO/PREVIOUS)`，並顯示中文 action 名；若 App 提供 `actionLabel`／`actionId`，要顯示
+  自訂標籤並以該 ID 呼叫 action。`IME_FLAG_NO_ENTER_ACTION`、無 action 或 App 拒絕時才
+  送 Enter key event。外接鍵盤 Enter 永遠走 key event，不可套 editor action。
+- **Android 外部 selection 變動必須清掉組字狀態**：`onUpdateSelection` 在 reading 或
+  候選存在時偵測游標／選取變更，重設引擎並結束 composing，否則下一鍵會在新游標沿用
+  舊讀音。為避免把游標拉回去或刪錯 App 文字，已顯示的 raw 注音會由
+  `finishComposingText()` 留在原處；只清引擎狀態。IME 自己的 `commitText`／
+  `setComposingText` 也會觸發 callback；必須以短期
+  mutation guard 略過自己的更新，而且只在真的修改 InputConnection 時啟用，否則按空白
+  開候選後立刻移動游標可能被誤判為自己的 callback。
+- **Android 觸控按鍵預覽不新增 hit target**：`BopomofoKeyboardView` 只為單一文字、注音
+  與符號鍵畫 1.4 倍 Canvas overlay，滑出原鍵、放開或取消即隱藏；功能鍵、候選列與實體
+  鍵盤模式不顯示。設定鍵 `key_preview_enabled` 預設 true，變更後由既有
+  `ime_settings` listener 立即刷新；不要讓預覽框本身可點擊或改變原按鍵範圍。
 - **Android 觸控 Shift 不等於實體 Shift**：注音版按 Shift 只暫時顯示英文小寫，
   並把雙標籤從「注音在上、鍵位在下」交換成「鍵位在上、注音在下」，輸入下一個
   觸控字元後立即回注音；由功能列切入的英文版按 Shift 才會持續切換大小寫，且大寫時
@@ -354,9 +368,13 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   一個注音 component 時也不可呼叫 `finishComposingText()`，因為它只移除 composing
   樣式並原樣保留 `ㄅ`；引擎必須回報丟棄 composing text，讓 loader 以
   `commitText("", 1)` 取代並結束 composing region。
-- **Android 外接鍵盤候選列也要保留底部系統區**：候選列依序為 ▲、9 個候選、▼、
-  Emoji，直式／橫式分別在下方保留 40dp／35dp，避免 Android 的多國語系地球鍵
-  遮住控制項。Emoji 必須在沒有中文字候選時仍可按。所有候選角標都固定顯示 `1–9`；
+- **Android 外接鍵盤候選列也要保留底部系統區**：候選列有 12 個等寬按鍵：9 個候選、
+  Emoji、`ㄅ／英` 與 `半／全`；後兩鍵不可再塞進同一欄縮成半寬。語言鍵點擊等同
+  `Ctrl+Space`，右格點擊等同 `Shift+Space`。輸入模式格只有兩種，NUMBER 也顯示為
+  `英`，點擊後切到 `ㄅ`；不可加回第三種「數」。候選列不顯示 ▲／▼，
+  翻頁使用 `Page Up`／`Page Down` 或空白。直式／橫式分別在下方保留 40dp／35dp，
+  避免 Android 的多國語系地球鍵遮住控制項。Emoji 必須在沒有中文字候選時仍可按。
+  所有候選角標都固定顯示 `1–9`；
   關聯詞雖以 Windows 式 `Shift+1–9` 選取，也不可把角標改成 `!@#$%^&*(`。
 - **Android 浮動候選依賴 App 回報游標座標**：設定啟用後以
   `requestCursorUpdates()`／`onUpdateCursorAnchorInfo()` 跟隨插入點，候選 Window
@@ -369,6 +387,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   macOS `OVIMTraditionalMandarin.cpp` 的 `_punctuation_list`，開啟與觸控「符」相同的
   90 個符號候選。組字 reading 尚未清空時，標點與符號快捷鍵須保留 reading，不可
   丟掉使用者正在組的注音。快捷鍵的 keydown 與 keyup 都要吃掉，長按不可重複觸發。
+- **Android 實體鍵盤全半形比照 Windows**：`Shift+Space` 切換 `半／全`，切換時保留
+  目前 reading／候選；全形模式將實體鍵盤提交的 ASCII 空白映成 U+3000，`!`–`~`
+  依序映成 U+FF01–U+FF5E，非 ASCII 與中文字不變。這個狀態不影響觸控鍵盤。
+  `Shift+Space` 必須先於一般 Space 處理，keydown／keyup 與 repeat 都要吃掉；即使使用者
+  先放開 Shift，按住 Space 產生的 repeat 也不可漏成空白。
 - **Android 關聯詞庫是固定 30 個文字資產**：`generateAssociatedPhraseAssets` 從
   `DataSource/McBopomofo/phrase.occ` 加入顯示為「小麥注音」的基本詞庫，再從公開的
   `DataSource/chichi77Collection` 加入 29 個 `phrase.*.tsv`。設定首次預設
@@ -688,9 +711,26 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 - [ ] 在 Android 實機依序測一般、Email、URL、電話、整數、小數、日期時間、密碼、姓名、
       地址、搜尋、簡訊／長文字與 ASCII 欄位；直橫式各確認 disabled key 無 hit／無震動，
-      軟 Enter 的完成、下一個、搜尋、傳送、前往、上一個會觸發正確 action，而 USB／藍牙
-      Enter 仍送 plain Enter。JVM 策略測試已加入；本機首次 Android SDK license 尚須由
-      開發者本人接受後才能完成 API 36 build。
+      軟 Enter 的完成、下一個、搜尋、傳送、前往、上一個及 App 自訂 `actionLabel`／
+      `actionId` 會觸發正確 action，而 USB／藍牙 Enter 仍送 plain Enter，且實體字元不受
+      觸控欄位限制。JVM 策略測試已加入；2026-08-30 已通過
+      `lintDebug testDebugUnitTest assembleDebug`，仍需在實機用自訂 editor 驗證 action callback。
+
+- [ ] 在 Android 實機驗證組字／候選開啟時，以觸控、滑鼠及 App 程式改變游標或選取範圍
+      會清除舊引擎狀態，IME 自己逐鍵更新 composing、確定候選與建立關聯詞則不會被誤清；
+      同時截圖確認直橫式文字／注音／符號鍵預覽約放大 1.4 倍、邊緣鍵不超出畫面、滑出與
+      放開會消失，設定關閉後不再顯示。2026-08-30 已在 Pixel 9a 驗證設定列正常顯示，
+      觸控按住預覽鍵無執行期錯誤，並以 composing `ㄅ` 移到字首後再輸入 `ㄚ` 得到
+      `ㄚㄅ`，另以 `ㄅㄚ` 選取尾字後輸入 `ㄉ` 得到 `ㄅㄉ`，確認游標與 selection range
+      都沒有沿用舊 reading；裝置的 ADB 截圖輸出全黑，預覽外觀與 App 程式改動仍待
+      人工畫面驗證。
+
+- [ ] 接上真正的 USB／藍牙鍵盤，確認底部候選列為 12 個等寬按鍵（9 候選、Emoji、
+      `ㄅ／英`、`半／全`），沒有 ▲／▼；驗證點擊後兩鍵可切換，並再驗證 `Ctrl+Space`、
+      `Shift+Space` 的 keydown／keyup／長按，以及全形 `Ａｚ０９！～　`、切回半形和
+      reading／候選保留。2026-08-30 已加入 modifier bit、全形映射與引擎單元測試並通過
+      `lintDebug testDebugUnitTest assembleDebug`；ADB `input keycombination` 直接送到 editor，
+      不會經過 `InputMethodService.onKeyDown`，不能代替實體鍵盤驗證。
 
 - [ ] 先在 Play Console 手動完成首次 app／AAB、Play App Signing 與 upload certificate
       登記（Publishing API 不能代替首次建立 app），再把 5 個 secrets 放進
@@ -710,7 +750,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       外接鍵盤一般候選 `1–9`／關聯詞 `Shift+1–9`、一次性注音 Shift、英文大小寫與
       兩套數字符號版面、`ㄋㄧˇ` Backspace 退音及複合 Emoji 一次刪除、
       關聯詞接續與全部關閉、符號／Emoji 各 10 頁及循環翻頁、外接鍵盤
-      `Ctrl+Space`／`Ctrl+,`／`Ctrl+.`／`Ctrl+0`／`Ctrl+1` 的
+      `Ctrl+Space`／`Shift+Space`／`Ctrl+,`／`Ctrl+.`／`Ctrl+0`／`Ctrl+1` 與全半形的
       smoke test；另需驗證實體鍵盤浮動候選預設關閉、直橫排列、游標四邊翻轉、
       不支援 `CursorAnchorInfo` 時的底部中央備援、觸控選字、方向鍵反白、Enter 與 ESC；
       2026-08-24 已在 Pixel 9a 的 Google 搜尋欄實測單一 composing `ㄅ` 按 Backspace

@@ -41,13 +41,33 @@ public final class InputFieldPolicyTest {
 
     @Test
     public void supportedEditorActionsHaveLabelsAndNoEnterActionWins() {
-        assertEquals("完成", policyWithAction(EditorInfo.IME_ACTION_DONE).enterLabel());
+        InputFieldPolicy done = policyWithAction(EditorInfo.IME_ACTION_DONE);
+        assertEquals("完成", done.enterLabel());
+        assertTrue(done.hasEditorAction());
         assertEquals("搜尋", policyWithAction(EditorInfo.IME_ACTION_SEARCH).enterLabel());
         assertEquals("傳送", policyWithAction(EditorInfo.IME_ACTION_SEND).enterLabel());
         assertEquals("前往", policyWithAction(EditorInfo.IME_ACTION_GO).enterLabel());
         assertEquals("上一個", policyWithAction(EditorInfo.IME_ACTION_PREVIOUS).enterLabel());
-        assertEquals("", policyWithAction(EditorInfo.IME_ACTION_DONE
-                | EditorInfo.IME_FLAG_NO_ENTER_ACTION).enterLabel());
+        InputFieldPolicy noAction = policyWithAction(EditorInfo.IME_ACTION_DONE
+                | EditorInfo.IME_FLAG_NO_ENTER_ACTION);
+        assertEquals("", noAction.enterLabel());
+        assertFalse(noAction.hasEditorAction());
+    }
+
+    @Test
+    public void customEditorActionUsesAppLabelAndId() {
+        InputFieldPolicy policy = InputFieldPolicy.fromValues(InputType.TYPE_CLASS_TEXT,
+                EditorInfo.IME_ACTION_UNSPECIFIED, "  送出\n表單  ", 42);
+
+        assertTrue(policy.hasEditorAction());
+        assertEquals(42, policy.editorAction());
+        assertEquals("送出 表單", policy.enterLabel());
+
+        InputFieldPolicy disabled = InputFieldPolicy.fromValues(InputType.TYPE_CLASS_TEXT,
+                EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_ENTER_ACTION,
+                "送出表單", 42);
+        assertFalse(disabled.hasEditorAction());
+        assertEquals("", disabled.enterLabel());
     }
 
     @Test

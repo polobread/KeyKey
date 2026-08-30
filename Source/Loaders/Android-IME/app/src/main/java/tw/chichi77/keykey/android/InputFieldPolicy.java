@@ -12,43 +12,48 @@ final class InputFieldPolicy {
 
     static final InputFieldPolicy DEFAULT = new InputFieldPolicy(
             Kind.GENERAL, EnumSet.allOf(BopomofoEngine.InputMode.class),
-            BopomofoEngine.InputMode.BOPOMOFO, EditorInfo.IME_ACTION_NONE, "");
+            BopomofoEngine.InputMode.BOPOMOFO, EditorInfo.IME_ACTION_NONE, "", false);
 
     private final Kind kind;
     private final EnumSet<BopomofoEngine.InputMode> allowedModes;
     private final BopomofoEngine.InputMode preferredMode;
     private final int editorAction;
     private final String enterLabel;
+    private final boolean hasEditorAction;
     private final boolean signedNumber;
 
     private InputFieldPolicy(Kind kind, EnumSet<BopomofoEngine.InputMode> allowedModes,
                              BopomofoEngine.InputMode preferredMode, int editorAction,
-                             String enterLabel) {
-        this.kind = kind;
-        this.allowedModes = allowedModes;
-        this.preferredMode = preferredMode;
-        this.editorAction = editorAction;
-        this.enterLabel = enterLabel;
-        this.signedNumber = false;
+                             String enterLabel, boolean hasEditorAction) {
+        this(kind, allowedModes, preferredMode, editorAction, enterLabel,
+                hasEditorAction, false);
     }
 
     private InputFieldPolicy(Kind kind, EnumSet<BopomofoEngine.InputMode> allowedModes,
                              BopomofoEngine.InputMode preferredMode, int editorAction,
-                             String enterLabel, boolean signedNumber) {
+                             String enterLabel, boolean hasEditorAction,
+                             boolean signedNumber) {
         this.kind = kind;
         this.allowedModes = allowedModes;
         this.preferredMode = preferredMode;
         this.editorAction = editorAction;
         this.enterLabel = enterLabel;
+        this.hasEditorAction = hasEditorAction;
         this.signedNumber = signedNumber;
     }
 
     static InputFieldPolicy from(EditorInfo info) {
         if (info == null) return DEFAULT;
-        return fromValues(info.inputType, info.imeOptions);
+        return fromValues(info.inputType, info.imeOptions,
+                info.actionLabel == null ? "" : info.actionLabel.toString(), info.actionId);
     }
 
     static InputFieldPolicy fromValues(int type, int imeOptions) {
+        return fromValues(type, imeOptions, "", EditorInfo.IME_ACTION_NONE);
+    }
+
+    static InputFieldPolicy fromValues(int type, int imeOptions, String customActionLabel,
+                                       int customActionId) {
         int inputClass = type & InputType.TYPE_MASK_CLASS;
         int variation = type & InputType.TYPE_MASK_VARIATION;
         Kind kind;
@@ -89,9 +94,17 @@ final class InputFieldPolicy {
         }
 
         int action = resolveAction(imeOptions);
+        boolean enterActionAllowed = (imeOptions & EditorInfo.IME_FLAG_NO_ENTER_ACTION) == 0;
+        String normalizedCustomLabel = customActionLabel == null ? ""
+                : customActionLabel.replace('\n', ' ').replace('\r', ' ').trim();
+        boolean hasCustomAction = enterActionAllowed && !normalizedCustomLabel.isEmpty();
+        boolean hasStandardAction = action != EditorInfo.IME_ACTION_NONE;
+        if (hasCustomAction) action = customActionId;
         boolean signed = inputClass == InputType.TYPE_CLASS_NUMBER
                 && (type & InputType.TYPE_NUMBER_FLAG_SIGNED) != 0;
-        return new InputFieldPolicy(kind, modes, preferred, action, actionLabel(action), signed);
+        return new InputFieldPolicy(kind, modes, preferred, action,
+                hasCustomAction ? normalizedCustomLabel : actionLabel(action),
+                hasCustomAction || hasStandardAction, signed);
     }
 
     private static int resolveAction(int imeOptions) {
@@ -123,6 +136,7 @@ final class InputFieldPolicy {
     BopomofoEngine.InputMode preferredMode() { return preferredMode; }
     int editorAction() { return editorAction; }
     String enterLabel() { return enterLabel; }
+    boolean hasEditorAction() { return hasEditorAction; }
     Kind kind() { return kind; }
 
     boolean hasSameLayout(InputFieldPolicy other) {

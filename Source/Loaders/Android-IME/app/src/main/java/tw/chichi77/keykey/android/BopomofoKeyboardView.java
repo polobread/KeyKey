@@ -100,6 +100,7 @@ final class BopomofoKeyboardView extends View {
     private BopomofoEngine.InputMode inputMode = BopomofoEngine.InputMode.BOPOMOFO;
     private boolean shifted;
     private boolean temporaryEnglish;
+    private boolean hardwareFullWidth;
     private boolean supportPromptVisible;
     private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
     private int page;
@@ -107,6 +108,8 @@ final class BopomofoKeyboardView extends View {
     private float downX;
     private float downY;
     private boolean downOnCandidate;
+    private boolean keyPreviewEnabled = true;
+    private Hit previewHit;
 
     BopomofoKeyboardView(Context context) {
         super(context);
@@ -134,18 +137,28 @@ final class BopomofoKeyboardView extends View {
     void setMode(Mode mode) {
         if (this.mode == mode) return;
         this.mode = mode;
+        previewHit = null;
         requestLayout();
         invalidate();
     }
 
+    void setKeyPreviewEnabled(boolean enabled) {
+        if (keyPreviewEnabled == enabled) return;
+        keyPreviewEnabled = enabled;
+        if (!enabled) previewHit = null;
+        invalidate();
+    }
+
     void setState(List<String> candidates, String reading, BopomofoEngine.InputMode inputMode,
-                  boolean shifted, boolean temporaryEnglish, boolean supportPromptVisible,
-                  int page, int pageCount, InputFieldPolicy fieldPolicy) {
+                  boolean shifted, boolean temporaryEnglish, boolean hardwareFullWidth,
+                  boolean supportPromptVisible, int page, int pageCount,
+                  InputFieldPolicy fieldPolicy) {
         this.candidates = List.copyOf(candidates);
         this.reading = reading;
         this.inputMode = inputMode;
         this.shifted = shifted;
         this.temporaryEnglish = temporaryEnglish;
+        this.hardwareFullWidth = hardwareFullWidth;
         this.supportPromptVisible = supportPromptVisible;
         this.page = page;
         this.pageCount = pageCount;
@@ -180,6 +193,7 @@ final class BopomofoKeyboardView extends View {
             case LANDSCAPE -> drawLandscape(canvas);
             case PORTRAIT -> drawPortrait(canvas);
         }
+        drawKeyPreview(canvas);
     }
 
     private void drawPortrait(Canvas canvas) {
@@ -212,17 +226,36 @@ final class BopomofoKeyboardView extends View {
         float gap = dp(2);
         int cellCount = BopomofoEngine.CANDIDATES_PER_PAGE + 3;
         float cellWidth = area.width() / cellCount;
-        drawPageButton(canvas, new RectF(area.left, area.top,
-                area.left + cellWidth, area.bottom), -1, "▲");
         for (int i = 0; i < BopomofoEngine.CANDIDATES_PER_PAGE; i++) {
-            RectF cell = new RectF(area.left + (i + 1) * cellWidth + gap,
-                    area.top + gap, area.left + (i + 2) * cellWidth - gap, area.bottom - gap);
+            RectF cell = new RectF(area.left + i * cellWidth + gap,
+                    area.top + gap, area.left + (i + 1) * cellWidth - gap,
+                    area.bottom - gap);
             drawCandidate(canvas, cell, i);
         }
-        drawPageButton(canvas, new RectF(area.left + 10 * cellWidth, area.top,
-                area.left + 11 * cellWidth, area.bottom), 1, "▼");
-        drawHardwareEmojiButton(canvas, new RectF(area.left + 11 * cellWidth, area.top,
-                area.right, area.bottom));
+        drawHardwareEmojiButton(canvas, new RectF(
+                area.left + BopomofoEngine.CANDIDATES_PER_PAGE * cellWidth,
+                area.top, area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 1) * cellWidth,
+                area.bottom));
+        drawHardwareStatusButton(canvas, new RectF(
+                area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 1) * cellWidth,
+                area.top, area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
+                area.bottom), inputMode == BopomofoEngine.InputMode.BOPOMOFO ? "ㄅ" : "英",
+                "HARDWARE_LANGUAGE");
+        drawHardwareStatusButton(canvas, new RectF(
+                area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
+                area.top, area.right, area.bottom), hardwareFullWidth ? "全" : "半",
+                "HARDWARE_WIDTH");
+    }
+
+    private void drawHardwareStatusButton(Canvas canvas, RectF bounds, String label,
+                                          String key) {
+        RectF inset = inset(bounds, dp(2));
+        canvas.drawRoundRect(inset, dp(6), dp(6), specialKeyPaint);
+
+        textPaint.setTextSize(dp(18));
+        textPaint.setFakeBoldText(true);
+        canvas.drawText(label, inset.centerX(), textBaseline(inset, textPaint), textPaint);
+        hits.add(new Hit(new RectF(inset), HitKind.KEY, key, -1));
     }
 
     private void drawHardwareEmojiButton(Canvas canvas, RectF bounds) {
@@ -392,7 +425,48 @@ final class BopomofoKeyboardView extends View {
 
     private void drawEnterLabel(Canvas canvas, RectF bounds, String label) {
         textPaint.setFakeBoldText(true);
-        textPaint.setTextSize(dp(mode == Mode.LANDSCAPE || label.length() > 2 ? 10 : 14));
+        float textSize = dp(mode == Mode.LANDSCAPE || label.length() > 2 ? 10 : 14);
+        textPaint.setTextSize(textSize);
+        float availableWidth = Math.max(1, bounds.width() - dp(6));
+        float measuredWidth = textPaint.measureText(label);
+        if (measuredWidth > availableWidth) {
+            textPaint.setTextSize(Math.max(dp(7), textSize * availableWidth / measuredWidth));
+        }
+        canvas.drawText(label, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
+    }
+
+    private void drawKeyPreview(Canvas canvas) {
+        if (previewHit == null || !isTouchMode()) return;
+        String label = previewLabel(previewHit.key());
+        if (label.isEmpty()) return;
+
+        RectF source = previewHit.bounds();
+        float scale = 1.4f;
+        float width = source.width() * scale;
+        float height = source.height() * scale;
+        float margin = dp(2);
+        float left = Math.max(margin, Math.min(source.centerX() - width / 2f,
+                getWidth() - margin - width));
+        float bottom = source.top - dp(4);
+        float top = bottom - height;
+        if (top < margin) {
+            top = margin;
+            bottom = top + height;
+        }
+        RectF bounds = new RectF(left, top, left + width, bottom);
+        canvas.drawRoundRect(bounds, dp(8), dp(8),
+                isSpecialKey(previewHit.key()) ? specialKeyPaint : keyPaint);
+
+        textPaint.setFakeBoldText(true);
+        float normalSize = dp(mode == Mode.LANDSCAPE ? 17 : 25);
+        float textSize = isToneSymbol(label) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
+        textPaint.setTextSize(textSize);
+        Paint.FontMetrics metrics = textPaint.getFontMetrics();
+        float availableHeight = Math.max(1, bounds.height() - dp(8));
+        float measuredHeight = metrics.descent - metrics.ascent;
+        if (measuredHeight > availableHeight) {
+            textPaint.setTextSize(textSize * availableHeight / measuredHeight);
+        }
         canvas.drawText(label, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
     }
 
@@ -508,9 +582,20 @@ final class BopomofoKeyboardView extends View {
                 Hit hit = findHit(downX, downY);
                 if (hit != null && listener != null) listener.onPress();
                 downOnCandidate = hit != null && hit.kind() == HitKind.CANDIDATE;
+                previewHit = canPreview(hit) ? hit : null;
+                if (previewHit != null) invalidate();
+                return true;
+            }
+            case MotionEvent.ACTION_MOVE -> {
+                if (previewHit != null
+                        && !previewHit.bounds().contains(event.getX(), event.getY())) {
+                    previewHit = null;
+                    invalidate();
+                }
                 return true;
             }
             case MotionEvent.ACTION_UP -> {
+                clearKeyPreview();
                 float distance = event.getX() - downX;
                 if (downOnCandidate && Math.abs(distance) > dp(38)) {
                     if (listener != null) listener.onPage(distance < 0 ? 1 : -1);
@@ -532,6 +617,7 @@ final class BopomofoKeyboardView extends View {
             }
             case MotionEvent.ACTION_CANCEL -> {
                 downOnCandidate = false;
+                clearKeyPreview();
                 return true;
             }
             default -> { return true; }
@@ -547,6 +633,27 @@ final class BopomofoKeyboardView extends View {
     private Hit findHit(float x, float y) {
         for (Hit hit : hits) if (hit.bounds().contains(x, y)) return hit;
         return null;
+    }
+
+    private boolean canPreview(Hit hit) {
+        return keyPreviewEnabled && isTouchMode() && hit != null
+                && hit.kind() == HitKind.KEY && !previewLabel(hit.key()).isEmpty();
+    }
+
+    private boolean isTouchMode() {
+        return mode == Mode.PORTRAIT || mode == Mode.LANDSCAPE;
+    }
+
+    private void clearKeyPreview() {
+        if (previewHit == null) return;
+        previewHit = null;
+        invalidate();
+    }
+
+    private String previewLabel(String key) {
+        if (key == null || key.length() != 1) return "";
+        String symbol = bopomofoSymbol(key);
+        return !symbol.isEmpty() && !temporaryEnglish ? symbol : key;
     }
 
     private String keyLabel(String key) {

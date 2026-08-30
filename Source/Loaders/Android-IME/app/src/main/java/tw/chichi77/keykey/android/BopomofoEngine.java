@@ -66,6 +66,7 @@ final class BopomofoEngine {
     private boolean shifted;
     private boolean temporaryEnglish;
     private boolean showingAssociatedPhrases;
+    private boolean hardwareFullWidth;
     private EnumSet<InputMode> allowedInputModes = EnumSet.allOf(InputMode.class);
 
     BopomofoEngine(CinDictionary dictionary) {
@@ -117,19 +118,27 @@ final class BopomofoEngine {
 
     Result handleHardwareCharacter(char key) {
         prepareForHardwareInput();
-        return character(key, false);
+        return applyHardwareWidth(character(key, false));
+    }
+
+    Result handleHardwareSpace() {
+        prepareForHardwareInput();
+        return applyHardwareWidth(space());
     }
 
     Result toggleHardwareLanguage() {
         prepareForHardwareInput();
         boolean hadReading = clearComposition();
-        if (allowedInputModes.contains(InputMode.BOPOMOFO)
-                && allowedInputModes.contains(InputMode.ENGLISH)) {
-            inputMode = inputMode == InputMode.BOPOMOFO
-                    ? InputMode.ENGLISH : InputMode.BOPOMOFO;
-        }
+        inputMode = inputMode == InputMode.BOPOMOFO
+                ? InputMode.ENGLISH : InputMode.BOPOMOFO;
         shifted = false;
         return hadReading ? Result.discardComposition() : Result.update();
+    }
+
+    Result toggleHardwareWidth() {
+        prepareForHardwareInput();
+        hardwareFullWidth = !hardwareFullWidth;
+        return Result.update();
     }
 
     Result commitHardwarePunctuation(String punctuation) {
@@ -271,6 +280,10 @@ final class BopomofoEngine {
         return temporaryEnglish;
     }
 
+    boolean isHardwareFullWidth() {
+        return hardwareFullWidth;
+    }
+
     boolean isShowingAssociatedPhrases() {
         return showingAssociatedPhrases;
     }
@@ -305,6 +318,25 @@ final class BopomofoEngine {
             return Result.commit(prefix + rawKey);
         }
         return Result.commit(String.valueOf(rawKey));
+    }
+
+    private Result applyHardwareWidth(Result result) {
+        if (!hardwareFullWidth || result.committedText().isEmpty()) return result;
+        String text = toFullWidth(result.committedText());
+        return new Result(text, result.deleteBeforeCursor(), result.sendEnter(),
+                result.discardComposingText());
+    }
+
+    static String toFullWidth(String text) {
+        StringBuilder converted = new StringBuilder(text.length());
+        for (int index = 0; index < text.length(); index++) {
+            char character = text.charAt(index);
+            if (character == ' ') converted.append('\u3000');
+            else if (character >= '!' && character <= '~') {
+                converted.append((char) (character - '!' + '\uFF01'));
+            } else converted.append(character);
+        }
+        return converted.toString();
     }
 
     private Result query() {

@@ -95,6 +95,23 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         description.setLineSpacing(0, 1.2f);
         content.addView(description, matchWrap(dp(0), dp(16)));
 
+        CheckBox keyPreview = new CheckBox(this);
+        keyPreview.setText(R.string.key_preview_enabled);
+        keyPreview.setTextSize(16);
+        keyPreview.setTextColor(Color.DKGRAY);
+        keyPreview.setMinHeight(dp(48));
+        keyPreview.setChecked(KeyPreviewSettings.enabled(this));
+        keyPreview.setOnCheckedChangeListener((button, checked) ->
+                KeyPreviewSettings.setEnabled(SettingsActivity.this, checked));
+        content.addView(keyPreview, matchWrap(dp(0), dp(8)));
+
+        TextView keyPreviewDescription = new TextView(this);
+        keyPreviewDescription.setText(R.string.key_preview_description);
+        keyPreviewDescription.setTextSize(14);
+        keyPreviewDescription.setTextColor(Color.GRAY);
+        keyPreviewDescription.setLineSpacing(0, 1.2f);
+        content.addView(keyPreviewDescription, matchWrap(dp(0), dp(16)));
+
         CheckBox floatingCandidates = new CheckBox(this);
         floatingCandidates.setText(R.string.floating_candidates_enabled);
         floatingCandidates.setTextSize(16);
