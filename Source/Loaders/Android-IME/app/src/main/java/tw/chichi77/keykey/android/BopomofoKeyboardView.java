@@ -101,6 +101,7 @@ final class BopomofoKeyboardView extends View {
     private boolean shifted;
     private boolean temporaryEnglish;
     private boolean supportPromptVisible;
+    private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
     private int page;
     private int pageCount;
     private float downX;
@@ -139,7 +140,7 @@ final class BopomofoKeyboardView extends View {
 
     void setState(List<String> candidates, String reading, BopomofoEngine.InputMode inputMode,
                   boolean shifted, boolean temporaryEnglish, boolean supportPromptVisible,
-                  int page, int pageCount) {
+                  int page, int pageCount, InputFieldPolicy fieldPolicy) {
         this.candidates = List.copyOf(candidates);
         this.reading = reading;
         this.inputMode = inputMode;
@@ -148,8 +149,12 @@ final class BopomofoKeyboardView extends View {
         this.supportPromptVisible = supportPromptVisible;
         this.page = page;
         this.pageCount = pageCount;
+        this.fieldPolicy = fieldPolicy == null ? InputFieldPolicy.DEFAULT : fieldPolicy;
         invalidate();
     }
+
+    static String[][] shiftedEnglishRows() { return SHIFTED_ENGLISH_ROWS; }
+    static String[][] shiftedNumberRows() { return SHIFTED_NUMBER_ROWS; }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -222,11 +227,14 @@ final class BopomofoKeyboardView extends View {
 
     private void drawHardwareEmojiButton(Canvas canvas, RectF bounds) {
         RectF inset = inset(bounds, dp(2));
+        boolean enabled = fieldPolicy.isKeyEnabled("EMOJI", inputMode, shifted);
+        int savedAlpha = canvas.saveLayerAlpha(inset, enabled ? 255 : 92);
         canvas.drawRoundRect(inset, dp(6), dp(6), specialKeyPaint);
         textPaint.setTextSize(dp(18));
         textPaint.setFakeBoldText(false);
         canvas.drawText("☺", inset.centerX(), textBaseline(inset, textPaint), textPaint);
-        hits.add(new Hit(new RectF(inset), HitKind.KEY, "EMOJI", -1));
+        canvas.restoreToCount(savedAlpha);
+        if (enabled) hits.add(new Hit(new RectF(inset), HitKind.KEY, "EMOJI", -1));
     }
 
     private void drawCandidateStrip(Canvas canvas, RectF area) {
@@ -350,18 +358,23 @@ final class BopomofoKeyboardView extends View {
 
     private void drawKey(Canvas canvas, RectF bounds, String key) {
         boolean special = isSpecialKey(key);
+        boolean enabled = fieldPolicy.isKeyEnabled(key, inputMode, shifted);
+        int savedAlpha = canvas.saveLayerAlpha(bounds, enabled ? 255 : 92);
         canvas.drawRoundRect(bounds, dp(6), dp(6), special ? specialKeyPaint : keyPaint);
 
         String symbol = bopomofoSymbol(key);
         if (!symbol.isEmpty()) {
             drawBopomofoKey(canvas, bounds, symbol, key, temporaryEnglish);
-            hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+            canvas.restoreToCount(savedAlpha);
+            if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
             return;
         }
 
         if (key.equals("ENTER")) {
-            drawEnterKey(canvas, bounds);
-            hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+            if (fieldPolicy.enterLabel().isEmpty()) drawEnterKey(canvas, bounds);
+            else drawEnterLabel(canvas, bounds, fieldPolicy.enterLabel());
+            canvas.restoreToCount(savedAlpha);
+            if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
             return;
         }
 
@@ -373,7 +386,14 @@ final class BopomofoKeyboardView extends View {
         textPaint.setFakeBoldText(key.equals("SPACE")
                 || (inputMode == BopomofoEngine.InputMode.BOPOMOFO && !special));
         canvas.drawText(label, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
-        hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+        canvas.restoreToCount(savedAlpha);
+        if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+    }
+
+    private void drawEnterLabel(Canvas canvas, RectF bounds, String label) {
+        textPaint.setFakeBoldText(true);
+        textPaint.setTextSize(dp(mode == Mode.LANDSCAPE || label.length() > 2 ? 10 : 14));
+        canvas.drawText(label, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
     }
 
     private void drawEnterKey(Canvas canvas, RectF bounds) {
@@ -531,11 +551,7 @@ final class BopomofoKeyboardView extends View {
 
     private String keyLabel(String key) {
         return switch (key) {
-            case "MODE" -> switch (inputMode) {
-                case BOPOMOFO -> "英/數";
-                case ENGLISH -> "數/中";
-                case NUMBER -> "中/英";
-            };
+            case "MODE" -> fieldPolicy.modeCaption(inputMode);
             case "SHIFT" -> shifted ? "⇧" : "⇧";
             case "BACKSPACE" -> "⌫";
             case "SPACE" -> "空白";

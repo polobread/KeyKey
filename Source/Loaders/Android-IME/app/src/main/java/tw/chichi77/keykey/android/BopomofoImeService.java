@@ -34,6 +34,7 @@ public final class BopomofoImeService extends InputMethodService
     private RectF cursorAnchor;
     private final Set<Integer> pressedControlShortcutKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedCandidateKeys = new LinkedHashSet<>();
+    private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
 
     @Override
     public void onCreate() {
@@ -91,7 +92,14 @@ public final class BopomofoImeService extends InputMethodService
         super.onStartInput(attribute, restarting);
         cursorAnchor = null;
         reloadPhraseDictionary();
-        if (!restarting && engine != null) engine.reset();
+        InputFieldPolicy nextPolicy = InputFieldPolicy.from(attribute);
+        boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
+        fieldPolicy = nextPolicy;
+        if (engine != null) {
+            if (!restarting) engine.reset();
+            engine.setAllowedInputModes(fieldPolicy.allowedModes(), fieldPolicy.preferredMode(),
+                    layoutChanged);
+        }
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
@@ -101,6 +109,13 @@ public final class BopomofoImeService extends InputMethodService
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
         reloadPhraseDictionary();
+        InputFieldPolicy nextPolicy = InputFieldPolicy.from(info);
+        boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
+        fieldPolicy = nextPolicy;
+        if (engine != null) {
+            engine.setAllowedInputModes(fieldPolicy.allowedModes(), fieldPolicy.preferredMode(),
+                    layoutChanged);
+        }
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
@@ -171,7 +186,8 @@ public final class BopomofoImeService extends InputMethodService
             startActivity(intent);
             return;
         }
-        apply(engine.handleSoftKey(key));
+        if (!fieldPolicy.isKeyEnabled(key, engine.inputMode(), engine.isShifted())) return;
+        apply(engine.handleSoftKey(key), key.equals("ENTER"));
     }
 
     @Override
@@ -288,6 +304,10 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     private void apply(BopomofoEngine.Result result) {
+        apply(result, false);
+    }
+
+    private void apply(BopomofoEngine.Result result, boolean softEnter) {
         InputConnection connection = getCurrentInputConnection();
         if (connection == null) {
             refreshKeyboard();
@@ -299,8 +319,13 @@ public final class BopomofoImeService extends InputMethodService
             connection.commitText(result.committedText(), 1);
         }
         if (result.sendEnter()) {
-            connection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
-            connection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+            boolean performedAction = softEnter
+                    && fieldPolicy.editorAction() != EditorInfo.IME_ACTION_NONE
+                    && connection.performEditorAction(fieldPolicy.editorAction());
+            if (!performedAction) {
+                connection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+                connection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+            }
         }
 
         if (result.discardComposingText()) {
@@ -327,7 +352,7 @@ public final class BopomofoImeService extends InputMethodService
         keyboardView.setState(engine.displayedCandidates(), engine.readingText(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
                 SupporterState.shouldShowSupportPrompt(this),
-                engine.page(), engine.pageCount());
+                engine.page(), engine.pageCount(), fieldPolicy);
         if (isFloatingCandidateMode() && floatingCandidateWindow != null) {
             floatingCandidateWindow.update(engine.displayedCandidates(),
                     engine.highlightedIndex(), floatingCandidateLayout, cursorAnchor);

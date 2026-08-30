@@ -105,7 +105,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -X86BuildDirectory .\out\build\x86
 ```
 
-會產生 `out\package\chichi77-KeyKey-1.2.6-windows-x64.zip`。在另一台 x64 Windows
+會產生 `out\package\chichi77-KeyKey-1.2.7-windows-x64.zip`。在另一台 x64 Windows
 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
@@ -145,8 +145,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
-`out\store-package\chichi77-KeyKey-1.2.6-windows-x64-setup.exe`。完整參數、`/S`
+`out\store-package\chichi77-KeyKey-1.2.7-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
+互動式完成頁可選擇開啟琦琦設定或 Windows 語言設定；只有舊檔被占用而必須延後清除
+時才會顯示重新啟動選項，且預設為稍後重新啟動。
 
 ## Android
 
@@ -173,7 +175,7 @@ Debug APK 位於
 ## GitHub Actions 封裝
 
 Android 與 iOS Simulator workflow 只支援從 GitHub Actions 頁面按 **Run workflow**
-手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag（例如 `v1.2.6`）時會自動發布到
+手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag（例如 `v1.2.7`）時會自動發布到
 該 Release；兩者也都可以手動執行，Windows 額外接受 `release_tag` 輸入，留空時只保留測試
 artifact。一般 commit、pull request 與不符合版號的 tag 不會發布 Release。建置完成後，
 以下檔案會以 Actions artifact 保留 7 天：
@@ -310,7 +312,7 @@ After building and testing, run from `Source\Loaders\Windows-TSF`:
   -X86BuildDirectory .\out\build\x86
 ```
 
-This creates `out\package\chichi77-KeyKey-1.2.6-windows-x64.zip`. On the other
+This creates `out\package\chichi77-KeyKey-1.2.7-windows-x64.zip`. On the other
 x64 Windows 11 PC, extract the complete ZIP, copy the entire extracted folder
 to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
@@ -345,9 +347,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 The script signs and verifies the three PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
-`out\store-package\chichi77-KeyKey-1.2.6-windows-x64-setup.exe`. See the Windows
+`out\store-package\chichi77-KeyKey-1.2.7-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
+The interactive finish page can open KeyKey settings or Windows Language &
+region settings. It offers a restart only when a locked old file must be removed
+later, and defaults to restarting later.
 
 ### Android
 
@@ -373,7 +378,7 @@ details.
 The Android and iOS Simulator workflows run only after **Run workflow** is
 selected on the GitHub Actions page. The macOS and Windows workflows publish to
 a Release when a tag that exactly matches the repository version, such as
-`v1.2.6`, is pushed. Both can also be run manually; the Windows workflow
+`v1.2.7`, is pushed. Both can also be run manually; the Windows workflow
 additionally takes a `release_tag` input, and leaving it blank produces a test
 artifact only. Commits, pull requests, and mismatched tags do not publish a
 Release. Successful runs retain these Actions artifacts for seven days:

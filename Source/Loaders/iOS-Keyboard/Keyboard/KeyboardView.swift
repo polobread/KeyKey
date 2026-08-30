@@ -22,6 +22,7 @@ final class KeyboardView: UIView {
         var shifted = false
         var temporaryEnglish = false
         var statusOverride: String?
+        var fieldPolicy = InputFieldPolicy.default
     }
 
     /// A reading key carries two labels at fixed heights rather than two lines
@@ -43,6 +44,7 @@ final class KeyboardView: UIView {
     private let nextPageButton = UIButton(type: .system)
     private let candidateStrip = UIStackView()
     private var candidateStripHeight: NSLayoutConstraint?
+    private var contentWidthConstraint: NSLayoutConstraint?
     private var keyViews: [[KeyView]] = []
     private var functionButtons: [(key: String, button: UIButton)] = []
     private var state = State()
@@ -85,13 +87,19 @@ final class KeyboardView: UIView {
         // Content sits at the top; the bottom safe area belongs to the system
         // globe key and the home indicator.
         NSLayoutConstraint.activate([
-            root.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
-            root.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            root.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 3),
+            root.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -3),
+            root.centerXAnchor.constraint(equalTo: centerXAnchor),
             root.topAnchor.constraint(equalTo: topAnchor, constant: 3),
             root.bottomAnchor.constraint(
                 equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -3
             )
         ])
+        let contentWidth = root.widthAnchor.constraint(
+            lessThanOrEqualToConstant: metrics.maximumContentWidth
+        )
+        contentWidth.isActive = true
+        contentWidthConstraint = contentWidth
     }
 
     private func buildCandidateStrip() -> UIView {
@@ -259,9 +267,10 @@ final class KeyboardView: UIView {
     // MARK: - State
 
     func setMetrics(_ metrics: KeyboardMetrics) {
-        guard metrics.contentHeight != self.metrics.contentHeight else { return }
+        guard metrics != self.metrics else { return }
         self.metrics = metrics
         candidateStripHeight?.constant = metrics.candidateStripHeight
+        contentWidthConstraint?.constant = metrics.maximumContentWidth
         apply(state)
     }
 
@@ -306,12 +315,22 @@ final class KeyboardView: UIView {
                 keyView.button.backgroundColor = KeyboardLayout.isSpecial(key)
                     ? Palette.specialKey : Palette.normalKey
                 keyView.button.accessibilityLabel = accessibilityLabel(for: key)
+                let enabled = state.fieldPolicy.isKeyEnabled(
+                    key, mode: state.mode, shifted: state.shifted
+                )
+                keyView.button.isEnabled = enabled
+                keyView.button.alpha = enabled ? 1 : 0.36
                 configure(keyView, for: key)
             }
         }
 
         for (key, button) in functionButtons {
             button.accessibilityLabel = accessibilityLabel(for: key)
+            let enabled = state.fieldPolicy.isKeyEnabled(
+                key, mode: state.mode, shifted: state.shifted
+            )
+            button.isEnabled = enabled
+            button.alpha = enabled ? 1 : 0.36
             if key == "ENTER" {
                 applyEnterIcon(to: button)
                 continue
@@ -321,7 +340,9 @@ final class KeyboardView: UIView {
                 button.setImage(UIImage(systemName: "globe"), for: .normal)
                 continue
             }
-            let caption = KeyboardLayout.caption(for: key, mode: state.mode)
+            let caption = key == "MODE"
+                ? state.fieldPolicy.modeCaption(for: state.mode)
+                : KeyboardLayout.caption(for: key, mode: state.mode)
             button.setTitle(caption, for: .normal)
             button.titleLabel?.font = .systemFont(
                 ofSize: caption.count > 3 ? metrics.functionFontSmall : metrics.functionFont

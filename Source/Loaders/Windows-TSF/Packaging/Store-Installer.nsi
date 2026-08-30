@@ -61,6 +61,14 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "See bundled license notices"
 !define MUI_ICON "${ICON_PATH}"
 !define MUI_UNICON "${ICON_PATH}"
 !define MUI_FINISHPAGE_NOAUTOCLOSE
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_FUNCTION LaunchKeyKeySettings
+!define MUI_FINISHPAGE_RUN_TEXT "$(FinishRunKeyKeySettings)"
+!define MUI_FINISHPAGE_SHOWREADME
+!define MUI_FINISHPAGE_SHOWREADME_FUNCTION OpenWindowsLanguageSettings
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "$(FinishOpenLanguageSettings)"
+!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
+!define MUI_FINISHPAGE_REBOOTLATER_DEFAULT
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "${LICENSE_DIR}\LICENSING.md"
@@ -75,7 +83,20 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "See bundled license notices"
 !insertmacro MUI_LANGUAGE "TradChinese"
 !insertmacro MUI_LANGUAGE "English"
 
+LangString FinishRunKeyKeySettings ${LANG_TRADCHINESE} "完成後開啟琦琦輸入法設定"
+LangString FinishRunKeyKeySettings ${LANG_ENGLISH} "Open chichi77 KeyKey settings when finished"
+LangString FinishOpenLanguageSettings ${LANG_TRADCHINESE} "開啟 Windows 語言與地區設定"
+LangString FinishOpenLanguageSettings ${LANG_ENGLISH} "Open Windows language and region settings"
+
 Var PreviousVersionDirectory
+
+Function LaunchKeyKeySettings
+  ExecShell "open" "${VERSION_DIRECTORY}\KeyKeySettings.exe"
+FunctionEnd
+
+Function OpenWindowsLanguageSettings
+  ExecShell "open" "ms-settings:regionlanguage"
+FunctionEnd
 
 !macro UnregisterTsfAt DIRECTORY
   ${If} ${FileExists} "${DIRECTORY}\KeyKeyTsf_x86.dll"

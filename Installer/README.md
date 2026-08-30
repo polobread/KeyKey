@@ -51,6 +51,10 @@ Settings, Keyboard, Input Sources. Upgrading over a version that is already
 installed and enabled needs neither: `postinstall` ends the running input
 method and Text Input Services starts the new one in its place.
 
+The Installer completion screen deliberately does not force a logout. It tells
+first-time users to sign out when convenient while letting upgrades finish
+without interrupting the current session.
+
 ## Signing and notarising
 
 Only needed to hand the package to someone else. Both certificates come with an

@@ -1,6 +1,8 @@
 package tw.chichi77.keykey.android;
 
 import java.util.List;
+import java.util.EnumSet;
+import java.util.Set;
 
 final class BopomofoEngine {
     static final int CANDIDATES_PER_PAGE = 9;
@@ -64,6 +66,7 @@ final class BopomofoEngine {
     private boolean shifted;
     private boolean temporaryEnglish;
     private boolean showingAssociatedPhrases;
+    private EnumSet<InputMode> allowedInputModes = EnumSet.allOf(InputMode.class);
 
     BopomofoEngine(CinDictionary dictionary) {
         this.dictionary = dictionary;
@@ -72,6 +75,26 @@ final class BopomofoEngine {
     void setAssociatedPhraseDictionary(AssociatedPhraseDictionary dictionary) {
         associatedPhrases = dictionary == null ? AssociatedPhraseDictionary.empty() : dictionary;
         if (showingAssociatedPhrases) clearComposition();
+    }
+
+    void setAllowedInputModes(Set<InputMode> allowed, InputMode preferred) {
+        setAllowedInputModes(allowed, preferred, false);
+    }
+
+    void setAllowedInputModes(Set<InputMode> allowed, InputMode preferred,
+                              boolean selectPreferred) {
+        EnumSet<InputMode> next = allowed == null || allowed.isEmpty()
+                ? EnumSet.allOf(InputMode.class) : EnumSet.copyOf(allowed);
+        allowedInputModes = next;
+        if (temporaryEnglish && !next.contains(InputMode.BOPOMOFO)) {
+            temporaryEnglish = false;
+        }
+        if (selectPreferred || !next.contains(inputMode)) {
+            clearComposition();
+            inputMode = next.contains(preferred) ? preferred : next.iterator().next();
+            shifted = false;
+            temporaryEnglish = false;
+        }
     }
 
     Result handleSoftKey(String key) {
@@ -100,8 +123,11 @@ final class BopomofoEngine {
     Result toggleHardwareLanguage() {
         prepareForHardwareInput();
         boolean hadReading = clearComposition();
-        inputMode = inputMode == InputMode.BOPOMOFO
-                ? InputMode.ENGLISH : InputMode.BOPOMOFO;
+        if (allowedInputModes.contains(InputMode.BOPOMOFO)
+                && allowedInputModes.contains(InputMode.ENGLISH)) {
+            inputMode = inputMode == InputMode.BOPOMOFO
+                    ? InputMode.ENGLISH : InputMode.BOPOMOFO;
+        }
         shifted = false;
         return hadReading ? Result.discardComposition() : Result.update();
     }
@@ -311,20 +337,29 @@ final class BopomofoEngine {
             shifted = false;
             return hadReading ? Result.discardComposition() : Result.update();
         }
-        inputMode = switch (inputMode) {
-            case BOPOMOFO -> InputMode.ENGLISH;
-            case ENGLISH -> InputMode.NUMBER;
-            case NUMBER -> InputMode.BOPOMOFO;
-        };
+        inputMode = nextAllowedMode(inputMode);
         shifted = false;
         return hadReading ? Result.discardComposition() : Result.update();
+    }
+
+    private InputMode nextAllowedMode(InputMode current) {
+        InputMode candidate = current;
+        do {
+            candidate = switch (candidate) {
+                case BOPOMOFO -> InputMode.ENGLISH;
+                case ENGLISH -> InputMode.NUMBER;
+                case NUMBER -> InputMode.BOPOMOFO;
+            };
+        } while (!allowedInputModes.contains(candidate));
+        return candidate;
     }
 
     private Result touchShift() {
         boolean hadReading = clearComposition();
         if (temporaryEnglish) {
             endTemporaryEnglish();
-        } else if (inputMode == InputMode.BOPOMOFO) {
+        } else if (inputMode == InputMode.BOPOMOFO
+                && allowedInputModes.contains(InputMode.ENGLISH)) {
             inputMode = InputMode.ENGLISH;
             temporaryEnglish = true;
             shifted = false;
@@ -337,7 +372,8 @@ final class BopomofoEngine {
     }
 
     private void endTemporaryEnglish() {
-        inputMode = InputMode.BOPOMOFO;
+        inputMode = allowedInputModes.contains(InputMode.BOPOMOFO)
+                ? InputMode.BOPOMOFO : allowedInputModes.iterator().next();
         temporaryEnglish = false;
         shifted = false;
     }

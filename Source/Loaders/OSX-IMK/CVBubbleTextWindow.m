@@ -5,11 +5,13 @@
 
 @implementation CVBubbleTextWindow
 
-- (id)initWithContentRect:(NSRect)contentRect styleMask:(unsigned int)aStyle backing:(NSBackingStoreType)bufferingType defer:(BOOL)flag
+- (instancetype)initWithContentRect:(NSRect)contentRect styleMask:(NSWindowStyleMask)aStyle backing:(NSBackingStoreType)bufferingType defer:(BOOL)flag
 {	
-    NSWindow *window = [super initWithContentRect:contentRect styleMask:NSBorderlessWindowMask backing:NSBackingStoreBuffered defer:NO];
+    CVBubbleTextWindow *window = [super initWithContentRect:contentRect styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:NO];
     [window setBackgroundColor:[NSColor clearColor]];
-    [window setLevel:NSScreenSaverWindowLevel];
+    [window setLevel:NSStatusWindowLevel];
+    [window setCollectionBehavior:NSWindowCollectionBehaviorCanJoinAllSpaces |
+        NSWindowCollectionBehaviorFullScreenAuxiliary];
     [window setAlphaValue:1.0];
     [window setOpaque:NO];
     [window setHasShadow:YES];
@@ -20,7 +22,7 @@
 }
 - (BOOL)canBecomeKeyWindow
 {
-    return YES;
+    return NO;
 }
 - (BOOL)canBecomeMainWindow
 {
@@ -38,7 +40,7 @@
 	NSRect screenFrame = [[NSScreen mainScreen] frame];
 	NSRect windowFrame = [self frame];
 	
-    currentLocation = [self convertBaseToScreen:[self mouseLocationOutsideOfEventStream]];
+    currentLocation = [self convertPointToScreen:[self mouseLocationOutsideOfEventStream]];
     newOrigin.x = currentLocation.x - _initialLocation.x;
     newOrigin.y = currentLocation.y - _initialLocation.y;
     
@@ -50,7 +52,7 @@
 - (void)mouseDown:(NSEvent *)theEvent
 {
     NSRect windowFrame = [self frame];
-	_initialLocation = [self convertBaseToScreen:[theEvent locationInWindow]];
+	_initialLocation = [self convertPointToScreen:[theEvent locationInWindow]];
 	_initialLocation.x -= windowFrame.origin.x;
 	_initialLocation.y -= windowFrame.origin.y;
 }

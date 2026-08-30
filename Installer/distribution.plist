@@ -28,6 +28,6 @@
         title="chichi77 KeyKey"
         description="chichi77 KeyKey"
         start_selected="true">
-      <pkg-ref id="io.github.polobread.chichi77.installerpackage" onConclusion="RequireLogout"/>
+      <pkg-ref id="io.github.polobread.chichi77.installerpackage"/>
     </choice>
 </installer-gui-script>

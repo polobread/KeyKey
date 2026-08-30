@@ -8,6 +8,8 @@ struct KeyboardMetricsTests {
     func selection() {
         #expect(KeyboardMetrics.forCompactHeight(false) == .portrait)
         #expect(KeyboardMetrics.forCompactHeight(true) == .compact)
+        #expect(KeyboardMetrics.forCompactHeight(false, isPad: true) == .pad)
+        #expect(KeyboardMetrics.forCompactHeight(true, isPad: true) == .pad)
     }
 
     @Test("landscape is shorter and smaller throughout")
@@ -30,6 +32,13 @@ struct KeyboardMetricsTests {
         #expect(KeyboardMetrics.compact.contentHeight == 155)
     }
 
+    @Test("iPad keeps the full-height keys but caps the eleven-column width")
+    func padWidth() {
+        #expect(KeyboardMetrics.pad.contentHeight == KeyboardMetrics.portrait.contentHeight)
+        #expect(KeyboardMetrics.pad.maximumContentWidth < KeyboardMetrics.portrait.maximumContentWidth)
+        #expect(KeyboardMetrics.pad.maximumContentWidth == 820)
+    }
+
     @Test("only portrait has room to stack the dual key labels")
     func labelStacking() {
         #expect(KeyboardMetrics.portrait.stacksKeyLabels)
@@ -44,7 +53,7 @@ struct KeyboardMetricsTests {
 
     @Test("five bands share the height left under the candidate strip")
     func bandHeight() {
-        for metrics in [KeyboardMetrics.portrait, .compact] {
+        for metrics in [KeyboardMetrics.portrait, .compact, .pad] {
             let total = metrics.candidateStripHeight + metrics.bandHeight * 5
             #expect(abs(total - metrics.contentHeight) < 0.001)
             #expect(metrics.bandHeight > 0)

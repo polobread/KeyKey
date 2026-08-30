@@ -66,11 +66,7 @@ public final class Statement {
     /// Binds the arguments in order and collects the first column of every row.
     /// The statement is reset afterwards so it can be reused.
     public func firstColumnStrings(_ arguments: [String]) -> [String] {
-        sqlite3_reset(handle)
-        sqlite3_clear_bindings(handle)
-        for (index, argument) in arguments.enumerated() {
-            sqlite3_bind_text(handle, Int32(index + 1), argument, -1, SQLITE_TRANSIENT)
-        }
+        bind(arguments)
 
         var rows: [String] = []
         while sqlite3_step(handle) == SQLITE_ROW {
@@ -84,8 +80,8 @@ public final class Statement {
 
     /// Collects every column of every row as text. Used for the small
     /// collection-name query, not on the typing path.
-    public func allRows(columnCount: Int32) -> [[String]] {
-        sqlite3_reset(handle)
+    public func allRows(_ arguments: [String] = [], columnCount: Int32) -> [[String]] {
+        bind(arguments)
         var rows: [[String]] = []
         while sqlite3_step(handle) == SQLITE_ROW {
             var row: [String] = []
@@ -100,6 +96,14 @@ public final class Statement {
         }
         sqlite3_reset(handle)
         return rows
+    }
+
+    private func bind(_ arguments: [String]) {
+        sqlite3_reset(handle)
+        sqlite3_clear_bindings(handle)
+        for (index, argument) in arguments.enumerated() {
+            sqlite3_bind_text(handle, Int32(index + 1), argument, -1, SQLITE_TRANSIENT)
+        }
     }
 }
 

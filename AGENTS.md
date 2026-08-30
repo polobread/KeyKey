@@ -53,6 +53,12 @@ macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是�
 | `Source/Loaders/Windows-TSF/CMakeLists.txt` | `project(... VERSION x.y.z)`；同時產生 DLL／EXE 的 `VERSIONINFO` |
 | `Source/Loaders/Windows-TSF/Package-Windows.ps1` | `$Version` 參數預設值 |
 
+### Android — 2 個本機預設值
+
+`Source/Loaders/Android-IME/app/build.gradle.kts` 的 `keyKeyVersionName` 預設值與
+由 `major * 1,000,000 + minor * 1,000 + patch` 算出的 `keyKeyVersionCode` 預設值。
+GitHub Actions 仍會從 `README.md` 解析並以 Gradle properties 覆寫這兩個值。
+
 ### iOS — 1 處
 
 | 檔案 | 位置 |
@@ -207,7 +213,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **macOS 首次安裝看不到輸入法**：Text Input Services 只在登入時掃
   `/Library/Input Methods`，換過 bundle id 就等於首次安裝，必須登出再登入，
   `lsregister` 手動註冊無效。確認是否註冊：
-  `defaults read com.apple.HIToolbox | grep -c chichi77`
+  `defaults read com.apple.HIToolbox | grep -c chichi77`。`distribution.plist` 刻意不設
+  `RequireLogout`：完成頁要求首次安裝者方便時自行登出，但升級由 postinstall 結束舊
+  process 後立即生效，不應每次安裝都中斷工作階段。
 - **macOS pkg 安裝**：`pkgbuild` 預設把 app bundle 標成 relocatable，`installer`
   會把 payload 寫到別處卻回報成功。已用 `Installer/build.sh` 的
   `BundleIsRelocatable false` 處理；安裝後仍務必
@@ -215,6 +223,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **Windows ZIP 安裝**：ZIP 版必須先完整解壓縮、複製到本機 `C:\` 路徑，才執行
   `Install.cmd`；UAC 提升權限後可能存取不到網路磁碟／NAS／UNC 來源。NSIS EXE 是
   獨立離線安裝器，不受這個解壓縮限制，也不要再包進另一層 ZIP 才交給 Partner Center。
+- **Windows NSIS 完成頁只在必要時要求重啟**：`Delete /REBOOTOK`／`RMDir /REBOOTOK`
+  遇到被鎖定的舊檔才設 reboot flag，完成頁此時預設「稍後重新啟動」；一般安裝不應
+  主動要求重啟。互動模式預設開啟琦琦設定，另可選開啟 `ms-settings:regionlanguage`；
+  `/S` 靜默安裝不可啟動兩者。
 - **Android Studio agent shell 的 x86 preset 可能撞到重複環境變數**：這個環境同時
   傳入 `Path` 與 `PATH` 時，Visual Studio generator 的 MSBuild 會以 MSB6001／
   `ArgumentException` 停在編譯器偵測。不是 x86 原始碼錯誤；用
@@ -261,6 +273,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   說明移到比例列上方並縮短模組清單，否則比例 popup 會直接蓋住說明文字。
   三份 `MainMenu.xib` 都必須把 `_candidateWindowStyleMatrix` 接到 `TakaoGlobal`；簡中曾
   漏接，會讓程式建立的比例列使用零座標並且無法保存直／橫式選擇。
+- **macOS 輸入法浮動視窗不可蓋過系統安全 UI 或搶焦點**：候選窗、提示泡泡與一般
+  浮動窗使用 `NSStatusWindowLevel`，並加入所有 Space／全螢幕輔助行為；只有需要互動的
+  字典視窗可成為 key window。候選窗顯示用 `orderFront:`，不要改回
+  `makeKeyAndOrderFront:`。多螢幕定位必須用完整的 `NSPointInRect` 同時判斷 x、y，否則
+  上下排列的螢幕會選錯 visible frame。
+- **macOS OneKey 啟動程式不可經過 shell**：`LaunchApp` 的值以 tab 分隔程式名稱／路徑
+  和參數，必須交給 `NSWorkspaceOpenConfiguration.arguments`；不要拼成 `open ...` 再呼叫
+  `system()`，否則設定值中的 shell metacharacter 會被執行。
 - **Windows 語言列通知可能重入或跨執行緒**：2026-08-24 的 Android Studio
   `studio64.exe` 在 `Ctrl+Space` 切換模式時連續三次以 `0xc0000005` 崩潰；WER 的
   faulting module 是 `KeyKeyTsf_x64.dll`，固定 offset `0xA087` 經同版 map 確認為
@@ -298,7 +318,16 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   一排功能鍵組成；四排依序結束於 `ㄦ`、`@`、Emoji、Shift。功能列的長空白是刻意
   的唯一寬鍵。注音鍵必須同時顯示注音與實體鍵位（如 `ㄅ／1`、`ㄉ／2`）。橫式內容
   仍固定 155dp，六排使用橫式小字級，不要恢復舊的左右分割候選。左下模式鍵隨目前
-  模式分別顯示「英/數」、「數/中」、「中/英」，不要改回固定「中/英/數」。
+  模式分別顯示「英/數」、「數/ㄅ」、「ㄅ/英」，不要改回「中」或固定「中/英/數」。
+- **Android 欄位模式由 App 的 `EditorInfo` 決定**：`inputType` 的文字／Email／URI／
+  password／phone／number（含 decimal、signed）／datetime 會轉成 `InputFieldPolicy`。
+  一般、姓名、地址、搜尋與長文字保留注音；Email、URL、ASCII／password 只留英文與
+  數字符號；電話、整數、小數、日期時間只留數字。限制型欄位不可移除按鍵造成版面跳動，
+  要淡化並移除 hit target；loader 也要再次拒絕 disabled key，不能只靠畫面擋。
+- **Android 軟 Enter action 與實體 Enter 必須分流**：直橫式觸控 Enter 在沒有 reading／
+  候選時，依 `imeOptions & IME_MASK_ACTION` 呼叫 `performEditorAction(DONE/NEXT/SEARCH/
+  SEND/GO/PREVIOUS)`，並顯示中文 action 名；`IME_FLAG_NO_ENTER_ACTION`、無 action 或
+  App 拒絕時才送 Enter key event。外接鍵盤 Enter 永遠走 key event，不可套 editor action。
 - **Android 觸控 Shift 不等於實體 Shift**：注音版按 Shift 只暫時顯示英文小寫，
   並把雙標籤從「注音在上、鍵位在下」交換成「鍵位在上、注音在下」，輸入下一個
   觸控字元後立即回注音；由功能列切入的英文版按 Shift 才會持續切換大小寫，且大寫時
@@ -365,10 +394,26 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **iOS extension 收不到實體鍵盤按鍵**：`UIInputViewController` 的
   `pressesBegan`／`pressesEnded` 不會被呼叫，第三方鍵盤也只能在自己的 input view 內
   繪製。Android 的實體鍵盤支援與浮動候選窗在 iOS **做不到**，不要再嘗試。
+- **iOS 欄位模式由 `textDocumentProxy.keyboardType` 決定**：11 種 `UIKeyboardType`
+  先映成 UIKit-free 的 `KeyboardTypeHint`／`InputFieldPolicy`，才能用 macOS SwiftPM
+  測試。限制型欄位保留固定 11 欄位置，將無效按鍵設為 `isEnabled = false` 並淡化；
+  controller 也要再次拒絕 disabled key。欄位類型改變時選 preferred mode，同類欄位間
+  則保留使用者手動選的 mode。
+- **iOS secure／phone pad 欄位禁止第三方鍵盤**：Apple 明定 secure text field、
+  `UIKeyboardType.phonePad` 與 `namePhonePad` 都會切回內建鍵盤，App 也能透過 extension
+  policy 全面禁用第三方鍵盤。對應 `InputFieldPolicy` 仍需保留作純邏輯測試與防禦性處理，
+  但不可宣稱 extension 能在這些欄位實際出現。
 - **iOS 沒有 inline 組字**：`UITextDocumentProxy` 只有 `insertText`／`deleteBackward`
   ／`documentContextBefore/AfterInput`，**沒有 marked text API**。注音讀音必須顯示在
   鍵盤自己的畫面，不能出現在目標 App 的文字欄位。副作用是 Android 那個「先
   `finishComposingText` 會變成 `ㄋㄧˇ你`」的陷阱在 iOS 不存在。
+- **iOS 外部文字／選取變動要清掉未送出的引擎狀態**：`textDidChange` 與鍵盤離開畫面時
+  清除 reading、候選、關聯詞和暫時狀態；但 loader 自己呼叫 `insertText`／
+  `deleteBackward` 造成的 callback 必須略過到下一個 main-loop turn，否則確定單字後
+  剛建立的關聯詞會立刻被清掉。
+- **iOS SQLite 順序不可依賴未指定的 row order**：單字候選查詢明確以 `rowid` 排序；
+  多個關聯詞庫一次查詢後，還要依使用者啟用的 source 順序重組並去重，不能把 SQL
+  `IN (...)` 的回傳順序當成詞庫優先權。變更 source 清單時需同步清掉 statement cache。
 - **iOS `deleteBackward()` 已經是 grapheme 感知，不要移植 `TextDeletion`**：
   2026-08-23 在模擬器實測，一次 `deleteBackward()` 可完整刪除 👍🏻（膚色修飾符，
   4 個 UTF-16 unit）與 👨‍👩‍👧（ZWJ 家庭序列，8 個 unit／5 個 scalar），沒有殘骸。
@@ -410,9 +455,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `advanceToNextInputMode()` 只有點一下。接對了的話系統第一次會自己跳出
   「快速更改鍵盤」說明卡。
 - **iPad 橫式不會進 compact 版面**：iPad 全螢幕時 `verticalSizeClass` 兩個方向都是
-  `.regular`，所以 `KeyboardMetrics.forCompactHeight` 永遠拿到直式那組（330pt）。
-  版面比例是照 iPhone 調的，iPad 上 11 欄會被拉寬（11 吋直式約 71pt／欄，橫式約
-  104pt），能用但不好看。
+  `.regular`，所以 metrics 必須另外判斷 `userInterfaceIdiom == .pad`。iPad 使用 330pt
+  高度、最大 820pt 的置中鍵盤內容；iPhone 仍依 compact height 切換 330／155pt，
+  不要只靠 size class 判斷 iPad 版面。
 - **在乾淨的模擬器上啟用第三方鍵盤不必手動點設定**：啟用清單是
   `.GlobalPreferences.plist` 的 `AppleKeyboards`，第三方項目就是 extension 的
   bundle ID。
@@ -615,6 +660,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### iOS
 
+- [ ] 在實機或 Simulator 測試 `default`、`asciiCapable`、`numbersAndPunctuation`、URL、
+      numberPad、phonePad、namePhonePad、emailAddress、decimalPad、webSearch、
+      asciiCapableNumberPad；確認直橫式 disabled key 無法點擊、VoiceOver 朗讀為 disabled，
+      並確認 secure、phonePad、namePhonePad 由 iOS 換回系統鍵盤。純策略 73 個 Swift 測試與完整
+      Simulator App／extension build 已於 2026-08-30 通過。
+
 - [ ] 版號集中：`MARKETING_VERSION` 目前寫在 pbxproj 的四個 configuration 裡，
       可抽成 xcconfig（4 處 → 1 處）。
 - [ ] VoiceOver：**元素樹已驗證，朗讀本身還沒聽過。** 2026-08-23 用臨時的
@@ -635,6 +686,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Android
 
+- [ ] 在 Android 實機依序測一般、Email、URL、電話、整數、小數、日期時間、密碼、姓名、
+      地址、搜尋、簡訊／長文字與 ASCII 欄位；直橫式各確認 disabled key 無 hit／無震動，
+      軟 Enter 的完成、下一個、搜尋、傳送、前往、上一個會觸發正確 action，而 USB／藍牙
+      Enter 仍送 plain Enter。JVM 策略測試已加入；本機首次 Android SDK license 尚須由
+      開發者本人接受後才能完成 API 36 build。
+
 - [ ] 先在 Play Console 手動完成首次 app／AAB、Play App Signing 與 upload certificate
       登記（Publishing API 不能代替首次建立 app），再把 5 個 secrets 放進
       `google-play-release` environment 並實跑 `Android Play Release`。首次手動上傳若已
@@ -644,14 +701,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       購買，以及離線或沒有 Play Store 時仍可完整輸入。直接 sideload 的 debug APK 無法
       完整驗證 Play 商品設定。
 
-- [ ] 聲調符號（ˊ ˇ ˋ ˙）字級是否比照 iOS 放大 —— 目前 Android 與其他注音同字級
-      （`drawBopomofoKey` 的 `dp(18)`），iOS 直式放大 1.8 倍
-      （`KeyboardLayout.glyphPointScale`）。兩個觸控鍵盤現在長得不一樣，要不要對齊
-      請一起決定。**Android 這邊改起來比 iOS 單純**：`drawText` 的兩個基線都是從
-      `bounds.centerY()` 固定偏移（`- dp(4)`／`+ dp(17)`），放大上面那個字不會推動
-      下面的鍵位數字，沒有 iOS 那個 TextKit 行框問題。橫式是
-      `primary + " " + secondary` 一行帶過，iOS 橫式也刻意沒放大，要動得先拆成兩次
-      `drawText`。
+- [x] Android 直式聲調符號已比照 iOS 放大 1.8 倍並以 glyph bounds 校正上緣；橫式兩端
+      都維持同列正常字級，於 2026-08-30 完成。
 - [ ] Enter 鍵描邊繪製（`drawEnterKey`）已於 2026-08-24 通過
       `lintDebug testDebugUnitTest assembleDebug` 編譯驗證；仍需在模擬器或實機截圖，
       比對 Enter 鍵外觀與 iOS 一致。

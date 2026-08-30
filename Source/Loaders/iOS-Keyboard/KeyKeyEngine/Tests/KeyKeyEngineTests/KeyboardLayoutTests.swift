@@ -46,8 +46,8 @@ struct KeyboardLayoutTests {
     @Test("the mode key advertises the next two modes")
     func modeCaption() {
         #expect(KeyboardLayout.caption(for: "MODE", mode: .bopomofo) == "英/數")
-        #expect(KeyboardLayout.caption(for: "MODE", mode: .english) == "數/中")
-        #expect(KeyboardLayout.caption(for: "MODE", mode: .number) == "中/英")
+        #expect(KeyboardLayout.caption(for: "MODE", mode: .english) == "數/ㄅ")
+        #expect(KeyboardLayout.caption(for: "MODE", mode: .number) == "ㄅ/英")
     }
 
     @Test("shift only swaps the plane where it should")

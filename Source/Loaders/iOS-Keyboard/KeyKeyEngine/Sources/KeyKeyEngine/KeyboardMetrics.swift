@@ -21,6 +21,9 @@ public struct KeyboardMetrics: Equatable, Sendable {
     public var functionFontSmall: Double
     public var pageFont: Double
     public var statusFont: Double
+    /// Keeps the eleven-column keyboard usable on wide iPads. Phone values are
+    /// intentionally larger than any supported screen so they remain full-width.
+    public var maximumContentWidth: Double
 
     public static let portrait = KeyboardMetrics(
         isCompactHeight: false,
@@ -34,7 +37,8 @@ public struct KeyboardMetrics: Equatable, Sendable {
         functionFont: 18,
         functionFontSmall: 12,
         pageFont: 16,
-        statusFont: 14
+        statusFont: 14,
+        maximumContentWidth: 2_000
     )
 
     /// iPhone landscape, where the vertical size class is compact.
@@ -50,11 +54,34 @@ public struct KeyboardMetrics: Equatable, Sendable {
         functionFont: 12,
         functionFontSmall: 9,
         pageFont: 14,
-        statusFont: 11
+        statusFont: 11,
+        maximumContentWidth: 2_000
     )
 
-    public static func forCompactHeight(_ compact: Bool) -> KeyboardMetrics {
-        compact ? .compact : .portrait
+    /// iPad keeps a regular vertical size class in both orientations. Its
+    /// height can stay at the comfortable portrait value, but the content is
+    /// centred and capped so eleven columns do not stretch across the display.
+    public static let pad = KeyboardMetrics(
+        isCompactHeight: false,
+        contentHeight: 330,
+        candidateStripHeight: 49.5,
+        candidateFont: 18,
+        candidateIndexFont: 10,
+        keyGlyphFont: 18,
+        keyHintFont: 10,
+        stacksKeyLabels: true,
+        functionFont: 18,
+        functionFontSmall: 12,
+        pageFont: 16,
+        statusFont: 14,
+        maximumContentWidth: 820
+    )
+
+    public static func forCompactHeight(
+        _ compact: Bool, isPad: Bool = false
+    ) -> KeyboardMetrics {
+        if isPad { return .pad }
+        return compact ? .compact : .portrait
     }
 
     /// The five bands below the strip -- four key rows and the function row --

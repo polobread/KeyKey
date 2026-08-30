@@ -88,8 +88,8 @@ public enum KeyboardLayout {
         case "MODE":
             switch mode {
             case .bopomofo: return "英/數"
-            case .english: return "數/中"
-            case .number: return "中/英"
+            case .english: return "數/ㄅ"
+            case .number: return "ㄅ/英"
             }
         case "SYMBOL": return "符"
         case "SETTINGS": return "設"

@@ -11,7 +11,7 @@ public final class CandidateStore {
 
     public init(database: Database) throws {
         byKey = try database.prepare(
-            "SELECT value FROM 'Mandarin-bpmf-cin' WHERE key = ?"
+            "SELECT value FROM 'Mandarin-bpmf-cin' WHERE key = ? ORDER BY rowid"
         )
     }
 
@@ -75,16 +75,22 @@ public final class AssociatedPhraseStore {
         } else {
             let placeholders = Array(repeating: "?", count: sources.count).joined(separator: ", ")
             guard let prepared = try? database.prepare(
-                "SELECT data FROM associated_phrases WHERE headchar = ? "
+                "SELECT data, source FROM associated_phrases WHERE headchar = ? "
                     + "AND source IN (\(placeholders))"
             ) else { return [] }
             byHeadCharacter[cacheKey] = prepared
             statement = prepared
         }
 
+        var rowsBySource: [String: String] = [:]
+        for row in statement.allRows([character] + sources, columnCount: 2) {
+            rowsBySource[row[1]] = row[0]
+        }
+
         var seen = Set<String>()
         var result: [String] = []
-        for row in statement.firstColumnStrings([character] + sources) {
+        for source in sources {
+            guard let row = rowsBySource[source] else { continue }
             for suffix in row.split(separator: ",", omittingEmptySubsequences: true) {
                 let phrase = String(suffix)
                 if seen.insert(phrase).inserted {

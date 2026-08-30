@@ -95,6 +95,54 @@ static float OVCCandidateWindowScale(const string& value)
 	return 1.0;
 }
 
+static void OVCLaunchApplication(const string& value)
+{
+	NSString *launchValue = [NSString stringWithUTF8String:value.c_str()];
+	if (![launchValue length])
+		return;
+
+	NSArray *components = [launchValue componentsSeparatedByString:@"\t"];
+	NSString *applicationName = [[components objectAtIndex:0]
+		stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+	if (![applicationName length])
+		return;
+
+	NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
+	NSString *expandedPath = [applicationName stringByExpandingTildeInPath];
+	NSURL *applicationURL = nil;
+	if ([[NSFileManager defaultManager] fileExistsAtPath:expandedPath]) {
+		applicationURL = [NSURL fileURLWithPath:expandedPath];
+	}
+	else {
+		applicationURL = [workspace URLForApplicationWithBundleIdentifier:applicationName];
+		if (!applicationURL) {
+			NSString *applicationPath = [workspace fullPathForApplication:applicationName];
+			if ([applicationPath length])
+				applicationURL = [NSURL fileURLWithPath:applicationPath];
+		}
+	}
+
+	if (!applicationURL)
+		return;
+
+	NSMutableArray *arguments = [NSMutableArray array];
+	for (NSUInteger index = 1; index < [components count]; ++index) {
+		NSString *argument = [components objectAtIndex:index];
+		if ([argument length])
+			[arguments addObject:argument];
+	}
+
+	NSWorkspaceOpenConfiguration *configuration =
+		[NSWorkspaceOpenConfiguration configuration];
+	[configuration setArguments:arguments];
+	[workspace openApplicationAtURL:applicationURL
+		configuration:configuration
+		completionHandler:^(NSRunningApplication *application, NSError *error) {
+			if (!application && error)
+				NSLog(@"Unable to launch OneKey application: %@", [error localizedDescription]);
+		}];
+}
+
 @implementation OpenVanillaController
 - (void)dealloc
 {
@@ -745,8 +793,7 @@ static float OVCCandidateWindowScale(const string& value)
 			string value = loaderService->loaderFeatureValue();
 			
 			if (key == "LaunchApp") {
-				value = string("open ") + value;
-				system(value.c_str());
+				OVCLaunchApplication(value);
 			}
 		}
 		

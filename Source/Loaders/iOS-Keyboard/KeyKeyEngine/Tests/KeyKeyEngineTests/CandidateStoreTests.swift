@@ -87,4 +87,26 @@ struct AssociatedPhraseStoreTests {
         store.setEnabledSources([])
         #expect(store.phrases(forHeadCharacter: "一").isEmpty)
     }
+
+    @Test("multiple collections follow the caller's priority and deduplicate")
+    func collectionPriority() throws {
+        let store = AssociatedPhraseStore(database: try Database(url: try cookedDatabaseURL()))
+
+        store.setEnabledSources(["general"])
+        let general = store.phrases(forHeadCharacter: "一")
+        store.setEnabledSources(["McBopomofo"])
+        let base = store.phrases(forHeadCharacter: "一")
+        #expect(general.first == "卡通")
+        #expect(base.first == "個")
+
+        store.setEnabledSources(["general", "McBopomofo"])
+        let generalFirst = store.phrases(forHeadCharacter: "一")
+        #expect(Array(generalFirst.prefix(general.count)) == general)
+        #expect(generalFirst.count == Set(general + base).count)
+
+        store.setEnabledSources(["McBopomofo", "general"])
+        let baseFirst = store.phrases(forHeadCharacter: "一")
+        #expect(Array(baseFirst.prefix(base.count)) == base)
+        #expect(baseFirst.count == Set(general + base).count)
+    }
 }

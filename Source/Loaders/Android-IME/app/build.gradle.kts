@@ -2,10 +2,10 @@ plugins {
     id("com.android.application")
 }
 
-val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("0.1.0")
+val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.2.7")
 val keyKeyVersionCode = providers.gradleProperty("keykeyVersionCode")
     .map(String::toInt)
-    .getOrElse(1)
+    .getOrElse(1_002_007)
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH")
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD")
 val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS")

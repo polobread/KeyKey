@@ -1,18 +1,14 @@
 // [AUTO_HEADER]
 
 #import "CVDictionaryWindow.h"
-#import <LFExtensions/LFCrossDevelopmentTools.h>
 
 @implementation CVDictionaryWindow
-- (id)initWithContentRect:(NSRect)contentRect styleMask:(unsigned int)aStyle backing:(NSBackingStoreType)bufferingType defer:(BOOL)flag
+- (instancetype)initWithContentRect:(NSRect)contentRect styleMask:(NSWindowStyleMask)aStyle backing:(NSBackingStoreType)bufferingType defer:(BOOL)flag
 {	
     if (self = [super initWithContentRect:contentRect styleMask:aStyle backing:NSBackingStoreBuffered defer:NO]) {
-		if (LFIsRunningUnderOSX10_5AndAbove()) {
-			[self setLevel:CGShieldingWindowLevel() + 1];
-		}
-		else {
-			[self setLevel:NSScreenSaverWindowLevel];
-		}
+		[self setLevel:NSStatusWindowLevel];
+		[self setCollectionBehavior:NSWindowCollectionBehaviorCanJoinAllSpaces |
+			NSWindowCollectionBehaviorFullScreenAuxiliary];
         [self setHasShadow:YES];
     }
 	

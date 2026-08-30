@@ -19,6 +19,8 @@ final class KeyboardViewController: UIInputViewController {
     private var collections: [AssociatedPhraseStore.Collection] = []
     private let phraseSettings = PhraseSettings()
     private var settingsPanel: SettingsPanel?
+    private var isMutatingDocument = false
+    private var fieldPolicy = InputFieldPolicy.default
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -48,17 +50,26 @@ final class KeyboardViewController: UIInputViewController {
         height.isActive = true
         heightConstraint = height
 
-        // Landscape reports a compact vertical size class; the keyboard shrinks
-        // to 155pt and drops to the smaller type scale.
+        // iPhone landscape reports compact height and uses the short scale.
+        // iPad remains full-height but receives a centred maximum content width.
         registerForTraitChanges([UITraitVerticalSizeClass.self]) {
             (self: Self, _) in self.applyMetrics()
         }
         applyMetrics()
+        updateFieldPolicy()
         refresh()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateFieldPolicy()
+    }
+
     private func applyMetrics() {
-        let metrics = KeyboardMetrics.forCompactHeight(traitCollection.verticalSizeClass == .compact)
+        let metrics = KeyboardMetrics.forCompactHeight(
+            traitCollection.verticalSizeClass == .compact,
+            isPad: traitCollection.userInterfaceIdiom == .pad
+        )
         keyboardView?.setMetrics(metrics)
         applyHeight(metrics)
     }
@@ -72,11 +83,29 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private var currentMetrics: KeyboardMetrics {
-        KeyboardMetrics.forCompactHeight(traitCollection.verticalSizeClass == .compact)
+        KeyboardMetrics.forCompactHeight(
+            traitCollection.verticalSizeClass == .compact,
+            isPad: traitCollection.userInterfaceIdiom == .pad
+        )
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        resetInputState()
+        settingsPanel?.removeFromSuperview()
+        settingsPanel = nil
     }
 
     override func textDidChange(_ textInput: UITextInput?) {
-        // Nothing to mirror: the composition lives entirely in the keyboard.
+        super.textDidChange(textInput)
+        updateFieldPolicy()
+        // The reading is not mirrored into the document. If the host changes
+        // the document or selection, keeping it would carry a stale reading or
+        // phrase list into another field. Mutations initiated below are ignored
+        // so committing a character can still leave its associated phrases up.
+        if !isMutatingDocument {
+            resetInputState()
+        }
     }
 
     private func loadEngine() {
@@ -102,8 +131,10 @@ final class KeyboardViewController: UIInputViewController {
     /// Only sources the database actually has are passed down, so a stale
     /// stored selection cannot silently widen the query.
     private func applyPhraseSelection(_ selection: Set<String>) {
-        let known = Set(collections.map(\.source))
-        phraseStore?.setEnabledSources(selection.intersection(known).sorted())
+        let enabledInPriorityOrder = collections
+            .filter { selection.contains($0.source) }
+            .map(\.source)
+        phraseStore?.setEnabledSources(enabledInPriorityOrder)
     }
 
     private func showSettingsPanel() {
@@ -142,10 +173,49 @@ final class KeyboardViewController: UIInputViewController {
         state.shifted = engine.isShifted
         state.temporaryEnglish = engine.isTemporaryEnglish
         state.statusOverride = statusOverride
+        state.fieldPolicy = fieldPolicy
         keyboardView.apply(state)
     }
 
+    private func updateFieldPolicy() {
+        let nextPolicy = InputFieldPolicy(hint: keyboardTypeHint(textDocumentProxy.keyboardType))
+        let layoutChanged = nextPolicy != fieldPolicy
+        fieldPolicy = nextPolicy
+        engine?.setAllowedInputModes(
+            fieldPolicy.allowedModes, preferred: fieldPolicy.preferredMode,
+            selectPreferred: layoutChanged
+        )
+        refresh()
+    }
+
+    private func keyboardTypeHint(_ type: UIKeyboardType?) -> KeyboardTypeHint {
+        switch type ?? .default {
+        case .asciiCapable: return .asciiCapable
+        case .numbersAndPunctuation: return .numbersAndPunctuation
+        case .URL: return .url
+        case .numberPad: return .numberPad
+        case .phonePad: return .phonePad
+        case .namePhonePad: return .namePhonePad
+        case .emailAddress: return .emailAddress
+        case .decimalPad: return .decimalPad
+        case .webSearch: return .webSearch
+        case .asciiCapableNumberPad: return .asciiCapableNumberPad
+        default: return .default
+        }
+    }
+
+    private func resetInputState() {
+        engine?.reset()
+        statusOverride = nil
+        refresh()
+    }
+
     private func apply(_ result: BopomofoEngine.Result) {
+        let mutatesDocument = result.deletesBackward
+            || !result.text.isEmpty || result.sendsReturn
+        if mutatesDocument {
+            isMutatingDocument = true
+        }
         if result.deletesBackward {
             textDocumentProxy.deleteBackward()
         }
@@ -156,6 +226,11 @@ final class KeyboardViewController: UIInputViewController {
             textDocumentProxy.insertText("\n")
         }
         refresh()
+        if mutatesDocument {
+            DispatchQueue.main.async { [weak self] in
+                self?.isMutatingDocument = false
+            }
+        }
     }
 }
 
@@ -167,6 +242,9 @@ extension KeyboardViewController: KeyboardViewDelegate {
             showSettingsPanel()
             return
         }
+        guard fieldPolicy.isKeyEnabled(
+            key, mode: engine.inputMode, shifted: engine.isShifted
+        ) else { return }
         apply(engine.handleSoftKey(key))
     }
 

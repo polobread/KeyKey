@@ -211,6 +211,18 @@ struct BopomofoEngineTests {
         #expect(engine.inputMode == .bopomofo)
     }
 
+    @Test("a restricted mode cycle skips Bopomofo")
+    func restrictedModeCycle() {
+        let engine = engine()
+        engine.setAllowedInputModes([.english, .number], preferred: .english,
+                                    selectPreferred: true)
+        #expect(engine.inputMode == .english)
+        _ = engine.handleSoftKey("MODE")
+        #expect(engine.inputMode == .number)
+        _ = engine.handleSoftKey("MODE")
+        #expect(engine.inputMode == .english)
+    }
+
     @Test("shift on the Bopomofo plane is a one-shot lower-case English")
     func oneShotEnglish() {
         let engine = engine()

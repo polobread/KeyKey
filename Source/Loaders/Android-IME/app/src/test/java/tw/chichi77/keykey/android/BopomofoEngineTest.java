@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.EnumSet;
 
 import org.junit.Test;
 
@@ -120,6 +121,20 @@ public final class BopomofoEngineTest {
         assertEquals("@", engine.handleSoftKey("@").committedText());
         engine.handleSoftKey("MODE");
         assertEquals(BopomofoEngine.InputMode.BOPOMOFO, engine.inputMode());
+    }
+
+    @Test
+    public void restrictedModeCycleSkipsBopomofo() throws Exception {
+        BopomofoEngine engine = engineWith("");
+        engine.setAllowedInputModes(
+                EnumSet.of(BopomofoEngine.InputMode.ENGLISH, BopomofoEngine.InputMode.NUMBER),
+                BopomofoEngine.InputMode.ENGLISH, true);
+
+        assertEquals(BopomofoEngine.InputMode.ENGLISH, engine.inputMode());
+        engine.handleSoftKey("MODE");
+        assertEquals(BopomofoEngine.InputMode.NUMBER, engine.inputMode());
+        engine.handleSoftKey("MODE");
+        assertEquals(BopomofoEngine.InputMode.ENGLISH, engine.inputMode());
     }
 
     @Test

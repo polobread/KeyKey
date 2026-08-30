@@ -26,6 +26,15 @@ static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame
 	[window display];
 }
 
+static NSRect CVVisibleFrameForPoint(NSPoint point)
+{
+	for (NSScreen *screen in [NSScreen screens]) {
+		if (NSPointInRect(point, [screen frame]))
+			return [screen visibleFrame];
+	}
+	return [[NSScreen mainScreen] visibleFrame];
+}
+
 @implementation CVPageButton
 
 - (BOOL)isFlipped
@@ -251,21 +260,7 @@ static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame
 		unscaledWindowSize.height * _candidateWindowScale);
 	windowFrame.origin.x = newPosition.x;
 
-	NSRect frame = [[NSScreen mainScreen] visibleFrame];
-	NSArray *screens = [NSScreen screens];
-	int i, c = [screens count];
-
-	if ([screens count] > 1) {
-		for (i = 0; i < c; i++) {
-			NSScreen *screen = [screens objectAtIndex:i];
-			NSRect screenFrame = [screen frame];
-
-			if (newPosition.x >= NSMinX(screenFrame) && newPosition.x <= NSMaxX(screenFrame)) {
-				frame = [screen visibleFrame];
-				break;
-			}
-		}
-	}
+	NSRect frame = CVVisibleFrameForPoint(newPosition);
 
 	if (newPosition.y < NSMinY(frame))
 		newPosition.y = NSMinY(frame);
@@ -298,8 +293,8 @@ static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame
 	}
     
     // show if it's visible--after update
-    if (panel->isVisible())
-		[[self window] makeKeyAndOrderFront:self];
+	if (panel->isVisible())
+		[[self window] orderFront:self];
 }
 - (void)hide
 {

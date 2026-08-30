@@ -18,7 +18,7 @@ public protocol AssociatedPhraseSource {
 public final class BopomofoEngine {
     public static let candidatesPerPage = 9
 
-    public enum InputMode: Sendable {
+    public enum InputMode: Sendable, Hashable, CaseIterable {
         case bopomofo, english, number
     }
 
@@ -77,6 +77,7 @@ public final class BopomofoEngine {
     private var shifted = false
     private var temporaryEnglish = false
     private var showingAssociatedPhrases = false
+    private var allowedInputModes = Set(InputMode.allCases)
 
     public init(dictionary: CandidateSource, associatedPhrases: AssociatedPhraseSource? = nil) {
         self.dictionary = dictionary
@@ -86,6 +87,22 @@ public final class BopomofoEngine {
     public func setAssociatedPhraseSource(_ source: AssociatedPhraseSource?) {
         associatedPhrases = source
         if showingAssociatedPhrases { clearComposition() }
+    }
+
+    public func setAllowedInputModes(
+        _ allowed: Set<InputMode>, preferred: InputMode, selectPreferred: Bool = false
+    ) {
+        allowedInputModes = allowed.isEmpty ? Set(InputMode.allCases) : allowed
+        if temporaryEnglish && !allowedInputModes.contains(.bopomofo) {
+            temporaryEnglish = false
+        }
+        if selectPreferred || !allowedInputModes.contains(mode) {
+            clearComposition()
+            mode = allowedInputModes.contains(preferred)
+                ? preferred : allowedInputModes.sorted(by: modeOrder).first!
+            shifted = false
+            temporaryEnglish = false
+        }
     }
 
     // MARK: - Display state
@@ -222,7 +239,10 @@ public final class BopomofoEngine {
 
     public func reset() {
         clearComposition()
-        if temporaryEnglish { mode = .bopomofo }
+        if temporaryEnglish {
+            mode = allowedInputModes.contains(.bopomofo)
+                ? .bopomofo : allowedInputModes.sorted(by: modeOrder).first!
+        }
         temporaryEnglish = false
         shifted = false
     }
@@ -304,11 +324,13 @@ public final class BopomofoEngine {
             shifted = false
             return .update
         }
-        switch mode {
-        case .bopomofo: mode = .english
-        case .english: mode = .number
-        case .number: mode = .bopomofo
-        }
+        repeat {
+            switch mode {
+            case .bopomofo: mode = .english
+            case .english: mode = .number
+            case .number: mode = .bopomofo
+            }
+        } while !allowedInputModes.contains(mode)
         shifted = false
         return .update
     }
@@ -319,7 +341,7 @@ public final class BopomofoEngine {
         clearComposition()
         if temporaryEnglish {
             endTemporaryEnglish()
-        } else if mode == .bopomofo {
+        } else if mode == .bopomofo, allowedInputModes.contains(.english) {
             mode = .english
             temporaryEnglish = true
             shifted = false
@@ -330,7 +352,8 @@ public final class BopomofoEngine {
     }
 
     private func endTemporaryEnglish() {
-        mode = .bopomofo
+        mode = allowedInputModes.contains(.bopomofo)
+            ? .bopomofo : allowedInputModes.sorted(by: modeOrder).first!
         temporaryEnglish = false
         shifted = false
     }
@@ -358,6 +381,10 @@ public final class BopomofoEngine {
     private func floorMod(_ value: Int, _ modulus: Int) -> Int {
         let remainder = value % modulus
         return remainder < 0 ? remainder + modulus : remainder
+    }
+
+    private func modeOrder(_ left: InputMode, _ right: InputMode) -> Bool {
+        InputMode.allCases.firstIndex(of: left)! < InputMode.allCases.firstIndex(of: right)!
     }
 }
 
