@@ -292,17 +292,17 @@ final class BopomofoKeyboardView extends View {
 
     private void drawCandidate(Canvas canvas, RectF bounds, int index) {
         canvas.drawRoundRect(bounds, dp(6), dp(6), candidatePaint);
-        if (index >= candidates.size()) return;
         String number = Integer.toString(index + 1);
-        String value = candidates.get(index);
-        textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
-        textPaint.setFakeBoldText(true);
-        canvas.drawText(value, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
         hintPaint.setTextAlign(Paint.Align.LEFT);
         hintPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(7) : dp(10));
         canvas.drawText(number, bounds.left + dp(5),
                 bounds.top + (mode == Mode.LANDSCAPE ? dp(8) : dp(12)), hintPaint);
         hintPaint.setTextAlign(Paint.Align.CENTER);
+        if (index >= candidates.size()) return;
+        String value = candidates.get(index);
+        textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
+        textPaint.setFakeBoldText(true);
+        canvas.drawText(value, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
         hits.add(new Hit(new RectF(bounds), HitKind.CANDIDATE, "", index));
     }
 

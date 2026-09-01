@@ -25,12 +25,15 @@ final class FloatingCandidateWindow {
     interface Listener {
         void onPress();
         void onCandidate(int displayedIndex);
+        void onWindowUnavailable();
     }
 
     private static final int VERTICAL_WIDTH_DP = 96;
     private static final int VERTICAL_ROW_HEIGHT_DP = 40;
     private static final int HORIZONTAL_CELL_WIDTH_DP = 68;
     private static final int HORIZONTAL_HEIGHT_DP = 48;
+    private static final int MAX_TOKEN_RETRIES = 15;
+    private static final long TOKEN_RETRY_DELAY_MS = 100;
 
     private final Context context;
     private final View tokenView;
@@ -43,6 +46,7 @@ final class FloatingCandidateWindow {
     private RectF cursorAnchor;
     private List<String> candidates = List.of();
     private int highlightedIndex = -1;
+    private int tokenRetryCount;
     private CandidateWindowSettings.Layout layout = CandidateWindowSettings.Layout.VERTICAL;
 
     FloatingCandidateWindow(Context context, View tokenView, Listener listener) {
@@ -72,6 +76,7 @@ final class FloatingCandidateWindow {
         this.layout = layout;
         this.cursorAnchor = cursorAnchor == null ? null : new RectF(cursorAnchor);
         if (candidates.isEmpty()) {
+            tokenRetryCount = 0;
             hide();
             return;
         }
@@ -153,9 +158,10 @@ final class FloatingCandidateWindow {
     private void showOrMove() {
         if (windowManager == null || candidates.isEmpty()) return;
         if (tokenView.getWindowToken() == null) {
-            tokenView.post(this::showOrMove);
+            retryOrFallback();
             return;
         }
+        tokenRetryCount = 0;
 
         Rect safeBounds = safeBounds();
         int gap = dp(4);
@@ -182,8 +188,26 @@ final class FloatingCandidateWindow {
                 windowManager.addView(content, windowParameters);
                 added = true;
             }
-        } catch (WindowManager.BadTokenException | IllegalStateException error) {
+        } catch (WindowManager.BadTokenException | WindowManager.InvalidDisplayException
+                | SecurityException | IllegalStateException error) {
+            if (added) {
+                try {
+                    windowManager.removeViewImmediate(content);
+                } catch (IllegalArgumentException ignored) {
+                    // The IME window may already have been detached by the system.
+                }
+            }
             added = false;
+            retryOrFallback();
+        }
+    }
+
+    private void retryOrFallback() {
+        if (++tokenRetryCount <= MAX_TOKEN_RETRIES) {
+            tokenView.postDelayed(this::showOrMove, TOKEN_RETRY_DELAY_MS);
+        } else {
+            tokenRetryCount = 0;
+            listener.onWindowUnavailable();
         }
     }
 

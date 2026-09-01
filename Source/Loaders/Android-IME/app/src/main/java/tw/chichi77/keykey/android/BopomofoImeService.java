@@ -31,6 +31,7 @@ public final class BopomofoImeService extends InputMethodService
     private Set<String> loadedPhraseCollections;
     private boolean hardwareKeyboard;
     private boolean floatingCandidatesEnabled;
+    private boolean floatingCandidateWindowAvailable = true;
     private CandidateWindowSettings.Layout floatingCandidateLayout =
             CandidateWindowSettings.Layout.VERTICAL;
     private RectF cursorAnchor;
@@ -98,6 +99,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting) {
         super.onStartInput(attribute, restarting);
+        floatingCandidateWindowAvailable = true;
         cursorAnchor = null;
         lastSelectionStart = attribute == null ? -1 : attribute.initialSelStart;
         lastSelectionEnd = attribute == null ? -1 : attribute.initialSelEnd;
@@ -224,6 +226,7 @@ public final class BopomofoImeService extends InputMethodService
         }
         if (!CandidateWindowSettings.KEY_FLOATING_ENABLED.equals(key)
                 && !CandidateWindowSettings.KEY_LAYOUT.equals(key)) return;
+        floatingCandidateWindowAvailable = true;
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
@@ -252,6 +255,14 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onCandidate(int displayedIndex) {
         apply(engine.selectDisplayedCandidate(displayedIndex));
+    }
+
+    @Override
+    public void onWindowUnavailable() {
+        if (!floatingCandidateWindowAvailable) return;
+        floatingCandidateWindowAvailable = false;
+        updateKeyboardMode();
+        refreshKeyboard();
     }
 
     @Override
@@ -484,7 +495,7 @@ public final class BopomofoImeService extends InputMethodService
         floatingCandidateLayout = CandidateWindowSettings.layout(this);
         if (keyboardView == null) return;
         if (hardwareKeyboard) {
-            keyboardView.setMode(floatingCandidatesEnabled
+            keyboardView.setMode(isFloatingCandidateMode()
                     ? BopomofoKeyboardView.Mode.HARDWARE_FLOATING
                     : BopomofoKeyboardView.Mode.HARDWARE);
         } else if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -496,7 +507,7 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     private boolean isFloatingCandidateMode() {
-        return hardwareKeyboard && floatingCandidatesEnabled;
+        return hardwareKeyboard && floatingCandidatesEnabled && floatingCandidateWindowAvailable;
     }
 
     private boolean handleFloatingCandidateNavigation(int keyCode) {

@@ -382,6 +382,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   不回報 `CursorAnchorInfo`，此時固定退回可用畫面底部中央，不要因此恢復底部候選列。
   浮動模式只把 IME input view 留成 1dp 以維持 window token；這不是待清理的空白。
   垂直窗用上下移動反白／左右換頁，水平窗相反，Enter 選反白，ESC 取消整個讀音。
+  若系統拒絕附掛浮窗，或 IME token 經約 1.5 秒重試仍拿不到，必須保留使用者設定、只對
+  目前輸入欄位降級為一般實體鍵盤候選列，不能靜默吃掉候選；下一個欄位可重新嘗試浮窗。
 - **Android 外接鍵盤的 Ctrl 快捷鍵要先於修飾鍵攔截判斷**：`Ctrl+Space` 只在注音與
   英文間切換，`Ctrl+,`／`Ctrl+.` 輸入全型 `，`／`。`；`Ctrl+0` 與 `Ctrl+1` 則比照
   macOS `OVIMTraditionalMandarin.cpp` 的 `_punctuation_list`，開啟與觸控「符」相同的
