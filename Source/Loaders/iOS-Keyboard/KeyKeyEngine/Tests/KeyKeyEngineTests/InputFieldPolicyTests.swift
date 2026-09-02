@@ -47,4 +47,26 @@ struct InputFieldPolicyTests {
         #expect(!policy.isKeyEnabled("EMOJI", mode: .english, shifted: false))
         #expect(!policy.isKeyEnabled("，", mode: .english, shifted: false))
     }
+
+    @Test("key previews describe the state the restricted policy will enter")
+    func restrictedPreviews() {
+        let policy = InputFieldPolicy(hint: .asciiCapable)
+        #expect(policy.modePreviewCaption(for: .english, temporaryEnglish: false) == "數")
+        #expect(policy.modePreviewCaption(for: .number, temporaryEnglish: false) == "英")
+        #expect(policy.shiftPreviewCaption(
+            for: .number, shifted: false, temporaryEnglish: false
+        ) == "符二")
+        #expect(policy.shiftPreviewCaption(
+            for: .number, shifted: true, temporaryEnglish: false
+        ) == "符一")
+    }
+
+    @Test("temporary English previews return to the state the engine will enter")
+    func temporaryEnglishPreviews() {
+        let policy = InputFieldPolicy.default
+        #expect(policy.modePreviewCaption(for: .english, temporaryEnglish: true) == "英")
+        #expect(policy.shiftPreviewCaption(
+            for: .english, shifted: false, temporaryEnglish: true
+        ) == "ㄅ")
+    }
 }

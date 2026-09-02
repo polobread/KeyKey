@@ -18,7 +18,8 @@ final class KeyboardViewController: UIInputViewController {
     private var collections: [AssociatedPhraseStore.Collection] = []
     private let phraseSettings = PhraseSettings()
     private var settingsPanel: SettingsPanel?
-    private var isMutatingDocument = false
+    private var documentMutationGuard = DocumentMutationGuard()
+    private var activeDocumentIdentifier: UUID?
     private var hasMarkedText = false
     private var fieldPolicy = InputFieldPolicy.default
     private var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
@@ -60,12 +61,16 @@ final class KeyboardViewController: UIInputViewController {
             (self: Self, _) in self.applyMetrics()
         }
         applyMetrics()
+        activeDocumentIdentifier = textDocumentProxy.documentIdentifier
         updateFieldPolicy()
         refresh()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        if updateDocumentIdentifier() {
+            abandonDocumentComposition()
+        }
         updateFieldPolicy()
     }
 
@@ -102,14 +107,38 @@ final class KeyboardViewController: UIInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
+        handleDocumentChange()
+    }
+
+    override func selectionDidChange(_ textInput: UITextInput?) {
+        super.selectionDidChange(textInput)
+        handleDocumentChange()
+    }
+
+    private func handleDocumentChange() {
+        let documentChanged = updateDocumentIdentifier()
         updateFieldPolicy()
         // If the host changes the document or selection, its old marked range
         // is no longer trustworthy. Mutations initiated below are ignored so a
         // committed character can still leave its associated phrases up.
-        if !isMutatingDocument {
-            hasMarkedText = false
-            resetInputState(discardDocumentComposition: false)
-        }
+        guard documentChanged || !documentMutationGuard.isActive else { return }
+        abandonDocumentComposition()
+    }
+
+    /// A new document must never inherit the previous proxy's mutation guard.
+    /// Returning true also lets a field switch win over a callback that happens
+    /// during the short internal-mutation suppression window.
+    private func updateDocumentIdentifier() -> Bool {
+        let identifier = textDocumentProxy.documentIdentifier
+        defer { activeDocumentIdentifier = identifier }
+        guard let activeDocumentIdentifier else { return false }
+        return activeDocumentIdentifier != identifier
+    }
+
+    private func abandonDocumentComposition() {
+        documentMutationGuard.invalidate()
+        hasMarkedText = false
+        resetInputState(discardDocumentComposition: false)
     }
 
     private func loadEngine() {
@@ -293,10 +322,10 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func mutateDocument(_ mutation: () -> Void) {
-        isMutatingDocument = true
+        let generation = documentMutationGuard.begin()
         mutation()
         DispatchQueue.main.async { [weak self] in
-            self?.isMutatingDocument = false
+            self?.documentMutationGuard.end(ifCurrent: generation)
         }
     }
 }

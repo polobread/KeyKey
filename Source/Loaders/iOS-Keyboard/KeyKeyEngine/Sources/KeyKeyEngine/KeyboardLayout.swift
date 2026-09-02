@@ -119,8 +119,8 @@ public enum KeyboardLayout {
     }
 
     /// What the candidate strip shows when there are no candidates. This is the
-    /// keyboard's only state readout, and on iOS it is also where the reading
-    /// lives, because an extension has no marked-text channel.
+    /// keyboard's state readout and a fallback visual cue while the iOS loader
+    /// also mirrors the reading into the host's marked-text range.
     public static func statusText(
         reading: String,
         mode: BopomofoEngine.InputMode,

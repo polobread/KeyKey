@@ -66,6 +66,30 @@ public struct InputFieldPolicy: Sendable, Equatable {
         }
     }
 
+    /// The state a press on MODE will actually enter. Temporary English is a
+    /// one-shot layer: MODE only makes it persistent instead of advancing to
+    /// the number plane.
+    public func modePreviewCaption(
+        for mode: BopomofoEngine.InputMode, temporaryEnglish: Bool
+    ) -> String {
+        temporaryEnglish ? symbol(mode) : symbol(nextMode(after: mode))
+    }
+
+    /// A concise description of the state a press on SHIFT will enter.
+    public func shiftPreviewCaption(
+        for mode: BopomofoEngine.InputMode, shifted: Bool, temporaryEnglish: Bool
+    ) -> String {
+        if temporaryEnglish { return symbol(.bopomofo) }
+        switch mode {
+        case .bopomofo:
+            return allowedModes.contains(.english) ? symbol(.english) : symbol(.bopomofo)
+        case .english:
+            return shifted ? "小寫" : "大寫"
+        case .number:
+            return shifted ? "符一" : "符二"
+        }
+    }
+
     public func isKeyEnabled(
         _ key: String, mode: BopomofoEngine.InputMode, shifted: Bool
     ) -> Bool {

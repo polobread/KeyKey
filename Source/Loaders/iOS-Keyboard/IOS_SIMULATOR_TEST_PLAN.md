@@ -16,6 +16,8 @@
 
 目前已確認的 Runtime（2026-09-02）：iPhone 12 是 **iOS 17.0**、iPhone 15 是 **iOS 18.6**、三台 iOS 26 裝置是 **iOS 26.5**。
 
+最近一次自動基線（2026-09-02）：`run-simulator-tests.sh --host-only` 的 79 個 Swift 測試與五台 Simulator 各 2 個 UI tests 全部通過；每台都驗證宿主／extension 安裝註冊、設定 opt-in 與 14 種欄位可到達。這不是 A–K 完成紀錄，extension-required 與下列人工項目仍須另跑。
+
 ## 前置
 
 1. 在每台 Simulator 安裝 Debug container app。
@@ -41,17 +43,35 @@
 
 ## 自動化與記錄
 
-每輪必跑：
+### 五機 runner
+
+先跑可無人值守的基線（引擎單元測試、安裝／啟用 extension、14 種宿主欄位）：
 
 ```sh
-cd Source/Loaders/iOS-Keyboard/KeyKeyEngine && swift test
-xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
-  -scheme "chichi77 KeyKey" -configuration Debug \
-  -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
-  CODE_SIGNING_ALLOWED=NO build
+Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
 ```
 
-keyboard extension 位於系統鍵盤程序，XCUITest 不能可靠地切換或操作它；A–K 目前是受控的人工 Simulator 測試。每次在 commit／PR 說明記錄：Xcode build、實際 runtime patch、五台裝置、通過區塊及任何已知系統限制。
+在五台都已切到琦琦注音後，跑 extension-required 套件：
+
+```sh
+Source/Loaders/iOS-Keyboard/run-simulator-tests.sh
+```
+
+runner 會依名稱尋找本計畫的五台 Simulator、等待開機、共用 DerivedData，並為每台留下獨立 `.xcresult`。可用 `KEYKEY_IOS_TEST_OUTPUT=/path` 指定輸出目錄；否則寫入暫存目錄。任何找不到的裝置、啟動失敗或測試失敗都會繼續跑剩餘裝置，最後以非 0 結束並列出五機摘要。
+
+### 目前自動涵蓋
+
+| 自動項目 | 對應區塊 | 說明 |
+|---|---|---|
+| Swift 引擎單元測試 | D–H、K 的純邏輯 | runner 開始時只跑一次 |
+| 設定導覽與鍵盤 opt-in | A、J 前置 | XCUITest 只操作受控 Simulator；iOS 26 的標籤是「新增鍵盤」 |
+| 14 種 Debug host 欄位可到達 | G、H 宿主側 | 驗證欄位存在、可捲動到且可點擊 |
+| ㄅ→英→數→ㄅ、`ㄋㄧˇ` 選字 | C、D、F | 只有目前軟體鍵盤已是琦琦注音時執行 |
+| 直式／橫式核心按鍵可見可點 | B | iPhone 與 iPad 都執行；要求 extension 已選定 |
+
+iOS 的第三方鍵盤 opt-in 與「目前輸入法」是兩件事。XCUITest 可以自動把琦琦注音加入系統清單，但 iOS 26 的 `InputSwitcherView` 可能只把選項反白而不接受合成 tap／drag，因此 runner 不會把「已加入」誤當成「已切換」。無人值守時用 `--host-only`；完整模式會要求 extension，不能取得 `keyboard.status` 就直接失敗。
+
+按住時的放大預覽、按鍵音、VoiceOver 實際朗讀、顏色視認、連續壓力與 iOS 強制換回 secure／phone 系統鍵盤等仍需依 A–K 人工確認。每次在 commit／PR 說明記錄：runner 模式、實際 runtime patch、五台裝置、自動結果、人工通過區塊及任何已知系統限制；不能只寫「XCUITest 通過」就宣稱 A–K 完成。
 
 ## 平台邊界
 

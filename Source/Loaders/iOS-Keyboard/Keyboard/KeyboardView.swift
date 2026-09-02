@@ -140,6 +140,7 @@ final class KeyboardView: UIView {
         candidateStrip.addArrangedSubview(nextPageButton)
 
         statusLabel.textColor = Palette.hintText
+        statusLabel.accessibilityIdentifier = "keyboard.status"
         statusLabel.textAlignment = .center
         statusLabel.adjustsFontSizeToFitWidth = true
         statusLabel.minimumScaleFactor = 0.7
@@ -525,15 +526,15 @@ final class KeyboardView: UIView {
 
     private func previewText(for key: String) -> String {
         if key == "MODE" {
-            switch state.mode {
-            case .bopomofo: return "英"
-            case .english: return "數"
-            case .number: return "ㄅ"
-            }
+            return state.fieldPolicy.modePreviewCaption(
+                for: state.mode, temporaryEnglish: state.temporaryEnglish
+            )
         }
         if key == "SHIFT" {
-            if state.mode == .bopomofo { return "英" }
-            return state.shifted ? "小寫" : "大寫"
+            return state.fieldPolicy.shiftPreviewCaption(
+                for: state.mode, shifted: state.shifted,
+                temporaryEnglish: state.temporaryEnglish
+            )
         }
         if key == "ENTER" { return state.returnKeyPolicy.accessibilityLabel }
         if state.mode == .bopomofo, let glyph = KeyboardLayout.bopomofoGlyph(for: key) {

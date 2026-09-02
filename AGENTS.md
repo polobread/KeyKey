@@ -433,14 +433,16 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `UIKeyboardType.phonePad` 與 `namePhonePad` 都會切回內建鍵盤，App 也能透過 extension
   policy 全面禁用第三方鍵盤。對應 `InputFieldPolicy` 仍需保留作純邏輯測試與防禦性處理，
   但不可宣稱 extension 能在這些欄位實際出現。
-- **iOS 沒有 inline 組字**：`UITextDocumentProxy` 只有 `insertText`／`deleteBackward`
-  ／`documentContextBefore/AfterInput`，**沒有 marked text API**。注音讀音必須顯示在
-  鍵盤自己的畫面，不能出現在目標 App 的文字欄位。副作用是 Android 那個「先
-  `finishComposingText` 會變成 `ㄋㄧˇ你`」的陷阱在 iOS 不存在。
-- **iOS 外部文字／選取變動要清掉未送出的引擎狀態**：`textDidChange` 與鍵盤離開畫面時
-  清除 reading、候選、關聯詞和暫時狀態；但 loader 自己呼叫 `insertText`／
-  `deleteBackward` 造成的 callback 必須略過到下一個 main-loop turn，否則確定單字後
-  剛建立的關聯詞會立刻被清掉。
+- **iOS 13 起可使用 inline 組字**：`UITextDocumentProxy.setMarkedText`／`unmarkText`
+  自 iOS 13 可用，本專案最低 iOS 17。loader 把 reading 寫成 marked text；確定候選時
+  必須先以候選取代同一 marked range 再 `unmarkText`，不可先 unmark 原始注音，否則會
+  產生 `ㄋㄧˇ你`。取消組字則以空字串取代 marked range，不能用 `unmarkText` 接受讀音。
+- **iOS 外部文字／選取變動要清掉組字狀態**：`textDidChange`、`selectionDidChange` 與
+  鍵盤離開畫面時清除 reading、候選、關聯詞和暫時狀態；外部游標移動後不能沿用舊的
+  marked range。loader 自己呼叫 `insertText`／`deleteBackward`／`setMarkedText` 造成的
+  callback 必須以短期 mutation generation 略過；同一按鍵可能連續替換舊 marked text
+  與建立新 reading，較早的非同步清除不可解除較新 mutation 的 guard。切換欄位時用
+  `documentIdentifier` 強制失效舊 guard，但不要在新游標位置刪除舊 marked range。
 - **iOS SQLite 順序不可依賴未指定的 row order**：單字候選查詢明確以 `rowid` 排序；
   多個關聯詞庫一次查詢後，還要依使用者啟用的 source 順序重組並去重，不能把 SQL
   `IN (...)` 的回傳順序當成詞庫優先權。變更 source 清單時需同步清掉 statement cache。
@@ -465,6 +467,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   看起來像鍵盤掛掉。關法是 Simulator 的 Cmd+Shift+K，或寫
   `defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false`
   再重開 Simulator 視窗。注意 `killall Simulator` 會把 booted 的裝置一起關掉。
+- **iOS XCUITest 能加入第三方鍵盤，但不保證能把它設為目前鍵盤**：五機入口是
+  `Source/Loaders/iOS-Keyboard/run-simulator-tests.sh`。`--host-only` 會自動跑引擎、
+  設定 opt-in 與 14 種宿主欄位；不加參數會要求 extension 的模式／組字／直橫測試。
+  iOS 26 的 `InputSwitcherView` 對合成 tap／drag 可能只反白不切換，不能把兩個
+  extension test 靜默 skip 後宣稱完整通過。iOS 26 設定頁文字是「新增鍵盤」，舊系統
+  可能是「加入新的鍵盤」；UI test 同時接受中英文與兩種標籤。
 - **iOS 按鍵標籤是兩個 UILabel，不是一個兩行的 attributed title**：注音鍵要同時顯示
   注音與鍵位，而聲調符號（ˊ ˇ ˋ ˙）是 spacing modifier letter，字級要放大約 1.8 倍
   才看得清。放大後若用兩行 label，第二行的鍵位數字會被推出按鍵外；改用
@@ -690,11 +698,18 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### iOS
 
+- [ ] 五台 Simulator 已加入共用 XCUITest target 與
+      `run-simulator-tests.sh`；2026-09-02 的 `--host-only` 基線為 79 個 Swift tests 與
+      五台各 2 個 UI tests 全部通過。仍須逐台切到琦琦注音跑
+      extension-required 模式並把結果記進 `IOS_SIMULATOR_TEST_PLAN.md`。系統輸入切換器
+      不能由 XCUITest 穩定選定，不得把 opt-in 成功當成 extension 功能通過。
 - [ ] 在實機或 Simulator 測試 `default`、`asciiCapable`、`numbersAndPunctuation`、URL、
       numberPad、phonePad、namePhonePad、emailAddress、decimalPad、webSearch、
       asciiCapableNumberPad；確認直橫式 disabled key 無法點擊、VoiceOver 朗讀為 disabled，
-      並確認 secure、phonePad、namePhonePad 由 iOS 換回系統鍵盤。純策略 73 個 Swift 測試與完整
-      Simulator App／extension build 已於 2026-08-30 通過。
+      並確認 secure、phonePad、namePhonePad 由 iOS 換回系統鍵盤。79 個 Swift 測試與
+      iOS 26.5 iPhone 17 Pro Simulator App／extension build 已於 2026-09-02 通過；
+      `selectionDidChange` 的游標移動清理、inline marked text 與 MODE／SHIFT 預覽仍須依
+      `IOS_SIMULATOR_TEST_PLAN.md` 在五台受控 Simulator 跑完 A–K 才算完整驗證。
 
 - [ ] 版號集中：`MARKETING_VERSION` 目前寫在 pbxproj 的四個 configuration 裡，
       可抽成 xcconfig（4 處 → 1 處）。

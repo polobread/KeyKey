@@ -21,6 +21,7 @@
 		C7700000000000000000003C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003B; };
 		C7700000000000000000003E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003D; };
 		C77000000000000000000040 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003F; };
+		C77000000000000000000041 /* KeyKeyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000042; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -53,6 +54,8 @@
 		C7700000000000000000003B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C7700000000000000000003D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C7700000000000000000003F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C77000000000000000000042 /* KeyKeyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyKeyUITests.swift; sourceTree = "<group>"; };
+		C77000000000000000000043 /* KeyKeyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KeyKeyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +75,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C77000000000000000000045 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -80,6 +90,7 @@
 			children = (
 				C77000000000000000000016 /* ContainerApp */,
 				C77000000000000000000017 /* Keyboard */,
+				C77000000000000000000044 /* KeyKeyUITests */,
 				C77000000000000000000018 /* Databases */,
 				C77000000000000000000019 /* Products */,
 			);
@@ -124,8 +135,17 @@
 			children = (
 				C77000000000000000000012 /* chichi77 KeyKey.app */,
 				C7700000000000000000000A /* Keyboard.appex */,
+				C77000000000000000000043 /* KeyKeyUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C77000000000000000000044 /* KeyKeyUITests */ = {
+			isa = PBXGroup;
+			children = (
+				C77000000000000000000042 /* KeyKeyUITests.swift */,
+			);
+			path = KeyKeyUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -173,6 +193,24 @@
 			productReference = C7700000000000000000000A /* Keyboard.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		C77000000000000000000048 /* KeyKeyUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C77000000000000000000049;
+			buildPhases = (
+				C77000000000000000000047 /* Sources */,
+				C77000000000000000000045 /* Frameworks */,
+				C77000000000000000000046 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C7700000000000000000004D /* PBXTargetDependency */,
+			);
+			name = KeyKeyUITests;
+			productName = KeyKeyUITests;
+			productReference = C77000000000000000000043 /* KeyKeyUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -188,6 +226,10 @@
 					};
 					C7700000000000000000001E = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					C77000000000000000000048 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = C7700000000000000000001A;
 					};
 				};
 			};
@@ -208,6 +250,7 @@
 			targets = (
 				C7700000000000000000001A /* chichi77 KeyKey */,
 				C7700000000000000000001E /* Keyboard */,
+				C77000000000000000000048 /* KeyKeyUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -228,6 +271,13 @@
 			files = (
 				C77000000000000000000007 /* KeyKey.db in Resources */,
 				C77000000000000000000040 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C77000000000000000000046 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,6 +305,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C77000000000000000000047 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C77000000000000000000041 /* KeyKeyUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -262,6 +320,11 @@
 			isa = PBXTargetDependency;
 			target = C7700000000000000000001E /* Keyboard */;
 			targetProxy = C77000000000000000000025 /* PBXContainerItemProxy */;
+		};
+		C7700000000000000000004D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C7700000000000000000001A /* chichi77 KeyKey */;
+			targetProxy = C7700000000000000000004C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -272,6 +335,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = C7700000000000000000001E;
 			remoteInfo = Keyboard;
+		};
+		C7700000000000000000004C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C77000000000000000000022 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C7700000000000000000001A;
+			remoteInfo = "chichi77 KeyKey";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -365,6 +435,30 @@
 			};
 			name = Release;
 		};
+		C7700000000000000000004A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.polobread.inputmethod.chichi77.ios.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TEST_TARGET_NAME = "chichi77 KeyKey";
+			};
+			name = Debug;
+		};
+		C7700000000000000000004B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.polobread.inputmethod.chichi77.ios.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TEST_TARGET_NAME = "chichi77 KeyKey";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -391,6 +485,15 @@
 			buildConfigurations = (
 				C77000000000000000000028 /* Debug */,
 				C7700000000000000000002B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C77000000000000000000049 = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C7700000000000000000004A /* Debug */,
+				C7700000000000000000004B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

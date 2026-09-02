@@ -13,8 +13,9 @@ public protocol AssociatedPhraseSource {
 /// `Source/Loaders/Android-IME/.../BopomofoEngine.java` so the two touch
 /// keyboards behave identically.
 ///
-/// Unlike Android there is no marked-text channel on iOS, so the caller shows
-/// `readingText` inside the keyboard and only ever inserts `Result.text`.
+/// The state machine remains platform-neutral. The iOS loader mirrors
+/// `readingText` into the host's marked-text range and applies `Result.text` as
+/// the committed replacement.
 public final class BopomofoEngine {
     public static let candidatesPerPage = 9
 
