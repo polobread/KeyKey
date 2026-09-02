@@ -4,6 +4,7 @@ import UIKit
 @MainActor
 protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>)
+    func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
 
@@ -18,12 +19,17 @@ final class SettingsPanel: UIView {
 
     private let collections: [AssociatedPhraseStore.Collection]
     private var enabled: Set<String>
+    private var inputClicksEnabled: Bool
     private let statusLabel = UILabel()
     private var switches: [String: UISwitch] = [:]
 
-    init(collections: [AssociatedPhraseStore.Collection], enabled: Set<String>) {
+    init(
+        collections: [AssociatedPhraseStore.Collection], enabled: Set<String>,
+        inputClicksEnabled: Bool
+    ) {
         self.collections = collections
         self.enabled = enabled
+        self.inputClicksEnabled = inputClicksEnabled
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
@@ -76,7 +82,7 @@ final class SettingsPanel: UIView {
             rows.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor)
         ])
 
-        let root = UIStackView(arrangedSubviews: [header, statusLabel, bulk, scroll])
+        let root = UIStackView(arrangedSubviews: [header, feedbackRow(), statusLabel, bulk, scroll])
         root.axis = .vertical
         root.spacing = 8
         root.translatesAutoresizingMaskIntoConstraints = false
@@ -123,6 +129,35 @@ final class SettingsPanel: UIView {
         return row
     }
 
+    private func feedbackRow() -> UIView {
+        let label = UILabel()
+        label.text = "按鍵音"
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = Palette.primaryText
+
+        let detail = UILabel()
+        detail.text = "不需完整取用；震動由 iOS 限制"
+        detail.font = .systemFont(ofSize: 11)
+        detail.textColor = Palette.hintText
+
+        let labels = UIStackView(arrangedSubviews: [label, detail])
+        labels.axis = .vertical
+        labels.spacing = 1
+
+        let toggle = UISwitch()
+        toggle.isOn = inputClicksEnabled
+        toggle.onTintColor = Palette.highlight
+        toggle.accessibilityIdentifier = "input-clicks"
+        toggle.accessibilityLabel = "按鍵音"
+        toggle.addTarget(self, action: #selector(inputClicksToggled(_:)), for: .valueChanged)
+
+        let row = UIStackView(arrangedSubviews: [labels, UIView(), toggle])
+        row.alignment = .center
+        row.isLayoutMarginsRelativeArrangement = true
+        row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
+        return row
+    }
+
     // MARK: - Actions
 
     @objc private func toggled(_ sender: UISwitch) {
@@ -133,6 +168,11 @@ final class SettingsPanel: UIView {
             enabled.remove(source)
         }
         publish()
+    }
+
+    @objc private func inputClicksToggled(_ sender: UISwitch) {
+        inputClicksEnabled = sender.isOn
+        delegate?.settingsPanel(self, didChangeInputClicksEnabled: inputClicksEnabled)
     }
 
     @objc private func enableAll() {

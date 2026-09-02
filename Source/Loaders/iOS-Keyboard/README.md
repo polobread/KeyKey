@@ -37,8 +37,8 @@ cd KeyKeyEngine && swift test
   iOS 把 `UIFeedbackGenerator` 綁在這個權限後面，因此沒有按鍵震動。
 - **沒有實體鍵盤支援與浮動候選窗**：extension 收不到硬體按鍵事件，也只能在自己的
   input view 內繪製。
-- **沒有 inline 組字**：`UITextDocumentProxy` 沒有 marked text API，注音讀音顯示在
-  鍵盤自己的畫面，不會出現在目標 App 的文字欄位。
+- **inline 組字**：專案最低 iOS 17，而 `UITextDocumentProxy.setMarkedText` 自 iOS 13
+  可用。注音讀音會以 marked text 顯示在目標欄位；選字時以候選字取代讀音。
 - 會讀取 `textDocumentProxy.keyboardType` 的 11 種 UIKit 提示。`default` 與
   `webSearch` 保留注音；ASCII、URL、Email 與姓名電話鍵盤預設英文；數字符號、數字、
   電話、小數與 ASCII 數字鍵盤預設數字。不適用的鍵保留原位置但會淡化、停用並退出

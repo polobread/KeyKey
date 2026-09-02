@@ -23,6 +23,8 @@ final class KeyboardView: UIView {
         var temporaryEnglish = false
         var statusOverride: String?
         var fieldPolicy = InputFieldPolicy.default
+        var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
+        var inputClicksEnabled = true
     }
 
     /// A reading key carries two labels at fixed heights rather than two lines
@@ -47,6 +49,7 @@ final class KeyboardView: UIView {
     private var contentWidthConstraint: NSLayoutConstraint?
     private var keyViews: [[KeyView]] = []
     private var functionButtons: [(key: String, button: UIButton)] = []
+    private let keyPreview = UILabel()
     private var state = State()
     private var metrics = KeyboardMetrics.portrait
     private var enterIconSide: Double = 0
@@ -100,6 +103,16 @@ final class KeyboardView: UIView {
         )
         contentWidth.isActive = true
         contentWidthConstraint = contentWidth
+
+        keyPreview.backgroundColor = Palette.primaryText
+        keyPreview.textColor = Palette.normalKey
+        keyPreview.textAlignment = .center
+        keyPreview.font = .systemFont(ofSize: 28, weight: .medium)
+        keyPreview.layer.cornerRadius = 12
+        keyPreview.layer.masksToBounds = true
+        keyPreview.isHidden = true
+        keyPreview.isUserInteractionEnabled = false
+        addSubview(keyPreview)
     }
 
     private func buildCandidateStrip() -> UIView {
@@ -168,6 +181,7 @@ final class KeyboardView: UIView {
                 button.layer.cornerRadius = 6
                 button.tag = rowIndex * 100 + columnIndex
                 button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
+                installPreviewHandlers(on: button)
                 stack.addArrangedSubview(button)
                 keys.append(makeKeyView(button))
             }
@@ -229,6 +243,7 @@ final class KeyboardView: UIView {
                 inputModeSwitchButton = button
             } else {
                 button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
+                installPreviewHandlers(on: button)
             }
             button.translatesAutoresizingMaskIntoConstraints = false
             row.addSubview(button)
@@ -332,7 +347,7 @@ final class KeyboardView: UIView {
             button.isEnabled = enabled
             button.alpha = enabled ? 1 : 0.36
             if key == "ENTER" {
-                applyEnterIcon(to: button)
+                applyEnterAppearance(to: button)
                 continue
             }
             if key == KeyboardLayout.inputModeSwitchKey {
@@ -350,8 +365,19 @@ final class KeyboardView: UIView {
         }
     }
 
-    /// Redrawn only when the type scale changes, not on every keystroke.
-    private func applyEnterIcon(to button: UIButton) {
+    /// The host supplies the intended action through `returnKeyType`. The
+    /// default action retains the shared Android/iOS arrow; all others receive
+    /// a short textual purpose such as 「搜尋」 or 「下一個」.
+    private func applyEnterAppearance(to button: UIButton) {
+        if let title = state.returnKeyPolicy.title {
+            button.setImage(nil, for: .normal)
+            button.setTitle(title, for: .normal)
+            button.titleLabel?.font = .systemFont(
+                ofSize: metrics.functionFontSmall, weight: .semibold
+            )
+            enterIconSide = 0
+            return
+        }
         let side = metrics.functionFont * 1.3
         guard side != enterIconSide else { return }
         button.setTitle(nil, for: .normal)
@@ -439,7 +465,7 @@ final class KeyboardView: UIView {
         case "SETTINGS": return "設定"
         case "SPACE": return "空白鍵"
         case "BACKSPACE": return "刪除"
-        case "ENTER": return "換行"
+        case "ENTER": return state.returnKeyPolicy.accessibilityLabel
         case "SHIFT": return "Shift"
         case "EMOJI": return "表情符號"
         case KeyboardLayout.inputModeSwitchKey: return "下一個鍵盤"
@@ -455,17 +481,18 @@ final class KeyboardView: UIView {
 
     @objc private func keyTapped(_ sender: UIButton) {
         guard let key = sender.accessibilityIdentifier else { return }
-        UIDevice.current.playInputClick()
+        hideKeyPreview()
+        playInputClick()
         delegate?.keyboardView(self, didPress: key)
     }
 
     @objc private func candidateTapped(_ sender: UIButton) {
-        UIDevice.current.playInputClick()
+        playInputClick()
         delegate?.keyboardView(self, didSelectCandidateAt: sender.tag)
     }
 
     @objc private func pageTapped(_ sender: UIButton) {
-        UIDevice.current.playInputClick()
+        playInputClick()
         delegate?.keyboardView(self, didChangePageBy: sender.tag)
     }
 
@@ -476,9 +503,73 @@ final class KeyboardView: UIView {
         // Dragging left moves forward, matching the Android strip.
         delegate?.keyboardView(self, didChangePageBy: dx < 0 ? 1 : -1)
     }
+
+    // MARK: - Press feedback
+
+    private func installPreviewHandlers(on button: UIButton) {
+        button.addTarget(self, action: #selector(previewTouchDown(_:)), for: .touchDown)
+        button.addTarget(
+            self, action: #selector(previewTouchEnded),
+            for: [.touchUpOutside, .touchCancel, .touchDragExit]
+        )
+    }
+
+    @objc private func previewTouchDown(_ sender: UIButton) {
+        guard sender.isEnabled, let key = sender.accessibilityIdentifier else { return }
+        showKeyPreview(previewText(for: key), from: sender)
+    }
+
+    @objc private func previewTouchEnded() {
+        hideKeyPreview()
+    }
+
+    private func previewText(for key: String) -> String {
+        if key == "MODE" {
+            switch state.mode {
+            case .bopomofo: return "英"
+            case .english: return "數"
+            case .number: return "ㄅ"
+            }
+        }
+        if key == "SHIFT" {
+            if state.mode == .bopomofo { return "英" }
+            return state.shifted ? "小寫" : "大寫"
+        }
+        if key == "ENTER" { return state.returnKeyPolicy.accessibilityLabel }
+        if state.mode == .bopomofo, let glyph = KeyboardLayout.bopomofoGlyph(for: key) {
+            return state.temporaryEnglish ? key.uppercased() : glyph
+        }
+        return KeyboardLayout.caption(for: key, mode: state.mode)
+    }
+
+    private func showKeyPreview(_ text: String, from button: UIButton) {
+        guard !text.isEmpty else { return }
+        layoutIfNeeded()
+        let keyFrame = button.convert(button.bounds, to: self)
+        let width = max(
+            56, min(116, text.size(withAttributes: [.font: keyPreview.font!]).width + 28)
+        )
+        let height: CGFloat = 62
+        keyPreview.text = text
+        keyPreview.frame = CGRect(
+            x: min(max(3, keyFrame.midX - width / 2), bounds.width - width - 3),
+            y: max(3, keyFrame.minY - height - 6), width: width, height: height
+        )
+        keyPreview.isHidden = false
+        bringSubviewToFront(keyPreview)
+    }
+
+    private func hideKeyPreview() {
+        keyPreview.isHidden = true
+    }
+
+    private func playInputClick() {
+        guard state.inputClicksEnabled else { return }
+        UIDevice.current.playInputClick()
+    }
 }
 
 // A keyboard extension may play the standard click without Full Access.
 extension KeyboardView: UIInputViewAudioFeedback {
-    var enableInputClicksWhenVisible: Bool { true }
+    var enableInputClicksWhenVisible: Bool { state.inputClicksEnabled }
 }

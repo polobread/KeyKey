@@ -4,11 +4,10 @@ import UIKit
 /// The extension's entry point. It owns the engine, renders through
 /// `KeyboardView`, and is the only place that touches the document.
 ///
-/// iOS gives an extension no marked-text API -- `UITextDocumentProxy` can only
-/// insert and delete -- so the reading lives in the keyboard's own status line
-/// and only finished text reaches the host app. That also means the Android
-/// ordering hazard (finishing composition before committing, which produced
-/// `ㄋㄧˇ你`) cannot arise here.
+/// The controller keeps the Bopomofo reading as marked text in the host field.
+/// `UITextDocumentProxy` gained that API in iOS 13, so it is available for the
+/// project's iOS 17 baseline. The keyboard status line remains a fallback
+/// visual cue while candidates are shown.
 final class KeyboardViewController: UIInputViewController {
     private var engine: BopomofoEngine?
     private var loadFailure: String?
@@ -20,7 +19,12 @@ final class KeyboardViewController: UIInputViewController {
     private let phraseSettings = PhraseSettings()
     private var settingsPanel: SettingsPanel?
     private var isMutatingDocument = false
+    private var hasMarkedText = false
     private var fieldPolicy = InputFieldPolicy.default
+    private var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
+    private var inputClicksEnabled = UserDefaults.standard.object(
+        forKey: KeyboardPreferences.inputClicksEnabled
+    ) as? Bool ?? true
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -99,12 +103,12 @@ final class KeyboardViewController: UIInputViewController {
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
         updateFieldPolicy()
-        // The reading is not mirrored into the document. If the host changes
-        // the document or selection, keeping it would carry a stale reading or
-        // phrase list into another field. Mutations initiated below are ignored
-        // so committing a character can still leave its associated phrases up.
+        // If the host changes the document or selection, its old marked range
+        // is no longer trustworthy. Mutations initiated below are ignored so a
+        // committed character can still leave its associated phrases up.
         if !isMutatingDocument {
-            resetInputState()
+            hasMarkedText = false
+            resetInputState(discardDocumentComposition: false)
         }
     }
 
@@ -140,7 +144,8 @@ final class KeyboardViewController: UIInputViewController {
     private func showSettingsPanel() {
         guard settingsPanel == nil, !collections.isEmpty else { return }
         let panel = SettingsPanel(
-            collections: collections, enabled: phraseSettings.enabledCollections
+            collections: collections, enabled: phraseSettings.enabledCollections,
+            inputClicksEnabled: inputClicksEnabled
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -174,6 +179,8 @@ final class KeyboardViewController: UIInputViewController {
         state.temporaryEnglish = engine.isTemporaryEnglish
         state.statusOverride = statusOverride
         state.fieldPolicy = fieldPolicy
+        state.returnKeyPolicy = returnKeyPolicy
+        state.inputClicksEnabled = inputClicksEnabled
         keyboardView.apply(state)
     }
 
@@ -184,6 +191,9 @@ final class KeyboardViewController: UIInputViewController {
         engine?.setAllowedInputModes(
             fieldPolicy.allowedModes, preferred: fieldPolicy.preferredMode,
             selectPreferred: layoutChanged
+        )
+        returnKeyPolicy = ReturnKeyPolicy(
+            hint: returnKeyHint(textDocumentProxy.returnKeyType ?? .default)
         )
         refresh()
     }
@@ -204,32 +214,89 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    private func resetInputState() {
+    private func returnKeyHint(_ type: UIReturnKeyType) -> ReturnKeyHint {
+        switch type {
+        case .done: return .done
+        case .go: return .go
+        case .next: return .next
+        case .search: return .search
+        case .send: return .send
+        case .join: return .join
+        case .route: return .route
+        case .continue: return .continue
+        case .emergencyCall: return .emergencyCall
+        case .google: return .google
+        case .yahoo: return .yahoo
+        default: return .default
+        }
+    }
+
+    private func resetInputState(discardDocumentComposition: Bool = true) {
+        if discardDocumentComposition { discardMarkedText() }
         engine?.reset()
         statusOverride = nil
         refresh()
     }
 
     private func apply(_ result: BopomofoEngine.Result) {
-        let mutatesDocument = result.deletesBackward
-            || !result.text.isEmpty || result.sendsReturn
-        if mutatesDocument {
-            isMutatingDocument = true
-        }
         if result.deletesBackward {
-            textDocumentProxy.deleteBackward()
+            discardMarkedText()
+            mutateDocument { textDocumentProxy.deleteBackward() }
         }
         if !result.text.isEmpty {
-            textDocumentProxy.insertText(result.text)
+            commitMarkedOrInsertedText(result.text)
         }
-        if result.sendsReturn {
-            textDocumentProxy.insertText("\n")
+        if engine?.readingText.isEmpty == false {
+            updateMarkedReading()
+        } else if result.text.isEmpty, !result.deletesBackward {
+            discardMarkedText()
         }
+        if result.sendsReturn { mutateDocument { textDocumentProxy.insertText("\n") } }
         refresh()
-        if mutatesDocument {
-            DispatchQueue.main.async { [weak self] in
-                self?.isMutatingDocument = false
+    }
+
+    /// Replaces the current reading rather than appending to it. This is the
+    /// crucial ordering: committing `你` must replace marked `ㄋㄧˇ`, not make
+    /// the host document read `ㄋㄧˇ你`.
+    private func commitMarkedOrInsertedText(_ text: String) {
+        mutateDocument {
+            if hasMarkedText {
+                textDocumentProxy.setMarkedText(
+                    text, selectedRange: NSRange(location: text.utf16.count, length: 0)
+                )
+                textDocumentProxy.unmarkText()
+                hasMarkedText = false
+            } else {
+                textDocumentProxy.insertText(text)
             }
+        }
+    }
+
+    private func updateMarkedReading() {
+        guard let reading = engine?.readingText, !reading.isEmpty else { return }
+        mutateDocument {
+            textDocumentProxy.setMarkedText(
+                reading, selectedRange: NSRange(location: reading.utf16.count, length: 0)
+            )
+            hasMarkedText = true
+        }
+    }
+
+    /// Replacing a marked range with an empty string cancels it. `unmarkText`
+    /// would do the opposite: it would accept the raw Bopomofo reading.
+    private func discardMarkedText() {
+        guard hasMarkedText else { return }
+        mutateDocument {
+            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+            hasMarkedText = false
+        }
+    }
+
+    private func mutateDocument(_ mutation: () -> Void) {
+        isMutatingDocument = true
+        mutation()
+        DispatchQueue.main.async { [weak self] in
+            self?.isMutatingDocument = false
         }
     }
 }
@@ -277,4 +344,14 @@ extension KeyboardViewController: SettingsPanelDelegate {
         applyHeight(currentMetrics)
         refresh()
     }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool) {
+        inputClicksEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: KeyboardPreferences.inputClicksEnabled)
+        refresh()
+    }
+}
+
+private enum KeyboardPreferences {
+    static let inputClicksEnabled = "inputClicksEnabled"
 }
