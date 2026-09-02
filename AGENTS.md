@@ -326,6 +326,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   要淡化並移除 hit target；觸控 callback 也要再次拒絕 disabled key，不能只靠畫面擋。
   此限制刻意不套到 USB／藍牙實體鍵盤：為與 Windows／macOS 一致，硬體字元與快捷鍵
   維持完整輸入，欄位內容仍由 App 驗證；不要在 `onKeyDown` 用 `inputType` 擋實體鍵。
+- **Android 測試完成以完整 AVD 計畫為準**：Android IME 行為、版面、設定、字典或建置有變更時，
+  必須依 `Source/Loaders/Android-IME/VIRTUAL_DEVICE_TEST_PLAN.md` 在 API 26、28、30、33、35、37
+  六台 AVD 跑完 A–L 矩陣；只跑 JVM test、安裝 APK、打出一個字或只測實體鍵盤都不算完成。
+  debug-only `ImeTestActivity` 是欄位型態與 Enter action 的 host，不能加入 release source set。
 - **Android 軟 Enter action 與實體 Enter 必須分流**：直橫式觸控 Enter 在沒有 reading／
   候選時，依 `imeOptions & IME_MASK_ACTION` 呼叫 `performEditorAction(DONE/NEXT/SEARCH/
   SEND/GO/PREVIOUS)`，並顯示中文 action 名；若 App 提供 `actionLabel`／`actionId`，要顯示
@@ -382,8 +386,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   不回報 `CursorAnchorInfo`，此時固定退回可用畫面底部中央，不要因此恢復底部候選列。
   浮動模式只把 IME input view 留成 1dp 以維持 window token；這不是待清理的空白。
   垂直窗用上下移動反白／左右換頁，水平窗相反，Enter 選反白，ESC 取消整個讀音。
-  若系統拒絕附掛浮窗，或 IME token 經約 1.5 秒重試仍拿不到，必須保留使用者設定、只對
-  目前輸入欄位降級為一般實體鍵盤候選列，不能靜默吃掉候選；下一個欄位可重新嘗試浮窗。
+  若系統拒絕附掛浮窗，或 IME token 經約 1.5 秒重試仍拿不到，必須自動關閉浮窗設定、
+  記錄並在設定頁顯示原因，直接改用一般實體鍵盤候選列；原因持續保留至使用者重新勾選，
+  重新勾選才清除並允許再試一次，不能靜默吃掉候選。
 - **Android 外接鍵盤的 Ctrl 快捷鍵要先於修飾鍵攔截判斷**：`Ctrl+Space` 只在注音與
   英文間切換，`Ctrl+,`／`Ctrl+.` 輸入全型 `，`／`。`；`Ctrl+0` 與 `Ctrl+1` 則比照
   macOS `OVIMTraditionalMandarin.cpp` 的 `_punctuation_list`，開啟與觸控「符」相同的

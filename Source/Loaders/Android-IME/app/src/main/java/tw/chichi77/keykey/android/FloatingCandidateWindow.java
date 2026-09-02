@@ -25,7 +25,7 @@ final class FloatingCandidateWindow {
     interface Listener {
         void onPress();
         void onCandidate(int displayedIndex);
-        void onWindowUnavailable();
+        void onWindowUnavailable(CandidateWindowSettings.Failure failure);
     }
 
     private static final int VERTICAL_WIDTH_DP = 96;
@@ -158,7 +158,7 @@ final class FloatingCandidateWindow {
     private void showOrMove() {
         if (windowManager == null || candidates.isEmpty()) return;
         if (tokenView.getWindowToken() == null) {
-            retryOrFallback();
+            retryOrFallback(CandidateWindowSettings.Failure.TOKEN);
             return;
         }
         tokenRetryCount = 0;
@@ -198,16 +198,16 @@ final class FloatingCandidateWindow {
                 }
             }
             added = false;
-            retryOrFallback();
+            retryOrFallback(CandidateWindowSettings.Failure.ATTACH);
         }
     }
 
-    private void retryOrFallback() {
+    private void retryOrFallback(CandidateWindowSettings.Failure failure) {
         if (++tokenRetryCount <= MAX_TOKEN_RETRIES) {
-            tokenView.postDelayed(this::showOrMove, TOKEN_RETRY_DELAY_MS);
+            tokenView.postDelayed(() -> showOrMove(), TOKEN_RETRY_DELAY_MS);
         } else {
             tokenRetryCount = 0;
-            listener.onWindowUnavailable();
+            listener.onWindowUnavailable(failure);
         }
     }
 

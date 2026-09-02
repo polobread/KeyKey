@@ -120,6 +120,13 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         floatingCandidates.setChecked(CandidateWindowSettings.floatingEnabled(this));
         content.addView(floatingCandidates, matchWrap(dp(0), dp(8)));
 
+        TextView floatingFailure = new TextView(this);
+        floatingFailure.setTextSize(14);
+        floatingFailure.setTextColor(getColor(R.color.keykey_blue_dark));
+        floatingFailure.setLineSpacing(0, 1.2f);
+        updateFloatingFailure(floatingFailure);
+        content.addView(floatingFailure, matchWrap(dp(0), dp(8)));
+
         TextView floatingLayoutLabel = new TextView(this);
         floatingLayoutLabel.setText(R.string.floating_candidates_layout);
         floatingLayoutLabel.setTextSize(16);
@@ -142,6 +149,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             CandidateWindowSettings.setFloatingEnabled(SettingsActivity.this, checked);
             floatingLayout.setEnabled(checked);
             floatingLayoutLabel.setEnabled(checked);
+            updateFloatingFailure(floatingFailure);
         });
         floatingLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
@@ -236,6 +244,18 @@ public final class SettingsActivity extends Activity implements SupporterBilling
 
         supporterBillingManager = new SupporterBillingManager(this, this);
         supporterBillingManager.start();
+    }
+
+    private void updateFloatingFailure(TextView view) {
+        CandidateWindowSettings.Failure failure = CandidateWindowSettings.failure(this);
+        if (failure == null) {
+            view.setVisibility(View.GONE);
+            return;
+        }
+        view.setText(failure == CandidateWindowSettings.Failure.TOKEN
+                ? R.string.floating_candidates_failure_token
+                : R.string.floating_candidates_failure_attach);
+        view.setVisibility(View.VISIBLE);
     }
 
     @Override

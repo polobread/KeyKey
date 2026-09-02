@@ -18,6 +18,8 @@
     <string name="key_preview_enabled">顯示觸控按鍵預覽</string>
     <string name="key_preview_description">按住文字、注音或符號鍵時，在按鍵上方或附近顯示放大的按鍵圖，方便確認是否按對。</string>
     <string name="floating_candidates_enabled">實體鍵盤使用浮動候選字窗</string>
+    <string name="floating_candidates_failure_token">已改用一般候選列：系統或目標 App 未提供可用的輸入法視窗 token。重新勾選可再試一次。</string>
+    <string name="floating_candidates_failure_attach">已改用一般候選列：系統拒絕附掛浮動候選字窗。重新勾選可再試一次。</string>
     <string name="floating_candidates_layout">浮動候選字窗排列</string>
     <string-array name="floating_candidate_layouts">
         <item>垂直選字窗</item>

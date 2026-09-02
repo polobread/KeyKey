@@ -5,10 +5,12 @@ import android.content.SharedPreferences;
 
 final class CandidateWindowSettings {
     enum Layout { VERTICAL, HORIZONTAL }
+    enum Failure { TOKEN, ATTACH }
 
     static final String PREFERENCES_NAME = "ime_settings";
     static final String KEY_FLOATING_ENABLED = "hardware_floating_candidates_enabled";
     static final String KEY_LAYOUT = "hardware_candidate_layout";
+    static final String KEY_FAILURE = "hardware_floating_candidates_failure";
 
     private static final String LAYOUT_VERTICAL = "vertical";
     private static final String LAYOUT_HORIZONTAL = "horizontal";
@@ -20,7 +22,24 @@ final class CandidateWindowSettings {
     }
 
     static void setFloatingEnabled(Context context, boolean enabled) {
-        preferences(context).edit().putBoolean(KEY_FLOATING_ENABLED, enabled).apply();
+        SharedPreferences.Editor editor = preferences(context).edit()
+                .putBoolean(KEY_FLOATING_ENABLED, enabled);
+        if (enabled) editor.remove(KEY_FAILURE);
+        editor.apply();
+    }
+
+    static void disableForFailure(Context context, Failure failure) {
+        preferences(context).edit()
+                .putBoolean(KEY_FLOATING_ENABLED, false)
+                .putString(KEY_FAILURE, failure.name())
+                .apply();
+    }
+
+    static Failure failure(Context context) {
+        String value = preferences(context).getString(KEY_FAILURE, null);
+        if (Failure.TOKEN.name().equals(value)) return Failure.TOKEN;
+        if (Failure.ATTACH.name().equals(value)) return Failure.ATTACH;
+        return null;
     }
 
     static Layout layout(Context context) {

@@ -120,6 +120,11 @@ assets，Android 執行時仍以文字格式解析，不另製作專用二進位
 
 APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。
 
+任何 Android IME 行為、版面、設定、字典或建置變更，都必須依
+[`VIRTUAL_DEVICE_TEST_PLAN.md`](VIRTUAL_DEVICE_TEST_PLAN.md) 跑完 API 26、28、30、33、35、37
+六台 AVD 的完整功能矩陣；只完成單元測試、安裝或單一輸入情境不算測試完成。debug APK
+另含 `ImeTestActivity`，用來實測所有欄位型態與 Enter action，release APK 不包含該頁。
+
 ## 在手機啟用
 
 1. 安裝 APK 並開啟「琦琦注音」。
