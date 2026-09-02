@@ -3,26 +3,44 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C77000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000002; };
-		C77000000000000000000003 /* SetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000004; };
-		C77000000000000000000005 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000006; };
-		C77000000000000000000007 /* KeyKey.db in Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000008; };
-		C77000000000000000000009 /* Keyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C7700000000000000000000A; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C7700000000000000000000B /* KeyKeyEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C7700000000000000000000C; };
-		C7700000000000000000000D /* KeyKeyEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C7700000000000000000000E; };
-		C77000000000000000000031 /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000030; };
-		C77000000000000000000035 /* SettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000034; };
-		C77000000000000000000037 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000036; };
-		C77000000000000000000039 /* EnterGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000038; };
-		C7700000000000000000003C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003B; };
-		C7700000000000000000003E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003D; };
-		C77000000000000000000040 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003F; };
-		C77000000000000000000041 /* KeyKeyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000042; };
+		C77000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000002 /* AppDelegate.swift */; };
+		C77000000000000000000003 /* SetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000004 /* SetupViewController.swift */; };
+		C77000000000000000000005 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000006 /* KeyboardViewController.swift */; };
+		C77000000000000000000007 /* KeyKey.db in Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000008 /* KeyKey.db */; };
+		C77000000000000000000009 /* Keyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C7700000000000000000000A /* Keyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C7700000000000000000000B /* KeyKeyEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C7700000000000000000000C /* KeyKeyEngine */; };
+		C7700000000000000000000D /* KeyKeyEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C7700000000000000000000E /* KeyKeyEngine */; };
+		C77000000000000000000031 /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000030 /* KeyboardView.swift */; };
+		C77000000000000000000035 /* SettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000034 /* SettingsPanel.swift */; };
+		C77000000000000000000037 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000036 /* Palette.swift */; };
+		C77000000000000000000039 /* EnterGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000038 /* EnterGlyph.swift */; };
+		C7700000000000000000003C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003B /* Assets.xcassets */; };
+		C7700000000000000000003E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003D /* PrivacyInfo.xcprivacy */; };
+		C77000000000000000000040 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003F /* PrivacyInfo.xcprivacy */; };
+		C77000000000000000000041 /* KeyKeyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000042 /* KeyKeyUITests.swift */; };
+		C77000000000000000000050 /* Acknowledgements.txt in Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000051 /* Acknowledgements.txt */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C77000000000000000000025 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C77000000000000000000022 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C7700000000000000000001E;
+			remoteInfo = Keyboard;
+		};
+		C7700000000000000000004C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C77000000000000000000022 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C7700000000000000000001A;
+			remoteInfo = "chichi77 KeyKey";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		C7700000000000000000000F /* Embed Foundation Extensions */ = {
@@ -42,11 +60,11 @@
 		C77000000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C77000000000000000000004 /* SetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupViewController.swift; sourceTree = "<group>"; };
 		C77000000000000000000006 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		C77000000000000000000008 /* KeyKey.db */ = {isa = PBXFileReference; lastKnownFileType = file; name = KeyKey.db; path = ../../Distributions/Takao/CookedDatabase/KeyKey.db; sourceTree = "<group>"; };
+		C7700000000000000000000A /* Keyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Keyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C77000000000000000000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C77000000000000000000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C77000000000000000000008 /* KeyKey.db */ = {isa = PBXFileReference; lastKnownFileType = file; name = KeyKey.db; path = "../../Distributions/Takao/CookedDatabase/KeyKey.db"; sourceTree = "<group>"; };
 		C77000000000000000000012 /* chichi77 KeyKey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "chichi77 KeyKey.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		C7700000000000000000000A /* Keyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Keyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C77000000000000000000030 /* KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardView.swift; sourceTree = "<group>"; };
 		C77000000000000000000034 /* SettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPanel.swift; sourceTree = "<group>"; };
 		C77000000000000000000036 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
@@ -56,6 +74,7 @@
 		C7700000000000000000003F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C77000000000000000000042 /* KeyKeyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyKeyUITests.swift; sourceTree = "<group>"; };
 		C77000000000000000000043 /* KeyKeyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KeyKeyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C77000000000000000000051 /* Acknowledgements.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Acknowledgements.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,6 +123,7 @@
 				C77000000000000000000010 /* Info.plist */,
 				C7700000000000000000003B /* Assets.xcassets */,
 				C7700000000000000000003D /* PrivacyInfo.xcprivacy */,
+				C77000000000000000000051 /* Acknowledgements.txt */,
 			);
 			path = ContainerApp;
 			sourceTree = "<group>";
@@ -153,7 +173,7 @@
 /* Begin PBXNativeTarget section */
 		C7700000000000000000001A /* chichi77 KeyKey */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C7700000000000000000001B;
+			buildConfigurationList = C7700000000000000000001B /* Build configuration list for PBXNativeTarget "chichi77 KeyKey" */;
 			buildPhases = (
 				C7700000000000000000001C /* Sources */,
 				C77000000000000000000013 /* Frameworks */,
@@ -175,7 +195,7 @@
 		};
 		C7700000000000000000001E /* Keyboard */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C7700000000000000000001F;
+			buildConfigurationList = C7700000000000000000001F /* Build configuration list for PBXNativeTarget "Keyboard" */;
 			buildPhases = (
 				C77000000000000000000020 /* Sources */,
 				C77000000000000000000014 /* Frameworks */,
@@ -195,7 +215,7 @@
 		};
 		C77000000000000000000048 /* KeyKeyUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C77000000000000000000049;
+			buildConfigurationList = C77000000000000000000049 /* Build configuration list for PBXNativeTarget "KeyKeyUITests" */;
 			buildPhases = (
 				C77000000000000000000047 /* Sources */,
 				C77000000000000000000045 /* Frameworks */,
@@ -233,7 +253,8 @@
 					};
 				};
 			};
-			buildConfigurationList = C77000000000000000000023;
+			buildConfigurationList = C77000000000000000000023 /* Build configuration list for PBXProject "KeyKeyiOS" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = zh_TW;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -256,21 +277,22 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		C7700000000000000000003A /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C7700000000000000000003C /* Assets.xcassets in Resources */,
-				C7700000000000000000003E /* PrivacyInfo.xcprivacy in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C77000000000000000000021 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				C77000000000000000000007 /* KeyKey.db in Resources */,
 				C77000000000000000000040 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C7700000000000000000003A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C7700000000000000000003C /* Assets.xcassets in Resources */,
+				C7700000000000000000003E /* PrivacyInfo.xcprivacy in Resources */,
+				C77000000000000000000050 /* Acknowledgements.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,8 +310,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C77000000000000000000001 /* in Sources */,
-				C77000000000000000000003 /* in Sources */,
+				C77000000000000000000001 /* AppDelegate.swift in Sources */,
+				C77000000000000000000003 /* SetupViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -297,7 +319,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C77000000000000000000005 /* in Sources */,
+				C77000000000000000000005 /* KeyboardViewController.swift in Sources */,
 				C77000000000000000000031 /* KeyboardView.swift in Sources */,
 				C77000000000000000000037 /* Palette.swift in Sources */,
 				C77000000000000000000039 /* EnterGlyph.swift in Sources */,
@@ -328,40 +350,24 @@
 		};
 /* End PBXTargetDependency section */
 
-/* Begin PBXContainerItemProxy section */
-		C77000000000000000000025 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C77000000000000000000022 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C7700000000000000000001E;
-			remoteInfo = Keyboard;
-		};
-		C7700000000000000000004C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C77000000000000000000022 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C7700000000000000000001A;
-			remoteInfo = "chichi77 KeyKey";
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin XCBuildConfiguration section */
 		C77000000000000000000026 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.2.7;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				CURRENT_PROJECT_VERSION = 1;
-				MARKETING_VERSION = 1.2.7;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				ONLY_ACTIVE_ARCH = YES;
+				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
@@ -370,8 +376,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = SR828N683P;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "ContainerApp/Info.plist";
+				INFOPLIST_FILE = ContainerApp/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.polobread.inputmethod.chichi77.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -382,8 +389,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = SR828N683P;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "Keyboard/Info.plist";
+				INFOPLIST_FILE = Keyboard/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.polobread.inputmethod.chichi77.ios.keyboard;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -396,16 +404,17 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.2.7;
 				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				CURRENT_PROJECT_VERSION = 1;
-				MARKETING_VERSION = 1.2.7;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
 		};
@@ -414,8 +423,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = SR828N683P;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "ContainerApp/Info.plist";
+				INFOPLIST_FILE = ContainerApp/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.polobread.inputmethod.chichi77.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -426,8 +436,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = SR828N683P;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "Keyboard/Info.plist";
+				INFOPLIST_FILE = Keyboard/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.polobread.inputmethod.chichi77.ios.keyboard;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -462,16 +473,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		C77000000000000000000023 = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C77000000000000000000026 /* Debug */,
-				C77000000000000000000029 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C7700000000000000000001B = {
+		C7700000000000000000001B /* Build configuration list for PBXNativeTarget "chichi77 KeyKey" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C77000000000000000000027 /* Debug */,
@@ -480,7 +482,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C7700000000000000000001F = {
+		C7700000000000000000001F /* Build configuration list for PBXNativeTarget "Keyboard" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C77000000000000000000028 /* Debug */,
@@ -489,7 +491,16 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C77000000000000000000049 = {
+		C77000000000000000000023 /* Build configuration list for PBXProject "KeyKeyiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C77000000000000000000026 /* Debug */,
+				C77000000000000000000029 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C77000000000000000000049 /* Build configuration list for PBXNativeTarget "KeyKeyUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C7700000000000000000004A /* Debug */,
@@ -517,7 +528,6 @@
 			productName = KeyKeyEngine;
 		};
 /* End XCSwiftPackageProductDependency section */
-
 	};
 	rootObject = C77000000000000000000022 /* Project object */;
 }

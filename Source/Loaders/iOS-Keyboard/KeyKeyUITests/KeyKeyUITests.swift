@@ -15,6 +15,21 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["輸入欄位測試"].waitForExistence(timeout: 8))
     }
 
+    func testAcknowledgementsAreBundledAndReachable() {
+        app = XCUIApplication()
+        app.launch()
+
+        let button = app.buttons["open-acknowledgements"]
+        XCTAssertTrue(button.waitForExistence(timeout: 8))
+        button.tap()
+
+        XCTAssertTrue(app.navigationBars["授權與致謝"].waitForExistence(timeout: 3))
+        let notices = app.textViews["acknowledgements-text"]
+        XCTAssertTrue(notices.exists)
+        XCTAssertTrue((notices.value as? String)?.contains("Yahoo! KeyKey") == true)
+        XCTAssertTrue((notices.value as? String)?.contains("McBopomofo") == true)
+    }
+
     func testInputFieldMatrixIsReachable() {
         launchHostApp()
         let identifiers = [

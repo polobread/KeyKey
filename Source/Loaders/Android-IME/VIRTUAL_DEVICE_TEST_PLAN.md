@@ -156,7 +156,7 @@ App 若錯報或不報 `inputType`，確認安全退回一般文字，不 crash�
   點擊後上方 `Action result` 顯示正確 action ID。
 - 自訂 action 顯示「送出表單」，點擊後回報 action ID 42；長標籤不得裁切鍵盤。
 - `IME_FLAG_NO_ENTER_ACTION` 顯示普通 Enter，送 key event，不呼叫標準 action。
-- 有 reading 或候選時 Enter 先確定輸入；沒有 reading／候選才執行 editor action。
+- 有 reading 或一般候選時 Enter 先確定輸入；顯示關聯候選時不可選入反白關聯詞，應關閉關聯候選後直接執行 Enter／editor action。
 - 實體鍵盤 Enter 在所有 action 欄位永遠維持 plain Enter key event。
 
 ### I. 實體鍵盤一般候選列
@@ -197,6 +197,7 @@ App 若錯報或不報 `inputType`，確認安全退回一般文字，不 crash�
 - 確定單一中文字才顯示關聯詞尾；選取只接上詞尾。輸入下一個注音會關閉關聯詞且不偷送第一項。
 - 全部關閉時沒有關聯詞；多詞庫混合依設定中的 source 順序排序、跨庫重複只留第一筆。
 - 一般候選用 1–9；關聯詞實體選字用 Shift+1–9，但角標仍顯示 1–9。
+- 關聯候選顯示中按觸控 Enter／搜尋／傳送／完成不可插入任何關聯詞；應關閉候選後只執行欄位 action。實體 Enter 也不可插入關聯詞，並維持普通 Enter key event。
 - 連續切換欄位、App、方向、模式、詞庫與浮窗至少 10 次，不能 crash、ANR、黑屏、候選消失或
   SharedPreferences 狀態損壞。
 

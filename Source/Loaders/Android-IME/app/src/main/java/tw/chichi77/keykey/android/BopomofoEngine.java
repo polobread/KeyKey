@@ -168,6 +168,10 @@ final class BopomofoEngine {
     }
 
     Result enter() {
+        if (showingAssociatedPhrases) {
+            clearComposition();
+            return Result.enter();
+        }
         if (!candidates.isEmpty()) return selectHighlightedCandidate();
         if (!reading.isEmpty()) return query();
         return Result.enter();

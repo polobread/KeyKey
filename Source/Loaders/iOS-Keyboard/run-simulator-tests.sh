@@ -69,6 +69,7 @@ for name in "${DEVICE_NAMES[@]}"; do
   test_args=()
   if [[ "$MODE" == "host-only" ]]; then
     test_args+=(
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testAcknowledgementsAreBundledAndReachable"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/test00KeyboardOptInIsConfigured"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testInputFieldMatrixIsReachable"
     )
@@ -123,7 +124,7 @@ done
 
 if [[ "$MODE" == "host-only" ]]; then
   echo
-  echo "Host-only validates installation, Settings opt-in, and all 14 input-field hosts."
+  echo "Host-only validates installation, Settings opt-in, acknowledgements, and all 14 input-field hosts."
   echo "Run without --host-only after selecting 琦琦注音 to require extension mode/composition/orientation tests."
 fi
 

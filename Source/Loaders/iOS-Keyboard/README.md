@@ -12,10 +12,15 @@ KeyKeyiOS.xcodeproj
 ## 建置
 
 ```sh
+make -C ../../Distributions/Takao/DatabaseCooker
 xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   CODE_SIGNING_ALLOWED=NO build
 ```
+
+`KeyKey.db` 是建置輸入，但不進版控。Xcode Cloud 會自動執行
+`ci_scripts/ci_post_clone.sh` cook 資料庫，並以 `CI_BUILD_NUMBER` 同步容器 App 與
+Keyboard extension 的 build number；本機建置維持專案內的預設 build number。
 
 引擎的測試不需要模擬器：
 
@@ -57,3 +62,4 @@ Swift Package 依賴只有透過 scheme 才會被建置，`-target` 不會。
 Copyright (c) 2026 Chui-Ping Cheng。打包進 extension 的 `KeyKey.db` 維持其
 輸入資料的原授權。完整範圍見本目錄的 `LICENSE.txt` 與 repository 根目錄的
 `LICENSING.md`。
+App 內的「授權與致謝」會顯示二進位散布所需的完整授權條款。

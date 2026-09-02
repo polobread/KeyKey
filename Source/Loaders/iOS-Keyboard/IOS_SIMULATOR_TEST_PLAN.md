@@ -16,7 +16,7 @@
 
 目前已確認的 Runtime（2026-09-02）：iPhone 12 是 **iOS 17.0**、iPhone 15 是 **iOS 18.6**、三台 iOS 26 裝置是 **iOS 26.5**。
 
-最近一次自動基線（2026-09-02）：`run-simulator-tests.sh --host-only` 的 79 個 Swift 測試與五台 Simulator 各 2 個 UI tests 全部通過；每台都驗證宿主／extension 安裝註冊、設定 opt-in 與 14 種欄位可到達。這不是 A–K 完成紀錄，extension-required 與下列人工項目仍須另跑。
+最近一次自動基線（2026-09-02）：`run-simulator-tests.sh --host-only` 的 79 個 Swift 測試與五台 Simulator 各 3 個 UI tests 全部通過；每台都驗證宿主／extension 安裝註冊、設定 opt-in、14 種欄位可到達，以及 App 內完整授權告知可開啟。這不是 A–K 完成紀錄，extension-required 與下列人工項目仍須另跑。
 
 ## 前置
 

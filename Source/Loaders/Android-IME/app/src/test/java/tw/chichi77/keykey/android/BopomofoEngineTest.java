@@ -1,6 +1,7 @@
 package tw.chichi77.keykey.android;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -362,7 +363,7 @@ public final class BopomofoEngineTest {
     }
 
     @Test
-    public void enterSelectsHighlightedAssociatedPhrase() throws Exception {
+    public void enterDismissesAssociatedPhrasesAndRequestsEnter() throws Exception {
         BopomofoEngine engine = engineWith("su3 你\nsu3 擬\n");
         engine.setAssociatedPhraseDictionary(AssociatedPhraseDictionary.fromEntries(
                 Map.of("你", List.of("好", "們"))));
@@ -373,8 +374,12 @@ public final class BopomofoEngineTest {
 
         engine.moveHighlight(1);
 
-        assertEquals("們", engine.enter().committedText());
+        BopomofoEngine.Result result = engine.enter();
+
+        assertEquals("", result.committedText());
+        assertTrue(result.sendEnter());
         assertTrue(engine.displayedCandidates().isEmpty());
+        assertFalse(engine.isShowingAssociatedPhrases());
     }
 
     @Test

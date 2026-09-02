@@ -178,6 +178,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - 新機器要先取得模擬器 runtime：`xcodebuild -downloadPlatform iOS`（約 8.5 GB）。
 - 需要先有 cook 好的 `KeyKey.db`；它會被複製進 **extension** bundle，不要放進容器
   App，否則 10 MB 會打包兩次。
+- Xcode Cloud 的 `ci_scripts` 必須位於 `Source/Loaders/iOS-Keyboard/`（與 xcodeproj
+  同層），`ci_post_clone.sh` 也必須保留 executable bit。腳本會在乾淨 checkout cook
+  `KeyKey.db`，再以 `CI_BUILD_NUMBER` 搭配 Apple Generic Versioning 同步 App 與
+  extension 的 build number；不要把 cook 後的資料庫提交進版控。
 - 配色只在 `Keyboard/Palette.swift`，全部是 `UIColor(dynamicProvider:)`，深色模式
   跟著系統走。淺色值與 Android 相同，深色值只有 iOS 有。
 - App 圖示來自 `Source/Branding/chichi77.png`，縮成 1024×1024 放在
@@ -331,10 +335,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   六台 AVD 跑完 A–L 矩陣；只跑 JVM test、安裝 APK、打出一個字或只測實體鍵盤都不算完成。
   debug-only `ImeTestActivity` 是欄位型態與 Enter action 的 host，不能加入 release source set。
 - **Android 軟 Enter action 與實體 Enter 必須分流**：直橫式觸控 Enter 在沒有 reading／
-  候選時，依 `imeOptions & IME_MASK_ACTION` 呼叫 `performEditorAction(DONE/NEXT/SEARCH/
+  一般候選時，依 `imeOptions & IME_MASK_ACTION` 呼叫 `performEditorAction(DONE/NEXT/SEARCH/
   SEND/GO/PREVIOUS)`，並顯示中文 action 名；若 App 提供 `actionLabel`／`actionId`，要顯示
   自訂標籤並以該 ID 呼叫 action。`IME_FLAG_NO_ENTER_ACTION`、無 action 或 App 拒絕時才
-  送 Enter key event。外接鍵盤 Enter 永遠走 key event，不可套 editor action。
+  送 Enter key event。關聯候選已是額外推薦，不是待確定的組字；Enter 必須關閉關聯候選後
+  直接執行 action，不可插入反白關聯詞。外接鍵盤 Enter 永遠走 key event，不可套 editor action，
+  也不可選入關聯詞。
 - **Android 外部 selection 變動必須清掉組字狀態**：`onUpdateSelection` 在 reading 或
   候選存在時偵測游標／選取變更，重設引擎並結束 composing，否則下一鍵會在新游標沿用
   舊讀音。為避免把游標拉回去或刪錯 App 文字，已顯示的 raw 注音會由
@@ -527,11 +533,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
     tag rule 會擋掉在 branch 上跑的 `workflow_dispatch`；補救失敗的 tag run 要從 Actions
     頁面 re-run（ref 仍是 tag），或用 Run workflow 直接選那個 tag。
   - Windows 兩種產物都未簽章，`.unsigned.exe` 只供測試；Android 是 debug APK；iOS 只產
-    Apple Silicon Simulator app。iOS 的 TestFlight／商店上傳尚未處理，那需要 App Store
-    Connect API key（`xcodebuild -allowProvisioningUpdates` 只吃 API key，app-specific
-    password 餵不了），另外還有兩個前置：`ContainerApp/Info.plist` 缺
-    `ITSAppUsesNonExemptEncryption`（會卡在 Missing Compliance），以及
-    `CURRENT_PROJECT_VERSION` 寫死 `1`（App Store Connect 要求 build number 遞增）。
+    Apple Silicon Simulator app。GitHub Actions 的 iOS TestFlight／商店上傳尚未處理，
+    那需要 App Store Connect API key（`xcodebuild -allowProvisioningUpdates` 只吃 API
+    key，app-specific password 餵不了）。Xcode Cloud 則由 `ci_post_clone.sh` cook 資料庫
+    並以 Cloud build number 覆寫 `CURRENT_PROJECT_VERSION`；出口合規宣告已固定為不使用
+    non-exempt encryption。
 - **Apple 簽章刻意把私鑰放進 GitHub Actions，Windows 不放**：這是明知的破例。hosted
   runner 沒有 Windows 憑證存放區的對等機制，notarization 也只能在 macOS 上跑，所以
   `Developer ID` 的 `.p12` 以 base64 存成 secret。收斂方式：secret 一律掛在 `release`
@@ -700,7 +706,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 - [ ] 五台 Simulator 已加入共用 XCUITest target 與
       `run-simulator-tests.sh`；2026-09-02 的 `--host-only` 基線為 79 個 Swift tests 與
-      五台各 2 個 UI tests 全部通過。仍須逐台切到琦琦注音跑
+      五台各 3 個 UI tests 全部通過（含 App 內授權告知）。仍須逐台切到琦琦注音跑
       extension-required 模式並把結果記進 `IOS_SIMULATOR_TEST_PLAN.md`。系統輸入切換器
       不能由 XCUITest 穩定選定，不得把 opt-in 成功當成 extension 功能通過。
 - [ ] 在實機或 Simulator 測試 `default`、`asciiCapable`、`numbersAndPunctuation`、URL、

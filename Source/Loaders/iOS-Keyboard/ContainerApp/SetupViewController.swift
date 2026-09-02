@@ -36,7 +36,12 @@ final class SetupViewController: UIViewController {
         )
         note.textColor = .tertiaryLabel
 
-        var items: [UIView] = [title, subtitle, steps, openSettings, note]
+        let acknowledgements = UIButton(configuration: .plain())
+        acknowledgements.setTitle("授權與致謝", for: .normal)
+        acknowledgements.accessibilityIdentifier = "open-acknowledgements"
+        acknowledgements.addTarget(self, action: #selector(openAcknowledgements), for: .touchUpInside)
+
+        var items: [UIView] = [title, subtitle, steps, openSettings, note, acknowledgements]
         #if DEBUG
         let inputFieldTest = UIButton(configuration: .tinted())
         inputFieldTest.setTitle("開啟輸入欄位測試", for: .normal)
@@ -79,12 +84,63 @@ final class SetupViewController: UIViewController {
         UIApplication.shared.open(url)
     }
 
+    @objc private func openAcknowledgements() {
+        present(
+            UINavigationController(rootViewController: AcknowledgementsViewController()),
+            animated: true
+        )
+    }
+
     #if DEBUG
     @objc private func openInputFieldTest() {
         let controller = InputFieldTestViewController()
         present(UINavigationController(rootViewController: controller), animated: true)
     }
     #endif
+}
+
+private final class AcknowledgementsViewController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "授權與致謝"
+        view.backgroundColor = .systemBackground
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .close,
+            target: self,
+            action: #selector(close)
+        )
+
+        let textView = UITextView()
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.alwaysBounceVertical = true
+        textView.font = .preferredFont(forTextStyle: .footnote)
+        textView.adjustsFontForContentSizeCategory = true
+        textView.accessibilityIdentifier = "acknowledgements-text"
+        textView.text = Self.loadText()
+        textView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(textView)
+
+        let guide = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            textView.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
+            textView.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -16),
+            textView.topAnchor.constraint(equalTo: guide.topAnchor),
+            textView.bottomAnchor.constraint(equalTo: guide.bottomAnchor)
+        ])
+    }
+
+    private static func loadText() -> String {
+        guard let url = Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt"),
+              let text = try? String(contentsOf: url, encoding: .utf8) else {
+            return "無法載入授權資訊。"
+        }
+        return text
+    }
+
+    @objc private func close() {
+        dismiss(animated: true)
+    }
 }
 
 #if DEBUG
