@@ -51,7 +51,9 @@ final class KeyboardViewController: UIInputViewController {
         let height = view.heightAnchor.constraint(
             equalToConstant: KeyboardMetrics.portrait.contentHeight
         )
-        height.priority = .defaultHigh
+        // Candidate content must not win over our requested keyboard height;
+        // leave only the host's required constraints above this one.
+        height.priority = UILayoutPriority(999)
         height.isActive = true
         heightConstraint = height
 
@@ -61,7 +63,7 @@ final class KeyboardViewController: UIInputViewController {
             (self: Self, _) in self.applyMetrics()
         }
         applyMetrics()
-        activeDocumentIdentifier = textDocumentProxy.documentIdentifier
+        activeDocumentIdentifier = currentDocumentIdentifier()
         updateFieldPolicy()
         refresh()
     }
@@ -129,10 +131,22 @@ final class KeyboardViewController: UIInputViewController {
     /// Returning true also lets a field switch win over a callback that happens
     /// during the short internal-mutation suppression window.
     private func updateDocumentIdentifier() -> Bool {
-        let identifier = textDocumentProxy.documentIdentifier
+        // The proxy can start with Objective-C nil and publish its UUID only
+        // after the first document callback. That nil -> UUID transition is
+        // initialisation, not a field switch: treating it as a new document
+        // would clear associated phrases immediately after the first commit.
+        guard let identifier = currentDocumentIdentifier() else { return false }
         defer { activeDocumentIdentifier = identifier }
         guard let activeDocumentIdentifier else { return false }
         return activeDocumentIdentifier != identifier
+    }
+
+    /// UIKit declares this property as a non-optional UUID, but an iOS 26.6
+    /// keyboard host can return Objective-C nil while the proxy is starting.
+    /// Access through KVC preserves that nil instead of trapping in Swift's
+    /// unconditional UUID bridge.
+    private func currentDocumentIdentifier() -> UUID? {
+        (textDocumentProxy as AnyObject).value(forKey: "documentIdentifier") as? UUID
     }
 
     private func abandonDocumentComposition() {
@@ -324,7 +338,12 @@ final class KeyboardViewController: UIInputViewController {
     private func mutateDocument(_ mutation: () -> Void) {
         let generation = documentMutationGuard.begin()
         mutation()
-        DispatchQueue.main.async { [weak self] in
+        // UIKit can report the callbacks for a setMarkedText + unmarkText
+        // commit after the next main-loop turn on a physical iPhone. Keep the
+        // classification guard alive briefly so that late callback does not
+        // erase the associated phrases we have already rendered. This does
+        // not delay the mutation or UI; it only classifies callbacks.
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(250)) { [weak self] in
             self?.documentMutationGuard.end(ifCurrent: generation)
         }
     }

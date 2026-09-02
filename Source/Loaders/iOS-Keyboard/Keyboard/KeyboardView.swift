@@ -98,6 +98,15 @@ final class KeyboardView: UIView {
                 equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -3
             )
         ])
+        // Candidate titles have different intrinsic widths (for example the
+        // anime collection offers 「的名字」 after 「你」). Without an explicit
+        // fill width, those titles resize all eleven key columns when the
+        // candidate strip appears and the keyboard shrinks again when it is
+        // dismissed. Priority 999 fills a phone while still allowing the
+        // required iPad maximum below to cap wide layouts.
+        let fillWidth = root.widthAnchor.constraint(equalTo: widthAnchor, constant: -6)
+        fillWidth.priority = UILayoutPriority(999)
+        fillWidth.isActive = true
         let contentWidth = root.widthAnchor.constraint(
             lessThanOrEqualToConstant: metrics.maximumContentWidth
         )

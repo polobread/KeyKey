@@ -84,6 +84,7 @@ final class KeyKeyUITests: XCTestCase {
         mode.tap()
         XCTAssertEqual(status.label, "標準注音")
 
+        let stableModeFrame = mode.frame
         app.buttons["ㄋ"].tap()
         app.buttons["ㄧ"].tap()
         app.buttons["ˇ"].tap()
@@ -93,7 +94,50 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH '第 1 個候選，'")
         ).firstMatch.tap()
-        XCTAssertFalse(field("default").value as? String == "ㄋㄧˇ")
+
+        // The base McBopomofo association for 你 starts with 們. Wait past the
+        // document-proxy callbacks so a transient candidate flash cannot pass.
+        let associated = app.buttons["第 1 個候選，們"]
+        XCTAssertTrue(associated.waitForExistence(timeout: 3))
+        Thread.sleep(forTimeInterval: 0.4)
+        XCTAssertTrue(associated.exists)
+        XCTAssertTrue(associated.isHittable)
+        XCTAssertEqual(field("default").value as? String, "你")
+        XCTAssertEqual(mode.frame.minX, stableModeFrame.minX, accuracy: 1)
+        XCTAssertEqual(mode.frame.minY, stableModeFrame.minY, accuracy: 1)
+        XCTAssertEqual(mode.frame.width, stableModeFrame.width, accuracy: 1)
+        XCTAssertEqual(mode.frame.height, stableModeFrame.height, accuracy: 1)
+    }
+
+    func testMultiCharacterAssociationsDoNotResizeKeyboard() throws {
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        field("default").tap()
+        guard selectKeyKeyKeyboard() else {
+            throw XCTSkip(keyboardActivationFailureMessage)
+        }
+
+        try selectOnlyPhraseCollection("anime")
+        addTeardownBlock { [weak self] in
+            try? self?.selectOnlyPhraseCollection("McBopomofo")
+        }
+
+        let mode = app.buttons["MODE"]
+        let initialFrame = mode.frame
+        app.buttons["ㄋ"].tap()
+        app.buttons["ㄧ"].tap()
+        app.buttons["ˇ"].tap()
+        let primary = app.buttons["第 1 個候選，你"]
+        XCTAssertTrue(primary.waitForExistence(timeout: 3))
+        primary.tap()
+
+        let associated = app.buttons["第 1 個候選，的名字"]
+        XCTAssertTrue(associated.waitForExistence(timeout: 3))
+        Thread.sleep(forTimeInterval: 0.4)
+        assertFrame(mode.frame, equals: initialFrame, message: "顯示多字關聯候選時")
+        associated.tap()
+        XCTAssertEqual(field("default").value as? String, "你的名字")
+        assertFrame(mode.frame, equals: initialFrame, message: "選完關聯候選後")
     }
 
     func testPortraitAndLandscapeKeepCoreKeysReachable() throws {
@@ -116,6 +160,29 @@ final class KeyKeyUITests: XCTestCase {
             XCTAssertTrue(app.buttons[identifier].exists, "方向切換後找不到按鍵：\(identifier)")
             XCTAssertTrue(app.buttons[identifier].isHittable, "方向切換後按鍵不可點：\(identifier)")
         }
+    }
+
+    private func selectOnlyPhraseCollection(_ identifier: String) throws {
+        app.buttons["SETTINGS"].tap()
+        XCTAssertTrue(app.buttons["全部關閉"].waitForExistence(timeout: 2))
+        app.buttons["全部關閉"].tap()
+
+        let toggle = app.switches[identifier]
+        for _ in 0..<8 where !toggle.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(toggle.exists, "找不到關聯詞庫：\(identifier)")
+        XCTAssertTrue(toggle.isHittable, "關聯詞庫不可操作：\(identifier)")
+        toggle.tap()
+        app.buttons["完成"].tap()
+        XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 2))
+    }
+
+    private func assertFrame(_ frame: CGRect, equals expected: CGRect, message: String) {
+        XCTAssertEqual(frame.minX, expected.minX, accuracy: 1, message)
+        XCTAssertEqual(frame.minY, expected.minY, accuracy: 1, message)
+        XCTAssertEqual(frame.width, expected.width, accuracy: 1, message)
+        XCTAssertEqual(frame.height, expected.height, accuracy: 1, message)
     }
 
     private func field(_ identifier: String) -> XCUIElement {

@@ -182,6 +182,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   同層），`ci_post_clone.sh` 也必須保留 executable bit。腳本會在乾淨 checkout cook
   `KeyKey.db`，再以 `CI_BUILD_NUMBER` 搭配 Apple Generic Versioning 同步 App 與
   extension 的 build number；不要把 cook 後的資料庫提交進版控。
+- 容器 App target 的 `COPY_PHASE_STRIP` 必須保持 `NO`。Keyboard extension 在自己的
+  target 已完成 Release strip 與簽章，Embed Foundation Extensions 階段若再次 strip，
+  Xcode 只會跳過並警告 `not stripping binary because it is signed`；這個設定不會關閉
+  extension 自己的 `STRIP_INSTALLED_PRODUCT`。
 - 配色只在 `Keyboard/Palette.swift`，全部是 `UIColor(dynamicProvider:)`，深色模式
   跟著系統走。淺色值與 Android 相同，深色值只有 iOS 有。
 - App 圖示來自 `Source/Branding/chichi77.png`，縮成 1024×1024 放在
@@ -449,6 +453,20 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   callback 必須以短期 mutation generation 略過；同一按鍵可能連續替換舊 marked text
   與建立新 reading，較早的非同步清除不可解除較新 mutation 的 guard。切換欄位時用
   `documentIdentifier` 強制失效舊 guard，但不要在新游標位置刪除舊 marked range。
+- **實機可能讓 `documentIdentifier` 違反 nonnull 宣告**：iPhone 16 Plus／iOS 26.6.1
+  在 keyboard proxy 剛啟動時實際回傳 Objective-C nil，直接讀 Swift 的非 optional
+  `UUID` 會在 `_unconditionallyBridgeFromObjectiveC` trap，造成輸入法立即跳回上一個。
+  必須經 `currentDocumentIdentifier()` 的 KVC optional bridge 讀取；不要改回直接存取。
+  proxy 後續第一次從 nil 取得 UUID 只是在完成初始化，不是切換輸入欄位，必須先建立
+  identifier 基準而不能 reset engine，否則選字後的關聯候選會閃現後立刻消失。
+- **實機 document callback 可能晚於下一個 main-loop**：選字時的
+  `setMarkedText + unmarkText` 在 iPhone 上可能延遲回報 `textDidChange`／
+  `selectionDidChange`。`mutateDocument` 的 guard 必須涵蓋這段短暫 grace period；這只用來
+  分類 callback，不可把文件 mutation 或候選顯示本身延遲。
+- **候選文字不可決定鍵盤內層寬度**：`KeyboardView` 的 root stack 必須以 999 priority
+  填滿手機可用寬度，再由 required maximum 把 iPad 限在 820pt。只放 leading/trailing
+  inequality 會讓 Auto Layout 依候選 intrinsic width 排版；動漫的「的名字」會把 11 欄
+  鍵盤撐寬，選完關聯詞後又縮回。UI test 必須用僅啟用 `anime` 的多字候選覆蓋這條路徑。
 - **iOS SQLite 順序不可依賴未指定的 row order**：單字候選查詢明確以 `rowid` 排序；
   多個關聯詞庫一次查詢後，還要依使用者啟用的 source 順序重組並去重，不能把 SQL
   `IN (...)` 的回傳順序當成詞庫優先權。變更 source 清單時需同步清掉 statement cache。

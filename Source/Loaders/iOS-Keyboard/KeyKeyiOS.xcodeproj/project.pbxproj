@@ -376,6 +376,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = SR828N683P;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ContainerApp/Info.plist;
@@ -423,6 +424,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = SR828N683P;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ContainerApp/Info.plist;
