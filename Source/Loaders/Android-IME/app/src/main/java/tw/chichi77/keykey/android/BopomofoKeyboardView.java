@@ -85,6 +85,7 @@ final class BopomofoKeyboardView extends View {
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint specialKeyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint candidatePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint candidateHighlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint hintPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint enterPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -105,6 +106,8 @@ final class BopomofoKeyboardView extends View {
     private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
     private int page;
     private int pageCount;
+    private int highlightedIndex = -1;
+    private int candidateHighlightTextColor = Color.WHITE;
     private float downX;
     private float downY;
     private boolean downOnCandidate;
@@ -120,6 +123,7 @@ final class BopomofoKeyboardView extends View {
         keyPaint.setColor(Color.WHITE);
         specialKeyPaint.setColor(Color.rgb(198, 207, 222));
         candidatePaint.setColor(Color.rgb(244, 247, 252));
+        candidateHighlightPaint.setColor(Color.rgb(128, 0, 128));
         textPaint.setColor(Color.rgb(24, 31, 44));
         textPaint.setTextAlign(Paint.Align.CENTER);
         hintPaint.setColor(Color.rgb(92, 102, 119));
@@ -149,10 +153,16 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
+    void setCandidateHighlightColors(int backgroundColor, int textColor) {
+        candidateHighlightPaint.setColor(backgroundColor);
+        candidateHighlightTextColor = textColor;
+        invalidate();
+    }
+
     void setState(List<String> candidates, String reading, BopomofoEngine.InputMode inputMode,
                   boolean shifted, boolean temporaryEnglish, boolean hardwareFullWidth,
                   boolean supportPromptVisible, int page, int pageCount,
-                  InputFieldPolicy fieldPolicy) {
+                  int highlightedIndex, InputFieldPolicy fieldPolicy) {
         this.candidates = List.copyOf(candidates);
         this.reading = reading;
         this.inputMode = inputMode;
@@ -162,6 +172,7 @@ final class BopomofoKeyboardView extends View {
         this.supportPromptVisible = supportPromptVisible;
         this.page = page;
         this.pageCount = pageCount;
+        this.highlightedIndex = highlightedIndex;
         this.fieldPolicy = fieldPolicy == null ? InputFieldPolicy.DEFAULT : fieldPolicy;
         invalidate();
     }
@@ -291,19 +302,30 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawCandidate(Canvas canvas, RectF bounds, int index) {
-        canvas.drawRoundRect(bounds, dp(6), dp(6), candidatePaint);
+        boolean highlighted = index == highlightedIndex && index < candidates.size();
+        canvas.drawRoundRect(bounds, dp(6), dp(6),
+                highlighted ? candidateHighlightPaint : candidatePaint);
+        int previousHintColor = hintPaint.getColor();
+        int previousTextColor = textPaint.getColor();
+        if (highlighted) {
+            hintPaint.setColor(candidateHighlightTextColor);
+            textPaint.setColor(candidateHighlightTextColor);
+        }
         String number = Integer.toString(index + 1);
         hintPaint.setTextAlign(Paint.Align.LEFT);
         hintPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(7) : dp(10));
         canvas.drawText(number, bounds.left + dp(5),
                 bounds.top + (mode == Mode.LANDSCAPE ? dp(8) : dp(12)), hintPaint);
         hintPaint.setTextAlign(Paint.Align.CENTER);
-        if (index >= candidates.size()) return;
-        String value = candidates.get(index);
-        textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
-        textPaint.setFakeBoldText(true);
-        canvas.drawText(value, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
-        hits.add(new Hit(new RectF(bounds), HitKind.CANDIDATE, "", index));
+        if (index < candidates.size()) {
+            String value = candidates.get(index);
+            textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
+            textPaint.setFakeBoldText(true);
+            canvas.drawText(value, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
+            hits.add(new Hit(new RectF(bounds), HitKind.CANDIDATE, "", index));
+        }
+        hintPaint.setColor(previousHintColor);
+        textPaint.setColor(previousTextColor);
     }
 
     private void drawPageButton(Canvas canvas, RectF bounds, int delta, String label) {

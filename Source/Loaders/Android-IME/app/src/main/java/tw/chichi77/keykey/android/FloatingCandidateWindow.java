@@ -112,6 +112,9 @@ final class FloatingCandidateWindow {
         float horizontalTextSize = cellWidth < dp(46) ? 10 : cellWidth < dp(58) ? 12 : 15;
         int verticalRowHeight = Math.min(dp(VERTICAL_ROW_HEIGHT_DP),
                 safeBounds.height() / candidates.size());
+        CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(context);
+        int highlightColor = CandidateColorSettings.backgroundColor(candidateColor);
+        int highlightTextColor = CandidateColorSettings.textColor(candidateColor);
 
         for (int index = 0; index < candidates.size(); index++) {
             String candidate = candidates.get(index);
@@ -130,9 +133,9 @@ final class FloatingCandidateWindow {
             item.setPadding(horizontal ? dp(2) : dp(4), 0,
                     horizontal ? dp(2) : dp(4), 0);
             boolean highlighted = index == highlightedIndex;
-            item.setTextColor(highlighted ? Color.WHITE : Color.rgb(24, 31, 44));
+            item.setTextColor(highlighted ? highlightTextColor : Color.rgb(24, 31, 44));
             item.setBackgroundColor(highlighted
-                    ? context.getColor(R.color.keykey_blue) : Color.TRANSPARENT);
+                    ? highlightColor : Color.TRANSPARENT);
             final int selectedIndex = index;
             item.setOnClickListener(view -> {
                 listener.onPress();

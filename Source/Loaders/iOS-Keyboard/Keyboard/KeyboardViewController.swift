@@ -17,12 +17,14 @@ final class KeyboardViewController: UIInputViewController {
     private var phraseStore: AssociatedPhraseStore?
     private var collections: [AssociatedPhraseStore.Collection] = []
     private let phraseSettings = PhraseSettings()
+    private let candidateColorSettings = CandidateColorSettings()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
     private var activeDocumentIdentifier: UUID?
     private var hasMarkedText = false
     private var fieldPolicy = InputFieldPolicy.default
     private var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
+    private var candidateColor = CandidateColorSettings().color
     private var inputClicksEnabled = UserDefaults.standard.object(
         forKey: KeyboardPreferences.inputClicksEnabled
     ) as? Bool ?? true
@@ -188,7 +190,7 @@ final class KeyboardViewController: UIInputViewController {
         guard settingsPanel == nil, !collections.isEmpty else { return }
         let panel = SettingsPanel(
             collections: collections, enabled: phraseSettings.enabledCollections,
-            inputClicksEnabled: inputClicksEnabled
+            inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -224,6 +226,7 @@ final class KeyboardViewController: UIInputViewController {
         state.fieldPolicy = fieldPolicy
         state.returnKeyPolicy = returnKeyPolicy
         state.inputClicksEnabled = inputClicksEnabled
+        state.candidateColor = candidateColor
         keyboardView.apply(state)
     }
 
@@ -396,6 +399,12 @@ extension KeyboardViewController: SettingsPanelDelegate {
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool) {
         inputClicksEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: KeyboardPreferences.inputClicksEnabled)
+        refresh()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor) {
+        candidateColor = color
+        candidateColorSettings.setColor(color)
         refresh()
     }
 }

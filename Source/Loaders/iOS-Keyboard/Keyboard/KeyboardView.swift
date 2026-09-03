@@ -25,6 +25,7 @@ final class KeyboardView: UIView {
         var fieldPolicy = InputFieldPolicy.default
         var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
         var inputClicksEnabled = true
+        var candidateColor = CandidateColor.purple
     }
 
     /// A reading key carries two labels at fixed heights rather than two lines
@@ -320,7 +321,9 @@ final class KeyboardView: UIView {
             button.setAttributedTitle(candidate.map {
                 candidateTitle($0, index: index, highlighted: highlighted)
             }, for: .normal)
-            button.backgroundColor = highlighted ? Palette.highlight : Palette.candidateCell
+            button.backgroundColor = highlighted
+                ? Palette.candidateHighlight(for: state.candidateColor)
+                : Palette.candidateCell
             button.accessibilityLabel = candidate.map { "第 \(index + 1) 個候選，\($0)" }
             // An empty cell stays laid out to keep the strip's spacing, but it
             // must leave the accessibility tree: an unlabelled button is a stop
@@ -398,7 +401,9 @@ final class KeyboardView: UIView {
     private func candidateTitle(
         _ candidate: String, index: Int, highlighted: Bool
     ) -> NSAttributedString {
-        let colour = highlighted ? Palette.highlightText : Palette.primaryText
+        let colour = highlighted
+            ? Palette.candidateHighlightText(for: state.candidateColor)
+            : Palette.primaryText
         let title = NSMutableAttributedString(
             string: candidate,
             attributes: [
@@ -410,7 +415,9 @@ final class KeyboardView: UIView {
             string: "\n\(index + 1)",
             attributes: [
                 .font: UIFont.systemFont(ofSize: metrics.candidateIndexFont),
-                .foregroundColor: highlighted ? Palette.highlightText : Palette.hintText
+                .foregroundColor: highlighted
+                    ? Palette.candidateHighlightText(for: state.candidateColor)
+                    : Palette.hintText
             ]
         ))
         return title

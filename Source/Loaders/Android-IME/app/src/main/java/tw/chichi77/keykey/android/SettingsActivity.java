@@ -112,6 +112,34 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         keyPreviewDescription.setLineSpacing(0, 1.2f);
         content.addView(keyPreviewDescription, matchWrap(dp(0), dp(16)));
 
+        TextView candidateColorLabel = new TextView(this);
+        candidateColorLabel.setText(R.string.candidate_color_title);
+        candidateColorLabel.setTextSize(16);
+        candidateColorLabel.setTextColor(Color.DKGRAY);
+        content.addView(candidateColorLabel, matchWrap(dp(0), dp(4)));
+
+        Spinner candidateColor = new Spinner(this);
+        ArrayAdapter<CharSequence> colorAdapter = ArrayAdapter.createFromResource(this,
+                R.array.candidate_highlight_colors,
+                android.R.layout.simple_spinner_item);
+        colorAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        candidateColor.setAdapter(colorAdapter);
+        candidateColor.setSelection(CandidateColorSettings.selectionIndex(
+                CandidateColorSettings.color(this)));
+        candidateColor.setOnItemSelectedListener(
+                new android.widget.AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(android.widget.AdapterView<?> parent,
+                                               android.view.View view, int position, long id) {
+                        CandidateColorSettings.setColor(SettingsActivity.this,
+                                CandidateColorSettings.colorAtSelectionIndex(position));
+                    }
+
+                    @Override public void onNothingSelected(
+                            android.widget.AdapterView<?> parent) {}
+                });
+        content.addView(candidateColor, matchWrap(dp(0), dp(20)));
+
         CheckBox floatingCandidates = new CheckBox(this);
         floatingCandidates.setText(R.string.floating_candidates_enabled);
         floatingCandidates.setTextSize(16);

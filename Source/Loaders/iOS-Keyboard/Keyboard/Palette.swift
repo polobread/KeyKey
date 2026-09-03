@@ -1,3 +1,4 @@
+import KeyKeyEngine
 import UIKit
 
 /// The keyboard palette. Light values are the Android ones so the two touch
@@ -10,11 +11,22 @@ enum Palette {
     static let candidateCell = dynamic(light: 0xF4_F7_FC, dark: 0x33_38_3F)
     static let primaryText = dynamic(light: 0x18_1F_2C, dark: 0xF2_F4_F8)
     static let hintText = dynamic(light: 0x5C_66_77, dark: 0xA8_B0_BD)
-    /// Brightened in the dark scheme so the selected candidate still reads as
-    /// selected against a dark cell.
-    static let highlight = dynamic(light: 0x31_5D_A8, dark: 0x4A_7F_D4)
-    static let highlightText = dynamic(light: 0xFF_FF_FF, dark: 0xFF_FF_FF)
+    /// Purple is the macOS default and remains the keyboard's control accent.
+    static let highlight = colour(0x80_00_80)
     static let surface = dynamic(light: 0xF4_F7_FC, dark: 0x1E_22_28)
+
+    static func candidateHighlight(for color: CandidateColor) -> UIColor {
+        switch color {
+        case .purple: colour(0x80_00_80)
+        case .green: colour(0x3B_AD_1F)
+        case .yellow: colour(0xEB_B5_00)
+        case .red: colour(0xBF_00_29)
+        }
+    }
+
+    static func candidateHighlightText(for color: CandidateColor) -> UIColor {
+        color == .yellow ? colour(0x00_00_00) : colour(0xFF_FF_FF)
+    }
 
     private static func dynamic(light: Int, dark: Int) -> UIColor {
         UIColor { traits in

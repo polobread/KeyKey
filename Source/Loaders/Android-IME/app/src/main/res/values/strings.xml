@@ -17,6 +17,13 @@
     <string name="haptic_value_seconds">震動時間：%1$s 秒</string>
     <string name="key_preview_enabled">顯示觸控按鍵預覽</string>
     <string name="key_preview_description">按住文字、注音或符號鍵時，在按鍵上方或附近顯示放大的按鍵圖，方便確認是否按對。</string>
+    <string name="candidate_color_title">候選字底色</string>
+    <string-array name="candidate_highlight_colors">
+        <item>紫色（預設）</item>
+        <item>綠色</item>
+        <item>黃色</item>
+        <item>紅色</item>
+    </string-array>
     <string name="floating_candidates_enabled">實體鍵盤使用浮動候選字窗</string>
     <string name="floating_candidates_failure_token">已改用一般候選列：系統或目標 App 未提供可用的輸入法視窗 token。重新勾選可再試一次。</string>
     <string name="floating_candidates_failure_attach">已改用一般候選列：系統拒絕附掛浮動候選字窗。重新勾選可再試一次。</string>

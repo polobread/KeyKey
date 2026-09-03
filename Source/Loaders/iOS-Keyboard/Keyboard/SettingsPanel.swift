@@ -5,6 +5,7 @@ import UIKit
 protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>)
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
+    func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
 
@@ -20,16 +21,21 @@ final class SettingsPanel: UIView {
     private let collections: [AssociatedPhraseStore.Collection]
     private var enabled: Set<String>
     private var inputClicksEnabled: Bool
+    private var candidateColor: CandidateColor
     private let statusLabel = UILabel()
+    private let candidateColorControl = UISegmentedControl(
+        items: ["紫", "綠", "黃", "紅"]
+    )
     private var switches: [String: UISwitch] = [:]
 
     init(
         collections: [AssociatedPhraseStore.Collection], enabled: Set<String>,
-        inputClicksEnabled: Bool
+        inputClicksEnabled: Bool, candidateColor: CandidateColor
     ) {
         self.collections = collections
         self.enabled = enabled
         self.inputClicksEnabled = inputClicksEnabled
+        self.candidateColor = candidateColor
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
@@ -82,7 +88,9 @@ final class SettingsPanel: UIView {
             rows.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor)
         ])
 
-        let root = UIStackView(arrangedSubviews: [header, feedbackRow(), statusLabel, bulk, scroll])
+        let root = UIStackView(arrangedSubviews: [
+            header, feedbackRow(), candidateColorRow(), statusLabel, bulk, scroll
+        ])
         root.axis = .vertical
         root.spacing = 8
         root.translatesAutoresizingMaskIntoConstraints = false
@@ -158,6 +166,43 @@ final class SettingsPanel: UIView {
         return row
     }
 
+    private func candidateColorRow() -> UIView {
+        let label = UILabel()
+        label.text = "候選字底色"
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = Palette.primaryText
+
+        candidateColorControl.selectedSegmentIndex = CandidateColor.allCases.firstIndex(
+            of: candidateColor
+        ) ?? 0
+        candidateColorControl.accessibilityIdentifier = "candidate-color"
+        candidateColorControl.accessibilityLabel = "候選字底色"
+        candidateColorControl.addTarget(
+            self, action: #selector(candidateColorChanged(_:)), for: .valueChanged
+        )
+        refreshCandidateColorControl()
+
+        let row = UIStackView(arrangedSubviews: [label, UIView(), candidateColorControl])
+        row.alignment = .center
+        row.spacing = 8
+        row.isLayoutMarginsRelativeArrangement = true
+        row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
+        return row
+    }
+
+    private func refreshCandidateColorControl() {
+        candidateColorControl.selectedSegmentTintColor = Palette.candidateHighlight(
+            for: candidateColor
+        )
+        candidateColorControl.setTitleTextAttributes(
+            [.foregroundColor: Palette.primaryText], for: .normal
+        )
+        candidateColorControl.setTitleTextAttributes(
+            [.foregroundColor: Palette.candidateHighlightText(for: candidateColor)],
+            for: .selected
+        )
+    }
+
     // MARK: - Actions
 
     @objc private func toggled(_ sender: UISwitch) {
@@ -173,6 +218,13 @@ final class SettingsPanel: UIView {
     @objc private func inputClicksToggled(_ sender: UISwitch) {
         inputClicksEnabled = sender.isOn
         delegate?.settingsPanel(self, didChangeInputClicksEnabled: inputClicksEnabled)
+    }
+
+    @objc private func candidateColorChanged(_ sender: UISegmentedControl) {
+        let index = min(max(sender.selectedSegmentIndex, 0), CandidateColor.allCases.count - 1)
+        candidateColor = CandidateColor.allCases[index]
+        refreshCandidateColorControl()
+        delegate?.settingsPanel(self, didChangeCandidateColor: candidateColor)
     }
 
     @objc private func enableAll() {

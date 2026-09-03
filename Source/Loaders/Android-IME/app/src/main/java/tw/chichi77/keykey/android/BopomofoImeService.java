@@ -198,7 +198,6 @@ public final class BopomofoImeService extends InputMethodService
         lastSelectionEnd = newSelEnd;
 
         if (awaitingOwnSelectionUpdate) {
-            cancelExpectedSelectionUpdate();
             return;
         }
         if (!selectionChanged || engine == null
@@ -220,6 +219,10 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
         if (KeyPreviewSettings.KEY_ENABLED.equals(key)) {
+            refreshKeyboard();
+            return;
+        }
+        if (CandidateColorSettings.KEY_COLOR.equals(key)) {
             refreshKeyboard();
             return;
         }
@@ -461,10 +464,15 @@ public final class BopomofoImeService extends InputMethodService
     private void refreshKeyboard() {
         if (keyboardView == null || engine == null) return;
         keyboardView.setKeyPreviewEnabled(KeyPreviewSettings.enabled(this));
+        CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(this);
+        keyboardView.setCandidateHighlightColors(
+                CandidateColorSettings.backgroundColor(candidateColor),
+                CandidateColorSettings.textColor(candidateColor));
         keyboardView.setState(engine.displayedCandidates(), engine.readingText(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
                 engine.isHardwareFullWidth(), SupporterState.shouldShowSupportPrompt(this),
-                engine.page(), engine.pageCount(), fieldPolicy);
+                engine.page(), engine.pageCount(),
+                engine.isShowingAssociatedPhrases() ? -1 : engine.highlightedIndex(), fieldPolicy);
         if (isFloatingCandidateMode() && floatingCandidateWindow != null) {
             floatingCandidateWindow.update(engine.displayedCandidates(),
                     engine.highlightedIndex(), floatingCandidateLayout, cursorAnchor);

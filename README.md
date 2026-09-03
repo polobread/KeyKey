@@ -61,6 +61,7 @@ macOS 與 Windows 安裝包也尚未簽章。完整產物清單與限制見
   建置與啟用方式
 - [iOS Keyboard README](Source/Loaders/iOS-Keyboard/README.md)：iOS extension 架構、
   建置方式與平台限制
+- [App Store / Google Play 素材](StoreAssets/README.md)：第一版商店圖片、來源截圖與內文草稿
 - [Installer README](Installer/README.md)：macOS 安裝包、簽署及 notarization
 - [LICENSING.md](LICENSING.md)：Yahoo BSD、原創 frontend MIT 與第三方授權範圍
 - [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)：第三方素材與授權

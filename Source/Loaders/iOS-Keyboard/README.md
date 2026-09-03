@@ -2,6 +2,12 @@
 
 琦琦注音的 iOS 版：一個 custom keyboard extension，加上帶安裝引導的容器 App。
 
+為熟悉五排標準注音鍵位的使用者保留完整排列與固定 `1–9` 候選位置，讓輸入延續
+肌肉記憶。畫面在記事本輸入 `ㄅ半注音的第一選擇 琦ㄑㄧˊ注音輸入法`，其中
+`ㄑㄧˊ` 保持組字與選字狀態。
+
+![琦琦注音在 iPhone 記事本中顯示五排鍵盤與 ㄑㄧˊ 候選](../../../StoreAssets/Sources/ios-notes-qi.png)
+
 ```
 KeyKeyEngine/     Swift Package，純邏輯，可用 swift test 在 Mac 上驗
 ContainerApp/     容器 App（安裝引導）
@@ -52,6 +58,8 @@ cd KeyKeyEngine && swift test
   `phonePad` 或 `namePhonePad`，系統會自動換回內建鍵盤。引擎仍保留這三種映射，方便
   測試與處理 host 實際提供相同 trait 的情況，但 extension 無法繞過系統封鎖；App 也能
   選擇全面禁止第三方鍵盤。
+- 候選選取底色可在鍵盤的「設」中選擇紫、綠、黃、紅；預設為與 macOS 相同的紫色，
+  黃底自動使用黑字，其餘使用白字。設定重開 extension 後仍會保留。
 
 `KeyKeyiOS.xcodeproj/xcshareddata/xcschemes` 內的 scheme 必須保留在版控中 ——
 Swift Package 依賴只有透過 scheme 才會被建置，`-target` 不會。
