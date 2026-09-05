@@ -174,17 +174,18 @@ Debug APK 位於
 
 ## GitHub Actions 封裝
 
-Android 與 iOS Simulator workflow 只支援從 GitHub Actions 頁面按 **Run workflow**
-手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag（例如 `v1.2.7`）時會自動發布到
-該 Release；兩者也都可以手動執行，Windows 額外接受 `release_tag` 輸入，留空時只保留測試
-artifact。一般 commit、pull request 與不符合版號的 tag 不會發布 Release。建置完成後，
-以下檔案會以 Actions artifact 保留 7 天：
+Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
+Actions 頁面按 **Run workflow** 手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag
+（例如 `v1.2.7`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
+`release_tag` 輸入，留空時只保留測試 artifact。一般 commit、pull request 與不符合版號的
+tag 不會發布 Release。建置完成後，以下檔案會以 Actions artifact 保留 7 天：
 
 | Workflow | 產物 | 限制 |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 手動 run 未簽章；tag run 以 Developer ID 簽章並 notarize |
 | Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`chichi77-KeyKey-版本-windows-x64-setup.unsigned.exe` | 兩者皆未簽章；EXE 只供測試，不能送 Store |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
+| Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 手動執行並上傳到 Google Play internal testing，後續在 Play Console 推廣到封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 
 artifact 另附同名 `.sha256`。發布 run 會把產物與 checksum 上傳到既有 Release；若 Release
@@ -207,9 +208,11 @@ artifact 抓。
 `APPLE_APP_SPECIFIC_PASSWORD`、`APPLE_TEAM_ID`。該 environment 的 deployment rule 必須
 限定 ref type 為 **tag** 的 `v*`，其他 workflow 與手動 branch run 才拿不到私鑰。
 
-其餘 workflow 封裝 repository 內全部公開詞庫，不需要私人 repository 或 secret。
-Windows 正式簽章、iOS 的 TestFlight 與商店上傳留待後續處理。這是公開 repository，
-因此 artifact 在 7 天保留期間仍可能被 repository 讀者下載。
+Android Play workflow 需要 `google-play-release` environment 的上傳金鑰與 Play service
+account secret；正式 AAB 由 Google Play 管理及簽署。iOS 實機、TestFlight 與 App Store
+上傳由 Xcode Cloud／App Store Connect 處理，不使用 Simulator workflow。其餘測試封裝只用
+repository 內的公開詞庫。Windows 正式簽章仍留待後續處理。這是公開 repository，因此
+artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 <a id="english"></a>
 
@@ -375,19 +378,21 @@ details.
 
 ### GitHub Actions packaging
 
-The Android and iOS Simulator workflows run only after **Run workflow** is
-selected on the GitHub Actions page. The macOS and Windows workflows publish to
-a Release when a tag that exactly matches the repository version, such as
-`v1.2.7`, is pushed. Both can also be run manually; the Windows workflow
-additionally takes a `release_tag` input, and leaving it blank produces a test
-artifact only. Commits, pull requests, and mismatched tags do not publish a
-Release. Successful runs retain these Actions artifacts for seven days:
+The Android debug packaging, Google Play release, and iOS Simulator workflows
+run only after **Run workflow** is selected on the GitHub Actions page. The
+macOS and Windows workflows publish to a Release when a tag that exactly
+matches the repository version, such as `v1.2.7`, is pushed. Both can also be
+run manually; the Windows workflow additionally takes a `release_tag` input,
+and leaving it blank produces a test artifact only. Commits, pull requests, and
+mismatched tags do not publish a Release. Successful runs retain these Actions
+artifacts for seven days:
 
 | Workflow | Output | Limitation |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Unsigned on a manual run; signed with a Developer ID and notarized on a tag run |
 | Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `chichi77-KeyKey-VERSION-windows-x64-setup.unsigned.exe` | Both are unsigned; the EXE is test-only and cannot be submitted to the Store |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
+| Android Play Release | No public artifact; uploads the signed AAB directly | Manually uploads to Google Play internal testing; promotion to closed testing is managed in Play Console |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 
 Each output has a matching `.sha256` file. A publishing run uploads its output
@@ -415,8 +420,10 @@ Application and Developer ID Installer identities),
 deployment rule must be restricted to `v*` with a ref type of **tag**, so that
 no other workflow and no manual branch run can reach the private key.
 
-The remaining workflows package all public dictionaries in this repository and
-require no private repository or secret. Windows production signing and the iOS
-TestFlight and store uploads are intentionally deferred. Because the repository
-is public, readers may still download an artifact during its seven-day
-retention period.
+The Android Play workflow uses upload-key and Play service-account secrets in
+the `google-play-release` environment; Google Play manages the final app
+signing. iOS device, TestFlight, and App Store builds are handled by Xcode Cloud
+and App Store Connect, not by the Simulator workflow. The other test packages
+use only the public dictionaries in this repository. Windows production signing
+is still deferred. Because the repository is public, readers may still download
+an artifact during its seven-day retention period.

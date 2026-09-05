@@ -13,9 +13,9 @@ Yahoo! KeyKey。這兩套輸入法後來都沒有持續維護；Android 與 iOS 
 利用生成式 AI 產生、推論並整理各類分類詞庫；這些資料沒有全面逐筆人工校正，不保證
 正確性或完整性，重要用途請自行查證。
 
-未來 Android 與 iPhone 版本可能會上架試用版及低價付費版，用來分擔 Apple Developer
-Program 每年 99 美元的費用（真的很貴）。希望免費使用的朋友，仍可 fork 本專案，拉回
-自己的電腦自行編譯安裝。
+Android 與 iOS 版透過 Google Play 與 App Store 的官方流程發行，並提供不影響任何輸入
+功能的一次性支持方案；希望免費使用的朋友，仍可 fork 本專案，拉回自己的電腦自行編譯
+安裝。macOS 與 Windows 安裝包則由 GitHub Release 提供。
 
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，目前支援 macOS、Windows、
 Android 與 iOS 四個平台。
@@ -40,17 +40,20 @@ Windows、Android 與 iOS 建立現代化 frontend。
 四個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
 
-## 手動 GitHub Actions 建置
+## 下載與發行
 
-`.github/workflows` 內有 macOS、Windows、Android 與 iOS Simulator 四個封裝
-workflow。它們只接受 GitHub Actions 頁面的手動執行；一般 commit、pull request
-與 tag 都不會觸發。選擇要測試的 branch 後執行對應 workflow，完成的未簽章產物會
-以 Actions artifact 保留 7 天，不會建立或更新 GitHub Release。
-公開 repository 的 Actions artifact 在保留期間仍可能被 repository 讀者下載。
+- [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS 與 Windows
+  桌面版。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
+  ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
+- Android 正式 AAB 由 `Android Play Release` workflow 簽署並手動送到 Google Play；
+  1.2.7 已送交封閉測試。`Package Android` 只產生供開發測試的 debug APK。
+- iOS 實機版由 Xcode Cloud／App Store Connect 建置及發行；`Package iOS Simulator`
+  只產生 Apple Silicon Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
-目前 Android 產物是 debug APK，iOS 產物只供 Apple Silicon Simulator 使用；
-macOS 與 Windows 安裝包也尚未簽章。完整產物清單與限制見
-[BUILDING.md](BUILDING.md#手動-github-actions-封裝)。
+推送符合專案版號的 tag（例如 `v1.2.7`）會同時啟動 `Package macOS` 與
+`Package Windows`，並把桌面版產物加入同一個 GitHub Release。兩個 workflow 也能手動
+執行；手動執行只保留 Actions artifact，不代表正式發行。完整產物、簽章與限制見
+[BUILDING.md](BUILDING.md#github-actions-封裝)。
 
 ## 文件
 
@@ -61,7 +64,8 @@ macOS 與 Windows 安裝包也尚未簽章。完整產物清單與限制見
   建置與啟用方式
 - [iOS Keyboard README](Source/Loaders/iOS-Keyboard/README.md)：iOS extension 架構、
   建置方式與平台限制
-- [App Store / Google Play 素材](StoreAssets/README.md)：第一版商店圖片、來源截圖與內文草稿
+- [CHANGELOG.md](CHANGELOG.md)：版本更新內容
+- [App Store / Google Play 素材](StoreAssets/README.md)：商店圖片、來源截圖、內文與發布管道
 - [Installer README](Installer/README.md)：macOS 安裝包、簽署及 notarization
 - [LICENSING.md](LICENSING.md)：Yahoo BSD、原創 frontend MIT 與第三方授權範圍
 - [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)：第三方素材與授權
@@ -101,20 +105,24 @@ by, or sponsored by Yahoo.**
 All four platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
 
-### Manual GitHub Actions builds
+### Downloads and releases
 
-The four packaging workflows under `.github/workflows` run only when started
-manually from the GitHub Actions page. Commits, pull requests, and tags do not
-trigger them. Select the branch to test and run the matching workflow; its
-unsigned output is retained as an Actions artifact for seven days and is never
-added to a GitHub Release.
-Because this repository is public, readers may still download an Actions
-artifact during its retention period.
+- [GitHub Releases](https://github.com/polobread/KeyKey/releases) provides the
+  macOS and Windows desktop builds. The macOS package is Developer ID signed,
+  notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP
+  and installer are currently unsigned and may trigger a security warning.
+- The signed Android AAB is uploaded manually to Google Play by the
+  `Android Play Release` workflow. Version 1.2.7 has been submitted to closed
+  testing. `Package Android` produces a debug APK for development only.
+- Device builds for iOS are handled by Xcode Cloud and App Store Connect.
+  `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
+  be installed on an iPhone or iPad.
 
-The Android output is currently a debug APK, the iOS output runs only in an
-Apple Silicon Simulator, and the macOS and Windows packages are unsigned. See
-[BUILDING.md](BUILDING.md#manual-github-actions-packaging) for the artifact list
-and limitations.
+Pushing a tag that exactly matches the project version, such as `v1.2.7`,
+starts `Package macOS` and `Package Windows` and adds both desktop outputs to
+the same GitHub Release. Manual runs retain Actions artifacts for testing but
+are not a formal release. See [BUILDING.md](BUILDING.md#github-actions-packaging)
+for the complete output and signing details.
 
 ### Documentation
 
@@ -125,6 +133,9 @@ and limitations.
   and setup instructions
 - [iOS Keyboard README](Source/Loaders/iOS-Keyboard/README.md): extension
   architecture, build instructions, and platform limitations
+- [CHANGELOG.md](CHANGELOG.md): release changes
+- [App Store / Google Play assets](StoreAssets/README.md): store images, source
+  captures, copy, and distribution channels
 - [Installer README](Installer/README.md): macOS packaging, signing, and
   notarization
 - [LICENSING.md](LICENSING.md): Yahoo BSD, original frontend MIT, and

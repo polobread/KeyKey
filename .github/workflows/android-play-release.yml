@@ -2,9 +2,6 @@ name: Android Play Release
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: read

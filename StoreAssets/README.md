@@ -55,7 +55,7 @@
 swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-assets.swift
 ```
 
-## App Store 內文草稿
+## App Store 內文
 
 名稱：`琦琦注音輸入法`
 
@@ -78,9 +78,9 @@ swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-ass
 > 琦琦注音也提供 macOS、Windows 與 Android 版本，讓常用的按鍵配置與選字習慣在
 > 四個平台延續。鍵盤不要求完整取用權限，查字與選字都在裝置本機完成。
 
-關鍵字草稿：`注音,繁體中文,五排鍵盤,標準注音,輸入法,候選字,離線鍵盤`
+關鍵字：`注音,繁體中文,五排鍵盤,標準注音,輸入法,候選字,離線鍵盤`
 
-## Google Play 內文草稿
+## Google Play 內文
 
 名稱：`琦琦注音輸入法`
 
@@ -105,6 +105,15 @@ swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-ass
 >
 > 琦琦注音也提供 macOS、Windows 與 iOS 版本，讓熟悉的輸入習慣在四個平台延續。
 > 輸入法沒有網路權限，查字與選字都在裝置本機完成。
+
+## 發布管道
+
+- Android 1.2.7 使用簽署 AAB，已送交 Google Play「封閉測試 - Alpha」；測試地區為台灣
+  與美國，測試人員透過 Play 提供的加入連結安裝。
+- iOS 實機版本與商店素材由 Xcode Cloud／App Store Connect 管理；GitHub Actions 的 iOS
+  ZIP 僅供 Apple Silicon Simulator 測試。
+- macOS 與 Windows 的版本標籤會把桌面安裝包加入同一個 GitHub Release；商店圖 05
+  使用兩個桌面平台的實際輸入畫面。
 
 ## 發布前檢查
 
