@@ -215,8 +215,8 @@ func page(_ c: C, _ n: Int, _ androidSet: Bool, _ ios: NSImage, _ android: NSIma
         }
         return
     }
-    if n == 5 { let sw = c.w*0.39; let sh: CGFloat = compact ? 430 : 560; let x1=c.w*0.08, x2=c.w*0.53, y1=top, y2=top+sh+68; imageFit(android,c,x1,y1,sw,sh); imageFit(ios,c,x2,y1,sw,sh); imageFit(mac,c,x1,y2,sw,sh); imageFit(win,c,x2,y2,sw,sh); txt("Android     iOS     macOS     Windows",c,70,y2+sh+35,c.w-140,40,c.w*0.025,.semibold,pale); return }
-    if !androidSet && (n == 2 || n == 3) { let p = n == 2 ? 3 : 4; let source = n == 2 ? ios : iosIPad; let iw = c.w*(n == 2 ? 0.56 : 0.84); let ih = min(iw*source.size.height/source.size.width,c.h-top-580); imageFit(source,c,(c.w-iw)/2,top,iw,ih); comic(sprite,c,p,c.w*0.30,c.h-430,c.w*0.40,340); if n == 3 { txt("iPad 的大畫面，仍是同一套ㄅ半位置",c,70,top+ih+25,c.w-140,35,c.w*0.025,.semibold,pale) }; return }
+    if n == 5 { let sw = c.w*0.39; let sh: CGFloat = compact ? 430 : 560; let x1=c.w*0.08, x2=c.w*0.53, y1=top, y2=top+sh+68; imageFit(android,c,x1,y1,sw,sh); imageFit(ios,c,x2,y1,sw,sh); imageFit(mac,c,x1,y2,sw,sh); imageFit(win,c,x2,y2,sw,sh); txt("Android     iOS     macOS     Windows",c,70,y2+sh+35,c.w-140,60,min(30,c.w*0.025),.semibold,pale); return }
+    if !androidSet && (n == 2 || n == 3) { let p = n == 2 ? 3 : 4; let source = n == 2 ? ios : iosIPad; let iw = c.w*(n == 2 ? 0.56 : 0.84); let ih = min(iw*source.size.height/source.size.width,c.h-top-580); imageFit(source,c,(c.w-iw)/2,top,iw,ih); comic(sprite,c,p,c.w*0.30,c.h-430,c.w*0.40,340); if n == 3 { txt("iPad 的大畫面，仍是同一套ㄅ半位置",c,70,top+ih+25,c.w-140,50,min(30,c.w*0.025),.semibold,pale) }; return }
     let iw=c.w*0.62; let ih=min(iw*ios.size.height/ios.size.width,c.h-top-80); imageFit(ios,c,(c.w-iw)/2,top,iw,ih)
 }
 func feature(_ android: NSImage, _ sprite: NSImage, _ out: URL) throws { let c=C(1024,500); bg(c); txt("ㄅ半注音的\n第一選擇",c,68,70,410,160,61,.bold,.white,.left); txt("浮動候選跟著游標，\n實體鍵盤也能快樂選字",c,72,276,440,84,24,.medium,pale,.left); comic(sprite,c,0,30,365,270,105); modeCard(c,535,40,205,400,.vertical,"直式浮動"); modeCard(c,770,40,205,400,.horizontal,"橫式浮動"); try c.save(out) }
@@ -229,6 +229,11 @@ let tablet=try load("android-tablet-candidates.png"), dictionaries=try load("and
 let touchPortrait=try load("android-phone-touch-portrait.png"), touchLandscape=try load("android-phone-touch-landscape.png")
 let fixedPortrait=try load("android-phone-hardware-fixed-portrait.png"), fixedLandscape=try load("android-phone-hardware-fixed-landscape.png")
 let iosIPad=try load("ios-ipad-notes-qi.png"), iosDictionaries=try load("ios-phone-dictionaries.png"), iosMcAssociated=try load("ios-phone-mcbopomofo-associated-ya.png"), iosAnimeAssociated=try load("ios-phone-anime-associated-ya.png")
-for (path,size,flag) in [("AppStore/iPhone-1206x2622",NSSize(width:1206,height:2622),false),("GooglePlay/Phone",NSSize(width:1080,height:1920),true)] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); for n in 1...5 { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosIPad,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
+for (path,size,flag) in [
+    ("AppStore/iPhone-1206x2622",NSSize(width:1206,height:2622),false),
+    ("AppStore/iPhone-1242x2688",NSSize(width:1242,height:2688),false),
+    ("AppStore/iPad-2048x2732",NSSize(width:2048,height:2732),false),
+    ("GooglePlay/Phone",NSSize(width:1080,height:1920),true),
+] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); for n in 1...5 { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosIPad,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
 try feature(android,sprite,store.appendingPathComponent("GooglePlay/feature-graphic-1024x500.png"))
 print("Generated store artwork in \(store.path)")

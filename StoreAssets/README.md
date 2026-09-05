@@ -36,8 +36,15 @@
   真正旋轉後的橫式實體鍵盤畫面；不是把直式圖拉寬或重畫，候選列完整顯示 `1–9`。
 - `Sources/comic-devices.png`：透明背景的手機、平板、藍牙鍵盤與觸控操作漫畫插圖。
 - `Sources/chichi-macos.png`、`Sources/chichi-windows.png`：桌面版實際輸入畫面。
-- `AppStore/iPhone-1206x2622/01.png`～`05.png`：`1206 × 2622` App Store iPhone 素材。
+- `AppStore/iPhone-1206x2622/01.png`～`05.png`：`1206 × 2622` iPhone Simulator
+  原生比例素材，保留供 README 與預覽使用。
+- `AppStore/iPhone-1242x2688/01.png`～`05.png`：App Store Connect 接受的 6.5 吋
+  iPhone 上架素材。
+- `AppStore/iPad-2048x2732/01.png`～`05.png`：App Store Connect 接受的 12.9／13 吋
+  iPad 上架素材。
 - `GooglePlay/Phone/01.png`～`05.png`：`1080 × 1920` Google Play 手機素材。
+- `GooglePlay/app-icon-512.png`：Google Play 商店圖示；由 iOS 的無透明背景 1024px
+  App Icon 等比例縮小。
 - `GooglePlay/feature-graphic-1024x500.png`：Google Play 主圖。
 
 整套圖片使用 macOS 預設候選紫 `#800080` 作為品牌主色。漫畫插圖以各自透明邊界裁切並
@@ -101,8 +108,9 @@ swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-ass
 
 ## 發布前檢查
 
-`1206 × 2622` 是目前 iPhone 17 Pro Simulator 的原生尺寸，不把它誤標為 6.9 吋素材；
-Google Play 手機圖保留建議的 `1080 × 1920` 直式比例。畫布尺寸不任意縮短，而是放大內容填滿
+`1206 × 2622` 是目前 iPhone 17 Pro Simulator 的原生尺寸，不把它誤標為 App Store Connect
+接受的 6.5 吋素材；實際上傳使用 `1242 × 2688`。iPad 上傳版使用 `2048 × 2732`，Google
+Play 手機圖保留 `1080 × 1920` 直式比例。畫布尺寸不任意縮短，而是放大內容填滿
 安全區；所有來源圖與漫畫都等比例縮放，候選列不得裁掉 `1–9`。送審前仍須在 App Store
 Connect 與 Play Console 預覽裁切、安全區、實際字數限制與要求的裝置尺寸。若產品頁只接受
 真實 App 操作畫面，使用 `Sources` 原圖，不使用加字版。來源截圖使用專為擷取畫面建立的記事本
