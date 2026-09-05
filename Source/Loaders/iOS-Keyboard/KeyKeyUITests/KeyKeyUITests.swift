@@ -30,6 +30,22 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue((notices.value as? String)?.contains("McBopomofo") == true)
     }
 
+    func testSupporterPurchaseControlsAreReachable() {
+        app = XCUIApplication()
+        app.launchArguments = ["-KeyKeySupporterReview"]
+        app.launch()
+
+        let purchase = app.buttons["supporter.purchase"]
+        let restore = app.buttons["supporter.restore"]
+        for _ in 0..<6 where !purchase.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(purchase.exists)
+        XCTAssertTrue(purchase.isHittable)
+        XCTAssertTrue(restore.exists)
+        XCTAssertTrue(restore.isHittable)
+    }
+
     func testInputFieldMatrixIsReachable() {
         launchHostApp()
         let identifiers = [

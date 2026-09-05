@@ -190,9 +190,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   跟著系統走。淺色值與 Android 相同，深色值只有 iOS 有。
 - App 圖示來自 `Source/Branding/chichi77.png`，縮成 1024×1024 放在
   `ContainerApp/Assets.xcassets/AppIcon.appiconset`（單一尺寸，Xcode 自行衍生）。
-- 兩個 target 各有 `PrivacyInfo.xcprivacy`。extension 宣告 `UserDefaults`
-  （required reason `CA92.1`，關聯詞詞庫開關）；容器 App 沒有 required-reason API。
-  兩份都宣告不追蹤、不收集。
+- 兩個 target 各有 `PrivacyInfo.xcprivacy`，也都宣告 `UserDefaults`（required reason
+  `CA92.1`）：extension 保存關聯詞詞庫開關與共用支持狀態，容器 App 保存一次性支持的
+  首次使用與 entitlement cache。兩份都宣告不追蹤、不收集。
 
 ---
 
@@ -621,6 +621,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `OneTimePurchaseOfferDetails` 選 `purchaseOptionId == "buy"`，並把該項的 offer token
   傳入 `BillingFlowParams`；不要退回舊式只傳 ProductDetails 的做法。試用期固定以
   `PackageInfo.firstInstallTime` 算 30 天，滿 30 天的邊界即 expired，解除安裝重裝重算。
+- **iOS Supporter entitlement 與 keyboard extension 必須保持分離**：StoreKit 2 只由
+  容器 App 的 `SupporterStore` 查詢商品、監聽／驗證交易與執行恢復購買；extension 只能
+  讀 App Group `group.io.github.polobread.inputmethod.chichi77.ios` 的 `SupporterState`
+  cache，不可在輸入路徑建立 StoreKit 或網路工作。產品 ID 同樣是非消耗型
+  `chichi_supporter`，未購買也不能限制任何輸入功能；首次使用滿 30 天後只在空白注音狀態
+  顯示支持提示。Apple Developer 的 App Group 必須同時指派給容器與 extension bundle ID。
 - **macOS／iOS cooker 的 people exclusion 來自公開分類詞庫**：
   `DatabaseCooker/Makefile` 會從 `DataSource/chichi77Collection/phrase.people-*.tsv`
   產生人名 exclusion，再匯入 McBopomofo 與 29 個分類詞庫。不要移除檔案存在時才執行
@@ -638,6 +644,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       Windows 公開 Release 含 ZIP、unsigned EXE 與各自 SHA-256；macOS 的 build
       artifact 也包含公開詞庫。先前 Windows 的 VS2026 與 Android 循環 symlink 修正中，
       Windows 已由本次 tag run 驗證，Android 仍待重跑。
+
+### iOS 發布
+
+- [ ] 用 Sandbox Apple ID 實測 `chichi_supporter` 的購買、待處理、取消、恢復與退款／撤銷，
+      並確認容器 App 與 keyboard extension 透過 App Group 同步 entitlement；Simulator 的
+      狀態與 UI 測試不能取代 App Store 伺服器交易驗證。
 - [x] macOS `publish` job 已於 2026-08-27 的 `v1.2.4` 首次實跑成功（run
       `33031272995`，build 18m25s、publish 31m20s）：臨時 keychain、
       `set-key-partition-list`、Apple 中介憑證鏈、簽章、notarytool、staple、

@@ -18,6 +18,7 @@ final class KeyboardViewController: UIInputViewController {
     private var collections: [AssociatedPhraseStore.Collection] = []
     private let phraseSettings = PhraseSettings()
     private let candidateColorSettings = CandidateColorSettings()
+    private let supporterState = SupporterState()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
     private var activeDocumentIdentifier: UUID?
@@ -31,6 +32,7 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        supporterState.recordFirstUse()
         loadEngine()
 
         // iPad draws no globe row of its own, so the keyboard has to carry the
@@ -72,6 +74,7 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        supporterState.recordFirstUse()
         if updateDocumentIdentifier() {
             abandonDocumentComposition()
         }
@@ -227,6 +230,7 @@ final class KeyboardViewController: UIInputViewController {
         state.returnKeyPolicy = returnKeyPolicy
         state.inputClicksEnabled = inputClicksEnabled
         state.candidateColor = candidateColor
+        state.supportPromptVisible = supporterState.shouldShowSupportPrompt()
         keyboardView.apply(state)
     }
 

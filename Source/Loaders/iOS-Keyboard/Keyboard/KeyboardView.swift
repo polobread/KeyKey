@@ -26,6 +26,7 @@ final class KeyboardView: UIView {
         var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
         var inputClicksEnabled = true
         var candidateColor = CandidateColor.purple
+        var supportPromptVisible = false
     }
 
     /// A reading key carries two labels at fixed heights rather than two lines
@@ -307,12 +308,16 @@ final class KeyboardView: UIView {
         candidateStrip.isHidden = !hasCandidates
         statusLabel.isHidden = hasCandidates
         statusLabel.font = .systemFont(ofSize: metrics.statusFont)
-        statusLabel.text = state.statusOverride ?? KeyboardLayout.statusText(
-            reading: state.reading,
-            mode: state.mode,
-            shifted: state.shifted,
+        let normalStatus = KeyboardLayout.statusText(
+            reading: state.reading, mode: state.mode, shifted: state.shifted,
             temporaryEnglish: state.temporaryEnglish
         )
+        if state.statusOverride == nil, state.supportPromptVisible,
+           state.reading.isEmpty, state.mode == .bopomofo {
+            statusLabel.text = "\(normalStatus)　歡迎付費支持"
+        } else {
+            statusLabel.text = state.statusOverride ?? normalStatus
+        }
 
         for (index, button) in candidateButtons.enumerated() {
             let candidate = index < state.candidates.count ? state.candidates[index] : nil

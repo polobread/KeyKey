@@ -23,6 +23,7 @@
 		C77000000000000000000040 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003F /* PrivacyInfo.xcprivacy */; };
 		C77000000000000000000041 /* KeyKeyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000042 /* KeyKeyUITests.swift */; };
 		C77000000000000000000050 /* Acknowledgements.txt in Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000051 /* Acknowledgements.txt */; };
+		C77000000000000000000052 /* SupporterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000053 /* SupporterStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +76,9 @@
 		C77000000000000000000042 /* KeyKeyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyKeyUITests.swift; sourceTree = "<group>"; };
 		C77000000000000000000043 /* KeyKeyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KeyKeyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C77000000000000000000051 /* Acknowledgements.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Acknowledgements.txt; sourceTree = "<group>"; };
+		C77000000000000000000053 /* SupporterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupporterStore.swift; sourceTree = "<group>"; };
+		C77000000000000000000054 /* KeyKey.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KeyKey.entitlements; sourceTree = "<group>"; };
+		C77000000000000000000055 /* Keyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Keyboard.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,7 +124,9 @@
 			children = (
 				C77000000000000000000002 /* AppDelegate.swift */,
 				C77000000000000000000004 /* SetupViewController.swift */,
+				C77000000000000000000053 /* SupporterStore.swift */,
 				C77000000000000000000010 /* Info.plist */,
+				C77000000000000000000054 /* KeyKey.entitlements */,
 				C7700000000000000000003B /* Assets.xcassets */,
 				C7700000000000000000003D /* PrivacyInfo.xcprivacy */,
 				C77000000000000000000051 /* Acknowledgements.txt */,
@@ -137,6 +143,7 @@
 				C77000000000000000000034 /* SettingsPanel.swift */,
 				C77000000000000000000006 /* KeyboardViewController.swift */,
 				C77000000000000000000011 /* Info.plist */,
+				C77000000000000000000055 /* Keyboard.entitlements */,
 				C7700000000000000000003F /* PrivacyInfo.xcprivacy */,
 			);
 			path = Keyboard;
@@ -243,9 +250,19 @@
 				TargetAttributes = {
 					C7700000000000000000001A = {
 						CreatedOnToolsVersion = 26.6;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 					C7700000000000000000001E = {
 						CreatedOnToolsVersion = 26.6;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 					C77000000000000000000048 = {
 						CreatedOnToolsVersion = 26.6;
@@ -312,6 +329,7 @@
 			files = (
 				C77000000000000000000001 /* AppDelegate.swift in Sources */,
 				C77000000000000000000003 /* SetupViewController.swift in Sources */,
+				C77000000000000000000052 /* SupporterStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -375,6 +393,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ContainerApp/KeyKey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = SR828N683P;
@@ -389,6 +408,7 @@
 		C77000000000000000000028 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Keyboard/Keyboard.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = SR828N683P;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -423,6 +443,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ContainerApp/KeyKey.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = SR828N683P;
@@ -437,6 +458,7 @@
 		C7700000000000000000002B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Keyboard/Keyboard.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = SR828N683P;
 				GENERATE_INFOPLIST_FILE = NO;

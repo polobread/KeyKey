@@ -4,6 +4,11 @@ import UIKit
 /// carries the settings, so this screen only has to get the user to the point
 /// where the keyboard is enabled and selected.
 final class SetupViewController: UIViewController {
+    private let supporterStore = SupporterStore()
+    private let supporterPrice = UILabel()
+    private let supporterButton = UIButton(configuration: .filled())
+    private let restoreButton = UIButton(configuration: .plain())
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
@@ -31,23 +36,57 @@ final class SetupViewController: UIViewController {
         openSettings.addTarget(self, action: #selector(openSystemSettings), for: .touchUpInside)
 
         let note = label(
-            "本輸入法不需要「完整取用權限」，不連線、不收集輸入內容。",
+            "鍵盤不需要「完整取用權限」，不連線、不收集輸入內容。付費支持由 App Store 處理。",
             size: 13, weight: .regular
         )
         note.textColor = .tertiaryLabel
+
+        let supporterTitle = label("支持開發", size: 20, weight: .semibold)
+        supporterTitle.textColor = .tintColor
+
+        let supporterDescription = label(
+            "琦琦輸入法即使未付費也可以繼續完整使用。如果覺得好用，歡迎一次付費支持後續維護與開發。",
+            size: 14, weight: .regular
+        )
+        supporterDescription.textColor = .secondaryLabel
+
+        supporterPrice.font = .preferredFont(forTextStyle: .body)
+        supporterPrice.textColor = .tintColor
+        supporterPrice.textAlignment = .center
+        supporterPrice.numberOfLines = 0
+        supporterPrice.accessibilityIdentifier = "supporter.price"
+        supporterPrice.isHidden = true
+
+        supporterButton.setTitle("正在確認…", for: .normal)
+        supporterButton.accessibilityIdentifier = "supporter.purchase"
+        supporterButton.isEnabled = false
+        supporterButton.addTarget(self, action: #selector(purchaseSupport), for: .touchUpInside)
+
+        restoreButton.setTitle("恢復購買", for: .normal)
+        restoreButton.accessibilityIdentifier = "supporter.restore"
+        restoreButton.isEnabled = false
+        restoreButton.addTarget(self, action: #selector(restoreSupport), for: .touchUpInside)
 
         let acknowledgements = UIButton(configuration: .plain())
         acknowledgements.setTitle("授權與致謝", for: .normal)
         acknowledgements.accessibilityIdentifier = "open-acknowledgements"
         acknowledgements.addTarget(self, action: #selector(openAcknowledgements), for: .touchUpInside)
 
-        var items: [UIView] = [title, subtitle, steps, openSettings, note, acknowledgements]
+        var items: [UIView] = [
+            title, subtitle, steps, openSettings, note,
+            supporterTitle, supporterDescription, supporterPrice,
+            supporterButton, restoreButton, acknowledgements
+        ]
         #if DEBUG
-        let inputFieldTest = UIButton(configuration: .tinted())
-        inputFieldTest.setTitle("開啟輸入欄位測試", for: .normal)
-        inputFieldTest.accessibilityIdentifier = "open-input-field-test"
-        inputFieldTest.addTarget(self, action: #selector(openInputFieldTest), for: .touchUpInside)
-        items.append(inputFieldTest)
+        if !ProcessInfo.processInfo.arguments.contains("-KeyKeySupporterReview") {
+            let inputFieldTest = UIButton(configuration: .tinted())
+            inputFieldTest.setTitle("開啟輸入欄位測試", for: .normal)
+            inputFieldTest.accessibilityIdentifier = "open-input-field-test"
+            inputFieldTest.addTarget(
+                self, action: #selector(openInputFieldTest), for: .touchUpInside
+            )
+            items.append(inputFieldTest)
+        }
         #endif
 
         let stack = UIStackView(arrangedSubviews: items)
@@ -55,14 +94,45 @@ final class SetupViewController: UIViewController {
         stack.spacing = 20
         stack.alignment = .fill
         stack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(stack)
+
+        let scroll = UIScrollView()
+        scroll.alwaysBounceVertical = true
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(stack)
+        view.addSubview(scroll)
 
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -24),
-            stack.topAnchor.constraint(equalTo: guide.topAnchor, constant: 32)
+            scroll.leadingAnchor.constraint(equalTo: guide.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: guide.trailingAnchor),
+            scroll.topAnchor.constraint(equalTo: guide.topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: guide.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -24),
+            stack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 32),
+            stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -24),
+            stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -48)
         ])
+
+        supporterStore.onStateChanged = { [weak self] state in
+            self?.updateSupporterUI(state)
+        }
+        supporterStore.onError = { [weak self] message in
+            self?.showSupporterMessage(message)
+        }
+        supporterStore.start()
+
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-KeyKeySupporterReview") {
+            DispatchQueue.main.async {
+                scroll.layoutIfNeeded()
+                let rect = self.supporterButton.convert(
+                    self.supporterButton.bounds, to: scroll
+                ).insetBy(dx: 0, dy: -140)
+                scroll.scrollRectToVisible(rect, animated: false)
+            }
+        }
+        #endif
 
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-KeyKeyInputFieldTest") {
@@ -89,6 +159,44 @@ final class SetupViewController: UIViewController {
             UINavigationController(rootViewController: AcknowledgementsViewController()),
             animated: true
         )
+    }
+
+    @objc private func purchaseSupport() {
+        Task { await supporterStore.purchase() }
+    }
+
+    @objc private func restoreSupport() {
+        Task { await supporterStore.restore() }
+    }
+
+    private func updateSupporterUI(_ state: SupporterStore.ViewState) {
+        if let formattedPrice = state.formattedPrice, !formattedPrice.isEmpty {
+            supporterPrice.text = "一次付費支持：\(formattedPrice)"
+            supporterPrice.isHidden = false
+        } else {
+            supporterPrice.isHidden = true
+        }
+
+        if state.checking {
+            supporterButton.setTitle("正在確認…", for: .normal)
+            supporterButton.isEnabled = false
+            restoreButton.isEnabled = false
+        } else if state.supporter {
+            supporterButton.setTitle("謝謝支持", for: .normal)
+            supporterButton.isEnabled = false
+            restoreButton.isHidden = true
+        } else {
+            supporterButton.setTitle("付費支持", for: .normal)
+            supporterButton.isEnabled = true
+            restoreButton.isEnabled = true
+            restoreButton.isHidden = false
+        }
+    }
+
+    private func showSupporterMessage(_ message: String) {
+        let alert = UIAlertController(title: "支持開發", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "好", style: .default))
+        present(alert, animated: true)
     }
 
     #if DEBUG

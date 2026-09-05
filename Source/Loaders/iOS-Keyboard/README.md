@@ -60,6 +60,16 @@ cd KeyKeyEngine && swift test
   選擇全面禁止第三方鍵盤。
 - 候選選取底色可在鍵盤的「設」中選擇紫、綠、黃、紅；預設為與 macOS 相同的紫色，
   黃底自動使用黑字，其餘使用白字。設定重開 extension 後仍會保留。
+- 容器 App 提供產品 ID `chichi_supporter` 的非消耗型一次性支持。未購買不會鎖住任何
+  輸入功能；首次使用滿 30 天後，注音鍵盤只會在尚未輸入、沒有候選字時顯示
+  「歡迎付費支持」。購買或恢復購買成功後，容器 App 透過 App Group
+  `group.io.github.polobread.inputmethod.chichi77.ios` 將授權快取給 extension，提示便會
+  永久隱藏。實際售價由 App Store 依地區顯示，設定頁也提供 Apple 要求的「恢復購買」。
+
+正式簽署前，Apple Developer 帳號必須建立上述 App Group，並同時指派給容器 App
+`io.github.polobread.inputmethod.chichi77.ios` 與 keyboard extension
+`io.github.polobread.inputmethod.chichi77.ios.keyboard`。StoreKit 查詢、驗證與交易監聽只在
+容器 App 執行；extension 只讀本機 entitlement cache，不會在輸入路徑連線。
 
 `KeyKeyiOS.xcodeproj/xcshareddata/xcschemes` 內的 scheme 必須保留在版控中 ——
 Swift Package 依賴只有透過 scheme 才會被建置，`-target` 不會。
