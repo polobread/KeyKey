@@ -13,7 +13,7 @@ protocol KeyboardViewDelegate: AnyObject {
 /// than a drawn canvas like the Android port, which gets VoiceOver for free and
 /// keeps hit testing independent of paint order.
 final class KeyboardView: UIView {
-    struct State {
+    struct State: Equatable {
         var reading = ""
         var candidates: [String] = []
         var highlightedIndex = -1
@@ -66,7 +66,7 @@ final class KeyboardView: UIView {
         super.init(frame: .zero)
         backgroundColor = Palette.background
         buildInterface()
-        apply(State())
+        apply(State(), force: true)
     }
 
     required init?(coder: NSCoder) {
@@ -298,88 +298,113 @@ final class KeyboardView: UIView {
         self.metrics = metrics
         candidateStripHeight?.constant = metrics.candidateStripHeight
         contentWidthConstraint?.constant = metrics.maximumContentWidth
-        apply(state)
+        apply(state, force: true)
     }
 
-    func apply(_ state: State) {
-        self.state = state
+    func apply(_ nextState: State, force: Bool = false) {
+        let previousState = state
+        state = nextState
 
         let hasCandidates = !state.candidates.isEmpty
-        candidateStrip.isHidden = !hasCandidates
-        statusLabel.isHidden = hasCandidates
-        statusLabel.font = .systemFont(ofSize: metrics.statusFont)
-        let normalStatus = KeyboardLayout.statusText(
-            reading: state.reading, mode: state.mode, shifted: state.shifted,
-            temporaryEnglish: state.temporaryEnglish
-        )
-        if state.statusOverride == nil, state.supportPromptVisible,
-           state.reading.isEmpty, state.mode == .bopomofo {
-            statusLabel.text = "\(normalStatus)　歡迎付費支持"
-        } else {
-            statusLabel.text = state.statusOverride ?? normalStatus
+        let hadCandidates = !previousState.candidates.isEmpty
+        if force || hasCandidates != hadCandidates
+            || state.reading != previousState.reading
+            || state.mode != previousState.mode
+            || state.shifted != previousState.shifted
+            || state.temporaryEnglish != previousState.temporaryEnglish
+            || state.statusOverride != previousState.statusOverride
+            || state.supportPromptVisible != previousState.supportPromptVisible {
+            candidateStrip.isHidden = !hasCandidates
+            statusLabel.isHidden = hasCandidates
+            statusLabel.font = .systemFont(ofSize: metrics.statusFont)
+            let normalStatus = KeyboardLayout.statusText(
+                reading: state.reading, mode: state.mode, shifted: state.shifted,
+                temporaryEnglish: state.temporaryEnglish
+            )
+            if state.statusOverride == nil, state.supportPromptVisible,
+               state.reading.isEmpty, state.mode == .bopomofo {
+                statusLabel.text = "\(normalStatus)　歡迎付費支持"
+            } else {
+                statusLabel.text = state.statusOverride ?? normalStatus
+            }
         }
 
-        for (index, button) in candidateButtons.enumerated() {
-            let candidate = index < state.candidates.count ? state.candidates[index] : nil
-            let highlighted = index == state.highlightedIndex
-            button.isEnabled = candidate != nil
-            button.setAttributedTitle(candidate.map {
-                candidateTitle($0, index: index, highlighted: highlighted)
-            }, for: .normal)
-            button.backgroundColor = highlighted
-                ? Palette.candidateHighlight(for: state.candidateColor)
-                : Palette.candidateCell
-            button.accessibilityLabel = candidate.map { "第 \(index + 1) 個候選，\($0)" }
-            // An empty cell stays laid out to keep the strip's spacing, but it
-            // must leave the accessibility tree: an unlabelled button is a stop
-            // VoiceOver announces with nothing to say.
-            button.isAccessibilityElement = candidate != nil
+        if force || state.candidates != previousState.candidates
+            || state.highlightedIndex != previousState.highlightedIndex
+            || state.candidateColor != previousState.candidateColor {
+            for (index, button) in candidateButtons.enumerated() {
+                let candidate = index < state.candidates.count ? state.candidates[index] : nil
+                let highlighted = index == state.highlightedIndex
+                button.isEnabled = candidate != nil
+                button.setAttributedTitle(candidate.map {
+                    candidateTitle($0, index: index, highlighted: highlighted)
+                }, for: .normal)
+                button.backgroundColor = highlighted
+                    ? Palette.candidateHighlight(for: state.candidateColor)
+                    : Palette.candidateCell
+                button.accessibilityLabel = candidate.map { "第 \(index + 1) 個候選，\($0)" }
+                // An empty cell stays laid out to keep the strip's spacing, but it
+                // must leave the accessibility tree: an unlabelled button is a stop
+                // VoiceOver announces with nothing to say.
+                button.isAccessibilityElement = candidate != nil
+            }
         }
-        for button in [previousPageButton, nextPageButton] {
-            button.titleLabel?.font = .systemFont(ofSize: metrics.pageFont)
-            button.isEnabled = state.pageCount > 1
+        if force || state.pageCount != previousState.pageCount {
+            for button in [previousPageButton, nextPageButton] {
+                button.titleLabel?.font = .systemFont(ofSize: metrics.pageFont)
+                button.isEnabled = state.pageCount > 1
+            }
         }
 
-        let rows = KeyboardLayout.rows(mode: state.mode, shifted: state.shifted)
-        for (rowIndex, row) in rows.enumerated() {
-            for (columnIndex, key) in row.enumerated() {
-                let keyView = keyViews[rowIndex][columnIndex]
-                keyView.button.accessibilityIdentifier = key
-                keyView.button.backgroundColor = KeyboardLayout.isSpecial(key)
-                    ? Palette.specialKey : Palette.normalKey
-                keyView.button.accessibilityLabel = accessibilityLabel(for: key)
+        let keyPlaneChanged = force
+            || state.mode != previousState.mode
+            || state.shifted != previousState.shifted
+            || state.temporaryEnglish != previousState.temporaryEnglish
+            || state.fieldPolicy != previousState.fieldPolicy
+        if keyPlaneChanged {
+            let rows = KeyboardLayout.rows(mode: state.mode, shifted: state.shifted)
+            for (rowIndex, row) in rows.enumerated() {
+                for (columnIndex, key) in row.enumerated() {
+                    let keyView = keyViews[rowIndex][columnIndex]
+                    keyView.button.accessibilityIdentifier = key
+                    keyView.button.backgroundColor = KeyboardLayout.isSpecial(key)
+                        ? Palette.specialKey : Palette.normalKey
+                    keyView.button.accessibilityLabel = accessibilityLabel(for: key)
+                    let enabled = state.fieldPolicy.isKeyEnabled(
+                        key, mode: state.mode, shifted: state.shifted
+                    )
+                    keyView.button.isEnabled = enabled
+                    keyView.button.alpha = enabled ? 1 : 0.36
+                    configure(keyView, for: key)
+                }
+            }
+        }
+
+        if keyPlaneChanged || state.returnKeyPolicy != previousState.returnKeyPolicy {
+            for (key, button) in functionButtons {
+                button.accessibilityLabel = accessibilityLabel(for: key)
                 let enabled = state.fieldPolicy.isKeyEnabled(
                     key, mode: state.mode, shifted: state.shifted
                 )
-                keyView.button.isEnabled = enabled
-                keyView.button.alpha = enabled ? 1 : 0.36
-                configure(keyView, for: key)
+                button.isEnabled = enabled
+                button.alpha = enabled ? 1 : 0.36
+                if key == "ENTER" {
+                    applyEnterAppearance(to: button)
+                    continue
+                }
+                if key == KeyboardLayout.inputModeSwitchKey {
+                    button.setTitle(nil, for: .normal)
+                    button.setImage(UIImage(systemName: "globe"), for: .normal)
+                    continue
+                }
+                let caption = key == "MODE"
+                    ? state.fieldPolicy.modeCaption(for: state.mode)
+                    : KeyboardLayout.caption(for: key, mode: state.mode)
+                button.setTitle(caption, for: .normal)
+                button.titleLabel?.font = .systemFont(
+                    ofSize: caption.count > 3 ? metrics.functionFontSmall : metrics.functionFont
+                )
             }
-        }
-
-        for (key, button) in functionButtons {
-            button.accessibilityLabel = accessibilityLabel(for: key)
-            let enabled = state.fieldPolicy.isKeyEnabled(
-                key, mode: state.mode, shifted: state.shifted
-            )
-            button.isEnabled = enabled
-            button.alpha = enabled ? 1 : 0.36
-            if key == "ENTER" {
-                applyEnterAppearance(to: button)
-                continue
-            }
-            if key == KeyboardLayout.inputModeSwitchKey {
-                button.setTitle(nil, for: .normal)
-                button.setImage(UIImage(systemName: "globe"), for: .normal)
-                continue
-            }
-            let caption = key == "MODE"
-                ? state.fieldPolicy.modeCaption(for: state.mode)
-                : KeyboardLayout.caption(for: key, mode: state.mode)
-            button.setTitle(caption, for: .normal)
-            button.titleLabel?.font = .systemFont(
-                ofSize: caption.count > 3 ? metrics.functionFontSmall : metrics.functionFont
-            )
         }
     }
 

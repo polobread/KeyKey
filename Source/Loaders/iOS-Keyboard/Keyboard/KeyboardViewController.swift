@@ -21,6 +21,7 @@ final class KeyboardViewController: UIInputViewController {
     private let supporterState = SupporterState()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
+    private var markedReadingUpdateGeneration: UInt = 0
     private var activeDocumentIdentifier: UUID?
     private var hasMarkedText = false
     private var fieldPolicy = InputFieldPolicy.default
@@ -155,6 +156,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func abandonDocumentComposition() {
+        cancelScheduledMarkedReadingUpdate()
         documentMutationGuard.invalidate()
         hasMarkedText = false
         resetInputState(discardDocumentComposition: false)
@@ -297,6 +299,15 @@ final class KeyboardViewController: UIInputViewController {
             commitMarkedOrInsertedText(result.text)
         }
         if engine?.readingText.isEmpty == false {
+            // Candidate buttons are extension-local UIKit. Give them the
+            // current run-loop turn before crossing into the host app through
+            // UITextDocumentProxy, which can be slower on real devices.
+            if result.text.isEmpty, !result.deletesBackward, !result.sendsReturn,
+               engine?.displayedCandidates.isEmpty == false {
+                refresh()
+                scheduleMarkedReadingUpdate()
+                return
+            }
             updateMarkedReading()
         } else if result.text.isEmpty, !result.deletesBackward {
             discardMarkedText()
@@ -309,6 +320,7 @@ final class KeyboardViewController: UIInputViewController {
     /// crucial ordering: committing `你` must replace marked `ㄋㄧˇ`, not make
     /// the host document read `ㄋㄧˇ你`.
     private func commitMarkedOrInsertedText(_ text: String) {
+        cancelScheduledMarkedReadingUpdate()
         mutateDocument {
             if hasMarkedText {
                 textDocumentProxy.setMarkedText(
@@ -332,9 +344,30 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    /// Coalescing protects rapid typing from applying an older reading after a
+    /// newer engine state. The small dispatch boundary also lets the candidate
+    /// strip become visible before the host field mirrors its final tone mark.
+    private func scheduleMarkedReadingUpdate() {
+        guard let reading = engine?.readingText, !reading.isEmpty else { return }
+        markedReadingUpdateGeneration &+= 1
+        let generation = markedReadingUpdateGeneration
+        DispatchQueue.main.async { [weak self] in
+            guard let self,
+                  self.markedReadingUpdateGeneration == generation,
+                  self.engine?.readingText == reading
+            else { return }
+            self.updateMarkedReading()
+        }
+    }
+
+    private func cancelScheduledMarkedReadingUpdate() {
+        markedReadingUpdateGeneration &+= 1
+    }
+
     /// Replacing a marked range with an empty string cancels it. `unmarkText`
     /// would do the opposite: it would accept the raw Bopomofo reading.
     private func discardMarkedText() {
+        cancelScheduledMarkedReadingUpdate()
         guard hasMarkedText else { return }
         mutateDocument {
             textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))

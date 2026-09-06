@@ -1,7 +1,7 @@
 import Foundation
 
 /// The candidate-selection colours shared with the desktop frontends.
-public enum CandidateColor: String, CaseIterable, Sendable {
+public enum CandidateColor: String, CaseIterable, Sendable, Equatable {
     case purple = "Purple"
     case green = "Green"
     case yellow = "Yellow"

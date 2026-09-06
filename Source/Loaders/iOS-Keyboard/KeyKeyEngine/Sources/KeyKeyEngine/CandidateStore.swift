@@ -8,6 +8,7 @@ import Foundation
 /// Bopomofo table). Row order is candidate priority and must be preserved.
 public final class CandidateStore {
     private let byKey: Statement
+    private var cache: [String: [String]] = [:]
 
     public init(database: Database) throws {
         byKey = try database.prepare(
@@ -18,12 +19,23 @@ public final class CandidateStore {
     /// Candidates for a composed reading.
     public func candidates(for reading: BopomofoReading) -> [String] {
         guard !reading.isEmpty else { return [] }
-        return byKey.firstColumnStrings([reading.queryKey])
+        return values(forKey: reading.queryKey)
     }
 
     /// Candidates for one of the table's named keys, e.g. `_punctuation_[`.
     public func values(forNamedKey key: String) -> [String] {
-        byKey.firstColumnStrings([key])
+        values(forKey: key)
+    }
+
+    /// A reading is commonly repeated within one keyboard session. Keeping
+    /// only keys that were actually requested avoids another SQLite step and
+    /// UTF-8 conversion without loading the complete dictionary into the
+    /// extension's memory-constrained process.
+    private func values(forKey key: String) -> [String] {
+        if let cached = cache[key] { return cached }
+        let values = byKey.firstColumnStrings([key])
+        cache[key] = values
+        return values
     }
 }
 
