@@ -9,6 +9,10 @@
   Emoji、30 種關聯詞庫與候選選取底色。
 - 修正 Android 顯示關聯候選時按 Enter／搜尋會誤選候選的問題。
 - iOS 加入五排鍵盤、輸入欄位模式、候選選取底色、詞庫選擇、關聯候選與版面穩定性改善。
+- iOS 容器 App 加入實體鍵盤編輯器：App 前景可接收 USB／藍牙鍵盤，使用固定直排
+  `1–9` 候選、`Shift+1–9` 關聯詞選字、可見插入游標、詞庫與複製／分享／清除快捷鍵；
+  橫式採輸入、候選、按鍵、動作四欄，並改善 iPad、iPhone SE 與旋轉後的固定版面。
+- 修正 iOS 顯示關聯候選時按 Enter 會誤選反白詞尾的問題。
 - iOS 加入不鎖定輸入功能的非消耗型一次性支持與恢復購買。
 - 新增 Android 與 iOS 多版本模擬器測試計畫、App Store／Google Play 商店素材與隱私說明。
 - macOS 安裝包支援 Developer ID 簽章與 notarization；Windows 提供 ZIP 與 NSIS 測試安裝程式。

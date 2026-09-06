@@ -24,6 +24,7 @@
 		C77000000000000000000041 /* KeyKeyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000042 /* KeyKeyUITests.swift */; };
 		C77000000000000000000050 /* Acknowledgements.txt in Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000051 /* Acknowledgements.txt */; };
 		C77000000000000000000052 /* SupporterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000053 /* SupporterStore.swift */; };
+		C77000000000000000000056 /* HardwareKeyboardEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000057 /* HardwareKeyboardEditorViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +80,7 @@
 		C77000000000000000000053 /* SupporterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupporterStore.swift; sourceTree = "<group>"; };
 		C77000000000000000000054 /* KeyKey.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KeyKey.entitlements; sourceTree = "<group>"; };
 		C77000000000000000000055 /* Keyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Keyboard.entitlements; sourceTree = "<group>"; };
+		C77000000000000000000057 /* HardwareKeyboardEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareKeyboardEditorViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,6 +126,7 @@
 			children = (
 				C77000000000000000000002 /* AppDelegate.swift */,
 				C77000000000000000000004 /* SetupViewController.swift */,
+				C77000000000000000000057 /* HardwareKeyboardEditorViewController.swift */,
 				C77000000000000000000053 /* SupporterStore.swift */,
 				C77000000000000000000010 /* Info.plist */,
 				C77000000000000000000054 /* KeyKey.entitlements */,
@@ -329,6 +332,7 @@
 			files = (
 				C77000000000000000000001 /* AppDelegate.swift in Sources */,
 				C77000000000000000000003 /* SetupViewController.swift in Sources */,
+				C77000000000000000000056 /* HardwareKeyboardEditorViewController.swift in Sources */,
 				C77000000000000000000052 /* SupporterStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

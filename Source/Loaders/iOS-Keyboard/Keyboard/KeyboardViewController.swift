@@ -387,6 +387,7 @@ final class KeyboardViewController: UIInputViewController {
             self?.documentMutationGuard.end(ifCurrent: generation)
         }
     }
+
 }
 
 extension KeyboardViewController: KeyboardViewDelegate {

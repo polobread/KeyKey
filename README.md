@@ -35,10 +35,14 @@ Windows、Android 與 iOS 建立現代化 frontend。
 | macOS | InputMethodKit；macOS 15 以上、Apple Silicon |
 | Windows | 原生 TSF；Windows 11 x64，並支援 32-bit Office process |
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
-| iOS | Swift custom keyboard extension 與安裝引導 App；不要求完整取用權限、不連網 |
+| iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
 
 四個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
+
+iOS 不允許第三方 keyboard extension 接管 USB／藍牙鍵盤，因此無法在備忘錄、LINE 或
+Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體鍵盤編輯器」：在 App 前景
+使用同一套注音引擎與固定直排 `1–9` 候選完成文字，再以複製或 iOS 分享面板送到其他 App。
 
 ## 下載與發行
 
@@ -100,10 +104,17 @@ by, or sponsored by Yahoo.**
 | macOS | InputMethodKit; macOS 15 or later on Apple Silicon |
 | Windows | Native TSF; Windows 11 x64, including 32-bit Office processes |
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
-| iOS | Swift custom keyboard extension and setup app; no Full Access or network access |
+| iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
 
 All four platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
+
+iOS does not let a third-party keyboard extension take over USB or Bluetooth
+keyboard events, so system-wide hardware-keyboard input in Notes, LINE, or
+Safari is not available. The container app instead includes a hardware-keyboard
+editor that uses the same engine and a fixed vertical `1–9` candidate list while
+the app is in the foreground, then copies or shares the completed text through
+iOS.
 
 ### Downloads and releases
 

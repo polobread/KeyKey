@@ -2,15 +2,21 @@
 
 主軸是俏皮的「ㄅ半注音的第一選擇」：保留熟悉的五排標準注音鍵位與固定 `1–9`
 候選位置，讓使用者換到不同裝置後仍能延續肌肉記憶。Android 另以實體鍵盤的直式／橫式
-浮動候選窗與關閉浮動模式作為平台特色。兩張來源畫面都在記事本輸入
-`ㄅ半注音的第一選擇 琦ㄑㄧˊ注音輸入法`；其中 `ㄑㄧˊ` 保持組字與選字狀態，沒有使用
-內部 test page，也沒有把候選畫面後製到截圖中。
+浮動候選窗與關閉浮動模式作為平台特色；iOS 則提供只能在琦琦 App 前景使用的實體鍵盤
+編輯器，完成後可複製或分享文字，不宣稱能在其他 App 接管硬體鍵盤。記事本來源畫面輸入
+`ㄅ半注音的第一選擇 琦ㄑㄧˊ注音輸入法`；其中 `ㄑㄧˊ` 保持組字與選字狀態。實體鍵盤
+編輯器來源則由 iPhone 與 iPad Simulator 的 UI 測試直接擷取，兩類畫面都沒有使用內部
+test page，也沒有把候選畫面後製到截圖中。
 
 ## 圖片
 
 - `Sources/ios-notes-qi.png`：iPhone Simulator 原始畫面，五排觸控鍵盤與 `ㄑㄧˊ` 候選。
 - `Sources/ios-ipad-notes-qi.png`：iPad Simulator 的原生全螢幕 4:3 畫面；系統使用預設
   字體大小與「全螢幕 App」多工設定，完整保留五排鍵盤及固定 `1–9` 候選。
+- `Sources/ios-phone-hardware-editor.png`：iPhone Simulator 的直式實體鍵盤編輯器操作畫面，
+  顯示鍵盤連線、固定 `1–9` 候選、方向鍵，以及複製與分享操作。
+- `Sources/ios-ipad-hardware-editor.png`：iPad Simulator 的直式實體鍵盤編輯器操作畫面，
+  以大畫面雙欄呈現固定 `1–9` 候選與實體鍵盤控制鍵。
 - `Sources/ios-phone-dictionaries.png`：iPhone Simulator 的 30 種關聯詞庫設定實際畫面。
 - `Sources/ios-phone-mcbopomofo-associated-ya.png`：iPhone 上只啟用小麥注音詞庫，選定
   `亞` 後停在關聯候選 `1–9` 的實際畫面。
@@ -63,8 +69,8 @@ swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-ass
 
 宣傳文字：
 
-> 手指記得，就讓它繼續快樂打字！熟悉的五排注音與固定 1–9 候選，換到 iPhone 或
-> iPad 也不用重新學；另有 macOS、Windows 與 Android 版可安裝。
+> 手指記得，就讓它繼續快樂打字！熟悉的五排注音與固定 1–9 候選；接上 USB／藍牙
+> 鍵盤，也能在 App 內完成文字再複製或分享。另有 macOS、Windows 與 Android 版。
 
 說明：
 
@@ -75,10 +81,14 @@ swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-ass
 > 注音、英文與數字符號模式依序切換，也支援符號、Emoji、30 種關聯詞庫與不同輸入
 > 欄位。
 >
+> 接上 USB 或藍牙鍵盤時，可在琦琦 App 的實體鍵盤編輯器中使用相同注音引擎、固定直排
+> 1–9 候選與關聯詞庫，完成後一鍵複製或開啟 iOS 分享面板。受 iOS 系統限制，第三方
+> 鍵盤無法在備忘錄、LINE、Safari 等其他 App 直接接管實體鍵盤。
+>
 > 琦琦注音也提供 macOS、Windows 與 Android 版本，讓常用的按鍵配置與選字習慣在
 > 四個平台延續。鍵盤不要求完整取用權限，查字與選字都在裝置本機完成。
 
-關鍵字：`注音,繁體中文,五排鍵盤,標準注音,輸入法,候選字,離線鍵盤`
+關鍵字：`注音,繁體中文,五排鍵盤,標準注音,輸入法,候選字,離線鍵盤,實體鍵盤,藍牙鍵盤`
 
 ## Google Play 內文
 

@@ -1,6 +1,7 @@
 # iOS 鍵盤
 
-琦琦注音的 iOS 版：一個 custom keyboard extension，加上帶安裝引導的容器 App。
+琦琦注音的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
+容器 App。
 
 為熟悉五排標準注音鍵位的使用者保留完整排列與固定 `1–9` 候選位置，讓輸入延續
 肌肉記憶。畫面在記事本輸入 `ㄅ半注音的第一選擇 琦ㄑㄧˊ注音輸入法`，其中
@@ -10,7 +11,7 @@
 
 ```
 KeyKeyEngine/     Swift Package，純邏輯，可用 swift test 在 Mac 上驗
-ContainerApp/     容器 App（安裝引導）
+ContainerApp/     容器 App（安裝引導、實體鍵盤編輯器）
 Keyboard/         UIInputViewController extension
 KeyKeyiOS.xcodeproj
 ```
@@ -20,7 +21,7 @@ KeyKeyiOS.xcodeproj
 ```sh
 make -C ../../Distributions/Takao/DatabaseCooker
 xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
-  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -configuration Debug -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
@@ -46,8 +47,9 @@ cd KeyKeyEngine && swift test
   所以 `BopomofoSyllable` 必須實作該編碼才查得到東西。
 - **`RequestsOpenAccess = false`**：不連網、設定存在 extension 自己的沙箱。代價是
   iOS 把 `UIFeedbackGenerator` 綁在這個權限後面，因此沒有按鍵震動。
-- **沒有實體鍵盤支援與浮動候選窗**：extension 收不到硬體按鍵事件，也只能在自己的
-  input view 內繪製。
+- **keyboard extension 沒有實體鍵盤支援與浮動候選窗**：extension 收不到硬體按鍵
+  事件，也只能在自己的 input view 內繪製。容器 App 的「實體鍵盤編輯器」只能在琦琦
+  App 前景接收 USB／藍牙鍵盤，不能讓琦琦在備忘錄、LINE 或 Safari 內接管實體鍵盤。
 - **inline 組字**：專案最低 iOS 17，而 `UITextDocumentProxy.setMarkedText` 自 iOS 13
   可用。注音讀音會以 marked text 顯示在目標欄位；選字時以候選字取代讀音。
 - 會讀取 `textDocumentProxy.keyboardType` 的 11 種 UIKit 提示。`default` 與
@@ -65,6 +67,26 @@ cd KeyKeyEngine && swift test
   「歡迎付費支持」。購買或恢復購買成功後，容器 App 透過 App Group
   `group.io.github.polobread.inputmethod.chichi77.ios` 將授權快取給 extension，提示便會
   永久隱藏。實際售價由 App Store 依地區顯示，設定頁也提供 Apple 要求的「恢復購買」。
+
+## 實體鍵盤編輯器
+
+容器 App 直接唯讀內嵌 `Keyboard.appex` 的同一份 `KeyKey.db`，但編輯器的詞庫選擇存在
+容器 App 自己的 `UserDefaults`；keyboard extension 未開完整取用，兩邊詞庫設定不會同步。
+編輯中的文字留在 App 內，只有使用者主動按下複製或分享時才交給 iOS 系統功能。
+
+- 候選固定直排 `1–9`，一般候選用 `1–9`，關聯詞用 `Shift+1–9`
+  （`!@#$%^&*(`）；`Space`、`Page Up`、`Page Down` 循環翻頁。
+- 一般候選用 `↑`／`↓` 移動反白、`←`／`→` 翻頁；沒有組字與候選時，四方向鍵移動
+  編輯器自己的可見插入游標。
+- `Ctrl+Space` 切換ㄅ／英、`Shift+Space` 切換半／全形；`Ctrl+0`／`Ctrl+1` 開啟符號，
+  `Ctrl+,`／`Ctrl+.` 輸入全形逗號／句號。
+- `Ctrl+C`／`⌘C` 複製全文，`Ctrl+S`／`⌘S` 開啟分享面板，`Ctrl+K`／`⌘K` 開啟
+  清除全文確認，並以 Enter 確認、Esc 取消。右上角資訊按鈕也列出完整快捷鍵。
+- 右側提供詞庫、ㄅ／英、半／全、符號、`🙂`、Esc、Backspace、Enter、四方向與空白等
+  觸控備援鍵。關聯候選顯示時，Enter 會先關閉推薦再換行，不會誤選反白詞尾。
+- 橫式固定由左到右排列輸入、候選、按鍵、清除／複製／分享四欄；iPad 保留方向鍵與
+  空白鍵，iPhone 高度不足時收起這組輔助鍵。4.7 吋 iPhone SE 直式會縮短輸入區，保留
+  完整候選與操作鍵。候選內容與裝置旋轉不應改變各區塊的固定尺寸。
 
 正式簽署前，Apple Developer 帳號必須建立上述 App Group，並同時指派給容器 App
 `io.github.polobread.inputmethod.chichi77.ios` 與 keyboard extension

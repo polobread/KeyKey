@@ -143,8 +143,19 @@ func comic(_ sprite: NSImage, _ c: C, _ panel: Int, _ x: CGFloat, _ top: CGFloat
     let dw = sourceW * scale, dh = sourceH * scale
     image(sprite, c, x + (w - dw) / 2, top + (h - dh) / 2, dw, dh, source, framed: false)
 }
-func header(_ c: C, _ title: String, _ sub: String, _ compact: Bool) { txt(title, c, 70, compact ? 58 : 85, c.w - 140, compact ? 88 : 110, c.w * (compact ? 0.052 : 0.058), .bold); txt(sub, c, 70, compact ? 155 : 210, c.w - 140, compact ? 56 : 76, c.w * 0.026, .medium, pale); let pw = c.w * 0.35; box(c, (c.w-pw)/2, compact ? 225 : 315, pw, 60, NSColor.white.withAlphaComponent(0.16), 30); txt("琦琦注音", c, (c.w-pw)/2, (compact ? 225 : 315)+15, pw, 34, 25, .semibold) }
-func copy(_ page: Int, _ android: Bool) -> (String,String) {
+func header(_ c: C, _ title: String, _ sub: String, _ compact: Bool) {
+    let tablet = c.w >= 1800
+    let titleTop: CGFloat = compact ? 58 : 85
+    let titleHeight: CGFloat = tablet ? 160 : (compact ? 88 : 110)
+    let subtitleTop: CGFloat = tablet ? 250 : (compact ? 155 : 210)
+    let badgeTop: CGFloat = tablet ? 350 : (compact ? 225 : 315)
+    txt(title, c, 70, titleTop, c.w - 140, titleHeight, c.w * (compact ? 0.052 : 0.058), .bold)
+    txt(sub, c, 70, subtitleTop, c.w - 140, compact ? 56 : 76, c.w * 0.026, .medium, pale)
+    let pw = c.w * 0.35
+    box(c, (c.w-pw)/2, badgeTop, pw, 60, NSColor.white.withAlphaComponent(0.16), 30)
+    txt("琦琦注音", c, (c.w-pw)/2, badgeTop+15, pw, 34, 25, .semibold)
+}
+func copy(_ page: Int, _ android: Bool, _ tablet: Bool) -> (String,String) {
     if android { return [
         ("接上鍵盤，候選跟著跑","直式或橫式浮動窗貼近游標，1–9 一伸手就到"),
         ("不想浮動，也能穩穩選","關閉浮動，候選字留在實體鍵盤列"),
@@ -152,16 +163,25 @@ func copy(_ page: Int, _ android: Bool) -> (String,String) {
         ("30 種詞庫，與你更關聯","小麥注音或動漫詞庫，候選跟著你的世界走"),
         ("手機桌機，都用同一套手感","Android、iOS、macOS、Windows 都能安裝")
     ][page-1] }
-    return [
+    var pages = [
         ("ㄅ半注音的第一選擇","琦琦注音，讓手指快樂回家"),
         ("五排都在，藍牙鍵盤也在","iPhone 接上實體鍵盤，熟悉的選字手感不變"),
-        ("iPad 接上鍵盤，直接開打","大畫面、五排鍵盤、固定 1–9 候選都在"),
+        ("接上鍵盤，直接開打","App 內完成文字，再複製或分享"),
         ("30 種詞庫，與你更關聯","小麥注音或動漫詞庫，候選跟著你的世界走"),
         ("手機桌機，都用同一套手感","Android、iOS、macOS、Windows 都能安裝")
-    ][page-1]
+    ]
+    if tablet {
+        pages[1] = ("五排都在，藍牙鍵盤也在", "iPad 接上實體鍵盤，熟悉的選字手感不變")
+        pages[2] = ("iPad 接上鍵盤，直接開打", "大畫面完成文字，再複製或分享")
+    }
+    return pages[page-1]
 }
-func page(_ c: C, _ n: Int, _ androidSet: Bool, _ ios: NSImage, _ android: NSImage, _ mac: NSImage, _ win: NSImage, _ sprite: NSImage, _ tablet: NSImage, _ dictionaries: NSImage, _ mcAssociated: NSImage, _ animeAssociated: NSImage, _ touchPortrait: NSImage, _ touchLandscape: NSImage, _ fixedPortrait: NSImage, _ fixedLandscape: NSImage, _ iosIPad: NSImage, _ iosDictionaries: NSImage, _ iosMcAssociated: NSImage, _ iosAnimeAssociated: NSImage) {
-    let compact = c.h < 2200; let top: CGFloat = compact ? 330 : 470; let (title,sub) = copy(n, androidSet); header(c,title,sub,compact)
+func page(_ c: C, _ n: Int, _ androidSet: Bool, _ ios: NSImage, _ android: NSImage, _ mac: NSImage, _ win: NSImage, _ sprite: NSImage, _ tablet: NSImage, _ dictionaries: NSImage, _ mcAssociated: NSImage, _ animeAssociated: NSImage, _ touchPortrait: NSImage, _ touchLandscape: NSImage, _ fixedPortrait: NSImage, _ fixedLandscape: NSImage, _ iosPhoneHardwareEditor: NSImage, _ iosIPadHardwareEditor: NSImage, _ iosDictionaries: NSImage, _ iosMcAssociated: NSImage, _ iosAnimeAssociated: NSImage) {
+    let compact = c.h < 2200
+    let isIPadCanvas = !androidSet && c.w >= 1800
+    let top: CGFloat = compact ? 330 : 470
+    let (title,sub) = copy(n, androidSet, isIPadCanvas)
+    header(c,title,sub,compact)
     if androidSet && n == 1 {
         let cw = c.w * 0.40
         modeCard(c,c.w*0.07,top+20,cw,570,.vertical,"直式浮動窗")
@@ -216,7 +236,27 @@ func page(_ c: C, _ n: Int, _ androidSet: Bool, _ ios: NSImage, _ android: NSIma
         return
     }
     if n == 5 { let sw = c.w*0.39; let sh: CGFloat = compact ? 430 : 560; let x1=c.w*0.08, x2=c.w*0.53, y1=top, y2=top+sh+68; imageFit(android,c,x1,y1,sw,sh); imageFit(ios,c,x2,y1,sw,sh); imageFit(mac,c,x1,y2,sw,sh); imageFit(win,c,x2,y2,sw,sh); txt("Android     iOS     macOS     Windows",c,70,y2+sh+35,c.w-140,60,min(30,c.w*0.025),.semibold,pale); return }
-    if !androidSet && (n == 2 || n == 3) { let p = n == 2 ? 3 : 4; let source = n == 2 ? ios : iosIPad; let iw = c.w*(n == 2 ? 0.56 : 0.84); let ih = min(iw*source.size.height/source.size.width,c.h-top-580); imageFit(source,c,(c.w-iw)/2,top,iw,ih); comic(sprite,c,p,c.w*0.30,c.h-430,c.w*0.40,340); if n == 3 { txt("iPad 的大畫面，仍是同一套ㄅ半位置",c,70,top+ih+25,c.w-140,50,min(30,c.w*0.025),.semibold,pale) }; return }
+    if !androidSet && (n == 2 || n == 3) {
+        let panel = n == 2 ? 3 : 4
+        let source: NSImage
+        let imageWidth: CGFloat
+        let bottomReserve: CGFloat
+        if n == 2 {
+            source = ios
+            imageWidth = c.w * 0.56
+            bottomReserve = 580
+        } else {
+            source = isIPadCanvas ? iosIPadHardwareEditor : iosPhoneHardwareEditor
+            imageWidth = c.w * (isIPadCanvas ? 0.72 : 0.58)
+            bottomReserve = 390
+        }
+        let imageHeight = min(imageWidth * source.size.height / source.size.width, c.h - top - bottomReserve)
+        imageFit(source,c,(c.w-imageWidth)/2,top,imageWidth,imageHeight)
+        let comicTop = n == 2 ? c.h - 430 : c.h - 350
+        let comicHeight: CGFloat = n == 2 ? 340 : 280
+        comic(sprite,c,panel,c.w*0.30,comicTop,c.w*0.40,comicHeight)
+        return
+    }
     let iw=c.w*0.62; let ih=min(iw*ios.size.height/ios.size.width,c.h-top-80); imageFit(ios,c,(c.w-iw)/2,top,iw,ih)
 }
 func feature(_ android: NSImage, _ sprite: NSImage, _ out: URL) throws { let c=C(1024,500); bg(c); txt("ㄅ半注音的\n第一選擇",c,68,70,410,160,61,.bold,.white,.left); txt("浮動候選跟著游標，\n實體鍵盤也能快樂選字",c,72,276,440,84,24,.medium,pale,.left); comic(sprite,c,0,30,365,270,105); modeCard(c,535,40,205,400,.vertical,"直式浮動"); modeCard(c,770,40,205,400,.horizontal,"橫式浮動"); try c.save(out) }
@@ -228,12 +268,13 @@ let ios=try load("ios-notes-qi.png"), android=try load("android-notes-floating-q
 let tablet=try load("android-tablet-candidates.png"), dictionaries=try load("android-phone-dictionaries.png"), mcAssociated=try load("android-phone-mcbopomofo-associated-ya.png"), animeAssociated=try load("android-phone-anime-associated-ya.png")
 let touchPortrait=try load("android-phone-touch-portrait.png"), touchLandscape=try load("android-phone-touch-landscape.png")
 let fixedPortrait=try load("android-phone-hardware-fixed-portrait.png"), fixedLandscape=try load("android-phone-hardware-fixed-landscape.png")
-let iosIPad=try load("ios-ipad-notes-qi.png"), iosDictionaries=try load("ios-phone-dictionaries.png"), iosMcAssociated=try load("ios-phone-mcbopomofo-associated-ya.png"), iosAnimeAssociated=try load("ios-phone-anime-associated-ya.png")
+let iosPhoneHardwareEditor=try load("ios-phone-hardware-editor.png"), iosIPadHardwareEditor=try load("ios-ipad-hardware-editor.png")
+let iosDictionaries=try load("ios-phone-dictionaries.png"), iosMcAssociated=try load("ios-phone-mcbopomofo-associated-ya.png"), iosAnimeAssociated=try load("ios-phone-anime-associated-ya.png")
 for (path,size,flag) in [
     ("AppStore/iPhone-1206x2622",NSSize(width:1206,height:2622),false),
     ("AppStore/iPhone-1242x2688",NSSize(width:1242,height:2688),false),
     ("AppStore/iPad-2048x2732",NSSize(width:2048,height:2732),false),
     ("GooglePlay/Phone",NSSize(width:1080,height:1920),true),
-] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); for n in 1...5 { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosIPad,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
+] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); for n in 1...5 { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosPhoneHardwareEditor,iosIPadHardwareEditor,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
 try feature(android,sprite,store.appendingPathComponent("GooglePlay/feature-graphic-1024x500.png"))
 print("Generated store artwork in \(store.path)")

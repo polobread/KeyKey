@@ -1,6 +1,6 @@
 # 建置、安裝與打包 / Building, installation, and packaging
 
-本文件集中說明琦琦輸入法的 macOS、Windows 與 Android 建置流程。
+本文件集中說明琦琦輸入法的 macOS、Windows、Android 與 iOS 建置流程。
 
 [English](#english)
 
@@ -171,6 +171,43 @@ Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
 [Source/Loaders/Android-IME/README.md](Source/Loaders/Android-IME/README.md)。
+
+## iOS
+
+### 需求、建置與測試
+
+- macOS 與 Xcode
+- 可用的 iOS Simulator runtime
+- GNU Make、Ruby 與 `sqlite3`，用於既有 DatabaseCooker
+
+從 repository 根目錄執行：
+
+```sh
+make -C Source/Distributions/Takao/DatabaseCooker
+xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
+  -scheme "chichi77 KeyKey" -configuration Debug \
+  -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
+  CODE_SIGNING_ALLOWED=NO build
+
+cd Source/Loaders/iOS-Keyboard/KeyKeyEngine
+swift test
+```
+
+`KeyKey.db` 是建置輸入但不進版控；Xcode Cloud 會由
+`Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` 自動 cook。五台受控 Simulator
+與完整 A–K 驗證方式見
+[iOS Simulator 測試計畫](Source/Loaders/iOS-Keyboard/IOS_SIMULATOR_TEST_PLAN.md)；可先從
+repository 根目錄執行可無人值守的宿主基線：
+
+```sh
+Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
+```
+
+實機 Debug build 請在 Xcode 選擇 Apple Developer Team 並使用 Automatic Signing；
+TestFlight 與 App Store archive 由 Xcode Cloud／App Store Connect 管理。iOS 的 keyboard
+extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤編輯器」只能在 App 前景
+接管按鍵，完成後以複製或系統分享面板把文字送往其他 App。詳細架構、限制與簽章需求見
+[iOS Keyboard README](Source/Loaders/iOS-Keyboard/README.md)。
 
 ## GitHub Actions 封裝
 
@@ -375,6 +412,40 @@ and does not convert them to a custom binary format. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.
+
+### iOS
+
+Requirements are macOS, Xcode, an installed iOS Simulator runtime, and the
+existing DatabaseCooker dependencies (GNU Make, Ruby, and `sqlite3`). From the
+repository root, run:
+
+```sh
+make -C Source/Distributions/Takao/DatabaseCooker
+xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
+  -scheme "chichi77 KeyKey" -configuration Debug \
+  -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
+  CODE_SIGNING_ALLOWED=NO build
+
+cd Source/Loaders/iOS-Keyboard/KeyKeyEngine
+swift test
+```
+
+`KeyKey.db` is a generated build input and is not committed. Xcode Cloud cooks
+it through `Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh`. Run the
+unattended host baseline from the repository root with:
+
+```sh
+Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
+```
+
+See the [iOS Simulator test plan](Source/Loaders/iOS-Keyboard/IOS_SIMULATOR_TEST_PLAN.md)
+for the five-device A–K matrix. Device Debug builds use an Apple Developer Team
+and Automatic Signing in Xcode; Xcode Cloud and App Store Connect handle
+TestFlight and App Store archives. A third-party keyboard extension cannot
+receive USB or Bluetooth keyboard events. The container app's hardware-keyboard
+editor handles them only while that app is in the foreground, then copies or
+shares the completed text. See the
+[iOS Keyboard README](Source/Loaders/iOS-Keyboard/README.md) for details.
 
 ### GitHub Actions packaging
 

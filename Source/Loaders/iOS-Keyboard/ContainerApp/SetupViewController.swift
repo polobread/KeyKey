@@ -20,6 +20,19 @@ final class SetupViewController: UIViewController {
         )
         subtitle.textColor = .secondaryLabel
 
+        let hardwareEditor = UIButton(configuration: .tinted())
+        hardwareEditor.setTitle("開啟實體鍵盤編輯器", for: .normal)
+        hardwareEditor.accessibilityIdentifier = "open-hardware-editor"
+        hardwareEditor.addTarget(
+            self, action: #selector(openHardwareKeyboardEditor), for: .touchUpInside
+        )
+
+        let hardwareEditorNote = label(
+            "USB／藍牙鍵盤可在 App 內使用琦琦選字，完成後一鍵複製或分享文字到其他 App。",
+            size: 13, weight: .regular
+        )
+        hardwareEditorNote.textColor = .secondaryLabel
+
         let steps = label(
             """
             1. 開啟「設定 → 一般 → 鍵盤 → 鍵盤 → 加入新的鍵盤」
@@ -73,7 +86,7 @@ final class SetupViewController: UIViewController {
         acknowledgements.addTarget(self, action: #selector(openAcknowledgements), for: .touchUpInside)
 
         var items: [UIView] = [
-            title, subtitle, steps, openSettings, note,
+            title, subtitle, hardwareEditor, hardwareEditorNote, steps, openSettings, note,
             supporterTitle, supporterDescription, supporterPrice,
             supporterButton, restoreButton, acknowledgements
         ]
@@ -159,6 +172,14 @@ final class SetupViewController: UIViewController {
             UINavigationController(rootViewController: AcknowledgementsViewController()),
             animated: true
         )
+    }
+
+    @objc private func openHardwareKeyboardEditor() {
+        let navigation = UINavigationController(
+            rootViewController: HardwareKeyboardEditorViewController()
+        )
+        navigation.modalPresentationStyle = .fullScreen
+        present(navigation, animated: true)
     }
 
     @objc private func purchaseSupport() {

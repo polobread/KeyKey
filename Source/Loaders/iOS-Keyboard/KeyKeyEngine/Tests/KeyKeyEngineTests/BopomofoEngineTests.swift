@@ -31,8 +31,9 @@ private struct TablePhraseSource: AssociatedPhraseSource {
     }
 }
 
-/// Ported from `BopomofoEngineTest.java`. The hardware-keyboard cases are
-/// omitted: an iOS extension never receives physical key events.
+/// Ported from `BopomofoEngineTest.java`. Hardware cases are used by the
+/// containing App's editor; the keyboard extension itself still cannot receive
+/// physical key events.
 @Suite("Bopomofo engine")
 struct BopomofoEngineTests {
     private func engine(
@@ -108,6 +109,15 @@ struct BopomofoEngineTests {
         let result = engine.handleSoftKey("2")
         #expect(result == .commit("你"))
         #expect(engine.readingText == "ㄉ")
+    }
+
+    @Test("hardware number row selects ordinary candidates")
+    func hardwareDigitSelectsCandidate() {
+        let engine = engine(["su3": ["你", "擬"]])
+        _ = type(engine, "su3")
+
+        #expect(engine.handleHardwareCharacter("2") == .commit("擬"))
+        #expect(engine.readingText.isEmpty)
     }
 
     @Test("a new reading over a candidate list commits the first candidate")
@@ -223,6 +233,17 @@ struct BopomofoEngineTests {
         #expect(engine.inputMode == .english)
     }
 
+    @Test("hardware language shortcut alternates Bopomofo and English")
+    func hardwareLanguageShortcut() {
+        let engine = engine()
+
+        _ = engine.toggleHardwareLanguage()
+        #expect(engine.inputMode == .english)
+        #expect(engine.handleHardwareCharacter("A") == .commit("A"))
+        _ = engine.toggleHardwareLanguage()
+        #expect(engine.inputMode == .bopomofo)
+    }
+
     @Test("shift on the Bopomofo plane is a one-shot lower-case English")
     func oneShotEnglish() {
         let engine = engine()
@@ -281,6 +302,17 @@ struct BopomofoEngineTests {
         #expect(engine.page == 9)
     }
 
+    @Test("hardware symbol and punctuation shortcuts preserve an active reading")
+    func hardwareShortcutsPreserveReading() {
+        let engine = engine()
+        _ = engine.handleHardwareCharacter("s")
+
+        #expect(engine.commitHardwarePunctuation("，") == .update)
+        #expect(engine.showHardwareSymbols() == .update)
+        #expect(engine.readingText == "ㄋ")
+        #expect(engine.displayedCandidates.isEmpty)
+    }
+
     /// Selecting a symbol does go on to ask for associated phrases, exactly as
     /// the Android engine does. Nothing comes back because the cooked
     /// dictionary only contains words whose first character is Han -- the
@@ -316,6 +348,19 @@ struct BopomofoEngineTests {
         #expect(engine.displayedCandidates.isEmpty)
     }
 
+    @Test("enter dismisses associated phrases and sends return")
+    func enterDismissesAssociatedPhrasesAndSendsReturn() {
+        let engine = engine(phrases: ["你": ["好", "們"]])
+        _ = type(engine, "su3")
+        _ = engine.selectDisplayedCandidate(0)
+        engine.moveHighlight(by: 1)
+
+        #expect(engine.handleSoftKey("ENTER") == .returnKey)
+        #expect(!engine.isShowingAssociatedPhrases)
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.readingText.isEmpty)
+    }
+
     @Test("a new reading dismisses associated phrases without committing one")
     func newReadingDismissesPhrases() {
         let engine = engine(phrases: ["你": ["好", "們"]])
@@ -327,6 +372,17 @@ struct BopomofoEngineTests {
         #expect(result == .update, "must not commit a phrase")
         #expect(engine.readingText == "ㄋ")
         #expect(!engine.isShowingAssociatedPhrases)
+    }
+
+    @Test("an unshifted hardware number starts a reading over associated phrases")
+    func hardwareDigitDoesNotSelectAssociatedPhrase() {
+        let engine = engine(phrases: ["你": ["好", "們"]])
+        _ = type(engine, "su3")
+        _ = engine.selectDisplayedCandidate(0)
+
+        #expect(engine.handleHardwareCharacter("2") == .update)
+        #expect(engine.readingText == "ㄉ")
+        #expect(engine.displayedCandidates.isEmpty)
     }
 
     @Test("associated phrases need a source")

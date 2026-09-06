@@ -150,10 +150,46 @@ public final class BopomofoEngine {
         case "SYMBOL": result = showSymbols()
         case "EMOJI": result = showEmojis()
         default:
-            result = key.count == 1 ? character(key.first!) : .update
+            result = key.count == 1 ? character(key.first!, fromTouch: true) : .update
         }
         if restoreBopomofo { endTemporaryEnglish() }
         return result
+    }
+
+    /// A character from a physical keyboard. This mirrors Android's hardware
+    /// path: Shift changes the character supplied by UIKit, number-row keys can
+    /// select ordinary candidates, and a new reading dismisses associated
+    /// phrases without committing one.
+    @discardableResult
+    public func handleHardwareCharacter(_ key: Character) -> Result {
+        prepareForHardwareInput()
+        return character(key, fromTouch: false)
+    }
+
+    /// Ctrl+Space alternates only between Bopomofo and English, matching the
+    /// desktop and Android physical-keyboard shortcut.
+    @discardableResult
+    public func toggleHardwareLanguage() -> Result {
+        prepareForHardwareInput()
+        clearComposition()
+        mode = mode == .bopomofo ? .english : .bopomofo
+        shifted = false
+        return .update
+    }
+
+    @discardableResult
+    public func showHardwareSymbols() -> Result {
+        prepareForHardwareInput()
+        guard reading.isEmpty else { return .update }
+        return showSymbols()
+    }
+
+    @discardableResult
+    public func commitHardwarePunctuation(_ punctuation: String) -> Result {
+        prepareForHardwareInput()
+        guard reading.isEmpty else { return .update }
+        clearComposition()
+        return .commit(punctuation)
     }
 
     @discardableResult
@@ -168,6 +204,10 @@ public final class BopomofoEngine {
 
     @discardableResult
     public func enter() -> Result {
+        if showingAssociatedPhrases {
+            clearComposition()
+            return .returnKey
+        }
         if !candidates.isEmpty { return selectHighlightedCandidate() }
         if !reading.isEmpty { return query() }
         return .returnKey
@@ -250,19 +290,19 @@ public final class BopomofoEngine {
 
     // MARK: - Internals
 
-    /// Every character arrives from the on-screen keyboard, so unlike the
-    /// Android engine there is no hardware branch: digits never select a
-    /// candidate, and the four Bopomofo rows stay Bopomofo even with a
-    /// candidate list open. Candidates are chosen by tapping them.
-    private func character(_ rawKey: Character) -> Result {
+    private func character(_ rawKey: Character, fromTouch: Bool) -> Result {
         if mode == .english {
-            let output = shifted && rawKey.isLetter
+            let output = fromTouch && shifted && rawKey.isLetter
                 ? Character(rawKey.uppercased()) : rawKey
             return .commit(String(output))
         }
         if mode == .number { return .commit(String(rawKey)) }
 
         let key = Character(rawKey.lowercased())
+        if !fromTouch, !showingAssociatedPhrases, !candidates.isEmpty,
+           let number = key.wholeNumberValue, (1...9).contains(number) {
+            return selectDisplayedCandidate(number - 1)
+        }
         if StandardBopomofoLayout.isReadingKey(key) {
             let prefix = commitFirstCandidateIfNeeded()
             reading.combine(key)
@@ -357,6 +397,10 @@ public final class BopomofoEngine {
             ? .bopomofo : allowedInputModes.sorted(by: modeOrder).first!
         temporaryEnglish = false
         shifted = false
+    }
+
+    private func prepareForHardwareInput() {
+        if temporaryEnglish { endTemporaryEnglish() }
     }
 
     private func showSymbols() -> Result {

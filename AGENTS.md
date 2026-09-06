@@ -167,7 +167,7 @@ cd Source\Loaders\Android-IME
 ```sh
 cd Source/Loaders/iOS-Keyboard
 xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
-  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -configuration Debug -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
@@ -191,8 +191,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - App 圖示來自 `Source/Branding/chichi77.png`，縮成 1024×1024 放在
   `ContainerApp/Assets.xcassets/AppIcon.appiconset`（單一尺寸，Xcode 自行衍生）。
 - 兩個 target 各有 `PrivacyInfo.xcprivacy`，也都宣告 `UserDefaults`（required reason
-  `CA92.1`）：extension 保存關聯詞詞庫開關與共用支持狀態，容器 App 保存一次性支持的
-  首次使用與 entitlement cache。兩份都宣告不追蹤、不收集。
+  `CA92.1`）：extension 自己保存按鍵音、候選底色與關聯詞庫，容器 App 自己保存實體
+  鍵盤編輯器的關聯詞庫；只有首次使用與支持 entitlement cache 透過 App Group 在兩個
+  target 間共用。兩份都宣告不追蹤、不收集。
 
 ---
 
@@ -433,7 +434,30 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   不到對方，改任一處要一併檢查。目前是正確的，不要當成 bug 去「修」。
 - **iOS extension 收不到實體鍵盤按鍵**：`UIInputViewController` 的
   `pressesBegan`／`pressesEnded` 不會被呼叫，第三方鍵盤也只能在自己的 input view 內
-  繪製。Android 的實體鍵盤支援與浮動候選窗在 iOS **做不到**，不要再嘗試。
+  繪製。Android 的系統級實體鍵盤支援與浮動候選窗在 iOS **做不到**，不要再嘗試。
+  iOS 容器 App 另有「實體鍵盤編輯器」：前景 App 的非文字 responder 以
+  `pressesBegan` 攔截按鍵，直接唯讀內嵌 `Keyboard.appex` 的同一份 `KeyKey.db`，完成後
+  直式可用固定底部按鈕或 `Ctrl+C`／`⌘C` 複製全文，並可用分享按鈕或
+  `Ctrl+S`／`⌘S` 開啟系統分享面板；`Ctrl+K`／`⌘K` 開啟清除全文確認窗，
+  並以 Enter 確認、Esc 取消。候選窗固定直排
+  1–9，不放觸控上一／下一頁按鈕；一般候選
+  以 `1–9` 選取、關聯詞以 `Shift+1–9`
+  （`!@#$%^&*(`）選取；沒有候選與組字時，方向鍵移動容器編輯器自己的可見插入游標。
+  控制列不重複顯示「準備輸入／組字」，有候選時把 `1/n` 頁碼放在第 9 個候選字下方；右側固定提供
+  ㄅ／英、半／全、符號與 `🙂` 按鈕；詞庫與
+  Esc、Backspace、Enter、四方向、空白等觸控備援鍵置於候選窗右側。
+  橫式固定由左到右使用輸入區、1–9 候選區、操作按鍵區、清除／複製／分享文字四欄，
+  最右欄三個動作按鈕由上到下排列；iPad 保留方向鍵與空白鍵，iPhone 橫式高度不足時可收起
+  方向鍵與空白鍵。4.7 吋 iPhone SE 的直式輸入區使用緊湊高度，仍須讓 1–9 候選、頁碼與
+  全部操作鍵留在固定底部動作列上方。候選內容只能改文字與反白，不得改欄寬或高度，直式
+  轉橫式再轉回直式時各區塊也必須精確恢復原尺寸。
+  一般候選狀態下
+  ↑／↓逐列移動、←／→換頁；快捷鍵說明只在點擊右上角資訊按鈕時顯示。容器編輯器能獨立選擇並保存
+  關聯詞庫，但 extension 不開完整取用，因此兩邊設定不可宣稱同步。這只能在琦琦 App
+  內工作，不可宣稱能在其他 App 直接輸入。
+- **iOS 關聯候選按 Enter 不可選入反白詞尾**：關聯詞已是確定單字後的額外推薦，觸控
+  keyboard extension 與容器實體鍵盤編輯器都必須先關閉關聯候選，再把 Enter 當作換行；
+  只有一般候選狀態下 Enter 才選取目前反白候選。這條與 Android 的軟 Enter 原則一致。
 - **iOS 欄位模式由 `textDocumentProxy.keyboardType` 決定**：11 種 `UIKeyboardType`
   先映成 UIKit-free 的 `KeyboardTypeHint`／`InputFieldPolicy`，才能用 macOS SwiftPM
   測試。限制型欄位保留固定 11 欄位置，將無效按鍵設為 `isEnabled = false` 並淡化；
@@ -638,18 +662,21 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### GitHub Actions
 
-- [ ] Android 與 iOS Simulator workflow 仍需從 GitHub Actions 頁面手動重跑，確認
-      hosted runner 的工具版本、7 天 artifact 與公開 `chichi77Collection` 都被封裝。
-      2026-08-27 的 `v1.2.4` tag 已實跑 macOS 與 Windows：兩個 workflow 都成功，
-      Windows 公開 Release 含 ZIP、unsigned EXE 與各自 SHA-256；macOS 的 build
-      artifact 也包含公開詞庫。先前 Windows 的 VS2026 與 Android 循環 symlink 修正中，
-      Windows 已由本次 tag run 驗證，Android 仍待重跑。
+- [x] 2026-08-27 的 `v1.2.4` tag 已實跑 macOS 與 Windows workflow：兩者都成功，
+      Windows 公開 Release 含 ZIP、unsigned EXE 與各自 SHA-256；macOS build artifact
+      也包含公開詞庫，Windows 的 VS2026 修正已由該次 run 驗證。
+- [ ] 從 GitHub Actions 頁面手動重跑 Android 與 iOS Simulator workflow，確認 hosted
+      runner 的工具版本、7 天 artifact 與公開 `chichi77Collection` 都被封裝；Android
+      的循環 symlink 修正仍待 hosted runner 驗證。
 
 ### iOS 發布
 
 - [ ] 用 Sandbox Apple ID 實測 `chichi_supporter` 的購買、待處理、取消、恢復與退款／撤銷，
       並確認容器 App 與 keyboard extension 透過 App Group 同步 entitlement；Simulator 的
       狀態與 UI 測試不能取代 App Store 伺服器交易驗證。
+
+### macOS 發布
+
 - [x] macOS `publish` job 已於 2026-08-27 的 `v1.2.4` 首次實跑成功（run
       `33031272995`，build 18m25s、publish 31m20s）：臨時 keychain、
       `set-key-partition-list`、Apple 中介憑證鏈、簽章、notarytool、staple、
@@ -721,74 +748,86 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       GitHub Release URL 供 Partner Center 抓取。
 - [ ] `Package-Windows.ps1` 的 `$Version` 與 `CMakeLists.txt` 重複，可改成從
       `CMakeLists.txt` regex 讀取。
-- [ ] 安裝 2026-08-24 的語言列生命週期修正版後，在 Android Studio 反覆以
-      `Ctrl+Space` 切換中英文並確認不再產生 `studio64.exe`／`KeyKeyTsf_x64.dll`
-      Application Error；x64／x86 Release 已建置，x64 的 3 個 CTest 已通過。
+- [x] 2026-08-24 的語言列生命週期修正版已完成 x64／x86 Release 建置，x64 的 3 個
+      CTest 也已通過。
+- [ ] 安裝該修正版後，在 Android Studio 反覆以 `Ctrl+Space` 切換中英文，確認不再產生
+      `studio64.exe`／`KeyKeyTsf_x64.dll` Application Error。
 - [ ] 為 `KeyKeySettings.exe` 增加 UI automation：目前只有啟動 smoke test，仍需人工
       驗證一般／注音／關聯詞三頁、五種注音鍵盤、直橫選字窗、十種比例、四種配色、Ctrl+\\、
       提示聲與 CNS11643 開關在實際 TSF host 中會即時套用；候選窗另需在 100%／225%
       與兩台不同縮放比例的螢幕間移動驗證字型、間距及游標定位。
-- [ ] Ctrl／Alt 快捷鍵放行時，候選或聯想詞面板會留在畫面上（引擎收不到該鍵，
-      `updateCandidateWindow` 不會被呼叫）。**與 macOS 現行行為對稱**，屬「快捷鍵
-      不改動組字狀態」的設計決定。要改請兩個平台一起改，不要單邊處理。
+- [x] 已確認 Ctrl／Alt 快捷鍵放行時保留候選或聯想詞面板是設計決定：引擎收不到該鍵，
+      `updateCandidateWindow` 不會被呼叫，且行為與 macOS 對稱。未來若改須兩平台一起改，
+      不可單邊處理。
 
 ### iOS
 
-- [ ] 五台 Simulator 已加入共用 XCUITest target 與
-      `run-simulator-tests.sh`；2026-09-02 的 `--host-only` 基線為 79 個 Swift tests 與
-      五台各 3 個 UI tests 全部通過（含 App 內授權告知）。仍須逐台切到琦琦注音跑
-      extension-required 模式並把結果記進 `IOS_SIMULATOR_TEST_PLAN.md`。系統輸入切換器
-      不能由 XCUITest 穩定選定，不得把 opt-in 成功當成 extension 功能通過。
+- [x] 五台 Simulator 已加入共用 XCUITest target 與 `run-simulator-tests.sh`；
+      2026-09-02 的 `--host-only` 基線為 79 個 Swift tests 與五台各 3 個 UI tests 全部
+      通過（含 App 內授權告知）。
+- [ ] 逐台切到琦琦注音跑 extension-required 模式，完成 A–K 並把結果記進
+      `IOS_SIMULATOR_TEST_PLAN.md`。系統輸入切換器不能由 XCUITest 穩定選定，不得把
+      opt-in 成功當成 extension 功能通過。
+- [x] 2026-09-06 的實體鍵盤編輯器針對性回歸已通過 93 個 Swift tests；iOS 26.5
+      iPhone 17 Pro 與 4.7 吋 iPhone SE 通過入口、控制項與直橫旋轉復原測試，iOS 26.5
+      iPad 通過橫式四欄測試。這只涵蓋編輯器本次改版，不可取代五台 A–K。
+- [ ] 用實體 USB／藍牙鍵盤驗證容器編輯器的注音、一般候選 `1–9`、關聯詞
+      `Shift+1–9`、Space／Page Up／Page Down 翻頁、方向鍵、全半形、Ctrl／Command
+      複製／分享／清除與清除確認；後續版面改動至少重跑兩台 iPhone 的
+      `testHardwareKeyboardEditorHasCopyAndShareActions` 與 iPad 的
+      `testHardwareKeyboardEditorLandscapeColumns`，並把結果同步到 iOS test plan。
+- [x] 11 種 `UIKeyboardType` 的純邏輯測試與 iOS 26.5 iPhone 17 Pro Simulator
+      App／extension build 已於 2026-09-02 通過；當時整套為 79 個 Swift tests。
 - [ ] 在實機或 Simulator 測試 `default`、`asciiCapable`、`numbersAndPunctuation`、URL、
       numberPad、phonePad、namePhonePad、emailAddress、decimalPad、webSearch、
       asciiCapableNumberPad；確認直橫式 disabled key 無法點擊、VoiceOver 朗讀為 disabled，
-      並確認 secure、phonePad、namePhonePad 由 iOS 換回系統鍵盤。79 個 Swift 測試與
-      iOS 26.5 iPhone 17 Pro Simulator App／extension build 已於 2026-09-02 通過；
-      `selectionDidChange` 的游標移動清理、inline marked text 與 MODE／SHIFT 預覽仍須依
+      並確認 secure、phonePad、namePhonePad 由 iOS 換回系統鍵盤。`selectionDidChange`
+      的游標移動清理、inline marked text 與 MODE／SHIFT 預覽仍須依
       `IOS_SIMULATOR_TEST_PLAN.md` 在五台受控 Simulator 跑完 A–K 才算完整驗證。
 
-- [ ] 版號集中：`MARKETING_VERSION` 目前寫在 pbxproj 的四個 configuration 裡，
-      可抽成 xcconfig（4 處 → 1 處）。
-- [ ] VoiceOver：**元素樹已驗證，朗讀本身還沒聽過。** 2026-08-23 用臨時的
-      hierarchy dump（模擬 VoiceOver 遇到 accessibility element 就停止下探的走法）
-      確認直式共 57 個元素，順序為狀態列 →候選列（上一頁／「第 n 個候選，字」／下一頁）
-      →四排注音鍵→功能列，每個都有中文標籤，聲調鍵唸注音符號而不是鍵位數字，
-      空候選格已排除。**尚未做的**：實際開 VoiceOver 聽朗讀與 rotor 行為、
-      accessibility audit。
+- [ ] 版號集中：`MARKETING_VERSION` 目前寫在 pbxproj 的 Debug／Release 兩個 project
+      configuration 裡，可抽成 xcconfig（2 處 → 1 處）。
+- [x] 2026-08-23 已用 hierarchy dump 驗證 VoiceOver 元素樹：直式共 57 個元素，順序為
+      狀態列 → 候選列（上一頁／「第 n 個候選，字」／下一頁）→ 四排注音鍵 → 功能列；
+      每個都有中文標籤，聲調鍵唸注音符號而不是鍵位數字，空候選格已排除。
+- [ ] 實際開 VoiceOver 聽朗讀與 rotor 行為，並執行 accessibility audit；元素樹檢查
+      不能取代真人聽測。
 - [ ] 設定面板每列的文字與開關是兩個獨立元素，VoiceOver 會把詞庫名稱唸兩次
       （系統「設定」App 是合併成一個元素）。要修就把整列包成一個
       `UIAccessibilityElement`，或改用 `UITableViewCell`。
-- [ ] iPad 版面沒有調過：目前兩個方向都吃直式的 330pt 與 iPhone 字級，按鍵被拉成
-      寬扁形。要做就得加一組 iPad metrics（judgement：高度拉到約 380–420pt、字級放大、
-      或改成不佔滿寬度的分段版面）。功能面已可用，地球鍵也有了。
-- [ ] 直式聲調符號放大 1.8 倍，**橫式刻意沒放大** —— 橫式把注音與鍵位併成一行
-      （`ㄅ 1`），只放大其中一個字會高低不齊，且橫式那排只有 26pt。要改的話得先
-      拆成兩個 label。
+- [x] iPad keyboard extension 已使用專用 `.pad` metrics（330pt 高、最大 820pt 置中），
+      實體鍵盤編輯器的橫式四欄也已通過 iPad UI 測試。
+- [ ] 依 A–K 在 iPad 人工檢查直橫式實際字級、Dynamic Type、VoiceOver 與長時間輸入；
+      frame assertion 不能取代視覺驗證。
+- [x] 直式聲調符號已放大 1.8 倍；橫式刻意維持正常字級，因為橫式把注音與鍵位併成
+      一行（`ㄅ 1`），只放大其中一個字會高低不齊，且橫式該排只有 26pt。未來若要放大，
+      必須先拆成兩個 label。
 
 ### Android
 
+- [x] Android 欄位與 Enter action 的 JVM 策略測試已加入，並於 2026-08-30 通過
+      `lintDebug testDebugUnitTest assembleDebug`。
 - [ ] 在 Android 實機依序測一般、Email、URL、電話、整數、小數、日期時間、密碼、姓名、
       地址、搜尋、簡訊／長文字與 ASCII 欄位；直橫式各確認 disabled key 無 hit／無震動，
       軟 Enter 的完成、下一個、搜尋、傳送、前往、上一個及 App 自訂 `actionLabel`／
       `actionId` 會觸發正確 action，而 USB／藍牙 Enter 仍送 plain Enter，且實體字元不受
-      觸控欄位限制。JVM 策略測試已加入；2026-08-30 已通過
-      `lintDebug testDebugUnitTest assembleDebug`，仍需在實機用自訂 editor 驗證 action callback。
+      觸控欄位限制。
 
-- [ ] 在 Android 實機驗證組字／候選開啟時，以觸控、滑鼠及 App 程式改變游標或選取範圍
-      會清除舊引擎狀態，IME 自己逐鍵更新 composing、確定候選與建立關聯詞則不會被誤清；
-      同時截圖確認直橫式文字／注音／符號鍵預覽約放大 1.4 倍、邊緣鍵不超出畫面、滑出與
-      放開會消失，設定關閉後不再顯示。2026-08-30 已在 Pixel 9a 驗證設定列正常顯示，
-      觸控按住預覽鍵無執行期錯誤，並以 composing `ㄅ` 移到字首後再輸入 `ㄚ` 得到
-      `ㄚㄅ`，另以 `ㄅㄚ` 選取尾字後輸入 `ㄉ` 得到 `ㄅㄉ`，確認游標與 selection range
-      都沒有沿用舊 reading；裝置的 ADB 截圖輸出全黑，預覽外觀與 App 程式改動仍待
-      人工畫面驗證。
+- [x] 2026-08-30 已在 Pixel 9a 驗證設定列正常顯示、觸控按住預覽鍵無執行期錯誤；
+      composing `ㄅ` 移到字首後輸入 `ㄚ` 得到 `ㄚㄅ`，`ㄅㄚ` 選取尾字後輸入 `ㄉ`
+      得到 `ㄅㄉ`，確認游標與 selection range 都沒有沿用舊 reading。
+- [ ] 在 Android 實機補測組字／候選開啟時由滑鼠及 App 程式改變游標或選取範圍，確認會
+      清除舊引擎狀態，而 IME 自己逐鍵更新 composing、確定候選與建立關聯詞不會被誤清；
+      人工畫面確認直橫式文字／注音／符號鍵預覽約放大 1.4 倍、邊緣鍵不超出畫面、滑出與
+      放開會消失，設定關閉後不再顯示。該裝置的 ADB 截圖輸出全黑，不能取代目視檢查。
 
+- [x] 2026-08-30 已加入 Android modifier bit、全形映射與引擎單元測試，並通過
+      `lintDebug testDebugUnitTest assembleDebug`。
 - [ ] 接上真正的 USB／藍牙鍵盤，確認底部候選列為 12 個等寬按鍵（9 候選、Emoji、
       `ㄅ／英`、`半／全`），沒有 ▲／▼；驗證點擊後兩鍵可切換，並再驗證 `Ctrl+Space`、
       `Shift+Space` 的 keydown／keyup／長按，以及全形 `Ａｚ０９！～　`、切回半形和
-      reading／候選保留。2026-08-30 已加入 modifier bit、全形映射與引擎單元測試並通過
-      `lintDebug testDebugUnitTest assembleDebug`；ADB `input keycombination` 直接送到 editor，
-      不會經過 `InputMethodService.onKeyDown`，不能代替實體鍵盤驗證。
+      reading／候選保留。ADB `input keycombination` 直接送到 editor，不會經過
+      `InputMethodService.onKeyDown`，不能代替實體鍵盤驗證。
 
 - [ ] 先在 Play Console 手動完成首次 app／AAB、Play App Signing 與 upload certificate
       登記（Publishing API 不能代替首次建立 app），再把 5 個 secrets 放進
@@ -801,9 +840,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 - [x] Android 直式聲調符號已比照 iOS 放大 1.8 倍並以 glyph bounds 校正上緣；橫式兩端
       都維持同列正常字級，於 2026-08-30 完成。
-- [ ] Enter 鍵描邊繪製（`drawEnterKey`）已於 2026-08-24 通過
-      `lintDebug testDebugUnitTest assembleDebug` 編譯驗證；仍需在模擬器或實機截圖，
-      比對 Enter 鍵外觀與 iOS 一致。
+- [x] Android Enter 鍵描邊繪製（`drawEnterKey`）已於 2026-08-24 通過
+      `lintDebug testDebugUnitTest assembleDebug` 編譯驗證。
+- [ ] 在 Android 模擬器或實機截圖，比對 Enter 鍵外觀與 iOS 一致。
+- [x] 2026-08-24 已在 Pixel 9a 的 Google 搜尋欄實測單一 composing `ㄅ` 按 Backspace
+      會完整移除，不會留下失去底線的 `ㄅ`。
 - [ ] 增加會在模擬器或實機啟動 `BopomofoImeService`，並驗證組字、觸控候選列、
       外接鍵盤一般候選 `1–9`／關聯詞 `Shift+1–9`、一次性注音 Shift、英文大小寫與
       兩套數字符號版面、`ㄋㄧˇ` Backspace 退音及複合 Emoji 一次刪除、
@@ -811,8 +852,6 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       `Ctrl+Space`／`Shift+Space`／`Ctrl+,`／`Ctrl+.`／`Ctrl+0`／`Ctrl+1` 與全半形的
       smoke test；另需驗證實體鍵盤浮動候選預設關閉、直橫排列、游標四邊翻轉、
       不支援 `CursorAnchorInfo` 時的底部中央備援、觸控選字、方向鍵反白、Enter 與 ESC；
-      2026-08-24 已在 Pixel 9a 的 Google 搜尋欄實測單一 composing `ㄅ` 按 Backspace
-      會完整移除、不會留下失去底線的 `ㄅ`；
       目前 JVM 單元測試與 APK 建置無法攔截 D8／R8 合成類別漏包及
       `InputConnection` 互動之類的執行期問題；也應截圖檢查底列沒有與系統導覽區重疊，
       並確認直橫式 11 欄按鍵等寬、橫式文字沒有裁切。
