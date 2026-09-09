@@ -275,6 +275,6 @@ for (path,size,flag) in [
     ("AppStore/iPhone-1242x2688",NSSize(width:1242,height:2688),false),
     ("AppStore/iPad-2048x2732",NSSize(width:2048,height:2732),false),
     ("GooglePlay/Phone",NSSize(width:1080,height:1920),true),
-] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); for n in 1...5 { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosPhoneHardwareEditor,iosIPadHardwareEditor,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
+] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); let pageCount = flag ? 5 : 4; for n in 1...pageCount { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosPhoneHardwareEditor,iosIPadHardwareEditor,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
 try feature(android,sprite,store.appendingPathComponent("GooglePlay/feature-graphic-1024x500.png"))
 print("Generated store artwork in \(store.path)")

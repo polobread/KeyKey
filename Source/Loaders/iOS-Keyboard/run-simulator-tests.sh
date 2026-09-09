@@ -6,12 +6,32 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT="$SCRIPT_DIR/KeyKeyiOS.xcodeproj"
 SCHEME="chichi77 KeyKey"
-MODE="full"
+MODE="functional"
+CONFIGURATION="Debug"
+TEST_PLAN="KeyKeyFunctional"
 
-if [[ "${1:-}" == "--host-only" ]]; then
-  MODE="host-only"
-elif [[ $# -gt 0 ]]; then
-  echo "Usage: $0 [--host-only]" >&2
+case "${1:-}" in
+  ""|--functional)
+    ;;
+  --smoke)
+    MODE="smoke"
+    CONFIGURATION="Release"
+    TEST_PLAN="KeyKeySmoke"
+    ;;
+  --host-only|--functional-host)
+    MODE="functional-host"
+    ;;
+  --functional-extension)
+    MODE="functional-extension"
+    ;;
+  *)
+    echo "Usage: $0 [--smoke|--functional|--functional-host|--functional-extension]" >&2
+    exit 64
+    ;;
+esac
+
+if [[ $# -gt 1 ]]; then
+  echo "Usage: $0 [--smoke|--functional|--functional-host|--functional-extension]" >&2
   exit 64
 fi
 
@@ -38,10 +58,12 @@ find_udid() {
 }
 
 echo "Output: $OUTPUT_DIR"
-echo "Running KeyKeyEngine unit tests"
-if ! (cd "$SCRIPT_DIR/KeyKeyEngine" && swift test); then
-  echo "KeyKeyEngine unit tests failed" >&2
-  exit 1
+if [[ "$MODE" != "smoke" ]]; then
+  echo "Running KeyKeyEngine unit tests"
+  if ! (cd "$SCRIPT_DIR/KeyKeyEngine" && swift test); then
+    echo "KeyKeyEngine unit tests failed" >&2
+    exit 1
+  fi
 fi
 
 failures=0
@@ -65,36 +87,49 @@ for name in "${DEVICE_NAMES[@]}"; do
   fi
 
   slug="${name// /-}"
-  result_bundle="$OUTPUT_DIR/$slug.xcresult"
+  result_bundle="$OUTPUT_DIR/$slug-$MODE.xcresult"
   test_args=()
-  if [[ "$MODE" == "host-only" ]]; then
+  if [[ "$MODE" == "functional-host" ]]; then
     test_args+=(
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testSmokeContainerAppLaunchesWithProductionControls"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testSmokeHardwareKeyboardEditorOpens"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testSmokeContainerAppSurvivesRotationAndRelaunch"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testSmokeSettingsEntryOpensSystemSettings"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testAcknowledgementsAreBundledAndReachable"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testSupporterPurchaseControlsAreReachable"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testHardwareKeyboardEditorHasCopyAndShareActions"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testHardwareKeyboardEditorLandscapeColumns"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/test00KeyboardOptInIsConfigured"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testInputFieldMatrixIsReachable"
     )
+  elif [[ "$MODE" == "functional-extension" ]]; then
+    test_args+=(
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testKeyboardExtensionModesAndComposition"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testMultiCharacterAssociationsDoNotResizeKeyboard"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testEnterDismissesAssociatedPhrasesBeforeSendingReturn"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testPortraitAndLandscapeKeepCoreKeysReachable"
+    )
   fi
 
-  echo "Testing $name ($udid) [$MODE]"
+  echo "Testing $name ($udid) [$MODE, $CONFIGURATION, $TEST_PLAN]"
   if xcodebuild test -quiet \
       -project "$PROJECT" \
       -scheme "$SCHEME" \
-      -configuration Debug \
+      -testPlan "$TEST_PLAN" \
+      -configuration "$CONFIGURATION" \
       -destination "platform=iOS Simulator,arch=arm64,id=$udid" \
       -derivedDataPath "$OUTPUT_DIR/DerivedData" \
       -resultBundlePath "$result_bundle" \
       "${test_args[@]}" \
       CODE_SIGNING_ALLOWED=YES; then
     skipped_tests=0
-    if [[ "$MODE" == "full" ]]; then
-      if result_summary="$(xcrun xcresulttool get test-results summary --path "$result_bundle")"; then
-        skipped_tests="$(awk '
-          /"skippedTests"/ { total += $3 }
-          END { print total + 0 }
-        ' <<< "$result_summary")"
-      else
-        skipped_tests=-1
-      fi
+    if result_summary="$(xcrun xcresulttool get test-results summary --path "$result_bundle")"; then
+      skipped_tests="$(awk '
+        /"skippedTests"/ { total += $3 }
+        END { print total + 0 }
+      ' <<< "$result_summary")"
+    else
+      skipped_tests=-1
     fi
     if [[ "$skipped_tests" -lt 0 ]]; then
       echo "FAIL  $name (could not inspect skipped-test count)" >&2
@@ -122,10 +157,17 @@ for result in "${results[@]}"; do
   printf '%-4s  %-30s  %s\n' "$status" "$name" "$detail"
 done
 
-if [[ "$MODE" == "host-only" ]]; then
+if [[ "$MODE" == "functional-host" ]]; then
   echo
-  echo "Host-only validates installation, Settings opt-in, acknowledgements, and all 14 input-field hosts."
-  echo "Run without --host-only after selecting 琦琦注音 to require extension mode/composition/orientation tests."
+  echo "Functional host mode validates production smoke, Settings opt-in, acknowledgements,"
+  echo "all 14 input-field hosts, and the hardware-keyboard editor."
+  echo "Run --functional-extension after selecting 琦琦注音 to exercise the extension."
+elif [[ "$MODE" == "functional-extension" ]]; then
+  echo
+  echo "Extension mode requires 琦琦注音 to be selected on every Simulator."
+elif [[ "$MODE" == "smoke" ]]; then
+  echo
+  echo "Smoke mode validates the Release container UI without Debug-only launch arguments."
 fi
 
 exit "$failures"

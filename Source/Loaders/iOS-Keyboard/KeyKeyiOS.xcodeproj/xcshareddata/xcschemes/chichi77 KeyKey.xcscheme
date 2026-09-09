@@ -11,11 +11,10 @@
       </BuildActionEntries>
    </BuildAction>
    <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES">
-      <Testables>
-         <TestableReference skipped="NO" parallelizable="NO">
-            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="C77000000000000000000048" BuildableName="KeyKeyUITests.xctest" BlueprintName="KeyKeyUITests" ReferencedContainer="container:KeyKeyiOS.xcodeproj"></BuildableReference>
-         </TestableReference>
-      </Testables>
+      <TestPlans>
+         <TestPlanReference reference="container:KeyKeyFunctional.xctestplan" default="YES"></TestPlanReference>
+         <TestPlanReference reference="container:KeyKeySmoke.xctestplan"></TestPlanReference>
+      </TestPlans>
       <MacroExpansion>
          <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="C7700000000000000000001A" BuildableName="chichi77 KeyKey.app" BlueprintName="chichi77 KeyKey" ReferencedContainer="container:KeyKeyiOS.xcodeproj"></BuildableReference>
       </MacroExpansion>

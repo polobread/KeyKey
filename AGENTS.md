@@ -651,6 +651,24 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   cache，不可在輸入路徑建立 StoreKit 或網路工作。產品 ID 同樣是非消耗型
   `chichi_supporter`，未購買也不能限制任何輸入功能；首次使用滿 30 天後只在空白注音狀態
   顯示支持提示。Apple Developer 的 App Group 必須同時指派給容器與 extension bundle ID。
+- **iOS 商品未載入時不能顯示可購買狀態**：`Product.products(for:)` 可能拋錯，也可能成功
+  回傳空陣列。這兩種情況都要保留恢復購買，但主按鈕只能顯示「重新載入價格」，不可顯示
+  「付費支持」後再必然跳錯誤。App Store Connect 的「付費 App 協議」也必須先顯示「有效」；
+  2026-09-09 送審被 Guideline 2.1(b) 拒絕時，該協議仍顯示「新」。
+- **App Store 描述欄不接受注音符號「ㄅ」**：App Store Connect 會以「此欄位包含一個或多個
+  無效的字元」拒絕儲存含「ㄅ半注音」的描述。商店描述固定寫「傳統注音」，不要把
+  `StoreAssets/README.md` 的這個用語改回「ㄅ半注音」。副標題目前可使用「ㄅ半注音的第一選擇」，
+  這項限制不要擴大套用到未出錯的欄位。
+- **iOS 購買／恢復／商品重載必須共用互斥狀態**：`SupporterStore` 在第一個 await 前
+  設定 `operation`，以 `defer` 回到 idle；不能只停用 UI，因為連點可能已排入多個 Task。
+  `iOS-Keyboard/Package.swift` 直接編譯容器的 `SupporterStore.swift` 並注入商店介面，
+  用 `swift test --scratch-path /tmp/keykey-supporter-flow-tests` 驗證，不把 StoreKit
+  放進共用引擎。這些流程測試不會連到 App Store，不能取代 Sandbox 真實交易。
+- **iOS 新版以 commit／push 觸發 Xcode Cloud**：2026-09-09 確認 App Store Connect 的
+  `Default` workflow 監看 `master` 任意檔案變更，執行 iOS Archive 並準備分發至
+  App Store Connect；目前沒有 Test action 或後續動作。依使用者要求，正式新版走這條
+  流程，不另從本機上傳。`testFlight` 只是本機工作分支；推送前核對 `origin/master`
+  並使用正常快轉，不要 force push。Cloud 由 `CI_BUILD_NUMBER` 設定兩個 target 版號。
 - **macOS／iOS cooker 的 people exclusion 來自公開分類詞庫**：
   `DatabaseCooker/Makefile` 會從 `DataSource/chichi77Collection/phrase.people-*.tsv`
   產生人名 exclusion，再匯入 McBopomofo 與 29 個分類詞庫。不要移除檔案存在時才執行
@@ -671,6 +689,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### iOS 發布
 
+- [x] 2026-09-09 補上購買／恢復／重載共用忙碌狀態、連點防護與取消／錯誤復原；
+      容器購買流程 7 組測試（15 個情境）通過，iOS Simulator Debug App 建置通過。
+      同日 iPhone 17 Pro Simulator Release smoke 5／5 通過、零 skip；本機 Release
+      archive 與匯出 IPA 的發佈簽章、App Group、資料庫與無 Debug 入口檢查均通過。
+- [ ] App Store Connect 付費 App 協議確認為「有效」，完成必要稅務／銀行資料，再驗證
+      Sandbox 購買並上傳含修正的新 build；更新審查備註中的錄影附件說明後重新送審。
 - [ ] 用 Sandbox Apple ID 實測 `chichi_supporter` 的購買、待處理、取消、恢復與退款／撤銷，
       並確認容器 App 與 keyboard extension 透過 App Group 同步 entitlement；Simulator 的
       狀態與 UI 測試不能取代 App Store 伺服器交易驗證。
@@ -762,6 +786,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### iOS
 
+- [ ] 完成 App Store Connect 的付費 App 協議、銀行與稅務資料，等狀態變成「有效」後，
+      用 Sandbox 實測 `chichi_supporter` 的商品載入、購買與恢復，再上傳包含商品重試流程的
+      新 build。2026-09-09 已修正商品查詢失敗仍顯示「付費支持」的流程，並清除 App Store
+      文案與截圖中的 Android／Windows 資訊。
 - [x] 五台 Simulator 已加入共用 XCUITest target 與 `run-simulator-tests.sh`；
       2026-09-02 的 `--host-only` 基線為 79 個 Swift tests 與五台各 3 個 UI tests 全部
       通過（含 App 內授權告知）。

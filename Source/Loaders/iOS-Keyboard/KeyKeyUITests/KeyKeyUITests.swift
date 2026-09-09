@@ -15,6 +15,74 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["輸入欄位測試"].waitForExistence(timeout: 8))
     }
 
+    func testSmokeContainerAppLaunchesWithProductionControls() {
+        app = XCUIApplication()
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["琦琦注音"].waitForExistence(timeout: 8))
+        for identifier in [
+            "open-hardware-editor", "open-system-settings", "supporter.purchase",
+            "supporter.restore", "open-acknowledgements"
+        ] {
+            XCTAssertTrue(app.buttons[identifier].exists, "首頁缺少控制項：\(identifier)")
+        }
+
+        #if DEBUG
+        XCTAssertTrue(app.buttons["open-input-field-test"].exists)
+        #else
+        XCTAssertFalse(app.buttons["open-input-field-test"].exists)
+        #endif
+    }
+
+    func testSmokeHardwareKeyboardEditorOpens() {
+        app = XCUIApplication()
+        app.launch()
+
+        let openEditor = app.buttons["open-hardware-editor"]
+        XCTAssertTrue(openEditor.waitForExistence(timeout: 8))
+        openEditor.tap()
+
+        XCTAssertTrue(app.navigationBars["實體鍵盤編輯器"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textViews["hardware-editor.output"].exists)
+        XCTAssertTrue(app.buttons["hardware-editor.candidate.1"].exists)
+        for identifier in [
+            "hardware-editor.clear", "hardware-editor.copy", "hardware-editor.share"
+        ] {
+            XCTAssertTrue(app.buttons[identifier].exists, "編輯器缺少控制項：\(identifier)")
+        }
+    }
+
+    func testSmokeContainerAppSurvivesRotationAndRelaunch() {
+        XCUIDevice.shared.orientation = .portrait
+        addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
+
+        app = XCUIApplication()
+        app.launch()
+        let openEditor = app.buttons["open-hardware-editor"]
+        XCTAssertTrue(openEditor.waitForExistence(timeout: 8))
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(openEditor.waitForExistence(timeout: 3))
+        XCTAssertTrue(openEditor.isHittable)
+
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["琦琦注音"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["open-hardware-editor"].isHittable)
+    }
+
+    func testSmokeSettingsEntryOpensSystemSettings() {
+        app = XCUIApplication()
+        app.launch()
+
+        let openSettings = app.buttons["open-system-settings"]
+        XCTAssertTrue(openSettings.waitForExistence(timeout: 8))
+        openSettings.tap()
+
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        XCTAssertTrue(settings.wait(for: .runningForeground, timeout: 5))
+    }
+
     func testAcknowledgementsAreBundledAndReachable() {
         app = XCUIApplication()
         app.launch()

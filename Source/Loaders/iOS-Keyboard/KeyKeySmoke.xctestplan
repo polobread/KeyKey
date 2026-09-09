@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "C7700000-0000-0000-0000-000000000101",
+      "name" : "Smoke",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:KeyKeyiOS.xcodeproj",
+      "identifier" : "C7700000000000000000001A",
+      "name" : "chichi77 KeyKey"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "selectedTests" : [
+        "KeyKeyUITests/testAcknowledgementsAreBundledAndReachable()",
+        "KeyKeyUITests/testSmokeContainerAppLaunchesWithProductionControls()",
+        "KeyKeyUITests/testSmokeContainerAppSurvivesRotationAndRelaunch()",
+        "KeyKeyUITests/testSmokeHardwareKeyboardEditorOpens()",
+        "KeyKeyUITests/testSmokeSettingsEntryOpensSystemSettings()"
+      ],
+      "target" : {
+        "containerPath" : "container:KeyKeyiOS.xcodeproj",
+        "identifier" : "C77000000000000000000048",
+        "name" : "KeyKeyUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

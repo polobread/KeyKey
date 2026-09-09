@@ -46,6 +46,7 @@ final class SetupViewController: UIViewController {
 
         let openSettings = UIButton(configuration: .filled())
         openSettings.setTitle("開啟「設定」", for: .normal)
+        openSettings.accessibilityIdentifier = "open-system-settings"
         openSettings.addTarget(self, action: #selector(openSystemSettings), for: .touchUpInside)
 
         let note = label(
@@ -183,7 +184,13 @@ final class SetupViewController: UIViewController {
     }
 
     @objc private func purchaseSupport() {
-        Task { await supporterStore.purchase() }
+        Task {
+            if supporterStore.state.productAvailable {
+                await supporterStore.purchase()
+            } else {
+                await supporterStore.reload(showError: true)
+            }
+        }
     }
 
     @objc private func restoreSupport() {
@@ -198,16 +205,27 @@ final class SetupViewController: UIViewController {
             supporterPrice.isHidden = true
         }
 
-        if state.checking {
-            supporterButton.setTitle("正在確認…", for: .normal)
+        restoreButton.isHidden = state.supporter
+        restoreButton.setTitle(
+            state.operation == .restoring ? "正在恢復…" : "恢復購買", for: .normal
+        )
+        if state.isBusy {
+            supporterButton.setTitle(
+                state.operation == .purchasing ? "正在購買…" : "正在確認…", for: .normal
+            )
             supporterButton.isEnabled = false
             restoreButton.isEnabled = false
         } else if state.supporter {
             supporterButton.setTitle("謝謝支持", for: .normal)
             supporterButton.isEnabled = false
             restoreButton.isHidden = true
-        } else {
+        } else if state.productAvailable {
             supporterButton.setTitle("付費支持", for: .normal)
+            supporterButton.isEnabled = true
+            restoreButton.isEnabled = true
+            restoreButton.isHidden = false
+        } else {
+            supporterButton.setTitle("重新載入價格", for: .normal)
             supporterButton.isEnabled = true
             restoreButton.isEnabled = true
             restoreButton.isHidden = false

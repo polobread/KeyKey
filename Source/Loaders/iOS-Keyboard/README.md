@@ -35,7 +35,21 @@ Keyboard extension 的 build number；本機建置維持專案內的預設 build
 cd KeyKeyEngine && swift test
 ```
 
+容器 App 的購買流程測試也可在 Mac 執行；在本目錄執行：
+
+```sh
+swift test --scratch-path /tmp/keykey-supporter-flow-tests
+```
+
+測試直接編譯 `ContainerApp/SupporterStore.swift`，以替代的商店介面驗證商品載入失敗與
+重試、購買／恢復／載入互斥、取消與錯誤後解除忙碌，以及授權快取更新。
+此測試套件不加入 keyboard extension 或 `KeyKeyEngine`；仍須另用 Sandbox Apple ID
+驗證真實交易與 App Store Connect 商品設定。
+
 首次在一台新機器上需要先取得模擬器 runtime：`xcodebuild -downloadPlatform iOS`。
+
+送審用的 iPhone 16 Plus 實機錄影步驟見
+[`APP_REVIEW_RECORDING_PLAN.md`](APP_REVIEW_RECORDING_PLAN.md)。
 
 ## 與其他平台的差異
 

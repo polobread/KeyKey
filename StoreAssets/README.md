@@ -42,11 +42,11 @@ test page，也沒有把候選畫面後製到截圖中。
   真正旋轉後的橫式實體鍵盤畫面；不是把直式圖拉寬或重畫，候選列完整顯示 `1–9`。
 - `Sources/comic-devices.png`：透明背景的手機、平板、藍牙鍵盤與觸控操作漫畫插圖。
 - `Sources/chichi-macos.png`、`Sources/chichi-windows.png`：桌面版實際輸入畫面。
-- `AppStore/iPhone-1206x2622/01.png`～`05.png`：`1206 × 2622` iPhone Simulator
+- `AppStore/iPhone-1206x2622/01.png`～`04.png`：`1206 × 2622` iPhone Simulator
   原生比例素材，保留供 README 與預覽使用。
-- `AppStore/iPhone-1242x2688/01.png`～`05.png`：App Store Connect 接受的 6.5 吋
+- `AppStore/iPhone-1242x2688/01.png`～`04.png`：App Store Connect 接受的 6.5 吋
   iPhone 上架素材。
-- `AppStore/iPad-2048x2732/01.png`～`05.png`：App Store Connect 接受的 12.9／13 吋
+- `AppStore/iPad-2048x2732/01.png`～`04.png`：App Store Connect 接受的 12.9／13 吋
   iPad 上架素材。
 - `GooglePlay/Phone/01.png`～`05.png`：`1080 × 1920` Google Play 手機素材。
 - `GooglePlay/app-icon-512.png`：Google Play 商店圖示；由 iOS 的無透明背景 1024px
@@ -70,23 +70,27 @@ swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-ass
 宣傳文字：
 
 > 手指記得，就讓它繼續快樂打字！熟悉的五排注音與固定 1–9 候選；接上 USB／藍牙
-> 鍵盤，也能在 App 內完成文字再複製或分享。另有 macOS、Windows 與 Android 版。
+> 實體鍵盤，也能在琦琦 App 內輸入區延續相同手感，完成後直接複製或分享。
 
 說明：
 
-> 琦琦注音是一套讓手指延續肌肉記憶的繁體中文ㄅ半注音輸入法。
+> 琦琦注音是一套讓手指延續肌肉記憶的繁體中文傳統注音輸入法。
 >
 > 多數手機鍵盤採四排設計，琦琦保留完整五排標準注音位置。候選字固定排列，不會因
-> 畫面變化而反覆移動，眼睛不用追、手指也不用重新猜。
-> 注音、英文與數字符號模式依序切換，也支援符號、Emoji、30 種關聯詞庫與不同輸入
-> 欄位。
+> 畫面變化而反覆移動，眼睛不用追，手指也不用重新猜。
 >
-> 接上 USB 或藍牙鍵盤時，可在琦琦 App 的實體鍵盤編輯器中使用相同注音引擎、固定直排
-> 1–9 候選與關聯詞庫，完成後一鍵複製或開啟 iOS 分享面板。受 iOS 系統限制，第三方
-> 鍵盤無法在備忘錄、LINE、Safari 等其他 App 直接接管實體鍵盤。
+> 主要功能
+> 五排標準注音觸控鍵盤
+> 固定 1-9 候選字位置
+> 注音、英文與數字符號模式
+> 符號與 Emoji
+> 30 種關聯詞庫，可依使用情境選擇
+> 支援 Email、網址、數字、搜尋等輸入欄位
+> 支援 iPhone 與 iPad
 >
-> 琦琦注音也提供 macOS、Windows 與 Android 版本，讓常用的按鍵配置與選字習慣在
-> 四個平台延續。鍵盤不要求完整取用權限，查字與選字都在裝置本機完成。
+> USB 或藍牙實體鍵盤可在琦琦 App 內的實體鍵盤編輯器使用，完成後複製或分享文字。
+>
+> 鍵盤不要求完整取用權限，查字與選字都在裝置本機完成。
 
 關鍵字：`注音,繁體中文,五排鍵盤,標準注音,輸入法,候選字,離線鍵盤,實體鍵盤,藍牙鍵盤`
 
@@ -122,8 +126,8 @@ swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-ass
   與美國，測試人員透過 Play 提供的加入連結安裝。
 - iOS 實機版本與商店素材由 Xcode Cloud／App Store Connect 管理；GitHub Actions 的 iOS
   ZIP 僅供 Apple Silicon Simulator 測試。
-- macOS 與 Windows 的版本標籤會把桌面安裝包加入同一個 GitHub Release；商店圖 05
-  使用兩個桌面平台的實際輸入畫面。
+- macOS 與 Windows 的版本標籤會把桌面安裝包加入同一個 GitHub Release；Google Play
+  商店圖 05 使用兩個桌面平台的實際輸入畫面，App Store 素材只呈現 iOS／iPadOS 體驗。
 
 ## 發布前檢查
 
