@@ -8,6 +8,17 @@ macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是�
 **交接前：** 更新本檔的 TODO 與「已知陷阱」。調查出來的結論寫進來，下一個代理才
 不會重跑一遍。
 
+**Linux 原生版（規劃中）：** 先讀 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)
+與 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。首版目標為 1.2.8，範圍是 macOS
+F01–F11、F16 的現行功能／視窗對等；F12–F15 已由使用者排除，不得重新加入。
+包含注音、倉頡、簡易；新建 Linux-only 引擎與 IBus／Fcitx 5 整合，不修改或連結既有
+KeyKeyEngine／OpenVanilla 核心。2026-09-12 已完成規劃與四平台版號 1.2.8 同步，
+尚未實作或跑 Linux CI；版號更新不代表 Linux 已可安裝。
+**主要支援／最完整測試環境是 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）**；
+先完成 X11、native Wayland、XWayland 的完整打字／視窗／App／套件驗收，再擴充其他目標。
+相容範圍為近四年，不限最新版；初始向前涵蓋到 Ubuntu 22.04／Fedora 36，
+完整版本清單見計畫。EOL 不自動排除，但必須區分產品相容與 OS 安全維護。
+
 ---
 
 ## 硬規則
@@ -199,6 +210,27 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ## 已知陷阱（不要重複調查）
 
+- **Ubuntu 24.04 的主框架是 Fcitx 5**：這是使用者指定的主要支援環境，需最完整
+  測試；不能只保留 Ubuntu + IBus 或以 KDE + Fcitx 的結果替代。GNOME 可能使用
+  IBus protocol bridge，但實測必須確認載入本專案 Fcitx addon。主環境每次相關
+  PR 跑完整 typing suite，每日／發布跑全部 App、sandbox、UI 組合與穩定性。
+- **Linux 功能範圍已核定為 F01–F11、F16**：macOS 有 TraditionalMandarin、
+  Generic-cj-cin、Generic-simplex-cin 正式入口，三者皆需原生實作；候選窗、縮放
+  配色、filter、符號面板與設定／關於仍在範圍。F12 計算機、F13 自訂詞／詞庫管理、
+  F14 通用表格／外掛設定、F15 一點通／提示通知視窗不開發、不列驗收缺口；
+  不因此刪除 F05 內建關聯詞分類開關或 F03 學習頻率，也不刪其他平台的現有功能。
+  SmartMandarin 仍因語料缺失而不啟用；不可憑舊模組存在就重新擴張 Linux 範圍。
+- **Linux 的 CI 綠燈要分層**：unit、adapter 或 Xvfb 通過都不等於原生 Wayland
+  可用；E2E 必須從鍵盤事件經過 IME，核對實際 App 文字與 preedit／候選流程，
+  並有停用 engine 的負控制。GNOME／KWin 的 hosted VM、popup 樣式與焦點能力
+  先做 P0；未驗證前不可承諾全部桌面測試皆可在 hosted runner 完成。
+- **Linux 不沿用舊 cooker 建置依賴**：macOS cooker 使用 Formosa Ruby extension；
+  Linux 應唯讀共用字表／詞庫，以獨立原生資料工具生成自身索引，不修改四平台
+  cooker 或資料內容。CIN 可能有 CRLF 與合法 `%` 字元列，解析不能一律略過。
+- **Linux 四年相容不能只測最新版或最舊／最新兩端**：初始矩陣含 2022–2026
+  的 Ubuntu、Debian、Fedora 共 20 個版本目標，歷史 EOL 列亦需套件安裝與真打字。
+  使用現行 runner 搭配舊 userspace／guest，最低 Qt／框架 API 由舊目標決定；
+  不能依賴 GitHub 保留舊 runner label，或為方便提高最低 OS 要求。
 - **授權按來源而不是路徑歷史判斷**：`Source/Loaders/Android-IME`、
   `Source/Loaders/iOS-Keyboard` 與 `Source/Loaders/Windows-TSF` 的原創 frontend
   由各目錄 `LICENSE.txt` 套用 MIT，不需逐檔標頭；其中引用、複製或打包的 Yahoo、
@@ -677,6 +709,27 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 ---
 
 ## TODO
+
+### Linux 原生版
+
+- [x] 已將 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）設為首要支援與最完整
+      測試目標；開發／測試計畫同步新增主環境完整驗收與 required CI 規格。
+- [x] 2026-09-12 完成開發／測試 plan 與原始碼功能盤點；沒有 Linux build、
+      workflow 或執行結果。依近四年要求改為 Ubuntu 22.04–26.04 各 LTS／中間版、
+      Debian 12／13、Fedora 36–44，共 20 個版本目標；x86_64 正式目標，ARM64
+      先 preview，套件採獨立 DEB／RPM，歷史 EOL 列不省略實際輸入測試。
+- [x] 依使用者要求將四平台版號同步至 1.2.8（Android versionCode 1002008），
+      設為 Linux 首版目標；從 Linux 計畫／測試移除 F12–F15 的開發要求，保留
+      F05 內建關聯詞分類。Linux 實作與 CI 仍未開始，不可當成已發布或已支援。
+      已檢查 14 個產品版號欄位、Android versionCode、四個 macOS plist 與 iOS
+      project 格式，均通過；本次未重新建置四平台。1.2.7 的已送審紀錄與錄影保留原版號。
+- [ ] 依 `LINUX_DEVELOPMENT_PLAN.md` P0 凍結 macOS 操作 baseline，確認候選樣式、
+      符號窗回送與 F01–F11、F16 行為；優先實證 Ubuntu 24.04 + Fcitx 5 三條 session
+      路徑的真打字、addon 身分與負控制，再擴充其他 GNOME／KWin 組合。
+- [ ] 完成 Linux-only 引擎、三輸入法、兩 adapter 與完整原生視窗／設定；禁止為此
+      修改、搬動或連結四平台既有核心；資料唯讀共用，F12–F15 不加入實作。
+- [ ] 依 `LINUX_TEST_PLAN.md` 建立逐鍵 golden、App 最終文字 assertion、四年矩陣
+      packages／安裝升級驗證，以及 PR／每日／每週／release workflows；未實跑不勾選。
 
 ### GitHub Actions
 

@@ -1,4 +1,4 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.2.7
+# 琦琦輸入法 / chichi77 KeyKey 1.2.8
 
 ## 開發初衷
 
@@ -20,6 +20,11 @@ Android 與 iOS 版透過 Google Play 與 App Store 的官方流程發行，並�
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，目前支援 macOS、Windows、
 Android 與 iOS 四個平台。
 
+1.2.8 起規劃加入 Linux 原生版，支援傳統注音、倉頡與簡易，並相容近四年的
+主要發行版本。Linux 目前尚在規劃階段，程式、套件與自動化驗收尚未完成；詳見
+[Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
+主要支援與最完整測試目標為 Ubuntu Desktop 24.04 LTS + Fcitx 5。
+
 本專案以 Yahoo! Inc. 於 2012 年以 BSD 3-Clause License 釋出的原始碼為基礎，
 保留 OpenVanilla／PlainVanilla 核心與傳統注音資料，移除失效的網路服務，並為
 Windows、Android 與 iOS 建立現代化 frontend。
@@ -36,6 +41,7 @@ Windows、Android 與 iOS 建立現代化 frontend。
 | Windows | 原生 TSF；Windows 11 x64，並支援 32-bit Office process |
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
+| Linux（1.2.8 起的開發目標，尚未提供） | 原生 IBus／Fcitx 5；注音、倉頡、簡易；近四年發行版相容與 DEB／RPM 套件，依計畫驗收後提供 |
 
 四個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
@@ -54,7 +60,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 - iOS 實機版由 Xcode Cloud／App Store Connect 建置及發行；`Package iOS Simulator`
   只產生 Apple Silicon Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
-推送符合專案版號的 tag（例如 `v1.2.7`）會同時啟動 `Package macOS` 與
+推送符合專案版號的 tag（例如 `v1.2.8`）會同時啟動 `Package macOS` 與
 `Package Windows`，並把桌面版產物加入同一個 GitHub Release。兩個 workflow 也能手動
 執行；手動執行只保留 Actions artifact，不代表正式發行。完整產物、簽章與限制見
 [BUILDING.md](BUILDING.md#github-actions-封裝)。
@@ -62,6 +68,8 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 ## 文件
 
 - [BUILDING.md](BUILDING.md)：四平台建置、測試、安裝與打包
+- [Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](LINUX_TEST_PLAN.md)：
+  1.2.8 起的原生 Linux 支援目標、功能範圍與驗收門檻，尚未實作
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md)：Windows frontend
   的實作、部署及驗證細節
 - [Android IME README](Source/Loaders/Android-IME/README.md)：Android 鍵盤配置、
@@ -90,6 +98,13 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports macOS, Windows, Android, and iOS.
 
+Native Linux support is targeted for version 1.2.8 onward, with Traditional
+Bopomofo, Cangjie, Simplex, and compatibility with roughly four years of distro
+releases. Linux code, packages, and automated acceptance tests are not yet
+implemented; see the [Linux development plan](LINUX_DEVELOPMENT_PLAN.md).
+Ubuntu Desktop 24.04 LTS with Fcitx 5 is the primary target and receives the
+most comprehensive test coverage in the plan.
+
 The project retains the OpenVanilla/PlainVanilla core and Traditional Bopomofo
 data, removes obsolete online services, and adds modern Windows, Android, and
 iOS frontends.
@@ -105,6 +120,7 @@ by, or sponsored by Yahoo.**
 | Windows | Native TSF; Windows 11 x64, including 32-bit Office processes |
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
 | iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
+| Linux (targeted for 1.2.8 onward; not yet available) | Native IBus/Fcitx 5; Bopomofo, Cangjie, Simplex; four-year distro compatibility and DEB/RPM packages, subject to acceptance testing |
 
 All four platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
@@ -129,7 +145,7 @@ iOS.
   `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
   be installed on an iPhone or iPad.
 
-Pushing a tag that exactly matches the project version, such as `v1.2.7`,
+Pushing a tag that exactly matches the project version, such as `v1.2.8`,
 starts `Package macOS` and `Package Windows` and adds both desktop outputs to
 the same GitHub Release. Manual runs retain Actions artifacts for testing but
 are not a formal release. See [BUILDING.md](BUILDING.md#github-actions-packaging)
@@ -138,6 +154,9 @@ for the complete output and signing details.
 ### Documentation
 
 - [BUILDING.md](BUILDING.md): build, test, installation, and packaging instructions
+- [Linux development plan](LINUX_DEVELOPMENT_PLAN.md) and
+  [automated test plan](LINUX_TEST_PLAN.md): scope and acceptance criteria for
+  native Linux support targeted for 1.2.8 onward; not yet implemented
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md): frontend
   implementation, deployment, and verification details
 - [Android IME README](Source/Loaders/Android-IME/README.md): layouts, build,
