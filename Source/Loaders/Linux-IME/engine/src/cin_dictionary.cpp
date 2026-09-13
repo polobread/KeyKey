@@ -59,6 +59,16 @@ CinDictionary CinDictionary::load(std::istream &input) {
         }
 
         const std::string lowered = lowercase(cleaned);
+        if (lowered.rfind("%endkey", 0) == 0) {
+            std::istringstream directive(cleaned);
+            std::string name;
+            std::string keys;
+            directive >> name >> keys;
+            for (const char key : keys) {
+                dictionary.endKeys_.insert(std::string(1, key));
+            }
+            continue;
+        }
         if (lowered.rfind("%keyname", 0) == 0) {
             std::istringstream directive(lowered);
             std::string name;
@@ -157,6 +167,14 @@ const std::string &CinDictionary::keyName(const std::string &key) const {
     static const std::string empty;
     const auto found = keyNames_.find(key);
     return found == keyNames_.end() ? empty : found->second;
+}
+
+bool CinDictionary::hasKeyName(const std::string &key) const noexcept {
+    return keyNames_.find(key) != keyNames_.end();
+}
+
+bool CinDictionary::isEndKey(const std::string &key) const noexcept {
+    return endKeys_.find(key) != endKeys_.end();
 }
 
 std::vector<std::string> CinDictionary::keys() const {

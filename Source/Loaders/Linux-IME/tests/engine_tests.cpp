@@ -50,8 +50,12 @@ void combineSequence(BopomofoReading &reading, const std::string &sequence,
 void testCinParserHandlesBomCrlfAndPercentKey() {
     std::istringstream input(
         "\xEF\xBB\xBF%gen_inp\r\n"
+        "%endkey  ,.%\r\n"
         "%keyname begin\r\n"
         "a 日\r\n"
+        ", ，\r\n"
+        ". 。\r\n"
+        "% ％\r\n"
         "%keyname end\r\n"
         "%chardef begin\r\n"
         "# #\r\n"
@@ -69,6 +73,11 @@ void testCinParserHandlesBomCrlfAndPercentKey() {
     require(dictionary.candidates("a").at(1) == "曰",
             "CIN candidate order changed");
     require(dictionary.keyName("a") == "日", "CIN key name was not parsed");
+    require(dictionary.hasKeyName(",") && dictionary.hasKeyName("%"),
+            "CIN punctuation key names were not parsed");
+    require(dictionary.isEndKey(",") && dictionary.isEndKey(".") &&
+                dictionary.isEndKey("%") && !dictionary.isEndKey("a"),
+            "CIN %endkey metadata was not parsed");
 }
 
 void testCinParserRejectsIncompleteData() {
@@ -584,11 +593,45 @@ void testRealCangjieTypingFlow() {
     result = engine.processKey(context, character('1'));
     require(result.commit == "日", "Cangjie candidate 1 must commit 日");
 
+    result = engine.processKey(context, character(','));
+    require(result.handled && result.commit == "，" &&
+                result.preedit.empty() && result.candidates.empty(),
+            "Cangjie direct punctuation must commit its sole result");
+
+    engine.processKey(context, character('b'));
+    engine.processKey(context, character('q'));
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.handled && result.commit == "用" &&
+                result.preedit.empty() && result.candidates.empty(),
+            "Cangjie Space must directly commit a sole candidate");
+
+    for (const char key : std::string("zzzzz")) {
+        engine.processKey(context, character(key));
+    }
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.handled && result.preedit.empty() &&
+                result.candidates.empty(),
+            "Cangjie query errors must clear the reading by default");
+
     for (const char key : std::string("abcdef")) {
         result = engine.processKey(context, character(key));
     }
     require(result.preedit == "日月金木水",
             "Cangjie accepted more than five roots");
+
+    context.reset();
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Character, '?', KeyModifier::Shift, false,
+                          false});
+    require(result.handled && result.commit == "？",
+            "Cangjie shifted direct punctuation was not normalized");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Character, ',', KeyModifier::Control, false,
+                          false});
+    require(!result.handled && result.commit.empty(),
+            "Cangjie Ctrl punctuation shortcut must pass through");
 }
 
 void testRealSimplexTypingFlowAndCodeLimit() {
@@ -606,10 +649,54 @@ void testRealSimplexTypingFlowAndCodeLimit() {
     result = engine.processKey(context, character('2'));
     require(result.commit == "曰", "Simplex candidate 2 must commit 曰");
 
+    result = engine.processKey(context, character('a'));
+    require(result.preedit == "日" && result.candidates.empty(),
+            "Simplex must wait for its second root");
+    result = engine.processKey(context, character('b'));
+    require(result.preedit == "日月" && result.candidates.size() > 1 &&
+                result.candidates.front() == "明",
+            "Simplex must query candidates at its two-root limit");
+    result = engine.processKey(context, character('1'));
+    require(result.commit == "明", "Simplex full-code candidate 1 must commit 明");
+
+    engine.processKey(context, character('w'));
+    result = engine.processKey(context, character('x'));
+    require(result.handled && result.commit == "䍤" &&
+                result.preedit.empty() && result.candidates.empty(),
+            "Simplex full code with one candidate must commit immediately");
+
+    result = engine.processKey(context, character(','));
+    require(result.handled && result.preedit == "，" &&
+                result.candidates.size() == 3 &&
+                result.candidates.at(0) == "，" &&
+                result.candidates.at(1) == "、",
+            "Simplex direct punctuation must open its real candidate list");
+    result = engine.processKey(context, character('2'));
+    require(result.commit == "、",
+            "Simplex punctuation candidate 2 must commit 、");
+
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Character, '+', KeyModifier::Shift, false,
+                          false});
+    require(result.handled && result.preedit == "＋" &&
+                result.candidates.empty(),
+            "Simplex shifted non-end symbol did not remain in the reading");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.candidates.size() == 2 && result.candidates.at(0) == "＋" &&
+                result.candidates.at(1) == "＝",
+            "Simplex non-end punctuation did not query on Space");
+    result = engine.processKey(context, character('2'));
+    require(result.commit == "＝",
+            "Simplex non-end punctuation candidate 2 must commit ＝");
+
     engine.processKey(context, character('a'));
-    engine.processKey(context, character('b'));
+    result = engine.processKey(context, character('b'));
+    require(result.preedit == "日月", "Simplex full-code preedit changed");
     result = engine.processKey(context, character('c'));
-    require(result.preedit == "日月", "Simplex accepted more than two roots");
+    require(result.handled && result.commit == "明" && result.preedit == "金" &&
+                result.candidates.empty(),
+            "Simplex continuous typing did not commit the highlighted candidate");
 }
 
 void testCandidatePagingAndSelection() {

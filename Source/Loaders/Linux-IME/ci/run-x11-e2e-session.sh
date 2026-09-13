@@ -13,7 +13,9 @@ known_cases=(
   T02-X11-GTK3-BOPOMOFO-HSU
   T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN
   T04-X11-GTK3-CANGJIE
+  T04-X11-GTK3-CANGJIE-ENDKEY-ERROR
   T05-X11-GTK3-SIMPLEX
+  T05-X11-GTK3-SIMPLEX-FULL-CODE
   T06-X11-GTK3-CANDIDATE-NAVIGATION
   T07-X11-GTK3-ASSOCIATED-PHRASE
   T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY
@@ -549,9 +551,23 @@ if case_selected T04-X11-GTK3-CANGJIE; then
   run_case T04-X11-GTK3-CANGJIE chichi77-keykey-cangjie \
     日 'a 1' 日 a space 1
 fi
+if case_selected T04-X11-GTK3-CANGJIE-ENDKEY-ERROR; then
+  run_case T04-X11-GTK3-CANGJIE-ENDKEY-ERROR \
+    chichi77-keykey-cangjie \
+    '，用' ',zzzzz bq ' \
+    '重,重重,重重重,重重重重,重重重重重,月,月手' \
+    comma z z z z z space b q space
+fi
 if case_selected T05-X11-GTK3-SIMPLEX; then
   run_case T05-X11-GTK3-SIMPLEX chichi77-keykey-simplex \
     曰 'a 2' 日 a space 2
+fi
+if case_selected T05-X11-GTK3-SIMPLEX-FULL-CODE; then
+  run_case T05-X11-GTK3-SIMPLEX-FULL-CODE \
+    chichi77-keykey-simplex \
+    '明銖䍤、' 'abcd1wx,2' \
+    '日,日月,金,金木,田,，' \
+    a b c d 1 w x comma 2
 fi
 if case_selected T06-X11-GTK3-CANDIDATE-NAVIGATION; then
   set_bopomofo_layout Standard

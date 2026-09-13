@@ -27,12 +27,14 @@ filter 同源的 3,058 筆繁轉簡單字對映；關聯詞另以原生 parser �
 `Shift+1–9` 詞尾選取；Ubuntu 24.04 的相同 engine suite
 亦已通過 ASan/UBSan。
 
-另有十八筆可重現的最小 L3 X11 證據：在 Ubuntu 24.04 x86_64 container 以獨立 D-Bus、
+另有二十筆可重現的最小 L3 X11 證據：在 Ubuntu 24.04 x86_64 container 以獨立 D-Bus、
 Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，T01 以 Standard `5j/` 選「中」；T02
 在 Standard、ETen、ETen26、Hsu、Hanyu Pinyin 五種配置逐鍵輸入二、三、
 四、輕聲的「麻馬罵嘛」，固定 ETen26／Hsu 複用鍵的消歧中間態，漢語拼音
 另驗證不完整 `zh` 依序退格為 `z` 與空 preedit；倉頡 `a` 選第一候選
-「日」，簡易 `a` 選第二候選「曰」；
+「日」，另以直接標點、五碼查無結果清除及單一候選提交精確得到「，用」；簡易
+`a` 選第二候選「曰」，另以兩碼自動開候選、下一碼提交反白候選並開始新組字、
+單一候選自動提交及直接標點候選精確得到「明銖䍤、」；
 另以注音 `5j/` 開啟 148 個真實候選，送 PageDown、Down、Enter 選出「妐」；
 `Shift+Space`、`Shift+A`、`Shift+1`、`Shift+\``、Space 提交精確全形 `Ａ！～　`，
 `keyboard-us` 負控制為 ` A!~ `；另以 `Ctrl+0` 開啟真實標點／符號候選並按
@@ -57,8 +59,8 @@ Hosted Linux workflow run `34742072894` 已在 `d83091d` 通過 Ubuntu 22.04／2
 Ubuntu 24.04 的目前 slice 也已用 debhelper 拆成架構無關的
 `chichi77-keykey-data_1.2.8-1+ubuntu24.04_all.deb` 與 amd64 的
 `fcitx5-chichi77-keykey_1.2.8-1+ubuntu24.04_amd64.deb`。乾淨 runtime container
-依序安裝受控 `1.2.8~preview1` fixture、跑十七個純鍵盤案例、升級至 1.2.8、
-再跑十七案例、移除／重裝後跑全部十八案例；設定視窗只在最後狀態啟動一次，
+依序安裝受控 `1.2.8~preview1` fixture、跑十九個純鍵盤案例、升級至 1.2.8、
+再跑十九案例、移除／重裝後跑全部二十案例；設定視窗只在最後狀態啟動一次，
 以節省兩次相同 Qt／AT-SPI
 啟動成本；dependency、ELF、安裝清單、資料 hash、授權及移除後
 不碰個人設定一併通過。這是 T14 的第一段 package lifecycle 證據，不代表真實舊版

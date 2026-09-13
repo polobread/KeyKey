@@ -57,8 +57,8 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   UID/GID。
 - 2026-09-13 同一台 WSL2／rootless Docker 主機已實跑兩個 one-shot gate：Ubuntu 22.04
   的 Fcitx 5.0.14 build、2/2 CTest、lintian、安裝／移除／重裝全數通過；Ubuntu 24.04
-  的 preview 安裝、release 升級、移除／重裝全數通過；擴充 T02 後再實跑
-  初裝與升級各 17 個純鍵盤案例，重裝後完整 18 案例也全數通過。
+  的 preview 安裝、release 升級、移除／重裝全數通過；擴充 F03／F04 後再實跑
+  初裝與升級各 19 個純鍵盤案例，重裝後完整 20 案例也全數通過。
   另直接執行 `run-ubuntu-24.04-x11-e2e.sh` 的原 17/17 基線亦通過，證明 rootless UID
   選擇同時適用 package 與獨立 X11 路徑；這些仍不是 GNOME／native Wayland 驗收。
 - 長駐 container 把 named volume 掛在 `out/stage`，但 verify 會刪除再建立其下的
@@ -77,13 +77,13 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   Source/Loaders/Linux-IME/ci/dev.sh verify
   ```
 
-  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 18 個
+  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 20 個
   Xvfb/GTK3/Fcitx 案例。`run-debian-package.sh ubuntu-24.04` 是乾淨安裝、升級、移除、
   重裝的 amd64 套件 gate，只在里程碑跑，不要每次修改都跑。Windows 桌面本身不能
   取代 GNOME／native Wayland 驗收；Xvfb 通過後仍須另找真 Linux desktop／VM。
-- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 18/18
-  通過；Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級、移除／重裝也已
-  以新案例重跑通過。Windows 主機不會取得原 Mac 的 container／named volumes，
+- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 20/20
+  通過；Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級各 19 案，
+  移除／重裝 20 案也已重跑通過。Windows 主機不會取得原 Mac 的 container／named volumes，
   首次執行較慢屬正常，之後應以同一 `ci/dev.sh` session 迭代。
 
 ---
@@ -383,6 +383,13 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `Ctrl+0`／`Ctrl+1`、Ctrl 標點與 Ctrl+Alt 組合才由輸入法處理；未定義的 Ctrl
   shortcut 要交回 App。reading 尚未清空時，已識別 shortcut 依 macOS 行為由輸入法
   吃掉但保留 reading，不能清掉組字或誤送標點。
+- **倉頡／簡易的直接標點就在各自 CIN，不是第四份標點表**：`cj-ext.cin` 與
+  `simplex-ext.cin` 的 `%keyname`、`%endkey`、`%chardef` 已包含逗號等鍵；Linux parser
+  必須保存 end-key metadata，不能把 table 輸入硬限為英文字母。end key 立即查詢，
+  單一候選直接提交；簡易一般字根到兩碼也立即查詢，候選開啟後繼續打下一字根時，
+  先提交目前反白候選再開始新組字。倉頡預設查無結果會清空 reading；簡易目前依
+  Preferences 預設保留，待完整設定入口提供切換。帶 Shift 的標點 keysym 需允許，
+  Ctrl／Alt 組合仍交回 App，不能為了標點把所有 modifier 吃掉。
 - **Linux 繁轉簡映射是第五份必要套件資料**：`data/tc2sc.cin` 由
   `tools/generate-tc2sc-cin.rb` 從唯讀 `VXHCTC2SCTable.c` 的 3,058 筆明示配對產生；
   不編譯或連結舊模組。舊 C array 雖宣告 3,059 組，實際只列 3,058 組，
@@ -932,11 +939,18 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       不完整 `zh` 退格到空，GTK host 並改為依序核對 preedit。五值設定 schema
       與每案 `keyboard-us` 負控制皆通過。這不等於更廣的錯誤輸入、GNOME／Wayland、
       候選窗畫面或完整 T02 已驗收。
+- [x] 2026-09-13 擴充 F03／F04 table 行為：嚴格 CIN reader 保存 `%endkey`，倉頡與
+      簡易接受字表宣告的直接標點、單一候選直接提交；倉頡查無碼依預設清空，簡易
+      到兩碼自動開候選，候選中繼續輸入會先提交反白項再開始下一組，單一候選則自動
+      提交。L1 使用正式 `cj-ext.cin`／`simplex-ext.cin`；Ubuntu 24.04 Xvfb/GTK3
+      新增兩案，精確提交「，用」與「明銖䍤、」，完整 staged suite 20/20 通過且每案
+      都有 `keyboard-us` 負控制。尚缺動態頻率、萬用字元、完整設定／encoding filter、
+      GNOME 與 Wayland，不能將 F03／F04 標成完成。
 - [x] 2026-09-12 建立 debhelper Debian packaging，產出
       `chichi77-keykey-data`（all）與 `fcitx5-chichi77-keykey`（每架構）兩包；Ubuntu
       24.04 amd64 local 已通過 lintian error gate、乾淨 runtime 安裝、受控 preview
-      fixture 升級、移除、重裝；擴充 T02 後的最新 local gate 在初裝與升級
-      各跑十七個純鍵盤 X11/GTK3 真實打字案例，重裝後跑完整十八案，
+      fixture 升級、移除、重裝；擴充 F03／F04 後的最新 local gate 在初裝與升級
+      各跑十九個純鍵盤 X11/GTK3 真實打字案例，重裝後跑完整二十案，
       UI 較重的設定案例只在重裝後執行一次。
       Ubuntu 22.04 amd64 local 亦已在 Fcitx 5.0.14 通過建置、lintian error gate、
       乾淨 runtime 安裝、移除、重裝、dependency／資料 hash／授權檢查；該 smoke

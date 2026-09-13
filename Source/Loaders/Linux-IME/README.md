@@ -12,7 +12,9 @@ The initial vertical slice provides:
 - a strict CIN reader using the repository's read-only input tables;
 - isolated state for each input context;
 - Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin Bopomofo layouts, plus
-  initial Cangjie and Simplex table composition using CIN key names;
+  Cangjie and Simplex table composition using CIN key names and `%endkey`
+  metadata. Table punctuation, single-candidate commit, Cangjie error clearing,
+  and Simplex two-code auto-query/continuous typing are implemented;
 - candidate lookup, cyclic arrow/PageUp/PageDown navigation, numeric selection,
   Backspace, Escape, Enter, and Space;
 - a native associated-phrase parser for the McBopomofo base and all 29 bundled
@@ -30,8 +32,10 @@ The initial vertical slice provides:
 - an installed-package X11 E2E test that sends physical key events into a real
   GTK 3 entry and verifies Standard Bopomofo → `中`, all five layouts and all
   four explicit tones → `麻馬罵嘛`, incomplete Pinyin backspace recovery,
-  Cangjie `a` → `日`, Simplex `a` → second candidate `曰`, and Bopomofo second-page keyboard
-  navigation → `妐`, `Shift+Space` full-width input → `Ａ！～　`, plus
+  Cangjie `a` → `日`, direct punctuation/error recovery → `，用`, Simplex
+  `a` → second candidate `曰`, full-code/continuous/direct-punctuation input →
+  `明銖䍤、`, and Bopomofo second-page keyboard navigation → `妐`,
+  `Shift+Space` full-width input → `Ａ！～　`, plus
   Traditional-to-Simplified output `臺灣` → `台湾`, plus `Ctrl+0` symbol-list
   selection → `，`, plus associated-phrase default `今` → `今天`,
   `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺!`;
@@ -45,7 +49,7 @@ The initial vertical slice provides:
 - Debian packages named `chichi77-keykey-data` and
   `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
 - a package lifecycle test covering install, controlled preview-to-1.2.8
-  upgrade, removal, reinstall, dependency/file/hash checks, the seventeen
+  upgrade, removal, reinstall, dependency/file/hash checks, the nineteen
   keyboard-only X11 cases after each installed state, and the settings-window
   case once after reinstall;
 - a persistent Fcitx-native settings schema with a five-layout combo box, a
@@ -54,7 +58,8 @@ The initial vertical slice provides:
   `chichi77 KeyKey Bopomofo` input method. The earlier comma-separated field is
   hidden and migrated when an existing development configuration is loaded.
 
-Advanced Cangjie/Simplex behaviors, IBus, a Linux equivalent for the macOS
+Remaining Cangjie/Simplex settings, dynamic frequency, wildcard and encoding
+filters, IBus, a Linux equivalent for the macOS
 Traditional-to-Simplified shortcut, full-width behavior outside an active
 Linux input context, the remaining settings and complete
 symbol/emoticon/common-text windows, RPM/Arch packaging, native Wayland, and
@@ -257,7 +262,7 @@ Source/Loaders/Linux-IME/ci/run-ubuntu-24.04-x11-e2e.sh
 This builds a separate test image, stages the addon and real CIN data into an
 ephemeral container, starts a private D-Bus session, Xvfb, and Fcitx 5, then
 uses XTest through `xdotool` to type all five Bopomofo layout sequences plus
-the Cangjie, Simplex, candidate-navigation, `Shift+Space` full-width,
+the Cangjie, Simplex, table-end-key, candidate-navigation, `Shift+Space` full-width,
 Traditional-to-Simplified, and `Ctrl+0` symbol-list sequences. The full-width
 case verifies the exact GTK text `Ａ！～　`, while the English-keyboard control
 receives ` A!~ `. The conversion case selects `臺` and `灣`, verifies committed
@@ -288,9 +293,9 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
 Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
-The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the seventeen
+The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the nineteen
 keyboard-only X11 cases, upgrades to `1.2.8`, runs them again, removes and
-reinstalls the packages, then runs all eighteen cases. Running the UI-heavy
+reinstalls the packages, then runs all twenty cases. Running the UI-heavy
 case once keeps the installed-package proof while avoiding three identical Qt
 startup cycles. The 22.04 path performs build, lintian,
 dependency, file/data checksum, install/remove/reinstall, and ELF checks but

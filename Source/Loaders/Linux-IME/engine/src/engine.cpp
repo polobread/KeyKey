@@ -149,6 +149,11 @@ void Engine::setAssociatedPhraseCollections(
 EngineResult Engine::processKey(InputContextState &context,
                                 const KeyEvent &event) const {
     bool updateUi = false;
+    std::string pendingCommit;
+    const auto includePendingCommit = [&](EngineResult result) {
+        result.commit = pendingCommit + result.commit;
+        return result;
+    };
     const auto passThroughResult = [&]() {
         EngineResult result = snapshot(context);
         result.updateUi = updateUi;
@@ -223,7 +228,13 @@ EngineResult Engine::processKey(InputContextState &context,
         }
         return queryPunctuation(context, punctuationKey);
     }
-    if (hasModifiers(event.modifiers)) {
+    const bool shiftedTableSymbol =
+        inputMethod_ != InputMethod::Bopomofo &&
+        event.code == KeyCode::Character &&
+        event.modifiers == KeyModifier::Shift &&
+        std::isalpha(static_cast<unsigned char>(event.character)) == 0 &&
+        acceptsCharacter(event.character);
+    if (hasModifiers(event.modifiers) && !shiftedTableSymbol) {
         if (context.fullWidthMode_ &&
             event.modifiers == KeyModifier::Shift &&
             event.code == KeyCode::Character && compositionEmpty(context) &&
@@ -245,13 +256,21 @@ EngineResult Engine::processKey(InputContextState &context,
                 static_cast<std::size_t>(event.character - '1');
             return selectDisplayedCandidate(context, displayedIndex);
         }
+        if (inputMethod_ != InputMethod::Bopomofo &&
+            !context.candidates_.empty() && acceptsCharacter(event.character)) {
+            const std::size_t absoluteIndex =
+                context.page_ * CandidatesPerPage + context.highlightedIndex_;
+            pendingCommit = outputText(
+                context, context.candidates_.at(absoluteIndex));
+            context.reset();
+        }
         if (context.fullWidthMode_ && compositionEmpty(context) &&
             context.candidates_.empty() &&
             std::isupper(static_cast<unsigned char>(event.character)) != 0) {
             EngineResult result = snapshot(context);
             result.handled = true;
             result.commit = outputText(context, std::string(1, event.character));
-            return result;
+            return includePendingCommit(std::move(result));
         }
         if (!acceptsCharacter(event.character)) {
             if (context.fullWidthMode_ && compositionEmpty(context) &&
@@ -269,12 +288,20 @@ EngineResult Engine::processKey(InputContextState &context,
             return passThroughResult();
         }
         clearCandidates(context);
+        if (inputMethod_ != InputMethod::Bopomofo &&
+            isEndKey(event.character)) {
+            return includePendingCommit(query(context, true));
+        }
+        if (inputMethod_ == InputMethod::Simplex &&
+            context.tableCode_.size() == maximumCodeLength()) {
+            return includePendingCommit(query(context, true));
+        }
         break;
     case KeyCode::Space:
         if (!context.candidates_.empty()) {
             changeCandidatePage(context, 1);
         } else if (!compositionEmpty(context)) {
-            return query(context);
+            return query(context, inputMethod_ != InputMethod::Bopomofo);
         } else if (context.fullWidthMode_) {
             EngineResult result = snapshot(context);
             result.handled = true;
@@ -289,7 +316,7 @@ EngineResult Engine::processKey(InputContextState &context,
             return selectDisplayedCandidate(context, context.highlightedIndex_);
         }
         if (!compositionEmpty(context)) {
-            return query(context);
+            return query(context, inputMethod_ != InputMethod::Bopomofo);
         }
         return passThroughResult();
     case KeyCode::Backspace:
@@ -337,6 +364,7 @@ EngineResult Engine::processKey(InputContextState &context,
 
     EngineResult result = snapshot(context);
     result.handled = true;
+    result.commit = std::move(pendingCommit);
     return result;
 }
 
@@ -373,12 +401,20 @@ EngineResult Engine::snapshot(const InputContextState &context) const {
     return result;
 }
 
-EngineResult Engine::query(InputContextState &context) const {
+EngineResult Engine::query(InputContextState &context,
+                           bool commitSingleCandidate) const {
     context.candidates_ = dictionary_->candidates(queryKey(context));
     context.candidatePreedit_.clear();
     context.showingAssociatedPhrases_ = false;
     context.page_ = 0;
     context.highlightedIndex_ = 0;
+    if (commitSingleCandidate && context.candidates_.size() == 1) {
+        return selectAbsoluteCandidate(context, 0);
+    }
+    if (context.candidates_.empty() &&
+        inputMethod_ == InputMethod::Cangjie) {
+        context.tableCode_.clear();
+    }
     EngineResult result = snapshot(context);
     result.handled = true;
     return result;
@@ -416,7 +452,15 @@ bool Engine::acceptsCharacter(char character) const noexcept {
     if (inputMethod_ == InputMethod::Bopomofo) {
         return BopomofoReading::isBopomofoKey(character, bopomofoLayout_);
     }
-    return std::isalpha(static_cast<unsigned char>(character)) != 0;
+    const char normalized = static_cast<char>(
+        std::tolower(static_cast<unsigned char>(character)));
+    return dictionary_->hasKeyName(std::string(1, normalized));
+}
+
+bool Engine::isEndKey(char character) const noexcept {
+    const char normalized = static_cast<char>(
+        std::tolower(static_cast<unsigned char>(character)));
+    return dictionary_->isEndKey(std::string(1, normalized));
 }
 
 bool Engine::compositionEmpty(const InputContextState &context) const noexcept {

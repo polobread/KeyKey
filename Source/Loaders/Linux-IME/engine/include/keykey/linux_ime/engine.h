@@ -110,13 +110,15 @@ public:
     EngineResult snapshot(const InputContextState &context) const;
 
 private:
-    EngineResult query(InputContextState &context) const;
+    EngineResult query(InputContextState &context,
+                       bool commitSingleCandidate = false) const;
     EngineResult queryPunctuation(InputContextState &context,
                                   const std::string &key) const;
     EngineResult selectAbsoluteCandidate(InputContextState &context,
                                          std::size_t index) const;
     void clearCandidates(InputContextState &context) const noexcept;
     bool acceptsCharacter(char character) const noexcept;
+    bool isEndKey(char character) const noexcept;
     bool compositionEmpty(const InputContextState &context) const noexcept;
     bool combine(InputContextState &context, char character) const;
     void backspace(InputContextState &context) const;
