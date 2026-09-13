@@ -11,15 +11,15 @@ set_target_properties(chichi77-keykey PROPERTIES PREFIX "")
 
 configure_file(chichi77-keykey-addon.conf.in chichi77-keykey-addon.conf)
 install(TARGETS chichi77-keykey
-    DESTINATION "${FCITX_INSTALL_LIBDIR}/fcitx5"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/fcitx5"
 )
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/chichi77-keykey-addon.conf"
     RENAME chichi77-keykey.conf
-    DESTINATION "${FCITX_INSTALL_PKGDATADIR}/addon"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/fcitx5/addon"
 )
 install(FILES
     chichi77-keykey-bopomofo.conf
     chichi77-keykey-cangjie.conf
     chichi77-keykey-simplex.conf
-    DESTINATION "${FCITX_INSTALL_PKGDATADIR}/inputmethod"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/fcitx5/inputmethod"
 )

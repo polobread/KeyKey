@@ -56,6 +56,18 @@ jobs:
           KEYKEY_BUILD_X11_E2E_HOST: ON
         run: ci/build-and-test.sh
 
+      - name: Test configure and GNU Make source builds
+        working-directory: Source/Loaders/Linux-IME
+        run: ci/test-configure-make.sh --source-directory-only
+
+      - name: Rebuild the source archive without Git or cached builds
+        working-directory: Source/Loaders/Linux-IME
+        run: ci/test-source-archive.sh
+
+      - name: Test default source install with Fcitx X11 typing
+        working-directory: Source/Loaders/Linux-IME
+        run: sudo ci/test-configure-make-system-e2e.sh
+
       - name: Run engine tests with ASan and UBSan
         working-directory: Source/Loaders/Linux-IME
         run: |
@@ -127,6 +139,14 @@ jobs:
           KEYKEY_BUILD_DIR: out/build/ubuntu-22.04-ci
           KEYKEY_STAGE_DIR: out/stage/ubuntu-22.04-ci
         run: ci/build-and-test.sh
+
+      - name: Test configure and GNU Make source builds
+        working-directory: Source/Loaders/Linux-IME
+        run: ci/test-configure-make.sh --source-directory-only
+
+      - name: Rebuild the source archive without Git or cached builds
+        working-directory: Source/Loaders/Linux-IME
+        run: ci/test-source-archive.sh
 
       - name: Build Ubuntu 22.04 Debian packages
         working-directory: Source/Loaders/Linux-IME

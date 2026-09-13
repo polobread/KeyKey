@@ -16,6 +16,12 @@ option(KEYKEY_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 option(KEYKEY_INSTALL_STANDALONE_LICENSE_FILES
     "Install the non-Debian standalone license copies" ON)
 
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/install-layout.txt.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/keykey-install-layout.txt"
+    @ONLY
+)
+
 get_filename_component(KEYKEY_REPOSITORY_ROOT
     "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
 set(KEYKEY_DATA_SOURCE_DIR
@@ -102,6 +108,12 @@ if(BUILD_TESTING)
         COMMAND "${CMAKE_COMMAND}" -P
                 "${CMAKE_CURRENT_SOURCE_DIR}/ci/validate-support-matrix.cmake"
     )
+    add_custom_target(check
+        COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure
+        DEPENDS keykey_linux_engine_tests
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        USES_TERMINAL
+    )
 
     if(KEYKEY_BUILD_X11_E2E_HOST)
         find_package(PkgConfig REQUIRED)
@@ -122,6 +134,17 @@ if(KEYKEY_BUILD_FCITX5)
     include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
     add_subdirectory(adapters/fcitx5)
 endif()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    @ONLY
+)
+add_custom_target(uninstall
+    COMMAND "${CMAKE_COMMAND}" -P
+            "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    USES_TERMINAL
+)
 
 install(FILES
     "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"

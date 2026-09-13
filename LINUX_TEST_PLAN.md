@@ -178,10 +178,11 @@ session、framework、App/version/backend、config、steps、expected、actual�
 所有未知的精確預期值在 P0 補齊，標 `pending-baseline`，不先寫 always-pass test。
 F12–F15 是核定排除，不列 `pending-baseline` 或 skip；原 T13 不納入測試總數。
 
-### T14-SOURCE：configure／make 原始碼安裝（待實作）
+### T14-SOURCE：configure／make 原始碼安裝（部分實作）
 
 2026-09-13 新增，對應開發計畫第 5.1 節，屬 T14 的安裝子案例，不改動既有
-14 個功能測試 ID。以下目前均未實跑，不得由 CMake／Ninja 或 `.deb` 綠燈推定通過。
+14 個功能測試 ID。各子案例仍須以自己的結果判定，不得由 CMake／Ninja 或 `.deb`
+綠燈推定通過。
 
 | 子案例 | 操作 | 驗收條件 |
 |---|---|---|
@@ -198,6 +199,16 @@ Source install 的 L3 結果不取代主環境 GNOME／native Wayland／XWayland
 報告另記錄 `buildMethod=configure-make`、來源 SHA、tarball SHA-256、configure 參數、
 compiler／Make／CMake 版本、安裝 manifest 與實際框架載入路徑；保留 configure、build、
 check、install／uninstall log。
+
+2026-09-13 Ubuntu 24.04 local amd64 container 已通過 checkout 的
+source-directory／out-of-source build、同一 commit 的 2.0 MB source tarball 在無
+`.git`／無 cache 的解壓目錄重建、2/2 CTest、`/usr` 與含空白的自訂
+prefix／libdir／datadir staging、重新 configure、缺失 compiler／未知選項、manifest
+卸載、sentinel 保留、clean 後重建及 distclean 隔離；另以預設 `/usr/local` 真安裝載入
+Fcitx 5，通過 T01 X11/GTK 3 注音與英文負控制後解除安裝。這是
+T14-SOURCE-BUILD／CONFIG／STAGE／CLEAN 與 INSTALL 的局部證據，不涵蓋
+`/usr`／任意 prefix 真打字、三輸入法完整案例、升級／重裝或其他 Ubuntu；後者仍待
+hosted CI 與 P4／P5，不得將整組 T14-SOURCE 標成通過。
 
 ## 5. 桌面與應用程式矩陣
 

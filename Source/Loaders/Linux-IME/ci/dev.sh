@@ -14,6 +14,7 @@ Usage: ci/dev.sh COMMAND [ARGUMENT]
 Commands:
   build              Incrementally configure and build.
   test               Incrementally build and run CTest.
+  source             Test the configure and GNU Make source-build interface.
   e2e [CASE|all]     Stage the current build and run selected X11 typing cases.
   verify [CASE|all]  Run build, CTest, staged checks, and X11 typing.
   package            Build the Ubuntu 24.04 development .deb files once.
@@ -36,6 +37,13 @@ run_as_developer() {
     --env "KEYKEY_STAGE_DIR=$stage_dir" \
     --workdir "$container_workdir" \
     "$container_name" "$@"
+}
+
+run_source_build() {
+  docker exec \
+    --env "HOME=$container_home" \
+    --workdir "$container_workdir" \
+    "$container_name" ci/dev-session-action.sh source
 }
 
 run_installed_e2e() {
@@ -75,6 +83,11 @@ case "$command_name" in
     if [[ -n "$argument" ]]; then usage >&2; exit 2; fi
     ensure_container
     run_as_developer ci/dev-session-action.sh "$command_name"
+    ;;
+  source)
+    if [[ -n "$argument" ]]; then usage >&2; exit 2; fi
+    ensure_container
+    run_source_build
     ;;
   e2e)
     ensure_container

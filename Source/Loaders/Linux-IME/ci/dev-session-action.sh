@@ -8,7 +8,7 @@ case "$build_dir" in out/build/*) ;; *) exit 2 ;; esac
 case "$stage_dir" in out/stage/*) ;; *) exit 2 ;; esac
 
 usage() {
-  echo "Usage: ci/dev-session-action.sh build|test|stage|verify|package" >&2
+  echo "Usage: ci/dev-session-action.sh build|test|source|stage|verify|package" >&2
 }
 
 configure() {
@@ -42,6 +42,9 @@ case "$1" in
   test)
     build
     ctest --test-dir "$build_dir" --output-on-failure
+    ;;
+  source)
+    ci/test-configure-make.sh --all
     ;;
   stage)
     stage

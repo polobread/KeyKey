@@ -319,11 +319,11 @@ chichi77-keykey-1.2.8.tar.xz
 - 安裝、升級、移除、重裝都測；移除程式保留學習資料／設定，刪個人資料需明確操作。
   APT／DNF repository、AUR／發行版官方收錄與簽章金鑰申請是另案，不自動對外發布。
 
-### 5.1 原始碼編譯安裝：configure 與 make（待實作）
+### 5.1 原始碼編譯安裝：configure 與 make（基本入口已實作）
 
 支援從乾淨 checkout 或發布的 source tarball，以傳統指令自行編譯及安裝。
-`configure` 入口規劃放在 `Source/Loaders/Linux-IME/`；tarball 保留必要的 monorepo
-相對結構。下列是待交付介面，尚不是目前可執行的建置指令：
+`configure` 入口位於 `Source/Loaders/Linux-IME/`；tarball 保留必要的 monorepo
+相對結構。下列介面已可執行：
 
 ```sh
 cd Source/Loaders/Linux-IME
@@ -361,6 +361,16 @@ make DESTDIR="$PWD/out/source-stage" install
 - 首先在 Ubuntu 22.04／24.04 驗證，P4 擴至全部 active Ubuntu 版本；ARM64
   保持既有 preview 規則。P5 從同 SHA 的待發布 tarball 重建、安裝及實際打字，
   對應測試計畫 T14-SOURCE 子案例；完成後同步 BUILDING 與 Linux README 的正式指令。
+
+2026-09-13 已完成 thin configure wrapper、source-directory／out-of-source Makefile、
+`check`、manifest-based `uninstall`、`clean`／`distclean`、prefix／libdir／datadir、
+環境編譯旗標、source tarball 產生與 Ubuntu 22.04／24.04 CI gate。Ubuntu 24.04
+local amd64 container 已通過兩種 build、2/2 CTest、DESTDIR、含空白的自訂路徑、
+重新 configure、卸載保留 sentinel、同一 commit 的 2.0 MB source tarball 在無 `.git`
+與無 cache 的解壓目錄重建，以及預設 `/usr/local` 真安裝後的 Fcitx 5 → GTK 3 X11
+注音逐鍵輸入與 manifest 卸載。Ubuntu 22.04 與 24.04 hosted CI 仍待執行；`/usr`／
+任意自訂 prefix 的實際打字、升級／重裝及其餘 active Ubuntu 尚未完成，所以
+T14-SOURCE 與 P4／P5 不標成全部通過。
 
 ## 6. GitHub Actions 設計
 

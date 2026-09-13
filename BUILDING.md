@@ -12,7 +12,38 @@ Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only �
 
 ## Linux（開發中）
 
-在已安裝 CMake 3.22、Ninja、C++17 compiler 與 Fcitx 5 Core 開發檔的 Linux 上：
+傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler 與 Fcitx 5 Core 開發檔；
+不需要 Ninja、Docker、Autoconf 或 Automake。Ubuntu 可先安裝：
+
+```sh
+sudo apt-get install build-essential cmake libfcitx5core-dev
+```
+
+接著使用預設 `/usr/local` prefix：
+
+```sh
+cd Source/Loaders/Linux-IME
+./configure
+make -j2
+make check
+make DESTDIR="$PWD/out/source-stage" install
+```
+
+最後一行只做無權限的暫存安裝。要實際安裝改用 `sudo make install`，移除則用
+`sudo make uninstall`；uninstall 只依這次建置的 install manifest 刪除專案檔案，
+不刪除使用者設定、學習資料或其他檔案，也不會自動切換預設輸入法。發行版形式可改用
+`./configure --prefix=/usr`。若系統已安裝 `fcitx5-chichi77-keykey` 或
+`chichi77-keykey-data` 套件，不要直接覆寫套件管理器的檔案；先移除套件，或在回到套件版
+以前先執行 source build 的 `make uninstall`。
+
+`./configure --help` 另列出 `--libdir`、`--datadir` 與 adapter／測試選項，並支援
+`CXX`、`CPPFLAGS`、`CXXFLAGS`、`LDFLAGS`。`make clean` 保留配置，
+`make distclean` 只移除此 configure 產生的 wrapper Makefile 與隔離 build directory。
+也可另建空目錄，再從該目錄執行完整路徑的 `configure`。非標準 prefix 的 Fcitx session
+搜尋路徑與完整注意事項見
+[Linux frontend README](Source/Loaders/Linux-IME/README.md#configure-and-gnu-make-source-build)。
+
+開發者若已安裝 Ninja，也可繼續使用既有 CMake preset：
 
 ```sh
 cd Source/Loaders/Linux-IME
@@ -27,6 +58,7 @@ userspace。日常修改優先使用一個長駐的 native-architecture 開發 c
 ```sh
 Source/Loaders/Linux-IME/ci/dev.sh up
 Source/Loaders/Linux-IME/ci/dev.sh test
+Source/Loaders/Linux-IME/ci/dev.sh source
 Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
 Source/Loaders/Linux-IME/ci/dev.sh verify
 Source/Loaders/Linux-IME/ci/dev.sh package
@@ -329,8 +361,38 @@ acceptance, and release packages are not complete. See the
 
 ### Linux (in development)
 
-On Linux with CMake 3.22, Ninja, a C++17 compiler, and the Fcitx 5 Core
-development files installed:
+A traditional source build requires CMake 3.22, GNU Make, a C++17 compiler,
+and the Fcitx 5 Core development files. It does not require Ninja, Docker,
+Autoconf, or Automake. On Ubuntu, install the dependencies and build with the
+default `/usr/local` prefix as follows:
+
+```sh
+sudo apt-get install build-essential cmake libfcitx5core-dev
+cd Source/Loaders/Linux-IME
+./configure
+make -j2
+make check
+make DESTDIR="$PWD/out/source-stage" install
+```
+
+The final command is an unprivileged staging install. Use `sudo make install`
+for the real system install and `sudo make uninstall` to remove only the files
+recorded in that build's install manifest. User settings, learning data, and
+unrelated files remain untouched, and installation does not select a default
+input method. Use `./configure --prefix=/usr` for a distribution-style layout.
+Do not overwrite files owned by the `fcitx5-chichi77-keykey` or
+`chichi77-keykey-data` Debian packages; remove those packages first, or
+uninstall the source build before returning to package-managed files.
+
+Run `./configure --help` for `--libdir`, `--datadir`, adapter, and test options.
+The wrapper also honors `CXX`, `CPPFLAGS`, `CXXFLAGS`, and `LDFLAGS` and
+supports an out-of-source invocation. `make clean` preserves the configuration;
+`make distclean` removes only the generated wrapper Makefile and its private
+build directory. See the
+[Linux frontend README](Source/Loaders/Linux-IME/README.md#configure-and-gnu-make-source-build)
+for nonstandard Fcitx prefix activation.
+
+Developers with Ninja installed may continue to use the existing CMake preset:
 
 ```sh
 cd Source/Loaders/Linux-IME
@@ -346,6 +408,7 @@ normal edit/build/test loop:
 ```sh
 Source/Loaders/Linux-IME/ci/dev.sh up
 Source/Loaders/Linux-IME/ci/dev.sh test
+Source/Loaders/Linux-IME/ci/dev.sh source
 Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
 Source/Loaders/Linux-IME/ci/dev.sh verify
 Source/Loaders/Linux-IME/ci/dev.sh package

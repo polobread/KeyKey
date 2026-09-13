@@ -290,12 +290,23 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   named volumes；`down` 保留快取。`e2e` 可用完整 case ID 或逗號清單縮小範圍，結果
   JSON 只能列實際執行案例。這條路徑不乾淨，不能取代 `run-debian-package.sh` 的
   runtime dependency、升級、移除及重裝 gate。
-- **Linux configure／make 原始碼入口已列入計畫，尚未實作**：2026-09-13 使用者要求
-  支援 `./configure → make → make install`，規格見開發計畫第 5.1 節及測試計畫
-  T14-SOURCE。採沿用 CMake 的入口，不把第三方 `ExternalLibraries` 內的 configure
-  當成產品入口。實作時要查 Fcitx 的 `FCITX_INSTALL_LIBDIR`／`FCITX_INSTALL_PKGDATADIR`
-  與 runtime 資料位置是否一起遵守 prefix／libdir／datadir；只改 CMake prefix 不足以
-  證明自訂路徑可被框架找到，`DESTDIR` 也不得寫入執行期路徑。
+- **Linux configure／make 是包住獨立 CMake build 的薄層**：入口位於
+  `Source/Loaders/Linux-IME/configure`，source-directory 使用
+  `out/build/configure-make`，out-of-source 使用 `.keykey-configure-build`，兩者只在
+  呼叫目錄生成一份有 marker 的 wrapper `Makefile`。不可改成直接在 source root 跑
+  CMake，也不可讓 `distclean` 刪到其他 Ninja build。Fcitx addon／metadata 改用
+  `CMAKE_INSTALL_LIBDIR`／`CMAKE_INSTALL_DATADIR`，才能共同遵守
+  prefix／libdir／datadir；runtime data path 使用 full datadir，絕不可加入 `DESTDIR`。
+  CMake 3.28 的 GNUInstallDirs 可能把預設 `CMAKE_INSTALL_DATADIR` cache 欄位留空，實際
+  作用域仍是 `share`；摘要與測試必須讀 configure 時生成的
+  `keykey-install-layout.txt`，不能直接把空 cache 當成安裝根目錄。
+- **長駐 dev container 的 source gate 和一般 incremental build 權限不同**：rootless
+  container 的 user namespace 可能讓數字相同的 host UID 無法寫 bind-mounted checkout，
+  因此 `ci/dev.sh source` 在隔離 container 內以 root 跑測試，再由 distclean／精確的
+  `out/` 路徑清理；不可改用 host 的 sudo 或放寬 Docker socket。24.04 system E2E 會先
+  拒絕覆寫既有 `/usr/local` 目標，再暫裝、跑 T01 真打字，最後依 install manifest
+  卸載。2026-09-13 local amd64 已通過，含同一 commit 的 2.0 MB source tarball 在無
+  `.git`／無 cache 解壓目錄重建；22.04 與兩個 hosted job 尚未執行。
 - **探測 Fcitx D-Bus 就緒不能先呼叫 `fcitx5-remote`**：它會透過 D-Bus activation
   啟動第二個 Fcitx 並搶走名稱，使測試中的明確 PID 退出。先對 bus daemon 呼叫
   `NameHasOwner(org.fcitx.Fcitx5)`，確認原行程取得名稱後才能使用 remote 指令。
@@ -843,10 +854,16 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Linux 原生版
 
-- [ ] 完成 `LINUX_DEVELOPMENT_PLAN.md` 第 5.1 節的 configure／make 原始碼建置入口：
-      支援平行建置、check、prefix／DESTDIR、install／uninstall、clean／distclean；
-      以乾淨 source tarball 通過 T14-SOURCE，納入 P4／P5 及 Ubuntu 首版 gate。
-      此需求於 2026-09-13 加入計畫，目前未新增建置腳本或宣告已支援。
+- [x] 2026-09-13 完成 `LINUX_DEVELOPMENT_PLAN.md` 第 5.1 節的基本 configure／GNU Make
+      入口：平行建置、check、source-directory／out-of-source、prefix／libdir／datadir、
+      編譯環境旗標、DESTDIR、manifest install／uninstall、clean／distclean 與 source
+      tarball 腳本；納入 Ubuntu 22.04／24.04 workflow。24.04 local amd64 已通過兩種
+      build、2/2 CTest、staging／卸載／清理，及預設 `/usr/local` 暫時真安裝後的 Fcitx
+      5 → GTK 3 X11 T01 打字與卸載。
+- [ ] 完成 T14-SOURCE 其餘發布 gate：確認 Ubuntu 22.04／24.04 hosted 結果，再補
+      `/usr`／任意 prefix 三輸入法完整真打字、原始碼
+      升級／重裝、9 個 active Ubuntu 與 P4／P5 release evidence；目前局部結果不得當成
+      整組 T14 或 Linux 1.2.8 已可發布。
 - [x] 已將 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）設為首要支援與最完整
       測試目標；開發／測試計畫同步新增主環境完整驗收與 required CI 規格。
 - [x] 2026-09-12 完成開發／測試 plan 與原始碼功能盤點；沒有 Linux build、
