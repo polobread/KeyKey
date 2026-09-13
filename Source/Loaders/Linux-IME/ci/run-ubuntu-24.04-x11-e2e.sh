@@ -20,6 +20,14 @@ case "$platform" in
     ;;
 esac
 
+bind_mount_uid=$(id -u)
+bind_mount_gid=$(id -g)
+if docker info --format '{{json .SecurityOptions}}' |
+    grep -Fq '"name=rootless"'; then
+  bind_mount_uid=0
+  bind_mount_gid=0
+fi
+
 image="chichi77-keykey-linux-dev:ubuntu-24.04-x11-$architecture"
 build_dir="out/build/ubuntu-24.04-x11-$architecture"
 stage_dir="out/stage/ubuntu-24.04-x11-$architecture"
@@ -34,7 +42,7 @@ docker build \
 
 docker run --rm \
   --platform "$platform" \
-  --user "$(id -u):$(id -g)" \
+  --user "$bind_mount_uid:$bind_mount_gid" \
   --env KEYKEY_BUILD_DIR="$build_dir" \
   --env KEYKEY_STAGE_DIR="$stage_dir" \
   --env KEYKEY_BUILD_X11_E2E_HOST=ON \
@@ -50,8 +58,8 @@ docker run --rm \
   --env KEYKEY_E2E_ARTIFACT_DIR="$artifact_dir" \
   --env KEYKEY_E2E_CASES="${KEYKEY_E2E_CASES:-all}" \
   --env KEYKEY_E2E_KEY_DELAY_MS="${KEYKEY_E2E_KEY_DELAY_MS:-80}" \
-  --env KEYKEY_HOST_UID="$(id -u)" \
-  --env KEYKEY_HOST_GID="$(id -g)" \
+  --env KEYKEY_HOST_UID="$bind_mount_uid" \
+  --env KEYKEY_HOST_GID="$bind_mount_gid" \
   --volume "$repository_root:/workspace/KeyKey" \
   --workdir /workspace/KeyKey/Source/Loaders/Linux-IME \
   "$image" \

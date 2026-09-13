@@ -87,6 +87,7 @@ cp -a \
 cp -a \
   "$linux_dir/adapters" \
   "$linux_dir/ci" \
+  "$linux_dir/cmake" \
   "$linux_dir/data" \
   "$linux_dir/docs" \
   "$linux_dir/engine" \

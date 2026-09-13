@@ -45,6 +45,17 @@ Debian 開發套件生命週期驗證；hosted Linux CI、GNOME 與 Wayland 仍�
   這時 `docker info` 會顯示 `permission denied`。先在一般 WSL shell 重跑
   `docker info`；若正常，應允許該 sandbox 存取本機 socket，不要改用 `sudo docker`、
   `chmod 666` 或隨意改群組。這是呼叫行程隔離，不是 Docker daemon 未啟動。
+- Rootless Docker 的 bind mount 會把 WSL checkout owner 顯示成 container root；
+  one-shot package／X11 scripts 因此會從 `docker info` 偵測 rootless，改以 container
+  UID/GID 0 寫 `out/`。Rootful engine 才沿用 host UID/GID。不可一律傳
+  `--user "$(id -u)"`，否則 rootless engine 會在 CMake 建立 build directory 時得到
+  `Permission denied`；artifact cleanup 的 chown 也必須使用同一組 container-side
+  UID/GID。
+- 2026-09-13 同一台 WSL2／rootless Docker 主機已實跑兩個 one-shot gate：Ubuntu 22.04
+  的 Fcitx 5.0.14 build、2/2 CTest、lintian、安裝／移除／重裝全數通過；Ubuntu 24.04
+  的 preview 安裝、release 升級、移除／重裝與完整 17 個 X11 案例全數通過。另直接
+  執行 `run-ubuntu-24.04-x11-e2e.sh` 也通過 2/2 CTest 與 17/17，證明 rootless UID
+  選擇同時適用 package 與獨立 X11 路徑；這些仍不是 GNOME／native Wayland 驗收。
 - 長駐 container 把 named volume 掛在 `out/stage`，但 verify 會刪除再建立其下的
   `dev-container-ARCH`。`initialize_writable_paths` 必須 `chown` stage 的掛載父目錄
   `${stage_dir%/*}`，不能只改 child；否則 root 建立的新 volume 會讓非 root 開發使用者
@@ -351,7 +362,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   先限制輸出必須位於 `out/packages/`，再轉成絕對路徑；不要放寬成任意目錄。
 - **Debian source staging 必須保留 monorepo 的相對資料結構**：Linux CMake 以
   `Source/Loaders/Linux-IME/../../..` 找唯讀字表與根授權，因此 package script 只複製
-  所需 Linux 原始碼、四份舊資料 CIN、Linux 產生的 `tc2sc.cin`、McBopomofo
+  所需 Linux 原始碼（包含 CMake `cmake/*.in` configure template）、四份舊資料 CIN、
+  Linux 產生的 `tc2sc.cin`、McBopomofo
   `phrase.occ`、29 個分類 TSV、顯示名稱表與各自授權複製到暫存 source tree，
   不依賴 repo 外檔案。
   `1.2.8~preview1` 僅為首版 package upgrade 流程 fixture，不可宣稱是真實已發布舊版。

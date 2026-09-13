@@ -22,6 +22,14 @@ case "$platform" in
   *) echo "Unsupported KEYKEY_DOCKER_PLATFORM: $platform" >&2; exit 2 ;;
 esac
 
+bind_mount_uid=$(id -u)
+bind_mount_gid=$(id -g)
+if docker info --format '{{json .SecurityOptions}}' |
+    grep -Fq '"name=rootless"'; then
+  bind_mount_uid=0
+  bind_mount_gid=0
+fi
+
 build_image="chichi77-keykey-linux-package-build:$target-$architecture"
 test_image="chichi77-keykey-linux-package-test:$target-$architecture"
 build_dir="out/build/$target-package-$architecture"
@@ -49,7 +57,7 @@ else
 fi
 docker run --rm \
   --platform "$platform" \
-  --user "$(id -u):$(id -g)" \
+  --user "$bind_mount_uid:$bind_mount_gid" \
   --env KEYKEY_BUILD_DIR="$build_dir" \
   --env KEYKEY_STAGE_DIR="out/stage/$target-package-$architecture" \
   --env KEYKEY_BUILD_X11_E2E_HOST="$build_x11_host" \
@@ -61,7 +69,7 @@ docker run --rm \
 if [[ "$target" == ubuntu-24.04 ]]; then
   docker run --rm \
     --platform "$platform" \
-    --user "$(id -u):$(id -g)" \
+    --user "$bind_mount_uid:$bind_mount_gid" \
     --volume "$repository_root:/workspace/KeyKey" \
     --workdir /workspace/KeyKey/Source/Loaders/Linux-IME \
     "$build_image" \
@@ -69,7 +77,7 @@ if [[ "$target" == ubuntu-24.04 ]]; then
 fi
 docker run --rm \
   --platform "$platform" \
-  --user "$(id -u):$(id -g)" \
+  --user "$bind_mount_uid:$bind_mount_gid" \
   --volume "$repository_root:/workspace/KeyKey" \
   --workdir /workspace/KeyKey/Source/Loaders/Linux-IME \
   "$build_image" \
@@ -87,8 +95,8 @@ docker run --rm \
   --env KEYKEY_BUILD_DIR="$build_dir" \
   --env KEYKEY_PACKAGE_ARTIFACT_DIR="$artifact_dir" \
   --env KEYKEY_RUN_X11_E2E="$run_x11_e2e" \
-  --env KEYKEY_HOST_UID="$(id -u)" \
-  --env KEYKEY_HOST_GID="$(id -g)" \
+  --env KEYKEY_HOST_UID="$bind_mount_uid" \
+  --env KEYKEY_HOST_GID="$bind_mount_gid" \
   --volume "$repository_root:/workspace/KeyKey" \
   --workdir /workspace/KeyKey/Source/Loaders/Linux-IME \
   "$test_image" \
