@@ -1,12 +1,108 @@
 # 建置、安裝與打包 / Building, installation, and packaging
 
-本文件集中說明琦琦輸入法的 macOS、Windows、Android 與 iOS 建置流程。
+本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 是 1.2.8 起的原生支援目標，尚未實作，不能使用下列四平台命令建置 Linux。
-開發／套件規格見 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，
-實際打字與 GitHub Actions 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
+Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
+外掛與 local X11/GTK 3 真實逐鍵測試，但尚未完成全部功能、GNOME／Wayland 桌面
+驗收或正式套件。開發／套件規格見
+[LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
+驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
 [English](#english)
+
+## Linux（開發中）
+
+傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler 與 Fcitx 5 Core 開發檔；
+不需要 Ninja、Docker、Autoconf 或 Automake。Ubuntu 可先安裝：
+
+```sh
+sudo apt-get install build-essential cmake libfcitx5core-dev
+```
+
+接著使用預設 `/usr/local` prefix：
+
+```sh
+cd Source/Loaders/Linux-IME
+./configure
+make -j2
+make check
+make DESTDIR="$PWD/out/source-stage" install
+```
+
+最後一行只做無權限的暫存安裝。要實際安裝改用 `sudo make install`，移除則用
+`sudo make uninstall`；uninstall 只依這次建置的 install manifest 刪除專案檔案，
+不刪除使用者設定、其他使用者資料或其他檔案，也不會自動切換預設輸入法。發行版形式可改用
+`./configure --prefix=/usr`。若系統已安裝 `fcitx5-chichi77-keykey` 或
+`chichi77-keykey-data` 套件，不要直接覆寫套件管理器的檔案；先移除套件，或在回到套件版
+以前先執行 source build 的 `make uninstall`。
+
+`./configure --help` 另列出 `--libdir`、`--datadir` 與 adapter／測試選項，並支援
+`CXX`、`CPPFLAGS`、`CXXFLAGS`、`LDFLAGS`。`make clean` 保留配置，
+`make distclean` 只移除此 configure 產生的 wrapper Makefile 與隔離 build directory。
+也可另建空目錄，再從該目錄執行完整路徑的 `configure`。非標準 prefix 的 Fcitx session
+搜尋路徑與完整注意事項見
+[Linux frontend README](Source/Loaders/Linux-IME/README.md#configure-and-gnu-make-source-build)。
+
+開發者若已安裝 Ninja，也可繼續使用既有 CMake preset：
+
+```sh
+cd Source/Loaders/Linux-IME
+cmake --preset linux-release
+cmake --build --preset linux-release
+ctest --preset linux-release
+```
+
+macOS 開發機可用 Rancher Desktop 或其他 Docker-compatible engine 重現 Ubuntu
+userspace。日常修改優先使用一個長駐的 native-architecture 開發 container：
+
+```sh
+Source/Loaders/Linux-IME/ci/dev.sh up
+Source/Loaders/Linux-IME/ci/dev.sh test
+Source/Loaders/Linux-IME/ci/dev.sh source
+Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
+Source/Loaders/Linux-IME/ci/dev.sh verify
+Source/Loaders/Linux-IME/ci/dev.sh package
+```
+
+`dev.sh` 在 Apple Silicon 自動使用 `linux/arm64`，保留同一個 container，並把
+incremental build／stage 放在 Docker named volumes；`down` 只移除 container，保留
+編譯快取。`e2e` 可指定一個 case、逗號分隔的 cases 或 `all`。這條快速路徑產生的
+ARM64 package 是開發 preview，不能取代 x86_64 release gate；`package` 也不取代乾淨
+runtime container 的安裝／升級／移除驗證。
+
+Windows 11 可從 WSL2 Ubuntu 使用同一組指令。Repository 必須放在 WSL 的 Linux
+filesystem（例如 `/home/.../KeyKey`），不要放在 `/mnt/c` 或會自動轉 CRLF 的 Windows
+checkout；先確認 `docker info` 能從一般 WSL shell 連到 Linux container engine。
+若受限制的自動化行程回報 Docker socket `permission denied`，但一般 WSL shell 的
+`docker info` 正常，這是呼叫行程的 sandbox 權限，不是 daemon 或 socket mode 壞掉；
+應允許該行程存取本機 Docker socket，不要改用 `sudo docker` 或把 socket 改成
+world-writable。完整診斷與 named-volume 注意事項見
+[Linux frontend README](Source/Loaders/Linux-IME/README.md)。
+
+以下 one-shot 指令仍用於獨立、可重建的 Ubuntu userspace 檢查：
+
+```sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-24.04.sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-22.04.sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-24.04-x11-e2e.sh
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
+```
+
+第一個指令是主要 Ubuntu 24.04 / Fcitx 5 build，第二個守住 Ubuntu 22.04 的最低
+API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3 的 X11 真實逐鍵輸入：五種
+注音配置及各自的英文負控制，並驗證注音設定 schema；目前也保留已排除的倉頡／簡易
+垂直切片回歸，但不代表 Linux 1.2.8 支援。這些 one-shot 指令預設建立
+`linux/amd64` 產物；ARM64 preview 可在指令前設定
+`KEYKEY_DOCKER_PLATFORM=linux/arm64`。Xvfb E2E 是 L3 X11 證據，不等於 GNOME／
+native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
+[Linux frontend README](Source/Loaders/Linux-IME/README.md)。
+
+後兩個指令用 debhelper 產生依發行版命名的 `chichi77-keykey-data` 與
+`fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
+各跑一次二十一個純鍵盤 X11 真實打字案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
+點選、保存、重啟及真實打字案例；22.04 則跑較省時的套件安裝／移除 smoke。
+這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
 
 ## macOS
 
@@ -259,10 +355,105 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 ## English
 
-Native Linux support is targeted for version 1.2.8 onward but is not yet
-implemented. The existing four-platform commands do not build Linux. See the
-[development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md)
-for the native implementation, packaging, and GitHub Actions acceptance criteria.
+Native Linux development starts with version 1.2.8. A buildable Linux-only
+engine and Fcitx 5 addon skeleton exist, but full features, real desktop typing
+acceptance, and release packages are not complete. See the
+[development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
+
+### Linux (in development)
+
+A traditional source build requires CMake 3.22, GNU Make, a C++17 compiler,
+and the Fcitx 5 Core development files. It does not require Ninja, Docker,
+Autoconf, or Automake. On Ubuntu, install the dependencies and build with the
+default `/usr/local` prefix as follows:
+
+```sh
+sudo apt-get install build-essential cmake libfcitx5core-dev
+cd Source/Loaders/Linux-IME
+./configure
+make -j2
+make check
+make DESTDIR="$PWD/out/source-stage" install
+```
+
+The final command is an unprivileged staging install. Use `sudo make install`
+for the real system install and `sudo make uninstall` to remove only the files
+recorded in that build's install manifest. User settings, other user data, and
+unrelated files remain untouched, and installation does not select a default
+input method. Use `./configure --prefix=/usr` for a distribution-style layout.
+Do not overwrite files owned by the `fcitx5-chichi77-keykey` or
+`chichi77-keykey-data` Debian packages; remove those packages first, or
+uninstall the source build before returning to package-managed files.
+
+Run `./configure --help` for `--libdir`, `--datadir`, adapter, and test options.
+The wrapper also honors `CXX`, `CPPFLAGS`, `CXXFLAGS`, and `LDFLAGS` and
+supports an out-of-source invocation. `make clean` preserves the configuration;
+`make distclean` removes only the generated wrapper Makefile and its private
+build directory. See the
+[Linux frontend README](Source/Loaders/Linux-IME/README.md#configure-and-gnu-make-source-build)
+for nonstandard Fcitx prefix activation.
+
+Developers with Ninja installed may continue to use the existing CMake preset:
+
+```sh
+cd Source/Loaders/Linux-IME
+cmake --preset linux-release
+cmake --build --preset linux-release
+ctest --preset linux-release
+```
+
+Rancher Desktop or another Docker-compatible engine can reproduce the Ubuntu
+userspace from macOS. Use the persistent native-architecture container for the
+normal edit/build/test loop:
+
+```sh
+Source/Loaders/Linux-IME/ci/dev.sh up
+Source/Loaders/Linux-IME/ci/dev.sh test
+Source/Loaders/Linux-IME/ci/dev.sh source
+Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
+Source/Loaders/Linux-IME/ci/dev.sh verify
+Source/Loaders/Linux-IME/ci/dev.sh package
+```
+
+On Apple Silicon, `dev.sh` automatically uses `linux/arm64`. It reuses one
+container and keeps incremental build and staging files in Docker named
+volumes. `e2e` accepts one case, a comma-separated case list, or `all`; `down`
+removes the container but retains the compilation cache. ARM64 packages from
+this path are development previews, and `package` does not replace clean
+install/upgrade/removal acceptance.
+
+Windows 11 can use the same commands from WSL2 Ubuntu. Keep the repository on
+the WSL Linux filesystem, such as `/home/.../KeyKey`, rather than `/mnt/c` or a
+Windows checkout that converts files to CRLF. First verify that `docker info`
+can reach a Linux container engine from a normal WSL shell. If only a
+restricted automation process reports Docker socket `permission denied`, grant
+that process access to the local socket; do not use `sudo docker` or make the
+socket world-writable. See the Linux frontend README for the full diagnostics
+and named-volume ownership note.
+
+The following one-shot commands remain the independent, reproducible checks:
+
+```sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-24.04.sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-22.04.sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-24.04-x11-e2e.sh
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
+```
+
+The third one-shot command types physical key events through the staged Fcitx 5 addon
+into a GTK 3 entry on Xvfb and runs an English-keyboard negative control. They
+default to `linux/amd64`; set `KEYKEY_DOCKER_PLATFORM=linux/arm64` for the ARM64
+preview build. The Xvfb result is L3 X11 evidence and does not count as GNOME or
+native Wayland desktop typing acceptance. See the
+[Linux frontend README](Source/Loaders/Linux-IME/README.md) for current scope.
+
+The final two commands create distro-labelled `chichi77-keykey-data` and
+`fcitx5-chichi77-keykey` Debian packages with debhelper. Ubuntu 24.04 also runs
+the twenty-one keyboard-only X11 cases after install, controlled upgrade, and
+reinstall. The native Fcitx settings-window click, persistence, restart, and
+typing case runs once after reinstall. These are development artifacts until
+the remaining release gates are complete.
 
 ### macOS
 

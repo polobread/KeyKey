@@ -1,0 +1,29 @@
+set(KEYKEY_INSTALL_MANIFEST "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+
+if(NOT EXISTS "${KEYKEY_INSTALL_MANIFEST}")
+    message(FATAL_ERROR
+        "Install manifest not found: ${KEYKEY_INSTALL_MANIFEST}. "
+        "Run make install before make uninstall.")
+endif()
+
+file(STRINGS "${KEYKEY_INSTALL_MANIFEST}" KEYKEY_INSTALLED_FILES)
+if(NOT KEYKEY_INSTALLED_FILES)
+    message(FATAL_ERROR
+        "Install manifest is empty: ${KEYKEY_INSTALL_MANIFEST}")
+endif()
+
+foreach(KEYKEY_INSTALLED_FILE IN LISTS KEYKEY_INSTALLED_FILES)
+    set(KEYKEY_STAGED_FILE "$ENV{DESTDIR}${KEYKEY_INSTALLED_FILE}")
+    if(EXISTS "${KEYKEY_STAGED_FILE}" OR IS_SYMLINK "${KEYKEY_STAGED_FILE}")
+        message(STATUS "Removing ${KEYKEY_STAGED_FILE}")
+        execute_process(
+            COMMAND "@CMAKE_COMMAND@" -E rm -f "${KEYKEY_STAGED_FILE}"
+            RESULT_VARIABLE KEYKEY_REMOVE_RESULT
+        )
+        if(NOT KEYKEY_REMOVE_RESULT EQUAL 0)
+            message(FATAL_ERROR "Could not remove ${KEYKEY_STAGED_FILE}")
+        endif()
+    else()
+        message(STATUS "Already absent: ${KEYKEY_STAGED_FILE}")
+    endif()
+endforeach()

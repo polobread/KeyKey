@@ -1,0 +1,33 @@
+Source: chichi77-keykey
+Section: utils
+Priority: optional
+Maintainer: Chui-Ping Cheng <polobread@yahoo.com.tw>
+Build-Depends:
+ cmake (>= 3.22),
+ debhelper-compat (= 13),
+ g++,
+ libfcitx5core-dev,
+ ninja-build,
+Standards-Version: 4.6.2
+Homepage: https://github.com/polobread/KeyKey
+Rules-Requires-Root: no
+
+Package: chichi77-keykey-data
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: shared input-method data for chichi77 KeyKey
+ This package contains the architecture-independent Bopomofo, Cangjie,
+ Simplex, conversion, and built-in associated-phrase data used by the native
+ Linux chichi77 KeyKey input methods.
+
+Package: fcitx5-chichi77-keykey
+Architecture: any
+Depends:
+ chichi77-keykey-data (= ${source:Version}),
+ fcitx5,
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: chichi77 KeyKey input methods for Fcitx 5
+ This package provides native Fcitx 5 Bopomofo, Cangjie, and Simplex input
+ methods. It uses the separately packaged chichi77 KeyKey data tables.

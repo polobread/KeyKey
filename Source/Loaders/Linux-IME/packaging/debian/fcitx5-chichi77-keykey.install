@@ -1,0 +1,5 @@
+usr/lib/*/fcitx5/chichi77-keykey.so
+usr/share/fcitx5/addon/chichi77-keykey.conf
+usr/share/fcitx5/inputmethod/chichi77-keykey-bopomofo.conf
+usr/share/fcitx5/inputmethod/chichi77-keykey-cangjie.conf
+usr/share/fcitx5/inputmethod/chichi77-keykey-simplex.conf

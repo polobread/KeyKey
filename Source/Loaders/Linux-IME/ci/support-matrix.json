@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "productVersion": "1.2.8",
+  "updatedAt": "2026-09-12",
+  "policy": {
+    "primary": "Ubuntu 24.04 GNOME with Fcitx 5",
+    "activeDistroFamilies": ["ubuntu"],
+    "deferredDistroFamilies": ["debian", "fedora"],
+    "formalArchitecture": "x86_64",
+    "previewArchitecture": "aarch64",
+    "statusValues": ["pending", "build-only", "desktop-tested", "release-qualified"],
+    "warning": "build-only does not satisfy installed desktop typing acceptance"
+  },
+  "targets": [
+    {
+      "distro": "ubuntu", "version": "22.04", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt5", "qt6", "firefox"],
+      "suite": "release-full", "required": true, "priority": "compatibility", "maintenance": "supported",
+      "status": "build-only", "imageDigest": "ubuntu:22.04@sha256:829f6df217bcbae2b371026e81711d1a787c61b2967ad09d015063663ebafbf7"
+    },
+    {
+      "distro": "ubuntu", "version": "22.10", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "release-full", "required": true, "priority": "compatibility", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "ubuntu", "version": "23.04", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "release-full", "required": true, "priority": "compatibility", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "ubuntu", "version": "23.10", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "release-full", "required": true, "priority": "compatibility", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "ubuntu", "version": "24.04", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["fcitx5", "ibus"], "appBackends": ["gtk3", "gtk4", "qt5", "qt6", "firefox", "chromium", "electron", "libreoffice"],
+      "suite": "primary-full", "required": true, "priority": "primary", "maintenance": "supported",
+      "status": "desktop-tested", "imageDigest": "ubuntu:24.04@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254"
+    },
+    {
+      "distro": "ubuntu", "version": "24.10", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "release-full", "required": true, "priority": "compatibility", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "ubuntu", "version": "25.04", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "release-full", "required": true, "priority": "compatibility", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "ubuntu", "version": "25.10", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "release-full", "required": true, "priority": "compatibility", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "ubuntu", "version": "26.04", "phase": "active", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox", "chromium", "electron", "libreoffice"],
+      "suite": "release-full", "required": true, "priority": "compatibility", "maintenance": "supported",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "debian", "version": "12", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["plasma", "xfce"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["fcitx5", "ibus"], "appBackends": ["gtk3", "gtk4", "qt5", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "supported",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "debian", "version": "13", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["plasma", "xfce"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["fcitx5", "ibus"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "supported",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "36", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "37", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "38", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "39", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "40", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "41", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "42", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "historical-eol",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "43", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox", "chromium", "electron", "libreoffice"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "supported",
+      "status": "pending", "imageDigest": null
+    },
+    {
+      "distro": "fedora", "version": "44", "phase": "future-todo", "architectures": ["x86_64", "aarch64-preview"],
+      "desktops": ["gnome", "plasma"], "sessions": ["x11", "wayland", "xwayland"],
+      "frameworks": ["ibus", "fcitx5"], "appBackends": ["gtk3", "gtk4", "qt6", "firefox", "chromium", "electron", "libreoffice"],
+      "suite": "future-todo", "required": false, "priority": "future", "maintenance": "supported",
+      "status": "pending", "imageDigest": null
+    }
+  ]
+}
