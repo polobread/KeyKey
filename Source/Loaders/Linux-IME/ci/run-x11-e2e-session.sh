@@ -7,6 +7,7 @@ test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
 
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-STANDARD
+  T02-X11-GTK3-BOPOMOFO-STANDARD
   T02-X11-GTK3-BOPOMOFO-ETEN
   T02-X11-GTK3-BOPOMOFO-ETEN26
   T02-X11-GTK3-BOPOMOFO-HSU
@@ -508,25 +509,41 @@ if case_selected T01-X11-GTK3-BOPOMOFO-STANDARD; then
     中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1
   verify_bopomofo_config_schema
 fi
+if case_selected T02-X11-GTK3-BOPOMOFO-STANDARD; then
+  set_bopomofo_layout Standard
+  run_case T02-X11-GTK3-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
+    麻馬罵嘛 'a86 1a83 1a84 1a87 1' \
+    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    a 8 6 space 1 a 8 3 space 1 a 8 4 space 1 a 8 7 space 1
+fi
 if case_selected T02-X11-GTK3-BOPOMOFO-ETEN; then
   set_bopomofo_layout ETen
   run_case T02-X11-GTK3-BOPOMOFO-ETEN chichi77-keykey-bopomofo \
-    中 ',x- 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' comma x minus space 1
+    麻馬罵嘛 'ma2 1ma3 1ma4 1ma1 1' \
+    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m a 2 space 1 m a 3 space 1 m a 4 space 1 m a 1 space 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-ETEN26; then
   set_bopomofo_layout ETen26
   run_case T02-X11-GTK3-BOPOMOFO-ETEN26 chichi77-keykey-bopomofo \
-    中 'gxl 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' g x l space 1
+    麻馬罵嘛 'maf 1maj 1mak 1mad 1' \
+    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m a f space 1 m a j space 1 m a k space 1 m a d space 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-HSU; then
   set_bopomofo_layout Hsu
   run_case T02-X11-GTK3-BOPOMOFO-HSU chichi77-keykey-bopomofo \
-    中 'jxl 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' j x l space 1
+    麻馬罵嘛 'myd 1myf 1myj 1mys 1' \
+    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m y d space 1 m y f space 1 m y j space 1 m y s space 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN; then
   set_bopomofo_layout HanyuPinyin
   run_case T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN chichi77-keykey-bopomofo \
-    中 'zhong 1' 'z,zh,zho,zhon,zhong' z h o n g space 1
+    麻馬罵嘛 'ma2 1ma3 1ma4 1ma5 1' \
+    'z,zh,m,ma,ma2,ma3,ma4,ma5' \
+    z h BackSpace BackSpace \
+    m a 2 space 1 m a 3 space 1 m a 4 space 1 m a 5 space 1
 fi
 if case_selected T04-X11-GTK3-CANGJIE; then
   run_case T04-X11-GTK3-CANGJIE chichi77-keykey-cangjie \

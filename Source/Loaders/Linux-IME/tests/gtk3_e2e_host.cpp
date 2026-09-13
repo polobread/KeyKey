@@ -15,7 +15,7 @@ struct TestState {
     std::string expectedCommit;
     std::string expectedLiteral;
     std::vector<std::string> requiredPreedits;
-    std::vector<bool> sawPreedits;
+    std::size_t nextRequiredPreedit = 0;
     bool positiveComplete = false;
     bool clearedAfterPositive = false;
     bool success = false;
@@ -36,12 +36,7 @@ std::vector<std::string> split(const std::string &value, char separator) {
 }
 
 bool sawAllRequiredPreedits(const TestState &state) {
-    for (const bool sawPreedit : state.sawPreedits) {
-        if (!sawPreedit) {
-            return false;
-        }
-    }
-    return true;
+    return state.nextRequiredPreedit == state.requiredPreedits.size();
 }
 
 std::string jsonString(const std::string &value) {
@@ -107,10 +102,9 @@ void onPreeditChanged(GtkEntry *, gchar *preedit, gpointer userData) {
     auto &state = *static_cast<TestState *>(userData);
     const std::string value = preedit == nullptr ? "" : preedit;
     appendEvent(state, "preedit", value);
-    for (std::size_t index = 0; index < state.requiredPreedits.size(); ++index) {
-        if (value == state.requiredPreedits[index]) {
-            state.sawPreedits[index] = true;
-        }
+    if (state.nextRequiredPreedit < state.requiredPreedits.size() &&
+        value == state.requiredPreedits[state.nextRequiredPreedit]) {
+        ++state.nextRequiredPreedit;
     }
 }
 
@@ -171,8 +165,6 @@ int main(int argc, char **argv) {
     if (*requiredPreedits != '\0') {
         state.requiredPreedits = split(requiredPreedits, ',');
     }
-    state.sawPreedits.assign(state.requiredPreedits.size(), false);
-
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "chichi77-keykey-gtk3-e2e");
     gtk_window_set_default_size(GTK_WINDOW(window), 480, 100);

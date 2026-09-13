@@ -28,8 +28,9 @@ The initial vertical slice provides:
   layout, representative Hanyu Pinyin initials/finals/tones, and punctuation
   shortcut/list behavior;
 - an installed-package X11 E2E test that sends physical key events into a real
-  GTK 3 entry and verifies all five Bopomofo layouts → `中`, Cangjie `a` →
-  `日`, Simplex `a` → second candidate `曰`, and Bopomofo second-page keyboard
+  GTK 3 entry and verifies Standard Bopomofo → `中`, all five layouts and all
+  four explicit tones → `麻馬罵嘛`, incomplete Pinyin backspace recovery,
+  Cangjie `a` → `日`, Simplex `a` → second candidate `曰`, and Bopomofo second-page keyboard
   navigation → `妐`, `Shift+Space` full-width input → `Ａ！～　`, plus
   Traditional-to-Simplified output `臺灣` → `台湾`, plus `Ctrl+0` symbol-list
   selection → `，`, plus associated-phrase default `今` → `今天`,
@@ -44,7 +45,7 @@ The initial vertical slice provides:
 - Debian packages named `chichi77-keykey-data` and
   `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
 - a package lifecycle test covering install, controlled preview-to-1.2.8
-  upgrade, removal, reinstall, dependency/file/hash checks, the sixteen
+  upgrade, removal, reinstall, dependency/file/hash checks, the seventeen
   keyboard-only X11 cases after each installed state, and the settings-window
   case once after reinstall;
 - a persistent Fcitx-native settings schema with a five-layout combo box, a
@@ -211,6 +212,11 @@ the named build volumes, so a later `up` can continue incrementally.
   for `/run/user/UID/docker.sock`, grant that process access to the local
   Docker socket and retry. Do not use `sudo docker`, change the socket to mode
   `666`, or add unrelated groups merely to bypass a process sandbox.
+- The one-shot build, X11, and package scripts detect a rootless engine and
+  use container-side UID/GID 0 for the bind-mounted checkout. Rootful engines
+  continue to use the host UID/GID. Do not simplify those paths to an
+  unconditional `--user "$(id -u):$(id -g)"`: after a clean build-directory
+  removal, CMake may no longer be able to recreate `CMakeFiles` on WSL.
 - Run `ci/dev.sh status`, `ci/dev.sh test`, and then `ci/dev.sh verify` after
   `up`. Container presence alone does not prove that the build and X11 paths
   can use the persistent volumes.
@@ -282,9 +288,9 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
 Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
-The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the sixteen
+The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the seventeen
 keyboard-only X11 cases, upgrades to `1.2.8`, runs them again, removes and
-reinstalls the packages, then runs all seventeen cases. Running the UI-heavy
+reinstalls the packages, then runs all eighteen cases. Running the UI-heavy
 case once keeps the installed-package proof while avoiding three identical Qt
 startup cycles. The 22.04 path performs build, lintian,
 dependency, file/data checksum, install/remove/reinstall, and ELF checks but

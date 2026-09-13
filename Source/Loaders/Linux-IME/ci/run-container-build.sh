@@ -37,6 +37,13 @@ esac
 image="chichi77-keykey-linux-dev:$target-$architecture"
 build_dir="out/build/$target-$architecture"
 stage_dir="out/stage/$target-$architecture"
+bind_mount_uid=$(id -u)
+bind_mount_gid=$(id -g)
+if docker info --format '{{json .SecurityOptions}}' |
+    grep -Fq '"name=rootless"'; then
+  bind_mount_uid=0
+  bind_mount_gid=0
+fi
 
 docker build \
   --platform "$platform" \
@@ -47,7 +54,7 @@ docker build \
 
 docker run --rm \
   --platform "$platform" \
-  --user "$(id -u):$(id -g)" \
+  --user "$bind_mount_uid:$bind_mount_gid" \
   --env KEYKEY_BUILD_DIR="$build_dir" \
   --env KEYKEY_STAGE_DIR="$stage_dir" \
   --volume "$repository_root:/workspace/KeyKey" \

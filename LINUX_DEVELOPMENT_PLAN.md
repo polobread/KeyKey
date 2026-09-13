@@ -448,7 +448,9 @@ context 獨立狀態、嚴格 CIN reader、五種注音布局、Fcitx 原生布�
 Fcitx 5 addon。Rancher Desktop container 已在 Ubuntu 24.04（Fcitx 5.1.7）與 22.04
 （Fcitx 5.0.14）x86_64 userspace 編譯、跑 CTest 並驗證 staged install；24.04 ARM64
 build 亦已通過。Ubuntu 24.04 x86_64 另以 Xvfb、獨立 D-Bus、Fcitx 5 與 GTK 3 host
-完成十七個最小 installed-addon L3 X11 流程：五種注音鍵序皆選出「中」、倉頡 `a`
+完成十八個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
+五種注音配置的 T02 鍵序皆以二、三、四、輕聲選出「麻馬罵嘛」，
+漢語拼音並清除不完整 `zh`；倉頡 `a`
 選「日」、簡易 `a` 選第二候選「曰」，並以 PageDown、Down、Enter 從注音第二頁
 選出「妐」；`Shift+Space` 全形流程提交精確 `Ａ！～　`；繁轉簡開啟時逐字選出
 真實候選「臺灣」並提交「台湾」；另以 `Ctrl+0`
@@ -459,12 +461,13 @@ migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫
 `fcitx5-config-qt` 的輸入法與核取方塊，實際點選只開 agriculture-food、保存並重啟後
 逐鍵輸出「作物育種」，同時保存切換前後截圖。各案都有 `keyboard-us` 負控制，
 並確認執行中 Fcitx process 載入 staged `.so`。真正安裝的 Ubuntu 24.04 `.deb`
-在 `1.2.8~preview1` 初裝與升級狀態各跑十六個鍵盤案例，移除後重裝則跑全部十七案；
+在 `1.2.8~preview1` 初裝與升級狀態各跑十七個鍵盤案例，移除後重裝則跑全部十八案；
 套件同時核對 debhelper/lintian、ELF dependency、架構、版本、安裝清單、資料 hash、
 授權檔與使用者設定保留。Ubuntu 22.04 的對應 `.deb` 亦已在 Fcitx 5.0.14 userspace
 建置，並於乾淨 runtime container 通過安裝、移除、重裝及相同的非桌面套件檢查。
 倉頡與簡易目前只有字根 preedit、基本候選與五碼／
-兩碼上限，不代表 F03／F04 完成；五配置也尚未完成 T02 的所有聲調與錯誤輸入 E2E。
+兩碼上限，不代表 F03／F04 完成；T02 已覆蓋五配置的二、三、四、輕聲
+與漢語拼音不完整輸入退格，但更廣的錯誤輸入仍待 macOS baseline 與完整 E2E。
 這不是 GNOME session；P0 所要求的 native Wayland／XWayland、完整桌面/App、popup
 與 hosted runner 實證仍未完成。
 

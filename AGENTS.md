@@ -16,7 +16,8 @@ KeyKeyEngine／OpenVanilla 核心。2026-09-12 已完成規劃、四平台版號
 第一段 Linux-only engine／Fcitx 5 垂直切片；local Ubuntu 24.04 Xvfb/GTK 3 的 L3
 真實輸入已通過，並含五種注音布局、候選鍵盤導覽、標點／符號候選、30 套內建關聯詞、
 Fcitx 原生設定 schema 與 Ubuntu 22.04／24.04
-Debian 開發套件生命週期驗證；hosted Linux CI、GNOME 與 Wayland 仍未跑。版號更新與這些 local
+Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基線已通過，
+GNOME 與 Wayland 仍未跑。版號更新與這些 local
 測試都不代表 Linux 已可發布。
 **主要支援／最完整測試環境是 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）**；
 先完成 X11、native Wayland、XWayland 的完整打字／視窗／App／套件驗收，再完成
@@ -25,8 +26,9 @@ Debian 開發套件生命週期驗證；hosted Linux CI、GNOME 與 Wayland 仍�
 
 ### 2026-09-13 Windows 11 主機接手 Linux 原生版
 
-- 遠端開發分支是 `origin/v1.2.8`，相對 `origin/master` 只有一筆
-  `Add native Ubuntu Fcitx 5 support`。該分支曾改寫歷史；若 Windows 上已有舊的
+- 遠端開發分支是 `origin/v1.2.8`；接手時先用
+  `git log --oneline origin/master..origin/v1.2.8` 確認當前 Linux 提交串。
+  該分支曾改寫歷史；若 Windows 上已有舊的
   `v1.2.8`，先保存未提交工作、重新 fetch，再對齊遠端，不能把舊的七筆歷史 merge
   回來。正式詞庫保留原始內容；Linux 測試與文件不使用「中國／中国／中!」案例。
 - 在 Windows 上接續的是 **Linux Fcitx 5 frontend**，不是 Windows TSF。建議從
@@ -39,7 +41,9 @@ Debian 開發套件生命週期驗證；hosted Linux CI、GNOME 與 Wayland 仍�
   amd64 package gate 時的模擬成本。2026-09-13 已在 Windows 11 + WSL2 Ubuntu
   24.04.4、WSL ext4 checkout、rootless Docker 29.8.0 實跑 warm `ci/dev.sh verify`：
   2 個 CTest 與 17 個 X11 案例全數通過，總耗時 18.22 秒。當時 dependency image 與
-  container 已存在，不能把這筆時間當成全新主機的 cold build；下次乾淨環境仍須記錄。
+  container 已存在，不能把這筆時間當成全新主機的 cold build；後續擴充
+  T02 聲調後的 2 個 CTest 與 18 個 X11 案例亦在同一 WSL 環境通過。
+  下次乾淨環境仍須記錄 cold build。
 - 受限制的自動化行程可能無法開啟 rootless Docker 的
   `/run/user/UID/docker.sock`，即使 socket owner、mode 與一般 WSL shell 都正常；
   這時 `docker info` 會顯示 `permission denied`。先在一般 WSL shell 重跑
@@ -53,8 +57,9 @@ Debian 開發套件生命週期驗證；hosted Linux CI、GNOME 與 Wayland 仍�
   UID/GID。
 - 2026-09-13 同一台 WSL2／rootless Docker 主機已實跑兩個 one-shot gate：Ubuntu 22.04
   的 Fcitx 5.0.14 build、2/2 CTest、lintian、安裝／移除／重裝全數通過；Ubuntu 24.04
-  的 preview 安裝、release 升級、移除／重裝與完整 17 個 X11 案例全數通過。另直接
-  執行 `run-ubuntu-24.04-x11-e2e.sh` 也通過 2/2 CTest 與 17/17，證明 rootless UID
+  的 preview 安裝、release 升級、移除／重裝全數通過；擴充 T02 後再實跑
+  初裝與升級各 17 個純鍵盤案例，重裝後完整 18 案例也全數通過。
+  另直接執行 `run-ubuntu-24.04-x11-e2e.sh` 的原 17/17 基線亦通過，證明 rootless UID
   選擇同時適用 package 與獨立 X11 路徑；這些仍不是 GNOME／native Wayland 驗收。
 - 長駐 container 把 named volume 掛在 `out/stage`，但 verify 會刪除再建立其下的
   `dev-container-ARCH`。`initialize_writable_paths` 必須 `chown` stage 的掛載父目錄
@@ -72,14 +77,14 @@ Debian 開發套件生命週期驗證；hosted Linux CI、GNOME 與 Wayland 仍�
   Source/Loaders/Linux-IME/ci/dev.sh verify
   ```
 
-  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 17 個
+  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 18 個
   Xvfb/GTK3/Fcitx 案例。`run-debian-package.sh ubuntu-24.04` 是乾淨安裝、升級、移除、
   重裝的 amd64 套件 gate，只在里程碑跑，不要每次修改都跑。Windows 桌面本身不能
   取代 GNOME／native Wayland 驗收；Xvfb 通過後仍須另找真 Linux desktop／VM。
-- 移交前最後狀態：macOS ARM64 長駐 container 的 CTest 2/2 與完整 X11 suite 17/17
-  通過；把停用關聯詞案例改為逐鍵輸出「臺!」後，又單獨重跑該案並通過。Windows
-  主機不會取得原 Mac 的 container／named volumes，首次執行較慢屬正常，之後應以
-  同一 `ci/dev.sh` session 迭代。
+- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 18/18
+  通過；Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級、移除／重裝也已
+  以新案例重跑通過。Windows 主機不會取得原 Mac 的 container／named volumes，
+  首次執行較慢屬正常，之後應以同一 `ci/dev.sh` session 迭代。
 
 ---
 
@@ -321,7 +326,13 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   前者是取代而非只附加內建 addon 目錄，必須一併加入 Fcitx5Core pkg-config 回報的
   system libdir 下 `fcitx5`，否則連 D-Bus／XCB addon 都找不到，Fcitx 不會就緒。
   `/usr` 安裝則使用發行版原生位置。2026-09-13 local amd64 已通過，含同一 commit 的 2.0 MB source tarball 在無
-  `.git`／無 cache 解壓目錄重建；22.04 與兩個 hosted job 尚未執行。
+  `.git`／無 cache 解壓目錄重建；Ubuntu 22.04／24.04 兩個 hosted job 亦已在
+  run `34742072894` 通過。
+- **Rootless Docker 的 one-shot build 也要使用 container-side root**：
+  `run-container-build.sh`、獨立 X11 與 package scripts 的 bind mount 規則一致。
+  Rootless engine 會把 WSL checkout owner 映射為 container UID/GID 0；若仍傳 host
+  UID/GID，清掉舊 build directory 後 CMake 會因無法建立 `CMakeFiles` 報一串
+  誤導性 compiler 偵測錯誤。先從 `docker info` 判斷 rootless；rootful 才傳 host UID/GID。
 - **探測 Fcitx D-Bus 就緒不能先呼叫 `fcitx5-remote`**：它會透過 D-Bus activation
   啟動第二個 Fcitx 並搶走名稱，使測試中的明確 PID 退出。先對 bus daemon 呼叫
   `NameHasOwner(org.fcitx.Fcitx5)`，確認原行程取得名稱後才能使用 remote 指令。
@@ -333,7 +344,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   private bus 啟動的額外 process，內層測試 cleanup 即使 kill／wait 自己追蹤的 Fcitx、
   GTK host 與 Xvfb，AT-SPI 仍可能短暫寫入 `/tmp/chichi77-keykey-e2e.*`。若在
   `dbus-run-session` 返回前執行 `cmake -E remove_directory`，會偶發因目錄內容競態失敗，
-  把其實已通過的 17 案例改判紅燈。runtime root 由外層建立，待 bus 完全退出後有界
+  把其實已通過的完整 suite 改判紅燈。runtime root 由外層建立，待 bus 完全退出後有界
   重試清理，並保留原測試 exit code；不可把清理搬回 session 內。
 - **`fcitx5-remote -r` 不會重載 input-method addon 自己的設定**：五布局 E2E 寫入
   `conf/chichi77-keykey.conf` 後，須同步呼叫 Controller1 的 `ReloadAddonConfig`
@@ -882,8 +893,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       tarball 腳本；納入 Ubuntu 22.04／24.04 workflow。24.04 local amd64 已通過兩種
       build、2/2 CTest、staging／卸載／清理，及預設 `/usr/local` 暫時真安裝後的 Fcitx
       5 → GTK 3 X11 T01 打字與卸載。
-- [ ] 完成 T14-SOURCE 其餘發布 gate：確認 Ubuntu 22.04／24.04 hosted 結果，再補
-      `/usr`／任意 prefix 三輸入法完整真打字、原始碼
+- [ ] 完成 T14-SOURCE 其餘發布 gate：Ubuntu 22.04／24.04 hosted 已在
+      run `34742072894` 通過；再補 `/usr`／任意 prefix 三輸入法完整真打字、原始碼
       升級／重裝、9 個 active Ubuntu 與 P4／P5 release evidence；目前局部結果不得當成
       整組 T14 或 Linux 1.2.8 已可發布。
 - [x] 已將 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）設為首要支援與最完整
@@ -904,28 +915,33 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       real-data CTest、staged install／dependency／factory export 驗證及單一
       `linux-ci.yml`，並建立 parity ledger 與 20 版本 machine-readable matrix。
       Ubuntu 24.04 x86_64／ARM64 preview 與 22.04 x86_64 local container build/test
-      已通過；24.04 ASan/UBSan 通過，hosted workflow 與 GNOME 真打字尚未執行。
+      已通過；24.04 ASan/UBSan 通過。後續 hosted workflow run `34742072894`
+      兩個 job 全綠；GNOME 真打字尚未執行。
 - [x] 2026-09-12 加入 Ubuntu 24.04 Fcitx 5 installed-addon X11 E2E：獨立 D-Bus、
       Xvfb、GTK 3 Entry 與 XTest/xdotool；逐鍵驗證注音 `ㄓ` → `ㄓㄨ` → `ㄓㄨㄥ`
       →「中」、倉頡 `a` →「日」、簡易 `a` →第二候選「曰」，`/proc` maps 核對
       staged addon，三者切到 `keyboard-us` 後同鍵序負控制分別為 `5j/ 1`、`a 1`、`a 2`。
-      已在 Rancher Desktop x86_64 通過；併入既有 24.04 job，不新增 workflow/job，
-      hosted runner 尚未執行，GNOME／Wayland／popup 不得視為已驗收。
+      已在 Rancher Desktop x86_64 通過；併入既有 24.04 job，不新增 workflow/job。
+      後續 hosted runner 已通過；GNOME／Wayland／popup 不得視為已驗收。
 - [x] 2026-09-12 完成 Linux 注音 Standard、ETen、ETen26、Hsu、HanyuPinyin 五種
       鍵盤配置與 Fcitx 原生持久化下拉設定。L1 對固定 `bpmf-ext.cin` 的 1,541 筆
       unique keys 驗證可正規化鍵序，round-trip 覆蓋為 Standard／ETen 各 1,521、
       ETen26 1,495、Hsu 1,494；複用鍵無法區分的碰撞保留明確 exclusion。Ubuntu 24.04
-      installed-addon X11/GTK3 另以五種實體鍵序 commit「中」，查詢 running Fcitx 的
-      五值設定 schema，且每案都有 `keyboard-us` 負控制；倉頡／簡易案例一併回歸通過。
-      這不等於完整 T02、GNOME／Wayland、候選窗畫面或 hosted Actions 已驗收。
+      installed-addon X11/GTK3 後續擴充為五配置的二、三、四、輕聲逐鍵流程，
+      均 commit「麻馬罵嘛」；ETen26／Hsu 核對複用鍵消歧中間態，漢語拼音另核對
+      不完整 `zh` 退格到空，GTK host 並改為依序核對 preedit。五值設定 schema
+      與每案 `keyboard-us` 負控制皆通過。這不等於更廣的錯誤輸入、GNOME／Wayland、
+      候選窗畫面或完整 T02 已驗收。
 - [x] 2026-09-12 建立 debhelper Debian packaging，產出
       `chichi77-keykey-data`（all）與 `fcitx5-chichi77-keykey`（每架構）兩包；Ubuntu
       24.04 amd64 local 已通過 lintian error gate、乾淨 runtime 安裝、受控 preview
-      fixture 升級、移除、重裝，以及三個已安裝狀態各十六案例 X11/GTK3 真實打字；
-      UI 較重的第十七案只在重裝後執行一次。
+      fixture 升級、移除、重裝；擴充 T02 後的最新 local gate 在初裝與升級
+      各跑十七個純鍵盤 X11/GTK3 真實打字案例，重裝後跑完整十八案，
+      UI 較重的設定案例只在重裝後執行一次。
       Ubuntu 22.04 amd64 local 亦已在 Fcitx 5.0.14 通過建置、lintian error gate、
       乾淨 runtime 安裝、移除、重裝、dependency／資料 hash／授權檢查；該 smoke
-      已接入既有第二個 CI job，仍待 hosted 實跑。workflow 總數維持 1、job 數維持 2，
+      已接入既有第二個 CI job，並在 run `34742072894` 通過。workflow 總數維持 1、
+      job 數維持 2，
       尚非正式發布套件。
 - [x] 2026-09-12 完成第一段 F06 候選鍵盤導覽：Linux engine 與 Fcitx 5 支援
       Up／Down 跨頁循環反白、Left／Right／PageUp／PageDown 循環翻頁及 Enter 確定；
@@ -984,11 +1000,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       packages／安裝升級驗證，以及 PR／手動完整測試／release workflows；Linux desktop
       workflow 不設排程，未實跑不勾選。
 - [x] 2026-09-13 在 Windows 11 x64 + WSL2 Ubuntu 24.04.4 + rootless Linux container
-      engine 實跑 warm `ci/dev.sh verify`；`linux/amd64`、2 個 CTest、17 個 X11 案例
-      全數通過，耗時 18.22 秒。這只補 Windows-hosted container 證據，不得取代
+      engine 實跑 warm `ci/dev.sh verify`；初始 17 案耗時 18.22 秒，擴充 T02 後
+      `linux/amd64`、2 個 CTest、18 個 X11 案例亦全數通過。這只補 Windows-hosted
+      container 證據，不得取代
       GNOME／native Wayland 驗收。
-- [ ] 下次全新 WSL 主機記錄 dependency image cold build 時間；里程碑另跑 Ubuntu
-      24.04 package lifecycle，不能用 warm verify 取代乾淨安裝／升級／移除／重裝 gate。
+- [ ] 下次全新 WSL 主機記錄 dependency image cold build 時間；目前 warm verify
+      與已完成的 24.04 package lifecycle 都不能代表 cold build 時間。
 - [ ] Ubuntu 完整發布 gate 達成後，才開始 P6 Debian 12／13 與 Fedora 36–44；
       重新計算四年範圍並逐列建立原生套件、桌面 E2E 與必要 CI。
 

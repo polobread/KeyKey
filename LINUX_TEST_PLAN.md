@@ -27,9 +27,12 @@ filter 同源的 3,058 筆繁轉簡單字對映；關聯詞另以原生 parser �
 `Shift+1–9` 詞尾選取；Ubuntu 24.04 的相同 engine suite
 亦已通過 ASan/UBSan。
 
-另有十七筆可重現的最小 L3 X11 證據：在 Ubuntu 24.04 x86_64 container 以獨立 D-Bus、
-Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，五種注音配置分別以 `5j/`、`,x-`、`gxl`、
-`jxl`、`zhong` 選「中」，倉頡 `a` 選第一候選「日」，簡易 `a` 選第二候選「曰」；
+另有十八筆可重現的最小 L3 X11 證據：在 Ubuntu 24.04 x86_64 container 以獨立 D-Bus、
+Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，T01 以 Standard `5j/` 選「中」；T02
+在 Standard、ETen、ETen26、Hsu、Hanyu Pinyin 五種配置逐鍵輸入二、三、
+四、輕聲的「麻馬罵嘛」，固定 ETen26／Hsu 複用鍵的消歧中間態，漢語拼音
+另驗證不完整 `zh` 依序退格為 `z` 與空 preedit；倉頡 `a` 選第一候選
+「日」，簡易 `a` 選第二候選「曰」；
 另以注音 `5j/` 開啟 148 個真實候選，送 PageDown、Down、Enter 選出「妐」；
 `Shift+Space`、`Shift+A`、`Shift+1`、`Shift+\``、Space 提交精確全形 `Ａ！～　`，
 `keyboard-us` 負控制為 ` A!~ `；另以 `Ctrl+0` 開啟真實標點／符號候選並按
@@ -42,19 +45,21 @@ Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，五種注音配置分別以 `5j/`、`,x-
 再以實際按鍵得到「中程計畫」；第六案以 AT-SPI 定位已安裝 `fcitx5-config-qt` 的
 輸入法列及核取方塊，實際點選只開 agriculture-food、保存、核對 INI、重啟並讀回後，
 以 `yji4` 選「作」再按 `Shift+1` 得到「作物育種」，同時保存切換前後 PNG。
-五種注音皆逐步核對 preedit；Fcitx D-Bus schema 亦確認
+五種注音皆依發生順序核對 preedit；Fcitx D-Bus schema 亦確認
 `BopomofoLayout` 下拉選項含 Standard、ETen、ETen26、Hsu、HanyuPinyin，並包含繁轉簡
 與 30 個關聯詞 Boolean 選項。所有案例皆核對實際 GTK buffer，且
 `/proc` maps 證明執行中的 Fcitx 載入 `chichi77-keykey.so`；每案切回
 `keyboard-us` 重送同鍵序的負控制也通過。這些仍是窄版 vertical slices，尚未驗證
-完整 T01–T06、GNOME、native Wayland、XWayland、Qt／GTK4／瀏覽器或候選視窗畫面；
-hosted Actions 尚未執行。
+完整 T01–T06、GNOME、native Wayland、XWayland、Qt／GTK4／瀏覽器或候選視窗畫面。
+Hosted Linux workflow run `34742072894` 已在 `d83091d` 通過 Ubuntu 22.04／24.04
+兩個 job；後續每個待交付 SHA 仍需用自己的 run 當證據。
 
 Ubuntu 24.04 的目前 slice 也已用 debhelper 拆成架構無關的
 `chichi77-keykey-data_1.2.8-1+ubuntu24.04_all.deb` 與 amd64 的
 `fcitx5-chichi77-keykey_1.2.8-1+ubuntu24.04_amd64.deb`。乾淨 runtime container
-依序安裝受控 `1.2.8~preview1` fixture、跑十六案例、升級至 1.2.8、再跑十六案例、
-移除／重裝後跑全部十七案例；設定視窗只在最後狀態啟動一次，以節省兩次相同 Qt／AT-SPI
+依序安裝受控 `1.2.8~preview1` fixture、跑十七個純鍵盤案例、升級至 1.2.8、
+再跑十七案例、移除／重裝後跑全部十八案例；設定視窗只在最後狀態啟動一次，
+以節省兩次相同 Qt／AT-SPI
 啟動成本；dependency、ELF、安裝清單、資料 hash、授權及移除後
 不碰個人設定一併通過。這是 T14 的第一段 package lifecycle 證據，不代表真實舊版
 升級、GNOME session、完整功能或正式 release package 已驗收。
@@ -208,7 +213,8 @@ prefix／libdir／datadir staging、重新 configure、缺失 compiler／未知�
 明示 session 搜尋路徑後載入 Fcitx 5，通過 T01 X11/GTK 3 注音與英文負控制後解除安裝。這是
 T14-SOURCE-BUILD／CONFIG／STAGE／CLEAN 與 INSTALL 的局部證據，不涵蓋
 `/usr`／任意 prefix 真打字、三輸入法完整案例、升級／重裝或其他 Ubuntu；後者仍待
-hosted CI 與 P4／P5，不得將整組 T14-SOURCE 標成通過。
+P4／P5。Ubuntu 22.04／24.04 hosted jobs 已通過同一局部 source gate，但不得因此將整組
+T14-SOURCE 標成通過。
 
 ## 5. 桌面與應用程式矩陣
 

@@ -368,6 +368,63 @@ void testBopomofoLayoutTonesAndAmbiguities() {
             "Hsu single ambiguous l must resolve to ㄦ");
 }
 
+void testBopomofoLayoutToneTypingFlows() {
+    struct LayoutCase {
+        BopomofoLayout layout;
+        const char *tone2;
+        const char *tone3;
+        const char *tone4;
+        const char *tone5;
+    };
+    const LayoutCase cases[] = {
+        {BopomofoLayout::Standard, "a86", "a83", "a84", "a87"},
+        {BopomofoLayout::ETen, "ma2", "ma3", "ma4", "ma1"},
+        {BopomofoLayout::ETen26, "maf", "maj", "mak", "mad"},
+        {BopomofoLayout::Hsu, "myd", "myf", "myj", "mys"},
+        {BopomofoLayout::HanyuPinyin, "ma2", "ma3", "ma4", "ma5"},
+    };
+
+    for (const LayoutCase &testCase : cases) {
+        Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                      testCase.layout);
+        InputContextState context;
+        std::string committed;
+        const char *sequences[] = {testCase.tone2, testCase.tone3,
+                                   testCase.tone4, testCase.tone5};
+        for (const char *sequence : sequences) {
+            for (const char key : std::string(sequence)) {
+                engine.processKey(context, character(key));
+            }
+            auto result = engine.processKey(
+                context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None,
+                                  false, false});
+            require(!result.candidates.empty(),
+                    "A tone sequence did not open real candidates");
+            result = engine.processKey(context, character('1'));
+            committed += result.commit;
+        }
+        require(committed == "麻馬罵嘛",
+                "A layout did not commit all four Mandarin tone fixtures");
+    }
+
+    Engine pinyin(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                  BopomofoLayout::HanyuPinyin);
+    InputContextState context;
+    auto result = pinyin.processKey(context, character('z'));
+    require(result.preedit == "z", "Pinyin incomplete initial was lost");
+    result = pinyin.processKey(context, character('h'));
+    require(result.preedit == "zh", "Pinyin incomplete digraph was lost");
+    result = pinyin.processKey(
+        context, KeyEvent{KeyCode::Backspace, '\0', KeyModifier::None, false,
+                          false});
+    require(result.preedit == "z", "Pinyin incomplete input did not backspace");
+    result = pinyin.processKey(
+        context, KeyEvent{KeyCode::Backspace, '\0', KeyModifier::None, false,
+                          false});
+    require(result.preedit.empty(),
+            "Pinyin incomplete input did not clear after backspace");
+}
+
 void testHanyuPinyinAliasesAndToneValidation() {
     struct PinyinCase {
         const char *keys;
@@ -867,6 +924,7 @@ int main() {
         testRealDataTypingFlow();
         testAllBopomofoLayoutsUseCanonicalDictionaryKeys();
         testBopomofoLayoutTonesAndAmbiguities();
+        testBopomofoLayoutToneTypingFlows();
         testHanyuPinyinAliasesAndToneValidation();
         testRealBopomofoDictionaryRoundTripsAcrossSymbolLayouts();
         testContextsAreIndependent();
