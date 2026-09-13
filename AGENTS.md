@@ -340,7 +340,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   runtime dependency，另 `Recommends: libcanberra-pulse` 供 Ubuntu GNOME 的
   PulseAudio／PipeWire 相容音訊路徑；不能把開發套件寫進 runtime Depends。Xvfb 沒有
   音訊 session，只能驗證呼叫不使 Fcitx 失效以及原生設定關閉／保存／重啟讀回；真正
-  可聽結果必須在 Ubuntu GNOME 驗收。
+  可聽結果必須在 Ubuntu GNOME 驗收。Container Dockerfile 與 Debian `Build-Depends`
+  加入相依套件時，也要同步 `.github/workflows/linux-ci.yml` 的兩份 native apt 清單；
+  hosted build 不會沿用 container 定義。run `34762595629` 曾因 24.04 缺
+  `libcanberra-dev`、22.04 同時缺 `libcanberra-dev` 與 `pkg-config` 而在 CMake configure
+  階段失敗。
 - **Linux 本機快速迭代使用長駐 dev container**：`ci/dev.sh up` 只在 24.04 Dockerfile
   改變時重建 dependency image，後續 build／CTest／stage／X11 E2E／單次 package build
   都以 `docker exec` 留在同一個 container。build 與 stage 使用具 checkout／架構隔離的
