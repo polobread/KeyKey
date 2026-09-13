@@ -46,6 +46,19 @@ run_source_build() {
     "$container_name" ci/dev-session-action.sh source
 }
 
+prepare_package_build() {
+  local package_work_dir package_output_dir
+  package_work_dir="$container_workdir/out/package-build/ubuntu-24.04-$architecture-release-candidate"
+  package_output_dir="$container_workdir/out/packages/ubuntu-24.04-$architecture/release-candidate"
+
+  # A clean one-shot package container runs as root. On a rootless Docker host,
+  # those bind-mounted files can look host-owned while still being root-owned
+  # inside this persistent container. Remove only the two generated package
+  # directories as root before returning to the host UID for the actual build.
+  docker exec "$container_name" cmake -E remove_directory "$package_work_dir"
+  docker exec "$container_name" cmake -E remove_directory "$package_output_dir"
+}
+
 run_installed_e2e() {
   local cases=$1
   local key_delay=${KEYKEY_E2E_KEY_DELAY_MS:-25}
@@ -82,6 +95,9 @@ case "$command_name" in
   build|test|package)
     if [[ -n "$argument" ]]; then usage >&2; exit 2; fi
     ensure_container
+    if [[ "$command_name" == package ]]; then
+      prepare_package_build
+    fi
     run_as_developer ci/dev-session-action.sh "$command_name"
     ;;
   source)

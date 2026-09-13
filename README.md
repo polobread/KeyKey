@@ -23,8 +23,10 @@ Android 與 iOS 四個平台。
 1.2.8 起開發 Linux 原生版，目標支援傳統注音、倉頡與簡易；目前先完整支援近四年的
 Ubuntu 主要發行版本。目前已有 Linux-only 引擎、三套輸入法的 Fcitx 5 最小垂直切片、
 五種注音鍵盤配置與原生設定選項、候選鍵盤導覽、標點／符號候選切片、
+Windows 對等的 reading／候選 Backspace 與 Escape 邊界、
 30 套內建關聯詞與 `Shift+1–9` 選詞切片、`Shift+Space` 全／半形、ASCII 全形
-對映與繁轉簡切片、Fcitx 原生設定視窗點選／保存測試、container／CI 建置測試及
+對映與繁轉簡切片、中英文切換與修飾鍵／按鍵放開邊界、Fcitx 原生設定視窗點選／保存
+測試、container／CI 建置測試及
 local X11/GTK 3 真實
 逐鍵測試，亦可產生 Ubuntu 22.04／24.04 開發用 `.deb`；但完整功能、GNOME／
 Wayland 驗收及正式發布套件尚未完成；詳見
@@ -112,6 +114,7 @@ input methods, all five Bopomofo keyboard layouts with a native Fcitx setting,
 candidate keyboard navigation, an initial punctuation/symbol-list slice,
 all 30 built-in associated-phrase collections with Shift+1–9 selection and
 native per-collection Boolean settings,
+Chinese/English switching and modifier/release boundaries,
 an AT-SPI-driven native Fcitx settings-window persistence test, container/CI
 build tests, and a local X11/GTK 3 real-key typing test now exist.
 Development `.deb` packages can also be built for Ubuntu 22.04 and 24.04. Full

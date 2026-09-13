@@ -20,11 +20,15 @@ enum class KeyCode {
     Space,
     Enter,
     Backspace,
+    Delete,
+    Tab,
     Escape,
     Left,
     Right,
     Up,
     Down,
+    Home,
+    End,
     PageUp,
     PageDown,
 };
@@ -53,6 +57,7 @@ struct KeyEvent {
 struct EngineResult {
     bool handled = false;
     bool updateUi = false;
+    bool beep = false;
     std::string preedit;
     std::size_t preeditCursorBytes = 0;
     std::vector<std::string> candidates;

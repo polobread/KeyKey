@@ -12,11 +12,12 @@ Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only �
 
 ## Linux（開發中）
 
-傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler 與 Fcitx 5 Core 開發檔；
+傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler、`pkg-config`、
+Fcitx 5 Core 與 libcanberra 開發檔；
 不需要 Ninja、Docker、Autoconf 或 Automake。Ubuntu 可先安裝：
 
 ```sh
-sudo apt-get install build-essential cmake libfcitx5core-dev
+sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev pkg-config
 ```
 
 接著使用預設 `/usr/local` prefix：
@@ -91,8 +92,9 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 
 第一個指令是主要 Ubuntu 24.04 / Fcitx 5 build，第二個守住 Ubuntu 22.04 的最低
 API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3 的 X11 真實逐鍵輸入：五種
-注音配置及各自的英文負控制，並驗證注音設定 schema；目前也保留已排除的倉頡／簡易
-垂直切片回歸，但不代表 Linux 1.2.8 支援。這些 one-shot 指令預設建立
+注音配置及各自的英文負控制，並驗證注音設定 schema；五種布局都是 Windows 對標的
+Linux 1.2.8 第一階段範圍。已完成的倉頡／簡易切片保留作回歸與未來擴充，不需從程式或
+測試中拆除。這些 one-shot 指令預設建立
 `linux/amd64` 產物；ARM64 preview 可在指令前設定
 `KEYKEY_DOCKER_PLATFORM=linux/arm64`。Xvfb E2E 是 L3 X11 證據，不等於 GNOME／
 native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
@@ -100,8 +102,8 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 
 後兩個指令用 debhelper 產生依發行版命名的 `chichi77-keykey-data` 與
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
-各跑一次二十一個純鍵盤 X11 真實打字案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
-點選、保存、重啟及真實打字案例；22.04 則跑較省時的套件安裝／移除 smoke。
+各跑一次二十九個純鍵盤 X11 真實打字案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
+點選、保存、重啟及真實打字案例（合計三十案）；22.04 則跑較省時的套件安裝／移除 smoke。
 這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
 
 ## macOS
@@ -363,12 +365,12 @@ acceptance, and release packages are not complete. See the
 ### Linux (in development)
 
 A traditional source build requires CMake 3.22, GNU Make, a C++17 compiler,
-and the Fcitx 5 Core development files. It does not require Ninja, Docker,
+`pkg-config`, and the Fcitx 5 Core and libcanberra development files. It does not require Ninja, Docker,
 Autoconf, or Automake. On Ubuntu, install the dependencies and build with the
 default `/usr/local` prefix as follows:
 
 ```sh
-sudo apt-get install build-essential cmake libfcitx5core-dev
+sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev pkg-config
 cd Source/Loaders/Linux-IME
 ./configure
 make -j2
@@ -450,10 +452,11 @@ native Wayland desktop typing acceptance. See the
 
 The final two commands create distro-labelled `chichi77-keykey-data` and
 `fcitx5-chichi77-keykey` Debian packages with debhelper. Ubuntu 24.04 also runs
-the twenty-one keyboard-only X11 cases after install, controlled upgrade, and
+the twenty-nine keyboard-only X11 cases after install, controlled upgrade, and
 reinstall. The native Fcitx settings-window click, persistence, restart, and
-typing case runs once after reinstall. These are development artifacts until
-the remaining release gates are complete.
+typing case—including changing the candidate style from vertical to
+horizontal—runs once after reinstall, for thirty cases in that final state.
+These are development artifacts until the remaining release gates are complete.
 
 ### macOS
 

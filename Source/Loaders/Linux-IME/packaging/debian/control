@@ -6,8 +6,10 @@ Build-Depends:
  cmake (>= 3.22),
  debhelper-compat (= 13),
  g++,
+ libcanberra-dev,
  libfcitx5core-dev,
  ninja-build,
+ pkg-config,
 Standards-Version: 4.6.2
 Homepage: https://github.com/polobread/KeyKey
 Rules-Requires-Root: no
@@ -28,6 +30,8 @@ Depends:
  fcitx5,
  ${misc:Depends},
  ${shlibs:Depends},
+Recommends:
+ libcanberra-pulse,
 Description: chichi77 KeyKey input methods for Fcitx 5
  This package provides native Fcitx 5 Bopomofo, Cangjie, and Simplex input
  methods. It uses the separately packaged chichi77 KeyKey data tables.

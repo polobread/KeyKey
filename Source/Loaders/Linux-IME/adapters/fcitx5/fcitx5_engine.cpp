@@ -2,6 +2,8 @@
 #include "keykey/linux_ime/cin_dictionary.h"
 #include "keykey/linux_ime/engine.h"
 
+#include "error_sound.h"
+
 #include <fcitx-config/configuration.h>
 #include <fcitx-config/iniparser.h>
 #include <fcitx-config/option.h>
@@ -21,8 +23,11 @@
 #include <fcitx/text.h>
 #include <fcitx/userinterface.h>
 
+#include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -31,6 +36,11 @@
 namespace {
 
 namespace linux_ime = keykey::linux_ime;
+namespace fcitx5_adapter = keykey::linux_ime::fcitx5_adapter;
+
+constexpr std::uint32_t ShiftTapTimeoutMilliseconds = 300;
+constexpr auto ShiftTapTimeout =
+    std::chrono::milliseconds(ShiftTapTimeoutMilliseconds);
 
 class BopomofoLayoutAnnotation : public fcitx::EnumAnnotation {
 public:
@@ -46,6 +56,17 @@ public:
         config.setValueByPath("EnumI18n/3", "Hsu");
         config.setValueByPath("Enum/4", "HanyuPinyin");
         config.setValueByPath("EnumI18n/4", "Hanyu Pinyin");
+    }
+};
+
+class CandidateWindowStyleAnnotation : public fcitx::EnumAnnotation {
+public:
+    void dumpDescription(fcitx::RawConfig &config) const {
+        fcitx::EnumAnnotation::dumpDescription(config);
+        config.setValueByPath("Enum/0", "Vertical");
+        config.setValueByPath("EnumI18n/0", "Vertical");
+        config.setValueByPath("Enum/1", "Horizontal");
+        config.setValueByPath("EnumI18n/1", "Horizontal");
     }
 };
 
@@ -97,12 +118,20 @@ FCITX_CONFIGURATION(
     fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
         bopomofoLayout{this, "BopomofoLayout", "Bopomofo keyboard layout",
                        "Standard"};
+    fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation>
+        candidateWindowStyle{this, "CandidateWindowStyle",
+                             "Candidate window style", "Vertical"};
     fcitx::Option<bool> traditionalToSimplified{
         this, "TraditionalToSimplified",
         "Convert Traditional Chinese output to Simplified Chinese", false};
     fcitx::Option<bool> useAllUnicodeCharacters{
         this, "UseAllUnicodeCharacters",
         "Include candidates outside Big-5", true};
+    fcitx::Option<bool> playSoundOnTypingError{
+        this, "PlaySoundOnTypingError", "Play a sound on typing errors", true};
+    fcitx::Option<bool> toggleWithControlBackslash{
+        this, "ToggleInputMethodWithControlBackslash",
+        "Toggle Chinese/English with Ctrl+\\", true};
     fcitx::Option<AssociatedPhraseConfig> associatedPhrases{
         this, "AssociatedPhrases", "Associated phrase collections"};
     fcitx::HiddenOption<std::string> associatedPhraseCollections{
@@ -150,17 +179,34 @@ public:
 
     void process(const linux_ime::Engine &engine,
                  bool traditionalToSimplified,
+                 bool playSoundOnTypingError,
+                 fcitx::CandidateLayoutHint candidateLayout,
+                 const fcitx5_adapter::ErrorSound &errorSound,
                  const linux_ime::KeyEvent &event, fcitx::KeyEvent &fcitxEvent);
+    bool processModeKey(bool toggleWithControlBackslash,
+                        fcitx::KeyEvent &event);
     void select(std::size_t displayedIndex);
     void reset();
+    bool chineseMode() const noexcept { return chineseMode_; }
 
 private:
+    struct ShiftPress {
+        std::uint32_t eventTime = 0;
+        std::chrono::steady_clock::time_point monotonicTime;
+    };
+
+    void toggleChineseMode();
     void apply(const linux_ime::EngineResult &result);
     void updateUi(const linux_ime::EngineResult &result);
 
     fcitx::InputContext *inputContext_;
     linux_ime::InputContextState context_;
     const linux_ime::Engine *activeEngine_ = nullptr;
+    bool chineseMode_ = true;
+    fcitx::CandidateLayoutHint candidateLayout_ =
+        fcitx::CandidateLayoutHint::Vertical;
+    std::optional<ShiftPress> shiftPressedAt_;
+    bool controlBackslashPressed_ = false;
 };
 
 class CandidateWord : public fcitx::CandidateWord {
@@ -184,7 +230,8 @@ private:
 class FcitxEngine : public fcitx::InputMethodEngineV2 {
 public:
     explicit FcitxEngine(fcitx::Instance *instance)
-        : bopomofoDictionary_(loadDictionary("bpmf-ext.cin")),
+        : instance_(instance),
+          bopomofoDictionary_(loadDictionary("bpmf-ext.cin")),
           cangjieDictionary_(loadDictionary("cj-ext.cin")),
           simplexDictionary_(loadDictionary("simplex-ext.cin")),
           punctuationDictionary_(loadDictionary("bpmf-punctuations.cin")),
@@ -227,6 +274,21 @@ public:
           }) {
         instance->inputContextManager().registerProperty(
             "chichi77KeyKeyState", &factory_);
+        keyEventWatcher_ = instance->watchEvent(
+            fcitx::EventType::InputContextKeyEvent,
+            fcitx::EventWatcherPhase::PreInputMethod,
+            [this](fcitx::Event &event) {
+                auto &keyEvent = static_cast<fcitx::KeyEvent &>(event);
+                const std::string inputMethod =
+                    instance_->inputMethod(keyEvent.inputContext());
+                if (!isKeyKeyInputMethod(inputMethod)) {
+                    return;
+                }
+                keyEvent.inputContext()
+                    ->propertyFor(&factory_)
+                    ->processModeKey(*config_.toggleWithControlBackslash,
+                                     keyEvent);
+            });
         reloadConfig();
     }
 
@@ -258,13 +320,28 @@ public:
 
     void keyEvent(const fcitx::InputMethodEntry &entry,
                   fcitx::KeyEvent &event) override {
+        FcitxState *state = event.inputContext()->propertyFor(&factory_);
         linux_ime::KeyEvent translated;
         if (!translate(event, translated)) {
             return;
         }
-        event.inputContext()->propertyFor(&factory_)->process(
-            engineFor(entry), *config_.traditionalToSimplified, translated,
-            event);
+        state->process(
+            engineFor(entry), *config_.traditionalToSimplified,
+            *config_.playSoundOnTypingError, candidateLayoutHint(), errorSound_,
+            translated, event);
+    }
+
+    std::string subModeLabelImpl(const fcitx::InputMethodEntry &entry,
+                                 fcitx::InputContext &inputContext) override {
+        FCITX_UNUSED(entry);
+        return inputContext.propertyFor(&factory_)->chineseMode() ? "中" : "英";
+    }
+
+    std::string subMode(const fcitx::InputMethodEntry &entry,
+                        fcitx::InputContext &inputContext) override {
+        FCITX_UNUSED(entry);
+        return inputContext.propertyFor(&factory_)->chineseMode() ? "Chinese"
+                                                                  : "English";
     }
 
     void reset(const fcitx::InputMethodEntry &entry,
@@ -279,6 +356,12 @@ public:
     }
 
 private:
+    static bool isKeyKeyInputMethod(const std::string &name) noexcept {
+        return name == "chichi77-keykey-bopomofo" ||
+               name == "chichi77-keykey-cangjie" ||
+               name == "chichi77-keykey-simplex";
+    }
+
     static std::shared_ptr<const linux_ime::CinDictionary>
     loadDictionary(const std::string &fileName) {
         const char *overrideDirectory = std::getenv("CHICHI77_KEYKEY_DATA_DIR");
@@ -384,6 +467,12 @@ private:
         return standardEngine_;
     }
 
+    fcitx::CandidateLayoutHint candidateLayoutHint() const noexcept {
+        return *config_.candidateWindowStyle == "Horizontal"
+                   ? fcitx::CandidateLayoutHint::Horizontal
+                   : fcitx::CandidateLayoutHint::Vertical;
+    }
+
     static const std::string &configFile() {
         static const std::string path = "conf/chichi77-keykey.conf";
         return path;
@@ -425,6 +514,15 @@ private:
         case FcitxKey_BackSpace:
             destination.code = linux_ime::KeyCode::Backspace;
             return true;
+        case FcitxKey_Delete:
+        case FcitxKey_KP_Delete:
+            destination.code = linux_ime::KeyCode::Delete;
+            return true;
+        case FcitxKey_Tab:
+        case FcitxKey_KP_Tab:
+        case FcitxKey_ISO_Left_Tab:
+            destination.code = linux_ime::KeyCode::Tab;
+            return true;
         case FcitxKey_Escape:
             destination.code = linux_ime::KeyCode::Escape;
             return true;
@@ -439,6 +537,14 @@ private:
             return true;
         case FcitxKey_Down:
             destination.code = linux_ime::KeyCode::Down;
+            return true;
+        case FcitxKey_Home:
+        case FcitxKey_KP_Home:
+            destination.code = linux_ime::KeyCode::Home;
+            return true;
+        case FcitxKey_End:
+        case FcitxKey_KP_End:
+            destination.code = linux_ime::KeyCode::End;
             return true;
         case FcitxKey_Page_Up:
             destination.code = linux_ime::KeyCode::PageUp;
@@ -459,6 +565,7 @@ private:
         return false;
     }
 
+    fcitx::Instance *instance_;
     std::shared_ptr<const linux_ime::CinDictionary> bopomofoDictionary_;
     std::shared_ptr<const linux_ime::CinDictionary> cangjieDictionary_;
     std::shared_ptr<const linux_ime::CinDictionary> simplexDictionary_;
@@ -474,29 +581,184 @@ private:
     linux_ime::Engine hanyuPinyinEngine_;
     linux_ime::Engine cangjieEngine_;
     linux_ime::Engine simplexEngine_;
+    fcitx5_adapter::ErrorSound errorSound_;
     fcitx::FactoryFor<FcitxState> factory_;
     KeyKeyConfig config_;
+    std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
+        keyEventWatcher_;
 };
 
 #undef KEYKEY_ASSOCIATED_PHRASE_OPTIONS
 
 void FcitxState::process(const linux_ime::Engine &engine,
                          bool traditionalToSimplified,
+                         bool playSoundOnTypingError,
+                         fcitx::CandidateLayoutHint candidateLayout,
+                         const fcitx5_adapter::ErrorSound &errorSound,
                          const linux_ime::KeyEvent &event,
                          fcitx::KeyEvent &fcitxEvent) {
+    candidateLayout_ = candidateLayout;
     if (activeEngine_ != &engine) {
         context_.reset();
         activeEngine_ = &engine;
     }
     engine.setTraditionalToSimplifiedMode(context_,
                                           traditionalToSimplified);
-    const linux_ime::EngineResult result = engine.processKey(context_, event);
+    if (!chineseMode_) {
+        if (event.release) {
+            return;
+        }
+        const linux_ime::EngineResult current = engine.snapshot(context_);
+        const auto modifiers = static_cast<unsigned int>(event.modifiers);
+        const auto controlAltSuper =
+            static_cast<unsigned int>(linux_ime::KeyModifier::Control) |
+            static_cast<unsigned int>(linux_ime::KeyModifier::Alt) |
+            static_cast<unsigned int>(linux_ime::KeyModifier::Super);
+        const bool widthToggle =
+            event.code == linux_ime::KeyCode::Space &&
+            event.modifiers == linux_ime::KeyModifier::Shift;
+        const bool fullWidthCharacter =
+            current.fullWidthMode && (modifiers & controlAltSuper) == 0U &&
+            (event.code == linux_ime::KeyCode::Space ||
+             (event.code == linux_ime::KeyCode::Character &&
+              event.character >= 0x20 && event.character <= 0x7E));
+        if (!widthToggle && !fullWidthCharacter) {
+            return;
+        }
+        if (fullWidthCharacter && !widthToggle) {
+            linux_ime::EngineResult result = current;
+            result.handled = true;
+            result.commit = linux_ime::toFullWidth(
+                event.code == linux_ime::KeyCode::Space
+                    ? std::string(" ")
+                    : std::string(1, event.character));
+            apply(result);
+            fcitxEvent.filterAndAccept();
+            return;
+        }
+    }
+    const fcitx::CapabilityFlags capabilities =
+        inputContext_->capabilityFlags();
+    const bool sensitive =
+        capabilities.test(fcitx::CapabilityFlag::Password) ||
+        capabilities.test(fcitx::CapabilityFlag::Sensitive);
+    if (sensitive && engine.snapshot(context_).associatedPhrases) {
+        context_.reset();
+    }
+    linux_ime::EngineResult result = engine.processKey(context_, event);
+    if (sensitive && result.associatedPhrases) {
+        const std::string commit = std::move(result.commit);
+        context_.reset();
+        result = engine.snapshot(context_);
+        result.handled = true;
+        result.commit = commit;
+    }
+    if (result.beep && playSoundOnTypingError) {
+        errorSound.play();
+    }
     if (result.handled) {
         apply(result);
         fcitxEvent.filterAndAccept();
     } else if (result.updateUi) {
         updateUi(result);
     }
+}
+
+bool FcitxState::processModeKey(bool toggleWithControlBackslash,
+                                fcitx::KeyEvent &event) {
+    const fcitx::Key key = event.key();
+    const fcitx::KeyStates states = key.states();
+    const bool shiftKey =
+        key.sym() == FcitxKey_Shift_L || key.sym() == FcitxKey_Shift_R;
+    const bool control = states.test(fcitx::KeyState::Ctrl);
+    const bool alt = states.test(fcitx::KeyState::Alt);
+    const bool shift = states.test(fcitx::KeyState::Shift);
+    const bool super = states.test(fcitx::KeyState::Super) ||
+                       states.test(fcitx::KeyState::Super2) ||
+                       states.test(fcitx::KeyState::Meta) ||
+                       states.test(fcitx::KeyState::Hyper);
+
+    if (shiftKey) {
+        if (!event.isRelease()) {
+            if (!control && !alt && !super &&
+                !states.test(fcitx::KeyState::Repeat)) {
+                if (!shiftPressedAt_) {
+                    shiftPressedAt_ = ShiftPress{
+                        static_cast<std::uint32_t>(event.time()),
+                        std::chrono::steady_clock::now()};
+                }
+            } else {
+                shiftPressedAt_.reset();
+            }
+            return false;
+        }
+
+        const bool trackedShift = shiftPressedAt_.has_value();
+        bool tapped = false;
+        if (trackedShift && !control && !alt && !super) {
+            const auto releaseEventTime =
+                static_cast<std::uint32_t>(event.time());
+            if (shiftPressedAt_->eventTime != 0U && releaseEventTime != 0U) {
+                tapped = releaseEventTime - shiftPressedAt_->eventTime <=
+                         ShiftTapTimeoutMilliseconds;
+            } else {
+                tapped = std::chrono::steady_clock::now() -
+                             shiftPressedAt_->monotonicTime <=
+                         ShiftTapTimeout;
+            }
+        }
+        shiftPressedAt_.reset();
+        if (tapped) {
+            toggleChineseMode();
+        }
+        if (trackedShift) {
+            event.filterAndAccept();
+            return true;
+        }
+        return false;
+    }
+
+    if (!event.isRelease()) {
+        shiftPressedAt_.reset();
+    }
+    const bool backslashKey = key.sym() == FcitxKey_backslash;
+    if (backslashKey && controlBackslashPressed_) {
+        // Ctrl may be released before backslash. X11 can then resend a press
+        // without the Ctrl state before the eventual key release, so suppress
+        // every event for an owned physical key until that release arrives.
+        if (event.isRelease()) {
+            controlBackslashPressed_ = false;
+        }
+        event.filterAndAccept();
+        return true;
+    }
+    if (backslashKey && control && !alt && !shift && !super) {
+        if (!toggleWithControlBackslash) {
+            // Skip both KeyKey and Fcitx global input-method handlers without
+            // accepting the shortcut, so the frontend forwards it to the
+            // client. The client decides whether that ends an active preedit.
+            event.filter();
+            return true;
+        } else if (!event.isRelease()) {
+            if (!controlBackslashPressed_) {
+                controlBackslashPressed_ = true;
+                toggleChineseMode();
+            }
+        }
+        event.filterAndAccept();
+        return true;
+    }
+    return false;
+}
+
+void FcitxState::toggleChineseMode() {
+    chineseMode_ = !chineseMode_;
+    context_.reset();
+    if (activeEngine_ != nullptr) {
+        updateUi(activeEngine_->snapshot(context_));
+    }
+    inputContext_->updateUserInterface(
+        fcitx::UserInterfaceComponent::StatusArea);
 }
 
 void FcitxState::select(std::size_t displayedIndex) {
@@ -506,6 +768,8 @@ void FcitxState::select(std::size_t displayedIndex) {
 }
 
 void FcitxState::reset() {
+    shiftPressedAt_.reset();
+    controlBackslashPressed_ = false;
     context_.reset();
     if (activeEngine_ != nullptr) {
         updateUi(activeEngine_->snapshot(context_));
@@ -547,6 +811,7 @@ void FcitxState::updateUi(const linux_ime::EngineResult &result) {
         };
         candidateList->setPageSize(9);
         candidateList->setSelectionKey(selectionKeys);
+        candidateList->setLayoutHint(candidateLayout_);
         candidateList->setGlobalCursorIndex(
             static_cast<int>(result.highlightedIndex));
         panel.setCandidateList(std::move(candidateList));

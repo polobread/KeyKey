@@ -53,7 +53,17 @@ def wait_for_node(root, role, name, present=True):
             return None
         time.sleep(POLL_SECONDS)
     qualifier = "appear" if present else "close"
-    raise RuntimeError(f"Timed out waiting for {role} {name!r} to {qualifier}")
+    role_names = []
+    for node in descendants(root):
+        try:
+            if node.getRoleName() == role:
+                role_names.append(node.name)
+        except (LookupError, RuntimeError, ValueError):
+            continue
+    raise RuntimeError(
+        f"Timed out waiting for {role} {name!r} to {qualifier}; "
+        f"available names: {role_names!r}"
+    )
 
 
 def wait_for_application(desktop, name):
@@ -123,6 +133,11 @@ def click_node(node):
     )
 
 
+def select_last_combo_value(node):
+    click_node(node)
+    subprocess.run(["xdotool", "key", "End", "Return"], check=True)
+
+
 def capture_window(title, stem):
     window_ids = subprocess.check_output(
         ["xdotool", "search", "--onlyvisible", "--name", f"^{title}$"],
@@ -189,10 +204,23 @@ def main():
 
     base_collection = wait_for_node(dialog, "check box", "小麥注音")
     agriculture_collection = wait_for_node(dialog, "check box", "農業食品")
+    error_sound = wait_for_node(
+        dialog, "check box", "Play a sound on typing errors"
+    )
+    control_backslash = wait_for_node(
+        dialog, "check box", "Toggle Chinese/English with Ctrl+\\"
+    )
+    candidate_window_style = wait_for_node(
+        dialog, "combo box", "Vertical"
+    )
     if has_state(base_collection, pyatspi.STATE_CHECKED) is not True:
         raise RuntimeError("Expected the McBopomofo collection to be enabled")
     if has_state(agriculture_collection, pyatspi.STATE_CHECKED) is not False:
         raise RuntimeError("Expected the agriculture-food collection to be disabled")
+    if has_state(error_sound, pyatspi.STATE_CHECKED) is not True:
+        raise RuntimeError("Expected typing-error sound to be enabled")
+    if has_state(control_backslash, pyatspi.STATE_CHECKED) is not True:
+        raise RuntimeError("Expected Ctrl+backslash switching to be enabled")
 
     capture_window(
         "chichi77 KeyKey Bopomofo",
@@ -200,8 +228,14 @@ def main():
     )
     perform_action(base_collection, "Toggle")
     perform_action(agriculture_collection, "Toggle")
+    perform_action(error_sound, "Toggle")
+    perform_action(control_backslash, "Toggle")
+    select_last_combo_value(candidate_window_style)
+    wait_for_node(dialog, "combo box", "Horizontal")
     wait_for_state(base_collection, pyatspi.STATE_CHECKED, False)
     wait_for_state(agriculture_collection, pyatspi.STATE_CHECKED, True)
+    wait_for_state(error_sound, pyatspi.STATE_CHECKED, False)
+    wait_for_state(control_backslash, pyatspi.STATE_CHECKED, False)
     capture_window(
         "chichi77 KeyKey Bopomofo",
         args.artifact_dir / "settings-after",
@@ -223,6 +257,9 @@ def main():
         "changed": {
             "McBopomofo": False,
             "agriculture-food": True,
+            "PlaySoundOnTypingError": False,
+            "ToggleInputMethodWithControlBackslash": False,
+            "CandidateWindowStyle": "Horizontal",
         },
         "status": "passed",
     }

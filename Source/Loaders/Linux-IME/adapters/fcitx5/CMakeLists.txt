@@ -1,7 +1,14 @@
-add_library(chichi77-keykey SHARED fcitx5_engine.cpp)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CANBERRA REQUIRED IMPORTED_TARGET libcanberra)
+
+add_library(chichi77-keykey SHARED
+    error_sound.cpp
+    fcitx5_engine.cpp
+)
 target_compile_features(chichi77-keykey PRIVATE cxx_std_17)
 target_link_libraries(chichi77-keykey PRIVATE
     Fcitx5::Core
+    PkgConfig::CANBERRA
     keykey_linux_engine
 )
 target_compile_definitions(chichi77-keykey PRIVATE

@@ -472,6 +472,11 @@ bool BopomofoReading::empty(BopomofoLayout layout) const noexcept {
                        });
 }
 
+bool BopomofoReading::hasToneMarker() const noexcept {
+    return components_[static_cast<std::size_t>(Kind::Tone)] !=
+           Component::None;
+}
+
 std::string BopomofoReading::queryKey() const {
     std::string result;
     for (const Component component : components_) {

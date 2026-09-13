@@ -1,7 +1,7 @@
 # Linux 原生版開發與交接計畫
 
 狀態：開發中。已建立第一段 Linux-only 引擎、Fcitx 5 外掛、container scripts 與
-`linux-ci.yml`、五種注音鍵盤配置／Fcitx 原生設定、候選鍵盤導覽、標點／符號候選切片、
+`linux-ci.yml`、五種 Windows 傳統注音鍵盤配置、候選鍵盤導覽、標點／符號候選切片、
 `Shift+Space` 全／半形、ASCII 全形對映、繁轉簡單字與注音 Big5-HKSCS 候選 filter 切片、
 L3 X11/GTK 3 真實輸入與
 Ubuntu 22.04／24.04 開發用 Debian 套件；尚未完成 GNOME／Wayland、注音的
@@ -18,17 +18,18 @@ Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下�
 
 ## 1. 已確定的產品方向
 
-- Linux 採原生實作，以目前 macOS **範圍內實際可用的功能與視窗**為功能基準。
-  2026-09-13 起首版只要求傳統注音；倉頡與簡易不再開發或列為發布條件。
+- Linux 採原生實作，第一階段以 Windows TSF **目前實際可用的全部功能與設定**為
+  功能基準；包含 Standard、ETen、ETen26、Hsu、Hanyu Pinyin 五種傳統注音布局。
 - **主要支援環境為 Ubuntu Desktop 24.04 LTS + Fcitx 5**，以預設 GNOME 桌面
   作為主要驗收環境，X11、native Wayland 與 XWayland 都要完整測試。功能開發、
   問題修正與自動化覆蓋優先落在這一組，完整範圍見測試計畫的「主要環境完整驗收」。
 - 使用者已排除 F12–F15：迷你計算機、自訂詞／詞庫管理、通用表格／外掛設定、
   一點通與提示／通知視窗。不開發、不加選單或佔位 UI，也不列為 Linux 驗收缺口。
   F05 內建關聯詞與分類開關、F11 符號面板及 F16 設定／關於仍保留。
-- 2026-09-13 使用者另行排除 F03 倉頡、F04 簡易及 Linux 候選學習／動態頻率。
-  已完成的垂直切片暫留作相容性回歸，但不再擴充、不列 parity 缺口或發布支援；
-  其他平台既有功能不更動。
+- 2026-09-13 最新決定改以 Windows 全功能對標取代「只做 Standard」：F02 四種額外
+  注音布局與布局設定維持第一階段支援。Linux 已完成但 Windows 沒有的 F03 倉頡、
+  F04 簡易與繁轉簡切片不特別移除，保留日後擴充能力，但不列為第一階段 blocker。
+  候選學習／動態頻率及注音自動修正仍不開發，其他平台既有功能不更動。
 - 建立新的 Linux-only C++17 引擎、IBus adapter、Fcitx 5 addon，以及原生設定 UI。
   不用 Wine、Electron、WebView 或網頁輸入框包裝成輸入法。
 - **不修改、不搬動、不連結既有 KeyKeyEngine 或 OpenVanilla 核心**。
@@ -122,33 +123,38 @@ Fedora 36 的 2022 基線可核對 [官方 ChangeSet](https://fedoraproject.org/
 架構無關資料可打成 Debian `all`／RPM `noarch`；若產生索引，格式必須明確定義
 版本、byte order 與校驗，不能把 C++ 記憶體結構直接 dump 成跨平台資料庫。
 
-## 3. macOS 功能對照：實際入口優先
+## 3. 第一階段範圍與行為對照：實際入口優先
 
-下表是原始碼盤點，不是 macOS 實機驗收紀錄。接手先對當前 macOS build 操作錄影，
-逐項記錄觸發按鍵、設定預設值、中間狀態與最終文字，形成 `docs/parity.md`。
-範圍內每列須有「來源／macOS 操作證據／Linux 對應／測試 ID／差異／狀態」。
-必備範圍為 F01–F02、F05–F11、F16，共 10 項。新增發現先記錄
-是否屬於這些項目，不自動擴充到已排除功能。本檔的「完整 parity」均指此核定範圍。
+下表是原始碼盤點，不是實機驗收紀錄。接手固定先查 macOS
+OSX-IMK、PlainVanilla 與實際模組事件流，再查 Windows TSF 原始碼並對當前
+build 操作錄影；逐項記錄觸發按鍵、設定預設值、中間狀態與最終文字，
+形成 `docs/parity.md`。兩平台不同時明列差異，不從 Windows 反推 macOS。
+範圍內每列須有「macOS 行為來源／Windows 交叉檢查與操作證據／Linux
+對應／測試 ID／差異／狀態」。
+第一階段必備範圍為 F01–F02、F05–F11，以及 F16 中 Windows 現有的設定與語系部分。
+新增發現先確認是否為 Windows runtime 實際提供的功能，不因舊原始碼存在就擴張範圍。
 
 | ID | 功能與視窗 | 已確認的原始碼入口 | Linux 交付要求 |
 |---|---|---|---|
-| F01 | 傳統注音 | `OSX-IMK/CVApplicationController.mm`、`OVIMMandarin` | 單音節 reading、聲調、選字、刪除、取消、連續輸入、Unicode／BIG-5 篩選設定；排序與提交時機對照 macOS |
-| F02 | 五種注音配置 | `OSX/TakaoPhonetic.m`、`TakaoKeyboardLayoutPopUpButton.m` | 標準（Standard）、倚天（ETen）、漢語拼音、倚天26、許氏（Hsu）全部實作；含歧義消解與換配置 |
-| F03 | 倉頡 | `OSX/TakaoCangjie.m`、`OVIMGeneric`、`cj-ext.cin` | **已排除**；既有 Linux 垂直切片只留相容性回歸，不再擴充或宣告支援 |
-| F04 | 簡易（Simplex） | `OSX/TakaoSimplex.m`、`OVIMGeneric`、`simplex-ext.cin` | **已排除**；既有 Linux 垂直切片只留相容性回歸，不再擴充或宣告支援 |
-| F05 | 關聯詞與分類詞庫 | `OVIMMandarin/OVAFAssociatedPhrase.cpp`、`OSX/TakaoPhraseCollections.m` | 提交後顯示後綴、Shift 選詞、接續、去重、來源順序、分類開關及全部關閉；實際作用的輸入模式依 macOS 驗證 |
-| F06 | 直／橫候選窗 | `OSX-IMK/CVVerticalCandidateController.mm`、`CVHorizontalCandidateController.mm` | 選字鍵角標、方向鍵反白、Enter、滑鼠選字、翻頁、空列表、焦點保留、關聯詞樣式 |
-| F07 | 比例與配色 | `OSX/TakaoGlobal.m`、候選 controller | 跟隨顯示器及 75/90/100/125/150/175/200/225/250/300/350%；預設及紫／綠／黃／紅／自訂色，對照實際 UI |
-| F08 | 一般設定與切換 | `OSX/TakaoGlobal.m`、`OSX-IMK/OpenVanillaController.mm` | 模組顯示、Ctrl+反斜線切換、鍵盤配置、提示聲、熱鍵、即時套用與重新登入後保存；保留至少一個輸入法 |
-| F09 | 全／半形與繁轉簡 | `OVOFFullWidthCharacter`、`OVOFHanConvert`、macOS menu | 相同輸出範圍及 filter 順序；字詞映射需對照，不能換一套轉換器就宣稱完全一致 |
-| F10 | 注音修正與標點 | `OVAFBopomofoCorrection`、注音標點 `.cin` | 修正開關、全半形標點、組合鍵標點與英文混輸，不能吞掉未配置的應用程式快捷鍵 |
-| F11 | 符號／顏文字／常用文字面板 | `OSX-IMK/CVSymbolController.mm`、`CVButtonViewController.mm`、`CVSmileyViewController.mm` | 使用已隨產品提供的分類資料；開關、切頁、點選後送回原輸入欄位，含焦點競態與取消 |
-| F16 | 設定／關於／語系 | `OSX/TakaoPreference_Toolbar.m`、`OSX-IMK/CVAboutController.mm` | 原生設定視窗、版本、授權及必要出處；繁中／簡中／英文、鍵盤操作與可及性 |
+| F01 | Standard 傳統注音 | `OSX-IMK/OpenVanillaController.mm`、`OVIMTraditionalMandarin.cpp`、`PlainVanilla/PVLoaderSystem.h`；再查 `Windows-TSF/KeyKeyEngine.cpp` | Standard 單音節 reading、聲調鍵立即查詢／單一候選直接提交、選字、刪除、取消、逐音節連續輸入、錯誤鍵保護與 BIG-5 篩選設定；排序與提交時機先對照 macOS，再交叉檢查 Windows |
+| F02 | 其他四種注音配置 | `OVIMTraditionalMandarin.cpp`；再查 `Windows-TSF/SettingsApp.cpp` | ETen、ETen26、Hsu、Hanyu Pinyin 與持久化布局選單；和 Standard 使用相同聲調即時查詢、候選、連續輸入、錯誤處理及桌面驗收 |
+| F03 | 倉頡 | `OSX/TakaoCangjie.m`、`OVIMGeneric`、`cj-ext.cin` | 不在 Windows 第一階段基線；保留既有 Linux 垂直切片、註冊、測試與可擴充架構 |
+| F04 | 簡易（Simplex） | `OSX/TakaoSimplex.m`、`OVIMGeneric`、`simplex-ext.cin` | 不在 Windows 第一階段基線；保留既有 Linux 垂直切片、註冊、測試與可擴充架構 |
+| F05 | 關聯詞與分類詞庫 | `OVAFAssociatedPhrase.cpp`；再查 `Windows-TSF/KeyKeyEngine.cpp`、`SettingsApp.cpp` | 提交後顯示後綴、Shift 選詞、接續、去重、來源順序、30 套分類開關及全部關閉；行為先對照 macOS，再交叉檢查 Windows |
+| F06 | 直／橫候選窗 | `PlainVanilla/PVCandidate.h`、`PVLoaderSystem.h`；再查 `Windows-TSF/CandidateWindow.cpp`、`CandidateStateTest.cpp` | 選字鍵角標、方向鍵反白、Enter、滑鼠選字、循環翻頁、空列表、焦點保留、關聯詞樣式 |
+| F07 | 比例與配色 | `OSX-IMK/OpenVanillaController.mm`、`CVHorizontalCandidateController.mm`、`CVVerticalCandidateController.mm`、`PreferenceApplications/OSX/TakaoGlobal.m`；再查 `Windows-TSF/CandidateWindow.cpp`、`SettingsApp.cpp` | 跟隨系統及 Windows 現有 75%–350% 比例選項；預設／紫、綠、黃、紅反白色，驗證 Fcitx 可達的對等呈現 |
+| F08 | 一般設定與切換 | `OSX-IMK/OpenVanillaController.mm`；再查 `Windows-TSF/TextService.cpp`、`LangBarButton.cpp`、`SettingsApp.cpp` | 中文／英文、全／半形狀態、Ctrl+反斜線與單按 Shift、錯誤提示聲、即時套用及重登入保存；以 Fcitx 原生 action／設定提供對等入口 |
+| F09 | 全／半形與既有繁轉簡擴充 | `OSX-IMK/OpenVanillaController.mm`、`OVOFFullWidthCharacter.cpp`；再查 `Windows-TSF/TextService.cpp`與 Linux `tc2sc.cin` | 第一階段對標 Windows 的 Shift+Space 與狀態呈現；已完成的 Linux 繁轉簡切片保留，不拆除其資料或 filter 架構 |
+| F10 | 注音標點 | `OVIMTraditionalMandarin.cpp`、注音標點 `.cin` | 五布局的直接／組合鍵標點與英文混輸，不能吞掉未配置的應用程式快捷鍵；注音自動修正不在 Windows runtime |
+| F11 | Windows 符號列表 | `OVIMTraditionalMandarin.cpp`、`Windows-TSF/KeyKeyEngine.cpp` | `Ctrl+0`／`Ctrl+1` 開啟內建符號候選、翻頁與鍵盤／滑鼠選取；macOS 額外顏文字／常用文字自訂窗不屬第一階段 |
+| F16 | Windows 對應設定／語系 | `PreferenceApplications/OSX`；再查 `Windows-TSF/SettingsApp.cpp`、`TextService.cpp` | 一般／注音／關聯詞三頁設定、繁中註冊名稱、鍵盤操作與可及性；Linux 套件仍保留版本、授權及必要出處 |
 
-已排除項目保留原 ID，避免舊交接編號混淆：
+非第一階段 Windows 對標項目保留原 ID，避免舊交接編號混淆，並保留日後擴充可能：
 
-- F03 倉頡、F04 簡易：不再開發完整引擎、設定、filter 或桌面驗收；既有切片不視為
-  1.2.8 支援承諾，是否從安裝產物移除須另有明確產品決定。
+- 注音自動修正：Windows module package 未載入 correction module，因此不載入
+  correction table、不提供開關，也不列為 F10 缺口。
+- F03 倉頡、F04 簡易：Windows TSF 未提供，但已完成的 Linux engine、註冊與測試不
+  拆除；目前作額外功能／回歸，不阻擋第一階段 Windows parity。
 - F12 迷你計算機：不實作算式引擎、互動模式或其 Ctrl+9 入口。
 - F13 自訂詞／詞庫管理：不實作使用者詞編輯、匯入、匯出或管理視窗；
   不排除 F05 的內建關聯詞資料與分類開關。候選學習另依 2026-09-13 決定排除。
@@ -157,16 +163,15 @@ Fedora 36 的 2022 基線可核對 [官方 ChangeSet](https://fedoraproject.org/
 - F15 一點通、提示／通知視窗：不實作一點通服務、獨立提示窗或通知視窗。
   輸入必要的 preedit／候選窗屬 F01／F06，設定欄位的基本錯誤提示仍在原視窗內呈現。
 
-以上是使用者核定的排除，不需做 macOS 行為錄影或建立對等 Linux 實作。
-不得因為原始碼存在而重新加入，也不刪除四個既有平台中的任何相關功能。
+以上項目不需為第一階段建立 Windows 對等實作，但也不得為了縮減驗收而刪除已完成的
+Linux 功能、擴充介面或四個既有平台中的任何相關功能。
 
 路徑縮寫：`OSX-IMK/` 在 `Source/Loaders/`；`OSX/` 在
 `Source/PreferenceApplications/`；模組在 `Source/ModulePackages/`；字表在
 `Source/DataTables/`。P0 須把簡寫補成可點選的完整來源連結與當時 commit。
 
-注音配置有隱藏入口：macOS `TakaoKeyboardLayoutPopUpButton.m` 在按住
-Command+Shift 展開選單時才顯示完整五種配置。Linux 應明列五種配置，不能因預設
-選單只看到三種而漏做；也不需複製 macOS 設定顯示的既有缺陷。
+Windows 設定直接列出 Standard、ETen、ETen26、Hsu、Hanyu Pinyin 五種注音配置；
+Linux 應維持五值設定與相同行為，不需複製 macOS 的隱藏選單方式。
 
 需要明確區分的 legacy 項目：
 
@@ -247,13 +252,17 @@ addon ID、client backend 與 panel provider，驗證登入後啟動、停用及
 
 ### 參考優先序與禁止範圍
 
-1. macOS 現行 loader、設定 UI、模組與真實操作：F01–F02、F05–F11、F16
-   行為／預設值的權威基準。
-2. Android Java 原生 `BopomofoEngine`、`BopomofoReading`、`CinDictionary`、
+1. macOS 現行 OSX-IMK loader、PlainVanilla、實際模組與真實操作：行為、
+   事件歸屬與預設值先以這條路徑為比對來源。
+2. Windows TSF 現行 loader、設定 UI、模組與真實操作：用於交叉檢查
+   macOS 結果並劃定第一階段功能範圍；與 macOS 不同時明列平台差異。
+3. Android Java 原生 `BopomofoEngine`、`BopomofoReading`、`CinDictionary`、
    `AssociatedPhraseDictionary`：狀態機與直接讀資料的參考。
-3. iOS Swift `KeyKeyEngine/Sources/KeyKeyEngine`：原生引擎、候選、Unicode、
+4. iOS Swift `KeyKeyEngine/Sources/KeyKeyEngine`：原生引擎、候選、Unicode、
    實體鍵盤與測試參考；不將 Swift package 改成 Linux 共用核心。
-4. Windows TSF：桌面生命週期、按鍵放行、選字窗／設定參考；不修改 Windows 引擎。
+
+macOS 已有但 Windows TSF 未提供的功能，不因此自動擴張第一階段範圍或
+升格為 blocker。
 
 禁止修改：`Source/Frameworks/`、既有 `Source/ModulePackages/`、四平台 loader、
 現有字表／詞庫內容、既有 cooker、四平台 workflow。若發現資料錯誤，另列 issue／
@@ -266,11 +275,10 @@ addon ID、client backend 與 panel provider，驗證登入後啟動、停用及
 ### 資料與授權
 
 - 必要唯讀來源至少涵蓋 `bpmf-ext.cin`、`bpmf-punctuations.cin`、
-  `bopomofo-correction.cin`、
   `DataSource/McBopomofo/phrase.occ`、公開分類詞庫及分類顯示名稱。
   繁簡映射、符號／常用文字表也要列入來源 manifest；不建立使用者詞匯入格式。
-  既有凍結切片仍會讀 `cj-ext.cin`／`simplex-ext.cin`，直到另有明確移除決定；
-  這不構成繼續開發或發布支援要求。
+  既有額外切片仍會讀 `cj-ext.cin`／`simplex-ext.cin`；目前不繼續開發、
+  不作第一階段 blocker，但保留實作與擴充結構。
 - 新寫 Linux 資料解析／索引工具，不直接要求舊 macOS cooker 在 Linux 執行：
   它依賴 Formosa Ruby extension。可採 C++17 建置時生成的自有版本化 SQLite 索引，
   runtime 使用系統 SQLite；候選排序須有明確序號欄，不能依索引自然順序。
@@ -457,7 +465,7 @@ context 獨立狀態、嚴格 CIN reader、五種注音布局、Fcitx 原生布�
 Fcitx 5 addon。Rancher Desktop container 已在 Ubuntu 24.04（Fcitx 5.1.7）與 22.04
 （Fcitx 5.0.14）x86_64 userspace 編譯、跑 CTest 並驗證 staged install；24.04 ARM64
 build 亦已通過。Ubuntu 24.04 x86_64 另以 Xvfb、獨立 D-Bus、Fcitx 5 與 GTK 3 host
-完成二十二個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
+完成三十個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
 五種注音配置的 T02 鍵序皆以二、三、四、輕聲選出「麻馬罵嘛」，
 漢語拼音並清除不完整 `zh`；倉頡 `a` 選「日」，另驗證直接標點、查無碼清除與
 單一候選提交為「，用」，並以 `a?`／`a*` 萬用字元提交「昌日」；簡易 `a`
@@ -473,23 +481,91 @@ migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫
 `fcitx5-config-qt` 的輸入法與核取方塊，實際點選只開 agriculture-food、保存並重啟後
 逐鍵輸出「作物育種」，同時保存切換前後截圖。各案都有 `keyboard-us` 負控制，
 並確認執行中 Fcitx process 載入 staged `.so`。真正安裝的 Ubuntu 24.04 `.deb`
-在 `1.2.8~preview1` 初裝與升級狀態各跑二十一個鍵盤案例，移除後重裝則跑全部二十二案；
+最近一次 package 證據在 `1.2.8~preview1` 初裝與升級狀態各跑二十九個鍵盤案例，
+移除後重裝則跑全部三十案，含一個設定視窗操作案；套件 dependency、
+資料 hash、移除殘檔與使用者設定保留也一併通過。
 套件同時核對 debhelper/lintian、ELF dependency、架構、版本、安裝清單、資料 hash、
 授權檔與使用者設定保留。Ubuntu 22.04 的對應 `.deb` 亦已在 Fcitx 5.0.14 userspace
 建置，並於乾淨 runtime container 通過安裝、移除、重裝及相同的非桌面套件檢查。
 倉頡與簡易已有字根 preedit、基本候選等垂直切片，倉頡另有 `?`／`*` 萬用字元；
-2026-09-13 起 F03／F04 已排除，這些只留作相容性回歸，不再擴充或宣告支援。
-T02 已覆蓋五配置的二、三、四、輕聲
-與漢語拼音不完整輸入退格，但更廣的錯誤輸入仍待 macOS baseline 與完整 E2E。
+兩者雖不在 Windows 第一階段基線，既有功能、註冊與測試均保留作額外功能與後續擴充。
+T02 已覆蓋五配置的二、三、四、輕聲；各聲調鍵會依 macOS 行為立即開候選，
+再以 Windows 交叉檢查，不需再按
+Space，並覆蓋漢語拼音不完整輸入退格。五種配置皆屬 Windows
+對標範圍。2026-09-13 已在 Linux engine 補上五布局候選開啟時直接開始下一音節，以及
+無效鍵／查無候選保留 reading 並回報錯誤提示訊號；Fcitx→GTK3 新增「中文」連續輸入
+與 `=`／`Ctrl+C` 錯誤恢復兩案並使完整 X11 suite 達 24/24。Fcitx adapter 已把
+錯誤訊號接到 XDG `bell-window-system` 事件音效，預設開啟並可由原生設定關閉；設定
+視窗測試會關閉、保存並在重啟後讀回。Xvfb 沒有桌面音訊 session，是否真正可聽仍待
+Ubuntu 24.04 GNOME 驗收。
+F08 中英模式也已補上 Fcitx 5 adapter：每個 input context 保留中／英狀態與
+狀態標籤，預設以 `Ctrl+\` 或 300 ms 內單按 Shift 切換，轉英文時放棄現有
+composition；英文半形交回 App，英文全形仍由輸入法轉換。X11 案例覆蓋
+Ctrl 快捷鍵來回、Shift 短按／長按、Caps Lock、全／半形與有 reading 時切換；
+`ToggleInputMethodWithControlBackslash` 的 Fcitx 原生核取方塊、INI／D-Bus 保存與
+重啟讀回也已實測。完整 warm `ci/dev.sh verify` 為 CTest 2/2、X11 26/26；
+Ubuntu 22.04 的 Fcitx 5.0.14 最低 API 建置及 configure／GNU Make source gate 同步通過。
+F06 候選方向已使用 Ubuntu 22.04／24.04 皆提供的 `CandidateLayoutHint`：原生設定預設
+Vertical，可切 Horizontal，並套用到每一份 Fcitx candidate list。AT-SPI 設定案例已
+實際切成 Horizontal、保存、重啟後由 D-Bus 讀回，接著在該 hint 下完成「作物育種」
+候選流程；完整 X11 suite 維持 26/26，更新後的 Ubuntu 24.04 `.deb` lifecycle 亦為
+初裝 25/25、升級 25/25、重裝 26/26。Xvfb classic-ui 的頂層 window geometry 無法可靠
+代表候選內容，因此尚未把寬高當成方向證據，仍須 GNOME／Wayland popup 畫面驗收。
+F07 的比例與反白色由 Fcitx UI/theme 決定，Ubuntu 22.04／24.04 的 input-method addon
+API 沒有 per-IME scale/color；若不能接受平台差異，後續須另作 custom UI addon，不能
+加入不會生效的假設定。
+T03 編輯／取消邊界已先依 macOS `OpenVanillaController`、`OVIMTraditionalMandarin`
+與 PlainVanilla candidate flow 固定，再以 Windows `KeyKeyEngine` 交叉檢查：空狀態
+Backspace／Escape 交還 App，reading Backspace 逐音退回，reading
+Escape 清空；候選 Backspace 關窗並只刪最後一音，候選 Escape 清掉整個 reading。
+L1 已覆蓋全部狀態，新增 installed-addon X11/GTK3 案例以同一欄位完成空狀態刪字、兩種
+Backspace 與兩種 Escape 後只提交「中文麻」。完整 `ci/dev.sh verify` 為 CTest 2/2、
+X11 27/27；Ubuntu 24.04 `.deb` lifecycle 為初裝 26/26、升級 26/26、重裝 27/27。
+T09 也已先依 macOS 事件流固定、再以 Windows 交叉檢查：一般
+Ctrl／Alt／Super 與 Ctrl+方向鍵不由注音引擎
+處理，key release 不可選字或重複提交；關聯詞在 modified key press 時關閉後放行，release
+則不改狀態。L1 已覆蓋 reading、一般候選與關聯詞的 press／release／repeat；新增
+installed-addon X11/GTK3 案例長按 `Ctrl+\` 一秒只切換一次，並在 reading／候選中送
+Ctrl+C、Alt+F 後精確提交 `x中文`，負控制為 `\x5j/ 1jp61`。這項測試曾實際抓到 X11
+repeat key-down 沒有 Fcitx `Repeat` state 而反覆切換的問題，現以實體 backslash
+press/release latch 修正；先放 Ctrl 所觸發的裸 backslash 重送也會持續被抑制到 key-up。
+更新後完整驗證為 CTest 2/2、X11 28/28；Ubuntu 24.04
+`.deb` lifecycle 為初裝 27/27、升級 27/27、重裝 28/28。Super 與 compositor 全域
+快捷鍵仍須在 GNOME 驗證，不能由無 window manager 的 Xvfb 代替。
+T10 的 local X11/GTK3 context lifecycle 也已建立：同一 client 的兩個 `GtkEntry`
+在第一欄候選開啟時，依 host 回報的實際 widget geometry 以 XTest 滑鼠點擊第二欄，
+使第一欄候選失焦後清除 preedit；第二欄獨立選出「文」，再以 Shift+Tab 切回
+第一欄先證明舊候選未殘留，再選出「中」。另一段在候選開啟時讓 client 走 GTK 正常
+關閉流程，確認 Fcitx 與 staged addon 仍存活，重啟 Fcitx 後再由新 client 選出「中」；
+每段都有 `keyboard-us` literal control。不同 input context 依 Fcitx 的 share-input-state
+設定可能各自記住 active engine，測試在每次跨 context 後明確切換並輪詢，不把框架
+策略誤判為 KeyKey 狀態外洩。兩個同時存活的獨立 App、GNOME 登出登入與 Wayland
+仍待桌面驗收。加入此案例後的完整 warm gate 為 CTest 2/2、X11 29/29；Ubuntu 24.04
+package lifecycle 亦已以真正安裝的套件通過初裝 28/28、升級 28/28、重裝 29/29。
+T11 的 local X11/GTK3 編輯與欄位安全邊界也已擴充：先依 macOS OSX-IMK、
+TraditionalMandarin 與 PlainVanilla 的事件流固定行為，再以 Windows TSF 交叉確認。
+reading 中未帶 Ctrl／Alt／Super 的方向、Home／End、PageUp／PageDown、Delete／Tab
+及其 Shift 變體會保留 reading、提示錯誤且不移動 App caret／selection；一般候選的
+Home／End 可跳首尾，無效候選編輯鍵也不漏入 App。真鍵盤流程在「甲乙丙」中間組字，
+送完上述按鍵仍原位提交第一個「中」，再以 Shift+Right 選取「乙」並由候選替換，
+精確得到「甲中中丙」；切入
+`GTK_INPUT_PURPOSE_PASSWORD` 後，Fcitx 依 capability 自動切回 `keyboard-us`，完整
+鍵序只產生 literal `rup 1!`，不允許強制選回自訂輸入法或顯示關聯詞；不可編輯欄位
+收到完整注音鍵序後仍保持「唯讀」。正向與 `keyboard-us` 負控制皆通過，adapter 對
+其他 frontend 可能傳入的 `Password`／`Sensitive` capability 另防禦性清除關聯詞。
+加入此案例後完整 warm gate 為 CTest 2/2、X11 30/30，Ubuntu 22.04 Fcitx 5.0.14
+build／CTest／staging 亦通過；Ubuntu 24.04 `.deb` lifecycle 的 preview 初裝與 release
+升級各為 29/29，移除／重裝後含設定視窗為 30/30，dependency、資料 hash、移除與設定
+sentinel 亦全數通過。滑鼠 selection、GTK4／Qt／瀏覽器、GNOME 與 Wayland 仍待驗收。
 這不是 GNOME session；P0 所要求的 native Wayland／XWayland、完整桌面/App、popup
 與 hosted runner 實證仍未完成。
 
 | 階段 | 工作 | 出場條件 |
 |---|---|---|
-| P0：證據與風險先行 | 先驗證 Ubuntu 24.04 GNOME + Fcitx 5 的 addon、popup、Qt 回送、三種 session 路徑與 hosted 注入；凍結 macOS baseline，盤點 Ubuntu 版本與最低依賴 | 主環境真 host app 收到測試字、負控制符合預期、addon 身分正確；Ubuntu 22.04 最低 API 與 GNOME 差異有結論 |
-| P1：Linux 引擎骨架與資料 | CMake、授權、native 資料工具、context 契約、五種注音布局 | 不需 GUI 可跑 CTest；真實資料 golden、Unicode／生命週期測試通過，無舊核心 link |
-| P2：注音功能與 filter | 內建關聯詞、標點、全半形、繁轉簡、注音修正 | F01–F02、F05、F09–F10 對應測試通過；不能到此就宣稱核定範圍的完整 parity |
-| P3：完整 Ubuntu 桌面整合 | 完成 Ubuntu 24.04 + Fcitx 5 全功能／視窗／App／sandbox 驗收，再完成 Ubuntu 內其他 adapter 路徑 | 主環境符合測試計畫完整驗收；F01–F02、F05–F11、F16 狀態明確；GTK/Qt 真打字與視窗流程通過；不加入已排除項目 |
+| P0：證據與風險先行 | 先驗證 Ubuntu 24.04 GNOME + Fcitx 5 的 addon、popup、Qt 回送、三種 session 路徑與 hosted 注入；凍結 Windows TSF baseline，盤點 Ubuntu 版本與最低依賴 | 主環境真 host app 收到測試字、負控制符合預期、addon 身分正確；Ubuntu 22.04 最低 API 與 GNOME 差異有結論 |
+| P1：Linux 引擎骨架與資料 | CMake、授權、native 資料工具、context 契約、Windows 五種注音布局 | 不需 GUI 可跑 CTest；真實資料 golden、Unicode／生命週期測試通過，無舊核心 link |
+| P2：Windows 注音功能與 filter | 五布局逐音節連續輸入、錯誤處理、內建關聯詞、標點、Big-5、全半形；保留既有繁轉簡擴充 | F01–F02、F05、F08–F10 對應測試通過；不能到此就宣稱 Windows 全功能 parity |
+| P3：完整 Ubuntu 桌面整合 | 完成 Ubuntu 24.04 + Fcitx 5 的 Windows 對標功能／視窗／App／sandbox 驗收，再完成 Ubuntu 內其他 adapter 路徑 | 主環境符合測試計畫完整驗收；F01–F02、F05–F11、F16 的 Windows 對應狀態明確；GTK/Qt 真打字與視窗流程通過；既有額外功能不拆除 |
 | P4：Ubuntu 多版本與安裝 | Ubuntu 近四年矩陣原生 `.deb`、ARM64 preview、乾淨安裝／升級／移除；configure／make 原始碼入口與 source tarball | 9 個 Ubuntu 版本的套件與原始碼安裝路徑皆有正確 dependency、data、授權；source tarball 可獨立重建，安裝後從系統選到注音並打字 |
 | P5：Ubuntu CI 與首版驗收 | Ubuntu workflows、release gate、sandbox／應用程式矩陣、文件 | 同一 SHA 的 Ubuntu 正式矩陣全綠且證據齊全；preview 不混入正式保證；由使用者確認可接受差異後發布 |
 | P6：其他發行版 TODO | Ubuntu 完成後再做 Debian 12／13 與 Fedora 36–44 的 adapter、DEB／RPM、桌面與 CI | 各家族重新確認仍在近四年範圍，逐列升格為 active；不得用 Ubuntu ELF binary 直接重包 |
@@ -497,10 +573,12 @@ T02 已覆蓋五配置的二、三、四、輕聲
 總完成條件：
 
 - [ ] 除核定的版號 metadata 更新外，未改動禁止範圍；四個既有平台的行為與發布路徑保持不變。
-- [ ] 注音在兩 adapter 都可用；F01–F02、F05–F11、F16 功能／視窗逐列有驗收結果。
+- [ ] Windows 五種傳統注音布局在兩 adapter 都可用；F01–F02、F05–F11、F16 的
+      Windows 對應功能／視窗逐列有驗收結果。
 - [ ] Ubuntu 24.04 GNOME + Fcitx 5 通過最完整測試，X11／native Wayland／XWayland、
       所有核定功能、App／sandbox／UI、安裝升級及穩定性皆有獨立證據。
-- [ ] F03–F04、F12–F15 不作為未完成／待恢復項目；新 UI 不加入其選單或佔位。
+- [ ] 五布局及布局選單保留；F03／F04 與既有繁轉簡擴充不因第一階段縮減而拆除。
+      候選學習／動態頻率、注音自動修正、F12–F15 不作為 Windows parity 缺口。
 - [ ] Ubuntu 近四年相容窗的每個版本／必要桌面組合通過已安裝套件的實際打字驗證，
       包含 EOL 歷史列，不只測最新版；Debian／Fedora 留在 P6 TODO，不阻擋此前的 Ubuntu 發布。
 - [ ] PR／手動完整測試／release 都有可追溯報告，沒有「用寫入文字代替鍵盤」的假 E2E。

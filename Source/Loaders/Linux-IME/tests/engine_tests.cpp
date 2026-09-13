@@ -300,6 +300,20 @@ void testAssociatedPhraseKeyboardFlow() {
                 !result.associatedPhrases && result.candidates.empty(),
             "Backspace did not dismiss associated phrases before pass-through");
 
+    result = commitHead();
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Character, 'c', KeyModifier::Control, true, false});
+    require(!result.handled && !result.updateUi && result.associatedPhrases &&
+                !result.candidates.empty(),
+            "A shortcut key release changed associated phrases");
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Character, 'c', KeyModifier::Control, false, true});
+    require(!result.handled && result.updateUi && result.commit.empty() &&
+                !result.associatedPhrases && result.candidates.empty(),
+            "A repeated application shortcut did not dismiss associated phrases before pass-through");
+
     engine.setAssociatedPhraseCollections({});
     result = commitHead();
     require(result.commit == "今" && !result.associatedPhrases &&
@@ -328,6 +342,106 @@ void testRealDataTypingFlow() {
     require(result.commit == "中", "Candidate 1 must commit 中");
     require(result.preedit.empty() && result.candidates.empty(),
             "Commit must clear composition state");
+}
+
+void testBopomofoContinuousTypingAndInputErrors() {
+    std::istringstream input(
+        "%chardef begin\n"
+        "5j/ 中\n"
+        "5j/ 忠\n"
+        "jp 文\n"
+        "jp 聞\n"
+        "%chardef end\n");
+    auto dictionary =
+        std::make_shared<const CinDictionary>(CinDictionary::load(input));
+    Engine engine(dictionary);
+    InputContextState context;
+
+    engine.processKey(context, character('5'));
+    engine.processKey(context, character('j'));
+    engine.processKey(context, character('/'));
+    auto result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false,
+                          false});
+    require(result.candidates == std::vector<std::string>({"中", "忠"}),
+            "First reading did not open the expected candidate list");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Down, '\0', KeyModifier::None, false,
+                          false});
+    require(result.highlightedIndex == 1,
+            "Candidate highlight did not move before continuous input");
+
+    result = engine.processKey(context, character('j'));
+    require(result.handled && !result.beep && result.commit == "忠" &&
+                result.preedit == "ㄨ" && result.candidates.empty(),
+            "Next Bopomofo key did not commit the highlight and start a new reading");
+    result = engine.processKey(context, character('p'));
+    require(result.handled && result.preedit == "ㄨㄣ",
+            "Continuous input did not extend the new reading");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false,
+                          false});
+    require(result.candidates == std::vector<std::string>({"文", "聞"}),
+            "Second reading did not open its candidate list");
+    result = engine.processKey(context, character('1'));
+    require(result.commit == "文" && result.preedit.empty(),
+            "Continuous input did not complete the second syllable");
+
+    result = engine.processKey(context, character('='));
+    require(!result.handled && !result.beep && result.preedit.empty(),
+            "An unmapped key was captured without an active reading");
+
+    result = engine.processKey(context, character('5'));
+    require(result.preedit == "ㄓ", "Error test did not start a reading");
+    result = engine.processKey(context, character('='));
+    require(result.handled && result.beep && result.commit.empty() &&
+                result.preedit == "ㄓ" && result.candidates.empty(),
+            "An invalid printable key leaked through or damaged the reading");
+
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Character, 'c', KeyModifier::Control, false, false});
+    require(!result.handled && !result.beep && result.preedit == "ㄓ",
+            "An application shortcut was captured or changed the reading");
+
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false,
+                          false});
+    require(result.handled && result.beep && result.commit.empty() &&
+                result.preedit == "ㄓ" && result.candidates.empty(),
+            "A no-candidate query did not preserve the reading and report an error");
+
+    struct LayoutCase {
+        BopomofoLayout layout;
+        const char *readingKeys;
+        char nextKey;
+        const char *nextPreedit;
+    };
+    const LayoutCase layouts[] = {
+        {BopomofoLayout::Standard, "5j/", 'j', "ㄨ"},
+        {BopomofoLayout::ETen, ",x-", 'x', "ㄨ"},
+        {BopomofoLayout::ETen26, "gxl", 'x', "ㄨ"},
+        {BopomofoLayout::Hsu, "jxl", 'x', "ㄨ"},
+        {BopomofoLayout::HanyuPinyin, "zhong", 'w', "w"},
+    };
+    for (const LayoutCase &layout : layouts) {
+        Engine layoutEngine(dictionary, InputMethod::Bopomofo, layout.layout);
+        InputContextState layoutContext;
+        for (const char key : std::string(layout.readingKeys)) {
+            layoutEngine.processKey(layoutContext, character(key));
+        }
+        result = layoutEngine.processKey(
+            layoutContext,
+            KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+        require(result.candidates.size() == 2,
+                "A Windows-supported layout did not open candidates");
+        result = layoutEngine.processKey(layoutContext,
+                                         character(layout.nextKey));
+        require(result.handled && !result.beep && result.commit == "中" &&
+                    result.preedit == layout.nextPreedit &&
+                    result.candidates.empty(),
+                "A Windows-supported layout did not continue into the next reading");
+    }
 }
 
 void testAllBopomofoLayoutsUseCanonicalDictionaryKeys() {
@@ -387,10 +501,14 @@ void testBopomofoLayoutTonesAndAmbiguities() {
             testCase.layout == BopomofoLayout::HanyuPinyin ? "leng3" : "ㄌㄥˇ";
         require(reading.displayText(testCase.layout) == expected,
                 "Layout displayed the wrong ㄌㄥˇ preedit");
+        require(reading.hasToneMarker(),
+                "Layout did not retain its explicit tone marker");
         require(reading.backspace(testCase.layout),
                 "Layout did not remove the last key");
         require(reading.queryKey() == "x/",
                 "Layout backspace did not preserve ㄌㄥ");
+        require(!reading.hasToneMarker(),
+                "Layout backspace did not remove its tone marker");
     }
 
     BopomofoReading eten26Single;
@@ -428,14 +546,12 @@ void testBopomofoLayoutToneTypingFlows() {
         const char *sequences[] = {testCase.tone2, testCase.tone3,
                                    testCase.tone4, testCase.tone5};
         for (const char *sequence : sequences) {
+            EngineResult result;
             for (const char key : std::string(sequence)) {
-                engine.processKey(context, character(key));
+                result = engine.processKey(context, character(key));
             }
-            auto result = engine.processKey(
-                context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None,
-                                  false, false});
             require(!result.candidates.empty(),
-                    "A tone sequence did not open real candidates");
+                    "A tone sequence did not immediately open real candidates");
             result = engine.processKey(context, character('1'));
             committed += result.commit;
         }
@@ -443,10 +559,26 @@ void testBopomofoLayoutToneTypingFlows() {
                 "A layout did not commit all four Mandarin tone fixtures");
     }
 
+    std::istringstream singleCandidateInput(
+        "%chardef begin\n"
+        "a86 麻\n"
+        "%chardef end\n");
+    auto singleCandidateDictionary = std::make_shared<const CinDictionary>(
+        CinDictionary::load(singleCandidateInput));
+    Engine singleCandidateEngine(singleCandidateDictionary);
+    InputContextState singleCandidateContext;
+    singleCandidateEngine.processKey(singleCandidateContext, character('a'));
+    singleCandidateEngine.processKey(singleCandidateContext, character('8'));
+    auto result =
+        singleCandidateEngine.processKey(singleCandidateContext, character('6'));
+    require(result.handled && result.commit == "麻" && result.preedit.empty() &&
+                result.candidates.empty(),
+            "A tone query did not immediately commit its sole candidate");
+
     Engine pinyin(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
                   BopomofoLayout::HanyuPinyin);
     InputContextState context;
-    auto result = pinyin.processKey(context, character('z'));
+    result = pinyin.processKey(context, character('z'));
     require(result.preedit == "z", "Pinyin incomplete initial was lost");
     result = pinyin.processKey(context, character('h'));
     require(result.preedit == "zh", "Pinyin incomplete digraph was lost");
@@ -600,9 +732,35 @@ void testContextsAreIndependent() {
     InputContextState second;
 
     engine.processKey(first, character('5'));
+    engine.processKey(first, character('j'));
+    engine.processKey(first, character('/'));
+    engine.processKey(
+        first, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
     engine.processKey(second, character('s'));
-    require(engine.snapshot(first).preedit == "ㄓ", "First context was corrupted");
-    require(engine.snapshot(second).preedit == "ㄋ", "Second context was corrupted");
+    require(engine.snapshot(first).preedit == "ㄓㄨㄥ" &&
+                !engine.snapshot(first).candidates.empty() &&
+                engine.snapshot(first).candidates.front() == "中",
+            "First context candidate state was corrupted");
+    require(engine.snapshot(second).preedit == "ㄋ" &&
+                engine.snapshot(second).candidates.empty(),
+            "First context candidates leaked into the second context");
+
+    first.reset();
+    require(engine.snapshot(first).preedit.empty() &&
+                engine.snapshot(first).candidates.empty(),
+            "Reset did not clear the selected context");
+    require(engine.snapshot(second).preedit == "ㄋ",
+            "Reset of the first context corrupted the second context");
+
+    engine.processKey(
+        first, KeyEvent{KeyCode::Space, '\0', KeyModifier::Shift, false, false});
+    engine.setTraditionalToSimplifiedMode(second, true);
+    require(engine.snapshot(first).fullWidthMode &&
+                !engine.snapshot(second).fullWidthMode,
+            "Full-width mode leaked between input contexts");
+    require(!engine.snapshot(first).traditionalToSimplifiedMode &&
+                engine.snapshot(second).traditionalToSimplifiedMode,
+            "Output-filter mode leaked between input contexts");
 }
 
 void testBopomofoBig5CandidateFilter() {
@@ -617,20 +775,16 @@ void testBopomofoBig5CandidateFilter() {
     Engine engine(loadRealBopomofoDictionary());
     InputContextState context;
     engine.processKey(context, character(','));
-    engine.processKey(context, character('4'));
-    auto result = engine.processKey(
-        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    auto result = engine.processKey(context, character('4'));
     require(result.candidates.size() == Engine::CandidatesPerPage &&
                 result.candidates.at(0) == "誒" &&
                 result.candidates.at(1) == "𠔅",
-            "Unicode Bopomofo candidates changed before Big-5 filtering");
+            "A tone key did not immediately open Unicode Bopomofo candidates");
 
     context.reset();
     engine.setRestrictBopomofoCandidatesToBig5(true);
     engine.processKey(context, character(','));
-    engine.processKey(context, character('4'));
-    result = engine.processKey(
-        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    result = engine.processKey(context, character('4'));
     require(result.candidates ==
                 std::vector<std::string>({"誒", "𤦩", "𨗴"}),
             "Bopomofo Big-5 filtering changed the real candidate list");
@@ -846,6 +1000,18 @@ void testCandidateKeyboardNavigation() {
         context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
 
     auto result = engine.processKey(
+        context, KeyEvent{KeyCode::End, '\0', KeyModifier::None, false, false});
+    require(result.handled && result.candidatePage == 1 &&
+                result.highlightedIndex == 2 &&
+                result.candidates.at(2) == "candidate-12",
+            "End did not move to the final candidate");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Home, '\0', KeyModifier::None, false, false});
+    require(result.handled && result.candidatePage == 0 &&
+                result.highlightedIndex == 0 &&
+                result.candidates.front() == "candidate-1",
+            "Home did not move to the first candidate");
+    result = engine.processKey(
         context, KeyEvent{KeyCode::Up, '\0', KeyModifier::None, false, false});
     require(result.handled && result.candidatePage == 1 &&
                 result.highlightedIndex == 2 &&
@@ -1026,8 +1192,12 @@ void testTraditionalToSimplifiedOutputFilter() {
     InputContextState context;
 
     const auto composeReading = [&](const std::string &keys) {
+        EngineResult result;
         for (const char key : keys) {
-            engine.processKey(context, character(key));
+            result = engine.processKey(context, character(key));
+        }
+        if (!result.candidates.empty() || !result.commit.empty()) {
+            return result;
         }
         return engine.processKey(
             context,
@@ -1072,26 +1242,200 @@ void testModifiedAndReleaseKeysPassThrough() {
     Engine engine(loadRealBopomofoDictionary());
     InputContextState context;
 
-    auto result = engine.processKey(
-        context, KeyEvent{KeyCode::Character, 'c', KeyModifier::Control, false, false});
-    require(!result.handled && result.preedit.empty(), "Ctrl+C must pass through");
+    const KeyEvent shortcuts[] = {
+        {KeyCode::Character, 'c', KeyModifier::Control, false, false},
+        {KeyCode::Character, 'f', KeyModifier::Alt, false, false},
+        {KeyCode::Character, 'l', KeyModifier::Super, false, false},
+        {KeyCode::Left, '\0', KeyModifier::Control, false, false},
+        {KeyCode::Character, 'c', KeyModifier::Control, false, true},
+    };
+
+    auto result = engine.processKey(context, shortcuts[0]);
+    require(!result.handled && result.preedit.empty(),
+            "Ctrl+C without composition must pass through");
+
+    engine.processKey(context, character('5'));
+    for (const KeyEvent &shortcut : shortcuts) {
+        result = engine.processKey(context, shortcut);
+        require(!result.handled && !result.beep && result.commit.empty() &&
+                    result.preedit == "ㄓ" && result.candidates.empty(),
+                "An application shortcut changed an active reading");
+    }
     result = engine.processKey(
-        context, KeyEvent{KeyCode::Character, '5', KeyModifier::None, true, false});
-    require(!result.handled && result.preedit.empty(), "Key release must pass through");
+        context,
+        KeyEvent{KeyCode::Character, 'j', KeyModifier::None, true, false});
+    require(!result.handled && result.preedit == "ㄓ",
+            "A key release changed an active reading");
+
+    engine.processKey(context, character('j'));
+    engine.processKey(context, character('/'));
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(!result.candidates.empty() && result.candidates.front() == "中",
+            "Shortcut-boundary test did not open the expected candidates");
+    const std::vector<std::string> expectedCandidates = result.candidates;
+    for (const KeyEvent &shortcut : shortcuts) {
+        result = engine.processKey(context, shortcut);
+        require(!result.handled && !result.beep && result.commit.empty() &&
+                    result.preedit == "ㄓㄨㄥ" &&
+                    result.candidates == expectedCandidates &&
+                    result.highlightedIndex == 0,
+                "An application shortcut changed an active candidate list");
+    }
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Character, '1', KeyModifier::None, true, false});
+    require(!result.handled && result.commit.empty() &&
+                result.candidates == expectedCandidates,
+            "A candidate-key release selected or changed a candidate");
+    result = engine.processKey(context, character('1'));
+    require(result.handled && result.commit == "中" &&
+                result.preedit.empty() && result.candidates.empty(),
+            "Candidate selection failed after application shortcuts");
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Character, '1', KeyModifier::None, true, false});
+    require(!result.handled && result.commit.empty() &&
+                result.preedit.empty(),
+            "A candidate-key release caused a duplicate commit");
 }
 
 void testBackspaceAndEscape() {
     Engine engine(loadRealBopomofoDictionary());
     InputContextState context;
 
+    auto result = engine.processKey(
+        context, KeyEvent{KeyCode::Backspace, '\0', KeyModifier::None, false,
+                          false});
+    require(!result.handled && result.preedit.empty() &&
+                result.candidates.empty(),
+            "Backspace without composition must pass through to the app");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false,
+                          false});
+    require(!result.handled && result.preedit.empty() &&
+                result.candidates.empty(),
+            "Escape without composition must pass through to the app");
+
     engine.processKey(context, character('5'));
     engine.processKey(context, character('j'));
-    auto result = engine.processKey(
+    result = engine.processKey(
         context, KeyEvent{KeyCode::Backspace, '\0', KeyModifier::None, false, false});
     require(result.handled && result.preedit == "ㄓ", "Backspace must remove medial");
     result = engine.processKey(
         context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false, false});
     require(result.handled && result.preedit.empty(), "Escape must cancel composition");
+
+    engine.processKey(context, character('5'));
+    engine.processKey(context, character('j'));
+    engine.processKey(context, character('/'));
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(!result.candidates.empty() && result.candidates.front() == "中",
+            "Edit-boundary test did not open the expected candidate list");
+
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Backspace, '\0', KeyModifier::None, false,
+                          false});
+    require(result.handled && result.commit.empty() &&
+                result.preedit == "ㄓㄨ" && result.candidates.empty(),
+            "Backspace in candidates must close the list and remove only the final");
+
+    result = engine.processKey(context, character('/'));
+    require(result.handled && result.preedit == "ㄓㄨㄥ",
+            "Reading did not resume after candidate Backspace");
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(!result.candidates.empty(),
+            "Candidate list did not reopen after editing the reading");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false,
+                          false});
+    require(result.handled && result.commit.empty() && result.preedit.empty() &&
+                result.candidates.empty(),
+            "Escape in candidates must cancel the complete reading");
+
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false,
+                          false});
+    require(!result.handled && result.preedit.empty() &&
+                result.candidates.empty(),
+            "Escape after canceling candidates must return to pass-through");
+}
+
+void testBopomofoReadingBlocksHostEditingKeys() {
+    Engine engine(loadRealBopomofoDictionary());
+    InputContextState context;
+
+    engine.processKey(context, character('5'));
+    auto result = engine.processKey(context, character('j'));
+    require(result.preedit == "ㄓㄨ",
+            "Editing-key test did not create the expected reading");
+
+    const KeyCode editingKeys[] = {
+        KeyCode::Left,   KeyCode::Right, KeyCode::Up,     KeyCode::Down,
+        KeyCode::Home,   KeyCode::End,   KeyCode::PageUp, KeyCode::PageDown,
+        KeyCode::Delete, KeyCode::Tab,
+    };
+    for (const KeyCode code : editingKeys) {
+        result = engine.processKey(
+            context, KeyEvent{code, '\0', KeyModifier::None, false, false});
+        require(result.handled && result.beep && result.preedit == "ㄓㄨ" &&
+                    result.candidates.empty() && result.commit.empty(),
+                "An unmodified host editing key escaped or changed the reading");
+        result = engine.processKey(
+            context, KeyEvent{code, '\0', KeyModifier::Shift, false, false});
+        require(result.handled && result.beep && result.preedit == "ㄓㄨ" &&
+                    result.candidates.empty() && result.commit.empty(),
+                "A Shift editing key escaped or changed the reading");
+    }
+
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Left, '\0', KeyModifier::Control, false, false});
+    require(!result.handled && !result.beep && result.preedit == "ㄓㄨ",
+            "Ctrl+Left must remain an application shortcut during a reading");
+
+    result = engine.processKey(context, character('/'));
+    require(result.handled && result.preedit == "ㄓㄨㄥ",
+            "Editing-key test could not finish its reading");
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.handled && !result.candidates.empty(),
+            "Editing-key test could not open candidates");
+    const auto candidates = result.candidates;
+    for (const KeyCode code : editingKeys) {
+        if (code == KeyCode::Delete || code == KeyCode::Tab) {
+            result = engine.processKey(
+                context,
+                KeyEvent{code, '\0', KeyModifier::None, false, false});
+            require(result.handled && result.beep &&
+                        result.candidates == candidates && result.commit.empty(),
+                    "An invalid candidate editing key escaped or changed state");
+        }
+        result = engine.processKey(
+            context, KeyEvent{code, '\0', KeyModifier::Shift, false, false});
+        require(result.handled && result.beep &&
+                    result.candidates == candidates && result.commit.empty(),
+                "A Shift editing key escaped or changed candidates");
+    }
+
+    result = engine.processKey(
+        context,
+        KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false, false});
+    require(result.handled && result.preedit.empty() &&
+                result.candidates.empty(),
+            "Editing-key test could not cancel its candidates");
+    for (const KeyCode code : editingKeys) {
+        result = engine.processKey(
+            context, KeyEvent{code, '\0', KeyModifier::None, false, false});
+        require(!result.handled && !result.beep && result.preedit.empty(),
+                "A host editing key was captured without a composition");
+    }
 }
 
 } // namespace
@@ -1105,6 +1449,7 @@ int main() {
         testRealAssociatedPhraseCollections();
         testAssociatedPhraseKeyboardFlow();
         testRealDataTypingFlow();
+        testBopomofoContinuousTypingAndInputErrors();
         testAllBopomofoLayoutsUseCanonicalDictionaryKeys();
         testBopomofoLayoutTonesAndAmbiguities();
         testBopomofoLayoutToneTypingFlows();
@@ -1121,6 +1466,7 @@ int main() {
         testTraditionalToSimplifiedOutputFilter();
         testModifiedAndReleaseKeysPassThrough();
         testBackspaceAndEscape();
+        testBopomofoReadingBlocksHostEditingKeys();
     } catch (const std::exception &error) {
         std::cerr << "FAILED: " << error.what() << '\n';
         return EXIT_FAILURE;

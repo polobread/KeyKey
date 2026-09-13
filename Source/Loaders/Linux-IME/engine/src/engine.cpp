@@ -14,6 +14,48 @@ bool hasModifiers(KeyModifier modifiers) noexcept {
     return modifiers != KeyModifier::None;
 }
 
+bool isHostEditingKey(KeyCode code) noexcept {
+    switch (code) {
+    case KeyCode::Delete:
+    case KeyCode::Tab:
+    case KeyCode::Left:
+    case KeyCode::Right:
+    case KeyCode::Up:
+    case KeyCode::Down:
+    case KeyCode::Home:
+    case KeyCode::End:
+    case KeyCode::PageUp:
+    case KeyCode::PageDown:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool isCandidateNavigationKey(KeyCode code) noexcept {
+    switch (code) {
+    case KeyCode::Left:
+    case KeyCode::Right:
+    case KeyCode::Up:
+    case KeyCode::Down:
+    case KeyCode::Home:
+    case KeyCode::End:
+    case KeyCode::PageUp:
+    case KeyCode::PageDown:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool hasApplicationShortcutModifier(KeyModifier modifiers) noexcept {
+    constexpr unsigned int shortcutModifiers =
+        static_cast<unsigned int>(KeyModifier::Control) |
+        static_cast<unsigned int>(KeyModifier::Alt) |
+        static_cast<unsigned int>(KeyModifier::Super);
+    return (static_cast<unsigned int>(modifiers) & shortcutModifiers) != 0U;
+}
+
 std::size_t associatedPhraseSelectionIndex(char character) noexcept {
     const std::string digits = "123456789";
     const std::string shiftedDigits = "!@#$%^&*(";
@@ -218,7 +260,8 @@ EngineResult Engine::processKey(InputContextState &context,
             event.modifiers == KeyModifier::None &&
             (event.code == KeyCode::Space || event.code == KeyCode::Left ||
              event.code == KeyCode::Right || event.code == KeyCode::Up ||
-             event.code == KeyCode::Down || event.code == KeyCode::PageUp ||
+             event.code == KeyCode::Down || event.code == KeyCode::Home ||
+             event.code == KeyCode::End || event.code == KeyCode::PageUp ||
              event.code == KeyCode::PageDown);
         if (!navigatesCandidates) {
             clearCandidates(context);
@@ -241,6 +284,20 @@ EngineResult Engine::processKey(InputContextState &context,
         event.modifiers == KeyModifier::Shift &&
         std::isalpha(static_cast<unsigned char>(event.character)) == 0 &&
         acceptsCharacter(event.character);
+    const bool blockHostEditingKey =
+        inputMethod_ == InputMethod::Bopomofo &&
+        isHostEditingKey(event.code) &&
+        !hasApplicationShortcutModifier(event.modifiers) &&
+        ((!compositionEmpty(context) && context.candidates_.empty()) ||
+         (!context.candidates_.empty() &&
+          (event.modifiers != KeyModifier::None ||
+           !isCandidateNavigationKey(event.code))));
+    if (blockHostEditingKey) {
+        EngineResult result = snapshot(context);
+        result.handled = true;
+        result.beep = true;
+        return result;
+    }
     if (hasModifiers(event.modifiers) && !shiftedTableSymbol) {
         if (context.fullWidthMode_ &&
             event.modifiers == KeyModifier::Shift &&
@@ -263,8 +320,7 @@ EngineResult Engine::processKey(InputContextState &context,
                 static_cast<std::size_t>(event.character - '1');
             return selectDisplayedCandidate(context, displayedIndex);
         }
-        if (inputMethod_ != InputMethod::Bopomofo &&
-            !context.candidates_.empty() && acceptsCharacter(event.character)) {
+        if (!context.candidates_.empty() && acceptsCharacter(event.character)) {
             const std::size_t absoluteIndex =
                 context.page_ * CandidatesPerPage + context.highlightedIndex_;
             pendingCommit = outputText(
@@ -280,6 +336,12 @@ EngineResult Engine::processKey(InputContextState &context,
             return includePendingCommit(std::move(result));
         }
         if (!acceptsCharacter(event.character)) {
+            if (!compositionEmpty(context) || !context.candidates_.empty()) {
+                EngineResult result = snapshot(context);
+                result.handled = true;
+                result.beep = true;
+                return includePendingCommit(std::move(result));
+            }
             if (context.fullWidthMode_ && compositionEmpty(context) &&
                 context.candidates_.empty() && event.character >= 0x20 &&
                 event.character <= 0x7E) {
@@ -292,9 +354,25 @@ EngineResult Engine::processKey(InputContextState &context,
             return passThroughResult();
         }
         if (!combine(context, event.character)) {
+            if (!pendingCommit.empty()) {
+                EngineResult result = snapshot(context);
+                result.handled = true;
+                result.beep = true;
+                return includePendingCommit(std::move(result));
+            }
+            if (!compositionEmpty(context) || !context.candidates_.empty()) {
+                EngineResult result = snapshot(context);
+                result.handled = true;
+                result.beep = true;
+                return result;
+            }
             return passThroughResult();
         }
         clearCandidates(context);
+        if (inputMethod_ == InputMethod::Bopomofo &&
+            context.reading_.hasToneMarker()) {
+            return includePendingCommit(query(context, true));
+        }
         const bool cangjieWildcard =
             inputMethod_ == InputMethod::Cangjie &&
             context.tableCode_.size() > 1 &&
@@ -346,6 +424,9 @@ EngineResult Engine::processKey(InputContextState &context,
         }
         context.reset();
         break;
+    case KeyCode::Delete:
+    case KeyCode::Tab:
+        return passThroughResult();
     case KeyCode::Left:
     case KeyCode::PageUp:
         if (context.candidates_.empty()) {
@@ -372,6 +453,21 @@ EngineResult Engine::processKey(InputContextState &context,
         }
         moveCandidateHighlight(context, 1);
         break;
+    case KeyCode::Home:
+        if (!context.candidates_.empty()) {
+            context.page_ = 0;
+            context.highlightedIndex_ = 0;
+            break;
+        }
+        return passThroughResult();
+    case KeyCode::End:
+        if (!context.candidates_.empty()) {
+            const std::size_t last = context.candidates_.size() - 1;
+            context.page_ = last / CandidatesPerPage;
+            context.highlightedIndex_ = last % CandidatesPerPage;
+            break;
+        }
+        return passThroughResult();
     }
 
     EngineResult result = snapshot(context);
@@ -440,6 +536,8 @@ EngineResult Engine::query(InputContextState &context,
     }
     EngineResult result = snapshot(context);
     result.handled = true;
+    result.beep = context.candidates_.empty() &&
+                  inputMethod_ == InputMethod::Bopomofo;
     return result;
 }
 
@@ -605,6 +703,7 @@ EngineResult Engine::selectAbsoluteCandidate(InputContextState &context,
     if (index >= context.candidates_.size()) {
         EngineResult result = snapshot(context);
         result.handled = true;
+        result.beep = true;
         return result;
     }
     const bool selectedAssociatedPhrase =

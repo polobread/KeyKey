@@ -7,8 +7,10 @@ RUN apt-get update \
         ca-certificates \
         cmake \
         g++ \
+        libcanberra-dev \
         libfcitx5core-dev \
         ninja-build \
+        pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 FROM build AS package-build
