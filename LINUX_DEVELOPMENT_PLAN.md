@@ -38,6 +38,8 @@ Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下�
   TODO，但不阻擋 Ubuntu 1.2.8 的開發與驗收，也不先建立額外 CI job。
 - Ubuntu 相容近四年版本，不限於最新版或上游仍在維護的版本。初始採 2022–2026 相容
   視窗，包含 Ubuntu 22.04 LTS；不能為方便使用新 API 而提高最低 OS 要求。
+- 2026-09-13 新增原始碼建置交付要求：支援 `./configure → make → make install`，
+  納入 P4／P5 與 Ubuntu 首版驗收。此入口尚未實作，介面與測試要求見第 5.1 節。
 - 本批版號、規劃與交接提交作為 1.2.8 開發起點；使用者已要求 commit 與 push。
   Linux workflow、目錄與指令入口均是後續實作項目；正式版本 tag 與套件發布在
   完成實作及驗收後另行執行。
@@ -171,7 +173,8 @@ Command+Shift 展開選單時才顯示完整五種配置。Linux 應明列五種
 
 ## 4. 原生架構與可修改邊界
 
-建議新增以下獨立目錄；使用 CMake + Ninja + CTest，Qt 6 Widgets 提供原生工具視窗。
+建議新增以下獨立目錄；使用 CMake + CTest，開發 preset 採 Ninja；另提供第 5.1 節的
+`configure`／GNU Make 入口，沿用同一組 CMake targets。Qt 6 Widgets 提供原生工具視窗。
 Qt 只放在 UI 層，引擎不能依賴顯示伺服器、D-Bus 或 Qt widget。
 
 最低依賴從最舊目標決定：例如 Ubuntu 22.04 的
@@ -316,6 +319,49 @@ chichi77-keykey-1.2.8.tar.xz
 - 安裝、升級、移除、重裝都測；移除程式保留學習資料／設定，刪個人資料需明確操作。
   APT／DNF repository、AUR／發行版官方收錄與簽章金鑰申請是另案，不自動對外發布。
 
+### 5.1 原始碼編譯安裝：configure 與 make（待實作）
+
+支援從乾淨 checkout 或發布的 source tarball，以傳統指令自行編譯及安裝。
+`configure` 入口規劃放在 `Source/Loaders/Linux-IME/`；tarball 保留必要的 monorepo
+相對結構。下列是待交付介面，尚不是目前可執行的建置指令：
+
+```sh
+cd Source/Loaders/Linux-IME
+./configure --prefix=/usr
+make -j2
+make check
+make DESTDIR="$PWD/out/source-stage" install
+# 實際安裝到系統時，改用 sudo make install；解除安裝用 sudo make uninstall。
+```
+
+- 採薄層 `configure` 入口，以 CMake 的 `Unix Makefiles` generator 與同一組
+  build／install 規則提供 GNU Make 介面；不另維護一套引擎或安裝清單。
+  支援一般 source-directory 呼叫與獨立 build directory 的 `path/to/configure`；
+  與現有 Ninja build cache 隔離，產生的 Makefile／cache 不提交 Git。
+- 明列 CMake 3.22 以上、GNU Make、C++17 compiler、shell、pkg-config 及所選
+  adapter／UI 的開發相依套件；此方式不要求 Ninja、Docker 或使用者自行執行
+  Autoconf／Automake。提供 `--help`、`--prefix`、`--libdir`、`--datadir`，尊重
+  `CXX`／`CPPFLAGS`／`CXXFLAGS`／`LDFLAGS`；相依缺失與未知參數在 configure 階段
+  明確報錯。明確要求的 adapter 不得因缺少依賴而靜默略過。
+- 支援 `make`、`make -jN`、`make check`（執行 CTest）、`make install`、
+  `make uninstall`、`make clean`、`make distclean`。configure、build、check 與
+  `DESTDIR` staging 均可由一般使用者執行；只有寫入受保護的系統安裝目錄才需提升權限。
+  `clean` 保留配置供重建；`distclean` 只移除此入口產生的配置與建置產物。
+- 預設 prefix 為 `/usr/local`，提供 `--prefix=/usr` 的發行版系統安裝範例。
+  Fcitx addon／metadata、IBus component／executable、資料、UI 與授權須共同遵守
+  安裝選項及架構目錄。configure 摘要列出實際目的地與框架搜尋設定；若自訂 prefix
+  不在框架搜尋範圍，文件須給出已驗證的啟用方式，不能只因檔案複製成功就算可用。
+  `DESTDIR` 僅作 staging 根目錄，不得寫入執行期資料路徑或 metadata。
+- source tarball 必須包含 executable `configure`、CMake 規則、必要測試／腳本、
+  全部唯讀字表／詞庫、Linux 資料及授權；安裝開發相依套件後可在無 `.git`、無
+  原 checkout／build cache 且停用網路的目錄完成 configure／build／check／staging。
+- 記錄安裝 manifest；解除安裝只處理此次安裝的檔案，保留使用者設定／學習資料及
+  其他程式的檔案。文件說明與 `.deb` 的衝突偵測及切換流程，避免互相覆寫；從
+  原始碼安裝不自動切換預設輸入法。
+- 首先在 Ubuntu 22.04／24.04 驗證，P4 擴至全部 active Ubuntu 版本；ARM64
+  保持既有 preview 規則。P5 從同 SHA 的待發布 tarball 重建、安裝及實際打字，
+  對應測試計畫 T14-SOURCE 子案例；完成後同步 BUILDING 與 Linux README 的正式指令。
+
 ## 6. GitHub Actions 設計
 
 結論：build、package、unit、adapter、X11 真實輸入可安排在 hosted runners；
@@ -365,6 +411,9 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
     Ubuntu 24.04 + Fcitx 5 完整功能與最舊／最新邊界。歷史版本只在相容性相關 PR、
     手動指定或 release 執行，不設定自動輪替。主要環境不可只跑 smoke；也不能降低
     release 的逐版本實際打字門檻，或省略中間版本來節省 CI 時間。
+11. 原始碼入口實作後，在既有 Linux CI／package workflow 納入第 5.1 節的
+    configure／make 與 tarball 重建檢查；依測試計畫分配 PR 與 release 覆蓋，
+    與 Ninja／原生套件結果分開呈現，不以其中一條路徑的成功代替另一條。
 
 ### Hosted Wayland 可行性 gate
 
@@ -414,7 +463,7 @@ migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫
 | P1：Linux 引擎骨架與資料 | CMake、授權、native 資料工具、context 契約、五種注音布局 | 不需 GUI 可跑 CTest；真實資料 golden、Unicode／生命週期測試通過，無舊核心 link |
 | P2：三輸入法與 filter | 倉頡、簡易、內建關聯詞、標點、全半形、繁轉簡、注音修正 | F01–F05、F09–F10 對應測試通過；不能到此就宣稱核定範圍的完整 parity |
 | P3：完整 Ubuntu 桌面整合 | 完成 Ubuntu 24.04 + Fcitx 5 全功能／視窗／App／sandbox 驗收，再完成 Ubuntu 內其他 adapter 路徑 | 主環境符合測試計畫完整驗收；F01–F11、F16 狀態明確；GTK/Qt 真打字與視窗流程通過；不加入 F12–F15 |
-| P4：Ubuntu 多版本與安裝 | Ubuntu 近四年矩陣原生 `.deb`、ARM64 preview、乾淨安裝／升級／移除 | 9 個 Ubuntu 版本的每份套件有正確 dependency、data、授權；安裝後從系統選到三輸入法並打字 |
+| P4：Ubuntu 多版本與安裝 | Ubuntu 近四年矩陣原生 `.deb`、ARM64 preview、乾淨安裝／升級／移除；configure／make 原始碼入口與 source tarball | 9 個 Ubuntu 版本的套件與原始碼安裝路徑皆有正確 dependency、data、授權；source tarball 可獨立重建，安裝後從系統選到三輸入法並打字 |
 | P5：Ubuntu CI 與首版驗收 | Ubuntu workflows、release gate、sandbox／應用程式矩陣、文件 | 同一 SHA 的 Ubuntu 正式矩陣全綠且證據齊全；preview 不混入正式保證；由使用者確認可接受差異後發布 |
 | P6：其他發行版 TODO | Ubuntu 完成後再做 Debian 12／13 與 Fedora 36–44 的 adapter、DEB／RPM、桌面與 CI | 各家族重新確認仍在近四年範圍，逐列升格為 active；不得用 Ubuntu ELF binary 直接重包 |
 
@@ -429,6 +478,8 @@ migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫
       包含 EOL 歷史列，不只測最新版；Debian／Fedora 留在 P6 TODO，不阻擋此前的 Ubuntu 發布。
 - [ ] PR／手動完整測試／release 都有可追溯報告，沒有「用寫入文字代替鍵盤」的假 E2E。
 - [ ] 套件命名、版本、ABI、使用者資料保留、授權及安裝說明完整。
+- [ ] 第 5.1 節 configure／make 入口與 T14-SOURCE 子案例完成；待發布 tarball
+      可獨立重建、安裝及解除安裝，active Ubuntu 有原始碼安裝後的真實打字證據。
 - [ ] 發布說明區分完整支援、preview、未測、已接受差異；未通過不標完成。
 
 ## 8. 接手第一輪工作

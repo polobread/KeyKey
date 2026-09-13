@@ -178,6 +178,27 @@ session、framework、App/version/backend、config、steps、expected、actual�
 所有未知的精確預期值在 P0 補齊，標 `pending-baseline`，不先寫 always-pass test。
 F12–F15 是核定排除，不列 `pending-baseline` 或 skip；原 T13 不納入測試總數。
 
+### T14-SOURCE：configure／make 原始碼安裝（待實作）
+
+2026-09-13 新增，對應開發計畫第 5.1 節，屬 T14 的安裝子案例，不改動既有
+14 個功能測試 ID。以下目前均未實跑，不得由 CMake／Ninja 或 `.deb` 綠燈推定通過。
+
+| 子案例 | 操作 | 驗收條件 |
+|---|---|---|
+| T14-SOURCE-BUILD | 乾淨 checkout 及無 `.git` 的 source tarball，分別執行 configure、make -j2、make check | 一般使用者可完成；Ninja／Docker 不在必要工具內；相依套件預先安裝後可離線完成；不讀原 checkout 或 cache；支援 source-directory 入口及獨立 build directory |
+| T14-SOURCE-CONFIG | --help、缺失相依套件、未知選項、CXX／編譯與連結旗標；預設及自訂 prefix／libdir／datadir | 說明、錯誤碼與目的地摘要正確；明確要求的 adapter 不靜默停用；包含空白的路徑與重新 configure 不造成錯用 cache |
+| T14-SOURCE-STAGE | make DESTDIR=暫存目錄 install | 不寫入 host 系統；清單涵蓋 addon／component、資料、UI 與授權；ELF／metadata 不含 staging 或 build 路徑；核對資料 hash |
+| T14-SOURCE-INSTALL | 在隔離 guest 安裝同次建置產物，測 /usr/local、/usr 及自訂 prefix | 框架依文件找到正確 addon／engine／資料；已交付的每個 adapter 均跑三輸入法逐鍵輸入、preedit／候選與英文負控制；原始碼安裝結果獨立記錄 |
+| T14-SOURCE-LIFECYCLE | 原始碼安裝後升級、解除安裝、重裝；驗證與原生套件切換 | 依 manifest 無系統殘檔，保留設定／學習資料及無關 sentinel；衝突先回報且不覆寫套件管理器的檔案；重裝後可打字；首版升級 fixture 明確標示 |
+| T14-SOURCE-CLEAN | make clean 後重建，再 make distclean 後重新 configure／make／check | 只清除本次生成檔，不刪來源、唯讀資料或使用者檔案；不影響獨立 Ninja build；兩次重建均通過 |
+
+先在 Ubuntu 22.04／24.04 x86_64 實作以上檢查，P4 擴至全部 9 個 active Ubuntu
+版本；ARM64 在同架構執行 build／check／staging，沿用 preview 升格規則。
+Source install 的 L3 結果不取代主環境 GNOME／native Wayland／XWayland 桌面 gate。
+報告另記錄 `buildMethod=configure-make`、來源 SHA、tarball SHA-256、configure 參數、
+compiler／Make／CMake 版本、安裝 manifest 與實際框架載入路徑；保留 configure、build、
+check、install／uninstall log。
+
 ## 5. 桌面與應用程式矩陣
 
 測試矩陣以機器可讀的 `ci/support-matrix.json` 管理並生成文件摘要。
@@ -306,6 +327,10 @@ QEMU 跨架構可補 smoke，但需明確標記 emulation，不能當成實體�
 - P0 每條桌面路徑至少連續三次全新 session 成功並通過負控制，再納入 required。
   失敗重試保留首次結果；不能把 flaky 測試無限重跑到綠。穩定性數據形成後調整
   timeout／切片，先不承諾所有 workflow 幾分鐘內完成。
+- configure／make 入口實作後：相關 PR 在既有 Ubuntu 22.04／24.04 CI 執行
+  T14-SOURCE 的 build、配置錯誤、staging、clean 及 installed X11 檢查；手動完整與
+  release 跑全部 active Ubuntu 的原始碼安裝生命週期。release 必須使用將發布的
+  同 SHA source tarball，解壓後獨立離線重建，再安裝該批產物驗證，不能改用 `.deb`。
 
 ### 工具與套件檢查
 
@@ -332,6 +357,8 @@ Guest image 來源、checksum、安裝套件版本與安裝腳本全部可審計
       無意提高；一般／EOL 相容標示與實際 OS 安全維護狀態分開。
 - [ ] App 精確文字與中間輸入流程通過，且正／負控制都符合預期。
 - [ ] 待發布套件本身通過乾淨安裝與打字，不用 build tree 取代 installed artifact。
+- [ ] 同 SHA 的待發布 source tarball 通過 T14-SOURCE 全部子案例與 active Ubuntu
+      原始碼安裝後的真打字；configure／make 介面、相依套件及安裝／移除文件齊全。
 - [ ] F01–F11、F16 有證據或經使用者接受的具體差異；F12–F15 明列排除，
       沒有加入對應功能入口，也不把排除項計為測試 skip 或未完成。
 - [ ] 原生 Wayland／XWayland、ARM64 preview／正式、虛擬／實體結果清楚分開。

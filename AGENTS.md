@@ -290,6 +290,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   named volumes；`down` 保留快取。`e2e` 可用完整 case ID 或逗號清單縮小範圍，結果
   JSON 只能列實際執行案例。這條路徑不乾淨，不能取代 `run-debian-package.sh` 的
   runtime dependency、升級、移除及重裝 gate。
+- **Linux configure／make 原始碼入口已列入計畫，尚未實作**：2026-09-13 使用者要求
+  支援 `./configure → make → make install`，規格見開發計畫第 5.1 節及測試計畫
+  T14-SOURCE。採沿用 CMake 的入口，不把第三方 `ExternalLibraries` 內的 configure
+  當成產品入口。實作時要查 Fcitx 的 `FCITX_INSTALL_LIBDIR`／`FCITX_INSTALL_PKGDATADIR`
+  與 runtime 資料位置是否一起遵守 prefix／libdir／datadir；只改 CMake prefix 不足以
+  證明自訂路徑可被框架找到，`DESTDIR` 也不得寫入執行期路徑。
 - **探測 Fcitx D-Bus 就緒不能先呼叫 `fcitx5-remote`**：它會透過 D-Bus activation
   啟動第二個 Fcitx 並搶走名稱，使測試中的明確 PID 退出。先對 bus daemon 呼叫
   `NameHasOwner(org.fcitx.Fcitx5)`，確認原行程取得名稱後才能使用 remote 指令。
@@ -837,6 +843,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Linux 原生版
 
+- [ ] 完成 `LINUX_DEVELOPMENT_PLAN.md` 第 5.1 節的 configure／make 原始碼建置入口：
+      支援平行建置、check、prefix／DESTDIR、install／uninstall、clean／distclean；
+      以乾淨 source tarball 通過 T14-SOURCE，納入 P4／P5 及 Ubuntu 首版 gate。
+      此需求於 2026-09-13 加入計畫，目前未新增建置腳本或宣告已支援。
 - [x] 已將 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）設為首要支援與最完整
       測試目標；開發／測試計畫同步新增主環境完整驗收與 required CI 規格。
 - [x] 2026-09-12 完成開發／測試 plan 與原始碼功能盤點；沒有 Linux build、
