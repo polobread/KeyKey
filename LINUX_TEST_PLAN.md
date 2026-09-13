@@ -1,15 +1,68 @@
 # Linux 自動化打字與發布驗收計畫
 
-狀態：測試設計，尚無 Linux 測試執行結果。搭配
-[開發計畫](LINUX_DEVELOPMENT_PLAN.md)；以下腳本、fixtures 與測試程式待實作。
+狀態：測試實作中。已有 CTest real-data typing-flow、Ubuntu 22.04／24.04
+container build/staged-install checks、Ubuntu 22.04／24.04 Debian package checks，
+以及 Ubuntu 24.04 Fcitx 5 → GTK 3 的 L3 X11 真實逐鍵輸入；下列完整
+GNOME／Wayland、App、視窗與三輸入法 suite 仍待實作。
+搭配 [開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
 
 Linux 首版目標為 1.2.8。功能驗收範圍是 F01–F11、F16；使用者已排除 F12–F15，
 不測算式、自訂詞管理、CIN／外掛管理與一點通／獨立通知窗。原 T13 退役，保留其他
-測試編號；完整 suite 指 T01–T12、T14–T15。F05 內建關聯詞與分類開關仍須驗證。
+測試編號；完整 suite 指 T01–T12、T14–T15。F05 已有內建關聯詞、分類開關與 T07
+第一段證據及一條 Fcitx 原生設定視窗點選／保存證據，其他設定、桌面及 App 驗收仍須補齊。
 
 **主要環境：Ubuntu Desktop 24.04 LTS + Fcitx 5 + GNOME，x86_64。**
 這一組須有最完整的打字、視窗、App、sandbox、安裝與穩定性測試；先完成此組
 再擴充其他環境。IBus 在相同 Ubuntu 版本上的結果與 Fcitx 分開計算。
+
+目前可重現的 L1／build 結果（2026-09-13）：Ubuntu 24.04 x86_64、ARM64 preview
+及 Ubuntu 22.04 x86_64 container 均能編譯 engine 與 Fcitx 5 addon；CTest 以 repository
+內真實 `bpmf-ext.cin` 驗證五種注音配置得到相同候選與 commit，四種符號配置另固定
+Standard／ETen 各 1,521 組、ETen26 1,495 組、Hsu 1,494 組真實讀音 round-trip 覆蓋，
+並測漢語拼音代表性聲母／韻母／聲調、input-context 隔離、pass-through、
+Backspace／Escape、CIN 邊界、候選分頁、數字選取、Ctrl 標點與真實符號候選表，以及
+`Shift+Space` 全／半形狀態、ASCII 對映與組字／候選保留，以及與現有輸出
+filter 同源的 3,058 筆繁轉簡單字對映；關聯詞另以原生 parser 驗證 McBopomofo
+基本詞庫、29 個分類詞庫、UTF-8／格式邊界、頻率排序、過濾、來源順序、去重、停用及
+`Shift+1–9` 詞尾選取；Ubuntu 24.04 的相同 engine suite
+亦已通過 ASan/UBSan。
+
+另有十七筆可重現的最小 L3 X11 證據：在 Ubuntu 24.04 x86_64 container 以獨立 D-Bus、
+Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，五種注音配置分別以 `5j/`、`,x-`、`gxl`、
+`jxl`、`zhong` 選「中」，倉頡 `a` 選第一候選「日」，簡易 `a` 選第二候選「曰」；
+另以注音 `5j/` 開啟 148 個真實候選，送 PageDown、Down、Enter 選出「妐」；
+`Shift+Space`、`Shift+A`、`Shift+1`、`Shift+\``、Space 提交精確全形 `Ａ！～　`，
+`keyboard-us` 負控制為 ` A!~ `；另以 `Ctrl+0` 開啟真實標點／符號候選並按
+`1` 提交「，」，英文負控制則只得到 `1`；繁轉簡原生設定開啟後，
+以 `w96`、`j0` 分別組成 `ㄊㄞˊ`、`ㄨㄢ`，選原候選「臺灣」並提交「台湾」，
+英文負控制為 `w96 2j0 1`；六個 T07 流程以實體 `Shift+1` 分別驗證預設基本詞庫
+得到「今天」、只開 history 分類得到「臺灣史」、全部關閉時得到「臺!」，並驗證
+舊逗號格式 migration 後仍得到「中程計畫」；第五案經 Fcitx D-Bus 設定 API 寫入、
+核對 INI、重啟 process、讀回設定，
+再以實際按鍵得到「中程計畫」；第六案以 AT-SPI 定位已安裝 `fcitx5-config-qt` 的
+輸入法列及核取方塊，實際點選只開 agriculture-food、保存、核對 INI、重啟並讀回後，
+以 `yji4` 選「作」再按 `Shift+1` 得到「作物育種」，同時保存切換前後 PNG。
+五種注音皆逐步核對 preedit；Fcitx D-Bus schema 亦確認
+`BopomofoLayout` 下拉選項含 Standard、ETen、ETen26、Hsu、HanyuPinyin，並包含繁轉簡
+與 30 個關聯詞 Boolean 選項。所有案例皆核對實際 GTK buffer，且
+`/proc` maps 證明執行中的 Fcitx 載入 `chichi77-keykey.so`；每案切回
+`keyboard-us` 重送同鍵序的負控制也通過。這些仍是窄版 vertical slices，尚未驗證
+完整 T01–T06、GNOME、native Wayland、XWayland、Qt／GTK4／瀏覽器或候選視窗畫面；
+hosted Actions 尚未執行。
+
+Ubuntu 24.04 的目前 slice 也已用 debhelper 拆成架構無關的
+`chichi77-keykey-data_1.2.8-1+ubuntu24.04_all.deb` 與 amd64 的
+`fcitx5-chichi77-keykey_1.2.8-1+ubuntu24.04_amd64.deb`。乾淨 runtime container
+依序安裝受控 `1.2.8~preview1` fixture、跑十六案例、升級至 1.2.8、再跑十六案例、
+移除／重裝後跑全部十七案例；設定視窗只在最後狀態啟動一次，以節省兩次相同 Qt／AT-SPI
+啟動成本；dependency、ELF、安裝清單、資料 hash、授權及移除後
+不碰個人設定一併通過。這是 T14 的第一段 package lifecycle 證據，不代表真實舊版
+升級、GNOME session、完整功能或正式 release package 已驗收。
+
+Ubuntu 22.04 的兩個對應 `.deb` 亦已在 Fcitx 5.0.14 userspace 建置，並於另一個
+不含開發標頭的乾淨 runtime container 完成安裝、檔案／資料 hash、ELF dependency、
+移除後無系統殘檔且保留個人設定 sentinel，以及重裝檢查。此列刻意不宣稱已完成
+桌面真實打字；Ubuntu 22.04 的 X11／GNOME 路徑仍須另外驗收。
 
 ## 1. 什麼才算「真的打出文字」
 
@@ -114,7 +167,7 @@ session、framework、App/version/backend、config、steps、expected、actual�
 | T05 | 簡易 `a` → Space → 選「曰」；輸入另一組真實頭尾碼 | 多候選、選字、分頁與兩碼流程；與倉頡使用各自的表及限制 |
 | T06 | 打開大於一頁的真實候選；方向鍵、Space、PageUp/Down、數字、Enter、滑鼠選字 | 前後頁、末頁、邊界不越界，反白與 commit 同字，直橫兩種樣式都覆蓋 |
 | T07 | 開啟分類 → 提交字 → Shift 選關聯詞 → 接續；全部關閉後重打 | host 是原字加「後綴」，不重複前字；順序／去重／分類保存與停用正確，fixture 固定具體詞與來源 |
-| T08 | 中文／英文、Shift/CapsLock、全半形、數字、標點、繁轉簡、注音修正 | 比對精確 code points；全形案例包含 `Ａｚ０９！～　`；filter 組合順序有測試 |
+| T08 | 中文／英文、Shift/CapsLock、全半形、數字、標點、繁轉簡、注音修正 | 比對精確 code points；L1 全形對映包含 `Ａｚ０９！～　`，現有 X11 切片真實提交 `Ａ！～　`；filter 組合順序有測試 |
 | T09 | 組字／候選／關聯詞時送 Ctrl/Alt/Super 快捷鍵、repeat、press/release | 未配置快捷鍵交給 App；無重複提交、卡住 modifiers 或意外清空；依 macOS 基線記錄合法差異 |
 | T10 | 在兩欄位、兩 App 切 focus；有候選時關閉 client；框架重啟／重新登入 | 不串字、不提交到另一 App；preedit 和 panel 生命週期正確；恢復後仍可輸入 |
 | T11 | 移 caret、選一段字後組字／替換、滑鼠移 selection；密碼／唯讀欄位 | 不沿用舊 context、沒有錯位刪字；密碼依 content-purpose 關閉學習／關聯詞／敏感 log；唯讀無修改 |
@@ -132,8 +185,9 @@ F12–F15 是核定排除，不列 `pending-baseline` 或 skip；原 T13 不納�
 required/preview、一般／歷史維護狀態與對應 image digest。release 用同一份矩陣，
 避免漏掉某種輸入法或中間 OS 版本；相容窗定義見開發計畫第 2 節。
 
-另加 `priority` 欄位：Ubuntu 24.04 GNOME + Fcitx 5 為 `primary`，其餘既定正式
-組合為 `compatibility`。此欄位控制開發順序與平日測試深度，不移除四年相容要求。
+另加 `phase` 與 `priority` 欄位：Ubuntu 24.04 GNOME + Fcitx 5 為 `active/primary`，
+其餘 Ubuntu 為 `active/compatibility`；Debian／Fedora 為 `future-todo/future` 且
+`required=false`。目前先完成 Ubuntu，後兩家族不建立 required job、不阻擋 Ubuntu 發布。
 
 ### 主要環境完整驗收
 
@@ -157,13 +211,13 @@ Ubuntu 24.04 + Fcitx 5 必須具備以下獨立結果，所有功能均限核定
 6. 乾淨安裝、三 engine 加入／切換、重新登入、Fcitx 重啟、升級、移除與重裝，
    設定／學習頻率保留；客戶端意外關閉、密集連打、長時間重複切換與恢復。
 7. 每項保留 App 文字、event trace、截圖與失敗錄影；整合問題優先在此環境重現。
-   PR 跑完整 typing suite 與所有功能的 UI 操作；每日／發布跑上述所有 App、
+   PR 跑完整 typing suite 與所有功能的 UI 操作；手動完整測試／發布跑上述所有 App、
    sandbox、視覺組合與壓力項目。主環境結果不得因其他平台成功而被覆蓋。
 
 若 Wayland panel 需額外 Shell 整合，先依開發計畫 P0 決議固定支援的組合及依賴，
 再將之列為 required。主要環境有必測未完成時阻擋正式發布。
 
-### 正式 x86_64 桌面列（每列都要測三種輸入法）
+### Active Ubuntu x86_64 桌面列（每列都要測三種輸入法）
 
 | 環境 | 最低 native host | 附加路徑 |
 |---|---|---|
@@ -171,18 +225,21 @@ Ubuntu 24.04 + Fcitx 5 必須具備以下獨立結果，所有功能均限核定
 | Ubuntu 22.04 GNOME / IBus | GTK3、GTK4、Qt6.2；Wayland 與 X11 分開 | 最低依賴／API 基線、XWayland host |
 | Ubuntu 24.04 GNOME / IBus（次要相容） | GTK3、GTK4、Qt6；Wayland 與 X11 分開 | Wayland session 中的 XWayland host |
 | Ubuntu 26.04 GNOME / IBus | GTK3、GTK4、Qt6；Wayland | XWayland host |
-| Debian 12、13 Plasma / Fcitx 5（各自一列） | GTK3、GTK4、Qt6；Wayland | XWayland host；Plasma 5／6 差異 |
-| Debian 12、13 Xfce / Fcitx 5（各自一列） | GTK3、GTK4、Qt6；X11 | 桌面原生安裝與重登入 |
-| Fedora 43 GNOME / IBus | GTK3、GTK4、Qt6；Wayland | XWayland host |
-| Fedora 44 GNOME / IBus | GTK3、GTK4、Qt6；Wayland | XWayland host |
-| Fedora 44 Plasma / Fcitx 5 | GTK3、GTK4、Qt6；Wayland | XWayland host |
 | Ubuntu 22.10、23.04、23.10、24.10、25.04、25.10（各自一列） | 該版 GTK3、GTK4、Qt6；GNOME Wayland / IBus | 歷史 guest、XWayland host、安裝後打字 |
-| Fedora 36、37、38、39、40、41、42（各自一列） | 該版 GTK3、GTK4、Qt6；GNOME Wayland / IBus | 歷史 guest、XWayland host；36 是最低 Fedora 基線 |
 
-上表範圍共 20 個 distro/version，表格合併顯示不表示合併測試。
-每個版本另跑 IBus 與 Fcitx 的 installed X11 slice；以 Xvfb／可用的輕量 WM
-驗證兩 adapter 真正被目標套件載入。最舊、最新通過不替代中間 18 版的結果。
-歷史列與一般列同樣要求三輸入法和功能測試；差別是來源快照、網路隔離與平日頻率。
+上表 active 範圍共 9 個 Ubuntu 版本，表格合併顯示不表示合併測試。每個版本另跑
+IBus 與 Fcitx 的 installed X11 slice；以 Xvfb／可用的輕量 WM 驗證兩 adapter 真正
+被目標套件載入。最舊、最新通過不替代中間 7 版的結果。歷史列與一般列同樣要求
+三輸入法和功能測試；差別是來源快照、網路隔離與平日頻率。
+
+### Future TODO：Debian／Fedora
+
+- Debian 12／13：Plasma Wayland + Fcitx 5、Xfce X11 + Fcitx 5，再補兩 adapter 的
+  installed X11 slice 與 Flatpak GTK／Qt editor。
+- Fedora 36–44：GNOME Wayland + IBus，44 另加 Plasma Wayland + Fcitx 5；每版需
+  自己建 RPM，不能重包 Ubuntu ELF。
+- 這 11 列保留在 `support-matrix.json`，但 Ubuntu 驗收完成前不排進 PR、手動完整測試
+  或 release required jobs；開始 P6 時再依當時日期重算四年範圍與套件來源。
 
 若目標 distro 不提供某 toolkit，必須更新矩陣理由與替代 App，不任意下載來源不明的
 runtime。不同 toolkit/backend 的 preedit 呈現差異可記錄，但文字結果不放寬。
@@ -192,13 +249,13 @@ runtime。不同 toolkit/backend 的 preedit 呈現差異可記錄，但文字�
 - 所有正式桌面列：至少一個發行版原生 GUI editor，以及 Firefox 的單行、多行、
   contenteditable。原生測試 hosts 跑完整 T01–T12、T14–T15；一般 App 最少 T01、T04、T05、
   T06、T07、T08、T10、T11。
-- Ubuntu 22.04／26.04 GNOME 與 Fedora 36 GNOME／44 Plasma：加 Chromium、Electron editor、
+- Ubuntu 22.04／26.04 GNOME：加 Chromium、Electron editor、
   LibreOffice Writer、終端機內一般文字編輯；Qt 5 相容性視可安裝性補上。
   瀏覽器／Electron 在 native Wayland 與 XWayland 各跑一次，記錄真實 backend。
 - Ubuntu 24.04 GNOME + Fcitx 5 依上節完整驗收，涵蓋所有上述 App、Snap 與
   Flatpak，不能因本節把它省寫在代表列中而少跑。
-- Ubuntu 22.04／24.04／26.04 LTS：Snap Firefox（完整 snapd/systemd guest，驗證 confinement 未被關閉）；
-  Debian 13 Plasma 與 Fedora 44 GNOME：至少一個 Flatpak GTK editor 和一個 Qt editor。
+- Ubuntu 22.04／24.04／26.04 LTS：Snap Firefox（完整 snapd/systemd guest，驗證 confinement 未被關閉）。
+  Debian／Fedora 的 Flatpak 組合留在上述 future TODO。
   固定 app/runtime revision，確認 sandbox 內外 IM module／D-Bus 路徑。
   普通 container 裝套件的測試不能冒充 Snap 桌面相容性。
 - 其他 App／交叉框架組合列 compatibility，不以一次成功推論所有 Linux App 都支援。
@@ -217,7 +274,7 @@ QEMU 跨架構可補 smoke，但需明確標記 emulation，不能當成實體�
 ## 6. 視窗與持久化驗收
 
 - 畫面比例至少 system、75%、100%、200%、225%、350%；所有設定值在 L1 驗證，
-  完整視覺 sweep 放 nightly。測候選在四邊、長字、最後一頁、視窗移動、最大化、
+  完整視覺 sweep 放手動完整測試與 release。測候選在四邊、長字、最後一頁、視窗移動、最大化、
   虛擬雙螢幕不同 scaling、符號面板開啟時換 App。
 - 預設／自訂色與 light/dark、繁中／簡中／英文，驗證文字未裁切、按鍵角標與頁碼
   可讀、按鈕可及性角色與名稱、Tab 順序。截圖 diff 固定字型與環境並設定合理容差；
@@ -236,16 +293,14 @@ QEMU 跨架構可補 smoke，但需明確標記 emulation，不能當成實體�
 - PR／主分支 push：Ubuntu 24.04 + Fcitx 5 設 required job，三條 session 路徑
   各跑完整 T01–T12、T14–T15，包含三輸入法、所有功能 UI 操作與套件生命週期。
   可分片並行；主環境不能只有最小 Wayland 四案例或放進輪替。
-- PR：L1 全部，兩 adapter L2；Ubuntu 22.04／26.04、Fedora 36／44、Debian 12
-  最舊／最新邊界 build，並在最舊 Ubuntu／Fedora 跑兩 adapter installed X11 slices；
-  P0 通過後加舊 GNOME、新 GNOME 與 Plasma 的最小 Wayland T01/T04/T05/T10。
-- Nightly：7 個一般版本列完整 scenarios、代表性 Apps、UI sweep、sandbox、
-  升級／移除與壓力；13 個歷史版本分組每日輪替，preview 結果分欄。
-  Ubuntu 24.04 + Fcitx 5 固定每天跑「主要環境完整驗收」的全部 App／sandbox／
-  視覺組合，另列專屬 summary，不參加輪替。
-- Weekly／手動完整：20 版本全部重跑，包含歷史列的完整功能／App／安裝測試；
-  歷史環境不是永遠只留首次成功結果。PR 更動 compat／最低依賴時加跑受影響歷史列。
-- Release：同 SHA／同一批待發布套件重跑 20 版本完整矩陣及 package lifecycle，
+- PR：L1 全部，兩 adapter L2；Ubuntu 22.04／26.04 最舊／最新邊界 build，並在
+  Ubuntu 22.04 跑兩 adapter installed X11 slices；P0 通過後加 Ubuntu 舊／新 GNOME
+  的最小 Wayland T01/T04/T05/T10。Debian／Fedora 不排入目前 required jobs。
+- 手動完整：`linux-desktop-tests.yml` 只接受 `workflow_dispatch`，不設 `schedule`／`cron`。
+  預設完整驗收 Ubuntu 24.04 + Fcitx 5；手動選擇完整矩陣時重跑 9 個 Ubuntu 版本，
+  也可只指定受影響的歷史版本。歷史環境不能永遠只留首次成功結果；PR 更動
+  compat／最低依賴時加跑受影響歷史列。
+- Release：同 SHA／同一批待發布套件重跑 9 個 Ubuntu 版本完整矩陣及 package lifecycle，
   不只依賴 PR quick suite。首版無舊 Linux release 時，以受控舊 schema／套件 fixture
   做遷移測試並註明；第二版起必測真實前版 → 新版。
 - P0 每條桌面路徑至少連續三次全新 session 成功並通過負控制，再納入 required。
@@ -271,8 +326,9 @@ Guest image 來源、checksum、安裝套件版本與安裝腳本全部可審計
 
 - [ ] Ubuntu 24.04 + Fcitx 5 的主要環境完整驗收全綠；三種 session 路徑、三輸入法、
       所有核定功能／App／sandbox／UI／套件生命週期與穩定性皆有證據。
-- [ ] 三輸入法、兩 adapter、正式 distro／桌面列皆有結果，必測案例無 skip。
-- [ ] 近四年每個版本（含歷史列）有 installed-package 真打字證據，最低依賴未被
+- [ ] 三輸入法、兩 adapter、active Ubuntu／桌面列皆有結果，必測案例無 skip。
+- [ ] Debian／Fedora 的 11 列維持 future TODO；開始 P6 後才逐列加入對應驗收與 gate。
+- [ ] active Ubuntu 近四年每個版本（含歷史列）有 installed-package 真打字證據，最低依賴未被
       無意提高；一般／EOL 相容標示與實際 OS 安全維護狀態分開。
 - [ ] App 精確文字與中間輸入流程通過，且正／負控制都符合預期。
 - [ ] 待發布套件本身通過乾淨安裝與打字，不用 build tree 取代 installed artifact。

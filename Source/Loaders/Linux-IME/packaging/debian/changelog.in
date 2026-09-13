@@ -1,0 +1,5 @@
+chichi77-keykey (@DEBIAN_VERSION@) @DEBIAN_DISTRIBUTION@; urgency=medium
+
+  * Build the native Linux Fcitx 5 preview packages.
+
+ -- Chui-Ping Cheng <polobread@yahoo.com.tw>  Sat, 12 Sep 2026 00:00:00 +0800

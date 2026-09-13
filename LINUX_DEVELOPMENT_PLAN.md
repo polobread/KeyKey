@@ -1,11 +1,17 @@
 # Linux 原生版開發與交接計畫
 
-狀態：規劃完成，尚未實作 Linux 程式、workflow 或執行 Linux 測試。
+狀態：開發中。已建立第一段 Linux-only 引擎、Fcitx 5 外掛、container scripts 與
+`linux-ci.yml`、五種注音鍵盤配置／Fcitx 原生設定、候選鍵盤導覽、標點／符號候選切片、
+`Shift+Space` 全／半形、ASCII 全形對映與繁轉簡單字 filter 切片、
+L3 X11/GTK 3 真實輸入與
+Ubuntu 22.04／24.04 開發用 Debian 套件；尚未完成 GNOME／Wayland、三輸入法的
+完整功能、完整視窗、IBus 或正式發布套件。
 
 盤點日期：2026-09-12；原始碼基線：`13696ef`；產品版號來源：`README.md` 標題。
 
 Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下列實作與驗收後才可
-對外宣告已支援。目前四平台版號已同步至 1.2.8，Linux 仍是規劃，沒有可安裝套件。
+對外宣告已支援。目前四平台版號已同步至 1.2.8；Linux 已有開發中的 staged install
+與 `.deb`，但缺少完整功能、桌面矩陣與 release gate，仍不是可正式發布的套件。
 
 接手順序：[AGENTS.md](AGENTS.md) → [BUILDING.md](BUILDING.md) → 本檔 →
 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。本計畫取代「Linux 只比照行動版注音」的範圍。
@@ -28,7 +34,9 @@ Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下�
   IBus 與 Fcitx 5 共用「新寫的 Linux 引擎」，並非沿用舊跨平台引擎。
 - 所有建置、打包、測試與發布檢查都設計成可由 GitHub Actions 啟動；優先使用
   GitHub-hosted runners，不預設要求維護者一直開著自己的 Linux 電腦。
-- 相容近四年版本，不限於最新版或上游仍在維護的版本。初始採 2022–2026 相容
+- 先完成 Ubuntu 家族，再開始 Debian 與 Fedora；後兩者保留在版本矩陣作為明確
+  TODO，但不阻擋 Ubuntu 1.2.8 的開發與驗收，也不先建立額外 CI job。
+- Ubuntu 相容近四年版本，不限於最新版或上游仍在維護的版本。初始採 2022–2026 相容
   視窗，包含 Ubuntu 22.04 LTS；不能為方便使用新 API 而提高最低 OS 要求。
 - 本批版號、規劃與交接提交作為 1.2.8 開發起點；使用者已要求 commit 與 push。
   Linux workflow、目錄與指令入口均是後續實作項目；正式版本 tag 與套件發布在
@@ -44,26 +52,27 @@ Ubuntu Desktop 是發行版的桌面產品；GNOME、KDE Plasma、Xfce 是另外
 
 以 2026-09-12 規劃日起算，將「近四年」向前涵蓋到 2022 年的主要發行版本，
 刻意保留稍早於精確 48 個月的 Ubuntu 22.04 LTS 與 Fedora 36，不只選 2024 以後。
-以下是規劃的 release gate，不代表目前已支援。先完成 Ubuntu 24.04 + Fcitx 5
-垂直切片與完整驗收；同步以 Ubuntu 22.04／Fedora 36 檢查最低 API，再擴充其他
-桌面矩陣。中途未達矩陣的產物只能標成 preview。
+以下保留完整版本盤點，不代表目前已支援。**目前 active release gate 只有 Ubuntu**：
+先完成 Ubuntu 24.04 + Fcitx 5 的全部功能與桌面驗收，以 Ubuntu 22.04 檢查最低 API，
+再完成其他 Ubuntu 版本。Debian／Fedora 是下一階段 TODO；在重新升格為 active 前
+不納入 1.2.8 Ubuntu 發布阻擋條件。中途未達 active 矩陣的產物只能標成 preview。
 
-| 發行版家族 | 一般維護／LTS 相容列 | 歷史相容列（含 EOL） | 套件 |
-|---|---|---|---|
-| Ubuntu | 22.04、24.04、26.04 LTS | 22.10、23.04、23.10、24.10、25.04、25.10 | 每版獨立 `.deb` |
-| Debian | 12、13 | 此時間窗沒有其他新的 major；11 初版為 2021，不列首版必要項 | 每版獨立 `.deb` |
-| Fedora | 43、44 | 36、37、38、39、40、41、42 | 每版獨立 `.rpm` |
+| 階段 | 發行版家族 | 一般維護／LTS 相容列 | 歷史相容列（含 EOL） | 套件 |
+|---|---|---|---|---|
+| Active：先完成 | Ubuntu | 22.04、24.04、26.04 LTS | 22.10、23.04、23.10、24.10、25.04、25.10 | 每版獨立 `.deb` |
+| Future TODO | Debian | 12、13 | 此時間窗沒有其他新的 major；11 初版為 2021，不列首版必要項 | 每版獨立 `.deb` |
+| Future TODO | Fedora | 43、44 | 36、37、38、39、40、41、42 | 每版獨立 `.rpm` |
 
-初始共 **20 個 distro/version 目標**：7 個一般列、13 個歷史列。
-這是保守的相容規劃，Ubuntu 非 LTS 也不直接漏掉。一般／歷史是 OS 維護狀態，
-不是琦琦功能等級；歷史列也必須安裝後真正打字，不能只有編譯成功。
+盤點共 **20 個 distro/version 目標**，其中目前 active 為 9 個 Ubuntu 版本，另有
+11 個 Debian／Fedora future TODO。這是分期順序，不是宣告後兩者已支援。Ubuntu
+非 LTS 也不直接漏掉；一般／歷史是 OS 維護狀態，不是琦琦功能等級，active 的
+歷史列也必須安裝後真正打字，不能只有編譯成功。
 
 - Ubuntu 24.04 的主要路徑是 GNOME + Fcitx 5，X11／native Wayland／XWayland
   皆屬必測；同版 IBus 保留為次要相容路徑。其他 Ubuntu 版本以 GNOME Wayland +
   IBus 為既定相容路徑；22.04 加 GNOME X11，其他舊版可用的 X11 路徑寫入矩陣。
-  Debian 12／13 以 Plasma Wayland +
-  Fcitx 5 及 Xfce X11 + Fcitx 5；Fedora 36–44 以 GNOME Wayland + IBus，
-  44 另加 Plasma Wayland + Fcitx 5。各版本都另測兩 adapter 的 installed X11 slice。
+  Debian 12／13 與 Fedora 36–44 的桌面／adapter 組合保留於 future TODO，待 Ubuntu
+  release gate 完成後再凍結與實作，不消耗目前的 PR runner 額度。
 - 第一階段正式桌面保證為 `x86_64`。完整版本矩陣同時建立 `aarch64` build／unit／
   package smoke jobs，但 ARM64 在完成同架構桌面打字驗證前標為 preview，
   不把交叉編譯成功當成正式支援。見測試計畫的 ARM64 升格條件。
@@ -323,8 +332,8 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 | 規劃檔案 | 觸發 | Jobs 與通過條件 |
 |---|---|---|
 | `.github/workflows/linux-ci.yml` | PR、主分支 push、手動 | 格式／靜態檢查、unit + sanitizers、兩 adapter contract；Ubuntu 24.04 + Fcitx 5 的三種 session 路徑跑完整 typing suite／UI 操作／安裝測試，其他目標跑回歸子集合 |
-| `.github/workflows/linux-desktop-tests.yml` | 手動、每日／每週排程（實作後才啟用） | Ubuntu 24.04 + Fcitx 5 跑所有 App／sandbox／UI 組合與壓力，獨立呈現主環境結果；一般列每日完整，13 個歷史版本每週完整／每日輪替 |
-| `.github/workflows/package-linux.yml` | `v*` tag、手動 | 版號檢查 → 20 版本 × 兩 CPU 建置／打包 → 安裝測試 → 同 SHA 全相容窗 x86_64 桌面 release gate → manifest/checksum → publish；ARM64 另列 preview |
+| `.github/workflows/linux-desktop-tests.yml` | 僅手動 `workflow_dispatch`（實作後才啟用） | 預設跑 Ubuntu 24.04 + Fcitx 5 的所有 App／sandbox／UI 組合與壓力；以手動輸入選擇完整 Ubuntu 版本矩陣或指定歷史版本，不設定每日／每週排程 |
+| `.github/workflows/package-linux.yml` | `v*` tag、手動（實作後才啟用） | 版號檢查 → 9 個 Ubuntu 版本 × 兩 CPU 建置／打包 → 安裝測試 → 同 SHA active x86_64 桌面 release gate → manifest/checksum → publish；ARM64 另列 preview。Debian／Fedora 待 P6 再擴充 |
 
 工作流約束：
 
@@ -339,7 +348,7 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
    舊 distro 跑在現行 runner 內的 container／guest，不依賴 GitHub 繼續提供舊
    `runs-on` label；VM 才能驗證舊 guest kernel 與桌面，container 共用 host kernel。
 5. build 產物交給乾淨環境安裝後再跑 E2E；release 測試的是將發布的同一批套件，
-   不是另外編的一份。不得沿用別的 SHA 的 nightly 綠燈。
+   不是另外編的一份。不得沿用別的 SHA 或先前手動執行的綠燈。
 6. workflow summary 分開呈現 build、unit、adapter、installed-package、X11、
    native Wayland、XWayland、sandbox、UI 的通過／失敗／未測。
    正式矩陣不准 `continue-on-error` 或用 skip 偽裝成功；ARM64 preview 與 Arch
@@ -351,11 +360,11 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
    macOS／Windows／行動版產物，不自動建立 tag，不覆蓋同名既有 asset。
 9. PR 觸發路徑包含 Linux 程式／測試／workflow，以及唯讀共用資料的變更；不能只
    監看 Linux 目錄而漏測新版詞庫。文件-only 變更可跑文件檢查，但需避免 required
-   checks 永久 pending；排程與 release 一律不因 path filter 跳過。
+   checks 永久 pending；手動桌面測試與 release 一律不因 path filter 跳過。
 10. 為擴大的四年矩陣設定 `max-parallel`、分片與產物去重；PR 固定必測
-    Ubuntu 24.04 + Fcitx 5 完整功能與最舊／最新邊界，一般列／歷史列依測試計畫
-    分配頻率。主要環境不可放進歷史列輪替，亦不可只跑 smoke。可以降低歷史列的平日頻率，不能
-    降低 release 的逐版本實際打字門檻，或省略中間版本來節省 CI 時間。
+    Ubuntu 24.04 + Fcitx 5 完整功能與最舊／最新邊界。歷史版本只在相容性相關 PR、
+    手動指定或 release 執行，不設定自動輪替。主要環境不可只跑 smoke；也不能降低
+    release 的逐版本實際打字門檻，或省略中間版本來節省 CI 時間。
 
 ### Hosted Wayland 可行性 gate
 
@@ -374,14 +383,40 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 
 每階段以可獨立 review 的變更交付，更新本節、`docs/parity.md` 與 AGENTS TODO。
 
+2026-09-12 第一段垂直切片已完成 P1 的主要骨架：C++17 engine contract、每個 input
+context 獨立狀態、嚴格 CIN reader、五種注音布局、Fcitx 原生布局設定，以及可載入的
+Fcitx 5 addon。Rancher Desktop container 已在 Ubuntu 24.04（Fcitx 5.1.7）與 22.04
+（Fcitx 5.0.14）x86_64 userspace 編譯、跑 CTest 並驗證 staged install；24.04 ARM64
+build 亦已通過。Ubuntu 24.04 x86_64 另以 Xvfb、獨立 D-Bus、Fcitx 5 與 GTK 3 host
+完成十七個最小 installed-addon L3 X11 流程：五種注音鍵序皆選出「中」、倉頡 `a`
+選「日」、簡易 `a` 選第二候選「曰」，並以 PageDown、Down、Enter 從注音第二頁
+選出「妐」；`Shift+Space` 全形流程提交精確 `Ａ！～　`；繁轉簡開啟時逐字選出
+真實候選「臺灣」並提交「台湾」；另以 `Ctrl+0`
+開啟真實標點表並按 `1` 選出「，」；六個關聯詞流程以 `Shift+1` 驗證基本詞庫
+「今天」、history-only「臺灣史」、全部關閉後的「臺!」，以及舊逗號設定
+migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫入 government-only，
+確認 INI 落盤、重啟 Fcitx 並讀回後仍輸出「中程計畫」；第六案以 AT-SPI 找到
+`fcitx5-config-qt` 的輸入法與核取方塊，實際點選只開 agriculture-food、保存並重啟後
+逐鍵輸出「作物育種」，同時保存切換前後截圖。各案都有 `keyboard-us` 負控制，
+並確認執行中 Fcitx process 載入 staged `.so`。真正安裝的 Ubuntu 24.04 `.deb`
+在 `1.2.8~preview1` 初裝與升級狀態各跑十六個鍵盤案例，移除後重裝則跑全部十七案；
+套件同時核對 debhelper/lintian、ELF dependency、架構、版本、安裝清單、資料 hash、
+授權檔與使用者設定保留。Ubuntu 22.04 的對應 `.deb` 亦已在 Fcitx 5.0.14 userspace
+建置，並於乾淨 runtime container 通過安裝、移除、重裝及相同的非桌面套件檢查。
+倉頡與簡易目前只有字根 preedit、基本候選與五碼／
+兩碼上限，不代表 F03／F04 完成；五配置也尚未完成 T02 的所有聲調與錯誤輸入 E2E。
+這不是 GNOME session；P0 所要求的 native Wayland／XWayland、完整桌面/App、popup
+與 hosted runner 實證仍未完成。
+
 | 階段 | 工作 | 出場條件 |
 |---|---|---|
-| P0：證據與風險先行 | 先驗證 Ubuntu 24.04 GNOME + Fcitx 5 的 addon、popup、Qt 回送、三種 session 路徑與 hosted 注入；凍結 macOS baseline，盤點 20 版本與最低依賴 | 主環境真 host app 收到測試字、負控制符合預期、addon 身分正確；Ubuntu 22.04／Fedora 36 最低 API 與 GNOME／KWin 差異有結論 |
+| P0：證據與風險先行 | 先驗證 Ubuntu 24.04 GNOME + Fcitx 5 的 addon、popup、Qt 回送、三種 session 路徑與 hosted 注入；凍結 macOS baseline，盤點 Ubuntu 版本與最低依賴 | 主環境真 host app 收到測試字、負控制符合預期、addon 身分正確；Ubuntu 22.04 最低 API 與 GNOME 差異有結論 |
 | P1：Linux 引擎骨架與資料 | CMake、授權、native 資料工具、context 契約、五種注音布局 | 不需 GUI 可跑 CTest；真實資料 golden、Unicode／生命週期測試通過，無舊核心 link |
 | P2：三輸入法與 filter | 倉頡、簡易、內建關聯詞、標點、全半形、繁轉簡、注音修正 | F01–F05、F09–F10 對應測試通過；不能到此就宣稱核定範圍的完整 parity |
-| P3：完整桌面整合 | 優先完成 Ubuntu 24.04 + Fcitx 5 全功能／視窗／App／sandbox 驗收，再完成其他 adapter 路徑 | 主環境符合測試計畫完整驗收；F01–F11、F16 狀態明確；GTK/Qt 真打字與視窗流程通過；不加入 F12–F15 |
-| P4：多版本與安裝 | 四年完整矩陣原生 packages、ARM64 preview、乾淨安裝／升級／移除 | 含歷史列的每份套件有正確 dependency、data、授權；安裝後從系統選到三輸入法並打字 |
-| P5：完整 CI 與首版驗收 | 所有 workflows、release gate、sandbox／應用程式矩陣、文件 | 同一 SHA 的正式矩陣全綠且證據齊全；preview 不混入正式保證；由使用者確認可接受差異後發布 |
+| P3：完整 Ubuntu 桌面整合 | 完成 Ubuntu 24.04 + Fcitx 5 全功能／視窗／App／sandbox 驗收，再完成 Ubuntu 內其他 adapter 路徑 | 主環境符合測試計畫完整驗收；F01–F11、F16 狀態明確；GTK/Qt 真打字與視窗流程通過；不加入 F12–F15 |
+| P4：Ubuntu 多版本與安裝 | Ubuntu 近四年矩陣原生 `.deb`、ARM64 preview、乾淨安裝／升級／移除 | 9 個 Ubuntu 版本的每份套件有正確 dependency、data、授權；安裝後從系統選到三輸入法並打字 |
+| P5：Ubuntu CI 與首版驗收 | Ubuntu workflows、release gate、sandbox／應用程式矩陣、文件 | 同一 SHA 的 Ubuntu 正式矩陣全綠且證據齊全；preview 不混入正式保證；由使用者確認可接受差異後發布 |
+| P6：其他發行版 TODO | Ubuntu 完成後再做 Debian 12／13 與 Fedora 36–44 的 adapter、DEB／RPM、桌面與 CI | 各家族重新確認仍在近四年範圍，逐列升格為 active；不得用 Ubuntu ELF binary 直接重包 |
 
 總完成條件：
 
@@ -390,9 +425,9 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 - [ ] Ubuntu 24.04 GNOME + Fcitx 5 通過最完整測試，X11／native Wayland／XWayland、
       所有核定功能、App／sandbox／UI、安裝升級及穩定性皆有獨立證據。
 - [ ] F12–F15 沒有實作、選單或佔位 UI，亦不作為未完成／待恢復項目。
-- [ ] 四年相容窗的每個 distro/version／必要桌面組合通過已安裝套件的實際打字驗證，
-      包含 EOL 歷史列，不只測最新版。
-- [ ] PR／nightly／release 都有可追溯報告，沒有「用寫入文字代替鍵盤」的假 E2E。
+- [ ] Ubuntu 近四年相容窗的每個版本／必要桌面組合通過已安裝套件的實際打字驗證，
+      包含 EOL 歷史列，不只測最新版；Debian／Fedora 留在 P6 TODO，不阻擋此前的 Ubuntu 發布。
+- [ ] PR／手動完整測試／release 都有可追溯報告，沒有「用寫入文字代替鍵盤」的假 E2E。
 - [ ] 套件命名、版本、ABI、使用者資料保留、授權及安裝說明完整。
 - [ ] 發布說明區分完整支援、preview、未測、已接受差異；未通過不標完成。
 

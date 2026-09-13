@@ -1,12 +1,66 @@
 # 建置、安裝與打包 / Building, installation, and packaging
 
-本文件集中說明琦琦輸入法的 macOS、Windows、Android 與 iOS 建置流程。
+本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 是 1.2.8 起的原生支援目標，尚未實作，不能使用下列四平台命令建置 Linux。
-開發／套件規格見 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，
-實際打字與 GitHub Actions 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
+Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
+外掛與 local X11/GTK 3 真實逐鍵測試，但尚未完成全部功能、GNOME／Wayland 桌面
+驗收或正式套件。開發／套件規格見
+[LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
+驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
 [English](#english)
+
+## Linux（開發中）
+
+在已安裝 CMake 3.22、Ninja、C++17 compiler 與 Fcitx 5 Core 開發檔的 Linux 上：
+
+```sh
+cd Source/Loaders/Linux-IME
+cmake --preset linux-release
+cmake --build --preset linux-release
+ctest --preset linux-release
+```
+
+macOS 開發機可用 Rancher Desktop 或其他 Docker-compatible engine 重現 Ubuntu
+userspace。日常修改優先使用一個長駐的 native-architecture 開發 container：
+
+```sh
+Source/Loaders/Linux-IME/ci/dev.sh up
+Source/Loaders/Linux-IME/ci/dev.sh test
+Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
+Source/Loaders/Linux-IME/ci/dev.sh verify
+Source/Loaders/Linux-IME/ci/dev.sh package
+```
+
+`dev.sh` 在 Apple Silicon 自動使用 `linux/arm64`，保留同一個 container，並把
+incremental build／stage 放在 Docker named volumes；`down` 只移除 container，保留
+編譯快取。`e2e` 可指定一個 case、逗號分隔的 cases 或 `all`。這條快速路徑產生的
+ARM64 package 是開發 preview，不能取代 x86_64 release gate；`package` 也不取代乾淨
+runtime container 的安裝／升級／移除驗證。
+
+以下 one-shot 指令仍用於獨立、可重建的 Ubuntu userspace 檢查：
+
+```sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-24.04.sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-22.04.sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-24.04-x11-e2e.sh
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
+```
+
+第一個指令是主要 Ubuntu 24.04 / Fcitx 5 build，第二個守住 Ubuntu 22.04 的最低
+API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3 的 X11 真實逐鍵輸入：五種
+注音配置、倉頡、簡易及各自的英文負控制，並驗證注音設定 schema。這些 one-shot 指令預設建立
+`linux/amd64` 產物；ARM64 preview 可在指令前設定
+`KEYKEY_DOCKER_PLATFORM=linux/arm64`。Xvfb E2E 是 L3 X11 證據，不等於 GNOME／
+native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
+[Linux frontend README](Source/Loaders/Linux-IME/README.md)。
+
+後兩個指令用 debhelper 產生依發行版命名的 `chichi77-keykey-data` 與
+`fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
+各跑一次十六案例的 X11 真實打字，並只在重裝後多跑一次 Fcitx 原生設定視窗
+點選、保存、重啟及真實打字案例；22.04 則跑較省時的套件安裝／移除 smoke。
+這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
 
 ## macOS
 
@@ -259,10 +313,65 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 ## English
 
-Native Linux support is targeted for version 1.2.8 onward but is not yet
-implemented. The existing four-platform commands do not build Linux. See the
-[development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md)
-for the native implementation, packaging, and GitHub Actions acceptance criteria.
+Native Linux development starts with version 1.2.8. A buildable Linux-only
+engine and Fcitx 5 addon skeleton exist, but full features, real desktop typing
+acceptance, and release packages are not complete. See the
+[development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
+
+### Linux (in development)
+
+On Linux with CMake 3.22, Ninja, a C++17 compiler, and the Fcitx 5 Core
+development files installed:
+
+```sh
+cd Source/Loaders/Linux-IME
+cmake --preset linux-release
+cmake --build --preset linux-release
+ctest --preset linux-release
+```
+
+Rancher Desktop or another Docker-compatible engine can reproduce the Ubuntu
+userspace from macOS. Use the persistent native-architecture container for the
+normal edit/build/test loop:
+
+```sh
+Source/Loaders/Linux-IME/ci/dev.sh up
+Source/Loaders/Linux-IME/ci/dev.sh test
+Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
+Source/Loaders/Linux-IME/ci/dev.sh verify
+Source/Loaders/Linux-IME/ci/dev.sh package
+```
+
+On Apple Silicon, `dev.sh` automatically uses `linux/arm64`. It reuses one
+container and keeps incremental build and staging files in Docker named
+volumes. `e2e` accepts one case, a comma-separated case list, or `all`; `down`
+removes the container but retains the compilation cache. ARM64 packages from
+this path are development previews, and `package` does not replace clean
+install/upgrade/removal acceptance.
+
+The following one-shot commands remain the independent, reproducible checks:
+
+```sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-24.04.sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-22.04.sh
+Source/Loaders/Linux-IME/ci/run-ubuntu-24.04-x11-e2e.sh
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
+```
+
+The third one-shot command types physical key events through the staged Fcitx 5 addon
+into a GTK 3 entry on Xvfb and runs an English-keyboard negative control. They
+default to `linux/amd64`; set `KEYKEY_DOCKER_PLATFORM=linux/arm64` for the ARM64
+preview build. The Xvfb result is L3 X11 evidence and does not count as GNOME or
+native Wayland desktop typing acceptance. See the
+[Linux frontend README](Source/Loaders/Linux-IME/README.md) for current scope.
+
+The final two commands create distro-labelled `chichi77-keykey-data` and
+`fcitx5-chichi77-keykey` Debian packages with debhelper. Ubuntu 24.04 also runs
+the sixteen keyboard-only X11 cases after install, controlled upgrade, and
+reinstall. The native Fcitx settings-window click, persistence, restart, and
+typing case runs once after reinstall. These are development artifacts until
+the remaining release gates are complete.
 
 ### macOS
 

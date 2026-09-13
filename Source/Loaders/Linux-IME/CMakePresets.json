@@ -1,0 +1,77 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "linux-release",
+      "displayName": "Linux Release (Ninja)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_INSTALL_PREFIX": "/usr",
+        "KEYKEY_BUILD_FCITX5": "ON"
+      }
+    },
+    {
+      "name": "engine-only",
+      "displayName": "Portable engine tests (Ninja)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/engine-only",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "KEYKEY_BUILD_FCITX5": "OFF"
+      }
+    },
+    {
+      "name": "engine-sanitized",
+      "displayName": "Engine tests with ASan and UBSan (Ninja)",
+      "inherits": "engine-only",
+      "binaryDir": "${sourceDir}/out/build/engine-sanitized",
+      "cacheVariables": {
+        "KEYKEY_ENABLE_SANITIZERS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release"
+    },
+    {
+      "name": "engine-only",
+      "configurePreset": "engine-only"
+    },
+    {
+      "name": "engine-sanitized",
+      "configurePreset": "engine-sanitized"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "engine-only",
+      "configurePreset": "engine-only",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "engine-sanitized",
+      "configurePreset": "engine-sanitized",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

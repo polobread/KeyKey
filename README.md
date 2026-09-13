@@ -20,10 +20,17 @@ Android 與 iOS 版透過 Google Play 與 App Store 的官方流程發行，並�
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，目前支援 macOS、Windows、
 Android 與 iOS 四個平台。
 
-1.2.8 起規劃加入 Linux 原生版，支援傳統注音、倉頡與簡易，並相容近四年的
-主要發行版本。Linux 目前尚在規劃階段，程式、套件與自動化驗收尚未完成；詳見
+1.2.8 起開發 Linux 原生版，目標支援傳統注音、倉頡與簡易；目前先完整支援近四年的
+Ubuntu 主要發行版本。目前已有 Linux-only 引擎、三套輸入法的 Fcitx 5 最小垂直切片、
+五種注音鍵盤配置與原生設定選項、候選鍵盤導覽、標點／符號候選切片、
+30 套內建關聯詞與 `Shift+1–9` 選詞切片、`Shift+Space` 全／半形、ASCII 全形
+對映與繁轉簡切片、Fcitx 原生設定視窗點選／保存測試、container／CI 建置測試及
+local X11/GTK 3 真實
+逐鍵測試，亦可產生 Ubuntu 22.04／24.04 開發用 `.deb`；但完整功能、GNOME／
+Wayland 驗收及正式發布套件尚未完成；詳見
 [Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
-主要支援與最完整測試目標為 Ubuntu Desktop 24.04 LTS + Fcitx 5。
+主要支援與最完整測試目標為 Ubuntu Desktop 24.04 LTS + Fcitx 5。Debian 與 Fedora
+保留為 Ubuntu 完成後的 TODO，尚未納入目前的 required CI 或發布條件。
 
 本專案以 Yahoo! Inc. 於 2012 年以 BSD 3-Clause License 釋出的原始碼為基礎，
 保留 OpenVanilla／PlainVanilla 核心與傳統注音資料，移除失效的網路服務，並為
@@ -41,7 +48,7 @@ Windows、Android 與 iOS 建立現代化 frontend。
 | Windows | 原生 TSF；Windows 11 x64，並支援 32-bit Office process |
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
-| Linux（1.2.8 起的開發目標，尚未提供） | 原生 IBus／Fcitx 5；注音、倉頡、簡易；近四年發行版相容與 DEB／RPM 套件，依計畫驗收後提供 |
+| Linux（1.2.8 起開發中，尚未提供） | 原生 IBus／Fcitx 5；注音、倉頡、簡易；先完成近四年 Ubuntu 與 DEB，Debian／Fedora、RPM 列後續 TODO |
 
 四個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
@@ -67,9 +74,9 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 ## 文件
 
-- [BUILDING.md](BUILDING.md)：四平台建置、測試、安裝與打包
+- [BUILDING.md](BUILDING.md)：各平台建置、測試、安裝與打包
 - [Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](LINUX_TEST_PLAN.md)：
-  1.2.8 起的原生 Linux 支援目標、功能範圍與驗收門檻，尚未實作
+  1.2.8 起的原生 Linux 支援目標、目前進度、功能範圍與驗收門檻
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md)：Windows frontend
   的實作、部署及驗證細節
 - [Android IME README](Source/Loaders/Android-IME/README.md)：Android 鍵盤配置、
@@ -98,12 +105,21 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports macOS, Windows, Android, and iOS.
 
-Native Linux support is targeted for version 1.2.8 onward, with Traditional
-Bopomofo, Cangjie, Simplex, and compatibility with roughly four years of distro
-releases. Linux code, packages, and automated acceptance tests are not yet
-implemented; see the [Linux development plan](LINUX_DEVELOPMENT_PLAN.md).
+Native Linux development starts with version 1.2.8 and targets Traditional
+Bopomofo, Cangjie, Simplex, and initially roughly four years of Ubuntu
+releases. A Linux-only engine, minimal Fcitx 5 vertical slices for all three
+input methods, all five Bopomofo keyboard layouts with a native Fcitx setting,
+candidate keyboard navigation, an initial punctuation/symbol-list slice,
+all 30 built-in associated-phrase collections with Shift+1–9 selection and
+native per-collection Boolean settings,
+an AT-SPI-driven native Fcitx settings-window persistence test, container/CI
+build tests, and a local X11/GTK 3 real-key typing test now exist.
+Development `.deb` packages can also be built for Ubuntu 22.04 and 24.04. Full
+features, GNOME/Wayland acceptance, and release packages are not complete; see the
+[Linux development plan](LINUX_DEVELOPMENT_PLAN.md).
 Ubuntu Desktop 24.04 LTS with Fcitx 5 is the primary target and receives the
-most comprehensive test coverage in the plan.
+most comprehensive test coverage in the plan. Debian and Fedora remain future
+TODOs after Ubuntu and are not current required CI or release gates.
 
 The project retains the OpenVanilla/PlainVanilla core and Traditional Bopomofo
 data, removes obsolete online services, and adds modern Windows, Android, and
@@ -120,7 +136,7 @@ by, or sponsored by Yahoo.**
 | Windows | Native TSF; Windows 11 x64, including 32-bit Office processes |
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
 | iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
-| Linux (targeted for 1.2.8 onward; not yet available) | Native IBus/Fcitx 5; Bopomofo, Cangjie, Simplex; four-year distro compatibility and DEB/RPM packages, subject to acceptance testing |
+| Linux (in development for 1.2.8; not yet available) | Native IBus/Fcitx 5; Bopomofo, Cangjie, Simplex; Ubuntu and DEB first, with Debian/Fedora and RPM as future TODOs |
 
 All four platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
@@ -156,7 +172,7 @@ for the complete output and signing details.
 - [BUILDING.md](BUILDING.md): build, test, installation, and packaging instructions
 - [Linux development plan](LINUX_DEVELOPMENT_PLAN.md) and
   [automated test plan](LINUX_TEST_PLAN.md): scope and acceptance criteria for
-  native Linux support targeted for 1.2.8 onward; not yet implemented
+  native Linux support targeted for 1.2.8 onward, including current progress
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md): frontend
   implementation, deployment, and verification details
 - [Android IME README](Source/Loaders/Android-IME/README.md): layouts, build,
