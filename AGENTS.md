@@ -36,8 +36,19 @@ Debian 開發套件生命週期驗證；hosted Linux CI、GNOME 與 Wayland 仍�
 - Docker Desktop、Rancher Desktop 或其他相容引擎皆可，但必須使用 Linux containers，
   且 WSL 內的 `docker info` 能直接連到 engine。一般 x64 Windows 主機的 `uname -m`
   是 `x86_64`，`ci/dev.sh` 因此直接使用 `linux/amd64`，可避免 Apple Silicon 執行
-  amd64 package gate 時的模擬成本。此 Windows／WSL 路徑尚未實跑，第一輪須留下
-  實際時間與失敗證據，不可先標成已驗證。
+  amd64 package gate 時的模擬成本。2026-09-13 已在 Windows 11 + WSL2 Ubuntu
+  24.04.4、WSL ext4 checkout、rootless Docker 29.8.0 實跑 warm `ci/dev.sh verify`：
+  2 個 CTest 與 17 個 X11 案例全數通過，總耗時 18.22 秒。當時 dependency image 與
+  container 已存在，不能把這筆時間當成全新主機的 cold build；下次乾淨環境仍須記錄。
+- 受限制的自動化行程可能無法開啟 rootless Docker 的
+  `/run/user/UID/docker.sock`，即使 socket owner、mode 與一般 WSL shell 都正常；
+  這時 `docker info` 會顯示 `permission denied`。先在一般 WSL shell 重跑
+  `docker info`；若正常，應允許該 sandbox 存取本機 socket，不要改用 `sudo docker`、
+  `chmod 666` 或隨意改群組。這是呼叫行程隔離，不是 Docker daemon 未啟動。
+- 長駐 container 把 named volume 掛在 `out/stage`，但 verify 會刪除再建立其下的
+  `dev-container-ARCH`。`initialize_writable_paths` 必須 `chown` stage 的掛載父目錄
+  `${stage_dir%/*}`，不能只改 child；否則 root 建立的新 volume 會讓非 root 開發使用者
+  在 staging 時遇到 `Permission denied`。修改 volume layout 時要保留此不變條件。
 - 從 repository 根目錄開始；第一次 `up` 會建立 dependency image，後續命令會重用
   同一 container 與 named-volume 編譯快取：
 
@@ -915,10 +926,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - [ ] 依 `LINUX_TEST_PLAN.md` 建立逐鍵 golden、App 最終文字 assertion、Ubuntu 四年矩陣
       packages／安裝升級驗證，以及 PR／手動完整測試／release workflows；Linux desktop
       workflow 不設排程，未實跑不勾選。
-- [ ] 在 Windows 11 x64 + WSL2 + Linux container engine 首次實跑 `ci/dev.sh verify`，
-      記錄 dependency image 冷啟動與 warm verify 時間，確認 2 個 CTest、17 個 X11
-      案例及 `linux/amd64` 架構；再於里程碑跑 Ubuntu 24.04 package lifecycle。這只補
-      Windows-hosted container 證據，不得取代 GNOME／native Wayland 驗收。
+- [x] 2026-09-13 在 Windows 11 x64 + WSL2 Ubuntu 24.04.4 + rootless Linux container
+      engine 實跑 warm `ci/dev.sh verify`；`linux/amd64`、2 個 CTest、17 個 X11 案例
+      全數通過，耗時 18.22 秒。這只補 Windows-hosted container 證據，不得取代
+      GNOME／native Wayland 驗收。
+- [ ] 下次全新 WSL 主機記錄 dependency image cold build 時間；里程碑另跑 Ubuntu
+      24.04 package lifecycle，不能用 warm verify 取代乾淨安裝／升級／移除／重裝 gate。
 - [ ] Ubuntu 完整發布 gate 達成後，才開始 P6 Debian 12／13 與 Fedora 36–44；
       重新計算四年範圍並逐列建立原生套件、桌面 E2E 與必要 CI。
 

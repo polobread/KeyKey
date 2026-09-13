@@ -20,11 +20,21 @@ EOF
 }
 
 require_docker() {
-  if ! docker info >/dev/null 2>&1; then
-    echo "The Docker-compatible engine is not reachable." >&2
-    echo "Start Rancher Desktop or Docker, then try again." >&2
-    exit 1
+  local docker_error
+  if docker_error=$(docker info 2>&1 >/dev/null); then
+    return
   fi
+
+  echo "The Docker-compatible engine is not reachable from this process." >&2
+  if [[ "$docker_error" == *"permission denied"* ]]; then
+    echo "Docker socket access was denied." >&2
+    echo "On WSL, retry from a normal WSL shell or allow this sandbox to access the local Docker socket." >&2
+    echo "Do not change the socket mode or switch to sudo as a workaround." >&2
+  else
+    echo "Start Rancher Desktop or Docker, then try again." >&2
+  fi
+  printf '%s\n' "$docker_error" >&2
+  exit 1
 }
 
 container_exists() {
@@ -98,7 +108,7 @@ initialize_writable_paths() {
     "$container_home"
   docker exec "$container_name" chown -R "$host_uid:$host_gid" \
     "$container_workdir/$build_dir" \
-    "$container_workdir/$stage_dir" \
+    "$container_workdir/${stage_dir%/*}" \
     "$container_home"
 }
 

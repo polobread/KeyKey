@@ -71,8 +71,9 @@ Entries marked `build-only` have not passed installed desktop typing acceptance.
 
 ## Persistent Ubuntu 24.04 development container
 
-On macOS, the fastest edit/build/test loop uses one persistent Ubuntu 24.04
-container instead of creating a fresh container for every command:
+On macOS or Windows 11 with WSL2, the fastest edit/build/test loop uses one
+persistent Ubuntu 24.04 container instead of creating a fresh container for
+every command:
 
 ```sh
 Source/Loaders/Linux-IME/ci/dev.sh up
@@ -107,6 +108,32 @@ not replace the clean install/upgrade/removal lifecycle below.
 Use `ci/dev.sh status` to inspect the session, `ci/dev.sh shell` for an
 interactive shell, and `ci/dev.sh down` to remove the container. `down` retains
 the named build volumes, so a later `up` can continue incrementally.
+
+### Windows 11 and WSL2 checklist
+
+- Use an Ubuntu WSL2 shell and keep the checkout on its Linux filesystem, for
+  example `/home/user/KeyKey`. Do not run these scripts from `/mnt/c` or a
+  Windows Git checkout that may change LF line endings or executable bits.
+- Run `uname -m`, `findmnt -T .`, and `docker info` before the first `up`.
+  A normal x64 Windows host should report `x86_64`, the checkout should use a
+  Linux filesystem such as `ext4`, and the Docker server must report Linux.
+- A rootless Docker context is valid. If `docker info` succeeds in the normal
+  WSL shell but a restricted automation process receives `permission denied`
+  for `/run/user/UID/docker.sock`, grant that process access to the local
+  Docker socket and retry. Do not use `sudo docker`, change the socket to mode
+  `666`, or add unrelated groups merely to bypass a process sandbox.
+- Run `ci/dev.sh status`, `ci/dev.sh test`, and then `ci/dev.sh verify` after
+  `up`. Container presence alone does not prove that the build and X11 paths
+  can use the persistent volumes.
+
+The stage named volume is mounted at `out/stage`, while each architecture uses
+a removable child such as `out/stage/dev-container-amd64`. The staging action
+deletes and recreates that child on every verification run. Therefore
+`initialize_writable_paths` must assign the host UID/GID ownership to the
+mounted `out/stage` parent (`${stage_dir%/*}`), not only to the child directory.
+Otherwise a fresh root-owned volume can fail with `Permission denied` when the
+non-root development user tries to recreate the staging directory. Keep this
+ownership invariant when changing the volume layout.
 
 ## One-shot Ubuntu container checks
 

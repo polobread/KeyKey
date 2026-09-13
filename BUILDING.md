@@ -38,6 +38,15 @@ incremental build／stage 放在 Docker named volumes；`down` 只移除 contain
 ARM64 package 是開發 preview，不能取代 x86_64 release gate；`package` 也不取代乾淨
 runtime container 的安裝／升級／移除驗證。
 
+Windows 11 可從 WSL2 Ubuntu 使用同一組指令。Repository 必須放在 WSL 的 Linux
+filesystem（例如 `/home/.../KeyKey`），不要放在 `/mnt/c` 或會自動轉 CRLF 的 Windows
+checkout；先確認 `docker info` 能從一般 WSL shell 連到 Linux container engine。
+若受限制的自動化行程回報 Docker socket `permission denied`，但一般 WSL shell 的
+`docker info` 正常，這是呼叫行程的 sandbox 權限，不是 daemon 或 socket mode 壞掉；
+應允許該行程存取本機 Docker socket，不要改用 `sudo docker` 或把 socket 改成
+world-writable。完整診斷與 named-volume 注意事項見
+[Linux frontend README](Source/Loaders/Linux-IME/README.md)。
+
 以下 one-shot 指令仍用於獨立、可重建的 Ubuntu userspace 檢查：
 
 ```sh
@@ -348,6 +357,15 @@ volumes. `e2e` accepts one case, a comma-separated case list, or `all`; `down`
 removes the container but retains the compilation cache. ARM64 packages from
 this path are development previews, and `package` does not replace clean
 install/upgrade/removal acceptance.
+
+Windows 11 can use the same commands from WSL2 Ubuntu. Keep the repository on
+the WSL Linux filesystem, such as `/home/.../KeyKey`, rather than `/mnt/c` or a
+Windows checkout that converts files to CRLF. First verify that `docker info`
+can reach a Linux container engine from a normal WSL shell. If only a
+restricted automation process reports Docker socket `permission denied`, grant
+that process access to the local socket; do not use `sudo docker` or make the
+socket world-writable. See the Linux frontend README for the full diagnostics
+and named-volume ownership note.
 
 The following one-shot commands remain the independent, reproducible checks:
 
