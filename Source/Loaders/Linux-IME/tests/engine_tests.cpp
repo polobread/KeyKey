@@ -414,15 +414,16 @@ void testBopomofoContinuousTypingAndInputErrors() {
     struct LayoutCase {
         BopomofoLayout layout;
         const char *readingKeys;
+        const char *readingPreedit;
         char nextKey;
         const char *nextPreedit;
     };
     const LayoutCase layouts[] = {
-        {BopomofoLayout::Standard, "5j/", 'j', "ㄨ"},
-        {BopomofoLayout::ETen, ",x-", 'x', "ㄨ"},
-        {BopomofoLayout::ETen26, "gxl", 'x', "ㄨ"},
-        {BopomofoLayout::Hsu, "jxl", 'x', "ㄨ"},
-        {BopomofoLayout::HanyuPinyin, "zhong", 'w', "w"},
+        {BopomofoLayout::Standard, "5j/", "ㄓㄨㄥ", 'j', "ㄨ"},
+        {BopomofoLayout::ETen, ",x-", "ㄓㄨㄥ", 'x', "ㄨ"},
+        {BopomofoLayout::ETen26, "gxl", "ㄓㄨㄥ", 'x', "ㄨ"},
+        {BopomofoLayout::Hsu, "jxl", "ㄓㄨㄥ", 'x', "ㄨ"},
+        {BopomofoLayout::HanyuPinyin, "zhong", "zhong", 'w', "w"},
     };
     for (const LayoutCase &layout : layouts) {
         Engine layoutEngine(dictionary, InputMethod::Bopomofo, layout.layout);
@@ -430,6 +431,19 @@ void testBopomofoContinuousTypingAndInputErrors() {
         for (const char key : std::string(layout.readingKeys)) {
             layoutEngine.processKey(layoutContext, character(key));
         }
+        result = layoutEngine.processKey(layoutContext, character('\\'));
+        require(result.handled && result.beep && result.commit.empty() &&
+                    result.preedit == layout.readingPreedit &&
+                    result.candidates.empty(),
+                "A Windows-supported layout leaked an invalid printable key or changed its reading");
+        result = layoutEngine.processKey(
+            layoutContext,
+            KeyEvent{KeyCode::Character, 'c', KeyModifier::Control, false,
+                     false});
+        require(!result.handled && !result.beep && result.commit.empty() &&
+                    result.preedit == layout.readingPreedit &&
+                    result.candidates.empty(),
+                "A Windows-supported layout captured a shortcut or changed its reading");
         result = layoutEngine.processKey(
             layoutContext,
             KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});

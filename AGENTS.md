@@ -85,7 +85,7 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   重裝的 amd64 套件 gate，只在里程碑跑，不要每次修改都跑。Windows 桌面本身不能
   取代 GNOME／native Wayland 驗收；Xvfb 通過後仍須另找真 Linux desktop／VM。
 - 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 30/30
-  通過；案例涵蓋注音候選直接接下一音節、reading 中無效鍵與 Ctrl 快捷鍵，以及
+  通過；案例涵蓋注音候選直接接下一音節、五布局 reading 中無效裸 `\` 與 Ctrl 快捷鍵，以及
   空狀態／reading／候選的 Backspace 與 Escape 邊界；也涵蓋每個 input context 的
   中英文模式、`Ctrl+\`、單按 Shift、Caps Lock、英文全半形，以及 reading／候選期間
   Ctrl／Alt 快捷鍵與 press／release 邊界；長按 `Ctrl+\` 只會切換一次。
@@ -103,6 +103,18 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   Ubuntu 24.04 package lifecycle 已重跑：preview 初裝與 release 升級各通過 29 個
   純鍵盤案例，移除／重裝後通過包含設定視窗的完整 30 案；dependency、資料 hash、
   移除與設定 sentinel 也全數通過。
+  2026-09-14 另把同一組 release-candidate `.deb` 實裝到 WSL2 Ubuntu 24.04.4，
+  由使用者在 WSLg XWayland 的 GTK3 gedit 以 Fcitx 5.1.7 實際確認可輸入中文；這只算
+  package／GTK3／XWayland 手動 smoke，不是 GNOME desktop、native Wayland 或候選視覺
+  驗收。WSLg 對已 unmap 的 Fcitx X11 候選窗會留下約一秒殘影，另見下方已知陷阱。
+  同日另啟動獨立的 GNOME Shell 46／TigerVNC X11 `:21` 診斷桌面，由本機 noVNC
+  顯示，沿用相同已安裝 addon。三次「快→Shift+1→樂」與十次「ㄎ、Space」連打的
+  GTK commit 為 0.72–1.88 ms，X11 隱藏觀測為 4.27–6.30 ms；兩個抽樣候選區域在
+  約 59 ms 已清除，半秒後像素一致，英文負控制也通過。這是隔離 X11 診斷證據；
+  同日使用者已在瀏覽器端確認延遲與多重殘影解決、試打成功。完整 GNOME 登入與
+  native Wayland 仍待完成。後續在此主機提供人工試打時優先沿用
+  [Ubuntu 手動試打交接](Source/Loaders/Linux-IME/docs/manual-desktop.md)，先啟動桌面、
+  切好琦琦注音並開啟本機連結，再請使用者測試。
   Windows 主機不會取得原 Mac 的 container／named volumes，
   首次執行較慢屬正常，之後應以同一 `ci/dev.sh` session 迭代。
 
@@ -323,6 +335,31 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   可用；E2E 必須從鍵盤事件經過 IME，核對實際 App 文字與 preedit／候選流程，
   並有停用 engine 的負控制。GNOME／KWin 的 hosted VM、popup 樣式與焦點能力
   先做 P0；未驗證前不可承諾全部桌面測試皆可在 hosted runner 完成。
+- **WSLg 的 Fcitx X11 候選殘影不是 engine 延遲**：2026-09-14 手動流程中，「快」
+  選字後由注音候選重畫成關聯詞候選很快，但再以 `Shift+1` 選「樂」後，已關閉的視窗
+  仍在 Windows 桌面殘留約 1–1.5 秒。先依 macOS／Windows 確認兩者都在同一按鍵處理
+  內 commit 並隱藏，再嘗試讓 Linux adapter 在 commit 前清空 panel；使用者確認完全
+  無改善，因此該嘗試已撤回。這與 [microsoft/wslg#1495](https://github.com/microsoft/wslg/issues/1495)
+  的 Fcitx 5.1.19 A/B 結果完全相同：`xcb_unmap_window()` 後只留下視覺殘影，維持 mapped
+  並縮成 1×1 才消失。Ubuntu 24.04 的 Fcitx 5.1.7 使用
+  `_NET_WM_WINDOW_TYPE_POPUP_MENU`；臨時改成新版的 `COMBO` 也不能視為產品修正，因為
+  上述 5.1.19 重現環境早已使用 `COMBO`。不可在 KeyKey engine 加 sleep、重複 commit
+  或篡改候選狀態規避；WSLg 只能驗證輸入功能，候選顯示／隱藏速度必須在真正 GNOME
+  X11／XWayland／native Wayland session 各自驗收。
+- **本機 GNOME／VNC 診斷桌面與原 WSLg 視窗並存**：2026-09-14 的
+  `keykey-manual-desktop.service` 使用獨立 X display `:21`、D-Bus、XDG 設定與 runtime，
+  從 `http://localhost:6080/vnc.html?autoconnect=true&resize=scale` 操作；已預選琦琦注音。
+  版控啟動入口為 `Source/Loaders/Linux-IME/tools/manual-desktop/start-desktop.sh`，
+  同目錄 `session-command.sh` 可在正確 session 執行 `fcitx5-remote`；詳細步驟與
+  排查順序見 `docs/manual-desktop.md`。不可沿用原 WSLg 的使用者 bus，否則會切錯
+  輸入法。VNC 僅開 0600 Unix socket，網頁／WebSocket 只綁 `127.0.0.1:6080` 並檢查
+  localhost Origin，不向區網開放。停止時只停止此 service，保留原 gedit 的未存文字。
+  Mutter 外框與 GTK client 有相同視窗標題，定位須核對 client 屬性；X11 map 早於
+  compositor 重畫，像素比較須先確認關窗前確實有候選畫面。診斷結果在
+  `out/manual-vnc/popup-timing-20260914-011529.json`，不是正式 CI 新增案例，也不是完整
+  desktop gate。使用者已確認此桌面試打成功；不要再次要求用同一個有殘影的 WSLg
+  單窗重試，也不要把環境修正寫成 KeyKey／Fcitx 產品修正。日後若同一獨立桌面也
+  重現，必須重新量測，不可直接套用 WSLg 結論。
 - **Linux 不沿用舊 cooker 建置依賴**：macOS cooker 使用 Formosa Ruby extension；
   Linux 應唯讀共用字表／詞庫，以獨立原生資料工具生成自身索引，不修改四平台
   cooker 或資料內容。CIN 可能有 CRLF 與合法 `%` 字元列，解析不能一律略過。
@@ -487,6 +524,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   設定，Linux 第一階段須維持相同選項。Windows module package
   只註冊 TraditionalMandarin 與 AssociatedPhrase，雖 cooker 含 correction table，
   實際未載入 BopomofoCorrection，所以 Linux 也不需實作注音自動修正。
+- **五布局錯誤鍵使用裸 `\` 作共同 E2E 錨點**：macOS TraditionalMandarin 在 reading
+  非空時會吃掉無法組入的普通鍵、保留 reading 並 beep；Ctrl／Alt 組合則放行且不改
+  reading。Windows 沿用同一 module 行為，TSF 另在送入引擎前排除 Ctrl／Alt 應用程式
+  快捷鍵。裸 `\` 不在 Standard、ETen、ETen26、Hsu 或 Hanyu Pinyin 的 reading key
+  集合內，且不會觸發只接受 `Ctrl+\` 的中英切換，因此可跨五布局固定這條契約；英文
+  負控制必須保留 literal `\`，才能證明事件確實走過真 App。
 - **Windows TraditionalMandarin 輸入明示聲調後立即查詢**：二、三、四、輕聲鍵由
   `hasToneMarker()` 觸發 `queryAndCompose()`，不需再按 Space。Linux 五布局亦須如此；
   無聲調的一聲仍以 Space／Enter 查詢。真實按鍵負控制要同步移除聲調後多餘空白，
@@ -510,6 +553,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   前重送一個沒有 Ctrl 的 backslash press，所以 latch 期間要吃掉該鍵的全部事件，不能
   只處理 repeat 或 release。Xvfb 沒有 GNOME window manager，`Super+L` 會落到 GTK，
   所以 Super 保留在 L1，真正桌面快捷鍵仍須在 GNOME T09 驗收。
+- **T09 英文負控制不能依賴長按 chord 的 key-up 排程**：上述案例刻意先放 Ctrl、再放
+  反斜線來驗證 KeyKey latch，但 `keyboard-us` 是否在兩次 key-up 間收到一次裸 `\`
+  取決於 X11 autorepeat 時序；warm staged test 曾收到，乾淨 package container 則沒有。
+  長按後必須在正負控制都送相同的 `Ctrl+A`／Backspace 清除可能殘值，再開始精確文字
+  比較；不可把不穩定的裸 `\` 寫進 expected literal，也不能改掉原本的 release 順序。
 - **Fcitx 候選方向與候選外觀不是同一層 API**：Ubuntu 22.04 的 Fcitx 5.0.14 與
   24.04 的 5.1.7 都能在每份 `CommonCandidateList` 呼叫 `setLayoutHint()` 指定
   Vertical／Horizontal，Linux 設定應保存這個 hint。比例與反白顏色則由 active Fcitx
@@ -1013,6 +1061,15 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Linux 原生版
 
+- [x] 2026-09-14 為使用者的 WSLg 候選窗一秒殘影與連打多重殘影，建立獨立
+      GNOME Shell／TigerVNC／noVNC X11 診斷桌面；相同 addon 通過三次關聯選字、
+      十次「ㄎ」連打、英文負控制，以及關窗後約 59 ms 的候選區域像素清除檢查。
+- [x] 2026-09-14 使用者在上述本機瀏覽器桌面確認延遲、多重殘窗解決，人工試打成功；
+      將成功環境、輸入法預選、按鍵衝突處理與分層排查流程寫進
+      `docs/manual-desktop.md`，並把可重建的啟動入口放在 `tools/manual-desktop/`。
+- [ ] 以完整 Ubuntu Desktop 登入 session 完成 GNOME X11／XWayland／native Wayland
+      驗收；本機 GNOME X11 人工通過不代替其他 session／App／發布 gate。
+
 - [x] 2026-09-13 完成 `LINUX_DEVELOPMENT_PLAN.md` 第 5.1 節的基本 configure／GNU Make
       入口：平行建置、check、source-directory／out-of-source、prefix／libdir／datadir、
       編譯環境旗標、DESTDIR、manifest install／uninstall、clean／distclean 與 source
@@ -1081,7 +1138,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       ASan/UBSan、configure／GNU Make source gate、完整 staged suite 22/22，以及
       24.04 套件初裝／升級各 21 個鍵盤案例、重裝後 22 案全數通過；GNOME／Wayland
       與 hosted workflow 仍待驗證。
-- [x] 2026-09-13 依 Windows TraditionalMandarin 補齊 Linux engine 的逐音節連續輸入與
+- [x] 2026-09-13 先依 macOS TraditionalMandarin、再以 Windows TSF 交叉檢查，補齊
+      Linux engine 的逐音節連續輸入與
       錯誤狀態保護：五布局候選開啟時，下一個合法 reading key 先提交目前反白字再開始
       新 reading；無效一般鍵與查無候選會保留 reading 並回報錯誤提示訊號，Ctrl／Alt
       應用程式快捷鍵維持放行。L1 合成資料覆蓋五布局、無效鍵、查無候選及快捷鍵；新增
@@ -1094,8 +1152,17 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       重啟讀回與錯誤路徑無崩潰已納入 24 案。Ubuntu 22.04／24.04 最低建置均通過，
       24.04 單次 `.deb` 亦確認 runtime dependency 為 `libcanberra0t64` 並建議安裝
       `libcanberra-pulse`；真正可聽效果仍待 GNOME 音訊 session 驗收。
-- [x] 2026-09-13 補齊 T03 注音編輯／取消邊界：先由 Windows
-      `OVIMTraditionalMandarin` 與 PlainVanilla candidate event flow 固定 golden，
+- [x] 2026-09-13 依 macOS TraditionalMandarin 行為、再用 Windows TSF 交叉檢查，將
+      五布局 reading 中的無效裸 `\` 與 `Ctrl+C` 加入同一批 L1 與 installed
+      Fcitx→GTK3 X11 T02：普通無效鍵被吃掉並提示錯誤、快捷鍵放行，兩者都保留
+      reading，隨後各布局仍精確提交「麻馬罵嘛」。五個 targeted X11 案例及完整 warm
+      `ci/dev.sh verify` 的 CTest 2/2、X11 30/30 均在 WSL2 rootless container 通過；
+      Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級各為 29/29，移除／
+      重裝後含設定視窗為 30/30。package gate 同時發現 T09 英文負控制依賴 X11 key-up
+      時序的偶發差異，改為正負控制都先清除可能殘值後，第二次完整 lifecycle 已通過。
+- [x] 2026-09-13 補齊 T03 注音編輯／取消邊界：先由 macOS `OpenVanillaController`、
+      `OVIMTraditionalMandarin` 與 PlainVanilla candidate event flow 固定 golden，再以
+      Windows TSF 交叉檢查，
       L1 覆蓋空狀態 pass-through、reading 逐音 Backspace／整段 Escape、一般候選
       Backspace 關窗後只退最後一音，以及候選 Escape 清空。新增 installed-addon
       X11/GTK3 案例先讓空狀態 Backspace 刪除 App 的 `=`，再交錯兩種 Backspace 與兩種
@@ -1104,12 +1171,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       preview 初裝、release 升級各為 26/26，移除／重裝後含設定視窗為 27/27。
       Ubuntu 22.04／Fcitx 5.0.14 的 build、CTest 2/2 與 staged install 亦通過；GNOME、
       native Wayland／XWayland 與多 App T03 仍待驗收。
-- [x] 2026-09-13 補齊 T09 修飾鍵、repeat 與 key-up 邊界：依 Windows
-      `KeyKeyEngineSession::wantsKey` 與 TSF control-key 白名單，L1 驗證 reading／一般
+- [x] 2026-09-13 補齊 T09 修飾鍵、repeat 與 key-up 邊界：先依 macOS
+      TraditionalMandarin／PlainVanilla event flow，再以 Windows
+      `KeyKeyEngineSession::wantsKey` 與 TSF control-key 白名單交叉檢查；L1 驗證 reading／一般
       候選中的 Ctrl+C、Alt+F、Super+L、Ctrl+Left、repeat，以及關聯詞與候選選字鍵的
       release 不會誤提交或破壞狀態。installed-addon X11/GTK3 案例長按 `Ctrl+\` 一秒後
       只切換一次，再於 reading／候選中送 Ctrl+C、Alt+F，精確提交 `x中文`；
-      `keyboard-us` 負控制為 `\x5j/ 1jp61`（先放 Ctrl 時裸反斜線交給 App）。測試先重現
+      正負控制先以同一組 `Ctrl+A`／Backspace 清除長按時序可能留下的裸反斜線，
+      `keyboard-us` 負控制固定為 `x5j/ 1jp61`。測試先重現
       X11 repeat 未標記導致反覆切換，
       Fcitx state 改以實體 backslash press/release latch 修正。完整 `ci/dev.sh verify`
       為 CTest 2/2、X11 28/28；Ubuntu 24.04 package lifecycle 的 preview 初裝、release

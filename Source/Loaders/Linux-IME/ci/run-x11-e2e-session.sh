@@ -1020,38 +1020,38 @@ fi
 if case_selected T02-X11-GTK3-BOPOMOFO-STANDARD; then
   set_bopomofo_layout Standard
   run_case T02-X11-GTK3-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
-    麻馬罵嘛 'a861a831a841a871' \
+    麻馬罵嘛 'a8\61a831a841a871' \
     'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
-    a 8 6 1 a 8 3 1 a 8 4 1 a 8 7 1
+    a 8 backslash ctrl+c 6 1 a 8 3 1 a 8 4 1 a 8 7 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-ETEN; then
   set_bopomofo_layout ETen
   run_case T02-X11-GTK3-BOPOMOFO-ETEN chichi77-keykey-bopomofo \
-    麻馬罵嘛 'ma21ma31ma41ma11' \
+    麻馬罵嘛 'ma\21ma31ma41ma11' \
     'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
-    m a 2 1 m a 3 1 m a 4 1 m a 1 1
+    m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 1 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-ETEN26; then
   set_bopomofo_layout ETen26
   run_case T02-X11-GTK3-BOPOMOFO-ETEN26 chichi77-keykey-bopomofo \
-    麻馬罵嘛 'maf1maj1mak1mad1' \
+    麻馬罵嘛 'ma\f1maj1mak1mad1' \
     'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
-    m a f 1 m a j 1 m a k 1 m a d 1
+    m a backslash ctrl+c f 1 m a j 1 m a k 1 m a d 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-HSU; then
   set_bopomofo_layout Hsu
   run_case T02-X11-GTK3-BOPOMOFO-HSU chichi77-keykey-bopomofo \
-    麻馬罵嘛 'myd1myf1myj1mys1' \
+    麻馬罵嘛 'my\d1myf1myj1mys1' \
     'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
-    m y d 1 m y f 1 m y j 1 m y s 1
+    m y backslash ctrl+c d 1 m y f 1 m y j 1 m y s 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN; then
   set_bopomofo_layout HanyuPinyin
   run_case T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN chichi77-keykey-bopomofo \
-    麻馬罵嘛 'ma21ma31ma41ma51' \
+    麻馬罵嘛 'ma\21ma31ma41ma51' \
     'z,zh,m,ma,ma2,ma3,ma4,ma5' \
     z h BackSpace BackSpace \
-    m a 2 1 m a 3 1 m a 4 1 m a 5 1
+    m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 5 1
 fi
 if case_selected T03-X11-GTK3-BOPOMOFO-EDIT-CANCEL; then
   set_bopomofo_layout Standard
@@ -1173,9 +1173,10 @@ if case_selected T09-X11-GTK3-MODIFIER-PASSTHROUGH; then
   set_toggle_with_control_backslash True
   run_case T09-X11-GTK3-MODIFIER-PASSTHROUGH \
     chichi77-keykey-bopomofo \
-    'x中文' '\x5j/ 1jp61' \
+    'x中文' 'x5j/ 1jp61' \
     'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨㄣˊ' \
-    ctrl-down backslash-down wait-1000ms ctrl-up backslash-up x \
+    ctrl-down backslash-down wait-1000ms ctrl-up backslash-up \
+    ctrl+a BackSpace x \
     ctrl+backslash \
     5 ctrl+c alt+f j slash space ctrl+c alt+f 1 \
     j p 6 ctrl+c alt+f 1

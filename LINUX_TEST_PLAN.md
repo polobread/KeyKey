@@ -35,7 +35,8 @@ Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，T01 以 Standard `5j/` 選「中」；T0
 在 Standard、ETen、ETen26、Hsu、Hanyu Pinyin 五種配置逐鍵輸入二、三、
 四、輕聲的「麻馬罵嘛」，固定 ETen26／Hsu 複用鍵的消歧中間態，漢語拼音
 另驗證不完整 `zh` 依序退格為 `z` 與空 preedit；五種配置都由聲調鍵立即開啟候選，
-不再多按 Space。T01 另以 `5j/` 開候選後直接輸入
+不再多按 Space，且每種配置都在第一個 reading 中送裸 `\` 與 `Ctrl+C`，確認無效鍵
+不漏入 App、快捷鍵交回 App 並保留 reading，之後仍選出「麻」。T01 另以 `5j/` 開候選後直接輸入
 下一 reading `jp6`，精確提交「中文」，並在 `ㄓ` reading 中送 `=`／`Ctrl+C` 後繼續
 提交「中」，確認無效一般鍵不漏入 App、快捷鍵不破壞組字；T03 另驗證空狀態
 Backspace 交回 GTK 刪除 App 文字、reading 中 Backspace
@@ -51,8 +52,9 @@ Escape 清除後可重新組字；整段只提交「中文麻」，沒有殘留 
 Shift 切換，覆蓋有 reading 時轉英文的清除、Caps Lock、英文全／半形、
 長按 Shift 不切換及切回中文；第二案關閉 `Ctrl+\` 選項後驗證快捷鍵交回
 GTK3，KeyKey 狀態仍是中文；T09 再長按 `Ctrl+\` 一秒驗證只切換一次，切回中文後
-在 reading 與候選期間送 Ctrl+C／Alt+F，仍精確提交 `x中文`，`keyboard-us` 負控制為
-`\x5j/ 1jp61`；T10 在第一欄候選開啟時，依 GTK host 回報的 widget geometry 以真實
+先以兩邊相同的 `Ctrl+A`／Backspace 清除 X11 repeat 時序可能留下的裸反斜線，再於
+reading 與候選期間送 Ctrl+C／Alt+F，仍精確提交 `x中文`，`keyboard-us` 負控制為
+`x5j/ 1jp61`；T10 在第一欄候選開啟時，依 GTK host 回報的 widget geometry 以真實
 滑鼠點擊第二欄，再以 Shift+Tab 切回，依序核對兩欄
 preedit 清除及獨立提交「中／文」，候選開啟時關閉 client 後確認 Fcitx/addon 存活，
 重啟 Fcitx 再由新 client 選出「中」，同樣含 literal 負控制；T11 先依 macOS、再比對
@@ -96,6 +98,28 @@ Ubuntu 24.04 的目前 slice 也已用 debhelper 拆成架構無關的
 啟動成本；dependency、ELF、安裝清單、資料 hash、授權及移除後
 不碰個人設定一併通過。這是 T14 的第一段 package lifecycle 證據，不代表真實舊版
 升級、GNOME session、完整功能或正式 release package 已驗收。
+
+2026-09-14 的 WSL2 Ubuntu 24.04.4 手動 smoke 已由使用者在 WSLg XWayland／GTK3 gedit
+確認套件可經 Fcitx 5.1.7 輸入中文。此環境在關閉 Fcitx X11 候選窗後會留下約一秒
+視覺殘影，與 `microsoft/wslg#1495` 的 `UnmapWindow` A/B 診斷相同；文字與 engine state
+已先完成，不列成 KeyKey 效能失敗，也不能當成 GNOME/XWayland 視窗通過。T06／T07 的
+候選顯示、切換與立即隱藏仍須在真正 Ubuntu Desktop session 驗收。
+
+同日另於 WSL Ubuntu 啟動獨立 GNOME Shell 46／Mutter／TigerVNC X11 `:21`，以
+noVNC 本機瀏覽器顯示，使用相同已安裝的 addon。專用 GTK3 欄位先核對每個注音
+preedit，再以 XTest 送 `dj941` 與 `Shift+1`，三次精確提交「快樂」；另一流程先送
+`d`／Space，再十次以 `d` 提交目前「ㄎ」並開始下一 reading，間隔 Space 重開候選，
+精確得到十個「ㄎ」。這 13 次 GTK commit 為 0.72–1.88 ms，觀察到 X11 已隱藏的時間
+為 4.27–6.30 ms，每次剩餘 mapped 候選窗為 0。此時間含跨行程與觀測輪詢成本，
+不是效能 SLA。第一個關聯選字與最後一個「ㄎ」另擷取候選區域：約 59 ms 時已改畫，
+再過 500 ms 像素一致。切到 `keyboard-us` 後相同關聯鍵序精確得到 `dj941!`。
+證據留在 `Source/Loaders/Linux-IME/out/manual-vnc/popup-timing-20260914-011529.json`
+與同目錄 before／after PNG；本機 web 連結已從 Windows 確認 HTTP 200。這只補上
+隔離 GNOME X11 診斷。同日使用者在此瀏覽器桌面確認一秒延遲與多重殘窗解決，
+人工試打成功。後續重現及交付步驟固定見
+[Ubuntu 手動試打交接](Source/Loaders/Linux-IME/docs/manual-desktop.md)，啟動入口
+已置於版控的 `tools/manual-desktop/`。不增加正式 30 案計數，不代表 native Wayland、
+完整登入／桌面服務或發布 gate 通過。
 
 Ubuntu 22.04 的兩個對應 `.deb` 亦已在 Fcitx 5.0.14 userspace 建置，並於另一個
 不含開發標頭的乾淨 runtime container 完成安裝、檔案／資料 hash、ELF dependency、
@@ -200,7 +224,7 @@ commit hash。Linux 候選學習已排除，不建立相關 fixture；要測關�
 | ID | 流程 | 必要 assertion |
 |---|---|---|
 | T01 | 注音依序 `5` → `j` → `/` → Space → 選「中」；候選開啟時直接接下一 reading；reading 中送無效鍵 | reading 為 `ㄓ` → `ㄓㄨ` → `ㄓㄨㄥ`；選字後 App 精確為「中」、preedit 清空、只 commit 一次；下一 reading 先提交反白字；無效一般鍵保留 reading 且不漏入 App |
-| T02 | Standard、ETen、ETen26、Hsu、Hanyu Pinyin | 五布局皆先依 macOS、再比對 Windows 行為驗證 reading、聲調鍵立即開候選、連續輸入、錯誤鍵與設定保存；不能只用 Standard 結果代替 |
+| T02 | Standard、ETen、ETen26、Hsu、Hanyu Pinyin | 五布局皆先依 macOS、再比對 Windows 行為驗證 reading、聲調鍵立即開候選、連續輸入、錯誤鍵與設定保存；L1 與 installed Fcitx→GTK3 X11 已逐布局驗證裸 `\` 被吃掉並提示錯誤、`Ctrl+C` 交回 App，兩者都不破壞 reading；不能只用 Standard 結果代替 |
 | T03 | reading 中 Backspace／Esc；有候選時 Backspace／Esc；空白狀態再按 | macOS 原始碼 golden 先固定，再以 Windows 交叉檢查；L1 與 X11/GTK3 已驗證逐音退格、整段取消、空狀態 pass-through，沒有殘留注音或誤刪 App 已提交文字；GNOME／Wayland 與多 App 仍待驗收 |
 | T04 | 倉頡既有垂直切片回歸 | F03 不在 Windows 第一階段基線；現有案例保護既有實作與擴充結構，目前不繼續功能開發、不列 parity blocker |
 | T05 | 簡易既有垂直切片回歸 | F04 不在 Windows 第一階段基線；現有案例保護既有實作與擴充結構，目前不繼續功能開發、不列 parity blocker |

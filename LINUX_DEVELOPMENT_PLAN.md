@@ -467,7 +467,8 @@ Fcitx 5 addon。Rancher Desktop container 已在 Ubuntu 24.04（Fcitx 5.1.7）�
 build 亦已通過。Ubuntu 24.04 x86_64 另以 Xvfb、獨立 D-Bus、Fcitx 5 與 GTK 3 host
 完成三十個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
 五種注音配置的 T02 鍵序皆以二、三、四、輕聲選出「麻馬罵嘛」，
-漢語拼音並清除不完整 `zh`；倉頡 `a` 選「日」，另驗證直接標點、查無碼清除與
+並在第一個 reading 中以裸 `\` 與 `Ctrl+C` 驗證無效鍵／快捷鍵不破壞組字，
+漢語拼音另清除不完整 `zh`；倉頡 `a` 選「日」，另驗證直接標點、查無碼清除與
 單一候選提交為「，用」，並以 `a?`／`a*` 萬用字元提交「昌日」；簡易 `a`
 選第二候選「曰」，另驗證兩碼自動候選、連續
 輸入、單一候選及標點候選為「明銖䍤、」；並以 PageDown、Down、Enter 從注音第二頁
@@ -491,7 +492,8 @@ migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫
 兩者雖不在 Windows 第一階段基線，既有功能、註冊與測試均保留作額外功能與後續擴充。
 T02 已覆蓋五配置的二、三、四、輕聲；各聲調鍵會依 macOS 行為立即開候選，
 再以 Windows 交叉檢查，不需再按
-Space，並覆蓋漢語拼音不完整輸入退格。五種配置皆屬 Windows
+Space，並覆蓋漢語拼音不完整輸入退格；五配置也都依相同參考順序驗證 reading 中
+裸 `\` 被吃掉並提示錯誤、`Ctrl+C` 放行，兩者之後仍能完成選字。五種配置皆屬 Windows
 對標範圍。2026-09-13 已在 Linux engine 補上五布局候選開啟時直接開始下一音節，以及
 無效鍵／查無候選保留 reading 並回報錯誤提示訊號；Fcitx→GTK3 新增「中文」連續輸入
 與 `=`／`Ctrl+C` 錯誤恢復兩案並使完整 X11 suite 達 24/24。Fcitx adapter 已把
@@ -526,7 +528,8 @@ Ctrl／Alt／Super 與 Ctrl+方向鍵不由注音引擎
 處理，key release 不可選字或重複提交；關聯詞在 modified key press 時關閉後放行，release
 則不改狀態。L1 已覆蓋 reading、一般候選與關聯詞的 press／release／repeat；新增
 installed-addon X11/GTK3 案例長按 `Ctrl+\` 一秒只切換一次，並在 reading／候選中送
-Ctrl+C、Alt+F 後精確提交 `x中文`，負控制為 `\x5j/ 1jp61`。這項測試曾實際抓到 X11
+Ctrl+C、Alt+F 後精確提交 `x中文`；長按後先在正負控制都以 `Ctrl+A`／Backspace 清除
+X11 repeat 時序可能留下的裸反斜線，負控制固定為 `x5j/ 1jp61`。這項測試曾實際抓到 X11
 repeat key-down 沒有 Fcitx `Repeat` state 而反覆切換的問題，現以實體 backslash
 press/release latch 修正；先放 Ctrl 所觸發的裸 backslash 重送也會持續被抑制到 key-up。
 更新後完整驗證為 CTest 2/2、X11 28/28；Ubuntu 24.04
@@ -557,8 +560,21 @@ Home／End 可跳首尾，無效候選編輯鍵也不漏入 App。真鍵盤流�
 build／CTest／staging 亦通過；Ubuntu 24.04 `.deb` lifecycle 的 preview 初裝與 release
 升級各為 29/29，移除／重裝後含設定視窗為 30/30，dependency、資料 hash、移除與設定
 sentinel 亦全數通過。滑鼠 selection、GTK4／Qt／瀏覽器、GNOME 與 Wayland 仍待驗收。
-這不是 GNOME session；P0 所要求的 native Wayland／XWayland、完整桌面/App、popup
-與 hosted runner 實證仍未完成。
+2026-09-14 將同一 release-candidate 套件實裝到 WSL2 Ubuntu 24.04.4 後，使用者已在
+WSLg XWayland 的 GTK3 gedit 經 Fcitx 5.1.7 確認中文輸入；終止候選後約一秒的視窗殘影
+已對應到 `microsoft/wslg#1495` 的已知 `UnmapWindow` 顯示問題，不是 KeyKey commit 或
+候選 state 延遲，故不以 engine workaround 處理，也不把此結果當作 GNOME popup 驗收。
+同日新增獨立 GNOME Shell／TigerVNC X11 與 localhost noVNC 診斷桌面，沿用同一
+已安裝 addon。三次「快樂」與十次「ㄎ」連打皆在約 4–7 ms 觀察到候選隱藏，
+兩個候選區域的約 59 ms 畫面已清除且半秒後像素一致，英文負控制通過。這補上
+隔離 GNOME X11 的局部證據；同日使用者在瀏覽器端確認問題解決、試打成功。
+後續在 Windows／WSL 提供人工試打時優先使用
+[固定交接流程](Source/Loaders/Linux-IME/docs/manual-desktop.md)，版控 launcher 位於
+`tools/manual-desktop/`。完整 GNOME session 及 native Wayland 仍未完成，詳細量測
+邊界見測試計畫。
+先前的 container／WSLg 單窗測試不具備完整 GNOME session；新增的獨立 X11 診斷也
+尚未完成 P0 所要求的 native Wayland／XWayland、完整桌面/App、popup 與 hosted
+runner 實證。
 
 | 階段 | 工作 | 出場條件 |
 |---|---|---|

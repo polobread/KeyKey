@@ -52,7 +52,8 @@ The initial vertical slice provides:
   shortcut/list behavior;
 - an installed-package X11 E2E test that sends physical key events into a real
   GTK 3 entry and verifies Standard Bopomofo → `中`, all five layouts and all
-  four explicit tones → `麻馬罵嘛`, candidate-to-next-reading continuous input
+  four explicit tones → `麻馬罵嘛`, with every layout preserving its reading
+  across an invalid bare `\` and a passed-through `Ctrl+C`, candidate-to-next-reading continuous input
   → `中文`, invalid `=` plus `Ctrl+C` recovery → `中`, incomplete Pinyin backspace recovery,
   macOS-first, Windows-cross-checked empty/reading/candidate Backspace and Escape
   boundaries → `中文麻`,
@@ -67,7 +68,8 @@ The initial vertical slice provides:
   rejection, and disabled-shortcut pass-through, plus
   a modifier-boundary flow that holds `Ctrl+\` for one second without repeated
   toggles and preserves active readings/candidates across `Ctrl+C` and `Alt+F`,
-  committing exact `x中文`, plus
+  clears any X11 key-repeat residue with the same application edit sequence in
+  both controls, and commits exact `x中文`, plus
   a two-entry input-context lifecycle flow that clears the first entry's
   candidate preedit after a geometry-derived pointer click focuses the second,
   independently commits `文` there,
@@ -324,6 +326,23 @@ directory under `out/stage`. To exercise the ARM64 preview build, run
 checks. A container does not provide the GNOME Wayland session needed for
 desktop E2E acceptance.
 
+Likewise, individual Linux windows shown through WSLg are useful for a manual
+package/typing smoke test, but they are not an Ubuntu Desktop session. WSLg has
+a [known X11/XWayland issue](https://github.com/microsoft/wslg/issues/1495) in
+which an Fcitx Classic UI candidate window remains visually present for about
+one second after it has already been unmapped. Do not compensate for that
+compositor artifact in the KeyKey engine; candidate show/hide timing must be
+accepted in real GNOME X11, XWayland, and native Wayland sessions.
+
+For interactive testing on a Windows/WSL host, use the
+[manual GNOME desktop runbook](docs/manual-desktop.md) and the tracked launcher
+under `tools/manual-desktop/`. It starts a separate GNOME/TigerVNC X11 desktop,
+opens gedit with Fcitx already set to Bopomofo, and serves noVNC on localhost.
+On 2026-09-14 the user confirmed this environment resolved both the one-second
+candidate ghost and the accumulated popups during rapid typing. This is a
+validated manual X11 test environment, not a change to the product engine or
+evidence for native Wayland acceptance.
+
 The Ubuntu 24.04 image can also run the current L3 installed X11/GTK 3 typing
 test under Xvfb:
 
@@ -341,9 +360,11 @@ Shift hold, Caps Lock, English full-width input, and disabled-shortcut
 pass-through. A separate modifier case holds `Ctrl+\` for one second, switches
 back to Chinese, and sends `Ctrl+C` and `Alt+F` through active reading and
 candidate states before committing exact `x中文`; its literal negative control
-is `\x5j/ 1jp61`: releasing Ctrl first makes the unowned physical backslash
-reach the client. Super-key behavior remains an engine-level check here because
-Xvfb has no GNOME window manager to own desktop shortcuts. The full-width case
+is `x5j/ 1jp61`. Both controls first clear any literal backslash that X11 may
+deliver between releasing Ctrl and releasing the physical backslash, so the
+assertion does not depend on autorepeat timing. Super-key behavior remains an
+engine-level check here because Xvfb has no GNOME window manager to own desktop
+shortcuts. The full-width case
 verifies the exact GTK text `Ａ！～　`, while the English-keyboard control
 receives ` A!~ `. The conversion case selects `臺` and `灣`, verifies committed
 `台湾`, and uses literal `w962j0 1` as its negative control.
