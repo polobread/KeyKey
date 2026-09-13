@@ -305,7 +305,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   因此 `ci/dev.sh source` 在隔離 container 內以 root 跑測試，再由 distclean／精確的
   `out/` 路徑清理；不可改用 host 的 sudo 或放寬 Docker socket。24.04 system E2E 會先
   拒絕覆寫既有 `/usr/local` 目標，再暫裝、跑 T01 真打字，最後依 install manifest
-  卸載。2026-09-13 local amd64 已通過，含同一 commit 的 2.0 MB source tarball 在無
+  卸載。`/usr/local` 在不同 Fcitx build 不保證同時位於 addon 與 XDG data 的內建搜尋
+  路徑，system E2E 必須依 configure layout 明示 `FCITX_ADDON_DIRS` 與 `XDG_DATA_DIRS`；
+  前者是取代而非只附加內建 addon 目錄，必須一併加入 Fcitx5Core pkg-config 回報的
+  system libdir 下 `fcitx5`，否則連 D-Bus／XCB addon 都找不到，Fcitx 不會就緒。
+  `/usr` 安裝則使用發行版原生位置。2026-09-13 local amd64 已通過，含同一 commit 的 2.0 MB source tarball 在無
   `.git`／無 cache 解壓目錄重建；22.04 與兩個 hosted job 尚未執行。
 - **探測 Fcitx D-Bus 就緒不能先呼叫 `fcitx5-remote`**：它會透過 D-Bus activation
   啟動第二個 Fcitx 並搶走名稱，使測試中的明確 PID 退出。先對 bus daemon 呼叫

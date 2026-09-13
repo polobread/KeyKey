@@ -367,8 +367,9 @@ make DESTDIR="$PWD/out/source-stage" install
 環境編譯旗標、source tarball 產生與 Ubuntu 22.04／24.04 CI gate。Ubuntu 24.04
 local amd64 container 已通過兩種 build、2/2 CTest、DESTDIR、含空白的自訂路徑、
 重新 configure、卸載保留 sentinel、同一 commit 的 2.0 MB source tarball 在無 `.git`
-與無 cache 的解壓目錄重建，以及預設 `/usr/local` 真安裝後的 Fcitx 5 → GTK 3 X11
-注音逐鍵輸入與 manifest 卸載。Ubuntu 22.04 與 24.04 hosted CI 仍待執行；`/usr`／
+與無 cache 的解壓目錄重建，以及預設 `/usr/local` 真安裝、設定明示 session 搜尋路徑
+後的 Fcitx 5 → GTK 3 X11 注音逐鍵輸入與 manifest 卸載。Ubuntu 22.04 與 24.04 hosted
+CI 仍待執行；`/usr`／
 任意自訂 prefix 的實際打字、升級／重裝及其餘 active Ubuntu 尚未完成，所以
 T14-SOURCE 與 P4／P5 不標成全部通過。
 

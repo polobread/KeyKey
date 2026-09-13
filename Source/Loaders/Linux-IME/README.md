@@ -88,8 +88,21 @@ The default prefix is `/usr/local`. A real install therefore uses
 `sudo make install`; `sudo make uninstall` removes only files recorded in that
 build's CMake install manifest. It does not remove Fcitx user configuration,
 learning data, or unrelated files, and it never selects an input method for
-the user. Restart Fcitx after installation, then add one of the three chichi77
-KeyKey input methods with the normal Fcitx configuration tool.
+the user. Some Fcitx builds do not include `/usr/local` in every compiled-in
+search path, so set the addon and data roots in the desktop session before
+restarting Fcitx:
+
+```sh
+fcitx_system_libdir=$(pkg-config --variable=libdir Fcitx5Core)
+export FCITX_ADDON_DIRS="/usr/local/lib/fcitx5:$fcitx_system_libdir/fcitx5${FCITX_ADDON_DIRS:+:$FCITX_ADDON_DIRS}"
+export XDG_DATA_DIRS="/usr/local/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+fcitx5 -r -d
+```
+
+Then add one of the three chichi77 KeyKey input methods with the normal Fcitx
+configuration tool. Put the variables in the desktop session environment when
+Fcitx is started through D-Bus or the desktop; an unrelated terminal does not
+change an already-running Fcitx process.
 
 Use `./configure --prefix=/usr` for a distribution-style system install.
 Do not overlay files owned by the `fcitx5-chichi77-keykey` or
@@ -111,20 +124,20 @@ make -j2
 make check
 ```
 
-For a nonstandard prefix outside `/usr/local` and `/usr`, launch Fcitx with the
-reported addon and data roots in its session environment. For example, with
+For another nonstandard prefix, use the directories printed by `configure` in
+the same session environment. For example, with
 `--prefix=/opt/keykey --libdir=lib --datadir=share`:
 
 ```sh
-export FCITX_ADDON_DIRS="/opt/keykey/lib/fcitx5${FCITX_ADDON_DIRS:+:$FCITX_ADDON_DIRS}"
+fcitx_system_libdir=$(pkg-config --variable=libdir Fcitx5Core)
+export FCITX_ADDON_DIRS="/opt/keykey/lib/fcitx5:$fcitx_system_libdir/fcitx5${FCITX_ADDON_DIRS:+:$FCITX_ADDON_DIRS}"
 export XDG_DATA_DIRS="/opt/keykey/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 fcitx5 -r -d
 ```
 
-Set these variables in the desktop session, not only in an unrelated terminal,
-when Fcitx is started through D-Bus or the desktop. The Ubuntu 24.04 gate also
-performs a temporary default `/usr/local` install, loads the addon in Fcitx 5,
-types through GTK 3 on X11, and uninstalls it through the manifest.
+The Ubuntu 24.04 gate performs a temporary default `/usr/local` install, applies
+those explicit session search paths, loads the addon in Fcitx 5, types through
+GTK 3 on X11, and uninstalls it through the manifest.
 
 Release maintainers can create the Linux source archive and checksum from a
 committed revision, then rebuild the archive without a Git directory or prior

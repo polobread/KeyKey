@@ -3,6 +3,7 @@ set -euo pipefail
 
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 linux_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd)
+repository_root=$(CDPATH='' cd -- "$linux_dir/../../.." && pwd)
 test_root=${KEYKEY_SOURCE_ARCHIVE_TEST_ROOT:-$linux_dir/out/source-archive-test}
 
 case "$test_root" in
@@ -33,7 +34,8 @@ if [[ -n "${KEYKEY_SOURCE_ARCHIVE:-}" ]]; then
 else
   archive="$test_root/chichi77-keykey-linux-$version.tar.gz"
   "$script_dir/create-source-archive.sh" "$archive"
-  source_revision=$(git -C "$linux_dir" rev-parse HEAD)
+  source_revision=$(git -c "safe.directory=$repository_root" \
+    -C "$repository_root" rev-parse HEAD)
 fi
 
 (

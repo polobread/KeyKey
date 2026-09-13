@@ -5,8 +5,9 @@ script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 linux_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 repository_root=$(CDPATH='' cd -- "$linux_dir/../../.." && pwd)
 revision=${2:-HEAD}
+git_command=(git -c "safe.directory=$repository_root" -C "$repository_root")
 
-version=$(git -C "$repository_root" show \
+version=$("${git_command[@]}" show \
   "$revision:Source/Loaders/Linux-IME/CMakeLists.txt" |
   sed -n 's/^project(KeyKeyLinux VERSION \([^ ]*\).*/\1/p')
 if [[ -z "$version" ]]; then
@@ -45,7 +46,7 @@ source_paths=(
   Source/Loaders/Linux-IME
 )
 
-git -C "$repository_root" archive \
+"${git_command[@]}" archive \
   --format=tar.gz \
   --prefix="chichi77-keykey-linux-$version/" \
   --output="$archive" \

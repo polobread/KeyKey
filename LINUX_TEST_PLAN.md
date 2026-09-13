@@ -204,8 +204,8 @@ check、install／uninstall log。
 source-directory／out-of-source build、同一 commit 的 2.0 MB source tarball 在無
 `.git`／無 cache 的解壓目錄重建、2/2 CTest、`/usr` 與含空白的自訂
 prefix／libdir／datadir staging、重新 configure、缺失 compiler／未知選項、manifest
-卸載、sentinel 保留、clean 後重建及 distclean 隔離；另以預設 `/usr/local` 真安裝載入
-Fcitx 5，通過 T01 X11/GTK 3 注音與英文負控制後解除安裝。這是
+卸載、sentinel 保留、clean 後重建及 distclean 隔離；另以預設 `/usr/local` 真安裝、
+明示 session 搜尋路徑後載入 Fcitx 5，通過 T01 X11/GTK 3 注音與英文負控制後解除安裝。這是
 T14-SOURCE-BUILD／CONFIG／STAGE／CLEAN 與 INSTALL 的局部證據，不涵蓋
 `/usr`／任意 prefix 真打字、三輸入法完整案例、升級／重裝或其他 Ubuntu；後者仍待
 hosted CI 與 P4／P5，不得將整組 T14-SOURCE 標成通過。

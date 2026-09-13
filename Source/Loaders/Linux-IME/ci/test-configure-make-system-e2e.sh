@@ -65,11 +65,24 @@ done
 make -C "$build_root" install
 installed=true
 
+system_fcitx_libdir=$(pkg-config --variable=libdir Fcitx5Core)
+if [[ -z "$system_fcitx_libdir" ]]; then
+  echo "Fcitx5Core did not report its system library directory." >&2
+  exit 1
+fi
+addon_dirs="$prefix/$libdir/fcitx5:$system_fcitx_libdir/fcitx5"
+if [[ -n "${FCITX_ADDON_DIRS:-}" ]]; then
+  addon_dirs+=":$FCITX_ADDON_DIRS"
+fi
+data_dirs="$prefix/$datadir:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+
 KEYKEY_BUILD_DIR="out/build/configure-make-system-e2e/.keykey-configure-build" \
 KEYKEY_E2E_INSTALL_SOURCE=system \
 KEYKEY_E2E_ARTIFACT_DIR="$artifact_dir" \
 KEYKEY_E2E_CASES=T01-X11-GTK3-BOPOMOFO-STANDARD \
 KEYKEY_E2E_CONFIG_UI=OFF \
+FCITX_ADDON_DIRS="$addon_dirs" \
+XDG_DATA_DIRS="$data_dirs" \
   "$script_dir/run-x11-e2e.sh"
 
 manifest="$inner_build/install_manifest.txt"
