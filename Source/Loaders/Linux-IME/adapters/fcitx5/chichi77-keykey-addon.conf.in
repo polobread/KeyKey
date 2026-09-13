@@ -1,0 +1,10 @@
+[Addon]
+Name=chichi77 KeyKey
+Name[zh_TW]=琦琦輸入法
+Name[zh_CN]=琦琦输入法
+Category=InputMethod
+Version=@PROJECT_VERSION@
+Library=chichi77-keykey
+Type=SharedLibrary
+OnDemand=True
+Configurable=False

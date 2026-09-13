@@ -1,0 +1,4 @@
+# These upstream CIN tables are UTF-8 input-method data, not locale-sensitive
+# program text. They must remain byte-for-byte identical to the pinned sources.
+national-encoding @LINTIAN_CONTEXT_OPEN@usr/share/chichi77-keykey/data/bpmf-ext.cin@LINTIAN_CONTEXT_CLOSE@
+national-encoding @LINTIAN_CONTEXT_OPEN@usr/share/chichi77-keykey/data/cj-ext.cin@LINTIAN_CONTEXT_CLOSE@

@@ -1,0 +1,3 @@
+[Behavior]
+ActiveByDefault=True
+ShareInputState=All

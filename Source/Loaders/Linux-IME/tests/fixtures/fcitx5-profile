@@ -1,0 +1,23 @@
+[Groups/0]
+Name=Default
+Default Layout=us
+DefaultIM=chichi77-keykey-bopomofo
+
+[Groups/0/Items/0]
+Name=keyboard-us
+Layout=
+
+[Groups/0/Items/1]
+Name=chichi77-keykey-bopomofo
+Layout=
+
+[Groups/0/Items/2]
+Name=chichi77-keykey-cangjie
+Layout=
+
+[Groups/0/Items/3]
+Name=chichi77-keykey-simplex
+Layout=
+
+[GroupOrder]
+0=Default

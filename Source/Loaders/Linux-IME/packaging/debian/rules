@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CXXFLAGS_MAINT_APPEND = -Wformat -Werror=format-security
+
+%:
+	dh $@ --buildsystem=cmake+ninja --sourcedirectory=Source/Loaders/Linux-IME
+
+override_dh_auto_configure:
+	dh_auto_configure --buildsystem=cmake+ninja \
+		--sourcedirectory=Source/Loaders/Linux-IME -- \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DKEYKEY_BUILD_FCITX5=ON \
+		-DKEYKEY_BUILD_X11_E2E_HOST=OFF \
+		-DKEYKEY_INSTALL_STANDALONE_LICENSE_FILES=OFF
+
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym
