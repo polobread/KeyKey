@@ -31,7 +31,7 @@ make DESTDIR="$PWD/out/source-stage" install
 
 最後一行只做無權限的暫存安裝。要實際安裝改用 `sudo make install`，移除則用
 `sudo make uninstall`；uninstall 只依這次建置的 install manifest 刪除專案檔案，
-不刪除使用者設定、學習資料或其他檔案，也不會自動切換預設輸入法。發行版形式可改用
+不刪除使用者設定、其他使用者資料或其他檔案，也不會自動切換預設輸入法。發行版形式可改用
 `./configure --prefix=/usr`。若系統已安裝 `fcitx5-chichi77-keykey` 或
 `chichi77-keykey-data` 套件，不要直接覆寫套件管理器的檔案；先移除套件，或在回到套件版
 以前先執行 source build 的 `make uninstall`。
@@ -91,7 +91,8 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 
 第一個指令是主要 Ubuntu 24.04 / Fcitx 5 build，第二個守住 Ubuntu 22.04 的最低
 API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3 的 X11 真實逐鍵輸入：五種
-注音配置、倉頡、簡易及各自的英文負控制，並驗證注音設定 schema。這些 one-shot 指令預設建立
+注音配置及各自的英文負控制，並驗證注音設定 schema；目前也保留已排除的倉頡／簡易
+垂直切片回歸，但不代表 Linux 1.2.8 支援。這些 one-shot 指令預設建立
 `linux/amd64` 產物；ARM64 preview 可在指令前設定
 `KEYKEY_DOCKER_PLATFORM=linux/arm64`。Xvfb E2E 是 L3 X11 證據，不等於 GNOME／
 native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
@@ -99,7 +100,7 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 
 後兩個指令用 debhelper 產生依發行版命名的 `chichi77-keykey-data` 與
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
-各跑一次二十個純鍵盤 X11 真實打字案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
+各跑一次二十一個純鍵盤 X11 真實打字案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例；22.04 則跑較省時的套件安裝／移除 smoke。
 這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
 
@@ -377,7 +378,7 @@ make DESTDIR="$PWD/out/source-stage" install
 
 The final command is an unprivileged staging install. Use `sudo make install`
 for the real system install and `sudo make uninstall` to remove only the files
-recorded in that build's install manifest. User settings, learning data, and
+recorded in that build's install manifest. User settings, other user data, and
 unrelated files remain untouched, and installation does not select a default
 input method. Use `./configure --prefix=/usr` for a distribution-style layout.
 Do not overwrite files owned by the `fcitx5-chichi77-keykey` or
@@ -449,7 +450,7 @@ native Wayland desktop typing acceptance. See the
 
 The final two commands create distro-labelled `chichi77-keykey-data` and
 `fcitx5-chichi77-keykey` Debian packages with debhelper. Ubuntu 24.04 also runs
-the twenty keyboard-only X11 cases after install, controlled upgrade, and
+the twenty-one keyboard-only X11 cases after install, controlled upgrade, and
 reinstall. The native Fcitx settings-window click, persistence, restart, and
 typing case runs once after reinstall. These are development artifacts until
 the remaining release gates are complete.

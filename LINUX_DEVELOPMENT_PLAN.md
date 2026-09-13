@@ -2,9 +2,9 @@
 
 狀態：開發中。已建立第一段 Linux-only 引擎、Fcitx 5 外掛、container scripts 與
 `linux-ci.yml`、五種注音鍵盤配置／Fcitx 原生設定、候選鍵盤導覽、標點／符號候選切片、
-`Shift+Space` 全／半形、ASCII 全形對映與繁轉簡單字 filter 切片、
+`Shift+Space` 全／半形、ASCII 全形對映、繁轉簡單字與注音 Big5-HKSCS 候選 filter 切片、
 L3 X11/GTK 3 真實輸入與
-Ubuntu 22.04／24.04 開發用 Debian 套件；尚未完成 GNOME／Wayland、三輸入法的
+Ubuntu 22.04／24.04 開發用 Debian 套件；尚未完成 GNOME／Wayland、注音的
 完整功能、完整視窗、IBus 或正式發布套件。
 
 盤點日期：2026-09-12；原始碼基線：`13696ef`；產品版號來源：`README.md` 標題。
@@ -19,13 +19,16 @@ Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下�
 ## 1. 已確定的產品方向
 
 - Linux 採原生實作，以目前 macOS **範圍內實際可用的功能與視窗**為功能基準。
-  傳統注音、倉頡、簡易三種輸入法都是正式版必備，不是後續選配。
+  2026-09-13 起首版只要求傳統注音；倉頡與簡易不再開發或列為發布條件。
 - **主要支援環境為 Ubuntu Desktop 24.04 LTS + Fcitx 5**，以預設 GNOME 桌面
   作為主要驗收環境，X11、native Wayland 與 XWayland 都要完整測試。功能開發、
   問題修正與自動化覆蓋優先落在這一組，完整範圍見測試計畫的「主要環境完整驗收」。
 - 使用者已排除 F12–F15：迷你計算機、自訂詞／詞庫管理、通用表格／外掛設定、
   一點通與提示／通知視窗。不開發、不加選單或佔位 UI，也不列為 Linux 驗收缺口。
-  F05 內建關聯詞與分類開關、F03 動態頻率、F11 符號面板及 F16 設定／關於仍保留。
+  F05 內建關聯詞與分類開關、F11 符號面板及 F16 設定／關於仍保留。
+- 2026-09-13 使用者另行排除 F03 倉頡、F04 簡易及 Linux 候選學習／動態頻率。
+  已完成的垂直切片暫留作相容性回歸，但不再擴充、不列 parity 缺口或發布支援；
+  其他平台既有功能不更動。
 - 建立新的 Linux-only C++17 引擎、IBus adapter、Fcitx 5 addon，以及原生設定 UI。
   不用 Wine、Electron、WebView 或網頁輸入框包裝成輸入法。
 - **不修改、不搬動、不連結既有 KeyKeyEngine 或 OpenVanilla 核心**。
@@ -39,7 +42,8 @@ Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下�
 - Ubuntu 相容近四年版本，不限於最新版或上游仍在維護的版本。初始採 2022–2026 相容
   視窗，包含 Ubuntu 22.04 LTS；不能為方便使用新 API 而提高最低 OS 要求。
 - 2026-09-13 新增原始碼建置交付要求：支援 `./configure → make → make install`，
-  納入 P4／P5 與 Ubuntu 首版驗收。此入口尚未實作，介面與測試要求見第 5.1 節。
+  納入 P4／P5 與 Ubuntu 首版驗收。薄層入口與 local source gate 已實作，剩餘矩陣與
+  發布測試要求見第 5.1 節。
 - 本批版號、規劃與交接提交作為 1.2.8 開發起點；使用者已要求 commit 與 push。
   Linux workflow、目錄與指令入口均是後續實作項目；正式版本 tag 與套件發布在
   完成實作及驗收後另行執行。
@@ -123,31 +127,33 @@ Fedora 36 的 2022 基線可核對 [官方 ChangeSet](https://fedoraproject.org/
 下表是原始碼盤點，不是 macOS 實機驗收紀錄。接手先對當前 macOS build 操作錄影，
 逐項記錄觸發按鍵、設定預設值、中間狀態與最終文字，形成 `docs/parity.md`。
 範圍內每列須有「來源／macOS 操作證據／Linux 對應／測試 ID／差異／狀態」。
-必備範圍為 F01–F11、F16，共 12 項；不可因為難移植而自行刪除。新增發現先記錄
+必備範圍為 F01–F02、F05–F11、F16，共 10 項。新增發現先記錄
 是否屬於這些項目，不自動擴充到已排除功能。本檔的「完整 parity」均指此核定範圍。
 
 | ID | 功能與視窗 | 已確認的原始碼入口 | Linux 交付要求 |
 |---|---|---|---|
 | F01 | 傳統注音 | `OSX-IMK/CVApplicationController.mm`、`OVIMMandarin` | 單音節 reading、聲調、選字、刪除、取消、連續輸入、Unicode／BIG-5 篩選設定；排序與提交時機對照 macOS |
 | F02 | 五種注音配置 | `OSX/TakaoPhonetic.m`、`TakaoKeyboardLayoutPopUpButton.m` | 標準（Standard）、倚天（ETen）、漢語拼音、倚天26、許氏（Hsu）全部實作；含歧義消解與換配置 |
-| F03 | 倉頡 | `OSX/TakaoCangjie.m`、`OVIMGeneric`、`cj-ext.cin` | 字根顯示、候選、動態頻率、五碼上限／滿碼提交選項、萬用字元、組字錯誤清除、邊打邊找、編碼篩選、標點表等現有選項 |
-| F04 | 簡易（Simplex） | `OSX/TakaoSimplex.m`、`OVIMGeneric`、`simplex-ext.cin` | 頭尾兩碼、滿碼觸發候選、同碼候選、分頁、錯誤處理、邊打邊找與現有設定；不能只改倉頡顯示名稱 |
+| F03 | 倉頡 | `OSX/TakaoCangjie.m`、`OVIMGeneric`、`cj-ext.cin` | **已排除**；既有 Linux 垂直切片只留相容性回歸，不再擴充或宣告支援 |
+| F04 | 簡易（Simplex） | `OSX/TakaoSimplex.m`、`OVIMGeneric`、`simplex-ext.cin` | **已排除**；既有 Linux 垂直切片只留相容性回歸，不再擴充或宣告支援 |
 | F05 | 關聯詞與分類詞庫 | `OVIMMandarin/OVAFAssociatedPhrase.cpp`、`OSX/TakaoPhraseCollections.m` | 提交後顯示後綴、Shift 選詞、接續、去重、來源順序、分類開關及全部關閉；實際作用的輸入模式依 macOS 驗證 |
 | F06 | 直／橫候選窗 | `OSX-IMK/CVVerticalCandidateController.mm`、`CVHorizontalCandidateController.mm` | 選字鍵角標、方向鍵反白、Enter、滑鼠選字、翻頁、空列表、焦點保留、關聯詞樣式 |
 | F07 | 比例與配色 | `OSX/TakaoGlobal.m`、候選 controller | 跟隨顯示器及 75/90/100/125/150/175/200/225/250/300/350%；預設及紫／綠／黃／紅／自訂色，對照實際 UI |
 | F08 | 一般設定與切換 | `OSX/TakaoGlobal.m`、`OSX-IMK/OpenVanillaController.mm` | 模組顯示、Ctrl+反斜線切換、鍵盤配置、提示聲、熱鍵、即時套用與重新登入後保存；保留至少一個輸入法 |
 | F09 | 全／半形與繁轉簡 | `OVOFFullWidthCharacter`、`OVOFHanConvert`、macOS menu | 相同輸出範圍及 filter 順序；字詞映射需對照，不能換一套轉換器就宣稱完全一致 |
-| F10 | 注音修正與標點 | `OVAFBopomofoCorrection`、注音／倉頡標點 `.cin` | 修正開關、全半形標點、組合鍵標點與英文混輸，不能吞掉未配置的應用程式快捷鍵 |
+| F10 | 注音修正與標點 | `OVAFBopomofoCorrection`、注音標點 `.cin` | 修正開關、全半形標點、組合鍵標點與英文混輸，不能吞掉未配置的應用程式快捷鍵 |
 | F11 | 符號／顏文字／常用文字面板 | `OSX-IMK/CVSymbolController.mm`、`CVButtonViewController.mm`、`CVSmileyViewController.mm` | 使用已隨產品提供的分類資料；開關、切頁、點選後送回原輸入欄位，含焦點競態與取消 |
 | F16 | 設定／關於／語系 | `OSX/TakaoPreference_Toolbar.m`、`OSX-IMK/CVAboutController.mm` | 原生設定視窗、版本、授權及必要出處；繁中／簡中／英文、鍵盤操作與可及性 |
 
 已排除項目保留原 ID，避免舊交接編號混淆：
 
+- F03 倉頡、F04 簡易：不再開發完整引擎、設定、filter 或桌面驗收；既有切片不視為
+  1.2.8 支援承諾，是否從安裝產物移除須另有明確產品決定。
 - F12 迷你計算機：不實作算式引擎、互動模式或其 Ctrl+9 入口。
 - F13 自訂詞／詞庫管理：不實作使用者詞編輯、匯入、匯出或管理視窗；
-  不排除 F05 的內建關聯詞資料與分類開關，也不排除倉頡的學習頻率。
+  不排除 F05 的內建關聯詞資料與分類開關。候選學習另依 2026-09-13 決定排除。
 - F14 通用表格與外掛設定：不提供使用者 CIN 安裝／管理、動態外掛與其設定；
-  注音、倉頡、簡易仍需解析產品內建 `.cin`，不能因此刪掉內部字表引擎。
+  注音仍需解析產品內建 `.cin`，不能因此刪掉內部字表引擎。
 - F15 一點通、提示／通知視窗：不實作一點通服務、獨立提示窗或通知視窗。
   輸入必要的 preedit／候選窗屬 F01／F06，設定欄位的基本錯誤提示仍在原視窗內呈現。
 
@@ -190,7 +196,7 @@ Source/Loaders/Linux-IME/
   CMakeLists.txt / CMakePresets.json / README.md / LICENSE.txt
   engine/                 Linux 專用 reading、表格引擎、候選及 filter
   data/                   資料 manifest、來源校驗與 Linux 自有索引工具
-  adapters/ibus/          IBusEngine、component XML、三個 engine metadata
+  adapters/ibus/          IBusEngine、component XML、注音 engine metadata
   adapters/fcitx5/        InputMethodEngine addon、三個 input method metadata
   ui/                     一般／輸入法／內建關聯詞設定、符號與關於視窗
   config/                 schema、預設值、遷移及 XDG 儲存
@@ -213,9 +219,9 @@ Source/Loaders/Linux-IME/
   contract test。不能讓主程式顯示成功、候選點選卻沒有 commit 到 client。
 - 框架處理與 OS 整合有關的中英切換；Linux 熱鍵可設定，先檢查 GNOME／KDE 衝突，
   不直接把所有 macOS Command 換成 Ctrl 或奪取 Super。保留 macOS 操作意圖與文件。
-- 設定存 `$XDG_CONFIG_HOME/chichi77-keykey`，學習頻率資料存
-  `$XDG_DATA_HOME/chichi77-keykey`，可重建索引存 `$XDG_CACHE_HOME/chichi77-keykey`；
-  未設變數時依 XDG 預設值。atomic write、schema version、損毀備援與升級備份必測。
+- 設定存 `$XDG_CONFIG_HOME/chichi77-keykey`，可重建索引存
+  `$XDG_CACHE_HOME/chichi77-keykey`；未設變數時依 XDG 預設值。atomic write、
+  schema version、損毀備援與升級備份必測。Linux 不建立候選學習資料。
 - 候選窗優先使用框架支援的 panel；設定、符號與關於視窗用 Qt 原生實作。
   所有跨程序請求使用 session bus，限定同一使用者與仍有效的 client context；
   使用者換焦點後不可把符號插入另一個 App。
@@ -241,7 +247,8 @@ addon ID、client backend 與 panel provider，驗證登入後啟動、停用及
 
 ### 參考優先序與禁止範圍
 
-1. macOS 現行 loader、設定 UI、模組與真實操作：F01–F11、F16 行為／預設值的權威基準。
+1. macOS 現行 loader、設定 UI、模組與真實操作：F01–F02、F05–F11、F16
+   行為／預設值的權威基準。
 2. Android Java 原生 `BopomofoEngine`、`BopomofoReading`、`CinDictionary`、
    `AssociatedPhraseDictionary`：狀態機與直接讀資料的參考。
 3. iOS Swift `KeyKeyEngine/Sources/KeyKeyEngine`：原生引擎、候選、Unicode、
@@ -258,10 +265,12 @@ addon ID、client backend 與 panel provider，驗證登入後啟動、停用及
 
 ### 資料與授權
 
-- 唯讀來源至少涵蓋 `bpmf-ext.cin`、`bpmf-punctuations.cin`、`cj-ext.cin`、
-  `simplex-ext.cin`、倉頡兩種標點表、`bopomofo-correction.cin`、
+- 必要唯讀來源至少涵蓋 `bpmf-ext.cin`、`bpmf-punctuations.cin`、
+  `bopomofo-correction.cin`、
   `DataSource/McBopomofo/phrase.occ`、公開分類詞庫及分類顯示名稱。
   繁簡映射、符號／常用文字表也要列入來源 manifest；不建立使用者詞匯入格式。
+  既有凍結切片仍會讀 `cj-ext.cin`／`simplex-ext.cin`，直到另有明確移除決定；
+  這不構成繼續開發或發布支援要求。
 - 新寫 Linux 資料解析／索引工具，不直接要求舊 macOS cooker 在 Linux 執行：
   它依賴 Formosa Ruby extension。可採 C++17 建置時生成的自有版本化 SQLite 索引，
   runtime 使用系統 SQLite；候選排序須有明確序號欄，不能依索引自然順序。
@@ -316,7 +325,7 @@ chichi77-keykey-1.2.8.tar.xz
   Arch recipe、Debian source package 與 source RPM 可隨相應工作完成一併提供。
 - 首版不把 IME 本體包成 AppImage／Snap／Flatpak 來替代系統框架安裝；它們不是
   任意主機上可通用的 engine 安裝方案。**Snap／Flatpak 應用程式內能打字**則必須測。
-- 安裝、升級、移除、重裝都測；移除程式保留學習資料／設定，刪個人資料需明確操作。
+- 安裝、升級、移除、重裝都測；移除程式保留設定與其他個人資料，刪個人資料需明確操作。
   APT／DNF repository、AUR／發行版官方收錄與簽章金鑰申請是另案，不自動對外發布。
 
 ### 5.1 原始碼編譯安裝：configure 與 make（基本入口已實作）
@@ -355,7 +364,7 @@ make DESTDIR="$PWD/out/source-stage" install
 - source tarball 必須包含 executable `configure`、CMake 規則、必要測試／腳本、
   全部唯讀字表／詞庫、Linux 資料及授權；安裝開發相依套件後可在無 `.git`、無
   原 checkout／build cache 且停用網路的目錄完成 configure／build／check／staging。
-- 記錄安裝 manifest；解除安裝只處理此次安裝的檔案，保留使用者設定／學習資料及
+- 記錄安裝 manifest；解除安裝只處理此次安裝的檔案，保留使用者設定及
   其他程式的檔案。文件說明與 `.deb` 的衝突偵測及切換流程，避免互相覆寫；從
   原始碼安裝不自動切換預設輸入法。
 - 首先在 Ubuntu 22.04／24.04 驗證，P4 擴至全部 active Ubuntu 版本；ARM64
@@ -448,13 +457,14 @@ context 獨立狀態、嚴格 CIN reader、五種注音布局、Fcitx 原生布�
 Fcitx 5 addon。Rancher Desktop container 已在 Ubuntu 24.04（Fcitx 5.1.7）與 22.04
 （Fcitx 5.0.14）x86_64 userspace 編譯、跑 CTest 並驗證 staged install；24.04 ARM64
 build 亦已通過。Ubuntu 24.04 x86_64 另以 Xvfb、獨立 D-Bus、Fcitx 5 與 GTK 3 host
-完成二十一個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
+完成二十二個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
 五種注音配置的 T02 鍵序皆以二、三、四、輕聲選出「麻馬罵嘛」，
 漢語拼音並清除不完整 `zh`；倉頡 `a` 選「日」，另驗證直接標點、查無碼清除與
 單一候選提交為「，用」，並以 `a?`／`a*` 萬用字元提交「昌日」；簡易 `a`
 選第二候選「曰」，另驗證兩碼自動候選、連續
 輸入、單一候選及標點候選為「明銖䍤、」；並以 PageDown、Down、Enter 從注音第二頁
-選出「妐」；`Shift+Space` 全形流程提交精確 `Ａ！～　`；繁轉簡開啟時逐字選出
+選出「妐」；`Shift+Space` 全形流程提交精確 `Ａ！～　`；Big-5 限制開啟時從
+`ㄝˋ` 過濾後候選選出 `𤦩`；繁轉簡開啟時逐字選出
 真實候選「臺灣」並提交「台湾」；另以 `Ctrl+0`
 開啟真實標點表並按 `1` 選出「，」；六個關聯詞流程以 `Shift+1` 驗證基本詞庫
 「今天」、history-only「臺灣史」、全部關閉後的「臺!」，以及舊逗號設定
@@ -463,13 +473,13 @@ migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫
 `fcitx5-config-qt` 的輸入法與核取方塊，實際點選只開 agriculture-food、保存並重啟後
 逐鍵輸出「作物育種」，同時保存切換前後截圖。各案都有 `keyboard-us` 負控制，
 並確認執行中 Fcitx process 載入 staged `.so`。真正安裝的 Ubuntu 24.04 `.deb`
-在 `1.2.8~preview1` 初裝與升級狀態各跑二十個鍵盤案例，移除後重裝則跑全部二十一案；
+在 `1.2.8~preview1` 初裝與升級狀態各跑二十一個鍵盤案例，移除後重裝則跑全部二十二案；
 套件同時核對 debhelper/lintian、ELF dependency、架構、版本、安裝清單、資料 hash、
 授權檔與使用者設定保留。Ubuntu 22.04 的對應 `.deb` 亦已在 Fcitx 5.0.14 userspace
 建置，並於乾淨 runtime container 通過安裝、移除、重裝及相同的非桌面套件檢查。
-倉頡與簡易已有字根 preedit、基本候選、CIN end-key 標點、單一候選提交、查無碼清除、
-倉頡 `?`／`*` 萬用字元與簡易兩碼自動候選／連續輸入，但尚缺動態頻率及完整設定，不代表
-F03／F04 完成；T02 已覆蓋五配置的二、三、四、輕聲
+倉頡與簡易已有字根 preedit、基本候選等垂直切片，倉頡另有 `?`／`*` 萬用字元；
+2026-09-13 起 F03／F04 已排除，這些只留作相容性回歸，不再擴充或宣告支援。
+T02 已覆蓋五配置的二、三、四、輕聲
 與漢語拼音不完整輸入退格，但更廣的錯誤輸入仍待 macOS baseline 與完整 E2E。
 這不是 GNOME session；P0 所要求的 native Wayland／XWayland、完整桌面/App、popup
 與 hosted runner 實證仍未完成。
@@ -478,19 +488,19 @@ F03／F04 完成；T02 已覆蓋五配置的二、三、四、輕聲
 |---|---|---|
 | P0：證據與風險先行 | 先驗證 Ubuntu 24.04 GNOME + Fcitx 5 的 addon、popup、Qt 回送、三種 session 路徑與 hosted 注入；凍結 macOS baseline，盤點 Ubuntu 版本與最低依賴 | 主環境真 host app 收到測試字、負控制符合預期、addon 身分正確；Ubuntu 22.04 最低 API 與 GNOME 差異有結論 |
 | P1：Linux 引擎骨架與資料 | CMake、授權、native 資料工具、context 契約、五種注音布局 | 不需 GUI 可跑 CTest；真實資料 golden、Unicode／生命週期測試通過，無舊核心 link |
-| P2：三輸入法與 filter | 倉頡、簡易、內建關聯詞、標點、全半形、繁轉簡、注音修正 | F01–F05、F09–F10 對應測試通過；不能到此就宣稱核定範圍的完整 parity |
-| P3：完整 Ubuntu 桌面整合 | 完成 Ubuntu 24.04 + Fcitx 5 全功能／視窗／App／sandbox 驗收，再完成 Ubuntu 內其他 adapter 路徑 | 主環境符合測試計畫完整驗收；F01–F11、F16 狀態明確；GTK/Qt 真打字與視窗流程通過；不加入 F12–F15 |
-| P4：Ubuntu 多版本與安裝 | Ubuntu 近四年矩陣原生 `.deb`、ARM64 preview、乾淨安裝／升級／移除；configure／make 原始碼入口與 source tarball | 9 個 Ubuntu 版本的套件與原始碼安裝路徑皆有正確 dependency、data、授權；source tarball 可獨立重建，安裝後從系統選到三輸入法並打字 |
+| P2：注音功能與 filter | 內建關聯詞、標點、全半形、繁轉簡、注音修正 | F01–F02、F05、F09–F10 對應測試通過；不能到此就宣稱核定範圍的完整 parity |
+| P3：完整 Ubuntu 桌面整合 | 完成 Ubuntu 24.04 + Fcitx 5 全功能／視窗／App／sandbox 驗收，再完成 Ubuntu 內其他 adapter 路徑 | 主環境符合測試計畫完整驗收；F01–F02、F05–F11、F16 狀態明確；GTK/Qt 真打字與視窗流程通過；不加入已排除項目 |
+| P4：Ubuntu 多版本與安裝 | Ubuntu 近四年矩陣原生 `.deb`、ARM64 preview、乾淨安裝／升級／移除；configure／make 原始碼入口與 source tarball | 9 個 Ubuntu 版本的套件與原始碼安裝路徑皆有正確 dependency、data、授權；source tarball 可獨立重建，安裝後從系統選到注音並打字 |
 | P5：Ubuntu CI 與首版驗收 | Ubuntu workflows、release gate、sandbox／應用程式矩陣、文件 | 同一 SHA 的 Ubuntu 正式矩陣全綠且證據齊全；preview 不混入正式保證；由使用者確認可接受差異後發布 |
 | P6：其他發行版 TODO | Ubuntu 完成後再做 Debian 12／13 與 Fedora 36–44 的 adapter、DEB／RPM、桌面與 CI | 各家族重新確認仍在近四年範圍，逐列升格為 active；不得用 Ubuntu ELF binary 直接重包 |
 
 總完成條件：
 
 - [ ] 除核定的版號 metadata 更新外，未改動禁止範圍；四個既有平台的行為與發布路徑保持不變。
-- [ ] 三輸入法在兩 adapter 都可用；F01–F11、F16 功能／視窗逐列有驗收結果。
+- [ ] 注音在兩 adapter 都可用；F01–F02、F05–F11、F16 功能／視窗逐列有驗收結果。
 - [ ] Ubuntu 24.04 GNOME + Fcitx 5 通過最完整測試，X11／native Wayland／XWayland、
       所有核定功能、App／sandbox／UI、安裝升級及穩定性皆有獨立證據。
-- [ ] F12–F15 沒有實作、選單或佔位 UI，亦不作為未完成／待恢復項目。
+- [ ] F03–F04、F12–F15 不作為未完成／待恢復項目；新 UI 不加入其選單或佔位。
 - [ ] Ubuntu 近四年相容窗的每個版本／必要桌面組合通過已安裝套件的實際打字驗證，
       包含 EOL 歷史列，不只測最新版；Debian／Fedora 留在 P6 TODO，不阻擋此前的 Ubuntu 發布。
 - [ ] PR／手動完整測試／release 都有可追溯報告，沒有「用寫入文字代替鍵盤」的假 E2E。

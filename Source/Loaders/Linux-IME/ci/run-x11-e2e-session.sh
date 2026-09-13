@@ -7,6 +7,7 @@ test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
 
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-STANDARD
+  T01-X11-GTK3-BOPOMOFO-BIG5-FILTER
   T02-X11-GTK3-BOPOMOFO-STANDARD
   T02-X11-GTK3-BOPOMOFO-ETEN
   T02-X11-GTK3-BOPOMOFO-ETEN26
@@ -227,6 +228,7 @@ start_fcitx
 
 bopomofo_layout=Standard
 traditional_to_simplified=False
+use_all_unicode_characters=True
 associated_phrase_collections=''
 associated_phrase_sources=(
   McBopomofo
@@ -277,6 +279,8 @@ write_keykey_config() {
   {
     printf 'BopomofoLayout=%s\nTraditionalToSimplified=%s\n' \
       "$bopomofo_layout" "$traditional_to_simplified"
+    printf 'UseAllUnicodeCharacters=%s\n' \
+      "$use_all_unicode_characters"
     printf 'AssociatedPhraseCollections=%s\n\n' \
       "$associated_phrase_collections"
     printf '[AssociatedPhrases]\n'
@@ -316,6 +320,12 @@ set_traditional_to_simplified() {
   reload_keykey_config
 }
 
+set_use_all_unicode_characters() {
+  use_all_unicode_characters=$1
+  write_keykey_config
+  reload_keykey_config
+}
+
 set_associated_phrase_collections() {
   associated_phrase_collections=$1
   write_keykey_config
@@ -334,8 +344,9 @@ associated_phrase_config_variant() {
     fi
     entries+="'$source': <'$enabled'>"
   done
-  printf "<{'BopomofoLayout': <'%s'>, 'TraditionalToSimplified': <'%s'>, 'AssociatedPhrases': <{%s}>}>" \
-    "$bopomofo_layout" "$traditional_to_simplified" "$entries"
+  printf "<{'BopomofoLayout': <'%s'>, 'TraditionalToSimplified': <'%s'>, 'UseAllUnicodeCharacters': <'%s'>, 'AssociatedPhrases': <{%s}>}>" \
+    "$bopomofo_layout" "$traditional_to_simplified" \
+    "$use_all_unicode_characters" "$entries"
 }
 
 set_keykey_config_via_dbus() {
@@ -365,6 +376,8 @@ verify_bopomofo_config_schema() {
     >"$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq BopomofoLayout "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq TraditionalToSimplified \
+    "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
+  grep -Fq UseAllUnicodeCharacters \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq AssociatedPhrases \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
@@ -511,6 +524,14 @@ if case_selected T01-X11-GTK3-BOPOMOFO-STANDARD; then
   run_case T01-X11-GTK3-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
     中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1
   verify_bopomofo_config_schema
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-BIG5-FILTER; then
+  set_bopomofo_layout Standard
+  set_use_all_unicode_characters False
+  run_case T01-X11-GTK3-BOPOMOFO-BIG5-FILTER \
+    chichi77-keykey-bopomofo \
+    𤦩 ',4 2' 'ㄝ,ㄝˋ' comma 4 space 2
+  set_use_all_unicode_characters True
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-STANDARD; then
   set_bopomofo_layout Standard

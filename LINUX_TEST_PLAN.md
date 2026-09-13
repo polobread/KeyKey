@@ -3,12 +3,14 @@
 狀態：測試實作中。已有 CTest real-data typing-flow、Ubuntu 22.04／24.04
 container build/staged-install checks、Ubuntu 22.04／24.04 Debian package checks，
 以及 Ubuntu 24.04 Fcitx 5 → GTK 3 的 L3 X11 真實逐鍵輸入；下列完整
-GNOME／Wayland、App、視窗與三輸入法 suite 仍待實作。
+GNOME／Wayland、App、視窗與完整注音 suite 仍待實作。
 搭配 [開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
 
-Linux 首版目標為 1.2.8。功能驗收範圍是 F01–F11、F16；使用者已排除 F12–F15，
+Linux 首版目標為 1.2.8。功能驗收範圍是 F01–F02、F05–F11、F16；使用者已排除
+F03–F04、F12–F15，
 不測算式、自訂詞管理、CIN／外掛管理與一點通／獨立通知窗。原 T13 退役，保留其他
-測試編號；完整 suite 指 T01–T12、T14–T15。F05 已有內建關聯詞、分類開關與 T07
+測試編號；發布必要 suite 指 T01–T03、T06–T12、T14–T15，既有 T04／T05 只作凍結
+回歸。F05 已有內建關聯詞、分類開關與 T07
 第一段證據及一條 Fcitx 原生設定視窗點選／保存證據，其他設定、桌面及 App 驗收仍須補齊。
 
 **主要環境：Ubuntu Desktop 24.04 LTS + Fcitx 5 + GNOME，x86_64。**
@@ -21,13 +23,13 @@ Linux 首版目標為 1.2.8。功能驗收範圍是 F01–F11、F16；使用者�
 Standard／ETen 各 1,521 組、ETen26 1,495 組、Hsu 1,494 組真實讀音 round-trip 覆蓋，
 並測漢語拼音代表性聲母／韻母／聲調、input-context 隔離、pass-through、
 Backspace／Escape、CIN 邊界、候選分頁、數字選取、Ctrl 標點與真實符號候選表，以及
-`Shift+Space` 全／半形狀態、ASCII 對映與組字／候選保留，以及與現有輸出
-filter 同源的 3,058 筆繁轉簡單字對映；關聯詞另以原生 parser 驗證 McBopomofo
+`Shift+Space` 全／半形狀態、ASCII 對映與組字／候選保留、Big5-HKSCS 可表示性與
+候選順序，以及與現有輸出 filter 同源的 3,058 筆繁轉簡單字對映；關聯詞另以原生 parser 驗證 McBopomofo
 基本詞庫、29 個分類詞庫、UTF-8／格式邊界、頻率排序、過濾、來源順序、去重、停用及
 `Shift+1–9` 詞尾選取；Ubuntu 24.04 的相同 engine suite
 亦已通過 ASan/UBSan。
 
-另有二十一筆可重現的最小 L3 X11 證據：在 Ubuntu 24.04 x86_64 container 以獨立 D-Bus、
+另有二十二筆可重現的最小 L3 X11 證據：在 Ubuntu 24.04 x86_64 container 以獨立 D-Bus、
 Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，T01 以 Standard `5j/` 選「中」；T02
 在 Standard、ETen、ETen26、Hsu、Hanyu Pinyin 五種配置逐鍵輸入二、三、
 四、輕聲的「麻馬罵嘛」，固定 ETen26／Hsu 複用鍵的消歧中間態，漢語拼音
@@ -38,7 +40,8 @@ Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，T01 以 Standard `5j/` 選「中」；T0
 單一候選自動提交及直接標點候選精確得到「明銖䍤、」；
 另以注音 `5j/` 開啟 148 個真實候選，送 PageDown、Down、Enter 選出「妐」；
 `Shift+Space`、`Shift+A`、`Shift+1`、`Shift+\``、Space 提交精確全形 `Ａ！～　`，
-`keyboard-us` 負控制為 ` A!~ `；另以 `Ctrl+0` 開啟真實標點／符號候選並按
+`keyboard-us` 負控制為 ` A!~ `；Big-5 限制開啟時輸入 Standard `,4`，從過濾後的
+`ㄝˋ` 候選選出 `𤦩`，英文負控制為 `,4 2`；另以 `Ctrl+0` 開啟真實標點／符號候選並按
 `1` 提交「，」，英文負控制則只得到 `1`；繁轉簡原生設定開啟後，
 以 `w96`、`j0` 分別組成 `ㄊㄞˊ`、`ㄨㄢ`，選原候選「臺灣」並提交「台湾」，
 英文負控制為 `w96 2j0 1`；六個 T07 流程以實體 `Shift+1` 分別驗證預設基本詞庫
@@ -49,8 +52,8 @@ Xvfb、Fcitx 5.1.7 與真 GTK 3 Entry，T01 以 Standard `5j/` 選「中」；T0
 輸入法列及核取方塊，實際點選只開 agriculture-food、保存、核對 INI、重啟並讀回後，
 以 `yji4` 選「作」再按 `Shift+1` 得到「作物育種」，同時保存切換前後 PNG。
 五種注音皆依發生順序核對 preedit；Fcitx D-Bus schema 亦確認
-`BopomofoLayout` 下拉選項含 Standard、ETen、ETen26、Hsu、HanyuPinyin，並包含繁轉簡
-與 30 個關聯詞 Boolean 選項。所有案例皆核對實際 GTK buffer，且
+`BopomofoLayout` 下拉選項含 Standard、ETen、ETen26、Hsu、HanyuPinyin，並包含繁轉簡、
+所有 Unicode 字元與 30 個關聯詞 Boolean 選項。所有案例皆核對實際 GTK buffer，且
 `/proc` maps 證明執行中的 Fcitx 載入 `chichi77-keykey.so`；每案切回
 `keyboard-us` 重送同鍵序的負控制也通過。這些仍是窄版 vertical slices，尚未驗證
 完整 T01–T06、GNOME、native Wayland、XWayland、Qt／GTK4／瀏覽器或候選視窗畫面。
@@ -60,8 +63,8 @@ Hosted Linux workflow run `34742072894` 已在 `d83091d` 通過 Ubuntu 22.04／2
 Ubuntu 24.04 的目前 slice 也已用 debhelper 拆成架構無關的
 `chichi77-keykey-data_1.2.8-1+ubuntu24.04_all.deb` 與 amd64 的
 `fcitx5-chichi77-keykey_1.2.8-1+ubuntu24.04_amd64.deb`。乾淨 runtime container
-依序安裝受控 `1.2.8~preview1` fixture、跑二十個純鍵盤案例、升級至 1.2.8、
-再跑二十案例、移除／重裝後跑全部二十一案例；設定視窗只在最後狀態啟動一次，
+依序安裝受控 `1.2.8~preview1` fixture、跑二十一個純鍵盤案例、升級至 1.2.8、
+再跑二十一案例、移除／重裝後跑全部二十二案例；設定視窗只在最後狀態啟動一次，
 以節省兩次相同 Qt／AT-SPI
 啟動成本；dependency、ELF、安裝清單、資料 hash、授權及移除後
 不碰個人設定一併通過。這是 T14 的第一段 package lifecycle 證據，不代表真實舊版
@@ -153,8 +156,8 @@ session、framework、App/version/backend、config、steps、expected、actual�
 
 ## 4. Golden fixtures 與具體按鍵案例
 
-固定乾淨使用者設定、US 實體鍵盤、注音 Standard、關聯詞初始關閉、動態頻率清空，
-以及字表的 commit hash。要測學習／關聯詞時才另外開啟。
+固定乾淨使用者設定、US 實體鍵盤、注音 Standard、關聯詞初始關閉，以及字表的
+commit hash。Linux 候選學習已排除，不建立相關 fixture；要測關聯詞時才另外開啟。
 
 真實資料錨點已在目前 `.cin` 確認：`bpmf-ext.cin` 的 `5j/` 第一項為「中」；
 `cj-ext.cin` 與 `simplex-ext.cin` 的 `a` 前兩項為「日／曰」，`l` 有「中」。
@@ -171,20 +174,21 @@ session、framework、App/version/backend、config、steps、expected、actual�
 | T01 | 注音依序 `5` → `j` → `/` → Space → 選「中」 | reading 為 `ㄓ` → `ㄓㄨ` → `ㄓㄨㄥ`；選字後 App 精確為「中」、preedit 清空、只 commit 一次；凍結選字鍵索引 |
 | T02 | 五種注音布局各自打同一組已驗證音節 | 不同鍵序得到相同文字；含二／三／四／輕聲、複用鍵布局及漢語拼音不完整輸入 |
 | T03 | reading 中 Backspace／Esc；有候選時 Backspace／Esc；空白狀態再按 | 每個階段清除／保留行為符合 golden，沒有殘留注音或誤刪 App 已提交文字 |
-| T04 | 倉頡 `a` → Space → 選「日」；改選第二候選「曰」 | 字根 preedit、候選次序與 host 文本精確符合；滿碼／邊打邊找／錯誤處理／頻率選項另有 cases |
-| T05 | 簡易 `a` → Space → 選「曰」；輸入另一組真實頭尾碼 | 多候選、選字、分頁與兩碼流程；與倉頡使用各自的表及限制 |
+| T04 | 倉頡既有垂直切片回歸 | F03 已排除；現有案例只防止既有產物意外損壞，不擴充、不列 1.2.8 支援條件 |
+| T05 | 簡易既有垂直切片回歸 | F04 已排除；現有案例只防止既有產物意外損壞，不擴充、不列 1.2.8 支援條件 |
 | T06 | 打開大於一頁的真實候選；方向鍵、Space、PageUp/Down、數字、Enter、滑鼠選字 | 前後頁、末頁、邊界不越界，反白與 commit 同字，直橫兩種樣式都覆蓋 |
 | T07 | 開啟分類 → 提交字 → Shift 選關聯詞 → 接續；全部關閉後重打 | host 是原字加「後綴」，不重複前字；順序／去重／分類保存與停用正確，fixture 固定具體詞與來源 |
 | T08 | 中文／英文、Shift/CapsLock、全半形、數字、標點、繁轉簡、注音修正 | 比對精確 code points；L1 全形對映包含 `Ａｚ０９！～　`，現有 X11 切片真實提交 `Ａ！～　`；filter 組合順序有測試 |
 | T09 | 組字／候選／關聯詞時送 Ctrl/Alt/Super 快捷鍵、repeat、press/release | 未配置快捷鍵交給 App；無重複提交、卡住 modifiers 或意外清空；依 macOS 基線記錄合法差異 |
 | T10 | 在兩欄位、兩 App 切 focus；有候選時關閉 client；框架重啟／重新登入 | 不串字、不提交到另一 App；preedit 和 panel 生命週期正確；恢復後仍可輸入 |
-| T11 | 移 caret、選一段字後組字／替換、滑鼠移 selection；密碼／唯讀欄位 | 不沿用舊 context、沒有錯位刪字；密碼依 content-purpose 關閉學習／關聯詞／敏感 log；唯讀無修改 |
-| T12 | 設定 UI 切直橫、比例、配色、聲音、布局、內建關聯詞分類；開符號面板點選／取消 | 即時套用、縮放後 click hit test 一致；關閉／再開及重登入保存；符號送回原欄位且只一次；不出現 F12–F15 選單或佔位 UI |
-| T14 | 套件安裝→三 engine 註冊→實打字→升級→再打字→移除→重裝 | ELF deps、UI／資料存在、設定／學習頻率保留、無重複註冊或殘留自啟；無自動改預設框架 |
+| T11 | 移 caret、選一段字後組字／替換、滑鼠移 selection；密碼／唯讀欄位 | 不沿用舊 context、沒有錯位刪字；密碼依 content-purpose 關閉關聯詞／敏感 log；唯讀無修改 |
+| T12 | 設定 UI 切直橫、比例、配色、聲音、布局、內建關聯詞分類；開符號面板點選／取消 | 即時套用、縮放後 click hit test 一致；關閉／再開及重登入保存；符號送回原欄位且只一次；不新增 F03–F04、F12–F15 設定或佔位 UI |
+| T14 | 套件安裝→注音註冊→實打字→升級→再打字→移除→重裝 | ELF deps、UI／資料存在、設定保留、無重複註冊或殘留自啟；無自動改預設框架；倉頡／簡易既有註冊不算支援條件 |
 | T15 | 密集連打、長候選、延伸漢字／Emoji 資料、locale 切換、兩 context 交錯 | 無 UTF 截斷、死鎖、串字、崩潰與無界記憶體成長；連打結果逐字一致 |
 
 所有未知的精確預期值在 P0 補齊，標 `pending-baseline`，不先寫 always-pass test。
-F12–F15 是核定排除，不列 `pending-baseline` 或 skip；原 T13 不納入測試總數。
+F03–F04、F12–F15 是核定排除，不列 `pending-baseline` 或 skip；既有 T04／T05 僅為
+凍結切片回歸，原 T13 不納入測試總數。
 
 ### T14-SOURCE：configure／make 原始碼安裝（部分實作）
 
@@ -197,8 +201,8 @@ F12–F15 是核定排除，不列 `pending-baseline` 或 skip；原 T13 不納�
 | T14-SOURCE-BUILD | 乾淨 checkout 及無 `.git` 的 source tarball，分別執行 configure、make -j2、make check | 一般使用者可完成；Ninja／Docker 不在必要工具內；相依套件預先安裝後可離線完成；不讀原 checkout 或 cache；支援 source-directory 入口及獨立 build directory |
 | T14-SOURCE-CONFIG | --help、缺失相依套件、未知選項、CXX／編譯與連結旗標；預設及自訂 prefix／libdir／datadir | 說明、錯誤碼與目的地摘要正確；明確要求的 adapter 不靜默停用；包含空白的路徑與重新 configure 不造成錯用 cache |
 | T14-SOURCE-STAGE | make DESTDIR=暫存目錄 install | 不寫入 host 系統；清單涵蓋 addon／component、資料、UI 與授權；ELF／metadata 不含 staging 或 build 路徑；核對資料 hash |
-| T14-SOURCE-INSTALL | 在隔離 guest 安裝同次建置產物，測 /usr/local、/usr 及自訂 prefix | 框架依文件找到正確 addon／engine／資料；已交付的每個 adapter 均跑三輸入法逐鍵輸入、preedit／候選與英文負控制；原始碼安裝結果獨立記錄 |
-| T14-SOURCE-LIFECYCLE | 原始碼安裝後升級、解除安裝、重裝；驗證與原生套件切換 | 依 manifest 無系統殘檔，保留設定／學習資料及無關 sentinel；衝突先回報且不覆寫套件管理器的檔案；重裝後可打字；首版升級 fixture 明確標示 |
+| T14-SOURCE-INSTALL | 在隔離 guest 安裝同次建置產物，測 /usr/local、/usr 及自訂 prefix | 框架依文件找到正確 addon／engine／資料；已交付的每個 adapter 均跑注音逐鍵輸入、preedit／候選與英文負控制；原始碼安裝結果獨立記錄 |
+| T14-SOURCE-LIFECYCLE | 原始碼安裝後升級、解除安裝、重裝；驗證與原生套件切換 | 依 manifest 無系統殘檔，保留設定及無關 sentinel；衝突先回報且不覆寫套件管理器的檔案；重裝後可打字；首版升級 fixture 明確標示 |
 | T14-SOURCE-CLEAN | make clean 後重建，再 make distclean 後重新 configure／make／check | 只清除本次生成檔，不刪來源、唯讀資料或使用者檔案；不影響獨立 Ninja build；兩次重建均通過 |
 
 先在 Ubuntu 22.04／24.04 x86_64 實作以上檢查，P4 擴至全部 9 個 active Ubuntu
@@ -215,7 +219,7 @@ prefix／libdir／datadir staging、重新 configure、缺失 compiler／未知�
 卸載、sentinel 保留、clean 後重建及 distclean 隔離；另以預設 `/usr/local` 真安裝、
 明示 session 搜尋路徑後載入 Fcitx 5，通過 T01 X11/GTK 3 注音與英文負控制後解除安裝。這是
 T14-SOURCE-BUILD／CONFIG／STAGE／CLEAN 與 INSTALL 的局部證據，不涵蓋
-`/usr`／任意 prefix 真打字、三輸入法完整案例、升級／重裝或其他 Ubuntu；後者仍待
+`/usr`／任意 prefix 真打字、注音完整案例、升級／重裝或其他 Ubuntu；後者仍待
 P4／P5。Ubuntu 22.04／24.04 hosted jobs 已通過同一局部 source gate，但不得因此將整組
 T14-SOURCE 標成通過。
 
@@ -224,7 +228,7 @@ T14-SOURCE 標成通過。
 測試矩陣以機器可讀的 `ci/support-matrix.json` 管理並生成文件摘要。
 欄位至少為 distro、arch、desktop、session、framework、app/backend、suite、
 required/preview、一般／歷史維護狀態與對應 image digest。release 用同一份矩陣，
-避免漏掉某種輸入法或中間 OS 版本；相容窗定義見開發計畫第 2 節。
+避免漏掉必要功能路徑或中間 OS 版本；相容窗定義見開發計畫第 2 節。
 
 另加 `phase` 與 `priority` 欄位：Ubuntu 24.04 GNOME + Fcitx 5 為 `active/primary`，
 其餘 Ubuntu 為 `active/compatibility`；Debian／Fedora 為 `future-todo/future` 且
@@ -232,25 +236,26 @@ required/preview、一般／歷史維護狀態與對應 image digest。release �
 
 ### 主要環境完整驗收
 
-Ubuntu 24.04 + Fcitx 5 必須具備以下獨立結果，所有功能均限核定的 F01–F11、F16：
+Ubuntu 24.04 + Fcitx 5 必須具備以下獨立結果，所有功能均限核定的
+F01–F02、F05–F11、F16：
 
 1. GNOME X11、GNOME Wayland + native client、GNOME Wayland + XWayland client
    三條路徑；各自安裝正式待驗 `.deb`，核對 Fcitx process 與 addon，記錄 panel
    provider。GNOME 的 IBus protocol bridge 與本專案 IBus engine 必須明確區分。
-2. 全部 14 個有效 T cases，在 GTK3／GTK4／Qt6 hosts 跑完；共通案例覆蓋三種
-   輸入法，模式專屬案例依其定義執行（如 T02 的五種配置屬注音），適用性在矩陣
+2. 全部 12 個範圍內 T cases，在 GTK3／GTK4／Qt6 hosts 跑完；模式專屬案例依其
+   定義執行（如 T02 的五種配置屬注音），適用性在矩陣
    明列，不列為 skipped。加 Qt5 client 相容測試。五種注音布局、一般／關聯選字、標點與 filters 都要有
    中間狀態、精確 App 文字及負控制，按鍵釋放／長按／焦點／selection 亦包含。
 3. Firefox、Chromium、Electron editor、LibreOffice Writer、終端機文字編輯各跑
    適用的完整輸入與焦點流程；瀏覽器補單行、多行、contenteditable，以及 native
    Wayland／XWayland。無對應控制項的案例要在 host 中有證據，不用全列 skip 代替。
 4. Snap Firefox、Flatpak GTK editor、Flatpak Qt editor，使用真實 confinement
-   與受控 runtime，驗證三種輸入法、preedit／候選、滑鼠選字、符號回送、切焦點。
+   與受控 runtime，驗證注音、preedit／候選、滑鼠選字、符號回送、切焦點。
 5. 設定、符號、關於、語系與鍵盤可及性；直橫候選 × 全部比例 × 配色的完整
    組合 sweep，含四邊游標、字型裁切、hit test、虛擬混合 DPI。自訂色用固定
    代表值驗證保存與呈現，避免把無限色值當成可窮舉矩陣。
-6. 乾淨安裝、三 engine 加入／切換、重新登入、Fcitx 重啟、升級、移除與重裝，
-   設定／學習頻率保留；客戶端意外關閉、密集連打、長時間重複切換與恢復。
+6. 乾淨安裝、注音加入／切換、重新登入、Fcitx 重啟、升級、移除與重裝，
+   設定保留；客戶端意外關閉、密集連打、長時間重複切換與恢復。
 7. 每項保留 App 文字、event trace、截圖與失敗錄影；整合問題優先在此環境重現。
    PR 跑完整 typing suite 與所有功能的 UI 操作；手動完整測試／發布跑上述所有 App、
    sandbox、視覺組合與壓力項目。主環境結果不得因其他平台成功而被覆蓋。
@@ -258,7 +263,7 @@ Ubuntu 24.04 + Fcitx 5 必須具備以下獨立結果，所有功能均限核定
 若 Wayland panel 需額外 Shell 整合，先依開發計畫 P0 決議固定支援的組合及依賴，
 再將之列為 required。主要環境有必測未完成時阻擋正式發布。
 
-### Active Ubuntu x86_64 桌面列（每列都要測三種輸入法）
+### Active Ubuntu x86_64 桌面列（每列都要測注音）
 
 | 環境 | 最低 native host | 附加路徑 |
 |---|---|---|
@@ -271,7 +276,7 @@ Ubuntu 24.04 + Fcitx 5 必須具備以下獨立結果，所有功能均限核定
 上表 active 範圍共 9 個 Ubuntu 版本，表格合併顯示不表示合併測試。每個版本另跑
 IBus 與 Fcitx 的 installed X11 slice；以 Xvfb／可用的輕量 WM 驗證兩 adapter 真正
 被目標套件載入。最舊、最新通過不替代中間 7 版的結果。歷史列與一般列同樣要求
-三輸入法和功能測試；差別是來源快照、網路隔離與平日頻率。
+注音和功能測試；差別是來源快照、網路隔離與平日頻率。
 
 ### Future TODO：Debian／Fedora
 
@@ -288,8 +293,8 @@ runtime。不同 toolkit/backend 的 preedit 呈現差異可記錄，但文字�
 ### 代表性真實 App
 
 - 所有正式桌面列：至少一個發行版原生 GUI editor，以及 Firefox 的單行、多行、
-  contenteditable。原生測試 hosts 跑完整 T01–T12、T14–T15；一般 App 最少 T01、T04、T05、
-  T06、T07、T08、T10、T11。
+  contenteditable。原生測試 hosts 跑完整 T01–T03、T06–T12、T14–T15；一般 App 最少
+  T01、T06、T07、T08、T10、T11。T04／T05 可留在回歸批次，但不列發布缺口。
 - Ubuntu 22.04／26.04 GNOME：加 Chromium、Electron editor、
   LibreOffice Writer、終端機內一般文字編輯；Qt 5 相容性視可安裝性補上。
   瀏覽器／Electron 在 native Wayland 與 XWayland 各跑一次，記錄真實 backend。
@@ -324,19 +329,20 @@ QEMU 跨架構可補 smoke，但需明確標記 emulation，不能當成實體�
   應失敗／列明限制，不能只把字型縮小到看得見就算通過。
 - 真實多螢幕熱插拔、實體鍵盤、Orca 朗讀等另列人工 smoke。報告區分
   `automated-virtual`／`manual-physical`，未做的標未測，不換算成自動化百分比。
-- 學習頻率、設定跨 engine restart／session restart／套件升級保存；
-  schema 舊版、資料庫唯讀、檔案損毀、遷移途中失敗均可恢復且不覆寫原檔。
+- 設定跨 engine restart／session restart／套件升級保存；schema 舊版、檔案損毀、
+  遷移途中失敗均可恢復且不覆寫原檔。Linux 不建立或驗證候選學習資料。
 
 ## 7. CI 速度、安全與發布門檻
 
 ### 執行分配
 
 - PR／主分支 push：Ubuntu 24.04 + Fcitx 5 設 required job，三條 session 路徑
-  各跑完整 T01–T12、T14–T15，包含三輸入法、所有功能 UI 操作與套件生命週期。
+  各跑 T01–T03、T06–T12、T14–T15，包含注音、所有功能 UI 操作與套件生命週期；
+  T04／T05 只屬既有切片回歸，不是發布支援條件。
   可分片並行；主環境不能只有最小 Wayland 四案例或放進輪替。
 - PR：L1 全部，兩 adapter L2；Ubuntu 22.04／26.04 最舊／最新邊界 build，並在
   Ubuntu 22.04 跑兩 adapter installed X11 slices；P0 通過後加 Ubuntu 舊／新 GNOME
-  的最小 Wayland T01/T04/T05/T10。Debian／Fedora 不排入目前 required jobs。
+  的最小 Wayland T01/T10。Debian／Fedora 不排入目前 required jobs。
 - 手動完整：`linux-desktop-tests.yml` 只接受 `workflow_dispatch`，不設 `schedule`／`cron`。
   預設完整驗收 Ubuntu 24.04 + Fcitx 5；手動選擇完整矩陣時重跑 9 個 Ubuntu 版本，
   也可只指定受影響的歷史版本。歷史環境不能永遠只留首次成功結果；PR 更動
@@ -369,9 +375,9 @@ Guest image 來源、checksum、安裝套件版本與安裝腳本全部可審計
 
 ### Release 必須全部滿足
 
-- [ ] Ubuntu 24.04 + Fcitx 5 的主要環境完整驗收全綠；三種 session 路徑、三輸入法、
+- [ ] Ubuntu 24.04 + Fcitx 5 的主要環境完整驗收全綠；三種 session 路徑、注音、
       所有核定功能／App／sandbox／UI／套件生命週期與穩定性皆有證據。
-- [ ] 三輸入法、兩 adapter、active Ubuntu／桌面列皆有結果，必測案例無 skip。
+- [ ] 注音、兩 adapter、active Ubuntu／桌面列皆有結果，必測案例無 skip。
 - [ ] Debian／Fedora 的 11 列維持 future TODO；開始 P6 後才逐列加入對應驗收與 gate。
 - [ ] active Ubuntu 近四年每個版本（含歷史列）有 installed-package 真打字證據，最低依賴未被
       無意提高；一般／EOL 相容標示與實際 OS 安全維護狀態分開。
@@ -379,8 +385,9 @@ Guest image 來源、checksum、安裝套件版本與安裝腳本全部可審計
 - [ ] 待發布套件本身通過乾淨安裝與打字，不用 build tree 取代 installed artifact。
 - [ ] 同 SHA 的待發布 source tarball 通過 T14-SOURCE 全部子案例與 active Ubuntu
       原始碼安裝後的真打字；configure／make 介面、相依套件及安裝／移除文件齊全。
-- [ ] F01–F11、F16 有證據或經使用者接受的具體差異；F12–F15 明列排除，
-      沒有加入對應功能入口，也不把排除項計為測試 skip 或未完成。
+- [ ] F01–F02、F05–F11、F16 有證據或經使用者接受的具體差異；F03–F04、F12–F15
+      明列排除，不新增對應功能入口，也不把排除項計為測試 skip 或未完成；既有
+      T04／T05 與註冊明列為凍結切片，不能誤列成支援。
 - [ ] 原生 Wayland／XWayland、ARM64 preview／正式、虛擬／實體結果清楚分開。
 - [ ] Workflow summary 可追溯 SHA、套件、環境、逐案例結果、截圖與失敗記錄。
 - [ ] 新套件未變更使用者預設框架，升級保留個人資料，授權與 checksum 齊全。

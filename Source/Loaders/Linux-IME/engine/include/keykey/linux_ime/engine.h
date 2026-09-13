@@ -105,6 +105,7 @@ public:
                                         bool enabled) const noexcept;
     void setAssociatedPhraseCollections(
         std::vector<std::string> enabledCollections);
+    void setRestrictBopomofoCandidatesToBig5(bool enabled) noexcept;
     EngineResult selectDisplayedCandidate(InputContextState &context,
                                           std::size_t displayedIndex) const;
     EngineResult snapshot(const InputContextState &context) const;
@@ -140,6 +141,7 @@ private:
         "McBopomofo"};
     InputMethod inputMethod_;
     BopomofoLayout bopomofoLayout_;
+    bool restrictBopomofoCandidatesToBig5_ = false;
 };
 
 } // namespace keykey::linux_ime

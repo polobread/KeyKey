@@ -4,6 +4,7 @@ project(KeyKeyLinux VERSION 1.2.8 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)
+find_package(Iconv REQUIRED)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(KEYKEY_FCITX5_DEFAULT ON)
@@ -65,11 +66,13 @@ endforeach()
 add_library(keykey_linux_engine STATIC
     engine/src/associated_phrase_dictionary.cpp
     engine/src/bopomofo_reading.cpp
+    engine/src/candidate_encoding.cpp
     engine/src/cin_dictionary.cpp
     engine/src/engine.cpp
 )
 target_compile_features(keykey_linux_engine PUBLIC cxx_std_17)
 target_include_directories(keykey_linux_engine PUBLIC engine/include)
+target_link_libraries(keykey_linux_engine PUBLIC Iconv::Iconv)
 set_target_properties(keykey_linux_engine PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     CXX_VISIBILITY_PRESET hidden

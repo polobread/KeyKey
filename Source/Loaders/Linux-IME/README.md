@@ -6,6 +6,10 @@ target is 1.2.8, led by Ubuntu Desktop 24.04 LTS with Fcitx 5.
 
 ## Current development status
 
+Linux 1.2.8 targets Bopomofo only. The already committed Cangjie and Simplex
+vertical slices remain as frozen regressions and are not being developed or
+presented as supported input methods.
+
 The initial vertical slice provides:
 
 - a display-server-independent C++17 engine contract;
@@ -18,6 +22,7 @@ The initial vertical slice provides:
   typing are implemented;
 - candidate lookup, cyclic arrow/PageUp/PageDown navigation, numeric selection,
   Backspace, Escape, Enter, and Space;
+- an optional Bopomofo Big5-HKSCS candidate filter that preserves source order;
 - a native associated-phrase parser for the McBopomofo base and all 29 bundled
   category collections, with source-order merge, deduplication, filtering,
   Shift+1–9 suffix selection, first-run base default, an all-disabled state,
@@ -37,7 +42,8 @@ The initial vertical slice provides:
   queries → `昌日`, Simplex
   `a` → second candidate `曰`, full-code/continuous/direct-punctuation input →
   `明銖䍤、`, and Bopomofo second-page keyboard navigation → `妐`,
-  `Shift+Space` full-width input → `Ａ！～　`, plus
+  `Shift+Space` full-width input → `Ａ！～　`, Big-5 filtering of `ㄝˋ`
+  candidates → `𤦩`, plus
   Traditional-to-Simplified output `臺灣` → `台湾`, plus `Ctrl+0` symbol-list
   selection → `，`, plus associated-phrase default `今` → `今天`,
   `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺!`;
@@ -51,25 +57,25 @@ The initial vertical slice provides:
 - Debian packages named `chichi77-keykey-data` and
   `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
 - a package lifecycle test covering install, controlled preview-to-1.2.8
-  upgrade, removal, reinstall, dependency/file/hash checks, the twenty
+  upgrade, removal, reinstall, dependency/file/hash checks, the twenty-one
   keyboard-only X11 cases after each installed state, and the settings-window
   case once after reinstall;
-- a persistent Fcitx-native settings schema with a five-layout combo box, a
-  Traditional-to-Simplified Boolean option, and a nested pane containing 30
+- a persistent Fcitx-native settings schema with a five-layout combo box,
+  Traditional-to-Simplified and all-Unicode Boolean options, and a nested pane containing 30
   associated-phrase collection checkboxes, exposed directly from the
   `chichi77 KeyKey Bopomofo` input method. The earlier comma-separated field is
   hidden and migrated when an existing development configuration is loaded.
 
-Remaining Cangjie/Simplex settings, dynamic frequency and encoding
-filters, IBus, a Linux equivalent for the macOS
+Remaining Bopomofo correction and combined filter-order coverage, IBus, a
+Linux equivalent for the macOS
 Traditional-to-Simplified shortcut, full-width behavior outside an active
 Linux input context, the remaining settings and complete
 symbol/emoticon/common-text windows, RPM/Arch packaging, native Wayland, and
 full desktop/App tests are not
 implemented yet. The current Debian packages contain only the implemented
 data and Fcitx 5 components; they are development artifacts, not a complete
-1.2.8 Linux release. These three input-method paths and five-layout tests are
-vertical slices, not complete feature-parity claims.
+1.2.8 Linux release. The Bopomofo path remains a vertical slice rather than a
+complete feature-parity claim; the other two paths are frozen regressions only.
 
 Current feature evidence is tracked in [`docs/parity.md`](docs/parity.md). The
 compatibility inventory is machine-readable in
@@ -95,7 +101,7 @@ make DESTDIR="$PWD/out/source-stage" install
 The default prefix is `/usr/local`. A real install therefore uses
 `sudo make install`; `sudo make uninstall` removes only files recorded in that
 build's CMake install manifest. It does not remove Fcitx user configuration,
-learning data, or unrelated files, and it never selects an input method for
+other user data, or unrelated files, and it never selects an input method for
 the user. Some Fcitx builds do not include `/usr/local` in every compiled-in
 search path, so set the addon and data roots in the desktop session before
 restarting Fcitx:
@@ -107,8 +113,9 @@ export XDG_DATA_DIRS="/usr/local/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/sh
 fcitx5 -r -d
 ```
 
-Then add one of the three chichi77 KeyKey input methods with the normal Fcitx
-configuration tool. Put the variables in the desktop session environment when
+Then add `chichi77 KeyKey Bopomofo` with the normal Fcitx configuration tool.
+The Cangjie and Simplex registrations remain only for frozen regression checks.
+Put the variables in the desktop session environment when
 Fcitx is started through D-Bus or the desktop; an unrelated terminal does not
 change an already-running Fcitx process.
 
@@ -295,9 +302,9 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
 Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
-The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the twenty
+The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the twenty-one
 keyboard-only X11 cases, upgrades to `1.2.8`, runs them again, removes and
-reinstalls the packages, then runs all twenty-one cases. Running the UI-heavy
+reinstalls the packages, then runs all twenty-two cases. Running the UI-heavy
 case once keeps the installed-package proof while avoiding three identical Qt
 startup cycles. The 22.04 path performs build, lintian,
 dependency, file/data checksum, install/remove/reinstall, and ELF checks but

@@ -1,5 +1,7 @@
 #include "keykey/linux_ime/engine.h"
 
+#include "keykey/linux_ime/candidate_encoding.h"
+
 #include <algorithm>
 #include <cctype>
 #include <stdexcept>
@@ -144,6 +146,11 @@ void Engine::setTraditionalToSimplifiedMode(InputContextState &context,
 void Engine::setAssociatedPhraseCollections(
     std::vector<std::string> enabledCollections) {
     enabledAssociatedPhraseCollections_ = std::move(enabledCollections);
+}
+
+void Engine::setRestrictBopomofoCandidatesToBig5(bool enabled) noexcept {
+    restrictBopomofoCandidatesToBig5_ =
+        inputMethod_ == InputMethod::Bopomofo && enabled;
 }
 
 EngineResult Engine::processKey(InputContextState &context,
@@ -414,6 +421,11 @@ EngineResult Engine::query(InputContextState &context,
         context.candidates_ = dictionary_->candidatesMatching(key, '?', '*');
     } else {
         context.candidates_ = dictionary_->candidates(key);
+    }
+    if (inputMethod_ == InputMethod::Bopomofo &&
+        restrictBopomofoCandidatesToBig5_) {
+        context.candidates_ =
+            filterBig5HkscsCandidates(context.candidates_);
     }
     context.candidatePreedit_.clear();
     context.showingAssociatedPhrases_ = false;

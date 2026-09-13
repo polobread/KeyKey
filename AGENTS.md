@@ -10,8 +10,8 @@ macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是�
 
 **Linux 原生版（開發中）：** 先讀 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)
 與 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。首版目標為 1.2.8，範圍是 macOS
-F01–F11、F16 的現行功能／視窗對等；F12–F15 已由使用者排除，不得重新加入。
-包含注音、倉頡、簡易；新建 Linux-only 引擎與 IBus／Fcitx 5 整合，不修改或連結既有
+F01–F02、F05–F11、F16 的現行功能／視窗對等；F03–F04、F12–F15 已由使用者排除，
+不得重新加入。首版只要求注音；新建 Linux-only 引擎與 IBus／Fcitx 5 整合，不修改或連結既有
 KeyKeyEngine／OpenVanilla 核心。2026-09-12 已完成規劃、四平台版號 1.2.8 同步及
 第一段 Linux-only engine／Fcitx 5 垂直切片；local Ubuntu 24.04 Xvfb/GTK 3 的 L3
 真實輸入已通過，並含五種注音布局、候選鍵盤導覽、標點／符號候選、30 套內建關聯詞、
@@ -57,8 +57,8 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   UID/GID。
 - 2026-09-13 同一台 WSL2／rootless Docker 主機已實跑兩個 one-shot gate：Ubuntu 22.04
   的 Fcitx 5.0.14 build、2/2 CTest、lintian、安裝／移除／重裝全數通過；Ubuntu 24.04
-  的 preview 安裝、release 升級、移除／重裝全數通過；擴充 F03／F04 後再實跑
-  初裝與升級各 20 個純鍵盤案例，重裝後完整 21 案例也全數通過。
+  的 preview 安裝、release 升級、移除／重裝全數通過；加入注音 Big-5 過濾後再實跑
+  初裝與升級各 21 個純鍵盤案例，重裝後完整 22 案例也全數通過。
   另直接執行 `run-ubuntu-24.04-x11-e2e.sh` 的原 17/17 基線亦通過，證明 rootless UID
   選擇同時適用 package 與獨立 X11 路徑；這些仍不是 GNOME／native Wayland 驗收。
 - 長駐 container 把 named volume 掛在 `out/stage`，但 verify 會刪除再建立其下的
@@ -77,13 +77,13 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   Source/Loaders/Linux-IME/ci/dev.sh verify
   ```
 
-  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 21 個
+  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 22 個
   Xvfb/GTK3/Fcitx 案例。`run-debian-package.sh ubuntu-24.04` 是乾淨安裝、升級、移除、
   重裝的 amd64 套件 gate，只在里程碑跑，不要每次修改都跑。Windows 桌面本身不能
   取代 GNOME／native Wayland 驗收；Xvfb 通過後仍須另找真 Linux desktop／VM。
-- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 21/21
-  通過；Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級各 20 案，
-  移除／重裝 21 案也已重跑通過。Windows 主機不會取得原 Mac 的 container／named volumes，
+- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 22/22
+  通過；Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級各 21 案，
+  移除／重裝 22 案也已重跑通過。Windows 主機不會取得原 Mac 的 container／named volumes，
   首次執行較慢屬正常，之後應以同一 `ci/dev.sh` session 迭代。
 
 ---
@@ -282,11 +282,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   IBus protocol bridge，但實測必須確認載入本專案 Fcitx addon。主環境每次相關
   PR 跑完整 typing suite，手動完整測試／發布跑全部 App、sandbox、UI 組合與穩定性；
   Linux desktop workflow 不設定每日或每週排程。
-- **Linux 功能範圍已核定為 F01–F11、F16**：macOS 有 TraditionalMandarin、
-  Generic-cj-cin、Generic-simplex-cin 正式入口，三者皆需原生實作；候選窗、縮放
-  配色、filter、符號面板與設定／關於仍在範圍。F12 計算機、F13 自訂詞／詞庫管理、
-  F14 通用表格／外掛設定、F15 一點通／提示通知視窗不開發、不列驗收缺口；
-  不因此刪除 F05 內建關聯詞分類開關或 F03 學習頻率，也不刪其他平台的現有功能。
+- **Linux 功能範圍已核定為 F01–F02、F05–F11、F16**：2026-09-13 使用者排除
+  F03 倉頡、F04 簡易及其候選學習／動態頻率；不要再擴充、建立設定或列為 parity
+  缺口。已提交的倉頡／簡易垂直切片暫時保留作相容性回歸，不代表發布支援，也不得
+  因此恢復開發。F12 計算機、F13 自訂詞／詞庫管理、F14 通用表格／外掛設定、
+  F15 一點通／提示通知視窗同樣不開發、不列驗收缺口。F05 關聯詞、候選窗、縮放
+  配色、filter、符號面板與設定／關於仍在範圍；其他平台既有功能維持原狀。
   SmartMandarin 仍因語料缺失而不啟用；不可憑舊模組存在就重新擴張 Linux 範圍。
 - **Linux 的 CI 綠燈要分層**：unit、adapter 或 Xvfb 通過都不等於原生 Wayland
   可用；E2E 必須從鍵盤事件經過 IME，核對實際 App 文字與 preedit／候選流程，
@@ -399,6 +400,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `tools/generate-tc2sc-cin.rb` 從唯讀 `VXHCTC2SCTable.c` 的 3,058 筆明示配對產生；
   不編譯或連結舊模組。舊 C array 雖宣告 3,059 組，實際只列 3,058 組，
   最後多出的零值初始化不是轉換資料，產生器必須固定驗證此數量。
+- **Linux Big-5 候選限制只套用注音**：F03 倉頡與 F04 簡易已排除，不得為凍結切片
+  擴張新設定。Linux 以 `iconv` 的 `BIG5-HKSCS` 做無損可表示性檢查，每個候選都要
+  重設 converter，並在分頁前過濾且保留來源順序；`UseAllUnicodeCharacters` 預設為
+  `True`。正式注音表的 Standard `,4` 是固定錨點：未過濾時第二候選為 `𠔅`，過濾後
+  必須精確為「誒、𤦩、𨗴」，按 `2` 提交「𤦩」。Ubuntu 22.04／24.04 的 glibc 都由
+  CMake `FindIconv` 判定為內建實作；更廣的 macOS 對照與多 filter 組合順序仍待驗證。
 - **Fcitx／GTK 可能將 `Shift+字母` 正規化成大寫 keysym**：X11 真實逐鍵測試中，
   `Shift+A` 到 addon 時可能已是 `A` 且 Shift state 被拿掉；全形路徑必須同時識別
   帶 Shift 的 ASCII 與正規化大寫，不能只看 modifier。`Shift+Space` 切換要保留
@@ -906,7 +913,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       build、2/2 CTest、staging／卸載／清理，及預設 `/usr/local` 暫時真安裝後的 Fcitx
       5 → GTK 3 X11 T01 打字與卸載。
 - [ ] 完成 T14-SOURCE 其餘發布 gate：Ubuntu 22.04／24.04 hosted 已在
-      run `34742072894` 通過；再補 `/usr`／任意 prefix 三輸入法完整真打字、原始碼
+      run `34742072894` 通過；再補 `/usr`／任意 prefix 的注音完整真打字、原始碼
       升級／重裝、9 個 active Ubuntu 與 P4／P5 release evidence；目前局部結果不得當成
       整組 T14 或 Linux 1.2.8 已可發布。
 - [x] 已將 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）設為首要支援與最完整
@@ -949,18 +956,26 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       到兩碼自動開候選，候選中繼續輸入會先提交反白項再開始下一組，單一候選則自動
       提交。L1 使用正式 `cj-ext.cin`／`simplex-ext.cin`；Ubuntu 24.04 Xvfb/GTK3
       新增兩案，精確提交「，用」與「明銖䍤、」，完整 staged suite 20/20 通過且每案
-      都有 `keyboard-us` 負控制。尚缺動態頻率、完整設定／encoding filter、
-      GNOME 與 Wayland，不能將 F03／F04 標成完成。
+      都有 `keyboard-us` 負控制。2026-09-13 起 F03／F04 已排除，這些既有切片只保留
+      相容性回歸，不再擴充或作發布支援宣告。
 - [x] 2026-09-13 完成第一段 F03 倉頡萬用字元：Linux-only CIN dictionary 以穩定
       code／同碼來源順序支援 `?` 恰一碼、`*` 零碼以上；保留單獨首鍵的直接標點語意，
       接在字根後則等 Space／Enter 查詢。L1 合成表及正式 `cj-ext.cin` 均驗證順序，
       Ubuntu 24.04 Xvfb/GTK3 逐鍵以 `a?`、`a*` 精確提交「昌日」，英文負控制為
-      `a? 1a* 1`；完整 staged suite 21/21 通過。仍缺動態頻率、完整設定／encoding
-      filter、GNOME 與 Wayland，不能將 F03 標成完成。
+      `a? 1a* 1`；完整 staged suite 21/21 通過。2026-09-13 起 F03 已排除，這項既有
+      切片只保留相容性回歸，不再擴充或作發布支援宣告。
+- [x] 2026-09-13 依最新範圍將 Linux 首版限為注音，排除 F03 倉頡、F04 簡易與候選
+      學習／動態頻率；未新增持久化、設定或測試，既有已提交的倉頡／簡易最小切片只
+      保留凍結回歸。另完成 F01 注音 Big5-HKSCS 候選限制：L1 驗證可表示性、正式
+      `bpmf-ext.cin` 順序及選取；Fcitx 原生設定預設保留所有 Unicode，Xvfb/GTK3
+      逐鍵以 `,4` 從過濾後候選提交「𤦩」。Ubuntu 22.04 build/CTest/staging、24.04
+      ASan/UBSan、configure／GNU Make source gate、完整 staged suite 22/22，以及
+      24.04 套件初裝／升級各 21 個鍵盤案例、重裝後 22 案全數通過；GNOME／Wayland
+      與 hosted workflow 仍待驗證。
 - [x] 2026-09-12 建立 debhelper Debian packaging，產出
       `chichi77-keykey-data`（all）與 `fcitx5-chichi77-keykey`（每架構）兩包；Ubuntu
       24.04 amd64 local 已通過 lintian error gate、乾淨 runtime 安裝、受控 preview
-      fixture 升級、移除、重裝；擴充 F03／F04 後的最新 local gate 在初裝與升級
+      fixture 升級、移除、重裝；擴充 F03／F04 當時的 local gate 在初裝與升級
       各跑二十個純鍵盤 X11/GTK3 真實打字案例，重裝後跑完整二十一案，
       UI 較重的設定案例只在重裝後執行一次。
       Ubuntu 22.04 amd64 local 亦已在 Fcitx 5.0.14 通過建置、lintian error gate、
@@ -1017,10 +1032,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       定義目錄。這些時間只代表目前 Rancher Desktop 主機，不是 CI SLA；乾淨 package
       lifecycle 與 amd64 release gate 仍使用既有獨立路徑。
 - [ ] 依 `LINUX_DEVELOPMENT_PLAN.md` P0 凍結 macOS 操作 baseline，確認候選樣式、
-      符號窗回送與 F01–F11、F16 行為；優先實證 Ubuntu 24.04 + Fcitx 5 三條 session
+      符號窗回送與 F01–F02、F05–F11、F16 行為；優先實證 Ubuntu 24.04 + Fcitx 5 三條 session
       路徑的真打字、addon 身分與負控制，再擴充其他 GNOME／KWin 組合。
-- [ ] 完成 Linux-only 引擎、三輸入法、兩 adapter 與完整原生視窗／設定；禁止為此
-      修改、搬動或連結四平台既有核心；資料唯讀共用，F12–F15 不加入實作。
+- [ ] 完成 Linux-only 注音引擎、兩 adapter 與完整原生視窗／設定；禁止為此
+      修改、搬動或連結四平台既有核心；資料唯讀共用，F03–F04、F12–F15 不加入實作。
 - [ ] 依 `LINUX_TEST_PLAN.md` 建立逐鍵 golden、App 最終文字 assertion、Ubuntu 四年矩陣
       packages／安裝升級驗證，以及 PR／手動完整測試／release workflows；Linux desktop
       workflow 不設排程，未實跑不勾選。

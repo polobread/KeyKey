@@ -1,4 +1,5 @@
 #include "keykey/linux_ime/associated_phrase_dictionary.h"
+#include "keykey/linux_ime/candidate_encoding.h"
 #include "keykey/linux_ime/cin_dictionary.h"
 #include "keykey/linux_ime/engine.h"
 
@@ -26,6 +27,8 @@ using keykey::linux_ime::InputMethod;
 using keykey::linux_ime::KeyCode;
 using keykey::linux_ime::KeyEvent;
 using keykey::linux_ime::KeyModifier;
+using keykey::linux_ime::filterBig5HkscsCandidates;
+using keykey::linux_ime::isBig5HkscsRepresentable;
 using keykey::linux_ime::toFullWidth;
 using keykey::linux_ime::toSimplifiedChinese;
 
@@ -602,6 +605,40 @@ void testContextsAreIndependent() {
     require(engine.snapshot(second).preedit == "ㄋ", "Second context was corrupted");
 }
 
+void testBopomofoBig5CandidateFilter() {
+    require(isBig5HkscsRepresentable("誒") &&
+                isBig5HkscsRepresentable("𤦩") &&
+                !isBig5HkscsRepresentable("𠔅"),
+            "Big-5 HKSCS representability anchors changed");
+    require(filterBig5HkscsCandidates({"誒", "𠔅", "𤦩"}) ==
+                std::vector<std::string>({"誒", "𤦩"}),
+            "Big-5 candidate filtering changed order or membership");
+
+    Engine engine(loadRealBopomofoDictionary());
+    InputContextState context;
+    engine.processKey(context, character(','));
+    engine.processKey(context, character('4'));
+    auto result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.candidates.size() == Engine::CandidatesPerPage &&
+                result.candidates.at(0) == "誒" &&
+                result.candidates.at(1) == "𠔅",
+            "Unicode Bopomofo candidates changed before Big-5 filtering");
+
+    context.reset();
+    engine.setRestrictBopomofoCandidatesToBig5(true);
+    engine.processKey(context, character(','));
+    engine.processKey(context, character('4'));
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.candidates ==
+                std::vector<std::string>({"誒", "𤦩", "𨗴"}),
+            "Bopomofo Big-5 filtering changed the real candidate list");
+    result = engine.processKey(context, character('2'));
+    require(result.commit == "𤦩",
+            "Big-5 filtered candidate selection committed the wrong text");
+}
+
 void testRealCangjieTypingFlow() {
     Engine engine(loadRealDictionary("cj-ext.cin"), InputMethod::Cangjie);
     InputContextState context;
@@ -1074,6 +1111,7 @@ int main() {
         testHanyuPinyinAliasesAndToneValidation();
         testRealBopomofoDictionaryRoundTripsAcrossSymbolLayouts();
         testContextsAreIndependent();
+        testBopomofoBig5CandidateFilter();
         testRealCangjieTypingFlow();
         testRealSimplexTypingFlowAndCodeLimit();
         testCandidatePagingAndSelection();

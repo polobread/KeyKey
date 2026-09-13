@@ -100,6 +100,9 @@ FCITX_CONFIGURATION(
     fcitx::Option<bool> traditionalToSimplified{
         this, "TraditionalToSimplified",
         "Convert Traditional Chinese output to Simplified Chinese", false};
+    fcitx::Option<bool> useAllUnicodeCharacters{
+        this, "UseAllUnicodeCharacters",
+        "Include candidates outside Big-5", true};
     fcitx::Option<AssociatedPhraseConfig> associatedPhrases{
         this, "AssociatedPhrases", "Associated phrase collections"};
     fcitx::HiddenOption<std::string> associatedPhraseCollections{
@@ -344,6 +347,17 @@ private:
         hanyuPinyinEngine_.setAssociatedPhraseCollections(enabled);
         cangjieEngine_.setAssociatedPhraseCollections(enabled);
         simplexEngine_.setAssociatedPhraseCollections(enabled);
+        const bool restrictBopomofoToBig5 = !*config_.useAllUnicodeCharacters;
+        standardEngine_.setRestrictBopomofoCandidatesToBig5(
+            restrictBopomofoToBig5);
+        etenEngine_.setRestrictBopomofoCandidatesToBig5(
+            restrictBopomofoToBig5);
+        eten26Engine_.setRestrictBopomofoCandidatesToBig5(
+            restrictBopomofoToBig5);
+        hsuEngine_.setRestrictBopomofoCandidatesToBig5(
+            restrictBopomofoToBig5);
+        hanyuPinyinEngine_.setRestrictBopomofoCandidatesToBig5(
+            restrictBopomofoToBig5);
     }
 
     const linux_ime::Engine &
