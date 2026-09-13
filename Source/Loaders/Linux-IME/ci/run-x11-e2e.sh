@@ -32,10 +32,24 @@ if [[ ! "$host_uid" =~ ^[0-9]+$ || ! "$host_gid" =~ ^[0-9]+$ ]]; then
 fi
 
 absolute_artifact_dir="$PWD/$artifact_dir"
-cleanup_owner() {
+runtime_root=$(mktemp -d /tmp/chichi77-keykey-e2e.XXXXXX)
+cleanup() {
+  exit_code=$?
   chown -R "$host_uid:$host_gid" "$absolute_artifact_dir" 2>/dev/null || true
+  for _ in {1..20}; do
+    cmake -E remove_directory "$runtime_root" 2>/dev/null || true
+    if [[ ! -e "$runtime_root" ]]; then
+      break
+    fi
+    sleep 0.1
+  done
+  if [[ -e "$runtime_root" ]]; then
+    echo "Warning: could not remove the private E2E runtime directory: $runtime_root" >&2
+  fi
+  trap - EXIT
+  exit "$exit_code"
 }
-trap cleanup_owner EXIT
+trap cleanup EXIT
 
 cmake -E remove_directory "$artifact_dir"
 mkdir -p "$artifact_dir"
@@ -47,6 +61,7 @@ e2e_host="$PWD/$build_dir/keykey_linux_gtk3_e2e_host"
 test -x "$e2e_host"
 export KEYKEY_E2E_HOST="$e2e_host"
 export KEYKEY_E2E_ARTIFACT_DIR="$absolute_artifact_dir"
+export KEYKEY_E2E_RUNTIME_ROOT="$runtime_root"
 
 unset AT_SPI_BUS_ADDRESS DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
 dbus-run-session -- ci/run-x11-e2e-session.sh

@@ -3,6 +3,7 @@ set -euo pipefail
 
 test -n "${KEYKEY_E2E_HOST:-}"
 test -n "${KEYKEY_E2E_ARTIFACT_DIR:-}"
+test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
 
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-STANDARD
@@ -98,7 +99,7 @@ case_selected() {
   return 1
 }
 
-runtime_root=$(mktemp -d /tmp/chichi77-keykey-e2e.XXXXXX)
+runtime_root=$KEYKEY_E2E_RUNTIME_ROOT
 export DISPLAY=:99
 export GTK_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
@@ -141,7 +142,9 @@ cleanup() {
   if [[ -n "$host_pid" ]]; then kill "$host_pid" 2>/dev/null || true; fi
   if [[ -n "$fcitx_pid" ]]; then kill "$fcitx_pid" 2>/dev/null || true; fi
   if [[ -n "$xvfb_pid" ]]; then kill "$xvfb_pid" 2>/dev/null || true; fi
-  cmake -E remove_directory "$runtime_root"
+  if [[ -n "$host_pid" ]]; then wait "$host_pid" 2>/dev/null || true; fi
+  if [[ -n "$fcitx_pid" ]]; then wait "$fcitx_pid" 2>/dev/null || true; fi
+  if [[ -n "$xvfb_pid" ]]; then wait "$xvfb_pid" 2>/dev/null || true; fi
   trap - EXIT
   exit "$exit_code"
 }

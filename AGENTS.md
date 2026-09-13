@@ -314,6 +314,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   可能先可用，`chichi77-keykey.so` 約一至兩秒後才載入；此時只呼叫一次
   `fcitx5-remote -s` 會靜默失敗且後續輪詢永遠留在 keyboard。X11 E2E 先以受控 PID
   的 `/proc/PID/maps` 有界等待 addon，再於 engine 輪詢內重送切換要求。
+- **X11 E2E 的 private runtime 要等 D-Bus session 結束後再刪**：AT-SPI registry 是由
+  private bus 啟動的額外 process，內層測試 cleanup 即使 kill／wait 自己追蹤的 Fcitx、
+  GTK host 與 Xvfb，AT-SPI 仍可能短暫寫入 `/tmp/chichi77-keykey-e2e.*`。若在
+  `dbus-run-session` 返回前執行 `cmake -E remove_directory`，會偶發因目錄內容競態失敗，
+  把其實已通過的 17 案例改判紅燈。runtime root 由外層建立，待 bus 完全退出後有界
+  重試清理，並保留原測試 exit code；不可把清理搬回 session 內。
 - **`fcitx5-remote -r` 不會重載 input-method addon 自己的設定**：五布局 E2E 寫入
   `conf/chichi77-keykey.conf` 後，須同步呼叫 Controller1 的 `ReloadAddonConfig`
   並傳 addon ID。查設定 schema 時 `GetConfig` 需要完整 URI
