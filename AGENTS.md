@@ -310,7 +310,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `Configure` 會開 modal dialog，不能同步呼叫其 `Press` action，否則 AT-SPI D-Bus
   會等到逾時。對該按鈕同樣用語意定位後點擊，核取方塊與 OK 才用 action。Apple
   Silicon 模擬 amd64 的 Qt 冷啟動可能超過 10 秒，UI 等待上限須保留 30 秒；找到元件後
-  會立即繼續，不會固定增加 native runner 時間。
+  會立即繼續，不會固定增加 native runner 時間。hosted runner 透過 `sudo` 執行套件
+  生命週期時，可能把一般使用者的 `XDG_RUNTIME_DIR` 留給 root；進入私有
+  `dbus-run-session` 前須清掉外部的 D-Bus／AT-SPI／runtime 位址，再用
+  `dbus-update-activation-environment` 把測試建立且擁有者正確的 XDG 目錄同步給 D-Bus
+  啟動的無障礙服務，否則設定工具即使已被 Fcitx 啟動也可能不會出現在 AT-SPI tree。
 - **APT 安裝本機 `.deb` 時路徑必須是絕對路徑或以 `./` 開頭**：傳入
   `out/packages/.../*.deb` 會被當成 package expression。package lifecycle script
   先限制輸出必須位於 `out/packages/`，再轉成絕對路徑；不要放寬成任意目錄。

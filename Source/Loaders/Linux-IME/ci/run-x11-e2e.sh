@@ -48,4 +48,5 @@ test -x "$e2e_host"
 export KEYKEY_E2E_HOST="$e2e_host"
 export KEYKEY_E2E_ARTIFACT_DIR="$absolute_artifact_dir"
 
+unset AT_SPI_BUS_ADDRESS DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
 dbus-run-session -- ci/run-x11-e2e-session.sh

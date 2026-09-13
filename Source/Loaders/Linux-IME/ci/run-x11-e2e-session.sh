@@ -112,6 +112,8 @@ export XDG_DATA_HOME="$runtime_root/data"
 export XDG_RUNTIME_DIR="$runtime_root/runtime"
 mkdir -p "$XDG_CONFIG_HOME/fcitx5/conf" "$XDG_DATA_HOME" "$XDG_RUNTIME_DIR"
 chmod 700 "$XDG_RUNTIME_DIR"
+dbus-update-activation-environment \
+  DISPLAY XDG_CONFIG_HOME XDG_DATA_HOME XDG_RUNTIME_DIR
 install -m 0644 tests/fixtures/fcitx5-profile "$XDG_CONFIG_HOME/fcitx5/profile"
 
 xvfb_pid=

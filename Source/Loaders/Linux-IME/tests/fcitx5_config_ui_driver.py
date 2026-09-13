@@ -56,8 +56,7 @@ def wait_for_node(root, role, name, present=True):
     raise RuntimeError(f"Timed out waiting for {role} {name!r} to {qualifier}")
 
 
-def wait_for_application(name):
-    desktop = pyatspi.Registry.getDesktop(0)
+def wait_for_application(desktop, name):
     deadline = time.monotonic() + TIMEOUT_SECONDS
     while time.monotonic() < deadline:
         for application in desktop:
@@ -67,7 +66,16 @@ def wait_for_application(name):
             except (LookupError, RuntimeError, ValueError):
                 continue
         time.sleep(POLL_SECONDS)
-    raise RuntimeError(f"Timed out waiting for application {name!r}")
+    application_names = []
+    for application in desktop:
+        try:
+            application_names.append(application.name)
+        except (LookupError, RuntimeError, ValueError):
+            continue
+    raise RuntimeError(
+        f"Timed out waiting for application {name!r}; "
+        f"AT-SPI applications: {application_names!r}"
+    )
 
 
 def has_state(node, state):
@@ -165,7 +173,8 @@ def main():
     args = parser.parse_args()
     args.artifact_dir.mkdir(parents=True, exist_ok=True)
 
-    application = wait_for_application("fcitx5-config-qt")
+    desktop = pyatspi.Registry.getDesktop(0)
+    application = wait_for_application(desktop, "fcitx5-config-qt")
     input_method = wait_for_node(
         application, "list item", "chichi77 KeyKey Bopomofo"
     )
