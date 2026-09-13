@@ -315,6 +315,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `dbus-run-session` 前須清掉外部的 D-Bus／AT-SPI／runtime 位址，再用
   `dbus-update-activation-environment` 把測試建立且擁有者正確的 XDG 目錄同步給 D-Bus
   啟動的無障礙服務，否則設定工具即使已被 Fcitx 啟動也可能不會出現在 AT-SPI tree。
+- **Xvfb 找到 window ID 不代表 GTK 視窗已可聚焦**：X11 可能在視窗 map 成可見狀態前
+  就讓 `xdotool search` 找到 ID，立刻 `windowfocus` 會以 `X_SetInputFocus BadMatch`
+  結束。真實打字 E2E 必須用 `search --onlyvisible`，並在 host 尚存活時有界重試 focus；
+  不能只延長固定 sleep，否則 hosted runner 仍會偶發失敗。
 - **APT 安裝本機 `.deb` 時路徑必須是絕對路徑或以 `./` 開頭**：傳入
   `out/packages/.../*.deb` 會被當成 package expression。package lifecycle script
   先限制輸出必須位於 `out/packages/`，再轉成絕對路徑；不要放寬成任意目錄。

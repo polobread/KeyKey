@@ -391,20 +391,28 @@ run_case() {
   host_pid=$!
 
   window_id=
+  window_focused=false
   for _ in {1..100}; do
-    window_id=$(xdotool search --name '^chichi77-keykey-gtk3-e2e$' 2>/dev/null |
-      head -n 1 || true)
-    if [[ -n "$window_id" ]]; then
+    window_id=$(xdotool search --onlyvisible \
+      --name '^chichi77-keykey-gtk3-e2e$' 2>/dev/null | head -n 1 || true)
+    if [[ -n "$window_id" ]] && \
+        xdotool windowfocus --sync "$window_id" 2>/dev/null; then
+      window_focused=true
       break
+    fi
+    if ! kill -0 "$host_pid" 2>/dev/null; then
+      wait "$host_pid" || true
+      host_pid=
+      echo "GTK 3 E2E host exited before its window was ready for $case_id." >&2
+      exit 1
     fi
     sleep 0.1
   done
-  if [[ -z "$window_id" ]]; then
-    echo "GTK 3 E2E host window was not found for $case_id." >&2
+  if [[ "$window_focused" != true ]]; then
+    echo "GTK 3 E2E host window could not be focused for $case_id." >&2
     exit 1
   fi
 
-  xdotool windowfocus --sync "$window_id"
   fcitx5-remote -o
   engine_ready=false
   for _ in {1..100}; do
