@@ -34,6 +34,38 @@ std::string lowercase(std::string value) {
     return value;
 }
 
+bool wildcardMatches(const std::string &pattern, const std::string &value,
+                     char matchOne, char matchZeroOrMore) {
+    std::size_t patternIndex = 0;
+    std::size_t valueIndex = 0;
+    std::size_t lastStar = std::string::npos;
+    std::size_t valueAfterStar = 0;
+
+    while (valueIndex < value.size()) {
+        if (patternIndex < pattern.size() &&
+            (pattern[patternIndex] == matchOne ||
+             pattern[patternIndex] == value[valueIndex])) {
+            ++patternIndex;
+            ++valueIndex;
+        } else if (patternIndex < pattern.size() &&
+                   pattern[patternIndex] == matchZeroOrMore) {
+            lastStar = patternIndex++;
+            valueAfterStar = valueIndex;
+        } else if (lastStar != std::string::npos) {
+            patternIndex = lastStar + 1;
+            valueIndex = ++valueAfterStar;
+        } else {
+            return false;
+        }
+    }
+
+    while (patternIndex < pattern.size() &&
+           pattern[patternIndex] == matchZeroOrMore) {
+        ++patternIndex;
+    }
+    return patternIndex == pattern.size();
+}
+
 } // namespace
 
 CinDictionary CinDictionary::loadFile(const std::string &path) {
@@ -161,6 +193,20 @@ CinDictionary::candidates(const std::string &key) const {
     static const std::vector<std::string> empty;
     const auto found = entries_.find(key);
     return found == entries_.end() ? empty : found->second;
+}
+
+std::vector<std::string>
+CinDictionary::candidatesMatching(const std::string &pattern, char matchOne,
+                                  char matchZeroOrMore) const {
+    std::vector<std::string> result;
+    for (const std::string &key : keys()) {
+        if (!wildcardMatches(pattern, key, matchOne, matchZeroOrMore)) {
+            continue;
+        }
+        const std::vector<std::string> &matches = candidates(key);
+        result.insert(result.end(), matches.begin(), matches.end());
+    }
+    return result;
 }
 
 const std::string &CinDictionary::keyName(const std::string &key) const {

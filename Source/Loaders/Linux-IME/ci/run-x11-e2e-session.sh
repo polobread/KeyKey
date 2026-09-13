@@ -14,6 +14,7 @@ known_cases=(
   T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN
   T04-X11-GTK3-CANGJIE
   T04-X11-GTK3-CANGJIE-ENDKEY-ERROR
+  T04-X11-GTK3-CANGJIE-WILDCARD
   T05-X11-GTK3-SIMPLEX
   T05-X11-GTK3-SIMPLEX-FULL-CODE
   T06-X11-GTK3-CANDIDATE-NAVIGATION
@@ -557,6 +558,13 @@ if case_selected T04-X11-GTK3-CANGJIE-ENDKEY-ERROR; then
     '，用' ',zzzzz bq ' \
     '重,重重,重重重,重重重重,重重重重重,月,月手' \
     comma z z z z z space b q space
+fi
+if case_selected T04-X11-GTK3-CANGJIE-WILDCARD; then
+  run_case T04-X11-GTK3-CANGJIE-WILDCARD \
+    chichi77-keykey-cangjie \
+    '昌日' 'a? 1a* 1' \
+    '日,日？,日,日＊' \
+    a question space 1 a asterisk space 1
 fi
 if case_selected T05-X11-GTK3-SIMPLEX; then
   run_case T05-X11-GTK3-SIMPLEX chichi77-keykey-simplex \

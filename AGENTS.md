@@ -58,7 +58,7 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
 - 2026-09-13 同一台 WSL2／rootless Docker 主機已實跑兩個 one-shot gate：Ubuntu 22.04
   的 Fcitx 5.0.14 build、2/2 CTest、lintian、安裝／移除／重裝全數通過；Ubuntu 24.04
   的 preview 安裝、release 升級、移除／重裝全數通過；擴充 F03／F04 後再實跑
-  初裝與升級各 19 個純鍵盤案例，重裝後完整 20 案例也全數通過。
+  初裝與升級各 20 個純鍵盤案例，重裝後完整 21 案例也全數通過。
   另直接執行 `run-ubuntu-24.04-x11-e2e.sh` 的原 17/17 基線亦通過，證明 rootless UID
   選擇同時適用 package 與獨立 X11 路徑；這些仍不是 GNOME／native Wayland 驗收。
 - 長駐 container 把 named volume 掛在 `out/stage`，但 verify 會刪除再建立其下的
@@ -77,13 +77,13 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   Source/Loaders/Linux-IME/ci/dev.sh verify
   ```
 
-  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 20 個
+  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 21 個
   Xvfb/GTK3/Fcitx 案例。`run-debian-package.sh ubuntu-24.04` 是乾淨安裝、升級、移除、
   重裝的 amd64 套件 gate，只在里程碑跑，不要每次修改都跑。Windows 桌面本身不能
   取代 GNOME／native Wayland 驗收；Xvfb 通過後仍須另找真 Linux desktop／VM。
-- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 20/20
-  通過；Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級各 19 案，
-  移除／重裝 20 案也已重跑通過。Windows 主機不會取得原 Mac 的 container／named volumes，
+- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 21/21
+  通過；Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級各 20 案，
+  移除／重裝 21 案也已重跑通過。Windows 主機不會取得原 Mac 的 container／named volumes，
   首次執行較慢屬正常，之後應以同一 `ci/dev.sh` session 迭代。
 
 ---
@@ -390,6 +390,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   先提交目前反白候選再開始新組字。倉頡預設查無結果會清空 reading；簡易目前依
   Preferences 預設保留，待完整設定入口提供切換。帶 Shift 的標點 keysym 需允許，
   Ctrl／Alt 組合仍交回 App，不能為了標點把所有 modifier 吃掉。
+- **倉頡的 `?`／`*` 同時是直接標點與萬用字元**：單獨作為第一個 component 時依
+  `cj-ext.cin` 的 end-key／chardef 立即處理為「？」／「＊」候選；前面已有字根時，
+  舊 `OVIMGeneric` 會排除 end-key 語意，分別作為「恰一碼」與「零碼以上」的 wildcard，
+  等 Space／Enter 才查詢。Linux 必須依 code 排序再保留同碼候選的 CIN 順序，不能
+  直接走 `unordered_map` iteration，也不能看到 `%endkey` 就把 `a?` 提前提交。
 - **Linux 繁轉簡映射是第五份必要套件資料**：`data/tc2sc.cin` 由
   `tools/generate-tc2sc-cin.rb` 從唯讀 `VXHCTC2SCTable.c` 的 3,058 筆明示配對產生；
   不編譯或連結舊模組。舊 C array 雖宣告 3,059 組，實際只列 3,058 組，
@@ -944,13 +949,19 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       到兩碼自動開候選，候選中繼續輸入會先提交反白項再開始下一組，單一候選則自動
       提交。L1 使用正式 `cj-ext.cin`／`simplex-ext.cin`；Ubuntu 24.04 Xvfb/GTK3
       新增兩案，精確提交「，用」與「明銖䍤、」，完整 staged suite 20/20 通過且每案
-      都有 `keyboard-us` 負控制。尚缺動態頻率、萬用字元、完整設定／encoding filter、
+      都有 `keyboard-us` 負控制。尚缺動態頻率、完整設定／encoding filter、
       GNOME 與 Wayland，不能將 F03／F04 標成完成。
+- [x] 2026-09-13 完成第一段 F03 倉頡萬用字元：Linux-only CIN dictionary 以穩定
+      code／同碼來源順序支援 `?` 恰一碼、`*` 零碼以上；保留單獨首鍵的直接標點語意，
+      接在字根後則等 Space／Enter 查詢。L1 合成表及正式 `cj-ext.cin` 均驗證順序，
+      Ubuntu 24.04 Xvfb/GTK3 逐鍵以 `a?`、`a*` 精確提交「昌日」，英文負控制為
+      `a? 1a* 1`；完整 staged suite 21/21 通過。仍缺動態頻率、完整設定／encoding
+      filter、GNOME 與 Wayland，不能將 F03 標成完成。
 - [x] 2026-09-12 建立 debhelper Debian packaging，產出
       `chichi77-keykey-data`（all）與 `fcitx5-chichi77-keykey`（每架構）兩包；Ubuntu
       24.04 amd64 local 已通過 lintian error gate、乾淨 runtime 安裝、受控 preview
       fixture 升級、移除、重裝；擴充 F03／F04 後的最新 local gate 在初裝與升級
-      各跑十九個純鍵盤 X11/GTK3 真實打字案例，重裝後跑完整二十案，
+      各跑二十個純鍵盤 X11/GTK3 真實打字案例，重裝後跑完整二十一案，
       UI 較重的設定案例只在重裝後執行一次。
       Ubuntu 22.04 amd64 local 亦已在 Fcitx 5.0.14 通過建置、lintian error gate、
       乾淨 runtime 安裝、移除、重裝、dependency／資料 hash／授權檢查；該 smoke

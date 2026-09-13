@@ -13,8 +13,9 @@ The initial vertical slice provides:
 - isolated state for each input context;
 - Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin Bopomofo layouts, plus
   Cangjie and Simplex table composition using CIN key names and `%endkey`
-  metadata. Table punctuation, single-candidate commit, Cangjie error clearing,
-  and Simplex two-code auto-query/continuous typing are implemented;
+  metadata. Table punctuation, single-candidate commit, Cangjie error clearing
+  and `?`/`*` wildcard queries, and Simplex two-code auto-query/continuous
+  typing are implemented;
 - candidate lookup, cyclic arrow/PageUp/PageDown navigation, numeric selection,
   Backspace, Escape, Enter, and Space;
 - a native associated-phrase parser for the McBopomofo base and all 29 bundled
@@ -32,7 +33,8 @@ The initial vertical slice provides:
 - an installed-package X11 E2E test that sends physical key events into a real
   GTK 3 entry and verifies Standard Bopomofo → `中`, all five layouts and all
   four explicit tones → `麻馬罵嘛`, incomplete Pinyin backspace recovery,
-  Cangjie `a` → `日`, direct punctuation/error recovery → `，用`, Simplex
+  Cangjie `a` → `日`, direct punctuation/error recovery → `，用`, wildcard
+  queries → `昌日`, Simplex
   `a` → second candidate `曰`, full-code/continuous/direct-punctuation input →
   `明銖䍤、`, and Bopomofo second-page keyboard navigation → `妐`,
   `Shift+Space` full-width input → `Ａ！～　`, plus
@@ -49,7 +51,7 @@ The initial vertical slice provides:
 - Debian packages named `chichi77-keykey-data` and
   `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
 - a package lifecycle test covering install, controlled preview-to-1.2.8
-  upgrade, removal, reinstall, dependency/file/hash checks, the nineteen
+  upgrade, removal, reinstall, dependency/file/hash checks, the twenty
   keyboard-only X11 cases after each installed state, and the settings-window
   case once after reinstall;
 - a persistent Fcitx-native settings schema with a five-layout combo box, a
@@ -58,7 +60,7 @@ The initial vertical slice provides:
   `chichi77 KeyKey Bopomofo` input method. The earlier comma-separated field is
   hidden and migrated when an existing development configuration is loaded.
 
-Remaining Cangjie/Simplex settings, dynamic frequency, wildcard and encoding
+Remaining Cangjie/Simplex settings, dynamic frequency and encoding
 filters, IBus, a Linux equivalent for the macOS
 Traditional-to-Simplified shortcut, full-width behavior outside an active
 Linux input context, the remaining settings and complete
@@ -293,9 +295,9 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
 Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
-The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the nineteen
+The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the twenty
 keyboard-only X11 cases, upgrades to `1.2.8`, runs them again, removes and
-reinstalls the packages, then runs all twenty cases. Running the UI-heavy
+reinstalls the packages, then runs all twenty-one cases. Running the UI-heavy
 case once keeps the installed-package proof while avoiding three identical Qt
 startup cycles. The 22.04 path performs build, lintian,
 dependency, file/data checksum, install/remove/reinstall, and ELF checks but

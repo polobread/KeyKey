@@ -15,6 +15,9 @@ public:
     static CinDictionary load(std::istream &input);
 
     const std::vector<std::string> &candidates(const std::string &key) const;
+    std::vector<std::string>
+    candidatesMatching(const std::string &pattern, char matchOne,
+                       char matchZeroOrMore) const;
     const std::string &keyName(const std::string &key) const;
     bool hasKeyName(const std::string &key) const noexcept;
     bool isEndKey(const std::string &key) const noexcept;

@@ -112,6 +112,30 @@ void testCinParserRejectsIncompleteData() {
             "CIN with an unterminated %keyname was accepted");
 }
 
+void testCinWildcardMatchingPreservesTableOrder() {
+    std::istringstream input(
+        "%chardef begin\n"
+        "b 水\n"
+        "abc 晶\n"
+        "a 日\n"
+        "ab 明\n"
+        "aa 昌\n"
+        "aa 昍\n"
+        "%chardef end\n");
+    const CinDictionary dictionary = CinDictionary::load(input);
+
+    const std::vector<std::string> one =
+        dictionary.candidatesMatching("a?", '?', '*');
+    require(one == std::vector<std::string>({"昌", "昍", "明"}),
+            "Single-character wildcard order changed");
+
+    const std::vector<std::string> zeroOrMore =
+        dictionary.candidatesMatching("a*", '?', '*');
+    require(zeroOrMore ==
+                std::vector<std::string>({"日", "昌", "昍", "明", "晶"}),
+            "Zero-or-more wildcard order changed");
+}
+
 std::shared_ptr<const CinDictionary> loadRealBopomofoDictionary() {
     return std::make_shared<const CinDictionary>(CinDictionary::loadFile(
         std::string(KEYKEY_TEST_DATA_DIR) + "/bpmf-ext.cin"));
@@ -632,6 +656,40 @@ void testRealCangjieTypingFlow() {
                           false});
     require(!result.handled && result.commit.empty(),
             "Cangjie Ctrl punctuation shortcut must pass through");
+
+    result = engine.processKey(context, character('a'));
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Character, '?', KeyModifier::Shift, false,
+                          false});
+    require(result.handled && result.preedit == "日？" &&
+                result.candidates.empty() && result.commit.empty(),
+            "Cangjie one-character wildcard was treated as an end key");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.candidates.size() > 2 && result.candidates.at(0) == "昌" &&
+                result.candidates.at(1) == "昍" &&
+                result.candidates.at(2) == "明",
+            "Cangjie one-character wildcard candidates changed");
+    result = engine.processKey(context, character('1'));
+    require(result.commit == "昌",
+            "Cangjie one-character wildcard candidate must commit 昌");
+
+    engine.processKey(context, character('a'));
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Character, '*', KeyModifier::Shift, false,
+                          false});
+    require(result.handled && result.preedit == "日＊" &&
+                result.candidates.empty() && result.commit.empty(),
+            "Cangjie zero-or-more wildcard was treated as an end key");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.candidates.size() > 2 && result.candidates.at(0) == "日" &&
+                result.candidates.at(1) == "曰" &&
+                result.candidates.at(2) == "昌",
+            "Cangjie zero-or-more wildcard candidates changed");
+    result = engine.processKey(context, character('1'));
+    require(result.commit == "日",
+            "Cangjie zero-or-more wildcard candidate must commit 日");
 }
 
 void testRealSimplexTypingFlowAndCodeLimit() {
@@ -1005,6 +1063,7 @@ int main() {
     try {
         testCinParserHandlesBomCrlfAndPercentKey();
         testCinParserRejectsIncompleteData();
+        testCinWildcardMatchingPreservesTableOrder();
         testAssociatedPhraseParserFiltersAndSorts();
         testRealAssociatedPhraseCollections();
         testAssociatedPhraseKeyboardFlow();

@@ -248,7 +248,7 @@ EngineResult Engine::processKey(InputContextState &context,
     }
 
     switch (event.code) {
-    case KeyCode::Character:
+    case KeyCode::Character: {
         if (!context.showingAssociatedPhrases_ &&
             !context.candidates_.empty() && event.character >= '1' &&
             event.character <= '9') {
@@ -288,8 +288,12 @@ EngineResult Engine::processKey(InputContextState &context,
             return passThroughResult();
         }
         clearCandidates(context);
+        const bool cangjieWildcard =
+            inputMethod_ == InputMethod::Cangjie &&
+            context.tableCode_.size() > 1 &&
+            (event.character == '?' || event.character == '*');
         if (inputMethod_ != InputMethod::Bopomofo &&
-            isEndKey(event.character)) {
+            isEndKey(event.character) && !cangjieWildcard) {
             return includePendingCommit(query(context, true));
         }
         if (inputMethod_ == InputMethod::Simplex &&
@@ -297,6 +301,7 @@ EngineResult Engine::processKey(InputContextState &context,
             return includePendingCommit(query(context, true));
         }
         break;
+    }
     case KeyCode::Space:
         if (!context.candidates_.empty()) {
             changeCandidatePage(context, 1);
@@ -403,7 +408,13 @@ EngineResult Engine::snapshot(const InputContextState &context) const {
 
 EngineResult Engine::query(InputContextState &context,
                            bool commitSingleCandidate) const {
-    context.candidates_ = dictionary_->candidates(queryKey(context));
+    const std::string key = queryKey(context);
+    if (inputMethod_ == InputMethod::Cangjie && key.size() > 1 &&
+        key.find_first_of("?*") != std::string::npos) {
+        context.candidates_ = dictionary_->candidatesMatching(key, '?', '*');
+    } else {
+        context.candidates_ = dictionary_->candidates(key);
+    }
     context.candidatePreedit_.clear();
     context.showingAssociatedPhrases_ = false;
     context.page_ = 0;

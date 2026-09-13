@@ -99,7 +99,7 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 
 後兩個指令用 debhelper 產生依發行版命名的 `chichi77-keykey-data` 與
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
-各跑一次十九個純鍵盤 X11 真實打字案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
+各跑一次二十個純鍵盤 X11 真實打字案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例；22.04 則跑較省時的套件安裝／移除 smoke。
 這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
 
@@ -449,7 +449,7 @@ native Wayland desktop typing acceptance. See the
 
 The final two commands create distro-labelled `chichi77-keykey-data` and
 `fcitx5-chichi77-keykey` Debian packages with debhelper. Ubuntu 24.04 also runs
-the nineteen keyboard-only X11 cases after install, controlled upgrade, and
+the twenty keyboard-only X11 cases after install, controlled upgrade, and
 reinstall. The native Fcitx settings-window click, persistence, restart, and
 typing case runs once after reinstall. These are development artifacts until
 the remaining release gates are complete.
