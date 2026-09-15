@@ -15,8 +15,11 @@ macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是�
 切片不需移除，保留日後擴充可能；候選學習／動態頻率、注音自動修正與 F12–F15
 目前不加入。新建 Linux-only 引擎與 IBus／Fcitx 5 整合，不修改或連結既有
 KeyKeyEngine／OpenVanilla 核心。2026-09-12 已完成規劃、四平台版號 1.2.8 同步及
-第一段 Linux-only engine／Fcitx 5 垂直切片；local Ubuntu 24.04 Xvfb/GTK 3 的 L3
-真實輸入已通過，並含五種注音布局、候選鍵盤／滑鼠操作、標點／符號候選、30 套內建關聯詞、
+第一段 Linux-only engine／Fcitx 5 垂直切片；local Ubuntu 24.04 Xvfb 已以 GTK 3、
+GTK 4 與 Qt 6 跑過各自適用的完整第一階段真實輸入矩陣，
+並含五種注音布局、
+候選鍵盤／滑鼠操作、
+標點／符號候選、30 套內建關聯詞、
 直／橫候選設定、中英文模式與全半形、XDG 錯誤提示聲、Fcitx 原生設定 schema 與
 Ubuntu 22.04／24.04
 Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基線已通過，
@@ -30,7 +33,7 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
 ### 2026-09-13 Windows 11 主機接手 Linux 原生版
 
 - PR #2 已合併到 `origin/master` 的 `d7a00a8`，遠端 `v1.2.8` 隨後刪除；本機
-  `v1.2.8` 已 rebase 到同一提交且沒有 upstream。下次推送會重新建立遠端開發分支；
+  `v1.2.8` 已 rebase 到同一提交，後續也已重新建立 `origin/v1.2.8` 並設為 upstream。
   不可把曾存在的舊七筆歷史 merge 回來。正式詞庫保留原始內容；Linux 測試與文件
   不使用「中國／中国／中!」案例。
 - 在 Windows 上接續的是 **Linux Fcitx 5 frontend**，不是 Windows TSF。建議從
@@ -79,29 +82,40 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   Source/Loaders/Linux-IME/ci/dev.sh verify
   ```
 
-  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 32 個
-  Xvfb/GTK3/Fcitx 案例。`run-debian-package.sh ubuntu-24.04` 是乾淨安裝、升級、移除、
+  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 83 個
+  Xvfb/GTK3/GTK4/Qt6/Fcitx 案例。`run-debian-package.sh ubuntu-24.04` 是乾淨安裝、升級、移除、
   重裝的 amd64 套件 gate，只在里程碑跑，不要每次修改都跑。Windows 桌面本身不能
   取代 GNOME／native Wayland 驗收；Xvfb 通過後仍須另找真 Linux desktop／VM。
-- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 32/32
+- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 83/83
   通過；案例涵蓋注音候選直接接下一音節、五布局 reading 中無效裸 `\` 與 Ctrl 快捷鍵，以及
   空狀態／reading／候選的 Backspace 與 Escape 邊界；也涵蓋每個 input context 的
   中英文模式、`Ctrl+\`、單按 Shift、Caps Lock、英文全半形，以及 reading／候選期間
   Ctrl／Alt 快捷鍵與 press／release 邊界；長按 `Ctrl+\` 只會切換一次。
-  T10 另驗證同一 App 兩欄 context 隔離、候選中關閉 client、重啟 Fcitx 與新 client
-  恢復輸入；兩個同時存活的獨立 App 與桌面登出登入仍待 GNOME 驗收。
-  T11 另以真 GTK3 欄位驗證 active reading 中的方向、Home／End、Delete／Tab 與 Shift
-  變體不會移動 App caret／selection 或換欄，接著驗證既有文字選取後由候選精確替換、
-  密碼 content purpose 使 Fcitx 回到 `keyboard-us` 而不載入自訂輸入法，以及唯讀欄位
-  在完整鍵序後不變；一般注音候選另以真實滑鼠點擊第二列選出「鐘」，符號表則點擊
-  第一列提交「，」。App 內容的滑鼠 selection、GTK4／Qt／瀏覽器與 Wayland 仍待驗收。
+  T10 另以 GTK3／GTK4／Qt6 驗證同一 App 兩欄 context 隔離、候選中關閉 client、重啟 Fcitx 與新 client
+  恢復輸入，以及兩個同時存活的獨立 App 各自保留中英文與全半形狀態；桌面登出登入、
+  active preedit 跨 App 切換及瀏覽器矩陣仍待 GNOME 驗收；GTK4 `GtkText`
+  已有 Standard 注音 `中` 的真實逐鍵 T01，以及五布局四聲／輕聲、無效鍵與快捷鍵的
+  T02，空狀態／reading／候選中 Backspace 與 Escape 邊界的 T03，以及直式
+  鍵盤／滑鼠候選、橫式 Windows 對標鍵盤導覽的 T06，以及預設／分類／停用／舊設定
+  遷移／D-Bus 保存重啟的關聯詞 T07，以及中英文切換、停用 `Ctrl+\`、全形與繁轉簡的
+  T08，以及長按 `Ctrl+\` 與 reading／候選中 Ctrl／Alt pass-through 的 T09，以及
+  同 App 兩欄、client/Fcitx 復原與兩個同時存活 App 狀態隔離的 T10，以及 T11
+  內容指標選取／替換／密碼／唯讀欄與 T12 符號候選；
+  每案都有 `keyboard-us` 負控制。
+  T11 另以三套 toolkit 真實欄位驗證 active reading 中的方向、Home／End、Delete／Tab 與 Shift
+  變體不會移動 App caret／selection 或換欄，並以 XTest 指標拖曳選取既有「乙」後由
+  候選精確替換為「中」、
+  密碼／Sensitive 路徑只產生 literal，以及唯讀欄位在完整鍵序後不變；一般注音候選
+  另以 GTK3／GTK4／Qt6 真實滑鼠點擊第二列選出「鐘」，
+  符號表則點擊
+  第一列提交「，」。瀏覽器與 Wayland 的 App 內容滑鼠 selection 仍待驗收。
   候選方向已能在原生設定由 Vertical 切成 Horizontal，保存／重啟後套用到真實候選；
   錯誤訊號已接到可關閉的 XDG 提示聲，設定視窗的關閉、保存與重啟讀回已納入同一
   suite；`configure`／GNU Make source-directory 與 out-of-source gate 亦在重建後的
   24.04 container 通過。單次 24.04 `.deb` 已重建並確認自動產生的 runtime dependency
   包含 `libcanberra0t64`。
-  Ubuntu 24.04 package lifecycle 已重跑：preview 初裝與 release 升級各通過 31 個
-  非設定視窗案例，移除／重裝後通過包含設定視窗的完整 32 案；dependency、資料 hash、
+  Ubuntu 24.04 package lifecycle 已重跑：preview 初裝與 release 升級各通過 82 個
+  非設定視窗案例，移除／重裝後通過包含設定視窗的完整 83 案；dependency、資料 hash、
   移除與設定 sentinel 也全數通過。
   2026-09-14 另把同一組 release-candidate `.deb` 實裝到 WSL2 Ubuntu 24.04.4，
   由使用者在 WSLg XWayland 的 GTK3 gedit 以 Fcitx 5.1.7 實際確認可輸入中文；這只算
@@ -458,8 +472,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   使用者真正的 Fcitx 設定檔權限。
 - **Xvfb 找到 window ID 不代表 GTK 視窗已可聚焦**：X11 可能在視窗 map 成可見狀態前
   就讓 `xdotool search` 找到 ID，立刻 `windowfocus` 會以 `X_SetInputFocus BadMatch`
-  結束。真實打字 E2E 必須用 `search --onlyvisible`，並在 host 尚存活時有界重試 focus；
-  不能只延長固定 sleep，否則 hosted runner 仍會偶發失敗。
+  結束；同名 host 快速重開時，舊 ID 也可能短暫留在搜尋結果。真實打字 E2E 必須用
+  `search --onlyvisible`，從最新 ID 起逐一嘗試，並在 host 尚存活時有界重試 focus；
+  不能只取第一個 ID 或延長固定 sleep，否則 hosted runner 仍會偶發失敗。
 - **Fcitx 候選窗的第一個可見 geometry 不是完整候選**：classic-ui 的
   `Fcitx5 Input Window` 會先以 1×1 map，再變成只容納 preedit 的小窗，最後才展開
   九列直式候選。T06 滑鼠測試必須先明確設為 Vertical，再以有界輪詢等待 width > 10
@@ -475,19 +490,68 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `fcitx5-remote -n`，不能把框架的 per-context 選擇策略誤判成 addon 串字。KeyKey 狀態
   仍必須由 `InputContextProperty` 隔離；失焦後應看到舊 preedit 清空，切回後按 `1` 只會
   開始新的 `ㄅ` reading，不可選到舊候選。GTK `changed` 在 focus-out 附近可能暫時回報
-  preedit 文字，應以有序 preedit 與最終 buffer 判定是否誤提交。Xvfb 沒有 window
+  preedit 文字；GTK4 `GtkText` 在失焦時也會短暫以 `changed` 回報 `ㄓㄨㄥ`，切回後由
+  Fcitx 清除，再從新的 reading 提交正確結果。應以有序 preedit 與最終 buffer 判定
+  是否誤提交。Xvfb 沒有 window
   manager，`xdotool windowclose` 可能直接摧毀 X window 並使 GTK 報 `BadWindow`；client
   lifecycle 測試改由 host 收到控制檔後自行 `gtk_widget_destroy()`。
+- **跨 App 的 active preedit 失焦行為不是四平台共同基線**：先查 macOS，
+  `deactivateServer:` 會先 commit composing buffer 再清理；Windows TSF 在 document
+  manager 失焦時則 `abandonComposition()` 並非同步終止。local Xvfb/Fcitx 5/GTK3 的
+  診斷中，App A 的 `ㄓㄨㄥ` client preedit 在切到 App B 時被 GTK 提交進 App A 的文字欄，
+  切回後再選字會得到 `ㄓㄨㄥ中`。這不能當成 KeyKey context 串字，也不能在 addon 內硬改成 Windows
+  語意。正式 T10 multi-App isolation 只在 composition 為空時切焦點，以兩個同時存活
+  的 GTK process 驗證每個 context 的中英文與全半形狀態；active preedit 仍須在 GNOME
+  與 GTK4／Qt／瀏覽器逐一確認並明列平台差異。
 - **候選開啟時不能用 Tab 製造 T10 focus-out**：macOS 的 PlainVanilla candidate flow
   會吃掉 Tab 並提示錯誤，Windows TSF 的相同共用 candidate flow 亦然；Linux 對標後
   也必須保留候選，不能為了測跨欄而讓 Tab 漏到 App。T10 改由 GTK host 輸出實際
   widget 中心座標，再以 XTest 真實滑鼠點擊第二欄；不可寫死 Xvfb 螢幕座標，也不可
   改回會掩蓋產品行為的 Tab。
+- **T10 的 GTK4 第二欄不可放在候選窗正下方**：GTK4 `GtkText` 的第一欄候選有時會
+  覆蓋垂直排列的第二欄，XTest 點擊就變成選出「衷」而不是切換 input context。
+  GTK4 focus host 因此以 960 px 寬的左右欄位保留真實滑鼠失焦路徑；座標仍由
+  `gtk_widget_compute_bounds()` 動態取得。不可改回上下排列或用固定螢幕座標。
+- **GTK3 指標選字不能把初始 focus selection 當成測試結果**：T11 的 `GtkEntry` 設定
+  「甲乙丙」後，初次取得焦點會先全選 `0:3`；若直接在第二字左緣 click 後立刻從同點
+  drag，GTK 可能把它判成 double click 而再次全選。測試先點 entry 文字右側空白區並
+  等 caret 到索引 3，再以 Pango layout 算出的第二字左右 hit point 做 XTest drag，最後
+  從 `GtkEditable` 有界輪詢精確確認 `1:2`。不可硬編碼 Xvfb 像素，也不能只接 entry 的
+  button signal，因為它的內部 event window 可能先吃掉指標事件。
 - **GTK3 密碼欄會由 Fcitx capability 停用自訂輸入法**：設為
   `GTK_INPUT_PURPOSE_PASSWORD` 後，該 context 會切回 `keyboard-us`，而且不能用
   `fcitx5-remote -s chichi77-keykey-bopomofo` 強制選回；T11 應把這個安全邊界當成
   預期結果，不能為了跑注音而移除 password purpose。Fcitx adapter 仍在收到
   `Password`／`Sensitive` capability 時防禦性清除關聯詞候選，供其他 frontend 行為。
+- **GTK4／Qt6 真實輸入要由各自的 host 驗證，不能拿 GTK3 binary 代稱**：Ubuntu 24.04
+  的 GTK4 案例使用 `GtkText` 與 `preedit-changed`，Qt6 案例使用
+  `QLineEdit`／`QPlainTextEdit` 與 `QInputMethodEvent`；runtime 同時安裝
+  `fcitx5-frontend-gtk4` 與 `fcitx5-frontend-qt6`。CMake 的
+  `--enable-x11-e2e-host` 因此需要 GTK3、GTK4、Qt6 Widgets 三套開發檔。E2E runner
+  保留 `KEYKEY_E2E_HOST` 給既有 GTK3 suite，另以 `KEYKEY_E2E_GTK4_HOST`、
+  `KEYKEY_E2E_QT6_HOST` 指定其餘 host，並依 case 選對視窗標題；不可只因都經 Fcitx
+  就改用別的 toolkit client。
+- **Qt6 唯讀欄位必須透過 input-method query 發布停用狀態**：`QLineEdit` 與
+  `QPlainTextEdit` 單獨呼叫 `setReadOnly(true)`，focus-in 後仍可能向 Fcitx 宣告 IME
+  可用，結果連標準 Fcitx engine 都會送入 preedit／commit。T11 的唯讀多行 host 因此
+  依 Qt 平台介面讓 `Qt::ImEnabled` 回傳 false，Fcitx 核心才會把完整按鍵交回 widget；
+  此路徑不需要在 KeyKey addon 猜測 widget 狀態或新增 Fcitx 5.0.14 沒有的 capability
+  enum。密碼欄在 Qt6 會保留目前 engine 名稱但將字元直接送 App，與 GTK3 自動顯示
+  `keyboard-us` 不同；驗收應核對無 preedit、只有 literal 和無關聯詞，不可硬套 GTK 的
+  `fcitx5-remote -n` golden。
+- **停用 `Ctrl+\` 後，active preedit 的處置屬於 client，不可在 addon 裡統一**：先查
+  macOS，其內部切換並不使用 Windows 式的 `Ctrl+\` 開關；再查 Windows TSF，停用
+  選項後 shortcut 會交回 App。Linux 也只 pass through。local Xvfb 中，GTK3 收到
+  `Ctrl+\` 時會先把 `ㄓ` client preedit 提交，再於其後插入下一個 commit，得到
+  `ㄓ翁`；GTK4 `GtkText` 同樣先提交 preedit，但 insertion point 留在其前，下一個
+  commit 因此得到 `翁ㄓ`。兩者都證明 KeyKey 狀態仍是中文且 shortcut 未被 addon
+  吃掉；不可為了讓文字順序一致而重送按鍵、提交或篡改 composition。
+- **橫式候選外觀不代表 macOS 與 Windows 有相同方向鍵語意**：macOS PlainVanilla
+  會隨候選方向交換按鍵角色，橫式以 Left／Right 移動反白、Up／Down 翻頁；Windows
+  TSF 目前只改 `CandidateWindow` 的繪製排列，底層 candidate service 維持直式，因此
+  仍由 Up／Down 移動反白、Left／Right 翻頁。Linux 1.2.8 第一階段依 Windows 行為，
+  Horizontal `CandidateLayoutHint` 不得自行交換按鍵角色；比較時仍必須先記錄 macOS
+  差異，再以 Windows runtime 界定範圍。
 - **APT 安裝本機 `.deb` 時路徑必須是絕對路徑或以 `./` 開頭**：傳入
   `out/packages/.../*.deb` 會被當成 package expression。package lifecycle script
   先限制輸出必須位於 `out/packages/`，再轉成絕對路徑；不要放寬成任意目錄。
@@ -1201,7 +1265,18 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       後由新 client 再提交「中」；正向流程及 recovery 都有 `keyboard-us` 負控制。
       單獨 T10、完整 warm gate（CTest 2/2、X11 29/29）及 Ubuntu 24.04 package
       lifecycle（初裝 28/28、升級 28/28、重裝 29/29）均已通過；兩個同時存活的
-      獨立 App、GNOME 登出登入、native Wayland／XWayland 仍待桌面驗收。
+      獨立 App 已由下列 2026-09-15 切片補上，GNOME 登出登入、native
+      Wayland／XWayland 仍待桌面驗收。
+- [x] 2026-09-15 擴充 T10 為兩個同時存活的獨立 GTK3 App：仍先查 macOS
+      `deactivateServer:`，確認失焦時會 commit composing buffer 後清理，再查 Windows
+      TSF，確認 document manager 失焦會 abandon 並非同步終止 composition。因 active
+      preedit 語意不同，正式 isolation 案例只在空 composition 切焦點：App A 切為英文
+      全形並輸出 `ａ`，App B 保持預設中文半形輸出「文」，切回 App A 後確認保留原狀態
+      並完成 `ａｂ中`；兩個 process 在受控關閉前都仍存活。`keyboard-us` 負控制精確為
+      `ab5j/ 1|jp61`。targeted T10、完整 warm gate（CTest 2/2、X11 33/33）及 Ubuntu
+      24.04 package lifecycle（preview 初裝 32/32、release 升級 32/32、移除／重裝後
+      33/33）均通過。local GTK3 active-preedit 診斷會在 App A 留下 `ㄓㄨㄥ中`，不能拿
+      Windows abandon 語意改寫 addon；GNOME、其他 toolkit 與登出登入仍待驗收。
 - [x] 2026-09-13 建立第一段 T11 編輯／敏感欄位邊界：installed-addon X11/GTK3
       先依 macOS OSX-IMK／TraditionalMandarin／PlainVanilla 事件流，再用 Windows TSF
       交叉確認：reading 中未帶 Ctrl／Alt／Super 的 Left／Right／Up／Down／Home／End／
@@ -1216,8 +1291,128 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       Ubuntu 24.04 `.deb` lifecycle 亦於 preview 初裝與 release 升級各通過 29/29，
       移除／重裝後含設定視窗通過 30/30，dependency、資料 hash、移除與設定 sentinel
       均通過。
-      Adapter 對 `Password`／`Sensitive` capability 另有防禦性關聯詞清除。滑鼠
-      selection、GTK4／Qt／瀏覽器、GNOME 與 Wayland 仍待驗收。
+      Adapter 對 `Password`／`Sensitive` capability 另有防禦性關聯詞清除。GTK3 App
+      內容的滑鼠 selection 已於下列 2026-09-15 切片補上；GTK4／Qt／瀏覽器、GNOME 與
+      Wayland 仍待驗收。
+- [x] 2026-09-15 擴充同一 T11 installed-addon 案例的 App 內容指標選取：先查 macOS
+      `OpenVanillaController`／PlainVanilla，再比對 Windows TSF。macOS 在外部強制結束
+      composition 時可提交 residue 後清理；Windows 若 selection 離開追蹤範圍則放棄並
+      非同步終止 TSF composition，兩邊不能假設完全相同。本切片只固定共同且無歧義的
+      committed-text 路徑：GTK host 以 Pango layout 回報第二字 hit point，XTest 真實
+      拖曳選取「乙」並精確觀測 selection `1:2`，再由注音候選替換為「中」得到
+      「甲中丙」；後續 active-reading 編輯鍵回歸仍得到「甲中中丙」，`keyboard-us`
+      負控制則精確得到「甲5j/ 1丙」。targeted T11 與完整 warm gate 均通過，後者為
+      CTest 2/2、X11 32/32；active composition 期間以指標改 selection、GTK4／Qt／
+      瀏覽器、GNOME 與 Wayland 仍待驗收。本次只改測試覆蓋，未重跑套件 lifecycle。
+- [x] 2026-09-15 建立 GTK4 Standard 注音 T01 真實 client slice：先查 macOS
+      `OVIMTraditionalMandarin` 選字後的 committed text 與 OSX-IMK
+      `commitComposition`／`insertText`，再查 Windows TSF snapshot → `commitText` →
+      候選更新／隱藏，確認兩邊在這條逐音、選字、清空流程一致。新增獨立 GTK4
+      `GtkText` host，透過 installed addon 與實體 XTest 鍵序精確觀測 `ㄓ` → `ㄓㄨ` →
+      `ㄓㄨㄥ` →「中」，`keyboard-us` 負控制為 `5j/ 1`。targeted 案例、完整 warm gate
+      （CTest 2/2、X11 34/34）與 Ubuntu 24.04 package lifecycle（preview 初裝 33/33、
+      release 升級 33/33、移除／重裝後含設定視窗 34/34）均通過。這一個 T01 切片
+      完成當時，GTK4 T02–T12、GNOME、native Wayland／XWayland 仍待驗收。
+- [x] 2026-09-15 將 GTK4 擴充至五布局 T02：先查 macOS
+      `OVIMTraditionalMandarin` 的 `combineKey`、tone marker 立即查詢與候選事件流，再查
+      Windows TSF 對同一共用 module 的 dispatch 及 Standard、ETen、ETen26、Hsu、
+      Hanyu Pinyin 五項設定。兩邊都在 reading 中吃掉無效一般鍵並提示錯誤，Ctrl／Alt
+      App shortcut 則 pass through。GTK4 `GtkText` 以真實鍵序逐布局輸入四聲／輕聲
+      「麻馬罵嘛」，並核對 ETen26／Hsu 複用鍵中間態、Hanyu Pinyin 不完整 `zh` 退格、
+      裸 `\` 與 `Ctrl+C` 後 reading 保留；每案都有 `keyboard-us` literal control。
+      五個 targeted 案例、完整 warm gate（CTest 2/2、X11 39/39）及 Ubuntu 24.04
+      package lifecycle（preview 初裝 38/38、release 升級 38/38、移除／重裝後含設定
+      視窗 39/39）均通過。GTK4 T03–T12、GNOME、native Wayland／XWayland 仍待驗收。
+- [x] 2026-09-15 將 GTK4 擴充至 T03 編輯／取消邊界：先查 macOS
+      `OVIMTraditionalMandarinContext::handleBackspace`、`handleKey` 與 PlainVanilla
+      candidate cancel flow，再查 Windows TSF `wantsKey`、`isPotentialKey` 與
+      snapshot/updateComposition。兩邊的共同語意為空狀態將 Backspace／Escape
+      交回 App，reading Backspace 只刪一個注音成分、Escape 清空；一般候選中
+      Backspace 先關候選再刪最後一音，Escape 則取消整段 reading。GTK4
+      `GtkText` 以真實鍵序重跑與 GTK3 相同的狀態轉移，只提交「中文麻」；
+      `keyboard-us` 負控制亦通過。targeted T03、完整 warm gate（CTest 2/2、
+      X11 40/40）及 Ubuntu 24.04 package lifecycle（preview 初裝 39/39、release
+      升級 39/39、移除／重裝後含設定視窗 40/40）均通過。Windows 對標的
+      GTK4 T06–T12、GNOME、native Wayland／XWayland 仍待驗收；T04／T05 為保留的
+      Linux 擴充，不是 1.2.8 第一階段 blocker。
+- [x] 2026-09-15 將 GTK4 擴充至 T06 候選導覽：先查 macOS `PVCandidate.h` 與
+      直／橫 candidate controller，確認橫式會交換方向鍵的反白／翻頁角色且一般候選
+      可由滑鼠索引轉選字鍵；再查 Windows TSF `CandidateWindow.cpp` 與
+      `CandidateStateTest.cpp`，確認橫式只改繪製，核心仍用直式鍵盤語意，且自繪窗
+      沒有 mouse-button 選字訊息。Linux 依第一階段 Windows 基線，兩種樣式都維持
+      Up／Down 反白、Left／Right／PageUp／PageDown／Space 翻頁，同時保留 Fcitx
+      原生滑鼠 callback。GTK4 直式鍵盤案選出「妐」、直式真實滑鼠第二列選出「鐘」，
+      橫式案送 End、Home、PageDown、PageUp、Right、Left、Space、Down、Enter 後選出
+      「妐」，三案都有 `keyboard-us` 負控制。targeted 三案、完整 warm gate
+      （CTest 2/2、X11 43/43）與 Ubuntu 24.04 package lifecycle（preview 初裝 42/42、
+      release 升級 42/42、移除／重裝後含設定視窗 43/43）均通過。GTK4 T07–T12 與
+      GNOME X11／XWayland／native Wayland 的候選畫面、位置、點擊仍待驗收。
+- [x] 2026-09-15 將 GTK4 擴充至 T07 關聯詞鍵盤與設定流程：先查 macOS
+      `OVAFAssociatedPhraseContext` 與 PlainVanilla around-filter event flow，確認單字
+      先提交、候選內容是不重複首字的後綴，並由 `Shift+1–9` 選取；再查 Windows TSF
+      `KeyKeyEngine` 的同一模組載入與設定同步，兩邊在本段鍵盤語意一致，且關聯詞窗
+      都不是一般候選的滑鼠控制流程。GTK4 `GtkText` 新增五案，分別驗證 McBopomofo
+      預設「今→今天」、history-only「臺→臺灣史」、全部停用後 `Shift+1` 交回 App、
+      舊逗號設定遷移，以及 D-Bus 寫入 government、重啟 Fcitx、讀回後輸入
+      「中程計畫」；每案都有 `keyboard-us` 負控制。targeted 五案、完整 warm gate
+      （CTest 2/2、X11 48/48）與 Ubuntu 24.04 package lifecycle（preview 初裝 47/47、
+      release 升級 47/47、移除／重裝後含設定視窗 48/48）均通過。關聯詞滑鼠仍不是
+      macOS／Windows 對標要求；GTK4 T08–T12 與 GNOME／Wayland 尚待驗收。
+- [x] 2026-09-15 將 GTK4 擴充至 T08 中英文、全半形與繁轉簡：先查 macOS
+      `OpenVanillaController.mm` 與 TraditionalMandarin／output-filter 事件流；macOS
+      的 `Ctrl+\` 是輪替內建輸入法、單按 Shift 不切內部中英文、全形選單快捷鍵為
+      Command+Shift+Space。再查 Windows TSF `TextService.cpp`／`SettingsApp.cpp`，其
+      內部中文／英文模式、可停用 `Ctrl+\`、固定 Ctrl+Space、短按 Shift、Shift+Space
+      全半形與 Caps Lock 才是 1.2.8 第一階段基線；兩平台的繁轉簡則都在輸出階段套用。
+      GTK4 `GtkText` 新增四案，精確得到中英模式
+      `5j/aBａ！　文abcde麻`、停用快捷鍵 `翁ㄓ`、全形 `Ａ！～　` 與繁轉簡 `台湾`，
+      並各有 `keyboard-us` 負控制。停用 shortcut 時 GTK3 為 `ㄓ翁`、GTK4 為 `翁ㄓ`，
+      這是 client 接收 active preedit 後的插入順序差異，不改 engine。targeted 四案、
+      完整 warm gate（CTest 2/2、X11 52/52）與 Ubuntu 24.04 package lifecycle
+      （preview 初裝 51/51、release 升級 51/51、移除／重裝後含設定視窗 52/52）均通過。
+      GTK4 T09–T12 與 GNOME X11／XWayland／native Wayland 尚待驗收。
+- [x] 2026-09-15 將 GTK4 擴充至 T09 修飾鍵、repeat 與 key-up 邊界：先查 macOS
+      `OpenVanillaController.mm` 與 TraditionalMandarin candidate flow，確認 Command、
+      一般 Ctrl／Option shortcut 在 loader 層交回 App，只有已處理的 key-down 才配對
+      吃掉 key-up；再查 Windows TSF `TextService.cpp`／`KeyKeyEngine.cpp`，確認一般
+      Ctrl／Alt 也在進 engine 前放行，普通 key-up 不吃，僅短按 Shift 另有切換語意。
+      Linux 保留既有 X11 平台差異：長按 `Ctrl+\` 的 repeat 可能未帶 Repeat state，
+      因此以實體 backslash press/release latch 保證只切一次。GTK4 `GtkText` 使用和 GTK3
+      完全相同的長按、清除殘值、切回中文及 reading／候選中 Ctrl+C／Alt+F 鍵序，精確
+      提交 `x中文`，`keyboard-us` 負控制為 `x5j/ 1jp61`。targeted 案、完整 warm gate
+      （CTest 2/2、X11 53/53）與 Ubuntu 24.04 package lifecycle（preview 初裝 52/52、
+      release 升級 52/52、移除／重裝後含設定視窗 53/53）均通過。Super 仍只在 L1，
+      GTK4 T10–T12 與 GNOME X11／XWayland／native Wayland 尚待驗收。
+- [x] 2026-09-15 將 GTK4 擴充至 T10 input-context／client lifecycle：先查 macOS
+      `OpenVanillaController`，確認每個 controller 有獨立 loader context，失焦時會
+      commit composing buffer 後清理；再查 Windows TSF `TextService.cpp`，其 document
+      manager／context 失焦會 `abandonComposition()` 並非同步終止。兩邊 active
+      composition 語意不同，因此沿用既有 T10 的共同可驗證邊界，不在 addon 強制統一。
+      GTK4 `GtkText` 以和 GTK3 相同的實體鍵序驗證同 App 兩欄各自提交 `中|文`、候選中
+      關閉 client 後 Fcitx/addon 存活、重啟 Fcitx 後新 client 再提交「中」，以及兩個
+      同時存活 App 各自保留英文全形與中文半形狀態並得到 `ａｂ中|文`；兩案都有
+      `keyboard-us` 負控制。GTK4 失焦時會短暫回報 client preedit 文字，切回後清除，
+      最終 buffer 與狀態隔離正確。focus host 改成左右欄避免候選 popup 蓋住第二欄，
+      runner 也會逐一嘗試同名可見 X11 window ID，排除快速重開的舊 ID。targeted 兩案、
+      完整 warm gate（CTest 2/2、X11 55/55）與 Ubuntu 24.04 package lifecycle（preview
+      初裝 54/54、release 升級 54/54、移除／重裝後含設定視窗 55/55）均通過。
+      GTK4 T11–T12、GNOME X11／XWayland／native Wayland、Qt／瀏覽器及桌面登出登入仍待驗收。
+- [x] 2026-09-16 一次完成 GTK4 T11–T12 與 Qt6 第一階段 X11 矩陣：比對仍先查
+      macOS OSX-IMK／PlainVanilla／TraditionalMandarin，再查 Windows TSF，固定共同的
+      組字、候選、關聯詞、符號與 App 編輯邊界，並保留 client 插入與 focus 行為差異。
+      GTK4 補上 T11 指標選取 `1:2`、候選替換、active-reading 編輯鍵、密碼／唯讀欄，
+      以及 T12 符號候選的鍵盤與滑鼠選取。新增獨立 Qt6 Widgets host，以
+      `QLineEdit`／`QPlainTextEdit`、`QInputMethodEvent` 和真實 XTest 重跑 T01–T03、
+      T06–T12 共 25 案，涵蓋五布局、直／橫候選、關聯詞設定保存、模式、兩 context、
+      兩 App、client/Fcitx 復原、指標 selection、多行唯讀與符號列表。Qt6 的 password
+      frontend 保留 engine 名稱但只送 literal；標準 read-only widget focus 後不穩定發布
+      IME disable，host 以 Qt 的 `ImEnabled=false` query 明確宣告，Fcitx 核心即可放行，
+      未加入 addon 特例。Qt6 的 `Alt+F` 會由 App 插入 `f`，且停用 `Ctrl+\` 後保留的
+      preedit 插入順序亦與 GTK4 不同，均以 toolkit golden 固定。25/25 targeted batch
+      與完整 warm gate（CTest 2/2、X11 83/83）通過；Ubuntu 24.04 package lifecycle
+      亦在 preview 初裝與 release 升級各通過 82/82，移除／重裝後含設定視窗通過
+      83/83，dependency、資料 hash、移除與設定 sentinel 全數通過。GNOME X11／XWayland／native Wayland、瀏覽器、
+      Qt5、active-preedit 跨 App 與桌面登出登入仍待驗收。
 - [x] 2026-09-13 完成 Windows 對標的 Linux F08 中英文模式：每個 Fcitx input context
       保存中文／英文狀態，狀態標籤顯示「中／英」，預設以 `Ctrl+\` 或 300 ms 內的
       單按 Shift 切換；進入任一模式都清除 active composition，英文半形將可列印鍵交回

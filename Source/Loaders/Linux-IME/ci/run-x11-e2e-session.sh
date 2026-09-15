@@ -2,11 +2,15 @@
 set -euo pipefail
 
 test -n "${KEYKEY_E2E_HOST:-}"
+test -n "${KEYKEY_E2E_GTK4_HOST:-}"
+test -n "${KEYKEY_E2E_QT6_HOST:-}"
 test -n "${KEYKEY_E2E_ARTIFACT_DIR:-}"
 test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
 
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-STANDARD
+  T01-X11-GTK4-BOPOMOFO-STANDARD
+  T01-X11-QT6-BOPOMOFO-STANDARD
   T01-X11-GTK3-BOPOMOFO-BIG5-FILTER
   T01-X11-GTK3-BOPOMOFO-CONTINUOUS
   T01-X11-GTK3-BOPOMOFO-INVALID-INPUT
@@ -15,7 +19,19 @@ known_cases=(
   T02-X11-GTK3-BOPOMOFO-ETEN26
   T02-X11-GTK3-BOPOMOFO-HSU
   T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN
+  T02-X11-GTK4-BOPOMOFO-STANDARD
+  T02-X11-GTK4-BOPOMOFO-ETEN
+  T02-X11-GTK4-BOPOMOFO-ETEN26
+  T02-X11-GTK4-BOPOMOFO-HSU
+  T02-X11-GTK4-BOPOMOFO-HANYU-PINYIN
+  T02-X11-QT6-BOPOMOFO-STANDARD
+  T02-X11-QT6-BOPOMOFO-ETEN
+  T02-X11-QT6-BOPOMOFO-ETEN26
+  T02-X11-QT6-BOPOMOFO-HSU
+  T02-X11-QT6-BOPOMOFO-HANYU-PINYIN
   T03-X11-GTK3-BOPOMOFO-EDIT-CANCEL
+  T03-X11-GTK4-BOPOMOFO-EDIT-CANCEL
+  T03-X11-QT6-BOPOMOFO-EDIT-CANCEL
   T04-X11-GTK3-CANGJIE
   T04-X11-GTK3-CANGJIE-ENDKEY-ERROR
   T04-X11-GTK3-CANGJIE-WILDCARD
@@ -23,25 +39,65 @@ known_cases=(
   T05-X11-GTK3-SIMPLEX-FULL-CODE
   T06-X11-GTK3-CANDIDATE-NAVIGATION
   T06-X11-GTK3-CANDIDATE-MOUSE
+  T06-X11-GTK4-CANDIDATE-NAVIGATION
+  T06-X11-GTK4-CANDIDATE-MOUSE
+  T06-X11-GTK4-CANDIDATE-HORIZONTAL
+  T06-X11-QT6-CANDIDATE-NAVIGATION
+  T06-X11-QT6-CANDIDATE-MOUSE
+  T06-X11-QT6-CANDIDATE-HORIZONTAL
   T07-X11-GTK3-ASSOCIATED-PHRASE
   T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY
   T07-X11-GTK3-ASSOCIATED-PHRASE-DISABLED
   T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG
   T07-X11-GTK3-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
+  T07-X11-GTK4-ASSOCIATED-PHRASE
+  T07-X11-GTK4-ASSOCIATED-PHRASE-CATEGORY
+  T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED
+  T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG
+  T07-X11-GTK4-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
+  T07-X11-QT6-ASSOCIATED-PHRASE
+  T07-X11-QT6-ASSOCIATED-PHRASE-CATEGORY
+  T07-X11-QT6-ASSOCIATED-PHRASE-DISABLED
+  T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG
+  T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
   T07-X11-FCITX5-CONFIG-UI-PERSISTENCE
   T08-X11-GTK3-CHINESE-ENGLISH-MODE
   T08-X11-GTK3-CONTROL-BACKSLASH-DISABLED
   T08-X11-GTK3-FULL-WIDTH
   T08-X11-GTK3-TRADITIONAL-TO-SIMPLIFIED
+  T08-X11-GTK4-CHINESE-ENGLISH-MODE
+  T08-X11-GTK4-CONTROL-BACKSLASH-DISABLED
+  T08-X11-GTK4-FULL-WIDTH
+  T08-X11-GTK4-TRADITIONAL-TO-SIMPLIFIED
+  T08-X11-QT6-CHINESE-ENGLISH-MODE
+  T08-X11-QT6-CONTROL-BACKSLASH-DISABLED
+  T08-X11-QT6-FULL-WIDTH
+  T08-X11-QT6-TRADITIONAL-TO-SIMPLIFIED
   T09-X11-GTK3-MODIFIER-PASSTHROUGH
+  T09-X11-GTK4-MODIFIER-PASSTHROUGH
+  T09-X11-QT6-MODIFIER-PASSTHROUGH
   T10-X11-GTK3-INPUT-CONTEXT-ISOLATION
+  T10-X11-GTK3-MULTI-APP-ISOLATION
+  T10-X11-GTK4-INPUT-CONTEXT-ISOLATION
+  T10-X11-GTK4-MULTI-APP-ISOLATION
+  T10-X11-QT6-INPUT-CONTEXT-ISOLATION
+  T10-X11-QT6-MULTI-APP-ISOLATION
   T11-X11-GTK3-EDITING-SENSITIVE-READONLY
+  T11-X11-GTK4-EDITING-SENSITIVE-READONLY
+  T11-X11-QT6-EDITING-SENSITIVE-READONLY
   T12-X11-GTK3-SYMBOL-LIST
   T12-X11-GTK3-SYMBOL-LIST-MOUSE
+  T12-X11-GTK4-SYMBOL-LIST
+  T12-X11-GTK4-SYMBOL-LIST-MOUSE
+  T12-X11-QT6-SYMBOL-LIST
+  T12-X11-QT6-SYMBOL-LIST-MOUSE
 )
 requested_cases=${KEYKEY_E2E_CASES:-all}
 config_ui=${KEYKEY_E2E_CONFIG_UI:-ON}
 key_delay_ms=${KEYKEY_E2E_KEY_DELAY_MS:-80}
+gtk3_e2e_host=$KEYKEY_E2E_HOST
+e2e_host_window_title=chichi77-keykey-gtk3-e2e
+e2e_host_label='GTK 3'
 case "$config_ui" in ON|OFF) ;; *)
   echo "KEYKEY_E2E_CONFIG_UI must be ON or OFF." >&2
   exit 2
@@ -93,16 +149,39 @@ for known_case in "${known_cases[@]}"; do
 done
 
 selected_cases_json=
-e2e_apps=gtk3-entry
+uses_gtk3=false
+uses_gtk4=false
+uses_qt6=false
+uses_config_ui=false
 for selected_case in "${selected_cases[@]}"; do
   if [[ -n "$selected_cases_json" ]]; then
     selected_cases_json+=,
   fi
   selected_cases_json+="\"$selected_case\""
-  if [[ "$selected_case" == T07-X11-FCITX5-CONFIG-UI-PERSISTENCE ]]; then
-    e2e_apps=gtk3-entry+fcitx5-config-qt
-  fi
+  case "$selected_case" in
+    *-GTK3-*) uses_gtk3=true ;;
+    *-GTK4-*) uses_gtk4=true ;;
+    *-QT6-*) uses_qt6=true ;;
+    T07-X11-FCITX5-CONFIG-UI-PERSISTENCE)
+      uses_gtk3=true
+      uses_config_ui=true
+      ;;
+  esac
 done
+e2e_apps=
+if [[ "$uses_gtk3" == true ]]; then e2e_apps=gtk3-entry; fi
+if [[ "$uses_gtk4" == true ]]; then
+  if [[ -n "$e2e_apps" ]]; then e2e_apps+=+; fi
+  e2e_apps+=gtk4-text
+fi
+if [[ "$uses_qt6" == true ]]; then
+  if [[ -n "$e2e_apps" ]]; then e2e_apps+=+; fi
+  e2e_apps+=qt6-line-edit
+fi
+if [[ "$uses_config_ui" == true ]]; then
+  if [[ -n "$e2e_apps" ]]; then e2e_apps+=+; fi
+  e2e_apps+=fcitx5-config-qt
+fi
 
 case_selected() {
   local target=$1 selected_case
@@ -117,6 +196,7 @@ case_selected() {
 runtime_root=$KEYKEY_E2E_RUNTIME_ROOT
 export DISPLAY=:99
 export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
@@ -135,6 +215,7 @@ install -m 0644 tests/fixtures/fcitx5-profile "$XDG_CONFIG_HOME/fcitx5/profile"
 xvfb_pid=
 fcitx_pid=
 host_pid=
+secondary_host_pid=
 test_status=failed
 cleanup() {
   exit_code=$?
@@ -143,7 +224,7 @@ cleanup() {
     failure_element=
   else
     failure_count=1
-    failure_element='<failure message="Installed Fcitx 5 to GTK 3 typing flow failed"/>'
+    failure_element='<failure message="Installed Fcitx 5 toolkit typing flow failed"/>'
   fi
   printf '%s\n' \
     "{\"tests\":[$selected_cases_json],\"distro\":\"ubuntu-24.04\",\"arch\":\"$(uname -m)\",\"session\":\"x11-xvfb\",\"framework\":\"fcitx5\",\"app\":\"$e2e_apps\",\"status\":\"$test_status\"}" \
@@ -151,13 +232,19 @@ cleanup() {
   printf '%s\n' \
     '<?xml version="1.0" encoding="UTF-8"?>' \
     "<testsuite name=\"chichi77-keykey-linux-x11-e2e\" tests=\"1\" failures=\"$failure_count\">" \
-    "  <testcase classname=\"fcitx5.gtk3.x11\" name=\"installed addon layouts, input methods, candidate navigation, output filters, symbols, and native settings\">$failure_element</testcase>" \
+    "  <testcase classname=\"fcitx5.toolkit.x11\" name=\"installed addon layouts, input methods, candidate navigation, output filters, symbols, and native settings\">$failure_element</testcase>" \
     '</testsuite>' \
     >"$KEYKEY_E2E_ARTIFACT_DIR/junit.xml"
   if [[ -n "$host_pid" ]]; then kill "$host_pid" 2>/dev/null || true; fi
+  if [[ -n "$secondary_host_pid" ]]; then
+    kill "$secondary_host_pid" 2>/dev/null || true
+  fi
   if [[ -n "$fcitx_pid" ]]; then kill "$fcitx_pid" 2>/dev/null || true; fi
   if [[ -n "$xvfb_pid" ]]; then kill "$xvfb_pid" 2>/dev/null || true; fi
   if [[ -n "$host_pid" ]]; then wait "$host_pid" 2>/dev/null || true; fi
+  if [[ -n "$secondary_host_pid" ]]; then
+    wait "$secondary_host_pid" 2>/dev/null || true
+  fi
   if [[ -n "$fcitx_pid" ]]; then wait "$fcitx_pid" 2>/dev/null || true; fi
   if [[ -n "$xvfb_pid" ]]; then wait "$xvfb_pid" 2>/dev/null || true; fi
   trap - EXIT
@@ -436,12 +523,15 @@ verify_bopomofo_config_schema() {
 send_key_sequence() {
   local special_sequence=false key_name center_file='' center_ready=false
   local entry_x='' entry_y='' focus_ready=false
+  local selection_start_file='' selection_end_file='' selection_ready=false
+  local selection_start_x='' selection_start_y='' selection_end_x=''
+  local selection_end_y=''
   local candidate_window_id='' candidate_geometry='' candidate_width=''
   local candidate_height='' candidate_row='' click_x='' click_y=''
   local popup_ready=false
   for key_name in "$@"; do
     case "$key_name" in
-    shift-down|shift-up|ctrl-down|ctrl-up|backslash-down|backslash-up|activate-bopomofo|expect-keyboard-us|click-second-entry|click-candidate-[1-9]|wait-500ms|wait-1000ms)
+    shift-down|shift-up|ctrl-down|ctrl-up|backslash-down|backslash-up|activate-bopomofo|expect-keyboard-us|click-second-entry|drag-first-second-character|click-candidate-[1-9]|wait-500ms|wait-1000ms)
       special_sequence=true
       break
       ;;
@@ -513,6 +603,58 @@ send_key_sequence() {
         done
         if [[ "$focus_ready" != true ]]; then
           echo "The pointer click did not focus the GTK host's second entry." >&2
+          exit 1
+        fi
+        ;;
+      drag-first-second-character)
+        selection_start_file="$KEYKEY_E2E_CASE_DIR/first-selection-start.txt"
+        selection_end_file="$KEYKEY_E2E_CASE_DIR/first-selection-end.txt"
+        selection_ready=false
+        for _ in {1..50}; do
+          if [[ -s "$selection_start_file" && -s "$selection_end_file" ]]; then
+            selection_ready=true
+            break
+          fi
+          sleep 0.1
+        done
+        if [[ "$selection_ready" != true ]]; then
+          echo "The GTK host did not publish its text-selection geometry." >&2
+          exit 1
+        fi
+        read -r selection_start_x selection_start_y <"$selection_start_file"
+        read -r selection_end_x selection_end_y <"$selection_end_file"
+        center_file="$KEYKEY_E2E_CASE_DIR/first-center.txt"
+        read -r entry_x entry_y <"$center_file"
+        xdotool mousemove --window "$window_id" "$entry_x" "$entry_y" click 1
+        selection_ready=false
+        for _ in {1..50}; do
+          if grep -Fxq 'cursor:3' \
+              "$KEYKEY_E2E_CASE_DIR/first-selection-state.txt"; then
+            selection_ready=true
+            break
+          fi
+          sleep 0.1
+        done
+        if [[ "$selection_ready" != true ]]; then
+          echo "The pointer click did not clear the GTK host's initial selection." >&2
+          exit 1
+        fi
+        xdotool mousemove --window "$window_id" \
+          "$selection_start_x" "$selection_start_y" mousedown 1
+        sleep 0.1
+        xdotool mousemove --sync --window "$window_id" \
+          "$selection_end_x" "$selection_end_y" mouseup 1
+        selection_ready=false
+        for _ in {1..50}; do
+          if grep -Fq '"type":"first-selection","value":"1:2"' \
+              "$KEYKEY_E2E_CASE_DIR/events.jsonl"; then
+            selection_ready=true
+            break
+          fi
+          sleep 0.1
+        done
+        if [[ "$selection_ready" != true ]]; then
+          echo "The pointer drag did not select the GTK host's second character." >&2
           exit 1
         fi
         ;;
@@ -591,7 +733,7 @@ run_case() {
   window_focused=false
   for _ in {1..100}; do
     window_id=$(xdotool search --onlyvisible \
-      --name '^chichi77-keykey-gtk3-e2e$' 2>/dev/null | head -n 1 || true)
+      --name "^${e2e_host_window_title}$" 2>/dev/null | head -n 1 || true)
     if [[ -n "$window_id" ]] && \
         xdotool windowfocus --sync "$window_id" 2>/dev/null; then
       window_focused=true
@@ -600,13 +742,13 @@ run_case() {
     if ! kill -0 "$host_pid" 2>/dev/null; then
       wait "$host_pid" || true
       host_pid=
-      echo "GTK 3 E2E host exited before its window was ready for $case_id." >&2
+      echo "$e2e_host_label E2E host exited before its window was ready for $case_id." >&2
       exit 1
     fi
     sleep 0.1
   done
   if [[ "$window_focused" != true ]]; then
-    echo "GTK 3 E2E host window could not be focused for $case_id." >&2
+    echo "$e2e_host_label E2E host window could not be focused for $case_id." >&2
     exit 1
   fi
 
@@ -670,6 +812,179 @@ run_case() {
     >"$case_dir/result.json"
 }
 
+run_gtk4_case() {
+  KEYKEY_E2E_HOST=$KEYKEY_E2E_GTK4_HOST
+  e2e_host_window_title=chichi77-keykey-gtk4-e2e
+  e2e_host_label='GTK 4'
+  run_case "$@"
+  KEYKEY_E2E_HOST=$gtk3_e2e_host
+  e2e_host_window_title=chichi77-keykey-gtk3-e2e
+  e2e_host_label='GTK 3'
+}
+
+run_gtk4_focus_case() {
+  KEYKEY_E2E_HOST=$KEYKEY_E2E_GTK4_HOST
+  e2e_host_window_title=chichi77-keykey-gtk4-e2e
+  e2e_host_label='GTK 4'
+  run_focus_case "$@"
+  KEYKEY_E2E_HOST=$gtk3_e2e_host
+  e2e_host_window_title=chichi77-keykey-gtk3-e2e
+  e2e_host_label='GTK 3'
+}
+
+run_gtk4_multi_app_case() {
+  KEYKEY_E2E_HOST=$KEYKEY_E2E_GTK4_HOST
+  e2e_host_window_title=chichi77-keykey-gtk4-e2e
+  e2e_host_label='GTK 4'
+  run_multi_app_case "$@"
+  KEYKEY_E2E_HOST=$gtk3_e2e_host
+  e2e_host_window_title=chichi77-keykey-gtk3-e2e
+  e2e_host_label='GTK 3'
+}
+
+run_gtk4_editing_case() {
+  KEYKEY_E2E_HOST=$KEYKEY_E2E_GTK4_HOST
+  e2e_host_window_title=chichi77-keykey-gtk4-e2e
+  e2e_host_label='GTK 4'
+  run_editing_case "$@"
+  KEYKEY_E2E_HOST=$gtk3_e2e_host
+  e2e_host_window_title=chichi77-keykey-gtk3-e2e
+  e2e_host_label='GTK 3'
+}
+
+run_qt6_case() {
+  KEYKEY_E2E_HOST=$KEYKEY_E2E_QT6_HOST
+  e2e_host_window_title=chichi77-keykey-qt6-e2e
+  e2e_host_label='Qt 6'
+  run_case "$@"
+  KEYKEY_E2E_HOST=$gtk3_e2e_host
+  e2e_host_window_title=chichi77-keykey-gtk3-e2e
+  e2e_host_label='GTK 3'
+}
+
+run_qt6_focus_case() {
+  KEYKEY_E2E_HOST=$KEYKEY_E2E_QT6_HOST
+  e2e_host_window_title=chichi77-keykey-qt6-e2e
+  e2e_host_label='Qt 6'
+  run_focus_case "$@"
+  KEYKEY_E2E_HOST=$gtk3_e2e_host
+  e2e_host_window_title=chichi77-keykey-gtk3-e2e
+  e2e_host_label='GTK 3'
+}
+
+run_qt6_multi_app_case() {
+  KEYKEY_E2E_HOST=$KEYKEY_E2E_QT6_HOST
+  e2e_host_window_title=chichi77-keykey-qt6-e2e
+  e2e_host_label='Qt 6'
+  run_multi_app_case "$@"
+  KEYKEY_E2E_HOST=$gtk3_e2e_host
+  e2e_host_window_title=chichi77-keykey-gtk3-e2e
+  e2e_host_label='GTK 3'
+}
+
+run_qt6_editing_case() {
+  KEYKEY_E2E_HOST=$KEYKEY_E2E_QT6_HOST
+  e2e_host_window_title=chichi77-keykey-qt6-e2e
+  e2e_host_label='Qt 6'
+  run_editing_case "$@"
+  KEYKEY_E2E_HOST=$gtk3_e2e_host
+  e2e_host_window_title=chichi77-keykey-gtk3-e2e
+  e2e_host_label='GTK 3'
+}
+
+wait_for_named_window() {
+  local title=$1 process_id=$2 label=$3
+  local candidate_window_id=''
+  for _ in {1..100}; do
+    candidate_window_id=$(xdotool search --onlyvisible \
+      --name "^${title}$" 2>/dev/null | head -n 1 || true)
+    if [[ -n "$candidate_window_id" ]]; then
+      printf '%s\n' "$candidate_window_id"
+      return 0
+    fi
+    if ! kill -0 "$process_id" 2>/dev/null; then
+      echo "$label exited before its window became visible." >&2
+      return 1
+    fi
+    sleep 0.1
+  done
+  echo "$label did not publish a visible window." >&2
+  return 1
+}
+
+focus_host_window() {
+  local window_id=$1 process_id=$2 label=$3
+  for _ in {1..50}; do
+    if ! kill -0 "$process_id" 2>/dev/null; then
+      echo "$label exited before it could receive focus." >&2
+      return 1
+    fi
+    xdotool windowraise "$window_id" 2>/dev/null || true
+    if xdotool windowfocus --sync "$window_id" 2>/dev/null; then
+      # X11 focus can be visible before the client toolkit has dispatched its
+      # focus event and notified Fcitx. This helper is used for cross-process
+      # context switching; click the single centered editor, then give that
+      # event one bounded loop turn before selecting the per-client engine.
+      xdotool mousemove --window "$window_id" 240 50 click 1
+      sleep 0.1
+      return 0
+    fi
+    sleep 0.1
+  done
+  echo "$label could not receive X11 focus." >&2
+  return 1
+}
+
+activate_engine_for_focused_app() {
+  local engine_name=$1 label=$2
+  fcitx5-remote -o
+  for _ in {1..100}; do
+    fcitx5-remote -s "$engine_name" || true
+    if [[ "$(fcitx5-remote -n)" == "$engine_name" ]]; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  echo "The $engine_name Fcitx engine is not active for $label." >&2
+  return 1
+}
+
+wait_for_host_event() {
+  local event_file=$1 expected_event=$2 label=$3
+  for _ in {1..100}; do
+    if [[ -f "$event_file" ]] && grep -Fq "$expected_event" "$event_file"; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  echo "$label did not report the expected GTK event: $expected_event" >&2
+  return 1
+}
+
+focus_named_host_window() {
+  local title=$1 process_id=$2 label=$3 candidate index
+  local -a candidates=()
+  for _ in {1..100}; do
+    mapfile -t candidates < <(
+      xdotool search --onlyvisible --name "^${title}$" 2>/dev/null || true)
+    for ((index=${#candidates[@]} - 1; index >= 0; --index)); do
+      candidate=${candidates[$index]}
+      if xdotool windowfocus --sync "$candidate" 2>/dev/null; then
+        printf '%s\n' "$candidate"
+        return 0
+      fi
+    done
+    if ! kill -0 "$process_id" 2>/dev/null; then
+      wait "$process_id" || true
+      echo "$label exited before its window was ready." >&2
+      return 1
+    fi
+    sleep 0.1
+  done
+  echo "$label window could not be focused." >&2
+  return 1
+}
+
 run_focus_phase() {
   local case_id=$1
   local phase=$2
@@ -680,7 +995,7 @@ run_focus_phase() {
   shift 6
 
   local phase_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id/$phase"
-  local window_id='' window_focused=false engine_ready=false
+  local window_id='' engine_ready=false
   local expected_output
   mkdir -p "$phase_dir"
   export KEYKEY_E2E_CASE_DIR="$phase_dir"
@@ -695,24 +1010,9 @@ run_focus_phase() {
     2>"$phase_dir/host.stderr.log" &
   host_pid=$!
 
-  for _ in {1..100}; do
-    window_id=$(xdotool search --onlyvisible \
-      --name '^chichi77-keykey-gtk3-e2e$' 2>/dev/null | head -n 1 || true)
-    if [[ -n "$window_id" ]] && \
-        xdotool windowfocus --sync "$window_id" 2>/dev/null; then
-      window_focused=true
-      break
-    fi
-    if ! kill -0 "$host_pid" 2>/dev/null; then
-      wait "$host_pid" || true
-      host_pid=
-      echo "GTK 3 focus host exited before its window was ready for $case_id/$phase." >&2
-      exit 1
-    fi
-    sleep 0.1
-  done
-  if [[ "$window_focused" != true ]]; then
-    echo "GTK 3 focus host window could not be focused for $case_id/$phase." >&2
+  if ! window_id=$(focus_named_host_window "$e2e_host_window_title" \
+      "$host_pid" "$e2e_host_label focus host for $case_id/$phase"); then
+    host_pid=
     exit 1
   fi
 
@@ -752,7 +1052,7 @@ run_editing_phase() {
   shift 7
 
   local phase_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id/$phase"
-  local window_id='' window_focused=false engine_ready=false
+  local window_id='' engine_ready=false
   local expected_output
   mkdir -p "$phase_dir"
   export KEYKEY_E2E_CASE_DIR="$phase_dir"
@@ -768,24 +1068,9 @@ run_editing_phase() {
     2>"$phase_dir/host.stderr.log" &
   host_pid=$!
 
-  for _ in {1..100}; do
-    window_id=$(xdotool search --onlyvisible \
-      --name '^chichi77-keykey-gtk3-e2e$' 2>/dev/null | head -n 1 || true)
-    if [[ -n "$window_id" ]] && \
-        xdotool windowfocus --sync "$window_id" 2>/dev/null; then
-      window_focused=true
-      break
-    fi
-    if ! kill -0 "$host_pid" 2>/dev/null; then
-      wait "$host_pid" || true
-      host_pid=
-      echo "GTK 3 editing host exited before its window was ready for $case_id/$phase." >&2
-      exit 1
-    fi
-    sleep 0.1
-  done
-  if [[ "$window_focused" != true ]]; then
-    echo "GTK 3 editing host window could not be focused for $case_id/$phase." >&2
+  if ! window_id=$(focus_named_host_window "$e2e_host_window_title" \
+      "$host_pid" "$e2e_host_label editing host for $case_id/$phase"); then
+    host_pid=
     exit 1
   fi
 
@@ -818,11 +1103,15 @@ run_editing_phase() {
 run_client_close_recovery() {
   local case_id=$1
   local close_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id/client-close"
-  local window_id='' window_focused=false engine_ready=false candidate_ready=false
+  local window_id='' engine_ready=false candidate_ready=false
+  local close_required_preedits='ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄓㄨㄥ'
+  if [[ "$e2e_host_label" == 'Qt 6' ]]; then
+    close_required_preedits='ㄓ,ㄓㄨ,ㄓㄨㄥ'
+  fi
   mkdir -p "$close_dir"
   export KEYKEY_E2E_CASE_DIR="$close_dir"
   export KEYKEY_E2E_SCENARIO=close
-  export KEYKEY_E2E_REQUIRED_PREEDITS='ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄓㄨㄥ'
+  export KEYKEY_E2E_REQUIRED_PREEDITS="$close_required_preedits"
   unset KEYKEY_E2E_EXPECTED_COMMIT KEYKEY_E2E_EXPECTED_LITERAL \
     KEYKEY_E2E_EXPECTED_FIRST KEYKEY_E2E_EXPECTED_SECOND \
     KEYKEY_E2E_EXPECTED_THIRD KEYKEY_E2E_REQUIRED_EVENTS
@@ -831,24 +1120,9 @@ run_client_close_recovery() {
     2>"$close_dir/host.stderr.log" &
   host_pid=$!
 
-  for _ in {1..100}; do
-    window_id=$(xdotool search --onlyvisible \
-      --name '^chichi77-keykey-gtk3-e2e$' 2>/dev/null | head -n 1 || true)
-    if [[ -n "$window_id" ]] && \
-        xdotool windowfocus --sync "$window_id" 2>/dev/null; then
-      window_focused=true
-      break
-    fi
-    if ! kill -0 "$host_pid" 2>/dev/null; then
-      wait "$host_pid" || true
-      host_pid=
-      echo "GTK 3 close host exited before its window was ready for $case_id." >&2
-      exit 1
-    fi
-    sleep 0.1
-  done
-  if [[ "$window_focused" != true ]]; then
-    echo "GTK 3 close host window could not be focused for $case_id." >&2
+  if ! window_id=$(focus_named_host_window "$e2e_host_window_title" \
+      "$host_pid" "$e2e_host_label close host for $case_id"); then
+    host_pid=
     exit 1
   fi
 
@@ -868,7 +1142,10 @@ run_client_close_recovery() {
 
   send_key_sequence 5 j slash space
   for _ in {1..100}; do
-    if [[ -f "$close_dir/ready-to-close" ]]; then
+    if [[ -f "$close_dir/ready-to-close" ]] && \
+        { [[ "$e2e_host_label" != 'Qt 6' ]] || \
+          [[ -n "$(xdotool search --onlyvisible \
+            --name '^Fcitx5 Input Window$' 2>/dev/null || true)" ]]; }; then
       candidate_ready=true
       break
     fi
@@ -900,24 +1177,34 @@ run_client_close_recovery() {
 run_editing_case() {
   local case_id=$1
   local positive_events='' negative_events=''
-  local common_prefix=(Home Right shift+Right)
   local positive_key_sequence=(
+    drag-first-second-character 5 j slash space 1
     Home Right 5 j Left Right Home End Delete Tab
     shift+Left shift+Right shift+Tab slash space 1
-    shift+Right 5 j slash space 1
     Tab expect-keyboard-us r u p space 1 shift+1
     Tab expect-keyboard-us 5 j slash space 1
   )
   local negative_key_sequence=(
-    "${common_prefix[@]}" 5 j slash space 1
+    drag-first-second-character 5 j slash space 1
     Tab r u p space 1 shift+1
     Tab 5 j slash space 1
   )
+  if [[ "$e2e_host_label" == 'Qt 6' ]]; then
+    positive_key_sequence=(
+      drag-first-second-character 5 j slash space 1
+      Home Right 5 j Left Right Home End Delete Tab
+      shift+Left shift+Right shift+Tab slash space 1
+      Tab r u p space 1 shift+1
+      Tab 5 j slash space 1
+    )
+  fi
 
-  positive_events+='first-text=甲中乙丙;first-text=甲中中丙;'
+  positive_events+='first-selection=1:2;first-text=甲中丙;'
+  positive_events+='first-text=甲中中丙;'
   positive_events+='second-text=rup 1!;'
   positive_events+='third-focus=in;third-key-press=1'
-  negative_events+='first-text=甲5j/ 1丙;second-text=rup 1!;'
+  negative_events+='first-selection=1:2;first-text=甲5j/ 1丙;'
+  negative_events+='second-text=rup 1!;'
   negative_events+='third-focus=in;third-key-press=1'
 
   run_editing_phase "$case_id" positive chichi77-keykey-bopomofo \
@@ -971,6 +1258,119 @@ run_focus_case() {
     >"$KEYKEY_E2E_ARTIFACT_DIR/$case_id/result.json"
 }
 
+run_multi_app_phase() {
+  local case_id=$1 phase=$2 engine_name=$3
+  local app_a_expected=$4 app_b_expected=$5
+  local phase_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id/$phase"
+  local app_a_dir="$phase_dir/app-a" app_b_dir="$phase_dir/app-b"
+  local app_a_title="chichi77-keykey-$phase-app-a"
+  local app_b_title="chichi77-keykey-$phase-app-b"
+  local app_a_window='' app_b_window='' window_id=''
+  local app_a_events="$app_a_dir/events.jsonl"
+  local app_b_events="$app_b_dir/events.jsonl"
+  mkdir -p "$app_a_dir" "$app_b_dir"
+
+  KEYKEY_E2E_CASE_DIR="$app_a_dir" \
+    KEYKEY_E2E_SCENARIO=hold \
+    KEYKEY_E2E_WINDOW_TITLE="$app_a_title" \
+    "$KEYKEY_E2E_HOST" >"$app_a_dir/host.stdout.log" \
+      2>"$app_a_dir/host.stderr.log" &
+  host_pid=$!
+  KEYKEY_E2E_CASE_DIR="$app_b_dir" \
+    KEYKEY_E2E_SCENARIO=hold \
+    KEYKEY_E2E_WINDOW_TITLE="$app_b_title" \
+    "$KEYKEY_E2E_HOST" >"$app_b_dir/host.stdout.log" \
+      2>"$app_b_dir/host.stderr.log" &
+  secondary_host_pid=$!
+
+  app_a_window=$(wait_for_named_window \
+    "$app_a_title" "$host_pid" "$case_id/$phase app A")
+  app_b_window=$(wait_for_named_window \
+    "$app_b_title" "$secondary_host_pid" "$case_id/$phase app B")
+
+  focus_host_window \
+    "$app_a_window" "$host_pid" "$case_id/$phase app A"
+  activate_engine_for_focused_app "$engine_name" "$case_id/$phase app A"
+  window_id=$app_a_window
+  if [[ "$phase" == positive ]]; then
+    send_key_sequence ctrl+backslash shift+space a
+    wait_for_host_event "$app_a_events" \
+      '"type":"text","value":"ａ"' "$case_id/$phase app A"
+
+    focus_host_window \
+      "$app_b_window" "$secondary_host_pid" "$case_id/$phase app B"
+    activate_engine_for_focused_app "$engine_name" "$case_id/$phase app B"
+    window_id=$app_b_window
+    send_key_sequence j p 6 1
+    wait_for_host_event "$app_b_events" \
+      '"type":"text","value":"文"' "$case_id/$phase app B"
+
+    focus_host_window \
+      "$app_a_window" "$host_pid" "$case_id/$phase app A"
+    activate_engine_for_focused_app "$engine_name" "$case_id/$phase app A"
+    window_id=$app_a_window
+    send_key_sequence b
+    wait_for_host_event "$app_a_events" \
+      '"type":"text","value":"ａｂ"' "$case_id/$phase app A"
+    send_key_sequence shift+space ctrl+backslash 5 j slash space 1
+    wait_for_host_event "$app_a_events" \
+      '"type":"text","value":"ａｂ中"' "$case_id/$phase app A"
+  else
+    send_key_sequence a
+    wait_for_host_event "$app_a_events" \
+      '"type":"text","value":"a"' "$case_id/$phase app A"
+
+    focus_host_window \
+      "$app_b_window" "$secondary_host_pid" "$case_id/$phase app B"
+    activate_engine_for_focused_app "$engine_name" "$case_id/$phase app B"
+    window_id=$app_b_window
+    send_key_sequence j p 6 1
+    wait_for_host_event "$app_b_events" \
+      '"type":"text","value":"jp61"' "$case_id/$phase app B"
+
+    focus_host_window \
+      "$app_a_window" "$host_pid" "$case_id/$phase app A"
+    activate_engine_for_focused_app "$engine_name" "$case_id/$phase app A"
+    window_id=$app_a_window
+    send_key_sequence b 5 j slash space 1
+    wait_for_host_event "$app_a_events" \
+      '"type":"text","value":"ab5j/ 1"' "$case_id/$phase app A"
+  fi
+
+  if ! kill -0 "$host_pid" 2>/dev/null ||
+      ! kill -0 "$secondary_host_pid" 2>/dev/null; then
+    echo "$case_id/$phase did not keep both GTK apps alive." >&2
+    exit 1
+  fi
+  touch "$app_a_dir/close-now" "$app_b_dir/close-now"
+  if ! wait "$host_pid"; then
+    echo "$case_id/$phase app A did not close cleanly." >&2
+    exit 1
+  fi
+  host_pid=
+  if ! wait "$secondary_host_pid"; then
+    echo "$case_id/$phase app B did not close cleanly." >&2
+    exit 1
+  fi
+  secondary_host_pid=
+  grep -Fxq "$app_a_expected" "$app_a_dir/final.txt"
+  grep -Fxq "$app_b_expected" "$app_b_dir/final.txt"
+}
+
+run_multi_app_case() {
+  local case_id=$1
+  run_multi_app_phase "$case_id" positive \
+    chichi77-keykey-bopomofo ａｂ中 文
+  if ! grep -Fq 'chichi77-keykey.so' "/proc/$fcitx_pid/maps"; then
+    echo "The running Fcitx process did not load the staged KeyKey addon." >&2
+    exit 1
+  fi
+  run_multi_app_phase "$case_id" negative keyboard-us 'ab5j/ 1' jp61
+  printf '%s\n' \
+    "{\"test\":\"$case_id\",\"engine\":\"chichi77-keykey-bopomofo\",\"expected\":\"ａｂ中|文\",\"negative\":\"ab5j/ 1|jp61\",\"status\":\"passed\"}" \
+    >"$KEYKEY_E2E_ARTIFACT_DIR/$case_id/result.json"
+}
+
 if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections McBopomofo
@@ -1020,6 +1420,16 @@ if case_selected T01-X11-GTK3-BOPOMOFO-STANDARD; then
     中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1
   verify_bopomofo_config_schema
 fi
+if case_selected T01-X11-GTK4-BOPOMOFO-STANDARD; then
+  set_bopomofo_layout Standard
+  run_gtk4_case T01-X11-GTK4-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
+    中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1
+fi
+if case_selected T01-X11-QT6-BOPOMOFO-STANDARD; then
+  set_bopomofo_layout Standard
+  run_qt6_case T01-X11-QT6-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
+    中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1
+fi
 if case_selected T01-X11-GTK3-BOPOMOFO-BIG5-FILTER; then
   set_bopomofo_layout Standard
   set_use_all_unicode_characters False
@@ -1057,6 +1467,19 @@ if case_selected T08-X11-GTK3-CHINESE-ENGLISH-MODE; then
     ctrl+backslash j p 6 1 \
     shift a b c shift-down wait-500ms shift-up d e shift a 8 6 1
 fi
+if case_selected T08-X11-GTK4-CHINESE-ENGLISH-MODE; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  set_toggle_with_control_backslash True
+  run_gtk4_case T08-X11-GTK4-CHINESE-ENGLISH-MODE \
+    chichi77-keykey-bopomofo \
+    '5j/aBａ！　文abcde麻' '55j/aB a!  jp61abcdea861' \
+    'ㄓ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    5 ctrl+backslash 5 j slash a Caps_Lock b Caps_Lock \
+    shift+space a shift+1 space shift+space \
+    ctrl+backslash j p 6 1 \
+    shift a b c shift-down wait-500ms shift-up d e shift a 8 6 1
+fi
 if case_selected T08-X11-GTK3-CONTROL-BACKSLASH-DISABLED; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections ''
@@ -1064,6 +1487,16 @@ if case_selected T08-X11-GTK3-CONTROL-BACKSLASH-DISABLED; then
   run_case T08-X11-GTK3-CONTROL-BACKSLASH-DISABLED \
     chichi77-keykey-bopomofo \
     'ㄓ翁' '5j/ 1' 'ㄓ,ㄨ,ㄨㄥ' \
+    5 ctrl+backslash j slash space 1
+  set_toggle_with_control_backslash True
+fi
+if case_selected T08-X11-GTK4-CONTROL-BACKSLASH-DISABLED; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  set_toggle_with_control_backslash False
+  run_gtk4_case T08-X11-GTK4-CONTROL-BACKSLASH-DISABLED \
+    chichi77-keykey-bopomofo \
+    '翁ㄓ' '5j/ 1' 'ㄓ,ㄨ,ㄨㄥ' \
     5 ctrl+backslash j slash space 1
   set_toggle_with_control_backslash True
 fi
@@ -1103,10 +1536,59 @@ if case_selected T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN; then
     z h BackSpace BackSpace \
     m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 5 1
 fi
+if case_selected T02-X11-GTK4-BOPOMOFO-STANDARD; then
+  set_bopomofo_layout Standard
+  run_gtk4_case T02-X11-GTK4-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
+    麻馬罵嘛 'a8\61a831a841a871' \
+    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    a 8 backslash ctrl+c 6 1 a 8 3 1 a 8 4 1 a 8 7 1
+fi
+if case_selected T02-X11-GTK4-BOPOMOFO-ETEN; then
+  set_bopomofo_layout ETen
+  run_gtk4_case T02-X11-GTK4-BOPOMOFO-ETEN chichi77-keykey-bopomofo \
+    麻馬罵嘛 'ma\21ma31ma41ma11' \
+    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 1 1
+fi
+if case_selected T02-X11-GTK4-BOPOMOFO-ETEN26; then
+  set_bopomofo_layout ETen26
+  run_gtk4_case T02-X11-GTK4-BOPOMOFO-ETEN26 chichi77-keykey-bopomofo \
+    麻馬罵嘛 'ma\f1maj1mak1mad1' \
+    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m a backslash ctrl+c f 1 m a j 1 m a k 1 m a d 1
+fi
+if case_selected T02-X11-GTK4-BOPOMOFO-HSU; then
+  set_bopomofo_layout Hsu
+  run_gtk4_case T02-X11-GTK4-BOPOMOFO-HSU chichi77-keykey-bopomofo \
+    麻馬罵嘛 'my\d1myf1myj1mys1' \
+    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m y backslash ctrl+c d 1 m y f 1 m y j 1 m y s 1
+fi
+if case_selected T02-X11-GTK4-BOPOMOFO-HANYU-PINYIN; then
+  set_bopomofo_layout HanyuPinyin
+  run_gtk4_case T02-X11-GTK4-BOPOMOFO-HANYU-PINYIN \
+    chichi77-keykey-bopomofo \
+    麻馬罵嘛 'ma\21ma31ma41ma51' \
+    'z,zh,m,ma,ma2,ma3,ma4,ma5' \
+    z h BackSpace BackSpace \
+    m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 5 1
+fi
 if case_selected T03-X11-GTK3-BOPOMOFO-EDIT-CANCEL; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections ''
   run_case T03-X11-GTK3-BOPOMOFO-EDIT-CANCEL \
+    chichi77-keykey-bopomofo \
+    中文麻 '5j// 1jpjp61a86a861' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    equal BackSpace Escape \
+    5 j slash space BackSpace slash space 1 \
+    j p Escape j p 6 1 \
+    a 8 6 Escape a 8 6 1
+fi
+if case_selected T03-X11-GTK4-BOPOMOFO-EDIT-CANCEL; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_gtk4_case T03-X11-GTK4-BOPOMOFO-EDIT-CANCEL \
     chichi77-keykey-bopomofo \
     中文麻 '5j// 1jpjp61a86a861' \
     'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
@@ -1156,16 +1638,51 @@ if case_selected T06-X11-GTK3-CANDIDATE-MOUSE; then
   run_case T06-X11-GTK3-CANDIDATE-MOUSE chichi77-keykey-bopomofo \
     鐘 '5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space click-candidate-2
 fi
+if case_selected T06-X11-GTK4-CANDIDATE-NAVIGATION; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_gtk4_case T06-X11-GTK4-CANDIDATE-NAVIGATION \
+    chichi77-keykey-bopomofo \
+    妐 '5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space End Home Page_Down Down Return
+fi
+if case_selected T06-X11-GTK4-CANDIDATE-MOUSE; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_gtk4_case T06-X11-GTK4-CANDIDATE-MOUSE chichi77-keykey-bopomofo \
+    鐘 '5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space click-candidate-2
+fi
+if case_selected T06-X11-GTK4-CANDIDATE-HORIZONTAL; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Horizontal
+  run_gtk4_case T06-X11-GTK4-CANDIDATE-HORIZONTAL \
+    chichi77-keykey-bopomofo \
+    妐 ' 5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' \
+    5 j slash space End Home Page_Down Page_Up Right Left space Down Return
+fi
 if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections McBopomofo
   run_case T07-X11-GTK3-ASSOCIATED-PHRASE chichi77-keykey-bopomofo \
     今天 'rup 1!' 'ㄐ,ㄐㄧ,ㄐㄧㄣ' r u p space 1 shift+1
 fi
+if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections McBopomofo
+  run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE \
+    chichi77-keykey-bopomofo \
+    今天 'rup 1!' 'ㄐ,ㄐㄧ,ㄐㄧㄣ' r u p space 1 shift+1
+fi
 if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections history
   run_case T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY \
+    chichi77-keykey-bopomofo \
+    臺灣史 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
+fi
+if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-CATEGORY; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections history
+  run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE-CATEGORY \
     chichi77-keykey-bopomofo \
     臺灣史 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
 fi
@@ -1177,12 +1694,30 @@ if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-DISABLED; then
     '臺!' 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
   set_associated_phrase_collections ''
 fi
+if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED \
+    chichi77-keykey-bopomofo \
+    '臺!' 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
+  set_associated_phrase_collections ''
+fi
 if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
   set_bopomofo_layout Standard
   associated_phrase_collections=government
   write_legacy_keykey_config
   reload_keykey_config
   run_case T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG \
+    chichi77-keykey-bopomofo \
+    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
+  set_associated_phrase_collections ''
+fi
+if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
+  set_bopomofo_layout Standard
+  associated_phrase_collections=government
+  write_legacy_keykey_config
+  reload_keykey_config
+  run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG \
     chichi77-keykey-bopomofo \
     中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
   set_associated_phrase_collections ''
@@ -1211,15 +1746,53 @@ if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
     中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
   set_associated_phrase_collections ''
 fi
+if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
+  set_bopomofo_layout Standard
+  associated_phrase_collections=government
+  persistence_case_dir="$KEYKEY_E2E_ARTIFACT_DIR/"
+  persistence_case_dir+=T07-X11-GTK4-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
+  mkdir -p "$persistence_case_dir"
+  set_keykey_config_via_dbus "$persistence_case_dir/set-config-result.txt"
+  cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
+    "$persistence_case_dir/saved-config.ini"
+  grep -Fxq 'AssociatedPhraseCollections=government' \
+    "$persistence_case_dir/saved-config.ini"
+  grep -Fxq 'McBopomofo=False' "$persistence_case_dir/saved-config.ini"
+  grep -Fxq 'government=True' "$persistence_case_dir/saved-config.ini"
+  restart_fcitx
+  get_keykey_config_via_dbus "$persistence_case_dir/config-after-restart.txt"
+  grep -Fq "'McBopomofo': <'False'>" \
+    "$persistence_case_dir/config-after-restart.txt"
+  grep -Fq "'government': <'True'>" \
+    "$persistence_case_dir/config-after-restart.txt"
+  run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE-DBUS-PERSISTENCE \
+    chichi77-keykey-bopomofo \
+    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
+  set_associated_phrase_collections ''
+fi
 if case_selected T08-X11-GTK3-FULL-WIDTH; then
   set_bopomofo_layout Standard
   run_case T08-X11-GTK3-FULL-WIDTH chichi77-keykey-bopomofo \
+    'Ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
+fi
+if case_selected T08-X11-GTK4-FULL-WIDTH; then
+  set_bopomofo_layout Standard
+  run_gtk4_case T08-X11-GTK4-FULL-WIDTH chichi77-keykey-bopomofo \
     'Ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
 fi
 if case_selected T08-X11-GTK3-TRADITIONAL-TO-SIMPLIFIED; then
   set_bopomofo_layout Standard
   set_traditional_to_simplified True
   run_case T08-X11-GTK3-TRADITIONAL-TO-SIMPLIFIED chichi77-keykey-bopomofo \
+    台湾 'w962j0 1' 'ㄊ,ㄊㄞ,ㄊㄞˊ,ㄨ,ㄨㄢ' \
+    w 9 6 2 j 0 space 1
+  set_traditional_to_simplified False
+fi
+if case_selected T08-X11-GTK4-TRADITIONAL-TO-SIMPLIFIED; then
+  set_bopomofo_layout Standard
+  set_traditional_to_simplified True
+  run_gtk4_case T08-X11-GTK4-TRADITIONAL-TO-SIMPLIFIED \
+    chichi77-keykey-bopomofo \
     台湾 'w962j0 1' 'ㄊ,ㄊㄞ,ㄊㄞˊ,ㄨ,ㄨㄢ' \
     w 9 6 2 j 0 space 1
   set_traditional_to_simplified False
@@ -1238,15 +1811,50 @@ if case_selected T09-X11-GTK3-MODIFIER-PASSTHROUGH; then
     5 ctrl+c alt+f j slash space ctrl+c alt+f 1 \
     j p 6 ctrl+c alt+f 1
 fi
+if case_selected T09-X11-GTK4-MODIFIER-PASSTHROUGH; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  set_toggle_with_control_backslash True
+  run_gtk4_case T09-X11-GTK4-MODIFIER-PASSTHROUGH \
+    chichi77-keykey-bopomofo \
+    'x中文' 'x5j/ 1jp61' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨㄣˊ' \
+    ctrl-down backslash-down wait-1000ms ctrl-up backslash-up \
+    ctrl+a BackSpace x \
+    ctrl+backslash \
+    5 ctrl+c alt+f j slash space ctrl+c alt+f 1 \
+    j p 6 ctrl+c alt+f 1
+fi
 if case_selected T10-X11-GTK3-INPUT-CONTEXT-ISOLATION; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections ''
   run_focus_case T10-X11-GTK3-INPUT-CONTEXT-ISOLATION
 fi
+if case_selected T10-X11-GTK3-MULTI-APP-ISOLATION; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_multi_app_case T10-X11-GTK3-MULTI-APP-ISOLATION
+fi
+if case_selected T10-X11-GTK4-INPUT-CONTEXT-ISOLATION; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_gtk4_focus_case T10-X11-GTK4-INPUT-CONTEXT-ISOLATION
+fi
+if case_selected T10-X11-GTK4-MULTI-APP-ISOLATION; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_gtk4_multi_app_case T10-X11-GTK4-MULTI-APP-ISOLATION
+fi
 if case_selected T11-X11-GTK3-EDITING-SENSITIVE-READONLY; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections McBopomofo
   run_editing_case T11-X11-GTK3-EDITING-SENSITIVE-READONLY
+  set_associated_phrase_collections ''
+fi
+if case_selected T11-X11-GTK4-EDITING-SENSITIVE-READONLY; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections McBopomofo
+  run_gtk4_editing_case T11-X11-GTK4-EDITING-SENSITIVE-READONLY
   set_associated_phrase_collections ''
 fi
 if case_selected T12-X11-GTK3-SYMBOL-LIST; then
@@ -1260,5 +1868,224 @@ if case_selected T12-X11-GTK3-SYMBOL-LIST-MOUSE; then
   set_candidate_window_style Vertical
   run_case T12-X11-GTK3-SYMBOL-LIST-MOUSE chichi77-keykey-bopomofo \
     '，!' '!' '' ctrl+0 click-candidate-1 wait-500ms shift+1
+fi
+if case_selected T12-X11-GTK4-SYMBOL-LIST; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_gtk4_case T12-X11-GTK4-SYMBOL-LIST chichi77-keykey-bopomofo \
+    ， '1' ， ctrl+0 1
+fi
+if case_selected T12-X11-GTK4-SYMBOL-LIST-MOUSE; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_gtk4_case T12-X11-GTK4-SYMBOL-LIST-MOUSE \
+    chichi77-keykey-bopomofo '，!' '!' '' \
+    ctrl+0 click-candidate-1 wait-500ms shift+1
+fi
+if case_selected T02-X11-QT6-BOPOMOFO-STANDARD; then
+  set_bopomofo_layout Standard
+  run_qt6_case T02-X11-QT6-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
+    麻馬罵嘛 'a8\61a831a841a871' \
+    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    a 8 backslash ctrl+c 6 1 a 8 3 1 a 8 4 1 a 8 7 1
+fi
+if case_selected T02-X11-QT6-BOPOMOFO-ETEN; then
+  set_bopomofo_layout ETen
+  run_qt6_case T02-X11-QT6-BOPOMOFO-ETEN chichi77-keykey-bopomofo \
+    麻馬罵嘛 'ma\21ma31ma41ma11' \
+    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 1 1
+fi
+if case_selected T02-X11-QT6-BOPOMOFO-ETEN26; then
+  set_bopomofo_layout ETen26
+  run_qt6_case T02-X11-QT6-BOPOMOFO-ETEN26 chichi77-keykey-bopomofo \
+    麻馬罵嘛 'ma\f1maj1mak1mad1' \
+    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m a backslash ctrl+c f 1 m a j 1 m a k 1 m a d 1
+fi
+if case_selected T02-X11-QT6-BOPOMOFO-HSU; then
+  set_bopomofo_layout Hsu
+  run_qt6_case T02-X11-QT6-BOPOMOFO-HSU chichi77-keykey-bopomofo \
+    麻馬罵嘛 'my\d1myf1myj1mys1' \
+    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    m y backslash ctrl+c d 1 m y f 1 m y j 1 m y s 1
+fi
+if case_selected T02-X11-QT6-BOPOMOFO-HANYU-PINYIN; then
+  set_bopomofo_layout HanyuPinyin
+  run_qt6_case T02-X11-QT6-BOPOMOFO-HANYU-PINYIN \
+    chichi77-keykey-bopomofo \
+    麻馬罵嘛 'ma\21ma31ma41ma51' \
+    'z,zh,m,ma,ma2,ma3,ma4,ma5' \
+    z h BackSpace BackSpace \
+    m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 5 1
+fi
+if case_selected T03-X11-QT6-BOPOMOFO-EDIT-CANCEL; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_qt6_case T03-X11-QT6-BOPOMOFO-EDIT-CANCEL \
+    chichi77-keykey-bopomofo \
+    中文麻 '5j// 1jpjp61a86a861' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    equal BackSpace Escape \
+    5 j slash space BackSpace slash space 1 \
+    j p Escape j p 6 1 \
+    a 8 6 Escape a 8 6 1
+fi
+if case_selected T06-X11-QT6-CANDIDATE-NAVIGATION; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_qt6_case T06-X11-QT6-CANDIDATE-NAVIGATION \
+    chichi77-keykey-bopomofo \
+    妐 '5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space End Home Page_Down Down Return
+fi
+if case_selected T06-X11-QT6-CANDIDATE-MOUSE; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_qt6_case T06-X11-QT6-CANDIDATE-MOUSE chichi77-keykey-bopomofo \
+    鐘 '5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space click-candidate-2
+fi
+if case_selected T06-X11-QT6-CANDIDATE-HORIZONTAL; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Horizontal
+  run_qt6_case T06-X11-QT6-CANDIDATE-HORIZONTAL \
+    chichi77-keykey-bopomofo \
+    妐 ' 5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' \
+    5 j slash space End Home Page_Down Page_Up Right Left space Down Return
+fi
+if case_selected T07-X11-QT6-ASSOCIATED-PHRASE; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections McBopomofo
+  run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE \
+    chichi77-keykey-bopomofo \
+    今天 'rup 1!' 'ㄐ,ㄐㄧ,ㄐㄧㄣ' r u p space 1 shift+1
+fi
+if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-CATEGORY; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections history
+  run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE-CATEGORY \
+    chichi77-keykey-bopomofo \
+    臺灣史 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
+fi
+if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-DISABLED; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE-DISABLED \
+    chichi77-keykey-bopomofo \
+    '臺!' 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
+  set_associated_phrase_collections ''
+fi
+if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
+  set_bopomofo_layout Standard
+  associated_phrase_collections=government
+  write_legacy_keykey_config
+  reload_keykey_config
+  run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG \
+    chichi77-keykey-bopomofo \
+    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
+  set_associated_phrase_collections ''
+fi
+if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
+  set_bopomofo_layout Standard
+  associated_phrase_collections=government
+  persistence_case_dir="$KEYKEY_E2E_ARTIFACT_DIR/"
+  persistence_case_dir+=T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
+  mkdir -p "$persistence_case_dir"
+  set_keykey_config_via_dbus "$persistence_case_dir/set-config-result.txt"
+  cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
+    "$persistence_case_dir/saved-config.ini"
+  grep -Fxq 'AssociatedPhraseCollections=government' \
+    "$persistence_case_dir/saved-config.ini"
+  grep -Fxq 'McBopomofo=False' "$persistence_case_dir/saved-config.ini"
+  grep -Fxq 'government=True' "$persistence_case_dir/saved-config.ini"
+  restart_fcitx
+  get_keykey_config_via_dbus "$persistence_case_dir/config-after-restart.txt"
+  grep -Fq "'McBopomofo': <'False'>" \
+    "$persistence_case_dir/config-after-restart.txt"
+  grep -Fq "'government': <'True'>" \
+    "$persistence_case_dir/config-after-restart.txt"
+  run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE \
+    chichi77-keykey-bopomofo \
+    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
+  set_associated_phrase_collections ''
+fi
+if case_selected T08-X11-QT6-CHINESE-ENGLISH-MODE; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  set_toggle_with_control_backslash True
+  run_qt6_case T08-X11-QT6-CHINESE-ENGLISH-MODE \
+    chichi77-keykey-bopomofo \
+    '5j/aBａ！　文abcde麻' '55j/aB a!  jp61abcdea861' \
+    'ㄓ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    5 ctrl+backslash 5 j slash a Caps_Lock b Caps_Lock \
+    shift+space a shift+1 space shift+space \
+    ctrl+backslash j p 6 1 \
+    shift a b c shift-down wait-500ms shift-up d e shift a 8 6 1
+fi
+if case_selected T08-X11-QT6-CONTROL-BACKSLASH-DISABLED; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  set_toggle_with_control_backslash False
+  run_qt6_case T08-X11-QT6-CONTROL-BACKSLASH-DISABLED \
+    chichi77-keykey-bopomofo \
+    中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' \
+    5 ctrl+backslash j slash space 1
+  set_toggle_with_control_backslash True
+fi
+if case_selected T08-X11-QT6-FULL-WIDTH; then
+  set_bopomofo_layout Standard
+  run_qt6_case T08-X11-QT6-FULL-WIDTH chichi77-keykey-bopomofo \
+    'Ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
+fi
+if case_selected T08-X11-QT6-TRADITIONAL-TO-SIMPLIFIED; then
+  set_bopomofo_layout Standard
+  set_traditional_to_simplified True
+  run_qt6_case T08-X11-QT6-TRADITIONAL-TO-SIMPLIFIED \
+    chichi77-keykey-bopomofo \
+    台湾 'w962j0 1' 'ㄊ,ㄊㄞ,ㄊㄞˊ,ㄨ,ㄨㄢ' \
+    w 9 6 2 j 0 space 1
+  set_traditional_to_simplified False
+fi
+if case_selected T09-X11-QT6-MODIFIER-PASSTHROUGH; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  set_toggle_with_control_backslash True
+  run_qt6_case T09-X11-QT6-MODIFIER-PASSTHROUGH \
+    chichi77-keykey-bopomofo \
+    'xff中f文' 'x5fj/ f1jp6f1' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨㄣˊ' \
+    ctrl+backslash \
+    ctrl+a BackSpace x \
+    ctrl+backslash \
+    5 ctrl+c alt+f j slash space ctrl+c alt+f 1 \
+    j p 6 ctrl+c alt+f 1
+fi
+if case_selected T10-X11-QT6-INPUT-CONTEXT-ISOLATION; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_qt6_focus_case T10-X11-QT6-INPUT-CONTEXT-ISOLATION
+fi
+if case_selected T10-X11-QT6-MULTI-APP-ISOLATION; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections ''
+  run_qt6_multi_app_case T10-X11-QT6-MULTI-APP-ISOLATION
+fi
+if case_selected T11-X11-QT6-EDITING-SENSITIVE-READONLY; then
+  set_bopomofo_layout Standard
+  set_associated_phrase_collections McBopomofo
+  run_qt6_editing_case T11-X11-QT6-EDITING-SENSITIVE-READONLY
+  set_associated_phrase_collections ''
+fi
+if case_selected T12-X11-QT6-SYMBOL-LIST; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_qt6_case T12-X11-QT6-SYMBOL-LIST chichi77-keykey-bopomofo \
+    ， '1' ， ctrl+0 1
+fi
+if case_selected T12-X11-QT6-SYMBOL-LIST-MOUSE; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_qt6_case T12-X11-QT6-SYMBOL-LIST-MOUSE \
+    chichi77-keykey-bopomofo '，!' '!' '' \
+    ctrl+0 click-candidate-1 wait-500ms shift+1
 fi
 test_status=passed

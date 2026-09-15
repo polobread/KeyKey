@@ -3,7 +3,9 @@
 本文件集中說明琦琦輸入法各平台的建置流程。
 
 Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
-外掛與 local X11/GTK 3 真實逐鍵測試，但尚未完成全部功能、GNOME／Wayland 桌面
+外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
+但尚未完成
+全部功能、GNOME／Wayland 桌面
 驗收或正式套件。開發／套件規格見
 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
@@ -91,8 +93,9 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
 第一個指令是主要 Ubuntu 24.04 / Fcitx 5 build，第二個守住 Ubuntu 22.04 的最低
-API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3 的 X11 真實逐鍵輸入：五種
-注音配置及各自的英文負控制，並驗證注音設定 schema；五種布局都是 Windows 對標的
+API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3／GTK 4／Qt 6 的 X11 真實逐鍵輸入：
+三套 toolkit 覆蓋各自適用的 T01–T03、T06–T12，且都有英文負控制；並驗證
+注音設定 schema。五種布局都是 Windows 對標的
 Linux 1.2.8 第一階段範圍。已完成的倉頡／簡易切片保留作回歸與未來擴充，不需從程式或
 測試中拆除。這些 one-shot 指令預設建立
 `linux/amd64` 產物；ARM64 preview 可在指令前設定
@@ -102,8 +105,8 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 
 後兩個指令用 debhelper 產生依發行版命名的 `chichi77-keykey-data` 與
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
-各跑一次三十一個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
-點選、保存、重啟及真實打字案例（合計三十二案）；22.04 則跑較省時的套件安裝／移除 smoke。
+各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
+點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
 這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
 
 ## macOS
@@ -444,7 +447,7 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
 The third one-shot command types physical key events through the staged Fcitx 5 addon
-into a GTK 3 entry on Xvfb and runs an English-keyboard negative control. They
+into GTK 3, GTK 4, and Qt 6 editors on Xvfb and runs English-keyboard negative controls. They
 default to `linux/amd64`; set `KEYKEY_DOCKER_PLATFORM=linux/arm64` for the ARM64
 preview build. The Xvfb result is L3 X11 evidence and does not count as GNOME or
 native Wayland desktop typing acceptance. See the
@@ -452,10 +455,10 @@ native Wayland desktop typing acceptance. See the
 
 The final two commands create distro-labelled `chichi77-keykey-data` and
 `fcitx5-chichi77-keykey` Debian packages with debhelper. Ubuntu 24.04 also runs
-the thirty-one non-settings-window X11 cases after install, controlled upgrade, and
+the eighty-two non-settings-window X11 cases after install, controlled upgrade, and
 reinstall. The native Fcitx settings-window click, persistence, restart, and
 typing case—including changing the candidate style from vertical to
-horizontal—runs once after reinstall, for thirty-two cases in that final state.
+horizontal—runs once after reinstall, for eighty-three cases in that final state.
 These are development artifacts until the remaining release gates are complete.
 
 ### macOS
