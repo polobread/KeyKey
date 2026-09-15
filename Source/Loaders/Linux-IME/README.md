@@ -60,7 +60,9 @@ The initial vertical slice provides:
   Cangjie `a` → `日`, direct punctuation/error recovery → `，用`, wildcard
   queries → `昌日`, Simplex
   `a` → second candidate `曰`, full-code/continuous/direct-punctuation input →
-  `明銖䍤、`, and Bopomofo Home/End plus second-page keyboard navigation → `妐`,
+  `明銖䍤、`, Bopomofo Home/End plus second-page keyboard navigation → `妐`, and
+  a real pointer click on the expanded vertical Fcitx candidate window's second
+  row → `鐘`,
   `Shift+Space` full-width input → `Ａ！～　`, Big-5 filtering of `ㄝˋ`
   candidates → `𤦩`, plus
   Chinese/English switching by `Ctrl+\` and a short Shift tap, including
@@ -84,7 +86,8 @@ The initial vertical slice provides:
   phrases, and confirms a read-only entry stays unchanged after a complete key
   sequence, plus
   Traditional-to-Simplified output `臺灣` → `台湾`, plus `Ctrl+0` symbol-list
-  selection → `，`, plus associated-phrase default `今` → `今天`,
+  keyboard selection → `，` and a real first-row pointer selection followed by
+  `!` → `，!`, plus associated-phrase default `今` → `今天`,
   `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺!`;
   a fourth association case verifies migration from the earlier comma-separated
   setting, while a fifth writes through the Fcitx D-Bus settings API, restarts
@@ -98,8 +101,8 @@ The initial vertical slice provides:
 - Debian packages named `chichi77-keykey-data` and
   `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
 - a package lifecycle test covering install, controlled preview-to-1.2.8
-  upgrade, removal, reinstall, dependency/file/hash checks, the twenty-nine
-  keyboard-only X11 cases after each installed state, and all thirty cases,
+  upgrade, removal, reinstall, dependency/file/hash checks, the thirty-one
+  non-settings-window X11 cases after each installed state, and all thirty-two cases,
   including the settings window, once after reinstall;
 - a persistent Fcitx-native settings schema with the five Windows-supported
   Bopomofo layouts and vertical/horizontal candidate styles,
@@ -412,12 +415,12 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
 Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
-The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the twenty-nine
-keyboard-only X11 cases, upgrades to `1.2.8`, runs them again, removes and
-reinstalls the packages, then runs all thirty cases. Running the UI-heavy
+The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the thirty-one
+non-settings-window X11 cases, upgrades to `1.2.8`, runs them again, removes and
+reinstalls the packages, then runs all thirty-two cases. Running the UI-heavy
 case once keeps the installed-package proof while avoiding three identical Qt
-startup cycles. The latest completed package evidence passes 29/29 cases after
-both preview install and release upgrade, then 30/30 after reinstall. The 22.04
+startup cycles. The latest completed package evidence passes 31/31 cases after
+both preview install and release upgrade, then 32/32 after reinstall. The 22.04
 path performs build, lintian,
 dependency, file/data checksum, install/remove/reinstall, and ELF checks but
 does not claim desktop typing acceptance. Packages and evidence are written

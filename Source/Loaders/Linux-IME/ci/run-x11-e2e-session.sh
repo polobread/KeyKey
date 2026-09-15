@@ -22,6 +22,7 @@ known_cases=(
   T05-X11-GTK3-SIMPLEX
   T05-X11-GTK3-SIMPLEX-FULL-CODE
   T06-X11-GTK3-CANDIDATE-NAVIGATION
+  T06-X11-GTK3-CANDIDATE-MOUSE
   T07-X11-GTK3-ASSOCIATED-PHRASE
   T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY
   T07-X11-GTK3-ASSOCIATED-PHRASE-DISABLED
@@ -36,6 +37,7 @@ known_cases=(
   T10-X11-GTK3-INPUT-CONTEXT-ISOLATION
   T11-X11-GTK3-EDITING-SENSITIVE-READONLY
   T12-X11-GTK3-SYMBOL-LIST
+  T12-X11-GTK3-SYMBOL-LIST-MOUSE
 )
 requested_cases=${KEYKEY_E2E_CASES:-all}
 config_ui=${KEYKEY_E2E_CONFIG_UI:-ON}
@@ -434,9 +436,12 @@ verify_bopomofo_config_schema() {
 send_key_sequence() {
   local special_sequence=false key_name center_file='' center_ready=false
   local entry_x='' entry_y='' focus_ready=false
+  local candidate_window_id='' candidate_geometry='' candidate_width=''
+  local candidate_height='' candidate_row='' click_x='' click_y=''
+  local popup_ready=false
   for key_name in "$@"; do
     case "$key_name" in
-    shift-down|shift-up|ctrl-down|ctrl-up|backslash-down|backslash-up|activate-bopomofo|expect-keyboard-us|click-second-entry|wait-500ms|wait-1000ms)
+    shift-down|shift-up|ctrl-down|ctrl-up|backslash-down|backslash-up|activate-bopomofo|expect-keyboard-us|click-second-entry|click-candidate-[1-9]|wait-500ms|wait-1000ms)
       special_sequence=true
       break
       ;;
@@ -511,6 +516,48 @@ send_key_sequence() {
           exit 1
         fi
         ;;
+      click-candidate-[1-9])
+        if [[ "${negative_phase:-false}" == true ]]; then
+          continue
+        fi
+        candidate_row=${key_name##*-}
+        popup_ready=false
+        for _ in {1..100}; do
+          candidate_window_id=$(xdotool search --onlyvisible \
+            --name '^Fcitx5 Input Window$' 2>/dev/null | head -n 1 || true)
+          if [[ -n "$candidate_window_id" ]]; then
+            candidate_geometry=$(xdotool getwindowgeometry --shell \
+              "$candidate_window_id" 2>/dev/null || true)
+            candidate_width=$(printf '%s\n' "$candidate_geometry" |
+              sed -n 's/^WIDTH=//p')
+            candidate_height=$(printf '%s\n' "$candidate_geometry" |
+              sed -n 's/^HEIGHT=//p')
+            if [[ "$candidate_width" =~ ^[0-9]+$ &&
+                  "$candidate_height" =~ ^[0-9]+$ &&
+                  "$candidate_width" -gt 10 &&
+                  "$candidate_height" -gt 100 ]]; then
+              popup_ready=true
+              break
+            fi
+          fi
+          sleep 0.05
+        done
+        if [[ "$popup_ready" != true ]]; then
+          echo "The expanded Fcitx candidate window did not become visible." >&2
+          exit 1
+        fi
+        # Classic UI lays out the nine vertical candidates as equal-height rows.
+        # Click the requested row's center after the popup has expanded past the
+        # transient 1x1 and preedit-only window geometries.
+        click_x=$((candidate_width / 2))
+        click_y=$((candidate_height * (2 * candidate_row - 1) / 18))
+        printf 'window=%s width=%s height=%s row=%s x=%s y=%s\n' \
+          "$candidate_window_id" "$candidate_width" "$candidate_height" \
+          "$candidate_row" "$click_x" "$click_y" \
+          >"$KEYKEY_E2E_CASE_DIR/candidate-click.txt"
+        xdotool mousemove --window "$candidate_window_id" \
+          "$click_x" "$click_y" click 1
+        ;;
       wait-500ms) sleep 0.5 ;;
       wait-1000ms) sleep 1 ;;
       *) xdotool key --delay "$key_delay_ms" "$key_name" ;;
@@ -578,6 +625,7 @@ run_case() {
     exit 1
   fi
 
+  negative_phase=false
   send_key_sequence "$@"
   positive_ready=false
   for _ in {1..100}; do
@@ -610,7 +658,9 @@ run_case() {
     exit 1
   fi
   xdotool key --delay "$key_delay_ms" ctrl+a BackSpace
+  negative_phase=true
   send_key_sequence "$@"
+  negative_phase=false
 
   wait "$host_pid"
   host_pid=
@@ -1096,8 +1146,15 @@ if case_selected T05-X11-GTK3-SIMPLEX-FULL-CODE; then
 fi
 if case_selected T06-X11-GTK3-CANDIDATE-NAVIGATION; then
   set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
   run_case T06-X11-GTK3-CANDIDATE-NAVIGATION chichi77-keykey-bopomofo \
     妐 '5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space End Home Page_Down Down Return
+fi
+if case_selected T06-X11-GTK3-CANDIDATE-MOUSE; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_case T06-X11-GTK3-CANDIDATE-MOUSE chichi77-keykey-bopomofo \
+    鐘 '5j/ ' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space click-candidate-2
 fi
 if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE; then
   set_bopomofo_layout Standard
@@ -1194,7 +1251,14 @@ if case_selected T11-X11-GTK3-EDITING-SENSITIVE-READONLY; then
 fi
 if case_selected T12-X11-GTK3-SYMBOL-LIST; then
   set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
   run_case T12-X11-GTK3-SYMBOL-LIST chichi77-keykey-bopomofo \
     ， '1' ， ctrl+0 1
+fi
+if case_selected T12-X11-GTK3-SYMBOL-LIST-MOUSE; then
+  set_bopomofo_layout Standard
+  set_candidate_window_style Vertical
+  run_case T12-X11-GTK3-SYMBOL-LIST-MOUSE chichi77-keykey-bopomofo \
+    '，!' '!' '' ctrl+0 click-candidate-1 wait-500ms shift+1
 fi
 test_status=passed

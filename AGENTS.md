@@ -16,7 +16,7 @@ macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是�
 目前不加入。新建 Linux-only 引擎與 IBus／Fcitx 5 整合，不修改或連結既有
 KeyKeyEngine／OpenVanilla 核心。2026-09-12 已完成規劃、四平台版號 1.2.8 同步及
 第一段 Linux-only engine／Fcitx 5 垂直切片；local Ubuntu 24.04 Xvfb/GTK 3 的 L3
-真實輸入已通過，並含五種注音布局、候選鍵盤導覽、標點／符號候選、30 套內建關聯詞、
+真實輸入已通過，並含五種注音布局、候選鍵盤／滑鼠操作、標點／符號候選、30 套內建關聯詞、
 直／橫候選設定、中英文模式與全半形、XDG 錯誤提示聲、Fcitx 原生設定 schema 與
 Ubuntu 22.04／24.04
 Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基線已通過，
@@ -29,11 +29,10 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
 
 ### 2026-09-13 Windows 11 主機接手 Linux 原生版
 
-- 遠端開發分支是 `origin/v1.2.8`；接手時先用
-  `git log --oneline origin/master..origin/v1.2.8` 確認當前 Linux 提交串。
-  該分支曾改寫歷史；若 Windows 上已有舊的
-  `v1.2.8`，先保存未提交工作、重新 fetch，再對齊遠端，不能把舊的七筆歷史 merge
-  回來。正式詞庫保留原始內容；Linux 測試與文件不使用「中國／中国／中!」案例。
+- PR #2 已合併到 `origin/master` 的 `d7a00a8`，遠端 `v1.2.8` 隨後刪除；本機
+  `v1.2.8` 已 rebase 到同一提交且沒有 upstream。下次推送會重新建立遠端開發分支；
+  不可把曾存在的舊七筆歷史 merge 回來。正式詞庫保留原始內容；Linux 測試與文件
+  不使用「中國／中国／中!」案例。
 - 在 Windows 上接續的是 **Linux Fcitx 5 frontend**，不是 Windows TSF。建議從
   WSL2 Ubuntu 的 shell 執行，repository 放在 WSL 的 Linux filesystem（例如
   `/home/.../KeyKey`），並以 WSL 內的 Git 保留 LF 與 executable bit；不要從會自動
@@ -80,11 +79,11 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   Source/Loaders/Linux-IME/ci/dev.sh verify
   ```
 
-  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 30 個
+  日常迭代先用 `test` 或 `e2e CASE-ID`；`verify` 才跑完整 staged 檢查與 32 個
   Xvfb/GTK3/Fcitx 案例。`run-debian-package.sh ubuntu-24.04` 是乾淨安裝、升級、移除、
   重裝的 amd64 套件 gate，只在里程碑跑，不要每次修改都跑。Windows 桌面本身不能
   取代 GNOME／native Wayland 驗收；Xvfb 通過後仍須另找真 Linux desktop／VM。
-- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 30/30
+- 目前 WSL 移交狀態：warm container 的 CTest 2/2 與完整 X11 suite 32/32
   通過；案例涵蓋注音候選直接接下一音節、五布局 reading 中無效裸 `\` 與 Ctrl 快捷鍵，以及
   空狀態／reading／候選的 Backspace 與 Escape 邊界；也涵蓋每個 input context 的
   中英文模式、`Ctrl+\`、單按 Shift、Caps Lock、英文全半形，以及 reading／候選期間
@@ -94,14 +93,15 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   T11 另以真 GTK3 欄位驗證 active reading 中的方向、Home／End、Delete／Tab 與 Shift
   變體不會移動 App caret／selection 或換欄，接著驗證既有文字選取後由候選精確替換、
   密碼 content purpose 使 Fcitx 回到 `keyboard-us` 而不載入自訂輸入法，以及唯讀欄位
-  在完整鍵序後不變；滑鼠 selection、GTK4／Qt／瀏覽器與 Wayland 仍待驗收。
+  在完整鍵序後不變；一般注音候選另以真實滑鼠點擊第二列選出「鐘」，符號表則點擊
+  第一列提交「，」。App 內容的滑鼠 selection、GTK4／Qt／瀏覽器與 Wayland 仍待驗收。
   候選方向已能在原生設定由 Vertical 切成 Horizontal，保存／重啟後套用到真實候選；
   錯誤訊號已接到可關閉的 XDG 提示聲，設定視窗的關閉、保存與重啟讀回已納入同一
   suite；`configure`／GNU Make source-directory 與 out-of-source gate 亦在重建後的
   24.04 container 通過。單次 24.04 `.deb` 已重建並確認自動產生的 runtime dependency
   包含 `libcanberra0t64`。
-  Ubuntu 24.04 package lifecycle 已重跑：preview 初裝與 release 升級各通過 29 個
-  純鍵盤案例，移除／重裝後通過包含設定視窗的完整 30 案；dependency、資料 hash、
+  Ubuntu 24.04 package lifecycle 已重跑：preview 初裝與 release 升級各通過 31 個
+  非設定視窗案例，移除／重裝後通過包含設定視窗的完整 32 案；dependency、資料 hash、
   移除與設定 sentinel 也全數通過。
   2026-09-14 另把同一組 release-candidate `.deb` 實裝到 WSL2 Ubuntu 24.04.4，
   由使用者在 WSLg XWayland 的 GTK3 gedit 以 Fcitx 5.1.7 實際確認可輸入中文；這只算
@@ -460,6 +460,15 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   就讓 `xdotool search` 找到 ID，立刻 `windowfocus` 會以 `X_SetInputFocus BadMatch`
   結束。真實打字 E2E 必須用 `search --onlyvisible`，並在 host 尚存活時有界重試 focus；
   不能只延長固定 sleep，否則 hosted runner 仍會偶發失敗。
+- **Fcitx 候選窗的第一個可見 geometry 不是完整候選**：classic-ui 的
+  `Fcitx5 Input Window` 會先以 1×1 map，再變成只容納 preedit 的小窗，最後才展開
+  九列直式候選。T06 滑鼠測試必須先明確設為 Vertical，再以有界輪詢等待 width > 10
+  且 height > 100，才可按九等分列中心點擊第二列；只等 window ID 或固定 sleep 會點到
+  暫態空窗。2026-09-15 的 Xvfb/Fcitx 5.1.7 實測完整窗為 44×247，第二列中心為
+  (22, 41)，但這些絕對像素只寫入 artifact，不得硬編碼成點擊座標。macOS 候選控制器
+  只在 panel 取得 control 時把滑鼠列／索引換成選字鍵送入 PlainVanilla；AssociatedPhrase
+  只 show 而不 yield control，所以橫式禁點、直式拒絕 selection change。目前 Windows TSF 自繪
+  `CandidateWindow` 沒有 mouse-button 選字訊息，屬平台差異，不可誤寫成 Windows parity。
 - **Fcitx input context 的 active engine 與 KeyKey 組字狀態是兩回事**：停用 Fcitx
   share-input-state 時，新取得焦點的 GTK entry 可能先使用 `keyboard-us`，即使前一欄是
   琦琦注音；T10 跨欄測試要在切入新 context 後明確選擇注音並輪詢
@@ -1243,6 +1252,18 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       更新後的 Ubuntu 24.04 `.deb` lifecycle 亦為初裝 25/25、升級 25/25、重裝
       26/26。F07 比例／配色因屬 Fcitx UI/theme 尚未實作，F06 也仍缺
       GNOME／Wayland popup 畫面與滑鼠選字，不能標成完整 parity。
+- [x] 2026-09-15 補上 F06 一般注音候選的 X11 真實滑鼠選字：先查 macOS
+      `CVHorizontalCandidateControl`／兩種 candidate controller，確認點擊索引會換算為
+      選字鍵並送入 PlainVanilla `CandidateChosen`／TraditionalMandarin commit；再查
+      Windows TSF `CandidateWindow`，確認現行自繪窗只有鍵盤、繪製、DPI 與
+      `WM_MOUSEACTIVATE`，沒有 `WM_LBUTTONDOWN`／`WM_LBUTTONUP` 選字訊息。Linux 保留
+      Fcitx 原生 `CandidateWord::select` callback，新增 T06 installed-addon 案例：鎖定
+      Vertical，等候候選窗越過 1×1／preedit-only 暫態後，以 XTest 點第二列並精確提交
+      「鐘」，`keyboard-us` 負控制為 `5j/ `。targeted 鍵盤／滑鼠兩案、完整 warm gate
+      CTest 2/2、X11 31/31 均通過；Ubuntu 24.04 package lifecycle 的 preview 初裝與
+      release 升級各通過 30/30，移除／重裝後含設定視窗通過 31/31。GNOME X11、
+      XWayland、native Wayland 的 popup 畫面／位置／點擊仍待驗收；符號候選滑鼠由下列
+      T12 案例接續。不能將 F06 標成完整 parity。
 - [x] 2026-09-12 完成第一段 F10／F11 標點與符號候選：Linux engine 與 Fcitx 5
       唯讀載入 `bpmf-punctuations.cin`；`Ctrl+,`／`Ctrl+.` 可提交「，」／「。」，
       `Ctrl+0`／`Ctrl+1` 可開啟真實候選表並以數字、翻頁與 Enter 選取。L1 驗證
@@ -1250,6 +1271,16 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       真實 `Ctrl+0`、`1` 提交「，」，英文負控制只得到 `1`，套件三種狀態皆通過。
       仍未包含直接鍵盤標點、自訂符號／顏文字／常用文字視窗、視覺／滑鼠、
       GNOME 或 Wayland，不能將 F10／F11 標為完成。
+- [x] 2026-09-15 補上 F11 符號候選的 X11 真實滑鼠選字：先確認 macOS
+      TraditionalMandarin 的一般／標點候選會 yield 給 candidate handler，故 panel 可點；
+      AssociatedPhrase 不 yield，並非關聯詞滑鼠的對標依據。再確認 Windows TSF 的
+      `Ctrl+0`／`Ctrl+1` 會開同一標點資料，但自繪 `CandidateWindow` 沒有 mouse-button
+      訊息。Linux 將 Fcitx 原生 pointer callback 保留為額外能力，新增 installed-addon
+      案例以 `Ctrl+0` 開表、XTest 點第一列、接著輸入 `!`，精確得到「，!」，
+      `keyboard-us` 負控制只得到 `!`。targeted 三案、完整 warm gate CTest 2/2、
+      X11 32/32 均通過；Ubuntu 24.04 package lifecycle 的 preview 初裝與 release 升級
+      各通過 31/31，移除／重裝後含設定視窗通過 32/32。GNOME X11、XWayland、native
+      Wayland 的符號窗畫面／位置／點擊仍待驗收，不能將 F11 標成完整 parity。
 - [x] 2026-09-12 完成第一段 F09 全／半形與繁轉簡：Linux engine 與 Fcitx 5 以
       `Shift+Space` 切換每個 input context 的狀態，全形模式將 ASCII space 及
       `!`–`~` 對映到 U+3000／U+FF01–U+FF5E，並在切換時保留 reading／候選。
@@ -1276,9 +1307,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       `fcitx5-config-qt` 的 Bopomofo 列、Configure、兩個分類核取方塊及 OK，透過真實
       X11 點擊只開 agriculture-food，保存切換前後 PNG，核對 INI，重啟並讀回後逐鍵
       得到「作物育種」；package lifecycle 為節省 runner 時間只在 reinstalled 狀態跑此案。
-      資料、顯示名稱與兩份來源授權均納入 staged install、DEB hash／移除檢查。仍缺
-      候選滑鼠操作、桌面登出登入、macOS 行為證據與 Windows 操作交叉檢查、
-      GNOME 與 Wayland，不能將 F05 標為完成。
+      資料、顯示名稱與兩份來源授權均納入 staged install、DEB hash／移除檢查。Linux
+      額外的關聯詞候選滑鼠操作尚未驗收，但 macOS source 已確認該 panel 不接受點選，
+      Windows 自繪窗也沒有滑鼠選字，因此不列為 parity blocker。桌面登出登入、平台
+      實際操作錄製、GNOME 與 Wayland 仍缺，不能將 F05 標為完成。
 - [x] 2026-09-12 建立 Ubuntu 24.04 長駐本機開發 session：Apple Silicon 預設原生
       ARM64，dependency image 依 Dockerfile hash 重建，CMake build／stage 置於 named
       volumes，並可在同一 container 反覆執行 build、CTest、指定或完整 X11 E2E 及單次

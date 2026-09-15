@@ -465,25 +465,27 @@ context 獨立狀態、嚴格 CIN reader、五種注音布局、Fcitx 原生布�
 Fcitx 5 addon。Rancher Desktop container 已在 Ubuntu 24.04（Fcitx 5.1.7）與 22.04
 （Fcitx 5.0.14）x86_64 userspace 編譯、跑 CTest 並驗證 staged install；24.04 ARM64
 build 亦已通過。Ubuntu 24.04 x86_64 另以 Xvfb、獨立 D-Bus、Fcitx 5 與 GTK 3 host
-完成三十個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
+完成三十二個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
 五種注音配置的 T02 鍵序皆以二、三、四、輕聲選出「麻馬罵嘛」，
 並在第一個 reading 中以裸 `\` 與 `Ctrl+C` 驗證無效鍵／快捷鍵不破壞組字，
 漢語拼音另清除不完整 `zh`；倉頡 `a` 選「日」，另驗證直接標點、查無碼清除與
 單一候選提交為「，用」，並以 `a?`／`a*` 萬用字元提交「昌日」；簡易 `a`
 選第二候選「曰」，另驗證兩碼自動候選、連續
 輸入、單一候選及標點候選為「明銖䍤、」；並以 PageDown、Down、Enter 從注音第二頁
-選出「妐」；`Shift+Space` 全形流程提交精確 `Ａ！～　`；Big-5 限制開啟時從
+選出「妐」，再以真實滑鼠點擊展開後的 Fcitx 直式候選第二列選出「鐘」；
+`Shift+Space` 全形流程提交精確 `Ａ！～　`；Big-5 限制開啟時從
 `ㄝˋ` 過濾後候選選出 `𤦩`；繁轉簡開啟時逐字選出
 真實候選「臺灣」並提交「台湾」；另以 `Ctrl+0`
-開啟真實標點表並按 `1` 選出「，」；六個關聯詞流程以 `Shift+1` 驗證基本詞庫
+開啟真實標點表並按 `1` 選出「，」，再以真實滑鼠點第一列後接 `!` 得到「，!」；
+六個關聯詞流程以 `Shift+1` 驗證基本詞庫
 「今天」、history-only「臺灣史」、全部關閉後的「臺!」，以及舊逗號設定
 migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫入 government-only，
 確認 INI 落盤、重啟 Fcitx 並讀回後仍輸出「中程計畫」；第六案以 AT-SPI 找到
 `fcitx5-config-qt` 的輸入法與核取方塊，實際點選只開 agriculture-food、保存並重啟後
 逐鍵輸出「作物育種」，同時保存切換前後截圖。各案都有 `keyboard-us` 負控制，
 並確認執行中 Fcitx process 載入 staged `.so`。真正安裝的 Ubuntu 24.04 `.deb`
-最近一次 package 證據在 `1.2.8~preview1` 初裝與升級狀態各跑二十九個鍵盤案例，
-移除後重裝則跑全部三十案，含一個設定視窗操作案；套件 dependency、
+最近一次 package 證據在 `1.2.8~preview1` 初裝與升級狀態各跑三十一個非設定視窗案例，
+移除後重裝則跑全部三十二案，含一個設定視窗操作案；套件 dependency、
 資料 hash、移除殘檔與使用者設定保留也一併通過。
 套件同時核對 debhelper/lintian、ELF dependency、架構、版本、安裝清單、資料 hash、
 授權檔與使用者設定保留。Ubuntu 22.04 的對應 `.deb` 亦已在 Fcitx 5.0.14 userspace
@@ -559,7 +561,8 @@ Home／End 可跳首尾，無效候選編輯鍵也不漏入 App。真鍵盤流�
 加入此案例後完整 warm gate 為 CTest 2/2、X11 30/30，Ubuntu 22.04 Fcitx 5.0.14
 build／CTest／staging 亦通過；Ubuntu 24.04 `.deb` lifecycle 的 preview 初裝與 release
 升級各為 29/29，移除／重裝後含設定視窗為 30/30，dependency、資料 hash、移除與設定
-sentinel 亦全數通過。滑鼠 selection、GTK4／Qt／瀏覽器、GNOME 與 Wayland 仍待驗收。
+sentinel 亦全數通過。App 內容的滑鼠 selection、GTK4／Qt／瀏覽器、GNOME 與 Wayland
+仍待驗收。
 2026-09-14 將同一 release-candidate 套件實裝到 WSL2 Ubuntu 24.04.4 後，使用者已在
 WSLg XWayland 的 GTK3 gedit 經 Fcitx 5.1.7 確認中文輸入；終止候選後約一秒的視窗殘影
 已對應到 `microsoft/wslg#1495` 的已知 `UnmapWindow` 顯示問題，不是 KeyKey commit 或
@@ -575,6 +578,28 @@ WSLg XWayland 的 GTK3 gedit 經 Fcitx 5.1.7 確認中文輸入；終止候選�
 先前的 container／WSLg 單窗測試不具備完整 GNOME session；新增的獨立 X11 診斷也
 尚未完成 P0 所要求的 native Wayland／XWayland、完整桌面/App、popup 與 hosted
 runner 實證。
+2026-09-15 先檢查 macOS 候選控制器：滑鼠點列後會換算選字鍵，再走 PlainVanilla
+`CandidateChosen` 與 TraditionalMandarin commit；接著檢查 Windows TSF 的自繪
+`CandidateWindow`，目前只有鍵盤導覽、繪製、DPI 與 `WM_MOUSEACTIVATE`，沒有
+`WM_LBUTTONDOWN`／`WM_LBUTTONUP` 選字處理，故兩平台實際行為不同。Linux 保留 Fcitx
+原生 `CandidateWord::select` callback 的滑鼠能力，新增
+`T06-X11-GTK3-CANDIDATE-MOUSE`：先鎖定 Vertical，等待 `Fcitx5 Input Window` 從
+暫態 1×1／preedit-only geometry 展開成九列候選，再以 XTest 點第二列，精確 commit
+「鐘」；`keyboard-us` 負控制仍為 `5j/ `。更新後 warm gate 為 CTest 2/2、X11 31/31；
+Ubuntu 24.04 package lifecycle 的 preview 初裝與 release 升級各為 30/30，移除／重裝
+後含設定視窗為 31/31。這是 Xvfb/classic-ui 的功能證據；GNOME X11、XWayland、native
+Wayland 的 popup 位置、畫面與點擊仍須桌面驗收，不能將 F06 標為完整 parity。
+同日繼續先查 macOS：TraditionalMandarin 的一般／標點候選會
+`yieldToCandidateEventHandler()`，因此候選控制器允許滑鼠選取；AssociatedPhrase
+只 show panel 而不 yield，橫式控制器明確設為不可點，直式 table delegate 也拒絕
+selection change。再查 Windows TSF，`Ctrl+0`／`Ctrl+1` 會開符號表，但同一自繪
+`CandidateWindow` 仍沒有 mouse-button 訊息。因此關聯詞滑鼠不是 macOS／Windows
+對標要求，Linux 的 Fcitx 原生 callback 行為暫保留但不宣稱已驗收。符號表則新增
+`T12-X11-GTK3-SYMBOL-LIST-MOUSE`，以 `Ctrl+0` 開表、XTest 點第一列，再輸入 `!`，
+精確得到「，!」，`keyboard-us` 負控制只得到 `!`。完整 warm gate 為 CTest 2/2、
+X11 32/32；Ubuntu 24.04 package lifecycle 的 preview 初裝與 release 升級各為
+31/31，移除／重裝後含設定視窗為 32/32。這項滑鼠支援是 Linux 保留的原生額外能力；
+GNOME X11、XWayland、native Wayland 的符號窗畫面／位置／點擊仍待驗收。
 
 | 階段 | 工作 | 出場條件 |
 |---|---|---|
