@@ -4,9 +4,8 @@
 
 Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
 外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
-但尚未完成
-全部功能、GNOME／Wayland 桌面
-驗收或正式套件。開發／套件規格見
+並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
+但尚未完成 XWayland／native Wayland、完整登入與視窗驗收或正式套件。開發／套件規格見
 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
@@ -361,8 +360,10 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 ## English
 
 Native Linux development starts with version 1.2.8. A buildable Linux-only
-engine and Fcitx 5 addon skeleton exist, but full features, real desktop typing
-acceptance, and release packages are not complete. See the
+engine and Fcitx 5 addon exist. The GTK 3, GTK 4, and Qt 6 X11 matrix is
+implemented, and 76 cases that do not restart the desktop Fcitx process pass
+in an isolated Ubuntu 24.04 GNOME X11 session. XWayland, native Wayland, full
+login/window acceptance, and release packages are not complete. See the
 [development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
 
 ### Linux (in development)

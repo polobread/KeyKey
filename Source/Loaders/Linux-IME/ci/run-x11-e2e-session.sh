@@ -7,6 +7,15 @@ test -n "${KEYKEY_E2E_QT6_HOST:-}"
 test -n "${KEYKEY_E2E_ARTIFACT_DIR:-}"
 test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
 
+session_mode=${KEYKEY_E2E_SESSION_MODE:-managed}
+case "$session_mode" in
+  managed|existing-gnome) ;;
+  *)
+    echo "KEYKEY_E2E_SESSION_MODE must be managed or existing-gnome." >&2
+    exit 2
+    ;;
+esac
+
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-STANDARD
   T01-X11-GTK4-BOPOMOFO-STANDARD
@@ -108,7 +117,7 @@ if [[ ! "$key_delay_ms" =~ ^[0-9]+$ ]]; then
 fi
 
 requested_case_list=()
-if [[ "$requested_cases" == all ]]; then
+if [[ "$requested_cases" == all || "$requested_cases" == desktop-safe ]]; then
   requested_case_list=("${known_cases[@]}")
 else
   IFS=',' read -r -a requested_case_list <<<"$requested_cases"
@@ -140,6 +149,15 @@ for known_case in "${known_cases[@]}"; do
       "$known_case" == T07-X11-FCITX5-CONFIG-UI-PERSISTENCE ]]; then
     continue
   fi
+  if [[ "$requested_cases" == desktop-safe ]]; then
+    case "$known_case" in
+      T07-X11-*-ASSOCIATED-PHRASE-DBUS-PERSISTENCE|\
+      T07-X11-FCITX5-CONFIG-UI-PERSISTENCE|\
+      T10-X11-*-INPUT-CONTEXT-ISOLATION)
+        continue
+        ;;
+    esac
+  fi
   for requested_case in "${requested_case_list[@]}"; do
     if [[ "$requested_case" == "$known_case" ]]; then
       selected_cases+=("$known_case")
@@ -147,6 +165,20 @@ for known_case in "${known_cases[@]}"; do
     fi
   done
 done
+
+if [[ "$session_mode" == existing-gnome ]]; then
+  for selected_case in "${selected_cases[@]}"; do
+    case "$selected_case" in
+      T07-X11-*-ASSOCIATED-PHRASE-DBUS-PERSISTENCE|\
+      T07-X11-FCITX5-CONFIG-UI-PERSISTENCE|\
+      T10-X11-*-INPUT-CONTEXT-ISOLATION)
+        echo "$selected_case restarts Fcitx and cannot run inside an existing desktop session." >&2
+        echo "Use KEYKEY_E2E_CASES=desktop-safe or the managed Xvfb runner." >&2
+        exit 2
+        ;;
+    esac
+  done
+fi
 
 selected_cases_json=
 uses_gtk3=false
@@ -194,7 +226,15 @@ case_selected() {
 }
 
 runtime_root=$KEYKEY_E2E_RUNTIME_ROOT
-export DISPLAY=:99
+if [[ "$session_mode" == managed ]]; then
+  export DISPLAY=:99
+else
+  test -n "${DISPLAY:-}"
+  test -n "${DBUS_SESSION_BUS_ADDRESS:-}"
+  test -n "${XDG_CONFIG_HOME:-}"
+  test -n "${XDG_DATA_HOME:-}"
+  test -n "${XDG_RUNTIME_DIR:-}"
+fi
 export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
@@ -203,19 +243,31 @@ export LC_ALL=C.UTF-8
 if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
 fi
-export XDG_CONFIG_HOME="$runtime_root/config"
-export XDG_DATA_HOME="$runtime_root/data"
-export XDG_RUNTIME_DIR="$runtime_root/runtime"
-mkdir -p "$XDG_CONFIG_HOME/fcitx5/conf" "$XDG_DATA_HOME" "$XDG_RUNTIME_DIR"
-chmod 700 "$XDG_RUNTIME_DIR"
+if [[ "$session_mode" == managed ]]; then
+  export XDG_CONFIG_HOME="$runtime_root/config"
+  export XDG_DATA_HOME="$runtime_root/data"
+  export XDG_RUNTIME_DIR="$runtime_root/runtime"
+  mkdir -p "$XDG_CONFIG_HOME/fcitx5/conf" "$XDG_DATA_HOME" "$XDG_RUNTIME_DIR"
+  chmod 700 "$XDG_RUNTIME_DIR"
+fi
 dbus-update-activation-environment \
   DISPLAY XDG_CONFIG_HOME XDG_DATA_HOME XDG_RUNTIME_DIR
-install -m 0644 tests/fixtures/fcitx5-profile "$XDG_CONFIG_HOME/fcitx5/profile"
+if [[ "$session_mode" == managed ]]; then
+  install -m 0644 tests/fixtures/fcitx5-profile "$XDG_CONFIG_HOME/fcitx5/profile"
+fi
 
 xvfb_pid=
 fcitx_pid=
+owns_fcitx=false
 host_pid=
 secondary_host_pid=
+session_label=x11-xvfb
+desktop_label=none
+original_engine=
+keykey_config_path="$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf"
+keykey_config_backup="$KEYKEY_E2E_ARTIFACT_DIR/.original-keykey-config"
+keykey_config_existed=false
+keykey_config_saved=false
 test_status=failed
 cleanup() {
   exit_code=$?
@@ -227,7 +279,7 @@ cleanup() {
     failure_element='<failure message="Installed Fcitx 5 toolkit typing flow failed"/>'
   fi
   printf '%s\n' \
-    "{\"tests\":[$selected_cases_json],\"distro\":\"ubuntu-24.04\",\"arch\":\"$(uname -m)\",\"session\":\"x11-xvfb\",\"framework\":\"fcitx5\",\"app\":\"$e2e_apps\",\"status\":\"$test_status\"}" \
+    "{\"tests\":[$selected_cases_json],\"distro\":\"ubuntu-24.04\",\"arch\":\"$(uname -m)\",\"desktop\":\"$desktop_label\",\"session\":\"$session_label\",\"framework\":\"fcitx5\",\"app\":\"$e2e_apps\",\"status\":\"$test_status\"}" \
     >"$KEYKEY_E2E_ARTIFACT_DIR/result.json"
   printf '%s\n' \
     '<?xml version="1.0" encoding="UTF-8"?>' \
@@ -239,39 +291,83 @@ cleanup() {
   if [[ -n "$secondary_host_pid" ]]; then
     kill "$secondary_host_pid" 2>/dev/null || true
   fi
-  if [[ -n "$fcitx_pid" ]]; then kill "$fcitx_pid" 2>/dev/null || true; fi
+  if [[ "$owns_fcitx" == true && -n "$fcitx_pid" ]]; then
+    kill "$fcitx_pid" 2>/dev/null || true
+  fi
   if [[ -n "$xvfb_pid" ]]; then kill "$xvfb_pid" 2>/dev/null || true; fi
   if [[ -n "$host_pid" ]]; then wait "$host_pid" 2>/dev/null || true; fi
   if [[ -n "$secondary_host_pid" ]]; then
     wait "$secondary_host_pid" 2>/dev/null || true
   fi
-  if [[ -n "$fcitx_pid" ]]; then wait "$fcitx_pid" 2>/dev/null || true; fi
+  if [[ "$owns_fcitx" == true && -n "$fcitx_pid" ]]; then
+    wait "$fcitx_pid" 2>/dev/null || true
+  fi
   if [[ -n "$xvfb_pid" ]]; then wait "$xvfb_pid" 2>/dev/null || true; fi
+  if [[ "$session_mode" == existing-gnome && "$keykey_config_saved" == true ]]; then
+    if [[ "$keykey_config_existed" == true && -f "$keykey_config_backup" ]]; then
+      cp "$keykey_config_backup" "$keykey_config_path"
+    else
+      cmake -E rm -f "$keykey_config_path"
+    fi
+    cmake -E rm -f "$keykey_config_backup"
+    gdbus call --session --dest org.fcitx.Fcitx5 \
+      --object-path /controller \
+      --method org.fcitx.Fcitx.Controller1.ReloadAddonConfig \
+      chichi77-keykey >/dev/null 2>&1 || true
+    if [[ -n "$original_engine" ]]; then
+      fcitx5-remote -s "$original_engine" >/dev/null 2>&1 || true
+    fi
+  fi
   trap - EXIT
   exit "$exit_code"
 }
 trap cleanup EXIT
 
-Xvfb "$DISPLAY" -screen 0 1024x768x24 -nolisten tcp \
-  >"$KEYKEY_E2E_ARTIFACT_DIR/xvfb.log" 2>&1 &
-xvfb_pid=$!
-display_ready=false
-for _ in {1..100}; do
-  if xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
-    display_ready=true
-    break
+if [[ "$session_mode" == managed ]]; then
+  Xvfb "$DISPLAY" -screen 0 1024x768x24 -nolisten tcp \
+    >"$KEYKEY_E2E_ARTIFACT_DIR/xvfb.log" 2>&1 &
+  xvfb_pid=$!
+  display_ready=false
+  for _ in {1..100}; do
+    if xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+      display_ready=true
+      break
+    fi
+    sleep 0.1
+  done
+  if [[ "$display_ready" != true ]]; then
+    echo "Xvfb did not become ready." >&2
+    exit 1
   fi
-  sleep 0.1
-done
-if [[ "$display_ready" != true ]]; then
-  echo "Xvfb did not become ready." >&2
-  exit 1
+else
+  if [[ "${XDG_SESSION_TYPE:-}" != x11 || "${XDG_CURRENT_DESKTOP:-}" != *GNOME* ]]; then
+    echo "The existing-session runner requires a GNOME X11 session." >&2
+    exit 1
+  fi
+  if ! xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+    echo "The existing GNOME X11 display is not reachable." >&2
+    exit 1
+  fi
+  if ! xdotool getactivewindow >/dev/null 2>&1; then
+    echo "GNOME has no active window; restart the isolated desktop before running the gate." >&2
+    exit 1
+  fi
+  wm_window=$(xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null |
+    sed -n 's/.*window id # \(0x[0-9a-fA-F]*\).*/\1/p')
+  if [[ -z "$wm_window" ]] ||
+      ! xprop -id "$wm_window" _NET_WM_NAME 2>/dev/null | grep -Fq 'GNOME Shell'; then
+    echo "The existing X11 display is not managed by GNOME Shell." >&2
+    exit 1
+  fi
+  session_label=gnome-x11
+  desktop_label=GNOME
 fi
 
 start_fcitx() {
   local fcitx_ready=false addon_ready=false
   fcitx5 >>"$KEYKEY_E2E_ARTIFACT_DIR/fcitx5.log" 2>&1 &
   fcitx_pid=$!
+  owns_fcitx=true
   for _ in {1..150}; do
     if ! kill -0 "$fcitx_pid" 2>/dev/null; then
       echo "Fcitx 5 exited before acquiring its D-Bus name." >&2
@@ -308,6 +404,10 @@ start_fcitx() {
 }
 
 stop_fcitx() {
+  if [[ "$owns_fcitx" != true ]]; then
+    echo "Fcitx restart is not permitted inside an existing desktop session." >&2
+    exit 1
+  fi
   if [[ -n "$fcitx_pid" ]]; then
     kill "$fcitx_pid"
     wait "$fcitx_pid" || true
@@ -321,7 +421,66 @@ restart_fcitx() {
 }
 
 : >"$KEYKEY_E2E_ARTIFACT_DIR/fcitx5.log"
-start_fcitx
+if [[ "$session_mode" == managed ]]; then
+  start_fcitx
+else
+  fcitx_pid=$(gdbus call --session --dest org.freedesktop.DBus \
+    --object-path /org/freedesktop/DBus \
+    --method org.freedesktop.DBus.GetConnectionUnixProcessID \
+    org.fcitx.Fcitx5 2>/dev/null |
+    sed -n 's/.*uint32 \([0-9][0-9]*\).*/\1/p')
+  if [[ -z "$fcitx_pid" || ! -r "/proc/$fcitx_pid/maps" ]]; then
+    echo "The existing desktop Fcitx process could not be identified." >&2
+    exit 1
+  fi
+  if ! grep -Fq 'chichi77-keykey.so' "/proc/$fcitx_pid/maps"; then
+    echo "The existing desktop Fcitx process did not load the KeyKey addon." >&2
+    exit 1
+  fi
+  if ! grep -Fq 'classicui.so' "/proc/$fcitx_pid/maps"; then
+    echo "The existing desktop Fcitx process did not load the Classic UI panel." >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$keykey_config_path")"
+  if [[ -f "$keykey_config_path" ]]; then
+    cp "$keykey_config_path" "$keykey_config_backup"
+    keykey_config_existed=true
+  fi
+  keykey_config_saved=true
+  original_engine=$(fcitx5-remote -n 2>/dev/null || true)
+  addon_path=$(awk '$NF ~ /\/chichi77-keykey\.so$/ {print $NF; exit}' \
+    "/proc/$fcitx_pid/maps")
+  panel_path=$(awk '$NF ~ /\/(lib)?classicui\.so$/ {print $NF; exit}' \
+    "/proc/$fcitx_pid/maps")
+  addon_sha256=$(sha256sum "$addon_path" | awk '{print $1}')
+  if ! package_identity=$(dpkg-query -W \
+      -f='${Package}=${Version}' fcitx5-chichi77-keykey 2>/dev/null); then
+    echo "The installed KeyKey Fcitx package could not be identified." >&2
+    exit 1
+  fi
+  if ! dpkg-query -S "$addon_path" 2>/dev/null |
+      grep -Fq 'fcitx5-chichi77-keykey:'; then
+    echo "The loaded KeyKey addon is not owned by the installed package." >&2
+    exit 1
+  fi
+  {
+    printf 'desktop=GNOME\nsession=x11\ndisplay=%s\n' "$DISPLAY"
+    printf 'window-manager=GNOME Shell\nframework=fcitx5\n'
+    printf 'fcitx-pid=%s\naddon=%s\npanel=%s\n' \
+      "$fcitx_pid" "$addon_path" "$panel_path"
+    printf 'addon-sha256=%s\npackage=%s\n' \
+      "$addon_sha256" "$package_identity"
+    printf 'gtk-backend=%s\nqt-platform=xcb\n' "${GDK_BACKEND:-x11}"
+    printf 'gtk3-host-sha256=%s\n' \
+      "$(sha256sum "$KEYKEY_E2E_HOST" | awk '{print $1}')"
+    printf 'gtk4-host-sha256=%s\n' \
+      "$(sha256sum "$KEYKEY_E2E_GTK4_HOST" | awk '{print $1}')"
+    printf 'qt6-host-sha256=%s\n' \
+      "$(sha256sum "$KEYKEY_E2E_QT6_HOST" | awk '{print $1}')"
+    fcitx5 --version 2>&1 | head -n 1
+    gnome-shell --version 2>&1 | head -n 1
+  } >"$KEYKEY_E2E_ARTIFACT_DIR/environment.txt"
+fi
 
 bopomofo_layout=Standard
 candidate_window_style=Vertical
@@ -707,6 +866,18 @@ send_key_sequence() {
   done
 }
 
+activate_existing_gnome_window() {
+  local window_id=$1
+  for _ in {1..20}; do
+    if [[ $(xdotool getactivewindow 2>/dev/null || true) == "$window_id" ]]; then
+      return 0
+    fi
+    xdotool windowactivate "$window_id" 2>/dev/null || true
+    sleep 0.05
+  done
+  return 1
+}
+
 run_case() {
   case_id=$1
   engine_name=$2
@@ -732,12 +903,19 @@ run_case() {
   window_id=
   window_focused=false
   for _ in {1..100}; do
-    window_id=$(xdotool search --onlyvisible \
+    window_id=$(xdotool search --onlyvisible --all --pid "$host_pid" \
       --name "^${e2e_host_window_title}$" 2>/dev/null | head -n 1 || true)
-    if [[ -n "$window_id" ]] && \
-        xdotool windowfocus --sync "$window_id" 2>/dev/null; then
-      window_focused=true
-      break
+    if [[ -n "$window_id" ]]; then
+      if [[ "$session_mode" == existing-gnome ]]; then
+        if activate_existing_gnome_window "$window_id"; then
+          xdotool mousemove --window "$window_id" 240 15 click 1
+          window_focused=true
+          break
+        fi
+      elif xdotool windowfocus --sync "$window_id" 2>/dev/null; then
+        window_focused=true
+        break
+      fi
     fi
     if ! kill -0 "$host_pid" 2>/dev/null; then
       wait "$host_pid" || true
@@ -896,7 +1074,7 @@ wait_for_named_window() {
   local title=$1 process_id=$2 label=$3
   local candidate_window_id=''
   for _ in {1..100}; do
-    candidate_window_id=$(xdotool search --onlyvisible \
+    candidate_window_id=$(xdotool search --onlyvisible --all --pid "$process_id" \
       --name "^${title}$" 2>/dev/null | head -n 1 || true)
     if [[ -n "$candidate_window_id" ]]; then
       printf '%s\n' "$candidate_window_id"
@@ -920,16 +1098,22 @@ focus_host_window() {
       return 1
     fi
     xdotool windowraise "$window_id" 2>/dev/null || true
-    if xdotool windowfocus --sync "$window_id" 2>/dev/null; then
-      # X11 focus can be visible before the client toolkit has dispatched its
-      # focus event and notified Fcitx. This helper is used for cross-process
-      # context switching; click the single centered editor, then give that
-      # event one bounded loop turn before selecting the per-client engine.
-      xdotool mousemove --window "$window_id" 240 50 click 1
+    if [[ "$session_mode" == existing-gnome ]]; then
+      if ! activate_existing_gnome_window "$window_id"; then
+        sleep 0.1
+        continue
+      fi
+    elif ! xdotool windowfocus --sync "$window_id" 2>/dev/null; then
       sleep 0.1
-      return 0
+      continue
     fi
+    # X11 focus can be visible before the client toolkit has dispatched its
+    # focus event and notified Fcitx. This helper is used for cross-process
+    # context switching; click the single centered editor, then give that
+    # event one bounded loop turn before selecting the per-client engine.
+    xdotool mousemove --window "$window_id" 240 15 click 1
     sleep 0.1
+    return 0
   done
   echo "$label could not receive X11 focus." >&2
   return 1
@@ -966,10 +1150,16 @@ focus_named_host_window() {
   local -a candidates=()
   for _ in {1..100}; do
     mapfile -t candidates < <(
-      xdotool search --onlyvisible --name "^${title}$" 2>/dev/null || true)
+      xdotool search --onlyvisible --all --pid "$process_id" \
+        --name "^${title}$" 2>/dev/null || true)
     for ((index=${#candidates[@]} - 1; index >= 0; --index)); do
       candidate=${candidates[$index]}
-      if xdotool windowfocus --sync "$candidate" 2>/dev/null; then
+      if [[ "$session_mode" == existing-gnome ]]; then
+        if activate_existing_gnome_window "$candidate"; then
+          printf '%s\n' "$candidate"
+          return 0
+        fi
+      elif xdotool windowfocus --sync "$candidate" 2>/dev/null; then
         printf '%s\n' "$candidate"
         return 0
       fi

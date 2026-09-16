@@ -3,8 +3,8 @@
 狀態：測試實作中。已有 CTest real-data typing-flow、Ubuntu 22.04／24.04
 container build/staged-install checks、Ubuntu 22.04／24.04 Debian package checks，
 以及 Ubuntu 24.04 Fcitx 5 → GTK 3／GTK 4／Qt 6 各自適用的第一階段 L3 X11
-完整真實逐鍵矩陣；下列完整
-GNOME／Wayland、App、視窗與完整注音 suite 仍待實作。
+完整真實逐鍵矩陣；隔離 GNOME X11 session 另已通過 76 個不重啟桌面 Fcitx 的
+desktop-safe 案例。下列完整登入、XWayland／native Wayland、App 與視窗 suite 仍待實作。
 搭配 [開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
 
 Linux 首版目標為 1.2.8。第一階段驗收 Windows TSF 目前實際提供的全部功能，對應
@@ -142,6 +142,19 @@ preedit，再以 XTest 送 `dj941` 與 `Shift+1`，三次精確提交「快樂�
 [Ubuntu 手動試打交接](Source/Loaders/Linux-IME/docs/manual-desktop.md)，啟動入口
 已置於版控的 `tools/manual-desktop/`。不增加正式 83 案計數，不代表 native Wayland、
 完整登入／桌面服務或發布 gate 通過。
+
+2026-09-16 新增可重現的 existing-session GNOME X11 runner，沿用版控內的
+`tools/manual-desktop/start-desktop.sh`，並以 PID 與 `xdotool search --all` 排除同名
+Mutter 外框。系統安裝的 `fcitx5-chichi77-keykey` 1.2.8、Fcitx 5.1.7、Classic UI，
+配合 GTK 3、GTK 4、Qt 6 hosts 跑過 76/76 desktop-safe 案例；涵蓋五布局、候選鍵盤／
+滑鼠、關聯詞、模式、兩 App、編輯／敏感／唯讀欄與符號表，每案都有 exact toolkit
+buffer 與 `keyboard-us` 負控制。runner 保留承載桌面的 Fcitx PID，測後還原設定與
+active engine，並記錄 addon／host SHA-256。三個 D-Bus process-restart persistence、
+一個設定視窗 persistence 及三個內含 Fcitx restart 的 input-context recovery 案仍由
+managed Xvfb／package gate 負責，不能把 76/76 寫成完整 83 案 GNOME 通過；完整登入、
+畫面 sweep、音訊、真實外部 App、XWayland 與 native Wayland 也仍待驗收。本機 Qt 6
+runtime 使用 Ubuntu 24.04 官方套件 payload 解壓到忽略版控的 `out/`，release gate
+仍需正常安裝套件。
 
 Ubuntu 22.04 的兩個對應 `.deb` 亦已在 Fcitx 5.0.14 userspace 建置，並於另一個
 不含開發標頭的乾淨 runtime container 完成安裝、檔案／資料 hash、ELF dependency、

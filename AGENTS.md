@@ -23,7 +23,8 @@ GTK 4 與 Qt 6 跑過各自適用的完整第一階段真實輸入矩陣，
 直／橫候選設定、中英文模式與全半形、XDG 錯誤提示聲、Fcitx 原生設定 schema 與
 Ubuntu 22.04／24.04
 Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基線已通過，
-GNOME 與 Wayland 仍未跑。版號更新與這些 local
+隔離 GNOME X11 的 76 案 desktop-safe gate 亦已通過；完整 GNOME 登入、XWayland 與
+native Wayland 仍未跑。版號更新與這些 local
 測試都不代表 Linux 已可發布。
 **主要支援／最完整測試環境是 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）**；
 先完成 X11、native Wayland、XWayland 的完整打字／視窗／App／套件驗收，再完成
@@ -126,7 +127,11 @@ GNOME 與 Wayland 仍未跑。版號更新與這些 local
   GTK commit 為 0.72–1.88 ms，X11 隱藏觀測為 4.27–6.30 ms；兩個抽樣候選區域在
   約 59 ms 已清除，半秒後像素一致，英文負控制也通過。這是隔離 X11 診斷證據；
   同日使用者已在瀏覽器端確認延遲與多重殘影解決、試打成功。完整 GNOME 登入與
-  native Wayland 仍待完成。後續在此主機提供人工試打時優先沿用
+  native Wayland 仍待完成。2026-09-16 同類隔離 GNOME X11 session 再以系統安裝的
+  1.2.8 addon 跑過 GTK3／GTK4／Qt6 共 76/76 desktop-safe 案例，包含五布局、候選
+  鍵盤／滑鼠、關聯詞、模式、兩 App、編輯欄位與符號表；七個會重啟承載 Fcitx 的
+  persistence／recovery 案仍只在 managed Xvfb／package gate。後續在此主機提供人工
+  試打時優先沿用
   [Ubuntu 手動試打交接](Source/Loaders/Linux-IME/docs/manual-desktop.md)，先啟動桌面、
   切好琦琦注音並開啟本機連結，再請使用者測試。
   Windows 主機不會取得原 Mac 的 container／named volumes，
@@ -374,6 +379,18 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   desktop gate。使用者已確認此桌面試打成功；不要再次要求用同一個有殘影的 WSLg
   單窗重試，也不要把環境修正寫成 KeyKey／Fcitx 產品修正。日後若同一獨立桌面也
   重現，必須重新量測，不可直接套用 WSLg 結論。
+- **GNOME X11 runner 不可用 Xvfb 的 focus 假設**：2026-09-16 新增
+  `tools/manual-desktop/run-gnome-x11-e2e.sh`，會在上述隔離桌面跑 76 個
+  desktop-safe 案例。Mutter 外框與 client 同名，`xdotool search` 的多條件預設為 OR；
+  必須加 `--all` 並核對 host PID，existing GNOME 只用 `windowactivate` 並確認
+  `_NET_ACTIVE_WINDOW`，不可再以 `windowfocus` 強設焦點；新 client 可能在搜尋前就已
+  active，不能直接呼叫 `windowactivate --sync`，否則會等不到下一次焦點變更而逾時。
+  多欄 host 啟用後不要額外
+  點擊，否則兩次近距離點擊會被視為雙擊、破壞 T11 selection；單欄與 multi-App
+  才點內容區。承載桌面的 Fcitx PID 不可由案例重啟，runner 因此拒絕三個 persistence、
+  設定視窗 persistence 與三個 input-context recovery 案；它們仍由 managed Xvfb／
+  package gate 執行。GNOME runner 會備份／還原 KeyKey 設定與 active engine，並記錄
+  addon、panel、package 及 SHA-256；76/76 不等於完整 83 案、登入生命週期或 Wayland。
 - **Linux 不沿用舊 cooker 建置依賴**：macOS cooker 使用 Formosa Ruby extension；
   Linux 應唯讀共用字表／詞庫，以獨立原生資料工具生成自身索引，不修改四平台
   cooker 或資料內容。CIN 可能有 CRLF 與合法 `%` 字元列，解析不能一律略過。
@@ -1140,6 +1157,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - [x] 2026-09-14 使用者在上述本機瀏覽器桌面確認延遲、多重殘窗解決，人工試打成功；
       將成功環境、輸入法預選、按鍵衝突處理與分層排查流程寫進
       `docs/manual-desktop.md`，並把可重建的啟動入口放在 `tools/manual-desktop/`。
+- [x] 2026-09-16 建立 installed-addon GNOME X11 desktop-safe gate：沿用獨立
+      GNOME Shell 46／Mutter／TigerVNC session，明確驗證 Fcitx 5.1.7 載入系統套件的
+      KeyKey addon 與 Classic UI panel，以 GTK3／GTK4／Qt6 重跑不會重啟承載 Fcitx 的
+      76 案並全部通過；五布局、候選鍵盤／真實滑鼠、關聯詞、模式、兩 App、selection、
+      密碼／唯讀與符號列表都有 exact text 與 `keyboard-us` 負控制。runner 依 PID 排除
+      同名 Mutter 外框，保留 Fcitx PID，失敗也會還原設定與 active engine，並輸出
+      addon／host SHA-256。七個 restart／persistence 案仍在 managed gate，完整登入、
+      視覺 sweep、音訊、真實 App、XWayland 與 native Wayland 未完成。
 - [ ] 以完整 Ubuntu Desktop 登入 session 完成 GNOME X11／XWayland／native Wayland
       驗收；本機 GNOME X11 人工通過不代替其他 session／App／發布 gate。
 

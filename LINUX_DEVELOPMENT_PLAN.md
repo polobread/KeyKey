@@ -4,8 +4,9 @@
 `linux-ci.yml`、五種 Windows 傳統注音鍵盤配置、候選鍵盤導覽、標點／符號候選切片、
 `Shift+Space` 全／半形、ASCII 全形對映、繁轉簡單字與注音 Big5-HKSCS 候選 filter 切片、
 L3 X11/GTK 3、GTK 4、Qt 6 各自適用的第一階段完整真實輸入矩陣與
-Ubuntu 22.04／24.04 開發用 Debian 套件；尚未完成 GNOME／Wayland、注音的
-完整功能、完整視窗、IBus 或正式發布套件。
+Ubuntu 22.04／24.04 開發用 Debian 套件；Ubuntu 24.04 的隔離 GNOME X11 session
+另已通過 76 個不重啟桌面 Fcitx 的 GTK 3／GTK 4／Qt 6 真實輸入案例。尚未完成
+XWayland／native Wayland、完整登入生命週期、完整視窗、IBus 或正式發布套件。
 
 盤點日期：2026-09-12；原始碼基線：`13696ef`；產品版號來源：`README.md` 標題。
 
@@ -689,6 +690,14 @@ toolkit-specific golden。Qt targeted 25/25、完整 warm gate（CTest 2/2、X11
 與 Ubuntu 24.04 package lifecycle（preview 初裝 82/82、release 升級 82/82、
 移除／重裝後含設定視窗 83/83）均通過。GNOME X11／XWayland／native Wayland、瀏覽器、Qt5、active-preedit 跨 App
 與桌面登出登入仍待驗收。
+2026-09-16 將同一組逐鍵 host 接到隔離 GNOME Shell 46／Mutter／TigerVNC X11
+session，新增 existing-session runner。它核對實際 window manager、系統安裝 addon、
+Classic UI panel、套件版本與 binary hash，並以 client PID 排除同名 Mutter 外框；
+76 個不重啟桌面 Fcitx 的案例在 GTK3／GTK4／Qt6 全數通過，且每案都有
+`keyboard-us` 負控制。其餘三個 Fcitx process-restart persistence、設定視窗
+persistence 及三個 input-context recovery 案仍由 managed Xvfb／package gate 驗證；
+完整登入生命週期、popup 畫面 sweep、音訊、真實外部 App、XWayland 與 native Wayland
+尚未完成，不能把這筆結果寫成完整 GNOME 發布驗收。
 2026-09-14 將同一 release-candidate 套件實裝到 WSL2 Ubuntu 24.04.4 後，使用者已在
 WSLg XWayland 的 GTK3 gedit 經 Fcitx 5.1.7 確認中文輸入；終止候選後約一秒的視窗殘影
 已對應到 `microsoft/wslg#1495` 的已知 `UnmapWindow` 顯示問題，不是 KeyKey commit 或

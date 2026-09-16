@@ -354,6 +354,21 @@ candidate ghost and the accumulated popups during rapid typing. This is a
 validated manual X11 test environment, not a change to the product engine or
 evidence for native Wayland acceptance.
 
+The same runbook now includes a GNOME X11 automated entry point. With the
+isolated desktop running and the current package candidate installed, run:
+
+```sh
+Source/Loaders/Linux-IME/tools/manual-desktop/run-gnome-x11-e2e.sh
+```
+
+It verifies the actual GNOME Shell window manager, installed addon and Classic
+UI panel, then runs 76 desktop-safe GTK 3, GTK 4, and Qt 6 cases with physical
+XTest key/pointer input and `keyboard-us` negative controls. It preserves the
+desktop Fcitx process and restores the original KeyKey settings. Seven cases
+that intentionally restart Fcitx remain in the managed Xvfb/package gates;
+XWayland, native Wayland, full login lifecycle, visual sweeps, and real Apps
+are still separate release requirements.
+
 The Ubuntu 24.04 image can also run the current L3 installed X11/GTK 3, GTK 4, and Qt 6
 typing tests under Xvfb:
 
