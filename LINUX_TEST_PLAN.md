@@ -344,8 +344,10 @@ F01–F02、F05–F11 與 F16 設定／語系部分：
 6. 乾淨安裝、注音加入／切換、重新登入、Fcitx 重啟、升級、移除與重裝，
    設定保留；客戶端意外關閉、密集連打、長時間重複切換與恢復。
 7. 每項保留 App 文字、event trace、截圖與失敗錄影；整合問題優先在此環境重現。
-   PR 跑完整 typing suite 與所有功能的 UI 操作；手動完整測試／發布跑上述所有 App、
-   sandbox、視覺組合與壓力項目。主環境結果不得因其他平台成功而被覆蓋。
+   PR 只跑 build、unit、staged install 與一個 GTK3/Fcitx 真打字 smoke；合併進
+   `master` 後才跑完整 hosted typing suite、UI 操作與套件生命週期。手動完整測試／
+   發布再跑上述所有 App、sandbox、視覺組合與壓力項目。主環境結果不得因其他平台
+   成功而被覆蓋。
 
 若 Wayland panel 需額外 Shell 整合，先依開發計畫 P0 決議固定支援的組合及依賴，
 再將之列為 required。主要環境有必測未完成時阻擋正式發布。
@@ -423,13 +425,14 @@ QEMU 跨架構可補 smoke，但需明確標記 emulation，不能當成實體�
 
 ### 執行分配
 
-- PR／主分支 push：Ubuntu 24.04 + Fcitx 5 設 required job，三條 session 路徑
-  各跑 T01–T03、T06–T12、T14–T15，包含注音、所有功能 UI 操作與套件生命週期；
-  T04／T05 只屬既有切片回歸，不是發布支援條件。
-  可分片並行；主環境不能只有最小 Wayland 四案例或放進輪替。
-- PR：L1 全部，兩 adapter L2；Ubuntu 22.04／26.04 最舊／最新邊界 build，並在
-  Ubuntu 22.04 跑兩 adapter installed X11 slices；P0 通過後加 Ubuntu 舊／新 GNOME
-  的最小 Wayland T01/T10。Debian／Fedora 不排入目前 required jobs。
+- PR：Ubuntu 24.04 + Fcitx 5 的 required smoke job 執行 build、L1 unit、staged
+  install 檢查，並以 GTK3 跑一個 Standard 注音真實逐鍵 T01 與 `keyboard-us`
+  負控制；不在 PR 建套件、跑完整 toolkit 矩陣、sanitizer、source archive 或
+  Ubuntu 22.04 package lifecycle。Debian／Fedora 不排入目前 required jobs。
+- 合併進 `master` 後的 push：Ubuntu 24.04 跑完整 hosted X11 typing suite、UI、
+  sanitizer、source build/archive 與套件升級／移除／重裝；Ubuntu 22.04 跑最低 API
+  build、source gate 及 package lifecycle。桌面三條 session 路徑實作完成後也只在
+  主分支完整 gate 與手動／release 流程跑，不塞回 PR smoke。
 - 手動完整：`linux-desktop-tests.yml` 只接受 `workflow_dispatch`，不設 `schedule`／`cron`。
   預設完整驗收 Ubuntu 24.04 + Fcitx 5；手動選擇完整矩陣時重跑 9 個 Ubuntu 版本，
   也可只指定受影響的歷史版本。歷史環境不能永遠只留首次成功結果；PR 更動
@@ -440,10 +443,10 @@ QEMU 跨架構可補 smoke，但需明確標記 emulation，不能當成實體�
 - P0 每條桌面路徑至少連續三次全新 session 成功並通過負控制，再納入 required。
   失敗重試保留首次結果；不能把 flaky 測試無限重跑到綠。穩定性數據形成後調整
   timeout／切片，先不承諾所有 workflow 幾分鐘內完成。
-- configure／make 入口實作後：相關 PR 在既有 Ubuntu 22.04／24.04 CI 執行
-  T14-SOURCE 的 build、配置錯誤、staging、clean 及 installed X11 檢查；手動完整與
-  release 跑全部 active Ubuntu 的原始碼安裝生命週期。release 必須使用將發布的
-  同 SHA source tarball，解壓後獨立離線重建，再安裝該批產物驗證，不能改用 `.deb`。
+- configure／make 入口的 T14-SOURCE build、配置錯誤、staging、clean、installed
+  X11 與 source archive 重建在合併後的主分支完整 gate 執行；手動完整與 release 跑
+  全部 active Ubuntu 的原始碼安裝生命週期。release 必須使用將發布的同 SHA source
+  tarball，解壓後獨立離線重建，再安裝該批產物驗證，不能改用 `.deb`。
 
 ### 工具與套件檢查
 

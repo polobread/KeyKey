@@ -334,8 +334,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **Ubuntu 24.04 的主框架是 Fcitx 5**：這是使用者指定的主要支援環境，需最完整
   測試；不能只保留 Ubuntu + IBus 或以 KDE + Fcitx 的結果替代。GNOME 可能使用
   IBus protocol bridge，但實測必須確認載入本專案 Fcitx addon。主環境每次相關
-  PR 跑完整 typing suite，手動完整測試／發布跑全部 App、sandbox、UI 組合與穩定性；
-  Linux desktop workflow 不設定每日或每週排程。
+  PR 只跑 Ubuntu 24.04 build、unit、staged install 與 GTK3/Fcitx T01 真打字 smoke；
+  合併進 `master` 後才跑完整 hosted typing、UI、source 與套件生命週期。手動完整
+  測試／發布跑全部 App、sandbox、UI 組合與穩定性；Linux desktop workflow 不設定
+  每日或每週排程。
 - **Linux 第一階段以 Windows TSF 現有功能為基準**：2026-09-13 最新決定是把 Windows
   已有的五種傳統注音布局、逐音節輸入、候選、關聯詞、Big-5 過濾、全半形、中英文
   切換、標點／符號列表、直橫候選、比例／配色、錯誤提示與三頁設定全部列入。先前
@@ -345,6 +347,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   計算機、F13 自訂詞／詞庫管理、F14 通用表格／外掛設定、F15 一點通／提示通知視窗
   也不屬於 Windows 對標範圍。其他平台既有功能維持原狀。
   SmartMandarin 仍因語料缺失而不啟用；不可憑舊模組存在就重新擴張 Linux 範圍。
+- **Fcitx 沒有單一輸入法的候選縮放屬性**：macOS 與 Windows 都提供 system、75、
+  90、100、125、150、175、200、225、250、300、350%，前者直接乘上直／橫候選窗
+  幾何，後者把比例與 monitor/host DPI 合成後縮放字型、padding 與視窗。Fcitx
+  5.0.14 只有一個全域 active UI，沒有 per-context panel callback；5.1.7 雖有
+  5.0.24 起新增的 custom callback，仍要求輸入法自行畫完整 panel，且不能當作
+  Ubuntu 22.04 最低 API。改 Classic UI 的 `Font`／DPI 會影響所有 Fcitx 輸入法並
+  寫入全域設定，不可偽裝成琦琦注音專屬比例。精確 parity 要做同時支援 X11 與
+  native Wayland 的自有 renderer；未完成前不加無作用的比例選項。
 - **TraditionalMandarin 的 Backspace／Escape 邊界以 Windows event flow 為準**：
   reading 中 Backspace 只刪最後一個注音成分，Escape 清掉整段；一般候選中 Backspace
   先關候選再刪最後一音，Escape 則經 candidate cancel 清掉整段。composition 與候選都
@@ -1167,6 +1177,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       視覺 sweep、音訊、真實 App、XWayland 與 native Wayland 未完成。
 - [ ] 以完整 Ubuntu Desktop 登入 session 完成 GNOME X11／XWayland／native Wayland
       驗收；本機 GNOME X11 人工通過不代替其他 session／App／發布 gate。
+- [ ] 決定並實作 F07 琦琦注音專屬候選 renderer；完整分解見
+      `LINUX_DEVELOPMENT_PLAN.md` 的「F07 專屬 renderer」TODO。決策前須先比較
+      Fcitx 5.0.14 相容 UI addon 與 5.0.24+ callback／22.04 相容層，涵蓋 system 與
+      75–350% 的完整 geometry／hit area、直橫候選、X11／XWayland／native Wayland、
+      mixed DPI、設定遷移、套件 dependency／授權及 GTK3／GTK4／Qt6 證據；不可用
+      會影響其他輸入法的 Classic UI 全域字型縮放代替，也不可先露出無作用選項。
 
 - [x] 2026-09-13 完成 `LINUX_DEVELOPMENT_PLAN.md` 第 5.1 節的基本 configure／GNU Make
       入口：平行建置、check、source-directory／out-of-source、prefix／libdir／datadir、

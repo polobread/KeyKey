@@ -29,8 +29,57 @@ concurrency:
   cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 jobs:
+  pull-request-smoke:
+    if: github.event_name == 'pull_request'
+    name: Ubuntu 24.04 build, unit tests, and GTK3 typing smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install smoke-test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            binutils build-essential cmake dbus-x11 fcitx5 \
+            fcitx5-frontend-gtk3 fonts-wqy-zenhei g++ libcanberra-dev \
+            libfcitx5core-dev libgtk-3-dev libgtk-4-dev ninja-build \
+            pkg-config qt6-base-dev x11-utils xdotool xvfb
+
+      - name: Build, run unit tests, and verify staged installation
+        working-directory: Source/Loaders/Linux-IME
+        env:
+          KEYKEY_BUILD_DIR: out/build/ubuntu-24.04-pr-smoke
+          KEYKEY_STAGE_DIR: out/stage/ubuntu-24.04-pr-smoke
+          KEYKEY_BUILD_X11_E2E_HOST: ON
+        run: ci/build-and-test.sh
+
+      - name: Type one Standard Bopomofo candidate through Fcitx and GTK3
+        working-directory: Source/Loaders/Linux-IME
+        env:
+          KEYKEY_BUILD_DIR: out/build/ubuntu-24.04-pr-smoke
+          KEYKEY_STAGE_DIR: out/stage/ubuntu-24.04-pr-smoke
+          KEYKEY_E2E_ARTIFACT_DIR: out/e2e/ubuntu-24.04-pr-smoke
+          KEYKEY_E2E_CASES: T01-X11-GTK3-BOPOMOFO-STANDARD
+          KEYKEY_E2E_CONFIG_UI: OFF
+        run: |
+          sudo --preserve-env=KEYKEY_BUILD_DIR,KEYKEY_STAGE_DIR,KEYKEY_E2E_ARTIFACT_DIR,KEYKEY_E2E_CASES,KEYKEY_E2E_CONFIG_UI \
+            ci/run-x11-e2e.sh
+
+      - name: Upload PR smoke evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-ubuntu-24.04-pr-smoke-${{ github.sha }}
+          path: Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-pr-smoke
+          if-no-files-found: warn
+          retention-days: 7
+
   ubuntu-24-04-fcitx5-build:
-    name: Ubuntu 24.04 Fcitx 5 build, packages, and GTK3/GTK4/Qt6 X11 E2E
+    if: github.event_name != 'pull_request'
+    name: Full Ubuntu 24.04 build, packages, and GTK3/GTK4/Qt6 X11 E2E
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -115,7 +164,8 @@ jobs:
           retention-days: 7
 
   ubuntu-22-04-minimum-api:
-    name: Ubuntu 22.04 minimum API build and package lifecycle
+    if: github.event_name != 'pull_request'
+    name: Full Ubuntu 22.04 minimum API build and package lifecycle
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     container:

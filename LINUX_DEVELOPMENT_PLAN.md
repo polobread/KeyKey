@@ -406,7 +406,7 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 
 | 規劃檔案 | 觸發 | Jobs 與通過條件 |
 |---|---|---|
-| `.github/workflows/linux-ci.yml` | PR、主分支 push、手動 | 格式／靜態檢查、unit + sanitizers、兩 adapter contract；Ubuntu 24.04 + Fcitx 5 的三種 session 路徑跑完整 typing suite／UI 操作／安裝測試，其他目標跑回歸子集合 |
+| `.github/workflows/linux-ci.yml` | PR、主分支 push、手動 | PR 只跑 Ubuntu 24.04 build、unit、staged install 與 GTK3/Fcitx T01 真打字 smoke；合併進 `master` 後及手動執行才跑 sanitizer、source gate、Ubuntu 22.04 最低 API、完整 hosted X11 typing／UI 與套件生命週期 |
 | `.github/workflows/linux-desktop-tests.yml` | 僅手動 `workflow_dispatch`（實作後才啟用） | 預設跑 Ubuntu 24.04 + Fcitx 5 的所有 App／sandbox／UI 組合與壓力；以手動輸入選擇完整 Ubuntu 版本矩陣或指定歷史版本，不設定每日／每週排程 |
 | `.github/workflows/package-linux.yml` | `v*` tag、手動（實作後才啟用） | 版號檢查 → 9 個 Ubuntu 版本 × 兩 CPU 建置／打包 → 安裝測試 → 同 SHA active x86_64 桌面 release gate → manifest/checksum → publish；ARM64 另列 preview。Debian／Fedora 待 P6 再擴充 |
 
@@ -436,10 +436,11 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 9. PR 觸發路徑包含 Linux 程式／測試／workflow，以及唯讀共用資料的變更；不能只
    監看 Linux 目錄而漏測新版詞庫。文件-only 變更可跑文件檢查，但需避免 required
    checks 永久 pending；手動桌面測試與 release 一律不因 path filter 跳過。
-10. 為擴大的四年矩陣設定 `max-parallel`、分片與產物去重；PR 固定必測
-    Ubuntu 24.04 + Fcitx 5 完整功能與最舊／最新邊界。歷史版本只在相容性相關 PR、
-    手動指定或 release 執行，不設定自動輪替。主要環境不可只跑 smoke；也不能降低
-    release 的逐版本實際打字門檻，或省略中間版本來節省 CI 時間。
+10. 為擴大的四年矩陣設定 `max-parallel`、分片與產物去重；PR 固定只跑
+    Ubuntu 24.04 + Fcitx 5 smoke，完整 hosted 回歸移到合併後的 `master` push。
+    歷史版本只在相容性相關的手動指定、主分支完整 gate 或 release 執行，不設定
+    自動輪替。這個分流不能降低 release 的逐版本實際打字門檻，或省略中間版本來
+    節省 release CI 時間。
 11. 原始碼入口實作後，在既有 Linux CI／package workflow 納入第 5.1 節的
     configure／make 與 tarball 重建檢查；依測試計畫分配 PR 與 release 覆蓋，
     與 Ninja／原生套件結果分開呈現，不以其中一條路徑的成功代替另一條。
@@ -519,6 +520,30 @@ Vertical，可切 Horizontal，並套用到每一份 Fcitx candidate list。AT-S
 F07 的比例與反白色由 Fcitx UI/theme 決定，Ubuntu 22.04／24.04 的 input-method addon
 API 沒有 per-IME scale/color；若不能接受平台差異，後續須另作 custom UI addon，不能
 加入不會生效的假設定。
+
+F07 專屬 renderer 暫列下列 TODO，實作路線尚未決定：
+
+1. 先做 architecture spike，比較「單一、相容 Fcitx 5.0.14 的 UI addon」與
+   「Fcitx 5.0.24+ per-context callback 加 22.04 相容層」；不得以修改 Classic UI
+   全域 `Font`／DPI 作為琦琦注音專屬功能。
+2. 凍結 renderer contract：只接受 engine 已產生的 preedit、候選、反白、頁面、
+   layout 與 click callback，不在 UI 重作注音選字邏輯；定義關窗、context 銷毀及
+   Fcitx 重啟時的資源生命週期。
+3. 實作與 macOS／Windows 相同的 system、75、90、100、125、150、175、200、225、
+   250、300、350%，把 system DPI、字型、padding、圖示、視窗 geometry 與 pointer
+   hit area 一起縮放，並固定 rounding 規則。
+4. 完成直式／橫式候選、一般候選／關聯詞／符號表、頁面控制、鍵盤反白與滑鼠選字；
+   候選消失不可重現 WSLg 殘影 workaround，也不可加入 sleep 或重複 commit。
+5. 分別完成 GNOME X11、XWayland、native Wayland 的游標定位、四邊避讓、不搶焦點、
+   虛擬混合 DPI、多螢幕與多 input context；不能以 XWayland 結果代替 native Wayland。
+6. 把比例放進 Fcitx 原生設定 schema，驗證預設值、舊設定 migration、D-Bus 保存、
+   Fcitx／desktop session 重啟、套件升級與移除；renderer 未可用前不顯示無作用選項。
+7. 新增 L1 geometry／rounding／hit-test 測試與 GTK3／GTK4／Qt6 installed-addon E2E；
+   至少覆蓋 system、75、100、200、225、350%、直／橫、四邊位置與 click golden，
+   完整比例 × 配色視覺 sweep 留給手動完整／release gate。
+8. 盤點新增 UI protocol／graphics dependency、Ubuntu 22.04 ABI、Debian package、授權
+   與可維護成本；若需引用 Fcitx Classic UI 原始碼，先處理 LGPL 邊界再實作。
+
 T03 編輯／取消邊界已先依 macOS `OpenVanillaController`、`OVIMTraditionalMandarin`
 與 PlainVanilla candidate flow 固定，再以 Windows `KeyKeyEngine` 交叉檢查：空狀態
 Backspace／Escape 交還 App，reading Backspace 逐音退回，reading
