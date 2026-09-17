@@ -763,6 +763,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   說明移到比例列上方並縮短模組清單，否則比例 popup 會直接蓋住說明文字。
   三份 `MainMenu.xib` 都必須把 `_candidateWindowStyleMatrix` 接到 `TakaoGlobal`；簡中曾
   漏接，會讓程式建立的比例列使用零座標並且無法保存直／橫式選擇。
+- **macOS 深色模式表格要使用系統動態色**：Preferences 三份 `MainMenu.xib` 的一般輸入法、
+  模組側欄與外掛清單文字使用動態 `controlTextColor`，其 `NSTableView` 底色也必須使用
+  `controlBackgroundColor`，不可寫死白色。直式候選是可捲動的 `NSTableView`；自訂比例
+  調整 window/content bounds 後，AppKit 可能保留 `NSClipView` offset，所以每次更新候選頁
+  與 selection 後都要將 clip view 回到 `NSZeroPoint`，否則前幾列會跑到上緣之外、底部留下
+  空白。候選窗沒有語系相關布局，英文版不會造成這個問題。
 - **macOS 輸入法浮動視窗不可蓋過系統安全 UI 或搶焦點**：候選窗、提示泡泡與一般
   浮動窗使用 `NSStatusWindowLevel`，並加入所有 Space／全螢幕輔助行為；只有需要互動的
   字典視窗可成為 key window。候選窗顯示用 `orderFront:`，不要改回
@@ -1647,6 +1653,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### macOS
 
+- [x] 2026-09-17 修正 Preferences 深色模式的白底白字，三種語系的表格改用系統動態底色；
+      同時在直式候選每次更新後重設 scroll origin，避免放大候選窗時第 1、2 列移出可視範圍。
+      三份 XIB 已通過 `ibtool --compile`，並以 Xcode 27／macOS 27 SDK 完成 arm64 Release
+      target 建置。
 - [ ] 在實體 Mac 截圖確認 Preferences 三種語系新增的候選窗比例列不再覆蓋模組說明，
       以及直式／橫式候選窗在「跟隨顯示器、75%、90%、100%、200%、350%」下的字體、
       按鍵角標、翻頁控制與點選

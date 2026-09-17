@@ -291,6 +291,15 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 		[_tableView deselectAll:self];
 		_allowClick = NO;
 	}
+
+	// NSTableView keeps its clip view's scroll offset across candidate updates.
+	// AppKit can also preserve that offset while the window is resized through
+	// a custom bounds scale, which can leave the first rows
+	// above the visible area. Every candidate page fits in this scroll view, so
+	// always restore its document origin after resizing and changing selection.
+	NSClipView *clipView = [_scrollView contentView];
+	[clipView scrollToPoint:NSZeroPoint];
+	[_scrollView reflectScrolledClipView:clipView];
     
     // show if it's visible--after update
 	if (panel->isVisible())
