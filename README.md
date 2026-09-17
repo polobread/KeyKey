@@ -71,8 +71,9 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 推送符合專案版號的 tag（例如 `v1.2.8`）會同時啟動 `Package macOS` 與
 `Package Windows`，並把桌面版產物加入同一個 GitHub Release。兩個 workflow 也能手動
-執行；手動執行只保留 Actions artifact，不代表正式發行。完整產物、簽章與限制見
-[BUILDING.md](BUILDING.md#github-actions-封裝)。
+執行；手動執行只保留 Actions artifact，不代表正式發行。同一個 `v*` tag 也會執行
+完整 `Linux CI`，Linux 開發用 `.deb` 只保留為 Actions artifact，不加入 GitHub Release。
+完整產物、簽章與限制見 [BUILDING.md](BUILDING.md#github-actions-封裝)。
 
 ## 文件
 
@@ -166,9 +167,11 @@ iOS.
 
 Pushing a tag that exactly matches the project version, such as `v1.2.8`,
 starts `Package macOS` and `Package Windows` and adds both desktop outputs to
-the same GitHub Release. Manual runs retain Actions artifacts for testing but
-are not a formal release. See [BUILDING.md](BUILDING.md#github-actions-packaging)
-for the complete output and signing details.
+the same GitHub Release. The same `v*` tag also runs the complete `Linux CI`;
+its development `.deb` files remain Actions artifacts and are not added to the
+GitHub Release. Manual runs retain Actions artifacts for testing but are not a
+formal release. See [BUILDING.md](BUILDING.md#github-actions-packaging) for the
+complete output and signing details.
 
 ### Documentation
 

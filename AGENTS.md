@@ -336,9 +336,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   測試；不能只保留 Ubuntu + IBus 或以 KDE + Fcitx 的結果替代。GNOME 可能使用
   IBus protocol bridge，但實測必須確認載入本專案 Fcitx addon。主環境每次相關
   PR 只跑 Ubuntu 24.04 build、unit、staged install 與 GTK3/Fcitx T01 真打字 smoke；
-  合併進 `master` 後才跑完整 hosted typing、UI、source 與套件生命週期。手動完整
-  測試／發布跑全部 App、sandbox、UI 組合與穩定性；Linux desktop workflow 不設定
-  每日或每週排程。
+  合併進 `master` 或推送 `v*` tag 後才跑完整 hosted typing、UI、source 與套件生命週期；
+  `workflow_dispatch` 也保留完整手動執行。tag run 目前仍只保留開發用 `.deb` Actions
+  artifact，不加入 GitHub Release。手動完整測試／發布跑全部 App、sandbox、UI 組合與
+  穩定性；Linux desktop workflow 不設定每日或每週排程。
 - **Linux 第一階段以 Windows TSF 現有功能為基準**：2026-09-13 最新決定是把 Windows
   已有的五種傳統注音布局、逐音節輸入、候選、關聯詞、Big-5 過濾、全半形、中英文
   切換、標點／符號列表、直橫候選、比例／配色、錯誤提示與三頁設定全部列入。先前

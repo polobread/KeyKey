@@ -12,6 +12,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
     paths:
       - '.github/workflows/linux-ci.yml'
       - 'Source/Loaders/Linux-IME/**'
