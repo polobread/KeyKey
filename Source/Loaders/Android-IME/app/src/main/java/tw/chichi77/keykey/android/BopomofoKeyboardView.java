@@ -73,7 +73,7 @@ final class BopomofoKeyboardView extends View {
     };
     private static final int PORTRAIT_CONTENT_HEIGHT_DP = 330;
     private static final int PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
-    private static final int LANDSCAPE_CONTENT_HEIGHT_DP = 155;
+    private static final int LANDSCAPE_CONTENT_HEIGHT_DP = 230;
     private static final int LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final int HARDWARE_CONTENT_HEIGHT_DP = 58;
     private static final int HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
