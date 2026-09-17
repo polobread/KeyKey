@@ -26,7 +26,7 @@
 - (void)awakeFromNib
 {
 	[[self window] setLevel:NSFloatingWindowLevel];	
-	[[self window] setBackgroundColor:[NSColor whiteColor]];
+	[[self window] setBackgroundColor:[NSColor windowBackgroundColor]];
 	defaultWindowSize = [[self window] frame].size;
 }
 

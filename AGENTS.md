@@ -763,12 +763,16 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   說明移到比例列上方並縮短模組清單，否則比例 popup 會直接蓋住說明文字。
   三份 `MainMenu.xib` 都必須把 `_candidateWindowStyleMatrix` 接到 `TakaoGlobal`；簡中曾
   漏接，會讓程式建立的比例列使用零座標並且無法保存直／橫式選擇。
-- **macOS 深色模式表格要使用系統動態色**：Preferences 三份 `MainMenu.xib` 的一般輸入法、
-  模組側欄與外掛清單文字使用動態 `controlTextColor`，其 `NSTableView` 底色也必須使用
-  `controlBackgroundColor`，不可寫死白色。直式候選是可捲動的 `NSTableView`；自訂比例
-  調整 window/content bounds 後，AppKit 可能保留 `NSClipView` offset，所以每次更新候選頁
-  與 selection 後都要將 clip view 回到 `NSZeroPoint`，否則前幾列會跑到上緣之外、底部留下
-  空白。候選窗沒有語系相關布局，英文版不會造成這個問題。
+- **macOS 標準 UI 要使用系統動態色**：Preferences、PhraseEditor、About、搜尋輸入框、
+  符號表及候選提示的 window/table/text/header 不可寫死 calibrated white、black 或 gray；
+  分別使用 `windowBackgroundColor`、`controlBackgroundColor`、`textBackgroundColor`、
+  `controlTextColor`、`secondaryLabelColor` 與 `headerColor`。三份語系 XIB 必須一起改。
+  黑底白字候選窗、通知窗等自訂浮動 UI 是刻意的固定主題，前景與背景必須成對設定，
+  不要只把其中一色改成動態色。
+- **macOS 直式候選每次更新都要重設 scroll origin**：自訂比例調整 window/content bounds
+  後，AppKit 可能保留 `NSClipView` offset，所以更新候選頁與 selection 後要將 clip view
+  回到 `NSZeroPoint`，否則前幾列會跑到上緣之外、底部留下空白。候選窗沒有語系相關
+  布局，英文版不會造成這個問題。
 - **macOS 直式候選的提示列與候選內容要分開計算寬度**：候選欄只需按鍵欄、最長候選、
   cell padding 與外框；`SHIFT + 數字鍵` 等 prompt 另以其文字寬度和翻頁按鈕空間決定
   minimum window width。不可先把 prompt 寫進候選 `_width` 再固定加 50 點，也不可交給
@@ -1667,6 +1671,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - [x] 2026-09-17 重作 macOS 直式候選的寬度與子視圖布局：候選內容和 prompt 分別量測，
       明確配置兩欄、scroll view、提示列及翻頁控制，避免短候選仍保留多餘寬度以及
       `SHIFT + 數字鍵` 被截斷；已完成 arm64 Release target 建置。
+- [x] 2026-09-17 完成 macOS UI 深色模式稽核：Preferences 與 PhraseEditor 三種語系的
+      table/header、About 視窗、搜尋輸入框、符號表及橫／直式候選 XIB 均改用系統動態色；
+      所有受影響 XIB 已通過 `ibtool --compile`，並完成 arm64 Release target 建置。
 - [ ] 在實體 Mac 截圖確認 Preferences 三種語系新增的候選窗比例列不再覆蓋模組說明，
       以及直式／橫式候選窗在「跟隨顯示器、75%、90%、100%、200%、350%」下的字體、
       按鍵角標、翻頁控制與點選
