@@ -10,8 +10,6 @@ on:
       - 'LINUX_DEVELOPMENT_PLAN.md'
       - 'LINUX_TEST_PLAN.md'
   push:
-    branches:
-      - master
     tags:
       - 'v*'
     paths:
