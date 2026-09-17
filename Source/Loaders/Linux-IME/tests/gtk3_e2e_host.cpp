@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
@@ -25,9 +26,11 @@ struct TestState {
     std::vector<std::string> requiredEvents;
     std::size_t nextRequiredPreedit = 0;
     std::size_t nextRequiredEvent = 0;
+    std::string lastFirstSelectionState;
     bool focusScenario = false;
     bool editingScenario = false;
     bool closeScenario = false;
+    bool holdScenario = false;
     bool readyToClose = false;
     bool positiveComplete = false;
     bool clearedAfterPositive = false;
@@ -138,12 +141,59 @@ bool writeEntryCenter(const TestState &state, GtkWidget *entry,
     return true;
 }
 
+bool writeSecondCharacterSelectionPoints(const TestState &state,
+                                         GtkWidget *entry) {
+    const gchar *text = gtk_entry_get_text(GTK_ENTRY(entry));
+    if (g_utf8_strlen(text, -1) < 3) {
+        return false;
+    }
+
+    const gchar *selectionStart = g_utf8_offset_to_pointer(text, 1);
+    const gchar *selectionEnd = g_utf8_offset_to_pointer(text, 2);
+    PangoLayout *layout = gtk_entry_get_layout(GTK_ENTRY(entry));
+    PangoRectangle startPosition{};
+    PangoRectangle endPosition{};
+    pango_layout_get_cursor_pos(
+        layout, static_cast<int>(selectionStart - text), &startPosition,
+        nullptr);
+    pango_layout_get_cursor_pos(
+        layout, static_cast<int>(selectionEnd - text), &endPosition, nullptr);
+
+    gint layoutX = 0;
+    gint layoutY = 0;
+    gtk_entry_get_layout_offsets(GTK_ENTRY(entry), &layoutX, &layoutY);
+    GtkAllocation allocation;
+    gtk_widget_get_allocation(entry, &allocation);
+    gint startX = 0;
+    gint startY = 0;
+    gint endX = 0;
+    gint endY = 0;
+    const gint y = allocation.height / 2;
+    const gint characterStart = PANGO_PIXELS(startPosition.x);
+    const gint characterEnd = PANGO_PIXELS(endPosition.x);
+    const gint outset = std::max(2, (characterEnd - characterStart) / 6);
+    if (!gtk_widget_translate_coordinates(
+            entry, state.window, layoutX + characterStart - outset, y, &startX,
+            &startY) ||
+        !gtk_widget_translate_coordinates(
+            entry, state.window, layoutX + characterEnd + outset, y, &endX,
+            &endY)) {
+        return false;
+    }
+    writeValue(state.artifactDirectory + "/first-selection-start.txt",
+               std::to_string(startX) + " " + std::to_string(startY) + "\n");
+    writeValue(state.artifactDirectory + "/first-selection-end.txt",
+               std::to_string(endX) + " " + std::to_string(endY) + "\n");
+    return true;
+}
+
 gboolean writeEntryCentersOnIdle(gpointer userData) {
     auto &state = *static_cast<TestState *>(userData);
     if (!writeEntryCenter(state, state.firstEntry, "first") ||
         !writeEntryCenter(state, state.secondEntry, "second") ||
         (state.editingScenario &&
-         !writeEntryCenter(state, state.thirdEntry, "third"))) {
+         (!writeEntryCenter(state, state.thirdEntry, "third") ||
+          !writeSecondCharacterSelectionPoints(state, state.firstEntry)))) {
         return G_SOURCE_CONTINUE;
     }
     return G_SOURCE_REMOVE;
@@ -221,6 +271,9 @@ void onTextChanged(GtkEditable *editable, gpointer userData) {
     if (state.closeScenario) {
         return;
     }
+    if (state.holdScenario) {
+        return;
+    }
 
     if (!state.positiveComplete && value == state.expectedCommit &&
         sawAllRequiredPreedits(state)) {
@@ -237,6 +290,42 @@ void onTextChanged(GtkEditable *editable, gpointer userData) {
         writeValue(state.artifactDirectory + "/final.txt", value);
         gtk_main_quit();
     }
+}
+
+void observeFirstSelection(GtkEditable *editable, EntryState &entryState) {
+    auto &state = *entryState.test;
+    gint start = 0;
+    gint end = 0;
+    const bool hasSelection =
+        gtk_editable_get_selection_bounds(editable, &start, &end);
+    if (start > end) {
+        std::swap(start, end);
+    }
+    const std::string value =
+        hasSelection ? std::to_string(start) + ":" + std::to_string(end)
+                     : "cursor:" +
+                           std::to_string(gtk_editable_get_position(editable));
+    if (value == state.lastFirstSelectionState) {
+        return;
+    }
+    state.lastFirstSelectionState = value;
+    writeValue(state.artifactDirectory + "/first-selection-state.txt",
+               value + "\n");
+    if (hasSelection) {
+        appendEvent(state, entryEventType(entryState, "selection"), value);
+        completeMultiEntryScenarioIfReady(state);
+    }
+}
+
+void onSelectionChanged(GObject *editable, GParamSpec *, gpointer userData) {
+    auto &entryState = *static_cast<EntryState *>(userData);
+    observeFirstSelection(GTK_EDITABLE(editable), entryState);
+}
+
+gboolean pollFirstSelection(gpointer userData) {
+    auto &entryState = *static_cast<EntryState *>(userData);
+    observeFirstSelection(GTK_EDITABLE(entryState.test->firstEntry), entryState);
+    return G_SOURCE_CONTINUE;
 }
 
 gboolean onFocusEvent(GtkWidget *, GdkEventFocus *event, gpointer userData) {
@@ -302,7 +391,11 @@ gboolean onControlFile(gpointer userData) {
 
 void onDestroy(GtkWidget *, gpointer userData) {
     auto &state = *static_cast<TestState *>(userData);
-    if (state.closeScenario && state.readyToClose) {
+    if (state.holdScenario) {
+        state.success = true;
+        writeValue(state.artifactDirectory + "/final.txt",
+                   gtk_entry_get_text(GTK_ENTRY(state.entry)));
+    } else if (state.closeScenario && state.readyToClose) {
         state.success = true;
         writeValue(state.artifactDirectory + "/final.txt", "closed");
     }
@@ -327,12 +420,16 @@ int main(int argc, char **argv) {
         scenario != nullptr && std::string(scenario) == "editing";
     const bool closeScenario =
         scenario != nullptr && std::string(scenario) == "close";
+    const bool holdScenario =
+        scenario != nullptr && std::string(scenario) == "hold";
+    const char *windowTitle = std::getenv("KEYKEY_E2E_WINDOW_TITLE");
     const char *expectedFirst = std::getenv("KEYKEY_E2E_EXPECTED_FIRST");
     const char *expectedSecond = std::getenv("KEYKEY_E2E_EXPECTED_SECOND");
     const char *expectedThird = std::getenv("KEYKEY_E2E_EXPECTED_THIRD");
     const char *requiredEvents = std::getenv("KEYKEY_E2E_REQUIRED_EVENTS");
     if (artifactDirectory == nullptr || *artifactDirectory == '\0' ||
         (!focusScenario && !editingScenario && !closeScenario &&
+         !holdScenario &&
          (expectedCommit == nullptr || *expectedCommit == '\0' ||
           expectedLiteral == nullptr || requiredPreedits == nullptr)) ||
         (closeScenario && requiredPreedits == nullptr) ||
@@ -348,6 +445,7 @@ int main(int argc, char **argv) {
     state.focusScenario = focusScenario;
     state.editingScenario = editingScenario;
     state.closeScenario = closeScenario;
+    state.holdScenario = holdScenario;
     if (focusScenario || editingScenario) {
         state.expectedFirst = expectedFirst;
         state.expectedSecond = expectedSecond;
@@ -357,16 +455,21 @@ int main(int argc, char **argv) {
         if (*requiredEvents != '\0') {
             state.requiredEvents = split(requiredEvents, ';');
         }
-    } else if (!closeScenario) {
+    } else if (!closeScenario && !holdScenario) {
         state.expectedCommit = expectedCommit;
         state.expectedLiteral = expectedLiteral;
     }
-    if (!focusScenario && !editingScenario && *requiredPreedits != '\0') {
+    if (!focusScenario && !editingScenario && requiredPreedits != nullptr &&
+        *requiredPreedits != '\0') {
         state.requiredPreedits = split(requiredPreedits, ',');
     }
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     state.window = window;
-    gtk_window_set_title(GTK_WINDOW(window), "chichi77-keykey-gtk3-e2e");
+    gtk_window_set_title(
+        GTK_WINDOW(window),
+        windowTitle == nullptr || *windowTitle == '\0'
+            ? "chichi77-keykey-gtk3-e2e"
+            : windowTitle);
     gtk_window_set_default_size(GTK_WINDOW(window), 480, 100);
     g_signal_connect(window, "destroy", G_CALLBACK(onDestroy), &state);
 
@@ -382,6 +485,12 @@ int main(int argc, char **argv) {
                      G_CALLBACK(onPreeditChanged), &firstEntryState);
     g_signal_connect(state.firstEntry, "changed", G_CALLBACK(onTextChanged),
                      &firstEntryState);
+    if (holdScenario) {
+        g_signal_connect(state.firstEntry, "focus-in-event",
+                         G_CALLBACK(onFocusEvent), &firstEntryState);
+        g_signal_connect(state.firstEntry, "focus-out-event",
+                         G_CALLBACK(onFocusEvent), &firstEntryState);
+    }
 
     if (focusScenario || editingScenario) {
         GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
@@ -406,6 +515,9 @@ int main(int argc, char **argv) {
         gtk_box_pack_start(GTK_BOX(box), state.secondEntry, TRUE, TRUE, 0);
         if (editingScenario) {
             gtk_entry_set_text(GTK_ENTRY(state.firstEntry), "甲乙丙");
+            g_signal_connect(state.firstEntry, "notify::selection-bound",
+                             G_CALLBACK(onSelectionChanged), &firstEntryState);
+            g_timeout_add(20, pollFirstSelection, &firstEntryState);
             gtk_entry_set_visibility(GTK_ENTRY(state.secondEntry), FALSE);
             gtk_entry_set_input_purpose(GTK_ENTRY(state.secondEntry),
                                         GTK_INPUT_PURPOSE_PASSWORD);
@@ -437,7 +549,7 @@ int main(int argc, char **argv) {
     if (focusScenario || editingScenario) {
         g_idle_add(writeEntryCentersOnIdle, &state);
     }
-    if (closeScenario) {
+    if (closeScenario || holdScenario) {
         g_timeout_add(20, onControlFile, &state);
     }
     g_timeout_add_seconds(20, onTimeout, &state);

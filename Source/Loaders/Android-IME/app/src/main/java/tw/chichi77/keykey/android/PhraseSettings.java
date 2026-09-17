@@ -8,7 +8,7 @@ import java.util.Set;
 
 final class PhraseSettings {
     private static final String PREFERENCES_NAME = "ime_settings";
-    private static final String KEY_ENABLED_COLLECTIONS = "enabled_phrase_collections";
+    static final String KEY_ENABLED_COLLECTIONS = "enabled_phrase_collections";
     private static final String DEFAULT_COLLECTION = "McBopomofo";
 
     private PhraseSettings() {}

@@ -12,7 +12,7 @@ else()
     set(KEYKEY_FCITX5_DEFAULT OFF)
 endif()
 option(KEYKEY_BUILD_FCITX5 "Build the Fcitx 5 addon" ${KEYKEY_FCITX5_DEFAULT})
-option(KEYKEY_BUILD_X11_E2E_HOST "Build the GTK 3 X11 E2E test host" OFF)
+option(KEYKEY_BUILD_X11_E2E_HOST "Build the GTK 3, GTK 4, and Qt 6 X11 E2E test hosts" OFF)
 option(KEYKEY_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 option(KEYKEY_INSTALL_STANDALONE_LICENSE_FILES
     "Install the non-Debian standalone license copies" ON)
@@ -121,11 +121,29 @@ if(BUILD_TESTING)
     if(KEYKEY_BUILD_X11_E2E_HOST)
         find_package(PkgConfig REQUIRED)
         pkg_check_modules(GTK3 REQUIRED IMPORTED_TARGET gtk+-3.0)
+        pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtk4)
+        find_package(Qt6 REQUIRED COMPONENTS Widgets)
         add_executable(keykey_linux_gtk3_e2e_host tests/gtk3_e2e_host.cpp)
         target_compile_features(keykey_linux_gtk3_e2e_host PRIVATE cxx_std_17)
         target_link_libraries(keykey_linux_gtk3_e2e_host PRIVATE PkgConfig::GTK3)
         if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
             target_compile_options(keykey_linux_gtk3_e2e_host PRIVATE
+                -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion
+            )
+        endif()
+        add_executable(keykey_linux_gtk4_e2e_host tests/gtk4_e2e_host.cpp)
+        target_compile_features(keykey_linux_gtk4_e2e_host PRIVATE cxx_std_17)
+        target_link_libraries(keykey_linux_gtk4_e2e_host PRIVATE PkgConfig::GTK4)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+            target_compile_options(keykey_linux_gtk4_e2e_host PRIVATE
+                -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion
+            )
+        endif()
+        add_executable(keykey_linux_qt6_e2e_host tests/qt6_e2e_host.cpp)
+        target_compile_features(keykey_linux_qt6_e2e_host PRIVATE cxx_std_17)
+        target_link_libraries(keykey_linux_qt6_e2e_host PRIVATE Qt6::Widgets)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+            target_compile_options(keykey_linux_qt6_e2e_host PRIVATE
                 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion
             )
         endif()

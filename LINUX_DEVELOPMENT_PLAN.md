@@ -3,9 +3,10 @@
 狀態：開發中。已建立第一段 Linux-only 引擎、Fcitx 5 外掛、container scripts 與
 `linux-ci.yml`、五種 Windows 傳統注音鍵盤配置、候選鍵盤導覽、標點／符號候選切片、
 `Shift+Space` 全／半形、ASCII 全形對映、繁轉簡單字與注音 Big5-HKSCS 候選 filter 切片、
-L3 X11/GTK 3 真實輸入與
-Ubuntu 22.04／24.04 開發用 Debian 套件；尚未完成 GNOME／Wayland、注音的
-完整功能、完整視窗、IBus 或正式發布套件。
+L3 X11/GTK 3、GTK 4、Qt 6 各自適用的第一階段完整真實輸入矩陣與
+Ubuntu 22.04／24.04 開發用 Debian 套件；Ubuntu 24.04 的隔離 GNOME X11 session
+另已通過 76 個不重啟桌面 Fcitx 的 GTK 3／GTK 4／Qt 6 真實輸入案例。尚未完成
+XWayland／native Wayland、完整登入生命週期、完整視窗、IBus 或正式發布套件。
 
 盤點日期：2026-09-12；原始碼基線：`13696ef`；產品版號來源：`README.md` 標題。
 
@@ -405,7 +406,7 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 
 | 規劃檔案 | 觸發 | Jobs 與通過條件 |
 |---|---|---|
-| `.github/workflows/linux-ci.yml` | PR、主分支 push、手動 | 格式／靜態檢查、unit + sanitizers、兩 adapter contract；Ubuntu 24.04 + Fcitx 5 的三種 session 路徑跑完整 typing suite／UI 操作／安裝測試，其他目標跑回歸子集合 |
+| `.github/workflows/linux-ci.yml` | PR、主分支 push、手動 | PR 只跑 Ubuntu 24.04 build、unit、staged install 與 GTK3/Fcitx T01 真打字 smoke；合併進 `master` 後及手動執行才跑 sanitizer、source gate、Ubuntu 22.04 最低 API、完整 hosted X11 typing／UI 與套件生命週期 |
 | `.github/workflows/linux-desktop-tests.yml` | 僅手動 `workflow_dispatch`（實作後才啟用） | 預設跑 Ubuntu 24.04 + Fcitx 5 的所有 App／sandbox／UI 組合與壓力；以手動輸入選擇完整 Ubuntu 版本矩陣或指定歷史版本，不設定每日／每週排程 |
 | `.github/workflows/package-linux.yml` | `v*` tag、手動（實作後才啟用） | 版號檢查 → 9 個 Ubuntu 版本 × 兩 CPU 建置／打包 → 安裝測試 → 同 SHA active x86_64 桌面 release gate → manifest/checksum → publish；ARM64 另列 preview。Debian／Fedora 待 P6 再擴充 |
 
@@ -435,10 +436,11 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 9. PR 觸發路徑包含 Linux 程式／測試／workflow，以及唯讀共用資料的變更；不能只
    監看 Linux 目錄而漏測新版詞庫。文件-only 變更可跑文件檢查，但需避免 required
    checks 永久 pending；手動桌面測試與 release 一律不因 path filter 跳過。
-10. 為擴大的四年矩陣設定 `max-parallel`、分片與產物去重；PR 固定必測
-    Ubuntu 24.04 + Fcitx 5 完整功能與最舊／最新邊界。歷史版本只在相容性相關 PR、
-    手動指定或 release 執行，不設定自動輪替。主要環境不可只跑 smoke；也不能降低
-    release 的逐版本實際打字門檻，或省略中間版本來節省 CI 時間。
+10. 為擴大的四年矩陣設定 `max-parallel`、分片與產物去重；PR 固定只跑
+    Ubuntu 24.04 + Fcitx 5 smoke，完整 hosted 回歸移到合併後的 `master` push。
+    歷史版本只在相容性相關的手動指定、主分支完整 gate 或 release 執行，不設定
+    自動輪替。這個分流不能降低 release 的逐版本實際打字門檻，或省略中間版本來
+    節省 release CI 時間。
 11. 原始碼入口實作後，在既有 Linux CI／package workflow 納入第 5.1 節的
     configure／make 與 tarball 重建檢查；依測試計畫分配 PR 與 release 覆蓋，
     與 Ninja／原生套件結果分開呈現，不以其中一條路徑的成功代替另一條。
@@ -464,26 +466,28 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 context 獨立狀態、嚴格 CIN reader、五種注音布局、Fcitx 原生布局設定，以及可載入的
 Fcitx 5 addon。Rancher Desktop container 已在 Ubuntu 24.04（Fcitx 5.1.7）與 22.04
 （Fcitx 5.0.14）x86_64 userspace 編譯、跑 CTest 並驗證 staged install；24.04 ARM64
-build 亦已通過。Ubuntu 24.04 x86_64 另以 Xvfb、獨立 D-Bus、Fcitx 5 與 GTK 3 host
-完成三十個最小 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
+build 亦已通過。Ubuntu 24.04 x86_64 另以 Xvfb、獨立 D-Bus、Fcitx 5 與 GTK 3／GTK 4／
+Qt 6 hosts 完成八十三個 installed-addon L3 X11 流程：Standard T01 鍵序選出「中」，
 五種注音配置的 T02 鍵序皆以二、三、四、輕聲選出「麻馬罵嘛」，
 並在第一個 reading 中以裸 `\` 與 `Ctrl+C` 驗證無效鍵／快捷鍵不破壞組字，
 漢語拼音另清除不完整 `zh`；倉頡 `a` 選「日」，另驗證直接標點、查無碼清除與
 單一候選提交為「，用」，並以 `a?`／`a*` 萬用字元提交「昌日」；簡易 `a`
 選第二候選「曰」，另驗證兩碼自動候選、連續
 輸入、單一候選及標點候選為「明銖䍤、」；並以 PageDown、Down、Enter 從注音第二頁
-選出「妐」；`Shift+Space` 全形流程提交精確 `Ａ！～　`；Big-5 限制開啟時從
+選出「妐」，再以真實滑鼠點擊展開後的 Fcitx 直式候選第二列選出「鐘」；
+`Shift+Space` 全形流程提交精確 `Ａ！～　`；Big-5 限制開啟時從
 `ㄝˋ` 過濾後候選選出 `𤦩`；繁轉簡開啟時逐字選出
 真實候選「臺灣」並提交「台湾」；另以 `Ctrl+0`
-開啟真實標點表並按 `1` 選出「，」；六個關聯詞流程以 `Shift+1` 驗證基本詞庫
+開啟真實標點表並按 `1` 選出「，」，再以真實滑鼠點第一列後接 `!` 得到「，!」；
+六個關聯詞流程以 `Shift+1` 驗證基本詞庫
 「今天」、history-only「臺灣史」、全部關閉後的「臺!」，以及舊逗號設定
 migration 後的「中程計畫」；第五案再從 Fcitx D-Bus `SetConfig` 寫入 government-only，
 確認 INI 落盤、重啟 Fcitx 並讀回後仍輸出「中程計畫」；第六案以 AT-SPI 找到
 `fcitx5-config-qt` 的輸入法與核取方塊，實際點選只開 agriculture-food、保存並重啟後
 逐鍵輸出「作物育種」，同時保存切換前後截圖。各案都有 `keyboard-us` 負控制，
 並確認執行中 Fcitx process 載入 staged `.so`。真正安裝的 Ubuntu 24.04 `.deb`
-最近一次 package 證據在 `1.2.8~preview1` 初裝與升級狀態各跑二十九個鍵盤案例，
-移除後重裝則跑全部三十案，含一個設定視窗操作案；套件 dependency、
+最近一次 package 證據在 `1.2.8~preview1` 初裝與升級狀態各跑八十二個非設定視窗案例，
+移除後重裝則跑全部八十三案，含一個設定視窗操作案；套件 dependency、
 資料 hash、移除殘檔與使用者設定保留也一併通過。
 套件同時核對 debhelper/lintian、ELF dependency、架構、版本、安裝清單、資料 hash、
 授權檔與使用者設定保留。Ubuntu 22.04 的對應 `.deb` 亦已在 Fcitx 5.0.14 userspace
@@ -516,6 +520,30 @@ Vertical，可切 Horizontal，並套用到每一份 Fcitx candidate list。AT-S
 F07 的比例與反白色由 Fcitx UI/theme 決定，Ubuntu 22.04／24.04 的 input-method addon
 API 沒有 per-IME scale/color；若不能接受平台差異，後續須另作 custom UI addon，不能
 加入不會生效的假設定。
+
+F07 專屬 renderer 暫列下列 TODO，實作路線尚未決定：
+
+1. 先做 architecture spike，比較「單一、相容 Fcitx 5.0.14 的 UI addon」與
+   「Fcitx 5.0.24+ per-context callback 加 22.04 相容層」；不得以修改 Classic UI
+   全域 `Font`／DPI 作為琦琦注音專屬功能。
+2. 凍結 renderer contract：只接受 engine 已產生的 preedit、候選、反白、頁面、
+   layout 與 click callback，不在 UI 重作注音選字邏輯；定義關窗、context 銷毀及
+   Fcitx 重啟時的資源生命週期。
+3. 實作與 macOS／Windows 相同的 system、75、90、100、125、150、175、200、225、
+   250、300、350%，把 system DPI、字型、padding、圖示、視窗 geometry 與 pointer
+   hit area 一起縮放，並固定 rounding 規則。
+4. 完成直式／橫式候選、一般候選／關聯詞／符號表、頁面控制、鍵盤反白與滑鼠選字；
+   候選消失不可重現 WSLg 殘影 workaround，也不可加入 sleep 或重複 commit。
+5. 分別完成 GNOME X11、XWayland、native Wayland 的游標定位、四邊避讓、不搶焦點、
+   虛擬混合 DPI、多螢幕與多 input context；不能以 XWayland 結果代替 native Wayland。
+6. 把比例放進 Fcitx 原生設定 schema，驗證預設值、舊設定 migration、D-Bus 保存、
+   Fcitx／desktop session 重啟、套件升級與移除；renderer 未可用前不顯示無作用選項。
+7. 新增 L1 geometry／rounding／hit-test 測試與 GTK3／GTK4／Qt6 installed-addon E2E；
+   至少覆蓋 system、75、100、200、225、350%、直／橫、四邊位置與 click golden，
+   完整比例 × 配色視覺 sweep 留給手動完整／release gate。
+8. 盤點新增 UI protocol／graphics dependency、Ubuntu 22.04 ABI、Debian package、授權
+   與可維護成本；若需引用 Fcitx Classic UI 原始碼，先處理 LGPL 邊界再實作。
+
 T03 編輯／取消邊界已先依 macOS `OpenVanillaController`、`OVIMTraditionalMandarin`
 與 PlainVanilla candidate flow 固定，再以 Windows `KeyKeyEngine` 交叉檢查：空狀態
 Backspace／Escape 交還 App，reading Backspace 逐音退回，reading
@@ -542,16 +570,28 @@ T10 的 local X11/GTK3 context lifecycle 也已建立：同一 client 的兩個 
 關閉流程，確認 Fcitx 與 staged addon 仍存活，重啟 Fcitx 後再由新 client 選出「中」；
 每段都有 `keyboard-us` literal control。不同 input context 依 Fcitx 的 share-input-state
 設定可能各自記住 active engine，測試在每次跨 context 後明確切換並輪詢，不把框架
-策略誤判為 KeyKey 狀態外洩。兩個同時存活的獨立 App、GNOME 登出登入與 Wayland
-仍待桌面驗收。加入此案例後的完整 warm gate 為 CTest 2/2、X11 29/29；Ubuntu 24.04
+策略誤判為 KeyKey 狀態外洩。兩個同時存活的獨立 App 已由下列 2026-09-15 切片補上，
+GNOME 登出登入與 Wayland 仍待桌面驗收。加入此案例後的完整 warm gate 為 CTest 2/2、
+X11 29/29；Ubuntu 24.04
 package lifecycle 亦已以真正安裝的套件通過初裝 28/28、升級 28/28、重裝 29/29。
+2026-09-15 再新增兩個同時存活的獨立 GTK3 process。行為調查先看 macOS：
+`deactivateServer:` 在失焦時 commit composing buffer 後清理；再看 Windows TSF：
+document manager 失焦會 abandon 並非同步終止 composition，兩邊對 active preedit 沒有
+單一共同語意。local Xvfb/Fcitx 5/GTK3 診斷也證實 App A 的 `ㄓㄨㄥ` client preedit
+在切到 App B 時被 GTK 提交，切回後再選字會得到 `ㄓㄨㄥ中`，因此不以 addon workaround
+假裝成 Windows。正式 multi-App isolation 在空 composition 切焦點：App A 切到英文全形
+輸出 `ａ`，App B 仍以預設中文半形輸出「文」，切回 App A 後確認保留自己的模式並完成
+`ａｂ中`；兩個 App 在受控關閉前皆仍存活。`keyboard-us` 負控制為
+`ab5j/ 1|jp61`。targeted T10、完整 warm gate（CTest 2/2、X11 33/33）與 Ubuntu 24.04
+package lifecycle（preview 初裝 32/32、release 升級 32/32、重裝後 33/33）均通過。
+active preedit、GNOME 登出登入、GTK4／Qt／瀏覽器與 Wayland 仍待桌面驗收。
 T11 的 local X11/GTK3 編輯與欄位安全邊界也已擴充：先依 macOS OSX-IMK、
 TraditionalMandarin 與 PlainVanilla 的事件流固定行為，再以 Windows TSF 交叉確認。
 reading 中未帶 Ctrl／Alt／Super 的方向、Home／End、PageUp／PageDown、Delete／Tab
 及其 Shift 變體會保留 reading、提示錯誤且不移動 App caret／selection；一般候選的
 Home／End 可跳首尾，無效候選編輯鍵也不漏入 App。真鍵盤流程在「甲乙丙」中間組字，
-送完上述按鍵仍原位提交第一個「中」，再以 Shift+Right 選取「乙」並由候選替換，
-精確得到「甲中中丙」；切入
+送完上述按鍵仍原位提交「中」，並驗證既有單字可由候選替換，精確得到
+「甲中中丙」；切入
 `GTK_INPUT_PURPOSE_PASSWORD` 後，Fcitx 依 capability 自動切回 `keyboard-us`，完整
 鍵序只產生 literal `rup 1!`，不允許強制選回自訂輸入法或顯示關聯詞；不可編輯欄位
 收到完整注音鍵序後仍保持「唯讀」。正向與 `keyboard-us` 負控制皆通過，adapter 對
@@ -559,7 +599,130 @@ Home／End 可跳首尾，無效候選編輯鍵也不漏入 App。真鍵盤流�
 加入此案例後完整 warm gate 為 CTest 2/2、X11 30/30，Ubuntu 22.04 Fcitx 5.0.14
 build／CTest／staging 亦通過；Ubuntu 24.04 `.deb` lifecycle 的 preview 初裝與 release
 升級各為 29/29，移除／重裝後含設定視窗為 30/30，dependency、資料 hash、移除與設定
-sentinel 亦全數通過。滑鼠 selection、GTK4／Qt／瀏覽器、GNOME 與 Wayland 仍待驗收。
+sentinel 亦全數通過。
+2026-09-15 同一 T11 案例再補 App committed text 的真實指標 selection。比對仍先查
+macOS：`OpenVanillaController`／PlainVanilla 在外部強制結束 composition 時可提交
+residue 後清理；再查 Windows TSF，selection 離開追蹤範圍時會放棄並非同步終止舊
+composition，因此不把 active composition 的指標行為假定為相同。本切片固定兩邊共同
+且無歧義的路徑：GTK host 從 Pango layout 產生第二字左右 hit point，XTest 先清除初始
+全選、再拖曳選取「乙」，精確觀測 selection `1:2`，由注音候選替換後得到「甲中丙」；
+接續原有 active-reading 編輯鍵回歸後最終仍為「甲中中丙」。`keyboard-us` 負控制使用
+相同指標選取只得到 literal「甲5j/ 1丙」。targeted T11 與完整 warm gate 均通過，後者
+為 CTest 2/2、X11 32/32；本次只改測試覆蓋，未重跑 package lifecycle。active
+composition 期間以指標改 selection、GTK4／Qt／瀏覽器、GNOME 與 Wayland 仍待驗收。
+2026-09-15 建立第一段 GTK4 client coverage。行為調查仍先查 macOS：
+`OVIMTraditionalMandarin` 選字後寫入 committed text，OSX-IMK loader 隨即以
+`commitComposition`／`insertText` 送進 App；再查 Windows TSF，engine snapshot 交由
+`updateComposition` 呼叫 `commitText`，同一按鍵流程更新或隱藏候選。兩邊對 Standard
+T01 的逐音 preedit、選字提交及清空順序一致。新增最小 GTK4 `GtkText` host，透過實體
+XTest 鍵序與已安裝 Fcitx 5 addon 精確觀測 `ㄓ` → `ㄓㄨ` → `ㄓㄨㄥ` →「中」，切回
+`keyboard-us` 後相同鍵序得到 literal `5j/ 1`。targeted 案例與完整 warm gate 均通過，
+後者為 CTest 2/2、X11 34/34；Ubuntu 24.04 package lifecycle 的 preview 初裝、release
+升級各通過 33/33，移除／重裝後含設定視窗通過 34/34。這一個 T01 切片完成當時，
+GTK4 T02–T12、GNOME 與 native Wayland／XWayland 仍待驗收。
+同日再把 GTK4 擴充至完整五布局 T02。比對順序維持 macOS
+`OVIMTraditionalMandarin` 的 `combineKey`／tone marker 立即查詢與候選流程在先，再看
+Windows TSF 的相同共用 module 及五項設定值；兩邊都保留 reading 中的無效鍵提示，且
+讓 Ctrl／Alt App shortcut 通過。GTK4 `GtkText` 以 Standard、ETen、ETen26、Hsu、
+Hanyu Pinyin 真實輸入四聲／輕聲「麻馬罵嘛」，同時核對複用鍵中間態、不完整 `zh`
+退格、裸 `\` 與 `Ctrl+C` 邊界。五個 targeted 案例與完整 warm gate 均通過，後者為
+CTest 2/2、X11 39/39；Ubuntu 24.04 package lifecycle 的 preview 初裝、release 升級
+各通過 38/38，移除／重裝後含設定視窗通過 39/39。GTK4 T03–T12、GNOME 與 native
+Wayland／XWayland 仍待驗收。
+同日再完成 GTK4 T03 編輯／取消邊界。先查 macOS
+`OVIMTraditionalMandarinContext::handleBackspace`、`handleKey` 與 PlainVanilla candidate
+cancel flow，再查 Windows TSF `wantsKey`、`isPotentialKey` 與
+snapshot/updateComposition。兩邊共同行為是空狀態交回 Backspace／Escape，reading
+Backspace 只刪最後一個注音成分、reading Escape 清空，一般候選 Backspace 先關窗
+再刪一音，候選 Escape 則取消整段 reading。GTK4 `GtkText` 以和 GTK3 相同的
+真實鍵序跑完所有邊界，只提交「中文麻」，並有 `keyboard-us` 負控制。targeted
+T03、完整 warm gate（CTest 2/2、X11 40/40）及 Ubuntu 24.04 package lifecycle
+（preview 初裝 39/39、release 升級 39/39、移除／重裝後含設定視窗 40/40）均通過。
+Windows 對標的 GTK4 T06–T12、GNOME 與 native Wayland／XWayland 仍待驗收；T04／T05
+為保留的 Linux 擴充，不是 1.2.8 第一階段 blocker。
+同日再完成 GTK4 T06 候選導覽。先查 macOS `PVCandidate.h` 與兩種 candidate
+controller：直式由 Up／Down 移動反白、Left／Right 翻頁，橫式則交換兩組方向鍵角色，
+滑鼠索引會換成選字鍵；再查 Windows TSF `CandidateWindow.cpp` 與
+`CandidateStateTest.cpp`，確認橫式只改自繪窗排列，底層仍使用直式鍵盤語意，且目前
+沒有滑鼠按鍵選字訊息。Linux 第一階段因此在兩種畫面都維持 Windows 的 Up／Down
+反白、Left／Right／PageUp／PageDown／Space 翻頁，同時保留 Fcitx 原生滑鼠 callback
+作為額外能力。GTK4 新增直式鍵盤、直式滑鼠與橫式完整鍵盤三案：前兩案分別選出
+「妐」與「鐘」，橫式依序送 End、Home、PageDown、PageUp、Right、Left、Space、Down、
+Enter 後選出「妐」，每案都有 `keyboard-us` 負控制。targeted 三案、完整 warm gate
+（CTest 2/2、X11 43/43）與 Ubuntu 24.04 package lifecycle（preview 初裝 42/42、
+release 升級 42/42、移除／重裝後含設定視窗 43/43）均通過。Windows 對標的 GTK4
+T07–T12、GNOME X11／XWayland／native Wayland 的候選畫面、位置與點擊仍待驗收。
+同日再完成 GTK4 T07 關聯詞鍵盤與設定流程。先查 macOS
+`OVAFAssociatedPhraseContext` 與 PlainVanilla around-filter：單字先 commit，候選只放
+headless 後綴，`Shift+1–9` 選取後綴；再查 Windows TSF `KeyKeyEngine` 對同一模組的
+啟用與設定同步，本段語意一致，且兩邊關聯詞窗都不走一般候選的滑鼠控制。GTK4
+`GtkText` 新增預設 McBopomofo「今天」、history-only「臺灣史」、全部停用「臺!」、
+舊逗號設定遷移「中程計畫」與 D-Bus 寫入／重啟／讀回後「中程計畫」五案，每案均有
+`keyboard-us` 負控制。targeted 五案、完整 warm gate（CTest 2/2、X11 48/48）及
+Ubuntu 24.04 package lifecycle（preview 初裝 47/47、release 升級 47/47、移除／重裝後
+含設定視窗 48/48）均通過。GTK4 T08–T12、GNOME 與 native Wayland／XWayland 仍待
+驗收；關聯詞滑鼠依既有平台差異不列 macOS／Windows 對標要求。
+同日再完成 GTK4 T08 中英文、全半形與繁轉簡。先查 macOS
+`OpenVanillaController.mm`、TraditionalMandarin 與 output-filter 流程：`Ctrl+\` 會
+輪替內建輸入法，單按 Shift 不切換內部中英文，全形選單快捷鍵為
+Command+Shift+Space；再查 Windows TSF `TextService.cpp`／`SettingsApp.cpp`，其內部
+中文／英文模式、可停用 `Ctrl+\`、固定 Ctrl+Space、短按 Shift、Shift+Space 全半形
+與 Caps Lock 才是本階段對標，繁轉簡則與 macOS 一樣在輸出階段套用。GTK4 新增四個
+真實鍵序案例，精確提交中英模式 `5j/aBａ！　文abcde麻`、停用快捷鍵 `翁ㄓ`、全形
+`Ａ！～　` 與繁轉簡 `台湾`，每案均有 `keyboard-us` 負控制。停用快捷鍵的同一 engine
+pass-through 在 GTK3 得到 `ㄓ翁`、GTK4 `GtkText` 得到 `翁ㄓ`：兩者都由 client 提交
+active preedit，但 GTK4 將後續 commit 插在其前，故不在 addon 內強制統一。targeted
+四案、完整 warm gate（CTest 2/2、X11 52/52）與 Ubuntu 24.04 package lifecycle
+（preview 初裝 51/51、release 升級 51/51、移除／重裝後含設定視窗 52/52）均通過。
+GTK4 T09–T12、GNOME 與 native Wayland／XWayland 仍待驗收。
+同日再完成 GTK4 T09 修飾鍵、repeat 與 key-up 邊界。先查 macOS
+`OpenVanillaController.mm` 與 TraditionalMandarin candidate flow：Command、一般
+Ctrl／Option shortcut 在 loader 層交回 App，只有已處理的 key-down 才配對吃掉 key-up；
+再查 Windows TSF `TextService.cpp`／`KeyKeyEngine.cpp`，一般 Ctrl／Alt 同樣在送入
+engine 前放行，普通 key-up 不吃，只有短按 Shift 另有切換語意。Linux 的 X11 長按
+`Ctrl+\` 可能收到未標 Repeat 的重送 key-down，因此沿用實體 backslash press/release
+latch，沒有把這項平台差異反推成 macOS／Windows 行為。GTK4 `GtkText` 以和 GTK3
+相同的真實鍵序長按一秒、清除可能殘留的裸反斜線、切回中文，並在 reading／候選中送
+Ctrl+C／Alt+F，精確提交 `x中文`；`keyboard-us` 負控制為 `x5j/ 1jp61`。targeted 案、
+完整 warm gate（CTest 2/2、X11 53/53）與 Ubuntu 24.04 package lifecycle（preview
+初裝 52/52、release 升級 52/52、移除／重裝後含設定視窗 53/53）均通過。Super 仍只在
+L1，GTK4 T10–T12、GNOME 與 native Wayland／XWayland 尚待驗收。
+同日再完成 GTK4 T10 input-context 與 client lifecycle。先查 macOS
+`OpenVanillaController` 的 per-controller context、失焦 commit 及清理，再查 Windows
+TSF `TextService.cpp` 的 document-manager／context 失焦 `abandonComposition()`；兩者
+對 active composition 的語意不同，因此本段沿用既有共同邊界，不在 addon 內強制統一。
+GTK4 `GtkText` 以和 GTK3 相同的實體鍵序驗證同 App 兩欄各自提交 `中|文`、候選中關閉
+client 後 Fcitx/addon 仍存活、重啟 Fcitx 後新 client 再提交「中」，以及兩個同時存活
+App 各自保留英文全形與中文半形狀態，精確得到 `ａｂ中|文`；兩案都有
+`keyboard-us` 負控制。GTK4 失焦會短暫以 `changed` 回報 client preedit，切回後清除，
+最終 buffer 與 context 狀態仍正確。兩欄改為左右排列以免候選 popup 覆蓋第二欄；
+runner 也從最新 ID 起逐一嘗試同名可見 X11 視窗，排除快速重開的殘留 ID。targeted
+兩案、完整 warm gate（CTest 2/2、X11 55/55）與 Ubuntu 24.04 package lifecycle
+（preview 初裝 54/54、release 升級 54/54、移除／重裝後含設定視窗 55/55）均通過。
+GTK4 T11–T12、GNOME X11／XWayland／native Wayland、Qt／瀏覽器及桌面登出登入仍待驗收。
+2026-09-16 依「補測試一次成批完成」的要求，把剩餘 GTK4 T11–T12 與 Qt6 第一階段
+X11 client 矩陣合併完成。每一類行為仍先查 macOS OSX-IMK／PlainVanilla／
+TraditionalMandarin，再以 Windows TSF 交叉確認；兩者不同時不強行統一 client 語意。
+GTK4 新增 committed-text 指標選取、候選替換、active-reading 編輯鍵、密碼／唯讀及
+符號候選鍵盤／滑鼠流程。Qt6 以獨立 Widgets host 重跑適用的 T01–T03、T06–T12
+共 25 案，包含五布局、直／橫候選、五個關聯詞設定路徑、中英／全形／繁轉簡、
+兩 context、兩 App、client／Fcitx 復原、selection、密碼、唯讀多行與符號表。
+Qt6 password frontend 會保留 active engine 名稱但不產生 preedit，只送 literal；
+內建 read-only widget 在 focus 後不穩定發布停用狀態，因此測試 host 依 Qt 平台契約讓
+`Qt::ImEnabled` query 回傳 false，Fcitx 核心即放行按鍵，沒有改 KeyKey addon。
+Qt6 對 disabled `Ctrl+\` 的 active-preedit 插入順序與 `Alt+F` 是否產生 `f` 亦採
+toolkit-specific golden。Qt targeted 25/25、完整 warm gate（CTest 2/2、X11 83/83）
+與 Ubuntu 24.04 package lifecycle（preview 初裝 82/82、release 升級 82/82、
+移除／重裝後含設定視窗 83/83）均通過。GNOME X11／XWayland／native Wayland、瀏覽器、Qt5、active-preedit 跨 App
+與桌面登出登入仍待驗收。
+2026-09-16 將同一組逐鍵 host 接到隔離 GNOME Shell 46／Mutter／TigerVNC X11
+session，新增 existing-session runner。它核對實際 window manager、系統安裝 addon、
+Classic UI panel、套件版本與 binary hash，並以 client PID 排除同名 Mutter 外框；
+76 個不重啟桌面 Fcitx 的案例在 GTK3／GTK4／Qt6 全數通過，且每案都有
+`keyboard-us` 負控制。其餘三個 Fcitx process-restart persistence、設定視窗
+persistence 及三個 input-context recovery 案仍由 managed Xvfb／package gate 驗證；
+完整登入生命週期、popup 畫面 sweep、音訊、真實外部 App、XWayland 與 native Wayland
+尚未完成，不能把這筆結果寫成完整 GNOME 發布驗收。
 2026-09-14 將同一 release-candidate 套件實裝到 WSL2 Ubuntu 24.04.4 後，使用者已在
 WSLg XWayland 的 GTK3 gedit 經 Fcitx 5.1.7 確認中文輸入；終止候選後約一秒的視窗殘影
 已對應到 `microsoft/wslg#1495` 的已知 `UnmapWindow` 顯示問題，不是 KeyKey commit 或
@@ -575,6 +738,28 @@ WSLg XWayland 的 GTK3 gedit 經 Fcitx 5.1.7 確認中文輸入；終止候選�
 先前的 container／WSLg 單窗測試不具備完整 GNOME session；新增的獨立 X11 診斷也
 尚未完成 P0 所要求的 native Wayland／XWayland、完整桌面/App、popup 與 hosted
 runner 實證。
+2026-09-15 先檢查 macOS 候選控制器：滑鼠點列後會換算選字鍵，再走 PlainVanilla
+`CandidateChosen` 與 TraditionalMandarin commit；接著檢查 Windows TSF 的自繪
+`CandidateWindow`，目前只有鍵盤導覽、繪製、DPI 與 `WM_MOUSEACTIVATE`，沒有
+`WM_LBUTTONDOWN`／`WM_LBUTTONUP` 選字處理，故兩平台實際行為不同。Linux 保留 Fcitx
+原生 `CandidateWord::select` callback 的滑鼠能力，新增
+`T06-X11-GTK3-CANDIDATE-MOUSE`：先鎖定 Vertical，等待 `Fcitx5 Input Window` 從
+暫態 1×1／preedit-only geometry 展開成九列候選，再以 XTest 點第二列，精確 commit
+「鐘」；`keyboard-us` 負控制仍為 `5j/ `。更新後 warm gate 為 CTest 2/2、X11 31/31；
+Ubuntu 24.04 package lifecycle 的 preview 初裝與 release 升級各為 30/30，移除／重裝
+後含設定視窗為 31/31。這是 Xvfb/classic-ui 的功能證據；GNOME X11、XWayland、native
+Wayland 的 popup 位置、畫面與點擊仍須桌面驗收，不能將 F06 標為完整 parity。
+同日繼續先查 macOS：TraditionalMandarin 的一般／標點候選會
+`yieldToCandidateEventHandler()`，因此候選控制器允許滑鼠選取；AssociatedPhrase
+只 show panel 而不 yield，橫式控制器明確設為不可點，直式 table delegate 也拒絕
+selection change。再查 Windows TSF，`Ctrl+0`／`Ctrl+1` 會開符號表，但同一自繪
+`CandidateWindow` 仍沒有 mouse-button 訊息。因此關聯詞滑鼠不是 macOS／Windows
+對標要求，Linux 的 Fcitx 原生 callback 行為暫保留但不宣稱已驗收。符號表則新增
+`T12-X11-GTK3-SYMBOL-LIST-MOUSE`，以 `Ctrl+0` 開表、XTest 點第一列，再輸入 `!`，
+精確得到「，!」，`keyboard-us` 負控制只得到 `!`。完整 warm gate 為 CTest 2/2、
+X11 32/32；Ubuntu 24.04 package lifecycle 的 preview 初裝與 release 升級各為
+31/31，移除／重裝後含設定視窗為 32/32。這項滑鼠支援是 Linux 保留的原生額外能力；
+GNOME X11、XWayland、native Wayland 的符號窗畫面／位置／點擊仍待驗收。
 
 | 階段 | 工作 | 出場條件 |
 |---|---|---|

@@ -50,45 +50,56 @@ The initial vertical slice provides:
   round-trip coverage for more than 1,490 real Bopomofo readings per symbolic
   layout, representative Hanyu Pinyin initials/finals/tones, and punctuation
   shortcut/list behavior;
-- an installed-package X11 E2E test that sends physical key events into a real
-  GTK 3 entry and verifies Standard Bopomofo → `中`, all five layouts and all
+- an installed-package X11 E2E test that sends physical key events into real
+  GTK 3, GTK 4, and Qt 6 editors; all three verify the Standard Bopomofo T01
+  preedit/commit path to `中` and all five layouts with all
   four explicit tones → `麻馬罵嘛`, with every layout preserving its reading
   across an invalid bare `\` and a passed-through `Ctrl+C`, candidate-to-next-reading continuous input
   → `中文`, invalid `=` plus `Ctrl+C` recovery → `中`, incomplete Pinyin backspace recovery,
-  macOS-first, Windows-cross-checked empty/reading/candidate Backspace and Escape
-  boundaries → `中文麻`,
+  and all three verify the macOS-first, Windows-cross-checked
+  empty/reading/candidate Backspace and Escape boundaries → `中文麻`,
   Cangjie `a` → `日`, direct punctuation/error recovery → `，用`, wildcard
   queries → `昌日`, Simplex
   `a` → second candidate `曰`, full-code/continuous/direct-punctuation input →
-  `明銖䍤、`, and Bopomofo Home/End plus second-page keyboard navigation → `妐`,
-  `Shift+Space` full-width input → `Ａ！～　`, Big-5 filtering of `ㄝˋ`
-  candidates → `𤦩`, plus
-  Chinese/English switching by `Ctrl+\` and a short Shift tap, including
+  `明銖䍤、`, GTK 3/GTK 4/Qt 6 vertical Bopomofo Home/End plus second-page keyboard
+  navigation → `妐`, and a real pointer click on the expanded vertical Fcitx
+  candidate window's second row → `鐘`; GTK 4 and Qt 6 additionally verify the
+  Windows-parity horizontal-key flow through Home/End, PageUp/PageDown,
+  Left/Right paging, Space paging, Down highlight, and Enter → `妐`;
+  all three toolkits verify `Shift+Space` full-width input → `Ａ！～　`, while GTK 3
+  additionally covers Big-5 filtering of `ㄝˋ` candidates → `𤦩`, plus
+  all three toolkits verify Chinese/English switching by `Ctrl+\` and a short Shift tap, including
   composition cancellation, Caps Lock, English full-width input, long-Shift
-  rejection, and disabled-shortcut pass-through, plus
-  a modifier-boundary flow that holds `Ctrl+\` for one second without repeated
+  rejection, disabled-shortcut pass-through, and Traditional-to-Simplified
+  output `臺灣` → `台湾`; a disabled shortcut lets the client commit active
+  preedit, producing GTK 3 `ㄓ翁` versus GTK 4 `翁ㄓ` because of their insertion
+  rules, while KeyKey remains in Chinese mode in both, plus
+  both toolkits run a modifier-boundary flow that holds `Ctrl+\` for one second without repeated
   toggles and preserves active readings/candidates across `Ctrl+C` and `Alt+F`,
   clears any X11 key-repeat residue with the same application edit sequence in
   both controls, and commits exact `x中文`, plus
-  a two-entry input-context lifecycle flow that clears the first entry's
+  all three toolkits run a two-entry input-context lifecycle flow that clears the first entry's
   candidate preedit after a geometry-derived pointer click focuses the second,
   independently commits `文` there,
   returns to commit `中` in the first without reviving the old candidate,
   closes a client while candidates are active, verifies Fcitx and the staged
   addon remain alive, restarts Fcitx, and types `中` from a fresh client, plus
-  an editing-field flow that preserves the active reading and insertion point
-  across navigation, Delete, Tab, and Shift-selection attempts, commits at the
-  original caret, then replaces the selected middle character in `甲中乙丙`
-  with a Bopomofo candidate to produce `甲中中丙`, verifies GTK's
-  password content purpose disables the custom input method and associated
-  phrases, and confirms a read-only entry stays unchanged after a complete key
-  sequence, plus
-  Traditional-to-Simplified output `臺灣` → `台湾`, plus `Ctrl+0` symbol-list
-  selection → `，`, plus associated-phrase default `今` → `今天`,
-  `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺!`;
-  a fourth association case verifies migration from the earlier comma-separated
-  setting, while a fifth writes through the Fcitx D-Bus settings API, restarts
-  Fcitx, reads the value back, and types with the persisted selection. A sixth
+  all three toolkits run a two-process flow that keeps both apps alive while App A retains its
+  English/full-width state and App B retains Chinese/half-width state, producing
+  exact `ａｂ中|文`, plus
+  an editing-field flow that uses a geometry-derived pointer drag to select
+  `乙` in `甲乙丙`, replaces it with a Bopomofo candidate to produce `甲中丙`,
+  then preserves an active reading and insertion point across navigation,
+  Delete, Tab, and Shift-selection attempts before producing `甲中中丙`,
+  verifies password fields produce only literal input without associated
+  phrases, and confirms a read-only editor stays unchanged after a complete key
+  sequence, plus `Ctrl+0` symbol-list
+  keyboard selection → `，` and a real first-row pointer selection followed by
+  `!` → `，!`, plus GTK 3/GTK 4/Qt 6 associated-phrase default `今` → `今天`,
+  `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺!`; all three
+  also verify migration from the earlier comma-separated setting and a Fcitx
+  D-Bus settings write followed by process restart, readback, and typing with
+  the persisted selection. A sixth GTK 3 flow
   opens the installed `fcitx5-config-qt` window, finds controls through AT-SPI,
   clicks the Bopomofo configuration, collection, typing-error sound, and
   `Ctrl+\` checkboxes, changes the candidate style from vertical to horizontal,
@@ -98,8 +109,8 @@ The initial vertical slice provides:
 - Debian packages named `chichi77-keykey-data` and
   `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
 - a package lifecycle test covering install, controlled preview-to-1.2.8
-  upgrade, removal, reinstall, dependency/file/hash checks, the twenty-nine
-  keyboard-only X11 cases after each installed state, and all thirty cases,
+  upgrade, removal, reinstall, dependency/file/hash checks, the eighty-two
+  non-settings-window X11 cases after each installed state, and all eighty-three cases,
   including the settings window, once after reinstall;
 - a persistent Fcitx-native settings schema with the five Windows-supported
   Bopomofo layouts and vertical/horizontal candidate styles,
@@ -223,8 +234,8 @@ Source/Loaders/Linux-IME/ci/create-source-archive.sh
 Source/Loaders/Linux-IME/ci/test-source-archive.sh
 ```
 
-`--enable-x11-e2e-host` additionally requires `pkg-config` and the GTK 3
-development files; these are test-only and are not required for the normal
+`--enable-x11-e2e-host` additionally requires `pkg-config`, the GTK 3/GTK 4
+development files, and Qt 6 Widgets development files; these are test-only and are not required for the normal
 engine and Fcitx addon build.
 
 ## Persistent Ubuntu 24.04 development container
@@ -343,8 +354,23 @@ candidate ghost and the accumulated popups during rapid typing. This is a
 validated manual X11 test environment, not a change to the product engine or
 evidence for native Wayland acceptance.
 
-The Ubuntu 24.04 image can also run the current L3 installed X11/GTK 3 typing
-test under Xvfb:
+The same runbook now includes a GNOME X11 automated entry point. With the
+isolated desktop running and the current package candidate installed, run:
+
+```sh
+Source/Loaders/Linux-IME/tools/manual-desktop/run-gnome-x11-e2e.sh
+```
+
+It verifies the actual GNOME Shell window manager, installed addon and Classic
+UI panel, then runs 76 desktop-safe GTK 3, GTK 4, and Qt 6 cases with physical
+XTest key/pointer input and `keyboard-us` negative controls. It preserves the
+desktop Fcitx process and restores the original KeyKey settings. Seven cases
+that intentionally restart Fcitx remain in the managed Xvfb/package gates;
+XWayland, native Wayland, full login lifecycle, visual sweeps, and real Apps
+are still separate release requirements.
+
+The Ubuntu 24.04 image can also run the current L3 installed X11/GTK 3, GTK 4, and Qt 6
+typing tests under Xvfb:
 
 ```sh
 Source/Loaders/Linux-IME/ci/run-ubuntu-24.04-x11-e2e.sh
@@ -357,7 +383,7 @@ the Cangjie, Simplex, table-end-key, candidate-navigation, `Shift+Space` full-wi
 Chinese/English mode, Traditional-to-Simplified, and `Ctrl+0` symbol-list
 sequences. The mode cases verify `Ctrl+\`, a 300 ms Shift tap, a rejected long
 Shift hold, Caps Lock, English full-width input, and disabled-shortcut
-pass-through. A separate modifier case holds `Ctrl+\` for one second, switches
+pass-through. Separate GTK 3 and GTK 4 modifier cases hold `Ctrl+\` for one second, switch
 back to Chinese, and sends `Ctrl+C` and `Alt+F` through active reading and
 candidate states before committing exact `x中文`; its literal negative control
 is `x5j/ 1jp61`. Both controls first clear any literal backslash that X11 may
@@ -368,14 +394,31 @@ shortcuts. The full-width case
 verifies the exact GTK text `Ａ！～　`, while the English-keyboard control
 receives ` A!~ `. The conversion case selects `臺` and `灣`, verifies committed
 `台湾`, and uses literal `w962j0 1` as its negative control.
-A context-lifecycle case uses Tab and Shift+Tab between two real GTK entries,
-verifies ordered per-entry preedit events and exact `中`／`文` text without
-reviving the first entry's old candidates, then closes a client with candidates
-open. It checks that Fcitx and the staged addon survive, restarts Fcitx, and
+A GTK3, GTK4, and Qt 6 context-lifecycle case uses a geometry-derived pointer click and Shift+Tab
+between two real toolkit entries, verifies ordered per-entry preedit events and exact
+`中`／`文` text without reviving the first entry's old candidates, then closes a
+client with candidates open. It checks that Fcitx and the staged addon survive, restarts Fcitx, and
 types `中` in a fresh client. Because Fcitx may track active input methods per
 input context when shared input state is disabled, the test explicitly selects
 and polls Bopomofo after moving to a newly focused entry; the matching
 `keyboard-us` phase keeps every key literal.
+A second context-lifecycle case in all three toolkits keeps two independent processes alive. App A
+switches to English/full-width and types `ａ`, App B independently stays in
+Chinese/half-width and types `文`, and App A retains its state after focus returns
+before finishing as `ａｂ中`; the literal control is `ab5j/ 1|jp61`. This case
+switches focus only while composition is empty: macOS commits its composing
+buffer on deactivation, Windows TSF abandons composition, and local GTK clients
+handle active preedit during focus changes—including a transient GTK4 text event
+that is cleared after focus returns—so active-preedit behavior still
+requires per-toolkit GNOME evidence rather than one forced cross-platform rule.
+The Qt 6 host additionally covers the same editing and candidate matrix through
+`QInputMethodEvent`. Its password field keeps the current Fcitx engine name but
+receives only literal text and no preedit. Its read-only `QPlainTextEdit`
+publishes `Qt::ImEnabled=false` through the standard input-method query so
+Fcitx forwards the whole key sequence and the document stays unchanged; this
+does not require a KeyKey-addon special case. Qt also inserts the text `f` for
+a passed-through `Alt+F`, so modifier assertions use toolkit-specific exact
+buffers rather than forcing GTK insertion behavior.
 The six associated-phrase cases verify the built-in default with `今天`, the
 `history` category in isolation with `臺灣史`, the all-disabled state, and
 migration of the earlier comma-separated setting through real `Shift+1` key
@@ -395,7 +438,7 @@ not inject Chinese text, call GTK setters, or use the clipboard. Each case is
 switched back to `keyboard-us` and receives the same keys as a negative
 control. Evidence is written under
 `out/e2e/ubuntu-24.04-x11-ARCH/`. Passing this test proves these minimal
-installed Fcitx 5 to GTK 3 X11 paths, not GNOME or native Wayland.
+installed Fcitx 5 to GTK 3, GTK 4, and Qt 6 X11 paths, not GNOME or native Wayland.
 
 Candidate size and highlight colors remain owned by the active Fcitx UI and
 theme. The input-method addon API available in Ubuntu 22.04 and 24.04 provides
@@ -412,12 +455,12 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
 Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
-The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the twenty-nine
-keyboard-only X11 cases, upgrades to `1.2.8`, runs them again, removes and
-reinstalls the packages, then runs all thirty cases. Running the UI-heavy
+The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the eighty-two
+non-settings-window X11 cases, upgrades to `1.2.8`, runs them again, removes and
+reinstalls the packages, then runs all eighty-three cases. Running the UI-heavy
 case once keeps the installed-package proof while avoiding three identical Qt
-startup cycles. The latest completed package evidence passes 29/29 cases after
-both preview install and release upgrade, then 30/30 after reinstall. The 22.04
+startup cycles. The latest completed package evidence passes 82/82 cases after
+both preview install and release upgrade, then 83/83 after reinstall. The 22.04
 path performs build, lintian,
 dependency, file/data checksum, install/remove/reinstall, and ELF checks but
 does not claim desktop typing acceptance. Packages and evidence are written

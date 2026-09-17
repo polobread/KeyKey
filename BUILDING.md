@@ -3,8 +3,9 @@
 本文件集中說明琦琦輸入法各平台的建置流程。
 
 Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
-外掛與 local X11/GTK 3 真實逐鍵測試，但尚未完成全部功能、GNOME／Wayland 桌面
-驗收或正式套件。開發／套件規格見
+外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
+並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
+但尚未完成 XWayland／native Wayland、完整登入與視窗驗收或正式套件。開發／套件規格見
 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
@@ -91,8 +92,9 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
 第一個指令是主要 Ubuntu 24.04 / Fcitx 5 build，第二個守住 Ubuntu 22.04 的最低
-API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3 的 X11 真實逐鍵輸入：五種
-注音配置及各自的英文負控制，並驗證注音設定 schema；五種布局都是 Windows 對標的
+API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3／GTK 4／Qt 6 的 X11 真實逐鍵輸入：
+三套 toolkit 覆蓋各自適用的 T01–T03、T06–T12，且都有英文負控制；並驗證
+注音設定 schema。五種布局都是 Windows 對標的
 Linux 1.2.8 第一階段範圍。已完成的倉頡／簡易切片保留作回歸與未來擴充，不需從程式或
 測試中拆除。這些 one-shot 指令預設建立
 `linux/amd64` 產物；ARM64 preview 可在指令前設定
@@ -102,8 +104,8 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 
 後兩個指令用 debhelper 產生依發行版命名的 `chichi77-keykey-data` 與
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
-各跑一次二十九個純鍵盤 X11 真實打字案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
-點選、保存、重啟及真實打字案例（合計三十案）；22.04 則跑較省時的套件安裝／移除 smoke。
+各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
+點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
 這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
 
 ## macOS
@@ -267,8 +269,8 @@ cd Source\Loaders\Android-IME
 
 建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
 `bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫，另固定
-加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。Android 仍直接把這些
-TSV 複製為 generated assets，不另轉為專用二進位格式。
+加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會從 CIN、基本詞庫與
+29 個 TSV 產生 `.kki` 索引；Android 執行時讀取索引，關聯詞索引在背景載入。
 Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
@@ -358,8 +360,10 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 ## English
 
 Native Linux development starts with version 1.2.8. A buildable Linux-only
-engine and Fcitx 5 addon skeleton exist, but full features, real desktop typing
-acceptance, and release packages are not complete. See the
+engine and Fcitx 5 addon exist. The GTK 3, GTK 4, and Qt 6 X11 matrix is
+implemented, and 76 cases that do not restart the desktop Fcitx process pass
+in an isolated Ubuntu 24.04 GNOME X11 session. XWayland, native Wayland, full
+login/window acceptance, and release packages are not complete. See the
 [development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
 
 ### Linux (in development)
@@ -444,7 +448,7 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 ```
 
 The third one-shot command types physical key events through the staged Fcitx 5 addon
-into a GTK 3 entry on Xvfb and runs an English-keyboard negative control. They
+into GTK 3, GTK 4, and Qt 6 editors on Xvfb and runs English-keyboard negative controls. They
 default to `linux/amd64`; set `KEYKEY_DOCKER_PLATFORM=linux/arm64` for the ARM64
 preview build. The Xvfb result is L3 X11 evidence and does not count as GNOME or
 native Wayland desktop typing acceptance. See the
@@ -452,10 +456,10 @@ native Wayland desktop typing acceptance. See the
 
 The final two commands create distro-labelled `chichi77-keykey-data` and
 `fcitx5-chichi77-keykey` Debian packages with debhelper. Ubuntu 24.04 also runs
-the twenty-nine keyboard-only X11 cases after install, controlled upgrade, and
+the eighty-two non-settings-window X11 cases after install, controlled upgrade, and
 reinstall. The native Fcitx settings-window click, persistence, restart, and
 typing case—including changing the candidate style from vertical to
-horizontal—runs once after reinstall, for thirty cases in that final state.
+horizontal—runs once after reinstall, for eighty-three cases in that final state.
 These are development artifacts until the remaining release gates are complete.
 
 ### macOS
@@ -610,8 +614,9 @@ cd Source\Loaders\Android-IME
 The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
 `Source/DataTables` directory and adds the base associated-phrase collection
 from `DataSource/McBopomofo` plus all 29 public categorized collections from
-`DataSource/chichi77Collection`. Android copies the TSV files as generated assets
-and does not convert them to a custom binary format. The debug APK is written to
+`DataSource/chichi77Collection`. The build compiles the CIN and phrase sources into
+`.kki` indexes; Android reads those indexes at runtime and loads associated-phrase
+indexes in the background. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.

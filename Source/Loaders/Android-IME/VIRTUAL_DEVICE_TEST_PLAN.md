@@ -61,7 +61,9 @@ adb -s emulator-XXXX shell am start -n \
 `ImeTestActivity` 只存在 debug APK，集中提供所有 `inputType`、標準 Enter action、自訂 action
 與 `IME_FLAG_NO_ENTER_ACTION`。release APK 不包含它。為了讓 ADB 回歸可重複設定狀態，test host
 接受 `--es floating off|vertical|horizontal`、`--ez keyPreview true|false`、
-`--ei hapticLevel 0..8` 及 `--es phrases none|base`；這些 hook 也只存在 debug build。
+`--ei hapticDurationMs 0..100`、`--ei portraitHeightPercent 50..200`、
+`--ei landscapeHeightPercent 50..200` 及 `--es phrases none|base|all`；這些 hook 也只存在
+debug build。`--ei hapticLevel 0..8` 只保留給舊自動化相容使用。
 
 每次開始一台 AVD 前清除 logcat；完成後保留截圖、畫面錄影或文字紀錄，並檢查：
 
@@ -80,16 +82,22 @@ adb -s emulator-XXXX shell dumpsys window | rg 'KeyKey candidate window|BadToken
 
 - 首頁可啟動，狀態列、cutout、導覽列不遮住標題、說明與三個按鈕。
 - 「啟用輸入法」、「選擇琦琦注音」、「調整設定」都能開啟正確頁面。
-- 設定頁可完整捲動，九段震動、觸控按鍵預覽、紫／綠／黃／紅候選底色、實體浮動候選、
-  直／橫排列與 30 個詞庫均存在；新安裝預設為紫色。
-- 重開 App／切換輸入欄位後，震動、預覽、候選底色、浮窗排列、全半形及詞庫選擇維持預期狀態。
+- 設定頁可完整捲動，0–100ms 震動、直式／橫式虛擬鍵盤高度、觸控按鍵預覽、
+  紫／綠／黃／紅候選底色、實體浮動候選、直／橫排列與 30 個詞庫均存在；
+  新安裝的兩個高度都是 100%，候選底色為紫色。
+- 重開 App／切換輸入欄位後，震動、兩個虛擬鍵盤高度、預覽、候選底色、浮窗排列、
+  全半形及詞庫選擇維持預期狀態。
 
 ### B. 觸控鍵盤直式與橫式
 
 直式與橫式各自驗證：
 
 - 候選列、四排 11 個等寬鍵及功能列完整；沒有裁切、重疊、跳位或被系統地球鍵／手勢條遮住。
-- 直式保留 40dp、橫式保留 35dp 系統區；橫式內容高度及小字仍清楚可讀。
+- 直式保留 40dp、橫式保留 35dp 系統區；橫式 100% 內容高度為 230dp，按鍵與小字
+  清楚可讀。
+- 分別把直式與橫式設為 50%、100%、200%，確認只改目前方向的觸控鍵盤內容高度，
+  每個尺寸都可點到最上與最下排，旋轉後套用另一個方向的設定。接上實體鍵盤後，底部
+  候選列與浮動候選字窗尺寸都不得隨這兩個設定改變。
 - 注音與實體鍵位雙標籤正確，直式聲調 `ˊˇˋ˙` 大小、位置及鍵位 baseline 正常。
 - Enter 外框、Backspace、Shift、Emoji、符、設、逗號、空白、句號均正常顯示。
 - 旋轉時正在組的字、候選與鍵盤模式不會 crash；旋轉後再重新輸入可正常選字。
@@ -120,8 +128,9 @@ adb -s emulator-XXXX shell dumpsys window | rg 'KeyKey candidate window|BadToken
 - 左右邊緣鍵的預覽不超出螢幕；滑出原鍵、放開或取消時立刻消失。
 - 功能鍵、候選字及實體鍵盤候選列不顯示按鍵預覽；預覽本身不新增可點擊範圍。
 - 關閉設定後不再顯示，重新開啟立即恢復。
-- 九段震動逐段可設定；0 不震動，非 0 的可用鍵有回饋；disabled key、滑出取消與預覽 overlay
-  不可額外震動。AVD 無法代表真機手感，但仍須確認沒有 vibrator/security error；實際強度另列真機驗收。
+- 震動可在 0–100ms 間以 1ms 調整；至少驗證 0、1、5、10、100ms，0 不震動，非 0 的
+  可用鍵有回饋；disabled key、滑出取消與預覽 overlay 不可額外震動。AVD 無法代表真機
+  手感，但仍須確認沒有 vibrator/security error；實際短震動手感另列真機驗收。
 
 ### F. 符號、Emoji 與標點
 
@@ -203,6 +212,9 @@ App 若錯報或不報 `inputType`，確認安全退回一般文字，不 crash�
 - 已啟用數量與 30 個 checkbox 一致；重開設定頁及重新顯示鍵盤後仍保持。
 - 確定單一中文字才顯示關聯詞尾；選取只接上詞尾。輸入下一個注音會關閉關聯詞且不偷送第一項。
 - 全部關閉時沒有關聯詞；多詞庫混合依設定中的 source 順序排序、跨庫重複只留第一筆。
+- 每台 cold boot 都分別以「全部啟用」及「全部關閉」記錄從欄位取得焦點到虛擬鍵盤完整
+  顯示的時間；兩者都不得因主執行緒解析文字詞庫而出現數秒停頓或 ANR。全部啟用時，
+  等背景索引載入完成後仍須能產生關聯詞。
 - 一般候選用 1–9；關聯詞實體選字用 Shift+1–9，但角標仍顯示 1–9。
 - 關聯候選顯示中按觸控 Enter／搜尋／傳送／完成不可插入任何關聯詞；應關閉候選後只執行欄位 action。實體 Enter 也不可插入關聯詞，並維持普通 Enter key event。
 - 連續切換欄位、App、方向、模式、詞庫與浮窗至少 10 次，不能 crash、ANR、黑屏、候選消失或

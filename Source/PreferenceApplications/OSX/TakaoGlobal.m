@@ -667,7 +667,7 @@ file for terms.
 	[aColor setFill];
 	[NSBezierPath fillRect:NSMakeRect(0, 0, [image size].width, [image size].height)];
 #endif
-	[[NSColor blackColor] setStroke];	
+	[[NSColor separatorColor] setStroke];
 	[NSBezierPath strokeRect:NSMakeRect(0, 0, [image size].width, [image size].height)];	
 	[image unlockFocus];
 	

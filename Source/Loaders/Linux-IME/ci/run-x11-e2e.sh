@@ -57,9 +57,15 @@ if [[ "$install_source" == stage ]]; then
   cp -a "$stage_dir/usr/." /usr/
 fi
 
-e2e_host="$PWD/$build_dir/keykey_linux_gtk3_e2e_host"
-test -x "$e2e_host"
-export KEYKEY_E2E_HOST="$e2e_host"
+gtk3_e2e_host="$PWD/$build_dir/keykey_linux_gtk3_e2e_host"
+gtk4_e2e_host="$PWD/$build_dir/keykey_linux_gtk4_e2e_host"
+qt6_e2e_host="$PWD/$build_dir/keykey_linux_qt6_e2e_host"
+test -x "$gtk3_e2e_host"
+test -x "$gtk4_e2e_host"
+test -x "$qt6_e2e_host"
+export KEYKEY_E2E_HOST="$gtk3_e2e_host"
+export KEYKEY_E2E_GTK4_HOST="$gtk4_e2e_host"
+export KEYKEY_E2E_QT6_HOST="$qt6_e2e_host"
 export KEYKEY_E2E_ARTIFACT_DIR="$absolute_artifact_dir"
 export KEYKEY_E2E_RUNTIME_ROOT="$runtime_root"
 

@@ -28,7 +28,9 @@ X11 桌面繪製，再以本機 noVNC 顯示整張桌面。候選窗不再各自
 ```sh
 sudo apt-get install --no-install-recommends \
   gnome-shell gnome-session gedit dbus-x11 \
-  fcitx5 fcitx5-frontend-gtk3 fcitx5-config-qt fonts-wqy-zenhei \
+  fcitx5 fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 \
+  fcitx5-frontend-qt6 fcitx5-config-qt \
+  libqt6widgets6t64 qt6-qpa-plugins fonts-wqy-zenhei \
   tigervnc-standalone-server novnc libgl1-mesa-dri \
   xauth xdotool x11-utils x11-xkb-utils curl
 ```
@@ -80,6 +82,45 @@ Windows 輸入法可能攔走按鍵，而且 KeyKey 的 `Shift+Space` 是全半�
 `DBUS_SESSION_BUS_ADDRESS`，否則指令可能顯示成功，實際卻切到另一個桌面。
 若執行環境限制本機 socket，允許該操作存取本機 session；不要改用 root 的 Fcitx。
 
+## GNOME X11 自動驗收
+
+先以乾淨的 `ci/run-debian-package.sh ubuntu-24.04` package gate 建好同一候選版本的
+GTK 3、GTK 4、Qt 6 test hosts，並把待測 `.deb` 正常安裝進桌面。上述桌面保持執行時，
+從 repository 根目錄執行：
+
+```sh
+Source/Loaders/Linux-IME/tools/manual-desktop/run-gnome-x11-e2e.sh
+```
+
+入口會先以 `ldd` 拒絕缺少 toolkit runtime 的環境，再確認目前 display 是由
+GNOME Shell 管理、Fcitx 已載入系統安裝的 `chichi77-keykey.so` 與 Classic UI panel。
+GNOME 的 Mutter 外框與 client 可能同名；runner 同時核對 host PID，且使用
+`xdotool search --all`，不能省略 `--all`，否則多條搜尋條件會成為 OR 而再次選到外框。
+新 client 可能在搜尋完成前已成為 active window，runner 會先讀取 active window，再以
+非阻塞 `windowactivate` 有界輪詢；不可改成會等待下一次焦點變更的 `--sync`。
+每案都透過實際 client 逐鍵輸入，並切到 `keyboard-us` 重送負控制。
+
+預設 `desktop-safe` 批次有 76 案，涵蓋 GTK 3、GTK 4、Qt 6 的五種注音布局、候選
+鍵盤／滑鼠操作、關聯詞、模式、兩 App、編輯／密碼／唯讀欄與符號表。它刻意排除
+三個 Fcitx process-restart persistence 案、設定視窗 persistence 案，以及三個內含
+Fcitx restart 的 input-context recovery 案；承載桌面的 Fcitx 一旦被停止，launcher
+就會結束整個 session。runner 也會拒絕在 existing desktop 直接指定這七案。這些案例
+仍由 managed Xvfb／package gate 執行，日後完整登入桌面需以能重建 session 的外層
+orchestrator 驗證。
+
+指定不會重啟 Fcitx 的單一案例可用：
+
+```sh
+KEYKEY_E2E_CASES=T06-X11-GTK4-CANDIDATE-MOUSE \
+  Source/Loaders/Linux-IME/tools/manual-desktop/run-gnome-x11-e2e.sh
+```
+
+結果寫入 `out/e2e/ubuntu-24.04-gnome-x11-amd64/`，其中 `environment.txt` 固定記錄
+GNOME／Fcitx 版本、addon／panel 路徑、套件版本、addon SHA-256 與三個 host SHA-256。
+測試前的 KeyKey 設定與 active engine 會在成功或失敗後還原；不會停止桌面的 Fcitx。
+若 GNOME 已沒有 active window，入口會要求重啟這個隔離桌面，不以 `windowfocus`
+繞過 Mutter 的 active-window 規則。
+
 ## 排查與驗證順序
 
 1. 取得使用者的完整按鍵流程。區分文字晚提交、候選狀態晚清除、視窗已關閉但畫面
@@ -111,6 +152,16 @@ noVNC 1.3.0。三次 `dj941` → `Shift+1` 得到「快樂」；十次「ㄎ」�
 PNG；`out/` 不進版控，換機不可假設這些證據還存在。摘要與使用者確認已記入
 [測試計畫](../../../../LINUX_TEST_PLAN.md)。2026-09-14 使用者在瀏覽器端確認問題
 解決、試打成功；不再列成「待使用者確認」。
+
+2026-09-16 另以同一類獨立 GNOME Shell 46／Mutter／TigerVNC X11 session，對系統
+安裝的 `fcitx5-chichi77-keykey` 1.2.8 套件執行上述 desktop-safe 批次，GTK 3、GTK 4、
+Qt 6 合計 76/76 通過。這次涵蓋五布局、直／橫候選、真實滑鼠選字、關聯詞、模式、
+兩個同時存活 App、selection／密碼／唯讀及符號列表，每案皆有 exact App text 與
+`keyboard-us` 負控制；執行中的 Fcitx 5.1.7 maps 同時確認 KeyKey addon 與 Classic UI。
+Qt 6 runtime／Fcitx frontend 使用 Ubuntu 24.04 官方套件 payload；因本機自動行程無法
+輸入 sudo 密碼，此次解壓於忽略版控的 `out/` 使用，正式 release gate 仍須依上方指令
+正常安裝套件。七個會重啟承載行程的案例、完整登入／登出、畫面截圖 sweep、音訊、
+XWayland 與 native Wayland 仍未由這次結果取代。
 
 這是已通過人工試打的獨立 GNOME X11 桌面；完整 Ubuntu 登入、native Wayland、
 XWayland、不同 App、音訊與套件發布 gate 仍依原測試計畫驗收。

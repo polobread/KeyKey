@@ -22,14 +22,18 @@ RUN apt-get update \
         fcitx5 \
         fcitx5-config-qt \
         fcitx5-frontend-gtk3 \
+        fcitx5-frontend-gtk4 \
+        fcitx5-frontend-qt6 \
         fonts-wqy-zenhei \
         libgtk-3-dev \
+        libgtk-4-dev \
         netpbm \
         python3-pyatspi \
         x11-apps \
         x11-utils \
         xdotool \
         xvfb \
+        qt6-base-dev \
     && rm -rf /var/lib/apt/lists/*
 
 FROM x11-e2e AS package-build
@@ -57,9 +61,13 @@ RUN apt-get update \
         fcitx5 \
         fcitx5-config-qt \
         fcitx5-frontend-gtk3 \
+        fcitx5-frontend-gtk4 \
+        fcitx5-frontend-qt6 \
         fonts-wqy-zenhei \
         libglib2.0-bin \
         libgtk-3-0 \
+        libgtk-4-1 \
+        libqt6widgets6 \
         netpbm \
         python3-pyatspi \
         x11-apps \

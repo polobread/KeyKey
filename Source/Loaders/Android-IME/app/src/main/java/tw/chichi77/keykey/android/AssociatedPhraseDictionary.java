@@ -49,8 +49,10 @@ final class AssociatedPhraseDictionary {
     private static final String DISPLAY_NAMES_ASSET = "display-names.tsv";
     private static final String BASE_ASSET = "McBopomofo.occ";
     private static final String BASE_SOURCE = "McBopomofo";
+    private static final String INDEX_SUFFIX = ".kki";
 
     private final Map<String, List<String>> entries;
+    private final List<IndexedDictionary> indexedCollections;
 
     private AssociatedPhraseDictionary(Map<String, List<String>> entries) {
         LinkedHashMap<String, List<String>> frozen = new LinkedHashMap<>();
@@ -58,6 +60,12 @@ final class AssociatedPhraseDictionary {
             frozen.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         this.entries = Collections.unmodifiableMap(frozen);
+        indexedCollections = List.of();
+    }
+
+    private AssociatedPhraseDictionary(List<IndexedDictionary> indexedCollections) {
+        entries = Map.of();
+        this.indexedCollections = List.copyOf(indexedCollections);
     }
 
     static AssociatedPhraseDictionary empty() {
@@ -73,28 +81,15 @@ final class AssociatedPhraseDictionary {
         if (enabled.isEmpty()) return empty();
 
         List<CollectionInfo> collections = availableCollections(assets);
-        Set<String> baseExclusions = loadBaseExclusions(assets, collections);
-        LinkedHashMap<String, List<String>> merged = new LinkedHashMap<>();
-        LinkedHashMap<String, Set<String>> seen = new LinkedHashMap<>();
+        ArrayList<IndexedDictionary> indexes = new ArrayList<>();
         for (CollectionInfo collection : collections) {
             if (!enabled.contains(collection.source())) continue;
-            Map<String, List<String>> parsed;
             try (InputStream stream = assets.open(
-                    ASSET_DIRECTORY + "/" + collection.assetName())) {
-                parsed = parseCollection(stream,
-                        BASE_SOURCE.equals(collection.source()) ? baseExclusions : Set.of());
-            }
-            for (Map.Entry<String, List<String>> entry : parsed.entrySet()) {
-                List<String> values = merged.computeIfAbsent(
-                        entry.getKey(), ignored -> new ArrayList<>());
-                Set<String> unique = seen.computeIfAbsent(
-                        entry.getKey(), ignored -> new LinkedHashSet<>());
-                for (String suffix : entry.getValue()) {
-                    if (unique.add(suffix)) values.add(suffix);
-                }
+                    ASSET_DIRECTORY + "/" + collection.assetName() + INDEX_SUFFIX)) {
+                indexes.add(IndexedDictionary.load(stream));
             }
         }
-        return new AssociatedPhraseDictionary(merged);
+        return new AssociatedPhraseDictionary(indexes);
     }
 
     static List<CollectionInfo> availableCollections(AssetManager assets) throws IOException {
@@ -113,10 +108,13 @@ final class AssociatedPhraseDictionary {
                         displayNames.getOrDefault(BASE_SOURCE, BASE_SOURCE), name));
             } else if (name.startsWith("phrase.") && name.endsWith(".tsv")) {
                 String source = name.substring("phrase.".length(), name.length() - ".tsv".length());
-                try (InputStream stream = assets.open(ASSET_DIRECTORY + "/" + name)) {
-                    result.add(new CollectionInfo(
-                            source, displayNames.getOrDefault(source, readDisplayName(stream)), name));
+                String displayName = displayNames.get(source);
+                if (displayName == null) {
+                    try (InputStream stream = assets.open(ASSET_DIRECTORY + "/" + name)) {
+                        displayName = readDisplayName(stream);
+                    }
                 }
+                result.add(new CollectionInfo(source, displayName, name));
             }
         }
         result.sort(Comparator
@@ -126,10 +124,22 @@ final class AssociatedPhraseDictionary {
     }
 
     List<String> candidates(String headCharacter) {
-        return entries.getOrDefault(headCharacter, List.of());
+        if (indexedCollections.isEmpty()) return entries.getOrDefault(headCharacter, List.of());
+        LinkedHashSet<String> merged = new LinkedHashSet<>();
+        for (IndexedDictionary collection : indexedCollections) {
+            merged.addAll(collection.candidates(headCharacter));
+        }
+        return merged.isEmpty() ? List.of() : List.copyOf(merged);
     }
 
     int entryCount() {
+        if (!indexedCollections.isEmpty()) {
+            int count = 0;
+            for (IndexedDictionary collection : indexedCollections) {
+                count += collection.valueCount();
+            }
+            return count;
+        }
         int count = 0;
         for (List<String> values : entries.values()) count += values.size();
         return count;
@@ -185,26 +195,6 @@ final class AssociatedPhraseDictionary {
             result.put(entry.getKey(), List.copyOf(suffixes));
         }
         return Collections.unmodifiableMap(result);
-    }
-
-    private static Set<String> loadBaseExclusions(
-            AssetManager assets, List<CollectionInfo> collections) throws IOException {
-        LinkedHashSet<String> exclusions = new LinkedHashSet<>();
-        for (CollectionInfo collection : collections) {
-            if (!collection.assetName().startsWith("phrase.people-")) continue;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    assets.open(ASSET_DIRECTORY + "/" + collection.assetName()),
-                    StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] fields = line.split("\\t", 2);
-                    if (fields.length == 0) continue;
-                    String word = fields[0].trim();
-                    if (!word.isEmpty() && !"詞".equals(word)) exclusions.add(word);
-                }
-            }
-        }
-        return exclusions;
     }
 
     private static String readDisplayName(InputStream stream) throws IOException {

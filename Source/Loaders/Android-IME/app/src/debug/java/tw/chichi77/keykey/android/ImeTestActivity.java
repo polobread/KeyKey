@@ -143,14 +143,37 @@ public final class ImeTestActivity extends Activity {
             KeyPreviewSettings.setEnabled(this,
                     getIntent().getBooleanExtra("keyPreview", true));
         }
-        if (getIntent().hasExtra("hapticLevel")) {
-            HapticSettings.setLevel(this, getIntent().getIntExtra("hapticLevel", 0));
+        if (getIntent().hasExtra("hapticDurationMs")) {
+            HapticSettings.setDurationMs(this,
+                    getIntent().getIntExtra("hapticDurationMs", 0));
+        } else if (getIntent().hasExtra("hapticLevel")) {
+            HapticSettings.setDurationMs(this, HapticSettings.legacyDurationMsForLevel(
+                    getIntent().getIntExtra("hapticLevel", 0)));
+        }
+        if (getIntent().hasExtra("portraitHeightPercent")) {
+            KeyboardSizeSettings.setPortraitPercent(this,
+                    getIntent().getIntExtra("portraitHeightPercent", 100));
+        }
+        if (getIntent().hasExtra("landscapeHeightPercent")) {
+            KeyboardSizeSettings.setLandscapePercent(this,
+                    getIntent().getIntExtra("landscapeHeightPercent", 100));
         }
         String phrases = getIntent().getStringExtra("phrases");
         if ("none".equals(phrases)) {
             PhraseSettings.setEnabledCollections(this, java.util.Set.of());
         } else if ("base".equals(phrases)) {
             PhraseSettings.setEnabledCollections(this, PhraseSettings.baseCollectionOnly());
+        } else if ("all".equals(phrases)) {
+            java.util.LinkedHashSet<String> sources = new java.util.LinkedHashSet<>();
+            try {
+                for (AssociatedPhraseDictionary.CollectionInfo collection
+                        : AssociatedPhraseDictionary.availableCollections(getAssets())) {
+                    sources.add(collection.source());
+                }
+                PhraseSettings.setEnabledCollections(this, sources);
+            } catch (java.io.IOException ignored) {
+                // Leave the current selection intact when generated assets are unavailable.
+            }
         }
     }
 

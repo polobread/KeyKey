@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.compile.JavaCompile
+
 plugins {
     id("com.android.application")
 }
@@ -68,6 +70,7 @@ android {
     }
 
     sourceSets["main"].assets.directories.add("build/generated/bopomofoAssets")
+    sourceSets["main"].assets.directories.add("build/generated/indexedDictionaryAssets")
 }
 
 val generateBopomofoAssets by tasks.registering(Copy::class) {
@@ -94,21 +97,66 @@ val generateAssociatedPhraseAssets by tasks.registering(Sync::class) {
     into(generatedCollectionDirectory)
 }
 
+val compileDictionaryCompiler by tasks.registering(JavaCompile::class) {
+    source = fileTree("tools") { include("DictionaryCompiler.java") }
+    classpath = files()
+    destinationDirectory.set(layout.buildDirectory.dir("dictionaryCompiler/classes"))
+    options.release.set(17)
+}
+
+val generatedIndexedDictionaryDirectory =
+    layout.buildDirectory.dir("generated/indexedDictionaryAssets")
+
+val generateIndexedDictionaryAssets by tasks.registering(JavaExec::class) {
+    dependsOn(compileDictionaryCompiler)
+    classpath = files(compileDictionaryCompiler.flatMap { it.destinationDirectory })
+    mainClass.set("DictionaryCompiler")
+    args(
+        generatedIndexedDictionaryDirectory.get().asFile.absolutePath,
+        layout.projectDirectory.file("../../../DataTables/bpmf-ext.cin").asFile.absolutePath,
+        layout.projectDirectory.file("../../../DataTables/bpmf-punctuations.cin").asFile.absolutePath,
+        layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ").asFile.absolutePath,
+        categorizedCollectionDirectory.asFile.absolutePath
+    )
+    inputs.files(
+        layout.projectDirectory.file("../../../DataTables/bpmf-ext.cin"),
+        layout.projectDirectory.file("../../../DataTables/bpmf-punctuations.cin"),
+        layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ"),
+        categorizedCollectionDirectory.asFileTree.matching { include("phrase.*.tsv") }
+    )
+    outputs.dir(generatedIndexedDictionaryDirectory)
+}
+
 tasks.named("preBuild").configure {
     dependsOn(generateBopomofoAssets)
     dependsOn(generateAssociatedPhraseAssets)
+    dependsOn(generateIndexedDictionaryAssets)
 }
 
 tasks.withType<Test>().configureEach {
     dependsOn(generateBopomofoAssets)
     dependsOn(generateAssociatedPhraseAssets)
+    dependsOn(generateIndexedDictionaryAssets)
     systemProperty(
         "keykey.bopomofo.cin",
         layout.buildDirectory.file("generated/bopomofoAssets/bpmf-ext.cin").get().asFile.absolutePath
     )
     systemProperty(
+        "keykey.bopomofo.punctuation",
+        layout.buildDirectory.file("generated/bopomofoAssets/bpmf-punctuations.cin")
+            .get().asFile.absolutePath
+    )
+    systemProperty(
         "keykey.associated.collections",
         generatedCollectionDirectory.get().asFile.absolutePath
+    )
+    systemProperty(
+        "keykey.bopomofo.index",
+        generatedIndexedDictionaryDirectory.get().file("bpmf-index.kki").asFile.absolutePath
+    )
+    systemProperty(
+        "keykey.associated.indexes",
+        generatedIndexedDictionaryDirectory.get().dir("collections").asFile.absolutePath
     )
 }
 
