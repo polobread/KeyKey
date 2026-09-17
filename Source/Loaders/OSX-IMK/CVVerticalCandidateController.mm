@@ -6,23 +6,12 @@
 static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame,
 	NSSize unscaledSize)
 {
-	NSRect unscaledFrame = scaledFrame;
-	unscaledFrame.size = unscaledSize;
-	[window setFrame:unscaledFrame display:NO];
-
 	NSView *contentView = [window contentView];
-	[contentView setBoundsSize:unscaledSize];
-	NSArray *subviews = [contentView subviews];
-	NSMutableArray *subviewFrames = [NSMutableArray arrayWithCapacity:[subviews count]];
-	NSEnumerator *enumerator = [subviews objectEnumerator];
-	NSView *subview;
-	while (subview = [enumerator nextObject])
-		[subviewFrames addObject:[NSValue valueWithRect:[subview frame]]];
-
+	BOOL autoresizesSubviews = [contentView autoresizesSubviews];
+	[contentView setAutoresizesSubviews:NO];
 	[window setFrame:scaledFrame display:NO];
 	[contentView setBoundsSize:unscaledSize];
-	for (NSUInteger index = 0; index < [subviews count]; index++)
-		[[subviews objectAtIndex:index] setFrame:[[subviewFrames objectAtIndex:index] rectValue]];
+	[contentView setAutoresizesSubviews:autoresizesSubviews];
 	[window display];
 }
 
@@ -207,9 +196,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 
 	NSString *prompt = [NSString stringWithUTF8String:panel->prompt().c_str()];
 	[_promptTextField setStringValue:prompt];
-	float promptHeight = [_promptTextField frame].size.height;
-	NSRect newPromptRect = [[_promptTextField attributedStringValue] boundingRectWithSize:NSMakeSize(1600, promptHeight) options:NSStringDrawingUsesLineFragmentOrigin];
-	_width = newPromptRect.size.width + 10;
+	CGFloat promptWidth = ceil([[_promptTextField attributedStringValue] size].width);
 	 
     OVCandidateList* list = panel->candidateList();
     
@@ -236,8 +223,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 		}
 		[d setValue:i forKey:@"key"];
 
-		NSRect rect = [c boundingRectWithSize:NSMakeSize(1600, [_tableView rowHeight]) options:NSStringDrawingUsesLineFragmentOrigin];
-		float currentWidth = rect.size.width;
+		float currentWidth = ceil([c size].width);
 		if (currentWidth >= _width)
 			_width = currentWidth;
 
@@ -246,16 +232,45 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	[_tableView reloadData];
 
 
-	NSRect tableFrame = [_tableView frame];
-	tableFrame.size.width = 50 + _width;
-	tableFrame.size.height = ([_tableView rowHeight] + 2) * panel->candidatesPerPage();
-	if (!tableFrame.size.height) 
-		tableFrame.size.height = 200;
-	[_tableView setFrame:tableFrame];
-	[_tableView sizeToFit];
-	
+	CGFloat tableHeight = ([_tableView rowHeight] + 2) * panel->candidatesPerPage();
+	if (!tableHeight)
+		tableHeight = 200;
+
+	NSTableColumn *keyColumn = [_tableView tableColumnWithIdentifier:@"key"];
+	NSTableColumn *candidateColumn = [_tableView tableColumnWithIdentifier:@"candidate"];
+	CGFloat keyColumnWidth = 20.0;
+	CGFloat columnSpacing = [_tableView intercellSpacing].width;
+	CGFloat candidateColumnWidth = MAX(40.0, _width + 8.0);
+	CGFloat windowWidth = keyColumnWidth + columnSpacing + candidateColumnWidth + 4.0;
+	CGFloat promptLeading = pageCount > 1 ? 26.0 : 6.0;
+	if ([prompt length])
+		windowWidth = MAX(windowWidth, promptLeading + promptWidth + 10.0);
+
+	CGFloat tableWidth = windowWidth - 4.0;
+	[keyColumn setWidth:keyColumnWidth];
+	[candidateColumn setWidth:tableWidth - keyColumnWidth - columnSpacing];
+	[_scrollView setFrame:NSMakeRect(2.0, 20.0, tableWidth, tableHeight)];
+	[_tableView setFrame:NSMakeRect(0.0, 0.0, tableWidth, tableHeight)];
+
+	CGFloat windowHeight = tableHeight + 40.0;
+	NSRect promptFrame = [_promptTextField frame];
+	promptFrame.origin = NSMakePoint(promptLeading, windowHeight - promptFrame.size.height - 6.0);
+	promptFrame.size.width = windowWidth - promptLeading - 6.0;
+	[_promptTextField setFrame:promptFrame];
+
+	NSRect previousFrame = [_previousButton frame];
+	previousFrame.origin = NSMakePoint(4.0, windowHeight - previousFrame.size.height);
+	[_previousButton setFrame:previousFrame];
+	NSRect nextFrame = [_nextButton frame];
+	nextFrame.origin = NSMakePoint(4.0, -1.0);
+	[_nextButton setFrame:nextFrame];
+	NSRect pageFrame = [_pageIndicatorTextField frame];
+	pageFrame.origin.x = 24.0;
+	pageFrame.size.width = windowWidth - 30.0;
+	[_pageIndicatorTextField setFrame:pageFrame];
+
     NSRect windowFrame = [[self window] frame];
-	NSSize unscaledWindowSize = NSMakeSize(tableFrame.size.width, tableFrame.size.height + 40);
+	NSSize unscaledWindowSize = NSMakeSize(windowWidth, windowHeight);
 	windowFrame.size = NSMakeSize(unscaledWindowSize.width * _candidateWindowScale,
 		unscaledWindowSize.height * _candidateWindowScale);
 	windowFrame.origin.x = newPosition.x;

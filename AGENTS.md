@@ -769,6 +769,13 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   調整 window/content bounds 後，AppKit 可能保留 `NSClipView` offset，所以每次更新候選頁
   與 selection 後都要將 clip view 回到 `NSZeroPoint`，否則前幾列會跑到上緣之外、底部留下
   空白。候選窗沒有語系相關布局，英文版不會造成這個問題。
+- **macOS 直式候選的提示列與候選內容要分開計算寬度**：候選欄只需按鍵欄、最長候選、
+  cell padding 與外框；`SHIFT + 數字鍵` 等 prompt 另以其文字寬度和翻頁按鈕空間決定
+  minimum window width。不可先把 prompt 寫進候選 `_width` 再固定加 50 點，也不可交給
+  `NSTableView sizeToFit` 重新分配欄寬，否則外框留下大塊空白但提示仍可能被截斷。
+  自訂比例改變 window frame 時要暫停 content view 的 subview autoresizing，並先以未縮放
+  bounds 明確排好 scroll view、table、prompt 與翻頁控制，避免 AppKit 依前一次實體 frame
+  累積縮窄子視圖。
 - **macOS 輸入法浮動視窗不可蓋過系統安全 UI 或搶焦點**：候選窗、提示泡泡與一般
   浮動窗使用 `NSStatusWindowLevel`，並加入所有 Space／全螢幕輔助行為；只有需要互動的
   字典視窗可成為 key window。候選窗顯示用 `orderFront:`，不要改回
@@ -1657,6 +1664,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       同時在直式候選每次更新後重設 scroll origin，避免放大候選窗時第 1、2 列移出可視範圍。
       三份 XIB 已通過 `ibtool --compile`，並以 Xcode 27／macOS 27 SDK 完成 arm64 Release
       target 建置。
+- [x] 2026-09-17 重作 macOS 直式候選的寬度與子視圖布局：候選內容和 prompt 分別量測，
+      明確配置兩欄、scroll view、提示列及翻頁控制，避免短候選仍保留多餘寬度以及
+      `SHIFT + 數字鍵` 被截斷；已完成 arm64 Release target 建置。
 - [ ] 在實體 Mac 截圖確認 Preferences 三種語系新增的候選窗比例列不再覆蓋模組說明，
       以及直式／橫式候選窗在「跟隨顯示器、75%、90%、100%、200%、350%」下的字體、
       按鍵角標、翻頁控制與點選
