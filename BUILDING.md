@@ -269,8 +269,8 @@ cd Source\Loaders\Android-IME
 
 建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
 `bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫，另固定
-加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。Android 仍直接把這些
-TSV 複製為 generated assets，不另轉為專用二進位格式。
+加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會從 CIN、基本詞庫與
+29 個 TSV 產生 `.kki` 索引；Android 執行時讀取索引，關聯詞索引在背景載入。
 Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
@@ -614,8 +614,9 @@ cd Source\Loaders\Android-IME
 The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
 `Source/DataTables` directory and adds the base associated-phrase collection
 from `DataSource/McBopomofo` plus all 29 public categorized collections from
-`DataSource/chichi77Collection`. Android copies the TSV files as generated assets
-and does not convert them to a custom binary format. The debug APK is written to
+`DataSource/chichi77Collection`. The build compiles the CIN and phrase sources into
+`.kki` indexes; Android reads those indexes at runtime and loads associated-phrase
+indexes in the background. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.

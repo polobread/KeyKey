@@ -113,6 +113,8 @@ final class BopomofoKeyboardView extends View {
     private boolean downOnCandidate;
     private boolean keyPreviewEnabled = true;
     private Hit previewHit;
+    private int portraitHeightPercent = KeyboardSizeSettings.DEFAULT_PERCENT;
+    private int landscapeHeightPercent = KeyboardSizeSettings.DEFAULT_PERCENT;
 
     BopomofoKeyboardView(Context context) {
         super(context);
@@ -159,6 +161,16 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
+    void setTouchKeyboardHeightPercents(int portraitPercent, int landscapePercent) {
+        int nextPortrait = KeyboardSizeSettings.clampPercent(portraitPercent);
+        int nextLandscape = KeyboardSizeSettings.clampPercent(landscapePercent);
+        if (portraitHeightPercent == nextPortrait
+                && landscapeHeightPercent == nextLandscape) return;
+        portraitHeightPercent = nextPortrait;
+        landscapeHeightPercent = nextLandscape;
+        if (isTouchMode()) requestLayout();
+    }
+
     void setState(List<String> candidates, String reading, BopomofoEngine.InputMode inputMode,
                   boolean shifted, boolean temporaryEnglish, boolean hardwareFullWidth,
                   boolean supportPromptVisible, int page, int pageCount,
@@ -185,8 +197,10 @@ final class BopomofoKeyboardView extends View {
         int desiredHeight = switch (mode) {
             case HARDWARE_FLOATING -> dp(1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP) + hardwareSystemAreaHeight();
-            case LANDSCAPE -> dp(LANDSCAPE_CONTENT_HEIGHT_DP + LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
-            case PORTRAIT -> dp(PORTRAIT_CONTENT_HEIGHT_DP + PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
+            case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
+                    landscapeHeightPercent) + dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
+            case PORTRAIT -> scaledContentHeight(PORTRAIT_CONTENT_HEIGHT_DP,
+                    portraitHeightPercent) + dp(PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
         };
         int width = MeasureSpec.getSize(widthMeasureSpec);
         setMeasuredDimension(resolveSize(width, widthMeasureSpec),
@@ -746,5 +760,9 @@ final class BopomofoKeyboardView extends View {
                 == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
         return dp(landscape ? HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP
                 : HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
+    }
+
+    private int scaledContentHeight(int baseDp, int percent) {
+        return Math.round(dp(baseDp) * (percent / 100f));
     }
 }

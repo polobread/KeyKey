@@ -11,9 +11,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 final class CinDictionary {
     private final Map<String, List<String>> entries;
+    private final IndexedDictionary indexedEntries;
 
     private CinDictionary(Map<String, List<String>> entries) {
         Map<String, List<String>> frozen = new LinkedHashMap<>();
@@ -21,6 +23,12 @@ final class CinDictionary {
             frozen.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         this.entries = Collections.unmodifiableMap(frozen);
+        indexedEntries = null;
+    }
+
+    private CinDictionary(IndexedDictionary indexedEntries) {
+        entries = Map.of();
+        this.indexedEntries = indexedEntries;
     }
 
     static CinDictionary empty() {
@@ -33,14 +41,24 @@ final class CinDictionary {
         return new CinDictionary(values);
     }
 
+    static CinDictionary loadIndexed(InputStream stream) throws IOException {
+        return new CinDictionary(IndexedDictionary.load(stream));
+    }
+
     List<String> candidates(String query) {
-        return entries.getOrDefault(query, List.of());
+        return indexedEntries == null
+                ? entries.getOrDefault(query, List.of()) : indexedEntries.candidates(query);
     }
 
     int entryCount() {
+        if (indexedEntries != null) return indexedEntries.valueCount();
         int count = 0;
         for (List<String> values : entries.values()) count += values.size();
         return count;
+    }
+
+    Set<String> keys() {
+        return indexedEntries == null ? entries.keySet() : indexedEntries.keys();
     }
 
     private static void parse(InputStream stream, Map<String, List<String>> output) throws IOException {

@@ -2,7 +2,6 @@ package tw.chichi77.keykey.android;
 
 import android.app.Activity;
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -71,13 +70,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         content.addView(value, matchWrap(dp(0), dp(12)));
 
         SeekBar duration = new SeekBar(this);
-        duration.setMax(HapticSettings.MAX_LEVEL);
-        duration.setProgress(HapticSettings.level(this));
-        GradientDrawable tick = new GradientDrawable();
-        tick.setShape(GradientDrawable.OVAL);
-        tick.setColor(getColor(R.color.keykey_blue_dark));
-        tick.setSize(dp(4), dp(4));
-        duration.setTickMark(tick);
+        duration.setMax(HapticSettings.MAX_DURATION_MS);
+        duration.setProgress(HapticSettings.durationMs(this));
         content.addView(duration, matchWrap(dp(0), dp(4)));
 
         LinearLayout endpoints = new LinearLayout(this);
@@ -94,6 +88,24 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         description.setTextColor(Color.GRAY);
         description.setLineSpacing(0, 1.2f);
         content.addView(description, matchWrap(dp(0), dp(16)));
+
+        TextView keyboardSizeTitle = new TextView(this);
+        keyboardSizeTitle.setText(R.string.keyboard_size_title);
+        keyboardSizeTitle.setTextSize(18);
+        keyboardSizeTitle.setTextColor(Color.DKGRAY);
+        content.addView(keyboardSizeTitle, matchWrap(dp(0), dp(8)));
+
+        TextView keyboardSizeDescription = new TextView(this);
+        keyboardSizeDescription.setText(R.string.keyboard_size_description);
+        keyboardSizeDescription.setTextSize(14);
+        keyboardSizeDescription.setTextColor(Color.GRAY);
+        keyboardSizeDescription.setLineSpacing(0, 1.2f);
+        content.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
+
+        addKeyboardSizeControl(content, R.string.keyboard_size_portrait,
+                KeyboardSizeSettings.portraitPercent(this), true);
+        addKeyboardSizeControl(content, R.string.keyboard_size_landscape,
+                KeyboardSizeSettings.landscapePercent(this), false);
 
         CheckBox keyPreview = new CheckBox(this);
         keyPreview.setText(R.string.key_preview_enabled);
@@ -256,12 +268,12 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 PhraseSettings.baseCollectionOnly()));
         selectNone.setOnClickListener(view -> setAllCollections(false));
 
-        updateValue(value, duration.getProgress());
+        updateHapticValue(value, duration.getProgress());
         duration.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                HapticSettings.setLevel(SettingsActivity.this, progress);
-                updateValue(value, progress);
+                HapticSettings.setDurationMs(SettingsActivity.this, progress);
+                updateHapticValue(value, progress);
             }
 
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
@@ -399,14 +411,61 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         return button;
     }
 
-    private void updateValue(TextView view, int level) {
-        int durationMs = HapticSettings.durationMsForLevel(level);
+    private void addKeyboardSizeControl(LinearLayout content, int labelResource,
+                                        int currentPercent, boolean portrait) {
+        TextView label = new TextView(this);
+        label.setText(labelResource);
+        label.setTextSize(16);
+        label.setTextColor(Color.DKGRAY);
+        content.addView(label, matchWrap(dp(0), dp(4)));
+
+        TextView value = new TextView(this);
+        value.setTextSize(16);
+        value.setTextColor(getColor(R.color.keykey_blue_dark));
+        value.setGravity(Gravity.CENTER);
+        updateKeyboardSizeValue(value, currentPercent);
+        content.addView(value, matchWrap(dp(0), dp(4)));
+
+        SeekBar size = new SeekBar(this);
+        size.setMax(KeyboardSizeSettings.MAX_PERCENT - KeyboardSizeSettings.MIN_PERCENT);
+        size.setProgress(currentPercent - KeyboardSizeSettings.MIN_PERCENT);
+        content.addView(size, matchWrap(dp(0), dp(2)));
+
+        LinearLayout endpoints = new LinearLayout(this);
+        endpoints.setOrientation(LinearLayout.HORIZONTAL);
+        TextView minimum = endpointLabel(R.string.keyboard_size_minimum, Gravity.START);
+        TextView maximum = endpointLabel(R.string.keyboard_size_maximum, Gravity.END);
+        endpoints.addView(minimum, weightedWrap());
+        endpoints.addView(maximum, weightedWrap());
+        content.addView(endpoints, matchWrap(dp(0), dp(12)));
+
+        size.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int percent = KeyboardSizeSettings.MIN_PERCENT + progress;
+                if (portrait) {
+                    KeyboardSizeSettings.setPortraitPercent(SettingsActivity.this, percent);
+                } else {
+                    KeyboardSizeSettings.setLandscapePercent(SettingsActivity.this, percent);
+                }
+                updateKeyboardSizeValue(value, percent);
+            }
+
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+    }
+
+    private void updateKeyboardSizeValue(TextView view, int percent) {
+        view.setText(getString(R.string.keyboard_size_value, percent));
+    }
+
+    private void updateHapticValue(TextView view, int durationMs) {
         if (durationMs == 0) {
             view.setText(R.string.haptic_value_off);
         } else {
-            String format = durationMs % 100 == 0 ? "%.1f" : "%.2f";
             view.setText(getString(R.string.haptic_value_seconds,
-                    String.format(Locale.TAIWAN, format, durationMs / 1000f)));
+                    String.format(Locale.TAIWAN, "%.3f", durationMs / 1000f), durationMs));
         }
     }
 

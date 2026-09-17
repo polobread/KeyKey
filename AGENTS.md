@@ -292,7 +292,8 @@ cd Source\Loaders\Android-IME
   從共用 `Source/DataTables` 複製，不要在 app 內另存一份。
 - 關聯詞由 `generateAssociatedPhraseAssets` 從 `DataSource/McBopomofo/phrase.occ`
   與公開的 `DataSource/chichi77Collection/phrase.*.tsv` 複製到 generated assets；
-  Android 仍在執行時解析文字資產，不另轉為專用二進位格式。
+  `generateIndexedDictionaryAssets` 再把 CIN 與關聯詞編成 `.kki`。執行時直接讀索引，
+  關聯詞索引由單一背景執行緒載入；原始文字檔才是資料來源，不要手改 generated 索引。
 
 ### iOS
 
@@ -823,9 +824,15 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   view 高度。
 - **Android 觸控鍵盤是 11 欄注音版面**：直橫式都由候選列、四排 11 個等寬輸入鍵與
   一排功能鍵組成；四排依序結束於 `ㄦ`、`@`、Emoji、Shift。功能列的長空白是刻意
-  的唯一寬鍵。注音鍵必須同時顯示注音與實體鍵位（如 `ㄅ／1`、`ㄉ／2`）。橫式內容
-  仍固定 155dp，六排使用橫式小字級，不要恢復舊的左右分割候選。左下模式鍵隨目前
-  模式分別顯示「英/數」、「數/ㄅ」、「ㄅ/英」，不要改回「中」或固定「中/英/數」。
+  的唯一寬鍵。注音鍵必須同時顯示注音與實體鍵位（如 `ㄅ／1`、`ㄉ／2`）。100% 時
+  橫式內容為 155dp；直式與橫式可各自調為 50%–200%，但 40dp／35dp 系統區固定不縮放，
+  實體鍵盤候選列與浮窗也不套用此比例。六排使用橫式小字級，不要恢復舊的左右分割候選。
+  左下模式鍵隨目前模式分別顯示「英/數」、「數/ㄅ」、「ㄅ/英」，不要改回「中」或固定
+  「中/英/數」。
+- **Android 字典索引由文字來源產生**：`app/tools/DictionaryCompiler.java` 會產生 `KKI1`
+  格式；core 在 IME 建立時讀索引，關聯詞索引在背景載入並於查詢時才解碼候選。
+  修改解析、過濾、排序或人名 exclusion 時，必須同步更新 compiler 及逐項一致性測試；
+  不可提交 `app/build/generated` 內容或把 `.kki` 當成手工資料來源。
 - **Android 欄位模式由 App 的 `EditorInfo` 決定**：`inputType` 的文字／Email／URI／
   password／phone／number（含 decimal、signed）／datetime 會轉成 `InputFieldPolicy`。
   一般、姓名、地址、搜尋與長文字保留注音；Email、URL、ASCII／password 只留英文與
@@ -1758,6 +1765,17 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Android
 
+- [x] 2026-09-17 已將注音字表與 30 個關聯詞庫改為建置時產生 `.kki` 索引；core 不再於
+      IME 啟動時解析 CIN，關聯詞改用低優先序背景載入及按鍵延遲解碼。另加入直式／橫式
+      各自 50%–200% 的虛擬鍵盤高度、0–100ms 每 1ms 的震動設定與舊震動設定遷移；
+      JVM 測試會逐項比對原始字典與產生索引。`lintDebug testDebugUnitTest assembleDebug`
+      已通過。API 26 `Medium_Phone` 的單次 cold-process smoke 中，`ime set` 在詞庫全關為
+      0.11 秒、30 庫全開為 0.09 秒，全開後可輸入「今」並顯示關聯候選，crash buffer 為空；
+      API 35 `Medium_Tablet` 已目視橫式 75%／150%、直式 150%，API 26 實體候選列也未被
+      虛擬鍵盤比例改變。這些是抽樣 smoke，不是 Pixel C 實機或下列六台 AVD 完整矩陣。
+- [ ] 在 Pixel C／Android 8 分別以詞庫全部啟用與全部關閉量測冷啟動及再次叫出鍵盤時間，
+      確認沒有原本約 10 秒與 1–3 秒的等待；再以 1、5、10ms 比對 Gboard 短震動手感，並
+      目視確認直式／橫式 50%、100%、200% 與實體候選窗不受比例影響。
 - [x] Android 欄位與 Enter action 的 JVM 策略測試已加入，並於 2026-08-30 通過
       `lintDebug testDebugUnitTest assembleDebug`。
 - [ ] 在 Android 實機依序測一般、Email、URL、電話、整數、小數、日期時間、密碼、姓名、

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class BopomofoImeService extends InputMethodService
         implements BopomofoKeyboardView.Listener, FloatingCandidateWindow.Listener,
@@ -29,6 +31,8 @@ public final class BopomofoImeService extends InputMethodService
     private FloatingCandidateWindow floatingCandidateWindow;
     private Vibrator vibrator;
     private Set<String> loadedPhraseCollections;
+    private Set<String> pendingPhraseCollections;
+    private volatile int phraseLoadGeneration;
     private boolean hardwareKeyboard;
     private boolean floatingCandidatesEnabled;
     private boolean floatingCandidateWindowAvailable = true;
@@ -38,6 +42,11 @@ public final class BopomofoImeService extends InputMethodService
     private final Set<Integer> pressedHardwareShortcutKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedCandidateKeys = new LinkedHashSet<>();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final ExecutorService dictionaryLoader = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "KeyKey dictionary loader");
+        thread.setPriority(Thread.NORM_PRIORITY - 1);
+        return thread;
+    });
     private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
     private int lastSelectionStart = -1;
     private int lastSelectionEnd = -1;
@@ -49,15 +58,18 @@ public final class BopomofoImeService extends InputMethodService
     public void onCreate() {
         super.onCreate();
         CinDictionary dictionary;
-        try {
-            InputStream bopomofo = getAssets().open("bpmf-ext.cin");
-            InputStream punctuation = getAssets().open("bpmf-punctuations.cin");
-            dictionary = CinDictionary.load(bopomofo, punctuation);
+        try (InputStream index = getAssets().open("bpmf-index.kki")) {
+            dictionary = CinDictionary.loadIndexed(index);
         } catch (IOException error) {
-            dictionary = CinDictionary.empty();
+            try (InputStream bopomofo = getAssets().open("bpmf-ext.cin");
+                 InputStream punctuation = getAssets().open("bpmf-punctuations.cin")) {
+                dictionary = CinDictionary.load(bopomofo, punctuation);
+            } catch (IOException fallbackError) {
+                dictionary = CinDictionary.empty();
+            }
         }
         engine = new BopomofoEngine(dictionary);
-        reloadPhraseDictionary();
+        schedulePhraseDictionaryReload();
         vibrator = getSystemService(Vibrator.class);
         CandidateWindowSettings.preferences(this)
                 .registerOnSharedPreferenceChangeListener(this);
@@ -103,7 +115,7 @@ public final class BopomofoImeService extends InputMethodService
         lastSelectionStart = attribute == null ? -1 : attribute.initialSelStart;
         lastSelectionEnd = attribute == null ? -1 : attribute.initialSelEnd;
         cancelExpectedSelectionUpdate();
-        reloadPhraseDictionary();
+        schedulePhraseDictionaryReload();
         InputFieldPolicy nextPolicy = InputFieldPolicy.from(attribute);
         boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
         fieldPolicy = nextPolicy;
@@ -123,7 +135,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
-        reloadPhraseDictionary();
+        schedulePhraseDictionaryReload();
         InputFieldPolicy nextPolicy = InputFieldPolicy.from(info);
         boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
         fieldPolicy = nextPolicy;
@@ -162,6 +174,8 @@ public final class BopomofoImeService extends InputMethodService
                 .unregisterOnSharedPreferenceChangeListener(this);
         SupporterState.preferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
+        phraseLoadGeneration++;
+        dictionaryLoader.shutdownNow();
         mainHandler.removeCallbacksAndMessages(null);
         hideFloatingCandidates();
         super.onDestroy();
@@ -224,6 +238,14 @@ public final class BopomofoImeService extends InputMethodService
         }
         if (CandidateColorSettings.KEY_COLOR.equals(key)) {
             refreshKeyboard();
+            return;
+        }
+        if (PhraseSettings.KEY_ENABLED_COLLECTIONS.equals(key)) {
+            schedulePhraseDictionaryReload();
+            return;
+        }
+        if (KeyboardSizeSettings.isSizeKey(key)) {
+            updateKeyboardSize();
             return;
         }
         if (!CandidateWindowSettings.KEY_FLOATING_ENABLED.equals(key)
@@ -464,6 +486,7 @@ public final class BopomofoImeService extends InputMethodService
     private void refreshKeyboard() {
         if (keyboardView == null || engine == null) return;
         keyboardView.setKeyPreviewEnabled(KeyPreviewSettings.enabled(this));
+        updateKeyboardSize();
         CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(this);
         keyboardView.setCandidateHighlightColors(
                 CandidateColorSettings.backgroundColor(candidateColor),
@@ -481,18 +504,46 @@ public final class BopomofoImeService extends InputMethodService
         }
     }
 
-    private void reloadPhraseDictionary() {
-        if (engine == null) return;
+    private void schedulePhraseDictionaryReload() {
+        if (engine == null || dictionaryLoader.isShutdown()) return;
         Set<String> enabled = new LinkedHashSet<>(PhraseSettings.enabledCollections(this));
-        if (enabled.equals(loadedPhraseCollections)) return;
-        AssociatedPhraseDictionary dictionary;
-        try {
-            dictionary = AssociatedPhraseDictionary.load(getAssets(), enabled);
-        } catch (IOException error) {
-            dictionary = AssociatedPhraseDictionary.empty();
+        if (enabled.equals(loadedPhraseCollections)) {
+            if (pendingPhraseCollections != null
+                    && !enabled.equals(pendingPhraseCollections)) {
+                phraseLoadGeneration++;
+                pendingPhraseCollections = null;
+            }
+            return;
         }
-        engine.setAssociatedPhraseDictionary(dictionary);
-        loadedPhraseCollections = enabled;
+        if (enabled.equals(pendingPhraseCollections)) {
+            return;
+        }
+        pendingPhraseCollections = Set.copyOf(enabled);
+        int generation = ++phraseLoadGeneration;
+        dictionaryLoader.execute(() -> {
+            if (generation != phraseLoadGeneration) return;
+            AssociatedPhraseDictionary dictionary;
+            try {
+                dictionary = AssociatedPhraseDictionary.load(getAssets(), enabled);
+            } catch (IOException error) {
+                dictionary = AssociatedPhraseDictionary.empty();
+            }
+            AssociatedPhraseDictionary loadedDictionary = dictionary;
+            mainHandler.post(() -> {
+                if (generation != phraseLoadGeneration || engine == null) return;
+                engine.setAssociatedPhraseDictionary(loadedDictionary);
+                loadedPhraseCollections = Set.copyOf(enabled);
+                pendingPhraseCollections = null;
+                refreshKeyboard();
+            });
+        });
+    }
+
+    private void updateKeyboardSize() {
+        if (keyboardView == null) return;
+        keyboardView.setTouchKeyboardHeightPercents(
+                KeyboardSizeSettings.portraitPercent(this),
+                KeyboardSizeSettings.landscapePercent(this));
     }
 
     private void updateKeyboardMode() {
