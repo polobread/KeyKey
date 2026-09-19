@@ -142,11 +142,19 @@ data and Fcitx 5 components; they are development artifacts, not a complete
 complete feature-parity claim; the other two paths are retained extension
 features rather than Windows-parity blockers.
 
-An Ubuntu 24.04.5 GNOME Wayland KVM guest now passes five native Wayland T01
-typing smokes across GTK 3, GTK 4 and Qt 6, including the default GTK Wayland
-input path and a keyboard-us negative control. See
-[the VM guide](docs/gnome-wayland-vm.md); this does not complete the broader
-Wayland or XWayland acceptance matrix.
+An Ubuntu 24.04.5 GNOME Wayland KVM guest now passes 20 typing and pointer
+cases across eight GTK 3/GTK 4/Qt 6 native Wayland and XWayland paths (160/160), each
+with a keyboard-us literal negative control. A separate real-application runner
+passes gedit in four paths and GNOME Text Editor with direct Fcitx Wayland and
+XWayland; the latter's two GTK Wayland IM paths currently report Fcitx
+`status=0` and an empty active engine while the document is focused. In this
+GNOME 46 guest, launch that editor with
+`GTK_IM_MODULE=fcitx` to use the verified native Wayland path. See
+[the VM guide](docs/gnome-wayland-vm.md). These results do
+not complete the full desktop, browser, visual or release acceptance matrix.
+The VM also passes 16/16 two-field focus phases; direct Fcitx paths commit raw
+preedit on blur, while the two GTK native Wayland paths with the module variable
+unset clear it. Both outcomes are recorded as a platform integration difference.
 
 Current feature evidence is tracked in [`docs/parity.md`](docs/parity.md). The
 compatibility inventory is machine-readable in
@@ -331,8 +339,8 @@ the named build volumes, so a later `up` can continue incrementally.
   `tools/check-wsl-vm-host.sh` from a new, normal WSL shell. It checks the KVM
   API, OVMF files, and a short QEMU startup with KVM acceleration. A restricted
   process may hide `/dev/kvm`; retry the check in a normal WSL shell before
-  changing the host configuration. The reproducible GNOME VM and five native
-  Wayland T01 typing smokes are documented in
+  changing the host configuration. The reproducible GNOME VM, typing matrix
+  and real-application checks are documented in
   [gnome-wayland-vm.md](docs/gnome-wayland-vm.md). WSLg GUI apps do not
   constitute a full GNOME desktop session.
 

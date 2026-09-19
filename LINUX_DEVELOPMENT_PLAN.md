@@ -6,7 +6,11 @@
 L3 X11/GTK 3、GTK 4、Qt 6 各自適用的第一階段完整真實輸入矩陣與
 Ubuntu 22.04／24.04 開發用 Debian 套件；Ubuntu 24.04 的隔離 GNOME X11 session
 另已通過 76 個不重啟桌面 Fcitx 的 GTK 3／GTK 4／Qt 6 真實輸入案例。尚未完成
-XWayland／native Wayland、完整登入生命週期、完整視窗、IBus 或正式發布套件。
+完整登入生命週期、完整視窗、IBus 或正式發布套件。2026-09-20 的 GNOME Wayland
+KVM guest 已以 20 案 × 8 條 native Wayland／XWayland 的逐鍵與滑鼠矩陣通過
+160/160；真實 gedit 四條路徑通過，GNOME Text Editor 的直接 Fcitx
+Wayland／XWayland 通過，
+但另兩條 GTK Wayland IM 路徑無 active input context，仍須處理。
 
 盤點日期：2026-09-12；原始碼基線：`13696ef`；產品版號來源：`README.md` 標題。
 
@@ -465,11 +469,23 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
   確認載入系統安裝的 KeyKey addon、Wayland 與 IBus frontend；QMP 真實鍵盤
   注入在 GTK3、GTK4、Qt6 原生 Wayland 各完成 T01，GTK3／GTK4 另在未設
   `GTK_IM_MODULE` 下通過，同樣包含 preedit／「中」／英文負控制，合計 5/5。
+  後續擴成 20 案 × 八條 toolkit/backend 路徑，完整一次執行 160/160 通過，
+  加入五布局、候選直／橫鍵盤導覽、第二列真滑鼠點擊與畫面清除、關聯詞、
+  全形／簡體、快捷鍵與符號表；
+  各案都有 `keyboard-us` literal 負控制。真實 gedit 四條路徑及 GNOME Text
+  Editor 直接 Fcitx Wayland／XWayland 路徑通過；Text Editor 在未設
+  `GTK_IM_MODULE` 及明設 `wayland` 時均沒有 active input context，不能以
+  synthetic GTK4 host 的 bridge 成功取代真 App 結論。GDM display-manager
+  restart 後新 session 的 T01／T06 滑鼠 16/16 通過。
+  同 guest 的 T10 兩欄焦點正負控制 16/16 通過；六條直接 Fcitx 路徑
+  失焦會提交原始「ㄓㄨㄥ」，兩條 GTK 原生未設 `GTK_IM_MODULE` 路徑則清除
+  preedit。這是觀測到的平台路徑差異，不能寫成 Windows focus-out parity
+  已完成；兩個同時存活 App 與 recovery 仍待驗收。
   最小桌面套件選錯 Netplan renderer 的 guest 重啟故障已修正；VM 停止後
   重新啟動，SSH、Wayland login、Fcitx addon 與五案再次恢復／全過。
   重建流程見 `Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md`。受限行程的
   `nodev` `/dev` 與 QMP socket 權限不能用來判定一般 WSL host 能力；
-  popup/focus 完整矩陣、XWayland 與 hosted runner 仍待驗證。
+  popup 邊界／多螢幕、focus／多 App 完整矩陣、瀏覽器與 hosted runner 仍待驗證。
 - Nested compositor 可先加速開發，但只有證明相同 protocol／panel／focus 路徑時，
   才能取代相應項目；Weston headless 不能代替 GNOME 或 Plasma 驗收。
 - 若 hosted runners 無法可靠完成正式矩陣，記錄具體失敗及嘗試過的方案，向使用者

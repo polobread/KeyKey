@@ -24,8 +24,12 @@ GTK 4 與 Qt 6 跑過各自適用的完整第一階段真實輸入矩陣，
 Ubuntu 22.04／24.04
 Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基線已通過，
 隔離 GNOME X11 的 76 案 desktop-safe gate 亦已通過；2026-09-20
-完整 GNOME Wayland KVM guest 另通過五個 GTK3／GTK4／Qt6 T01 smoke，
-候選窗亦在畫面上可見。XWayland、完整 Wayland／App／popup 矩陣與重登仍未跑。
+完整 GNOME Wayland KVM guest 另以 20 案 × 八條 GTK3／GTK4／Qt6 native
+Wayland／XWayland 的逐鍵與滑鼠矩陣通過 160/160；真實 gedit 四條路徑及 GNOME Text Editor
+的直接 Fcitx Wayland／XWayland 通過，Text Editor 另兩條 GTK Wayland IM 路徑
+沒有 active input context。T10 兩欄焦點的 16/16 正負階段另量到直接 Fcitx
+失焦提交原始注音、GTK 預設 Wayland 路徑清除 preedit 的差異。完整 App／popup／
+多螢幕與明確登出登入仍未跑。
 版號更新與這些 local
 測試都不代表 Linux 已可發布。
 **主要支援／最完整測試環境是 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）**；
@@ -68,8 +72,11 @@ Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基
   由 `loginctl` 確認為 Wayland，Fcitx maps 同時載入本專案 addon、Wayland 與
   IBus frontend。QEMU 鍵盤注入的 GTK3／GTK4／Qt6 原生 Wayland T01 smoke，
   加上 GTK3／GTK4 未設 `GTK_IM_MODULE` 路徑，共 5/5 通過三段 preedit、
-  「中」提交及 `keyboard-us` literal 負控制。完整 XWayland、popup 視覺與
-  T01–T12 桌面矩陣仍待驗收。
+  「中」提交及 `keyboard-us` literal 負控制。後續擴充為 20 案 × 八條
+  native Wayland／XWayland 路徑，包含五布局、候選第二列真滑鼠點選及點選後
+  畫面清除、關聯詞、模式、全形、簡體、快捷鍵與符號表；guest 的
+  `systemctl restart gdm3` 後，新 session 的 T01／T06 滑鼠 16/16 通過。
+  仍須完整 popup 邊界、多 App、瀏覽器與明確登出登入驗收。
   後續從正常 WSL shell 執行
   `Source/Loaders/Linux-IME/tools/check-wsl-vm-host.sh` 可重驗前置條件；VM
   建立、安裝與 smoke 步驟見 `docs/gnome-wayland-vm.md`。
@@ -358,13 +365,41 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `wsl.exe --version`；需要 KVM 的開發指令要在能存取 host 裝置的行程執行。
   不要因此重裝 WSL、改 Docker socket mode 或覆寫 `.wslconfig`。
   WSLg 只提供 GUI App 整合，不是完整 Ubuntu Desktop session；目前 KVM guest
-  的五個原生 Wayland T01 smoke 也不能代替完整 GNOME popup／App／發布驗收。
+  已通過的 160 組逐鍵／滑鼠矩陣也不能代替完整 GNOME popup／App／發布驗收。
   受限行程也可能拒絕連接 `out/gnome-vm/qmp.sock`，一般 WSL shell 則可；
   讓測試行程存取該本機 socket，不需修改 QEMU 或 guest 權限。
   2026-09-20 的 GTK3 Wayland 候選截圖中，候選窗位於欄位下方且九列可見；
   GNOME 同時顯示 Fcitx「Wayland Diagnose」通知，建議安裝 Input Method
   Panel GNOME Shell extension。這只證明此虛擬解析度的一次畫面，不能把
   popup 四邊定位、遮擋、閃爍或多螢幕標為通過。
+  QMP 候選清除檢查須比對「候選顯示中」與「點選後」；背後 Files 等 App
+  可能在同一像素區顯示提示框，直接要求點選後回到「候選前」的畫面會誤判。
+  真滑鼠案例另核對第二列提交「鐘」，不能只用像素差宣稱選字成功。
+- **GNOME GTK4 真實 App 與 synthetic host 的 bridge 結果不同**：2026-09-20
+  Ubuntu 24.04.5 GNOME Wayland guest 以 gedit／GNOME Text Editor 各跑直接
+  Fcitx、未設 `GTK_IM_MODULE`、明設 `wayland` 與 XWayland 四路徑。
+  gedit 4/4、Text Editor 直接 Fcitx 與 XWayland 2/4 通過實際文件「中」提交
+  與 `keyboard-us` literal 負控制；Text Editor 另外兩路徑的文件已聚焦、
+  普通按鍵能輸入，但 `fcitx5-remote` 為 status 0／無 active engine。
+  診斷再次確認兩個失敗程序都有預期的 Wayland 環境、GTK4 Fcitx module 已
+  映射，套件版本為 GNOME Text Editor 46.3、GTK 4.14.5 與 Fcitx GTK4
+  frontend 5.1.1；仍不能僅憑 module 映射判定實際使用哪個 IM context。
+  GTK4 測試 host 的未設環境變數路徑卻通過，故不能用 synthetic host 推論所有
+  真實 GTK4 App。直接 `GTK_IM_MODULE=fcitx` 是目前已證實可用的 Text Editor
+  路徑；原因與其他 GTK4 App 的範圍仍需查明。runner 即使有失敗也保存 JSON
+  並還原 guest 設定，見 `tools/gnome-vm-real-app-smoke.py`。
+- **GNOME Wayland T10 失焦行為依輸入路徑而異**：同一 Ubuntu 24.04.5
+  GNOME Shell 46 guest 以真 VM 指標切同 App 兩欄，GTK3／GTK4／Qt6 的
+  native Wayland／XWayland 八模式，正負控制合計 16/16。六條直接 Fcitx
+  路徑在第一欄有候選時失焦，client 會提交原始「ㄓㄨㄥ」，切回再選字後
+  為「ㄓㄨㄥ中|文」；兩條 GTK 原生 Wayland 且未設 `GTK_IM_MODULE` 的
+  路徑會清除 preedit，得到「中|文」。全部 `keyboard-us` 負控制均為
+  `5j/ 1|jp61`。既有 X11 T10 的第一欄是「中」，Mac／Windows 失焦語意也
+  不同；不可把兩欄可隔離直接寫成所有路徑已達 Windows focus-out parity。
+  VM 的 AT-SPI 對 native GTK3／Qt6 回報視窗局部座標，XWayland 卻回報螢幕
+  座標；GTK4 測試 host 的兩欄沒有可用的 AT-SPI 欄位角色。runner 依 host
+  自寫欄位中心及 VM 截圖校正，避免誤點第一欄。詳見
+  `tools/gnome-vm-focus-smoke.py` 與 `docs/gnome-wayland-vm.md`。
 - **最小 GNOME 套件會改掉 VM 的 Netplan renderer**：官方 cloud image 原用
   `systemd-networkd`，以 `ubuntu-desktop-minimal --no-install-recommends` 安裝後，
   Netplan 選了未安裝的 NetworkManager；下一次啟動的 `enp0s2` 保持 DOWN、
@@ -1252,6 +1287,23 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       與 smoke 入口；修復最小桌面安裝後 Netplan renderer 選錯及 guest `/tmp`
       重啟清除 host 的問題，完整 VM 停止／啟動後五案再次通過。
       XWayland、GNOME popup／多 App／設定與登出再登入仍待完成。
+- [x] 2026-09-20 擴充 GNOME Wayland guest 的 QMP runner 為 20 案 × 八路徑，
+      包含 GTK3／GTK4／Qt6 原生 Wayland 與 XWayland、五布局、候選鍵盤／
+      真滑鼠、關聯詞、模式／全形／簡體、快捷鍵及符號表；每案驗證 App 文字
+      與 `keyboard-us` 負控制；完整一次執行 160/160 通過且無設定還原錯誤。
+      T06 滑鼠另以候選前／顯示／點選後截圖核對
+      第二列「鐘」與約半秒的 popup 清除。重啟 GDM 後新 session 的 T01／
+      T06 滑鼠 16/16 通過。
+- [ ] 處理 GNOME Text Editor 的 GTK Wayland IM 路徑沒有 active input context：
+      已有真實 App runner 記錄 gedit 4/4、Text Editor 2/4；查明是 GTK／GNOME
+      設定、應用程式還是 Fcitx 整合所致，再決定產品或安裝文件修正。
+- [x] 2026-09-20 在 GNOME Wayland VM 加入 T10 雙欄真指標焦點 runner，
+      八模式各有 active 候選切欄與 `keyboard-us` 負控制，16/16 通過；
+      六條直接 Fcitx 路徑失焦提交原始注音，兩條 GTK 預設 Wayland
+      路徑清除 preedit，已記入 JSON 與驗收計畫。
+- [ ] 決定 T10 直接 Fcitx 路徑的原始 preedit 失焦提交是否需調整；
+      先對照同版 Fcitx GTK／Qt frontend 事件順序與 GNOME X11 baseline，
+      再決定產品修改或明列平台差異，不用延遲鍵盤事件規避。
 - [x] 2026-09-14 為使用者的 WSLg 候選窗一秒殘影與連打多重殘影，建立獨立
       GNOME Shell／TigerVNC／noVNC X11 診斷桌面；相同 addon 通過三次關聯選字、
       十次「ㄎ」連打、英文負控制，以及關窗後約 59 ms 的候選區域像素清除檢查。

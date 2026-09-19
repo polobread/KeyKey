@@ -5,8 +5,11 @@
 Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
 外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
 並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
-另在完整 Ubuntu 24.04 GNOME Wayland KVM guest 通過五個原生 Wayland T01
-打字 smoke；XWayland、完整 Wayland／視窗驗收與正式套件仍待完成。開發／套件規格見
+另在完整 Ubuntu 24.04 GNOME Wayland KVM guest 通過涵蓋 native Wayland／XWayland
+的 160/160 組逐鍵／滑鼠矩陣；真實 gedit 四條輸入路徑與 GNOME Text Editor 的直接 Fcitx
+Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有缺口。
+雙欄焦點正負控制 16/16 通過並量到失焦語意依輸入路徑而異。
+完整視窗／App 驗收與正式套件仍待完成。開發／套件規格見
 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
@@ -76,8 +79,8 @@ runtime container 的安裝／升級／移除驗證。
 `source-e2e` 使用乾淨的一次性 container，分別驗證 `/usr/local`、`/usr` 與自訂
 prefix 的原始碼安裝、GTK3／GTK4／Qt6 X11 真實打字及解除安裝；自訂 prefix 另驗證
 無關檔案保留與重裝。
-Ubuntu 24.04 GNOME Wayland 的本機 KVM guest 建立、`.deb` 安裝與五個原生
-Wayland T01 smoke 見 [VM 手冊](Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md)。
+Ubuntu 24.04 GNOME Wayland 的本機 KVM guest 建立、`.deb` 安裝、逐鍵／滑鼠矩陣與
+真實 App 驗證見 [VM 手冊](Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md)。
 
 Windows 11 可從 WSL2 Ubuntu 使用同一組指令。Repository 必須放在 WSL 的 Linux
 filesystem（例如 `/home/.../KeyKey`），不要放在 `/mnt/c` 或會自動轉 CRLF 的 Windows
@@ -372,8 +375,13 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 Native Linux development starts with version 1.2.8. A buildable Linux-only
 engine and Fcitx 5 addon exist. The GTK 3, GTK 4, and Qt 6 X11 matrix is
 implemented, and 76 cases that do not restart the desktop Fcitx process pass
-in an isolated Ubuntu 24.04 GNOME X11 session. XWayland, native Wayland, full
-login/window acceptance, and release packages are not complete. See the
+in an isolated Ubuntu 24.04 GNOME X11 session. A GNOME Wayland KVM guest also
+passes 160/160 native Wayland/XWayland key and pointer combinations. Real gedit
+passes four input paths; GNOME Text Editor passes the direct Fcitx Wayland and
+XWayland paths, with two GTK Wayland IM paths still failing. Full login/window
+acceptance and release packages are not complete. The guest also passes 16/16
+two-field focus phases, with a recorded raw-preedit blur difference between
+direct Fcitx and default GTK Wayland paths. See the
 [development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
 
 ### Linux (in development)
