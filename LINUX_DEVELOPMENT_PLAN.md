@@ -10,7 +10,13 @@ Ubuntu 22.04／24.04 開發用 Debian 套件；Ubuntu 24.04 的隔離 GNOME X11 
 KVM guest 已以 20 案 × 8 條 native Wayland／XWayland 的逐鍵與滑鼠矩陣通過
 160/160；真實 gedit 四條路徑通過，GNOME Text Editor 的直接 Fcitx
 Wayland／XWayland 通過，
-但另兩條 GTK Wayland IM 路徑無 active input context，仍須處理。
+但另兩條 GTK Wayland IM 路徑無 active input context，仍須處理。後續
+T11 編輯欄位以 GNOME Shell crash 前 21/24、恢復 session 後 3/3 完成；
+T12 符號表真滑鼠八路徑 8/8 通過。T10 兩個同時存活 App 的直接 Fcitx
+六路徑 12/12 通過，GTK 預設 Wayland bridge 則共用單一 IBus context，
+未達跨 App 模式隔離；候選中關閉 client 與新 client 恢復八路徑 8/8、
+Fcitx 新 PID 後重跑 T01 八路徑亦 8/8。明確 GDM 登出登入後新 session
+的 T01／T06 真滑鼠各八路徑共 16/16 通過，完整 App／視窗與穩定性尚待驗收。
 
 盤點日期：2026-09-12；原始碼基線：`13696ef`；產品版號來源：`README.md` 標題。
 
@@ -480,12 +486,20 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
   同 guest 的 T10 兩欄焦點正負控制 16/16 通過；六條直接 Fcitx 路徑
   失焦會提交原始「ㄓㄨㄥ」，兩條 GTK 原生未設 `GTK_IM_MODULE` 路徑則清除
   preedit。這是觀測到的平台路徑差異，不能寫成 Windows focus-out parity
-  已完成；兩個同時存活 App 與 recovery 仍待驗收。
+  已完成。後續兩個同時存活 App 的直接 Fcitx 六路徑 12/12 通過，
+  GTK 預設 Wayland bridge 兩條路徑則共用 IBus input context，正向隔離
+  0/2；client 關閉與 Fcitx 新 PID 恢復各八路徑 8/8。明確登出登入後
+  T01／T06 16/16；T11 指標替換／密碼／唯讀與 T12 符號真滑鼠亦已實跑。
+  Firefox Snap native Wayland 兩路徑與 Epiphany native Wayland／XWayland
+  三路徑，跨多行、單行與 `contenteditable` 真正 DOM 欄位 15/15 通過。
+  Firefox Snap XWayland 在此 VM
+  無法開啟 display，仍屬缺口。
   最小桌面套件選錯 Netplan renderer 的 guest 重啟故障已修正；VM 停止後
   重新啟動，SSH、Wayland login、Fcitx addon 與五案再次恢復／全過。
   重建流程見 `Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md`。受限行程的
   `nodev` `/dev` 與 QMP socket 權限不能用來判定一般 WSL host 能力；
-  popup 邊界／多螢幕、focus／多 App 完整矩陣、瀏覽器與 hosted runner 仍待驗證。
+  popup 邊界／多螢幕、完整 focus／多 App 矩陣、其他瀏覽器操作與
+  hosted runner 仍待驗證。
 - Nested compositor 可先加速開發，但只有證明相同 protocol／panel／focus 路徑時，
   才能取代相應項目；Weston headless 不能代替 GNOME 或 Plasma 驗收。
 - 若 hosted runners 無法可靠完成正式矩陣，記錄具體失敗及嘗試過的方案，向使用者

@@ -67,6 +67,19 @@ Source/Loaders/Linux-IME/tools/gnome-vm-wayland-smoke.py --case T06-navigation -
 Source/Loaders/Linux-IME/tools/gnome-vm-real-app-smoke.py --mode wayland --mode xwayland
 Source/Loaders/Linux-IME/tools/gnome-vm-real-app-smoke.py
 Source/Loaders/Linux-IME/tools/gnome-vm-focus-smoke.py
+Source/Loaders/Linux-IME/tools/gnome-vm-editing-smoke.py --phase positive --phase negative --phase extended
+Source/Loaders/Linux-IME/tools/gnome-vm-multi-app-smoke.py
+Source/Loaders/Linux-IME/tools/gnome-vm-wayland-smoke.py --case T12-symbol-mouse
+Source/Loaders/Linux-IME/tools/gnome-vm-recovery-smoke.py
+Source/Loaders/Linux-IME/tools/gnome-vm-browser-smoke.py
+```
+
+The browser runner additionally needs Firefox Snap and Epiphany in the guest.
+The base desktop may already have Firefox; install only the missing browser:
+
+```sh
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh 'snap list firefox || sudo snap install firefox'
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh 'sudo apt-get install -y epiphany-browser'
 ```
 
 The runner requires an active Wayland login, the installed
@@ -127,6 +140,68 @@ expectations and records `raw_preedit_on_blur` in
 from the existing X11 focus test and still needs a product decision before
 declaring active-candidate focus behavior complete.
 
+The editing runner uses actual VM pointer drags to select only the middle
+character of `甲乙丙`, then checks candidate replacement, active-reading
+Home/End, PageUp/PageDown, direction, Delete, Tab and Shift key boundaries,
+password input, and a read-only field. Its negative phase uses `keyboard-us`.
+The clean 2026-09-20 run passed 21 of 24 phases before GNOME Shell 46
+crashed with signal 11 while opening a Qt 6 XWayland host. After restarting
+GDM and replacing the Fcitx process in the new Wayland session, the remaining
+three phases passed. The independent Shell report is
+`/var/crash/_usr_bin_gnome-shell.1000.crash` in the guest; the crash cause is
+not established. The runner stores its JSON in
+`out/gnome-vm/gnome-editing-last.json` and timestamped files. The symbol
+pointer case separately passed all eight modes: it clicks the first row,
+commits `，`, checks popup clearance, and uses `!` as the literal control.
+
+The two-app runner keeps two host processes alive while app A switches to
+English full-width, app B types Chinese, and app A resumes. Six direct Fcitx
+native Wayland/XWayland modes passed both phases (12/12), with `ａｂ中|文`
+and `ab5j/ 1|jp61`. GTK 3 and GTK 4 with `GTK_IM_MODULE` unset passed their
+literal phases but failed the positive isolation check (14/16 overall).
+After a fresh Fcitx process, each bridge case reproduced app B receiving
+`ｊｐ６１` from app A's English full-width mode. Fcitx
+`Controller1.DebugInfo` reported one `frontend:ibus` input context with an
+empty program name for the GNOME Wayland group. The engine stores its state
+per Fcitx input context, so this bridge does not expose the two apps as
+separate contexts to it. Use the verified direct Fcitx route
+(`GTK_IM_MODULE=fcitx`) when per-app state isolation matters. The bridge
+behavior remains an acceptance gap; the runner intentionally reports its
+positive cases as failures and saves `out/gnome-vm/gnome-multi-app-last.json`.
+
+The recovery runner opens a real candidate popup, closes the client with the
+candidate active, verifies that Fcitx and the addon remain in the same
+process, then types `中` and the `keyboard-us` literal in a new client. All
+eight modes passed this immediate recovery. It next restarts Fcitx once,
+launching a new process from the active user session, and runs T01 again in
+all eight modes; that batch also passed 8/8. The restart changed the D-Bus
+owner from `:1.801` to `:1.824` and PID from `551961` to `553445`.
+`Controller1.Restart` alone stops a Fcitx process created by a transient
+`systemd-run` unit and does not recreate that unit; the runner must launch
+the replacement explicitly. It records JSON in `out/gnome-vm/gnome-recovery-last.json`
+and timestamped files. This checks client closure and Fcitx restart; an
+explicit user logout/login is described below.
+
+The browser runner starts a localhost page with real `<textarea>`, `<input>`
+and `contenteditable` fields, reading their DOM focus and input events from
+the guest. QMP keys enter `中` through the installed addon, then the same
+field must show the literal `5j/ 1` with `keyboard-us`. On 2026-09-20 the
+combined run passed 15/15 field/mode cases: Firefox Snap native Wayland with
+direct Fcitx and the default GNOME bridge, plus Epiphany direct Wayland,
+bridge Wayland and XWayland. The runner uses a separate Firefox profile under
+its confined home and a private Epiphany profile for each case,
+closes each browser, removes its test profile, and restores the KeyKey,
+desktop and Epiphany settings.
+It records exact DOM event sequences, installed addon hash and popup screenshots
+in ignored `out/gnome-vm/gnome-browser-last.json` and timestamped reports.
+The page advertises an English interface so Firefox does not open its
+translation suggestion over the candidate. The runner first proves literal
+typing with `keyboard-us`, then switches to KeyKey for the positive case.
+This is one candidate sequence per field at a fixed VM resolution. Other web
+editors, Firefox Snap XWayland, browser focus switching and sandbox coverage
+beyond the tested Snap path remain open. In this VM Firefox Snap XWayland exited with
+`cannot open display: :0`; Epiphany covered the XWayland browser route.
+
 The runner temporarily disables GNOME idle lock and unlocks the guest's active
 Wayland session before injecting keys. It restores the prior idle/lock settings,
 the KeyKey config file, and the active KeyKey engine on exit. Without this step,
@@ -152,7 +227,17 @@ smoke cases passed again. After an explicit `systemctl restart gdm3`, the
 active Wayland session, GNOME Shell and Fcitx processes were new, the installed
 addon loaded, and T01 standard plus T06 pointer selection passed in all eight
 toolkit/backend modes (16/16). This checks display-manager session restart;
-manual logout/login and application state recovery still need separate checks.
+candidate-client closure and Fcitx process restart are covered by the
+recovery runner above. A separate 2026-09-20 check sent
+`gnome-session-quit --logout --no-prompt` from the active user session.
+GDM showed the Username and Password screen; the VM account is normally
+password locked, so a temporary VM-only password was set, entered through
+QMP keyboard events, and the original locked password field was restored
+immediately after login. The new Wayland session changed from `7085` to
+`8481`, with fresh GNOME Shell, XWayland and Fcitx processes. T01 standard
+and T06 candidate-row pointer selection each passed in all eight modes
+(16/16) with literal negative controls. This is a logout/login functional
+sample, not a complete post-login application and stability sweep.
 
 To stop or resume the guest without deleting its disk:
 

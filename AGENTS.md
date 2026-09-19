@@ -28,8 +28,11 @@ Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基
 Wayland／XWayland 的逐鍵與滑鼠矩陣通過 160/160；真實 gedit 四條路徑及 GNOME Text Editor
 的直接 Fcitx Wayland／XWayland 通過，Text Editor 另兩條 GTK Wayland IM 路徑
 沒有 active input context。T10 兩欄焦點的 16/16 正負階段另量到直接 Fcitx
-失焦提交原始注音、GTK 預設 Wayland 路徑清除 preedit 的差異。完整 App／popup／
-多螢幕與明確登出登入仍未跑。
+失焦提交原始注音、GTK 預設 Wayland 路徑清除 preedit 的差異；T11 編輯欄位、
+T12 符號表真滑鼠、T10 client/Fcitx recovery 與明確 GDM 登出登入後的
+T01／T06 抽樣已實跑；Firefox Snap 與 Epiphany 的真正 DOM 三種欄位
+五路徑 15/15 通過。完整 App／popup 四邊／多螢幕仍待驗收，
+GTK 預設 Wayland bridge 的跨 App 模式隔離亦未通過。
 版號更新與這些 local
 測試都不代表 Linux 已可發布。
 **主要支援／最完整測試環境是 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）**；
@@ -76,7 +79,9 @@ Wayland／XWayland 的逐鍵與滑鼠矩陣通過 160/160；真實 gedit 四條�
   native Wayland／XWayland 路徑，包含五布局、候選第二列真滑鼠點選及點選後
   畫面清除、關聯詞、模式、全形、簡體、快捷鍵與符號表；guest 的
   `systemctl restart gdm3` 後，新 session 的 T01／T06 滑鼠 16/16 通過。
-  仍須完整 popup 邊界、多 App、瀏覽器與明確登出登入驗收。
+  後續已另做明確登出登入 16 案與多 App 差異調查；Firefox Snap／Epiphany
+  真正 DOM 三種欄位五路徑亦 15/15 通過。仍須完整 popup 邊界、其他
+  瀏覽器操作、sandbox 與跨版本驗收。
   後續從正常 WSL shell 執行
   `Source/Loaders/Linux-IME/tools/check-wsl-vm-host.sh` 可重驗前置條件；VM
   建立、安裝與 smoke 步驟見 `docs/gnome-wayland-vm.md`。
@@ -388,6 +393,19 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   真實 GTK4 App。直接 `GTK_IM_MODULE=fcitx` 是目前已證實可用的 Text Editor
   路徑；原因與其他 GTK4 App 的範圍仍需查明。runner 即使有失敗也保存 JSON
   並還原 guest 設定，見 `tools/gnome-vm-real-app-smoke.py`。
+- **GNOME VM 瀏覽器 fixture 的焦點與提示窗要分開判讀**：Firefox Snap
+  原生 Wayland 可完成直接 Fcitx 與 GNOME bridge 的 DOM 打字；Epiphany
+  另通過 native Wayland 兩路徑與 XWayland。但網頁欄位即使在 JS 端
+  已回報 focus，也可能在首次啟動提示窗、翻譯浮窗或其他瀏覽器窗取得
+  compositor 焦點後收不到 VM 鍵盤。測試頁用英文介面標記避免 Firefox
+  的翻譯建議遮住候選；每案先在 `keyboard-us` 送 `x`／Backspace 確認
+  真正可打字，再切琦琦注音，並以 DOM 事件核對「中」與負控制。
+  用 VM VNC 指標再次點自動聚焦的欄位在本 guest 反而會失焦；不要以
+  DOM `focus` 事件或候選截圖單獨宣稱打字成功。Firefox 測試以 confined
+  home 的獨立 profile 避免前次異常結束時的安全模式提示；結束須正常
+  關閉瀏覽器，以免 Snap scope 殘留。Epiphany 首次啟動的預設瀏覽器提示
+  也會攔鍵，runner 暫時關閉並還原該設定。Firefox Snap 強制 XWayland
+  在此 VM 回報 `cannot open display: :0`，目前不列為已通過。
 - **GNOME Wayland T10 失焦行為依輸入路徑而異**：同一 Ubuntu 24.04.5
   GNOME Shell 46 guest 以真 VM 指標切同 App 兩欄，GTK3／GTK4／Qt6 的
   native Wayland／XWayland 八模式，正負控制合計 16/16。六條直接 Fcitx
@@ -400,6 +418,41 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   座標；GTK4 測試 host 的兩欄沒有可用的 AT-SPI 欄位角色。runner 依 host
   自寫欄位中心及 VM 截圖校正，避免誤點第一欄。詳見
   `tools/gnome-vm-focus-smoke.py` 與 `docs/gnome-wayland-vm.md`。
+- **GNOME 的預設 GTK Wayland bridge 共用 Fcitx IBus context**：2026-09-20
+  `Controller1.DebugInfo` 在完整 GNOME Wayland guest 回報 `Group [wayland:] has 1
+  InputContext(s)`，唯一 context 為 `frontend:ibus` 且 `program:` 為空；GTK3／GTK4
+  未設 `GTK_IM_MODULE` 的兩個同時存活 App 因此共用琦琦注音的中英文與全半形狀態。
+  乾淨 Fcitx 行程下，App A 切英文全形後，App B 的 `jp61` 都得到 `ｊｐ６１`，
+  不是獨立中文模式的「文」；六條直接 Fcitx native Wayland／XWayland 路徑則
+  12/12 通過 `ａｂ中|文` 與英文負控制。這是由 GNOME bridge 暴露單一 context
+  的本機觀察，不能把直接 Fcitx 的 per-App 結果外推到預設 GTK bridge；
+  先用 `GTK_IM_MODULE=fcitx` 的已驗證路徑，並將 bridge 另列發布差異。
+- **長批次 GNOME VM 要檢查 session 是否仍存活**：2026-09-20 清除舊輸出後的
+  T11 矩陣在 21/24 時，GNOME Shell 46 於啟動 Qt6 XWayland host 同時以 signal 11
+  崩潰，`/var/crash/_usr_bin_gnome-shell.1000.crash` 留有獨立 crash 證據；
+  XWayland socket 隨之消失，後兩個 Qt host 只回報 `could not connect to display`。
+  重啟 GDM，於新 Wayland session 替換掉無 display 的舊 Fcitx 後，受影響三階段
+  3/3 通過。不能把 Qt host 的連線失敗算作 KeyKey 輸入失敗，也不能由時間相近
+  反推 Shell crash 根因；後續 runner 在失敗後須檢查 GNOME session，停止連續注入。
+  T11 真指標選字前要清除 GTK3 初始 `0:3` 全選，等到 `cursor:3` 再拖曳；GTK4
+  XWayland 的 host 座標從內容區起算，原生 Wayland 則從含標題列的視窗起算。
+- **GNOME VM 的 Fcitx D-Bus Restart 不會重建 transient unit**：T10 recovery
+  將候選中 client 關閉後，八路徑都確認 Fcitx/addon PID 未變且新 client T01
+  通過。對由 `systemd-run --user` 啟動的 Fcitx 呼叫 `Controller1.Restart` 會讓
+  舊行程退出，但這個臨時 unit 沒有自動 restart policy；runner 必須從仍有效的
+  user manager 明確啟動新的 Fcitx，再等 D-Bus owner 改變、addon maps 就緒。
+  不可用 `fcitx5-remote` 當就緒 probe，避免其 D-Bus activation 搶先建立缺少
+  display 環境的行程。按此流程重啟後新 PID 的 GTK3／GTK4／Qt6 native
+  Wayland、XWayland 與兩條 GTK bridge T01 8/8 通過。
+- **GNOME VM 明確登出後不會再次自動登入鎖定帳戶**：2026-09-20
+  `gnome-session-quit --logout --no-prompt` 確實終止使用者 Wayland session，
+  GDM 留在帳戶登入頁；`keykey` 測試帳戶平時為 password locked，
+  `/etc/gdm3/custom.conf` 的 `AutomaticLogin` 只在 GDM 初啟時生效。
+  本次僅在專用 VM 暫設測試密碼，以 QMP 真鍵盤經 Username／Password 畫面登入，
+  隨即把 `/etc/shadow` 的該帳戶密碼欄還原為原鎖定值。session ID
+  `7085`→`8481`，新的 GNOME Shell／Fcitx／XWayland 行程啟動；
+  T01 與 T06 真滑鼠各八路徑共 16/16 通過。不可把單純 GDM restart
+  當成這次使用者發起的 logout/login；後續重跑要先規劃可還原的登入方式。
 - **最小 GNOME 套件會改掉 VM 的 Netplan renderer**：官方 cloud image 原用
   `systemd-networkd`，以 `ubuntu-desktop-minimal --no-install-recommends` 安裝後，
   Netplan 選了未安裝的 NetworkManager；下一次啟動的 `enp0s2` 保持 DOWN、
@@ -1301,6 +1354,39 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       八模式各有 active 候選切欄與 `keyboard-us` 負控制，16/16 通過；
       六條直接 Fcitx 路徑失焦提交原始注音，兩條 GTK 預設 Wayland
       路徑清除 preedit，已記入 JSON 與驗收計畫。
+- [x] 2026-09-20 加入 T11 真實編輯欄位 VM runner：GTK3／GTK4／Qt6
+      native Wayland、XWayland 與兩條 GTK bridge 正向、`keyboard-us` 負控制、
+      active reading 編輯鍵三階段各通過，乾淨輸出紀錄為 21/24 加新 session
+      補跑 3/3。真指標精確選取 `1:2`，由「甲乙丙」替換為「甲中丙」；方向、
+      Home／End、PageUp／PageDown、Delete／Tab、Shift 變體後為「甲中中丙」，
+      密碼欄只收 literal、唯讀欄不變且兩者無 preedit。另加 T12 符號表
+      真滑鼠第一列，八路徑 8/8 選出「，」並通過英文 `!` 負控制。
+- [ ] 完成 T10 兩個同時存活 App 的 GNOME bridge 狀態隔離決策：六條直接
+      Fcitx 路徑正負控制 12/12 通過，GTK3／GTK4 預設 Wayland bridge 的
+      負控制 2/2 通過、正向 0/2；乾淨 Fcitx 重現兩個 App 共用唯一 IBus
+      context，App B 收到英文全形 `ｊｐ６１`。目前直接 Fcitx 路徑可用；
+      bridge 差異、真實 App 範圍及發布說明仍需決定。
+- [x] 2026-09-20 加入 T10 GNOME Wayland VM 候選中關閉 client 與 Fcitx
+      重啟恢復 runner：八路徑皆先捕捉候選 popup、關閉 client，驗證 addon
+      PID 存活，再由新 client 通過「中」與 `keyboard-us` 負控制，8/8；
+      框架重啟以 D-Bus owner `:1.801`→`:1.824`、PID `551961`→`553445`
+      證明進入新行程，八路徑新 client 再通過 8/8。前一輪只呼叫 D-Bus
+      `Restart` 卻未重建 transient unit，屬測試環境啟動步驟缺漏，已修正。
+- [x] 2026-09-20 在同一專用 VM 實際由 `gnome-session-quit` 登出，
+      經 GDM Username／Password 畫面用 QMP 鍵盤重新登入，隨即還原
+      測試帳戶原本的 password lock；新 session `8481`、新 Fcitx PID
+      `559719` 均已確認。重新登入後八路徑 T01「中」與 T06 候選第二列
+      真滑鼠「鐘」加英文負控制共 16/16 通過；完整登入後長時間穩定性、
+      瀏覽器首段見下一項，其他互動與 sandbox 仍未驗收。
+- [x] 2026-09-20 加入本機 HTTP／DOM 瀏覽器逐鍵 runner：Firefox Snap
+      native Wayland 的直接 Fcitx／預設 GNOME bridge，以及 Epiphany 的
+      直接 Wayland、bridge Wayland、XWayland，跨 `<textarea>`、單行 `<input>`
+      與 `contenteditable` 合併 15/15 通過「中」與 `keyboard-us` literal
+      `5j/ 1`。Firefox 採 Snap confined home
+      中的獨立 profile，Epiphany 採 private profile；每案關閉瀏覽器並保存
+      DOM 事件與候選畫面。Firefox Snap XWayland 在本 VM 啟動時回報
+      `cannot open display: :0`，不可把 Epiphany XWayland 結果算成 Firefox。
+      瀏覽器跨 App 焦點與其他 sandbox 組合仍待驗收。
 - [ ] 決定 T10 直接 Fcitx 路徑的原始 preedit 失焦提交是否需調整；
       先對照同版 Fcitx GTK／Qt frontend 事件順序與 GNOME X11 baseline，
       再決定產品修改或明列平台差異，不用延遲鍵盤事件規避。

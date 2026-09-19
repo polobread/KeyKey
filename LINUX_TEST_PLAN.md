@@ -6,7 +6,9 @@ container build/staged-install checks、Ubuntu 22.04／24.04 Debian package chec
 完整真實逐鍵矩陣；隔離 GNOME X11 session 另已通過 76 個不重啟桌面 Fcitx 的
 desktop-safe 案例。2026-09-20 已在 Ubuntu 24.04.5 GNOME Wayland KVM guest
 通過 20 案 × 八條 native Wayland／XWayland 的打字與滑鼠矩陣（160/160），另以 gedit 和 GNOME
-Text Editor 驗證真實文件欄位；瀏覽器、sandbox、完整 App／視窗 suite 仍待實作。
+Text Editor 驗證真實文件欄位；Firefox Snap／Epiphany 的五條瀏覽器路徑
+與三種欄位亦已通過真實 DOM 事件 15/15。更多 sandbox／App／視窗 suite
+仍待實作。
 搭配 [開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
 
 Linux 首版目標為 1.2.8。第一階段驗收 Windows TSF 目前實際提供的全部功能，對應
@@ -46,8 +48,9 @@ T03 編輯取消、T06 直／橫鍵盤候選與真滑鼠點第二列、T07 關�
 XWayland 通過，未設 `GTK_IM_MODULE` 與明設 `wayland` 兩條則在文件已聚焦並接受
 普通按鍵時，`fcitx5-remote` 仍回報沒有 active input context。這是尚未關閉的
 GTK4 真實 App 缺口。GDM 重啟後新 Wayland session 的 T01 與 T06 滑鼠案例 16/16
-通過；並非明確登出／登入完整生命週期。瀏覽器／sandbox、popup 四邊與多螢幕、
-多 App／完整 focus、其他 T cases 及 hosted runner 仍未驗證。
+通過；後續另已明確登出／登入再跑 16/16。瀏覽器首段、兩個同時存活 App
+與 client／Fcitx recovery 的實測見下文；popup 四邊與多螢幕、其他
+瀏覽器互動／其他 sandbox、長時間穩定性及 hosted runner 仍未驗證。
 
 同一 guest 的 T10 雙欄焦點 runner 又完成 8 模式 × 正負控制 16/16：第一欄有
 active 候選時以 VM 指標切第二欄，第二欄精確提交「文」，切回第一欄再提交「中」；
@@ -55,8 +58,48 @@ active 候選時以 VM 指標切第二欄，第二欄精確提交「文」，切
 XWayland 路徑在失焦時由 client 提交原始 preedit，最後第一欄為「ㄓㄨㄥ中」；
 未設 `GTK_IM_MODULE` 的 GTK3／GTK4 原生 Wayland 路徑則清空 preedit，第一欄
 為「中」。這只證明兩欄隔離及可重現的路徑差異；與既有 X11 T10 的 focus-out
-語意不同，正式 parity 決策、兩個同時存活 App、client/Fcitx recovery 與完整
-登出登入仍待驗收。
+語意不同，正式 parity 決策仍待完成。兩個同時存活 App、client/Fcitx
+recovery 與明確登出登入的後續結果見下文。
+
+T11 真實編輯欄位另以八模式各跑選取替換、`keyboard-us` 負控制及 active-reading
+編輯鍵：VM 指標先清除初始全選，再拖曳精確得到 `1:2`，候選把「甲乙丙」改為
+「甲中丙」；後續送 Home／End、PageUp／PageDown、方向、Delete／Tab 與 Shift
+變體，仍在原欄得到「甲中中丙」。密碼欄只產生 `rup 1!`、沒有 preedit，唯讀欄
+保持「唯讀」。乾淨輸出第一次完成 21/24；GNOME Shell 46 在最後 Qt6 XWayland
+host 啟動時 signal 11 崩潰，重建圖形 session 後同三階段 3/3 通過。
+T12 符號表再以真 VM 指標點第一列，八路徑 8/8 提交「，」，英文負控制為 `!`。
+這些是實際 App buffer 與 Fcitx addon 載入的證據，尚未覆蓋所有視窗位置。
+
+T10 兩個同時存活 App 的 runner 量到另一項路徑差異：六條直接 Fcitx
+native Wayland／XWayland 路徑正負控制 12/12 通過，App A 先切英文全形、
+App B 仍獨立提交「文」，回到 A 得到 `ａｂ中|文`；兩條 GTK 未設
+`GTK_IM_MODULE` 的原生 Wayland bridge 負控制 2/2 通過，正向 0/2。
+乾淨 Fcitx 行程下兩者的 App B 都繼承 A 的英文全形並輸出 `ｊｐ６１`；
+`Controller1.DebugInfo` 同時顯示 GNOME Wayland 群組只有一個 `frontend:ibus`
+input context、沒有 program 名稱。bridge 無法以目前 context 身分區分兩 App，
+此差異仍是發布驗收缺口；直接 Fcitx 的結果不可外推到預設 GTK bridge。
+
+同一 guest 的 T10 client recovery runner 在八路徑都先截到真正候選 popup，
+候選中關閉 client 後 Fcitx/addon PID 保持不變，新 client 的 T01「中」與
+`keyboard-us` 負控制 8/8 通過；再由使用者 session 建立新的 Fcitx 行程，
+D-Bus owner `:1.801`→`:1.824`、PID `551961`→`553445`，八路徑新 client
+再 8/8 通過。這驗證 client 關閉與框架重啟。
+之後再從 GNOME session 主動登出，經 GDM 帳戶／密碼畫面用 VM 鍵盤登入，
+新 Wayland session ID `7085`→`8481`，新 Fcitx PID `559719`；
+測試帳戶恢復原本 password lock。登入後 T01「中」與 T06 第二列真滑鼠「鐘」
+各八路徑共 16/16 通過。這仍是登入後的功能抽樣，不代替長時間穩定性或完整
+App／popup sweep。
+
+瀏覽器的本機 HTTP fixture 在真正 `<textarea>`、單行 `<input>` 與
+`contenteditable` 記錄 DOM focus／input，不直接灌入中文字。2026-09-20
+合併跑過 Firefox Snap native Wayland 的直接 Fcitx／GNOME bridge、
+Epiphany native Wayland 的直接／bridge 與 Epiphany XWayland，
+五條路徑 × 三種欄位 15/15 都以 VM 鍵盤輸入「中」，再切 `keyboard-us`
+精確輸出 `5j/ 1`；
+Firefox 候選窗另有真實畫面截圖。Snap Firefox 在這台 VM 強制 XWayland
+時回報 `cannot open display: :0`，故 XWayland 以發行版 Epiphany 驗證，
+不能外推為 Firefox Snap XWayland 已過。更多瀏覽器操作及 sandbox
+組合仍需補齊；執行入口與證據位置見 VM 手冊。
 
 目前可重現的 L1／build 結果（2026-09-13）：Ubuntu 24.04 x86_64、ARM64 preview
 及 Ubuntu 22.04 x86_64 container 均能編譯 engine 與 Fcitx 5 addon；CTest 以 repository
@@ -312,9 +355,9 @@ commit hash。Linux 候選學習已排除，不建立相關 fixture；要測關�
 | T07 | 開啟分類 → 提交字 → Shift 選關聯詞 → 接續；全部關閉後重打 | host 是原字加「後綴」，不重複前字；順序／去重／分類保存與停用正確，fixture 固定具體詞與來源。X11/GTK3／GTK4／Qt6 已驗證預設「今天」、history-only「臺灣史」、全部停用「臺!」、舊設定遷移與 D-Bus 保存／重啟後「中程計畫」；GTK3 另完成原生設定視窗保存後「作物育種」。關聯詞滑鼠不是 macOS／Windows 對標要求；GNOME Wayland VM 八路徑已驗證三種詞庫設定的鍵盤選字，桌面設定 UI 與登出登入仍待驗收 |
 | T08 | 中文／英文、Shift/CapsLock、全半形、數字、標點、繁轉簡 | 先查 macOS，再比對 Windows：macOS 的 `Ctrl+\` 輪替內建輸入法、單按 Shift 不切內部中英文、全形選單用 Command+Shift+Space；Linux 第一階段跟隨 Windows 的內部模式、可停用 `Ctrl+\`、固定 Ctrl+Space、短按 Shift、Shift+Space 與 Caps Lock。L1 全形對映包含 `Ａｚ０９！～　`；X11/GTK3／GTK4／Qt6 已驗證模式切換、active composition 清除、英文半／全形、全形 `Ａ！～　`、繁轉簡 `台湾` 與停用快捷鍵交回 client。停用案依各 client 插入規則固定自己的 golden，不由 addon 統一；filter 組合順序有測試；不測注音自動修正 |
 | T09 | 組字／候選／關聯詞時送 Ctrl/Alt/Super 快捷鍵、repeat、press/release | macOS 原始碼 golden 先固定、再以 Windows 交叉檢查：兩者都在 engine 前放行一般 App shortcut，普通 key-up 不處理；macOS Command 與 Windows Alt 的平台 modifier 不同，短按 Shift 只有 Windows 另作模式切換。L1 已覆蓋 Ctrl+C、Alt+F、Super+L、Ctrl+Left、repeat 及 key-up；X11/GTK3／GTK4 驗證長按 `Ctrl+\` 只切換一次，Qt6 驗證完整 press/release；三者都讓 Ctrl／Alt 在 reading／候選期間交回 App 且不破壞狀態，並按 toolkit 是否插入 `Alt+F` 的 `f` 固定 exact golden；GNOME Wayland VM 八路徑另驗證 Ctrl+C pass-through；Super/compositor、repeat 與多 App 仍待驗收 |
-| T10 | 在兩欄位、兩 App 切 focus；有候選時關閉 client；框架重啟／重新登入 | local X11/GTK3、GTK4 與 Qt6 已以同一視窗兩欄驗證第一欄候選失焦後清空 preedit、第二欄獨立提交「文」、切回第一欄不沿用舊候選並提交「中」；另在候選開啟時正常關閉 client、確認 Fcitx/addon 存活，重啟框架後由新 client 再提交「中」，各段含 `keyboard-us` 負控制。三套 toolkit 的兩個同時存活 App 另在空 composition 切焦點，驗證 App A 的英文全形與 App B 的中文半形狀態隔離，精確得到 `ａｂ中|文`，負控制為 `ab5j/ 1|jp61`。GTK4 失焦會短暫回報 client preedit 文字，切回後清除且最終 buffer 正確。macOS 失焦會 commit composing buffer，Windows TSF 則 abandon composition；GNOME Wayland VM 雙欄 16/16 已量到直接 Fcitx 路徑失焦提交原始 preedit、GTK 原生預設路徑清除 preedit；兩 App、瀏覽器、client/Fcitx recovery 與登出登入仍待補齊 |
-| T11 | 移 caret、選一段字後組字／替換、滑鼠移 selection；密碼／唯讀欄位 | 先依 macOS、再比對 Windows；local X11/GTK3／GTK4／Qt6 已驗證 active reading 中的方向、Home／End、PageUp／PageDown、Delete／Tab 與 Shift 變體不移 App caret／selection、不換欄且保留 reading；另依各 toolkit layout/cursor geometry 取得 hit point，以 XTest 真實拖曳選取既有「乙」、觀測 selection `1:2`，再由注音候選精確替換為「中」。密碼欄皆只收 literal 且不出現關聯詞；GTK3 會切到 `keyboard-us`，Qt6 則可能保留 engine 名稱。Qt6 唯讀多行欄以標準 `ImEnabled=false` query 發布狀態，三套唯讀欄完整鍵序後均不變。active composition 期間的指標 selection、瀏覽器、GNOME／Wayland 仍待驗收 |
-| T12 | 設定 UI 切直橫、比例、配色、錯誤提示聲、五布局、內建關聯詞分類；開符號列表點選／取消 | Windows 對標設定即時套用；縮放後 click hit test 一致；關閉／再開及重登入保存；符號送回原欄位且只一次；local X11/classic-ui 已在 GTK3／GTK4／Qt6 由 `Ctrl+0` 開表，分別以鍵盤或真實滑鼠點第一列提交「，」，GNOME Wayland VM 八路徑已驗證符號表鍵盤選字；仍需畫面、位置與真滑鼠點擊證據；不新增候選學習、注音自動修正或 F12–F15 佔位 UI |
+| T10 | 在兩欄位、兩 App 切 focus；有候選時關閉 client；框架重啟／重新登入 | local X11/GTK3、GTK4 與 Qt6 已以同一視窗兩欄驗證第一欄候選失焦後清空 preedit、第二欄獨立提交「文」、切回第一欄不沿用舊候選並提交「中」；另在候選開啟時正常關閉 client、確認 Fcitx/addon 存活，重啟框架後由新 client 再提交「中」，各段含 `keyboard-us` 負控制。三套 toolkit 的兩個同時存活 App 另在空 composition 切焦點，驗證 App A 的英文全形與 App B 的中文半形狀態隔離，精確得到 `ａｂ中|文`，負控制為 `ab5j/ 1|jp61`。GTK4 失焦會短暫回報 client preedit 文字，切回後清除且最終 buffer 正確。macOS 失焦會 commit composing buffer，Windows TSF 則 abandon composition；GNOME Wayland VM 雙欄 16/16 已量到直接 Fcitx 路徑失焦提交原始 preedit、GTK 原生預設路徑清除 preedit。VM 兩個同時存活 App 的直接 Fcitx 六路徑 12/12 通過；GTK Wayland bridge 兩路徑的負控制 2/2、正向 0/2，後者共用一個 IBus context 而跨 App 泄漏模式。候選中關閉 client、addon 存活及新 client 恢復八路徑 8/8，框架新 PID 後再 8/8；明確登出再登入後 T01／T06 八路徑 16/16；瀏覽器、sandbox 與長時間穩定性仍待補齊 |
+| T11 | 移 caret、選一段字後組字／替換、滑鼠移 selection；密碼／唯讀欄位 | 先依 macOS、再比對 Windows；local X11/GTK3／GTK4／Qt6 已驗證 active reading 中的方向、Home／End、PageUp／PageDown、Delete／Tab 與 Shift 變體不移 App caret／selection、不換欄且保留 reading；另依各 toolkit layout/cursor geometry 取得 hit point，以 XTest 真實拖曳選取既有「乙」、觀測 selection `1:2`，再由注音候選精確替換為「中」。密碼欄皆只收 literal 且不出現關聯詞；GTK3 會切到 `keyboard-us`，Qt6 則可能保留 engine 名稱。Qt6 唯讀多行欄以標準 `ImEnabled=false` query 發布狀態，三套唯讀欄完整鍵序後均不變。GNOME Wayland VM 八路徑的指標替換、負控制與 active-reading 編輯鍵另以乾淨輸出 21/24 加中斷後補跑 3/3 通過；密碼欄無 preedit，唯讀欄不變。active composition 期間改變指標 selection、瀏覽器仍待驗收 |
+| T12 | 設定 UI 切直橫、比例、配色、錯誤提示聲、五布局、內建關聯詞分類；開符號列表點選／取消 | Windows 對標設定即時套用；縮放後 click hit test 一致；關閉／再開及重登入保存；符號送回原欄位且只一次；local X11/classic-ui 已在 GTK3／GTK4／Qt6 由 `Ctrl+0` 開表，分別以鍵盤或真實滑鼠點第一列提交「，」，GNOME Wayland VM 八路徑已驗證符號表鍵盤選字，另以真 VM 指標點第一列 8/8 提交「，」並檢查 popup 清除；仍需多視窗位置、設定 UI 與視覺驗收；不新增候選學習、注音自動修正或 F12–F15 佔位 UI |
 | T14 | 套件安裝→注音註冊→實打字→升級→再打字→移除→重裝 | ELF deps、UI／資料存在、設定保留、無重複註冊或殘留自啟；無自動改預設框架；倉頡／簡易既有註冊不算支援條件 |
 | T15 | 密集連打、長候選、延伸漢字／Emoji 資料、locale 切換、兩 context 交錯 | 無 UTF 截斷、死鎖、串字、崩潰與無界記憶體成長；連打結果逐字一致 |
 

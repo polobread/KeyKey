@@ -55,7 +55,7 @@ for index in range(desktop.get_child_count()):
         window = app.get_child_at_index(window_index)
         if sys.argv[1] == window.get_name():
             text_fields = fields(window)
-            if len(text_fields) != 2:
+            if len(text_fields) < int(sys.argv[2]):
                 continue
             rect = Atspi.Component.get_extents(window, Atspi.CoordType.SCREEN)
             print(json.dumps({"app": app.get_name(), "window": window.get_name(),
@@ -66,21 +66,21 @@ sys.exit(2)
 '''
 
 
-def find_fields(title):
+def find_fields(title, minimum_count=2):
     command = ("DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus "
                "/usr/bin/python3 -c " + shlex.quote(AT_SPI_FIELDS) + " "
-               + shlex.quote(title))
+               + shlex.quote(title) + " " + str(minimum_count))
     last = None
     for _ in range(50):
         try:
             last = json.loads(guest(command))
             fields = sorted(last["fields"], key=lambda item: item["y"])
-            if len(fields) == 2:
+            if len(fields) >= minimum_count:
                 return fields, last
         except RuntimeError:
             pass
         time.sleep(0.2)
-    raise RuntimeError(f"Could not identify two text fields for {title}: {last}")
+    raise RuntimeError(f"Could not identify {minimum_count} text fields for {title}: {last}")
 
 
 def select_engine(name):
@@ -122,7 +122,7 @@ def gtk4_window_origin(screenshot):
             if (215 <= red <= 225 and 212 <= green <= 222 and
                     208 <= blue <= 220 and abs(red - green - 3) < 4):
                 matches.append(x)
-        if len(matches) > 400 and max(matches) - min(matches) > 600:
+        if len(matches) > 250 and max(matches) - min(matches) > 350:
             top = y
             row = top + 2
             matches = []

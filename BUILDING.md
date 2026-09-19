@@ -381,7 +381,18 @@ passes four input paths; GNOME Text Editor passes the direct Fcitx Wayland and
 XWayland paths, with two GTK Wayland IM paths still failing. Full login/window
 acceptance and release packages are not complete. The guest also passes 16/16
 two-field focus phases, with a recorded raw-preedit blur difference between
-direct Fcitx and default GTK Wayland paths. See the
+direct Fcitx and default GTK Wayland paths. Separate editing-field evidence
+passed 21 cases before a GNOME Shell crash and the remaining three after
+session recovery; symbol-list pointer selection passed all eight modes.
+Two live applications preserve independent modes in six direct Fcitx paths
+(12/12), while the two default GTK Wayland bridge paths share one IBus input
+context and fail mode isolation. All eight modes passed candidate-client
+closure and immediate new-client recovery; all eight also passed after a
+fresh Fcitx process was started. An explicit GDM logout/login followed by
+T01 and pointer T06 also passed 16/16. Firefox Snap and Epiphany passed 15
+real browser field/mode cases across native Wayland and XWayland, covering
+`<textarea>`, `<input>` and `contenteditable` with DOM input checks and
+literal controls. See the
 [development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
 
 ### Linux (in development)

@@ -45,6 +45,7 @@ class Case:
     style: str = "Vertical"
     simplified: bool = False
     mouse_row: int = 0
+    negative_keys: tuple[str, ...] = ()
 
 
 MODES = {
@@ -153,6 +154,10 @@ CASES = {
     "T12-symbol-list": Case(
         "，", "1", "，", ("ctrl-0", "1"),
     ),
+    "T12-symbol-mouse": Case(
+        "，", "!", "，", ("ctrl-0",), mouse_row=1,
+        negative_keys=("ctrl-0", "shift-1"),
+    ),
 }
 
 
@@ -260,6 +265,23 @@ class VncPointer:
         self.connection.sendall(struct.pack(">BBHH", 5, 1, x, y))
         time.sleep(0.1)
         self.connection.sendall(struct.pack(">BBHH", 5, 0, x, y))
+
+    def drag(self, qmp, start, end):
+        for x, y in (start, end):
+            if not (0 <= x < self.width and 0 <= y < self.height):
+                raise RuntimeError(f"Selection drag outside VNC screen: {x},{y}")
+        qmp.move_pointer(*start, self.width, self.height)
+        time.sleep(0.15)
+        self.connection.sendall(struct.pack(">BBHH", 5, 1, *start))
+        time.sleep(0.15)
+        for step in range(1, 7):
+            x = start[0] + (end[0] - start[0]) * step // 6
+            y = start[1] + (end[1] - start[1]) * step // 6
+            qmp.move_pointer(x, y, self.width, self.height)
+            self.connection.sendall(struct.pack(">BBHH", 5, 1, x, y))
+            time.sleep(0.08)
+        self.connection.sendall(struct.pack(">BBHH", 5, 0, *end))
+        time.sleep(0.15)
 
 
 def read_ppm(path):
@@ -555,7 +577,8 @@ def run_case(qmp, case_name, mode_name):
         selected = session_command("fcitx5-remote -s keyboard-us; fcitx5-remote -n")
         if not selected or selected.splitlines()[-1] != "keyboard-us":
             raise RuntimeError(f"Negative control did not select keyboard-us: {selected}")
-        qmp.keys(("ctrl-a", "backspace") + case.keys)
+        qmp.keys(("ctrl-a", "backspace") +
+                 (case.negative_keys or case.keys))
         wait_file(case_dir, "final.txt")
         result = guest(f"test \"$(cat {case_dir}/final.txt)\" = {shlex.quote(case.literal)}; "
                        f"grep -Fxq result=passed {case_dir}/host-events.log; "
