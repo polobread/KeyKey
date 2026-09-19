@@ -142,6 +142,12 @@ data and Fcitx 5 components; they are development artifacts, not a complete
 complete feature-parity claim; the other two paths are retained extension
 features rather than Windows-parity blockers.
 
+An Ubuntu 24.04.5 GNOME Wayland KVM guest now passes five native Wayland T01
+typing smokes across GTK 3, GTK 4 and Qt 6, including the default GTK Wayland
+input path and a keyboard-us negative control. See
+[the VM guide](docs/gnome-wayland-vm.md); this does not complete the broader
+Wayland or XWayland acceptance matrix.
+
 Current feature evidence is tracked in [`docs/parity.md`](docs/parity.md). The
 compatibility inventory is machine-readable in
 [`ci/support-matrix.json`](ci/support-matrix.json): nine Ubuntu targets are the
@@ -224,6 +230,13 @@ fcitx5 -r -d
 The Ubuntu 24.04 gate performs a temporary default `/usr/local` install, applies
 those explicit session search paths, loads the addon in Fcitx 5, types through
 GTK 3 on X11, and uninstalls it through the manifest.
+For a broader local source-install gate, `ci/dev.sh source-e2e` builds separate
+`/usr/local`, `/usr`, and custom prefix variants in a clean one-shot container
+using the development image. It runs the 82-case GTK 3/GTK 4/Qt 6 X11 suite for each installed
+variant, then removes it through its manifest. The custom prefix contains
+spaces and uses custom lib/data directories; that variant also checks that an
+unrelated file survives removal and that a reinstall can type in all three
+toolkits. Every install refuses an existing project-owned system path.
 
 Release maintainers can create the Linux source archive and checksum from a
 committed revision, then rebuild the archive without a Git directory or prior
@@ -249,6 +262,7 @@ Source/Loaders/Linux-IME/ci/dev.sh up
 Source/Loaders/Linux-IME/ci/dev.sh build
 Source/Loaders/Linux-IME/ci/dev.sh test
 Source/Loaders/Linux-IME/ci/dev.sh source
+Source/Loaders/Linux-IME/ci/dev.sh source-e2e
 Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
 Source/Loaders/Linux-IME/ci/dev.sh verify
 Source/Loaders/Linux-IME/ci/dev.sh package
@@ -283,7 +297,9 @@ is needed.
 `source` runs both source-directory and out-of-source configure/GNU Make
 builds, including CTest, custom install directories, DESTDIR staging,
 uninstall, clean, and distclean. It is separate from the incremental Ninja
-cache used by `build` and `test`.
+cache used by `build` and `test`. `source-e2e` is a longer isolated system-install
+gate; the hosted pull request continues to run only the `/usr/local` source
+typing smoke.
 
 Use `ci/dev.sh status` to inspect the session, `ci/dev.sh shell` for an
 interactive shell, and `ci/dev.sh down` to remove the container. `down` retains
@@ -310,6 +326,15 @@ the named build volumes, so a later `up` can continue incrementally.
 - Run `ci/dev.sh status`, `ci/dev.sh test`, and then `ci/dev.sh verify` after
   `up`. Container presence alone does not prove that the build and X11 paths
   can use the persistent volumes.
+- For a full GNOME Wayland guest, install `qemu-system-x86`, `qemu-utils`, and
+  `ovmf` plus `cloud-image-utils`, ensure the user belongs to `kvm`, then run
+  `tools/check-wsl-vm-host.sh` from a new, normal WSL shell. It checks the KVM
+  API, OVMF files, and a short QEMU startup with KVM acceleration. A restricted
+  process may hide `/dev/kvm`; retry the check in a normal WSL shell before
+  changing the host configuration. The reproducible GNOME VM and five native
+  Wayland T01 typing smokes are documented in
+  [gnome-wayland-vm.md](docs/gnome-wayland-vm.md). WSLg GUI apps do not
+  constitute a full GNOME desktop session.
 
 The stage named volume is mounted at `out/stage`, while each architecture uses
 a removable child such as `out/stage/dev-container-amd64`. The staging action

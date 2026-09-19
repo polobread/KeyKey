@@ -387,9 +387,18 @@ local amd64 container 已通過兩種 build、2/2 CTest、DESTDIR、含空白的
 重新 configure、卸載保留 sentinel、同一 commit 的 2.0 MB source tarball 在無 `.git`
 與無 cache 的解壓目錄重建，以及預設 `/usr/local` 真安裝、設定明示 session 搜尋路徑
 後的 Fcitx 5 → GTK 3 X11 注音逐鍵輸入與 manifest 卸載。Ubuntu 22.04 與 24.04 hosted
-CI 仍待執行；`/usr`／
+CI 已在 run `34742072894` 通過基本 source gate；`/usr`／
 任意自訂 prefix 的實際打字、升級／重裝及其餘 active Ubuntu 尚未完成，所以
 T14-SOURCE 與 P4／P5 不標成全部通過。
+
+2026-09-20 Ubuntu 24.04 local amd64 再完成三種原始碼真安裝：`/usr/local`、
+`/usr`、含空白路徑與自訂 libdir／datadir 的 prefix。每組核對 Fcitx 5 實際載入
+的 addon 路徑，並以 GTK3／GTK4／Qt6 通過 82 個非設定視窗 X11 真打字案例後依
+manifest 卸載；自訂 prefix 的無關 sentinel 在移除後仍在，重裝後三套 toolkit
+的 T01 亦通過。`/usr`／自訂 prefix 在乾淨的一次性 container 跑，因長駐
+dev container 先前的 staged gate 已留下 `/usr` KeyKey 檔案，覆寫保護會拒絕
+混用。跨版本 source 升級、22.04 對等系統安裝、其他 active Ubuntu 與
+GNOME／Wayland 仍未完成。
 
 ## 6. GitHub Actions 設計
 
@@ -450,6 +459,17 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 - 優先 QEMU 完整 guest：systemd + session D-Bus + 真 GNOME Shell／KWin +
   distro 原生框架，以軟體繪圖與虛擬鍵盤執行。探測 `/dev/kvm` 可用性，不假設
   每種 host／架構都有 nested virtualization。TCG 備援也要量測成本與 timeout。
+- 2026-09-20 本機 WSL2 Ubuntu 24.04 已在正常使用者行程確認 KVM API 12，
+  QEMU 8.2.2／OVMF 可啟動官方 Ubuntu 24.04.5 cloud image。完整 GDM
+  自動登入的 GNOME Shell 46 session 為 active Wayland，Fcitx 5.1.7 maps
+  確認載入系統安裝的 KeyKey addon、Wayland 與 IBus frontend；QMP 真實鍵盤
+  注入在 GTK3、GTK4、Qt6 原生 Wayland 各完成 T01，GTK3／GTK4 另在未設
+  `GTK_IM_MODULE` 下通過，同樣包含 preedit／「中」／英文負控制，合計 5/5。
+  最小桌面套件選錯 Netplan renderer 的 guest 重啟故障已修正；VM 停止後
+  重新啟動，SSH、Wayland login、Fcitx addon 與五案再次恢復／全過。
+  重建流程見 `Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md`。受限行程的
+  `nodev` `/dev` 與 QMP socket 權限不能用來判定一般 WSL host 能力；
+  popup/focus 完整矩陣、XWayland 與 hosted runner 仍待驗證。
 - Nested compositor 可先加速開發，但只有證明相同 protocol／panel／focus 路徑時，
   才能取代相應項目；Weston headless 不能代替 GNOME 或 Plasma 驗收。
 - 若 hosted runners 無法可靠完成正式矩陣，記錄具體失敗及嘗試過的方案，向使用者

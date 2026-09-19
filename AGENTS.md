@@ -23,8 +23,10 @@ GTK 4 與 Qt 6 跑過各自適用的完整第一階段真實輸入矩陣，
 直／橫候選設定、中英文模式與全半形、XDG 錯誤提示聲、Fcitx 原生設定 schema 與
 Ubuntu 22.04／24.04
 Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基線已通過，
-隔離 GNOME X11 的 76 案 desktop-safe gate 亦已通過；完整 GNOME 登入、XWayland 與
-native Wayland 仍未跑。版號更新與這些 local
+隔離 GNOME X11 的 76 案 desktop-safe gate 亦已通過；2026-09-20
+完整 GNOME Wayland KVM guest 另通過五個 GTK3／GTK4／Qt6 T01 smoke，
+候選窗亦在畫面上可見。XWayland、完整 Wayland／App／popup 矩陣與重登仍未跑。
+版號更新與這些 local
 測試都不代表 Linux 已可發布。
 **主要支援／最完整測試環境是 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）**；
 先完成 X11、native Wayland、XWayland 的完整打字／視窗／App／套件驗收，再完成
@@ -55,6 +57,22 @@ native Wayland 仍未跑。版號更新與這些 local
   這時 `docker info` 會顯示 `permission denied`。先在一般 WSL shell 重跑
   `docker info`；若正常，應允許該 sandbox 存取本機 socket，不要改用 `sudo docker`、
   `chmod 666` 或隨意改群組。這是呼叫行程隔離，不是 Docker daemon 未啟動。
+- 2026-09-20 WSL2 Ubuntu 24.04 主機已確認可用 KVM：正常 WSL 行程的
+  `/dev/kvm` 是 `root:kvm`、`10:232`，KVM API version 為 12；開發使用者
+  已加入 `kvm` 群組，新開的 WSL 行程可讀寫該裝置。已安裝 Ubuntu 的
+  `qemu-system-x86`／`qemu-utils` 8.2.2 與 OVMF 2024.02，短暫啟動
+  `qemu-system-x86_64 -accel kvm` 成功取得 QMP greeting。受限行程的 `/dev`
+  是 `nodev` tmpfs，會遮住 `/dev/kvm`；從那裡看到裝置不存在不能推定正常
+  WSL2 缺少 KVM。後續已用官方映像建立 Ubuntu 24.04.5 KVM guest，安裝 GNOME
+  Shell 46、Fcitx 5.1.7 與本專案 1.2.8 `.deb`；GDM 自動登入的 active session
+  由 `loginctl` 確認為 Wayland，Fcitx maps 同時載入本專案 addon、Wayland 與
+  IBus frontend。QEMU 鍵盤注入的 GTK3／GTK4／Qt6 原生 Wayland T01 smoke，
+  加上 GTK3／GTK4 未設 `GTK_IM_MODULE` 路徑，共 5/5 通過三段 preedit、
+  「中」提交及 `keyboard-us` literal 負控制。完整 XWayland、popup 視覺與
+  T01–T12 桌面矩陣仍待驗收。
+  後續從正常 WSL shell 執行
+  `Source/Loaders/Linux-IME/tools/check-wsl-vm-host.sh` 可重驗前置條件；VM
+  建立、安裝與 smoke 步驟見 `docs/gnome-wayland-vm.md`。
 - Rootless Docker 的 bind mount 會把 WSL checkout owner 顯示成 container root；
   one-shot package／X11 scripts 因此會從 `docker info` 偵測 rootless，改以 container
   UID/GID 0 寫 `out/`。Rootful engine 才沿用 host UID/GID。不可一律傳
@@ -332,6 +350,34 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ## 已知陷阱（不要重複調查）
 
+- **WSL2 的 KVM、Docker 與 Windows interop 可能只被呼叫行程隔離**：
+  2026-09-20 此主機的受限行程看不到 `/dev/kvm`，`docker info` 顯示 socket
+  `permission denied`，`wsl.exe --version` 也可能回報 vsock 錯誤；正常 WSL
+  行程的 KVM API 12、rootless Docker 29.8.0 與 interop 均正常。
+  先比較正常 WSL shell 的 `ls -l /dev/kvm`、`id`、`docker info` 與
+  `wsl.exe --version`；需要 KVM 的開發指令要在能存取 host 裝置的行程執行。
+  不要因此重裝 WSL、改 Docker socket mode 或覆寫 `.wslconfig`。
+  WSLg 只提供 GUI App 整合，不是完整 Ubuntu Desktop session；目前 KVM guest
+  的五個原生 Wayland T01 smoke 也不能代替完整 GNOME popup／App／發布驗收。
+  受限行程也可能拒絕連接 `out/gnome-vm/qmp.sock`，一般 WSL shell 則可；
+  讓測試行程存取該本機 socket，不需修改 QEMU 或 guest 權限。
+  2026-09-20 的 GTK3 Wayland 候選截圖中，候選窗位於欄位下方且九列可見；
+  GNOME 同時顯示 Fcitx「Wayland Diagnose」通知，建議安裝 Input Method
+  Panel GNOME Shell extension。這只證明此虛擬解析度的一次畫面，不能把
+  popup 四邊定位、遮擋、閃爍或多螢幕標為通過。
+- **最小 GNOME 套件會改掉 VM 的 Netplan renderer**：官方 cloud image 原用
+  `systemd-networkd`，以 `ubuntu-desktop-minimal --no-install-recommends` 安裝後，
+  Netplan 選了未安裝的 NetworkManager；下一次啟動的 `enp0s2` 保持 DOWN、
+  `systemd-networkd-wait-online` 等兩分鐘，SSH 只連上 QEMU hostfwd 而收不到
+  banner。2026-09-20 已在 guest 將 renderer 明確設回 `networkd`、生成設定並
+  重啟 networkd，介面取得 `10.0.2.15/24`、SSH 恢復；
+  `tools/gnome-vm-setup-guest.sh` 現在於安裝後寫入 `99-keykey-vm.yaml`。
+  guest 測試 host 也須複製到使用者的 `.local/libexec/keykey-e2e/`，不能只放
+  重啟會清空的 `/tmp`。修正後再次停止／啟動 VM，GNOME Wayland、SSH、
+  Fcitx addon 自動恢復，五個 T01 smoke 仍全過。不要把 QEMU hostfwd
+  可連線誤判為 guest SSH 可用。
+  `tools/check-wsl-vm-host.sh` 在受限行程會給出明確的 `/dev/kvm` 提示，
+  應由正常 WSL shell 執行。
 - **Ubuntu 24.04 的主框架是 Fcitx 5**：這是使用者指定的主要支援環境，需最完整
   測試；不能只保留 Ubuntu + IBus 或以 KDE + Fcitx 的結果替代。GNOME 可能使用
   IBus protocol bridge，但實測必須確認載入本專案 Fcitx addon。主環境每次相關
@@ -453,6 +499,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `/usr` 安裝則使用發行版原生位置。2026-09-13 local amd64 已通過，含同一 commit 的 2.0 MB source tarball 在無
   `.git`／無 cache 解壓目錄重建；Ubuntu 22.04／24.04 兩個 hosted job 亦已在
   run `34742072894` 通過。
+- **原始碼 `/usr` 真安裝要用乾淨 container**：長駐開發 container 可能已由 staged
+  X11 E2E 把 KeyKey 複製到 `/usr`。2026-09-20 首次擴充 source gate 時，`/usr` 的
+  覆寫保護因此如預期拒絕安裝；不可刪掉保護或在共用 session 直接卸載檔案。
+  `ci/dev.sh source-e2e` 改以同一 dependency image 啟動一次性 container；原始碼
+  `/usr/local`、`/usr`、含空白的自訂 prefix 各自編譯、安裝、跑完整 82 案、依
+  manifest 卸載。自訂 prefix 另保留 sentinel，重裝後再跑三個 toolkit 的 T01。
+  `FCITX_ADDON_DIRS` 必須同時包含自訂 addon 目錄與 Fcitx 系統 addon 目錄；測試
+  另核對 `/proc/PID/maps` 的實際 addon 路徑，避免從其他 prefix 誤載入。
 - **Rootless Docker 的 one-shot build 也要使用 container-side root**：
   `run-container-build.sh`、獨立 X11 與 package scripts 的 bind mount 規則一致。
   Rootless engine 會把 WSL checkout owner 映射為 container UID/GID 0；若仍傳 host
@@ -1187,6 +1241,17 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Linux 原生版
 
+- [x] 2026-09-20 修正 WSL2 VM host 前置條件：確認 KVM 核心與正常 WSL
+      `/dev/kvm` 可用，開發使用者加入 `kvm` 群組，安裝 QEMU／OVMF 並以
+      一般使用者成功啟動 KVM 加速空機；受限行程的 `/dev` 掛載不能當成
+      WSL2 虛擬化能力證據。
+- [x] 2026-09-20 建立 Ubuntu 24.04.5 GNOME Wayland KVM guest，實裝 Fcitx 5
+      與本專案 `.deb`，驗證 active Wayland login 與 addon 載入；QMP 逐鍵送入
+      GTK3／GTK4／Qt6，加 GTK3／GTK4 預設 Wayland IM 路徑共 5/5 通過
+      T01 preedit／「中」提交／英文負控制。建立可重跑的 VM prepare、provision
+      與 smoke 入口；修復最小桌面安裝後 Netplan renderer 選錯及 guest `/tmp`
+      重啟清除 host 的問題，完整 VM 停止／啟動後五案再次通過。
+      XWayland、GNOME popup／多 App／設定與登出再登入仍待完成。
 - [x] 2026-09-14 為使用者的 WSLg 候選窗一秒殘影與連打多重殘影，建立獨立
       GNOME Shell／TigerVNC／noVNC X11 診斷桌面；相同 addon 通過三次關聯選字、
       十次「ㄎ」連打、英文負控制，以及關窗後約 59 ms 的候選區域像素清除檢查。
@@ -1217,9 +1282,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       build、2/2 CTest、staging／卸載／清理，及預設 `/usr/local` 暫時真安裝後的 Fcitx
       5 → GTK 3 X11 T01 打字與卸載。
 - [ ] 完成 T14-SOURCE 其餘發布 gate：Ubuntu 22.04／24.04 hosted 已在
-      run `34742072894` 通過；再補 `/usr`／任意 prefix 的注音完整真打字、原始碼
-      升級／重裝、9 個 active Ubuntu 與 P4／P5 release evidence；目前局部結果不得當成
-      整組 T14 或 Linux 1.2.8 已可發布。
+      run `34742072894` 通過；2026-09-20 Ubuntu 24.04 local amd64 又以原始碼
+      `/usr/local`、`/usr`、含空白的自訂 prefix 各通過 82 個 X11 真實輸入案例，
+      自訂 prefix 移除後保留 sentinel、重裝後 GTK3／GTK4／Qt6 T01 各通過。
+      仍須補原始碼升級 fixture、Ubuntu 22.04 的相同系統安裝驗收、其餘
+      active Ubuntu 與 P4／P5 release evidence；目前局部結果不得當成整組 T14 或
+      Linux 1.2.8 已可發布。
 - [x] 已將 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）設為首要支援與最完整
       測試目標；開發／測試計畫同步新增主環境完整驗收與 required CI 規格。
 - [x] 2026-09-12 完成開發／測試 plan 與原始碼功能盤點；沒有 Linux build、

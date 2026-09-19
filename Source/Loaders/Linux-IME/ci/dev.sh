@@ -15,6 +15,7 @@ Commands:
   build              Incrementally configure and build.
   test               Incrementally build and run CTest.
   source             Test the configure and GNU Make source-build interface.
+  source-e2e         Test source installs at three prefixes and X11 typing.
   e2e [CASE|all]     Stage the current build and run selected X11 typing cases.
   verify [CASE|all]  Run build, CTest, staged checks, and X11 typing.
   package            Build the Ubuntu 24.04 development .deb files once.
@@ -44,6 +45,25 @@ run_source_build() {
     --env "HOME=$container_home" \
     --workdir "$container_workdir" \
     "$container_name" ci/dev-session-action.sh source
+}
+
+run_source_e2e() {
+  local bind_mount_uid=$host_uid
+  local bind_mount_gid=$host_gid
+  if docker info --format '{{json .SecurityOptions}}' |
+      grep -Fq '"name=rootless"'; then
+    bind_mount_uid=0
+    bind_mount_gid=0
+  fi
+  docker run --rm \
+    --platform "$platform" \
+    --user 0:0 \
+    --env "KEYKEY_HOST_UID=$bind_mount_uid" \
+    --env "KEYKEY_HOST_GID=$bind_mount_gid" \
+    --volume "$repository_root:/workspace/KeyKey" \
+    --workdir "$container_workdir" \
+    "$image" \
+    ci/test-configure-make-system-e2e.sh --extended
 }
 
 prepare_package_build() {
@@ -104,6 +124,11 @@ case "$command_name" in
     if [[ -n "$argument" ]]; then usage >&2; exit 2; fi
     ensure_container
     run_source_build
+    ;;
+  source-e2e)
+    if [[ -n "$argument" ]]; then usage >&2; exit 2; fi
+    ensure_container
+    run_source_e2e
     ;;
   e2e)
     ensure_container

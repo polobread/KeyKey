@@ -4,7 +4,8 @@
 container build/staged-install checks、Ubuntu 22.04／24.04 Debian package checks，
 以及 Ubuntu 24.04 Fcitx 5 → GTK 3／GTK 4／Qt 6 各自適用的第一階段 L3 X11
 完整真實逐鍵矩陣；隔離 GNOME X11 session 另已通過 76 個不重啟桌面 Fcitx 的
-desktop-safe 案例。下列完整登入、XWayland／native Wayland、App 與視窗 suite 仍待實作。
+desktop-safe 案例。2026-09-20 已在 Ubuntu 24.04.5 GNOME Wayland KVM guest
+通過五個 T01 smoke；下列完整 XWayland／native Wayland、App 與視窗 suite 仍待實作。
 搭配 [開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
 
 Linux 首版目標為 1.2.8。第一階段驗收 Windows TSF 目前實際提供的全部功能，對應
@@ -17,6 +18,24 @@ F01–F02、F05–F11，以及 F16 的 Windows 設定／語系部分；五種注
 **主要環境：Ubuntu Desktop 24.04 LTS + Fcitx 5 + GNOME，x86_64。**
 這一組須有最完整的打字、視窗、App、sandbox、安裝與穩定性測試；先完成此組
 再擴充其他環境。IBus 在相同 Ubuntu 版本上的結果與 Fcitx 分開計算。
+
+2026-09-20 本機 WSL2/KVM 中以官方 SHA-256 驗證的 Ubuntu 24.04.5 amd64 映像
+建立完整 GDM／GNOME Shell 46 Wayland login，實裝
+`fcitx5-chichi77-keykey`／`chichi77-keykey-data` 1.2.8-1+ubuntu24.04；
+Fcitx 5.1.7 行程 maps 確認 KeyKey addon、Wayland 與 IBus frontend。
+QMP 的 VM 鍵盤事件經 GTK3、GTK4、Qt6 原生 Wayland 欄位各自提交「中」，
+三段 preedit 為「ㄓ／ㄓㄨ／ㄓㄨㄥ」，改用 `keyboard-us` 後同鍵序精確提交
+`5j/ 1`；GTK3／GTK4 另各以未設 `GTK_IM_MODULE` 的預設 Wayland IM 路徑
+通過相同案例，合計 5/5。事件 trace 在 guest 的 `/tmp/keykey-wayland-smoke-*`；
+入口與重建流程見 [VM 手冊](Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md)。
+一次 GTK3 直式候選的 QMP 截圖顯示完整九列候選窗緊鄰欄位下方；同時出現
+Fcitx「Wayland Diagnose」建議安裝 GNOME Shell Input Method Panel 的通知。
+畫面保存在忽略版控的 `out/gnome-vm/wayland-popup-before.png` 與
+`wayland-popup-candidate.png`，只算單一虛擬解析度的目視樣本。
+guest 經 QEMU ACPI 停止並重新 KVM 啟動後，SSH、GNOME Wayland、Fcitx addon
+自動恢復；五個 T01 smoke 再次 5/5 通過。這驗證 VM 重啟，不代替使用者登出／再登入。
+這是完整登入桌面內的原生 Wayland T01 局部證據，尚未驗證候選窗位置／畫面矩陣、
+XWayland、瀏覽器／sandbox、其他 T cases、桌面登出登入或 hosted runner。
 
 目前可重現的 L1／build 結果（2026-09-13）：Ubuntu 24.04 x86_64、ARM64 preview
 及 Ubuntu 22.04 x86_64 container 均能編譯 engine 與 Fcitx 5 addon；CTest 以 repository
@@ -218,6 +237,11 @@ P0 首選 QEMU 的 `input-send-event` 或 `send-key`，注入 guest 的虛擬鍵
 記錄 `XDG_SESSION_TYPE`、compositor、framework、toolkit backend／plugin、
 程式版本與實際啟動參數；確認被測視窗確實用 Wayland，而非偷偷 fallback X11。
 native Wayland 與 XWayland 分開報告。`xdotool` 不當成 native Wayland 注入器。
+
+2026-09-20 WSL2 Ubuntu 24.04 主機已可讓一般使用者透過 KVM 12 啟動
+QEMU 8.2.2 空機，並具備 OVMF；這是建立完整 guest 的前置條件，尚未取得
+GNOME Wayland、XWayland 或虛擬鍵盤注入的驗收結果。受限行程可能用
+`nodev` `/dev` 隱藏 `/dev/kvm`，判定前須在正常 WSL 行程重查。
 Nested GNOME／KWin 可做較快子集合，完整 guest 為首版 release 優先驗證方式。
 
 ### Test hosts
@@ -309,6 +333,15 @@ T14-SOURCE-BUILD／CONFIG／STAGE／CLEAN 與 INSTALL 的局部證據，不涵�
 `/usr`／任意 prefix 真打字、注音完整案例、升級／重裝或其他 Ubuntu；後者仍待
 P4／P5。Ubuntu 22.04／24.04 hosted jobs 已通過同一局部 source gate，但不得因此將整組
 T14-SOURCE 標成通過。
+
+2026-09-20 Ubuntu 24.04 local amd64 另以 source build 分別在 `/usr/local`、`/usr`
+與含空白的自訂 prefix／libdir／datadir 真安裝，每組經 Fcitx 5 實際載入該路徑的
+addon，GTK3／GTK4／Qt6 跑完 82 個非設定視窗 X11 案例，皆通過，並依 manifest
+卸載確認檔案消失。自訂 prefix 中的無關 sentinel 在卸載後保留，重裝後三套 toolkit
+的 T01 再通過。`/usr` 與自訂 prefix 使用乾淨的一次性 Ubuntu container；
+`/usr/local` 使用長駐開發 container。這補上 24.04 的三種 prefix、完整 X11
+打字與重裝局部證據，仍不涵蓋原始碼跨版本升級、Ubuntu 22.04 的對等系統安裝、
+其他 active Ubuntu 或 GNOME／Wayland。
 
 ## 5. 桌面與應用程式矩陣
 

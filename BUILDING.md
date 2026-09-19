@@ -5,7 +5,8 @@
 Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
 外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
 並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
-但尚未完成 XWayland／native Wayland、完整登入與視窗驗收或正式套件。開發／套件規格見
+另在完整 Ubuntu 24.04 GNOME Wayland KVM guest 通過五個原生 Wayland T01
+打字 smoke；XWayland、完整 Wayland／視窗驗收與正式套件仍待完成。開發／套件規格見
 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
@@ -61,6 +62,7 @@ userspace。日常修改優先使用一個長駐的 native-architecture 開發 c
 Source/Loaders/Linux-IME/ci/dev.sh up
 Source/Loaders/Linux-IME/ci/dev.sh test
 Source/Loaders/Linux-IME/ci/dev.sh source
+Source/Loaders/Linux-IME/ci/dev.sh source-e2e
 Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
 Source/Loaders/Linux-IME/ci/dev.sh verify
 Source/Loaders/Linux-IME/ci/dev.sh package
@@ -71,6 +73,11 @@ incremental build／stage 放在 Docker named volumes；`down` 只移除 contain
 編譯快取。`e2e` 可指定一個 case、逗號分隔的 cases 或 `all`。這條快速路徑產生的
 ARM64 package 是開發 preview，不能取代 x86_64 release gate；`package` 也不取代乾淨
 runtime container 的安裝／升級／移除驗證。
+`source-e2e` 使用乾淨的一次性 container，分別驗證 `/usr/local`、`/usr` 與自訂
+prefix 的原始碼安裝、GTK3／GTK4／Qt6 X11 真實打字及解除安裝；自訂 prefix 另驗證
+無關檔案保留與重裝。
+Ubuntu 24.04 GNOME Wayland 的本機 KVM guest 建立、`.deb` 安裝與五個原生
+Wayland T01 smoke 見 [VM 手冊](Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md)。
 
 Windows 11 可從 WSL2 Ubuntu 使用同一組指令。Repository 必須放在 WSL 的 Linux
 filesystem（例如 `/home/.../KeyKey`），不要放在 `/mnt/c` 或會自動轉 CRLF 的 Windows
