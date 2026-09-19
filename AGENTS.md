@@ -880,9 +880,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   選取，不是 AssociatedPhrase 關聯詞。
 - **Android 首頁與設定頁要避開前相機挖孔**：targetSdk 36 的 Activity 會 edge-to-edge，
   兩頁由 `UiInsets` 把 system bars 與 display cutout 加到既有 padding；不要改回固定
-  上邊距。首頁第三個按鈕開啟震動設定，`HapticSettings` 固定使用
-  `0/10/20/30/50/80/100/150/200ms` 九段並以 SharedPreferences 共用給 IME；`0`
-  表示關閉，震動需要 manifest 的 `VIBRATE` 權限。
+  上邊距。首頁第三個按鈕開啟震動設定，`HapticSettings` 使用
+  `0/1/2/3/5/10/20/30/50/100ms` 十段並以 SharedPreferences 共用給 IME；舊值對應
+  最接近的一段，等距時選較短的一段。`0` 表示關閉，震動需要 manifest 的 `VIBRATE` 權限。
 - **Android Backspace 要以完整文字圖形為單位**：有注音 reading 時由引擎逐步刪除
   聲調、韻母、介音、聲母，候選開啟也不可只關候選而不退音；reading 為空時才由
   `TextDeletion` 計算游標前完整 grapheme 的 UTF-16 長度，讓代理字元、變體選擇符、
@@ -1767,6 +1767,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Android
 
+- [x] 2026-09-19 震動時間改為 0、1、2、3、5、10、20、30、50、100ms 十段；直橫式
+      鍵盤高度各改為 50%、75%、90%、100%、110%、125%、150%、175%、200% 九段；
+      舊的任意數值讀取時對應到最近段。設定頁只在放開震動滑桿後試震一次，0 不震動。
+      `lintDebug testDebugUnitTest assembleDebug` 已通過；API 26 `Medium_Phone` 已安裝
+      debug APK，檢查設定頁初始值與滑桿切換到 100ms、110% 的顯示，未見崩潰或權限錯誤。
+      真機短震動手感與六台 AVD 完整矩陣仍需驗收。
 - [x] 2026-09-17 已將注音字表與 30 個關聯詞庫改為建置時產生 `.kki` 索引；core 不再於
       IME 啟動時解析 CIN，關聯詞改用低優先序背景載入及按鍵延遲解碼。另加入直式／橫式
       各自 50%–200% 的虛擬鍵盤高度、0–100ms 每 1ms 的震動設定與舊震動設定遷移；

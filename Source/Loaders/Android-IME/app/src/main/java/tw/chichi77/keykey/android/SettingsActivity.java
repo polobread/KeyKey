@@ -3,6 +3,8 @@ package tw.chichi77.keykey.android;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -70,8 +72,9 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         content.addView(value, matchWrap(dp(0), dp(12)));
 
         SeekBar duration = new SeekBar(this);
-        duration.setMax(HapticSettings.MAX_DURATION_MS);
-        duration.setProgress(HapticSettings.durationMs(this));
+        duration.setMax(HapticSettings.maxSelectionIndex());
+        duration.setProgress(HapticSettings.selectionForDurationMs(
+                HapticSettings.durationMs(this)));
         content.addView(duration, matchWrap(dp(0), dp(4)));
 
         LinearLayout endpoints = new LinearLayout(this);
@@ -268,16 +271,24 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 PhraseSettings.baseCollectionOnly()));
         selectNone.setOnClickListener(view -> setAllCollections(false));
 
-        updateHapticValue(value, duration.getProgress());
+        updateHapticValue(value, HapticSettings.durationMsForSelection(duration.getProgress()));
         duration.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                HapticSettings.setDurationMs(SettingsActivity.this, progress);
-                updateHapticValue(value, progress);
+                int durationMs = HapticSettings.durationMsForSelection(progress);
+                HapticSettings.setDurationMs(SettingsActivity.this, durationMs);
+                updateHapticValue(value, durationMs);
             }
 
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {
+                int durationMs = HapticSettings.durationMsForSelection(seekBar.getProgress());
+                Vibrator vibrator = getSystemService(Vibrator.class);
+                if (durationMs > 0 && vibrator != null && vibrator.hasVibrator()) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(
+                            durationMs, VibrationEffect.DEFAULT_AMPLITUDE));
+                }
+            }
         });
 
         setContentView(scroll);
@@ -427,8 +438,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         content.addView(value, matchWrap(dp(0), dp(4)));
 
         SeekBar size = new SeekBar(this);
-        size.setMax(KeyboardSizeSettings.MAX_PERCENT - KeyboardSizeSettings.MIN_PERCENT);
-        size.setProgress(currentPercent - KeyboardSizeSettings.MIN_PERCENT);
+        size.setMax(KeyboardSizeSettings.maxSelectionIndex());
+        size.setProgress(KeyboardSizeSettings.selectionForPercent(currentPercent));
         content.addView(size, matchWrap(dp(0), dp(2)));
 
         LinearLayout endpoints = new LinearLayout(this);
@@ -442,7 +453,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         size.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int percent = KeyboardSizeSettings.MIN_PERCENT + progress;
+                int percent = KeyboardSizeSettings.percentForSelection(progress);
                 if (portrait) {
                     KeyboardSizeSettings.setPortraitPercent(SettingsActivity.this, percent);
                 } else {

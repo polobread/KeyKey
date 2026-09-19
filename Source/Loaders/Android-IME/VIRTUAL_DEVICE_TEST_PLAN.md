@@ -61,8 +61,10 @@ adb -s emulator-XXXX shell am start -n \
 `ImeTestActivity` 只存在 debug APK，集中提供所有 `inputType`、標準 Enter action、自訂 action
 與 `IME_FLAG_NO_ENTER_ACTION`。release APK 不包含它。為了讓 ADB 回歸可重複設定狀態，test host
 接受 `--es floating off|vertical|horizontal`、`--ez keyPreview true|false`、
-`--ei hapticDurationMs 0..100`、`--ei portraitHeightPercent 50..200`、
-`--ei landscapeHeightPercent 50..200` 及 `--es phrases none|base|all`；這些 hook 也只存在
+`--ei hapticDurationMs 0|1|2|3|5|10|20|30|50|100`、
+`--ei portraitHeightPercent 50|75|90|100|110|125|150|175|200`、
+`--ei landscapeHeightPercent 50|75|90|100|110|125|150|175|200` 及
+`--es phrases none|base|all`；這些 hook 也只存在
 debug build。`--ei hapticLevel 0..8` 只保留給舊自動化相容使用。
 
 每次開始一台 AVD 前清除 logcat；完成後保留截圖、畫面錄影或文字紀錄，並檢查：
@@ -82,7 +84,7 @@ adb -s emulator-XXXX shell dumpsys window | rg 'KeyKey candidate window|BadToken
 
 - 首頁可啟動，狀態列、cutout、導覽列不遮住標題、說明與三個按鈕。
 - 「啟用輸入法」、「選擇琦琦注音」、「調整設定」都能開啟正確頁面。
-- 設定頁可完整捲動，0–100ms 震動、直式／橫式虛擬鍵盤高度、觸控按鍵預覽、
+- 設定頁可完整捲動，十段震動、直式／橫式各九段虛擬鍵盤高度、觸控按鍵預覽、
   紫／綠／黃／紅候選底色、實體浮動候選、直／橫排列與 30 個詞庫均存在；
   新安裝的兩個高度都是 100%，候選底色為紫色。
 - 重開 App／切換輸入欄位後，震動、兩個虛擬鍵盤高度、預覽、候選底色、浮窗排列、
@@ -128,9 +130,10 @@ adb -s emulator-XXXX shell dumpsys window | rg 'KeyKey candidate window|BadToken
 - 左右邊緣鍵的預覽不超出螢幕；滑出原鍵、放開或取消時立刻消失。
 - 功能鍵、候選字及實體鍵盤候選列不顯示按鍵預覽；預覽本身不新增可點擊範圍。
 - 關閉設定後不再顯示，重新開啟立即恢復。
-- 震動可在 0–100ms 間以 1ms 調整；至少驗證 0、1、5、10、100ms，0 不震動，非 0 的
+- 震動可選 0、1、2、3、5、10、20、30、50、100ms；至少驗證 0、1、5、10、100ms，0 不震動，非 0 的
   可用鍵有回饋；disabled key、滑出取消與預覽 overlay 不可額外震動。AVD 無法代表真機
   手感，但仍須確認沒有 vibrator/security error；實際短震動手感另列真機驗收。
+- 設定頁拖動震動時間滑桿時不連續震動，手指放開後只以選定的時間試震一次；0 不試震。
 
 ### F. 符號、Emoji 與標點
 
