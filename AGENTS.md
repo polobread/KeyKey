@@ -430,6 +430,11 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **長批次 GNOME VM 要檢查 session 是否仍存活**：2026-09-20 清除舊輸出後的
   T11 矩陣在 21/24 時，GNOME Shell 46 於啟動 Qt6 XWayland host 同時以 signal 11
   崩潰，`/var/crash/_usr_bin_gnome-shell.1000.crash` 留有獨立 crash 證據；
+  後續以 GDB 解開同一 core，crashing thread 在 GNOME Shell 的
+  `libatk-bridge-2.0` D-Bus dispatch 經 `g_hash_table_foreach` 呼叫
+  `g_object_ref`／`g_type_check_instance_is_fundamentally_a` 時收到 SIGSEGV；
+  該堆疊沒有 KeyKey addon。這只縮小故障位置，尚不能判定 AT-SPI 查詢、
+  Shell 本身或 VM 圖形環境哪一項造成該次崩潰。
   XWayland socket 隨之消失，後兩個 Qt host 只回報 `could not connect to display`。
   重啟 GDM，於新 Wayland session 替換掉無 display 的舊 Fcitx 後，受影響三階段
   3/3 通過。不能把 Qt host 的連線失敗算作 KeyKey 輸入失敗，也不能由時間相近

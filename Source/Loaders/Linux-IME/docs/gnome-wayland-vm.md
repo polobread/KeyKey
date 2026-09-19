@@ -153,6 +153,10 @@ not established. The runner stores its JSON in
 `out/gnome-vm/gnome-editing-last.json` and timestamped files. The symbol
 pointer case separately passed all eight modes: it clicks the first row,
 commits `，`, checks popup clearance, and uses `!` as the literal control.
+An offline GDB backtrace of that Shell core enters `libatk-bridge-2.0` during
+D-Bus dispatch and crashes at GObject type checking. No KeyKey addon frame
+appears in the Shell thread. This locates the faulting path but does not prove
+which interaction caused the crash; the original guest crash file is retained.
 
 The two-app runner keeps two host processes alive while app A switches to
 English full-width, app B types Chinese, and app A resumes. Six direct Fcitx
