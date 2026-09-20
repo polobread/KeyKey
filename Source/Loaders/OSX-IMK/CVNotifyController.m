@@ -101,7 +101,8 @@ NSPoint c_lastLocation;
 	float x = [_messageTextField	frame].origin.x;
 	float y = ([[self window] frame].size.height - height) / 2;
 	NSRect newFrame = NSMakeRect(x, y, width, height);
-	[_messageTextField setFrame:newFrame];	
+	[_messageTextField setFrame:newFrame];
+	[a release];
 	
 }
 - (NSColor *)textColor

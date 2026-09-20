@@ -1,6 +1,7 @@
 // [AUTO_HEADER]
 
 #import "CVHorizontalCandidateController.h"
+#import "CVCandidateWindowGeometry.h"
 #import "NSColor+LFColorExtensions.h"
 
 static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame,
@@ -202,27 +203,13 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	[_background setFrame:NSMakeRect(0, 0, windowFrame.size.width, candidateSize.height)];
 
 	NSSize unscaledWindowSize = windowFrame.size;
-	windowFrame.size = NSMakeSize(unscaledWindowSize.width * _candidateWindowScale,
-		unscaledWindowSize.height * _candidateWindowScale);
-
-	NSRect frame = CVVisibleFrameForPoint(newPosition);
-
-	if (newPosition.y < NSMinY(frame))
-		newPosition.y = NSMinY(frame);
-	else if (newPosition.y - windowFrame.size.height < NSMinY(frame))
-		newPosition.y = newPosition.y + _fontHeight;
-//	else if (newPosition.y + windowFrame.size.height > NSMaxY(frame))
-	else if (newPosition.y > NSMaxY(frame))				
-		newPosition.y = NSMaxY(frame) - windowFrame.size.height;
-	else
-		newPosition.y = newPosition.y - windowFrame.size.height;
-
-	if (newPosition.x < NSMinX(frame))
-		newPosition.x = NSMinX(frame);
-	else if (newPosition.x + windowFrame.size.width > NSMaxX(frame))
-		newPosition.x = NSMaxX(frame) - windowFrame.size.width;
-
-	windowFrame.origin = newPosition;
+	NSRect visibleFrame = CVVisibleFrameForPoint(newPosition);
+	CGFloat scale = CVFitCandidateScale(unscaledWindowSize, visibleFrame,
+		_candidateWindowScale);
+	NSSize scaledSize = NSMakeSize(unscaledWindowSize.width * scale,
+		unscaledWindowSize.height * scale);
+	windowFrame = CVPlaceCandidateWindow(newPosition, scaledSize, visibleFrame,
+		_fontHeight);
 
 	if (panel->isInControl()) {
 		[_candidateControl setClickable:YES];

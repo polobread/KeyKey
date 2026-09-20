@@ -392,6 +392,32 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ## 已知陷阱（不要重複調查）
 
+- **macOS 記憶體與 KeyKey.db 不能只看檔案大小**：2026-09-20 review 確認
+  直式候選 `CVVerticalCandidateController.mm` 的 `NSAttributedString *c`
+  及通知文字有未平衡的 alloc ownership；詞彙編輯器的
+  `userPhraseDBDictionaryAtRow:` 另遺漏 `delete select`，隔離呼叫 1,000 次
+  留下 1,000 個 statement、約 3.39 MiB，並使 SQLite close 回 SQLITE_BUSY。
+  2026-09-20 已修正這三處 ownership；修後隔離重複 1,000 次留下 0 個
+  statement、close 回 SQLITE_OK，arm64 Release build／analyze 通過；其他舊碼
+  仍有 analyzer warning。現有 1.2.8
+  行程實測 footprint 55.1 MiB、leaks 3.01 MiB；不能
+  把所有用量都歸給資料庫。新 cook 的 db 9.812 MiB，4 KiB + VACUUM 副本為
+  9.141 MiB（-6.85%）；WITHOUT ROWID 實驗為 7.352 MiB，但 iOS 明確依賴
+  `ORDER BY rowid`，不可只換 db。系統 SQLite 預設 cache_size 在此 Mac 是
+  2000 pages，與上游常見的 -2000 不同；本機 512 KiB 建議預算的資料層
+  抽樣已完成，仍需真實 IMK 與跨平台回歸。完整證據、其他候選窗問題與
+  後續順序見 [macOS review](MACOS_CODE_REVIEW.md)，不要把副本實驗當成
+  已套用的產品優化。
+- **五平台記憶體策略不能只改 KeyKey.db**：2026-09-20 使用者要求綜合各平台
+  使用情況，並認為 db 瘦身影響有限；目前已修 macOS 已確認的洩漏，接著量測
+  長時間快取成長，保留資料格式。Windows TSF 直接編譯 SQLite 3.6.11，
+  原生 cooker 仍讀共用 Schema.sql；隔離 probe 確認 WITHOUT ROWID 副本回
+  malformed schema，cache_size=-512 代表 512 pages 而非 KiB，不可直接搬用
+  Mac 設定。iOS CandidateStore 與 Android IndexedDictionary 的候選 cache
+  均沒有淘汰機制，需量不同讀音，不能只重複同一讀音。Android 使用 .kki，
+  Linux 使用 CIN／詞庫 maps，都不讀 KeyKey.db；Linux 已共享字典，但啟動
+  會解析全部輸入法及詞庫。注音專用 db 副本雖可由 9.812 降至 3.082 MiB，
+  此為安裝空間可行性實驗，並非等量 RAM 收益，尚未改任何平台打包流程。
 - **WSL2 的 KVM、Docker 與 Windows interop 可能只被呼叫行程隔離**：
   2026-09-20 此主機的受限行程看不到 `/dev/kvm`，`docker info` 顯示 socket
   `permission denied`，`wsl.exe --version` 也可能回報 vsock 錯誤；正常 WSL
@@ -937,9 +963,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **macOS framework 的 Headers 封印**：framework target 在 `Headers` 還在的狀態下簽好
   自己的產物，app 的 Copy Files phase 再把 header 砍掉，封印就留著已經不存在的檔案，
   `codesign --verify --deep --strict` 必定回報 `a sealed resource is missing or invalid`，
-  notarize 也會被退。**不影響本機安裝與使用**，裝不起來時不要往這裡查。已由
+  notarize 也會被退。已由
   `Installer/build.sh` 在 stage 之後、簽章之前刪掉 `Versions/A/Headers` 與最上層的
-  `Headers` symlink 處理掉（header 對執行期沒有用途）。修掉之前 `build.sh` 的
+  `Headers` symlink 處理掉（header 對執行期沒有用途）。本機未提供 Developer ID
+  時也必須重新 ad hoc 簽 nested frameworks／helper apps／外層 app，否則移除
+  headers 後封印失效；2026-09-20 本機 package 已補此步並通過 deep strict verify。
+  修掉之前 `build.sh` 的
   `DEVELOPER_ID_APPLICATION` 分支其實跑不完：`set -euo pipefail` 加上必定失敗的
   `--verify --deep --strict` 會直接中斷整個腳本。
 - **舊 macOS TSM component ID 有三份同步點**：雖然 `Source/Loaders/OSX-TSM` 已不在
@@ -955,7 +984,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   process 後立即生效，不應每次安裝都中斷工作階段。
 - **macOS pkg 安裝**：`pkgbuild` 預設把 app bundle 標成 relocatable，`installer`
   會把 payload 寫到別處卻回報成功。已用 `Installer/build.sh` 的
-  `BundleIsRelocatable false` 處理；安裝後仍務必
+  `BundleIsRelocatable false` 處理；2026-09-20 本機 `pkgbuild --analyze` 未輸出該欄位，
+  腳本已改成缺席時新增，不可只用 PlistBuddy `Set`。安裝後仍務必
   `ls -ld "/Library/Input Methods/chichi77 KeyKey.app"` 確認。
 - **Windows ZIP 安裝**：ZIP 版必須先完整解壓縮、複製到本機 `C:\` 路徑，才執行
   `Install.cmd`；UAC 提升權限後可能存取不到網路磁碟／NAS／UNC 來源。NSIS EXE 是
@@ -1016,10 +1046,18 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `controlTextColor`、`secondaryLabelColor` 與 `headerColor`。三份語系 XIB 必須一起改。
   黑底白字候選窗、通知窗等自訂浮動 UI 是刻意的固定主題，前景與背景必須成對設定，
   不要只把其中一色改成動態色。
-- **macOS 直式候選每次更新都要重設 scroll origin**：自訂比例調整 window/content bounds
-  後，AppKit 可能保留 `NSClipView` offset，所以更新候選頁與 selection 後要將 clip view
-  回到 `NSZeroPoint`，否則前幾列會跑到上緣之外、底部留下空白。候選窗沒有語系相關
-  布局，英文版不會造成這個問題。
+- **macOS 直式候選布局與捲動要在顯示前完成**：先設定視窗的物理 frame 與未縮放
+  content bounds，再明確設定子視圖 frame；最後設定選取、校正 clip view 位置並重畫。
+  換頁／換候選／隱藏再顯示回到頂端，同頁重畫保留合法的手動捲動；內容已全部放得下
+  時必須將殘留 offset 限制為零。這些是防護，不能直接當作舊截圖的已證實根因。
+  2026-09-20 使用實際 controller／NIB 的隔離 AppKit 測試，新版 100%、200%、350%
+  與切換倍率後的首列垂直範圍正常，200% 離屏渲染可見第 1–9 列；舊 `a3b838f`
+  在首次 200% 及 100%／150%／200% 切換也未重現「從第 3 列開始、底部留白」。
+  使用者確認截圖來自先前版本，並指出周圍文字仍是正常大小；不要把 200%
+  當作主要原因。尚未重現原始操作序列，不得宣稱該截圖問題已通過修復前後對照。
+  2026-09-20 後續隔離測試於 100% 人為建立舊 table 高度及捲動位置，新控制器
+  重畫後可恢復零 offset；大字級有捲軸時同頁保留位置、翻頁／換內容／隱藏重開歸零，
+  鍵盤反白末列可見。隔離測試未包含實際 IMK 事件與滑鼠。
 - **macOS 直式候選的提示列與候選內容要分開計算寬度**：候選欄只需按鍵欄、最長候選、
   cell padding 與外框；`SHIFT + 數字鍵` 等 prompt 另以其文字寬度和翻頁按鈕空間決定
   minimum window width。不可先把 prompt 寫進候選 `_width` 再固定加 50 點，也不可交給
@@ -2039,6 +2077,53 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### macOS
 
+- [x] 2026-09-20 完成 macOS 候選／loader／SQLite 與 cooker 專項 review，
+      重建資料庫並完成副本大小、順序、快取及 statement 洩漏實驗；結果在
+      `MACOS_CODE_REVIEW.md`；後續同日另依使用者要求修正三項 P2。
+- [x] 修正直式候選與通知 attributed-string ownership，以及詞彙編輯器查詢
+      statement 洩漏；arm64 Release build／analyze 與 1,000 次資料層 probe 通過。
+- [ ] 在實際 1.2.9 IMK 行程反覆重畫候選、開關通知、詞彙編輯 save／close，
+      重新量測 leaks／footprint 及確認長時間不再累積；目前執行的 1.2.8
+      行程不能代表修復後結果。
+- [ ] 修復洩漏後再量長時間使用及 SQLite cache 成本；目前保留 db 格式，
+      4 KiB／VACUUM／注音專用產物作後續空間選項。共用改動須包含 Windows
+      SQLite 3.6.11 相容性及 macOS／iOS 候選／反查順序回歸。
+- [ ] 按五平台實際架構量記憶體：iOS／Android 多讀音候選 cache 與載入峰值、
+      Windows x86／x64 多 host 用量、Linux Fcitx 字典常駐與切換成本；
+      依 MACOS_CODE_REVIEW.md 跨平台專節決定是否需要限制快取或延後載入。
+- [x] 候選窗依 visible frame 限制可用尺寸；直式超高時捲動、橫式超界時
+      降低實際縮放，且最終位置雙軸限制。幾何／捲動測試與 Release build 通過。
+- [x] 2026-09-20 直式候選改為先確定縮放 frame／bounds、再排子視圖，最後才選取、
+      校正捲動與重畫；同頁保留合法捲動，反白列變更時才自動揭露，
+      換候選／翻頁／隱藏重開清除舊位置。
+      實際 controller／NIB 隔離測試通過 100% 舊 table 高度／offset 恢復、
+      200% 大字級捲動與反白末列、100%／200%／350% 切換。
+- [x] 已產生本機第二版 arm64 1.2.9 測試包
+      `Installer/local-builds/chichi77-KeyKey-1.2.9-local-20260920-r2-macos-arm64.pkg`；
+      內含此次直式候選順序與捲動改動，app UUID
+      `97C08D88-FCD6-3892-A807-793D3C03619F`，套件固定安裝路徑、
+      ad hoc deep strict 簽章及 SQLite integrity check 通過。尚未在系統安裝。
+- [x] 2026-09-20 產生本機 arm64 1.2.9 測試安裝包，位於
+      `Installer/local-builds/chichi77-KeyKey-1.2.9-local-20260920-macos-arm64.pkg`；
+      pkg 內版號／固定安裝路徑、db integrity 及 app ad hoc deep strict 簽章均通過。
+      此本機產物被 `.gitignore` 忽略，未提交或發布；後續確認使用者系統的
+      1.2.9 app Mach-O UUID 與這一版相同，但未確認當時執行中的輸入法是否已重載。
+- [ ] 實際 Mac 補驗 350%、小螢幕、邊緣／雙螢幕定位、翻頁、捲動條與
+      滑鼠命中；靜態幾何測試不能代替真實視覺驗收。
+- [ ] 追查網友「新增 macOS 輸入法後叫不出來」：使用者後續確認網友下載的
+      是正式 1.2.8，仍待取得 CPU、macOS、是否首次安裝後重新登入，
+      以及無法切換或切換後無法輸入的區別。使用者稍後會找時間登出測試。
+      目前產物僅 arm64／macOS 15+，distribution 只有 OS 檢查，尚缺明確 CPU
+      安裝門檻；不能因唯音正常就排除 KeyKey 相容性，也未有兩者衝突的證據。
+      postinstall 已結束舊 KeyKey 行程，升級通常由系統重啟；首次安裝仍提示重新登入。
+- [ ] Intel macOS 封裝：2026-09-20 以獨立 `Intel.xcconfig` 強制 `ARCHS=x86_64`
+      實際編譯，前置 target 完成，主程式連結失敗的具體阻礙是現有
+      `/opt/homebrew/opt/openssl@3/lib/libcrypto.a` 僅 arm64；缺少 x86_64
+      `_BIO_*`、`_PEM_read_bio_RSA*`、`_RSA_*`、`_SHA1`。需要相同版本的
+      x86_64 OpenSSL 靜態庫，再做完整 x86_64 app／nested code／pkg 驗證與
+      Intel macOS 15 實機輸入測試。Xcode 27 在 deployment target 15 下可編
+      x86_64 空物件，`-xcconfig` 的 `ARCHS=x86_64` 必須寫在 include 原設定之後；
+      僅在 xcodebuild 命令列加 `ARCHS=x86_64` 會被現有 xcconfig 的 arm64 覆蓋。
 - [x] 2026-09-17 修正 Preferences 深色模式的白底白字，三種語系的表格改用系統動態底色；
       同時在直式候選每次更新後重設 scroll origin，避免放大候選窗時第 1、2 列移出可視範圍。
       三份 XIB 已通過 `ibtool --compile`，並以 Xcode 27／macOS 27 SDK 完成 arm64 Release

@@ -1,6 +1,7 @@
 // [AUTO_HEADER]
 
 #import "CVVerticalCandidateController.h"
+#import "CVCandidateWindowGeometry.h"
 #import "NSColor+LFColorExtensions.h"
 
 static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame,
@@ -12,7 +13,6 @@ static void CVSetScaledCandidateWindowFrame(NSWindow *window, NSRect scaledFrame
 	[window setFrame:scaledFrame display:NO];
 	[contentView setBoundsSize:unscaledSize];
 	[contentView setAutoresizesSubviews:autoresizesSubviews];
-	[window display];
 }
 
 static NSRect CVVisibleFrameForPoint(NSPoint point)
@@ -62,6 +62,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 - (void)dealloc
 {
 	[_candidateArray release];
+	[_displayedCandidateTexts release];
 	[_backgroundColor release];
 	[_foregroundColor release];
 	[_highlightTextColor release];
@@ -76,6 +77,8 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 		
 		_candidateTextHeight = 18.0;
 		_candidateWindowScale = 1.0;
+		_displayedPage = (size_t)-1;
+		_displayedHighlightIndex = (size_t)-1;
 	}
 	return self;
 }
@@ -148,13 +151,14 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 {
     // hide if it's invisible--before update
     if (!panel->isVisible()) {
-        [[self window] orderOut:self];
+		[self hide];
 		return;
 	}
 
 	_sending = NO;
 
     NSPoint newPosition = position;
+	NSPoint previousScrollPoint = [[_scrollView contentView] bounds].origin;
 
 	if (_candidateArray)
 		[_candidateArray removeAllObjects];
@@ -176,6 +180,7 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
     size_t index;
     size_t count = panel->currentPageCandidateCount();
     size_t highlightedIndex = panel->currentHightlightIndex();
+	NSMutableArray *candidateTexts = [NSMutableArray arrayWithCapacity:count];
 	size_t currentPage = panel->currentPage()  + 1;
 	size_t pageCount = panel->pageCount();
 	NSString *pageString = [NSString stringWithFormat:@"%d/%d", currentPage, pageCount];
@@ -209,8 +214,10 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
     for (index = 0; index < count; index++) {
         string candidate = list->candidateAtIndex(fromIndex + index);        
         string keyString = panel->candidateKeyAtIndex(index).receivedString();
+		NSString *candidateText = [NSString stringWithUTF8String:candidate.c_str()];
+		[candidateTexts addObject:candidateText];
 
-		NSAttributedString *c = [[NSAttributedString alloc] initWithString:[NSString stringWithUTF8String:candidate.c_str()]  attributes:attributes];
+		NSAttributedString *c = [[NSAttributedString alloc] initWithString:candidateText attributes:attributes];
 		NSString *k = [NSString stringWithUTF8String:keyString.c_str()];
 		NSMutableDictionary *d = [NSMutableDictionary dictionary];
 		[d setValue:c forKey:@"candidate"];
@@ -228,7 +235,17 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 			_width = currentWidth;
 
 		[_candidateArray addObject:d];
+		[c release];
 	}
+	BOOL resetScroll = _panel != panel || _displayedPage != panel->currentPage() ||
+		![_displayedCandidateTexts isEqualToArray:candidateTexts];
+	BOOL revealHighlighted = resetScroll || !_displayedInControl ||
+		_displayedHighlightIndex != highlightedIndex;
+	[_displayedCandidateTexts release];
+	_displayedCandidateTexts = [candidateTexts copy];
+	_displayedPage = panel->currentPage();
+	_displayedHighlightIndex = highlightedIndex;
+	_displayedInControl = panel->isInControl();
 	[_tableView reloadData];
 
 
@@ -246,13 +263,41 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	if ([prompt length])
 		windowWidth = MAX(windowWidth, promptLeading + promptWidth + 10.0);
 
-	CGFloat tableWidth = windowWidth - 4.0;
+	NSRect visibleFrame = CVVisibleFrameForPoint(newPosition);
+	CGFloat fullWindowHeight = tableHeight + 40.0;
+	CGFloat minimumWindowHeight = MIN(fullWindowHeight, [_tableView rowHeight] + 42.0);
+	CGFloat scale = CVFitCandidateScale(NSMakeSize(windowWidth, minimumWindowHeight),
+		visibleFrame, _candidateWindowScale);
+	CGFloat windowHeight = MIN(fullWindowHeight, visibleFrame.size.height / scale);
+	BOOL needsScrolling = windowHeight + 0.5 < fullWindowHeight;
+	if (needsScrolling) {
+		// Reserve room for the scrollbar even when the user disables overlay scrollbars.
+		windowWidth += 16.0;
+		scale = CVFitCandidateScale(NSMakeSize(windowWidth, minimumWindowHeight),
+			visibleFrame, _candidateWindowScale);
+		windowHeight = MIN(fullWindowHeight, visibleFrame.size.height / scale);
+	}
+
+	CGFloat tableWidth = windowWidth - 4.0 - (needsScrolling ? 16.0 : 0.0);
+	NSSize unscaledWindowSize = NSMakeSize(windowWidth, windowHeight);
+	NSSize scaledSize = NSMakeSize(unscaledWindowSize.width * scale,
+		unscaledWindowSize.height * scale);
+	NSRect windowFrame = CVPlaceCandidateWindow(newPosition, scaledSize,
+		visibleFrame, _fontHeight);
+
+	// Finish resizing the window and its logical coordinate system before laying
+	// out any children. Their XIB autoresizing masks must not inherit an
+	// intermediate size from the previous candidate window.
+	CVSetScaledCandidateWindowFrame([self window], windowFrame, unscaledWindowSize);
+
 	[keyColumn setWidth:keyColumnWidth];
 	[candidateColumn setWidth:tableWidth - keyColumnWidth - columnSpacing];
-	[_scrollView setFrame:NSMakeRect(2.0, 20.0, tableWidth, tableHeight)];
+	[_scrollView setHasVerticalScroller:needsScrolling];
+	[_scrollView setFrame:NSMakeRect(2.0, 20.0, windowWidth - 4.0,
+		windowHeight - 40.0)];
 	[_tableView setFrame:NSMakeRect(0.0, 0.0, tableWidth, tableHeight)];
+	[_scrollView tile];
 
-	CGFloat windowHeight = tableHeight + 40.0;
 	NSRect promptFrame = [_promptTextField frame];
 	promptFrame.origin = NSMakePoint(promptLeading, windowHeight - promptFrame.size.height - 6.0);
 	promptFrame.size.width = windowWidth - promptLeading - 6.0;
@@ -269,37 +314,13 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 	pageFrame.size.width = windowWidth - 30.0;
 	[_pageIndicatorTextField setFrame:pageFrame];
 
-    NSRect windowFrame = [[self window] frame];
-	NSSize unscaledWindowSize = NSMakeSize(windowWidth, windowHeight);
-	windowFrame.size = NSMakeSize(unscaledWindowSize.width * _candidateWindowScale,
-		unscaledWindowSize.height * _candidateWindowScale);
-	windowFrame.origin.x = newPosition.x;
-
-	NSRect frame = CVVisibleFrameForPoint(newPosition);
-
-	if (newPosition.y < NSMinY(frame))
-		newPosition.y = NSMinY(frame);
-	else if (newPosition.y - windowFrame.size.height < NSMinY(frame))
-		newPosition.y = newPosition.y + _fontHeight;
-//	else if (newPosition.y + windowFrame.size.height > NSMaxY(frame))
-	else if (newPosition.y > NSMaxY(frame))
-		newPosition.y = NSMaxY(frame) - windowFrame.size.height;
-	else
-		newPosition.y = newPosition.y - windowFrame.size.height;
-
-	if (newPosition.x < NSMinX(frame))
-		newPosition.x = NSMinX(frame);
-	else if (newPosition.x + windowFrame.size.width > NSMaxX(frame))
-		newPosition.x = NSMaxX(frame) - windowFrame.size.width;
-
-	windowFrame.origin = newPosition;
-
-	CVSetScaledCandidateWindowFrame([self window], windowFrame, unscaledWindowSize);
-
 	if (panel->isInControl()) {
 		_allowClick = YES;
 		[_tableView setAllowsEmptySelection:NO];
-		[_tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(int)highlightedIndex] byExtendingSelection:NO];
+		if (highlightedIndex < count)
+			[_tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSInteger)highlightedIndex] byExtendingSelection:NO];
+		else
+			[_tableView deselectAll:self];
 	} 
 	else {
 		[_tableView setAllowsEmptySelection:YES];
@@ -307,14 +328,16 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 		_allowClick = NO;
 	}
 
-	// NSTableView keeps its clip view's scroll offset across candidate updates.
-	// AppKit can also preserve that offset while the window is resized through
-	// a custom bounds scale, which can leave the first rows
-	// above the visible area. Every candidate page fits in this scroll view, so
-	// always restore its document origin after resizing and changing selection.
+	// Preserve a manual scroll within the same page, but discard an offset from
+	// different candidates. In either case constrain it after the new viewport
+	// and document frames have both been laid out.
 	NSClipView *clipView = [_scrollView contentView];
-	[clipView scrollToPoint:NSZeroPoint];
+	NSPoint scrollPoint = resetScroll ? NSZeroPoint : previousScrollPoint;
+	[clipView scrollToPoint:[clipView constrainScrollPoint:scrollPoint]];
 	[_scrollView reflectScrolledClipView:clipView];
+	if (needsScrolling && panel->isInControl() && highlightedIndex < count && revealHighlighted)
+		[_tableView scrollRowToVisible:(NSInteger)highlightedIndex];
+	[[self window] display];
     
     // show if it's visible--after update
 	if (panel->isVisible())
@@ -322,7 +345,12 @@ static NSRect CVVisibleFrameForPoint(NSPoint point)
 }
 - (void)hide
 {
-	[[self window] orderOut:self];;
+	[[self window] orderOut:self];
+	[_displayedCandidateTexts release];
+	_displayedCandidateTexts = nil;
+	_displayedPage = (size_t)-1;
+	_displayedHighlightIndex = (size_t)-1;
+	_displayedInControl = NO;
 }
 
 #pragma mark Interface Builder actions
