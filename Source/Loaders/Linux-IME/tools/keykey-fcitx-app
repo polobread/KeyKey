@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Launch one application with the direct Fcitx GTK input context.
+set -euo pipefail
+
+if [[ $# -eq 0 ]]; then
+  echo 'Usage: keykey-fcitx-app COMMAND [ARGUMENT ...]' >&2
+  exit 2
+fi
+
+export GTK_IM_MODULE=fcitx
+exec "$@"

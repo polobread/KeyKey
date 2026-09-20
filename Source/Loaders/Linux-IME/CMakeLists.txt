@@ -154,6 +154,12 @@ if(KEYKEY_BUILD_FCITX5)
     find_package(Fcitx5Core REQUIRED)
     include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
     add_subdirectory(adapters/fcitx5)
+    install(PROGRAMS tools/keykey-fcitx-app
+        DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(FILES data/org.chichi77.KeyKey.TextEditor.desktop
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
+    install(FILES docs/keykey-fcitx-app.1
+        DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 endif()
 
 configure_file(

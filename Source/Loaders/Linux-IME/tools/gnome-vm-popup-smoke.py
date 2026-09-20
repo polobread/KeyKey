@@ -6,6 +6,7 @@ import datetime
 import json
 import runpy
 import shlex
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -223,6 +224,17 @@ def main():
     positions = args.position or ("top-left", "top-right", "bottom-left", "bottom-right")
     evidence = {"environment": VM["check_guest"](), "results": [],
                 "candidate_panel": VM["candidate_panel_state"]()}
+    display_source = Path(__file__).with_name("gnome-vm-displays.py").read_text()
+    display_result = subprocess.run(
+        VM["SSH"] + ["/usr/bin/python3", "-", "show"], input=display_source,
+        text=True, capture_output=True, check=True)
+    evidence["displays"] = json.loads(display_result.stdout)
+    if evidence["displays"]["logical"] != [{
+            "x": 0, "y": 0, "scale": 1.0, "primary": True,
+            "connector": "Virtual-1"}]:
+        raise RuntimeError("Popup corner test requires the single Virtual-1 "
+                           "1280x800 layout; current layout: "
+                           f"{evidence['displays']['logical']}")
     if args.panel and evidence["candidate_panel"]["provider"] != args.panel:
         raise RuntimeError(f"Expected {args.panel} candidate panel, got "
                            f"{evidence['candidate_panel']['provider']}")

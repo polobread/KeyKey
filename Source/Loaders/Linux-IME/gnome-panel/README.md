@@ -1,6 +1,6 @@
 # GNOME Input Method Panel integration patch
 
-This directory contains a GPL-2.0 patch for the upstream GNOME Shell
+This GPL-2.0 directory contains a patch and packaging tools for the upstream GNOME Shell
 [Input Method Panel](https://github.com/wengxt/gnome-shell-extension-kimpanel)
 extension, `kimpanel@kde.org` version 83. Its source and copyright remain
 upstream's; see [COPYING](COPYING). The patch is kept separately from the
@@ -18,24 +18,44 @@ between monitors:
   focused, translate the cached rectangle by subsequent frame movement.
   A later fresh frontend rectangle resets the reference origin.
 
-`build-patched-extension.py` accepts only the inspected official v83 files
-(`extension.js` and `panel.js` hashes are pinned in the script), copies the
-source tree to a new directory, and applies the patch there. It does not
-modify the installed extension:
+`upstream-v83/` contains the inspected JavaScript, stylesheet, metadata and
+schema sources extracted from the official v83 archive (version tag 57768,
+archive SHA-256 `b8d83c1bc6e903a280dc0492b9b4e3be4b2713ab96c669d1ae90e625eacf675f`).
+Translations and generated files are omitted. `build-patched-extension.py`
+checks the original `extension.js` and `panel.js` hashes before applying the
+patch. `build-deb.py` checks every bundled source file, compiles the schema and
+normalizes package timestamps (using `SOURCE_DATE_EPOCH` when supplied), and
+produces an architecture-independent, separately licensed Ubuntu 24.04 package.
+Two clean builds with the same source and epoch have identical SHA-256 hashes:
 
 ```sh
 python3 build-patched-extension.py /path/to/official/kimpanel@kde.org \
   /tmp/kimpanel-keykey-v83
+python3 build-deb.py ../out/gnome-panel
 ```
 
-The test guest uses GNOME Shell 46. After copying the two patched `.js` files
-from the output over the guest's user-local official extension and restarting
-GDM, `gnome-vm-multimonitor-smoke.py --panel kimpanel --mouse` checks both
-100% and 200% second displays across eight toolkit/frontend paths. The clean
-patched tree passed 16/16 of these second-display pointer cases and 32/32
-single-display four-corner cases in GNOME Shell 46. This is a development
-integration, not an installed KeyKey package dependency yet.
-Ubuntu 22.04 GNOME 42 needs its own compatible extension build and validation
-before this can be packaged as a supported release component. The complete
-decision and remaining gates are in
+`ci/build-debian-packages.sh ubuntu-24.04 release-candidate` additionally
+places a version-matched `*_source.tar.gz` beside the `.deb`, containing the
+inspected upstream sources, patch, builder and GPL-2.0 license. Both files
+appear in the output `SHA256SUMS` and hosted package artifact.
+
+The package owns `/usr/share/gnome-shell/extensions/kimpanel@kde.org`, while
+the Fcitx addon and data remain in their existing packages. On Ubuntu 24.04
+GNOME Shell 46, install or upgrade the downloaded package with:
+
+```sh
+sudo apt install ./gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb
+```
+
+Use the newer `.deb` path for an upgrade; the package version must increase.
+A user-local copy of the same UUID under
+`~/.local/share/gnome-shell/extensions/kimpanel@kde.org` takes precedence;
+move that copy aside and log out and in before enabling the system package.
+Then run `keykey-gnome-panel enable`; use `keykey-gnome-panel status` to check
+it and `keykey-gnome-panel disable` to turn it off for the current user.
+Upgrading the `.deb` replaces only package-owned files; log out and in after
+an upgrade so GNOME Shell loads the new code. Removal leaves user settings in
+place. The package is restricted to GNOME Shell 46 and is not a dependency of
+the Fcitx addon. Ubuntu 22.04 GNOME 42 needs its own compatible extension
+build and validation. The complete decision and remaining gates are in
 [GNOME candidate panel](../docs/gnome-candidate-panel.md).

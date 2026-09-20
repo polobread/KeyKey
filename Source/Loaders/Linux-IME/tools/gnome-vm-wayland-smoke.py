@@ -180,6 +180,15 @@ def candidate_panel_state():
     """Record which GNOME candidate renderer can own the active Fcitx UI."""
     extension = session_command(
         "gnome-extensions info kimpanel@kde.org 2>/dev/null || true")
+    extension_path = next((line.strip().removeprefix("Path: ")
+                           for line in extension.splitlines()
+                           if line.strip().startswith("Path: ")), "")
+    package_version = guest(
+        "dpkg-query -W -f='${Version}' "
+        "gnome-shell-extension-keykey-kimpanel 2>/dev/null || true")
+    package_owned = bool(extension_path) and "gnome-shell-extension-keykey-kimpanel:" in guest(
+        "dpkg-query -S " + shlex.quote(extension_path + "/extension.js")
+        + " 2>/dev/null || true")
     active = "State: ACTIVE" in extension
     bus_owner = session_command(
         "gdbus call --session --dest org.freedesktop.DBus "
@@ -194,6 +203,9 @@ def candidate_panel_state():
     return {"provider": "kimpanel" if active else "classic-ui",
             "kimpanel_extension_active": active,
             "kimpanel_bus_owner": bus_owner,
+            "extension_path": extension_path,
+            "package_version": package_version,
+            "package_owned": package_owned,
             "classic_ui_loaded": classic_loaded}
 
 
@@ -349,7 +361,10 @@ def find_candidate_popup(before, after):
             rows.append((y, min(changed), max(changed)))
     groups = []
     for row in rows:
-        if not groups or row[0] > groups[-1][-1][0] + 1:
+        # Over a light application, only the text in each candidate row may
+        # differ from the background. Join those separated strokes into the
+        # same popup instead of requiring a continuously changed border.
+        if not groups or row[0] > groups[-1][-1][0] + 25:
             groups.append([row])
         else:
             groups[-1].append(row)
@@ -380,7 +395,7 @@ def candidate_list_top(screenshot, bounds):
     blue_rows = []
     for y in range(top, min(top + 50, bottom)):
         blue_pixels = 0
-        for x in range(left, right):
+        for x in range(max(0, left - 15), min(width, right + 15)):
             offset = (y * width + x) * 3
             red, green, blue = pixels[offset:offset + 3]
             if blue > red + 40 and blue > green + 15 and blue > 100:
@@ -595,16 +610,31 @@ def run_case(qmp, case_name, mode_name):
             candidate_pixels = changed_pixels(before, after, bounds)
             remaining_pixels = changed_pixels(before, cleared, bounds)
             cleared_pixels = changed_pixels(after, cleared, bounds)
-            if candidate_pixels < 100 or cleared_pixels < candidate_pixels * 0.6:
+            try:
+                find_candidate_popup(before, cleared)
+            except RuntimeError as error:
+                if not (str(error).startswith("No tall candidate popup") or
+                        str(error).startswith("Candidate popup width not established")):
+                    raise
+                popup_remains = False
+            else:
+                popup_remains = True
+            # Text behind a popup can stay changed after selection. Check
+            # that the tall popup itself disappeared as well as the pixel
+            # change, instead of requiring a return to the exact old frame.
+            if (candidate_pixels < 100 or
+                    cleared_pixels < candidate_pixels * 0.5 or popup_remains):
                 raise RuntimeError(
                     f"Candidate popup did not clear after selection: "
-                    f"{cleared_pixels}/{candidate_pixels} changed pixels")
+                    f"{cleared_pixels}/{candidate_pixels} changed pixels, "
+                    f"popup_remains={popup_remains}")
             popup = {"bounds": bounds, "list_top": list_top, "click": [x, y],
                      "candidate_screenshot": str(after),
                      "cleared_screenshot": str(cleared),
                      "candidate_pixels": candidate_pixels,
                      "remaining_pixels": remaining_pixels,
-                     "cleared_pixels": cleared_pixels}
+                     "cleared_pixels": cleared_pixels,
+                     "popup_remains": popup_remains}
         else:
             qmp.keys(case.keys)
         wait_file(case_dir, "positive-ready")
@@ -633,7 +663,8 @@ def main():
     args = parser.parse_args()
     cases = args.case or list(CASES)
     modes = args.mode or list(MODES)
-    evidence = {"environment": check_guest(), "results": []}
+    evidence = {"environment": check_guest(),
+                "candidate_panel": candidate_panel_state(), "results": []}
     print("Guest: GNOME Wayland, XWayland and installed KeyKey addon ready", flush=True)
     original_engine = session_command("fcitx5-remote -n")
     original_state = session_command("fcitx5-remote; true")

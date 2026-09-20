@@ -166,7 +166,8 @@ def main():
     args = parser.parse_args()
     modes = args.mode or list(MODES)
     fields = args.field or FIELDS
-    evidence = {"environment": VM["check_guest"](), "results": [],
+    evidence = {"environment": VM["check_guest"](),
+                "candidate_panel": VM["candidate_panel_state"](), "results": [],
                 "firefox": guest("snap list firefox 2>/dev/null || true"),
                 "epiphany": guest("dpkg-query -W epiphany-browser 2>/dev/null || true")}
     original_engine = session_command("fcitx5-remote -n")

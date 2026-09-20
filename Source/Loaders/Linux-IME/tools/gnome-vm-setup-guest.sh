@@ -19,7 +19,8 @@ sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommen
   fcitx5-frontend-qt6 fcitx5-config-qt qt6-wayland \
   fonts-wqy-zenhei libcanberra-pulse x11-utils xdotool qemu-guest-agent \
   /tmp/chichi77-keykey-data_1.2.8-1+ubuntu24.04_all.deb \
-  /tmp/fcitx5-chichi77-keykey_1.2.8-1+ubuntu24.04_amd64.deb
+  /tmp/fcitx5-chichi77-keykey_1.2.8-1+ubuntu24.04_amd64.deb \
+  /tmp/gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb
 
 # The cloud image uses networkd. The minimal desktop's Netplan defaults can
 # select NetworkManager even though --no-install-recommends does not install it.
@@ -83,4 +84,12 @@ fi
 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus \
   gsettings set org.gnome.settings-daemon.plugins.xsettings overrides \
   "{'Gtk/IMModule':<'fcitx'>}"
-echo 'GNOME Wayland guest ready with installed KeyKey addon.'
+if [[ -e $HOME/.local/share/gnome-shell/extensions/kimpanel@kde.org ]]; then
+  echo 'A user-local Kimpanel copy shadows the installed panel package.' >&2
+  exit 1
+fi
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus \
+  keykey-gnome-panel enable
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus \
+  keykey-gnome-panel status | grep -F 'State: ACTIVE'
+echo 'GNOME Wayland guest ready with installed KeyKey addon and candidate panel.'

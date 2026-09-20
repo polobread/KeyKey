@@ -44,6 +44,7 @@ RUN apt-get update \
         debhelper \
         dpkg-dev \
         fakeroot \
+        libglib2.0-bin \
         lintian \
     && rm -rf /var/lib/apt/lists/*
 

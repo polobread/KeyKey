@@ -91,6 +91,7 @@ cp -a \
   "$linux_dir/data" \
   "$linux_dir/docs" \
   "$linux_dir/engine" \
+  "$linux_dir/gnome-panel" \
   "$linux_dir/tests" \
   "$linux_dir/tools" \
   "$source_root/Source/Loaders/Linux-IME/"
@@ -141,13 +142,50 @@ fcitx_package="$output_dir/fcitx5-chichi77-keykey_${debian_version}_${architectu
 test -f "$data_package"
 test -f "$fcitx_package"
 
+if [[ "$target" == ubuntu-24.04 ]]; then
+  case "$variant" in
+    release-candidate) panel_version=83+keykey1-1+ubuntu24.04 ;;
+    upgrade-fixture) panel_version=83+keykey1~preview1-1+ubuntu24.04 ;;
+  esac
+  python3 "$source_root/Source/Loaders/Linux-IME/gnome-panel/build-deb.py" \
+    "$output_dir" --version "$panel_version"
+  panel_package="$output_dir/gnome-shell-extension-keykey-kimpanel_${panel_version}_all.deb"
+  test -f "$panel_package"
+  panel_source="$output_dir/gnome-shell-extension-keykey-kimpanel_${panel_version}_source.tar.gz"
+  tar --sort=name --mtime='@1789862400' --owner=0 --group=0 --numeric-owner \
+    --exclude='__pycache__' --exclude='*.pyc' \
+    -C "$source_root/Source/Loaders/Linux-IME" -cf - gnome-panel | \
+    gzip -n >"$panel_source"
+  tar -tzf "$panel_source" >"$work_dir/panel-source-files.txt"
+  grep -Fxq 'gnome-panel/COPYING' "$work_dir/panel-source-files.txt"
+  grep -Fxq 'gnome-panel/kimpanel-v83.patch' "$work_dir/panel-source-files.txt"
+  grep -Fxq 'gnome-panel/upstream-v83/extension.js' \
+    "$work_dir/panel-source-files.txt"
+  lintian --fail-on error "$panel_package"
+  if [[ "$variant" == release-candidate ]]; then
+    preview_panel="$linux_dir/out/packages/$target-$architecture/upgrade-fixture/gnome-shell-extension-keykey-kimpanel_83+keykey1~preview1-1+ubuntu24.04_all.deb"
+    if [[ -f "$preview_panel" ]]; then
+      "$linux_dir/ci/test-gnome-panel-package.sh" "$panel_package" "$preview_panel"
+    else
+      "$linux_dir/ci/test-gnome-panel-package.sh" "$panel_package"
+    fi
+  fi
+fi
+
 lintian --fail-on error "$output_dir"/*.changes
 (
   cd "$output_dir"
-  sha256sum ./*.deb >SHA256SUMS
+  checksums=(./*.deb)
+  if [[ "$target" == ubuntu-24.04 ]]; then
+    checksums+=(./gnome-shell-extension-keykey-kimpanel_*_source.tar.gz)
+  fi
+  sha256sum "${checksums[@]}" >SHA256SUMS
 )
 
 printf '%s\n' \
   "Built Debian packages:" \
   "  $data_package" \
   "  $fcitx_package"
+if [[ "$target" == ubuntu-24.04 ]]; then
+  printf '  %s\n  %s\n' "$panel_package" "$panel_source"
+fi

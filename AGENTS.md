@@ -31,8 +31,9 @@ Wayland／XWayland 的逐鍵與滑鼠矩陣通過 160/160；真實 gedit 四條�
 失焦提交原始注音、GTK 預設 Wayland 路徑清除 preedit 的差異；T11 編輯欄位、
 T12 符號表真滑鼠、T10 client/Fcitx recovery 與明確 GDM 登出登入後的
 T01／T06 抽樣已實跑；Firefox Snap 與 Epiphany 的真正 DOM 三種欄位
-五路徑 15/15 通過。修補版 Kimpanel v83 在 GNOME Shell 46 VM 的
-四角 32/32、雙螢幕第二列真滑鼠 16/16 已通過；完整 App、
+五路徑 15/15 通過。加入符號表真滑鼠後的 21 案 × 八路徑
+已在系統安裝的修補版 Kimpanel 套件下完整通過 168/168，無設定還原錯誤；
+同套件四角 32/32、雙螢幕第二列真滑鼠 16/16 已通過；完整 App、
 實體多螢幕及跨 Ubuntu 版本仍待驗收，
 GTK 預設 Wayland bridge 的跨 App 模式隔離亦未通過。
 版號更新與這些 local
@@ -425,9 +426,31 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   單螢幕四角 32/32 通過。Qt6 200% 的白色候選窗與白色 App 重疊時，
   舊像素差演算法會漏掉上方三列而點到第四列；runner 已補回 popup 真正
   頂界，驗證「鐘」而非僅看提交任一字。這只關閉 GNOME Shell 46 VM
-  的定位矩陣；實體雙螢幕、Ubuntu 22.04、正式套件仍待驗收。
+  的定位矩陣；後續獨立 `.deb` 已重跑同一 VM 矩陣，實體雙螢幕與
+  Ubuntu 22.04 仍待驗收。
   正式 GNOME panel 路線與完整 gate 見
   `Source/Loaders/Linux-IME/docs/gnome-candidate-panel.md`。
+- **GNOME 面板套件與 VM 顯示配置**：2026-09-20 已把固定官方 v83
+  來源及 GPL-2.0 修補做成獨立的
+  `gnome-shell-extension-keykey-kimpanel` Ubuntu 24.04 `.deb`；不用修改
+  Fcitx addon 套件的授權。預覽版初裝→正式版升級、`dpkg --verify`、
+  `keykey-gnome-panel disable`→`enable` 已在 GNOME Shell 46 guest 通過；
+  停用時 `org.kde.impanel` owner 為 false，啟用為 true。系統套件版本再跑
+  四角 32/32、雙螢幕 16/16 真滑鼠案例。GNOME 會優先使用
+  `~/.local/share/gnome-shell/extensions/kimpanel@kde.org` 同 UUID 副本；
+  測試時先保留舊 user-local 副本、移開並重新登入，確認 `gnome-extensions
+  info` 的 Path 是 `/usr/share/gnome-shell/extensions/kimpanel@kde.org`。
+  `gnome-vm-popup-smoke.py` 需要 Virtual-1 單螢幕 1280×800；若 VM
+  留在 Virtual-2 主螢幕、300% 縮放，QMP 第一 head 只有背景，先用
+  `gnome-vm-displays.py single` 調回測試配置。runner 現會在開始前
+  檢查此條件。Files 的淺色視窗在候選後方時，候選仍正常可見且滑鼠
+  可選，但舊像素偵測把九列切開；runner 現允許行間 25 px 空白。Qt6
+  符號表的 reading 邊框也會與候選上緣合併，取候選列頂點時須擴大藍色
+  邊框搜尋範圍；白色 Files 背景在候選消失後仍可能變動，清除檢查要同時
+  比對候選前／後並確認高候選窗已消失。修正後 T12 真滑鼠八路徑 8/8
+  通過「，」及英文負控制，T06 第二列「鐘」既有截圖座標也已核對。
+  這些是 GNOME Shell 46 VM 證據；Ubuntu 22.04
+  的 GNOME 與實體顯示器仍未驗收。
 - **GNOME GTK4 真實 App 與 synthetic host 的 bridge 結果不同**：2026-09-20
   Ubuntu 24.04.5 GNOME Wayland guest 以 gedit／GNOME Text Editor 各跑直接
   Fcitx、未設 `GTK_IM_MODULE`、明設 `wayland` 與 XWayland 四路徑。
@@ -1413,10 +1436,19 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       與 `keyboard-us` 負控制；完整一次執行 160/160 通過且無設定還原錯誤。
       T06 滑鼠另以候選前／顯示／點選後截圖核對
       第二列「鐘」與約半秒的 popup 清除。重啟 GDM 後新 session 的 T01／
-      T06 滑鼠 16/16 通過。
+      T06 滑鼠 16/16 通過。後續加入 T12 符號表真滑鼠，現為 21 案 × 八路徑；
+      系統安裝的候選面板下完整重跑 168/168 通過，設定還原無錯誤，報告
+      確認 extension path 由 `gnome-shell-extension-keykey-kimpanel` 套件擁有。
 - [ ] 處理 GNOME Text Editor 的 GTK Wayland IM 路徑沒有 active input context：
       已有真實 App runner 記錄 gedit 4/4、Text Editor 2/4；查明是 GTK／GNOME
       設定、應用程式還是 Fcitx 整合所致，再決定產品或安裝文件修正。
+      2026-09-20 已在 Fcitx 套件加入個別 App 的 `keykey-fcitx-app` 與
+      「文字編輯器（琦琦注音）」啟動器；真實 GNOME Text Editor／gedit
+      各由已安裝 helper 通過「中」提交與英文負控制。兩個 App 同時存活的
+      Alt+Tab 焦點案例在 native Wayland 與 XWayland 2/2 通過，gedit 失焦
+      提交原始「ㄓㄨㄥ」，兩個編輯器隨後都能提交中文與英文負控制。
+      這提供可用的直接
+      Fcitx 路徑，不表示預設 GTK Wayland bridge 問題已修復。
 - [x] 2026-09-20 在 GNOME Wayland VM 加入 T10 雙欄真指標焦點 runner，
       八模式各有 active 候選切欄與 `keyboard-us` 負控制，16/16 通過；
       六條直接 Fcitx 路徑失焦提交原始注音，兩條 GTK 預設 Wayland
@@ -1428,11 +1460,16 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       Home／End、PageUp／PageDown、Delete／Tab、Shift 變體後為「甲中中丙」，
       密碼欄只收 literal、唯讀欄不變且兩者無 preedit。另加 T12 符號表
       真滑鼠第一列，八路徑 8/8 選出「，」並通過英文 `!` 負控制。
+      系統安裝面板套件下重跑 T11 正負階段 16/16 與 extended 階段 8/8，
+      本次 24/24 完成且 GNOME session 未崩潰；結果分別保存於有時間戳的
+      `gnome-editing-*.json`。
 - [ ] 完成 T10 兩個同時存活 App 的 GNOME bridge 狀態隔離決策：六條直接
       Fcitx 路徑正負控制 12/12 通過，GTK3／GTK4 預設 Wayland bridge 的
       負控制 2/2 通過、正向 0/2；乾淨 Fcitx 重現兩個 App 共用唯一 IBus
       context，App B 收到英文全形 `ｊｐ６１`。目前直接 Fcitx 路徑可用；
-      bridge 差異、真實 App 範圍及發布說明仍需決定。
+      bridge 差異、真實 App 範圍及發布說明仍需決定。系統安裝面板套件下
+      再次跑六條直接 Fcitx 路徑的正負控制，12/12 通過且設定還原無錯誤；
+      這沒有改變 bridge 的單一 context 行為。
 - [x] 2026-09-20 加入 T10 GNOME Wayland VM 候選中關閉 client 與 Fcitx
       重啟恢復 runner：八路徑皆先捕捉候選 popup、關閉 client，驗證 addon
       PID 存活，再由新 client 通過「中」與 `keyboard-us` 負控制，8/8；
@@ -1453,7 +1490,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       中的獨立 profile，Epiphany 採 private profile；每案關閉瀏覽器並保存
       DOM 事件與候選畫面。Firefox Snap XWayland 在本 VM 啟動時回報
       `cannot open display: :0`，不可把 Epiphany XWayland 結果算成 Firefox。
-      瀏覽器跨 App 焦點與其他 sandbox 組合仍待驗收。
+      瀏覽器跨 App 焦點與其他 sandbox 組合仍待驗收。系統安裝的 GNOME
+      候選面板套件下已重跑相同 15 個 DOM 案例，全部通過且設定還原無錯誤；
+      報告記錄 system extension path、套件版本與 D-Bus owner。
 - [ ] 決定 T10 直接 Fcitx 路徑的原始 preedit 失焦提交是否需調整；
       已用真實 gedit／GNOME Text Editor 的 Alt+Tab 案補證：direct Fcitx
       native Wayland／XWayland 各通過，gedit 失焦提交「ㄓㄨㄥ」，Text Editor
@@ -1493,8 +1532,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       額外移窗、熱插拔、實體顯示器與跨版本。
 - [ ] 完成 Ubuntu 24.04 GNOME 正式候選 panel：決策以 Kimpanel 協定與
       GNOME Shell 面板為方向；修補版已在 VM 完成雙螢幕 16/16，
-      但仍未納入 `.deb`。須完成可重現安裝／更新／停用、GNOME 版本
-      相容、橫式、縮放配色、焦點／再次移窗與實體多螢幕；
+      獨立 GPL-2.0 `.deb` 已在 Ubuntu 24.04 GNOME Shell 46 VM 完成
+      預覽安裝→正式升級、停用→啟用與 32/32 四角、16/16 雙螢幕
+      真滑鼠重驗。最後的 copyright metadata 修正後重新安裝相同程式 payload，
+      `dpkg --verify` 與 T01／T06 真滑鼠抽樣 4/4 通過。仍須 GNOME 跨版本、
+      橫式、縮放配色、焦點／再次移窗、
+      熱插拔與實體多螢幕；
       詳見 `docs/gnome-candidate-panel.md`。
 - [ ] 決定並實作 F07 琦琦注音專屬候選 renderer；完整分解見
       `LINUX_DEVELOPMENT_PLAN.md` 的「F07 專屬 renderer」TODO。決策前須先比較

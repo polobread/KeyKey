@@ -2,6 +2,14 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: chichi77 KeyKey
 Source: https://github.com/polobread/KeyKey
 
+Files: Source/Loaders/Linux-IME/gnome-panel/*
+Copyright: 2026 Chui-Ping Cheng
+ Input Method Panel contributors
+License: GPL-2
+ The GNOME panel source and packaging tools are distributed separately from
+ the KeyKey engine under GPL version 2. The complete license is in
+ /usr/share/common-licenses/GPL-2 on Debian systems.
+
 Files: Source/Loaders/Linux-IME/*
 Copyright: 2026 Chui-Ping Cheng
 License: MIT

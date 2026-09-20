@@ -27,7 +27,9 @@ MODES = {
     "bridge": ("GDK_BACKEND=wayland", "unset"),
     "wayland-im": ("GDK_BACKEND=wayland", "wayland"),
     "xwayland": ("GDK_BACKEND=x11", "fcitx"),
+    "launcher": ("GDK_BACKEND=wayland", "launcher"),
 }
+DEFAULT_MODES = ("wayland", "bridge", "wayland-im", "xwayland")
 AT_SPI_READ = r'''
 import gi
 import json
@@ -114,8 +116,10 @@ def run_app(qmp, app, mode):
         "systemd-run", "--user", f"--unit={unit}", "--collect",
         "--property=Type=exec", f"--setenv={backend}",
         *([f"--setenv=GTK_IM_MODULE={gtk_module}"]
-          if gtk_module != "unset" else []),
-        *(["/usr/bin/env", "-u", "GTK_IM_MODULE"] if gtk_module == "unset" else []),
+          if gtk_module not in ("unset", "launcher") else []),
+        *(["/usr/bin/env", "-u", "GTK_IM_MODULE"]
+          if gtk_module in ("unset", "launcher") else []),
+        *(["/usr/bin/keykey-fcitx-app"] if gtk_module == "launcher" else []),
         *command,
         document,
     ]
@@ -153,8 +157,9 @@ def main():
     parser.add_argument("--mode", action="append", choices=MODES)
     args = parser.parse_args()
     apps = args.app or list(APPS)
-    modes = args.mode or list(MODES)
-    evidence = {"environment": VM["check_guest"](), "results": []}
+    modes = args.mode or DEFAULT_MODES
+    evidence = {"environment": VM["check_guest"](),
+                "candidate_panel": VM["candidate_panel_state"](), "results": []}
     evidence["guest_packages"] = guest(
         "dpkg-query -W -f='${binary:Package}=${Version}\\n' "
         "gedit gnome-text-editor libgtk-4-1 fcitx5-frontend-gtk4")

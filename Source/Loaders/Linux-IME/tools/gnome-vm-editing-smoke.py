@@ -175,7 +175,8 @@ def main():
     args = parser.parse_args()
     modes = args.mode or list(MODES)
     phases = args.phase or ("positive", "negative")
-    evidence = {"environment": VM["check_guest"](), "results": []}
+    evidence = {"environment": VM["check_guest"](),
+                "candidate_panel": VM["candidate_panel_state"](), "results": []}
     original_engine = session_command("fcitx5-remote -n")
     original_state = session_command("fcitx5-remote; true")
     prior_config = VM["read_config"]()

@@ -108,6 +108,19 @@ The initial vertical slice provides:
   every flow has a `keyboard-us` negative control;
 - Debian packages named `chichi77-keykey-data` and
   `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
+- a separate GPL-2.0 GNOME Shell 46 panel package for Ubuntu 24.04, built
+  from pinned Input Method Panel v83 sources and the cross-monitor placement
+  patch. Install or upgrade its `.deb`, log out and in, then run
+  `keykey-gnome-panel enable`; `disable` and `status` manage the current user's
+  panel without changing the Fcitx addon. See `gnome-panel/README.md`;
+- `keykey-fcitx-app COMMAND [ARGUMENT ...]` for launching one GTK application
+  through the direct Fcitx input context. The optional
+  "Text Editor (琦琦注音)" application launcher starts a separate GNOME Text
+  Editor window this way. The direct `GTK_IM_MODULE=fcitx` route has passed
+  the real editor input test through the installed helper; the desktop file
+  also passes metadata validation;
+  GNOME's default GTK Wayland bridge still exposes one shared IBus context
+  to two applications, so it cannot provide per-application mode isolation;
 - a package lifecycle test covering install, controlled preview-to-1.2.8
   upgrade, removal, reinstall, dependency/file/hash checks, the eighty-two
   non-settings-window X11 cases after each installed state, and all eighty-three cases,

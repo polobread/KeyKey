@@ -6,7 +6,7 @@
 L3 X11/GTK 3、GTK 4、Qt 6 各自適用的第一階段完整真實輸入矩陣與
 Ubuntu 22.04／24.04 開發用 Debian 套件；Ubuntu 24.04 的隔離 GNOME X11 session
 另已通過 76 個不重啟桌面 Fcitx 的 GTK 3／GTK 4／Qt 6 真實輸入案例。尚未完成
-完整登入生命週期、完整視窗、IBus 或正式發布套件。2026-09-20 的 GNOME Wayland
+完整 App／視窗／穩定性、IBus 或正式發布驗收。2026-09-20 的 GNOME Wayland
 KVM guest 已以 20 案 × 8 條 native Wayland／XWayland 的逐鍵與滑鼠矩陣通過
 160/160；真實 gedit 四條路徑通過，GNOME Text Editor 的直接 Fcitx
 Wayland／XWayland 通過，
@@ -16,13 +16,17 @@ T12 符號表真滑鼠八路徑 8/8 通過。T10 兩個同時存活 App 的直�
 六路徑 12/12 通過，GTK 預設 Wayland bridge 則共用單一 IBus context，
 未達跨 App 模式隔離；候選中關閉 client 與新 client 恢復八路徑 8/8、
 Fcitx 新 PID 後重跑 T01 八路徑亦 8/8。明確 GDM 登出登入後新 session
-的 T01／T06 真滑鼠各八路徑共 16/16 通過，完整 App／視窗與穩定性尚待驗收。
+的 T01／T06 真滑鼠各八路徑共 16/16 通過。另已將修補版 GNOME Shell 46
+候選面板製成獨立 GPL-2.0 `.deb`，在專用 VM 通過預覽安裝、正式升級、
+停用／啟用及系統套件的四角 32/32、雙螢幕 16/16 真滑鼠重驗；完整 App／
+視窗、跨版本與穩定性尚待驗收。加入符號表真滑鼠後的現行 21 案 × 八路徑
+矩陣已在該系統面板下完整重跑 168/168，且無設定還原錯誤。
 
 盤點日期：2026-09-12；原始碼基線：`13696ef`；產品版號來源：`README.md` 標題。
 
 Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下列實作與驗收後才可
 對外宣告已支援。目前四平台版號已同步至 1.2.8；Linux 已有開發中的 staged install
-與 `.deb`，但缺少完整功能、桌面矩陣與 release gate，仍不是可正式發布的套件。
+與 `.deb`，但缺少完整功能、桌面矩陣與 release gate，仍不可正式發布。
 
 接手順序：[AGENTS.md](AGENTS.md) → [BUILDING.md](BUILDING.md) → 本檔 →
 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。本計畫取代「Linux 只比照行動版注音」的範圍。
@@ -279,10 +283,11 @@ window frame origin 不能修復這個時序，後者還曾讓候選蓋住欄位
 則在同一焦點視窗內補上 frame origin 位移。乾淨補丁產物在 GNOME Shell 46
 guest 以兩種副螢幕縮放 × 八路徑的第二列真滑鼠選「鐘」、清除與英文負控制
 16/16 通過，單螢幕四角回歸 32/32 通過。補丁建立與授權見
-`Source/Loaders/Linux-IME/gnome-panel/`；Ubuntu 22.04、實體雙螢幕、
-橫式／theme／熱插拔及正式 extension 套件仍未驗收。
-extension 目前只安裝在測試 guest，不能當成套件已提供或 P0 已關閉；
-VM 混合 DPI 首次移窗定位已修正，仍須完成實體螢幕、跨版本與正式套件整合。
+`Source/Loaders/Linux-IME/gnome-panel/`。後續已製成獨立 GPL-2.0 `.deb`，
+在專用 Ubuntu 24.04 GNOME Shell 46 VM 完成預覽安裝、正式升級、停用／啟用，
+並以系統套件重跑四角 32/32、雙螢幕 16/16 真滑鼠案例。Ubuntu 22.04、
+實體雙螢幕、橫式／theme／熱插拔仍未驗收，P0 亦尚未關閉；
+VM 混合 DPI 首次移窗定位不能代表實體螢幕與跨版本相容。
 若 GNOME 達不到 macOS 外觀功能，提出「受維護的 Shell 整合／
 經驗證的替代呈現」與成本，經確認後才實作額外整合或接受差異。
 不得默默用系統預設樣式取代需求，再宣稱完整 parity；也不能以 XWayland fallback

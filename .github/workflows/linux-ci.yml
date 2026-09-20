@@ -95,7 +95,7 @@ jobs:
             dpkg-dev fakeroot fcitx5 fcitx5-config-qt \
             fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt6 \
             fonts-wqy-zenhei g++ \
-            libcanberra-dev libfcitx5core-dev libgtk-3-dev libgtk-4-dev \
+            libcanberra-dev libfcitx5core-dev libglib2.0-bin libgtk-3-dev libgtk-4-dev \
             lintian netpbm ninja-build pkg-config python3-pyatspi qt6-base-dev \
             x11-apps \
             x11-utils xdotool xvfb

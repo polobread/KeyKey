@@ -6,10 +6,12 @@ Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only �
 外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
 並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
 另在完整 Ubuntu 24.04 GNOME Wayland KVM guest 通過涵蓋 native Wayland／XWayland
-的 160/160 組逐鍵／滑鼠矩陣；真實 gedit 四條輸入路徑與 GNOME Text Editor 的直接 Fcitx
+的舊版 160/160 組逐鍵／滑鼠矩陣；加入符號表真滑鼠後，系統安裝的候選
+面板下完整 168/168 組通過。真實 gedit 四條輸入路徑與 GNOME Text Editor 的直接 Fcitx
 Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有缺口。
 雙欄焦點正負控制 16/16 通過並量到失焦語意依輸入路徑而異。
-完整視窗／App 驗收與正式套件仍待完成。開發／套件規格見
+完整視窗／App 驗收與正式發布門檻仍待完成。GNOME Shell 46 的獨立候選
+面板套件已在 Ubuntu 24.04 VM 測過安裝、升級、停用與再啟用。開發／套件規格見
 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
@@ -117,6 +119,13 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
 這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
+
+Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
+`gnome-shell-extension-keykey-kimpanel` `.deb`，只支援 GNOME Shell 46，供
+GNOME Wayland 候選面板使用。安裝、啟用、停用和同 UUID 的 user-local
+extension 處理方式見 [面板說明](Source/Loaders/Linux-IME/gnome-panel/README.md)。
+`fcitx5-chichi77-keykey` 另安裝「文字編輯器（琦琦注音）」啟動器與
+`keykey-fcitx-app`；這兩者只為個別啟動的 GTK App 選用直接 Fcitx 輸入路徑。
 
 ## macOS
 

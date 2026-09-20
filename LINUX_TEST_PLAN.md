@@ -7,8 +7,12 @@ container build/staged-install checks、Ubuntu 22.04／24.04 Debian package chec
 desktop-safe 案例。2026-09-20 已在 Ubuntu 24.04.5 GNOME Wayland KVM guest
 通過 20 案 × 八條 native Wayland／XWayland 的打字與滑鼠矩陣（160/160），另以 gedit 和 GNOME
 Text Editor 驗證真實文件欄位；Firefox Snap／Epiphany 的五條瀏覽器路徑
-與三種欄位亦已通過真實 DOM 事件 15/15。更多 sandbox／App／視窗 suite
-仍待實作。
+與三種欄位亦已通過真實 DOM 事件 15/15。修補版 GNOME Shell 46 候選面板
+已製成獨立 `.deb`，系統安裝後在專用 VM 通過四角 32/32、雙螢幕 16/16
+真滑鼠重驗；現行 21 案 × 八路徑亦在該面板下完整重跑 168/168，
+無設定還原錯誤。已安裝 helper 的真實雙編輯器焦點 2/2、兩 App 直接
+Fcitx 狀態隔離 12/12，以及 Firefox Snap／Epiphany DOM 15/15 亦在
+同一套件下重跑通過。更多 sandbox／App／視窗及跨版本 suite 仍待實作。
 搭配 [開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
 
 Linux 首版目標為 1.2.8。第一階段驗收 Windows TSF 目前實際提供的全部功能，對應
@@ -42,7 +46,8 @@ guest 經 QEMU ACPI 停止並重新 KVM 啟動後，SSH、GNOME Wayland、Fcitx 
 T03 編輯取消、T06 直／橫鍵盤候選與真滑鼠點第二列、T07 關聯詞、T08 模式／全形／
 繁轉簡、T09 Ctrl 快捷鍵及 T12 符號表。滑鼠案例另用 QMP 截圖比對候選顯示與
 點選後約半秒的畫面清除；8 條路徑的第二列皆選出「鐘」，候選顯示與點選後
-畫面的差異大於候選出現時的 60%。背景 App 的提示框亦可能改變像素，
+畫面的差異至少為候選出現時的 50%，並確認高候選窗已消失。背景 App
+的提示框亦可能改變像素，
 故保留前／中／後截圖供檢查。真實 gedit 四條 native／XWayland 路徑都通過
 「中」與英文 literal 負控制；GNOME Text Editor 的直接 Fcitx native Wayland 與
 XWayland 通過，未設 `GTK_IM_MODULE` 與明設 `wayland` 兩條則在文件已聚焦並接受
@@ -60,7 +65,7 @@ GNOME Shell extension (`kimpanel@kde.org` v83) 在專用 guest 啟用後，
 `gnome-vm-popup-smoke.py --mouse` 的八模式 × 四角 32/32 通過九列候選
 不裁切、欄位避讓、第二列滑鼠提交「鐘」、點後清除及英文 literal 控制。
 在 extension 未安裝時，GTK3／GTK4 native Wayland 的右緣候選裁切，
-Qt6 候選蓋住欄位；extension 仍未納入產品套件。
+Qt6 候選蓋住欄位；後續已以獨立的 GNOME panel `.deb` 納入交付。
 雙螢幕 runner 的 16 組均在副螢幕提交「中」與英文 literal，
 候選定位 10/16 通過（100% 6/8、200% 4/8）；
 但 200% 副螢幕的 GTK3／GTK4 direct Wayland 直接移窗後候選可能還留
@@ -84,8 +89,9 @@ relative 縮放與同焦點視窗 XWayland absolute rect 移位：由乾淨補�
 產物重跑，兩種副螢幕布局 × 八條路徑的真滑鼠第二列「鐘」、候選清除與
 英文負控制 16/16；單螢幕四角 32/32 回歸亦通過。Qt6 200% 案
 原先把白色 App 上方的白色候選幾列漏算，runner 已以較低像素差補足
-popup 頂界後真點第二列，不再誤點第四列。這是 GNOME Shell 46 VM
-證據，尚非實體雙螢幕、Ubuntu 22.04 或正式套件發布證據。
+popup 頂界後真點第二列，不再誤點第四列。後續以獨立 `.deb` 實裝、升級、
+停用／啟用，並重跑系統套件的四角 32/32、雙螢幕 16/16；這仍不是
+實體雙螢幕、Ubuntu 22.04 或完整發布證據。
 
 同一 guest 的 T10 雙欄焦點 runner 又完成 8 模式 × 正負控制 16/16：第一欄有
 active 候選時以 VM 指標切第二欄，第二欄精確提交「文」，切回第一欄再提交「中」；
@@ -103,7 +109,10 @@ T11 真實編輯欄位另以八模式各跑選取替換、`keyboard-us` 負控�
 保持「唯讀」。乾淨輸出第一次完成 21/24；GNOME Shell 46 在最後 Qt6 XWayland
 host 啟動時 signal 11 崩潰，重建圖形 session 後同三階段 3/3 通過。
 T12 符號表再以真 VM 指標點第一列，八路徑 8/8 提交「，」，英文負控制為 `!`。
-這些是實際 App buffer 與 Fcitx addon 載入的證據，尚未覆蓋所有視窗位置。
+系統安裝面板套件後，T11 正負階段 16/16 與 active-reading extended 階段
+8/8 在同一存活 GNOME session 全數通過，沒有重現前次 Shell crash；兩次
+JSON 報告按時間保存。這些是實際 App buffer 與 Fcitx addon 載入的證據，
+尚未覆蓋所有視窗位置。
 
 T10 兩個同時存活 App 的 runner 量到另一項路徑差異：六條直接 Fcitx
 native Wayland／XWayland 路徑正負控制 12/12 通過，App A 先切英文全形、

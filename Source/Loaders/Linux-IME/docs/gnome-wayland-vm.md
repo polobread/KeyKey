@@ -93,10 +93,14 @@ include T01 standard/continuous/invalid typing, T02's five Bopomofo layouts,
 T03 editing/cancel, T06 vertical and horizontal keyboard navigation plus a
 real pointer click on candidate two, T07 associated phrases, T08 full-width,
 simplified output and mode switching, T09 shortcut pass-through, and T12 symbol
-selection. The current matrix is 20 cases across eight toolkit/backend modes,
-or 160 combinations. `--case` and `--mode` can be repeated to narrow a
-diagnostic run. The complete 2026-09-20 guest run passed 160/160 and restored
-the guest settings without errors. The pointer case takes QMP screenshots
+selection. The current matrix is 21 cases across eight toolkit/backend modes,
+or 168 combinations, including the symbol-table pointer case. `--case` and
+`--mode` can be repeated to narrow a diagnostic run. An earlier complete
+2026-09-20 guest run passed 160/160. After adding the symbol-table pointer
+case and correcting popup detection over a light background, the packaged
+panel run passed 168/168 and restored guest settings without errors. Its
+report confirms system package ownership of the active extension. The pointer
+case takes QMP screenshots
 before, during and after the candidate popup; it checks that the selected text
 is `鐘` and that the
 popup region clears within roughly half a second. These are sampled display
@@ -144,14 +148,16 @@ The dedicated guest currently has the official GNOME Shell
 upstream download has `version_tag=57768` and SHA-256
 `b8d83c1bc6e903a280dc0492b9b4e3be4b2713ab96c669d1ae90e625eacf675f`.
 The guest now runs the minimal GPL-2.0 patch built from that pinned source by
-`../gnome-panel/build-patched-extension.py`; the KeyKey `.deb` does not install
-the extension or patch.
+`../gnome-panel/build-patched-extension.py`. It is delivered in the separate
+`gnome-shell-extension-keykey-kimpanel` `.deb`; the Fcitx addon package does
+not own GNOME Shell files. Verify `gnome-extensions info kimpanel@kde.org`
+reports `/usr/share/gnome-shell/extensions/kimpanel@kde.org` as its Path, so
+an older user-local copy cannot shadow the package.
 Confirm `gnome-extensions info kimpanel@kde.org` says `ACTIVE` and the session
 bus owns `org.kde.impanel` before comparing panel positions. Without this
 extension, this guest showed GTK 3/4 native Wayland clipping at the right edge
 and Qt 6 candidate overlap; with it, the complete 1280×800 four-corner run
-passed 32/32, including mouse commit and clearance. This extension is only in
-the test guest, not installed by the KeyKey package. The fixed resolution and
+passed 32/32, including mouse commit and clearance. The fixed resolution and
 one vertical style do not cover horizontal candidates, other themes, hotplug,
 physical GPUs or multiple real monitors.
 
@@ -206,8 +212,21 @@ commit `鐘`, cleared, and passed `keyboard-us` literal control. The
 single-display `gnome-vm-popup-smoke.py --panel kimpanel --mouse` four-corner
 regression also passed 32/32. Reports and both-head screenshots are in
 ignored `out/gnome-vm/gnome-multimonitor-last.json` and `gnome-popup-last.json`.
-Physical monitors, Ubuntu 22.04, extension packaging, hotplug and other App
+Physical monitors, Ubuntu 22.04, hotplug and other App
 scenarios remain release gates.
+
+The separate Ubuntu 24.04 package has since passed preview installation,
+upgrade to `83+keykey1-1+ubuntu24.04`, `dpkg --verify`, disable and re-enable
+in the guest. The Kimpanel bus owner changed from true to false and back;
+the packaged extension was ACTIVE and passed the same 32/32 four-corner and
+16/16 two-display pointer matrices. The reproducible package builder and
+user commands are in [gnome-panel](../gnome-panel/README.md). The popup
+runner now checks that Virtual-1 is the sole 1280×800 primary display before
+testing; a leftover 300% Virtual-2 primary otherwise makes its QMP first-head
+screenshot show only desktop background. In the full typing runner, a Files
+window behind a white candidate popup can leave only the text strokes visible
+in screenshot differences. The popup detector now joins those rows across
+short gaps; GTK3 direct Wayland T06 mouse again selected `鐘` in that scene.
 
 For one failing GTK 3 direct Wayland case on the 200% display, a filtered
 session bus trace shows the GTK frontend calling Fcitx
@@ -237,6 +256,12 @@ GNOME Text Editor 46.3, GTK 4.14.5 and Fcitx GTK4 frontend 5.1.1.
 Keep this as an open GTK 4 application integration gap; the direct
 `GTK_IM_MODULE=fcitx` path is the tested route for
 that editor (`GTK_IM_MODULE=fcitx gnome-text-editor` inside the guest). The
+installed Fcitx package now offers `keykey-fcitx-app` and a separate
+"Text Editor (琦琦注音)" launcher. The real App runner used the packaged
+helper to enter `中` and the `keyboard-us` literal control in both GNOME Text
+Editor and gedit. An installed-helper Alt+Tab run with both editors alive
+passed native Wayland and XWayland 2/2, including focus-out text and literal
+negative controls. The default GTK bridge gap remains open. The
 synthetic GTK 4 host passed its corresponding unset-variable path,
 which does not establish compatibility for every GTK 4 application.
 

@@ -1,7 +1,10 @@
 # GNOME Wayland 候選面板決策與驗收門檻
 
 狀態：2026-09-20 已完成 GNOME Shell 46 VM 的 16/16 雙螢幕真滑鼠定位及
-32/32 單螢幕四角回歸；正式套件、Ubuntu 22.04 與實體螢幕驗收仍未完成。
+32/32 單螢幕四角回歸；獨立 GNOME Shell 46 `.deb` 已完成固定來源重建、
+lintian error gate、預覽版初裝→正式版升級、停用→啟用，以及以系統套件跑
+32/32 四角、16/16 雙螢幕真滑鼠案例。Ubuntu 22.04、實體螢幕、熱插拔和
+其他視覺／App 組合仍須另列結果。
 
 ## 決策
 
@@ -22,6 +25,9 @@ GNOME Shell 46 的 1280×800 四角矩陣 32/32 通過，但雙螢幕候選定�
 
 正式交付路線是將可重現的移窗與縮放修正送回 Kimpanel／Fcitx 上游，並在專用
 GNOME extension 整合套件中固定已驗證的來源版本、授權、Shell 相容範圍及升級路徑。
+目前的 `gnome-shell-extension-keykey-kimpanel` 僅允許 GNOME Shell 46，與
+Fcitx addon 分開建置；同 UUID 的 user-local extension 必須移開，避免遮住
+系統套件。安裝、更新與停用指令見 `gnome-panel/README.md`。
 目前的最小修補已與 KeyKey 的 BSD／MIT 原始碼分開標示 GPL-2.0 授權及上游出處。
 沒有完成套件與跨版本驗收前，不把 extension 列為必要依賴，也不把現有 `.deb`
 稱為正式 GNOME 發布版。
@@ -64,11 +70,18 @@ GNOME extension 整合套件中固定已驗證的來源版本、授權、Shell �
    兩布局 × 八路徑 16/16；runner 保存 QMP head 截圖。此結果使用由
    `build-patched-extension.py` 生成的乾淨產物，並非臨時診斷碼。
 4. 已以真實 gedit／GNOME Text Editor 的 direct Fcitx 與兩個 gedit
-   bridge 視窗完成焦點差異驗證；仍需對修補面板重跑完整
-   Firefox Snap、Epiphany 及多 App 模式矩陣。
-5. 完成修補版 extension 的可重現套件安裝、停用與升級驗收，
-   再於 Ubuntu 22.04、24.04 的 GNOME session 及實體雙螢幕／
-   混合 DPI 重驗；VM 通過不取代實體螢幕。
+   bridge 視窗完成焦點差異驗證；系統面板套件下另以已安裝 helper 重跑
+   兩編輯器 Alt+Tab 2/2、Firefox Snap／Epiphany 真實 DOM 欄位 15/15，
+   以及六條直接 Fcitx 路徑的兩個同時存活 App 正負控制 12/12。
+   預設 GTK bridge 的共用 context 與其他 App／sandbox 組合仍待處理。
+5. 已完成固定來源與獨立 GPL `.deb` 的重建、payload／版號順序／lintian
+   檢查，及專用 Ubuntu 24.04 GNOME VM 的預覽版初裝、正式版升級、停用、
+   再啟用與候選真滑鼠定位。停用後 `org.kde.impanel` bus owner 為 false，
+   啟用後為 true；extension path 指向系統套件。copyright metadata 修正
+   後的最終 `.deb` 已重新安裝並通過 `dpkg --verify` 與 T01／T06 真滑鼠
+   四案；其 GNOME extension payload 與完整 168 案使用的版本逐位元相同。
+   仍須於 Ubuntu 22.04 的
+   GNOME session 及實體雙螢幕／混合 DPI 重驗；VM 通過不取代實體螢幕。
 
 Kimpanel 上游為 GPL-2.0，現有 extension 下載及測試步驟見
 [GNOME VM 手冊](gnome-wayland-vm.md)。這份決策不宣稱 F07 專屬比例／配色

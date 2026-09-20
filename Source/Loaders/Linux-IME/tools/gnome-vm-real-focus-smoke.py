@@ -34,7 +34,9 @@ def launch_editor(app, backend, module, unit, document):
         "systemd-run", "--user", f"--unit={unit}", "--collect",
         "--property=Type=exec", f"--setenv=GDK_BACKEND={backend}",
         *(["--setenv=GTK_IM_MODULE=fcitx"] if module == "direct" else []),
-        *(["/usr/bin/env", "-u", "GTK_IM_MODULE"] if module == "bridge" else []),
+        *(["/usr/bin/env", "-u", "GTK_IM_MODULE"]
+          if module in ("bridge", "launcher") else []),
+        *(["/usr/bin/keykey-fcitx-app"] if module == "launcher" else []),
         *command, document,
     ]
     session_command(shlex.join(launch))
@@ -42,7 +44,7 @@ def launch_editor(app, backend, module, unit, document):
 
 
 def run_case(qmp, backend, module):
-    second_app = "gnome-text-editor" if module == "direct" else "gedit"
+    second_app = "gedit" if module == "bridge" else "gnome-text-editor"
     stamp = int(time.time())
     first_unit = f"keykey-real-focus-gedit-{backend}-{module}-{stamp}"
     second_unit = f"keykey-real-focus-second-{backend}-{module}-{stamp}"
@@ -61,7 +63,7 @@ def run_case(qmp, backend, module):
         qmp.keys(("alt-tab",))
         APPS["wait_app"](second_app, Path(second_doc).name)
         first_after_blur = APPS["read_app"]("gedit", Path(first_doc).name)
-        expected_blur = "ㄓㄨㄥ" if module == "direct" else ""
+        expected_blur = "" if module == "bridge" else "ㄓㄨㄥ"
         if first_after_blur["text"] != expected_blur:
             raise RuntimeError(f"Unexpected real gedit blur result: {first_after_blur}")
         select_engine("chichi77-keykey-bopomofo")
@@ -104,7 +106,7 @@ def run_case(qmp, backend, module):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", action="append", choices=("wayland", "x11"))
-    parser.add_argument("--input-path", action="append", choices=("direct", "bridge"))
+    parser.add_argument("--input-path", action="append", choices=("direct", "bridge", "launcher"))
     args = parser.parse_args()
     backends = args.backend or ("wayland", "x11")
     paths = args.input_path or ("direct", "bridge")

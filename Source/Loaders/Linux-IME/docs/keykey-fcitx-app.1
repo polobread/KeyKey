@@ -1,0 +1,12 @@
+.TH KEYKEY-FCITX-APP 1 "20 September 2026" "KeyKey" "User Commands"
+.SH NAME
+keykey-fcitx-app \- launch one GTK application with the direct Fcitx input context
+.SH SYNOPSIS
+.B keykey-fcitx-app
+.I command
+.RI [ arguments ... ]
+.SH DESCRIPTION
+Set GTK_IM_MODULE to fcitx for the launched command and its child processes.
+Other applications and the desktop session keep their existing input-method
+settings. A single-instance application can forward the request to an existing
+process; use that application's separate-instance option when available.

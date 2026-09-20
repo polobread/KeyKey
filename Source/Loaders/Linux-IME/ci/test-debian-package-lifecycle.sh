@@ -95,6 +95,9 @@ verify_install() {
   test -f /usr/share/fcitx5/inputmethod/chichi77-keykey-bopomofo.conf
   test -f /usr/share/fcitx5/inputmethod/chichi77-keykey-cangjie.conf
   test -f /usr/share/fcitx5/inputmethod/chichi77-keykey-simplex.conf
+  test -x /usr/bin/keykey-fcitx-app
+  test -f /usr/share/applications/org.chichi77.KeyKey.TextEditor.desktop
+  test -f /usr/share/man/man1/keykey-fcitx-app.1.gz
   test -f /usr/share/chichi77-keykey/data/bpmf-ext.cin
   test -f /usr/share/chichi77-keykey/data/cj-ext.cin
   test -f /usr/share/chichi77-keykey/data/simplex-ext.cin
@@ -184,6 +187,9 @@ test ! -e /usr/share/fcitx5/addon/chichi77-keykey.conf
 test ! -e /usr/share/chichi77-keykey/data/bpmf-ext.cin
 test ! -e /usr/share/chichi77-keykey/data/tc2sc.cin
 test ! -e /usr/share/chichi77-keykey/data/associated-phrases
+test ! -e /usr/bin/keykey-fcitx-app
+test ! -e /usr/share/applications/org.chichi77.KeyKey.TextEditor.desktop
+test ! -e /usr/share/man/man1/keykey-fcitx-app.1.gz
 test -f "$test_config_root/chichi77-keykey/package-test-sentinel"
 
 install_packages "$release_dir"
