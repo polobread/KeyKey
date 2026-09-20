@@ -397,6 +397,17 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   距離判斷。兩種缺口都還不能當作多螢幕定位通過。測試入口、extension
   版本與輸出位置見 `docs/gnome-wayland-vm.md`；QEMU 第二 head 必須使用
   `keykey-display` 擷取，`Virtual-2` 預設未接上，需在 guest 接通後重啟 GDM。
+  本專案 Fcitx adapter 的 `FcitxState::updateUi` 只更新 preedit／candidate
+  與 `InputPanel`，不設定 cursor rectangle；GTK frontend 會自行送
+  `SetCursorRectV2`。同一 200% GTK3 Wayland 失敗案例的篩選 D-Bus trace
+  已確認 GTK frontend 從移動前的 `(35,61,0,98,scale=1)` 改送移動後
+  `(100,122,0,196,scale=2)`，Fcitx core 也把同組值轉送為
+  `org.kde.impanel2.SetRelativeSpotRectV2`；候選卻仍顯示在主螢幕右緣。
+  trace 留在 guest 的 `/tmp/keykey-cursor-monitor.log` 與
+  `/tmp/keykey-panel-monitor.log`，對應 runner 截圖在忽略版控的
+  `out/gnome-vm/`。這排除了「client 完全沒更新游標矩形」的假設，
+  尚需追查 Kimpanel／Mutter 對 relative rect 的焦點視窗與混合 DPI
+  座標換算；不要在 KeyKey engine 猜測螢幕絕對座標。
 - **GNOME GTK4 真實 App 與 synthetic host 的 bridge 結果不同**：2026-09-20
   Ubuntu 24.04.5 GNOME Wayland guest 以 gedit／GNOME Text Editor 各跑直接
   Fcitx、未設 `GTK_IM_MODULE`、明設 `wayland` 與 XWayland 四路徑。

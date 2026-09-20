@@ -166,6 +166,19 @@ shortcut and checks the resulting window bounds. The six failures remain
 open; a correct text commit alone is insufficient evidence for popup
 placement. The guest layout and KeyKey settings were restored after the run.
 
+For one failing GTK 3 direct Wayland case on the 200% display, a filtered
+session bus trace shows the GTK frontend calling Fcitx
+`SetCursorRectV2(100,122,0,196,2)` after the move, following an earlier
+`(35,61,0,98,1)` call on display one. Fcitx then calls the Shell extension's
+`SetRelativeSpotRectV2` with the same updated values; nevertheless the popup
+appears against the primary display's right edge. The guest traces are
+`/tmp/keykey-cursor-monitor.log` and `/tmp/keykey-panel-monitor.log`, and
+the two-head screenshots are in the runner report. KeyKey's Fcitx adapter
+updates preedit and the input panel but does not calculate or set the cursor
+rectangle. This narrows investigation to the relative rectangle's display
+mapping through Fcitx, Kimpanel and Mutter; the exact faulty component is
+not yet established.
+
 The second runner opens real gedit and GNOME Text Editor documents in four
 paths each: direct Fcitx native Wayland, native Wayland with `GTK_IM_MODULE`
 unset, explicit GTK Wayland IM, and XWayland. It sends the same physical VM

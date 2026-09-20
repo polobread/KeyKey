@@ -69,6 +69,10 @@ XWayland 直接跨螢幕移窗後候選仍留主螢幕，額外移窗後可停�
 cursor rectangle，
 已補入 caret 距離斷言。這些為尚未關閉的視覺驗收缺口，不能將
 「有提交文字」等同多螢幕定位通過。完整結果及重建方式見 VM 手冊。
+其中一個 200% GTK3 direct Wayland 失敗案另以篩選 D-Bus trace 驗證：
+GTK frontend 已送新 `SetCursorRectV2` 且 Fcitx 已轉送相同的
+`SetRelativeSpotRectV2`，候選仍在主螢幕右緣；不能歸因於 KeyKey 沒有
+更新候選內容，也尚未證明確切座標換算出錯的元件。
 
 同一 guest 的 T10 雙欄焦點 runner 又完成 8 模式 × 正負控制 16/16：第一欄有
 active 候選時以 VM 指標切第二欄，第二欄精確提交「文」，切回第一欄再提交「中」；
