@@ -1,4 +1,7 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.2.8
+# 琦琦輸入法 / chichi77 KeyKey 1.2.9
+
+1.2.9 目前是開發版號，尚未建立 `v1.2.9` 標籤或發布套件；下列下載連結
+仍指向已發布的 1.2.8。
 
 ## 開發初衷
 
@@ -64,7 +67,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 - iOS 實機版由 Xcode Cloud／App Store Connect 建置及發行；`Package iOS Simulator`
   只產生 Apple Silicon Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
-推送符合專案版號的 tag（例如 `v1.2.8`）會同時啟動 `Package macOS` 與
+推送符合專案版號的 tag（例如 `v1.2.9`）會同時啟動 `Package macOS` 與
 `Package Windows`，並把桌面版產物加入同一個 GitHub Release。兩個 workflow 也能手動
 執行；手動執行只保留 Actions artifact，不代表正式發行。同一個 `v*` tag 也會執行
 完整 `Linux CI`；獨立的 `linux-v1.2.8` 標籤提供首版正式 Linux 套件。
@@ -99,6 +102,9 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 <a id="english"></a>
 
 ## English
+
+Version 1.2.9 is in development. There is no `v1.2.9` tag or release yet;
+the download links below still point to the published 1.2.8 packages.
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports macOS, Windows, Android, iOS, and Ubuntu Desktop 24.04 LTS.
@@ -155,7 +161,7 @@ iOS.
   `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
   be installed on an iPhone or iPad.
 
-Pushing a tag that exactly matches the project version, such as `v1.2.8`,
+Pushing a tag that exactly matches the project version, such as `v1.2.9`,
 starts `Package macOS` and `Package Windows` and adds both desktop outputs to
 the same GitHub Release. The same `v*` tag also runs the complete `Linux CI`;
 the separate `linux-v1.2.8` tag carries the first formal Linux packages.

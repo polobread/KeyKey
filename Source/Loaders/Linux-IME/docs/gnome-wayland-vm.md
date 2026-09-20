@@ -43,9 +43,10 @@ GNOME desktop, GDM, Fcitx 5, toolkit frontends and Qt Wayland plugin; enables
 automatic login for the guest user; configures Fcitx autostart and restarts
 GDM. The host binaries are installed under the guest user's
 `~/.local/libexec/keykey-e2e/`, so smoke tests still work after a VM reboot.
-The current package filenames are `1.2.8-1+ubuntu24.04`, even when the
-development branch is `v1.2.9`; verify the package version and hashes for
-each release candidate. Provisioning is repeatable but interrupts any active
+The provision script now expects development packages named
+`1.2.9-1+ubuntu24.04`; the existing VM results and published packages are
+from 1.2.8. Build new packages and verify their versions and hashes before
+provisioning. Provisioning is repeatable but interrupts any active
 guest desktop session. It also fixes the guest's Netplan renderer to the
 installed `systemd-networkd`: the minimal GNOME package set otherwise selects
 NetworkManager without installing its service, leaving `enp0s2` DOWN after

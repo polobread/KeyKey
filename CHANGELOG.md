@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.9（開發中，尚未發布）
+
+- 同步 macOS、Windows、Android、iOS 與 Linux 的下一版建置版號；
+  尚未建立 tag 或新 Release。1.2.8 的已發布套件與測試紀錄保留原版號。
+
 ## Linux 1.2.8（Ubuntu 24.04 首版）
 
 - 正式支援 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；

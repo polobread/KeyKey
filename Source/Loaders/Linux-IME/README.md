@@ -1,5 +1,9 @@
 # chichi77 KeyKey for Linux
 
+Current source version: 1.2.9 (in development). The documented 1.2.8
+Ubuntu package set remains the published release; 1.2.9 packages have not
+been released or accepted yet.
+
 This directory contains the new native Linux implementation. It does not link
 or modify the legacy KeyKeyEngine or OpenVanilla frameworks. Linux 1.2.8
 supports Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, and amd64. See

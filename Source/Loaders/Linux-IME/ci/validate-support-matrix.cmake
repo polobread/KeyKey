@@ -41,8 +41,9 @@ foreach(index RANGE 0 ${last_target})
     endif()
 
     if(target_id STREQUAL "ubuntu-24.04")
-        if(NOT phase STREQUAL "active" OR NOT required OR NOT status STREQUAL "release-qualified")
-            message(FATAL_ERROR "Ubuntu 24.04 must be the qualified release target")
+        if(NOT phase STREQUAL "active" OR NOT required OR
+           NOT status STREQUAL "desktop-tested")
+            message(FATAL_ERROR "Ubuntu 24.04 must remain the tested development target")
         endif()
         math(EXPR active_count "${active_count} + 1")
     elseif(distro STREQUAL "ubuntu" OR distro STREQUAL "debian" OR distro STREQUAL "fedora")
@@ -63,5 +64,5 @@ endif()
 
 if(NOT active_count EQUAL 1 OR NOT future_count EQUAL 19)
     message(FATAL_ERROR
-        "Expected one qualified Ubuntu and 19 deferred targets; found ${active_count} and ${future_count}")
+        "Expected one active Ubuntu and 19 deferred targets; found ${active_count} and ${future_count}")
 endif()

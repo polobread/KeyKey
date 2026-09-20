@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(KeyKeyLinux VERSION 1.2.8 LANGUAGES CXX)
+project(KeyKeyLinux VERSION 1.2.9 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)
