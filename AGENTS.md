@@ -1,6 +1,6 @@
 # AGENTS.md — 開發交接
 
-**2026-09-20 v1.2.9 發布授權：** 使用者已明確要求建立並發布 `v1.2.9` tag／Release，並將該 Release 設為 latest。tag 必須指向含正式安裝文件的 `v1.2.9` 分支提交；等待 macOS、Windows 與 Linux 發布流程完成及資產核對後，才將 draft Release 公開並設為 latest。Android 與 iOS 繼續走商店發行，GitHub Release 不放 debug APK 或 Simulator 包。
+**2026-09-20 v1.2.9 重新發布要求：** 首次 `v1.2.9` tag／Release 因 Linux CI 失敗已依使用者要求刪除，遠端和本機 tag 都已撤下；`latest` 暫時回到 `v1.2.8`。先修好 Ubuntu 24.04 完整套件／X11 設定視窗測試及 Ubuntu 22.04 套件生命週期，確認 Linux CI 全綠，才從含修正與正式安裝文件的 `v1.2.9` 分支提交重新建立 tag／Release 並設為 latest。Android 與 iOS 繼續走商店發行，GitHub Release 不放 debug APK 或 Simulator 包。
 
 **2026-09-20 Linux 使用者文件：** 使用者指定 Linux 下一版與其他平台共用 `v1.2.9` 標籤，不再以獨立 Linux 標籤作為新指南的安裝入口。`LINUX_INSTALL.md` 已改為統一發布的安裝指南。Linux CI 已接上 tag 專用發布 job：Ubuntu 24.04 完整套件與 X11 輸入測試成功後，才核對版號及 checksum 並上傳三個 `.deb`、面板原始碼及 `SHA256SUMS` 到同一 Release。三張 `docs/images/keykey-linux-*.png` 均為先前 1.2.8 實拍：候選與符號取自已安裝套件的 GNOME Wayland VM，設定取自已安裝套件的 Ubuntu 24.04 X11 測試桌面，不是 1.2.9 驗收證據。README 已設入口。測試視窗與一般 App 畫面須明確區分；`out/` 不進版控，不要在使用者文件直接引用。
 
@@ -31,7 +31,7 @@ Fcitx 5、amd64，標籤為 `linux-v1.2.8`。套件、安裝步驟、已驗證�
 - [x] 將五平台下一版建置版號同步至 1.2.9，僅 commit／push 開發分支。
 - [x] 準備 Ubuntu 24.04 的 `v1.2.9` 圖文安裝與使用指南，並保存三張先前版本的實際截圖。
 - [x] 將 Linux 套件、面板原始碼與校驗檔的 tag 自動上傳接進同一 Release。
-- [ ] 確認 `v1.2.9` tag 工作流程、三平台 Release 資產與 latest 指向；GNOME 實機驗收另列後續工作。
+- [ ] 修正 Ubuntu 22.04／24.04 Linux CI，完整重跑全綠後重新建立 `v1.2.9` tag；核對三平台 Release 資產與 latest 指向。GNOME 實機驗收另列後續工作。
 - [ ] 後續另驗實體雙螢幕／熱插拔、更多 GTK App 與 sandbox、GNOME 主題、
       Ubuntu 其他版本及 ARM64；只有驗過的組合才加入正式支援。
 
@@ -804,6 +804,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `dbus-run-session` 前須清掉外部的 D-Bus／AT-SPI／runtime 位址，再用
   `dbus-update-activation-environment` 把測試建立且擁有者正確的 XDG 目錄同步給 D-Bus
   啟動的無障礙服務，否則設定工具即使已被 Fcitx 啟動也可能不會出現在 AT-SPI tree。
+  2026-09-20 的 1.2.9 tag CI 另遇到 Qt 設定程式已啟動、AT-SPI tree 卻空白：
+  在 Ubuntu 24.04 容器分別驗證，啟動視窗前必須先初始化 AT-SPI registry，並將
+  `QT_LINUX_ACCESSIBILITY_ALWAYS_ON` 連同 XDG 變數送入 D-Bus activation environment；
+  只做其中一項都會得到空樹。已在 X11 E2E 腳本修正，完整 CI 待重跑。
   `safeSaveAsIni` 寫出的實際設定是 0600；複製到 E2E artifact 後要只把證據副本改成
   0644，否則 rootless container 的 UID mapping 會讓 WSL host 無法直接閱讀。不要放寬
   使用者真正的 Fcitx 設定檔權限。
@@ -892,6 +896,10 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **APT 安裝本機 `.deb` 時路徑必須是絕對路徑或以 `./` 開頭**：傳入
   `out/packages/.../*.deb` 會被當成 package expression。package lifecycle script
   先限制輸出必須位於 `out/packages/`，再轉成絕對路徑；不要放寬成任意目錄。
+- **Ubuntu 22.04 精簡容器會讓套件內的 man page 看似消失**：官方容器的 dpkg
+  `excludes` 設有 `path-exclude=/usr/share/man/*`。2026-09-20 的 1.2.9 套件
+  實際含 `keykey-fcitx-app.1.gz`，安裝時卻被容器略過；生命週期測試應驗證
+  `.deb` 含該頁，並只在 dpkg 未排除 man page 時要求安裝後檔案存在。
 - **Debian source staging 必須保留 monorepo 的相對資料結構**：Linux CMake 以
   `Source/Loaders/Linux-IME/../../..` 找唯讀字表與根授權，因此 package script 只複製
   所需 Linux 原始碼（包含 CMake `cmake/*.in` configure template）、四份舊資料 CIN、

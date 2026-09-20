@@ -4,6 +4,8 @@
 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)；
 Android 與 iOS 依各自的商店管道安裝。
 
+[下載目前最新的 GitHub Release](https://github.com/polobread/KeyKey/releases/latest)
+
 ## 開發初衷
 
 開發琦琦輸入法，是因為我很懷念 Windows 上的微軟「ㄅ半」，以及 macOS 上的
@@ -58,6 +60,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 ## 下載與發行
 
+- [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
 - Windows 11 使用者請看[Windows 安裝與使用指南](WINDOWS_INSTALL.md)：下載 ZIP、執行安裝、切換輸入法與日常打字。
 - Ubuntu 24.04 使用者請看[Linux 安裝與使用指南](LINUX_INSTALL.md)：`v1.2.9` 套件安裝、Fcitx 5 設定與實際桌面截圖。
@@ -118,6 +121,8 @@ The macOS, Windows, and Ubuntu 24.04 installers for `v1.2.9` share one
 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9).
 Android and iOS use their respective store distribution channels.
 
+[Download the latest GitHub Release](https://github.com/polobread/KeyKey/releases/latest).
+
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports macOS, Windows, Android, iOS, and Ubuntu Desktop 24.04 LTS.
 
@@ -159,6 +164,7 @@ iOS.
 
 ### Downloads and releases
 
+- [Latest release](https://github.com/polobread/KeyKey/releases/latest) always opens the release currently marked Latest on GitHub.
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
 - Windows 11 installation, setup, and daily use: [Windows installation guide (Traditional Chinese)](WINDOWS_INSTALL.md).
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
