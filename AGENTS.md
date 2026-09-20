@@ -1,5 +1,7 @@
 # AGENTS.md — 開發交接
 
+**2026-09-20 Android 使用者文件：** `ANDROID_INSTALL.md` 說明 Google 測試群組、Google Play 封閉測試加入與安裝，三步須用同一 Google 帳號且至少保留測試資格 14 天；另含 App 首頁啟用、觸控與實體鍵盤、設定及排除問題。README 與 Android 技術 README 已加入入口。`docs/images/android-enable-ime.svg` 是明確標示的操作示意圖，四張輸入與設定圖沿用 `StoreAssets/Sources/` 的 Android 模擬裝置截圖。若改為公開發行，需重新查證並更新安裝段落；debug APK 不應作為一般使用者安裝包，`v1.2.9` 仍未發布。
+
 **2026-09-20 iOS 使用者文件：** `IOS_INSTALL.md` 是 iPhone／iPad 的安裝與日常使用指南，連到已上架的 App Store 產品頁，並以一張明確標示的設定路徑 SVG 示意圖及三張 `StoreAssets/Sources/` 的既有實際畫面說明操作。README 與 iOS 技術 README 已設入口。若 App 設定路徑或商店狀態改變，應重新核對 Apple 官方說明及產品頁；`v1.2.9` 仍只是開發分支。
 
 **2026-09-20 macOS 使用者文件：** `v1.2.9` 分支的 `MACOS_INSTALL.md` 已改成一般使用者的圖文安裝與日常使用指南，包含選字、翻頁、關聯詞、切換輸入法及偏好設定；README 與安裝完成頁連回該文件。`docs/images/` 的兩張 SVG 是明確標示的操作示意圖；實際候選字截圖沿用 `StoreAssets/Sources/chichi-macos.png`。目前環境無法擷取 macOS 桌面，日後若補真實系統設定截圖，請以實際 macOS 版本標示並避免暴露個人資訊。文件不代表 1.2.9 已發布。

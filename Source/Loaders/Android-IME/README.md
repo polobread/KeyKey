@@ -1,5 +1,7 @@
 # 琦琦注音 Android IME
 
+一般使用者請先看[Android 手機、平板安裝與使用指南](../../../ANDROID_INSTALL.md)；本頁包含開發、建置與實作細節。
+
 Android 原生繁體中文注音輸入法，使用 KeyKey 共用的
 `Source/DataTables/bpmf-ext.cin` 字表。建置時會自動把字表與關聯詞詞庫加入 APK，
 不需要手動複製。
