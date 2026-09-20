@@ -1,5 +1,22 @@
 # AGENTS.md — 開發交接
 
+**2026-09-20 Linux 首版範圍更新：** 使用者要求先發布主要版本。
+Linux 1.2.8 首版僅支援 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、
+Fcitx 5、amd64，標籤為 `linux-v1.2.8`。套件、安裝步驟、已驗證案例
+與已知 GTK bridge／實體螢幕限制見
+[Linux 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
+舊 TODO 的九版 Ubuntu、IBus、ARM64、更多 App／實體螢幕 gate
+改列後續相容性工作，不能阻擋此限定範圍的首版，也不能宣稱已通過。
+既有 `v1.2.8` 是較早的跨平台 Release，含 Linux preview，不要移動 tag。
+
+首版交接 TODO：
+- [x] 收斂支援矩陣、安裝與限制文件；保留 GNOME VM 與套件生命週期證據。
+- [ ] 後續另驗實體雙螢幕／熱插拔、更多 GTK App 與 sandbox、GNOME 主題、
+      Ubuntu 其他版本及 ARM64；只有驗過的組合才加入正式支援。
+
+已知陷阱：從受限 WSL 行程執行 `gh` 可能顯示網路與憑證失效；同一環境在
+允許連線的行程可正常查詢 `v1.2.8` Release。不要據此重新登入或更換 token。
+
 macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是各平台的交接點。
 
 **接手時：** 先讀完本檔，再讀 [BUILDING.md](BUILDING.md)。動任何 `Source/Frameworks`

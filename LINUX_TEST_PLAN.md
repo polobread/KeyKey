@@ -1,5 +1,14 @@
 # Linux 自動化打字與發布驗收計畫
 
+**2026-09-20 首版 gate 收斂：** 使用者要求先完成可用的正式 Linux 版本。
+`linux-v1.2.8` 只宣告 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、
+Fcitx 5、amd64；已安裝套件的 X11 83 案、GNOME X11 76 案、GNOME
+Wayland/XWayland 168 案、候選四角 32 案、雙虛擬顯示 16 案與瀏覽器 DOM
+15 案構成首版主要證據。GTK bridge 差異與未測硬體／App 在
+[發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)明列。
+下文原訂全 Ubuntu、IBus、ARM64 與所有 App 的 gate 留作後續相容性目標，
+不能再解讀成首版發布 blocker，也不能從首版推論那些組合已支援。
+
 狀態：測試實作中。已有 CTest real-data typing-flow、Ubuntu 22.04／24.04
 container build/staged-install checks、Ubuntu 22.04／24.04 Debian package checks，
 以及 Ubuntu 24.04 Fcitx 5 → GTK 3／GTK 4／Qt 6 各自適用的第一階段 L3 X11

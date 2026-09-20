@@ -2,7 +2,10 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
+Linux 1.2.8 首版支援 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64。
+下載與安裝見 [Linux 1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
+其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
+目前已有可建置的 Linux-only 引擎與 Fcitx 5
 外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
 並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
 另在完整 Ubuntu 24.04 GNOME Wayland KVM guest 通過涵蓋 native Wayland／XWayland
@@ -10,14 +13,14 @@ Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only �
 面板下完整 168/168 組通過。真實 gedit 四條輸入路徑與 GNOME Text Editor 的直接 Fcitx
 Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有缺口。
 雙欄焦點正負控制 16/16 通過並量到失焦語意依輸入路徑而異。
-完整視窗／App 驗收與正式發布門檻仍待完成。GNOME Shell 46 的獨立候選
+更廣的視窗／App 相容性與實體雙螢幕仍待驗收。GNOME Shell 46 的獨立候選
 面板套件已在 Ubuntu 24.04 VM 測過安裝、升級、停用與再啟用。開發／套件規格見
 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
 [English](#english)
 
-## Linux（開發中）
+## Linux 原始碼建置
 
 傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler、`pkg-config`、
 Fcitx 5 Core 與 libcanberra 開發檔；
@@ -118,7 +121,8 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
-這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
+正式 Ubuntu 24.04 amd64 套件與對應的限定支援範圍列在 Linux 1.2.8
+發布說明；本節指令產生的本機套件仍是開發產物。
 
 Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
 `gnome-shell-extension-keykey-kimpanel` `.deb`，只支援 GNOME Shell 46，供

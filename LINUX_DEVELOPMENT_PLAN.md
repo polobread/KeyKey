@@ -1,5 +1,13 @@
 # Linux 原生版開發與交接計畫
 
+**2026-09-20 首版發布決定：** Linux 1.2.8 先以 Ubuntu Desktop 24.04 LTS、
+GNOME Shell 46、Fcitx 5、amd64 作為正式支援範圍，使用獨立
+`linux-v1.2.8` 標籤及三個 `.deb`。以下原訂九個 Ubuntu 版本、IBus、ARM64、
+更多 App 與實體多螢幕的完整矩陣改列後續相容性工作，不阻擋這一版。
+首版的實際證據、限制與安裝步驟以
+[Linux 1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)
+為準；下文保留原規劃與調查紀錄，舊的全 Ubuntu gate 不再是首版條件。
+
 狀態：開發中。已建立第一段 Linux-only 引擎、Fcitx 5 外掛、container scripts 與
 `linux-ci.yml`、五種 Windows 傳統注音鍵盤配置、候選鍵盤導覽、標點／符號候選切片、
 `Shift+Space` 全／半形、ASCII 全形對映、繁轉簡單字與注音 Big5-HKSCS 候選 filter 切片、

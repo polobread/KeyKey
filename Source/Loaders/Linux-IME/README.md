@@ -1,10 +1,11 @@
 # chichi77 KeyKey for Linux
 
 This directory contains the new native Linux implementation. It does not link
-or modify the legacy KeyKeyEngine or OpenVanilla frameworks. The first release
-target is 1.2.8, led by Ubuntu Desktop 24.04 LTS with Fcitx 5.
+or modify the legacy KeyKeyEngine or OpenVanilla frameworks. Linux 1.2.8
+supports Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, and amd64. See
+[release installation and limits](docs/linux-1.2.8-release.md).
 
-## Current development status
+## Release features and development status
 
 Linux 1.2.8 phase one targets all behavior currently shipped by the Windows
 TSF frontend. Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin are therefore
@@ -146,14 +147,10 @@ The Fcitx adapter also clears associated-phrase state defensively for clients
 that report Password or Sensitive capabilities. In the current GTK 3 X11 path,
 password purpose is stricter: Fcitx switches that input context to
 `keyboard-us` and rejects forcing the custom method back on.
-Other remaining work includes combined filter-order coverage, IBus,
-full-width behavior outside an active Linux input context, symbol-list mouse
-and visual behavior, RPM/Arch
-packaging, native Wayland, and full desktop/App tests. The current Debian packages contain only the implemented
-data and Fcitx 5 components; they are development artifacts, not a complete
-1.2.8 Linux release. The Bopomofo path remains a vertical slice rather than a
-complete feature-parity claim; the other two paths are retained extension
-features rather than Windows-parity blockers.
+Further compatibility work includes IBus, physical monitor hotplug, more Apps
+and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. Local packages
+from development scripts remain test artifacts. The supported 1.2.8 package
+set and its verified boundaries are listed in the release notes.
 
 An Ubuntu 24.04.5 GNOME Wayland KVM guest now passes 20 typing and pointer
 cases across eight GTK 3/GTK 4/Qt 6 native Wayland and XWayland paths (160/160), each
@@ -163,13 +160,13 @@ XWayland; the latter's two GTK Wayland IM paths currently report Fcitx
 `status=0` and an empty active engine while the document is focused. In this
 GNOME 46 guest, launch that editor with
 `GTK_IM_MODULE=fcitx` to use the verified native Wayland path. See
-[the VM guide](docs/gnome-wayland-vm.md). These results do
-not complete the full desktop, browser, visual or release acceptance matrix.
+[the VM guide](docs/gnome-wayland-vm.md). Later packaged-panel testing expanded
+the matrix to 168/168 and tested Firefox Snap and Epiphany DOM fields 15/15.
 The [GNOME candidate panel decision](docs/gnome-candidate-panel.md) records
 the unmodified 10/16 Kimpanel and 6/16 Classic UI dual-display placement
 results. A pinned GPL-2.0 Kimpanel v83 patch now passes 16/16 dual-display
-pointer cases and 32/32 single-display four-corner cases in the GNOME 46 VM;
-package integration and physical-monitor verification remain open.
+pointer cases and 32/32 single-display four-corner cases in the GNOME 46 VM.
+Physical-monitor verification remains open.
 The VM also passes 16/16 two-field focus phases; direct Fcitx paths commit raw
 preedit on blur, while the two GTK native Wayland paths with the module variable
 unset clear it. Both outcomes are recorded as a platform integration difference.
@@ -179,8 +176,8 @@ windows using the default Wayland bridge clear it.
 
 Current feature evidence is tracked in [`docs/parity.md`](docs/parity.md). The
 compatibility inventory is machine-readable in
-[`ci/support-matrix.json`](ci/support-matrix.json): nine Ubuntu targets are the
-active phase, while Debian and Fedora are eleven explicit future TODO targets.
+[`ci/support-matrix.json`](ci/support-matrix.json): Ubuntu 24.04 is the only
+qualified release target; all other distro/version targets are future TODOs.
 Entries marked `build-only` have not passed installed desktop typing acceptance.
 
 ## Configure and GNU Make source build

@@ -1,6 +1,16 @@
 # Changelog
 
-## 1.2.8（開發中）
+## Linux 1.2.8（Ubuntu 24.04 首版）
+
+- 正式支援 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；
+  獨立 `linux-v1.2.8` 發布三個 Debian 套件與 SHA-256。
+- 五種注音布局、候選／符號、關聯詞、模式與設定可用，另提供倉頡、簡易；
+  GNOME 候選面板獨立安裝、更新、停用。
+- 已安裝套件在 GNOME Wayland／XWayland 通過 168/168 真實輸入案例、
+  四角 32/32、雙虛擬顯示 16/16；已知 GTK App 路徑差異與未測範圍
+  詳見 [發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
+
+## 1.2.8 開發紀錄
 
 - 同步四平台產品版號，將 1.2.8 設為原生 Linux 支援的首版目標。
 - 新增 Linux 開發與自動化打字驗收計畫：注音、倉頡、簡易、IBus／Fcitx 5、

@@ -17,22 +17,15 @@ Android 與 iOS 版透過 Google Play 與 App Store 的官方流程發行，並�
 功能的一次性支持方案；希望免費使用的朋友，仍可 fork 本專案，拉回自己的電腦自行編譯
 安裝。macOS 與 Windows 安裝包則由 GitHub Release 提供。
 
-琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，目前支援 macOS、Windows、
-Android 與 iOS 四個平台。
+琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，支援 macOS、Windows、
+Android、iOS，以及 Ubuntu Desktop 24.04 LTS 的 Linux 原生版。
 
-1.2.8 起開發 Linux 原生版，目標支援傳統注音、倉頡與簡易；目前先完整支援近四年的
-Ubuntu 主要發行版本。目前已有 Linux-only 引擎、三套輸入法的 Fcitx 5 最小垂直切片、
-五種注音鍵盤配置與原生設定選項、候選鍵盤導覽、標點／符號候選切片、
-Windows 對等的 reading／候選 Backspace 與 Escape 邊界、
-30 套內建關聯詞與 `Shift+1–9` 選詞切片、`Shift+Space` 全／半形、ASCII 全形
-對映與繁轉簡切片、中英文切換與修飾鍵／按鍵放開邊界、Fcitx 原生設定視窗點選／保存
-測試、container／CI 建置測試及
-local X11/GTK 3 真實
-逐鍵測試，亦可產生 Ubuntu 22.04／24.04 開發用 `.deb`；但完整功能、GNOME／
-Wayland 驗收及正式發布套件尚未完成；詳見
-[Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)。
-主要支援與最完整測試目標為 Ubuntu Desktop 24.04 LTS + Fcitx 5。Debian 與 Fedora
-保留為 Ubuntu 完成後的 TODO，尚未納入目前的 required CI 或發布條件。
+Linux 1.2.8 首版提供 GNOME Shell 46、Fcitx 5、amd64 套件，包含五種傳統注音
+布局、候選與符號、30 套關聯詞、中英文與全半形切換，以及額外的倉頡和簡易。
+已驗證 GNOME X11、Wayland、XWayland 的 GTK 3／GTK 4／Qt 6 輸入與候選操作，
+另有獨立的 GNOME 候選面板套件。下載、安裝及已知 App 差異見
+[Linux 1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
+其他 Ubuntu 版本、IBus、ARM64 與其他發行版留待後續相容性驗收。
 
 本專案以 Yahoo! Inc. 於 2012 年以 BSD 3-Clause License 釋出的原始碼為基礎，
 保留 OpenVanilla／PlainVanilla 核心與傳統注音資料，移除失效的網路服務，並為
@@ -50,9 +43,9 @@ Windows、Android 與 iOS 建立現代化 frontend。
 | Windows | 原生 TSF；Windows 11 x64，並支援 32-bit Office process |
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
-| Linux（1.2.8 起開發中，尚未提供） | 原生 IBus／Fcitx 5；注音、倉頡、簡易；先完成近四年 Ubuntu 與 DEB，Debian／Fedora、RPM 列後續 TODO |
+| Linux | Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；注音、倉頡、簡易 |
 
-四個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
+五個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
 
 iOS 不允許第三方 keyboard extension 接管 USB／藍牙鍵盤，因此無法在備忘錄、LINE 或
@@ -64,6 +57,8 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS 與 Windows
   桌面版。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
+- [Linux 1.2.8](https://github.com/polobread/KeyKey/releases/tag/linux-v1.2.8)
+  提供 Ubuntu 24.04 amd64 的三個 `.deb`、SHA-256 與 GNOME 面板原始碼。
 - Android 正式 AAB 由 `Android Play Release` workflow 簽署並手動送到 Google Play；
   1.2.7 已送交封閉測試。`Package Android` 只產生供開發測試的 debug APK。
 - iOS 實機版由 Xcode Cloud／App Store Connect 建置及發行；`Package iOS Simulator`
@@ -72,7 +67,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 推送符合專案版號的 tag（例如 `v1.2.8`）會同時啟動 `Package macOS` 與
 `Package Windows`，並把桌面版產物加入同一個 GitHub Release。兩個 workflow 也能手動
 執行；手動執行只保留 Actions artifact，不代表正式發行。同一個 `v*` tag 也會執行
-完整 `Linux CI`，Linux 開發用 `.deb` 只保留為 Actions artifact，不加入 GitHub Release。
+完整 `Linux CI`；獨立的 `linux-v1.2.8` 標籤提供首版正式 Linux 套件。
 完整產物、簽章與限制見 [BUILDING.md](BUILDING.md#github-actions-封裝)。
 
 ## 文件
@@ -106,24 +101,17 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 ## English
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
-method. It supports macOS, Windows, Android, and iOS.
+method. It supports macOS, Windows, Android, iOS, and Ubuntu Desktop 24.04 LTS.
 
-Native Linux development starts with version 1.2.8 and targets Traditional
-Bopomofo, Cangjie, Simplex, and initially roughly four years of Ubuntu
-releases. A Linux-only engine, minimal Fcitx 5 vertical slices for all three
-input methods, all five Bopomofo keyboard layouts with a native Fcitx setting,
-candidate keyboard navigation, an initial punctuation/symbol-list slice,
-all 30 built-in associated-phrase collections with Shift+1–9 selection and
-native per-collection Boolean settings,
-Chinese/English switching and modifier/release boundaries,
-an AT-SPI-driven native Fcitx settings-window persistence test, container/CI
-build tests, and a local X11/GTK 3 real-key typing test now exist.
-Development `.deb` packages can also be built for Ubuntu 22.04 and 24.04. Full
-features, GNOME/Wayland acceptance, and release packages are not complete; see the
-[Linux development plan](LINUX_DEVELOPMENT_PLAN.md).
-Ubuntu Desktop 24.04 LTS with Fcitx 5 is the primary target and receives the
-most comprehensive test coverage in the plan. Debian and Fedora remain future
-TODOs after Ubuntu and are not current required CI or release gates.
+The first native Linux release, 1.2.8, supports GNOME Shell 46 with Fcitx 5
+on amd64. It includes five Traditional Bopomofo layouts, candidates, symbols,
+30 associated-phrase collections, Chinese/English and full-width modes, plus
+Cangjie and Simplex. GTK 3, GTK 4, and Qt 6 input and candidate interaction
+were checked on GNOME X11, Wayland, and XWayland. The separate GNOME candidate
+panel package handles popup placement. See the
+[Linux 1.2.8 release notes](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)
+for installation and known application differences. Other Ubuntu versions,
+IBus, ARM64, and other distributions await compatibility testing.
 
 The project retains the OpenVanilla/PlainVanilla core and Traditional Bopomofo
 data, removes obsolete online services, and adds modern Windows, Android, and
@@ -140,9 +128,9 @@ by, or sponsored by Yahoo.**
 | Windows | Native TSF; Windows 11 x64, including 32-bit Office processes |
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
 | iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
-| Linux (in development for 1.2.8; not yet available) | Native IBus/Fcitx 5; Bopomofo, Cangjie, Simplex; Ubuntu and DEB first, with Debian/Fedora and RPM as future TODOs |
+| Linux | Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, amd64; Bopomofo, Cangjie, Simplex |
 
-All four platforms provide Traditional Bopomofo composition, candidates, and
+All five platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
 
 iOS does not let a third-party keyboard extension take over USB or Bluetooth
@@ -158,6 +146,8 @@ iOS.
   macOS and Windows desktop builds. The macOS package is Developer ID signed,
   notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP
   and installer are currently unsigned and may trigger a security warning.
+- [Linux 1.2.8](https://github.com/polobread/KeyKey/releases/tag/linux-v1.2.8)
+  provides three Ubuntu 24.04 amd64 `.deb` files, checksums, and GNOME panel source.
 - The signed Android AAB is uploaded manually to Google Play by the
   `Android Play Release` workflow. Version 1.2.7 has been submitted to closed
   testing. `Package Android` produces a debug APK for development only.
@@ -168,9 +158,8 @@ iOS.
 Pushing a tag that exactly matches the project version, such as `v1.2.8`,
 starts `Package macOS` and `Package Windows` and adds both desktop outputs to
 the same GitHub Release. The same `v*` tag also runs the complete `Linux CI`;
-its development `.deb` files remain Actions artifacts and are not added to the
-GitHub Release. Manual runs retain Actions artifacts for testing but are not a
-formal release. See [BUILDING.md](BUILDING.md#github-actions-packaging) for the
+the separate `linux-v1.2.8` tag carries the first formal Linux packages.
+Manual runs retain Actions artifacts for testing. See [BUILDING.md](BUILDING.md#github-actions-packaging) for the
 complete output and signing details.
 
 ### Documentation
