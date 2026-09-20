@@ -22,6 +22,7 @@
 		C7700000000000000000003E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003D /* PrivacyInfo.xcprivacy */; };
 		C77000000000000000000040 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C7700000000000000000003F /* PrivacyInfo.xcprivacy */; };
 		C77000000000000000000041 /* KeyKeyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000042 /* KeyKeyUITests.swift */; };
+		C77000000000000000000058 /* HeartSutraFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000059 /* HeartSutraFixture.swift */; };
 		C77000000000000000000050 /* Acknowledgements.txt in Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000051 /* Acknowledgements.txt */; };
 		C77000000000000000000052 /* SupporterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000053 /* SupporterStore.swift */; };
 		C77000000000000000000056 /* HardwareKeyboardEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000057 /* HardwareKeyboardEditorViewController.swift */; };
@@ -75,6 +76,7 @@
 		C7700000000000000000003D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C7700000000000000000003F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C77000000000000000000042 /* KeyKeyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyKeyUITests.swift; sourceTree = "<group>"; };
+		C77000000000000000000059 /* HeartSutraFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartSutraFixture.swift; sourceTree = "<group>"; };
 		C77000000000000000000043 /* KeyKeyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KeyKeyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C77000000000000000000051 /* Acknowledgements.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Acknowledgements.txt; sourceTree = "<group>"; };
 		C77000000000000000000053 /* SupporterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupporterStore.swift; sourceTree = "<group>"; };
@@ -174,6 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				C77000000000000000000042 /* KeyKeyUITests.swift */,
+				C77000000000000000000059 /* HeartSutraFixture.swift */,
 			);
 			path = KeyKeyUITests;
 			sourceTree = "<group>";
@@ -354,6 +357,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C77000000000000000000041 /* KeyKeyUITests.swift in Sources */,
+				C77000000000000000000058 /* HeartSutraFixture.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -57,6 +57,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 ## 下載與發行
 
+- macOS 首次安裝與「不能用」排查：[macOS 安裝與疑難排解](MACOS_INSTALL.md)。
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS 與 Windows
   桌面版。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
@@ -76,6 +77,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 ## 文件
 
 - [BUILDING.md](BUILDING.md)：各平台建置、測試、安裝與打包
+- [五平台心經長文 functional test](tests/HEART_SUTRA_FUNCTIONAL.md)：關閉關聯詞庫後逐字輸入，核對全文及每字候選順位
 - [Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](LINUX_TEST_PLAN.md)：
   1.2.8 起的原生 Linux 支援目標、目前進度、功能範圍與驗收門檻
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md)：Windows frontend
@@ -148,6 +150,7 @@ iOS.
 
 ### Downloads and releases
 
+- First-time macOS setup and troubleshooting: [macOS installation guide](MACOS_INSTALL.md).
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) provides the
   macOS and Windows desktop builds. The macOS package is Developer ID signed,
   notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP

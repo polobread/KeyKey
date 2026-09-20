@@ -21,6 +21,28 @@ Fcitx 5、amd64，標籤為 `linux-v1.2.8`。套件、安裝步驟、已驗證�
 - [ ] 後續另驗實體雙螢幕／熱插拔、更多 GTK App 與 sandbox、GNOME 主題、
       Ubuntu 其他版本及 ARM64；只有驗過的組合才加入正式支援。
 
+**2026-09-20 五平台長文驗收：** 新增 `tests/heart-sutra.annotated.txt`（使用者提供
+的完整心經注音稿，268 字）、`tests/heart_sutra.py` 與
+`tests/HEART_SUTRA_FUNCTIONAL.md`。五平台執行前必須把基本及分類關聯詞庫
+全部關閉，以標準注音實際逐字輸入；每平台須保存全文 capture 及 268 筆
+實際候選絕對順位，`check-all` 會依共用 CIN 比對全部文字與順位。
+共用字表已驗證 268/268 讀音存在；「ㄅㄛ→波」在第 18 位，須跨頁。
+2026-09-20 已在已安裝的 macOS 1.2.9／macOS 27.0 TextEdit 以標準注音、關閉
+全部關聯詞庫實際輸入全篇，逐字檢查 268 次選字前綴、標點與候選窗關閉，
+`tests/results/2026-09-20-macos/` 保留 331 字元與標點的 capture、順位與環境紀錄；
+比對器通過。`ㄙˇ→死` 在 macOS 因其餘罕字被系統濾掉而直接提交，順位仍記 1；
+測試送鍵時若另送候選鍵會誤產生下一個注音，後續自動化應先檢查候選窗是否存在。
+使用者原本的關聯詞設定與 ABC 輸入來源已恢復。**Windows、Android、iOS、Linux
+仍無心經實際輸入紀錄**，不得標成五平台 functional test 通過。下一步依文件收集
+其餘平台 capture，特別注意 iOS extension
+詞庫設定與容器 App 設定不共用，以及 Linux GNOME Text Editor 的輸入路徑差異。
+後續使用者指定 macOS／iOS 心經全文測試只在開發機 MacBook 執行，不加入
+macOS GitHub Actions 或 iOS Xcode Cloud。macOS 本機腳本
+`tests/run_macos_heart_sutra.py` 在執行前檢查已選用琦琦注音、關聯詞庫全關；
+`--generate-only` 已通過九段 AppleScript 編譯。iOS 專用的
+`KeyKeyHeartSutra.xctestplan` 使用 iOS 17 Simulator 和真實 keyboard extension；
+2026-09-20 的全文試跑依使用者要求中斷，沒有通過紀錄或全文 capture。
+
 已知陷阱：從受限 WSL 行程執行 `gh` 可能顯示網路與憑證失效；同一環境在
 允許連線的行程可正常查詢 `v1.2.8` Release。不要據此重新登入或更換 token。
 GNOME VM provisioning script 會尋找當前 CMake 版號的 `.deb`；只升版號後，

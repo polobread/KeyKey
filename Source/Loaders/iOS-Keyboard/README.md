@@ -48,6 +48,29 @@ swift test --scratch-path /tmp/keykey-supporter-flow-tests
 
 首次在一台新機器上需要先取得模擬器 runtime：`xcodebuild -downloadPlatform iOS`。
 
+### 本機 MacBook 心經長文測試
+
+在開發機的 iOS 17 Simulator 執行 shared scheme `chichi77 KeyKey` 的
+`KeyKeyHeartSutra.xctestplan`。測試會在乾淨 Simulator 透過「設定」加入並切換到
+琦琦注音 keyboard extension，關閉全部關聯詞庫，逐字點完 268 個心經注音字與標點；
+每字檢查提交後全文前綴和候選絕對順位，最後在 `.xcresult` 留下 `ios.txt` 與
+`ios.positions.tsv` attachments。若鍵盤沒真正啟動會失敗，不能以 skip 當通過。
+
+```sh
+python3 ../../../tests/generate_ios_heart_sutra_fixture.py --check
+xcodebuild test -project KeyKeyiOS.xcodeproj -scheme 'chichi77 KeyKey' \
+  -testPlan KeyKeyHeartSutra -configuration Debug \
+  -destination 'platform=iOS Simulator,name=KeyKey iOS 17 iPhone 12' \
+  -resultBundlePath "/tmp/keykey-ios-heart-sutra-$(date +%Y%m%d-%H%M%S).xcresult" \
+  CODE_SIGNING_ALLOWED=YES
+```
+
+測試資料由 `tests/generate_ios_heart_sutra_fixture.py` 從共用原稿及 CIN 產生並編入
+UI test。若心經稿或字表變動，先在 repository 根目錄執行
+`python3 tests/generate_ios_heart_sutra_fixture.py` 更新它。本機乾淨 iOS 17.0
+Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator 雖能加入鍵盤，
+但既有切換測試被系統略過。這個完整測試保留給開發機執行，不列入 Xcode Cloud。
+
 送審用的 iPhone 16 Plus 實機錄影步驟見
 [`APP_REVIEW_RECORDING_PLAN.md`](APP_REVIEW_RECORDING_PLAN.md)。
 
