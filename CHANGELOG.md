@@ -1,9 +1,14 @@
 # Changelog
 
-## 1.2.9（開發中，尚未發布）
+## 1.2.9
 
-- 同步 macOS、Windows、Android、iOS 與 Linux 的下一版建置版號；
-  尚未建立 tag 或新 Release。1.2.8 的已發布套件與測試紀錄保留原版號。
+- 同步 macOS、Windows、Android、iOS 與 Linux 的建置版號至 1.2.9；
+  GitHub Release 提供 macOS、Windows 與 Ubuntu 24.04 安裝包。Android 和 iOS
+  維持各自的商店發行管道。
+- Linux 的三個 Debian 套件、GNOME 面板原始碼及 SHA-256 校驗檔會在
+  Ubuntu 24.04 套件與 X11 輸入測試通過後自動加入同一個 Release。
+- 更新 macOS、Windows、Android、iOS 與 Ubuntu 24.04 的安裝及使用指南，
+  補充各平台的操作畫面；1.2.8 的測試截圖仍按原版本標示。
 
 ## Linux 1.2.8（Ubuntu 24.04 首版）
 
