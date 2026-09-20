@@ -22,6 +22,18 @@ GitHub Actions 的 **debug APK 是開發測試產物**，不是一般使用者�
 4. 返回琦琦注音 App，點 **2. 選擇琦琦注音**，在輸入法清單中選 **琦琦注音輸入法**。
 5. 開啟記事本或其他可輸入文字的 App，點文字欄位，確認琦琦注音鍵盤出現。
 
+<img src="docs/images/keykey-android-pixel9a-home.png" alt="Pixel 9a 上琦琦注音 App 首頁，顯示啟用、選擇輸入法及調整設定三個按鈕" width="360">
+
+*Pixel 9a 實拍：先按 1 啟用，再按 2 選擇；完成後可按 3 調整設定。*
+
+<img src="docs/images/keykey-android-pixel9a-current.png" alt="Pixel 9a 系統鍵盤應用程式清單，琦琦注音輸入法開關已打開" width="360">
+
+*Pixel 9a 實拍（繁體中文／台灣）：第 2 步在「鍵盤應用程式」打開琦琦注音輸入法的開關。*
+
+<img src="docs/images/keykey-android-pixel9a-choose.png" alt="Pixel 9a 的輸入法選擇清單，顯示琦琦注音輸入法" width="360">
+
+*Pixel 9a 實拍：第 4 步在選擇清單點琦琦注音輸入法。*
+
 ![Android 琦琦注音啟用流程示意圖](docs/images/android-enable-ime.svg)
 
 *圖 1：操作順序示意圖，不是 Android 系統截圖；各品牌手機的設定頁名稱、警示文字和按鈕位置可能不同。優先從琦琦注音 App 的兩個按鈕進入對應設定。*
@@ -34,9 +46,9 @@ GitHub Actions 的 **debug APK 是開發測試產物**，不是一般使用者�
 2. 直接點候選列中的字完成選字。候選列兩端的 **▲／▼** 可換頁，也可在候選列左右滑動；顯示候選時按空白會翻到下一頁。
 3. 選定一個字後，如果出現關聯詞，點想接續的詞即可；沒有想用的詞，直接輸入下一個字。
 
-<img src="StoreAssets/Sources/android-phone-touch-portrait.png" alt="Android 手機上琦琦注音顯示注音組字、九個候選字與五排觸控鍵盤的實際畫面" width="360">
+<img src="docs/images/keykey-android-pixel9a-touch-keyboard.png" alt="Pixel 9a 系統設定搜尋欄開啟時顯示琦琦注音的完整觸控鍵盤" width="360">
 
-*圖 2：專案既有的 Android 模擬裝置實際輸入畫面。上方是候選字列，下方是五排鍵盤；圖中的記事本是測試畫面。*
+*Pixel 9a 實拍（繁體中文／台灣）：在 Android 系統設定的搜尋欄叫出琦琦注音鍵盤，底部可看見注音鍵、模式、符號、設定、空白與搜尋鍵。這是一般系統輸入欄位。*
 
 ### 常用按鍵
 
@@ -66,23 +78,19 @@ GitHub Actions 的 **debug APK 是開發測試產物**，不是一般使用者�
 
 預設在螢幕底部顯示固定候選列，也可直接點它選字。如果想讓候選字靠近文字游標，打開 **琦琦注音 App → 3. 調整設定 → 實體鍵盤使用浮動候選字窗**，再選垂直或水平排列。這項設定只影響實體鍵盤；若目標 App 不支援浮動窗，會改用底部候選列。
 
-<img src="StoreAssets/Sources/android-phone-hardware-fixed-portrait.png" alt="Android 手機搭配實體鍵盤時底部固定候選列的實際畫面" width="360">
-
-*圖 3：Android 模擬裝置的實體鍵盤固定候選列；數字 1–9 對應候選字。*
-
-<img src="StoreAssets/Sources/android-notes-floating-qi.png" alt="Android 手機搭配實體鍵盤時游標旁浮動候選字窗的實際畫面" width="360">
-
-*圖 4：開啟浮動候選字窗後的實際畫面；候選字窗位置會隨輸入欄位改變。*
-
 ## 5. 調整設定與關聯詞
 
 打開 **琦琦注音 App → 3. 調整設定**，可以調整按鍵震動、直式與橫式的螢幕鍵盤高度、按鍵預覽、候選字底色，以及實體鍵盤的浮動候選字窗。不確定怎麼選時，先保留預設值。
 
+<img src="docs/images/keykey-android-pixel9a-settings.png" alt="Pixel 9a 上琦琦注音設定頁，顯示震動與螢幕鍵盤高度選項" width="360">
+
+*Pixel 9a 實拍：設定頁上方可調整震動和鍵盤高度。*
+
 關聯詞是**選好一個字後**提供的接續詞建議。初次安裝預設只開啟「小麥注音」詞庫；若想增加特定領域的建議，在 **關聯詞詞庫**勾選對應分類即可，也可選 **僅小麥注音**或 **全部關閉**。分類詞庫可能有錯字或不合適的詞，輸入重要內容時請自行確認。詞庫變更在下次顯示鍵盤時生效。
 
-<img src="StoreAssets/Sources/android-phone-dictionaries.png" alt="Android 琦琦注音設定中的關聯詞詞庫勾選畫面" width="360">
+<img src="docs/images/keykey-android-pixel9a-dictionaries.png" alt="Pixel 9a 上琦琦注音設定頁的關聯詞詞庫分類" width="360">
 
-*圖 5：Android 模擬裝置的關聯詞詞庫設定畫面。*
+*Pixel 9a 實拍：往下滑可找到關聯詞詞庫；保留預設也可以正常打字。*
 
 ## 遇到問題時
 
