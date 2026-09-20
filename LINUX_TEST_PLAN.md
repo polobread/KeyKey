@@ -79,6 +79,13 @@ GTK frontend 已送新 `SetCursorRectV2` 且 Fcitx 已轉送相同的
 已以「鐘」提交及候選清除通過，並不代表整體方案通過。
 Kimpanel 逐事件紀錄另確認舊 scale=1 caret 矩形先用於候選顯示，
 新 scale=2 矩形到達時候選已隱藏；後續應同時修事件時序及定位。
+固定官方 Kimpanel v83 來源 hash 的 GPL-2.0 補丁已修正 VM 所見的
+relative 縮放與同焦點視窗 XWayland absolute rect 移位：由乾淨補丁
+產物重跑，兩種副螢幕布局 × 八條路徑的真滑鼠第二列「鐘」、候選清除與
+英文負控制 16/16；單螢幕四角 32/32 回歸亦通過。Qt6 200% 案
+原先把白色 App 上方的白色候選幾列漏算，runner 已以較低像素差補足
+popup 頂界後真點第二列，不再誤點第四列。這是 GNOME Shell 46 VM
+證據，尚非實體雙螢幕、Ubuntu 22.04 或正式套件發布證據。
 
 同一 guest 的 T10 雙欄焦點 runner 又完成 8 模式 × 正負控制 16/16：第一欄有
 active 候選時以 VM 指標切第二欄，第二欄精確提交「文」，切回第一欄再提交「中」；

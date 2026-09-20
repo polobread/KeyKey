@@ -143,6 +143,9 @@ The dedicated guest currently has the official GNOME Shell
 (`kimpanel@kde.org`) extension version 83 installed for Shell 46. Its
 upstream download has `version_tag=57768` and SHA-256
 `b8d83c1bc6e903a280dc0492b9b4e3be4b2713ab96c669d1ae90e625eacf675f`.
+The guest now runs the minimal GPL-2.0 patch built from that pinned source by
+`../gnome-panel/build-patched-extension.py`; the KeyKey `.deb` does not install
+the extension or patch.
 Confirm `gnome-extensions info kimpanel@kde.org` says `ACTIVE` and the session
 bus owns `org.kde.impanel` before comparing panel positions. Without this
 extension, this guest showed GTK 3/4 native Wayland clipping at the right edge
@@ -162,8 +165,8 @@ to display two, but GTK 3/4 XWayland could still use an old caret rectangle,
 and GTK 3 direct Wayland at 200% once placed it over the input field. That
 extra move could place a window at the bottom rather than the intended upper
 test area, so the repeatable gate uses only GNOME's move-to-right-display
-shortcut and checks the resulting window bounds. The six failures remain
-open; a correct text commit alone is insufficient evidence for popup
+shortcut and checks the resulting window bounds. The six failures were open
+in this unmodified baseline; a correct text commit alone is insufficient for popup
 placement. The guest layout and KeyKey settings were restored after the run.
 
 The same 16 cases were repeated with the official extension disabled.
@@ -175,7 +178,7 @@ is Kimpanel or Classic UI, can require it with `--panel kimpanel` or
 `--panel classic-ui`, and supports `--mouse` to click on the second display
 through QMP. The popup runner has the same `--panel` guard. Run
 `gnome-vm-multimonitor-smoke.py --panel kimpanel --mouse` as the complete
-visual gate after the remaining positioning paths are fixed. The formal
+visual gate with the patched extension. The formal
 integration decision and release gates are in
 [GNOME candidate panel](gnome-candidate-panel.md).
 
@@ -186,7 +189,25 @@ The new `(100,122,0,196,scale=2)` rectangle reached Kimpanel only after
 `ShowLookupTable` had become false. A frame-origin conversion moved the popup
 to display two but overlapped the entry; rescaling the late rectangle moved
 an already hidden actor. The experiments were confined to the disposable
-guest, and the official extension files were restored afterward.
+guest. The original files were restored before producing the clean patch.
+
+The patched v83 integration uses the current monitor's `geometry_scale`
+divided by the relative rectangle's source scale, so a cached 100% rectangle
+follows a focused window moved to a 200% screen before the next frontend
+update. For XWayland's absolute rectangles it stores the focused window and
+frame origin when the rectangle arrives, then translates the rectangle by
+subsequent movement of that same window. The builder verifies the official
+`extension.js` and `panel.js` SHA-256 hashes, writes a separate patched tree,
+and contains no diagnostic logging. With that exact tree installed in the
+guest, the complete `gnome-vm-multimonitor-smoke.py --panel kimpanel --mouse`
+matrix passed 16/16: all eight toolkit/frontend paths on both 100% and 200%
+second displays placed nine rows near the moved client, clicked row two to
+commit `鐘`, cleared, and passed `keyboard-us` literal control. The
+single-display `gnome-vm-popup-smoke.py --panel kimpanel --mouse` four-corner
+regression also passed 32/32. Reports and both-head screenshots are in
+ignored `out/gnome-vm/gnome-multimonitor-last.json` and `gnome-popup-last.json`.
+Physical monitors, Ubuntu 22.04, extension packaging, hotplug and other App
+scenarios remain release gates.
 
 For one failing GTK 3 direct Wayland case on the 200% display, a filtered
 session bus trace shows the GTK frontend calling Fcitx
@@ -197,9 +218,8 @@ appears against the primary display's right edge. The guest traces are
 `/tmp/keykey-cursor-monitor.log` and `/tmp/keykey-panel-monitor.log`, and
 the two-head screenshots are in the runner report. KeyKey's Fcitx adapter
 updates preedit and the input panel but does not calculate or set the cursor
-rectangle. This narrows investigation to the relative rectangle's display
-mapping through Fcitx, Kimpanel and Mutter; the exact faulty component is
-not yet established.
+rectangle. The later event-order trace and patched VM matrix above establish
+the candidate display's use of a stale rectangle at the time of first render.
 
 The second runner opens real gedit and GNOME Text Editor documents in four
 paths each: direct Fcitx native Wayland, native Wayland with `GTK_IM_MODULE`

@@ -153,8 +153,10 @@ GNOME 46 guest, launch that editor with
 [the VM guide](docs/gnome-wayland-vm.md). These results do
 not complete the full desktop, browser, visual or release acceptance matrix.
 The [GNOME candidate panel decision](docs/gnome-candidate-panel.md) records
-the current 10/16 Kimpanel and 6/16 Classic UI dual-display placement results;
-neither renderer has passed the formal multi-monitor gate.
+the unmodified 10/16 Kimpanel and 6/16 Classic UI dual-display placement
+results. A pinned GPL-2.0 Kimpanel v83 patch now passes 16/16 dual-display
+pointer cases and 32/32 single-display four-corner cases in the GNOME 46 VM;
+package integration and physical-monitor verification remain open.
 The VM also passes 16/16 two-field focus phases; direct Fcitx paths commit raw
 preedit on blur, while the two GTK native Wayland paths with the module variable
 unset clear it. Both outcomes are recorded as a platform integration difference.

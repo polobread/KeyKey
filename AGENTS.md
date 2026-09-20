@@ -31,7 +31,9 @@ Wayland／XWayland 的逐鍵與滑鼠矩陣通過 160/160；真實 gedit 四條�
 失焦提交原始注音、GTK 預設 Wayland 路徑清除 preedit 的差異；T11 編輯欄位、
 T12 符號表真滑鼠、T10 client/Fcitx recovery 與明確 GDM 登出登入後的
 T01／T06 抽樣已實跑；Firefox Snap 與 Epiphany 的真正 DOM 三種欄位
-五路徑 15/15 通過。完整 App／popup 四邊／多螢幕仍待驗收，
+五路徑 15/15 通過。修補版 Kimpanel v83 在 GNOME Shell 46 VM 的
+四角 32/32、雙螢幕第二列真滑鼠 16/16 已通過；完整 App、
+實體多螢幕及跨 Ubuntu 版本仍待驗收，
 GTK 預設 Wayland bridge 的跨 App 模式隔離亦未通過。
 版號更新與這些 local
 測試都不代表 Linux 已可發布。
@@ -415,6 +417,15 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   停用 extension 由 Classic UI 重跑則僅 6/16 定位通過，不能把它直接
   定為正式替代方案。`--panel` 可鎖定 runner 所測 provider，雙螢幕
   `--mouse` 已在混合 DPI GTK3 direct Wayland 以第二列「鐘」及點後清除通過。
+  後續以固定官方 v83 原檔 SHA 的 GPL-2.0 補丁修正兩件事：Wayland
+  relative rect 使用目前 monitor `geometry_scale`／來源 scale，XWayland
+  absolute rect 在同一焦點視窗內加上 frame origin 位移。先還原官方檔案，
+  再用 `gnome-panel/build-patched-extension.py` 建乾淨產物裝入專用 guest；
+  八條路徑 × 兩種副螢幕的第二列真滑鼠、清除及英文負控制 16/16，
+  單螢幕四角 32/32 通過。Qt6 200% 的白色候選窗與白色 App 重疊時，
+  舊像素差演算法會漏掉上方三列而點到第四列；runner 已補回 popup 真正
+  頂界，驗證「鐘」而非僅看提交任一字。這只關閉 GNOME Shell 46 VM
+  的定位矩陣；實體雙螢幕、Ubuntu 22.04、正式套件仍待驗收。
   正式 GNOME panel 路線與完整 gate 見
   `Source/Loaders/Linux-IME/docs/gnome-candidate-panel.md`。
 - **GNOME GTK4 真實 App 與 synthetic host 的 bridge 結果不同**：2026-09-20
@@ -1473,17 +1484,18 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       中文與英文 literal，候選定位則 10/16 通過；保存雙 head 截圖及
       精確幾何證據。後續加入 panel provider guard、副螢幕 QMP 真滑鼠第二列
       選「鐘」與清除檢查；Classic UI 對照 16 案定位只通過 6 案。
-- [ ] 關閉雙螢幕的候選定位缺口：200% 第二螢幕的 GTK3／GTK4 direct
-      Wayland 及 GTK3／GTK4 XWayland 的已聚焦視窗搬到第二螢幕後，
-      候選可能還留在第一螢幕；額外移窗後又可能蓋欄位或留在舊
-      cursor rectangle。追查 Fcitx frontend／Kimpanel／Mutter
-      的座標更新責任，驗證移動後重聚焦、不同縮放與真實 App，再決定
-      修正或平台差異。
+- [x] 關閉專用 GNOME Shell 46 VM 的雙螢幕首次移窗候選缺口：
+      官方 Kimpanel v83 原版 10/16、Classic UI 6/16；固定 SHA 的
+      `gnome-panel/kimpanel-v83.patch` 修正 relative 縮放與 absolute rect
+      同視窗位移後，以真滑鼠第二列「鐘」、候選清除及英文負控制 16/16，
+      單螢幕四角回歸 32/32。runner 也會在每案啟動前把指標移回主螢幕，
+      避免前案的副螢幕指標讓新 App 直接開到副螢幕。仍須另外驗證
+      額外移窗、熱插拔、實體顯示器與跨版本。
 - [ ] 完成 Ubuntu 24.04 GNOME 正式候選 panel：決策以 Kimpanel 協定與
-      GNOME Shell 面板為方向，官方 `kimpanel@kde.org` v83 仍僅是測試基線，
-      沒有納入套件。須修正移窗／caret 時序，完成雙螢幕 16/16 真滑鼠矩陣，
-      再處理可重現安裝、GPL-2.0、GNOME 版本相容、橫式、縮放配色及
-      實體多螢幕；詳見 `docs/gnome-candidate-panel.md`。
+      GNOME Shell 面板為方向；修補版已在 VM 完成雙螢幕 16/16，
+      但仍未納入 `.deb`。須完成可重現安裝／更新／停用、GNOME 版本
+      相容、橫式、縮放配色、焦點／再次移窗與實體多螢幕；
+      詳見 `docs/gnome-candidate-panel.md`。
 - [ ] 決定並實作 F07 琦琦注音專屬候選 renderer；完整分解見
       `LINUX_DEVELOPMENT_PLAN.md` 的「F07 專屬 renderer」TODO。決策前須先比較
       Fcitx 5.0.14 相容 UI addon 與 5.0.24+ callback／22.04 相容層，涵蓋 system 與

@@ -67,12 +67,41 @@ def gtk4_preedit_bounds(screenshot, window):
         max(x for x, _ in points) + 1, max(y for _, y in points) + 1
 
 
+def recover_popup_top(before, after, bounds):
+    """Find the light popup over a light Qt window above its dark-background rows."""
+    left, top, right, bottom = bounds
+    if bottom - top >= 250:
+        return bounds
+    width, _, old_pixels = VM["read_ppm"](before)
+    _, _, pixels = VM["read_ppm"](after)
+    while top > 0:
+        y = top - 1
+        changed = 0
+        for x in range(left, right):
+            offset = (y * width + x) * 3
+            delta = sum(abs(old_pixels[offset + channel] - pixels[offset + channel])
+                        for channel in range(3))
+            changed += delta > 20
+        if changed < (right - left) * 0.6:
+            break
+        top = y
+    return left, top, right, bottom
+
+
 def run_mode(qmp, mode_name, layout, mouse=False):
     mode = MODES[mode_name]
     case_dir = f"/tmp/keykey-gnome-multimonitor/{layout}/{mode_name}"
     unit = f"keykey-dual-{layout}-{mode_name}-{int(time.time())}"
     stem = f"multimonitor-{layout}-{mode_name}"
     try:
+        primary_layout = VM_DIR / f"{stem}-layout-primary.ppm"
+        secondary_layout = VM_DIR / f"{stem}-layout-secondary.ppm"
+        qmp.screenshot(primary_layout)
+        qmp.screenshot(secondary_layout, head=1)
+        primary_size = VM["read_ppm"](primary_layout)[:2]
+        secondary_size = VM["read_ppm"](secondary_layout)[:2]
+        qmp.move_pointer(200, 200, primary_size[0] + secondary_size[0],
+                         max(primary_size[1], secondary_size[1]))
         MULTI["start_host"](mode, unit, case_dir)
         MULTI["select_engine"]("chichi77-keykey-bopomofo")
         first_before = VM_DIR / f"{stem}-first-before.ppm"
@@ -106,6 +135,7 @@ def run_mode(qmp, mode_name, layout, mouse=False):
             qmp.screenshot(first_candidate)
             try:
                 bounds, _ = VM["find_candidate_popup"](second_moved, candidate)
+                bounds = recover_popup_top(second_moved, candidate, bounds)
                 break
             except RuntimeError:
                 try:
@@ -138,6 +168,8 @@ def run_mode(qmp, mode_name, layout, mouse=False):
         if mouse and bounds and not errors:
             click = (first_size[0] + (bounds[0] + bounds[2]) // 2,
                      bounds[1] + (bounds[3] - bounds[1]) // 6)
+            print(f"{layout}/{mode_name}: click={click} popup={bounds}",
+                  flush=True)
             qmp.click(*click, first_size[0] + second_size[0],
                       max(first_size[1], second_size[1]))
             selected_character = "鐘"

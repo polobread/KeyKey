@@ -1,0 +1,57 @@
+diff --git a/extension.js b/extension.js
+--- a/extension.js
++++ b/extension.js
+@@ -218,6 +218,8 @@
+         this.h = 0;
+         this.relative = false;
+         this.scale = 1;
++        this.absoluteWindow = null;
++        this.absoluteFrame = null;
+         this.table = [];
+         this.label = [];
+         this.pos = 0;
+@@ -318,10 +320,14 @@
+                                GLib.Variant.new('(i)', [ arg ]));
+     }
+     setRect(x, y, w, h, relative, scale) {
++        const absoluteWindow = relative ? null : global.display.focus_window;
+         if (this.x == x && this.y == y && this.w == w && this.h == h &&
+-            this.relative == relative && this.scale == scale) {
++            this.relative == relative && this.scale == scale &&
++            this.absoluteWindow === absoluteWindow) {
+             return;
+         }
++        this.absoluteWindow = absoluteWindow;
++        this.absoluteFrame = absoluteWindow?.get_frame_rect() ?? null;
+         this.x = x;
+         this.y = y;
+         this.w = w;
+diff --git a/panel.js b/panel.js
+--- a/panel.js
++++ b/panel.js
+@@ -200,12 +200,21 @@
+                 let window =
+                     global.display.focus_window.get_compositor_private();
+                 if (window) {
+-                    x = window.x + x * (shellScale / kimpanel.scale);
+-                    y = window.y + y * (shellScale / kimpanel.scale);
+-                    w = w * (shellScale / kimpanel.scale);
+-                    h = h * (shellScale / kimpanel.scale);
++                    const monitor = global.display.focus_window.get_monitor();
++                    const monitorScale = Main.layoutManager.monitors[monitor]
++                        ?.geometry_scale ?? shellScale;
++                    const scale = monitorScale / kimpanel.scale;
++                    x = window.x + x * scale;
++                    y = window.y + y * scale;
++                    w *= scale;
++                    h *= scale;
+                 }
+             }
++        } else if (global.display.focus_window === kimpanel.absoluteWindow &&
++                   kimpanel.absoluteFrame) {
++            const frame = global.display.focus_window.get_frame_rect();
++            x += frame.x - kimpanel.absoluteFrame.x;
++            y += frame.y - kimpanel.absoluteFrame.y;
+         }
+         let rect = new Mtk.Rectangle({x : x, y : y, width : w, height : h});
+         let monitor =

@@ -274,8 +274,15 @@ Wayland 的右緣候選被裁切、Qt6 候選壓住欄位；在 guest 安裝官�
 Kimpanel 事件紀錄顯示候選首次顯示仍使用移窗前的 scale=1 caret 矩形；
 scale=2 新矩形到達時 `ShowLookupTable` 已為 false。僅修改座標除法或
 window frame origin 不能修復這個時序，後者還曾讓候選蓋住欄位。
+後續以固定官方 v83 SHA 的 GPL-2.0 補丁，將 relative rect 換算改為
+目前 monitor `geometry_scale`／rect source scale；XWayland 絕對 rect
+則在同一焦點視窗內補上 frame origin 位移。乾淨補丁產物在 GNOME Shell 46
+guest 以兩種副螢幕縮放 × 八路徑的第二列真滑鼠選「鐘」、清除與英文負控制
+16/16 通過，單螢幕四角回歸 32/32 通過。補丁建立與授權見
+`Source/Loaders/Linux-IME/gnome-panel/`；Ubuntu 22.04、實體雙螢幕、
+橫式／theme／熱插拔及正式 extension 套件仍未驗收。
 extension 目前只安裝在測試 guest，不能當成套件已提供或 P0 已關閉；
-混合 DPI 與移窗定位須先解決，再決定正式的 GNOME panel 整合方案。
+VM 混合 DPI 首次移窗定位已修正，仍須完成實體螢幕、跨版本與正式套件整合。
 若 GNOME 達不到 macOS 外觀功能，提出「受維護的 Shell 整合／
 經驗證的替代呈現」與成本，經確認後才實作額外整合或接受差異。
 不得默默用系統預設樣式取代需求，再宣稱完整 parity；也不能以 XWayland fallback
