@@ -1364,10 +1364,24 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `DatabaseCooker/Makefile` 會從 `DataSource/chichi77Collection/phrase.people-*.tsv`
   產生人名 exclusion，再匯入 McBopomofo 與 29 個分類詞庫。不要移除檔案存在時才執行
   `awk` 的保護；資料目錄暫時不完整時仍應能產生空 exclusion，避免錯誤訊息誤導。
+- **五平台商店圖與 iPhone App Store 圖分開生成**：2026-09-20 將 Linux GNOME
+  原始候選截圖放在 `StoreAssets/Sources/chichi-linux.png`，由
+  `StoreAssets/generate-five-platforms.py` 生成 Google Play 手機圖 05 與
+  `StoreAssets/FivePlatforms/five-platforms.png`。Linux 格明示開發中；
+  `generate-assets.swift` 只生成各圖組的 01–04，不可再讓它覆蓋五平台圖，
+  也不可把五平台圖放進 `AppStore/iPhone-*`。
 
 ---
 
 ## TODO
+
+### 商店圖庫
+
+- [x] 2026-09-20 以既有 Google Play 05 的紫色版型新增 Linux 實際畫面，
+      產生 Android、iOS、macOS、Windows、Linux 五平台圖與獨立存放副本；
+      iPhone App Store 上架素材維持原四張。
+- [ ] 正式使用五平台圖前，在 Play Console 預覽縮圖與裁切，並確認 Linux
+      「開發中」標示在實際商店頁清楚可見。
 
 ### Linux 原生版
 
