@@ -1,6 +1,6 @@
 # AGENTS.md — 開發交接
 
-**2026-09-20 v1.2.9 重新發布要求：** 首次 `v1.2.9` tag／Release 因 Linux CI 失敗已依使用者要求刪除，遠端和本機 tag 都已撤下；`latest` 暫時回到 `v1.2.8`。先修好 Ubuntu 24.04 完整套件／X11 設定視窗測試及 Ubuntu 22.04 套件生命週期，確認 Linux CI 全綠，才從含修正與正式安裝文件的 `v1.2.9` 分支提交重新建立 tag／Release 並設為 latest。Android 與 iOS 繼續走商店發行，GitHub Release 不放 debug APK 或 Simulator 包。
+**2026-09-21 v1.2.9 發布現況：** 首次 `v1.2.9` tag／Release 曾因 Linux CI 失敗撤下；修正後已重新發布。`v1.2.9` tag 與 Release 存在，Linux 三個 `.deb`、面板原始碼及 `SHA256SUMS` 均在 Assets，Release 標為 latest；Linux CI 的 2026-09-20 手動完整驗證與後續分支執行成功。Android 與 iOS 繼續走商店發行，GitHub Release 不放 debug APK 或 Simulator 包。
 
 **2026-09-20 Linux 使用者文件：** 使用者指定 Linux 下一版與其他平台共用 `v1.2.9` 標籤，不再以獨立 Linux 標籤作為新指南的安裝入口。`LINUX_INSTALL.md` 已改為統一發布的安裝指南。Linux CI 已接上 tag 專用發布 job：Ubuntu 24.04 完整套件與 X11 輸入測試成功後，才核對版號及 checksum 並上傳三個 `.deb`、面板原始碼及 `SHA256SUMS` 到同一 Release。三張 `docs/images/keykey-linux-*.png` 均為先前 1.2.8 實拍：候選與符號取自已安裝套件的 GNOME Wayland VM，設定取自已安裝套件的 Ubuntu 24.04 X11 測試桌面，不是 1.2.9 驗收證據。README 已設入口。測試視窗與一般 App 畫面須明確區分；`out/` 不進版控，不要在使用者文件直接引用。
 
@@ -13,7 +13,7 @@
 **2026-09-20 macOS 使用者文件：** `v1.2.9` 分支的 `MACOS_INSTALL.md` 已改成一般使用者的圖文安裝與日常使用指南，包含選字、翻頁、關聯詞、切換輸入法及偏好設定；README 與安裝完成頁連回該文件。`docs/images/` 的兩張 SVG 是明確標示的操作示意圖；兩張 `keykey-macos-*.png` 是 macOS 27.0 系統鍵盤設定和輸入來源清單的實拍，取景避開個人帳號側欄，另沿用 `StoreAssets/Sources/chichi-macos.png` 的候選字截圖。截圖與 1.2.9 套件驗收須分開標示。
 
 **2026-09-20 下一版工作：** 工作分支 `v1.2.9` 的產品與建置版號同步升為
-1.2.9；使用者已另行授權建立 `v1.2.9` tag、發布 Release 並設為 latest。
+1.2.9；`v1.2.9` tag 與 Release 現已發布並設為 latest。
 已發布的 1.2.8 套件、來源與 GNOME VM 測試紀錄仍屬 1.2.8。
 Linux CI 已有 tag 自動上傳流程；1.2.9 的 GNOME 實機相容性仍待擴大驗收。
 
@@ -31,7 +31,8 @@ Fcitx 5、amd64，標籤為 `linux-v1.2.8`。套件、安裝步驟、已驗證�
 - [x] 將五平台下一版建置版號同步至 1.2.9，僅 commit／push 開發分支。
 - [x] 準備 Ubuntu 24.04 的 `v1.2.9` 圖文安裝與使用指南，並保存三張先前版本的實際截圖。
 - [x] 將 Linux 套件、面板原始碼與校驗檔的 tag 自動上傳接進同一 Release。
-- [ ] 修正 Ubuntu 22.04／24.04 Linux CI，完整重跑全綠後重新建立 `v1.2.9` tag；核對三平台 Release 資產與 latest 指向。GNOME 實機驗收另列後續工作。
+- [x] 修正 Ubuntu 22.04／24.04 Linux CI 並完整重跑；重新建立 `v1.2.9` tag，核對 macOS、Windows、Linux Release 資產與 latest 指向。GNOME 實機相容性驗收另列後續工作。
+- [x] 2026-09-21 將乾淨 Ubuntu 24.04 X11 VM 的 Fcitx 登入環境問題、重啟步驟及 `Ctrl+Space` 等基本操作寫入 `LINUX_INSTALL.md`。
 - [ ] 後續另驗實體雙螢幕／熱插拔、更多 GTK App 與 sandbox、GNOME 主題、
       Ubuntu 其他版本及 ARM64；只有驗過的組合才加入正式支援。
 
@@ -632,6 +633,25 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   可連線誤判為 guest SSH 可用。
   `tools/check-wsl-vm-host.sh` 在受限行程會給出明確的 `/dev/kvm` 提示，
   應由正常 WSL shell 執行。
+- **乾淨 Ubuntu Desktop VM 首次安裝後須重啟才會出現 GDM**：2026-09-20
+  另由官方 24.04.5 cloud image 建立獨立的
+  `Source/Loaders/Linux-IME/out/gnome-vm-clean/` 客體，僅安裝
+  `ubuntu-desktop-minimal`、`qemu-guest-agent` 與 SSH；建立時未預裝 Fcitx 或琦琦套件。
+  首次 cloud-init 完成後停在 TTY，當場啟動 `gdm3` 仍不會自動切換前景；正常
+  重啟後才在 tty1 顯示圖形登入。最小桌面也造成上述 Netplan renderer 問題；
+  在客體執行 `sudo netplan set network.renderer=networkd` 與
+  `sudo netplan apply` 後，Ubuntu 套件站 DNS 解析成功。該客體的 VNC 是
+  `127.0.0.1:5903`，本機 noVNC 為 `127.0.0.1:6080`；舊驗證客體磁碟未動。
+  使用者從 Xorg 工作階段登出後曾留在黑色虛擬終端；VM、GDM 服務與新建的
+  `gdm` tty1 session 均仍正常，切換到 `Ctrl+Alt+F1` 即恢復圖形登入畫面。
+  使用者自行安裝琦琦後，`~/.xinputrc` 雖已寫入 `run_im fcitx5`，舊 X11 session
+  的 user manager 仍保留 `GTK_IM_MODULE=ibus`、`QT_IM_MODULE=ibus` 與
+  `XMODIFIERS=@im=ibus`；當時只有套件專用的文字編輯器能輸入，Firefox
+  網址列只輸出英文，GNOME 終端機須等十幾秒。完整重啟並登入 Ubuntu on Xorg
+  後，三個變數均變成 `fcitx`，Fcitx 5 行程已啟動；Firefox 網址列實際完成
+  `5j/` → `ㄓㄨㄥ` → 候選「中」提交，新開 GNOME 終端機也在數秒內顯示
+  `ㄓㄨㄥ` preedit；終端機的 `Ctrl+Space` 也實際切到英文再切回中文。
+  `LINUX_INSTALL.md` 因此改為在 `im-config` 後重啟 Ubuntu。
 - **Ubuntu 24.04 的主框架是 Fcitx 5**：這是使用者指定的主要支援環境，需最完整
   測試；不能只保留 Ubuntu + IBus 或以 KDE + Fcitx 的結果替代。GNOME 可能使用
   IBus protocol bridge，但實測必須確認載入本專案 Fcitx addon。主環境每次相關
@@ -1529,6 +1549,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Linux 原生版
 
+- [x] 2026-09-20 另啟動乾淨的 Ubuntu Desktop 24.04.5 KVM 客體供使用者自行
+      安裝與實測；完成首次重啟、GDM 圖形登入及套件站 DNS 驗證，未預裝琦琦輸入法。
 - [x] 2026-09-20 修正 WSL2 VM host 前置條件：確認 KVM 核心與正常 WSL
       `/dev/kvm` 可用，開發使用者加入 `kvm` 群組，安裝 QEMU／OVMF 並以
       一般使用者成功啟動 KVM 加速空機；受限行程的 `/dev` 掛載不能當成
