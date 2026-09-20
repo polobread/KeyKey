@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 445" role="img" aria-labelledby="title desc">
+  <title id="title">在 iPhone 或 iPad 加入琦琦注音鍵盤</title>
+  <desc id="desc">操作示意：進入設定、一般、鍵盤、鍵盤、新增鍵盤，在第三方鍵盤選琦琦注音。</desc>
+  <rect width="940" height="445" rx="20" fill="#f4f6fa"/>
+  <text x="48" y="61" font-family="-apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif" font-size="27" font-weight="700" fill="#202630">加入琦琦注音鍵盤</text>
+  <text x="48" y="96" font-family="-apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif" font-size="17" fill="#5c6573">依序點選裝置上的選單</text>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif" font-size="23" font-weight="700" text-anchor="middle">
+    <rect x="45" y="135" width="180" height="78" rx="16" fill="white" stroke="#cbd5e1" stroke-width="2"/><text x="135" y="184" fill="#202630">① 設定</text>
+    <rect x="258" y="135" width="180" height="78" rx="16" fill="white" stroke="#cbd5e1" stroke-width="2"/><text x="348" y="184" fill="#202630">② 一般</text>
+    <rect x="471" y="135" width="180" height="78" rx="16" fill="white" stroke="#cbd5e1" stroke-width="2"/><text x="561" y="184" fill="#202630">③ 鍵盤</text>
+    <rect x="684" y="135" width="210" height="78" rx="16" fill="white" stroke="#cbd5e1" stroke-width="2"/><text x="789" y="184" fill="#202630">④ 鍵盤清單</text>
+    <rect x="148" y="288" width="250" height="84" rx="16" fill="#e8f1ff" stroke="#4c83e6" stroke-width="2"/><text x="273" y="340" fill="#2056ae">⑤ 新增鍵盤</text>
+    <rect x="487" y="288" width="300" height="84" rx="16" fill="#e8f5ec" stroke="#2d9a50" stroke-width="3"/><text x="637" y="340" fill="#176536">⑥ 琦琦注音</text>
+  </g>
+  <g fill="none" stroke="#8a95a6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M231 174h17m-7-8 8 8-8 8"/><path d="M444 174h17m-7-8 8 8-8 8"/><path d="M657 174h17m-7-8 8 8-8 8"/>
+    <path d="M789 223v28H273v25m-8-8 8 8 8-8"/><path d="M409 330h65m-8-8 8 8-8 8"/>
+  </g>
+  <text x="48" y="417" font-family="-apple-system, BlinkMacSystemFont, 'Noto Sans TC', sans-serif" font-size="16" fill="#5c6573">在「第三方鍵盤」區選擇琦琦注音；「允許完整取用」可保持關閉。</text>
+</svg>

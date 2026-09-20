@@ -58,6 +58,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 ## 下載與發行
 
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載檔案辨識、安裝、登入後啟用、試打及常見問題。
+- iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦注音》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939)安裝。
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS 與 Windows
   桌面版。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
@@ -65,8 +66,8 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
   提供 Ubuntu 24.04 amd64 的三個 `.deb`、SHA-256 與 GNOME 面板原始碼。
 - Android 正式 AAB 由 `Android Play Release` workflow 簽署並手動送到 Google Play；
   1.2.7 已送交封閉測試。`Package Android` 只產生供開發測試的 debug APK。
-- iOS 實機版由 Xcode Cloud／App Store Connect 建置及發行；`Package iOS Simulator`
-  只產生 Apple Silicon Simulator 測試包，不能安裝到 iPhone 或 iPad。
+- iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
+  Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
 推送符合專案版號的 tag（例如 `v1.2.9`）會同時啟動 `Package macOS` 與
 `Package Windows`，並把桌面版產物加入同一個 GitHub Release。兩個 workflow 也能手動
@@ -77,6 +78,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 ## 文件
 
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：不需開發工具的首次安裝步驟與操作示意圖
+- [iOS 安裝與使用指南](IOS_INSTALL.md)：App Store 安裝、加入鍵盤、日常操作與實體鍵盤編輯器
 - [BUILDING.md](BUILDING.md)：各平台建置、測試、安裝與打包
 - [五平台心經長文 functional test](tests/HEART_SUTRA_FUNCTIONAL.md)：關閉關聯詞庫後逐字輸入，核對全文及每字候選順位
 - [Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](LINUX_TEST_PLAN.md)：
@@ -152,6 +154,7 @@ iOS.
 ### Downloads and releases
 
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
+- iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939).
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) provides the
   macOS and Windows desktop builds. The macOS package is Developer ID signed,
   notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP
@@ -161,7 +164,7 @@ iOS.
 - The signed Android AAB is uploaded manually to Google Play by the
   `Android Play Release` workflow. Version 1.2.7 has been submitted to closed
   testing. `Package Android` produces a debug APK for development only.
-- Device builds for iOS are handled by Xcode Cloud and App Store Connect.
+- Device builds for iOS are distributed through the App Store.
   `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
   be installed on an iPhone or iPad.
 

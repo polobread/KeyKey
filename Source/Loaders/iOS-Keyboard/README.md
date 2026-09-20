@@ -1,5 +1,7 @@
 # iOS 鍵盤
 
+一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。以下是開發與測試資訊。
+
 琦琦注音的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
 容器 App。
 
