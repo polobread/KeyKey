@@ -97,7 +97,17 @@ verify_install() {
   test -f /usr/share/fcitx5/inputmethod/chichi77-keykey-simplex.conf
   test -x /usr/bin/keykey-fcitx-app
   test -f /usr/share/applications/org.chichi77.KeyKey.TextEditor.desktop
-  test -f /usr/share/man/man1/keykey-fcitx-app.1.gz
+  # Ubuntu's minimal container image excludes man pages at dpkg extraction time.
+  # Verify the package still ships the page, and require the installed copy
+  # whenever the runner has not opted out of installing man pages.
+  if ! dpkg-deb --contents "$fcitx_package" |
+      grep -Fq './usr/share/man/man1/keykey-fcitx-app.1.gz'; then
+    echo "The Fcitx package does not contain the keykey-fcitx-app man page." >&2
+    exit 1
+  fi
+  if ! grep -RqsFx 'path-exclude=/usr/share/man/*' /etc/dpkg/dpkg.cfg /etc/dpkg/dpkg.cfg.d; then
+    test -f /usr/share/man/man1/keykey-fcitx-app.1.gz
+  fi
   test -f /usr/share/chichi77-keykey/data/bpmf-ext.cin
   test -f /usr/share/chichi77-keykey/data/cj-ext.cin
   test -f /usr/share/chichi77-keykey/data/simplex-ext.cin

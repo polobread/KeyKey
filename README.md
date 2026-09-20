@@ -1,7 +1,10 @@
 # 琦琦輸入法 / chichi77 KeyKey 1.2.9
 
-1.2.9 目前是開發版號，尚未建立 `v1.2.9` 標籤或發布套件；macOS 與 Windows
-現有下載仍是已發布的 1.2.8，Linux 的 1.2.9 安裝指南待統一發布後使用。
+`v1.2.9` 的 macOS、Windows 與 Ubuntu 24.04 安裝包集中在同一個
+[GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)；
+Android 與 iOS 依各自的商店管道安裝。
+
+[下載目前最新的 GitHub Release](https://github.com/polobread/KeyKey/releases/latest)
 
 ## 開發初衷
 
@@ -18,7 +21,7 @@ Yahoo! KeyKey。這兩套輸入法後來都沒有持續維護；Android 與 iOS 
 
 Android 與 iOS 版透過 Google Play 與 App Store 的官方流程發行，並提供不影響任何輸入
 功能的一次性支持方案；希望免費使用的朋友，仍可 fork 本專案，拉回自己的電腦自行編譯
-安裝。macOS 與 Windows 安裝包則由 GitHub Release 提供。
+安裝。macOS、Windows 與 Ubuntu 24.04 安裝包則由 GitHub Release 提供。
 
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，支援 macOS、Windows、
 Android、iOS，以及 Ubuntu Desktop 24.04 LTS 的 Linux 原生版。
@@ -26,8 +29,8 @@ Android、iOS，以及 Ubuntu Desktop 24.04 LTS 的 Linux 原生版。
 Linux 原生版針對 Ubuntu Desktop 24.04、GNOME Shell 46、Fcitx 5、amd64，包含五種傳統注音
 布局、候選與符號、30 套關聯詞、中英文與全半形切換，以及額外的倉頡和簡易。
 先前版本已驗證 GNOME X11、Wayland、XWayland 的 GTK 3／GTK 4／Qt 6 輸入與候選操作，
-另有獨立的 GNOME 候選面板套件。下一版規劃併入統一的 `v1.2.9` 發布；
-[Ubuntu 安裝與使用指南](LINUX_INSTALL.md)會在套件上線後適用。
+另有獨立的 GNOME 候選面板套件。安裝步驟見
+[Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版留待後續相容性驗收。
 
 本專案以 Yahoo! Inc. 於 2012 年以 BSD 3-Clause License 釋出的原始碼為基礎，
@@ -57,15 +60,16 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 ## 下載與發行
 
+- [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
 - Windows 11 使用者請看[Windows 安裝與使用指南](WINDOWS_INSTALL.md)：下載 ZIP、執行安裝、切換輸入法與日常打字。
-- Ubuntu 24.04 使用者請看[Linux 安裝與使用指南](LINUX_INSTALL.md)：`v1.2.9` 套件發布後的安裝流程、Fcitx 5 設定與實際桌面截圖。
+- Ubuntu 24.04 使用者請看[Linux 安裝與使用指南](LINUX_INSTALL.md)：`v1.2.9` 套件安裝、Fcitx 5 設定與實際桌面截圖。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦注音》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939)安裝。
 - Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；目前透過 Google 群組及 Google Play 封閉測試加入後安裝。
-- [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS 與 Windows
-  桌面版。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
+- [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS、Windows 與
+  Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
-- Linux 套件下一版會在 Ubuntu 24.04 完整測試通過後，自動加入與桌面版相同的 `v1.2.9` Release；目前尚未上線。
+- Linux 的三個 `.deb`、面板原始碼及 `SHA256SUMS` 與桌面版同放在 `v1.2.9` Release。
 - Android 正式 AAB 由 `Android Play Release` workflow 簽署並手動送到 Google Play；
   1.2.7 已送交封閉測試。`Package Android` 只產生供開發測試的 debug APK。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
@@ -74,7 +78,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 推送符合專案版號的 tag（例如 `v1.2.9`）會啟動 `Package macOS`、
 `Package Windows` 與完整 `Linux CI`。macOS 和 Windows 的產物，以及通過 Ubuntu 24.04
 套件安裝與輸入測試的 Linux 套件，會加入同一個 GitHub Release。手動執行 Linux CI
-只保留 Actions artifact，不發布 Release；`v1.2.9` 目前尚未建立 tag 或完成驗收。
+只保留 Actions artifact，不發布 Release。Linux 的 1.2.9 GNOME 實機相容性仍須持續驗收。
 完整產物、簽章與限制見 [BUILDING.md](BUILDING.md#github-actions-封裝)。
 
 ## 文件
@@ -113,9 +117,11 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 ## English
 
-Version 1.2.9 is in development. There is no `v1.2.9` tag or release yet.
-The current macOS and Windows downloads remain at 1.2.8; the Linux 1.2.9
-installation guide applies after the unified release is published.
+The macOS, Windows, and Ubuntu 24.04 installers for `v1.2.9` share one
+[GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9).
+Android and iOS use their respective store distribution channels.
+
+[Download the latest GitHub Release](https://github.com/polobread/KeyKey/releases/latest).
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports macOS, Windows, Android, iOS, and Ubuntu Desktop 24.04 LTS.
@@ -125,8 +131,8 @@ and amd64. It includes five Traditional Bopomofo layouts, candidates, symbols,
 30 associated-phrase collections, Chinese/English and full-width modes, plus
 Cangjie and Simplex. Earlier builds were checked with GTK 3, GTK 4, and Qt 6
 on GNOME X11, Wayland, and XWayland. The separate GNOME candidate panel package
-handles popup placement. The [Ubuntu installation guide](LINUX_INSTALL.md)
-targets the planned unified `v1.2.9` release. Other Ubuntu versions,
+handles popup placement. See the [Ubuntu installation guide](LINUX_INSTALL.md).
+Other Ubuntu versions,
 IBus, ARM64, and other distributions await compatibility testing.
 
 The project retains the OpenVanilla/PlainVanilla core and Traditional Bopomofo
@@ -158,17 +164,18 @@ iOS.
 
 ### Downloads and releases
 
+- [Latest release](https://github.com/polobread/KeyKey/releases/latest) always opens the release currently marked Latest on GitHub.
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
 - Windows 11 installation, setup, and daily use: [Windows installation guide (Traditional Chinese)](WINDOWS_INSTALL.md).
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
 - iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939).
 - Android setup and daily use: [Android installation guide (Traditional Chinese)](ANDROID_INSTALL.md). Installation currently uses a Google Group and Google Play closed testing.
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) provides the
-  macOS and Windows desktop builds. The macOS package is Developer ID signed,
+  macOS, Windows, and Ubuntu 24.04 builds. The macOS package is Developer ID signed,
   notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP
   and installer are currently unsigned and may trigger a security warning.
-- The next Linux package set will be added to the same `v1.2.9` Release as the
-  desktop builds after the Ubuntu 24.04 package checks pass; it is not available yet.
+- The three Linux `.deb` files, panel source archive, and `SHA256SUMS` share the
+  `v1.2.9` Release with the desktop builds.
 - The signed Android AAB is uploaded manually to Google Play by the
   `Android Play Release` workflow. Version 1.2.7 has been submitted to closed
   testing. `Package Android` produces a debug APK for development only.
@@ -180,7 +187,8 @@ Pushing a tag that exactly matches the project version, such as `v1.2.9`,
 starts `Package macOS`, `Package Windows`, and the full `Linux CI`. The desktop
 outputs and the Linux packages that pass the Ubuntu 24.04 package checks are
 added to the same GitHub Release. Manual Linux CI runs retain Actions artifacts
-without publishing a Release. The `v1.2.9` tag and release do not exist yet.
+without publishing a Release. Linux 1.2.9 GNOME hardware compatibility still
+needs broader validation.
 See [BUILDING.md](BUILDING.md#github-actions-packaging) for the
 complete output and signing details.
 

@@ -250,8 +250,14 @@ if [[ "$session_mode" == managed ]]; then
   mkdir -p "$XDG_CONFIG_HOME/fcitx5/conf" "$XDG_DATA_HOME" "$XDG_RUNTIME_DIR"
   chmod 700 "$XDG_RUNTIME_DIR"
 fi
-dbus-update-activation-environment \
-  DISPLAY XDG_CONFIG_HOME XDG_DATA_HOME XDG_RUNTIME_DIR
+if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
+  dbus-update-activation-environment \
+    DISPLAY XDG_CONFIG_HOME XDG_DATA_HOME XDG_RUNTIME_DIR \
+    QT_LINUX_ACCESSIBILITY_ALWAYS_ON
+else
+  dbus-update-activation-environment \
+    DISPLAY XDG_CONFIG_HOME XDG_DATA_HOME XDG_RUNTIME_DIR
+fi
 if [[ "$session_mode" == managed ]]; then
   install -m 0644 tests/fixtures/fcitx5-profile "$XDG_CONFIG_HOME/fcitx5/profile"
 fi
@@ -1576,6 +1582,9 @@ if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   ui_case_dir="$KEYKEY_E2E_ARTIFACT_DIR/"
   ui_case_dir+=T07-X11-FCITX5-CONFIG-UI-PERSISTENCE
   mkdir -p "$ui_case_dir"
+  # Qt is launched through Fcitx/D-Bus. Start the accessibility registry first
+  # so the newly launched settings window registers in the AT-SPI tree.
+  python3 -c 'import pyatspi; pyatspi.Registry.getDesktop(0)'
   gdbus call --session --dest org.fcitx.Fcitx5 \
     --object-path /controller \
     --method org.fcitx.Fcitx.Controller1.ConfigureIM \

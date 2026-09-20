@@ -2,7 +2,7 @@
 
 這份指南給第一次使用琦琦輸入法的 Windows 使用者。照著畫面下載、解壓縮並連按兩下安裝檔即可，**不需要安裝開發工具，也不需要輸入指令**。安裝完成後，琦琦輸入法會出現在 Windows 的輸入法清單中，不會像一般 App 一樣開啟打字主視窗。
 
-目前已發布的 Windows 版本是 **1.2.8**；`v1.2.9` 仍是開發分支，沒有 1.2.9 的公開安裝包。以下檔名以 1.2.8 為例，日後新版本的數字會改變。
+本指南使用 **v1.2.9** 的 Windows 安裝包。日後更新時，檔名中的版本數字會跟著改變。
 
 ## 安裝前，先確認電腦
 
@@ -12,8 +12,8 @@ Windows 安裝檔目前**沒有數位簽章**，因此瀏覽器或 Windows 可�
 
 ## 1. 下載 Windows 套件
 
-1. 開啟 [琦琦輸入法 1.2.8 正式發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.2.8)，往下找到 **Assets**；如果清單收起來，按一下展開。
-2. 下載 [**`chichi77-KeyKey-1.2.8-windows-x64.zip`**](https://github.com/polobread/KeyKey/releases/download/v1.2.8/chichi77-KeyKey-1.2.8-windows-x64.zip)。它是本指南使用的完整安裝資料夾。
+1. 開啟 [琦琦輸入法 v1.2.9 正式發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)，往下找到 **Assets**；如果清單收起來，按一下展開。
+2. 下載 [**`chichi77-KeyKey-1.2.9-windows-x64.zip`**](https://github.com/polobread/KeyKey/releases/download/v1.2.9/chichi77-KeyKey-1.2.9-windows-x64.zip)。它是本指南使用的完整安裝資料夾。
 3. 請不要選旁邊的 `.sha256`、Linux、macOS 或 `Source code` 檔案。發布頁另有 `.unsigned.exe` 測試安裝程式；以下步驟使用 ZIP 內的 `Install.cmd`，它會將輸入法加入目前帳號的 Windows 輸入法清單。
 
 ![Windows 套件安裝順序示意圖](docs/images/windows-install-flow.svg)

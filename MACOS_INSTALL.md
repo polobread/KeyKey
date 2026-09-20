@@ -4,7 +4,7 @@
 
 安裝後，琦琦輸入法會出現在 Mac 的「輸入法」選單中；它不會像一般 App 一樣開啟主視窗。整個流程是：**下載安裝包 → 安裝 → 登出並重新登入 → 加入輸入法 → 試打**。
 
-> 請從正式發布頁下載目前已發布的 macOS 版本。下圖以 1.2.8 為例；實際檔名中的版本數字會隨發布更新。
+> 請從正式發布頁下載目前已發布的 macOS 版本。下圖是操作示意；實際檔名中的版本數字會隨發布更新。
 
 ## 安裝前，確認你的 Mac
 
@@ -18,7 +18,7 @@
 ## 1. 下載 macOS 安裝包
 
 1. 打開 [琦琦輸入法的正式桌面版下載頁](https://github.com/polobread/KeyKey/releases/latest)。若看到很多檔案，往下找到 **Assets**，必要時按一下展開。
-2. 點選檔名包含 **`macos-arm64.pkg.zip`** 的檔案。以 1.2.8 為例，完整檔名是 `chichi77-KeyKey-1.2.8-macos-arm64.pkg.zip`。
+2. 點選檔名包含 **`macos-arm64.pkg.zip`** 的檔案。v1.2.9 的完整檔名是 `chichi77-KeyKey-1.2.9-macos-arm64.pkg.zip`。
 3. 在「下載項目」資料夾中連按兩下下載的 ZIP，會得到 `.pkg` 安裝檔。請不要選旁邊的 `.sha256`、Windows、Linux 或 `Source code` 檔案。
 
 ![正式發布頁的檔案選擇示意圖，標出 macos-arm64.pkg.zip](docs/images/macos-release-assets.svg)
