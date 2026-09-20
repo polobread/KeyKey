@@ -2,8 +2,10 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 1.2.8 首版支援 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64。
-下載與安裝見 [Linux 1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
+Linux 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
+[Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。下一版規劃與其他平台共用 `v1.2.9`
+Release；目前標籤與新套件尚未發布。先前 Linux 版本的發布紀錄保留在
+[1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
 外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，

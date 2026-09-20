@@ -1,5 +1,7 @@
 # AGENTS.md — 開發交接
 
+**2026-09-20 Linux 使用者文件：** 使用者指定 Linux 下一版與其他平台共用 `v1.2.9` 標籤，不再以獨立 Linux 標籤作為新指南的安裝入口。`LINUX_INSTALL.md` 已改為統一發布的準備稿；`v1.2.9` Release、1.2.9 Linux 套件與校驗檔目前都尚未發布，不能將預期檔名當作現成下載。三張 `docs/images/keykey-linux-*.png` 均為先前 1.2.8 實拍：候選與符號取自已安裝套件的 GNOME Wayland VM，設定取自已安裝套件的 Ubuntu 24.04 X11 測試桌面，不是 1.2.9 驗收證據。README 已設入口。測試視窗與一般 App 畫面須明確區分；`out/` 不進版控，不要在使用者文件直接引用。
+
 **2026-09-20 Windows 使用者文件：** `WINDOWS_INSTALL.md` 以已發布的 1.2.8 Windows x64 ZIP 為主要安裝流程，說明完整解壓縮、連按兩下 `Install.cmd`、管理員提示、`Win + Space`、記事本試打、候選字、設定與解除安裝。README 和 Windows TSF 技術 README 已設入口。`docs/images/windows-install-flow.svg` 是明確標示的示意圖，另沿用 `Source/Loaders/Windows-TSF/IMAGES/` 的四張 Windows 實際畫面。ZIP 的安裝腳本會加入目前使用者的輸入法清單；已發布的 `.unsigned.exe` 也在 Release，但本指南以 ZIP 為主。Windows 發行檔目前未簽章，未測實機安裝或 SmartScreen 畫面；若套件簽章、發行方式或設定 UI 改變，需重新核對指南。`v1.2.9` 仍未發布。
 
 **2026-09-20 Android 使用者文件：** `ANDROID_INSTALL.md` 說明 Google 測試群組、Google Play 封閉測試加入與安裝，三步須用同一 Google 帳號且至少保留測試資格 14 天；另含 App 首頁啟用、觸控與實體鍵盤、設定及排除問題。README 與 Android 技術 README 已加入入口。`docs/images/android-enable-ime.svg` 是明確標示的操作示意圖；六張 `docs/images/keykey-android-pixel9a-*.png` 是 Pixel 9a 實拍，系統已切到繁體中文（台灣），觸控鍵盤取自系統設定搜尋欄。使用指南不再展示 DEBUG 測試輸入框／測試記事本畫面。若改為公開發行，需重新查證並更新安裝段落；debug APK 不應作為一般使用者安裝包，`v1.2.9` 仍未發布。
@@ -12,6 +14,8 @@
 1.2.9；這只是後續開發基線，尚未建立 `v1.2.9` tag 或新 Release。
 已發布的 1.2.8 套件、來源與 GNOME VM 測試紀錄仍屬 1.2.8。
 使用者稍後還要修改其他內容；不要把這次版號提交當成發布授權。
+下一次 Linux 安裝包的目標改為與其他平台共用 `v1.2.9` Release；目前 Linux CI
+只保存套件 artifact，尚未把它上傳到 Release，且 1.2.9 GNOME 套件驗收未完成。
 
 **2026-09-20 Linux 首版範圍更新：** 使用者要求先發布主要版本。
 Linux 1.2.8 首版僅支援 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、
@@ -25,7 +29,8 @@ Fcitx 5、amd64，標籤為 `linux-v1.2.8`。套件、安裝步驟、已驗證�
 首版交接 TODO：
 - [x] 收斂支援矩陣、安裝與限制文件；保留 GNOME VM 與套件生命週期證據。
 - [x] 將五平台下一版建置版號同步至 1.2.9，僅 commit／push 開發分支。
-- [ ] 等使用者完成其他修改後，再決定單一 Release 的整合方式與發布時間。
+- [x] 準備 Ubuntu 24.04 的 `v1.2.9` 圖文安裝與使用指南，並保存三張先前版本的實際截圖。
+- [ ] 在發布 `v1.2.9` 前整合 Linux 套件、面板原始碼與校驗檔到同一 Release，重跑 1.2.9 驗收，再決定發布時間。
 - [ ] 後續另驗實體雙螢幕／熱插拔、更多 GTK App 與 sandbox、GNOME 主題、
       Ubuntu 其他版本及 ARM64；只有驗過的組合才加入正式支援。
 
@@ -56,6 +61,7 @@ macOS GitHub Actions 或 iOS Xcode Cloud。macOS 本機腳本
 GNOME VM provisioning script 會尋找當前 CMake 版號的 `.deb`；只升版號後，
 舊 `out/` 的 1.2.8 套件不會自動變成 1.2.9，須先重建再安裝，不能將舊
 VM 的 1.2.8 測試紀錄標成 1.2.9 驗收。
+既有 1.2.8 Linux 發布的 `SHA256SUMS` 包含三個 `.deb` 及 GNOME 面板原始碼包；新指南沿用同一校驗流程，但 1.2.9 的 `SHA256SUMS` 必須由該版建置重新產生，不能沿用舊檔。
 
 macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是各平台的交接點。
 
