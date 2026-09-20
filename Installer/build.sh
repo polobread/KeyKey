@@ -20,25 +20,31 @@ for f in "$STAGED"/Contents/Frameworks/*.framework; do
     rm -rf "$f/Versions/A/Headers" "$f/Headers"
 done
 
-if [ -n "${DEVELOPER_ID_APPLICATION:-}" ]; then
-    # Inside out: nested code carries its own signature before the enclosing
-    # bundle seals it. Hardened Runtime is what the notary service requires,
-    # and it is also what applies library validation to the module bundles the
-    # loader opens at runtime -- those are signed here with the same team, so
-    # validation passes without having to disable it.
-    for f in "$STAGED"/Contents/Frameworks/*.framework; do
-        codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_APPLICATION" "$f"
-    done
-
-    for f in "$STAGED"/Contents/SharedSupport/*.app; do
-        codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_APPLICATION" "$f"
-    done
-
-    codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID_APPLICATION" "$STAGED"
-    codesign --verify --deep --strict --verbose=2 "$STAGED"
+SIGN_IDENTITY=${DEVELOPER_ID_APPLICATION:--}
+if [ "$SIGN_IDENTITY" != "-" ]; then
+    # Developer ID packages need Hardened Runtime and a secure timestamp.
+    sign_staged() {
+        codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$1"
+    }
 else
-    echo "DEVELOPER_ID_APPLICATION is not set, leaving the app ad-hoc signed" >&2
+    echo "DEVELOPER_ID_APPLICATION is not set, signing the local app ad hoc" >&2
+    sign_staged() {
+        codesign --force --sign - "$1"
+    }
 fi
+
+# Removing framework headers invalidates the original build signatures. Sign
+# nested code first, then the app, even for an unsigned local test package.
+for f in "$STAGED"/Contents/Frameworks/*.framework; do
+    sign_staged "$f"
+done
+
+for f in "$STAGED"/Contents/SharedSupport/*.app; do
+    sign_staged "$f"
+done
+
+sign_staged "$STAGED"
+codesign --verify --deep --strict --verbose=2 "$STAGED"
 
 # pkgbuild marks app bundles relocatable by default, which lets installer
 # redirect the payload onto any copy of the same bundle id it can find --
@@ -48,7 +54,10 @@ fi
 COMPONENTS="$STAGE.plist"
 trap 'rm -rf "$STAGE" "$COMPONENTS"' EXIT
 pkgbuild --analyze --root "$STAGE" "$COMPONENTS"
-/usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENTS"
+if ! /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENTS" 2>/dev/null; then
+    # Recent pkgbuild versions may omit the key instead of emitting its default.
+    /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" "$COMPONENTS"
+fi
 
 pkgbuild \
     --root "$STAGE" \

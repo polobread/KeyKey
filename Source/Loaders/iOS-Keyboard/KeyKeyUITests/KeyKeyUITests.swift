@@ -369,6 +369,122 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(tapSettingRow(named: ["琦琦注音"], in: settings), "第三方鍵盤清單中找不到琦琦注音")
     }
 
+    /// Run locally on the development Mac's iOS 17 Simulator. It drives the
+    /// actual keyboard extension, not the container app's editor or engine API.
+    /// The embedded fixture is generated from the shared annotated Heart Sutra.
+    func testHeartSutraKeyboardExtension() {
+        XCTAssertEqual(HeartSutraFixture.entries.count, 268)
+
+        // Third-party keyboards require user opt-in. Settings UI is the only
+        // supported path, so do it in this test rather than relying on order.
+        launchHostApp()
+        app.terminate()
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        settings.launch()
+        XCTAssertTrue(openKeyboardList(in: settings), "無法開啟系統鍵盤清單")
+        if !settingRow(named: ["琦琦注音"], in: settings).exists {
+            XCTAssertTrue(tapSettingRow(
+                named: ["新增鍵盤", "新增鍵盤…", "新增鍵盤⋯", "新增鍵盤...",
+                        "加入新的鍵盤…", "加入新的鍵盤⋯", "加入新的鍵盤...",
+                        "Add New Keyboard", "Add New Keyboard…", "Add New Keyboard..."],
+                in: settings
+            ), "找不到加入鍵盤的設定")
+            XCTAssertTrue(tapSettingRow(named: ["琦琦注音"], in: settings), "無法加入琦琦注音")
+        }
+
+        launchHostApp()
+        XCTAssertTrue(revealField("message"))
+        let output = field("message")
+        output.tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        XCTAssertEqual(app.staticTexts["keyboard.status"].label, "標準注音")
+
+        app.buttons["SETTINGS"].tap()
+        let disableAll = app.buttons["全部關閉"]
+        XCTAssertTrue(disableAll.waitForExistence(timeout: 3))
+        disableAll.tap()
+        app.buttons["完成"].tap()
+        XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 3))
+
+        var expected = ""
+        var observed: [String] = []
+        defer {
+            let textCapture = XCTAttachment(string: output.value as? String ?? "")
+            textCapture.name = "ios.txt"
+            textCapture.lifetime = .keepAlways
+            add(textCapture)
+            let rankCapture = XCTAttachment(string: observed.joined(separator: "\n") + "\n")
+            rankCapture.name = "ios.positions.tsv"
+            rankCapture.lifetime = .keepAlways
+            add(rankCapture)
+        }
+
+        for (index, entry) in HeartSutraFixture.entries.enumerated() {
+            for key in entry.keys {
+                let button = app.buttons[String(key)]
+                XCTAssertTrue(button.exists, "第 \(index + 1) 字找不到注音鍵 \(key)")
+                button.tap()
+            }
+            if !entry.reading.contains(where: { "ˊˇˋ˙".contains($0) }) {
+                app.buttons["SPACE"].tap()
+            }
+
+            let nextExpected = expected + entry.target
+            // The button's accessibility label exposes its displayed slot.
+            // Checking that exact slot after paging proves the target occupies
+            // the shared CIN's absolute rank without an expensive nine-cell
+            // accessibility snapshot on every one of the 268 syllables.
+            let page = (entry.expectedRank - 1) / 9
+            let slot = (entry.expectedRank - 1) % 9 + 1
+            let candidate = app.buttons["第 \(slot) 個候選，\(entry.target)"]
+            if (output.value as? String) != nextExpected {
+                for _ in 0..<page {
+                    let nextPage = app.buttons["下一頁"]
+                    XCTAssertTrue(nextPage.waitForExistence(timeout: 3))
+                    XCTAssertTrue(nextPage.isEnabled, "第 \(index + 1) 字無法翻到基準順位")
+                    nextPage.tap()
+                }
+                if candidate.waitForExistence(timeout: 3) {
+                    candidate.tap()
+                } else {
+                    // A unique candidate can be submitted as soon as the
+                    // reading is complete, with no candidate strip to tap.
+                    XCTAssertEqual(entry.expectedRank, 1,
+                                   "第 \(index + 1) 字 \(entry.reading) → \(entry.target) 候選順位不同")
+                    XCTAssertEqual(output.value as? String, nextExpected,
+                                   "第 \(index + 1) 字沒有候選也沒有提交")
+                }
+            }
+            XCTAssertTrue(waitForLayout(timeout: 3) {
+                (output.value as? String) == nextExpected
+            }, "第 \(index + 1) 字提交後全文前綴不符")
+            observed.append("\(index + 1)\t\(entry.reading)\t\(entry.target)\t\(entry.expectedRank)")
+            expected = nextExpected
+
+            for mark in entry.punctuation {
+                switch mark {
+                case "，", "。":
+                    app.buttons[String(mark)].tap()
+                case "、", "；":
+                    app.buttons["SYMBOL"].tap()
+                    let slot = mark == "、" ? 3 : 7
+                    let symbol = app.buttons["第 \(slot) 個候選，\(mark)"]
+                    XCTAssertTrue(symbol.waitForExistence(timeout: 3))
+                    symbol.tap()
+                default:
+                    XCTFail("心經含未定義的標點：\(mark)")
+                }
+                expected.append(mark)
+                XCTAssertTrue(waitForLayout(timeout: 3) {
+                    (output.value as? String) == expected
+                }, "第 \(index + 1) 字後的標點 \(mark) 不符")
+            }
+        }
+        XCTAssertEqual(observed.count, 268)
+        XCTAssertEqual(expected, HeartSutraFixture.expectedText)
+        XCTAssertEqual(output.value as? String, HeartSutraFixture.expectedText)
+    }
+
     func testKeyboardExtensionModesAndComposition() throws {
         launchHostApp()
         XCTAssertTrue(revealField("default"))

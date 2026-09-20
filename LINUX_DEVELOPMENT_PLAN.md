@@ -1,18 +1,40 @@
 # Linux 原生版開發與交接計畫
 
+**2026-09-20 首版發布決定：** Linux 1.2.8 先以 Ubuntu Desktop 24.04 LTS、
+GNOME Shell 46、Fcitx 5、amd64 作為正式支援範圍，使用獨立
+`linux-v1.2.8` 標籤及三個 `.deb`。以下原訂九個 Ubuntu 版本、IBus、ARM64、
+更多 App 與實體多螢幕的完整矩陣改列後續相容性工作，不阻擋這一版。
+首版的實際證據、限制與安裝步驟以
+[Linux 1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)
+為準；下文保留原規劃與調查紀錄，舊的全 Ubuntu gate 不再是首版條件。
+
 狀態：開發中。已建立第一段 Linux-only 引擎、Fcitx 5 外掛、container scripts 與
 `linux-ci.yml`、五種 Windows 傳統注音鍵盤配置、候選鍵盤導覽、標點／符號候選切片、
 `Shift+Space` 全／半形、ASCII 全形對映、繁轉簡單字與注音 Big5-HKSCS 候選 filter 切片、
 L3 X11/GTK 3、GTK 4、Qt 6 各自適用的第一階段完整真實輸入矩陣與
 Ubuntu 22.04／24.04 開發用 Debian 套件；Ubuntu 24.04 的隔離 GNOME X11 session
 另已通過 76 個不重啟桌面 Fcitx 的 GTK 3／GTK 4／Qt 6 真實輸入案例。尚未完成
-XWayland／native Wayland、完整登入生命週期、完整視窗、IBus 或正式發布套件。
+完整 App／視窗／穩定性、IBus 或正式發布驗收。2026-09-20 的 GNOME Wayland
+KVM guest 已以 20 案 × 8 條 native Wayland／XWayland 的逐鍵與滑鼠矩陣通過
+160/160；真實 gedit 四條路徑通過，GNOME Text Editor 的直接 Fcitx
+Wayland／XWayland 通過，
+但另兩條 GTK Wayland IM 路徑無 active input context，仍須處理。後續
+T11 編輯欄位以 GNOME Shell crash 前 21/24、恢復 session 後 3/3 完成；
+T12 符號表真滑鼠八路徑 8/8 通過。T10 兩個同時存活 App 的直接 Fcitx
+六路徑 12/12 通過，GTK 預設 Wayland bridge 則共用單一 IBus context，
+未達跨 App 模式隔離；候選中關閉 client 與新 client 恢復八路徑 8/8、
+Fcitx 新 PID 後重跑 T01 八路徑亦 8/8。明確 GDM 登出登入後新 session
+的 T01／T06 真滑鼠各八路徑共 16/16 通過。另已將修補版 GNOME Shell 46
+候選面板製成獨立 GPL-2.0 `.deb`，在專用 VM 通過預覽安裝、正式升級、
+停用／啟用及系統套件的四角 32/32、雙螢幕 16/16 真滑鼠重驗；完整 App／
+視窗、跨版本與穩定性尚待驗收。加入符號表真滑鼠後的現行 21 案 × 八路徑
+矩陣已在該系統面板下完整重跑 168/168，且無設定還原錯誤。
 
 盤點日期：2026-09-12；原始碼基線：`13696ef`；產品版號來源：`README.md` 標題。
 
 Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下列實作與驗收後才可
 對外宣告已支援。目前四平台版號已同步至 1.2.8；Linux 已有開發中的 staged install
-與 `.deb`，但缺少完整功能、桌面矩陣與 release gate，仍不是可正式發布的套件。
+與 `.deb`，但缺少完整功能、桌面矩陣與 release gate，仍不可正式發布。
 
 接手順序：[AGENTS.md](AGENTS.md) → [BUILDING.md](BUILDING.md) → 本檔 →
 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。本計畫取代「Linux 只比照行動版注音」的範圍。
@@ -246,6 +268,34 @@ P0 必須驗證 F06／F07／F11：跟隨游標、四邊避讓、不搶焦點、�
 addon ID、client backend 與 panel provider，驗證登入後啟動、停用及重啟流程。
 若需 Shell extension／Kimpanel，P0 記錄必要性、版本與相容範圍，再依本節的 UI
 整合決議納入；不能把只在另一個桌面可用的 popup 當成 Ubuntu 主環境驗收。
+2026-09-20 的 Ubuntu 24.04.5 GNOME Shell 46 KVM guest 已加入雙 virtio 輸出與
+Mutter 100%／200% layout runner。未裝 Input Method Panel 時，GTK3／GTK4 native
+Wayland 的右緣候選被裁切、Qt6 候選壓住欄位；在 guest 安裝官方
+`kimpanel@kde.org` v83 後，1280×800 單螢幕的八路徑 × 四角真滑鼠矩陣
+32/32 通過，但 200% 第二螢幕的 GTK3／GTK4 direct Wayland
+在已聚焦視窗跨螢幕移動後仍可能把候選留在主螢幕；GTK3 額外移窗後
+曾讓候選覆蓋欄位。GTK3／GTK4 XWayland 也可能把候選留在主螢幕，
+或在額外移窗後留在舊 cursor rectangle。
+雙螢幕直接移窗的完整定位矩陣只通過 10/16，雖然 16/16 都提交正確文字；
+不能以輸入成功代替 popup 位置驗收。
+停用官方 extension、改由 Fcitx Classic UI 呈現後，同樣矩陣只有 6/16
+定位通過；混合 DPI 的 GTK3 direct Wayland 一案另以第二螢幕真滑鼠點選第二列
+「鐘」與清除通過。runner 已能指定 provider 並在副螢幕點選，
+正式整合決策與全部通過條件見
+`Source/Loaders/Linux-IME/docs/gnome-candidate-panel.md`。
+Kimpanel 事件紀錄顯示候選首次顯示仍使用移窗前的 scale=1 caret 矩形；
+scale=2 新矩形到達時 `ShowLookupTable` 已為 false。僅修改座標除法或
+window frame origin 不能修復這個時序，後者還曾讓候選蓋住欄位。
+後續以固定官方 v83 SHA 的 GPL-2.0 補丁，將 relative rect 換算改為
+目前 monitor `geometry_scale`／rect source scale；XWayland 絕對 rect
+則在同一焦點視窗內補上 frame origin 位移。乾淨補丁產物在 GNOME Shell 46
+guest 以兩種副螢幕縮放 × 八路徑的第二列真滑鼠選「鐘」、清除與英文負控制
+16/16 通過，單螢幕四角回歸 32/32 通過。補丁建立與授權見
+`Source/Loaders/Linux-IME/gnome-panel/`。後續已製成獨立 GPL-2.0 `.deb`，
+在專用 Ubuntu 24.04 GNOME Shell 46 VM 完成預覽安裝、正式升級、停用／啟用，
+並以系統套件重跑四角 32/32、雙螢幕 16/16 真滑鼠案例。Ubuntu 22.04、
+實體雙螢幕、橫式／theme／熱插拔仍未驗收，P0 亦尚未關閉；
+VM 混合 DPI 首次移窗定位不能代表實體螢幕與跨版本相容。
 若 GNOME 達不到 macOS 外觀功能，提出「受維護的 Shell 整合／
 經驗證的替代呈現」與成本，經確認後才實作額外整合或接受差異。
 不得默默用系統預設樣式取代需求，再宣稱完整 parity；也不能以 XWayland fallback
@@ -387,9 +437,18 @@ local amd64 container 已通過兩種 build、2/2 CTest、DESTDIR、含空白的
 重新 configure、卸載保留 sentinel、同一 commit 的 2.0 MB source tarball 在無 `.git`
 與無 cache 的解壓目錄重建，以及預設 `/usr/local` 真安裝、設定明示 session 搜尋路徑
 後的 Fcitx 5 → GTK 3 X11 注音逐鍵輸入與 manifest 卸載。Ubuntu 22.04 與 24.04 hosted
-CI 仍待執行；`/usr`／
+CI 已在 run `34742072894` 通過基本 source gate；`/usr`／
 任意自訂 prefix 的實際打字、升級／重裝及其餘 active Ubuntu 尚未完成，所以
 T14-SOURCE 與 P4／P5 不標成全部通過。
+
+2026-09-20 Ubuntu 24.04 local amd64 再完成三種原始碼真安裝：`/usr/local`、
+`/usr`、含空白路徑與自訂 libdir／datadir 的 prefix。每組核對 Fcitx 5 實際載入
+的 addon 路徑，並以 GTK3／GTK4／Qt6 通過 82 個非設定視窗 X11 真打字案例後依
+manifest 卸載；自訂 prefix 的無關 sentinel 在移除後仍在，重裝後三套 toolkit
+的 T01 亦通過。`/usr`／自訂 prefix 在乾淨的一次性 container 跑，因長駐
+dev container 先前的 staged gate 已留下 `/usr` KeyKey 檔案，覆寫保護會拒絕
+混用。跨版本 source 升級、22.04 對等系統安裝、其他 active Ubuntu 與
+GNOME／Wayland 仍未完成。
 
 ## 6. GitHub Actions 設計
 
@@ -450,6 +509,37 @@ GitHub 提供版本化的 Linux x64／ARM64 runner labels，但不把 `ubuntu-la
 - 優先 QEMU 完整 guest：systemd + session D-Bus + 真 GNOME Shell／KWin +
   distro 原生框架，以軟體繪圖與虛擬鍵盤執行。探測 `/dev/kvm` 可用性，不假設
   每種 host／架構都有 nested virtualization。TCG 備援也要量測成本與 timeout。
+- 2026-09-20 本機 WSL2 Ubuntu 24.04 已在正常使用者行程確認 KVM API 12，
+  QEMU 8.2.2／OVMF 可啟動官方 Ubuntu 24.04.5 cloud image。完整 GDM
+  自動登入的 GNOME Shell 46 session 為 active Wayland，Fcitx 5.1.7 maps
+  確認載入系統安裝的 KeyKey addon、Wayland 與 IBus frontend；QMP 真實鍵盤
+  注入在 GTK3、GTK4、Qt6 原生 Wayland 各完成 T01，GTK3／GTK4 另在未設
+  `GTK_IM_MODULE` 下通過，同樣包含 preedit／「中」／英文負控制，合計 5/5。
+  後續擴成 20 案 × 八條 toolkit/backend 路徑，完整一次執行 160/160 通過，
+  加入五布局、候選直／橫鍵盤導覽、第二列真滑鼠點擊與畫面清除、關聯詞、
+  全形／簡體、快捷鍵與符號表；
+  各案都有 `keyboard-us` literal 負控制。真實 gedit 四條路徑及 GNOME Text
+  Editor 直接 Fcitx Wayland／XWayland 路徑通過；Text Editor 在未設
+  `GTK_IM_MODULE` 及明設 `wayland` 時均沒有 active input context，不能以
+  synthetic GTK4 host 的 bridge 成功取代真 App 結論。GDM display-manager
+  restart 後新 session 的 T01／T06 滑鼠 16/16 通過。
+  同 guest 的 T10 兩欄焦點正負控制 16/16 通過；六條直接 Fcitx 路徑
+  失焦會提交原始「ㄓㄨㄥ」，兩條 GTK 原生未設 `GTK_IM_MODULE` 路徑則清除
+  preedit。這是觀測到的平台路徑差異，不能寫成 Windows focus-out parity
+  已完成。後續兩個同時存活 App 的直接 Fcitx 六路徑 12/12 通過，
+  GTK 預設 Wayland bridge 兩條路徑則共用 IBus input context，正向隔離
+  0/2；client 關閉與 Fcitx 新 PID 恢復各八路徑 8/8。明確登出登入後
+  T01／T06 16/16；T11 指標替換／密碼／唯讀與 T12 符號真滑鼠亦已實跑。
+  Firefox Snap native Wayland 兩路徑與 Epiphany native Wayland／XWayland
+  三路徑，跨多行、單行與 `contenteditable` 真正 DOM 欄位 15/15 通過。
+  Firefox Snap XWayland 在此 VM
+  無法開啟 display，仍屬缺口。
+  最小桌面套件選錯 Netplan renderer 的 guest 重啟故障已修正；VM 停止後
+  重新啟動，SSH、Wayland login、Fcitx addon 與五案再次恢復／全過。
+  重建流程見 `Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md`。受限行程的
+  `nodev` `/dev` 與 QMP socket 權限不能用來判定一般 WSL host 能力；
+  popup 邊界／多螢幕、完整 focus／多 App 矩陣、其他瀏覽器操作與
+  hosted runner 仍待驗證。
 - Nested compositor 可先加速開發，但只有證明相同 protocol／panel／focus 路徑時，
   才能取代相應項目；Weston headless 不能代替 GNOME 或 Plasma 驗收。
 - 若 hosted runners 無法可靠完成正式矩陣，記錄具體失敗及嘗試過的方案，向使用者

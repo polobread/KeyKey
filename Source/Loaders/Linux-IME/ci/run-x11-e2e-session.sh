@@ -482,6 +482,15 @@ else
   } >"$KEYKEY_E2E_ARTIFACT_DIR/environment.txt"
 fi
 
+if [[ -n "${KEYKEY_E2E_EXPECTED_ADDON_PATH:-}" ]]; then
+  if ! grep -Fq -- "$KEYKEY_E2E_EXPECTED_ADDON_PATH" "/proc/$fcitx_pid/maps"; then
+    echo "Fcitx loaded an addon from a different install prefix." >&2
+    exit 1
+  fi
+  printf '%s\n' "$KEYKEY_E2E_EXPECTED_ADDON_PATH" \
+    >"$KEYKEY_E2E_ARTIFACT_DIR/loaded-addon-path.txt"
+fi
+
 bopomofo_layout=Standard
 candidate_window_style=Vertical
 traditional_to_simplified=False

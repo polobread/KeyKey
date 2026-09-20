@@ -21,6 +21,7 @@
 
 #include <sstream>
 #include <set>
+#include <memory>
 
 #import "LFUtilities.h"
 
@@ -670,7 +671,11 @@ using namespace OpenVanilla;
         return result;
     }
         
-    OVSQLiteStatement* select = _userPhraseDB->prepare("SELECT * FROM user_unigrams WHERE rowid = %d", row + 1);
+    std::unique_ptr<OVSQLiteStatement> select(
+        _userPhraseDB->prepare("SELECT * FROM user_unigrams WHERE rowid = %d", row + 1));
+    if (!select) {
+        return result;
+    }
     while (select->step() == SQLITE_ROW) {
         // string qstring = select->textOfColumn(0);
         // string current = select->textOfColumn(1);
@@ -1110,5 +1115,4 @@ using namespace OpenVanilla;
 }
 
 @end
-
 

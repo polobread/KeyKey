@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 220" role="img" aria-labelledby="title desc">
+  <title id="title">Android 琦琦注音啟用流程示意圖</title>
+  <desc id="desc">依序打開琦琦注音 App，啟用輸入法，選擇琦琦注音，最後在文字欄位試打。</desc>
+  <rect width="960" height="220" rx="20" fill="#f5f7fb"/>
+  <text x="480" y="38" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#1f2a44">安裝後，依照 App 首頁的按鈕完成設定</text>
+  <g font-family="sans-serif" font-size="19" text-anchor="middle">
+    <rect x="24" y="76" width="200" height="104" rx="15" fill="#e7eefb" stroke="#9bb5d8"/>
+    <text x="124" y="119" fill="#1f2a44">開啟琦琦注音</text>
+    <text x="124" y="149" fill="#52617b" font-size="16">App 首頁</text>
+    <rect x="260" y="76" width="200" height="104" rx="15" fill="#e7eefb" stroke="#9bb5d8"/>
+    <text x="360" y="119" fill="#1f2a44">1. 啟用輸入法</text>
+    <text x="360" y="149" fill="#52617b" font-size="16">在系統設定中開啟</text>
+    <rect x="496" y="76" width="200" height="104" rx="15" fill="#e7eefb" stroke="#9bb5d8"/>
+    <text x="596" y="119" fill="#1f2a44">2. 選擇琦琦注音</text>
+    <text x="596" y="149" fill="#52617b" font-size="16">從輸入法清單選取</text>
+    <rect x="732" y="76" width="204" height="104" rx="15" fill="#e5f4ea" stroke="#93c9a0"/>
+    <text x="834" y="119" fill="#1f2a44">到記事本試打</text>
+    <text x="834" y="149" fill="#52617b" font-size="16">點文字欄位叫出鍵盤</text>
+  </g>
+  <g fill="#5575a6">
+    <path d="M230 123h10v-7l14 12-14 12v-7h-10z"/>
+    <path d="M466 123h10v-7l14 12-14 12v-7h-10z"/>
+    <path d="M702 123h10v-7l14 12-14 12v-7h-10z"/>
+  </g>
+  <text x="480" y="205" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#68758d">操作示意圖；實際系統畫面會因 Android 版本與手機品牌而異</text>
+</svg>

@@ -27,8 +27,8 @@ changes.
 
 `build.sh` takes the app path as its first argument and defaults to
 `../Source/build/Release/chichi77 KeyKey.app`. The app is staged in a temporary
-root, so nothing is written into the working tree and pkgbuild assigns
-root:wheel itself.
+root. Nested code and the app are re-signed ad hoc for local builds after
+framework headers are removed. `pkgbuild` assigns root:wheel itself.
 
 It writes two files: `chichi77KeyKey.pkg` to install, and `chichi77KeyKey.pkg.zip`
 to attach to a release.
@@ -83,6 +83,9 @@ framework targets sign their own output while those headers are still in place,
 and the app's Copy Files phase then strips them, leaving the seal listing files
 that are gone. `codesign --verify --deep --strict` fails on that and the notary
 service rejects it. Headers are of no use at runtime.
+
+Local packages re-sign the staged app ad hoc and verify its seal. They remain
+unsigned at the installer level and are not notarized.
 
 ## Signing in GitHub Actions
 

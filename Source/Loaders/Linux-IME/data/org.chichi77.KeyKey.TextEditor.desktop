@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Text Editor (琦琦注音)
+Name[zh_TW]=文字編輯器（琦琦注音）
+Comment=Open a separate text editor window with 琦琦注音
+Exec=keykey-fcitx-app gnome-text-editor --standalone --ignore-session --new-window %F
+TryExec=gnome-text-editor
+Icon=org.gnome.TextEditor
+Terminal=false
+Categories=Utility;TextEditor;
+StartupNotify=true

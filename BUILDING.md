@@ -2,16 +2,27 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 是 1.2.8 起的原生支援目標，目前已有可建置的 Linux-only 引擎與 Fcitx 5
+Linux 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
+[Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。下一版規劃與其他平台共用 `v1.2.9`
+Release；目前標籤與新套件尚未發布。先前 Linux 版本的發布紀錄保留在
+[1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
+其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
+目前已有可建置的 Linux-only 引擎與 Fcitx 5
 外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
 並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
-但尚未完成 XWayland／native Wayland、完整登入與視窗驗收或正式套件。開發／套件規格見
+另在完整 Ubuntu 24.04 GNOME Wayland KVM guest 通過涵蓋 native Wayland／XWayland
+的舊版 160/160 組逐鍵／滑鼠矩陣；加入符號表真滑鼠後，系統安裝的候選
+面板下完整 168/168 組通過。真實 gedit 四條輸入路徑與 GNOME Text Editor 的直接 Fcitx
+Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有缺口。
+雙欄焦點正負控制 16/16 通過並量到失焦語意依輸入路徑而異。
+更廣的視窗／App 相容性與實體雙螢幕仍待驗收。GNOME Shell 46 的獨立候選
+面板套件已在 Ubuntu 24.04 VM 測過安裝、升級、停用與再啟用。開發／套件規格見
 [LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
 驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
 
 [English](#english)
 
-## Linux（開發中）
+## Linux 原始碼建置
 
 傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler、`pkg-config`、
 Fcitx 5 Core 與 libcanberra 開發檔；
@@ -61,6 +72,7 @@ userspace。日常修改優先使用一個長駐的 native-architecture 開發 c
 Source/Loaders/Linux-IME/ci/dev.sh up
 Source/Loaders/Linux-IME/ci/dev.sh test
 Source/Loaders/Linux-IME/ci/dev.sh source
+Source/Loaders/Linux-IME/ci/dev.sh source-e2e
 Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
 Source/Loaders/Linux-IME/ci/dev.sh verify
 Source/Loaders/Linux-IME/ci/dev.sh package
@@ -71,6 +83,11 @@ incremental build／stage 放在 Docker named volumes；`down` 只移除 contain
 編譯快取。`e2e` 可指定一個 case、逗號分隔的 cases 或 `all`。這條快速路徑產生的
 ARM64 package 是開發 preview，不能取代 x86_64 release gate；`package` 也不取代乾淨
 runtime container 的安裝／升級／移除驗證。
+`source-e2e` 使用乾淨的一次性 container，分別驗證 `/usr/local`、`/usr` 與自訂
+prefix 的原始碼安裝、GTK3／GTK4／Qt6 X11 真實打字及解除安裝；自訂 prefix 另驗證
+無關檔案保留與重裝。
+Ubuntu 24.04 GNOME Wayland 的本機 KVM guest 建立、`.deb` 安裝、逐鍵／滑鼠矩陣與
+真實 App 驗證見 [VM 手冊](Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md)。
 
 Windows 11 可從 WSL2 Ubuntu 使用同一組指令。Repository 必須放在 WSL 的 Linux
 filesystem（例如 `/home/.../KeyKey`），不要放在 `/mnt/c` 或會自動轉 CRLF 的 Windows
@@ -106,7 +123,15 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
-這些仍是開發產物，不能在完整 release gates 完成前當成正式 Linux 版發布。
+正式 Ubuntu 24.04 amd64 套件與對應的限定支援範圍列在 Linux 1.2.8
+發布說明；本節指令產生的本機套件仍是開發產物。
+
+Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
+`gnome-shell-extension-keykey-kimpanel` `.deb`，只支援 GNOME Shell 46，供
+GNOME Wayland 候選面板使用。安裝、啟用、停用和同 UUID 的 user-local
+extension 處理方式見 [面板說明](Source/Loaders/Linux-IME/gnome-panel/README.md)。
+`fcitx5-chichi77-keykey` 另安裝「文字編輯器（琦琦注音）」啟動器與
+`keykey-fcitx-app`；這兩者只為個別啟動的 GTK App 選用直接 Fcitx 輸入路徑。
 
 ## macOS
 
@@ -209,7 +234,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -X86BuildDirectory .\out\build\x86
 ```
 
-會產生 `out\package\chichi77-KeyKey-1.2.8-windows-x64.zip`。在另一台 x64 Windows
+會產生 `out\package\chichi77-KeyKey-1.2.9-windows-x64.zip`。在另一台 x64 Windows
 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
@@ -249,7 +274,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
-`out\store-package\chichi77-KeyKey-1.2.8-windows-x64-setup.exe`。完整參數、`/S`
+`out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
 互動式完成頁可選擇開啟琦琦設定或 Windows 語言設定；只有舊檔被占用而必須延後清除
 時才會顯示重新啟動選項，且預設為稍後重新啟動。
@@ -317,10 +342,12 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
 Actions 頁面按 **Run workflow** 手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag
-（例如 `v1.2.8`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
+（例如 `v1.2.9`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
 `release_tag` 輸入，留空時只保留測試 artifact。一般 commit、pull request 與不符合版號的
 tag 不會發布 Release。`Linux CI` 保留 pull request 與手動執行，並由 `v*` tag 觸發完整
-gate；`master` push 不觸發。Linux tag run 只保留開發用套件 artifact，不發布到 Release。
+gate；`master` push 不觸發。tag run 在 Ubuntu 24.04 套件建置、安裝生命週期與 X11
+輸入測試成功後，核對版號及 `SHA256SUMS`，把三個 `.deb`、GNOME 面板原始碼和校驗檔
+加入同一個 Release；手動 run 仍只保留 artifact。
 建置完成後，以下檔案會以 Actions artifact 保留 7 天：
 
 | Workflow | 產物 | 限制 |
@@ -330,9 +357,9 @@ gate；`master` push 不觸發。Linux tag run 只保留開發用套件 artifact
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 手動執行並上傳到 Google Play internal testing，後續在 Play Console 推廣到封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
-| Linux CI | Ubuntu 22.04／24.04 開發用 `.deb` | PR 跑 smoke；`v*` tag 與手動 run 跑完整 gate，不加入 Release |
+| Linux CI | Ubuntu 22.04／24.04 `.deb`；Ubuntu 24.04 另有面板原始碼與 `SHA256SUMS` | PR 跑 smoke；tag 完整測試通過後只將 Ubuntu 24.04 的五個檔案加入 Release；手動 run 和 Ubuntu 22.04 套件只保留 artifact |
 
-artifact 另附同名 `.sha256`。發布 run 會把產物與 checksum 上傳到既有 Release；若 Release
+桌面版 artifact 另附同名 `.sha256`；Linux 使用涵蓋四個檔案的 `SHA256SUMS`。發布 run 會把產物與 checksum 上傳到既有 Release；若 Release
 尚不存在才建立。workflow 不會建立 tag，也不會覆寫同名資產。
 
 macOS workflow 拆成兩個 job。`build` 永遠會跑、拿不到任何 secret，產出未簽章 pkg；
@@ -365,8 +392,24 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 Native Linux development starts with version 1.2.8. A buildable Linux-only
 engine and Fcitx 5 addon exist. The GTK 3, GTK 4, and Qt 6 X11 matrix is
 implemented, and 76 cases that do not restart the desktop Fcitx process pass
-in an isolated Ubuntu 24.04 GNOME X11 session. XWayland, native Wayland, full
-login/window acceptance, and release packages are not complete. See the
+in an isolated Ubuntu 24.04 GNOME X11 session. A GNOME Wayland KVM guest also
+passes 160/160 native Wayland/XWayland key and pointer combinations. Real gedit
+passes four input paths; GNOME Text Editor passes the direct Fcitx Wayland and
+XWayland paths, with two GTK Wayland IM paths still failing. Full login/window
+acceptance and release packages are not complete. The guest also passes 16/16
+two-field focus phases, with a recorded raw-preedit blur difference between
+direct Fcitx and default GTK Wayland paths. Separate editing-field evidence
+passed 21 cases before a GNOME Shell crash and the remaining three after
+session recovery; symbol-list pointer selection passed all eight modes.
+Two live applications preserve independent modes in six direct Fcitx paths
+(12/12), while the two default GTK Wayland bridge paths share one IBus input
+context and fail mode isolation. All eight modes passed candidate-client
+closure and immediate new-client recovery; all eight also passed after a
+fresh Fcitx process was started. An explicit GDM logout/login followed by
+T01 and pointer T06 also passed 16/16. Firefox Snap and Epiphany passed 15
+real browser field/mode cases across native Wayland and XWayland, covering
+`<textarea>`, `<input>` and `contenteditable` with DOM input checks and
+literal controls. See the
 [development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
 
 ### Linux (in development)
@@ -562,7 +605,7 @@ After building and testing, run from `Source\Loaders\Windows-TSF`:
   -X86BuildDirectory .\out\build\x86
 ```
 
-This creates `out\package\chichi77-KeyKey-1.2.8-windows-x64.zip`. On the other
+This creates `out\package\chichi77-KeyKey-1.2.9-windows-x64.zip`. On the other
 x64 Windows 11 PC, extract the complete ZIP, copy the entire extracted folder
 to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
@@ -597,7 +640,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 The script signs and verifies the three PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
-`out\store-package\chichi77-KeyKey-1.2.8-windows-x64-setup.exe`. See the Windows
+`out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
 The interactive finish page can open KeyKey settings or Windows Language &
@@ -663,13 +706,15 @@ shares the completed text. See the
 The Android debug packaging, Google Play release, and iOS Simulator workflows
 run only after **Run workflow** is selected on the GitHub Actions page. The
 macOS and Windows workflows publish to a Release when a tag that exactly
-matches the repository version, such as `v1.2.8`, is pushed. Both can also be
+matches the repository version, such as `v1.2.9`, is pushed. Both can also be
 run manually; the Windows workflow additionally takes a `release_tag` input,
 and leaving it blank produces a test artifact only. Commits, pull requests, and
 mismatched tags do not publish a Release. `Linux CI` keeps its pull-request and
 manual triggers, runs its full gate on `v*` tags, and does not run on `master`
-pushes. Linux tag runs retain development package artifacts without publishing
-them to the Release. Successful runs retain these Actions artifacts for seven days:
+pushes. A tag run adds the three Ubuntu 24.04 `.deb` files, the GNOME panel
+source archive, and `SHA256SUMS` to the Release after the package and X11 typing
+checks pass. Manual runs keep artifacts without publishing. Successful runs
+retain these Actions artifacts for seven days:
 
 | Workflow | Output | Limitation |
 |---|---|---|
@@ -678,9 +723,10 @@ them to the Release. Successful runs retain these Actions artifacts for seven da
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Android Play Release | No public artifact; uploads the signed AAB directly | Manually uploads to Google Play internal testing; promotion to closed testing is managed in Play Console |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
-| Linux CI | Development `.deb` packages for Ubuntu 22.04 and 24.04 | PR smoke; full gate on `v*` tags and manual runs; not added to the Release |
+| Linux CI | Ubuntu 22.04 and 24.04 `.deb` packages; Ubuntu 24.04 panel source and `SHA256SUMS` | PR smoke; on a tag, adds the five verified Ubuntu 24.04 assets to the Release; manual runs and Ubuntu 22.04 packages remain Actions artifacts |
 
-Each output has a matching `.sha256` file. A publishing run uploads its output
+Desktop outputs have matching `.sha256` files; Linux uses `SHA256SUMS` for its
+four downloadable files. A publishing run uploads its output
 and checksum to an existing Release, or creates the Release if it does not
 exist. It never creates a tag or overwrites an existing asset.
 

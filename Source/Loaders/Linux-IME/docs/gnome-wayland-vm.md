@@ -1,0 +1,402 @@
+# Ubuntu 24.04 GNOME Wayland VM
+
+This local guest tests the installed Fcitx 5 addon in a complete GNOME login
+session. It is separate from WSLg and from the Xvfb container gates. Run the
+commands from the repository root in a normal WSL2 Ubuntu shell, with the
+checkout on the WSL Linux filesystem.
+
+## Prepare and start
+
+Install the host tools and confirm that the current user can access KVM:
+
+```sh
+sudo apt-get install qemu-system-x86 qemu-utils ovmf cloud-image-utils curl
+Source/Loaders/Linux-IME/tools/check-wsl-vm-host.sh
+Source/Loaders/Linux-IME/tools/gnome-vm.sh prepare
+Source/Loaders/Linux-IME/tools/gnome-vm.sh start
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh cloud-init status --wait
+```
+
+`prepare` downloads the official Ubuntu Noble amd64 cloud image and checks it
+against Ubuntu's `SHA256SUMS`, then creates a 40 GB copy-on-write guest disk,
+NoCloud seed, SSH key and OVMF variable file under the ignored
+`Source/Loaders/Linux-IME/out/gnome-vm/`. The image download is about 600 MB;
+GNOME packages require further network and disk space. The guest uses 4 vCPUs,
+6 GB RAM and KVM. SSH is forwarded only to `127.0.0.1:2222`; QEMU VNC is
+bound only to `127.0.0.1:5902`. The VM SSH key has access to a passwordless
+sudo account inside this disposable guest. Keep the private key and guest disk
+in ignored `out/` and do not publish them.
+
+## Install the tested package and desktop
+
+First build the Ubuntu 24.04 release candidate package and three toolkit test
+hosts with the existing package gate:
+
+```sh
+Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
+Source/Loaders/Linux-IME/tools/gnome-vm.sh provision
+```
+
+`provision` copies the resulting two `.deb` files, the GTK 3/GTK 4/Qt 6 test
+hosts and the test Fcitx profile into the guest. It installs Ubuntu's minimal
+GNOME desktop, GDM, Fcitx 5, toolkit frontends and Qt Wayland plugin; enables
+automatic login for the guest user; configures Fcitx autostart and restarts
+GDM. The host binaries are installed under the guest user's
+`~/.local/libexec/keykey-e2e/`, so smoke tests still work after a VM reboot.
+The provision script now expects development packages named
+`1.2.9-1+ubuntu24.04`; the existing VM results and published packages are
+from 1.2.8. Build new packages and verify their versions and hashes before
+provisioning. Provisioning is repeatable but interrupts any active
+guest desktop session. It also fixes the guest's Netplan renderer to the
+installed `systemd-networkd`: the minimal GNOME package set otherwise selects
+NetworkManager without installing its service, leaving `enp0s2` DOWN after
+the next VM boot and delaying `systemd-networkd-wait-online` by two minutes.
+
+Check the session and addon before testing:
+
+```sh
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh loginctl list-sessions
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh pgrep -a fcitx5
+Source/Loaders/Linux-IME/tools/gnome-vm.sh status
+```
+
+## GNOME typing matrix
+
+```sh
+Source/Loaders/Linux-IME/tools/gnome-vm-wayland-smoke.py
+Source/Loaders/Linux-IME/tools/gnome-vm-wayland-smoke.py --case T06-navigation --mode gtk3-xwayland
+Source/Loaders/Linux-IME/tools/gnome-vm-real-app-smoke.py --mode wayland --mode xwayland
+Source/Loaders/Linux-IME/tools/gnome-vm-real-app-smoke.py
+Source/Loaders/Linux-IME/tools/gnome-vm-focus-smoke.py
+Source/Loaders/Linux-IME/tools/gnome-vm-editing-smoke.py --phase positive --phase negative --phase extended
+Source/Loaders/Linux-IME/tools/gnome-vm-multi-app-smoke.py
+Source/Loaders/Linux-IME/tools/gnome-vm-wayland-smoke.py --case T12-symbol-mouse
+Source/Loaders/Linux-IME/tools/gnome-vm-recovery-smoke.py
+Source/Loaders/Linux-IME/tools/gnome-vm-browser-smoke.py
+```
+
+The browser runner additionally needs Firefox Snap and Epiphany in the guest.
+The base desktop may already have Firefox; install only the missing browser:
+
+```sh
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh 'snap list firefox || sudo snap install firefox'
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh 'sudo apt-get install -y epiphany-browser'
+```
+
+The runner requires an active Wayland login, the installed
+`chichi77-keykey.so`, Fcitx Wayland and IBus frontends, and the three guest
+test hosts. It forces native Wayland or XWayland backends for GTK 3/4 and Qt 6,
+then sends actual VM keyboard events through QMP. GTK 3/4 also run with
+`GTK_IM_MODULE` unset on native Wayland to exercise GNOME's default input
+path. Every case checks required preedit states and exact application text,
+switches to `keyboard-us`, and checks the literal negative control. Cases
+include T01 standard/continuous/invalid typing, T02's five Bopomofo layouts,
+T03 editing/cancel, T06 vertical and horizontal keyboard navigation plus a
+real pointer click on candidate two, T07 associated phrases, T08 full-width,
+simplified output and mode switching, T09 shortcut pass-through, and T12 symbol
+selection. The current matrix is 21 cases across eight toolkit/backend modes,
+or 168 combinations, including the symbol-table pointer case. `--case` and
+`--mode` can be repeated to narrow a diagnostic run. An earlier complete
+2026-09-20 guest run passed 160/160. After adding the symbol-table pointer
+case and correcting popup detection over a light background, the packaged
+panel run passed 168/168 and restored guest settings without errors. Its
+report confirms system package ownership of the active extension. The pointer
+case takes QMP screenshots
+before, during and after the candidate popup; it checks that the selected text
+is `鐘` and that the
+popup region clears within roughly half a second. These are sampled display
+pixels in the VM, not a full geometry, theme or multi-monitor sweep.
+The runner records the installed package and addon hash, individual results,
+and any failure in ignored `out/gnome-vm/gnome-typing-last.json`; event traces
+and final text remain under `/tmp/keykey-gnome-e2e/` inside the guest. A
+passing run is functional evidence for these key sequences. It does not
+establish browser or sandbox behavior, full T01–T12 coverage, all popup
+positions/styles, or release readiness.
+
+## Candidate popup edges and two displays
+
+The VM launcher now exposes two virtio display outputs. Restart an older VM
+process after updating the launcher; the second connector remains disconnected
+until enabled inside the disposable guest. The connector number in this guest
+is `card1-Virtual-2`; inspect `/sys/class/drm/card*-Virtual-2/status` if it
+differs on another QEMU version:
+
+```sh
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh 'sudo sh -c "echo on > /sys/class/drm/card1-Virtual-2/status"'
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh 'sudo systemctl restart gdm3'
+Source/Loaders/Linux-IME/tools/gnome-vm-popup-smoke.py --mouse
+Source/Loaders/Linux-IME/tools/gnome-vm-multimonitor-smoke.py
+```
+
+The guest-only `gnome-vm-displays.py` helper uses Mutter DisplayConfig to
+apply temporary layouts. `dual` puts a 1024×768 display at 100% to the right
+of the 1280×800 primary; `dual-mixed` uses 1920×1080 at 200% on the right.
+The runner restores the starting layout and Fcitx settings after a failure as
+well as after success. QMP captures both physical heads separately. The
+single-monitor runner moves a real GTK 3/4 or Qt 6 window to every corner in
+eight native Wayland, GNOME bridge and XWayland modes. It checks all nine
+candidate rows fit on screen, avoid the focused field, and stay near the
+caret; a VM pointer clicks row two to commit `鐘`, then checks the popup clears
+and `keyboard-us` yields the literal `5j/ 1`. The monitor runner moves the
+live window to display two and checks the popup's head, screen bounds, caret
+position, actual `中` commit and literal control. Evidence and screenshots are
+in ignored `out/gnome-vm/gnome-popup-last.json` and
+`gnome-multimonitor-last.json`.
+
+The dedicated guest currently has the official GNOME Shell
+[Input Method Panel](https://extensions.gnome.org/extension/261/kimpanel/)
+(`kimpanel@kde.org`) extension version 83 installed for Shell 46. Its
+upstream download has `version_tag=57768` and SHA-256
+`b8d83c1bc6e903a280dc0492b9b4e3be4b2713ab96c669d1ae90e625eacf675f`.
+The guest now runs the minimal GPL-2.0 patch built from that pinned source by
+`../gnome-panel/build-patched-extension.py`. It is delivered in the separate
+`gnome-shell-extension-keykey-kimpanel` `.deb`; the Fcitx addon package does
+not own GNOME Shell files. Verify `gnome-extensions info kimpanel@kde.org`
+reports `/usr/share/gnome-shell/extensions/kimpanel@kde.org` as its Path, so
+an older user-local copy cannot shadow the package.
+Confirm `gnome-extensions info kimpanel@kde.org` says `ACTIVE` and the session
+bus owns `org.kde.impanel` before comparing panel positions. Without this
+extension, this guest showed GTK 3/4 native Wayland clipping at the right edge
+and Qt 6 candidate overlap; with it, the complete 1280×800 four-corner run
+passed 32/32, including mouse commit and clearance. The fixed resolution and
+one vertical style do not cover horizontal candidates, other themes, hotplug,
+physical GPUs or multiple real monitors.
+
+The 2026-09-20 direct window-to-display-two run passed candidate positioning
+in 10/16 mode/layout combinations: six of eight at 100% and four of eight
+with the second display at 200%. All 16 still committed `中` in the moved
+window and passed the `keyboard-us` literal control. GTK 3/4 XWayland in both
+layouts left the popup on display one; GTK 3/4 direct Wayland also left it
+there at 200%. An additional GNOME move operation sometimes moved the popup
+to display two, but GTK 3/4 XWayland could still use an old caret rectangle,
+and GTK 3 direct Wayland at 200% once placed it over the input field. That
+extra move could place a window at the bottom rather than the intended upper
+test area, so the repeatable gate uses only GNOME's move-to-right-display
+shortcut and checks the resulting window bounds. The six failures were open
+in this unmodified baseline; a correct text commit alone is insufficient for popup
+placement. The guest layout and KeyKey settings were restored after the run.
+
+The same 16 cases were repeated with the official extension disabled.
+Fcitx Classic UI placed only 6/16 popups correctly, although all cases still
+committed text. GTK3 direct Wayland on the 200% display passed a new
+second-head pointer check: clicking candidate row two committed `鐘`, then
+the popup cleared. The monitor runner now records whether the active provider
+is Kimpanel or Classic UI, can require it with `--panel kimpanel` or
+`--panel classic-ui`, and supports `--mouse` to click on the second display
+through QMP. The popup runner has the same `--panel` guard. Run
+`gnome-vm-multimonitor-smoke.py --panel kimpanel --mouse` as the complete
+visual gate with the patched extension. The formal
+integration decision and release gates are in
+[GNOME candidate panel](gnome-candidate-panel.md).
+
+Instrumenting Kimpanel v83's event sequence narrowed one mixed DPI failure:
+after a focused GTK3 Wayland window moved to the 200% display, the first
+candidate display used the previous `(35,61,0,98,scale=1)` cursor rectangle.
+The new `(100,122,0,196,scale=2)` rectangle reached Kimpanel only after
+`ShowLookupTable` had become false. A frame-origin conversion moved the popup
+to display two but overlapped the entry; rescaling the late rectangle moved
+an already hidden actor. The experiments were confined to the disposable
+guest. The original files were restored before producing the clean patch.
+
+The patched v83 integration uses the current monitor's `geometry_scale`
+divided by the relative rectangle's source scale, so a cached 100% rectangle
+follows a focused window moved to a 200% screen before the next frontend
+update. For XWayland's absolute rectangles it stores the focused window and
+frame origin when the rectangle arrives, then translates the rectangle by
+subsequent movement of that same window. The builder verifies the official
+`extension.js` and `panel.js` SHA-256 hashes, writes a separate patched tree,
+and contains no diagnostic logging. With that exact tree installed in the
+guest, the complete `gnome-vm-multimonitor-smoke.py --panel kimpanel --mouse`
+matrix passed 16/16: all eight toolkit/frontend paths on both 100% and 200%
+second displays placed nine rows near the moved client, clicked row two to
+commit `鐘`, cleared, and passed `keyboard-us` literal control. The
+single-display `gnome-vm-popup-smoke.py --panel kimpanel --mouse` four-corner
+regression also passed 32/32. Reports and both-head screenshots are in
+ignored `out/gnome-vm/gnome-multimonitor-last.json` and `gnome-popup-last.json`.
+Physical monitors, Ubuntu 22.04, hotplug and other App
+scenarios remain release gates.
+
+The separate Ubuntu 24.04 package has since passed preview installation,
+upgrade to `83+keykey1-1+ubuntu24.04`, `dpkg --verify`, disable and re-enable
+in the guest. The Kimpanel bus owner changed from true to false and back;
+the packaged extension was ACTIVE and passed the same 32/32 four-corner and
+16/16 two-display pointer matrices. The reproducible package builder and
+user commands are in [gnome-panel](../gnome-panel/README.md). The popup
+runner now checks that Virtual-1 is the sole 1280×800 primary display before
+testing; a leftover 300% Virtual-2 primary otherwise makes its QMP first-head
+screenshot show only desktop background. In the full typing runner, a Files
+window behind a white candidate popup can leave only the text strokes visible
+in screenshot differences. The popup detector now joins those rows across
+short gaps; GTK3 direct Wayland T06 mouse again selected `鐘` in that scene.
+
+For one failing GTK 3 direct Wayland case on the 200% display, a filtered
+session bus trace shows the GTK frontend calling Fcitx
+`SetCursorRectV2(100,122,0,196,2)` after the move, following an earlier
+`(35,61,0,98,1)` call on display one. Fcitx then calls the Shell extension's
+`SetRelativeSpotRectV2` with the same updated values; nevertheless the popup
+appears against the primary display's right edge. The guest traces are
+`/tmp/keykey-cursor-monitor.log` and `/tmp/keykey-panel-monitor.log`, and
+the two-head screenshots are in the runner report. KeyKey's Fcitx adapter
+updates preedit and the input panel but does not calculate or set the cursor
+rectangle. The later event-order trace and patched VM matrix above establish
+the candidate display's use of a stale rectangle at the time of first render.
+
+The second runner opens real gedit and GNOME Text Editor documents in four
+paths each: direct Fcitx native Wayland, native Wayland with `GTK_IM_MODULE`
+unset, explicit GTK Wayland IM, and XWayland. It sends the same physical VM
+keys and reads the document through AT-SPI, including a `keyboard-us` literal
+negative control. It writes an ignored `out/gnome-vm/gnome-real-app-last.json`
+report even when a case fails and restores the original desktop settings.
+On 2026-09-20 gedit passed all four paths. GNOME Text Editor passed direct
+Fcitx Wayland and XWayland but failed the two other native paths: the focused
+document accepted the priming `x` and Backspace, while `fcitx5-remote` reported
+an empty active engine and `status=0`. The failing processes had the intended
+Wayland environment, a focused document, and the GTK 4 Fcitx module mapped;
+this does not establish why the context was inactive. The tested guest has
+GNOME Text Editor 46.3, GTK 4.14.5 and Fcitx GTK4 frontend 5.1.1.
+Keep this as an open GTK 4 application integration gap; the direct
+`GTK_IM_MODULE=fcitx` path is the tested route for
+that editor (`GTK_IM_MODULE=fcitx gnome-text-editor` inside the guest). The
+installed Fcitx package now offers `keykey-fcitx-app` and a separate
+"Text Editor (琦琦注音)" launcher. The real App runner used the packaged
+helper to enter `中` and the `keyboard-us` literal control in both GNOME Text
+Editor and gedit. An installed-helper Alt+Tab run with both editors alive
+passed native Wayland and XWayland 2/2, including focus-out text and literal
+negative controls. The default GTK bridge gap remains open. The
+synthetic GTK 4 host passed its corresponding unset-variable path,
+which does not establish compatibility for every GTK 4 application.
+
+`gnome-vm-real-focus-smoke.py` opens actual editor documents concurrently,
+switches them through GNOME's Alt+Tab, and reads the document buffers through
+AT-SPI. On 2026-09-20 direct Fcitx native Wayland and XWayland each passed:
+gedit committed raw `ㄓㄨㄥ` on blur, GNOME Text Editor committed `文`, and
+returning to gedit still allowed `中`; both editors passed the `keyboard-us`
+literal control. Two separate real gedit windows on GNOME's default Wayland
+bridge also passed, but the first document cleared its active preedit on
+blur instead of committing raw reading. Reports are saved in
+`out/gnome-vm/gnome-real-focus-last.json` and timestamped siblings. These
+real App results confirm that focus-out semantics differ by frontend path;
+they do not resolve the GTK4 bridge's inactive context.
+
+The focus runner opens two fields in each GTK 3, GTK 4 and Qt 6 host. It
+starts a candidate in the first field, clicks the second through the VM
+pointer, commits `文`, returns to the first and commits `中`. A separate
+`keyboard-us` phase checks literal text in both fields. The 2026-09-20 run
+passed 16/16 phases, with two distinct focus-out results: six direct Fcitx
+native Wayland/XWayland paths commit the first field's raw `ㄓㄨㄥ` on blur,
+yielding `ㄓㄨㄥ中|文`; the two GTK native Wayland paths with `GTK_IM_MODULE`
+unset clear the preedit and yield `中|文`. The runner preserves these exact
+expectations and records `raw_preedit_on_blur` in
+`out/gnome-vm/gnome-focus-last.json`. This observed path difference
+from the existing X11 focus test and still needs a product decision before
+declaring active-candidate focus behavior complete.
+
+The editing runner uses actual VM pointer drags to select only the middle
+character of `甲乙丙`, then checks candidate replacement, active-reading
+Home/End, PageUp/PageDown, direction, Delete, Tab and Shift key boundaries,
+password input, and a read-only field. Its negative phase uses `keyboard-us`.
+The clean 2026-09-20 run passed 21 of 24 phases before GNOME Shell 46
+crashed with signal 11 while opening a Qt 6 XWayland host. After restarting
+GDM and replacing the Fcitx process in the new Wayland session, the remaining
+three phases passed. The independent Shell report is
+`/var/crash/_usr_bin_gnome-shell.1000.crash` in the guest; the crash cause is
+not established. The runner stores its JSON in
+`out/gnome-vm/gnome-editing-last.json` and timestamped files. The symbol
+pointer case separately passed all eight modes: it clicks the first row,
+commits `，`, checks popup clearance, and uses `!` as the literal control.
+An offline GDB backtrace of that Shell core enters `libatk-bridge-2.0` during
+D-Bus dispatch and crashes at GObject type checking. No KeyKey addon frame
+appears in the Shell thread. This locates the faulting path but does not prove
+which interaction caused the crash; the original guest crash file is retained.
+
+The two-app runner keeps two host processes alive while app A switches to
+English full-width, app B types Chinese, and app A resumes. Six direct Fcitx
+native Wayland/XWayland modes passed both phases (12/12), with `ａｂ中|文`
+and `ab5j/ 1|jp61`. GTK 3 and GTK 4 with `GTK_IM_MODULE` unset passed their
+literal phases but failed the positive isolation check (14/16 overall).
+After a fresh Fcitx process, each bridge case reproduced app B receiving
+`ｊｐ６１` from app A's English full-width mode. Fcitx
+`Controller1.DebugInfo` reported one `frontend:ibus` input context with an
+empty program name for the GNOME Wayland group. The engine stores its state
+per Fcitx input context, so this bridge does not expose the two apps as
+separate contexts to it. Use the verified direct Fcitx route
+(`GTK_IM_MODULE=fcitx`) when per-app state isolation matters. The bridge
+behavior remains an acceptance gap; the runner intentionally reports its
+positive cases as failures and saves `out/gnome-vm/gnome-multi-app-last.json`.
+
+The recovery runner opens a real candidate popup, closes the client with the
+candidate active, verifies that Fcitx and the addon remain in the same
+process, then types `中` and the `keyboard-us` literal in a new client. All
+eight modes passed this immediate recovery. It next restarts Fcitx once,
+launching a new process from the active user session, and runs T01 again in
+all eight modes; that batch also passed 8/8. The restart changed the D-Bus
+owner from `:1.801` to `:1.824` and PID from `551961` to `553445`.
+`Controller1.Restart` alone stops a Fcitx process created by a transient
+`systemd-run` unit and does not recreate that unit; the runner must launch
+the replacement explicitly. It records JSON in `out/gnome-vm/gnome-recovery-last.json`
+and timestamped files. This checks client closure and Fcitx restart; an
+explicit user logout/login is described below.
+
+The browser runner starts a localhost page with real `<textarea>`, `<input>`
+and `contenteditable` fields, reading their DOM focus and input events from
+the guest. QMP keys enter `中` through the installed addon, then the same
+field must show the literal `5j/ 1` with `keyboard-us`. On 2026-09-20 the
+combined run passed 15/15 field/mode cases: Firefox Snap native Wayland with
+direct Fcitx and the default GNOME bridge, plus Epiphany direct Wayland,
+bridge Wayland and XWayland. The runner uses a separate Firefox profile under
+its confined home and a private Epiphany profile for each case,
+closes each browser, removes its test profile, and restores the KeyKey,
+desktop and Epiphany settings.
+It records exact DOM event sequences, installed addon hash and popup screenshots
+in ignored `out/gnome-vm/gnome-browser-last.json` and timestamped reports.
+The page advertises an English interface so Firefox does not open its
+translation suggestion over the candidate. The runner first proves literal
+typing with `keyboard-us`, then switches to KeyKey for the positive case.
+This is one candidate sequence per field at a fixed VM resolution. Other web
+editors, Firefox Snap XWayland, browser focus switching and sandbox coverage
+beyond the tested Snap path remain open. In this VM Firefox Snap XWayland exited with
+`cannot open display: :0`; Epiphany covered the XWayland browser route.
+
+The runner temporarily disables GNOME idle lock and unlocks the guest's active
+Wayland session before injecting keys. It restores the prior idle/lock settings,
+the KeyKey config file, and the active KeyKey engine on exit. Without this step,
+an unattended VM can lock between test runs: QMP keys then enter the lock
+screen, and the test host times out with no input events despite a healthy
+Fcitx addon.
+
+On 2026-09-20 a separate QMP screenshot during the GTK 3 candidate stage
+showed all nine vertical candidates next to the focused entry. Fcitx also
+displayed a Wayland diagnostic
+notification recommending the GNOME Shell Input Method Panel extension. The
+before/candidate PNG files are in the ignored `out/gnome-vm/` directory; they
+are one visual sample, not the planned popup geometry and timing sweep.
+
+The QMP socket and KVM device can be hidden from a restricted process even
+when the ordinary WSL user can access them. In that case run the scripts from
+a normal WSL shell or grant that process access to the local VM socket. Do not
+change `/dev/kvm` or socket permissions merely to bypass process isolation.
+
+The guest has also been stopped and started again after provisioning; the
+Wayland login, SSH and installed addon recovered, and the original five T01
+smoke cases passed again. After an explicit `systemctl restart gdm3`, the
+active Wayland session, GNOME Shell and Fcitx processes were new, the installed
+addon loaded, and T01 standard plus T06 pointer selection passed in all eight
+toolkit/backend modes (16/16). This checks display-manager session restart;
+candidate-client closure and Fcitx process restart are covered by the
+recovery runner above. A separate 2026-09-20 check sent
+`gnome-session-quit --logout --no-prompt` from the active user session.
+GDM showed the Username and Password screen; the VM account is normally
+password locked, so a temporary VM-only password was set, entered through
+QMP keyboard events, and the original locked password field was restored
+immediately after login. The new Wayland session changed from `7085` to
+`8481`, with fresh GNOME Shell, XWayland and Fcitx processes. T01 standard
+and T06 candidate-row pointer selection each passed in all eight modes
+(16/16) with literal negative controls. This is a logout/login functional
+sample, not a complete post-login application and stability sweep.
+
+To stop or resume the guest without deleting its disk:
+
+```sh
+Source/Loaders/Linux-IME/tools/gnome-vm.sh stop
+Source/Loaders/Linux-IME/tools/gnome-vm.sh start
+```

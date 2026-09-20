@@ -160,15 +160,13 @@ func copy(_ page: Int, _ android: Bool, _ tablet: Bool) -> (String,String) {
         ("接上鍵盤，候選跟著跑","直式或橫式浮動窗貼近游標，1–9 一伸手就到"),
         ("不想浮動，也能穩穩選","關閉浮動，候選字留在實體鍵盤列"),
         ("觸控也有熟悉的五排","直式、橫式都保留ㄅ半注音的肌肉記憶"),
-        ("30 種詞庫，與你更關聯","小麥注音或動漫詞庫，候選跟著你的世界走"),
-        ("手機桌機，都用同一套手感","Android、iOS、macOS、Windows 都能安裝")
+        ("30 種詞庫，與你更關聯","小麥注音或動漫詞庫，候選跟著你的世界走")
     ][page-1] }
     var pages = [
         ("ㄅ半注音的第一選擇","琦琦注音，讓手指快樂回家"),
         ("五排都在，藍牙鍵盤也在","iPhone 接上實體鍵盤，熟悉的選字手感不變"),
         ("接上鍵盤，直接開打","App 內完成文字，再複製或分享"),
-        ("30 種詞庫，與你更關聯","小麥注音或動漫詞庫，候選跟著你的世界走"),
-        ("手機桌機，都用同一套手感","Android、iOS、macOS、Windows 都能安裝")
+        ("30 種詞庫，與你更關聯","小麥注音或動漫詞庫，候選跟著你的世界走")
     ]
     if tablet {
         pages[1] = ("五排都在，藍牙鍵盤也在", "iPad 接上實體鍵盤，熟悉的選字手感不變")
@@ -235,7 +233,6 @@ func page(_ c: C, _ n: Int, _ androidSet: Bool, _ ios: NSImage, _ android: NSIma
         }
         return
     }
-    if n == 5 { let sw = c.w*0.39; let sh: CGFloat = compact ? 430 : 560; let x1=c.w*0.08, x2=c.w*0.53, y1=top, y2=top+sh+68; imageFit(android,c,x1,y1,sw,sh); imageFit(ios,c,x2,y1,sw,sh); imageFit(mac,c,x1,y2,sw,sh); imageFit(win,c,x2,y2,sw,sh); txt("Android     iOS     macOS     Windows",c,70,y2+sh+35,c.w-140,60,min(30,c.w*0.025),.semibold,pale); return }
     if !androidSet && (n == 2 || n == 3) {
         let panel = n == 2 ? 3 : 4
         let source: NSImage
@@ -275,6 +272,6 @@ for (path,size,flag) in [
     ("AppStore/iPhone-1242x2688",NSSize(width:1242,height:2688),false),
     ("AppStore/iPad-2048x2732",NSSize(width:2048,height:2732),false),
     ("GooglePlay/Phone",NSSize(width:1080,height:1920),true),
-] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); let pageCount = flag ? 5 : 4; for n in 1...pageCount { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosPhoneHardwareEditor,iosIPadHardwareEditor,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
+] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); for n in 1...4 { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosPhoneHardwareEditor,iosIPadHardwareEditor,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
 try feature(android,sprite,store.appendingPathComponent("GooglePlay/feature-graphic-1024x500.png"))
 print("Generated store artwork in \(store.path)")

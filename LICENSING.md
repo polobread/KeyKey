@@ -51,6 +51,11 @@ packages.
 - `Source/Loaders/Linux-IME/data/tc2sc.cin` is generated from the read-only
   OpenVanilla `VXHCTC2SCTable.c` mapping and retains that table's BSD 3-Clause
   terms and attribution, including its recorded Encode::HanConvert origin.
+- `Source/Loaders/Linux-IME/gnome-panel/` contains inspected GNOME Input
+  Method Panel source, the placement patch, and its packaging tools under
+  GPL-2.0. The license text is in `gnome-panel/COPYING`. This directory builds
+  a separate GNOME Shell package; the independent Linux engine and Fcitx addon
+  remain under MIT.
 - OpenSSL and other third-party components retain the licenses recorded in
   [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) or their own license files.
 - Product names, logos, and application icons are not licensed by this map.

@@ -14,6 +14,7 @@
       <TestPlans>
          <TestPlanReference reference="container:KeyKeyFunctional.xctestplan" default="YES"></TestPlanReference>
          <TestPlanReference reference="container:KeyKeySmoke.xctestplan"></TestPlanReference>
+         <TestPlanReference reference="container:KeyKeyHeartSutra.xctestplan"></TestPlanReference>
       </TestPlans>
       <MacroExpansion>
          <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="C7700000000000000000001A" BuildableName="chichi77 KeyKey.app" BlueprintName="chichi77 KeyKey" ReferencedContainer="container:KeyKeyiOS.xcodeproj"></BuildableReference>

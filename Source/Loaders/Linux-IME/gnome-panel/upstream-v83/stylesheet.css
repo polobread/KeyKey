@@ -1,0 +1,42 @@
+.popup-menu-boxpointer.kimpanel-popup-boxpointer {
+  /* you may customize pointer box here */
+}
+
+.popup-menu-content.kimpanel-popup-content {
+  /* you may customize pointer box here */
+  /* padding: 6px; */
+}
+
+.kimpanel-label {
+  font-family:sans;
+  font-weight:normal;
+  padding: 0.4em;
+}
+
+.kimpanel-candidate-item {
+  cursor: pointer;
+  transition-duration: 0ms;
+}
+
+.kimpanel-candidate-item:hover {
+  /* border-radius: 14px; */
+  /* background-color: rgba(200,200,200,0.33); */
+}
+
+.kimpanel-candidate-item:active {
+  /* border-radius: 14px; */
+  /* background-color: rgba(200,200,200,0.33); */
+}
+
+.kimpanel-candidate-item:active:hover {
+  /* border-radius: 14px; */
+  /* background-color: rgba(200,200,200,0.15); */
+}
+
+.minwidth-zero {
+  min-width: 0;
+}
+
+.icon-disable {
+  color:rgba(150,150,150,0.5);
+}

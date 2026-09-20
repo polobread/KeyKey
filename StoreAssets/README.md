@@ -1,4 +1,4 @@
-# App Store / Google Play 商店素材
+# 商店圖庫與 App Store / Google Play 素材
 
 主軸是俏皮的「ㄅ半注音的第一選擇」：保留熟悉的五排標準注音鍵位與固定 `1–9`
 候選位置，讓使用者換到不同裝置後仍能延續肌肉記憶。Android 另以實體鍵盤的直式／橫式
@@ -42,24 +42,34 @@ test page，也沒有把候選畫面後製到截圖中。
   真正旋轉後的橫式實體鍵盤畫面；不是把直式圖拉寬或重畫，候選列完整顯示 `1–9`。
 - `Sources/comic-devices.png`：透明背景的手機、平板、藍牙鍵盤與觸控操作漫畫插圖。
 - `Sources/chichi-macos.png`、`Sources/chichi-windows.png`：桌面版實際輸入畫面。
+- `Sources/chichi-linux.png`：Ubuntu GNOME 上的 Linux 原生版實際候選畫面；版本仍在開發中。
 - `AppStore/iPhone-1206x2622/01.png`～`04.png`：`1206 × 2622` iPhone Simulator
   原生比例素材，保留供 README 與預覽使用。
 - `AppStore/iPhone-1242x2688/01.png`～`04.png`：App Store Connect 接受的 6.5 吋
   iPhone 上架素材。
 - `AppStore/iPad-2048x2732/01.png`～`04.png`：App Store Connect 接受的 12.9／13 吋
   iPad 上架素材。
-- `GooglePlay/Phone/01.png`～`05.png`：`1080 × 1920` Google Play 手機素材。
+- `GooglePlay/Phone/01.png`～`05.png`：`1080 × 1920` Google Play 手機素材；`05.png`
+  以 Android、iOS、macOS、Windows 與 Linux 五張實際畫面構成，Linux 標為開發中。
+- `FivePlatforms/five-platforms.png`：同一張五平台圖的獨立存放位置，不屬於 iPhone
+  App Store 上架圖組。
 - `GooglePlay/app-icon-512.png`：Google Play 商店圖示；由 iOS 的無透明背景 1024px
   App Icon 等比例縮小。
 - `GooglePlay/feature-graphic-1024x500.png`：Google Play 主圖。
 
 整套圖片使用 macOS 預設候選紫 `#800080` 作為品牌主色。漫畫插圖以各自透明邊界裁切並
 等比例縮放，不可拉寬或壓扁；候選列一律完整保留 `1–9`。圖片內容由
-`generate-assets.swift` 產生；換過來源截圖後，在 repository 根目錄執行：
+`generate-assets.swift` 產生前四張手機圖與 iPhone、iPad 圖；五平台圖另由
+`generate-five-platforms.py` 使用原始畫面等比例排版，不重畫候選視窗。
+換過來源截圖後，在 repository 根目錄執行：
 
 ```sh
 swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-assets.swift
+python3 StoreAssets/generate-five-platforms.py
 ```
+
+第二個命令需要 Pillow 與支援繁體中文的 Noto Sans CJK 或 PingFang 字體；它會同時更新
+`GooglePlay/Phone/05.png` 與獨立的五平台圖，不會寫入 `AppStore/iPhone-*`。
 
 ## App Store 內文
 
@@ -127,7 +137,8 @@ swift -module-cache-path /tmp/keykey-swift-module-cache StoreAssets/generate-ass
 - iOS 實機版本與商店素材由 Xcode Cloud／App Store Connect 管理；GitHub Actions 的 iOS
   ZIP 僅供 Apple Silicon Simulator 測試。
 - macOS 與 Windows 的版本標籤會把桌面安裝包加入同一個 GitHub Release；Google Play
-  商店圖 05 使用兩個桌面平台的實際輸入畫面，App Store 素材只呈現 iOS／iPadOS 體驗。
+  商店圖 05 使用三個桌面平台與兩個手機平台的實際輸入畫面，Linux 明確標為開發中。
+  App Store 素材只呈現 iOS／iPadOS 體驗，五平台圖另放在 `FivePlatforms/`。
 
 ## 發布前檢查
 

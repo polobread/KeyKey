@@ -1,0 +1,33 @@
+{
+  "configurations" : [
+    {
+      "id" : "C7700000-0000-0000-0000-000000000103",
+      "name" : "Heart Sutra",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:KeyKeyiOS.xcodeproj",
+      "identifier" : "C7700000000000000000001A",
+      "name" : "chichi77 KeyKey"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "selectedTests" : [
+        "KeyKeyUITests/testHeartSutraKeyboardExtension()"
+      ],
+      "target" : {
+        "containerPath" : "container:KeyKeyiOS.xcodeproj",
+        "identifier" : "C77000000000000000000048",
+        "name" : "KeyKeyUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -1,5 +1,69 @@
 # AGENTS.md — 開發交接
 
+**2026-09-20 Linux 使用者文件：** 使用者指定 Linux 下一版與其他平台共用 `v1.2.9` 標籤，不再以獨立 Linux 標籤作為新指南的安裝入口。`LINUX_INSTALL.md` 已改為統一發布的準備稿；`v1.2.9` Release、1.2.9 Linux 套件與校驗檔目前都尚未發布，不能將預期檔名當作現成下載。Linux CI 現已接上 tag 專用發布 job：Ubuntu 24.04 完整套件與 X11 輸入測試成功後，才核對版號及 checksum 並上傳三個 `.deb`、面板原始碼及 `SHA256SUMS` 到同一 Release；該流程尚未在 1.2.9 tag 實跑。三張 `docs/images/keykey-linux-*.png` 均為先前 1.2.8 實拍：候選與符號取自已安裝套件的 GNOME Wayland VM，設定取自已安裝套件的 Ubuntu 24.04 X11 測試桌面，不是 1.2.9 驗收證據。README 已設入口。測試視窗與一般 App 畫面須明確區分；`out/` 不進版控，不要在使用者文件直接引用。
+
+**2026-09-20 Windows 使用者文件：** `WINDOWS_INSTALL.md` 以已發布的 1.2.8 Windows x64 ZIP 為主要安裝流程，說明完整解壓縮、連按兩下 `Install.cmd`、管理員提示、`Win + Space`、記事本試打、候選字、設定與解除安裝。README 和 Windows TSF 技術 README 已設入口。`docs/images/windows-install-flow.svg` 是明確標示的示意圖，另沿用 `Source/Loaders/Windows-TSF/IMAGES/` 的四張 Windows 實際畫面。ZIP 的安裝腳本會加入目前使用者的輸入法清單；已發布的 `.unsigned.exe` 也在 Release，但本指南以 ZIP 為主。Windows 發行檔目前未簽章，未測實機安裝或 SmartScreen 畫面；若套件簽章、發行方式或設定 UI 改變，需重新核對指南。`v1.2.9` 仍未發布。
+
+**2026-09-20 Android 使用者文件：** `ANDROID_INSTALL.md` 說明 Google 測試群組、Google Play 封閉測試加入與安裝，三步須用同一 Google 帳號且至少保留測試資格 14 天；另含 App 首頁啟用、觸控與實體鍵盤、設定及排除問題。README 與 Android 技術 README 已加入入口。`docs/images/android-enable-ime.svg` 是明確標示的操作示意圖；六張 `docs/images/keykey-android-pixel9a-*.png` 是 Pixel 9a 實拍，系統已切到繁體中文（台灣），觸控鍵盤取自系統設定搜尋欄。使用指南不再展示 DEBUG 測試輸入框／測試記事本畫面。若改為公開發行，需重新查證並更新安裝段落；debug APK 不應作為一般使用者安裝包，`v1.2.9` 仍未發布。
+
+**2026-09-20 iOS 使用者文件：** `IOS_INSTALL.md` 是 iPhone／iPad 的安裝與日常使用指南，連到已上架的 App Store 產品頁；兩張 `docs/images/keykey-ios-iphone17pro-*.png` 是 iPhone 17 Pro／iOS 26.5 的實拍系統鍵盤列表與正式 App 橫向編輯器。移除以測試記事本示範輸入的圖。使用者確認台灣商店支持開發金額 NT$90；模擬器 Apple 商店帳號回傳美元 $2.99，故不可把該首頁截圖放入指南。裝置語言 `zh_TW` 不等於商店帳號地區。README 與 iOS 技術 README 已設入口。若 App 設定路徑或商店狀態改變，應重新核對官方說明及產品頁；`v1.2.9` 仍只是開發分支。
+
+**2026-09-20 macOS 使用者文件：** `v1.2.9` 分支的 `MACOS_INSTALL.md` 已改成一般使用者的圖文安裝與日常使用指南，包含選字、翻頁、關聯詞、切換輸入法及偏好設定；README 與安裝完成頁連回該文件。`docs/images/` 的兩張 SVG 是明確標示的操作示意圖；兩張 `keykey-macos-*.png` 是 macOS 27.0 系統鍵盤設定和輸入來源清單的實拍，取景避開個人帳號側欄，另沿用 `StoreAssets/Sources/chichi-macos.png` 的候選字截圖。文件不代表 1.2.9 已發布。
+
+**2026-09-20 下一版工作：** 工作分支 `v1.2.9` 的產品與建置版號同步升為
+1.2.9；這只是後續開發基線，尚未建立 `v1.2.9` tag 或新 Release。
+已發布的 1.2.8 套件、來源與 GNOME VM 測試紀錄仍屬 1.2.8。
+使用者稍後還要修改其他內容；不要把這次版號提交當成發布授權。
+下一次 Linux 安裝包的目標改為與其他平台共用 `v1.2.9` Release；Linux CI
+已有 tag 自動上傳流程，但尚未於 1.2.9 實跑，且 1.2.9 GNOME 套件驗收未完成。
+
+**2026-09-20 Linux 首版範圍更新：** 使用者要求先發布主要版本。
+Linux 1.2.8 首版僅支援 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、
+Fcitx 5、amd64，標籤為 `linux-v1.2.8`。套件、安裝步驟、已驗證案例
+與已知 GTK bridge／實體螢幕限制見
+[Linux 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
+舊 TODO 的九版 Ubuntu、IBus、ARM64、更多 App／實體螢幕 gate
+改列後續相容性工作，不能阻擋此限定範圍的首版，也不能宣稱已通過。
+既有 `v1.2.8` 是較早的跨平台 Release，含 Linux preview，不要移動 tag。
+
+首版交接 TODO：
+- [x] 收斂支援矩陣、安裝與限制文件；保留 GNOME VM 與套件生命週期證據。
+- [x] 將五平台下一版建置版號同步至 1.2.9，僅 commit／push 開發分支。
+- [x] 準備 Ubuntu 24.04 的 `v1.2.9` 圖文安裝與使用指南，並保存三張先前版本的實際截圖。
+- [x] 將 Linux 套件、面板原始碼與校驗檔的 tag 自動上傳接進同一 Release。
+- [ ] 在發布 `v1.2.9` 前重跑 1.2.9 GNOME 套件驗收並確認 Linux CI 的實際發布結果，再決定發布時間。
+- [ ] 後續另驗實體雙螢幕／熱插拔、更多 GTK App 與 sandbox、GNOME 主題、
+      Ubuntu 其他版本及 ARM64；只有驗過的組合才加入正式支援。
+
+**2026-09-20 五平台長文驗收：** 新增 `tests/heart-sutra.annotated.txt`（使用者提供
+的完整心經注音稿，268 字）、`tests/heart_sutra.py` 與
+`tests/HEART_SUTRA_FUNCTIONAL.md`。五平台執行前必須把基本及分類關聯詞庫
+全部關閉，以標準注音實際逐字輸入；每平台須保存全文 capture 及 268 筆
+實際候選絕對順位，`check-all` 會依共用 CIN 比對全部文字與順位。
+共用字表已驗證 268/268 讀音存在；「ㄅㄛ→波」在第 18 位，須跨頁。
+2026-09-20 已在已安裝的 macOS 1.2.9／macOS 27.0 TextEdit 以標準注音、關閉
+全部關聯詞庫實際輸入全篇，逐字檢查 268 次選字前綴、標點與候選窗關閉，
+`tests/results/2026-09-20-macos/` 保留 331 字元與標點的 capture、順位與環境紀錄；
+比對器通過。`ㄙˇ→死` 在 macOS 因其餘罕字被系統濾掉而直接提交，順位仍記 1；
+測試送鍵時若另送候選鍵會誤產生下一個注音，後續自動化應先檢查候選窗是否存在。
+使用者原本的關聯詞設定與 ABC 輸入來源已恢復。**Windows、Android、iOS、Linux
+仍無心經實際輸入紀錄**，不得標成五平台 functional test 通過。下一步依文件收集
+其餘平台 capture，特別注意 iOS extension
+詞庫設定與容器 App 設定不共用，以及 Linux GNOME Text Editor 的輸入路徑差異。
+後續使用者指定 macOS／iOS 心經全文測試只在開發機 MacBook 執行，不加入
+macOS GitHub Actions 或 iOS Xcode Cloud。macOS 本機腳本
+`tests/run_macos_heart_sutra.py` 在執行前檢查已選用琦琦注音、關聯詞庫全關；
+`--generate-only` 已通過九段 AppleScript 編譯。iOS 專用的
+`KeyKeyHeartSutra.xctestplan` 使用 iOS 17 Simulator 和真實 keyboard extension；
+2026-09-20 的全文試跑依使用者要求中斷，沒有通過紀錄或全文 capture。
+
+已知陷阱：從受限 WSL 行程執行 `gh` 可能顯示網路與憑證失效；同一環境在
+允許連線的行程可正常查詢 `v1.2.8` Release。不要據此重新登入或更換 token。
+GNOME VM provisioning script 會尋找當前 CMake 版號的 `.deb`；只升版號後，
+舊 `out/` 的 1.2.8 套件不會自動變成 1.2.9，須先重建再安裝，不能將舊
+VM 的 1.2.8 測試紀錄標成 1.2.9 驗收。
+既有 1.2.8 Linux 發布的 `SHA256SUMS` 包含三個 `.deb` 及 GNOME 面板原始碼包；新指南沿用同一校驗流程，但 1.2.9 的 `SHA256SUMS` 必須由該版建置重新產生，不能沿用舊檔。
+
 macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是各平台的交接點。
 
 **接手時：** 先讀完本檔，再讀 [BUILDING.md](BUILDING.md)。動任何 `Source/Frameworks`
@@ -23,8 +87,20 @@ GTK 4 與 Qt 6 跑過各自適用的完整第一階段真實輸入矩陣，
 直／橫候選設定、中英文模式與全半形、XDG 錯誤提示聲、Fcitx 原生設定 schema 與
 Ubuntu 22.04／24.04
 Debian 開發套件生命週期驗證；Ubuntu 22.04／24.04 hosted Linux CI 基線已通過，
-隔離 GNOME X11 的 76 案 desktop-safe gate 亦已通過；完整 GNOME 登入、XWayland 與
-native Wayland 仍未跑。版號更新與這些 local
+隔離 GNOME X11 的 76 案 desktop-safe gate 亦已通過；2026-09-20
+完整 GNOME Wayland KVM guest 另以 20 案 × 八條 GTK3／GTK4／Qt6 native
+Wayland／XWayland 的逐鍵與滑鼠矩陣通過 160/160；真實 gedit 四條路徑及 GNOME Text Editor
+的直接 Fcitx Wayland／XWayland 通過，Text Editor 另兩條 GTK Wayland IM 路徑
+沒有 active input context。T10 兩欄焦點的 16/16 正負階段另量到直接 Fcitx
+失焦提交原始注音、GTK 預設 Wayland 路徑清除 preedit 的差異；T11 編輯欄位、
+T12 符號表真滑鼠、T10 client/Fcitx recovery 與明確 GDM 登出登入後的
+T01／T06 抽樣已實跑；Firefox Snap 與 Epiphany 的真正 DOM 三種欄位
+五路徑 15/15 通過。加入符號表真滑鼠後的 21 案 × 八路徑
+已在系統安裝的修補版 Kimpanel 套件下完整通過 168/168，無設定還原錯誤；
+同套件四角 32/32、雙螢幕第二列真滑鼠 16/16 已通過；完整 App、
+實體多螢幕及跨 Ubuntu 版本仍待驗收，
+GTK 預設 Wayland bridge 的跨 App 模式隔離亦未通過。
+版號更新與這些 local
 測試都不代表 Linux 已可發布。
 **主要支援／最完整測試環境是 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）**；
 先完成 X11、native Wayland、XWayland 的完整打字／視窗／App／套件驗收，再完成
@@ -55,6 +131,27 @@ native Wayland 仍未跑。版號更新與這些 local
   這時 `docker info` 會顯示 `permission denied`。先在一般 WSL shell 重跑
   `docker info`；若正常，應允許該 sandbox 存取本機 socket，不要改用 `sudo docker`、
   `chmod 666` 或隨意改群組。這是呼叫行程隔離，不是 Docker daemon 未啟動。
+- 2026-09-20 WSL2 Ubuntu 24.04 主機已確認可用 KVM：正常 WSL 行程的
+  `/dev/kvm` 是 `root:kvm`、`10:232`，KVM API version 為 12；開發使用者
+  已加入 `kvm` 群組，新開的 WSL 行程可讀寫該裝置。已安裝 Ubuntu 的
+  `qemu-system-x86`／`qemu-utils` 8.2.2 與 OVMF 2024.02，短暫啟動
+  `qemu-system-x86_64 -accel kvm` 成功取得 QMP greeting。受限行程的 `/dev`
+  是 `nodev` tmpfs，會遮住 `/dev/kvm`；從那裡看到裝置不存在不能推定正常
+  WSL2 缺少 KVM。後續已用官方映像建立 Ubuntu 24.04.5 KVM guest，安裝 GNOME
+  Shell 46、Fcitx 5.1.7 與本專案 1.2.8 `.deb`；GDM 自動登入的 active session
+  由 `loginctl` 確認為 Wayland，Fcitx maps 同時載入本專案 addon、Wayland 與
+  IBus frontend。QEMU 鍵盤注入的 GTK3／GTK4／Qt6 原生 Wayland T01 smoke，
+  加上 GTK3／GTK4 未設 `GTK_IM_MODULE` 路徑，共 5/5 通過三段 preedit、
+  「中」提交及 `keyboard-us` literal 負控制。後續擴充為 20 案 × 八條
+  native Wayland／XWayland 路徑，包含五布局、候選第二列真滑鼠點選及點選後
+  畫面清除、關聯詞、模式、全形、簡體、快捷鍵與符號表；guest 的
+  `systemctl restart gdm3` 後，新 session 的 T01／T06 滑鼠 16/16 通過。
+  後續已另做明確登出登入 16 案與多 App 差異調查；Firefox Snap／Epiphany
+  真正 DOM 三種欄位五路徑亦 15/15 通過。仍須完整 popup 邊界、其他
+  瀏覽器操作、sandbox 與跨版本驗收。
+  後續從正常 WSL shell 執行
+  `Source/Loaders/Linux-IME/tools/check-wsl-vm-host.sh` 可重驗前置條件；VM
+  建立、安裝與 smoke 步驟見 `docs/gnome-wayland-vm.md`。
 - Rootless Docker 的 bind mount 會把 WSL checkout owner 顯示成 container root；
   one-shot package／X11 scripts 因此會從 `docker info` 偵測 rootless，改以 container
   UID/GID 0 寫 `out/`。Rootful engine 才沿用 host UID/GID。不可一律傳
@@ -332,6 +429,209 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ## 已知陷阱（不要重複調查）
 
+- **macOS 記憶體與 KeyKey.db 不能只看檔案大小**：2026-09-20 review 確認
+  直式候選 `CVVerticalCandidateController.mm` 的 `NSAttributedString *c`
+  及通知文字有未平衡的 alloc ownership；詞彙編輯器的
+  `userPhraseDBDictionaryAtRow:` 另遺漏 `delete select`，隔離呼叫 1,000 次
+  留下 1,000 個 statement、約 3.39 MiB，並使 SQLite close 回 SQLITE_BUSY。
+  2026-09-20 已修正這三處 ownership；修後隔離重複 1,000 次留下 0 個
+  statement、close 回 SQLITE_OK，arm64 Release build／analyze 通過；其他舊碼
+  仍有 analyzer warning。現有 1.2.8
+  行程實測 footprint 55.1 MiB、leaks 3.01 MiB；不能
+  把所有用量都歸給資料庫。新 cook 的 db 9.812 MiB，4 KiB + VACUUM 副本為
+  9.141 MiB（-6.85%）；WITHOUT ROWID 實驗為 7.352 MiB，但 iOS 明確依賴
+  `ORDER BY rowid`，不可只換 db。系統 SQLite 預設 cache_size 在此 Mac 是
+  2000 pages，與上游常見的 -2000 不同；本機 512 KiB 建議預算的資料層
+  抽樣已完成，仍需真實 IMK 與跨平台回歸。完整證據、其他候選窗問題與
+  後續順序見 [macOS review](MACOS_CODE_REVIEW.md)，不要把副本實驗當成
+  已套用的產品優化。
+- **五平台記憶體策略不能只改 KeyKey.db**：2026-09-20 使用者要求綜合各平台
+  使用情況，並認為 db 瘦身影響有限；目前已修 macOS 已確認的洩漏，接著量測
+  長時間快取成長，保留資料格式。Windows TSF 直接編譯 SQLite 3.6.11，
+  原生 cooker 仍讀共用 Schema.sql；隔離 probe 確認 WITHOUT ROWID 副本回
+  malformed schema，cache_size=-512 代表 512 pages 而非 KiB，不可直接搬用
+  Mac 設定。iOS CandidateStore 與 Android IndexedDictionary 的候選 cache
+  均沒有淘汰機制，需量不同讀音，不能只重複同一讀音。Android 使用 .kki，
+  Linux 使用 CIN／詞庫 maps，都不讀 KeyKey.db；Linux 已共享字典，但啟動
+  會解析全部輸入法及詞庫。注音專用 db 副本雖可由 9.812 降至 3.082 MiB，
+  此為安裝空間可行性實驗，並非等量 RAM 收益，尚未改任何平台打包流程。
+- **WSL2 的 KVM、Docker 與 Windows interop 可能只被呼叫行程隔離**：
+  2026-09-20 此主機的受限行程看不到 `/dev/kvm`，`docker info` 顯示 socket
+  `permission denied`，`wsl.exe --version` 也可能回報 vsock 錯誤；正常 WSL
+  行程的 KVM API 12、rootless Docker 29.8.0 與 interop 均正常。
+  先比較正常 WSL shell 的 `ls -l /dev/kvm`、`id`、`docker info` 與
+  `wsl.exe --version`；需要 KVM 的開發指令要在能存取 host 裝置的行程執行。
+  不要因此重裝 WSL、改 Docker socket mode 或覆寫 `.wslconfig`。
+  WSLg 只提供 GUI App 整合，不是完整 Ubuntu Desktop session；目前 KVM guest
+  已通過的 160 組逐鍵／滑鼠矩陣也不能代替完整 GNOME popup／App／發布驗收。
+  受限行程也可能拒絕連接 `out/gnome-vm/qmp.sock`，一般 WSL shell 則可；
+  讓測試行程存取該本機 socket，不需修改 QEMU 或 guest 權限。
+  2026-09-20 的 GTK3 Wayland 候選截圖中，候選窗位於欄位下方且九列可見；
+  GNOME 同時顯示 Fcitx「Wayland Diagnose」通知，建議安裝 Input Method
+  Panel GNOME Shell extension。這只證明此虛擬解析度的一次畫面，不能把
+  popup 四邊定位、遮擋、閃爍或多螢幕標為通過。
+  QMP 候選清除檢查須比對「候選顯示中」與「點選後」；背後 Files 等 App
+  可能在同一像素區顯示提示框，直接要求點選後回到「候選前」的畫面會誤判。
+  真滑鼠案例另核對第二列提交「鐘」，不能只用像素差宣稱選字成功。
+- **GNOME 候選四邊與雙螢幕要分開驗收**：2026-09-20 專用 KVM guest 的
+  官方 `kimpanel@kde.org` v83（GNOME Shell 46）啟用後，1280×800 的八條
+  GTK3／GTK4／Qt6 native Wayland、GNOME bridge 與 XWayland 路徑 × 四角
+  32/32 通過九列可見、欄位避讓、真滑鼠選第二列「鐘」及約半秒候選清除。
+  未裝 extension 時，GTK3／GTK4 native Wayland 右緣會裁切、Qt6 候選壓欄位；
+  extension 只裝在測試 guest，並非 KeyKey `.deb` 的依賴或安裝內容。
+  雙虛擬顯示器以 Mutter 切 1024×768／100% 與 1920×1080／200%；
+  直接跨螢幕移窗的 16 組定位為 10/16（100% 6/8、200% 4/8），
+  文字與 `keyboard-us` 負控制則 16/16 正確。
+  GTK3／GTK4 direct Wayland 在 200% 副螢幕以 GNOME 快捷鍵直接移窗後，
+  候選可能還留在主螢幕；GTK3 額外移窗後曾覆蓋副螢幕欄位。
+  GTK3／GTK4 XWayland 直接移窗後也把候選留在主螢幕，額外移窗後
+  即使候選到副螢幕仍可能停在舊 cursor rectangle；
+  只檢查提交「中」或 popup 出現在副螢幕會誤判，runner 已加入欄位／caret
+  距離判斷。兩種缺口都還不能當作多螢幕定位通過。測試入口、extension
+  版本與輸出位置見 `docs/gnome-wayland-vm.md`；QEMU 第二 head 必須使用
+  `keykey-display` 擷取，`Virtual-2` 預設未接上，需在 guest 接通後重啟 GDM。
+  本專案 Fcitx adapter 的 `FcitxState::updateUi` 只更新 preedit／candidate
+  與 `InputPanel`，不設定 cursor rectangle；GTK frontend 會自行送
+  `SetCursorRectV2`。同一 200% GTK3 Wayland 失敗案例的篩選 D-Bus trace
+  已確認 GTK frontend 從移動前的 `(35,61,0,98,scale=1)` 改送移動後
+  `(100,122,0,196,scale=2)`，Fcitx core 也把同組值轉送為
+  `org.kde.impanel2.SetRelativeSpotRectV2`；候選卻仍顯示在主螢幕右緣。
+  trace 留在 guest 的 `/tmp/keykey-cursor-monitor.log` 與
+  `/tmp/keykey-panel-monitor.log`，對應 runner 截圖在忽略版控的
+  `out/gnome-vm/`。這排除了「client 完全沒更新游標矩形」的假設，
+  仍須追查 Fcitx frontend／Kimpanel 對移窗事件的時序；不要在 KeyKey engine
+  猜測螢幕絕對座標。後續在專用 guest 暫改 Kimpanel v83 加入事件紀錄，
+  發現候選首次顯示使用舊 `(35,61,0,98,scale=1)` rect；新
+  `(100,122,0,196,scale=2)` 到達時 `ShowLookupTable` 已為 false。
+  單改 frame origin 可使 popup 到第二螢幕，但蓋住欄位；單改比例亦只
+  移動已隱藏的 actor。實驗結束已把 guest extension 原始檔還原。
+  停用 extension 由 Classic UI 重跑則僅 6/16 定位通過，不能把它直接
+  定為正式替代方案。`--panel` 可鎖定 runner 所測 provider，雙螢幕
+  `--mouse` 已在混合 DPI GTK3 direct Wayland 以第二列「鐘」及點後清除通過。
+  後續以固定官方 v83 原檔 SHA 的 GPL-2.0 補丁修正兩件事：Wayland
+  relative rect 使用目前 monitor `geometry_scale`／來源 scale，XWayland
+  absolute rect 在同一焦點視窗內加上 frame origin 位移。先還原官方檔案，
+  再用 `gnome-panel/build-patched-extension.py` 建乾淨產物裝入專用 guest；
+  八條路徑 × 兩種副螢幕的第二列真滑鼠、清除及英文負控制 16/16，
+  單螢幕四角 32/32 通過。Qt6 200% 的白色候選窗與白色 App 重疊時，
+  舊像素差演算法會漏掉上方三列而點到第四列；runner 已補回 popup 真正
+  頂界，驗證「鐘」而非僅看提交任一字。這只關閉 GNOME Shell 46 VM
+  的定位矩陣；後續獨立 `.deb` 已重跑同一 VM 矩陣，實體雙螢幕與
+  Ubuntu 22.04 仍待驗收。
+  正式 GNOME panel 路線與完整 gate 見
+  `Source/Loaders/Linux-IME/docs/gnome-candidate-panel.md`。
+- **GNOME 面板套件與 VM 顯示配置**：2026-09-20 已把固定官方 v83
+  來源及 GPL-2.0 修補做成獨立的
+  `gnome-shell-extension-keykey-kimpanel` Ubuntu 24.04 `.deb`；不用修改
+  Fcitx addon 套件的授權。預覽版初裝→正式版升級、`dpkg --verify`、
+  `keykey-gnome-panel disable`→`enable` 已在 GNOME Shell 46 guest 通過；
+  停用時 `org.kde.impanel` owner 為 false，啟用為 true。系統套件版本再跑
+  四角 32/32、雙螢幕 16/16 真滑鼠案例。GNOME 會優先使用
+  `~/.local/share/gnome-shell/extensions/kimpanel@kde.org` 同 UUID 副本；
+  測試時先保留舊 user-local 副本、移開並重新登入，確認 `gnome-extensions
+  info` 的 Path 是 `/usr/share/gnome-shell/extensions/kimpanel@kde.org`。
+  `gnome-vm-popup-smoke.py` 需要 Virtual-1 單螢幕 1280×800；若 VM
+  留在 Virtual-2 主螢幕、300% 縮放，QMP 第一 head 只有背景，先用
+  `gnome-vm-displays.py single` 調回測試配置。runner 現會在開始前
+  檢查此條件。Files 的淺色視窗在候選後方時，候選仍正常可見且滑鼠
+  可選，但舊像素偵測把九列切開；runner 現允許行間 25 px 空白。Qt6
+  符號表的 reading 邊框也會與候選上緣合併，取候選列頂點時須擴大藍色
+  邊框搜尋範圍；白色 Files 背景在候選消失後仍可能變動，清除檢查要同時
+  比對候選前／後並確認高候選窗已消失。修正後 T12 真滑鼠八路徑 8/8
+  通過「，」及英文負控制，T06 第二列「鐘」既有截圖座標也已核對。
+  這些是 GNOME Shell 46 VM 證據；Ubuntu 22.04
+  的 GNOME 與實體顯示器仍未驗收。
+- **GNOME GTK4 真實 App 與 synthetic host 的 bridge 結果不同**：2026-09-20
+  Ubuntu 24.04.5 GNOME Wayland guest 以 gedit／GNOME Text Editor 各跑直接
+  Fcitx、未設 `GTK_IM_MODULE`、明設 `wayland` 與 XWayland 四路徑。
+  gedit 4/4、Text Editor 直接 Fcitx 與 XWayland 2/4 通過實際文件「中」提交
+  與 `keyboard-us` literal 負控制；Text Editor 另外兩路徑的文件已聚焦、
+  普通按鍵能輸入，但 `fcitx5-remote` 為 status 0／無 active engine。
+  診斷再次確認兩個失敗程序都有預期的 Wayland 環境、GTK4 Fcitx module 已
+  映射，套件版本為 GNOME Text Editor 46.3、GTK 4.14.5 與 Fcitx GTK4
+  frontend 5.1.1；仍不能僅憑 module 映射判定實際使用哪個 IM context。
+  GTK4 測試 host 的未設環境變數路徑卻通過，故不能用 synthetic host 推論所有
+  真實 GTK4 App。直接 `GTK_IM_MODULE=fcitx` 是目前已證實可用的 Text Editor
+  路徑；原因與其他 GTK4 App 的範圍仍需查明。runner 即使有失敗也保存 JSON
+  並還原 guest 設定，見 `tools/gnome-vm-real-app-smoke.py`。
+- **GNOME VM 瀏覽器 fixture 的焦點與提示窗要分開判讀**：Firefox Snap
+  原生 Wayland 可完成直接 Fcitx 與 GNOME bridge 的 DOM 打字；Epiphany
+  另通過 native Wayland 兩路徑與 XWayland。但網頁欄位即使在 JS 端
+  已回報 focus，也可能在首次啟動提示窗、翻譯浮窗或其他瀏覽器窗取得
+  compositor 焦點後收不到 VM 鍵盤。測試頁用英文介面標記避免 Firefox
+  的翻譯建議遮住候選；每案先在 `keyboard-us` 送 `x`／Backspace 確認
+  真正可打字，再切琦琦注音，並以 DOM 事件核對「中」與負控制。
+  用 VM VNC 指標再次點自動聚焦的欄位在本 guest 反而會失焦；不要以
+  DOM `focus` 事件或候選截圖單獨宣稱打字成功。Firefox 測試以 confined
+  home 的獨立 profile 避免前次異常結束時的安全模式提示；結束須正常
+  關閉瀏覽器，以免 Snap scope 殘留。Epiphany 首次啟動的預設瀏覽器提示
+  也會攔鍵，runner 暫時關閉並還原該設定。Firefox Snap 強制 XWayland
+  在此 VM 回報 `cannot open display: :0`，目前不列為已通過。
+- **GNOME Wayland T10 失焦行為依輸入路徑而異**：同一 Ubuntu 24.04.5
+  GNOME Shell 46 guest 以真 VM 指標切同 App 兩欄，GTK3／GTK4／Qt6 的
+  native Wayland／XWayland 八模式，正負控制合計 16/16。六條直接 Fcitx
+  路徑在第一欄有候選時失焦，client 會提交原始「ㄓㄨㄥ」，切回再選字後
+  為「ㄓㄨㄥ中|文」；兩條 GTK 原生 Wayland 且未設 `GTK_IM_MODULE` 的
+  路徑會清除 preedit，得到「中|文」。全部 `keyboard-us` 負控制均為
+  `5j/ 1|jp61`。既有 X11 T10 的第一欄是「中」，Mac／Windows 失焦語意也
+  不同；不可把兩欄可隔離直接寫成所有路徑已達 Windows focus-out parity。
+  VM 的 AT-SPI 對 native GTK3／Qt6 回報視窗局部座標，XWayland 卻回報螢幕
+  座標；GTK4 測試 host 的兩欄沒有可用的 AT-SPI 欄位角色。runner 依 host
+  自寫欄位中心及 VM 截圖校正，避免誤點第一欄。詳見
+  `tools/gnome-vm-focus-smoke.py` 與 `docs/gnome-wayland-vm.md`。
+- **GNOME 的預設 GTK Wayland bridge 共用 Fcitx IBus context**：2026-09-20
+  `Controller1.DebugInfo` 在完整 GNOME Wayland guest 回報 `Group [wayland:] has 1
+  InputContext(s)`，唯一 context 為 `frontend:ibus` 且 `program:` 為空；GTK3／GTK4
+  未設 `GTK_IM_MODULE` 的兩個同時存活 App 因此共用琦琦注音的中英文與全半形狀態。
+  乾淨 Fcitx 行程下，App A 切英文全形後，App B 的 `jp61` 都得到 `ｊｐ６１`，
+  不是獨立中文模式的「文」；六條直接 Fcitx native Wayland／XWayland 路徑則
+  12/12 通過 `ａｂ中|文` 與英文負控制。這是由 GNOME bridge 暴露單一 context
+  的本機觀察，不能把直接 Fcitx 的 per-App 結果外推到預設 GTK bridge；
+  先用 `GTK_IM_MODULE=fcitx` 的已驗證路徑，並將 bridge 另列發布差異。
+- **長批次 GNOME VM 要檢查 session 是否仍存活**：2026-09-20 清除舊輸出後的
+  T11 矩陣在 21/24 時，GNOME Shell 46 於啟動 Qt6 XWayland host 同時以 signal 11
+  崩潰，`/var/crash/_usr_bin_gnome-shell.1000.crash` 留有獨立 crash 證據；
+  後續以 GDB 解開同一 core，crashing thread 在 GNOME Shell 的
+  `libatk-bridge-2.0` D-Bus dispatch 經 `g_hash_table_foreach` 呼叫
+  `g_object_ref`／`g_type_check_instance_is_fundamentally_a` 時收到 SIGSEGV；
+  該堆疊沒有 KeyKey addon。這只縮小故障位置，尚不能判定 AT-SPI 查詢、
+  Shell 本身或 VM 圖形環境哪一項造成該次崩潰。
+  XWayland socket 隨之消失，後兩個 Qt host 只回報 `could not connect to display`。
+  重啟 GDM，於新 Wayland session 替換掉無 display 的舊 Fcitx 後，受影響三階段
+  3/3 通過。不能把 Qt host 的連線失敗算作 KeyKey 輸入失敗，也不能由時間相近
+  反推 Shell crash 根因；後續 runner 在失敗後須檢查 GNOME session，停止連續注入。
+  T11 真指標選字前要清除 GTK3 初始 `0:3` 全選，等到 `cursor:3` 再拖曳；GTK4
+  XWayland 的 host 座標從內容區起算，原生 Wayland 則從含標題列的視窗起算。
+- **GNOME VM 的 Fcitx D-Bus Restart 不會重建 transient unit**：T10 recovery
+  將候選中 client 關閉後，八路徑都確認 Fcitx/addon PID 未變且新 client T01
+  通過。對由 `systemd-run --user` 啟動的 Fcitx 呼叫 `Controller1.Restart` 會讓
+  舊行程退出，但這個臨時 unit 沒有自動 restart policy；runner 必須從仍有效的
+  user manager 明確啟動新的 Fcitx，再等 D-Bus owner 改變、addon maps 就緒。
+  不可用 `fcitx5-remote` 當就緒 probe，避免其 D-Bus activation 搶先建立缺少
+  display 環境的行程。按此流程重啟後新 PID 的 GTK3／GTK4／Qt6 native
+  Wayland、XWayland 與兩條 GTK bridge T01 8/8 通過。
+- **GNOME VM 明確登出後不會再次自動登入鎖定帳戶**：2026-09-20
+  `gnome-session-quit --logout --no-prompt` 確實終止使用者 Wayland session，
+  GDM 留在帳戶登入頁；`keykey` 測試帳戶平時為 password locked，
+  `/etc/gdm3/custom.conf` 的 `AutomaticLogin` 只在 GDM 初啟時生效。
+  本次僅在專用 VM 暫設測試密碼，以 QMP 真鍵盤經 Username／Password 畫面登入，
+  隨即把 `/etc/shadow` 的該帳戶密碼欄還原為原鎖定值。session ID
+  `7085`→`8481`，新的 GNOME Shell／Fcitx／XWayland 行程啟動；
+  T01 與 T06 真滑鼠各八路徑共 16/16 通過。不可把單純 GDM restart
+  當成這次使用者發起的 logout/login；後續重跑要先規劃可還原的登入方式。
+- **最小 GNOME 套件會改掉 VM 的 Netplan renderer**：官方 cloud image 原用
+  `systemd-networkd`，以 `ubuntu-desktop-minimal --no-install-recommends` 安裝後，
+  Netplan 選了未安裝的 NetworkManager；下一次啟動的 `enp0s2` 保持 DOWN、
+  `systemd-networkd-wait-online` 等兩分鐘，SSH 只連上 QEMU hostfwd 而收不到
+  banner。2026-09-20 已在 guest 將 renderer 明確設回 `networkd`、生成設定並
+  重啟 networkd，介面取得 `10.0.2.15/24`、SSH 恢復；
+  `tools/gnome-vm-setup-guest.sh` 現在於安裝後寫入 `99-keykey-vm.yaml`。
+  guest 測試 host 也須複製到使用者的 `.local/libexec/keykey-e2e/`，不能只放
+  重啟會清空的 `/tmp`。修正後再次停止／啟動 VM，GNOME Wayland、SSH、
+  Fcitx addon 自動恢復，五個 T01 smoke 仍全過。不要把 QEMU hostfwd
+  可連線誤判為 guest SSH 可用。
+  `tools/check-wsl-vm-host.sh` 在受限行程會給出明確的 `/dev/kvm` 提示，
+  應由正常 WSL shell 執行。
 - **Ubuntu 24.04 的主框架是 Fcitx 5**：這是使用者指定的主要支援環境，需最完整
   測試；不能只保留 Ubuntu + IBus 或以 KDE + Fcitx 的結果替代。GNOME 可能使用
   IBus protocol bridge，但實測必須確認載入本專案 Fcitx addon。主環境每次相關
@@ -453,6 +753,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `/usr` 安裝則使用發行版原生位置。2026-09-13 local amd64 已通過，含同一 commit 的 2.0 MB source tarball 在無
   `.git`／無 cache 解壓目錄重建；Ubuntu 22.04／24.04 兩個 hosted job 亦已在
   run `34742072894` 通過。
+- **原始碼 `/usr` 真安裝要用乾淨 container**：長駐開發 container 可能已由 staged
+  X11 E2E 把 KeyKey 複製到 `/usr`。2026-09-20 首次擴充 source gate 時，`/usr` 的
+  覆寫保護因此如預期拒絕安裝；不可刪掉保護或在共用 session 直接卸載檔案。
+  `ci/dev.sh source-e2e` 改以同一 dependency image 啟動一次性 container；原始碼
+  `/usr/local`、`/usr`、含空白的自訂 prefix 各自編譯、安裝、跑完整 82 案、依
+  manifest 卸載。自訂 prefix 另保留 sentinel，重裝後再跑三個 toolkit 的 T01。
+  `FCITX_ADDON_DIRS` 必須同時包含自訂 addon 目錄與 Fcitx 系統 addon 目錄；測試
+  另核對 `/proc/PID/maps` 的實際 addon 路徑，避免從其他 prefix 誤載入。
 - **Rootless Docker 的 one-shot build 也要使用 container-side root**：
   `run-container-build.sh`、獨立 X11 與 package scripts 的 bind mount 規則一致。
   Rootless engine 會把 WSL checkout owner 映射為 container UID/GID 0；若仍傳 host
@@ -692,9 +1000,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - **macOS framework 的 Headers 封印**：framework target 在 `Headers` 還在的狀態下簽好
   自己的產物，app 的 Copy Files phase 再把 header 砍掉，封印就留著已經不存在的檔案，
   `codesign --verify --deep --strict` 必定回報 `a sealed resource is missing or invalid`，
-  notarize 也會被退。**不影響本機安裝與使用**，裝不起來時不要往這裡查。已由
+  notarize 也會被退。已由
   `Installer/build.sh` 在 stage 之後、簽章之前刪掉 `Versions/A/Headers` 與最上層的
-  `Headers` symlink 處理掉（header 對執行期沒有用途）。修掉之前 `build.sh` 的
+  `Headers` symlink 處理掉（header 對執行期沒有用途）。本機未提供 Developer ID
+  時也必須重新 ad hoc 簽 nested frameworks／helper apps／外層 app，否則移除
+  headers 後封印失效；2026-09-20 本機 package 已補此步並通過 deep strict verify。
+  修掉之前 `build.sh` 的
   `DEVELOPER_ID_APPLICATION` 分支其實跑不完：`set -euo pipefail` 加上必定失敗的
   `--verify --deep --strict` 會直接中斷整個腳本。
 - **舊 macOS TSM component ID 有三份同步點**：雖然 `Source/Loaders/OSX-TSM` 已不在
@@ -710,7 +1021,8 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   process 後立即生效，不應每次安裝都中斷工作階段。
 - **macOS pkg 安裝**：`pkgbuild` 預設把 app bundle 標成 relocatable，`installer`
   會把 payload 寫到別處卻回報成功。已用 `Installer/build.sh` 的
-  `BundleIsRelocatable false` 處理；安裝後仍務必
+  `BundleIsRelocatable false` 處理；2026-09-20 本機 `pkgbuild --analyze` 未輸出該欄位，
+  腳本已改成缺席時新增，不可只用 PlistBuddy `Set`。安裝後仍務必
   `ls -ld "/Library/Input Methods/chichi77 KeyKey.app"` 確認。
 - **Windows ZIP 安裝**：ZIP 版必須先完整解壓縮、複製到本機 `C:\` 路徑，才執行
   `Install.cmd`；UAC 提升權限後可能存取不到網路磁碟／NAS／UNC 來源。NSIS EXE 是
@@ -771,10 +1083,18 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `controlTextColor`、`secondaryLabelColor` 與 `headerColor`。三份語系 XIB 必須一起改。
   黑底白字候選窗、通知窗等自訂浮動 UI 是刻意的固定主題，前景與背景必須成對設定，
   不要只把其中一色改成動態色。
-- **macOS 直式候選每次更新都要重設 scroll origin**：自訂比例調整 window/content bounds
-  後，AppKit 可能保留 `NSClipView` offset，所以更新候選頁與 selection 後要將 clip view
-  回到 `NSZeroPoint`，否則前幾列會跑到上緣之外、底部留下空白。候選窗沒有語系相關
-  布局，英文版不會造成這個問題。
+- **macOS 直式候選布局與捲動要在顯示前完成**：先設定視窗的物理 frame 與未縮放
+  content bounds，再明確設定子視圖 frame；最後設定選取、校正 clip view 位置並重畫。
+  換頁／換候選／隱藏再顯示回到頂端，同頁重畫保留合法的手動捲動；內容已全部放得下
+  時必須將殘留 offset 限制為零。這些是防護，不能直接當作舊截圖的已證實根因。
+  2026-09-20 使用實際 controller／NIB 的隔離 AppKit 測試，新版 100%、200%、350%
+  與切換倍率後的首列垂直範圍正常，200% 離屏渲染可見第 1–9 列；舊 `a3b838f`
+  在首次 200% 及 100%／150%／200% 切換也未重現「從第 3 列開始、底部留白」。
+  使用者確認截圖來自先前版本，並指出周圍文字仍是正常大小；不要把 200%
+  當作主要原因。尚未重現原始操作序列，不得宣稱該截圖問題已通過修復前後對照。
+  2026-09-20 後續隔離測試於 100% 人為建立舊 table 高度及捲動位置，新控制器
+  重畫後可恢復零 offset；大字級有捲軸時同頁保留位置、翻頁／換內容／隱藏重開歸零，
+  鍵盤反白末列可見。隔離測試未包含實際 IMK 事件與滑鼠。
 - **macOS 直式候選的提示列與候選內容要分開計算寬度**：候選欄只需按鍵欄、最長候選、
   cell padding 與外框；`SHIFT + 數字鍵` 等 prompt 另以其文字寬度和翻頁按鈕空間決定
   minimum window width。不可先把 prompt 寫進候選 `_width` 再固定加 50 點，也不可交給
@@ -880,9 +1200,9 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   選取，不是 AssociatedPhrase 關聯詞。
 - **Android 首頁與設定頁要避開前相機挖孔**：targetSdk 36 的 Activity 會 edge-to-edge，
   兩頁由 `UiInsets` 把 system bars 與 display cutout 加到既有 padding；不要改回固定
-  上邊距。首頁第三個按鈕開啟震動設定，`HapticSettings` 固定使用
-  `0/10/20/30/50/80/100/150/200ms` 九段並以 SharedPreferences 共用給 IME；`0`
-  表示關閉，震動需要 manifest 的 `VIBRATE` 權限。
+  上邊距。首頁第三個按鈕開啟震動設定，`HapticSettings` 使用
+  `0/1/2/3/5/10/20/30/50/100ms` 十段並以 SharedPreferences 共用給 IME；舊值對應
+  最接近的一段，等距時選較短的一段。`0` 表示關閉，震動需要 manifest 的 `VIBRATE` 權限。
 - **Android Backspace 要以完整文字圖形為單位**：有注音 reading 時由引擎逐步刪除
   聲調、韻母、介音、聲母，候選開啟也不可只關候選而不退音；reading 為空時才由
   `TextDeletion` 計算游標前完整 grapheme 的 UTF-16 長度，讓代理字元、變體選擇符、
@@ -1180,13 +1500,109 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   `DatabaseCooker/Makefile` 會從 `DataSource/chichi77Collection/phrase.people-*.tsv`
   產生人名 exclusion，再匯入 McBopomofo 與 29 個分類詞庫。不要移除檔案存在時才執行
   `awk` 的保護；資料目錄暫時不完整時仍應能產生空 exclusion，避免錯誤訊息誤導。
+- **五平台商店圖與 iPhone App Store 圖分開生成**：2026-09-20 將 Linux GNOME
+  原始候選截圖放在 `StoreAssets/Sources/chichi-linux.png`，由
+  `StoreAssets/generate-five-platforms.py` 生成 Google Play 手機圖 05 與
+  `StoreAssets/FivePlatforms/five-platforms.png`。Linux 格明示開發中；
+  `generate-assets.swift` 只生成各圖組的 01–04，不可再讓它覆蓋五平台圖，
+  也不可把五平台圖放進 `AppStore/iPhone-*`。
 
 ---
 
 ## TODO
 
+### 商店圖庫
+
+- [x] 2026-09-20 以既有 Google Play 05 的紫色版型新增 Linux 實際畫面，
+      產生 Android、iOS、macOS、Windows、Linux 五平台圖與獨立存放副本；
+      iPhone App Store 上架素材維持原四張。
+- [ ] 正式使用五平台圖前，在 Play Console 預覽縮圖與裁切，並確認 Linux
+      「開發中」標示在實際商店頁清楚可見。
+
 ### Linux 原生版
 
+- [x] 2026-09-20 修正 WSL2 VM host 前置條件：確認 KVM 核心與正常 WSL
+      `/dev/kvm` 可用，開發使用者加入 `kvm` 群組，安裝 QEMU／OVMF 並以
+      一般使用者成功啟動 KVM 加速空機；受限行程的 `/dev` 掛載不能當成
+      WSL2 虛擬化能力證據。
+- [x] 2026-09-20 建立 Ubuntu 24.04.5 GNOME Wayland KVM guest，實裝 Fcitx 5
+      與本專案 `.deb`，驗證 active Wayland login 與 addon 載入；QMP 逐鍵送入
+      GTK3／GTK4／Qt6，加 GTK3／GTK4 預設 Wayland IM 路徑共 5/5 通過
+      T01 preedit／「中」提交／英文負控制。建立可重跑的 VM prepare、provision
+      與 smoke 入口；修復最小桌面安裝後 Netplan renderer 選錯及 guest `/tmp`
+      重啟清除 host 的問題，完整 VM 停止／啟動後五案再次通過。
+      XWayland、GNOME popup／多 App／設定與登出再登入仍待完成。
+- [x] 2026-09-20 擴充 GNOME Wayland guest 的 QMP runner 為 20 案 × 八路徑，
+      包含 GTK3／GTK4／Qt6 原生 Wayland 與 XWayland、五布局、候選鍵盤／
+      真滑鼠、關聯詞、模式／全形／簡體、快捷鍵及符號表；每案驗證 App 文字
+      與 `keyboard-us` 負控制；完整一次執行 160/160 通過且無設定還原錯誤。
+      T06 滑鼠另以候選前／顯示／點選後截圖核對
+      第二列「鐘」與約半秒的 popup 清除。重啟 GDM 後新 session 的 T01／
+      T06 滑鼠 16/16 通過。後續加入 T12 符號表真滑鼠，現為 21 案 × 八路徑；
+      系統安裝的候選面板下完整重跑 168/168 通過，設定還原無錯誤，報告
+      確認 extension path 由 `gnome-shell-extension-keykey-kimpanel` 套件擁有。
+- [ ] 處理 GNOME Text Editor 的 GTK Wayland IM 路徑沒有 active input context：
+      已有真實 App runner 記錄 gedit 4/4、Text Editor 2/4；查明是 GTK／GNOME
+      設定、應用程式還是 Fcitx 整合所致，再決定產品或安裝文件修正。
+      2026-09-20 已在 Fcitx 套件加入個別 App 的 `keykey-fcitx-app` 與
+      「文字編輯器（琦琦注音）」啟動器；真實 GNOME Text Editor／gedit
+      各由已安裝 helper 通過「中」提交與英文負控制。兩個 App 同時存活的
+      Alt+Tab 焦點案例在 native Wayland 與 XWayland 2/2 通過，gedit 失焦
+      提交原始「ㄓㄨㄥ」，兩個編輯器隨後都能提交中文與英文負控制。
+      這提供可用的直接
+      Fcitx 路徑，不表示預設 GTK Wayland bridge 問題已修復。
+- [x] 2026-09-20 在 GNOME Wayland VM 加入 T10 雙欄真指標焦點 runner，
+      八模式各有 active 候選切欄與 `keyboard-us` 負控制，16/16 通過；
+      六條直接 Fcitx 路徑失焦提交原始注音，兩條 GTK 預設 Wayland
+      路徑清除 preedit，已記入 JSON 與驗收計畫。
+- [x] 2026-09-20 加入 T11 真實編輯欄位 VM runner：GTK3／GTK4／Qt6
+      native Wayland、XWayland 與兩條 GTK bridge 正向、`keyboard-us` 負控制、
+      active reading 編輯鍵三階段各通過，乾淨輸出紀錄為 21/24 加新 session
+      補跑 3/3。真指標精確選取 `1:2`，由「甲乙丙」替換為「甲中丙」；方向、
+      Home／End、PageUp／PageDown、Delete／Tab、Shift 變體後為「甲中中丙」，
+      密碼欄只收 literal、唯讀欄不變且兩者無 preedit。另加 T12 符號表
+      真滑鼠第一列，八路徑 8/8 選出「，」並通過英文 `!` 負控制。
+      系統安裝面板套件下重跑 T11 正負階段 16/16 與 extended 階段 8/8，
+      本次 24/24 完成且 GNOME session 未崩潰；結果分別保存於有時間戳的
+      `gnome-editing-*.json`。
+- [ ] 完成 T10 兩個同時存活 App 的 GNOME bridge 狀態隔離決策：六條直接
+      Fcitx 路徑正負控制 12/12 通過，GTK3／GTK4 預設 Wayland bridge 的
+      負控制 2/2 通過、正向 0/2；乾淨 Fcitx 重現兩個 App 共用唯一 IBus
+      context，App B 收到英文全形 `ｊｐ６１`。目前直接 Fcitx 路徑可用；
+      bridge 差異、真實 App 範圍及發布說明仍需決定。系統安裝面板套件下
+      再次跑六條直接 Fcitx 路徑的正負控制，12/12 通過且設定還原無錯誤；
+      這沒有改變 bridge 的單一 context 行為。
+- [x] 2026-09-20 加入 T10 GNOME Wayland VM 候選中關閉 client 與 Fcitx
+      重啟恢復 runner：八路徑皆先捕捉候選 popup、關閉 client，驗證 addon
+      PID 存活，再由新 client 通過「中」與 `keyboard-us` 負控制，8/8；
+      框架重啟以 D-Bus owner `:1.801`→`:1.824`、PID `551961`→`553445`
+      證明進入新行程，八路徑新 client 再通過 8/8。前一輪只呼叫 D-Bus
+      `Restart` 卻未重建 transient unit，屬測試環境啟動步驟缺漏，已修正。
+- [x] 2026-09-20 在同一專用 VM 實際由 `gnome-session-quit` 登出，
+      經 GDM Username／Password 畫面用 QMP 鍵盤重新登入，隨即還原
+      測試帳戶原本的 password lock；新 session `8481`、新 Fcitx PID
+      `559719` 均已確認。重新登入後八路徑 T01「中」與 T06 候選第二列
+      真滑鼠「鐘」加英文負控制共 16/16 通過；完整登入後長時間穩定性、
+      瀏覽器首段見下一項，其他互動與 sandbox 仍未驗收。
+- [x] 2026-09-20 加入本機 HTTP／DOM 瀏覽器逐鍵 runner：Firefox Snap
+      native Wayland 的直接 Fcitx／預設 GNOME bridge，以及 Epiphany 的
+      直接 Wayland、bridge Wayland、XWayland，跨 `<textarea>`、單行 `<input>`
+      與 `contenteditable` 合併 15/15 通過「中」與 `keyboard-us` literal
+      `5j/ 1`。Firefox 採 Snap confined home
+      中的獨立 profile，Epiphany 採 private profile；每案關閉瀏覽器並保存
+      DOM 事件與候選畫面。Firefox Snap XWayland 在本 VM 啟動時回報
+      `cannot open display: :0`，不可把 Epiphany XWayland 結果算成 Firefox。
+      瀏覽器跨 App 焦點與其他 sandbox 組合仍待驗收。系統安裝的 GNOME
+      候選面板套件下已重跑相同 15 個 DOM 案例，全部通過且設定還原無錯誤；
+      報告記錄 system extension path、套件版本與 D-Bus owner。
+- [ ] 決定 T10 直接 Fcitx 路徑的原始 preedit 失焦提交是否需調整；
+      已用真實 gedit／GNOME Text Editor 的 Alt+Tab 案補證：direct Fcitx
+      native Wayland／XWayland 各通過，gedit 失焦提交「ㄓㄨㄥ」，Text Editor
+      提交「文」，回切 gedit 提交「中」；兩個真實 gedit 視窗的 GNOME bridge
+      則在失焦清掉 preedit，中文與 `keyboard-us` 負控制仍通過。報告在
+      `out/gnome-vm/gnome-real-focus-last.json`；仍須對照同版 Fcitx GTK／Qt
+      frontend 事件順序與 GNOME X11 baseline，
+      再決定產品修改或明列平台差異，不用延遲鍵盤事件規避。
 - [x] 2026-09-14 為使用者的 WSLg 候選窗一秒殘影與連打多重殘影，建立獨立
       GNOME Shell／TigerVNC／noVNC X11 診斷桌面；相同 addon 通過三次關聯選字、
       十次「ㄎ」連打、英文負控制，以及關窗後約 59 ms 的候選區域像素清除檢查。
@@ -1203,6 +1619,28 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       視覺 sweep、音訊、真實 App、XWayland 與 native Wayland 未完成。
 - [ ] 以完整 Ubuntu Desktop 登入 session 完成 GNOME X11／XWayland／native Wayland
       驗收；本機 GNOME X11 人工通過不代替其他 session／App／發布 gate。
+- [x] 2026-09-20 建立 GNOME Wayland guest 的 popup 四角與雙 virtio 輸出
+      runner：八條 toolkit/backend 路徑在 1280×800 四角 32/32 通過九列
+      候選、避讓、真滑鼠提交與清除；副螢幕 100%／200% 各八路徑均實際提交
+      中文與英文 literal，候選定位則 10/16 通過；保存雙 head 截圖及
+      精確幾何證據。後續加入 panel provider guard、副螢幕 QMP 真滑鼠第二列
+      選「鐘」與清除檢查；Classic UI 對照 16 案定位只通過 6 案。
+- [x] 關閉專用 GNOME Shell 46 VM 的雙螢幕首次移窗候選缺口：
+      官方 Kimpanel v83 原版 10/16、Classic UI 6/16；固定 SHA 的
+      `gnome-panel/kimpanel-v83.patch` 修正 relative 縮放與 absolute rect
+      同視窗位移後，以真滑鼠第二列「鐘」、候選清除及英文負控制 16/16，
+      單螢幕四角回歸 32/32。runner 也會在每案啟動前把指標移回主螢幕，
+      避免前案的副螢幕指標讓新 App 直接開到副螢幕。仍須另外驗證
+      額外移窗、熱插拔、實體顯示器與跨版本。
+- [ ] 完成 Ubuntu 24.04 GNOME 正式候選 panel：決策以 Kimpanel 協定與
+      GNOME Shell 面板為方向；修補版已在 VM 完成雙螢幕 16/16，
+      獨立 GPL-2.0 `.deb` 已在 Ubuntu 24.04 GNOME Shell 46 VM 完成
+      預覽安裝→正式升級、停用→啟用與 32/32 四角、16/16 雙螢幕
+      真滑鼠重驗。最後的 copyright metadata 修正後重新安裝相同程式 payload，
+      `dpkg --verify` 與 T01／T06 真滑鼠抽樣 4/4 通過。仍須 GNOME 跨版本、
+      橫式、縮放配色、焦點／再次移窗、
+      熱插拔與實體多螢幕；
+      詳見 `docs/gnome-candidate-panel.md`。
 - [ ] 決定並實作 F07 琦琦注音專屬候選 renderer；完整分解見
       `LINUX_DEVELOPMENT_PLAN.md` 的「F07 專屬 renderer」TODO。決策前須先比較
       Fcitx 5.0.14 相容 UI addon 與 5.0.24+ callback／22.04 相容層，涵蓋 system 與
@@ -1217,9 +1655,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       build、2/2 CTest、staging／卸載／清理，及預設 `/usr/local` 暫時真安裝後的 Fcitx
       5 → GTK 3 X11 T01 打字與卸載。
 - [ ] 完成 T14-SOURCE 其餘發布 gate：Ubuntu 22.04／24.04 hosted 已在
-      run `34742072894` 通過；再補 `/usr`／任意 prefix 的注音完整真打字、原始碼
-      升級／重裝、9 個 active Ubuntu 與 P4／P5 release evidence；目前局部結果不得當成
-      整組 T14 或 Linux 1.2.8 已可發布。
+      run `34742072894` 通過；2026-09-20 Ubuntu 24.04 local amd64 又以原始碼
+      `/usr/local`、`/usr`、含空白的自訂 prefix 各通過 82 個 X11 真實輸入案例，
+      自訂 prefix 移除後保留 sentinel、重裝後 GTK3／GTK4／Qt6 T01 各通過。
+      仍須補原始碼升級 fixture、Ubuntu 22.04 的相同系統安裝驗收、其餘
+      active Ubuntu 與 P4／P5 release evidence；目前局部結果不得當成整組 T14 或
+      Linux 1.2.8 已可發布。
 - [x] 已將 Ubuntu Desktop 24.04 LTS + Fcitx 5（GNOME）設為首要支援與最完整
       測試目標；開發／測試計畫同步新增主環境完整驗收與 required CI 規格。
 - [x] 2026-09-12 完成開發／測試 plan 與原始碼功能盤點；沒有 Linux build、
@@ -1673,6 +2114,53 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### macOS
 
+- [x] 2026-09-20 完成 macOS 候選／loader／SQLite 與 cooker 專項 review，
+      重建資料庫並完成副本大小、順序、快取及 statement 洩漏實驗；結果在
+      `MACOS_CODE_REVIEW.md`；後續同日另依使用者要求修正三項 P2。
+- [x] 修正直式候選與通知 attributed-string ownership，以及詞彙編輯器查詢
+      statement 洩漏；arm64 Release build／analyze 與 1,000 次資料層 probe 通過。
+- [ ] 在實際 1.2.9 IMK 行程反覆重畫候選、開關通知、詞彙編輯 save／close，
+      重新量測 leaks／footprint 及確認長時間不再累積；目前執行的 1.2.8
+      行程不能代表修復後結果。
+- [ ] 修復洩漏後再量長時間使用及 SQLite cache 成本；目前保留 db 格式，
+      4 KiB／VACUUM／注音專用產物作後續空間選項。共用改動須包含 Windows
+      SQLite 3.6.11 相容性及 macOS／iOS 候選／反查順序回歸。
+- [ ] 按五平台實際架構量記憶體：iOS／Android 多讀音候選 cache 與載入峰值、
+      Windows x86／x64 多 host 用量、Linux Fcitx 字典常駐與切換成本；
+      依 MACOS_CODE_REVIEW.md 跨平台專節決定是否需要限制快取或延後載入。
+- [x] 候選窗依 visible frame 限制可用尺寸；直式超高時捲動、橫式超界時
+      降低實際縮放，且最終位置雙軸限制。幾何／捲動測試與 Release build 通過。
+- [x] 2026-09-20 直式候選改為先確定縮放 frame／bounds、再排子視圖，最後才選取、
+      校正捲動與重畫；同頁保留合法捲動，反白列變更時才自動揭露，
+      換候選／翻頁／隱藏重開清除舊位置。
+      實際 controller／NIB 隔離測試通過 100% 舊 table 高度／offset 恢復、
+      200% 大字級捲動與反白末列、100%／200%／350% 切換。
+- [x] 已產生本機第二版 arm64 1.2.9 測試包
+      `Installer/local-builds/chichi77-KeyKey-1.2.9-local-20260920-r2-macos-arm64.pkg`；
+      內含此次直式候選順序與捲動改動，app UUID
+      `97C08D88-FCD6-3892-A807-793D3C03619F`，套件固定安裝路徑、
+      ad hoc deep strict 簽章及 SQLite integrity check 通過。尚未在系統安裝。
+- [x] 2026-09-20 產生本機 arm64 1.2.9 測試安裝包，位於
+      `Installer/local-builds/chichi77-KeyKey-1.2.9-local-20260920-macos-arm64.pkg`；
+      pkg 內版號／固定安裝路徑、db integrity 及 app ad hoc deep strict 簽章均通過。
+      此本機產物被 `.gitignore` 忽略，未提交或發布；後續確認使用者系統的
+      1.2.9 app Mach-O UUID 與這一版相同，但未確認當時執行中的輸入法是否已重載。
+- [ ] 實際 Mac 補驗 350%、小螢幕、邊緣／雙螢幕定位、翻頁、捲動條與
+      滑鼠命中；靜態幾何測試不能代替真實視覺驗收。
+- [ ] 追查網友「新增 macOS 輸入法後叫不出來」：使用者後續確認網友下載的
+      是正式 1.2.8，仍待取得 CPU、macOS、是否首次安裝後重新登入，
+      以及無法切換或切換後無法輸入的區別。使用者稍後會找時間登出測試。
+      目前產物僅 arm64／macOS 15+，distribution 只有 OS 檢查，尚缺明確 CPU
+      安裝門檻；不能因唯音正常就排除 KeyKey 相容性，也未有兩者衝突的證據。
+      postinstall 已結束舊 KeyKey 行程，升級通常由系統重啟；首次安裝仍提示重新登入。
+- [ ] Intel macOS 封裝：2026-09-20 以獨立 `Intel.xcconfig` 強制 `ARCHS=x86_64`
+      實際編譯，前置 target 完成，主程式連結失敗的具體阻礙是現有
+      `/opt/homebrew/opt/openssl@3/lib/libcrypto.a` 僅 arm64；缺少 x86_64
+      `_BIO_*`、`_PEM_read_bio_RSA*`、`_RSA_*`、`_SHA1`。需要相同版本的
+      x86_64 OpenSSL 靜態庫，再做完整 x86_64 app／nested code／pkg 驗證與
+      Intel macOS 15 實機輸入測試。Xcode 27 在 deployment target 15 下可編
+      x86_64 空物件，`-xcconfig` 的 `ARCHS=x86_64` 必須寫在 include 原設定之後；
+      僅在 xcodebuild 命令列加 `ARCHS=x86_64` 會被現有 xcconfig 的 arm64 覆蓋。
 - [x] 2026-09-17 修正 Preferences 深色模式的白底白字，三種語系的表格改用系統動態底色；
       同時在直式候選每次更新後重設 scroll origin，避免放大候選窗時第 1、2 列移出可視範圍。
       三份 XIB 已通過 `ibtool --compile`，並以 Xcode 27／macOS 27 SDK 完成 arm64 Release
@@ -1767,6 +2255,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Android
 
+- [x] 2026-09-19 震動時間改為 0、1、2、3、5、10、20、30、50、100ms 十段；直橫式
+      鍵盤高度各改為 50%、75%、90%、100%、110%、125%、150%、175%、200% 九段；
+      舊的任意數值讀取時對應到最近段。設定頁只在放開震動滑桿後試震一次，0 不震動。
+      `lintDebug testDebugUnitTest assembleDebug` 已通過；API 26 `Medium_Phone` 已安裝
+      debug APK，檢查設定頁初始值與滑桿切換到 100ms、110% 的顯示，未見崩潰或權限錯誤。
+      真機短震動手感與六台 AVD 完整矩陣仍需驗收。
 - [x] 2026-09-17 已將注音字表與 30 個關聯詞庫改為建置時產生 `.kki` 索引；core 不再於
       IME 啟動時解析 CIN，關聯詞改用低優先序背景載入及按鍵延遲解碼。另加入直式／橫式
       各自 50%–200% 的虛擬鍵盤高度、0–100ms 每 1ms 的震動設定與舊震動設定遷移；

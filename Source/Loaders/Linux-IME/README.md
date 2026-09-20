@@ -1,10 +1,15 @@
 # chichi77 KeyKey for Linux
 
-This directory contains the new native Linux implementation. It does not link
-or modify the legacy KeyKeyEngine or OpenVanilla frameworks. The first release
-target is 1.2.8, led by Ubuntu Desktop 24.04 LTS with Fcitx 5.
+Current source version: 1.2.9 (in development). The documented 1.2.8
+Ubuntu package set remains the published release; 1.2.9 packages have not
+been released or accepted yet.
 
-## Current development status
+This directory contains the new native Linux implementation. It does not link
+or modify the legacy KeyKeyEngine or OpenVanilla frameworks. Linux 1.2.8
+supports Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, and amd64. See
+[release installation and limits](docs/linux-1.2.8-release.md).
+
+## Release features and development status
 
 Linux 1.2.8 phase one targets all behavior currently shipped by the Windows
 TSF frontend. Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin are therefore
@@ -108,6 +113,19 @@ The initial vertical slice provides:
   every flow has a `keyboard-us` negative control;
 - Debian packages named `chichi77-keykey-data` and
   `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
+- a separate GPL-2.0 GNOME Shell 46 panel package for Ubuntu 24.04, built
+  from pinned Input Method Panel v83 sources and the cross-monitor placement
+  patch. Install or upgrade its `.deb`, log out and in, then run
+  `keykey-gnome-panel enable`; `disable` and `status` manage the current user's
+  panel without changing the Fcitx addon. See `gnome-panel/README.md`;
+- `keykey-fcitx-app COMMAND [ARGUMENT ...]` for launching one GTK application
+  through the direct Fcitx input context. The optional
+  "Text Editor (琦琦注音)" application launcher starts a separate GNOME Text
+  Editor window this way. The direct `GTK_IM_MODULE=fcitx` route has passed
+  the real editor input test through the installed helper; the desktop file
+  also passes metadata validation;
+  GNOME's default GTK Wayland bridge still exposes one shared IBus context
+  to two applications, so it cannot provide per-application mode isolation;
 - a package lifecycle test covering install, controlled preview-to-1.2.8
   upgrade, removal, reinstall, dependency/file/hash checks, the eighty-two
   non-settings-window X11 cases after each installed state, and all eighty-three cases,
@@ -133,19 +151,37 @@ The Fcitx adapter also clears associated-phrase state defensively for clients
 that report Password or Sensitive capabilities. In the current GTK 3 X11 path,
 password purpose is stricter: Fcitx switches that input context to
 `keyboard-us` and rejects forcing the custom method back on.
-Other remaining work includes combined filter-order coverage, IBus,
-full-width behavior outside an active Linux input context, symbol-list mouse
-and visual behavior, RPM/Arch
-packaging, native Wayland, and full desktop/App tests. The current Debian packages contain only the implemented
-data and Fcitx 5 components; they are development artifacts, not a complete
-1.2.8 Linux release. The Bopomofo path remains a vertical slice rather than a
-complete feature-parity claim; the other two paths are retained extension
-features rather than Windows-parity blockers.
+Further compatibility work includes IBus, physical monitor hotplug, more Apps
+and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. Local packages
+from development scripts remain test artifacts. The supported 1.2.8 package
+set and its verified boundaries are listed in the release notes.
+
+An Ubuntu 24.04.5 GNOME Wayland KVM guest now passes 20 typing and pointer
+cases across eight GTK 3/GTK 4/Qt 6 native Wayland and XWayland paths (160/160), each
+with a keyboard-us literal negative control. A separate real-application runner
+passes gedit in four paths and GNOME Text Editor with direct Fcitx Wayland and
+XWayland; the latter's two GTK Wayland IM paths currently report Fcitx
+`status=0` and an empty active engine while the document is focused. In this
+GNOME 46 guest, launch that editor with
+`GTK_IM_MODULE=fcitx` to use the verified native Wayland path. See
+[the VM guide](docs/gnome-wayland-vm.md). Later packaged-panel testing expanded
+the matrix to 168/168 and tested Firefox Snap and Epiphany DOM fields 15/15.
+The [GNOME candidate panel decision](docs/gnome-candidate-panel.md) records
+the unmodified 10/16 Kimpanel and 6/16 Classic UI dual-display placement
+results. A pinned GPL-2.0 Kimpanel v83 patch now passes 16/16 dual-display
+pointer cases and 32/32 single-display four-corner cases in the GNOME 46 VM.
+Physical-monitor verification remains open.
+The VM also passes 16/16 two-field focus phases; direct Fcitx paths commit raw
+preedit on blur, while the two GTK native Wayland paths with the module variable
+unset clear it. Both outcomes are recorded as a platform integration difference.
+The real-editor focus runner also reproduces this distinction: direct Fcitx
+gedit commits raw preedit on blur to GNOME Text Editor, while two real gedit
+windows using the default Wayland bridge clear it.
 
 Current feature evidence is tracked in [`docs/parity.md`](docs/parity.md). The
 compatibility inventory is machine-readable in
-[`ci/support-matrix.json`](ci/support-matrix.json): nine Ubuntu targets are the
-active phase, while Debian and Fedora are eleven explicit future TODO targets.
+[`ci/support-matrix.json`](ci/support-matrix.json): Ubuntu 24.04 is the only
+qualified release target; all other distro/version targets are future TODOs.
 Entries marked `build-only` have not passed installed desktop typing acceptance.
 
 ## Configure and GNU Make source build
@@ -224,6 +260,13 @@ fcitx5 -r -d
 The Ubuntu 24.04 gate performs a temporary default `/usr/local` install, applies
 those explicit session search paths, loads the addon in Fcitx 5, types through
 GTK 3 on X11, and uninstalls it through the manifest.
+For a broader local source-install gate, `ci/dev.sh source-e2e` builds separate
+`/usr/local`, `/usr`, and custom prefix variants in a clean one-shot container
+using the development image. It runs the 82-case GTK 3/GTK 4/Qt 6 X11 suite for each installed
+variant, then removes it through its manifest. The custom prefix contains
+spaces and uses custom lib/data directories; that variant also checks that an
+unrelated file survives removal and that a reinstall can type in all three
+toolkits. Every install refuses an existing project-owned system path.
 
 Release maintainers can create the Linux source archive and checksum from a
 committed revision, then rebuild the archive without a Git directory or prior
@@ -249,6 +292,7 @@ Source/Loaders/Linux-IME/ci/dev.sh up
 Source/Loaders/Linux-IME/ci/dev.sh build
 Source/Loaders/Linux-IME/ci/dev.sh test
 Source/Loaders/Linux-IME/ci/dev.sh source
+Source/Loaders/Linux-IME/ci/dev.sh source-e2e
 Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
 Source/Loaders/Linux-IME/ci/dev.sh verify
 Source/Loaders/Linux-IME/ci/dev.sh package
@@ -283,7 +327,9 @@ is needed.
 `source` runs both source-directory and out-of-source configure/GNU Make
 builds, including CTest, custom install directories, DESTDIR staging,
 uninstall, clean, and distclean. It is separate from the incremental Ninja
-cache used by `build` and `test`.
+cache used by `build` and `test`. `source-e2e` is a longer isolated system-install
+gate; the hosted pull request continues to run only the `/usr/local` source
+typing smoke.
 
 Use `ci/dev.sh status` to inspect the session, `ci/dev.sh shell` for an
 interactive shell, and `ci/dev.sh down` to remove the container. `down` retains
@@ -310,6 +356,15 @@ the named build volumes, so a later `up` can continue incrementally.
 - Run `ci/dev.sh status`, `ci/dev.sh test`, and then `ci/dev.sh verify` after
   `up`. Container presence alone does not prove that the build and X11 paths
   can use the persistent volumes.
+- For a full GNOME Wayland guest, install `qemu-system-x86`, `qemu-utils`, and
+  `ovmf` plus `cloud-image-utils`, ensure the user belongs to `kvm`, then run
+  `tools/check-wsl-vm-host.sh` from a new, normal WSL shell. It checks the KVM
+  API, OVMF files, and a short QEMU startup with KVM acceleration. A restricted
+  process may hide `/dev/kvm`; retry the check in a normal WSL shell before
+  changing the host configuration. The reproducible GNOME VM, typing matrix
+  and real-application checks are documented in
+  [gnome-wayland-vm.md](docs/gnome-wayland-vm.md). WSLg GUI apps do not
+  constitute a full GNOME desktop session.
 
 The stage named volume is mounted at `out/stage`, while each architecture uses
 a removable child such as `out/stage/dev-container-amd64`. The staging action

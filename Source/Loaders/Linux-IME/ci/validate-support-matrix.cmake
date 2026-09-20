@@ -40,12 +40,13 @@ foreach(index RANGE 0 ${last_target})
         endif()
     endif()
 
-    if(distro STREQUAL "ubuntu")
-        if(NOT phase STREQUAL "active")
-            message(FATAL_ERROR "Ubuntu target is not active: ${target_id}")
+    if(target_id STREQUAL "ubuntu-24.04")
+        if(NOT phase STREQUAL "active" OR NOT required OR
+           NOT status STREQUAL "desktop-tested")
+            message(FATAL_ERROR "Ubuntu 24.04 must remain the tested development target")
         endif()
         math(EXPR active_count "${active_count} + 1")
-    elseif(distro STREQUAL "debian" OR distro STREQUAL "fedora")
+    elseif(distro STREQUAL "ubuntu" OR distro STREQUAL "debian" OR distro STREQUAL "fedora")
         if(NOT phase STREQUAL "future-todo" OR required)
             message(FATAL_ERROR
                 "Deferred target must be a non-required future TODO: ${target_id}")
@@ -61,7 +62,7 @@ if(NOT primary_count EQUAL 1)
         "The Linux support matrix must contain one primary target; found ${primary_count}")
 endif()
 
-if(NOT active_count EQUAL 9 OR NOT future_count EQUAL 11)
+if(NOT active_count EQUAL 1 OR NOT future_count EQUAL 19)
     message(FATAL_ERROR
-        "Expected 9 active Ubuntu and 11 deferred Debian/Fedora targets; found ${active_count} and ${future_count}")
+        "Expected one active Ubuntu and 19 deferred targets; found ${active_count} and ${future_count}")
 endif()
