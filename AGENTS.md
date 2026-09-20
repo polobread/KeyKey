@@ -380,6 +380,23 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   QMP 候選清除檢查須比對「候選顯示中」與「點選後」；背後 Files 等 App
   可能在同一像素區顯示提示框，直接要求點選後回到「候選前」的畫面會誤判。
   真滑鼠案例另核對第二列提交「鐘」，不能只用像素差宣稱選字成功。
+- **GNOME 候選四邊與雙螢幕要分開驗收**：2026-09-20 專用 KVM guest 的
+  官方 `kimpanel@kde.org` v83（GNOME Shell 46）啟用後，1280×800 的八條
+  GTK3／GTK4／Qt6 native Wayland、GNOME bridge 與 XWayland 路徑 × 四角
+  32/32 通過九列可見、欄位避讓、真滑鼠選第二列「鐘」及約半秒候選清除。
+  未裝 extension 時，GTK3／GTK4 native Wayland 右緣會裁切、Qt6 候選壓欄位；
+  extension 只裝在測試 guest，並非 KeyKey `.deb` 的依賴或安裝內容。
+  雙虛擬顯示器以 Mutter 切 1024×768／100% 與 1920×1080／200%；
+  直接跨螢幕移窗的 16 組定位為 10/16（100% 6/8、200% 4/8），
+  文字與 `keyboard-us` 負控制則 16/16 正確。
+  GTK3／GTK4 direct Wayland 在 200% 副螢幕以 GNOME 快捷鍵直接移窗後，
+  候選可能還留在主螢幕；GTK3 額外移窗後曾覆蓋副螢幕欄位。
+  GTK3／GTK4 XWayland 直接移窗後也把候選留在主螢幕，額外移窗後
+  即使候選到副螢幕仍可能停在舊 cursor rectangle；
+  只檢查提交「中」或 popup 出現在副螢幕會誤判，runner 已加入欄位／caret
+  距離判斷。兩種缺口都還不能當作多螢幕定位通過。測試入口、extension
+  版本與輸出位置見 `docs/gnome-wayland-vm.md`；QEMU 第二 head 必須使用
+  `keykey-display` 擷取，`Virtual-2` 預設未接上，需在 guest 接通後重啟 GDM。
 - **GNOME GTK4 真實 App 與 synthetic host 的 bridge 結果不同**：2026-09-20
   Ubuntu 24.04.5 GNOME Wayland guest 以 gedit／GNOME Text Editor 各跑直接
   Fcitx、未設 `GTK_IM_MODULE`、明設 `wayland` 與 XWayland 四路徑。
@@ -1411,6 +1428,21 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       視覺 sweep、音訊、真實 App、XWayland 與 native Wayland 未完成。
 - [ ] 以完整 Ubuntu Desktop 登入 session 完成 GNOME X11／XWayland／native Wayland
       驗收；本機 GNOME X11 人工通過不代替其他 session／App／發布 gate。
+- [x] 2026-09-20 建立 GNOME Wayland guest 的 popup 四角與雙 virtio 輸出
+      runner：八條 toolkit/backend 路徑在 1280×800 四角 32/32 通過九列
+      候選、避讓、真滑鼠提交與清除；副螢幕 100%／200% 各八路徑均實際提交
+      中文與英文 literal，候選定位則 10/16 通過；保存雙 head 截圖及
+      精確幾何證據。
+- [ ] 關閉雙螢幕的候選定位缺口：200% 第二螢幕的 GTK3／GTK4 direct
+      Wayland 及 GTK3／GTK4 XWayland 的已聚焦視窗搬到第二螢幕後，
+      候選可能還留在第一螢幕；額外移窗後又可能蓋欄位或留在舊
+      cursor rectangle。追查 Fcitx frontend／Kimpanel／Mutter
+      的座標更新責任，驗證移動後重聚焦、不同縮放與真實 App，再決定
+      修正或平台差異。
+- [ ] 決定 Ubuntu 24.04 GNOME 正式候選 panel：測試 guest 的官方
+      `kimpanel@kde.org` v83 修正單螢幕四邊裁切，但尚未納入套件；
+      記錄安裝／更新／授權／GNOME 版本相容與無 extension 時的退化行為，
+      並完成混合 DPI、橫式、縮放配色及實體多螢幕驗收。
 - [ ] 決定並實作 F07 琦琦注音專屬候選 renderer；完整分解見
       `LINUX_DEVELOPMENT_PLAN.md` 的「F07 專屬 renderer」TODO。決策前須先比較
       Fcitx 5.0.14 相容 UI addon 與 5.0.24+ callback／22.04 相容層，涵蓋 system 與

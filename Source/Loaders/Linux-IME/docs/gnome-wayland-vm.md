@@ -108,6 +108,64 @@ passing run is functional evidence for these key sequences. It does not
 establish browser or sandbox behavior, full T01–T12 coverage, all popup
 positions/styles, or release readiness.
 
+## Candidate popup edges and two displays
+
+The VM launcher now exposes two virtio display outputs. Restart an older VM
+process after updating the launcher; the second connector remains disconnected
+until enabled inside the disposable guest. The connector number in this guest
+is `card1-Virtual-2`; inspect `/sys/class/drm/card*-Virtual-2/status` if it
+differs on another QEMU version:
+
+```sh
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh 'sudo sh -c "echo on > /sys/class/drm/card1-Virtual-2/status"'
+Source/Loaders/Linux-IME/tools/gnome-vm.sh ssh 'sudo systemctl restart gdm3'
+Source/Loaders/Linux-IME/tools/gnome-vm-popup-smoke.py --mouse
+Source/Loaders/Linux-IME/tools/gnome-vm-multimonitor-smoke.py
+```
+
+The guest-only `gnome-vm-displays.py` helper uses Mutter DisplayConfig to
+apply temporary layouts. `dual` puts a 1024×768 display at 100% to the right
+of the 1280×800 primary; `dual-mixed` uses 1920×1080 at 200% on the right.
+The runner restores the starting layout and Fcitx settings after a failure as
+well as after success. QMP captures both physical heads separately. The
+single-monitor runner moves a real GTK 3/4 or Qt 6 window to every corner in
+eight native Wayland, GNOME bridge and XWayland modes. It checks all nine
+candidate rows fit on screen, avoid the focused field, and stay near the
+caret; a VM pointer clicks row two to commit `鐘`, then checks the popup clears
+and `keyboard-us` yields the literal `5j/ 1`. The monitor runner moves the
+live window to display two and checks the popup's head, screen bounds, caret
+position, actual `中` commit and literal control. Evidence and screenshots are
+in ignored `out/gnome-vm/gnome-popup-last.json` and
+`gnome-multimonitor-last.json`.
+
+The dedicated guest currently has the official GNOME Shell
+[Input Method Panel](https://extensions.gnome.org/extension/261/kimpanel/)
+(`kimpanel@kde.org`) extension version 83 installed for Shell 46. Its
+upstream download has `version_tag=57768` and SHA-256
+`b8d83c1bc6e903a280dc0492b9b4e3be4b2713ab96c669d1ae90e625eacf675f`.
+Confirm `gnome-extensions info kimpanel@kde.org` says `ACTIVE` and the session
+bus owns `org.kde.impanel` before comparing panel positions. Without this
+extension, this guest showed GTK 3/4 native Wayland clipping at the right edge
+and Qt 6 candidate overlap; with it, the complete 1280×800 four-corner run
+passed 32/32, including mouse commit and clearance. This extension is only in
+the test guest, not installed by the KeyKey package. The fixed resolution and
+one vertical style do not cover horizontal candidates, other themes, hotplug,
+physical GPUs or multiple real monitors.
+
+The 2026-09-20 direct window-to-display-two run passed candidate positioning
+in 10/16 mode/layout combinations: six of eight at 100% and four of eight
+with the second display at 200%. All 16 still committed `中` in the moved
+window and passed the `keyboard-us` literal control. GTK 3/4 XWayland in both
+layouts left the popup on display one; GTK 3/4 direct Wayland also left it
+there at 200%. An additional GNOME move operation sometimes moved the popup
+to display two, but GTK 3/4 XWayland could still use an old caret rectangle,
+and GTK 3 direct Wayland at 200% once placed it over the input field. That
+extra move could place a window at the bottom rather than the intended upper
+test area, so the repeatable gate uses only GNOME's move-to-right-display
+shortcut and checks the resulting window bounds. The six failures remain
+open; a correct text commit alone is insufficient evidence for popup
+placement. The guest layout and KeyKey settings were restored after the run.
+
 The second runner opens real gedit and GNOME Text Editor documents in four
 paths each: direct Fcitx native Wayland, native Wayland with `GTK_IM_MODULE`
 unset, explicit GTK Wayland IM, and XWayland. It sends the same physical VM

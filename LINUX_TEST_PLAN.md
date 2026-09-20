@@ -49,8 +49,26 @@ XWayland 通過，未設 `GTK_IM_MODULE` 與明設 `wayland` 兩條則在文件�
 普通按鍵時，`fcitx5-remote` 仍回報沒有 active input context。這是尚未關閉的
 GTK4 真實 App 缺口。GDM 重啟後新 Wayland session 的 T01 與 T06 滑鼠案例 16/16
 通過；後續另已明確登出／登入再跑 16/16。瀏覽器首段、兩個同時存活 App
-與 client／Fcitx recovery 的實測見下文；popup 四邊與多螢幕、其他
-瀏覽器互動／其他 sandbox、長時間穩定性及 hosted runner 仍未驗證。
+與 client／Fcitx recovery 的實測見下文；popup 四邊與多螢幕的新增實測
+及未解缺口見下一段，其他瀏覽器互動／其他 sandbox、長時間穩定性及
+hosted runner 仍未驗證。
+
+2026-09-20 另在同一 GNOME Wayland guest 為 QEMU 加第二 virtio output，
+以 Mutter DisplayConfig 實切 1280×800 主螢幕加 1024×768／100% 或
+1920×1080／200% 副螢幕，QMP 個別擷取兩個 head。官方 Input Method Panel
+GNOME Shell extension (`kimpanel@kde.org` v83) 在專用 guest 啟用後，
+`gnome-vm-popup-smoke.py --mouse` 的八模式 × 四角 32/32 通過九列候選
+不裁切、欄位避讓、第二列滑鼠提交「鐘」、點後清除及英文 literal 控制。
+在 extension 未安裝時，GTK3／GTK4 native Wayland 的右緣候選裁切，
+Qt6 候選蓋住欄位；extension 仍未納入產品套件。
+雙螢幕 runner 的 16 組均在副螢幕提交「中」與英文 literal，
+候選定位 10/16 通過（100% 6/8、200% 4/8）；
+但 200% 副螢幕的 GTK3／GTK4 direct Wayland 直接移窗後候選可能還留
+主螢幕；GTK3 額外移窗後曾蓋住欄位。另由截圖發現 GTK3／GTK4
+XWayland 直接跨螢幕移窗後候選仍留主螢幕，額外移窗後可停在舊
+cursor rectangle，
+已補入 caret 距離斷言。這些為尚未關閉的視覺驗收缺口，不能將
+「有提交文字」等同多螢幕定位通過。完整結果及重建方式見 VM 手冊。
 
 同一 guest 的 T10 雙欄焦點 runner 又完成 8 模式 × 正負控制 16/16：第一欄有
 active 候選時以 VM 指標切第二欄，第二欄精確提交「文」，切回第一欄再提交「中」；

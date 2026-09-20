@@ -115,7 +115,7 @@ case ${1:-} in
       -drive if=pflash,format=raw,file="$vm_dir/ovmf-vars.fd" \
       -drive if=virtio,format=qcow2,file="$vm_dir/guest.qcow2" \
       -drive if=virtio,format=raw,file="$vm_dir/seed.img" \
-      -vga virtio \
+      -vga none -device virtio-vga,id=keykey-display,max_outputs=2 \
       -netdev user,id=net0,hostfwd=tcp:127.0.0.1:"$ssh_port"-:22 \
       -device virtio-net-pci,netdev=net0 \
       -vnc 127.0.0.1:"$vnc_display" \

@@ -213,9 +213,13 @@ class Qmp:
                 raise RuntimeError(f"QEMU rejected key {key}: {result.strip()}")
             time.sleep(0.15)
 
-    def screenshot(self, path):
-        self.call("human-monitor-command",
-                  {"command-line": f"screendump {path}"})
+    def screenshot(self, path, head=0):
+        if head:
+            self.call("screendump", {"filename": str(path),
+                                     "device": "keykey-display", "head": head})
+        else:
+            self.call("human-monitor-command",
+                      {"command-line": f"screendump {path}"})
 
     def move_pointer(self, x, y, width, height):
         self.call("input-send-event", {"events": [
@@ -303,9 +307,9 @@ def find_candidate_popup(before, after):
     if (width, height) != (new_width, new_height):
         raise RuntimeError("VM display resolution changed during candidate capture")
     rows = []
-    for y in range(30, height - 30):
+    for y in range(height):
         changed = []
-        for x in range(50, width - 50):
+        for x in range(width):
             offset = (y * width + x) * 3
             delta = sum(abs(old_pixels[offset + channel] - pixels[offset + channel])
                         for channel in range(3))

@@ -256,6 +256,18 @@ P0 必須驗證 F06／F07／F11：跟隨游標、四邊避讓、不搶焦點、�
 addon ID、client backend 與 panel provider，驗證登入後啟動、停用及重啟流程。
 若需 Shell extension／Kimpanel，P0 記錄必要性、版本與相容範圍，再依本節的 UI
 整合決議納入；不能把只在另一個桌面可用的 popup 當成 Ubuntu 主環境驗收。
+2026-09-20 的 Ubuntu 24.04.5 GNOME Shell 46 KVM guest 已加入雙 virtio 輸出與
+Mutter 100%／200% layout runner。未裝 Input Method Panel 時，GTK3／GTK4 native
+Wayland 的右緣候選被裁切、Qt6 候選壓住欄位；在 guest 安裝官方
+`kimpanel@kde.org` v83 後，1280×800 單螢幕的八路徑 × 四角真滑鼠矩陣
+32/32 通過，但 200% 第二螢幕的 GTK3／GTK4 direct Wayland
+在已聚焦視窗跨螢幕移動後仍可能把候選留在主螢幕；GTK3 額外移窗後
+曾讓候選覆蓋欄位。GTK3／GTK4 XWayland 也可能把候選留在主螢幕，
+或在額外移窗後留在舊 cursor rectangle。
+雙螢幕直接移窗的完整定位矩陣只通過 10/16，雖然 16/16 都提交正確文字；
+不能以輸入成功代替 popup 位置驗收。
+extension 目前只安裝在測試 guest，不能當成套件已提供或 P0 已關閉；
+混合 DPI 與移窗定位須先解決，再決定正式的 GNOME panel 整合方案。
 若 GNOME 達不到 macOS 外觀功能，提出「受維護的 Shell 整合／
 經驗證的替代呈現」與成本，經確認後才實作額外整合或接受差異。
 不得默默用系統預設樣式取代需求，再宣稱完整 parity；也不能以 XWayland fallback
