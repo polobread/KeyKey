@@ -58,6 +58,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 ## 下載與發行
 
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
+- Windows 11 使用者請看[Windows 安裝與使用指南](WINDOWS_INSTALL.md)：下載 ZIP、執行安裝、切換輸入法與日常打字。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦注音》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939)安裝。
 - Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；目前透過 Google 群組及 Google Play 封閉測試加入後安裝。
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS 與 Windows
@@ -79,6 +80,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 ## 文件
 
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
+- [Windows 安裝與使用指南](WINDOWS_INSTALL.md)：安裝、啟用、選字、詞庫設定與解除安裝
 - [iOS 安裝與使用指南](IOS_INSTALL.md)：App Store 安裝、加入鍵盤、日常操作與實體鍵盤編輯器
 - [Android 安裝與使用指南](ANDROID_INSTALL.md)：Google Play 測試安裝、啟用鍵盤、觸控與實體鍵盤操作
 - [BUILDING.md](BUILDING.md)：各平台建置、測試、安裝與打包
@@ -156,6 +158,7 @@ iOS.
 ### Downloads and releases
 
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
+- Windows 11 installation, setup, and daily use: [Windows installation guide (Traditional Chinese)](WINDOWS_INSTALL.md).
 - iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939).
 - Android setup and daily use: [Android installation guide (Traditional Chinese)](ANDROID_INSTALL.md). Installation currently uses a Google Group and Google Play closed testing.
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) provides the
@@ -180,6 +183,7 @@ complete output and signing details.
 
 ### Documentation
 
+- [Windows installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): download, setup, typing, preferences, and removal
 - [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play testing, keyboard setup, touch and hardware keyboard use
 - [BUILDING.md](BUILDING.md): build, test, installation, and packaging instructions
 - [Linux development plan](LINUX_DEVELOPMENT_PLAN.md) and

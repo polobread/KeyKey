@@ -1,5 +1,7 @@
 # 琦琦輸入法 Windows TSF frontend
 
+一般使用者請先看 [Windows 11 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
+
 This directory contains the modern Windows 11 Text Services Framework (TSF)
 frontend. It is separate from `Windows-IMM`, so the existing macOS IMK target
 and its Xcode project remain unchanged.
