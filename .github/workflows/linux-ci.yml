@@ -12,13 +12,6 @@ on:
   push:
     tags:
       - 'v*'
-    paths:
-      - '.github/workflows/linux-ci.yml'
-      - 'Source/Loaders/Linux-IME/**'
-      - 'Source/DataTables/**'
-      - 'DataSource/**'
-      - 'LINUX_DEVELOPMENT_PLAN.md'
-      - 'LINUX_TEST_PLAN.md'
   workflow_dispatch:
 
 permissions:
@@ -160,8 +153,96 @@ jobs:
         with:
           name: linux-ubuntu-24.04-debian-packages-${{ github.sha }}
           path: Source/Loaders/Linux-IME/out/packages/ubuntu-24.04-amd64/release-candidate
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
+
+  publish-linux:
+    needs: ubuntu-24-04-fcitx5-build
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    name: Publish Ubuntu 24.04 packages to the GitHub Release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download verified Ubuntu 24.04 packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux-ubuntu-24.04-debian-packages-${{ github.sha }}
+          path: ${{ runner.temp }}/linux-packages
+
+      - name: Verify version, package set, and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(sed -nE '1s/^.* ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' README.md)
+          linux_version=$(sed -nE 's/^project\(KeyKeyLinux VERSION ([0-9]+\.[0-9]+\.[0-9]+) LANGUAGES.*$/\1/p' Source/Loaders/Linux-IME/CMakeLists.txt)
+          if [[ -z "$version" || "$linux_version" != "$version" || "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "The tag, README, and Linux package version must match." >&2
+            exit 1
+          fi
+
+          cd "$RUNNER_TEMP/linux-packages"
+          data="chichi77-keykey-data_${version}-1+ubuntu24.04_all.deb"
+          fcitx="fcitx5-chichi77-keykey_${version}-1+ubuntu24.04_amd64.deb"
+          shopt -s nullglob
+          panels=(gnome-shell-extension-keykey-kimpanel_*+ubuntu24.04_all.deb)
+          if (( ${#panels[@]} != 1 )); then
+            echo "Expected exactly one Ubuntu 24.04 GNOME panel package." >&2
+            exit 1
+          fi
+          panel=${panels[0]}
+          panel_source="${panel%_all.deb}_source.tar.gz"
+          for file in "$data" "$fcitx" "$panel" "$panel_source" SHA256SUMS; do
+            test -s "$file" || { echo "Missing or empty release asset: $file" >&2; exit 1; }
+          done
+          expected_checksums=$(printf './%s\n' "$data" "$fcitx" "$panel" "$panel_source" | LC_ALL=C sort)
+          actual_checksums=$(awk '{ print $2 }' SHA256SUMS | LC_ALL=C sort)
+          if [[ "$actual_checksums" != "$expected_checksums" ]]; then
+            echo "SHA256SUMS must list exactly the four Linux release assets." >&2
+            exit 1
+          fi
+          sha256sum --check --strict SHA256SUMS
+
+          mkdir -p "$RUNNER_TEMP/linux-release-assets"
+          cp -- "$data" "$fcitx" "$panel" "$panel_source" SHA256SUMS \
+            "$RUNNER_TEMP/linux-release-assets/"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Add Linux packages to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          assets=("$RUNNER_TEMP"/linux-release-assets/*)
+          for attempt in 1 2 3 4 5; do
+            if release_query=$(gh release view "$GITHUB_REF_NAME" \
+                --repo "$GITHUB_REPOSITORY" --json tagName 2>&1); then
+              gh release upload "$GITHUB_REF_NAME" \
+                --repo "$GITHUB_REPOSITORY" "${assets[@]}"
+              exit 0
+            fi
+            if ! grep -qiE 'release not found|HTTP 404' <<< "$release_query"; then
+              echo "Could not query release $GITHUB_REF_NAME: $release_query" >&2
+              exit 1
+            fi
+            if gh release create "$GITHUB_REF_NAME" \
+                --repo "$GITHUB_REPOSITORY" --verify-tag \
+                --title "chichi77 KeyKey $VERSION" \
+                --generate-notes "${assets[@]}"; then
+              exit 0
+            fi
+            echo "Release creation attempt $attempt failed; retrying after checking for another publisher." >&2
+            sleep 3
+          done
+          echo "Could not create or find release $GITHUB_REF_NAME." >&2
+          exit 1
 
   ubuntu-22-04-minimum-api:
     if: github.event_name != 'pull_request'

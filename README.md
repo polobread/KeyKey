@@ -65,17 +65,16 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS 與 Windows
   桌面版。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
-- Linux 套件下一版規劃放在與桌面版相同的 `v1.2.9` Release；目前尚未上線。
+- Linux 套件下一版會在 Ubuntu 24.04 完整測試通過後，自動加入與桌面版相同的 `v1.2.9` Release；目前尚未上線。
 - Android 正式 AAB 由 `Android Play Release` workflow 簽署並手動送到 Google Play；
   1.2.7 已送交封閉測試。`Package Android` 只產生供開發測試的 debug APK。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
   Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
-推送符合專案版號的 tag（例如 `v1.2.9`）會同時啟動 `Package macOS` 與
-`Package Windows`，並把桌面版產物加入同一個 GitHub Release。兩個 workflow 也能手動
-執行；手動執行只保留 Actions artifact，不代表正式發行。同一個 `v*` tag 也會執行
-完整 `Linux CI`。目前 CI 只保留 Linux 套件 artifact；`v1.2.9` 的 Linux Release
-資產仍須在發布前整合與驗收。
+推送符合專案版號的 tag（例如 `v1.2.9`）會啟動 `Package macOS`、
+`Package Windows` 與完整 `Linux CI`。macOS 和 Windows 的產物，以及通過 Ubuntu 24.04
+套件安裝與輸入測試的 Linux 套件，會加入同一個 GitHub Release。手動執行 Linux CI
+只保留 Actions artifact，不發布 Release；`v1.2.9` 目前尚未建立 tag 或完成驗收。
 完整產物、簽章與限制見 [BUILDING.md](BUILDING.md#github-actions-封裝)。
 
 ## 文件
@@ -168,8 +167,8 @@ iOS.
   macOS and Windows desktop builds. The macOS package is Developer ID signed,
   notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP
   and installer are currently unsigned and may trigger a security warning.
-- The next Linux package set is planned for the same `v1.2.9` Release as the
-  desktop builds; it is not available yet.
+- The next Linux package set will be added to the same `v1.2.9` Release as the
+  desktop builds after the Ubuntu 24.04 package checks pass; it is not available yet.
 - The signed Android AAB is uploaded manually to Google Play by the
   `Android Play Release` workflow. Version 1.2.7 has been submitted to closed
   testing. `Package Android` produces a debug APK for development only.
@@ -178,11 +177,11 @@ iOS.
   be installed on an iPhone or iPad.
 
 Pushing a tag that exactly matches the project version, such as `v1.2.9`,
-starts `Package macOS` and `Package Windows` and adds both desktop outputs to
-the same GitHub Release. The same `v*` tag also runs the complete `Linux CI`;
-Linux CI currently retains package artifacts without adding them to the Release.
-The Linux `v1.2.9` assets still need integration and validation before publication.
-Manual runs retain Actions artifacts for testing. See [BUILDING.md](BUILDING.md#github-actions-packaging) for the
+starts `Package macOS`, `Package Windows`, and the full `Linux CI`. The desktop
+outputs and the Linux packages that pass the Ubuntu 24.04 package checks are
+added to the same GitHub Release. Manual Linux CI runs retain Actions artifacts
+without publishing a Release. The `v1.2.9` tag and release do not exist yet.
+See [BUILDING.md](BUILDING.md#github-actions-packaging) for the
 complete output and signing details.
 
 ### Documentation

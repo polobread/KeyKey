@@ -345,7 +345,9 @@ Actions 頁面按 **Run workflow** 手動執行。macOS 與 Windows 在推送完
 （例如 `v1.2.9`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
 `release_tag` 輸入，留空時只保留測試 artifact。一般 commit、pull request 與不符合版號的
 tag 不會發布 Release。`Linux CI` 保留 pull request 與手動執行，並由 `v*` tag 觸發完整
-gate；`master` push 不觸發。Linux tag run 只保留開發用套件 artifact，不發布到 Release。
+gate；`master` push 不觸發。tag run 在 Ubuntu 24.04 套件建置、安裝生命週期與 X11
+輸入測試成功後，核對版號及 `SHA256SUMS`，把三個 `.deb`、GNOME 面板原始碼和校驗檔
+加入同一個 Release；手動 run 仍只保留 artifact。
 建置完成後，以下檔案會以 Actions artifact 保留 7 天：
 
 | Workflow | 產物 | 限制 |
@@ -355,9 +357,9 @@ gate；`master` push 不觸發。Linux tag run 只保留開發用套件 artifact
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 手動執行並上傳到 Google Play internal testing，後續在 Play Console 推廣到封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
-| Linux CI | Ubuntu 22.04／24.04 開發用 `.deb` | PR 跑 smoke；`v*` tag 與手動 run 跑完整 gate，不加入 Release |
+| Linux CI | Ubuntu 22.04／24.04 `.deb`；Ubuntu 24.04 另有面板原始碼與 `SHA256SUMS` | PR 跑 smoke；tag 完整測試通過後只將 Ubuntu 24.04 的五個檔案加入 Release；手動 run 和 Ubuntu 22.04 套件只保留 artifact |
 
-artifact 另附同名 `.sha256`。發布 run 會把產物與 checksum 上傳到既有 Release；若 Release
+桌面版 artifact 另附同名 `.sha256`；Linux 使用涵蓋四個檔案的 `SHA256SUMS`。發布 run 會把產物與 checksum 上傳到既有 Release；若 Release
 尚不存在才建立。workflow 不會建立 tag，也不會覆寫同名資產。
 
 macOS workflow 拆成兩個 job。`build` 永遠會跑、拿不到任何 secret，產出未簽章 pkg；
@@ -709,8 +711,10 @@ run manually; the Windows workflow additionally takes a `release_tag` input,
 and leaving it blank produces a test artifact only. Commits, pull requests, and
 mismatched tags do not publish a Release. `Linux CI` keeps its pull-request and
 manual triggers, runs its full gate on `v*` tags, and does not run on `master`
-pushes. Linux tag runs retain development package artifacts without publishing
-them to the Release. Successful runs retain these Actions artifacts for seven days:
+pushes. A tag run adds the three Ubuntu 24.04 `.deb` files, the GNOME panel
+source archive, and `SHA256SUMS` to the Release after the package and X11 typing
+checks pass. Manual runs keep artifacts without publishing. Successful runs
+retain these Actions artifacts for seven days:
 
 | Workflow | Output | Limitation |
 |---|---|---|
@@ -719,9 +723,10 @@ them to the Release. Successful runs retain these Actions artifacts for seven da
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Android Play Release | No public artifact; uploads the signed AAB directly | Manually uploads to Google Play internal testing; promotion to closed testing is managed in Play Console |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
-| Linux CI | Development `.deb` packages for Ubuntu 22.04 and 24.04 | PR smoke; full gate on `v*` tags and manual runs; not added to the Release |
+| Linux CI | Ubuntu 22.04 and 24.04 `.deb` packages; Ubuntu 24.04 panel source and `SHA256SUMS` | PR smoke; on a tag, adds the five verified Ubuntu 24.04 assets to the Release; manual runs and Ubuntu 22.04 packages remain Actions artifacts |
 
-Each output has a matching `.sha256` file. A publishing run uploads its output
+Desktop outputs have matching `.sha256` files; Linux uses `SHA256SUMS` for its
+four downloadable files. A publishing run uploads its output
 and checksum to an existing Release, or creates the Release if it does not
 exist. It never creates a tag or overwrites an existing asset.
 

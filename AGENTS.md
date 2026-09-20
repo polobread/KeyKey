@@ -1,6 +1,6 @@
 # AGENTS.md — 開發交接
 
-**2026-09-20 Linux 使用者文件：** 使用者指定 Linux 下一版與其他平台共用 `v1.2.9` 標籤，不再以獨立 Linux 標籤作為新指南的安裝入口。`LINUX_INSTALL.md` 已改為統一發布的準備稿；`v1.2.9` Release、1.2.9 Linux 套件與校驗檔目前都尚未發布，不能將預期檔名當作現成下載。三張 `docs/images/keykey-linux-*.png` 均為先前 1.2.8 實拍：候選與符號取自已安裝套件的 GNOME Wayland VM，設定取自已安裝套件的 Ubuntu 24.04 X11 測試桌面，不是 1.2.9 驗收證據。README 已設入口。測試視窗與一般 App 畫面須明確區分；`out/` 不進版控，不要在使用者文件直接引用。
+**2026-09-20 Linux 使用者文件：** 使用者指定 Linux 下一版與其他平台共用 `v1.2.9` 標籤，不再以獨立 Linux 標籤作為新指南的安裝入口。`LINUX_INSTALL.md` 已改為統一發布的準備稿；`v1.2.9` Release、1.2.9 Linux 套件與校驗檔目前都尚未發布，不能將預期檔名當作現成下載。Linux CI 現已接上 tag 專用發布 job：Ubuntu 24.04 完整套件與 X11 輸入測試成功後，才核對版號及 checksum 並上傳三個 `.deb`、面板原始碼及 `SHA256SUMS` 到同一 Release；該流程尚未在 1.2.9 tag 實跑。三張 `docs/images/keykey-linux-*.png` 均為先前 1.2.8 實拍：候選與符號取自已安裝套件的 GNOME Wayland VM，設定取自已安裝套件的 Ubuntu 24.04 X11 測試桌面，不是 1.2.9 驗收證據。README 已設入口。測試視窗與一般 App 畫面須明確區分；`out/` 不進版控，不要在使用者文件直接引用。
 
 **2026-09-20 Windows 使用者文件：** `WINDOWS_INSTALL.md` 以已發布的 1.2.8 Windows x64 ZIP 為主要安裝流程，說明完整解壓縮、連按兩下 `Install.cmd`、管理員提示、`Win + Space`、記事本試打、候選字、設定與解除安裝。README 和 Windows TSF 技術 README 已設入口。`docs/images/windows-install-flow.svg` 是明確標示的示意圖，另沿用 `Source/Loaders/Windows-TSF/IMAGES/` 的四張 Windows 實際畫面。ZIP 的安裝腳本會加入目前使用者的輸入法清單；已發布的 `.unsigned.exe` 也在 Release，但本指南以 ZIP 為主。Windows 發行檔目前未簽章，未測實機安裝或 SmartScreen 畫面；若套件簽章、發行方式或設定 UI 改變，需重新核對指南。`v1.2.9` 仍未發布。
 
@@ -14,8 +14,8 @@
 1.2.9；這只是後續開發基線，尚未建立 `v1.2.9` tag 或新 Release。
 已發布的 1.2.8 套件、來源與 GNOME VM 測試紀錄仍屬 1.2.8。
 使用者稍後還要修改其他內容；不要把這次版號提交當成發布授權。
-下一次 Linux 安裝包的目標改為與其他平台共用 `v1.2.9` Release；目前 Linux CI
-只保存套件 artifact，尚未把它上傳到 Release，且 1.2.9 GNOME 套件驗收未完成。
+下一次 Linux 安裝包的目標改為與其他平台共用 `v1.2.9` Release；Linux CI
+已有 tag 自動上傳流程，但尚未於 1.2.9 實跑，且 1.2.9 GNOME 套件驗收未完成。
 
 **2026-09-20 Linux 首版範圍更新：** 使用者要求先發布主要版本。
 Linux 1.2.8 首版僅支援 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、
@@ -30,7 +30,8 @@ Fcitx 5、amd64，標籤為 `linux-v1.2.8`。套件、安裝步驟、已驗證�
 - [x] 收斂支援矩陣、安裝與限制文件；保留 GNOME VM 與套件生命週期證據。
 - [x] 將五平台下一版建置版號同步至 1.2.9，僅 commit／push 開發分支。
 - [x] 準備 Ubuntu 24.04 的 `v1.2.9` 圖文安裝與使用指南，並保存三張先前版本的實際截圖。
-- [ ] 在發布 `v1.2.9` 前整合 Linux 套件、面板原始碼與校驗檔到同一 Release，重跑 1.2.9 驗收，再決定發布時間。
+- [x] 將 Linux 套件、面板原始碼與校驗檔的 tag 自動上傳接進同一 Release。
+- [ ] 在發布 `v1.2.9` 前重跑 1.2.9 GNOME 套件驗收並確認 Linux CI 的實際發布結果，再決定發布時間。
 - [ ] 後續另驗實體雙螢幕／熱插拔、更多 GTK App 與 sandbox、GNOME 主題、
       Ubuntu 其他版本及 ARM64；只有驗過的組合才加入正式支援。
 
