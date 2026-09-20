@@ -73,6 +73,12 @@ cursor rectangle，
 GTK frontend 已送新 `SetCursorRectV2` 且 Fcitx 已轉送相同的
 `SetRelativeSpotRectV2`，候選仍在主螢幕右緣；不能歸因於 KeyKey 沒有
 更新候選內容，也尚未證明確切座標換算出錯的元件。
+同日停用 Kimpanel v83 後由 Classic UI 重跑 16 案，定位僅 6/16；
+新 `--panel` guard 會把實際 provider 記入報告，`--mouse` 可透過 QMP
+在副螢幕真點第二列。Classic UI 的混合 DPI GTK3 direct Wayland 單案
+已以「鐘」提交及候選清除通過，並不代表整體方案通過。
+Kimpanel 逐事件紀錄另確認舊 scale=1 caret 矩形先用於候選顯示，
+新 scale=2 矩形到達時候選已隱藏；後續應同時修事件時序及定位。
 
 同一 guest 的 T10 雙欄焦點 runner 又完成 8 模式 × 正負控制 16/16：第一欄有
 active 候選時以 VM 指標切第二欄，第二欄精確提交「文」，切回第一欄再提交「中」；
@@ -100,6 +106,12 @@ App B 仍獨立提交「文」，回到 A 得到 `ａｂ中|文`；兩條 GTK �
 `Controller1.DebugInfo` 同時顯示 GNOME Wayland 群組只有一個 `frontend:ibus`
 input context、沒有 program 名稱。bridge 無法以目前 context 身分區分兩 App，
 此差異仍是發布驗收缺口；直接 Fcitx 的結果不可外推到預設 GTK bridge。
+真實 gedit／GNOME Text Editor 同時存活的 Alt+Tab 測試補上 App 層證據：
+直接 Fcitx 的 native Wayland 與 XWayland 各通過一案，gedit 失焦提交
+原始「ㄓㄨㄥ」，Text Editor 接著提交「文」，回切 gedit 仍提交「中」，
+兩者英文負控制皆通過；兩個真實 gedit 視窗走 GNOME bridge 時亦通過
+中文與負控制，但失焦會清除 preedit。這不修復 Text Editor bridge
+沒有 active context 的缺口。
 
 同一 guest 的 T10 client recovery runner 在八路徑都先截到真正候選 popup，
 候選中關閉 client 後 Fcitx/addon PID 保持不變，新 client 的 T01「中」與

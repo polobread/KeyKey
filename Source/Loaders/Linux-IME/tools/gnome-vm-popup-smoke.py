@@ -216,14 +216,16 @@ def main():
         "top-left", "top-right", "bottom-left", "bottom-right"))
     parser.add_argument("--mouse", action="store_true",
                         help="Click the second candidate through the VM pointer")
+    parser.add_argument("--panel", choices=("kimpanel", "classic-ui"),
+                        help="Require the intended candidate panel provider")
     args = parser.parse_args()
     modes = args.mode or list(MODES)
     positions = args.position or ("top-left", "top-right", "bottom-left", "bottom-right")
     evidence = {"environment": VM["check_guest"](), "results": [],
-                "kimpanel_bus_owner": session_command(
-                    "gdbus call --session --dest org.freedesktop.DBus "
-                    "--object-path /org/freedesktop/DBus "
-                    "--method org.freedesktop.DBus.NameHasOwner org.kde.impanel")}
+                "candidate_panel": VM["candidate_panel_state"]()}
+    if args.panel and evidence["candidate_panel"]["provider"] != args.panel:
+        raise RuntimeError(f"Expected {args.panel} candidate panel, got "
+                           f"{evidence['candidate_panel']['provider']}")
     original_engine = session_command("fcitx5-remote -n")
     original_state = session_command("fcitx5-remote; true")
     prior_config = VM["read_config"]()

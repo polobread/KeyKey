@@ -166,6 +166,28 @@ shortcut and checks the resulting window bounds. The six failures remain
 open; a correct text commit alone is insufficient evidence for popup
 placement. The guest layout and KeyKey settings were restored after the run.
 
+The same 16 cases were repeated with the official extension disabled.
+Fcitx Classic UI placed only 6/16 popups correctly, although all cases still
+committed text. GTK3 direct Wayland on the 200% display passed a new
+second-head pointer check: clicking candidate row two committed `鐘`, then
+the popup cleared. The monitor runner now records whether the active provider
+is Kimpanel or Classic UI, can require it with `--panel kimpanel` or
+`--panel classic-ui`, and supports `--mouse` to click on the second display
+through QMP. The popup runner has the same `--panel` guard. Run
+`gnome-vm-multimonitor-smoke.py --panel kimpanel --mouse` as the complete
+visual gate after the remaining positioning paths are fixed. The formal
+integration decision and release gates are in
+[GNOME candidate panel](gnome-candidate-panel.md).
+
+Instrumenting Kimpanel v83's event sequence narrowed one mixed DPI failure:
+after a focused GTK3 Wayland window moved to the 200% display, the first
+candidate display used the previous `(35,61,0,98,scale=1)` cursor rectangle.
+The new `(100,122,0,196,scale=2)` rectangle reached Kimpanel only after
+`ShowLookupTable` had become false. A frame-origin conversion moved the popup
+to display two but overlapped the entry; rescaling the late rectangle moved
+an already hidden actor. The experiments were confined to the disposable
+guest, and the official extension files were restored afterward.
+
 For one failing GTK 3 direct Wayland case on the 200% display, a filtered
 session bus trace shows the GTK frontend calling Fcitx
 `SetCursorRectV2(100,122,0,196,2)` after the move, following an earlier
@@ -197,6 +219,18 @@ Keep this as an open GTK 4 application integration gap; the direct
 that editor (`GTK_IM_MODULE=fcitx gnome-text-editor` inside the guest). The
 synthetic GTK 4 host passed its corresponding unset-variable path,
 which does not establish compatibility for every GTK 4 application.
+
+`gnome-vm-real-focus-smoke.py` opens actual editor documents concurrently,
+switches them through GNOME's Alt+Tab, and reads the document buffers through
+AT-SPI. On 2026-09-20 direct Fcitx native Wayland and XWayland each passed:
+gedit committed raw `ㄓㄨㄥ` on blur, GNOME Text Editor committed `文`, and
+returning to gedit still allowed `中`; both editors passed the `keyboard-us`
+literal control. Two separate real gedit windows on GNOME's default Wayland
+bridge also passed, but the first document cleared its active preedit on
+blur instead of committing raw reading. Reports are saved in
+`out/gnome-vm/gnome-real-focus-last.json` and timestamped siblings. These
+real App results confirm that focus-out semantics differ by frontend path;
+they do not resolve the GTK4 bridge's inactive context.
 
 The focus runner opens two fields in each GTK 3, GTK 4 and Qt 6 host. It
 starts a candidate in the first field, clicks the second through the VM

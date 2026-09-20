@@ -67,7 +67,7 @@ def gtk4_preedit_bounds(screenshot, window):
         max(x for x, _ in points) + 1, max(y for _, y in points) + 1
 
 
-def run_mode(qmp, mode_name, layout):
+def run_mode(qmp, mode_name, layout, mouse=False):
     mode = MODES[mode_name]
     case_dir = f"/tmp/keykey-gnome-multimonitor/{layout}/{mode_name}"
     unit = f"keykey-dual-{layout}-{mode_name}-{int(time.time())}"
@@ -86,6 +86,7 @@ def run_mode(qmp, mode_name, layout):
         qmp.screenshot(first_moved)
         qmp.screenshot(second_moved, head=1)
         window = moved_window_bounds(second_before, second_moved)
+        first_size = VM["read_ppm"](first_moved)[:2]
         second_size = VM["read_ppm"](second_moved)[:2]
         if window[1] > second_size[1] // 2:
             raise RuntimeError(f"Window landed outside the upper display test area: "
@@ -98,6 +99,7 @@ def run_mode(qmp, mode_name, layout):
         errors = []
         bounds = None
         first_bounds = None
+        first_monitor_observed = False
         for _ in range(4):
             time.sleep(0.5)
             qmp.screenshot(candidate, head=1)
@@ -109,7 +111,7 @@ def run_mode(qmp, mode_name, layout):
                 try:
                     first_bounds, _ = VM["find_candidate_popup"](
                         first_moved, first_candidate)
-                    break
+                    first_monitor_observed = True
                 except RuntimeError:
                     pass
         size = VM["read_ppm"](candidate)[:2]
@@ -131,8 +133,26 @@ def run_mode(qmp, mode_name, layout):
             if entry and min(right, entry[2]) - max(left, entry[0]) > 5 and \
                     min(bottom, entry[3]) - max(top, entry[1]) > 5:
                 errors.append("Candidate covers the focused input field")
-        qmp.keys(("1",))
-        MULTI["wait_event"](case_dir, "text", "中")
+        click = None
+        selected_character = "中"
+        if mouse and bounds and not errors:
+            click = (first_size[0] + (bounds[0] + bounds[2]) // 2,
+                     bounds[1] + (bounds[3] - bounds[1]) // 6)
+            qmp.click(*click, first_size[0] + second_size[0],
+                      max(first_size[1], second_size[1]))
+            selected_character = "鐘"
+        else:
+            qmp.keys(("1",))
+        MULTI["wait_event"](case_dir, "text", selected_character)
+        if bounds:
+            cleared = VM_DIR / f"{stem}-second-cleared.ppm"
+            time.sleep(0.5)
+            qmp.screenshot(cleared, head=1)
+            candidate_pixels = VM["changed_pixels"](second_moved, candidate, bounds)
+            cleared_pixels = VM["changed_pixels"](candidate, cleared, bounds)
+            if candidate_pixels < 100 or cleared_pixels < candidate_pixels * 0.6:
+                errors.append("Candidate did not clear after selection: "
+                              f"{cleared_pixels}/{candidate_pixels} pixels")
         MULTI["select_engine"]("keyboard-us")
         qmp.keys(("ctrl-a", "backspace", "5", "j", "slash", "spc", "1"))
         MULTI["wait_event"](case_dir, "text", "5j/ 1")
@@ -143,6 +163,8 @@ def run_mode(qmp, mode_name, layout):
                   "window_bounds": window, "entry_bounds": entry,
                   "preedit_bounds": preedit,
                   "candidate_bounds": bounds,
+                  "click": click, "selected_character": selected_character,
+                  "first_monitor_observed": first_monitor_observed,
                   "second_resolution": size,
                   "first_before": str(first_before), "first_moved": str(first_moved),
                   "first_candidate": str(first_candidate),
@@ -159,14 +181,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", action="append", choices=MODES)
     parser.add_argument("--layout", action="append", choices=("dual", "dual-mixed"))
+    parser.add_argument("--panel", choices=("kimpanel", "classic-ui"),
+                        help="Require the intended candidate panel provider")
+    parser.add_argument("--mouse", action="store_true",
+                        help="Click the second candidate on the second display")
     args = parser.parse_args()
     modes = args.mode or list(MODES)
     layouts = args.layout or ("dual", "dual-mixed")
     evidence = {"environment": VM["check_guest"](), "results": [],
-                "kimpanel_bus_owner": session_command(
-                    "gdbus call --session --dest org.freedesktop.DBus "
-                    "--object-path /org/freedesktop/DBus "
-                    "--method org.freedesktop.DBus.NameHasOwner org.kde.impanel")}
+                "candidate_panel": VM["candidate_panel_state"]()}
+    if args.panel and evidence["candidate_panel"]["provider"] != args.panel:
+        raise RuntimeError(f"Expected {args.panel} candidate panel, got "
+                           f"{evidence['candidate_panel']['provider']}")
     state = display_layout("show")
     if "Virtual-2" not in state["monitors"]:
         raise RuntimeError("GNOME does not see Virtual-2; connect the second "
@@ -186,7 +212,8 @@ def main():
                 evidence.setdefault("layouts", []).append(display_layout(layout))
                 for mode in modes:
                     try:
-                        evidence["results"].append(run_mode(qmp, mode, layout))
+                        evidence["results"].append(run_mode(
+                            qmp, mode, layout, args.mouse))
                     except Exception as error:
                         evidence["results"].append({"layout": layout, "mode": mode,
                                                     "status": "failed", "error": str(error)})

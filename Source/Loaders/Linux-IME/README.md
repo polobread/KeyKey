@@ -152,9 +152,15 @@ GNOME 46 guest, launch that editor with
 `GTK_IM_MODULE=fcitx` to use the verified native Wayland path. See
 [the VM guide](docs/gnome-wayland-vm.md). These results do
 not complete the full desktop, browser, visual or release acceptance matrix.
+The [GNOME candidate panel decision](docs/gnome-candidate-panel.md) records
+the current 10/16 Kimpanel and 6/16 Classic UI dual-display placement results;
+neither renderer has passed the formal multi-monitor gate.
 The VM also passes 16/16 two-field focus phases; direct Fcitx paths commit raw
 preedit on blur, while the two GTK native Wayland paths with the module variable
 unset clear it. Both outcomes are recorded as a platform integration difference.
+The real-editor focus runner also reproduces this distinction: direct Fcitx
+gedit commits raw preedit on blur to GNOME Text Editor, while two real gedit
+windows using the default Wayland bridge clear it.
 
 Current feature evidence is tracked in [`docs/parity.md`](docs/parity.md). The
 compatibility inventory is machine-readable in

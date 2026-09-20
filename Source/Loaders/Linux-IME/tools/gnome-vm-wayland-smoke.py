@@ -176,6 +176,27 @@ def session_command(command):
                  + command)
 
 
+def candidate_panel_state():
+    """Record which GNOME candidate renderer can own the active Fcitx UI."""
+    extension = session_command(
+        "gnome-extensions info kimpanel@kde.org 2>/dev/null || true")
+    active = "State: ACTIVE" in extension
+    bus_owner = session_command(
+        "gdbus call --session --dest org.freedesktop.DBus "
+        "--object-path /org/freedesktop/DBus "
+        "--method org.freedesktop.DBus.NameHasOwner org.kde.impanel")
+    bus_owner = "true" in bus_owner.lower()
+    classic_loaded = "classicui.so" in guest(
+        "pid=$(pgrep -u keykey -x fcitx5 | tail -n 1); "
+        "grep -E '/(lib)?classicui[.]so' /proc/$pid/maps | head -n 1 || true")
+    if active != bus_owner:
+        raise RuntimeError("GNOME Kimpanel extension and D-Bus owner disagree")
+    return {"provider": "kimpanel" if active else "classic-ui",
+            "kimpanel_extension_active": active,
+            "kimpanel_bus_owner": bus_owner,
+            "classic_ui_loaded": classic_loaded}
+
+
 class Qmp:
     def __enter__(self):
         self.connection = socket.socket(socket.AF_UNIX)
@@ -226,6 +247,15 @@ class Qmp:
             {"type": "abs", "data": {"axis": "x", "value": x * 32767 // (width - 1)}},
             {"type": "abs", "data": {"axis": "y", "value": y * 32767 // (height - 1)}},
         ]})
+
+    def click(self, x, y, width, height):
+        self.move_pointer(x, y, width, height)
+        time.sleep(0.15)
+        for down in (True, False):
+            self.call("input-send-event", {"events": [
+                {"type": "btn", "data": {"button": "left", "down": down}},
+            ]})
+            time.sleep(0.15)
 
 
 def receive_exact(connection, length):

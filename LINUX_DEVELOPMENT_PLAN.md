@@ -266,6 +266,14 @@ Wayland 的右緣候選被裁切、Qt6 候選壓住欄位；在 guest 安裝官�
 或在額外移窗後留在舊 cursor rectangle。
 雙螢幕直接移窗的完整定位矩陣只通過 10/16，雖然 16/16 都提交正確文字；
 不能以輸入成功代替 popup 位置驗收。
+停用官方 extension、改由 Fcitx Classic UI 呈現後，同樣矩陣只有 6/16
+定位通過；混合 DPI 的 GTK3 direct Wayland 一案另以第二螢幕真滑鼠點選第二列
+「鐘」與清除通過。runner 已能指定 provider 並在副螢幕點選，
+正式整合決策與全部通過條件見
+`Source/Loaders/Linux-IME/docs/gnome-candidate-panel.md`。
+Kimpanel 事件紀錄顯示候選首次顯示仍使用移窗前的 scale=1 caret 矩形；
+scale=2 新矩形到達時 `ShowLookupTable` 已為 false。僅修改座標除法或
+window frame origin 不能修復這個時序，後者還曾讓候選蓋住欄位。
 extension 目前只安裝在測試 guest，不能當成套件已提供或 P0 已關閉；
 混合 DPI 與移窗定位須先解決，再決定正式的 GNOME panel 整合方案。
 若 GNOME 達不到 macOS 外觀功能，提出「受維護的 Shell 整合／
