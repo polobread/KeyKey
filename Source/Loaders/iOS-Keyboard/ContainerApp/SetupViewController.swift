@@ -14,6 +14,14 @@ final class SetupViewController: UIViewController {
         view.backgroundColor = .systemBackground
 
         let title = label("琦琦注音", size: 28, weight: .bold)
+        let version = label(appVersionText, size: 14, weight: .regular)
+        version.textColor = .secondaryLabel
+        version.accessibilityIdentifier = "app.version"
+        let titleBlock = UIStackView(arrangedSubviews: [title, version])
+        titleBlock.axis = .vertical
+        titleBlock.spacing = 4
+        titleBlock.alignment = .fill
+
         let subtitle = label(
             "注音輸入法，支援直式與橫式鍵盤、候選字、關聯詞與符號面板。",
             size: 16, weight: .regular
@@ -87,7 +95,7 @@ final class SetupViewController: UIViewController {
         acknowledgements.addTarget(self, action: #selector(openAcknowledgements), for: .touchUpInside)
 
         var items: [UIView] = [
-            title, subtitle, hardwareEditor, hardwareEditorNote, steps, openSettings, note,
+            titleBlock, subtitle, hardwareEditor, hardwareEditorNote, steps, openSettings, note,
             supporterTitle, supporterDescription, supporterPrice,
             supporterButton, restoreButton, acknowledgements
         ]
@@ -153,6 +161,16 @@ final class SetupViewController: UIViewController {
             DispatchQueue.main.async { [weak self] in self?.openInputFieldTest() }
         }
         #endif
+    }
+
+    private var appVersionText: String {
+        guard let value = Bundle.main.object(
+            forInfoDictionaryKey: "CFBundleShortVersionString"
+        ) as? String else {
+            return "版本 —"
+        }
+        let version = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return "版本 \(version.isEmpty ? "—" : version)"
     }
 
     private func label(_ text: String, size: CGFloat, weight: UIFont.Weight) -> UILabel {

@@ -16,8 +16,8 @@ public enum KeyboardLayout {
     public static let shiftedEnglishRows: [[String]] = [
         ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_"],
         ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "@"],
-        ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "EMOJI"],
-        ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "SHIFT"]
+        ["A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "EMOJI"],
+        ["Z", "X", "C", "V", "B", "N", "M", "<", ">", "?", "SHIFT"]
     ]
 
     public static let numberRows: [[String]] = [

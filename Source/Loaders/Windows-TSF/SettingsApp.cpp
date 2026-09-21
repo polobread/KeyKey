@@ -16,8 +16,13 @@ using KeyKey::WindowsTsf::AssociatedPhrasePreferencesPath;
 using KeyKey::WindowsTsf::LoaderPreferencesPath;
 using KeyKey::WindowsTsf::TraditionalMandarinPreferencesPath;
 
+#define KEYKEY_WIDEN_INNER(value) L##value
+#define KEYKEY_WIDEN(value) KEYKEY_WIDEN_INNER(value)
+
 constexpr wchar_t kWindowClass[] = L"KeyKeySettingsWindow";
 constexpr wchar_t kWindowTitle[] = L"琦琦輸入法 — 設定";
+constexpr wchar_t kVersionText[] =
+    L"版本 " KEYKEY_WIDEN(KEYKEY_MARKETING_VERSION);
 constexpr int kTabId = 100;
 constexpr int kSaveId = IDOK;
 constexpr int kCloseId = IDCANCEL;
@@ -42,6 +47,7 @@ struct Collection {
 
 struct WindowState {
     HWND tab = nullptr;
+    HWND version = nullptr;
     HWND phraseList = nullptr;
     HWND status = nullptr;
     std::vector<HWND> generalControls;
@@ -513,7 +519,8 @@ void Layout(HWND window, WindowState* state) {
     const int width = client.right - client.left;
     const int height = client.bottom - client.top;
     MoveWindow(state->tab, 12, 12, width - 24, height - 78, TRUE);
-    MoveWindow(state->status, 22, height - 52, width - 240, 28, TRUE);
+    MoveWindow(state->version, 22, height - 52, 120, 28, TRUE);
+    MoveWindow(state->status, 152, height - 52, width - 370, 28, TRUE);
     MoveWindow(GetDlgItem(window, kSaveId), width - 206, height - 54, 86, 30,
                TRUE);
     MoveWindow(GetDlgItem(window, kCloseId), width - 110, height - 54, 86, 30,
@@ -543,6 +550,10 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM wparam,
                 TabCtrl_InsertItem(state->tab, index, &item);
             }
 
+            state->version = CreateWindowExW(
+                0, L"STATIC", kVersionText,
+                WS_CHILD | WS_VISIBLE | SS_LEFT, 0, 0, 0, 0, window, nullptr,
+                nullptr, nullptr);
             state->status = CreateWindowExW(0, L"STATIC", L"",
                                              WS_CHILD | WS_VISIBLE | SS_LEFT,
                                              0, 0, 0, 0, window, nullptr,
@@ -557,6 +568,7 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM wparam,
                 0, 0, 0, 0, window,
                 reinterpret_cast<HMENU>(static_cast<INT_PTR>(kCloseId)), nullptr,
                 nullptr);
+            SetControlFont(state->version);
             SetControlFont(state->status);
             SetControlFont(save);
             SetControlFont(close);

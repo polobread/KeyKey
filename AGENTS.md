@@ -1,5 +1,57 @@
 # AGENTS.md — 開發交接
 
+**2026-09-21 iOS／Windows／Linux 顯示版本：** iOS container app 首頁標題下方從
+`CFBundleShortVersionString` 顯示 `版本 1.2.9`，並以 `app.version` accessibility id
+加入 smoke UI test。Windows `KeyKeySettings.exe` footer 從 CMake `PROJECT_VERSION`
+編譯出的 `KEYKEY_MARKETING_VERSION` 顯示版本，static frontend validator 會檢查接線。
+Linux 沒有獨立 container app，因此在琦琦注音的 Fcitx 設定頁最上方，以 read-only
+information group 顯示 CMake `PROJECT_VERSION`；X11 schema gate 會核對文字。三平台 UI
+都不另外硬編版號來源，升版時跟既有 build metadata 一起更新。
+
+**2026-09-21 1.3.x 候選順位參考計畫：** 新增
+[1.3.x 跨平台候選字順位計畫](CANDIDATE_ORDER_1_3_PLAN.md)。這是未排期、未承諾實作的
+完整參考文件，不改變 1.2.9 執行行為。計畫將 macOS 凍結順位定為主基準、Windows
+「ㄅ半」凍結順位定為補充基準，要求五平台不因 glyph／字型／Big5 支援刪除候選；缺字
+須保留原 Unicode、slot、編號與分頁並顯示方框。文件記錄三份 CIN 自 2012 年未改內容的
+hash、基礎／全字表關係與六組歷史例外，提出多模式、profile version、明確 ordinal／
+`ORDER BY`、全 1,541 讀音 golden digest、字型安裝前後順位不變及 Big5 僅作進階舊系統
+相容模式。真正開發前仍須由使用者指定可接受的 macOS 與 Windows 參考 build／設定，
+匯出完整序列後才能凍結 profile；不可直接依目前字型過濾結果或單一截圖推算。
+
+**2026-09-21 Android 欄位提示與首頁版本：** 在本機 `v1.2.9` branch 上，首頁標題下方
+會從已安裝 package 顯示 `版本 1.2.9`。Android 的 `EditorInfo.inputType` 只決定
+第一次進入欄位的模式：一般文字與 URI 一開始就是完整三模式，URI 即使帶
+`IME_FLAG_FORCE_ASCII` 也保留中文搜尋；Email、password、visible password、web
+variants 與 `IME_FLAG_FORCE_ASCII` 先用原本的英文精簡模式，phone、number、datetime
+先用原本的數字精簡模式。所有精簡模式的 MODE 鍵都可按；第一次按下時解除這次 editor
+session 的限制並進入完整注音／英文／數字循環，後續 input-view restart 不會重新鎖定，
+離開欄位才重設。debug test host、README 與 AVD 計畫已同步。
+觸控英文模式按 Shift 後，末四個小寫符號 `; , . /` 會對應成 `: < > ?`，顯示與
+實際送出字元共用同一份 shifted layout。
+`lintDebug testDebugUnitTest assembleDebug` 已通過，APK metadata 為
+`versionCode=1002009`、`versionName=1.2.9`；六台 AVD 的 A–L 人工矩陣尚未重跑。
+遠端 `refs/heads/v1.2.9` 已刪除，所以 `git pull origin refs/heads/v1.2.9` 會失敗；
+本機 branch 與遠端已發布 `v1.2.9` tag 的 peeled commit 都是 `20a2f19`。
+
+**2026-09-21 Android Fragment Play 警告：** Billing 9.1.0 經由
+`play-services-basement:18.9.0` 間接帶入已過時的 `androidx.fragment:fragment:1.1.0`；
+`app/build.gradle.kts` 已用 dependency constraint 將 release runtime 解析到官方穩定版
+`fragment:1.9.0`。`dependencyInsight` 已確認 1.1.0 僅顯示為 requested、實際 selected
+為 1.9.0；該 AAR 的 Manifest 宣告 `minSdkVersion=23`，低於專案與 Android 8.0 的 API
+26。`lintDebug testDebugUnitTest assembleDebug` 與 `bundleRelease` 均已通過；Play Console
+警告仍須上傳這個新 AAB 後由 Google 重新掃描才會更新。
+
+**2026-09-21 Android 設定順序：** 「虛擬鍵盤高度」標題、說明及直式／橫式控制項已從
+震動設定後方移到候選設定之後、「支持開發」之前；偏好 key、預設值與滑桿行為未改。
+
+**2026-09-21 iOS 欄位提示與英文 Shift：** iOS 已對齊 Android 的觸控欄位策略：URL
+從一開始提供完整注音／英文／數字與全部功能；ASCII、Email、姓名電話及各種數字欄位
+仍保留原本的英文或數字起始精簡模式，但 MODE 永遠可按，第一次按下會解除該欄位限制，
+之後在同一 document/editor 重顯鍵盤仍保持完整三模式，切換欄位才重設。英文小寫模式按
+Shift 後，四個標點已由 ASCII `; , . /` 改為 `: < > ?`；顯示與送字
+共用 shifted layout。2026-09-21 `KeyKeyEngine` 的 97 個 Swift tests 與 generic iOS
+Simulator Debug build 已通過；五台 Simulator A–K 與實機仍未重跑。
+
 **2026-09-21 Linux 原始碼使用者指南：** 新增 `LINUX_CONFIGURE_INSTALL.md`，以 `v1.2.9` 完整 GitHub 原始碼與 Ubuntu 24.04 amd64 為範圍，說明 `./configure --prefix=/usr`、GNU Make、測試、Fcitx 啟用、另裝 GNOME 面板、試打及依原建置清單移除。README、`LINUX_INSTALL.md`、BUILDING 與 Linux frontend README 已加入入口。文件提醒不能拿 GNOME 面板 `_source.tar.gz` 當完整原始碼，也不能直接覆寫既有 `.deb` 安裝；截圖沿用先前套件版並標明來源。此文件沒有擴張其他 Linux 發行版的正式支援範圍。
 
 **2026-09-21 v1.2.9 發布現況：** 首次 `v1.2.9` tag／Release 曾因 Linux CI 失敗撤下；修正後已重新發布。`v1.2.9` tag 與 Release 存在，Linux 三個 `.deb`、面板原始碼及 `SHA256SUMS` 均在 Assets，Release 標為 latest；Linux CI 的 2026-09-20 手動完整驗證與後續分支執行成功。Android 與 iOS 繼續走商店發行，GitHub Release 不放 debug APK 或 Simulator 包。
@@ -1185,13 +1237,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   格式；core 在 IME 建立時讀索引，關聯詞索引在背景載入並於查詢時才解碼候選。
   修改解析、過濾、排序或人名 exclusion 時，必須同步更新 compiler 及逐項一致性測試；
   不可提交 `app/build/generated` 內容或把 `.kki` 當成手工資料來源。
-- **Android 欄位模式由 App 的 `EditorInfo` 決定**：`inputType` 的文字／Email／URI／
-  password／phone／number（含 decimal、signed）／datetime 會轉成 `InputFieldPolicy`。
-  一般、姓名、地址、搜尋與長文字保留注音；Email、URL、ASCII／password 只留英文與
-  數字符號；電話、整數、小數、日期時間只留數字。限制型欄位不可移除按鍵造成版面跳動，
-  要淡化並移除 hit target；觸控 callback 也要再次拒絕 disabled key，不能只靠畫面擋。
-  此限制刻意不套到 USB／藍牙實體鍵盤：為與 Windows／macOS 一致，硬體字元與快捷鍵
-  維持完整輸入，欄位內容仍由 App 驗證；不要在 `onKeyDown` 用 `inputType` 擋實體鍵。
+- **Android 的 `EditorInfo` 只限制初始觸控模式**：一般文字與 URI 一開始使用完整
+  三模式；Email、password／ASCII 先用英文精簡模式，phone、number（含 decimal、
+  signed）、datetime 先用數字精簡模式。精簡模式不可停用 MODE；第一次按 MODE 要先把
+  policy 解鎖，再依完整 `ㄅ → 英 → 數` 順序切到下一模式，之後同一 editor session
+  不得因 `onStartInputView` 或 restarting input 重新鎖定，只有離開欄位才重設。
+  URI 即使帶 `IME_FLAG_FORCE_ASCII` 也維持完整模式，讓網址列可輸入中文搜尋。
+  USB／藍牙實體鍵盤同樣維持完整字元與快捷鍵，不要在 `onKeyDown` 用 `inputType`
+  擋實體鍵；欄位最後接受哪些內容仍由 App 驗證。
 - **Android 測試完成以完整 AVD 計畫為準**：Android IME 行為、版面、設定、字典或建置有變更時，
   必須依 `Source/Loaders/Android-IME/VIRTUAL_DEVICE_TEST_PLAN.md` 在 API 26、28、30、33、35、37
   六台 AVD 跑完 A–L 矩陣；只跑 JVM test、安裝 APK、打出一個字或只測實體鍵盤都不算完成。
@@ -2311,10 +2364,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 - [x] Android 欄位與 Enter action 的 JVM 策略測試已加入，並於 2026-08-30 通過
       `lintDebug testDebugUnitTest assembleDebug`。
 - [ ] 在 Android 實機依序測一般、Email、URL、電話、整數、小數、日期時間、密碼、姓名、
-      地址、搜尋、簡訊／長文字與 ASCII 欄位；直橫式各確認 disabled key 無 hit／無震動，
+      地址、搜尋、簡訊／長文字、可見密碼與要求 ASCII 鍵盤欄位；直橫式各確認限制型欄位
+      的 MODE 仍可點，第一次按下後完整解鎖，重顯同一 editor 不會再鎖回；URL 從一開始
+      就可用注音／英文／數字與完整功能，
       軟 Enter 的完成、下一個、搜尋、傳送、前往、上一個及 App 自訂 `actionLabel`／
       `actionId` 會觸發正確 action，而 USB／藍牙 Enter 仍送 plain Enter，且實體字元不受
-      觸控欄位限制。
+      欄位提示限制。
 
 - [x] 2026-08-30 已在 Pixel 9a 驗證設定列正常顯示、觸控按住預覽鍵無執行期錯誤；
       composing `ㄅ` 移到字首後輸入 `ㄚ` 得到 `ㄚㄅ`，`ㄅㄚ` 選取尾字後輸入 `ㄉ`

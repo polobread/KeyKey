@@ -48,6 +48,7 @@ public final class BopomofoImeService extends InputMethodService
         return thread;
     });
     private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
+    private boolean fieldPolicyUnlocked;
     private int lastSelectionStart = -1;
     private int lastSelectionEnd = -1;
     private int selectionMutationGeneration;
@@ -111,12 +112,14 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting) {
         super.onStartInput(attribute, restarting);
+        if (!restarting) fieldPolicyUnlocked = false;
         cursorAnchor = null;
         lastSelectionStart = attribute == null ? -1 : attribute.initialSelStart;
         lastSelectionEnd = attribute == null ? -1 : attribute.initialSelEnd;
         cancelExpectedSelectionUpdate();
         schedulePhraseDictionaryReload();
         InputFieldPolicy nextPolicy = InputFieldPolicy.from(attribute);
+        if (fieldPolicyUnlocked) nextPolicy = nextPolicy.unrestricted();
         boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
         fieldPolicy = nextPolicy;
         if (engine != null) {
@@ -137,6 +140,7 @@ public final class BopomofoImeService extends InputMethodService
         super.onStartInputView(info, restarting);
         schedulePhraseDictionaryReload();
         InputFieldPolicy nextPolicy = InputFieldPolicy.from(info);
+        if (fieldPolicyUnlocked) nextPolicy = nextPolicy.unrestricted();
         boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
         fieldPolicy = nextPolicy;
         if (engine != null) {
@@ -157,6 +161,7 @@ public final class BopomofoImeService extends InputMethodService
         lastSelectionStart = -1;
         lastSelectionEnd = -1;
         appliedComposingText = "";
+        fieldPolicyUnlocked = false;
         cancelExpectedSelectionUpdate();
         hideFloatingCandidates();
         super.onFinishInput();
@@ -271,6 +276,12 @@ public final class BopomofoImeService extends InputMethodService
         if (key.equals("HARDWARE_WIDTH")) {
             apply(engine.toggleHardwareWidth());
             return;
+        }
+        if (key.equals("MODE") && fieldPolicy.isRestricted()) {
+            fieldPolicyUnlocked = true;
+            fieldPolicy = fieldPolicy.unrestricted();
+            engine.setAllowedInputModes(fieldPolicy.allowedModes(),
+                    fieldPolicy.preferredMode(), false);
         }
         if (!fieldPolicy.isKeyEnabled(key, engine.inputMode(), engine.isShifted())) return;
         apply(engine.handleSoftKey(key), key.equals("ENTER"));

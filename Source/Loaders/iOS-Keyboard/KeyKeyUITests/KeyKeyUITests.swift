@@ -20,6 +20,10 @@ final class KeyKeyUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["琦琦注音"].waitForExistence(timeout: 8))
+        let version = app.staticTexts["app.version"]
+        XCTAssertTrue(version.exists)
+        XCTAssertTrue(version.label.hasPrefix("版本 "))
+        XCTAssertNotEqual(version.label, "版本 —")
         for identifier in [
             "open-hardware-editor", "open-system-settings", "supporter.purchase",
             "supporter.restore", "open-acknowledgements"

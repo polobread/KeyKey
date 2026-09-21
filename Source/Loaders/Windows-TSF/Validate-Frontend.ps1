@@ -71,6 +71,14 @@ foreach ($entryPoint in $legacyEntryPoints) {
 }
 
 $cmake = Get-Content -LiteralPath (Join-Path $frontend 'CMakeLists.txt') -Raw
+if ($cmake -notmatch 'KEYKEY_MARKETING_VERSION') {
+    $errors.Add('CMake does not expose the marketing version to the settings UI')
+}
+$settingsApp = Get-Content -LiteralPath (Join-Path $frontend 'SettingsApp.cpp') -Raw
+if ($settingsApp -notmatch 'kVersionText' -or
+    $settingsApp -notmatch 'KEYKEY_MARKETING_VERSION') {
+    $errors.Add('Settings app does not display the build marketing version')
+}
 $sourceReferences = [regex]::Matches($cmake, '"\$\{KEYKEY_SOURCE\}/([^"$]+)"')
 $repositorySource = Resolve-Path -LiteralPath (Join-Path $frontend '..\..')
 foreach ($match in $sourceReferences) {

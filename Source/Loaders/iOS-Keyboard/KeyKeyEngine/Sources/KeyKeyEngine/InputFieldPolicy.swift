@@ -11,7 +11,7 @@ public struct InputFieldPolicy: Sendable, Equatable {
 
     public static let `default` = InputFieldPolicy(hint: .default)
 
-    public let allowedModes: Set<BopomofoEngine.InputMode>
+    public private(set) var allowedModes: Set<BopomofoEngine.InputMode>
     public let preferredMode: BopomofoEngine.InputMode
     private let kind: Kind
 
@@ -31,8 +31,8 @@ public struct InputFieldPolicy: Sendable, Equatable {
             preferredMode = .number
         case .url:
             kind = .url
-            allowedModes = [.english, .number]
-            preferredMode = .english
+            allowedModes = Set(BopomofoEngine.InputMode.allCases)
+            preferredMode = .bopomofo
         case .numberPad, .asciiCapableNumberPad:
             kind = .number
             allowedModes = [.number]
@@ -56,9 +56,20 @@ public struct InputFieldPolicy: Sendable, Equatable {
         }
     }
 
+    public var isRestricted: Bool {
+        allowedModes.count < BopomofoEngine.InputMode.allCases.count
+    }
+
+    /// Keeps the field's preferred starting plane, but lets an explicit press
+    /// on MODE opt out of the host's restrictive keyboard hint.
+    public func unrestricted() -> InputFieldPolicy {
+        guard isRestricted else { return self }
+        var policy = self
+        policy.allowedModes = Set(BopomofoEngine.InputMode.allCases)
+        return policy
+    }
+
     public func modeCaption(for mode: BopomofoEngine.InputMode) -> String {
-        if allowedModes.count == 1 { return symbol(mode) }
-        if allowedModes.count == 2 { return symbol(nextMode(after: mode)) }
         switch mode {
         case .bopomofo: return "英/數"
         case .english: return "數/ㄅ"
@@ -72,7 +83,15 @@ public struct InputFieldPolicy: Sendable, Equatable {
     public func modePreviewCaption(
         for mode: BopomofoEngine.InputMode, temporaryEnglish: Bool
     ) -> String {
-        temporaryEnglish ? symbol(mode) : symbol(nextMode(after: mode))
+        guard !temporaryEnglish else { return symbol(mode) }
+        if isRestricted {
+            switch mode {
+            case .bopomofo: return symbol(.english)
+            case .english: return symbol(.number)
+            case .number: return symbol(.bopomofo)
+            }
+        }
+        return symbol(nextMode(after: mode))
     }
 
     /// A concise description of the state a press on SHIFT will enter.
@@ -97,9 +116,14 @@ public struct InputFieldPolicy: Sendable, Equatable {
         case KeyboardLayout.inputModeSwitchKey, "SETTINGS", "BACKSPACE", "ENTER":
             return true
         case "MODE":
-            return allowedModes.count > 1
+            return true
+        default:
+            break
+        }
+        if !isRestricted { return allowedModes.contains(mode) }
+        switch key {
         case "SYMBOL", "EMOJI", "，", "。":
-            return kind == .general
+            return false
         case "SPACE":
             return allows(" ")
         case "SHIFT":
@@ -120,11 +144,11 @@ public struct InputFieldPolicy: Sendable, Equatable {
         let character = Character(value)
         let ascii = scalar.value >= 0x20 && scalar.value <= 0x7e
         switch kind {
-        case .general: return true
+        case .general, .url: return true
         case .ascii: return ascii
         case .punctuation:
             return ascii && (!character.isLetter)
-        case .url, .email:
+        case .email:
             return ascii && scalar.value > 0x20
         case .number:
             return character.isNumber

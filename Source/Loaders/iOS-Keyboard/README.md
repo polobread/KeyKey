@@ -4,6 +4,8 @@
 
 琦琦注音的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
 容器 App。
+首頁會從 container app bundle 的 `CFBundleShortVersionString` 顯示目前版本，避免畫面
+版號和 Xcode 的 `MARKETING_VERSION` 失同步。
 
 為熟悉五排標準注音鍵位的使用者保留完整排列與固定 `1–9` 候選位置，讓輸入延續
 肌肉記憶。畫面在記事本輸入 `ㄅ半注音的第一選擇 琦ㄑㄧˊ注音輸入法`，其中
@@ -91,10 +93,13 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   App 前景接收 USB／藍牙鍵盤，不能讓琦琦在備忘錄、LINE 或 Safari 內接管實體鍵盤。
 - **inline 組字**：專案最低 iOS 17，而 `UITextDocumentProxy.setMarkedText` 自 iOS 13
   可用。注音讀音會以 marked text 顯示在目標欄位；選字時以候選字取代讀音。
-- 會讀取 `textDocumentProxy.keyboardType` 的 11 種 UIKit 提示。`default` 與
-  `webSearch` 保留注音；ASCII、URL、Email 與姓名電話鍵盤預設英文；數字符號、數字、
-  電話、小數與 ASCII 數字鍵盤預設數字。不適用的鍵保留原位置但會淡化、停用並退出
-  VoiceOver 元素的可操作狀態。
+- 會讀取 `textDocumentProxy.keyboardType` 的 11 種 UIKit 提示。`default`、URL 與
+  `webSearch` 一開始就提供完整注音／英文／數字模式，URL 可直接輸入中文搜尋；ASCII、
+  Email 與姓名電話鍵盤先用英文精簡模式，數字符號、數字、電話、小數與 ASCII 數字鍵盤
+  先用數字精簡模式。不適用的鍵會淡化並停用，但 MODE 保持可按；第一次按 MODE 後即解除
+  該輸入欄位的提示限制，切回完整三模式與全部功能，直到離開該欄位。
+- 英文小寫按 Shift 後，字母改為大寫，末四個符號也依序由 `; , . /` 改為
+  `: < > ?`。
 - **密碼與電話欄位是 iOS 系統限制**：第三方鍵盤不會出現在 secure text field、
   `phonePad` 或 `namePhonePad`，系統會自動換回內建鍵盤。引擎仍保留這三種映射，方便
   測試與處理 host 實際提供相同 trait 的情況，但 extension 無法繞過系統封鎖；App 也能

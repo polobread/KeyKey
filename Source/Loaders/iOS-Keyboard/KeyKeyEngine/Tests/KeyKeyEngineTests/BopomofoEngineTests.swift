@@ -267,6 +267,16 @@ struct BopomofoEngineTests {
         #expect(engine.isShifted, "English shift must not clear after one letter")
     }
 
+    @Test("shifted English punctuation commits the displayed characters")
+    func englishShiftPunctuation() {
+        let engine = engine()
+        _ = engine.handleSoftKey("MODE")
+        _ = engine.handleSoftKey("SHIFT")
+        for key in [":", "<", ">", "?"] {
+            #expect(engine.handleSoftKey(key) == .commit(key))
+        }
+    }
+
     @Test("shift in number mode stays in number mode")
     func numberShiftStays() {
         let engine = engine()

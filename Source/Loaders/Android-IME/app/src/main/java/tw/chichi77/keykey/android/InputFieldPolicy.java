@@ -55,7 +55,6 @@ final class InputFieldPolicy {
     static InputFieldPolicy fromValues(int type, int imeOptions, String customActionLabel,
                                        int customActionId) {
         int inputClass = type & InputType.TYPE_MASK_CLASS;
-        int variation = type & InputType.TYPE_MASK_VARIATION;
         Kind kind;
         if (inputClass == InputType.TYPE_CLASS_NUMBER) {
             kind = (type & InputType.TYPE_NUMBER_FLAG_DECIMAL) != 0
@@ -65,6 +64,7 @@ final class InputFieldPolicy {
         } else if (inputClass == InputType.TYPE_CLASS_DATETIME) {
             kind = Kind.DATE_TIME;
         } else if (inputClass == InputType.TYPE_CLASS_TEXT) {
+            int variation = type & InputType.TYPE_MASK_VARIATION;
             kind = switch (variation) {
                 case InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
                         InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS -> Kind.EMAIL;
@@ -72,7 +72,8 @@ final class InputFieldPolicy {
                 case InputType.TYPE_TEXT_VARIATION_PASSWORD,
                         InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
                         InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD -> Kind.ASCII;
-                default -> Kind.GENERAL;
+                default -> (imeOptions & EditorInfo.IME_FLAG_FORCE_ASCII) != 0
+                        ? Kind.ASCII : Kind.GENERAL;
             };
         } else {
             kind = Kind.GENERAL;
@@ -84,7 +85,7 @@ final class InputFieldPolicy {
                 || kind == Kind.DATE_TIME) {
             modes = EnumSet.of(BopomofoEngine.InputMode.NUMBER);
             preferred = BopomofoEngine.InputMode.NUMBER;
-        } else if (kind == Kind.ASCII || kind == Kind.EMAIL || kind == Kind.URL) {
+        } else if (kind == Kind.ASCII || kind == Kind.EMAIL) {
             modes = EnumSet.of(BopomofoEngine.InputMode.ENGLISH,
                     BopomofoEngine.InputMode.NUMBER);
             preferred = BopomofoEngine.InputMode.ENGLISH;
@@ -138,6 +139,15 @@ final class InputFieldPolicy {
     String enterLabel() { return enterLabel; }
     boolean hasEditorAction() { return hasEditorAction; }
     Kind kind() { return kind; }
+    boolean isRestricted() {
+        return allowedModes.size() < BopomofoEngine.InputMode.values().length;
+    }
+
+    InputFieldPolicy unrestricted() {
+        if (!isRestricted()) return this;
+        return new InputFieldPolicy(kind, EnumSet.allOf(BopomofoEngine.InputMode.class),
+                preferredMode, editorAction, enterLabel, hasEditorAction, signedNumber);
+    }
 
     boolean hasSameLayout(InputFieldPolicy other) {
         return other != null && kind == other.kind
@@ -146,8 +156,6 @@ final class InputFieldPolicy {
     }
 
     String modeCaption(BopomofoEngine.InputMode mode) {
-        if (allowedModes.size() == 1) return symbol(mode);
-        if (allowedModes.size() == 2) return symbol(nextMode(mode));
         return switch (mode) {
             case BOPOMOFO -> "英/數";
             case ENGLISH -> "數/ㄅ";
@@ -156,13 +164,14 @@ final class InputFieldPolicy {
     }
 
     boolean isKeyEnabled(String key, BopomofoEngine.InputMode mode, boolean shifted) {
-        if (key.equals("SETTINGS") || key.equals("BACKSPACE") || key.equals("ENTER")) {
+        if (key.equals("SETTINGS") || key.equals("BACKSPACE") || key.equals("ENTER")
+                || key.equals("MODE")) {
             return true;
         }
-        if (key.equals("MODE")) return allowedModes.size() > 1;
+        if (!isRestricted()) return allowedModes.contains(mode);
         if (key.equals("SYMBOL") || key.equals("EMOJI")
                 || key.equals("，") || key.equals("。")) {
-            return kind == Kind.GENERAL;
+            return false;
         }
         if (key.equals("SPACE")) return allowsCharacter(" ");
         if (key.equals("SHIFT")) {
@@ -188,10 +197,9 @@ final class InputFieldPolicy {
         if (value.length() != 1) return false;
         char character = value.charAt(0);
         return switch (kind) {
-            case GENERAL -> true;
+            case GENERAL, URL -> true;
             case ASCII -> character >= 0x20 && character <= 0x7E;
             case EMAIL -> character >= 0x21 && character <= 0x7E;
-            case URL -> character >= 0x21 && character <= 0x7E;
             case PHONE -> Character.isDigit(character)
                     || "+-#*() ".indexOf(character) >= 0;
             case INTEGER -> Character.isDigit(character)
@@ -199,26 +207,6 @@ final class InputFieldPolicy {
             case DECIMAL -> Character.isDigit(character) || character == '.'
                     || signedNumber && character == '-';
             case DATE_TIME -> Character.isDigit(character) || "/:-. ".indexOf(character) >= 0;
-        };
-    }
-
-    private BopomofoEngine.InputMode nextMode(BopomofoEngine.InputMode current) {
-        BopomofoEngine.InputMode candidate = current;
-        do {
-            candidate = switch (candidate) {
-                case BOPOMOFO -> BopomofoEngine.InputMode.ENGLISH;
-                case ENGLISH -> BopomofoEngine.InputMode.NUMBER;
-                case NUMBER -> BopomofoEngine.InputMode.BOPOMOFO;
-            };
-        } while (!allowedModes.contains(candidate));
-        return candidate;
-    }
-
-    private static String symbol(BopomofoEngine.InputMode mode) {
-        return switch (mode) {
-            case BOPOMOFO -> "ㄅ";
-            case ENGLISH -> "英";
-            case NUMBER -> "數";
         };
     }
 }
