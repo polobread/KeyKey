@@ -162,5 +162,10 @@ tasks.withType<Test>().configureEach {
 
 dependencies {
     implementation("com.android.billingclient:billing:9.1.0")
+    constraints {
+        implementation("androidx.fragment:fragment:1.9.0") {
+            because("Billing's Play Services dependencies otherwise resolve obsolete Fragment 1.1.0")
+        }
+    }
     testImplementation("junit:junit:4.13.2")
 }

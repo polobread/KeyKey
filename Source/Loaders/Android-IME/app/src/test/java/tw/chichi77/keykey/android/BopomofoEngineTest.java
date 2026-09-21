@@ -125,6 +125,25 @@ public final class BopomofoEngineTest {
     }
 
     @Test
+    public void englishShiftChangesLettersAndTrailingPunctuation() throws Exception {
+        BopomofoEngine engine = engineWith("");
+        engine.handleSoftKey("MODE");
+        engine.handleSoftKey("SHIFT");
+
+        assertEquals(BopomofoEngine.InputMode.ENGLISH, engine.inputMode());
+        assertTrue(engine.isShifted());
+        String[][] rows = BopomofoKeyboardView.shiftedEnglishRows();
+        assertEquals(":", rows[2][9]);
+        assertEquals("<", rows[3][7]);
+        assertEquals(">", rows[3][8]);
+        assertEquals("?", rows[3][9]);
+        assertEquals(":", engine.handleSoftKey(rows[2][9]).committedText());
+        assertEquals("<", engine.handleSoftKey(rows[3][7]).committedText());
+        assertEquals(">", engine.handleSoftKey(rows[3][8]).committedText());
+        assertEquals("?", engine.handleSoftKey(rows[3][9]).committedText());
+    }
+
+    @Test
     public void restrictedModeCycleSkipsBopomofo() throws Exception {
         BopomofoEngine engine = engineWith("");
         engine.setAllowedInputModes(

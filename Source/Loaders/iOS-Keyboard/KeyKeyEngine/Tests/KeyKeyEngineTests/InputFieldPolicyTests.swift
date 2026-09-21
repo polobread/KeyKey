@@ -17,13 +17,13 @@ struct InputFieldPolicyTests {
         }
     }
 
-    @Test("number pad only accepts digits")
+    @Test("number pad starts with digits but leaves MODE available")
     func numberPad() {
         let policy = InputFieldPolicy(hint: .numberPad)
         #expect(policy.isKeyEnabled("8", mode: .number, shifted: false))
         #expect(!policy.isKeyEnabled(".", mode: .number, shifted: false))
         #expect(!policy.isKeyEnabled("SHIFT", mode: .number, shifted: false))
-        #expect(!policy.isKeyEnabled("MODE", mode: .number, shifted: false))
+        #expect(policy.isKeyEnabled("MODE", mode: .number, shifted: false))
     }
 
     @Test("decimal and phone pads expose only their useful punctuation")
@@ -38,21 +38,48 @@ struct InputFieldPolicyTests {
         #expect(!phone.isKeyEnabled("@", mode: .number, shifted: false))
     }
 
-    @Test("ASCII fields skip Bopomofo and disable non-ASCII panels")
+    @Test("ASCII fields start without Bopomofo and disable non-ASCII panels")
     func ascii() {
         let policy = InputFieldPolicy(hint: .asciiCapable)
         #expect(policy.allowedModes == [.english, .number])
         #expect(policy.preferredMode == .english)
-        #expect(policy.modeCaption(for: .english) == "數")
+        #expect(policy.modeCaption(for: .english) == "數/ㄅ")
         #expect(!policy.isKeyEnabled("EMOJI", mode: .english, shifted: false))
         #expect(!policy.isKeyEnabled("，", mode: .english, shifted: false))
+    }
+
+    @Test("URL starts with all three modes because it may be used for search")
+    func url() {
+        let policy = InputFieldPolicy(hint: .url)
+        #expect(policy.allowedModes == Set(BopomofoEngine.InputMode.allCases))
+        #expect(policy.preferredMode == .bopomofo)
+        #expect(!policy.isRestricted)
+        #expect(policy.isKeyEnabled("EMOJI", mode: .bopomofo, shifted: false))
+    }
+
+    @Test("restricted fields become fully functional after opting out")
+    func unrestricted() {
+        for hint in [KeyboardTypeHint.asciiCapable, .emailAddress, .numberPad, .decimalPad] {
+            let policy = InputFieldPolicy(hint: hint)
+            #expect(policy.isRestricted)
+            #expect(policy.isKeyEnabled("MODE", mode: policy.preferredMode, shifted: false))
+
+            let unlocked = policy.unrestricted()
+            #expect(!unlocked.isRestricted)
+            #expect(unlocked.allowedModes == Set(BopomofoEngine.InputMode.allCases))
+            #expect(unlocked.preferredMode == policy.preferredMode)
+            #expect(unlocked.isKeyEnabled("EMOJI", mode: .bopomofo, shifted: false))
+            #expect(unlocked.isKeyEnabled("SPACE", mode: .english, shifted: false))
+        }
     }
 
     @Test("key previews describe the state the restricted policy will enter")
     func restrictedPreviews() {
         let policy = InputFieldPolicy(hint: .asciiCapable)
         #expect(policy.modePreviewCaption(for: .english, temporaryEnglish: false) == "數")
-        #expect(policy.modePreviewCaption(for: .number, temporaryEnglish: false) == "英")
+        #expect(policy.modePreviewCaption(for: .number, temporaryEnglish: false) == "ㄅ")
+        let number = InputFieldPolicy(hint: .numberPad)
+        #expect(number.modePreviewCaption(for: .number, temporaryEnglish: false) == "ㄅ")
         #expect(policy.shiftPreviewCaption(
             for: .number, shifted: false, temporaryEnglish: false
         ) == "符二")

@@ -92,24 +92,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         description.setLineSpacing(0, 1.2f);
         content.addView(description, matchWrap(dp(0), dp(16)));
 
-        TextView keyboardSizeTitle = new TextView(this);
-        keyboardSizeTitle.setText(R.string.keyboard_size_title);
-        keyboardSizeTitle.setTextSize(18);
-        keyboardSizeTitle.setTextColor(Color.DKGRAY);
-        content.addView(keyboardSizeTitle, matchWrap(dp(0), dp(8)));
-
-        TextView keyboardSizeDescription = new TextView(this);
-        keyboardSizeDescription.setText(R.string.keyboard_size_description);
-        keyboardSizeDescription.setTextSize(14);
-        keyboardSizeDescription.setTextColor(Color.GRAY);
-        keyboardSizeDescription.setLineSpacing(0, 1.2f);
-        content.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
-
-        addKeyboardSizeControl(content, R.string.keyboard_size_portrait,
-                KeyboardSizeSettings.portraitPercent(this), true);
-        addKeyboardSizeControl(content, R.string.keyboard_size_landscape,
-                KeyboardSizeSettings.landscapePercent(this), false);
-
         CheckBox keyPreview = new CheckBox(this);
         keyPreview.setText(R.string.key_preview_enabled);
         keyPreview.setTextSize(16);
@@ -205,6 +187,24 @@ public final class SettingsActivity extends Activity implements SupporterBilling
 
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
+
+        TextView keyboardSizeTitle = new TextView(this);
+        keyboardSizeTitle.setText(R.string.keyboard_size_title);
+        keyboardSizeTitle.setTextSize(18);
+        keyboardSizeTitle.setTextColor(Color.DKGRAY);
+        content.addView(keyboardSizeTitle, matchWrap(dp(0), dp(8)));
+
+        TextView keyboardSizeDescription = new TextView(this);
+        keyboardSizeDescription.setText(R.string.keyboard_size_description);
+        keyboardSizeDescription.setTextSize(14);
+        keyboardSizeDescription.setTextColor(Color.GRAY);
+        keyboardSizeDescription.setLineSpacing(0, 1.2f);
+        content.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
+
+        addKeyboardSizeControl(content, R.string.keyboard_size_portrait,
+                KeyboardSizeSettings.portraitPercent(this), true);
+        addKeyboardSizeControl(content, R.string.keyboard_size_landscape,
+                KeyboardSizeSettings.landscapePercent(this), false);
 
         TextView supporterTitle = new TextView(this);
         supporterTitle.setText(R.string.supporter_section_title);

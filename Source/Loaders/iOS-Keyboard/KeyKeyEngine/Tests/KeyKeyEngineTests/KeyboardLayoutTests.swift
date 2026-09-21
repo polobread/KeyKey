@@ -66,6 +66,14 @@ struct KeyboardLayoutTests {
             == KeyboardLayout.shiftedNumberRows)
     }
 
+    @Test("English shift also shifts the four punctuation keys")
+    func englishShiftPunctuation() {
+        #expect(KeyboardLayout.bopomofoRows[2][9] == ";")
+        #expect(Array(KeyboardLayout.bopomofoRows[3][7...9]) == [",", ".", "/"])
+        #expect(KeyboardLayout.shiftedEnglishRows[2][9] == ":")
+        #expect(Array(KeyboardLayout.shiftedEnglishRows[3][7...9]) == ["<", ">", "?"])
+    }
+
     @Test("the status line doubles as the reading display")
     func statusText() {
         #expect(KeyboardLayout.statusText(

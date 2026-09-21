@@ -79,6 +79,12 @@ public final class ImeTestActivity extends Activity {
         addField(content, "密碼", InputType.TYPE_CLASS_TEXT
                         | InputType.TYPE_TEXT_VARIATION_PASSWORD,
                 EditorInfo.IME_ACTION_NONE, true, 0, null);
+        addField(content, "可見密碼", InputType.TYPE_CLASS_TEXT
+                        | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                        | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS,
+                EditorInfo.IME_ACTION_NONE, true, 0, null);
+        addField(content, "要求 ASCII 鍵盤", InputType.TYPE_CLASS_TEXT,
+                EditorInfo.IME_FLAG_FORCE_ASCII, true, 0, null);
         addField(content, "姓名", InputType.TYPE_CLASS_TEXT
                         | InputType.TYPE_TEXT_VARIATION_PERSON_NAME,
                 EditorInfo.IME_ACTION_NONE, true, 0, null);
@@ -95,11 +101,6 @@ public final class ImeTestActivity extends Activity {
                         | InputType.TYPE_TEXT_VARIATION_LONG_MESSAGE
                         | InputType.TYPE_TEXT_FLAG_MULTI_LINE,
                 EditorInfo.IME_FLAG_NO_ENTER_ACTION, false, 0, null);
-        addField(content, "ASCII 限定", InputType.TYPE_CLASS_TEXT
-                        | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                        | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS,
-                EditorInfo.IME_ACTION_NONE, true, 0, null);
-
         addSection(content, "Enter action");
         addField(content, "完成", InputType.TYPE_CLASS_TEXT,
                 EditorInfo.IME_ACTION_DONE, true, 0, null);

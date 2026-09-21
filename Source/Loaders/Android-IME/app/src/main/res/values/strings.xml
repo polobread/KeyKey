@@ -4,6 +4,7 @@
     <string name="ime_name">琦琦注音輸入法</string>
     <string name="ime_subtype_name">繁體中文（標準注音）</string>
     <string name="setup_title">琦琦注音輸入法</string>
+    <string name="version_info">版本 %1$s</string>
     <string name="setup_description">使用與電腦相同的標準注音鍵位，支援可選關聯詞詞庫、直式、橫式以及 USB／藍牙實體鍵盤。</string>
     <string name="enable_ime">1. 啟用輸入法</string>
     <string name="choose_ime">2. 選擇琦琦注音</string>

@@ -2,6 +2,7 @@ package tw.chichi77.keykey.android;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -29,7 +30,14 @@ public final class MainActivity extends Activity {
         title.setTextSize(28);
         title.setTextColor(getColor(R.color.keykey_blue_dark));
         title.setGravity(Gravity.CENTER);
-        content.addView(title, matchWrap(dp(0), dp(20)));
+        content.addView(title, matchWrap(dp(0), dp(2)));
+
+        TextView version = new TextView(this);
+        version.setText(getString(R.string.version_info, versionName()));
+        version.setTextSize(14);
+        version.setTextColor(Color.GRAY);
+        version.setGravity(Gravity.CENTER);
+        content.addView(version, matchWrap(dp(0), dp(12)));
 
         TextView description = new TextView(this);
         description.setText(R.string.setup_description);
@@ -69,6 +77,16 @@ public final class MainActivity extends Activity {
         content.addView(privacy, matchWrap(dp(0), dp(12)));
 
         setContentView(content);
+    }
+
+    private String versionName() {
+        try {
+            String versionName = getPackageManager()
+                    .getPackageInfo(getPackageName(), 0).versionName;
+            return versionName == null || versionName.trim().isEmpty() ? "—" : versionName;
+        } catch (PackageManager.NameNotFoundException ignored) {
+            return "—";
+        }
     }
 
     private LinearLayout.LayoutParams matchWrap(int top, int bottom) {

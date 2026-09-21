@@ -25,6 +25,7 @@ final class KeyboardViewController: UIInputViewController {
     private var activeDocumentIdentifier: UUID?
     private var hasMarkedText = false
     private var fieldPolicy = InputFieldPolicy.default
+    private var fieldPolicyUnlocked = false
     private var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
     private var candidateColor = CandidateColorSettings().color
     private var inputClicksEnabled = UserDefaults.standard.object(
@@ -77,6 +78,7 @@ final class KeyboardViewController: UIInputViewController {
         super.viewWillAppear(animated)
         supporterState.recordFirstUse()
         if updateDocumentIdentifier() {
+            fieldPolicyUnlocked = false
             abandonDocumentComposition()
         }
         updateFieldPolicy()
@@ -125,6 +127,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func handleDocumentChange() {
         let documentChanged = updateDocumentIdentifier()
+        if documentChanged { fieldPolicyUnlocked = false }
         updateFieldPolicy()
         // If the host changes the document or selection, its old marked range
         // is no longer trustworthy. Mutations initiated below are ignored so a
@@ -237,7 +240,8 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func updateFieldPolicy() {
-        let nextPolicy = InputFieldPolicy(hint: keyboardTypeHint(textDocumentProxy.keyboardType))
+        var nextPolicy = InputFieldPolicy(hint: keyboardTypeHint(textDocumentProxy.keyboardType))
+        if fieldPolicyUnlocked { nextPolicy = nextPolicy.unrestricted() }
         let layoutChanged = nextPolicy != fieldPolicy
         fieldPolicy = nextPolicy
         engine?.setAllowedInputModes(
@@ -397,6 +401,14 @@ extension KeyboardViewController: KeyboardViewDelegate {
         if key == "SETTINGS" {
             showSettingsPanel()
             return
+        }
+        if key == "MODE", fieldPolicy.isRestricted {
+            fieldPolicyUnlocked = true
+            fieldPolicy = fieldPolicy.unrestricted()
+            engine.setAllowedInputModes(
+                fieldPolicy.allowedModes, preferred: fieldPolicy.preferredMode,
+                selectPreferred: false
+            )
         }
         guard fieldPolicy.isKeyEnabled(
             key, mode: engine.inputMode, shifted: engine.isShifted
