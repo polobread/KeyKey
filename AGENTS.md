@@ -1,5 +1,13 @@
 # AGENTS.md — 開發交接
 
+**2026-09-21 iOS／Windows／Linux 顯示版本：** iOS container app 首頁標題下方從
+`CFBundleShortVersionString` 顯示 `版本 1.2.9`，並以 `app.version` accessibility id
+加入 smoke UI test。Windows `KeyKeySettings.exe` footer 從 CMake `PROJECT_VERSION`
+編譯出的 `KEYKEY_MARKETING_VERSION` 顯示版本，static frontend validator 會檢查接線。
+Linux 沒有獨立 container app，因此在琦琦注音的 Fcitx 設定頁最上方，以 read-only
+information group 顯示 CMake `PROJECT_VERSION`；X11 schema gate 會核對文字。三平台 UI
+都不另外硬編版號來源，升版時跟既有 build metadata 一起更新。
+
 **2026-09-21 1.3.x 候選順位參考計畫：** 新增
 [1.3.x 跨平台候選字順位計畫](CANDIDATE_ORDER_1_3_PLAN.md)。這是未排期、未承諾實作的
 完整參考文件，不改變 1.2.9 執行行為。計畫將 macOS 凍結順位定為主基準、Windows

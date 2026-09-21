@@ -4,6 +4,8 @@
 
 琦琦注音的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
 容器 App。
+首頁會從 container app bundle 的 `CFBundleShortVersionString` 顯示目前版本，避免畫面
+版號和 Xcode 的 `MARKETING_VERSION` 失同步。
 
 為熟悉五排標準注音鍵位的使用者保留完整排列與固定 `1–9` 候選位置，讓輸入延續
 肌肉記憶。畫面在記事本輸入 `ㄅ半注音的第一選擇 琦ㄑㄧˊ注音輸入法`，其中

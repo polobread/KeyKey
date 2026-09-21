@@ -13,6 +13,7 @@ target_link_libraries(chichi77-keykey PRIVATE
 )
 target_compile_definitions(chichi77-keykey PRIVATE
     KEYKEY_LINUX_DATA_DIR="${CMAKE_INSTALL_FULL_DATADIR}/chichi77-keykey/data"
+    KEYKEY_VERSION_STRING="${PROJECT_VERSION}"
 )
 set_target_properties(chichi77-keykey PROPERTIES PREFIX "")
 

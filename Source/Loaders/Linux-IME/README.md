@@ -3,6 +3,8 @@
 Current source version: 1.2.9 (in development). The documented 1.2.8
 Ubuntu package set remains the published release; 1.2.9 packages have not
 been released or accepted yet.
+The Fcitx configuration page shows the CMake project version in a read-only
+information group, so the addon metadata and visible settings use one source.
 
 This directory contains the new native Linux implementation. It does not link
 or modify the legacy KeyKeyEngine or OpenVanilla frameworks. Linux 1.2.8

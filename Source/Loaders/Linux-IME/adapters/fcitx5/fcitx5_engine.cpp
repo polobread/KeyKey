@@ -113,8 +113,13 @@ FCITX_CONFIGURATION(
 
 #undef KEYKEY_DECLARE_ASSOCIATED_PHRASE_OPTION
 
+FCITX_CONFIGURATION(VersionInfoConfig, )
+
 FCITX_CONFIGURATION(
     KeyKeyConfig,
+    fcitx::Option<VersionInfoConfig> versionInfo{
+        this, "VersionInfo",
+        "琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING};
     fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
         bopomofoLayout{this, "BopomofoLayout", "Bopomofo keyboard layout",
                        "Standard"};

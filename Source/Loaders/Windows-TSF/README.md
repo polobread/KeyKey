@@ -91,6 +91,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 The build creates `KeyKeyTsf.dll`, `KeyKeySettings.exe`, and
 `out\build\x64-ninja\Databases\KeyKey.db`. Keep the executable beside the DLL;
 Windows Keyboard options and the language-bar settings button both launch it.
+The settings window footer displays the CMake project marketing version, so its
+visible version comes from the same source as the packaged binaries.
 Re-run the build after changing a source CIN, plist, or phrase file; CMake will
 automatically recook the database.
 
