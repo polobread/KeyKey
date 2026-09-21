@@ -188,6 +188,10 @@ Entries marked `build-only` have not passed installed desktop typing acceptance.
 
 ## Configure and GNU Make source build
 
+For the complete Ubuntu 24.04 download, installation, Fcitx setup, typing,
+and removal steps in Traditional Chinese, see the
+[Linux `./configure` guide](../../../LINUX_CONFIGURE_INSTALL.md).
+
 The traditional source-build entry point is a thin wrapper around the same
 CMake targets and install rules used by the development and package builds. On
 Ubuntu, install the required compiler, build system, and Fcitx headers first:
