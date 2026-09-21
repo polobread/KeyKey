@@ -24,6 +24,9 @@ Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有
 
 ## Linux 原始碼建置
 
+Ubuntu 24.04 使用者若要從下載、編譯一路完成 Fcitx 啟用與試打，請先看
+[Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)。
+
 傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler、`pkg-config`、
 Fcitx 5 Core 與 libcanberra 開發檔；
 不需要 Ninja、Docker、Autoconf 或 Automake。Ubuntu 可先安裝：

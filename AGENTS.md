@@ -1,5 +1,7 @@
 # AGENTS.md — 開發交接
 
+**2026-09-21 Linux 原始碼使用者指南：** 新增 `LINUX_CONFIGURE_INSTALL.md`，以 `v1.2.9` 完整 GitHub 原始碼與 Ubuntu 24.04 amd64 為範圍，說明 `./configure --prefix=/usr`、GNU Make、測試、Fcitx 啟用、另裝 GNOME 面板、試打及依原建置清單移除。README、`LINUX_INSTALL.md`、BUILDING 與 Linux frontend README 已加入入口。文件提醒不能拿 GNOME 面板 `_source.tar.gz` 當完整原始碼，也不能直接覆寫既有 `.deb` 安裝；截圖沿用先前套件版並標明來源。此文件沒有擴張其他 Linux 發行版的正式支援範圍。
+
 **2026-09-21 v1.2.9 發布現況：** 首次 `v1.2.9` tag／Release 曾因 Linux CI 失敗撤下；修正後已重新發布。`v1.2.9` tag 與 Release 存在，Linux 三個 `.deb`、面板原始碼及 `SHA256SUMS` 均在 Assets，Release 標為 latest；Linux CI 的 2026-09-20 手動完整驗證與後續分支執行成功。Android 與 iOS 繼續走商店發行，GitHub Release 不放 debug APK 或 Simulator 包。
 
 **2026-09-20 Linux 使用者文件：** 使用者指定 Linux 下一版與其他平台共用 `v1.2.9` 標籤，不再以獨立 Linux 標籤作為新指南的安裝入口。`LINUX_INSTALL.md` 已改為統一發布的安裝指南。Linux CI 已接上 tag 專用發布 job：Ubuntu 24.04 完整套件與 X11 輸入測試成功後，才核對版號及 checksum 並上傳三個 `.deb`、面板原始碼及 `SHA256SUMS` 到同一 Release。三張 `docs/images/keykey-linux-*.png` 均為先前 1.2.8 實拍：候選與符號取自已安裝套件的 GNOME Wayland VM，設定取自已安裝套件的 Ubuntu 24.04 X11 測試桌面，不是 1.2.9 驗收證據。README 已設入口。測試視窗與一般 App 畫面須明確區分；`out/` 不進版控，不要在使用者文件直接引用。
