@@ -76,6 +76,13 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
   Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
+### Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io/), certificate
+by [SignPath Foundation](https://signpath.org/)。詳見
+[Code signing policy](CODE_SIGNING_POLICY.md)。`v1.2.9` Windows 發行檔早於此整合，
+目前仍未簽章；SignPath Foundation 核准申請並完成驗證流程後，政策才適用於後續正式版。
+
 推送符合專案版號的 tag（例如 `v1.2.9`）會啟動 `Package macOS`、
 `Package Windows` 與完整 `Linux CI`。macOS 和 Windows 的產物，以及通過 Ubuntu 24.04
 套件安裝與輸入測試的 Linux 套件，會加入同一個 GitHub Release。手動執行 Linux CI
@@ -185,6 +192,15 @@ iOS.
 - Device builds for iOS are distributed through the App Store.
   `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
   be installed on an iPhone or iPad.
+
+#### Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io/), certificate
+by [SignPath Foundation](https://signpath.org/). See the
+[Code signing policy](CODE_SIGNING_POLICY.md). The Windows assets in `v1.2.9`
+predate this integration and remain unsigned; the policy applies to later
+official releases after the application is accepted and the verified workflow
+is enabled.
 
 Pushing a tag that exactly matches the project version, such as `v1.2.9`,
 starts `Package macOS`, `Package Windows`, and the full `Linux CI`. The desktop
