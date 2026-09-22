@@ -2272,6 +2272,12 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 ### Windows
 
+- [ ] Windows 11 設定 UI 與 SQLite／Defender 的後續評估見
+      [Windows SQLite／Defender 評估交接](WINDOWS_SQLITE_EVALUATION.md)。建議保留
+      `ITfFnConfigure` 啟動獨立 `KeyKeySettings.exe`，在 Windows 上比較既有 Win32 與
+      C++/WinRT WinUI 3 原型；先抽出共用 `SettingsStore`，並以建置產生的 manifest／
+      resource 取代 Settings EXE 為讀取 `collection_names` 而直接連結 SQLite。這只是
+      建議，不代表已決定改寫、改用 WinSQLite，或已解決 Defender 誤判。
 - [ ] 取得受信任的正式程式碼簽章憑證後，實跑 `Package-Store-Windows.ps1`，確認三個
       PE 與 NSIS EXE 的 RFC 3161 時間戳記；目前只驗證 `-UnsignedTest` 能編譯並含完整
       payload。還要在乾淨 Windows 11 VM 測 `/S` 安裝、靜默解除安裝、升級、x64
