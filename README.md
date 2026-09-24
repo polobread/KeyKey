@@ -92,6 +92,8 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 ## 文件
 
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
+- [macOS App Store Connect 上架可行性與發行計畫](MACOS_APP_STORE_PLAN.md)：Apple
+  現行政策阻礙、第三方輸入法經驗、商店外發行改善與未來上架 gate
 - [Windows 安裝與使用指南](WINDOWS_INSTALL.md)：安裝、啟用、選字、詞庫設定與解除安裝
 - [Linux 安裝與使用指南](LINUX_INSTALL.md)：Ubuntu 24.04 的套件安裝、Fcitx 5 設定、注音選字與實拍圖
 - [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：Ubuntu 24.04 的原始碼安裝、啟用、試打與移除
@@ -120,7 +122,11 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-智慧注音所需的中研院語料未包含在 Yahoo 的開源釋出中，因此目前不啟用。
+macOS、iOS 與 Android 版提供 Yahoo KeyKey 原有的「好打注音」整句組字模式，並可切回
+傳統逐字注音。語言模型由
+McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yahoo 未釋出的中研院語料；
+另加入可替換的 11,180 句 AI 合成 bootstrap corpora 產生初版 bigram 上下文資料。這份
+小型合成語料用於工程與 A/B 測試，不代表完整的台灣繁中語料分布。
 
 <a id="english"></a>
 
@@ -129,6 +135,13 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 The macOS, Windows, and Ubuntu 24.04 installers for `v1.2.9` share one
 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9).
 Android and iOS use their respective store distribution channels.
+
+The macOS, iOS, and Android builds provide the original Smart Phonetic composition mode,
+with Traditional Phonetic available as an option.
+Its redistributable unigram model is generated from the MIT-licensed
+McBopomofo readings and occurrence counts. Replaceable AI-generated bootstrap
+corpora with 11,180 sentences supply an initial bigram layer for engineering and A/B testing; the
+proprietary corpus from the historical Yahoo build is not included.
 
 [Download the latest GitHub Release](https://github.com/polobread/KeyKey/releases/latest).
 
@@ -213,6 +226,7 @@ complete output and signing details.
 
 ### Documentation
 
+- [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
 - [Windows installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): download, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
@@ -245,8 +259,9 @@ data was generated, inferred, and normalized automatically, has not been reviewe
 item by item, and may contain errors. Accuracy and completeness are not
 guaranteed; see
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md).
-Smart Mandarin remains disabled because the required Sinica corpus was not
-included in Yahoo's source release.
+Smart Mandarin uses a redistributable model generated from McBopomofo data and the
+replaceable synthetic bootstrap corpora described above. Yahoo's proprietary Sinica corpus
+is not included.
 
 ## License
 

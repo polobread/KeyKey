@@ -74,6 +74,11 @@ database_count="$(find "$APP_PATH" -type f -name KeyKey.db | wc -l | tr -d '[:sp
 [[ "$database_count" == "1" ]] || fail "Expected one KeyKey.db, found $database_count"
 pass "KeyKey.db is packaged exactly once"
 
+verifier="$(cd "$(dirname "$0")/../../Distributions/Takao/DatabaseCooker" && pwd)/verify-smart-mandarin-db.py"
+python3 "$verifier" "$DATABASE_PATH" \
+  || fail "Keyboard.appex/KeyKey.db does not contain the 885614-row Smart Mandarin model"
+pass "Keyboard.appex contains the 885614-row Smart Mandarin model"
+
 plist_value() {
   /usr/libexec/PlistBuddy -c "Print :$2" "$1" 2>/dev/null
 }

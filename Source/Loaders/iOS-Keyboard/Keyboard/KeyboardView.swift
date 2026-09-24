@@ -51,6 +51,14 @@ final class KeyboardView: UIView {
     private var contentWidthConstraint: NSLayoutConstraint?
     private var keyViews: [[KeyView]] = []
     private var functionButtons: [(key: String, button: UIButton)] = []
+    private let backspaceRepeater = BackspaceRepeater()
+    private var backspaceTouchActive = false
+
+    func cancelBackspaceRepeat() {
+        backspaceRepeater.stop()
+        backspaceTouchActive = false
+        hideKeyPreview()
+    }
     private let keyPreview = UILabel()
     private var state = State()
     private var metrics = KeyboardMetrics.portrait
@@ -253,6 +261,15 @@ final class KeyboardView: UIView {
             button.accessibilityIdentifier = key
             if key == KeyboardLayout.inputModeSwitchKey {
                 inputModeSwitchButton = button
+            } else if key == "BACKSPACE" {
+                button.addTarget(self, action: #selector(backspaceTouchDown), for: .touchDown)
+                button.addTarget(self, action: #selector(backspaceTouchUpInside), for: .touchUpInside)
+                button.addTarget(
+                    self, action: #selector(backspaceTouchEnded),
+                    for: [.touchUpOutside, .touchCancel]
+                )
+                button.addTarget(self, action: #selector(backspaceTouchExited), for: .touchDragExit)
+                installPreviewHandlers(on: button)
             } else {
                 button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
                 installPreviewHandlers(on: button)
@@ -531,6 +548,39 @@ final class KeyboardView: UIView {
         hideKeyPreview()
         playInputClick()
         delegate?.keyboardView(self, didPress: key)
+    }
+
+    @objc private func backspaceTouchDown(_ sender: UIButton) {
+        guard sender.isEnabled else { return }
+        backspaceTouchActive = true
+        playInputClick()
+        delegate?.keyboardView(self, didPress: "BACKSPACE")
+        backspaceRepeater.start { [weak self] in
+            guard let self else { return }
+            self.delegate?.keyboardView(self, didPress: "BACKSPACE")
+        }
+    }
+
+    @objc private func backspaceTouchUpInside() {
+        // Accessibility activation can produce an up action without touch down.
+        if !backspaceTouchActive {
+            playInputClick()
+            delegate?.keyboardView(self, didPress: "BACKSPACE")
+        }
+        backspaceTouchEnded()
+    }
+
+    @objc private func backspaceTouchEnded() {
+        cancelBackspaceRepeat()
+    }
+
+    @objc private func backspaceTouchExited() {
+        backspaceRepeater.stop()
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil { cancelBackspaceRepeat() }
     }
 
     @objc private func candidateTapped(_ sender: UIButton) {

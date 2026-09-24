@@ -7,6 +7,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -111,6 +113,9 @@ final class BopomofoKeyboardView extends View {
     private float downX;
     private float downY;
     private boolean downOnCandidate;
+    private boolean backspaceTouchStarted;
+    private final BackspaceRepeater backspaceRepeater =
+            new BackspaceRepeater(new Handler(Looper.getMainLooper()));
     private boolean keyPreviewEnabled = true;
     private Hit previewHit;
     private int portraitHeightPercent = KeyboardSizeSettings.DEFAULT_PERCENT;
@@ -142,6 +147,8 @@ final class BopomofoKeyboardView extends View {
 
     void setMode(Mode mode) {
         if (this.mode == mode) return;
+        backspaceRepeater.stop();
+        backspaceTouchStarted = false;
         this.mode = mode;
         previewHit = null;
         requestLayout();
@@ -613,16 +620,30 @@ final class BopomofoKeyboardView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN -> {
+                backspaceRepeater.stop();
                 downX = event.getX();
                 downY = event.getY();
                 Hit hit = findHit(downX, downY);
                 if (hit != null && listener != null) listener.onPress();
+                backspaceTouchStarted = hit != null && hit.kind() == HitKind.KEY
+                        && "BACKSPACE".equals(hit.key());
+                if (backspaceTouchStarted && listener != null) {
+                    listener.onKey("BACKSPACE");
+                    backspaceRepeater.start(() -> {
+                        if (listener != null) listener.onKey("BACKSPACE");
+                    });
+                }
                 downOnCandidate = hit != null && hit.kind() == HitKind.CANDIDATE;
                 previewHit = canPreview(hit) ? hit : null;
                 if (previewHit != null) invalidate();
                 return true;
             }
             case MotionEvent.ACTION_MOVE -> {
+                if (backspaceTouchStarted) {
+                    Hit hit = findHit(event.getX(), event.getY());
+                    if (hit == null || hit.kind() != HitKind.KEY
+                            || !"BACKSPACE".equals(hit.key())) backspaceRepeater.stop();
+                }
                 if (previewHit != null
                         && !previewHit.bounds().contains(event.getX(), event.getY())) {
                     previewHit = null;
@@ -631,7 +652,13 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_UP -> {
+                backspaceRepeater.stop();
                 clearKeyPreview();
+                if (backspaceTouchStarted) {
+                    backspaceTouchStarted = false;
+                    performClick();
+                    return true;
+                }
                 float distance = event.getX() - downX;
                 if (downOnCandidate && Math.abs(distance) > dp(38)) {
                     if (listener != null) listener.onPage(distance < 0 ? 1 : -1);
@@ -652,12 +679,21 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_CANCEL -> {
+                backspaceRepeater.stop();
+                backspaceTouchStarted = false;
                 downOnCandidate = false;
                 clearKeyPreview();
                 return true;
             }
             default -> { return true; }
         }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        backspaceRepeater.stop();
+        backspaceTouchStarted = false;
+        super.onDetachedFromWindow();
     }
 
     @Override

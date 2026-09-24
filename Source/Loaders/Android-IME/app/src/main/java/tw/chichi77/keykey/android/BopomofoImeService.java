@@ -27,6 +27,8 @@ public final class BopomofoImeService extends InputMethodService
         implements BopomofoKeyboardView.Listener, FloatingCandidateWindow.Listener,
         SharedPreferences.OnSharedPreferenceChangeListener {
     private BopomofoEngine engine;
+    private SmartMandarinStore smartMandarinStore;
+    private SmartMandarinUserData smartUserData;
     private BopomofoKeyboardView keyboardView;
     private FloatingCandidateWindow floatingCandidateWindow;
     private Vibrator vibrator;
@@ -42,6 +44,9 @@ public final class BopomofoImeService extends InputMethodService
     private final Set<Integer> pressedHardwareShortcutKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedCandidateKeys = new LinkedHashSet<>();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final BackspaceRepeater hardwareBackspaceRepeater =
+            new BackspaceRepeater(mainHandler);
+    private boolean hardwareBackspaceHeld;
     private final ExecutorService dictionaryLoader = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "KeyKey dictionary loader");
         thread.setPriority(Thread.NORM_PRIORITY - 1);
@@ -69,7 +74,14 @@ public final class BopomofoImeService extends InputMethodService
                 dictionary = CinDictionary.empty();
             }
         }
-        engine = new BopomofoEngine(dictionary);
+        try {
+            smartUserData = SmartMandarinUserData.open(this);
+            smartMandarinStore = SmartMandarinStore.open(this, smartUserData);
+        } catch (IOException | RuntimeException error) {
+            smartMandarinStore = null;
+        }
+        engine = new BopomofoEngine(dictionary, smartMandarinStore,
+                BopomofoCompositionModeSettings.mode(this));
         schedulePhraseDictionaryReload();
         vibrator = getSystemService(Vibrator.class);
         CandidateWindowSettings.preferences(this)
@@ -112,6 +124,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting) {
         super.onStartInput(attribute, restarting);
+        stopHardwareBackspace();
         if (!restarting) fieldPolicyUnlocked = false;
         cursorAnchor = null;
         lastSelectionStart = attribute == null ? -1 : attribute.initialSelStart;
@@ -138,6 +151,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting) {
         super.onStartInputView(info, restarting);
+        stopHardwareBackspace();
         schedulePhraseDictionaryReload();
         InputFieldPolicy nextPolicy = InputFieldPolicy.from(info);
         if (fieldPolicyUnlocked) nextPolicy = nextPolicy.unrestricted();
@@ -154,6 +168,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onFinishInput() {
+        stopHardwareBackspace();
         if (engine != null) engine.reset();
         pressedHardwareShortcutKeys.clear();
         pressedCandidateKeys.clear();
@@ -169,16 +184,26 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onWindowHidden() {
+        stopHardwareBackspace();
         hideFloatingCandidates();
         super.onWindowHidden();
     }
 
     @Override
     public void onDestroy() {
+        stopHardwareBackspace();
         CandidateWindowSettings.preferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
         SupporterState.preferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
+        if (smartMandarinStore != null) {
+            smartMandarinStore.close();
+            smartMandarinStore = null;
+        }
+        if (smartUserData != null) {
+            smartUserData.close();
+            smartUserData = null;
+        }
         phraseLoadGeneration++;
         dictionaryLoader.shutdownNow();
         mainHandler.removeCallbacksAndMessages(null);
@@ -189,6 +214,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        stopHardwareBackspace();
         cursorAnchor = null;
         updateKeyboardMode();
         requestCursorAnchorUpdates();
@@ -220,7 +246,7 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
         if (!selectionChanged || engine == null
-                || (engine.readingText().isEmpty() && engine.pageCount() == 0)) {
+                || (!engine.hasComposition() && engine.pageCount() == 0)) {
             return;
         }
 
@@ -233,6 +259,19 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
+        if (BopomofoCompositionModeSettings.KEY_MODE.equals(key)) {
+            boolean hadComposition = engine != null && engine.hasComposition();
+            if (engine != null) {
+                engine.setCompositionMode(BopomofoCompositionModeSettings.mode(this));
+            }
+            if (hadComposition) {
+                InputConnection connection = getCurrentInputConnection();
+                if (connection != null) connection.commitText("", 1);
+                appliedComposingText = "";
+            }
+            refreshKeyboard();
+            return;
+        }
         if (SupporterState.KEY_SUPPORTER.equals(key)) {
             refreshKeyboard();
             return;
@@ -309,6 +348,8 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_DEL && hardwareBackspaceHeld) return true;
+        if (keyCode != KeyEvent.KEYCODE_DEL && hardwareBackspaceHeld) stopHardwareBackspace();
         if (event.getRepeatCount() > 0 && (pressedCandidateKeys.contains(keyCode)
                 || pressedHardwareShortcutKeys.contains(keyCode))) {
             return true;
@@ -348,7 +389,17 @@ public final class BopomofoImeService extends InputMethodService
             return true;
         }
         switch (keyCode) {
-            case KeyEvent.KEYCODE_DEL -> apply(engine.backspace());
+            case KeyEvent.KEYCODE_DEL -> {
+                apply(engine.backspace());
+                hardwareBackspaceHeld = true;
+                hardwareBackspaceRepeater.start(() -> {
+                    if (engine == null || getCurrentInputConnection() == null) {
+                        stopHardwareBackspace();
+                        return;
+                    }
+                    apply(engine.backspace());
+                });
+            }
             case KeyEvent.KEYCODE_SPACE -> {
                 if (candidatesVisible) pressedCandidateKeys.add(keyCode);
                 apply(engine.handleHardwareSpace());
@@ -384,6 +435,10 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_DEL && hardwareBackspaceHeld) {
+            stopHardwareBackspace();
+            return true;
+        }
         if (pressedCandidateKeys.remove(keyCode)) return true;
         if (pressedHardwareShortcutKeys.remove(keyCode)
                 || isHardwareControlShortcut(keyCode, event)
@@ -391,6 +446,11 @@ public final class BopomofoImeService extends InputMethodService
             return true;
         }
         return super.onKeyUp(keyCode, event);
+    }
+
+    private void stopHardwareBackspace() {
+        hardwareBackspaceRepeater.stop();
+        hardwareBackspaceHeld = false;
     }
 
     private boolean isHardwareControlShortcut(int keyCode, KeyEvent event) {
@@ -427,7 +487,7 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
 
-        String nextReading = engine.readingText();
+        String nextReading = engine.composingText();
         boolean committedText = !result.committedText().isEmpty();
         boolean updateComposingText = !nextReading.isEmpty()
                 && (!nextReading.equals(appliedComposingText)
@@ -436,7 +496,7 @@ public final class BopomofoImeService extends InputMethodService
                 && (!appliedComposingText.isEmpty() || committedText);
         boolean changesSelection = result.deleteBeforeCursor() || committedText
                 || result.discardComposingText() || updateComposingText;
-        boolean keepsActiveState = !engine.readingText().isEmpty() || engine.pageCount() > 0;
+        boolean keepsActiveState = engine.hasComposition() || engine.pageCount() > 0;
         if (changesSelection && keepsActiveState) expectOwnSelectionUpdate();
 
         connection.beginBatchEdit();
@@ -502,7 +562,7 @@ public final class BopomofoImeService extends InputMethodService
         keyboardView.setCandidateHighlightColors(
                 CandidateColorSettings.backgroundColor(candidateColor),
                 CandidateColorSettings.textColor(candidateColor));
-        keyboardView.setState(engine.displayedCandidates(), engine.readingText(),
+        keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
                 engine.isHardwareFullWidth(), SupporterState.shouldShowSupportPrompt(this),
                 engine.page(), engine.pageCount(),

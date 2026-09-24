@@ -157,7 +157,14 @@ xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
 
 DatabaseCooker 會產生
 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`，Xcode 再將它包進
-`chichi77 KeyKey.app`。
+`chichi77 KeyKey.app`。建置時也會以 `DataSource/McBopomofo/phrase.occ`、
+`BPMFMappings.txt` 及注音字表產生好打注音的 unigram 語言模型；不需要 Yahoo 未釋出的
+中研院語料或舊的 `PhraseTool`／CEROD 工具。另以
+`DataSource/AISyntheticBigram/corpus-v1.txt`、`corpus-v2.txt`、`corpus-v3.txt`、
+試打回饋與去重後的 2,300 篇文章建立合成 bigram 與 backoff；語料每行
+一句，可使用空白標示詞界，也可交由 cooker 依現有 unigram 詞頻切詞。
+`DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv` 另以資料列補入中文數字與
+常用單位組合；阿拉伯數字開頭的詞組目前不走這條詞庫路徑。
 
 目前 macOS build 僅支援 arm64。若要製作 universal binary，需要另行準備
 x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
@@ -181,10 +188,12 @@ x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 - Visual Studio 2026，安裝「使用 C++ 的桌面開發」workload；也提供 Visual
   Studio 2022 相容 preset
 - CMake 3.25 以上；Visual Studio 內附版本即可
+- Ruby 3.x（從原始資料煮好打注音詞庫時需要；Windows CI 會安裝）
 - NSIS 3.12（只有建立 Store EXE 時需要）
 
-Windows 使用獨立的原生 C++ DatabaseCooker，不需要 Ruby、GNU Make、`awk`、
-`sed` 或外部 `sqlite3` 程式，也不會修改 macOS 的既有 cooker。
+Windows 使用原生 C++ DatabaseCooker 與 macOS 共用的 SmartMandarinCooker.rb
+產生好打注音資料；SQLite 則連結 Windows 內建的 WinSQLite3。不需要 GNU Make、
+`awk`、`sed` 或外部 `sqlite3` 程式。
 
 ### 建置及測試 x64
 
@@ -237,7 +246,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -X86BuildDirectory .\out\build\x86
 ```
 
-會產生 `out\package\chichi77-KeyKey-1.2.9-windows-x64.zip`。在另一台 x64 Windows
+會產生 `out\package\chichi77-KeyKey-1.2.10-windows-x64.zip`。在另一台 x64 Windows
 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
@@ -277,7 +286,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
-`out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.exe`。完整參數、`/S`
+`out\store-package\chichi77-KeyKey-1.2.10-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
 互動式完成頁可選擇開啟琦琦設定或 Windows 語言設定；只有舊檔被占用而必須延後清除
 時才會顯示重新啟動選項，且預設為稍後重新啟動。
@@ -298,7 +307,8 @@ cd Source\Loaders\Android-IME
 建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
 `bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫，另固定
 加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會從 CIN、基本詞庫與
-29 個 TSV 產生 `.kki` 索引；Android 執行時讀取索引，關聯詞索引在背景載入。
+29 個 TSV 產生 `.kki` 索引，並把 cook 好的 `KeyKey.db` 加入 APK，供預設的好打注音
+整句組字使用；Android 執行時讀取索引，關聯詞索引在背景載入。
 Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
@@ -533,7 +543,14 @@ xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
 The cooker creates `Source/Distributions/Takao/CookedDatabase/KeyKey.db`, which
 is bundled into `chichi77 KeyKey.app`. The current configuration is arm64-only;
 a universal build requires a separate x86_64 OpenSSL build and an xcconfig
-change.
+change. The cooker also generates the Smart Phonetic unigram model from
+`DataSource/McBopomofo/phrase.occ`, `BPMFMappings.txt`, and the Bopomofo CIN;
+the unpublished Yahoo corpus and the historical PhraseTool/CEROD tools are not
+required. `DataSource/AISyntheticBigram/corpus-v1.txt`, `corpus-v2.txt`,
+`corpus-v3.txt`, typing feedback, and the deduplicated 2,300-article corpus
+add a synthetic bigram and backoff layer. Each line is one sentence; whitespace may
+mark word boundaries, or the cooker can segment unspaced Chinese text with the
+existing unigram scores.
 
 The public `DataSource/chichi77Collection` directory is included in the
 repository. The macOS DatabaseCooker always writes its 29 TSV collections into
@@ -551,10 +568,12 @@ installation, signing, and notarization.
 - Visual Studio 2026 with the **Desktop development with C++** workload;
   Visual Studio 2022-compatible presets are also included
 - CMake 3.25 or newer; the Visual Studio copy is sufficient
+- Ruby 3.x to cook the Smart Mandarin database from source (installed in Windows CI)
 - NSIS 3.12, only when building the Store EXE
 
-Windows uses its own native C++ database cooker. Ruby, GNU Make, `awk`, `sed`,
-and a separate `sqlite3` program are not required.
+Windows uses its native C++ database cooker and the SmartMandarinCooker.rb
+shared with macOS. It links the system WinSQLite3 library. GNU Make, `awk`,
+`sed`, and a separate `sqlite3` program are not required.
 
 #### Build and test x64
 
@@ -608,7 +627,7 @@ After building and testing, run from `Source\Loaders\Windows-TSF`:
   -X86BuildDirectory .\out\build\x86
 ```
 
-This creates `out\package\chichi77-KeyKey-1.2.9-windows-x64.zip`. On the other
+This creates `out\package\chichi77-KeyKey-1.2.10-windows-x64.zip`. On the other
 x64 Windows 11 PC, extract the complete ZIP, copy the entire extracted folder
 to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
@@ -643,7 +662,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 The script signs and verifies the three PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
-`out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.exe`. See the Windows
+`out\store-package\chichi77-KeyKey-1.2.10-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
 The interactive finish page can open KeyKey settings or Windows Language &
@@ -664,8 +683,9 @@ The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
 `Source/DataTables` directory and adds the base associated-phrase collection
 from `DataSource/McBopomofo` plus all 29 public categorized collections from
 `DataSource/chichi77Collection`. The build compiles the CIN and phrase sources into
-`.kki` indexes; Android reads those indexes at runtime and loads associated-phrase
-indexes in the background. The debug APK is written to
+`.kki` indexes and packages the cooked `KeyKey.db` for the default Smart Phonetic
+composition mode. Android reads the indexes at runtime and loads associated-phrase indexes
+in the background. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.

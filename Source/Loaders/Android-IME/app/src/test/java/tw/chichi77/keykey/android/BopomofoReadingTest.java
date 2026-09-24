@@ -18,6 +18,17 @@ public final class BopomofoReadingTest {
         assertEquals("su3", reading.queryKey());
         assertEquals("ㄋㄧˇ", reading.displayText());
         assertTrue(reading.hasTone());
+        assertEquals("\\O", reading.languageModelKey());
+    }
+
+    @Test
+    public void languageModelKeyMatchesCookedDatabaseEncoding() {
+        BopomofoReading reading = new BopomofoReading();
+        reading.combine('c');
+        reading.combine('l');
+        reading.combine('3');
+
+        assertEquals(":W", reading.languageModelKey());
     }
 
     @Test
@@ -46,5 +57,12 @@ public final class BopomofoReadingTest {
         reading.backspace();
         assertTrue(reading.isEmpty());
         assertFalse(reading.hasTone());
+    }
+
+    @Test
+    public void customPhraseReadingsUseTheSameKeysAsMacOsAndAcceptLayoutKeys() {
+        assertEquals("\\O:W", SmartMandarinUserData.queryForReading("ㄋㄧˇ ㄏㄠˇ"));
+        assertEquals("\\O:W", SmartMandarinUserData.queryForReading("su3cl3"));
+        assertEquals("ㄋㄧˇ ㄏㄠˇ", SmartMandarinUserData.readingForQuery("\\O:W"));
     }
 }

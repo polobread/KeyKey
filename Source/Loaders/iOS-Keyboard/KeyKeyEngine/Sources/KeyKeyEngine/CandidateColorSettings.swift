@@ -12,20 +12,25 @@ public enum CandidateColor: String, CaseIterable, Sendable, Equatable {
 /// Missing and unknown values intentionally fall back to the macOS default.
 public struct CandidateColorSettings {
     private static let key = "candidate_highlight_color"
-    private let defaults: UserDefaults
+    private let store: KeyboardPreferenceStore
 
-    public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    public init(
+        defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
+        writesShared: Bool = false
+    ) {
+        store = KeyboardPreferenceStore(
+            defaults: defaults, sharedDefaults: sharedDefaults, writesShared: writesShared
+        )
     }
 
     public var color: CandidateColor {
-        guard let value = defaults.string(forKey: Self.key),
+        guard let value = store.object(forKey: Self.key) as? String,
               let color = CandidateColor(rawValue: value)
         else { return .purple }
         return color
     }
 
     public func setColor(_ color: CandidateColor) {
-        defaults.set(color.rawValue, forKey: Self.key)
+        store.set(color.rawValue, forKey: Self.key)
     }
 }

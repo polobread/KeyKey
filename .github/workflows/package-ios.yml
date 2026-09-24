@@ -74,6 +74,8 @@ jobs:
           [[ -d "$app" ]]
           [[ -d "$extension" ]]
           [[ -f "$database" ]]
+          python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
+            "$database"
 
           built_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Info.plist")
           if [[ "$built_version" != "$VERSION" ]]; then

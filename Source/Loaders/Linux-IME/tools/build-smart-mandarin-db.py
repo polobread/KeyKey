@@ -218,6 +218,8 @@ def write_database(path, counts, readings, probabilities, total,
     unigram_count = database.execute("SELECT COUNT(*) FROM unigrams").fetchone()[0]
     bigram_count = database.execute("SELECT COUNT(*) FROM bigrams").fetchone()[0]
     database.close()
+    if bigram_count != 885_614:
+        raise ValueError(f"Expected 885614 bigrams, found {bigram_count}")
     print(f"Smart Mandarin: {unigram_count} unigrams, {bigram_count} bigrams, "
           f"{sentences} sentences", file=sys.stderr)
 

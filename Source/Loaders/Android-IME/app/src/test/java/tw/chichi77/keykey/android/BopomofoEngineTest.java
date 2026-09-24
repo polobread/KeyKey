@@ -436,6 +436,85 @@ public final class BopomofoEngineTest {
         assertTrue(engine.displayedCandidates().isEmpty());
     }
 
+    @Test
+    public void smartModeComposesMultipleReadingsUntilEnter() throws Exception {
+        BopomofoEngine engine = smartEngine();
+
+        for (char key : "su3cl3".toCharArray()) {
+            assertEquals("", engine.handleSoftKey(String.valueOf(key)).committedText());
+        }
+
+        assertEquals("你好", engine.composingText());
+    }
+
+    @Test
+    public void smartModeEnterCommitsTheWholeComposition() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3");
+
+        BopomofoEngine.Result result = engine.enter();
+
+        assertEquals("你好", result.committedText());
+        assertFalse(engine.hasComposition());
+    }
+
+    @Test
+    public void smartCandidateOverridesLastReadingWithoutCommitting() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3");
+
+        BopomofoEngine.Result result = engine.selectDisplayedCandidate(1);
+
+        assertEquals("", result.committedText());
+        assertEquals("妳", engine.composingText());
+    }
+
+    @Test
+    public void smartBackspaceRemovesTheLastCompletedReading() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3");
+
+        BopomofoEngine.Result result = engine.backspace();
+
+        assertEquals("你", engine.composingText());
+        assertFalse(result.deleteBeforeCursor());
+    }
+
+    private BopomofoEngine smartEngine() throws Exception {
+        String cin = "%chardef begin\nsu3 你\nsu3 妳\ncl3 好\n%chardef end\n";
+        CinDictionary dictionary = CinDictionary.load(new ByteArrayInputStream(
+                cin.getBytes(StandardCharsets.UTF_8)));
+        SmartMandarinSource source = new SmartMandarinSource() {
+            @Override
+            public SmartMandarinComposition compose(List<String> readings,
+                                                     Map<Integer, String> overrides) {
+                if (readings.size() > 2) return null;
+                StringBuilder text = new StringBuilder();
+                java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
+                for (int index = 0; index < readings.size(); index++) {
+                    String value = overrides.getOrDefault(index,
+                            index == 0 ? "你" : "好");
+                    text.append(value);
+                    segments.add(new SmartMandarinSegment(index, 1, readings.get(index), value));
+                }
+                return new SmartMandarinComposition(text.toString(), List.copyOf(segments));
+            }
+
+            @Override
+            public List<String> candidates(List<String> readings, int index,
+                                           SmartMandarinComposition composition) {
+                return index == 0 ? List.of("你", "妳") : List.of("好");
+            }
+        };
+        return new BopomofoEngine(dictionary, source, BopomofoCompositionMode.SMART);
+    }
+
+    private void type(BopomofoEngine engine, String keys) {
+        for (int index = 0; index < keys.length(); index++) {
+            engine.handleSoftKey(String.valueOf(keys.charAt(index)));
+        }
+    }
+
     private BopomofoEngine engineWith(String definitions) throws Exception {
         String cin = "%chardef begin\n" + definitions + "%chardef end\n";
         CinDictionary dictionary = CinDictionary.load(new ByteArrayInputStream(

@@ -58,7 +58,7 @@ all: createdir $(DB)
 createdir:
 	mkdir -p $(TMPDIR)
 
-$(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_COOKER) collection-name.rb $(SMART_SQL)
+$(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_COOKER) collection-name.rb verify-smart-mandarin-db.py $(SMART_SQL)
 	rm -f $(DB)
 	cat Schema.sql | $(SQLITE3) $(DB)
 	$(SQLITE3) $(DB) < $(SMART_SQL)
@@ -88,6 +88,7 @@ $(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_CO
 		$(SQLITE3) $(DB) < $(TMPDIR)/assoc-$$name.sql && \
 		ruby -E UTF-8 ./collection-name.rb $$f $$name $(COLLECTION_DISPLAY_NAMES) | $(SQLITE3) $(DB) || exit 1; \
 	done
+	python3 ./verify-smart-mandarin-db.py $(DB)
 
 $(SMART_SQL): createdir $(SMART_COOKER) $(SMART_OCC) $(SMART_MAPPINGS) $(SMART_SUPPLEMENTAL_LEXICON) $(SMART_NUMERIC_LEXICON) $(SMART_BIGRAM_CORPORA) $(TMPDIR)/bpmf-ext-absorder.cin
 	ruby -E UTF-8 $(SMART_COOKER) $(SMART_OCC) $(SMART_MAPPINGS) $(TMPDIR)/bpmf-ext-absorder.cin --lexicon $(SMART_SUPPLEMENTAL_LEXICON) --lexicon $(SMART_NUMERIC_LEXICON) $(SMART_BIGRAM_CORPORA) > $@

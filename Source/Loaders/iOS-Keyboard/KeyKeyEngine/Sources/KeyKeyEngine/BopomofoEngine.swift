@@ -69,6 +69,8 @@ public final class BopomofoEngine {
 
     private let dictionary: CandidateSource
     private var associatedPhrases: AssociatedPhraseSource?
+    private let smartSource: SmartMandarinSource?
+    private let hardwareSmartEditing: Bool
 
     private var reading = BopomofoReading()
     private var candidates: [String] = []
@@ -79,15 +81,35 @@ public final class BopomofoEngine {
     private var temporaryEnglish = false
     private var showingAssociatedPhrases = false
     private var allowedInputModes = Set(InputMode.allCases)
+    private var compositionMode: BopomofoCompositionMode
+    private var smartReadings: [String] = []
+    private var smartComposition: SmartMandarinComposition?
+    private var smartOverrides: [Int: String] = [:]
+    private var showingSmartCandidates = false
 
-    public init(dictionary: CandidateSource, associatedPhrases: AssociatedPhraseSource? = nil) {
+    public init(
+        dictionary: CandidateSource,
+        associatedPhrases: AssociatedPhraseSource? = nil,
+        smartSource: SmartMandarinSource? = nil,
+        compositionMode: BopomofoCompositionMode = .traditional,
+        hardwareSmartEditing: Bool = false
+    ) {
         self.dictionary = dictionary
         self.associatedPhrases = associatedPhrases
+        self.smartSource = smartSource
+        self.hardwareSmartEditing = hardwareSmartEditing
+        self.compositionMode = smartSource == nil ? .traditional : compositionMode
     }
 
     public func setAssociatedPhraseSource(_ source: AssociatedPhraseSource?) {
         associatedPhrases = source
         if showingAssociatedPhrases { clearComposition() }
+    }
+
+    public func setCompositionMode(_ mode: BopomofoCompositionMode) {
+        guard mode != compositionMode else { return }
+        clearComposition()
+        compositionMode = mode == .smart && smartSource == nil ? .traditional : mode
     }
 
     public func setAllowedInputModes(
@@ -109,6 +131,13 @@ public final class BopomofoEngine {
     // MARK: - Display state
 
     public var readingText: String { reading.displayText }
+    public var composingText: String {
+        guard compositionMode == .smart else { return reading.displayText }
+        return (smartComposition?.text ?? "") + reading.displayText
+    }
+    public var hasComposition: Bool { !composingText.isEmpty }
+    public var bopomofoCompositionMode: BopomofoCompositionMode { compositionMode }
+    public var isShowingSmartCandidates: Bool { showingSmartCandidates }
     public var inputMode: InputMode { mode }
     public var isShifted: Bool { shifted }
     public var isTemporaryEnglish: Bool { temporaryEnglish }
@@ -194,6 +223,17 @@ public final class BopomofoEngine {
 
     @discardableResult
     public func space() -> Result {
+        if compositionMode == .smart, mode == .bopomofo {
+            if !reading.isEmpty { return finishSmartReading() }
+            if !smartReadings.isEmpty {
+                if hardwareSmartEditing && !showingSmartCandidates {
+                    showHardwareSmartCandidates()
+                } else {
+                    changePage(by: 1)
+                }
+                return .update
+            }
+        }
         if !candidates.isEmpty {
             changePage(by: 1)
             return .update
@@ -208,6 +248,16 @@ public final class BopomofoEngine {
             clearComposition()
             return .returnKey
         }
+        if compositionMode == .smart, mode == .bopomofo, hasComposition {
+            if hardwareSmartEditing && showingSmartCandidates {
+                return selectHighlightedCandidate()
+            }
+            if !reading.isEmpty {
+                let result = finishSmartReading()
+                guard reading.isEmpty else { return result }
+            }
+            return commitSmartComposition()
+        }
         if !candidates.isEmpty { return selectHighlightedCandidate() }
         if !reading.isEmpty { return query() }
         return .returnKey
@@ -217,6 +267,21 @@ public final class BopomofoEngine {
     /// keyboard; only an empty reading reaches the document.
     @discardableResult
     public func backspace() -> Result {
+        if compositionMode == .smart, mode == .bopomofo {
+            if !reading.isEmpty {
+                reading.backspace()
+                candidates = []
+                showingSmartCandidates = false
+                pageIndex = 0
+                return .update
+            }
+            if !smartReadings.isEmpty {
+                smartReadings.removeLast()
+                smartOverrides = smartOverrides.filter { $0.key < smartReadings.count }
+                rebuildSmartComposition()
+                return .update
+            }
+        }
         if !candidates.isEmpty {
             candidates = []
             showingAssociatedPhrases = false
@@ -232,6 +297,17 @@ public final class BopomofoEngine {
 
     @discardableResult
     public func escape() -> Result {
+        if hardwareSmartEditing, compositionMode == .smart {
+            if showingSmartCandidates {
+                candidates = []
+                showingSmartCandidates = false
+                pageIndex = 0
+                highlight = 0
+            } else if !reading.isEmpty {
+                reading.clear()
+            }
+            return .update
+        }
         clearComposition()
         return .update
     }
@@ -243,6 +319,15 @@ public final class BopomofoEngine {
         let absolute = pageIndex * Self.candidatesPerPage + displayedIndex
         guard absolute >= 0, absolute < candidates.count else { return .update }
         let selected = candidates[absolute]
+        if compositionMode == .smart, showingSmartCandidates, !smartReadings.isEmpty {
+            smartSource?.learnSelection(
+                readings: smartReadings, at: smartReadings.count - 1,
+                selected: selected, composition: smartComposition
+            )
+            smartOverrides[smartReadings.count - 1] = selected
+            rebuildSmartComposition()
+            return .update
+        }
         if showingAssociatedPhrases {
             // Only the suffix is committed, and it does not chain another round.
             clearComposition()
@@ -304,6 +389,13 @@ public final class BopomofoEngine {
             return selectDisplayedCandidate(number - 1)
         }
         if StandardBopomofoLayout.isReadingKey(key) {
+            if compositionMode == .smart {
+                candidates = []
+                showingAssociatedPhrases = false
+                showingSmartCandidates = false
+                reading.combine(key)
+                return reading.hasToneMarker ? finishSmartReading() : .update
+            }
             let prefix = commitFirstCandidateIfNeeded()
             reading.combine(key)
             let result = reading.hasToneMarker ? query() : Result.update
@@ -314,6 +406,11 @@ public final class BopomofoEngine {
         }
 
         if !reading.isEmpty { return .update }
+        if compositionMode == .smart, !smartReadings.isEmpty {
+            let prefix = smartComposition?.text ?? ""
+            clearComposition()
+            return .commit(prefix + String(rawKey))
+        }
         if !candidates.isEmpty {
             let prefix = commitFirstCandidateIfNeeded()
             return .commit(prefix + String(rawKey))
@@ -330,6 +427,65 @@ public final class BopomofoEngine {
             return commitPrimaryCandidate(candidates[0], offeringAssociatedPhrases: true)
         }
         return .update
+    }
+
+    private func finishSmartReading() -> Result {
+        guard let smartSource, !reading.isEmpty else { return .update }
+        let query = reading.queryKey
+        let trialReadings = smartReadings + [query]
+        guard smartSource.compose(readings: trialReadings, overrides: smartOverrides) != nil else {
+            candidates = dictionary.candidates(for: reading)
+            showingSmartCandidates = false
+            pageIndex = 0
+            highlight = 0
+            return .update
+        }
+        smartReadings.append(query)
+        reading.clear()
+        rebuildSmartComposition()
+        return .update
+    }
+
+    private func rebuildSmartComposition() {
+        guard let smartSource else { return }
+        smartComposition = smartSource.compose(
+            readings: smartReadings, overrides: smartOverrides
+        )
+        if smartReadings.isEmpty || smartComposition == nil || hardwareSmartEditing {
+            candidates = []
+            showingSmartCandidates = false
+        } else {
+            candidates = smartSource.candidates(
+                for: smartReadings,
+                at: smartReadings.count - 1,
+                composition: smartComposition
+            )
+            showingSmartCandidates = !candidates.isEmpty
+        }
+        showingAssociatedPhrases = false
+        pageIndex = 0
+        highlight = 0
+    }
+
+    private func showHardwareSmartCandidates() {
+        guard let smartSource, !smartReadings.isEmpty else { return }
+        candidates = smartSource.candidates(
+            for: smartReadings,
+            at: smartReadings.count - 1,
+            composition: smartComposition
+        )
+        showingSmartCandidates = !candidates.isEmpty
+        pageIndex = 0
+        highlight = 0
+    }
+
+    private func commitSmartComposition() -> Result {
+        let text = smartComposition?.text ?? ""
+        if let smartComposition, !text.isEmpty {
+            smartSource?.learnConfirmedComposition(smartComposition)
+        }
+        clearComposition()
+        return text.isEmpty ? .update : .commit(text)
     }
 
     /// Associated phrases only appear after a single Chinese character is
@@ -404,19 +560,25 @@ public final class BopomofoEngine {
     }
 
     private func showSymbols() -> Result {
+        let prefix = compositionMode == .smart ? smartComposition?.text ?? "" : ""
         clearComposition()
         candidates = Self.symbols
-        return .update
+        return prefix.isEmpty ? .update : .commit(prefix)
     }
 
     private func showEmojis() -> Result {
+        let prefix = compositionMode == .smart ? smartComposition?.text ?? "" : ""
         clearComposition()
         candidates = Self.emojis
-        return .update
+        return prefix.isEmpty ? .update : .commit(prefix)
     }
 
     private func clearComposition() {
         reading.clear()
+        smartReadings = []
+        smartComposition = nil
+        smartOverrides = [:]
+        showingSmartCandidates = false
         candidates = []
         pageIndex = 0
         highlight = 0

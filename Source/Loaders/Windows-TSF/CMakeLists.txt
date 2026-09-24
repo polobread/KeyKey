@@ -194,6 +194,18 @@ if(NOT KEYKEY_DATABASE_PATH)
     set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_NATIVE_DATABASE}")
 endif()
 
+if(KEYKEY_DATABASE_PATH)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_custom_target(keykey_database ALL
+        COMMAND "${Python3_EXECUTABLE}"
+                "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
+                "${KEYKEY_DATABASE_PATH}"
+        DEPENDS
+            "${KEYKEY_DATABASE_PATH}"
+            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
+        VERBATIM)
+endif()
+
 add_library(KeyKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp

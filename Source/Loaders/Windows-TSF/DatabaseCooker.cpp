@@ -646,8 +646,8 @@ int main(int argc, char* argv[]) {
             }
             database.execute(ReadFile(fs::u8path(argv[3])));
             if (ScalarInteger(database.get(), "SELECT count(*) FROM unigrams") < 100000 ||
-                ScalarInteger(database.get(), "SELECT count(*) FROM bigrams") < 800000) {
-                throw DatabaseError("Smart Mandarin SQL is missing the full article bigram corpus");
+                ScalarInteger(database.get(), "SELECT count(*) FROM bigrams") != 885614) {
+                throw DatabaseError("Smart Mandarin SQL does not contain the 885614-row bigram corpus");
             }
             Statement integrity(database.get(), "PRAGMA integrity_check");
             if (sqlite3_step(integrity.get()) != SQLITE_ROW ||

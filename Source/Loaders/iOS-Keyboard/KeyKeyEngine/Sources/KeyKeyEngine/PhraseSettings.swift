@@ -2,9 +2,8 @@ import Foundation
 
 /// Which associated-phrase collections are enabled.
 ///
-/// Stored in the extension's own `UserDefaults`, which needs no Full Access
-/// because the settings panel lives inside the keyboard rather than in the
-/// container app.
+/// Keyboard changes stay in its own `UserDefaults`; the containing app can
+/// provide a newer value through the App Group without Full Access.
 ///
 /// An absent key is a first run and gets the base collection. An explicitly
 /// empty set means the user turned everything off and must not be quietly
@@ -13,21 +12,26 @@ public struct PhraseSettings {
     public static let baseCollection = "McBopomofo"
     private static let key = "enabled_phrase_collections"
 
-    private let defaults: UserDefaults
+    private let store: KeyboardPreferenceStore
 
-    public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    public init(
+        defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
+        writesShared: Bool = false
+    ) {
+        store = KeyboardPreferenceStore(
+            defaults: defaults, sharedDefaults: sharedDefaults, writesShared: writesShared
+        )
     }
 
     public var enabledCollections: Set<String> {
-        guard let stored = defaults.array(forKey: Self.key) as? [String] else {
+        guard let stored = store.object(forKey: Self.key) as? [String] else {
             return [Self.baseCollection]
         }
         return Set(stored)
     }
 
     public func setEnabledCollections(_ collections: Set<String>) {
-        defaults.set(Array(collections).sorted(), forKey: Self.key)
+        store.set(Array(collections).sorted(), forKey: Self.key)
     }
 
     public func setCollection(_ source: String, enabled: Bool) {
@@ -43,6 +47,6 @@ public struct PhraseSettings {
     /// Restores the first-run state, so a later read falls back to the base
     /// collection rather than to an empty set.
     public func clearStoredSelection() {
-        defaults.removeObject(forKey: Self.key)
+        store.removeObject(forKey: Self.key)
     }
 }

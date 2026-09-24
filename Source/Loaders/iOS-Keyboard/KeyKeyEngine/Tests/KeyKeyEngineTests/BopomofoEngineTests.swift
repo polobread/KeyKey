@@ -31,6 +31,28 @@ private struct TablePhraseSource: AssociatedPhraseSource {
     }
 }
 
+private struct TableSmartSource: SmartMandarinSource {
+    let table: [String: [String]]
+
+    func compose(
+        readings: [String], overrides: [Int: String]
+    ) -> SmartMandarinComposition? {
+        var segments: [SmartMandarinSegment] = []
+        for (index, reading) in readings.enumerated() {
+            guard let text = overrides[index] ?? table[reading]?.first else { return nil }
+            segments.append(.init(start: index, length: 1, query: reading, text: text))
+        }
+        return .init(text: segments.map(\.text).joined(), segments: segments)
+    }
+
+    func candidates(
+        for readings: [String], at index: Int, composition: SmartMandarinComposition?
+    ) -> [String] {
+        guard readings.indices.contains(index) else { return [] }
+        return table[readings[index]] ?? []
+    }
+}
+
 /// Ported from `BopomofoEngineTest.java`. Hardware cases are used by the
 /// containing App's editor; the keyboard extension itself still cannot receive
 /// physical key events.
@@ -50,7 +72,101 @@ struct BopomofoEngineTests {
         keys.map { engine.handleSoftKey(String($0)) }
     }
 
+    private func smartEngine(hardwareEditing: Bool = false) -> BopomofoEngine {
+        let table = [
+            TableCandidateSource.queryKey(for: "su3"): ["你", "妳", "擬"],
+            TableCandidateSource.queryKey(for: "cl3"): ["好", "郝"]
+        ]
+        return BopomofoEngine(
+            dictionary: TableCandidateSource(["su3": ["你"], "cl3": ["好"]]),
+            smartSource: TableSmartSource(table: table),
+            compositionMode: .smart,
+            hardwareSmartEditing: hardwareEditing
+        )
+    }
+
     // MARK: Reading and candidates
+
+    @Test("smart mode keeps accepting syllables until Enter commits the sentence")
+    func smartContinuousComposition() {
+        let engine = smartEngine()
+        let first = type(engine, "su3").last
+        #expect(first == .update)
+        #expect(engine.composingText == "你")
+
+        let second = type(engine, "cl3").last
+        #expect(second == .update)
+        #expect(engine.composingText == "你好")
+        #expect(engine.handleSoftKey("ENTER") == .commit("你好"))
+        #expect(!engine.hasComposition)
+    }
+
+    @Test("smart candidate selection overrides without prematurely committing")
+    func smartCandidateOverride() {
+        let engine = smartEngine()
+        _ = type(engine, "su3")
+        #expect(engine.displayedCandidates.prefix(2) == ["你", "妳"])
+        #expect(engine.selectDisplayedCandidate(1) == .update)
+        #expect(engine.composingText == "妳")
+        _ = type(engine, "cl3")
+        #expect(engine.composingText == "妳好")
+    }
+
+    @Test("smart backspace removes a composed syllable before the document")
+    func smartBackspace() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3")
+        #expect(engine.composingText == "你好")
+        #expect(engine.backspace() == .update)
+        #expect(engine.composingText == "你")
+        #expect(engine.backspace() == .update)
+        #expect(!engine.hasComposition)
+        #expect(engine.backspace() == .delete)
+    }
+
+    @Test("hardware smart mode keeps number-row keys for the next reading until Space opens candidates")
+    func hardwareSmartContinuousReading() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3")
+        #expect(engine.composingText == "你")
+        #expect(engine.displayedCandidates.isEmpty)
+
+        // 3 is a Bopomofo tone key. The next syllable must not select candidate 3.
+        _ = type(engine, "cl3")
+        #expect(engine.composingText == "你好")
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.enter() == .commit("你好"))
+    }
+
+    @Test("hardware smart mode selects candidates only after Space and keeps composing")
+    func hardwareSmartCandidatePanel() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3")
+        #expect(engine.space() == .update)
+        #expect(engine.isShowingSmartCandidates)
+        #expect(engine.displayedCandidates == ["你", "妳", "擬"])
+        #expect(engine.handleHardwareCharacter("2") == .update)
+        #expect(engine.composingText == "妳")
+        #expect(engine.displayedCandidates.isEmpty)
+
+        _ = type(engine, "cl3")
+        #expect(engine.composingText == "妳好")
+        #expect(engine.space() == .update)
+        #expect(engine.escape() == .update)
+        #expect(engine.composingText == "妳好")
+        #expect(engine.displayedCandidates.isEmpty)
+    }
+
+    @Test("hardware smart Enter accepts an open candidate before committing the sentence")
+    func hardwareSmartEnterCandidate() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3")
+        _ = engine.space()
+        engine.moveHighlight(by: 1)
+        #expect(engine.enter() == .update)
+        #expect(engine.composingText == "妳")
+        #expect(engine.enter() == .commit("妳"))
+    }
 
     @Test("a tone mark opens the candidate list")
     func toneOpensCandidates() {

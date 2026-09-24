@@ -59,6 +59,84 @@ struct CandidateStoreTests {
     }
 }
 
+@Suite("Smart Mandarin language model")
+struct SmartMandarinStoreTests {
+    @Test("the cooked mobile language model includes the current bigram corpus")
+    func bigramCorpusSize() throws {
+        let database = try Database(url: try cookedDatabaseURL())
+        let rows = try database.prepare("SELECT COUNT(*) FROM bigrams")
+            .firstColumnStrings([])
+        #expect((Int(rows.first ?? "") ?? 0) == 885_614)
+    }
+
+    private func query(_ keys: String) -> String {
+        var reading = BopomofoReading()
+        for key in keys { reading.combine(key) }
+        return reading.queryKey
+    }
+
+    @Test("the iOS walker uses the cooked bigram model for continuous text")
+    func continuousSentence() throws {
+        let database = try Database(url: try cookedDatabaseURL())
+        let store = try SmartMandarinStore(database: database)
+        let readings = ["rup", "wu0", "1o4", "fu;6", "54", "g/", "ru6", "2l4"]
+            .map(query)
+        let composition = try #require(store.compose(readings: readings, overrides: [:]))
+        #expect(composition.text == "今天被強制升級到")
+        #expect(composition.segments.map(\.text) == ["今天", "被", "強制", "升級", "到"])
+    }
+
+    @Test("an explicit candidate override is preserved while the rest is reranked")
+    func override() throws {
+        let database = try Database(url: try cookedDatabaseURL())
+        let store = try SmartMandarinStore(database: database)
+        let reading = query("su3")
+        let composition = try #require(store.compose(
+            readings: [reading], overrides: [0: "妳"]
+        ))
+        #expect(composition.text == "妳")
+    }
+
+    @Test("shared custom phrases and private learning affect composition without changing cooked data")
+    func userData() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let phrasesURL = directory.appendingPathComponent("group/UserPhrase.db")
+        let keyboard = try SmartMandarinUserData(
+            phrasesURL: phrasesURL,
+            learningURL: directory.appendingPathComponent("keyboard/learning.db"),
+            writablePhrases: false
+        )
+        #expect(keyboard.unigrams(for: query("su3") + query("cl3")).isEmpty)
+        let editor = try SmartMandarinUserData(
+            phrasesURL: phrasesURL,
+            learningURL: directory.appendingPathComponent("app/learning.db"),
+            writablePhrases: true
+        )
+        try editor.savePhrase(text: "琦琦", reading: "su3cl3")
+        #expect(editor.userPhrases().first?.reading == "ㄋㄧˇ ㄏㄠˇ")
+
+        let store = try SmartMandarinStore(
+            database: Database(url: try cookedDatabaseURL()), userData: keyboard
+        )
+        let readings = [query("su3"), query("cl3")]
+        #expect(store.compose(readings: readings, overrides: [:])?.text == "琦琦")
+        keyboard.learnCandidate(query: readings[0], current: "妳")
+        #expect(store.candidates(for: [readings[0]], at: 0, composition: nil).first == "妳")
+        try keyboard.resetLearning()
+        #expect(keyboard.learnedCandidate(for: readings[0]) == nil)
+        #expect(editor.userPhrases().count == 1)
+
+        let imported = try SmartMandarinUserData(
+            phrasesURL: directory.appendingPathComponent("second/UserPhrase.db"),
+            learningURL: directory.appendingPathComponent("second/learning.db"),
+            writablePhrases: true
+        )
+        #expect(try imported.importPhrases(editor.exportPhrases()).imported == 1)
+        #expect(imported.userPhrases().first?.text == "琦琦")
+    }
+}
+
 @Suite("Associated phrases")
 struct AssociatedPhraseStoreTests {
     @Test("collections are listed base-first")

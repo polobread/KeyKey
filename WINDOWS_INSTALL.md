@@ -31,6 +31,37 @@ Windows 安裝檔目前**沒有數位簽章**，因此瀏覽器或 Windows 可�
 
 Windows 若顯示「Windows 已保護您的電腦」等未簽署程式警告，請先核對檔案是從上方的發布頁下載、檔名正確；若你信任此版本，且畫面提供 **其他資訊 → 仍要執行**，可自行選擇繼續。若沒有繼續選項，記下畫面訊息並向專案回報。
 
+## Microsoft 對本次 Defender 偵測的判定
+
+Windows Defender 曾將本次送驗的 `KeyKeySettings.exe` 偵測為
+`Trojan:Win32/Wacatac.C!ml`。Microsoft Security Intelligence 分析後將最終判定列為
+**Not malware（不是惡意程式）**，並說明該檔案不符合惡意程式或潛在不受歡迎應用程式
+的標準，相關偵測已移除。
+
+這項判定只適用於送驗的檔案內容；日後重新編譯的版本會有不同的檔案雜湊，仍須重新掃描。
+舊的動態簽章或本機快取也可能讓 Windows 暫時繼續顯示原警告。遇到這個偵測時，先按以下
+順序更新，不要關閉即時防護，也不要把整個安裝資料夾加入排除清單：
+
+1. 開啟 **Windows 安全性 → 病毒與威脅防護 → 防護更新**，按 **檢查更新**。
+2. 更新完成後，重新掃描從本指南正式發布頁下載的 ZIP 或解壓縮資料夾。
+3. 如果 `KeyKeySettings.exe` 先前已被隔離，更新後重新下載 ZIP、完整解壓縮，再執行
+   `Install.cmd`；不要從其他網站尋找替代檔案。
+4. 若仍出現相同偵測，以系統管理員身分開啟 **命令提示字元**，依 Microsoft 分析員提供
+   的步驟執行：
+
+   ```bat
+   cd /d "%ProgramFiles%\Windows Defender"
+   MpCmdRun.exe -removedefinitions -dynamicsignatures
+   MpCmdRun.exe -SignatureUpdate
+   ```
+
+   第一個命令會清除快取的動態簽章，請緊接著執行第二個命令取得最新定義；不要只執行
+   第一個命令就停止。完成後再掃描一次正式下載的檔案。
+
+若更新後仍被擋住，請不要停用 Defender 強行安裝。記下威脅名稱、Defender 定義版本、
+下載檔名及畫面訊息，再到 [Microsoft 檔案送驗頁](https://www.microsoft.com/en-us/wdsi/filesubmission)
+提交檔案，或向專案回報。
+
 ## 3. 切換到琦琦輸入法
 
 1. 打開 Windows 內建的 **記事本**，新增空白文件，點一下文字區。
@@ -86,7 +117,7 @@ Windows 版使用實體鍵盤上的標準注音位置。若你使用「標準」
 
 | 情況 | 先檢查 |
 | --- | --- |
-| 安裝時被 Windows 擋住 | 核對下載頁、版本與檔名。此版尚未簽章；若系統沒有繼續選項，不要關閉安全防護強行安裝。 |
+| 安裝時被 Windows 擋住 | 核對下載頁、版本與檔名。若顯示 `Wacatac.C!ml`，先依上方 Microsoft 判定與更新步驟處理；此版尚未簽章，若系統仍沒有繼續選項，不要關閉安全防護強行安裝。 |
 | 連按兩下 `Install.cmd` 後視窗一閃而過 | 確認 ZIP 已完整解壓縮、整個資料夾在本機磁碟；安裝失敗記錄通常在 `%TEMP%\chichi77-keykey-install.log`。 |
 | `Win + Space` 看不到琦琦輸入法 | 首次安裝後登出再登入；檢查安裝視窗是否顯示成功，再看「設定 → 時間與語言 → 語言與地區」的繁體中文輸入法清單。 |
 | 已選琦琦，打字仍是英文 | 看工作列模式是否為「英」；按 **Ctrl + Space** 切回「ㄅ」，再到記事本試打。 |

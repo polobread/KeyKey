@@ -63,6 +63,7 @@ load.
   2022 compatibility preset is also included)
 - CMake 3.25 or newer
 - Ruby 3.x when cooking the database from source (the Windows CI installs it)
+- Python 3 when deploying a database cooked elsewhere
 - NSIS 3.12 when building the Store EXE
 
 Windows uses the operating system's `winsqlite3.dll` through the Windows SDK's
@@ -79,7 +80,8 @@ generated and normalized automatically and has not been reviewed item by item.
 
 To deploy a database cooked elsewhere instead, pass
 `-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.
-It must contain populated `unigrams` and `bigrams` tables for Smart Mandarin.
+It must contain the 885,614-row Smart Mandarin bigram model and pass the
+SQLite integrity check. CMake verifies both during the build.
 If an existing CMake build directory cached the old default database path,
 reconfigure with `cmake --fresh --preset windows-x64` (and likewise for x86)
 to use the new source cooker.

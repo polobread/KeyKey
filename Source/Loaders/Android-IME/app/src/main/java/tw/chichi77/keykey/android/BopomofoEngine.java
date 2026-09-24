@@ -1,7 +1,10 @@
 package tw.chichi77.keykey.android;
 
-import java.util.List;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 final class BopomofoEngine {
@@ -57,6 +60,7 @@ final class BopomofoEngine {
     }
 
     private final CinDictionary dictionary;
+    private final SmartMandarinSource smartSource;
     private final BopomofoReading reading = new BopomofoReading();
     private AssociatedPhraseDictionary associatedPhrases = AssociatedPhraseDictionary.empty();
     private List<String> candidates = List.of();
@@ -68,9 +72,29 @@ final class BopomofoEngine {
     private boolean showingAssociatedPhrases;
     private boolean hardwareFullWidth;
     private EnumSet<InputMode> allowedInputModes = EnumSet.allOf(InputMode.class);
+    private BopomofoCompositionMode compositionMode;
+    private final List<String> smartReadings = new ArrayList<>();
+    private SmartMandarinComposition smartComposition;
+    private final Map<Integer, String> smartOverrides = new HashMap<>();
+    private boolean showingSmartCandidates;
 
     BopomofoEngine(CinDictionary dictionary) {
+        this(dictionary, null, BopomofoCompositionMode.TRADITIONAL);
+    }
+
+    BopomofoEngine(CinDictionary dictionary, SmartMandarinSource smartSource,
+                   BopomofoCompositionMode compositionMode) {
         this.dictionary = dictionary;
+        this.smartSource = smartSource;
+        this.compositionMode = smartSource == null
+                ? BopomofoCompositionMode.TRADITIONAL : compositionMode;
+    }
+
+    void setCompositionMode(BopomofoCompositionMode mode) {
+        if (mode == compositionMode) return;
+        clearComposition();
+        compositionMode = mode == BopomofoCompositionMode.SMART && smartSource == null
+                ? BopomofoCompositionMode.TRADITIONAL : mode;
     }
 
     void setAssociatedPhraseDictionary(AssociatedPhraseDictionary dictionary) {
@@ -159,6 +183,14 @@ final class BopomofoEngine {
     }
 
     Result space() {
+        if (compositionMode == BopomofoCompositionMode.SMART
+                && inputMode == InputMode.BOPOMOFO) {
+            if (!reading.isEmpty()) return finishSmartReading();
+            if (!smartReadings.isEmpty()) {
+                changePage(1);
+                return Result.update();
+            }
+        }
         if (!candidates.isEmpty()) {
             changePage(1);
             return Result.update();
@@ -172,12 +204,37 @@ final class BopomofoEngine {
             clearComposition();
             return Result.enter();
         }
+        if (compositionMode == BopomofoCompositionMode.SMART
+                && inputMode == InputMode.BOPOMOFO && hasComposition()) {
+            if (!reading.isEmpty()) {
+                Result result = finishSmartReading();
+                if (!reading.isEmpty()) return result;
+            }
+            return commitSmartComposition();
+        }
         if (!candidates.isEmpty()) return selectHighlightedCandidate();
         if (!reading.isEmpty()) return query();
         return Result.enter();
     }
 
     Result backspace() {
+        if (compositionMode == BopomofoCompositionMode.SMART
+                && inputMode == InputMode.BOPOMOFO) {
+            if (!reading.isEmpty()) {
+                reading.backspace();
+                candidates = List.of();
+                showingSmartCandidates = false;
+                page = 0;
+                return Result.update();
+            }
+            if (!smartReadings.isEmpty()) {
+                smartReadings.remove(smartReadings.size() - 1);
+                smartOverrides.keySet().removeIf(index -> index >= smartReadings.size());
+                rebuildSmartComposition();
+                return smartReadings.isEmpty()
+                        ? Result.discardComposition() : Result.update();
+            }
+        }
         if (!candidates.isEmpty()) {
             candidates = List.of();
             showingAssociatedPhrases = false;
@@ -199,6 +256,14 @@ final class BopomofoEngine {
         int absoluteIndex = page * CANDIDATES_PER_PAGE + displayedIndex;
         if (absoluteIndex < 0 || absoluteIndex >= candidates.size()) return Result.update();
         String selected = candidates.get(absoluteIndex);
+        if (compositionMode == BopomofoCompositionMode.SMART
+                && showingSmartCandidates && !smartReadings.isEmpty()) {
+            smartSource.learnSelection(smartReadings, smartReadings.size() - 1,
+                    selected, smartComposition);
+            smartOverrides.put(smartReadings.size() - 1, selected);
+            rebuildSmartComposition();
+            return Result.update();
+        }
         if (showingAssociatedPhrases) {
             clearComposition();
             return Result.commit(selected);
@@ -247,6 +312,20 @@ final class BopomofoEngine {
 
     String readingText() {
         return reading.displayText();
+    }
+
+    String composingText() {
+        if (compositionMode != BopomofoCompositionMode.SMART) return reading.displayText();
+        return (smartComposition == null ? "" : smartComposition.text())
+                + reading.displayText();
+    }
+
+    boolean hasComposition() {
+        return !composingText().isEmpty();
+    }
+
+    BopomofoCompositionMode compositionMode() {
+        return compositionMode;
     }
 
     List<String> displayedCandidates() {
@@ -307,6 +386,13 @@ final class BopomofoEngine {
         }
 
         if (BopomofoReading.isBopomofoKey(key)) {
+            if (compositionMode == BopomofoCompositionMode.SMART) {
+                candidates = List.of();
+                showingAssociatedPhrases = false;
+                showingSmartCandidates = false;
+                reading.combine(key);
+                return reading.hasTone() ? finishSmartReading() : Result.update();
+            }
             String prefix = commitFirstCandidateIfNeeded();
             reading.combine(key);
             Result result = reading.hasTone() ? query() : Result.update();
@@ -317,6 +403,11 @@ final class BopomofoEngine {
         }
 
         if (!reading.isEmpty()) return Result.update();
+        if (compositionMode == BopomofoCompositionMode.SMART && !smartReadings.isEmpty()) {
+            String prefix = smartComposition == null ? "" : smartComposition.text();
+            clearComposition();
+            return Result.commit(prefix + rawKey);
+        }
         if (!candidates.isEmpty()) {
             String prefix = commitFirstCandidateIfNeeded();
             return Result.commit(prefix + rawKey);
@@ -353,6 +444,50 @@ final class BopomofoEngine {
             return commitPrimaryCandidate(only, true);
         }
         return Result.update();
+    }
+
+    private Result finishSmartReading() {
+        if (smartSource == null || reading.isEmpty()) return Result.update();
+        String dictionaryQuery = reading.queryKey();
+        String query = reading.languageModelKey();
+        ArrayList<String> trialReadings = new ArrayList<>(smartReadings);
+        trialReadings.add(query);
+        if (smartSource.compose(trialReadings, smartOverrides) == null) {
+            candidates = dictionary.candidates(dictionaryQuery);
+            showingSmartCandidates = false;
+            page = 0;
+            highlightedIndex = 0;
+            return Result.update();
+        }
+        smartReadings.add(query);
+        reading.clear();
+        rebuildSmartComposition();
+        return Result.update();
+    }
+
+    private void rebuildSmartComposition() {
+        if (smartSource == null) return;
+        smartComposition = smartSource.compose(smartReadings, smartOverrides);
+        if (smartReadings.isEmpty() || smartComposition == null) {
+            candidates = List.of();
+            showingSmartCandidates = false;
+        } else {
+            candidates = smartSource.candidates(smartReadings, smartReadings.size() - 1,
+                    smartComposition);
+            showingSmartCandidates = !candidates.isEmpty();
+        }
+        showingAssociatedPhrases = false;
+        page = 0;
+        highlightedIndex = 0;
+    }
+
+    private Result commitSmartComposition() {
+        String text = smartComposition == null ? "" : smartComposition.text();
+        if (smartComposition != null && !text.isEmpty()) {
+            smartSource.learnConfirmedComposition(smartComposition);
+        }
+        clearComposition();
+        return text.isEmpty() ? Result.update() : Result.commit(text);
     }
 
     private String commitFirstCandidateIfNeeded() {
@@ -415,24 +550,34 @@ final class BopomofoEngine {
     }
 
     private Result symbols() {
+        String prefix = compositionMode == BopomofoCompositionMode.SMART
+                && smartComposition != null ? smartComposition.text() : "";
         boolean hadReading = clearComposition();
         candidates = SYMBOLS;
         showingAssociatedPhrases = false;
         highlightedIndex = 0;
+        if (!prefix.isEmpty()) return Result.commit(prefix);
         return hadReading ? Result.discardComposition() : Result.update();
     }
 
     private Result emojis() {
+        String prefix = compositionMode == BopomofoCompositionMode.SMART
+                && smartComposition != null ? smartComposition.text() : "";
         boolean hadReading = clearComposition();
         candidates = EMOJIS;
         showingAssociatedPhrases = false;
         highlightedIndex = 0;
+        if (!prefix.isEmpty()) return Result.commit(prefix);
         return hadReading ? Result.discardComposition() : Result.update();
     }
 
     private boolean clearComposition() {
-        boolean hadReading = !reading.isEmpty();
+        boolean hadReading = hasComposition();
         reading.clear();
+        smartReadings.clear();
+        smartComposition = null;
+        smartOverrides.clear();
+        showingSmartCandidates = false;
         candidates = List.of();
         page = 0;
         highlightedIndex = 0;
