@@ -335,6 +335,50 @@ final class KeyKeyUITests: XCTestCase {
         assertFrame(share.frame, equals: portraitShareFrame, message: "橫式轉回直式的分享按鈕")
     }
 
+    func testHardwareEditorModeWidthAndFunctionButtonsKeepSmartText() {
+        app = XCUIApplication()
+        app.launch()
+        let openEditor = app.buttons["open-hardware-editor"]
+        XCTAssertTrue(openEditor.waitForExistence(timeout: 8))
+        openEditor.tap()
+
+        let compositionMode = app.buttons["hardware-editor.composition-mode"]
+        XCTAssertTrue(compositionMode.waitForExistence(timeout: 3))
+        if !compositionMode.label.contains("好打注音") {
+            compositionMode.tap()
+            let smart = app.buttons["好打注音"]
+            XCTAssertTrue(smart.waitForExistence(timeout: 3))
+            smart.tap()
+        }
+
+        let output = app.textViews["hardware-editor.output"]
+        let mode = app.buttons["hardware-editor.mode"]
+        let width = app.buttons["hardware-editor.width"]
+        func typeReading(_ keys: String) {
+            for key in keys { app.typeKey(String(key), modifierFlags: []) }
+        }
+
+        typeReading("su3cl3")
+        mode.tap()
+        XCTAssertEqual(output.value as? String, "你好")
+
+        mode.tap()
+        typeReading("su3")
+        width.tap()
+        XCTAssertEqual(output.value as? String, "你好")
+        mode.tap()
+        XCTAssertEqual(output.value as? String, "你好你")
+
+        mode.tap()
+        typeReading("cl3")
+        app.buttons["hardware-editor.symbols"].tap()
+        XCTAssertEqual(output.value as? String, "你好你好")
+
+        typeReading("su3")
+        app.buttons["hardware-editor.emoji"].tap()
+        XCTAssertEqual(output.value as? String, "你好你好你")
+    }
+
     func testHardwareKeyboardEditorLandscapeColumns() {
         XCUIDevice.shared.orientation = .portrait
         addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
