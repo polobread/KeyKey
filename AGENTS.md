@@ -57,6 +57,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 ```
 
 - iOS 專案用 `-scheme 'chichi77 KeyKey'` 建置；`-target` 不能取代 Swift Package 依賴。DB 應只打包進 `Keyboard.appex`。Xcode Cloud 的 `ci_scripts/ci_post_clone.sh` 會於乾淨 checkout 重煮並驗證 DB。
+- `KeyKeyiOS.xcodeproj/xcshareddata/xcodecloud/manifest.json` 是 Xcode Cloud 的產品對應資料，須隨專案提交；不要將它當成 `xcuserdata` 暫存檔。工作流程本身仍在 Xcode Cloud 管理。
 - Windows 用 `Source/Loaders/Windows-TSF` 的 CMake presets 建置 x64 和 x86；正常 cook 與 `KEYKEY_DATABASE_PATH` 覆寫都要通過 DB verifier。驗證 Windows TSF 行為須在 Windows 執行，macOS 靜態檢查不能算實測。
 - Linux 的 unit、staged install、X11 與 GNOME Wayland 測試是不同層級。測試結果要寫明實際環境與輸入路徑；詳細 VM 診斷見 `Source/Loaders/Linux-IME/docs/`，不要把舊測試數字當成目前版本結果。
 - iOS 鍵盤 extension 接收不到一般實體鍵盤事件；實體鍵盤編輯器在容器 App，這兩條路徑需分別驗證。
