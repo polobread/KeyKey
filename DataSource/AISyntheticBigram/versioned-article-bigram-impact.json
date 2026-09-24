@@ -1,0 +1,53 @@
+{
+  "corpus_file": "article-corpus-2300-exact-dedup.txt",
+  "stages": [
+    {
+      "stage": "v2",
+      "articles": 1650,
+      "unigrams": 114232,
+      "words": 108009,
+      "bigram_rows": 670811,
+      "sentences": 268025,
+      "tokens": 1296409,
+      "clipped": 1143599,
+      "integrity_check": "ok",
+      "text_pairs": 420835,
+      "database_bytes": 43491328,
+      "added_pairs": 0,
+      "lost_pairs": 0,
+      "database_change_bytes": 0
+    },
+    {
+      "stage": "v2_v3",
+      "articles": 2000,
+      "unigrams": 114232,
+      "words": 108009,
+      "bigram_rows": 767091,
+      "sentences": 320842,
+      "tokens": 1516794,
+      "clipped": 1354494,
+      "integrity_check": "ok",
+      "text_pairs": 483142,
+      "database_bytes": 48619520,
+      "added_pairs": 62307,
+      "lost_pairs": 0,
+      "database_change_bytes": 5128192
+    },
+    {
+      "stage": "v2_v3_v4",
+      "articles": 2300,
+      "unigrams": 114232,
+      "words": 108009,
+      "bigram_rows": 885614,
+      "sentences": 356023,
+      "tokens": 1710665,
+      "clipped": 1506548,
+      "integrity_check": "ok",
+      "text_pairs": 560140,
+      "database_bytes": 55017472,
+      "added_pairs": 76998,
+      "lost_pairs": 0,
+      "database_change_bytes": 6397952
+    }
+  ]
+}

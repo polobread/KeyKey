@@ -20,6 +20,7 @@ NATIVE_BOPOMOFO_MAKEFILE = $(NATIVE_BOPOMOFO_DIR)/Makefile
 
 ASSOC_COOKER = ./AssociatedPhraseCooker.rb
 OCC_TO_LM = ./phrase-occ-to-lm.rb
+SMART_COOKER = ./SmartMandarinCooker.rb
 
 # One collection per file. Stable source identifiers come from the path;
 # product display-name overrides come from COLLECTION_DISPLAY_NAMES.
@@ -28,6 +29,17 @@ COLLECTION_DISPLAY_NAMES = $(COLLECTION_DIR)/AssociatedPhraseCollectionNames.tsv
 COLLECTIONS = $(COLLECTION_DIR)/McBopomofo/phrase.occ \
 	$(wildcard $(COLLECTION_DIR)/chichi77Collection/phrase.*.tsv)
 PEOPLE_COLLECTIONS = $(wildcard $(COLLECTION_DIR)/chichi77Collection/phrase.people-*.tsv)
+SMART_OCC = $(COLLECTION_DIR)/McBopomofo/phrase.occ
+SMART_MAPPINGS = $(COLLECTION_DIR)/McBopomofo/BPMFMappings.txt
+SMART_SUPPLEMENTAL_LEXICON = $(COLLECTION_DIR)/AISyntheticBigram/supplemental-lexicon.tsv
+SMART_NUMERIC_LEXICON = $(COLLECTION_DIR)/AISyntheticBigram/numeric-unit-lexicon.tsv
+SMART_ARTICLE_CORPUS = $(COLLECTION_DIR)/AISyntheticBigram/article-corpus-2300-exact-dedup.txt
+SMART_BIGRAM_CORPORA = $(COLLECTION_DIR)/AISyntheticBigram/corpus-v1.txt \
+	$(COLLECTION_DIR)/AISyntheticBigram/corpus-v2.txt \
+	$(COLLECTION_DIR)/AISyntheticBigram/corpus-v3.txt \
+	$(COLLECTION_DIR)/AISyntheticBigram/corpus-typing-feedback.txt \
+	$(SMART_ARTICLE_CORPUS)
+SMART_SQL = $(TMPDIR)/SmartMandarin.sql
 
 SOURCEDIR = ../../../DataTables
 SRC = $(TMPDIR)/bpmf-ext-absorder.cin \
@@ -46,9 +58,10 @@ all: createdir $(DB)
 createdir:
 	mkdir -p $(TMPDIR)
 
-$(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_COOKER) collection-name.rb
+$(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_COOKER) collection-name.rb $(SMART_SQL)
 	rm -f $(DB)
 	cat Schema.sql | $(SQLITE3) $(DB)
+	$(SQLITE3) $(DB) < $(SMART_SQL)
 	$(TOOL) $(TMPDIR)/bpmf-ext-absorder.cin Mandarin-bpmf-cin | $(SQLITE3) $(DB)
 	$(TOOL) $(SOURCEDIR)/bpmf-punctuations.cin Mandarin-bpmf-cin --chardef-only | $(SQLITE3) $(DB)
 	$(TOOL) $(SOURCEDIR)/cj-ext.cin Generic-cj-cin | $(SQLITE3) $(DB)
@@ -76,6 +89,15 @@ $(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_CO
 		ruby -E UTF-8 ./collection-name.rb $$f $$name $(COLLECTION_DISPLAY_NAMES) | $(SQLITE3) $(DB) || exit 1; \
 	done
 
+$(SMART_SQL): createdir $(SMART_COOKER) $(SMART_OCC) $(SMART_MAPPINGS) $(SMART_SUPPLEMENTAL_LEXICON) $(SMART_NUMERIC_LEXICON) $(SMART_BIGRAM_CORPORA) $(TMPDIR)/bpmf-ext-absorder.cin
+	ruby -E UTF-8 $(SMART_COOKER) $(SMART_OCC) $(SMART_MAPPINGS) $(TMPDIR)/bpmf-ext-absorder.cin --lexicon $(SMART_SUPPLEMENTAL_LEXICON) --lexicon $(SMART_NUMERIC_LEXICON) $(SMART_BIGRAM_CORPORA) > $@
+
+$(SMART_ARTICLE_CORPUS): $(COLLECTION_DIR)/AISyntheticBigram/build-versioned-article-corpus.py \
+	$(COLLECTION_DIR)/AISyntheticArticles/typing-articles-v2.jsonl \
+	$(COLLECTION_DIR)/AISyntheticArticles/typing-articles-v3.jsonl \
+	$(COLLECTION_DIR)/AISyntheticArticles/typing-articles-v4.jsonl
+	python3 $(COLLECTION_DIR)/AISyntheticBigram/build-versioned-article-corpus.py
+
 $(TMPDIR)/bpmf-ext-absorder.cin: createdir $(SOURCEDIR)/bpmf-ext.cin $(CONVERT_TOOL) $(NATIVE_BOPOMOFO_BUNDLE)
 	ruby -I $(NATIVE_BOPOMOFO_DIR) $(CONVERT_TOOL) < $(SOURCEDIR)/bpmf-ext.cin > $(TMPDIR)/bpmf-ext-absorder.cin
 	
@@ -88,4 +110,3 @@ $(NATIVE_BOPOMOFO_MAKEFILE): $(NATIVE_BOPOMOFO_EXTCONF)
 clean:
 	rm $(DB)
 	rm -rf $(TMPDIR)
-

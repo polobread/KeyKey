@@ -9,6 +9,8 @@ CREATE TABLE 'BopomofoCorrection-bopomofo-correction-cin' (key, value);
 CREATE TABLE 'prepopulated_service_data' (key, value);
 CREATE TABLE associated_phrases (headchar, data, source);
 CREATE TABLE collection_names (source, display, sortorder);
+CREATE TABLE unigrams (qstring, current, probability, backoff);
+CREATE TABLE bigrams (qstring, previous, current, probability);
 
 CREATE INDEX 'Generic-cj-cin-index-on-key' ON 'Generic-cj-cin' (key);
 CREATE INDEX 'Generic-cj-cin-index-on-value' ON 'Generic-cj-cin' (value);
@@ -20,3 +22,6 @@ CREATE INDEX 'Mandarin-bpmf-cin-index-on-value' ON 'Mandarin-bpmf-cin' (value);
 CREATE INDEX 'BopomofoCorrection-bopomofo-correction-cin-index' ON 'BopomofoCorrection-bopomofo-correction-cin' (key);
 CREATE INDEX 'prepopulated_service_data_index' ON 'prepopulated_service_data' (key);
 CREATE INDEX associated_phrases_index ON associated_phrases (headchar, source);
+CREATE INDEX unigrams_index ON unigrams (qstring);
+CREATE INDEX unigrams_current_index ON unigrams (current);
+CREATE INDEX bigrams_index ON bigrams (qstring);
