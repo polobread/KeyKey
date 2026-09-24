@@ -459,6 +459,69 @@ public final class BopomofoEngineTest {
     }
 
     @Test
+    public void smartModeSwitchCommitsBeforeChangingKeys() throws Exception {
+        for (String key : List.of("MODE", "SHIFT", "SYMBOL", "EMOJI")) {
+            BopomofoEngine engine = smartEngine();
+            type(engine, "su3cl3");
+            BopomofoEngine.Result result = engine.handleSoftKey(key);
+            assertEquals("你好", result.committedText());
+            assertFalse(result.discardComposingText());
+            assertFalse(engine.hasComposition());
+        }
+    }
+
+    @Test
+    public void smartModeSwitchPreservesUnfinishedReading() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3s");
+        String visible = engine.composingText();
+        assertTrue(visible.startsWith("你好"));
+
+        BopomofoEngine.Result result = engine.handleSoftKey("MODE");
+        assertEquals(visible, result.committedText());
+        assertTrue(engine.isEnglishMode());
+        assertFalse(engine.hasComposition());
+    }
+
+    @Test
+    public void smartSymbolsAndPunctuationPreserveUnfinishedReading() throws Exception {
+        BopomofoEngine symbols = smartEngine();
+        type(symbols, "su3cl3s");
+        String visible = symbols.composingText();
+        assertEquals(visible, symbols.handleSoftKey("SYMBOL").committedText());
+        assertFalse(symbols.displayedCandidates().isEmpty());
+
+        BopomofoEngine punctuation = smartEngine();
+        type(punctuation, "su3cl3s");
+        String pending = punctuation.composingText();
+        assertEquals(pending + "?", punctuation.handleSoftKey("?").committedText());
+    }
+
+    @Test
+    public void smartHardwareLanguageAndPunctuationCommitComposition() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3");
+        assertEquals("你好", engine.toggleHardwareLanguage().committedText());
+        assertTrue(engine.isEnglishMode());
+
+        engine.toggleHardwareLanguage();
+        type(engine, "su3cl3");
+        assertEquals("你好，", engine.commitHardwarePunctuation("，").committedText());
+    }
+
+    @Test
+    public void smartOtherKeysCommitComposition() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3");
+        assertEquals("你好?", engine.handleSoftKey("?").committedText());
+
+        type(engine, "su3cl3");
+        assertEquals("你好", engine.setCompositionMode(
+                BopomofoCompositionMode.TRADITIONAL).committedText());
+        assertFalse(engine.hasComposition());
+    }
+
+    @Test
     public void smartCandidateOverridesLastReadingWithoutCommitting() throws Exception {
         BopomofoEngine engine = smartEngine();
         type(engine, "su3");

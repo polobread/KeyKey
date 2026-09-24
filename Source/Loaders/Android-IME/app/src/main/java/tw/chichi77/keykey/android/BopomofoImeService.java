@@ -260,14 +260,8 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
         if (BopomofoCompositionModeSettings.KEY_MODE.equals(key)) {
-            boolean hadComposition = engine != null && engine.hasComposition();
             if (engine != null) {
-                engine.setCompositionMode(BopomofoCompositionModeSettings.mode(this));
-            }
-            if (hadComposition) {
-                InputConnection connection = getCurrentInputConnection();
-                if (connection != null) connection.commitText("", 1);
-                appliedComposingText = "";
+                apply(engine.setCompositionMode(BopomofoCompositionModeSettings.mode(this)));
             }
             refreshKeyboard();
             return;
@@ -303,6 +297,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onKey(String key) {
         if (key.equals("SETTINGS")) {
+            apply(engine.finishCompositionForModeSwitch());
             Intent intent = new Intent(this, SettingsActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);

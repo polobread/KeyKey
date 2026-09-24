@@ -102,8 +102,7 @@ final class KeyboardViewController: UIInputViewController {
         inputClicksEnabled = clickSettings.enabled
         let mode = compositionModeSettings.mode
         if engine?.bopomofoCompositionMode != mode {
-            discardMarkedText()
-            engine?.setCompositionMode(mode)
+            if let engine { apply(engine.setCompositionMode(mode)) }
         }
         applyPhraseSelection(phraseSettings.enabledCollections)
         if learningResetRequest.applyIfNeeded(to: smartUserData) {
@@ -499,8 +498,7 @@ extension KeyboardViewController: SettingsPanelDelegate {
     func settingsPanel(
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
     ) {
-        discardMarkedText()
-        engine?.setCompositionMode(mode)
+        if let engine { apply(engine.setCompositionMode(mode)) }
         compositionModeSettings.setMode(mode)
         refresh()
     }

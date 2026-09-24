@@ -106,10 +106,12 @@ public final class BopomofoEngine {
         if showingAssociatedPhrases { clearComposition() }
     }
 
-    public func setCompositionMode(_ mode: BopomofoCompositionMode) {
-        guard mode != compositionMode else { return }
-        clearComposition()
+    @discardableResult
+    public func setCompositionMode(_ mode: BopomofoCompositionMode) -> Result {
+        guard mode != compositionMode else { return .update }
+        let result = finishCompositionForModeSwitch()
         compositionMode = mode == .smart && smartSource == nil ? .traditional : mode
+        return result
     }
 
     public func setAllowedInputModes(
@@ -200,25 +202,24 @@ public final class BopomofoEngine {
     @discardableResult
     public func toggleHardwareLanguage() -> Result {
         prepareForHardwareInput()
-        clearComposition()
+        let result = finishCompositionForModeSwitch()
         mode = mode == .bopomofo ? .english : .bopomofo
         shifted = false
-        return .update
+        return result
     }
 
     @discardableResult
     public func showHardwareSymbols() -> Result {
         prepareForHardwareInput()
-        guard reading.isEmpty else { return .update }
+        guard reading.isEmpty || compositionMode == .smart else { return .update }
         return showSymbols()
     }
 
     @discardableResult
     public func commitHardwarePunctuation(_ punctuation: String) -> Result {
         prepareForHardwareInput()
-        guard reading.isEmpty else { return .update }
-        clearComposition()
-        return .commit(punctuation)
+        guard reading.isEmpty || compositionMode == .smart else { return .update }
+        return .commit(finishCompositionForModeSwitch().text + punctuation)
     }
 
     @discardableResult
@@ -405,11 +406,14 @@ public final class BopomofoEngine {
             return result
         }
 
-        if !reading.isEmpty { return .update }
+        if !reading.isEmpty {
+            if compositionMode == .smart {
+                return .commit(finishCompositionForModeSwitch().text + String(rawKey))
+            }
+            return .update
+        }
         if compositionMode == .smart, !smartReadings.isEmpty {
-            let prefix = smartComposition?.text ?? ""
-            clearComposition()
-            return .commit(prefix + String(rawKey))
+            return .commit(finishCompositionForModeSwitch().text + String(rawKey))
         }
         if !candidates.isEmpty {
             let prefix = commitFirstCandidateIfNeeded()
@@ -488,6 +492,24 @@ public final class BopomofoEngine {
         return text.isEmpty ? .update : .commit(text)
     }
 
+    private func finishCompositionForModeSwitch() -> Result {
+        guard compositionMode == .smart, mode == .bopomofo, hasComposition else {
+            clearComposition()
+            return .update
+        }
+        if !reading.isEmpty { _ = finishSmartReading() }
+        if reading.isEmpty { return commitSmartComposition() }
+
+        // An unfinished syllable may have no language-model match. Keep the
+        // visible reading after the converted text instead of losing it.
+        let text = (smartComposition?.text ?? "") + reading.displayText
+        if let smartComposition {
+            smartSource?.learnConfirmedComposition(smartComposition)
+        }
+        clearComposition()
+        return .commit(text)
+    }
+
     /// Associated phrases only appear after a single Chinese character is
     /// committed from the dictionary -- never after a symbol, emoji or letter.
     private func commitPrimaryCandidate(
@@ -515,11 +537,11 @@ public final class BopomofoEngine {
     }
 
     private func cycleInputMode() -> Result {
-        clearComposition()
+        let result = finishCompositionForModeSwitch()
         if temporaryEnglish {
             temporaryEnglish = false
             shifted = false
-            return .update
+            return result
         }
         repeat {
             switch mode {
@@ -529,13 +551,13 @@ public final class BopomofoEngine {
             }
         } while !allowedInputModes.contains(mode)
         shifted = false
-        return .update
+        return result
     }
 
     /// Shift on the Bopomofo plane is a one-shot hop to lower-case English; on
     /// the English and number planes it latches.
     private func touchShift() -> Result {
-        clearComposition()
+        let result = finishCompositionForModeSwitch()
         if temporaryEnglish {
             endTemporaryEnglish()
         } else if mode == .bopomofo, allowedInputModes.contains(.english) {
@@ -545,7 +567,7 @@ public final class BopomofoEngine {
         } else {
             shifted = !shifted
         }
-        return .update
+        return result
     }
 
     private func endTemporaryEnglish() {
@@ -560,17 +582,15 @@ public final class BopomofoEngine {
     }
 
     private func showSymbols() -> Result {
-        let prefix = compositionMode == .smart ? smartComposition?.text ?? "" : ""
-        clearComposition()
+        let result = finishCompositionForModeSwitch()
         candidates = Self.symbols
-        return prefix.isEmpty ? .update : .commit(prefix)
+        return result
     }
 
     private func showEmojis() -> Result {
-        let prefix = compositionMode == .smart ? smartComposition?.text ?? "" : ""
-        clearComposition()
+        let result = finishCompositionForModeSwitch()
         candidates = Self.emojis
-        return prefix.isEmpty ? .update : .commit(prefix)
+        return result
     }
 
     private func clearComposition() {

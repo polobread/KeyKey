@@ -90,11 +90,12 @@ final class BopomofoEngine {
                 ? BopomofoCompositionMode.TRADITIONAL : compositionMode;
     }
 
-    void setCompositionMode(BopomofoCompositionMode mode) {
-        if (mode == compositionMode) return;
-        clearComposition();
+    Result setCompositionMode(BopomofoCompositionMode mode) {
+        if (mode == compositionMode) return Result.update();
+        Result result = finishCompositionForModeSwitch();
         compositionMode = mode == BopomofoCompositionMode.SMART && smartSource == null
                 ? BopomofoCompositionMode.TRADITIONAL : mode;
+        return result;
     }
 
     void setAssociatedPhraseDictionary(AssociatedPhraseDictionary dictionary) {
@@ -152,11 +153,11 @@ final class BopomofoEngine {
 
     Result toggleHardwareLanguage() {
         prepareForHardwareInput();
-        boolean hadReading = clearComposition();
+        Result result = finishCompositionForModeSwitch();
         inputMode = inputMode == InputMode.BOPOMOFO
                 ? InputMode.ENGLISH : InputMode.BOPOMOFO;
         shifted = false;
-        return hadReading ? Result.discardComposition() : Result.update();
+        return result;
     }
 
     Result toggleHardwareWidth() {
@@ -167,14 +168,17 @@ final class BopomofoEngine {
 
     Result commitHardwarePunctuation(String punctuation) {
         prepareForHardwareInput();
-        if (!reading.isEmpty()) return Result.update();
-        clearComposition();
-        return Result.commit(punctuation);
+        if (!reading.isEmpty() && compositionMode != BopomofoCompositionMode.SMART) {
+            return Result.update();
+        }
+        return Result.commit(finishCompositionForModeSwitch().committedText() + punctuation);
     }
 
     Result showHardwareSymbols() {
         prepareForHardwareInput();
-        if (!reading.isEmpty()) return Result.update();
+        if (!reading.isEmpty() && compositionMode != BopomofoCompositionMode.SMART) {
+            return Result.update();
+        }
         return symbols();
     }
 
@@ -402,11 +406,14 @@ final class BopomofoEngine {
             return result;
         }
 
-        if (!reading.isEmpty()) return Result.update();
+        if (!reading.isEmpty()) {
+            if (compositionMode == BopomofoCompositionMode.SMART) {
+                return Result.commit(finishCompositionForModeSwitch().committedText() + rawKey);
+            }
+            return Result.update();
+        }
         if (compositionMode == BopomofoCompositionMode.SMART && !smartReadings.isEmpty()) {
-            String prefix = smartComposition == null ? "" : smartComposition.text();
-            clearComposition();
-            return Result.commit(prefix + rawKey);
+            return Result.commit(finishCompositionForModeSwitch().committedText() + rawKey);
         }
         if (!candidates.isEmpty()) {
             String prefix = commitFirstCandidateIfNeeded();
@@ -490,6 +497,22 @@ final class BopomofoEngine {
         return text.isEmpty() ? Result.update() : Result.commit(text);
     }
 
+    Result finishCompositionForModeSwitch() {
+        if (compositionMode == BopomofoCompositionMode.SMART
+                && inputMode == InputMode.BOPOMOFO && hasComposition()) {
+            if (!reading.isEmpty()) finishSmartReading();
+            if (reading.isEmpty()) return commitSmartComposition();
+
+            // Preserve an unfinished syllable if the language model cannot convert it.
+            String prefix = smartComposition == null ? "" : smartComposition.text();
+            String text = prefix + reading.displayText();
+            if (smartComposition != null) smartSource.learnConfirmedComposition(smartComposition);
+            clearComposition();
+            return Result.commit(text);
+        }
+        return clearComposition() ? Result.discardComposition() : Result.update();
+    }
+
     private String commitFirstCandidateIfNeeded() {
         if (candidates.isEmpty()) return "";
         if (showingAssociatedPhrases) {
@@ -502,15 +525,15 @@ final class BopomofoEngine {
     }
 
     private Result cycleInputMode() {
-        boolean hadReading = clearComposition();
+        Result result = finishCompositionForModeSwitch();
         if (temporaryEnglish) {
             temporaryEnglish = false;
             shifted = false;
-            return hadReading ? Result.discardComposition() : Result.update();
+            return result;
         }
         inputMode = nextAllowedMode(inputMode);
         shifted = false;
-        return hadReading ? Result.discardComposition() : Result.update();
+        return result;
     }
 
     private InputMode nextAllowedMode(InputMode current) {
@@ -526,7 +549,7 @@ final class BopomofoEngine {
     }
 
     private Result touchShift() {
-        boolean hadReading = clearComposition();
+        Result result = finishCompositionForModeSwitch();
         if (temporaryEnglish) {
             endTemporaryEnglish();
         } else if (inputMode == InputMode.BOPOMOFO
@@ -539,7 +562,7 @@ final class BopomofoEngine {
         } else {
             shifted = !shifted;
         }
-        return hadReading ? Result.discardComposition() : Result.update();
+        return result;
     }
 
     private void endTemporaryEnglish() {
@@ -550,25 +573,19 @@ final class BopomofoEngine {
     }
 
     private Result symbols() {
-        String prefix = compositionMode == BopomofoCompositionMode.SMART
-                && smartComposition != null ? smartComposition.text() : "";
-        boolean hadReading = clearComposition();
+        Result result = finishCompositionForModeSwitch();
         candidates = SYMBOLS;
         showingAssociatedPhrases = false;
         highlightedIndex = 0;
-        if (!prefix.isEmpty()) return Result.commit(prefix);
-        return hadReading ? Result.discardComposition() : Result.update();
+        return result;
     }
 
     private Result emojis() {
-        String prefix = compositionMode == BopomofoCompositionMode.SMART
-                && smartComposition != null ? smartComposition.text() : "";
-        boolean hadReading = clearComposition();
+        Result result = finishCompositionForModeSwitch();
         candidates = EMOJIS;
         showingAssociatedPhrases = false;
         highlightedIndex = 0;
-        if (!prefix.isEmpty()) return Result.commit(prefix);
-        return hadReading ? Result.discardComposition() : Result.update();
+        return result;
     }
 
     private boolean clearComposition() {

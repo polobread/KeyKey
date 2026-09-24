@@ -1133,7 +1133,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     private func selectCompositionMode(_ mode: BopomofoCompositionMode) {
         guard let engine else { return }
-        engine.setCompositionMode(mode)
+        apply(engine.setCompositionMode(mode))
         compositionModeSettings.setMode(mode)
         transientStatus = nil
         refresh()

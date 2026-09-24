@@ -101,6 +101,64 @@ struct BopomofoEngineTests {
         #expect(!engine.hasComposition)
     }
 
+    @Test("smart composition is committed before switching keyboard planes")
+    func smartModeSwitchCommits() {
+        for key in ["MODE", "SHIFT", "SYMBOL", "EMOJI"] {
+            let engine = smartEngine()
+            _ = type(engine, "su3cl3")
+            #expect(engine.handleSoftKey(key) == .commit("你好"))
+            #expect(!engine.hasComposition)
+        }
+    }
+
+    @Test("switching preserves an unfinished smart reading")
+    func smartModeSwitchKeepsUnfinishedReading() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3s")
+        let visible = engine.composingText
+        #expect(visible.hasPrefix("你好"))
+        #expect(engine.handleSoftKey("MODE") == .commit(visible))
+        #expect(engine.inputMode == .english)
+        #expect(!engine.hasComposition)
+    }
+
+    @Test("symbols and punctuation keep an unfinished smart reading")
+    func smartOtherKeysKeepUnfinishedReading() {
+        let symbols = smartEngine()
+        _ = type(symbols, "su3cl3s")
+        let visible = symbols.composingText
+        #expect(symbols.handleSoftKey("SYMBOL") == .commit(visible))
+        #expect(!symbols.displayedCandidates.isEmpty)
+
+        let punctuation = smartEngine()
+        _ = type(punctuation, "su3cl3s")
+        let pending = punctuation.composingText
+        #expect(punctuation.handleSoftKey("?") == .commit(pending + "?"))
+    }
+
+    @Test("hardware language and punctuation commit smart composition")
+    func smartHardwareSwitchCommits() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3cl3")
+        #expect(engine.toggleHardwareLanguage() == .commit("你好"))
+        #expect(engine.inputMode == .english)
+
+        _ = engine.toggleHardwareLanguage()
+        _ = type(engine, "su3cl3")
+        #expect(engine.commitHardwarePunctuation("，") == .commit("你好，"))
+    }
+
+    @Test("other smart keys keep text before switching or inserting")
+    func smartOtherKeysCommit() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3")
+        #expect(engine.handleSoftKey("?") == .commit("你好?"))
+
+        _ = type(engine, "su3cl3")
+        #expect(engine.setCompositionMode(.traditional) == .commit("你好"))
+        #expect(!engine.hasComposition)
+    }
+
     @Test("smart candidate selection overrides without prematurely committing")
     func smartCandidateOverride() {
         let engine = smartEngine()
