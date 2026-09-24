@@ -24,23 +24,79 @@ public struct SmartMandarinComposition: Equatable, Sendable {
     }
 }
 
+public struct SmartMandarinSelection: Equatable, Sendable {
+    public let length: Int
+    public let text: String
+
+    public init(length: Int, text: String) {
+        self.length = length
+        self.text = text
+    }
+}
+
+public struct SmartMandarinCandidate: Equatable, Sendable {
+    public let length: Int
+    public let text: String
+
+    public init(length: Int, text: String) {
+        self.length = length
+        self.text = text
+    }
+}
+
 public protocol SmartMandarinSource {
     func compose(readings: [String], overrides: [Int: String]) -> SmartMandarinComposition?
+    func compose(
+        readings: [String], selections: [Int: SmartMandarinSelection]
+    ) -> SmartMandarinComposition?
     func candidates(
         for readings: [String], at index: Int, composition: SmartMandarinComposition?
     ) -> [String]
+    func candidateOptions(
+        for readings: [String], at index: Int, composition: SmartMandarinComposition?
+    ) -> [SmartMandarinCandidate]
     func learnSelection(
         readings: [String], at index: Int, selected: String,
+        composition: SmartMandarinComposition?
+    )
+    func learnSelection(
+        readings: [String], at index: Int, candidate: SmartMandarinCandidate,
         composition: SmartMandarinComposition?
     )
     func learnConfirmedComposition(_ composition: SmartMandarinComposition)
 }
 
 public extension SmartMandarinSource {
+    func compose(
+        readings: [String], selections: [Int: SmartMandarinSelection]
+    ) -> SmartMandarinComposition? {
+        guard selections.values.allSatisfy({ $0.length == 1 }) else { return nil }
+        return compose(readings: readings, overrides: selections.mapValues(\.text))
+    }
+
+    func candidateOptions(
+        for readings: [String], at index: Int, composition: SmartMandarinComposition?
+    ) -> [SmartMandarinCandidate] {
+        candidates(for: readings, at: index, composition: composition).map {
+            SmartMandarinCandidate(length: 1, text: $0)
+        }
+    }
+
     func learnSelection(
         readings: [String], at index: Int, selected: String,
         composition: SmartMandarinComposition?
     ) {}
+    func learnSelection(
+        readings: [String], at index: Int, candidate: SmartMandarinCandidate,
+        composition: SmartMandarinComposition?
+    ) {
+        if candidate.length == 1 {
+            learnSelection(
+                readings: readings, at: index, selected: candidate.text,
+                composition: composition
+            )
+        }
+    }
     func learnConfirmedComposition(_ composition: SmartMandarinComposition) {}
 }
 
@@ -89,6 +145,14 @@ public final class SmartMandarinStore: SmartMandarinSource {
     public func compose(
         readings: [String], overrides: [Int: String] = [:]
     ) -> SmartMandarinComposition? {
+        compose(readings: readings, selections: overrides.mapValues {
+            SmartMandarinSelection(length: 1, text: $0)
+        })
+    }
+
+    public func compose(
+        readings: [String], selections: [Int: SmartMandarinSelection]
+    ) -> SmartMandarinComposition? {
         guard !readings.isEmpty else {
             return SmartMandarinComposition(text: "", segments: [])
         }
@@ -101,15 +165,18 @@ public final class SmartMandarinStore: SmartMandarinSource {
             for length in 1...largestSpan {
                 let end = start + length
                 let query = readings[start..<end].joined()
-                let protectedIndices = overrides.keys.filter { start <= $0 && $0 < end }
-                if !protectedIndices.isEmpty && !(length == 1 && protectedIndices == [start]) {
+                let overlapping = selections.filter { selectedStart, selection in
+                    selectedStart < end && start < selectedStart + selection.length
+                }
+                if !overlapping.isEmpty && !(overlapping.count == 1
+                    && overlapping[start]?.length == length) {
                     continue
                 }
 
                 var entries = unigrams(for: query)
                 let learned = userData?.learnedCandidate(for: query)
-                if let required = overrides[start] {
-                    entries = entries.filter { $0.text == required }
+                if let required = selections[start] {
+                    entries = entries.filter { $0.text == required.text }
                 }
                 guard !entries.isEmpty else { continue }
 
@@ -166,48 +233,74 @@ public final class SmartMandarinStore: SmartMandarinSource {
     public func candidates(
         for readings: [String], at index: Int, composition: SmartMandarinComposition?
     ) -> [String] {
+        candidateOptions(for: readings, at: index, composition: composition).map(\.text)
+    }
+
+    public func candidateOptions(
+        for readings: [String], at index: Int, composition: SmartMandarinComposition?
+    ) -> [SmartMandarinCandidate] {
         guard readings.indices.contains(index) else { return [] }
-        let query = readings[index]
-        let learned = userData?.learnedCandidate(for: query)
         let previous = composition?.segments.last(where: { $0.start + $0.length == index })
         let previousBackoff = previous.flatMap { segment in
             unigrams(for: segment.query).first(where: { $0.text == segment.text })?.backoff
         } ?? 0
-        let ranked = unigrams(for: query).map { entry -> (String, Double) in
-            let score: Double
-            if learned == entry.text {
-                score = 0
-            } else if let previous {
-                let fallback = previousBackoff + entry.probability
-                let observed = bigramProbability(
-                    previousQuery: previous.query,
-                    currentQuery: query,
-                    previousText: previous.text,
-                    currentText: entry.text
-                )
-                score = max(observed ?? fallback, fallback)
-            } else {
-                let observed = bigramProbability(
-                    previousQuery: "!", currentQuery: query,
-                    previousText: "", currentText: entry.text
-                )
-                score = max(observed ?? entry.probability, entry.probability)
+        var ranked: [(SmartMandarinCandidate, Double)] = []
+        for length in 1...min(maximumSpan, readings.count - index) {
+            let query = readings[index..<(index + length)].joined()
+            let learned = userData?.learnedCandidate(for: query)
+            for entry in unigrams(for: query) {
+                let score: Double
+                if learned == entry.text {
+                    score = 0
+                } else if let previous {
+                    let fallback = previousBackoff + entry.probability
+                    let observed = bigramProbability(
+                        previousQuery: previous.query,
+                        currentQuery: query,
+                        previousText: previous.text,
+                        currentText: entry.text
+                    )
+                    score = max(observed ?? fallback, fallback)
+                } else {
+                    let observed = bigramProbability(
+                        previousQuery: "!", currentQuery: query,
+                        previousText: "", currentText: entry.text
+                    )
+                    score = max(observed ?? entry.probability, entry.probability)
+                }
+                ranked.append((SmartMandarinCandidate(length: length, text: entry.text), score))
             }
-            return (entry.text, score)
-        }.sorted { $0.1 > $1.1 }
+        }
+        ranked.sort { $0.1 > $1.1 }
 
         var seen = Set<String>()
-        return ranked.compactMap { seen.insert($0.0).inserted ? $0.0 : nil }
+        return ranked.compactMap { candidate, _ in
+            seen.insert("\(candidate.length)\u{1f}\(candidate.text)").inserted
+                ? candidate : nil
+        }
     }
 
     public func learnSelection(
         readings: [String], at index: Int, selected: String,
         composition: SmartMandarinComposition?
     ) {
-        guard readings.indices.contains(index) else { return }
+        learnSelection(
+            readings: readings, at: index,
+            candidate: SmartMandarinCandidate(length: 1, text: selected),
+            composition: composition
+        )
+    }
+
+    public func learnSelection(
+        readings: [String], at index: Int, candidate: SmartMandarinCandidate,
+        composition: SmartMandarinComposition?
+    ) {
+        guard readings.indices.contains(index), candidate.length > 0,
+              index + candidate.length <= readings.count else { return }
         let previous = composition?.segments.last(where: { $0.start + $0.length == index })
         userData?.learnCandidate(
-            query: readings[index], current: selected,
+            query: readings[index..<(index + candidate.length)].joined(),
+            current: candidate.text,
             previousQuery: previous?.query, previous: previous?.text
         )
     }

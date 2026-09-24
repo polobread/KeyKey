@@ -37,10 +37,24 @@ private struct TableSmartSource: SmartMandarinSource {
     func compose(
         readings: [String], overrides: [Int: String]
     ) -> SmartMandarinComposition? {
+        compose(readings: readings, selections: overrides.mapValues {
+            SmartMandarinSelection(length: 1, text: $0)
+        })
+    }
+
+    func compose(
+        readings: [String], selections: [Int: SmartMandarinSelection]
+    ) -> SmartMandarinComposition? {
         var segments: [SmartMandarinSegment] = []
-        for (index, reading) in readings.enumerated() {
-            guard let text = overrides[index] ?? table[reading]?.first else { return nil }
-            segments.append(.init(start: index, length: 1, query: reading, text: text))
+        var index = 0
+        while index < readings.count {
+            let selection = selections[index]
+            let length = selection?.length ?? 1
+            guard length > 0, index + length <= readings.count else { return nil }
+            let query = readings[index..<(index + length)].joined()
+            guard let text = selection?.text ?? table[query]?.first else { return nil }
+            segments.append(.init(start: index, length: length, query: query, text: text))
+            index += length
         }
         return .init(text: segments.map(\.text).joined(), segments: segments)
     }
@@ -50,6 +64,18 @@ private struct TableSmartSource: SmartMandarinSource {
     ) -> [String] {
         guard readings.indices.contains(index) else { return [] }
         return table[readings[index]] ?? []
+    }
+
+    func candidateOptions(
+        for readings: [String], at index: Int, composition: SmartMandarinComposition?
+    ) -> [SmartMandarinCandidate] {
+        guard readings.indices.contains(index) else { return [] }
+        return (1...(readings.count - index)).flatMap { length in
+            let query = readings[index..<(index + length)].joined()
+            return (table[query] ?? []).map {
+                SmartMandarinCandidate(length: length, text: $0)
+            }
+        }
     }
 }
 
@@ -243,6 +269,69 @@ struct BopomofoEngineTests {
         #expect(engine.enter() == .update)
         #expect(engine.composingText == "妳")
         #expect(engine.enter() == .commit("妳"))
+    }
+
+    @Test("hardware smart cursor selects an earlier character without committing the sentence")
+    func hardwareSmartEarlierCharacter() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3cl3")
+        #expect(engine.smartCompositionCursor == 2)
+        #expect(engine.moveSmartCompositionCursor(by: -2))
+        #expect(engine.smartCompositionCursor == 0)
+        #expect(engine.composingCaretUTF16Offset == 0)
+        #expect(engine.space() == .update)
+        #expect(engine.displayedCandidates == ["你", "妳", "擬"])
+        #expect(engine.selectDisplayedCandidate(1) == .update)
+        #expect(engine.composingText == "妳好")
+        #expect(engine.smartCompositionCursor == 1)
+        #expect(engine.enter() == .commit("妳好"))
+    }
+
+    @Test("hardware smart cursor can choose a multi-syllable phrase")
+    func hardwareSmartPhraseSelection() {
+        let first = TableCandidateSource.queryKey(for: "su3")
+        let second = TableCandidateSource.queryKey(for: "cl3")
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource(["su3": ["你"], "cl3": ["好"]]),
+            smartSource: TableSmartSource(table: [
+                first: ["你", "妳"], second: ["好"],
+                first + second: ["你好", "您好"]
+            ]),
+            compositionMode: .smart,
+            hardwareSmartEditing: true
+        )
+        _ = type(engine, "su3cl3")
+        #expect(engine.moveSmartCompositionCursor(by: -2))
+        _ = engine.space()
+        #expect(engine.displayedCandidates == ["你", "妳", "你好", "您好"])
+        #expect(engine.selectDisplayedCandidate(3) == .update)
+        #expect(engine.composingText == "您好")
+        #expect(engine.smartCompositionCursor == 2)
+        #expect(engine.moveSmartCompositionCursor(by: -1))
+        #expect(engine.composingCaretUTF16Offset == 1)
+        _ = engine.space()
+        #expect(engine.displayedCandidates == ["好"])
+        #expect(engine.selectDisplayedCandidate(0) == .update)
+        #expect(engine.enter() == .commit("你好"))
+    }
+
+    @Test("editing at the hardware smart cursor changes the uncommitted sentence")
+    func hardwareSmartCursorEditing() {
+        let insertion = smartEngine(hardwareEditing: true)
+        _ = type(insertion, "su3cl3")
+        #expect(insertion.moveSmartCompositionCursor(by: -1))
+        _ = type(insertion, "su3")
+        #expect(insertion.composingText == "你你好")
+        #expect(insertion.composingCaretUTF16Offset == 2)
+        #expect(insertion.enter() == .commit("你你好"))
+
+        let deletion = smartEngine(hardwareEditing: true)
+        _ = type(deletion, "su3cl3")
+        #expect(deletion.moveSmartCompositionCursor(by: -1))
+        #expect(deletion.backspace() == .update)
+        #expect(deletion.composingText == "好")
+        #expect(deletion.smartCompositionCursor == 0)
+        #expect(deletion.enter() == .commit("好"))
     }
 
     @Test("a tone mark opens the candidate list")

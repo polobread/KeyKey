@@ -14,6 +14,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.ExtractedText;
+import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputConnection;
 
 import java.io.IOException;
@@ -43,6 +45,7 @@ public final class BopomofoImeService extends InputMethodService
     private RectF cursorAnchor;
     private final Set<Integer> pressedHardwareShortcutKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedCandidateKeys = new LinkedHashSet<>();
+    private final Set<Integer> pressedNavigationKeys = new LinkedHashSet<>();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final BackspaceRepeater hardwareBackspaceRepeater =
             new BackspaceRepeater(mainHandler);
@@ -59,6 +62,8 @@ public final class BopomofoImeService extends InputMethodService
     private int selectionMutationGeneration;
     private boolean awaitingOwnSelectionUpdate;
     private String appliedComposingText = "";
+    private int composingRegionStart = -1;
+    private int expectedSmartSelection = -1;
 
     @Override
     public void onCreate() {
@@ -139,6 +144,8 @@ public final class BopomofoImeService extends InputMethodService
             if (!restarting) {
                 engine.reset();
                 appliedComposingText = "";
+                composingRegionStart = -1;
+                expectedSmartSelection = -1;
             }
             engine.setAllowedInputModes(fieldPolicy.allowedModes(), fieldPolicy.preferredMode(),
                     layoutChanged);
@@ -172,10 +179,13 @@ public final class BopomofoImeService extends InputMethodService
         if (engine != null) engine.reset();
         pressedHardwareShortcutKeys.clear();
         pressedCandidateKeys.clear();
+        pressedNavigationKeys.clear();
         cursorAnchor = null;
         lastSelectionStart = -1;
         lastSelectionEnd = -1;
         appliedComposingText = "";
+        composingRegionStart = -1;
+        expectedSmartSelection = -1;
         fieldPolicyUnlocked = false;
         cancelExpectedSelectionUpdate();
         hideFloatingCandidates();
@@ -241,8 +251,16 @@ public final class BopomofoImeService extends InputMethodService
                 : newSelStart != oldSelStart || newSelEnd != oldSelEnd;
         lastSelectionStart = newSelStart;
         lastSelectionEnd = newSelEnd;
+        if (candidatesStart >= 0 && engine != null && engine.hasComposition()) {
+            composingRegionStart = candidatesStart;
+        }
 
-        if (awaitingOwnSelectionUpdate) {
+        boolean expectedSmartCursor = expectedSmartSelection >= 0
+                && newSelStart == expectedSmartSelection
+                && newSelEnd == expectedSmartSelection;
+        if (expectedSmartCursor) expectedSmartSelection = -1;
+
+        if (awaitingOwnSelectionUpdate || expectedSmartCursor) {
             return;
         }
         if (!selectionChanged || engine == null
@@ -252,6 +270,8 @@ public final class BopomofoImeService extends InputMethodService
 
         engine.reset();
         appliedComposingText = "";
+        composingRegionStart = -1;
+        expectedSmartSelection = -1;
         InputConnection connection = getCurrentInputConnection();
         if (connection != null) connection.finishComposingText();
         refreshKeyboard();
@@ -378,6 +398,44 @@ public final class BopomofoImeService extends InputMethodService
             apply(engine.selectDisplayedCandidate(candidateIndex));
             return true;
         }
+        if (engine.smartCompositionCursor() >= 0) {
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_DPAD_LEFT -> {
+                    pressedNavigationKeys.add(keyCode);
+                    engine.moveSmartCompositionCursor(-1);
+                    apply(BopomofoEngine.Result.update());
+                    return true;
+                }
+                case KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                    pressedNavigationKeys.add(keyCode);
+                    engine.moveSmartCompositionCursor(1);
+                    apply(BopomofoEngine.Result.update());
+                    return true;
+                }
+                case KeyEvent.KEYCODE_DPAD_UP -> {
+                    pressedNavigationKeys.add(keyCode);
+                    if (engine.isShowingSmartCandidates()) {
+                        engine.moveHighlight(-1);
+                        refreshKeyboard();
+                    } else {
+                        engine.moveSmartCompositionCursor(-1);
+                        apply(BopomofoEngine.Result.update());
+                    }
+                    return true;
+                }
+                case KeyEvent.KEYCODE_DPAD_DOWN -> {
+                    pressedNavigationKeys.add(keyCode);
+                    if (engine.isShowingSmartCandidates()) {
+                        engine.moveHighlight(1);
+                        refreshKeyboard();
+                    } else {
+                        apply(engine.handleHardwareSpace());
+                    }
+                    return true;
+                }
+                default -> { }
+            }
+        }
         if (isFloatingCandidateMode() && candidatesVisible
                 && handleFloatingCandidateNavigation(keyCode)) {
             pressedCandidateKeys.add(keyCode);
@@ -435,6 +493,7 @@ public final class BopomofoImeService extends InputMethodService
             return true;
         }
         if (pressedCandidateKeys.remove(keyCode)) return true;
+        if (pressedNavigationKeys.remove(keyCode)) return true;
         if (pressedHardwareShortcutKeys.remove(keyCode)
                 || isHardwareControlShortcut(keyCode, event)
                 || isHardwareWidthShortcut(keyCode, event)) {
@@ -499,21 +558,46 @@ public final class BopomofoImeService extends InputMethodService
             if (result.deleteBeforeCursor()) deletePreviousGrapheme(connection);
             if (committedText) {
                 connection.commitText(result.committedText(), 1);
+                composingRegionStart = -1;
             }
             if (result.discardComposingText()) {
                 // finishComposingText() preserves the underlined text. Committing an empty
                 // replacement removes the composing region and finishes it in one operation.
                 connection.commitText("", 1);
                 appliedComposingText = "";
+                composingRegionStart = -1;
             } else if (finishComposingText) {
                 connection.finishComposingText();
                 appliedComposingText = "";
+                composingRegionStart = -1;
             } else if (updateComposingText) {
+                if (composingRegionStart < 0 && lastSelectionStart >= 0) {
+                    composingRegionStart = lastSelectionStart;
+                }
                 connection.setComposingText(nextReading, 1);
                 appliedComposingText = nextReading;
             }
         } finally {
             connection.endBatchEdit();
+        }
+
+        if (engine.smartCompositionCursor() >= 0 && !nextReading.isEmpty()) {
+            // setComposingText can only put the cursor outside the replacement.
+            // Move it inside the marked sentence with setSelection instead.
+            if (updateComposingText) {
+                ExtractedText extracted = connection.getExtractedText(
+                        new ExtractedTextRequest(), 0);
+                if (extracted != null && extracted.selectionStart >= 0) {
+                    composingRegionStart = extracted.startOffset
+                            + extracted.selectionStart - nextReading.length();
+                }
+            }
+            if (composingRegionStart >= 0) {
+                int position = composingRegionStart + engine.composingCaretUtf16Offset();
+                expectOwnSelectionUpdate();
+                expectedSmartSelection = position;
+                if (!connection.setSelection(position, position)) expectedSmartSelection = -1;
+            }
         }
 
         if (result.sendEnter()) {
@@ -616,6 +700,7 @@ public final class BopomofoImeService extends InputMethodService
         Configuration configuration = getResources().getConfiguration();
         hardwareKeyboard = configuration.keyboard != Configuration.KEYBOARD_NOKEYS
                 && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
+        if (engine != null) engine.setHardwareSmartEditing(hardwareKeyboard);
         floatingCandidatesEnabled = CandidateWindowSettings.floatingEnabled(this);
         floatingCandidateLayout = CandidateWindowSettings.layout(this);
         if (keyboardView == null) return;

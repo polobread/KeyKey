@@ -138,6 +138,13 @@ struct SmartMandarinStoreTests {
         )
         let readings = [query("su3"), query("cl3")]
         #expect(store.compose(readings: readings, overrides: [:])?.text == "琦琦")
+        #expect(store.candidateOptions(
+            for: readings, at: 0, composition: nil
+        ).contains(SmartMandarinCandidate(length: 2, text: "琦琦")))
+        #expect(store.compose(
+            readings: readings,
+            selections: [0: SmartMandarinSelection(length: 2, text: "琦琦")]
+        )?.text == "琦琦")
         keyboard.learnCandidate(query: readings[0], current: "妳")
         #expect(store.candidates(for: [readings[0]], at: 0, composition: nil).first == "妳")
         try keyboard.resetLearning()

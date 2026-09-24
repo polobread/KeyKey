@@ -75,7 +75,11 @@ final class BopomofoEngine {
     private BopomofoCompositionMode compositionMode;
     private final List<String> smartReadings = new ArrayList<>();
     private SmartMandarinComposition smartComposition;
-    private final Map<Integer, String> smartOverrides = new HashMap<>();
+    private final Map<Integer, SmartMandarinSelection> smartOverrides = new HashMap<>();
+    private int smartCursor;
+    private int smartCandidateStart;
+    private List<SmartMandarinCandidate> smartCandidateOptions = List.of();
+    private boolean hardwareSmartEditing;
     private boolean showingSmartCandidates;
 
     BopomofoEngine(CinDictionary dictionary) {
@@ -184,6 +188,17 @@ final class BopomofoEngine {
 
     void prepareForHardwareInput() {
         if (temporaryEnglish) endTemporaryEnglish();
+        setHardwareSmartEditing(true);
+    }
+
+    void setHardwareSmartEditing(boolean enabled) {
+        if (compositionMode != BopomofoCompositionMode.SMART || enabled == hardwareSmartEditing) {
+            return;
+        }
+        hardwareSmartEditing = enabled;
+        if (!smartReadings.isEmpty()) {
+            rebuildSmartComposition();
+        }
     }
 
     Result space() {
@@ -191,7 +206,11 @@ final class BopomofoEngine {
                 && inputMode == InputMode.BOPOMOFO) {
             if (!reading.isEmpty()) return finishSmartReading();
             if (!smartReadings.isEmpty()) {
-                changePage(1);
+                if (hardwareSmartEditing && !showingSmartCandidates) {
+                    showHardwareSmartCandidates();
+                } else {
+                    changePage(1);
+                }
                 return Result.update();
             }
         }
@@ -210,6 +229,9 @@ final class BopomofoEngine {
         }
         if (compositionMode == BopomofoCompositionMode.SMART
                 && inputMode == InputMode.BOPOMOFO && hasComposition()) {
+            if (hardwareSmartEditing && showingSmartCandidates) {
+                return selectHighlightedCandidate();
+            }
             if (!reading.isEmpty()) {
                 Result result = finishSmartReading();
                 if (!reading.isEmpty()) return result;
@@ -232,8 +254,11 @@ final class BopomofoEngine {
                 return Result.update();
             }
             if (!smartReadings.isEmpty()) {
-                smartReadings.remove(smartReadings.size() - 1);
-                smartOverrides.keySet().removeIf(index -> index >= smartReadings.size());
+                if (smartCursor == 0) return Result.update();
+                int removed = smartCursor - 1;
+                smartReadings.remove(removed);
+                smartCursor = removed;
+                shiftSmartOverridesAfterRemoving(removed);
                 rebuildSmartComposition();
                 return smartReadings.isEmpty()
                         ? Result.discardComposition() : Result.update();
@@ -253,6 +278,18 @@ final class BopomofoEngine {
     }
 
     Result escape() {
+        if (hardwareSmartEditing && compositionMode == BopomofoCompositionMode.SMART) {
+            if (showingSmartCandidates) {
+                candidates = List.of();
+                smartCandidateOptions = List.of();
+                showingSmartCandidates = false;
+                page = 0;
+                highlightedIndex = 0;
+            } else if (!reading.isEmpty()) {
+                reading.clear();
+            }
+            return hasComposition() ? Result.update() : Result.discardComposition();
+        }
         return clearComposition() ? Result.discardComposition() : Result.update();
     }
 
@@ -262,9 +299,16 @@ final class BopomofoEngine {
         String selected = candidates.get(absoluteIndex);
         if (compositionMode == BopomofoCompositionMode.SMART
                 && showingSmartCandidates && !smartReadings.isEmpty()) {
-            smartSource.learnSelection(smartReadings, smartReadings.size() - 1,
-                    selected, smartComposition);
-            smartOverrides.put(smartReadings.size() - 1, selected);
+            if (absoluteIndex >= smartCandidateOptions.size()) return Result.update();
+            SmartMandarinCandidate candidate = smartCandidateOptions.get(absoluteIndex);
+            smartSource.learnSelection(smartReadings, smartCandidateStart,
+                    candidate, smartComposition);
+            int end = smartCandidateStart + candidate.length();
+            smartOverrides.entrySet().removeIf(entry -> entry.getKey() < end
+                    && smartCandidateStart < entry.getKey() + entry.getValue().length());
+            smartOverrides.put(smartCandidateStart,
+                    new SmartMandarinSelection(candidate.length(), candidate.text()));
+            smartCursor = end;
             rebuildSmartComposition();
             return Result.update();
         }
@@ -305,6 +349,42 @@ final class BopomofoEngine {
         }
         page = Math.floorMod(page + delta, pages);
         highlightedIndex = 0;
+    }
+
+    boolean moveSmartCompositionCursor(int delta) {
+        if (smartCompositionCursor() < 0 || !reading.isEmpty()) return false;
+        smartCursor = Math.max(0, Math.min(smartReadings.size(), smartCursor + delta));
+        candidates = List.of();
+        smartCandidateOptions = List.of();
+        showingSmartCandidates = false;
+        page = 0;
+        highlightedIndex = 0;
+        return true;
+    }
+
+    int smartCompositionCursor() {
+        return hardwareSmartEditing && compositionMode == BopomofoCompositionMode.SMART
+                && !smartReadings.isEmpty() ? smartCursor : -1;
+    }
+
+    int composingCaretUtf16Offset() {
+        if (smartComposition == null || smartCompositionCursor() < 0 || !reading.isEmpty()) {
+            return composingText().length();
+        }
+        int offset = 0;
+        for (SmartMandarinSegment segment : smartComposition.segments()) {
+            if (smartCursor >= segment.start() + segment.length()) {
+                offset += segment.text().length();
+            } else if (smartCursor > segment.start()) {
+                int points = segment.text().codePointCount(0, segment.text().length());
+                int count = (smartCursor - segment.start()) * points / segment.length();
+                offset += segment.text().offsetByCodePoints(0, count);
+                break;
+            } else {
+                break;
+            }
+        }
+        return offset;
     }
 
     void reset() {
@@ -373,6 +453,10 @@ final class BopomofoEngine {
 
     boolean isShowingAssociatedPhrases() {
         return showingAssociatedPhrases;
+    }
+
+    boolean isShowingSmartCandidates() {
+        return showingSmartCandidates;
     }
 
     private Result character(char rawKey, boolean fromTouch) {
@@ -458,15 +542,20 @@ final class BopomofoEngine {
         String dictionaryQuery = reading.queryKey();
         String query = reading.languageModelKey();
         ArrayList<String> trialReadings = new ArrayList<>(smartReadings);
-        trialReadings.add(query);
-        if (smartSource.compose(trialReadings, smartOverrides) == null) {
+        trialReadings.add(smartCursor, query);
+        Map<Integer, SmartMandarinSelection> shifted = shiftedSmartOverridesAfterInserting(smartCursor);
+        if (smartSource.composeSelections(trialReadings, shifted) == null) {
             candidates = dictionary.candidates(dictionaryQuery);
             showingSmartCandidates = false;
             page = 0;
             highlightedIndex = 0;
             return Result.update();
         }
-        smartReadings.add(query);
+        smartReadings.clear();
+        smartReadings.addAll(trialReadings);
+        smartOverrides.clear();
+        smartOverrides.putAll(shifted);
+        smartCursor++;
         reading.clear();
         rebuildSmartComposition();
         return Result.update();
@@ -474,18 +563,63 @@ final class BopomofoEngine {
 
     private void rebuildSmartComposition() {
         if (smartSource == null) return;
-        smartComposition = smartSource.compose(smartReadings, smartOverrides);
-        if (smartReadings.isEmpty() || smartComposition == null) {
+        smartComposition = smartSource.composeSelections(smartReadings, smartOverrides);
+        if (smartReadings.isEmpty() || smartComposition == null || hardwareSmartEditing) {
             candidates = List.of();
+            smartCandidateOptions = List.of();
             showingSmartCandidates = false;
         } else {
-            candidates = smartSource.candidates(smartReadings, smartReadings.size() - 1,
-                    smartComposition);
+            smartCandidateStart = smartReadings.size() - 1;
+            smartCandidateOptions = smartSource.candidateOptions(smartReadings,
+                    smartCandidateStart, smartComposition);
+            ArrayList<String> texts = new ArrayList<>();
+            for (SmartMandarinCandidate candidate : smartCandidateOptions) {
+                texts.add(candidate.text());
+            }
+            candidates = List.copyOf(texts);
             showingSmartCandidates = !candidates.isEmpty();
         }
         showingAssociatedPhrases = false;
         page = 0;
         highlightedIndex = 0;
+    }
+
+    private void showHardwareSmartCandidates() {
+        if (smartSource == null || smartReadings.isEmpty()) return;
+        smartCandidateStart = Math.min(smartCursor, smartReadings.size() - 1);
+        smartCandidateOptions = smartSource.candidateOptions(smartReadings,
+                smartCandidateStart, smartComposition);
+        ArrayList<String> texts = new ArrayList<>();
+        for (SmartMandarinCandidate candidate : smartCandidateOptions) {
+            texts.add(candidate.text());
+        }
+        candidates = List.copyOf(texts);
+        showingSmartCandidates = !candidates.isEmpty();
+        page = 0;
+        highlightedIndex = 0;
+    }
+
+    private Map<Integer, SmartMandarinSelection> shiftedSmartOverridesAfterInserting(int index) {
+        Map<Integer, SmartMandarinSelection> shifted = new HashMap<>();
+        for (Map.Entry<Integer, SmartMandarinSelection> entry : smartOverrides.entrySet()) {
+            int start = entry.getKey();
+            SmartMandarinSelection selection = entry.getValue();
+            if (start >= index) shifted.put(start + 1, selection);
+            else if (start + selection.length() <= index) shifted.put(start, selection);
+        }
+        return shifted;
+    }
+
+    private void shiftSmartOverridesAfterRemoving(int index) {
+        Map<Integer, SmartMandarinSelection> shifted = new HashMap<>();
+        for (Map.Entry<Integer, SmartMandarinSelection> entry : smartOverrides.entrySet()) {
+            int start = entry.getKey();
+            SmartMandarinSelection selection = entry.getValue();
+            if (start > index) shifted.put(start - 1, selection);
+            else if (start + selection.length() <= index) shifted.put(start, selection);
+        }
+        smartOverrides.clear();
+        smartOverrides.putAll(shifted);
     }
 
     private Result commitSmartComposition() {
@@ -594,6 +728,10 @@ final class BopomofoEngine {
         smartReadings.clear();
         smartComposition = null;
         smartOverrides.clear();
+        smartCursor = 0;
+        smartCandidateStart = 0;
+        smartCandidateOptions = List.of();
+        hardwareSmartEditing = false;
         showingSmartCandidates = false;
         candidates = List.of();
         page = 0;

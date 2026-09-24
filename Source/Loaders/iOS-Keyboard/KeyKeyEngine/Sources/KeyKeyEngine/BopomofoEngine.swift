@@ -84,7 +84,10 @@ public final class BopomofoEngine {
     private var compositionMode: BopomofoCompositionMode
     private var smartReadings: [String] = []
     private var smartComposition: SmartMandarinComposition?
-    private var smartOverrides: [Int: String] = [:]
+    private var smartOverrides: [Int: SmartMandarinSelection] = [:]
+    private var smartCursor = 0
+    private var smartCandidateStart = 0
+    private var smartCandidateOptions: [SmartMandarinCandidate] = []
     private var showingSmartCandidates = false
 
     public init(
@@ -138,6 +141,31 @@ public final class BopomofoEngine {
         return (smartComposition?.text ?? "") + reading.displayText
     }
     public var hasComposition: Bool { !composingText.isEmpty }
+    public var smartCompositionCursor: Int? {
+        hardwareSmartEditing && compositionMode == .smart && !smartReadings.isEmpty
+            ? smartCursor : nil
+    }
+    public var smartCompositionReadingCount: Int { smartReadings.count }
+    public var composingCaretUTF16Offset: Int {
+        guard let composition = smartComposition, let cursor = smartCompositionCursor,
+              reading.isEmpty else { return composingText.utf16.count }
+        var prefix = ""
+        for segment in composition.segments {
+            if cursor >= segment.start + segment.length {
+                prefix += segment.text
+            } else if cursor > segment.start {
+                // Most segments have one character per reading. Keep the caret
+                // inside a longer phrase if its display length differs.
+                let characters = Array(segment.text)
+                let count = (cursor - segment.start) * characters.count / segment.length
+                prefix += String(characters.prefix(count))
+                break
+            } else {
+                break
+            }
+        }
+        return prefix.utf16.count
+    }
     public var bopomofoCompositionMode: BopomofoCompositionMode { compositionMode }
     public var isShowingSmartCandidates: Bool { showingSmartCandidates }
     public var inputMode: InputMode { mode }
@@ -277,8 +305,11 @@ public final class BopomofoEngine {
                 return .update
             }
             if !smartReadings.isEmpty {
-                smartReadings.removeLast()
-                smartOverrides = smartOverrides.filter { $0.key < smartReadings.count }
+                guard smartCursor > 0 else { return .update }
+                let deleted = smartCursor - 1
+                smartReadings.remove(at: deleted)
+                smartCursor = deleted
+                shiftSmartOverrides(afterRemoving: deleted)
                 rebuildSmartComposition()
                 return .update
             }
@@ -321,11 +352,20 @@ public final class BopomofoEngine {
         guard absolute >= 0, absolute < candidates.count else { return .update }
         let selected = candidates[absolute]
         if compositionMode == .smart, showingSmartCandidates, !smartReadings.isEmpty {
+            guard smartCandidateOptions.indices.contains(absolute) else { return .update }
+            let option = smartCandidateOptions[absolute]
             smartSource?.learnSelection(
-                readings: smartReadings, at: smartReadings.count - 1,
-                selected: selected, composition: smartComposition
+                readings: smartReadings, at: smartCandidateStart,
+                candidate: option, composition: smartComposition
             )
-            smartOverrides[smartReadings.count - 1] = selected
+            let end = smartCandidateStart + option.length
+            smartOverrides = smartOverrides.filter { start, selection in
+                start >= end || start + selection.length <= smartCandidateStart
+            }
+            smartOverrides[smartCandidateStart] = SmartMandarinSelection(
+                length: option.length, text: option.text
+            )
+            smartCursor = end
             rebuildSmartComposition()
             return .update
         }
@@ -362,6 +402,20 @@ public final class BopomofoEngine {
         }
         pageIndex = floorMod(pageIndex + delta, pages)
         highlight = 0
+    }
+
+    /// Moves between reading boundaries in an uncommitted hardware composition.
+    /// The candidate panel closes so the next Space queries the new position.
+    @discardableResult
+    public func moveSmartCompositionCursor(by delta: Int) -> Bool {
+        guard smartCompositionCursor != nil, reading.isEmpty else { return false }
+        smartCursor = min(max(smartCursor + delta, 0), smartReadings.count)
+        candidates = []
+        smartCandidateOptions = []
+        showingSmartCandidates = false
+        pageIndex = 0
+        highlight = 0
+        return true
     }
 
     public func reset() {
@@ -436,15 +490,19 @@ public final class BopomofoEngine {
     private func finishSmartReading() -> Result {
         guard let smartSource, !reading.isEmpty else { return .update }
         let query = reading.queryKey
-        let trialReadings = smartReadings + [query]
-        guard smartSource.compose(readings: trialReadings, overrides: smartOverrides) != nil else {
+        var trialReadings = smartReadings
+        trialReadings.insert(query, at: smartCursor)
+        let shiftedOverrides = shiftedSmartOverrides(afterInserting: smartCursor)
+        guard smartSource.compose(readings: trialReadings, selections: shiftedOverrides) != nil else {
             candidates = dictionary.candidates(for: reading)
             showingSmartCandidates = false
             pageIndex = 0
             highlight = 0
             return .update
         }
-        smartReadings.append(query)
+        smartReadings = trialReadings
+        smartOverrides = shiftedOverrides
+        smartCursor += 1
         reading.clear()
         rebuildSmartComposition()
         return .update
@@ -453,17 +511,20 @@ public final class BopomofoEngine {
     private func rebuildSmartComposition() {
         guard let smartSource else { return }
         smartComposition = smartSource.compose(
-            readings: smartReadings, overrides: smartOverrides
+            readings: smartReadings, selections: smartOverrides
         )
         if smartReadings.isEmpty || smartComposition == nil || hardwareSmartEditing {
             candidates = []
+            smartCandidateOptions = []
             showingSmartCandidates = false
         } else {
-            candidates = smartSource.candidates(
+            smartCandidateStart = smartReadings.count - 1
+            smartCandidateOptions = smartSource.candidateOptions(
                 for: smartReadings,
-                at: smartReadings.count - 1,
+                at: smartCandidateStart,
                 composition: smartComposition
             )
+            candidates = smartCandidateOptions.map(\.text)
             showingSmartCandidates = !candidates.isEmpty
         }
         showingAssociatedPhrases = false
@@ -473,14 +534,40 @@ public final class BopomofoEngine {
 
     private func showHardwareSmartCandidates() {
         guard let smartSource, !smartReadings.isEmpty else { return }
-        candidates = smartSource.candidates(
+        smartCandidateStart = min(smartCursor, smartReadings.count - 1)
+        smartCandidateOptions = smartSource.candidateOptions(
             for: smartReadings,
-            at: smartReadings.count - 1,
+            at: smartCandidateStart,
             composition: smartComposition
         )
+        candidates = smartCandidateOptions.map(\.text)
         showingSmartCandidates = !candidates.isEmpty
         pageIndex = 0
         highlight = 0
+    }
+
+    private func shiftedSmartOverrides(afterInserting index: Int) -> [Int: SmartMandarinSelection] {
+        var shifted: [Int: SmartMandarinSelection] = [:]
+        for (start, selection) in smartOverrides {
+            if start >= index {
+                shifted[start + 1] = selection
+            } else if start + selection.length <= index {
+                shifted[start] = selection
+            }
+        }
+        return shifted
+    }
+
+    private func shiftSmartOverrides(afterRemoving index: Int) {
+        var shifted: [Int: SmartMandarinSelection] = [:]
+        for (start, selection) in smartOverrides {
+            if start > index {
+                shifted[start - 1] = selection
+            } else if start + selection.length <= index {
+                shifted[start] = selection
+            }
+        }
+        smartOverrides = shifted
     }
 
     private func commitSmartComposition() -> Result {
@@ -598,6 +685,9 @@ public final class BopomofoEngine {
         smartReadings = []
         smartComposition = nil
         smartOverrides = [:]
+        smartCursor = 0
+        smartCandidateStart = 0
+        smartCandidateOptions = []
         showingSmartCandidates = false
         candidates = []
         pageIndex = 0

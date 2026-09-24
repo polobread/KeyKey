@@ -941,7 +941,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 ]
             ))
         }
-        displayedCaretUTF16Offset = text.length
+        displayedCaretUTF16Offset = text.length - (engine?.composingText.utf16.count ?? 0)
+            + (engine?.composingCaretUTF16Offset ?? 0)
         text.append(NSAttributedString(
             string: suffix,
             attributes: [.font: bodyFont, .foregroundColor: UIColor.label]
@@ -1019,6 +1020,12 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     }
 
     private func refreshCursorPositionLabel() {
+        if let engine, let cursor = engine.smartCompositionCursor {
+            cursorPositionLabel.text = cursor == engine.smartCompositionReadingCount
+                ? "組字游標：句尾"
+                : "組字游標：第 \(cursor + 1) 個音節前"
+            return
+        }
         let prefix = committedText.prefix(insertionCharacterIndex)
         let line = prefix.reduce(into: 1) { count, character in
             if character == "\n" { count += 1 }
@@ -1370,7 +1377,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     @objc private func showHelp() {
         let smartHelp = engine?.bopomofoCompositionMode == .smart
-            ? "好打注音：連續輸入注音；Space 開候選，開啟後 1–9 選字；Enter 確定整句。\n"
+            ? "好打注音：連續輸入注音；←／→ 移動組字游標，Space／↓ 開啟游標處的字詞候選，開啟後 ↑／↓ 與 1–9 選字詞；Enter 確定整句。\n"
             : ""
         let message = """
         \(smartHelp)
@@ -1444,6 +1451,27 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     private func moveCursorOrCandidate(_ direction: CursorDirection) {
         guard let engine else { return }
+        if engine.smartCompositionCursor != nil {
+            switch direction {
+            case .left, .right:
+                _ = engine.moveSmartCompositionCursor(by: direction == .left ? -1 : 1)
+            case .up:
+                if engine.isShowingSmartCandidates {
+                    engine.moveHighlight(by: -1)
+                } else {
+                    _ = engine.moveSmartCompositionCursor(by: -1)
+                }
+            case .down:
+                if engine.isShowingSmartCandidates {
+                    engine.moveHighlight(by: 1)
+                } else {
+                    _ = engine.space()
+                }
+            }
+            transientStatus = nil
+            refresh()
+            return
+        }
         guard !engine.displayedCandidates.isEmpty else {
             moveInsertionCursor(direction)
             return

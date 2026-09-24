@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +83,16 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     @Override
     public SmartMandarinComposition compose(List<String> readings,
                                              Map<Integer, String> overrides) {
+        Map<Integer, SmartMandarinSelection> selections = new HashMap<>();
+        for (Map.Entry<Integer, String> entry : overrides.entrySet()) {
+            selections.put(entry.getKey(), new SmartMandarinSelection(1, entry.getValue()));
+        }
+        return composeSelections(readings, selections);
+    }
+
+    @Override
+    public SmartMandarinComposition composeSelections(
+            List<String> readings, Map<Integer, SmartMandarinSelection> selections) {
         if (readings.isEmpty()) return new SmartMandarinComposition("", List.of());
 
         List<Map<String, Path>> paths = new ArrayList<>(readings.size() + 1);
@@ -96,21 +105,24 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
             for (int length = 1; length <= largestSpan; length++) {
                 int end = start + length;
                 String query = String.join("", readings.subList(start, end));
-                Set<Integer> protectedIndices = new HashSet<>();
-                for (int index : overrides.keySet()) {
-                    if (start <= index && index < end) protectedIndices.add(index);
+                int overlapCount = 0;
+                for (Map.Entry<Integer, SmartMandarinSelection> selection : selections.entrySet()) {
+                    int selectedStart = selection.getKey();
+                    if (selectedStart < end && start < selectedStart + selection.getValue().length()) {
+                        overlapCount++;
+                    }
                 }
-                if (!protectedIndices.isEmpty()
-                        && !(length == 1 && protectedIndices.size() == 1
-                        && protectedIndices.contains(start))) continue;
+                SmartMandarinSelection required = selections.get(start);
+                if (overlapCount != 0
+                        && !(overlapCount == 1 && required != null
+                        && required.length() == length)) continue;
 
                 List<Unigram> entries = unigrams(query);
                 String learned = learnedCandidate(query);
-                String required = overrides.get(start);
                 if (required != null) {
                     ArrayList<Unigram> matching = new ArrayList<>();
                     for (Unigram row : entries) {
-                        if (row.text().equals(required)) matching.add(row);
+                        if (row.text().equals(required.text())) matching.add(row);
                     }
                     entries = matching;
                 }
@@ -168,9 +180,17 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     @Override
     public List<String> candidates(List<String> readings, int index,
                                    SmartMandarinComposition composition) {
+        ArrayList<String> texts = new ArrayList<>();
+        for (SmartMandarinCandidate candidate : candidateOptions(readings, index, composition)) {
+            texts.add(candidate.text());
+        }
+        return List.copyOf(texts);
+    }
+
+    @Override
+    public List<SmartMandarinCandidate> candidateOptions(
+            List<String> readings, int index, SmartMandarinComposition composition) {
         if (index < 0 || index >= readings.size()) return List.of();
-        String query = readings.get(index);
-        String learned = learnedCandidate(query);
         SmartMandarinSegment previous = null;
         if (composition != null) {
             for (SmartMandarinSegment segment : composition.segments()) {
@@ -178,7 +198,7 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
             }
         }
 
-        record Ranked(String text, double score) {}
+        record Ranked(SmartMandarinCandidate candidate, double score) {}
         ArrayList<Ranked> ranked = new ArrayList<>();
         double previousBackoff = 0;
         if (previous != null) {
@@ -189,25 +209,39 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                 }
             }
         }
-        for (Unigram entry : unigrams(query)) {
-            Double bigram = previous == null
-                    ? bigramProbability("!", query, "", entry.text())
-                    : bigramProbability(previous.query(), query,
-                            previous.text(), entry.text());
-            double fallback = previousBackoff + entry.probability();
-            ranked.add(new Ranked(entry.text(), entry.text().equals(learned) ? 0
-                    : bigram == null ? fallback : Math.max(bigram, fallback)));
+        int largestSpan = Math.min(MAXIMUM_SPAN, readings.size() - index);
+        for (int length = 1; length <= largestSpan; length++) {
+            String query = String.join("", readings.subList(index, index + length));
+            String learned = learnedCandidate(query);
+            for (Unigram entry : unigrams(query)) {
+                Double bigram = previous == null
+                        ? bigramProbability("!", query, "", entry.text())
+                        : bigramProbability(previous.query(), query,
+                                previous.text(), entry.text());
+                double fallback = previousBackoff + entry.probability();
+                ranked.add(new Ranked(new SmartMandarinCandidate(length, entry.text()),
+                        entry.text().equals(learned) ? 0
+                                : bigram == null ? fallback : Math.max(bigram, fallback)));
+            }
         }
         ranked.sort((left, right) -> Double.compare(right.score(), left.score()));
-        LinkedHashSet<String> unique = new LinkedHashSet<>();
-        for (Ranked item : ranked) unique.add(item.text());
+        LinkedHashSet<SmartMandarinCandidate> unique = new LinkedHashSet<>();
+        for (Ranked item : ranked) unique.add(item.candidate());
         return List.copyOf(unique);
     }
 
     @Override
     public void learnSelection(List<String> readings, int index, String selected,
                                SmartMandarinComposition composition) {
-        if (userData == null || index < 0 || index >= readings.size()) return;
+        learnSelection(readings, index, new SmartMandarinCandidate(1, selected), composition);
+    }
+
+    @Override
+    public void learnSelection(List<String> readings, int index,
+                               SmartMandarinCandidate candidate,
+                               SmartMandarinComposition composition) {
+        if (userData == null || index < 0 || candidate.length() <= 0
+                || index + candidate.length() > readings.size()) return;
         SmartMandarinSegment previous = null;
         if (composition != null) {
             for (SmartMandarinSegment segment : composition.segments()) {
@@ -215,7 +249,8 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
             }
         }
         try {
-            userData.learnCandidate(readings.get(index), selected,
+            userData.learnCandidate(String.join("", readings.subList(index,
+                            index + candidate.length())), candidate.text(),
                     previous == null ? null : previous.query(),
                     previous == null ? null : previous.text());
         } catch (RuntimeException ignored) {
