@@ -1,0 +1,6993 @@
+{
+  "method": {
+    "ai_lexicon_count": 29,
+    "full_corpora": [
+      "corpus-v1.txt",
+      "corpus-v2.txt",
+      "corpus-v3.txt",
+      "corpus-typing-feedback.txt",
+      "article-corpus-1650.txt"
+    ],
+    "training_corpora": [
+      "corpus-v1.txt",
+      "corpus-v2.txt",
+      "corpus-v3.txt",
+      "corpus-typing-feedback.txt",
+      "article-corpus-1500.txt"
+    ],
+    "heldout_articles": "1551-1650",
+    "variants": {
+      "current": [
+        {
+          "option": "--lexicon",
+          "file": "supplemental-lexicon.tsv"
+        }
+      ],
+      "anime_safe": [
+        {
+          "option": "--lexicon",
+          "file": "supplemental-lexicon.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.anime.tsv"
+        }
+      ],
+      "other_28_safe": [
+        {
+          "option": "--lexicon",
+          "file": "supplemental-lexicon.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.agriculture-food.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.ai-data-science.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.biotech-pharma.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.business.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.chinese.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.civil-engineering.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.education.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.electronics.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.energy-environment.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.finance.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.general.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.government.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.history.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.industrial-engineering.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.law.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.manufacturing.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.materials-chemistry.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.media-design.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.medicine.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.network-security.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.people-contemporary.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.people-history.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.people-oldnews.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.psychology-society.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.science.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.semiconductor.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.software.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.transport-logistics.tsv"
+        }
+      ],
+      "all_29_safe": [
+        {
+          "option": "--lexicon",
+          "file": "supplemental-lexicon.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.agriculture-food.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.ai-data-science.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.anime.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.biotech-pharma.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.business.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.chinese.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.civil-engineering.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.education.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.electronics.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.energy-environment.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.finance.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.general.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.government.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.history.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.industrial-engineering.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.law.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.manufacturing.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.materials-chemistry.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.media-design.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.medicine.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.network-security.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.people-contemporary.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.people-history.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.people-oldnews.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.psychology-society.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.science.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.semiconductor.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.software.tsv"
+        },
+        {
+          "option": "--lexicon-preserve-counts",
+          "file": "phrase.transport-logistics.tsv"
+        }
+      ],
+      "anime_direct": [
+        {
+          "option": "--lexicon",
+          "file": "supplemental-lexicon.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.anime.tsv"
+        }
+      ],
+      "other_28_direct": [
+        {
+          "option": "--lexicon",
+          "file": "supplemental-lexicon.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.agriculture-food.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.ai-data-science.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.biotech-pharma.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.business.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.chinese.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.civil-engineering.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.education.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.electronics.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.energy-environment.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.finance.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.general.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.government.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.history.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.industrial-engineering.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.law.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.manufacturing.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.materials-chemistry.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.media-design.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.medicine.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.network-security.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.people-contemporary.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.people-history.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.people-oldnews.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.psychology-society.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.science.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.semiconductor.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.software.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.transport-logistics.tsv"
+        }
+      ],
+      "all_29_direct": [
+        {
+          "option": "--lexicon",
+          "file": "supplemental-lexicon.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.agriculture-food.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.ai-data-science.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.anime.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.biotech-pharma.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.business.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.chinese.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.civil-engineering.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.education.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.electronics.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.energy-environment.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.finance.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.general.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.government.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.history.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.industrial-engineering.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.law.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.manufacturing.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.materials-chemistry.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.media-design.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.medicine.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.network-security.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.people-contemporary.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.people-history.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.people-oldnews.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.psychology-society.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.science.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.semiconductor.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.software.tsv"
+        },
+        {
+          "option": "--lexicon",
+          "file": "phrase.transport-logistics.tsv"
+        }
+      ]
+    }
+  },
+  "full_models": [
+    {
+      "variant": "current",
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 668698,
+      "sentences": 274369,
+      "tokens": 1309158,
+      "clipped": 1162707,
+      "supplemental_entries": 6,
+      "integrity_check": "ok",
+      "unigram_rows": 113599,
+      "unigram_words": 107385,
+      "text_pairs": 420820,
+      "lexical_pairs": 398659,
+      "database_bytes": 43319296,
+      "database_mib": 41.3125,
+      "new_words_vs_current": 0,
+      "pairs_added_vs_current": 0,
+      "pairs_lost_vs_current": 0,
+      "top_new_words_in_added_pairs": [],
+      "added_pair_examples": [],
+      "lost_pair_examples": [],
+      "database_change_bytes": 0,
+      "database_change_mib": 0.0
+    },
+    {
+      "variant": "anime_safe",
+      "unigrams": 115793,
+      "words": 109582,
+      "bigram_rows": 668732,
+      "sentences": 274369,
+      "tokens": 1308866,
+      "clipped": 1162368,
+      "supplemental_entries": 2539,
+      "integrity_check": "ok",
+      "unigram_rows": 115796,
+      "unigram_words": 109582,
+      "text_pairs": 420867,
+      "lexical_pairs": 398672,
+      "database_bytes": 43507712,
+      "database_mib": 41.4921875,
+      "new_words_vs_current": 2197,
+      "pairs_added_vs_current": 149,
+      "pairs_lost_vs_current": 102,
+      "top_new_words_in_added_pairs": [
+        {
+          "word": "小豪",
+          "pair_contexts": 13
+        },
+        {
+          "word": "借物",
+          "pair_contexts": 11
+        },
+        {
+          "word": "小傑",
+          "pair_contexts": 11
+        },
+        {
+          "word": "白川",
+          "pair_contexts": 11
+        },
+        {
+          "word": "小玲",
+          "pair_contexts": 9
+        },
+        {
+          "word": "小珊",
+          "pair_contexts": 8
+        },
+        {
+          "word": "相信你",
+          "pair_contexts": 6
+        },
+        {
+          "word": "露易絲",
+          "pair_contexts": 5
+        },
+        {
+          "word": "你的名字",
+          "pair_contexts": 5
+        },
+        {
+          "word": "哈比",
+          "pair_contexts": 4
+        },
+        {
+          "word": "投手丘",
+          "pair_contexts": 4
+        },
+        {
+          "word": "懲罰你",
+          "pair_contexts": 3
+        },
+        {
+          "word": "小蘭",
+          "pair_contexts": 3
+        },
+        {
+          "word": "任務完成",
+          "pair_contexts": 3
+        },
+        {
+          "word": "不要回頭",
+          "pair_contexts": 2
+        },
+        {
+          "word": "喜歡你",
+          "pair_contexts": 2
+        },
+        {
+          "word": "招待不周",
+          "pair_contexts": 2
+        },
+        {
+          "word": "小夏",
+          "pair_contexts": 2
+        },
+        {
+          "word": "之旅",
+          "pair_contexts": 2
+        },
+        {
+          "word": "最強",
+          "pair_contexts": 2
+        },
+        {
+          "word": "捉弄人",
+          "pair_contexts": 2
+        },
+        {
+          "word": "找到你了",
+          "pair_contexts": 2
+        },
+        {
+          "word": "只想告訴你",
+          "pair_contexts": 2
+        },
+        {
+          "word": "一人出局",
+          "pair_contexts": 2
+        }
+      ],
+      "added_pair_examples": [
+        [
+          "",
+          "借物"
+        ],
+        [
+          "",
+          "只想告訴你"
+        ],
+        [
+          "",
+          "哈比"
+        ],
+        [
+          "",
+          "小傑"
+        ],
+        [
+          "",
+          "小夏"
+        ],
+        [
+          "",
+          "小玲"
+        ],
+        [
+          "",
+          "小珊"
+        ],
+        [
+          "",
+          "小蘭"
+        ],
+        [
+          "",
+          "小豪"
+        ],
+        [
+          "",
+          "局數"
+        ],
+        [
+          "",
+          "找到你了"
+        ],
+        [
+          "",
+          "物主"
+        ],
+        [
+          "",
+          "白川"
+        ],
+        [
+          "",
+          "露易絲"
+        ],
+        [
+          "一人出局",
+          ""
+        ],
+        [
+          "不",
+          "相信你"
+        ],
+        [
+          "不要回頭",
+          "改"
+        ],
+        [
+          "之旅",
+          "保留"
+        ],
+        [
+          "以為",
+          "小豪"
+        ],
+        [
+          "任務完成",
+          ""
+        ],
+        [
+          "但",
+          "不要回頭"
+        ],
+        [
+          "位於",
+          "白川"
+        ],
+        [
+          "你的名字",
+          ""
+        ],
+        [
+          "你的名字",
+          "沒有"
+        ],
+        [
+          "個人",
+          "小豪"
+        ],
+        [
+          "借物",
+          "先"
+        ],
+        [
+          "借物",
+          "先寫"
+        ],
+        [
+          "借物",
+          "和"
+        ],
+        [
+          "借物",
+          "清單"
+        ],
+        [
+          "借物",
+          "規則"
+        ],
+        [
+          "借物",
+          "記錄"
+        ],
+        [
+          "兼任",
+          "最強"
+        ],
+        [
+          "再請",
+          "物主"
+        ],
+        [
+          "到",
+          "露易絲"
+        ],
+        [
+          "到了",
+          "哈比"
+        ],
+        [
+          "只想告訴你",
+          ""
+        ],
+        [
+          "吃飯",
+          "約成"
+        ],
+        [
+          "哈比",
+          "村"
+        ],
+        [
+          "喜歡你",
+          "寫"
+        ],
+        [
+          "回",
+          "白川"
+        ],
+        [
+          "在",
+          "露易絲"
+        ],
+        [
+          "報",
+          "局數"
+        ],
+        [
+          "學生",
+          "小傑"
+        ],
+        [
+          "宵夜",
+          "約成"
+        ],
+        [
+          "家",
+          "小珊"
+        ],
+        [
+          "寫",
+          "你的名字"
+        ],
+        [
+          "寫成",
+          "哈比"
+        ],
+        [
+          "對",
+          "小傑"
+        ],
+        [
+          "小傑",
+          ""
+        ],
+        [
+          "小傑",
+          "早已"
+        ],
+        [
+          "小傑",
+          "晚"
+        ],
+        [
+          "小傑",
+          "查"
+        ],
+        [
+          "小傑",
+          "的"
+        ],
+        [
+          "小傑",
+          "確認"
+        ],
+        [
+          "小傑",
+          "說"
+        ],
+        [
+          "小夏",
+          ""
+        ],
+        [
+          "小玲",
+          ""
+        ],
+        [
+          "小玲",
+          "一"
+        ],
+        [
+          "小玲",
+          "一直"
+        ],
+        [
+          "小玲",
+          "回"
+        ],
+        [
+          "小玲",
+          "留"
+        ],
+        [
+          "小玲",
+          "的"
+        ],
+        [
+          "小玲",
+          "確認"
+        ],
+        [
+          "小玲",
+          "說"
+        ],
+        [
+          "小珊",
+          ""
+        ],
+        [
+          "小珊",
+          "回覆"
+        ],
+        [
+          "小珊",
+          "留言"
+        ],
+        [
+          "小珊",
+          "追問"
+        ],
+        [
+          "小蘭",
+          ""
+        ],
+        [
+          "小豪",
+          ""
+        ],
+        [
+          "小豪",
+          "一直"
+        ],
+        [
+          "小豪",
+          "不用"
+        ],
+        [
+          "小豪",
+          "你"
+        ],
+        [
+          "小豪",
+          "又"
+        ],
+        [
+          "小豪",
+          "要"
+        ],
+        [
+          "小豪",
+          "負責"
+        ],
+        [
+          "小豪",
+          "進"
+        ],
+        [
+          "小豪",
+          "進來"
+        ],
+        [
+          "尚待",
+          "小傑"
+        ],
+        [
+          "局數",
+          ""
+        ],
+        [
+          "局數",
+          "和"
+        ],
+        [
+          "局數",
+          "如何"
+        ],
+        [
+          "局數",
+          "與"
+        ],
+        [
+          "往後",
+          "借物"
+        ],
+        [
+          "待",
+          "物主"
+        ],
+        [
+          "後段",
+          "局數"
+        ],
+        [
+          "從",
+          "投手丘"
+        ],
+        [
+          "懲罰你",
+          ""
+        ],
+        [
+          "成",
+          "小豪"
+        ],
+        [
+          "我的",
+          "借物"
+        ],
+        [
+          "我願意",
+          "相信你"
+        ],
+        [
+          "才",
+          "相信你"
+        ],
+        [
+          "找到你了",
+          ""
+        ],
+        [
+          "投手丘",
+          ""
+        ],
+        [
+          "投手丘",
+          "走到"
+        ],
+        [
+          "招待不周",
+          ""
+        ],
+        [
+          "指出",
+          "局數"
+        ],
+        [
+          "捉弄人",
+          ""
+        ],
+        [
+          "採",
+          "白川"
+        ],
+        [
+          "提",
+          "你的名字"
+        ]
+      ],
+      "lost_pair_examples": [
+        [
+          "不要",
+          "回頭"
+        ],
+        [
+          "丘",
+          "走到"
+        ],
+        [
+          "主",
+          "在"
+        ],
+        [
+          "主",
+          "操作"
+        ],
+        [
+          "主",
+          "檢查"
+        ],
+        [
+          "主",
+          "處理"
+        ],
+        [
+          "主",
+          "雨"
+        ],
+        [
+          "之",
+          "旅"
+        ],
+        [
+          "人",
+          "出局"
+        ],
+        [
+          "任務",
+          "完成"
+        ],
+        [
+          "位於",
+          "白"
+        ],
+        [
+          "你的",
+          "名字"
+        ],
+        [
+          "個人",
+          "小"
+        ],
+        [
+          "借",
+          "物"
+        ],
+        [
+          "傑",
+          "早已"
+        ],
+        [
+          "傑",
+          "晚"
+        ],
+        [
+          "傑",
+          "查"
+        ],
+        [
+          "傑",
+          "確認"
+        ],
+        [
+          "兼任",
+          "最"
+        ],
+        [
+          "再請",
+          "物"
+        ],
+        [
+          "到",
+          "露"
+        ],
+        [
+          "到了",
+          "哈"
+        ],
+        [
+          "吃飯",
+          "約"
+        ],
+        [
+          "名字",
+          "沒有"
+        ],
+        [
+          "哈",
+          "比"
+        ],
+        [
+          "喜歡",
+          "你"
+        ],
+        [
+          "回",
+          "白"
+        ],
+        [
+          "回頭",
+          "改"
+        ],
+        [
+          "在",
+          "露"
+        ],
+        [
+          "報",
+          "局"
+        ],
+        [
+          "學生",
+          "小"
+        ],
+        [
+          "宵夜",
+          "約"
+        ],
+        [
+          "家",
+          "小"
+        ],
+        [
+          "小",
+          "傑"
+        ],
+        [
+          "小",
+          "夏"
+        ],
+        [
+          "小",
+          "玲"
+        ],
+        [
+          "小",
+          "珊"
+        ],
+        [
+          "小",
+          "蘭"
+        ],
+        [
+          "小",
+          "豪"
+        ],
+        [
+          "尚待",
+          "小"
+        ],
+        [
+          "局",
+          "數"
+        ],
+        [
+          "川",
+          "村"
+        ],
+        [
+          "川",
+          "鄉"
+        ],
+        [
+          "強敵",
+          "人"
+        ],
+        [
+          "往後",
+          "借"
+        ],
+        [
+          "待",
+          "物"
+        ],
+        [
+          "後段",
+          "局"
+        ],
+        [
+          "懲罰",
+          "你"
+        ],
+        [
+          "成",
+          "跨"
+        ],
+        [
+          "我的",
+          "借"
+        ],
+        [
+          "投手",
+          "丘"
+        ],
+        [
+          "招待",
+          "不"
+        ],
+        [
+          "指出",
+          "局"
+        ],
+        [
+          "捉弄",
+          "人"
+        ],
+        [
+          "採",
+          "白"
+        ],
+        [
+          "提",
+          "你的"
+        ],
+        [
+          "提",
+          "白"
+        ],
+        [
+          "故意",
+          "懲罰"
+        ],
+        [
+          "數",
+          "如何"
+        ],
+        [
+          "旅",
+          "保留"
+        ],
+        [
+          "易",
+          "絲"
+        ],
+        [
+          "最",
+          "強敵"
+        ],
+        [
+          "會",
+          "捉弄"
+        ],
+        [
+          "未能",
+          "約"
+        ],
+        [
+          "末班車",
+          "任務"
+        ],
+        [
+          "每次",
+          "借"
+        ],
+        [
+          "比",
+          "村"
+        ],
+        [
+          "消失",
+          "懲罰"
+        ],
+        [
+          "物",
+          "主"
+        ],
+        [
+          "物",
+          "先寫"
+        ],
+        [
+          "物",
+          "清單"
+        ],
+        [
+          "物",
+          "規則"
+        ],
+        [
+          "物",
+          "記錄"
+        ],
+        [
+          "玲",
+          "一"
+        ],
+        [
+          "玲",
+          "一直"
+        ],
+        [
+          "玲",
+          "留"
+        ],
+        [
+          "珊",
+          "追問"
+        ],
+        [
+          "用",
+          "白"
+        ],
+        [
+          "由",
+          "物"
+        ],
+        [
+          "白",
+          "川"
+        ],
+        [
+          "的",
+          "借"
+        ],
+        [
+          "的",
+          "露"
+        ],
+        [
+          "相信",
+          "你"
+        ],
+        [
+          "相信",
+          "你有"
+        ],
+        [
+          "確認",
+          "物"
+        ],
+        [
+          "稱",
+          "白"
+        ],
+        [
+          "約",
+          "成"
+        ],
+        [
+          "絲",
+          "湖"
+        ],
+        [
+          "群組",
+          "任務"
+        ],
+        [
+          "請",
+          "物"
+        ],
+        [
+          "豪",
+          "一直"
+        ],
+        [
+          "豪",
+          "不用"
+        ],
+        [
+          "豪",
+          "你"
+        ],
+        [
+          "豪",
+          "又"
+        ],
+        [
+          "豪",
+          "進"
+        ],
+        [
+          "豪",
+          "進來"
+        ],
+        [
+          "走上",
+          "投手"
+        ],
+        [
+          "那",
+          "白"
+        ],
+        [
+          "都沒",
+          "約"
+        ],
+        [
+          "關鍵",
+          "局"
+        ]
+      ],
+      "database_change_bytes": 188416,
+      "database_change_mib": 0.1796875
+    },
+    {
+      "variant": "other_28_safe",
+      "unigrams": 116213,
+      "words": 110001,
+      "bigram_rows": 668777,
+      "sentences": 274369,
+      "tokens": 1307985,
+      "clipped": 1161249,
+      "supplemental_entries": 4015,
+      "integrity_check": "ok",
+      "unigram_rows": 116216,
+      "unigram_words": 110001,
+      "text_pairs": 421105,
+      "lexical_pairs": 398879,
+      "database_bytes": 43573248,
+      "database_mib": 41.5546875,
+      "new_words_vs_current": 2616,
+      "pairs_added_vs_current": 990,
+      "pairs_lost_vs_current": 705,
+      "top_new_words_in_added_pairs": [
+        {
+          "word": "貼文",
+          "pair_contexts": 228
+        },
+        {
+          "word": "不確定",
+          "pair_contexts": 192
+        },
+        {
+          "word": "排程",
+          "pair_contexts": 91
+        },
+        {
+          "word": "會議紀錄",
+          "pair_contexts": 69
+        },
+        {
+          "word": "標註",
+          "pair_contexts": 32
+        },
+        {
+          "word": "維運",
+          "pair_contexts": 28
+        },
+        {
+          "word": "簽核",
+          "pair_contexts": 20
+        },
+        {
+          "word": "期限內",
+          "pair_contexts": 19
+        },
+        {
+          "word": "不可靠",
+          "pair_contexts": 18
+        },
+        {
+          "word": "成果報告",
+          "pair_contexts": 17
+        },
+        {
+          "word": "宅配",
+          "pair_contexts": 14
+        },
+        {
+          "word": "電動機車",
+          "pair_contexts": 13
+        },
+        {
+          "word": "封裝",
+          "pair_contexts": 13
+        },
+        {
+          "word": "固定床",
+          "pair_contexts": 12
+        },
+        {
+          "word": "電子發票",
+          "pair_contexts": 12
+        },
+        {
+          "word": "量具",
+          "pair_contexts": 11
+        },
+        {
+          "word": "前置",
+          "pair_contexts": 11
+        },
+        {
+          "word": "往返時間",
+          "pair_contexts": 9
+        },
+        {
+          "word": "接案",
+          "pair_contexts": 7
+        },
+        {
+          "word": "線上客服",
+          "pair_contexts": 6
+        },
+        {
+          "word": "課綱",
+          "pair_contexts": 6
+        },
+        {
+          "word": "網購",
+          "pair_contexts": 6
+        },
+        {
+          "word": "地方史",
+          "pair_contexts": 6
+        },
+        {
+          "word": "網路設備",
+          "pair_contexts": 5
+        },
+        {
+          "word": "問題解決",
+          "pair_contexts": 4
+        },
+        {
+          "word": "品質管理",
+          "pair_contexts": 4
+        },
+        {
+          "word": "應收帳款",
+          "pair_contexts": 4
+        },
+        {
+          "word": "郵件系統",
+          "pair_contexts": 4
+        },
+        {
+          "word": "測試機",
+          "pair_contexts": 4
+        },
+        {
+          "word": "網路延遲",
+          "pair_contexts": 4
+        }
+      ],
+      "added_pair_examples": [
+        [
+          "",
+          "不確定"
+        ],
+        [
+          "",
+          "品質管理"
+        ],
+        [
+          "",
+          "固定床"
+        ],
+        [
+          "",
+          "宅配"
+        ],
+        [
+          "",
+          "封裝"
+        ],
+        [
+          "",
+          "局數"
+        ],
+        [
+          "",
+          "成果報告"
+        ],
+        [
+          "",
+          "排程"
+        ],
+        [
+          "",
+          "接案"
+        ],
+        [
+          "",
+          "改善措施"
+        ],
+        [
+          "",
+          "會議紀錄"
+        ],
+        [
+          "",
+          "期限內"
+        ],
+        [
+          "",
+          "簽核"
+        ],
+        [
+          "",
+          "維運"
+        ],
+        [
+          "",
+          "網路延遲"
+        ],
+        [
+          "",
+          "網路設備"
+        ],
+        [
+          "",
+          "線上客服"
+        ],
+        [
+          "",
+          "貼文"
+        ],
+        [
+          "",
+          "超商取貨"
+        ],
+        [
+          "",
+          "跨領域"
+        ],
+        [
+          "",
+          "邊坡"
+        ],
+        [
+          "",
+          "量具"
+        ],
+        [
+          "",
+          "電子發票"
+        ],
+        [
+          "一向",
+          "不可靠"
+        ],
+        [
+          "一時",
+          "不確定"
+        ],
+        [
+          "一次性密碼",
+          ""
+        ],
+        [
+          "一段",
+          "短影片"
+        ],
+        [
+          "一班",
+          "不確定"
+        ],
+        [
+          "一直",
+          "標註"
+        ],
+        [
+          "一篇",
+          "貼文"
+        ],
+        [
+          "一般",
+          "表面處理"
+        ],
+        [
+          "上次",
+          "會議紀錄"
+        ],
+        [
+          "上週",
+          "簽核"
+        ],
+        [
+          "下午",
+          "不確定"
+        ],
+        [
+          "不可靠",
+          ""
+        ],
+        [
+          "不可靠",
+          "的"
+        ],
+        [
+          "不可靠",
+          "行程"
+        ],
+        [
+          "不同",
+          "郵件系統"
+        ],
+        [
+          "不把",
+          "電動機車"
+        ],
+        [
+          "不是",
+          "宅配"
+        ],
+        [
+          "不是",
+          "網路延遲"
+        ],
+        [
+          "不用",
+          "從眾"
+        ],
+        [
+          "不確定",
+          ""
+        ],
+        [
+          "不確定",
+          "一個字"
+        ],
+        [
+          "不確定",
+          "上次"
+        ],
+        [
+          "不確定",
+          "之處"
+        ],
+        [
+          "不確定",
+          "也"
+        ],
+        [
+          "不確定",
+          "人數"
+        ],
+        [
+          "不確定",
+          "他"
+        ],
+        [
+          "不確定",
+          "位置"
+        ],
+        [
+          "不確定",
+          "住"
+        ],
+        [
+          "不確定",
+          "你想"
+        ],
+        [
+          "不確定",
+          "便"
+        ],
+        [
+          "不確定",
+          "內容"
+        ],
+        [
+          "不確定",
+          "出口"
+        ],
+        [
+          "不確定",
+          "分"
+        ],
+        [
+          "不確定",
+          "分開"
+        ],
+        [
+          "不確定",
+          "判斷"
+        ],
+        [
+          "不確定",
+          "前"
+        ],
+        [
+          "不確定",
+          "即可"
+        ],
+        [
+          "不確定",
+          "取回"
+        ],
+        [
+          "不確定",
+          "哪一"
+        ],
+        [
+          "不確定",
+          "哪些"
+        ],
+        [
+          "不確定",
+          "哪裡"
+        ],
+        [
+          "不確定",
+          "因素"
+        ],
+        [
+          "不確定",
+          "她"
+        ],
+        [
+          "不確定",
+          "它"
+        ],
+        [
+          "不確定",
+          "寫成"
+        ],
+        [
+          "不確定",
+          "對方"
+        ],
+        [
+          "不確定",
+          "就"
+        ],
+        [
+          "不確定",
+          "就不"
+        ],
+        [
+          "不確定",
+          "就是"
+        ],
+        [
+          "不確定",
+          "就算"
+        ],
+        [
+          "不確定",
+          "尺寸"
+        ],
+        [
+          "不確定",
+          "屬於"
+        ],
+        [
+          "不確定",
+          "市區"
+        ],
+        [
+          "不確定",
+          "年"
+        ],
+        [
+          "不確定",
+          "幾點"
+        ],
+        [
+          "不確定",
+          "很"
+        ],
+        [
+          "不確定",
+          "從"
+        ],
+        [
+          "不確定",
+          "性"
+        ],
+        [
+          "不確定",
+          "您"
+        ],
+        [
+          "不確定",
+          "情況"
+        ],
+        [
+          "不確定",
+          "換成"
+        ],
+        [
+          "不確定",
+          "摔倒"
+        ],
+        [
+          "不確定",
+          "早上"
+        ],
+        [
+          "不確定",
+          "是不是"
+        ],
+        [
+          "不確定",
+          "是否"
+        ],
+        [
+          "不確定",
+          "時"
+        ],
+        [
+          "不確定",
+          "會"
+        ],
+        [
+          "不確定",
+          "有沒有"
+        ],
+        [
+          "不確定",
+          "檢查"
+        ],
+        [
+          "不確定",
+          "營業"
+        ],
+        [
+          "不確定",
+          "現在"
+        ],
+        [
+          "不確定",
+          "現況"
+        ],
+        [
+          "不確定",
+          "理解"
+        ],
+        [
+          "不確定",
+          "留言"
+        ],
+        [
+          "不確定",
+          "當"
+        ],
+        [
+          "不確定",
+          "當成"
+        ],
+        [
+          "不確定",
+          "的"
+        ]
+      ],
+      "lost_pair_examples": [
+        [
+          "",
+          "宅"
+        ],
+        [
+          "",
+          "維"
+        ],
+        [
+          "",
+          "超商"
+        ],
+        [
+          "一向",
+          "不"
+        ],
+        [
+          "一時",
+          "不"
+        ],
+        [
+          "一班",
+          "不"
+        ],
+        [
+          "一直",
+          "標"
+        ],
+        [
+          "一篇",
+          "貼"
+        ],
+        [
+          "一般",
+          "表面"
+        ],
+        [
+          "上週",
+          "簽"
+        ],
+        [
+          "不",
+          "可靠"
+        ],
+        [
+          "不",
+          "確定"
+        ],
+        [
+          "不",
+          "確定會"
+        ],
+        [
+          "不把",
+          "電動機"
+        ],
+        [
+          "不是",
+          "宅"
+        ],
+        [
+          "不是",
+          "網路"
+        ],
+        [
+          "不要在",
+          "貼"
+        ],
+        [
+          "不談",
+          "貼"
+        ],
+        [
+          "主辦",
+          "貼"
+        ],
+        [
+          "也在",
+          "期限"
+        ],
+        [
+          "事項",
+          "前"
+        ],
+        [
+          "二手",
+          "電動機"
+        ],
+        [
+          "交叉",
+          "驗證"
+        ],
+        [
+          "交接",
+          "會議"
+        ],
+        [
+          "交給",
+          "維"
+        ],
+        [
+          "交通",
+          "規劃"
+        ],
+        [
+          "今天",
+          "宅"
+        ],
+        [
+          "仍在",
+          "期限"
+        ],
+        [
+          "付款",
+          "簽"
+        ],
+        [
+          "代表",
+          "旅行"
+        ],
+        [
+          "以",
+          "應"
+        ],
+        [
+          "以上",
+          "會議"
+        ],
+        [
+          "以及",
+          "電子"
+        ],
+        [
+          "但",
+          "簽"
+        ],
+        [
+          "但",
+          "貼"
+        ],
+        [
+          "作",
+          "前"
+        ],
+        [
+          "作出",
+          "不"
+        ],
+        [
+          "作為",
+          "排"
+        ],
+        [
+          "作者",
+          "貼"
+        ],
+        [
+          "你的",
+          "會議"
+        ],
+        [
+          "你的",
+          "貼"
+        ],
+        [
+          "使用者",
+          "貼"
+        ],
+        [
+          "來源",
+          "貼"
+        ],
+        [
+          "來看",
+          "電動機"
+        ],
+        [
+          "來自",
+          "排"
+        ],
+        [
+          "依",
+          "會議"
+        ],
+        [
+          "依舊",
+          "貼"
+        ],
+        [
+          "依賴",
+          "不"
+        ],
+        [
+          "依賴",
+          "貼"
+        ],
+        [
+          "保留",
+          "貼"
+        ],
+        [
+          "信件",
+          "封"
+        ],
+        [
+          "修正",
+          "貼"
+        ],
+        [
+          "倉庫",
+          "品質"
+        ],
+        [
+          "做",
+          "成果"
+        ],
+        [
+          "做",
+          "排"
+        ],
+        [
+          "做事",
+          "不"
+        ],
+        [
+          "停止",
+          "排"
+        ],
+        [
+          "傳",
+          "迷"
+        ],
+        [
+          "傳給",
+          "不"
+        ],
+        [
+          "像",
+          "地方"
+        ],
+        [
+          "像",
+          "會議"
+        ],
+        [
+          "先前",
+          "貼"
+        ],
+        [
+          "先找",
+          "簽"
+        ],
+        [
+          "先把",
+          "貼"
+        ],
+        [
+          "先請",
+          "維"
+        ],
+        [
+          "免",
+          "運"
+        ],
+        [
+          "內",
+          "以"
+        ],
+        [
+          "內",
+          "入"
+        ],
+        [
+          "內",
+          "同時"
+        ],
+        [
+          "內",
+          "完整"
+        ],
+        [
+          "內",
+          "都能"
+        ],
+        [
+          "內",
+          "針對"
+        ],
+        [
+          "內部",
+          "稽核"
+        ],
+        [
+          "其實",
+          "維"
+        ],
+        [
+          "具",
+          "位置"
+        ],
+        [
+          "具",
+          "使用"
+        ],
+        [
+          "具",
+          "則是"
+        ],
+        [
+          "再把",
+          "不"
+        ],
+        [
+          "再次",
+          "標"
+        ],
+        [
+          "再聯絡",
+          "維"
+        ],
+        [
+          "冠宇",
+          "貼"
+        ],
+        [
+          "分析",
+          "嗎"
+        ],
+        [
+          "分開",
+          "標"
+        ],
+        [
+          "分類",
+          "不"
+        ],
+        [
+          "列為",
+          "不"
+        ],
+        [
+          "別在",
+          "會議"
+        ],
+        [
+          "別在",
+          "貼"
+        ],
+        [
+          "刪除",
+          "排"
+        ],
+        [
+          "刪除",
+          "貼"
+        ],
+        [
+          "到",
+          "會議"
+        ],
+        [
+          "則",
+          "貼"
+        ],
+        [
+          "前",
+          "置"
+        ],
+        [
+          "剛才在",
+          "貼"
+        ],
+        [
+          "加上",
+          "不"
+        ],
+        [
+          "加入",
+          "不"
+        ],
+        [
+          "勛",
+          "貼"
+        ],
+        [
+          "勳",
+          "貼"
+        ],
+        [
+          "匿名",
+          "貼"
+        ],
+        [
+          "協助",
+          "成果"
+        ],
+        [
+          "協議",
+          "會議"
+        ]
+      ],
+      "database_change_bytes": 253952,
+      "database_change_mib": 0.2421875
+    },
+    {
+      "variant": "all_29_safe",
+      "unigrams": 118403,
+      "words": 112191,
+      "bigram_rows": 668808,
+      "sentences": 274369,
+      "tokens": 1307696,
+      "clipped": 1160911,
+      "supplemental_entries": 6548,
+      "integrity_check": "ok",
+      "unigram_rows": 118406,
+      "unigram_words": 112191,
+      "text_pairs": 421154,
+      "lexical_pairs": 398896,
+      "database_bytes": 43745280,
+      "database_mib": 41.71875,
+      "new_words_vs_current": 4806,
+      "pairs_added_vs_current": 1134,
+      "pairs_lost_vs_current": 800,
+      "top_new_words_in_added_pairs": [
+        {
+          "word": "貼文",
+          "pair_contexts": 228
+        },
+        {
+          "word": "不確定",
+          "pair_contexts": 192
+        },
+        {
+          "word": "排程",
+          "pair_contexts": 91
+        },
+        {
+          "word": "會議紀錄",
+          "pair_contexts": 69
+        },
+        {
+          "word": "標註",
+          "pair_contexts": 32
+        },
+        {
+          "word": "維運",
+          "pair_contexts": 28
+        },
+        {
+          "word": "簽核",
+          "pair_contexts": 20
+        },
+        {
+          "word": "期限內",
+          "pair_contexts": 19
+        },
+        {
+          "word": "不可靠",
+          "pair_contexts": 18
+        },
+        {
+          "word": "成果報告",
+          "pair_contexts": 17
+        },
+        {
+          "word": "宅配",
+          "pair_contexts": 14
+        },
+        {
+          "word": "小豪",
+          "pair_contexts": 13
+        },
+        {
+          "word": "電動機車",
+          "pair_contexts": 13
+        },
+        {
+          "word": "封裝",
+          "pair_contexts": 13
+        },
+        {
+          "word": "固定床",
+          "pair_contexts": 12
+        },
+        {
+          "word": "電子發票",
+          "pair_contexts": 12
+        },
+        {
+          "word": "小傑",
+          "pair_contexts": 11
+        },
+        {
+          "word": "量具",
+          "pair_contexts": 11
+        },
+        {
+          "word": "白川",
+          "pair_contexts": 11
+        },
+        {
+          "word": "前置",
+          "pair_contexts": 11
+        },
+        {
+          "word": "借物",
+          "pair_contexts": 11
+        },
+        {
+          "word": "小玲",
+          "pair_contexts": 9
+        },
+        {
+          "word": "往返時間",
+          "pair_contexts": 9
+        },
+        {
+          "word": "小珊",
+          "pair_contexts": 8
+        },
+        {
+          "word": "接案",
+          "pair_contexts": 7
+        },
+        {
+          "word": "相信你",
+          "pair_contexts": 6
+        },
+        {
+          "word": "線上客服",
+          "pair_contexts": 6
+        },
+        {
+          "word": "課綱",
+          "pair_contexts": 6
+        },
+        {
+          "word": "網購",
+          "pair_contexts": 6
+        },
+        {
+          "word": "地方史",
+          "pair_contexts": 6
+        }
+      ],
+      "added_pair_examples": [
+        [
+          "",
+          "不確定"
+        ],
+        [
+          "",
+          "他是"
+        ],
+        [
+          "",
+          "借物"
+        ],
+        [
+          "",
+          "只想告訴你"
+        ],
+        [
+          "",
+          "品質管理"
+        ],
+        [
+          "",
+          "哈比"
+        ],
+        [
+          "",
+          "固定床"
+        ],
+        [
+          "",
+          "宅配"
+        ],
+        [
+          "",
+          "封裝"
+        ],
+        [
+          "",
+          "小傑"
+        ],
+        [
+          "",
+          "小夏"
+        ],
+        [
+          "",
+          "小玲"
+        ],
+        [
+          "",
+          "小珊"
+        ],
+        [
+          "",
+          "小蘭"
+        ],
+        [
+          "",
+          "小豪"
+        ],
+        [
+          "",
+          "局數"
+        ],
+        [
+          "",
+          "成果報告"
+        ],
+        [
+          "",
+          "找到你了"
+        ],
+        [
+          "",
+          "排程"
+        ],
+        [
+          "",
+          "接案"
+        ],
+        [
+          "",
+          "改善措施"
+        ],
+        [
+          "",
+          "會議紀錄"
+        ],
+        [
+          "",
+          "期限內"
+        ],
+        [
+          "",
+          "物主"
+        ],
+        [
+          "",
+          "白川"
+        ],
+        [
+          "",
+          "簽核"
+        ],
+        [
+          "",
+          "維運"
+        ],
+        [
+          "",
+          "網路延遲"
+        ],
+        [
+          "",
+          "網路設備"
+        ],
+        [
+          "",
+          "線上客服"
+        ],
+        [
+          "",
+          "貼文"
+        ],
+        [
+          "",
+          "超商取貨"
+        ],
+        [
+          "",
+          "跨領域"
+        ],
+        [
+          "",
+          "邊坡"
+        ],
+        [
+          "",
+          "量具"
+        ],
+        [
+          "",
+          "電子發票"
+        ],
+        [
+          "",
+          "露易絲"
+        ],
+        [
+          "一人出局",
+          ""
+        ],
+        [
+          "一向",
+          "不可靠"
+        ],
+        [
+          "一時",
+          "不確定"
+        ],
+        [
+          "一次性密碼",
+          ""
+        ],
+        [
+          "一段",
+          "短影片"
+        ],
+        [
+          "一班",
+          "不確定"
+        ],
+        [
+          "一直",
+          "標註"
+        ],
+        [
+          "一篇",
+          "貼文"
+        ],
+        [
+          "一般",
+          "表面處理"
+        ],
+        [
+          "上次",
+          "會議紀錄"
+        ],
+        [
+          "上週",
+          "簽核"
+        ],
+        [
+          "下午",
+          "不確定"
+        ],
+        [
+          "不",
+          "相信你"
+        ],
+        [
+          "不可靠",
+          ""
+        ],
+        [
+          "不可靠",
+          "的"
+        ],
+        [
+          "不可靠",
+          "行程"
+        ],
+        [
+          "不同",
+          "郵件系統"
+        ],
+        [
+          "不把",
+          "電動機車"
+        ],
+        [
+          "不是",
+          "宅配"
+        ],
+        [
+          "不是",
+          "網路延遲"
+        ],
+        [
+          "不用",
+          "從眾"
+        ],
+        [
+          "不知",
+          "他是"
+        ],
+        [
+          "不知道",
+          "他是"
+        ],
+        [
+          "不確定",
+          ""
+        ],
+        [
+          "不確定",
+          "一個字"
+        ],
+        [
+          "不確定",
+          "上次"
+        ],
+        [
+          "不確定",
+          "之處"
+        ],
+        [
+          "不確定",
+          "也"
+        ],
+        [
+          "不確定",
+          "人數"
+        ],
+        [
+          "不確定",
+          "他"
+        ],
+        [
+          "不確定",
+          "位置"
+        ],
+        [
+          "不確定",
+          "住"
+        ],
+        [
+          "不確定",
+          "你想"
+        ],
+        [
+          "不確定",
+          "便"
+        ],
+        [
+          "不確定",
+          "內容"
+        ],
+        [
+          "不確定",
+          "出口"
+        ],
+        [
+          "不確定",
+          "分"
+        ],
+        [
+          "不確定",
+          "分開"
+        ],
+        [
+          "不確定",
+          "判斷"
+        ],
+        [
+          "不確定",
+          "前"
+        ],
+        [
+          "不確定",
+          "即可"
+        ],
+        [
+          "不確定",
+          "取回"
+        ],
+        [
+          "不確定",
+          "哪一"
+        ],
+        [
+          "不確定",
+          "哪些"
+        ],
+        [
+          "不確定",
+          "哪裡"
+        ],
+        [
+          "不確定",
+          "因素"
+        ],
+        [
+          "不確定",
+          "她"
+        ],
+        [
+          "不確定",
+          "它"
+        ],
+        [
+          "不確定",
+          "寫成"
+        ],
+        [
+          "不確定",
+          "對方"
+        ],
+        [
+          "不確定",
+          "就"
+        ],
+        [
+          "不確定",
+          "就不"
+        ],
+        [
+          "不確定",
+          "就是"
+        ],
+        [
+          "不確定",
+          "就算"
+        ],
+        [
+          "不確定",
+          "尺寸"
+        ],
+        [
+          "不確定",
+          "屬於"
+        ],
+        [
+          "不確定",
+          "市區"
+        ],
+        [
+          "不確定",
+          "年"
+        ],
+        [
+          "不確定",
+          "幾點"
+        ],
+        [
+          "不確定",
+          "很"
+        ],
+        [
+          "不確定",
+          "從"
+        ],
+        [
+          "不確定",
+          "性"
+        ],
+        [
+          "不確定",
+          "您"
+        ]
+      ],
+      "lost_pair_examples": [
+        [
+          "",
+          "宅"
+        ],
+        [
+          "",
+          "維"
+        ],
+        [
+          "",
+          "超商"
+        ],
+        [
+          "一向",
+          "不"
+        ],
+        [
+          "一時",
+          "不"
+        ],
+        [
+          "一班",
+          "不"
+        ],
+        [
+          "一直",
+          "標"
+        ],
+        [
+          "一篇",
+          "貼"
+        ],
+        [
+          "一般",
+          "表面"
+        ],
+        [
+          "上週",
+          "簽"
+        ],
+        [
+          "不",
+          "可靠"
+        ],
+        [
+          "不",
+          "確定"
+        ],
+        [
+          "不",
+          "確定會"
+        ],
+        [
+          "不把",
+          "電動機"
+        ],
+        [
+          "不是",
+          "宅"
+        ],
+        [
+          "不是",
+          "網路"
+        ],
+        [
+          "不要",
+          "回頭"
+        ],
+        [
+          "不要在",
+          "貼"
+        ],
+        [
+          "不談",
+          "貼"
+        ],
+        [
+          "丘",
+          "走到"
+        ],
+        [
+          "主",
+          "在"
+        ],
+        [
+          "主",
+          "操作"
+        ],
+        [
+          "主",
+          "檢查"
+        ],
+        [
+          "主",
+          "處理"
+        ],
+        [
+          "主",
+          "雨"
+        ],
+        [
+          "主辦",
+          "貼"
+        ],
+        [
+          "之",
+          "旅"
+        ],
+        [
+          "也在",
+          "期限"
+        ],
+        [
+          "事項",
+          "前"
+        ],
+        [
+          "二手",
+          "電動機"
+        ],
+        [
+          "交叉",
+          "驗證"
+        ],
+        [
+          "交接",
+          "會議"
+        ],
+        [
+          "交給",
+          "維"
+        ],
+        [
+          "交通",
+          "規劃"
+        ],
+        [
+          "人",
+          "出局"
+        ],
+        [
+          "今天",
+          "宅"
+        ],
+        [
+          "仍在",
+          "期限"
+        ],
+        [
+          "他",
+          "是"
+        ],
+        [
+          "付款",
+          "簽"
+        ],
+        [
+          "代表",
+          "旅行"
+        ],
+        [
+          "以",
+          "應"
+        ],
+        [
+          "以上",
+          "會議"
+        ],
+        [
+          "以及",
+          "電子"
+        ],
+        [
+          "任務",
+          "完成"
+        ],
+        [
+          "但",
+          "簽"
+        ],
+        [
+          "但",
+          "貼"
+        ],
+        [
+          "位於",
+          "白"
+        ],
+        [
+          "作",
+          "前"
+        ],
+        [
+          "作出",
+          "不"
+        ],
+        [
+          "作為",
+          "排"
+        ],
+        [
+          "作者",
+          "貼"
+        ],
+        [
+          "你的",
+          "名字"
+        ],
+        [
+          "你的",
+          "會議"
+        ],
+        [
+          "你的",
+          "貼"
+        ],
+        [
+          "使用者",
+          "貼"
+        ],
+        [
+          "來源",
+          "貼"
+        ],
+        [
+          "來看",
+          "電動機"
+        ],
+        [
+          "來自",
+          "排"
+        ],
+        [
+          "依",
+          "會議"
+        ],
+        [
+          "依舊",
+          "貼"
+        ],
+        [
+          "依賴",
+          "不"
+        ],
+        [
+          "依賴",
+          "貼"
+        ],
+        [
+          "保留",
+          "貼"
+        ],
+        [
+          "信件",
+          "封"
+        ],
+        [
+          "修正",
+          "貼"
+        ],
+        [
+          "倉庫",
+          "品質"
+        ],
+        [
+          "個人",
+          "小"
+        ],
+        [
+          "借",
+          "物"
+        ],
+        [
+          "做",
+          "成果"
+        ],
+        [
+          "做",
+          "排"
+        ],
+        [
+          "做事",
+          "不"
+        ],
+        [
+          "停止",
+          "排"
+        ],
+        [
+          "傑",
+          "早已"
+        ],
+        [
+          "傑",
+          "晚"
+        ],
+        [
+          "傑",
+          "查"
+        ],
+        [
+          "傑",
+          "確認"
+        ],
+        [
+          "傳",
+          "迷"
+        ],
+        [
+          "傳給",
+          "不"
+        ],
+        [
+          "像",
+          "地方"
+        ],
+        [
+          "像",
+          "會議"
+        ],
+        [
+          "先前",
+          "貼"
+        ],
+        [
+          "先找",
+          "簽"
+        ],
+        [
+          "先把",
+          "貼"
+        ],
+        [
+          "先請",
+          "維"
+        ],
+        [
+          "免",
+          "運"
+        ],
+        [
+          "內",
+          "以"
+        ],
+        [
+          "內",
+          "入"
+        ],
+        [
+          "內",
+          "同時"
+        ],
+        [
+          "內",
+          "完整"
+        ],
+        [
+          "內",
+          "都能"
+        ],
+        [
+          "內",
+          "針對"
+        ],
+        [
+          "內部",
+          "稽核"
+        ],
+        [
+          "其實",
+          "維"
+        ],
+        [
+          "具",
+          "位置"
+        ],
+        [
+          "具",
+          "使用"
+        ],
+        [
+          "具",
+          "則是"
+        ],
+        [
+          "兼任",
+          "最"
+        ],
+        [
+          "再把",
+          "不"
+        ],
+        [
+          "再次",
+          "標"
+        ],
+        [
+          "再聯絡",
+          "維"
+        ]
+      ],
+      "database_change_bytes": 425984,
+      "database_change_mib": 0.40625
+    },
+    {
+      "variant": "anime_direct",
+      "unigrams": 115793,
+      "words": 109582,
+      "bigram_rows": 668732,
+      "sentences": 274369,
+      "tokens": 1308866,
+      "clipped": 1162368,
+      "supplemental_entries": 2539,
+      "integrity_check": "ok",
+      "unigram_rows": 115796,
+      "unigram_words": 109582,
+      "text_pairs": 420867,
+      "lexical_pairs": 398672,
+      "database_bytes": 43507712,
+      "database_mib": 41.4921875,
+      "new_words_vs_current": 2197,
+      "pairs_added_vs_current": 149,
+      "pairs_lost_vs_current": 102,
+      "top_new_words_in_added_pairs": [
+        {
+          "word": "小豪",
+          "pair_contexts": 13
+        },
+        {
+          "word": "借物",
+          "pair_contexts": 11
+        },
+        {
+          "word": "小傑",
+          "pair_contexts": 11
+        },
+        {
+          "word": "白川",
+          "pair_contexts": 11
+        },
+        {
+          "word": "小玲",
+          "pair_contexts": 9
+        },
+        {
+          "word": "小珊",
+          "pair_contexts": 8
+        },
+        {
+          "word": "相信你",
+          "pair_contexts": 6
+        },
+        {
+          "word": "露易絲",
+          "pair_contexts": 5
+        },
+        {
+          "word": "你的名字",
+          "pair_contexts": 5
+        },
+        {
+          "word": "哈比",
+          "pair_contexts": 4
+        },
+        {
+          "word": "投手丘",
+          "pair_contexts": 4
+        },
+        {
+          "word": "懲罰你",
+          "pair_contexts": 3
+        },
+        {
+          "word": "小蘭",
+          "pair_contexts": 3
+        },
+        {
+          "word": "任務完成",
+          "pair_contexts": 3
+        },
+        {
+          "word": "不要回頭",
+          "pair_contexts": 2
+        },
+        {
+          "word": "喜歡你",
+          "pair_contexts": 2
+        },
+        {
+          "word": "招待不周",
+          "pair_contexts": 2
+        },
+        {
+          "word": "小夏",
+          "pair_contexts": 2
+        },
+        {
+          "word": "之旅",
+          "pair_contexts": 2
+        },
+        {
+          "word": "最強",
+          "pair_contexts": 2
+        },
+        {
+          "word": "捉弄人",
+          "pair_contexts": 2
+        },
+        {
+          "word": "找到你了",
+          "pair_contexts": 2
+        },
+        {
+          "word": "只想告訴你",
+          "pair_contexts": 2
+        },
+        {
+          "word": "一人出局",
+          "pair_contexts": 2
+        }
+      ],
+      "added_pair_examples": [
+        [
+          "",
+          "借物"
+        ],
+        [
+          "",
+          "只想告訴你"
+        ],
+        [
+          "",
+          "哈比"
+        ],
+        [
+          "",
+          "小傑"
+        ],
+        [
+          "",
+          "小夏"
+        ],
+        [
+          "",
+          "小玲"
+        ],
+        [
+          "",
+          "小珊"
+        ],
+        [
+          "",
+          "小蘭"
+        ],
+        [
+          "",
+          "小豪"
+        ],
+        [
+          "",
+          "局數"
+        ],
+        [
+          "",
+          "找到你了"
+        ],
+        [
+          "",
+          "物主"
+        ],
+        [
+          "",
+          "白川"
+        ],
+        [
+          "",
+          "露易絲"
+        ],
+        [
+          "一人出局",
+          ""
+        ],
+        [
+          "不",
+          "相信你"
+        ],
+        [
+          "不要回頭",
+          "改"
+        ],
+        [
+          "之旅",
+          "保留"
+        ],
+        [
+          "以為",
+          "小豪"
+        ],
+        [
+          "任務完成",
+          ""
+        ],
+        [
+          "但",
+          "不要回頭"
+        ],
+        [
+          "位於",
+          "白川"
+        ],
+        [
+          "你的名字",
+          ""
+        ],
+        [
+          "你的名字",
+          "沒有"
+        ],
+        [
+          "個人",
+          "小豪"
+        ],
+        [
+          "借物",
+          "先"
+        ],
+        [
+          "借物",
+          "先寫"
+        ],
+        [
+          "借物",
+          "和"
+        ],
+        [
+          "借物",
+          "清單"
+        ],
+        [
+          "借物",
+          "規則"
+        ],
+        [
+          "借物",
+          "記錄"
+        ],
+        [
+          "兼任",
+          "最強"
+        ],
+        [
+          "再請",
+          "物主"
+        ],
+        [
+          "到",
+          "露易絲"
+        ],
+        [
+          "到了",
+          "哈比"
+        ],
+        [
+          "只想告訴你",
+          ""
+        ],
+        [
+          "吃飯",
+          "約成"
+        ],
+        [
+          "哈比",
+          "村"
+        ],
+        [
+          "喜歡你",
+          "寫"
+        ],
+        [
+          "回",
+          "白川"
+        ],
+        [
+          "在",
+          "露易絲"
+        ],
+        [
+          "報",
+          "局數"
+        ],
+        [
+          "學生",
+          "小傑"
+        ],
+        [
+          "宵夜",
+          "約成"
+        ],
+        [
+          "家",
+          "小珊"
+        ],
+        [
+          "寫",
+          "你的名字"
+        ],
+        [
+          "寫成",
+          "哈比"
+        ],
+        [
+          "對",
+          "小傑"
+        ],
+        [
+          "小傑",
+          ""
+        ],
+        [
+          "小傑",
+          "早已"
+        ],
+        [
+          "小傑",
+          "晚"
+        ],
+        [
+          "小傑",
+          "查"
+        ],
+        [
+          "小傑",
+          "的"
+        ],
+        [
+          "小傑",
+          "確認"
+        ],
+        [
+          "小傑",
+          "說"
+        ],
+        [
+          "小夏",
+          ""
+        ],
+        [
+          "小玲",
+          ""
+        ],
+        [
+          "小玲",
+          "一"
+        ],
+        [
+          "小玲",
+          "一直"
+        ],
+        [
+          "小玲",
+          "回"
+        ],
+        [
+          "小玲",
+          "留"
+        ],
+        [
+          "小玲",
+          "的"
+        ],
+        [
+          "小玲",
+          "確認"
+        ],
+        [
+          "小玲",
+          "說"
+        ],
+        [
+          "小珊",
+          ""
+        ],
+        [
+          "小珊",
+          "回覆"
+        ],
+        [
+          "小珊",
+          "留言"
+        ],
+        [
+          "小珊",
+          "追問"
+        ],
+        [
+          "小蘭",
+          ""
+        ],
+        [
+          "小豪",
+          ""
+        ],
+        [
+          "小豪",
+          "一直"
+        ],
+        [
+          "小豪",
+          "不用"
+        ],
+        [
+          "小豪",
+          "你"
+        ],
+        [
+          "小豪",
+          "又"
+        ],
+        [
+          "小豪",
+          "要"
+        ],
+        [
+          "小豪",
+          "負責"
+        ],
+        [
+          "小豪",
+          "進"
+        ],
+        [
+          "小豪",
+          "進來"
+        ],
+        [
+          "尚待",
+          "小傑"
+        ],
+        [
+          "局數",
+          ""
+        ],
+        [
+          "局數",
+          "和"
+        ],
+        [
+          "局數",
+          "如何"
+        ],
+        [
+          "局數",
+          "與"
+        ],
+        [
+          "往後",
+          "借物"
+        ],
+        [
+          "待",
+          "物主"
+        ],
+        [
+          "後段",
+          "局數"
+        ],
+        [
+          "從",
+          "投手丘"
+        ],
+        [
+          "懲罰你",
+          ""
+        ],
+        [
+          "成",
+          "小豪"
+        ],
+        [
+          "我的",
+          "借物"
+        ],
+        [
+          "我願意",
+          "相信你"
+        ],
+        [
+          "才",
+          "相信你"
+        ],
+        [
+          "找到你了",
+          ""
+        ],
+        [
+          "投手丘",
+          ""
+        ],
+        [
+          "投手丘",
+          "走到"
+        ],
+        [
+          "招待不周",
+          ""
+        ],
+        [
+          "指出",
+          "局數"
+        ],
+        [
+          "捉弄人",
+          ""
+        ],
+        [
+          "採",
+          "白川"
+        ],
+        [
+          "提",
+          "你的名字"
+        ]
+      ],
+      "lost_pair_examples": [
+        [
+          "不要",
+          "回頭"
+        ],
+        [
+          "丘",
+          "走到"
+        ],
+        [
+          "主",
+          "在"
+        ],
+        [
+          "主",
+          "操作"
+        ],
+        [
+          "主",
+          "檢查"
+        ],
+        [
+          "主",
+          "處理"
+        ],
+        [
+          "主",
+          "雨"
+        ],
+        [
+          "之",
+          "旅"
+        ],
+        [
+          "人",
+          "出局"
+        ],
+        [
+          "任務",
+          "完成"
+        ],
+        [
+          "位於",
+          "白"
+        ],
+        [
+          "你的",
+          "名字"
+        ],
+        [
+          "個人",
+          "小"
+        ],
+        [
+          "借",
+          "物"
+        ],
+        [
+          "傑",
+          "早已"
+        ],
+        [
+          "傑",
+          "晚"
+        ],
+        [
+          "傑",
+          "查"
+        ],
+        [
+          "傑",
+          "確認"
+        ],
+        [
+          "兼任",
+          "最"
+        ],
+        [
+          "再請",
+          "物"
+        ],
+        [
+          "到",
+          "露"
+        ],
+        [
+          "到了",
+          "哈"
+        ],
+        [
+          "吃飯",
+          "約"
+        ],
+        [
+          "名字",
+          "沒有"
+        ],
+        [
+          "哈",
+          "比"
+        ],
+        [
+          "喜歡",
+          "你"
+        ],
+        [
+          "回",
+          "白"
+        ],
+        [
+          "回頭",
+          "改"
+        ],
+        [
+          "在",
+          "露"
+        ],
+        [
+          "報",
+          "局"
+        ],
+        [
+          "學生",
+          "小"
+        ],
+        [
+          "宵夜",
+          "約"
+        ],
+        [
+          "家",
+          "小"
+        ],
+        [
+          "小",
+          "傑"
+        ],
+        [
+          "小",
+          "夏"
+        ],
+        [
+          "小",
+          "玲"
+        ],
+        [
+          "小",
+          "珊"
+        ],
+        [
+          "小",
+          "蘭"
+        ],
+        [
+          "小",
+          "豪"
+        ],
+        [
+          "尚待",
+          "小"
+        ],
+        [
+          "局",
+          "數"
+        ],
+        [
+          "川",
+          "村"
+        ],
+        [
+          "川",
+          "鄉"
+        ],
+        [
+          "強敵",
+          "人"
+        ],
+        [
+          "往後",
+          "借"
+        ],
+        [
+          "待",
+          "物"
+        ],
+        [
+          "後段",
+          "局"
+        ],
+        [
+          "懲罰",
+          "你"
+        ],
+        [
+          "成",
+          "跨"
+        ],
+        [
+          "我的",
+          "借"
+        ],
+        [
+          "投手",
+          "丘"
+        ],
+        [
+          "招待",
+          "不"
+        ],
+        [
+          "指出",
+          "局"
+        ],
+        [
+          "捉弄",
+          "人"
+        ],
+        [
+          "採",
+          "白"
+        ],
+        [
+          "提",
+          "你的"
+        ],
+        [
+          "提",
+          "白"
+        ],
+        [
+          "故意",
+          "懲罰"
+        ],
+        [
+          "數",
+          "如何"
+        ],
+        [
+          "旅",
+          "保留"
+        ],
+        [
+          "易",
+          "絲"
+        ],
+        [
+          "最",
+          "強敵"
+        ],
+        [
+          "會",
+          "捉弄"
+        ],
+        [
+          "未能",
+          "約"
+        ],
+        [
+          "末班車",
+          "任務"
+        ],
+        [
+          "每次",
+          "借"
+        ],
+        [
+          "比",
+          "村"
+        ],
+        [
+          "消失",
+          "懲罰"
+        ],
+        [
+          "物",
+          "主"
+        ],
+        [
+          "物",
+          "先寫"
+        ],
+        [
+          "物",
+          "清單"
+        ],
+        [
+          "物",
+          "規則"
+        ],
+        [
+          "物",
+          "記錄"
+        ],
+        [
+          "玲",
+          "一"
+        ],
+        [
+          "玲",
+          "一直"
+        ],
+        [
+          "玲",
+          "留"
+        ],
+        [
+          "珊",
+          "追問"
+        ],
+        [
+          "用",
+          "白"
+        ],
+        [
+          "由",
+          "物"
+        ],
+        [
+          "白",
+          "川"
+        ],
+        [
+          "的",
+          "借"
+        ],
+        [
+          "的",
+          "露"
+        ],
+        [
+          "相信",
+          "你"
+        ],
+        [
+          "相信",
+          "你有"
+        ],
+        [
+          "確認",
+          "物"
+        ],
+        [
+          "稱",
+          "白"
+        ],
+        [
+          "約",
+          "成"
+        ],
+        [
+          "絲",
+          "湖"
+        ],
+        [
+          "群組",
+          "任務"
+        ],
+        [
+          "請",
+          "物"
+        ],
+        [
+          "豪",
+          "一直"
+        ],
+        [
+          "豪",
+          "不用"
+        ],
+        [
+          "豪",
+          "你"
+        ],
+        [
+          "豪",
+          "又"
+        ],
+        [
+          "豪",
+          "進"
+        ],
+        [
+          "豪",
+          "進來"
+        ],
+        [
+          "走上",
+          "投手"
+        ],
+        [
+          "那",
+          "白"
+        ],
+        [
+          "都沒",
+          "約"
+        ],
+        [
+          "關鍵",
+          "局"
+        ]
+      ],
+      "database_change_bytes": 188416,
+      "database_change_mib": 0.1796875
+    },
+    {
+      "variant": "other_28_direct",
+      "unigrams": 116213,
+      "words": 110001,
+      "bigram_rows": 668777,
+      "sentences": 274369,
+      "tokens": 1307985,
+      "clipped": 1161249,
+      "supplemental_entries": 4015,
+      "integrity_check": "ok",
+      "unigram_rows": 116216,
+      "unigram_words": 110001,
+      "text_pairs": 421105,
+      "lexical_pairs": 398879,
+      "database_bytes": 43573248,
+      "database_mib": 41.5546875,
+      "new_words_vs_current": 2616,
+      "pairs_added_vs_current": 990,
+      "pairs_lost_vs_current": 705,
+      "top_new_words_in_added_pairs": [
+        {
+          "word": "貼文",
+          "pair_contexts": 228
+        },
+        {
+          "word": "不確定",
+          "pair_contexts": 192
+        },
+        {
+          "word": "排程",
+          "pair_contexts": 91
+        },
+        {
+          "word": "會議紀錄",
+          "pair_contexts": 69
+        },
+        {
+          "word": "標註",
+          "pair_contexts": 32
+        },
+        {
+          "word": "維運",
+          "pair_contexts": 28
+        },
+        {
+          "word": "簽核",
+          "pair_contexts": 20
+        },
+        {
+          "word": "期限內",
+          "pair_contexts": 19
+        },
+        {
+          "word": "不可靠",
+          "pair_contexts": 18
+        },
+        {
+          "word": "成果報告",
+          "pair_contexts": 17
+        },
+        {
+          "word": "宅配",
+          "pair_contexts": 14
+        },
+        {
+          "word": "電動機車",
+          "pair_contexts": 13
+        },
+        {
+          "word": "封裝",
+          "pair_contexts": 13
+        },
+        {
+          "word": "固定床",
+          "pair_contexts": 12
+        },
+        {
+          "word": "電子發票",
+          "pair_contexts": 12
+        },
+        {
+          "word": "量具",
+          "pair_contexts": 11
+        },
+        {
+          "word": "前置",
+          "pair_contexts": 11
+        },
+        {
+          "word": "往返時間",
+          "pair_contexts": 9
+        },
+        {
+          "word": "接案",
+          "pair_contexts": 7
+        },
+        {
+          "word": "線上客服",
+          "pair_contexts": 6
+        },
+        {
+          "word": "課綱",
+          "pair_contexts": 6
+        },
+        {
+          "word": "網購",
+          "pair_contexts": 6
+        },
+        {
+          "word": "地方史",
+          "pair_contexts": 6
+        },
+        {
+          "word": "網路設備",
+          "pair_contexts": 5
+        },
+        {
+          "word": "問題解決",
+          "pair_contexts": 4
+        },
+        {
+          "word": "品質管理",
+          "pair_contexts": 4
+        },
+        {
+          "word": "應收帳款",
+          "pair_contexts": 4
+        },
+        {
+          "word": "郵件系統",
+          "pair_contexts": 4
+        },
+        {
+          "word": "測試機",
+          "pair_contexts": 4
+        },
+        {
+          "word": "網路延遲",
+          "pair_contexts": 4
+        }
+      ],
+      "added_pair_examples": [
+        [
+          "",
+          "不確定"
+        ],
+        [
+          "",
+          "品質管理"
+        ],
+        [
+          "",
+          "固定床"
+        ],
+        [
+          "",
+          "宅配"
+        ],
+        [
+          "",
+          "封裝"
+        ],
+        [
+          "",
+          "局數"
+        ],
+        [
+          "",
+          "成果報告"
+        ],
+        [
+          "",
+          "排程"
+        ],
+        [
+          "",
+          "接案"
+        ],
+        [
+          "",
+          "改善措施"
+        ],
+        [
+          "",
+          "會議紀錄"
+        ],
+        [
+          "",
+          "期限內"
+        ],
+        [
+          "",
+          "簽核"
+        ],
+        [
+          "",
+          "維運"
+        ],
+        [
+          "",
+          "網路延遲"
+        ],
+        [
+          "",
+          "網路設備"
+        ],
+        [
+          "",
+          "線上客服"
+        ],
+        [
+          "",
+          "貼文"
+        ],
+        [
+          "",
+          "超商取貨"
+        ],
+        [
+          "",
+          "跨領域"
+        ],
+        [
+          "",
+          "邊坡"
+        ],
+        [
+          "",
+          "量具"
+        ],
+        [
+          "",
+          "電子發票"
+        ],
+        [
+          "一向",
+          "不可靠"
+        ],
+        [
+          "一時",
+          "不確定"
+        ],
+        [
+          "一次性密碼",
+          ""
+        ],
+        [
+          "一段",
+          "短影片"
+        ],
+        [
+          "一班",
+          "不確定"
+        ],
+        [
+          "一直",
+          "標註"
+        ],
+        [
+          "一篇",
+          "貼文"
+        ],
+        [
+          "一般",
+          "表面處理"
+        ],
+        [
+          "上次",
+          "會議紀錄"
+        ],
+        [
+          "上週",
+          "簽核"
+        ],
+        [
+          "下午",
+          "不確定"
+        ],
+        [
+          "不可靠",
+          ""
+        ],
+        [
+          "不可靠",
+          "的"
+        ],
+        [
+          "不可靠",
+          "行程"
+        ],
+        [
+          "不同",
+          "郵件系統"
+        ],
+        [
+          "不把",
+          "電動機車"
+        ],
+        [
+          "不是",
+          "宅配"
+        ],
+        [
+          "不是",
+          "網路延遲"
+        ],
+        [
+          "不用",
+          "從眾"
+        ],
+        [
+          "不確定",
+          ""
+        ],
+        [
+          "不確定",
+          "一個字"
+        ],
+        [
+          "不確定",
+          "上次"
+        ],
+        [
+          "不確定",
+          "之處"
+        ],
+        [
+          "不確定",
+          "也"
+        ],
+        [
+          "不確定",
+          "人數"
+        ],
+        [
+          "不確定",
+          "他"
+        ],
+        [
+          "不確定",
+          "位置"
+        ],
+        [
+          "不確定",
+          "住"
+        ],
+        [
+          "不確定",
+          "你想"
+        ],
+        [
+          "不確定",
+          "便"
+        ],
+        [
+          "不確定",
+          "內容"
+        ],
+        [
+          "不確定",
+          "出口"
+        ],
+        [
+          "不確定",
+          "分"
+        ],
+        [
+          "不確定",
+          "分開"
+        ],
+        [
+          "不確定",
+          "判斷"
+        ],
+        [
+          "不確定",
+          "前"
+        ],
+        [
+          "不確定",
+          "即可"
+        ],
+        [
+          "不確定",
+          "取回"
+        ],
+        [
+          "不確定",
+          "哪一"
+        ],
+        [
+          "不確定",
+          "哪些"
+        ],
+        [
+          "不確定",
+          "哪裡"
+        ],
+        [
+          "不確定",
+          "因素"
+        ],
+        [
+          "不確定",
+          "她"
+        ],
+        [
+          "不確定",
+          "它"
+        ],
+        [
+          "不確定",
+          "寫成"
+        ],
+        [
+          "不確定",
+          "對方"
+        ],
+        [
+          "不確定",
+          "就"
+        ],
+        [
+          "不確定",
+          "就不"
+        ],
+        [
+          "不確定",
+          "就是"
+        ],
+        [
+          "不確定",
+          "就算"
+        ],
+        [
+          "不確定",
+          "尺寸"
+        ],
+        [
+          "不確定",
+          "屬於"
+        ],
+        [
+          "不確定",
+          "市區"
+        ],
+        [
+          "不確定",
+          "年"
+        ],
+        [
+          "不確定",
+          "幾點"
+        ],
+        [
+          "不確定",
+          "很"
+        ],
+        [
+          "不確定",
+          "從"
+        ],
+        [
+          "不確定",
+          "性"
+        ],
+        [
+          "不確定",
+          "您"
+        ],
+        [
+          "不確定",
+          "情況"
+        ],
+        [
+          "不確定",
+          "換成"
+        ],
+        [
+          "不確定",
+          "摔倒"
+        ],
+        [
+          "不確定",
+          "早上"
+        ],
+        [
+          "不確定",
+          "是不是"
+        ],
+        [
+          "不確定",
+          "是否"
+        ],
+        [
+          "不確定",
+          "時"
+        ],
+        [
+          "不確定",
+          "會"
+        ],
+        [
+          "不確定",
+          "有沒有"
+        ],
+        [
+          "不確定",
+          "檢查"
+        ],
+        [
+          "不確定",
+          "營業"
+        ],
+        [
+          "不確定",
+          "現在"
+        ],
+        [
+          "不確定",
+          "現況"
+        ],
+        [
+          "不確定",
+          "理解"
+        ],
+        [
+          "不確定",
+          "留言"
+        ],
+        [
+          "不確定",
+          "當"
+        ],
+        [
+          "不確定",
+          "當成"
+        ],
+        [
+          "不確定",
+          "的"
+        ]
+      ],
+      "lost_pair_examples": [
+        [
+          "",
+          "宅"
+        ],
+        [
+          "",
+          "維"
+        ],
+        [
+          "",
+          "超商"
+        ],
+        [
+          "一向",
+          "不"
+        ],
+        [
+          "一時",
+          "不"
+        ],
+        [
+          "一班",
+          "不"
+        ],
+        [
+          "一直",
+          "標"
+        ],
+        [
+          "一篇",
+          "貼"
+        ],
+        [
+          "一般",
+          "表面"
+        ],
+        [
+          "上週",
+          "簽"
+        ],
+        [
+          "不",
+          "可靠"
+        ],
+        [
+          "不",
+          "確定"
+        ],
+        [
+          "不",
+          "確定會"
+        ],
+        [
+          "不把",
+          "電動機"
+        ],
+        [
+          "不是",
+          "宅"
+        ],
+        [
+          "不是",
+          "網路"
+        ],
+        [
+          "不要在",
+          "貼"
+        ],
+        [
+          "不談",
+          "貼"
+        ],
+        [
+          "主辦",
+          "貼"
+        ],
+        [
+          "也在",
+          "期限"
+        ],
+        [
+          "事項",
+          "前"
+        ],
+        [
+          "二手",
+          "電動機"
+        ],
+        [
+          "交叉",
+          "驗證"
+        ],
+        [
+          "交接",
+          "會議"
+        ],
+        [
+          "交給",
+          "維"
+        ],
+        [
+          "交通",
+          "規劃"
+        ],
+        [
+          "今天",
+          "宅"
+        ],
+        [
+          "仍在",
+          "期限"
+        ],
+        [
+          "付款",
+          "簽"
+        ],
+        [
+          "代表",
+          "旅行"
+        ],
+        [
+          "以",
+          "應"
+        ],
+        [
+          "以上",
+          "會議"
+        ],
+        [
+          "以及",
+          "電子"
+        ],
+        [
+          "但",
+          "簽"
+        ],
+        [
+          "但",
+          "貼"
+        ],
+        [
+          "作",
+          "前"
+        ],
+        [
+          "作出",
+          "不"
+        ],
+        [
+          "作為",
+          "排"
+        ],
+        [
+          "作者",
+          "貼"
+        ],
+        [
+          "你的",
+          "會議"
+        ],
+        [
+          "你的",
+          "貼"
+        ],
+        [
+          "使用者",
+          "貼"
+        ],
+        [
+          "來源",
+          "貼"
+        ],
+        [
+          "來看",
+          "電動機"
+        ],
+        [
+          "來自",
+          "排"
+        ],
+        [
+          "依",
+          "會議"
+        ],
+        [
+          "依舊",
+          "貼"
+        ],
+        [
+          "依賴",
+          "不"
+        ],
+        [
+          "依賴",
+          "貼"
+        ],
+        [
+          "保留",
+          "貼"
+        ],
+        [
+          "信件",
+          "封"
+        ],
+        [
+          "修正",
+          "貼"
+        ],
+        [
+          "倉庫",
+          "品質"
+        ],
+        [
+          "做",
+          "成果"
+        ],
+        [
+          "做",
+          "排"
+        ],
+        [
+          "做事",
+          "不"
+        ],
+        [
+          "停止",
+          "排"
+        ],
+        [
+          "傳",
+          "迷"
+        ],
+        [
+          "傳給",
+          "不"
+        ],
+        [
+          "像",
+          "地方"
+        ],
+        [
+          "像",
+          "會議"
+        ],
+        [
+          "先前",
+          "貼"
+        ],
+        [
+          "先找",
+          "簽"
+        ],
+        [
+          "先把",
+          "貼"
+        ],
+        [
+          "先請",
+          "維"
+        ],
+        [
+          "免",
+          "運"
+        ],
+        [
+          "內",
+          "以"
+        ],
+        [
+          "內",
+          "入"
+        ],
+        [
+          "內",
+          "同時"
+        ],
+        [
+          "內",
+          "完整"
+        ],
+        [
+          "內",
+          "都能"
+        ],
+        [
+          "內",
+          "針對"
+        ],
+        [
+          "內部",
+          "稽核"
+        ],
+        [
+          "其實",
+          "維"
+        ],
+        [
+          "具",
+          "位置"
+        ],
+        [
+          "具",
+          "使用"
+        ],
+        [
+          "具",
+          "則是"
+        ],
+        [
+          "再把",
+          "不"
+        ],
+        [
+          "再次",
+          "標"
+        ],
+        [
+          "再聯絡",
+          "維"
+        ],
+        [
+          "冠宇",
+          "貼"
+        ],
+        [
+          "分析",
+          "嗎"
+        ],
+        [
+          "分開",
+          "標"
+        ],
+        [
+          "分類",
+          "不"
+        ],
+        [
+          "列為",
+          "不"
+        ],
+        [
+          "別在",
+          "會議"
+        ],
+        [
+          "別在",
+          "貼"
+        ],
+        [
+          "刪除",
+          "排"
+        ],
+        [
+          "刪除",
+          "貼"
+        ],
+        [
+          "到",
+          "會議"
+        ],
+        [
+          "則",
+          "貼"
+        ],
+        [
+          "前",
+          "置"
+        ],
+        [
+          "剛才在",
+          "貼"
+        ],
+        [
+          "加上",
+          "不"
+        ],
+        [
+          "加入",
+          "不"
+        ],
+        [
+          "勛",
+          "貼"
+        ],
+        [
+          "勳",
+          "貼"
+        ],
+        [
+          "匿名",
+          "貼"
+        ],
+        [
+          "協助",
+          "成果"
+        ],
+        [
+          "協議",
+          "會議"
+        ]
+      ],
+      "database_change_bytes": 253952,
+      "database_change_mib": 0.2421875
+    },
+    {
+      "variant": "all_29_direct",
+      "unigrams": 118403,
+      "words": 112191,
+      "bigram_rows": 668808,
+      "sentences": 274369,
+      "tokens": 1307696,
+      "clipped": 1160911,
+      "supplemental_entries": 6548,
+      "integrity_check": "ok",
+      "unigram_rows": 118406,
+      "unigram_words": 112191,
+      "text_pairs": 421154,
+      "lexical_pairs": 398896,
+      "database_bytes": 43745280,
+      "database_mib": 41.71875,
+      "new_words_vs_current": 4806,
+      "pairs_added_vs_current": 1134,
+      "pairs_lost_vs_current": 800,
+      "top_new_words_in_added_pairs": [
+        {
+          "word": "貼文",
+          "pair_contexts": 228
+        },
+        {
+          "word": "不確定",
+          "pair_contexts": 192
+        },
+        {
+          "word": "排程",
+          "pair_contexts": 91
+        },
+        {
+          "word": "會議紀錄",
+          "pair_contexts": 69
+        },
+        {
+          "word": "標註",
+          "pair_contexts": 32
+        },
+        {
+          "word": "維運",
+          "pair_contexts": 28
+        },
+        {
+          "word": "簽核",
+          "pair_contexts": 20
+        },
+        {
+          "word": "期限內",
+          "pair_contexts": 19
+        },
+        {
+          "word": "不可靠",
+          "pair_contexts": 18
+        },
+        {
+          "word": "成果報告",
+          "pair_contexts": 17
+        },
+        {
+          "word": "宅配",
+          "pair_contexts": 14
+        },
+        {
+          "word": "小豪",
+          "pair_contexts": 13
+        },
+        {
+          "word": "電動機車",
+          "pair_contexts": 13
+        },
+        {
+          "word": "封裝",
+          "pair_contexts": 13
+        },
+        {
+          "word": "固定床",
+          "pair_contexts": 12
+        },
+        {
+          "word": "電子發票",
+          "pair_contexts": 12
+        },
+        {
+          "word": "小傑",
+          "pair_contexts": 11
+        },
+        {
+          "word": "量具",
+          "pair_contexts": 11
+        },
+        {
+          "word": "白川",
+          "pair_contexts": 11
+        },
+        {
+          "word": "前置",
+          "pair_contexts": 11
+        },
+        {
+          "word": "借物",
+          "pair_contexts": 11
+        },
+        {
+          "word": "小玲",
+          "pair_contexts": 9
+        },
+        {
+          "word": "往返時間",
+          "pair_contexts": 9
+        },
+        {
+          "word": "小珊",
+          "pair_contexts": 8
+        },
+        {
+          "word": "接案",
+          "pair_contexts": 7
+        },
+        {
+          "word": "相信你",
+          "pair_contexts": 6
+        },
+        {
+          "word": "線上客服",
+          "pair_contexts": 6
+        },
+        {
+          "word": "課綱",
+          "pair_contexts": 6
+        },
+        {
+          "word": "網購",
+          "pair_contexts": 6
+        },
+        {
+          "word": "地方史",
+          "pair_contexts": 6
+        }
+      ],
+      "added_pair_examples": [
+        [
+          "",
+          "不確定"
+        ],
+        [
+          "",
+          "他是"
+        ],
+        [
+          "",
+          "借物"
+        ],
+        [
+          "",
+          "只想告訴你"
+        ],
+        [
+          "",
+          "品質管理"
+        ],
+        [
+          "",
+          "哈比"
+        ],
+        [
+          "",
+          "固定床"
+        ],
+        [
+          "",
+          "宅配"
+        ],
+        [
+          "",
+          "封裝"
+        ],
+        [
+          "",
+          "小傑"
+        ],
+        [
+          "",
+          "小夏"
+        ],
+        [
+          "",
+          "小玲"
+        ],
+        [
+          "",
+          "小珊"
+        ],
+        [
+          "",
+          "小蘭"
+        ],
+        [
+          "",
+          "小豪"
+        ],
+        [
+          "",
+          "局數"
+        ],
+        [
+          "",
+          "成果報告"
+        ],
+        [
+          "",
+          "找到你了"
+        ],
+        [
+          "",
+          "排程"
+        ],
+        [
+          "",
+          "接案"
+        ],
+        [
+          "",
+          "改善措施"
+        ],
+        [
+          "",
+          "會議紀錄"
+        ],
+        [
+          "",
+          "期限內"
+        ],
+        [
+          "",
+          "物主"
+        ],
+        [
+          "",
+          "白川"
+        ],
+        [
+          "",
+          "簽核"
+        ],
+        [
+          "",
+          "維運"
+        ],
+        [
+          "",
+          "網路延遲"
+        ],
+        [
+          "",
+          "網路設備"
+        ],
+        [
+          "",
+          "線上客服"
+        ],
+        [
+          "",
+          "貼文"
+        ],
+        [
+          "",
+          "超商取貨"
+        ],
+        [
+          "",
+          "跨領域"
+        ],
+        [
+          "",
+          "邊坡"
+        ],
+        [
+          "",
+          "量具"
+        ],
+        [
+          "",
+          "電子發票"
+        ],
+        [
+          "",
+          "露易絲"
+        ],
+        [
+          "一人出局",
+          ""
+        ],
+        [
+          "一向",
+          "不可靠"
+        ],
+        [
+          "一時",
+          "不確定"
+        ],
+        [
+          "一次性密碼",
+          ""
+        ],
+        [
+          "一段",
+          "短影片"
+        ],
+        [
+          "一班",
+          "不確定"
+        ],
+        [
+          "一直",
+          "標註"
+        ],
+        [
+          "一篇",
+          "貼文"
+        ],
+        [
+          "一般",
+          "表面處理"
+        ],
+        [
+          "上次",
+          "會議紀錄"
+        ],
+        [
+          "上週",
+          "簽核"
+        ],
+        [
+          "下午",
+          "不確定"
+        ],
+        [
+          "不",
+          "相信你"
+        ],
+        [
+          "不可靠",
+          ""
+        ],
+        [
+          "不可靠",
+          "的"
+        ],
+        [
+          "不可靠",
+          "行程"
+        ],
+        [
+          "不同",
+          "郵件系統"
+        ],
+        [
+          "不把",
+          "電動機車"
+        ],
+        [
+          "不是",
+          "宅配"
+        ],
+        [
+          "不是",
+          "網路延遲"
+        ],
+        [
+          "不用",
+          "從眾"
+        ],
+        [
+          "不知",
+          "他是"
+        ],
+        [
+          "不知道",
+          "他是"
+        ],
+        [
+          "不確定",
+          ""
+        ],
+        [
+          "不確定",
+          "一個字"
+        ],
+        [
+          "不確定",
+          "上次"
+        ],
+        [
+          "不確定",
+          "之處"
+        ],
+        [
+          "不確定",
+          "也"
+        ],
+        [
+          "不確定",
+          "人數"
+        ],
+        [
+          "不確定",
+          "他"
+        ],
+        [
+          "不確定",
+          "位置"
+        ],
+        [
+          "不確定",
+          "住"
+        ],
+        [
+          "不確定",
+          "你想"
+        ],
+        [
+          "不確定",
+          "便"
+        ],
+        [
+          "不確定",
+          "內容"
+        ],
+        [
+          "不確定",
+          "出口"
+        ],
+        [
+          "不確定",
+          "分"
+        ],
+        [
+          "不確定",
+          "分開"
+        ],
+        [
+          "不確定",
+          "判斷"
+        ],
+        [
+          "不確定",
+          "前"
+        ],
+        [
+          "不確定",
+          "即可"
+        ],
+        [
+          "不確定",
+          "取回"
+        ],
+        [
+          "不確定",
+          "哪一"
+        ],
+        [
+          "不確定",
+          "哪些"
+        ],
+        [
+          "不確定",
+          "哪裡"
+        ],
+        [
+          "不確定",
+          "因素"
+        ],
+        [
+          "不確定",
+          "她"
+        ],
+        [
+          "不確定",
+          "它"
+        ],
+        [
+          "不確定",
+          "寫成"
+        ],
+        [
+          "不確定",
+          "對方"
+        ],
+        [
+          "不確定",
+          "就"
+        ],
+        [
+          "不確定",
+          "就不"
+        ],
+        [
+          "不確定",
+          "就是"
+        ],
+        [
+          "不確定",
+          "就算"
+        ],
+        [
+          "不確定",
+          "尺寸"
+        ],
+        [
+          "不確定",
+          "屬於"
+        ],
+        [
+          "不確定",
+          "市區"
+        ],
+        [
+          "不確定",
+          "年"
+        ],
+        [
+          "不確定",
+          "幾點"
+        ],
+        [
+          "不確定",
+          "很"
+        ],
+        [
+          "不確定",
+          "從"
+        ],
+        [
+          "不確定",
+          "性"
+        ],
+        [
+          "不確定",
+          "您"
+        ]
+      ],
+      "lost_pair_examples": [
+        [
+          "",
+          "宅"
+        ],
+        [
+          "",
+          "維"
+        ],
+        [
+          "",
+          "超商"
+        ],
+        [
+          "一向",
+          "不"
+        ],
+        [
+          "一時",
+          "不"
+        ],
+        [
+          "一班",
+          "不"
+        ],
+        [
+          "一直",
+          "標"
+        ],
+        [
+          "一篇",
+          "貼"
+        ],
+        [
+          "一般",
+          "表面"
+        ],
+        [
+          "上週",
+          "簽"
+        ],
+        [
+          "不",
+          "可靠"
+        ],
+        [
+          "不",
+          "確定"
+        ],
+        [
+          "不",
+          "確定會"
+        ],
+        [
+          "不把",
+          "電動機"
+        ],
+        [
+          "不是",
+          "宅"
+        ],
+        [
+          "不是",
+          "網路"
+        ],
+        [
+          "不要",
+          "回頭"
+        ],
+        [
+          "不要在",
+          "貼"
+        ],
+        [
+          "不談",
+          "貼"
+        ],
+        [
+          "丘",
+          "走到"
+        ],
+        [
+          "主",
+          "在"
+        ],
+        [
+          "主",
+          "操作"
+        ],
+        [
+          "主",
+          "檢查"
+        ],
+        [
+          "主",
+          "處理"
+        ],
+        [
+          "主",
+          "雨"
+        ],
+        [
+          "主辦",
+          "貼"
+        ],
+        [
+          "之",
+          "旅"
+        ],
+        [
+          "也在",
+          "期限"
+        ],
+        [
+          "事項",
+          "前"
+        ],
+        [
+          "二手",
+          "電動機"
+        ],
+        [
+          "交叉",
+          "驗證"
+        ],
+        [
+          "交接",
+          "會議"
+        ],
+        [
+          "交給",
+          "維"
+        ],
+        [
+          "交通",
+          "規劃"
+        ],
+        [
+          "人",
+          "出局"
+        ],
+        [
+          "今天",
+          "宅"
+        ],
+        [
+          "仍在",
+          "期限"
+        ],
+        [
+          "他",
+          "是"
+        ],
+        [
+          "付款",
+          "簽"
+        ],
+        [
+          "代表",
+          "旅行"
+        ],
+        [
+          "以",
+          "應"
+        ],
+        [
+          "以上",
+          "會議"
+        ],
+        [
+          "以及",
+          "電子"
+        ],
+        [
+          "任務",
+          "完成"
+        ],
+        [
+          "但",
+          "簽"
+        ],
+        [
+          "但",
+          "貼"
+        ],
+        [
+          "位於",
+          "白"
+        ],
+        [
+          "作",
+          "前"
+        ],
+        [
+          "作出",
+          "不"
+        ],
+        [
+          "作為",
+          "排"
+        ],
+        [
+          "作者",
+          "貼"
+        ],
+        [
+          "你的",
+          "名字"
+        ],
+        [
+          "你的",
+          "會議"
+        ],
+        [
+          "你的",
+          "貼"
+        ],
+        [
+          "使用者",
+          "貼"
+        ],
+        [
+          "來源",
+          "貼"
+        ],
+        [
+          "來看",
+          "電動機"
+        ],
+        [
+          "來自",
+          "排"
+        ],
+        [
+          "依",
+          "會議"
+        ],
+        [
+          "依舊",
+          "貼"
+        ],
+        [
+          "依賴",
+          "不"
+        ],
+        [
+          "依賴",
+          "貼"
+        ],
+        [
+          "保留",
+          "貼"
+        ],
+        [
+          "信件",
+          "封"
+        ],
+        [
+          "修正",
+          "貼"
+        ],
+        [
+          "倉庫",
+          "品質"
+        ],
+        [
+          "個人",
+          "小"
+        ],
+        [
+          "借",
+          "物"
+        ],
+        [
+          "做",
+          "成果"
+        ],
+        [
+          "做",
+          "排"
+        ],
+        [
+          "做事",
+          "不"
+        ],
+        [
+          "停止",
+          "排"
+        ],
+        [
+          "傑",
+          "早已"
+        ],
+        [
+          "傑",
+          "晚"
+        ],
+        [
+          "傑",
+          "查"
+        ],
+        [
+          "傑",
+          "確認"
+        ],
+        [
+          "傳",
+          "迷"
+        ],
+        [
+          "傳給",
+          "不"
+        ],
+        [
+          "像",
+          "地方"
+        ],
+        [
+          "像",
+          "會議"
+        ],
+        [
+          "先前",
+          "貼"
+        ],
+        [
+          "先找",
+          "簽"
+        ],
+        [
+          "先把",
+          "貼"
+        ],
+        [
+          "先請",
+          "維"
+        ],
+        [
+          "免",
+          "運"
+        ],
+        [
+          "內",
+          "以"
+        ],
+        [
+          "內",
+          "入"
+        ],
+        [
+          "內",
+          "同時"
+        ],
+        [
+          "內",
+          "完整"
+        ],
+        [
+          "內",
+          "都能"
+        ],
+        [
+          "內",
+          "針對"
+        ],
+        [
+          "內部",
+          "稽核"
+        ],
+        [
+          "其實",
+          "維"
+        ],
+        [
+          "具",
+          "位置"
+        ],
+        [
+          "具",
+          "使用"
+        ],
+        [
+          "具",
+          "則是"
+        ],
+        [
+          "兼任",
+          "最"
+        ],
+        [
+          "再把",
+          "不"
+        ],
+        [
+          "再次",
+          "標"
+        ],
+        [
+          "再聯絡",
+          "維"
+        ]
+      ],
+      "database_change_bytes": 425984,
+      "database_change_mib": 0.40625
+    }
+  ],
+  "heldout": [
+    {
+      "variant": "current",
+      "heldout_lexical_pairs": 41998,
+      "covered_pairs": 23357,
+      "coverage_percent": 55.61455307395591,
+      "coverage_change_percentage_points": 0.0
+    },
+    {
+      "variant": "anime_safe",
+      "heldout_lexical_pairs": 41995,
+      "covered_pairs": 23352,
+      "coverage_percent": 55.60661983569473,
+      "coverage_change_percentage_points": -0.007933238261180975
+    },
+    {
+      "variant": "other_28_safe",
+      "heldout_lexical_pairs": 41996,
+      "covered_pairs": 23334,
+      "coverage_percent": 55.5624345175731,
+      "coverage_change_percentage_points": -0.05211855638280838
+    },
+    {
+      "variant": "all_29_safe",
+      "heldout_lexical_pairs": 41993,
+      "covered_pairs": 23328,
+      "coverage_percent": 55.55211582882862,
+      "coverage_change_percentage_points": -0.062437245127291874
+    },
+    {
+      "variant": "anime_direct",
+      "heldout_lexical_pairs": 41995,
+      "covered_pairs": 23352,
+      "coverage_percent": 55.60661983569473,
+      "coverage_change_percentage_points": -0.007933238261180975
+    },
+    {
+      "variant": "other_28_direct",
+      "heldout_lexical_pairs": 41996,
+      "covered_pairs": 23334,
+      "coverage_percent": 55.5624345175731,
+      "coverage_change_percentage_points": -0.05211855638280838
+    },
+    {
+      "variant": "all_29_direct",
+      "heldout_lexical_pairs": 41993,
+      "covered_pairs": 23328,
+      "coverage_percent": 55.55211582882862,
+      "coverage_change_percentage_points": -0.062437245127291874
+    }
+  ],
+  "dictionary_surface_hits": [
+    {
+      "variant": "anime",
+      "entries": 2533,
+      "new_entries": 2197,
+      "matched_entries": 43,
+      "occurrences": 1211,
+      "document_hits": 740,
+      "top_matches": [
+        {
+          "word": "到我",
+          "occurrences": 871,
+          "documents": 641
+        },
+        {
+          "word": "小傑",
+          "occurrences": 67,
+          "documents": 6
+        },
+        {
+          "word": "小珊",
+          "occurrences": 57,
+          "documents": 7
+        },
+        {
+          "word": "小豪",
+          "occurrences": 25,
+          "documents": 3
+        },
+        {
+          "word": "小玲",
+          "occurrences": 22,
+          "documents": 3
+        },
+        {
+          "word": "小蘭",
+          "occurrences": 22,
+          "documents": 2
+        },
+        {
+          "word": "丘比",
+          "occurrences": 20,
+          "documents": 7
+        },
+        {
+          "word": "小夏",
+          "occurrences": 16,
+          "documents": 1
+        },
+        {
+          "word": "白川",
+          "occurrences": 16,
+          "documents": 1
+        },
+        {
+          "word": "克林",
+          "occurrences": 9,
+          "documents": 1
+        },
+        {
+          "word": "布魯克",
+          "occurrences": 9,
+          "documents": 1
+        },
+        {
+          "word": "久保",
+          "occurrences": 7,
+          "documents": 7
+        },
+        {
+          "word": "同學是",
+          "occurrences": 6,
+          "documents": 6
+        },
+        {
+          "word": "借物",
+          "occurrences": 6,
+          "documents": 4
+        },
+        {
+          "word": "哈比",
+          "occurrences": 6,
+          "documents": 2
+        },
+        {
+          "word": "日和",
+          "occurrences": 5,
+          "documents": 5
+        },
+        {
+          "word": "相信你",
+          "occurrences": 5,
+          "documents": 5
+        },
+        {
+          "word": "露易絲",
+          "occurrences": 5,
+          "documents": 1
+        },
+        {
+          "word": "你的名字",
+          "occurrences": 3,
+          "documents": 3
+        },
+        {
+          "word": "和真",
+          "occurrences": 3,
+          "documents": 3
+        },
+        {
+          "word": "最強",
+          "occurrences": 3,
+          "documents": 3
+        },
+        {
+          "word": "投手丘",
+          "occurrences": 2,
+          "documents": 2
+        },
+        {
+          "word": "任務完成",
+          "occurrences": 2,
+          "documents": 2
+        },
+        {
+          "word": "法馬",
+          "occurrences": 2,
+          "documents": 2
+        },
+        {
+          "word": "懲罰你",
+          "occurrences": 2,
+          "documents": 2
+        },
+        {
+          "word": "喜歡你",
+          "occurrences": 2,
+          "documents": 2
+        },
+        {
+          "word": "鄰座",
+          "occurrences": 2,
+          "documents": 2
+        },
+        {
+          "word": "只想告訴你",
+          "occurrences": 1,
+          "documents": 1
+        },
+        {
+          "word": "高木",
+          "occurrences": 1,
+          "documents": 1
+        },
+        {
+          "word": "不要回頭",
+          "occurrences": 1,
+          "documents": 1
+        }
+      ],
+      "entry_coverage_percent": 1.957214383249886
+    },
+    {
+      "variant": "other_28",
+      "entries": 3755,
+      "new_entries": 2616,
+      "matched_entries": 104,
+      "occurrences": 1524,
+      "document_hits": 993,
+      "top_matches": [
+        {
+          "word": "貼文",
+          "occurrences": 455,
+          "documents": 209
+        },
+        {
+          "word": "不確定",
+          "occurrences": 436,
+          "documents": 347
+        },
+        {
+          "word": "排程",
+          "occurrences": 82,
+          "documents": 46
+        },
+        {
+          "word": "會議紀錄",
+          "occurrences": 61,
+          "documents": 46
+        },
+        {
+          "word": "第三人",
+          "occurrences": 46,
+          "documents": 39
+        },
+        {
+          "word": "工單",
+          "occurrences": 44,
+          "documents": 14
+        },
+        {
+          "word": "維運",
+          "occurrences": 34,
+          "documents": 4
+        },
+        {
+          "word": "標註",
+          "occurrences": 24,
+          "documents": 21
+        },
+        {
+          "word": "不安全",
+          "occurrences": 23,
+          "documents": 23
+        },
+        {
+          "word": "不可靠",
+          "occurrences": 18,
+          "documents": 16
+        },
+        {
+          "word": "接案",
+          "occurrences": 17,
+          "documents": 3
+        },
+        {
+          "word": "簽核",
+          "occurrences": 15,
+          "documents": 11
+        },
+        {
+          "word": "次清",
+          "occurrences": 14,
+          "documents": 14
+        },
+        {
+          "word": "期限內",
+          "occurrences": 14,
+          "documents": 12
+        },
+        {
+          "word": "成果報告",
+          "occurrences": 13,
+          "documents": 3
+        },
+        {
+          "word": "現地",
+          "occurrences": 12,
+          "documents": 10
+        },
+        {
+          "word": "多能",
+          "occurrences": 11,
+          "documents": 10
+        },
+        {
+          "word": "宅配",
+          "occurrences": 9,
+          "documents": 6
+        },
+        {
+          "word": "封裝",
+          "occurrences": 9,
+          "documents": 4
+        },
+        {
+          "word": "字重",
+          "occurrences": 8,
+          "documents": 6
+        },
+        {
+          "word": "間作",
+          "occurrences": 8,
+          "documents": 8
+        },
+        {
+          "word": "前置",
+          "occurrences": 8,
+          "documents": 7
+        },
+        {
+          "word": "電子發票",
+          "occurrences": 7,
+          "documents": 3
+        },
+        {
+          "word": "電動機車",
+          "occurrences": 7,
+          "documents": 3
+        },
+        {
+          "word": "固定床",
+          "occurrences": 7,
+          "documents": 6
+        },
+        {
+          "word": "往返時間",
+          "occurrences": 6,
+          "documents": 6
+        },
+        {
+          "word": "段距",
+          "occurrences": 6,
+          "documents": 6
+        },
+        {
+          "word": "量具",
+          "occurrences": 6,
+          "documents": 3
+        },
+        {
+          "word": "表面處理",
+          "occurrences": 5,
+          "documents": 2
+        },
+        {
+          "word": "線上客服",
+          "occurrences": 5,
+          "documents": 4
+        }
+      ],
+      "entry_coverage_percent": 3.9755351681957185
+    },
+    {
+      "variant": "all_29",
+      "entries": 6262,
+      "new_entries": 4806,
+      "matched_entries": 147,
+      "occurrences": 2735,
+      "document_hits": 1733,
+      "top_matches": [
+        {
+          "word": "到我",
+          "occurrences": 871,
+          "documents": 641
+        },
+        {
+          "word": "貼文",
+          "occurrences": 455,
+          "documents": 209
+        },
+        {
+          "word": "不確定",
+          "occurrences": 436,
+          "documents": 347
+        },
+        {
+          "word": "排程",
+          "occurrences": 82,
+          "documents": 46
+        },
+        {
+          "word": "小傑",
+          "occurrences": 67,
+          "documents": 6
+        },
+        {
+          "word": "會議紀錄",
+          "occurrences": 61,
+          "documents": 46
+        },
+        {
+          "word": "小珊",
+          "occurrences": 57,
+          "documents": 7
+        },
+        {
+          "word": "第三人",
+          "occurrences": 46,
+          "documents": 39
+        },
+        {
+          "word": "工單",
+          "occurrences": 44,
+          "documents": 14
+        },
+        {
+          "word": "維運",
+          "occurrences": 34,
+          "documents": 4
+        },
+        {
+          "word": "小豪",
+          "occurrences": 25,
+          "documents": 3
+        },
+        {
+          "word": "標註",
+          "occurrences": 24,
+          "documents": 21
+        },
+        {
+          "word": "不安全",
+          "occurrences": 23,
+          "documents": 23
+        },
+        {
+          "word": "小玲",
+          "occurrences": 22,
+          "documents": 3
+        },
+        {
+          "word": "小蘭",
+          "occurrences": 22,
+          "documents": 2
+        },
+        {
+          "word": "丘比",
+          "occurrences": 20,
+          "documents": 7
+        },
+        {
+          "word": "不可靠",
+          "occurrences": 18,
+          "documents": 16
+        },
+        {
+          "word": "接案",
+          "occurrences": 17,
+          "documents": 3
+        },
+        {
+          "word": "小夏",
+          "occurrences": 16,
+          "documents": 1
+        },
+        {
+          "word": "白川",
+          "occurrences": 16,
+          "documents": 1
+        },
+        {
+          "word": "簽核",
+          "occurrences": 15,
+          "documents": 11
+        },
+        {
+          "word": "次清",
+          "occurrences": 14,
+          "documents": 14
+        },
+        {
+          "word": "期限內",
+          "occurrences": 14,
+          "documents": 12
+        },
+        {
+          "word": "成果報告",
+          "occurrences": 13,
+          "documents": 3
+        },
+        {
+          "word": "現地",
+          "occurrences": 12,
+          "documents": 10
+        },
+        {
+          "word": "多能",
+          "occurrences": 11,
+          "documents": 10
+        },
+        {
+          "word": "宅配",
+          "occurrences": 9,
+          "documents": 6
+        },
+        {
+          "word": "封裝",
+          "occurrences": 9,
+          "documents": 4
+        },
+        {
+          "word": "克林",
+          "occurrences": 9,
+          "documents": 1
+        },
+        {
+          "word": "布魯克",
+          "occurrences": 9,
+          "documents": 1
+        }
+      ],
+      "entry_coverage_percent": 3.058676654182272
+    }
+  ],
+  "anime_assessment": {
+    "new_entries": 2197,
+    "matched_entries": 43,
+    "entry_coverage_percent": 1.957214383249886,
+    "top_matches": [
+      {
+        "word": "到我",
+        "occurrences": 871,
+        "documents": 641
+      },
+      {
+        "word": "小傑",
+        "occurrences": 67,
+        "documents": 6
+      },
+      {
+        "word": "小珊",
+        "occurrences": 57,
+        "documents": 7
+      },
+      {
+        "word": "小豪",
+        "occurrences": 25,
+        "documents": 3
+      },
+      {
+        "word": "小玲",
+        "occurrences": 22,
+        "documents": 3
+      },
+      {
+        "word": "小蘭",
+        "occurrences": 22,
+        "documents": 2
+      },
+      {
+        "word": "丘比",
+        "occurrences": 20,
+        "documents": 7
+      },
+      {
+        "word": "小夏",
+        "occurrences": 16,
+        "documents": 1
+      },
+      {
+        "word": "白川",
+        "occurrences": 16,
+        "documents": 1
+      },
+      {
+        "word": "克林",
+        "occurrences": 9,
+        "documents": 1
+      },
+      {
+        "word": "布魯克",
+        "occurrences": 9,
+        "documents": 1
+      },
+      {
+        "word": "久保",
+        "occurrences": 7,
+        "documents": 7
+      },
+      {
+        "word": "同學是",
+        "occurrences": 6,
+        "documents": 6
+      },
+      {
+        "word": "借物",
+        "occurrences": 6,
+        "documents": 4
+      },
+      {
+        "word": "哈比",
+        "occurrences": 6,
+        "documents": 2
+      },
+      {
+        "word": "日和",
+        "occurrences": 5,
+        "documents": 5
+      },
+      {
+        "word": "相信你",
+        "occurrences": 5,
+        "documents": 5
+      },
+      {
+        "word": "露易絲",
+        "occurrences": 5,
+        "documents": 1
+      },
+      {
+        "word": "你的名字",
+        "occurrences": 3,
+        "documents": 3
+      },
+      {
+        "word": "和真",
+        "occurrences": 3,
+        "documents": 3
+      },
+      {
+        "word": "最強",
+        "occurrences": 3,
+        "documents": 3
+      },
+      {
+        "word": "投手丘",
+        "occurrences": 2,
+        "documents": 2
+      },
+      {
+        "word": "任務完成",
+        "occurrences": 2,
+        "documents": 2
+      },
+      {
+        "word": "法馬",
+        "occurrences": 2,
+        "documents": 2
+      },
+      {
+        "word": "懲罰你",
+        "occurrences": 2,
+        "documents": 2
+      },
+      {
+        "word": "喜歡你",
+        "occurrences": 2,
+        "documents": 2
+      },
+      {
+        "word": "鄰座",
+        "occurrences": 2,
+        "documents": 2
+      },
+      {
+        "word": "只想告訴你",
+        "occurrences": 1,
+        "documents": 1
+      },
+      {
+        "word": "高木",
+        "occurrences": 1,
+        "documents": 1
+      },
+      {
+        "word": "不要回頭",
+        "occurrences": 1,
+        "documents": 1
+      }
+    ],
+    "top_new_words_in_added_pairs": [
+      {
+        "word": "小豪",
+        "pair_contexts": 13
+      },
+      {
+        "word": "借物",
+        "pair_contexts": 11
+      },
+      {
+        "word": "小傑",
+        "pair_contexts": 11
+      },
+      {
+        "word": "白川",
+        "pair_contexts": 11
+      },
+      {
+        "word": "小玲",
+        "pair_contexts": 9
+      },
+      {
+        "word": "小珊",
+        "pair_contexts": 8
+      },
+      {
+        "word": "相信你",
+        "pair_contexts": 6
+      },
+      {
+        "word": "露易絲",
+        "pair_contexts": 5
+      },
+      {
+        "word": "你的名字",
+        "pair_contexts": 5
+      },
+      {
+        "word": "哈比",
+        "pair_contexts": 4
+      },
+      {
+        "word": "投手丘",
+        "pair_contexts": 4
+      },
+      {
+        "word": "懲罰你",
+        "pair_contexts": 3
+      },
+      {
+        "word": "小蘭",
+        "pair_contexts": 3
+      },
+      {
+        "word": "任務完成",
+        "pair_contexts": 3
+      },
+      {
+        "word": "不要回頭",
+        "pair_contexts": 2
+      },
+      {
+        "word": "喜歡你",
+        "pair_contexts": 2
+      },
+      {
+        "word": "招待不周",
+        "pair_contexts": 2
+      },
+      {
+        "word": "小夏",
+        "pair_contexts": 2
+      },
+      {
+        "word": "之旅",
+        "pair_contexts": 2
+      },
+      {
+        "word": "最強",
+        "pair_contexts": 2
+      },
+      {
+        "word": "捉弄人",
+        "pair_contexts": 2
+      },
+      {
+        "word": "找到你了",
+        "pair_contexts": 2
+      },
+      {
+        "word": "只想告訴你",
+        "pair_contexts": 2
+      },
+      {
+        "word": "一人出局",
+        "pair_contexts": 2
+      }
+    ],
+    "safe_pairs_changed_vs_current": 251,
+    "safe_database_change_mib": 0.1796875,
+    "safe_coverage_change_percentage_points": -0.007933238261180975,
+    "direct_pairs_changed_vs_current": 251,
+    "direct_database_change_mib": 0.1796875,
+    "direct_coverage_change_percentage_points": -0.007933238261180975
+  },
+  "recommendation": "Do not merge all 29 collections into the core Smart Mandarin vocabulary as-is. Review the 104 non-anime new entries that actually occur in the 1,650 articles, then test a compact allowlist and candidate ordering. Keep anime separate and opt-in: most of its new vocabulary is unseen in general typing text, while title fragments can create frequent false phrase boundaries."
+}

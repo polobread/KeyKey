@@ -1,0 +1,891 @@
+{
+  "articles": 1650,
+  "han_chars": {
+    "minimum": 1050,
+    "average": 1157.730303030303,
+    "maximum": 1350
+  },
+  "recent_30_years": {
+    "count": 1163,
+    "percent": 70.48484848484848,
+    "target_percent": 70.0
+  },
+  "era_distribution": [
+    {
+      "name": "1926-1945",
+      "count": 73,
+      "percent": 4.424242424242424,
+      "target_percent": 5.0,
+      "difference_percentage_points": -0.5757575757575761,
+      "difference_from_prorated_count": -9.5
+    },
+    {
+      "name": "1946-1969",
+      "count": 144,
+      "percent": 8.727272727272728,
+      "target_percent": 8.0,
+      "difference_percentage_points": 0.7272727272727284,
+      "difference_from_prorated_count": 12.0
+    },
+    {
+      "name": "1970-1989",
+      "count": 181,
+      "percent": 10.969696969696969,
+      "target_percent": 11.0,
+      "difference_percentage_points": -0.030303030303031164,
+      "difference_from_prorated_count": -0.5
+    },
+    {
+      "name": "1990-1996",
+      "count": 89,
+      "percent": 5.393939393939394,
+      "target_percent": 6.0,
+      "difference_percentage_points": -0.6060606060606064,
+      "difference_from_prorated_count": -10.0
+    },
+    {
+      "name": "1997-2009",
+      "count": 308,
+      "percent": 18.666666666666668,
+      "target_percent": 18.0,
+      "difference_percentage_points": 0.6666666666666679,
+      "difference_from_prorated_count": 11.0
+    },
+    {
+      "name": "2010-2019",
+      "count": 376,
+      "percent": 22.78787878787879,
+      "target_percent": 22.0,
+      "difference_percentage_points": 0.787878787878789,
+      "difference_from_prorated_count": 13.0
+    },
+    {
+      "name": "2020-2026",
+      "count": 479,
+      "percent": 29.030303030303028,
+      "target_percent": 30.0,
+      "difference_percentage_points": -0.9696969696969724,
+      "difference_from_prorated_count": -16.0
+    }
+  ],
+  "category_distribution": [
+    {
+      "name": "法律紛爭與政府政策",
+      "count": 117,
+      "percent": 7.090909090909091,
+      "target_percent": 7.000000000000001,
+      "difference_percentage_points": 0.09090909090908994,
+      "difference_from_prorated_count": 1.5
+    },
+    {
+      "name": "情緒與人際關係",
+      "count": 155,
+      "percent": 9.393939393939393,
+      "target_percent": 9.0,
+      "difference_percentage_points": 0.3939393939393927,
+      "difference_from_prorated_count": 6.5
+    },
+    {
+      "name": "工作討論與公事",
+      "count": 163,
+      "percent": 9.878787878787879,
+      "target_percent": 12.0,
+      "difference_percentage_points": -2.121212121212121,
+      "difference_from_prorated_count": -35.0
+    },
+    {
+      "name": "學習請教與知識問答",
+      "count": 98,
+      "percent": 5.9393939393939394,
+      "target_percent": 6.5,
+      "difference_percentage_points": -0.5606060606060606,
+      "difference_from_prorated_count": -9.25
+    },
+    {
+      "name": "社群吐槽與講幹話",
+      "count": 107,
+      "percent": 6.484848484848485,
+      "target_percent": 6.5,
+      "difference_percentage_points": -0.015151515151514694,
+      "difference_from_prorated_count": -0.25
+    },
+    {
+      "name": "日常溝通與協調",
+      "count": 242,
+      "percent": 14.666666666666666,
+      "target_percent": 14.000000000000002,
+      "difference_percentage_points": 0.6666666666666643,
+      "difference_from_prorated_count": 11.0
+    },
+    {
+      "name": "住宿旅遊與交通",
+      "count": 133,
+      "percent": 8.06060606060606,
+      "target_percent": 8.0,
+      "difference_percentage_points": 0.06060606060606055,
+      "difference_from_prorated_count": 1.0
+    },
+    {
+      "name": "商品品牌與科技",
+      "count": 134,
+      "percent": 8.121212121212121,
+      "target_percent": 8.0,
+      "difference_percentage_points": 0.1212121212121211,
+      "difference_from_prorated_count": 2.0
+    },
+    {
+      "name": "其他國家繁中地名與旅行",
+      "count": 31,
+      "percent": 1.8787878787878787,
+      "target_percent": 1.5,
+      "difference_percentage_points": 0.3787878787878787,
+      "difference_from_prorated_count": 6.25
+    },
+    {
+      "name": "餐飲與休閒娛樂",
+      "count": 132,
+      "percent": 8.0,
+      "target_percent": 8.0,
+      "difference_percentage_points": 0.0,
+      "difference_from_prorated_count": 0.0
+    },
+    {
+      "name": "消費服務與交易",
+      "count": 136,
+      "percent": 8.242424242424242,
+      "target_percent": 8.0,
+      "difference_percentage_points": 0.2424242424242422,
+      "difference_from_prorated_count": 4.0
+    },
+    {
+      "name": "中國繁中地名與旅行",
+      "count": 19,
+      "percent": 1.1515151515151514,
+      "target_percent": 1.0,
+      "difference_percentage_points": 0.15151515151515138,
+      "difference_from_prorated_count": 2.5
+    },
+    {
+      "name": "台灣地標與地方生活",
+      "count": 108,
+      "percent": 6.545454545454546,
+      "target_percent": 6.5,
+      "difference_percentage_points": 0.04545454545454586,
+      "difference_from_prorated_count": 0.75
+    },
+    {
+      "name": "美國繁中地名與旅行",
+      "count": 17,
+      "percent": 1.0303030303030303,
+      "target_percent": 1.0,
+      "difference_percentage_points": 0.030303030303030276,
+      "difference_from_prorated_count": 0.5
+    },
+    {
+      "name": "日本繁中景點與旅行",
+      "count": 39,
+      "percent": 2.3636363636363638,
+      "target_percent": 2.0,
+      "difference_percentage_points": 0.36363636363636376,
+      "difference_from_prorated_count": 6.0
+    },
+    {
+      "name": "歐洲繁中地名與旅行",
+      "count": 19,
+      "percent": 1.1515151515151514,
+      "target_percent": 1.0,
+      "difference_percentage_points": 0.15151515151515138,
+      "difference_from_prorated_count": 2.5
+    }
+  ],
+  "assigned_tone_distribution": [
+    {
+      "name": "正式謹慎",
+      "count": 186,
+      "percent": 11.272727272727273
+    },
+    {
+      "name": "猶豫試探",
+      "count": 179,
+      "percent": 10.84848484848485
+    },
+    {
+      "name": "耐心說明",
+      "count": 177,
+      "percent": 10.727272727272727
+    },
+    {
+      "name": "溫和安慰",
+      "count": 173,
+      "percent": 10.484848484848484
+    },
+    {
+      "name": "自然直接",
+      "count": 166,
+      "percent": 10.06060606060606
+    },
+    {
+      "name": "帶著不滿",
+      "count": 165,
+      "percent": 10.0
+    },
+    {
+      "name": "簡短俐落",
+      "count": 158,
+      "percent": 9.575757575757576
+    },
+    {
+      "name": "客氣克制",
+      "count": 155,
+      "percent": 9.393939393939393
+    },
+    {
+      "name": "輕鬆幽默",
+      "count": 149,
+      "percent": 9.03030303030303
+    },
+    {
+      "name": "急迫但清楚",
+      "count": 142,
+      "percent": 8.606060606060606
+    }
+  ],
+  "tone_signal_match": [
+    {
+      "tone": "帶著不滿",
+      "signal": "生氣／衝突",
+      "articles": 165,
+      "matched": 156,
+      "matched_percent": 94.54545454545455
+    },
+    {
+      "tone": "急迫但清楚",
+      "signal": "急迫",
+      "articles": 142,
+      "matched": 83,
+      "matched_percent": 58.45070422535211
+    },
+    {
+      "tone": "溫和安慰",
+      "signal": "支持／安慰",
+      "articles": 173,
+      "matched": 104,
+      "matched_percent": 60.115606936416185
+    },
+    {
+      "tone": "輕鬆幽默",
+      "signal": "幽默口語",
+      "articles": 149,
+      "matched": 38,
+      "matched_percent": 25.503355704697988
+    },
+    {
+      "tone": "客氣克制",
+      "signal": "禮貌緩和",
+      "articles": 155,
+      "matched": 125,
+      "matched_percent": 80.64516129032258
+    },
+    {
+      "tone": "正式謹慎",
+      "signal": "正式／法律",
+      "articles": 186,
+      "matched": 124,
+      "matched_percent": 66.66666666666666
+    }
+  ],
+  "lexical_signals": [
+    {
+      "name": "正向／感謝",
+      "documents": 1220,
+      "document_percent": 73.93939393939394,
+      "occurrences": 2535
+    },
+    {
+      "name": "支持／安慰",
+      "documents": 708,
+      "document_percent": 42.90909090909091,
+      "occurrences": 1307
+    },
+    {
+      "name": "焦慮／難過",
+      "documents": 575,
+      "document_percent": 34.84848484848485,
+      "occurrences": 991
+    },
+    {
+      "name": "生氣／衝突",
+      "documents": 820,
+      "document_percent": 49.696969696969695,
+      "occurrences": 1771
+    },
+    {
+      "name": "急迫",
+      "documents": 663,
+      "document_percent": 40.18181818181818,
+      "occurrences": 941
+    },
+    {
+      "name": "幽默口語",
+      "documents": 176,
+      "document_percent": 10.666666666666668,
+      "occurrences": 388
+    },
+    {
+      "name": "禮貌緩和",
+      "documents": 1328,
+      "document_percent": 80.48484848484848,
+      "occurrences": 3401
+    },
+    {
+      "name": "正式／法律",
+      "documents": 918,
+      "document_percent": 55.63636363636364,
+      "occurrences": 3595
+    }
+  ],
+  "region_distribution": [
+    {
+      "name": "東部地區",
+      "count": 194,
+      "percent": 11.757575757575758
+    },
+    {
+      "name": "南部城市",
+      "count": 178,
+      "percent": 10.787878787878787
+    },
+    {
+      "name": "北部郊區",
+      "count": 174,
+      "percent": 10.545454545454545
+    },
+    {
+      "name": "線上跨地區",
+      "count": 168,
+      "percent": 10.181818181818182
+    },
+    {
+      "name": "離島",
+      "count": 161,
+      "percent": 9.757575757575758
+    },
+    {
+      "name": "南部鄉鎮",
+      "count": 161,
+      "percent": 9.757575757575758
+    },
+    {
+      "name": "跨縣市",
+      "count": 157,
+      "percent": 9.515151515151516
+    },
+    {
+      "name": "北部都會",
+      "count": 155,
+      "percent": 9.393939393939393
+    },
+    {
+      "name": "中部城市",
+      "count": 152,
+      "percent": 9.212121212121211
+    },
+    {
+      "name": "中部農村",
+      "count": 150,
+      "percent": 9.090909090909092
+    }
+  ],
+  "channel_distribution": [
+    {
+      "name": "電子郵件",
+      "count": 242,
+      "percent": 14.666666666666666
+    },
+    {
+      "name": "通訊軟體私訊",
+      "count": 166,
+      "percent": 10.06060606060606
+    },
+    {
+      "name": "通訊軟體群組",
+      "count": 144,
+      "percent": 8.727272727272728
+    },
+    {
+      "name": "社群貼文",
+      "count": 102,
+      "percent": 6.181818181818182
+    },
+    {
+      "name": "社群留言",
+      "count": 97,
+      "percent": 5.878787878787879
+    },
+    {
+      "name": "私人書信",
+      "count": 91,
+      "percent": 5.515151515151516
+    },
+    {
+      "name": "電子布告欄",
+      "count": 74,
+      "percent": 4.484848484848484
+    },
+    {
+      "name": "即時通訊",
+      "count": 62,
+      "percent": 3.7575757575757573
+    },
+    {
+      "name": "部落格留言",
+      "count": 61,
+      "percent": 3.6969696969696972
+    },
+    {
+      "name": "搜尋與人工智慧提示",
+      "count": 58,
+      "percent": 3.5151515151515147
+    },
+    {
+      "name": "報刊投書",
+      "count": 58,
+      "percent": 3.5151515151515147
+    },
+    {
+      "name": "共享文件",
+      "count": 56,
+      "percent": 3.3939393939393945
+    },
+    {
+      "name": "客服文字對談",
+      "count": 55,
+      "percent": 3.3333333333333335
+    },
+    {
+      "name": "電話留言",
+      "count": 53,
+      "percent": 3.212121212121212
+    },
+    {
+      "name": "手機簡訊",
+      "count": 53,
+      "percent": 3.212121212121212
+    },
+    {
+      "name": "讀者投書",
+      "count": 45,
+      "percent": 2.727272727272727
+    },
+    {
+      "name": "家庭留言",
+      "count": 38,
+      "percent": 2.3030303030303028
+    },
+    {
+      "name": "公司備忘錄",
+      "count": 37,
+      "percent": 2.242424242424242
+    },
+    {
+      "name": "呼叫器留言",
+      "count": 23,
+      "percent": 1.3939393939393938
+    },
+    {
+      "name": "工作聊天軟體",
+      "count": 21,
+      "percent": 1.2727272727272727
+    },
+    {
+      "name": "日記",
+      "count": 17,
+      "percent": 1.0303030303030303
+    },
+    {
+      "name": "留言簿",
+      "count": 16,
+      "percent": 0.9696969696969697
+    },
+    {
+      "name": "旅行札記",
+      "count": 14,
+      "percent": 0.8484848484848486
+    },
+    {
+      "name": "旅遊筆記",
+      "count": 11,
+      "percent": 0.6666666666666667
+    },
+    {
+      "name": "工作文件",
+      "count": 10,
+      "percent": 0.6060606060606061
+    },
+    {
+      "name": "會議紀錄",
+      "count": 10,
+      "percent": 0.6060606060606061
+    },
+    {
+      "name": "傳真往返",
+      "count": 10,
+      "percent": 0.6060606060606061
+    },
+    {
+      "name": "公文草稿",
+      "count": 9,
+      "percent": 0.5454545454545455
+    },
+    {
+      "name": "申請書",
+      "count": 8,
+      "percent": 0.48484848484848486
+    },
+    {
+      "name": "公司文件",
+      "count": 7,
+      "percent": 0.4242424242424243
+    },
+    {
+      "name": "聯絡簿",
+      "count": 2,
+      "percent": 0.12121212121212122
+    }
+  ],
+  "channel_group_distribution": [
+    {
+      "name": "私人溝通",
+      "count": 503,
+      "percent": 30.484848484848488
+    },
+    {
+      "name": "公開討論",
+      "count": 453,
+      "percent": 27.454545454545453
+    },
+    {
+      "name": "電子郵件",
+      "count": 242,
+      "percent": 14.666666666666666
+    },
+    {
+      "name": "群組對話",
+      "count": 144,
+      "percent": 8.727272727272728
+    },
+    {
+      "name": "工作協作",
+      "count": 141,
+      "percent": 8.545454545454545
+    },
+    {
+      "name": "搜尋／AI 提示",
+      "count": 58,
+      "percent": 3.5151515151515147
+    },
+    {
+      "name": "客服服務",
+      "count": 55,
+      "percent": 3.3333333333333335
+    },
+    {
+      "name": "正式文件",
+      "count": 27,
+      "percent": 1.6363636363636365
+    },
+    {
+      "name": "旅行書寫",
+      "count": 25,
+      "percent": 1.5151515151515151
+    },
+    {
+      "name": "教育聯絡",
+      "count": 2,
+      "percent": 0.12121212121212122
+    }
+  ],
+  "text_features": [
+    {
+      "name": "英文拉丁字母",
+      "count": 81,
+      "percent": 4.909090909090909
+    },
+    {
+      "name": "阿拉伯數字",
+      "count": 27,
+      "percent": 1.6363636363636365
+    },
+    {
+      "name": "網址",
+      "count": 0,
+      "percent": 0.0
+    },
+    {
+      "name": "Emoji",
+      "count": 0,
+      "percent": 0.0
+    },
+    {
+      "name": "注音符號",
+      "count": 0,
+      "percent": 0.0
+    },
+    {
+      "name": "阿拉伯數字金額",
+      "count": 0,
+      "percent": 0.0
+    },
+    {
+      "name": "數字日期／時間",
+      "count": 0,
+      "percent": 0.0
+    }
+  ],
+  "line_lengths": {
+    "count": 46750,
+    "average": 46.943294117647056,
+    "median": 43,
+    "at_most_10_chars": 11238,
+    "at_most_10_chars_percent": 24.038502673796792
+  },
+  "repeated_sentences": {
+    "sentence_occurrences": 74917,
+    "unique_sentences": 74620,
+    "repeated_sentence_types": 60,
+    "duplicate_occurrences": 297,
+    "duplicate_percent": 0.39643872552291204,
+    "top_examples": [
+      {
+        "sentence": "雙方不寫無法控制的精確承諾，只約定下一次聯絡的節點",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00241",
+          "tw-typing-00242",
+          "tw-typing-00243",
+          "tw-typing-00244",
+          "tw-typing-00245",
+          "tw-typing-00246",
+          "tw-typing-00247",
+          "tw-typing-00248",
+          "tw-typing-00249",
+          "tw-typing-00250",
+          "tw-typing-00251",
+          "tw-typing-00252"
+        ]
+      },
+      {
+        "sentence": "遇到記不準的細節，就寫「待確認」，不硬補一個好看的答案",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00229",
+          "tw-typing-00230",
+          "tw-typing-00231",
+          "tw-typing-00232",
+          "tw-typing-00233",
+          "tw-typing-00234",
+          "tw-typing-00235",
+          "tw-typing-00236",
+          "tw-typing-00237",
+          "tw-typing-00238",
+          "tw-typing-00239",
+          "tw-typing-00240"
+        ]
+      },
+      {
+        "sentence": "這讓後面的回覆雖然較慢，卻可以追得回去",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00229",
+          "tw-typing-00230",
+          "tw-typing-00231",
+          "tw-typing-00232",
+          "tw-typing-00233",
+          "tw-typing-00234",
+          "tw-typing-00235",
+          "tw-typing-00236",
+          "tw-typing-00237",
+          "tw-typing-00238",
+          "tw-typing-00239",
+          "tw-typing-00240"
+        ]
+      },
+      {
+        "sentence": "這次往返沒有把所有變數消除，卻留下了可追蹤的處理方式，也讓下一位接手的人讀得懂前面為何改動",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00229",
+          "tw-typing-00230",
+          "tw-typing-00231",
+          "tw-typing-00232",
+          "tw-typing-00233",
+          "tw-typing-00234",
+          "tw-typing-00235",
+          "tw-typing-00236",
+          "tw-typing-00237",
+          "tw-typing-00238",
+          "tw-typing-00239",
+          "tw-typing-00240"
+        ]
+      },
+      {
+        "sentence": "這一句看似多餘，反而讓雙方沒有再各說各話",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00229",
+          "tw-typing-00230",
+          "tw-typing-00231",
+          "tw-typing-00232",
+          "tw-typing-00233",
+          "tw-typing-00234",
+          "tw-typing-00235",
+          "tw-typing-00236",
+          "tw-typing-00237",
+          "tw-typing-00238",
+          "tw-typing-00239",
+          "tw-typing-00240"
+        ]
+      },
+      {
+        "sentence": "若後續條件有變，必須再通知，不能把沉默當成同意",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00229",
+          "tw-typing-00230",
+          "tw-typing-00231",
+          "tw-typing-00232",
+          "tw-typing-00233",
+          "tw-typing-00234",
+          "tw-typing-00235",
+          "tw-typing-00236",
+          "tw-typing-00237",
+          "tw-typing-00238",
+          "tw-typing-00239",
+          "tw-typing-00240"
+        ]
+      },
+      {
+        "sentence": "若屆時仍無答案，也要主動說明，不讓等待的一方自行猜測",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00241",
+          "tw-typing-00242",
+          "tw-typing-00243",
+          "tw-typing-00244",
+          "tw-typing-00245",
+          "tw-typing-00246",
+          "tw-typing-00247",
+          "tw-typing-00248",
+          "tw-typing-00249",
+          "tw-typing-00250",
+          "tw-typing-00251",
+          "tw-typing-00252"
+        ]
+      },
+      {
+        "sentence": "能由書面查到的先查，必須詢問第三人的就清楚標記",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00241",
+          "tw-typing-00242",
+          "tw-typing-00243",
+          "tw-typing-00244",
+          "tw-typing-00245",
+          "tw-typing-00246",
+          "tw-typing-00247",
+          "tw-typing-00248",
+          "tw-typing-00249",
+          "tw-typing-00250",
+          "tw-typing-00251",
+          "tw-typing-00252"
+        ]
+      },
+      {
+        "sentence": "結論沒有刻意寫得圓滿，但前因、修改和後續都找得到",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00241",
+          "tw-typing-00242",
+          "tw-typing-00243",
+          "tw-typing-00244",
+          "tw-typing-00245",
+          "tw-typing-00246",
+          "tw-typing-00247",
+          "tw-typing-00248",
+          "tw-typing-00249",
+          "tw-typing-00250",
+          "tw-typing-00251",
+          "tw-typing-00252"
+        ]
+      },
+      {
+        "sentence": "短短的「收到」只代表看見，並不等於內容已確認",
+        "count": 12,
+        "prompt_ids": [
+          "tw-typing-00229",
+          "tw-typing-00230",
+          "tw-typing-00231",
+          "tw-typing-00232",
+          "tw-typing-00233",
+          "tw-typing-00234",
+          "tw-typing-00235",
+          "tw-typing-00236",
+          "tw-typing-00237",
+          "tw-typing-00238",
+          "tw-typing-00239",
+          "tw-typing-00240"
+        ]
+      }
+    ]
+  },
+  "common_discourse_terms": {
+    "最後": {
+      "documents": 977,
+      "occurrences": 1582
+    },
+    "原本": {
+      "documents": 640,
+      "occurrences": 828
+    },
+    "這次": {
+      "documents": 830,
+      "occurrences": 1255
+    },
+    "確認": {
+      "documents": 1469,
+      "occurrences": 7000
+    },
+    "回覆": {
+      "documents": 1260,
+      "occurrences": 4030
+    },
+    "資料": {
+      "documents": 832,
+      "occurrences": 3034
+    },
+    "說明": {
+      "documents": 1091,
+      "occurrences": 2565
+    },
+    "處理": {
+      "documents": 944,
+      "occurrences": 2205
+    },
+    "問題": {
+      "documents": 819,
+      "occurrences": 1526
+    },
+    "需要": {
+      "documents": 1079,
+      "occurrences": 2204
+    },
+    "所以": {
+      "documents": 643,
+      "occurrences": 811
+    }
+  },
+  "method": {
+    "tone": "Assigned tone comes from the saved prompt metadata.",
+    "lexical_signals": "Overlapping exact substring indicators; they are not exclusive sentiment labels or semantic classification."
+  }
+}

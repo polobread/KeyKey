@@ -1,0 +1,9 @@
+Generate 180 independent, natural sentences in Taiwan Traditional Chinese for
+training an offline Bopomofo input method. Use one sentence per line. Cover
+daily conversation, messaging, work, school, transportation, shopping,
+weather, health, public services, software, devices, and input methods. Include
+several natural variants involving system upgrades, continuous typing, and
+accidentally pressing Return. Do not include names of private people, quotes,
+lyrics, personal data, URLs, markdown, numbering, or explanations. Keep each
+sentence between 8 and 30 Chinese characters. Prefer vocabulary and phrasing
+commonly used in Taiwan.

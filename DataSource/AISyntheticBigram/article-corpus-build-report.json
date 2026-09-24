@@ -1,0 +1,125 @@
+{
+  "source": "DataSource/AISyntheticArticles/typing-articles-v2.jsonl",
+  "snapshots": [
+    {
+      "articles": 100,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-00100",
+      "corpus_lines": 3233,
+      "han_chars": 121214,
+      "bytes": 422658,
+      "sha256": "094e1f9538332581628fc4622e02f7f3de6396596b13a45f70815b10a0c01810",
+      "file": "article-corpus-100.txt"
+    },
+    {
+      "articles": 200,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-00200",
+      "corpus_lines": 6622,
+      "han_chars": 237905,
+      "bytes": 831500,
+      "sha256": "8992dfdd269d881421bd6e2da96ec4a486195b91375f630e5333f3986d226da6",
+      "file": "article-corpus-200.txt"
+    },
+    {
+      "articles": 300,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-00300",
+      "corpus_lines": 9342,
+      "han_chars": 356328,
+      "bytes": 1245932,
+      "sha256": "3c67ce0b9f217db07a98a79fe2d434a5ff015af5485944575d9ec5c0887119c8",
+      "file": "article-corpus-300.txt"
+    },
+    {
+      "articles": 400,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-00400",
+      "corpus_lines": 11939,
+      "han_chars": 469026,
+      "bytes": 1638461,
+      "sha256": "4a2e32672d2565777d69fb34b4d95c4ca4c25f3a02b269d37319ca888a0f494d",
+      "file": "article-corpus-400.txt"
+    },
+    {
+      "articles": 450,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-00450",
+      "corpus_lines": 13270,
+      "han_chars": 524689,
+      "bytes": 1831904,
+      "sha256": "d31019953cca3165facdd67c335ba9e01b9227abdfe8839a7cb2a03586cfdaf0",
+      "file": "article-corpus-450.txt"
+    },
+    {
+      "articles": 500,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-00500",
+      "corpus_lines": 14481,
+      "han_chars": 581083,
+      "bytes": 2026673,
+      "sha256": "6a7f89c428de04419296696107ba1b24cdd1b0ff300674a7852a1ec788b70d90",
+      "file": "article-corpus-500.txt"
+    },
+    {
+      "articles": 700,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-00700",
+      "corpus_lines": 20423,
+      "han_chars": 815066,
+      "bytes": 2839858,
+      "sha256": "8d48bcbe223a73dfd14afaa07f5afee7dd8c3b79578845fdf8b5198da7eb54c0",
+      "file": "article-corpus-700.txt"
+    },
+    {
+      "articles": 900,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-00900",
+      "corpus_lines": 25933,
+      "han_chars": 1041865,
+      "bytes": 3630834,
+      "sha256": "fb3c1a0730b38ea5794703953884abfe6e904c861c19b526728bd34dc020f680",
+      "file": "article-corpus-900.txt"
+    },
+    {
+      "articles": 1100,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-01100",
+      "corpus_lines": 31112,
+      "han_chars": 1268598,
+      "bytes": 4419036,
+      "sha256": "86f06d7a92f2cf2fbf050067b4d3c1095ce5d95322ec6850c8d0d52c16f84832",
+      "file": "article-corpus-1100.txt"
+    },
+    {
+      "articles": 1300,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-01300",
+      "corpus_lines": 36164,
+      "han_chars": 1503908,
+      "bytes": 5235358,
+      "sha256": "df49b8826fd436eebe8cd67fee11f6a51f6be60ec02d09b63e4e064ccd52118d",
+      "file": "article-corpus-1300.txt"
+    },
+    {
+      "articles": 1500,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-01500",
+      "corpus_lines": 42146,
+      "han_chars": 1732803,
+      "bytes": 6032926,
+      "sha256": "e28066ad5ba2a5be306690e66dbd03b90e166a68c2a2d640ceee86012372e595",
+      "file": "article-corpus-1500.txt"
+    },
+    {
+      "articles": 1650,
+      "source_first": "tw-typing-00001",
+      "source_last": "tw-typing-01650",
+      "corpus_lines": 46749,
+      "han_chars": 1911073,
+      "bytes": 6650758,
+      "sha256": "b93843dbeb76c6614e33b36c69340234a281452d04f2bf72201a55f489db4d32",
+      "file": "article-corpus-1650.txt"
+    }
+  ]
+}
