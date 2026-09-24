@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.10（開發中）
+
+- Linux Fcitx 設定加入「好打注音／傳統注音」，未設定模式時預設好打注音；好打注音
+  可連續組字、在句中移動游標與刪改讀音、選候選後重組，並以
+  Enter 送出整句。套件內的語言模型由 Linux 原生資料工具產生，詞頻與 Bigram 資料
+  對齊 macOS。
+- Linux 好打注音加入持久化自訂詞與選字學習；`keykey-smart-phrases` 可新增、列出、
+  刪除自訂詞，也可只清除學習紀錄而保留自訂詞。
+
 ## 1.2.9
 
 - 同步 macOS、Windows、Android、iOS 與 Linux 的建置版號至 1.2.9；

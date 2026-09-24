@@ -113,6 +113,7 @@ verify_install() {
   test -f /usr/share/chichi77-keykey/data/simplex-ext.cin
   test -f /usr/share/chichi77-keykey/data/bpmf-punctuations.cin
   test -f /usr/share/chichi77-keykey/data/tc2sc.cin
+  test -s /usr/share/chichi77-keykey/data/smart-mandarin.db
   test -f /usr/share/chichi77-keykey/data/associated-phrases/McBopomofo.occ
   test -f /usr/share/chichi77-keykey/data/associated-phrases/display-names.tsv
   test -f /usr/share/chichi77-keykey/data/associated-phrases/phrase.general.tsv
@@ -196,6 +197,7 @@ fi
 test ! -e /usr/share/fcitx5/addon/chichi77-keykey.conf
 test ! -e /usr/share/chichi77-keykey/data/bpmf-ext.cin
 test ! -e /usr/share/chichi77-keykey/data/tc2sc.cin
+test ! -e /usr/share/chichi77-keykey/data/smart-mandarin.db
 test ! -e /usr/share/chichi77-keykey/data/associated-phrases
 test ! -e /usr/bin/keykey-fcitx-app
 test ! -e /usr/share/applications/org.chichi77.KeyKey.TextEditor.desktop

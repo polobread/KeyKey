@@ -28,11 +28,11 @@ Ubuntu 24.04 使用者若要從下載、編譯一路完成 Fcitx 啟用與試打
 [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)。
 
 傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler、`pkg-config`、
-Fcitx 5 Core 與 libcanberra 開發檔；
+Fcitx 5 Core、libcanberra 與 SQLite 3 開發檔，以及 Python 3；
 不需要 Ninja、Docker、Autoconf 或 Automake。Ubuntu 可先安裝：
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev pkg-config
+sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
 ```
 
 接著使用預設 `/usr/local` prefix：
@@ -418,12 +418,12 @@ literal controls. See the
 ### Linux (in development)
 
 A traditional source build requires CMake 3.22, GNU Make, a C++17 compiler,
-`pkg-config`, and the Fcitx 5 Core and libcanberra development files. It does not require Ninja, Docker,
+`pkg-config`, Python 3, and the Fcitx 5 Core, libcanberra, and SQLite 3 development files. It does not require Ninja, Docker,
 Autoconf, or Automake. On Ubuntu, install the dependencies and build with the
 default `/usr/local` prefix as follows:
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev pkg-config
+sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
 cd Source/Loaders/Linux-IME
 ./configure
 make -j2

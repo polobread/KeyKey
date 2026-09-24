@@ -63,6 +63,7 @@ public:
     bool empty(BopomofoLayout layout) const noexcept;
     bool hasToneMarker() const noexcept;
     std::string queryKey() const;
+    std::string absoluteOrderKey() const;
     std::string displayText(BopomofoLayout layout) const;
     std::string inputKeySequence(BopomofoLayout layout) const;
 

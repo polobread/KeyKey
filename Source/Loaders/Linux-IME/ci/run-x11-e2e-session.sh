@@ -18,6 +18,7 @@ esac
 
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-STANDARD
+  T01-X11-GTK3-BOPOMOFO-SMART
   T01-X11-GTK4-BOPOMOFO-STANDARD
   T01-X11-QT6-BOPOMOFO-STANDARD
   T01-X11-GTK3-BOPOMOFO-BIG5-FILTER
@@ -498,6 +499,7 @@ if [[ -n "${KEYKEY_E2E_EXPECTED_ADDON_PATH:-}" ]]; then
 fi
 
 bopomofo_layout=Standard
+bopomofo_mode=Traditional
 candidate_window_style=Vertical
 traditional_to_simplified=False
 use_all_unicode_characters=True
@@ -551,8 +553,8 @@ associated_phrase_source_enabled() {
 
 write_keykey_config() {
   {
-    printf 'BopomofoLayout=%s\nTraditionalToSimplified=%s\n' \
-      "$bopomofo_layout" "$traditional_to_simplified"
+    printf 'BopomofoLayout=%s\nBopomofoMode=%s\nTraditionalToSimplified=%s\n' \
+      "$bopomofo_layout" "$bopomofo_mode" "$traditional_to_simplified"
     printf 'CandidateWindowStyle=%s\n' "$candidate_window_style"
     printf 'UseAllUnicodeCharacters=%s\n' \
       "$use_all_unicode_characters"
@@ -574,8 +576,8 @@ write_keykey_config() {
 }
 
 write_legacy_keykey_config() {
-  printf 'BopomofoLayout=%s\nTraditionalToSimplified=%s\nAssociatedPhraseCollections=%s\n' \
-    "$bopomofo_layout" "$traditional_to_simplified" \
+  printf 'BopomofoLayout=%s\nBopomofoMode=%s\nTraditionalToSimplified=%s\nAssociatedPhraseCollections=%s\n' \
+    "$bopomofo_layout" "$bopomofo_mode" "$traditional_to_simplified" \
     "$associated_phrase_collections" \
     >"$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf"
 }
@@ -589,6 +591,12 @@ reload_keykey_config() {
 
 set_bopomofo_layout() {
   bopomofo_layout=$1
+  write_keykey_config
+  reload_keykey_config
+}
+
+set_bopomofo_mode() {
+  bopomofo_mode=$1
   write_keykey_config
   reload_keykey_config
 }
@@ -635,8 +643,8 @@ associated_phrase_config_variant() {
     fi
     entries+="'$source': <'$enabled'>"
   done
-  printf "<{'BopomofoLayout': <'%s'>, 'CandidateWindowStyle': <'%s'>, 'TraditionalToSimplified': <'%s'>, 'UseAllUnicodeCharacters': <'%s'>, 'PlaySoundOnTypingError': <'%s'>, 'ToggleInputMethodWithControlBackslash': <'%s'>, 'AssociatedPhrases': <{%s}>}>" \
-    "$bopomofo_layout" "$candidate_window_style" \
+  printf "<{'BopomofoLayout': <'%s'>, 'BopomofoMode': <'%s'>, 'CandidateWindowStyle': <'%s'>, 'TraditionalToSimplified': <'%s'>, 'UseAllUnicodeCharacters': <'%s'>, 'PlaySoundOnTypingError': <'%s'>, 'ToggleInputMethodWithControlBackslash': <'%s'>, 'AssociatedPhrases': <{%s}>}>" \
+    "$bopomofo_layout" "$bopomofo_mode" "$candidate_window_style" \
     "$traditional_to_simplified" \
     "$use_all_unicode_characters" "$play_sound_on_typing_error" \
     "$toggle_with_control_backslash" "$entries"
@@ -668,6 +676,7 @@ verify_bopomofo_config_schema() {
     fcitx://config/inputmethod/chichi77-keykey-bopomofo \
     >"$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq BopomofoLayout "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
+  grep -Fq BopomofoMode "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq CandidateWindowStyle \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq TraditionalToSimplified \
@@ -680,7 +689,7 @@ verify_bopomofo_config_schema() {
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq AssociatedPhrases \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
-  grep -Fq '琦琦輸入法 — 版本 1.2.9' \
+  grep -Fq '琦琦輸入法 — 版本 1.2.10' \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   for source in "${associated_phrase_sources[@]}"; do
     grep -Fq "$source" \
@@ -1629,6 +1638,13 @@ if case_selected T01-X11-GTK3-BOPOMOFO-STANDARD; then
   run_case T01-X11-GTK3-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
     中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1
   verify_bopomofo_config_schema
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART chichi77-keykey-bopomofo \
+    你好 'su3cl3' 'ㄋ,ㄋㄧ,你,你ㄏ,你好' s u 3 c l 3 Return
+  set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK4-BOPOMOFO-STANDARD; then
   set_bopomofo_layout Standard

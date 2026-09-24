@@ -39,11 +39,13 @@ License: BSD-3-Clause
  Source/ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c.
 
 Files: DataSource/McBopomofo/phrase.occ
+ DataSource/McBopomofo/BPMFMappings.txt
 Copyright: 2011-2026 Mengjuei Hsieh et al.
 License: MIT
 
 Files: DataSource/AssociatedPhraseCollectionNames.tsv
  DataSource/chichi77Collection/*
+ DataSource/AISyntheticBigram/*
 Copyright: 2026 Chui-Ping Cheng
 License: MIT
 

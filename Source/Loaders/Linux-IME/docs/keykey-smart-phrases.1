@@ -1,0 +1,25 @@
+.TH KEYKEY-SMART-PHRASES 1 "September 2026" "KeyKey" "User Commands"
+.SH NAME
+keykey-smart-phrases \- manage Smart Mandarin custom phrases and learning
+.SH SYNOPSIS
+.B keykey-smart-phrases list
+.br
+.B keykey-smart-phrases add
+.I phrase "reading"
+.br
+.B keykey-smart-phrases remove
+.I phrase "reading"
+.br
+.B keykey-smart-phrases reset-learning
+.SH DESCRIPTION
+Readings use one space-separated Bopomofo syllable per character. Quote the
+reading so the shell passes it as one argument. Candidate choices are learned
+automatically while typing with Smart Mandarin. The reset-learning command
+clears candidate and adjacent-word learning while preserving custom phrases.
+.SH ENVIRONMENT
+.TP
+.B XDG_DATA_HOME
+Base directory for the private user database. Defaults to ~/.local/share.
+.TP
+.B CHICHI77_KEYKEY_USER_DB
+Override the full user database path.

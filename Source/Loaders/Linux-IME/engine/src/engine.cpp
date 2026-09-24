@@ -111,6 +111,17 @@ bool isValidUtf8Sequence(const std::string &text, std::size_t offset,
     return true;
 }
 
+std::size_t utf8ByteOffset(const std::string &text,
+                           std::size_t codePoints) noexcept {
+    std::size_t offset = 0;
+    while (codePoints-- > 0 && offset < text.size()) {
+        const std::size_t length =
+            utf8SequenceLength(static_cast<unsigned char>(text[offset]));
+        offset += length == 0 ? 1 : length;
+    }
+    return std::min(offset, text.size());
+}
+
 } // namespace
 
 std::string toFullWidth(const std::string &text) {
@@ -159,6 +170,22 @@ void InputContextState::reset() noexcept {
     page_ = 0;
     highlightedIndex_ = 0;
     showingAssociatedPhrases_ = false;
+    smartReadings_.clear();
+    smartComposition_ = {};
+    smartOverrides_.clear();
+    smartCursor_ = 0;
+    smartCandidateIndex_ = 0;
+    showingSmartCandidates_ = false;
+}
+
+void Engine::setSmartMandarinStore(
+    std::shared_ptr<const SmartMandarinStore> store) noexcept {
+    smartMandarinStore_ = std::move(store);
+}
+
+void Engine::setSmartMandarinMode(bool enabled) noexcept {
+    smartMandarinMode_ = enabled && smartMandarinStore_ != nullptr &&
+                         inputMethod_ == InputMethod::Bopomofo;
 }
 
 Engine::Engine(std::shared_ptr<const CinDictionary> dictionary,
@@ -220,6 +247,10 @@ EngineResult Engine::processKey(InputContextState &context,
         EngineResult result = snapshot(context);
         result.handled = true;
         return result;
+    }
+
+    if (smartMandarinMode_) {
+        return processSmartKey(context, event);
     }
 
     if (context.showingAssociatedPhrases_) {
@@ -478,15 +509,325 @@ EngineResult Engine::processKey(InputContextState &context,
 
 EngineResult Engine::selectDisplayedCandidate(InputContextState &context,
                                               std::size_t displayedIndex) const {
+    if (smartMandarinMode_ && context.showingSmartCandidates_) {
+        const std::size_t index =
+            context.page_ * CandidatesPerPage + displayedIndex;
+        if (index >= context.candidates_.size()) {
+            EngineResult result = snapshot(context);
+            result.handled = true;
+            result.beep = true;
+            return result;
+        }
+        const std::string chosen = context.candidates_[index];
+        smartMandarinStore_->learnCandidate(
+            context.smartReadings_, context.smartCandidateIndex_, chosen,
+            context.smartComposition_);
+        context.smartOverrides_[context.smartCandidateIndex_] = chosen;
+        rebuildSmartComposition(context);
+        EngineResult result = snapshot(context);
+        result.handled = true;
+        return result;
+    }
     const std::size_t absoluteIndex =
         context.page_ * CandidatesPerPage + displayedIndex;
     return selectAbsoluteCandidate(context, absoluteIndex);
 }
 
+void Engine::rebuildSmartComposition(InputContextState &context) const {
+    context.smartComposition_ = {};
+    if (!context.smartReadings_.empty()) {
+        smartMandarinStore_->compose(context.smartReadings_,
+                                    context.smartOverrides_,
+                                    context.smartComposition_);
+    }
+    context.candidates_.clear();
+    context.showingSmartCandidates_ = false;
+    context.page_ = 0;
+    context.highlightedIndex_ = 0;
+}
+
+bool Engine::finishSmartReading(InputContextState &context) const {
+    if (context.reading_.empty(bopomofoLayout_)) {
+        return false;
+    }
+    const std::string query = context.reading_.absoluteOrderKey();
+    auto trial = context.smartReadings_;
+    trial.insert(trial.begin() +
+                     static_cast<std::ptrdiff_t>(context.smartCursor_), query);
+    std::map<std::size_t, std::string> shiftedOverrides;
+    for (const auto &entry : context.smartOverrides_) {
+        shiftedOverrides[entry.first >= context.smartCursor_
+                             ? entry.first + 1 : entry.first] = entry.second;
+    }
+    SmartComposition composition;
+    if (!smartMandarinStore_->compose(trial, shiftedOverrides,
+                                     composition)) {
+        context.candidates_ = dictionary_->candidates(context.reading_.queryKey());
+        context.showingSmartCandidates_ = false;
+        context.page_ = 0;
+        context.highlightedIndex_ = 0;
+        return false;
+    }
+    context.smartReadings_ = std::move(trial);
+    context.smartOverrides_ = std::move(shiftedOverrides);
+    context.smartComposition_ = std::move(composition);
+    ++context.smartCursor_;
+    context.reading_.clear();
+    context.candidates_.clear();
+    context.showingSmartCandidates_ = false;
+    context.page_ = 0;
+    context.highlightedIndex_ = 0;
+    return true;
+}
+
+EngineResult Engine::processSmartKey(InputContextState &context,
+                                     const KeyEvent &event) const {
+    const auto resultFor = [&](bool beep = false) {
+        EngineResult result = snapshot(context);
+        result.handled = true;
+        result.beep = beep;
+        return result;
+    };
+    const bool hasReading = !context.reading_.empty(bopomofoLayout_);
+    const bool hasComposition = !context.smartReadings_.empty();
+    const std::string punctuationKey = punctuationQueryKey(event);
+    if (!punctuationKey.empty()) {
+        if (hasReading) {
+            return resultFor(true);
+        }
+        const std::string prefix =
+            hasComposition ? outputText(context, context.smartComposition_.text)
+                           : std::string{};
+        if (hasComposition) {
+            context.reset();
+        }
+        EngineResult result = queryPunctuation(context, punctuationKey);
+        result.commit = prefix + result.commit;
+        return result;
+    }
+    if (hasApplicationShortcutModifier(event.modifiers)) {
+        return snapshot(context);
+    }
+    if (event.modifiers != KeyModifier::None) {
+        return snapshot(context);
+    }
+    if (!context.candidatePreedit_.empty() && !context.candidates_.empty()) {
+        if (event.code == KeyCode::Character && event.character >= '1' &&
+            event.character <= '9') {
+            return selectDisplayedCandidate(
+                context, static_cast<std::size_t>(event.character - '1'));
+        }
+        if (event.code == KeyCode::Enter) {
+            return selectDisplayedCandidate(context, context.highlightedIndex_);
+        }
+        if (event.code == KeyCode::Escape) {
+            clearCandidates(context);
+            return resultFor();
+        }
+        if (event.code == KeyCode::Space || event.code == KeyCode::Right ||
+            event.code == KeyCode::PageDown) {
+            changeCandidatePage(context, 1);
+            return resultFor();
+        }
+        if (event.code == KeyCode::Left || event.code == KeyCode::PageUp) {
+            changeCandidatePage(context, -1);
+            return resultFor();
+        }
+    }
+    if (event.code == KeyCode::Character) {
+        if (context.showingSmartCandidates_ && event.character >= '1' &&
+            event.character <= '9') {
+            return selectDisplayedCandidate(
+                context, static_cast<std::size_t>(event.character - '1'));
+        }
+        if (acceptsCharacter(event.character)) {
+            context.candidates_.clear();
+            context.showingSmartCandidates_ = false;
+            if (!context.reading_.combine(event.character, bopomofoLayout_)) {
+                return resultFor(true);
+            }
+            if (context.reading_.hasToneMarker() &&
+                !finishSmartReading(context)) {
+                return resultFor(true);
+            }
+            return resultFor();
+        }
+        if (hasReading) {
+            return resultFor(true);
+        }
+        if (hasComposition) {
+            const std::string composed = context.smartComposition_.text;
+            const std::string literal =
+                outputText(context, std::string(1, event.character));
+            context.reset();
+            EngineResult result = resultFor();
+            result.commit = outputText(context, composed) + literal;
+            return result;
+        }
+        if (context.fullWidthMode_ && event.character >= 0x20 &&
+            event.character <= 0x7E) {
+            EngineResult result = resultFor();
+            result.commit = outputText(context, std::string(1, event.character));
+            return result;
+        }
+        return snapshot(context);
+    }
+    switch (event.code) {
+    case KeyCode::Space:
+        if (hasReading) {
+            return resultFor(!finishSmartReading(context));
+        }
+        if (context.showingSmartCandidates_) {
+            changeCandidatePage(context, 1);
+            return resultFor();
+        }
+        if (hasComposition) {
+            context.smartCandidateIndex_ =
+                context.smartCursor_ == context.smartReadings_.size()
+                    ? context.smartCursor_ - 1 : context.smartCursor_;
+            context.candidates_ = smartMandarinStore_->candidates(
+                context.smartReadings_, context.smartCandidateIndex_,
+                context.smartComposition_);
+            context.showingSmartCandidates_ = !context.candidates_.empty();
+            return resultFor();
+        }
+        if (context.fullWidthMode_) {
+            EngineResult result = resultFor();
+            result.commit = outputText(context, " ");
+            return result;
+        }
+        return snapshot(context);
+    case KeyCode::Enter:
+        if (hasReading) {
+            return resultFor(!finishSmartReading(context));
+        }
+        if (hasComposition) {
+            const std::string composed = context.smartComposition_.text;
+            const std::string commit = outputText(context, composed);
+            context.reset();
+            EngineResult result = resultFor();
+            result.commit = commit;
+            return result;
+        }
+        return snapshot(context);
+    case KeyCode::Backspace:
+        if (hasReading) {
+            context.reading_.backspace(bopomofoLayout_);
+            context.candidates_.clear();
+            return resultFor();
+        }
+        if (hasComposition && context.smartCursor_ > 0) {
+            const std::size_t erased = --context.smartCursor_;
+            context.smartReadings_.erase(
+                context.smartReadings_.begin() +
+                static_cast<std::ptrdiff_t>(erased));
+            std::map<std::size_t, std::string> shifted;
+            for (const auto &entry : context.smartOverrides_) {
+                if (entry.first != erased) {
+                    shifted[entry.first > erased ? entry.first - 1
+                                                 : entry.first] = entry.second;
+                }
+            }
+            context.smartOverrides_ = std::move(shifted);
+            rebuildSmartComposition(context);
+            return resultFor();
+        }
+        return hasComposition ? resultFor(true) : snapshot(context);
+    case KeyCode::Delete:
+        if (hasComposition && context.smartCursor_ < context.smartReadings_.size()) {
+            const std::size_t erased = context.smartCursor_;
+            context.smartReadings_.erase(
+                context.smartReadings_.begin() +
+                static_cast<std::ptrdiff_t>(erased));
+            std::map<std::size_t, std::string> shifted;
+            for (const auto &entry : context.smartOverrides_) {
+                if (entry.first != erased) {
+                    shifted[entry.first > erased ? entry.first - 1
+                                                 : entry.first] = entry.second;
+                }
+            }
+            context.smartOverrides_ = std::move(shifted);
+            rebuildSmartComposition(context);
+            return resultFor();
+        }
+        return hasReading || hasComposition ? resultFor(true)
+                                            : snapshot(context);
+    case KeyCode::Escape:
+        if (context.showingSmartCandidates_) {
+            context.candidates_.clear();
+            context.showingSmartCandidates_ = false;
+            return resultFor();
+        }
+        if (hasReading || hasComposition) {
+            context.reset();
+            return resultFor();
+        }
+        return snapshot(context);
+    case KeyCode::Left:
+    case KeyCode::PageUp:
+        if (context.showingSmartCandidates_) {
+            changeCandidatePage(context, -1);
+            return resultFor();
+        }
+        if (event.code == KeyCode::Left && hasComposition && !hasReading &&
+            context.smartCursor_ > 0) {
+            --context.smartCursor_;
+            return resultFor();
+        }
+        break;
+    case KeyCode::Right:
+    case KeyCode::PageDown:
+        if (context.showingSmartCandidates_) {
+            changeCandidatePage(context, 1);
+            return resultFor();
+        }
+        if (event.code == KeyCode::Right && hasComposition && !hasReading &&
+            context.smartCursor_ < context.smartReadings_.size()) {
+            ++context.smartCursor_;
+            return resultFor();
+        }
+        break;
+    case KeyCode::Home:
+        if (hasComposition && !hasReading) {
+            context.smartCursor_ = 0;
+            return resultFor();
+        }
+        break;
+    case KeyCode::End:
+        if (hasComposition && !hasReading) {
+            context.smartCursor_ = context.smartReadings_.size();
+            return resultFor();
+        }
+        break;
+    case KeyCode::Up:
+    case KeyCode::Down:
+        if (context.showingSmartCandidates_) {
+            moveCandidateHighlight(context,
+                                   event.code == KeyCode::Down ? 1 : -1);
+            return resultFor();
+        }
+        break;
+    default:
+        break;
+    }
+    return hasReading || hasComposition ? resultFor(true) : snapshot(context);
+}
+
 EngineResult Engine::snapshot(const InputContextState &context) const {
     EngineResult result;
-    result.preedit = displayText(context);
-    result.preeditCursorBytes = result.preedit.size();
+    if (smartMandarinMode_ && context.candidatePreedit_.empty()) {
+        const std::string &composed = context.smartComposition_.text;
+        const std::size_t cursor = utf8ByteOffset(composed,
+                                                  context.smartCursor_);
+        const std::string reading =
+            context.reading_.displayText(bopomofoLayout_);
+        result.preedit = composed.substr(0, cursor) + reading +
+                         composed.substr(cursor);
+        result.preeditCursorBytes = cursor + reading.size();
+    } else {
+        result.preedit = displayText(context);
+        result.preeditCursorBytes = result.preedit.size();
+    }
     result.candidatePage = context.page_;
     result.candidatePageCount =
         (context.candidates_.size() + CandidatesPerPage - 1) /
@@ -710,7 +1051,8 @@ EngineResult Engine::selectAbsoluteCandidate(InputContextState &context,
         context.showingAssociatedPhrases_;
     const std::string selected = context.candidates_[index];
     context.reset();
-    if (!selectedAssociatedPhrase && associatedPhraseDictionary_) {
+    if (!smartMandarinMode_ && !selectedAssociatedPhrase &&
+        associatedPhraseDictionary_) {
         context.candidates_ = associatedPhraseDictionary_->candidates(
             selected, enabledAssociatedPhraseCollections_);
         context.showingAssociatedPhrases_ = !context.candidates_.empty();

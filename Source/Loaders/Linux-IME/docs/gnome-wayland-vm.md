@@ -44,7 +44,7 @@ automatic login for the guest user; configures Fcitx autostart and restarts
 GDM. The host binaries are installed under the guest user's
 `~/.local/libexec/keykey-e2e/`, so smoke tests still work after a VM reboot.
 The provision script now expects development packages named
-`1.2.9-1+ubuntu24.04`; the existing VM results and published packages are
+`1.2.10-1+ubuntu24.04`; the existing VM results and published packages are
 from 1.2.8. Build new packages and verify their versions and hashes before
 provisioning. Provisioning is repeatable but interrupts any active
 guest desktop session. It also fixes the guest's Netplan renderer to the

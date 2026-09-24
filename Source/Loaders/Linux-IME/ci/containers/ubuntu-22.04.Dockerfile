@@ -9,8 +9,10 @@ RUN apt-get update \
         g++ \
         libcanberra-dev \
         libfcitx5core-dev \
+        libsqlite3-dev \
         ninja-build \
         pkg-config \
+        python3 \
     && rm -rf /var/lib/apt/lists/*
 
 FROM build AS package-build

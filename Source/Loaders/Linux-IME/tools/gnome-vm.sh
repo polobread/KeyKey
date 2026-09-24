@@ -83,8 +83,8 @@ provision() {
   local panel_dir=$linux_root/out/packages/ubuntu-24.04-amd64/release-candidate
   local host_dir=$linux_root/out/build/ubuntu-24.04-package-amd64
   local files=(
-    "$package_dir/chichi77-keykey-data_1.2.9-1+ubuntu24.04_all.deb"
-    "$package_dir/fcitx5-chichi77-keykey_1.2.9-1+ubuntu24.04_amd64.deb"
+    "$package_dir/chichi77-keykey-data_1.2.10-1+ubuntu24.04_all.deb"
+    "$package_dir/fcitx5-chichi77-keykey_1.2.10-1+ubuntu24.04_amd64.deb"
     "$panel_dir/gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb"
     "$host_dir/keykey_linux_gtk3_e2e_host"
     "$host_dir/keykey_linux_gtk4_e2e_host"

@@ -59,6 +59,17 @@ public:
     }
 };
 
+class BopomofoModeAnnotation : public fcitx::EnumAnnotation {
+public:
+    void dumpDescription(fcitx::RawConfig &config) const {
+        fcitx::EnumAnnotation::dumpDescription(config);
+        config.setValueByPath("Enum/0", "Smart");
+        config.setValueByPath("EnumI18n/0", "好打注音");
+        config.setValueByPath("Enum/1", "Traditional");
+        config.setValueByPath("EnumI18n/1", "傳統注音");
+    }
+};
+
 class CandidateWindowStyleAnnotation : public fcitx::EnumAnnotation {
 public:
     void dumpDescription(fcitx::RawConfig &config) const {
@@ -123,6 +134,8 @@ FCITX_CONFIGURATION(
     fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
         bopomofoLayout{this, "BopomofoLayout", "Bopomofo keyboard layout",
                        "Standard"};
+    fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation>
+        bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"};
     fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation>
         candidateWindowStyle{this, "CandidateWindowStyle",
                              "Candidate window style", "Vertical"};
@@ -183,6 +196,7 @@ public:
         : inputContext_(inputContext) {}
 
     void process(const linux_ime::Engine &engine,
+                 bool smartMode,
                  bool traditionalToSimplified,
                  bool playSoundOnTypingError,
                  fcitx::CandidateLayoutHint candidateLayout,
@@ -208,6 +222,7 @@ private:
     linux_ime::InputContextState context_;
     const linux_ime::Engine *activeEngine_ = nullptr;
     bool chineseMode_ = true;
+    bool smartMode_ = false;
     fcitx::CandidateLayoutHint candidateLayout_ =
         fcitx::CandidateLayoutHint::Vertical;
     std::optional<ShiftPress> shiftPressedAt_;
@@ -242,6 +257,7 @@ public:
           punctuationDictionary_(loadDictionary("bpmf-punctuations.cin")),
           traditionalToSimplifiedDictionary_(loadDictionary("tc2sc.cin")),
           associatedPhraseDictionary_(loadAssociatedPhraseDictionary()),
+          smartMandarinStore_(loadSmartMandarinStore()),
           standardEngine_(bopomofoDictionary_, linux_ime::InputMethod::Bopomofo,
                           linux_ime::BopomofoLayout::Standard,
                           punctuationDictionary_,
@@ -331,7 +347,9 @@ public:
             return;
         }
         state->process(
-            engineFor(entry), *config_.traditionalToSimplified,
+            engineFor(entry), entry.uniqueName() == "chichi77-keykey-bopomofo" &&
+                                  *config_.bopomofoMode != "Traditional",
+            *config_.traditionalToSimplified,
             *config_.playSoundOnTypingError, candidateLayoutHint(), errorSound_,
             translated, event);
     }
@@ -388,6 +406,18 @@ private:
                 directory + "/associated-phrases"));
     }
 
+    static std::shared_ptr<const linux_ime::SmartMandarinStore>
+    loadSmartMandarinStore() {
+        const char *overrideDirectory = std::getenv("CHICHI77_KEYKEY_DATA_DIR");
+        const std::string directory =
+            overrideDirectory == nullptr ? KEYKEY_LINUX_DATA_DIR
+                                         : overrideDirectory;
+        auto userData = linux_ime::SmartMandarinUserData::open(
+            linux_ime::SmartMandarinUserData::defaultPath());
+        return linux_ime::SmartMandarinStore::open(
+            directory + "/smart-mandarin.db", std::move(userData));
+    }
+
     static std::vector<std::string>
     parseCollectionList(const std::string &value) {
         std::vector<std::string> result;
@@ -426,6 +456,13 @@ private:
     }
 
     void applyConfig() {
+        const bool smart = *config_.bopomofoMode != "Traditional";
+        for (linux_ime::Engine *engine : {&standardEngine_, &etenEngine_,
+                                          &eten26Engine_, &hsuEngine_,
+                                          &hanyuPinyinEngine_}) {
+            engine->setSmartMandarinStore(smartMandarinStore_);
+            engine->setSmartMandarinMode(smart);
+        }
         const std::vector<std::string> enabled =
             enabledAssociatedPhraseCollections(*config_.associatedPhrases);
         standardEngine_.setAssociatedPhraseCollections(enabled);
@@ -579,6 +616,7 @@ private:
         traditionalToSimplifiedDictionary_;
     std::shared_ptr<const linux_ime::AssociatedPhraseDictionary>
         associatedPhraseDictionary_;
+    std::shared_ptr<const linux_ime::SmartMandarinStore> smartMandarinStore_;
     linux_ime::Engine standardEngine_;
     linux_ime::Engine etenEngine_;
     linux_ime::Engine eten26Engine_;
@@ -596,6 +634,7 @@ private:
 #undef KEYKEY_ASSOCIATED_PHRASE_OPTIONS
 
 void FcitxState::process(const linux_ime::Engine &engine,
+                         bool smartMode,
                          bool traditionalToSimplified,
                          bool playSoundOnTypingError,
                          fcitx::CandidateLayoutHint candidateLayout,
@@ -603,9 +642,10 @@ void FcitxState::process(const linux_ime::Engine &engine,
                          const linux_ime::KeyEvent &event,
                          fcitx::KeyEvent &fcitxEvent) {
     candidateLayout_ = candidateLayout;
-    if (activeEngine_ != &engine) {
+    if (activeEngine_ != &engine || smartMode_ != smartMode) {
         context_.reset();
         activeEngine_ = &engine;
+        smartMode_ = smartMode;
     }
     engine.setTraditionalToSimplifiedMode(context_,
                                           traditionalToSimplified);
@@ -794,6 +834,7 @@ void FcitxState::updateUi(const linux_ime::EngineResult &result) {
 
     if (!result.preedit.empty()) {
         fcitx::Text preedit(result.preedit, fcitx::TextFormatFlag::HighLight);
+        preedit.setCursor(static_cast<int>(result.preeditCursorBytes));
         if (inputContext_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit)) {
             panel.setClientPreedit(preedit);
         } else {

@@ -13,6 +13,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <unistd.h>
 
 namespace {
 
@@ -1452,10 +1453,224 @@ void testBopomofoReadingBlocksHostEditingKeys() {
     }
 }
 
+void testSmartMandarinComposition() {
+    const auto store = keykey::linux_ime::SmartMandarinStore::open(
+        KEYKEY_TEST_SMART_DB);
+    require(store != nullptr, "Smart Mandarin database did not open");
+    Engine engine(loadRealBopomofoDictionary());
+    engine.setSmartMandarinStore(store);
+    engine.setSmartMandarinMode(true);
+    InputContextState context;
+    EngineResult result;
+    for (char key : std::string("su3cl3")) {
+        result = engine.processKey(context, character(key));
+    }
+    require(result.handled && result.commit.empty() &&
+                result.preedit == "你好",
+            "Smart Mandarin did not compose two readings before commit");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.handled && !result.candidates.empty() &&
+                result.preedit == "你好",
+            "Smart Mandarin did not offer candidates for the last reading");
+    if (result.candidates.size() > 1) {
+        result = engine.processKey(context, character('2'));
+        require(result.handled && result.preedit != "你好" &&
+                    result.commit.empty(),
+                "Smart Mandarin candidate did not override the last reading");
+        context.reset();
+        for (char key : std::string("su3cl3")) {
+            result = engine.processKey(context, character(key));
+        }
+        result = engine.processKey(
+            context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    }
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false, false});
+    require(result.handled && result.preedit == "你好" &&
+                result.candidates.empty(),
+            "Closing Smart Mandarin candidates lost the composition");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Enter, '\0', KeyModifier::None, false, false});
+    require(result.commit == "你好" && result.preedit.empty(),
+            "Enter did not commit the Smart Mandarin composition");
+
+    for (char key : std::string("su3cl3")) {
+        result = engine.processKey(context, character(key));
+    }
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Backspace, '\0', KeyModifier::None, false, false});
+    require(result.preedit == "你", "Backspace did not remove the last reading");
+    for (char key : std::string("cl3")) {
+        result = engine.processKey(context, character(key));
+    }
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Left, '\0', KeyModifier::None, false, false});
+    require(result.preedit == "你好" && result.preeditCursorBytes == 3,
+            "Smart Mandarin did not move its cursor between readings");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.handled && !result.candidates.empty(),
+            "Smart Mandarin did not open candidates at the cursor");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false, false});
+    require(result.preeditCursorBytes == 3 && result.preedit == "你好",
+            "Closing cursor candidates moved the Smart Mandarin cursor");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Backspace, '\0', KeyModifier::None, false, false});
+    require(result.preedit == "好" && result.preeditCursorBytes == 0,
+            "Smart Mandarin did not delete before its cursor");
+    for (char key : std::string("su3")) {
+        result = engine.processKey(context, character(key));
+    }
+    require(result.preedit == "你好" && result.preeditCursorBytes == 3,
+            "Smart Mandarin did not insert a reading at its cursor");
+    engine.processKey(
+        context, KeyEvent{KeyCode::Home, '\0', KeyModifier::None, false, false});
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Delete, '\0', KeyModifier::None, false, false});
+    require(result.preedit == "好" && result.preeditCursorBytes == 0,
+            "Smart Mandarin Delete did not remove the current reading");
+    context.reset();
+    for (char key : std::string("rup")) {
+        result = engine.processKey(context, character(key));
+    }
+    result = engine.processKey(context, character('='));
+    require(result.beep && result.preedit == "ㄐㄧㄣ",
+            "Invalid key changed an unfinished Smart Mandarin reading");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    require(result.handled && !result.preedit.empty() &&
+                result.preedit != "ㄐㄧㄣ",
+            "Space did not finish a first-tone Smart Mandarin reading");
+    context.reset();
+    engine.setSmartMandarinMode(false);
+    for (char key : std::string("su3")) {
+        result = engine.processKey(context, character(key));
+    }
+    require(result.preedit == "ㄋㄧˇ" && !result.candidates.empty(),
+            "Traditional mode did not restore single-reading candidates");
+}
+
+void testSmartMandarinUserData() {
+    using keykey::linux_ime::SmartMandarinStore;
+    using keykey::linux_ime::SmartMandarinUserData;
+    char path[] = "/tmp/keykey-smart-user-XXXXXX";
+    const int temporary = mkstemp(path);
+    require(temporary >= 0, "Could not create a temporary user-data path");
+    close(temporary);
+    unlink(path);
+    auto user = SmartMandarinUserData::open(path);
+    require(user != nullptr, "Could not create Smart Mandarin user data");
+    require(SmartMandarinUserData::readingToQuery("ㄋㄧˇ ㄏㄠˇ").size() == 4,
+            "Custom phrase reading was not encoded");
+    require(SmartMandarinUserData::queryToReading(
+                SmartMandarinUserData::readingToQuery("ㄋㄧˇ ㄏㄠˇ")) ==
+                "ㄋㄧˇ ㄏㄠˇ",
+            "Custom phrase reading did not round trip");
+    require(!user->addPhrase("甲乙", "ㄋㄧˇ"),
+            "A mismatched custom phrase was accepted");
+    require(user->addPhrase("甲乙", "ㄋㄧˇ ㄏㄠˇ"),
+            "Could not add a custom phrase");
+    require(user->phrases().size() == 1 &&
+                user->phrases().front().first == "甲乙",
+            "Custom phrase did not appear in the user database");
+    {
+        const auto store = SmartMandarinStore::open(KEYKEY_TEST_SMART_DB, user);
+        Engine engine(loadRealBopomofoDictionary());
+        engine.setSmartMandarinStore(store);
+        engine.setSmartMandarinMode(true);
+        InputContextState context;
+        EngineResult result;
+        for (char key : std::string("su3cl3")) {
+            result = engine.processKey(context, character(key));
+        }
+        require(result.preedit == "甲乙",
+                "Custom phrase did not enter the composition graph");
+    }
+    require(user->removePhrase("甲乙", "ㄋㄧˇ ㄏㄠˇ"),
+            "Could not remove a custom phrase");
+    require(user->phrases().empty(), "Removed custom phrase remained visible");
+    const auto base = SmartMandarinStore::open(KEYKEY_TEST_SMART_DB);
+    const std::string query = SmartMandarinUserData::readingToQuery("ㄏㄠˇ");
+    keykey::linux_ime::SmartComposition composition;
+    require(base->compose({query}, {}, composition),
+            "Could not compose a reading for learning test");
+    const auto candidates = base->candidates({query}, 0, composition);
+    require(candidates.size() > 1 && candidates[0] != candidates[1],
+            "Learning test needs distinct candidates");
+    {
+        const auto store = SmartMandarinStore::open(KEYKEY_TEST_SMART_DB, user);
+        Engine engine(loadRealBopomofoDictionary());
+        engine.setSmartMandarinStore(store);
+        engine.setSmartMandarinMode(true);
+        InputContextState context;
+        for (char key : std::string("cl3")) {
+            engine.processKey(context, character(key));
+        }
+        const auto opened = engine.processKey(
+            context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+        require(opened.candidates.size() > 1 &&
+                    opened.candidates[1] == candidates[1],
+                "Engine did not expose the candidate to learn");
+        const auto selected = engine.processKey(context, character('2'));
+        require(selected.handled && selected.preedit == candidates[1] &&
+                    user->learnedCandidate(query) == candidates[1],
+                "Choosing a candidate did not save learning");
+    }
+    user.reset();
+    const auto reopened = SmartMandarinUserData::open(path);
+    require(reopened && reopened->learnedCandidate(query) == candidates[1],
+            "Candidate choice was not persisted");
+    const auto learnedStore = SmartMandarinStore::open(KEYKEY_TEST_SMART_DB,
+                                                       reopened);
+    require(learnedStore->compose({query}, {}, composition) &&
+                composition.text == candidates[1],
+            "Saved candidate choice did not affect new compositions");
+    require(reopened->resetLearning(),
+            "Could not clear the candidate choice before bigram test");
+    {
+        Engine engine(loadRealBopomofoDictionary());
+        engine.setSmartMandarinStore(learnedStore);
+        engine.setSmartMandarinMode(true);
+        InputContextState context;
+        for (char key : std::string("su3cl3")) {
+            engine.processKey(context, character(key));
+        }
+        const auto opened = engine.processKey(
+            context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+        require(opened.candidates.size() > 1,
+                "Could not open sentence candidates for bigram learning");
+        engine.processKey(context, character('2'));
+        double learnedScore = -1;
+        require(reopened->learnedBigram(
+                    SmartMandarinUserData::readingToQuery("ㄋㄧˇ"), query,
+                    "你", opened.candidates[1], learnedScore) &&
+                    learnedScore == 0,
+                "Sentence candidate selection did not learn the adjacent word");
+    }
+    require(reopened->addPhrase("甲乙", "ㄋㄧˇ ㄏㄠˇ"),
+            "Could not restore custom phrase before learning reset");
+    require(reopened->resetLearning() &&
+                reopened->learnedCandidate(query).empty() &&
+                reopened->phrases().size() == 1,
+            "Reset learning removed custom phrases or retained learning");
+    require(learnedStore->compose({query}, {}, composition) &&
+                composition.text == candidates[0],
+            "Reset learning did not restore normal composition");
+    unlink(path);
+}
+
 } // namespace
 
-int main() {
+int main(int argc, char **argv) {
     try {
+        if (argc == 2 && std::string(argv[1]) == "--smart-only") {
+            testSmartMandarinComposition();
+            testSmartMandarinUserData();
+            std::cout << "Smart Mandarin tests passed\n";
+            return EXIT_SUCCESS;
+        }
         testCinParserHandlesBomCrlfAndPercentKey();
         testCinParserRejectsIncompleteData();
         testCinWildcardMatchingPreservesTableOrder();
@@ -1481,6 +1696,8 @@ int main() {
         testModifiedAndReleaseKeysPassThrough();
         testBackspaceAndEscape();
         testBopomofoReadingBlocksHostEditingKeys();
+        testSmartMandarinComposition();
+        testSmartMandarinUserData();
     } catch (const std::exception &error) {
         std::cerr << "FAILED: " << error.what() << '\n';
         return EXIT_FAILURE;

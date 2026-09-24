@@ -8,8 +8,10 @@ Build-Depends:
  g++,
  libcanberra-dev,
  libfcitx5core-dev,
+ libsqlite3-dev,
  ninja-build,
  pkg-config,
+ python3,
 Standards-Version: 4.6.2
 Homepage: https://github.com/polobread/KeyKey
 Rules-Requires-Root: no
@@ -20,8 +22,8 @@ Multi-Arch: foreign
 Depends: ${misc:Depends}
 Description: shared input-method data for chichi77 KeyKey
  This package contains the architecture-independent Bopomofo, Cangjie,
- Simplex, conversion, and built-in associated-phrase data used by the native
- Linux chichi77 KeyKey input methods.
+ Simplex, conversion, Smart Mandarin language model, and built-in
+ associated-phrase data used by the native Linux chichi77 KeyKey input methods.
 
 Package: fcitx5-chichi77-keykey
 Architecture: any

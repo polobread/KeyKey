@@ -1,8 +1,8 @@
 # chichi77 KeyKey for Linux
 
-Current source version: 1.2.9 (in development). The documented 1.2.8
-Ubuntu package set remains the published release; 1.2.9 packages have not
-been released or accepted yet.
+Current source version: 1.2.10 (in development). The 1.2.9 Ubuntu package set
+remains the published release; the Smart Mandarin mode is part of the current
+source work.
 The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
@@ -24,6 +24,24 @@ Windows runtime does not provide them.
 The initial vertical slice provides:
 
 - a display-server-independent C++17 engine contract;
+- a persistent Bopomofo mode setting with 好打注音 as the first-run default
+  and 傳統注音 as the alternate. Smart mode composes multiple readings with
+  the same unigram/bigram model used by macOS, commits with Enter, and lets
+  Space open candidates at the cursor. Left/Right/Home/End move within the
+  composition, and Backspace/Delete edit readings there; the model is built from the
+  repository's source lexicon and corpora during package creation. Existing
+  configurations without a mode choice also use 好打注音;
+- 好打注音 stores custom phrases and learned candidate choices in
+  `$XDG_DATA_HOME/chichi77-keykey/smart-mandarin-user.db` (or
+  `~/.local/share/chichi77-keykey/smart-mandarin-user.db`). Candidate choices
+  and adjacent-word preferences survive Fcitx restarts. Manage custom phrases
+  with `keykey-smart-phrases list`,
+  `keykey-smart-phrases add 詞語 'ㄘˊ ㄩˇ'`, and
+  `keykey-smart-phrases remove 詞語 'ㄘˊ ㄩˇ'`.
+  `keykey-smart-phrases reset-learning` clears learned choices while preserving
+  custom phrases. Each Chinese character needs one space-separated reading;
+- the persistent user database is private to the current Linux user and is
+  separate from the packaged, read-only language model;
 - a strict CIN reader using the repository's read-only input tables;
 - isolated state for each input context;
 - Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin Bopomofo layouts, plus
@@ -57,6 +75,7 @@ The initial vertical slice provides:
   round-trip coverage for more than 1,490 real Bopomofo readings per symbolic
   layout, representative Hanyu Pinyin initials/finals/tones, and punctuation
   shortcut/list behavior;
+- an X11 GTK 3 case for Smart Mandarin `你好` composition and Enter commit;
 - an installed-package X11 E2E test that sends physical key events into real
   GTK 3, GTK 4, and Qt 6 editors; all three verify the Standard Bopomofo T01
   preedit/commit path to `中` and all five layouts with all

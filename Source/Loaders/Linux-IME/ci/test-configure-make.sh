@@ -75,6 +75,7 @@ assert_installed_tree() {
   test -f "$data_root/simplex-ext.cin"
   test -f "$data_root/bpmf-punctuations.cin"
   test -f "$data_root/tc2sc.cin"
+  test -s "$data_root/smart-mandarin.db"
   test -f "$data_root/associated-phrases/McBopomofo.occ"
   test -f "$data_root/associated-phrases/display-names.tsv"
   test "$(find "$data_root/associated-phrases" -maxdepth 1 \
