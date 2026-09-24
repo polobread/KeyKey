@@ -100,6 +100,7 @@ if(MSVC)
 endif()
 
 set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_DATABASE_PATH}")
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 if(NOT KEYKEY_DATABASE_PATH)
     find_package(Ruby REQUIRED)
     add_executable(KeyKeyDatabaseCooker DatabaseCooker.cpp)
@@ -168,6 +169,9 @@ if(NOT KEYKEY_DATABASE_PATH)
                 --append-smart-sql
                 "${KEYKEY_NATIVE_DATABASE}"
                 "${KEYKEY_SMART_SQL}"
+        COMMAND "${Python3_EXECUTABLE}"
+                "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
+                "${KEYKEY_NATIVE_DATABASE}"
         COMMAND "${CMAKE_COMMAND}" -E touch "${KEYKEY_NATIVE_DATABASE_STAMP}"
         DEPENDS
             KeyKeyDatabaseCooker
@@ -180,6 +184,7 @@ if(NOT KEYKEY_DATABASE_PATH)
             "${KEYKEY_SOURCE}/DataTables/cj-punctuations-mixedwidth.cin"
             "${KEYKEY_SOURCE}/DataTables/bopomofo-correction.cin"
             "${KEYKEY_SMART_COOKER}"
+            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
             "${CMAKE_CURRENT_SOURCE_DIR}/GenerateSmartMandarinSql.rb"
             "${KEYKEY_ROOT}/DataSource/McBopomofo/BPMFMappings.txt"
             ${KEYKEY_SMART_LEXICONS}
@@ -195,7 +200,6 @@ if(NOT KEYKEY_DATABASE_PATH)
 endif()
 
 if(KEYKEY_DATABASE_PATH)
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
     add_custom_target(keykey_database ALL
         COMMAND "${Python3_EXECUTABLE}"
                 "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
@@ -283,6 +287,17 @@ if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
                 "${KEYKEY_DEPLOY_DATABASE}"
                 "$<TARGET_FILE_DIR:KeyKeyTsf>/Databases/KeyKey.db"
+        VERBATIM
+    )
+    # A language-model update can rebuild KeyKey.db without relinking the DLL.
+    # Keep the runtime copy current in that case as well as on a fresh build.
+    add_custom_target(keykey_database_deploy ALL
+        COMMAND "${CMAKE_COMMAND}" -E make_directory
+                "$<TARGET_FILE_DIR:KeyKeyTsf>/Databases"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                "${KEYKEY_DEPLOY_DATABASE}"
+                "$<TARGET_FILE_DIR:KeyKeyTsf>/Databases/KeyKey.db"
+        DEPENDS KeyKeyTsf keykey_database
         VERBATIM
     )
 endif()

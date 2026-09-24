@@ -63,7 +63,7 @@ load.
   2022 compatibility preset is also included)
 - CMake 3.25 or newer
 - Ruby 3.x when cooking the database from source (the Windows CI installs it)
-- Python 3 when deploying a database cooked elsewhere
+- Python 3 to verify the cooked Smart Mandarin database
 - NSIS 3.12 when building the Store EXE
 
 Windows uses the operating system's `winsqlite3.dll` through the Windows SDK's
@@ -77,6 +77,8 @@ the 2,300-article corpus, and all 29 categorized associated-phrase
 collections. These are the same Smart Mandarin language-model inputs used by
 the macOS database cooker. The categorized data was
 generated and normalized automatically and has not been reviewed item by item.
+Both the source cooker and externally supplied databases must pass the
+Smart Mandarin first-syllable ranking check before packaging.
 
 To deploy a database cooked elsewhere instead, pass
 `-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.
