@@ -9,6 +9,7 @@ import java.util.Set;
 
 final class BopomofoEngine {
     static final int CANDIDATES_PER_PAGE = 9;
+    static final int TOUCH_SMART_EDITABLE_LIMIT = 9;
     enum InputMode { BOPOMOFO, ENGLISH, NUMBER }
     private static final List<String> SYMBOLS = List.of(
             "，", "。", "、", "？", "！", "：", "；", "「", "」",
@@ -206,7 +207,7 @@ final class BopomofoEngine {
                 && inputMode == InputMode.BOPOMOFO) {
             if (!reading.isEmpty()) return finishSmartReading();
             if (!smartReadings.isEmpty()) {
-                if (hardwareSmartEditing && !showingSmartCandidates) {
+                if (!showingSmartCandidates) {
                     showHardwareSmartCandidates();
                 } else {
                     changePage(1);
@@ -308,7 +309,7 @@ final class BopomofoEngine {
                     && smartCandidateStart < entry.getKey() + entry.getValue().length());
             smartOverrides.put(smartCandidateStart,
                     new SmartMandarinSelection(candidate.length(), candidate.text()));
-            smartCursor = end;
+            if (hardwareSmartEditing) smartCursor = end;
             rebuildSmartComposition();
             return Result.update();
         }
@@ -365,6 +366,45 @@ final class BopomofoEngine {
     int smartCompositionCursor() {
         return hardwareSmartEditing && compositionMode == BopomofoCompositionMode.SMART
                 && !smartReadings.isEmpty() ? smartCursor : -1;
+    }
+
+    List<String> touchSmartCells() {
+        if (compositionMode != BopomofoCompositionMode.SMART
+                || inputMode != InputMode.BOPOMOFO || hardwareSmartEditing) return List.of();
+        ArrayList<String> cells = new ArrayList<>();
+        if (smartComposition != null) {
+            for (SmartMandarinSegment segment : smartComposition.segments()) {
+                int[] points = segment.text().codePoints().toArray();
+                for (int offset = 0; offset < segment.length(); offset++) {
+                    int start = offset * points.length / segment.length();
+                    int end = (offset + 1) * points.length / segment.length();
+                    cells.add(new String(points, start, end - start));
+                }
+            }
+        }
+        reading.displayText().codePoints().forEach(point -> {
+            if (cells.size() < 11) cells.add(new String(Character.toChars(point)));
+            else cells.set(10, cells.get(10) + new String(Character.toChars(point)));
+        });
+        return List.copyOf(cells);
+    }
+
+    int touchSmartEditableCount() {
+        return smartReadings.size();
+    }
+
+    boolean selectTouchSmartCell(int index) {
+        if (compositionMode != BopomofoCompositionMode.SMART
+                || inputMode != InputMode.BOPOMOFO || hardwareSmartEditing
+                || index < 0 || index >= smartReadings.size()) return false;
+        if (showingSmartCandidates && smartCandidateStart == index) {
+            candidates = List.of();
+            smartCandidateOptions = List.of();
+            showingSmartCandidates = false;
+            return true;
+        }
+        showSmartCandidatesAt(index);
+        return true;
     }
 
     int composingCaretUtf16Offset() {
@@ -558,35 +598,51 @@ final class BopomofoEngine {
         smartCursor++;
         reading.clear();
         rebuildSmartComposition();
+        if (!hardwareSmartEditing && smartReadings.size() > TOUCH_SMART_EDITABLE_LIMIT) {
+            return evictFirstTouchSmartReading();
+        }
         return Result.update();
+    }
+
+    private Result evictFirstTouchSmartReading() {
+        if (smartComposition == null || smartComposition.segments().isEmpty()) {
+            return Result.update();
+        }
+        SmartMandarinSegment first = smartComposition.segments().get(0);
+        if (first.text().isEmpty()) return Result.update();
+        int firstLength = Character.charCount(first.text().codePointAt(0));
+        String committed = first.text().substring(0, firstLength);
+        SmartMandarinSelection selection = smartOverrides.get(0);
+        shiftSmartOverridesAfterRemoving(0);
+        if (selection != null && selection.length() > 1) {
+            smartOverrides.put(0, new SmartMandarinSelection(selection.length() - 1,
+                    selection.text().substring(Character.charCount(
+                            selection.text().codePointAt(0)))));
+        }
+        smartReadings.remove(0);
+        smartCursor = Math.max(0, smartCursor - 1);
+        rebuildSmartComposition();
+        return Result.commit(committed);
     }
 
     private void rebuildSmartComposition() {
         if (smartSource == null) return;
         smartComposition = smartSource.composeSelections(smartReadings, smartOverrides);
-        if (smartReadings.isEmpty() || smartComposition == null || hardwareSmartEditing) {
-            candidates = List.of();
-            smartCandidateOptions = List.of();
-            showingSmartCandidates = false;
-        } else {
-            smartCandidateStart = smartReadings.size() - 1;
-            smartCandidateOptions = smartSource.candidateOptions(smartReadings,
-                    smartCandidateStart, smartComposition);
-            ArrayList<String> texts = new ArrayList<>();
-            for (SmartMandarinCandidate candidate : smartCandidateOptions) {
-                texts.add(candidate.text());
-            }
-            candidates = List.copyOf(texts);
-            showingSmartCandidates = !candidates.isEmpty();
-        }
+        candidates = List.of();
+        smartCandidateOptions = List.of();
+        showingSmartCandidates = false;
         showingAssociatedPhrases = false;
         page = 0;
         highlightedIndex = 0;
     }
 
     private void showHardwareSmartCandidates() {
+        showSmartCandidatesAt(Math.min(smartCursor, smartReadings.size() - 1));
+    }
+
+    private void showSmartCandidatesAt(int index) {
         if (smartSource == null || smartReadings.isEmpty()) return;
-        smartCandidateStart = Math.min(smartCursor, smartReadings.size() - 1);
+        smartCandidateStart = index;
         smartCandidateOptions = smartSource.candidateOptions(smartReadings,
                 smartCandidateStart, smartComposition);
         ArrayList<String> texts = new ArrayList<>();

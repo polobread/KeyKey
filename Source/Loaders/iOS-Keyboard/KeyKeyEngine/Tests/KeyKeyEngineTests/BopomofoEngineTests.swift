@@ -208,11 +208,73 @@ struct BopomofoEngineTests {
     func smartCandidateOverride() {
         let engine = smartEngine()
         _ = type(engine, "su3")
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.selectTouchSmartCell(0))
         #expect(engine.displayedCandidates.prefix(2) == ["你", "妳"])
         #expect(engine.selectDisplayedCandidate(1) == .update)
+        #expect(engine.displayedCandidates.isEmpty)
         #expect(engine.composingText == "妳")
         _ = type(engine, "cl3")
         #expect(engine.composingText == "妳好")
+    }
+
+    @Test("touch smart correction keeps the next syllable at the sentence end")
+    func touchSmartCorrectionPreservesInsertionPoint() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3su3cl3")
+        #expect(engine.composingText == "你好你好")
+        #expect(engine.selectTouchSmartCell(2))
+        _ = engine.selectDisplayedCandidate(1)
+        #expect(engine.composingText == "你好妳好")
+        _ = type(engine, "su3")
+        #expect(engine.composingText == "你好妳好你")
+    }
+
+    @Test("touch smart keeps nine editable cells and sends only the oldest on the tenth")
+    func touchSmartNineCellWindow() {
+        let engine = smartEngine()
+        for _ in 0..<9 {
+            #expect(type(engine, "su3").last == .update)
+        }
+        #expect(engine.smartCompositionReadingCount == 9)
+        #expect(engine.touchSmartCells == Array(repeating: "你", count: 9))
+        #expect(engine.displayedCandidates.isEmpty)
+
+        _ = type(engine, "s")
+        #expect(engine.touchSmartCells.count == 10)
+        #expect(engine.touchSmartCells[9] == "ㄋ")
+        #expect(engine.selectTouchSmartCell(2))
+        #expect(engine.selectDisplayedCandidate(1) == .update)
+        #expect(engine.touchSmartCells[2] == "妳")
+        #expect(engine.displayedCandidates.isEmpty)
+        _ = engine.backspace()
+
+        #expect(type(engine, "su3").last == .commit("你"))
+        #expect(engine.smartCompositionReadingCount == 9)
+        #expect(engine.touchSmartCells[1] == "妳")
+    }
+
+    @Test("touch smart keeps the remainder of a selected phrase when its first cell leaves")
+    func touchSmartPhraseAcrossWindow() {
+        let first = TableCandidateSource.queryKey(for: "su3")
+        let second = TableCandidateSource.queryKey(for: "cl3")
+        let source = TableSmartSource(table: [
+            first: ["你"], second: ["好"], first + second: ["您好"]
+        ])
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource(["su3": ["你"], "cl3": ["好"]]),
+            smartSource: source, compositionMode: .smart
+        )
+        _ = type(engine, "su3cl3")
+        #expect(engine.selectTouchSmartCell(0))
+        #expect(engine.displayedCandidates == ["你", "您好"])
+        _ = engine.selectDisplayedCandidate(1)
+        #expect(engine.composingText == "您好")
+        for _ in 0..<7 { _ = type(engine, "su3") }
+        #expect(engine.smartCompositionReadingCount == 9)
+        #expect(type(engine, "su3").last == .commit("您"))
+        #expect(engine.touchSmartCells.first == "好")
+        #expect(engine.smartCompositionReadingCount == 9)
     }
 
     @Test("smart backspace removes a composed syllable before the document")

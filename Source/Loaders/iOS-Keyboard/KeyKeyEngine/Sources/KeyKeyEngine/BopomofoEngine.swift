@@ -18,6 +18,7 @@ public protocol AssociatedPhraseSource {
 /// the committed replacement.
 public final class BopomofoEngine {
     public static let candidatesPerPage = 9
+    public static let touchSmartEditableLimit = 9
 
     public enum InputMode: Sendable, Hashable, CaseIterable {
         case bopomofo, english, number
@@ -146,6 +147,40 @@ public final class BopomofoEngine {
             ? smartCursor : nil
     }
     public var smartCompositionReadingCount: Int { smartReadings.count }
+    /// The eleven cells above the touch keyboard: nine editable syllables and
+    /// room for the unfinished Bopomofo reading.
+    public var touchSmartCells: [String] {
+        guard compositionMode == .smart, mode == .bopomofo, !hardwareSmartEditing else {
+            return []
+        }
+        var cells = smartComposition?.segments.flatMap { segment -> [String] in
+            let characters = Array(segment.text)
+            return (0..<segment.length).map { offset in
+                let start = offset * characters.count / segment.length
+                let end = (offset + 1) * characters.count / segment.length
+                return String(characters[start..<end])
+            }
+        } ?? []
+        for symbol in reading.displayText.map(String.init) {
+            if cells.count < 11 { cells.append(symbol) }
+            else { cells[10] += symbol }
+        }
+        return cells
+    }
+
+    @discardableResult
+    public func selectTouchSmartCell(_ index: Int) -> Bool {
+        guard compositionMode == .smart, mode == .bopomofo, !hardwareSmartEditing,
+              smartReadings.indices.contains(index) else { return false }
+        if showingSmartCandidates, smartCandidateStart == index {
+            candidates = []
+            smartCandidateOptions = []
+            showingSmartCandidates = false
+            return true
+        }
+        showSmartCandidates(at: index)
+        return true
+    }
     public var composingCaretUTF16Offset: Int {
         guard let composition = smartComposition, let cursor = smartCompositionCursor,
               reading.isEmpty else { return composingText.utf16.count }
@@ -255,7 +290,7 @@ public final class BopomofoEngine {
         if compositionMode == .smart, mode == .bopomofo {
             if !reading.isEmpty { return finishSmartReading() }
             if !smartReadings.isEmpty {
-                if hardwareSmartEditing && !showingSmartCandidates {
+                if !showingSmartCandidates {
                     showHardwareSmartCandidates()
                 } else {
                     changePage(by: 1)
@@ -365,7 +400,7 @@ public final class BopomofoEngine {
             smartOverrides[smartCandidateStart] = SmartMandarinSelection(
                 length: option.length, text: option.text
             )
-            smartCursor = end
+            if hardwareSmartEditing { smartCursor = end }
             rebuildSmartComposition()
             return .update
         }
@@ -505,7 +540,29 @@ public final class BopomofoEngine {
         smartCursor += 1
         reading.clear()
         rebuildSmartComposition()
+        if !hardwareSmartEditing && smartReadings.count > Self.touchSmartEditableLimit {
+            return evictFirstTouchSmartReading()
+        }
         return .update
+    }
+
+    private func evictFirstTouchSmartReading() -> Result {
+        guard let first = smartComposition?.segments.first,
+              let character = first.text.first else { return .update }
+        let committed = String(character)
+        if let selection = smartOverrides[0], selection.length > 1 {
+            let remaining = String(selection.text.dropFirst())
+            shiftSmartOverrides(afterRemoving: 0)
+            smartOverrides[0] = SmartMandarinSelection(
+                length: selection.length - 1, text: remaining
+            )
+        } else {
+            shiftSmartOverrides(afterRemoving: 0)
+        }
+        smartReadings.removeFirst()
+        smartCursor = max(0, smartCursor - 1)
+        rebuildSmartComposition()
+        return .commit(committed)
     }
 
     private func rebuildSmartComposition() {
@@ -513,28 +570,21 @@ public final class BopomofoEngine {
         smartComposition = smartSource.compose(
             readings: smartReadings, selections: smartOverrides
         )
-        if smartReadings.isEmpty || smartComposition == nil || hardwareSmartEditing {
-            candidates = []
-            smartCandidateOptions = []
-            showingSmartCandidates = false
-        } else {
-            smartCandidateStart = smartReadings.count - 1
-            smartCandidateOptions = smartSource.candidateOptions(
-                for: smartReadings,
-                at: smartCandidateStart,
-                composition: smartComposition
-            )
-            candidates = smartCandidateOptions.map(\.text)
-            showingSmartCandidates = !candidates.isEmpty
-        }
+        candidates = []
+        smartCandidateOptions = []
+        showingSmartCandidates = false
         showingAssociatedPhrases = false
         pageIndex = 0
         highlight = 0
     }
 
     private func showHardwareSmartCandidates() {
+        showSmartCandidates(at: min(smartCursor, smartReadings.count - 1))
+    }
+
+    private func showSmartCandidates(at index: Int) {
         guard let smartSource, !smartReadings.isEmpty else { return }
-        smartCandidateStart = min(smartCursor, smartReadings.count - 1)
+        smartCandidateStart = index
         smartCandidateOptions = smartSource.candidateOptions(
             for: smartReadings,
             at: smartCandidateStart,

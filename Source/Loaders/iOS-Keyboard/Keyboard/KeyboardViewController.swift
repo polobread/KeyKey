@@ -266,6 +266,10 @@ final class KeyboardViewController: UIInputViewController {
         }
         var state = KeyboardView.State()
         state.reading = engine.composingText
+        state.smartMode = engine.bopomofoCompositionMode == .smart
+            && engine.inputMode == .bopomofo
+        state.smartCells = engine.touchSmartCells
+        state.smartEditableCount = engine.smartCompositionReadingCount
         state.candidates = engine.displayedCandidates
         state.highlightedIndex = engine.isShowingAssociatedPhrases
             ? -1 : engine.highlightedIndex
@@ -463,6 +467,11 @@ extension KeyboardViewController: KeyboardViewDelegate {
         statusOverride = nil
         guard let engine else { return }
         apply(engine.selectDisplayedCandidate(index))
+    }
+
+    func keyboardView(_ view: KeyboardView, didSelectSmartCellAt index: Int) {
+        guard let engine, engine.selectTouchSmartCell(index) else { return }
+        refresh()
     }
 
     func keyboardView(_ view: KeyboardView, didChangePageBy delta: Int) {

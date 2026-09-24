@@ -526,10 +526,53 @@ public final class BopomofoEngineTest {
         BopomofoEngine engine = smartEngine();
         type(engine, "su3");
 
+        assertTrue(engine.displayedCandidates().isEmpty());
+        assertTrue(engine.selectTouchSmartCell(0));
+
         BopomofoEngine.Result result = engine.selectDisplayedCandidate(1);
 
         assertEquals("", result.committedText());
         assertEquals("妳", engine.composingText());
+        assertTrue(engine.displayedCandidates().isEmpty());
+    }
+
+    @Test
+    public void touchSmartCorrectionPreservesInsertionPoint() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3su3cl3");
+        assertEquals("你好你好", engine.composingText());
+        assertTrue(engine.selectTouchSmartCell(2));
+        engine.selectDisplayedCandidate(1);
+        assertEquals("你好妳好", engine.composingText());
+        type(engine, "su3");
+        assertEquals("你好妳好你", engine.composingText());
+    }
+
+    @Test
+    public void touchSmartKeepsNineEditableCellsAndEvictsOneOnTenth() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        for (int index = 0; index < 9; index++) {
+            type(engine, "su3");
+        }
+        assertEquals(9, engine.touchSmartEditableCount());
+        assertEquals(9, engine.touchSmartCells().size());
+        assertTrue(engine.displayedCandidates().isEmpty());
+
+        engine.handleSoftKey("s");
+        assertEquals("ㄋ", engine.touchSmartCells().get(9));
+        assertTrue(engine.selectTouchSmartCell(2));
+        assertEquals("", engine.selectDisplayedCandidate(1).committedText());
+        assertEquals("妳", engine.touchSmartCells().get(2));
+        assertTrue(engine.displayedCandidates().isEmpty());
+        engine.backspace();
+
+        BopomofoEngine.Result overflow = BopomofoEngine.Result.update();
+        for (char key : "su3".toCharArray()) {
+            overflow = engine.handleSoftKey(String.valueOf(key));
+        }
+        assertEquals("你", overflow.committedText());
+        assertEquals(9, engine.touchSmartEditableCount());
+        assertEquals("妳", engine.touchSmartCells().get(1));
     }
 
     @Test
@@ -648,16 +691,23 @@ public final class BopomofoEngineTest {
         String cin = "%chardef begin\nsu3 你\nsu3 妳\ncl3 好\n%chardef end\n";
         CinDictionary dictionary = CinDictionary.load(new ByteArrayInputStream(
                 cin.getBytes(StandardCharsets.UTF_8)));
+        BopomofoReading firstReading = new BopomofoReading();
+        for (char key : "su3".toCharArray()) firstReading.combine(key);
+        String firstQuery = firstReading.languageModelKey();
+        BopomofoReading secondReading = new BopomofoReading();
+        for (char key : "cl3".toCharArray()) secondReading.combine(key);
+        String secondQuery = secondReading.languageModelKey();
         SmartMandarinSource source = new SmartMandarinSource() {
             @Override
             public SmartMandarinComposition compose(List<String> readings,
                                                      Map<Integer, String> overrides) {
-                if (readings.size() > 2) return null;
+                if (readings.stream().anyMatch(query -> !query.equals(firstQuery)
+                        && !query.equals(secondQuery))) return null;
                 StringBuilder text = new StringBuilder();
                 java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
                 for (int index = 0; index < readings.size(); index++) {
                     String value = overrides.getOrDefault(index,
-                            index == 0 ? "你" : "好");
+                            readings.get(index).equals(firstQuery) ? "你" : "好");
                     text.append(value);
                     segments.add(new SmartMandarinSegment(index, 1, readings.get(index), value));
                 }
@@ -667,7 +717,8 @@ public final class BopomofoEngineTest {
             @Override
             public List<String> candidates(List<String> readings, int index,
                                            SmartMandarinComposition composition) {
-                return index == 0 ? List.of("你", "妳") : List.of("好");
+                return readings.get(index).equals(firstQuery)
+                        ? List.of("你", "妳") : List.of("好");
             }
         };
         return new BopomofoEngine(dictionary, source, BopomofoCompositionMode.SMART);

@@ -347,6 +347,11 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     @Override
+    public void onSmartCell(int index) {
+        if (engine.selectTouchSmartCell(index)) refreshKeyboard();
+    }
+
+    @Override
     public void onWindowUnavailable(CandidateWindowSettings.Failure failure) {
         if (!floatingCandidateWindowAvailable) return;
         floatingCandidateWindowAvailable = false;
@@ -642,6 +647,9 @@ public final class BopomofoImeService extends InputMethodService
                 CandidateColorSettings.backgroundColor(candidateColor),
                 CandidateColorSettings.textColor(candidateColor));
         keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
+                engine.compositionMode() == BopomofoCompositionMode.SMART
+                        && engine.inputMode() == BopomofoEngine.InputMode.BOPOMOFO,
+                engine.touchSmartCells(), engine.touchSmartEditableCount(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
                 engine.isHardwareFullWidth(), SupporterState.shouldShowSupportPrompt(this),
                 engine.page(), engine.pageCount(),

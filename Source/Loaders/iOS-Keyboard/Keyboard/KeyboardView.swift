@@ -5,6 +5,7 @@ import UIKit
 protocol KeyboardViewDelegate: AnyObject {
     func keyboardView(_ view: KeyboardView, didPress key: String)
     func keyboardView(_ view: KeyboardView, didSelectCandidateAt index: Int)
+    func keyboardView(_ view: KeyboardView, didSelectSmartCellAt index: Int)
     func keyboardView(_ view: KeyboardView, didChangePageBy delta: Int)
 }
 
@@ -15,6 +16,9 @@ protocol KeyboardViewDelegate: AnyObject {
 final class KeyboardView: UIView {
     struct State: Equatable {
         var reading = ""
+        var smartMode = false
+        var smartCells: [String] = []
+        var smartEditableCount = 0
         var candidates: [String] = []
         var highlightedIndex = -1
         var pageCount = 0
@@ -47,7 +51,15 @@ final class KeyboardView: UIView {
     private let previousPageButton = UIButton(type: .system)
     private let nextPageButton = UIButton(type: .system)
     private let candidateStrip = UIStackView()
+    private let candidateContainer = UIView()
+    private let smartCellStrip = UIStackView()
+    private var smartCellButtons: [UIButton] = []
+    private var smartCellStripHeight: NSLayoutConstraint?
     private var candidateStripHeight: NSLayoutConstraint?
+    private var rootStack: UIStackView?
+    private var keyBands: UIStackView?
+    private var candidateOverlayConstraints: [NSLayoutConstraint] = []
+    private var candidateIsOverlay = false
     private var contentWidthConstraint: NSLayoutConstraint?
     private var keyViews: [[KeyView]] = []
     private var functionButtons: [(key: String, button: UIButton)] = []
@@ -87,11 +99,15 @@ final class KeyboardView: UIView {
         // Five equal bands below the strip, matching the Android division of
         // the remaining height.
         let bands = UIStackView(arrangedSubviews: buildKeyRows() + [buildFunctionRow()])
+        keyBands = bands
         bands.axis = .vertical
         bands.distribution = .fillEqually
         bands.spacing = 3
 
-        let root = UIStackView(arrangedSubviews: [buildCandidateStrip(), bands])
+        let root = UIStackView(arrangedSubviews: [
+            buildSmartCellStrip(), buildCandidateStrip(), bands
+        ])
+        rootStack = root
         root.axis = .vertical
         root.spacing = 3
         root.translatesAutoresizingMaskIntoConstraints = false
@@ -164,7 +180,8 @@ final class KeyboardView: UIView {
         statusLabel.adjustsFontSizeToFitWidth = true
         statusLabel.minimumScaleFactor = 0.7
 
-        let container = UIView()
+        let container = candidateContainer
+        container.backgroundColor = Palette.background
         for child in [candidateStrip, statusLabel] as [UIView] {
             child.translatesAutoresizingMaskIntoConstraints = false
             container.addSubview(child)
@@ -187,6 +204,29 @@ final class KeyboardView: UIView {
         height.isActive = true
         candidateStripHeight = height
         return container
+    }
+
+    private func buildSmartCellStrip() -> UIView {
+        smartCellStrip.axis = .horizontal
+        smartCellStrip.distribution = .fillEqually
+        smartCellStrip.spacing = 2
+        smartCellButtons = (0..<11).map { index in
+            let button = UIButton(type: .system)
+            button.tag = index
+            button.backgroundColor = Palette.candidateCell
+            button.layer.cornerRadius = 6
+            button.titleLabel?.adjustsFontSizeToFitWidth = true
+            button.titleLabel?.minimumScaleFactor = 0.5
+            button.addTarget(self, action: #selector(smartCellTapped(_:)), for: .touchUpInside)
+            smartCellStrip.addArrangedSubview(button)
+            return button
+        }
+        let height = smartCellStrip.heightAnchor.constraint(
+            equalToConstant: metrics.candidateStripHeight
+        )
+        height.isActive = true
+        smartCellStripHeight = height
+        return smartCellStrip
     }
 
     private func buildKeyRows() -> [UIView] {
@@ -310,10 +350,38 @@ final class KeyboardView: UIView {
 
     // MARK: - State
 
+    private func setCandidateOverlay(_ enabled: Bool) {
+        guard enabled != candidateIsOverlay,
+              let rootStack, let firstKeyRow = keyBands?.arrangedSubviews.first
+        else { return }
+        candidateIsOverlay = enabled
+        if enabled {
+            candidateStripHeight?.isActive = false
+            rootStack.removeArrangedSubview(candidateContainer)
+            candidateContainer.removeFromSuperview()
+            candidateContainer.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(candidateContainer)
+            candidateOverlayConstraints = [
+                candidateContainer.leadingAnchor.constraint(equalTo: firstKeyRow.leadingAnchor),
+                candidateContainer.trailingAnchor.constraint(equalTo: firstKeyRow.trailingAnchor),
+                candidateContainer.topAnchor.constraint(equalTo: firstKeyRow.topAnchor),
+                candidateContainer.bottomAnchor.constraint(equalTo: firstKeyRow.bottomAnchor)
+            ]
+            NSLayoutConstraint.activate(candidateOverlayConstraints)
+        } else {
+            NSLayoutConstraint.deactivate(candidateOverlayConstraints)
+            candidateOverlayConstraints = []
+            candidateContainer.removeFromSuperview()
+            rootStack.insertArrangedSubview(candidateContainer, at: 1)
+            candidateStripHeight?.isActive = true
+        }
+    }
+
     func setMetrics(_ metrics: KeyboardMetrics) {
         guard metrics != self.metrics else { return }
         self.metrics = metrics
         candidateStripHeight?.constant = metrics.candidateStripHeight
+        smartCellStripHeight?.constant = metrics.candidateStripHeight
         contentWidthConstraint?.constant = metrics.maximumContentWidth
         apply(state, force: true)
     }
@@ -321,6 +389,7 @@ final class KeyboardView: UIView {
     func apply(_ nextState: State, force: Bool = false) {
         let previousState = state
         state = nextState
+        setCandidateOverlay(state.smartMode)
 
         let hasCandidates = !state.candidates.isEmpty
         let hadCandidates = !previousState.candidates.isEmpty
@@ -343,6 +412,23 @@ final class KeyboardView: UIView {
                 statusLabel.text = "\(normalStatus)　歡迎付費支持"
             } else {
                 statusLabel.text = state.statusOverride ?? normalStatus
+            }
+        }
+
+        smartCellStrip.isHidden = !state.smartMode
+        candidateContainer.isHidden = state.smartMode && !hasCandidates
+        if force || state.smartCells != previousState.smartCells
+            || state.smartEditableCount != previousState.smartEditableCount
+            || state.smartMode != previousState.smartMode {
+            for (index, button) in smartCellButtons.enumerated() {
+                let value = index < state.smartCells.count ? state.smartCells[index] : ""
+                button.setTitle(value, for: .normal)
+                button.setTitleColor(Palette.primaryText, for: .normal)
+                button.titleLabel?.font = .systemFont(ofSize: metrics.candidateFont)
+                button.isEnabled = index < state.smartEditableCount && !value.isEmpty
+                button.accessibilityLabel = button.isEnabled
+                    ? "第 \(index + 1) 個組字，\(value)" : nil
+                button.isAccessibilityElement = button.isEnabled
             }
         }
 
@@ -586,6 +672,10 @@ final class KeyboardView: UIView {
     @objc private func candidateTapped(_ sender: UIButton) {
         playInputClick()
         delegate?.keyboardView(self, didSelectCandidateAt: sender.tag)
+    }
+
+    @objc private func smartCellTapped(_ sender: UIButton) {
+        delegate?.keyboardView(self, didSelectSmartCellAt: sender.tag)
     }
 
     @objc private func pageTapped(_ sender: UIButton) {

@@ -31,6 +31,13 @@
 - `Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py` 檢查共用 DB 完整性、筆數與首音節。iOS archive、Android asset、macOS App 和 Windows 打包目錄仍要各自確認；Linux 使用自己的資料庫與核心測試。
 - Android 的私有 DB 檔名是更新快取的版本邊界。換模型後若不變更檔名或加入內容校驗，已安裝使用者可能繼續讀舊庫。Windows 的 `keykey_database_deploy` 須在 DB 更新而 DLL 未重新連結時同步打包目錄。
 
+## iOS／Android 好打注音螢幕鍵盤
+
+- 觸控版與實體鍵盤共用組字引擎，但操作契約不同。只調整螢幕鍵盤時，檢查 iOS 的 `KeyboardView.swift`、`KeyboardViewController.swift`、`BopomofoEngine.swift`，以及 Android 的 `BopomofoKeyboardView.java`、`BopomofoImeService.java`、`BopomofoEngine.java`；不要把觸控選字方式套到實體鍵盤游標。
+- 好打注音上方固定 11 個組字格，最多保留 9 個已完成、可點選修正的音節，餘格顯示尚未完成的注音；第 10 個音節完成時才送出最前一字。選字格只指定候選目標，不能改變後續輸入的插入游標；修正句中第三字後再打字，應接在句尾。
+- 觸控候選窗開啟時覆蓋第一排注音按鍵並攔截該排觸控，收起後恢復按鍵。開關候選窗不得調整鍵盤列的大小或位置。傳統注音仍使用原有候選列與輸入行為。
+- 修改上述行為時，至少驗證 9／10 音節邊界、句中改字後繼續輸入、未完成注音時回頭選字、跨越邊界的多字詞、候選窗開關，以及傳統注音與實體鍵盤回歸。引擎測試不能代替 App／鍵盤 extension 建置或實機版面檢查。
+
 ## 建置與驗證入口
 
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md) 及各平台 README。下列命令從儲存庫根目錄執行；需要相應平台的 SDK 和工具鏈。
