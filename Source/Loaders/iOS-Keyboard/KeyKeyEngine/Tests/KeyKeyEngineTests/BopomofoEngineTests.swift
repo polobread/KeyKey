@@ -148,6 +148,25 @@ struct BopomofoEngineTests {
         #expect(engine.commitHardwarePunctuation("，") == .commit("你好，"))
     }
 
+    @Test("hardware shortcuts preserve unfinished smart text")
+    func smartHardwareShortcutsKeepUnfinishedReading() {
+        let language = smartEngine(hardwareEditing: true)
+        _ = type(language, "su3cl3s")
+        let pendingLanguage = language.composingText
+        #expect(language.toggleHardwareLanguage() == .commit(pendingLanguage))
+
+        let symbols = smartEngine(hardwareEditing: true)
+        _ = type(symbols, "su3cl3s")
+        let pendingSymbols = symbols.composingText
+        #expect(symbols.showHardwareSymbols() == .commit(pendingSymbols))
+        #expect(!symbols.displayedCandidates.isEmpty)
+
+        let punctuation = smartEngine(hardwareEditing: true)
+        _ = type(punctuation, "su3cl3s")
+        let pendingPunctuation = punctuation.composingText
+        #expect(punctuation.commitHardwarePunctuation("，") == .commit(pendingPunctuation + "，"))
+    }
+
     @Test("other smart keys keep text before switching or inserting")
     func smartOtherKeysCommit() {
         let engine = smartEngine()
