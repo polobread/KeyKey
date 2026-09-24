@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "ModuleState.h"
+#include "sqlite3.h"
 
 namespace KeyKey::WindowsTsf {
 HMODULE g_module = nullptr;
@@ -69,6 +70,7 @@ int main() {
         return 3;
     }
 
-    std::cout << "Traditional Bopomofo engine smoke test passed.\n";
+    std::cout << "Bopomofo engine smoke test passed with WinSQLite "
+              << sqlite3_libversion() << ".\n";
     return 0;
 }

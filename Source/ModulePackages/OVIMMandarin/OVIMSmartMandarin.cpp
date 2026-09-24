@@ -1031,7 +1031,7 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo, OVLoaderService* loader
             
             if (userDB->execute("BEGIN") == SQLITE_OK) {
 
-                OVSQLiteStatement* fetch = oldUserDB->prepare("SELECT * FROM user_unigrams");
+                OVSQLiteStatement* fetch = oldUserDB->prepare("SELECT * FROM user_unigrams ORDER BY rowid");
             
                 if (fetch) {
                     while (fetch->step() == SQLITE_ROW) {
@@ -1058,7 +1058,13 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo, OVLoaderService* loader
             }
         }
 
-        if (userDB->execute("PRAGMA synchronous = OFF") == SQLITE_OK) {
+        if (userDB->execute(
+#ifdef WIN32
+            "PRAGMA synchronous = NORMAL"
+#else
+            "PRAGMA synchronous = OFF"
+#endif
+            ) == SQLITE_OK) {
             // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "pragma executed" << endl;
         }
         else {
@@ -1165,6 +1171,7 @@ void OVIMSmartMandarin::loadConfig(OVKeyValueMap* moduleConfig, OVLoaderService*
     // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "Candidate cursor precesdes block: " << m_cfgCandidateCursorAtEndOfTargetBlock << endl;    
     
     m_LM->flushCache();
+    m_LM->flushUserCache();
     m_LM->loadUserBigramCache();
     m_LM->loadUserCandidateOverrideCache();
 }

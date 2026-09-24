@@ -99,6 +99,11 @@ bool TestWindowsEngineCandidateKeys() {
     session->handleKey(Character(L'1'));  // Standard layout: Bopomofo B.
     session->handleKey(Character(L'u'));  // Standard layout: Bopomofo I.
     EngineResult candidates = session->handleKey(Character(L'3'));  // Third tone.
+    // Traditional Mandarin opens candidates on the tone key; Smart Mandarin
+    // composes the sentence first and opens them on Down.
+    if (!candidates.candidatesVisible) {
+        candidates = session->handleKey(VirtualKey(VK_DOWN));
+    }
     if (!Expect(candidates.handled && candidates.candidatesVisible &&
                     !candidates.candidates.empty(),
                 "Bopomofo sequence did not open a candidate list.")) {

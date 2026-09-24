@@ -66,6 +66,11 @@ jobs:
           "release_tag=$releaseTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Set up Ruby for Smart Mandarin database
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+
       - name: Configure and build x64
         working-directory: Source/Loaders/Windows-TSF
         run: |

@@ -1,18 +1,35 @@
 # Windows SQLite／Defender 評估交接
 
 > 日期：2026-09-23
-> 狀態：留待 Windows 11 開發環境重新評估，本文件不承諾實作。
+> 狀態：2026-09-24 已依使用者選擇完成 WinSQLite 第一版程式修改；仍待 Windows 11 x64／x86 實際建置與試打。
 
-## 已確認現況
+## 2026-09-24 第一版實作
 
-- 現代 Windows TSF 使用 repository 內嵌的 SQLite **3.6.11**。
+- Windows TSF、設定程式與原生 database cooker 改連結 Windows SDK 的
+  `winsqlite3.lib`；不再靜態編譯 repository 內的 SQLite 3.6.11。
+- Windows 預設煮庫加入 SmartMandarin unigram／bigram；新使用者預設好打注音，
+  既有使用者維持原模式。自訂詞與學習資料使用
+  `%APPDATA%\chichi77 KeyKey\SmartMandarinUserData.db`。
+- 已檢查候選表、關聯詞、使用者詞庫與學習快取的列順序；有順序語意的查詢加上
+  `ORDER BY rowid`，跨主庫與使用者庫的 unigram 查詢則依來源及各自 rowid 排序。
+- 在 macOS 使用原生 cooker 加共用 SmartMandarinCooker 產生測試庫：最新
+  2,300 篇文章、打字回饋與數字詞庫輸入後為 114,235 筆 unigram、885,614 筆
+  bigram，`PRAGMA integrity_check` 為 `ok`；用 SQLite 3.53.2
+  驗證刪除造成 rowid 缺口後仍依預期順序讀取。這些結果不等於 Windows 的
+  MSVC／WinSQLite／TSF 實機驗收。
+
+下方保留改動前的基線、候選方案與 Windows 實測清單，供後續在實機上比較。
+
+## 改動前基線（2026-09-23）
+
+- 改動前的 Windows TSF 使用 repository 內嵌的 SQLite **3.6.11**。
 - 正式發布的 x64 `KeyKeyTsf.dll`、x86 `KeyKeyTsf.dll` 與
   `KeyKeySettings.exe` 都會靜態包含這一版 SQLite。
 - `KeyKeySettings.exe` 只用 SQLite 查詢 `collection_names`。
 - Windows 10／11 內建 `winsqlite3.dll`，Windows SDK 提供 `winsqlite3.h` 與
   `winsqlite3.lib`；它可作為類似 iOS 系統 SQLite 的依賴，但實際 SQLite 版本會隨
   Windows Update 改變。
-- 目前優先候選為改用系統 **WinSQLite**；備用方案才是固定內嵌官方 SQLite
+- 當時優先候選為改用系統 **WinSQLite**；備用方案才是固定內嵌官方 SQLite
   **3.53.4**。
 - 非 Windows 的初步 size benchmark 顯示，3.53.4 約使每個靜態連結 binary 增加
   **0.4–0.6 MiB**；三個正式 binary 合計預估增加約 **1.3–1.8 MiB**，仍須以 MSVC
@@ -20,10 +37,9 @@
 - Defender 曾將 `KeyKeySettings.exe` 判為 Wacatac ML 類別；檔案已送 Microsoft 分析。
 - SignPath Foundation 申請已送出，正式簽章資格仍待核准。
 
-## 到 Windows 後再決定
+## Windows 實機驗收清單
 
-先建立未修改的 3.6.11 x64／x86 Release baseline，再分別建立 WinSQLite 與內嵌 3.53.4
-測試 build，比較：
+保留 3.6.11 x64／x86 Release baseline，與這次 WinSQLite 實作比較：
 
 1. x64／x86 是否能乾淨編譯，CTest 是否全部通過。
 2. 舊 `KeyKey.db`、新 cooker、候選順序與 collection 清單是否相容。
@@ -48,16 +64,17 @@ cmake --preset windows-x86
 cmake --build --preset windows-x86-release --target KeyKeyTsf
 ```
 
-## 暫不決定
+## 原評估時的未定事項
 
 - 不因 Defender 誤判而全面重寫 Windows 架構。
-- 不先決定採 WinSQLite、內嵌 3.53.4，或移除 Settings 的 SQLite。
+- 當時尚未決定採 WinSQLite、內嵌 3.53.4，或移除 Settings 的 SQLite；
+  這次依使用者選擇採 WinSQLite，Settings 仍使用 SQLite。
 - 不改 iOS／macOS 的系統 SQLite，也不改 Android 的 `.kki` 索引。
 - 不把 SQLite 升級視為 Wacatac 誤判的保證解法。
 - 正式發布仍需簽署 x64 DLL、x86 DLL、Settings EXE 與外層 installer，並掃描最終簽章後
   的同一份檔案。
 
-## Windows 評估方向
+## 原 WinSQLite 評估方向
 
 優先測試以 `winsqlite3.h`／`winsqlite3.lib` 取代 repository 的 `sqlite3.c`。若基本 API、
 舊資料庫、cooker、候選結果及 x86 host 都相容，系統 WinSQLite 可減少三個正式 binary

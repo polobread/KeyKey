@@ -60,6 +60,7 @@ public:
 private:
     explicit KeyKeyEngineSession(OpenVanilla::PVLoaderContext* context);
     OpenVanilla::PVLoaderContext* context_ = nullptr;
+    std::string inputMethod_;
 };
 
 }  // namespace KeyKey::WindowsTsf

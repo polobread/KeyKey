@@ -134,7 +134,7 @@ namespace OpenVanilla {
         
         virtual const string valueForPropertyInTable(const string& property, const string& name)
         {
-            OVSQLiteStatement* statement = m_connection->prepare("SELECT VALUE FROM %Q WHERE KEY = ?", name.c_str());
+            OVSQLiteStatement* statement = m_connection->prepare("SELECT VALUE FROM %Q WHERE KEY = ? ORDER BY rowid", name.c_str());
             string result;
             
             if (statement) {
@@ -191,7 +191,7 @@ namespace OpenVanilla {
     inline const vector<string> OVSQLiteKeyValueDataTable::valuesForKey(const string& key)
     {
         vector<string> result;
-        OVSQLiteStatement* statement = m_source->connection()->prepare("SELECT value FROM %Q WHERE key = %Q", m_tableName.c_str(), key.c_str());
+        OVSQLiteStatement* statement = m_source->connection()->prepare("SELECT value FROM %Q WHERE key = %Q ORDER BY rowid", m_tableName.c_str(), key.c_str());
         if (statement) {
             while (statement->step() == SQLITE_ROW) {
                 result.push_back(statement->textOfColumn(0));
@@ -206,7 +206,7 @@ namespace OpenVanilla {
     inline const vector<string> OVSQLiteKeyValueDataTable::keysForValue(const string& value)
     {
         vector<string> result;
-        OVSQLiteStatement* statement = m_source->connection()->prepare("SELECT key FROM %Q WHERE value = %Q", m_tableName.c_str(), value.c_str());
+        OVSQLiteStatement* statement = m_source->connection()->prepare("SELECT key FROM %Q WHERE value = %Q ORDER BY rowid", m_tableName.c_str(), value.c_str());
         if (statement) {
             while (statement->step() == SQLITE_ROW) {
                 string key = statement->textOfColumn(0);
@@ -228,7 +228,7 @@ namespace OpenVanilla {
         pair<string, string> exp = OVSQLiteHelper::SQLiteStringFromWildcard(expression);
                     
         vector<pair<string, string> > result;
-        OVSQLiteStatement* statement = m_source->connection()->prepare("SELECT key, value FROM %Q WHERE key like %Q escape %Q", m_tableName.c_str(), exp.first.c_str(), exp.second.c_str());
+        OVSQLiteStatement* statement = m_source->connection()->prepare("SELECT key, value FROM %Q WHERE key like %Q escape %Q ORDER BY rowid", m_tableName.c_str(), exp.first.c_str(), exp.second.c_str());
         if (statement) {
             while (statement->step() == SQLITE_ROW) {
                 result.push_back(pair<string, string>(statement->textOfColumn(0), statement->textOfColumn(1)));

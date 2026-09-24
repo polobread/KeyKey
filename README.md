@@ -1,4 +1,4 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.2.9
+# 琦琦輸入法 / chichi77 KeyKey 1.2.10
 
 `v1.2.9` 的 macOS、Windows 與 Ubuntu 24.04 安裝包集中在同一個
 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)；

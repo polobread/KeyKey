@@ -91,6 +91,15 @@ std::wstring TraditionalMandarinPreferencesPath() {
                      L"TraditionalMandarin.plist";
 }
 
+std::wstring SmartMandarinPreferencesPath() {
+    const std::wstring directory = SettingsDirectory();
+    return directory.empty()
+               ? std::wstring()
+               : directory +
+                     L"\\org.openvanilla.chichi77-keykey.windows."
+                     L"SmartMandarin.plist";
+}
+
 std::wstring AssociatedPhrasePreferencesPath() {
     const std::wstring directory = SettingsDirectory();
     return directory.empty()

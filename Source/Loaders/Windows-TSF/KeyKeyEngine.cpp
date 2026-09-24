@@ -8,6 +8,7 @@
 #include "OpenVanilla.h"
 #include "PlainVanilla.h"
 #include "OVAFAssociatedPhrase.h"
+#include "OVIMSmartMandarin.h"
 #include "OVIMTraditionalMandarin.h"
 
 namespace KeyKey::WindowsTsf {
@@ -15,7 +16,8 @@ namespace {
 
 using namespace OpenVanilla;
 
-constexpr char kPrimaryInputMethod[] = OVIMTRADITIONALMANDARIN_IDENTIFIER;
+constexpr char kSmartInputMethod[] = OVIMSMARTMANDARIN_IDENTIFIER;
+constexpr char kTraditionalInputMethod[] = OVIMTRADITIONALMANDARIN_IDENTIFIER;
 constexpr char kAssociatedPhraseFilter[] = OVAFASSOCIATEDPHRASE_IDENTIFIER;
 
 class WindowsEncodingService final : public OVEncodingService {
@@ -74,17 +76,31 @@ public:
     const std::vector<std::string> modulePackageFilePatterns() override { return {}; }
 };
 
-// Smart Mandarin depends on a corpus that is not part of this repository. Keep
-// the database-backed Traditional Mandarin and associated-phrase modules in the
-// first Windows milestone.
 class WindowsMandarinPackage final : public OVModulePackage {
 public:
+    explicit WindowsMandarinPackage(bool includeSmart) : includeSmart_(includeSmart) {}
+
     bool initialize(OVPathInfo*, OVLoaderService*) override {
         m_moduleVector.push_back(new OVModuleClassWrapper<OVIMTraditionalMandarin>);
+        if (includeSmart_) {
+            m_moduleVector.push_back(new OVModuleClassWrapper<OVIMSmartMandarin>);
+        }
         m_moduleVector.push_back(new OVModuleClassWrapper<OVAFAssociatedPhrase>);
         return true;
     }
+private:
+    bool includeSmart_;
 };
+
+bool HasSmartMandarinData(OVSQLiteConnection* connection) {
+    if (!connection || !connection->hasTable("unigrams") ||
+        !connection->hasTable("bigrams")) return false;
+    std::unique_ptr<OVSQLiteStatement> count(connection->prepare(
+        "SELECT (SELECT count(*) FROM unigrams), "
+        "(SELECT count(*) FROM bigrams)"));
+    return count && count->step() == SQLITE_ROW &&
+           count->intOfColumn(0) >= 1000 && count->intOfColumn(1) > 0;
+}
 
 std::wstring ModuleDirectory() {
     std::wstring path(32768, L'\0');
@@ -128,6 +144,10 @@ public:
             OutputDebugStringW(L"chichi77 KeyKey TSF: unable to open KeyKey.db.\n");
             return;
         }
+        const bool smartAvailable = HasSmartMandarinData(database_->connection());
+        if (!smartAvailable) {
+            OutputDebugStringW(L"chichi77 KeyKey TSF: Smart Mandarin language model is missing; using Traditional Mandarin.\n");
+        }
 
         const std::string resourcePath = OVUTF8::FromUTF16(ModuleDirectory());
         OVPathInfo pathInfo;
@@ -138,11 +158,15 @@ public:
         OVDirectoryHelper::CheckDirectory(pathInfo.writablePath);
 
         policy_ = std::make_unique<WindowsLoaderPolicy>();
+        const std::wstring loaderPreferences = OVUTF16::FromUTF8(
+            policy_->propertyListPathForLoader());
+        const bool existingProfile =
+            GetFileAttributesW(loaderPreferences.c_str()) != INVALID_FILE_ATTRIBUTES;
         service_ = std::make_unique<PVLoaderService>(
             "zh_TW", nullptr, database_.get(), nullptr, &encodingService_);
         packages_ = std::make_unique<PVStaticModulePackageLoadingSystem>(pathInfo, true);
 
-        auto* mandarin = new WindowsMandarinPackage();
+        auto* mandarin = new WindowsMandarinPackage(smartAvailable);
         if (!mandarin->initialize(&pathInfo, service_.get()) ||
             !packages_->addInitializedPackage("OVIMMandarin", mandarin)) {
             mandarin->finalize();
@@ -152,12 +176,17 @@ public:
 
         std::vector<PVModulePackageLoadingSystem*> systems{packages_.get()};
         loader_ = std::make_unique<PVLoader>(policy_.get(), service_.get(), systems);
-        loader_->setPrimaryInputMethod(kPrimaryInputMethod);
+        // Keep the choice of existing users. A new profile starts with the
+        // sentence composer when the cooked language model is available.
+        if (!existingProfile && smartAvailable) {
+            loader_->setPrimaryInputMethod(kSmartInputMethod);
+        }
         if (!loader_->isAroundFilterActivated(kAssociatedPhraseFilter)) {
             loader_->toggleAroundFilter(kAssociatedPhraseFilter);
         }
         loader_->syncSandwichConfig();
-        ready_ = loader_->primaryInputMethod() == kPrimaryInputMethod;
+        ready_ = loader_->primaryInputMethod() == kSmartInputMethod ||
+                 loader_->primaryInputMethod() == kTraditionalInputMethod;
     }
 
     PVLoaderContext* createContext() {
@@ -167,7 +196,27 @@ public:
 
     PVLoaderService* service() const { return service_.get(); }
     void syncSettings() {
-        if (loader_) loader_->syncSandwichConfig();
+        if (loader_) {
+            loader_->syncLoaderConfig();
+            // The settings app writes the attached user database from another
+            // connection. Reload both phrase and learning caches before a
+            // stale in-process cache can replace the edited rows.
+            if (database_) {
+                std::unique_ptr<OVSQLiteStatement> version(
+                    database_->connection()->prepare("PRAGMA userdb.data_version"));
+                if (version && version->step() == SQLITE_ROW) {
+                    const int current = version->intOfColumn(0);
+                    if (lastUserDataVersion_ && current != lastUserDataVersion_) {
+                        loader_->forceSyncModuleConfigForNextRound(kSmartInputMethod);
+                    }
+                    lastUserDataVersion_ = current;
+                }
+            }
+            loader_->syncSandwichConfig();
+        }
+    }
+    std::string primaryInputMethod() const {
+        return loader_ ? loader_->primaryInputMethod() : std::string();
     }
     std::recursive_mutex& mutex() { return mutex_; }
 
@@ -179,6 +228,7 @@ private:
     std::unique_ptr<PVLoaderService> service_;
     std::unique_ptr<PVStaticModulePackageLoadingSystem> packages_;
     std::unique_ptr<PVLoader> loader_;
+    int lastUserDataVersion_ = 0;
     bool ready_ = false;
 };
 
@@ -396,6 +446,7 @@ std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::Create() {
 KeyKeyEngineSession::KeyKeyEngineSession(PVLoaderContext* context) : context_(context) {
     if (context_) {
         std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+        inputMethod_ = Runtime().primaryInputMethod();
         context_->activate();
     }
 }
@@ -403,6 +454,7 @@ KeyKeyEngineSession::KeyKeyEngineSession(PVLoaderContext* context) : context_(co
 KeyKeyEngineSession::~KeyKeyEngineSession() {
     if (!context_) return;
     std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    Runtime().syncSettings();
     context_->deactivate();
     delete context_;
 }
@@ -439,6 +491,17 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
 
     std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
     Runtime().syncSettings();
+    const std::string selectedMethod = Runtime().primaryInputMethod();
+    if (selectedMethod != inputMethod_ &&
+        context_->composingText()->isEmpty() &&
+        context_->readingText()->isEmpty()) {
+        context_->deactivate();
+        delete context_;
+        context_ = Runtime().createContext();
+        if (!context_) return result;
+        inputMethod_ = selectedMethod;
+        context_->activate();
+    }
     PVKeyImpl keyImplementation = MakeKey(event);
     OVKey key(keyImplementation.copy());
     Runtime().service()->resetState();

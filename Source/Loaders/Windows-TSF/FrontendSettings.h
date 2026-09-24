@@ -22,6 +22,7 @@ struct FrontendSettings {
 std::wstring SettingsDirectory();
 std::wstring LoaderPreferencesPath();
 std::wstring TraditionalMandarinPreferencesPath();
+std::wstring SmartMandarinPreferencesPath();
 std::wstring AssociatedPhrasePreferencesPath();
 
 FrontendSettings LoadFrontendSettings();

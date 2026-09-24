@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <CommCtrl.h>
+#include <CommDlg.h>
 
 #include <fstream>
 #include <iterator>
@@ -8,6 +9,7 @@
 #include <vector>
 
 #include "FrontendSettings.h"
+#include "UserDataStore.h"
 #include "sqlite3.h"
 
 namespace {
@@ -15,6 +17,8 @@ namespace {
 using KeyKey::WindowsTsf::AssociatedPhrasePreferencesPath;
 using KeyKey::WindowsTsf::LoaderPreferencesPath;
 using KeyKey::WindowsTsf::TraditionalMandarinPreferencesPath;
+using KeyKey::WindowsTsf::SmartMandarinPreferencesPath;
+using KeyKey::WindowsTsf::UserPhrase;
 
 #define KEYKEY_WIDEN_INNER(value) L##value
 #define KEYKEY_WIDEN(value) KEYKEY_WIDEN_INNER(value)
@@ -36,9 +40,19 @@ constexpr int kGeneralBeepId = 207;
 constexpr int kGeneralCandidateScaleId = 208;
 constexpr int kPhoneticKeyboardLayoutId = 301;
 constexpr int kPhoneticRareCharactersId = 302;
+constexpr int kPhoneticModeId = 303;
 constexpr int kPhraseListId = 401;
 constexpr int kPhraseSelectAllId = 402;
 constexpr int kPhraseBaseOnlyId = 403;
+constexpr int kUserPhraseListId = 501;
+constexpr int kUserPhraseTextId = 502;
+constexpr int kUserPhraseReadingId = 503;
+constexpr int kUserPhraseAddId = 504;
+constexpr int kUserPhraseUpdateId = 505;
+constexpr int kUserPhraseDeleteId = 506;
+constexpr int kUserLearningResetId = 507;
+constexpr int kUserImportId = 508;
+constexpr int kUserExportId = 509;
 
 struct Collection {
     std::wstring source;
@@ -49,10 +63,13 @@ struct WindowState {
     HWND tab = nullptr;
     HWND version = nullptr;
     HWND phraseList = nullptr;
+    HWND userPhraseList = nullptr;
     HWND status = nullptr;
     std::vector<HWND> generalControls;
     std::vector<HWND> phoneticControls;
     std::vector<HWND> phraseControls;
+    std::vector<HWND> userControls;
+    std::vector<UserPhrase> userPhrases;
 };
 
 std::wstring Utf8ToWide(const std::string& text) {
@@ -143,11 +160,44 @@ void SetPlistString(std::string& xml, const std::string& key,
 
 bool WriteFile(const std::wstring& path, const std::string& contents) {
     if (path.empty()) return false;
-    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    WIN32_FILE_ATTRIBUTE_DATA oldAttributes{};
+    const bool hadPrevious = GetFileAttributesExW(
+        path.c_str(), GetFileExInfoStandard, &oldAttributes) != FALSE;
+    const std::wstring temporary =
+        path + L".tmp." + std::to_wstring(GetCurrentProcessId());
+    std::ofstream output(temporary, std::ios::binary | std::ios::trunc);
     if (!output) return false;
     output.write(contents.data(), static_cast<std::streamsize>(contents.size()));
     output.close();
-    return output.good();
+    if (!output.good() || !MoveFileExW(temporary.c_str(), path.c_str(),
+                                     MOVEFILE_REPLACE_EXISTING |
+                                         MOVEFILE_WRITE_THROUGH)) {
+        DeleteFileW(temporary.c_str());
+        return false;
+    }
+
+    // The legacy loader compares _wstat timestamps in whole seconds. Ensure
+    // rapid consecutive edits still have a strictly increasing timestamp.
+    FILETIME now{};
+    GetSystemTimeAsFileTime(&now);
+    ULARGE_INTEGER next{};
+    next.LowPart = now.dwLowDateTime;
+    next.HighPart = now.dwHighDateTime;
+    if (hadPrevious) {
+        ULARGE_INTEGER previous{};
+        previous.LowPart = oldAttributes.ftLastWriteTime.dwLowDateTime;
+        previous.HighPart = oldAttributes.ftLastWriteTime.dwHighDateTime;
+        const ULONGLONG afterPrevious = previous.QuadPart + 10000000ULL;
+        if (next.QuadPart < afterPrevious) next.QuadPart = afterPrevious;
+    }
+    FILETIME lastWrite{next.LowPart, next.HighPart};
+    HANDLE file = CreateFileW(path.c_str(), FILE_WRITE_ATTRIBUTES,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                              nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return false;
+    const bool updated = SetFileTime(file, nullptr, nullptr, &lastWrite) != FALSE;
+    CloseHandle(file);
+    return updated;
 }
 
 std::wstring ExecutableDirectory() {
@@ -173,7 +223,7 @@ std::vector<Collection> LoadCollections() {
     sqlite3_stmt* statement = nullptr;
     if (sqlite3_prepare_v2(database,
                           "SELECT source, display FROM collection_names "
-                          "ORDER BY sortorder, display",
+                          "ORDER BY sortorder, display, rowid",
                           -1, &statement, nullptr) == SQLITE_OK) {
         while (sqlite3_step(statement) == SQLITE_ROW) {
             const char* source = reinterpret_cast<const char*>(
@@ -275,12 +325,12 @@ void CreateGeneralPage(HWND window, WindowState* state) {
 
     AddControl(window, page, 0, L"BUTTON", L"輸入法模組管理", BS_GROUPBOX,
                26, 146, 650, 82);
-    HWND module = AddControl(window, page, 0, L"BUTTON", L"傳統注音",
+    HWND module = AddControl(window, page, 0, L"BUTTON", L"好打注音／傳統注音",
                              BS_AUTOCHECKBOX, 44, 174, 180, 24);
     SendMessageW(module, BM_SETCHECK, BST_CHECKED, 0);
     EnableWindow(module, FALSE);
     AddControl(window, page, 0, L"STATIC",
-               L"Windows 版固定啟用傳統注音；本版不包含倉頡與簡易。", 0,
+               L"可在「注音」分頁切換組字模式；本版不包含倉頡與簡易。", 0,
                238, 176, 400, 24);
 
     AddControl(window, page, 0, L"BUTTON", L"選字窗", BS_GROUPBOX, 26,
@@ -360,23 +410,31 @@ void CreateGeneralPage(HWND window, WindowState* state) {
 
 void CreatePhoneticPage(HWND window, WindowState* state) {
     auto& page = state->phoneticControls;
-    AddControl(window, page, 0, L"BUTTON", L"傳統注音輸入法", BS_GROUPBOX,
-               26, 54, 650, 190);
-    AddControl(window, page, 0, L"STATIC", L"鍵盤配置：", 0, 48, 90, 100,
+    AddControl(window, page, 0, L"BUTTON", L"注音輸入法", BS_GROUPBOX,
+               26, 54, 650, 224);
+    AddControl(window, page, 0, L"STATIC", L"組字模式：", 0, 48, 88, 100,
+               22);
+    HWND mode = AddControl(window, page, 0, WC_COMBOBOXW, L"",
+                           CBS_DROPDOWNLIST | WS_VSCROLL, 154, 84, 220, 120,
+                           kPhoneticModeId);
+    const std::string loaderXml = ReadFile(LoaderPreferencesPath());
+    AddComboValues(mode, {L"好打注音（整句組字）", L"傳統注音"},
+                   PlistString(loaderXml, "PrimaryInputMethod", "SmartMandarin") ==
+                           "TraditionalMandarin" ? 1 : 0);
+    AddControl(window, page, 0, L"STATIC", L"鍵盤配置：", 0, 48, 128, 100,
                22);
     HWND layout = AddControl(window, page, 0, WC_COMBOBOXW, L"",
-                             CBS_DROPDOWNLIST | WS_VSCROLL, 154, 85, 220, 180,
+                             CBS_DROPDOWNLIST | WS_VSCROLL, 154, 124, 220, 180,
                              kPhoneticKeyboardLayoutId);
     AddControl(window, page, 0, L"BUTTON", L"使用全字庫罕用字（CNS11643）",
-               BS_AUTOCHECKBOX, 48, 132, 300, 24,
+               BS_AUTOCHECKBOX, 48, 170, 300, 24,
                kPhoneticRareCharactersId);
     AddControl(window, page, 0, L"STATIC",
                L"關閉時僅顯示 Big-5 可表示的候選字；變更會在下一次按鍵時生效。",
-               0, 48, 170, 580, 42);
+               0, 48, 208, 580, 42);
     AddControl(window, page, 0, L"STATIC",
-               L"注音選字鍵固定為 1–9；空白、Enter、方向鍵、Page Up／"
-               L"Page Down 與 Esc 的行為和 macOS 傳統注音一致。",
-               0, 34, 274, 620, 48);
+               L"好打注音會整句組字並學習選字；切換模式會在下一次開始輸入時生效。",
+               0, 34, 298, 620, 48);
 
     const std::string xml = ReadFile(TraditionalMandarinPreferencesPath());
     const std::string current = PlistString(xml, "KeyboardLayout", "Standard");
@@ -440,13 +498,102 @@ void CreatePhrasePage(HWND window, WindowState* state) {
     }
 }
 
+void RefreshUserPhrases(WindowState* state) {
+    if (!state || !state->userPhraseList) return;
+    state->userPhrases = KeyKey::WindowsTsf::LoadUserPhrases();
+    ListView_DeleteAllItems(state->userPhraseList);
+    for (size_t index = 0; index < state->userPhrases.size(); ++index) {
+        const UserPhrase& phrase = state->userPhrases[index];
+        LVITEMW item{};
+        item.mask = LVIF_TEXT;
+        item.iItem = static_cast<int>(index);
+        item.pszText = const_cast<wchar_t*>(phrase.text.c_str());
+        ListView_InsertItem(state->userPhraseList, &item);
+        ListView_SetItemText(state->userPhraseList, static_cast<int>(index), 1,
+                             const_cast<wchar_t*>(phrase.reading.c_str()));
+    }
+}
+
+int SelectedUserPhrase(const WindowState* state) {
+    if (!state || !state->userPhraseList) return -1;
+    const int selected = ListView_GetNextItem(state->userPhraseList, -1, LVNI_SELECTED);
+    return selected >= 0 && static_cast<size_t>(selected) < state->userPhrases.size()
+               ? selected : -1;
+}
+
+std::wstring ControlText(HWND window, int id) {
+    wchar_t buffer[512]{};
+    GetWindowTextW(GetDlgItem(window, id), buffer, ARRAYSIZE(buffer));
+    return buffer;
+}
+
+std::wstring ChooseUserDatabase(HWND window, bool save) {
+    wchar_t path[MAX_PATH]{};
+    OPENFILENAMEW dialog{};
+    dialog.lStructSize = sizeof(dialog);
+    dialog.hwndOwner = window;
+    dialog.lpstrFilter = L"SQLite 資料庫 (*.db)\0*.db\0所有檔案 (*.*)\0*.*\0";
+    dialog.lpstrFile = path;
+    dialog.nMaxFile = ARRAYSIZE(path);
+    dialog.lpstrDefExt = L"db";
+    dialog.Flags = OFN_PATHMUSTEXIST |
+                   (save ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
+    if (save ? GetSaveFileNameW(&dialog) : GetOpenFileNameW(&dialog)) return path;
+    return {};
+}
+
+void CreateUserPage(HWND window, WindowState* state) {
+    auto& page = state->userControls;
+    AddControl(window, page, 0, L"STATIC",
+               L"自訂詞會用於好打注音；讀音請以半形逗號分隔，每個字對應一個音節。",
+               0, 28, 58, 640, 24);
+    state->userPhraseList = AddControl(
+        window, page, WS_EX_CLIENTEDGE, WC_LISTVIEWW, L"",
+        LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+        28, 90, 646, 290, kUserPhraseListId);
+    ListView_SetExtendedListViewStyle(state->userPhraseList,
+                                      LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+    LVCOLUMNW column{};
+    column.mask = LVCF_TEXT | LVCF_WIDTH;
+    column.pszText = const_cast<wchar_t*>(L"詞語");
+    column.cx = 290;
+    ListView_InsertColumn(state->userPhraseList, 0, &column);
+    column.pszText = const_cast<wchar_t*>(L"注音讀音");
+    column.cx = 330;
+    ListView_InsertColumn(state->userPhraseList, 1, &column);
+
+    AddControl(window, page, 0, L"STATIC", L"詞語：", 0, 28, 402, 70, 24);
+    AddControl(window, page, WS_EX_CLIENTEDGE, L"EDIT", L"",
+               ES_AUTOHSCROLL, 96, 398, 235, 27, kUserPhraseTextId);
+    AddControl(window, page, 0, L"STATIC", L"讀音：", 0, 346, 402, 70, 24);
+    AddControl(window, page, WS_EX_CLIENTEDGE, L"EDIT", L"",
+               ES_AUTOHSCROLL, 414, 398, 260, 27, kUserPhraseReadingId);
+    AddControl(window, page, 0, L"BUTTON", L"新增", BS_PUSHBUTTON,
+               28, 444, 90, 28, kUserPhraseAddId);
+    AddControl(window, page, 0, L"BUTTON", L"修改選取詞", BS_PUSHBUTTON,
+               128, 444, 110, 28, kUserPhraseUpdateId);
+    AddControl(window, page, 0, L"BUTTON", L"刪除選取詞", BS_PUSHBUTTON,
+               248, 444, 110, 28, kUserPhraseDeleteId);
+    AddControl(window, page, 0, L"BUTTON", L"重設學習紀錄…", BS_PUSHBUTTON,
+               510, 444, 164, 28, kUserLearningResetId);
+    AddControl(window, page, 0, L"BUTTON", L"匯入使用者資料庫…", BS_PUSHBUTTON,
+               28, 484, 178, 28, kUserImportId);
+    AddControl(window, page, 0, L"BUTTON", L"匯出使用者資料庫…", BS_PUSHBUTTON,
+               218, 484, 178, 28, kUserExportId);
+    AddControl(window, page, 0, L"STATIC",
+               L"匯入會合併自訂詞並載入該資料庫的學習紀錄；重設只清除學習。",
+               0, 28, 528, 640, 24);
+    RefreshUserPhrases(state);
+}
+
 void ShowSelectedPage(WindowState* state) {
     if (!state || !state->tab) return;
     const int selected = TabCtrl_GetCurSel(state->tab);
     const std::vector<HWND>* pages[] = {&state->generalControls,
                                         &state->phoneticControls,
-                                        &state->phraseControls};
-    for (int page = 0; page < 3; ++page) {
+                                        &state->phraseControls,
+                                        &state->userControls};
+    for (int page = 0; page < 4; ++page) {
         for (HWND control : *pages[page]) {
             ShowWindow(control, page == selected ? SW_SHOW : SW_HIDE);
         }
@@ -455,6 +602,10 @@ void ShowSelectedPage(WindowState* state) {
 
 bool SaveSettings(HWND window, WindowState* state) {
     std::string general = ReadFile(LoaderPreferencesPath());
+    SetPlistString(general, "PrimaryInputMethod",
+                   SendMessageW(GetDlgItem(window, kPhoneticModeId),
+                                CB_GETCURSEL, 0, 0) == 1
+                       ? "TraditionalMandarin" : "SmartMandarin");
     SetPlistString(
         general, "OneDimensionalCandidatePanelStyle",
         SendMessageW(GetDlgItem(window, kGeneralHorizontalId), BM_GETCHECK, 0,
@@ -499,10 +650,17 @@ bool SaveSettings(HWND window, WindowState* state) {
                      BM_GETCHECK, 0, 0) == BST_CHECKED
             ? ""
             : "BIG-5");
+    std::string smart = ReadFile(SmartMandarinPreferencesPath());
+    SetPlistString(smart, "KeyboardLayout",
+                   layouts[layoutIndex >= 0 && layoutIndex < 5 ? layoutIndex : 0]);
+    SetPlistString(smart, "UseCharactersSupportedByEncoding",
+                   SendMessageW(GetDlgItem(window, kPhoneticRareCharactersId),
+                                BM_GETCHECK, 0, 0) == BST_CHECKED ? "" : "BIG-5");
 
     const bool saved = WriteFile(LoaderPreferencesPath(), general) &&
                        WriteFile(TraditionalMandarinPreferencesPath(),
                                  phonetic) &&
+                       WriteFile(SmartMandarinPreferencesPath(), smart) &&
                        SaveEnabledCollections(state->phraseList);
     if (saved) {
         SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
@@ -542,8 +700,8 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM wparam,
                 reinterpret_cast<HMENU>(static_cast<INT_PTR>(kTabId)), nullptr,
                 nullptr);
             SetControlFont(state->tab);
-            const wchar_t* tabs[] = {L"一般", L"注音", L"關聯詞庫"};
-            for (int index = 0; index < 3; ++index) {
+            const wchar_t* tabs[] = {L"一般", L"注音", L"關聯詞庫", L"自訂詞"};
+            for (int index = 0; index < 4; ++index) {
                 TCITEMW item{};
                 item.mask = TCIF_TEXT;
                 item.pszText = const_cast<wchar_t*>(tabs[index]);
@@ -576,6 +734,7 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM wparam,
             CreateGeneralPage(window, state);
             CreatePhoneticPage(window, state);
             CreatePhrasePage(window, state);
+            CreateUserPage(window, state);
             TabCtrl_SetCurSel(state->tab, 0);
             ShowSelectedPage(state);
             Layout(window, state);
@@ -590,9 +749,82 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM wparam,
                 ShowSelectedPage(state);
                 return 0;
             }
+            if (state && reinterpret_cast<NMHDR*>(lparam)->idFrom == kUserPhraseListId &&
+                reinterpret_cast<NMHDR*>(lparam)->code == LVN_ITEMCHANGED) {
+                const int selected = SelectedUserPhrase(state);
+                if (selected >= 0) {
+                    const UserPhrase& phrase = state->userPhrases[selected];
+                    SetWindowTextW(GetDlgItem(window, kUserPhraseTextId),
+                                   phrase.text.c_str());
+                    SetWindowTextW(GetDlgItem(window, kUserPhraseReadingId),
+                                   phrase.reading.c_str());
+                }
+                return 0;
+            }
             break;
         case WM_COMMAND: {
             const int id = LOWORD(wparam);
+            if (state && (id == kUserPhraseAddId || id == kUserPhraseUpdateId)) {
+                UserPhrase phrase;
+                if (id == kUserPhraseUpdateId) {
+                    const int selected = SelectedUserPhrase(state);
+                    if (selected < 0) {
+                        SetWindowTextW(state->status, L"請先選取要修改的詞");
+                        return 0;
+                    }
+                    phrase.rowid = state->userPhrases[selected].rowid;
+                }
+                phrase.text = ControlText(window, kUserPhraseTextId);
+                phrase.reading = ControlText(window, kUserPhraseReadingId);
+                const bool saved = KeyKey::WindowsTsf::SaveUserPhrase(phrase);
+                if (saved) RefreshUserPhrases(state);
+                SetWindowTextW(state->status,
+                               saved ? L"自訂詞已儲存"
+                                     : L"儲存失敗：檢查詞語、讀音數量與重複項目");
+                return 0;
+            }
+            if (state && id == kUserPhraseDeleteId) {
+                const int selected = SelectedUserPhrase(state);
+                if (selected < 0) {
+                    SetWindowTextW(state->status, L"請先選取要刪除的詞");
+                    return 0;
+                }
+                const bool removed = KeyKey::WindowsTsf::DeleteUserPhrase(
+                    state->userPhrases[selected].rowid);
+                if (removed) RefreshUserPhrases(state);
+                SetWindowTextW(state->status,
+                               removed ? L"自訂詞已刪除" : L"刪除自訂詞失敗");
+                return 0;
+            }
+            if (state && id == kUserLearningResetId) {
+                if (MessageBoxW(window,
+                                L"要清除選字與前後文學習紀錄嗎？自訂詞會保留。",
+                                L"重設學習紀錄", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+                    SetWindowTextW(state->status,
+                        KeyKey::WindowsTsf::ResetUserLearning()
+                            ? L"學習紀錄已重設" : L"重設學習紀錄失敗");
+                }
+                return 0;
+            }
+            if (state && id == kUserImportId) {
+                const std::wstring path = ChooseUserDatabase(window, false);
+                if (!path.empty()) {
+                    const bool imported = KeyKey::WindowsTsf::ImportUserData(path);
+                    if (imported) RefreshUserPhrases(state);
+                    SetWindowTextW(state->status,
+                        imported ? L"使用者資料已匯入" : L"匯入失敗：請確認資料庫格式");
+                }
+                return 0;
+            }
+            if (state && id == kUserExportId) {
+                const std::wstring path = ChooseUserDatabase(window, true);
+                if (!path.empty()) {
+                    SetWindowTextW(state->status,
+                        KeyKey::WindowsTsf::ExportUserData(path)
+                            ? L"使用者資料已匯出" : L"匯出使用者資料失敗");
+                }
+                return 0;
+            }
             if (id == kPhraseSelectAllId && state) {
                 const int count = ListView_GetItemCount(state->phraseList);
                 for (int row = 0; row < count; ++row) {

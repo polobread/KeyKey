@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(KeyKeyWindowsTsf VERSION 1.2.9 LANGUAGES C CXX)
+project(KeyKeyWindowsTsf VERSION 1.2.10 LANGUAGES C CXX)
 
 set(KEYKEY_VERSION_TWEAK 0)
 if(NOT "${PROJECT_VERSION_TWEAK}" STREQUAL "")
@@ -32,13 +32,15 @@ endif()
 get_filename_component(KEYKEY_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
 set(KEYKEY_SOURCE "${KEYKEY_ROOT}/Source")
 set(KEYKEY_DATABASE_PATH
-    "${KEYKEY_SOURCE}/Distributions/Takao/CookedDatabase/KeyKey.db"
+    ""
     CACHE FILEPATH "Path to the cooked KeyKey SQLite database")
+if(KEYKEY_DATABASE_PATH AND NOT EXISTS "${KEYKEY_DATABASE_PATH}")
+    message(FATAL_ERROR "KEYKEY_DATABASE_PATH does not exist: ${KEYKEY_DATABASE_PATH}")
+endif()
 set(KEYKEY_CATEGORIZED_COLLECTION_DIR
     "${KEYKEY_ROOT}/DataSource/chichi77Collection")
 
 add_library(keykey_third_party STATIC
-    "${KEYKEY_SOURCE}/ExternalLibraries/sqlite/sqlite3.c"
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib/xmlparse.c"
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib/xmlrole.c"
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib/xmltok.c"
@@ -46,23 +48,24 @@ add_library(keykey_third_party STATIC
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib/xmltok_ns.c"
 )
 target_include_directories(keykey_third_party PUBLIC
-    "${KEYKEY_SOURCE}/ExternalLibraries/sqlite"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib"
 )
 target_compile_definitions(keykey_third_party PRIVATE
     COMPILED_FROM_DSP
     XML_STATIC
-    SQLITE_THREADSAFE=1
-    SQLITE_OMIT_LOAD_EXTENSION
     _CRT_SECURE_NO_WARNINGS
 )
+target_link_libraries(keykey_third_party PUBLIC winsqlite3)
 set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(keykey_core STATIC
     "${KEYKEY_SOURCE}/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
     "${KEYKEY_SOURCE}/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
     "${KEYKEY_SOURCE}/Frameworks/Formosa/Source/Mandarin.cpp"
+    "${KEYKEY_SOURCE}/Frameworks/Manjusri/Source/Node.cpp"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp"
+    "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"
     KeyKeyEngine.cpp
 )
@@ -72,6 +75,7 @@ target_compile_definitions(keykey_core PUBLIC
     OVIMMANDARIN_IDENTIFIER=\"Mandarin\"
     OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX=\"Punctuations\"
     OVIMTRADITIONALMANDARIN_IDENTIFIER=\"TraditionalMandarin\"
+    OVIMSMARTMANDARIN_IDENTIFIER=\"SmartMandarin\"
     OVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING
     OVAFASSOCIATEDPHRASE_IDENTIFIER=\"AssociatedPhrase\"
     XML_STATIC
@@ -85,6 +89,7 @@ target_include_directories(keykey_core PUBLIC
     "${KEYKEY_SOURCE}/Frameworks/OpenVanilla/Headers"
     "${KEYKEY_SOURCE}/Frameworks/PlainVanilla/Headers"
     "${KEYKEY_SOURCE}/Frameworks/Formosa/Headers"
+    "${KEYKEY_SOURCE}/Frameworks/Manjusri/Headers"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin"
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -95,7 +100,8 @@ if(MSVC)
 endif()
 
 set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_DATABASE_PATH}")
-if(NOT EXISTS "${KEYKEY_DATABASE_PATH}")
+if(NOT KEYKEY_DATABASE_PATH)
+    find_package(Ruby REQUIRED)
     add_executable(KeyKeyDatabaseCooker DatabaseCooker.cpp)
     target_compile_features(KeyKeyDatabaseCooker PRIVATE cxx_std_17)
     target_link_libraries(KeyKeyDatabaseCooker PRIVATE keykey_core)
@@ -113,11 +119,31 @@ if(NOT EXISTS "${KEYKEY_DATABASE_PATH}")
             "Categorized associated-phrase data not found: ${KEYKEY_CATEGORIZED_COLLECTION_DIR}")
     endif()
     list(APPEND KEYKEY_COLLECTION_INPUTS ${KEYKEY_CATEGORIZED_COLLECTION_INPUTS})
+    set(KEYKEY_SMART_SQL "${CMAKE_CURRENT_BINARY_DIR}/Databases/SmartMandarin.sql")
+    set(KEYKEY_ABSOLUTE_CIN "${CMAKE_CURRENT_BINARY_DIR}/Databases/bpmf-absorder.cin")
+    set(KEYKEY_SMART_COOKER
+        "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/SmartMandarinCooker.rb")
+    set(KEYKEY_SMART_CORPORA
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v1.txt"
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v2.txt"
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v3.txt"
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-typing-feedback.txt"
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/article-corpus-2300-exact-dedup.txt")
+    set(KEYKEY_SMART_LEXICONS
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/supplemental-lexicon.tsv"
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv")
+    foreach(KEYKEY_SMART_INPUT IN LISTS KEYKEY_SMART_CORPORA KEYKEY_SMART_LEXICONS)
+        if(NOT EXISTS "${KEYKEY_SMART_INPUT}")
+            message(FATAL_ERROR "Smart Mandarin source data not found: ${KEYKEY_SMART_INPUT}")
+        endif()
+    endforeach()
     message(STATUS
         "Including categorized associated-phrase data from: ${KEYKEY_CATEGORIZED_COLLECTION_DIR}")
     set(KEYKEY_NATIVE_DATABASE "${CMAKE_CURRENT_BINARY_DIR}/Databases/KeyKey.db")
+    set(KEYKEY_NATIVE_DATABASE_STAMP "${CMAKE_CURRENT_BINARY_DIR}/Databases/KeyKey.db.complete")
     add_custom_command(
-        OUTPUT "${KEYKEY_NATIVE_DATABASE}"
+        OUTPUT "${KEYKEY_NATIVE_DATABASE_STAMP}"
+        BYPRODUCTS "${KEYKEY_NATIVE_DATABASE}" "${KEYKEY_ABSOLUTE_CIN}" "${KEYKEY_SMART_SQL}"
         COMMAND "${CMAKE_COMMAND}" -E make_directory
                 "${CMAKE_CURRENT_BINARY_DIR}/Databases"
         COMMAND "$<TARGET_FILE:KeyKeyDatabaseCooker>"
@@ -125,6 +151,24 @@ if(NOT EXISTS "${KEYKEY_DATABASE_PATH}")
                 "${KEYKEY_ROOT}/DataSource"
                 "${KEYKEY_CATEGORIZED_COLLECTION_DIR}"
                 "${KEYKEY_NATIVE_DATABASE}"
+                "${KEYKEY_ABSOLUTE_CIN}"
+        COMMAND "${Ruby_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/GenerateSmartMandarinSql.rb"
+                "${KEYKEY_SMART_SQL}"
+                "${KEYKEY_SMART_COOKER}"
+                "${KEYKEY_ROOT}/DataSource/McBopomofo/phrase.occ"
+                "${KEYKEY_ROOT}/DataSource/McBopomofo/BPMFMappings.txt"
+                "${KEYKEY_ABSOLUTE_CIN}"
+                --lexicon
+                "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/supplemental-lexicon.tsv"
+                --lexicon
+                "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv"
+                ${KEYKEY_SMART_CORPORA}
+        COMMAND "$<TARGET_FILE:KeyKeyDatabaseCooker>"
+                --append-smart-sql
+                "${KEYKEY_NATIVE_DATABASE}"
+                "${KEYKEY_SMART_SQL}"
+        COMMAND "${CMAKE_COMMAND}" -E touch "${KEYKEY_NATIVE_DATABASE_STAMP}"
         DEPENDS
             KeyKeyDatabaseCooker
             "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/Schema.sql"
@@ -135,13 +179,18 @@ if(NOT EXISTS "${KEYKEY_DATABASE_PATH}")
             "${KEYKEY_SOURCE}/DataTables/cj-punctuations-halfwidth.cin"
             "${KEYKEY_SOURCE}/DataTables/cj-punctuations-mixedwidth.cin"
             "${KEYKEY_SOURCE}/DataTables/bopomofo-correction.cin"
+            "${KEYKEY_SMART_COOKER}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/GenerateSmartMandarinSql.rb"
+            "${KEYKEY_ROOT}/DataSource/McBopomofo/BPMFMappings.txt"
+            ${KEYKEY_SMART_LEXICONS}
+            ${KEYKEY_SMART_CORPORA}
             "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/OneKey.plist"
             "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/CannedMessages.plist"
             ${KEYKEY_COLLECTION_INPUTS}
         COMMENT "Cooking KeyKey.db with the native Windows database cooker"
         VERBATIM
     )
-    add_custom_target(keykey_database ALL DEPENDS "${KEYKEY_NATIVE_DATABASE}")
+    add_custom_target(keykey_database ALL DEPENDS "${KEYKEY_NATIVE_DATABASE_STAMP}")
     set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_NATIVE_DATABASE}")
 endif()
 
@@ -181,6 +230,7 @@ target_link_libraries(KeyKeyTsf PRIVATE
 add_executable(KeyKeySettings WIN32
     FrontendSettings.cpp
     SettingsApp.cpp
+    UserDataStore.cpp
     KeyKeySettings.rc
 )
 target_compile_features(KeyKeySettings PRIVATE cxx_std_17)
@@ -196,7 +246,8 @@ if(MSVC)
     target_compile_options(KeyKeySettings PRIVATE /W4 /permissive- /utf-8)
 endif()
 target_link_libraries(KeyKeySettings PRIVATE
-    keykey_third_party
+    keykey_core
+    comdlg32
     comctl32
     shell32
     user32

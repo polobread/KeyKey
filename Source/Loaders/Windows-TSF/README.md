@@ -8,27 +8,31 @@ and its Xcode project remain unchanged.
 
 ## Current milestone
 
-- Traditional Mandarin/Bopomofo input through the existing OpenVanilla and
-  PlainVanilla core
+- Smart Mandarin (好打注音) sentence composition and the existing Traditional
+  Mandarin mode through the OpenVanilla and PlainVanilla core
+- per-user phrases, candidate overrides, and contextual learning stored in
+  `%APPDATA%\chichi77 KeyKey\SmartMandarinUserData.db`
 - TSF composition, caret placement, commit, and candidate-window flow
 - Immersive TSF registration for modern Windows text hosts such as Start/Search
 - Taskbar language-bar indicators for Chinese/English (`ㄅ`/`英`) and
   half-/full-width (`半`/`全`) modes
-- `ITfFnConfigure` keyboard-options entry and a standalone three-page settings
-  app for general, Traditional Bopomofo, and associated-phrase options
+- `ITfFnConfigure` keyboard-options entry and a standalone four-page settings
+  app for general, Bopomofo mode, associated phrases, and user phrases
 - vertical or horizontal candidate windows with independent Windows-style
   scaling choices and purple, green, yellow, or red highlighting; optional
   typing-error sound and `Ctrl+\` mode switching
 - Standard, ETen, ETen 26, Hsu, and Hanyu Pinyin Bopomofo layouts, plus a
   switch between Big-5-only candidates and the full CNS11643 character set
 - Traditional Chinese (`zh-TW`) language profile registration
-- verified x86 and x64 builds; an unverified ARM64 CMake preset is retained for
-  future bring-up
+- x86 and x64 build presets; the new WinSQLite and Smart Mandarin changes await
+  Windows builds and live TSF testing. The ARM64 preset is also unverified
 
-Smart Mandarin is intentionally not enabled because its language-model corpus
-is not present in this repository. Cangjie and Simplex are also outside this
-Windows package. The old IMM32 loader is retained as historical reference and
-is not linked into this DLL.
+New profiles start in Smart Mandarin. Existing profiles retain their selected
+mode. The settings app can switch between Smart and Traditional Mandarin and
+edit user phrases. The reset-learning button removes learned bigrams and
+candidate overrides while preserving user phrases. Cangjie and Simplex are
+outside this Windows package. The old IMM32 loader is retained as historical
+reference and is not linked into this DLL.
 
 ## Screenshots
 
@@ -58,19 +62,27 @@ load.
 - Visual Studio 2026 with **Desktop development with C++** (a Visual Studio
   2022 compatibility preset is also included)
 - CMake 3.25 or newer
+- Ruby 3.x when cooking the database from source (the Windows CI installs it)
 - NSIS 3.12 when building the Store EXE
 
-No Ruby, GNU Make, `awk`, `sed`, or standalone `sqlite3` program is required.
-When the legacy cooked database is absent, CMake builds the new native C++
-`KeyKeyDatabaseCooker` and creates `Databases\KeyKey.db` from the repository's
-CIN tables and public associated-phrase sources, including all 29 categorized
-collections in `DataSource\chichi77Collection`. The legacy cooker remains
-unchanged. The categorized data was generated, inferred, and normalized
-automatically, has not been reviewed item by item, and is not guaranteed to be
-accurate or complete.
+Windows uses the operating system's `winsqlite3.dll` through the Windows SDK's
+`winsqlite3.h` and `winsqlite3.lib`. The runtime SQLite version can vary with
+Windows Update. No GNU Make, `awk`, `sed`, or standalone `sqlite3` program is
+required. By default CMake runs the native C++ `KeyKeyDatabaseCooker` and the
+same Ruby Smart Mandarin language-model generator used by macOS. It creates
+`Databases\KeyKey.db` from the repository's CIN tables, McBopomofo data,
+supplemental and numeric lexicons, three bootstrap corpora, typing feedback,
+the 2,300-article corpus, and all 29 categorized associated-phrase
+collections. These are the same Smart Mandarin language-model inputs used by
+the macOS database cooker. The categorized data was
+generated and normalized automatically and has not been reviewed item by item.
 
 To deploy a database cooked elsewhere instead, pass
 `-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.
+It must contain populated `unigrams` and `bigrams` tables for Smart Mandarin.
+If an existing CMake build directory cached the old default database path,
+reconfigure with `cmake --fresh --preset windows-x64` (and likewise for x86)
+to use the new source cooker.
 
 ## Build and register (x64 and x86)
 
@@ -91,12 +103,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 The build creates `KeyKeyTsf.dll`, `KeyKeySettings.exe`, and
 `out\build\x64-ninja\Databases\KeyKey.db`. Keep the executable beside the DLL;
 Windows Keyboard options and the language-bar settings button both launch it.
+The settings app has a 自訂詞 tab: enter a word and comma-separated Bopomofo
+readings, one syllable per character, then add or update the row. Deletion and
+editing use the stored SQLite `rowid`, so gaps from earlier deletions are safe.
+The same tab can import a `SmartMandarinUserData.db` backup: user phrases are
+merged by reading and text, while the imported candidate and contextual
+learning replace the current learning tables. Export uses SQLite's online
+backup API, so a database can be saved while the input method is active.
 The settings window footer displays the CMake project marketing version, so its
 visible version comes from the same source as the packaged binaries.
 Re-run the build after changing a source CIN, plist, or phrase file; CMake will
 automatically recook the database.
 
-To verify the Traditional Bopomofo core independently of TSF, run:
+To verify the Bopomofo core independently of TSF, run:
 
 ```powershell
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
@@ -135,7 +154,7 @@ successful build and test, run:
   -X86BuildDirectory .\out\build\x86
 ```
 
-The result is `out\package\chichi77-KeyKey-1.2.9-windows-x64.zip`. On the other
+The result is `out\package\chichi77-KeyKey-1.2.10-windows-x64.zip`. On the other
 PC, extract the entire ZIP, copy the complete extracted folder to a local
 `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd` there. Do not
 install directly from a mapped network drive, NAS, or UNC path: it can become
@@ -160,7 +179,7 @@ The Windows GitHub Actions workflow installs NSIS 3.12 and emits this test-only
 installer in addition to the ZIP package:
 
 ```text
-out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.unsigned.exe
+out\store-package\chichi77-KeyKey-1.2.10-windows-x64-setup.unsigned.exe
 ```
 
 The `.unsigned.exe` artifact supports `/S` silent installation but is not
@@ -174,7 +193,7 @@ has locked an old installed file and NSIS schedules its removal with
 `/REBOOTOK`; in that case, restarting later is the default. Silent `/S` installs
 do not launch either settings screen.
 
-Pushing a tag that exactly matches the repository version, such as `v1.2.9`,
+Pushing a tag that exactly matches the repository version, such as `v1.2.10`,
 automatically publishes this unsigned EXE, the ZIP package, and SHA-256 files.
 The workflow uploads to the corresponding Release when it already exists, or
 creates the Release when needed; it never creates the tag or overwrites an
@@ -219,8 +238,8 @@ edits the original build outputs and does not accept or store a PFX password.
 The output is:
 
 ```text
-out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.exe
-out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.exe.sha256
+out\store-package\chichi77-KeyKey-1.2.10-windows-x64-setup.exe
+out\store-package\chichi77-KeyKey-1.2.10-windows-x64-setup.exe.sha256
 ```
 
 Test the signed installer's silent installation and uninstallation on a
@@ -228,7 +247,7 @@ disposable clean Windows 11 VM before submission. NSIS treats `/S` as
 case-sensitive:
 
 ```powershell
-.\chichi77-KeyKey-1.2.9-windows-x64-setup.exe /S
+.\chichi77-KeyKey-1.2.10-windows-x64-setup.exe /S
 & "$env:ProgramFiles\chichi77 KeyKey\Uninstall.exe" /S
 ```
 
@@ -238,7 +257,7 @@ the unsigned test assets. Upload the separately signed EXE as a distinct asset
 to that existing Release, then use a URL such as:
 
 ```text
-https://github.com/polobread/KeyKey/releases/download/v1.2.8/chichi77-KeyKey-1.2.9-windows-x64-setup.exe
+https://github.com/polobread/KeyKey/releases/download/v1.2.10/chichi77-KeyKey-1.2.10-windows-x64-setup.exe
 ```
 
 Do not replace an asset after submitting its URL. In Partner Center select
@@ -259,7 +278,7 @@ Databases/
 
 The ZIP installer places this layout directly under
 `C:\Program Files\chichi77 KeyKey`. The NSIS installer places it in a versioned
-subdirectory such as `C:\Program Files\chichi77 KeyKey\1.2.9`; its uninstaller
+subdirectory such as `C:\Program Files\chichi77 KeyKey\1.2.10`; its uninstaller
 remains one level above. Versioned payload directories let an upgrade register
 new DLL paths even while an application still has the previous TSF DLL loaded.
 

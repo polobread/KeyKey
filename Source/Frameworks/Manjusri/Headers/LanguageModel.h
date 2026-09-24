@@ -241,7 +241,7 @@ namespace Manjusri {
         if (!m_cfgUseUserBigramCache)
             return;
         
-        OVSQLiteStatement* statement = m_connection->prepare("SELECT qstring, previous, current, probability FROM user_bigram_cache");
+        OVSQLiteStatement* statement = m_connection->prepare("SELECT qstring, previous, current, probability FROM user_bigram_cache ORDER BY rowid");
         if (!statement)
             return;
         
@@ -282,7 +282,7 @@ namespace Manjusri {
         if (!m_cfgUseUserCandidateOverrideCache)
             return;
         
-        OVSQLiteStatement* statement = m_connection->prepare("SELECT qstring, current FROM user_candidate_override_cache");
+        OVSQLiteStatement* statement = m_connection->prepare("SELECT qstring, current FROM user_candidate_override_cache ORDER BY rowid");
         if (!statement)
             return;
         
@@ -395,7 +395,7 @@ namespace Manjusri {
         , m_unigramTableName("unigrams")
     {
         // see if table 'supplement.unigrams' exists
-        OVSQLiteStatement *supplementFind = m_connection->prepare("SELECT * FROM supplement.unigrams LIMIT 1");
+        OVSQLiteStatement *supplementFind = m_connection->prepare("SELECT * FROM supplement.unigrams ORDER BY rowid LIMIT 1");
         if (supplementFind) {
             cerr << "LM: Supplement find" << endl;
             
@@ -407,19 +407,18 @@ namespace Manjusri {
         if (m_cfgUseUserTable)
             m_insertUserUnigram = m_connection->prepare("INSERT INTO userdb.user_unigrams VALUES(?, ?, ?, ?)");                
                 
-        m_selectBigram = m_connection->prepare("SELECT * FROM bigrams WHERE qstring = ?" /* " ORDER BY previous, probability DESC" */);
+        m_selectBigram = m_connection->prepare("SELECT * FROM bigrams WHERE qstring = ? ORDER BY rowid");
 
         string selectUnigramCommand;
         if (m_cfgUseUserTable) {
-            selectUnigramCommand = "SELECT * FROM ";
+            selectUnigramCommand = "SELECT qstring, current, probability, backoff FROM (SELECT qstring, current, probability, backoff, 0 AS source_order, rowid AS source_rowid FROM ";
             selectUnigramCommand += m_unigramTableName;
-            selectUnigramCommand += " WHERE qstring = ? UNION SELECT * from userdb.user_unigrams WHERE qstring = ?";
-            /* " ORDER BY probability DESC, current" */ /*, m_unigramTableName.c_str() */
+            selectUnigramCommand += " WHERE qstring = ? UNION ALL SELECT qstring, current, probability, backoff, 1 AS source_order, rowid AS source_rowid FROM userdb.user_unigrams WHERE qstring = ?) GROUP BY qstring, current, probability, backoff ORDER BY MIN(source_order), MIN(source_rowid)";
         }
         else {
             selectUnigramCommand = "SELECT * FROM ";
             selectUnigramCommand += m_unigramTableName;
-            selectUnigramCommand += " WHERE qstring = ?"; /* " ORDER BY probability DESC, current" */
+            selectUnigramCommand += " WHERE qstring = ? ORDER BY rowid";
         }
 
         // cerr << selectUnigramCommand << endl;
