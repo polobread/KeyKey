@@ -164,6 +164,8 @@ extern size_t VendorMotcleSize;
 		}
 	}	
 	
+	if (![excludeSet containsObject:@"SmartMandarin"])
+		[a addObject:[self _dictionaryWithIdentifier:("SmartMandarin") localizedName:LFLSTR(@"Smart Phonetic")]];
 	if (![excludeSet containsObject:@"TraditionalMandarin"])
 		[a addObject:[self _dictionaryWithIdentifier:("TraditionalMandarin") localizedName:LFLSTR(@"Traditional Phonetic")]];
 	if (![excludeSet containsObject:@"Generic-cj-cin"])
@@ -190,7 +192,7 @@ extern size_t VendorMotcleSize;
     }
 	
 	if (![a count]) {
-		[a addObject:[self _dictionaryWithIdentifier:("TraditionalMandarin") localizedName:LFLSTR(@"Traditional Phonetic")]];
+		[a addObject:[self _dictionaryWithIdentifier:("SmartMandarin") localizedName:LFLSTR(@"Smart Phonetic")]];
 	}
 	
 	return a;

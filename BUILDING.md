@@ -355,7 +355,7 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
 Actions 頁面按 **Run workflow** 手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag
-（例如 `v1.2.9`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
+（例如 `v1.2.10`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
 `release_tag` 輸入，留空時只保留測試 artifact。一般 commit、pull request 與不符合版號的
 tag 不會發布 Release。`Linux CI` 保留 pull request 與手動執行，並由 `v*` tag 觸發完整
 gate；`master` push 不觸發。tag run 在 Ubuntu 24.04 套件建置、安裝生命週期與 X11
@@ -729,7 +729,7 @@ shares the completed text. See the
 The Android debug packaging, Google Play release, and iOS Simulator workflows
 run only after **Run workflow** is selected on the GitHub Actions page. The
 macOS and Windows workflows publish to a Release when a tag that exactly
-matches the repository version, such as `v1.2.9`, is pushed. Both can also be
+matches the repository version, such as `v1.2.10`, is pushed. Both can also be
 run manually; the Windows workflow additionally takes a `release_tag` input,
 and leaving it blank produces a test artifact only. Commits, pull requests, and
 mismatched tags do not publish a Release. `Linux CI` keeps its pull-request and

@@ -2,12 +2,26 @@
 
 ## 1.2.10（開發中）
 
+- 同步 macOS、Windows、Android、iOS 與 Linux 的產品及建置版號至 1.2.10。
+- macOS 恢復 Yahoo KeyKey 的「好打注音」整句組字模式，新安裝預設使用好打注音，
+  仍可從輸入法選單切換到傳統注音、倉頡或簡易。
+- iOS 與 Android 加入「好打注音／傳統注音」設定，新安裝預設好打注音；手機鍵盤可
+  連續輸入多個音節，由與 macOS 相同的 Bigram 模型整句選字，按 Enter 再一次送出整句。
 - Linux Fcitx 設定加入「好打注音／傳統注音」，未設定模式時預設好打注音；好打注音
   可連續組字、在句中移動游標與刪改讀音、選候選後重組，並以
   Enter 送出整句。套件內的語言模型由 Linux 原生資料工具產生，詞頻與 Bigram 資料
   對齊 macOS。
 - Linux 好打注音加入持久化自訂詞與選字學習；`keykey-smart-phrases` 可新增、列出、
   刪除自訂詞，也可只清除學習紀錄而保留自訂詞。
+- macOS 好打注音選單加入「編輯自訂詞…」捷徑，並修正自訂詞資料庫 rowid 不連續、
+  無可用讀音、損壞讀音資料及多音字組合過多時可能造成的錯列、越界或卡頓。
+- macOS 好打注音選單加入有確認步驟的「重設學習紀錄」，可清除候選覆寫與相鄰詞
+  學習而保留自訂詞；重新載入前會先清空記憶體中的舊學習快取。
+- DatabaseCooker 改用 MIT 授權的 McBopomofo 字音、詞頻與既有注音字表產生
+  SmartMandarin unigram 模型，不依賴未開源的中研院語料、PhraseTool 或 CEROD。
+- 加入共 11,180 句的 AI 合成繁中 bootstrap corpora；模板重複的相同 bigram 只計一次，
+  再產生平滑後的 SmartMandarin bigram 與 unigram backoff，供上下文選字與 A/B 測試。
+- 修正好打注音偏好設定的候選鍵重複檢查迴圈。
 
 ## 1.2.9
 

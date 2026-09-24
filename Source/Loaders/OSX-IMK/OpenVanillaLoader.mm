@@ -483,7 +483,7 @@ using namespace OpenVanilla;
     }
 
     if (!kvm.stringValueForKey("PrimaryInputMethod").length()) {
-        kvm.setKeyStringValue("PrimaryInputMethod", "TraditionalMandarin");
+        kvm.setKeyStringValue("PrimaryInputMethod", "SmartMandarin");
         writeConfig = true;
     }
         
@@ -491,7 +491,7 @@ using namespace OpenVanilla;
         _loader->syncLoaderConfig(true);
 	
 	if (!_loader->primaryInputMethod().size()) {
-		_loader->setPrimaryInputMethod("TraditionalMandarin");
+		_loader->setPrimaryInputMethod("SmartMandarin");
         _loader->syncSandwichConfig();
 	}
 
@@ -667,35 +667,53 @@ using namespace OpenVanilla;
 - (NSDictionary *)userPhraseDBDictionaryAtRow:(int)row
 {
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
-    if (![self _userPhraseDBConnection]) {
+    if (row < 0 || ![self _userPhraseDBConnection]) {
         return result;
     }
         
     std::unique_ptr<OVSQLiteStatement> select(
-        _userPhraseDB->prepare("SELECT * FROM user_unigrams WHERE rowid = %d", row + 1));
+        _userPhraseDB->prepare(
+            "SELECT qstring, current FROM user_unigrams ORDER BY rowid LIMIT 1 OFFSET %d", row));
     if (!select) {
         return result;
     }
     while (select->step() == SQLITE_ROW) {
-        // string qstring = select->textOfColumn(0);
-        // string current = select->textOfColumn(1);
-        // string probability = select->textOfColumn(2);
-        // string backoff = select->textOfColumn(3);
-        
-        [result setObject:[NSString stringWithUTF8String:select->textOfColumn(1)] forKey:@"Text"];
-        [result setObject:[NSString stringWithUTF8String:BPMFUserPhraseHelper::BPMFString(string(select->textOfColumn(0))).c_str()] forKey:@"BPMF"];        
+        const char *qstring = select->textOfColumn(0);
+        const char *current = select->textOfColumn(1);
+        NSString *text = current ? [NSString stringWithUTF8String:current] : nil;
+        NSString *reading = qstring
+            ? [NSString stringWithUTF8String:BPMFUserPhraseHelper::BPMFString(string(qstring)).c_str()]
+            : nil;
+        if (text && reading) {
+            [result setObject:text forKey:@"Text"];
+            [result setObject:reading forKey:@"BPMF"];
+        }
     }
         
     return result;
 }
 - (NSArray *)userPhraseDBReadingsForPhrase:(NSString *)phrase
 {
-    NSMutableArray *results = [NSMutableArray array];    
+    NSMutableArray *results = [NSMutableArray array];
+    if (![phrase length]) {
+        return results;
+    }
+
     vector<string> codepoints = OVUTF8Helper::SplitStringByCodePoint([phrase UTF8String]);    
 
-    OVSQLiteStatement* select = dynamic_cast<OVSQLiteDatabaseService*>(_loaderService->SQLiteDatabaseService())->connection()->prepare("SELECT qstring FROM unigrams WHERE current = ? ORDER BY probability DESC");
+    OVSQLiteDatabaseService *databaseService =
+        dynamic_cast<OVSQLiteDatabaseService *>(_loaderService->SQLiteDatabaseService());
+    if (!databaseService || !databaseService->connection()) {
+        return results;
+    }
+    OVSQLiteStatement* select = databaseService->connection()->prepare(
+        "SELECT qstring FROM unigrams WHERE current = ? ORDER BY probability DESC");
     
     OVKeyValueDataTableInterface* tbl = _loaderService->SQLiteDatabaseService()->createKeyValueDataTableInterface("Mandarin-bpmf-cin");
+    if (!tbl) {
+        delete select;
+        return results;
+    }
 
     vector<vector<string> > phraseBPMFs;
     phraseBPMFs.push_back(vector<string>());
@@ -706,7 +724,6 @@ using namespace OpenVanilla;
         set<string> dedup;
         
         if (select) {
-			NSLog(@"has select, querying: %@", [NSString stringWithUTF8String:(*cpi).c_str()]);
             select->bindTextToColumn(*cpi, 1);
             while (select->step() == SQLITE_ROW) {
                 string b = select->textOfColumn(0);
@@ -714,7 +731,6 @@ using namespace OpenVanilla;
 				if (exp.match(b))
 					continue;
 				
-				cerr << b << endl;
                 dedup.insert(b);
                 bpmfs.push_back(b);
             }
@@ -732,7 +748,8 @@ using namespace OpenVanilla;
         
         
         if (!bpmfs.size()) {
-            bpmfs = tbl->keysForValue("ㄅ");            
+            phraseBPMFs.clear();
+            break;
         }
 
         vector<vector<string> > npb;
@@ -741,7 +758,14 @@ using namespace OpenVanilla;
                 vector<string> newEntry = *pbi;
                 newEntry.push_back(BPMF::FromAbsoluteOrderString(*bi).composedString());
                 npb.push_back(newEntry);
+                // A long polyphonic phrase can otherwise create millions of
+                // combinations and freeze the editor. The highest-frequency
+                // readings arrive first, so retain a practical ranked prefix.
+                if (npb.size() >= 256)
+                    break;
             }
+            if (npb.size() >= 256)
+                break;
         }
         phraseBPMFs = npb;
     }    
@@ -782,28 +806,30 @@ using namespace OpenVanilla;
 }
 - (void)userPhraseDBSetNewReading:(NSString *)reading forPhraseAtRow:(int)row
 {
-    if (![self _userPhraseDBConnection]) {
+    if (row < 0 || ![reading length] || ![self _userPhraseDBConnection]) {
         return;
     }
 
-    _userPhraseDB->execute("UPDATE user_unigrams SET qstring = %Q WHERE rowid = %d", [self _qstringFromReading:reading].c_str(), row + 1);
+    string qstring = [self _qstringFromReading:reading];
+    if (!qstring.length()) {
+        return;
+    }
+    _userPhraseDB->execute(
+        "UPDATE user_unigrams SET qstring = %Q WHERE rowid = "
+        "(SELECT rowid FROM user_unigrams ORDER BY rowid LIMIT 1 OFFSET %d)",
+        qstring.c_str(), row);
     _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 
 - (void)userPhraseDBDeleteRow:(int)row
 {
-    if (![self _userPhraseDBConnection]) {
+    if (row < 0 || ![self _userPhraseDBConnection]) {
         return;
     }
 
-	_userPhraseDB->execute("BEGIN");
-	_userPhraseDB->execute("CREATE TEMP TABLE uu_temp(a, b, c, d)");
-	_userPhraseDB->execute("INSERT INTO uu_temp SELECT * from user_unigrams");
-	_userPhraseDB->execute("DELETE FROM uu_temp WHERE rowid = %d", row + 1);
-    _userPhraseDB->execute("DELETE FROM user_unigrams");
-    _userPhraseDB->execute("INSERT INTO user_unigrams SELECT * from uu_temp");
-    _userPhraseDB->execute("DROP TABLE uu_temp");    
-	_userPhraseDB->execute("END");
+    _userPhraseDB->execute(
+        "DELETE FROM user_unigrams WHERE rowid = "
+        "(SELECT rowid FROM user_unigrams ORDER BY rowid LIMIT 1 OFFSET %d)", row);
     _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
 }
 - (void)userPhraseDBAddNewRow:(NSString *)phrase
@@ -812,7 +838,11 @@ using namespace OpenVanilla;
         return;
     }
     
-    NSString *reading = [[self userPhraseDBReadingsForPhrase:phrase] objectAtIndex:0];
+    NSArray *readings = [self userPhraseDBReadingsForPhrase:phrase];
+    if (![readings count]) {
+        return;
+    }
+    NSString *reading = [readings objectAtIndex:0];
     _userPhraseDB->execute("INSERT INTO user_unigrams (qstring, current, probability, backoff) VALUES (%Q, %Q, %f, %f)", [self _qstringFromReading:reading].c_str(), [phrase UTF8String], -1.0, 0.0);
     
     _loader->forceSyncModuleConfigForNextRound("SmartMandarin");    
@@ -830,9 +860,11 @@ using namespace OpenVanilla;
 	NSString *phrase;
 	NSEnumerator *enumerator = [array objectEnumerator];
 	while (phrase = [enumerator nextObject]) {
-		// NSLog(@"before looking for reading");
-		NSString *reading = [[self userPhraseDBReadingsForPhrase:phrase] objectAtIndex:0];
-		// NSLog(@"before insert");
+		NSArray *readings = [self userPhraseDBReadingsForPhrase:phrase];
+		if (![readings count]) {
+			continue;
+		}
+		NSString *reading = [readings objectAtIndex:0];
 		_userPhraseDB->execute("INSERT INTO user_unigrams (qstring, current, probability, backoff) VALUES (%Q, %Q, %f, %f)", [self _qstringFromReading:reading].c_str(), [phrase UTF8String], -1.0, 0.0); 
 		
 	}
@@ -844,13 +876,49 @@ using namespace OpenVanilla;
 
 - (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row
 {
-    if (![self _userPhraseDBConnection]) {
+    if (row < 0 || ![phrase length] || ![self _userPhraseDBConnection]) {
         return;
     }
     
-    NSString *reading = [[self userPhraseDBReadingsForPhrase:phrase] objectAtIndex:0];
-    _userPhraseDB->execute("UPDATE user_unigrams SET qstring = %Q, current = %Q WHERE rowid = %d", [self _qstringFromReading:reading].c_str(), [phrase UTF8String], row + 1);
+    NSArray *readings = [self userPhraseDBReadingsForPhrase:phrase];
+    if (![readings count]) {
+        return;
+    }
+    NSString *reading = [readings objectAtIndex:0];
+    _userPhraseDB->execute(
+        "UPDATE user_unigrams SET qstring = %Q, current = %Q WHERE rowid = "
+        "(SELECT rowid FROM user_unigrams ORDER BY rowid LIMIT 1 OFFSET %d)",
+        [self _qstringFromReading:reading].c_str(), [phrase UTF8String], row);
     _loader->forceSyncModuleConfigForNextRound("SmartMandarin");    
+}
+
+- (BOOL)resetSmartMandarinLearning
+{
+    if (![self _userPhraseDBConnection]) {
+        return NO;
+    }
+
+    if (_userPhraseDB->execute("BEGIN IMMEDIATE") != SQLITE_OK) {
+        return NO;
+    }
+
+    BOOL cleared =
+        _userPhraseDB->execute("DELETE FROM user_bigram_cache") == SQLITE_OK &&
+        _userPhraseDB->execute("DELETE FROM user_candidate_override_cache") == SQLITE_OK;
+    if (cleared) {
+        cleared = _userPhraseDB->execute("COMMIT") == SQLITE_OK;
+        if (!cleared) {
+            _userPhraseDB->execute("ROLLBACK");
+        }
+    }
+    else {
+        _userPhraseDB->execute("ROLLBACK");
+    }
+
+    if (cleared) {
+        _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
+    }
+    return cleared;
 }
 
 - (void)mergeCannedMessagesData
@@ -1115,4 +1183,3 @@ using namespace OpenVanilla;
 }
 
 @end
-

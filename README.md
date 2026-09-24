@@ -83,7 +83,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 [Code signing policy](CODE_SIGNING_POLICY.md)。`v1.2.9` Windows 發行檔早於此整合，
 目前仍未簽章；SignPath Foundation 核准申請並完成驗證流程後，政策才適用於後續正式版。
 
-推送符合專案版號的 tag（例如 `v1.2.9`）會啟動 `Package macOS`、
+推送符合專案版號的 tag（例如 `v1.2.10`）會啟動 `Package macOS`、
 `Package Windows` 與完整 `Linux CI`。macOS 和 Windows 的產物，以及通過 Ubuntu 24.04
 套件安裝與輸入測試的 Linux 套件，會加入同一個 GitHub Release。手動執行 Linux CI
 只保留 Actions artifact，不發布 Release。Linux 的 1.2.9 GNOME 實機相容性仍須持續驗收。
@@ -215,7 +215,7 @@ predate this integration and remain unsigned; the policy applies to later
 official releases after the application is accepted and the verified workflow
 is enabled.
 
-Pushing a tag that exactly matches the project version, such as `v1.2.9`,
+Pushing a tag that exactly matches the project version, such as `v1.2.10`,
 starts `Package macOS`, `Package Windows`, and the full `Linux CI`. The desktop
 outputs and the Linux packages that pass the Ubuntu 24.04 package checks are
 added to the same GitHub Release. Manual Linux CI runs retain Actions artifacts

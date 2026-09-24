@@ -4,6 +4,15 @@
 "Simplex" = "Simplex";
 "Help" = "Help";
 "Preferences..." = "Preferences...";
+"Edit User Phrases..." = "Edit User Phrases...";
+"Unable to launch user phrase editor." = "Unable to launch user phrase editor.";
+"Reset Smart Phonetic Learning..." = "Reset Smart Phonetic Learning...";
+"Reset Smart Phonetic Learning?" = "Reset Smart Phonetic Learning?";
+"This clears learned candidate choices and word relationships. Your custom phrases are kept." = "This clears learned candidate choices and word relationships. Your custom phrases are kept.";
+"Reset Learning" = "Reset Learning";
+"Cancel" = "Cancel";
+"Smart Phonetic learning was reset." = "Smart Phonetic learning was reset.";
+"Unable to reset Smart Phonetic learning." = "Unable to reset Smart Phonetic learning.";
 "About chichi77 KeyKey" = "About chichi77 KeyKey";
 "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>" = "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>";
 "<h2>Not Found</h2><p>Unable to find results matching %@." = "<h2>Not Found</h2><p>Unable to find anything that matches '%@'.";

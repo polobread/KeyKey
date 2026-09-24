@@ -3,6 +3,8 @@
 "General" = "一般"; 
 "Phonetic" = "注音";
 "Smart Phonetic" = "好打注音";
+"Unable to launch user phrase editor." = "無法啟動詞彙編輯工具。";
+"PhraseEditor.app is missing from the installed input method." = "已安裝的輸入法中缺少 PhraseEditor.app。";
 "Traditional Phonetic" = "傳統注音";
 "Cangjie" = "倉頡";
 "Simplex" = "簡易";

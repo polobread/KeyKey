@@ -83,6 +83,7 @@ class CVLoaderHookedServiceDelegate;
 - (void)userPhraseDBAddNewRow:(NSString *)phrase;
 - (void)userPhraseDBAddNewRows:(NSArray *)array;
 - (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row;
+- (BOOL)resetSmartMandarinLearning;
 
 #pragma mark Server-side data provision
 
@@ -101,4 +102,3 @@ class CVLoaderHookedServiceDelegate;
 
 
 extern NSString *CVLoaderUpdateCannedMessagesNotification;
-

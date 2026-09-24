@@ -312,6 +312,7 @@ file for terms.
 	else {
 		[_inputMethods removeAllObjects];
 	}
+	[self _addToModuleArrayWithIdentifer:@"SmartMandarin" localizedName:LFLSTR(@"Smart Phonetic")];
 	[self _addToModuleArrayWithIdentifer:@"TraditionalMandarin" localizedName:LFLSTR(@"Traditional Phonetic")];
 	[self _addToModuleArrayWithIdentifer:@"Generic-cj-cin" localizedName:LFLSTR(@"Cangjie")];
 	[self _addToModuleArrayWithIdentifer:@"Generic-simplex-cin" localizedName:LFLSTR(@"Simplex")];	

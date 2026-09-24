@@ -899,6 +899,47 @@ static void OVCLaunchApplication(const string& value)
 	[self _resetUI];	
 }
 
+- (void)phraseEditorAction:(id)sender
+{
+	NSString *phraseEditorPath = [[[NSBundle mainBundle] sharedSupportPath]
+		stringByAppendingPathComponent:@"PhraseEditor.app"];
+	BOOL launched = [[NSWorkspace sharedWorkspace] openFile:phraseEditorPath];
+	if (!launched) {
+		launched = [[NSWorkspace sharedWorkspace]
+			launchAppWithBundleIdentifier:@"io.github.polobread.inputmethod.chichi77.PhraseEditor"
+			options:NSWorkspaceLaunchDefault
+			additionalEventParamDescriptor:nil
+			launchIdentifier:nil];
+	}
+	if (!launched) {
+		[CVNotifyController notify:LFLSTR(@"Unable to launch user phrase editor.")];
+	}
+	[self _resetUI];
+}
+
+- (void)resetSmartMandarinLearningAction:(id)sender
+{
+	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+	[alert setMessageText:LFLSTR(@"Reset Smart Phonetic Learning?")];
+	[alert setInformativeText:LFLSTR(@"This clears learned candidate choices and word relationships. Your custom phrases are kept.")];
+	[alert addButtonWithTitle:LFLSTR(@"Reset Learning")];
+	[alert addButtonWithTitle:LFLSTR(@"Cancel")];
+	[alert setAlertStyle:NSWarningAlertStyle];
+	if ([alert runModal] != NSAlertFirstButtonReturn) {
+		return;
+	}
+
+	// Finish the active context first so any pending learning is written before
+	// the two cache tables are cleared.
+	[self _resetUI];
+	if ([[OpenVanillaLoader sharedInstance] resetSmartMandarinLearning]) {
+		[CVNotifyController notify:LFLSTR(@"Smart Phonetic learning was reset.")];
+	}
+	else {
+		[CVNotifyController notify:LFLSTR(@"Unable to reset Smart Phonetic learning.")];
+	}
+}
+
 - (void)aboutAction:(id)sender
 {
 	[[NSApp delegate] showAboutWindow:sender];
@@ -1024,6 +1065,20 @@ static void OVCLaunchApplication(const string& value)
 	[symbolMenuItem setKeyEquivalent:@"."];
 	[symbolMenuItem setKeyEquivalentModifierMask: NSCommandKeyMask | NSControlKeyMask];	
 	[menu addItem:symbolMenuItem];
+
+	if ([OpenVanillaLoader sharedLoader]->primaryInputMethod() == "SmartMandarin") {
+		NSMenuItem *phraseEditorMenuItem = [[[NSMenuItem alloc] init] autorelease];
+		[phraseEditorMenuItem setTarget:self];
+		[phraseEditorMenuItem setAction:@selector(phraseEditorAction:)];
+		[phraseEditorMenuItem setTitle:LFLSTR(@"Edit User Phrases...")];
+		[menu addItem:phraseEditorMenuItem];
+
+		NSMenuItem *resetLearningMenuItem = [[[NSMenuItem alloc] init] autorelease];
+		[resetLearningMenuItem setTarget:self];
+		[resetLearningMenuItem setAction:@selector(resetSmartMandarinLearningAction:)];
+		[resetLearningMenuItem setTitle:LFLSTR(@"Reset Smart Phonetic Learning...")];
+		[menu addItem:resetLearningMenuItem];
+	}
 	
 	NSMenuItem *prefMenuItem = [[[NSMenuItem alloc] init] autorelease];
 	[prefMenuItem setTarget:self];

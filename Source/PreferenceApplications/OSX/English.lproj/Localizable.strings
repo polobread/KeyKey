@@ -3,6 +3,8 @@
 "General" = "General"; 
 "Phonetic" = "Phonetic";
 "Smart Phonetic" = "Smart Phonetic";
+"Unable to launch user phrase editor." = "Unable to launch user phrase editor.";
+"PhraseEditor.app is missing from the installed input method." = "PhraseEditor.app is missing from the installed input method.";
 "Traditional Phonetic" = "Traditional Phonetic";
 "Cangjie" = "Cangjie";
 "Simplex" = "Simplex";

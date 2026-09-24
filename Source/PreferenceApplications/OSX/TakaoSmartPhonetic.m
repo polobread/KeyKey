@@ -151,7 +151,7 @@ file for terms.
 	for (i = 0; i < [selectionKeys length] - 1; i++) {
 		char currKey = [selectionKeys characterAtIndex:i];
 		int j = i + 1;
-		for (j = i + 1; i < [selectionKeys length]; i++) {
+		for (j = i + 1; j < [selectionKeys length]; j++) {
 			char checkKey = [selectionKeys characterAtIndex:j];
 			if (currKey == checkKey)
 				return NO;
