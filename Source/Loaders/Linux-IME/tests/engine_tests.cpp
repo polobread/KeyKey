@@ -13,6 +13,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <sqlite3.h>
 #include <unistd.h>
 
 namespace {
@@ -1453,6 +1454,27 @@ void testBopomofoReadingBlocksHostEditingKeys() {
     }
 }
 
+void testSmartMandarinModelVersion() {
+    sqlite3 *database = nullptr;
+    require(sqlite3_open_v2(KEYKEY_TEST_SMART_DB, &database,
+                            SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK,
+            "Smart Mandarin model database did not open");
+    sqlite3_stmt *statement = nullptr;
+    const char *query =
+        "SELECT (SELECT COUNT(*) FROM unigrams), "
+        "(SELECT COUNT(*) FROM bigrams)";
+    const int prepared = sqlite3_prepare_v2(database, query, -1, &statement,
+                                            nullptr);
+    require(prepared == SQLITE_OK && sqlite3_step(statement) == SQLITE_ROW,
+            "Smart Mandarin model counts could not be read");
+    const int unigrams = sqlite3_column_int(statement, 0);
+    const int bigrams = sqlite3_column_int(statement, 1);
+    sqlite3_finalize(statement);
+    sqlite3_close(database);
+    require(unigrams == 114235 && bigrams == 885614,
+            "Smart Mandarin model version does not match macOS");
+}
+
 void testSmartMandarinComposition() {
     const auto store = keykey::linux_ime::SmartMandarinStore::open(
         KEYKEY_TEST_SMART_DB);
@@ -1666,6 +1688,7 @@ void testSmartMandarinUserData() {
 int main(int argc, char **argv) {
     try {
         if (argc == 2 && std::string(argv[1]) == "--smart-only") {
+            testSmartMandarinModelVersion();
             testSmartMandarinComposition();
             testSmartMandarinUserData();
             std::cout << "Smart Mandarin tests passed\n";
@@ -1696,6 +1719,7 @@ int main(int argc, char **argv) {
         testModifiedAndReleaseKeysPassThrough();
         testBackspaceAndEscape();
         testBopomofoReadingBlocksHostEditingKeys();
+        testSmartMandarinModelVersion();
         testSmartMandarinComposition();
         testSmartMandarinUserData();
     } catch (const std::exception &error) {

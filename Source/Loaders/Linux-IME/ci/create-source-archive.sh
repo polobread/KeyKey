@@ -40,11 +40,12 @@ source_paths=(
   DataSource/McBopomofo/phrase.occ
   DataSource/McBopomofo/BPMFMappings.txt
   DataSource/AISyntheticBigram/supplemental-lexicon.tsv
+  DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv
   DataSource/AISyntheticBigram/corpus-v1.txt
   DataSource/AISyntheticBigram/corpus-v2.txt
   DataSource/AISyntheticBigram/corpus-v3.txt
   DataSource/AISyntheticBigram/corpus-typing-feedback.txt
-  DataSource/AISyntheticBigram/article-corpus-1650.txt
+  DataSource/AISyntheticBigram/article-corpus-2300-exact-dedup.txt
   DataSource/chichi77Collection
   Source/DataTables/bpmf-ext.cin
   Source/DataTables/bpmf-punctuations.cin

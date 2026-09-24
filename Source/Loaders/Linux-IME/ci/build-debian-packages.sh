@@ -116,11 +116,12 @@ cp -a "$repository_root/DataSource/chichi77Collection" \
 mkdir -p "$source_root/DataSource/AISyntheticBigram"
 cp -a \
   "$repository_root/DataSource/AISyntheticBigram/supplemental-lexicon.tsv" \
+  "$repository_root/DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv" \
   "$repository_root/DataSource/AISyntheticBigram/corpus-v1.txt" \
   "$repository_root/DataSource/AISyntheticBigram/corpus-v2.txt" \
   "$repository_root/DataSource/AISyntheticBigram/corpus-v3.txt" \
   "$repository_root/DataSource/AISyntheticBigram/corpus-typing-feedback.txt" \
-  "$repository_root/DataSource/AISyntheticBigram/article-corpus-1650.txt" \
+  "$repository_root/DataSource/AISyntheticBigram/article-corpus-2300-exact-dedup.txt" \
   "$source_root/DataSource/AISyntheticBigram/"
 cp -a "$repository_root/LICENSE.txt" "$source_root/LICENSE.txt"
 cp -a "$repository_root/LICENSES/MIT.txt" "$source_root/LICENSES/MIT.txt"

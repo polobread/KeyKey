@@ -41,7 +41,7 @@ set(KEYKEY_SMART_CORPORA
     "${KEYKEY_SMART_SOURCE_DIR}/corpus-v2.txt"
     "${KEYKEY_SMART_SOURCE_DIR}/corpus-v3.txt"
     "${KEYKEY_SMART_SOURCE_DIR}/corpus-typing-feedback.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/article-corpus-1650.txt")
+    "${KEYKEY_SMART_SOURCE_DIR}/article-corpus-2300-exact-dedup.txt")
 set(KEYKEY_SMART_DB "${CMAKE_CURRENT_BINARY_DIR}/smart-mandarin.db")
 add_custom_command(OUTPUT "${KEYKEY_SMART_DB}"
     COMMAND "${Python3_EXECUTABLE}"
@@ -51,6 +51,7 @@ add_custom_command(OUTPUT "${KEYKEY_SMART_DB}"
         "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
         "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/BPMFMappings.txt"
         "${KEYKEY_SMART_SOURCE_DIR}/supplemental-lexicon.tsv"
+        "${KEYKEY_SMART_SOURCE_DIR}/numeric-unit-lexicon.tsv"
         ${KEYKEY_SMART_CORPORA}
     DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/build-smart-mandarin-db.py"
@@ -58,6 +59,7 @@ add_custom_command(OUTPUT "${KEYKEY_SMART_DB}"
         "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
         "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/BPMFMappings.txt"
         "${KEYKEY_SMART_SOURCE_DIR}/supplemental-lexicon.tsv"
+        "${KEYKEY_SMART_SOURCE_DIR}/numeric-unit-lexicon.tsv"
         ${KEYKEY_SMART_CORPORA}
     VERBATIM)
 add_custom_target(keykey_linux_smart_db ALL DEPENDS "${KEYKEY_SMART_DB}")

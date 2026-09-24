@@ -36,7 +36,7 @@ def absolute_key(symbols):
     return chr(48 + order % 79) + chr(48 + order // 79)
 
 
-def read_lexicon(counts_path, mappings_path, cin_path, lexicon_path):
+def read_lexicon(counts_path, mappings_path, cin_path, lexicon_paths):
     counts = {}
     with counts_path.open(encoding="utf-8") as source:
         for line in source:
@@ -74,21 +74,22 @@ def read_lexicon(counts_path, mappings_path, cin_path, lexicon_path):
                     if key:
                         readings.setdefault(word, {})[key] = None
 
-    with lexicon_path.open(encoding="utf-8") as source:
-        for line in source:
-            fields = line.rstrip("\n").split("\t")
-            if len(fields) < 3 or not fields[1].isdigit():
-                continue
-            word, raw_count, raw_reading = fields[:3]
-            syllables = raw_reading.split()
-            if not (1 <= len(word) <= MAX_PHRASE_LENGTH and
-                    len(syllables) == len(word) and int(raw_count) > 0):
-                continue
-            keys = [absolute_key(syllable) for syllable in syllables]
-            if not all(keys):
-                continue
-            counts[word] = max(counts.get(word, 0), int(raw_count))
-            readings.setdefault(word, {})["".join(keys)] = None
+    for lexicon_path in lexicon_paths:
+        with lexicon_path.open(encoding="utf-8") as source:
+            for line in source:
+                fields = line.rstrip("\n").split("\t")
+                if len(fields) < 3 or not fields[1].isdigit():
+                    continue
+                word, raw_count, raw_reading = fields[:3]
+                syllables = raw_reading.split()
+                if not (1 <= len(word) <= MAX_PHRASE_LENGTH and
+                        len(syllables) == len(word) and int(raw_count) > 0):
+                    continue
+                keys = [absolute_key(syllable) for syllable in syllables]
+                if not all(keys):
+                    continue
+                counts[word] = max(counts.get(word, 0), int(raw_count))
+                readings.setdefault(word, {})["".join(keys)] = None
 
     readings = {word: keys for word, keys in readings.items() if keys}
     total = sum(counts[word] for word in readings)
@@ -223,10 +224,13 @@ def write_database(path, counts, readings, probabilities, total,
 
 def main():
     output = Path(sys.argv[1])
-    cin, counts_path, mappings_path, lexicon_path = map(Path, sys.argv[2:6])
-    corpora = list(map(Path, sys.argv[6:]))
+    cin, counts_path, mappings_path = map(Path, sys.argv[2:5])
+    lexicon_paths = list(map(Path, sys.argv[5:7]))
+    corpora = list(map(Path, sys.argv[7:]))
+    if len(lexicon_paths) != 2 or not corpora:
+        raise SystemExit("Expected two lexicons and at least one corpus")
     counts, readings, probabilities, total = read_lexicon(
-        counts_path, mappings_path, cin, lexicon_path)
+        counts_path, mappings_path, cin, lexicon_paths)
     pairs, outgoing, sentences, tokens = read_bigrams(
         corpora, readings, probabilities)
     output.parent.mkdir(parents=True, exist_ok=True)
