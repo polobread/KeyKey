@@ -17,6 +17,10 @@ BIGRAM_PRIOR_STRENGTH = 1_000.0
 # count is not observed language frequency. Clip each synthetic pair so a
 # repeated frame cannot dominate the unigram prior.
 MAX_SYNTHETIC_BIGRAM_COUNT = 1
+# Phrase counts provide pronunciation evidence for individual characters. Limit
+# that evidence so overlapping dictionary phrases cannot erase a rare reading.
+READING_EVIDENCE_PRIOR = 1_000.0
+MAX_READING_EVIDENCE_WEIGHT = 0.85
 
 COMPONENTS = {
   "ㄅ" => 0x0001, "ㄆ" => 0x0002, "ㄇ" => 0x0003, "ㄈ" => 0x0004,
@@ -206,6 +210,47 @@ end
 total_count = readings.sum { |word, qstrings| qstrings.empty? ? 0 : counts.fetch(word) }
 abort "Smart Mandarin source data contains no usable entries" if total_count.zero?
 
+# phrase.occ counts are per written word, not per reading. Splitting a character's
+# count evenly across every reading makes uncommon pronunciations of frequent
+# characters outrank ordinary characters (for example 日/密 for ㄇㄧˋ).
+# Multi-character entries give evidence of the reading used in context. Divide
+# each phrase count among its own reading variants before collecting evidence.
+reading_evidence = Hash.new { |hash, character| hash[character] = Hash.new(0.0) }
+readings.each do |word, qstrings|
+  next if word.length < 2 || qstrings.empty?
+
+  characters = word.each_char.to_a
+  occurrence_per_reading = counts.fetch(word).to_f / qstrings.length
+  qstrings.each_key do |qstring|
+    characters.each_with_index do |character, index|
+      reading_evidence[character][qstring.byteslice(index * 2, 2)] += occurrence_per_reading
+    end
+  end
+end
+
+reading_weights = {}
+readings.each do |word, qstrings|
+  next unless word.length == 1 && qstrings.length > 1
+
+  evidence = reading_evidence[word]
+  total_evidence = qstrings.keys.sum { |qstring| evidence[qstring] }
+  next if total_evidence.zero?
+
+  # Phrase entries overlap, so their summed counts are not independent samples.
+  # Use the character's own count to set confidence in the distribution.
+  character_count = counts.fetch(word).to_f
+  evidence_weight = [character_count / (character_count + READING_EVIDENCE_PRIOR),
+                     MAX_READING_EVIDENCE_WEIGHT].min
+  uniform_weight = (1.0 - evidence_weight) / qstrings.length
+  reading_weights[word] = qstrings.keys.to_h do |qstring|
+    [qstring, uniform_weight + evidence_weight * evidence[qstring] / total_evidence]
+  end
+end
+
+reading_weight_for = lambda do |word, qstring|
+  reading_weights[word]&.fetch(qstring) || 1.0 / readings.fetch(word).length
+end
+
 word_probabilities = {}
 readings.each do |word, qstrings|
   next if qstrings.empty?
@@ -258,9 +303,9 @@ row_count = 0
 readings.each do |word, qstrings|
   next if qstrings.empty?
 
-  probability = word_probabilities.fetch(word) - Math.log10(qstrings.length)
   backoff = backoff_for.call(word)
   qstrings.each_key do |qstring|
+    probability = word_probabilities.fetch(word) + Math.log10(reading_weight_for.call(word, qstring))
     puts "INSERT INTO unigrams VALUES (#{sql_string(qstring)}, #{sql_string(word)}, #{probability}, #{backoff});"
     row_count += 1
   end
@@ -273,20 +318,25 @@ bigram_counts.each do |(previous, current), count|
   previous_text = previous == "<s>" ? "" : previous
   current_text = current == "</s>" ? "" : current
 
-  base_probability = if current == "</s>"
-                       sentence_count.to_f / (token_count + sentence_count)
-                     else
-                       counts.fetch(current).to_f / total_count / current_qstrings.length
-                     end
-  conditional_probability =
-    (count.to_f / current_qstrings.length + BIGRAM_PRIOR_STRENGTH * base_probability) /
-    (outgoing_counts.fetch(previous) + BIGRAM_PRIOR_STRENGTH)
-  probability = Math.log10(conditional_probability)
+  current_probabilities = current_qstrings.to_h do |current_qstring|
+    if current == "</s>"
+      base_probability = sentence_count.to_f / (token_count + sentence_count)
+      occurrence = count.to_f
+    else
+      reading_weight = reading_weight_for.call(current, current_qstring)
+      base_probability = counts.fetch(current).to_f / total_count * reading_weight
+      occurrence = count.to_f * reading_weight
+    end
+    conditional_probability =
+      (occurrence + BIGRAM_PRIOR_STRENGTH * base_probability) /
+      (outgoing_counts.fetch(previous) + BIGRAM_PRIOR_STRENGTH)
+    [current_qstring, Math.log10(conditional_probability)]
+  end
 
   previous_qstrings.each do |previous_qstring|
     current_qstrings.each do |current_qstring|
       combined_qstring = "#{previous_qstring} #{current_qstring}"
-      puts "INSERT INTO bigrams VALUES (#{sql_string(combined_qstring)}, #{sql_string(previous_text)}, #{sql_string(current_text)}, #{probability});"
+      puts "INSERT INTO bigrams VALUES (#{sql_string(combined_qstring)}, #{sql_string(previous_text)}, #{sql_string(current_text)}, #{current_probabilities.fetch(current_qstring)});"
       bigram_row_count += 1
     end
   end

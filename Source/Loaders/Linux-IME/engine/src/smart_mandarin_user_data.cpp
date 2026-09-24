@@ -39,7 +39,7 @@ bool prepare(sqlite3 *database, Statement &statement, const char *sql) {
            SQLITE_OK;
 }
 
-void bind(sqlite3_stmt *statement, int column, const std::string &text) {
+void bindText(sqlite3_stmt *statement, int column, const std::string &text) {
     sqlite3_bind_text(statement, column, text.c_str(), -1, SQLITE_TRANSIENT);
 }
 
@@ -126,7 +126,7 @@ SmartMandarinUserData::unigrams(const std::string &query) const {
                  "WHERE qstring = ? ORDER BY probability DESC, rowid")) {
         return {};
     }
-    bind(statement.value, 1, query);
+    bindText(statement.value, 1, query);
     std::vector<UserUnigram> result;
     while (sqlite3_step(statement.value) == SQLITE_ROW) {
         result.push_back({columnText(statement.value, 0),
@@ -144,7 +144,7 @@ std::string SmartMandarinUserData::learnedCandidate(
                  "WHERE qstring = ? ORDER BY rowid DESC LIMIT 1")) {
         return {};
     }
-    bind(statement.value, 1, query);
+    bindText(statement.value, 1, query);
     return sqlite3_step(statement.value) == SQLITE_ROW
                ? columnText(statement.value, 0) : std::string{};
 }
@@ -160,9 +160,9 @@ bool SmartMandarinUserData::learnedBigram(
                  "ORDER BY rowid DESC LIMIT 1")) {
         return false;
     }
-    bind(statement.value, 1, previousQuery + " " + query);
-    bind(statement.value, 2, previous);
-    bind(statement.value, 3, current);
+    bindText(statement.value, 1, previousQuery + " " + query);
+    bindText(statement.value, 2, previous);
+    bindText(statement.value, 3, current);
     if (sqlite3_step(statement.value) != SQLITE_ROW) {
         return false;
     }
@@ -184,12 +184,12 @@ bool SmartMandarinUserData::learn(
              prepare(database_, insert,
                      "INSERT INTO user_candidate_override_cache VALUES (?, ?)");
         if (ok) {
-            bind(remove.value, 1, query);
+            bindText(remove.value, 1, query);
             ok = sqlite3_step(remove.value) == SQLITE_DONE;
         }
         if (ok) {
-            bind(insert.value, 1, query);
-            bind(insert.value, 2, current);
+            bindText(insert.value, 1, query);
+            bindText(insert.value, 2, current);
             ok = sqlite3_step(insert.value) == SQLITE_DONE;
         }
         if (ok && !previousQuery.empty()) {
@@ -199,13 +199,13 @@ bool SmartMandarinUserData::learn(
                          "INSERT INTO user_bigram_cache VALUES (?, ?, ?, 0)");
             const std::string pair = previousQuery + " " + query;
             if (ok) {
-                bind(removeBigram.value, 1, pair);
+                bindText(removeBigram.value, 1, pair);
                 ok = sqlite3_step(removeBigram.value) == SQLITE_DONE;
             }
             if (ok) {
-                bind(insertBigram.value, 1, pair);
-                bind(insertBigram.value, 2, previous);
-                bind(insertBigram.value, 3, current);
+                bindText(insertBigram.value, 1, pair);
+                bindText(insertBigram.value, 2, previous);
+                bindText(insertBigram.value, 3, current);
                 ok = sqlite3_step(insertBigram.value) == SQLITE_DONE;
             }
         }
@@ -282,11 +282,11 @@ bool SmartMandarinUserData::addPhrase(const std::string &text,
                  "SELECT 1 FROM user_unigrams WHERE qstring = ? AND current = ?") ||
         !prepare(database_, insert,
                  "INSERT INTO user_unigrams VALUES (?, ?, -0.0000001, 0)")) return false;
-    bind(exists.value, 1, query);
-    bind(exists.value, 2, text);
+    bindText(exists.value, 1, query);
+    bindText(exists.value, 2, text);
     if (sqlite3_step(exists.value) == SQLITE_ROW) return false;
-    bind(insert.value, 1, query);
-    bind(insert.value, 2, text);
+    bindText(insert.value, 1, query);
+    bindText(insert.value, 2, text);
     return sqlite3_step(insert.value) == SQLITE_DONE;
 }
 
@@ -298,8 +298,8 @@ bool SmartMandarinUserData::removePhrase(const std::string &text,
     if (!prepare(database_, statement,
                  "DELETE FROM user_unigrams WHERE qstring = ? AND current = ?"))
         return false;
-    bind(statement.value, 1, query);
-    bind(statement.value, 2, text);
+    bindText(statement.value, 1, query);
+    bindText(statement.value, 2, text);
     return sqlite3_step(statement.value) == SQLITE_DONE &&
            sqlite3_changes(database_) > 0;
 }

@@ -86,6 +86,23 @@ struct SmartMandarinStoreTests {
         #expect(composition.segments.map(\.text) == ["今天", "被", "強制", "升級", "到"])
     }
 
+    @Test("common first syllables outrank rare readings of frequent characters")
+    func readingSpecificFirstSyllables() throws {
+        let store = try SmartMandarinStore(database: Database(url: try cookedDatabaseURL()))
+        for (keys, expected) in [
+            ("1j4", "不"), ("xu,4", "列"), ("au4", "密"),
+            ("up4", "印"), ("294", "代"), ("cj06", "環"),
+            ("b4", "日"), ("su3", "你"), ("vm,4", "血")
+        ] {
+            let reading = query(keys)
+            #expect(store.compose(readings: [reading], overrides: [:])?.text == expected)
+            #expect(store.candidates(for: [reading], at: 0, composition: nil).first == expected)
+        }
+
+        let phrase = ["xu,4", "g;4", "fm4"].map(query)
+        #expect(store.compose(readings: phrase, overrides: [:])?.text == "列上去")
+    }
+
     @Test("an explicit candidate override is preserved while the rest is reranked")
     func override() throws {
         let database = try Database(url: try cookedDatabaseURL())

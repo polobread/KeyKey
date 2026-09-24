@@ -11,6 +11,8 @@ import tempfile
 
 MAX_PHRASE_LENGTH = 7
 PRIOR = 1000.0
+READING_EVIDENCE_PRIOR = 1000.0
+MAX_READING_EVIDENCE_WEIGHT = 0.85
 COMPONENTS = {
     **dict(zip("ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙ", range(1, 22))),
     "ㄧ": 0x20, "ㄨ": 0x40, "ㄩ": 0x60,
@@ -168,8 +170,51 @@ def read_bigrams(corpora, readings, probabilities):
     return pairs, outgoing, sentences, tokens
 
 
+def character_reading_weights(counts, readings):
+    # A word's total count does not belong equally to every pronunciation of
+    # each character. Multi-character phrases supply reading evidence, while
+    # smoothing keeps infrequent readings available.
+    evidence = {}
+    for word, keys in readings.items():
+        if len(word) < 2:
+            continue
+        occurrence = counts[word] / len(keys)
+        for query in keys:
+            for index, character in enumerate(word):
+                by_reading = evidence.setdefault(character, {})
+                syllable = query[index * 2:index * 2 + 2]
+                by_reading[syllable] = by_reading.get(syllable, 0.0) + occurrence
+
+    weights = {}
+    for word, keys in readings.items():
+        if len(word) != 1 or len(keys) < 2:
+            continue
+        by_reading = evidence.get(word, {})
+        total_evidence = sum(by_reading.get(query, 0.0) for query in keys)
+        if total_evidence == 0:
+            continue
+        # Phrase entries overlap; use the character count for confidence, not
+        # their summed occurrence count.
+        evidence_weight = min(
+            counts[word] / (counts[word] + READING_EVIDENCE_PRIOR),
+            MAX_READING_EVIDENCE_WEIGHT,
+        )
+        uniform_weight = (1.0 - evidence_weight) / len(keys)
+        weights[word] = {
+            query: uniform_weight
+            + evidence_weight * by_reading.get(query, 0.0) / total_evidence
+            for query in keys
+        }
+    return weights
+
+
 def write_database(path, counts, readings, probabilities, total,
                    pairs, outgoing, sentences, tokens):
+    reading_weights = character_reading_weights(counts, readings)
+
+    def reading_weight(word, query):
+        return reading_weights.get(word, {}).get(query, 1.0 / len(readings[word]))
+
     database = sqlite3.connect(path)
     database.executescript("""
         CREATE TABLE unigrams (qstring TEXT, current TEXT,
@@ -188,7 +233,7 @@ def write_database(path, counts, readings, probabilities, total,
                               ("!", "", 0.0, backoff("<s>")),
                               ("$", "", 0.0, 0.0)])
         database.executemany("INSERT INTO unigrams VALUES (?, ?, ?, ?)",
-            ((query, word, probabilities[word] - math.log10(len(keys)), backoff(word))
+            ((query, word, probabilities[word] + math.log10(reading_weight(word, query)), backoff(word))
              for word, keys in readings.items() for query in keys))
 
         def bigram_rows():
@@ -197,13 +242,18 @@ def write_database(path, counts, readings, probabilities, total,
                 current_keys = ["$"] if current == "</s>" else readings[current]
                 previous_text = "" if previous == "<s>" else previous
                 current_text = "" if current == "</s>" else current
-                base = (sentences / (tokens + sentences) if current == "</s>"
-                        else counts[current] / total / len(current_keys))
-                conditional = ((count / len(current_keys) + PRIOR * base) /
-                               (outgoing[previous] + PRIOR))
-                probability = math.log10(conditional)
                 for previous_query in previous_keys:
                     for current_query in current_keys:
+                        if current == "</s>":
+                            base = sentences / (tokens + sentences)
+                            occurrence = count
+                        else:
+                            weight = reading_weight(current, current_query)
+                            base = counts[current] / total * weight
+                            occurrence = count * weight
+                        probability = math.log10(
+                            (occurrence + PRIOR * base) / (outgoing[previous] + PRIOR)
+                        )
                         yield (previous_query + " " + current_query,
                                previous_text, current_text, probability)
 

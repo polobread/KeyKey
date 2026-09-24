@@ -120,19 +120,22 @@ public final class SmartMandarinStore: SmartMandarinSource {
                     for previousPath in paths[start].values {
                         let transition: Double
                         if let previous = previousPath.segments.last {
-                            transition = bigramProbability(
+                            let fallback = previousPath.lastBackoff + entry.probability
+                            let observed = bigramProbability(
                                 previousQuery: previous.query,
                                 currentQuery: query,
                                 previousText: previous.text,
                                 currentText: entry.text
-                            ) ?? (previousPath.lastBackoff + entry.probability)
+                            )
+                            transition = max(observed ?? fallback, fallback)
                         } else {
-                            transition = bigramProbability(
+                            let observed = bigramProbability(
                                 previousQuery: "!",
                                 currentQuery: query,
                                 previousText: "",
                                 currentText: entry.text
-                            ) ?? entry.probability
+                            )
+                            transition = max(observed ?? entry.probability, entry.probability)
                         }
 
                         let learnedTransition = learned == entry.text
@@ -167,22 +170,28 @@ public final class SmartMandarinStore: SmartMandarinSource {
         let query = readings[index]
         let learned = userData?.learnedCandidate(for: query)
         let previous = composition?.segments.last(where: { $0.start + $0.length == index })
+        let previousBackoff = previous.flatMap { segment in
+            unigrams(for: segment.query).first(where: { $0.text == segment.text })?.backoff
+        } ?? 0
         let ranked = unigrams(for: query).map { entry -> (String, Double) in
             let score: Double
             if learned == entry.text {
                 score = 0
             } else if let previous {
-                score = bigramProbability(
+                let fallback = previousBackoff + entry.probability
+                let observed = bigramProbability(
                     previousQuery: previous.query,
                     currentQuery: query,
                     previousText: previous.text,
                     currentText: entry.text
-                ) ?? entry.probability
+                )
+                score = max(observed ?? fallback, fallback)
             } else {
-                score = bigramProbability(
+                let observed = bigramProbability(
                     previousQuery: "!", currentQuery: query,
                     previousText: "", currentText: entry.text
-                ) ?? entry.probability
+                )
+                score = max(observed ?? entry.probability, entry.probability)
             }
             return (entry.text, score)
         }.sorted { $0.1 > $1.1 }
@@ -209,12 +218,13 @@ public final class SmartMandarinStore: SmartMandarinSource {
 
     private func finalScore(_ path: Path) -> Double {
         guard let last = path.segments.last else { return path.score }
-        return path.score + (bigramProbability(
+        let observed = bigramProbability(
             previousQuery: last.query,
             currentQuery: "$",
             previousText: last.text,
             currentText: ""
-        ) ?? 0)
+        )
+        return path.score + max(observed ?? path.lastBackoff, path.lastBackoff)
     }
 
     private func unigrams(for query: String) -> [Unigram] {

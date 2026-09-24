@@ -188,12 +188,15 @@ bool SmartMandarinStore::compose(
                     const SmartSegment *previous = hasPrevious
                                                        ? &previousPath.segments.back()
                                                        : nullptr;
-                    if (!bigram(hasPrevious ? previous->query : "!", query,
-                                hasPrevious ? previous->text : "", entry.text,
-                                transition)) {
-                        transition = hasPrevious
-                                         ? previousPath.backoff + entry.probability
-                                         : entry.probability;
+                    const double fallback = hasPrevious
+                                                ? previousPath.backoff + entry.probability
+                                                : entry.probability;
+                    if (bigram(hasPrevious ? previous->query : "!", query,
+                               hasPrevious ? previous->text : "", entry.text,
+                               transition)) {
+                        transition = std::max(transition, fallback);
+                    } else {
+                        transition = fallback;
                     }
                     Path path = previousPath;
                     path.score += transition +
@@ -216,8 +219,11 @@ bool SmartMandarinStore::compose(
     for (const auto &state : paths.back()) {
         const Path &path = state.second;
         const SmartSegment &last = path.segments.back();
-        double ending = 0;
-        bigram(last.query, "$", last.text, "", ending);
+        double ending = path.backoff;
+        double observed = 0;
+        if (bigram(last.query, "$", last.text, "", observed)) {
+            ending = std::max(observed, ending);
+        }
         if (path.score + ending > bestScore) {
             bestScore = path.score + ending;
             best = &path;
@@ -248,11 +254,22 @@ std::vector<std::string> SmartMandarinStore::candidates(
     std::vector<std::pair<std::string, double>> ranked;
     const std::string learned =
         userData_ ? userData_->learnedCandidate(readings[index]) : std::string{};
+    double previousBackoff = 0;
+    if (previous) {
+        for (const Unigram &entry : unigrams(previous->query)) {
+            if (entry.text == previous->text) {
+                previousBackoff = entry.backoff;
+                break;
+            }
+        }
+    }
     for (const Unigram &entry : unigrams(readings[index])) {
-        double score;
-        if (!bigram(previous ? previous->query : "!", readings[index],
-                    previous ? previous->text : "", entry.text, score)) {
-            score = entry.probability;
+        const double fallback = previousBackoff + entry.probability;
+        double score = fallback;
+        double observed = 0;
+        if (bigram(previous ? previous->query : "!", readings[index],
+                   previous ? previous->text : "", entry.text, observed)) {
+            score = std::max(observed, fallback);
         }
         ranked.emplace_back(entry.text,
                             score + (entry.text == learned ? 5.0 : 0.0));

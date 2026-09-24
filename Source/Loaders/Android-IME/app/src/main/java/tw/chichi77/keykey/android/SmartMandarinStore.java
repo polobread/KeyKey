@@ -19,8 +19,10 @@ import java.util.Set;
 /** Lazy, read-only Viterbi walker over the same language model used by macOS and iOS. */
 final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     private static final String ASSET_NAME = "KeyKey.db";
-    private static final String INSTALLED_NAME = "KeyKey-smart-885614.db";
-    private static final String PREVIOUS_INSTALLED_NAME = "KeyKey-smart-1.2.10.db";
+    private static final String INSTALLED_NAME = "KeyKey-smart-reading-v2.db";
+    private static final String[] PREVIOUS_INSTALLED_NAMES = {
+            "KeyKey-smart-885614.db", "KeyKey-smart-1.2.10.db"
+    };
     private static final long EXPECTED_BIGRAM_ROWS = 885_614;
     private static final int MAXIMUM_SPAN = 8;
 
@@ -64,7 +66,9 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
             database.close();
             throw error;
         }
-        new File(databaseFile.getParentFile(), PREVIOUS_INSTALLED_NAME).delete();
+        for (String previousName : PREVIOUS_INSTALLED_NAMES) {
+            new File(databaseFile.getParentFile(), previousName).delete();
+        }
         return new SmartMandarinStore(database, userData);
     }
 
@@ -125,8 +129,9 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                             bigram = bigramProbability(previous.query(), query,
                                     previous.text(), entry.text());
                         }
-                        double transition = bigram != null
-                                ? bigram : previousPath.lastBackoff() + entry.probability();
+                        double fallback = previousPath.lastBackoff() + entry.probability();
+                        double transition = bigram == null
+                                ? fallback : Math.max(bigram, fallback);
                         ArrayList<SmartMandarinSegment> segments =
                                 new ArrayList<>(previousPath.segments());
                         segments.add(segment);
@@ -175,13 +180,23 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
 
         record Ranked(String text, double score) {}
         ArrayList<Ranked> ranked = new ArrayList<>();
+        double previousBackoff = 0;
+        if (previous != null) {
+            for (Unigram item : unigrams(previous.query())) {
+                if (item.text().equals(previous.text())) {
+                    previousBackoff = item.backoff();
+                    break;
+                }
+            }
+        }
         for (Unigram entry : unigrams(query)) {
             Double bigram = previous == null
                     ? bigramProbability("!", query, "", entry.text())
                     : bigramProbability(previous.query(), query,
                             previous.text(), entry.text());
+            double fallback = previousBackoff + entry.probability();
             ranked.add(new Ranked(entry.text(), entry.text().equals(learned) ? 0
-                    : bigram == null ? entry.probability() : bigram));
+                    : bigram == null ? fallback : Math.max(bigram, fallback)));
         }
         ranked.sort((left, right) -> Double.compare(right.score(), left.score()));
         LinkedHashSet<String> unique = new LinkedHashSet<>();
@@ -222,7 +237,8 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
         if (path.segments().isEmpty()) return path.score();
         SmartMandarinSegment last = path.segments().get(path.segments().size() - 1);
         Double ending = bigramProbability(last.query(), "$", last.text(), "");
-        return path.score() + (ending == null ? 0 : ending);
+        return path.score() + (ending == null
+                ? path.lastBackoff() : Math.max(ending, path.lastBackoff()));
     }
 
     private List<Unigram> unigrams(String query) {

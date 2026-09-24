@@ -1479,6 +1479,23 @@ void testSmartMandarinComposition() {
     const auto store = keykey::linux_ime::SmartMandarinStore::open(
         KEYKEY_TEST_SMART_DB);
     require(store != nullptr, "Smart Mandarin database did not open");
+    for (const auto &[query, expected] :
+         std::vector<std::pair<std::string, std::string>>{
+             {"L_", "不"}, {"ac", "列"}, {"8_", "密"}, {"@j", "印"},
+             {"Qd", "代"}, {"IJ", "環"}, {"1_", "日"}, {"\\O", "你"},
+             {"Dd", "血"}}) {
+        keykey::linux_ime::SmartComposition composition;
+        require(store->compose({query}, {}, composition) &&
+                    composition.text == expected,
+                "Smart Mandarin preferred an uncommon first-syllable reading");
+        const auto candidates = store->candidates({query}, 0, composition);
+        require(!candidates.empty() && candidates.front() == expected,
+                "Smart Mandarin first-syllable candidate order diverged");
+    }
+    keykey::linux_ime::SmartComposition phrase;
+    require(store->compose({"ac", "Dk", "n_"}, {}, phrase) &&
+                phrase.text == "列上去",
+            "Smart Mandarin did not compose 列上去");
     Engine engine(loadRealBopomofoDictionary());
     engine.setSmartMandarinStore(store);
     engine.setSmartMandarinMode(true);
