@@ -78,6 +78,10 @@ Public Domain。
 | `bpmf-ext.cin` | `f7c05229355ad39a0ef7806db85723709380099c24d3cb787f3eb01d49e29589` |
 | `bpmf-punctuations.cin` | `5eb470548b071642d94328e8763ad1fea5ba6c1fc360b394d9fe8d6d14291f1` |
 
+三份檔案目前都是無 BOM、LF 換行的 UTF-8 文字，並能完整通過 UTF-8 解碼；它們不是
+Big5 檔案。Big5／CP950／HKSCS 只出現在執行階段的舊編碼相容判定，不是來源資料的儲存
+格式。因此這項計畫不需轉碼或改寫三份 CIN；仍以原始 bytes 與上述 hash 保護它們。
+
 這表示「以前看得到、後來消失」不是這三份來源檔在本 repo 被刪字造成的；主要原因是不同
 平台、字型或 encoding service 在候選送到畫面前做了過濾。
 
@@ -140,6 +144,40 @@ cooker 和 Linux loader，主要都使用 `bpmf-ext.cin`；一般候選消失並
 Linux vector 則保留解析順序。
 
 若要把順位當相容性承諾，不能繼續依賴「目前剛好如此」。
+
+### 4.3 不同國家／地區的使用者會得到不同顯示結果
+
+同一份 Unicode 候選資料，在不同國家／地區的實際使用感受可能不同。差異不是由使用者
+所在的地理位置直接決定，而是由裝置銷售版本、OS／發行版、語言與地區設定、OEM 預裝
+內容、已安裝字型、字型 fallback 順序，以及候選窗與目標 App 所使用的繪字技術共同決定。
+
+- macOS／iOS 的 CoreText fallback 會參考可用字型及語言偏好；macOS 另有可下載及
+  使用者安裝的字型，系統更新也可能增修字型。iOS 的系統字型會隨版本改變，App 或文件
+  安裝的字型也不保證輸入法 extension 或每個目標 App 都以相同方式採用。
+- Windows 的預裝與選用字型會隨系統語言功能而不同；繁體中文補充字型可包含
+  `MingLiU_HKSCS` 等字型。GDI、DirectWrite、瀏覽器與不同 App 的 fallback／font linking
+  結果可能不同。目前 TSF 候選窗使用 GDI `DrawTextW`，須和輸入後的目標 App 分開驗證。
+- Android 的 fallback chain 由 AOSP、OS 版本及 OEM 共同決定，同版 Android 的不同品牌、
+  市場機型也可能有不同 coverage。Android 12 起平台可在不更新完整 OS 的情況下更新受信任
+  的系統字型，但不代表所有裝置會取得同一套罕字字型。
+- Linux 沒有跨發行版一致的預裝字型集合；Ubuntu 可由 `fonts-noto-cjk` 等套件提供 CJK
+  coverage，Fontconfig／Pango 再依字元、語言及使用者設定選擇 fallback。套件、桌面環境與
+  App toolkit 都可能改變結果。
+
+因此台灣繁中、香港繁中、日文、韓文與英文環境可能顯示不同地區字形，也可能有不同的
+缺字集合。這種差異只允許影響畫出的 glyph；候選 Unicode 字串、數量、編號、分頁、選取
+索引與提交結果仍須一致。未來 OS、OEM、Linux 套件或使用者安裝的字型增加 coverage 時，
+原 slot 應直接由缺字方框變成可讀 glyph，不能因而新增、刪除或重排候選。
+
+現有 macOS `CVEncodingService` 只以 `STHeiti`（失敗時 `AppleGothic` 或 system font）這一支
+字型的 `coveredCharacterSet` 建立不支援清單，並硬排除部分 PUA 與 `U+2FFFF` 以上字元；
+這不是整個 CoreText fallback chain 的實際能力。即使使用者另裝字型，候選也可能先被
+琦琦刪除。正式實作必須移除這項 membership 過濾，不能改成另一套動態 coverage 過濾。
+
+`bpmf-ext.cin` 另含大量 PUA 候選。PUA 的字義不由 Unicode 指定，只有安裝與原始資料採用
+相同私用對應的字型才會得到預期 glyph；一般系統日後增加標準 Unicode 漢字，不保證能
+補上舊 PUA，使用不同私用約定的字型甚至可能畫出另一個字。PUA 測試必須同時記錄 code
+point、預期 glyph 來源與字型版本，不能只記錄「有方框／沒有方框」。
 
 ## 5. 不可變順位契約
 
@@ -369,7 +407,26 @@ profile id + profile version + reading key + ordered candidate strings
 兩次測試的 candidate count、Unicode strings、absolute ordinal、頁數、頁內位置與 commit
 結果必須完全相同；只有畫素輸出可不同。
 
-### 12.4 UI 與輸入測試
+### 12.4 國家／地區與語言環境矩陣
+
+字型驗收不能只跑開發機的台灣繁中環境。每個支援平台至少選擇可實際取得的下列環境，
+記錄 OS build、裝置／OEM、系統語言、地區、偏好語言順序、已安裝或可下載字型、App
+toolkit 與最後實際採用的 fallback font：
+
+- 台灣繁中（`zh-TW`）與香港繁中（`zh-HK`）。
+- 日文（`ja-JP`）與韓文（`ko-KR`）。
+- 英文系統但未額外安裝東亞補充字型，以及安裝補充字型後的對照。
+- Android 至少一台 Google／AOSP 基準與一台不同 OEM／市場機型；Linux 至少 Ubuntu
+  預設安裝與安裝 `fonts-noto-cjk` 後的對照。
+
+同一批測試字應包含常用繁體字、台港日韓共用但地區字形不同的漢字、CJK Extension
+supplementary-plane 字、HKSCS／全字庫罕字、variation sequence 及已知來源的 PUA。
+候選窗與提交後的目標 App 要分開截取結果，因為兩者可能使用不同 rendering stack。
+
+驗收產物分成兩層：Unicode sequence／digest 是跨環境必須相同的硬門檻；glyph、fallback
+font 與 tofu 清單是環境相關的診斷資料。語言或字型變更前後，只允許第二層改變。
+
+### 12.5 UI 與輸入測試
 
 - 候選標籤、翻頁、點選／數字鍵選取與提交字串一致。
 - supplementary-plane、PUA、variation selector、組合字串與無 glyph 候選不造成 index
@@ -378,7 +435,7 @@ profile id + profile version + reading key + ordered candidate strings
 - 關聯詞與標點不做 glyph-based filtering。
 - 大型 profile 的啟動時間、查詢延遲、記憶體與套件大小在發布預算內。
 
-### 12.5 最低端到端環境
+### 12.6 最低端到端環境
 
 - macOS：經確認的歷史基準版本，加上當前支援版本。
 - Windows 11：TSF；另用歷史環境只做 Windows ㄅ半 profile 對照。
@@ -427,6 +484,9 @@ profile id + profile version + reading key + ordered candidate strings
 5. 既有使用者升級時採新預設，或保留舊設定直到自行選擇？
 6. 若保留 Big5，相容目標是 WHATWG Big5、CP950、某版 HKSCS，或另外定義的聯集／交集？
 7. profile 更新政策及審核人是誰？是否只允許 major/minor 版本變更？
+8. 候選窗是否由產品自帶一套可追溯、可授權散布的罕字 fallback font，還是只依賴各平台
+   系統與使用者字型並接受 tofu？若自帶字型，涵蓋哪些標準 Unicode 字、是否包含已確認
+   對應的 PUA，以及五平台 extension／套件大小與授權限制都要另案評估。
 
 建議答案是：六組歷史例外原樣保留；一般 UI 先顯示四種模式；Big5 與完整原始序列放進
 進階設定；但最終仍需在真正開發前由產品決策確認。
@@ -452,6 +512,14 @@ profile id + profile version + reading key + ordered candidate strings
 - [CNS11643 中文全字庫](https://www.cns11643.gov.tw/)
 - [WHATWG Encoding Standard：Big5](https://encoding.spec.whatwg.org/)
 - [香港政府 HKSCS-2016 文件](https://www.ogcio.gov.hk/en/our_work/business/tech_promotion/ccli/terms/doc/e_hkscs_2016.pdf)
+- [Apple CoreText：依語言偏好取得 fallback cascade](https://developer.apple.com/documentation/coretext/ctfontcopydefaultcascadelistforlanguages(_:_:))
+- [Apple：macOS 內建與可下載字型](https://support.apple.com/122869)
+- [Microsoft：Windows 字型 fallback／font linking](https://learn.microsoft.com/en-us/globalization/fonts-layout/fonts)
+- [Microsoft：Windows 語言相關補充字型](https://learn.microsoft.com/en-us/windows/deployment/windows-missing-fonts)
+- [Android：系統字型與 custom fallback 更新](https://source.android.com/docs/core/fonts/custom-font-fallback)
+- [Fontconfig：依 charset／lang 的字型比對](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-user.html)
+- [Unicode：Private-use characters FAQ](https://www.unicode.org/faq/private_use.html)
+- [Noto CJK：台灣、香港、日本、韓國等語言／地區字型](https://github.com/notofonts/noto-cjk/blob/main/Sans/README.md)
 
 以上外部資料用來說明歷史來源、字集與顯示問題；真正發布的順位仍必須由使用者認可的
 macOS／Windows 實際基準匯出、凍結及測試，不能只由網路文件推算。
