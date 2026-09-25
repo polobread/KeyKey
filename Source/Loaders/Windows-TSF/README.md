@@ -41,23 +41,41 @@ reference and is not linked into this DLL.
 
 ## Screenshots
 
+These screenshots show the Windows 1.3.0 development build. The published
+v1.2.9 interface is documented in the [Windows installation guide](../../../WINDOWS_INSTALL.md).
 After installation, select KeyKey under Traditional Chinese (Taiwan), Hong Kong,
 or Macao in the Windows taskbar input selector. The installer does not add
 Windows languages or change the default input method.
 
-![Selecting KeyKey from the Windows input selector](IMAGES/select_chichi.png)
+In Notepad, Smart Mandarin composes Bopomofo and displays numbered Chinese
+candidate choices. The underline on active composition text may look different
+in other applications because the text host controls its rendering.
 
-The language-bar menu provides direct Smart/Traditional Mandarin selection,
-Chinese/English and half-/full-width switching, plus an entry to settings.
-After upgrading, sign out and back in once so Explorer loads the new menu.
+![Smart Mandarin composition and Chinese candidates in Notepad, Windows 1.3.0](IMAGES/v1.3.0-smart-mandarin-composition.png)
 
-Typing Bopomofo shows the composition text and numbered candidate list in the
-active application.
+The taskbar menu directly selects Smart Mandarin (好打注音) or Traditional
+Mandarin (傳統注音). Check marks show the selected input method and width mode;
+the same menu switches Chinese/English and opens settings. After upgrading,
+sign out and back in once so Explorer loads the new menu.
 
-![Bopomofo composition and candidates](IMAGES/typing.png)
+![Windows 1.3.0 taskbar menu with Smart and Traditional Mandarin](IMAGES/v1.3.0-taskbar-input-method-menu.png)
 
-The settings app lets users choose the public associated-phrase collections to
-load. Its Fluent controls follow the Windows light/dark setting.
+The General settings page controls which input methods appear in the taskbar
+menu, candidate-window direction and size, and other keyboard options. At
+least one input method must remain visible.
+
+![Windows 1.3.0 General settings page](IMAGES/v1.3.0-settings-general.png)
+
+The Associated Phrases page selects the public phrase collections to load;
+changes take effect on the next input. The User Phrases page adds, edits,
+deletes, imports, and exports personal phrases and learning data.
+
+![Windows 1.3.0 Associated Phrases settings page](IMAGES/v1.3.0-settings-associated-phrases.png)
+
+![Windows 1.3.0 User Phrases settings page](IMAGES/v1.3.0-settings-user-phrases.png)
+
+These captures show the light appearance. The Fluent settings app follows
+the Windows light/dark preference.
 
 ## Prerequisites
 

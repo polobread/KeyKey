@@ -5,6 +5,8 @@
 本指南使用 **v1.2.9** 的 Windows 11 安裝包。1.3.0 開發版的 Windows 10 起
 建置、測試與操作差異見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)；
 本頁的安裝畫面與設定選項仍以已發布的 v1.2.9 為準。
+新版的組字候選、工作列選單及設定畫面可直接看
+[1.3.0 開發版 Windows 截圖](Source/Loaders/Windows-TSF/README.md#screenshots)。
 
 ## 安裝前，先確認電腦
 
@@ -133,3 +135,26 @@ Windows 版使用實體鍵盤上的標準注音位置。若你使用「標準」
 打開 **開始 → 設定 → 應用程式 → 已安裝的應用程式**，搜尋 **chichi77 KeyKey** 或 **琦琦輸入法**，點右側的 **… → 解除安裝**。如果正在使用琦琦輸入法，先切到其他輸入法並關閉正在打字的 App；移除後若仍在清單中，登出並重新登入。
 
 Windows 切換鍵盤的系統操作可參考 [Microsoft 的語言與鍵盤設定說明](https://support.microsoft.com/en-us/windows/hardware/input-devices/manage-the-language-and-keyboard-input-layout-settings-in-windows)。建置與進階部署資訊另見 [Windows TSF 技術文件](Source/Loaders/Windows-TSF/README.md)。
+
+## 1.3.0 開發版畫面
+
+以下五張截圖來自 Windows 1.3.0 開發版，與上方 v1.2.9 正式安裝包的操作畫面不同；
+1.3.0 尚未發布。好打注音可連續組字並選擇中文字候選。組字底線由使用中的 App 顯示，
+不同 App 可能有不同外觀。
+
+![Windows 1.3.0 記事本中的好打注音組字與中文字候選](Source/Loaders/Windows-TSF/IMAGES/v1.3.0-smart-mandarin-composition.png)
+
+工作列選單可直接勾選「好打注音」或「傳統注音」，也可切換中英文與全半形；
+升級後登出再登入，工作列才會載入新版選單。
+
+![Windows 1.3.0 工作列輸入法選單](Source/Loaders/Windows-TSF/IMAGES/v1.3.0-taskbar-input-method-menu.png)
+
+「一般」頁可勾選工作列選單要顯示的輸入法，並調整候選窗；至少需保留一種輸入法。
+
+![Windows 1.3.0 輸入法設定的一般頁](Source/Loaders/Windows-TSF/IMAGES/v1.3.0-settings-general.png)
+
+「關聯詞庫」頁可選擇要啟用的分類詞庫；「自訂詞」頁可新增、修改、刪除與匯入／匯出詞語資料。
+
+![Windows 1.3.0 輸入法設定的關聯詞庫頁](Source/Loaders/Windows-TSF/IMAGES/v1.3.0-settings-associated-phrases.png)
+
+![Windows 1.3.0 輸入法設定的自訂詞頁](Source/Loaders/Windows-TSF/IMAGES/v1.3.0-settings-user-phrases.png)
