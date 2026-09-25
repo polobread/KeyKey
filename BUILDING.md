@@ -2,9 +2,9 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
+Linux 1.3.0 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-共用 [`v1.2.9` Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)。先前 Linux 版本的發布紀錄保留在
+共用 [`v1.3.0` Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -84,7 +84,7 @@ Source/Loaders/Linux-IME/ci/dev.sh package
 `dev.sh` 在 Apple Silicon 自動使用 `linux/arm64`，保留同一個 container，並把
 incremental build／stage 放在 Docker named volumes；`down` 只移除 container，保留
 編譯快取。`e2e` 可指定一個 case、逗號分隔的 cases 或 `all`。這條快速路徑產生的
-ARM64 package 是開發 preview，不能取代 x86_64 release gate；`package` 也不取代乾淨
+ARM64 package 是未列入支援範圍的測試產物，不能取代 x86_64 release gate；`package` 也不取代乾淨
 runtime container 的安裝／升級／移除驗證。
 `source-e2e` 使用乾淨的一次性 container，分別驗證 `/usr/local`、`/usr` 與自訂
 prefix 的原始碼安裝、GTK3／GTK4／Qt6 X11 真實打字及解除安裝；自訂 prefix 另驗證
@@ -117,7 +117,7 @@ API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3／GTK 4／Qt 6
 注音設定 schema。五種布局都是 Windows 對標的
 Linux 1.2.8 第一階段範圍。已完成的倉頡／簡易切片保留作回歸與未來擴充，不需從程式或
 測試中拆除。這些 one-shot 指令預設建立
-`linux/amd64` 產物；ARM64 preview 可在指令前設定
+`linux/amd64` 產物；ARM64 測試產物可在指令前設定
 `KEYKEY_DOCKER_PLATFORM=linux/arm64`。Xvfb E2E 是 L3 X11 證據，不等於 GNOME／
 native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 [Linux frontend README](Source/Loaders/Linux-IME/README.md)。
@@ -126,8 +126,8 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
-正式 Ubuntu 24.04 amd64 套件與對應的限定支援範圍列在 Linux 1.2.8
-發布說明；本節指令產生的本機套件仍是開發產物。
+Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.3.0 安裝與使用指南](LINUX_INSTALL.md)；
+本節指令產生的本機套件仍需通過發布流程的驗證，才可作為 GitHub Release 安裝檔。
 
 Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
 `gnome-shell-extension-keykey-kimpanel` `.deb`，只支援 GNOME Shell 46，供
@@ -418,14 +418,14 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 ## English
 
-Native Linux development starts with version 1.2.8. A buildable Linux-only
-engine and Fcitx 5 addon exist. The GTK 3, GTK 4, and Qt 6 X11 matrix is
+Native Linux support began with version 1.2.8. Version 1.3.0 includes a
+Linux-only engine and Fcitx 5 addon. The GTK 3, GTK 4, and Qt 6 X11 matrix is
 implemented, and 76 cases that do not restart the desktop Fcitx process pass
 in an isolated Ubuntu 24.04 GNOME X11 session. A GNOME Wayland KVM guest also
 passes 160/160 native Wayland/XWayland key and pointer combinations. Real gedit
 passes four input paths; GNOME Text Editor passes the direct Fcitx Wayland and
-XWayland paths, with two GTK Wayland IM paths still failing. Full login/window
-acceptance and release packages are not complete. The guest also passes 16/16
+XWayland paths, with two GTK Wayland IM paths still failing. These earlier
+checks do not replace the versioned release workflow. The guest also passes 16/16
 two-field focus phases, with a recorded raw-preedit blur difference between
 direct Fcitx and default GTK Wayland paths. Separate editing-field evidence
 passed 21 cases before a GNOME Shell crash and the remaining three after
@@ -441,7 +441,7 @@ real browser field/mode cases across native Wayland and XWayland, covering
 literal controls. See the
 [development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
 
-### Linux (in development)
+### Linux source build
 
 A traditional source build requires CMake 3.22, GNU Make, a C++17 compiler,
 `pkg-config`, Python 3, and the Fcitx 5 Core, libcanberra, and SQLite 3 development files. It does not require Ninja, Docker,
@@ -500,7 +500,7 @@ On Apple Silicon, `dev.sh` automatically uses `linux/arm64`. It reuses one
 container and keeps incremental build and staging files in Docker named
 volumes. `e2e` accepts one case, a comma-separated case list, or `all`; `down`
 removes the container but retains the compilation cache. ARM64 packages from
-this path are development previews, and `package` does not replace clean
+this path are test outputs outside the supported release scope, and `package` does not replace clean
 install/upgrade/removal acceptance.
 
 Windows 11 can use the same commands from WSL2 Ubuntu. Keep the repository on
@@ -525,7 +525,7 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 The third one-shot command types physical key events through the staged Fcitx 5 addon
 into GTK 3, GTK 4, and Qt 6 editors on Xvfb and runs English-keyboard negative controls. They
 default to `linux/amd64`; set `KEYKEY_DOCKER_PLATFORM=linux/arm64` for the ARM64
-preview build. The Xvfb result is L3 X11 evidence and does not count as GNOME or
+test build. The Xvfb result is L3 X11 evidence and does not count as GNOME or
 native Wayland desktop typing acceptance. See the
 [Linux frontend README](Source/Loaders/Linux-IME/README.md) for current scope.
 
@@ -535,7 +535,7 @@ the eighty-two non-settings-window X11 cases after install, controlled upgrade, 
 reinstall. The native Fcitx settings-window click, persistence, restart, and
 typing case—including changing the candidate style from vertical to
 horizontal—runs once after reinstall, for eighty-three cases in that final state.
-These are development artifacts until the remaining release gates are complete.
+Local outputs from these commands require the release workflow's checks before distribution.
 
 ### macOS
 

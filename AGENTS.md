@@ -2,7 +2,7 @@
 
 此檔只記錄目前開發需要遵守的規則與入口。舊版逐日進度、測試數字和待辦已完整移到 [歷史交接紀錄](docs/AGENTS_HISTORY.md)；該紀錄僅供查證當時情況，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 和相關平台文件。
 
-目前本機開發分支為 `v1.3.0`，五平台原始碼版號已升至 1.3.0；尚未建立對應 tag 或發布套件。README 說明目前公開下載仍為 `v1.2.9`；Windows 安裝指南以 1.3.0 的安裝與操作畫面為準，並標明尚未發布。舊版測試紀錄和 Android 私有資料庫清理清單中的 `1.2.10` 也須保留原意。發布前仍需依各平台建置與驗證流程確認實際產物。
+目前工作分支為 `v1.3.0`，五平台原始碼及對外安裝文件均以 1.3.0 為準。此分支合併後再建立發行 tag，由各平台流程產生安裝包與 GitHub Release Assets；文件中的下載檔名須與實際產物核對。舊版測試紀錄和 Android 私有資料庫清理清單中的 `1.2.10` 仍須保留原意。發布前依各平台建置與驗證流程確認產物，不能把本機套件測試當成所有平台的發行驗收。
 
 Linux 好打注音的本機修正：第十個音節完成時送出最前方完整詞；即使學習單字「假」讓走訪器拆開「請假」，若畫面開頭仍是詞庫完整詞，第十音節仍須一次擠出「請假」，並固定下一詞段的字與跨度。句中可用方向下鍵開候選，支援 Fcitx preedit click 的客戶端也可點字改選；候選選擇須保留整詞跨度，Enter 先套用反白候選、下次 Enter 才送出。切換輸入法時先完成有效讀音再送出可見組字，無法完成的讀音照原樣保留。詳細跨平台對照與測試界線見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。本輪另修正 Fcitx 點字座標（字元索引，不是 UTF-8 byte offset）、Esc／Delete、候選導覽與攔鍵、組字中配置切換及無效讀音誤入傳統候選。好打注音修正已打包為 `fix5`。
 
@@ -78,7 +78,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 
 - iOS 專案用 `-scheme 'chichi77 KeyKey'` 建置；`-target` 不能取代 Swift Package 依賴。DB 應只打包進 `Keyboard.appex`。Xcode Cloud 的 `ci_scripts/ci_post_clone.sh` 會於乾淨 checkout 重煮並驗證 DB。
 - `KeyKeyiOS.xcodeproj/xcshareddata/xcodecloud/manifest.json` 是 Xcode Cloud 的產品對應資料，須隨專案提交；不要將它當成 `xcuserdata` 暫存檔。工作流程本身仍在 Xcode Cloud 管理。
-- Windows 1.3.0 開發套件以 Windows 10 起為目標。x64 ZIP 內含 x64／x86 TSF DLL，供兩種位元數的所有應用程式使用；x86 ZIP 供 32 位元 Windows 使用，只含 x86 TSF DLL。NSIS 測試安裝器目前仍為 x64。設定程式改用 .NET 10 WPF Fluent 介面，跟隨系統明暗模式；x64／x86 各自編出設定 EXE 與同位元數的 `KeyKeySettingsBackend.dll`，設定 DLL 不會載入應用程式的 TSF 行程。兩種設定程式皆為獨立離線 EXE，不要求使用者另裝 .NET。已在 Windows 11 x64 建置並啟動兩種設定程式，Windows 10 x86／x64 尚待實機驗證。
+- Windows 1.3.0 套件以 Windows 10 起為目標。x64 ZIP 內含 x64／x86 TSF DLL，供兩種位元數的所有應用程式使用；x86 ZIP 供 32 位元 Windows 使用，只含 x86 TSF DLL。NSIS 測試安裝器目前仍為 x64。設定程式改用 .NET 10 WPF Fluent 介面，跟隨系統明暗模式；x64／x86 各自編出設定 EXE 與同位元數的 `KeyKeySettingsBackend.dll`，設定 DLL 不會載入應用程式的 TSF 行程。兩種設定程式皆為獨立離線 EXE，不要求使用者另裝 .NET。已在 Windows 11 x64 建置並啟動兩種設定程式，Windows 10 x86／x64 尚待實機驗證。
 - Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets 建置。正常 cook 與 `KEYKEY_DATABASE_PATH` 覆寫都要通過 DB verifier。驗證 Windows TSF 行為須在 Windows 執行，macOS 靜態檢查不能算實測。
 - Windows 好打注音設定的 `UseCharactersSupportedByEncoding` 空值或 `UTF-8` 代表不限制字集；`WindowsEncodingService` 必須接受空值，否則詞庫查到的中文字候選會全部被濾掉，只留下底線注音。WPF 設定頁讀取兩者，但儲存時使用 `UTF-8`，讓尚未換掉舊 DLL 的行程也能輸入。引擎測試需實際驗證完整音節能組成中文字，不能只檢查注音鍵有被攔截。
 - Windows TSF 的組字底線由 `ITfDisplayAttributeProvider` 與 `GUID_PROP_ATTRIBUTE` 宣告，實際呈現仍由文字宿主決定；驗證需分別看記事本與其他 App。中英模式切換及 TIP 失焦時，應在可寫入的 edit session 以 `EndComposition` 保留組字文字，不可呼叫會清空 range 的 `abandonComposition()`。好打注音可能先把符號留在組字內，傳統注音可能直接送出，候選鍵測試需接受兩種有效狀態。
@@ -108,7 +108,12 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 
 再核對文件範例、各平台打包後的實際版本與發行流程；GitHub Release、App Store、Google Play 的版本不能由原始碼版號推定。
 
-目前待辦：在各平台完成 1.3.0 建置與套件版號驗證；發布後再把安裝指南、下載連結及支援矩陣的發布狀態更新到實際可取得的套件。
+## 1.3.0 待接手事項
+
+- **Windows 好打注音 Esc 待修。** 全新設定下，於記事本輸入完整句（例如 `su3cl3` →「你好」）後按 Esc，目前可能整句消失；若先輸入未完成注音，第一次 Esc 只清讀音，下一次又清整句。`KeyKeyEngine.cpp` 會把 `VK_ESCAPE` 交給共用 `OVIMSmartMandarin`；該模組的 Windows 預設 `ClearComposingTextWithEsc=true`，於已完成讀音的組字上清除 Manjusri，TSF 接著可能以 `endComposition(true)` 刪除文字範圍。對齊 macOS 與 Linux 的預設：候選窗開啟時 Esc 只關窗、未完成讀音時只清讀音、完成的整句仍留在組字狀態；若使用者明確設定 Esc 清句，須另外保留該選項的語意。補 Windows 引擎與 TSF 測試覆蓋三種狀態及設定 true/false，並在實機記事本驗證；先核對 Windows 編譯時 `WIN32` 條件與舊設定遷移，不能只改預設常數。對照見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。
+- **Linux 原生 Wayland 移窗仍需手動重驗。** `fix7` 的底線組字與避免失焦二次送字已通過隔離 X11／GTK 4 宿主及真實 GNOME Text Editor 路徑；以目前 1.3.0 套件在 GNOME 原生 Wayland 有組字時移動視窗，確認沒有內容加倍、藍底或漏字，並記錄 App、session 與輸入路徑。
+- **Windows ZIP 升級路徑仍需修。** NSIS 已改為不先以舊 DLL 執行 `regsvr32 /u`；ZIP 的 `Install.cmd` 仍沿用舊解除註冊流程。升級前應比照不中斷 profile 的流程，驗證不再出現與簡體中文詞典相關的系統通知。
+- **發行產物須與文件核對。** 本機安裝的 Linux `+fix8` 只供驗證；公開 1.3.0 的 `.deb` 檔名應由 tag 的 Linux CI 產生 `1.3.0-1+ubuntu24.04`，並重建對應 `SHA256SUMS`，不可重用本機 `+fix8` 校驗檔。確認 macOS、Windows 與 Linux Assets 實際齊全，再核對安裝指南與平台支援矩陣；iOS／Android 仍依各自商店流程。
 
 ## 專題文件
 

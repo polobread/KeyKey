@@ -1,27 +1,26 @@
 # chichi77 KeyKey for Linux
 
-Current source version: 1.3.0 (in development). The 1.2.9 Ubuntu package set
-remains the published release; the Smart Mandarin mode is part of the current
-source work.
+Version 1.3.0 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
+LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
+as 傳統注音, Cangjie, and Simplex. See the
+[Linux installation and usage guide](../../../LINUX_INSTALL.md) for the package
+set and setup steps.
 The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
-This directory contains the new native Linux implementation. It does not link
-or modify the legacy KeyKeyEngine or OpenVanilla frameworks. Linux 1.2.8
-supports Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, and amd64. See
-[release installation and limits](docs/linux-1.2.8-release.md).
+This directory contains the native Linux implementation. It does not link or
+modify the legacy KeyKeyEngine or OpenVanilla frameworks. The earlier 1.2.8
+release boundaries remain in the
+[1.2.8 release record](docs/linux-1.2.8-release.md).
 
-## Release features and development status
+## Version 1.3.0 features and verification
 
-Linux 1.2.8 phase one targets all behavior currently shipped by the Windows
-TSF frontend. Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin are therefore
-all in scope. The already implemented Cangjie, Simplex, and
-Traditional-to-Simplified slices remain available as extension points instead
-of being removed, although they do not block Windows parity. Bopomofo learning,
-dynamic frequency, and auto-correction are outside this phase because the
-Windows runtime does not provide them.
+The 1.2.8 phase established Traditional Bopomofo behavior across Standard,
+ETen, ETen 26-key, Hsu, and Hanyu Pinyin layouts, along with Cangjie, Simplex,
+and Traditional-to-Simplified output. Version 1.3.0 adds 好打注音 sentence
+composition and persistent candidate learning.
 
-The initial vertical slice provides:
+The Linux implementation provides:
 
 - a display-server-independent C++17 engine contract;
 - a persistent Bopomofo mode setting with 好打注音 as the first-run default
@@ -179,7 +178,7 @@ The initial vertical slice provides:
   mode-toggle Boolean options, and a nested pane containing 30
   associated-phrase collection checkboxes, exposed directly from the
   `chichi77 KeyKey Bopomofo` input method. The earlier comma-separated field is
-  hidden and migrated when an existing development configuration is loaded.
+  hidden and migrated when an earlier configuration is loaded.
 
 The engine now opens candidates as soon as an explicit tone is entered, and
 commits the highlighted candidate before starting a new reading when the next
@@ -195,9 +194,10 @@ that report Password or Sensitive capabilities. In the current GTK 3 X11 path,
 password purpose is stricter: Fcitx switches that input context to
 `keyboard-us` and rejects forcing the custom method back on.
 Further compatibility work includes IBus, physical monitor hotplug, more Apps
-and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. Local packages
-from development scripts remain test artifacts. The supported 1.2.8 package
-set and its verified boundaries are listed in the release notes.
+and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. The supported
+1.3.0 Ubuntu package set and setup steps are in the
+[Linux installation guide](../../../LINUX_INSTALL.md); the 1.2.8 release record
+preserves that version's verified boundaries.
 
 An Ubuntu 24.04.5 GNOME Wayland KVM guest now passes 20 typing and pointer
 cases across eight GTK 3/GTK 4/Qt 6 native Wayland and XWayland paths (160/160), each
@@ -238,7 +238,7 @@ CMake targets and install rules used by the development and package builds. On
 Ubuntu, install the required compiler, build system, and Fcitx headers first:
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev pkg-config
+sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
 cd Source/Loaders/Linux-IME
 ./configure
 make -j2
@@ -267,8 +267,7 @@ fcitx5 -r -d
 ```
 
 Then add `chichi77 KeyKey Bopomofo` with the normal Fcitx configuration tool.
-The existing Cangjie and Simplex registrations remain available as optional
-extension paths; they are regression-tested but do not block phase-one parity.
+The Cangjie and Simplex registrations remain available and regression-tested.
 Put the variables in the desktop session environment when
 Fcitx is started through D-Bus or the desktop; an unrelated terminal does not
 change an already-running Fcitx process.

@@ -2,16 +2,16 @@
 
 琦琦輸入法是 Windows 輸入法，安裝後從工作列或 **Win + Space** 選用，不會開啟獨立的打字視窗。本指南使用 1.3.0 的安裝精靈與設定介面；一般使用者不需要安裝開發工具或執行指令。
 
-目前 1.3.0 尚未提供正式下載，以下安裝步驟適用於已取得 1.3.0 安裝檔的使用者。已公開的 [v1.2.9 安裝包](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)使用不同畫面，請先確認手上的檔案版本。
+本指南適用於 **1.3.0**。安裝前請到[正式發布頁](https://github.com/polobread/KeyKey/releases/latest)確認發布版本與下載檔名都是 **1.3.0**，再依系統位元數選擇安裝檔。
 
 ## 1. 確認系統與安裝檔
 
 開啟 **開始 → 設定 → 系統 → 關於**，查看「系統類型」。1.3.0 以 Windows 10 起為目標；目前已在 Windows 11 x64 建置與測試，Windows 10 x64／x86 尚待實機驗證。
 
-- **64 位元 x64 Windows**：使用 `chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe` 安裝精靈。日後簽章的安裝檔會以 `setup.exe` 結尾。x64 套件同時包含 x64 與 x86 輸入法 DLL，可供 64 位元及 32 位元應用程式使用。
+- **64 位元 x64 Windows**：使用發布頁提供的 1.3.0 x64 安裝精靈；未簽署版檔名為 `chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`，簽章版以 `setup.exe` 結尾。x64 套件同時包含 x64 與 x86 輸入法 DLL，可供 64 位元及 32 位元應用程式使用。
 - **32 位元 x86 Windows**：使用 `chichi77-KeyKey-1.3.0-windows-x86.zip` 內的 `Install.cmd`；本頁的安裝精靈截圖只適用於 x64 EXE。
 
-目前的未簽署安裝檔可能引發 Windows 安全提示。先確認檔案來源與版本；不要為了安裝而關閉整台電腦的安全防護。自行建置與打包方式見 [BUILDING.md](BUILDING.md#windows-10-與-11)。
+未簽署安裝檔可能引發 Windows 安全提示。先確認檔案來源與版本；不要為了安裝而關閉整台電腦的安全防護。自行建置與打包方式見 [BUILDING.md](BUILDING.md#windows-10-與-11)。
 
 ## 2. 執行 x64 安裝精靈
 
