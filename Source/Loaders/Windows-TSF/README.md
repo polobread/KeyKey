@@ -1,6 +1,6 @@
 # 琦琦輸入法 Windows TSF frontend
 
-已發布 v1.2.9 的操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄 1.3.0 開發版的實作、建置與部署細節。
+Windows 1.3.0 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
 
 This directory contains the Windows 10 and 11 Text Services Framework (TSF)
 frontend. It is separate from `Windows-IMM`, so the existing macOS IMK target
@@ -41,8 +41,8 @@ reference and is not linked into this DLL.
 
 ## Screenshots
 
-These screenshots show the Windows 1.3.0 development build. The published
-v1.2.9 interface is documented in the [Windows installation guide](../../../WINDOWS_INSTALL.md).
+The [Windows installation guide](../../../WINDOWS_INSTALL.md) also shows the
+1.3.0 installer welcome and destination pages.
 After installation, select KeyKey under Traditional Chinese (Taiwan), Hong Kong,
 or Macao in the Windows taskbar input selector. The installer does not add
 Windows languages or change the default input method.

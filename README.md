@@ -68,7 +68,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 - [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
-- 已發布 v1.2.9 的 Windows 11 使用者請看[Windows 安裝與使用指南](WINDOWS_INSTALL.md)：下載 ZIP、執行安裝、切換輸入法與日常打字。1.3.0 開發版的建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
+- [Windows 1.3.0 安裝與使用指南](WINDOWS_INSTALL.md)說明新版安裝精靈、好打／傳統注音切換與設定畫面；1.3.0 尚未正式發布。自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
 - Ubuntu 24.04 使用者請看[Linux 安裝與使用指南](LINUX_INSTALL.md)：`v1.2.9` 套件安裝、Fcitx 5 設定與實際桌面截圖。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦注音》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939)安裝。
@@ -100,7 +100,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
 - [macOS App Store Connect 上架可行性與發行計畫](MACOS_APP_STORE_PLAN.md)：Apple
   現行政策阻礙、第三方輸入法經驗、商店外發行改善與未來上架 gate
-- [Windows v1.2.9 安裝與使用指南](WINDOWS_INSTALL.md)：已發布版本的安裝、啟用、選字、詞庫設定與解除安裝
+- [Windows 1.3.0 安裝與使用指南](WINDOWS_INSTALL.md)：新版安裝精靈、啟用、選字、設定與解除安裝
 - [Linux 安裝與使用指南](LINUX_INSTALL.md)：Ubuntu 24.04 的套件安裝、Fcitx 5 設定、注音選字與實拍圖
 - [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：Ubuntu 24.04 的原始碼安裝、啟用、試打與移除
 - [iOS 安裝與使用指南](IOS_INSTALL.md)：App Store 安裝、加入鍵盤、日常操作與實體鍵盤編輯器
@@ -203,7 +203,7 @@ iOS.
 
 - [Latest release](https://github.com/polobread/KeyKey/releases/latest) always opens the release currently marked Latest on GitHub.
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
-- Published v1.2.9 on Windows 11: [Windows installation guide (Traditional Chinese)](WINDOWS_INSTALL.md). For the 1.3.0 development build, see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md).
+- The [Windows 1.3.0 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the new installer, typing modes, and settings. Version 1.3.0 has not been published; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
 - Build and install the Ubuntu 24.04 version from source with `./configure`: [Linux source installation and usage guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md).
 - iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939).
@@ -242,7 +242,7 @@ complete output and signing details.
 ### Documentation
 
 - [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
-- [Windows v1.2.9 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): published package download, setup, typing, preferences, and removal
+- [Windows 1.3.0 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
 - [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play testing, keyboard setup, touch and hardware keyboard use
