@@ -16,6 +16,8 @@ if [ ! -s "$database_path" ]; then
     exit 1
 fi
 
+python3 "$cooker_dir/verify-smart-mandarin-db.py" "$database_path"
+
 if [ -n "${CI_BUILD_NUMBER:-}" ]; then
     case "$CI_BUILD_NUMBER" in
         *[!0-9]*)

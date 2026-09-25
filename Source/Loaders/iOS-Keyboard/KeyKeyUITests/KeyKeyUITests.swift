@@ -25,7 +25,8 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(version.label.hasPrefix("版本 "))
         XCTAssertNotEqual(version.label, "版本 —")
         for identifier in [
-            "open-hardware-editor", "open-system-settings", "supporter.purchase",
+            "open-hardware-editor", "open-input-method-settings", "open-user-phrases",
+            "open-system-settings", "supporter.purchase",
             "supporter.restore", "open-acknowledgements"
         ] {
             XCTAssertTrue(app.buttons[identifier].exists, "首頁缺少控制項：\(identifier)")
@@ -36,6 +37,59 @@ final class KeyKeyUITests: XCTestCase {
         #else
         XCTAssertFalse(app.buttons["open-input-field-test"].exists)
         #endif
+    }
+
+    func testAppSettingsEntryOpensAndPersistsCompositionMode() {
+        app = XCUIApplication()
+        app.launch()
+
+        let entry = app.buttons["open-input-method-settings"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 8))
+        entry.tap()
+        XCTAssertTrue(app.navigationBars["輸入法設定"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.segmentedControls["app-settings.candidate-color"].exists)
+        XCTAssertTrue(app.switches["app-settings.input-clicks"].exists)
+        XCTAssertTrue(app.switches["app-settings.collection.McBopomofo"].exists)
+        XCTAssertTrue(app.buttons["app-settings.user-phrases"].exists)
+        XCTAssertTrue(app.buttons["app-settings.reset-learning"].exists)
+
+        let mode = app.segmentedControls["app-settings.composition-mode"]
+        mode.buttons["傳統注音"].tap()
+        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
+        entry.tap()
+        XCTAssertTrue(mode.buttons["傳統注音"].isSelected)
+        mode.buttons["好打注音"].tap()
+    }
+
+    func testUserPhraseManagerOpensAndCreatesPhrase() {
+        app = XCUIApplication()
+        app.launch()
+
+        let manager = app.buttons["open-user-phrases"]
+        XCTAssertTrue(manager.waitForExistence(timeout: 8))
+        manager.tap()
+        XCTAssertTrue(app.navigationBars["好打注音自訂詞"].waitForExistence(timeout: 3))
+        let list = app.tables["user-phrases.list"]
+        XCTAssertTrue(list.exists)
+        let phrase = list.cells.containing(.staticText, identifier: "琦琦").firstMatch
+        if phrase.exists {
+            phrase.swipeLeft()
+            app.buttons["刪除"].tap()
+        }
+
+        app.buttons["user-phrases.add"].tap()
+        let text = app.textFields["user-phrases.text"]
+        let reading = app.textFields["user-phrases.reading"]
+        XCTAssertTrue(text.waitForExistence(timeout: 3))
+        text.tap()
+        text.typeText("琦琦")
+        reading.tap()
+        reading.typeText("su3cl3")
+        app.alerts["新增自訂詞"].buttons["儲存"].tap()
+        XCTAssertTrue(phrase.waitForExistence(timeout: 3))
+        phrase.swipeLeft()
+        app.buttons["刪除"].tap()
+        XCTAssertFalse(phrase.exists)
     }
 
     func testSmokeHardwareKeyboardEditorOpens() {
@@ -133,6 +187,7 @@ final class KeyKeyUITests: XCTestCase {
             XCTAssertTrue(app.buttons[action].isHittable)
         }
         XCTAssertTrue(app.buttons["hardware-editor.mode"].exists)
+        XCTAssertTrue(app.buttons["hardware-editor.composition-mode"].exists)
         XCTAssertTrue(app.buttons["hardware-editor.width"].exists)
         XCTAssertTrue(app.buttons["hardware-editor.symbols"].exists)
         XCTAssertTrue(app.buttons["hardware-editor.emoji"].exists)
@@ -278,6 +333,50 @@ final class KeyKeyUITests: XCTestCase {
         assertFrame(clear.frame, equals: portraitClearFrame, message: "橫式轉回直式的清除按鈕")
         assertFrame(copy.frame, equals: portraitCopyFrame, message: "橫式轉回直式的複製按鈕")
         assertFrame(share.frame, equals: portraitShareFrame, message: "橫式轉回直式的分享按鈕")
+    }
+
+    func testHardwareEditorModeWidthAndFunctionButtonsKeepSmartText() {
+        app = XCUIApplication()
+        app.launch()
+        let openEditor = app.buttons["open-hardware-editor"]
+        XCTAssertTrue(openEditor.waitForExistence(timeout: 8))
+        openEditor.tap()
+
+        let compositionMode = app.buttons["hardware-editor.composition-mode"]
+        XCTAssertTrue(compositionMode.waitForExistence(timeout: 3))
+        if !compositionMode.label.contains("好打注音") {
+            compositionMode.tap()
+            let smart = app.buttons["好打注音"]
+            XCTAssertTrue(smart.waitForExistence(timeout: 3))
+            smart.tap()
+        }
+
+        let output = app.textViews["hardware-editor.output"]
+        let mode = app.buttons["hardware-editor.mode"]
+        let width = app.buttons["hardware-editor.width"]
+        func typeReading(_ keys: String) {
+            for key in keys { app.typeKey(String(key), modifierFlags: []) }
+        }
+
+        typeReading("su3cl3")
+        mode.tap()
+        XCTAssertEqual(output.value as? String, "你好")
+
+        mode.tap()
+        typeReading("su3")
+        width.tap()
+        XCTAssertEqual(output.value as? String, "你好")
+        mode.tap()
+        XCTAssertEqual(output.value as? String, "你好你")
+
+        mode.tap()
+        typeReading("cl3")
+        app.buttons["hardware-editor.symbols"].tap()
+        XCTAssertEqual(output.value as? String, "你好你好")
+
+        typeReading("su3")
+        app.buttons["hardware-editor.emoji"].tap()
+        XCTAssertEqual(output.value as? String, "你好你好你")
     }
 
     func testHardwareKeyboardEditorLandscapeColumns() {
@@ -497,6 +596,7 @@ final class KeyKeyUITests: XCTestCase {
         guard selectKeyKeyKeyboard() else {
             throw XCTSkip(keyboardActivationFailureMessage)
         }
+        try selectCompositionMode("好打注音")
         let status = app.staticTexts["keyboard.status"]
         XCTAssertEqual(status.label, "標準注音")
 
@@ -513,25 +613,56 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["ㄋ"].tap()
         app.buttons["ㄧ"].tap()
         app.buttons["ˇ"].tap()
-        XCTAssertTrue(app.buttons.matching(
-            NSPredicate(format: "label BEGINSWITH '第 1 個候選，'")
-        ).firstMatch.waitForExistence(timeout: 3))
-        app.buttons.matching(
-            NSPredicate(format: "label BEGINSWITH '第 1 個候選，'")
-        ).firstMatch.tap()
-
-        // The base McBopomofo association for 你 starts with 們. Wait past the
-        // document-proxy callbacks so a transient candidate flash cannot pass.
-        let associated = app.buttons["第 1 個候選，們"]
-        XCTAssertTrue(associated.waitForExistence(timeout: 3))
-        Thread.sleep(forTimeInterval: 0.4)
-        XCTAssertTrue(associated.exists)
-        XCTAssertTrue(associated.isHittable)
-        XCTAssertEqual(field("default").value as? String, "你")
+        XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你" })
+        app.buttons["ㄏ"].tap()
+        app.buttons["ㄠ"].tap()
+        app.buttons["ˇ"].tap()
+        XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你好" })
+        app.buttons["ENTER"].tap()
+        XCTAssertEqual(field("default").value as? String, "你好")
         XCTAssertEqual(mode.frame.minX, stableModeFrame.minX, accuracy: 1)
         XCTAssertEqual(mode.frame.minY, stableModeFrame.minY, accuracy: 1)
         XCTAssertEqual(mode.frame.width, stableModeFrame.width, accuracy: 1)
         XCTAssertEqual(mode.frame.height, stableModeFrame.height, accuracy: 1)
+    }
+
+    func testTouchSmartHandoffCommitsTextWhenChangingKeyboard() throws {
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        output.tap()
+        guard selectKeyKeyKeyboard() else {
+            throw XCTSkip(keyboardActivationFailureMessage)
+        }
+        try selectCompositionMode("好打注音")
+
+        for syllable in ["fu/3", "ru84", "ul4", "fm4", "s83",
+                         "xu3", "j06", "sk7", "fm4", "c93"] {
+            for key in syllable {
+                let button = app.buttons[String(key)]
+                XCTAssertTrue(button.exists, "找不到注音鍵 \(key)")
+                button.tap()
+            }
+        }
+        XCTAssertTrue(waitForLayout {
+            (output.value as? String) == "請假要去哪裡玩呢去海"
+        })
+        XCTAssertTrue(app.staticTexts["keyboard.status"].exists)
+
+        app.buttons["BACKSPACE"].tap()
+        XCTAssertTrue(waitForLayout {
+            (output.value as? String) == "請假要去哪裡玩呢去"
+        })
+        for key in "c93" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout {
+            (output.value as? String) == "請假要去哪裡玩呢去海"
+        })
+
+        let nextKeyboard = try XCTUnwrap(nextKeyboardButton())
+        nextKeyboard.tap()
+        XCTAssertTrue(waitForLayout(timeout: 5) {
+            (output.value as? String) == "請假要去哪裡玩呢去海"
+        })
     }
 
     func testMultiCharacterAssociationsDoNotResizeKeyboard() throws {
@@ -540,6 +671,11 @@ final class KeyKeyUITests: XCTestCase {
         field("default").tap()
         guard selectKeyKeyKeyboard() else {
             throw XCTSkip(keyboardActivationFailureMessage)
+        }
+
+        try selectCompositionMode("傳統注音")
+        addTeardownBlock { [weak self] in
+            try? self?.selectCompositionMode("好打注音")
         }
 
         try selectOnlyPhraseCollection("anime")
@@ -571,6 +707,11 @@ final class KeyKeyUITests: XCTestCase {
         field("message").tap()
         guard selectKeyKeyKeyboard() else {
             throw XCTSkip(keyboardActivationFailureMessage)
+        }
+
+        try selectCompositionMode("傳統注音")
+        addTeardownBlock { [weak self] in
+            try? self?.selectCompositionMode("好打注音")
         }
 
         app.buttons["ㄋ"].tap()
@@ -622,6 +763,17 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(toggle.exists, "找不到關聯詞庫：\(identifier)")
         XCTAssertTrue(toggle.isHittable, "關聯詞庫不可操作：\(identifier)")
         toggle.tap()
+        app.buttons["完成"].tap()
+        XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 2))
+    }
+
+    private func selectCompositionMode(_ label: String) throws {
+        app.buttons["SETTINGS"].tap()
+        let control = app.segmentedControls["bopomofo-composition-mode"]
+        XCTAssertTrue(control.waitForExistence(timeout: 2), "找不到注音模式設定")
+        let option = control.buttons[label]
+        XCTAssertTrue(option.exists, "找不到注音模式：\(label)")
+        if option.value as? String != "1" { option.tap() }
         app.buttons["完成"].tap()
         XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 2))
     }

@@ -4,6 +4,15 @@
 "Simplex" = "简易";
 "Help" = "帮助";
 "Preferences..." = "偏好设置";
+"Edit User Phrases..." = "编辑自定义词…";
+"Unable to launch user phrase editor." = "无法打开自定义词编辑器。";
+"Reset Smart Phonetic Learning..." = "重设好打注音学习记录…";
+"Reset Smart Phonetic Learning?" = "要重设好打注音学习记录吗？";
+"This clears learned candidate choices and word relationships. Your custom phrases are kept." = "这会清除已学习的选字和相邻词关系，但会保留你的自定义词。";
+"Reset Learning" = "重设学习记录";
+"Cancel" = "取消";
+"Smart Phonetic learning was reset." = "好打注音学习记录已重设。";
+"Unable to reset Smart Phonetic learning." = "无法重设好打注音学习记录。";
 "About chichi77 KeyKey" = "关于 琦琦输入法";
 "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>" = "<h2>错误</h2><p>无法连接在线字典。</p></body></html>";
 "<h2>Not Found</h2><p>Unable to find results matching %@." = "<h2>找不到</h2><p>找不到匹配“%@”的项目。";

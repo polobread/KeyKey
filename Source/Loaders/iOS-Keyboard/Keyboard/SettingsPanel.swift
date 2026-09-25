@@ -4,8 +4,12 @@ import UIKit
 @MainActor
 protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>)
+    func settingsPanel(
+        _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
+    )
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
+    func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
 
@@ -22,20 +26,28 @@ final class SettingsPanel: UIView {
     private var enabled: Set<String>
     private var inputClicksEnabled: Bool
     private var candidateColor: CandidateColor
+    private var compositionMode: BopomofoCompositionMode
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
         items: ["紫", "綠", "黃", "紅"]
     )
+    private let compositionModeControl = UISegmentedControl(
+        items: BopomofoCompositionMode.allCases.map(\.displayName)
+    )
     private var switches: [String: UISwitch] = [:]
+    private let resetLearningButton = UIButton(configuration: .tinted())
+    private var resetConfirmation = false
 
     init(
         collections: [AssociatedPhraseStore.Collection], enabled: Set<String>,
-        inputClicksEnabled: Bool, candidateColor: CandidateColor
+        inputClicksEnabled: Bool, candidateColor: CandidateColor,
+        compositionMode: BopomofoCompositionMode
     ) {
         self.collections = collections
         self.enabled = enabled
         self.inputClicksEnabled = inputClicksEnabled
         self.candidateColor = candidateColor
+        self.compositionMode = compositionMode
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
@@ -48,7 +60,7 @@ final class SettingsPanel: UIView {
 
     private func buildInterface() {
         let title = UILabel()
-        title.text = "關聯詞詞庫"
+        title.text = "輸入法設定"
         title.font = .systemFont(ofSize: 16, weight: .semibold)
         title.textColor = Palette.primaryText
 
@@ -89,8 +101,11 @@ final class SettingsPanel: UIView {
         ])
 
         let root = UIStackView(arrangedSubviews: [
-            header, feedbackRow(), candidateColorRow(), statusLabel, bulk, scroll
+            header, compositionModeRow(), resetLearningButton, feedbackRow(), candidateColorRow(),
+            statusLabel, bulk, scroll
         ])
+        resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
+        resetLearningButton.addTarget(self, action: #selector(resetLearningTapped), for: .touchUpInside)
         root.axis = .vertical
         root.spacing = 8
         root.translatesAutoresizingMaskIntoConstraints = false
@@ -112,6 +127,18 @@ final class SettingsPanel: UIView {
         let button = UIButton(configuration: configuration)
         button.addTarget(self, action: action, for: .touchUpInside)
         return button
+    }
+
+    @objc private func resetLearningTapped() {
+        if !resetConfirmation {
+            resetConfirmation = true
+            resetLearningButton.setTitle("再按一次確認重設", for: .normal)
+            return
+        }
+        resetConfirmation = false
+        resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
+        statusLabel.text = delegate?.settingsPanelResetLearning(self) == true
+            ? "學習紀錄已重設，自訂詞保留。" : "無法重設學習紀錄。"
     }
 
     private func collectionRow(_ collection: AssociatedPhraseStore.Collection) -> UIView {
@@ -161,6 +188,29 @@ final class SettingsPanel: UIView {
 
         let row = UIStackView(arrangedSubviews: [labels, UIView(), toggle])
         row.alignment = .center
+        row.isLayoutMarginsRelativeArrangement = true
+        row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
+        return row
+    }
+
+    private func compositionModeRow() -> UIView {
+        let label = UILabel()
+        label.text = "注音模式"
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = Palette.primaryText
+
+        compositionModeControl.selectedSegmentIndex = BopomofoCompositionMode.allCases.firstIndex(
+            of: compositionMode
+        ) ?? 0
+        compositionModeControl.accessibilityIdentifier = "bopomofo-composition-mode"
+        compositionModeControl.accessibilityLabel = "注音模式"
+        compositionModeControl.addTarget(
+            self, action: #selector(compositionModeChanged(_:)), for: .valueChanged
+        )
+
+        let row = UIStackView(arrangedSubviews: [label, UIView(), compositionModeControl])
+        row.alignment = .center
+        row.spacing = 8
         row.isLayoutMarginsRelativeArrangement = true
         row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
         return row
@@ -218,6 +268,13 @@ final class SettingsPanel: UIView {
     @objc private func inputClicksToggled(_ sender: UISwitch) {
         inputClicksEnabled = sender.isOn
         delegate?.settingsPanel(self, didChangeInputClicksEnabled: inputClicksEnabled)
+    }
+
+    @objc private func compositionModeChanged(_ sender: UISegmentedControl) {
+        let modes = BopomofoCompositionMode.allCases
+        let index = min(max(sender.selectedSegmentIndex, 0), modes.count - 1)
+        compositionMode = modes[index]
+        delegate?.settingsPanel(self, didChangeCompositionMode: compositionMode)
     }
 
     @objc private func candidateColorChanged(_ sender: UISegmentedControl) {

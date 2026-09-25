@@ -3,9 +3,11 @@
 #include "keykey/linux_ime/associated_phrase_dictionary.h"
 #include "keykey/linux_ime/bopomofo_reading.h"
 #include "keykey/linux_ime/cin_dictionary.h"
+#include "keykey/linux_ime/smart_mandarin_store.h"
 
 #include <cstddef>
 #include <memory>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -52,6 +54,7 @@ struct KeyEvent {
     KeyModifier modifiers = KeyModifier::None;
     bool release = false;
     bool repeat = false;
+    bool capsLock = false;
 };
 
 struct EngineResult {
@@ -87,6 +90,13 @@ private:
     bool fullWidthMode_ = false;
     bool traditionalToSimplifiedMode_ = false;
     bool showingAssociatedPhrases_ = false;
+    std::vector<std::string> smartReadings_;
+    SmartComposition smartComposition_;
+    std::map<std::size_t, SmartSelection> smartOverrides_;
+    std::vector<SmartCandidate> smartCandidateOptions_;
+    std::size_t smartCursor_ = 0;
+    std::size_t smartCandidateIndex_ = 0;
+    bool showingSmartCandidates_ = false;
 };
 
 class Engine {
@@ -103,6 +113,9 @@ public:
                         traditionalToSimplifiedDictionary = nullptr,
                     std::shared_ptr<const AssociatedPhraseDictionary>
                         associatedPhraseDictionary = nullptr);
+    void setSmartMandarinStore(
+        std::shared_ptr<const SmartMandarinStore> store) noexcept;
+    void setSmartMandarinMode(bool enabled) noexcept;
 
     EngineResult processKey(InputContextState &context,
                             const KeyEvent &event) const;
@@ -113,6 +126,10 @@ public:
     void setRestrictBopomofoCandidatesToBig5(bool enabled) noexcept;
     EngineResult selectDisplayedCandidate(InputContextState &context,
                                           std::size_t displayedIndex) const;
+    EngineResult selectSmartCharacter(InputContextState &context,
+                                      std::size_t preeditCharacterIndex) const;
+    EngineResult finishSmartComposition(InputContextState &context) const;
+    EngineResult finishComposition(InputContextState &context) const;
     EngineResult snapshot(const InputContextState &context) const;
 
 private:
@@ -135,7 +152,13 @@ private:
     std::string outputText(const InputContextState &context,
                            const std::string &text) const;
     std::size_t maximumCodeLength() const noexcept;
-    std::string punctuationQueryKey(const KeyEvent &event) const;
+    std::string punctuationQueryKey(const KeyEvent &event,
+                                    bool includeOrdinary = false) const;
+    EngineResult processSmartKey(InputContextState &context,
+                                 const KeyEvent &event) const;
+    bool finishSmartReading(InputContextState &context,
+                            std::string &pendingCommit) const;
+    void rebuildSmartComposition(InputContextState &context) const;
 
     std::shared_ptr<const CinDictionary> dictionary_;
     std::shared_ptr<const CinDictionary> punctuationDictionary_;
@@ -147,6 +170,8 @@ private:
     InputMethod inputMethod_;
     BopomofoLayout bopomofoLayout_;
     bool restrictBopomofoCandidatesToBig5_ = false;
+    bool smartMandarinMode_ = false;
+    std::shared_ptr<const SmartMandarinStore> smartMandarinStore_;
 };
 
 } // namespace keykey::linux_ime

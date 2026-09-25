@@ -153,9 +153,9 @@ bool BPMFUserPhraseHelper::Import(OVSQLiteConnection* db, const string& filename
             int result = 0;
             result = db->execute("ATTACH DATABASE %Q AS export KEY %Q", cacheImportTempFile.c_str(), MANJUSRI_EXPORT_KEY);
             result = db->execute("DELETE FROM user_bigram_cache");
-            result = db->execute("INSERT INTO user_bigram_cache (qstring, previous, current, probability) SELECT qstring, previous, current, probability FROM export.user_bigram_cache");
+            result = db->execute("INSERT INTO user_bigram_cache (qstring, previous, current, probability) SELECT qstring, previous, current, probability FROM export.user_bigram_cache ORDER BY rowid");
             result = db->execute("DELETE FROM user_candidate_override_cache");
-            result = db->execute("INSERT INTO user_candidate_override_cache (qstring, current) SELECT qstring, current FROM export.user_candidate_override_cache");
+            result = db->execute("INSERT INTO user_candidate_override_cache (qstring, current) SELECT qstring, current FROM export.user_candidate_override_cache ORDER BY rowid");
             result = db->execute("DETACH DATABASE export");            
 			OVPathHelper::RemoveEverythingAtPath(cacheImportTempFile);
         }
@@ -181,7 +181,7 @@ bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db, const string& filename
         
     ofs << "MJSR version 1.0.0" << endl;
 
-    OVSQLiteStatement* select = db->prepare("SELECT * FROM user_unigrams");
+    OVSQLiteStatement* select = db->prepare("SELECT * FROM user_unigrams ORDER BY rowid");
     while (select->step() == SQLITE_ROW) {
         string qstring =  select->textOfColumn(0);
         string current = select->textOfColumn(1);
@@ -200,8 +200,8 @@ bool BPMFUserPhraseHelper::Export(OVSQLiteConnection* db, const string& filename
     db->execute("ATTACH DATABASE %Q AS export KEY %Q", cacheExportTempFile.c_str(), MANJUSRI_EXPORT_KEY);
     db->execute("CREATE TABLE export.user_bigram_cache (qstring, previous, current, probability)");
     db->execute("CREATE TABLE export.user_candidate_override_cache (qstring, current)");
-    db->execute("INSERT INTO export.user_bigram_cache (qstring, previous, current, probability) SELECT qstring, previous, current, probability FROM user_bigram_cache");
-    db->execute("INSERT INTO export.user_candidate_override_cache (qstring, current) SELECT qstring, current FROM user_candidate_override_cache");
+    db->execute("INSERT INTO export.user_bigram_cache (qstring, previous, current, probability) SELECT qstring, previous, current, probability FROM user_bigram_cache ORDER BY rowid");
+    db->execute("INSERT INTO export.user_candidate_override_cache (qstring, current) SELECT qstring, current FROM user_candidate_override_cache ORDER BY rowid");
     db->execute("DETACH DATABASE export");
     
     pair<char*, size_t> data = OVFileHelper::SlurpFile(cacheExportTempFile);

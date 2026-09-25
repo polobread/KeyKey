@@ -7,6 +7,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -20,10 +22,11 @@ final class BopomofoKeyboardView extends View {
         void onPress();
         void onKey(String key);
         void onCandidate(int displayedIndex);
+        void onSmartCell(int index);
         void onPage(int delta);
     }
 
-    private enum HitKind { KEY, CANDIDATE, PAGE }
+    private enum HitKind { KEY, CANDIDATE, PAGE, SMART_CELL, CANDIDATE_BLOCK }
 
     private static final class Hit {
         private final RectF bounds;
@@ -98,6 +101,9 @@ final class BopomofoKeyboardView extends View {
     private Mode mode = Mode.PORTRAIT;
     private List<String> candidates = List.of();
     private String reading = "";
+    private boolean smartMode;
+    private List<String> smartCells = List.of();
+    private int smartEditableCount;
     private BopomofoEngine.InputMode inputMode = BopomofoEngine.InputMode.BOPOMOFO;
     private boolean shifted;
     private boolean temporaryEnglish;
@@ -111,6 +117,9 @@ final class BopomofoKeyboardView extends View {
     private float downX;
     private float downY;
     private boolean downOnCandidate;
+    private boolean backspaceTouchStarted;
+    private final BackspaceRepeater backspaceRepeater =
+            new BackspaceRepeater(new Handler(Looper.getMainLooper()));
     private boolean keyPreviewEnabled = true;
     private Hit previewHit;
     private int portraitHeightPercent = KeyboardSizeSettings.DEFAULT_PERCENT;
@@ -142,6 +151,8 @@ final class BopomofoKeyboardView extends View {
 
     void setMode(Mode mode) {
         if (this.mode == mode) return;
+        backspaceRepeater.stop();
+        backspaceTouchStarted = false;
         this.mode = mode;
         previewHit = null;
         requestLayout();
@@ -171,12 +182,17 @@ final class BopomofoKeyboardView extends View {
         if (isTouchMode()) requestLayout();
     }
 
-    void setState(List<String> candidates, String reading, BopomofoEngine.InputMode inputMode,
+    void setState(List<String> candidates, String reading, boolean smartMode,
+                  List<String> smartCells, int smartEditableCount,
+                  BopomofoEngine.InputMode inputMode,
                   boolean shifted, boolean temporaryEnglish, boolean hardwareFullWidth,
                   boolean supportPromptVisible, int page, int pageCount,
                   int highlightedIndex, InputFieldPolicy fieldPolicy) {
         this.candidates = List.copyOf(candidates);
         this.reading = reading;
+        this.smartMode = smartMode;
+        this.smartCells = List.copyOf(smartCells);
+        this.smartEditableCount = smartEditableCount;
         this.inputMode = inputMode;
         this.shifted = shifted;
         this.temporaryEnglish = temporaryEnglish;
@@ -233,10 +249,14 @@ final class BopomofoKeyboardView extends View {
         float contentHeight = contentHeight();
         float candidateHeight = landscape ? contentHeight / 6f
                 : Math.max(dp(46), contentHeight * 0.15f);
-        drawCandidateStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
+        float top = candidateHeight;
+        if (smartMode) {
+            drawSmartCellStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
+        } else {
+            drawCandidateStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
+        }
 
         String[][] rows = inputRows();
-        float top = candidateHeight;
         float rowHeight = (contentHeight - top) / 5f;
         for (int row = 0; row < rows.length; row++) {
             drawEqualKeyRow(canvas, rows[row], 0, getWidth(), top + row * rowHeight,
@@ -244,6 +264,37 @@ final class BopomofoKeyboardView extends View {
         }
         drawWeightedKeyRow(canvas, FUNCTION_ROW, 0, getWidth(), top + 4 * rowHeight,
                 contentHeight);
+        if (smartMode && !candidates.isEmpty()) {
+            RectF overlay = new RectF(0, top, getWidth(), top + rowHeight);
+            canvas.drawRect(overlay, backgroundPaint);
+            hits.add(new Hit(new RectF(overlay), HitKind.CANDIDATE_BLOCK, "", -1));
+            drawCandidateStrip(canvas, overlay);
+        }
+    }
+
+    private void drawSmartCellStrip(Canvas canvas, RectF area) {
+        float cellWidth = area.width() / 11f;
+        for (int index = 0; index < 11; index++) {
+            RectF cell = new RectF(area.left + index * cellWidth + dp(2),
+                    area.top + dp(2), area.left + (index + 1) * cellWidth - dp(2),
+                    area.bottom - dp(2));
+            canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
+            if (index >= smartCells.size()) continue;
+            String value = smartCells.get(index);
+            textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
+            textPaint.setFakeBoldText(index < smartEditableCount);
+            float availableWidth = Math.max(1, cell.width() - dp(4));
+            float measuredWidth = textPaint.measureText(value);
+            if (measuredWidth > availableWidth) {
+                textPaint.setTextSize(Math.max(dp(8),
+                        textPaint.getTextSize() * availableWidth / measuredWidth));
+            }
+            canvas.drawText(value, cell.centerX(),
+                    textBaseline(cell, textPaint), textPaint);
+            if (index < smartEditableCount && !value.isEmpty()) {
+                hits.add(new Hit(new RectF(cell), HitKind.SMART_CELL, "", index));
+            }
+        }
     }
 
     private void drawHardware(Canvas canvas) {
@@ -613,16 +664,30 @@ final class BopomofoKeyboardView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN -> {
+                backspaceRepeater.stop();
                 downX = event.getX();
                 downY = event.getY();
                 Hit hit = findHit(downX, downY);
                 if (hit != null && listener != null) listener.onPress();
+                backspaceTouchStarted = hit != null && hit.kind() == HitKind.KEY
+                        && "BACKSPACE".equals(hit.key());
+                if (backspaceTouchStarted && listener != null) {
+                    listener.onKey("BACKSPACE");
+                    backspaceRepeater.start(() -> {
+                        if (listener != null) listener.onKey("BACKSPACE");
+                    });
+                }
                 downOnCandidate = hit != null && hit.kind() == HitKind.CANDIDATE;
                 previewHit = canPreview(hit) ? hit : null;
                 if (previewHit != null) invalidate();
                 return true;
             }
             case MotionEvent.ACTION_MOVE -> {
+                if (backspaceTouchStarted) {
+                    Hit hit = findHit(event.getX(), event.getY());
+                    if (hit == null || hit.kind() != HitKind.KEY
+                            || !"BACKSPACE".equals(hit.key())) backspaceRepeater.stop();
+                }
                 if (previewHit != null
                         && !previewHit.bounds().contains(event.getX(), event.getY())) {
                     previewHit = null;
@@ -631,7 +696,13 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_UP -> {
+                backspaceRepeater.stop();
                 clearKeyPreview();
+                if (backspaceTouchStarted) {
+                    backspaceTouchStarted = false;
+                    performClick();
+                    return true;
+                }
                 float distance = event.getX() - downX;
                 if (downOnCandidate && Math.abs(distance) > dp(38)) {
                     if (listener != null) listener.onPage(distance < 0 ? 1 : -1);
@@ -642,9 +713,11 @@ final class BopomofoKeyboardView extends View {
                 if (hit != null && hit.bounds().contains(downX, downY) && listener != null) {
                     if (hit.kind() == HitKind.CANDIDATE) {
                         listener.onCandidate(hit.candidateIndex());
+                    } else if (hit.kind() == HitKind.SMART_CELL) {
+                        listener.onSmartCell(hit.candidateIndex());
                     } else if (hit.kind() == HitKind.PAGE) {
                         listener.onPage(hit.candidateIndex());
-                    } else {
+                    } else if (hit.kind() == HitKind.KEY) {
                         listener.onKey(hit.key());
                     }
                 }
@@ -652,6 +725,8 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_CANCEL -> {
+                backspaceRepeater.stop();
+                backspaceTouchStarted = false;
                 downOnCandidate = false;
                 clearKeyPreview();
                 return true;
@@ -661,13 +736,23 @@ final class BopomofoKeyboardView extends View {
     }
 
     @Override
+    protected void onDetachedFromWindow() {
+        backspaceRepeater.stop();
+        backspaceTouchStarted = false;
+        super.onDetachedFromWindow();
+    }
+
+    @Override
     public boolean performClick() {
         super.performClick();
         return true;
     }
 
     private Hit findHit(float x, float y) {
-        for (Hit hit : hits) if (hit.bounds().contains(x, y)) return hit;
+        for (int index = hits.size() - 1; index >= 0; index--) {
+            Hit hit = hits.get(index);
+            if (hit.bounds().contains(x, y)) return hit;
+        }
         return null;
     }
 

@@ -242,6 +242,7 @@ $resolvedX86BuildDirectory = (Resolve-Path -LiteralPath $X86BuildDirectory).Path
 $x64DllPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyTsf.dll'
 $x86DllPath = Resolve-BuildArtifact $resolvedX86BuildDirectory 'KeyKeyTsf.dll'
 $settingsPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeySettings.exe'
+$settingsBackendPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeySettingsBackend.dll'
 $databasePath = Resolve-BuildArtifact $resolvedBuildDirectory 'Databases\KeyKey.db'
 Assert-PeMachine -FilePath $x64DllPath -ExpectedMachine 0x8664 `
     -Description 'The x64 TSF DLL'
@@ -249,6 +250,8 @@ Assert-PeMachine -FilePath $x86DllPath -ExpectedMachine 0x014C `
     -Description 'The x86 TSF DLL'
 Assert-PeMachine -FilePath $settingsPath -ExpectedMachine 0x8664 `
     -Description 'The settings executable'
+Assert-PeMachine -FilePath $settingsBackendPath -ExpectedMachine 0x8664 `
+    -Description 'The settings backend'
 $resolvedMakensis = Resolve-Makensis -RequestedPath $MakensisPath
 Assert-MakensisVersion -ToolPath $resolvedMakensis `
     -RequiredVersion $requiredNsisVersion
@@ -261,6 +264,20 @@ while ($versionParts.Count -lt 4) {
     $versionParts += 0
 }
 $productVersion = $versionParts[0..3] -join '.'
+
+$fingerprintParts = @($x64DllPath, $x86DllPath, $settingsPath, $settingsBackendPath,
+    $databasePath, (Join-Path $PSScriptRoot 'Packaging\Store-Installer.nsi')) | ForEach-Object {
+    (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash
+}
+$sha256 = [Security.Cryptography.SHA256]::Create()
+try {
+    $digest = $sha256.ComputeHash([Text.Encoding]::ASCII.GetBytes(
+        ($fingerprintParts -join '')))
+}
+finally { $sha256.Dispose() }
+$payloadFingerprint = [BitConverter]::ToString($digest).Replace('-', '').Substring(0, 12).ToLowerInvariant()
+$localTestSuffix = if ($UnsignedTest) { "-test-$payloadFingerprint" } else { '' }
+$installSubdirectory = "$Version$localTestSuffix"
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $packagingDirectory = Join-Path $PSScriptRoot 'Packaging'
@@ -301,9 +318,11 @@ try {
     $stagedX64Dll = Join-Path $payloadDirectory 'KeyKeyTsf_x64.dll'
     $stagedX86Dll = Join-Path $payloadDirectory 'KeyKeyTsf_x86.dll'
     $stagedSettings = Join-Path $payloadDirectory 'KeyKeySettings.exe'
+    $stagedSettingsBackend = Join-Path $payloadDirectory 'KeyKeySettingsBackend.dll'
     Copy-Item -LiteralPath $x64DllPath -Destination $stagedX64Dll
     Copy-Item -LiteralPath $x86DllPath -Destination $stagedX86Dll
     Copy-Item -LiteralPath $settingsPath -Destination $stagedSettings
+    Copy-Item -LiteralPath $settingsBackendPath -Destination $stagedSettingsBackend
     Copy-Item -LiteralPath $databasePath -Destination $databaseDirectory
 
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'README.md') `
@@ -325,7 +344,7 @@ try {
         -Destination $licenseDirectory
 
     if (-not $UnsignedTest) {
-        $peFiles = @($stagedX64Dll, $stagedX86Dll, $stagedSettings)
+        $peFiles = @($stagedX64Dll, $stagedX86Dll, $stagedSettings, $stagedSettingsBackend)
         Invoke-SignFiles -FilePath $peFiles -ToolPath $resolvedSignTool `
             -Thumbprint $normalizedThumbprint `
             -Rfc3161TimestampUrl $TimestampUrl `
@@ -340,8 +359,11 @@ try {
     }
     $makensisArguments = @(
         '/V4',
+        '/INPUTCHARSET', 'UTF8',
         "/DVERSION=$Version",
         "/DPRODUCT_VERSION=$productVersion",
+        "/DINSTALL_SUBDIRECTORY=$installSubdirectory",
+        "/DPAYLOAD_FINGERPRINT=$payloadFingerprint",
         "/DPUBLISHER=$Publisher",
         "/DPAYLOAD_DIR=$payloadDirectory",
         "/DLICENSE_DIR=$licenseDirectory",

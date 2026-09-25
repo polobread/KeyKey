@@ -64,6 +64,14 @@ jobs:
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           "platforms;android-36.1" "build-tools;36.0.0"
 
+      - name: Cook the Smart Mandarin database
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential python3 ruby ruby-dev ruby-sqlite3 sqlite3
+          make -C Source/Distributions/Takao/DatabaseCooker
+
       - name: Restore upload key
         shell: bash
         env:
@@ -99,9 +107,12 @@ jobs:
 
       - name: Verify signed AAB
         shell: bash
-        run: >-
-          jarsigner -verify
-          Source/Loaders/Android-IME/app/build/outputs/bundle/release/app-release.aab
+        run: |
+          bundle=Source/Loaders/Android-IME/app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify "$bundle"
+          unzip -p "$bundle" base/assets/KeyKey.db > "$RUNNER_TEMP/KeyKey-android.db"
+          python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
+            "$RUNNER_TEMP/KeyKey-android.db"
 
       - name: Upload to Google Play internal testing
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5

@@ -5,6 +5,8 @@
 #include <new>
 
 #include "Guids.h"
+#include "FrontendSettings.h"
+#include "KeyKeyEngine.h"
 #include "TextService.h"
 
 namespace KeyKey::WindowsTsf {
@@ -14,6 +16,8 @@ constexpr UINT kMenuToggleLanguage = 1;
 constexpr UINT kMenuHalfWidth = 2;
 constexpr UINT kMenuFullWidth = 3;
 constexpr UINT kMenuSettings = 4;
+constexpr UINT kMenuSmartMandarin = 11;
+constexpr UINT kMenuTraditionalMandarin = 12;
 
 HICON CreateLabelIcon(const wchar_t* label, COLORREF background) {
     HDC screen = GetDC(nullptr);
@@ -153,6 +157,19 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
         AppendMenuW(menu, MF_STRING, kMenuToggleLanguage,
                     service_->isChineseMode() ? L"切換至英文" : L"切換至中文注音");
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(menu, MF_STRING | MF_GRAYED, 0, L"輸入法");
+        const std::string selectedMethod = CurrentInputMethod();
+        if (IsInputMethodVisible("SmartMandarin")) {
+            AppendMenuW(menu, MF_STRING |
+                (selectedMethod == "SmartMandarin" ? MF_CHECKED : 0),
+                kMenuSmartMandarin, L"好打注音");
+        }
+        if (IsInputMethodVisible("TraditionalMandarin")) {
+            AppendMenuW(menu, MF_STRING |
+                (selectedMethod == "TraditionalMandarin" ? MF_CHECKED : 0),
+                kMenuTraditionalMandarin, L"傳統注音");
+        }
+        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
         AppendMenuW(menu, MF_STRING | (!service_->isFullWidthMode() ? MF_CHECKED : 0),
                     kMenuHalfWidth, L"半形");
         AppendMenuW(menu, MF_STRING | (service_->isFullWidthMode() ? MF_CHECKED : 0),
@@ -187,6 +204,28 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
         service_->isChineseMode() ? L"切換至英文" : L"切換至中文注音",
         service_->isChineseMode() ? 5 : 7, nullptr);
     if (FAILED(result)) return result;
+    result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr,
+                               nullptr, 0, nullptr);
+    if (FAILED(result)) return result;
+    result = menu->AddMenuItem(0, TF_LBMENUF_GRAYED, nullptr, nullptr,
+                               L"輸入法", 3, nullptr);
+    if (FAILED(result)) return result;
+    const std::string selectedMethod = CurrentInputMethod();
+    if (IsInputMethodVisible("SmartMandarin")) {
+        result = menu->AddMenuItem(kMenuSmartMandarin,
+            selectedMethod == "SmartMandarin" ? TF_LBMENUF_CHECKED : 0,
+            nullptr, nullptr, L"好打注音", 4, nullptr);
+        if (FAILED(result)) return result;
+    }
+    if (IsInputMethodVisible("TraditionalMandarin")) {
+        result = menu->AddMenuItem(kMenuTraditionalMandarin,
+            selectedMethod == "TraditionalMandarin" ? TF_LBMENUF_CHECKED : 0,
+            nullptr, nullptr, L"傳統注音", 4, nullptr);
+        if (FAILED(result)) return result;
+    }
+    result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr,
+                               nullptr, 0, nullptr);
+    if (FAILED(result)) return result;
     result = menu->AddMenuItem(kMenuHalfWidth,
                                service_->isFullWidthMode() ? 0 : TF_LBMENUF_CHECKED,
                                nullptr, nullptr, L"半形", 2, nullptr);
@@ -204,6 +243,8 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
 
 STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
     if (id == kMenuToggleLanguage) service_->toggleChineseMode();
+    if (id == kMenuSmartMandarin) service_->selectInputMethod("SmartMandarin");
+    if (id == kMenuTraditionalMandarin) service_->selectInputMethod("TraditionalMandarin");
     if (id == kMenuHalfWidth && service_->isFullWidthMode())
         service_->toggleFullWidthMode();
     if (id == kMenuFullWidth && !service_->isFullWidthMode())

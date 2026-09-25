@@ -22,6 +22,7 @@ class TextService final : public ITfTextInputProcessorEx,
                           public ITfTextEditSink,
                           public ITfThreadMgrEventSink,
                           public ITfCompartmentEventSink,
+                          public ITfDisplayAttributeProvider,
                           public ITfFunctionProvider,
                           public ITfFnConfigure {
 public:
@@ -64,6 +65,11 @@ public:
     // ITfCompartmentEventSink
     STDMETHODIMP OnChange(REFGUID guid) override;
 
+    // ITfDisplayAttributeProvider
+    STDMETHODIMP EnumDisplayAttributeInfo(IEnumTfDisplayAttributeInfo** items) override;
+    STDMETHODIMP GetDisplayAttributeInfo(REFGUID guid,
+                                          ITfDisplayAttributeInfo** info) override;
+
     // ITfFunctionProvider
     STDMETHODIMP GetType(GUID* guid) override;
     STDMETHODIMP GetDescription(BSTR* description) override;
@@ -76,10 +82,13 @@ public:
     HRESULT processKey(TfEditCookie editCookie, ITfContext* context,
                        const KeyEvent& event, bool* handled);
     HRESULT terminateComposition(TfEditCookie editCookie);
+    HRESULT commitCompositionForModeSwitch(TfEditCookie editCookie,
+                                           ITfContext* context);
     bool isChineseMode() const noexcept { return chineseMode_; }
     bool isFullWidthMode() const noexcept { return fullWidthMode_; }
     void toggleChineseMode();
     void toggleFullWidthMode();
+    bool selectInputMethod(const char* identifier);
     HRESULT openSettings(HWND parent = nullptr) const;
 
 private:
@@ -111,6 +120,7 @@ private:
     HRESULT commitText(TfEditCookie editCookie, ITfContext* context,
                        const std::wstring& text);
     HRESULT endComposition(TfEditCookie editCookie, bool clearText);
+    bool requestCommitComposition();
     void abandonComposition();
     void updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
                                const EngineResult& result);
@@ -124,12 +134,14 @@ private:
     DWORD inputModeCookie_ = TF_INVALID_COOKIE;
     DWORD conversionModeCookie_ = TF_INVALID_COOKIE;
     DWORD textEditCookie_ = TF_INVALID_COOKIE;
+    TfGuidAtom compositionDisplayAttributeAtom_ = TF_INVALID_GUIDATOM;
     bool chineseMode_ = true;
     bool fullWidthMode_ = false;
     bool shiftTogglePending_ = false;
     DWORD shiftPressedAt_ = 0;
     bool candidateActive_ = false;
     bool endingComposition_ = false;
+    bool pendingModeCommit_ = false;
     Microsoft::WRL::ComPtr<ITfComposition> composition_;
     Microsoft::WRL::ComPtr<ITfContext> compositionContext_;
     Microsoft::WRL::ComPtr<ITfContext> textEditContext_;

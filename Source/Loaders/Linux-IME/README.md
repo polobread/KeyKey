@@ -1,29 +1,66 @@
 # chichi77 KeyKey for Linux
 
-Current source version: 1.2.9 (in development). The documented 1.2.8
-Ubuntu package set remains the published release; 1.2.9 packages have not
-been released or accepted yet.
+Version 1.3.0 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
+LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
+as 傳統注音, Cangjie, and Simplex. See the
+[Linux installation and usage guide](../../../LINUX_INSTALL.md) for the package
+set and setup steps.
 The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
-This directory contains the new native Linux implementation. It does not link
-or modify the legacy KeyKeyEngine or OpenVanilla frameworks. Linux 1.2.8
-supports Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, and amd64. See
-[release installation and limits](docs/linux-1.2.8-release.md).
+This directory contains the native Linux implementation. It does not link or
+modify the legacy KeyKeyEngine or OpenVanilla frameworks. The earlier 1.2.8
+release boundaries remain in the
+[1.2.8 release record](docs/linux-1.2.8-release.md).
 
-## Release features and development status
+## Version 1.3.0 features and verification
 
-Linux 1.2.8 phase one targets all behavior currently shipped by the Windows
-TSF frontend. Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin are therefore
-all in scope. The already implemented Cangjie, Simplex, and
-Traditional-to-Simplified slices remain available as extension points instead
-of being removed, although they do not block Windows parity. Bopomofo learning,
-dynamic frequency, and auto-correction are outside this phase because the
-Windows runtime does not provide them.
+The 1.2.8 phase established Traditional Bopomofo behavior across Standard,
+ETen, ETen 26-key, Hsu, and Hanyu Pinyin layouts, along with Cangjie, Simplex,
+and Traditional-to-Simplified output. Version 1.3.0 adds 好打注音 sentence
+composition and persistent candidate learning.
 
-The initial vertical slice provides:
+The Linux implementation provides:
 
 - a display-server-independent C++17 engine contract;
+- a persistent Bopomofo mode setting with 好打注音 as the first-run default
+  and 傳統注音 as the alternate. Smart mode composes multiple readings with
+  the same unigram/bigram model used by macOS, commits with Enter, and lets
+  Space or Down open candidates at the cursor. Clicking a composed character
+  opens its candidates in clients that send Fcitx preedit click events.
+  While candidates are open, Down moves the highlight and Enter replaces the
+  selected word without committing the sentence; another Enter commits it.
+  Left/Right/Home/End move within the composition, and Backspace/Delete edit
+  readings there. Completing the tenth syllable commits the first full word
+  segment while the remaining sentence stays in preedit. A learned single
+  character does not split a visible dictionary word at the eviction boundary,
+  and the following word stays fixed while the buffer shifts. Switching input
+  methods or Chinese/English mode finishes valid readings and commits the
+  visible composition; an unmatched partial reading remains literal. The model is built from the
+  repository's source lexicons and corpora during package creation. The current
+  2,300-article corpus produces 114,235 unigrams and 885,627 bigrams, matching
+  the macOS model. Existing
+  configurations without a mode choice also use 好打注音;
+- 好打注音 candidate panels own editing keys until selection or Escape.
+  Home/End address the full candidate list; horizontal arrows follow the panel
+  layout. With an unfinished reading, Escape cancels only that reading and
+  Delete preserves the following text. Completed sentences survive Escape.
+  Preedit click positions use Unicode character indexes; opening candidates
+  for another character resets the page. Changing the composition mode or
+  keyboard layout finishes the old composition before using the new setting.
+  See [the cross-platform review](docs/smart-mandarin-platform-review.md) for
+  tested behavior and remaining platform differences;
+- 好打注音 stores custom phrases and learned candidate choices in
+  `$XDG_DATA_HOME/chichi77-keykey/smart-mandarin-user.db` (or
+  `~/.local/share/chichi77-keykey/smart-mandarin-user.db`). Candidate choices
+  and adjacent-word preferences survive Fcitx restarts. Manage custom phrases
+  with `keykey-smart-phrases list`,
+  `keykey-smart-phrases add 詞語 'ㄘˊ ㄩˇ'`, and
+  `keykey-smart-phrases remove 詞語 'ㄘˊ ㄩˇ'`.
+  `keykey-smart-phrases reset-learning` clears learned choices while preserving
+  custom phrases. Each Chinese character needs one space-separated reading;
+- the persistent user database is private to the current Linux user and is
+  separate from the packaged, read-only language model;
 - a strict CIN reader using the repository's read-only input tables;
 - isolated state for each input context;
 - Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin Bopomofo layouts, plus
@@ -36,7 +73,8 @@ The initial vertical slice provides:
   including after closing candidates, while Escape cancels the complete reading;
   empty-state edit keys pass through to the application. An explicit Bopomofo
   tone immediately opens candidates, matching the Windows runtime;
-- an optional Bopomofo Big5-HKSCS candidate filter that preserves source order;
+- an optional Bopomofo Big5-HKSCS candidate filter for readings and symbols
+  that preserves source order;
 - a native associated-phrase parser for the McBopomofo base and all 29 bundled
   category collections, with source-order merge, deduplication, filtering,
   Shift+1–9 suffix selection, first-run base default, an all-disabled state,
@@ -48,8 +86,9 @@ The initial vertical slice provides:
   reading or candidate list;
 - a per-input-context Chinese/English mode with compact Fcitx status labels,
   toggled by `Ctrl+\` by default or by a bare Shift tap within 300 ms. Entering
-  English abandons the active composition; half-width printable keys pass to
-  the application, while full-width ASCII remains available;
+  English confirms the highlighted Traditional candidate or preserves its raw
+  unfinished reading; Smart mode finishes the current composition. Half-width
+  printable keys pass to the application, while full-width ASCII remains available;
 - one loadable Fcitx 5 addon with Bopomofo, Cangjie, and Simplex registrations;
 - default-enabled typing-error feedback using the XDG `bell-window-system`
   event sound, with a Fcitx-native option to disable it;
@@ -57,6 +96,7 @@ The initial vertical slice provides:
   round-trip coverage for more than 1,490 real Bopomofo readings per symbolic
   layout, representative Hanyu Pinyin initials/finals/tones, and punctuation
   shortcut/list behavior;
+- an X11 GTK 3 case for Smart Mandarin `你好` composition and Enter commit;
 - an installed-package X11 E2E test that sends physical key events into real
   GTK 3, GTK 4, and Qt 6 editors; all three verify the Standard Bopomofo T01
   preedit/commit path to `中` and all five layouts with all
@@ -72,11 +112,11 @@ The initial vertical slice provides:
   navigation → `妐`, and a real pointer click on the expanded vertical Fcitx
   candidate window's second row → `鐘`; GTK 4 and Qt 6 additionally verify the
   Windows-parity horizontal-key flow through Home/End, PageUp/PageDown,
-  Left/Right paging, Space paging, Down highlight, and Enter → `妐`;
+  Left/Right highlight, Space paging, and Enter → `妐`;
   all three toolkits verify `Shift+Space` full-width input → `Ａ！～　`, while GTK 3
   additionally covers Big-5 filtering of `ㄝˋ` candidates → `𤦩`, plus
   all three toolkits verify Chinese/English switching by `Ctrl+\` and a short Shift tap, including
-  composition cancellation, Caps Lock, English full-width input, long-Shift
+  composition preservation, Caps Lock, English full-width input, long-Shift
   rejection, disabled-shortcut pass-through, and Traditional-to-Simplified
   output `臺灣` → `台湾`; a disabled shortcut lets the client commit active
   preedit, producing GTK 3 `ㄓ翁` versus GTK 4 `翁ㄓ` because of their insertion
@@ -102,8 +142,8 @@ The initial vertical slice provides:
   phrases, and confirms a read-only editor stays unchanged after a complete key
   sequence, plus `Ctrl+0` symbol-list
   keyboard selection → `，` and a real first-row pointer selection followed by
-  `!` → `，!`, plus GTK 3/GTK 4/Qt 6 associated-phrase default `今` → `今天`,
-  `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺!`; all three
+  `!` → `，！`, plus GTK 3/GTK 4/Qt 6 associated-phrase default `今` → `今天`,
+  `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺！`; all three
   also verify migration from the earlier comma-separated setting and a Fcitx
   D-Bus settings write followed by process restart, readback, and typing with
   the persisted selection. A sixth GTK 3 flow
@@ -138,7 +178,7 @@ The initial vertical slice provides:
   mode-toggle Boolean options, and a nested pane containing 30
   associated-phrase collection checkboxes, exposed directly from the
   `chichi77 KeyKey Bopomofo` input method. The earlier comma-separated field is
-  hidden and migrated when an existing development configuration is loaded.
+  hidden and migrated when an earlier configuration is loaded.
 
 The engine now opens candidates as soon as an explicit tone is entered, and
 commits the highlighted candidate before starting a new reading when the next
@@ -154,9 +194,10 @@ that report Password or Sensitive capabilities. In the current GTK 3 X11 path,
 password purpose is stricter: Fcitx switches that input context to
 `keyboard-us` and rejects forcing the custom method back on.
 Further compatibility work includes IBus, physical monitor hotplug, more Apps
-and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. Local packages
-from development scripts remain test artifacts. The supported 1.2.8 package
-set and its verified boundaries are listed in the release notes.
+and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. The supported
+1.3.0 Ubuntu package set and setup steps are in the
+[Linux installation guide](../../../LINUX_INSTALL.md); the 1.2.8 release record
+preserves that version's verified boundaries.
 
 An Ubuntu 24.04.5 GNOME Wayland KVM guest now passes 20 typing and pointer
 cases across eight GTK 3/GTK 4/Qt 6 native Wayland and XWayland paths (160/160), each
@@ -197,7 +238,7 @@ CMake targets and install rules used by the development and package builds. On
 Ubuntu, install the required compiler, build system, and Fcitx headers first:
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev pkg-config
+sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
 cd Source/Loaders/Linux-IME
 ./configure
 make -j2
@@ -226,8 +267,7 @@ fcitx5 -r -d
 ```
 
 Then add `chichi77 KeyKey Bopomofo` with the normal Fcitx configuration tool.
-The existing Cangjie and Simplex registrations remain available as optional
-extension paths; they are regression-tested but do not block phase-one parity.
+The Cangjie and Simplex registrations remain available and regression-tested.
 Put the variables in the desktop session environment when
 Fcitx is started through D-Bus or the desktop; an unrelated terminal does not
 change an already-running Fcitx process.

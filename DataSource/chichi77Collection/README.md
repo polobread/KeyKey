@@ -37,3 +37,11 @@ license, including original selection, classification, and arrangement where
 copyrightable. No exclusive rights are claimed in common expressions, facts,
 public-domain material, or other uncopyrightable content, and no trademark rights
 are granted.
+
+These collections are built for categorized associated-phrase lookup. They are
+not enabled as the core Smart Mandarin segmentation vocabulary. The reproducible
+experiment in `../AISyntheticBigram/analyze-ai-lexicon-impact.py` found that
+loading all 29 collections slightly reduced held-out general-text bigram
+coverage because new words and readings changed segmentation. In particular,
+the anime collection contains proper names together with work-title fragments
+and ordinary phrases, so it remains opt-in pending a dedicated review.

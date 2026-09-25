@@ -4,10 +4,9 @@ import UIKit
 /// The extension's entry point. It owns the engine, renders through
 /// `KeyboardView`, and is the only place that touches the document.
 ///
-/// The controller keeps the Bopomofo reading as marked text in the host field.
-/// `UITextDocumentProxy` gained that API in iOS 13, so it is available for the
-/// project's iOS 17 baseline. The keyboard status line remains a fallback
-/// visual cue while candidates are shown.
+/// Touch Smart Mandarin mirrors completed characters as ordinary host text so
+/// the document keeps them if iOS dismisses the keyboard without a callback.
+/// Other Bopomofo modes use marked text in the host field.
 final class KeyboardViewController: UIInputViewController {
     private var engine: BopomofoEngine?
     private var loadFailure: String?
@@ -15,32 +14,48 @@ final class KeyboardViewController: UIInputViewController {
     private var statusOverride: String?
     private var heightConstraint: NSLayoutConstraint?
     private var phraseStore: AssociatedPhraseStore?
+    private var smartUserData: SmartMandarinUserData?
     private var collections: [AssociatedPhraseStore.Collection] = []
-    private let phraseSettings = PhraseSettings()
-    private let candidateColorSettings = CandidateColorSettings()
+    private let sharedDefaults = UserDefaults(
+        suiteName: KeyboardPreferenceStore.appGroupIdentifier
+    )
+    private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
+    private lazy var candidateColorSettings = CandidateColorSettings(sharedDefaults: sharedDefaults)
+    private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
+        sharedDefaults: sharedDefaults
+    )
+    private lazy var clickSettings = KeyboardClickSettings(sharedDefaults: sharedDefaults)
+    private lazy var learningResetRequest = KeyboardLearningResetRequest(
+        sharedDefaults: sharedDefaults
+    )
     private let supporterState = SupporterState()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
     private var markedReadingUpdateGeneration: UInt = 0
     private var activeDocumentIdentifier: UUID?
     private var hasMarkedText = false
+    private var touchHostText = TouchSmartHostTextState()
     private var fieldPolicy = InputFieldPolicy.default
     private var fieldPolicyUnlocked = false
     private var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
-    private var candidateColor = CandidateColorSettings().color
-    private var inputClicksEnabled = UserDefaults.standard.object(
-        forKey: KeyboardPreferences.inputClicksEnabled
-    ) as? Bool ?? true
+    private var candidateColor: CandidateColor = .purple
+    private var inputClicksEnabled = true
 
     override func viewDidLoad() {
         super.viewDidLoad()
         supporterState.recordFirstUse()
         loadEngine()
+        candidateColor = candidateColorSettings.color
+        inputClicksEnabled = clickSettings.enabled
+        _ = learningResetRequest.applyIfNeeded(to: smartUserData)
 
         // iPad draws no globe row of its own, so the keyboard has to carry the
         // key or there is no way to leave it.
         let keyboard = KeyboardView(needsInputModeSwitch: needsInputModeSwitchKey)
         keyboard.delegate = self
+        keyboard.inputModeSwitchButton?.addTarget(
+            self, action: #selector(commitBeforeInputModeSwitch), for: .touchDown
+        )
         keyboard.inputModeSwitchButton?.addTarget(
             self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents
         )
@@ -81,7 +96,24 @@ final class KeyboardViewController: UIInputViewController {
             fieldPolicyUnlocked = false
             abandonDocumentComposition()
         }
+        refreshAppSettings()
         updateFieldPolicy()
+    }
+
+    private func refreshAppSettings() {
+        candidateColor = candidateColorSettings.color
+        inputClicksEnabled = clickSettings.enabled
+        let mode = compositionModeSettings.mode
+        if engine?.bopomofoCompositionMode != mode {
+            if let engine { apply(engine.setCompositionMode(mode)) }
+        }
+        applyPhraseSelection(phraseSettings.enabledCollections)
+        if learningResetRequest.applyIfNeeded(to: smartUserData) {
+            discardMarkedText()
+            engine?.reset()
+            touchHostText.reset()
+        }
+        refresh()
     }
 
     private func applyMetrics() {
@@ -109,10 +141,31 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     override func viewWillDisappear(_ animated: Bool) {
+        commitPendingTouchSmartComposition()
         super.viewWillDisappear(animated)
+        keyboardView?.cancelBackspaceRepeat()
         resetInputState()
         settingsPanel?.removeFromSuperview()
         settingsPanel = nil
+    }
+
+    override func textWillChange(_ textInput: UITextInput?) {
+        if !documentMutationGuard.isActive { commitPendingTouchSmartComposition() }
+        super.textWillChange(textInput)
+    }
+
+    override func selectionWillChange(_ textInput: UITextInput?) {
+        if !documentMutationGuard.isActive { commitPendingTouchSmartComposition() }
+        super.selectionWillChange(textInput)
+    }
+
+    @objc private func commitBeforeInputModeSwitch() {
+        commitPendingTouchSmartComposition()
+    }
+
+    private func commitPendingTouchSmartComposition() {
+        guard let engine, engine.isTouchSmartComposition, engine.hasComposition else { return }
+        apply(engine.finishCompositionForInputHandoff())
     }
 
     override func textDidChange(_ textInput: UITextInput?) {
@@ -172,13 +225,26 @@ final class KeyboardViewController: UIInputViewController {
         }
         do {
             let database = try Database(url: url)
+            let localDirectory = FileManager.default.urls(
+                for: .applicationSupportDirectory, in: .userDomainMask
+            )[0]
+            let groupDirectory = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: "group.io.github.polobread.inputmethod.chichi77.ios"
+            )
+            smartUserData = try? SmartMandarinUserData(
+                phrasesURL: (groupDirectory ?? localDirectory).appendingPathComponent("UserPhrase.db"),
+                learningURL: localDirectory.appendingPathComponent("SmartMandarinLearning.db"),
+                writablePhrases: false
+            )
             let phrases = AssociatedPhraseStore(database: database)
             collections = (try? phrases.collections()) ?? []
             phraseStore = phrases
             applyPhraseSelection(phraseSettings.enabledCollections)
             engine = BopomofoEngine(
                 dictionary: try CandidateStore(database: database),
-                associatedPhrases: phrases
+                associatedPhrases: phrases,
+                smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
+                compositionMode: compositionModeSettings.mode
             )
         } catch {
             loadFailure = String(describing: error)
@@ -198,7 +264,8 @@ final class KeyboardViewController: UIInputViewController {
         guard settingsPanel == nil, !collections.isEmpty else { return }
         let panel = SettingsPanel(
             collections: collections, enabled: phraseSettings.enabledCollections,
-            inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor
+            inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
+            compositionMode: engine?.bopomofoCompositionMode ?? .smart
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -222,7 +289,11 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
         var state = KeyboardView.State()
-        state.reading = engine.readingText
+        state.reading = engine.composingText
+        state.smartMode = engine.bopomofoCompositionMode == .smart
+            && engine.inputMode == .bopomofo
+        state.smartCells = engine.touchSmartCells
+        state.smartEditableCount = engine.smartCompositionReadingCount
         state.candidates = engine.displayedCandidates
         state.highlightedIndex = engine.isShowingAssociatedPhrases
             ? -1 : engine.highlightedIndex
@@ -290,11 +361,16 @@ final class KeyboardViewController: UIInputViewController {
     private func resetInputState(discardDocumentComposition: Bool = true) {
         if discardDocumentComposition { discardMarkedText() }
         engine?.reset()
+        touchHostText.reset()
         statusOverride = nil
         refresh()
     }
 
     private func apply(_ result: BopomofoEngine.Result) {
+        if engine?.isTouchSmartComposition == true || !touchHostText.editableText.isEmpty {
+            applyTouchSmart(result)
+            return
+        }
         if result.deletesBackward {
             discardMarkedText()
             mutateDocument { textDocumentProxy.deleteBackward() }
@@ -302,7 +378,7 @@ final class KeyboardViewController: UIInputViewController {
         if !result.text.isEmpty {
             commitMarkedOrInsertedText(result.text)
         }
-        if engine?.readingText.isEmpty == false {
+        if engine?.hasComposition == true {
             // Candidate buttons are extension-local UIKit. Give them the
             // current run-loop turn before crossing into the host app through
             // UITextDocumentProxy, which can be slower on real devices.
@@ -316,6 +392,30 @@ final class KeyboardViewController: UIInputViewController {
         } else if result.text.isEmpty, !result.deletesBackward {
             discardMarkedText()
         }
+        if result.sendsReturn { mutateDocument { textDocumentProxy.insertText("\n") } }
+        refresh()
+    }
+
+    private func applyTouchSmart(_ result: BopomofoEngine.Result) {
+        if hasMarkedText { discardMarkedText() }
+        let edit: TouchSmartHostTextState.Edit
+        if engine?.isTouchSmartComposition == true, engine?.hasComposition == true {
+            edit = touchHostText.update(
+                to: engine?.completedSmartText ?? "", evictedPrefix: result.text
+            )
+        } else if engine?.isTouchSmartComposition == true, result.text.isEmpty,
+                  !result.deletesBackward, !result.sendsReturn {
+            edit = touchHostText.cancel()
+        } else {
+            edit = touchHostText.finish(with: result.text)
+        }
+        if !edit.isEmpty {
+            mutateDocument {
+                for _ in 0..<edit.deleteCount { textDocumentProxy.deleteBackward() }
+                if !edit.insertion.isEmpty { textDocumentProxy.insertText(edit.insertion) }
+            }
+        }
+        if result.deletesBackward { mutateDocument { textDocumentProxy.deleteBackward() } }
         if result.sendsReturn { mutateDocument { textDocumentProxy.insertText("\n") } }
         refresh()
     }
@@ -339,7 +439,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func updateMarkedReading() {
-        guard let reading = engine?.readingText, !reading.isEmpty else { return }
+        guard let reading = engine?.composingText, !reading.isEmpty else { return }
         mutateDocument {
             textDocumentProxy.setMarkedText(
                 reading, selectedRange: NSRange(location: reading.utf16.count, length: 0)
@@ -352,13 +452,13 @@ final class KeyboardViewController: UIInputViewController {
     /// newer engine state. The small dispatch boundary also lets the candidate
     /// strip become visible before the host field mirrors its final tone mark.
     private func scheduleMarkedReadingUpdate() {
-        guard let reading = engine?.readingText, !reading.isEmpty else { return }
+        guard let reading = engine?.composingText, !reading.isEmpty else { return }
         markedReadingUpdateGeneration &+= 1
         let generation = markedReadingUpdateGeneration
         DispatchQueue.main.async { [weak self] in
             guard let self,
                   self.markedReadingUpdateGeneration == generation,
-                  self.engine?.readingText == reading
+                  self.engine?.composingText == reading
             else { return }
             self.updateMarkedReading()
         }
@@ -422,6 +522,11 @@ extension KeyboardViewController: KeyboardViewDelegate {
         apply(engine.selectDisplayedCandidate(index))
     }
 
+    func keyboardView(_ view: KeyboardView, didSelectSmartCellAt index: Int) {
+        guard let engine, engine.selectTouchSmartCell(index) else { return }
+        refresh()
+    }
+
     func keyboardView(_ view: KeyboardView, didChangePageBy delta: Int) {
         statusOverride = nil
         guard let engine else { return }
@@ -431,11 +536,33 @@ extension KeyboardViewController: KeyboardViewDelegate {
 }
 
 extension KeyboardViewController: SettingsPanelDelegate {
+    func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool {
+        guard let smartUserData else { return false }
+        do {
+            try smartUserData.resetLearning()
+            discardMarkedText()
+            engine?.reset()
+            touchHostText.reset()
+            refresh()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>) {
         phraseSettings.setEnabledCollections(enabled)
         applyPhraseSelection(enabled)
         // A phrase list already on screen belongs to the old selection.
         engine?.setAssociatedPhraseSource(phraseStore)
+        refresh()
+    }
+
+    func settingsPanel(
+        _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
+    ) {
+        if let engine { apply(engine.setCompositionMode(mode)) }
+        compositionModeSettings.setMode(mode)
         refresh()
     }
 
@@ -448,7 +575,7 @@ extension KeyboardViewController: SettingsPanelDelegate {
 
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool) {
         inputClicksEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: KeyboardPreferences.inputClicksEnabled)
+        clickSettings.setEnabled(enabled)
         refresh()
     }
 
@@ -457,8 +584,4 @@ extension KeyboardViewController: SettingsPanelDelegate {
         candidateColorSettings.setColor(color)
         refresh()
     }
-}
-
-private enum KeyboardPreferences {
-    static let inputClicksEnabled = "inputClicksEnabled"
 }

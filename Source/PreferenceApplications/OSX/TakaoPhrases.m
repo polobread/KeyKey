@@ -114,4 +114,34 @@ file for terms.
 	}
 }
 
+- (IBAction)launchEditor:(id)sender
+{
+	// Preferences.app is installed beside PhraseEditor.app under the input
+	// method's Contents/SharedSupport directory.
+	NSString *sharedSupportPath = [[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
+	NSString *phraseEditorPath = [sharedSupportPath stringByAppendingPathComponent:@"PhraseEditor.app"];
+	BOOL launched = NO;
+
+	if ([[NSFileManager defaultManager] fileExistsAtPath:phraseEditorPath]) {
+		launched = [[NSWorkspace sharedWorkspace] openFile:phraseEditorPath];
+	}
+
+	if (!launched) {
+		launched = [[NSWorkspace sharedWorkspace]
+			launchAppWithBundleIdentifier:@"io.github.polobread.inputmethod.chichi77.PhraseEditor"
+			options:NSWorkspaceLaunchDefault
+			additionalEventParamDescriptor:nil
+			launchIdentifier:nil];
+	}
+
+	if (!launched) {
+		NSAlert *alert = [NSAlert alertWithMessageText:LFLSTR(@"Unable to launch user phrase editor.")
+			defaultButton:LFLSTR(@"OK")
+			alternateButton:nil
+			otherButton:nil
+			informativeTextWithFormat:LFLSTR(@"PhraseEditor.app is missing from the installed input method.")];
+		[alert beginSheetModalForWindow:window modalDelegate:self didEndSelector:nil contextInfo:nil];
+	}
+}
+
 @end

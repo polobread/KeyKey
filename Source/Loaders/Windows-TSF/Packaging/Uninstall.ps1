@@ -40,7 +40,11 @@ if (Test-Path -LiteralPath $uninstallRegistryPath) {
 }
 
 $nativeRegsvr32 = Join-Path $env:SystemRoot 'System32\regsvr32.exe'
-$x86Regsvr32 = Join-Path $env:SystemRoot 'SysWOW64\regsvr32.exe'
+$x86Regsvr32 = if ([Environment]::Is64BitOperatingSystem) {
+    Join-Path $env:SystemRoot 'SysWOW64\regsvr32.exe'
+} else {
+    $nativeRegsvr32
+}
 $registrations = @(
     @{ Dll = 'KeyKeyTsf_x86.dll'; Tool = $x86Regsvr32 },
     @{ Dll = 'KeyKeyTsf_x64.dll'; Tool = $nativeRegsvr32 },
@@ -57,19 +61,6 @@ foreach ($registration in $registrations) {
     if ($registrationExitCode -ne 0) {
         throw "TSF unregistration failed for $($registration.Dll) with exit code $registrationExitCode."
     }
-}
-
-$tip = '0404:{828E3CF0-11E9-45FC-A5DB-394991AD0093}{BED5C2CB-27F6-455D-AB13-CD2BB19B670B}'
-$languageList = Get-WinUserLanguageList
-$languageListChanged = $false
-foreach ($language in $languageList) {
-    if ($language.InputMethodTips -contains $tip) {
-        [void]$language.InputMethodTips.Remove($tip)
-        $languageListChanged = $true
-    }
-}
-if ($languageListChanged) {
-    Set-WinUserLanguageList $languageList -Force
 }
 
 if (Test-Path -LiteralPath $uninstallRegistryPath) {

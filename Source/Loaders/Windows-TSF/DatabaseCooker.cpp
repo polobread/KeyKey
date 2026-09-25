@@ -74,6 +74,8 @@ public:
 
     ~Statement() { sqlite3_finalize(statement_); }
 
+    sqlite3_stmt* get() const { return statement_; }
+
     Statement(const Statement&) = delete;
     Statement& operator=(const Statement&) = delete;
 
@@ -228,7 +230,7 @@ void InsertPair(Statement& statement, const std::string& key,
 
 std::size_t ImportCin(Database& database, const fs::path& path,
                       const std::string& table, bool characterDefinitionsOnly,
-                      bool convertBopomofo) {
+                      bool convertBopomofo, std::ostream* absoluteCin = nullptr) {
     std::ifstream input(path, std::ios::binary);
     if (!input) throw std::runtime_error("Cannot open " + path.u8string());
 
@@ -257,6 +259,10 @@ std::size_t ImportCin(Database& database, const fs::path& path,
                     key = BopomofoKeyboardLayout::StandardLayout()
                               ->syllableFromKeySequence(key)
                               .absoluteOrderString();
+                    if (absoluteCin && Utf8CodePointCount(value) == 1 &&
+                        key.size() == 2) {
+                        *absoluteCin << key << ' ' << value << '\n';
+                    }
                 }
                 InsertPair(insert, key, value);
                 ++inserted;
@@ -503,7 +509,8 @@ std::int64_t ScalarInteger(sqlite3* database, const char* sql) {
 void VerifyCollectionDisplayNames(
     sqlite3* database, const std::map<std::string, std::string>& displayNames) {
     sqlite3_stmt* statement = nullptr;
-    const char* sql = "SELECT display FROM collection_names WHERE source = ?";
+    const char* sql = "SELECT display FROM collection_names WHERE source = ? "
+                      "ORDER BY rowid LIMIT 1";
     if (sqlite3_prepare_v2(database, sql, -1, &statement, nullptr) != SQLITE_OK) {
         throw DatabaseError(sqlite3_errmsg(database));
     }
@@ -576,7 +583,7 @@ std::vector<fs::path> CollectionPaths(const fs::path& dataRoot,
 
 void Cook(const fs::path& sourceRoot, const fs::path& dataRoot,
           const fs::path& categorizedCollectionRoot,
-          const fs::path& outputPath) {
+          const fs::path& outputPath, const fs::path& absoluteCinPath) {
     fs::create_directories(outputPath.parent_path());
     std::error_code removeError;
     fs::remove(outputPath, removeError);
@@ -590,7 +597,13 @@ void Cook(const fs::path& sourceRoot, const fs::path& dataRoot,
                               "DatabaseCooker" / "Schema.sql"));
 
     const fs::path tables = sourceRoot / "DataTables";
-    ImportCin(database, tables / "bpmf-ext.cin", "Mandarin-bpmf-cin", false, true);
+    std::ofstream absoluteCin(absoluteCinPath, std::ios::binary | std::ios::trunc);
+    if (!absoluteCin) throw std::runtime_error("Cannot create " + absoluteCinPath.u8string());
+    absoluteCin << "%chardef begin\n";
+    ImportCin(database, tables / "bpmf-ext.cin", "Mandarin-bpmf-cin", false, true,
+              &absoluteCin);
+    absoluteCin << "%chardef end\n";
+    absoluteCin.close();
     ImportCin(database, tables / "bpmf-punctuations.cin", "Mandarin-bpmf-cin",
               true, false);
     ImportCin(database, tables / "cj-ext.cin", "Generic-cj-cin", false, false);
@@ -624,15 +637,40 @@ void Cook(const fs::path& sourceRoot, const fs::path& dataRoot,
 }  // namespace
 
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
+    if (argc == 4 && std::string(argv[1]) == "--append-smart-sql") {
+        try {
+            Database database(fs::u8path(argv[2]));
+            if (ScalarInteger(database.get(), "SELECT count(*) FROM unigrams") != 0 ||
+                ScalarInteger(database.get(), "SELECT count(*) FROM bigrams") != 0) {
+                throw DatabaseError("Smart Mandarin data has already been appended");
+            }
+            database.execute(ReadFile(fs::u8path(argv[3])));
+            if (ScalarInteger(database.get(), "SELECT count(*) FROM unigrams") < 100000 ||
+                ScalarInteger(database.get(), "SELECT count(*) FROM bigrams") != 885627) {
+                throw DatabaseError("Smart Mandarin SQL does not contain the 885627-row bigram corpus");
+            }
+            Statement integrity(database.get(), "PRAGMA integrity_check");
+            if (sqlite3_step(integrity.get()) != SQLITE_ROW ||
+                std::string(reinterpret_cast<const char*>(
+                    sqlite3_column_text(integrity.get(), 0))) != "ok") {
+                throw DatabaseError("Smart Mandarin database failed integrity_check");
+            }
+            database.execute("ANALYZE");
+            return 0;
+        } catch (const std::exception& error) {
+            std::cerr << "KeyKeyDatabaseCooker: " << error.what() << '\n';
+            return 1;
+        }
+    }
+    if (argc != 6) {
         std::cerr << "Usage: KeyKeyDatabaseCooker <Source directory> "
                      "<DataSource directory> <categorized collection directory> "
-                     "<output KeyKey.db>\n";
+                     "<output KeyKey.db> <output absolute-order CIN>\n";
         return 2;
     }
     try {
         Cook(fs::u8path(argv[1]), fs::u8path(argv[2]), fs::u8path(argv[3]),
-             fs::u8path(argv[4]));
+             fs::u8path(argv[4]), fs::u8path(argv[5]));
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "KeyKeyDatabaseCooker: " << error.what() << '\n';

@@ -72,6 +72,12 @@ jobs:
             -xcconfig Takao-macOS.xcconfig \
             build
 
+      - name: Verify packaged language model
+        shell: bash
+        run: >-
+          python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py
+          "Source/build/Release/chichi77 KeyKey.app/Contents/Resources/Databases/KeyKey.db"
+
       - name: Build unsigned installer package
         shell: bash
         run: |

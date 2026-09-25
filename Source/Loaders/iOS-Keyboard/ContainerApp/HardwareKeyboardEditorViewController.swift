@@ -5,6 +5,7 @@ import UIKit
 @MainActor
 fileprivate protocol HardwareKeyboardCaptureViewDelegate: AnyObject {
     func captureView(_ view: HardwareKeyboardCaptureView, didPress key: UIKey) -> Bool
+    func captureViewDidReleaseBackspace(_ view: HardwareKeyboardCaptureView)
 }
 
 /// A non-text responder receives raw hardware events without involving the
@@ -12,20 +13,54 @@ fileprivate protocol HardwareKeyboardCaptureViewDelegate: AnyObject {
 /// to `super`, which prevents the same key from also reaching UIKit text input.
 fileprivate final class HardwareKeyboardCaptureView: UIView {
     weak var keyDelegate: HardwareKeyboardCaptureViewDelegate?
+    private var backspaceHeld = false
 
     override var canBecomeFirstResponder: Bool { true }
 
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         var unhandled = Set<UIPress>()
         for press in presses {
+            if press.key?.keyCode.rawValue == 0x2A, backspaceHeld { continue }
             guard let key = press.key, keyDelegate?.captureView(self, didPress: key) == true else {
                 unhandled.insert(press)
                 continue
             }
+            if key.keyCode.rawValue == 0x2A { backspaceHeld = true }
         }
         if !unhandled.isEmpty {
             super.pressesBegan(unhandled, with: event)
         }
+    }
+
+    override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        let handled = releaseBackspace(in: presses)
+        let unhandled = presses.subtracting(handled)
+        if !unhandled.isEmpty { super.pressesEnded(unhandled, with: event) }
+    }
+
+    override func pressesCancelled(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        let handled = releaseBackspace(in: presses)
+        let unhandled = presses.subtracting(handled)
+        if !unhandled.isEmpty { super.pressesCancelled(unhandled, with: event) }
+    }
+
+    private func releaseBackspace(in presses: Set<UIPress>) -> Set<UIPress> {
+        guard backspaceHeld,
+              presses.contains(where: { $0.key?.keyCode.rawValue == 0x2A }) else { return [] }
+        backspaceHeld = false
+        keyDelegate?.captureViewDidReleaseBackspace(self)
+        return Set(presses.filter { $0.key?.keyCode.rawValue == 0x2A })
+    }
+
+    func cancelBackspaceHold() {
+        guard backspaceHeld else { return }
+        backspaceHeld = false
+        keyDelegate?.captureViewDidReleaseBackspace(self)
+    }
+
+    override func resignFirstResponder() -> Bool {
+        cancelBackspaceHold()
+        return super.resignFirstResponder()
     }
 
 }
@@ -132,6 +167,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private let cursorIndicator = UIView()
     private let cursorPositionLabel = UILabel()
     private let pageIndicatorLabel = UILabel()
+    private let compositionModeButton = UIButton(configuration: .tinted())
     private let phraseButton = UIButton(configuration: .tinted())
     private let modeButton = UIButton(configuration: .tinted())
     private let widthButton = UIButton(configuration: .tinted())
@@ -139,6 +175,9 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private let emojiButton = UIButton(configuration: .tinted())
     private let escapeButton = UIButton(configuration: .tinted())
     private let backspaceButton = UIButton(configuration: .tinted())
+    private let hardwareBackspaceRepeater = BackspaceRepeater()
+    private let touchBackspaceRepeater = BackspaceRepeater()
+    private var backspaceTouchActive = false
     private let enterButton = UIButton(configuration: .tinted())
     private let leftButton = UIButton(configuration: .tinted())
     private let upButton = UIButton(configuration: .tinted())
@@ -173,8 +212,15 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private var usesCompactPortraitLayout: Bool?
     private var engine: BopomofoEngine?
     private var phraseStore: AssociatedPhraseStore?
+    private var smartUserData: SmartMandarinUserData?
     private var collections: [AssociatedPhraseStore.Collection] = []
-    private let phraseSettings = PhraseSettings()
+    private let sharedDefaults = UserDefaults(
+        suiteName: KeyboardPreferenceStore.appGroupIdentifier
+    )
+    private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
+    private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
+        sharedDefaults: sharedDefaults
+    )
     private var committedText = ""
     private var insertionCharacterIndex = 0
     private var displayedCaretUTF16Offset = 0
@@ -217,7 +263,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        captureView.resignFirstResponder()
+        stopBackspaceRepeats()
+        _ = captureView.resignFirstResponder()
     }
 
     override func viewDidLayoutSubviews() {
@@ -292,12 +339,13 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         pageIndicatorLabel.accessibilityIdentifier = "hardware-editor.page"
         pageIndicatorLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
+        configureCompositionModeButton()
         configurePhraseButton()
         configureCandidateList()
         configureControlsColumn()
         configureActionsStack()
 
-        for view in [connectionLabel, outputView, cursorPositionLabel] {
+        for view in [connectionLabel, compositionModeButton, outputView, cursorPositionLabel] {
             inputColumn.addArrangedSubview(view)
         }
         inputColumn.axis = .vertical
@@ -593,6 +641,18 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             backspaceButton, title: "⌫", identifier: "hardware-editor.backspace",
             action: #selector(pressBackspace)
         )
+        backspaceButton.removeTarget(self, action: #selector(pressBackspace), for: .touchUpInside)
+        backspaceButton.addTarget(self, action: #selector(backspaceTouchDown), for: .touchDown)
+        backspaceButton.addTarget(
+            self, action: #selector(backspaceTouchUpInside), for: .touchUpInside
+        )
+        backspaceButton.addTarget(
+            self, action: #selector(backspaceTouchEnded),
+            for: [.touchUpOutside, .touchCancel]
+        )
+        backspaceButton.addTarget(
+            self, action: #selector(backspaceTouchExited), for: .touchDragExit
+        )
         configureEditingButton(
             enterButton, title: "Enter", identifier: "hardware-editor.enter",
             action: #selector(pressEnter)
@@ -677,6 +737,30 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         )
     }
 
+    private func configureCompositionModeButton() {
+        compositionModeButton.accessibilityIdentifier = "hardware-editor.composition-mode"
+        compositionModeButton.contentHorizontalAlignment = .leading
+        compositionModeButton.showsMenuAsPrimaryAction = true
+        refreshCompositionModeButton()
+    }
+
+    private func refreshCompositionModeButton() {
+        let selected = engine?.bopomofoCompositionMode ?? compositionModeSettings.mode
+        compositionModeButton.setTitle("注音：\(selected.displayName)", for: .normal)
+        compositionModeButton.menu = UIMenu(
+            title: "注音模式",
+            options: .singleSelection,
+            children: BopomofoCompositionMode.allCases.map { mode in
+                UIAction(
+                    title: mode.displayName,
+                    state: selected == mode ? .on : .off
+                ) { [weak self] _ in
+                    self?.selectCompositionMode(mode)
+                }
+            }
+        )
+    }
+
     private func configureActionsStack() {
         clearButton.setTitle("清除", for: .normal)
         clearButton.accessibilityIdentifier = "hardware-editor.clear"
@@ -717,13 +801,28 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         }
         do {
             let database = try Database(url: url)
+            if let groupDirectory = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: "group.io.github.polobread.inputmethod.chichi77.ios"
+            ) {
+                let localDirectory = FileManager.default.urls(
+                    for: .applicationSupportDirectory, in: .userDomainMask
+                )[0]
+                smartUserData = try? SmartMandarinUserData(
+                    phrasesURL: groupDirectory.appendingPathComponent("UserPhrase.db"),
+                    learningURL: localDirectory.appendingPathComponent("SmartMandarinLearning.db"),
+                    writablePhrases: true
+                )
+            }
             let phrases = AssociatedPhraseStore(database: database)
             collections = try phrases.collections()
             phraseStore = phrases
             applyPhraseSelection(phraseSettings.enabledCollections, persist: false)
             engine = BopomofoEngine(
                 dictionary: try CandidateStore(database: database),
-                associatedPhrases: phrases
+                associatedPhrases: phrases,
+                smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
+                compositionMode: compositionModeSettings.mode,
+                hardwareSmartEditing: true
             )
         } catch {
             transientStatus = "字庫載入失敗：\(error)"
@@ -783,12 +882,29 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             self, selector: #selector(keyboardConnectionChanged),
             name: .GCKeyboardDidDisconnect, object: nil
         )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(applicationWillResignActive(_:)),
+            name: UIApplication.willResignActiveNotification, object: nil
+        )
+    }
+
+    @objc private func applicationWillResignActive(_ notification: Notification) {
+        stopBackspaceRepeats()
+    }
+
+    private func stopBackspaceRepeats() {
+        hardwareBackspaceRepeater.stop()
+        touchBackspaceRepeater.stop()
+        backspaceTouchActive = false
+        captureView.cancelBackspaceHold()
     }
 
     @objc private func keyboardConnectionChanged() {
         refreshConnectionStatus()
         if GCKeyboard.coalesced != nil {
             captureView.becomeFirstResponder()
+        } else {
+            captureView.cancelBackspaceHold()
         }
     }
 
@@ -815,7 +931,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             string: prefix,
             attributes: [.font: bodyFont, .foregroundColor: UIColor.label]
         )
-        if let reading = engine?.readingText, !reading.isEmpty {
+        if let reading = engine?.composingText, !reading.isEmpty {
             text.append(NSAttributedString(
                 string: reading,
                 attributes: [
@@ -825,7 +941,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 ]
             ))
         }
-        displayedCaretUTF16Offset = text.length
+        displayedCaretUTF16Offset = text.length - (engine?.composingText.utf16.count ?? 0)
+            + (engine?.composingCaretUTF16Offset ?? 0)
         text.append(NSAttributedString(
             string: suffix,
             attributes: [.font: bodyFont, .foregroundColor: UIColor.label]
@@ -873,6 +990,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         widthButton.setTitle(isFullWidth ? "全" : "半", for: .normal)
         widthButton.accessibilityLabel = isFullWidth
             ? "目前全形，切換半形" : "目前半形，切換全形"
+        refreshCompositionModeButton()
         updateExportButtons()
     }
 
@@ -895,13 +1013,19 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     }
 
     private func updateExportButtons() {
-        let canExport = !committedText.isEmpty || engine?.readingText.isEmpty == false
+        let canExport = !committedText.isEmpty || engine?.hasComposition == true
         copyButton.isEnabled = canExport
         shareButton.isEnabled = canExport
         clearButton.isEnabled = canExport || engine?.displayedCandidates.isEmpty == false
     }
 
     private func refreshCursorPositionLabel() {
+        if let engine, let cursor = engine.smartCompositionCursor {
+            cursorPositionLabel.text = cursor == engine.smartCompositionReadingCount
+                ? "組字游標：句尾"
+                : "組字游標：第 \(cursor + 1) 個音節前"
+            return
+        }
         let prefix = committedText.prefix(insertionCharacterIndex)
         let line = prefix.reduce(into: 1) { count, character in
             if character == "\n" { count += 1 }
@@ -977,19 +1101,24 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     private func prepareTextForExport() -> Bool {
         guard let engine else { return false }
-        if engine.isShowingAssociatedPhrases {
+        if engine.bopomofoCompositionMode == .smart, engine.hasComposition {
+            if engine.isShowingSmartCandidates {
+                apply(engine.enter())
+            }
+            apply(engine.enter())
+        } else if engine.isShowingAssociatedPhrases {
             apply(engine.escape())
         } else if !engine.displayedCandidates.isEmpty {
             apply(engine.selectHighlightedCandidate())
             if engine.isShowingAssociatedPhrases { apply(engine.escape()) }
-        } else if !engine.readingText.isEmpty {
+        } else if engine.hasComposition {
             apply(engine.enter())
             if !engine.isShowingAssociatedPhrases, !engine.displayedCandidates.isEmpty {
                 apply(engine.selectHighlightedCandidate())
             }
             if engine.isShowingAssociatedPhrases { apply(engine.escape()) }
         }
-        guard engine.readingText.isEmpty else {
+        guard !engine.hasComposition else {
             transientStatus = "這組注音沒有候選字，請修改後再複製或分享。"
             refresh()
             return false
@@ -1009,9 +1138,18 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         restoreCaptureFocusAfterControlAction()
     }
 
+    private func selectCompositionMode(_ mode: BopomofoCompositionMode) {
+        guard let engine else { return }
+        apply(engine.setCompositionMode(mode))
+        compositionModeSettings.setMode(mode)
+        transientStatus = nil
+        refresh()
+        restoreCaptureFocusAfterControlAction()
+    }
+
     @objc private func showPhraseCollections() {
         guard !collections.isEmpty else { return }
-        captureView.resignFirstResponder()
+        _ = captureView.resignFirstResponder()
         let picker = PhraseCollectionPickerViewController(
             collections: collections,
             enabled: phraseSettings.enabledCollections.intersection(Set(collections.map(\.source)))
@@ -1057,7 +1195,27 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     @objc private func pressBackspace() {
         guard let engine else { return }
         apply(engine.backspace())
+    }
+
+    @objc private func backspaceTouchDown() {
+        backspaceTouchActive = true
+        pressBackspace()
+        touchBackspaceRepeater.start { [weak self] in self?.pressBackspace() }
+    }
+
+    @objc private func backspaceTouchUpInside() {
+        if !backspaceTouchActive { pressBackspace() }
+        backspaceTouchEnded()
+    }
+
+    @objc private func backspaceTouchEnded() {
+        touchBackspaceRepeater.stop()
+        backspaceTouchActive = false
         restoreCaptureFocusAfterControlAction()
+    }
+
+    @objc private func backspaceTouchExited() {
+        touchBackspaceRepeater.stop()
     }
 
     @objc private func pressEnter() {
@@ -1094,7 +1252,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     @objc private func requestClearText() {
         guard clearConfirmationOverlay == nil else { return }
-        guard !committedText.isEmpty || engine?.readingText.isEmpty == false else {
+        guard !committedText.isEmpty || engine?.hasComposition == true else {
             transientStatus = "目前沒有文字可清除。"
             refresh()
             restoreCaptureFocusAfterControlAction()
@@ -1218,10 +1376,14 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     }
 
     @objc private func showHelp() {
+        let smartHelp = engine?.bopomofoCompositionMode == .smart
+            ? "好打注音：連續輸入注音；滿十個音節後，下一個音節會擠出最前面的完整詞組。←／→ 移動組字游標，Space／↓ 開啟游標處的字詞候選，開啟後 ↑／↓ 與 1–9 選字詞；Enter 確定整句。\n"
+            : ""
         let message = """
+        \(smartHelp)
         一般候選：1–9
         關聯候選：Shift+1–9（! @ # $ % ^ & * (）
-        翻頁：Space／Page Up／Page Down
+        候選翻頁：Space／Page Up／Page Down
         切換ㄅ／英：Ctrl+Space
         切換半／全形：Shift+Space
         符號：Ctrl+0／Ctrl+1
@@ -1289,6 +1451,27 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     private func moveCursorOrCandidate(_ direction: CursorDirection) {
         guard let engine else { return }
+        if engine.smartCompositionCursor != nil {
+            switch direction {
+            case .left, .right:
+                _ = engine.moveSmartCompositionCursor(by: direction == .left ? -1 : 1)
+            case .up:
+                if engine.isShowingSmartCandidates {
+                    engine.moveHighlight(by: -1)
+                } else {
+                    _ = engine.moveSmartCompositionCursor(by: -1)
+                }
+            case .down:
+                if engine.isShowingSmartCandidates {
+                    engine.moveHighlight(by: 1)
+                } else {
+                    _ = engine.space()
+                }
+            }
+            transientStatus = nil
+            refresh()
+            return
+        }
         guard !engine.displayedCandidates.isEmpty else {
             moveInsertionCursor(direction)
             return
@@ -1309,7 +1492,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     }
 
     private func moveInsertionCursor(_ direction: CursorDirection) {
-        guard engine?.readingText.isEmpty == true,
+        guard engine?.hasComposition == false,
               engine?.displayedCandidates.isEmpty == true
         else { return }
 
@@ -1376,6 +1559,10 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 }
 
 extension HardwareKeyboardEditorViewController: HardwareKeyboardCaptureViewDelegate {
+    fileprivate func captureViewDidReleaseBackspace(_ view: HardwareKeyboardCaptureView) {
+        hardwareBackspaceRepeater.stop()
+    }
+
     fileprivate func captureView(
         _ view: HardwareKeyboardCaptureView, didPress key: UIKey
     ) -> Bool {
@@ -1459,6 +1646,10 @@ extension HardwareKeyboardEditorViewController: HardwareKeyboardCaptureViewDeleg
             apply(engine.escape())
         case .backspace:
             apply(engine.backspace())
+            hardwareBackspaceRepeater.start { [weak self] in
+                guard let self, let engine = self.engine else { return }
+                self.apply(engine.backspace())
+            }
         case .tab:
             apply(engine.handleSoftKey("\t"), widenASCII: true)
         case .space:

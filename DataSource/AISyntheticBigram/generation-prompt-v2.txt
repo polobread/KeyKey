@@ -1,0 +1,11 @@
+Generate exactly 1,000 additional independent sentences for an offline
+Bopomofo language model. Use natural Taiwan Traditional Chinese with one
+sentence per line and explicit spaces at useful word boundaries. Cover forty
+everyday domains, including schedules, weather, work, software, continuous
+typing, candidate correction, messaging, education, transportation, shopping,
+food, health, public services, security, files, home life, emergencies,
+context-sensitive homophones, and Taiwanese city life. Keep every sentence
+between 8 and 30 Han characters. Do not use private names, personal data,
+quotes, lyrics, URLs, numbering, or explanations. Ensure all 1,000 sentences
+are unique. Use balanced five-by-five variations within each domain so the
+output can be regenerated and audited deterministically.

@@ -1,0 +1,621 @@
+{
+  "method": {
+    "cooker": "Source/Distributions/Takao/DatabaseCooker/SmartMandarinCooker.rb",
+    "bootstrap_corpora": [
+      "DataSource/AISyntheticBigram/corpus-v1.txt",
+      "DataSource/AISyntheticBigram/corpus-v2.txt",
+      "DataSource/AISyntheticBigram/corpus-v3.txt"
+    ],
+    "article_snapshots": {
+      "100": "DataSource/AISyntheticBigram/article-corpus-100.txt",
+      "200": "DataSource/AISyntheticBigram/article-corpus-200.txt",
+      "300": "DataSource/AISyntheticBigram/article-corpus-300.txt",
+      "400": "DataSource/AISyntheticBigram/article-corpus-400.txt",
+      "450": "DataSource/AISyntheticBigram/article-corpus-450.txt",
+      "500": "DataSource/AISyntheticBigram/article-corpus-500.txt",
+      "700": "DataSource/AISyntheticBigram/article-corpus-700.txt",
+      "900": "DataSource/AISyntheticBigram/article-corpus-900.txt",
+      "1100": "DataSource/AISyntheticBigram/article-corpus-1100.txt",
+      "1300": "DataSource/AISyntheticBigram/article-corpus-1300.txt",
+      "1500": "DataSource/AISyntheticBigram/article-corpus-1500.txt",
+      "1650": "DataSource/AISyntheticBigram/article-corpus-1650.txt"
+    },
+    "bigram_prior_strength": 1000,
+    "synthetic_pair_count_cap": 1
+  },
+  "baseline": {
+    "unigrams": 113596,
+    "words": 107385,
+    "bigram_rows": 6236,
+    "sentences": 11180,
+    "tokens": 131838,
+    "clipped": 138946,
+    "integrity_check": "ok",
+    "text_bigram_pairs": 4072,
+    "lexical_text_bigram_pairs": 3572,
+    "predecessor_contexts": 1083,
+    "database_bytes": 8241152
+  },
+  "growth": [
+    {
+      "articles": 100,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 87239,
+      "sentences": 27356,
+      "tokens": 205554,
+      "clipped": 180709,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 52201,
+      "lexical_text_bigram_pairs": 45610,
+      "predecessor_contexts": 7308,
+      "database_bytes": 12386304,
+      "new_pairs_vs_baseline": 48129,
+      "marginal_new_pairs": 48129,
+      "block_articles": 100,
+      "marginal_new_pairs_per_article": 481.29,
+      "database_increase_bytes": 4145152,
+      "database_increase_mib": 3.953125
+    },
+    {
+      "articles": 200,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 145617,
+      "sentences": 44032,
+      "tokens": 276756,
+      "clipped": 232947,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 87841,
+      "lexical_text_bigram_pairs": 78523,
+      "predecessor_contexts": 9537,
+      "database_bytes": 15450112,
+      "new_pairs_vs_baseline": 83769,
+      "marginal_new_pairs": 35640,
+      "block_articles": 100,
+      "marginal_new_pairs_per_article": 356.4,
+      "database_increase_bytes": 7208960,
+      "database_increase_mib": 6.875
+    },
+    {
+      "articles": 300,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 190384,
+      "sentences": 60202,
+      "tokens": 349336,
+      "clipped": 294522,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 115016,
+      "lexical_text_bigram_pairs": 104052,
+      "predecessor_contexts": 10965,
+      "database_bytes": 17793024,
+      "new_pairs_vs_baseline": 110944,
+      "marginal_new_pairs": 27175,
+      "block_articles": 100,
+      "marginal_new_pairs_per_article": 271.75,
+      "database_increase_bytes": 9551872,
+      "database_increase_mib": 9.109375
+    },
+    {
+      "articles": 400,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 236661,
+      "sentences": 75986,
+      "tokens": 419315,
+      "clipped": 351504,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 143797,
+      "lexical_text_bigram_pairs": 131273,
+      "predecessor_contexts": 12210,
+      "database_bytes": 20258816,
+      "new_pairs_vs_baseline": 139725,
+      "marginal_new_pairs": 28781,
+      "block_articles": 100,
+      "marginal_new_pairs_per_article": 287.81,
+      "database_increase_bytes": 12017664,
+      "database_increase_mib": 11.4609375
+    },
+    {
+      "articles": 450,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 259199,
+      "sentences": 83782,
+      "tokens": 453953,
+      "clipped": 380059,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 157676,
+      "lexical_text_bigram_pairs": 144442,
+      "predecessor_contexts": 12784,
+      "database_bytes": 21438464,
+      "new_pairs_vs_baseline": 153604,
+      "marginal_new_pairs": 13879,
+      "block_articles": 50,
+      "marginal_new_pairs_per_article": 277.58,
+      "database_increase_bytes": 13197312,
+      "database_increase_mib": 12.5859375
+    },
+    {
+      "articles": 500,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 281033,
+      "sentences": 91226,
+      "tokens": 488926,
+      "clipped": 408659,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 171493,
+      "lexical_text_bigram_pairs": 157641,
+      "predecessor_contexts": 13282,
+      "database_bytes": 22593536,
+      "new_pairs_vs_baseline": 167421,
+      "marginal_new_pairs": 13817,
+      "block_articles": 50,
+      "marginal_new_pairs_per_article": 276.34,
+      "database_increase_bytes": 14352384,
+      "database_increase_mib": 13.6875
+    },
+    {
+      "articles": 700,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 365513,
+      "sentences": 123275,
+      "tokens": 633606,
+      "clipped": 532374,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 224507,
+      "lexical_text_bigram_pairs": 208427,
+      "predecessor_contexts": 14971,
+      "database_bytes": 27074560,
+      "new_pairs_vs_baseline": 220435,
+      "marginal_new_pairs": 53014,
+      "block_articles": 200,
+      "marginal_new_pairs_per_article": 265.07,
+      "database_increase_bytes": 18833408,
+      "database_increase_mib": 17.9609375
+    },
+    {
+      "articles": 900,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 435157,
+      "sentences": 155085,
+      "tokens": 773390,
+      "clipped": 659248,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 269227,
+      "lexical_text_bigram_pairs": 251535,
+      "predecessor_contexts": 16148,
+      "database_bytes": 30801920,
+      "new_pairs_vs_baseline": 265155,
+      "marginal_new_pairs": 44720,
+      "block_articles": 200,
+      "marginal_new_pairs_per_article": 223.6,
+      "database_increase_bytes": 22560768,
+      "database_increase_mib": 21.515625
+    },
+    {
+      "articles": 1100,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 502984,
+      "sentences": 186607,
+      "tokens": 913392,
+      "clipped": 787083,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 312916,
+      "lexical_text_bigram_pairs": 293670,
+      "predecessor_contexts": 17281,
+      "database_bytes": 34422784,
+      "new_pairs_vs_baseline": 308844,
+      "marginal_new_pairs": 43689,
+      "block_articles": 200,
+      "marginal_new_pairs_per_article": 218.445,
+      "database_increase_bytes": 26181632,
+      "database_increase_mib": 24.96875
+    },
+    {
+      "articles": 1300,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 566384,
+      "sentences": 218738,
+      "tokens": 1058550,
+      "clipped": 923421,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 353867,
+      "lexical_text_bigram_pairs": 333485,
+      "predecessor_contexts": 18083,
+      "database_bytes": 37806080,
+      "new_pairs_vs_baseline": 349795,
+      "marginal_new_pairs": 40951,
+      "block_articles": 200,
+      "marginal_new_pairs_per_article": 204.755,
+      "database_increase_bytes": 29564928,
+      "database_increase_mib": 28.1953125
+    },
+    {
+      "articles": 1500,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 626015,
+      "sentences": 250470,
+      "tokens": 1200181,
+      "clipped": 1058068,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 392583,
+      "lexical_text_bigram_pairs": 371038,
+      "predecessor_contexts": 18906,
+      "database_bytes": 41017344,
+      "new_pairs_vs_baseline": 388511,
+      "marginal_new_pairs": 38716,
+      "block_articles": 200,
+      "marginal_new_pairs_per_article": 193.58,
+      "database_increase_bytes": 32776192,
+      "database_increase_mib": 31.2578125
+    },
+    {
+      "articles": 1650,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 668529,
+      "sentences": 274339,
+      "tokens": 1308908,
+      "clipped": 1162533,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 420714,
+      "lexical_text_bigram_pairs": 398554,
+      "predecessor_contexts": 19348,
+      "database_bytes": 43311104,
+      "new_pairs_vs_baseline": 416642,
+      "marginal_new_pairs": 28131,
+      "block_articles": 150,
+      "marginal_new_pairs_per_article": 187.54,
+      "database_increase_bytes": 35069952,
+      "database_increase_mib": 33.4453125
+    }
+  ],
+  "heldout_201_300_coverage": {
+    "heldout_articles": 100,
+    "heldout_lexical_pairs": 35174,
+    "models": [
+      {
+        "articles": 0,
+        "covered_pairs": 447,
+        "coverage": 0.01270825041223631,
+        "coverage_percent": 1.270825041223631,
+        "in_sample": false
+      },
+      {
+        "articles": 100,
+        "covered_pairs": 6806,
+        "coverage": 0.1934951953147211,
+        "coverage_percent": 19.349519531472108,
+        "in_sample": false
+      },
+      {
+        "articles": 200,
+        "covered_pairs": 9645,
+        "coverage": 0.2742082219821459,
+        "coverage_percent": 27.42082219821459,
+        "in_sample": false
+      },
+      {
+        "articles": 300,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 400,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 450,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 500,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 700,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 900,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 1100,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 1300,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 1500,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      },
+      {
+        "articles": 1650,
+        "covered_pairs": 35174,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      }
+    ]
+  },
+  "heldout_1551_1650_coverage": {
+    "heldout_articles": 100,
+    "heldout_lexical_pairs": 41999,
+    "models": [
+      {
+        "articles": 0,
+        "covered_pairs": 537,
+        "coverage": 0.012786018714731303,
+        "coverage_percent": 1.2786018714731304,
+        "in_sample": false
+      },
+      {
+        "articles": 100,
+        "covered_pairs": 7696,
+        "coverage": 0.18324245815376555,
+        "coverage_percent": 18.324245815376557,
+        "in_sample": false
+      },
+      {
+        "articles": 200,
+        "covered_pairs": 11104,
+        "coverage": 0.2643872473154123,
+        "coverage_percent": 26.438724731541228,
+        "in_sample": false
+      },
+      {
+        "articles": 300,
+        "covered_pairs": 13129,
+        "coverage": 0.3126026810162147,
+        "coverage_percent": 31.26026810162147,
+        "in_sample": false
+      },
+      {
+        "articles": 400,
+        "covered_pairs": 14951,
+        "coverage": 0.3559846663015786,
+        "coverage_percent": 35.59846663015786,
+        "in_sample": false
+      },
+      {
+        "articles": 450,
+        "covered_pairs": 15714,
+        "coverage": 0.3741517655182266,
+        "coverage_percent": 37.41517655182266,
+        "in_sample": false
+      },
+      {
+        "articles": 500,
+        "covered_pairs": 16391,
+        "coverage": 0.3902711969332603,
+        "coverage_percent": 39.02711969332603,
+        "in_sample": false
+      },
+      {
+        "articles": 700,
+        "covered_pairs": 18594,
+        "coverage": 0.44272482678159003,
+        "coverage_percent": 44.272482678159,
+        "in_sample": false
+      },
+      {
+        "articles": 900,
+        "covered_pairs": 20172,
+        "coverage": 0.48029714993214123,
+        "coverage_percent": 48.02971499321412,
+        "in_sample": false
+      },
+      {
+        "articles": 1100,
+        "covered_pairs": 21436,
+        "coverage": 0.5103931045977285,
+        "coverage_percent": 51.03931045977285,
+        "in_sample": false
+      },
+      {
+        "articles": 1300,
+        "covered_pairs": 22512,
+        "coverage": 0.536012762208624,
+        "coverage_percent": 53.6012762208624,
+        "in_sample": false
+      },
+      {
+        "articles": 1500,
+        "covered_pairs": 23357,
+        "coverage": 0.5561322888640206,
+        "coverage_percent": 55.613228886402055,
+        "in_sample": false
+      },
+      {
+        "articles": 1650,
+        "covered_pairs": 41999,
+        "coverage": 1.0,
+        "coverage_percent": 100.0,
+        "in_sample": true
+      }
+    ]
+  },
+  "score_lift": [
+    {
+      "block": "1–100",
+      "new_lexical_rows_measured": 74117,
+      "median_log10_score_lift": 0.8617242440105084,
+      "median_probability_multiplier": 7.273178462392452,
+      "p10_log10_score_lift": 0.11185019701689569,
+      "p90_log10_score_lift": 2.480529354286266
+    },
+    {
+      "block": "101–200",
+      "new_lexical_rows_measured": 55429,
+      "median_log10_score_lift": 1.000835585125568,
+      "median_probability_multiplier": 10.019258579409417,
+      "p10_log10_score_lift": 0.12908344957685092,
+      "p90_log10_score_lift": 2.5358742880365837
+    },
+    {
+      "block": "201–300",
+      "new_lexical_rows_measured": 42977,
+      "median_log10_score_lift": 1.0258746974276294,
+      "median_probability_multiplier": 10.613892811569524,
+      "p10_log10_score_lift": 0.15793169330807189,
+      "p90_log10_score_lift": 2.6070385672785745
+    },
+    {
+      "block": "301–400",
+      "new_lexical_rows_measured": 44593,
+      "median_log10_score_lift": 1.037263569445921,
+      "median_probability_multiplier": 10.895911558668999,
+      "p10_log10_score_lift": 0.16398706754122871,
+      "p90_log10_score_lift": 2.591836933345573
+    },
+    {
+      "block": "401–450",
+      "new_lexical_rows_measured": 21762,
+      "median_log10_score_lift": 1.0754706206613336,
+      "median_probability_multiplier": 11.897908389585352,
+      "p10_log10_score_lift": 0.16384580455580888,
+      "p90_log10_score_lift": 2.682956197660404
+    },
+    {
+      "block": "451–500",
+      "new_lexical_rows_measured": 21168,
+      "median_log10_score_lift": 1.1124610958106094,
+      "median_probability_multiplier": 12.955706348335744,
+      "p10_log10_score_lift": 0.16523019529738603,
+      "p90_log10_score_lift": 2.656141571772995
+    },
+    {
+      "block": "501–700",
+      "new_lexical_rows_measured": 82098,
+      "median_log10_score_lift": 1.148603047505643,
+      "median_probability_multiplier": 14.080012731481492,
+      "p10_log10_score_lift": 0.16523019529738603,
+      "p90_log10_score_lift": 2.6829561976604044
+    },
+    {
+      "block": "701–900",
+      "new_lexical_rows_measured": 67942,
+      "median_log10_score_lift": 1.2178227497773402,
+      "median_probability_multiplier": 16.512877144818123,
+      "p10_log10_score_lift": 0.1681995631423252,
+      "p90_log10_score_lift": 2.721508894146654
+    },
+    {
+      "block": "901–1100",
+      "new_lexical_rows_measured": 66192,
+      "median_log10_score_lift": 1.2397145732556738,
+      "median_probability_multiplier": 17.366590876176687,
+      "p10_log10_score_lift": 0.16704325113794605,
+      "p90_log10_score_lift": 2.752859820103732
+    },
+    {
+      "block": "1101–1300",
+      "new_lexical_rows_measured": 62197,
+      "median_log10_score_lift": 1.2086913090040654,
+      "median_probability_multiplier": 16.169303355704695,
+      "p10_log10_score_lift": 0.1788782420423103,
+      "p90_log10_score_lift": 2.73170888074382
+    },
+    {
+      "block": "1301–1500",
+      "new_lexical_rows_measured": 58391,
+      "median_log10_score_lift": 1.2579175789398191,
+      "median_probability_multiplier": 18.10996366389098,
+      "p10_log10_score_lift": 0.18405787143134145,
+      "p90_log10_score_lift": 2.7750978517163793
+    },
+    {
+      "block": "1501–1650",
+      "new_lexical_rows_measured": 41865,
+      "median_log10_score_lift": 1.290623166080609,
+      "median_probability_multiplier": 19.526444262295097,
+      "p10_log10_score_lift": 0.18854524805297457,
+      "p90_log10_score_lift": 2.752859820103732
+    }
+  ],
+  "saturation_projection": {
+    "model": "marginal_pairs_per_article = coefficient * article_count ^ exponent",
+    "fit_blocks": [
+      "501–700",
+      "701–900",
+      "901–1100",
+      "1101–1300",
+      "1301–1500",
+      "1501–1650"
+    ],
+    "coefficient": 2238.2640621437918,
+    "exponent": -0.33783482099040746,
+    "r_squared_log_space": 0.9621735257480336,
+    "projections": [
+      {
+        "marginal_pairs_per_article": 175,
+        "projected_article_count": 1890
+      },
+      {
+        "marginal_pairs_per_article": 150,
+        "projected_article_count": 2982
+      },
+      {
+        "marginal_pairs_per_article": 125,
+        "projected_article_count": 5116
+      },
+      {
+        "marginal_pairs_per_article": 100,
+        "projected_article_count": 9903
+      }
+    ],
+    "warning": "Extrapolation from six late blocks; topic mix and filtering policy can change the curve."
+  },
+  "summary": {
+    "first_100_new_pairs": 48129,
+    "baseline_heldout_coverage_percent": 1.270825041223631,
+    "after_100_heldout_coverage_percent": 19.349519531472108,
+    "after_200_heldout_coverage_percent": 27.42082219821459,
+    "comparison_from_articles": 1500,
+    "comparison_to_articles": 1650,
+    "pairs_added_in_comparison": 28131,
+    "rows_added_in_comparison": 42514,
+    "database_mib_added_in_comparison": 2.1875,
+    "pairs_added_500_to_700": 53014,
+    "rows_added_500_to_700": 84480,
+    "database_mib_added_500_to_700": 4.2734375,
+    "heldout_coverage_gain_500_to_700_pp": 5.245362984832973
+  }
+}

@@ -12,9 +12,8 @@ Xcode, and Homebrew's `openssl@3`:
 
 ## Building from scratch
 
-Three steps, from the repository root. The dictionary only needs re-cooking
-when something under `Source/DataTables` or `Source/Distributions/Takao/OnlineData`
-changes.
+Three steps, from the repository root. `make` rebuilds the dictionary when
+its source tables, phrase data, corpora, lexicons, or cooker change.
 
     cd Source/Distributions/Takao/DatabaseCooker && make && cd -
 

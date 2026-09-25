@@ -1,0 +1,11 @@
+Generate exactly 10,000 additional Traditional Chinese sentences for an
+offline Bopomofo language model. Keep the data deterministic and auditable.
+Cover the forty everyday domains defined by the second corpus, and introduce
+ten natural modal or situational variations for every beginning-and-ending
+pair. Use Taiwan Traditional Chinese with explicit word boundaries. Keep every
+sentence between 10 and 45 Han characters. Do not include private names,
+personal data, quotations, lyrics, URLs, numbering, or explanations. Reject
+duplicates both within this output and across earlier corpus versions. Preserve
+negative instructions such as 不要, and avoid doubling leading modal words such
+as 會, 可以, 應該, 要, 記得, and 先. Interleave the output deterministically so
+sentences with the same template beginning do not appear as a consecutive block.

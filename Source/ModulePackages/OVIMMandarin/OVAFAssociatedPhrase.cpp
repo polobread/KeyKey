@@ -74,7 +74,7 @@ void OVAFAssociatedPhraseContext::rebuildStatementIfNeeded()
             query += ", ";
         query += "'" + m_module->m_cfgCollections[i] + "'";
     }
-    query += ")";
+    query += ") ORDER BY rowid";
 
     m_selectStatement = m_module->m_phraseDB->prepare(query.c_str());
 }

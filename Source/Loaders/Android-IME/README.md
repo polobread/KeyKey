@@ -6,6 +6,19 @@ Android 原生繁體中文注音輸入法，使用 KeyKey 共用的
 `Source/DataTables/bpmf-ext.cin` 字表。建置時會自動把字表與關聯詞詞庫加入 APK，
 不需要手動複製。
 
+設定頁可選「好打注音」或「傳統注音」，新安裝預設好打注音。觸控好打注音將已完成的
+中文字即時寫入 App，並保留最近九個音節供句中選字及退格修正；更早的詞段留在 App。
+組句使用 APK 內的 `KeyKey.db` Bigram 模型。外接實體鍵盤保留句中游標組字；第十一個
+音節完成時會送出前方完整詞段，剩餘最多十個音節仍可移動游標改選。傳統注音保留
+逐字選字與關聯詞流程。19 音節完整句「請假要去哪裡玩呢去海邊因為那裡有比基尼」
+的實體鍵盤檢查點與測試界線見[交接紀錄](../../../docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)。
+
+設定頁的「管理好打注音自訂詞」可新增、編輯、刪除詞句，並匯入／匯出 macOS
+`MJSR version 1.0.0` 檔案的自訂詞段落。輸入每字一組注音，例如 `ㄋㄧˇ ㄏㄠˇ`，
+或用標準鍵位 `su3cl3`。自訂詞與好打注音學習紀錄儲存在 App 的本機 SQLite 資料庫，
+虛擬鍵盤與實體鍵盤共用。選字及確定整句後會學習候選與相鄰詞關係；設定頁可重設
+學習紀錄而保留自訂詞。macOS 匯出檔內加密的學習資料區塊不會匯入行動版。
+
 保留熟悉的五排標準注音鍵位與固定 `1–9` 候選位置；接上實體鍵盤時也能用跟隨游標的
 浮動候選字窗延續選字習慣。畫面在記事本輸入
 `ㄅ半注音的第一選擇 琦ㄑㄧˊ注音輸入法`，其中 `ㄑㄧˊ` 保持組字與選字狀態。
@@ -32,6 +45,7 @@ Android 原生繁體中文注音輸入法，使用 KeyKey 共用的
   `Ctrl+,`、`Ctrl+.` 分別輸入全型逗號 `，` 與句號 `。`。
   macOS 的 Traditional Mandarin 是用 `Ctrl+0` 或 `Ctrl+1` 開啟符號候選，Android
   外接鍵盤也支援這兩組快捷鍵，效果和觸控版的「符」完全相同。
+  好打注音遇到語言模型無法組出的讀音時會保留原句與注音；按 Esc 可只取消該讀音。
 
   設定頁可改用跟隨文字游標的浮動候選字窗；啟用後會收起底部實體鍵盤候選列，
   候選出現時才顯示可觸控的垂直或水平選字窗。每頁仍是 9 個候選，候選文字最多顯示
@@ -72,11 +86,13 @@ Android 原生繁體中文注音輸入法，使用 KeyKey 共用的
 Backspace 在注音組字期間逐一刪除聲調、韻母、介音與聲母，例如 `ㄋㄧˇ` 會先退回
 `ㄋㄧ`，不會刪除游標前的文字。已送出的 Emoji 會按使用者看到的一個完整圖形刪除，
 包含代理字元、變體選擇符、膚色及連接字元組合。
+觸控和實體鍵盤的 Backspace 按下時先刪一次；持續按住約 450 毫秒後開始連續刪除，
+逐步加快但最多約每 70 毫秒一次，放開或中斷輸入時立即停止。
 
 組字或候選開啟期間，若使用者以觸控、滑鼠或 App 改變游標位置或選取範圍，IME 會
-結束目前的 composing 狀態並清除引擎內的讀音／候選，避免下一個按鍵沿用舊位置；
-editor 已顯示的注音文字會留在原處並結束底線組字。輸入法自己更新 composing text
-或確定候選所造成的 selection callback 會被辨識，不會誤清剛建立的候選或關聯詞。
+結束目前組字並清除引擎內的讀音／候選，避免下一個按鍵沿用舊位置。觸控好打注音
+已寫入 App 的中文字會保留；實體鍵盤與傳統注音的 composing text 則會確認。
+輸入法自己更新文字或確定候選所造成的 selection callback 會被辨識，不會誤清候選。
 
 ## 欄位模式與 Enter
 
@@ -94,7 +110,8 @@ App 自己驗證。
 
 App 若為軟鍵盤指定 `IME_ACTION_DONE`、`NEXT`、`SEARCH`、`SEND`、`GO` 或
 `PREVIOUS`，直式與橫式 Enter 會分別顯示「完成、下一個、搜尋、傳送、前往、上一個」，
-並呼叫對應 editor action。App 也可用 `EditorInfo.actionLabel`／`actionId` 提供自訂
+並呼叫對應 editor action。好打注音仍有組字時，第一次按鍵就會確認文字並執行動作。
+App 也可用 `EditorInfo.actionLabel`／`actionId` 提供自訂
 Enter 文字與 action；過長的標籤會自動縮小。App 拒絕 action 時會安全退回一般 Enter。
 USB／藍牙實體鍵盤的 Enter 永遠維持 Enter key event，不會被改成軟鍵盤 action。
 
@@ -104,7 +121,8 @@ Windows／macOS 版的完整輸入與修飾鍵習慣，不依 `inputType` 擋字
 ## App 設定
 
 App 首頁會避開狀態列與前相機挖孔，標題下顯示目前安裝的版本，並提供第三個
-「調整設定」按鈕。設定頁的震動
+「調整設定」按鈕。設定頁最上方的注音模式可選好打注音或傳統注音，預設好打注音。
+設定頁的震動
 回饋可選 0、1、2、3、5、10、20、30、50、100 毫秒；0 表示關閉。舊版儲存的其他
 時間會對應到最接近的一段，相同距離時選較短的一段；超過 0.1 秒則限制為 0.1 秒。
 放開震動時間滑桿後會以所選時間試震一次（0 不震動）；
@@ -131,7 +149,13 @@ App 首頁會避開狀態列與前相機挖孔，標題下顯示目前安裝的�
 
 ## 建置
 
-需求：Android Studio、JDK 17 以上、Android SDK 36。
+需求：Android Studio、JDK 17 以上、Android SDK 36、Python 3，以及已煮好的
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`。若在乾淨 checkout 建置，先安裝
+Ruby 3、`sqlite3`、Ruby `sqlite3` 套件與 `make`，從 repo 根目錄執行：
+
+```sh
+make -C Source/Distributions/Takao/DatabaseCooker
+```
 
 ```powershell
 cd Source\Loaders\Android-IME
@@ -143,6 +167,9 @@ cd Source\Loaders\Android-IME
 編譯成 `.kki` 索引；執行時直接讀索引，候選內容在查詢該鍵時才解碼。關聯詞索引在背景
 載入，不阻塞虛擬鍵盤顯示。原始文字檔仍是唯一資料來源，不能手動修改 generated 索引。
 分類詞庫由自動化方式生成、推論與整理，沒有逐筆人工校正，也不保證正確性或完整性。
+建置也會把 `Source/Distributions/Takao/CookedDatabase/KeyKey.db` 複製為好打注音的唯讀
+語言模型資產，建置時驗證其 Bigram 恰為 885,627 筆且 SQLite 完整性正常；首次載入
+輸入法時安裝到 App 的 no-backup 目錄，後續以 SQLite 懶查詢。
 
 APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。
 

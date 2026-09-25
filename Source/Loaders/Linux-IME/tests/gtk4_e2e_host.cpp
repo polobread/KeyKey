@@ -411,6 +411,8 @@ int main() {
         scenario != nullptr && std::string(scenario) == "close";
     const bool holdScenario =
         scenario != nullptr && std::string(scenario) == "hold";
+    const bool moveScenario =
+        scenario != nullptr && std::string(scenario) == "move";
     const char *windowTitle = std::getenv("KEYKEY_E2E_WINDOW_TITLE");
     const char *expectedFirst = std::getenv("KEYKEY_E2E_EXPECTED_FIRST");
     const char *expectedSecond = std::getenv("KEYKEY_E2E_EXPECTED_SECOND");
@@ -418,7 +420,7 @@ int main() {
     const char *requiredEvents = std::getenv("KEYKEY_E2E_REQUIRED_EVENTS");
     if (artifactDirectory == nullptr || *artifactDirectory == '\0' ||
         (!focusScenario && !editingScenario && !closeScenario &&
-         !holdScenario &&
+         !holdScenario && !moveScenario &&
          (expectedCommit == nullptr || *expectedCommit == '\0' ||
           expectedLiteral == nullptr || requiredPreedits == nullptr)) ||
         (closeScenario && requiredPreedits == nullptr) ||
@@ -434,7 +436,7 @@ int main() {
     state.focusScenario = focusScenario;
     state.editingScenario = editingScenario;
     state.closeScenario = closeScenario;
-    state.holdScenario = holdScenario;
+    state.holdScenario = holdScenario || moveScenario;
     if (focusScenario || editingScenario) {
         state.expectedFirst = expectedFirst;
         state.expectedSecond = expectedSecond;
@@ -444,7 +446,7 @@ int main() {
         if (*requiredEvents != '\0') {
             state.requiredEvents = split(requiredEvents, ';');
         }
-    } else if (!closeScenario && !holdScenario) {
+    } else if (!closeScenario && !holdScenario && !moveScenario) {
         state.expectedCommit = expectedCommit;
         state.expectedLiteral = expectedLiteral;
     }
@@ -464,6 +466,9 @@ int main() {
     gtk_window_set_default_size(GTK_WINDOW(window),
                                 focusScenario ? 960 : 480,
                                 editingScenario ? 160 : 100);
+    if (moveScenario) {
+        gtk_window_set_titlebar(GTK_WINDOW(window), gtk_header_bar_new());
+    }
 
     TextState firstTextState{
         &state, focusScenario || editingScenario ? "first" : ""};
@@ -478,7 +483,7 @@ int main() {
                      G_CALLBACK(onPreeditChanged), &firstTextState);
     g_signal_connect(state.firstText, "changed", G_CALLBACK(onTextChanged),
                      &firstTextState);
-    if (focusScenario || editingScenario || holdScenario) {
+    if (focusScenario || editingScenario || holdScenario || moveScenario) {
         g_signal_connect(state.firstText, "notify::has-focus",
                          G_CALLBACK(onFocusChanged), &firstTextState);
     }
@@ -538,7 +543,7 @@ int main() {
     if (focusScenario || editingScenario) {
         g_idle_add(writeTextCentersOnIdle, &state);
     }
-    if (closeScenario || holdScenario) {
+    if (closeScenario || holdScenario || moveScenario) {
         g_timeout_add(20, onControlFile, &state);
     }
     const guint timeoutSource = g_timeout_add_seconds(20, onTimeout, &state);

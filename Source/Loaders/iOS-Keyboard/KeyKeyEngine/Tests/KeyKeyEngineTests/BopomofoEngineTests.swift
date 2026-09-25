@@ -31,6 +31,79 @@ private struct TablePhraseSource: AssociatedPhraseSource {
     }
 }
 
+private struct TableSmartSource: SmartMandarinSource {
+    let table: [String: [String]]
+
+    func compose(
+        readings: [String], overrides: [Int: String]
+    ) -> SmartMandarinComposition? {
+        compose(readings: readings, selections: overrides.mapValues {
+            SmartMandarinSelection(length: 1, text: $0)
+        })
+    }
+
+    func compose(
+        readings: [String], selections: [Int: SmartMandarinSelection]
+    ) -> SmartMandarinComposition? {
+        var segments: [SmartMandarinSegment] = []
+        var index = 0
+        while index < readings.count {
+            let selection = selections[index]
+            let length = selection?.length ?? 1
+            guard length > 0, index + length <= readings.count else { return nil }
+            let query = readings[index..<(index + length)].joined()
+            guard let text = selection?.text ?? table[query]?.first else { return nil }
+            segments.append(.init(start: index, length: length, query: query, text: text))
+            index += length
+        }
+        return .init(text: segments.map(\.text).joined(), segments: segments)
+    }
+
+    func candidates(
+        for readings: [String], at index: Int, composition: SmartMandarinComposition?
+    ) -> [String] {
+        guard readings.indices.contains(index) else { return [] }
+        return table[readings[index]] ?? []
+    }
+
+    func candidateOptions(
+        for readings: [String], at index: Int, composition: SmartMandarinComposition?
+    ) -> [SmartMandarinCandidate] {
+        guard readings.indices.contains(index) else { return [] }
+        return (1...(readings.count - index)).flatMap { length in
+            let query = readings[index..<(index + length)].joined()
+            return (table[query] ?? []).map {
+                SmartMandarinCandidate(length: length, text: $0)
+            }
+        }
+    }
+}
+
+private struct ContextSensitiveSmartSource: SmartMandarinSource {
+    let head = TableCandidateSource.queryKey(for: "fu/3")
+    let following = TableCandidateSource.queryKey(for: "ru84")
+    let filler = TableCandidateSource.queryKey(for: "su3")
+
+    func compose(readings: [String], overrides: [Int: String]) -> SmartMandarinComposition? {
+        var segments: [SmartMandarinSegment] = []
+        for (index, query) in readings.enumerated() {
+            let value: String
+            if query == head { value = "請" }
+            else if query == following { value = index > 0 && readings[index - 1] == head ? "假" : "價" }
+            else if query == filler { value = "你" }
+            else { return nil }
+            segments.append(.init(
+                start: index, length: 1, query: query, text: overrides[index] ?? value
+            ))
+        }
+        return .init(text: segments.map(\.text).joined(), segments: segments)
+    }
+
+    func candidates(
+        for readings: [String], at index: Int, composition: SmartMandarinComposition?
+    ) -> [String] { [] }
+}
+
 /// Ported from `BopomofoEngineTest.java`. Hardware cases are used by the
 /// containing App's editor; the keyboard extension itself still cannot receive
 /// physical key events.
@@ -50,7 +123,344 @@ struct BopomofoEngineTests {
         keys.map { engine.handleSoftKey(String($0)) }
     }
 
+    private func smartEngine(hardwareEditing: Bool = false) -> BopomofoEngine {
+        let table = [
+            TableCandidateSource.queryKey(for: "su3"): ["你", "妳", "擬"],
+            TableCandidateSource.queryKey(for: "cl3"): ["好", "郝"]
+        ]
+        return BopomofoEngine(
+            dictionary: TableCandidateSource(["su3": ["你"], "cl3": ["好"]]),
+            smartSource: TableSmartSource(table: table),
+            compositionMode: .smart,
+            hardwareSmartEditing: hardwareEditing
+        )
+    }
+
     // MARK: Reading and candidates
+
+    @Test("touch smart Enter commits the sentence and sends return together")
+    func smartContinuousComposition() {
+        let engine = smartEngine()
+        let first = type(engine, "su3").last
+        #expect(first == .update)
+        #expect(engine.composingText == "你")
+
+        let second = type(engine, "cl3").last
+        #expect(second == .update)
+        #expect(engine.composingText == "你好")
+        var hostText = TouchSmartHostTextState()
+        _ = hostText.update(to: engine.completedSmartText)
+        let result = engine.handleSoftKey("ENTER")
+        #expect(result == .commitAndReturn("你好"))
+        #expect(hostText.finish(with: result.text).isEmpty, "already inserted text must not repeat")
+        #expect(!engine.hasComposition)
+    }
+
+    @Test("touch smart Enter includes an unfinished reading before return")
+    func smartEnterKeepsUnfinishedReading() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3s")
+        #expect(engine.handleSoftKey("ENTER") == .commitAndReturn("你好ㄋ"))
+        #expect(!engine.hasComposition)
+    }
+
+    @Test("touch smart Enter retains a phrase evicted while finishing the last reading")
+    func smartEnterKeepsEvictedPrefix() {
+        let accented = TableCandidateSource.queryKey(for: "su3")
+        let untuned = TableCandidateSource.queryKey(for: "su")
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource([:]),
+            smartSource: TableSmartSource(table: [accented: ["你"], untuned: ["尼"]]),
+            compositionMode: .smart
+        )
+        _ = type(engine, String(repeating: "su3", count: 9) + "su")
+        #expect(engine.handleSoftKey("ENTER") == .commitAndReturn(
+            String(repeating: "你", count: 9) + "尼"
+        ))
+        #expect(!engine.hasComposition)
+    }
+
+    @Test("smart composition is committed before switching keyboard planes")
+    func smartModeSwitchCommits() {
+        for key in ["MODE", "SHIFT", "SYMBOL", "EMOJI"] {
+            let engine = smartEngine()
+            _ = type(engine, "su3cl3")
+            #expect(engine.handleSoftKey(key) == .commit("你好"))
+            #expect(!engine.hasComposition)
+        }
+    }
+
+    @Test("switching preserves an unfinished smart reading")
+    func smartModeSwitchKeepsUnfinishedReading() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3s")
+        let visible = engine.composingText
+        #expect(visible.hasPrefix("你好"))
+        #expect(engine.handleSoftKey("MODE") == .commit(visible))
+        #expect(engine.inputMode == .english)
+        #expect(!engine.hasComposition)
+    }
+
+    @Test("symbols and punctuation keep an unfinished smart reading")
+    func smartOtherKeysKeepUnfinishedReading() {
+        let symbols = smartEngine()
+        _ = type(symbols, "su3cl3s")
+        let visible = symbols.composingText
+        #expect(symbols.handleSoftKey("SYMBOL") == .commit(visible))
+        #expect(!symbols.displayedCandidates.isEmpty)
+
+        let punctuation = smartEngine()
+        _ = type(punctuation, "su3cl3s")
+        let pending = punctuation.composingText
+        #expect(punctuation.handleSoftKey("?") == .commit(pending + "?"))
+    }
+
+    @Test("hardware language and punctuation commit smart composition")
+    func smartHardwareSwitchCommits() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3cl3")
+        #expect(engine.toggleHardwareLanguage() == .commit("你好"))
+        #expect(engine.inputMode == .english)
+
+        _ = engine.toggleHardwareLanguage()
+        _ = type(engine, "su3cl3")
+        #expect(engine.commitHardwarePunctuation("，") == .commit("你好，"))
+    }
+
+    @Test("hardware shortcuts preserve unfinished smart text")
+    func smartHardwareShortcutsKeepUnfinishedReading() {
+        let language = smartEngine(hardwareEditing: true)
+        _ = type(language, "su3cl3s")
+        let pendingLanguage = language.composingText
+        #expect(language.toggleHardwareLanguage() == .commit(pendingLanguage))
+
+        let symbols = smartEngine(hardwareEditing: true)
+        _ = type(symbols, "su3cl3s")
+        let pendingSymbols = symbols.composingText
+        #expect(symbols.showHardwareSymbols() == .commit(pendingSymbols))
+        #expect(!symbols.displayedCandidates.isEmpty)
+
+        let punctuation = smartEngine(hardwareEditing: true)
+        _ = type(punctuation, "su3cl3s")
+        let pendingPunctuation = punctuation.composingText
+        #expect(punctuation.commitHardwarePunctuation("，") == .commit(pendingPunctuation + "，"))
+    }
+
+    @Test("other smart keys keep text before switching or inserting")
+    func smartOtherKeysCommit() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3")
+        #expect(engine.handleSoftKey("?") == .commit("你好?"))
+
+        _ = type(engine, "su3cl3")
+        #expect(engine.setCompositionMode(.traditional) == .commit("你好"))
+        #expect(!engine.hasComposition)
+    }
+
+    @Test("smart candidate selection overrides without prematurely committing")
+    func smartCandidateOverride() {
+        let engine = smartEngine()
+        _ = type(engine, "su3")
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.selectTouchSmartCell(0))
+        #expect(engine.displayedCandidates.prefix(2) == ["你", "妳"])
+        #expect(engine.selectDisplayedCandidate(1) == .update)
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.composingText == "妳")
+        _ = type(engine, "cl3")
+        #expect(engine.composingText == "妳好")
+    }
+
+    @Test("touch smart correction keeps the next syllable at the sentence end")
+    func touchSmartCorrectionPreservesInsertionPoint() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3su3cl3")
+        #expect(engine.composingText == "你好你好")
+        #expect(engine.selectTouchSmartCell(2))
+        _ = engine.selectDisplayedCandidate(1)
+        #expect(engine.composingText == "你好妳好")
+        _ = type(engine, "su3")
+        #expect(engine.composingText == "你好妳好你")
+    }
+
+    @Test("touch smart keeps nine editable cells and sends only the oldest on the tenth")
+    func touchSmartNineCellWindow() {
+        let engine = smartEngine()
+        for _ in 0..<9 {
+            #expect(type(engine, "su3").last == .update)
+        }
+        #expect(engine.smartCompositionReadingCount == 9)
+        #expect(engine.touchSmartCells == Array(repeating: "你", count: 9))
+        #expect(engine.displayedCandidates.isEmpty)
+
+        _ = type(engine, "s")
+        #expect(engine.touchSmartCells.count == 10)
+        #expect(engine.touchSmartCells[9] == "ㄋ")
+        #expect(engine.selectTouchSmartCell(2))
+        #expect(engine.selectDisplayedCandidate(1) == .update)
+        #expect(engine.touchSmartCells[2] == "妳")
+        #expect(engine.displayedCandidates.isEmpty)
+        _ = engine.backspace()
+
+        #expect(type(engine, "su3").last == .commit("你"))
+        #expect(engine.smartCompositionReadingCount == 9)
+        #expect(engine.touchSmartCells[1] == "妳")
+    }
+
+    @Test("touch smart sends a selected phrase together when it leaves the window")
+    func touchSmartPhraseAcrossWindow() {
+        let first = TableCandidateSource.queryKey(for: "su3")
+        let second = TableCandidateSource.queryKey(for: "cl3")
+        let source = TableSmartSource(table: [
+            first: ["你"], second: ["好"], first + second: ["您好"]
+        ])
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource(["su3": ["你"], "cl3": ["好"]]),
+            smartSource: source, compositionMode: .smart
+        )
+        _ = type(engine, "su3cl3")
+        #expect(engine.selectTouchSmartCell(0))
+        #expect(engine.displayedCandidates == ["你", "您好"])
+        _ = engine.selectDisplayedCandidate(1)
+        #expect(engine.composingText == "您好")
+        for _ in 0..<7 { _ = type(engine, "su3") }
+        #expect(engine.smartCompositionReadingCount == 9)
+        #expect(type(engine, "su3").last == .commit("您好"))
+        #expect(engine.touchSmartCells.first == "你")
+        #expect(engine.smartCompositionReadingCount == 8)
+    }
+
+    @Test("touch smart keeps the next character when its preceding context leaves")
+    func touchSmartPreservesFollowingSegment() {
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource([:]), smartSource: ContextSensitiveSmartSource(),
+            compositionMode: .smart
+        )
+        _ = type(engine, "fu/3ru84")
+        for _ in 0..<7 { _ = type(engine, "su3") }
+        #expect(engine.composingText == "請假" + String(repeating: "你", count: 7))
+        #expect(type(engine, "su3").last == .commit("請"))
+        #expect(engine.composingText == "假" + String(repeating: "你", count: 8))
+    }
+
+    @Test("smart backspace removes a composed syllable before the document")
+    func smartBackspace() {
+        let engine = smartEngine()
+        _ = type(engine, "su3cl3")
+        #expect(engine.composingText == "你好")
+        #expect(engine.backspace() == .update)
+        #expect(engine.composingText == "你")
+        #expect(engine.backspace() == .update)
+        #expect(!engine.hasComposition)
+        #expect(engine.backspace() == .delete)
+    }
+
+    @Test("hardware smart mode keeps number-row keys for the next reading until Space opens candidates")
+    func hardwareSmartContinuousReading() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3")
+        #expect(engine.composingText == "你")
+        #expect(engine.displayedCandidates.isEmpty)
+
+        // 3 is a Bopomofo tone key. The next syllable must not select candidate 3.
+        _ = type(engine, "cl3")
+        #expect(engine.composingText == "你好")
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.enter() == .commit("你好"))
+    }
+
+    @Test("hardware smart mode selects candidates only after Space and keeps composing")
+    func hardwareSmartCandidatePanel() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3")
+        #expect(engine.space() == .update)
+        #expect(engine.isShowingSmartCandidates)
+        #expect(engine.displayedCandidates == ["你", "妳", "擬"])
+        #expect(engine.handleHardwareCharacter("2") == .update)
+        #expect(engine.composingText == "妳")
+        #expect(engine.displayedCandidates.isEmpty)
+
+        _ = type(engine, "cl3")
+        #expect(engine.composingText == "妳好")
+        #expect(engine.space() == .update)
+        #expect(engine.escape() == .update)
+        #expect(engine.composingText == "妳好")
+        #expect(engine.displayedCandidates.isEmpty)
+    }
+
+    @Test("hardware smart Enter accepts an open candidate before committing the sentence")
+    func hardwareSmartEnterCandidate() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3")
+        _ = engine.space()
+        engine.moveHighlight(by: 1)
+        #expect(engine.enter() == .update)
+        #expect(engine.composingText == "妳")
+        #expect(engine.enter() == .commit("妳"))
+    }
+
+    @Test("hardware smart cursor selects an earlier character without committing the sentence")
+    func hardwareSmartEarlierCharacter() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3cl3")
+        #expect(engine.smartCompositionCursor == 2)
+        #expect(engine.moveSmartCompositionCursor(by: -2))
+        #expect(engine.smartCompositionCursor == 0)
+        #expect(engine.composingCaretUTF16Offset == 0)
+        #expect(engine.space() == .update)
+        #expect(engine.displayedCandidates == ["你", "妳", "擬"])
+        #expect(engine.selectDisplayedCandidate(1) == .update)
+        #expect(engine.composingText == "妳好")
+        #expect(engine.smartCompositionCursor == 1)
+        #expect(engine.enter() == .commit("妳好"))
+    }
+
+    @Test("hardware smart cursor can choose a multi-syllable phrase")
+    func hardwareSmartPhraseSelection() {
+        let first = TableCandidateSource.queryKey(for: "su3")
+        let second = TableCandidateSource.queryKey(for: "cl3")
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource(["su3": ["你"], "cl3": ["好"]]),
+            smartSource: TableSmartSource(table: [
+                first: ["你", "妳"], second: ["好"],
+                first + second: ["你好", "您好"]
+            ]),
+            compositionMode: .smart,
+            hardwareSmartEditing: true
+        )
+        _ = type(engine, "su3cl3")
+        #expect(engine.moveSmartCompositionCursor(by: -2))
+        _ = engine.space()
+        #expect(engine.displayedCandidates == ["你", "妳", "你好", "您好"])
+        #expect(engine.selectDisplayedCandidate(3) == .update)
+        #expect(engine.composingText == "您好")
+        #expect(engine.smartCompositionCursor == 2)
+        #expect(engine.moveSmartCompositionCursor(by: -1))
+        #expect(engine.composingCaretUTF16Offset == 1)
+        _ = engine.space()
+        #expect(engine.displayedCandidates == ["好"])
+        #expect(engine.selectDisplayedCandidate(0) == .update)
+        #expect(engine.enter() == .commit("你好"))
+    }
+
+    @Test("editing at the hardware smart cursor changes the uncommitted sentence")
+    func hardwareSmartCursorEditing() {
+        let insertion = smartEngine(hardwareEditing: true)
+        _ = type(insertion, "su3cl3")
+        #expect(insertion.moveSmartCompositionCursor(by: -1))
+        _ = type(insertion, "su3")
+        #expect(insertion.composingText == "你你好")
+        #expect(insertion.composingCaretUTF16Offset == 2)
+        #expect(insertion.enter() == .commit("你你好"))
+
+        let deletion = smartEngine(hardwareEditing: true)
+        _ = type(deletion, "su3cl3")
+        #expect(deletion.moveSmartCompositionCursor(by: -1))
+        #expect(deletion.backspace() == .update)
+        #expect(deletion.composingText == "好")
+        #expect(deletion.smartCompositionCursor == 0)
+        #expect(deletion.enter() == .commit("好"))
+    }
 
     @Test("a tone mark opens the candidate list")
     func toneOpensCandidates() {

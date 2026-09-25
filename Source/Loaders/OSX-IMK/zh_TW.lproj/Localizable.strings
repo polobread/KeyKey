@@ -4,6 +4,15 @@
 "Simplex" = "簡易";
 "Help" = "輔助說明";
 "Preferences..." = "偏好設定…";
+"Edit User Phrases..." = "編輯自訂詞…";
+"Unable to launch user phrase editor." = "無法開啟自訂詞編輯器。";
+"Reset Smart Phonetic Learning..." = "重設好打注音學習紀錄…";
+"Reset Smart Phonetic Learning?" = "要重設好打注音學習紀錄嗎？";
+"This clears learned candidate choices and word relationships. Your custom phrases are kept." = "這會清除已學習的選字和相鄰詞關係，但會保留你的自訂詞。";
+"Reset Learning" = "重設學習紀錄";
+"Cancel" = "取消";
+"Smart Phonetic learning was reset." = "好打注音學習紀錄已重設。";
+"Unable to reset Smart Phonetic learning." = "無法重設好打注音學習紀錄。";
 "About chichi77 KeyKey" = "關於 琦琦輸入法";
 "<h2>Error</h2><p>Unable to fetch data from the online dictionary.</p></body></html>" = "<h2>錯誤</h2><p>無法與線上字典連線。</p></body></html>";
 "<h2>Not Found</h2><p>Unable to find results matching %@." = "<h2>找不到</h2><p>找不到符合「%@」的項目";

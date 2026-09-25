@@ -1,13 +1,14 @@
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.Exec
 
 plugins {
     id("com.android.application")
 }
 
-val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.2.9")
+val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.3.0")
 val keyKeyVersionCode = providers.gradleProperty("keykeyVersionCode")
     .map(String::toInt)
-    .getOrElse(1_002_009)
+    .getOrElse(1_003_000)
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH")
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD")
 val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS")
@@ -71,6 +72,7 @@ android {
 
     sourceSets["main"].assets.directories.add("build/generated/bopomofoAssets")
     sourceSets["main"].assets.directories.add("build/generated/indexedDictionaryAssets")
+    sourceSets["main"].assets.directories.add("build/generated/smartMandarinAssets")
 }
 
 val generateBopomofoAssets by tasks.registering(Copy::class) {
@@ -107,6 +109,31 @@ val compileDictionaryCompiler by tasks.registering(JavaCompile::class) {
 val generatedIndexedDictionaryDirectory =
     layout.buildDirectory.dir("generated/indexedDictionaryAssets")
 
+val smartMandarinDatabase =
+    layout.projectDirectory.file("../../../Distributions/Takao/CookedDatabase/KeyKey.db")
+val smartMandarinVerifier =
+    layout.projectDirectory.file(
+        "../../../Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
+    )
+
+val verifySmartMandarinDatabase by tasks.registering(Exec::class) {
+    val python = providers.environmentVariable("PYTHON3").orNull
+    if (python != null) {
+        commandLine(python, smartMandarinVerifier.asFile, smartMandarinDatabase.asFile)
+    } else if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+        commandLine("py", "-3", smartMandarinVerifier.asFile, smartMandarinDatabase.asFile)
+    } else {
+        commandLine("python3", smartMandarinVerifier.asFile, smartMandarinDatabase.asFile)
+    }
+    inputs.files(smartMandarinDatabase, smartMandarinVerifier)
+}
+
+val generateSmartMandarinAssets by tasks.registering(Sync::class) {
+    dependsOn(verifySmartMandarinDatabase)
+    from(smartMandarinDatabase)
+    into(layout.buildDirectory.dir("generated/smartMandarinAssets"))
+}
+
 val generateIndexedDictionaryAssets by tasks.registering(JavaExec::class) {
     dependsOn(compileDictionaryCompiler)
     classpath = files(compileDictionaryCompiler.flatMap { it.destinationDirectory })
@@ -131,6 +158,7 @@ tasks.named("preBuild").configure {
     dependsOn(generateBopomofoAssets)
     dependsOn(generateAssociatedPhraseAssets)
     dependsOn(generateIndexedDictionaryAssets)
+    dependsOn(generateSmartMandarinAssets)
 }
 
 tasks.withType<Test>().configureEach {

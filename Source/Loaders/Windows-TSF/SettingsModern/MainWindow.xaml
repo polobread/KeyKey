@@ -1,0 +1,147 @@
+<Window x:Class="KeyKeySettings.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="琦琦輸入法設定" Width="900" Height="720" MinWidth="680" MinHeight="550"
+        WindowStartupLocation="CenterScreen" FontFamily="Microsoft JhengHei UI"
+        ThemeMode="System">
+  <Window.Resources>
+    <Style TargetType="GroupBox">
+      <Setter Property="Margin" Value="0,0,0,18" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style TargetType="TextBlock">
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style TargetType="ComboBox">
+      <Setter Property="MinWidth" Value="190" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Margin" Value="0,6,0,10" />
+    </Style>
+    <Style TargetType="Button">
+      <Setter Property="Padding" Value="14,6" />
+      <Setter Property="Margin" Value="0,0,8,0" />
+      <Setter Property="MinHeight" Value="34" />
+    </Style>
+  </Window.Resources>
+  <DockPanel Margin="24,18,24,18">
+    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+      <TextBlock Text="琦琦輸入法" FontSize="26" FontWeight="SemiBold" />
+      <TextBlock Text="設定" FontSize="14" Opacity="0.7" />
+    </StackPanel>
+    <Grid DockPanel.Dock="Bottom" Margin="0,14,0,0">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <TextBlock Text="版本 1.3.0" VerticalAlignment="Center" Opacity="0.65" />
+      <TextBlock x:Name="Status" Grid.Column="1" Margin="20,0" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
+      <StackPanel Grid.Column="2" Orientation="Horizontal">
+        <Button Content="套用" Click="Apply_Click" IsDefault="True" />
+        <Button Content="關閉" Click="Close_Click" IsCancel="True" />
+      </StackPanel>
+    </Grid>
+    <TabControl>
+      <TabItem Header="一般">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="16,20,20,8">
+          <GroupBox Header="鍵盤與輸入法">
+            <StackPanel>
+              <TextBlock Text="實體鍵盤配置" FontWeight="SemiBold" />
+              <TextBlock Text="美式鍵盤（固定）" Margin="0,6,0,8" />
+              <TextBlock Text="在工作列輸入法選單顯示" FontWeight="SemiBold" Margin="0,10,0,8" />
+              <CheckBox x:Name="ShowSmartMandarin" Content="好打注音" Margin="0,0,0,8" />
+              <CheckBox x:Name="ShowTraditionalMandarin" Content="傳統注音" Margin="0,0,0,8" />
+              <TextBlock Text="至少保留一種輸入法；工作列選單可直接切換。本版不包含倉頡與簡易。" Opacity="0.7" />
+            </StackPanel>
+          </GroupBox>
+          <GroupBox Header="選字窗">
+            <StackPanel>
+              <TextBlock Text="顯示方向" FontWeight="SemiBold" />
+              <StackPanel Orientation="Horizontal" Margin="0,8,0,12">
+                <RadioButton x:Name="VerticalCandidate" Content="垂直" GroupName="CandidateDirection" Margin="0,0,22,0" />
+                <RadioButton x:Name="HorizontalCandidate" Content="水平" GroupName="CandidateDirection" />
+              </StackPanel>
+              <TextBlock Text="大小" FontWeight="SemiBold" />
+              <ComboBox x:Name="CandidateScale" />
+              <TextBlock Text="跟隨 Windows 時，會使用目前顯示器的縮放比例。" Opacity="0.7" Margin="0,0,0,12" />
+              <TextBlock Text="反白顏色" FontWeight="SemiBold" />
+              <ComboBox x:Name="HighlightColor" />
+            </StackPanel>
+          </GroupBox>
+          <GroupBox Header="快捷鍵與提示聲">
+            <StackPanel>
+              <CheckBox x:Name="ControlBackslash" Content="使用 Ctrl + \ 切換中英文模式" Margin="0,0,0,12" />
+              <CheckBox x:Name="TypingBeep" Content="輸入錯誤時發出提示聲" Margin="0,0,0,12" />
+              <TextBlock Text="單按 Shift 或 Ctrl+Space 切換中英文；Shift+Space 切換全半形。" Opacity="0.7" />
+            </StackPanel>
+          </GroupBox>
+        </StackPanel></ScrollViewer>
+      </TabItem>
+      <TabItem Header="注音">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="16,20,20,8">
+          <GroupBox Header="注音輸入法">
+            <StackPanel>
+              <TextBlock Text="鍵盤配置" FontWeight="SemiBold" />
+              <ComboBox x:Name="PhoneticLayout" />
+              <CheckBox x:Name="RareCharacters" Content="使用全字庫罕用字（CNS11643）" Margin="0,10,0,10" />
+              <TextBlock Text="關閉時僅顯示 Big-5 可表示的候選字。設定會在下一次按鍵時生效。" Opacity="0.7" />
+              <CheckBox x:Name="ClearSmartCompositionWithEsc" Content="按 Esc 清除好打注音已完成的整句" Margin="0,18,0,8" />
+              <TextBlock Text="預設保留整句；候選窗開啟時 Esc 只關閉候選，未完成讀音則只清除讀音。" Opacity="0.7" />
+            </StackPanel>
+          </GroupBox>
+          <TextBlock Text="好打注音會整句組字並學習選字；輸入法可從工作列直接切換。" Opacity="0.7" />
+        </StackPanel></ScrollViewer>
+      </TabItem>
+      <TabItem Header="關聯詞庫">
+        <Grid Margin="16,20,20,8">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <TextBlock Text="選擇要啟用的關聯詞詞庫。變更會在下一次輸入時生效。" Margin="0,0,0,12" />
+          <DataGrid x:Name="Collections" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False"
+                    HeadersVisibility="Column" IsReadOnly="False" SelectionMode="Single">
+            <DataGrid.Columns>
+              <DataGridTemplateColumn Header="啟用" Width="70">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTextColumn Header="詞庫" Binding="{Binding Display}" IsReadOnly="True" Width="*" />
+              <DataGridTextColumn Header="識別碼" Binding="{Binding Source}" IsReadOnly="True" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,12,0,0">
+            <Button Content="全部啟用" Click="EnableAll_Click" />
+            <Button Content="僅基本詞庫" Click="BaseOnly_Click" />
+          </StackPanel>
+        </Grid>
+      </TabItem>
+      <TabItem Header="自訂詞">
+        <Grid Margin="16,20,20,8">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <TextBlock Text="自訂詞用於好打注音；每個字的讀音以半形逗號分隔。" Margin="0,0,0,12" />
+          <DataGrid x:Name="UserPhrases" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+                    CanUserAddRows="False" SelectionMode="Single" SelectionChanged="UserPhrases_SelectionChanged">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="詞語" Binding="{Binding Text}" Width="*" />
+              <DataGridTextColumn Header="注音讀音" Binding="{Binding Reading}" Width="2*" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <Grid Grid.Row="2" Margin="0,12,0,10">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+            <StackPanel><TextBlock Text="詞語"/><TextBox x:Name="PhraseText" Margin="0,5,0,0"/></StackPanel>
+            <StackPanel Grid.Column="2"><TextBlock Text="注音讀音"/><TextBox x:Name="PhraseReading" Margin="0,5,0,0"/></StackPanel>
+          </Grid>
+          <WrapPanel Grid.Row="3" Margin="0,0,0,10">
+            <Button Content="新增" Click="AddPhrase_Click" />
+            <Button Content="修改選取詞" Click="UpdatePhrase_Click" />
+            <Button Content="刪除選取詞" Click="DeletePhrase_Click" />
+            <Button Content="重設學習紀錄…" Click="ResetLearning_Click" />
+          </WrapPanel>
+          <WrapPanel Grid.Row="4">
+            <Button Content="匯入使用者資料庫…" Click="Import_Click" />
+            <Button Content="匯出使用者資料庫…" Click="Export_Click" />
+            <TextBlock Text="匯入會合併自訂詞並載入學習紀錄；重設僅清除學習。" VerticalAlignment="Center" Opacity="0.7" />
+          </WrapPanel>
+        </Grid>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

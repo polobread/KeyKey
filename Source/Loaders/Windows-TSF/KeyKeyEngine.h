@@ -42,6 +42,8 @@ struct KeyEvent {
 // DataTables/bpmf-punctuations.cin. General application shortcuts must remain
 // outside the input-method engine.
 bool IsInputMethodControlKey(const KeyEvent& event);
+std::string CurrentInputMethod();
+bool SelectInputMethod(const char* identifier);
 
 class KeyKeyEngineSession final {
 public:
@@ -60,6 +62,7 @@ public:
 private:
     explicit KeyKeyEngineSession(OpenVanilla::PVLoaderContext* context);
     OpenVanilla::PVLoaderContext* context_ = nullptr;
+    std::string inputMethod_;
 };
 
 }  // namespace KeyKey::WindowsTsf

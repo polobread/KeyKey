@@ -98,35 +98,6 @@ if ($registrationProcess.ExitCode -ne 0) {
     throw "regsvr32 failed with exit code $($registrationProcess.ExitCode)."
 }
 
-$tip = '0404:{828E3CF0-11E9-45FC-A5DB-394991AD0093}{BED5C2CB-27F6-455D-AB13-CD2BB19B670B}'
-$languageList = Get-WinUserLanguageList
-$languageListChanged = $false
-if ($Unregister) {
-    foreach ($language in $languageList) {
-        if ($language.InputMethodTips -contains $tip) {
-            [void]$language.InputMethodTips.Remove($tip)
-            $languageListChanged = $true
-        }
-    }
-}
-else {
-    $traditionalChinese = $languageList |
-        Where-Object LanguageTag -eq 'zh-Hant-TW' |
-        Select-Object -First 1
-    if (-not $traditionalChinese) {
-        $traditionalChinese = New-WinUserLanguageList 'zh-Hant-TW'
-        $languageList += $traditionalChinese
-        $languageListChanged = $true
-    }
-    if ($traditionalChinese.InputMethodTips -notcontains $tip) {
-        [void]$traditionalChinese.InputMethodTips.Add($tip)
-        $languageListChanged = $true
-    }
-}
-if ($languageListChanged) {
-    Set-WinUserLanguageList $languageList -Force
-}
-
 $operation = if ($Unregister) { 'Unregistered' } else { 'Registered' }
 # Keep this script ASCII-only because Windows PowerShell 5 treats UTF-8 files
 # without a BOM as the current ANSI code page. The registered profile itself

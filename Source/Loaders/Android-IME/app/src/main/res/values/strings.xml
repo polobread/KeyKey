@@ -10,6 +10,12 @@
     <string name="choose_ime">2. 選擇琦琦注音</string>
     <string name="open_settings">3. 調整設定</string>
     <string name="settings_title">琦琦注音設定</string>
+    <string name="composition_mode_title">注音模式</string>
+    <string-array name="composition_modes">
+        <item>好打注音</item>
+        <item>傳統注音</item>
+    </string-array>
+    <string name="composition_mode_description">好打注音會連續組句，不必逐字選字。螢幕鍵盤會即時把已組好的中文字寫入 App；點上方組字列中的字可改選候選，搜尋／前往／Enter 按一次即可執行。使用實體鍵盤時，按 ←／→ 移動組字游標，Space／↓ 開啟游標處的字詞候選，↑／↓ 或 1–9 選字詞。傳統注音維持逐字選字的操作方式。</string>
     <string name="haptic_feedback_title">按鍵震動回饋</string>
     <string name="haptic_feedback_description">可選 0、1、2、3、5、10、20、30、50、100 毫秒。放開滑桿後會以所選時間試震一次；設定為 0 時關閉震動。</string>
     <string name="haptic_off">0 秒（關閉）</string>

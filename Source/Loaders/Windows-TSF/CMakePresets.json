@@ -16,13 +16,6 @@
       }
     },
     {
-      "name": "windows-arm64",
-      "displayName": "Windows ARM64 (Visual Studio 2026)",
-      "generator": "Visual Studio 18 2026",
-      "architecture": "ARM64",
-      "binaryDir": "${sourceDir}/out/build/arm64"
-    },
-    {
       "name": "windows-x64-vs2026",
       "displayName": "Windows x64 (Visual Studio 2026)",
       "generator": "Visual Studio 18 2026",
@@ -55,11 +48,6 @@
     {
       "name": "windows-x64-release",
       "configurePreset": "windows-x64"
-    },
-    {
-      "name": "windows-arm64-release",
-      "configurePreset": "windows-arm64",
-      "configuration": "Release"
     },
     {
       "name": "windows-x64-vs2026-release",

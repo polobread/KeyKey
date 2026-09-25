@@ -28,9 +28,16 @@ often they occur -- under a licence that permits redistribution.
 `BPMFMappings.txt` supplies readings, which associated phrases do not use but a
 phrase input model would.
 
-## What still is not here
+## Smart Phonetic model
 
-Phrase input needs more than a word list. It needs the unigram and bigram model
-`Makefile.SmartMandarin` builds, and that makefile depends on
-`PrecompiledTools/PhraseTool` and `cerod_build`, neither of which was part of
-the open-source release. These files do not close that gap.
+`Source/Distributions/Takao/DatabaseCooker/SmartMandarinCooker.rb` combines
+these files with the Bopomofo CIN and writes the redistributable unigram model
+used by the macOS Smart Phonetic input method. It replaces the historical
+PhraseTool/CEROD build path and does not require the unpublished Sinica corpus.
+
+The source data contains word occurrence counts, but no adjacent-word counts.
+The cooker supplements it with the separately documented bootstrap and
+2,300-article corpus in `DataSource/AISyntheticBigram`. Each distinct synthetic
+text pair contributes at most one observation. This corpus remains for
+engineering and A/B testing; contextual prediction can still differ from the
+historical Yahoo model.

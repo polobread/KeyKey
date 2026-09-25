@@ -59,6 +59,17 @@ public:
     }
 };
 
+class BopomofoModeAnnotation : public fcitx::EnumAnnotation {
+public:
+    void dumpDescription(fcitx::RawConfig &config) const {
+        fcitx::EnumAnnotation::dumpDescription(config);
+        config.setValueByPath("Enum/0", "Smart");
+        config.setValueByPath("EnumI18n/0", "好打注音");
+        config.setValueByPath("Enum/1", "Traditional");
+        config.setValueByPath("EnumI18n/1", "傳統注音");
+    }
+};
+
 class CandidateWindowStyleAnnotation : public fcitx::EnumAnnotation {
 public:
     void dumpDescription(fcitx::RawConfig &config) const {
@@ -123,6 +134,8 @@ FCITX_CONFIGURATION(
     fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
         bopomofoLayout{this, "BopomofoLayout", "Bopomofo keyboard layout",
                        "Standard"};
+    fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation>
+        bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"};
     fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation>
         candidateWindowStyle{this, "CandidateWindowStyle",
                              "Candidate window style", "Vertical"};
@@ -183,6 +196,7 @@ public:
         : inputContext_(inputContext) {}
 
     void process(const linux_ime::Engine &engine,
+                 bool smartMode,
                  bool traditionalToSimplified,
                  bool playSoundOnTypingError,
                  fcitx::CandidateLayoutHint candidateLayout,
@@ -191,7 +205,9 @@ public:
     bool processModeKey(bool toggleWithControlBackslash,
                         fcitx::KeyEvent &event);
     void select(std::size_t displayedIndex);
+    bool selectSmartCharacter(std::size_t preeditCharacterIndex);
     void reset();
+    void commitAndReset();
     bool chineseMode() const noexcept { return chineseMode_; }
 
 private:
@@ -206,8 +222,12 @@ private:
 
     fcitx::InputContext *inputContext_;
     linux_ime::InputContextState context_;
-    const linux_ime::Engine *activeEngine_ = nullptr;
+    const linux_ime::Engine *sourceEngine_ = nullptr;
+    // Keep the configuration that owns this composition. applyConfig mutates
+    // shared engines before the next key or deactivation reaches this state.
+    std::unique_ptr<linux_ime::Engine> activeEngine_;
     bool chineseMode_ = true;
+    bool smartMode_ = false;
     fcitx::CandidateLayoutHint candidateLayout_ =
         fcitx::CandidateLayoutHint::Vertical;
     std::optional<ShiftPress> shiftPressedAt_;
@@ -232,7 +252,7 @@ private:
     std::size_t displayedIndex_;
 };
 
-class FcitxEngine : public fcitx::InputMethodEngineV2 {
+class FcitxEngine : public fcitx::InputMethodEngineV3 {
 public:
     explicit FcitxEngine(fcitx::Instance *instance)
         : instance_(instance),
@@ -242,6 +262,7 @@ public:
           punctuationDictionary_(loadDictionary("bpmf-punctuations.cin")),
           traditionalToSimplifiedDictionary_(loadDictionary("tc2sc.cin")),
           associatedPhraseDictionary_(loadAssociatedPhraseDictionary()),
+          smartMandarinStore_(loadSmartMandarinStore()),
           standardEngine_(bopomofoDictionary_, linux_ime::InputMethod::Bopomofo,
                           linux_ime::BopomofoLayout::Standard,
                           punctuationDictionary_,
@@ -294,6 +315,19 @@ public:
                     ->processModeKey(*config_.toggleWithControlBackslash,
                                      keyEvent);
             });
+        switchEventWatcher_ = instance->watchEvent(
+            fcitx::EventType::InputContextSwitchInputMethod,
+            fcitx::EventWatcherPhase::PreInputMethod,
+            [this](fcitx::Event &event) {
+                auto &switchEvent =
+                    static_cast<fcitx::InputContextSwitchInputMethodEvent &>(
+                        event);
+                if (isKeyKeyInputMethod(switchEvent.oldInputMethod())) {
+                    switchEvent.inputContext()
+                        ->propertyFor(&factory_)
+                        ->commitAndReset();
+                }
+            });
         reloadConfig();
     }
 
@@ -331,7 +365,9 @@ public:
             return;
         }
         state->process(
-            engineFor(entry), *config_.traditionalToSimplified,
+            engineFor(entry), entry.uniqueName() == "chichi77-keykey-bopomofo" &&
+                                  *config_.bopomofoMode != "Traditional",
+            *config_.traditionalToSimplified,
             *config_.playSoundOnTypingError, candidateLayoutHint(), errorSound_,
             translated, event);
     }
@@ -357,7 +393,19 @@ public:
 
     void deactivate(const fcitx::InputMethodEntry &entry,
                     fcitx::InputContextEvent &event) override {
-        reset(entry, event);
+        FCITX_UNUSED(entry);
+        event.inputContext()->propertyFor(&factory_)->commitAndReset();
+    }
+
+    void invokeActionImpl(const fcitx::InputMethodEntry &entry,
+                          fcitx::InvokeActionEvent &event) override {
+        if (entry.uniqueName() == "chichi77-keykey-bopomofo" &&
+            event.action() == fcitx::InvokeActionEvent::Action::LeftClick &&
+            event.cursor() >= 0 &&
+            event.inputContext()->propertyFor(&factory_)->selectSmartCharacter(
+                static_cast<std::size_t>(event.cursor()))) {
+            event.filter();
+        }
     }
 
 private:
@@ -386,6 +434,18 @@ private:
         return std::make_shared<const linux_ime::AssociatedPhraseDictionary>(
             linux_ime::AssociatedPhraseDictionary::loadDirectory(
                 directory + "/associated-phrases"));
+    }
+
+    static std::shared_ptr<const linux_ime::SmartMandarinStore>
+    loadSmartMandarinStore() {
+        const char *overrideDirectory = std::getenv("CHICHI77_KEYKEY_DATA_DIR");
+        const std::string directory =
+            overrideDirectory == nullptr ? KEYKEY_LINUX_DATA_DIR
+                                         : overrideDirectory;
+        auto userData = linux_ime::SmartMandarinUserData::open(
+            linux_ime::SmartMandarinUserData::defaultPath());
+        return linux_ime::SmartMandarinStore::open(
+            directory + "/smart-mandarin.db", std::move(userData));
     }
 
     static std::vector<std::string>
@@ -426,6 +486,13 @@ private:
     }
 
     void applyConfig() {
+        const bool smart = *config_.bopomofoMode != "Traditional";
+        for (linux_ime::Engine *engine : {&standardEngine_, &etenEngine_,
+                                          &eten26Engine_, &hsuEngine_,
+                                          &hanyuPinyinEngine_}) {
+            engine->setSmartMandarinStore(smartMandarinStore_);
+            engine->setSmartMandarinMode(smart);
+        }
         const std::vector<std::string> enabled =
             enabledAssociatedPhraseCollections(*config_.associatedPhrases);
         standardEngine_.setAssociatedPhraseCollections(enabled);
@@ -486,6 +553,7 @@ private:
     static bool translate(const fcitx::KeyEvent &source,
                           linux_ime::KeyEvent &destination) {
         destination.release = source.isRelease();
+        destination.capsLock = source.rawKey().states().test(fcitx::KeyState::CapsLock);
         const fcitx::KeyStates states = source.key().states();
         destination.repeat = states.test(fcitx::KeyState::Repeat);
         if (states.test(fcitx::KeyState::Shift)) {
@@ -579,6 +647,7 @@ private:
         traditionalToSimplifiedDictionary_;
     std::shared_ptr<const linux_ime::AssociatedPhraseDictionary>
         associatedPhraseDictionary_;
+    std::shared_ptr<const linux_ime::SmartMandarinStore> smartMandarinStore_;
     linux_ime::Engine standardEngine_;
     linux_ime::Engine etenEngine_;
     linux_ime::Engine eten26Engine_;
@@ -591,11 +660,14 @@ private:
     KeyKeyConfig config_;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
         keyEventWatcher_;
+    std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
+        switchEventWatcher_;
 };
 
 #undef KEYKEY_ASSOCIATED_PHRASE_OPTIONS
 
-void FcitxState::process(const linux_ime::Engine &engine,
+void FcitxState::process(const linux_ime::Engine &sourceEngine,
+                         bool smartMode,
                          bool traditionalToSimplified,
                          bool playSoundOnTypingError,
                          fcitx::CandidateLayoutHint candidateLayout,
@@ -603,10 +675,18 @@ void FcitxState::process(const linux_ime::Engine &engine,
                          const linux_ime::KeyEvent &event,
                          fcitx::KeyEvent &fcitxEvent) {
     candidateLayout_ = candidateLayout;
-    if (activeEngine_ != &engine) {
-        context_.reset();
-        activeEngine_ = &engine;
+    if (sourceEngine_ != &sourceEngine || smartMode_ != smartMode) {
+        commitAndReset();
+        activeEngine_.reset();
+        sourceEngine_ = &sourceEngine;
+        smartMode_ = smartMode;
     }
+    const auto current = activeEngine_ ? activeEngine_->snapshot(context_)
+                                       : linux_ime::EngineResult{};
+    if (!activeEngine_ || (current.preedit.empty() && current.candidates.empty())) {
+        activeEngine_ = std::make_unique<linux_ime::Engine>(sourceEngine);
+    }
+    const linux_ime::Engine &engine = *activeEngine_;
     engine.setTraditionalToSimplifiedMode(context_,
                                           traditionalToSimplified);
     if (!chineseMode_) {
@@ -650,7 +730,30 @@ void FcitxState::process(const linux_ime::Engine &engine,
     if (sensitive && engine.snapshot(context_).associatedPhrases) {
         context_.reset();
     }
-    linux_ime::EngineResult result = engine.processKey(context_, event);
+    auto editingEvent = event;
+    if (candidateLayout_ == fcitx::CandidateLayoutHint::Horizontal &&
+        event.modifiers == linux_ime::KeyModifier::None &&
+        !engine.snapshot(context_).candidates.empty()) {
+        // Match the desktop panel: arrows along its axis select a candidate;
+        // arrows across its axis change pages.
+        switch (event.code) {
+        case linux_ime::KeyCode::Left:
+            editingEvent.code = linux_ime::KeyCode::Up;
+            break;
+        case linux_ime::KeyCode::Right:
+            editingEvent.code = linux_ime::KeyCode::Down;
+            break;
+        case linux_ime::KeyCode::Up:
+            editingEvent.code = linux_ime::KeyCode::Left;
+            break;
+        case linux_ime::KeyCode::Down:
+            editingEvent.code = linux_ime::KeyCode::Right;
+            break;
+        default:
+            break;
+        }
+    }
+    linux_ime::EngineResult result = engine.processKey(context_, editingEvent);
     if (sensitive && result.associatedPhrases) {
         const std::string commit = std::move(result.commit);
         context_.reset();
@@ -746,8 +849,10 @@ bool FcitxState::processModeKey(bool toggleWithControlBackslash,
             return true;
         } else if (!event.isRelease()) {
             if (!controlBackslashPressed_) {
-                controlBackslashPressed_ = true;
                 toggleChineseMode();
+                // Completing composition resets transient key state. Own the
+                // held key afterwards, until its physical release arrives.
+                controlBackslashPressed_ = true;
             }
         }
         event.filterAndAccept();
@@ -757,11 +862,8 @@ bool FcitxState::processModeKey(bool toggleWithControlBackslash,
 }
 
 void FcitxState::toggleChineseMode() {
+    commitAndReset();
     chineseMode_ = !chineseMode_;
-    context_.reset();
-    if (activeEngine_ != nullptr) {
-        updateUi(activeEngine_->snapshot(context_));
-    }
     inputContext_->updateUserInterface(
         fcitx::UserInterfaceComponent::StatusArea);
 }
@@ -770,6 +872,39 @@ void FcitxState::select(std::size_t displayedIndex) {
     if (activeEngine_ != nullptr) {
         apply(activeEngine_->selectDisplayedCandidate(context_, displayedIndex));
     }
+}
+
+bool FcitxState::selectSmartCharacter(std::size_t preeditCharacterIndex) {
+    if (activeEngine_ == nullptr || !smartMode_) {
+        return false;
+    }
+    const linux_ime::EngineResult result =
+        activeEngine_->selectSmartCharacter(context_, preeditCharacterIndex);
+    if (!result.handled) {
+        return false;
+    }
+    apply(result);
+    return true;
+}
+
+void FcitxState::commitAndReset() {
+    if (!inputContext_->hasFocus() &&
+        inputContext_->capabilityFlags().test(
+            fcitx::CapabilityFlag::ClientUnfocusCommit)) {
+        // GTK/Qt frontends with this capability commit the visible client
+        // preedit before reporting focus-out. Committing the engine buffer
+        // again here would duplicate the composition in the document.
+        reset();
+        return;
+    }
+    if (activeEngine_ != nullptr) {
+        const linux_ime::EngineResult result =
+            activeEngine_->finishComposition(context_);
+        if (!result.commit.empty()) {
+            inputContext_->commitString(result.commit);
+        }
+    }
+    reset();
 }
 
 void FcitxState::reset() {
@@ -793,7 +928,8 @@ void FcitxState::updateUi(const linux_ime::EngineResult &result) {
     panel.reset();
 
     if (!result.preedit.empty()) {
-        fcitx::Text preedit(result.preedit, fcitx::TextFormatFlag::HighLight);
+        fcitx::Text preedit(result.preedit, fcitx::TextFormatFlag::Underline);
+        preedit.setCursor(static_cast<int>(result.preeditCursorBytes));
         if (inputContext_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit)) {
             panel.setClientPreedit(preedit);
         } else {

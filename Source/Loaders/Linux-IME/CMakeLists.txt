@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(KeyKeyLinux VERSION 1.2.9 LANGUAGES CXX)
+project(KeyKeyLinux VERSION 1.3.0 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)
 find_package(Iconv REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(KEYKEY_FCITX5_DEFAULT ON)
@@ -32,6 +34,35 @@ set(KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR
     "${KEYKEY_REPOSITORY_ROOT}/DataSource"
     CACHE PATH "Path to the read-only associated-phrase data sources")
 set(KEYKEY_LINUX_DATA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
+set(KEYKEY_SMART_SOURCE_DIR
+    "${KEYKEY_REPOSITORY_ROOT}/DataSource/AISyntheticBigram")
+set(KEYKEY_SMART_CORPORA
+    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v1.txt"
+    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v2.txt"
+    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v3.txt"
+    "${KEYKEY_SMART_SOURCE_DIR}/corpus-typing-feedback.txt"
+    "${KEYKEY_SMART_SOURCE_DIR}/article-corpus-2300-exact-dedup.txt")
+set(KEYKEY_SMART_DB "${CMAKE_CURRENT_BINARY_DIR}/smart-mandarin.db")
+add_custom_command(OUTPUT "${KEYKEY_SMART_DB}"
+    COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/build-smart-mandarin-db.py"
+        "${KEYKEY_SMART_DB}"
+        "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"
+        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
+        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/BPMFMappings.txt"
+        "${KEYKEY_SMART_SOURCE_DIR}/supplemental-lexicon.tsv"
+        "${KEYKEY_SMART_SOURCE_DIR}/numeric-unit-lexicon.tsv"
+        ${KEYKEY_SMART_CORPORA}
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/build-smart-mandarin-db.py"
+        "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"
+        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
+        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/BPMFMappings.txt"
+        "${KEYKEY_SMART_SOURCE_DIR}/supplemental-lexicon.tsv"
+        "${KEYKEY_SMART_SOURCE_DIR}/numeric-unit-lexicon.tsv"
+        ${KEYKEY_SMART_CORPORA}
+    VERBATIM)
+add_custom_target(keykey_linux_smart_db ALL DEPENDS "${KEYKEY_SMART_DB}")
 set(KEYKEY_INSTALL_DATA_DIR
     "${CMAKE_INSTALL_DATADIR}/chichi77-keykey/data")
 set(KEYKEY_INSTALL_ASSOCIATED_PHRASE_DIR
@@ -69,10 +100,18 @@ add_library(keykey_linux_engine STATIC
     engine/src/candidate_encoding.cpp
     engine/src/cin_dictionary.cpp
     engine/src/engine.cpp
+    engine/src/smart_mandarin_store.cpp
+    engine/src/smart_mandarin_user_data.cpp
 )
 target_compile_features(keykey_linux_engine PUBLIC cxx_std_17)
 target_include_directories(keykey_linux_engine PUBLIC engine/include)
-target_link_libraries(keykey_linux_engine PUBLIC Iconv::Iconv)
+target_link_libraries(keykey_linux_engine PUBLIC Iconv::Iconv SQLite::SQLite3)
+add_executable(keykey-smart-phrases tools/smart-mandarin-phrases.cpp)
+target_compile_features(keykey-smart-phrases PRIVATE cxx_std_17)
+target_link_libraries(keykey-smart-phrases PRIVATE keykey_linux_engine)
+install(TARGETS keykey-smart-phrases RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(FILES docs/keykey-smart-phrases.1
+    DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 set_target_properties(keykey_linux_engine PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     CXX_VISIBILITY_PRESET hidden
@@ -100,7 +139,9 @@ if(BUILD_TESTING)
         KEYKEY_TEST_DATA_DIR="${KEYKEY_DATA_SOURCE_DIR}"
         KEYKEY_TEST_LINUX_DATA_DIR="${KEYKEY_LINUX_DATA_SOURCE_DIR}"
         KEYKEY_TEST_ASSOCIATED_PHRASE_DATA_DIR="${KEYKEY_ASSOCIATED_PHRASE_BUILD_DIR}"
+        KEYKEY_TEST_SMART_DB="${KEYKEY_SMART_DB}"
     )
+    add_dependencies(keykey_linux_engine_tests keykey_linux_smart_db)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(keykey_linux_engine_tests PRIVATE
             -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion
@@ -181,6 +222,9 @@ install(FILES
     DESTINATION "${KEYKEY_INSTALL_DATA_DIR}"
 )
 install(FILES "${KEYKEY_LINUX_DATA_SOURCE_DIR}/tc2sc.cin"
+    DESTINATION "${KEYKEY_INSTALL_DATA_DIR}"
+)
+install(FILES "${KEYKEY_SMART_DB}"
     DESTINATION "${KEYKEY_INSTALL_DATA_DIR}"
 )
 install(FILES

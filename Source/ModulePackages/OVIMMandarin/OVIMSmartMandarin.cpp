@@ -820,11 +820,10 @@ OVIMSmartMandarin::OVIMSmartMandarin()
     , m_cfgComposingTextBufferSize(10)    
 #ifndef WIN32
     , m_cfgShowCandidateListWithSpace(true)
-    , m_cfgClearComposingTextWithEsc(false)
 #else
     , m_cfgShowCandidateListWithSpace(false)
-    , m_cfgClearComposingTextWithEsc(true)
 #endif
+    , m_cfgClearComposingTextWithEsc(false)
 	, m_cfgShiftKeyAlwaysCommitUppercaseCharacters(false)
 {
 }
@@ -1031,7 +1030,7 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo, OVLoaderService* loader
             
             if (userDB->execute("BEGIN") == SQLITE_OK) {
 
-                OVSQLiteStatement* fetch = oldUserDB->prepare("SELECT * FROM user_unigrams");
+                OVSQLiteStatement* fetch = oldUserDB->prepare("SELECT * FROM user_unigrams ORDER BY rowid");
             
                 if (fetch) {
                     while (fetch->step() == SQLITE_ROW) {
@@ -1058,7 +1057,13 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo, OVLoaderService* loader
             }
         }
 
-        if (userDB->execute("PRAGMA synchronous = OFF") == SQLITE_OK) {
+        if (userDB->execute(
+#ifdef WIN32
+            "PRAGMA synchronous = NORMAL"
+#else
+            "PRAGMA synchronous = OFF"
+#endif
+            ) == SQLITE_OK) {
             // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "pragma executed" << endl;
         }
         else {
@@ -1139,9 +1144,20 @@ void OVIMSmartMandarin::loadConfig(OVKeyValueMap* moduleConfig, OVLoaderService*
         m_cfgShowCandidateListWithSpace = moduleConfig->isKeyTrue("ShowCandidateListWithSpace");
     }
     
+#ifdef WIN32
+    // The old Windows default was true, and PlainVanilla saved that default
+    // when a context deactivated. An unmarked true in an existing plist is
+    // therefore not evidence that the user opted in to clearing a sentence.
+    m_cfgClearComposingTextWithEsc =
+        moduleConfig->hasKey("ClearComposingTextWithEscUserChoice") &&
+        moduleConfig->isKeyTrue("ClearComposingTextWithEscUserChoice") &&
+        moduleConfig->hasKey("ClearComposingTextWithEsc") &&
+        moduleConfig->isKeyTrue("ClearComposingTextWithEsc");
+#else
     if (moduleConfig->hasKey("ClearComposingTextWithEsc")) {
         m_cfgClearComposingTextWithEsc = moduleConfig->isKeyTrue("ClearComposingTextWithEsc");
     }
+#endif
     
     if (moduleConfig->hasKey("ComposingTextBufferSize")) {
 		size_t s = (size_t)moduleConfig->intValueForKey("ComposingTextBufferSize");
@@ -1165,6 +1181,7 @@ void OVIMSmartMandarin::loadConfig(OVKeyValueMap* moduleConfig, OVLoaderService*
     // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "Candidate cursor precesdes block: " << m_cfgCandidateCursorAtEndOfTargetBlock << endl;    
     
     m_LM->flushCache();
+    m_LM->flushUserCache();
     m_LM->loadUserBigramCache();
     m_LM->loadUserCandidateOverrideCache();
 }

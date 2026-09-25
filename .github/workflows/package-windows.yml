@@ -66,6 +66,16 @@ jobs:
           "release_tag=$releaseTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Set up Ruby for Smart Mandarin database
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+
+      - name: Set up .NET for settings
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
       - name: Configure and build x64
         working-directory: Source/Loaders/Windows-TSF
         run: |
@@ -80,7 +90,7 @@ jobs:
         working-directory: Source/Loaders/Windows-TSF
         run: |
           cmake --preset windows-x86
-          cmake --build --preset windows-x86-release --target KeyKeyTsf
+          cmake --build --preset windows-x86-release --target KeyKeySettings
 
       - name: Install NSIS 3.12
         run: |
@@ -103,6 +113,11 @@ jobs:
             -BuildDirectory ./out/build/x64-vs2026 `
             -X86BuildDirectory ./out/build/x86 `
             -Version $env:VERSION
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./Package-Windows.ps1 `
+            -BuildDirectory ./out/build/x64-vs2026 `
+            -X86BuildDirectory ./out/build/x86 `
+            -Architecture x86 `
+            -Version $env:VERSION
 
       - name: Build unsigned NSIS installer
         working-directory: Source/Loaders/Windows-TSF
@@ -120,6 +135,7 @@ jobs:
           $artifactDirectory = New-Item -ItemType Directory -Path artifacts -Force
           $sources = @(
             "Source/Loaders/Windows-TSF/out/package/chichi77-KeyKey-$env:VERSION-windows-x64.zip",
+            "Source/Loaders/Windows-TSF/out/package/chichi77-KeyKey-$env:VERSION-windows-x86.zip",
             "Source/Loaders/Windows-TSF/out/store-package/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe"
           )
           foreach ($source in $sources) {
@@ -151,6 +167,8 @@ jobs:
           $assets = @(
             "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64.zip",
             "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64.zip.sha256",
+            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x86.zip",
+            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x86.zip.sha256",
             "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe",
             "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe.sha256"
           )

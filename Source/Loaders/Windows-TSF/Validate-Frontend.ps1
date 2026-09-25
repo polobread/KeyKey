@@ -14,13 +14,16 @@ $requiredFiles = @(
     'FrontendSettings.h',
     'Guids.h',
     'KeyKeyEngine.cpp',
-    'KeyKeySettings.rc',
     'KeyKeyTsf.rc',
     'KeyKeyTsf.def',
     'LangBarButton.cpp',
     'LangBarButton.h',
     'Resource.h',
-    'SettingsApp.cpp',
+    'SettingsModern\App.xaml',
+    'SettingsModern\KeyKeySettings.csproj',
+    'SettingsModern\MainWindow.xaml',
+    'SettingsModern\MainWindow.xaml.cs',
+    'SettingsModern\SettingsBackend.cpp',
     'TextService.cpp',
     'TsfInterfaceSmokeTest.cpp',
     'VersionInfo.rcinc'
@@ -74,9 +77,10 @@ $cmake = Get-Content -LiteralPath (Join-Path $frontend 'CMakeLists.txt') -Raw
 if ($cmake -notmatch 'KEYKEY_MARKETING_VERSION') {
     $errors.Add('CMake does not expose the marketing version to the settings UI')
 }
-$settingsApp = Get-Content -LiteralPath (Join-Path $frontend 'SettingsApp.cpp') -Raw
-if ($settingsApp -notmatch 'kVersionText' -or
-    $settingsApp -notmatch 'KEYKEY_MARKETING_VERSION') {
+$versionMatch = [regex]::Match($cmake, 'project\(KeyKeyWindowsTsf VERSION ([0-9]+\.[0-9]+\.[0-9]+)')
+$settingsView = Get-Content -LiteralPath (Join-Path $frontend 'SettingsModern\MainWindow.xaml') -Raw
+if (-not $versionMatch.Success -or
+    $settingsView -notmatch [regex]::Escape("版本 $($versionMatch.Groups[1].Value)")) {
     $errors.Add('Settings app does not display the build marketing version')
 }
 $sourceReferences = [regex]::Matches($cmake, '"\$\{KEYKEY_SOURCE\}/([^"$]+)"')

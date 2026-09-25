@@ -488,6 +488,21 @@ std::string BopomofoReading::queryKey() const {
     return result;
 }
 
+std::string BopomofoReading::absoluteOrderKey() const {
+    const auto value = [](Component component) {
+        return static_cast<int>(component);
+    };
+    const int initial = value(components_[0]);
+    const int medial = value(components_[1]);
+    const int final = value(components_[2]);
+    const int tone = value(components_[3]);
+    const int order = initial + (medial == 0 ? 0 : (medial - 21) * 22) +
+                      (final == 0 ? 0 : (final - 24) * 88) +
+                      (tone == 0 ? 0 : (tone - 37) * 1232);
+    return {static_cast<char>(48 + order % 79),
+            static_cast<char>(48 + order / 79)};
+}
+
 std::string BopomofoReading::displayText(BopomofoLayout layout) const {
     if (layout == BopomofoLayout::HanyuPinyin) {
         return pinyinSequence_;

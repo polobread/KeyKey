@@ -59,6 +59,14 @@ jobs:
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           "platforms;android-36.1" "build-tools;36.0.0"
 
+      - name: Cook the Smart Mandarin database
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential python3 ruby ruby-dev ruby-sqlite3 sqlite3
+          make -C Source/Distributions/Takao/DatabaseCooker
+
       - name: Lint, test, and build debug APK
         working-directory: Source/Loaders/Android-IME
         shell: bash
@@ -73,6 +81,9 @@ jobs:
         run: |
           set -euo pipefail
           source_apk=Source/Loaders/Android-IME/app/build/outputs/apk/debug/app-debug.apk
+          unzip -p "$source_apk" assets/KeyKey.db > "$RUNNER_TEMP/KeyKey-android.db"
+          python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
+            "$RUNNER_TEMP/KeyKey-android.db"
           mkdir -p artifacts
           output="artifacts/chichi77-KeyKey-$VERSION-android-debug.apk"
           cp "$source_apk" "$output"

@@ -1,0 +1,48 @@
+{
+  "scope": "Three saved article samples only",
+  "encoding": "o200k_base",
+  "counting_method": "input_tokens encode SYSTEM_TEXT + newline + compact prompt JSON; output_tokens encode article body only. Chat wrappers, tool calls, hidden context, reasoning, retries, and account billing are excluded.",
+  "system_text": "請依下列作文任務寫一篇完整的台灣繁體中文文章。只輸出正文，不加標題、前言、字數說明或後記。完整遵守 requirements、language_requirements 與 avoid。",
+  "rows": [
+    {
+      "prompt_id": "tw-writing-0001",
+      "title": "月台邊的舊布包",
+      "visible_chars": 1334,
+      "han_chars": 1179,
+      "input_tokens": 435,
+      "output_tokens": 1360,
+      "total_tokens": 1795,
+      "prompt_sha256": "f041179716c289cf8065f5c956858687f2a3cf77a27aa205a3493f04111f2de3",
+      "output_sha256": "1f3438678fff3da535d9d5b8117a170f7b4a43ff0e228201d3e274154ca87847"
+    },
+    {
+      "prompt_id": "tw-writing-0002",
+      "title": "掌心裡的教室：手機與學生學習",
+      "visible_chars": 1463,
+      "han_chars": 1325,
+      "input_tokens": 356,
+      "output_tokens": 1302,
+      "total_tokens": 1658,
+      "prompt_sha256": "cb387be2b731b58f7c14f0da02a30d8bb1c44ab85bb95ec9c3d372c6b3f87533",
+      "output_sha256": "f399b8461932991ae0a50e99ebcbe7818f6ccbb95b336b5aa88e09bb6110d59e"
+    },
+    {
+      "prompt_id": "tw-writing-0004",
+      "title": "期待的重量：現代父母與子女之間",
+      "visible_chars": 1548,
+      "han_chars": 1350,
+      "input_tokens": 363,
+      "output_tokens": 1410,
+      "total_tokens": 1773,
+      "prompt_sha256": "706b8ba017db38d939bb2aebef73ae47e0875ecfdf74dbb83d918492b3a107cd",
+      "output_sha256": "4e93be253f0a0b69fb47ea9afba977da5b99e829e817dbc8602e87df839de82c"
+    }
+  ],
+  "totals": {
+    "visible_chars": 4345,
+    "han_chars": 3854,
+    "input_tokens": 1154,
+    "output_tokens": 4072,
+    "total_tokens": 5226
+  }
+}

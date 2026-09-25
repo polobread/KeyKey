@@ -1,4 +1,6 @@
+import KeyKeyEngine
 import UIKit
+import UniformTypeIdentifiers
 
 /// Setup guidance, mirroring the Android launcher screen. The keyboard itself
 /// carries the settings, so this screen only has to get the user to the point
@@ -40,6 +42,16 @@ final class SetupViewController: UIViewController {
             size: 13, weight: .regular
         )
         hardwareEditorNote.textColor = .secondaryLabel
+
+        let userPhrases = UIButton(configuration: .tinted())
+        userPhrases.setTitle("管理好打注音自訂詞", for: .normal)
+        userPhrases.accessibilityIdentifier = "open-user-phrases"
+        userPhrases.addTarget(self, action: #selector(openUserPhrases), for: .touchUpInside)
+
+        let inputSettings = UIButton(configuration: .tinted())
+        inputSettings.setTitle("輸入法設定", for: .normal)
+        inputSettings.accessibilityIdentifier = "open-input-method-settings"
+        inputSettings.addTarget(self, action: #selector(openInputMethodSettings), for: .touchUpInside)
 
         let steps = label(
             """
@@ -95,7 +107,8 @@ final class SetupViewController: UIViewController {
         acknowledgements.addTarget(self, action: #selector(openAcknowledgements), for: .touchUpInside)
 
         var items: [UIView] = [
-            titleBlock, subtitle, hardwareEditor, hardwareEditorNote, steps, openSettings, note,
+            titleBlock, subtitle, hardwareEditor, hardwareEditorNote, inputSettings, userPhrases,
+            steps, openSettings, note,
             supporterTitle, supporterDescription, supporterPrice,
             supporterButton, restoreButton, acknowledgements
         ]
@@ -201,6 +214,15 @@ final class SetupViewController: UIViewController {
         present(navigation, animated: true)
     }
 
+    @objc private func openUserPhrases() {
+        present(UINavigationController(rootViewController: UserPhrasesViewController()), animated: true)
+    }
+
+    @objc private func openInputMethodSettings() {
+        present(UINavigationController(rootViewController: InputMethodSettingsViewController()),
+                animated: true)
+    }
+
     @objc private func purchaseSupport() {
         Task {
             if supporterStore.state.productAvailable {
@@ -262,6 +284,438 @@ final class SetupViewController: UIViewController {
         present(UINavigationController(rootViewController: controller), animated: true)
     }
     #endif
+}
+
+/// App-managed keyboard preferences are read by the keyboard from the App Group.
+/// The keyboard still keeps its own changes in its private sandbox.
+private final class InputMethodSettingsViewController: UIViewController {
+    private let sharedDefaults = UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier)
+    private var collections: [AssociatedPhraseStore.Collection] = []
+    private var collectionSwitches: [String: UISwitch] = [:]
+    private lazy var phraseSettings = PhraseSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
+    private lazy var modeSettings = BopomofoCompositionModeSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
+    private lazy var colorSettings = CandidateColorSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
+    private lazy var clickSettings = KeyboardClickSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "輸入法設定"
+        view.backgroundColor = .systemBackground
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .done, target: self, action: #selector(close)
+        )
+
+        let scroll = UIScrollView()
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scroll)
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 14
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(stack)
+        NSLayoutConstraint.activate([
+            scroll.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scroll.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -20),
+            stack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 20),
+            stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -24),
+            stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -40)
+        ])
+
+        guard sharedDefaults != nil else {
+            stack.addArrangedSubview(label("無法開啟共用設定，請檢查 App Group 設定。", size: 16))
+            return
+        }
+
+        stack.addArrangedSubview(label("注音模式", size: 18))
+        let modes = BopomofoCompositionMode.allCases
+        let modeControl = UISegmentedControl(items: modes.map(\.displayName))
+        modeControl.selectedSegmentIndex = modes.firstIndex(of: modeSettings.mode) ?? 0
+        modeControl.accessibilityIdentifier = "app-settings.composition-mode"
+        modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(modeControl)
+
+        stack.addArrangedSubview(label("候選字底色", size: 18))
+        let colors = CandidateColor.allCases
+        let colorControl = UISegmentedControl(items: ["紫", "綠", "黃", "紅"])
+        colorControl.selectedSegmentIndex = colors.firstIndex(of: colorSettings.color) ?? 0
+        colorControl.accessibilityIdentifier = "app-settings.candidate-color"
+        colorControl.addTarget(self, action: #selector(colorChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(colorControl)
+
+        let clickRow = UIStackView()
+        clickRow.axis = .horizontal
+        clickRow.alignment = .center
+        clickRow.addArrangedSubview(label("按鍵音", size: 18))
+        clickRow.addArrangedSubview(UIView())
+        let clicks = UISwitch()
+        clicks.isOn = clickSettings.enabled
+        clicks.accessibilityIdentifier = "app-settings.input-clicks"
+        clicks.addTarget(self, action: #selector(clicksChanged(_:)), for: .valueChanged)
+        clickRow.addArrangedSubview(clicks)
+        stack.addArrangedSubview(clickRow)
+
+        stack.addArrangedSubview(label("關聯詞詞庫", size: 18))
+        let bulk = UIStackView(arrangedSubviews: [
+            button("全部啟用", #selector(enableAll)),
+            button("僅小麥注音", #selector(enableBaseOnly)),
+            button("全部關閉", #selector(disableAll))
+        ])
+        bulk.axis = .horizontal
+        bulk.distribution = .fillEqually
+        bulk.spacing = 4
+        stack.addArrangedSubview(bulk)
+
+        collections = loadCollections()
+        if collections.isEmpty {
+            stack.addArrangedSubview(label("無法載入關聯詞詞庫。", size: 14))
+        } else {
+            for collection in collections {
+                let row = UIStackView()
+                row.axis = .horizontal
+                row.alignment = .center
+                row.addArrangedSubview(label(collection.display, size: 15))
+                row.addArrangedSubview(UIView())
+                let toggle = UISwitch()
+                toggle.isOn = phraseSettings.enabledCollections.contains(collection.source)
+                toggle.accessibilityIdentifier = "app-settings.collection.\(collection.source)"
+                toggle.accessibilityLabel = collection.display
+                toggle.addTarget(self, action: #selector(collectionChanged(_:)), for: .valueChanged)
+                collectionSwitches[collection.source] = toggle
+                row.addArrangedSubview(toggle)
+                row.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+                stack.addArrangedSubview(row)
+            }
+        }
+
+        let phrases = button("管理好打注音自訂詞", #selector(openPhrases))
+        phrases.accessibilityIdentifier = "app-settings.user-phrases"
+        stack.addArrangedSubview(phrases)
+        let reset = button("重設好打注音學習紀錄", #selector(confirmLearningReset))
+        reset.accessibilityIdentifier = "app-settings.reset-learning"
+        stack.addArrangedSubview(reset)
+
+        let note = label(
+            "在這裡變更後，鍵盤下次開啟會套用。鍵盤內「設」頁的修改保存在鍵盤自己的資料區，無法顯示回 App。重設學習紀錄會在下次開啟鍵盤時生效。",
+            size: 13
+        )
+        note.textColor = .secondaryLabel
+        stack.addArrangedSubview(note)
+    }
+
+    private func label(_ title: String, size: CGFloat) -> UILabel {
+        let label = UILabel()
+        label.text = title
+        label.font = .systemFont(ofSize: size, weight: size >= 18 ? .semibold : .regular)
+        label.numberOfLines = 0
+        return label
+    }
+
+    private func button(_ title: String, _ action: Selector) -> UIButton {
+        let button = UIButton(configuration: .tinted())
+        button.setTitle(title, for: .normal)
+        button.addTarget(self, action: action, for: .touchUpInside)
+        return button
+    }
+
+    private func loadCollections() -> [AssociatedPhraseStore.Collection] {
+        guard let plugIns = Bundle.main.builtInPlugInsURL,
+              let entries = try? FileManager.default.contentsOfDirectory(
+                at: plugIns, includingPropertiesForKeys: nil
+              ),
+              let url = entries.lazy.filter({ $0.pathExtension == "appex" })
+                .compactMap({ Bundle(url: $0)?.url(forResource: "KeyKey", withExtension: "db") }).first,
+              let database = try? Database(url: url)
+        else { return [] }
+        let store = AssociatedPhraseStore(database: database)
+        return (try? store.collections()) ?? []
+    }
+
+    private func syncCollectionSwitches() {
+        let enabled = phraseSettings.enabledCollections
+        for (source, toggle) in collectionSwitches { toggle.isOn = enabled.contains(source) }
+    }
+
+    @objc private func close() { dismiss(animated: true) }
+
+    @objc private func modeChanged(_ sender: UISegmentedControl) {
+        modeSettings.setMode(BopomofoCompositionMode.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func colorChanged(_ sender: UISegmentedControl) {
+        colorSettings.setColor(CandidateColor.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func clicksChanged(_ sender: UISwitch) {
+        clickSettings.setEnabled(sender.isOn)
+    }
+
+    @objc private func collectionChanged(_ sender: UISwitch) {
+        guard let source = collectionSwitches.first(where: { $0.value === sender })?.key else { return }
+        phraseSettings.setCollection(source, enabled: sender.isOn)
+    }
+
+    @objc private func enableAll() {
+        phraseSettings.setEnabledCollections(Set(collections.map(\.source)))
+        syncCollectionSwitches()
+    }
+
+    @objc private func enableBaseOnly() {
+        phraseSettings.setEnabledCollections([PhraseSettings.baseCollection])
+        syncCollectionSwitches()
+    }
+
+    @objc private func disableAll() {
+        phraseSettings.setEnabledCollections([])
+        syncCollectionSwitches()
+    }
+
+    @objc private func openPhrases() {
+        navigationController?.pushViewController(UserPhrasesViewController(), animated: true)
+    }
+
+    @objc private func confirmLearningReset() {
+        let alert = UIAlertController(
+            title: "重設學習紀錄？",
+            message: "自訂詞會保留；鍵盤學習紀錄會在下次開啟鍵盤時清除。",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "重設", style: .destructive) { [weak self] _ in
+            self?.resetLearning()
+        })
+        present(alert, animated: true)
+    }
+
+    private func resetLearning() {
+        KeyboardLearningResetRequest(sharedDefaults: sharedDefaults).request()
+        var editorReset = false
+        if let group = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: KeyboardPreferenceStore.appGroupIdentifier
+        ) {
+            let local = FileManager.default.urls(for: .applicationSupportDirectory,
+                                                 in: .userDomainMask)[0]
+            do {
+                let data = try SmartMandarinUserData(
+                    phrasesURL: group.appendingPathComponent("UserPhrase.db"),
+                    learningURL: local.appendingPathComponent("SmartMandarinLearning.db"),
+                    writablePhrases: true
+                )
+                try data.resetLearning()
+                editorReset = true
+            } catch { /* The keyboard reset request can still be applied. */ }
+        }
+        let alert = UIAlertController(
+            title: "學習紀錄",
+            message: editorReset
+                ? "App 內編輯器已重設；鍵盤下次開啟時會重設。"
+                : "鍵盤下次開啟時會重設；App 內編輯器的紀錄暫時無法清除。",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "知道了", style: .default))
+        present(alert, animated: true)
+    }
+}
+
+/// Writes only to the App Group phrase database. The keyboard can read it
+/// without requesting Full Access; its learning database remains private.
+private final class UserPhrasesViewController: UITableViewController, UIDocumentPickerDelegate {
+    private var userData: SmartMandarinUserData?
+    private var phrases: [SmartMandarinUserPhrase] = []
+
+    init() {
+        super.init(style: .insetGrouped)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("not used")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "好打注音自訂詞"
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .done, target: self, action: #selector(close)
+        )
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .add, target: self, action: #selector(addPhrase)
+        )
+        navigationItem.rightBarButtonItem?.accessibilityIdentifier = "user-phrases.add"
+        navigationItem.rightBarButtonItems = [
+            navigationItem.rightBarButtonItem!,
+            UIBarButtonItem(title: "匯入／匯出", menu: UIMenu(children: [
+                UIAction(title: "匯入自訂詞") { [weak self] _ in
+                    self?.chooseImportFile()
+                },
+                UIAction(title: "匯出自訂詞") { [weak self] _ in
+                    self?.exportPhrases()
+                }
+            ]))
+        ]
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "phrase")
+        tableView.accessibilityIdentifier = "user-phrases.list"
+
+        guard let group = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.io.github.polobread.inputmethod.chichi77.ios"
+        ) else {
+            showError("無法開啟共用詞庫，請檢查 App Group 設定。")
+            navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = false }
+            return
+        }
+        let local = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask
+        )[0]
+        do {
+            userData = try SmartMandarinUserData(
+                phrasesURL: group.appendingPathComponent("UserPhrase.db"),
+                learningURL: local.appendingPathComponent("SmartMandarinLearning.db"),
+                writablePhrases: true
+            )
+            reloadPhrases()
+        } catch {
+            showError(error.localizedDescription)
+            navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = false }
+        }
+    }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        phrases.count
+    }
+
+    override func tableView(
+        _ tableView: UITableView, cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "phrase", for: indexPath)
+        let phrase = phrases[indexPath.row]
+        var content = cell.defaultContentConfiguration()
+        content.text = phrase.text
+        content.secondaryText = phrase.reading
+        cell.contentConfiguration = content
+        cell.accessoryType = .disclosureIndicator
+        return cell
+    }
+
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        editPhrase(phrases[indexPath.row])
+    }
+
+    override func tableView(
+        _ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
+    ) -> UISwipeActionsConfiguration? {
+        let phrase = phrases[indexPath.row]
+        let delete = UIContextualAction(style: .destructive, title: "刪除") { [weak self] _, _, done in
+            guard let self else { done(false); return }
+            do {
+                try self.userData?.deletePhrase(id: phrase.id)
+                self.reloadPhrases()
+                done(true)
+            } catch {
+                self.showError(error.localizedDescription)
+                done(false)
+            }
+        }
+        return UISwipeActionsConfiguration(actions: [delete])
+    }
+
+    @objc private func close() {
+        if navigationController?.viewControllers.first === self {
+            dismiss(animated: true)
+        } else {
+            navigationController?.popViewController(animated: true)
+        }
+    }
+    @objc private func addPhrase() { editPhrase(nil) }
+
+    private func editPhrase(_ phrase: SmartMandarinUserPhrase?) {
+        let alert = UIAlertController(
+            title: phrase == nil ? "新增自訂詞" : "編輯自訂詞",
+            message: "每個字輸入一組注音，以空格或逗號分隔，例如：你好／ㄋㄧˇ ㄏㄠˇ。",
+            preferredStyle: .alert
+        )
+        alert.addTextField { field in
+            field.placeholder = "詞句"
+            field.text = phrase?.text
+            field.accessibilityIdentifier = "user-phrases.text"
+        }
+        alert.addTextField { field in
+            field.placeholder = "注音，例如 ㄋㄧˇ ㄏㄠˇ"
+            field.text = phrase?.reading
+            field.accessibilityIdentifier = "user-phrases.reading"
+        }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "儲存", style: .default) { [weak self, weak alert] _ in
+            guard let self, let fields = alert?.textFields else { return }
+            do {
+                try self.userData?.savePhrase(
+                    id: phrase?.id, text: fields[0].text ?? "", reading: fields[1].text ?? ""
+                )
+                self.reloadPhrases()
+            } catch {
+                self.showError(error.localizedDescription)
+            }
+        })
+        present(alert, animated: true)
+    }
+
+    private func reloadPhrases() {
+        phrases = userData?.userPhrases() ?? []
+        tableView.reloadData()
+    }
+
+    private func chooseImportFile() {
+        let picker = UIDocumentPickerViewController(
+            forOpeningContentTypes: [.plainText, .text, .data], asCopy: true
+        )
+        picker.delegate = self
+        present(picker, animated: true)
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let contents = try String(contentsOf: url, encoding: .utf8)
+            guard let userData else { return }
+            let result = try userData.importPhrases(contents)
+            reloadPhrases()
+            showError("已匯入 \(result.imported) 筆，略過 \(result.skipped) 筆。")
+        } catch {
+            showError(error.localizedDescription)
+        }
+    }
+
+    private func exportPhrases() {
+        guard let userData else { return }
+        do {
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("KeyKey-UserPhrases.mjsr")
+            try userData.exportPhrases().write(to: url, atomically: true, encoding: .utf8)
+            let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            activity.popoverPresentationController?.barButtonItem = navigationItem.rightBarButtonItems?.last
+            present(activity, animated: true)
+        } catch {
+            showError(error.localizedDescription)
+        }
+    }
+
+    private func showError(_ message: String) {
+        let alert = UIAlertController(title: "自訂詞", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "知道了", style: .default))
+        DispatchQueue.main.async { [weak self] in self?.present(alert, animated: true) }
+    }
 }
 
 private final class AcknowledgementsViewController: UIViewController {

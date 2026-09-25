@@ -1,0 +1,104 @@
+{
+  "method": {
+    "pair_count_cap": 1,
+    "near_duplicate_thresholds": {
+      "minimum_normalized_characters": 40,
+      "shingle_size": 5,
+      "minimum_length_ratio": 0.9,
+      "minimum_jaccard": 0.86
+    }
+  },
+  "full_1650": [
+    {
+      "variant": "raw",
+      "corpus_lines": 46749,
+      "removed_lines": 0,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 668529,
+      "sentences": 274339,
+      "tokens": 1308908,
+      "clipped": 1162533,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 420714,
+      "lexical_text_bigram_pairs": 398554,
+      "database_bytes": 43311104,
+      "database_mib": 41.3046875,
+      "pair_retention_percent": 100.0,
+      "pairs_missing_vs_raw": 0,
+      "size_saved_bytes": 0,
+      "size_saved_mib": 0.0
+    },
+    {
+      "variant": "exact dedup",
+      "corpus_lines": 41040,
+      "removed_lines": 5709,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 668527,
+      "sentences": 267609,
+      "tokens": 1295978,
+      "clipped": 1142874,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 420713,
+      "lexical_text_bigram_pairs": 398553,
+      "database_bytes": 43311104,
+      "database_mib": 41.3046875,
+      "pair_retention_percent": 99.99976230883688,
+      "pairs_missing_vs_raw": 1,
+      "size_saved_bytes": 0,
+      "size_saved_mib": 0.0
+    },
+    {
+      "variant": "near dedup",
+      "corpus_lines": 41003,
+      "removed_lines": 5746,
+      "unigrams": 113596,
+      "words": 107385,
+      "bigram_rows": 668523,
+      "sentences": 267284,
+      "tokens": 1294661,
+      "clipped": 1141234,
+      "integrity_check": "ok",
+      "text_bigram_pairs": 420711,
+      "lexical_text_bigram_pairs": 398551,
+      "database_bytes": 43311104,
+      "database_mib": 41.3046875,
+      "pair_retention_percent": 99.99928692651065,
+      "pairs_missing_vs_raw": 3,
+      "size_saved_bytes": 0,
+      "size_saved_mib": 0.0
+    }
+  ],
+  "heldout_1551_1650": {
+    "lexical_pairs": 41999,
+    "variants": [
+      {
+        "variant": "raw",
+        "covered_pairs": 23357,
+        "coverage_percent": 55.613228886402055,
+        "coverage_change_percentage_points": 0.0
+      },
+      {
+        "variant": "exact dedup",
+        "covered_pairs": 23357,
+        "coverage_percent": 55.613228886402055,
+        "coverage_change_percentage_points": 0.0
+      },
+      {
+        "variant": "near dedup",
+        "covered_pairs": 23357,
+        "coverage_percent": 55.613228886402055,
+        "coverage_change_percentage_points": 0.0
+      }
+    ]
+  },
+  "summary": {
+    "exact_lines_removed": 5709,
+    "near_lines_removed": 37,
+    "exact_size_saved_mib": 0.0,
+    "near_size_saved_mib": 0.0,
+    "near_pair_retention_percent": 99.99928692651065,
+    "near_coverage_change_percentage_points": 0.0
+  }
+}

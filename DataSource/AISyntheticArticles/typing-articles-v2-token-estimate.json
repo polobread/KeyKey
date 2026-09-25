@@ -1,0 +1,15 @@
+{
+  "encoding": "o200k_base",
+  "method": "Input encodes saved instructions plus compact prompt JSON; projected output uses the mean of accepted seed bodies.",
+  "pending_requests": 9997,
+  "estimated_pending_input_tokens": 9408799,
+  "mean_input_tokens_per_request": 941.1622486746023,
+  "seed_output_tokens": [
+    1127,
+    1177,
+    1132
+  ],
+  "mean_seed_output_tokens": 1145.3333333333333,
+  "projected_output_tokens_for_10000": 11453333,
+  "limitations": "API wrappers and model behavior can change actual usage. Final usage must come from Batch API response usage fields."
+}

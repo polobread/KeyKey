@@ -1,6 +1,8 @@
 package tw.chichi77.keykey.android;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.VibrationEffect;
@@ -58,6 +60,65 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         title.setTextColor(getColor(R.color.keykey_blue_dark));
         title.setGravity(Gravity.CENTER);
         content.addView(title, matchWrap(dp(0), dp(32)));
+
+        TextView compositionModeLabel = new TextView(this);
+        compositionModeLabel.setText(R.string.composition_mode_title);
+        compositionModeLabel.setTextSize(18);
+        compositionModeLabel.setTextColor(Color.DKGRAY);
+        content.addView(compositionModeLabel, matchWrap(dp(0), dp(4)));
+
+        Spinner compositionMode = new Spinner(this);
+        compositionMode.setContentDescription(getString(R.string.composition_mode_title));
+        ArrayAdapter<CharSequence> compositionAdapter = ArrayAdapter.createFromResource(this,
+                R.array.composition_modes, android.R.layout.simple_spinner_item);
+        compositionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        compositionMode.setAdapter(compositionAdapter);
+        compositionMode.setSelection(BopomofoCompositionModeSettings.mode(this)
+                == BopomofoCompositionMode.SMART ? 0 : 1);
+        compositionMode.setOnItemSelectedListener(
+                new android.widget.AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(android.widget.AdapterView<?> parent,
+                                               android.view.View view, int position, long id) {
+                        BopomofoCompositionModeSettings.setMode(SettingsActivity.this,
+                                position == 0 ? BopomofoCompositionMode.SMART
+                                        : BopomofoCompositionMode.TRADITIONAL);
+                    }
+
+                    @Override public void onNothingSelected(
+                            android.widget.AdapterView<?> parent) {}
+                });
+        content.addView(compositionMode, matchWrap(dp(0), dp(8)));
+
+        TextView compositionModeDescription = new TextView(this);
+        compositionModeDescription.setText(R.string.composition_mode_description);
+        compositionModeDescription.setTextSize(14);
+        compositionModeDescription.setTextColor(Color.GRAY);
+        compositionModeDescription.setLineSpacing(0, 1.2f);
+        content.addView(compositionModeDescription, matchWrap(dp(0), dp(24)));
+
+        Button userPhrases = new Button(this);
+        userPhrases.setText("管理好打注音自訂詞");
+        userPhrases.setContentDescription("管理好打注音自訂詞");
+        userPhrases.setOnClickListener(view ->
+                startActivity(new Intent(this, UserPhrasesActivity.class)));
+        content.addView(userPhrases, matchWrap(dp(0), dp(8)));
+
+        Button resetLearning = new Button(this);
+        resetLearning.setText("重設好打注音學習紀錄");
+        resetLearning.setOnClickListener(view -> new AlertDialog.Builder(this)
+                .setTitle("重設學習紀錄？")
+                .setMessage("這會清除已學習的選字和相鄰詞關係，自訂詞會保留。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("重設", (dialog, which) -> {
+                    try (SmartMandarinUserData data = SmartMandarinUserData.open(this)) {
+                        data.resetLearning();
+                        Toast.makeText(this, "學習紀錄已重設", Toast.LENGTH_SHORT).show();
+                    } catch (RuntimeException error) {
+                        Toast.makeText(this, "無法重設學習紀錄", Toast.LENGTH_LONG).show();
+                    }
+                }).show());
+        content.addView(resetLearning, matchWrap(dp(0), dp(24)));
 
         TextView label = new TextView(this);
         label.setText(R.string.haptic_feedback_title);

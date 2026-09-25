@@ -1,0 +1,38 @@
+{
+  "articles": 2300,
+  "raw_lines": 68989,
+  "kept_lines": 61777,
+  "identical_lines_removed": 7212,
+  "sources": [
+    {
+      "version": "v2",
+      "articles": 1650,
+      "source_file": "typing-articles-v2.jsonl",
+      "source_sha256": "ae70cc5274c5d131510a010aa07adf9eaca4be3f37345711e4c5516049cafe5d",
+      "raw_lines": 46749,
+      "kept_lines": 41488,
+      "identical_lines_removed": 5261
+    },
+    {
+      "version": "v3",
+      "articles": 350,
+      "source_file": "typing-articles-v3.jsonl",
+      "source_sha256": "8e783676d4a22cd92ae832e1a3be913d2e07252c8e2c4add76b55f6c725877de",
+      "raw_lines": 15813,
+      "kept_lines": 14856,
+      "identical_lines_removed": 957
+    },
+    {
+      "version": "v4",
+      "articles": 300,
+      "source_file": "typing-articles-v4.jsonl",
+      "source_sha256": "ff625fc0b7be600347d7e61c9ddc3b4c4b8ada17f2b76950425f203505af6dc8",
+      "raw_lines": 6427,
+      "kept_lines": 5433,
+      "identical_lines_removed": 994
+    }
+  ],
+  "corpus_file": "article-corpus-2300-exact-dedup.txt",
+  "corpus_bytes": 8924048,
+  "corpus_sha256": "b9a0bdaf3f85c0d4a70f0cd0d1d2040f8e0b0a0c4726c831601a1d5ba0175af0"
+}

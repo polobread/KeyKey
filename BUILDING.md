@@ -2,9 +2,9 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
+Linux 1.3.0 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-共用 [`v1.2.9` Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)。先前 Linux 版本的發布紀錄保留在
+共用 [`v1.3.0` Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -28,11 +28,11 @@ Ubuntu 24.04 使用者若要從下載、編譯一路完成 Fcitx 啟用與試打
 [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)。
 
 傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler、`pkg-config`、
-Fcitx 5 Core 與 libcanberra 開發檔；
+Fcitx 5 Core、libcanberra 與 SQLite 3 開發檔，以及 Python 3；
 不需要 Ninja、Docker、Autoconf 或 Automake。Ubuntu 可先安裝：
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev pkg-config
+sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
 ```
 
 接著使用預設 `/usr/local` prefix：
@@ -84,7 +84,7 @@ Source/Loaders/Linux-IME/ci/dev.sh package
 `dev.sh` 在 Apple Silicon 自動使用 `linux/arm64`，保留同一個 container，並把
 incremental build／stage 放在 Docker named volumes；`down` 只移除 container，保留
 編譯快取。`e2e` 可指定一個 case、逗號分隔的 cases 或 `all`。這條快速路徑產生的
-ARM64 package 是開發 preview，不能取代 x86_64 release gate；`package` 也不取代乾淨
+ARM64 package 是未列入支援範圍的測試產物，不能取代 x86_64 release gate；`package` 也不取代乾淨
 runtime container 的安裝／升級／移除驗證。
 `source-e2e` 使用乾淨的一次性 container，分別驗證 `/usr/local`、`/usr` 與自訂
 prefix 的原始碼安裝、GTK3／GTK4／Qt6 X11 真實打字及解除安裝；自訂 prefix 另驗證
@@ -117,7 +117,7 @@ API 邊界，第三個另跑已安裝 addon → Fcitx 5 → GTK 3／GTK 4／Qt 6
 注音設定 schema。五種布局都是 Windows 對標的
 Linux 1.2.8 第一階段範圍。已完成的倉頡／簡易切片保留作回歸與未來擴充，不需從程式或
 測試中拆除。這些 one-shot 指令預設建立
-`linux/amd64` 產物；ARM64 preview 可在指令前設定
+`linux/amd64` 產物；ARM64 測試產物可在指令前設定
 `KEYKEY_DOCKER_PLATFORM=linux/arm64`。Xvfb E2E 是 L3 X11 證據，不等於 GNOME／
 native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 [Linux frontend README](Source/Loaders/Linux-IME/README.md)。
@@ -126,8 +126,8 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
-正式 Ubuntu 24.04 amd64 套件與對應的限定支援範圍列在 Linux 1.2.8
-發布說明；本節指令產生的本機套件仍是開發產物。
+Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.3.0 安裝與使用指南](LINUX_INSTALL.md)；
+本節指令產生的本機套件仍需通過發布流程的驗證，才可作為 GitHub Release 安裝檔。
 
 Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
 `gnome-shell-extension-keykey-kimpanel` `.deb`，只支援 GNOME Shell 46，供
@@ -157,7 +157,14 @@ xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
 
 DatabaseCooker 會產生
 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`，Xcode 再將它包進
-`chichi77 KeyKey.app`。
+`chichi77 KeyKey.app`。建置時也會以 `DataSource/McBopomofo/phrase.occ`、
+`BPMFMappings.txt` 及注音字表產生好打注音的 unigram 語言模型；不需要 Yahoo 未釋出的
+中研院語料或舊的 `PhraseTool`／CEROD 工具。另以
+`DataSource/AISyntheticBigram/corpus-v1.txt`、`corpus-v2.txt`、`corpus-v3.txt`、
+試打回饋與去重後的 2,300 篇文章建立合成 bigram 與 backoff；語料每行
+一句，可使用空白標示詞界，也可交由 cooker 依現有 unigram 詞頻切詞。
+`DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv` 另以資料列補入中文數字與
+常用單位組合；阿拉伯數字開頭的詞組目前不走這條詞庫路徑。
 
 目前 macOS build 僅支援 arm64。若要製作 universal binary，需要另行準備
 x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
@@ -173,18 +180,21 @@ x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 安裝包的建置、本機安裝、簽署及 notarization 說明見
 [Installer/README.md](Installer/README.md)。
 
-## Windows 11
+## Windows 10 與 11
 
 ### 需求
 
-- Windows 11
+- Windows 10 或更新版本（目前開發機在 Windows 11 驗證；Windows 10 待實機驗證）
 - Visual Studio 2026，安裝「使用 C++ 的桌面開發」workload；也提供 Visual
   Studio 2022 相容 preset
 - CMake 3.25 以上；Visual Studio 內附版本即可
+- .NET 10 SDK（設定頁採 WPF Fluent；套件內已包含執行階段）
+- Ruby 3.x（從原始資料煮好打注音詞庫時需要；Windows CI 會安裝）
 - NSIS 3.12（只有建立 Store EXE 時需要）
 
-Windows 使用獨立的原生 C++ DatabaseCooker，不需要 Ruby、GNU Make、`awk`、
-`sed` 或外部 `sqlite3` 程式，也不會修改 macOS 的既有 cooker。
+Windows 使用原生 C++ DatabaseCooker 與 macOS 共用的 SmartMandarinCooker.rb
+產生好打注音資料；SQLite 則連結 Windows 內建的 WinSQLite3。不需要 GNU Make、
+`awk`、`sed` 或外部 `sqlite3` 程式。
 
 ### 建置及測試 x64
 
@@ -197,7 +207,7 @@ cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release --target KeyKeyTsf
+cmake --build --preset windows-x86-release --target KeyKeySettings
 ```
 
 輸出檔案為：
@@ -205,6 +215,7 @@ cmake --build --preset windows-x86-release --target KeyKeyTsf
 ```text
 out\build\x64-ninja\KeyKeyTsf.dll
 out\build\x64-ninja\KeyKeySettings.exe
+out\build\x64-ninja\KeyKeySettingsBackend.dll
 out\build\x64-ninja\Databases\KeyKey.db
 ```
 
@@ -220,7 +231,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
 ```
 
-註冊腳本也會將「琦琦輸入法」加入目前使用者的繁體中文輸入法清單。若沒有立即
+Windows 會將註冊的 TSF 顯示於已安裝的繁體中文（台灣、香港或澳門）輸入法清單；
+註冊腳本不會改動使用者的語言清單。若沒有立即
 出現在 `Win+Space`，請登出再登入。解除註冊：
 
 ```powershell
@@ -235,10 +247,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 ```powershell
 .\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
   -X86BuildDirectory .\out\build\x86
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -Architecture x86
 ```
 
-會產生 `out\package\chichi77-KeyKey-1.2.9-windows-x64.zip`。在另一台 x64 Windows
-11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
+會產生 x64 與 x86 兩種 ZIP。選擇與 Windows 系統架構相同的套件；在另一台 Windows 10
+或 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
 - 將檔案複製到 `C:\Program Files\chichi77 KeyKey`
@@ -248,12 +262,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 請勿直接從網路磁碟、NAS 或 UNC 路徑安裝；UAC 後可能無法存取原路徑，且安裝
 視窗可能立即關閉。失敗記錄位於 `%TEMP%\chichi77-keykey-install.log`。
 
-安裝腳本會自動加入目前使用者的 `Win+Space` 輸入法清單；若沒有立即出現，請登出
+Windows 會在已安裝的繁體中文（台灣、香港或澳門）語言下顯示輸入法；若沒有立即出現，請登出
 再登入。這是未簽署的家用測試套件，因此從網路下載時 Windows 可能顯示安全警告。
 
-Windows x64 套件會同時安裝 x64 與 x86 TSF DLL，因此也可在 32-bit Office 中輸入。
-ARM64 preset 與打包選項目前僅保留供未來移植，尚未驗證，也不在目前發佈套件內。
+Windows x64 套件會同時安裝 x64 與 x86 TSF DLL，可供所有 32 位元應用程式使用；
+x86 套件供 32 位元 Windows 使用。
 DLL 架構必須和載入它的應用程式架構相同。
+
+本機要產生未簽署的 NSIS 測試安裝檔，可執行：
+
+```powershell
+.\Package-Store-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -UnsignedTest
+```
+
+產物是 `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`。
+產品版號維持 `1.3.0`；本機測試安裝目錄使用 `1.3.0-test-<內容指紋>`，避免
+重編後覆寫仍由應用程式載入的 DLL。正式簽章套件則使用 `1.3.0` 等一般版號目錄。
 
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
@@ -275,12 +300,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -TimestampUrl $timestampUrl
 ```
 
-腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE，以 NSIS 建立離線安裝
+腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE 與設定後端 DLL，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
-`out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.exe`。完整參數、`/S`
+`out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
-互動式完成頁可選擇開啟琦琦設定或 Windows 語言設定；只有舊檔被占用而必須延後清除
-時才會顯示重新啟動選項，且預設為稍後重新啟動。
+互動式完成頁可選擇開啟琦琦設定；版本升級時另提示登出再登入，讓工作列載入新版
+輸入法。升級時會保留可能仍被舊版文字宿主使用的版本目錄，等舊行程結束後再清理。
 
 ## Android
 
@@ -298,7 +323,8 @@ cd Source\Loaders\Android-IME
 建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
 `bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫，另固定
 加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會從 CIN、基本詞庫與
-29 個 TSV 產生 `.kki` 索引；Android 執行時讀取索引，關聯詞索引在背景載入。
+29 個 TSV 產生 `.kki` 索引，並把 cook 好的 `KeyKey.db` 加入 APK，供預設的好打注音
+整句組字使用；Android 執行時讀取索引，關聯詞索引在背景載入。
 Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
@@ -345,7 +371,7 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
 Actions 頁面按 **Run workflow** 手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag
-（例如 `v1.2.9`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
+（例如 `v1.3.0`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
 `release_tag` 輸入，留空時只保留測試 artifact。一般 commit、pull request 與不符合版號的
 tag 不會發布 Release。`Linux CI` 保留 pull request 與手動執行，並由 `v*` tag 觸發完整
 gate；`master` push 不觸發。tag run 在 Ubuntu 24.04 套件建置、安裝生命週期與 X11
@@ -392,14 +418,14 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 ## English
 
-Native Linux development starts with version 1.2.8. A buildable Linux-only
-engine and Fcitx 5 addon exist. The GTK 3, GTK 4, and Qt 6 X11 matrix is
+Native Linux support began with version 1.2.8. Version 1.3.0 includes a
+Linux-only engine and Fcitx 5 addon. The GTK 3, GTK 4, and Qt 6 X11 matrix is
 implemented, and 76 cases that do not restart the desktop Fcitx process pass
 in an isolated Ubuntu 24.04 GNOME X11 session. A GNOME Wayland KVM guest also
 passes 160/160 native Wayland/XWayland key and pointer combinations. Real gedit
 passes four input paths; GNOME Text Editor passes the direct Fcitx Wayland and
-XWayland paths, with two GTK Wayland IM paths still failing. Full login/window
-acceptance and release packages are not complete. The guest also passes 16/16
+XWayland paths, with two GTK Wayland IM paths still failing. These earlier
+checks do not replace the versioned release workflow. The guest also passes 16/16
 two-field focus phases, with a recorded raw-preedit blur difference between
 direct Fcitx and default GTK Wayland paths. Separate editing-field evidence
 passed 21 cases before a GNOME Shell crash and the remaining three after
@@ -415,15 +441,15 @@ real browser field/mode cases across native Wayland and XWayland, covering
 literal controls. See the
 [development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
 
-### Linux (in development)
+### Linux source build
 
 A traditional source build requires CMake 3.22, GNU Make, a C++17 compiler,
-`pkg-config`, and the Fcitx 5 Core and libcanberra development files. It does not require Ninja, Docker,
+`pkg-config`, Python 3, and the Fcitx 5 Core, libcanberra, and SQLite 3 development files. It does not require Ninja, Docker,
 Autoconf, or Automake. On Ubuntu, install the dependencies and build with the
 default `/usr/local` prefix as follows:
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev pkg-config
+sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
 cd Source/Loaders/Linux-IME
 ./configure
 make -j2
@@ -474,7 +500,7 @@ On Apple Silicon, `dev.sh` automatically uses `linux/arm64`. It reuses one
 container and keeps incremental build and staging files in Docker named
 volumes. `e2e` accepts one case, a comma-separated case list, or `all`; `down`
 removes the container but retains the compilation cache. ARM64 packages from
-this path are development previews, and `package` does not replace clean
+this path are test outputs outside the supported release scope, and `package` does not replace clean
 install/upgrade/removal acceptance.
 
 Windows 11 can use the same commands from WSL2 Ubuntu. Keep the repository on
@@ -499,7 +525,7 @@ Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
 The third one-shot command types physical key events through the staged Fcitx 5 addon
 into GTK 3, GTK 4, and Qt 6 editors on Xvfb and runs English-keyboard negative controls. They
 default to `linux/amd64`; set `KEYKEY_DOCKER_PLATFORM=linux/arm64` for the ARM64
-preview build. The Xvfb result is L3 X11 evidence and does not count as GNOME or
+test build. The Xvfb result is L3 X11 evidence and does not count as GNOME or
 native Wayland desktop typing acceptance. See the
 [Linux frontend README](Source/Loaders/Linux-IME/README.md) for current scope.
 
@@ -509,7 +535,7 @@ the eighty-two non-settings-window X11 cases after install, controlled upgrade, 
 reinstall. The native Fcitx settings-window click, persistence, restart, and
 typing case—including changing the candidate style from vertical to
 horizontal—runs once after reinstall, for eighty-three cases in that final state.
-These are development artifacts until the remaining release gates are complete.
+Local outputs from these commands require the release workflow's checks before distribution.
 
 ### macOS
 
@@ -533,7 +559,14 @@ xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
 The cooker creates `Source/Distributions/Takao/CookedDatabase/KeyKey.db`, which
 is bundled into `chichi77 KeyKey.app`. The current configuration is arm64-only;
 a universal build requires a separate x86_64 OpenSSL build and an xcconfig
-change.
+change. The cooker also generates the Smart Phonetic unigram model from
+`DataSource/McBopomofo/phrase.occ`, `BPMFMappings.txt`, and the Bopomofo CIN;
+the unpublished Yahoo corpus and the historical PhraseTool/CEROD tools are not
+required. `DataSource/AISyntheticBigram/corpus-v1.txt`, `corpus-v2.txt`,
+`corpus-v3.txt`, typing feedback, and the deduplicated 2,300-article corpus
+add a synthetic bigram and backoff layer. Each line is one sentence; whitespace may
+mark word boundaries, or the cooker can segment unspaced Chinese text with the
+existing unigram scores.
 
 The public `DataSource/chichi77Collection` directory is included in the
 repository. The macOS DatabaseCooker always writes its 29 TSV collections into
@@ -543,18 +576,21 @@ item, and is not guaranteed to be accurate or complete. See
 [Installer/README.md](Installer/README.md) for macOS packaging, local
 installation, signing, and notarization.
 
-### Windows 11
+### Windows 10 and 11
 
 #### Requirements
 
-- Windows 11
+- Windows 10 or later (built and launched on Windows 11; Windows 10 needs device testing)
+- .NET 10 SDK to build the self-contained Fluent WPF settings app
 - Visual Studio 2026 with the **Desktop development with C++** workload;
   Visual Studio 2022-compatible presets are also included
 - CMake 3.25 or newer; the Visual Studio copy is sufficient
+- Ruby 3.x to cook the Smart Mandarin database from source (installed in Windows CI)
 - NSIS 3.12, only when building the Store EXE
 
-Windows uses its own native C++ database cooker. Ruby, GNU Make, `awk`, `sed`,
-and a separate `sqlite3` program are not required.
+Windows uses its native C++ database cooker and the SmartMandarinCooker.rb
+shared with macOS. It links the system WinSQLite3 library. GNU Make, `awk`,
+`sed`, and a separate `sqlite3` program are not required.
 
 #### Build and test x64
 
@@ -567,7 +603,7 @@ cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release --target KeyKeyTsf
+cmake --build --preset windows-x86-release --target KeyKeySettings
 ```
 
 The outputs are:
@@ -575,6 +611,7 @@ The outputs are:
 ```text
 out\build\x64-ninja\KeyKeyTsf.dll
 out\build\x64-ninja\KeyKeySettings.exe
+out\build\x64-ninja\KeyKeySettingsBackend.dll
 out\build\x64-ninja\Databases\KeyKey.db
 ```
 
@@ -590,8 +627,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
 ```
 
-The script also adds **琦琦輸入法** to the current user's Traditional Chinese
-input methods. Sign out and back in if it does not immediately appear in
+Windows lists the registered TSF under installed Traditional Chinese (Taiwan,
+Hong Kong, or Macao) languages. The script does not change the user's language
+list. Sign out and back in if it does not immediately appear in
 `Win+Space`. To unregister:
 
 ```powershell
@@ -606,22 +644,38 @@ After building and testing, run from `Source\Loaders\Windows-TSF`:
 ```powershell
 .\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
   -X86BuildDirectory .\out\build\x86
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -Architecture x86
 ```
 
-This creates `out\package\chichi77-KeyKey-1.2.9-windows-x64.zip`. On the other
-x64 Windows 11 PC, extract the complete ZIP, copy the entire extracted folder
+This creates x64 and x86 ZIPs. Use the ZIP matching the Windows 10/11 OS
+architecture. On the other PC, extract the complete ZIP and copy the folder
 to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
 become inaccessible after UAC elevation and the installer window can close
 immediately. Failures are logged to `%TEMP%\chichi77-keykey-install.log`. It copies the runtime to
 `C:\Program Files\chichi77 KeyKey`, registers
-both x64 and x86 TSF DLLs (including support for 32-bit Office), adds it to the
-current user's `Win+Space` list, and creates an entry in Windows Installed apps.
+both x64 and x86 TSF DLLs on x64 Windows (for all 32-bit applications), or the
+x86 DLL on 32-bit Windows, and creates an
+entry in Windows Installed apps. Windows lists KeyKey under installed Traditional
+Chinese (Taiwan, Hong Kong, or Macao) languages in `Win+Space`.
 Sign out and back in if it does not appear immediately.
 
 The home-testing package is unsigned, so Windows may warn about a downloaded
-copy. The ARM64 preset and packaging option are retained for future bring-up,
-but ARM64 is not currently verified or published.
+copy.
+
+To build an unsigned local NSIS test installer, run:
+
+```powershell
+.\Package-Store-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -UnsignedTest
+```
+
+The output is `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`.
+Its product version remains `1.3.0`; local test installations use a
+`1.3.0-test-<content fingerprint>` directory so rebuilding does not overwrite
+a DLL still loaded by an application. Signed production installers use plain
+version directories such as `1.3.0`.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.
@@ -641,14 +695,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -TimestampUrl 'YOUR_CA_RFC3161_TIMESTAMP_URL'
 ```
 
-The script signs and verifies the three PE payloads, builds an offline NSIS
+The script signs and verifies the four PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
-`out\store-package\chichi77-KeyKey-1.2.9-windows-x64-setup.exe`. See the Windows
+`out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
-The interactive finish page can open KeyKey settings or Windows Language &
-region settings. It offers a restart only when a locked old file must be removed
-later, and defaults to restarting later.
+The interactive finish page can open KeyKey settings. An upgrade keeps older
+version directories available to text hosts that still have the previous DLL
+loaded; remove them after those processes exit.
 
 ### Android
 
@@ -664,8 +718,9 @@ The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
 `Source/DataTables` directory and adds the base associated-phrase collection
 from `DataSource/McBopomofo` plus all 29 public categorized collections from
 `DataSource/chichi77Collection`. The build compiles the CIN and phrase sources into
-`.kki` indexes; Android reads those indexes at runtime and loads associated-phrase
-indexes in the background. The debug APK is written to
+`.kki` indexes and packages the cooked `KeyKey.db` for the default Smart Phonetic
+composition mode. Android reads the indexes at runtime and loads associated-phrase indexes
+in the background. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.
@@ -709,7 +764,7 @@ shares the completed text. See the
 The Android debug packaging, Google Play release, and iOS Simulator workflows
 run only after **Run workflow** is selected on the GitHub Actions page. The
 macOS and Windows workflows publish to a Release when a tag that exactly
-matches the repository version, such as `v1.2.9`, is pushed. Both can also be
+matches the repository version, such as `v1.3.0`, is pushed. Both can also be
 run manually; the Windows workflow additionally takes a `release_tag` input,
 and leaving it blank produces a test artifact only. Commits, pull requests, and
 mismatched tags do not publish a Release. `Linux CI` keeps its pull-request and

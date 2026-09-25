@@ -38,8 +38,8 @@ jobs:
           sudo apt-get install --yes --no-install-recommends \
             binutils build-essential cmake dbus-x11 fcitx5 \
             fcitx5-frontend-gtk3 fonts-wqy-zenhei g++ libcanberra-dev \
-            libfcitx5core-dev libgtk-3-dev libgtk-4-dev ninja-build \
-            pkg-config qt6-base-dev x11-utils xdotool xvfb
+            libfcitx5core-dev libgtk-3-dev libgtk-4-dev libsqlite3-dev ninja-build \
+            pkg-config python3 qt6-base-dev x11-utils xdotool xvfb
 
       - name: Build, run unit tests, and verify staged installation
         working-directory: Source/Loaders/Linux-IME
@@ -88,7 +88,7 @@ jobs:
             dpkg-dev fakeroot fcitx5 fcitx5-config-qt \
             fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt6 \
             fonts-wqy-zenhei g++ \
-            libcanberra-dev libfcitx5core-dev libglib2.0-bin libgtk-3-dev libgtk-4-dev \
+            libcanberra-dev libfcitx5core-dev libglib2.0-bin libgtk-3-dev libgtk-4-dev libsqlite3-dev \
             lintian netpbm ninja-build pkg-config python3-pyatspi qt6-base-dev \
             x11-apps \
             x11-utils xdotool xvfb
@@ -265,7 +265,7 @@ jobs:
         run: |
           apt-get install --yes --no-install-recommends \
             binutils build-essential cmake debhelper dpkg-dev fakeroot g++ \
-            libcanberra-dev libfcitx5core-dev lintian ninja-build pkg-config
+            libcanberra-dev libfcitx5core-dev libsqlite3-dev lintian ninja-build pkg-config python3
 
       - name: Build, test, and verify staged installation
         working-directory: Source/Loaders/Linux-IME

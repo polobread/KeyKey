@@ -94,6 +94,139 @@ private:
     ComPtr<ITfComposition> composition_;
 };
 
+class CommitModeSwitchEditSession final : public ITfEditSession {
+public:
+    CommitModeSwitchEditSession(TextService* service, ITfContext* context)
+        : service_(service), context_(context) {
+        service_->AddRef();
+    }
+    STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
+        if (!object) return E_INVALIDARG;
+        *object = nullptr;
+        if (iid == IID_IUnknown || iid == IID_ITfEditSession) {
+            *object = static_cast<ITfEditSession*>(this);
+            AddRef();
+            return S_OK;
+        }
+        return E_NOINTERFACE;
+    }
+    STDMETHODIMP_(ULONG) AddRef() override { return ++references_; }
+    STDMETHODIMP_(ULONG) Release() override {
+        const ULONG remaining = --references_;
+        if (!remaining) delete this;
+        return remaining;
+    }
+    STDMETHODIMP DoEditSession(TfEditCookie editCookie) override {
+        return service_->commitCompositionForModeSwitch(editCookie, context_.Get());
+    }
+
+private:
+    ~CommitModeSwitchEditSession() { service_->Release(); }
+    std::atomic<ULONG> references_{1};
+    TextService* service_;
+    ComPtr<ITfContext> context_;
+};
+
+class CompositionDisplayAttributeInfo final : public ITfDisplayAttributeInfo {
+public:
+    CompositionDisplayAttributeInfo() { ++g_objectCount; }
+    STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
+        if (!object) return E_INVALIDARG;
+        *object = nullptr;
+        if (iid == IID_IUnknown || iid == IID_ITfDisplayAttributeInfo) {
+            *object = static_cast<ITfDisplayAttributeInfo*>(this);
+            AddRef();
+            return S_OK;
+        }
+        return E_NOINTERFACE;
+    }
+    STDMETHODIMP_(ULONG) AddRef() override { return ++references_; }
+    STDMETHODIMP_(ULONG) Release() override {
+        const ULONG remaining = --references_;
+        if (!remaining) delete this;
+        return remaining;
+    }
+    STDMETHODIMP GetGUID(GUID* guid) override {
+        if (!guid) return E_INVALIDARG;
+        *guid = kCompositionDisplayAttributeGuid;
+        return S_OK;
+    }
+    STDMETHODIMP GetDescription(BSTR* description) override {
+        if (!description) return E_INVALIDARG;
+        *description = SysAllocString(L"琦琦輸入法組字");
+        return *description ? S_OK : E_OUTOFMEMORY;
+    }
+    STDMETHODIMP GetAttributeInfo(TF_DISPLAYATTRIBUTE* attribute) override {
+        if (!attribute) return E_INVALIDARG;
+        *attribute = {};
+        attribute->crText.type = TF_CT_NONE;
+        attribute->crBk.type = TF_CT_NONE;
+        attribute->lsStyle = TF_LS_SOLID;
+        attribute->crLine.type = TF_CT_NONE;
+        attribute->bAttr = TF_ATTR_INPUT;
+        return S_OK;
+    }
+    STDMETHODIMP SetAttributeInfo(const TF_DISPLAYATTRIBUTE*) override {
+        return E_NOTIMPL;
+    }
+    STDMETHODIMP Reset() override { return S_OK; }
+
+private:
+    ~CompositionDisplayAttributeInfo() { --g_objectCount; }
+    std::atomic<ULONG> references_{1};
+};
+
+class CompositionDisplayAttributeEnum final : public IEnumTfDisplayAttributeInfo {
+public:
+    explicit CompositionDisplayAttributeEnum(bool consumed = false)
+        : consumed_(consumed) { ++g_objectCount; }
+    STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
+        if (!object) return E_INVALIDARG;
+        *object = nullptr;
+        if (iid == IID_IUnknown || iid == IID_IEnumTfDisplayAttributeInfo) {
+            *object = static_cast<IEnumTfDisplayAttributeInfo*>(this);
+            AddRef();
+            return S_OK;
+        }
+        return E_NOINTERFACE;
+    }
+    STDMETHODIMP_(ULONG) AddRef() override { return ++references_; }
+    STDMETHODIMP_(ULONG) Release() override {
+        const ULONG remaining = --references_;
+        if (!remaining) delete this;
+        return remaining;
+    }
+    STDMETHODIMP Clone(IEnumTfDisplayAttributeInfo** result) override {
+        if (!result) return E_INVALIDARG;
+        *result = new (std::nothrow) CompositionDisplayAttributeEnum(consumed_);
+        return *result ? S_OK : E_OUTOFMEMORY;
+    }
+    STDMETHODIMP Next(ULONG count, ITfDisplayAttributeInfo** items,
+                      ULONG* fetched) override {
+        if (!items || (!fetched && count != 1)) return E_INVALIDARG;
+        if (fetched) *fetched = 0;
+        if (!count) return S_OK;
+        if (consumed_) return S_FALSE;
+        items[0] = new (std::nothrow) CompositionDisplayAttributeInfo();
+        if (!items[0]) return E_OUTOFMEMORY;
+        consumed_ = true;
+        if (fetched) *fetched = 1;
+        return count == 1 ? S_OK : S_FALSE;
+    }
+    STDMETHODIMP Reset() override { consumed_ = false; return S_OK; }
+    STDMETHODIMP Skip(ULONG count) override {
+        if (!count) return S_OK;
+        if (consumed_) return S_FALSE;
+        consumed_ = true;
+        return count == 1 ? S_OK : S_FALSE;
+    }
+
+private:
+    ~CompositionDisplayAttributeEnum() { --g_objectCount; }
+    std::atomic<ULONG> references_{1};
+    bool consumed_ = false;
+};
+
 bool IsKeyDown(UINT virtualKey) {
     return (GetKeyState(static_cast<int>(virtualKey)) & 0x8000) != 0;
 }
@@ -220,6 +353,8 @@ STDMETHODIMP TextService::QueryInterface(REFIID iid, void** object) {
         *object = static_cast<ITfThreadMgrEventSink*>(this);
     } else if (iid == IID_ITfCompartmentEventSink) {
         *object = static_cast<ITfCompartmentEventSink*>(this);
+    } else if (iid == IID_ITfDisplayAttributeProvider) {
+        *object = static_cast<ITfDisplayAttributeProvider*>(this);
     } else if (iid == IID_ITfFunctionProvider) {
         *object = static_cast<ITfFunctionProvider*>(this);
     } else if (iid == IID_ITfFnConfigure || iid == IID_ITfFunction) {
@@ -249,6 +384,16 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
 
     threadManager_ = threadManager;
     clientId_ = clientId;
+    ComPtr<ITfCategoryMgr> categoryManager;
+    if (SUCCEEDED(CoCreateInstance(CLSID_TF_CategoryMgr, nullptr,
+                                   CLSCTX_INPROC_SERVER,
+                                   IID_PPV_ARGS(&categoryManager)))) {
+        const HRESULT attributeResult = categoryManager->RegisterGUID(
+            kCompositionDisplayAttributeGuid, &compositionDisplayAttributeAtom_);
+        Trace("Composition display attribute hr=0x%08lX atom=%lu",
+              static_cast<unsigned long>(attributeResult),
+              static_cast<unsigned long>(compositionDisplayAttributeAtom_));
+    }
     engine_ = KeyKeyEngineSession::Create();
     Trace("Activate process=%ls arch=%ls client=%lu engineReady=%d",
           CurrentProcessName().c_str(), BuildArchitecture(),
@@ -288,13 +433,16 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
 
 STDMETHODIMP TextService::Deactivate() {
     Trace("Deactivate");
-    abandonComposition();
+    if (!requestCommitComposition()) {
+        Trace("Deactivate: composition could not be committed");
+    }
     unadviseFunctionProvider();
     unadviseSinks();
     uninitializeLangBar();
     engine_.reset();
     threadManager_.Reset();
     clientId_ = TF_CLIENTID_NULL;
+    compositionDisplayAttributeAtom_ = TF_INVALID_GUIDATOM;
     return S_OK;
 }
 
@@ -516,10 +664,16 @@ void TextService::refreshLangBar() {
 }
 
 void TextService::setChineseMode(bool enabled) {
+    // Ending a TSF composition without clearing its range commits the visible
+    // text. Clearing it here used to discard the user's unfinished sentence.
+    if (!enabled && !requestCommitComposition()) {
+        Trace("InputMode switch deferred: composition commit unavailable");
+        setChineseMode(true);
+        return;
+    }
     chineseMode_ = enabled;
     shiftTogglePending_ = false;
     shiftPressedAt_ = 0;
-    if (!enabled) abandonComposition();
 
     HRESULT result = E_FAIL;
     ComPtr<ITfCompartmentMgr> manager;
@@ -572,6 +726,17 @@ void TextService::setFullWidthMode(bool enabled) {
 }
 
 void TextService::toggleFullWidthMode() { setFullWidthMode(!fullWidthMode_); }
+
+bool TextService::selectInputMethod(const char* identifier) {
+    if (!IsInputMethodVisible(identifier)) return false;
+    if (CurrentInputMethod() != identifier) {
+        if (!requestCommitComposition()) return false;
+        if (!SelectInputMethod(identifier)) return false;
+    }
+    if (!chineseMode_) setChineseMode(true);
+    refreshLangBar();
+    return true;
+}
 
 KeyEvent TextService::translateKey(WPARAM wparam, LPARAM lparam) const {
     KeyEvent event;
@@ -626,7 +791,9 @@ bool TextService::isFullWidthCharacterKey(const KeyEvent& event) const {
 STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
     if (!foreground) {
         shiftTogglePending_ = false;
-        abandonComposition();
+        if (!requestCommitComposition()) {
+            Trace("Input focus lost: composition could not be committed");
+        }
     }
     return S_OK;
 }
@@ -747,6 +914,10 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
                                 const KeyEvent& event, bool* handled) {
     if (!context || !handled) return E_INVALIDARG;
     if (composition_ && compositionContext_.Get() != context) {
+        if (pendingModeCommit_) {
+            *handled = false;
+            return S_OK;
+        }
         // A focus/context switch can happen without giving the old context a
         // writable edit cookie. Detach it before processing the new key so an
         // old composition cannot permanently block the new document.
@@ -841,6 +1012,22 @@ HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext*
         return result;
     }
 
+    if (compositionDisplayAttributeAtom_ != TF_INVALID_GUIDATOM) {
+        ComPtr<ITfProperty> property;
+        const HRESULT propertyResult = context->GetProperty(GUID_PROP_ATTRIBUTE,
+                                                             &property);
+        if (SUCCEEDED(propertyResult)) {
+            VARIANT value;
+            VariantInit(&value);
+            value.vt = VT_I4;
+            value.lVal = static_cast<LONG>(compositionDisplayAttributeAtom_);
+            const HRESULT attributeResult = property->SetValue(editCookie, range.Get(),
+                                                               &value);
+            Trace("Composition underline hr=0x%08lX",
+                  static_cast<unsigned long>(attributeResult));
+        }
+    }
+
     ComPtr<ITfRange> selection;
     result = range->Clone(&selection);
     if (FAILED(result)) {
@@ -910,17 +1097,96 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
 
 HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
     if (!composition_) return S_OK;
+    ComPtr<ITfRange> range;
+    if (compositionContext_ && SUCCEEDED(composition_->GetRange(&range)) && range) {
+        ComPtr<ITfProperty> property;
+        if (SUCCEEDED(compositionContext_->GetProperty(GUID_PROP_ATTRIBUTE,
+                                                       &property))) {
+            property->Clear(editCookie, range.Get());
+        }
+    }
     if (clearText) {
-        ComPtr<ITfRange> range;
-        if (SUCCEEDED(composition_->GetRange(&range))) {
+        if (range) {
             range->SetText(editCookie, 0, nullptr, 0);
         }
     }
     endingComposition_ = true;
-    const HRESULT result = composition_->EndComposition(editCookie);
+    ComPtr<ITfComposition> completing = composition_;
+    const HRESULT result = completing->EndComposition(editCookie);
     endingComposition_ = false;
-    composition_.Reset();
-    compositionContext_.Reset();
+    if (SUCCEEDED(result)) {
+        composition_.Reset();
+        compositionContext_.Reset();
+    }
+    return result;
+}
+
+bool TextService::requestCommitComposition() {
+    if (pendingModeCommit_) return true;
+    if (!composition_) {
+        candidateWindow_.hide();
+        candidateActive_ = false;
+        candidateAnchor_.Reset();
+        if (engine_) engine_->reset();
+        return true;
+    }
+    if (!compositionContext_ || clientId_ == TF_CLIENTID_NULL) return false;
+
+    auto* session = new (std::nothrow)
+        CommitModeSwitchEditSession(this, compositionContext_.Get());
+    if (!session) return false;
+    pendingModeCommit_ = true;
+    HRESULT editResult = E_FAIL;
+    HRESULT requestResult = compositionContext_->RequestEditSession(
+        clientId_, session, TF_ES_SYNC | TF_ES_READWRITE, &editResult);
+    if (requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
+        (SUCCEEDED(requestResult) && editResult == TF_E_SYNCHRONOUS)) {
+        editResult = E_FAIL;
+        requestResult = compositionContext_->RequestEditSession(
+            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE,
+            &editResult);
+    }
+    const bool accepted = SUCCEEDED(requestResult) && SUCCEEDED(editResult);
+    if (!accepted) pendingModeCommit_ = false;
+    Trace("ModeCommit request=0x%08lX edit=0x%08lX accepted=%d",
+          static_cast<unsigned long>(requestResult),
+          static_cast<unsigned long>(editResult), accepted);
+    session->Release();
+    return accepted;
+}
+
+HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
+                                                     ITfContext* context) {
+    HRESULT result = S_OK;
+    if (composition_ && compositionContext_.Get() == context) {
+        ComPtr<ITfRange> range;
+        result = composition_->GetRange(&range);
+        if (SUCCEEDED(result)) {
+            ComPtr<ITfRange> caret;
+            result = range->Clone(&caret);
+            if (SUCCEEDED(result)) result = caret->Collapse(editCookie, TF_ANCHOR_END);
+            if (SUCCEEDED(result)) {
+                TF_SELECTION selection{};
+                selection.range = caret.Get();
+                selection.style.ase = TF_AE_NONE;
+                selection.style.fInterimChar = FALSE;
+                result = context->SetSelection(editCookie, 1, &selection);
+            }
+            if (SUCCEEDED(result)) result = endComposition(editCookie, false);
+        }
+    }
+    if (SUCCEEDED(result)) {
+        candidateWindow_.hide();
+        candidateActive_ = false;
+        candidateAnchor_.Reset();
+        if (engine_) engine_->reset();
+    }
+    pendingModeCommit_ = false;
+    if (FAILED(result) && !chineseMode_ && threadManager_) {
+        setChineseMode(true);
+    }
+    Trace("ModeCommit complete hr=0x%08lX",
+          static_cast<unsigned long>(result));
     return result;
 }
 
@@ -1074,8 +1340,10 @@ STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie
         return S_OK;
     }
     if (!selectionMatchesTrackedState(editCookie, context)) {
-        Trace("Selection left active input state; abandoning composition");
-        abandonComposition();
+        if (!pendingModeCommit_) {
+            Trace("Selection left active input state; abandoning composition");
+            abandonComposition();
+        }
     }
     return S_OK;
 }
@@ -1097,18 +1365,18 @@ STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie,
 
 STDMETHODIMP TextService::OnInitDocumentMgr(ITfDocumentMgr*) { return S_OK; }
 STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
-    if (compositionContext_) {
+    if (compositionContext_ && !pendingModeCommit_) {
         ComPtr<ITfDocumentMgr> owner;
         if (SUCCEEDED(compositionContext_->GetDocumentMgr(&owner)) &&
             owner.Get() == documentManager) {
-            abandonComposition();
+            requestCommitComposition();
         }
     }
     if (textEditContext_) {
         ComPtr<ITfDocumentMgr> owner;
         if (SUCCEEDED(textEditContext_->GetDocumentMgr(&owner)) &&
             owner.Get() == documentManager) {
-            abandonComposition();
+            if (!pendingModeCommit_) requestCommitComposition();
             unadviseTextEditSink();
         }
     }
@@ -1118,8 +1386,10 @@ STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
     ComPtr<ITfContext> focusedContext;
     if (focused) focused->GetTop(&focusedContext);
     if ((composition_ || candidateActive_) &&
-        textEditContext_.Get() != focusedContext.Get()) {
-        abandonComposition();
+        textEditContext_.Get() != focusedContext.Get() && !pendingModeCommit_) {
+        if (!requestCommitComposition()) {
+            Trace("Document focus changed: composition could not be committed");
+        }
     }
     const HRESULT textEditResult = adviseTextEditSink(focusedContext.Get());
     Trace("Focus AdviseTextEdit hr=0x%08lX",
@@ -1133,8 +1403,9 @@ STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
     return S_OK;
 }
 STDMETHODIMP TextService::OnPushContext(ITfContext* context) {
-    if ((composition_ || candidateActive_) && textEditContext_.Get() != context) {
-        abandonComposition();
+    if ((composition_ || candidateActive_) && textEditContext_.Get() != context &&
+        !pendingModeCommit_) {
+        requestCommitComposition();
     }
     const HRESULT result = adviseTextEditSink(context);
     Trace("PushContext AdviseTextEdit hr=0x%08lX",
@@ -1145,7 +1416,7 @@ STDMETHODIMP TextService::OnPushContext(ITfContext* context) {
 }
 STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
     if (compositionContext_.Get() == context) {
-        abandonComposition();
+        if (!pendingModeCommit_) requestCommitComposition();
     } else {
         candidateWindow_.hide();
         candidateActive_ = false;
@@ -1197,15 +1468,28 @@ STDMETHODIMP TextService::OnChange(REFGUID guid) {
         SUCCEEDED(compartment->GetValue(&value)) && value.vt == VT_I4) {
         const bool enabled = value.lVal != 0;
         if (chineseMode_ != enabled) {
-            chineseMode_ = enabled;
-            shiftTogglePending_ = false;
-            if (!enabled) abandonComposition();
-            refreshLangBar();
+            setChineseMode(enabled);
         }
         Trace("InputMode changed chinese=%d", chineseMode_);
     }
     VariantClear(&value);
     return S_OK;
+}
+
+STDMETHODIMP TextService::EnumDisplayAttributeInfo(
+    IEnumTfDisplayAttributeInfo** items) {
+    if (!items) return E_INVALIDARG;
+    *items = new (std::nothrow) CompositionDisplayAttributeEnum();
+    return *items ? S_OK : E_OUTOFMEMORY;
+}
+
+STDMETHODIMP TextService::GetDisplayAttributeInfo(
+    REFGUID guid, ITfDisplayAttributeInfo** info) {
+    if (!info) return E_INVALIDARG;
+    *info = nullptr;
+    if (guid != kCompositionDisplayAttributeGuid) return E_INVALIDARG;
+    *info = new (std::nothrow) CompositionDisplayAttributeInfo();
+    return *info ? S_OK : E_OUTOFMEMORY;
 }
 
 STDMETHODIMP TextService::GetType(GUID* guid) {
@@ -1235,6 +1519,31 @@ STDMETHODIMP TextService::GetDisplayName(BSTR* name) {
 }
 
 HRESULT TextService::openSettings(HWND parent) const {
+    // A text host can keep an older DLL loaded after a side-by-side upgrade.
+    // Resolve the active installation first so its settings app still opens.
+    wchar_t installedDirectory[32768]{};
+    DWORD installedDirectoryBytes = sizeof(installedDirectory);
+    if (RegGetValueW(
+            HKEY_LOCAL_MACHINE,
+            L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\chichi77KeyKey",
+            L"VersionLocation", RRF_RT_REG_SZ | RRF_SUBKEY_WOW6464KEY, nullptr,
+            installedDirectory, &installedDirectoryBytes) == ERROR_SUCCESS &&
+        installedDirectory[0]) {
+        std::wstring installedPath = installedDirectory;
+        if (installedPath.back() != L'\\' && installedPath.back() != L'/')
+            installedPath += L'\\';
+        installedPath += L"KeyKeySettings.exe";
+        const DWORD attributes = GetFileAttributesW(installedPath.c_str());
+        if (attributes != INVALID_FILE_ATTRIBUTES &&
+            !(attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+            const HINSTANCE launched = ShellExecuteW(
+                parent, L"open", installedPath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+            const INT_PTR code = reinterpret_cast<INT_PTR>(launched);
+            return code > 32 ? S_OK : HRESULT_FROM_WIN32(static_cast<DWORD>(code));
+        }
+    }
+
+    // A development DLL can be registered without an installer entry.
     std::wstring modulePath(32768, L'\0');
     const DWORD length = GetModuleFileNameW(g_module, modulePath.data(),
                                             static_cast<DWORD>(modulePath.size()));

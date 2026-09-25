@@ -1,0 +1,12 @@
+{
+  "prompt_count": 10000,
+  "valid_articles": 1650,
+  "rejected_articles": 0,
+  "missing_articles": 8350,
+  "batch_errors": [],
+  "api_usage_for_valid_articles": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0
+  }
+}

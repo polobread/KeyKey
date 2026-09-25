@@ -2,6 +2,7 @@
 !include "MUI2.nsh"
 !include "WordFunc.nsh"
 !include "x64.nsh"
+!include "WinVer.nsh"
 
 !insertmacro VersionCompare
 
@@ -10,6 +11,9 @@
 !endif
 !ifndef PRODUCT_VERSION
   !error "PRODUCT_VERSION is required."
+!endif
+!ifndef PAYLOAD_FINGERPRINT
+  !error "PAYLOAD_FINGERPRINT is required."
 !endif
 !ifndef PUBLISHER
   !error "PUBLISHER is required."
@@ -30,7 +34,10 @@
 !define PRODUCT_NAME "chichi77 KeyKey"
 !define PRODUCT_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\chichi77KeyKey"
 !define PRODUCT_URL "https://github.com/polobread/KeyKey"
-!define VERSION_DIRECTORY "$INSTDIR\${VERSION}"
+!ifndef INSTALL_SUBDIRECTORY
+  !define INSTALL_SUBDIRECTORY "${VERSION}"
+!endif
+!define VERSION_DIRECTORY "$INSTDIR\${INSTALL_SUBDIRECTORY}"
 
 Unicode true
 RequestExecutionLevel admin
@@ -64,10 +71,6 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "See bundled license notices"
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_FUNCTION LaunchKeyKeySettings
 !define MUI_FINISHPAGE_RUN_TEXT "$(FinishRunKeyKeySettings)"
-!define MUI_FINISHPAGE_SHOWREADME
-!define MUI_FINISHPAGE_SHOWREADME_FUNCTION OpenWindowsLanguageSettings
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "$(FinishOpenLanguageSettings)"
-!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_REBOOTLATER_DEFAULT
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE
 !insertmacro MUI_PAGE_WELCOME
@@ -76,6 +79,7 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "See bundled license notices"
 !insertmacro MUI_PAGE_LICENSE "${LICENSE_DIR}\KeyKey-LICENSE.txt"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW ShowUpgradeNotice
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
@@ -85,17 +89,28 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "See bundled license notices"
 
 LangString FinishRunKeyKeySettings ${LANG_TRADCHINESE} "完成後開啟琦琦輸入法設定"
 LangString FinishRunKeyKeySettings ${LANG_ENGLISH} "Open chichi77 KeyKey settings when finished"
-LangString FinishOpenLanguageSettings ${LANG_TRADCHINESE} "開啟 Windows 語言與地區設定"
-LangString FinishOpenLanguageSettings ${LANG_ENGLISH} "Open Windows language and region settings"
+LangString UpgradeFinishText ${LANG_TRADCHINESE} "版本升級已完成。請登出 Windows 再重新登入，讓工作列的輸入法選單載入新版設定頁。"
+LangString UpgradeFinishText ${LANG_ENGLISH} "The upgrade is complete. Sign out of Windows and sign back in so the taskbar input method menu loads the new settings page."
+LangString AlreadyInstalledText ${LANG_TRADCHINESE} "這份琦琦輸入法已安裝，不需重複寫入檔案。若工作列仍顯示舊版選單，請登出 Windows 再登入。"
+LangString AlreadyInstalledText ${LANG_ENGLISH} "This build is already installed. If the taskbar still shows the old menu, sign out of Windows and sign back in."
+LangString DifferentBuildText ${LANG_TRADCHINESE} "已安裝同版號但內容不同的琦琦輸入法。為避免覆寫正在使用的輸入法，請使用較新版號的安裝檔。"
+LangString DifferentBuildText ${LANG_ENGLISH} "A different build with the same version is installed. Use an installer with a newer version number so loaded files are not overwritten."
 
 Var PreviousVersionDirectory
+Var IsUpgrade
+Var AlreadyInstalled
+Var PreviousFingerprint
+
+Function ShowUpgradeNotice
+  ${If} $AlreadyInstalled == 1
+    ${NSD_SetText} $mui.FinishPage.Text "$(AlreadyInstalledText)"
+  ${ElseIf} $IsUpgrade == 1
+    ${NSD_SetText} $mui.FinishPage.Text "$(UpgradeFinishText)"
+  ${EndIf}
+FunctionEnd
 
 Function LaunchKeyKeySettings
   ExecShell "open" "${VERSION_DIRECTORY}\KeyKeySettings.exe"
-FunctionEnd
-
-Function OpenWindowsLanguageSettings
-  ExecShell "open" "ms-settings:regionlanguage"
 FunctionEnd
 
 !macro UnregisterTsfAt DIRECTORY
@@ -134,6 +149,7 @@ FunctionEnd
   Delete /REBOOTOK "${DIRECTORY}\KeyKeyTsf_arm64.dll"
   Delete /REBOOTOK "${DIRECTORY}\KeyKeyTsf.dll"
   Delete /REBOOTOK "${DIRECTORY}\KeyKeySettings.exe"
+  Delete /REBOOTOK "${DIRECTORY}\KeyKeySettingsBackend.dll"
   Delete /REBOOTOK "${DIRECTORY}\Install.cmd"
   Delete /REBOOTOK "${DIRECTORY}\Install.ps1"
   Delete /REBOOTOK "${DIRECTORY}\Uninstall.cmd"
@@ -145,6 +161,11 @@ FunctionEnd
 !macroend
 
 Function .onInit
+  ${IfNot} ${AtLeastWin10}
+    MessageBox MB_OK|MB_ICONSTOP "${PRODUCT_NAME} requires Windows 10 or later." /SD IDOK
+    SetErrorLevel 1633
+    Quit
+  ${EndIf}
   ${IfNot} ${RunningX64}
     MessageBox MB_OK|MB_ICONSTOP "${PRODUCT_NAME} requires x64 Windows." /SD IDOK
     SetErrorLevel 1633
@@ -153,12 +174,17 @@ Function .onInit
 
   SetShellVarContext all
   SetRegView 64
+  StrCpy $IsUpgrade 0
+  StrCpy $AlreadyInstalled 0
   ReadRegStr $0 HKLM "${PRODUCT_KEY}" "InstallLocation"
   ${If} $0 != ""
     StrCpy $INSTDIR $0
   ${EndIf}
   ReadRegStr $3 HKLM "${PRODUCT_KEY}" "DisplayVersion"
   ${If} $3 != ""
+    ${If} $3 != "${VERSION}"
+      StrCpy $IsUpgrade 1
+    ${EndIf}
     ${VersionCompare} $3 "${VERSION}" $4
     ${If} $4 == 1
       MessageBox MB_OK|MB_ICONSTOP \
@@ -168,6 +194,7 @@ Function .onInit
     ${EndIf}
   ${EndIf}
   ReadRegStr $PreviousVersionDirectory HKLM "${PRODUCT_KEY}" "VersionLocation"
+  ReadRegStr $PreviousFingerprint HKLM "${PRODUCT_KEY}" "PayloadFingerprint"
   ${If} $PreviousVersionDirectory == ""
     StrCpy $PreviousVersionDirectory $INSTDIR
   ${ElseIf} $PreviousVersionDirectory != $INSTDIR
@@ -179,6 +206,28 @@ Function .onInit
       StrCpy $2 $PreviousVersionDirectory 1 $1
       ${If} $2 != "\"
         StrCpy $PreviousVersionDirectory $INSTDIR
+      ${EndIf}
+    ${EndIf}
+  ${EndIf}
+  ${If} $3 != ""
+    ${If} $PreviousVersionDirectory != "${VERSION_DIRECTORY}"
+      StrCpy $IsUpgrade 1
+    ${Else}
+      ${If} $PreviousFingerprint != "${PAYLOAD_FINGERPRINT}"
+        MessageBox MB_OK|MB_ICONSTOP "$(DifferentBuildText)" /SD IDOK
+        SetErrorLevel 1638
+        Quit
+      ${EndIf}
+      ${If} ${FileExists} "${VERSION_DIRECTORY}\KeyKeyTsf_x64.dll"
+        ${If} ${FileExists} "${VERSION_DIRECTORY}\KeyKeyTsf_x86.dll"
+          ${If} ${FileExists} "${VERSION_DIRECTORY}\KeyKeySettings.exe"
+            ${If} ${FileExists} "${VERSION_DIRECTORY}\KeyKeySettingsBackend.dll"
+              ${If} ${FileExists} "${VERSION_DIRECTORY}\Databases\KeyKey.db"
+                StrCpy $AlreadyInstalled 1
+              ${EndIf}
+            ${EndIf}
+          ${EndIf}
+        ${EndIf}
       ${EndIf}
     ${EndIf}
   ${EndIf}
@@ -197,19 +246,36 @@ Section "Install"
   SetShellVarContext all
   SetRegView 64
 
-  !insertmacro UnregisterTsfAt "$PreviousVersionDirectory"
-  ${If} $PreviousVersionDirectory != $INSTDIR
-    !insertmacro UnregisterTsfAt "$INSTDIR"
+  ${If} $AlreadyInstalled == 1
+    DetailPrint "This build is already installed; keeping the loaded text service files."
+    Goto install_done
   ${EndIf}
 
   SetOutPath "${VERSION_DIRECTORY}"
+  ClearErrors
   File "/oname=KeyKeyTsf_x64.dll" "${PAYLOAD_DIR}\KeyKeyTsf_x64.dll"
+  IfErrors 0 +3
+    SetErrorLevel 5
+    Abort "Could not install the x64 text service. Close applications using KeyKey and try again."
+  ClearErrors
   File "/oname=KeyKeyTsf_x86.dll" "${PAYLOAD_DIR}\KeyKeyTsf_x86.dll"
+  IfErrors 0 +3
+    SetErrorLevel 5
+    Abort "Could not install the x86 text service. Close applications using KeyKey and try again."
+  ClearErrors
   File "/oname=KeyKeySettings.exe" "${PAYLOAD_DIR}\KeyKeySettings.exe"
+  File "/oname=KeyKeySettingsBackend.dll" "${PAYLOAD_DIR}\KeyKeySettingsBackend.dll"
+  IfErrors 0 +3
+    SetErrorLevel 5
+    Abort "Could not install KeyKey settings. Close the settings app and try again."
   File "/oname=README.md" "${LICENSE_DIR}\KeyKey-README.md"
 
   SetOutPath "${VERSION_DIRECTORY}\Databases"
+  ClearErrors
   File "/oname=KeyKey.db" "${PAYLOAD_DIR}\Databases\KeyKey.db"
+  IfErrors 0 +3
+    SetErrorLevel 5
+    Abort "Could not install the KeyKey database. Close applications using KeyKey and try again."
 
   SetOutPath "${VERSION_DIRECTORY}\LICENSES"
   File /r "${LICENSE_DIR}\*.*"
@@ -237,15 +303,13 @@ Section "Install"
     Abort "Could not register the x86 text service (error $0)."
   ${EndIf}
 
-  ${If} $PreviousVersionDirectory != "${VERSION_DIRECTORY}"
-    !insertmacro RemoveKnownPayload "$PreviousVersionDirectory"
-    ${If} $PreviousVersionDirectory != $INSTDIR
-      RMDir /REBOOTOK "$PreviousVersionDirectory"
-    ${EndIf}
-  ${EndIf}
-  ${If} $PreviousVersionDirectory != $INSTDIR
-    !insertmacro RemoveKnownPayload "$INSTDIR"
-  ${EndIf}
+  ; Re-registering the same TSF CLSID/profile switches both COM views to the
+  ; new payload. Do not unregister the old DLL first: the temporary loss of the
+  ; active input profile causes Windows to activate a fallback IME.
+  ; An already running text host may still use the previous DLL and resolve
+  ; its database or settings app beside that DLL. Keep its payload available
+  ; until those processes exit; removing unlocked companion files here breaks
+  ; a still-loaded input method.
 
   SetOutPath $INSTDIR
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -260,11 +324,13 @@ Section "Install"
   WriteRegStr HKLM "${PRODUCT_KEY}" "DisplayIcon" '"${VERSION_DIRECTORY}\KeyKeySettings.exe",0'
   WriteRegStr HKLM "${PRODUCT_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKLM "${PRODUCT_KEY}" "VersionLocation" "${VERSION_DIRECTORY}"
+  WriteRegStr HKLM "${PRODUCT_KEY}" "PayloadFingerprint" "${PAYLOAD_FINGERPRINT}"
   WriteRegStr HKLM "${PRODUCT_KEY}" "URLInfoAbout" "${PRODUCT_URL}"
   WriteRegStr HKLM "${PRODUCT_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegStr HKLM "${PRODUCT_KEY}" "QuietUninstallString" '"$INSTDIR\Uninstall.exe" /S'
   WriteRegDWORD HKLM "${PRODUCT_KEY}" "NoModify" 1
   WriteRegDWORD HKLM "${PRODUCT_KEY}" "NoRepair" 1
+install_done:
 SectionEnd
 
 Section "Uninstall"

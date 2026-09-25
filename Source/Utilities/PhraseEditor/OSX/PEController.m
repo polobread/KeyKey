@@ -76,12 +76,12 @@ typedef unsigned int NSUInteger;
 {
 	NSString *string = [originalString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 	
-	if (!string && ![string length])
+	if (!string || ![string length])
 		return nil;
 	int i;
 	NSMutableString *validatedString = [NSMutableString string];
 	for (i = 0; i < [string length]; i++) {
-		unichar aChar = [originalString characterAtIndex:i];
+		unichar aChar = [string characterAtIndex:i];
 		if (aChar >= 0x2E80 && aChar < 0xFF00) {
 			[validatedString appendFormat:@"%C", aChar];
 		}
@@ -99,9 +99,14 @@ typedef unsigned int NSUInteger;
 
 - (IBAction)add:(id)sender
 {
+	int previousCount = [_loader userPhraseDBNumberOfRow];
 	[_loader userPhraseDBAddNewRow:[NSString stringWithUTF8String:"新詞"]];
 	[_tableView reloadData];
 	int count = [self numberOfRowsInTableView:_tableView];
+	if (count <= previousCount) {
+		[self updateStatus];
+		return;
+	}
 	[_tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:count - 1] byExtendingSelection:NO];
 	[self editPhrase:self];
 	[self updateStatus];
@@ -188,6 +193,8 @@ typedef unsigned int NSUInteger;
 		return;
 	
 	NSArray *bpmfArray = [[dataDict objectForKey:@"BPMF"] componentsSeparatedByString:@","];
+	if ([bpmfArray count] != [phrase length])
+		return;
 	int i = 0;
 	NSMutableArray *a = [NSMutableArray array];
 	for (i = 0; i < [phrase length]; i++) {		

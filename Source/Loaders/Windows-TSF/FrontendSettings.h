@@ -20,11 +20,14 @@ struct FrontendSettings {
 };
 
 std::wstring SettingsDirectory();
+void MigrateLegacyPreferences();
 std::wstring LoaderPreferencesPath();
 std::wstring TraditionalMandarinPreferencesPath();
+std::wstring SmartMandarinPreferencesPath();
 std::wstring AssociatedPhrasePreferencesPath();
 
 FrontendSettings LoadFrontendSettings();
+bool IsInputMethodVisible(const char* identifier);
 COLORREF HighlightColorValue(const std::wstring& name);
 
 }  // namespace KeyKey::WindowsTsf
