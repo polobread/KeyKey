@@ -23,6 +23,17 @@ known_cases=(
   T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK
   T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW
   T01-X11-GTK3-BOPOMOFO-SMART-SWITCH
+  T01-X11-GTK3-BOPOMOFO-SMART-SWITCH-READING
+  T01-X11-GTK3-BOPOMOFO-SMART-EDIT
+  T01-X11-GTK3-BOPOMOFO-SMART-INVALID-READING
+  T01-X11-GTK3-BOPOMOFO-SMART-HORIZONTAL
+  T01-X11-GTK3-BOPOMOFO-SMART-CANDIDATE-HOME-END
+  T01-X11-GTK3-BOPOMOFO-SMART-PUNCTUATION
+  T01-X11-GTK3-BOPOMOFO-SMART-UPPERCASE
+  T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-MODE
+  T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-LAYOUT
+  T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-DEACTIVATE
+  T01-X11-QT6-BOPOMOFO-SMART-PREEDIT-ACTION
   T01-X11-GTK4-BOPOMOFO-STANDARD
   T01-X11-QT6-BOPOMOFO-STANDARD
   T01-X11-GTK3-BOPOMOFO-BIG5-FILTER
@@ -720,7 +731,7 @@ send_key_sequence() {
   local popup_ready=false
   for key_name in "$@"; do
     case "$key_name" in
-    shift-down|shift-up|ctrl-down|ctrl-up|backslash-down|backslash-up|activate-bopomofo|switch-keyboard-us|expect-keyboard-us|click-second-entry|drag-first-second-character|click-candidate-[1-9]|wait-500ms|wait-1000ms)
+    shift-down|shift-up|ctrl-down|ctrl-up|backslash-down|backslash-up|activate-bopomofo|switch-keyboard-us|config-traditional|config-eten|expect-keyboard-us|click-second-entry|drag-first-second-character|click-candidate-[1-9]|wait-500ms|wait-1000ms)
       special_sequence=true
       break
       ;;
@@ -739,6 +750,16 @@ send_key_sequence() {
       ctrl-up) xdotool keyup Control ;;
       backslash-down) xdotool keydown backslash ;;
       backslash-up) xdotool keyup backslash ;;
+      config-traditional)
+        if [[ ${negative_phase:-false} != true ]]; then
+          set_bopomofo_mode Traditional
+        fi
+        ;;
+      config-eten)
+        if [[ ${negative_phase:-false} != true ]]; then
+          set_bopomofo_layout ETen
+        fi
+        ;;
       activate-bopomofo)
         fcitx5-remote -s chichi77-keykey-bopomofo
         for _ in {1..50}; do
@@ -931,6 +952,22 @@ run_case() {
   expected_literal=$4
   required_preedits=$5
   shift 5
+
+  # Each baseline case starts with the same model. A previous correction must
+  # not change the expected text of an unrelated case. Explicit learning DB
+  # fixtures and existing desktop sessions keep their data untouched.
+  if [[ "$session_mode" == managed && -z ${CHICHI77_KEYKEY_USER_DB:-} ]]; then
+    python3 - "$XDG_DATA_HOME/chichi77-keykey/smart-mandarin-user.db" <<'PY'
+import pathlib
+import sqlite3
+import sys
+path = pathlib.Path(sys.argv[1])
+if path.exists():
+    with sqlite3.connect(path.as_uri() + '?mode=rw', uri=True) as db:
+        db.execute('DELETE FROM user_candidate_override_cache')
+        db.execute('DELETE FROM user_bigram_cache')
+PY
+  fi
 
   case_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id"
   mkdir -p "$case_dir"
@@ -1686,6 +1723,14 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART-SWITCH; then
     s u 3 c l 3 switch-keyboard-us
   set_bopomofo_mode Traditional
 fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-SWITCH-READING; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-SWITCH-READING \
+    chichi77-keykey-bopomofo 中 '5j/' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' \
+    5 j slash switch-keyboard-us
+  set_bopomofo_mode Traditional
+fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-KEY; then
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
@@ -1700,6 +1745,89 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK; then
   run_case T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK \
     chichi77-keykey-bopomofo 請架 'fu/3ru84' '請假,請架' \
     f u slash 3 r u 8 4 Down click-candidate-2 Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-EDIT; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-EDIT \
+    chichi77-keykey-bopomofo 你好 'su3clf' '你好,你ㄑ好' \
+    s u 3 c l 3 Left f Delete Escape Escape End Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-INVALID-READING; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-INVALID-READING \
+    chichi77-keykey-bopomofo 你好 'su3cl3vup3' '你好,你好ㄒㄧㄣˇ,你好' \
+    s u 3 c l 3 v u p 3 Escape Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-HORIZONTAL; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  set_candidate_window_style Horizontal
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-HORIZONTAL \
+    chichi77-keykey-bopomofo 你郝 'su3cl3' '你好,你郝' \
+    s u 3 c l 3 Down Right Return Return
+  set_candidate_window_style Vertical
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CANDIDATE-HOME-END; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-CANDIDATE-HOME-END \
+    chichi77-keykey-bopomofo 請架 'fu/3ru84' '請假,請架' \
+    f u slash 3 r u 8 4 Down End Home Down Return Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-PUNCTUATION; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-PUNCTUATION \
+    chichi77-keykey-bopomofo 你好、你好 'su3cl3su3cl3' '你好,，' \
+    s u 3 c l 3 ctrl+0 Down Return s u 3 c l 3 Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-UPPERCASE; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-UPPERCASE \
+    chichi77-keykey-bopomofo 你好A 'su3cl3A' '你好' \
+    s u 3 c l 3 shift+a
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-MODE; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-MODE \
+    chichi77-keykey-bopomofo 你好中 'su3cl35j/ 1' '你好,ㄓㄨㄥ' \
+    s u 3 c l 3 config-traditional 5 j slash space 1
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-LAYOUT; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-LAYOUT \
+    chichi77-keykey-bopomofo 你好中 'su3cl3,x- ' '你好,ㄓㄨㄥ,中' \
+    s u 3 c l 3 config-eten comma x minus space Return
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-DEACTIVATE; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-DEACTIVATE \
+    chichi77-keykey-bopomofo 你好 'su3cl3' '你好' \
+    s u 3 c l 3 config-traditional switch-keyboard-us
+fi
+if case_selected T01-X11-QT6-BOPOMOFO-SMART-PREEDIT-ACTION; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  export KEYKEY_E2E_INVOKE_ACTION_INDEX=2
+  run_qt6_case T01-X11-QT6-BOPOMOFO-SMART-PREEDIT-ACTION \
+    chichi77-keykey-bopomofo 請假要中 'fu/3ru84ul415j/ ' '請假要,請假要中' \
+    f u slash 3 r u 8 4 u l 4 F6 1 5 j slash space Return
+  unset KEYKEY_E2E_INVOKE_ACTION_INDEX
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK4-BOPOMOFO-STANDARD; then

@@ -205,7 +205,7 @@ public:
     bool processModeKey(bool toggleWithControlBackslash,
                         fcitx::KeyEvent &event);
     void select(std::size_t displayedIndex);
-    bool selectSmartCharacter(std::size_t preeditByteOffset);
+    bool selectSmartCharacter(std::size_t preeditCharacterIndex);
     void reset();
     void commitAndReset();
     bool chineseMode() const noexcept { return chineseMode_; }
@@ -222,7 +222,10 @@ private:
 
     fcitx::InputContext *inputContext_;
     linux_ime::InputContextState context_;
-    const linux_ime::Engine *activeEngine_ = nullptr;
+    const linux_ime::Engine *sourceEngine_ = nullptr;
+    // Keep the configuration that owns this composition. applyConfig mutates
+    // shared engines before the next key or deactivation reaches this state.
+    std::unique_ptr<linux_ime::Engine> activeEngine_;
     bool chineseMode_ = true;
     bool smartMode_ = false;
     fcitx::CandidateLayoutHint candidateLayout_ =
@@ -662,7 +665,7 @@ private:
 
 #undef KEYKEY_ASSOCIATED_PHRASE_OPTIONS
 
-void FcitxState::process(const linux_ime::Engine &engine,
+void FcitxState::process(const linux_ime::Engine &sourceEngine,
                          bool smartMode,
                          bool traditionalToSimplified,
                          bool playSoundOnTypingError,
@@ -671,11 +674,18 @@ void FcitxState::process(const linux_ime::Engine &engine,
                          const linux_ime::KeyEvent &event,
                          fcitx::KeyEvent &fcitxEvent) {
     candidateLayout_ = candidateLayout;
-    if (activeEngine_ != &engine || smartMode_ != smartMode) {
-        context_.reset();
-        activeEngine_ = &engine;
+    if (sourceEngine_ != &sourceEngine || smartMode_ != smartMode) {
+        commitAndReset();
+        activeEngine_.reset();
+        sourceEngine_ = &sourceEngine;
         smartMode_ = smartMode;
     }
+    const auto current = activeEngine_ ? activeEngine_->snapshot(context_)
+                                       : linux_ime::EngineResult{};
+    if (!activeEngine_ || (current.preedit.empty() && current.candidates.empty())) {
+        activeEngine_ = std::make_unique<linux_ime::Engine>(sourceEngine);
+    }
+    const linux_ime::Engine &engine = *activeEngine_;
     engine.setTraditionalToSimplifiedMode(context_,
                                           traditionalToSimplified);
     if (!chineseMode_) {
@@ -719,7 +729,30 @@ void FcitxState::process(const linux_ime::Engine &engine,
     if (sensitive && engine.snapshot(context_).associatedPhrases) {
         context_.reset();
     }
-    linux_ime::EngineResult result = engine.processKey(context_, event);
+    auto editingEvent = event;
+    if (smartMode_ && candidateLayout_ == fcitx::CandidateLayoutHint::Horizontal &&
+        event.modifiers == linux_ime::KeyModifier::None &&
+        !engine.snapshot(context_).candidates.empty()) {
+        // Match the desktop panel: arrows along its axis select a candidate;
+        // arrows across its axis change pages.
+        switch (event.code) {
+        case linux_ime::KeyCode::Left:
+            editingEvent.code = linux_ime::KeyCode::Up;
+            break;
+        case linux_ime::KeyCode::Right:
+            editingEvent.code = linux_ime::KeyCode::Down;
+            break;
+        case linux_ime::KeyCode::Up:
+            editingEvent.code = linux_ime::KeyCode::Left;
+            break;
+        case linux_ime::KeyCode::Down:
+            editingEvent.code = linux_ime::KeyCode::Right;
+            break;
+        default:
+            break;
+        }
+    }
+    linux_ime::EngineResult result = engine.processKey(context_, editingEvent);
     if (sensitive && result.associatedPhrases) {
         const std::string commit = std::move(result.commit);
         context_.reset();
@@ -838,12 +871,12 @@ void FcitxState::select(std::size_t displayedIndex) {
     }
 }
 
-bool FcitxState::selectSmartCharacter(std::size_t preeditByteOffset) {
+bool FcitxState::selectSmartCharacter(std::size_t preeditCharacterIndex) {
     if (activeEngine_ == nullptr || !smartMode_) {
         return false;
     }
     const linux_ime::EngineResult result =
-        activeEngine_->selectSmartCharacter(context_, preeditByteOffset);
+        activeEngine_->selectSmartCharacter(context_, preeditCharacterIndex);
     if (!result.handled) {
         return false;
     }
@@ -853,9 +886,10 @@ bool FcitxState::selectSmartCharacter(std::size_t preeditByteOffset) {
 
 void FcitxState::commitAndReset() {
     if (activeEngine_ != nullptr && smartMode_) {
-        const std::string text = activeEngine_->snapshot(context_).preedit;
-        if (!text.empty()) {
-            inputContext_->commitString(text);
+        const linux_ime::EngineResult result =
+            activeEngine_->finishSmartComposition(context_);
+        if (!result.commit.empty()) {
+            inputContext_->commitString(result.commit);
         }
     }
     reset();

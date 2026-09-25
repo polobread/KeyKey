@@ -1,4 +1,5 @@
 #include "keykey/linux_ime/smart_mandarin_store.h"
+#include "keykey/linux_ime/candidate_encoding.h"
 
 #include <sqlite3.h>
 
@@ -152,8 +153,8 @@ bool SmartMandarinStore::bigram(const std::string &previousQuery,
 
 bool SmartMandarinStore::compose(
     const std::vector<std::string> &readings,
-    const std::map<std::size_t, std::string> &overrides,
-    SmartComposition &result) const {
+    const std::map<std::size_t, SmartSelection> &overrides,
+    SmartComposition &result, bool restrictToBig5) const {
     result = {};
     if (readings.empty()) {
         return true;
@@ -170,15 +171,24 @@ bool SmartMandarinStore::compose(
             query += readings[start + length - 1];
             const std::string learned =
                 userData_ ? userData_->learnedCandidate(query) : std::string{};
-            const auto protectedIndex = overrides.lower_bound(start);
-            if (protectedIndex != overrides.end() &&
-                protectedIndex->first < start + length &&
-                (length != 1 || protectedIndex->first != start)) {
+            const auto overlapping = std::find_if(
+                overrides.begin(), overrides.end(),
+                [start, length](const auto &selection) {
+                    return selection.first < start + length &&
+                           start < selection.first + selection.second.length &&
+                           !(selection.first == start &&
+                             selection.second.length == length);
+                });
+            if (overlapping != overrides.end()) {
                 continue;
             }
             for (const Unigram &entry : unigrams(query)) {
+                if (restrictToBig5 && !isBig5HkscsRepresentable(entry.text)) {
+                    continue;
+                }
                 const auto required = overrides.find(start);
-                if (required != overrides.end() && required->second != entry.text) {
+                if (required != overrides.end() &&
+                    required->second.text != entry.text) {
                     continue;
                 }
                 for (const auto &state : paths[start]) {
@@ -248,9 +258,9 @@ bool SmartMandarinStore::compose(
     return true;
 }
 
-std::vector<std::string> SmartMandarinStore::candidates(
+std::vector<SmartCandidate> SmartMandarinStore::candidateOptions(
     const std::vector<std::string> &readings, std::size_t index,
-    const SmartComposition &composition) const {
+    const SmartComposition &composition, bool restrictToBig5) const {
     if (index >= readings.size()) {
         return {};
     }
@@ -260,9 +270,7 @@ std::vector<std::string> SmartMandarinStore::candidates(
             previous = &segment;
         }
     }
-    std::vector<std::pair<std::string, double>> ranked;
-    const std::string learned =
-        userData_ ? userData_->learnedCandidate(readings[index]) : std::string{};
+    std::vector<std::pair<SmartCandidate, double>> ranked;
     double previousBackoff = 0;
     if (previous) {
         for (const Unigram &entry : unigrams(previous->query)) {
@@ -272,35 +280,57 @@ std::vector<std::string> SmartMandarinStore::candidates(
             }
         }
     }
-    for (const Unigram &entry : unigrams(readings[index])) {
-        const double fallback = previousBackoff + entry.probability;
-        double score = fallback;
-        double observed = 0;
-        if (bigram(previous ? previous->query : "!", readings[index],
-                   previous ? previous->text : "", entry.text, observed)) {
-            score = std::max(observed, fallback);
+    std::string query;
+    for (std::size_t length = 1;
+         length <= 8 && index + length <= readings.size(); ++length) {
+        query += readings[index + length - 1];
+        const std::string learned =
+            userData_ ? userData_->learnedCandidate(query) : std::string{};
+        for (const Unigram &entry : unigrams(query)) {
+            if (restrictToBig5 && !isBig5HkscsRepresentable(entry.text)) {
+                continue;
+            }
+            const double fallback = previousBackoff + entry.probability;
+            double score = fallback;
+            double observed = 0;
+            if (bigram(previous ? previous->query : "!", query,
+                       previous ? previous->text : "", entry.text, observed)) {
+                score = std::max(observed, fallback);
+            }
+            ranked.push_back({{length, entry.text},
+                              score + (entry.text == learned ? 5.0 : 0.0)});
         }
-        ranked.emplace_back(entry.text,
-                            score + (entry.text == learned ? 5.0 : 0.0));
     }
     std::stable_sort(ranked.begin(), ranked.end(),
                      [](const auto &left, const auto &right) {
                          return left.second > right.second;
                      });
-    std::set<std::string> seen;
-    std::vector<std::string> result;
+    std::set<std::pair<std::size_t, std::string>> seen;
+    std::vector<SmartCandidate> result;
     for (const auto &entry : ranked) {
-        if (seen.insert(entry.first).second) {
+        if (seen.insert({entry.first.length, entry.first.text}).second) {
             result.push_back(entry.first);
         }
     }
     return result;
 }
 
+std::vector<std::string> SmartMandarinStore::candidates(
+    const std::vector<std::string> &readings, std::size_t index,
+    const SmartComposition &composition) const {
+    std::vector<std::string> result;
+    for (const SmartCandidate &candidate :
+         candidateOptions(readings, index, composition)) {
+        result.push_back(candidate.text);
+    }
+    return result;
+}
+
 bool SmartMandarinStore::learnCandidate(
     const std::vector<std::string> &readings, std::size_t index,
-    const std::string &chosen, const SmartComposition &composition) const {
-    if (!userData_ || index >= readings.size()) {
+    const SmartCandidate &chosen, const SmartComposition &composition) const {
+    if (!userData_ || chosen.length == 0 ||
+        index + chosen.length > readings.size()) {
         return false;
     }
     const SmartSegment *previous = nullptr;
@@ -322,8 +352,51 @@ bool SmartMandarinStore::learnCandidate(
             }
         }
     }
-    return userData_->learn(readings[index], chosen, previousQuery,
+    std::string query;
+    for (std::size_t offset = 0; offset < chosen.length; ++offset) {
+        query += readings[index + offset];
+    }
+    return userData_->learn(query, chosen.text, previousQuery,
                             previousText);
+}
+
+std::size_t SmartMandarinStore::evictionLength(
+    const std::vector<std::string> &readings,
+    const SmartComposition &composition) const {
+    if (composition.segments.empty()) {
+        return 0;
+    }
+    const std::size_t firstLength = composition.segments.front().length;
+    if (firstLength != 1) {
+        return firstLength;
+    }
+    // Learning a single character can split a visible dictionary word into
+    // one-character nodes. Keep that word together when the buffer shifts.
+    std::size_t length = 0;
+    std::string text;
+    std::string query;
+    for (const SmartSegment &segment : composition.segments) {
+        if (segment.start != length || length + segment.length > readings.size()) {
+            break;
+        }
+        for (std::size_t offset = 0; offset < segment.length; ++offset) {
+            query += readings[length + offset];
+        }
+        length += segment.length;
+        text += segment.text;
+        if (length < 2) {
+            continue;
+        }
+        if (length > 8) {
+            break;
+        }
+        for (const Unigram &entry : unigrams(query)) {
+            if (entry.text == text) {
+                return length;
+            }
+        }
+    }
+    return firstLength;
 }
 
 } // namespace keykey::linux_ime

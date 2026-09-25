@@ -30,15 +30,27 @@ The initial vertical slice provides:
   Space or Down open candidates at the cursor. Clicking a composed character
   opens its candidates in clients that send Fcitx preedit click events.
   While candidates are open, Down moves the highlight and Enter replaces the
-  selected character without committing the sentence; another Enter commits it.
+  selected word without committing the sentence; another Enter commits it.
   Left/Right/Home/End move within the composition, and Backspace/Delete edit
   readings there. Completing the tenth syllable commits the first full word
-  segment while the remaining sentence stays in preedit; switching input
-  methods or Chinese/English mode commits the visible composition. The model is built from the
+  segment while the remaining sentence stays in preedit. A learned single
+  character does not split a visible dictionary word at the eviction boundary,
+  and the following word stays fixed while the buffer shifts. Switching input
+  methods or Chinese/English mode finishes valid readings and commits the
+  visible composition; an unmatched partial reading remains literal. The model is built from the
   repository's source lexicons and corpora during package creation. The current
   2,300-article corpus produces 114,235 unigrams and 885,627 bigrams, matching
   the macOS model. Existing
   configurations without a mode choice also use 好打注音;
+- 好打注音 candidate panels own editing keys until selection or Escape.
+  Home/End address the full candidate list; horizontal arrows follow the panel
+  layout. With an unfinished reading, Escape cancels only that reading and
+  Delete preserves the following text. Completed sentences survive Escape.
+  Preedit click positions use Unicode character indexes; opening candidates
+  for another character resets the page. Changing the composition mode or
+  keyboard layout finishes the old composition before using the new setting.
+  See [the cross-platform review](docs/smart-mandarin-platform-review.md) for
+  tested behavior and remaining platform differences;
 - 好打注音 stores custom phrases and learned candidate choices in
   `$XDG_DATA_HOME/chichi77-keykey/smart-mandarin-user.db` (or
   `~/.local/share/chichi77-keykey/smart-mandarin-user.db`). Candidate choices

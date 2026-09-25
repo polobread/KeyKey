@@ -37,6 +37,7 @@ protected:
 private:
     TestState &state_;
     std::string name_;
+    QString lastPreedit_;
 };
 
 class TestReadOnlyTextEdit final : public QPlainTextEdit {
@@ -258,6 +259,7 @@ TestLineEdit::TestLineEdit(TestState &state, std::string name, QWidget *parent)
 }
 
 void TestLineEdit::inputMethodEvent(QInputMethodEvent *event) {
+    lastPreedit_ = event->preeditString();
     onPreedit(state_, name_, event->preeditString());
     QLineEdit::inputMethodEvent(event);
 }
@@ -275,6 +277,15 @@ void TestLineEdit::focusOutEvent(QFocusEvent *event) {
 }
 
 void TestLineEdit::keyPressEvent(QKeyEvent *event) {
+    const char *actionIndex = std::getenv("KEYKEY_E2E_INVOKE_ACTION_INDEX");
+    if (event->key() == Qt::Key_F6 && actionIndex && !lastPreedit_.isEmpty()) {
+        // Exercise Qt's real IM plugin and Fcitx D-Bus coordinate conversion.
+        // This is the same action QLineEdit sends for a click in its preedit.
+        QGuiApplication::inputMethod()->invokeAction(QInputMethod::Click,
+                                                     std::atoi(actionIndex));
+        event->accept();
+        return;
+    }
     std::string value = utf8(event->text());
     if (value.empty()) {
         value = utf8(QKeySequence(event->key()).toString());

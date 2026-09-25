@@ -91,7 +91,8 @@ private:
     bool showingAssociatedPhrases_ = false;
     std::vector<std::string> smartReadings_;
     SmartComposition smartComposition_;
-    std::map<std::size_t, std::string> smartOverrides_;
+    std::map<std::size_t, SmartSelection> smartOverrides_;
+    std::vector<SmartCandidate> smartCandidateOptions_;
     std::size_t smartCursor_ = 0;
     std::size_t smartCandidateIndex_ = 0;
     bool showingSmartCandidates_ = false;
@@ -125,7 +126,8 @@ public:
     EngineResult selectDisplayedCandidate(InputContextState &context,
                                           std::size_t displayedIndex) const;
     EngineResult selectSmartCharacter(InputContextState &context,
-                                      std::size_t preeditByteOffset) const;
+                                      std::size_t preeditCharacterIndex) const;
+    EngineResult finishSmartComposition(InputContextState &context) const;
     EngineResult snapshot(const InputContextState &context) const;
 
 private:

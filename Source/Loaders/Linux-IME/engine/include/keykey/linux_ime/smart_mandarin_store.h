@@ -24,6 +24,16 @@ struct SmartComposition {
     std::vector<SmartSegment> segments;
 };
 
+struct SmartSelection {
+    std::size_t length = 0;
+    std::string text;
+};
+
+struct SmartCandidate {
+    std::size_t length = 0;
+    std::string text;
+};
+
 class SmartMandarinStore {
 public:
     static std::shared_ptr<const SmartMandarinStore> open(
@@ -34,14 +44,19 @@ public:
     SmartMandarinStore &operator=(const SmartMandarinStore &) = delete;
 
     bool compose(const std::vector<std::string> &readings,
-                 const std::map<std::size_t, std::string> &overrides,
-                 SmartComposition &result) const;
+                 const std::map<std::size_t, SmartSelection> &overrides,
+                 SmartComposition &result, bool restrictToBig5 = false) const;
+    std::vector<SmartCandidate> candidateOptions(
+        const std::vector<std::string> &readings, std::size_t index,
+        const SmartComposition &composition, bool restrictToBig5 = false) const;
     std::vector<std::string> candidates(
         const std::vector<std::string> &readings, std::size_t index,
         const SmartComposition &composition) const;
     bool learnCandidate(const std::vector<std::string> &readings,
-                        std::size_t index, const std::string &chosen,
+                        std::size_t index, const SmartCandidate &chosen,
                         const SmartComposition &composition) const;
+    std::size_t evictionLength(const std::vector<std::string> &readings,
+                               const SmartComposition &composition) const;
 
 private:
     struct Unigram {

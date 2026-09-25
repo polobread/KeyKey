@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -1645,7 +1646,7 @@ void testSmartMandarinComposition() {
     require(committed == "請假" && result.preedit == "要去哪裡玩呢去海" &&
                 result.preeditCursorBytes == result.preedit.size(),
             "Smart Mandarin did not push out 請假 at 海");
-    result = engine.selectSmartCharacter(context, result.preedit.size() - 3);
+    result = engine.selectSmartCharacter(context, 7);
     require(result.handled && !result.candidates.empty() &&
                 result.preedit == "要去哪裡玩呢去海",
             "The remaining Smart Mandarin sentence cannot be corrected");
@@ -1680,7 +1681,7 @@ void testSmartMandarinComposition() {
     for (char key : std::string("su3cl3")) {
         result = engine.processKey(context, character(key));
     }
-    result = engine.selectSmartCharacter(context, 3);
+    result = engine.selectSmartCharacter(context, 1);
     require(result.handled && !result.candidates.empty() &&
                 result.preeditCursorBytes == 3,
             "Clicking the second composed character did not open candidates");
@@ -1690,6 +1691,23 @@ void testSmartMandarinComposition() {
         context, KeyEvent{KeyCode::Down, '\0', KeyModifier::None, false, false});
     require(result.handled && !result.candidates.empty(),
             "Down did not open candidates for the composed character");
+    result = engine.finishSmartComposition(context);
+    require(result.commit == "你好" && result.preedit.empty(),
+            "Switching input methods with candidates lost the composition");
+    for (char key : std::string("5j/")) {
+        result = engine.processKey(context, character(key));
+    }
+    require(result.preedit == "ㄓㄨㄥ",
+            "The unfinished reading was not visible before switching");
+    result = engine.finishSmartComposition(context);
+    require(result.commit == "中" && result.preedit.empty(),
+            "Switching input methods did not finish a valid reading");
+    result = engine.processKey(context, character('f'));
+    require(result.preedit == "ㄑ",
+            "The partial reading was not visible before switching");
+    result = engine.finishSmartComposition(context);
+    require(result.commit == "ㄑ" && result.preedit.empty(),
+            "Switching input methods lost an incomplete reading");
     context.reset();
     for (char key : std::string("rup")) {
         result = engine.processKey(context, character(key));
@@ -1709,6 +1727,154 @@ void testSmartMandarinComposition() {
     }
     require(result.preedit == "ㄋㄧˇ" && !result.candidates.empty(),
             "Traditional mode did not restore single-reading candidates");
+}
+
+void testSmartMandarinEditingTransitions() {
+    Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                  BopomofoLayout::Standard,
+                  loadRealDictionary("bpmf-punctuations.cin"));
+    engine.setSmartMandarinStore(keykey::linux_ime::SmartMandarinStore::open(
+        KEYKEY_TEST_SMART_DB));
+    engine.setSmartMandarinMode(true);
+    InputContextState context;
+    const auto type = [&](const std::string &keys) {
+        EngineResult result;
+        for (char key : keys) result = engine.processKey(context, character(key));
+        return result;
+    };
+
+    type("su3cl3");
+    engine.processKey(context, KeyEvent{KeyCode::Left});
+    type("f");
+    auto result = engine.processKey(context, KeyEvent{KeyCode::Delete});
+    require(result.handled && result.beep && result.preedit == "你ㄑ好" &&
+                result.preeditCursorBytes == 6 && result.commit.empty(),
+            "Delete removed a completed character while a reading was unfinished");
+    result = engine.processKey(context, KeyEvent{KeyCode::Escape});
+    require(result.preedit == "你好" && result.preeditCursorBytes == 3 &&
+                result.commit.empty(),
+            "Escape discarded the sentence instead of only the unfinished reading");
+    result = engine.processKey(context, KeyEvent{KeyCode::Escape});
+    require(result.preedit == "你好" && result.commit.empty(),
+            "Escape discarded completed Smart Mandarin text");
+
+    engine.processKey(context, KeyEvent{KeyCode::Home});
+    result = engine.processKey(context, KeyEvent{KeyCode::Down});
+    require(result.candidatePageCount > 1, "Navigation test needs multiple pages");
+    const auto opened = result;
+    result = engine.processKey(context, KeyEvent{KeyCode::End});
+    require(result.candidatePage + 1 == result.candidatePageCount &&
+                result.highlightedIndex + 1 == result.candidates.size() &&
+                result.preeditCursorBytes == opened.preeditCursorBytes,
+            "Candidate End moved the composing cursor instead of the highlight");
+    result = engine.selectSmartCharacter(context, 1);
+    require(result.candidatePage == 0 && result.highlightedIndex == 0 &&
+                !result.candidates.empty() && result.preeditCursorBytes == 3,
+            "Clicking another character kept the previous candidate page");
+    engine.selectSmartCharacter(context, 0);
+    result = engine.processKey(context, KeyEvent{KeyCode::Home});
+    require(result.candidatePage == 0 && result.highlightedIndex == 0 &&
+                result.preeditCursorBytes == opened.preeditCursorBytes,
+            "Candidate Home moved the composing cursor instead of the highlight");
+    for (const auto key : {KeyEvent{KeyCode::Backspace}, KeyEvent{KeyCode::Delete},
+                           character('f')}) {
+        result = engine.processKey(context, key);
+        require(result.handled && result.beep && result.preedit == "你好" &&
+                    result.candidates == opened.candidates && result.commit.empty(),
+                "A non-candidate key edited the sentence through the candidate panel");
+    }
+    result = engine.processKey(context, KeyEvent{KeyCode::Escape});
+    require(result.candidates.empty() && result.preedit == "你好",
+            "Candidate Escape did not return to composing");
+    engine.processKey(context, KeyEvent{KeyCode::End});
+    type("5j/");
+    result = engine.processKey(context, KeyEvent{KeyCode::Down});
+    require(result.preedit == "你好中" && result.commit.empty(),
+            "Down did not finish an unfinished first-tone reading");
+
+    context.reset();
+    type("su3cl3");
+    result = engine.processKey(context, character('A'));
+    require(result.commit == "你好A" && result.preedit.empty(),
+            "An uppercase literal was interpreted as a Bopomofo key");
+    type("su3cl3");
+    result = engine.processKey(context,
+        KeyEvent{KeyCode::Character, 'A', KeyModifier::Shift});
+    require(result.handled && result.commit == "你好A" && result.preedit.empty(),
+            "Shift-uppercase bypassed the active composition");
+
+    context.reset();
+    type("su3cl3");
+    const KeyEvent punctuation{KeyCode::Character, '0', KeyModifier::Control};
+    result = engine.processKey(context, punctuation);
+    require(result.commit == "你好" && result.candidates.size() > 1,
+            "Smart punctuation did not preserve its composing prefix");
+    const auto punctuationOpened = result;
+    result = engine.processKey(context, KeyEvent{KeyCode::Down});
+    require(result.highlightedIndex == 1 && result.commit.empty(),
+            "Smart punctuation ignored candidate highlight movement");
+    const auto symbol = result.candidates[result.highlightedIndex];
+    result = engine.processKey(context, KeyEvent{KeyCode::Enter});
+    require(result.commit == symbol && result.preedit.empty(),
+            "Smart punctuation did not choose its highlighted symbol");
+    engine.processKey(context, punctuation);
+    result = type("f");
+    require(result.beep && result.preedit == punctuationOpened.preedit &&
+                result.candidates == punctuationOpened.candidates,
+            "Typing through punctuation candidates left a hidden reading");
+    engine.processKey(context, KeyEvent{KeyCode::Escape});
+    result = type("su3cl3");
+    require(result.preedit == "你好" && result.commit.empty(),
+            "Cancelled punctuation leaked state into the next composition");
+    result = engine.finishSmartComposition(context);
+    require(result.commit == "你好", "Mode switch lost the edited sentence");
+    result = engine.finishSmartComposition(context);
+    require(result.commit.empty(), "Repeated deactivation duplicated text");
+
+    type("fu/3ru84ul4");
+    result = engine.selectSmartCharacter(context, 2);
+    require(result.preedit == "請假要" && result.preeditCursorBytes == 6 &&
+                !result.candidates.empty(),
+            "A character-index click on the third character targeted the second");
+    result = engine.selectDisplayedCandidate(context, 0);
+    require(result.preeditCursorBytes == 9 && result.commit.empty(),
+            "Click correction did not move past the requested character");
+    result = engine.selectSmartCharacter(context, 100);
+    require(!result.handled && result.candidates.empty(),
+            "An out-of-range preedit action selected an unrelated character");
+    context.reset();
+
+    result = type("su3cl3vup3");
+    require(result.beep && result.preedit == "你好ㄒㄧㄣˇ" && result.candidates.empty() &&
+                result.commit.empty(),
+            "An unmatched reading opened destructive traditional candidates inside Smart Mandarin: " + result.preedit + "|" + result.commit + "|candidates=" + std::to_string(result.candidates.size()) + "|beep=" + std::to_string(result.beep));
+    result = engine.processKey(context, KeyEvent{KeyCode::Escape});
+    require(result.preedit == "你好" && result.commit.empty(),
+            "Cancelling an unmatched reading discarded completed text");
+    context.reset();
+
+    engine.setRestrictBopomofoCandidatesToBig5(true);
+    const auto allCandidates = [&]() {
+        auto page = engine.processKey(context, KeyEvent{KeyCode::Down});
+        auto choices = page.candidates;
+        for (std::size_t index = 1; index < page.candidatePageCount; ++index) {
+            page = engine.processKey(context, KeyEvent{KeyCode::Space});
+            choices.insert(choices.end(), page.candidates.begin(), page.candidates.end());
+        }
+        return choices;
+    };
+    type("u6");
+    const auto restricted = allCandidates();
+    require(!restricted.empty() &&
+                std::all_of(restricted.begin(), restricted.end(),
+                            isBig5HkscsRepresentable),
+            "Smart Mandarin ignored the Big5 candidate filter");
+    context.reset();
+    engine.setRestrictBopomofoCandidatesToBig5(false);
+    type("u6");
+    const auto unrestricted = allCandidates();
+    require(unrestricted.size() > restricted.size(),
+            "Smart Mandarin Unicode mode did not restore rare candidates");
 }
 
 void testSmartMandarinUserData() {
@@ -1820,6 +1986,149 @@ void testSmartMandarinUserData() {
     unlink(path);
 }
 
+void testSmartMandarinLearnedWordEviction() {
+    using keykey::linux_ime::SmartCandidate;
+    using keykey::linux_ime::SmartComposition;
+    using keykey::linux_ime::SmartMandarinStore;
+    using keykey::linux_ime::SmartMandarinUserData;
+    using keykey::linux_ime::SmartSelection;
+    char path[] = "/tmp/keykey-smart-eviction-XXXXXX";
+    const int temporary = mkstemp(path);
+    require(temporary >= 0, "Could not create an eviction test user database");
+    close(temporary);
+    unlink(path);
+    {
+        auto user = SmartMandarinUserData::open(path);
+        require(user != nullptr &&
+                    user->learn(SmartMandarinUserData::readingToQuery("ㄐㄧㄚˋ"),
+                                "假", {}, {}),
+                "Could not reproduce the saved 假 candidate");
+        const auto store = SmartMandarinStore::open(KEYKEY_TEST_SMART_DB,
+                                                    user);
+        std::vector<std::string> readings;
+        for (const char *syllable :
+             {"ㄑㄧㄥˇ", "ㄐㄧㄚˋ", "ㄧㄠˋ", "ㄑㄩˋ", "ㄋㄚˇ", "ㄌㄧˇ",
+              "ㄨㄢˊ", "ㄋㄜ˙", "ㄑㄩˋ", "ㄏㄞˇ"}) {
+            readings.push_back(SmartMandarinUserData::readingToQuery(syllable));
+        }
+        SmartComposition composition;
+        require(store->compose(readings, {}, composition) &&
+                    composition.text == "請假要去哪裡玩呢去海" &&
+                    composition.segments.front().length == 1,
+                "Learned 假 no longer reproduces the split word");
+        require(store->evictionLength(readings, composition) == 2,
+                "The visible dictionary word 請假 was split on eviction");
+
+        const std::vector<std::string> firstTwo(readings.begin(),
+                                                 readings.begin() + 2);
+        SmartComposition pair;
+        require(store->compose(firstTwo, {}, pair),
+                "Could not compose 請假 for phrase candidates");
+        const auto options = store->candidateOptions(firstTwo, 0, pair);
+        require(std::any_of(options.begin(), options.end(),
+                            [](const SmartCandidate &candidate) {
+                                return candidate.length == 2 &&
+                                       candidate.text == "請假";
+                            }),
+                "The Linux candidate list omitted the full word 請假");
+        const std::map<std::size_t, SmartSelection> selected{
+            {0, {2, "請假"}}};
+        require(store->compose(firstTwo, selected, pair) &&
+                    pair.segments.front().length == 2 &&
+                    pair.text == "請假",
+                "Selecting a full-word candidate did not retain its span");
+
+        Engine engine(loadRealBopomofoDictionary());
+        engine.setSmartMandarinStore(store);
+        engine.setSmartMandarinMode(true);
+        InputContextState context;
+        EngineResult result;
+        std::string committed;
+        for (char key : std::string("fu/3ru84ul4fm4s83xu3j06sk7fm4c93")) {
+            result = engine.processKey(context, character(key));
+            committed += result.commit;
+        }
+        require(committed == "請假" &&
+                    result.preedit == "要去哪裡玩呢去海",
+                "Learned 假 caused the tenth syllable to evict only 請");
+        for (char key : std::string("1u0")) {
+            result = engine.processKey(context, character(key));
+            committed += result.commit;
+        }
+        result = engine.processKey(
+            context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None,
+                              false, false});
+        committed += result.commit;
+        require(committed == "請假" &&
+                    result.preedit == "要去哪裡玩呢去海邊",
+                "Learned 假 changed the following composition after eviction");
+        for (char key : std::string("j06")) {
+            result = engine.processKey(context, character(key));
+            committed += result.commit;
+        }
+        require(committed == "請假要" &&
+                    result.preedit.rfind("去哪裡玩呢去海邊", 0) == 0 &&
+                    result.preedit.size() == std::string("去哪裡玩呢去海邊完").size(),
+                "A second buffer eviction lost or duplicated text: " +
+                    committed + "|" + result.preedit);
+
+        context.reset();
+        for (char key : std::string("fu/3ru84")) {
+            result = engine.processKey(context, character(key));
+        }
+        engine.processKey(
+            context, KeyEvent{KeyCode::Home, '\0', KeyModifier::None,
+                              false, false});
+        result = engine.processKey(
+            context, KeyEvent{KeyCode::Down, '\0', KeyModifier::None,
+                              false, false});
+        const auto phraseChoice = std::find_if(
+            options.begin(), options.end(), [](const SmartCandidate &candidate) {
+                return candidate.length == 2 && candidate.text == "請假";
+            });
+        const std::size_t phraseIndex = static_cast<std::size_t>(
+            std::distance(options.begin(), phraseChoice));
+        for (std::size_t page = 0; page < phraseIndex / Engine::CandidatesPerPage;
+             ++page) {
+            result = engine.processKey(
+                context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None,
+                                  false, false});
+        }
+        result = engine.selectDisplayedCandidate(
+            context, phraseIndex % Engine::CandidatesPerPage);
+        require(result.handled && result.commit.empty() &&
+                    result.preedit == "請假" &&
+                    result.preeditCursorBytes == result.preedit.size(),
+                "Selecting the full-word candidate committed or lost its span");
+        for (char key : std::string("ul4")) {
+            result = engine.processKey(context, character(key));
+        }
+        require(result.preedit == "請假要" && result.commit.empty(),
+                "Typing after a full-word selection changed the selected word");
+        result = engine.processKey(context, KeyEvent{KeyCode::Backspace});
+        require(result.preedit == "請假", "Deleting after a selected word changed it");
+        engine.processKey(context, KeyEvent{KeyCode::Left});
+        for (char key : std::string("5j/")) {
+            engine.processKey(context, character(key));
+        }
+        result = engine.processKey(context, KeyEvent{KeyCode::Space});
+        require(result.preedit == "請中假" && result.preeditCursorBytes == 6 &&
+                    result.commit.empty(),
+                "Inserting inside a selected word retained a stale phrase span");
+        result = engine.processKey(context, KeyEvent{KeyCode::Delete});
+        require(result.preedit == "請中" && result.preeditCursorBytes == 6,
+                "Forward deletion after splitting a selected word lost text");
+        result = engine.processKey(context, KeyEvent{KeyCode::Backspace});
+        require(result.preedit == "請", "Backspace retained a stale phrase span");
+        for (char key : std::string("ru84")) {
+            result = engine.processKey(context, character(key));
+        }
+        require(result.preedit == "請假" && result.commit.empty(),
+                "A split, edited word could not be composed again");
+    }
+    unlink(path);
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -1827,7 +2136,9 @@ int main(int argc, char **argv) {
         if (argc == 2 && std::string(argv[1]) == "--smart-only") {
             testSmartMandarinModelVersion();
             testSmartMandarinComposition();
+            testSmartMandarinEditingTransitions();
             testSmartMandarinUserData();
+            testSmartMandarinLearnedWordEviction();
             std::cout << "Smart Mandarin tests passed\n";
             return EXIT_SUCCESS;
         }
@@ -1858,7 +2169,9 @@ int main(int argc, char **argv) {
         testBopomofoReadingBlocksHostEditingKeys();
         testSmartMandarinModelVersion();
         testSmartMandarinComposition();
+        testSmartMandarinEditingTransitions();
         testSmartMandarinUserData();
+        testSmartMandarinLearnedWordEviction();
     } catch (const std::exception &error) {
         std::cerr << "FAILED: " << error.what() << '\n';
         return EXIT_FAILURE;
