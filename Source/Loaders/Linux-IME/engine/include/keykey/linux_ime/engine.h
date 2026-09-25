@@ -124,6 +124,8 @@ public:
     void setRestrictBopomofoCandidatesToBig5(bool enabled) noexcept;
     EngineResult selectDisplayedCandidate(InputContextState &context,
                                           std::size_t displayedIndex) const;
+    EngineResult selectSmartCharacter(InputContextState &context,
+                                      std::size_t preeditByteOffset) const;
     EngineResult snapshot(const InputContextState &context) const;
 
 private:
@@ -149,7 +151,8 @@ private:
     std::string punctuationQueryKey(const KeyEvent &event) const;
     EngineResult processSmartKey(InputContextState &context,
                                  const KeyEvent &event) const;
-    bool finishSmartReading(InputContextState &context) const;
+    bool finishSmartReading(InputContextState &context,
+                            std::string &pendingCommit) const;
     void rebuildSmartComposition(InputContextState &context) const;
 
     std::shared_ptr<const CinDictionary> dictionary_;

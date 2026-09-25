@@ -27,8 +27,12 @@ The initial vertical slice provides:
 - a persistent Bopomofo mode setting with 好打注音 as the first-run default
   and 傳統注音 as the alternate. Smart mode composes multiple readings with
   the same unigram/bigram model used by macOS, commits with Enter, and lets
-  Space open candidates at the cursor. Left/Right/Home/End move within the
-  composition, and Backspace/Delete edit readings there; the model is built from the
+  Space or Down open candidates at the cursor. Clicking a composed character
+  opens its candidates in clients that send Fcitx preedit click events.
+  Left/Right/Home/End move within the composition, and Backspace/Delete edit
+  readings there. Completing the tenth syllable commits the first full word
+  segment while the remaining sentence stays in preedit; switching input
+  methods or Chinese/English mode commits the visible composition. The model is built from the
   repository's source lexicons and corpora during package creation. The current
   2,300-article corpus produces 114,235 unigrams and 885,627 bigrams, matching
   the macOS model. Existing

@@ -205,7 +205,9 @@ public:
     bool processModeKey(bool toggleWithControlBackslash,
                         fcitx::KeyEvent &event);
     void select(std::size_t displayedIndex);
+    bool selectSmartCharacter(std::size_t preeditByteOffset);
     void reset();
+    void commitAndReset();
     bool chineseMode() const noexcept { return chineseMode_; }
 
 private:
@@ -247,7 +249,7 @@ private:
     std::size_t displayedIndex_;
 };
 
-class FcitxEngine : public fcitx::InputMethodEngineV2 {
+class FcitxEngine : public fcitx::InputMethodEngineV3 {
 public:
     explicit FcitxEngine(fcitx::Instance *instance)
         : instance_(instance),
@@ -309,6 +311,19 @@ public:
                     ->propertyFor(&factory_)
                     ->processModeKey(*config_.toggleWithControlBackslash,
                                      keyEvent);
+            });
+        switchEventWatcher_ = instance->watchEvent(
+            fcitx::EventType::InputContextSwitchInputMethod,
+            fcitx::EventWatcherPhase::PreInputMethod,
+            [this](fcitx::Event &event) {
+                auto &switchEvent =
+                    static_cast<fcitx::InputContextSwitchInputMethodEvent &>(
+                        event);
+                if (isKeyKeyInputMethod(switchEvent.oldInputMethod())) {
+                    switchEvent.inputContext()
+                        ->propertyFor(&factory_)
+                        ->commitAndReset();
+                }
             });
         reloadConfig();
     }
@@ -375,7 +390,19 @@ public:
 
     void deactivate(const fcitx::InputMethodEntry &entry,
                     fcitx::InputContextEvent &event) override {
-        reset(entry, event);
+        FCITX_UNUSED(entry);
+        event.inputContext()->propertyFor(&factory_)->commitAndReset();
+    }
+
+    void invokeActionImpl(const fcitx::InputMethodEntry &entry,
+                          fcitx::InvokeActionEvent &event) override {
+        if (entry.uniqueName() == "chichi77-keykey-bopomofo" &&
+            event.action() == fcitx::InvokeActionEvent::Action::LeftClick &&
+            event.cursor() >= 0 &&
+            event.inputContext()->propertyFor(&factory_)->selectSmartCharacter(
+                static_cast<std::size_t>(event.cursor()))) {
+            event.filter();
+        }
     }
 
 private:
@@ -629,6 +656,8 @@ private:
     KeyKeyConfig config_;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
         keyEventWatcher_;
+    std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
+        switchEventWatcher_;
 };
 
 #undef KEYKEY_ASSOCIATED_PHRASE_OPTIONS
@@ -797,11 +826,8 @@ bool FcitxState::processModeKey(bool toggleWithControlBackslash,
 }
 
 void FcitxState::toggleChineseMode() {
+    commitAndReset();
     chineseMode_ = !chineseMode_;
-    context_.reset();
-    if (activeEngine_ != nullptr) {
-        updateUi(activeEngine_->snapshot(context_));
-    }
     inputContext_->updateUserInterface(
         fcitx::UserInterfaceComponent::StatusArea);
 }
@@ -810,6 +836,29 @@ void FcitxState::select(std::size_t displayedIndex) {
     if (activeEngine_ != nullptr) {
         apply(activeEngine_->selectDisplayedCandidate(context_, displayedIndex));
     }
+}
+
+bool FcitxState::selectSmartCharacter(std::size_t preeditByteOffset) {
+    if (activeEngine_ == nullptr || !smartMode_) {
+        return false;
+    }
+    const linux_ime::EngineResult result =
+        activeEngine_->selectSmartCharacter(context_, preeditByteOffset);
+    if (!result.handled) {
+        return false;
+    }
+    apply(result);
+    return true;
+}
+
+void FcitxState::commitAndReset() {
+    if (activeEngine_ != nullptr && smartMode_) {
+        const std::string text = activeEngine_->snapshot(context_).preedit;
+        if (!text.empty()) {
+            inputContext_->commitString(text);
+        }
+    }
+    reset();
 }
 
 void FcitxState::reset() {

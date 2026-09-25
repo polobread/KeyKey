@@ -1609,6 +1609,59 @@ void testSmartMandarinComposition() {
         context, KeyEvent{KeyCode::Delete, '\0', KeyModifier::None, false, false});
     require(result.preedit == "好" && result.preeditCursorBytes == 0,
             "Smart Mandarin Delete did not remove the current reading");
+
+    context.reset();
+    std::string committed;
+    for (char key : std::string("fu/3ru84ul4fm4s83xu3j06sk7fm4")) {
+        result = engine.processKey(context, character(key));
+        committed += result.commit;
+    }
+    require(committed.empty() && result.preedit == "請假要去哪裡玩呢去",
+            "Smart Mandarin committed the long sentence before 海");
+    for (char key : std::string("c93")) {
+        result = engine.processKey(context, character(key));
+        committed += result.commit;
+    }
+    require(committed == "請假" && result.preedit == "要去哪裡玩呢去海" &&
+                result.preeditCursorBytes == result.preedit.size(),
+            "Smart Mandarin did not push out 請假 at 海");
+    result = engine.selectSmartCharacter(context, result.preedit.size() - 3);
+    require(result.handled && !result.candidates.empty() &&
+                result.preedit == "要去哪裡玩呢去海",
+            "The remaining Smart Mandarin sentence cannot be corrected");
+    engine.processKey(
+        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false, false});
+    engine.processKey(
+        context, KeyEvent{KeyCode::End, '\0', KeyModifier::None, false, false});
+    for (char key : std::string("1u0")) {
+        result = engine.processKey(context, character(key));
+        committed += result.commit;
+    }
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+    committed += result.commit;
+    require(committed == "請假" &&
+                result.preedit == "要去哪裡玩呢去海邊",
+            "Smart Mandarin did not keep composing after the prefix commit");
+
+    context.reset();
+    for (char key : std::string("su3cl3")) {
+        result = engine.processKey(context, character(key));
+    }
+    result = engine.selectSmartCharacter(context, 0);
+    require(result.handled && !result.candidates.empty() &&
+                result.preeditCursorBytes == 0,
+            "Clicking the first composed character did not open candidates");
+    result = engine.selectSmartCharacter(context, 3);
+    require(result.handled && !result.candidates.empty() &&
+                result.preeditCursorBytes == 3,
+            "Clicking the second composed character did not open candidates");
+    engine.processKey(
+        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false, false});
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Down, '\0', KeyModifier::None, false, false});
+    require(result.handled && !result.candidates.empty(),
+            "Down did not open candidates for the composed character");
     context.reset();
     for (char key : std::string("rup")) {
         result = engine.processKey(context, character(key));

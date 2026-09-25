@@ -19,6 +19,8 @@ esac
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-STANDARD
   T01-X11-GTK3-BOPOMOFO-SMART
+  T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW
+  T01-X11-GTK3-BOPOMOFO-SMART-SWITCH
   T01-X11-GTK4-BOPOMOFO-STANDARD
   T01-X11-QT6-BOPOMOFO-STANDARD
   T01-X11-GTK3-BOPOMOFO-BIG5-FILTER
@@ -716,7 +718,7 @@ send_key_sequence() {
   local popup_ready=false
   for key_name in "$@"; do
     case "$key_name" in
-    shift-down|shift-up|ctrl-down|ctrl-up|backslash-down|backslash-up|activate-bopomofo|expect-keyboard-us|click-second-entry|drag-first-second-character|click-candidate-[1-9]|wait-500ms|wait-1000ms)
+    shift-down|shift-up|ctrl-down|ctrl-up|backslash-down|backslash-up|activate-bopomofo|switch-keyboard-us|expect-keyboard-us|click-second-entry|drag-first-second-character|click-candidate-[1-9]|wait-500ms|wait-1000ms)
       special_sequence=true
       break
       ;;
@@ -746,6 +748,22 @@ send_key_sequence() {
         done
         if [[ "$(fcitx5-remote -n)" != chichi77-keykey-bopomofo ]]; then
           echo "The Bopomofo engine did not activate after a focus change." >&2
+          exit 1
+        fi
+        ;;
+      switch-keyboard-us)
+        if [[ ${negative_phase:-false} == true ]]; then
+          continue
+        fi
+        fcitx5-remote -s keyboard-us
+        for _ in {1..50}; do
+          if [[ "$(fcitx5-remote -n)" == keyboard-us ]]; then
+            break
+          fi
+          sleep 0.1
+        done
+        if [[ "$(fcitx5-remote -n)" != keyboard-us ]]; then
+          echo "The keyboard engine did not activate after switching." >&2
           exit 1
         fi
         ;;
@@ -1644,6 +1662,26 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART; then
   set_bopomofo_mode Smart
   run_case T01-X11-GTK3-BOPOMOFO-SMART chichi77-keykey-bopomofo \
     你好 'su3cl3' 'ㄋ,ㄋㄧ,你,你ㄏ,你好' s u 3 c l 3 Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW \
+    chichi77-keykey-bopomofo 請假要去哪裡玩呢去海邊 \
+    'fu/3ru84ul4fm4s83xu3j06sk7fm4c931u0 ' \
+    '請假要去哪裡玩呢去,要去哪裡玩呢去海,要去哪裡玩呢去海邊' \
+    f u slash 3 r u 8 4 u l 4 f m 4 s 8 3 x u 3 j 0 6 \
+    s k 7 f m 4 c 9 3 1 u 0 space Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-SWITCH; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-SWITCH \
+    chichi77-keykey-bopomofo 你好 'su3cl3' \
+    'ㄋ,ㄋㄧ,你,你ㄏ,你好' \
+    s u 3 c l 3 switch-keyboard-us
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK4-BOPOMOFO-STANDARD; then
