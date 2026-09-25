@@ -3,7 +3,7 @@
 本文件比對下列來源：
 
 - Yahoo KeyKey 1.1.2528 原始碼：`../yahoo/KeyKey-master/YahooKeyKey-Source-1.1.2528`
-- 目前開發分支：`v1.2.10`
+- 目前開發分支：`v1.3.0`
 - macOS 實際 Release target：`Takao (Loader OSX-IMK)`
 
 ## 已恢復

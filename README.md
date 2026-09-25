@@ -1,5 +1,6 @@
-# 琦琦輸入法 / chichi77 KeyKey 1.2.10
+# 琦琦輸入法 / chichi77 KeyKey 1.3.0
 
+1.3.0 原始碼仍在開發中。目前公開的安裝包為 `v1.2.9`。
 `v1.2.9` 的 macOS、Windows 與 Ubuntu 24.04 安裝包集中在同一個
 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)；
 Android 與 iOS 依各自的商店管道安裝。
@@ -83,7 +84,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 [Code signing policy](CODE_SIGNING_POLICY.md)。`v1.2.9` Windows 發行檔早於此整合，
 目前仍未簽章；SignPath Foundation 核准申請並完成驗證流程後，政策才適用於後續正式版。
 
-推送符合專案版號的 tag（例如 `v1.2.10`）會啟動 `Package macOS`、
+推送符合專案版號的 tag（例如 `v1.3.0`）會啟動 `Package macOS`、
 `Package Windows` 與完整 `Linux CI`。macOS 和 Windows 的產物，以及通過 Ubuntu 24.04
 套件安裝與輸入測試的 Linux 套件，會加入同一個 GitHub Release。手動執行 Linux CI
 只保留 Actions artifact，不發布 Release。Linux 的 1.2.9 GNOME 實機相容性仍須持續驗收。
@@ -132,7 +133,8 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 
 ## English
 
-The macOS, Windows, and Ubuntu 24.04 installers for `v1.2.9` share one
+The 1.3.0 source version is still in development. The currently published
+macOS, Windows, and Ubuntu 24.04 installers for `v1.2.9` share one
 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9).
 Android and iOS use their respective store distribution channels.
 
@@ -215,7 +217,7 @@ predate this integration and remain unsigned; the policy applies to later
 official releases after the application is accepted and the verified workflow
 is enabled.
 
-Pushing a tag that exactly matches the project version, such as `v1.2.10`,
+Pushing a tag that exactly matches the project version, such as `v1.3.0`,
 starts `Package macOS`, `Package Windows`, and the full `Linux CI`. The desktop
 outputs and the Linux packages that pass the Ubuntu 24.04 package checks are
 added to the same GitHub Release. Manual Linux CI runs retain Actions artifacts

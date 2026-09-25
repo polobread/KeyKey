@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the Smart Mandarin database snapshot used by version 1.2.10."""
+"""Verify the Smart Mandarin database snapshot used by version 1.3.0."""
 
 import sqlite3
 import sys

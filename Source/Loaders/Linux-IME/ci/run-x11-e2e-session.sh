@@ -689,7 +689,7 @@ verify_bopomofo_config_schema() {
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq AssociatedPhrases \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
-  grep -Fq '琦琦輸入法 — 版本 1.2.10' \
+  grep -Fq '琦琦輸入法 — 版本 1.3.0' \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   for source in "${associated_phrase_sources[@]}"; do
     grep -Fq "$source" \

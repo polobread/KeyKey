@@ -1,6 +1,6 @@
 # chichi77 KeyKey for Linux
 
-Current source version: 1.2.10 (in development). The 1.2.9 Ubuntu package set
+Current source version: 1.3.0 (in development). The 1.2.9 Ubuntu package set
 remains the published release; the Smart Mandarin mode is part of the current
 source work.
 The Fcitx configuration page shows the CMake project version in a read-only

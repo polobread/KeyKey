@@ -2,6 +2,8 @@
 
 此檔只記錄目前開發需要遵守的規則與入口。舊版逐日進度、測試數字和待辦已完整移到 [歷史交接紀錄](docs/AGENTS_HISTORY.md)；該紀錄僅供查證當時情況，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 和相關平台文件。
 
+目前本機開發分支為 `v1.3.0`，五平台原始碼版號已升至 1.3.0；尚未建立對應 tag 或發布套件。README 與安裝指南指向已發布的 `v1.2.9`，舊版測試紀錄和 Android 私有資料庫清理清單中的 `1.2.10` 也須保留原意。發布前仍需依各平台建置與驗證流程確認實際產物。
+
 ## 工作區與提交
 
 - 先執行 `git status --short --branch`；保留使用者既有的未提交修改。只逐檔 `git add` 本次工作，不用 `git add .` 或 `git add -A`。
@@ -27,7 +29,7 @@
 | Linux | `Linux-IME` 的 C++ walker、Fcitx 5 adapter | Python cooker 產生 `smart-mandarin.db` |
 
 - macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 另有組句實作。改動 SmartMandarin 的詞頻、Bigram、backoff 或候選排序時，必須檢查五平台，不能只看同一份資料庫。
-- 目前 `v1.2.10` 模型有 **885,614 筆 Bigram**。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動語料或 cooker 後，更新驗證預期值與測試，避免只用 Bigram 筆數判斷新舊。
+- 目前 `v1.3.0` 模型有 **885,614 筆 Bigram**。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動語料或 cooker 後，更新驗證預期值與測試，避免只用 Bigram 筆數判斷新舊。
 - `Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py` 檢查共用 DB 完整性、筆數與首音節。iOS archive、Android asset、macOS App 和 Windows 打包目錄仍要各自確認；Linux 使用自己的資料庫與核心測試。
 - Android 的私有 DB 檔名是更新快取的版本邊界。換模型後若不變更檔名或加入內容校驗，已安裝使用者可能繼續讀舊庫。Windows 的 `keykey_database_deploy` 須在 DB 更新而 DLL 未重新連結時同步打包目錄。
 
@@ -83,6 +85,8 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 | Linux | `Source/Loaders/Linux-IME/CMakeLists.txt` 的 `project(... VERSION ...)` |
 
 再核對文件範例、各平台打包後的實際版本與發行流程；GitHub Release、App Store、Google Play 的版本不能由原始碼版號推定。
+
+目前待辦：在各平台完成 1.3.0 建置與套件版號驗證；發布後再把安裝指南、下載連結及支援矩陣的發布狀態更新到實際可取得的套件。
 
 ## 專題文件
 
