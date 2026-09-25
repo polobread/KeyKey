@@ -4,7 +4,9 @@
 #include "keykey/linux_ime/engine.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -1613,9 +1615,11 @@ void testSmartMandarinModelVersion() {
 }
 
 void testSmartMandarinRequiresBigrams() {
-    char path[] = "/tmp/keykey-smart-model-XXXXXX";
+    char path[] = "keykey-smart-model-XXXXXX";
     const int temporary = mkstemp(path);
-    require(temporary >= 0, "Could not create a model validation fixture");
+    require(temporary >= 0,
+            "Could not create a model validation fixture: " +
+                std::string(std::strerror(errno)));
     close(temporary);
     sqlite3 *database = nullptr;
     require(sqlite3_open(path, &database) == SQLITE_OK,
@@ -2072,7 +2076,7 @@ void testSmartMandarinEditingTransitions() {
 void testSmartMandarinUserData() {
     using keykey::linux_ime::SmartMandarinStore;
     using keykey::linux_ime::SmartMandarinUserData;
-    char path[] = "/tmp/keykey-smart-user-XXXXXX";
+    char path[] = "keykey-smart-user-XXXXXX";
     const int temporary = mkstemp(path);
     require(temporary >= 0, "Could not create a temporary user-data path");
     close(temporary);
@@ -2182,7 +2186,7 @@ void testSmartMandarinBigramLearning() {
     using keykey::linux_ime::SmartComposition;
     using keykey::linux_ime::SmartMandarinStore;
     using keykey::linux_ime::SmartMandarinUserData;
-    char path[] = "/tmp/keykey-smart-bigram-XXXXXX";
+    char path[] = "keykey-smart-bigram-XXXXXX";
     const int temporary = mkstemp(path);
     require(temporary >= 0, "Could not create a Bigram learning fixture");
     close(temporary);
@@ -2248,7 +2252,7 @@ void testSmartMandarinLearnedWordEviction() {
     using keykey::linux_ime::SmartMandarinStore;
     using keykey::linux_ime::SmartMandarinUserData;
     using keykey::linux_ime::SmartSelection;
-    char path[] = "/tmp/keykey-smart-eviction-XXXXXX";
+    char path[] = "keykey-smart-eviction-XXXXXX";
     const int temporary = mkstemp(path);
     require(temporary >= 0, "Could not create an eviction test user database");
     close(temporary);
