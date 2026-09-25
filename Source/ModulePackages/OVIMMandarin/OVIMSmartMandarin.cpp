@@ -820,11 +820,10 @@ OVIMSmartMandarin::OVIMSmartMandarin()
     , m_cfgComposingTextBufferSize(10)    
 #ifndef WIN32
     , m_cfgShowCandidateListWithSpace(true)
-    , m_cfgClearComposingTextWithEsc(false)
 #else
     , m_cfgShowCandidateListWithSpace(false)
-    , m_cfgClearComposingTextWithEsc(true)
 #endif
+    , m_cfgClearComposingTextWithEsc(false)
 	, m_cfgShiftKeyAlwaysCommitUppercaseCharacters(false)
 {
 }
@@ -1145,9 +1144,20 @@ void OVIMSmartMandarin::loadConfig(OVKeyValueMap* moduleConfig, OVLoaderService*
         m_cfgShowCandidateListWithSpace = moduleConfig->isKeyTrue("ShowCandidateListWithSpace");
     }
     
+#ifdef WIN32
+    // The old Windows default was true, and PlainVanilla saved that default
+    // when a context deactivated. An unmarked true in an existing plist is
+    // therefore not evidence that the user opted in to clearing a sentence.
+    m_cfgClearComposingTextWithEsc =
+        moduleConfig->hasKey("ClearComposingTextWithEscUserChoice") &&
+        moduleConfig->isKeyTrue("ClearComposingTextWithEscUserChoice") &&
+        moduleConfig->hasKey("ClearComposingTextWithEsc") &&
+        moduleConfig->isKeyTrue("ClearComposingTextWithEsc");
+#else
     if (moduleConfig->hasKey("ClearComposingTextWithEsc")) {
         m_cfgClearComposingTextWithEsc = moduleConfig->isKeyTrue("ClearComposingTextWithEsc");
     }
+#endif
     
     if (moduleConfig->hasKey("ComposingTextBufferSize")) {
 		size_t s = (size_t)moduleConfig->intValueForKey("ComposingTextBufferSize");

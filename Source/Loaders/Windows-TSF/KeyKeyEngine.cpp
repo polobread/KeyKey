@@ -70,7 +70,9 @@ public:
 
 class WindowsLoaderPolicy final : public PVLoaderPolicy {
 public:
-    WindowsLoaderPolicy() : PVLoaderPolicy(std::vector<std::string>()) {}
+    explicit WindowsLoaderPolicy(std::string testProfileDirectory)
+        : PVLoaderPolicy(std::vector<std::string>()),
+          testProfileDirectory_(std::move(testProfileDirectory)) {}
 
     const std::string defaultDatabaseFileName() override { return "KeyKey.db"; }
     const std::string loaderIdentifier() override {
@@ -78,7 +80,34 @@ public:
     }
     const std::string loaderName() override { return "chichi77 KeyKey"; }
     const std::vector<std::string> modulePackageFilePatterns() override { return {}; }
+    const std::string propertyListPathForLoader() override {
+        return testProfileDirectory_.empty()
+                   ? PVLoaderPolicy::propertyListPathForLoader()
+                   : OVPathHelper::PathCat(testProfileDirectory_,
+                                           loaderIdentifier() + ".plist");
+    }
+    const std::string propertyListPathFromIdentifier(
+        const std::string& identifier) override {
+        return testProfileDirectory_.empty()
+                   ? PVLoaderPolicy::propertyListPathFromIdentifier(identifier)
+                   : OVPathHelper::PathCat(testProfileDirectory_,
+                                           moduleIdentifierPrefix(identifier) + ".plist");
+    }
+
+private:
+    std::string testProfileDirectory_;
 };
+
+std::string TestProfileDirectory() {
+    // Engine smoke tests use an isolated per-process profile. Production
+    // processes have no override and keep the normal Roaming AppData paths.
+    std::wstring path(32768, L'\0');
+    const DWORD length = GetEnvironmentVariableW(
+        L"KEYKEY_TSF_TEST_PROFILE_DIR", path.data(), static_cast<DWORD>(path.size()));
+    if (!length || length >= path.size()) return {};
+    path.resize(length);
+    return OVUTF8::FromUTF16(path);
+}
 
 class WindowsMandarinPackage final : public OVModulePackage {
 public:
@@ -157,12 +186,15 @@ public:
         OVPathInfo pathInfo;
         pathInfo.loadedPath = resourcePath;
         pathInfo.resourcePath = resourcePath;
-        pathInfo.writablePath =
-            OVDirectoryHelper::UserApplicationSupportDataDirectory("chichi77 KeyKey");
+        const std::string testProfileDirectory = TestProfileDirectory();
+        pathInfo.writablePath = testProfileDirectory.empty()
+                                    ? OVDirectoryHelper::UserApplicationSupportDataDirectory(
+                                          "chichi77 KeyKey")
+                                    : testProfileDirectory;
         OVDirectoryHelper::CheckDirectory(pathInfo.writablePath);
 
-        MigrateLegacyPreferences();
-        policy_ = std::make_unique<WindowsLoaderPolicy>();
+        if (testProfileDirectory.empty()) MigrateLegacyPreferences();
+        policy_ = std::make_unique<WindowsLoaderPolicy>(testProfileDirectory);
         const std::wstring loaderPreferences = OVUTF16::FromUTF8(
             policy_->propertyListPathForLoader());
         const bool existingProfile =

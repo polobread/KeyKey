@@ -60,6 +60,8 @@ public partial class MainWindow : Window
             SettingsStore.Read(phonetic, "KeyboardLayout", "Standard"));
         RareCharacters.IsChecked = SettingsStore.Read(phonetic,
             "UseCharactersSupportedByEncoding", "BIG-5") is "" or "UTF-8";
+        ClearSmartCompositionWithEsc.IsChecked =
+            SettingsStore.ReadSmartEscClearPreference(SettingsStore.SmartPath);
     }
 
     private void LoadCollections()
@@ -129,7 +131,12 @@ public partial class MainWindow : Window
                 ["UseCharactersSupportedByEncoding"] = RareCharacters.IsChecked == true ? "UTF-8" : "BIG-5",
             };
             SettingsStore.Write(SettingsStore.TraditionalPath, phoneticValues);
-            SettingsStore.Write(SettingsStore.SmartPath, phoneticValues);
+            var smartValues = new Dictionary<string, string>(phoneticValues) {
+                ["ClearComposingTextWithEscUserChoice"] = "true",
+                ["ClearComposingTextWithEsc"] =
+                    ClearSmartCompositionWithEsc.IsChecked == true ? "true" : "false",
+            };
+            SettingsStore.Write(SettingsStore.SmartPath, smartValues);
             SettingsStore.Write(SettingsStore.AssociatedPath, new Dictionary<string, string> {
                 ["EnabledCollections"] = string.Join(',', collections.Where(c => c.Enabled).Select(c => c.Source)),
             });

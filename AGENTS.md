@@ -110,7 +110,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 
 ## 1.3.0 待接手事項
 
-- **Windows 好打注音 Esc 待修。** 全新設定下，於記事本輸入完整句（例如 `su3cl3` →「你好」）後按 Esc，目前可能整句消失；若先輸入未完成注音，第一次 Esc 只清讀音，下一次又清整句。`KeyKeyEngine.cpp` 會把 `VK_ESCAPE` 交給共用 `OVIMSmartMandarin`；該模組的 Windows 預設 `ClearComposingTextWithEsc=true`，於已完成讀音的組字上清除 Manjusri，TSF 接著可能以 `endComposition(true)` 刪除文字範圍。對齊 macOS 與 Linux 的預設：候選窗開啟時 Esc 只關窗、未完成讀音時只清讀音、完成的整句仍留在組字狀態；若使用者明確設定 Esc 清句，須另外保留該選項的語意。補 Windows 引擎與 TSF 測試覆蓋三種狀態及設定 true/false，並在實機記事本驗證；先核對 Windows 編譯時 `WIN32` 條件與舊設定遷移，不能只改預設常數。對照見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。
+- **Windows 好打注音 Esc 實機驗證待完成。** 原始碼已將預設改為保留完整句；候選窗開啟時 Esc 只關窗，讀音未完成時只清讀音。舊 Windows 預設 `ClearComposingTextWithEsc=true` 曾由 PlainVanilla 自動寫入 plist，因此只有新版設定頁寫入 `ClearComposingTextWithEscUserChoice=true` 才視為使用者明確選擇清句。x64／x86 TSF、設定程式皆已在本機建置，兩架構各 5 個 CTest 與設定 plist 測試通過；尚未安裝新版 DLL，也未在記事本確認 Esc 後文字範圍與底線的實際行為。安裝後以 `su3cl3` →「你好」測試候選窗、未完成讀音、完整句及明確開啟清句選項，並檢查其他文字宿主。對照見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。
 - **Linux 原生 Wayland 移窗仍需手動重驗。** `fix7` 的底線組字與避免失焦二次送字已通過隔離 X11／GTK 4 宿主及真實 GNOME Text Editor 路徑；以目前 1.3.0 套件在 GNOME 原生 Wayland 有組字時移動視窗，確認沒有內容加倍、藍底或漏字，並記錄 App、session 與輸入路徑。
 - **Windows ZIP 升級路徑仍需修。** NSIS 已改為不先以舊 DLL 執行 `regsvr32 /u`；ZIP 的 `Install.cmd` 仍沿用舊解除註冊流程。升級前應比照不中斷 profile 的流程，驗證不再出現與簡體中文詞典相關的系統通知。
 - **發行產物須與文件核對。** 本機安裝的 Linux `+fix8` 只供驗證；公開 1.3.0 的 `.deb` 檔名應由 tag 的 Linux CI 產生 `1.3.0-1+ubuntu24.04`，並重建對應 `SHA256SUMS`，不可重用本機 `+fix8` 校驗檔。確認 macOS、Windows 與 Linux Assets 實際齊全，再核對安裝指南與平台支援矩陣；iOS／Android 仍依各自商店流程。

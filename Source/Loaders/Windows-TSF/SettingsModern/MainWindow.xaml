@@ -81,6 +81,8 @@
               <ComboBox x:Name="PhoneticLayout" />
               <CheckBox x:Name="RareCharacters" Content="使用全字庫罕用字（CNS11643）" Margin="0,10,0,10" />
               <TextBlock Text="關閉時僅顯示 Big-5 可表示的候選字。設定會在下一次按鍵時生效。" Opacity="0.7" />
+              <CheckBox x:Name="ClearSmartCompositionWithEsc" Content="按 Esc 清除好打注音已完成的整句" Margin="0,18,0,8" />
+              <TextBlock Text="預設保留整句；候選窗開啟時 Esc 只關閉候選，未完成讀音則只清除讀音。" Opacity="0.7" />
             </StackPanel>
           </GroupBox>
           <TextBlock Text="好打注音會整句組字並學習選字；輸入法可從工作列直接切換。" Opacity="0.7" />

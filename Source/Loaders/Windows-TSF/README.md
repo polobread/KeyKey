@@ -50,6 +50,9 @@ Windows languages or change the default input method.
 In Notepad, Smart Mandarin composes Bopomofo and displays numbered Chinese
 candidate choices. The underline on active composition text may look different
 in other applications because the text host controls its rendering.
+Esc closes an open candidate list or cancels an unfinished reading while keeping
+the completed sentence. By default, Esc also keeps a completed sentence in
+composition; the Phonetic settings tab offers an explicit option to clear it.
 
 ![Smart Mandarin composition and Chinese candidates in Notepad, Windows 1.3.0](IMAGES/v1.3.0-smart-mandarin-composition.png)
 

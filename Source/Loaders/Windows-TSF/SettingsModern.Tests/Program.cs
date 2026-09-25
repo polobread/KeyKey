@@ -27,6 +27,23 @@ try
         File.GetLastWriteTimeUtc(file) <= before)
         throw new Exception("設定檔往返測試失敗");
     Console.WriteLine("Settings plist round-trip passed");
+
+    SettingsStore.Write(file, new Dictionary<string, string> {
+        ["ClearComposingTextWithEsc"] = "true",
+    });
+    if (SettingsStore.ReadSmartEscClearPreference(file))
+        throw new Exception("舊版自動儲存的 Esc=true 不應清除整句");
+    SettingsStore.Write(file, new Dictionary<string, string> {
+        ["ClearComposingTextWithEscUserChoice"] = "true",
+    });
+    if (!SettingsStore.ReadSmartEscClearPreference(file))
+        throw new Exception("使用者明確選擇 Esc 清句未生效");
+    SettingsStore.Write(file, new Dictionary<string, string> {
+        ["ClearComposingTextWithEsc"] = "false",
+    });
+    if (SettingsStore.ReadSmartEscClearPreference(file))
+        throw new Exception("使用者關閉 Esc 清句未生效");
+    Console.WriteLine("Smart Mandarin Esc preference migration passed");
 }
 finally { if (File.Exists(file)) File.Delete(file); }
 

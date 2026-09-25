@@ -20,6 +20,10 @@ internal static class SettingsStore
     public static string SmartPath => PreferencePath(".SmartMandarin");
     public static string AssociatedPath => PreferencePath(".AssociatedPhrase");
 
+    internal static bool ReadSmartEscClearPreference(string path)
+        => Read(path, "ClearComposingTextWithEscUserChoice", "false") == "true"
+           && Read(path, "ClearComposingTextWithEsc", "false") == "true";
+
     private static string PreferencePath(string suffix)
     {
         _ = Migrated.Value;
