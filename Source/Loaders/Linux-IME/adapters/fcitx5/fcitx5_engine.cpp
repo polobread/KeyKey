@@ -553,6 +553,7 @@ private:
     static bool translate(const fcitx::KeyEvent &source,
                           linux_ime::KeyEvent &destination) {
         destination.release = source.isRelease();
+        destination.capsLock = source.rawKey().states().test(fcitx::KeyState::CapsLock);
         const fcitx::KeyStates states = source.key().states();
         destination.repeat = states.test(fcitx::KeyState::Repeat);
         if (states.test(fcitx::KeyState::Shift)) {
@@ -730,7 +731,7 @@ void FcitxState::process(const linux_ime::Engine &sourceEngine,
         context_.reset();
     }
     auto editingEvent = event;
-    if (smartMode_ && candidateLayout_ == fcitx::CandidateLayoutHint::Horizontal &&
+    if (candidateLayout_ == fcitx::CandidateLayoutHint::Horizontal &&
         event.modifiers == linux_ime::KeyModifier::None &&
         !engine.snapshot(context_).candidates.empty()) {
         // Match the desktop panel: arrows along its axis select a candidate;
@@ -848,8 +849,10 @@ bool FcitxState::processModeKey(bool toggleWithControlBackslash,
             return true;
         } else if (!event.isRelease()) {
             if (!controlBackslashPressed_) {
-                controlBackslashPressed_ = true;
                 toggleChineseMode();
+                // Completing composition resets transient key state. Own the
+                // held key afterwards, until its physical release arrives.
+                controlBackslashPressed_ = true;
             }
         }
         event.filterAndAccept();
@@ -885,9 +888,9 @@ bool FcitxState::selectSmartCharacter(std::size_t preeditCharacterIndex) {
 }
 
 void FcitxState::commitAndReset() {
-    if (activeEngine_ != nullptr && smartMode_) {
+    if (activeEngine_ != nullptr) {
         const linux_ime::EngineResult result =
-            activeEngine_->finishSmartComposition(context_);
+            activeEngine_->finishComposition(context_);
         if (!result.commit.empty()) {
             inputContext_->commitString(result.commit);
         }

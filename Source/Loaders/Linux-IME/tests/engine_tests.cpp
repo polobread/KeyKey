@@ -1119,6 +1119,142 @@ void testPunctuationAndSymbolShortcuts() {
             "An undefined Ctrl shortcut did not pass through");
 }
 
+void testTraditionalQueryCompletionAndPunctuation() {
+    // A reduced dictionary isolates singleton behavior from corpus changes.
+    std::istringstream data("%chardef begin\na8 媽\na86 麻\n%chardef end\n");
+    Engine singleton(std::make_shared<const CinDictionary>(CinDictionary::load(data)));
+    for (const auto key : {KeyCode::Space, KeyCode::Enter}) {
+        InputContextState state;
+        singleton.processKey(state, character('a'));
+        singleton.processKey(state, character('8'));
+        const auto result = singleton.processKey(state, KeyEvent{key});
+        require(result.commit == "媽" && result.preedit.empty() &&
+                    result.candidates.empty(),
+                "Traditional first-tone singleton requires an extra selection");
+    }
+
+    const auto punctuation = loadRealDictionary("bpmf-punctuations.cin");
+    const BopomofoLayout layouts[] = {BopomofoLayout::Standard,
+        BopomofoLayout::ETen, BopomofoLayout::ETen26,
+        BopomofoLayout::Hsu, BopomofoLayout::HanyuPinyin};
+    for (const auto layout : layouts) {
+        Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                      layout, punctuation);
+        InputContextState state;
+        auto result = engine.processKey(state, character('['));
+        require(result.commit == "「", "Traditional opening quote mapping missing");
+        result = engine.processKey(state, character('>'));
+        const bool compact = layout == BopomofoLayout::ETen26 ||
+            layout == BopomofoLayout::Hsu || layout == BopomofoLayout::HanyuPinyin;
+        require(result.commit == (compact ? "〉" : "。"),
+                "Layout-specific punctuation mapping ignored");
+    }
+    Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                  BopomofoLayout::Standard, punctuation);
+    InputContextState state;
+    for (const char key : std::string("5j/")) engine.processKey(state, character(key));
+    engine.processKey(state, KeyEvent{KeyCode::Space});
+    engine.processKey(state, KeyEvent{KeyCode::Down});
+    auto result = engine.processKey(state, KeyEvent{KeyCode::Character, '!', KeyModifier::Shift});
+    require(result.commit == "鐘！" && result.preedit.empty(),
+            "Punctuation did not follow the highlighted candidate");
+    result = engine.processKey(state, character('{'));
+    require(result.candidates.size() > 1 && result.preedit == "『",
+            "Ordinary punctuation did not open multiple candidates");
+    const auto opened = result;
+    result = engine.processKey(state, KeyEvent{KeyCode::Character, ',', KeyModifier::Control});
+    require(result.handled && result.beep && result.commit.empty() &&
+                result.candidates == opened.candidates && result.preedit == opened.preedit,
+            "Ctrl punctuation replaced an active punctuation candidate list");
+    engine.processKey(state, KeyEvent{KeyCode::Down});
+    result = engine.processKey(state, character('a'));
+    require(result.commit == "《" && result.preedit == "ㄇ",
+            "Typing after punctuation did not confirm the highlighted symbol");
+    result = engine.processKey(state, KeyEvent{KeyCode::Character, '!', KeyModifier::Shift});
+    require(result.handled && result.beep && result.commit.empty() && result.preedit == "ㄇ",
+            "Shift punctuation escaped an unfinished reading");
+    state.reset();
+    for (const char key : std::string("5j/")) engine.processKey(state, character(key));
+    engine.processKey(state, KeyEvent{KeyCode::Space});
+    result = engine.processKey(state, character('>'));
+    require(result.candidatePage == 1 && result.commit.empty(),
+            "Shift-period did not page an active candidate panel");
+    result = engine.processKey(state, KeyEvent{KeyCode::Character, '<', KeyModifier::Shift});
+    require(result.candidatePage == 0 && result.commit.empty(),
+            "Shift-comma did not page backwards");
+}
+
+void testTraditionalHandoffAndLiteralInput() {
+    Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                  BopomofoLayout::Standard, loadRealDictionary("bpmf-punctuations.cin"),
+                  loadLinuxData("tc2sc.cin"), loadRealAssociatedPhraseDictionary());
+    InputContextState state;
+    const auto type = [&](const std::string &keys) {
+        for (const char key : keys) engine.processKey(state, character(key));
+    };
+    type("5j/");
+    auto result = engine.finishComposition(state);
+    require(result.commit == "ㄓㄨㄥ" && result.preedit.empty(),
+            "Handoff lost an unqueried reading or guessed its conversion");
+    require(engine.finishComposition(state).commit.empty(), "Handoff committed twice");
+    type("5j/");
+    engine.processKey(state, KeyEvent{KeyCode::Space});
+    result = engine.processKey(state, KeyEvent{KeyCode::End});
+    const std::string last = result.candidates.at(result.highlightedIndex);
+    result = engine.finishComposition(state);
+    require(result.commit == last && result.candidates.empty(),
+            "Handoff lost the selected candidate on a later page");
+    require(engine.finishComposition(state).commit.empty(), "Candidate handoff duplicated text");
+    engine.processKey(state, character('{'));
+    engine.processKey(state, KeyEvent{KeyCode::Down});
+    require(engine.finishComposition(state).commit == "《", "Handoff lost a punctuation selection");
+    type("rup");
+    engine.processKey(state, KeyEvent{KeyCode::Space});
+    result = engine.processKey(state, character('1'));
+    require(result.commit == "今" && result.associatedPhrases,
+            "Associated phrase handoff fixture failed");
+    require(engine.finishComposition(state).commit.empty(),
+            "Handoff committed an unchosen associated phrase");
+
+    type("5");
+    result = engine.processKey(state, character('A'));
+    require(result.commit == "ㄓA" && result.preedit.empty(),
+            "Normalized uppercase replaced the unfinished reading");
+    type("5j/");
+    engine.processKey(state, KeyEvent{KeyCode::Space});
+    engine.processKey(state, KeyEvent{KeyCode::Down});
+    result = engine.processKey(state, KeyEvent{KeyCode::Character, 'B', KeyModifier::Shift});
+    require(result.commit == "鐘B" && result.preedit.empty(),
+            "Shift-letter escaped the highlighted candidate");
+    result = engine.processKey(state, KeyEvent{KeyCode::Character, 'a', KeyModifier::None,
+                                              false, false, true});
+    require(result.commit == "a" && result.preedit.empty(),
+            "CapsLock+Shift lowercase was interpreted as Bopomofo");
+    engine.setTraditionalToSimplifiedMode(state, true);
+    type("5j/");
+    engine.processKey(state, KeyEvent{KeyCode::Space});
+    engine.processKey(state, KeyEvent{KeyCode::Down});
+    require(engine.finishComposition(state).commit == "钟", "Handoff bypassed output conversion");
+    type("5");
+    engine.processKey(state, KeyEvent{KeyCode::Escape});
+    require(engine.finishComposition(state).commit.empty(), "Handoff resurrected cancelled input");
+}
+
+void testTraditionalPunctuationEncodingFilter() {
+    std::istringstream data("%chardef begin\n_ctrl_, 😀\n_ctrl_, ，\n_ctrl_. 😀\n%chardef end\n");
+    auto punctuation = std::make_shared<const CinDictionary>(CinDictionary::load(data));
+    Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                  BopomofoLayout::Standard, punctuation);
+    engine.setRestrictBopomofoCandidatesToBig5(true);
+    InputContextState state;
+    auto result = engine.processKey(state, KeyEvent{KeyCode::Character, ',', KeyModifier::Control});
+    require(result.commit == "，" && result.candidates.empty(),
+            "Big5 punctuation filter did not auto-commit the remaining candidate");
+    result = engine.processKey(state, KeyEvent{KeyCode::Character, '.', KeyModifier::Control});
+    require(result.beep && result.commit.empty() && result.preedit.empty(),
+            "Empty filtered punctuation list committed unsupported text");
+}
+
 void testFullWidthModeAndAsciiMapping() {
     require(toFullWidth("Az09!~ 中文é") == "Ａｚ０９！～　中文é",
             "Full-width conversion changed the ASCII mapping or non-ASCII text");
@@ -1151,8 +1287,8 @@ void testFullWidthModeAndAsciiMapping() {
     require(result.handled && result.commit == "Ｚ",
             "Full-width mode did not handle Fcitx-normalized uppercase input");
     result = engine.processKey(context, character('['));
-    require(result.handled && result.commit == "［",
-            "Full-width mode did not convert an unmapped ASCII punctuation key");
+    require(result.handled && result.commit == "「",
+            "Full-width mode bypassed the punctuation table");
     result = engine.processKey(
         context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
     require(result.handled && result.commit == "　",
@@ -1191,8 +1327,8 @@ void testFullWidthModeAndAsciiMapping() {
     require(result.handled && !result.fullWidthMode,
             "Shift+Space did not return to half-width mode");
     result = engine.processKey(context, character('['));
-    require(!result.handled && result.commit.empty(),
-            "Half-width mode captured an unmapped application key");
+    require(result.handled && result.commit == "「",
+            "Half-width mode lost the punctuation table mapping");
 }
 
 void testTraditionalToSimplifiedOutputFilter() {
@@ -2162,6 +2298,9 @@ int main(int argc, char **argv) {
         testCandidatePagingAndSelection();
         testCandidateKeyboardNavigation();
         testPunctuationAndSymbolShortcuts();
+        testTraditionalQueryCompletionAndPunctuation();
+        testTraditionalHandoffAndLiteralInput();
+        testTraditionalPunctuationEncodingFilter();
         testFullWidthModeAndAsciiMapping();
         testTraditionalToSimplifiedOutputFilter();
         testModifiedAndReleaseKeysPassThrough();

@@ -74,7 +74,8 @@ The initial vertical slice provides:
   including after closing candidates, while Escape cancels the complete reading;
   empty-state edit keys pass through to the application. An explicit Bopomofo
   tone immediately opens candidates, matching the Windows runtime;
-- an optional Bopomofo Big5-HKSCS candidate filter that preserves source order;
+- an optional Bopomofo Big5-HKSCS candidate filter for readings and symbols
+  that preserves source order;
 - a native associated-phrase parser for the McBopomofo base and all 29 bundled
   category collections, with source-order merge, deduplication, filtering,
   Shift+1–9 suffix selection, first-run base default, an all-disabled state,
@@ -86,8 +87,9 @@ The initial vertical slice provides:
   reading or candidate list;
 - a per-input-context Chinese/English mode with compact Fcitx status labels,
   toggled by `Ctrl+\` by default or by a bare Shift tap within 300 ms. Entering
-  English abandons the active composition; half-width printable keys pass to
-  the application, while full-width ASCII remains available;
+  English confirms the highlighted Traditional candidate or preserves its raw
+  unfinished reading; Smart mode finishes the current composition. Half-width
+  printable keys pass to the application, while full-width ASCII remains available;
 - one loadable Fcitx 5 addon with Bopomofo, Cangjie, and Simplex registrations;
 - default-enabled typing-error feedback using the XDG `bell-window-system`
   event sound, with a Fcitx-native option to disable it;
@@ -111,11 +113,11 @@ The initial vertical slice provides:
   navigation → `妐`, and a real pointer click on the expanded vertical Fcitx
   candidate window's second row → `鐘`; GTK 4 and Qt 6 additionally verify the
   Windows-parity horizontal-key flow through Home/End, PageUp/PageDown,
-  Left/Right paging, Space paging, Down highlight, and Enter → `妐`;
+  Left/Right highlight, Space paging, and Enter → `妐`;
   all three toolkits verify `Shift+Space` full-width input → `Ａ！～　`, while GTK 3
   additionally covers Big-5 filtering of `ㄝˋ` candidates → `𤦩`, plus
   all three toolkits verify Chinese/English switching by `Ctrl+\` and a short Shift tap, including
-  composition cancellation, Caps Lock, English full-width input, long-Shift
+  composition preservation, Caps Lock, English full-width input, long-Shift
   rejection, disabled-shortcut pass-through, and Traditional-to-Simplified
   output `臺灣` → `台湾`; a disabled shortcut lets the client commit active
   preedit, producing GTK 3 `ㄓ翁` versus GTK 4 `翁ㄓ` because of their insertion
@@ -141,8 +143,8 @@ The initial vertical slice provides:
   phrases, and confirms a read-only editor stays unchanged after a complete key
   sequence, plus `Ctrl+0` symbol-list
   keyboard selection → `，` and a real first-row pointer selection followed by
-  `!` → `，!`, plus GTK 3/GTK 4/Qt 6 associated-phrase default `今` → `今天`,
-  `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺!`; all three
+  `!` → `，！`, plus GTK 3/GTK 4/Qt 6 associated-phrase default `今` → `今天`,
+  `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺！`; all three
   also verify migration from the earlier comma-separated setting and a Fcitx
   D-Bus settings write followed by process restart, readback, and typing with
   the persisted selection. A sixth GTK 3 flow

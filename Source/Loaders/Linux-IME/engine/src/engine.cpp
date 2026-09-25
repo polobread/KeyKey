@@ -301,14 +301,40 @@ EngineResult Engine::processKey(InputContextState &context,
         }
     }
 
-    const std::string punctuationKey = punctuationQueryKey(event);
+    const bool plainOrShift = event.modifiers == KeyModifier::None ||
+                              event.modifiers == KeyModifier::Shift;
+    if (inputMethod_ == InputMethod::Bopomofo && plainOrShift &&
+        event.code == KeyCode::Character && !context.candidates_.empty() &&
+        (event.character == '<' || event.character == '>')) {
+        changeCandidatePage(context, event.character == '>' ? 1 : -1);
+        EngineResult result = snapshot(context);
+        result.handled = true;
+        return result;
+    }
+    // Fcitx normalizes Shift+A to an uppercase keysym without Shift. Retain
+    // CapsLock separately, including CapsLock+Shift producing lowercase text.
+    if (inputMethod_ == InputMethod::Bopomofo && plainOrShift &&
+        event.code == KeyCode::Character &&
+        std::isalpha(static_cast<unsigned char>(event.character)) != 0 &&
+        (event.capsLock || event.modifiers == KeyModifier::Shift ||
+         std::isupper(static_cast<unsigned char>(event.character)) != 0)) {
+        EngineResult result = finishComposition(context);
+        result.commit += outputText(context, std::string(1, event.character));
+        return result;
+    }
+    const std::string punctuationKey = punctuationQueryKey(event, true);
     if (!punctuationKey.empty()) {
-        if (!compositionEmpty(context)) {
+        if ((!plainOrShift && !context.candidates_.empty()) ||
+            (!compositionEmpty(context) && context.candidates_.empty())) {
             EngineResult result = snapshot(context);
             result.handled = true;
+            result.beep = true;
             return result;
         }
-        return queryPunctuation(context, punctuationKey);
+        if (!context.candidates_.empty()) {
+            pendingCommit = finishComposition(context).commit;
+        }
+        return includePendingCommit(queryPunctuation(context, punctuationKey));
     }
     const bool shiftedTableSymbol =
         inputMethod_ != InputMethod::Bopomofo &&
@@ -331,6 +357,13 @@ EngineResult Engine::processKey(InputContextState &context,
         return result;
     }
     if (hasModifiers(event.modifiers) && !shiftedTableSymbol) {
+        if (inputMethod_ == InputMethod::Bopomofo && plainOrShift &&
+            (!compositionEmpty(context) || !context.candidates_.empty())) {
+            EngineResult result = snapshot(context);
+            result.handled = true;
+            result.beep = true;
+            return result;
+        }
         if (context.fullWidthMode_ &&
             event.modifiers == KeyModifier::Shift &&
             event.code == KeyCode::Character && compositionEmpty(context) &&
@@ -423,7 +456,7 @@ EngineResult Engine::processKey(InputContextState &context,
         if (!context.candidates_.empty()) {
             changeCandidatePage(context, 1);
         } else if (!compositionEmpty(context)) {
-            return query(context, inputMethod_ != InputMethod::Bopomofo);
+            return query(context, true);
         } else if (context.fullWidthMode_) {
             EngineResult result = snapshot(context);
             result.handled = true;
@@ -438,7 +471,7 @@ EngineResult Engine::processKey(InputContextState &context,
             return selectDisplayedCandidate(context, context.highlightedIndex_);
         }
         if (!compositionEmpty(context)) {
-            return query(context, inputMethod_ != InputMethod::Bopomofo);
+            return query(context, true);
         }
         return passThroughResult();
     case KeyCode::Backspace:
@@ -560,6 +593,27 @@ EngineResult Engine::selectSmartCharacter(
         std::min(preeditCharacterIndex, context.smartReadings_.size() - 1);
     clearCandidates(context);
     return processSmartKey(context, KeyEvent{KeyCode::Space});
+}
+
+EngineResult Engine::finishComposition(InputContextState &context) const {
+    if (smartMandarinMode_) {
+        return finishSmartComposition(context);
+    }
+    std::string text;
+    if (inputMethod_ == InputMethod::Bopomofo && !context.showingAssociatedPhrases_) {
+        if (!context.candidates_.empty()) {
+            text = context.candidates_.at(
+                context.page_ * CandidatesPerPage + context.highlightedIndex_);
+        } else {
+            text = displayText(context);
+        }
+    }
+    const std::string commit = outputText(context, text);
+    context.reset();
+    EngineResult result = snapshot(context);
+    result.handled = true;
+    result.commit = commit;
+    return result;
 }
 
 EngineResult Engine::finishSmartComposition(InputContextState &context) const {
@@ -996,10 +1050,16 @@ EngineResult Engine::queryPunctuation(InputContextState &context,
     if (!punctuationDictionary_) {
         return snapshot(context);
     }
-    const std::vector<std::string> &candidates =
+    std::vector<std::string> candidates =
         punctuationDictionary_->candidates(key);
+    if (restrictBopomofoCandidatesToBig5_) {
+        candidates = filterBig5HkscsCandidates(candidates);
+    }
     if (candidates.empty()) {
-        return snapshot(context);
+        EngineResult result = snapshot(context);
+        result.handled = true;
+        result.beep = true;
+        return result;
     }
     if (candidates.size() == 1) {
         const std::string selected = candidates.front();
@@ -1127,7 +1187,8 @@ std::size_t Engine::maximumCodeLength() const noexcept {
     return inputMethod_ == InputMethod::Simplex ? 2U : 5U;
 }
 
-std::string Engine::punctuationQueryKey(const KeyEvent &event) const {
+std::string Engine::punctuationQueryKey(const KeyEvent &event,
+                                       bool includeOrdinary) const {
     if (inputMethod_ != InputMethod::Bopomofo || !punctuationDictionary_ ||
         event.code != KeyCode::Character) {
         return {};
@@ -1141,6 +1202,22 @@ std::string Engine::punctuationQueryKey(const KeyEvent &event) const {
     } else if (event.modifiers ==
                (KeyModifier::Control | KeyModifier::Alt)) {
         key = "_ctrl_opt_" + std::string(1, event.character);
+    } else if (includeOrdinary &&
+               (event.modifiers == KeyModifier::None ||
+                event.modifiers == KeyModifier::Shift) &&
+               !acceptsCharacter(event.character)) {
+        const char *layout = "Standard";
+        switch (bopomofoLayout_) {
+        case BopomofoLayout::Standard: break;
+        case BopomofoLayout::ETen: layout = "ETen"; break;
+        case BopomofoLayout::ETen26: layout = "ETen26"; break;
+        case BopomofoLayout::Hsu: layout = "Hsu"; break;
+        case BopomofoLayout::HanyuPinyin: layout = "HanyuPinyin"; break;
+        }
+        key = std::string("_punctuation_") + layout + "_" + event.character;
+        if (punctuationDictionary_->candidates(key).empty()) {
+            key = "_punctuation_" + std::string(1, event.character);
+        }
     } else {
         return {};
     }

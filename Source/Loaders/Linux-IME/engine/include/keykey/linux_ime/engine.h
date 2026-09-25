@@ -54,6 +54,7 @@ struct KeyEvent {
     KeyModifier modifiers = KeyModifier::None;
     bool release = false;
     bool repeat = false;
+    bool capsLock = false;
 };
 
 struct EngineResult {
@@ -128,6 +129,7 @@ public:
     EngineResult selectSmartCharacter(InputContextState &context,
                                       std::size_t preeditCharacterIndex) const;
     EngineResult finishSmartComposition(InputContextState &context) const;
+    EngineResult finishComposition(InputContextState &context) const;
     EngineResult snapshot(const InputContextState &context) const;
 
 private:
@@ -150,7 +152,8 @@ private:
     std::string outputText(const InputContextState &context,
                            const std::string &text) const;
     std::size_t maximumCodeLength() const noexcept;
-    std::string punctuationQueryKey(const KeyEvent &event) const;
+    std::string punctuationQueryKey(const KeyEvent &event,
+                                    bool includeOrdinary = false) const;
     EngineResult processSmartKey(InputContextState &context,
                                  const KeyEvent &event) const;
     bool finishSmartReading(InputContextState &context,
