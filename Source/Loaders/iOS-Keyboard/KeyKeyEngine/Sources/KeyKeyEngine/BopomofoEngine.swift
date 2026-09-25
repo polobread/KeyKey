@@ -19,6 +19,7 @@ public protocol AssociatedPhraseSource {
 public final class BopomofoEngine {
     public static let candidatesPerPage = 9
     public static let touchSmartEditableLimit = 9
+    public static let hardwareSmartEditableLimit = 10
 
     public enum InputMode: Sendable, Hashable, CaseIterable {
         case bopomofo, english, number
@@ -552,7 +553,9 @@ public final class BopomofoEngine {
         rebuildSmartComposition()
         // The container App's hardware editor uses the same bounded walker as
         // the touch keyboard: the leading whole segment becomes committed text.
-        if smartReadings.count > Self.touchSmartEditableLimit {
+        let editableLimit = hardwareSmartEditing
+            ? Self.hardwareSmartEditableLimit : Self.touchSmartEditableLimit
+        if smartReadings.count > editableLimit {
             return evictFirstSmartSegment()
         }
         return .update

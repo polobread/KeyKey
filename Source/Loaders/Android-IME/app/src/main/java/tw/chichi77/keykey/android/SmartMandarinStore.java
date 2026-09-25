@@ -271,6 +271,33 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
         }
     }
 
+    @Override
+    public int evictionLength(List<String> readings, SmartMandarinComposition composition) {
+        if (composition.segments().isEmpty()) return 0;
+        int firstLength = composition.segments().get(0).length();
+        if (firstLength != 1) return firstLength;
+
+        // A learned single character can split a visible dictionary phrase.
+        // Keep that phrase together when it leaves the editable window.
+        int length = 0;
+        StringBuilder query = new StringBuilder();
+        StringBuilder text = new StringBuilder();
+        for (SmartMandarinSegment segment : composition.segments()) {
+            if (segment.start() != length || length + segment.length() > readings.size()) break;
+            for (int index = 0; index < segment.length(); index++) {
+                query.append(readings.get(length + index));
+            }
+            length += segment.length();
+            text.append(segment.text());
+            if (length < 2) continue;
+            if (length > MAXIMUM_SPAN) break;
+            for (Unigram entry : unigrams(query.toString())) {
+                if (entry.text().equals(text.toString())) return length;
+            }
+        }
+        return firstLength;
+    }
+
     private double finalScore(Path path) {
         if (path.segments().isEmpty()) return path.score();
         SmartMandarinSegment last = path.segments().get(path.segments().size() - 1);

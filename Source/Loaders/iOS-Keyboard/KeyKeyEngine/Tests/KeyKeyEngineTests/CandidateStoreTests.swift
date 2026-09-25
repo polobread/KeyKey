@@ -149,24 +149,29 @@ struct SmartMandarinStoreTests {
             hardwareSmartEditing: true
         )
         let keys = ["fu/3", "ru84", "ul4", "fm4", "s83", "xu3",
-                    "j06", "sk7", "fm4", "c93", "1u0"]
+                    "j06", "sk7", "fm4", "c93", "1u0", "up", "jo4",
+                    "s84", "xu3", "u.3", "1u3", "ru", "su6"]
         var committed = ""
         for (index, syllable) in keys.enumerated() {
             for key in syllable {
                 committed += engine.handleHardwareCharacter(key).text
             }
-            if index == keys.count - 1 {
+            if index == 10 || index == 11 || index == 17 {
                 committed += engine.space().text
             }
             if index == 9 {
+                #expect(committed.isEmpty)
+                #expect(engine.composingText == "請假要去哪裡玩呢去海")
+                #expect(engine.smartCompositionReadingCount == 10)
+            }
+            if index == 10 {
                 #expect(committed == "請假")
-                #expect(engine.composingText == "要去哪裡玩呢去海")
-                #expect(engine.smartCompositionReadingCount == 8)
+                #expect(engine.composingText == "要去哪裡玩呢去海邊")
+                #expect(engine.smartCompositionReadingCount == 9)
             }
         }
-        #expect(committed == "請假")
-        #expect(engine.composingText == "要去哪裡玩呢去海邊")
-        #expect(engine.smartCompositionReadingCount == 9)
+        #expect(committed + engine.composingText ==
+                "請假要去哪裡玩呢去海邊因為那裡有比基尼")
     }
 
     @Test("common first syllables outrank rare readings of frequent characters")

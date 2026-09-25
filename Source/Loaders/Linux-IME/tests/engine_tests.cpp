@@ -1669,14 +1669,16 @@ void testSmartMandarinComposition() {
     std::vector<std::string> longReadings;
     for (const char *syllable :
          {"ㄑㄧㄥˇ", "ㄐㄧㄚˋ", "ㄧㄠˋ", "ㄑㄩˋ", "ㄋㄚˇ", "ㄌㄧˇ",
-          "ㄨㄢˊ", "ㄋㄜ˙", "ㄑㄩˋ", "ㄏㄞˇ", "ㄅㄧㄢ"}) {
+          "ㄨㄢˊ", "ㄋㄜ˙", "ㄑㄩˋ", "ㄏㄞˇ", "ㄅㄧㄢ", "ㄧㄣ", "ㄨㄟˋ",
+          "ㄋㄚˋ", "ㄌㄧˇ", "ㄧㄡˇ", "ㄅㄧˇ", "ㄐㄧ", "ㄋㄧˊ"}) {
         longReadings.push_back(
             keykey::linux_ime::SmartMandarinUserData::readingToQuery(syllable));
     }
     keykey::linux_ime::SmartComposition longSentence;
     require(store->compose(longReadings, {}, longSentence) &&
-                longSentence.text == "請假要去哪裡玩呢去海邊",
-            "Smart Mandarin did not compose 請假要去哪裡玩呢去海邊");
+                longSentence.text == "請假要去哪裡玩呢去海邊因為那裡有比基尼",
+            "Smart Mandarin did not compose the complete nineteen-syllable sentence: " +
+                longSentence.text);
     sqlite3 *auditDatabase = nullptr;
     require(sqlite3_open_v2(KEYKEY_TEST_SMART_DB, &auditDatabase,
                             SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK,
@@ -1812,27 +1814,48 @@ void testSmartMandarinComposition() {
         result = engine.processKey(context, character(key));
         committed += result.commit;
     }
-    require(committed == "請假" && result.preedit == "要去哪裡玩呢去海" &&
+    require(committed.empty() && result.preedit == "請假要去哪裡玩呢去海" &&
                 result.preeditCursorBytes == result.preedit.size(),
-            "Smart Mandarin did not push out 請假 at 海");
-    result = engine.selectSmartCharacter(context, 7);
-    require(result.handled && !result.candidates.empty() &&
-                result.preedit == "要去哪裡玩呢去海",
-            "The remaining Smart Mandarin sentence cannot be corrected");
-    engine.processKey(
-        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false, false});
-    engine.processKey(
-        context, KeyEvent{KeyCode::End, '\0', KeyModifier::None, false, false});
+            "Smart Mandarin shifted before the eleventh desktop reading");
     for (char key : std::string("1u0")) {
         result = engine.processKey(context, character(key));
         committed += result.commit;
     }
     result = engine.processKey(
-        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None, false, false});
+        context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None,
+                          false, false});
     committed += result.commit;
     require(committed == "請假" &&
                 result.preedit == "要去哪裡玩呢去海邊",
+            "Smart Mandarin did not shift the whole word at the eleventh reading");
+    result = engine.selectSmartCharacter(context, 7);
+    require(result.handled && !result.candidates.empty() &&
+                result.preedit == "要去哪裡玩呢去海邊",
+            "The remaining Smart Mandarin sentence cannot be corrected");
+    engine.processKey(
+        context, KeyEvent{KeyCode::Escape, '\0', KeyModifier::None, false, false});
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::End, '\0', KeyModifier::None, false, false});
+    require(committed == "請假" &&
+                result.preedit == "要去哪裡玩呢去海邊",
             "Smart Mandarin did not keep composing after the prefix commit");
+    for (const std::string syllable :
+         {"up", "jo4", "s84", "xu3", "u.3", "1u3", "ru", "su6"}) {
+        for (char key : syllable) {
+            result = engine.processKey(context, character(key));
+            committed += result.commit;
+        }
+        if (syllable == "up" || syllable == "ru") {
+            result = engine.processKey(
+                context, KeyEvent{KeyCode::Space, '\0', KeyModifier::None,
+                                  false, false});
+            committed += result.commit;
+        }
+    }
+    require(committed + result.preedit ==
+                "請假要去哪裡玩呢去海邊因為那裡有比基尼",
+            "Smart Mandarin lost text while shifting the nineteen-syllable sentence: " +
+                committed + "|" + result.preedit);
 
     context.reset();
     for (char key : std::string("su3cl3")) {
@@ -2281,9 +2304,9 @@ void testSmartMandarinLearnedWordEviction() {
             result = engine.processKey(context, character(key));
             committed += result.commit;
         }
-        require(committed == "請假" &&
-                    result.preedit == "要去哪裡玩呢去海",
-                "Learned 假 caused the tenth syllable to evict only 請");
+        require(committed.empty() &&
+                    result.preedit == "請假要去哪裡玩呢去海",
+                "Learned 假 shifted the desktop sentence before its limit");
         for (char key : std::string("1u0")) {
             result = engine.processKey(context, character(key));
             committed += result.commit;
@@ -2294,14 +2317,22 @@ void testSmartMandarinLearnedWordEviction() {
         committed += result.commit;
         require(committed == "請假" &&
                     result.preedit == "要去哪裡玩呢去海邊",
-                "Learned 假 changed the following composition after eviction");
+                "Learned 假 changed the following composition after eviction: " +
+                    committed + "|" + result.preedit);
         for (char key : std::string("j06")) {
+            result = engine.processKey(context, character(key));
+            committed += result.commit;
+        }
+        require(committed == "請假" &&
+                    result.preedit.rfind("要去哪裡玩呢去海邊", 0) == 0,
+                "The desktop buffer shifted again before eleven readings");
+        for (char key : std::string("su3")) {
             result = engine.processKey(context, character(key));
             committed += result.commit;
         }
         require(committed == "請假要" &&
                     result.preedit.rfind("去哪裡玩呢去海邊", 0) == 0 &&
-                    result.preedit.size() == std::string("去哪裡玩呢去海邊完").size(),
+                    result.preedit.size() == std::string("去哪裡玩呢去海邊完你").size(),
                 "A second buffer eviction lost or duplicated text: " +
                     committed + "|" + result.preedit);
 

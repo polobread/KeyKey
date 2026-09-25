@@ -422,6 +422,11 @@ public final class BopomofoImeService extends InputMethodService
             apply(engine.selectDisplayedCandidate(candidateIndex));
             return true;
         }
+        if (isFloatingCandidateMode() && candidatesVisible
+                && handleFloatingCandidateNavigation(keyCode)) {
+            pressedCandidateKeys.add(keyCode);
+            return true;
+        }
         if (engine.smartCompositionCursor() >= 0) {
             switch (keyCode) {
                 case KeyEvent.KEYCODE_DPAD_LEFT -> {
@@ -459,11 +464,6 @@ public final class BopomofoImeService extends InputMethodService
                 }
                 default -> { }
             }
-        }
-        if (isFloatingCandidateMode() && candidatesVisible
-                && handleFloatingCandidateNavigation(keyCode)) {
-            pressedCandidateKeys.add(keyCode);
-            return true;
         }
         switch (keyCode) {
             case KeyEvent.KEYCODE_DEL -> {

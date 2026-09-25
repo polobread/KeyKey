@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 
 #include "ModuleState.h"
 #include "sqlite3.h"
@@ -24,9 +25,10 @@ KeyKey::WindowsTsf::EngineResult Press(
     wchar_t translatedCharacter = 0) {
     using namespace KeyKey::WindowsTsf;
     KeyEvent event;
-    event.virtualKey = static_cast<UINT>(character >= L'a' && character <= L'z'
-                                             ? character - L'a' + 'A'
-                                             : character);
+    event.virtualKey = character == L'/' ? VK_OEM_2
+        : character == L'.' ? VK_OEM_PERIOD
+        : static_cast<UINT>(character >= L'a' && character <= L'z'
+                                ? character - L'a' + 'A' : character);
     // Num Lock is normally enabled on Windows desktops. It must not turn main
     // keyboard keys into numpad keys for the OpenVanilla core.
     event.numLock = true;
@@ -186,6 +188,49 @@ int main(int argc, char** argv) {
         (clearSentenceWithEsc && !secondEscape.compositionText.empty())) {
         std::cerr << "Second Esc did not respect the sentence preference.\n";
         return 16;
+    }
+
+    session->reset();
+    const wchar_t* syllables[] = {L"fu/3", L"ru84", L"ul4", L"fm4", L"s83",
+                                  L"xu3", L"j06", L"sk7", L"fm4", L"c93", L"1u0",
+                                  L"up", L"jo4", L"s84", L"xu3", L"u.3", L"1u3",
+                                  L"ru", L"su6"};
+    std::wstring committed;
+    EngineResult result;
+    for (size_t index = 0; index < std::size(syllables); ++index) {
+        for (const wchar_t* key = syllables[index]; *key; ++key) {
+            result = Press(*session, *key);
+            if (!result.handled) {
+                std::cerr << "Long Smart Mandarin reading was not handled.\n";
+                return 17;
+            }
+            committed += result.committedText;
+        }
+        if (index == 9 &&
+            (!committed.empty() || result.compositionText != L"請假要去哪裡玩呢去海")) {
+            std::cerr << "Smart Mandarin changed the sentence before its desktop limit.\n";
+            return 18;
+        }
+        if (index == 10 || index == 11 || index == 17) {
+            result = PressKey(*session, VK_SPACE);
+            committed += result.committedText;
+            if (!result.handled) {
+                std::cerr << "Smart Mandarin first-tone reading was not completed.\n";
+                return 19;
+            }
+        }
+        if (index == 10) {
+            if (committed != L"請假" ||
+                result.compositionText != L"要去哪裡玩呢去海邊") {
+                std::cerr << "Smart Mandarin did not evict the whole leading word at eleven readings.\n";
+                return 20;
+            }
+        }
+    }
+    if (committed + result.compositionText !=
+        L"請假要去哪裡玩呢去海邊因為那裡有比基尼") {
+        std::cerr << "Smart Mandarin lost text while shifting the full sentence.\n";
+        return 21;
     }
 
     std::cout << "Bopomofo and Esc " << mode << " test passed with WinSQLite "

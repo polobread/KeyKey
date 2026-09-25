@@ -40,6 +40,10 @@ interface SmartMandarinSource {
     }
 
     default void learnConfirmedComposition(SmartMandarinComposition composition) {}
+
+    default int evictionLength(List<String> readings, SmartMandarinComposition composition) {
+        return composition.segments().isEmpty() ? 0 : composition.segments().get(0).length();
+    }
 }
 
 record SmartMandarinSegment(int start, int length, String query, String text) {}

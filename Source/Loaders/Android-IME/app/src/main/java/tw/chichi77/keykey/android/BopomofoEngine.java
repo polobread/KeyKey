@@ -10,6 +10,7 @@ import java.util.Set;
 final class BopomofoEngine {
     static final int CANDIDATES_PER_PAGE = 9;
     static final int TOUCH_SMART_EDITABLE_LIMIT = 9;
+    static final int HARDWARE_SMART_EDITABLE_LIMIT = 10;
     enum InputMode { BOPOMOFO, ENGLISH, NUMBER }
     private static final List<String> SYMBOLS = List.of(
             "，", "。", "、", "？", "！", "：", "；", "「", "」",
@@ -521,6 +522,14 @@ final class BopomofoEngine {
         }
         if (inputMode == InputMode.NUMBER) return Result.commit(String.valueOf(rawKey));
 
+        if (!fromTouch && compositionMode == BopomofoCompositionMode.SMART
+                && rawKey >= 'A' && rawKey <= 'Z') {
+            // A shifted letter is literal hardware input, not the reading key
+            // printed on the same physical key.
+            if (!reading.isEmpty()) return Result.update();
+            return Result.commit(finishCompositionForModeSwitch().committedText() + rawKey);
+        }
+
         if (!fromTouch && !showingAssociatedPhrases
                 && !candidates.isEmpty() && key >= '1' && key <= '9') {
             return selectDisplayedCandidate(key - '1');
@@ -598,10 +607,14 @@ final class BopomofoEngine {
         trialReadings.add(smartCursor, query);
         Map<Integer, SmartMandarinSelection> shifted = shiftedSmartOverridesAfterInserting(smartCursor);
         if (smartSource.composeSelections(trialReadings, shifted) == null) {
-            candidates = dictionary.candidates(dictionaryQuery);
-            showingSmartCandidates = false;
-            page = 0;
-            highlightedIndex = 0;
+            if (!hardwareSmartEditing) {
+                candidates = dictionary.candidates(dictionaryQuery);
+                showingSmartCandidates = false;
+                page = 0;
+                highlightedIndex = 0;
+            }
+            // Hardware editing must retain its sentence and reading if the
+            // language model cannot compose this syllable.
             return Result.update();
         }
         smartReadings.clear();
@@ -611,8 +624,11 @@ final class BopomofoEngine {
         smartCursor++;
         reading.clear();
         rebuildSmartComposition();
-        if (!hardwareSmartEditing && smartReadings.size() > TOUCH_SMART_EDITABLE_LIMIT) {
-            return evictFirstTouchSmartSegment();
+        int editableLimit = hardwareSmartEditing
+                ? HARDWARE_SMART_EDITABLE_LIMIT : TOUCH_SMART_EDITABLE_LIMIT;
+        if (smartReadings.size() > editableLimit) {
+            return hardwareSmartEditing
+                    ? evictFirstHardwareSmartSegment() : evictFirstTouchSmartSegment();
         }
         return Result.update();
     }
@@ -643,6 +659,41 @@ final class BopomofoEngine {
         smartCursor = Math.max(0, smartCursor - first.length());
         rebuildSmartComposition();
         return Result.commit(committed);
+    }
+
+    private Result evictFirstHardwareSmartSegment() {
+        if (smartComposition == null || smartComposition.segments().isEmpty()) {
+            return Result.update();
+        }
+        int count = smartSource.evictionLength(smartReadings, smartComposition);
+        if (count <= 0 || count > smartReadings.size()) return Result.update();
+        // Match the desktop walker: retain the following node's chosen text
+        // when its preceding context leaves the editable window.
+        SmartMandarinSegment next = null;
+        StringBuilder committed = new StringBuilder();
+        for (SmartMandarinSegment segment : smartComposition.segments()) {
+            if (segment.start() < count) committed.append(segment.text());
+            else if (segment.start() == count) {
+                next = segment;
+                break;
+            }
+        }
+        if (committed.length() == 0) return Result.update();
+        smartReadings.subList(0, count).clear();
+        Map<Integer, SmartMandarinSelection> shifted = new HashMap<>();
+        for (Map.Entry<Integer, SmartMandarinSelection> entry : smartOverrides.entrySet()) {
+            if (entry.getKey() >= count) {
+                shifted.put(entry.getKey() - count, entry.getValue());
+            }
+        }
+        smartOverrides.clear();
+        smartOverrides.putAll(shifted);
+        if (next != null) {
+            smartOverrides.put(0, new SmartMandarinSelection(next.length(), next.text()));
+        }
+        smartCursor = Math.max(0, smartCursor - count);
+        rebuildSmartComposition();
+        return Result.commit(committed.toString());
     }
 
     private void rebuildSmartComposition() {

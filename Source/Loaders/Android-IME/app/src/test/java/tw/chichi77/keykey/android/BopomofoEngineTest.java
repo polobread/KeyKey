@@ -636,8 +636,9 @@ public final class BopomofoEngineTest {
     @Test
     public void touchSmartKeepsQingJiaTogetherInLongSentence() throws Exception {
         String[] keys = {"fu/3", "ru84", "ul4", "fm4", "s83", "xu3",
-                "j06", "sk7", "fm4", "c93", "1u0"};
-        String sentence = "請假要去哪裡玩呢去海邊";
+                "j06", "sk7", "fm4", "c93", "1u0", "up", "jo4",
+                "s84", "xu3", "u.3", "1u3", "ru", "su6"};
+        String sentence = "請假要去哪裡玩呢去海邊因為那裡有比基尼";
         java.util.HashMap<String, String> characters = new java.util.HashMap<>();
         java.util.ArrayList<String> queries = new java.util.ArrayList<>();
         for (int index = 0; index < keys.length; index++) {
@@ -688,7 +689,7 @@ public final class BopomofoEngineTest {
                 result = engine.handleSoftKey(String.valueOf(key));
                 committed.append(result.committedText());
             }
-            if (index == keys.length - 1) {
+            if (index == 10 || index == 11 || index == 17) {
                 result = engine.handleSoftKey("SPACE");
                 committed.append(result.committedText());
             }
@@ -700,7 +701,7 @@ public final class BopomofoEngineTest {
                 assertEquals("要去哪裡玩呢去海", engine.composingText());
             }
         }
-        assertEquals("請假要去哪裡玩呢去海邊", committed + engine.composingText());
+        assertEquals(sentence, committed + engine.composingText());
 
         BopomofoEngine handoff = new BopomofoEngine(dictionary, source,
                 BopomofoCompositionMode.SMART);
@@ -716,6 +717,75 @@ public final class BopomofoEngineTest {
         assertEquals("請假要去哪裡玩呢去海", alreadySent + pending);
         assertEquals("", handoff.composingText());
         assertEquals("", handoff.finishCompositionForInputHandoff().committedText());
+
+        BopomofoEngine hardware = new BopomofoEngine(dictionary, source,
+                BopomofoCompositionMode.SMART);
+        StringBuilder hardwareCommitted = new StringBuilder();
+        for (int index = 0; index < keys.length; index++) {
+            for (char key : keys[index].toCharArray()) {
+                hardwareCommitted.append(hardware.handleHardwareCharacter(key).committedText());
+            }
+            if (index == 10 || index == 11 || index == 17) {
+                hardwareCommitted.append(hardware.handleHardwareSpace().committedText());
+            }
+            if (index == 9) {
+                assertEquals("", hardwareCommitted.toString());
+                assertEquals("請假要去哪裡玩呢去海", hardware.composingText());
+                assertEquals(10, hardware.smartCompositionCursor());
+            }
+            if (index == 10) {
+                assertEquals("請假", hardwareCommitted.toString());
+                assertEquals("要去哪裡玩呢去海邊", hardware.composingText());
+                assertEquals(9, hardware.smartCompositionCursor());
+                assertTrue(hardware.moveSmartCompositionCursor(-8));
+                assertEquals(1, hardware.smartCompositionCursor());
+                assertTrue(hardware.moveSmartCompositionCursor(8));
+            }
+        }
+        assertEquals(sentence, hardwareCommitted + hardware.composingText());
+        assertEquals(sentence,
+                hardwareCommitted + hardware.enter().committedText());
+
+        SmartMandarinSource learnedSplit = new SmartMandarinSource() {
+            @Override
+            public SmartMandarinComposition compose(List<String> readings,
+                                                     Map<Integer, String> overrides) {
+                SmartMandarinComposition original = source.compose(readings, overrides);
+                if (original == null || original.segments().isEmpty()
+                        || !original.segments().get(0).text().equals("請假")) return original;
+                java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
+                segments.add(new SmartMandarinSegment(0, 1, readings.get(0), "請"));
+                segments.add(new SmartMandarinSegment(1, 1, readings.get(1), "假"));
+                segments.addAll(original.segments().subList(1, original.segments().size()));
+                return new SmartMandarinComposition(original.text(), List.copyOf(segments));
+            }
+
+            @Override
+            public List<String> candidates(List<String> readings, int index,
+                                           SmartMandarinComposition composition) {
+                return List.of();
+            }
+
+            @Override
+            public int evictionLength(List<String> readings,
+                                      SmartMandarinComposition composition) {
+                return composition.text().startsWith("請假") ? 2
+                        : SmartMandarinSource.super.evictionLength(readings, composition);
+            }
+        };
+        BopomofoEngine learnedHardware = new BopomofoEngine(dictionary, learnedSplit,
+                BopomofoCompositionMode.SMART);
+        StringBuilder learnedCommitted = new StringBuilder();
+        for (String syllable : java.util.Arrays.copyOf(keys, 11)) {
+            for (char key : syllable.toCharArray()) {
+                learnedCommitted.append(learnedHardware.handleHardwareCharacter(key).committedText());
+            }
+        }
+        learnedCommitted.append(learnedHardware.handleHardwareSpace().committedText());
+        assertEquals("請假", learnedCommitted.toString());
+        assertEquals("要去哪裡玩呢去海邊", learnedHardware.composingText());
+        assertEquals("請假要去哪裡玩呢去海邊",
+                learnedCommitted + learnedHardware.enter().committedText());
     }
 
     @Test
@@ -793,6 +863,36 @@ public final class BopomofoEngineTest {
         assertEquals("你好", engine.composingText());
         assertTrue(engine.displayedCandidates().isEmpty());
         assertEquals("你好", engine.enter().committedText());
+    }
+
+    @Test
+    public void hardwareSmartUnknownReadingPreservesEarlierSentence() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        typeHardware(engine, "su3cl3vup3");
+
+        assertEquals("你好", engine.completedSmartText());
+        assertEquals("ㄒㄧㄣˇ", engine.readingText());
+        assertTrue(engine.displayedCandidates().isEmpty());
+        assertEquals("", engine.enter().committedText());
+        assertEquals("你好ㄒㄧㄣˇ", engine.composingText());
+
+        engine.escape();
+        assertEquals("你好", engine.composingText());
+        assertEquals("你好", engine.enter().committedText());
+    }
+
+    @Test
+    public void hardwareShiftLetterCommitsSentenceAsLiteralAscii() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        typeHardware(engine, "su3cl3");
+
+        assertEquals("你好A", engine.handleHardwareCharacter('A').committedText());
+        assertFalse(engine.hasComposition());
+        assertEquals("B", engine.handleHardwareCharacter('B').committedText());
+
+        typeHardware(engine, "su3s");
+        assertEquals("", engine.handleHardwareCharacter('C').committedText());
+        assertEquals("你ㄋ", engine.composingText());
     }
 
     @Test

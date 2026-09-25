@@ -685,7 +685,9 @@ bool Engine::finishSmartReading(InputContextState &context,
     context.showingSmartCandidates_ = false;
     context.page_ = 0;
     context.highlightedIndex_ = 0;
-    constexpr std::size_t SmartComposingBufferSize = 10;
+    // Desktop keyboards retain ten completed readings. The eleventh shifts
+    // the leading word; touch keyboards use a smaller visible window.
+    constexpr std::size_t SmartComposingBufferSize = 11;
     if (context.smartReadings_.size() >= SmartComposingBufferSize &&
         !context.smartComposition_.segments.empty()) {
         const std::size_t count = smartMandarinStore_->evictionLength(

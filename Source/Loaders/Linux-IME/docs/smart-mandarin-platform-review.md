@@ -1,6 +1,6 @@
 # 好打注音跨平台行為檢查
 
-本紀錄對照本機 `v1.3.0` 原始碼。macOS 與 Windows 共用 `OVIMSmartMandarin`、PlainVanilla 和 Manjusri；iOS、Android、Linux 有各自的 walker。下表區分桌面、手機實體鍵盤與觸控，不能把五者視為完全相同。
+本紀錄保留先前 Linux 修正階段的比較與驗證歷史；本次十／十一音節界線、19 音節完整句與現況見 [實體鍵盤好打注音交接](../../../../docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)。macOS 與 Windows 共用 `OVIMSmartMandarin`、PlainVanilla 和 Manjusri；iOS、Android、Linux 有各自的 walker。下表區分桌面、手機實體鍵盤與觸控，不能把五者視為完全相同。
 
 ## 本輪 Linux 問題與修正
 
@@ -36,7 +36,7 @@
 | 未完成讀音的 Esc | 只清讀音 | 只清讀音 | 實體鍵盤只清讀音 | 實體鍵盤只清讀音 | 只清讀音 |
 | 已完成整句的 Esc | 預設不清句子 | 預設可清句子 | 實體鍵盤保留 | 實體鍵盤保留 | 採 macOS 預設保留 |
 | 未完成讀音的 Delete | 提示，保留 | 同模組 | 不從觸控 Backspace 推論 Delete | 不從觸控 Backspace 推論 Delete | 提示，保留後方字 |
-| 第十音節 | 移出開頭完整節點，保存下一節點 | 同 Manjusri | 觸控及容器 App 實體編輯器皆有九音節可編輯上限 | **只有觸控**有同樣上限；目前實體鍵盤沒有這個擠出條件 | 第十音節移出完整詞，保存下一詞段；另保護被單字學習拆開的可見詞 |
+| 長句擠字界線 | 實體鍵盤保留十個已完成音節，第十一個移出開頭完整節點 | 同 macOS | 容器 App 實體編輯器十／十一；虛擬鍵盤九／十 | 外接實體鍵盤十／十一；虛擬鍵盤九／十 | 實體鍵盤十／十一，另保護被單字學習拆開的可見完整詞 |
 | 切換輸入法／模式 | IMK 送出組合顯示內容再清理 | TSF 用保留文字的 EndComposition 結束組字 | 先完成有效讀音，失敗時保留原注音；觸控另外管理宿主已寫入尾段 | 同樣先完成有效讀音；觸控另管理宿主尾段 | 完成有效讀音、保留無法完成者；重複回呼不重複送字 |
 
 ## 尚未相同的行為與驗證界線
@@ -44,10 +44,10 @@
 - Linux 的 Ctrl 符號候選仍先送出前面的句子，符號使用獨立候選狀態；macOS／Windows 可把符號節點保留在同一組字圖內。這是已知差異，不能宣稱符號編輯完全一致。
 - Linux 固定九個數字選字鍵；桌面共用模組預設八個，並支援許氏／倚天 26 鍵的字母選字鍵及其他配置。Linux 尚未提供所有這些配置、Shift 選取組字區新增詞等桌面功能。
 - Linux 保留桌面版的「明確候選改選」學習時機；iOS／Android 還會在確認整句時呼叫 `learnConfirmedComposition`。Linux 已移除固定 `+5` 的學習加分，但未改動語料、詞頻或 Bigram 資料列，也不宣稱所有候選排序相同。
-- macOS／Windows 的 Manjusri 在首詞回退時使用 BOS backoff，學過的 Bigram 會取代同一組讀音的內建 Bigram 列；Linux 與 iOS／Android walker 在首詞回退時用 unigram 分數，並以完整前後詞比對學過的 Bigram。直接照搬桌面 BOS backoff 會改變 Linux 1,345 組單音節讀音中的 112 組首選，包括已驗證的「ㄇㄧˋ→密」；本輪維持目前首選與 9／10 音節行為，沒有把這些評分差異當成局部補丁。
+- macOS／Windows 的 Manjusri 在首詞回退時使用 BOS backoff，學過的 Bigram 會取代同一組讀音的內建 Bigram 列；Linux 與 iOS／Android walker 在首詞回退時用 unigram 分數，並以完整前後詞比對學過的 Bigram。直接照搬桌面 BOS backoff 會改變 Linux 1,345 組單音節讀音中的 112 組首選，包括已驗證的「ㄇㄧˋ→密」；本輪維持目前首選，並把實體鍵盤界線調整為十／十一，沒有把評分差異當成局部補丁。
 - 手機觸控會把完成中文字即時寫進 App，再維護可替換尾段；Linux 使用 Fcitx preedit。手機觸控的選字游標契約不能直接套到 Linux。
 - 已執行 Linux CTest、隔離 Ubuntu 24.04 X11／GTK3 操作案例，並加入 Qt 6 preedit action 整合測試。Qt 測試由宿主呼叫點擊所用的 `QInputMethod::invokeAction`，不是實體滑鼠定位測試。Fcitx 組字點擊仍需要客戶端送出此事件。
-- 本輪沒有 macOS／Windows／iOS／Android SDK 或實機驗證；GNOME 原生 Wayland 的移窗行為尚未以自動化重驗。GTK 4 宿主及真實 GNOME Text Editor 已用 X11 直接 Fcitx 路徑測試失焦送字。原始碼、staged addon、安裝包和系統已安裝版本分開記錄。
+- 先前 Linux 修正階段沒有 macOS／Windows／iOS／Android SDK 或實機驗證；本次新測試與未測範圍另見上述交接。GNOME 原生 Wayland 的移窗行為尚未以自動化重驗。GTK 4 宿主及真實 GNOME Text Editor 先前已用 X11 直接 Fcitx 路徑測試失焦送字。原始碼、staged addon、安裝包和系統已安裝版本分開記錄。
 
 ## 參考入口
 
