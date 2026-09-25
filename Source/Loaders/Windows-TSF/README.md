@@ -1,8 +1,8 @@
 # 琦琦輸入法 Windows TSF frontend
 
-一般使用者請先看 [Windows 11 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
+已發布 v1.2.9 的操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄 1.3.0 開發版的實作、建置與部署細節。
 
-This directory contains the modern Windows 11 Text Services Framework (TSF)
+This directory contains the Windows 10 and 11 Text Services Framework (TSF)
 frontend. It is separate from `Windows-IMM`, so the existing macOS IMK target
 and its Xcode project remain unchanged.
 
@@ -15,36 +15,41 @@ and its Xcode project remain unchanged.
 - TSF composition, caret placement, commit, and candidate-window flow
 - Immersive TSF registration for modern Windows text hosts such as Start/Search
 - Taskbar language-bar indicators for Chinese/English (`ㄅ`/`英`) and
-  half-/full-width (`半`/`全`) modes
-- `ITfFnConfigure` keyboard-options entry and a standalone four-page settings
-  app for general, Bopomofo mode, associated phrases, and user phrases
+  half-/full-width (`半`/`全`) modes, with a menu section for direct Smart or
+  Traditional Mandarin selection
+- `ITfFnConfigure` keyboard-options entry and a standalone four-page Fluent WPF
+  settings app that follows the Windows light/dark preference; its native backend
+  retains the existing user phrase and learning-data behavior
 - vertical or horizontal candidate windows with independent Windows-style
   scaling choices and purple, green, yellow, or red highlighting; optional
   typing-error sound and `Ctrl+\` mode switching
 - Standard, ETen, ETen 26, Hsu, and Hanyu Pinyin Bopomofo layouts, plus a
   switch between Big-5-only candidates and the full CNS11643 character set
-- Traditional Chinese (`zh-TW`) language profile registration
-- x86 and x64 build presets; the new WinSQLite and Smart Mandarin changes await
-  Windows builds and live TSF testing. The ARM64 preset is also unverified
+- Traditional Chinese language profiles for Taiwan (`zh-TW`), Hong Kong
+  (`zh-HK`), and Macao (`zh-MO`); Taiwan is enabled by default, while Hong Kong
+  and Macao can be added under those languages
+- x86 and x64 builds completed for 1.3.0; a Notepad Bopomofo smoke test passed,
+  with broader application testing pending
 
 New profiles start in Smart Mandarin. Existing profiles retain their selected
-mode. The settings app can switch between Smart and Traditional Mandarin and
-edit user phrases. The reset-learning button removes learned bigrams and
+mode. The settings app's General page controls which input methods appear in
+the taskbar menu; the Bopomofo page keeps layout and character-set options.
+The reset-learning button removes learned bigrams and
 candidate overrides while preserving user phrases. Cangjie and Simplex are
 outside this Windows package. The old IMM32 loader is retained as historical
 reference and is not linked into this DLL.
 
 ## Screenshots
 
-After installation, select the Traditional Chinese KeyKey input method from the
-Windows taskbar input selector.
+After installation, select KeyKey under Traditional Chinese (Taiwan), Hong Kong,
+or Macao in the Windows taskbar input selector. The installer does not add
+Windows languages or change the default input method.
 
 ![Selecting KeyKey from the Windows input selector](IMAGES/select_chichi.png)
 
-The language-bar button provides Chinese/English and half-/full-width mode
-switching, plus an entry to the input-method settings.
-
-![Language-bar menu](IMAGES/setup.png)
+The language-bar menu provides direct Smart/Traditional Mandarin selection,
+Chinese/English and half-/full-width switching, plus an entry to settings.
+After upgrading, sign out and back in once so Explorer loads the new menu.
 
 Typing Bopomofo shows the composition text and numbered candidate list in the
 active application.
@@ -52,13 +57,13 @@ active application.
 ![Bopomofo composition and candidates](IMAGES/typing.png)
 
 The settings app lets users choose the public associated-phrase collections to
-load.
-
-![Associated-phrase collection settings](IMAGES/word.png)
+load. Its Fluent controls follow the Windows light/dark setting.
 
 ## Prerequisites
 
-- Windows 11
+- Windows 10 or later; development builds have been launched on Windows 11,
+  while Windows 10 x64/x86 device verification remains pending
+- .NET 10 SDK for building the self-contained settings app (not needed on user PCs)
 - Visual Studio 2026 with **Desktop development with C++** (a Visual Studio
   2022 compatibility preset is also included)
 - CMake 3.25 or newer
@@ -104,8 +109,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x86\Release\KeyKeyTsf.dll
 ```
 
-The build creates `KeyKeyTsf.dll`, `KeyKeySettings.exe`, and
-`out\build\x64-ninja\Databases\KeyKey.db`. Keep the executable beside the DLL;
+The build creates `KeyKeyTsf.dll`, `KeyKeySettings.exe`,
+`KeyKeySettingsBackend.dll`, and `out\build\x64-ninja\Databases\KeyKey.db`.
+Keep the settings backend beside the executable;
 Windows Keyboard options and the language-bar settings button both launch it.
 The settings app has a 自訂詞 tab: enter a word and comma-separated Bopomofo
 readings, one syllable per character, then add or update the row. Deletion and
@@ -129,6 +135,11 @@ The smoke test sends the Standard-layout `1`, `u`, `3` sequence and fails if
 the engine passes those keys through as ASCII instead of producing a Bopomofo
 reading and candidates.
 
+The TSF service marks active composition text with a solid underline display
+attribute. Text hosts decide how to render that attribute, so the underline
+may differ between apps. Switching to English mode or away from the TIP ends
+the active composition while keeping its visible text in the document.
+
 The registration script adds **琦琦輸入法** to the current user's Traditional
 Chinese input-method list. Sign out and sign in if it does not immediately
 appear in `Win+Space`. Registration needs elevation because the COM server is
@@ -144,8 +155,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 ```
 
 The DLL and the hosting application must have matching architectures. In
-particular, 32-bit Office cannot load the x64 TIP even on x64 Windows. The x64
-package therefore includes and registers both x64 and x86 DLLs.
+particular, any 32-bit application cannot load the x64 TIP even on x64 Windows.
+The x64 package therefore includes and registers both x64 and x86 DLLs.
+The separate x86 ZIP serves 32-bit Windows and contains an x86 settings executable
+and an x86 settings backend. The NSIS EXE is still x64-only.
 
 ## Package for another Windows PC
 
@@ -156,10 +169,12 @@ successful build and test, run:
 ```powershell
 .\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
   -X86BuildDirectory .\out\build\x86
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -Architecture x86
 ```
 
-The result is `out\package\chichi77-KeyKey-1.3.0-windows-x64.zip`. On the other
-PC, extract the entire ZIP, copy the complete extracted folder to a local
+The results are x64 and x86 ZIPs. Use the package that matches the Windows OS
+architecture. On the other PC, extract the entire ZIP and copy the folder to a local
 `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd` there. Do not
 install directly from a mapped network drive, NAS, or UNC path: it can become
 inaccessible after UAC elevation and the installer window can close
@@ -171,11 +186,10 @@ The elevated installer:
 - registers the TSF from that permanent location; and
 - adds **琦琦輸入法** to Windows Installed apps for uninstallation.
 
-The installer adds the input method to the current user's `Win+Space` list;
-sign out and back in if it does not appear immediately. The package is unsigned
-and is intended for trusted home testing; Windows may warn after a download.
-ARM64 is not part of the currently verified or published package. Its preset
-and packaging option are retained for future bring-up.
+Windows shows the registered input method under installed Traditional Chinese
+(Taiwan, Hong Kong, or Macao) languages; sign out and back in if it does not
+appear immediately. The package is unsigned and is intended for trusted home
+testing; Windows may warn after a download.
 
 ## Build and sign a Microsoft Store NSIS EXE
 
@@ -189,13 +203,14 @@ out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe
 The `.unsigned.exe` artifact supports `/S` silent installation but is not
 eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
 settings executable, and the outer installer is unsigned as well.
+It retains product version `1.3.0` but installs into a fingerprinted local
+test directory such as `C:\Program Files\chichi77 KeyKey\1.3.0-test-xxxxxxxxxxxx`.
+Rebuilding changed binaries gets a new directory, so an existing text host
+can continue using its previously loaded DLL. Signed production packages use
+the plain version directory, such as `1.3.0` or `1.3.1`.
 
-The interactive finish page offers to open the KeyKey settings app and Windows
-Language & region settings. Opening KeyKey settings is selected by default;
-opening Windows settings is optional. A restart choice appears only if Windows
-has locked an old installed file and NSIS schedules its removal with
-`/REBOOTOK`; in that case, restarting later is the default. Silent `/S` installs
-do not launch either settings screen.
+The interactive finish page offers to open the KeyKey settings app by default.
+Silent `/S` installs do not launch the settings app.
 
 Pushing a tag that exactly matches the repository version, such as `v1.3.0`,
 automatically publishes this unsigned EXE, the ZIP package, and SHA-256 files.
@@ -285,6 +300,11 @@ The ZIP installer places this layout directly under
 subdirectory such as `C:\Program Files\chichi77 KeyKey\1.3.0`; its uninstaller
 remains one level above. Versioned payload directories let an upgrade register
 new DLL paths even while an application still has the previous TSF DLL loaded.
+NSIS registers the new DLLs without unregistering the old ones, so the active
+Taiwan profile stays available throughout the upgrade. It leaves earlier
+payload directories in place because running text hosts can still use their DLL,
+database, and settings executable. Remove those directories only after the old
+text hosts have exited.
 
 Runtime preferences are stored under `%APPDATA%\chichi77 KeyKey`. General
 frontend settings share the PlainVanilla loader plist, while Traditional

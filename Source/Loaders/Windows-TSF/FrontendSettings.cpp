@@ -74,12 +74,28 @@ std::wstring SettingsDirectory() {
     return directory;
 }
 
+void MigrateLegacyPreferences() {
+    const std::wstring directory = SettingsDirectory();
+    if (directory.empty()) return;
+    constexpr const wchar_t* suffixes[] = {
+        L"", L".TraditionalMandarin", L".SmartMandarin",
+        L".AssociatedPhrase"};
+    for (const wchar_t* suffix : suffixes) {
+        const std::wstring current = directory +
+            L"\\com.polobread.chichi77-keykey.windows" + suffix + L".plist";
+        const std::wstring legacy = directory +
+            L"\\org.openvanilla.chichi77-keykey.windows" + suffix + L".plist";
+        // Keep the old file for text hosts still using the previous DLL.
+        CopyFileW(legacy.c_str(), current.c_str(), TRUE);
+    }
+}
+
 std::wstring LoaderPreferencesPath() {
     const std::wstring directory = SettingsDirectory();
     return directory.empty()
                ? std::wstring()
                : directory +
-                     L"\\org.openvanilla.chichi77-keykey.windows.plist";
+                     L"\\com.polobread.chichi77-keykey.windows.plist";
 }
 
 std::wstring TraditionalMandarinPreferencesPath() {
@@ -87,7 +103,7 @@ std::wstring TraditionalMandarinPreferencesPath() {
     return directory.empty()
                ? std::wstring()
                : directory +
-                     L"\\org.openvanilla.chichi77-keykey.windows."
+                     L"\\com.polobread.chichi77-keykey.windows."
                      L"TraditionalMandarin.plist";
 }
 
@@ -96,7 +112,7 @@ std::wstring SmartMandarinPreferencesPath() {
     return directory.empty()
                ? std::wstring()
                : directory +
-                     L"\\org.openvanilla.chichi77-keykey.windows."
+                     L"\\com.polobread.chichi77-keykey.windows."
                      L"SmartMandarin.plist";
 }
 
@@ -105,7 +121,7 @@ std::wstring AssociatedPhrasePreferencesPath() {
     return directory.empty()
                ? std::wstring()
                : directory +
-                     L"\\org.openvanilla.chichi77-keykey.windows."
+                     L"\\com.polobread.chichi77-keykey.windows."
                      L"AssociatedPhrase.plist";
 }
 
@@ -126,6 +142,21 @@ FrontendSettings LoadFrontendSettings() {
     settings.playSoundOnTypingError =
         PlistBool(xml, "ShouldPlaySoundOnTypingError", true);
     return settings;
+}
+
+bool IsInputMethodVisible(const char* identifier) {
+    const std::string xml = ReadFile(LoaderPreferencesPath());
+    constexpr char key[] = "<key>ModulesSuppressedFromUI</key>";
+    const size_t keyStart = xml.find(key);
+    if (keyStart == std::string::npos) return true;
+    const size_t nextTag = xml.find('<', keyStart + sizeof(key) - 1);
+    if (nextTag == std::string::npos || xml.compare(nextTag, 7, "<array>") != 0)
+        return true;
+    const size_t end = xml.find("</array>", nextTag);
+    if (end == std::string::npos) return true;
+    const std::string entry = std::string("<string>") + identifier + "</string>";
+    const size_t found = xml.find(entry, nextTag + 7);
+    return found == std::string::npos || found >= end;
 }
 
 COLORREF HighlightColorValue(const std::wstring& name) {

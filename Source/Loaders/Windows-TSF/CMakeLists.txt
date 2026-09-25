@@ -60,6 +60,7 @@ target_link_libraries(keykey_third_party PUBLIC winsqlite3)
 set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(keykey_core STATIC
+    FrontendSettings.cpp
     "${KEYKEY_SOURCE}/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
     "${KEYKEY_SOURCE}/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
     "${KEYKEY_SOURCE}/Frameworks/Formosa/Source/Mandarin.cpp"
@@ -102,7 +103,7 @@ endif()
 set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_DATABASE_PATH}")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 if(NOT KEYKEY_DATABASE_PATH)
-    find_package(Ruby REQUIRED)
+    find_package(Ruby REQUIRED COMPONENTS Interpreter)
     add_executable(KeyKeyDatabaseCooker DatabaseCooker.cpp)
     target_compile_features(KeyKeyDatabaseCooker PRIVATE cxx_std_17)
     target_link_libraries(KeyKeyDatabaseCooker PRIVATE keykey_core)
@@ -214,7 +215,6 @@ add_library(KeyKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp
     Diagnostics.cpp
-    FrontendSettings.cpp
     LangBarButton.cpp
     KeyKeyTsf.rc
     TextService.cpp
@@ -243,15 +243,12 @@ target_link_libraries(KeyKeyTsf PRIVATE
     uuid
 )
 
-add_executable(KeyKeySettings WIN32
-    FrontendSettings.cpp
-    SettingsApp.cpp
+add_library(KeyKeySettingsBackend SHARED
     UserDataStore.cpp
-    KeyKeySettings.rc
+    SettingsModern/SettingsBackend.cpp
 )
-target_compile_features(KeyKeySettings PRIVATE cxx_std_17)
-target_compile_definitions(KeyKeySettings PRIVATE
-    ${KEYKEY_VERSION_DEFINITIONS}
+target_compile_features(KeyKeySettingsBackend PRIVATE cxx_std_17)
+target_compile_definitions(KeyKeySettingsBackend PRIVATE
     UNICODE
     _UNICODE
     WIN32_LEAN_AND_MEAN
@@ -259,17 +256,34 @@ target_compile_definitions(KeyKeySettings PRIVATE
     _CRT_SECURE_NO_WARNINGS
 )
 if(MSVC)
-    target_compile_options(KeyKeySettings PRIVATE /W4 /permissive- /utf-8)
+    target_compile_options(KeyKeySettingsBackend PRIVATE /W4 /permissive- /utf-8)
 endif()
-target_link_libraries(KeyKeySettings PRIVATE
+target_link_libraries(KeyKeySettingsBackend PRIVATE
     keykey_core
-    comdlg32
-    comctl32
     shell32
     user32
 )
-set_target_properties(KeyKeySettings PROPERTIES
-    OUTPUT_NAME "KeyKeySettings"
+find_program(KEYKEY_DOTNET_EXECUTABLE dotnet REQUIRED)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(KEYKEY_SETTINGS_RID win-x64)
+else()
+    set(KEYKEY_SETTINGS_RID win-x86)
+endif()
+file(GLOB KEYKEY_SETTINGS_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.cs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.xaml"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.csproj")
+add_custom_target(KeyKeySettings ALL
+    COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" publish
+            "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/KeyKeySettings.csproj"
+            --configuration Release --runtime ${KEYKEY_SETTINGS_RID} --self-contained true
+            -p:PublishSingleFile=true
+            -p:IncludeNativeLibrariesForSelfExtract=true
+            -p:NuGetAudit=false
+            -p:Version=${PROJECT_VERSION}
+            --output "$<TARGET_FILE_DIR:KeyKeyTsf>"
+    DEPENDS KeyKeySettingsBackend KeyKeyTsf ${KEYKEY_SETTINGS_SOURCES}
+    VERBATIM
 )
 set_target_properties(KeyKeyTsf PROPERTIES
     OUTPUT_NAME "KeyKeyTsf"
@@ -370,7 +384,8 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS KeyKeyTsf RUNTIME DESTINATION . LIBRARY DESTINATION .)
-install(TARGETS KeyKeySettings RUNTIME DESTINATION .)
+install(TARGETS KeyKeySettingsBackend RUNTIME DESTINATION .)
+install(FILES "$<TARGET_FILE_DIR:KeyKeyTsf>/KeyKeySettings.exe" DESTINATION .)
 if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
     install(FILES "${KEYKEY_DEPLOY_DATABASE}" DESTINATION Databases)
 endif()

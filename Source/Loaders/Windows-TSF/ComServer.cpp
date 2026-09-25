@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <msctf.h>
+#include <cstddef>
 #include <iterator>
 #include <new>
 #include <string>
@@ -90,6 +91,19 @@ void UnregisterComServer() {
     RegDeleteTreeW(HKEY_CLASSES_ROOT, classKey.c_str());
 }
 
+struct LanguageProfile {
+    LANGID languageId;
+    GUID profileGuid;
+};
+
+// Taiwan is enabled by default. Hong Kong and Macao remain available for
+// users to add under those languages, without enabling unused profiles.
+constexpr LanguageProfile kLanguageProfiles[] = {
+    {kTraditionalChineseLangId, kTraditionalChineseProfileGuid},
+    {kHongKongLangId, kHongKongProfileGuid},
+    {kMacaoLangId, kMacaoProfileGuid},
+};
+
 HRESULT RegisterProfile() {
     wchar_t modulePath[32768]{};
     const DWORD length = GetModuleFileNameW(g_module, modulePath,
@@ -100,10 +114,23 @@ HRESULT RegisterProfile() {
     HRESULT result = CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr,
                                       CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&profiles));
     if (FAILED(result)) return result;
-    result = profiles->RegisterProfile(
-        kTextServiceClsid, kTraditionalChineseLangId, kTraditionalChineseProfileGuid,
-        kTextServiceDescription, static_cast<ULONG>(wcslen(kTextServiceDescription)),
-        modulePath, length, 0, nullptr, 0, TRUE, 0);
+    std::size_t registeredCount = 0;
+    for (const auto& profile : kLanguageProfiles) {
+        result = profiles->RegisterProfile(
+            kTextServiceClsid, profile.languageId, profile.profileGuid,
+            kTextServiceDescription, static_cast<ULONG>(wcslen(kTextServiceDescription)),
+            modulePath, length, 0, nullptr, 0,
+            profile.languageId == kTraditionalChineseLangId ? TRUE : FALSE, 0);
+        if (FAILED(result)) break;
+        ++registeredCount;
+    }
+    if (FAILED(result)) {
+        while (registeredCount > 0) {
+            const auto& profile = kLanguageProfiles[--registeredCount];
+            profiles->UnregisterProfile(kTextServiceClsid, profile.languageId,
+                                        profile.profileGuid, 0);
+        }
+    }
     profiles->Release();
     return result;
 }
@@ -112,8 +139,10 @@ void UnregisterProfile() {
     ITfInputProcessorProfileMgr* profiles = nullptr;
     if (SUCCEEDED(CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr,
                                    CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&profiles)))) {
-        profiles->UnregisterProfile(kTextServiceClsid, kTraditionalChineseLangId,
-                                    kTraditionalChineseProfileGuid, 0);
+        for (const auto& profile : kLanguageProfiles) {
+            profiles->UnregisterProfile(kTextServiceClsid, profile.languageId,
+                                        profile.profileGuid, 0);
+        }
         profiles->Release();
     }
 }
@@ -124,6 +153,7 @@ void UnregisterProfile() {
 // text hosts such as Start/Search and Store apps.
 const GUID kCategories[] = {
     GUID_TFCAT_TIP_KEYBOARD,
+    GUID_TFCAT_DISPLAYATTRIBUTEPROVIDER,
     GUID_TFCAT_TIPCAP_INPUTMODECOMPARTMENT,
     GUID_TFCAT_TIPCAP_SYSTRAYSUPPORT,
     GUID_TFCAT_TIPCAP_IMMERSIVESUPPORT,

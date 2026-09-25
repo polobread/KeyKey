@@ -180,14 +180,15 @@ x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 安裝包的建置、本機安裝、簽署及 notarization 說明見
 [Installer/README.md](Installer/README.md)。
 
-## Windows 11
+## Windows 10 與 11
 
 ### 需求
 
-- Windows 11
+- Windows 10 或更新版本（目前開發機在 Windows 11 驗證；Windows 10 待實機驗證）
 - Visual Studio 2026，安裝「使用 C++ 的桌面開發」workload；也提供 Visual
   Studio 2022 相容 preset
 - CMake 3.25 以上；Visual Studio 內附版本即可
+- .NET 10 SDK（設定頁採 WPF Fluent；套件內已包含執行階段）
 - Ruby 3.x（從原始資料煮好打注音詞庫時需要；Windows CI 會安裝）
 - NSIS 3.12（只有建立 Store EXE 時需要）
 
@@ -206,7 +207,7 @@ cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release --target KeyKeyTsf
+cmake --build --preset windows-x86-release --target KeyKeySettings
 ```
 
 輸出檔案為：
@@ -214,6 +215,7 @@ cmake --build --preset windows-x86-release --target KeyKeyTsf
 ```text
 out\build\x64-ninja\KeyKeyTsf.dll
 out\build\x64-ninja\KeyKeySettings.exe
+out\build\x64-ninja\KeyKeySettingsBackend.dll
 out\build\x64-ninja\Databases\KeyKey.db
 ```
 
@@ -229,7 +231,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
 ```
 
-註冊腳本也會將「琦琦輸入法」加入目前使用者的繁體中文輸入法清單。若沒有立即
+Windows 會將註冊的 TSF 顯示於已安裝的繁體中文（台灣、香港或澳門）輸入法清單；
+註冊腳本不會改動使用者的語言清單。若沒有立即
 出現在 `Win+Space`，請登出再登入。解除註冊：
 
 ```powershell
@@ -244,10 +247,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 ```powershell
 .\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
   -X86BuildDirectory .\out\build\x86
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -Architecture x86
 ```
 
-會產生 `out\package\chichi77-KeyKey-1.3.0-windows-x64.zip`。在另一台 x64 Windows
-11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
+會產生 x64 與 x86 兩種 ZIP。選擇與 Windows 系統架構相同的套件；在另一台 Windows 10
+或 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
 - 將檔案複製到 `C:\Program Files\chichi77 KeyKey`
@@ -257,11 +262,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 請勿直接從網路磁碟、NAS 或 UNC 路徑安裝；UAC 後可能無法存取原路徑，且安裝
 視窗可能立即關閉。失敗記錄位於 `%TEMP%\chichi77-keykey-install.log`。
 
-安裝腳本會自動加入目前使用者的 `Win+Space` 輸入法清單；若沒有立即出現，請登出
+Windows 會在已安裝的繁體中文（台灣、香港或澳門）語言下顯示輸入法；若沒有立即出現，請登出
 再登入。這是未簽署的家用測試套件，因此從網路下載時 Windows 可能顯示安全警告。
 
-Windows x64 套件會同時安裝 x64 與 x86 TSF DLL，因此也可在 32-bit Office 中輸入。
-ARM64 preset 與打包選項目前僅保留供未來移植，尚未驗證，也不在目前發佈套件內。
+Windows x64 套件會同時安裝 x64 與 x86 TSF DLL，可供所有 32 位元應用程式使用；
+x86 套件供 32 位元 Windows 使用。
 DLL 架構必須和載入它的應用程式架構相同。
 
 Windows frontend 的部署及驗證細節見
@@ -284,12 +289,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -TimestampUrl $timestampUrl
 ```
 
-腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE，以 NSIS 建立離線安裝
+腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE 與設定後端 DLL，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
 `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
-互動式完成頁可選擇開啟琦琦設定或 Windows 語言設定；只有舊檔被占用而必須延後清除
-時才會顯示重新啟動選項，且預設為稍後重新啟動。
+互動式完成頁可選擇開啟琦琦設定；版本升級時另提示登出再登入，讓工作列載入新版
+輸入法。升級時會保留可能仍被舊版文字宿主使用的版本目錄，等舊行程結束後再清理。
 
 ## Android
 
@@ -560,11 +565,12 @@ item, and is not guaranteed to be accurate or complete. See
 [Installer/README.md](Installer/README.md) for macOS packaging, local
 installation, signing, and notarization.
 
-### Windows 11
+### Windows 10 and 11
 
 #### Requirements
 
-- Windows 11
+- Windows 10 or later (built and launched on Windows 11; Windows 10 needs device testing)
+- .NET 10 SDK to build the self-contained Fluent WPF settings app
 - Visual Studio 2026 with the **Desktop development with C++** workload;
   Visual Studio 2022-compatible presets are also included
 - CMake 3.25 or newer; the Visual Studio copy is sufficient
@@ -586,7 +592,7 @@ cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release --target KeyKeyTsf
+cmake --build --preset windows-x86-release --target KeyKeySettings
 ```
 
 The outputs are:
@@ -594,6 +600,7 @@ The outputs are:
 ```text
 out\build\x64-ninja\KeyKeyTsf.dll
 out\build\x64-ninja\KeyKeySettings.exe
+out\build\x64-ninja\KeyKeySettingsBackend.dll
 out\build\x64-ninja\Databases\KeyKey.db
 ```
 
@@ -609,8 +616,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
 ```
 
-The script also adds **琦琦輸入法** to the current user's Traditional Chinese
-input methods. Sign out and back in if it does not immediately appear in
+Windows lists the registered TSF under installed Traditional Chinese (Taiwan,
+Hong Kong, or Macao) languages. The script does not change the user's language
+list. Sign out and back in if it does not immediately appear in
 `Win+Space`. To unregister:
 
 ```powershell
@@ -625,22 +633,25 @@ After building and testing, run from `Source\Loaders\Windows-TSF`:
 ```powershell
 .\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
   -X86BuildDirectory .\out\build\x86
+.\Package-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -Architecture x86
 ```
 
-This creates `out\package\chichi77-KeyKey-1.3.0-windows-x64.zip`. On the other
-x64 Windows 11 PC, extract the complete ZIP, copy the entire extracted folder
+This creates x64 and x86 ZIPs. Use the ZIP matching the Windows 10/11 OS
+architecture. On the other PC, extract the complete ZIP and copy the folder
 to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
 become inaccessible after UAC elevation and the installer window can close
 immediately. Failures are logged to `%TEMP%\chichi77-keykey-install.log`. It copies the runtime to
 `C:\Program Files\chichi77 KeyKey`, registers
-both x64 and x86 TSF DLLs (including support for 32-bit Office), adds it to the
-current user's `Win+Space` list, and creates an entry in Windows Installed apps.
+both x64 and x86 TSF DLLs on x64 Windows (for all 32-bit applications), or the
+x86 DLL on 32-bit Windows, and creates an
+entry in Windows Installed apps. Windows lists KeyKey under installed Traditional
+Chinese (Taiwan, Hong Kong, or Macao) languages in `Win+Space`.
 Sign out and back in if it does not appear immediately.
 
 The home-testing package is unsigned, so Windows may warn about a downloaded
-copy. The ARM64 preset and packaging option are retained for future bring-up,
-but ARM64 is not currently verified or published.
+copy.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.
@@ -665,9 +676,9 @@ installer, then signs and verifies the outer EXE. It writes
 `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
-The interactive finish page can open KeyKey settings or Windows Language &
-region settings. It offers a restart only when a locked old file must be removed
-later, and defaults to restarting later.
+The interactive finish page can open KeyKey settings. An upgrade keeps older
+version directories available to text hosts that still have the previous DLL
+loaded; remove them after those processes exit.
 
 ### Android
 

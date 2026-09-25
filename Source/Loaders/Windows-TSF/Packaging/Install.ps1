@@ -92,25 +92,33 @@ if (-not (Test-Path -LiteralPath $packageInfoPath -PathType Leaf)) {
 }
 
 $packageInfo = Get-Content -LiteralPath $packageInfoPath -Raw | ConvertFrom-Json
+$uninstallRegistryPath = `
+    'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\chichi77KeyKey'
+$previousVersion = (Get-ItemProperty -LiteralPath $uninstallRegistryPath `
+    -Name DisplayVersion -ErrorAction SilentlyContinue).DisplayVersion
+$isVersionUpgrade = $previousVersion -and `
+    ([string]$previousVersion -ne [string]$packageInfo.version)
+if ([Environment]::OSVersion.Version.Major -lt 10) {
+    throw 'This package requires Windows 10 or later.'
+}
 $nativeArchitecture = [Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITEW6432')
 if (-not $nativeArchitecture) {
     $nativeArchitecture = [Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITECTURE')
 }
-if ($packageInfo.architecture -eq 'x64' -and $nativeArchitecture -ne 'AMD64') {
-    throw "This is an x64 package, but Windows reports $nativeArchitecture."
-}
-if ($packageInfo.architecture -eq 'arm64' -and $nativeArchitecture -ne 'ARM64') {
-    throw "This is an ARM64 package, but Windows reports $nativeArchitecture."
+if (($packageInfo.architecture -eq 'x64' -and $nativeArchitecture -ne 'AMD64') -or
+    ($packageInfo.architecture -eq 'x86' -and $nativeArchitecture -ne 'x86') -or
+    $packageInfo.architecture -notin @('x64', 'x86')) {
+    throw "Package architecture $($packageInfo.architecture) does not match Windows architecture $nativeArchitecture."
 }
 
 $tipDllNames = if ($packageInfo.architecture -eq 'x64') {
     @('KeyKeyTsf_x64.dll', 'KeyKeyTsf_x86.dll')
-}
-else {
-    @('KeyKeyTsf_arm64.dll')
+} else {
+    @('KeyKeyTsf_x86.dll')
 }
 
 foreach ($relativePath in @($tipDllNames) + @('KeyKeySettings.exe',
+         'KeyKeySettingsBackend.dll',
          'Databases\KeyKey.db')) {
     $sourcePath = Join-Path $payloadDirectory $relativePath
     if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
@@ -120,7 +128,11 @@ foreach ($relativePath in @($tipDllNames) + @('KeyKeySettings.exe',
 
 $installDirectory = Join-Path $env:ProgramFiles 'chichi77 KeyKey'
 $nativeRegsvr32 = Join-Path $env:SystemRoot 'System32\regsvr32.exe'
-$x86Regsvr32 = Join-Path $env:SystemRoot 'SysWOW64\regsvr32.exe'
+$x86Regsvr32 = if ($packageInfo.architecture -eq 'x64') {
+    Join-Path $env:SystemRoot 'SysWOW64\regsvr32.exe'
+} else {
+    $nativeRegsvr32
+}
 
 # Remove both registry views before replacing an earlier single- or
 # dual-architecture installation. A 32-bit Office process can only load the
@@ -147,6 +159,8 @@ foreach ($dllName in $tipDllNames) {
 }
 Copy-Item -LiteralPath (Join-Path $payloadDirectory 'KeyKeySettings.exe') `
     -Destination $installDirectory -Force
+Copy-Item -LiteralPath (Join-Path $payloadDirectory 'KeyKeySettingsBackend.dll') `
+    -Destination $installDirectory -Force
 Copy-Item -LiteralPath (Join-Path $payloadDirectory 'Databases') `
     -Destination $installDirectory -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Uninstall.ps1') `
@@ -167,15 +181,11 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Could not grant app-container read access to the installation.'
 }
 
-$registrations = if ($packageInfo.architecture -eq 'x64') {
-    @(
-        @{ Dll = 'KeyKeyTsf_x64.dll'; Tool = $nativeRegsvr32 },
-        @{ Dll = 'KeyKeyTsf_x86.dll'; Tool = $x86Regsvr32 }
-    )
+$registrations = @()
+if ($packageInfo.architecture -eq 'x64') {
+    $registrations += @{ Dll = 'KeyKeyTsf_x64.dll'; Tool = $nativeRegsvr32 }
 }
-else {
-    @(@{ Dll = 'KeyKeyTsf_arm64.dll'; Tool = $nativeRegsvr32 })
-}
+$registrations += @{ Dll = 'KeyKeyTsf_x86.dll'; Tool = $x86Regsvr32 }
 foreach ($registration in $registrations) {
     $installedDll = Join-Path $installDirectory $registration.Dll
     $registrationExitCode = Invoke-Regsvr32 `
@@ -185,22 +195,6 @@ foreach ($registration in $registrations) {
     }
 }
 
-$tip = '0404:{828E3CF0-11E9-45FC-A5DB-394991AD0093}{BED5C2CB-27F6-455D-AB13-CD2BB19B670B}'
-$languageList = Get-WinUserLanguageList
-$traditionalChinese = $languageList |
-    Where-Object LanguageTag -eq 'zh-Hant-TW' |
-    Select-Object -First 1
-if (-not $traditionalChinese) {
-    $traditionalChinese = New-WinUserLanguageList 'zh-Hant-TW'
-    $languageList += $traditionalChinese
-}
-if ($traditionalChinese.InputMethodTips -notcontains $tip) {
-    [void]$traditionalChinese.InputMethodTips.Add($tip)
-    Set-WinUserLanguageList $languageList -Force
-}
-
-$uninstallRegistryPath = `
-    'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\chichi77KeyKey'
 $uninstallCommand = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{0}"' `
     -f (Join-Path $installDirectory 'Uninstall.ps1')
 $displayName = ([char]0x7426).ToString() + [char]0x7426 + [char]0x8F38 + `
@@ -227,8 +221,12 @@ New-ItemProperty -Path $uninstallRegistryPath -Name NoRepair `
 Write-Host ''
 Write-Host 'chichi77 KeyKey was installed successfully.'
 Write-Host "Location: $installDirectory"
-Write-Host 'Sign out and sign back in, then add the input method under'
-Write-Host 'Settings > Time & language > Language & region > Chinese (Traditional).'
+if ($isVersionUpgrade) {
+    Write-Host 'Upgrade complete. Sign out of Windows and sign back in so the taskbar input method menu loads the new settings page.'
+} else {
+    Write-Host 'Sign out and sign back in if the input method is not listed yet, then add it under'
+    Write-Host 'Settings > Time & language > Language & region > Traditional Chinese (Taiwan, Hong Kong, or Macao).'
+}
 }
 catch {
     Write-Host ''

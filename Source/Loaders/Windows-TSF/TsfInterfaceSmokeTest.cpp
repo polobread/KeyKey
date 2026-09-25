@@ -57,6 +57,30 @@ int wmain() {
     if (FAILED(result) || !textEditSink) return 6;
     textEditSink->Release();
 
+    ITfDisplayAttributeProvider* displayProvider = nullptr;
+    result = configure->QueryInterface(IID_ITfDisplayAttributeProvider,
+                                       reinterpret_cast<void**>(&displayProvider));
+    if (FAILED(result) || !displayProvider) return 9;
+    IEnumTfDisplayAttributeInfo* attributes = nullptr;
+    result = displayProvider->EnumDisplayAttributeInfo(&attributes);
+    if (FAILED(result) || !attributes) return 10;
+    ITfDisplayAttributeInfo* attributeInfo = nullptr;
+    ULONG fetched = 0;
+    result = attributes->Next(1, &attributeInfo, &fetched);
+    attributes->Release();
+    displayProvider->Release();
+    if (FAILED(result) || fetched != 1 || !attributeInfo) return 11;
+    GUID attributeGuid{};
+    TF_DISPLAYATTRIBUTE attribute{};
+    result = attributeInfo->GetGUID(&attributeGuid);
+    if (SUCCEEDED(result)) result = attributeInfo->GetAttributeInfo(&attribute);
+    attributeInfo->Release();
+    if (FAILED(result) ||
+        attributeGuid != KeyKey::WindowsTsf::kCompositionDisplayAttributeGuid ||
+        attribute.lsStyle != TF_LS_SOLID || attribute.bAttr != TF_ATTR_INPUT) {
+        return 12;
+    }
+
     ITfFunctionProvider* provider = nullptr;
     result = configure->QueryInterface(IID_ITfFunctionProvider,
                                        reinterpret_cast<void**>(&provider));
@@ -68,6 +92,6 @@ int wmain() {
     if (FAILED(result) || !function) return 8;
     function->Release();
     FreeLibrary(module);
-    std::cout << "TSF configure interface smoke test passed.\n";
+    std::cout << "TSF configure and display attribute interfaces passed.\n";
     return 0;
 }

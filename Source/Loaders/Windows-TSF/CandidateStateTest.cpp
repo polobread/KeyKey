@@ -32,6 +32,15 @@ bool Expect(bool condition, const char* message) {
     return false;
 }
 
+bool ExpectSymbol(const EngineResult& result, const wchar_t* symbol,
+                  const char* message) {
+    // Smart Mandarin keeps punctuation in its composition until the sentence
+    // is committed; Traditional Mandarin can commit the same symbol at once.
+    return Expect(result.handled &&
+                      (result.committedText == symbol ||
+                       result.compositionText == symbol), message);
+}
+
 KeyEvent VirtualKey(UINT virtualKey) {
     KeyEvent event;
     event.virtualKey = virtualKey;
@@ -227,23 +236,23 @@ bool TestInputMethodControlKeyResults() {
 
     auto punctuation = KeyKeyEngineSession::Create();
     EngineResult semicolon = punctuation->handleKey(ControlKey(VK_OEM_1));
-    if (!Expect(semicolon.handled && semicolon.committedText == L"\uFF1B",
-                "Ctrl+semicolon did not commit the table-backed full-width symbol.")) {
+    if (!ExpectSymbol(semicolon, L"\uFF1B",
+                      "Ctrl+semicolon did not produce the table-backed full-width symbol.")) {
         return false;
     }
 
     auto shiftedPunctuation = KeyKeyEngineSession::Create();
     EngineResult colon = shiftedPunctuation->handleKey(
         ControlKey(VK_OEM_1, false, true));
-    if (!Expect(colon.handled && colon.committedText == L"\uFF1A",
-                "Ctrl+Shift+semicolon did not commit the Windows colon entry.")) {
+    if (!ExpectSymbol(colon, L"\uFF1A",
+                      "Ctrl+Shift+semicolon did not produce the Windows colon entry.")) {
         return false;
     }
 
     auto ctrlAltSymbol = KeyKeyEngineSession::Create();
     EngineResult corner = ctrlAltSymbol->handleKey(ControlKey('Q', true));
-    return Expect(corner.handled && corner.committedText == L"\u250C",
-                  "Ctrl+Alt+Q did not commit the table-backed box symbol.");
+    return ExpectSymbol(corner, L"\u250C",
+                        "Ctrl+Alt+Q did not produce the table-backed box symbol.");
 }
 
 }  // namespace

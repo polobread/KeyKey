@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "ModuleState.h"
+#include "FrontendSettings.h"
 
 #include "OpenVanilla.h"
 #include "PlainVanilla.h"
@@ -24,7 +25,10 @@ class WindowsEncodingService final : public OVEncodingService {
 public:
     bool codepointSupportedByEncoding(const std::string& codepoint,
                                       const std::string& encoding) override {
-        if (encoding == "UTF-8") return true;
+        // An empty encoding means the user has not enabled the Big-5-only
+        // candidate restriction. Smart Mandarin passes this value to its
+        // candidate filter, so rejecting it hides every Chinese character.
+        if (encoding.empty() || encoding == "UTF-8") return true;
         if (encoding != "BIG-5") return false;
 
         const int wideLength = MultiByteToWideChar(
@@ -70,7 +74,7 @@ public:
 
     const std::string defaultDatabaseFileName() override { return "KeyKey.db"; }
     const std::string loaderIdentifier() override {
-        return "org.openvanilla.chichi77-keykey.windows";
+        return "com.polobread.chichi77-keykey.windows";
     }
     const std::string loaderName() override { return "chichi77 KeyKey"; }
     const std::vector<std::string> modulePackageFilePatterns() override { return {}; }
@@ -157,6 +161,7 @@ public:
             OVDirectoryHelper::UserApplicationSupportDataDirectory("chichi77 KeyKey");
         OVDirectoryHelper::CheckDirectory(pathInfo.writablePath);
 
+        MigrateLegacyPreferences();
         policy_ = std::make_unique<WindowsLoaderPolicy>();
         const std::wstring loaderPreferences = OVUTF16::FromUTF8(
             policy_->propertyListPathForLoader());
@@ -218,6 +223,13 @@ public:
     std::string primaryInputMethod() const {
         return loader_ ? loader_->primaryInputMethod() : std::string();
     }
+    bool selectInputMethod(const std::string& identifier) {
+        if (!loader_ || (identifier != kSmartInputMethod &&
+                         identifier != kTraditionalInputMethod)) return false;
+        loader_->syncLoaderConfig();
+        loader_->setPrimaryInputMethod(identifier);
+        return loader_->primaryInputMethod() == identifier;
+    }
     std::recursive_mutex& mutex() { return mutex_; }
 
 private:
@@ -237,6 +249,12 @@ EngineRuntime& Runtime() {
     // loader lock during process shutdown.
     static EngineRuntime* runtime = new EngineRuntime();
     return *runtime;
+}
+
+std::string CurrentInputMethodLocked() {
+    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    Runtime().syncSettings();
+    return Runtime().primaryInputMethod();
 }
 
 unsigned int Modifiers(const KeyEvent& event) {
@@ -402,6 +420,14 @@ void Snapshot(PVLoaderContext* context, EngineResult& result) {
 }
 
 }  // namespace
+
+std::string CurrentInputMethod() { return CurrentInputMethodLocked(); }
+
+bool SelectInputMethod(const char* identifier) {
+    if (!identifier) return false;
+    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    return Runtime().selectInputMethod(identifier);
+}
 
 bool IsInputMethodControlKey(const KeyEvent& event) {
     if (!event.control) return false;

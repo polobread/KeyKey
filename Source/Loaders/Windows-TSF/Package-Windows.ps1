@@ -4,7 +4,7 @@ param(
 
     [string] $X86BuildDirectory = (Join-Path $PSScriptRoot 'out\build\x86'),
 
-    [ValidateSet('x64', 'arm64')]
+    [ValidateSet('x64', 'x86')]
     [string] $Architecture = 'x64',
 
     [ValidatePattern('^[0-9]+(?:\.[0-9]+){1,3}$')]
@@ -31,17 +31,22 @@ function Resolve-BuildArtifact {
     throw "Required build output was not found under $Directory`: $RelativePath"
 }
 
-$nativeDllPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyTsf.dll'
-$settingsPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeySettings.exe'
 $databasePath = Resolve-BuildArtifact $resolvedBuildDirectory 'Databases\KeyKey.db'
 
-$x86DllPath = $null
+if (-not (Test-Path -LiteralPath $X86BuildDirectory -PathType Container)) {
+    throw "The x86 build directory was not found: $X86BuildDirectory. Build the windows-x86-release preset before packaging so 32-bit applications are supported."
+}
+$resolvedX86BuildDirectory = (Resolve-Path -LiteralPath $X86BuildDirectory).Path
+$x86DllPath = Resolve-BuildArtifact $resolvedX86BuildDirectory 'KeyKeyTsf.dll'
+$settingsBuildDirectory = if ($Architecture -eq 'x86') {
+    $resolvedX86BuildDirectory
+} else {
+    $resolvedBuildDirectory
+}
+$settingsPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeySettings.exe'
+$settingsBackendPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeySettingsBackend.dll'
 if ($Architecture -eq 'x64') {
-    if (-not (Test-Path -LiteralPath $X86BuildDirectory -PathType Container)) {
-        throw "The x86 build directory was not found: $X86BuildDirectory. Build the windows-x86-release preset before packaging so 32-bit Office is supported."
-    }
-    $resolvedX86BuildDirectory = (Resolve-Path -LiteralPath $X86BuildDirectory).Path
-    $x86DllPath = Resolve-BuildArtifact $resolvedX86BuildDirectory 'KeyKeyTsf.dll'
+    $nativeDllPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyTsf.dll'
 }
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
@@ -61,19 +66,15 @@ try {
     New-Item -ItemType Directory -Path $licenseDirectory -Force | Out-Null
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 
-    $nativeDllName = if ($Architecture -eq 'arm64') {
-        'KeyKeyTsf_arm64.dll'
+    if ($Architecture -eq 'x64') {
+        Copy-Item -LiteralPath $nativeDllPath `
+            -Destination (Join-Path $payloadDirectory 'KeyKeyTsf_x64.dll')
     }
-    else {
-        'KeyKeyTsf_x64.dll'
-    }
-    Copy-Item -LiteralPath $nativeDllPath `
-        -Destination (Join-Path $payloadDirectory $nativeDllName)
-    if ($x86DllPath) {
-        Copy-Item -LiteralPath $x86DllPath `
-            -Destination (Join-Path $payloadDirectory 'KeyKeyTsf_x86.dll')
-    }
+    Copy-Item -LiteralPath $x86DllPath `
+        -Destination (Join-Path $payloadDirectory 'KeyKeyTsf_x86.dll')
     Copy-Item -LiteralPath $settingsPath `
+        -Destination $payloadDirectory
+    Copy-Item -LiteralPath $settingsBackendPath `
         -Destination $payloadDirectory
     Copy-Item -LiteralPath $databasePath -Destination $databaseDirectory
 
