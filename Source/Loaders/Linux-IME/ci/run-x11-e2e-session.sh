@@ -31,6 +31,9 @@ known_cases=(
   T01-X11-QT6-BOPOMOFO-TRADITIONAL-CONFIG
   T01-X11-GTK3-BOPOMOFO-STANDARD
   T01-X11-GTK3-BOPOMOFO-SMART
+  T01-X11-GTK4-BOPOMOFO-SMART
+  T01-X11-GTK4-BOPOMOFO-SMART-SWITCH
+  T01-X11-GTK4-BOPOMOFO-SMART-WINDOW-MOVE
   T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-KEY
   T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK
   T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW
@@ -1104,6 +1107,94 @@ run_gtk4_case() {
   e2e_host_label='GTK 3'
 }
 
+run_gtk4_smart_window_move_case() {
+  local case_id=T01-X11-GTK4-BOPOMOFO-SMART-WINDOW-MOVE
+  local case_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id"
+  mkdir -p "$case_dir"
+  export KEYKEY_E2E_CASE_DIR="$case_dir"
+  export KEYKEY_E2E_SCENARIO=move
+  unset KEYKEY_E2E_EXPECTED_COMMIT KEYKEY_E2E_EXPECTED_LITERAL \
+    KEYKEY_E2E_REQUIRED_PREEDITS KEYKEY_E2E_EXPECTED_FIRST \
+    KEYKEY_E2E_EXPECTED_SECOND KEYKEY_E2E_EXPECTED_THIRD \
+    KEYKEY_E2E_REQUIRED_EVENTS
+
+  "$KEYKEY_E2E_GTK4_HOST" >"$case_dir/host.stdout.log" \
+    2>"$case_dir/host.stderr.log" &
+  host_pid=$!
+  local window_id
+  window_id=$(focus_named_host_window chichi77-keykey-gtk4-e2e \
+    "$host_pid" "$case_id")
+  xdotool mousemove --window "$window_id" 240 75 click 1
+  activate_engine_for_focused_app chichi77-keykey-bopomofo "$case_id"
+  xdotool key --delay "$key_delay_ms" s u 3 c l 3
+  for _ in {1..50}; do
+    if grep -Fq '"type":"preedit","value":"你好"' \
+      "$case_dir/events.jsonl" 2>/dev/null; then
+      break
+    fi
+    sleep 0.1
+  done
+  grep -Fq '"type":"preedit","value":"你好"' "$case_dir/events.jsonl"
+  if grep -Fq '"type":"text","value":"你好"' "$case_dir/events.jsonl"; then
+    echo "$case_id committed before moving the window." >&2
+    return 1
+  fi
+
+  # Clicking the GTK header bar can blur its editor even when the top-level
+  # window remains active. Move it while the mouse button is held, as a user
+  # would, then switch engines to catch a second commit from stale IME state.
+  xdotool mousemove --window "$window_id" 240 18 mousedown 1
+  xdotool windowmove "$window_id" 120 120
+  xdotool mouseup 1
+  sleep 0.3
+  xmessage -center -buttons OK:0 'KeyKey focus target' \
+    >"$case_dir/focus-target.log" 2>&1 &
+  local other_pid=$! other_window=
+  for _ in {1..50}; do
+    other_window=$(xdotool search --onlyvisible \
+      --name '^xmessage$' 2>/dev/null | head -n 1 || true)
+    if [[ -n "$other_window" ]]; then
+      break
+    fi
+    sleep 0.1
+  done
+  if [[ -z "$other_window" ]]; then
+    echo "$case_id could not open the focus target." >&2
+    return 1
+  fi
+  xdotool windowfocus --sync "$other_window"
+  sleep 0.3
+  if ! grep -Fq '"type":"focus","value":"out"' \
+      "$case_dir/events.jsonl" ||
+      ! grep -Fq '"type":"text","value":"你好"' \
+        "$case_dir/events.jsonl"; then
+    echo "$case_id did not commit preedit when the GTK editor lost focus." >&2
+    return 1
+  fi
+  if grep -Fq '"type":"text","value":"你好你好"' \
+      "$case_dir/events.jsonl"; then
+    echo "$case_id committed the same preedit twice on focus-out." >&2
+    return 1
+  fi
+  fcitx5-remote -s keyboard-us
+  sleep 0.3
+  touch "$case_dir/close-now"
+  wait "$host_pid"
+  host_pid=
+  kill "$other_pid" 2>/dev/null || true
+  if ! grep -Fxq '你好' "$case_dir/final.txt"; then
+    echo "$case_id expected exactly one 你好 after moving the window." >&2
+    cat "$case_dir/final.txt" >&2
+    return 1
+  fi
+  python3 - "$case_id" >"$case_dir/result.json" <<'PYJSON'
+import json
+import sys
+print(json.dumps({"test": sys.argv[1], "status": "passed"}, ensure_ascii=False))
+PYJSON
+  unset KEYKEY_E2E_SCENARIO
+}
+
 run_gtk4_focus_case() {
   KEYKEY_E2E_HOST=$KEYKEY_E2E_GTK4_HOST
   e2e_host_window_title=chichi77-keykey-gtk4-e2e
@@ -1772,6 +1863,27 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART; then
   set_bopomofo_mode Smart
   run_case T01-X11-GTK3-BOPOMOFO-SMART chichi77-keykey-bopomofo \
     你好 'su3cl3' 'ㄋ,ㄋㄧ,你,你ㄏ,你好' s u 3 c l 3 Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK4-BOPOMOFO-SMART; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_gtk4_case T01-X11-GTK4-BOPOMOFO-SMART chichi77-keykey-bopomofo \
+    你好 'su3cl3' 'ㄋ,ㄋㄧ,你,你ㄏ,你好' s u 3 c l 3 Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK4-BOPOMOFO-SMART-SWITCH; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_gtk4_case T01-X11-GTK4-BOPOMOFO-SMART-SWITCH \
+    chichi77-keykey-bopomofo 你好 'su3cl3' \
+    'ㄋ,ㄋㄧ,你,你ㄏ,你好' s u 3 c l 3 switch-keyboard-us
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK4-BOPOMOFO-SMART-WINDOW-MOVE; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_gtk4_smart_window_move_case
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW; then

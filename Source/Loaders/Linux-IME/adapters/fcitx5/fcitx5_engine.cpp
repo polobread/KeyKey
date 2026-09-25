@@ -888,6 +888,15 @@ bool FcitxState::selectSmartCharacter(std::size_t preeditCharacterIndex) {
 }
 
 void FcitxState::commitAndReset() {
+    if (!inputContext_->hasFocus() &&
+        inputContext_->capabilityFlags().test(
+            fcitx::CapabilityFlag::ClientUnfocusCommit)) {
+        // GTK/Qt frontends with this capability commit the visible client
+        // preedit before reporting focus-out. Committing the engine buffer
+        // again here would duplicate the composition in the document.
+        reset();
+        return;
+    }
     if (activeEngine_ != nullptr) {
         const linux_ime::EngineResult result =
             activeEngine_->finishComposition(context_);
@@ -919,7 +928,7 @@ void FcitxState::updateUi(const linux_ime::EngineResult &result) {
     panel.reset();
 
     if (!result.preedit.empty()) {
-        fcitx::Text preedit(result.preedit, fcitx::TextFormatFlag::HighLight);
+        fcitx::Text preedit(result.preedit, fcitx::TextFormatFlag::Underline);
         preedit.setCursor(static_cast<int>(result.preeditCursorBytes));
         if (inputContext_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit)) {
             panel.setClientPreedit(preedit);
