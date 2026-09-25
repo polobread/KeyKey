@@ -1471,7 +1471,7 @@ void testSmartMandarinModelVersion() {
     const int bigrams = sqlite3_column_int(statement, 1);
     sqlite3_finalize(statement);
     sqlite3_close(database);
-    require(unigrams == 114235 && bigrams == 885614,
+    require(unigrams == 114235 && bigrams == 885627,
             "Smart Mandarin model version does not match macOS");
 }
 
@@ -1483,7 +1483,7 @@ void testSmartMandarinComposition() {
          std::vector<std::pair<std::string, std::string>>{
              {"L_", "不"}, {"ac", "列"}, {"8_", "密"}, {"@j", "印"},
              {"Qd", "代"}, {"IJ", "環"}, {"1_", "日"}, {"\\O", "你"},
-             {"Dd", "血"}}) {
+             {"Dd", "血"}, {"6C", "和"}, {"{h", "漢"}}) {
         keykey::linux_ime::SmartComposition composition;
         require(store->compose({query}, {}, composition) &&
                     composition.text == expected,
@@ -1496,6 +1496,45 @@ void testSmartMandarinComposition() {
     require(store->compose({"ac", "Dk", "n_"}, {}, phrase) &&
                 phrase.text == "列上去",
             "Smart Mandarin did not compose 列上去");
+    std::vector<std::string> longReadings;
+    for (const std::string &syllable :
+         {"ㄑㄧㄥˇ", "ㄐㄧㄚˋ", "ㄧㄠˋ", "ㄑㄩˋ", "ㄋㄚˇ", "ㄌㄧˇ",
+          "ㄨㄢˊ", "ㄋㄜ˙", "ㄑㄩˋ", "ㄏㄞˇ", "ㄅㄧㄢ"}) {
+        longReadings.push_back(
+            keykey::linux_ime::SmartMandarinUserData::readingToQuery(syllable));
+    }
+    keykey::linux_ime::SmartComposition longSentence;
+    require(store->compose(longReadings, {}, longSentence) &&
+                longSentence.text == "請假要去哪裡玩呢去海邊",
+            "Smart Mandarin did not compose 請假要去哪裡玩呢去海邊");
+    sqlite3 *auditDatabase = nullptr;
+    require(sqlite3_open_v2(KEYKEY_TEST_SMART_DB, &auditDatabase,
+                            SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK,
+            "First-syllable audit database did not open");
+    sqlite3_stmt *auditStatement = nullptr;
+    require(sqlite3_prepare_v2(
+                auditDatabase,
+                "SELECT DISTINCT qstring FROM unigrams "
+                "WHERE length(qstring) = 2 AND length(current) = 1 ORDER BY qstring",
+                -1, &auditStatement, nullptr) == SQLITE_OK,
+            "First-syllable audit query did not prepare");
+    int auditedReadings = 0;
+    while (sqlite3_step(auditStatement) == SQLITE_ROW) {
+        const char *rawQuery = reinterpret_cast<const char *>(
+            sqlite3_column_text(auditStatement, 0));
+        const std::string query = rawQuery ? rawQuery : "";
+        keykey::linux_ime::SmartComposition single;
+        require(store->compose({query}, {}, single),
+                "Single-syllable composition failed");
+        const auto choices = store->candidates({query}, 0, single);
+        require(!choices.empty() && single.text == choices.front(),
+                "Single-syllable composition disagrees with first candidate");
+        ++auditedReadings;
+    }
+    sqlite3_finalize(auditStatement);
+    sqlite3_close(auditDatabase);
+    require(auditedReadings == 1345,
+            "First-syllable audit did not cover every reading");
     Engine engine(loadRealBopomofoDictionary());
     engine.setSmartMandarinStore(store);
     engine.setSmartMandarinMode(true);

@@ -13,9 +13,9 @@ public protocol AssociatedPhraseSource {
 /// `Source/Loaders/Android-IME/.../BopomofoEngine.java` so the two touch
 /// keyboards behave identically.
 ///
-/// The state machine remains platform-neutral. The iOS loader mirrors
-/// `readingText` into the host's marked-text range and applies `Result.text` as
-/// the committed replacement.
+/// The state machine remains platform-neutral. The iOS loader mirrors a
+/// traditional reading into the host's marked-text range. For touch Smart
+/// Mandarin, it inserts completed text and keeps only the editable tail.
 public final class BopomofoEngine {
     public static let candidatesPerPage = 9
     public static let touchSmartEditableLimit = 9
@@ -34,6 +34,9 @@ public final class BopomofoEngine {
         static let update = Result(text: "", deletesBackward: false, sendsReturn: false)
         static func commit(_ text: String) -> Result {
             Result(text: text, deletesBackward: false, sendsReturn: false)
+        }
+        static func commitAndReturn(_ text: String) -> Result {
+            Result(text: text, deletesBackward: false, sendsReturn: true)
         }
         static let delete = Result(text: "", deletesBackward: true, sendsReturn: false)
         static let returnKey = Result(text: "", deletesBackward: false, sendsReturn: true)
@@ -142,6 +145,10 @@ public final class BopomofoEngine {
         return (smartComposition?.text ?? "") + reading.displayText
     }
     public var hasComposition: Bool { !composingText.isEmpty }
+    public var completedSmartText: String { smartComposition?.text ?? "" }
+    public var isTouchSmartComposition: Bool {
+        compositionMode == .smart && mode == .bopomofo && !hardwareSmartEditing
+    }
     public var smartCompositionCursor: Int? {
         hardwareSmartEditing && compositionMode == .smart && !smartReadings.isEmpty
             ? smartCursor : nil
@@ -315,6 +322,9 @@ public final class BopomofoEngine {
         if compositionMode == .smart, mode == .bopomofo, hasComposition {
             if hardwareSmartEditing && showingSmartCandidates {
                 return selectHighlightedCandidate()
+            }
+            if !hardwareSmartEditing {
+                return .commitAndReturn(finishCompositionForModeSwitch().text)
             }
             if !reading.isEmpty {
                 let result = finishSmartReading()
@@ -540,27 +550,30 @@ public final class BopomofoEngine {
         smartCursor += 1
         reading.clear()
         rebuildSmartComposition()
-        if !hardwareSmartEditing && smartReadings.count > Self.touchSmartEditableLimit {
-            return evictFirstTouchSmartReading()
+        // The container App's hardware editor uses the same bounded walker as
+        // the touch keyboard: the leading whole segment becomes committed text.
+        if smartReadings.count > Self.touchSmartEditableLimit {
+            return evictFirstSmartSegment()
         }
         return .update
     }
 
-    private func evictFirstTouchSmartReading() -> Result {
+    private func evictFirstSmartSegment() -> Result {
         guard let first = smartComposition?.segments.first,
-              let character = first.text.first else { return .update }
-        let committed = String(character)
-        if let selection = smartOverrides[0], selection.length > 1 {
-            let remaining = String(selection.text.dropFirst())
-            shiftSmartOverrides(afterRemoving: 0)
-            smartOverrides[0] = SmartMandarinSelection(
-                length: selection.length - 1, text: remaining
-            )
-        } else {
-            shiftSmartOverrides(afterRemoving: 0)
+              first.length > 0, !first.text.isEmpty else { return .update }
+        // The desktop walker keeps the next node's chosen text when it shifts
+        // away the head. Preserve that boundary here, before recomposing with
+        // less left-hand context.
+        let next = smartComposition?.segments.dropFirst().first
+        let committed = first.text
+        smartReadings.removeFirst(first.length)
+        smartOverrides = Dictionary(uniqueKeysWithValues: smartOverrides.compactMap { start, selection in
+            start >= first.length ? (start - first.length, selection) : nil
+        })
+        if let next {
+            smartOverrides[0] = SmartMandarinSelection(length: next.length, text: next.text)
         }
-        smartReadings.removeFirst()
-        smartCursor = max(0, smartCursor - 1)
+        smartCursor = max(0, smartCursor - first.length)
         rebuildSmartComposition()
         return .commit(committed)
     }
@@ -629,17 +642,29 @@ public final class BopomofoEngine {
         return text.isEmpty ? .update : .commit(text)
     }
 
+    /// Send the keyboard-local text to the current document before UIKit
+    /// replaces or dismisses this input view. The second call is harmless.
+    @discardableResult
+    public func finishCompositionForInputHandoff() -> Result {
+        guard isTouchSmartComposition, hasComposition else { return .update }
+        return finishCompositionForModeSwitch()
+    }
+
     private func finishCompositionForModeSwitch() -> Result {
         guard compositionMode == .smart, mode == .bopomofo, hasComposition else {
             clearComposition()
             return .update
         }
-        if !reading.isEmpty { _ = finishSmartReading() }
-        if reading.isEmpty { return commitSmartComposition() }
+        let evictedText = reading.isEmpty ? "" : finishSmartReading().text
+        if reading.isEmpty {
+            let committed = commitSmartComposition().text
+            return evictedText.isEmpty && committed.isEmpty
+                ? .update : .commit(evictedText + committed)
+        }
 
         // An unfinished syllable may have no language-model match. Keep the
         // visible reading after the converted text instead of losing it.
-        let text = (smartComposition?.text ?? "") + reading.displayText
+        let text = evictedText + (smartComposition?.text ?? "") + reading.displayText
         if let smartComposition {
             smartSource?.learnConfirmedComposition(smartComposition)
         }

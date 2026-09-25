@@ -6,9 +6,10 @@ Android 原生繁體中文注音輸入法，使用 KeyKey 共用的
 `Source/DataTables/bpmf-ext.cin` 字表。建置時會自動把字表與關聯詞詞庫加入 APK，
 不需要手動複製。
 
-設定頁可選「好打注音」或「傳統注音」，新安裝預設好打注音。好打注音把完成的音節
-保留在 marked text，以 APK 內的 `KeyKey.db` Bigram 模型持續重排整句；Enter 確定整句，
-候選選取只修正最後一個音節。傳統注音保留原本逐字選字與關聯詞流程。
+設定頁可選「好打注音」或「傳統注音」，新安裝預設好打注音。觸控好打注音將已完成的
+中文字即時寫入 App，並保留最近九個音節供句中選字及退格修正；更早的詞段留在 App。
+組句使用 APK 內的 `KeyKey.db` Bigram 模型。外接實體鍵盤保留句中游標組字，傳統注音
+保留逐字選字與關聯詞流程。
 
 設定頁的「管理好打注音自訂詞」可新增、編輯、刪除詞句，並匯入／匯出 macOS
 `MJSR version 1.0.0` 檔案的自訂詞段落。輸入每字一組注音，例如 `ㄋㄧˇ ㄏㄠˇ`，
@@ -86,9 +87,9 @@ Backspace 在注音組字期間逐一刪除聲調、韻母、介音與聲母，�
 逐步加快但最多約每 70 毫秒一次，放開或中斷輸入時立即停止。
 
 組字或候選開啟期間，若使用者以觸控、滑鼠或 App 改變游標位置或選取範圍，IME 會
-結束目前的 composing 狀態並清除引擎內的讀音／候選，避免下一個按鍵沿用舊位置；
-editor 已顯示的注音文字會留在原處並結束底線組字。輸入法自己更新 composing text
-或確定候選所造成的 selection callback 會被辨識，不會誤清剛建立的候選或關聯詞。
+結束目前組字並清除引擎內的讀音／候選，避免下一個按鍵沿用舊位置。觸控好打注音
+已寫入 App 的中文字會保留；實體鍵盤與傳統注音的 composing text 則會確認。
+輸入法自己更新文字或確定候選所造成的 selection callback 會被辨識，不會誤清候選。
 
 ## 欄位模式與 Enter
 
@@ -106,7 +107,8 @@ App 自己驗證。
 
 App 若為軟鍵盤指定 `IME_ACTION_DONE`、`NEXT`、`SEARCH`、`SEND`、`GO` 或
 `PREVIOUS`，直式與橫式 Enter 會分別顯示「完成、下一個、搜尋、傳送、前往、上一個」，
-並呼叫對應 editor action。App 也可用 `EditorInfo.actionLabel`／`actionId` 提供自訂
+並呼叫對應 editor action。好打注音仍有組字時，第一次按鍵就會確認文字並執行動作。
+App 也可用 `EditorInfo.actionLabel`／`actionId` 提供自訂
 Enter 文字與 action；過長的標籤會自動縮小。App 拒絕 action 時會安全退回一般 Enter。
 USB／藍牙實體鍵盤的 Enter 永遠維持 Enter key event，不會被改成軟鍵盤 action。
 
@@ -163,7 +165,7 @@ cd Source\Loaders\Android-IME
 載入，不阻塞虛擬鍵盤顯示。原始文字檔仍是唯一資料來源，不能手動修改 generated 索引。
 分類詞庫由自動化方式生成、推論與整理，沒有逐筆人工校正，也不保證正確性或完整性。
 建置也會把 `Source/Distributions/Takao/CookedDatabase/KeyKey.db` 複製為好打注音的唯讀
-語言模型資產，建置時驗證其 Bigram 恰為 885,614 筆且 SQLite 完整性正常；首次載入
+語言模型資產，建置時驗證其 Bigram 恰為 885,627 筆且 SQLite 完整性正常；首次載入
 輸入法時安裝到 App 的 no-backup 目錄，後續以 SQLite 懶查詢。
 
 APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。

@@ -62,6 +62,7 @@ public final class BopomofoImeService extends InputMethodService
     private int selectionMutationGeneration;
     private boolean awaitingOwnSelectionUpdate;
     private String appliedComposingText = "";
+    private final TouchSmartHostTextState touchHostText = new TouchSmartHostTextState();
     private int composingRegionStart = -1;
     private int expectedSmartSelection = -1;
 
@@ -144,6 +145,7 @@ public final class BopomofoImeService extends InputMethodService
             if (!restarting) {
                 engine.reset();
                 appliedComposingText = "";
+                touchHostText.reset();
                 composingRegionStart = -1;
                 expectedSmartSelection = -1;
             }
@@ -176,6 +178,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onFinishInput() {
         stopHardwareBackspace();
+        commitPendingTouchSmartComposition();
         if (engine != null) engine.reset();
         pressedHardwareShortcutKeys.clear();
         pressedCandidateKeys.clear();
@@ -184,6 +187,7 @@ public final class BopomofoImeService extends InputMethodService
         lastSelectionStart = -1;
         lastSelectionEnd = -1;
         appliedComposingText = "";
+        touchHostText.reset();
         composingRegionStart = -1;
         expectedSmartSelection = -1;
         fieldPolicyUnlocked = false;
@@ -193,10 +197,23 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     @Override
+    public void onFinishInputView(boolean finishingInput) {
+        commitPendingTouchSmartComposition();
+        super.onFinishInputView(finishingInput);
+    }
+
+    @Override
     public void onWindowHidden() {
         stopHardwareBackspace();
+        commitPendingTouchSmartComposition();
         hideFloatingCandidates();
         super.onWindowHidden();
+    }
+
+    private void commitPendingTouchSmartComposition() {
+        if (engine == null || !engine.isTouchSmartComposition() || !engine.hasComposition()
+                || getCurrentInputConnection() == null) return;
+        apply(engine.finishCompositionForInputHandoff());
     }
 
     @Override
@@ -268,8 +285,10 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
 
+        commitPendingTouchSmartComposition();
         engine.reset();
         appliedComposingText = "";
+        touchHostText.reset();
         composingRegionStart = -1;
         expectedSmartSelection = -1;
         InputConnection connection = getCurrentInputConnection();
@@ -546,6 +565,11 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
 
+        if (engine.isTouchSmartComposition() || !touchHostText.editableText().isEmpty()) {
+            applyTouchSmart(connection, result, softEnter);
+            return;
+        }
+
         String nextReading = engine.composingText();
         boolean committedText = !result.committedText().isEmpty();
         boolean updateComposingText = !nextReading.isEmpty()
@@ -603,6 +627,50 @@ public final class BopomofoImeService extends InputMethodService
                 expectedSmartSelection = position;
                 if (!connection.setSelection(position, position)) expectedSmartSelection = -1;
             }
+        }
+
+        if (result.sendEnter()) {
+            boolean performedAction = softEnter && fieldPolicy.hasEditorAction()
+                    && connection.performEditorAction(fieldPolicy.editorAction());
+            if (!performedAction) {
+                connection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+                connection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+            }
+        }
+        refreshKeyboard();
+    }
+
+    private void applyTouchSmart(InputConnection connection, BopomofoEngine.Result result,
+                                 boolean softEnter) {
+        TouchSmartHostTextState.Edit edit;
+        if (engine.isTouchSmartComposition() && engine.hasComposition()) {
+            edit = touchHostText.update(engine.completedSmartText(), result.committedText());
+        } else if (engine.isTouchSmartComposition() && result.committedText().isEmpty()
+                && !result.deleteBeforeCursor() && !result.sendEnter()) {
+            edit = touchHostText.cancel();
+        } else {
+            edit = touchHostText.finish(result.committedText());
+        }
+
+        boolean changesSelection = !edit.isEmpty() || result.deleteBeforeCursor()
+                || result.sendEnter();
+        if (changesSelection && (engine.hasComposition() || engine.pageCount() > 0)) {
+            expectOwnSelectionUpdate();
+        }
+        connection.beginBatchEdit();
+        try {
+            if (!appliedComposingText.isEmpty()) {
+                connection.commitText("", 1);
+                appliedComposingText = "";
+                composingRegionStart = -1;
+            }
+            if (edit.deleteCount() > 0) {
+                connection.deleteSurroundingText(edit.deleteCount(), 0);
+            }
+            if (!edit.insertion().isEmpty()) connection.commitText(edit.insertion(), 1);
+            if (result.deleteBeforeCursor()) deletePreviousGrapheme(connection);
+        } finally {
+            connection.endBatchEdit();
         }
 
         if (result.sendEnter()) {

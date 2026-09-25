@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 
 
-EXPECTED_BIGRAM_ROWS = 885_614
+EXPECTED_BIGRAM_ROWS = 885_627
+EXPECTED_SINGLE_SYLLABLE_READINGS = 1_345
 EXPECTED_SINGLE_SYLLABLES = {
     "L_": ("ㄅㄨˋ", "不"),
     "ac": ("ㄌㄧㄝˋ", "列"),
@@ -17,6 +18,8 @@ EXPECTED_SINGLE_SYLLABLES = {
     "1_": ("ㄖˋ", "日"),
     "\\O": ("ㄋㄧˇ", "你"),
     "Dd": ("ㄒㄩㄝˋ", "血"),
+    "6C": ("ㄏㄜˊ", "和"),
+    "{h": ("ㄏㄢˋ", "漢"),
 }
 
 
@@ -42,6 +45,27 @@ def main() -> int:
                 ).fetchone()
                 for query in EXPECTED_SINGLE_SYLLABLES
             }
+            # Audit every single-syllable reading, not only the hand-picked
+            # examples below. A first choice must exist in the phonetic table
+            # for the same reading; otherwise it cannot be selected reliably
+            # across the desktop and mobile implementations.
+            all_first_candidates = database.execute(
+                "SELECT qstring, current FROM ("
+                "SELECT qstring, current, ROW_NUMBER() OVER ("
+                "PARTITION BY qstring ORDER BY probability DESC, rowid"
+                ") AS rank FROM unigrams "
+                "WHERE length(qstring) = 2 AND length(current) = 1"
+                ") WHERE rank = 1"
+            ).fetchall()
+            missing_phonetic_entries = [
+                (query, candidate)
+                for query, candidate in all_first_candidates
+                if database.execute(
+                    'SELECT 1 FROM "Mandarin-bpmf-cin" '
+                    'WHERE key = ? AND value = ? LIMIT 1',
+                    (query, candidate),
+                ).fetchone() is None
+            ]
     except sqlite3.Error as error:
         print(f"Unable to verify Smart Mandarin database {path}: {error}", file=sys.stderr)
         return 1
@@ -65,7 +89,22 @@ def main() -> int:
             )
             return 1
 
-    print(f"Smart Mandarin database verified: {bigram_rows} bigrams ({path})")
+    if (len(all_first_candidates) != EXPECTED_SINGLE_SYLLABLE_READINGS
+            or missing_phonetic_entries):
+        print(
+            f"Smart Mandarin single-syllable audit: "
+            f"{len(all_first_candidates)} readings, "
+            f"{len(missing_phonetic_entries)} first choices missing from CIN; "
+            f"expected {EXPECTED_SINGLE_SYLLABLE_READINGS} readings; "
+            f"examples: {missing_phonetic_entries[:5]}",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        f"Smart Mandarin database verified: {bigram_rows} bigrams, "
+        f"{len(all_first_candidates)} first syllables ({path})"
+    )
     return 0
 
 

@@ -55,6 +55,7 @@ final class BopomofoEngine {
 
         static Result update() { return new Result("", false, false, false); }
         static Result commit(String text) { return new Result(text, false, false, false); }
+        static Result commitAndEnter(String text) { return new Result(text, false, true, false); }
         static Result delete() { return new Result("", true, false, false); }
         static Result enter() { return new Result("", false, true, false); }
         static Result discardComposition() { return new Result("", false, false, true); }
@@ -232,6 +233,9 @@ final class BopomofoEngine {
                 && inputMode == InputMode.BOPOMOFO && hasComposition()) {
             if (hardwareSmartEditing && showingSmartCandidates) {
                 return selectHighlightedCandidate();
+            }
+            if (!hardwareSmartEditing) {
+                return Result.commitAndEnter(finishCompositionForModeSwitch().committedText());
             }
             if (!reading.isEmpty()) {
                 Result result = finishSmartReading();
@@ -444,8 +448,17 @@ final class BopomofoEngine {
                 + reading.displayText();
     }
 
+    String completedSmartText() {
+        return smartComposition == null ? "" : smartComposition.text();
+    }
+
     boolean hasComposition() {
         return !composingText().isEmpty();
+    }
+
+    boolean isTouchSmartComposition() {
+        return compositionMode == BopomofoCompositionMode.SMART
+                && inputMode == InputMode.BOPOMOFO && !hardwareSmartEditing;
     }
 
     BopomofoCompositionMode compositionMode() {
@@ -599,28 +612,35 @@ final class BopomofoEngine {
         reading.clear();
         rebuildSmartComposition();
         if (!hardwareSmartEditing && smartReadings.size() > TOUCH_SMART_EDITABLE_LIMIT) {
-            return evictFirstTouchSmartReading();
+            return evictFirstTouchSmartSegment();
         }
         return Result.update();
     }
 
-    private Result evictFirstTouchSmartReading() {
+    private Result evictFirstTouchSmartSegment() {
         if (smartComposition == null || smartComposition.segments().isEmpty()) {
             return Result.update();
         }
         SmartMandarinSegment first = smartComposition.segments().get(0);
-        if (first.text().isEmpty()) return Result.update();
-        int firstLength = Character.charCount(first.text().codePointAt(0));
-        String committed = first.text().substring(0, firstLength);
-        SmartMandarinSelection selection = smartOverrides.get(0);
-        shiftSmartOverridesAfterRemoving(0);
-        if (selection != null && selection.length() > 1) {
-            smartOverrides.put(0, new SmartMandarinSelection(selection.length() - 1,
-                    selection.text().substring(Character.charCount(
-                            selection.text().codePointAt(0)))));
+        if (first.length() <= 0 || first.text().isEmpty()) return Result.update();
+        // Match the desktop walker: retain the following node's chosen text
+        // when its preceding context leaves the editable window.
+        SmartMandarinSegment next = smartComposition.segments().size() > 1
+                ? smartComposition.segments().get(1) : null;
+        String committed = first.text();
+        smartReadings.subList(0, first.length()).clear();
+        Map<Integer, SmartMandarinSelection> shifted = new HashMap<>();
+        for (Map.Entry<Integer, SmartMandarinSelection> entry : smartOverrides.entrySet()) {
+            if (entry.getKey() >= first.length()) {
+                shifted.put(entry.getKey() - first.length(), entry.getValue());
+            }
         }
-        smartReadings.remove(0);
-        smartCursor = Math.max(0, smartCursor - 1);
+        smartOverrides.clear();
+        smartOverrides.putAll(shifted);
+        if (next != null) {
+            smartOverrides.put(0, new SmartMandarinSelection(next.length(), next.text()));
+        }
+        smartCursor = Math.max(0, smartCursor - first.length());
         rebuildSmartComposition();
         return Result.commit(committed);
     }
@@ -690,17 +710,26 @@ final class BopomofoEngine {
     Result finishCompositionForModeSwitch() {
         if (compositionMode == BopomofoCompositionMode.SMART
                 && inputMode == InputMode.BOPOMOFO && hasComposition()) {
-            if (!reading.isEmpty()) finishSmartReading();
-            if (reading.isEmpty()) return commitSmartComposition();
+            String evictedText = reading.isEmpty() ? "" : finishSmartReading().committedText();
+            if (reading.isEmpty()) {
+                String committed = commitSmartComposition().committedText();
+                return evictedText.isEmpty() && committed.isEmpty()
+                        ? Result.update() : Result.commit(evictedText + committed);
+            }
 
             // Preserve an unfinished syllable if the language model cannot convert it.
             String prefix = smartComposition == null ? "" : smartComposition.text();
-            String text = prefix + reading.displayText();
+            String text = evictedText + prefix + reading.displayText();
             if (smartComposition != null) smartSource.learnConfirmedComposition(smartComposition);
             clearComposition();
             return Result.commit(text);
         }
         return clearComposition() ? Result.discardComposition() : Result.update();
+    }
+
+    Result finishCompositionForInputHandoff() {
+        if (!isTouchSmartComposition() || !hasComposition()) return Result.update();
+        return finishCompositionForModeSwitch();
     }
 
     private String commitFirstCandidateIfNeeded() {

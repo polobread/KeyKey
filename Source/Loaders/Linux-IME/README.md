@@ -30,7 +30,7 @@ The initial vertical slice provides:
   Space open candidates at the cursor. Left/Right/Home/End move within the
   composition, and Backspace/Delete edit readings there; the model is built from the
   repository's source lexicons and corpora during package creation. The current
-  2,300-article corpus produces 114,235 unigrams and 885,614 bigrams, matching
+  2,300-article corpus produces 114,235 unigrams and 885,627 bigrams, matching
   the macOS model. Existing
   configurations without a mode choice also use 好打注音;
 - 好打注音 stores custom phrases and learned candidate choices in

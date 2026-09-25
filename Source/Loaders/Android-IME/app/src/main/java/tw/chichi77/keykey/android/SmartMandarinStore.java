@@ -18,11 +18,12 @@ import java.util.Set;
 /** Lazy, read-only Viterbi walker over the same language model used by macOS and iOS. */
 final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     private static final String ASSET_NAME = "KeyKey.db";
-    private static final String INSTALLED_NAME = "KeyKey-smart-reading-v2.db";
+    private static final String INSTALLED_NAME = "KeyKey-smart-reading-v3.db";
     private static final String[] PREVIOUS_INSTALLED_NAMES = {
-            "KeyKey-smart-885614.db", "KeyKey-smart-1.2.10.db"
+            "KeyKey-smart-885614.db", "KeyKey-smart-1.2.10.db",
+            "KeyKey-smart-reading-v2.db"
     };
-    private static final long EXPECTED_BIGRAM_ROWS = 885_614;
+    private static final long EXPECTED_BIGRAM_ROWS = 885_627;
     private static final int MAXIMUM_SPAN = 8;
 
     private record Unigram(String text, double probability, double backoff) {}
@@ -59,7 +60,7 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                 databaseFile.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
         try (Cursor cursor = database.rawQuery("SELECT COUNT(*) FROM bigrams", null)) {
             if (!cursor.moveToFirst() || cursor.getLong(0) != EXPECTED_BIGRAM_ROWS) {
-                throw new IOException("The bundled Smart Mandarin database must have 885614 bigrams");
+                throw new IOException("The bundled Smart Mandarin database must have 885627 bigrams");
             }
         } catch (IOException | RuntimeException error) {
             database.close();
@@ -165,7 +166,9 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
         Path best = null;
         double bestScore = Double.NEGATIVE_INFINITY;
         for (Path path : paths.get(readings.size()).values()) {
-            double score = finalScore(path);
+            // The desktop walker does not let the end marker replace the
+            // first candidate of an isolated syllable.
+            double score = readings.size() == 1 ? path.score() : finalScore(path);
             if (score > bestScore) {
                 best = path;
                 bestScore = score;

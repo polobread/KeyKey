@@ -1377,7 +1377,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     @objc private func showHelp() {
         let smartHelp = engine?.bopomofoCompositionMode == .smart
-            ? "好打注音：連續輸入注音；←／→ 移動組字游標，Space／↓ 開啟游標處的字詞候選，開啟後 ↑／↓ 與 1–9 選字詞；Enter 確定整句。\n"
+            ? "好打注音：連續輸入注音；滿九個音節後，下一個音節會擠出最前面的完整詞組。←／→ 移動組字游標，Space／↓ 開啟游標處的字詞候選，開啟後 ↑／↓ 與 1–9 選字詞；Enter 確定整句。\n"
             : ""
         let message = """
         \(smartHelp)

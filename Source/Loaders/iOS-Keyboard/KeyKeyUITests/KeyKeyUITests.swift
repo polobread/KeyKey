@@ -626,6 +626,45 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertEqual(mode.frame.height, stableModeFrame.height, accuracy: 1)
     }
 
+    func testTouchSmartHandoffCommitsTextWhenChangingKeyboard() throws {
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        output.tap()
+        guard selectKeyKeyKeyboard() else {
+            throw XCTSkip(keyboardActivationFailureMessage)
+        }
+        try selectCompositionMode("好打注音")
+
+        for syllable in ["fu/3", "ru84", "ul4", "fm4", "s83",
+                         "xu3", "j06", "sk7", "fm4", "c93"] {
+            for key in syllable {
+                let button = app.buttons[String(key)]
+                XCTAssertTrue(button.exists, "找不到注音鍵 \(key)")
+                button.tap()
+            }
+        }
+        XCTAssertTrue(waitForLayout {
+            (output.value as? String) == "請假要去哪裡玩呢去海"
+        })
+        XCTAssertTrue(app.staticTexts["keyboard.status"].exists)
+
+        app.buttons["BACKSPACE"].tap()
+        XCTAssertTrue(waitForLayout {
+            (output.value as? String) == "請假要去哪裡玩呢去"
+        })
+        for key in "c93" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout {
+            (output.value as? String) == "請假要去哪裡玩呢去海"
+        })
+
+        let nextKeyboard = try XCTUnwrap(nextKeyboardButton())
+        nextKeyboard.tap()
+        XCTAssertTrue(waitForLayout(timeout: 5) {
+            (output.value as? String) == "請假要去哪裡玩呢去海"
+        })
+    }
+
     func testMultiCharacterAssociationsDoNotResizeKeyboard() throws {
         launchHostApp()
         XCTAssertTrue(revealField("default"))

@@ -222,8 +222,12 @@ public final class SmartMandarinStore: SmartMandarinSource {
             }
         }
 
+        // For an isolated syllable, match the desktop walker's first choice:
+        // the end marker must not rerank the candidate shown to the user.
         guard let best = paths[readings.count].values.max(by: {
-            finalScore($0) < finalScore($1)
+            let first = readings.count == 1 ? $0.score : finalScore($0)
+            let second = readings.count == 1 ? $1.score : finalScore($1)
+            return first < second
         }) else { return nil }
         return SmartMandarinComposition(
             text: best.segments.map(\.text).joined(), segments: best.segments

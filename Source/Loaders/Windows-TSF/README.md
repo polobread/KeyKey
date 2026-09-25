@@ -105,7 +105,7 @@ Smart Mandarin first-syllable ranking check before packaging.
 
 To deploy a database cooked elsewhere instead, pass
 `-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.
-It must contain the 885,614-row Smart Mandarin bigram model and pass the
+It must contain the 885,627-row Smart Mandarin bigram model and pass the
 SQLite integrity check. CMake verifies both during the build.
 If an existing CMake build directory cached the old default database path,
 reconfigure with `cmake --fresh --preset windows-x64` (and likewise for x86)

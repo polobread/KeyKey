@@ -112,8 +112,8 @@ The impact report is written to `versioned-article-bigram-impact.json` and
 `.md`. Under identical vocabulary and bootstrap conditions, v3 adds 62,247
 distinct text pairs and 4.88 MiB to the minimal language-model database;
 v4 adds another 76,971 pairs and 6.08 MiB. The rebuilt full local
-`CookedDatabase/KeyKey.db` contains 885,614 bigram rows and 560,140 distinct
-text pairs, passes `PRAGMA integrity_check`, and occupies 64.01 MiB. An existing
+`CookedDatabase/KeyKey.db` contains 885,627 bigram rows and 560,144 distinct
+text pairs, passes `PRAGMA integrity_check`, and occupies 64.09 MiB. An existing
 installer package must be rebuilt separately to include that database.
 
 ## Number and unit phrases

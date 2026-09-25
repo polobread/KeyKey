@@ -4,10 +4,9 @@ import UIKit
 /// The extension's entry point. It owns the engine, renders through
 /// `KeyboardView`, and is the only place that touches the document.
 ///
-/// The controller keeps the Bopomofo reading as marked text in the host field.
-/// `UITextDocumentProxy` gained that API in iOS 13, so it is available for the
-/// project's iOS 17 baseline. The keyboard status line remains a fallback
-/// visual cue while candidates are shown.
+/// Touch Smart Mandarin mirrors completed characters as ordinary host text so
+/// the document keeps them if iOS dismisses the keyboard without a callback.
+/// Other Bopomofo modes use marked text in the host field.
 final class KeyboardViewController: UIInputViewController {
     private var engine: BopomofoEngine?
     private var loadFailure: String?
@@ -35,6 +34,7 @@ final class KeyboardViewController: UIInputViewController {
     private var markedReadingUpdateGeneration: UInt = 0
     private var activeDocumentIdentifier: UUID?
     private var hasMarkedText = false
+    private var touchHostText = TouchSmartHostTextState()
     private var fieldPolicy = InputFieldPolicy.default
     private var fieldPolicyUnlocked = false
     private var returnKeyPolicy = ReturnKeyPolicy(hint: .default)
@@ -53,6 +53,9 @@ final class KeyboardViewController: UIInputViewController {
         // key or there is no way to leave it.
         let keyboard = KeyboardView(needsInputModeSwitch: needsInputModeSwitchKey)
         keyboard.delegate = self
+        keyboard.inputModeSwitchButton?.addTarget(
+            self, action: #selector(commitBeforeInputModeSwitch), for: .touchDown
+        )
         keyboard.inputModeSwitchButton?.addTarget(
             self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents
         )
@@ -108,6 +111,7 @@ final class KeyboardViewController: UIInputViewController {
         if learningResetRequest.applyIfNeeded(to: smartUserData) {
             discardMarkedText()
             engine?.reset()
+            touchHostText.reset()
         }
         refresh()
     }
@@ -137,11 +141,31 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     override func viewWillDisappear(_ animated: Bool) {
+        commitPendingTouchSmartComposition()
         super.viewWillDisappear(animated)
         keyboardView?.cancelBackspaceRepeat()
         resetInputState()
         settingsPanel?.removeFromSuperview()
         settingsPanel = nil
+    }
+
+    override func textWillChange(_ textInput: UITextInput?) {
+        if !documentMutationGuard.isActive { commitPendingTouchSmartComposition() }
+        super.textWillChange(textInput)
+    }
+
+    override func selectionWillChange(_ textInput: UITextInput?) {
+        if !documentMutationGuard.isActive { commitPendingTouchSmartComposition() }
+        super.selectionWillChange(textInput)
+    }
+
+    @objc private func commitBeforeInputModeSwitch() {
+        commitPendingTouchSmartComposition()
+    }
+
+    private func commitPendingTouchSmartComposition() {
+        guard let engine, engine.isTouchSmartComposition, engine.hasComposition else { return }
+        apply(engine.finishCompositionForInputHandoff())
     }
 
     override func textDidChange(_ textInput: UITextInput?) {
@@ -337,11 +361,16 @@ final class KeyboardViewController: UIInputViewController {
     private func resetInputState(discardDocumentComposition: Bool = true) {
         if discardDocumentComposition { discardMarkedText() }
         engine?.reset()
+        touchHostText.reset()
         statusOverride = nil
         refresh()
     }
 
     private func apply(_ result: BopomofoEngine.Result) {
+        if engine?.isTouchSmartComposition == true || !touchHostText.editableText.isEmpty {
+            applyTouchSmart(result)
+            return
+        }
         if result.deletesBackward {
             discardMarkedText()
             mutateDocument { textDocumentProxy.deleteBackward() }
@@ -363,6 +392,30 @@ final class KeyboardViewController: UIInputViewController {
         } else if result.text.isEmpty, !result.deletesBackward {
             discardMarkedText()
         }
+        if result.sendsReturn { mutateDocument { textDocumentProxy.insertText("\n") } }
+        refresh()
+    }
+
+    private func applyTouchSmart(_ result: BopomofoEngine.Result) {
+        if hasMarkedText { discardMarkedText() }
+        let edit: TouchSmartHostTextState.Edit
+        if engine?.isTouchSmartComposition == true, engine?.hasComposition == true {
+            edit = touchHostText.update(
+                to: engine?.completedSmartText ?? "", evictedPrefix: result.text
+            )
+        } else if engine?.isTouchSmartComposition == true, result.text.isEmpty,
+                  !result.deletesBackward, !result.sendsReturn {
+            edit = touchHostText.cancel()
+        } else {
+            edit = touchHostText.finish(with: result.text)
+        }
+        if !edit.isEmpty {
+            mutateDocument {
+                for _ in 0..<edit.deleteCount { textDocumentProxy.deleteBackward() }
+                if !edit.insertion.isEmpty { textDocumentProxy.insertText(edit.insertion) }
+            }
+        }
+        if result.deletesBackward { mutateDocument { textDocumentProxy.deleteBackward() } }
         if result.sendsReturn { mutateDocument { textDocumentProxy.insertText("\n") } }
         refresh()
     }
@@ -489,6 +542,7 @@ extension KeyboardViewController: SettingsPanelDelegate {
             try smartUserData.resetLearning()
             discardMarkedText()
             engine?.reset()
+            touchHostText.reset()
             refresh()
             return true
         } catch {

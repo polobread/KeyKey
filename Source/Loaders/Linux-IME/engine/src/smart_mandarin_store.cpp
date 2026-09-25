@@ -218,6 +218,15 @@ bool SmartMandarinStore::compose(
     const Path *best = nullptr;
     for (const auto &state : paths.back()) {
         const Path &path = state.second;
+        // Match the desktop walker's first choice for an isolated syllable.
+        // The end marker must not rerank the visible candidate.
+        if (readings.size() == 1) {
+            if (path.score > bestScore) {
+                bestScore = path.score;
+                best = &path;
+            }
+            continue;
+        }
         const SmartSegment &last = path.segments.back();
         double ending = path.backoff;
         double observed = 0;

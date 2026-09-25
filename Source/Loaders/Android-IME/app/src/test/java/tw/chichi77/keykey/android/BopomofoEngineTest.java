@@ -448,13 +448,71 @@ public final class BopomofoEngineTest {
     }
 
     @Test
-    public void smartModeEnterCommitsTheWholeComposition() throws Exception {
+    public void smartModeEnterCommitsTheWholeCompositionAndSendsEnter() throws Exception {
         BopomofoEngine engine = smartEngine();
         type(engine, "su3cl3");
+        TouchSmartHostTextState hostText = new TouchSmartHostTextState();
+        hostText.update(engine.completedSmartText(), "");
 
         BopomofoEngine.Result result = engine.enter();
 
         assertEquals("你好", result.committedText());
+        assertTrue(result.sendEnter());
+        assertTrue(hostText.finish(result.committedText()).isEmpty());
+        assertFalse(engine.hasComposition());
+    }
+
+    @Test
+    public void touchSmartEnterKeepsUnfinishedReadingBeforeSendingEnter() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3s");
+
+        BopomofoEngine.Result result = engine.handleSoftKey("ENTER");
+
+        assertEquals("你好ㄋ", result.committedText());
+        assertTrue(result.sendEnter());
+        assertFalse(engine.hasComposition());
+    }
+
+    @Test
+    public void touchSmartEnterKeepsPrefixEvictedWhileFinishingLastReading() throws Exception {
+        BopomofoReading tonedReading = new BopomofoReading();
+        for (char key : "su3".toCharArray()) tonedReading.combine(key);
+        String toned = tonedReading.languageModelKey();
+        BopomofoReading untunedReading = new BopomofoReading();
+        for (char key : "su".toCharArray()) untunedReading.combine(key);
+        String untuned = untunedReading.languageModelKey();
+        SmartMandarinSource source = new SmartMandarinSource() {
+            @Override
+            public SmartMandarinComposition compose(List<String> readings,
+                                                     Map<Integer, String> overrides) {
+                java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
+                StringBuilder text = new StringBuilder();
+                for (int index = 0; index < readings.size(); index++) {
+                    String query = readings.get(index);
+                    if (!query.equals(toned) && !query.equals(untuned)) return null;
+                    String value = overrides.getOrDefault(index,
+                            query.equals(toned) ? "你" : "尼");
+                    segments.add(new SmartMandarinSegment(index, 1, query, value));
+                    text.append(value);
+                }
+                return new SmartMandarinComposition(text.toString(), List.copyOf(segments));
+            }
+
+            @Override
+            public List<String> candidates(List<String> readings, int index,
+                                           SmartMandarinComposition composition) {
+                return List.of();
+            }
+        };
+        BopomofoEngine engine = new BopomofoEngine(CinDictionary.empty(), source,
+                BopomofoCompositionMode.SMART);
+        type(engine, "su3".repeat(9) + "su");
+
+        BopomofoEngine.Result result = engine.enter();
+
+        assertEquals("你".repeat(9) + "尼", result.committedText());
+        assertTrue(result.sendEnter());
         assertFalse(engine.hasComposition());
     }
 
@@ -573,6 +631,144 @@ public final class BopomofoEngineTest {
         assertEquals("你", overflow.committedText());
         assertEquals(9, engine.touchSmartEditableCount());
         assertEquals("妳", engine.touchSmartCells().get(1));
+    }
+
+    @Test
+    public void touchSmartKeepsQingJiaTogetherInLongSentence() throws Exception {
+        String[] keys = {"fu/3", "ru84", "ul4", "fm4", "s83", "xu3",
+                "j06", "sk7", "fm4", "c93", "1u0"};
+        String sentence = "請假要去哪裡玩呢去海邊";
+        java.util.HashMap<String, String> characters = new java.util.HashMap<>();
+        java.util.ArrayList<String> queries = new java.util.ArrayList<>();
+        for (int index = 0; index < keys.length; index++) {
+            BopomofoReading reading = new BopomofoReading();
+            for (char key : keys[index].toCharArray()) reading.combine(key);
+            String query = reading.languageModelKey();
+            queries.add(query);
+            characters.put(query, sentence.substring(index, index + 1));
+        }
+        SmartMandarinSource source = new SmartMandarinSource() {
+            @Override
+            public SmartMandarinComposition compose(List<String> readings,
+                                                     Map<Integer, String> overrides) {
+                java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
+                int index = 0;
+                if (readings.size() >= 2 && readings.get(0).equals(queries.get(0))
+                        && readings.get(1).equals(queries.get(1))) {
+                    segments.add(new SmartMandarinSegment(0, 2,
+                            readings.get(0) + readings.get(1), "請假"));
+                    index = 2;
+                }
+                for (; index < readings.size(); index++) {
+                    String character = characters.get(readings.get(index));
+                    if (character == null) return null;
+                    segments.add(new SmartMandarinSegment(index, 1,
+                            readings.get(index), character));
+                }
+                StringBuilder text = new StringBuilder();
+                for (SmartMandarinSegment segment : segments) text.append(segment.text());
+                return new SmartMandarinComposition(text.toString(), List.copyOf(segments));
+            }
+
+            @Override
+            public List<String> candidates(List<String> readings, int index,
+                                           SmartMandarinComposition composition) {
+                return List.of();
+            }
+        };
+        CinDictionary dictionary = CinDictionary.load(new ByteArrayInputStream(
+                "%chardef begin\n%chardef end\n".getBytes(StandardCharsets.UTF_8)));
+        BopomofoEngine engine = new BopomofoEngine(dictionary, source,
+                BopomofoCompositionMode.SMART);
+
+        StringBuilder committed = new StringBuilder();
+        for (int index = 0; index < keys.length; index++) {
+            BopomofoEngine.Result result = BopomofoEngine.Result.update();
+            for (char key : keys[index].toCharArray()) {
+                result = engine.handleSoftKey(String.valueOf(key));
+                committed.append(result.committedText());
+            }
+            if (index == keys.length - 1) {
+                result = engine.handleSoftKey("SPACE");
+                committed.append(result.committedText());
+            }
+            if (index < 9) assertEquals("", committed.toString());
+            assertEquals(sentence.substring(0, index + 1),
+                    committed + engine.composingText());
+            if (index == 9) {
+                assertEquals("請假", committed.toString());
+                assertEquals("要去哪裡玩呢去海", engine.composingText());
+            }
+        }
+        assertEquals("請假要去哪裡玩呢去海邊", committed + engine.composingText());
+
+        BopomofoEngine handoff = new BopomofoEngine(dictionary, source,
+                BopomofoCompositionMode.SMART);
+        StringBuilder alreadySent = new StringBuilder();
+        for (int index = 0; index < 10; index++) {
+            for (char key : keys[index].toCharArray()) {
+                alreadySent.append(handoff.handleSoftKey(String.valueOf(key)).committedText());
+            }
+        }
+        assertEquals("請假", alreadySent.toString());
+        assertEquals("要去哪裡玩呢去海", handoff.composingText());
+        String pending = handoff.finishCompositionForInputHandoff().committedText();
+        assertEquals("請假要去哪裡玩呢去海", alreadySent + pending);
+        assertEquals("", handoff.composingText());
+        assertEquals("", handoff.finishCompositionForInputHandoff().committedText());
+    }
+
+    @Test
+    public void touchSmartKeepsFollowingCharacterWhenContextLeaves() throws Exception {
+        BopomofoReading headReading = new BopomofoReading();
+        for (char key : "fu/3".toCharArray()) headReading.combine(key);
+        BopomofoReading followingReading = new BopomofoReading();
+        for (char key : "ru84".toCharArray()) followingReading.combine(key);
+        BopomofoReading fillerReading = new BopomofoReading();
+        for (char key : "su3".toCharArray()) fillerReading.combine(key);
+        String head = headReading.languageModelKey();
+        String following = followingReading.languageModelKey();
+        String filler = fillerReading.languageModelKey();
+        SmartMandarinSource source = new SmartMandarinSource() {
+            @Override
+            public SmartMandarinComposition compose(List<String> readings,
+                                                     Map<Integer, String> overrides) {
+                java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
+                for (int index = 0; index < readings.size(); index++) {
+                    String query = readings.get(index);
+                    String value;
+                    if (query.equals(head)) value = "請";
+                    else if (query.equals(following)) {
+                        value = index > 0 && readings.get(index - 1).equals(head) ? "假" : "價";
+                    } else if (query.equals(filler)) value = "你";
+                    else return null;
+                    segments.add(new SmartMandarinSegment(index, 1, query,
+                            overrides.getOrDefault(index, value)));
+                }
+                StringBuilder text = new StringBuilder();
+                for (SmartMandarinSegment segment : segments) text.append(segment.text());
+                return new SmartMandarinComposition(text.toString(), List.copyOf(segments));
+            }
+
+            @Override
+            public List<String> candidates(List<String> readings, int index,
+                                           SmartMandarinComposition composition) {
+                return List.of();
+            }
+        };
+        CinDictionary dictionary = CinDictionary.load(new ByteArrayInputStream(
+                "%chardef begin\n%chardef end\n".getBytes(StandardCharsets.UTF_8)));
+        BopomofoEngine engine = new BopomofoEngine(dictionary, source,
+                BopomofoCompositionMode.SMART);
+        type(engine, "fu/3ru84");
+        for (int index = 0; index < 7; index++) type(engine, "su3");
+        assertEquals("請假" + "你".repeat(7), engine.composingText());
+        BopomofoEngine.Result overflow = BopomofoEngine.Result.update();
+        for (char key : "su3".toCharArray()) {
+            overflow = engine.handleSoftKey(String.valueOf(key));
+        }
+        assertEquals("請", overflow.committedText());
+        assertEquals("假" + "你".repeat(8), engine.composingText());
     }
 
     @Test

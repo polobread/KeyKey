@@ -29,14 +29,17 @@
 | Linux | `Linux-IME` 的 C++ walker、Fcitx 5 adapter | Python cooker 產生 `smart-mandarin.db` |
 
 - macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 另有組句實作。改動 SmartMandarin 的詞頻、Bigram、backoff 或候選排序時，必須檢查五平台，不能只看同一份資料庫。
-- 目前 `v1.3.0` 模型有 **885,614 筆 Bigram**。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動語料或 cooker 後，更新驗證預期值與測試，避免只用 Bigram 筆數判斷新舊。
+- 目前 `v1.3.0` 模型有 **885,627 筆 Bigram**。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動語料或 cooker 後，更新驗證預期值與測試，避免只用 Bigram 筆數判斷新舊。
 - `Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py` 檢查共用 DB 完整性、筆數與首音節。iOS archive、Android asset、macOS App 和 Windows 打包目錄仍要各自確認；Linux 使用自己的資料庫與核心測試。
 - Android 的私有 DB 檔名是更新快取的版本邊界。換模型後若不變更檔名或加入內容校驗，已安裝使用者可能繼續讀舊庫。Windows 的 `keykey_database_deploy` 須在 DB 更新而 DLL 未重新連結時同步打包目錄。
 
 ## iOS／Android 好打注音螢幕鍵盤
 
 - 觸控版與實體鍵盤共用組字引擎，但操作契約不同。只調整螢幕鍵盤時，檢查 iOS 的 `KeyboardView.swift`、`KeyboardViewController.swift`、`BopomofoEngine.swift`，以及 Android 的 `BopomofoKeyboardView.java`、`BopomofoImeService.java`、`BopomofoEngine.java`；不要把觸控選字方式套到實體鍵盤游標。
-- 好打注音上方固定 11 個組字格，最多保留 9 個已完成、可點選修正的音節，餘格顯示尚未完成的注音；第 10 個音節完成時才送出最前一字。選字格只指定候選目標，不能改變後續輸入的插入游標；修正句中第三字後再打字，應接在句尾。
+- iOS 容器 App 的實體鍵盤編輯器也要在第十個好打注音音節完成時擠出最前面的完整詞段，例如「請假」兩字；剩下九個音節仍可移動組字游標並選字。`HardwareKeyboardEditorViewController` 會把引擎回傳的詞段插入已確認文字區。
+- 好打注音上方固定 11 個組字格，最多保留 9 個已完成、可點選修正的音節，餘格顯示尚未完成的注音；已組好的中文字即時寫入 App，第 10 個音節完成時把最前面的完整詞段移出可修改範圍，並固定下一詞段已顯示的選字，不能只移出詞段首字後重新組句。選字格只指定候選目標，不能改變後續輸入的插入游標；修正句中第三字後再打字，應接在句尾。
+- iOS 和 Android 觸控好打注音都將已組好的中文字直接寫入使用者 App，只有未完成的注音留在鍵盤組字列；切換 App 或輸入法時不能依賴宿主保存 marked/composing text。兩平台生命週期可能連續回呼，不能重複送字，也不能把舊欄位文字送到新欄位。實體鍵盤路徑仍保留原本組字方式。
+- 跨越 9／10 音節邊界時，已擠出的詞段留在 host 欄位，但從可替換尾段移除；後續句中選字與 Backspace 只能替換尾段，不能刪改已擠出的詞段。iOS 不要在同一按鍵依序 unmark 前段、再 mark 後段，實機文字宿主可能漏掉前段或重複後段。
 - 觸控候選窗開啟時覆蓋第一排注音按鍵並攔截該排觸控，收起後恢復按鍵。開關候選窗不得調整鍵盤列的大小或位置。傳統注音仍使用原有候選列與輸入行為。
 - 修改上述行為時，至少驗證 9／10 音節邊界、句中改字後繼續輸入、未完成注音時回頭選字、跨越邊界的多字詞、候選窗開關，以及傳統注音與實體鍵盤回歸。引擎測試不能代替 App／鍵盤 extension 建置或實機版面檢查。
 

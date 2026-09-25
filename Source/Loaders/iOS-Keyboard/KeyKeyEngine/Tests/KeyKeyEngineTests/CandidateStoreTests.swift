@@ -66,7 +66,7 @@ struct SmartMandarinStoreTests {
         let database = try Database(url: try cookedDatabaseURL())
         let rows = try database.prepare("SELECT COUNT(*) FROM bigrams")
             .firstColumnStrings([])
-        #expect((Int(rows.first ?? "") ?? 0) == 885_614)
+        #expect((Int(rows.first ?? "") ?? 0) == 885_627)
     }
 
     private func query(_ keys: String) -> String {
@@ -86,13 +86,97 @@ struct SmartMandarinStoreTests {
         #expect(composition.segments.map(\.text) == ["今天", "被", "強制", "升級", "到"])
     }
 
+    @Test("the leading word of a long sentence stays together at the touch boundary")
+    func longSentenceTouchBoundary() throws {
+        let database = try Database(url: try cookedDatabaseURL())
+        let store = try SmartMandarinStore(database: database)
+        let readings = ["0]", "J`", "tf", "n_", "OP", "]O", ">J", "R3", "n_", "wT", "I:"]
+        let composition = try #require(store.compose(
+            readings: Array(readings.prefix(10)), overrides: [:]
+        ))
+        #expect(composition.text == "請假要去哪裡玩呢去海")
+        #expect(composition.segments.first?.text == "請假")
+        let fullSentence = try #require(store.compose(readings: readings, overrides: [:]))
+        #expect(fullSentence.text == "請假要去哪裡玩呢去海邊")
+
+        let engine = BopomofoEngine(
+            dictionary: try CandidateStore(database: database),
+            smartSource: store, compositionMode: .smart
+        )
+        let keys = ["fu/3", "ru84", "ul4", "fm4", "s83", "xu3",
+                    "j06", "sk7", "fm4", "c93", "1u0"]
+        var committed = ""
+        for (index, syllable) in keys.enumerated() {
+            for key in syllable {
+                committed += engine.handleSoftKey(String(key)).text
+            }
+            if index < 9 { #expect(committed.isEmpty) }
+            if index == keys.count - 1 {
+                committed += engine.handleSoftKey("SPACE").text
+            }
+            if index == 9 {
+                #expect(committed == "請假")
+                #expect(engine.composingText == "要去哪裡玩呢去海")
+            }
+        }
+        #expect(committed + engine.composingText == "請假要去哪裡玩呢去海邊")
+
+        let handoff = BopomofoEngine(
+            dictionary: try CandidateStore(database: database),
+            smartSource: store, compositionMode: .smart
+        )
+        var alreadySent = ""
+        for syllable in keys.prefix(10) {
+            for key in syllable {
+                alreadySent += handoff.handleSoftKey(String(key)).text
+            }
+        }
+        #expect(alreadySent == "請假")
+        #expect(handoff.composingText == "要去哪裡玩呢去海")
+        let pending = handoff.finishCompositionForInputHandoff().text
+        #expect(alreadySent + pending == "請假要去哪裡玩呢去海")
+        #expect(handoff.composingText.isEmpty)
+        #expect(handoff.finishCompositionForInputHandoff().text.isEmpty)
+    }
+
+    @Test("hardware editor evicts the whole leading phrase at the same boundary as macOS")
+    func longSentenceHardwareBoundary() throws {
+        let database = try Database(url: try cookedDatabaseURL())
+        let engine = BopomofoEngine(
+            dictionary: try CandidateStore(database: database),
+            smartSource: try SmartMandarinStore(database: database),
+            compositionMode: .smart,
+            hardwareSmartEditing: true
+        )
+        let keys = ["fu/3", "ru84", "ul4", "fm4", "s83", "xu3",
+                    "j06", "sk7", "fm4", "c93", "1u0"]
+        var committed = ""
+        for (index, syllable) in keys.enumerated() {
+            for key in syllable {
+                committed += engine.handleHardwareCharacter(key).text
+            }
+            if index == keys.count - 1 {
+                committed += engine.space().text
+            }
+            if index == 9 {
+                #expect(committed == "請假")
+                #expect(engine.composingText == "要去哪裡玩呢去海")
+                #expect(engine.smartCompositionReadingCount == 8)
+            }
+        }
+        #expect(committed == "請假")
+        #expect(engine.composingText == "要去哪裡玩呢去海邊")
+        #expect(engine.smartCompositionReadingCount == 9)
+    }
+
     @Test("common first syllables outrank rare readings of frequent characters")
     func readingSpecificFirstSyllables() throws {
         let store = try SmartMandarinStore(database: Database(url: try cookedDatabaseURL()))
         for (keys, expected) in [
             ("1j4", "不"), ("xu,4", "列"), ("au4", "密"),
             ("up4", "印"), ("294", "代"), ("cj06", "環"),
-            ("b4", "日"), ("su3", "你"), ("vm,4", "血")
+            ("b4", "日"), ("su3", "你"), ("vm,4", "血"),
+            ("ck6", "和"), ("c04", "漢")
         ] {
             let reading = query(keys)
             #expect(store.compose(readings: [reading], overrides: [:])?.text == expected)
@@ -101,6 +185,22 @@ struct SmartMandarinStoreTests {
 
         let phrase = ["xu,4", "g;4", "fm4"].map(query)
         #expect(store.compose(readings: phrase, overrides: [:])?.text == "列上去")
+    }
+
+    @Test("every single-syllable composition agrees with its first candidate")
+    func allFirstSyllablesAgreeWithCandidates() throws {
+        let database = try Database(url: try cookedDatabaseURL())
+        let store = try SmartMandarinStore(database: database)
+        let readings = try database.prepare(
+            "SELECT DISTINCT qstring FROM unigrams "
+                + "WHERE length(qstring) = 2 AND length(current) = 1 ORDER BY qstring"
+        ).firstColumnStrings([])
+        #expect(readings.count == 1_345)
+        for reading in readings {
+            let composed = store.compose(readings: [reading], overrides: [:])?.text
+            let first = store.candidates(for: [reading], at: 0, composition: nil).first
+            #expect(composed == first, "reading \(reading)")
+        }
     }
 
     @Test("an explicit candidate override is preserved while the rest is reranked")
