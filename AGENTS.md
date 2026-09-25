@@ -8,7 +8,9 @@ Linux 好打注音的本機修正：第十個音節完成時送出最前方完�
 
 Linux 傳統注音接續檢查：切換時確認反白候選或保留原讀音，聯想詞不自動送出；補齊一般／排列專屬標點、橫排方向、候選翻頁、單一候選確認、Shift／CapsLock 字面輸入與符號 Big5 過濾。詳見 `Source/Loaders/Linux-IME/docs/traditional-mandarin-platform-review.md`；桌面與手機傳統模式的切換、選字鍵及 preedit 顯示仍有明列差異。另修正長按 Ctrl+反斜線時按住狀態被組字清理覆蓋、反覆切換中英的問題。修正包為 `fix6`，系統已安裝。
 
-好打注音的 GTK 4 組字先前使用反白格式，會呈現整段藍底；失焦時 GTK 客戶端已送出組字，Fcitx 引擎再送一次會讓內容加倍。`fix7` 改用底線格式，並依 `ClientUnfocusCommit` 能力避免失焦二次提交；主動切換輸入法的送字路徑保留。隔離 GTK 4 宿主與真實 GNOME Text Editor 的 X11 路徑已重現並驗證單次送字；GNOME 原生 Wayland 移窗仍待手動確認。`fix7` 套件已安裝，Fcitx 已重啟並載入新版元件。
+好打注音的 GTK 4 組字先前使用反白格式，會呈現整段藍底；失焦時 GTK 客戶端已送出組字，Fcitx 引擎再送一次會讓內容加倍。`fix7` 改用底線格式，並依 `ClientUnfocusCommit` 能力避免失焦二次提交；主動切換輸入法的送字路徑保留。隔離 GTK 4 宿主與真實 GNOME Text Editor 的 X11 路徑已重現並驗證單次送字；GNOME 原生 Wayland 移窗仍待手動確認。
+
+後續 Bigram 檢查的 `fix8` 已安裝：明確選字先重組、再從新詞段學習前詞；已學候選的組句分數上限改為 0；模型缺少或不足 885,627 筆 Bigram 時拒絕載入。Linux CTest、封裝後 CTest、套件完整性與四個隔離 X11／Fcitx 回歸（長句擠字、鍵盤選字、切換輸入法、GTK 4 移窗）通過。系統 `chichi77-keykey-data` 和 `fcitx5-chichi77-keykey` 均為 `1.3.0-1+ubuntu24.04+fix8`，Fcitx 已重啟並載入新版元件；原生 GNOME Wayland 移窗仍未自動化驗證。詳細五平台 Bigram 差異見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。
 
 ## 工作區與提交
 

@@ -553,9 +553,6 @@ EngineResult Engine::selectDisplayedCandidate(InputContextState &context,
             return result;
         }
         const SmartCandidate chosen = context.smartCandidateOptions_[index];
-        smartMandarinStore_->learnCandidate(
-            context.smartReadings_, context.smartCandidateIndex_, chosen,
-            context.smartComposition_);
         const std::size_t end = context.smartCandidateIndex_ + chosen.length;
         for (auto entry = context.smartOverrides_.begin();
              entry != context.smartOverrides_.end();) {
@@ -571,6 +568,9 @@ EngineResult Engine::selectDisplayedCandidate(InputContextState &context,
             {chosen.length, chosen.text};
         context.smartCursor_ = end;
         rebuildSmartComposition(context);
+        smartMandarinStore_->learnCandidate(
+            context.smartReadings_, context.smartCandidateIndex_, chosen,
+            context.smartComposition_);
         EngineResult result = snapshot(context);
         result.handled = true;
         return result;

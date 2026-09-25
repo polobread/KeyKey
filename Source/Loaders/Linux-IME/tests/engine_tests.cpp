@@ -1612,6 +1612,39 @@ void testSmartMandarinModelVersion() {
             "Smart Mandarin model version does not match macOS");
 }
 
+void testSmartMandarinRequiresBigrams() {
+    char path[] = "/tmp/keykey-smart-model-XXXXXX";
+    const int temporary = mkstemp(path);
+    require(temporary >= 0, "Could not create a model validation fixture");
+    close(temporary);
+    sqlite3 *database = nullptr;
+    require(sqlite3_open(path, &database) == SQLITE_OK,
+            "Could not open a model validation fixture");
+    require(sqlite3_exec(database,
+                         "CREATE TABLE unigrams (qstring TEXT, current TEXT, "
+                         "probability REAL, backoff REAL);"
+                         "INSERT INTO unigrams VALUES ('!', '', 0, 0);",
+                         nullptr, nullptr, nullptr) == SQLITE_OK,
+            "Could not create fixture unigrams");
+    require(keykey::linux_ime::SmartMandarinStore::open(path) == nullptr,
+            "A model without the Bigram table was accepted");
+    require(sqlite3_exec(database,
+                         "CREATE TABLE bigrams (qstring TEXT, previous TEXT, "
+                         "current TEXT, probability REAL);",
+                         nullptr, nullptr, nullptr) == SQLITE_OK,
+            "Could not create the fixture Bigram table");
+    require(keykey::linux_ime::SmartMandarinStore::open(path) == nullptr,
+            "An empty Bigram table was accepted");
+    require(sqlite3_exec(database,
+                         "INSERT INTO bigrams VALUES ('! AB', '', '甲', -1);",
+                         nullptr, nullptr, nullptr) == SQLITE_OK,
+            "Could not insert a partial Bigram fixture");
+    require(keykey::linux_ime::SmartMandarinStore::open(path) == nullptr,
+            "A partial Bigram model was accepted");
+    sqlite3_close(database);
+    unlink(path);
+}
+
 void testSmartMandarinComposition() {
     const auto store = keykey::linux_ime::SmartMandarinStore::open(
         KEYKEY_TEST_SMART_DB);
@@ -2122,6 +2155,70 @@ void testSmartMandarinUserData() {
     unlink(path);
 }
 
+void testSmartMandarinBigramLearning() {
+    using keykey::linux_ime::SmartComposition;
+    using keykey::linux_ime::SmartMandarinStore;
+    using keykey::linux_ime::SmartMandarinUserData;
+    char path[] = "/tmp/keykey-smart-bigram-XXXXXX";
+    const int temporary = mkstemp(path);
+    require(temporary >= 0, "Could not create a Bigram learning fixture");
+    close(temporary);
+    unlink(path);
+    const auto user = SmartMandarinUserData::open(path);
+    const auto store = SmartMandarinStore::open(KEYKEY_TEST_SMART_DB, user);
+    require(user && store, "Could not open the Bigram learning fixture");
+
+    const std::string ao = SmartMandarinUserData::readingToQuery("ㄠˊ");
+    const std::string ye = SmartMandarinUserData::readingToQuery("ㄧㄝˋ");
+    SmartComposition composition;
+    require(store->compose({ao, ye}, {}, composition) &&
+                composition.text == "熬夜" && composition.segments.size() == 1,
+            "The model did not initially keep 熬夜 as a word");
+    require(user->learn(ye, "夜", {}, {}), "Could not learn 夜");
+    require(store->compose({ao, ye}, {}, composition) &&
+                composition.text == "熬夜" && composition.segments.size() == 1,
+            "Learning 夜 split the stronger 熬夜 word path");
+    require(user->resetLearning(), "Could not clear learned 夜");
+
+    Engine engine(loadRealBopomofoDictionary());
+    engine.setSmartMandarinStore(store);
+    engine.setSmartMandarinMode(true);
+    InputContextState context;
+    EngineResult result;
+    for (char key : std::string("5j/")) {
+        result = engine.processKey(context, character(key));
+    }
+    result = engine.processKey(context, KeyEvent{KeyCode::Space});
+    for (char key : std::string("eji62u4z8;")) {
+        result = engine.processKey(context, character(key));
+    }
+    result = engine.processKey(context, KeyEvent{KeyCode::Space});
+    require(result.preedit == "中國地方" && result.commit.empty(),
+            "Could not compose the Bigram predecessor fixture");
+    result = engine.selectSmartCharacter(context, 2);
+    const auto selected = std::find(result.candidates.begin(),
+                                    result.candidates.end(), "地方");
+    require(selected != result.candidates.end(),
+            "The 地方 candidate was not available at the third character");
+    result = engine.selectDisplayedCandidate(
+        context, static_cast<std::size_t>(selected - result.candidates.begin()));
+    require(result.preedit == "中國地方" && result.commit.empty(),
+            "Selecting 地方 changed or committed the visible sentence");
+    const std::string china =
+        SmartMandarinUserData::readingToQuery("ㄓㄨㄥ ㄍㄨㄛˊ");
+    const std::string country =
+        SmartMandarinUserData::readingToQuery("ㄍㄨㄛˊ");
+    const std::string place =
+        SmartMandarinUserData::readingToQuery("ㄉㄧˋ ㄈㄤ");
+    double score = -1;
+    require(user->learnedBigram(china, place, "中國", "地方", score) &&
+                score == 0,
+            "Candidate selection did not learn the recomposed previous word");
+    require(!user->learnedBigram(country, place, "國", "地方", score),
+            "Candidate selection learned a predecessor from the old word path");
+    unlink(path);
+}
+
 void testSmartMandarinLearnedWordEviction() {
     using keykey::linux_ime::SmartCandidate;
     using keykey::linux_ime::SmartComposition;
@@ -2271,9 +2368,11 @@ int main(int argc, char **argv) {
     try {
         if (argc == 2 && std::string(argv[1]) == "--smart-only") {
             testSmartMandarinModelVersion();
+            testSmartMandarinRequiresBigrams();
             testSmartMandarinComposition();
             testSmartMandarinEditingTransitions();
             testSmartMandarinUserData();
+            testSmartMandarinBigramLearning();
             testSmartMandarinLearnedWordEviction();
             std::cout << "Smart Mandarin tests passed\n";
             return EXIT_SUCCESS;
@@ -2307,9 +2406,11 @@ int main(int argc, char **argv) {
         testBackspaceAndEscape();
         testBopomofoReadingBlocksHostEditingKeys();
         testSmartMandarinModelVersion();
+        testSmartMandarinRequiresBigrams();
         testSmartMandarinComposition();
         testSmartMandarinEditingTransitions();
         testSmartMandarinUserData();
+        testSmartMandarinBigramLearning();
         testSmartMandarinLearnedWordEviction();
     } catch (const std::exception &error) {
         std::cerr << "FAILED: " << error.what() << '\n';

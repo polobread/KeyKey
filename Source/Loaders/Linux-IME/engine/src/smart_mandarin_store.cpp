@@ -28,25 +28,6 @@ struct Path {
     std::vector<SmartSegment> segments;
 };
 
-std::string codepointAt(const std::string &text, std::size_t index) {
-    std::size_t start = 0;
-    for (std::size_t current = 0; current < index && start < text.size();
-         ++current) {
-        ++start;
-        while (start < text.size() &&
-               (static_cast<unsigned char>(text[start]) & 0xC0U) == 0x80U) {
-            ++start;
-        }
-    }
-    if (start >= text.size()) return {};
-    std::size_t end = start + 1;
-    while (end < text.size() &&
-           (static_cast<unsigned char>(text[end]) & 0xC0U) == 0x80U) {
-        ++end;
-    }
-    return text.substr(start, end - start);
-}
-
 } // namespace
 
 std::shared_ptr<const SmartMandarinStore>
@@ -59,13 +40,33 @@ SmartMandarinStore::open(
         sqlite3_close(database);
         return nullptr;
     }
-    {
-        Statement check;
-        if (sqlite3_prepare_v2(database, "SELECT qstring FROM unigrams LIMIT 1",
-                               -1, &check.value, nullptr) != SQLITE_OK) {
+    for (const char *query : {
+             "SELECT qstring, current, probability, backoff FROM unigrams LIMIT 1",
+             "SELECT qstring, previous, current, probability FROM bigrams LIMIT 1"}) {
+        bool valid = false;
+        {
+            Statement check;
+            valid = sqlite3_prepare_v2(database, query, -1, &check.value,
+                                       nullptr) == SQLITE_OK &&
+                    sqlite3_step(check.value) == SQLITE_ROW;
+        }
+        if (!valid) {
             sqlite3_close(database);
             return nullptr;
         }
+    }
+    constexpr sqlite3_int64 ExpectedBigramRows = 885627;
+    bool complete = false;
+    {
+        Statement count;
+        complete = sqlite3_prepare_v2(database, "SELECT COUNT(*) FROM bigrams",
+                                      -1, &count.value, nullptr) == SQLITE_OK &&
+                   sqlite3_step(count.value) == SQLITE_ROW &&
+                   sqlite3_column_int64(count.value, 0) == ExpectedBigramRows;
+    }
+    if (!complete) {
+        sqlite3_close(database);
+        return nullptr;
     }
     return std::shared_ptr<const SmartMandarinStore>(
         new SmartMandarinStore(database, std::move(userData)));
@@ -209,8 +210,8 @@ bool SmartMandarinStore::compose(
                         transition = fallback;
                     }
                     Path path = previousPath;
-                    path.score += transition +
-                                  (entry.text == learned ? 5.0 : 0.0);
+                    path.score += entry.text == learned
+                                      ? std::max(transition, 0.0) : transition;
                     path.backoff = entry.backoff;
                     path.segments.push_back(
                         {start, length, query, entry.text});
@@ -298,7 +299,7 @@ std::vector<SmartCandidate> SmartMandarinStore::candidateOptions(
                 score = std::max(observed, fallback);
             }
             ranked.push_back({{length, entry.text},
-                              score + (entry.text == learned ? 5.0 : 0.0)});
+                              entry.text == learned ? 0.0 : score});
         }
     }
     std::stable_sort(ranked.begin(), ranked.end(),
@@ -333,6 +334,15 @@ bool SmartMandarinStore::learnCandidate(
         index + chosen.length > readings.size()) {
         return false;
     }
+    const auto selected = std::find_if(
+        composition.segments.begin(), composition.segments.end(),
+        [index, &chosen](const SmartSegment &segment) {
+            return segment.start == index && segment.length == chosen.length &&
+                   segment.text == chosen.text;
+        });
+    if (selected == composition.segments.end()) {
+        return false;
+    }
     const SmartSegment *previous = nullptr;
     for (const auto &segment : composition.segments) {
         if (segment.start + segment.length == index) {
@@ -341,17 +351,6 @@ bool SmartMandarinStore::learnCandidate(
     }
     std::string previousQuery = previous ? previous->query : std::string{};
     std::string previousText = previous ? previous->text : std::string{};
-    if (!previous && index > 0) {
-        for (const auto &segment : composition.segments) {
-            if (segment.start <= index - 1 &&
-                segment.start + segment.length > index - 1) {
-                previousQuery = readings[index - 1];
-                previousText = codepointAt(segment.text,
-                                           index - 1 - segment.start);
-                break;
-            }
-        }
-    }
     std::string query;
     for (std::size_t offset = 0; offset < chosen.length; ++offset) {
         query += readings[index + offset];
