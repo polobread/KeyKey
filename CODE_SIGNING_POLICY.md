@@ -15,7 +15,8 @@ The intended signing coverage is:
 
 - the x64 `KeyKeyTsf.dll`;
 - the x86 `KeyKeyTsf.dll`;
-- `KeyKeySettings.exe`; and
+- `KeyKeySettings.exe`;
+- `KeyKeySettingsBackend.dll`; and
 - the outer NSIS installer containing the signed payload files.
 
 Signatures must use SHA-256 and an RFC 3161 timestamp. The release workflow must

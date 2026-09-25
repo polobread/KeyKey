@@ -47,13 +47,18 @@ Windows、Android 與 iOS 建立現代化 frontend。
 | 平台 | 實作與支援範圍 |
 |---|---|
 | macOS | InputMethodKit；macOS 15 以上、Apple Silicon |
-| Windows | 原生 TSF；Windows 11 x64，並支援 32-bit Office process |
+| Windows | 原生 TSF；已發布 v1.2.9 適用 Windows 11 x64。1.3.0 開發版以 Windows 10 起為目標，提供 x64／x86 套件；Windows 10 尚待實機驗證 |
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
 | Linux | Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；注音、倉頡、簡易 |
 
 五個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
+
+1.3.0 的 Windows 原始碼加入好打注音與傳統注音的工作列快速切換、跟隨系統明暗模式的
+四頁設定介面，以及 x64／x86 TSF。x64 套件同時包含 x64 與 x86 DLL，供兩種位元數的
+應用程式使用；x86 套件供 32 位元 Windows 使用。這些是開發版功能，尚未以 1.3.0
+正式發布；升級後須登出再登入，讓工作列載入新版輸入法。
 
 iOS 不允許第三方 keyboard extension 接管 USB／藍牙鍵盤，因此無法在備忘錄、LINE 或
 Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體鍵盤編輯器」：在 App 前景
@@ -63,7 +68,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 - [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
-- Windows 11 使用者請看[Windows 安裝與使用指南](WINDOWS_INSTALL.md)：下載 ZIP、執行安裝、切換輸入法與日常打字。
+- 已發布 v1.2.9 的 Windows 11 使用者請看[Windows 安裝與使用指南](WINDOWS_INSTALL.md)：下載 ZIP、執行安裝、切換輸入法與日常打字。1.3.0 開發版的建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
 - Ubuntu 24.04 使用者請看[Linux 安裝與使用指南](LINUX_INSTALL.md)：`v1.2.9` 套件安裝、Fcitx 5 設定與實際桌面截圖。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦注音》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939)安裝。
@@ -95,7 +100,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
 - [macOS App Store Connect 上架可行性與發行計畫](MACOS_APP_STORE_PLAN.md)：Apple
   現行政策阻礙、第三方輸入法經驗、商店外發行改善與未來上架 gate
-- [Windows 安裝與使用指南](WINDOWS_INSTALL.md)：安裝、啟用、選字、詞庫設定與解除安裝
+- [Windows v1.2.9 安裝與使用指南](WINDOWS_INSTALL.md)：已發布版本的安裝、啟用、選字、詞庫設定與解除安裝
 - [Linux 安裝與使用指南](LINUX_INSTALL.md)：Ubuntu 24.04 的套件安裝、Fcitx 5 設定、注音選字與實拍圖
 - [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：Ubuntu 24.04 的原始碼安裝、啟用、試打與移除
 - [iOS 安裝與使用指南](IOS_INSTALL.md)：App Store 安裝、加入鍵盤、日常操作與實體鍵盤編輯器
@@ -123,8 +128,8 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-macOS、iOS 與 Android 版提供 Yahoo KeyKey 原有的「好打注音」整句組字模式，並可切回
-傳統逐字注音。語言模型由
+1.3.0 的 macOS、Windows、iOS、Android 與 Linux 原始碼均提供「好打注音」整句組字模式，
+並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。語言模型由
 McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yahoo 未釋出的中研院語料；
 另加入可替換的 11,180 句 AI 合成 bootstrap corpora 產生初版 bigram 上下文資料。這份
 小型合成語料用於工程與 A/B 測試，不代表完整的台灣繁中語料分布。
@@ -138,8 +143,9 @@ macOS, Windows, and Ubuntu 24.04 installers for `v1.2.9` share one
 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9).
 Android and iOS use their respective store distribution channels.
 
-The macOS, iOS, and Android builds provide the original Smart Phonetic composition mode,
-with Traditional Phonetic available as an option.
+The 1.3.0 source implements Smart Phonetic sentence composition on macOS,
+Windows, iOS, Android, and Linux, with Traditional Phonetic available as an
+option. For published builds, consult the installation guide for that version.
 Its redistributable unigram model is generated from the MIT-licensed
 McBopomofo readings and occurrence counts. Replaceable AI-generated bootstrap
 corpora with 11,180 sentences supply an initial bigram layer for engineering and A/B testing; the
@@ -171,13 +177,20 @@ by, or sponsored by Yahoo.**
 | Platform | Implementation and support |
 |---|---|
 | macOS | InputMethodKit; macOS 15 or later on Apple Silicon |
-| Windows | Native TSF; Windows 11 x64, including 32-bit Office processes |
+| Windows | Native TSF; published v1.2.9 targets Windows 11 x64. The 1.3.0 development build targets Windows 10 or later with x64/x86 packages; Windows 10 device verification is pending |
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
 | iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
 | Linux | Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, amd64; Bopomofo, Cangjie, Simplex |
 
 All five platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
+
+The 1.3.0 Windows source adds direct Smart/Traditional Phonetic selection from
+the taskbar, a four-page settings app that follows the system light/dark mode,
+and x64/x86 TSF builds. The x64 package includes both DLL architectures for
+64-bit and 32-bit applications; the x86 package is for 32-bit Windows. Version
+1.3.0 has not been published. After upgrading a development installation, sign
+out and back in so the taskbar loads the new input method.
 
 iOS does not let a third-party keyboard extension take over USB or Bluetooth
 keyboard events, so system-wide hardware-keyboard input in Notes, LINE, or
@@ -190,7 +203,7 @@ iOS.
 
 - [Latest release](https://github.com/polobread/KeyKey/releases/latest) always opens the release currently marked Latest on GitHub.
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
-- Windows 11 installation, setup, and daily use: [Windows installation guide (Traditional Chinese)](WINDOWS_INSTALL.md).
+- Published v1.2.9 on Windows 11: [Windows installation guide (Traditional Chinese)](WINDOWS_INSTALL.md). For the 1.3.0 development build, see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md).
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
 - Build and install the Ubuntu 24.04 version from source with `./configure`: [Linux source installation and usage guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md).
 - iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939).
@@ -229,7 +242,7 @@ complete output and signing details.
 ### Documentation
 
 - [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
-- [Windows installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): download, setup, typing, preferences, and removal
+- [Windows v1.2.9 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): published package download, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
 - [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play testing, keyboard setup, touch and hardware keyboard use

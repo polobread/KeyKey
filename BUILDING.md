@@ -269,6 +269,17 @@ Windows x64 套件會同時安裝 x64 與 x86 TSF DLL，可供所有 32 位元�
 x86 套件供 32 位元 Windows 使用。
 DLL 架構必須和載入它的應用程式架構相同。
 
+本機要產生未簽署的 NSIS 測試安裝檔，可執行：
+
+```powershell
+.\Package-Store-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -UnsignedTest
+```
+
+產物是 `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`。
+產品版號維持 `1.3.0`；本機測試安裝目錄使用 `1.3.0-test-<內容指紋>`，避免
+重編後覆寫仍由應用程式載入的 DLL。正式簽章套件則使用 `1.3.0` 等一般版號目錄。
+
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
 
@@ -653,6 +664,19 @@ Sign out and back in if it does not appear immediately.
 The home-testing package is unsigned, so Windows may warn about a downloaded
 copy.
 
+To build an unsigned local NSIS test installer, run:
+
+```powershell
+.\Package-Store-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -UnsignedTest
+```
+
+The output is `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`.
+Its product version remains `1.3.0`; local test installations use a
+`1.3.0-test-<content fingerprint>` directory so rebuilding does not overwrite
+a DLL still loaded by an application. Signed production installers use plain
+version directories such as `1.3.0`.
+
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.
 
@@ -671,7 +695,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -TimestampUrl 'YOUR_CA_RFC3161_TIMESTAMP_URL'
 ```
 
-The script signs and verifies the three PE payloads, builds an offline NSIS
+The script signs and verifies the four PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
 `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned

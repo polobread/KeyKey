@@ -102,7 +102,7 @@ run from this directory:
 cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release --target KeyKeyTsf
+cmake --build --preset windows-x86-release --target KeyKeySettings
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
@@ -120,8 +120,8 @@ The same tab can import a `SmartMandarinUserData.db` backup: user phrases are
 merged by reading and text, while the imported candidate and contextual
 learning replace the current learning tables. Export uses SQLite's online
 backup API, so a database can be saved while the input method is active.
-The settings window footer displays the CMake project marketing version, so its
-visible version comes from the same source as the packaged binaries.
+The settings window footer shows `1.3.0`; the frontend validation script checks
+that this visible version matches the CMake project and packaging version.
 Re-run the build after changing a source CIN, plist, or phrase file; CMake will
 automatically recook the database.
 
@@ -200,6 +200,13 @@ installer in addition to the ZIP package:
 out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe
 ```
 
+To build the same unsigned installer locally after building x64 and x86, run:
+
+```powershell
+.\Package-Store-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
+  -X86BuildDirectory .\out\build\x86 -UnsignedTest
+```
+
 The `.unsigned.exe` artifact supports `/S` silent installation but is not
 eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
 settings executable, and the outer installer is unsigned as well.
@@ -250,7 +257,8 @@ The certificate defaults to `Cert:\CurrentUser\My`. Add
 it in `Cert:\LocalMachine\My`. Use `-MakensisPath` if NSIS is not in `PATH` or
 its default installation directory. The script requires NSIS 3.12, copies the
 build outputs to a temporary staging directory, signs and verifies
-`KeyKeyTsf_x64.dll`, `KeyKeyTsf_x86.dll`, and `KeyKeySettings.exe`, builds an
+`KeyKeyTsf_x64.dll`, `KeyKeyTsf_x86.dll`, `KeyKeySettings.exe`, and
+`KeyKeySettingsBackend.dll`, builds an
 offline x64 installer, and finally signs and verifies the outer EXE. It never
 edits the original build outputs and does not accept or store a PFX password.
 
@@ -291,6 +299,7 @@ update.
 KeyKeyTsf_x64.dll
 KeyKeyTsf_x86.dll
 KeyKeySettings.exe
+KeyKeySettingsBackend.dll
 Databases/
   KeyKey.db
 ```
@@ -319,7 +328,11 @@ and an elevated desktop application. Verify Bopomofo input, backspace, arrow
 navigation, candidate paging/selection, commit with Enter/Space, focus changes,
 and repeated enable/disable cycles. Also verify every Bopomofo layout, both
 candidate-window orientations, all four colors, `Ctrl+\`, disabled error sound,
-and the CNS11643 switch. Secure desktop and Microsoft Store app coverage should
+and the CNS11643 switch. Compare composition underlines in Notepad and another
+text host, check that switching to English keeps the composed text, and verify
+the taskbar mode menu and settings after signing out and back in. On upgrade,
+check that Windows does not request a Simplified Chinese input dictionary.
+Secure desktop and Microsoft Store app coverage should
 be treated as release gates, not assumed from registration.
 
 ## License
