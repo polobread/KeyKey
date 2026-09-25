@@ -29,6 +29,8 @@ The initial vertical slice provides:
   the same unigram/bigram model used by macOS, commits with Enter, and lets
   Space or Down open candidates at the cursor. Clicking a composed character
   opens its candidates in clients that send Fcitx preedit click events.
+  While candidates are open, Down moves the highlight and Enter replaces the
+  selected character without committing the sentence; another Enter commits it.
   Left/Right/Home/End move within the composition, and Backspace/Delete edit
   readings there. Completing the tenth syllable commits the first full word
   segment while the remaining sentence stays in preedit; switching input

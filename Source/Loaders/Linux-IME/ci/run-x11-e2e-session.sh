@@ -19,6 +19,8 @@ esac
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-STANDARD
   T01-X11-GTK3-BOPOMOFO-SMART
+  T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-KEY
+  T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK
   T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW
   T01-X11-GTK3-BOPOMOFO-SMART-SWITCH
   T01-X11-GTK4-BOPOMOFO-STANDARD
@@ -1682,6 +1684,22 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART-SWITCH; then
     chichi77-keykey-bopomofo 你好 'su3cl3' \
     'ㄋ,ㄋㄧ,你,你ㄏ,你好' \
     s u 3 c l 3 switch-keyboard-us
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-KEY; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-KEY \
+    chichi77-keykey-bopomofo 你郝 'su3cl3' '你好,你郝' \
+    s u 3 c l 3 Down Down Return Return
+  set_bopomofo_mode Traditional
+fi
+if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK; then
+  set_bopomofo_layout Standard
+  set_bopomofo_mode Smart
+  run_case T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK \
+    chichi77-keykey-bopomofo 請架 'fu/3ru84' '請假,請架' \
+    f u slash 3 r u 8 4 Down click-candidate-2 Return
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK4-BOPOMOFO-STANDARD; then

@@ -1497,7 +1497,7 @@ void testSmartMandarinComposition() {
                 phrase.text == "列上去",
             "Smart Mandarin did not compose 列上去");
     std::vector<std::string> longReadings;
-    for (const std::string &syllable :
+    for (const char *syllable :
          {"ㄑㄧㄥˇ", "ㄐㄧㄚˋ", "ㄧㄠˋ", "ㄑㄩˋ", "ㄋㄚˇ", "ㄌㄧˇ",
           "ㄨㄢˊ", "ㄋㄜ˙", "ㄑㄩˋ", "ㄏㄞˇ", "ㄅㄧㄢ"}) {
         longReadings.push_back(
@@ -1540,6 +1540,26 @@ void testSmartMandarinComposition() {
     engine.setSmartMandarinMode(true);
     InputContextState context;
     EngineResult result;
+    for (char key : std::string("fu/3ru84")) {
+        result = engine.processKey(context, character(key));
+    }
+    require(result.preedit == "請假", "Smart Mandarin did not compose 請假");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Down, '\0', KeyModifier::None, false, false});
+    require(result.handled && result.candidates.size() > 1 &&
+                result.commit.empty(),
+            "Down did not open 請假 correction candidates");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Down, '\0', KeyModifier::None, false, false});
+    require(result.highlightedIndex == 1 && result.commit.empty(),
+            "Down did not move the correction highlight");
+    result = engine.processKey(
+        context, KeyEvent{KeyCode::Enter, '\0', KeyModifier::None, false, false});
+    require(result.handled && result.commit.empty() &&
+                result.preedit != "請假" && result.candidates.empty() &&
+                result.preeditCursorBytes == result.preedit.size(),
+            "Enter committed 請假 instead of choosing the highlighted candidate");
+    context.reset();
     for (char key : std::string("su3cl3")) {
         result = engine.processKey(context, character(key));
     }
@@ -1652,6 +1672,14 @@ void testSmartMandarinComposition() {
     require(result.handled && !result.candidates.empty() &&
                 result.preeditCursorBytes == 0,
             "Clicking the first composed character did not open candidates");
+    result = engine.selectDisplayedCandidate(context, 1);
+    require(result.handled && result.commit.empty() &&
+                result.preeditCursorBytes == 3 && result.preedit != "你好",
+            "Correcting the first character committed or left the cursor before it");
+    context.reset();
+    for (char key : std::string("su3cl3")) {
+        result = engine.processKey(context, character(key));
+    }
     result = engine.selectSmartCharacter(context, 3);
     require(result.handled && !result.candidates.empty() &&
                 result.preeditCursorBytes == 3,

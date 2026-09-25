@@ -523,6 +523,7 @@ EngineResult Engine::selectDisplayedCandidate(InputContextState &context,
             context.smartReadings_, context.smartCandidateIndex_, chosen,
             context.smartComposition_);
         context.smartOverrides_[context.smartCandidateIndex_] = chosen;
+        context.smartCursor_ = context.smartCandidateIndex_ + 1;
         rebuildSmartComposition(context);
         EngineResult result = snapshot(context);
         result.handled = true;
@@ -745,6 +746,9 @@ EngineResult Engine::processSmartKey(InputContextState &context,
     case KeyCode::Enter:
         if (hasReading) {
             return resultFor(!finishSmartReading(context, pendingCommit));
+        }
+        if (context.showingSmartCandidates_) {
+            return selectDisplayedCandidate(context, context.highlightedIndex_);
         }
         if (hasComposition) {
             const std::string composed = context.smartComposition_.text;
