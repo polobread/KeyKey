@@ -1,277 +1,270 @@
-#!/usr/bin/env swift
 import AppKit
 import Foundation
 import ImageIO
 
-let purple = NSColor(calibratedRed: 0.50, green: 0, blue: 0.50, alpha: 1)
-let dark = NSColor(calibratedRed: 0.12, green: 0.03, blue: 0.20, alpha: 1)
-let pale = NSColor(calibratedRed: 0.96, green: 0.92, blue: 0.98, alpha: 1)
-let ink = NSColor(calibratedWhite: 0.12, alpha: 1)
-let paper = NSColor(calibratedWhite: 0.97, alpha: 1)
+let root = FileManager.default.currentDirectoryPath
+let output = root + "/StoreAssets"
+let fm = FileManager.default
+try fm.createDirectory(atPath: output, withIntermediateDirectories: true)
 
-enum Err: Error { case image(String); case png }
-struct C {
-    let w: CGFloat; let h: CGFloat; let bitmap: NSBitmapImageRep
-    init(_ w: CGFloat, _ h: CGFloat) {
-        self.w = w; self.h = h
-        guard let b = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(w), pixelsHigh: Int(h), bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bitmapFormat: [], bytesPerRow: 0, bitsPerPixel: 0), let ctx = NSGraphicsContext(bitmapImageRep: b) else { fatalError() }
-        bitmap = b; NSGraphicsContext.saveGraphicsState(); NSGraphicsContext.current = ctx
+func col(_ hex: UInt32) -> NSColor {
+    NSColor(calibratedRed: CGFloat((hex >> 16) & 255) / 255,
+            green: CGFloat((hex >> 8) & 255) / 255,
+            blue: CGFloat(hex & 255) / 255, alpha: 1)
+}
+let plum = col(0x341A4A), purple = col(0x8A1997), lavender = col(0xEEE2F5)
+let white = NSColor.white, gold = col(0xFFD46D)
+
+final class Canvas {
+    let width: CGFloat, height: CGFloat, rep: NSBitmapImageRep
+    init(_ width: Int, _ height: Int) {
+        self.width = CGFloat(width); self.height = CGFloat(height)
+        rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
+                               bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                               isPlanar: false, colorSpaceName: .deviceRGB,
+                               bitmapFormat: [], bytesPerRow: 0, bitsPerPixel: 0)!
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     }
-    func r(_ x: CGFloat, _ top: CGFloat, _ width: CGFloat, _ height: CGFloat) -> NSRect { NSRect(x: x, y: h - top - height, width: width, height: height) }
-    func save(_ url: URL) throws {
-        NSGraphicsContext.current?.flushGraphics(); NSGraphicsContext.restoreGraphicsState()
-        guard let source = bitmap.cgImage,
-              let context = CGContext(data: nil, width: Int(w), height: Int(h), bitsPerComponent: 8, bytesPerRow: Int(w) * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue),
-              let destinationImage = { () -> CGImage? in
-                  context.setFillColor(NSColor.white.cgColor)
-                  context.fill(CGRect(x: 0, y: 0, width: w, height: h))
-                  context.draw(source, in: CGRect(x: 0, y: 0, width: w, height: h))
-                  return context.makeImage()
-              }() else { throw Err.png }
-        let rgb = URL(fileURLWithPath: "/private/tmp/keykey-\(UUID().uuidString)-rgb.png")
-        defer { try? FileManager.default.removeItem(at: rgb) }
-        guard let destination = CGImageDestinationCreateWithURL(rgb as CFURL, "public.png" as CFString, 1, nil) else { throw Err.png }
-        CGImageDestinationAddImage(destination, destinationImage, nil)
-        guard CGImageDestinationFinalize(destination) else { throw Err.png }
-        if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
-        try FileManager.default.moveItem(at: rgb, to: url)
+    func rect(_ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat) -> NSRect {
+        NSRect(x: x, y: height - top - h, width: w, height: h)
+    }
+    func fill(_ color: NSColor) {
+        color.setFill(); NSBezierPath(rect: rect(0, 0, width, height)).fill()
+    }
+    func rounded(_ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat,
+                 _ radius: CGFloat, _ color: NSColor) {
+        color.setFill(); NSBezierPath(roundedRect: rect(x, top, w, h),
+                                       xRadius: radius, yRadius: radius).fill()
+    }
+    func text(_ value: String, x: CGFloat, top: CGFloat, width: CGFloat,
+              height: CGFloat, size: CGFloat, weight: NSFont.Weight = .regular,
+              color: NSColor, align: NSTextAlignment = .left) {
+        let style = NSMutableParagraphStyle()
+        style.alignment = align
+        style.lineBreakMode = .byWordWrapping
+        style.lineSpacing = size * 0.07
+        NSAttributedString(string: value, attributes: [
+            .font: NSFont.systemFont(ofSize: size, weight: weight),
+            .foregroundColor: color, .paragraphStyle: style
+        ]).draw(in: rect(x, top, width, height))
+    }
+    func screenshot(_ path: String, x: CGFloat, top: CGFloat,
+                    maxWidth: CGFloat, maxHeight: CGFloat, radius: CGFloat = 30) {
+        guard let source = NSImage(contentsOfFile: path) else { fatalError("Missing screenshot: \(path)") }
+        let scale = min(maxWidth / source.size.width, maxHeight / source.size.height)
+        let w = source.size.width * scale, h = source.size.height * scale
+        let px = x + (maxWidth - w) / 2, py = top + (maxHeight - h) / 2
+        let frame = rect(px, py, w, h)
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow(); shadow.shadowColor = col(0x160B22).withAlphaComponent(0.32)
+        shadow.shadowBlurRadius = 28; shadow.shadowOffset = NSSize(width: 0, height: -10)
+        shadow.set(); white.setFill()
+        NSBezierPath(roundedRect: frame, xRadius: radius, yRadius: radius).fill()
+        NSGraphicsContext.restoreGraphicsState()
+        NSGraphicsContext.saveGraphicsState()
+        NSBezierPath(roundedRect: frame, xRadius: radius, yRadius: radius).addClip()
+        source.draw(in: frame, from: NSRect(origin: .zero, size: source.size),
+                    operation: .sourceOver, fraction: 1, respectFlipped: true,
+                    hints: [.interpolation: NSImageInterpolation.high])
+        NSGraphicsContext.restoreGraphicsState()
+    }
+    func save(_ path: String) {
+        NSGraphicsContext.current?.flushGraphics()
+        NSGraphicsContext.restoreGraphicsState()
+        try! fm.createDirectory(atPath: (path as NSString).deletingLastPathComponent,
+                                withIntermediateDirectories: true)
+        // App Store screenshots must not carry an alpha channel.
+        guard let source = rep.cgImage,
+              let context = CGContext(data: nil, width: Int(width), height: Int(height),
+                                      bitsPerComponent: 8, bytesPerRow: Int(width) * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else {
+            fatalError("Could not create RGB canvas")
+        }
+        context.setFillColor(NSColor.white.cgColor)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        context.draw(source, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let image = context.makeImage(),
+              let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL,
+                                                                 "public.png" as CFString, 1, nil) else {
+            fatalError("Could not save PNG: \(path)")
+        }
+        CGImageDestinationAddImage(destination, image, nil)
+        guard CGImageDestinationFinalize(destination) else { fatalError("Could not finalize PNG: \(path)") }
     }
 }
-func bg(_ c: C) {
-    NSGradient(starting: dark, ending: purple)?.draw(in: NSRect(x: 0, y: 0, width: c.w, height: c.h), angle: 68)
-    for v in [(c.w * 0.73, -c.w * 0.1, c.w * 0.62, CGFloat(0.12)), (-c.w * 0.22, c.h * 0.52, c.w * 0.66, CGFloat(0.08))] { NSColor.white.withAlphaComponent(v.3).setFill(); NSBezierPath(ovalIn: c.r(v.0, v.1, v.2, v.2)).fill() }
+
+struct Page {
+    let title: String
+    let subtitle: String
+    let tag: String
+    let image: String
 }
-func txt(_ s: String, _ c: C, _ x: CGFloat = 70, _ top: CGFloat, _ width: CGFloat? = nil, _ height: CGFloat, _ size: CGFloat, _ weight: NSFont.Weight = .regular, _ color: NSColor = .white, _ align: NSTextAlignment = .center) {
-    let p = NSMutableParagraphStyle(); p.alignment = align; p.lineBreakMode = .byWordWrapping; p.lineSpacing = size * 0.1
-    NSAttributedString(string: s, attributes: [.font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: color, .paragraphStyle: p]).draw(in: c.r(x, top, width ?? c.w - x * 2, height))
-}
-func box(_ c: C, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat, _ color: NSColor, _ radius: CGFloat = 24, _ shadow: Bool = false) {
-    let r = c.r(x, top, w, h)
-    if shadow { NSGraphicsContext.saveGraphicsState(); let s = NSShadow(); s.shadowColor = NSColor.black.withAlphaComponent(0.28); s.shadowBlurRadius = 19; s.shadowOffset = NSSize(width: 0, height: -7); s.set() }
-    color.setFill(); NSBezierPath(roundedRect: r, xRadius: radius, yRadius: radius).fill(); if shadow { NSGraphicsContext.restoreGraphicsState() }
-}
-func image(_ i: NSImage, _ c: C, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat, _ source: NSRect? = nil, framed: Bool = true) {
-    let d = c.r(x, top, w, h)
-    if framed { box(c, x, top, w, h, .white, 26, true); NSGraphicsContext.saveGraphicsState(); NSBezierPath(roundedRect: d, xRadius: 26, yRadius: 26).addClip() }
-    i.draw(in: d, from: source ?? NSRect(origin: .zero, size: i.size), operation: .sourceOver, fraction: 1, respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high])
-    if framed { NSGraphicsContext.restoreGraphicsState() }
-}
-func imageFit(_ i: NSImage, _ c: C, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat, framed: Bool = true) {
-    if framed { box(c, x, top, w, h, .white, 26, true) }
-    let inset: CGFloat = framed ? 12 : 0
-    let aw = w - inset * 2, ah = h - inset * 2
-    let scale = min(aw / i.size.width, ah / i.size.height)
-    let dw = i.size.width * scale, dh = i.size.height * scale
-    image(i, c, x + inset + (aw - dw) / 2, top + inset + (ah - dh) / 2, dw, dh, framed: false)
-}
-func imageSourceFit(_ i: NSImage, _ c: C, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat, _ source: NSRect, framed: Bool = true) {
-    if framed { box(c, x, top, w, h, .white, 12, true) }
-    let inset: CGFloat = framed ? 7 : 0
-    let aw = w - inset * 2, ah = h - inset * 2
-    let scale = min(aw / source.width, ah / source.height)
-    let dw = source.width * scale, dh = source.height * scale
-    image(i, c, x + inset + (aw - dw) / 2, top + inset + (ah - dh) / 2, dw, dh, source, framed: false)
-}
-func imageFill(_ i: NSImage, _ c: C, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat, _ source: NSRect? = nil, framed: Bool = true) {
-    let src = source ?? NSRect(origin: .zero, size: i.size)
-    let targetRatio = w / h
-    var crop = src
-    if src.width / src.height > targetRatio {
-        crop.size.width = src.height * targetRatio
-        crop.origin.x += (src.width - crop.width) / 2
+let ios = root + "/docs/images/"
+let iphone: [Page] = [
+    .init(title: "好打注音，整句順著打", subtitle: "請假要去哪裡玩呢去海邊", tag: "連續組句", image: ios + "keykey-ios-v130-smart-typing.png"),
+    .init(title: "傳統注音，逐字精準選", subtitle: "熟悉的 1–9 候選與標準鍵位", tag: "傳統注音", image: root + "/StoreAssets/Sources/ios-notes-qi.png"),
+    .init(title: "接上鍵盤，選字也順手", subtitle: "在琦琦 App 內輸入，再複製或分享", tag: "實體鍵盤", image: ios + "keykey-ios-v130-hardware-editor-boundary.png"),
+    .init(title: "好打或傳統，隨時切換", subtitle: "兩種注音節奏，依你的習慣選", tag: "自由切換", image: ios + "keykey-ios-v130-keyboard-settings.png")
+]
+let ipad: [Page] = [
+    .init(title: "好打注音，整句順著打", subtitle: "請假要去哪裡玩呢去海邊", tag: "iPad 原生畫面", image: output + "/Sources/ios-ipad-v130-smart-full.png"),
+    .init(title: "傳統注音，逐字精準選", subtitle: "熟悉的 1–9 候選與標準鍵位", tag: "傳統注音", image: root + "/StoreAssets/Sources/ios-ipad-notes-qi.png"),
+    .init(title: "接上鍵盤，選字也順手", subtitle: "在琦琦 App 內輸入，再複製或分享", tag: "實體鍵盤", image: output + "/Sources/ios-ipad-v130-hardware-editor.png"),
+    .init(title: "好打或傳統，隨時切換", subtitle: "兩種注音節奏，依你的習慣選", tag: "自由切換", image: output + "/Sources/ios-ipad-v130-settings.png")
+]
+let android: [Page] = [
+    .init(title: "好打注音，整句順著打", subtitle: "請假要去哪裡玩呢去海邊", tag: "連續組句", image: output + "/Sources/android-v130-smart-full.png"),
+    .init(title: "想改中間的字，直接點", subtitle: "回頭選字，整句不用重打", tag: "句中選字", image: output + "/Sources/android-v130-smart-middle-candidate.png"),
+    .init(title: "傳統注音，照熟悉的方式選", subtitle: "固定 1–9 候選，標準注音鍵位", tag: "傳統注音", image: root + "/StoreAssets/Sources/android-phone-touch-portrait.png"),
+    .init(title: "接上鍵盤，候選跟著游標", subtitle: "浮動候選與數字選字都保留", tag: "實體鍵盤", image: root + "/StoreAssets/Sources/android-notes-floating-qi.png"),
+    .init(title: "五個平台，同一套注音習慣", subtitle: "Android・iOS・macOS・Windows・Linux", tag: "跨平台", image: "")
+]
+
+func render(_ page: Page, index: Int, count: Int, variant: String,
+            width: Int, height: Int, kind: String, path: String) {
+    let c = Canvas(width, height)
+    let w = c.width, h = c.height, k = w / 1242
+    let darkTheme = variant == "A"
+    if darkTheme {
+        NSGradient(starting: col(0x271037), ending: col(0x882598))!
+            .draw(in: c.rect(0, 0, w, h), angle: 67)
+        c.rounded(w * 0.68, -w * 0.07, w * 0.5, w * 0.5, w * 0.25,
+                  white.withAlphaComponent(0.08))
+        c.rounded(-w * 0.30, h * 0.64, w * 0.7, w * 0.7, w * 0.35,
+                  white.withAlphaComponent(0.07))
+        c.rounded(82*k, 95*k, 255*k, 72*k, 36*k, white.withAlphaComponent(0.17))
+        c.text(page.tag, x: 95*k, top: 112*k, width: 230*k, height: 50*k,
+               size: 37*k, weight: .semibold, color: white, align: .center)
+        c.text(page.title, x: 80*k, top: 210*k, width: w-160*k,
+               height: 145*k, size: 76*k, weight: .bold, color: white)
+        c.text(page.subtitle, x: 85*k, top: 365*k, width: w-170*k,
+               height: 105*k, size: 45*k, weight: .medium, color: lavender)
+        c.rounded(80*k, 505*k, w-160*k, 5*k, 2*k, gold)
     } else {
-        crop.size.height = src.width / targetRatio
-        crop.origin.y += (src.height - crop.height) / 2
+        c.fill(col(0xFAF7FD))
+        c.rounded(0, 0, w, 104*k, 0, plum)
+        c.text("琦琦注音  /  \(kind)", x: 68*k, top: 30*k,
+               width: w-136*k, height: 54*k, size: 38*k,
+               weight: .semibold, color: white)
+        c.rounded(80*k, 155*k, 16*k, 216*k, 8*k, purple)
+        c.text(page.tag, x: 125*k, top: 155*k, width: w-205*k,
+               height: 62*k, size: 39*k, weight: .bold, color: purple)
+        c.text(page.title, x: 125*k, top: 235*k, width: w-205*k,
+               height: 165*k, size: 74*k, weight: .bold, color: plum)
+        c.text(page.subtitle, x: 83*k, top: 415*k, width: w-166*k,
+               height: 94*k, size: 43*k, weight: .medium, color: col(0x604B6B))
     }
-    image(i, c, x, top, w, h, crop, framed: framed)
-}
-func label(_ c: C, _ value: String, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, selected: Bool = false, small: Bool = false) {
-    let h: CGFloat = small ? 24 : 38
-    if selected { box(c, x, top, w, h, purple, 6) }
-    txt(value, c, x + 7, top + (small ? 5 : 9), w - 14, h - 5, small ? 13 : 20, selected ? .bold : .medium, selected ? .white : ink, .left)
-}
-enum Mode { case vertical, horizontal, fixed, touch }
-func modeCard(_ c: C, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat, _ mode: Mode, _ caption: String) {
-    box(c, x, top, w, h, paper, 28, true); box(c, x, top, w, 40, NSColor(calibratedRed: 0.11, green: 0.12, blue: 0.21, alpha: 1), 28)
-    txt("記事本", c, x + 17, top + 11, w - 34, 24, min(17, w * 0.06), .bold, .white, .left)
-    txt("ㄅ半注音的第一選擇", c, x + 18, top + 58, w - 36, 28, min(16, w * 0.06), .medium, ink, .left)
-    txt("琦ㄑㄧˊ注音輸入法", c, x + 18, top + 91, w - 36, 28, min(16, w * 0.06), .medium, ink, .left)
-    txt(caption, c, x + 16, top + h - 31, w - 32, 22, min(13, w * 0.05), .bold, purple)
-    let candidates = ["1 其","2 期","3 齊","4 奇","5 旗","6 騎","7 祈","8 棋","9 祺"]
-    if mode == .vertical {
-        // Anchor the floating list immediately below the inline reading instead
-        // of letting it drift into the middle of the editor mockup.
-        let cx = x + w * 0.27, cy = top + 116, cw = w * 0.43
-        box(c, cx, cy, cw, 238, NSColor(calibratedRed: 0.96, green: 0.97, blue: 1, alpha: 1), 9, true)
-        for (n,v) in candidates.enumerated() { label(c, v, cx + 4, cy + 5 + CGFloat(n) * 25, cw - 8, selected: n == 0, small: true) }
+    let photoTop: CGFloat = kind == "Google Play" ? 540*k : 535*k
+    let photoBottom: CGFloat = kind == "Google Play" ? 130*k : 112*k
+    let photoWidth: CGFloat = kind == "iPad" ? w*0.78 : (kind == "Google Play" ? w*0.73 : w*0.79)
+    let frameX = (w-photoWidth)/2
+    if darkTheme {
+        c.rounded(frameX-29*k, photoTop-29*k, photoWidth+58*k,
+                  h-photoTop-photoBottom+58*k, 54*k, white.withAlphaComponent(0.18))
+    } else {
+        c.rounded(frameX-29*k, photoTop-29*k, photoWidth+58*k,
+                  h-photoTop-photoBottom+58*k, 54*k, lavender)
     }
-    if mode == .horizontal || mode == .fixed { let cy = mode == .fixed ? top + h - 108 : top + 140; let cw = w * 0.92; let cx = x + w * 0.04; box(c, cx, cy, cw, 52, NSColor(calibratedRed: 0.91, green: 0.89, blue: 0.96, alpha: 1), 8, mode == .horizontal); for (n,v) in candidates.enumerated() { let cell = cw / 9; if n == 0 { box(c, cx + CGFloat(n) * cell, cy + 7, cell, 38, purple, 6) }; txt(v.replacingOccurrences(of: " ", with: ""), c, cx + CGFloat(n) * cell, cy + 18, cell, 19, min(11, cell * 0.25), n == 0 ? .bold : .medium, n == 0 ? .white : ink) } }
-    if mode == .touch { let k = min(23, w * 0.09); let l = x + (w - k * 9 - 40) / 2; for (row,count) in [(0,9),(1,8),(2,7)] { for n in 0..<count { box(c, l + CGFloat(n) * (k + 5) + CGFloat(row) * k * 0.35, top + h - 150 + CGFloat(row) * 37, k, k * 0.75, NSColor(calibratedRed: 0.93, green: 0.89, blue: 0.96, alpha: 1), 6) } }; txt("ㄅ   ㄆ   ㄇ   ㄈ   ㄉ   ㄊ   ㄋ", c, l, top + h - 147, k * 8.5, 18, 11, .bold, purple, .left) }
+    c.screenshot(page.image, x: frameX, top: photoTop,
+                 maxWidth: photoWidth, maxHeight: h-photoTop-photoBottom,
+                 radius: 28*k)
+    c.text(String(format: "%02d / %02d", index, count), x: w-215*k,
+           top: h-80*k, width: 160*k, height: 50*k, size: 32*k,
+           weight: .semibold, color: darkTheme ? white : purple, align: .right)
+    c.save(path)
 }
-func library(_ c: C, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ title: String, _ sub: String, _ rows: [String], _ active: String? = nil) {
-    box(c, x, top, w, 220, paper, 24, true); txt(title, c, x + 20, top + 18, w - 40, 28, 20, .bold, ink, .left); txt(sub, c, x + 20, top + 49, w - 40, 24, 13, .medium, .gray, .left)
-    for (n,v) in rows.enumerated() { box(c, x + 18, top + 82 + CGFloat(n) * 38, w - 36, 31, v == active ? purple : NSColor(calibratedWhite: 0.92, alpha: 1), 8); txt(v, c, x + 28, top + 89 + CGFloat(n) * 38, w - 56, 20, 15, v == active ? .bold : .medium, v == active ? .white : ink, .left) }
-}
-func phoneShot(_ c: C, _ shot: NSImage, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat, _ caption: String, zoomCandidates: Bool = false, candidateSourceY: CGFloat? = nil) {
-    box(c, x, top, w, h, paper, 24, true)
-    let captionH: CGFloat = 58
-    imageFit(shot, c, x + 10, top + 10, w - 20, h - captionH - 18, framed: false)
-    if zoomCandidates {
-        // The AVD candidate row sits immediately above the touch keyboard. Keep
-        // the complete row, including both arrows and candidates 1–9. Fitting the
-        // crop is intentional: filling this wide strip would cut candidate 1 or 9.
-        let source = NSRect(x: 0, y: candidateSourceY ?? shot.size.height - 2070, width: shot.size.width, height: 205)
-        imageSourceFit(shot, c, x + 14, top + h - 150, w - 28, 68, source, framed: true)
-    }
-    txt(caption, c, x + 12, top + h - 48, w - 24, 30, min(18, w * 0.06), .bold, purple)
-}
-func comic(_ sprite: NSImage, _ c: C, _ panel: Int, _ x: CGFloat, _ top: CGFloat, _ w: CGFloat, _ h: CGFloat) {
-    // Image generation leaves different amounts of transparent space around each
-    // illustration. Crop each panel at its own transparent gutter so a neighbouring
-    // device never leaks into the frame, then aspect-fit it into the available space.
-    let panels: [(CGFloat, CGFloat)] = [
-        (0, 480),
-        (485, 330),
-        (820, 400),
-        (1260, 325),
-        (1625, sprite.size.width - 1625),
-    ]
-    let (sourceX, sourceW) = panels[panel]
-    let sourceH = sprite.size.height * 0.72
-    let source = NSRect(x: sourceX, y: sprite.size.height * 0.14, width: sourceW, height: sourceH)
-    let scale = min(w / sourceW, h / sourceH)
-    let dw = sourceW * scale, dh = sourceH * scale
-    image(sprite, c, x + (w - dw) / 2, top + (h - dh) / 2, dw, dh, source, framed: false)
-}
-func header(_ c: C, _ title: String, _ sub: String, _ compact: Bool) {
-    let tablet = c.w >= 1800
-    let titleTop: CGFloat = compact ? 58 : 85
-    let titleHeight: CGFloat = tablet ? 160 : (compact ? 88 : 110)
-    let subtitleTop: CGFloat = tablet ? 250 : (compact ? 155 : 210)
-    let badgeTop: CGFloat = tablet ? 350 : (compact ? 225 : 315)
-    txt(title, c, 70, titleTop, c.w - 140, titleHeight, c.w * (compact ? 0.052 : 0.058), .bold)
-    txt(sub, c, 70, subtitleTop, c.w - 140, compact ? 56 : 76, c.w * 0.026, .medium, pale)
-    let pw = c.w * 0.35
-    box(c, (c.w-pw)/2, badgeTop, pw, 60, NSColor.white.withAlphaComponent(0.16), 30)
-    txt("琦琦注音", c, (c.w-pw)/2, badgeTop+15, pw, 34, 25, .semibold)
-}
-func copy(_ page: Int, _ android: Bool, _ tablet: Bool) -> (String,String) {
-    if android { return [
-        ("接上鍵盤，候選跟著跑","直式或橫式浮動窗貼近游標，1–9 一伸手就到"),
-        ("不想浮動，也能穩穩選","關閉浮動，候選字留在實體鍵盤列"),
-        ("觸控也有熟悉的五排","直式、橫式都保留ㄅ半注音的肌肉記憶"),
-        ("30 種詞庫，與你更關聯","小麥注音或動漫詞庫，候選跟著你的世界走")
-    ][page-1] }
-    var pages = [
-        ("ㄅ半注音的第一選擇","琦琦注音，讓手指快樂回家"),
-        ("五排都在，藍牙鍵盤也在","iPhone 接上實體鍵盤，熟悉的選字手感不變"),
-        ("接上鍵盤，直接開打","App 內完成文字，再複製或分享"),
-        ("30 種詞庫，與你更關聯","小麥注音或動漫詞庫，候選跟著你的世界走")
-    ]
-    if tablet {
-        pages[1] = ("五排都在，藍牙鍵盤也在", "iPad 接上實體鍵盤，熟悉的選字手感不變")
-        pages[2] = ("iPad 接上鍵盤，直接開打", "大畫面完成文字，再複製或分享")
-    }
-    return pages[page-1]
-}
-func page(_ c: C, _ n: Int, _ androidSet: Bool, _ ios: NSImage, _ android: NSImage, _ mac: NSImage, _ win: NSImage, _ sprite: NSImage, _ tablet: NSImage, _ dictionaries: NSImage, _ mcAssociated: NSImage, _ animeAssociated: NSImage, _ touchPortrait: NSImage, _ touchLandscape: NSImage, _ fixedPortrait: NSImage, _ fixedLandscape: NSImage, _ iosPhoneHardwareEditor: NSImage, _ iosIPadHardwareEditor: NSImage, _ iosDictionaries: NSImage, _ iosMcAssociated: NSImage, _ iosAnimeAssociated: NSImage) {
-    let compact = c.h < 2200
-    let isIPadCanvas = !androidSet && c.w >= 1800
-    let top: CGFloat = compact ? 330 : 470
-    let (title,sub) = copy(n, androidSet, isIPadCanvas)
-    header(c,title,sub,compact)
-    if androidSet && n == 1 {
-        let cw = c.w * 0.40
-        modeCard(c,c.w*0.07,top+20,cw,570,.vertical,"直式浮動窗")
-        modeCard(c,c.w*0.53,top+20,cw,570,.horizontal,"橫式浮動窗")
-        imageFit(tablet,c,c.w*0.07,top+620,c.w*0.86,540)
-        comic(sprite,c,0,c.w*0.30,c.h-310,c.w*0.40,250)
-        return
-    }
-    if androidSet && n == 2 {
-        // These are full AVD captures, not reconstructed keyboard mockups. Keep
-        // each device orientation's native aspect ratio and every 1–9 cell.
-        let portraitW = c.w * 0.36
-        let portraitH = portraitW * fixedPortrait.size.height / fixedPortrait.size.width
-        imageFit(fixedPortrait,c,c.w*0.045,top+20,portraitW,portraitH)
-        txt("直式畫面・關閉浮動",c,c.w*0.045,top+portraitH+42,portraitW,42,24,.bold,pale)
 
-        let landscapeW = c.w * 0.56
-        let landscapeH = landscapeW * fixedLandscape.size.height / fixedLandscape.size.width
-        imageFit(fixedLandscape,c,c.w*0.42,top+150,landscapeW,landscapeH)
-        txt("畫面打橫・關閉浮動",c,c.w*0.42,top+landscapeH+172,landscapeW,42,24,.bold,pale)
-        txt("兩張都是手機實際操作畫面；候選固定留在鍵盤列，方向改變也完整保留 1–9",c,c.w*0.43,top+landscapeH+235,c.w*0.53,110,24,.semibold,pale)
-        comic(sprite,c,1,c.w*0.47,c.h-620,c.w*0.46,520)
-        return
+func feature(_ variant: String, path: String) {
+    let c = Canvas(1024,500)
+    if variant == "A" {
+        NSGradient(starting: plum, ending: purple)!.draw(in: c.rect(0,0,1024,500), angle: 45)
+        c.text("注音照你的習慣",x:55,top:75,width:520,height:100,size:65,weight:.bold,color:white)
+        c.text("好打注音・傳統注音・實體鍵盤",x:58,top:190,width:500,height:95,size:31,weight:.medium,color:lavender)
+        c.rounded(55,332,500,68,34,gold)
+        c.text("琦琦注音輸入法",x:75,top:343,width:460,height:53,size:34,weight:.bold,color:plum)
+    } else {
+        c.fill(col(0xFAF7FD))
+        c.rounded(0,0,22,500,0,purple)
+        c.text("注音照你的習慣",x:65,top:68,width:510,height:112,size:65,weight:.bold,color:plum)
+        c.text("好打・傳統・接上鍵盤",x:68,top:193,width:485,height:105,size:38,weight:.medium,color:purple)
+        c.rounded(65,352,458,76,38,plum)
+        c.text("琦琦注音 1.3.0",x:85,top:362,width:420,height:55,size:37,weight:.bold,color:white)
     }
-    if androidSet && n == 3 {
-        let portraitW = c.w * 0.37
-        let portraitH = portraitW * touchPortrait.size.height / touchPortrait.size.width
-        imageFit(touchPortrait,c,c.w*0.06,top+20,portraitW,portraitH)
-        txt("直式觸控",c,c.w*0.06,top+portraitH+40,portraitW,40,24,.bold,pale)
-        let landscapeW = c.w * 0.50
-        let landscapeH = landscapeW * touchLandscape.size.height / touchLandscape.size.width
-        imageFit(touchLandscape,c,c.w*0.46,top+150,landscapeW,landscapeH)
-        txt("畫面打橫後的橫式觸控",c,c.w*0.46,top+landscapeH+170,landscapeW,45,24,.bold,pale)
-        txt("直式、橫式都是實際操作畫面，五排鍵位與 1–9 候選完整保留",c,c.w*0.46,top+landscapeH+230,landscapeW,100,23,.semibold,pale)
-        comic(sprite,c,2,c.w*0.30,c.h-310,c.w*0.40,250)
-        return
-    }
-    if n == 4 {
-        if androidSet {
-            let w = c.w * 0.285, h: CGFloat = 930, y = top + 15
-            phoneShot(c,dictionaries,c.w*0.045,y,w,h,"A・可選 30 種詞庫")
-            phoneShot(c,mcAssociated,c.w*0.3575,y,w,h,"B・只選小麥注音",zoomCandidates:true)
-            phoneShot(c,animeAssociated,c.w*0.67,y,w,h,"C・只選動漫",zoomCandidates:true)
-            comic(sprite,c,2,c.w*0.33,c.h-360,c.w*0.34,300)
-        } else {
-            let w = c.w * 0.285, h: CGFloat = 1260, y = top + 15
-            phoneShot(c,iosDictionaries,c.w*0.045,y,w,h,"A・可選 30 種詞庫")
-            phoneShot(c,iosMcAssociated,c.w*0.3575,y,w,h,"B・只選小麥注音",zoomCandidates:true,candidateSourceY:iosMcAssociated.size.height*0.40)
-            phoneShot(c,iosAnimeAssociated,c.w*0.67,y,w,h,"C・只選動漫",zoomCandidates:true,candidateSourceY:iosAnimeAssociated.size.height*0.40)
-            comic(sprite,c,2,c.w*0.33,c.h-390,c.w*0.34,320)
-        }
-        return
-    }
-    if !androidSet && (n == 2 || n == 3) {
-        let panel = n == 2 ? 3 : 4
-        let source: NSImage
-        let imageWidth: CGFloat
-        let bottomReserve: CGFloat
-        if n == 2 {
-            source = ios
-            imageWidth = c.w * 0.56
-            bottomReserve = 580
-        } else {
-            source = isIPadCanvas ? iosIPadHardwareEditor : iosPhoneHardwareEditor
-            imageWidth = c.w * (isIPadCanvas ? 0.72 : 0.58)
-            bottomReserve = 390
-        }
-        let imageHeight = min(imageWidth * source.size.height / source.size.width, c.h - top - bottomReserve)
-        imageFit(source,c,(c.w-imageWidth)/2,top,imageWidth,imageHeight)
-        let comicTop = n == 2 ? c.h - 430 : c.h - 350
-        let comicHeight: CGFloat = n == 2 ? 340 : 280
-        comic(sprite,c,panel,c.w*0.30,comicTop,c.w*0.40,comicHeight)
-        return
-    }
-    let iw=c.w*0.62; let ih=min(iw*ios.size.height/ios.size.width,c.h-top-80); imageFit(ios,c,(c.w-iw)/2,top,iw,ih)
+    let phone = NSImage(contentsOfFile: output + "/Sources/android-v130-smart-full.png")!
+    let panel = c.rect(630,25,350,450)
+    c.rounded(622,17,366,466,23,white)
+    NSGraphicsContext.saveGraphicsState()
+    NSBezierPath(roundedRect: panel, xRadius: 16, yRadius: 16).addClip()
+    phone.draw(in: panel,
+               from: NSRect(x:0,y:0,width:phone.size.width,height:phone.size.height*0.52),
+               operation:.sourceOver,fraction:1,respectFlipped:true,
+               hints:[.interpolation:NSImageInterpolation.high])
+    NSGraphicsContext.restoreGraphicsState()
+    c.save(path)
 }
-func feature(_ android: NSImage, _ sprite: NSImage, _ out: URL) throws { let c=C(1024,500); bg(c); txt("ㄅ半注音的\n第一選擇",c,68,70,410,160,61,.bold,.white,.left); txt("浮動候選跟著游標，\n實體鍵盤也能快樂選字",c,72,276,440,84,24,.medium,pale,.left); comic(sprite,c,0,30,365,270,105); modeCard(c,535,40,205,400,.vertical,"直式浮動"); modeCard(c,770,40,205,400,.horizontal,"橫式浮動"); try c.save(out) }
 
-let root = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent().deletingLastPathComponent()
-let store = root.appendingPathComponent("StoreAssets")
-func load(_ name:String) throws -> NSImage { let u=store.appendingPathComponent("Sources/\(name)"); guard let i=NSImage(contentsOf:u) else { throw Err.image(u.path) }; return i }
-let ios=try load("ios-notes-qi.png"), android=try load("android-notes-floating-qi.png"), mac=try load("chichi-macos.png"), win=try load("chichi-windows.png"), sprite=try load("comic-devices.png")
-let tablet=try load("android-tablet-candidates.png"), dictionaries=try load("android-phone-dictionaries.png"), mcAssociated=try load("android-phone-mcbopomofo-associated-ya.png"), animeAssociated=try load("android-phone-anime-associated-ya.png")
-let touchPortrait=try load("android-phone-touch-portrait.png"), touchLandscape=try load("android-phone-touch-landscape.png")
-let fixedPortrait=try load("android-phone-hardware-fixed-portrait.png"), fixedLandscape=try load("android-phone-hardware-fixed-landscape.png")
-let iosPhoneHardwareEditor=try load("ios-phone-hardware-editor.png"), iosIPadHardwareEditor=try load("ios-ipad-hardware-editor.png")
-let iosDictionaries=try load("ios-phone-dictionaries.png"), iosMcAssociated=try load("ios-phone-mcbopomofo-associated-ya.png"), iosAnimeAssociated=try load("ios-phone-anime-associated-ya.png")
-for (path,size,flag) in [
-    ("AppStore/iPhone-1206x2622",NSSize(width:1206,height:2622),false),
-    ("AppStore/iPhone-1242x2688",NSSize(width:1242,height:2688),false),
-    ("AppStore/iPad-2048x2732",NSSize(width:2048,height:2732),false),
-    ("GooglePlay/Phone",NSSize(width:1080,height:1920),true),
-] { let out=store.appendingPathComponent(path); try FileManager.default.createDirectory(at:out,withIntermediateDirectories:true); for n in 1...4 { let c=C(size.width,size.height); bg(c); page(c,n,flag,ios,android,mac,win,sprite,tablet,dictionaries,mcAssociated,animeAssociated,touchPortrait,touchLandscape,fixedPortrait,fixedLandscape,iosPhoneHardwareEditor,iosIPadHardwareEditor,iosDictionaries,iosMcAssociated,iosAnimeAssociated); try c.save(out.appendingPathComponent(String(format:"%02d.png",n))) } }
-try feature(android,sprite,store.appendingPathComponent("GooglePlay/feature-graphic-1024x500.png"))
-print("Generated store artwork in \(store.path)")
+func renderFivePlatforms(_ variant: String, path: String) {
+    let c = Canvas(1080,1920)
+    let darkTheme = variant == "A"
+    if darkTheme {
+        NSGradient(starting: col(0x271037), ending: col(0x882598))!
+            .draw(in:c.rect(0,0,1080,1920),angle:67)
+    } else {
+        c.fill(col(0xFAF7FD))
+        c.rounded(0,0,1080,92,0,plum)
+        c.text("琦琦注音  /  Google Play",x:58,top:25,width:950,height:55,
+               size:34,weight:.semibold,color:white)
+    }
+    let head = darkTheme ? white : plum
+    let sub = darkTheme ? lavender : purple
+    c.text("五個平台，同一套注音習慣",x:55,top:darkTheme ? 84 : 145,
+           width:970,height:165,size:68,weight:.bold,color:head)
+    c.text("Android・iOS・macOS・Windows・Linux",x:58,top:darkTheme ? 255 : 315,
+           width:970,height:75,size:34,weight:.medium,color:sub)
+    let devices: [(String,String,CGFloat,CGFloat,CGFloat,CGFloat)] = [
+        ("Android",output + "/Sources/android-v130-smart-full.png",55,430,465,660),
+        ("iOS",ios+"keykey-ios-v130-smart-typing.png",560,430,465,660),
+        ("macOS",ios+"keykey-macos-v130-candidates.png",45,1130,315,490),
+        ("Windows",root+"/StoreAssets/Sources/chichi-windows.png",383,1130,315,490),
+        ("Linux",ios+"keykey-linux-v130-smart-candidates.png",721,1130,315,490)
+    ]
+    for (name,source,x,y,w,h) in devices {
+        c.rounded(x,y,w,h,30,white)
+        c.text(name,x:x+14,top:y+20,width:w-28,height:55,size:37,
+               weight:.bold,color:purple,align:.center)
+        c.screenshot(source,x:x+20,top:y+90,maxWidth:w-40,
+                     maxHeight:h-125,radius:10)
+    }
+    c.text("手機、桌機，都有熟悉的注音鍵位",x:70,top:1710,
+           width:940,height:85,size:45,weight:.semibold,color:head,align:.center)
+    c.text("05 / 05",x:810,top:1840,width:210,height:48,
+           size:32,weight:.semibold,color:sub,align:.right)
+    c.save(path)
+}
+
+// The selected 1.3.0 store artwork is variant A. Run this script from the
+// repository root so source paths and output paths remain portable.
+for (name, pages, width, height, destination) in [
+    ("iPhone", iphone, 1206, 2622, "AppStore/iPhone-1206x2622"),
+    ("iPhone", iphone, 1242, 2688, "AppStore/iPhone-1242x2688"),
+    ("iPad", ipad, 2048, 2732, "AppStore/iPad-2048x2732"),
+    ("GooglePlay", android, 1080, 1920, "GooglePlay/Phone")
+] {
+    for (i, page) in pages.enumerated() {
+        let dest = "\(output)/\(destination)/" + String(format: "%02d.png", i + 1)
+        if name == "GooglePlay" && i == 4 {
+            renderFivePlatforms("A", path: dest)
+        } else {
+            render(page, index: i + 1, count: pages.count, variant: "A",
+                   width: width, height: height,
+                   kind: name == "GooglePlay" ? "Google Play" : name, path: dest)
+        }
+        print(dest)
+    }
+}
+feature("A", path: "\(output)/GooglePlay/feature-graphic-1024x500.png")
+let fivePlatforms = output + "/FivePlatforms/five-platforms.png"
+if fm.fileExists(atPath: fivePlatforms) { try fm.removeItem(atPath: fivePlatforms) }
+try fm.copyItem(atPath: output + "/GooglePlay/Phone/05.png", toPath: fivePlatforms)
