@@ -90,6 +90,22 @@ add_library(keykey_linux_engine STATIC
 target_compile_features(keykey_linux_engine PUBLIC cxx_std_17)
 target_include_directories(keykey_linux_engine PUBLIC engine/include)
 target_link_libraries(keykey_linux_engine PUBLIC Iconv::Iconv SQLite::SQLite3)
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    # Fcitx's include paths select ports' iconv.h even when FindIconv
+    # detects iconv in libc. That header maps calls to libiconv_*.
+    find_library(KEYKEY_FREEBSD_ICONV_LIBRARY NAMES iconv REQUIRED)
+    get_filename_component(KEYKEY_FREEBSD_ICONV_LIBDIR
+        "${KEYKEY_FREEBSD_ICONV_LIBRARY}" DIRECTORY)
+    get_filename_component(KEYKEY_FREEBSD_ICONV_PREFIX
+        "${KEYKEY_FREEBSD_ICONV_LIBDIR}" DIRECTORY)
+    find_path(KEYKEY_FREEBSD_ICONV_INCLUDE_DIR iconv.h
+        PATHS "${KEYKEY_FREEBSD_ICONV_PREFIX}/include"
+        NO_DEFAULT_PATH REQUIRED)
+    target_include_directories(keykey_linux_engine PRIVATE
+        "${KEYKEY_FREEBSD_ICONV_INCLUDE_DIR}")
+    target_link_libraries(keykey_linux_engine PUBLIC
+        "${KEYKEY_FREEBSD_ICONV_LIBRARY}")
+endif()
 add_executable(keykey-smart-phrases tools/smart-mandarin-phrases.cpp)
 target_compile_features(keykey-smart-phrases PRIVATE cxx_std_17)
 target_link_libraries(keykey-smart-phrases PRIVATE keykey_linux_engine)
