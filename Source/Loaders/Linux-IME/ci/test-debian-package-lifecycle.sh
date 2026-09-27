@@ -129,7 +129,7 @@ verify_install() {
     /usr/share/chichi77-keykey/data/simplex-ext.cin
   cmp "$repository_root/Source/DataTables/bpmf-punctuations.cin" \
     /usr/share/chichi77-keykey/data/bpmf-punctuations.cin
-  cmp "$linux_dir/data/tc2sc.cin" \
+  cmp "$linux_dir/../Fcitx5-Common/data/tc2sc.cin" \
     /usr/share/chichi77-keykey/data/tc2sc.cin
   cmp "$repository_root/DataSource/McBopomofo/phrase.occ" \
     /usr/share/chichi77-keykey/data/associated-phrases/McBopomofo.occ

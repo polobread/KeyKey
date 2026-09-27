@@ -8,8 +8,11 @@ set and setup steps.
 The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
-This directory contains the native Linux implementation. It does not link or
-modify the legacy KeyKeyEngine or OpenVanilla frameworks. The earlier 1.2.8
+This directory contains the Linux build entry point, desktop integration,
+packaging, and platform tests. The engine, Fcitx 5 addon, model cooker, and
+runtime tables are in [Fcitx5-Common](../Fcitx5-Common/README.md), shared with
+the FreeBSD frontend. They do not link or modify the legacy KeyKeyEngine or
+OpenVanilla frameworks. The earlier 1.2.8
 release boundaries remain in the
 [1.2.8 release record](docs/linux-1.2.8-release.md).
 

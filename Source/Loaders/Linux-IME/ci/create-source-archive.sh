@@ -51,6 +51,7 @@ source_paths=(
   Source/DataTables/bpmf-punctuations.cin
   Source/DataTables/cj-ext.cin
   Source/DataTables/simplex-ext.cin
+  Source/Loaders/Fcitx5-Common
   Source/Loaders/Linux-IME
 )
 

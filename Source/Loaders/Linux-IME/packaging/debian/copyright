@@ -11,6 +11,7 @@ License: GPL-2
  /usr/share/common-licenses/GPL-2 on Debian systems.
 
 Files: Source/Loaders/Linux-IME/*
+ Source/Loaders/Fcitx5-Common/*
 Copyright: 2026 Chui-Ping Cheng
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -31,7 +32,7 @@ License: MIT
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
 
-Files: Source/Loaders/Linux-IME/data/tc2sc.cin
+Files: Source/Loaders/Fcitx5-Common/data/tc2sc.cin
 Copyright: 2004-2007 The OpenVanilla Project
  2002-2004 Autrijus Tang
 License: BSD-3-Clause

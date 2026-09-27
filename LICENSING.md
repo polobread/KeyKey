@@ -26,6 +26,8 @@ are licensed under the MIT License:
 - `Source/Loaders/Android-IME/`
 - `Source/Loaders/iOS-Keyboard/`
 - `Source/Loaders/Linux-IME/`
+- `Source/Loaders/Fcitx5-Common/`
+- `Source/Loaders/FreeBSD-IME/`
 - `Source/Loaders/Windows-TSF/`
 
 The MIT License text for these frontends is in
@@ -48,7 +50,7 @@ packages.
   packaging it with an MIT frontend does not relicense the database.
 - OpenVanilla, PlainVanilla, Formosa, Manjusri, and module packages retain the
   licenses and copyright notices stated in their source files.
-- `Source/Loaders/Linux-IME/data/tc2sc.cin` is generated from the read-only
+- `Source/Loaders/Fcitx5-Common/data/tc2sc.cin` is generated from the read-only
   OpenVanilla `VXHCTC2SCTable.c` mapping and retains that table's BSD 3-Clause
   terms and attribution, including its recorded Encode::HanConvert origin.
 - `Source/Loaders/Linux-IME/gnome-panel/` contains inspected GNOME Input

@@ -78,6 +78,8 @@ mkdir -p \
   "$output_dir"
 
 mkdir -p "$source_root/Source/Loaders/Linux-IME"
+cp -a "$repository_root/Source/Loaders/Fcitx5-Common" \
+  "$source_root/Source/Loaders/"
 cp -a \
   "$linux_dir/CMakeLists.txt" \
   "$linux_dir/CMakePresets.json" \
@@ -85,12 +87,10 @@ cp -a \
   "$linux_dir/README.md" \
   "$source_root/Source/Loaders/Linux-IME/"
 cp -a \
-  "$linux_dir/adapters" \
   "$linux_dir/ci" \
   "$linux_dir/cmake" \
   "$linux_dir/data" \
   "$linux_dir/docs" \
-  "$linux_dir/engine" \
   "$linux_dir/gnome-panel" \
   "$linux_dir/tests" \
   "$linux_dir/tools" \
