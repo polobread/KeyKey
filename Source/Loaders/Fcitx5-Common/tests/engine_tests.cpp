@@ -1610,7 +1610,7 @@ void testSmartMandarinModelVersion() {
     const int bigrams = sqlite3_column_int(statement, 1);
     sqlite3_finalize(statement);
     sqlite3_close(database);
-    require(unigrams == 114235 && bigrams == 885627,
+    require(unigrams == 114392 && bigrams == 885627,
             "Smart Mandarin model version does not match macOS");
 }
 
