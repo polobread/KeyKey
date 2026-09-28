@@ -18,10 +18,12 @@ import java.util.Set;
 /** Lazy, read-only Viterbi walker over the same language model used by macOS and iOS. */
 final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     private static final String ASSET_NAME = "KeyKey.db";
-    private static final String INSTALLED_NAME = "KeyKey-smart-reading-v3.db";
+    // The shared-model verifier checks this fingerprint so an app upgrade
+    // cannot reuse a different model merely because its row count matches.
+    private static final String INSTALLED_NAME = "KeyKey-smart-28b18de318ac13ee.db";
     private static final String[] PREVIOUS_INSTALLED_NAMES = {
             "KeyKey-smart-885614.db", "KeyKey-smart-1.2.10.db",
-            "KeyKey-smart-reading-v2.db"
+            "KeyKey-smart-reading-v2.db", "KeyKey-smart-reading-v3.db"
     };
     private static final long EXPECTED_BIGRAM_ROWS = 885_627;
     private static final int MAXIMUM_SPAN = 8;

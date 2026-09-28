@@ -327,11 +327,9 @@ public final class BopomofoEngine {
             if !hardwareSmartEditing {
                 return .commitAndReturn(finishCompositionForModeSwitch().text)
             }
-            if !reading.isEmpty {
-                let result = finishSmartReading()
-                guard reading.isEmpty else { return result }
-            }
-            return commitSmartComposition()
+            let finishedReading = reading.isEmpty ? Result.update : finishSmartReading()
+            guard reading.isEmpty else { return finishedReading }
+            return .commit(finishedReading.text + commitSmartComposition().text)
         }
         if !candidates.isEmpty { return selectHighlightedCandidate() }
         if !reading.isEmpty { return query() }
@@ -400,10 +398,6 @@ public final class BopomofoEngine {
         if compositionMode == .smart, showingSmartCandidates, !smartReadings.isEmpty {
             guard smartCandidateOptions.indices.contains(absolute) else { return .update }
             let option = smartCandidateOptions[absolute]
-            smartSource?.learnSelection(
-                readings: smartReadings, at: smartCandidateStart,
-                candidate: option, composition: smartComposition
-            )
             let end = smartCandidateStart + option.length
             smartOverrides = smartOverrides.filter { start, selection in
                 start >= end || start + selection.length <= smartCandidateStart
@@ -413,6 +407,10 @@ public final class BopomofoEngine {
             )
             if hardwareSmartEditing { smartCursor = end }
             rebuildSmartComposition()
+            smartSource?.learnSelection(
+                readings: smartReadings, at: smartCandidateStart,
+                candidate: option, composition: smartComposition
+            )
             return .update
         }
         if showingAssociatedPhrases {
@@ -484,6 +482,10 @@ public final class BopomofoEngine {
         }
         if mode == .number { return .commit(String(rawKey)) }
 
+        if !fromTouch, compositionMode == .smart, rawKey.isASCII, rawKey.isUppercase {
+            guard reading.isEmpty else { return .update }
+            return .commit(finishCompositionForModeSwitch().text + String(rawKey))
+        }
         let key = Character(rawKey.lowercased())
         if !fromTouch, !showingAssociatedPhrases, !candidates.isEmpty,
            let number = key.wholeNumberValue, (1...9).contains(number) {
@@ -562,21 +564,20 @@ public final class BopomofoEngine {
     }
 
     private func evictFirstSmartSegment() -> Result {
-        guard let first = smartComposition?.segments.first,
-              first.length > 0, !first.text.isEmpty else { return .update }
-        // The desktop walker keeps the next node's chosen text when it shifts
-        // away the head. Preserve that boundary here, before recomposing with
-        // less left-hand context.
-        let next = smartComposition?.segments.dropFirst().first
-        let committed = first.text
-        smartReadings.removeFirst(first.length)
+        guard let smartSource, let composition = smartComposition else { return .update }
+        let count = smartSource.evictionLength(readings: smartReadings, composition: composition)
+        guard count > 0, count <= smartReadings.count else { return .update }
+        let committed = composition.segments.filter { $0.start < count }.map(\.text).joined()
+        guard !committed.isEmpty else { return .update }
+        let next = composition.segments.first { $0.start == count }
+        smartReadings.removeFirst(count)
         smartOverrides = Dictionary(uniqueKeysWithValues: smartOverrides.compactMap { start, selection in
-            start >= first.length ? (start - first.length, selection) : nil
+            start >= count ? (start - count, selection) : nil
         })
         if let next {
             smartOverrides[0] = SmartMandarinSelection(length: next.length, text: next.text)
         }
-        smartCursor = max(0, smartCursor - first.length)
+        smartCursor = max(0, smartCursor - count)
         rebuildSmartComposition()
         return .commit(committed)
     }
@@ -680,12 +681,20 @@ public final class BopomofoEngine {
     private func commitPrimaryCandidate(
         _ selected: String, offeringAssociatedPhrases offering: Bool
     ) -> Result {
+        let text: String
+        if compositionMode == .smart, !smartReadings.isEmpty {
+            let characters = Array(smartComposition?.text ?? "")
+            let cursor = min(smartCursor, characters.count)
+            text = String(characters[..<cursor]) + selected + String(characters[cursor...])
+        } else {
+            text = selected
+        }
         clearComposition()
         if offering, let source = associatedPhrases {
             candidates = source.phrases(forHeadCharacter: selected)
             showingAssociatedPhrases = !candidates.isEmpty
         }
-        return .commit(selected)
+        return .commit(text)
     }
 
     /// Typing a new reading over a candidate list commits the first candidate

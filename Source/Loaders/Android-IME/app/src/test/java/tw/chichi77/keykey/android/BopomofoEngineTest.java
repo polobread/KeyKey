@@ -514,6 +514,13 @@ public final class BopomofoEngineTest {
         assertEquals("你".repeat(9) + "尼", result.committedText());
         assertTrue(result.sendEnter());
         assertFalse(engine.hasComposition());
+
+        BopomofoEngine hardware = new BopomofoEngine(CinDictionary.empty(), source,
+                BopomofoCompositionMode.SMART);
+        typeHardware(hardware, "su3".repeat(10) + "su");
+        assertEquals("你".repeat(10) + "尼", hardware.enter().committedText());
+        assertFalse(hardware.hasComposition());
+        assertEquals("", hardware.finishCompositionForInputHandoff().committedText());
     }
 
     @Test
@@ -786,6 +793,18 @@ public final class BopomofoEngineTest {
         assertEquals("要去哪裡玩呢去海邊", learnedHardware.composingText());
         assertEquals("請假要去哪裡玩呢去海邊",
                 learnedCommitted + learnedHardware.enter().committedText());
+
+        BopomofoEngine learnedTouch = new BopomofoEngine(dictionary, learnedSplit,
+                BopomofoCompositionMode.SMART);
+        StringBuilder touchPrefix = new StringBuilder();
+        for (String syllable : java.util.Arrays.copyOf(keys, 10)) {
+            for (char key : syllable.toCharArray()) {
+                touchPrefix.append(learnedTouch.handleSoftKey(String.valueOf(key)).committedText());
+            }
+        }
+        assertEquals("請假", touchPrefix.toString());
+        assertEquals("要去哪裡玩呢去海", learnedTouch.composingText());
+
     }
 
     @Test
@@ -983,8 +1002,61 @@ public final class BopomofoEngineTest {
         assertEquals("您好", engine.enter().committedText());
     }
 
+    @Test
+    public void touchFallbackSelectionPreservesComposedSentence() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3vup3");
+        assertEquals(List.of("伈", "𨓇"), engine.displayedCandidates());
+        assertEquals("你好𨓇", engine.selectDisplayedCandidate(1).committedText());
+        assertFalse(engine.hasComposition());
+    }
+
+    @Test
+    public void learningUsesContextAfterRecomposition() {
+        for (boolean hardware : new boolean[]{false, true}) {
+            java.util.ArrayList<String> learned = new java.util.ArrayList<>();
+            SmartMandarinSource source = new SmartMandarinSource() {
+                @Override
+                public SmartMandarinComposition compose(List<String> readings,
+                                                         Map<Integer, String> overrides) {
+                    java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
+                    for (int i = 0; i < readings.size(); ++i) {
+                        String text = overrides.getOrDefault(i,
+                                i == 0 ? ("郝".equals(overrides.get(1)) ? "妳" : "你") : "好");
+                        segments.add(new SmartMandarinSegment(i, 1, readings.get(i), text));
+                    }
+                    return new SmartMandarinComposition(segments.stream()
+                            .map(SmartMandarinSegment::text).collect(java.util.stream.Collectors.joining()),
+                            List.copyOf(segments));
+                }
+                @Override
+                public List<String> candidates(List<String> readings, int index,
+                                               SmartMandarinComposition composition) {
+                    return List.of("好", "郝");
+                }
+                @Override
+                public void learnSelection(List<String> readings, int index, String selected,
+                                           SmartMandarinComposition composition) {
+                    learned.add(composition.text());
+                }
+            };
+            BopomofoEngine engine = new BopomofoEngine(CinDictionary.empty(), source,
+                    BopomofoCompositionMode.SMART);
+            if (hardware) {
+                typeHardware(engine, "su3cl3");
+                engine.handleHardwareSpace();
+            } else {
+                type(engine, "su3cl3");
+                assertTrue(engine.selectTouchSmartCell(1));
+            }
+            engine.selectDisplayedCandidate(1);
+            assertEquals("妳郝", engine.composingText());
+            assertEquals(List.of("妳郝"), learned);
+        }
+    }
+
     private BopomofoEngine smartEngine() throws Exception {
-        String cin = "%chardef begin\nsu3 你\nsu3 妳\ncl3 好\n%chardef end\n";
+        String cin = "%chardef begin\nsu3 你\nsu3 妳\ncl3 好\nvup3 伈\nvup3 𨓇\n%chardef end\n";
         CinDictionary dictionary = CinDictionary.load(new ByteArrayInputStream(
                 cin.getBytes(StandardCharsets.UTF_8)));
         BopomofoReading firstReading = new BopomofoReading();

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 import sys
 
@@ -62,6 +63,14 @@ def main() -> int:
             missing = [value for value in required if value not in text]
             if missing:
                 raise ValueError(f"{platform}: {path} is missing {missing}")
+
+        android_store = (ROOT / "Source/Loaders/Android-IME/app/src/main/java/"
+                         "tw/chichi77/keykey/android/SmartMandarinStore.java").read_text(
+                             encoding="utf-8")
+        installed_name = re.search(r'INSTALLED_NAME\s*=\s*"([^"]+)"', android_store)
+        expected_name = f"KeyKey-smart-{model['database_sha256'][:16]}.db"
+        if installed_name is None or installed_name.group(1) != expected_name:
+            raise ValueError(f"Android model cache must be named {expected_name}")
 
         cloud_script = (
             ROOT / "Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh"

@@ -218,6 +218,14 @@ namespace OpenVanilla {
         {
             m_moduleManager->forceSyncModuleConfigForNextRound(identifier);
         }
+
+        // Reload an already initialized module before a UI action returns.
+        // Resetting persistent learning must also discard its in-memory copy
+        // before a context can stop and save the old cache again.
+        void forceSyncModuleConfig(const string& identifier)
+        {
+            m_moduleManager->syncConfigForModule(identifier, m_loaderService, true);
+        }
         
         PVLoaderService* loaderService()
         {

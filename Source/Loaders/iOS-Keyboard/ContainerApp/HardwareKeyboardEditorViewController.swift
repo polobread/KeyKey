@@ -1465,7 +1465,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 if engine.isShowingSmartCandidates {
                     engine.moveHighlight(by: 1)
                 } else {
-                    _ = engine.space()
+                    apply(engine.space())
                 }
             }
             transientStatus = nil

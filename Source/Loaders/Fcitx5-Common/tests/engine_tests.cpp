@@ -1925,6 +1925,73 @@ void testSmartMandarinComposition() {
             "Traditional mode did not restore single-reading candidates");
 }
 
+void testSmartMandarinPunctuation() {
+    Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                  BopomofoLayout::Standard,
+                  loadRealDictionary("bpmf-punctuations.cin"));
+    engine.setSmartMandarinStore(keykey::linux_ime::SmartMandarinStore::open(
+        KEYKEY_TEST_SMART_DB));
+    engine.setSmartMandarinMode(true);
+    struct Case {
+        char key;
+        KeyModifier modifiers;
+        const char *text;
+    };
+    // Fcitx may remove Shift after resolving the shifted keysym.
+    for (const auto &test : {
+             Case{'<', KeyModifier::Shift, "，"},
+             Case{'<', KeyModifier::None, "，"},
+             Case{'>', KeyModifier::Shift, "。"},
+             Case{'[', KeyModifier::None, "「"},
+             Case{',', KeyModifier::Control, "，"}}) {
+        const KeyEvent key{KeyCode::Character, test.key, test.modifiers};
+        for (const bool withPrefix : {false, true}) {
+            InputContextState context;
+            if (withPrefix) {
+                for (char c : std::string("su3cl3")) {
+                    engine.processKey(context, character(c));
+                }
+            }
+            const auto result = engine.processKey(context, key);
+            require(result.handled && !result.beep &&
+                        result.commit == std::string(withPrefix ? "你好" : "") +
+                                             test.text &&
+                        result.preedit.empty() && result.candidates.empty(),
+                    "Smart punctuation did not convert and commit exactly once");
+            require(engine.finishComposition(context).commit.empty(),
+                    "Smart punctuation left text to be committed twice");
+        }
+        InputContextState context;
+        for (char c : std::string("su3cl3f")) {
+            engine.processKey(context, character(c));
+        }
+        const auto result = engine.processKey(context, key);
+        require(result.handled && result.beep && result.commit.empty() &&
+                    result.preedit == "你好ㄑ",
+                "Punctuation discarded a sentence with an unfinished reading");
+    }
+
+    for (const bool withPrefix : {false, true}) {
+        InputContextState context;
+        if (withPrefix) {
+            for (char c : std::string("su3cl3")) {
+                engine.processKey(context, character(c));
+            }
+        }
+        auto result = engine.processKey(
+            context, KeyEvent{KeyCode::Character, '{', KeyModifier::Shift});
+        require(result.handled && !result.beep &&
+                    result.commit == (withPrefix ? "你好" : "") &&
+                    result.candidates.size() > 1 && result.preedit == "『",
+                "Smart ordinary punctuation did not open its candidate list");
+        const auto selected = result.candidates[1];
+        result = engine.processKey(context, character('2'));
+        require(result.commit == selected && result.preedit.empty() &&
+                    result.candidates.empty(),
+                "Smart ordinary punctuation selection lost or duplicated text");
+    }
+}
+
 void testSmartMandarinEditingTransitions() {
     Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
                   BopomofoLayout::Standard,
@@ -2405,6 +2472,7 @@ int main(int argc, char **argv) {
             testSmartMandarinModelVersion();
             testSmartMandarinRequiresBigrams();
             testSmartMandarinComposition();
+            testSmartMandarinPunctuation();
             testSmartMandarinEditingTransitions();
             testSmartMandarinUserData();
             testSmartMandarinBigramLearning();
@@ -2443,6 +2511,7 @@ int main(int argc, char **argv) {
         testSmartMandarinModelVersion();
         testSmartMandarinRequiresBigrams();
         testSmartMandarinComposition();
+        testSmartMandarinPunctuation();
         testSmartMandarinEditingTransitions();
         testSmartMandarinUserData();
         testSmartMandarinBigramLearning();

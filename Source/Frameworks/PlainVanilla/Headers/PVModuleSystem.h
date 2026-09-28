@@ -219,7 +219,7 @@ namespace OpenVanilla {
             meta.propertyList->forceSyncForNextRound();
         }
         
-        virtual bool syncConfigForModule(const string& name, OVLoaderService* loaderService)
+        virtual bool syncConfigForModule(const string& name, OVLoaderService* loaderService, bool forced = false)
         {
             map<string, ModuleMetadata>::iterator mdataIter = m_moduleStore.find(name);
             if (mdataIter == m_moduleStore.end())
@@ -229,10 +229,10 @@ namespace OpenVanilla {
             if (!meta.propertyList)
                 return false;
                 
-            if (!meta.propertyList->shouldReadSync())
+            if (!forced && !meta.propertyList->shouldReadSync())
                 return false;
                 
-            meta.propertyList->readSync();
+            meta.propertyList->readSync(forced);
             
             OVKeyValueMap kvm = meta.propertyList->rootDictionary()->readOnlyKeyValueMap();
             meta.module->loadConfig(&kvm, loaderService);                

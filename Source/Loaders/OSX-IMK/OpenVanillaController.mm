@@ -929,8 +929,8 @@ static void OVCLaunchApplication(const string& value)
 		return;
 	}
 
-	// Finish the active context first so any pending learning is written before
-	// the two cache tables are cleared.
+	// Hide transient UI. The loader clears both persistent and in-memory
+	// learning synchronously, including caches shared by inactive contexts.
 	[self _resetUI];
 	if ([[OpenVanillaLoader sharedInstance] resetSmartMandarinLearning]) {
 		[CVNotifyController notify:LFLSTR(@"Smart Phonetic learning was reset.")];

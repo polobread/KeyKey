@@ -178,6 +178,8 @@ tasks.withType<Test>().configureEach {
     dependsOn(generateBopomofoAssets)
     dependsOn(generateAssociatedPhraseAssets)
     dependsOn(generateIndexedDictionaryAssets)
+    dependsOn(generateSmartMandarinAssets)
+    systemProperty("keykey.smart.database", smartMandarinDatabase.asFile.absolutePath)
     systemProperty(
         "keykey.bopomofo.cin",
         layout.buildDirectory.file("generated/bopomofoAssets/bpmf-ext.cin").get().asFile.absolutePath

@@ -34,7 +34,7 @@ The Linux implementation provides:
   While candidates are open, Down moves the highlight and Enter replaces the
   selected word without committing the sentence; another Enter commits it.
   Left/Right/Home/End move within the composition, and Backspace/Delete edit
-  readings there. Completing the tenth syllable commits the first full word
+  readings there. Completing the eleventh syllable commits the first full word
   segment while the remaining sentence stays in preedit. A learned single
   character does not split a visible dictionary word at the eviction boundary,
   and the following word stays fixed while the buffer shifts. Switching input

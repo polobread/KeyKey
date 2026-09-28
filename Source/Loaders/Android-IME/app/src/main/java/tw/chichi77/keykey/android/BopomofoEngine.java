@@ -238,11 +238,10 @@ final class BopomofoEngine {
             if (!hardwareSmartEditing) {
                 return Result.commitAndEnter(finishCompositionForModeSwitch().committedText());
             }
-            if (!reading.isEmpty()) {
-                Result result = finishSmartReading();
-                if (!reading.isEmpty()) return result;
-            }
-            return commitSmartComposition();
+            Result finishedReading = reading.isEmpty() ? Result.update() : finishSmartReading();
+            if (!reading.isEmpty()) return finishedReading;
+            return Result.commit(finishedReading.committedText()
+                    + commitSmartComposition().committedText());
         }
         if (!candidates.isEmpty()) return selectHighlightedCandidate();
         if (!reading.isEmpty()) return query();
@@ -307,8 +306,6 @@ final class BopomofoEngine {
                 && showingSmartCandidates && !smartReadings.isEmpty()) {
             if (absoluteIndex >= smartCandidateOptions.size()) return Result.update();
             SmartMandarinCandidate candidate = smartCandidateOptions.get(absoluteIndex);
-            smartSource.learnSelection(smartReadings, smartCandidateStart,
-                    candidate, smartComposition);
             int end = smartCandidateStart + candidate.length();
             smartOverrides.entrySet().removeIf(entry -> entry.getKey() < end
                     && smartCandidateStart < entry.getKey() + entry.getValue().length());
@@ -316,6 +313,8 @@ final class BopomofoEngine {
                     new SmartMandarinSelection(candidate.length(), candidate.text()));
             if (hardwareSmartEditing) smartCursor = end;
             rebuildSmartComposition();
+            smartSource.learnSelection(smartReadings, smartCandidateStart,
+                    candidate, smartComposition);
             return Result.update();
         }
         if (showingAssociatedPhrases) {
@@ -338,12 +337,16 @@ final class BopomofoEngine {
     }
 
     private Result commitPrimaryCandidate(String selected, boolean showAssociatedPhrases) {
+        // Touch fallback candidates are outside the model, but the preceding
+        // sentence is still present in the host and must survive this commit.
+        String text = compositionMode == BopomofoCompositionMode.SMART && smartComposition != null
+                ? smartComposition.text() + selected : selected;
         clearComposition();
         if (showAssociatedPhrases) {
             candidates = associatedPhrases.candidates(selected);
             this.showingAssociatedPhrases = !candidates.isEmpty();
         }
-        return Result.commit(selected);
+        return Result.commit(text);
     }
 
     void changePage(int delta) {
@@ -627,41 +630,12 @@ final class BopomofoEngine {
         int editableLimit = hardwareSmartEditing
                 ? HARDWARE_SMART_EDITABLE_LIMIT : TOUCH_SMART_EDITABLE_LIMIT;
         if (smartReadings.size() > editableLimit) {
-            return hardwareSmartEditing
-                    ? evictFirstHardwareSmartSegment() : evictFirstTouchSmartSegment();
+            return evictFirstSmartSegment();
         }
         return Result.update();
     }
 
-    private Result evictFirstTouchSmartSegment() {
-        if (smartComposition == null || smartComposition.segments().isEmpty()) {
-            return Result.update();
-        }
-        SmartMandarinSegment first = smartComposition.segments().get(0);
-        if (first.length() <= 0 || first.text().isEmpty()) return Result.update();
-        // Match the desktop walker: retain the following node's chosen text
-        // when its preceding context leaves the editable window.
-        SmartMandarinSegment next = smartComposition.segments().size() > 1
-                ? smartComposition.segments().get(1) : null;
-        String committed = first.text();
-        smartReadings.subList(0, first.length()).clear();
-        Map<Integer, SmartMandarinSelection> shifted = new HashMap<>();
-        for (Map.Entry<Integer, SmartMandarinSelection> entry : smartOverrides.entrySet()) {
-            if (entry.getKey() >= first.length()) {
-                shifted.put(entry.getKey() - first.length(), entry.getValue());
-            }
-        }
-        smartOverrides.clear();
-        smartOverrides.putAll(shifted);
-        if (next != null) {
-            smartOverrides.put(0, new SmartMandarinSelection(next.length(), next.text()));
-        }
-        smartCursor = Math.max(0, smartCursor - first.length());
-        rebuildSmartComposition();
-        return Result.commit(committed);
-    }
-
-    private Result evictFirstHardwareSmartSegment() {
+    private Result evictFirstSmartSegment() {
         if (smartComposition == null || smartComposition.segments().isEmpty()) {
             return Result.update();
         }
