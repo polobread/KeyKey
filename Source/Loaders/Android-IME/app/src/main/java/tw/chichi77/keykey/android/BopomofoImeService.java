@@ -88,6 +88,7 @@ public final class BopomofoImeService extends InputMethodService
         }
         engine = new BopomofoEngine(dictionary, smartMandarinStore,
                 BopomofoCompositionModeSettings.mode(this));
+        engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this));
         schedulePhraseDictionaryReload();
         vibrator = getSystemService(Vibrator.class);
         CandidateWindowSettings.preferences(this)
@@ -298,6 +299,11 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
+        if (BopomofoKeyboardLayoutSettings.KEY_LAYOUT.equals(key)) {
+            if (engine != null) apply(engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this)));
+            refreshKeyboard();
+            return;
+        }
         if (BopomofoCompositionModeSettings.KEY_MODE.equals(key)) {
             if (engine != null) {
                 apply(engine.setCompositionMode(BopomofoCompositionModeSettings.mode(this)));
@@ -708,6 +714,7 @@ public final class BopomofoImeService extends InputMethodService
 
     private void refreshKeyboard() {
         if (keyboardView == null || engine == null) return;
+        keyboardView.setKeyboardLayout(engine.keyboardLayout());
         keyboardView.setKeyPreviewEnabled(KeyPreviewSettings.enabled(this));
         updateKeyboardSize();
         CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(this);

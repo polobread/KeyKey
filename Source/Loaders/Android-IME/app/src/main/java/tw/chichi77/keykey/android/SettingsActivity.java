@@ -97,6 +97,33 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         compositionModeDescription.setLineSpacing(0, 1.2f);
         content.addView(compositionModeDescription, matchWrap(dp(0), dp(24)));
 
+        TextView keyboardLayoutLabel = new TextView(this);
+        keyboardLayoutLabel.setText(R.string.bopomofo_keyboard_layout);
+        keyboardLayoutLabel.setTextSize(18);
+        keyboardLayoutLabel.setTextColor(Color.DKGRAY);
+        content.addView(keyboardLayoutLabel, matchWrap(dp(0), dp(4)));
+        Spinner keyboardLayout = new Spinner(this);
+        keyboardLayout.setContentDescription(getString(R.string.bopomofo_keyboard_layout));
+        ArrayAdapter<CharSequence> keyboardLayoutAdapter = ArrayAdapter.createFromResource(this,
+                R.array.bopomofo_keyboard_layouts, android.R.layout.simple_spinner_item);
+        keyboardLayoutAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        keyboardLayout.setAdapter(keyboardLayoutAdapter);
+        keyboardLayout.setSelection(BopomofoKeyboardLayoutSettings.layout(this)
+                == BopomofoKeyboardLayout.HSU ? 1 : 0);
+        keyboardLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,
+                    android.view.View view, int position, long id) {
+                BopomofoKeyboardLayoutSettings.setLayout(SettingsActivity.this,
+                        position == 1 ? BopomofoKeyboardLayout.HSU : BopomofoKeyboardLayout.STANDARD);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        content.addView(keyboardLayout, matchWrap(dp(0), dp(8)));
+        TextView keyboardLayoutDescription = new TextView(this);
+        keyboardLayoutDescription.setText(R.string.bopomofo_keyboard_layout_description);
+        keyboardLayoutDescription.setTextSize(14);
+        content.addView(keyboardLayoutDescription, matchWrap(dp(0), dp(24)));
+
         Button userPhrases = new Button(this);
         userPhrases.setText("管理好打注音自訂詞");
         userPhrases.setContentDescription("管理好打注音自訂詞");

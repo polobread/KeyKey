@@ -105,6 +105,15 @@ final class BopomofoEngine {
         return result;
     }
 
+    BopomofoKeyboardLayout keyboardLayout() { return reading.layout(); }
+
+    Result setKeyboardLayout(BopomofoKeyboardLayout layout) {
+        if (layout == reading.layout()) return Result.update();
+        Result result = finishCompositionForModeSwitch();
+        reading.setLayout(layout);
+        return result;
+    }
+
     void setAssociatedPhraseDictionary(AssociatedPhraseDictionary dictionary) {
         associatedPhrases = dictionary == null ? AssociatedPhraseDictionary.empty() : dictionary;
         if (showingAssociatedPhrases) clearComposition();
@@ -538,7 +547,15 @@ final class BopomofoEngine {
             return selectDisplayedCandidate(key - '1');
         }
 
-        if (BopomofoReading.isBopomofoKey(key)) {
+        if (reading.layout() == BopomofoKeyboardLayout.HSU && key == 'q' && reading.isEmpty()
+                && compositionMode == BopomofoCompositionMode.SMART && !smartReadings.isEmpty()) {
+            return space();
+        }
+        String layoutPunctuation = reading.layout().punctuation(key);
+        if (reading.isEmpty() && layoutPunctuation != null) {
+            return Result.commit(finishCompositionForModeSwitch().committedText() + layoutPunctuation);
+        }
+        if (reading.isReadingKey(key)) {
             if (compositionMode == BopomofoCompositionMode.SMART) {
                 candidates = List.of();
                 showingAssociatedPhrases = false;

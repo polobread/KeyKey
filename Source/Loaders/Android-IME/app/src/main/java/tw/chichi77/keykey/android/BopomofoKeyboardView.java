@@ -105,6 +105,7 @@ final class BopomofoKeyboardView extends View {
     private List<String> smartCells = List.of();
     private int smartEditableCount;
     private BopomofoEngine.InputMode inputMode = BopomofoEngine.InputMode.BOPOMOFO;
+    private BopomofoKeyboardLayout keyboardLayout = BopomofoKeyboardLayout.STANDARD;
     private boolean shifted;
     private boolean temporaryEnglish;
     private boolean hardwareFullWidth;
@@ -147,6 +148,13 @@ final class BopomofoKeyboardView extends View {
 
     void setListener(Listener listener) {
         this.listener = listener;
+    }
+
+    void setKeyboardLayout(BopomofoKeyboardLayout layout) {
+        if (keyboardLayout == layout) return;
+        keyboardLayout = layout;
+        previewHit = null;
+        invalidate();
     }
 
     void setMode(Mode mode) {
@@ -417,15 +425,15 @@ final class BopomofoKeyboardView extends View {
                 drawSupportPrompt(canvas, area);
                 return;
             }
-            message = mode == Mode.HARDWARE
-                    ? "標準注音・候選 1–9・關聯詞 Shift+1–9" : "標準注音";
+            message = keyboardLayout.displayName + "注音"
+                    + (mode == Mode.HARDWARE ? "・候選 1–9・關聯詞 Shift+1–9" : "");
         }
         hintPaint.setTextSize(standardHintTextSize());
         canvas.drawText(message, area.centerX(), textBaseline(area, hintPaint), hintPaint);
     }
 
     private void drawSupportPrompt(Canvas canvas, RectF area) {
-        String primary = "標準注音";
+        String primary = keyboardLayout.displayName + "注音";
         String secondary = getResources().getString(R.string.supporter_prompt);
         float primarySize = standardHintTextSize();
         float secondarySize = primarySize * 0.70f;
@@ -791,6 +799,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private String bopomofoSymbol(String key) {
+        if (keyboardLayout == BopomofoKeyboardLayout.HSU) return "";
         if (inputMode != BopomofoEngine.InputMode.BOPOMOFO && !temporaryEnglish
                 || key.length() != 1) return "";
         String symbol = BopomofoReading.symbolForKey(Character.toLowerCase(key.charAt(0)));

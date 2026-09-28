@@ -42,6 +42,13 @@ Keyboard/         UIInputViewController extension
 KeyKeyiOS.xcodeproj
 ```
 
+## 注音鍵盤配置
+
+「輸入法設定」、鍵盤「設」及 App 內實體鍵盤編輯器提供「標準／許氏」配置，
+預設標準，好打與傳統注音共用。許氏虛擬鍵盤保留英文 QWERTY 鍵帽，
+例如 `nef` 輸入 `ㄋㄧˇ`，切回標準會恢復注音雙標籤。
+iOS 系統鍵盤 extension 仍只接收觸控；外接鍵盤使用 App 內實體鍵盤編輯器。
+
 ## 建置
 
 ```sh

@@ -25,6 +25,7 @@ final class KeyboardViewController: UIInputViewController {
         sharedDefaults: sharedDefaults
     )
     private lazy var clickSettings = KeyboardClickSettings(sharedDefaults: sharedDefaults)
+    private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
@@ -108,6 +109,7 @@ final class KeyboardViewController: UIInputViewController {
             if let engine { apply(engine.setCompositionMode(mode)) }
         }
         applyPhraseSelection(phraseSettings.enabledCollections)
+        if let engine { apply(engine.setKeyboardLayout(layoutSettings.layout)) }
         if learningResetRequest.applyIfNeeded(to: smartUserData) {
             discardMarkedText()
             engine?.reset()
@@ -244,7 +246,8 @@ final class KeyboardViewController: UIInputViewController {
                 dictionary: try CandidateStore(database: database),
                 associatedPhrases: phrases,
                 smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
-                compositionMode: compositionModeSettings.mode
+                compositionMode: compositionModeSettings.mode,
+                keyboardLayout: layoutSettings.layout
             )
         } catch {
             loadFailure = String(describing: error)
@@ -265,7 +268,8 @@ final class KeyboardViewController: UIInputViewController {
         let panel = SettingsPanel(
             collections: collections, enabled: phraseSettings.enabledCollections,
             inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
-            compositionMode: engine?.bopomofoCompositionMode ?? .smart
+            compositionMode: engine?.bopomofoCompositionMode ?? .smart,
+            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -299,6 +303,7 @@ final class KeyboardViewController: UIInputViewController {
             ? -1 : engine.highlightedIndex
         state.pageCount = engine.pageCount
         state.mode = engine.inputMode
+        state.keyboardLayout = engine.keyboardLayout
         state.shifted = engine.isShifted
         state.temporaryEnglish = engine.isTemporaryEnglish
         state.statusOverride = statusOverride
@@ -570,6 +575,12 @@ extension KeyboardViewController: SettingsPanelDelegate {
         panel.removeFromSuperview()
         settingsPanel = nil
         applyHeight(currentMetrics)
+        refresh()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout) {
+        if let engine { apply(engine.setKeyboardLayout(layout)) }
+        layoutSettings.setLayout(layout)
         refresh()
     }
 

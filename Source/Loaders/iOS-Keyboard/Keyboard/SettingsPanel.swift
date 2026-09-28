@@ -9,6 +9,7 @@ protocol SettingsPanelDelegate: AnyObject {
     )
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
+    func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout)
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
@@ -27,6 +28,7 @@ final class SettingsPanel: UIView {
     private var inputClicksEnabled: Bool
     private var candidateColor: CandidateColor
     private var compositionMode: BopomofoCompositionMode
+    private var keyboardLayout: BopomofoKeyboardLayout
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
         items: ["紫", "綠", "黃", "紅"]
@@ -41,13 +43,15 @@ final class SettingsPanel: UIView {
     init(
         collections: [AssociatedPhraseStore.Collection], enabled: Set<String>,
         inputClicksEnabled: Bool, candidateColor: CandidateColor,
-        compositionMode: BopomofoCompositionMode
+        compositionMode: BopomofoCompositionMode,
+        keyboardLayout: BopomofoKeyboardLayout = .standard
     ) {
         self.collections = collections
         self.enabled = enabled
         self.inputClicksEnabled = inputClicksEnabled
         self.candidateColor = candidateColor
         self.compositionMode = compositionMode
+        self.keyboardLayout = keyboardLayout
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
@@ -90,33 +94,33 @@ final class SettingsPanel: UIView {
 
         let scroll = UIScrollView()
         scroll.alwaysBounceVertical = true
-        rows.translatesAutoresizingMaskIntoConstraints = false
-        scroll.addSubview(rows)
-        NSLayoutConstraint.activate([
-            rows.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
-            rows.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
-            rows.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
-            rows.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
-            rows.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor)
-        ])
-
         let root = UIStackView(arrangedSubviews: [
-            header, compositionModeRow(), resetLearningButton, feedbackRow(), candidateColorRow(),
-            statusLabel, bulk, scroll
+            compositionModeRow(), keyboardLayoutRow(), resetLearningButton, feedbackRow(), candidateColorRow(),
+            statusLabel, bulk, rows
         ])
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
         resetLearningButton.addTarget(self, action: #selector(resetLearningTapped), for: .touchUpInside)
         root.axis = .vertical
         root.spacing = 8
         root.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(root)
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        header.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(header)
+        addSubview(scroll)
+        scroll.addSubview(root)
         NSLayoutConstraint.activate([
-            root.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            root.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            root.topAnchor.constraint(equalTo: topAnchor, constant: 10),
-            root.bottomAnchor.constraint(
-                equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8
-            )
+            header.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            header.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            header.topAnchor.constraint(equalTo: topAnchor, constant: 10),
+            scroll.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
+            scroll.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            scroll.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8),
+            root.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            root.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            root.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            root.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            root.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor)
         ])
     }
 
@@ -214,6 +218,27 @@ final class SettingsPanel: UIView {
         row.isLayoutMarginsRelativeArrangement = true
         row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
         return row
+    }
+
+    private func keyboardLayoutRow() -> UIView {
+        let label = UILabel()
+        label.text = "注音鍵盤"
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = Palette.primaryText
+        let control = UISegmentedControl(items: BopomofoKeyboardLayout.allCases.map(\.displayName))
+        control.selectedSegmentIndex = BopomofoKeyboardLayout.allCases.firstIndex(of: keyboardLayout) ?? 0
+        control.accessibilityIdentifier = "bopomofo-keyboard-layout"
+        control.accessibilityLabel = "注音鍵盤"
+        control.addTarget(self, action: #selector(keyboardLayoutChanged(_:)), for: .valueChanged)
+        let row = UIStackView(arrangedSubviews: [label, UIView(), control])
+        row.alignment = .center
+        row.spacing = 8
+        return row
+    }
+
+    @objc private func keyboardLayoutChanged(_ sender: UISegmentedControl) {
+        keyboardLayout = BopomofoKeyboardLayout.allCases[sender.selectedSegmentIndex]
+        delegate?.settingsPanel(self, didChangeKeyboardLayout: keyboardLayout)
     }
 
     private func candidateColorRow() -> UIView {

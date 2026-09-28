@@ -1,3 +1,6 @@
+// Copyright (c) 2007-2012, Yahoo! Inc. All rights reserved.
+// Copyrights licensed under the New BSD License. See the accompanying LICENSE.
+// Hsu mapping and disambiguation ported from Formosa/Mandarin.h and Mandarin.cpp.
 package tw.chichi77.keykey.android;
 
 import java.util.Collections;
@@ -28,6 +31,33 @@ final class BopomofoReading {
 
     private static final Map<Character, Component> COMPONENTS;
 
+    // Standard-layout component keys in the desktop Hsu disambiguation order.
+    private static final Map<Character, String> HSU_KEYS = Map.ofEntries(
+            Map.entry('b', "1"), Map.entry('p', "q"), Map.entry('m', "a0"),
+            Map.entry('f', "z3"), Map.entry('d', "26"), Map.entry('t', "w"),
+            Map.entry('n', "sp"), Map.entry('l', "x/-"), Map.entry('g', "ek"),
+            Map.entry('k', "d;"), Map.entry('h', "ci"), Map.entry('j', "r54"),
+            Map.entry('v', "ft"), Map.entry('c', "vg"), Map.entry('r', "b"),
+            Map.entry('z', "y"), Map.entry('a', "ho"), Map.entry('s', "n7"),
+            Map.entry('e', "u,"), Map.entry('x', "j"), Map.entry('u', "m"),
+            Map.entry('y', "8"), Map.entry('i', "9"), Map.entry('w', "l"),
+            Map.entry('o', "."));
+
+    private BopomofoKeyboardLayout layout = BopomofoKeyboardLayout.STANDARD;
+
+    BopomofoKeyboardLayout layout() { return layout; }
+
+    void setLayout(BopomofoKeyboardLayout layout) {
+        clear();
+        this.layout = layout;
+    }
+
+    boolean isReadingKey(char rawKey) {
+        char key = Character.toLowerCase(rawKey);
+        return layout == BopomofoKeyboardLayout.HSU
+                ? HSU_KEYS.containsKey(key) : isBopomofoKey(key);
+    }
+
     static {
         Map<Character, Component> values = new LinkedHashMap<>();
         add(values, Kind.INITIAL, "1qaz2wsxedcrfv5tgbYhn",
@@ -46,18 +76,33 @@ final class BopomofoReading {
     private Component tone;
 
     boolean combine(char rawKey) {
+        if (layout == BopomofoKeyboardLayout.HSU) {
+            char key = Character.toLowerCase(rawKey);
+            if (!isReadingKey(key)) return false;
+            parseHsu(hsuSequence() + key);
+            return true;
+        }
         Component component = COMPONENTS.get(Character.toLowerCase(rawKey));
         if (component == null) return false;
+        addComponent(component);
+        return true;
+    }
+
+    private void addComponent(Component component) {
         switch (component.kind()) {
             case INITIAL -> initial = component;
             case MEDIAL -> medial = component;
             case FINAL -> finalComponent = component;
             case TONE -> tone = component;
         }
-        return true;
     }
 
     void backspace() {
+        if (layout == BopomofoKeyboardLayout.HSU) {
+            String sequence = hsuSequence();
+            parseHsu(sequence.isEmpty() ? "" : sequence.substring(0, sequence.length() - 1));
+            return;
+        }
         if (tone != null) tone = null;
         else if (finalComponent != null) finalComponent = null;
         else if (medial != null) medial = null;
@@ -111,6 +156,92 @@ final class BopomofoReading {
 
     static boolean isBopomofoKey(char key) {
         return COMPONENTS.containsKey(Character.toLowerCase(key));
+    }
+
+    private String hsuSequence() {
+        StringBuilder result = new StringBuilder();
+        for (char key : queryKey().toCharArray()) {
+            for (Map.Entry<Character, String> entry : HSU_KEYS.entrySet()) {
+                if (entry.getValue().indexOf(key) >= 0) {
+                    result.append(entry.getKey());
+                    break;
+                }
+            }
+        }
+        return result.toString();
+    }
+
+    private static int mask(Component component) {
+        return switch (component.kind()) {
+            case INITIAL -> 0x001f;
+            case MEDIAL -> 0x0060;
+            case FINAL -> 0x0780;
+            case TONE -> 0x3800;
+        };
+    }
+
+    private int maskType() {
+        return (initial == null ? 0 : 0x001f) | (medial == null ? 0 : 0x0060)
+                | (finalComponent == null ? 0 : 0x0780) | (tone == null ? 0 : 0x3800);
+    }
+
+    private static boolean jqx(Component component) {
+        return component.packedValue >= 12 && component.packedValue <= 14;
+    }
+
+    private static boolean zcsr(Component component) {
+        return component.packedValue >= 15 && component.packedValue <= 21;
+    }
+
+    private static boolean endOrTone(String sequence, int index) {
+        return index == sequence.length() || "dfjs".indexOf(sequence.charAt(index)) >= 0;
+    }
+
+    private static boolean containsIorUE(String sequence) {
+        return sequence.indexOf('e') >= 0 || sequence.indexOf('u') >= 0;
+    }
+
+    private void parseHsu(String sequence) {
+        clear();
+        for (int index = 0; index < sequence.length(); index++) {
+            String keys = HSU_KEYS.get(sequence.charAt(index));
+            if (keys == null) continue;
+            Component head = COMPONENTS.get(keys.charAt(0));
+            if (keys.length() == 1) { addComponent(head); continue; }
+            Component follow = COMPONENTS.get(keys.charAt(1));
+            Component ending = COMPONENTS.get(keys.charAt(keys.length() - 1));
+            boolean beforeHasIorUE = containsIorUE(sequence.substring(0, index));
+            boolean aheadHasIorUE = containsIorUE(sequence.substring(index + 1));
+            if (head.key == ',' || follow.key == ',') {
+                addComponent(beforeHasIorUE ? COMPONENTS.get(',')
+                        : (head.key == ',' ? follow : head));
+            } else if (jqx(head) != jqx(follow)) {
+                if (!isEmpty()) {
+                    if (ending != follow) addComponent(ending);
+                } else {
+                    addComponent(aheadHasIorUE == jqx(head) ? head : follow);
+                }
+            } else if (sequence.length() == 1) {
+                if (head.kind == Kind.FINAL || follow.kind == Kind.TONE || zcsr(head)) {
+                    addComponent(head);
+                } else {
+                    addComponent(follow.kind == Kind.FINAL || ending.kind == Kind.TONE
+                            ? follow : ending);
+                }
+            } else if ((maskType() & mask(head)) == 0 && !endOrTone(sequence, index + 1)) {
+                addComponent(head);
+            } else if (endOrTone(sequence, index + 1) && zcsr(head) && isEmpty()) {
+                addComponent(head);
+            } else {
+                addComponent(maskType() < mask(follow) ? follow : ending);
+            }
+        }
+        if (finalComponent == COMPONENTS.get('/') && initial == null && medial == null) {
+            finalComponent = COMPONENTS.get('-');
+        } else if (initial == COMPONENTS.get('e')
+                && (medial == COMPONENTS.get('u') || medial == COMPONENTS.get('m'))) {
+            initial = COMPONENTS.get('r');
+        }
     }
 
     static String symbolForKey(char key) {

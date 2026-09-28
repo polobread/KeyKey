@@ -43,8 +43,9 @@ public enum StandardBopomofoLayout {
 /// The composition buffer for a single syllable.
 public struct BopomofoReading: Equatable, Sendable {
     private var syllable = BopomofoSyllable()
+    public let layout: BopomofoKeyboardLayout
 
-    public init() {}
+    public init(layout: BopomofoKeyboardLayout = .standard) { self.layout = layout }
 
     public var isEmpty: Bool { syllable.isEmpty }
     public var hasToneMarker: Bool { syllable.hasToneMarker }
@@ -58,6 +59,12 @@ public struct BopomofoReading: Equatable, Sendable {
     @discardableResult
     public mutating func combine(_ rawKey: Character) -> Bool {
         let key = Character(rawKey.lowercased())
+        if layout == .hsu {
+            guard layout.isReadingKey(key) else { return false }
+            syllable = BopomofoKeyboardLayout.parseHsu(
+                BopomofoKeyboardLayout.hsuSequence(for: syllable) + String(key))
+            return true
+        }
         guard let component = StandardBopomofoLayout.componentForKey[key] else { return false }
         syllable.add(component)
         return true
@@ -66,6 +73,11 @@ public struct BopomofoReading: Equatable, Sendable {
     /// Peels one component in canonical order, matching the Java engine and the
     /// net effect of the C++ buffer chopping its key sequence.
     public mutating func backspace() {
+        if layout == .hsu {
+            syllable = BopomofoKeyboardLayout.parseHsu(
+                String(BopomofoKeyboardLayout.hsuSequence(for: syllable).dropLast()))
+            return
+        }
         let order: [BopomofoSyllable.Component] = [
             BopomofoSyllable.toneMask,
             BopomofoSyllable.vowelMask,

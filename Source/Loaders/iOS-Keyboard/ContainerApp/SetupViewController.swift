@@ -298,6 +298,9 @@ private final class InputMethodSettingsViewController: UIViewController {
     private lazy var modeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
+    private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
     private lazy var colorSettings = CandidateColorSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
@@ -345,6 +348,15 @@ private final class InputMethodSettingsViewController: UIViewController {
         modeControl.accessibilityIdentifier = "app-settings.composition-mode"
         modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(modeControl)
+
+        stack.addArrangedSubview(label("注音鍵盤", size: 18))
+        let layouts = BopomofoKeyboardLayout.allCases
+        let layoutControl = UISegmentedControl(items: layouts.map(\.displayName))
+        layoutControl.selectedSegmentIndex = layouts.firstIndex(of: layoutSettings.layout) ?? 0
+        layoutControl.accessibilityIdentifier = "app-settings.keyboard-layout"
+        layoutControl.addTarget(self, action: #selector(layoutChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(layoutControl)
+        stack.addArrangedSubview(label("好打與傳統注音共用配置。許氏虛擬鍵盤維持英文鍵帽。", size: 14))
 
         stack.addArrangedSubview(label("候選字底色", size: 18))
         let colors = CandidateColor.allCases
@@ -451,6 +463,10 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     @objc private func modeChanged(_ sender: UISegmentedControl) {
         modeSettings.setMode(BopomofoCompositionMode.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func layoutChanged(_ sender: UISegmentedControl) {
+        layoutSettings.setLayout(BopomofoKeyboardLayout.allCases[sender.selectedSegmentIndex])
     }
 
     @objc private func colorChanged(_ sender: UISegmentedControl) {

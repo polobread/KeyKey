@@ -14,6 +14,44 @@ import org.junit.Test;
 
 public final class BopomofoEngineTest {
     @Test
+    public void hsuTraditionalCandidatesAndSwitchBackToStandard() throws Exception {
+        BopomofoEngine engine = engineWith("su3 你\nsu3 妳\n");
+        assertEquals(BopomofoKeyboardLayout.STANDARD, engine.keyboardLayout());
+        engine.setKeyboardLayout(BopomofoKeyboardLayout.HSU);
+        type(engine, "nef");
+        assertEquals("ㄋㄧˇ", engine.readingText());
+        assertEquals(List.of("你", "妳"), engine.displayedCandidates());
+        engine.backspace();
+        assertEquals("ㄋㄧ", engine.readingText());
+        engine.handleSoftKey("f");
+        assertEquals("妳", engine.handleHardwareCharacter('2').committedText());
+        engine.setKeyboardLayout(BopomofoKeyboardLayout.STANDARD);
+        type(engine, "su3");
+        assertEquals(List.of("你", "妳"), engine.displayedCandidates());
+        assertEquals("你", engine.handleHardwareCharacter('1').committedText());
+    }
+
+    @Test
+    public void hsuSmartTouchAndHardwareKeepTextAcrossLayoutChanges() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            BopomofoEngine engine = smartEngine();
+            engine.setKeyboardLayout(BopomofoKeyboardLayout.HSU);
+            if (hardware) typeHardware(engine, "nefhwf"); else type(engine, "nefhwf");
+            assertEquals("你好", engine.composingText());
+            engine.handleSoftKey("q");
+            assertFalse(engine.displayedCandidates().isEmpty());
+            assertEquals("你好", engine.setKeyboardLayout(BopomofoKeyboardLayout.STANDARD).committedText());
+            assertFalse(engine.hasComposition());
+            type(engine, "su3cl3");
+            assertEquals("你好", engine.composingText());
+            assertEquals("你好", engine.setKeyboardLayout(BopomofoKeyboardLayout.HSU).committedText());
+            type(engine, "nefhwf");
+            assertEquals("你好，", engine.handleSoftKey(",").committedText());
+            assertEquals("〈", engine.handleSoftKey("<").committedText());
+        }
+    }
+
+    @Test
     public void toneOpensCandidatesAndHardwareNumberSelects() throws Exception {
         BopomofoEngine engine = engineWith("su3 你\nsu3 擬\n");
 

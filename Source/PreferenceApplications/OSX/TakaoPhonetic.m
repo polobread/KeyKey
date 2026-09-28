@@ -30,10 +30,12 @@ file for terms.
 		[_keyboardLayoutPopUpButton selectItemAtIndex:2];
 	}
 	else if ([keyboardLayout isEqualToString:@"ETen26"] || 
-			 [keyboardLayout isEqualToString:@"bpmfdtnlvkhgvcgycjqwsexuaorwiqzpmntlhfjkd"] ||
-			 [keyboardLayout isEqualToString:@"Hsu"] ||
-			 [keyboardLayout isEqualToString:@"bpmfdtnlgkhjvcjvcrzasexuyhgeiawomnklldfjs"])  {
+			 [keyboardLayout isEqualToString:@"bpmfdtnlvkhgvcgycjqwsexuaorwiqzpmntlhfjkd"]) {
 		[_keyboardLayoutPopUpButton selectItemAtIndex:3];
+	}
+	else if ([keyboardLayout isEqualToString:@"Hsu"] ||
+			 [keyboardLayout isEqualToString:@"bpmfdtnlgkhjvcjvcrzasexuyhgeiawomnklldfjs"]) {
+		[_keyboardLayoutPopUpButton selectItemAtIndex:4];
 	}
 	else {
 		[_keyboardLayoutPopUpButton selectItemAtIndex:0];

@@ -100,18 +100,30 @@ public final class BopomofoEngine {
         associatedPhrases: AssociatedPhraseSource? = nil,
         smartSource: SmartMandarinSource? = nil,
         compositionMode: BopomofoCompositionMode = .traditional,
-        hardwareSmartEditing: Bool = false
+        hardwareSmartEditing: Bool = false,
+        keyboardLayout: BopomofoKeyboardLayout = .standard
     ) {
         self.dictionary = dictionary
         self.associatedPhrases = associatedPhrases
         self.smartSource = smartSource
         self.hardwareSmartEditing = hardwareSmartEditing
+        self.reading = BopomofoReading(layout: keyboardLayout)
         self.compositionMode = smartSource == nil ? .traditional : compositionMode
     }
 
     public func setAssociatedPhraseSource(_ source: AssociatedPhraseSource?) {
         associatedPhrases = source
         if showingAssociatedPhrases { clearComposition() }
+    }
+
+    public var keyboardLayout: BopomofoKeyboardLayout { reading.layout }
+
+    @discardableResult
+    public func setKeyboardLayout(_ layout: BopomofoKeyboardLayout) -> Result {
+        guard layout != reading.layout else { return .update }
+        let result = finishCompositionForModeSwitch()
+        reading = BopomofoReading(layout: layout)
+        return result
     }
 
     @discardableResult
@@ -491,7 +503,14 @@ public final class BopomofoEngine {
            let number = key.wholeNumberValue, (1...9).contains(number) {
             return selectDisplayedCandidate(number - 1)
         }
-        if StandardBopomofoLayout.isReadingKey(key) {
+        if reading.layout == .hsu, key == "q", reading.isEmpty,
+           compositionMode == .smart, !smartReadings.isEmpty {
+            return space()
+        }
+        if reading.isEmpty, let punctuation = reading.layout.punctuation(for: key) {
+            return .commit(finishCompositionForModeSwitch().text + punctuation)
+        }
+        if reading.layout.isReadingKey(key) {
             if compositionMode == .smart {
                 candidates = []
                 showingAssociatedPhrases = false

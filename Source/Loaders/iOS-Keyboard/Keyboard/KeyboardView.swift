@@ -23,6 +23,7 @@ final class KeyboardView: UIView {
         var highlightedIndex = -1
         var pageCount = 0
         var mode = BopomofoEngine.InputMode.bopomofo
+        var keyboardLayout = BopomofoKeyboardLayout.standard
         var shifted = false
         var temporaryEnglish = false
         var statusOverride: String?
@@ -396,6 +397,7 @@ final class KeyboardView: UIView {
         if force || hasCandidates != hadCandidates
             || state.reading != previousState.reading
             || state.mode != previousState.mode
+            || state.keyboardLayout != previousState.keyboardLayout
             || state.shifted != previousState.shifted
             || state.temporaryEnglish != previousState.temporaryEnglish
             || state.statusOverride != previousState.statusOverride
@@ -405,7 +407,7 @@ final class KeyboardView: UIView {
             statusLabel.font = .systemFont(ofSize: metrics.statusFont)
             let normalStatus = KeyboardLayout.statusText(
                 reading: state.reading, mode: state.mode, shifted: state.shifted,
-                temporaryEnglish: state.temporaryEnglish
+                temporaryEnglish: state.temporaryEnglish, layout: state.keyboardLayout
             )
             if state.statusOverride == nil, state.supportPromptVisible,
                state.reading.isEmpty, state.mode == .bopomofo {
@@ -460,6 +462,7 @@ final class KeyboardView: UIView {
         }
 
         let keyPlaneChanged = force
+            || state.keyboardLayout != previousState.keyboardLayout
             || state.mode != previousState.mode
             || state.shifted != previousState.shifted
             || state.temporaryEnglish != previousState.temporaryEnglish
@@ -567,7 +570,7 @@ final class KeyboardView: UIView {
     private func configure(_ keyView: KeyView, for key: String) {
         let caption = KeyboardLayout.caption(for: key, mode: state.mode)
         guard state.mode == .bopomofo,
-              let glyph = KeyboardLayout.bopomofoGlyph(for: key)
+              let glyph = KeyboardLayout.bopomofoGlyph(for: key, layout: state.keyboardLayout)
         else {
             keyView.glyph.text = caption
             keyView.glyph.font = .systemFont(
@@ -620,7 +623,8 @@ final class KeyboardView: UIView {
         case "EMOJI": return "表情符號"
         case KeyboardLayout.inputModeSwitchKey: return "下一個鍵盤"
         default:
-            if state.mode == .bopomofo, let glyph = KeyboardLayout.bopomofoGlyph(for: key) {
+            if state.mode == .bopomofo,
+               let glyph = KeyboardLayout.bopomofoGlyph(for: key, layout: state.keyboardLayout) {
                 return glyph
             }
             return key
@@ -723,7 +727,8 @@ final class KeyboardView: UIView {
             )
         }
         if key == "ENTER" { return state.returnKeyPolicy.accessibilityLabel }
-        if state.mode == .bopomofo, let glyph = KeyboardLayout.bopomofoGlyph(for: key) {
+        if state.mode == .bopomofo,
+           let glyph = KeyboardLayout.bopomofoGlyph(for: key, layout: state.keyboardLayout) {
             return state.temporaryEnglish ? key.uppercased() : glyph
         }
         return KeyboardLayout.caption(for: key, mode: state.mode)

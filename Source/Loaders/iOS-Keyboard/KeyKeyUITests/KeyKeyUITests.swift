@@ -61,6 +61,49 @@ final class KeyKeyUITests: XCTestCase {
         mode.buttons["好打注音"].tap()
     }
 
+    func testHsuLayoutSettingsPersistAndKeyboardKeepsEnglishKeycaps() {
+        test00KeyboardOptInIsConfigured()
+        app = XCUIApplication()
+        app.launch()
+        let entry = app.buttons["open-input-method-settings"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 8))
+        entry.tap()
+        let layout = app.segmentedControls["app-settings.keyboard-layout"]
+        layout.buttons["許氏"].tap()
+        app.terminate()
+        app.launch()
+        entry.tap()
+        XCTAssertTrue(layout.buttons["許氏"].isSelected)
+
+        launchHostApp()
+        XCTAssertTrue(revealField("message"))
+        field("message").tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        app.buttons["SETTINGS"].tap()
+        let keyboardLayout = app.segmentedControls["bopomofo-keyboard-layout"]
+        // Extension preferences also work without Full Access to the App Group.
+        keyboardLayout.buttons["許氏"].tap()
+        app.segmentedControls["bopomofo-composition-mode"].buttons["傳統注音"].tap()
+        app.buttons["完成"].tap()
+        XCTAssertEqual(app.buttons["j"].label, "j")
+        for key in "nef" { app.buttons[String(key)].tap() }
+        let candidate = app.buttons["第 1 個候選，你"]
+        XCTAssertTrue(candidate.waitForExistence(timeout: 3))
+        candidate.tap()
+        XCTAssertTrue(waitForLayout { (self.field("message").value as? String) == "你" })
+
+        app.buttons["SETTINGS"].tap()
+        keyboardLayout.buttons["標準"].tap()
+        app.segmentedControls["bopomofo-composition-mode"].buttons["好打注音"].tap()
+        app.buttons["完成"].tap()
+        XCTAssertEqual(app.buttons["j"].label, "ㄨ")
+        app.terminate()
+        app = XCUIApplication()
+        app.launch()
+        app.buttons["open-input-method-settings"].tap()
+        app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
+    }
+
     func testUserPhraseManagerOpensAndCreatesPhrase() {
         app = XCUIApplication()
         app.launch()
@@ -808,7 +851,18 @@ final class KeyKeyUITests: XCTestCase {
     /// does not expose a supported API for silently granting a third-party keyboard,
     /// so the one-time Settings opt-in remains an explicit test precondition.
     private func selectKeyKeyKeyboard() -> Bool {
-        let status = app.staticTexts["keyboard.status"]
+        func dismissSystemKeyboardTip() {
+            // iOS can present its first-use keyboard-switching tutorial after
+            // cycling keyboards. It covers the globe until Continue is tapped.
+            for title in ["Continue", "繼續"] {
+                let button = app.buttons[title]
+                if button.exists && button.isHittable { button.tap() }
+            }
+        }
+        dismissSystemKeyboardTip()
+        // Smart mode hides the empty candidate/status row. The settings key
+        // identifies the extension in either composition mode and layout.
+        let status = app.buttons["SETTINGS"]
         if status.waitForExistence(timeout: 2) { return true }
 
         if let nextKeyboard = nextKeyboardButton() {
@@ -842,6 +896,7 @@ final class KeyKeyUITests: XCTestCase {
         }
 
         for _ in 0..<8 {
+            dismissSystemKeyboardTip()
             guard let nextKeyboard = nextKeyboardButton() else { return false }
             nextKeyboard.tap()
             if status.waitForExistence(timeout: 1) { return true }

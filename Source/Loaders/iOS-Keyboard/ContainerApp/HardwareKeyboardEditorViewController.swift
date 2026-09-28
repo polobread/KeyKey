@@ -168,6 +168,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private let cursorPositionLabel = UILabel()
     private let pageIndicatorLabel = UILabel()
     private let compositionModeButton = UIButton(configuration: .tinted())
+    private let keyboardLayoutButton = UIButton(configuration: .tinted())
     private let phraseButton = UIButton(configuration: .tinted())
     private let modeButton = UIButton(configuration: .tinted())
     private let widthButton = UIButton(configuration: .tinted())
@@ -221,6 +222,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults
     )
+    private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
     private var committedText = ""
     private var insertionCharacterIndex = 0
     private var displayedCaretUTF16Offset = 0
@@ -258,6 +260,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        if let engine { apply(engine.setKeyboardLayout(layoutSettings.layout)) }
         captureView.becomeFirstResponder()
     }
 
@@ -345,7 +348,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         configureControlsColumn()
         configureActionsStack()
 
-        for view in [connectionLabel, compositionModeButton, outputView, cursorPositionLabel] {
+        for view in [connectionLabel, compositionModeButton, keyboardLayoutButton, outputView, cursorPositionLabel] {
             inputColumn.addArrangedSubview(view)
         }
         inputColumn.axis = .vertical
@@ -745,6 +748,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     }
 
     private func refreshCompositionModeButton() {
+        refreshKeyboardLayoutButton()
         let selected = engine?.bopomofoCompositionMode ?? compositionModeSettings.mode
         compositionModeButton.setTitle("注音：\(selected.displayName)", for: .normal)
         compositionModeButton.menu = UIMenu(
@@ -759,6 +763,22 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 }
             }
         )
+    }
+
+    private func refreshKeyboardLayoutButton() {
+        let selected = engine?.keyboardLayout ?? layoutSettings.layout
+        keyboardLayoutButton.accessibilityIdentifier = "hardware-editor.keyboard-layout"
+        keyboardLayoutButton.contentHorizontalAlignment = .leading
+        keyboardLayoutButton.showsMenuAsPrimaryAction = true
+        keyboardLayoutButton.setTitle("鍵盤：\(selected.displayName)", for: .normal)
+        keyboardLayoutButton.menu = UIMenu(title: "注音鍵盤", options: .singleSelection,
+            children: BopomofoKeyboardLayout.allCases.map { layout in
+                UIAction(title: layout.displayName, state: selected == layout ? .on : .off) { [weak self] _ in
+                    guard let self, let engine = self.engine else { return }
+                    self.apply(engine.setKeyboardLayout(layout))
+                    self.layoutSettings.setLayout(layout)
+                }
+            })
     }
 
     private func configureActionsStack() {
@@ -822,7 +842,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 associatedPhrases: phrases,
                 smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
                 compositionMode: compositionModeSettings.mode,
-                hardwareSmartEditing: true
+                hardwareSmartEditing: true,
+                keyboardLayout: layoutSettings.layout
             )
         } catch {
             transientStatus = "字庫載入失敗：\(error)"

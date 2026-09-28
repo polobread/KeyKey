@@ -130,6 +130,46 @@ private final class LearningContextSource: SmartMandarinSource {
 /// physical key events.
 @Suite("Bopomofo engine")
 struct BopomofoEngineTests {
+    @Test("Hsu supports traditional candidates and returns to Standard without leaking state")
+    func hsuTraditionalSwitching() {
+        let engine = engine()
+        #expect(engine.keyboardLayout == .standard)
+        #expect(engine.setKeyboardLayout(.hsu) == .update)
+        _ = type(engine, "nef")
+        #expect(engine.readingText == "ㄋㄧˇ")
+        #expect(engine.displayedCandidates == ["你", "妳", "擬"])
+        #expect(engine.backspace() == .update)
+        #expect(engine.readingText == "ㄋㄧ")
+        _ = engine.handleSoftKey("f")
+        #expect(engine.handleHardwareCharacter("2") == .commit("妳"))
+        _ = engine.setKeyboardLayout(.standard)
+        _ = type(engine, "su3")
+        #expect(engine.displayedCandidates == ["你", "妳", "擬"])
+        #expect(engine.handleHardwareCharacter("1") == .commit("你"))
+    }
+
+    @Test("Hsu smart touch and hardware preserve composition through candidates and layout changes")
+    func hsuSmartSwitching() {
+        for hardware in [false, true] {
+            let engine = smartEngine(hardwareEditing: hardware)
+            _ = engine.setKeyboardLayout(.hsu)
+            for key in "nefhwf" {
+                _ = hardware ? engine.handleHardwareCharacter(key) : engine.handleSoftKey(String(key))
+            }
+            #expect(engine.composingText == "你好")
+            #expect(engine.handleSoftKey("q") == .update)
+            #expect(!engine.displayedCandidates.isEmpty)
+            #expect(engine.setKeyboardLayout(.standard) == .commit("你好"))
+            #expect(!engine.hasComposition)
+            _ = type(engine, "su3cl3")
+            #expect(engine.composingText == "你好")
+            #expect(engine.setKeyboardLayout(.hsu) == .commit("你好"))
+            _ = type(engine, "nefhwf")
+            #expect(engine.handleSoftKey(",") == .commit("你好，"))
+            #expect(engine.handleSoftKey("<") == .commit("〈"))
+        }
+    }
+
     private func engine(
         _ entries: [String: [String]] = ["su3": ["你", "妳", "擬"]],
         phrases: [String: [String]] = [:]
