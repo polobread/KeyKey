@@ -1,6 +1,6 @@
 # chichi77 KeyKey for Linux
 
-Version 1.3.0 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
+Version 1.3.1 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
 LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
 as 傳統注音, Cangjie, and Simplex. See the
 [Linux installation and usage guide](../../../LINUX_INSTALL.md) for the package
@@ -16,11 +16,11 @@ OpenVanilla frameworks. The earlier 1.2.8
 release boundaries remain in the
 [1.2.8 release record](docs/linux-1.2.8-release.md).
 
-## Version 1.3.0 features and verification
+## Version 1.3.1 features and verification
 
 The 1.2.8 phase established Traditional Bopomofo behavior across Standard,
 ETen, ETen 26-key, Hsu, and Hanyu Pinyin layouts, along with Cangjie, Simplex,
-and Traditional-to-Simplified output. Version 1.3.0 adds 好打注音 sentence
+and Traditional-to-Simplified output. Version 1.3.1 includes 好打注音 sentence
 composition and persistent candidate learning.
 
 The Linux implementation provides:
@@ -199,7 +199,7 @@ password purpose is stricter: Fcitx switches that input context to
 `keyboard-us` and rejects forcing the custom method back on.
 Further compatibility work includes IBus, physical monitor hotplug, more Apps
 and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. The supported
-1.3.0 Ubuntu package set and setup steps are in the
+1.3.1 Ubuntu package set and setup steps are in the
 [Linux installation guide](../../../LINUX_INSTALL.md); the 1.2.8 release record
 preserves that version's verified boundaries.
 

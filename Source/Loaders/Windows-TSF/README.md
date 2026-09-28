@@ -1,6 +1,6 @@
 # 琦琦輸入法 Windows TSF frontend
 
-Windows 1.3.0 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
+Windows 1.3.1 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
 
 This directory contains the Windows 10 and 11 Text Services Framework (TSF)
 frontend. It is separate from `Windows-IMM`, so the existing macOS IMK target
@@ -134,7 +134,7 @@ The same tab can import a `SmartMandarinUserData.db` backup: user phrases are
 merged by reading and text, while the imported candidate and contextual
 learning replace the current learning tables. Export uses SQLite's online
 backup API, so a database can be saved while the input method is active.
-The settings window footer shows `1.3.0`; the frontend validation script checks
+The settings window footer shows `1.3.1`; the frontend validation script checks
 that this visible version matches the CMake project and packaging version.
 Language-model source changes do not alter a platform build automatically.
 Generate and validate a new canonical `KeyKey.db` first, then commit the file
@@ -212,7 +212,7 @@ The Windows GitHub Actions workflow installs NSIS 3.12 and emits this test-only
 installer in addition to the ZIP package:
 
 ```text
-out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe
+out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe
 ```
 
 To build the same unsigned installer locally after building x64 and x86, run:
@@ -225,16 +225,16 @@ To build the same unsigned installer locally after building x64 and x86, run:
 The `.unsigned.exe` artifact supports `/S` silent installation but is not
 eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
 settings executable, and the outer installer is unsigned as well.
-It retains product version `1.3.0` but installs into a fingerprinted local
-test directory such as `C:\Program Files\chichi77 KeyKey\1.3.0-test-xxxxxxxxxxxx`.
+It retains product version `1.3.1` but installs into a fingerprinted local
+test directory such as `C:\Program Files\chichi77 KeyKey\1.3.1-test-xxxxxxxxxxxx`.
 Rebuilding changed binaries gets a new directory, so an existing text host
 can continue using its previously loaded DLL. Signed production packages use
-the plain version directory, such as `1.3.0` or `1.3.1`.
+the plain version directory, such as `1.3.1`.
 
 The interactive finish page offers to open the KeyKey settings app by default.
 Silent `/S` installs do not launch the settings app.
 
-Pushing a tag that exactly matches the repository version, such as `v1.3.0`,
+Pushing a tag that exactly matches the repository version, such as `v1.3.1`,
 automatically publishes this unsigned EXE, the ZIP package, and SHA-256 files.
 The workflow uploads to the corresponding Release when it already exists, or
 creates the Release when needed; it never creates the tag or overwrites an
@@ -280,8 +280,8 @@ edits the original build outputs and does not accept or store a PFX password.
 The output is:
 
 ```text
-out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe
-out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe.sha256
+out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe
+out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe.sha256
 ```
 
 Test the signed installer's silent installation and uninstallation on a
@@ -289,7 +289,7 @@ disposable clean Windows 11 VM before submission. NSIS treats `/S` as
 case-sensitive:
 
 ```powershell
-.\chichi77-KeyKey-1.3.0-windows-x64-setup.exe /S
+.\chichi77-KeyKey-1.3.1-windows-x64-setup.exe /S
 & "$env:ProgramFiles\chichi77 KeyKey\Uninstall.exe" /S
 ```
 
@@ -299,7 +299,7 @@ the unsigned test assets. Upload the separately signed EXE as a distinct asset
 to that existing Release, then use a URL such as:
 
 ```text
-https://github.com/polobread/KeyKey/releases/download/v1.3.0/chichi77-KeyKey-1.3.0-windows-x64-setup.exe
+https://github.com/polobread/KeyKey/releases/download/v1.3.1/chichi77-KeyKey-1.3.1-windows-x64-setup.exe
 ```
 
 Do not replace an asset after submitting its URL. In Partner Center select
@@ -321,7 +321,7 @@ Databases/
 
 The ZIP installer places this layout directly under
 `C:\Program Files\chichi77 KeyKey`. The NSIS installer places it in a versioned
-subdirectory such as `C:\Program Files\chichi77 KeyKey\1.3.0`; its uninstaller
+subdirectory such as `C:\Program Files\chichi77 KeyKey\1.3.1`; its uninstaller
 remains one level above. Versioned payload directories let an upgrade register
 new DLL paths even while an application still has the previous TSF DLL loaded.
 NSIS registers the new DLLs without unregistering the old ones, so the active

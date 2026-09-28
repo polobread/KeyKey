@@ -2,7 +2,7 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 1.3.0 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
+Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
 共用 [`v1.3.0` Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
@@ -126,7 +126,7 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
-Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.3.0 安裝與使用指南](LINUX_INSTALL.md)；
+Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.3.1 安裝與使用指南](LINUX_INSTALL.md)；
 本節指令產生的本機套件仍需通過發布流程的驗證，才可作為 GitHub Release 安裝檔。
 
 Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
@@ -276,9 +276,9 @@ DLL 架構必須和載入它的應用程式架構相同。
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-產物是 `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`。
-產品版號維持 `1.3.0`；本機測試安裝目錄使用 `1.3.0-test-<內容指紋>`，避免
-重編後覆寫仍由應用程式載入的 DLL。正式簽章套件則使用 `1.3.0` 等一般版號目錄。
+產物是 `out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe`。
+產品版號維持 `1.3.1`；本機測試安裝目錄使用 `1.3.1-test-<內容指紋>`，避免
+重編後覆寫仍由應用程式載入的 DLL。正式簽章套件則使用 `1.3.1` 等一般版號目錄。
 
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
@@ -302,7 +302,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE 與設定後端 DLL，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
-`out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`。完整參數、`/S`
+`out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
 互動式完成頁可選擇開啟琦琦設定；版本升級時另提示登出再登入，讓工作列載入新版
 輸入法。升級時會保留可能仍被舊版文字宿主使用的版本目錄，等舊行程結束後再清理。
@@ -371,7 +371,7 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
 Actions 頁面按 **Run workflow** 手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag
-（例如 `v1.3.0`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
+（例如 `v1.3.1`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
 `release_tag` 輸入，留空時只保留測試 artifact。一般 commit、pull request 與不符合版號的
 tag 不會發布 Release。`Linux CI` 保留 pull request 與手動執行，並由 `v*` tag 觸發完整
 gate；`master` push 不觸發。tag run 在 Ubuntu 24.04 套件建置、安裝生命週期與 X11
@@ -418,7 +418,7 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 ## English
 
-Native Linux support began with version 1.2.8. Version 1.3.0 includes a
+Native Linux support began with version 1.2.8. Version 1.3.1 includes a
 Linux-only engine and Fcitx 5 addon. The GTK 3, GTK 4, and Qt 6 X11 matrix is
 implemented, and 76 cases that do not restart the desktop Fcitx process pass
 in an isolated Ubuntu 24.04 GNOME X11 session. A GNOME Wayland KVM guest also
@@ -671,11 +671,11 @@ To build an unsigned local NSIS test installer, run:
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-The output is `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`.
-Its product version remains `1.3.0`; local test installations use a
-`1.3.0-test-<content fingerprint>` directory so rebuilding does not overwrite
+The output is `out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe`.
+Its product version remains `1.3.1`; local test installations use a
+`1.3.1-test-<content fingerprint>` directory so rebuilding does not overwrite
 a DLL still loaded by an application. Signed production installers use plain
-version directories such as `1.3.0`.
+version directories such as `1.3.1`.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.
@@ -697,7 +697,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 The script signs and verifies the four PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
-`out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`. See the Windows
+`out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
 The interactive finish page can open KeyKey settings. An upgrade keeps older
@@ -764,7 +764,7 @@ shares the completed text. See the
 The Android debug packaging, Google Play release, and iOS Simulator workflows
 run only after **Run workflow** is selected on the GitHub Actions page. The
 macOS and Windows workflows publish to a Release when a tag that exactly
-matches the repository version, such as `v1.3.0`, is pushed. Both can also be
+matches the repository version, such as `v1.3.1`, is pushed. Both can also be
 run manually; the Windows workflow additionally takes a `release_tag` input,
 and leaving it blank produces a test artifact only. Commits, pull requests, and
 mismatched tags do not publish a Release. `Linux CI` keeps its pull-request and
