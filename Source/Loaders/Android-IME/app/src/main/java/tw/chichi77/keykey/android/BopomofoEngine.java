@@ -162,6 +162,20 @@ final class BopomofoEngine {
         return applyHardwareWidth(character(key, false));
     }
 
+    Result commitHardwareNumber(char key) {
+        if ("1234567890!@#$%^&*()".indexOf(key) < 0) return Result.update();
+        prepareForHardwareInput();
+        String prefix;
+        if (compositionMode == BopomofoCompositionMode.TRADITIONAL && !reading.isEmpty()) {
+            prefix = candidates.isEmpty() ? reading.displayText()
+                    : candidates.get(page * CANDIDATES_PER_PAGE);
+            clearComposition();
+        } else {
+            prefix = finishCompositionForModeSwitch().committedText();
+        }
+        return applyHardwareWidth(Result.commit(prefix + key));
+    }
+
     Result handleHardwareSpace() {
         prepareForHardwareInput();
         return applyHardwareWidth(space());

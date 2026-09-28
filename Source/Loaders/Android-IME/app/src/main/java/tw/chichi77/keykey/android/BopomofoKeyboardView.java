@@ -71,6 +71,12 @@ final class BopomofoKeyboardView extends View {
             {"←", "→", "↑", "↓", "↔", "↕", "↖", "↗", "↘", "↙", "⇒"},
             {"★", "☆", "●", "○", "■", "□", "▲", "△", "▼", "▽", "SHIFT"}
     };
+    private static final String[] HARDWARE_NUMBER_DIGITS = {
+            "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
+    };
+    private static final String[] HARDWARE_NUMBER_SYMBOLS = {
+            "!", "@", "#", "$", "%", "^", "&", "*", "(", ")"
+    };
     private static final String[] FUNCTION_ROW = {
             "MODE", "SYMBOL", "SETTINGS", "，", "SPACE", "。", "BACKSPACE", "ENTER"
     };
@@ -79,6 +85,7 @@ final class BopomofoKeyboardView extends View {
     private static final int LANDSCAPE_CONTENT_HEIGHT_DP = 230;
     private static final int LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final int HARDWARE_CONTENT_HEIGHT_DP = 58;
+    private static final int HARDWARE_NUMBER_ROW_HEIGHT_DP = 48;
     private static final int HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
     private static final int HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final float TONE_SYMBOL_SCALE = 1.8f;
@@ -109,6 +116,8 @@ final class BopomofoKeyboardView extends View {
     private boolean shifted;
     private boolean temporaryEnglish;
     private boolean hardwareFullWidth;
+    private boolean hardwareNumberRowEnabled;
+    private boolean hardwareNumberShifted;
     private boolean supportPromptVisible;
     private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
     private int page;
@@ -167,6 +176,19 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
+    void setHardwareNumberRowEnabled(boolean enabled) {
+        if (hardwareNumberRowEnabled == enabled) return;
+        hardwareNumberRowEnabled = enabled;
+        hardwareNumberShifted = false;
+        if (mode == Mode.HARDWARE) requestLayout();
+        invalidate();
+    }
+
+    void toggleHardwareNumberShift() {
+        hardwareNumberShifted = !hardwareNumberShifted;
+        invalidate();
+    }
+
     void setKeyPreviewEnabled(boolean enabled) {
         if (keyPreviewEnabled == enabled) return;
         keyPreviewEnabled = enabled;
@@ -220,7 +242,9 @@ final class BopomofoKeyboardView extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int desiredHeight = switch (mode) {
             case HARDWARE_FLOATING -> dp(1);
-            case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP) + hardwareSystemAreaHeight();
+            case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
+                    + (hardwareNumberRowEnabled ? HARDWARE_NUMBER_ROW_HEIGHT_DP : 0))
+                    + hardwareSystemAreaHeight();
             case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
                     landscapeHeightPercent) + dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
             case PORTRAIT -> scaledContentHeight(PORTRAIT_CONTENT_HEIGHT_DP,
@@ -306,7 +330,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawHardware(Canvas canvas) {
-        RectF area = new RectF(0, 0, getWidth(), contentHeight());
+        RectF area = new RectF(0, 0, getWidth(), dp(HARDWARE_CONTENT_HEIGHT_DP));
         float gap = dp(2);
         int cellCount = BopomofoEngine.CANDIDATES_PER_PAGE + 3;
         float cellWidth = area.width() / cellCount;
@@ -329,6 +353,40 @@ final class BopomofoKeyboardView extends View {
                 area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
                 area.top, area.right, area.bottom), hardwareFullWidth ? "全" : "半",
                 "HARDWARE_WIDTH");
+        if (hardwareNumberRowEnabled) {
+            drawHardwareNumberRow(canvas, new RectF(0, area.bottom, getWidth(),
+                    area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP)));
+        }
+    }
+
+    private void drawHardwareNumberRow(Canvas canvas, RectF area) {
+        float cellWidth = area.width() / 12f;
+        for (int index = 0; index < 12; index++) {
+            RectF cell = inset(new RectF(area.left + index * cellWidth, area.top,
+                    area.left + (index + 1) * cellWidth, area.bottom), dp(2));
+            boolean special = index >= 10;
+            canvas.drawRoundRect(cell, dp(6), dp(6), special ? specialKeyPaint : keyPaint);
+            if (index < 10) {
+                String primary = hardwareNumberShifted
+                        ? HARDWARE_NUMBER_SYMBOLS[index] : HARDWARE_NUMBER_DIGITS[index];
+                String secondary = hardwareNumberShifted
+                        ? HARDWARE_NUMBER_DIGITS[index] : HARDWARE_NUMBER_SYMBOLS[index];
+                textPaint.setTextSize(dp(17));
+                textPaint.setFakeBoldText(true);
+                canvas.drawText(primary, cell.centerX(), cell.centerY() + dp(1), textPaint);
+                hintPaint.setTextSize(dp(10));
+                canvas.drawText(secondary, cell.centerX(), cell.bottom - dp(5), hintPaint);
+                hits.add(new Hit(new RectF(cell), HitKind.KEY,
+                        "HARDWARE_NUMBER:" + primary, -1));
+            } else {
+                textPaint.setTextSize(dp(18));
+                textPaint.setFakeBoldText(index == 11 && hardwareNumberShifted);
+                canvas.drawText(index == 10 ? "符" : "⇧", cell.centerX(),
+                        textBaseline(cell, textPaint), textPaint);
+                hits.add(new Hit(new RectF(cell), HitKind.KEY,
+                        index == 10 ? "HARDWARE_SYMBOL" : "HARDWARE_NUMBER_SHIFT", -1));
+            }
+        }
     }
 
     private void drawHardwareStatusButton(Canvas canvas, RectF bounds, String label,

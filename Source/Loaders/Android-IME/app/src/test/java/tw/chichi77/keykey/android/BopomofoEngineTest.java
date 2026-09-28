@@ -953,6 +953,20 @@ public final class BopomofoEngineTest {
     }
 
     @Test
+    public void hardwareNumberRowCommitsLiteralWithoutLosingComposition() throws Exception {
+        BopomofoEngine smart = smartEngine();
+        typeHardware(smart, "su3cl3");
+        assertEquals("你好1", smart.commitHardwareNumber('1').committedText());
+        assertFalse(smart.hasComposition());
+        assertEquals("!", smart.commitHardwareNumber('!').committedText());
+
+        BopomofoEngine traditional = engineWith("su3 你\nsu3 擬\n");
+        typeHardware(traditional, "su3");
+        assertEquals("你2", traditional.commitHardwareNumber('2').committedText());
+        assertFalse(traditional.hasComposition());
+    }
+
+    @Test
     public void hardwareSmartCursorChangesAnEarlierCharacter() throws Exception {
         BopomofoEngine engine = smartEngine();
         typeHardware(engine, "su3cl3");

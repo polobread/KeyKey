@@ -332,7 +332,8 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
         if (!CandidateWindowSettings.KEY_FLOATING_ENABLED.equals(key)
-                && !CandidateWindowSettings.KEY_LAYOUT.equals(key)) return;
+                && !CandidateWindowSettings.KEY_LAYOUT.equals(key)
+                && !CandidateWindowSettings.KEY_NUMBER_ROW.equals(key)) return;
         floatingCandidateWindowAvailable = CandidateWindowSettings.floatingEnabled(this);
         updateKeyboardMode();
         requestCursorAnchorUpdates();
@@ -341,6 +342,18 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onKey(String key) {
+        if (key.equals("HARDWARE_NUMBER_SHIFT")) {
+            keyboardView.toggleHardwareNumberShift();
+            return;
+        }
+        if (key.equals("HARDWARE_SYMBOL")) {
+            apply(engine.showHardwareSymbols());
+            return;
+        }
+        if (key.startsWith("HARDWARE_NUMBER:") && key.length() == 17) {
+            apply(engine.commitHardwareNumber(key.charAt(16)));
+            return;
+        }
         if (key.equals("SETTINGS")) {
             apply(engine.finishCompositionForModeSwitch());
             Intent intent = new Intent(this, SettingsActivity.class);
@@ -787,6 +800,7 @@ public final class BopomofoImeService extends InputMethodService
         floatingCandidatesEnabled = CandidateWindowSettings.floatingEnabled(this);
         floatingCandidateLayout = CandidateWindowSettings.layout(this);
         if (keyboardView == null) return;
+        keyboardView.setHardwareNumberRowEnabled(CandidateWindowSettings.numberRowEnabled(this));
         if (hardwareKeyboard) {
             keyboardView.setMode(isFloatingCandidateMode()
                     ? BopomofoKeyboardView.Mode.HARDWARE_FLOATING

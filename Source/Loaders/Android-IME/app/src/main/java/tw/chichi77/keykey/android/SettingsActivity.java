@@ -258,10 +258,22 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         floatingLayoutLabel.setEnabled(floatingCandidates.isChecked());
         content.addView(floatingLayout, matchWrap(dp(0), dp(36)));
 
+        CheckBox hardwareNumberRow = new CheckBox(this);
+        hardwareNumberRow.setText(R.string.hardware_number_row_enabled);
+        hardwareNumberRow.setTextSize(16);
+        hardwareNumberRow.setTextColor(Color.DKGRAY);
+        hardwareNumberRow.setMinHeight(dp(48));
+        hardwareNumberRow.setChecked(CandidateWindowSettings.numberRowEnabled(this));
+        hardwareNumberRow.setEnabled(!floatingCandidates.isChecked());
+        content.addView(hardwareNumberRow, matchWrap(dp(0), dp(8)));
+        hardwareNumberRow.setOnCheckedChangeListener((button, checked) ->
+                CandidateWindowSettings.setNumberRowEnabled(SettingsActivity.this, checked));
+
         floatingCandidates.setOnCheckedChangeListener((button, checked) -> {
             CandidateWindowSettings.setFloatingEnabled(SettingsActivity.this, checked);
             floatingLayout.setEnabled(checked);
             floatingLayoutLabel.setEnabled(checked);
+            hardwareNumberRow.setEnabled(!checked);
             updateFloatingFailure(floatingFailure);
         });
         floatingLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
