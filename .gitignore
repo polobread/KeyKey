@@ -12,3 +12,5 @@ Source/Loaders/Android-IME/app/build/
 Source/Loaders/Android-IME/local.properties
 Source/Loaders/Linux-IME/out/
 /Source/Loaders/Linux-IME/Makefile
+DataSource/AISyntheticArticles/article-api-runs/
+DataSource/AISyntheticArticles/article-batches-v2/

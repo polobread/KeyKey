@@ -1,0 +1,9 @@
+.typing-cache/
+versions/
+typing-benchmarks/
+__pycache__/
+*.pyc
+*-results.json
+*-results.md
+*-analysis.json
+*-analysis.md
