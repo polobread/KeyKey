@@ -23,6 +23,7 @@ ARTICLES = DATA / "AISyntheticArticles"
 DEFAULT_TRAINING = tuple(ARTICLES / f"typing-articles-v{version}.jsonl" for version in (2, 3, 4))
 DEFAULT_PROTECTED = BIGRAM / "basic-bigram-protected-characters.txt"
 DEFAULT_SUPPLEMENT = BIGRAM / "common-unigram-supplement.tsv"
+DEFAULT_SEARCH_TREND = BIGRAM / "search-trend-unigram.tsv"
 DEFAULT_COUNTS = DATA / "McBopomofo/phrase.occ"
 DEFAULT_MANIFEST = BIGRAM / "smart-mandarin-model-manifest.json"
 EXPECTED_ARTICLES = (1650, 350, 300)
@@ -111,6 +112,30 @@ def load_supplement(path: Path, counts_path: Path) -> list[dict[str, object]]:
             })
     if not entries:
         raise ValueError(f"{path}: no supplement entries")
+    return entries
+
+
+def load_search_trend(path: Path) -> list[dict[str, object]]:
+    with path.open(encoding="utf-8", newline="") as source:
+        reader = csv.DictReader(source, delimiter="\t")
+        if tuple(reader.fieldnames or ()) != ("詞", "詞頻", "注音"):
+            raise ValueError(f"{path}: expected 詞、詞頻、注音 columns")
+        entries = []
+        seen = set()
+        for number, row in enumerate(reader, 2):
+            word = row["詞"]
+            count = int(row["詞頻"])
+            syllables = row["注音"].split()
+            if not word or word in seen or count < 0 or len(syllables) != len(word):
+                raise ValueError(f"{path}:{number}: invalid or duplicate search-trend row")
+            seen.add(word)
+            entries.append({
+                "word": word,
+                "count": count,
+                "query": "".join(absolute_query(syllable) for syllable in syllables),
+            })
+    if not entries:
+        raise ValueError(f"{path}: no search-trend entries")
     return entries
 
 
@@ -226,7 +251,7 @@ def infer_eos_background(database: sqlite3.Connection) -> float:
 
 
 def verify_sources(manifest: dict[str, object], paths: tuple[Path, ...], protected: Path,
-                   supplement: Path) -> None:
+                   supplement: Path, search_trend: Path) -> None:
     expected = manifest.get("sources", {})
     actual_training = [
         {"file": path.name, "articles": count, "sha256": file_sha256(path)}
@@ -238,17 +263,29 @@ def verify_sources(manifest: dict[str, object], paths: tuple[Path, ...], protect
         row = expected.get(key)
         if row and row.get("sha256") != file_sha256(path):
             raise ValueError(f"{path}: source hash differs from the selected model manifest")
+    row = expected.get("search_trend_unigram")
+    if row and row.get("sha256") != file_sha256(search_trend):
+        raise ValueError(f"{search_trend}: source hash differs from the selected model manifest")
 
 
 def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_path: Path,
-             supplement_path: Path, counts_path: Path, manifest_path: Path) -> dict[str, object]:
+             supplement_path: Path, search_trend_path: Path, counts_path: Path,
+             manifest_path: Path) -> dict[str, object]:
     if not database_path.is_file():
         raise ValueError(f"database does not exist: {database_path}")
     manifest = load_manifest(manifest_path)
-    verify_sources(manifest, training_paths, protected_path, supplement_path)
+    base_digest = file_sha256(database_path)
+    expected_base_digest = manifest.get("base_database_sha256")
+    if expected_base_digest and base_digest != expected_base_digest:
+        raise ValueError(
+            f"base database SHA-256 {base_digest}; expected {expected_base_digest}"
+        )
+    verify_sources(manifest, training_paths, protected_path, supplement_path, search_trend_path)
     articles, training_sources = load_training(training_paths)
     protected_characters = load_protected_characters(protected_path)
     supplement = load_supplement(supplement_path, counts_path)
+    search_trend = load_search_trend(search_trend_path)
+    unigram_total_count = int(manifest["unigram_total_count"])
     temporary = database_path.with_name(f".{database_path.name}.finalize-{os.getpid()}")
     if temporary.exists():
         temporary.unlink()
@@ -351,6 +388,27 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
                 )
                 if cursor.rowcount != 1:
                     raise ValueError(f"expected one unigram row for {entry['word']}")
+            search_trend_inserted = 0
+            search_trend_existing = 0
+            for entry in search_trend:
+                if not entry["count"]:
+                    continue
+                probability = math.log10(int(entry["count"]) / unigram_total_count)
+                existing = database.execute(
+                    "SELECT probability FROM main.unigrams WHERE qstring=? AND current=?",
+                    (entry["query"], entry["word"]),
+                ).fetchone()
+                if existing is None:
+                    database.execute(
+                        "INSERT INTO main.unigrams(qstring,current,probability,backoff) "
+                        "VALUES(?,?,?,0.0)",
+                        (entry["query"], entry["word"], probability),
+                    )
+                    search_trend_inserted += 1
+                elif not math.isclose(existing[0], probability, rel_tol=0.0, abs_tol=1e-12):
+                    raise ValueError(f"search-trend probability changed for {entry['word']}")
+                else:
+                    search_trend_existing += 1
             database.commit()
             database.execute("DETACH DATABASE base")
 
@@ -383,6 +441,7 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
         bands["five_plus"] += frequency >= 5
     return {
         "database": str(database_path),
+        "base_database_sha256": base_digest,
         "database_sha256": file_sha256(database_path),
         "semantic_sha256": digest,
         "training_articles": len(articles),
@@ -394,6 +453,8 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
         "protected_queries": len(protected_queries),
         "protected_bigram_rows": protected_bigram_rows,
         "supplemented_unigrams": changed_unigram_probabilities,
+        "search_trend_inserted": search_trend_inserted,
+        "search_trend_existing": search_trend_existing,
         "unigram_backoffs_changed_vs_base": 0,
         "rows": rows,
     }
@@ -405,6 +466,7 @@ def main() -> None:
     parser.add_argument("--training-articles", nargs=3, type=Path, default=DEFAULT_TRAINING)
     parser.add_argument("--protected-characters", type=Path, default=DEFAULT_PROTECTED)
     parser.add_argument("--supplement", type=Path, default=DEFAULT_SUPPLEMENT)
+    parser.add_argument("--search-trend", type=Path, default=DEFAULT_SEARCH_TREND)
     parser.add_argument("--counts", type=Path, default=DEFAULT_COUNTS)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--report", type=Path)
@@ -415,6 +477,7 @@ def main() -> None:
             tuple(args.training_articles),
             args.protected_characters,
             args.supplement,
+            args.search_trend,
             args.counts,
             args.manifest,
         )

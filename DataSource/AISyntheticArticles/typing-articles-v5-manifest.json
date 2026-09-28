@@ -45,17 +45,24 @@
       "correction_actions": 11000
     },
     "selected_v1_3_1_model": {
-      "database_sha256": "bde6ff987670ce45845e9d57f90b081265dffac06ddc1a6d7d0660b234e43809",
-      "semantic_sha256": "68a634d62d66734564aaa82a37b4cffa5c72f72bdfe038569033ae7ac0caf28d",
-      "total_actions": 331068,
-      "correction_actions": 10449,
+      "database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
+      "semantic_sha256": "7b05aabbe8a8d53f905bc5ef3b915049288fbc4bff0da7c21e8efd19eb753676",
+      "total_actions": 331062,
+      "correction_actions": 10443,
       "improved_articles": 97,
       "unchanged_articles": 19,
       "regressed_articles": 14,
-      "saved_actions": 617,
+      "saved_actions": 623,
       "added_actions": 66,
-      "basic_character_corrections": 1270,
-      "general_character_corrections": 2320
+      "basic_character_corrections": 1269,
+      "general_character_corrections": 2319,
+      "search_trend_delta": {
+        "previous_total_actions": 331068,
+        "actions_saved": 6,
+        "improved_articles": 3,
+        "unchanged_articles": 127,
+        "regressed_articles": 0
+      }
     }
   }
 }

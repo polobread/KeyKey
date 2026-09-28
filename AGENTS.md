@@ -37,7 +37,7 @@ Linux 傳統注音接續檢查：切換時確認反白候選或保留原讀音�
 | Linux／FreeBSD | Fcitx 5 共用 C++ walker 與 adapter | 同一份 `KeyKey.db` 安裝時改名為 `smart-mandarin.db` |
 
 - macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 另有組句實作。改動 SmartMandarin 的詞頻、Bigram、backoff 或候選排序時，必須檢查五平台，不能只看同一份資料庫。
-- 目前 `v1.3.1` 模型有 **114,235 筆 Unigram、885,627 筆 Bigram**。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動模型後，更新 manifest 與測試，不能只用 Bigram 筆數判斷新舊。
+- 目前 `v1.3.1` 模型有 **114,392 筆 Unigram、885,627 筆 Bigram**。其中搜尋熱門詞來源的 550 詞先剔除 393 個既有詞，再以保守詞頻補 157 詞。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動模型後，更新 manifest 與測試，不能只用資料列數判斷新舊。
 - `Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py` 檢查共用 DB 的固定雜湊、完整性、筆數與首音節。iOS archive、Android asset、macOS App、Windows 打包目錄與 Linux／FreeBSD 安裝後的改名檔仍要各自確認。
 - Android 的私有 DB 檔名是更新快取的版本邊界。換模型後若不變更檔名或加入內容校驗，已安裝使用者可能繼續讀舊庫。Windows 的 `keykey_database_deploy` 須在 DB 更新而 DLL 未重新連結時同步打包目錄。
 

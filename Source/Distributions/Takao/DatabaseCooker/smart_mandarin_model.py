@@ -73,8 +73,32 @@ def load_manifest(path: Path) -> dict[str, object]:
     return manifest
 
 
+def verify_source_hashes(manifest: dict[str, object], manifest_path: Path) -> None:
+    bigram = manifest_path.resolve().parent
+    articles = bigram.parent / "AISyntheticArticles"
+    sources = manifest["sources"]
+    checks = []
+    for row in sources["training_articles"]:
+        checks.append((articles / row["file"], row["sha256"]))
+    for key in ("protected_characters", "unigram_supplement"):
+        row = sources[key]
+        checks.append((bigram / row["file"], row["sha256"]))
+    trend = sources["search_trend_unigram"]
+    checks.extend((
+        (bigram / trend["source_file"], trend["source_sha256"]),
+        (bigram / trend["file"], trend["sha256"]),
+        (bigram / trend["review_file"], trend["review_sha256"]),
+        (bigram / "search-trend-reading-overrides.tsv", trend["reading_overrides_sha256"]),
+    ))
+    for path, expected in checks:
+        actual = file_sha256(path)
+        if actual != expected:
+            raise ValueError(f"{path}: SHA-256 {actual}; expected {expected}")
+
+
 def verify_manifest(path: Path, manifest_path: Path) -> dict[str, object]:
     manifest = load_manifest(manifest_path)
+    verify_source_hashes(manifest, manifest_path)
     with connect_readonly(path) as database:
         validate_schema(database)
         integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
