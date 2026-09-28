@@ -169,3 +169,13 @@ The earlier 100–1,650 article snapshots remain experiments. The combined
 2,300-article corpus is included in `SMART_BIGRAM_CORPORA` by default. Pair
 coverage and local score lift do not replace end-to-end candidate-order A/B
 testing.
+
+## Common-word unigram supplement experiment
+
+Smart Mandarin can revise only the roughly 9–10 syllables still present in its
+composition window. `common-unigram-supplement.tsv` therefore contains a small
+reviewed overlay for ordinary words that should require fewer manual
+corrections without relying on longer Bigram context. It leaves the vendored
+McBopomofo files unchanged. The selection rules, fixed 130-article validation
+result, and reproducible application command are documented in
+`COMMON_UNIGRAM_SUPPLEMENT.md`.
