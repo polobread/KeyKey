@@ -32,14 +32,11 @@ endif()
 get_filename_component(KEYKEY_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
 set(KEYKEY_SOURCE "${KEYKEY_ROOT}/Source")
 set(KEYKEY_DATABASE_PATH
-    ""
-    CACHE FILEPATH "Path to the cooked KeyKey SQLite database")
+    "${KEYKEY_ROOT}/Source/Distributions/Takao/CookedDatabase/KeyKey.db"
+    CACHE FILEPATH "Path to the canonical shared KeyKey SQLite database")
 if(KEYKEY_DATABASE_PATH AND NOT EXISTS "${KEYKEY_DATABASE_PATH}")
     message(FATAL_ERROR "KEYKEY_DATABASE_PATH does not exist: ${KEYKEY_DATABASE_PATH}")
 endif()
-set(KEYKEY_CATEGORIZED_COLLECTION_DIR
-    "${KEYKEY_ROOT}/DataSource/chichi77Collection")
-
 add_library(keykey_third_party STATIC
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib/xmlparse.c"
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib/xmlrole.c"
@@ -103,113 +100,19 @@ endif()
 set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_DATABASE_PATH}")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 if(NOT KEYKEY_DATABASE_PATH)
-    find_package(Ruby REQUIRED COMPONENTS Interpreter)
-    add_executable(KeyKeyDatabaseCooker DatabaseCooker.cpp)
-    target_compile_features(KeyKeyDatabaseCooker PRIVATE cxx_std_17)
-    target_link_libraries(KeyKeyDatabaseCooker PRIVATE keykey_core)
-    if(MSVC)
-        target_compile_options(KeyKeyDatabaseCooker PRIVATE /W4 /permissive- /utf-8)
-    endif()
-
-    set(KEYKEY_COLLECTION_INPUTS
-        "${KEYKEY_ROOT}/DataSource/AssociatedPhraseCollectionNames.tsv"
-        "${KEYKEY_ROOT}/DataSource/McBopomofo/phrase.occ")
-    file(GLOB KEYKEY_CATEGORIZED_COLLECTION_INPUTS CONFIGURE_DEPENDS
-        "${KEYKEY_CATEGORIZED_COLLECTION_DIR}/phrase.*.tsv")
-    if(NOT KEYKEY_CATEGORIZED_COLLECTION_INPUTS)
-        message(FATAL_ERROR
-            "Categorized associated-phrase data not found: ${KEYKEY_CATEGORIZED_COLLECTION_DIR}")
-    endif()
-    list(APPEND KEYKEY_COLLECTION_INPUTS ${KEYKEY_CATEGORIZED_COLLECTION_INPUTS})
-    set(KEYKEY_SMART_SQL "${CMAKE_CURRENT_BINARY_DIR}/Databases/SmartMandarin.sql")
-    set(KEYKEY_ABSOLUTE_CIN "${CMAKE_CURRENT_BINARY_DIR}/Databases/bpmf-absorder.cin")
-    set(KEYKEY_SMART_COOKER
-        "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/SmartMandarinCooker.rb")
-    set(KEYKEY_SMART_CORPORA
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v1.txt"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v2.txt"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v3.txt"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-typing-feedback.txt"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/article-corpus-2300-exact-dedup.txt")
-    set(KEYKEY_SMART_LEXICONS
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/supplemental-lexicon.tsv"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv")
-    foreach(KEYKEY_SMART_INPUT IN LISTS KEYKEY_SMART_CORPORA KEYKEY_SMART_LEXICONS)
-        if(NOT EXISTS "${KEYKEY_SMART_INPUT}")
-            message(FATAL_ERROR "Smart Mandarin source data not found: ${KEYKEY_SMART_INPUT}")
-        endif()
-    endforeach()
-    message(STATUS
-        "Including categorized associated-phrase data from: ${KEYKEY_CATEGORIZED_COLLECTION_DIR}")
-    set(KEYKEY_NATIVE_DATABASE "${CMAKE_CURRENT_BINARY_DIR}/Databases/KeyKey.db")
-    set(KEYKEY_NATIVE_DATABASE_STAMP "${CMAKE_CURRENT_BINARY_DIR}/Databases/KeyKey.db.complete")
-    add_custom_command(
-        OUTPUT "${KEYKEY_NATIVE_DATABASE_STAMP}"
-        BYPRODUCTS "${KEYKEY_NATIVE_DATABASE}" "${KEYKEY_ABSOLUTE_CIN}" "${KEYKEY_SMART_SQL}"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory
-                "${CMAKE_CURRENT_BINARY_DIR}/Databases"
-        COMMAND "$<TARGET_FILE:KeyKeyDatabaseCooker>"
-                "${KEYKEY_SOURCE}"
-                "${KEYKEY_ROOT}/DataSource"
-                "${KEYKEY_CATEGORIZED_COLLECTION_DIR}"
-                "${KEYKEY_NATIVE_DATABASE}"
-                "${KEYKEY_ABSOLUTE_CIN}"
-        COMMAND "${Ruby_EXECUTABLE}"
-                "${CMAKE_CURRENT_SOURCE_DIR}/GenerateSmartMandarinSql.rb"
-                "${KEYKEY_SMART_SQL}"
-                "${KEYKEY_SMART_COOKER}"
-                "${KEYKEY_ROOT}/DataSource/McBopomofo/phrase.occ"
-                "${KEYKEY_ROOT}/DataSource/McBopomofo/BPMFMappings.txt"
-                "${KEYKEY_ABSOLUTE_CIN}"
-                --lexicon
-                "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/supplemental-lexicon.tsv"
-                --lexicon
-                "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv"
-                ${KEYKEY_SMART_CORPORA}
-        COMMAND "$<TARGET_FILE:KeyKeyDatabaseCooker>"
-                --append-smart-sql
-                "${KEYKEY_NATIVE_DATABASE}"
-                "${KEYKEY_SMART_SQL}"
-        COMMAND "${Python3_EXECUTABLE}"
-                "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
-                "${KEYKEY_NATIVE_DATABASE}"
-        COMMAND "${CMAKE_COMMAND}" -E touch "${KEYKEY_NATIVE_DATABASE_STAMP}"
-        DEPENDS
-            KeyKeyDatabaseCooker
-            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/Schema.sql"
-            "${KEYKEY_SOURCE}/DataTables/bpmf-ext.cin"
-            "${KEYKEY_SOURCE}/DataTables/bpmf-punctuations.cin"
-            "${KEYKEY_SOURCE}/DataTables/cj-ext.cin"
-            "${KEYKEY_SOURCE}/DataTables/simplex-ext.cin"
-            "${KEYKEY_SOURCE}/DataTables/cj-punctuations-halfwidth.cin"
-            "${KEYKEY_SOURCE}/DataTables/cj-punctuations-mixedwidth.cin"
-            "${KEYKEY_SOURCE}/DataTables/bopomofo-correction.cin"
-            "${KEYKEY_SMART_COOKER}"
-            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
-            "${CMAKE_CURRENT_SOURCE_DIR}/GenerateSmartMandarinSql.rb"
-            "${KEYKEY_ROOT}/DataSource/McBopomofo/BPMFMappings.txt"
-            ${KEYKEY_SMART_LEXICONS}
-            ${KEYKEY_SMART_CORPORA}
-            "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/OneKey.plist"
-            "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/CannedMessages.plist"
-            ${KEYKEY_COLLECTION_INPUTS}
-        COMMENT "Cooking KeyKey.db with the native Windows database cooker"
-        VERBATIM
-    )
-    add_custom_target(keykey_database ALL DEPENDS "${KEYKEY_NATIVE_DATABASE_STAMP}")
-    set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_NATIVE_DATABASE}")
+    message(FATAL_ERROR
+        "KEYKEY_DATABASE_PATH must name the pre-generated shared KeyKey.db")
 endif()
-
-if(KEYKEY_DATABASE_PATH)
-    add_custom_target(keykey_database ALL
-        COMMAND "${Python3_EXECUTABLE}"
-                "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
-                "${KEYKEY_DATABASE_PATH}"
-        DEPENDS
+add_custom_target(keykey_database ALL
+    COMMAND "${Python3_EXECUTABLE}"
+            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
             "${KEYKEY_DATABASE_PATH}"
-            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
-        VERBATIM)
-endif()
+    DEPENDS
+        "${KEYKEY_DATABASE_PATH}"
+        "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
+        "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py"
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
+    VERBATIM)
 
 add_library(KeyKeyTsf SHARED
     CandidateWindow.cpp

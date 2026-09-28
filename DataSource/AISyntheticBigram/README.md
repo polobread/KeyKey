@@ -98,14 +98,13 @@ and word boundaries; the cooker still caps every resulting text pair at one
 observation. The output is `article-corpus-2300-exact-dedup.txt`, with source
 hashes and removal counts in `article-corpus-2300-build-report.json`.
 
-The DatabaseCooker Makefile regenerates this corpus when any article export
-changes and includes it in `SMART_BIGRAM_CORPORA` by default. To rebuild and
+`build-versioned-article-corpus.py` can regenerate this analysis corpus when an
+article export changes. It is not part of normal platform builds. To rebuild and
 measure the incremental v3 and v4 contribution:
 
 ```sh
 python3 DataSource/AISyntheticBigram/build-versioned-article-corpus.py
 python3 DataSource/AISyntheticBigram/analyze-versioned-article-impact.py
-make -C Source/Distributions/Takao/DatabaseCooker all
 ```
 
 The impact report is written to `versioned-article-bigram-impact.json` and
@@ -114,7 +113,9 @@ distinct text pairs and 4.88 MiB to the minimal language-model database;
 v4 adds another 76,971 pairs and 6.08 MiB. The rebuilt full local
 `CookedDatabase/KeyKey.db` contains 885,627 bigram rows and 560,144 distinct
 text pairs, passes `PRAGMA integrity_check`, and occupies 64.09 MiB. An existing
-installer package must be rebuilt separately to include that database.
+installer package must be rebuilt separately to include that database. The
+selected v1.3.1 model and current direct-sharing workflow are documented in
+`SMART_MANDARIN_MODEL_V1_3_1.md`.
 
 ## Number and unit phrases
 

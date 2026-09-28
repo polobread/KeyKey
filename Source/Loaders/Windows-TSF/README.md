@@ -88,31 +88,24 @@ the Windows light/dark preference.
 - Visual Studio 2026 with **Desktop development with C++** (a Visual Studio
   2022 compatibility preset is also included)
 - CMake 3.25 or newer
-- Ruby 3.x when cooking the database from source (the Windows CI installs it)
-- Python 3 to verify the cooked Smart Mandarin database
+- Python 3 to verify the pre-generated Smart Mandarin database
 - NSIS 3.12 when building the Store EXE
 
 Windows uses the operating system's `winsqlite3.dll` through the Windows SDK's
 `winsqlite3.h` and `winsqlite3.lib`. The runtime SQLite version can vary with
 Windows Update. No GNU Make, `awk`, `sed`, or standalone `sqlite3` program is
-required. By default CMake runs the native C++ `KeyKeyDatabaseCooker` and the
-same Ruby Smart Mandarin language-model generator used by macOS. It creates
-`Databases\KeyKey.db` from the repository's CIN tables, McBopomofo data,
-supplemental and numeric lexicons, three bootstrap corpora, typing feedback,
-the 2,300-article corpus, and all 29 categorized associated-phrase
-collections. These are the same Smart Mandarin language-model inputs used by
-the macOS database cooker. The categorized data was
-generated and normalized automatically and has not been reviewed item by item.
-Both the source cooker and externally supplied databases must pass the
-Smart Mandarin first-syllable ranking check before packaging.
+required. CMake verifies and packages the repository's pre-generated shared
+`Source\Distributions\Takao\CookedDatabase\KeyKey.db`; Windows builds do not
+recook the language model. This keeps Windows, macOS, iOS, Android, Linux, and
+FreeBSD on the exact same validated bytes.
 
-To deploy a database cooked elsewhere instead, pass
+To verify and deploy another pre-generated database, pass
 `-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.
 It must contain the 885,627-row Smart Mandarin bigram model and pass the
-SQLite integrity check. CMake verifies both during the build.
+manifest, file hash, and SQLite integrity checks. CMake verifies it during the build.
 If an existing CMake build directory cached the old default database path,
 reconfigure with `cmake --fresh --preset windows-x64` (and likewise for x86)
-to use the new source cooker.
+to use the checked-in shared database.
 
 ## Build and register (x64 and x86)
 
@@ -143,8 +136,9 @@ learning replace the current learning tables. Export uses SQLite's online
 backup API, so a database can be saved while the input method is active.
 The settings window footer shows `1.3.0`; the frontend validation script checks
 that this visible version matches the CMake project and packaging version.
-Re-run the build after changing a source CIN, plist, or phrase file; CMake will
-automatically recook the database.
+Language-model source changes do not alter a platform build automatically.
+Generate and validate a new canonical `KeyKey.db` first, then commit the file
+and its manifest before rebuilding the package.
 
 To verify the Bopomofo core independently of TSF, run:
 

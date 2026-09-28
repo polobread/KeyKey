@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "role": "Fixed holdout only; never included in unigram or bigram training",
+  "corpus": {
+    "article_count": 130,
+    "first_article": "tw-corpus-0001.md",
+    "last_article": "tw-corpus-0130.md",
+    "utf8_bytes": 316577,
+    "han_characters": 92889,
+    "combined_sha256": "f548e5abd3ac0328a14ce54166fd139279f72982846e01f06a9ef30927a66f49",
+    "training_sources": [
+      {
+        "file": "typing-articles-v2.jsonl",
+        "articles": 1650,
+        "sha256": "ae70cc5274c5d131510a010aa07adf9eaca4be3f37345711e4c5516049cafe5d"
+      },
+      {
+        "file": "typing-articles-v3.jsonl",
+        "articles": 350,
+        "sha256": "8e783676d4a22cd92ae832e1a3be913d2e07252c8e2c4add76b55f6c725877de"
+      },
+      {
+        "file": "typing-articles-v4.jsonl",
+        "articles": 300,
+        "sha256": "ff625fc0b7be600347d7e61c9ddc3b4c4b8ada17f2b76950425f203505af6dc8"
+      }
+    ],
+    "leakage_checks": {
+      "exact_document_overlap": 0,
+      "duplicate_validation_documents": 0,
+      "exact_paragraph_overlap": 0
+    }
+  },
+  "evaluation": {
+    "policy": {
+      "settle_syllables": 5,
+      "buffer_syllables": 10,
+      "page_size": 8,
+      "interaction": "click",
+      "learning": "disabled; fresh engine process for every article and model"
+    },
+    "production_control": {
+      "database_sha256": "c29d06c7a9586641f8a261a0ab97042d3f843879b65b35248d8b650f42a1cc92",
+      "total_actions": 331619,
+      "correction_actions": 11000
+    },
+    "selected_v1_3_1_model": {
+      "database_sha256": "bde6ff987670ce45845e9d57f90b081265dffac06ddc1a6d7d0660b234e43809",
+      "semantic_sha256": "68a634d62d66734564aaa82a37b4cffa5c72f72bdfe038569033ae7ac0caf28d",
+      "total_actions": 331068,
+      "correction_actions": 10449,
+      "improved_articles": 97,
+      "unchanged_articles": 19,
+      "regressed_articles": 14,
+      "saved_actions": 617,
+      "added_actions": 66,
+      "basic_character_corrections": 1270,
+      "general_character_corrections": 2320
+    }
+  }
+}

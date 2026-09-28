@@ -2,7 +2,7 @@
 
 此檔只記錄目前開發需要遵守的規則與入口。舊版逐日進度、測試數字和待辦已完整移到 [歷史交接紀錄](docs/AGENTS_HISTORY.md)；該紀錄僅供查證當時情況，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 和相關平台文件。
 
-目前工作分支為 `v1.3.0`，五平台原始碼及對外安裝文件均以 1.3.0 為準。此分支合併後再建立發行 tag，由各平台流程產生安裝包與 GitHub Release Assets；文件中的下載檔名須與實際產物核對。舊版測試紀錄和 Android 私有資料庫清理清單中的 `1.2.10` 仍須保留原意。發布前依各平台建置與驗證流程確認產物，不能把本機套件測試當成所有平台的發行驗收。
+目前工作分支為 `v1.3.1`。五平台原始碼仍須依各自發行流程產生與驗證安裝包；文件中的下載檔名須與實際產物核對。舊版測試紀錄和 Android 私有資料庫清理清單中的 `1.2.10` 仍須保留原意。發布前依各平台建置與驗證流程確認產物，不能把本機套件測試當成所有平台的發行驗收。
 
 Linux 好打注音的本機修正：第十一個音節完成時送出最前方完整詞；即使學習單字「假」讓走訪器拆開「請假」，若畫面開頭仍是詞庫完整詞，第十一音節仍須一次擠出「請假」，並固定下一詞段的字與跨度。句中可用方向下鍵開候選，支援 Fcitx preedit click 的客戶端也可點字改選；候選選擇須保留整詞跨度，Enter 先套用反白候選、下次 Enter 才送出。切換輸入法時先完成有效讀音再送出可見組字，無法完成的讀音照原樣保留。詳細跨平台對照與測試界線見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。本輪另修正 Fcitx 點字座標（字元索引，不是 UTF-8 byte offset）、Esc／Delete、候選導覽與攔鍵、組字中配置切換及無效讀音誤入傳統候選。先前的好打注音修正曾打包為 `fix5`；本工作樹的十／十一音節界線尚未重新打包或安裝，已安裝的 `+fix8` 不能代表本次原始碼。
 
@@ -17,7 +17,7 @@ Linux 傳統注音接續檢查：切換時確認反白候選或保留原讀音�
 - 先執行 `git status --short --branch`；保留使用者既有的未提交修改。只逐檔 `git add` 本次工作，不用 `git add .` 或 `git add -A`。
 - 提交前檢查 diff、`git diff --check` 和測試結果。提交作者與提交者沿用儲存庫既有身分；不要改用公司信箱，也不要加入工具署名或 `Co-Authored-By`。
 - 產品 UI、About 和字串資源不加入開發者或工具署名。語料、測試與建置設定中必要的模型名稱屬資料內容，不能因署名規則刪除。
-- `Source/Distributions/Takao/CookedDatabase/KeyKey.db`、各平台建置目錄、`Installer/local-builds/`、影片、API 請求和執行紀錄都是產物，不要因它們出現在工作區就一併提交。不要提交 API 金鑰。
+- `Source/Distributions/Takao/CookedDatabase/KeyKey.db` 是 v1.3.1 起五平台共用且必須提交的固定模型；更換時要同步模型 manifest 與 130 篇驗證結果。各平台建置目錄、`Installer/local-builds/`、影片、API 請求和執行紀錄仍是產物，不要一併提交。不要提交 API 金鑰。
 - 對外宣稱「已修正」時，區分原始碼、建置產物、已安裝版本和實機行為；一層通過不代表其他層也通過。
 
 ## 授權與資料來源
@@ -30,15 +30,15 @@ Linux 傳統注音接續檢查：切換時確認反白候選或保留原讀音�
 
 | 平台 | 好打注音執行路徑 | 語言模型來源 |
 |---|---|---|
-| macOS | `OSX-IMK`、`OVIMSmartMandarin`、Manjusri C++ | 共用 Ruby cooker 產生並打包 `KeyKey.db` |
-| Windows | `Windows-TSF`、`OVIMSmartMandarin`、Manjusri C++ | 原始資料 cook 或指定外部 `KeyKey.db`，建置時驗證後打包 |
+| macOS | `OSX-IMK`、`OVIMSmartMandarin`、Manjusri C++ | 直接打包預先產生的共用 `KeyKey.db` |
+| Windows | `Windows-TSF`、`OVIMSmartMandarin`、Manjusri C++ | 驗證並打包預先產生的共用 `KeyKey.db` |
 | iOS | `iOS-Keyboard/KeyKeyEngine` 的 Swift walker | 鍵盤 extension 內的共用 `KeyKey.db` |
 | Android | `Android-IME` 的 Java walker | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
-| Linux | `Linux-IME` 的 C++ walker、Fcitx 5 adapter | Python cooker 產生 `smart-mandarin.db` |
+| Linux／FreeBSD | Fcitx 5 共用 C++ walker 與 adapter | 同一份 `KeyKey.db` 安裝時改名為 `smart-mandarin.db` |
 
 - macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 另有組句實作。改動 SmartMandarin 的詞頻、Bigram、backoff 或候選排序時，必須檢查五平台，不能只看同一份資料庫。
-- 目前 `v1.3.0` 模型有 **885,627 筆 Bigram**。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動語料或 cooker 後，更新驗證預期值與測試，避免只用 Bigram 筆數判斷新舊。
-- `Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py` 檢查共用 DB 完整性、筆數與首音節。iOS archive、Android asset、macOS App 和 Windows 打包目錄仍要各自確認；Linux 使用自己的資料庫與核心測試。
+- 目前 `v1.3.1` 模型有 **114,235 筆 Unigram、885,627 筆 Bigram**。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動模型後，更新 manifest 與測試，不能只用 Bigram 筆數判斷新舊。
+- `Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py` 檢查共用 DB 的固定雜湊、完整性、筆數與首音節。iOS archive、Android asset、macOS App、Windows 打包目錄與 Linux／FreeBSD 安裝後的改名檔仍要各自確認。
 - Android 的私有 DB 檔名是更新快取的版本邊界。換模型後若不變更檔名或加入內容校驗，已安裝使用者可能繼續讀舊庫。Windows 的 `keykey_database_deploy` 須在 DB 更新而 DLL 未重新連結時同步打包目錄。
 
 ## iOS／Android 好打注音螢幕鍵盤
@@ -58,10 +58,11 @@ Linux 傳統注音接續檢查：切換時確認反白候選或保留原讀音�
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md) 及各平台 README。下列命令從儲存庫根目錄執行；需要相應平台的 SDK 和工具鏈。
 
 ```sh
-# macOS、iOS、Android 共用的 cooked DB；改資料或 cooker 後先重建
+# 六個 frontend 共用的預先產生 DB；此命令只驗證，不重建
 make -C Source/Distributions/Takao/DatabaseCooker
 python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
   Source/Distributions/Takao/CookedDatabase/KeyKey.db
+python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
 
 # macOS；xcconfig 不可省略
 (cd Source && xcodebuild -project Takao.xcodeproj \
@@ -78,10 +79,10 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 (cd Source/Loaders/Linux-IME && ci/build-and-test.sh)
 ```
 
-- iOS 專案用 `-scheme 'chichi77 KeyKey'` 建置；`-target` 不能取代 Swift Package 依賴。DB 應只打包進 `Keyboard.appex`。Xcode Cloud 的 `ci_scripts/ci_post_clone.sh` 會於乾淨 checkout 重煮並驗證 DB。
+- iOS 專案用 `-scheme 'chichi77 KeyKey'` 建置；`-target` 不能取代 Swift Package 依賴。DB 應只打包進 `Keyboard.appex`。Xcode Cloud 的 `ci_scripts/ci_post_clone.sh` 會於乾淨 checkout 驗證已提交的共用 DB。
 - `KeyKeyiOS.xcodeproj/xcshareddata/xcodecloud/manifest.json` 是 Xcode Cloud 的產品對應資料，須隨專案提交；不要將它當成 `xcuserdata` 暫存檔。工作流程本身仍在 Xcode Cloud 管理。
 - Windows 1.3.0 套件以 Windows 10 起為目標。x64 ZIP 內含 x64／x86 TSF DLL，供兩種位元數的所有應用程式使用；x86 ZIP 供 32 位元 Windows 使用，只含 x86 TSF DLL。NSIS 測試安裝器目前仍為 x64。設定程式改用 .NET 10 WPF Fluent 介面，跟隨系統明暗模式；x64／x86 各自編出設定 EXE 與同位元數的 `KeyKeySettingsBackend.dll`，設定 DLL 不會載入應用程式的 TSF 行程。兩種設定程式皆為獨立離線 EXE，不要求使用者另裝 .NET。已在 Windows 11 x64 建置並啟動兩種設定程式，Windows 10 x86／x64 尚待實機驗證。
-- Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets 建置。正常 cook 與 `KEYKEY_DATABASE_PATH` 覆寫都要通過 DB verifier。驗證 Windows TSF 行為須在 Windows 執行，macOS 靜態檢查不能算實測。
+- Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets 建置。預設共用 DB 與 `KEYKEY_DATABASE_PATH` 覆寫都要通過 DB verifier；建置不再 cooker。驗證 Windows TSF 行為須在 Windows 執行，macOS 靜態檢查不能算實測。
 - Windows 好打注音設定的 `UseCharactersSupportedByEncoding` 空值或 `UTF-8` 代表不限制字集；`WindowsEncodingService` 必須接受空值，否則詞庫查到的中文字候選會全部被濾掉，只留下底線注音。WPF 設定頁讀取兩者，但儲存時使用 `UTF-8`，讓尚未換掉舊 DLL 的行程也能輸入。引擎測試需實際驗證完整音節能組成中文字，不能只檢查注音鍵有被攔截。
 - Windows TSF 的組字底線由 `ITfDisplayAttributeProvider` 與 `GUID_PROP_ATTRIBUTE` 宣告，實際呈現仍由文字宿主決定；驗證需分別看記事本與其他 App。中英模式切換及 TIP 失焦時，應在可寫入的 edit session 以 `EndComposition` 保留組字文字，不可呼叫會清空 range 的 `abandonComposition()`。好打注音可能先把符號留在組字內，傳統注音可能直接送出，候選鍵測試需接受兩種有效狀態。
 - Windows TSF 以繁體中文（台灣）`0x0404` 為預設啟用的 profile，同時註冊繁體中文（香港）`0x0c04` 與繁體中文（澳門）`0x1404` 供使用者手動加入；不得註冊或安裝簡體中文。台灣原 GUID 必須保留，香港、澳門各有獨立 GUID。ZIP 安裝、解除安裝與 `Register-Tip.ps1` 不以 `Set-WinUserLanguageList` 改動 Windows 語言清單，也不要求使用者先安裝語言套件；NSIS 不開啟 Windows 語言設定頁。香港、澳門 profile 尚未在對應語言環境實測。

@@ -1,0 +1,5 @@
+# Bigram DF reweighting keeps the original score for every reading shared by
+# one of these characters. This is the ordered union of the reviewed 83 basic
+# function/content characters and ranks 1-100 of the supplied common-character
+# list. Keep this small and change it only after whole-cohort validation.
+是像跟和及與或但而因為如比對從到在把被讓給的得地了嗎呢吧啊我你他她它這那哪誰一個些每各不沒有也都就才又還再只很更最太真會能可要想敢別請說看聽來去上下進出開關問做用吃喝人中年月箇等後於日將並併以好大多時之過裡新由所三其該向嚮前已齣小當噹卻內們愛第

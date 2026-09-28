@@ -115,6 +115,14 @@ val smartMandarinVerifier =
     layout.projectDirectory.file(
         "../../../Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
     )
+val smartMandarinModelHelper =
+    layout.projectDirectory.file(
+        "../../../Distributions/Takao/DatabaseCooker/smart_mandarin_model.py"
+    )
+val smartMandarinModelManifest =
+    layout.projectDirectory.file(
+        "../../../../DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
+    )
 
 val verifySmartMandarinDatabase by tasks.registering(Exec::class) {
     val python = providers.environmentVariable("PYTHON3").orNull
@@ -125,7 +133,12 @@ val verifySmartMandarinDatabase by tasks.registering(Exec::class) {
     } else {
         commandLine("python3", smartMandarinVerifier.asFile, smartMandarinDatabase.asFile)
     }
-    inputs.files(smartMandarinDatabase, smartMandarinVerifier)
+    inputs.files(
+        smartMandarinDatabase,
+        smartMandarinVerifier,
+        smartMandarinModelHelper,
+        smartMandarinModelManifest,
+    )
 }
 
 val generateSmartMandarinAssets by tasks.registering(Sync::class) {

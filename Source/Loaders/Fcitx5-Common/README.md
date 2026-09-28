@@ -1,8 +1,9 @@
 # Shared Fcitx 5 implementation
 
 `engine/` contains the input engine and local learning store.
-`adapters/fcitx5/` supplies the Fcitx 5 addon. `tools/` builds the
-Smart Mandarin database and phrase utility. `data/` contains the
+`adapters/fcitx5/` supplies the Fcitx 5 addon. Linux and FreeBSD verify and
+install the repository's pre-generated shared `KeyKey.db` as
+`smart-mandarin.db`; `tools/` contains the phrase utility. `data/` contains the
 generated Traditional-to-Simplified table.
 
 `Linux-IME` and `FreeBSD-IME` each provide a platform CMake entry

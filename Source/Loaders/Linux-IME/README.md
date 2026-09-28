@@ -9,8 +9,8 @@ The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
 This directory contains the Linux build entry point, desktop integration,
-packaging, and platform tests. The engine, Fcitx 5 addon, model cooker, and
-runtime tables are in [Fcitx5-Common](../Fcitx5-Common/README.md), shared with
+packaging, and platform tests. The engine, Fcitx 5 addon, shared-model verifier,
+and runtime tables are in [Fcitx5-Common](../Fcitx5-Common/README.md), shared with
 the FreeBSD frontend. They do not link or modify the legacy KeyKeyEngine or
 OpenVanilla frameworks. The earlier 1.2.8
 release boundaries remain in the
@@ -39,10 +39,11 @@ The Linux implementation provides:
   character does not split a visible dictionary word at the eviction boundary,
   and the following word stays fixed while the buffer shifts. Switching input
   methods or Chinese/English mode finishes valid readings and commits the
-  visible composition; an unmatched partial reading remains literal. The model is built from the
-  repository's source lexicons and corpora during package creation. The current
-  2,300-article corpus produces 114,235 unigrams and 885,627 bigrams, matching
-  the macOS model. Existing
+  visible composition; an unmatched partial reading remains literal. Package builds
+  verify and install the repository's pre-generated shared model as
+  `smart-mandarin.db`; they do not recook it. The current model contains 114,235
+  unigrams and 885,627 bigrams and is byte-for-byte the same input used by the
+  other platforms. Existing
   configurations without a mode choice also use 好打注音;
 - 好打注音 candidate panels own editing keys until selection or Escape.
   Home/End address the full candidate list; horizontal arrows follow the panel

@@ -45,14 +45,15 @@ KeyKeyiOS.xcodeproj
 ## 建置
 
 ```sh
-make -C ../../Distributions/Takao/DatabaseCooker
+python3 ../../Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
+  ../../Distributions/Takao/CookedDatabase/KeyKey.db
 xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   -configuration Debug -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-`KeyKey.db` 是建置輸入，但不進版控。Xcode Cloud 會自動執行
-`ci_scripts/ci_post_clone.sh` cook 資料庫，並以 `CI_BUILD_NUMBER` 同步容器 App 與
+`KeyKey.db` 是版控內的共用建置輸入。Xcode Cloud 會自動執行
+`ci_scripts/ci_post_clone.sh` 驗證資料庫，並以 `CI_BUILD_NUMBER` 同步容器 App 與
 Keyboard extension 的 build number；本機建置維持專案內的預設 build number。
 
 引擎的測試不需要模擬器：
@@ -103,7 +104,7 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
 ## 與其他平台的差異
 
 - **引擎是 Swift 重寫**，不載入 `Source/Frameworks` 的 C++ core。
-- **但資料層走已 cook 好的 `KeyKey.db`**，不像 Android 在執行時解析 `.cin`。
+- **但資料層走預先產生的共用 `KeyKey.db`**，不像 Android 在執行時解析 `.cin`。
   keyboard extension 的記憶體上限約 60 MB，超過會被系統直接終止且沒有 crash
   log；SQLite 只映射查詢用到的頁，資料層常駐足跡不到 1 MB。
 - `Mandarin-bpmf-cin` 的 key 是 Formosa 的 absolute-order 編碼，不是鍵盤按鍵，

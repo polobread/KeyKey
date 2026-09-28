@@ -20,33 +20,24 @@ set(KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR
 set(KEYKEY_LINUX_DATA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
 set(KEYKEY_SMART_SOURCE_DIR
     "${KEYKEY_REPOSITORY_ROOT}/DataSource/AISyntheticBigram")
-set(KEYKEY_SMART_CORPORA
-    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v1.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v2.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v3.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/corpus-typing-feedback.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/article-corpus-2300-exact-dedup.txt")
-set(KEYKEY_SMART_DB "${CMAKE_CURRENT_BINARY_DIR}/smart-mandarin.db")
-add_custom_command(OUTPUT "${KEYKEY_SMART_DB}"
+set(KEYKEY_SMART_DB
+    "${KEYKEY_REPOSITORY_ROOT}/Source/Distributions/Takao/CookedDatabase/KeyKey.db")
+set(KEYKEY_SMART_MODEL_VERIFIER
+    "${KEYKEY_REPOSITORY_ROOT}/Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py")
+set(KEYKEY_SMART_MODEL_HELPER
+    "${KEYKEY_REPOSITORY_ROOT}/Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py")
+set(KEYKEY_SMART_MODEL_MANIFEST
+    "${KEYKEY_SMART_SOURCE_DIR}/smart-mandarin-model-manifest.json")
+add_custom_target(keykey_linux_smart_db ALL
     COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tools/build-smart-mandarin-db.py"
+        "${KEYKEY_SMART_MODEL_VERIFIER}"
         "${KEYKEY_SMART_DB}"
-        "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"
-        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
-        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/BPMFMappings.txt"
-        "${KEYKEY_SMART_SOURCE_DIR}/supplemental-lexicon.tsv"
-        "${KEYKEY_SMART_SOURCE_DIR}/numeric-unit-lexicon.tsv"
-        ${KEYKEY_SMART_CORPORA}
     DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/tools/build-smart-mandarin-db.py"
-        "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"
-        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
-        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/BPMFMappings.txt"
-        "${KEYKEY_SMART_SOURCE_DIR}/supplemental-lexicon.tsv"
-        "${KEYKEY_SMART_SOURCE_DIR}/numeric-unit-lexicon.tsv"
-        ${KEYKEY_SMART_CORPORA}
+        "${KEYKEY_SMART_DB}"
+        "${KEYKEY_SMART_MODEL_VERIFIER}"
+        "${KEYKEY_SMART_MODEL_HELPER}"
+        "${KEYKEY_SMART_MODEL_MANIFEST}"
     VERBATIM)
-add_custom_target(keykey_linux_smart_db ALL DEPENDS "${KEYKEY_SMART_DB}")
 set(KEYKEY_INSTALL_DATA_DIR
     "${CMAKE_INSTALL_DATADIR}/chichi77-keykey/data")
 set(KEYKEY_INSTALL_ASSOCIATED_PHRASE_DIR
@@ -168,6 +159,7 @@ install(FILES "${KEYKEY_LINUX_DATA_SOURCE_DIR}/tc2sc.cin"
 )
 install(FILES "${KEYKEY_SMART_DB}"
     DESTINATION "${KEYKEY_INSTALL_DATA_DIR}"
+    RENAME "smart-mandarin.db"
 )
 install(FILES
     "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"

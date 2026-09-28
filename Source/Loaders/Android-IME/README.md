@@ -149,12 +149,12 @@ App 首頁會避開狀態列與前相機挖孔，標題下顯示目前安裝的�
 
 ## 建置
 
-需求：Android Studio、JDK 17 以上、Android SDK 36、Python 3，以及已煮好的
-`Source/Distributions/Takao/CookedDatabase/KeyKey.db`。若在乾淨 checkout 建置，先安裝
-Ruby 3、`sqlite3`、Ruby `sqlite3` 套件與 `make`，從 repo 根目錄執行：
+需求：Android Studio、JDK 17 以上、Android SDK 36、Python 3，以及版控內預先產生的
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`。從 repo 根目錄可先驗證共用檔：
 
 ```sh
-make -C Source/Distributions/Takao/DatabaseCooker
+python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
+  Source/Distributions/Takao/CookedDatabase/KeyKey.db
 ```
 
 ```powershell

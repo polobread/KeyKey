@@ -33,13 +33,18 @@ Bigram 在好打注音中只能影響仍留在組字區的約 9～10 個音節�
 
 相對於目前正式對照資料庫，整體候選（Bigram 調整加補充層）由 331,619 降到 331,068 次總動作，少 551 次；修正動作由 11,000 降到 10,449 次。
 
-## 套用
+## 維護與發行
 
-以下命令只產生新的實驗資料庫與同名 `.supplement-report.json`，不覆寫來源：
+以下命令仍可產生獨立的實驗資料庫與同名 `.supplement-report.json`，不覆寫來源：
 
 ```sh
 python3 DataSource/AISyntheticBigram/apply-common-unigram-supplement.py \
   INPUT.db --output OUTPUT.db
 ```
 
-補充層目前尚未接入正式 DatabaseCooker，也未取代正式 `KeyKey.db`。新增或刪除詞之前，必須以相同 130 篇重新獨立測試，並用整體結果判斷，不得依單篇錯誤逐筆補詞。
+通過整體驗證的 Bigram 與這 7 個詞已合併進 v1.3.1 的預先產生
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`。macOS、iOS、Android、Windows、
+Linux 與 FreeBSD 建置都直接驗證及複製這個檔案，不在平台建置期間重新 cooker。
+`finalize-smart-mandarin-model.py` 只供模型維護者在完整分析後明確重建候選檔。
+
+新增或刪除詞之前，必須以相同 130 篇重新獨立測試，並用整體結果判斷，不得依單篇錯誤逐筆補詞。

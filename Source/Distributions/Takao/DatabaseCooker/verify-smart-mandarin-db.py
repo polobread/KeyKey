@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Verify the Smart Mandarin database snapshot used by version 1.3.0."""
+"""Verify the canonical Smart Mandarin database shared by all platforms."""
 
 import sqlite3
 import sys
 from pathlib import Path
 
+from smart_mandarin_model import verify_manifest
+
 
 EXPECTED_BIGRAM_ROWS = 885_627
+MODEL_MANIFEST = (
+    Path(__file__).resolve().parents[4]
+    / "DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
+)
 EXPECTED_SINGLE_SYLLABLE_READINGS = 1_345
 EXPECTED_SINGLE_SYLLABLES = {
     "L_": ("ㄅㄨˋ", "不"),
@@ -34,6 +40,7 @@ def main() -> int:
         return 1
 
     try:
+        model = verify_manifest(path, MODEL_MANIFEST)
         with sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True) as database:
             bigram_rows = database.execute("SELECT COUNT(*) FROM bigrams").fetchone()[0]
             integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
@@ -66,7 +73,7 @@ def main() -> int:
                     (query, candidate),
                 ).fetchone() is None
             ]
-    except sqlite3.Error as error:
+    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as error:
         print(f"Unable to verify Smart Mandarin database {path}: {error}", file=sys.stderr)
         return 1
 
@@ -103,7 +110,8 @@ def main() -> int:
 
     print(
         f"Smart Mandarin database verified: {bigram_rows} bigrams, "
-        f"{len(all_first_candidates)} first syllables ({path})"
+        f"{len(all_first_candidates)} first syllables, "
+        f"model={model['semantic_sha256']} ({path})"
     )
     return 0
 

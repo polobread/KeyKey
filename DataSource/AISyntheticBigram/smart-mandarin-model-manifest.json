@@ -1,0 +1,39 @@
+{
+  "format": 1,
+  "description": "Selected v1.3.1 Smart Mandarin language model shared by five product platforms plus FreeBSD",
+  "training_articles": 2300,
+  "validation_articles": 130,
+  "unigram_rows": 114235,
+  "bigram_rows": 885627,
+  "semantic_sha256": "68a634d62d66734564aaa82a37b4cffa5c72f72bdfe038569033ae7ac0caf28d",
+  "canonical_database_sha256": "bde6ff987670ce45845e9d57f90b081265dffac06ddc1a6d7d0660b234e43809",
+  "sources": {
+    "training_articles": [
+      {
+        "file": "typing-articles-v2.jsonl",
+        "articles": 1650,
+        "sha256": "ae70cc5274c5d131510a010aa07adf9eaca4be3f37345711e4c5516049cafe5d"
+      },
+      {
+        "file": "typing-articles-v3.jsonl",
+        "articles": 350,
+        "sha256": "8e783676d4a22cd92ae832e1a3be913d2e07252c8e2c4add76b55f6c725877de"
+      },
+      {
+        "file": "typing-articles-v4.jsonl",
+        "articles": 300,
+        "sha256": "ff625fc0b7be600347d7e61c9ddc3b4c4b8ada17f2b76950425f203505af6dc8"
+      }
+    ],
+    "protected_characters": {
+      "file": "basic-bigram-protected-characters.txt",
+      "characters": 122,
+      "sha256": "54c2a5eaa78b69d77b64ccffefe14c6da7cf6c20a2875c3fef9f60093f8d0cda"
+    },
+    "unigram_supplement": {
+      "file": "common-unigram-supplement.tsv",
+      "entries": 7,
+      "sha256": "b1bcff76f1551de638847680465113809579638d5794b256697a31ff6bba82ad"
+    }
+  }
+}
