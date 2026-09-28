@@ -39,7 +39,7 @@ struct HsuLayoutTests {
         #expect(KeyboardLayout.bopomofoGlyph(for: "j") == "ㄨ")
         #expect(KeyboardLayout.caption(for: "j", mode: .bopomofo) == "j")
         #expect(KeyboardLayout.statusText(reading: "", mode: .bopomofo, shifted: false,
-                    temporaryEnglish: false, layout: .hsu) == "許氏注音")
+                    temporaryEnglish: false, layout: .hsu) == "許氏鍵盤")
     }
 
     @Test("layout defaults to Standard, persists, and follows App Group revisions")

@@ -510,15 +510,20 @@ final class BopomofoKeyboardView extends View {
                 drawSupportPrompt(canvas, area);
                 return;
             }
-            message = keyboardLayout.displayName + "注音"
+            message = bopomofoLayoutName()
                     + (mode == Mode.HARDWARE ? "・候選 1–9・關聯詞 Shift+1–9" : "");
         }
         hintPaint.setTextSize(standardHintTextSize());
         canvas.drawText(message, area.centerX(), textBaseline(area, hintPaint), hintPaint);
     }
 
+    private String bopomofoLayoutName() {
+        return keyboardLayout == BopomofoKeyboardLayout.HSU
+                ? keyboardLayout.displayName : keyboardLayout.displayName + "注音";
+    }
+
     private void drawSupportPrompt(Canvas canvas, RectF area) {
-        String primary = keyboardLayout.displayName + "注音";
+        String primary = bopomofoLayoutName();
         String secondary = getResources().getString(R.string.supporter_prompt);
         float primarySize = standardHintTextSize();
         float secondarySize = primarySize * 0.70f;

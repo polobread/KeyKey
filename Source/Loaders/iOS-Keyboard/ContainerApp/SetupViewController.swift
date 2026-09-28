@@ -356,7 +356,7 @@ private final class InputMethodSettingsViewController: UIViewController {
         layoutControl.accessibilityIdentifier = "app-settings.keyboard-layout"
         layoutControl.addTarget(self, action: #selector(layoutChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(layoutControl)
-        stack.addArrangedSubview(label("好打與傳統注音共用配置。許氏虛擬鍵盤維持英文鍵帽。", size: 14))
+        stack.addArrangedSubview(label("好打與傳統注音共用配置。選許氏鍵盤時，虛擬鍵盤維持英文鍵帽。", size: 14))
 
         stack.addArrangedSubview(label("候選字底色", size: 18))
         let colors = CandidateColor.allCases

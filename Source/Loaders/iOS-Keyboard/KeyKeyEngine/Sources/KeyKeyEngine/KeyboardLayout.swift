@@ -136,7 +136,7 @@ public enum KeyboardLayout {
         switch mode {
         case .english: return shifted ? "英文大寫" : "英文小寫"
         case .number: return shifted ? "數字與符號（二）" : "數字與符號（一）"
-        case .bopomofo: return layout == .hsu ? "許氏注音" : "標準注音"
+        case .bopomofo: return layout == .hsu ? "許氏鍵盤" : "標準注音"
         }
     }
 }

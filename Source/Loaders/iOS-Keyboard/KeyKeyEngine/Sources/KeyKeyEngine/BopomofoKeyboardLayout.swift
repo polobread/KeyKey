@@ -6,7 +6,7 @@ public enum BopomofoKeyboardLayout: String, CaseIterable, Sendable {
     case standard = "Standard"
     case hsu = "Hsu"
 
-    public var displayName: String { self == .hsu ? "許氏" : "標準" }
+    public var displayName: String { self == .hsu ? "許氏鍵盤" : "標準" }
 
     public func isReadingKey(_ key: Character) -> Bool {
         let key = Character(key.lowercased())

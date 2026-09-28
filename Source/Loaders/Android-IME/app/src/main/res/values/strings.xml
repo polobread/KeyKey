@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="bopomofo_keyboard_layout">注音鍵盤</string>
-    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準；許氏虛擬鍵盤維持英文鍵帽。</string>
+    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準；選許氏鍵盤時，虛擬鍵盤維持英文鍵帽。</string>
     <string-array name="bopomofo_keyboard_layouts">
         <item>標準</item>
-        <item>許氏</item>
+        <item>許氏鍵盤</item>
     </string-array>
     <string name="app_name">琦琦注音</string>
     <string name="ime_name">琦琦注音輸入法</string>

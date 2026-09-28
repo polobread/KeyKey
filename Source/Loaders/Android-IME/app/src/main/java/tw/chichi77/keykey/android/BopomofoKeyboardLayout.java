@@ -1,7 +1,7 @@
 package tw.chichi77.keykey.android;
 
 enum BopomofoKeyboardLayout {
-    STANDARD("Standard", "標準"), HSU("Hsu", "許氏");
+    STANDARD("Standard", "標準"), HSU("Hsu", "許氏鍵盤");
 
     final String value;
     final String displayName;

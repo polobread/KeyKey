@@ -69,11 +69,11 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(entry.waitForExistence(timeout: 8))
         entry.tap()
         let layout = app.segmentedControls["app-settings.keyboard-layout"]
-        layout.buttons["許氏"].tap()
+        layout.buttons["許氏鍵盤"].tap()
         app.terminate()
         app.launch()
         entry.tap()
-        XCTAssertTrue(layout.buttons["許氏"].isSelected)
+        XCTAssertTrue(layout.buttons["許氏鍵盤"].isSelected)
 
         launchHostApp()
         XCTAssertTrue(revealField("message"))
@@ -82,7 +82,7 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["SETTINGS"].tap()
         let keyboardLayout = app.segmentedControls["bopomofo-keyboard-layout"]
         // Extension preferences also work without Full Access to the App Group.
-        keyboardLayout.buttons["許氏"].tap()
+        keyboardLayout.buttons["許氏鍵盤"].tap()
         app.segmentedControls["bopomofo-composition-mode"].buttons["傳統注音"].tap()
         app.buttons["完成"].tap()
         XCTAssertEqual(app.buttons["j"].label, "j")
