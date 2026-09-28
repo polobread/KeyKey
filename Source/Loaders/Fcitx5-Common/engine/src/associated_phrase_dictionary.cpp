@@ -278,7 +278,7 @@ AssociatedPhraseDictionary::parseCollection(
             continue;
         }
         const std::size_t length = codePointCount(word);
-        if (length < 2 || length > 20) {
+        if (length < 2 || length > 6) {
             continue;
         }
 

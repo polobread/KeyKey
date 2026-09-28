@@ -3,7 +3,7 @@
 require "benchmark"
 
 THRESHOLD = -6.0
-MAX_LENGTH = 20
+MAX_LENGTH = 6
 
 if ARGV.size < 3
   STDERR.puts "usage: AssociatedPhraseCooker.rb <source lm> <output sql> <collection name>"

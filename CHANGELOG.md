@@ -4,6 +4,8 @@
 
 ### 共用資料與版本
 
+- 聯想詞上限統一為 6 字（含首字），同步套用共用資料庫工具、Android 索引與解析器、
+  Linux／FreeBSD 載入器及保留的 Windows cooker。正式共用 DB 的現有聯想詞皆已符合此上限。
 - macOS、Windows、iOS、Android、Linux 與 FreeBSD 的產品及建置版號同步至 1.3.1。
 - 好打注音改用六平台共用、預先產生並驗證的 `KeyKey.db`，內含 114,392 筆
   Unigram 與 885,627 筆 Bigram；平台建置只驗證及打包，不再重新 cooker。

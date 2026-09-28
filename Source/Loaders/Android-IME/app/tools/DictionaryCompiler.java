@@ -132,7 +132,7 @@ public final class DictionaryCompiler {
                 long count = parseCount(fields[1]);
                 if (count == 0 || !startsWithHan(word) || exclusions.contains(word)) continue;
                 int codePointCount = word.codePointCount(0, word.length());
-                if (codePointCount < 2 || codePointCount > 20 || word.contains("媽的")) continue;
+                if (codePointCount < 2 || codePointCount > 6 || word.contains("媽的")) continue;
 
                 int firstCharacterLength = Character.charCount(word.codePointAt(0));
                 PhraseRow previous = uniqueRows.get(word);

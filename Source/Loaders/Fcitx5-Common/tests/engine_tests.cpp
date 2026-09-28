@@ -192,6 +192,14 @@ void testAssociatedPhraseParserFiltersAndSorts() {
             "Whitespace-separated associated phrases were not parsed");
     require(entries.find("王") == entries.end(),
             "Associated-phrase exclusions were ignored");
+
+    std::istringstream boundaryInput(
+        "甲乙丙丁戊己 100\n甲乙丙丁戊己庚 100\n"
+        "𠀀乙丙丁戊己 100\n𠀀乙丙丁戊己庚 100\n");
+    const auto boundary = AssociatedPhraseDictionary::parseCollection(boundaryInput);
+    require(boundary.at("甲") == std::vector<std::string>({"乙丙丁戊己"}) &&
+                boundary.at("𠀀") == std::vector<std::string>({"乙丙丁戊己"}),
+            "Associated phrases must contain at most six code points including the head");
 }
 
 void testRealAssociatedPhraseCollections() {
