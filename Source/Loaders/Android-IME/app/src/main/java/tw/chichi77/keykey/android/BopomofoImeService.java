@@ -43,6 +43,12 @@ public final class BopomofoImeService extends InputMethodService
     private CandidateWindowSettings.Layout floatingCandidateLayout =
             CandidateWindowSettings.Layout.VERTICAL;
     private RectF cursorAnchor;
+    private static final int MAX_CURSOR_ANCHOR_RETRIES = 1;
+    private static final long CURSOR_ANCHOR_RETRY_DELAY_MS = 300;
+    private int cursorAnchorRetryCount;
+    private boolean cursorAnchorRequestPending;
+    private boolean floatingCandidatesVisible;
+    private final Runnable cursorAnchorRetry = this::retryCursorAnchorUpdates;
     private final Set<Integer> pressedHardwareShortcutKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedCandidateKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedNavigationKeys = new LinkedHashSet<>();
@@ -83,6 +89,8 @@ public final class BopomofoImeService extends InputMethodService
         try {
             smartUserData = SmartMandarinUserData.open(this);
             smartMandarinStore = SmartMandarinStore.open(this, smartUserData);
+            smartMandarinStore.setBigramEnabled(
+                    BopomofoCompositionModeSettings.bigramEnabled(this));
         } catch (IOException | RuntimeException error) {
             smartMandarinStore = null;
         }
@@ -133,7 +141,7 @@ public final class BopomofoImeService extends InputMethodService
         super.onStartInput(attribute, restarting);
         stopHardwareBackspace();
         if (!restarting) fieldPolicyUnlocked = false;
-        cursorAnchor = null;
+        resetCursorAnchor();
         lastSelectionStart = attribute == null ? -1 : attribute.initialSelStart;
         lastSelectionEnd = attribute == null ? -1 : attribute.initialSelEnd;
         cancelExpectedSelectionUpdate();
@@ -184,7 +192,7 @@ public final class BopomofoImeService extends InputMethodService
         pressedHardwareShortcutKeys.clear();
         pressedCandidateKeys.clear();
         pressedNavigationKeys.clear();
-        cursorAnchor = null;
+        resetCursorAnchor();
         lastSelectionStart = -1;
         lastSelectionEnd = -1;
         appliedComposingText = "";
@@ -243,7 +251,7 @@ public final class BopomofoImeService extends InputMethodService
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         stopHardwareBackspace();
-        cursorAnchor = null;
+        resetCursorAnchor();
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
@@ -253,6 +261,14 @@ public final class BopomofoImeService extends InputMethodService
     public void onUpdateCursorAnchorInfo(CursorAnchorInfo cursorAnchorInfo) {
         super.onUpdateCursorAnchorInfo(cursorAnchorInfo);
         cursorAnchor = insertionMarkerBounds(cursorAnchorInfo);
+        if (cursorAnchor != null) {
+            cursorAnchorRequestPending = false;
+            mainHandler.removeCallbacks(cursorAnchorRetry);
+        } else if (floatingCandidatesVisible && !cursorAnchorRequestPending) {
+            cursorAnchorRequestPending = true;
+            cursorAnchorRetryCount = 0;
+            mainHandler.postDelayed(cursorAnchorRetry, CURSOR_ANCHOR_RETRY_DELAY_MS);
+        }
         if (floatingCandidateWindow != null) {
             floatingCandidateWindow.updateCursorAnchor(cursorAnchor);
         }
@@ -309,6 +325,21 @@ public final class BopomofoImeService extends InputMethodService
                 apply(engine.setCompositionMode(BopomofoCompositionModeSettings.mode(this)));
             }
             refreshKeyboard();
+            return;
+        }
+        if (BopomofoCompositionModeSettings.KEY_BIGRAM_ENABLED.equals(key)) {
+            if (smartMandarinStore != null) {
+                smartMandarinStore.setBigramEnabled(
+                        BopomofoCompositionModeSettings.bigramEnabled(this));
+            }
+            // Preserve visible text and finish the old candidate session before
+            // using a different scoring policy. Traditional input is unaffected.
+            if (engine != null && engine.compositionMode() == BopomofoCompositionMode.SMART
+                    && engine.inputMode() == BopomofoEngine.InputMode.BOPOMOFO) {
+                apply(engine.finishCompositionForModeSwitch());
+            } else {
+                refreshKeyboard();
+            }
             return;
         }
         if (SupporterState.KEY_SUPPORTER.equals(key)) {
@@ -744,6 +775,16 @@ public final class BopomofoImeService extends InputMethodService
                 engine.page(), engine.pageCount(),
                 engine.isShowingAssociatedPhrases() ? -1 : engine.highlightedIndex(), fieldPolicy);
         if (isFloatingCandidateMode() && floatingCandidateWindow != null) {
+            boolean candidatesVisible = !engine.displayedCandidates().isEmpty();
+            boolean openingCandidates = candidatesVisible && !floatingCandidatesVisible;
+            floatingCandidatesVisible = candidatesVisible;
+            if (openingCandidates) {
+                // A request accepted during IME binding can lose its monitor on Android 8.
+                // Re-arm it when opening candidates, even if an older anchor is available.
+                cursorAnchorRetryCount = 0;
+                requestCursorAnchorUpdates();
+            }
+            if (!candidatesVisible) mainHandler.removeCallbacks(cursorAnchorRetry);
             floatingCandidateWindow.update(engine.displayedCandidates(),
                     engine.highlightedIndex(), floatingCandidateLayout, cursorAnchor);
         } else {
@@ -847,14 +888,35 @@ public final class BopomofoImeService extends InputMethodService
         return false;
     }
 
+    private void resetCursorAnchor() {
+        mainHandler.removeCallbacks(cursorAnchorRetry);
+        cursorAnchorRetryCount = 0;
+        cursorAnchorRequestPending = false;
+        cursorAnchor = null;
+        floatingCandidatesVisible = false;
+    }
+
+    private void retryCursorAnchorUpdates() {
+        if (!cursorAnchorRequestPending || !floatingCandidatesVisible
+                || !isFloatingCandidateMode() || getCurrentInputConnection() == null) return;
+        if (cursorAnchorRetryCount >= MAX_CURSOR_ANCHOR_RETRIES) {
+            onWindowUnavailable(CandidateWindowSettings.Failure.CURSOR_ANCHOR);
+            return;
+        }
+        cursorAnchorRetryCount++;
+        requestCursorAnchorUpdates();
+    }
+
     private void requestCursorAnchorUpdates() {
+        mainHandler.removeCallbacks(cursorAnchorRetry);
         InputConnection connection = getCurrentInputConnection();
         if (connection == null) return;
         if (!isFloatingCandidateMode()) {
             connection.requestCursorUpdates(0);
-            cursorAnchor = null;
+            resetCursorAnchor();
             return;
         }
+        cursorAnchorRequestPending = true;
         int mode = InputConnection.CURSOR_UPDATE_IMMEDIATE
                 | InputConnection.CURSOR_UPDATE_MONITOR;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -862,6 +924,11 @@ public final class BopomofoImeService extends InputMethodService
                     InputConnection.CURSOR_UPDATE_FILTER_INSERTION_MARKER);
         } else {
             connection.requestCursorUpdates(mode);
+        }
+        // Only judge failure while candidates are needed. An accepted request can
+        // still produce no callback; give it one retry, then disable floating mode.
+        if (floatingCandidatesVisible && cursorAnchorRequestPending) {
+            mainHandler.postDelayed(cursorAnchorRetry, CURSOR_ANCHOR_RETRY_DELAY_MS);
         }
     }
 
@@ -883,6 +950,8 @@ public final class BopomofoImeService extends InputMethodService
     }
 
     private void hideFloatingCandidates() {
+        floatingCandidatesVisible = false;
+        mainHandler.removeCallbacks(cursorAnchorRetry);
         if (floatingCandidateWindow != null) floatingCandidateWindow.hide();
     }
 }

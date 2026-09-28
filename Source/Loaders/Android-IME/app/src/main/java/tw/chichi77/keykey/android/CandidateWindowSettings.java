@@ -5,7 +5,7 @@ import android.content.SharedPreferences;
 
 final class CandidateWindowSettings {
     enum Layout { VERTICAL, HORIZONTAL }
-    enum Failure { TOKEN, ATTACH }
+    enum Failure { TOKEN, ATTACH, CURSOR_ANCHOR }
 
     static final String PREFERENCES_NAME = "ime_settings";
     static final String KEY_FLOATING_ENABLED = "hardware_floating_candidates_enabled";
@@ -40,6 +40,7 @@ final class CandidateWindowSettings {
         String value = preferences(context).getString(KEY_FAILURE, null);
         if (Failure.TOKEN.name().equals(value)) return Failure.TOKEN;
         if (Failure.ATTACH.name().equals(value)) return Failure.ATTACH;
+        if (Failure.CURSOR_ANCHOR.name().equals(value)) return Failure.CURSOR_ANCHOR;
         return null;
     }
 

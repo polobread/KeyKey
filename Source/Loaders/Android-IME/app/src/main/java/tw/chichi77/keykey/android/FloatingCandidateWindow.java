@@ -47,6 +47,7 @@ final class FloatingCandidateWindow {
     private List<String> candidates = List.of();
     private int highlightedIndex = -1;
     private int tokenRetryCount;
+    private final Runnable windowRetry = this::showOrMove;
     private CandidateWindowSettings.Layout layout = CandidateWindowSettings.Layout.VERTICAL;
 
     FloatingCandidateWindow(Context context, View tokenView, Listener listener) {
@@ -90,6 +91,9 @@ final class FloatingCandidateWindow {
     }
 
     void hide() {
+        tokenView.removeCallbacks(windowRetry);
+        tokenRetryCount = 0;
+        candidates = List.of();
         if (!added || windowManager == null) return;
         try {
             windowManager.removeViewImmediate(content);
@@ -159,12 +163,12 @@ final class FloatingCandidateWindow {
     }
 
     private void showOrMove() {
+        tokenView.removeCallbacks(windowRetry);
         if (windowManager == null || candidates.isEmpty()) return;
         if (tokenView.getWindowToken() == null) {
             retryOrFallback(CandidateWindowSettings.Failure.TOKEN);
             return;
         }
-        tokenRetryCount = 0;
 
         Rect safeBounds = safeBounds();
         int gap = dp(4);
@@ -191,6 +195,7 @@ final class FloatingCandidateWindow {
                 windowManager.addView(content, windowParameters);
                 added = true;
             }
+            tokenRetryCount = 0;
         } catch (WindowManager.BadTokenException | WindowManager.InvalidDisplayException
                 | SecurityException | IllegalStateException error) {
             if (added) {
@@ -207,9 +212,10 @@ final class FloatingCandidateWindow {
 
     private void retryOrFallback(CandidateWindowSettings.Failure failure) {
         if (++tokenRetryCount <= MAX_TOKEN_RETRIES) {
-            tokenView.postDelayed(() -> showOrMove(), TOKEN_RETRY_DELAY_MS);
+            tokenView.removeCallbacks(windowRetry);
+            tokenView.postDelayed(windowRetry, TOKEN_RETRY_DELAY_MS);
         } else {
-            tokenRetryCount = 0;
+            hide();
             listener.onWindowUnavailable(failure);
         }
     }
