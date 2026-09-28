@@ -77,6 +77,13 @@ final class BopomofoKeyboardView extends View {
     private static final String[] HARDWARE_NUMBER_SYMBOLS = {
             "!", "@", "#", "$", "%", "^", "&", "*", "(", ")"
     };
+    private static final String[] HARDWARE_PUNCTUATION_KEYS = {
+            "-", "=", "[", "]", ";", "'", ",", ".", "/", "\\", "`"
+    };
+    private static final String[] HARDWARE_PUNCTUATION_SYMBOLS = {
+            "_", "+", "{", "}", ":", "\"", "<", ">", "?", "|", "~"
+    };
+    static final String HARDWARE_LITERAL_PREFIX = "HARDWARE_LITERAL:";
     private static final String[] FUNCTION_ROW = {
             "MODE", "SYMBOL", "SETTINGS", "，", "SPACE", "。", "BACKSPACE", "ENTER"
     };
@@ -243,7 +250,7 @@ final class BopomofoKeyboardView extends View {
         int desiredHeight = switch (mode) {
             case HARDWARE_FLOATING -> dp(1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
-                    + (hardwareNumberRowEnabled ? HARDWARE_NUMBER_ROW_HEIGHT_DP : 0))
+                    + (hardwareNumberRowEnabled ? 2 * HARDWARE_NUMBER_ROW_HEIGHT_DP : 0))
                     + hardwareSystemAreaHeight();
             case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
                     landscapeHeightPercent) + dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
@@ -356,37 +363,57 @@ final class BopomofoKeyboardView extends View {
         if (hardwareNumberRowEnabled) {
             drawHardwareNumberRow(canvas, new RectF(0, area.bottom, getWidth(),
                     area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP)));
+            drawHardwarePunctuationRow(canvas, new RectF(0,
+                    area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP), getWidth(),
+                    area.bottom + dp(2 * HARDWARE_NUMBER_ROW_HEIGHT_DP)));
         }
     }
 
     private void drawHardwareNumberRow(Canvas canvas, RectF area) {
         float cellWidth = area.width() / 12f;
         for (int index = 0; index < 12; index++) {
-            RectF cell = inset(new RectF(area.left + index * cellWidth, area.top,
-                    area.left + (index + 1) * cellWidth, area.bottom), dp(2));
-            boolean special = index >= 10;
-            canvas.drawRoundRect(cell, dp(6), dp(6), special ? specialKeyPaint : keyPaint);
+            RectF cell = new RectF(area.left + index * cellWidth, area.top,
+                    area.left + (index + 1) * cellWidth, area.bottom);
             if (index < 10) {
-                String primary = hardwareNumberShifted
-                        ? HARDWARE_NUMBER_SYMBOLS[index] : HARDWARE_NUMBER_DIGITS[index];
-                String secondary = hardwareNumberShifted
-                        ? HARDWARE_NUMBER_DIGITS[index] : HARDWARE_NUMBER_SYMBOLS[index];
-                textPaint.setTextSize(dp(17));
-                textPaint.setFakeBoldText(true);
-                canvas.drawText(primary, cell.centerX(), cell.centerY() + dp(1), textPaint);
-                hintPaint.setTextSize(dp(10));
-                canvas.drawText(secondary, cell.centerX(), cell.bottom - dp(5), hintPaint);
-                hits.add(new Hit(new RectF(cell), HitKind.KEY,
-                        "HARDWARE_NUMBER:" + primary, -1));
+                drawHardwareLiteralKey(canvas, inset(cell, dp(2)), HARDWARE_NUMBER_DIGITS[index],
+                        HARDWARE_NUMBER_SYMBOLS[index]);
+            } else if (index == 10) {
+                drawHardwareStatusButton(canvas, cell, "符", "HARDWARE_SYMBOL");
             } else {
-                textPaint.setTextSize(dp(18));
-                textPaint.setFakeBoldText(index == 11 && hardwareNumberShifted);
-                canvas.drawText(index == 10 ? "符" : "⇧", cell.centerX(),
-                        textBaseline(cell, textPaint), textPaint);
-                hits.add(new Hit(new RectF(cell), HitKind.KEY,
-                        index == 10 ? "HARDWARE_SYMBOL" : "HARDWARE_NUMBER_SHIFT", -1));
+                drawHardwareStatusButton(canvas, cell, "設", "SETTINGS");
             }
         }
+    }
+
+    private void drawHardwarePunctuationRow(Canvas canvas, RectF area) {
+        float cellWidth = area.width() / 12f;
+        for (int index = 0; index < 11; index++) {
+            RectF cell = inset(new RectF(area.left + index * cellWidth, area.top,
+                    area.left + (index + 1) * cellWidth, area.bottom), dp(2));
+            drawHardwareLiteralKey(canvas, cell, HARDWARE_PUNCTUATION_KEYS[index],
+                    HARDWARE_PUNCTUATION_SYMBOLS[index]);
+        }
+        RectF shift = inset(new RectF(area.right - cellWidth, area.top,
+                area.right, area.bottom), dp(2));
+        canvas.drawRoundRect(shift, dp(6), dp(6), specialKeyPaint);
+        textPaint.setTextSize(dp(18));
+        textPaint.setFakeBoldText(hardwareNumberShifted);
+        canvas.drawText("⇧", shift.centerX(), textBaseline(shift, textPaint), textPaint);
+        hits.add(new Hit(new RectF(shift), HitKind.KEY, "HARDWARE_NUMBER_SHIFT", -1));
+    }
+
+    private void drawHardwareLiteralKey(Canvas canvas, RectF cell,
+                                        String unshifted, String shiftedValue) {
+        String primary = hardwareNumberShifted ? shiftedValue : unshifted;
+        String secondary = hardwareNumberShifted ? unshifted : shiftedValue;
+        canvas.drawRoundRect(cell, dp(6), dp(6), keyPaint);
+        textPaint.setTextSize(dp(17));
+        textPaint.setFakeBoldText(true);
+        canvas.drawText(primary, cell.centerX(), cell.centerY() + dp(1), textPaint);
+        hintPaint.setTextSize(dp(10));
+        canvas.drawText(secondary, cell.centerX(), cell.bottom - dp(5), hintPaint);
+        hits.add(new Hit(new RectF(cell), HitKind.KEY,
+                HARDWARE_LITERAL_PREFIX + primary, -1));
     }
 
     private void drawHardwareStatusButton(Canvas canvas, RectF bounds, String label,

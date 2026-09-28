@@ -162,8 +162,7 @@ final class BopomofoEngine {
         return applyHardwareWidth(character(key, false));
     }
 
-    Result commitHardwareNumber(char key) {
-        if ("1234567890!@#$%^&*()".indexOf(key) < 0) return Result.update();
+    Result commitHardwareLiteral(char key) {
         prepareForHardwareInput();
         String prefix;
         if (compositionMode == BopomofoCompositionMode.TRADITIONAL && !reading.isEmpty()) {

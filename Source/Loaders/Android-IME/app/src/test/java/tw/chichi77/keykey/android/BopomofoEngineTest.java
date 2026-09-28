@@ -953,17 +953,22 @@ public final class BopomofoEngineTest {
     }
 
     @Test
-    public void hardwareNumberRowCommitsLiteralWithoutLosingComposition() throws Exception {
+    public void hardwareLiteralRowsCommitWithoutLosingComposition() throws Exception {
         BopomofoEngine smart = smartEngine();
         typeHardware(smart, "su3cl3");
-        assertEquals("你好1", smart.commitHardwareNumber('1').committedText());
+        assertEquals("你好1", smart.commitHardwareLiteral('1').committedText());
         assertFalse(smart.hasComposition());
-        assertEquals("!", smart.commitHardwareNumber('!').committedText());
+        assertEquals("!", smart.commitHardwareLiteral('!').committedText());
+        typeHardware(smart, "su3cl3");
+        assertEquals("你好-", smart.commitHardwareLiteral('-').committedText());
+        assertEquals("_", smart.commitHardwareLiteral('_').committedText());
 
         BopomofoEngine traditional = engineWith("su3 你\nsu3 擬\n");
         typeHardware(traditional, "su3");
-        assertEquals("你2", traditional.commitHardwareNumber('2').committedText());
+        assertEquals("你2", traditional.commitHardwareLiteral('2').committedText());
         assertFalse(traditional.hasComposition());
+        typeHardware(traditional, "su3");
+        assertEquals("你[", traditional.commitHardwareLiteral('[').committedText());
     }
 
     @Test

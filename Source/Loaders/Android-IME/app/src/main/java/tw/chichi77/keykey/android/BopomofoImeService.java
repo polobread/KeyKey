@@ -350,8 +350,9 @@ public final class BopomofoImeService extends InputMethodService
             apply(engine.showHardwareSymbols());
             return;
         }
-        if (key.startsWith("HARDWARE_NUMBER:") && key.length() == 17) {
-            apply(engine.commitHardwareNumber(key.charAt(16)));
+        if (key.startsWith(BopomofoKeyboardView.HARDWARE_LITERAL_PREFIX)
+                && key.length() == BopomofoKeyboardView.HARDWARE_LITERAL_PREFIX.length() + 1) {
+            apply(engine.commitHardwareLiteral(key.charAt(key.length() - 1)));
             return;
         }
         if (key.equals("SETTINGS")) {

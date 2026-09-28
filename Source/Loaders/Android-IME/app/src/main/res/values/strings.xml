@@ -48,7 +48,7 @@
     <string name="floating_candidates_failure_token">已改用一般候選列：系統或目標 App 未提供可用的輸入法視窗 token。重新勾選可再試一次。</string>
     <string name="floating_candidates_failure_attach">已改用一般候選列：系統拒絕附掛浮動候選字窗。重新勾選可再試一次。</string>
     <string name="floating_candidates_layout">浮動候選字窗排列</string>
-    <string name="hardware_number_row_enabled">關閉浮動候選字窗時顯示虛擬數字鍵</string>
+    <string name="hardware_number_row_enabled">關閉浮動候選字窗時顯示虛擬數字與符號鍵</string>
     <string-array name="floating_candidate_layouts">
         <item>垂直選字窗</item>
         <item>水平選字窗</item>
