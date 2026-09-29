@@ -7,7 +7,7 @@
 source = File.expand_path(
   '../../../ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c', __dir__
 )
-output = File.expand_path('../../Fcitx5-Common/data/tc2sc.cin', __dir__)
+output = File.expand_path('../data/tc2sc.cin', __dir__)
 
 array_body = File.binread(source)[/\{(.*)\}/m, 1]
 abort "Could not find the conversion table in #{source}" unless array_body

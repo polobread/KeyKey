@@ -8,12 +8,19 @@ set and setup steps.
 The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
-This directory contains the Linux build entry point, desktop integration,
-packaging, and platform tests. The engine, Fcitx 5 addon, shared-model verifier,
-and runtime tables are in [Fcitx5-Common](../Fcitx5-Common/README.md), shared with
-the FreeBSD frontend. They do not link or modify the legacy KeyKeyEngine or
-OpenVanilla frameworks. The earlier 1.2.8
-release boundaries remain in the
+This directory contains the C++ engine, Fcitx 5 addon, runtime tables, tools,
+desktop integration, packaging, and platform tests. CMake verifies and installs
+the repository's pre-generated shared model. Runtime addon and data names remain
+`chichi77-keykey`, and the C++ namespace is `keykey::linux_ime`. The engine and
+addon do not link or modify the legacy KeyKeyEngine or OpenVanilla frameworks.
+
+FreeBSD packaging is maintained in the official
+[`chinese/fcitx5-keykey` port](https://www.freshports.org/chinese/fcitx5-keykey/).
+That port builds this directory from a selected release. The FreeBSD-specific
+iconv include and link fix remains in CMake; port recipes and release validation
+are maintained in the FreeBSD Ports tree.
+
+The earlier 1.2.8 release boundaries remain in the
 [1.2.8 release record](docs/linux-1.2.8-release.md).
 
 ## Version 1.3.1 features and verification

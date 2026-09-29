@@ -24,7 +24,7 @@ Android 與 iOS 版透過 Google Play 與 App Store 的官方流程發行，並�
 安裝。macOS、Windows 與 Ubuntu 24.04 安裝包則由 GitHub Release 提供。
 
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，支援 macOS、Windows、
-Android、iOS、Ubuntu Desktop 24.04 LTS 的 Linux 原生版，以及 FreeBSD Fcitx 5 frontend。
+Android、iOS、Ubuntu Desktop 24.04 LTS 的 Linux 原生版；FreeBSD 由官方 Ports 提供 Fcitx 5 套件。
 
 Linux 原生版針對 Ubuntu Desktop 24.04、GNOME Shell 46、Fcitx 5、amd64，包含預設的
 好打注音整句組字、可切換的傳統注音、五種注音布局、候選與符號、30 套關聯詞、
@@ -51,7 +51,7 @@ Windows、Android 與 iOS 建立現代化 frontend。
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
 | Linux | Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；注音、倉頡、簡易 |
-| FreeBSD | Fcitx 5；已在 FreeBSD 15.1 amd64 與 14.4 i386 建置、測試及驗證 staged install |
+| FreeBSD | 官方 [`chinese/fcitx5-keykey`](https://www.freshports.org/chinese/fcitx5-keykey/) port；使用 Linux 目錄中的 Fcitx 5 實作，版本與平台驗證由 port 維護 |
 
 六個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
@@ -136,7 +136,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-1.3.1 的 macOS、Windows、iOS、Android、Linux 與 FreeBSD 原始碼均提供「好打注音」整句組字模式，
+1.3.1 的 macOS、Windows、iOS、Android 與 Linux 原始碼均提供「好打注音」整句組字模式，
 並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。語言模型由
 McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yahoo 未釋出的中研院語料；
 另加入可替換的 11,180 句 AI 合成 bootstrap corpora 產生初版 bigram 上下文資料。這份
@@ -162,7 +162,7 @@ proprietary corpus from the historical Yahoo build is not included.
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports macOS, Windows, Android, iOS, Ubuntu Desktop 24.04 LTS,
-and FreeBSD.
+and FreeBSD through the official Ports collection.
 
 The native Linux build targets Ubuntu Desktop 24.04, GNOME Shell 46, Fcitx 5,
 and amd64. It includes Smart Phonetic sentence composition by default,
@@ -190,7 +190,7 @@ by, or sponsored by Yahoo.**
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
 | iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
 | Linux | Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, amd64; Bopomofo, Cangjie, Simplex |
-| FreeBSD | Fcitx 5; built, tested, and stage-installed on FreeBSD 15.1 amd64 and 14.4 i386 |
+| FreeBSD | Official [`chinese/fcitx5-keykey`](https://www.freshports.org/chinese/fcitx5-keykey/) port using the Fcitx 5 implementation in the Linux directory; releases and validation are maintained by the port |
 
 All six platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.

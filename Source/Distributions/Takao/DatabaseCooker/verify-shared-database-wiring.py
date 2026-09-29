@@ -37,20 +37,13 @@ REQUIRED_REFERENCES = {
             "must name the pre-generated shared KeyKey.db",
         ),
     ),
-    "Linux/FreeBSD common": (
-        ROOT / "Source/Loaders/Fcitx5-Common/CMakeLists.txt",
+    "Linux": (
+        ROOT / "Source/Loaders/Linux-IME/CMakeLists.txt",
         (
             "Source/Distributions/Takao/CookedDatabase/KeyKey.db",
             'RENAME "smart-mandarin.db"',
+            '"${KEYKEY_SMART_MODEL_VERIFIER}"',
         ),
-    ),
-    "Linux": (
-        ROOT / "Source/Loaders/Linux-IME/CMakeLists.txt",
-        ('add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../Fcitx5-Common"',),
-    ),
-    "FreeBSD": (
-        ROOT / "Source/Loaders/FreeBSD-IME/CMakeLists.txt",
-        ('add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../Fcitx5-Common"',),
     ),
 }
 

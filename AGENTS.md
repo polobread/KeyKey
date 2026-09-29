@@ -6,7 +6,7 @@
 
 ## 好打注音模型決策
 
-- 六個平台共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **114,392 筆 Unigram、885,627 筆 Bigram**，SHA-256 為 `28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252`。
+- 本儲存庫五個 frontend 共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **114,392 筆 Unigram、885,627 筆 Bigram**，SHA-256 為 `28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252`。
 - Bigram 建模固定使用 `typing-articles-v2.jsonl`、`v3.jsonl`、`v4.jsonl` 共 **2,300 篇**。正式驗證固定使用 `typing-articles-v5-seed/tw-corpus-0001.md` 至 `0130.md` 共 **130 篇**，排除 `chat.md`；訓練與驗證沒有相同文章或 20 字以上相同段落。800／750／750 只屬已結束的 unigram 實驗分割，不再作為目前 Bigram 的建模或驗證依據。
 - 每篇文章、每個模型都啟動全新引擎程序，關閉 user table、Bigram learning 與 candidate override，測試間不得共享記憶。正式動作模型採 5 音節穩定、10 音節組字範圍、每頁 8 個候選；注音鍵、確認、點字開候選、選字及翻頁都計入。輸出須包含總動作、額外修正動作、修正字及各自成本；總動作越少越好。
 - Bigram 約只能影響仍在組字區內的 9～10 個字，不能期待後文完全救回前面的同音字。優先降低核心 83 字、前 100 名基本字與第 101～1,000 名一般字的修正；第 1,001～1,500 名、未排名罕字、專業詞及專有名詞只列診斷，不決定基礎模型是否採用，這些內容可由使用者學習改善。
@@ -21,7 +21,7 @@
 - 不直接改 `DataSource/McBopomofo/phrase.occ` 或 `BPMFMappings.txt`；專案補充詞、讀音覆寫及語料放在 `DataSource/AISyntheticBigram/`。
 - 變更模型時同步更新正式 DB、`smart-mandarin-model-manifest.json`、130 篇驗證結果及內容雜湊。不能只看資料列數判斷新舊，也不能把罕見字改善換成基本字退步。
 - 量測工具入口與動作定義見 `DataSource/AISyntheticBigram/TYPING_COST.md`。`measure-typing-cost.py ARTICLE VERSION` 量單篇；批次工具先固定樣本、完整分析，再比較全域候選。模型調整程式不得覆寫來源 DB。
-- `verify-smart-mandarin-db.py` 驗證固定雜湊、完整性、資料列與首音節；`verify-shared-database-wiring.py` 驗證六平台都使用同一份 DB。iOS archive、Android asset、macOS App、Windows 打包目錄及 Linux／FreeBSD 安裝後改名檔仍須各自核對。
+- `verify-smart-mandarin-db.py` 驗證固定雜湊、完整性、資料列與首音節；`verify-shared-database-wiring.py` 驗證本儲存庫五個 frontend 都使用同一份 DB。iOS archive、Android asset、macOS App、Windows 打包目錄及 Linux 安裝後改名檔仍須各自核對。FreeBSD 套件由 Ports 維護者依所選版本驗證。
 - Android 私有 DB 檔名是更新快取邊界；換模型時必須變更檔名或加入內容校驗。Windows 的 `keykey_database_deploy` 必須在 DB 更新但 DLL 未重新連結時同步打包目錄。
 
 ## 工作區與提交
@@ -31,7 +31,7 @@
 - 建置目錄、`.typing-cache/`、`typing-benchmarks/`、`Installer/local-builds/`、影片、API 請求與執行紀錄是產物，不提交。不要提交 API 金鑰。
 - 授權範圍以 [LICENSING.md](LICENSING.md) 為準；Yahoo 舊碼與衍生修改保留 BSD 3-Clause 標頭，原創 frontend 與第三方資料維持各自授權。
 
-## 六平台架構
+## 平台架構
 
 | 平台 | 好打注音執行路徑 | 語言模型來源 |
 |---|---|---|
@@ -39,10 +39,10 @@
 | Windows | `Windows-TSF`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
 | iOS | `iOS-Keyboard/KeyKeyEngine` Swift walker | 鍵盤 extension 內的共用 `KeyKey.db` |
 | Android | `Android-IME` Java walker | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
-| Linux | Fcitx 5 共用 C++ walker 與 adapter | 共用 DB 安裝時改名為 `smart-mandarin.db` |
-| FreeBSD | Fcitx 5 共用 C++ walker 與 adapter | 共用 DB 安裝時改名為 `smart-mandarin.db` |
+| Linux | `Linux-IME` 的 Fcitx 5 C++ walker 與 adapter | 共用 DB 安裝時改名為 `smart-mandarin.db` |
+| FreeBSD | 官方 `chinese/fcitx5-keykey` port，使用 `Linux-IME` 原始碼 | 依 port 選定版本；v1.3.1 建置驗證並安裝共用 DB |
 
-macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux／FreeBSD 各有組句 frontend。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
+macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 各有組句 frontend，FreeBSD port 使用 Linux 的 Fcitx 5 實作。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
 
 ## 輸入行為界線
 
@@ -75,7 +75,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.
 (cd Source/Loaders/Linux-IME && ci/build-and-test.sh)
 ```
 
-完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets；FreeBSD 使用 port staging 與平台 README 的驗證流程。
+完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets；FreeBSD 打包與驗證由官方 [Ports](https://www.freshports.org/chinese/fcitx5-keykey/) 維護，保留 Linux CMake 內的 FreeBSD iconv 相容修正。
 
 ## 改版號清單
 
@@ -88,7 +88,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.
 | iOS | Xcode project 的 App／extension `MARKETING_VERSION` |
 | Android | `build.gradle.kts` 的 `keyKeyVersionName`、`keyKeyVersionCode` |
 | Linux | `Linux-IME/CMakeLists.txt`、支援矩陣及版本化套件／測試腳本 |
-| FreeBSD | `FreeBSD-IME/CMakeLists.txt` 與 port `DISTVERSION` |
+| FreeBSD | 官方 Ports tree 的 `DISTVERSION`，由 port 維護者更新 |
 
 再核對文件範例、打包後的實際版本及發行流程；GitHub Release、App Store、Google Play 的現況不能由原始碼版號推定。
 

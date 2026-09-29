@@ -78,8 +78,6 @@ mkdir -p \
   "$output_dir"
 
 mkdir -p "$source_root/Source/Loaders/Linux-IME"
-cp -a "$repository_root/Source/Loaders/Fcitx5-Common" \
-  "$source_root/Source/Loaders/"
 cp -a \
   "$linux_dir/CMakeLists.txt" \
   "$linux_dir/CMakePresets.json" \
@@ -87,6 +85,8 @@ cp -a \
   "$linux_dir/README.md" \
   "$source_root/Source/Loaders/Linux-IME/"
 cp -a \
+  "$linux_dir/adapters" \
+  "$linux_dir/engine" \
   "$linux_dir/ci" \
   "$linux_dir/cmake" \
   "$linux_dir/data" \
@@ -123,6 +123,30 @@ cp -a \
   "$repository_root/DataSource/AISyntheticBigram/corpus-typing-feedback.txt" \
   "$repository_root/DataSource/AISyntheticBigram/article-corpus-2300-exact-dedup.txt" \
   "$source_root/DataSource/AISyntheticBigram/"
+# Include the canonical model and every source fingerprint checked by its verifier.
+model_paths=(
+  Source/Distributions/Takao/CookedDatabase/KeyKey.db
+  Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py
+  Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py
+  DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json
+  DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt
+  DataSource/AISyntheticBigram/common-unigram-supplement.tsv
+  DataSource/AISyntheticBigram/search-trend-unigram-source.txt
+  DataSource/AISyntheticBigram/search-trend-unigram.tsv
+  DataSource/AISyntheticBigram/search-trend-unigram-review.tsv
+  DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv
+  DataSource/AISyntheticArticles/typing-articles-v2.jsonl
+  DataSource/AISyntheticArticles/typing-articles-v3.jsonl
+  DataSource/AISyntheticArticles/typing-articles-v4.jsonl
+  DataSource/AISyntheticArticles/LICENSE.txt
+  DataSource/AISyntheticBigram/LICENSE.txt
+  LICENSES/AI-DATA-NOTICE.txt
+)
+for model_path in "${model_paths[@]}"; do
+  mkdir -p "$source_root/$(dirname -- "$model_path")"
+  cp -a "$repository_root/$model_path" "$source_root/$model_path"
+done
+cp -a "$repository_root/LICENSING.md" "$source_root/LICENSING.md"
 cp -a "$repository_root/LICENSE.txt" "$source_root/LICENSE.txt"
 cp -a "$repository_root/LICENSES/MIT.txt" "$source_root/LICENSES/MIT.txt"
 
