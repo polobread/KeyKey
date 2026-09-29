@@ -20,12 +20,10 @@
     <string name="settings_group_composition_summary">注音模式：%1$s · 上下文：%2$s</string>
     <string name="settings_value_on">開啟</string>
     <string name="settings_value_off">關閉</string>
-    <string name="settings_group_appearance">外觀與回饋</string>
-    <string name="settings_group_appearance_summary">震動、按鍵預覽、候選顏色</string>
+    <string name="settings_group_appearance">外觀與操作</string>
+    <string name="settings_group_appearance_summary">鍵盤高度、震動、按鍵預覽、候選顏色</string>
     <string name="settings_group_hardware">實體鍵盤</string>
     <string name="settings_group_hardware_summary">浮動候選窗、候選按鍵</string>
-    <string name="settings_group_size">虛擬鍵盤大小</string>
-    <string name="settings_group_size_summary">直式與橫式鍵盤高度</string>
     <string name="settings_group_phrases">關聯詞詞庫</string>
     <string name="settings_group_phrases_summary">選擇要啟用的詞庫</string>
     <string name="settings_group_expand">展開%1$s</string>

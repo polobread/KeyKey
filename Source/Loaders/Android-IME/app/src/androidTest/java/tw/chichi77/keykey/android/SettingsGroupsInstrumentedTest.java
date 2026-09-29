@@ -36,7 +36,7 @@ public final class SettingsGroupsInstrumentedTest {
                 ViewGroup root = settings.findViewById(android.R.id.content);
                 ScrollView scroll = (ScrollView) root.getChildAt(0);
                 LinearLayout page = (LinearLayout) scroll.getChildAt(0);
-                assertEquals(7, page.getChildCount()); // title + five groups + supporter
+                assertEquals(6, page.getChildCount()); // title + four groups + supporter
 
                 View supporter = page.getChildAt(1);
                 assertTrue(containsText(supporter, "支持開發"));
@@ -54,7 +54,17 @@ public final class SettingsGroupsInstrumentedTest {
                         "關聯詞詞庫"));
                 settings.onStateChanged(true, false, null);
                 assertSame(supporter, page.getChildAt(1));
-                LinearLayout phrases = (LinearLayout) page.getChildAt(6);
+                LinearLayout appearance = (LinearLayout) page.getChildAt(3);
+                assertTrue(containsText(appearance.getChildAt(0), "外觀與操作"));
+                appearance.getChildAt(0).performClick();
+                View appearanceBody = appearance.getChildAt(1);
+                assertEquals(View.VISIBLE, appearanceBody.getVisibility());
+                assertTrue(containsText(appearanceBody, "虛擬鍵盤高度"));
+                assertTrue(containsText(appearanceBody, "直式虛擬鍵盤"));
+                assertTrue(containsText(appearanceBody, "橫式虛擬鍵盤"));
+                appearance.getChildAt(0).performClick();
+
+                LinearLayout phrases = (LinearLayout) page.getChildAt(5);
                 phrases.getChildAt(0).performClick();
                 assertEquals(View.VISIBLE, phrases.getChildAt(1).getVisibility());
                 assertEquals(30, countCollectionChecks(phrases.getChildAt(1)));

@@ -263,6 +263,24 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 });
         appearanceContent.addView(candidateColor, matchWrap(dp(0), dp(20)));
 
+        TextView keyboardSizeTitle = new TextView(this);
+        keyboardSizeTitle.setText(R.string.keyboard_size_title);
+        keyboardSizeTitle.setTextSize(18);
+        keyboardSizeTitle.setTextColor(Color.DKGRAY);
+        appearanceContent.addView(keyboardSizeTitle, matchWrap(dp(0), dp(8)));
+
+        TextView keyboardSizeDescription = new TextView(this);
+        keyboardSizeDescription.setText(R.string.keyboard_size_description);
+        keyboardSizeDescription.setTextSize(14);
+        keyboardSizeDescription.setTextColor(Color.GRAY);
+        keyboardSizeDescription.setLineSpacing(0, 1.2f);
+        appearanceContent.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
+
+        addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_portrait,
+                KeyboardSizeSettings.portraitPercent(this), true);
+        addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_landscape,
+                KeyboardSizeSettings.landscapePercent(this), false);
+
         LinearLayout hardwareContent = addSettingsGroup(content, savedInstanceState,
                 "hardware", R.string.settings_group_hardware,
                 R.string.settings_group_hardware_summary, false).body;
@@ -328,27 +346,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
 
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
-
-        LinearLayout sizeContent = addSettingsGroup(content, savedInstanceState,
-                "size", R.string.settings_group_size,
-                R.string.settings_group_size_summary, false).body;
-        TextView keyboardSizeTitle = new TextView(this);
-        keyboardSizeTitle.setText(R.string.keyboard_size_title);
-        keyboardSizeTitle.setTextSize(18);
-        keyboardSizeTitle.setTextColor(Color.DKGRAY);
-        sizeContent.addView(keyboardSizeTitle, matchWrap(dp(0), dp(8)));
-
-        TextView keyboardSizeDescription = new TextView(this);
-        keyboardSizeDescription.setText(R.string.keyboard_size_description);
-        keyboardSizeDescription.setTextSize(14);
-        keyboardSizeDescription.setTextColor(Color.GRAY);
-        keyboardSizeDescription.setLineSpacing(0, 1.2f);
-        sizeContent.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
-
-        addKeyboardSizeControl(sizeContent, R.string.keyboard_size_portrait,
-                KeyboardSizeSettings.portraitPercent(this), true);
-        addKeyboardSizeControl(sizeContent, R.string.keyboard_size_landscape,
-                KeyboardSizeSettings.landscapePercent(this), false);
 
         supporterSection = new LinearLayout(this);
         supporterSection.setOrientation(LinearLayout.VERTICAL);
