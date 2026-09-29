@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "description": "Selected v1.3.1 Smart Mandarin language model shared by five product platforms plus FreeBSD",
+  "description": "Selected v1.3.1 Smart Mandarin language model shared by five product platforms",
   "training_articles": 2300,
   "validation_articles": 130,
   "base_database_sha256": "c29d06c7a9586641f8a261a0ab97042d3f843879b65b35248d8b650f42a1cc92",

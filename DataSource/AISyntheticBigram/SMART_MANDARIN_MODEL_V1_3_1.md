@@ -2,7 +2,7 @@
 
 這一版把語言模型固定為一份預先產生且已驗證的
 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`。macOS、iOS、Android、Windows、
-Linux 與 FreeBSD 都直接驗證並複製相同檔案；平台建置不再各自執行 cooker。
+Linux 都直接驗證並複製相同檔案；平台建置不再各自執行 cooker。
 
 ## 建模範圍
 

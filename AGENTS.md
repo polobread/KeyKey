@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-目前工作分支及產品版號為 `v1.3.1`。macOS、Windows、iOS、Android、Linux、FreeBSD 必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+目前工作分支及產品版號為 `v1.3.1`。macOS、Windows、iOS、Android、Linux 必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -21,7 +21,7 @@
 - 不直接改 `DataSource/McBopomofo/phrase.occ` 或 `BPMFMappings.txt`；專案補充詞、讀音覆寫及語料放在 `DataSource/AISyntheticBigram/`。
 - 變更模型時同步更新正式 DB、`smart-mandarin-model-manifest.json`、130 篇驗證結果及內容雜湊。不能只看資料列數判斷新舊，也不能把罕見字改善換成基本字退步。
 - 量測工具入口與動作定義見 `DataSource/AISyntheticBigram/TYPING_COST.md`。`measure-typing-cost.py ARTICLE VERSION` 量單篇；批次工具先固定樣本、完整分析，再比較全域候選。模型調整程式不得覆寫來源 DB。
-- `verify-smart-mandarin-db.py` 驗證固定雜湊、完整性、資料列與首音節；`verify-shared-database-wiring.py` 驗證本儲存庫五個 frontend 都使用同一份 DB。iOS archive、Android asset、macOS App、Windows 打包目錄及 Linux 安裝後改名檔仍須各自核對。FreeBSD 套件由 Ports 維護者依所選版本驗證。
+- `verify-smart-mandarin-db.py` 驗證固定雜湊、完整性、資料列與首音節；`verify-shared-database-wiring.py` 驗證本儲存庫五個 frontend 都使用同一份 DB。iOS archive、Android asset、macOS App、Windows 打包目錄及 Linux 安裝後改名檔仍須各自核對。
 - Android 私有 DB 檔名是更新快取邊界；換模型時必須變更檔名或加入內容校驗。Windows 的 `keykey_database_deploy` 必須在 DB 更新但 DLL 未重新連結時同步打包目錄。
 
 ## 工作區與提交
@@ -40,9 +40,8 @@
 | iOS | `iOS-Keyboard/KeyKeyEngine` Swift walker | 鍵盤 extension 內的共用 `KeyKey.db` |
 | Android | `Android-IME` Java walker | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
 | Linux | `Linux-IME` 的 Fcitx 5 C++ walker 與 adapter | 共用 DB 安裝時改名為 `smart-mandarin.db` |
-| FreeBSD | 官方 `chinese/fcitx5-keykey` port，使用 `Linux-IME` 原始碼 | 依 port 選定版本；v1.3.1 建置驗證並安裝共用 DB |
 
-macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 各有組句 frontend，FreeBSD port 使用 Linux 的 Fcitx 5 實作。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
+macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 各有組句 frontend。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
 
 ## 輸入行為界線
 
@@ -75,7 +74,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.
 (cd Source/Loaders/Linux-IME && ci/build-and-test.sh)
 ```
 
-完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets；FreeBSD 打包與驗證由官方 [Ports](https://www.freshports.org/chinese/fcitx5-keykey/) 維護，保留 Linux CMake 內的 FreeBSD iconv 相容修正。
+完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
 
 ## 改版號清單
 
@@ -88,7 +87,6 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.
 | iOS | Xcode project 的 App／extension `MARKETING_VERSION` |
 | Android | `build.gradle.kts` 的 `keyKeyVersionName`、`keyKeyVersionCode` |
 | Linux | `Linux-IME/CMakeLists.txt`、支援矩陣及版本化套件／測試腳本 |
-| FreeBSD | 官方 Ports tree 的 `DISTVERSION`，由 port 維護者更新 |
 
 再核對文件範例、打包後的實際版本及發行流程；GitHub Release、App Store、Google Play 的現況不能由原始碼版號推定。
 

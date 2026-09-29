@@ -14,12 +14,6 @@ the repository's pre-generated shared model. Runtime addon and data names remain
 `chichi77-keykey`, and the C++ namespace is `keykey::linux_ime`. The engine and
 addon do not link or modify the legacy KeyKeyEngine or OpenVanilla frameworks.
 
-FreeBSD packaging is maintained in the official
-[`chinese/fcitx5-keykey` port](https://www.freshports.org/chinese/fcitx5-keykey/).
-That port builds this directory from a selected release. The FreeBSD-specific
-iconv include and link fix remains in CMake; port recipes and release validation
-are maintained in the FreeBSD Ports tree.
-
 The earlier 1.2.8 release boundaries remain in the
 [1.2.8 release record](docs/linux-1.2.8-release.md).
 

@@ -5,18 +5,15 @@
 ### 共用資料與版本
 
 - 聯想詞上限統一為 6 字（含首字），同步套用共用資料庫工具、Android 索引與解析器、
-  Linux／FreeBSD 載入器及保留的 Windows cooker。正式共用 DB 的現有聯想詞皆已符合此上限。
+  Linux 載入器及保留的 Windows cooker。正式共用 DB 的現有聯想詞皆已符合此上限。
 - macOS、Windows、iOS、Android 與 Linux 的產品及建置版號同步至 1.3.1。
 - 好打注音改用各 frontend 共用、預先產生並驗證的 `KeyKey.db`，內含 114,392 筆
   Unigram 與 885,627 筆 Bigram；平台建置只驗證及打包，不再重新 cooker。
 - 加入去重後的臺灣搜尋熱門詞補充層：550 個來源詞中剔除 393 個既有詞，新增 157 詞。
   固定 130 篇獨立驗證相較前一版再少 6 次修正動作，沒有文章退步。
 
-### Linux／FreeBSD
+### Linux
 
-- 將 Fcitx 5 引擎、adapter、資料與測試整併回 Linux 專案，保留 1.3.1 的
-  標點修正、六字聯想詞限制、正式共用模型及 FreeBSD iconv 相容修正。
-  FreeBSD 打包改由官方 `chinese/fcitx5-keykey` port 維護。
 - Linux Debian 套件與原始碼封存納入正式共用資料庫及模型驗證所需檔案。
 
 - 修正好打注音漏查普通標點表：Shift＋逗號、Shift＋句號及括號鍵現在可單獨

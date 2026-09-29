@@ -44,7 +44,7 @@ python3 DataSource/AISyntheticBigram/apply-common-unigram-supplement.py \
 
 通過整體驗證的 Bigram 與這 7 個詞已合併進 v1.3.1 的預先產生
 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`。macOS、iOS、Android、Windows、
-Linux 與 FreeBSD 建置都直接驗證及複製這個檔案，不在平台建置期間重新 cooker。
+Linux 建置都直接驗證及複製這個檔案，不在平台建置期間重新 cooker。
 `finalize-smart-mandarin-model.py` 只供模型維護者在完整分析後明確重建候選檔。
 
 新增或刪除詞之前，必須以相同 130 篇重新獨立測試，並用整體結果判斷，不得依單篇錯誤逐筆補詞。

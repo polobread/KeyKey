@@ -96,8 +96,8 @@ Windows uses the operating system's `winsqlite3.dll` through the Windows SDK's
 Windows Update. No GNU Make, `awk`, `sed`, or standalone `sqlite3` program is
 required. CMake verifies and packages the repository's pre-generated shared
 `Source\Distributions\Takao\CookedDatabase\KeyKey.db`; Windows builds do not
-recook the language model. This keeps Windows, macOS, iOS, Android, Linux, and
-FreeBSD on the exact same validated bytes.
+recook the language model. This keeps Windows, macOS, iOS, Android, and Linux
+on the exact same validated bytes.
 
 To verify and deploy another pre-generated database, pass
 `-DKEYKEY_DATABASE_PATH=C:\path\to\KeyKey.db` when configuring.

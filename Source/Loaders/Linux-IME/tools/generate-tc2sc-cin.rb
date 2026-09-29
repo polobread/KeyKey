@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Generates the Fcitx 5 runtime table from the read-only OpenVanilla mapping.
+# Generates the Linux runtime table from the read-only OpenVanilla mapping.
 # The generated table remains under the source table's BSD 3-Clause terms.
 
 source = File.expand_path(
