@@ -123,6 +123,14 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 
 ## 詞庫與限制
 
+**AI 文章與 bigram 資料目前暫不提供使用授權。**
+`DataSource/AISyntheticArticles/` 的 AI 文章，以及
+`DataSource/AISyntheticBigram/` 的 AI 合成語料與衍生 bigram 資料，
+包括匯出檔及併入資料庫的相應部分，均不因公開存放而適用 MIT 或 BSD。
+使用、重製、修改、散布、商用、模型訓練或評測須另行取得明確書面許可；
+依法無須許可的使用及已有效取得的權利不受影響。範圍詳見
+[AI 資料聲明](LICENSES/AI-DATA-NOTICE.txt)。
+
 公開 repository 內含 McBopomofo 的字音與詞頻資料，以及 29 份以 MIT License
 釋出的分類關聯詞詞庫。分類詞庫由自動化方式生成、推論與整理，沒有逐筆人工校正，
 可能含有錯誤；不保證正確性或完整性，詳見
@@ -275,8 +283,18 @@ data was generated, inferred, and normalized automatically, has not been reviewe
 item by item, and may contain errors. Accuracy and completeness are not
 guaranteed; see
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md).
-Smart Mandarin uses a redistributable model generated from McBopomofo data and the
-replaceable synthetic bootstrap corpora described above. Yahoo's proprietary Sinica corpus
+
+**AI articles and bigram data are not currently offered under a usage license.**
+This covers AI articles in `DataSource/AISyntheticArticles/`, AI-generated corpora
+and derived bigram data in `DataSource/AISyntheticBigram/`, and covered portions
+of exports and bundled databases. Reuse, modification, redistribution, commercial
+use, and model training or evaluation require separate express written permission,
+subject to statutory rights and valid prior grants. See the
+[AI data notice](LICENSES/AI-DATA-NOTICE.txt).
+
+Smart Mandarin combines McBopomofo data with project AI-generated data. The
+licenses for the McBopomofo inputs do not grant permission to reuse the covered
+AI-derived portions of the combined model. Yahoo's proprietary Sinica corpus
 is not included.
 
 ## License

@@ -42,3 +42,7 @@ Nothing in this notice relicenses Yahoo! KeyKey or third-party material.
 
 See LICENSING.md for the authoritative scope map and
 LICENSES/MIT.txt for the MIT License text covering the original frontends.
+
+AI-generated articles and bigram data identified in LICENSING.md are not
+currently offered under a usage license. They are not covered by the BSD or MIT
+grants above. See LICENSES/AI-DATA-NOTICE.txt for scope and limitations.
