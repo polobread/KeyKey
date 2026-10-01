@@ -6,6 +6,31 @@ Windows 1.3.1 的兩種安裝流程稽核、舊版遷移設計與待驗收矩陣
 
 Windows 1.3.1 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
 
+The standard `GUID_LBI_INPUTMODE` item exposes a menu style (without a split-button arrow):
+Windows can invoke `InitMenu`/`OnMenuSelect` to switch all four methods even when
+an immersive host cannot use the desktop popup. `KeyKeyTsfSystemTrayTest` checks
+the item through the native TSF language-bar manager and verifies its mode menu.
+Chinese/English mode synchronizes both open/close and the conversion compartment's
+`NATIVE` bit, retaining width and the other conversion flags.
+If a restricted Search/Store process cannot access Roaming preferences, the
+frontend and engine share that process's sandboxed Temp profile. Preferences and
+learning data remain private; no file permissions are expanded. The current input
+method is shared through a TSF global compartment, read at activation, focus, menu,
+and key dispatch. A stale profile cannot overwrite that choice on activation.
+Desktop settings changes and explicit menu selections publish a new choice.
+`KeyKeySharedInputMethodTest` uses a random compartment GUID and separate processes
+and profiles to verify all four modes, actual composition, and reverse propagation.
+Pass the other architecture's executable as its argument to test x64/x86 sharing.
+`--container` creates a temporary AppContainer, gives only that SID read/execute
+access to disposable executable/database copies, and runs all four child cases
+with private writable profiles. The AppContainer registration is removed afterward.
+Run this test in the normal user session: a restricted command sandbox cannot
+write the session-wide TSF compartment and reports `E_FAIL`.
+Local verification passed 15 x64 and 14 x86 tests, plus both directions of
+x64/x86 mode sharing. On 2026-10-01, the user confirmed that the installed
+Windows Search mode switching and menu fixes work. This is separate from
+the automated AppContainer tests and from release/upgrade validation.
+
 This directory contains the Windows 10 and 11 Text Services Framework (TSF)
 frontend. It is separate from `Windows-IMM`, so the existing macOS IMK target
 and its Xcode project remain unchanged.
@@ -14,14 +39,16 @@ and its Xcode project remain unchanged.
 
 - Smart Mandarin (好打注音) sentence composition and the existing Traditional
   Mandarin mode through the OpenVanilla and PlainVanilla core
+- Cangjie (倉頡) and Simplex (簡易) through the shared `OVIMGeneric` engine and
+  canonical database, with Windows-specific settings and short learning transactions
 - per-user phrases, candidate overrides, and contextual learning stored in
   `%APPDATA%\chichi77 KeyKey\SmartMandarinUserData.db`
 - TSF composition, caret placement, commit, and candidate-window flow
 - Immersive TSF registration for modern Windows text hosts such as Start/Search
-- Taskbar language-bar indicators for Chinese/English (`ㄅ`/`英`) and
+- Taskbar language-bar indicators for Chinese/English (`ㄅ`/`倉`/`簡`/`英`) and
   half-/full-width (`半`/`全`) modes, with a menu section for direct Smart or
-  Traditional Mandarin selection
-- `ITfFnConfigure` keyboard-options entry and a standalone four-page Fluent WPF
+  Traditional Mandarin, Cangjie or Simplex selection
+- `ITfFnConfigure` keyboard-options entry and a standalone five-page Fluent WPF
   settings app that follows the Windows light/dark preference; its native backend
   retains the existing user phrase and learning-data behavior
 - vertical or horizontal candidate windows with independent Windows-style
@@ -39,10 +66,42 @@ and its Xcode project remain unchanged.
 New profiles start in Smart Mandarin. Existing profiles retain their selected
 mode. The settings app's General page controls which input methods appear in
 the taskbar menu; the Bopomofo page keeps layout and character-set options.
-The reset-learning button removes learned bigrams and
-candidate overrides while preserving user phrases. Cangjie and Simplex are
-outside this Windows package. The old IMM32 loader is retained as historical
+The reset-learning button removes Smart Mandarin learned bigrams and
+candidate overrides while preserving user phrases and table candidate ordering.
+The old IMM32 loader and Windows preference panels supply behavioral references
+for Cangjie and Simplex. The old IMM32 loader is retained as historical
 reference and is not linked into this DLL.
+
+### Cangjie and Simplex development build
+
+This source adds these modes to 1.3.1 local builds; published installers and
+already installed DLLs are separate artifacts and may still contain only Mandarin.
+Cangjie retains up to five radicals and queries with Space/Enter; Simplex queries
+at two radicals. Number keys select candidates, Page Up/Down page, Backspace
+edits radicals and Esc cancels. Cangjie supports `?` and `*` wildcard lookup.
+The table settings page controls live lookup, clear-on-error and Big-5 filtering;
+Cangjie also offers full-code querying, punctuation overrides and dynamic ordering.
+Live lookup and clear-on-error are mutually exclusive. Dynamic ordering defaults
+off, as in the old Windows preference application. Each input method uses its own
+`Generic-*-cin-DynamicCandidateOrder.sqlite3` file. Learned candidates remain
+subject to the current character-set restriction. Busy or unwritable learning
+storage does not block text input.
+
+The current `com.polobread` preference files take precedence over the earlier
+`org.openvanilla.chichi77-keykey.windows` files. Migration now includes both table
+modules and preserves the old files. The old Simplex `ComposeWhenTyping` alias
+is accepted until `ComposeWhenTypingMigrated=true` records a modern setting.
+Raw Yahoo IMM/MSI installation state and its different profile directory are not
+automatically imported. Mode changes preserve visible text (including unfinished
+radicals) before new input starts in the selected mode.
+
+Local verification uses `KeyKeyTableInputTest` for basic input, paging, live
+lookup, Windows-translated Backspace/Enter/Esc events, legacy settings, Unicode, settings reload, mode changes, and an independent
+SQLite writer while an engine session remains active. Settings tests cover all
+15 non-empty visibility combinations and native-backend WPF control events,
+Apply and reopening. `KEYKEY_TSF_TEST_PROFILE_DIR` isolates both the engine and
+settings backend. Desktop visual QA, actual TSF host input, and installer
+upgrade verification remain separate acceptance steps.
 
 ## Screenshots
 
@@ -62,8 +121,8 @@ composition; the Phonetic settings tab offers an explicit option to clear it.
 
 ![Smart Mandarin composition and Chinese candidates in Notepad, Windows 1.3.0](IMAGES/v1.3.0-smart-mandarin-composition.png)
 
-The taskbar menu directly selects Smart Mandarin (好打注音) or Traditional
-Mandarin (傳統注音). Check marks show the selected input method and width mode;
+The taskbar menu directly selects Smart Mandarin (好打注音), Traditional
+Mandarin (傳統注音), Cangjie (倉頡), or Simplex (簡易). Check marks show the selected input method and width mode;
 the same menu switches Chinese/English and opens settings. After upgrading,
 sign out and back in once so Explorer loads the new menu.
 

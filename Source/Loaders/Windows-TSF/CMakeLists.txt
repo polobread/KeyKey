@@ -58,6 +58,7 @@ set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON
 
 add_library(keykey_core STATIC
     FrontendSettings.cpp
+    WindowsTableInputMethod.cpp
     "${KEYKEY_SOURCE}/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
     "${KEYKEY_SOURCE}/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
     "${KEYKEY_SOURCE}/Frameworks/Formosa/Source/Mandarin.cpp"
@@ -65,11 +66,13 @@ add_library(keykey_core STATIC
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"
+    "${KEYKEY_SOURCE}/ModulePackages/OVIMGeneric/OVIMGeneric.cpp"
     KeyKeyEngine.cpp
 )
 target_compile_features(keykey_core PUBLIC cxx_std_17)
 target_compile_definitions(keykey_core PUBLIC
     OV_USE_SQLITE
+    OVIMGENERIC_IDENTIFIER_PREFIX=\"Generic\"
     OVIMMANDARIN_IDENTIFIER=\"Mandarin\"
     OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX=\"Punctuations\"
     OVIMTRADITIONALMANDARIN_IDENTIFIER=\"TraditionalMandarin\"
@@ -89,6 +92,7 @@ target_include_directories(keykey_core PUBLIC
     "${KEYKEY_SOURCE}/Frameworks/Formosa/Headers"
     "${KEYKEY_SOURCE}/Frameworks/Manjusri/Headers"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin"
+    "${KEYKEY_SOURCE}/ModulePackages/OVIMGeneric"
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 target_link_libraries(keykey_core PUBLIC keykey_third_party)
@@ -259,6 +263,28 @@ if(BUILD_TESTING)
     add_dependencies(KeyKeyTsfInterfaceSmokeTest KeyKeyTsf)
     add_test(NAME KeyKeyTsfConfigureInterface COMMAND KeyKeyTsfInterfaceSmokeTest)
 
+    add_executable(KeyKeyTsfSystemTrayTest TsfSystemTrayTest.cpp
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp Diagnostics.cpp)
+    target_compile_features(KeyKeyTsfSystemTrayTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeyTsfSystemTrayTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    if(MSVC)
+        target_compile_options(KeyKeyTsfSystemTrayTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeyTsfSystemTrayTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32)
+    add_dependencies(KeyKeyTsfSystemTrayTest KeyKeyTsf keykey_database_deploy)
+    add_test(NAME KeyKeyTsfSystemTrayModes COMMAND KeyKeyTsfSystemTrayTest)
+
+    add_executable(KeyKeySharedInputMethodTest SharedInputMethodTest.cpp)
+    target_compile_features(KeyKeySharedInputMethodTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeySharedInputMethodTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    if(MSVC)
+        target_compile_options(KeyKeySharedInputMethodTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeySharedInputMethodTest PRIVATE keykey_core ole32 oleaut32 uuid userenv)
+    add_dependencies(KeyKeySharedInputMethodTest keykey_database_deploy)
+    add_test(NAME KeyKeySharedInputMethodProcesses COMMAND KeyKeySharedInputMethodTest)
+    add_test(NAME KeyKeySharedInputMethodAppContainer COMMAND KeyKeySharedInputMethodTest --container)
+
     add_executable(KeyKeyTsfRegistrationIntegrationTest TsfRegistrationIntegrationTest.cpp)
     target_compile_features(KeyKeyTsfRegistrationIntegrationTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfRegistrationIntegrationTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
@@ -295,6 +321,30 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyEngineBopomofo COMMAND KeyKeyEngineSmokeTest legacy)
     add_test(NAME KeyKeyEngineEscapeKeep COMMAND KeyKeyEngineSmokeTest keep)
     add_test(NAME KeyKeyEngineEscapeClear COMMAND KeyKeyEngineSmokeTest clear)
+
+    add_executable(KeyKeyTableInputTest TableInputTest.cpp)
+    target_compile_features(KeyKeyTableInputTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeyTableInputTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    if(MSVC)
+        target_compile_options(KeyKeyTableInputTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeyTableInputTest PRIVATE keykey_core advapi32 gdi32 ole32 shell32 user32 uuid)
+    add_dependencies(KeyKeyTableInputTest keykey_database_deploy)
+    add_test(NAME KeyKeyTableInputBasics COMMAND KeyKeyTableInputTest basic)
+    add_test(NAME KeyKeyTableLiveLookup COMMAND KeyKeyTableInputTest compose)
+    add_test(NAME KeyKeyTableLegacyAlias COMMAND KeyKeyTableInputTest alias)
+    add_test(NAME KeyKeyTableConcurrentLearning COMMAND KeyKeyTableInputTest dynamic)
+    add_test(NAME KeyKeyTableSettingsAndUnicode COMMAND KeyKeyTableInputTest settings)
+    add_test(NAME KeyKeySettingsPreferences
+        COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
+            --project "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern.Tests/SettingsModern.Tests.csproj"
+            --configuration Release)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        add_test(NAME KeyKeySettingsWpfControls
+            COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
+                --project "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern.UiTests/SettingsModern.UiTests.csproj"
+                --configuration Release "--property:KeyKeyRuntimeDirectory=$<TARGET_FILE_DIR:KeyKeyTsf>")
+    endif()
 
     add_executable(KeyKeyCandidateStateTest CandidateStateTest.cpp)
     target_compile_features(KeyKeyCandidateStateTest PRIVATE cxx_std_17)

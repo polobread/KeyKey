@@ -1,10 +1,13 @@
 #include "KeyKeyEngine.h"
 
 #include <mutex>
+#include <algorithm>
 #include <utility>
 
 #include "ModuleState.h"
 #include "FrontendSettings.h"
+#include "InputMethods.h"
+#include "WindowsTableInputMethod.h"
 
 #include "OpenVanilla.h"
 #include "PlainVanilla.h"
@@ -70,9 +73,9 @@ public:
 
 class WindowsLoaderPolicy final : public PVLoaderPolicy {
 public:
-    explicit WindowsLoaderPolicy(std::string testProfileDirectory)
+    explicit WindowsLoaderPolicy(std::string profileDirectory)
         : PVLoaderPolicy(std::vector<std::string>()),
-          testProfileDirectory_(std::move(testProfileDirectory)) {}
+          profileDirectory_(std::move(profileDirectory)) {}
 
     const std::string defaultDatabaseFileName() override { return "KeyKey.db"; }
     const std::string loaderIdentifier() override {
@@ -81,21 +84,15 @@ public:
     const std::string loaderName() override { return "chichi77 KeyKey"; }
     const std::vector<std::string> modulePackageFilePatterns() override { return {}; }
     const std::string propertyListPathForLoader() override {
-        return testProfileDirectory_.empty()
-                   ? PVLoaderPolicy::propertyListPathForLoader()
-                   : OVPathHelper::PathCat(testProfileDirectory_,
-                                           loaderIdentifier() + ".plist");
+        return OVPathHelper::PathCat(profileDirectory_, loaderIdentifier() + ".plist");
     }
     const std::string propertyListPathFromIdentifier(
         const std::string& identifier) override {
-        return testProfileDirectory_.empty()
-                   ? PVLoaderPolicy::propertyListPathFromIdentifier(identifier)
-                   : OVPathHelper::PathCat(testProfileDirectory_,
-                                           moduleIdentifierPrefix(identifier) + ".plist");
+        return OVPathHelper::PathCat(profileDirectory_, moduleIdentifierPrefix(identifier) + ".plist");
     }
 
 private:
-    std::string testProfileDirectory_;
+    std::string profileDirectory_;
 };
 
 std::string TestProfileDirectory() {
@@ -123,6 +120,30 @@ public:
     }
 private:
     bool includeSmart_;
+};
+
+class WindowsTablePackage final : public OVModulePackage {
+public:
+    bool initialize(OVPathInfo*, OVLoaderService* service) override {
+        auto* database = service->SQLiteDatabaseService();
+        if (!database) return false;
+        const auto tables = database->tables(std::string("Generic-*"));
+        for (const auto& method : kInputMethods) {
+            if (IsTableInputMethod(method.identifier) &&
+                std::find(tables.begin(), tables.end(), method.identifier) != tables.end()) {
+                identifiers_.push_back(method.identifier);
+            }
+        }
+        return true;
+    }
+    size_t numberOfModules(OVLoaderService*) override { return identifiers_.size(); }
+    OVModule* moduleAtIndex(size_t index, OVLoaderService* service) override {
+        return index < identifiers_.size()
+            ? new WindowsTableInputMethod(identifiers_[index], service->SQLiteDatabaseService())
+            : nullptr;
+    }
+private:
+    std::vector<std::string> identifiers_;
 };
 
 bool HasSmartMandarinData(OVSQLiteConnection* connection) {
@@ -187,14 +208,15 @@ public:
         pathInfo.loadedPath = resourcePath;
         pathInfo.resourcePath = resourcePath;
         const std::string testProfileDirectory = TestProfileDirectory();
-        pathInfo.writablePath = testProfileDirectory.empty()
-                                    ? OVDirectoryHelper::UserApplicationSupportDataDirectory(
-                                          "chichi77 KeyKey")
-                                    : testProfileDirectory;
+        pathInfo.writablePath = OVUTF8::FromUTF16(SettingsDirectory());
+        if (pathInfo.writablePath.empty()) {
+            OutputDebugStringW(L"chichi77 KeyKey TSF: no accessible profile directory.\n");
+            return;
+        }
         OVDirectoryHelper::CheckDirectory(pathInfo.writablePath);
 
         if (testProfileDirectory.empty()) MigrateLegacyPreferences();
-        policy_ = std::make_unique<WindowsLoaderPolicy>(testProfileDirectory);
+        policy_ = std::make_unique<WindowsLoaderPolicy>(pathInfo.writablePath);
         const std::wstring loaderPreferences = OVUTF16::FromUTF8(
             policy_->propertyListPathForLoader());
         const bool existingProfile =
@@ -211,19 +233,30 @@ public:
             return;
         }
 
+        auto* table = new WindowsTablePackage;
+        if (!table->initialize(&pathInfo, service_.get()) ||
+            !packages_->addInitializedPackage("OVIMGeneric", table)) {
+            table->finalize();
+            delete table;
+            return;
+        }
+
         std::vector<PVModulePackageLoadingSystem*> systems{packages_.get()};
         loader_ = std::make_unique<PVLoader>(policy_.get(), service_.get(), systems);
         // Keep the choice of existing users. A new profile starts with the
         // sentence composer when the cooked language model is available.
-        if (!existingProfile && smartAvailable) {
-            loader_->setPrimaryInputMethod(kSmartInputMethod);
+        if (!existingProfile) {
+            loader_->setPrimaryInputMethod(smartAvailable ? kSmartInputMethod : kTraditionalInputMethod);
         }
         if (!loader_->isAroundFilterActivated(kAssociatedPhraseFilter)) {
             loader_->toggleAroundFilter(kAssociatedPhraseFilter);
         }
         loader_->syncSandwichConfig();
-        ready_ = loader_->primaryInputMethod() == kSmartInputMethod ||
-                 loader_->primaryInputMethod() == kTraditionalInputMethod;
+        for (const auto& method : kInputMethods) {
+            auto* module = loader_->moduleWithName(method.identifier);
+            if (module && module->isUsable()) availableMethods_.push_back(method.identifier);
+        }
+        ready_ = !availableMethods_.empty();
     }
 
     PVLoaderContext* createContext() {
@@ -256,11 +289,15 @@ public:
         return loader_ ? loader_->primaryInputMethod() : std::string();
     }
     bool selectInputMethod(const std::string& identifier) {
-        if (!loader_ || (identifier != kSmartInputMethod &&
-                         identifier != kTraditionalInputMethod)) return false;
+        if (!loader_ || std::find(availableMethods_.begin(), availableMethods_.end(),
+                                 identifier) == availableMethods_.end()) return false;
         loader_->syncLoaderConfig();
         loader_->setPrimaryInputMethod(identifier);
         return loader_->primaryInputMethod() == identifier;
+    }
+    bool isAvailable(const std::string& identifier) const {
+        return std::find(availableMethods_.begin(), availableMethods_.end(), identifier) !=
+               availableMethods_.end();
     }
     std::recursive_mutex& mutex() { return mutex_; }
 
@@ -274,6 +311,7 @@ private:
     std::unique_ptr<PVLoader> loader_;
     int lastUserDataVersion_ = 0;
     bool ready_ = false;
+    std::vector<std::string> availableMethods_;
 };
 
 EngineRuntime& Runtime() {
@@ -370,6 +408,11 @@ char PrintableAsciiFromVirtualKey(const KeyEvent& event) {
 PVKeyImpl MakeKey(const KeyEvent& event) {
     const unsigned int modifiers = Modifiers(event);
     unsigned int keyCode = SpecialKeyCode(event.virtualKey);
+    // Windows translates Backspace/Enter/Tab/Esc into control characters.
+    // OVIMGeneric checks receivedString before its editing-key branches, so
+    // attaching that text turns an editing key into an invalid radical.
+    // Preserve special-key semantics; PVKeyImpl still supplies " " for Space.
+    if (keyCode) return PVKeyImpl(keyCode, modifiers);
     std::string received;
 
     if (event.control && event.virtualKey >= 'A' && event.virtualKey <= 'Z') {
@@ -455,6 +498,12 @@ void Snapshot(PVLoaderContext* context, EngineResult& result) {
 
 std::string CurrentInputMethod() { return CurrentInputMethodLocked(); }
 
+bool IsInputMethodAvailable(const char* identifier) {
+    if (!identifier) return false;
+    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    return Runtime().isAvailable(identifier);
+}
+
 bool SelectInputMethod(const char* identifier) {
     if (!identifier) return false;
     std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
@@ -463,6 +512,7 @@ bool SelectInputMethod(const char* identifier) {
 
 bool IsInputMethodControlKey(const KeyEvent& event) {
     if (!event.control) return false;
+    if (IsTableInputMethod(CurrentInputMethod())) return false;
 
     const char character = PrintableAsciiFromVirtualKey(event);
     if (event.alt) {
@@ -550,13 +600,19 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
     std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
     Runtime().syncSettings();
     const std::string selectedMethod = Runtime().primaryInputMethod();
-    if (selectedMethod != inputMethod_ &&
-        context_->composingText()->isEmpty() &&
-        context_->readingText()->isEmpty()) {
+    std::wstring previousComposition;
+    if (selectedMethod != inputMethod_) {
+        // Settings can change the selection while another host is composing.
+        // Preserve its visible text before the loader replaces its old context.
+        PVCombinedUTF16TextBuffer combined(*context_->composingText(), *context_->readingText());
+        previousComposition = combined.wideComposedText();
         context_->deactivate();
         delete context_;
         context_ = Runtime().createContext();
-        if (!context_) return result;
+        if (!context_) {
+            result.committedText = previousComposition;
+            return result;
+        }
         inputMethod_ = selectedMethod;
         context_->activate();
     }
@@ -566,6 +622,7 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
     result.handled = context_->handleKeyEvent(&key);
     result.beep = Runtime().service()->shouldBeep();
     Snapshot(context_, result);
+    result.committedText = previousComposition + result.committedText;
     return result;
 }
 

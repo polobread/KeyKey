@@ -12,8 +12,6 @@ namespace KeyKey::WindowsTsf {
 
 class TextService;
 
-inline constexpr GUID kLangBarInputModeGuid = {
-    0x2c77a81e, 0x41cc, 0x4178, {0xa3, 0xa7, 0x5f, 0x8a, 0x98, 0x75, 0x68, 0xe6}};
 inline constexpr GUID kLangBarSwitchLanguageGuid = {
     0xa4ab59e7, 0x9fb0, 0x4e4b, {0x94, 0x9e, 0xa0, 0xd3, 0x15, 0xe8, 0x72, 0xb1}};
 inline constexpr GUID kLangBarFullHalfGuid = {
@@ -26,6 +24,7 @@ public:
     enum class Kind { InputMode, SwitchLanguage, FullHalf, Settings };
 
     LangBarButton(TextService* service, REFGUID guid, Kind kind);
+    static LangBarButton* CreateInputMode(TextService* service);
 
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override;
     STDMETHODIMP_(ULONG) AddRef() override;

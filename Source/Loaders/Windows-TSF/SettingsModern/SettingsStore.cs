@@ -8,8 +8,10 @@ internal static class SettingsStore
 {
     private const string CurrentPrefix = "com.polobread.chichi77-keykey.windows";
     private const string LegacyPrefix = "org.openvanilla.chichi77-keykey.windows";
-    private static readonly string DirectoryPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "chichi77 KeyKey");
+    private static readonly string DirectoryPath =
+        Environment.GetEnvironmentVariable("KEYKEY_TSF_TEST_PROFILE_DIR") is { Length: > 0 } testDirectory
+            ? testDirectory : Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "chichi77 KeyKey");
     private static readonly Lazy<bool> Migrated = new(() => {
         MigrateLegacyPreferences(DirectoryPath);
         return true;
@@ -19,6 +21,8 @@ internal static class SettingsStore
     public static string TraditionalPath => PreferencePath(".TraditionalMandarin");
     public static string SmartPath => PreferencePath(".SmartMandarin");
     public static string AssociatedPath => PreferencePath(".AssociatedPhrase");
+    public static string CangjiePath => PreferencePath(".Generic-cj-cin");
+    public static string SimplexPath => PreferencePath(".Generic-simplex-cin");
 
     internal static bool ReadSmartEscClearPreference(string path)
         => Read(path, "ClearComposingTextWithEscUserChoice", "false") == "true"
@@ -34,7 +38,7 @@ internal static class SettingsStore
     {
         Directory.CreateDirectory(directory);
         foreach (var suffix in new[] { "", ".TraditionalMandarin", ".SmartMandarin",
-                     ".AssociatedPhrase" })
+                     ".AssociatedPhrase", ".Generic-cj-cin", ".Generic-simplex-cin" })
         {
             var current = Path.Combine(directory, CurrentPrefix + suffix + ".plist");
             var legacy = Path.Combine(directory, LegacyPrefix + suffix + ".plist");
@@ -77,7 +81,7 @@ internal static class SettingsStore
 
     public static void Write(string path, IReadOnlyDictionary<string, string> values)
     {
-        Directory.CreateDirectory(DirectoryPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var document = File.Exists(path) ? Open(path) : NewDocument();
         var dict = document.Root?.Element("dict")
             ?? throw new InvalidDataException($"無效的設定檔：{path}");
@@ -91,7 +95,7 @@ internal static class SettingsStore
 
     public static void WriteArray(string path, string key, IEnumerable<string> values)
     {
-        Directory.CreateDirectory(DirectoryPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var document = File.Exists(path) ? Open(path) : NewDocument();
         var dict = document.Root?.Element("dict")
             ?? throw new InvalidDataException($"無效的設定檔：{path}");

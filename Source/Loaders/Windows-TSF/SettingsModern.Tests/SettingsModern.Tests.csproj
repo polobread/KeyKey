@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../SettingsModern/SettingsStore.cs" Link="SettingsStore.cs" />
+    <Compile Include="../SettingsModern/InputMethodSettings.cs" Link="InputMethodSettings.cs" />
   </ItemGroup>
 </Project>
