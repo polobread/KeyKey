@@ -1,0 +1,10 @@
+# Model source hashes describe the canonical LF bytes on every platform.
+DataSource/AISyntheticArticles/typing-articles-v2.jsonl text eol=lf
+DataSource/AISyntheticArticles/typing-articles-v3.jsonl text eol=lf
+DataSource/AISyntheticArticles/typing-articles-v4.jsonl text eol=lf
+DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt text eol=lf
+DataSource/AISyntheticBigram/common-unigram-supplement.tsv text eol=lf
+DataSource/AISyntheticBigram/search-trend-unigram-source.txt text eol=lf
+DataSource/AISyntheticBigram/search-trend-unigram.tsv text eol=lf
+DataSource/AISyntheticBigram/search-trend-unigram-review.tsv text eol=lf
+DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv text eol=lf

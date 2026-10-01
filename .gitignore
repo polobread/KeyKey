@@ -6,6 +6,10 @@ __pycache__/
 .idea/
 .vs/
 Source/Loaders/Windows-TSF/out/
+Source/Loaders/Windows-TSF/Deployment/bin/
+Source/Loaders/Windows-TSF/Deployment/obj/
+Source/Loaders/Windows-TSF/Deployment.Tests/bin/
+Source/Loaders/Windows-TSF/Deployment.Tests/obj/
 Source/Loaders/Android-IME/.gradle/
 Source/Loaders/Android-IME/build/
 Source/Loaders/Android-IME/app/build/

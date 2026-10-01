@@ -1,5 +1,9 @@
 # 琦琦輸入法 Windows TSF frontend
 
+Windows 1.3.1 的兩種安裝流程稽核、舊版遷移設計與待驗收矩陣見
+[Windows 安裝與舊版遷移規劃](../../../docs/WINDOWS_INSTALLATION_1_3_1_PLAN.md)。
+共用安裝核心、兩種入口與文件已依規劃修改；歷代實際安裝包的 VM 升級／移除驗收仍待完成。
+
 Windows 1.3.1 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
 
 This directory contains the Windows 10 and 11 Text Services Framework (TSF)
@@ -25,9 +29,10 @@ and its Xcode project remain unchanged.
   typing-error sound and `Ctrl+\` mode switching
 - Standard, ETen, ETen 26, Hsu, and Hanyu Pinyin Bopomofo layouts, plus a
   switch between Big-5-only candidates and the full CNS11643 character set
-- Traditional Chinese language profiles for Taiwan (`zh-TW`), Hong Kong
-  (`zh-HK`), and Macao (`zh-MO`); Taiwan is enabled by default, while Hong Kong
-  and Macao can be added under those languages
+- One selectable Traditional Chinese profile (`zh-TW`), disabled by default.
+  All regions share this entry; users add it themselves in Settings. Upgrades
+  retire both old Hong Kong/Macao definitions. Users of those old entries must
+  select the shared entry in Settings; personal preferences and data are retained.
 - x86 and x64 builds completed for 1.3.0; a Notepad Bopomofo smoke test passed,
   with broader application testing pending
 
@@ -41,11 +46,12 @@ reference and is not linked into this DLL.
 
 ## Screenshots
 
-The [Windows installation guide](../../../WINDOWS_INSTALL.md) also shows the
-1.3.0 installer welcome and destination pages.
-After installation, select KeyKey under Traditional Chinese (Taiwan), Hong Kong,
-or Macao in the Windows taskbar input selector. The installer does not add
-Windows languages or change the default input method.
+The [Windows installation guide](../../../WINDOWS_INSTALL.md) uses clearly
+labelled 1.3.0 reference captures; the 1.3.1 installer has no destination page.
+After first installation, add KeyKey under Traditional Chinese (Taiwan), Hong
+Kong or Macao in Windows Settings > Language options > Add a keyboard, then
+select it using Win+Space. The shared entry selection is preserved; users of the
+retired regional entries must add and select the shared entry.
 
 In Notepad, Smart Mandarin composes Bopomofo and displays numbered Chinese
 candidate choices. The underline on active composition text may look different
@@ -84,7 +90,7 @@ the Windows light/dark preference.
 
 - Windows 10 or later; development builds have been launched on Windows 11,
   while Windows 10 x64/x86 device verification remains pending
-- .NET 10 SDK for building the self-contained settings app (not needed on user PCs)
+- .NET 10 SDK for building the self-contained settings and deployment apps (not needed on user PCs)
 - Visual Studio 2026 with **Desktop development with C++** (a Visual Studio
   2022 compatibility preset is also included)
 - CMake 3.25 or newer
@@ -116,7 +122,7 @@ run from this directory:
 cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release --target KeyKeySettings
+cmake --build --preset windows-x86-release
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
@@ -124,7 +130,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 ```
 
 The build creates `KeyKeyTsf.dll`, `KeyKeySettings.exe`,
-`KeyKeySettingsBackend.dll`, and `out\build\x64-ninja\Databases\KeyKey.db`.
+`KeyKeySettingsBackend.dll`, `KeyKeyDeployment.exe`, `KeyKeyRegistration.exe`,
+and `out\build\x64-ninja\Databases\KeyKey.db`.
 Keep the settings backend beside the executable;
 Windows Keyboard options and the language-bar settings button both launch it.
 The settings app has a 自訂詞 tab: enter a word and comma-separated Bopomofo
@@ -155,10 +162,10 @@ attribute. Text hosts decide how to render that attribute, so the underline
 may differ between apps. Switching to English mode or away from the TIP ends
 the active composition while keeping its visible text in the document.
 
-The registration script adds **琦琦輸入法** to the current user's Traditional
-Chinese input-method list. Sign out and sign in if it does not immediately
-appear in `Win+Space`. Registration needs elevation because the COM server is
-registered machine-wide.
+The development registration script makes **琦琦輸入法** available in Windows
+Settings. Add it yourself under a Traditional Chinese language's keyboard
+options before selecting it with `Win+Space`. Existing profile choices are
+preserved. Registration needs elevation because COM is machine-wide.
 
 To unregister:
 
@@ -193,17 +200,18 @@ architecture. On the other PC, extract the entire ZIP and copy the folder to a l
 `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd` there. Do not
 install directly from a mapped network drive, NAS, or UNC path: it can become
 inaccessible after UAC elevation and the installer window can close
-immediately. Failures are recorded in `%TEMP%\chichi77-keykey-install.log`.
+immediately. Record any exit code; once deployment starts, diagnostics are in
+`%ProgramFiles%\chichi77 KeyKey\Deployment.log`.
 The elevated installer:
 
 - copies the x64 and x86 DLLs, settings app, database, and notices to
-  `C:\Program Files\chichi77 KeyKey`;
+  `C:\Program Files\chichi77 KeyKey\1.3.1-<fingerprint>`;
 - registers the TSF from that permanent location; and
 - adds **琦琦輸入法** to Windows Installed apps for uninstallation.
 
-Windows shows the registered input method under installed Traditional Chinese
-(Taiwan, Hong Kong, or Macao) languages; sign out and back in if it does not
-appear immediately. The package is unsigned and is intended for trusted home
+On first installation, add the keyboard in Windows Settings under Traditional
+Chinese (Taiwan, Hong Kong or Macao). On upgrade, sign out and back in to load
+the new DLLs; existing keyboard choices are kept. The ZIP is unsigned for trusted home
 testing; Windows may warn after a download.
 
 ## Build and sign a Microsoft Store NSIS EXE
@@ -225,14 +233,14 @@ To build the same unsigned installer locally after building x64 and x86, run:
 The `.unsigned.exe` artifact supports `/S` silent installation but is not
 eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
 settings executable, and the outer installer is unsigned as well.
-It retains product version `1.3.1` but installs into a fingerprinted local
-test directory such as `C:\Program Files\chichi77 KeyKey\1.3.1-test-xxxxxxxxxxxx`.
+It retains product version `1.3.1` and installs into a fingerprinted directory
+such as `C:\Program Files\chichi77 KeyKey\1.3.1-xxxxxxxxxxxx`.
 Rebuilding changed binaries gets a new directory, so an existing text host
 can continue using its previously loaded DLL. Signed production packages use
-the plain version directory, such as `1.3.1`.
+the same version-and-fingerprint naming scheme.
 
-The interactive finish page offers to open the KeyKey settings app by default.
-Silent `/S` installs do not launch the settings app.
+The finish page explains how users add KeyKey in Windows Settings. Installation
+does not launch the settings app, enable a keyboard, or change a default.
 
 Pushing a tag that exactly matches the repository version, such as `v1.3.1`,
 automatically publishes this unsigned EXE, the ZIP package, and SHA-256 files.
@@ -273,9 +281,13 @@ it in `Cert:\LocalMachine\My`. Use `-MakensisPath` if NSIS is not in `PATH` or
 its default installation directory. The script requires NSIS 3.12, copies the
 build outputs to a temporary staging directory, signs and verifies
 `KeyKeyTsf_x64.dll`, `KeyKeyTsf_x86.dll`, `KeyKeySettings.exe`, and
-`KeyKeySettingsBackend.dll`, builds an
+`KeyKeySettingsBackend.dll`, `KeyKeyDeployment.exe` and
+`KeyKeyRegistration_x86.exe`, builds an
 offline x64 installer, and finally signs and verifies the outer EXE. It never
 edits the original build outputs and does not accept or store a PFX password.
+The installed uninstaller is a copy of the signed deployment executable;
+NSIS does not generate a separate unsigned uninstaller. Payload hashes are
+recorded after signing, so the manifest describes the actual installed bytes.
 
 The output is:
 
@@ -290,7 +302,7 @@ case-sensitive:
 
 ```powershell
 .\chichi77-KeyKey-1.3.1-windows-x64-setup.exe /S
-& "$env:ProgramFiles\chichi77 KeyKey\Uninstall.exe" /S
+& "$env:ProgramFiles\chichi77 KeyKey\Uninstall.exe" uninstall --quiet
 ```
 
 For an EXE Store submission, Partner Center takes a versioned HTTPS package URL
@@ -304,9 +316,12 @@ https://github.com/polobread/KeyKey/releases/download/v1.3.1/chichi77-KeyKey-1.3
 
 Do not replace an asset after submitting its URL. In Partner Center select
 `EXE`, architecture `x64`, and enter `/S` as the silent install parameter. The
-installer reports `0` on success, `1633` on a non-x64 system, and `1638` when a
-newer version is already installed. Publish a new versioned URL for every
-update.
+installer and deployment tool report `0` on success, `3010` when file removal
+needs a restart, `1602` on UAC cancellation, `1618` when another deployment is
+running, `1633` for unsupported architecture, and `1638` for a downgrade or
+stale owner. Other failures remain nonzero. Quiet removal needs an elevated
+caller and uses `uninstall --quiet` (the installed ARP QuietUninstallString also
+includes an owner ID). Publish a new versioned URL for every update.
 
 ## Deployment layout
 
@@ -315,20 +330,57 @@ KeyKeyTsf_x64.dll
 KeyKeyTsf_x86.dll
 KeyKeySettings.exe
 KeyKeySettingsBackend.dll
+KeyKeyDeployment.exe
+KeyKeyRegistration_x86.exe
 Databases/
   KeyKey.db
+LICENSES/
 ```
 
-The ZIP installer places this layout directly under
-`C:\Program Files\chichi77 KeyKey`. The NSIS installer places it in a versioned
-subdirectory such as `C:\Program Files\chichi77 KeyKey\1.3.1`; its uninstaller
-remains one level above. Versioned payload directories let an upgrade register
-new DLL paths even while an application still has the previous TSF DLL loaded.
-NSIS registers the new DLLs without unregistering the old ones, so the active
-Taiwan profile stays available throughout the upgrade. It leaves earlier
-payload directories in place because running text hosts can still use their DLL,
-database, and settings executable. Remove those directories only after the old
-text hosts have exited.
+ZIP and NSIS invoke the same deployment executable and use the same layout in
+`C:\Program Files\chichi77 KeyKey\1.3.1-<fingerprint>`. Repair or reinstall before
+a pending reboot uses a fresh `1.3.1-<instance-id>` path. New directory names do
+not contain `test` or `repair`; old directories with those labels remain
+recognizable for migration. The product root holds protected state, a durable
+transaction journal while installing, diagnostics and compatibility uninstall
+entrypoints. Neither installer overwrites an occupied version directory.
+
+Upgrades snapshot the product's two COM views, TSF profiles/categories and ARP
+values, register the new DLLs without `/u`, then commit. Failures restore the
+previous registration; interrupted transactions recover on the next deployment.
+The existing shared profile is preserved, including its user enable state.
+After the main installation commits, TSF APIs unregister exactly the two obsolete
+Hong Kong/Macao definitions in each registry view. No user-hive scan is needed.
+Users who selected a retired entry must add/select the shared entry in Windows
+Settings, including choosing it again as default if desired. Deployment does not
+rewrite language lists or select a replacement for users; personal data is kept.
+Cleanup failure is logged and retried on rerun; it does not undo a working install.
+The native registration bridge reports the actual HRESULT and failure phase.
+Category snapshots read the five exact machine definition keys: TSF enumeration
+can cache an empty list across DLL reloads inside the installer STA apartment.
+The regression test reproduces the old 0x1 vs. required 0x1f01 failure in separate
+processes, then verifies install/remove/reinstall with the corrected snapshot.
+The documented hidden flag was accepted but ignored by RegisterProfile on the
+Windows build used for testing, so deployment does not depend on that flag.
+Earlier payloads remain while installed for existing icon references.
+
+Uninstall checks current ownership, uses the verified new TSF maintenance APIs
+instead of executing old DLLs, and deletes only inventoried, unchanged files.
+Occupied payloads and maintenance files (including the running uninstaller)
+are queued together for removal at restart. Empty version subdirectories are
+removed or queued after their children; the shared root is never queued.
+After all removals/deletion requests succeed, the app list entry is removed.
+Exit 3010 asks for a restart without a second uninstall. Failures retain a retry
+entry. Extra/modified files, per-user data and root diagnostic/state records stay.
+`RemovalQueued` records accepted deletion requests, not proof of reboot completion. Use the current Windows Installed apps entry or a new package's
+`Uninstall.cmd`; saved historical uninstallers outside the managed directory
+cannot be made safe by this code. Yahoo IMM/MSI is a separate product.
+
+`KeyKeyDeployment.exe inspect` is read-only. For package maintenance use
+`install --package <extracted-directory>`, `repair --package <directory>`,
+`uninstall --package <directory>` (can prepare maintenance for a legacy TSF
+installation without registering the new IME), or `cleanup`. Protected/custom
+legacy path inconsistencies stop automatic migration for individual diagnosis.
 
 Runtime preferences are stored under `%APPDATA%\chichi77 KeyKey`. General
 frontend settings share the PlainVanilla loader plist, while Traditional

@@ -1,8 +1,8 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
-    [string] $BuildDirectory = (Join-Path $PSScriptRoot 'out\build\x64-ninja'),
+    [string] $BuildDirectory,
 
-    [string] $X86BuildDirectory = (Join-Path $PSScriptRoot 'out\build\x86'),
+    [string] $X86BuildDirectory,
 
     [ValidateSet('x64', 'x86')]
     [string] $Architecture = 'x64',
@@ -12,6 +12,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell may not populate PSScriptRoot during parameter defaults.
+if (-not $BuildDirectory) { $BuildDirectory = Join-Path $PSScriptRoot 'out\build\x64-ninja' }
+if (-not $X86BuildDirectory) { $X86BuildDirectory = Join-Path $PSScriptRoot 'out\build\x86' }
+. (Join-Path $PSScriptRoot 'Packaging\New-PackageManifest.ps1')
 
 $resolvedBuildDirectory = (Resolve-Path -LiteralPath $BuildDirectory).Path
 function Resolve-BuildArtifact {
@@ -38,6 +42,7 @@ if (-not (Test-Path -LiteralPath $X86BuildDirectory -PathType Container)) {
 }
 $resolvedX86BuildDirectory = (Resolve-Path -LiteralPath $X86BuildDirectory).Path
 $x86DllPath = Resolve-BuildArtifact $resolvedX86BuildDirectory 'KeyKeyTsf.dll'
+$x86RegistrationPath = Resolve-BuildArtifact $resolvedX86BuildDirectory 'KeyKeyRegistration.exe'
 $settingsBuildDirectory = if ($Architecture -eq 'x86') {
     $resolvedX86BuildDirectory
 } else {
@@ -45,6 +50,7 @@ $settingsBuildDirectory = if ($Architecture -eq 'x86') {
 }
 $settingsPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeySettings.exe'
 $settingsBackendPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeySettingsBackend.dll'
+$deploymentPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeyDeployment.exe'
 if ($Architecture -eq 'x64') {
     $nativeDllPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyTsf.dll'
 }
@@ -76,6 +82,8 @@ try {
         -Destination $payloadDirectory
     Copy-Item -LiteralPath $settingsBackendPath `
         -Destination $payloadDirectory
+    Copy-Item -LiteralPath $deploymentPath -Destination $payloadDirectory
+    Copy-Item -LiteralPath $x86RegistrationPath -Destination (Join-Path $payloadDirectory 'KeyKeyRegistration_x86.exe')
     Copy-Item -LiteralPath $databasePath -Destination $databaseDirectory
 
     foreach ($template in 'Install.cmd', 'Install.ps1', 'Uninstall.cmd',
@@ -100,6 +108,9 @@ try {
             'chichi77Collection-LICENSE.txt')
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'THIRD-PARTY-NOTICES.md') `
         -Destination $licenseDirectory
+    Copy-Item -LiteralPath $licenseDirectory -Destination $payloadDirectory -Recurse
+    New-KeyKeyPackageManifest -PackageDirectory $packageRoot -Version $Version `
+        -Architecture $Architecture
 
     [ordered]@{
         name = 'chichi77 KeyKey'
@@ -116,6 +127,13 @@ try {
 }
 finally {
     if (Test-Path -LiteralPath $temporaryRoot -PathType Container) {
+        $resolvedStage = (Resolve-Path -LiteralPath $temporaryRoot).Path
+        $resolvedTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')
+        if ([IO.Path]::GetDirectoryName($resolvedStage) -ne $resolvedTemp -or
+            [IO.Path]::GetFileName($resolvedStage) -notmatch '^chichi77-keykey-package-[0-9a-f]{32}$' -or
+            ((Get-Item -LiteralPath $resolvedStage).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            throw 'Refusing to remove an unexpected package staging path.'
+        }
         Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
     }
 }

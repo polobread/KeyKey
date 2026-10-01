@@ -140,6 +140,7 @@ target_link_libraries(KeyKeyTsf PRIVATE
     advapi32
     gdi32
     ole32
+    oleaut32
     shcore
     shell32
     user32
@@ -193,6 +194,25 @@ set_target_properties(KeyKeyTsf PROPERTIES
     PREFIX ""
 )
 
+file(GLOB KEYKEY_DEPLOYMENT_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/Deployment/*.cs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Deployment/*.csproj"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Deployment/*.manifest")
+add_executable(KeyKeyRegistration RegistrationTool.cpp)
+target_compile_features(KeyKeyRegistration PRIVATE cxx_std_17)
+target_compile_definitions(KeyKeyRegistration PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+add_custom_target(KeyKeyDeployment ALL
+    COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" publish
+            "${CMAKE_CURRENT_SOURCE_DIR}/Deployment/KeyKeyDeployment.csproj"
+            --configuration Release --runtime ${KEYKEY_SETTINGS_RID} --self-contained true
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+            -p:Version=${PROJECT_VERSION} -p:NuGetAudit=false
+            --output "$<TARGET_FILE_DIR:KeyKeyTsf>"
+    DEPENDS KeyKeyTsf KeyKeyRegistration ${KEYKEY_DEPLOYMENT_SOURCES}
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
+    VERBATIM)
+add_dependencies(KeyKeySettings KeyKeyDeployment)
+
 if(TARGET keykey_database)
     add_dependencies(KeyKeyTsf keykey_database)
 endif()
@@ -220,6 +240,10 @@ if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
 endif()
 
 if(BUILD_TESTING)
+    add_test(NAME KeyKeyDeploymentTransactions
+        COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
+            --project "${CMAKE_CURRENT_SOURCE_DIR}/Deployment.Tests/Deployment.Tests.csproj"
+            --configuration Release)
     add_executable(KeyKeyTsfInterfaceSmokeTest TsfInterfaceSmokeTest.cpp)
     target_compile_features(KeyKeyTsfInterfaceSmokeTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfInterfaceSmokeTest PRIVATE
@@ -231,9 +255,19 @@ if(BUILD_TESTING)
     if(MSVC)
         target_compile_options(KeyKeyTsfInterfaceSmokeTest PRIVATE /W4 /permissive- /utf-8)
     endif()
-    target_link_libraries(KeyKeyTsfInterfaceSmokeTest PRIVATE ole32 oleaut32 uuid)
+    target_link_libraries(KeyKeyTsfInterfaceSmokeTest PRIVATE ole32 oleaut32 uuid advapi32)
     add_dependencies(KeyKeyTsfInterfaceSmokeTest KeyKeyTsf)
     add_test(NAME KeyKeyTsfConfigureInterface COMMAND KeyKeyTsfInterfaceSmokeTest)
+
+    add_executable(KeyKeyTsfRegistrationIntegrationTest TsfRegistrationIntegrationTest.cpp)
+    target_compile_features(KeyKeyTsfRegistrationIntegrationTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeyTsfRegistrationIntegrationTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    if(MSVC)
+        target_compile_options(KeyKeyTsfRegistrationIntegrationTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeyTsfRegistrationIntegrationTest PRIVATE ole32 uuid advapi32)
+    add_dependencies(KeyKeyTsfRegistrationIntegrationTest KeyKeyTsf)
+    add_test(NAME KeyKeyTsfRegistrationIsolated COMMAND KeyKeyTsfRegistrationIntegrationTest)
 
     add_executable(KeyKeyEngineSmokeTest EngineSmokeTest.cpp)
     target_compile_features(KeyKeyEngineSmokeTest PRIVATE cxx_std_17)
@@ -291,6 +325,7 @@ endif()
 install(TARGETS KeyKeyTsf RUNTIME DESTINATION . LIBRARY DESTINATION .)
 install(TARGETS KeyKeySettingsBackend RUNTIME DESTINATION .)
 install(FILES "$<TARGET_FILE_DIR:KeyKeyTsf>/KeyKeySettings.exe" DESTINATION .)
+install(FILES "$<TARGET_FILE_DIR:KeyKeyTsf>/KeyKeyDeployment.exe" DESTINATION .)
 if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
     install(FILES "${KEYKEY_DEPLOY_DATABASE}" DESTINATION Databases)
 endif()

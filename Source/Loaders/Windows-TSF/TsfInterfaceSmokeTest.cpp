@@ -33,6 +33,33 @@ int wmain() {
     const auto getClassObject = reinterpret_cast<GetClassObject>(
         GetProcAddress(module, "DllGetClassObject"));
     if (!getClassObject) return 2;
+    using QueryState = HRESULT(__stdcall*)(DWORD*);
+    const auto queryState = reinterpret_cast<QueryState>(
+        GetProcAddress(module, "KeyKeyQueryTsfState"));
+    if (!queryState || !GetProcAddress(module, "KeyKeyRestoreTsfState") ||
+        !GetProcAddress(module, "KeyKeyRegisterTsfState")) return 13;
+    DWORD registrationState = 0;
+    // Query only: this smoke test never registers, activates or removes an IME.
+    if (FAILED(queryState(&registrationState))) return 14;
+    // Existing machine definitions must remain visible even to an account
+    // with no Traditional Chinese language installed (including the sandbox).
+    using namespace KeyKey::WindowsTsf;
+    const LANGID languages[] = { kTraditionalChineseLangId, kHongKongLangId, kMacaoLangId };
+    const GUID profileGuids[] = { kTraditionalChineseProfileGuid, kHongKongProfileGuid, kMacaoProfileGuid };
+    wchar_t clsid[40]{};
+    StringFromGUID2(kTextServiceClsid, clsid, 40);
+    for (unsigned int i = 0; i < 3; ++i) {
+        wchar_t language[16]{}, profile[40]{};
+        swprintf_s(language, L"0x%08x", static_cast<unsigned int>(languages[i]));
+        StringFromGUID2(profileGuids[i], profile, 40);
+        const auto key = std::wstring(L"Software\\Microsoft\\CTF\\TIP\\") + clsid +
+            L"\\LanguageProfile\\" + language + L"\\" + profile;
+        HKEY definition = nullptr;
+        const LONG opened = RegOpenKeyExW(HKEY_LOCAL_MACHINE, key.c_str(), 0, KEY_READ, &definition);
+        if (definition) RegCloseKey(definition);
+        if (opened == ERROR_SUCCESS && !(registrationState & (1u << i))) return 15;
+        if (opened != ERROR_SUCCESS && opened != ERROR_FILE_NOT_FOUND && opened != ERROR_PATH_NOT_FOUND) return 16;
+    }
 
     IClassFactory* factory = nullptr;
     HRESULT result = getClassObject(KeyKey::WindowsTsf::kTextServiceClsid,

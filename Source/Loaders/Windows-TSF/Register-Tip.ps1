@@ -52,8 +52,11 @@ if (-not (Test-Administrator)) {
 
 $systemDirectory = [Environment]::SystemDirectory
 $machine = Get-PeMachine -Path $resolvedDll
-$regsvr32 = if ($machine -eq 0x014C) {
+$regsvr32 = if ($machine -eq 0x014C -and [Environment]::Is64BitOperatingSystem) {
     Join-Path $env:SystemRoot 'SysWOW64\regsvr32.exe'
+}
+elseif ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
+    Join-Path $env:SystemRoot 'Sysnative\regsvr32.exe'
 }
 else {
     Join-Path $env:SystemRoot 'System32\regsvr32.exe'
