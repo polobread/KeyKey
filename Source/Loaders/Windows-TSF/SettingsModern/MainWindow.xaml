@@ -30,10 +30,10 @@
     </StackPanel>
     <Grid DockPanel.Dock="Bottom" Margin="0,14,0,0">
       <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-      <TextBlock Text="版本 1.3.0" VerticalAlignment="Center" Opacity="0.65" />
+      <TextBlock Text="版本 1.3.1" VerticalAlignment="Center" Opacity="0.65" />
       <TextBlock x:Name="Status" Grid.Column="1" Margin="20,0" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
       <StackPanel Grid.Column="2" Orientation="Horizontal">
-        <Button Content="套用" Click="Apply_Click" IsDefault="True" />
+        <Button x:Name="ApplyButton" Content="套用" Click="Apply_Click" IsDefault="True" />
         <Button Content="關閉" Click="Close_Click" IsCancel="True" />
       </StackPanel>
     </Grid>
@@ -47,7 +47,9 @@
               <TextBlock Text="在工作列輸入法選單顯示" FontWeight="SemiBold" Margin="0,10,0,8" />
               <CheckBox x:Name="ShowSmartMandarin" Content="好打注音" Margin="0,0,0,8" />
               <CheckBox x:Name="ShowTraditionalMandarin" Content="傳統注音" Margin="0,0,0,8" />
-              <TextBlock Text="至少保留一種輸入法；工作列選單可直接切換。本版不包含倉頡與簡易。" Opacity="0.7" />
+              <CheckBox x:Name="ShowCangjie" Content="倉頡" Margin="0,0,0,8" />
+              <CheckBox x:Name="ShowSimplex" Content="簡易" Margin="0,0,0,8" />
+              <TextBlock Text="至少保留一種輸入法；工作列選單可直接切換。" Opacity="0.7" />
             </StackPanel>
           </GroupBox>
           <GroupBox Header="選字窗">
@@ -86,6 +88,31 @@
             </StackPanel>
           </GroupBox>
           <TextBlock Text="好打注音會整句組字並學習選字；輸入法可從工作列直接切換。" Opacity="0.7" />
+        </StackPanel></ScrollViewer>
+      </TabItem>
+      <TabItem Header="倉頡／簡易">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="16,20,20,8">
+          <GroupBox Header="倉頡">
+            <StackPanel>
+              <TextBlock Text="最多五碼；空白或 Enter 查詢候選，數字選字。? 代表一個字根，* 代表任意長度字根。" Opacity="0.7" Margin="0,0,0,12" />
+              <CheckBox x:Name="CangjieCommitAtMaximum" Content="輸入滿五碼時自動查詢或送出單一候選" Margin="0,0,0,12" />
+              <CheckBox x:Name="CangjieDynamicFrequency" Content="依選字紀錄調整候選順序" Margin="0,0,0,12" />
+              <CheckBox x:Name="CangjieComposeWhileTyping" Content="邊打邊顯示候選" Checked="TableCompose_Checked" Margin="0,0,0,12" />
+              <CheckBox x:Name="CangjieClearOnError" Content="找不到候選時清除字根" Checked="TableClear_Checked" Margin="0,0,0,12" />
+              <CheckBox x:Name="CangjieRareCharacters" Content="使用全字庫罕用字（CNS11643）" Margin="0,0,0,12" />
+              <TextBlock Text="標點配置" FontWeight="SemiBold" />
+              <ComboBox x:Name="CangjiePunctuation" AutomationProperties.Name="倉頡標點配置" />
+            </StackPanel>
+          </GroupBox>
+          <GroupBox Header="簡易">
+            <StackPanel>
+              <TextBlock Text="最多兩碼；滿兩碼自動查詢或送出單一候選，數字選字、空白翻頁。" Opacity="0.7" Margin="0,0,0,12" />
+              <CheckBox x:Name="SimplexComposeWhileTyping" Content="邊打邊顯示候選" Checked="TableCompose_Checked" Margin="0,0,0,12" />
+              <CheckBox x:Name="SimplexClearOnError" Content="找不到候選時清除字根" Checked="TableClear_Checked" Margin="0,0,0,12" />
+              <CheckBox x:Name="SimplexRareCharacters" Content="使用全字庫罕用字（CNS11643）" />
+            </StackPanel>
+          </GroupBox>
+          <TextBlock Text="邊打邊顯示候選與錯碼清除擇一使用。關閉全字庫時僅顯示 Big-5 可表示的候選字。" Opacity="0.7" />
         </StackPanel></ScrollViewer>
       </TabItem>
       <TabItem Header="關聯詞庫">

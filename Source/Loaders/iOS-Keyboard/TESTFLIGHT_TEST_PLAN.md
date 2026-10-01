@@ -189,7 +189,7 @@ Source/Loaders/iOS-Keyboard/run-simulator-tests.sh
 ### Workflow 1：PR Functional
 
 - Trigger：iOS 路徑、共用資料表、DatabaseCooker 或 project 檔案變更的 pull request。
-- `ci_post_clone.sh` cook `KeyKey.db`。
+- `ci_post_clone.sh` 驗證版控內預先產生的共用 `KeyKey.db`。
 - Test action：`KeyKeyFunctional.xctestplan`，Debug。
 - Destinations：最低支援 iPhone、最新 iPhone、最新 iPad。
 - `Required To Pass = Yes`。

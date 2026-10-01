@@ -12,6 +12,11 @@ $requiredFiles = @(
     'EngineSmokeTest.cpp',
     'FrontendSettings.cpp',
     'FrontendSettings.h',
+    'InputMethods.h',
+    'InputModeState.h',
+    'WindowsTableInputMethod.cpp',
+    'WindowsTableInputMethod.h',
+    'TableInputTest.cpp',
     'Guids.h',
     'KeyKeyEngine.cpp',
     'KeyKeyTsf.rc',
@@ -26,6 +31,7 @@ $requiredFiles = @(
     'SettingsModern\SettingsBackend.cpp',
     'TextService.cpp',
     'TsfInterfaceSmokeTest.cpp',
+    'TsfSystemTrayTest.cpp',
     'VersionInfo.rcinc'
 )
 

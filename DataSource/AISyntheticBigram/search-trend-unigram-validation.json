@@ -1,0 +1,80 @@
+{
+  "format": 1,
+  "source_terms": 550,
+  "source_duplicates": 0,
+  "existing_terms_removed": 393,
+  "custom_terms": 157,
+  "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))",
+  "frequency_range": [1, 100],
+  "reading_overrides": [
+    "新冠肺炎",
+    "載具",
+    "長照",
+    "個資",
+    "個資外洩"
+  ],
+  "candidate_comparison": {
+    "training_observed_only_66_terms": {
+      "total_actions": 331062,
+      "improved_articles": 3,
+      "unchanged_articles": 127,
+      "regressed_articles": 0
+    },
+    "selected_all_157_terms": {
+      "total_actions": 331062,
+      "correction_actions": 10443,
+      "improved_articles": 3,
+      "unchanged_articles": 127,
+      "regressed_articles": 0,
+      "saved_actions": 6,
+      "added_actions": 0
+    }
+  },
+  "targeted_composition": {
+    "terms_already_composed_as_target_before": 111,
+    "terms_composed_as_target_after": 136,
+    "changed_outputs": 25,
+    "remaining_nonfirst_terms": [
+      "長照",
+      "載具",
+      "車貸",
+      "買房",
+      "特休",
+      "挖礦",
+      "攜碼",
+      "網紅",
+      "假新聞",
+      "台劇",
+      "陸劇",
+      "原神",
+      "鳴潮",
+      "手遊",
+      "課金",
+      "指考",
+      "級分",
+      "副食品",
+      "托嬰",
+      "減醣",
+      "低醣"
+    ],
+    "note": "保留原候選排序；不為了讓每個搜尋詞成為第一名而提高到超過語料支持的詞頻"
+  },
+  "fixed_holdout": {
+    "articles": 130,
+    "han_characters": 92889,
+    "fresh_engine_per_article_and_model": true,
+    "learning": "disabled",
+    "previous_selected_total_actions": 331068,
+    "selected_total_actions": 331062,
+    "basic_character_corrections_before": 1270,
+    "basic_character_corrections_after": 1269,
+    "general_character_corrections_before": 2320,
+    "general_character_corrections_after": 2319
+  },
+  "selected_database": {
+    "unigram_rows": 114392,
+    "bigram_rows": 885627,
+    "database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
+    "semantic_sha256": "7b05aabbe8a8d53f905bc5ef3b915049288fbc4bff0da7c21e8efd19eb753676"
+  }
+}

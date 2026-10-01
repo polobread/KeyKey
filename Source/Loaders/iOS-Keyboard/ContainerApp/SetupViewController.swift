@@ -6,7 +6,23 @@ import UniformTypeIdentifiers
 /// carries the settings, so this screen only has to get the user to the point
 /// where the keyboard is enabled and selected.
 final class SetupViewController: UIViewController {
-    private let supporterStore = SupporterStore()
+    private let supporterState: SupporterState = {
+        #if DEBUG
+        if let state = SupporterUIFixture.state { return state }
+        #endif
+        return SupporterState()
+    }()
+    private lazy var supporterStore: SupporterStore = {
+        #if DEBUG
+        if SupporterUIFixture.state != nil {
+            return SupporterStore(supporterState: supporterState,
+                                  client: SupporterUIFixture.storeClient)
+        }
+        #endif
+        return SupporterStore(supporterState: supporterState)
+    }()
+    private let contentStack = UIStackView()
+    private let supporterSection = UIStackView()
     private let supporterPrice = UILabel()
     private let supporterButton = UIButton(configuration: .filled())
     private let restoreButton = UIButton(configuration: .plain())
@@ -29,6 +45,7 @@ final class SetupViewController: UIViewController {
             size: 16, weight: .regular
         )
         subtitle.textColor = .secondaryLabel
+        subtitle.accessibilityIdentifier = "app.subtitle"
 
         let hardwareEditor = UIButton(configuration: .tinted())
         hardwareEditor.setTitle("開啟實體鍵盤編輯器", for: .normal)
@@ -77,6 +94,7 @@ final class SetupViewController: UIViewController {
 
         let supporterTitle = label("支持開發", size: 20, weight: .semibold)
         supporterTitle.textColor = .tintColor
+        supporterTitle.accessibilityIdentifier = "supporter.title"
 
         let supporterDescription = label(
             "琦琦輸入法即使未付費也可以繼續完整使用。如果覺得好用，歡迎一次付費支持後續維護與開發。",
@@ -106,11 +124,19 @@ final class SetupViewController: UIViewController {
         acknowledgements.accessibilityIdentifier = "open-acknowledgements"
         acknowledgements.addTarget(self, action: #selector(openAcknowledgements), for: .touchUpInside)
 
+        let supporterItems: [UIView] = [supporterTitle, supporterDescription, supporterPrice,
+                                        supporterButton, restoreButton]
+        for item in supporterItems {
+            supporterSection.addArrangedSubview(item)
+        }
+        supporterSection.axis = .vertical
+        supporterSection.spacing = 20
+        supporterSection.alignment = .fill
+        supporterSection.accessibilityIdentifier = "supporter.section"
+
         var items: [UIView] = [
             titleBlock, subtitle, hardwareEditor, hardwareEditorNote, inputSettings, userPhrases,
-            steps, openSettings, note,
-            supporterTitle, supporterDescription, supporterPrice,
-            supporterButton, restoreButton, acknowledgements
+            steps, openSettings, note, acknowledgements
         ]
         #if DEBUG
         if !ProcessInfo.processInfo.arguments.contains("-KeyKeySupporterReview") {
@@ -124,7 +150,9 @@ final class SetupViewController: UIViewController {
         }
         #endif
 
-        let stack = UIStackView(arrangedSubviews: items)
+        for item in items { contentStack.addArrangedSubview(item) }
+        let stack = contentStack
+        updateSupporterSectionPosition(supporter: supporterState.isSupporter)
         stack.axis = .vertical
         stack.spacing = 20
         stack.alignment = .fill
@@ -174,6 +202,13 @@ final class SetupViewController: UIViewController {
             DispatchQueue.main.async { [weak self] in self?.openInputFieldTest() }
         }
         #endif
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        var state = supporterStore.state
+        state.supporter = supporterState.isSupporter
+        updateSupporterUI(state)
     }
 
     private var appVersionText: String {
@@ -237,7 +272,20 @@ final class SetupViewController: UIViewController {
         Task { await supporterStore.restore() }
     }
 
+    private func updateSupporterSectionPosition(supporter: Bool) {
+        let destination = supporter ? contentStack.arrangedSubviews.count - 1 : 1
+        if contentStack.arrangedSubviews.firstIndex(of: supporterSection) == destination { return }
+        contentStack.removeArrangedSubview(supporterSection)
+        supporterSection.removeFromSuperview()
+        if supporter {
+            contentStack.addArrangedSubview(supporterSection)
+        } else {
+            contentStack.insertArrangedSubview(supporterSection, at: 1)
+        }
+    }
+
     private func updateSupporterUI(_ state: SupporterStore.ViewState) {
+        updateSupporterSectionPosition(supporter: state.supporter)
         if let formattedPrice = state.formattedPrice, !formattedPrice.isEmpty {
             supporterPrice.text = "一次付費支持：\(formattedPrice)"
             supporterPrice.isHidden = false
@@ -295,7 +343,10 @@ private final class InputMethodSettingsViewController: UIViewController {
     private lazy var phraseSettings = PhraseSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
-    private lazy var modeSettings = BopomofoCompositionModeSettings(
+    private lazy var modeSettings = ChineseInputMethodSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
+    private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
     private lazy var colorSettings = CandidateColorSettings(
@@ -338,13 +389,24 @@ private final class InputMethodSettingsViewController: UIViewController {
             return
         }
 
-        stack.addArrangedSubview(label("注音模式", size: 18))
-        let modes = BopomofoCompositionMode.allCases
+        stack.addArrangedSubview(label("輸入法", size: 18))
+        let modes = ChineseInputMethod.allCases
         let modeControl = UISegmentedControl(items: modes.map(\.displayName))
-        modeControl.selectedSegmentIndex = modes.firstIndex(of: modeSettings.mode) ?? 0
+        modeControl.selectedSegmentIndex = modes.firstIndex(of: modeSettings.method) ?? 0
         modeControl.accessibilityIdentifier = "app-settings.composition-mode"
         modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(modeControl)
+        stack.addArrangedSubview(tableOptionsButton(for: .cangjie))
+        stack.addArrangedSubview(tableOptionsButton(for: .simplex))
+
+        stack.addArrangedSubview(label("注音鍵盤", size: 18))
+        let layouts = BopomofoKeyboardLayout.allCases
+        let layoutControl = UISegmentedControl(items: layouts.map(\.displayName))
+        layoutControl.selectedSegmentIndex = layouts.firstIndex(of: layoutSettings.layout) ?? 0
+        layoutControl.accessibilityIdentifier = "app-settings.keyboard-layout"
+        layoutControl.addTarget(self, action: #selector(layoutChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(layoutControl)
+        stack.addArrangedSubview(label("好打與傳統注音共用配置。選許氏鍵盤時，虛擬鍵盤維持英文鍵帽。", size: 14))
 
         stack.addArrangedSubview(label("候選字底色", size: 18))
         let colors = CandidateColor.allCases
@@ -449,8 +511,48 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     @objc private func close() { dismiss(animated: true) }
 
+    private func tableOptionsButton(for method: ChineseInputMethod) -> UIButton {
+        let button = UIButton(configuration: .tinted())
+        button.setTitle(method.displayName + "設定", for: .normal)
+        button.accessibilityIdentifier = "table-options." + method.rawValue
+        button.showsMenuAsPrimaryAction = true
+        refreshTableOptions(button, for: method)
+        return button
+    }
+
+    private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod) {
+        let options = modeSettings.options(for: method)
+        var children: [UIMenuElement] = options.switches(for: method).map { item in
+            UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self, weak button] _ in
+                guard let self, let button else { return }
+                var next = self.modeSettings.options(for: method)
+                next.toggle(item.key)
+                self.modeSettings.setOptions(next, for: method)
+
+                self.refreshTableOptions(button, for: method)
+            }
+        }
+        if method == .cangjie {
+            children.append(UIMenu(title: "標點", children: ["原字表", "中英混合", "半形"].enumerated().map { index, title in
+                UIAction(title: title, state: options.punctuation == index ? .on : .off) { [weak self, weak button] _ in
+                    guard let self, let button else { return }
+                    var next = self.modeSettings.options(for: method)
+                    next.punctuation = index
+                    self.modeSettings.setOptions(next, for: method)
+
+                    self.refreshTableOptions(button, for: method)
+                }
+            }))
+        }
+        button.menu = UIMenu(title: method.displayName + "設定", children: children)
+    }
+
     @objc private func modeChanged(_ sender: UISegmentedControl) {
-        modeSettings.setMode(BopomofoCompositionMode.allCases[sender.selectedSegmentIndex])
+        modeSettings.setMethod(ChineseInputMethod.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func layoutChanged(_ sender: UISegmentedControl) {
+        layoutSettings.setLayout(BopomofoKeyboardLayout.allCases[sender.selectedSegmentIndex])
     }
 
     @objc private func colorChanged(_ sender: UISegmentedControl) {
@@ -892,6 +994,43 @@ private final class InputFieldTestViewController: UIViewController, UITextFieldD
 
     @objc private func close() {
         dismiss(animated: true)
+    }
+}
+#endif
+
+#if DEBUG
+/// Isolated launch fixtures exercise the UI without changing real entitlements.
+@MainActor
+enum SupporterUIFixture {
+    static let state: SupporterState? = {
+        guard let status = argument("-KeyKeySupporterFixture"),
+              ["expired", "trial", "paid"].contains(status),
+              let defaults = UserDefaults(suiteName: "KeyKey.SupporterUIFixture") else { return nil }
+        defaults.removePersistentDomain(forName: "KeyKey.SupporterUIFixture")
+        let state = SupporterState(defaults: defaults)
+        state.setSupporter(status == "paid")
+        state.recordFirstUse(at: Date().addingTimeInterval(
+            status == "trial" ? -29 * 24 * 60 * 60 : -31 * 24 * 60 * 60
+        ))
+        return state
+    }()
+    static let storeClient = StoreClient()
+
+    static func argument(_ name: String) -> String? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: name), index + 1 < arguments.count else { return nil }
+        return arguments[index + 1]
+    }
+
+    final class StoreClient: SupporterStoreClient {
+        private var entitled = SupporterUIFixture.argument("-KeyKeySupporterFixture") == "paid"
+        func loadPrice() async throws -> String? { "NT$150" }
+        func purchase() async throws -> SupporterPurchaseResult {
+            entitled = true
+            return .verified(finish: {})
+        }
+        func sync() async throws { entitled = true }
+        func hasEntitlement() async -> Bool { entitled }
     }
 }
 #endif

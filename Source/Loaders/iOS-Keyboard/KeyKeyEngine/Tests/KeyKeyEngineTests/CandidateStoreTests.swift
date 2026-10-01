@@ -139,6 +139,34 @@ struct SmartMandarinStoreTests {
         #expect(handoff.finishCompositionForInputHandoff().text.isEmpty)
     }
 
+    @Test("learned single characters cannot split the visible leading phrase at eviction")
+    func learnedWordEviction() throws {
+        for hardware in [false, true] {
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let user = try SmartMandarinUserData(phrasesURL: directory.appendingPathComponent("phrases.db"),
+                learningURL: directory.appendingPathComponent("learning.db"), writablePhrases: true)
+            user.learnCandidate(query: query("ru84"), current: "假")
+            let database = try Database(url: try cookedDatabaseURL())
+            let store = try SmartMandarinStore(database: database, userData: user)
+            let split = try #require(store.compose(readings: [query("fu/3"), query("ru84")], overrides: [:]))
+            #expect(split.segments.map(\.text) == ["請", "假"])
+            #expect(store.evictionLength(readings: [query("fu/3"), query("ru84")], composition: split) == 2)
+            let engine = BopomofoEngine(dictionary: try CandidateStore(database: database),
+                smartSource: store, compositionMode: .smart, hardwareSmartEditing: hardware)
+            let keys = ["fu/3", "ru84", "ul4", "fm4", "s83", "xu3", "j06", "sk7", "fm4", "c93", "1u0 "]
+            var committed = ""
+            for syllable in keys.prefix(hardware ? 11 : 10) {
+                for key in syllable {
+                    if key == " " { committed += engine.space().text }
+                    else { committed += engine.handleSoftKey(String(key)).text }
+                }
+            }
+            #expect(committed == "請假")
+            #expect(committed + engine.composingText == (hardware ? "請假要去哪裡玩呢去海邊" : "請假要去哪裡玩呢去海"))
+        }
+    }
+
     @Test("hardware editor evicts the whole leading phrase at the same boundary as macOS")
     func longSentenceHardwareBoundary() throws {
         let database = try Database(url: try cookedDatabaseURL())

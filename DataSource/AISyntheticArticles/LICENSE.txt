@@ -1,0 +1,40 @@
+AI 文章與 Bigram 資料：暫不提供使用授權
+AI articles and bigram data: no license granted at this time
+
+適用範圍
+本聲明適用於 DataSource/AISyntheticArticles/ 中由本專案以 AI 產生的文章
+（包括樣本、訓練及驗證文章、seed 檔與 JSONL 匯出），以及
+DataSource/AISyntheticBigram/ 中的 AI 合成語料、文章語料快照與衍生的
+bigram 資料、計數及權重。上述資料被轉檔、匯出或併入 KeyKey.db 等資料庫時，
+其中屬於上述資料的部分仍適用本聲明。
+
+目前未就上述資料提供使用、重製、修改、散布、再授權、商業利用、模型訓練或
+評測的許可。需要上述授權者，須另行取得專案權利人的明確書面許可。
+公開可見或可下載，不代表這些資料適用本專案其他部分的 MIT 或 BSD 授權。
+
+本聲明僅保留依法可主張的權利，不主張 AI 輸出、個別詞彙、事實或統計數字
+必然享有著作權；不限制依法無須許可的使用，也不撤回已有效授予的權利或
+平台條款另行賦予的權利。第三方資料、已另行授權的詞庫及程式碼仍依各自
+授權處理；本聲明不把這兩個目錄內的工具程式或其他文件一概改為限制授權。
+
+Scope
+This notice covers project AI-generated articles in DataSource/AISyntheticArticles/
+(including samples, training and validation articles, seed files, and JSONL exports),
+and AI-generated corpora, article corpus snapshots, and derived bigram data,
+counts, and weights in DataSource/AISyntheticBigram/. Covered portions remain
+subject to this notice when converted, exported, or incorporated into databases
+such as KeyKey.db.
+
+No permission is currently granted to use, reproduce, modify, distribute,
+sublicense, commercially exploit, train models on, or evaluate models with the
+covered data. Obtain separate express written permission from the project rights
+holder for those permissions. Public availability does not place the covered data
+under the MIT or BSD licenses used elsewhere in this repository.
+
+Only rights recognized by applicable law are reserved. This notice does not assert
+that AI output, individual words, facts, or statistics necessarily qualify for
+copyright protection. It does not restrict uses that require no permission under
+law, revoke valid permissions previously granted, or override platform-granted
+rights. Third-party data, separately licensed collections, and source code retain
+their respective terms. This is not a blanket restriction on tools or documentation
+in these directories.

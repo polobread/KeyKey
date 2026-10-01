@@ -90,7 +90,11 @@ jobs:
         working-directory: Source/Loaders/Windows-TSF
         run: |
           cmake --preset windows-x86
-          cmake --build --preset windows-x86-release --target KeyKeySettings
+          cmake --build --preset windows-x86-release
+
+      - name: Test x86
+        working-directory: Source/Loaders/Windows-TSF
+        run: ctest --test-dir .\out\build\x86 -C Release --output-on-failure
 
       - name: Install NSIS 3.12
         run: |
@@ -129,6 +133,13 @@ jobs:
             -Version $env:VERSION `
             -MakensisPath $env:MAKENSIS_PATH `
             -UnsignedTest
+
+      - name: Verify actual ZIP contents
+        working-directory: Source/Loaders/Windows-TSF
+        run: |
+          python Packaging/verify-package.py `
+            "out/package/chichi77-KeyKey-$env:VERSION-windows-x64.zip" `
+            "out/package/chichi77-KeyKey-$env:VERSION-windows-x86.zip"
 
       - name: Stage artifact and checksum
         run: |

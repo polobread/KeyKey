@@ -8,11 +8,10 @@ cooker_dir="$repository_root/Source/Distributions/Takao/DatabaseCooker"
 database_path="$repository_root/Source/Distributions/Takao/CookedDatabase/KeyKey.db"
 project_dir="$repository_root/Source/Loaders/iOS-Keyboard"
 
-echo "Cooking KeyKey.db for the iOS keyboard extension..."
-make -C "$cooker_dir"
+echo "Verifying the shared KeyKey.db for the iOS keyboard extension..."
 
 if [ ! -s "$database_path" ]; then
-    echo "error: Database cooker did not create a non-empty KeyKey.db at $database_path" >&2
+    echo "error: Shared KeyKey.db is missing or empty at $database_path" >&2
     exit 1
 fi
 

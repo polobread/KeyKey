@@ -14,6 +14,44 @@ import org.junit.Test;
 
 public final class BopomofoEngineTest {
     @Test
+    public void hsuTraditionalCandidatesAndSwitchBackToStandard() throws Exception {
+        BopomofoEngine engine = engineWith("su3 你\nsu3 妳\n");
+        assertEquals(BopomofoKeyboardLayout.STANDARD, engine.keyboardLayout());
+        engine.setKeyboardLayout(BopomofoKeyboardLayout.HSU);
+        type(engine, "nef");
+        assertEquals("ㄋㄧˇ", engine.readingText());
+        assertEquals(List.of("你", "妳"), engine.displayedCandidates());
+        engine.backspace();
+        assertEquals("ㄋㄧ", engine.readingText());
+        engine.handleSoftKey("f");
+        assertEquals("妳", engine.handleHardwareCharacter('2').committedText());
+        engine.setKeyboardLayout(BopomofoKeyboardLayout.STANDARD);
+        type(engine, "su3");
+        assertEquals(List.of("你", "妳"), engine.displayedCandidates());
+        assertEquals("你", engine.handleHardwareCharacter('1').committedText());
+    }
+
+    @Test
+    public void hsuSmartTouchAndHardwareKeepTextAcrossLayoutChanges() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            BopomofoEngine engine = smartEngine();
+            engine.setKeyboardLayout(BopomofoKeyboardLayout.HSU);
+            if (hardware) typeHardware(engine, "nefhwf"); else type(engine, "nefhwf");
+            assertEquals("你好", engine.composingText());
+            engine.handleSoftKey("q");
+            assertFalse(engine.displayedCandidates().isEmpty());
+            assertEquals("你好", engine.setKeyboardLayout(BopomofoKeyboardLayout.STANDARD).committedText());
+            assertFalse(engine.hasComposition());
+            type(engine, "su3cl3");
+            assertEquals("你好", engine.composingText());
+            assertEquals("你好", engine.setKeyboardLayout(BopomofoKeyboardLayout.HSU).committedText());
+            type(engine, "nefhwf");
+            assertEquals("你好，", engine.handleSoftKey(",").committedText());
+            assertEquals("〈", engine.handleSoftKey("<").committedText());
+        }
+    }
+
+    @Test
     public void toneOpensCandidatesAndHardwareNumberSelects() throws Exception {
         BopomofoEngine engine = engineWith("su3 你\nsu3 擬\n");
 
@@ -514,6 +552,13 @@ public final class BopomofoEngineTest {
         assertEquals("你".repeat(9) + "尼", result.committedText());
         assertTrue(result.sendEnter());
         assertFalse(engine.hasComposition());
+
+        BopomofoEngine hardware = new BopomofoEngine(CinDictionary.empty(), source,
+                BopomofoCompositionMode.SMART);
+        typeHardware(hardware, "su3".repeat(10) + "su");
+        assertEquals("你".repeat(10) + "尼", hardware.enter().committedText());
+        assertFalse(hardware.hasComposition());
+        assertEquals("", hardware.finishCompositionForInputHandoff().committedText());
     }
 
     @Test
@@ -786,6 +831,18 @@ public final class BopomofoEngineTest {
         assertEquals("要去哪裡玩呢去海邊", learnedHardware.composingText());
         assertEquals("請假要去哪裡玩呢去海邊",
                 learnedCommitted + learnedHardware.enter().committedText());
+
+        BopomofoEngine learnedTouch = new BopomofoEngine(dictionary, learnedSplit,
+                BopomofoCompositionMode.SMART);
+        StringBuilder touchPrefix = new StringBuilder();
+        for (String syllable : java.util.Arrays.copyOf(keys, 10)) {
+            for (char key : syllable.toCharArray()) {
+                touchPrefix.append(learnedTouch.handleSoftKey(String.valueOf(key)).committedText());
+            }
+        }
+        assertEquals("請假", touchPrefix.toString());
+        assertEquals("要去哪裡玩呢去海", learnedTouch.composingText());
+
     }
 
     @Test
@@ -896,6 +953,25 @@ public final class BopomofoEngineTest {
     }
 
     @Test
+    public void hardwareLiteralRowsCommitWithoutLosingComposition() throws Exception {
+        BopomofoEngine smart = smartEngine();
+        typeHardware(smart, "su3cl3");
+        assertEquals("你好1", smart.commitHardwareLiteral('1').committedText());
+        assertFalse(smart.hasComposition());
+        assertEquals("!", smart.commitHardwareLiteral('!').committedText());
+        typeHardware(smart, "su3cl3");
+        assertEquals("你好-", smart.commitHardwareLiteral('-').committedText());
+        assertEquals("_", smart.commitHardwareLiteral('_').committedText());
+
+        BopomofoEngine traditional = engineWith("su3 你\nsu3 擬\n");
+        typeHardware(traditional, "su3");
+        assertEquals("你2", traditional.commitHardwareLiteral('2').committedText());
+        assertFalse(traditional.hasComposition());
+        typeHardware(traditional, "su3");
+        assertEquals("你[", traditional.commitHardwareLiteral('[').committedText());
+    }
+
+    @Test
     public void hardwareSmartCursorChangesAnEarlierCharacter() throws Exception {
         BopomofoEngine engine = smartEngine();
         typeHardware(engine, "su3cl3");
@@ -983,8 +1059,61 @@ public final class BopomofoEngineTest {
         assertEquals("您好", engine.enter().committedText());
     }
 
+    @Test
+    public void touchFallbackSelectionPreservesComposedSentence() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        type(engine, "su3cl3vup3");
+        assertEquals(List.of("伈", "𨓇"), engine.displayedCandidates());
+        assertEquals("你好𨓇", engine.selectDisplayedCandidate(1).committedText());
+        assertFalse(engine.hasComposition());
+    }
+
+    @Test
+    public void learningUsesContextAfterRecomposition() {
+        for (boolean hardware : new boolean[]{false, true}) {
+            java.util.ArrayList<String> learned = new java.util.ArrayList<>();
+            SmartMandarinSource source = new SmartMandarinSource() {
+                @Override
+                public SmartMandarinComposition compose(List<String> readings,
+                                                         Map<Integer, String> overrides) {
+                    java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
+                    for (int i = 0; i < readings.size(); ++i) {
+                        String text = overrides.getOrDefault(i,
+                                i == 0 ? ("郝".equals(overrides.get(1)) ? "妳" : "你") : "好");
+                        segments.add(new SmartMandarinSegment(i, 1, readings.get(i), text));
+                    }
+                    return new SmartMandarinComposition(segments.stream()
+                            .map(SmartMandarinSegment::text).collect(java.util.stream.Collectors.joining()),
+                            List.copyOf(segments));
+                }
+                @Override
+                public List<String> candidates(List<String> readings, int index,
+                                               SmartMandarinComposition composition) {
+                    return List.of("好", "郝");
+                }
+                @Override
+                public void learnSelection(List<String> readings, int index, String selected,
+                                           SmartMandarinComposition composition) {
+                    learned.add(composition.text());
+                }
+            };
+            BopomofoEngine engine = new BopomofoEngine(CinDictionary.empty(), source,
+                    BopomofoCompositionMode.SMART);
+            if (hardware) {
+                typeHardware(engine, "su3cl3");
+                engine.handleHardwareSpace();
+            } else {
+                type(engine, "su3cl3");
+                assertTrue(engine.selectTouchSmartCell(1));
+            }
+            engine.selectDisplayedCandidate(1);
+            assertEquals("妳郝", engine.composingText());
+            assertEquals(List.of("妳郝"), learned);
+        }
+    }
+
     private BopomofoEngine smartEngine() throws Exception {
-        String cin = "%chardef begin\nsu3 你\nsu3 妳\ncl3 好\n%chardef end\n";
+        String cin = "%chardef begin\nsu3 你\nsu3 妳\ncl3 好\nvup3 伈\nvup3 𨓇\n%chardef end\n";
         CinDictionary dictionary = CinDictionary.load(new ByteArrayInputStream(
                 cin.getBytes(StandardCharsets.UTF_8)));
         BopomofoReading firstReading = new BopomofoReading();

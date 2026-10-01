@@ -1,8 +1,8 @@
-[CmdletBinding(DefaultParameterSetName = 'Signed')]
+﻿[CmdletBinding(DefaultParameterSetName = 'Signed')]
 param(
-    [string] $BuildDirectory = (Join-Path $PSScriptRoot 'out\build\x64-ninja'),
+    [string] $BuildDirectory,
 
-    [string] $X86BuildDirectory = (Join-Path $PSScriptRoot 'out\build\x86'),
+    [string] $X86BuildDirectory,
 
     [ValidatePattern('^[0-9]+(?:\.[0-9]+){1,3}$')]
     [string] $Version,
@@ -11,6 +11,9 @@ param(
     [string] $Publisher = 'chichi77 KeyKey',
 
     [string] $MakensisPath,
+
+    [ValidatePattern('^[A-Za-z0-9-]{1,40}$')]
+    [string] $BuildLabel,
 
     [Parameter(Mandatory = $true, ParameterSetName = 'Signed')]
     [string] $CertificateThumbprint,
@@ -30,6 +33,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell may not populate PSScriptRoot during parameter defaults.
+if (-not $BuildDirectory) { $BuildDirectory = Join-Path $PSScriptRoot 'out\build\x64-ninja' }
+if (-not $X86BuildDirectory) { $X86BuildDirectory = Join-Path $PSScriptRoot 'out\build\x86' }
+. (Join-Path $PSScriptRoot 'Packaging\New-PackageManifest.ps1')
 $requiredNsisVersion = [version]'3.12'
 
 if (-not $Version) {
@@ -241,8 +248,10 @@ $resolvedBuildDirectory = (Resolve-Path -LiteralPath $BuildDirectory).Path
 $resolvedX86BuildDirectory = (Resolve-Path -LiteralPath $X86BuildDirectory).Path
 $x64DllPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyTsf.dll'
 $x86DllPath = Resolve-BuildArtifact $resolvedX86BuildDirectory 'KeyKeyTsf.dll'
+$x86RegistrationPath = Resolve-BuildArtifact $resolvedX86BuildDirectory 'KeyKeyRegistration.exe'
 $settingsPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeySettings.exe'
 $settingsBackendPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeySettingsBackend.dll'
+$deploymentPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyDeployment.exe'
 $databasePath = Resolve-BuildArtifact $resolvedBuildDirectory 'Databases\KeyKey.db'
 Assert-PeMachine -FilePath $x64DllPath -ExpectedMachine 0x8664 `
     -Description 'The x64 TSF DLL'
@@ -252,6 +261,10 @@ Assert-PeMachine -FilePath $settingsPath -ExpectedMachine 0x8664 `
     -Description 'The settings executable'
 Assert-PeMachine -FilePath $settingsBackendPath -ExpectedMachine 0x8664 `
     -Description 'The settings backend'
+Assert-PeMachine -FilePath $deploymentPath -ExpectedMachine 0x8664 `
+    -Description 'The deployment executable'
+Assert-PeMachine -FilePath $x86RegistrationPath -ExpectedMachine 0x014C `
+    -Description 'The x86 registration bridge'
 $resolvedMakensis = Resolve-Makensis -RequestedPath $MakensisPath
 Assert-MakensisVersion -ToolPath $resolvedMakensis `
     -RequiredVersion $requiredNsisVersion
@@ -265,20 +278,6 @@ while ($versionParts.Count -lt 4) {
 }
 $productVersion = $versionParts[0..3] -join '.'
 
-$fingerprintParts = @($x64DllPath, $x86DllPath, $settingsPath, $settingsBackendPath,
-    $databasePath, (Join-Path $PSScriptRoot 'Packaging\Store-Installer.nsi')) | ForEach-Object {
-    (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash
-}
-$sha256 = [Security.Cryptography.SHA256]::Create()
-try {
-    $digest = $sha256.ComputeHash([Text.Encoding]::ASCII.GetBytes(
-        ($fingerprintParts -join '')))
-}
-finally { $sha256.Dispose() }
-$payloadFingerprint = [BitConverter]::ToString($digest).Replace('-', '').Substring(0, 12).ToLowerInvariant()
-$localTestSuffix = if ($UnsignedTest) { "-test-$payloadFingerprint" } else { '' }
-$installSubdirectory = "$Version$localTestSuffix"
-
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $packagingDirectory = Join-Path $PSScriptRoot 'Packaging'
 $nsisSourcePath = Join-Path $packagingDirectory 'Store-Installer.nsi'
@@ -289,11 +288,12 @@ $payloadDirectory = Join-Path $workDirectory 'Payload'
 $databaseDirectory = Join-Path $payloadDirectory 'Databases'
 $licenseDirectory = Join-Path $workDirectory 'LICENSES'
 $unsignedSuffix = if ($UnsignedTest) { '.unsigned' } else { '' }
+$buildSuffix = if ($BuildLabel) { "-$BuildLabel" } else { '' }
 $installerPath = Join-Path $outputDirectory (
-    "chichi77-KeyKey-$Version-windows-x64-setup$unsignedSuffix.exe")
+    "chichi77-KeyKey-$Version-windows-x64-setup$buildSuffix$unsignedSuffix.exe")
 $checksumPath = "$installerPath.sha256"
 $builtInstallerPath = Join-Path $workDirectory (
-    "chichi77-KeyKey-$Version-windows-x64-setup$unsignedSuffix.exe")
+    "chichi77-KeyKey-$Version-windows-x64-setup$buildSuffix$unsignedSuffix.exe")
 
 $normalizedThumbprint = $null
 $resolvedSignTool = $null
@@ -319,10 +319,14 @@ try {
     $stagedX86Dll = Join-Path $payloadDirectory 'KeyKeyTsf_x86.dll'
     $stagedSettings = Join-Path $payloadDirectory 'KeyKeySettings.exe'
     $stagedSettingsBackend = Join-Path $payloadDirectory 'KeyKeySettingsBackend.dll'
+    $stagedDeployment = Join-Path $payloadDirectory 'KeyKeyDeployment.exe'
+    $stagedRegistration = Join-Path $payloadDirectory 'KeyKeyRegistration_x86.exe'
     Copy-Item -LiteralPath $x64DllPath -Destination $stagedX64Dll
     Copy-Item -LiteralPath $x86DllPath -Destination $stagedX86Dll
     Copy-Item -LiteralPath $settingsPath -Destination $stagedSettings
     Copy-Item -LiteralPath $settingsBackendPath -Destination $stagedSettingsBackend
+    Copy-Item -LiteralPath $deploymentPath -Destination $stagedDeployment
+    Copy-Item -LiteralPath $x86RegistrationPath -Destination $stagedRegistration
     Copy-Item -LiteralPath $databasePath -Destination $databaseDirectory
 
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'README.md') `
@@ -344,7 +348,7 @@ try {
         -Destination $licenseDirectory
 
     if (-not $UnsignedTest) {
-        $peFiles = @($stagedX64Dll, $stagedX86Dll, $stagedSettings, $stagedSettingsBackend)
+        $peFiles = @($stagedX64Dll, $stagedX86Dll, $stagedSettings, $stagedSettingsBackend, $stagedDeployment, $stagedRegistration)
         Invoke-SignFiles -FilePath $peFiles -ToolPath $resolvedSignTool `
             -Thumbprint $normalizedThumbprint `
             -Rfc3161TimestampUrl $TimestampUrl `
@@ -354,6 +358,10 @@ try {
         }
     }
 
+    Copy-Item -LiteralPath $licenseDirectory -Destination $payloadDirectory -Recurse
+    New-KeyKeyPackageManifest -PackageDirectory $workDirectory -Version $Version `
+        -Architecture x64 -Signed (-not $UnsignedTest)
+
     if (-not (Test-Path -LiteralPath $nsisSourcePath -PathType Leaf)) {
         throw "The NSIS source is missing: $nsisSourcePath"
     }
@@ -362,10 +370,9 @@ try {
         '/INPUTCHARSET', 'UTF8',
         "/DVERSION=$Version",
         "/DPRODUCT_VERSION=$productVersion",
-        "/DINSTALL_SUBDIRECTORY=$installSubdirectory",
-        "/DPAYLOAD_FINGERPRINT=$payloadFingerprint",
         "/DPUBLISHER=$Publisher",
         "/DPAYLOAD_DIR=$payloadDirectory",
+        "/DMANIFEST_PATH=$(Join-Path $workDirectory 'PackageManifest.json')",
         "/DLICENSE_DIR=$licenseDirectory",
         "/DICON_PATH=$(Join-Path $PSScriptRoot 'chichi77.ico')",
         "/DOUTPUT_FILE=$builtInstallerPath",
@@ -402,6 +409,13 @@ try {
 }
 finally {
     if (Test-Path -LiteralPath $workDirectory -PathType Container) {
+        $resolvedStage = (Resolve-Path -LiteralPath $workDirectory).Path
+        $resolvedOutput = [IO.Path]::GetFullPath($outputDirectory).TrimEnd('\')
+        if ([IO.Path]::GetDirectoryName($resolvedStage) -ne $resolvedOutput -or
+            [IO.Path]::GetFileName($resolvedStage) -notmatch '^\.work-[0-9a-f]{32}$' -or
+            ((Get-Item -LiteralPath $resolvedStage).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            throw 'Refusing to remove an unexpected NSIS staging path.'
+        }
         Remove-Item -LiteralPath $workDirectory -Recurse -Force
     }
 }

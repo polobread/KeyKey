@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -22,14 +23,22 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public final class SettingsActivity extends Activity implements SupporterBillingManager.Listener {
     private final ArrayList<CheckBox> collectionChecks = new ArrayList<>();
     private TextView collectionStatus;
+    private final Map<String, SettingsGroup> settingsGroups = new LinkedHashMap<>();
+    private LinearLayout settingsContent;
+    private LinearLayout supporterSection;
+    private ScrollView settingsScroll;
+    private TextView supporterTitle;
+    private TextView supporterDescription;
     private TextView supporterPrice;
     private Button supporterButton;
     private SupporterBillingManager supporterBillingManager;
@@ -42,6 +51,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         int horizontalPadding = dp(24);
         int verticalPadding = dp(24);
         ScrollView scroll = new ScrollView(this);
+        settingsScroll = scroll;
         scroll.setFillViewport(true);
         scroll.setBackgroundColor(getColor(R.color.keykey_surface));
         UiInsets.applySystemPadding(scroll, horizontalPadding, verticalPadding,
@@ -51,6 +61,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         content.setOrientation(LinearLayout.VERTICAL);
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         content.setBackgroundColor(getColor(R.color.keykey_surface));
+        settingsContent = content;
         scroll.addView(content, new ScrollView.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -61,11 +72,16 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         title.setGravity(Gravity.CENTER);
         content.addView(title, matchWrap(dp(0), dp(32)));
 
+        LinearLayout methodContent = new LinearLayout(this);
+        methodContent.setOrientation(LinearLayout.VERTICAL);
+        methodContent.setPadding(dp(16), dp(12), dp(16), dp(8));
+        methodContent.setBackground(sectionBackground());
+        content.addView(methodContent, matchWrap(dp(0), dp(16)));
         TextView compositionModeLabel = new TextView(this);
         compositionModeLabel.setText(R.string.composition_mode_title);
         compositionModeLabel.setTextSize(18);
         compositionModeLabel.setTextColor(Color.DKGRAY);
-        content.addView(compositionModeLabel, matchWrap(dp(0), dp(4)));
+        methodContent.addView(compositionModeLabel, matchWrap(dp(0), dp(4)));
 
         Spinner compositionMode = new Spinner(this);
         compositionMode.setContentDescription(getString(R.string.composition_mode_title));
@@ -73,36 +89,85 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 R.array.composition_modes, android.R.layout.simple_spinner_item);
         compositionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         compositionMode.setAdapter(compositionAdapter);
-        compositionMode.setSelection(BopomofoCompositionModeSettings.mode(this)
-                == BopomofoCompositionMode.SMART ? 0 : 1);
+        compositionMode.setSelection(ChineseInputMethodSettings.method(this).ordinal());
         compositionMode.setOnItemSelectedListener(
                 new android.widget.AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(android.widget.AdapterView<?> parent,
                                                android.view.View view, int position, long id) {
-                        BopomofoCompositionModeSettings.setMode(SettingsActivity.this,
-                                position == 0 ? BopomofoCompositionMode.SMART
-                                        : BopomofoCompositionMode.TRADITIONAL);
+                        ChineseInputMethodSettings.setMethod(SettingsActivity.this,
+                                ChineseInputMethod.values()[position]);
                     }
 
                     @Override public void onNothingSelected(
                             android.widget.AdapterView<?> parent) {}
                 });
-        content.addView(compositionMode, matchWrap(dp(0), dp(8)));
+        methodContent.addView(compositionMode, matchWrap(dp(0), dp(8)));
 
+        SettingsGroup compositionGroup = addSettingsGroup(content, savedInstanceState,
+                "composition", R.string.settings_group_composition,
+                R.string.settings_group_composition_summary, false);
+        LinearLayout compositionContent = compositionGroup.body;
+        updateCompositionSummary(compositionGroup.summary);
         TextView compositionModeDescription = new TextView(this);
         compositionModeDescription.setText(R.string.composition_mode_description);
         compositionModeDescription.setTextSize(14);
         compositionModeDescription.setTextColor(Color.GRAY);
         compositionModeDescription.setLineSpacing(0, 1.2f);
-        content.addView(compositionModeDescription, matchWrap(dp(0), dp(24)));
+        compositionContent.addView(compositionModeDescription, matchWrap(dp(0), dp(24)));
+
+        CheckBox bigramContext = new CheckBox(this);
+        bigramContext.setText(R.string.smart_bigram_enabled);
+        bigramContext.setTextSize(16);
+        bigramContext.setTextColor(Color.DKGRAY);
+        bigramContext.setMinHeight(dp(48));
+        bigramContext.setChecked(BopomofoCompositionModeSettings.bigramEnabled(this));
+        bigramContext.setOnCheckedChangeListener((button, checked) -> {
+            BopomofoCompositionModeSettings.setBigramEnabled(SettingsActivity.this, checked);
+            updateCompositionSummary(compositionGroup.summary);
+        });
+        compositionContent.addView(bigramContext, matchWrap(dp(0), dp(8)));
+        TextView bigramDescription = new TextView(this);
+        bigramDescription.setText(R.string.smart_bigram_description);
+        bigramDescription.setTextSize(14);
+        bigramDescription.setTextColor(Color.GRAY);
+        bigramDescription.setLineSpacing(0, 1.2f);
+        compositionContent.addView(bigramDescription, matchWrap(dp(0), dp(24)));
+
+        TextView keyboardLayoutLabel = new TextView(this);
+        keyboardLayoutLabel.setText(R.string.bopomofo_keyboard_layout);
+        keyboardLayoutLabel.setTextSize(18);
+        keyboardLayoutLabel.setTextColor(Color.DKGRAY);
+        compositionContent.addView(keyboardLayoutLabel, matchWrap(dp(0), dp(4)));
+        Spinner keyboardLayout = new Spinner(this);
+        keyboardLayout.setContentDescription(getString(R.string.bopomofo_keyboard_layout));
+        ArrayAdapter<CharSequence> keyboardLayoutAdapter = ArrayAdapter.createFromResource(this,
+                R.array.bopomofo_keyboard_layouts, android.R.layout.simple_spinner_item);
+        keyboardLayoutAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        keyboardLayout.setAdapter(keyboardLayoutAdapter);
+        keyboardLayout.setSelection(BopomofoKeyboardLayoutSettings.layout(this)
+                == BopomofoKeyboardLayout.HSU ? 1 : 0);
+        keyboardLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,
+                    android.view.View view, int position, long id) {
+                BopomofoKeyboardLayoutSettings.setLayout(SettingsActivity.this,
+                        position == 1 ? BopomofoKeyboardLayout.HSU : BopomofoKeyboardLayout.STANDARD);
+                updateCompositionSummary(compositionGroup.summary);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        compositionContent.addView(keyboardLayout, matchWrap(dp(0), dp(8)));
+        TextView keyboardLayoutDescription = new TextView(this);
+        keyboardLayoutDescription.setText(R.string.bopomofo_keyboard_layout_description);
+        keyboardLayoutDescription.setTextSize(14);
+        compositionContent.addView(keyboardLayoutDescription, matchWrap(dp(0), dp(24)));
 
         Button userPhrases = new Button(this);
         userPhrases.setText("管理好打注音自訂詞");
         userPhrases.setContentDescription("管理好打注音自訂詞");
         userPhrases.setOnClickListener(view ->
                 startActivity(new Intent(this, UserPhrasesActivity.class)));
-        content.addView(userPhrases, matchWrap(dp(0), dp(8)));
+        compositionContent.addView(userPhrases, matchWrap(dp(0), dp(8)));
 
         Button resetLearning = new Button(this);
         resetLearning.setText("重設好打注音學習紀錄");
@@ -118,25 +183,40 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                         Toast.makeText(this, "無法重設學習紀錄", Toast.LENGTH_LONG).show();
                     }
                 }).show());
-        content.addView(resetLearning, matchWrap(dp(0), dp(24)));
+        compositionContent.addView(resetLearning, matchWrap(dp(0), dp(24)));
 
+        LinearLayout tableContent = addSettingsGroup(content, savedInstanceState,
+                "table", R.string.settings_group_table,
+                R.string.settings_group_table_summary, false).body;
+        TextView tableDescription = new TextView(this);
+        tableDescription.setText(R.string.settings_group_table_description);
+        tableDescription.setTextSize(14);
+        tableDescription.setTextColor(Color.GRAY);
+        tableDescription.setLineSpacing(0, 1.2f);
+        tableContent.addView(tableDescription, matchWrap(dp(0), dp(16)));
+        addTableSettings(tableContent, ChineseInputMethod.CANGJIE);
+        addTableSettings(tableContent, ChineseInputMethod.SIMPLEX);
+
+        LinearLayout appearanceContent = addSettingsGroup(content, savedInstanceState,
+                "appearance", R.string.settings_group_appearance,
+                R.string.settings_group_appearance_summary, false).body;
         TextView label = new TextView(this);
         label.setText(R.string.haptic_feedback_title);
         label.setTextSize(18);
         label.setTextColor(Color.DKGRAY);
-        content.addView(label, matchWrap(dp(0), dp(8)));
+        appearanceContent.addView(label, matchWrap(dp(0), dp(8)));
 
         TextView value = new TextView(this);
         value.setTextSize(16);
         value.setTextColor(getColor(R.color.keykey_blue_dark));
         value.setGravity(Gravity.CENTER);
-        content.addView(value, matchWrap(dp(0), dp(12)));
+        appearanceContent.addView(value, matchWrap(dp(0), dp(12)));
 
         SeekBar duration = new SeekBar(this);
         duration.setMax(HapticSettings.maxSelectionIndex());
         duration.setProgress(HapticSettings.selectionForDurationMs(
                 HapticSettings.durationMs(this)));
-        content.addView(duration, matchWrap(dp(0), dp(4)));
+        appearanceContent.addView(duration, matchWrap(dp(0), dp(4)));
 
         LinearLayout endpoints = new LinearLayout(this);
         endpoints.setOrientation(LinearLayout.HORIZONTAL);
@@ -144,14 +224,14 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         TextView maximum = endpointLabel(R.string.haptic_maximum, Gravity.END);
         endpoints.addView(zero, weightedWrap());
         endpoints.addView(maximum, weightedWrap());
-        content.addView(endpoints, matchWrap(dp(0), dp(24)));
+        appearanceContent.addView(endpoints, matchWrap(dp(0), dp(24)));
 
         TextView description = new TextView(this);
         description.setText(R.string.haptic_feedback_description);
         description.setTextSize(14);
         description.setTextColor(Color.GRAY);
         description.setLineSpacing(0, 1.2f);
-        content.addView(description, matchWrap(dp(0), dp(16)));
+        appearanceContent.addView(description, matchWrap(dp(0), dp(16)));
 
         CheckBox keyPreview = new CheckBox(this);
         keyPreview.setText(R.string.key_preview_enabled);
@@ -161,20 +241,20 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         keyPreview.setChecked(KeyPreviewSettings.enabled(this));
         keyPreview.setOnCheckedChangeListener((button, checked) ->
                 KeyPreviewSettings.setEnabled(SettingsActivity.this, checked));
-        content.addView(keyPreview, matchWrap(dp(0), dp(8)));
+        appearanceContent.addView(keyPreview, matchWrap(dp(0), dp(8)));
 
         TextView keyPreviewDescription = new TextView(this);
         keyPreviewDescription.setText(R.string.key_preview_description);
         keyPreviewDescription.setTextSize(14);
         keyPreviewDescription.setTextColor(Color.GRAY);
         keyPreviewDescription.setLineSpacing(0, 1.2f);
-        content.addView(keyPreviewDescription, matchWrap(dp(0), dp(16)));
+        appearanceContent.addView(keyPreviewDescription, matchWrap(dp(0), dp(16)));
 
         TextView candidateColorLabel = new TextView(this);
         candidateColorLabel.setText(R.string.candidate_color_title);
         candidateColorLabel.setTextSize(16);
         candidateColorLabel.setTextColor(Color.DKGRAY);
-        content.addView(candidateColorLabel, matchWrap(dp(0), dp(4)));
+        appearanceContent.addView(candidateColorLabel, matchWrap(dp(0), dp(4)));
 
         Spinner candidateColor = new Spinner(this);
         ArrayAdapter<CharSequence> colorAdapter = ArrayAdapter.createFromResource(this,
@@ -196,28 +276,49 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                     @Override public void onNothingSelected(
                             android.widget.AdapterView<?> parent) {}
                 });
-        content.addView(candidateColor, matchWrap(dp(0), dp(20)));
+        appearanceContent.addView(candidateColor, matchWrap(dp(0), dp(20)));
 
+        TextView keyboardSizeTitle = new TextView(this);
+        keyboardSizeTitle.setText(R.string.keyboard_size_title);
+        keyboardSizeTitle.setTextSize(18);
+        keyboardSizeTitle.setTextColor(Color.DKGRAY);
+        appearanceContent.addView(keyboardSizeTitle, matchWrap(dp(0), dp(8)));
+
+        TextView keyboardSizeDescription = new TextView(this);
+        keyboardSizeDescription.setText(R.string.keyboard_size_description);
+        keyboardSizeDescription.setTextSize(14);
+        keyboardSizeDescription.setTextColor(Color.GRAY);
+        keyboardSizeDescription.setLineSpacing(0, 1.2f);
+        appearanceContent.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
+
+        addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_portrait,
+                KeyboardSizeSettings.portraitPercent(this), true);
+        addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_landscape,
+                KeyboardSizeSettings.landscapePercent(this), false);
+
+        LinearLayout hardwareContent = addSettingsGroup(content, savedInstanceState,
+                "hardware", R.string.settings_group_hardware,
+                R.string.settings_group_hardware_summary, false).body;
         CheckBox floatingCandidates = new CheckBox(this);
         floatingCandidates.setText(R.string.floating_candidates_enabled);
         floatingCandidates.setTextSize(16);
         floatingCandidates.setTextColor(Color.DKGRAY);
         floatingCandidates.setMinHeight(dp(48));
         floatingCandidates.setChecked(CandidateWindowSettings.floatingEnabled(this));
-        content.addView(floatingCandidates, matchWrap(dp(0), dp(8)));
+        hardwareContent.addView(floatingCandidates, matchWrap(dp(0), dp(8)));
 
         TextView floatingFailure = new TextView(this);
         floatingFailure.setTextSize(14);
         floatingFailure.setTextColor(getColor(R.color.keykey_blue_dark));
         floatingFailure.setLineSpacing(0, 1.2f);
         updateFloatingFailure(floatingFailure);
-        content.addView(floatingFailure, matchWrap(dp(0), dp(8)));
+        hardwareContent.addView(floatingFailure, matchWrap(dp(0), dp(8)));
 
         TextView floatingLayoutLabel = new TextView(this);
         floatingLayoutLabel.setText(R.string.floating_candidates_layout);
         floatingLayoutLabel.setTextSize(16);
         floatingLayoutLabel.setTextColor(Color.DKGRAY);
-        content.addView(floatingLayoutLabel, matchWrap(dp(0), dp(4)));
+        hardwareContent.addView(floatingLayoutLabel, matchWrap(dp(0), dp(4)));
 
         Spinner floatingLayout = new Spinner(this);
         ArrayAdapter<CharSequence> layoutAdapter = ArrayAdapter.createFromResource(this,
@@ -229,12 +330,24 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 == CandidateWindowSettings.Layout.HORIZONTAL ? 1 : 0);
         floatingLayout.setEnabled(floatingCandidates.isChecked());
         floatingLayoutLabel.setEnabled(floatingCandidates.isChecked());
-        content.addView(floatingLayout, matchWrap(dp(0), dp(36)));
+        hardwareContent.addView(floatingLayout, matchWrap(dp(0), dp(36)));
+
+        CheckBox hardwareNumberRow = new CheckBox(this);
+        hardwareNumberRow.setText(R.string.hardware_number_row_enabled);
+        hardwareNumberRow.setTextSize(16);
+        hardwareNumberRow.setTextColor(Color.DKGRAY);
+        hardwareNumberRow.setMinHeight(dp(48));
+        hardwareNumberRow.setChecked(CandidateWindowSettings.numberRowEnabled(this));
+        hardwareNumberRow.setEnabled(!floatingCandidates.isChecked());
+        hardwareContent.addView(hardwareNumberRow, matchWrap(dp(0), dp(8)));
+        hardwareNumberRow.setOnCheckedChangeListener((button, checked) ->
+                CandidateWindowSettings.setNumberRowEnabled(SettingsActivity.this, checked));
 
         floatingCandidates.setOnCheckedChangeListener((button, checked) -> {
             CandidateWindowSettings.setFloatingEnabled(SettingsActivity.this, checked);
             floatingLayout.setEnabled(checked);
             floatingLayoutLabel.setEnabled(checked);
+            hardwareNumberRow.setEnabled(!checked);
             updateFloatingFailure(floatingFailure);
         });
         floatingLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
@@ -249,62 +362,50 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        TextView keyboardSizeTitle = new TextView(this);
-        keyboardSizeTitle.setText(R.string.keyboard_size_title);
-        keyboardSizeTitle.setTextSize(18);
-        keyboardSizeTitle.setTextColor(Color.DKGRAY);
-        content.addView(keyboardSizeTitle, matchWrap(dp(0), dp(8)));
-
-        TextView keyboardSizeDescription = new TextView(this);
-        keyboardSizeDescription.setText(R.string.keyboard_size_description);
-        keyboardSizeDescription.setTextSize(14);
-        keyboardSizeDescription.setTextColor(Color.GRAY);
-        keyboardSizeDescription.setLineSpacing(0, 1.2f);
-        content.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
-
-        addKeyboardSizeControl(content, R.string.keyboard_size_portrait,
-                KeyboardSizeSettings.portraitPercent(this), true);
-        addKeyboardSizeControl(content, R.string.keyboard_size_landscape,
-                KeyboardSizeSettings.landscapePercent(this), false);
-
-        TextView supporterTitle = new TextView(this);
+        supporterSection = new LinearLayout(this);
+        supporterSection.setOrientation(LinearLayout.VERTICAL);
+        supporterSection.setPadding(dp(16), dp(16), dp(16), dp(8));
+        supporterSection.setBackground(sectionBackground());
+        content.addView(supporterSection, matchWrap(dp(0), dp(16)));
+        supporterTitle = new TextView(this);
         supporterTitle.setText(R.string.supporter_section_title);
         supporterTitle.setTextSize(20);
         supporterTitle.setTextColor(getColor(R.color.keykey_blue_dark));
-        content.addView(supporterTitle, matchWrap(dp(0), dp(8)));
+        supporterSection.addView(supporterTitle, matchWrap(dp(0), dp(8)));
 
-        TextView supporterDescription = new TextView(this);
+        supporterDescription = new TextView(this);
         supporterDescription.setText(R.string.supporter_description);
         supporterDescription.setTextSize(14);
         supporterDescription.setTextColor(Color.GRAY);
         supporterDescription.setLineSpacing(0, 1.2f);
-        content.addView(supporterDescription, matchWrap(dp(0), dp(8)));
+        supporterSection.addView(supporterDescription, matchWrap(dp(0), dp(8)));
 
         supporterPrice = new TextView(this);
         supporterPrice.setTextSize(16);
         supporterPrice.setTextColor(getColor(R.color.keykey_blue_dark));
         supporterPrice.setGravity(Gravity.CENTER);
         supporterPrice.setVisibility(View.GONE);
-        content.addView(supporterPrice, matchWrap(dp(0), dp(8)));
+        supporterSection.addView(supporterPrice, matchWrap(dp(0), dp(8)));
 
         supporterButton = new Button(this);
         supporterButton.setAllCaps(false);
         supporterButton.setOnClickListener(view ->
                 supporterBillingManager.launchPurchase(SettingsActivity.this));
-        content.addView(supporterButton, matchWrap(dp(0), dp(36)));
-        updateSupporterButton(false, SupporterState.isSupporter(this));
+        supporterSection.addView(supporterButton, matchWrap(dp(0), dp(36)));
+        updateSupporterDisplay(false, SupporterState.isSupporter(this), null);
 
-        TextView phraseTitle = new TextView(this);
-        phraseTitle.setTextSize(20);
-        phraseTitle.setTextColor(getColor(R.color.keykey_blue_dark));
-        content.addView(phraseTitle, matchWrap(dp(0), dp(8)));
+        SettingsGroup phraseGroup = addSettingsGroup(content, savedInstanceState,
+                "phrases", R.string.settings_group_phrases,
+                R.string.settings_group_phrases_summary, false);
+        LinearLayout phraseContent = phraseGroup.body;
+        collectionStatus = phraseGroup.summary;
 
         TextView phraseDescription = new TextView(this);
         phraseDescription.setText(R.string.phrase_collections_description);
         phraseDescription.setTextSize(14);
         phraseDescription.setTextColor(Color.GRAY);
         phraseDescription.setLineSpacing(0, 1.2f);
-        content.addView(phraseDescription, matchWrap(dp(0), dp(12)));
+        phraseContent.addView(phraseDescription, matchWrap(dp(0), dp(12)));
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -314,18 +415,12 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         actions.addView(selectAll, weightedWrap());
         actions.addView(baseOnly, weightedWrap());
         actions.addView(selectNone, weightedWrap());
-        content.addView(actions, matchWrap(dp(0), dp(8)));
-
-        collectionStatus = new TextView(this);
-        collectionStatus.setTextSize(14);
-        collectionStatus.setTextColor(getColor(R.color.keykey_blue_dark));
-        collectionStatus.setGravity(Gravity.CENTER);
-        content.addView(collectionStatus, matchWrap(dp(0), dp(8)));
+        phraseContent.addView(actions, matchWrap(dp(0), dp(8)));
 
         LinearLayout collectionList = new LinearLayout(this);
         collectionList.setOrientation(LinearLayout.VERTICAL);
-        content.addView(collectionList, matchWrap(dp(0), dp(12)));
-        loadPhraseCollections(phraseTitle, collectionList);
+        phraseContent.addView(collectionList, matchWrap(dp(0), dp(12)));
+        loadPhraseCollections(collectionList);
 
         selectAll.setOnClickListener(view -> setAllCollections(true));
         baseOnly.setOnClickListener(view -> setOnlyCollections(
@@ -352,10 +447,171 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             }
         });
 
+        placeSupporterSection(SupporterState.isSupporter(this));
         setContentView(scroll);
+        if (savedInstanceState != null) {
+            int scrollY = savedInstanceState.getInt("settings_scroll_y", 0);
+            scroll.post(() -> scroll.scrollTo(0, scrollY));
+        }
 
         supporterBillingManager = new SupporterBillingManager(this, this);
         supporterBillingManager.start();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        for (Map.Entry<String, SettingsGroup> entry : settingsGroups.entrySet()) {
+            state.putBoolean("settings_group_" + entry.getKey(),
+                    entry.getValue().body.getVisibility() == View.VISIBLE);
+        }
+        state.putInt("settings_scroll_y", settingsScroll.getScrollY());
+    }
+
+    private static final class SettingsGroup {
+        final LinearLayout body;
+        final TextView summary;
+
+        SettingsGroup(LinearLayout body, TextView summary) {
+            this.body = body;
+            this.summary = summary;
+        }
+    }
+
+    private SettingsGroup addSettingsGroup(LinearLayout root, Bundle savedState,
+            String key, int titleRes, int summaryRes, boolean defaultExpanded) {
+        LinearLayout section = new LinearLayout(this);
+        section.setOrientation(LinearLayout.VERTICAL);
+        section.setBackground(sectionBackground());
+        root.addView(section, matchWrap(dp(0), dp(16)));
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setPadding(dp(16), dp(12), dp(16), dp(12));
+        header.setMinimumHeight(dp(56));
+        header.setFocusable(true);
+        header.setClickable(true);
+        section.addView(header, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView heading = new TextView(this);
+        heading.setTextSize(20);
+        heading.setTextColor(getColor(R.color.keykey_blue_dark));
+        header.addView(heading);
+
+        TextView summary = new TextView(this);
+        summary.setText(summaryRes);
+        summary.setTextSize(14);
+        summary.setTextColor(Color.DKGRAY);
+        summary.setPadding(0, dp(4), 0, 0);
+        header.addView(summary);
+
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(16), 0, dp(16), dp(8));
+        section.addView(body, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        boolean expanded = savedState == null ? defaultExpanded
+                : savedState.getBoolean("settings_group_" + key, defaultExpanded);
+        setGroupExpanded(header, heading, body, titleRes, expanded);
+        header.setOnClickListener(view -> setGroupExpanded(header, heading, body, titleRes,
+                body.getVisibility() != View.VISIBLE));
+        SettingsGroup group = new SettingsGroup(body, summary);
+        settingsGroups.put(key, group);
+        return group;
+    }
+
+    private void setGroupExpanded(LinearLayout header, TextView heading, LinearLayout body,
+            int titleRes, boolean expanded) {
+        body.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        heading.setText((expanded ? "▾  " : "▸  ") + getString(titleRes));
+        header.setContentDescription(getString(
+                expanded ? R.string.settings_group_collapse : R.string.settings_group_expand,
+                getString(titleRes)));
+    }
+
+    private GradientDrawable sectionBackground() {
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setCornerRadius(dp(12));
+        background.setStroke(dp(1), Color.rgb(218, 226, 238));
+        return background;
+    }
+
+    private void placeSupporterSection(boolean supporter) {
+        if (settingsContent == null || supporterSection == null) return;
+        int position = supporter ? settingsContent.getChildCount() - 1 : 1;
+        if (settingsContent.indexOfChild(supporterSection) == position) return;
+        settingsContent.removeView(supporterSection);
+        settingsContent.addView(supporterSection,
+                supporter ? settingsContent.getChildCount() : 1);
+    }
+
+    private void addTableSettings(LinearLayout parent, ChineseInputMethod method) {
+        TextView heading = new TextView(this);
+        heading.setText(method.displayName + "設定");
+        heading.setTextSize(18);
+        parent.addView(heading, matchWrap(dp(0), dp(4)));
+        TableInputOptions initial = ChineseInputMethodSettings.options(this, method);
+        String[] keys = method == ChineseInputMethod.CANGJIE
+                ? new String[]{"realtime", "clear", "maximum", "learning"}
+                : new String[]{"realtime", "clear"};
+        String[] titles = {"即時候選", "錯碼清除", "滿五碼查詢", "依選字紀錄排序"};
+        CheckBox[] controls = new CheckBox[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            String key = keys[i];
+            CheckBox control = new CheckBox(this);
+            controls[i] = control;
+            control.setText(titles[i]);
+            control.setMinHeight(dp(44));
+            control.setChecked(switch (key) {
+                case "realtime" -> initial.composeWhileTyping;
+                case "clear" -> initial.clearOnError;
+                case "maximum" -> initial.queryAtMaximum;
+                default -> initial.dynamicFrequency;
+            });
+            control.setOnCheckedChangeListener((button, checked) -> {
+                TableInputOptions next = ChineseInputMethodSettings.options(this, method);
+                switch (key) {
+                    case "realtime" -> { next.composeWhileTyping = checked; if (checked) next.clearOnError = false; }
+                    case "clear" -> { next.clearOnError = checked; if (checked) next.composeWhileTyping = false; }
+                    case "maximum" -> next.queryAtMaximum = checked;
+                    default -> next.dynamicFrequency = checked;
+                }
+                ChineseInputMethodSettings.setOptions(this, method, next);
+                if (controls[0] != null) controls[0].setChecked(next.composeWhileTyping);
+                if (controls[1] != null) controls[1].setChecked(next.clearOnError);
+            });
+            parent.addView(control, matchWrap(dp(0), dp(0)));
+        }
+        if (method == ChineseInputMethod.CANGJIE) {
+            Spinner punctuation = new Spinner(this);
+            punctuation.setContentDescription("倉頡標點");
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                    android.R.layout.simple_spinner_item, new String[]{"標點：原字表", "標點：中英混合", "標點：半形"});
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            punctuation.setAdapter(adapter);
+            punctuation.setSelection(initial.punctuation);
+            punctuation.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                public void onItemSelected(android.widget.AdapterView<?> view, View item, int position, long id) {
+                    TableInputOptions next = ChineseInputMethodSettings.options(SettingsActivity.this, method);
+                    if (next.punctuation == position) return;
+                    next.punctuation = position;
+                    ChineseInputMethodSettings.setOptions(SettingsActivity.this, method, next);
+                }
+                public void onNothingSelected(android.widget.AdapterView<?> view) {}
+            });
+            parent.addView(punctuation, matchWrap(dp(0), dp(8)));
+        }
+    }
+
+    private void updateCompositionSummary(TextView view) {
+        String layout = getResources().getStringArray(R.array.bopomofo_keyboard_layouts)[
+                BopomofoKeyboardLayoutSettings.layout(this) == BopomofoKeyboardLayout.HSU ? 1 : 0];
+        view.setText(getString(R.string.settings_group_composition_summary, layout,
+                getString(BopomofoCompositionModeSettings.bigramEnabled(this)
+                        ? R.string.settings_value_on : R.string.settings_value_off)));
     }
 
     private void updateFloatingFailure(TextView view) {
@@ -364,9 +620,11 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             view.setVisibility(View.GONE);
             return;
         }
-        view.setText(failure == CandidateWindowSettings.Failure.TOKEN
-                ? R.string.floating_candidates_failure_token
-                : R.string.floating_candidates_failure_attach);
+        view.setText(switch (failure) {
+            case TOKEN -> R.string.floating_candidates_failure_token;
+            case ATTACH -> R.string.floating_candidates_failure_attach;
+            case CURSOR_ANCHOR -> R.string.floating_candidates_failure_cursor_anchor;
+        });
         view.setVisibility(View.VISIBLE);
     }
 
@@ -380,13 +638,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
     public void onStateChanged(boolean billingQueryComplete, boolean supporter,
                                String formattedPrice) {
         runOnUiThread(() -> {
-            updateSupporterButton(billingQueryComplete, supporter);
-            if (formattedPrice == null || formattedPrice.isEmpty()) {
-                supporterPrice.setVisibility(View.GONE);
-            } else {
-                supporterPrice.setText(getString(R.string.supporter_price, formattedPrice));
-                supporterPrice.setVisibility(View.VISIBLE);
-            }
+            updateSupporterDisplay(billingQueryComplete, supporter, formattedPrice);
         });
     }
 
@@ -396,12 +648,24 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 Toast.LENGTH_SHORT).show());
     }
 
-    private void updateSupporterButton(boolean billingQueryComplete, boolean supporter) {
-        if (!billingQueryComplete) {
-            supporterButton.setText(R.string.supporter_checking);
-            supporterButton.setEnabled(false);
-        } else if (supporter) {
+    private void updateSupporterDisplay(boolean billingQueryComplete, boolean supporter,
+            String formattedPrice) {
+        placeSupporterSection(supporter);
+        supporterTitle.setText(supporter ? R.string.supporter_thank_you
+                : R.string.supporter_section_title);
+        supporterDescription.setText(supporter ? R.string.supporter_supported_description
+                : R.string.supporter_description);
+        if (supporter || formattedPrice == null || formattedPrice.isEmpty()) {
+            supporterPrice.setVisibility(View.GONE);
+        } else {
+            supporterPrice.setText(getString(R.string.supporter_price, formattedPrice));
+            supporterPrice.setVisibility(View.VISIBLE);
+        }
+        if (supporter) {
             supporterButton.setText(R.string.supporter_thank_you);
+            supporterButton.setEnabled(false);
+        } else if (!billingQueryComplete) {
+            supporterButton.setText(R.string.supporter_checking);
             supporterButton.setEnabled(false);
         } else {
             supporterButton.setText(R.string.supporter_button);
@@ -409,17 +673,15 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         }
     }
 
-    private void loadPhraseCollections(TextView title, LinearLayout list) {
+    private void loadPhraseCollections(LinearLayout list) {
         List<AssociatedPhraseDictionary.CollectionInfo> collections;
         try {
             collections = AssociatedPhraseDictionary.availableCollections(getAssets());
         } catch (IOException error) {
-            title.setText(R.string.phrase_collections_title_unavailable);
             collectionStatus.setText(R.string.phrase_collections_unavailable);
             return;
         }
 
-        title.setText(getString(R.string.phrase_collections_title, collections.size()));
         Set<String> enabled = PhraseSettings.enabledCollections(this);
         updatingCollections = true;
         for (AssociatedPhraseDictionary.CollectionInfo collection : collections) {

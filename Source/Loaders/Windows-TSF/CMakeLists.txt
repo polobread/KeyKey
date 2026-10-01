@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(KeyKeyWindowsTsf VERSION 1.3.0 LANGUAGES C CXX)
+project(KeyKeyWindowsTsf VERSION 1.3.1 LANGUAGES C CXX)
 
 set(KEYKEY_VERSION_TWEAK 0)
 if(NOT "${PROJECT_VERSION_TWEAK}" STREQUAL "")
@@ -32,14 +32,11 @@ endif()
 get_filename_component(KEYKEY_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
 set(KEYKEY_SOURCE "${KEYKEY_ROOT}/Source")
 set(KEYKEY_DATABASE_PATH
-    ""
-    CACHE FILEPATH "Path to the cooked KeyKey SQLite database")
+    "${KEYKEY_ROOT}/Source/Distributions/Takao/CookedDatabase/KeyKey.db"
+    CACHE FILEPATH "Path to the canonical shared KeyKey SQLite database")
 if(KEYKEY_DATABASE_PATH AND NOT EXISTS "${KEYKEY_DATABASE_PATH}")
     message(FATAL_ERROR "KEYKEY_DATABASE_PATH does not exist: ${KEYKEY_DATABASE_PATH}")
 endif()
-set(KEYKEY_CATEGORIZED_COLLECTION_DIR
-    "${KEYKEY_ROOT}/DataSource/chichi77Collection")
-
 add_library(keykey_third_party STATIC
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib/xmlparse.c"
     "${KEYKEY_SOURCE}/ExternalLibraries/expat/lib/xmlrole.c"
@@ -61,6 +58,7 @@ set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON
 
 add_library(keykey_core STATIC
     FrontendSettings.cpp
+    WindowsTableInputMethod.cpp
     "${KEYKEY_SOURCE}/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
     "${KEYKEY_SOURCE}/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
     "${KEYKEY_SOURCE}/Frameworks/Formosa/Source/Mandarin.cpp"
@@ -68,11 +66,13 @@ add_library(keykey_core STATIC
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"
+    "${KEYKEY_SOURCE}/ModulePackages/OVIMGeneric/OVIMGeneric.cpp"
     KeyKeyEngine.cpp
 )
 target_compile_features(keykey_core PUBLIC cxx_std_17)
 target_compile_definitions(keykey_core PUBLIC
     OV_USE_SQLITE
+    OVIMGENERIC_IDENTIFIER_PREFIX=\"Generic\"
     OVIMMANDARIN_IDENTIFIER=\"Mandarin\"
     OVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX=\"Punctuations\"
     OVIMTRADITIONALMANDARIN_IDENTIFIER=\"TraditionalMandarin\"
@@ -92,6 +92,7 @@ target_include_directories(keykey_core PUBLIC
     "${KEYKEY_SOURCE}/Frameworks/Formosa/Headers"
     "${KEYKEY_SOURCE}/Frameworks/Manjusri/Headers"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin"
+    "${KEYKEY_SOURCE}/ModulePackages/OVIMGeneric"
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 target_link_libraries(keykey_core PUBLIC keykey_third_party)
@@ -103,113 +104,19 @@ endif()
 set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_DATABASE_PATH}")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 if(NOT KEYKEY_DATABASE_PATH)
-    find_package(Ruby REQUIRED COMPONENTS Interpreter)
-    add_executable(KeyKeyDatabaseCooker DatabaseCooker.cpp)
-    target_compile_features(KeyKeyDatabaseCooker PRIVATE cxx_std_17)
-    target_link_libraries(KeyKeyDatabaseCooker PRIVATE keykey_core)
-    if(MSVC)
-        target_compile_options(KeyKeyDatabaseCooker PRIVATE /W4 /permissive- /utf-8)
-    endif()
-
-    set(KEYKEY_COLLECTION_INPUTS
-        "${KEYKEY_ROOT}/DataSource/AssociatedPhraseCollectionNames.tsv"
-        "${KEYKEY_ROOT}/DataSource/McBopomofo/phrase.occ")
-    file(GLOB KEYKEY_CATEGORIZED_COLLECTION_INPUTS CONFIGURE_DEPENDS
-        "${KEYKEY_CATEGORIZED_COLLECTION_DIR}/phrase.*.tsv")
-    if(NOT KEYKEY_CATEGORIZED_COLLECTION_INPUTS)
-        message(FATAL_ERROR
-            "Categorized associated-phrase data not found: ${KEYKEY_CATEGORIZED_COLLECTION_DIR}")
-    endif()
-    list(APPEND KEYKEY_COLLECTION_INPUTS ${KEYKEY_CATEGORIZED_COLLECTION_INPUTS})
-    set(KEYKEY_SMART_SQL "${CMAKE_CURRENT_BINARY_DIR}/Databases/SmartMandarin.sql")
-    set(KEYKEY_ABSOLUTE_CIN "${CMAKE_CURRENT_BINARY_DIR}/Databases/bpmf-absorder.cin")
-    set(KEYKEY_SMART_COOKER
-        "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/SmartMandarinCooker.rb")
-    set(KEYKEY_SMART_CORPORA
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v1.txt"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v2.txt"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-v3.txt"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/corpus-typing-feedback.txt"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/article-corpus-2300-exact-dedup.txt")
-    set(KEYKEY_SMART_LEXICONS
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/supplemental-lexicon.tsv"
-        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv")
-    foreach(KEYKEY_SMART_INPUT IN LISTS KEYKEY_SMART_CORPORA KEYKEY_SMART_LEXICONS)
-        if(NOT EXISTS "${KEYKEY_SMART_INPUT}")
-            message(FATAL_ERROR "Smart Mandarin source data not found: ${KEYKEY_SMART_INPUT}")
-        endif()
-    endforeach()
-    message(STATUS
-        "Including categorized associated-phrase data from: ${KEYKEY_CATEGORIZED_COLLECTION_DIR}")
-    set(KEYKEY_NATIVE_DATABASE "${CMAKE_CURRENT_BINARY_DIR}/Databases/KeyKey.db")
-    set(KEYKEY_NATIVE_DATABASE_STAMP "${CMAKE_CURRENT_BINARY_DIR}/Databases/KeyKey.db.complete")
-    add_custom_command(
-        OUTPUT "${KEYKEY_NATIVE_DATABASE_STAMP}"
-        BYPRODUCTS "${KEYKEY_NATIVE_DATABASE}" "${KEYKEY_ABSOLUTE_CIN}" "${KEYKEY_SMART_SQL}"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory
-                "${CMAKE_CURRENT_BINARY_DIR}/Databases"
-        COMMAND "$<TARGET_FILE:KeyKeyDatabaseCooker>"
-                "${KEYKEY_SOURCE}"
-                "${KEYKEY_ROOT}/DataSource"
-                "${KEYKEY_CATEGORIZED_COLLECTION_DIR}"
-                "${KEYKEY_NATIVE_DATABASE}"
-                "${KEYKEY_ABSOLUTE_CIN}"
-        COMMAND "${Ruby_EXECUTABLE}"
-                "${CMAKE_CURRENT_SOURCE_DIR}/GenerateSmartMandarinSql.rb"
-                "${KEYKEY_SMART_SQL}"
-                "${KEYKEY_SMART_COOKER}"
-                "${KEYKEY_ROOT}/DataSource/McBopomofo/phrase.occ"
-                "${KEYKEY_ROOT}/DataSource/McBopomofo/BPMFMappings.txt"
-                "${KEYKEY_ABSOLUTE_CIN}"
-                --lexicon
-                "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/supplemental-lexicon.tsv"
-                --lexicon
-                "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv"
-                ${KEYKEY_SMART_CORPORA}
-        COMMAND "$<TARGET_FILE:KeyKeyDatabaseCooker>"
-                --append-smart-sql
-                "${KEYKEY_NATIVE_DATABASE}"
-                "${KEYKEY_SMART_SQL}"
-        COMMAND "${Python3_EXECUTABLE}"
-                "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
-                "${KEYKEY_NATIVE_DATABASE}"
-        COMMAND "${CMAKE_COMMAND}" -E touch "${KEYKEY_NATIVE_DATABASE_STAMP}"
-        DEPENDS
-            KeyKeyDatabaseCooker
-            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/Schema.sql"
-            "${KEYKEY_SOURCE}/DataTables/bpmf-ext.cin"
-            "${KEYKEY_SOURCE}/DataTables/bpmf-punctuations.cin"
-            "${KEYKEY_SOURCE}/DataTables/cj-ext.cin"
-            "${KEYKEY_SOURCE}/DataTables/simplex-ext.cin"
-            "${KEYKEY_SOURCE}/DataTables/cj-punctuations-halfwidth.cin"
-            "${KEYKEY_SOURCE}/DataTables/cj-punctuations-mixedwidth.cin"
-            "${KEYKEY_SOURCE}/DataTables/bopomofo-correction.cin"
-            "${KEYKEY_SMART_COOKER}"
-            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
-            "${CMAKE_CURRENT_SOURCE_DIR}/GenerateSmartMandarinSql.rb"
-            "${KEYKEY_ROOT}/DataSource/McBopomofo/BPMFMappings.txt"
-            ${KEYKEY_SMART_LEXICONS}
-            ${KEYKEY_SMART_CORPORA}
-            "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/OneKey.plist"
-            "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/CannedMessages.plist"
-            ${KEYKEY_COLLECTION_INPUTS}
-        COMMENT "Cooking KeyKey.db with the native Windows database cooker"
-        VERBATIM
-    )
-    add_custom_target(keykey_database ALL DEPENDS "${KEYKEY_NATIVE_DATABASE_STAMP}")
-    set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_NATIVE_DATABASE}")
+    message(FATAL_ERROR
+        "KEYKEY_DATABASE_PATH must name the pre-generated shared KeyKey.db")
 endif()
-
-if(KEYKEY_DATABASE_PATH)
-    add_custom_target(keykey_database ALL
-        COMMAND "${Python3_EXECUTABLE}"
-                "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
-                "${KEYKEY_DATABASE_PATH}"
-        DEPENDS
+add_custom_target(keykey_database ALL
+    COMMAND "${Python3_EXECUTABLE}"
+            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
             "${KEYKEY_DATABASE_PATH}"
-            "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
-        VERBATIM)
-endif()
+    DEPENDS
+        "${KEYKEY_DATABASE_PATH}"
+        "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
+        "${KEYKEY_SOURCE}/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py"
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
+    VERBATIM)
 
 add_library(KeyKeyTsf SHARED
     CandidateWindow.cpp
@@ -237,6 +144,7 @@ target_link_libraries(KeyKeyTsf PRIVATE
     advapi32
     gdi32
     ole32
+    oleaut32
     shcore
     shell32
     user32
@@ -290,6 +198,25 @@ set_target_properties(KeyKeyTsf PROPERTIES
     PREFIX ""
 )
 
+file(GLOB KEYKEY_DEPLOYMENT_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/Deployment/*.cs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Deployment/*.csproj"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Deployment/*.manifest")
+add_executable(KeyKeyRegistration RegistrationTool.cpp)
+target_compile_features(KeyKeyRegistration PRIVATE cxx_std_17)
+target_compile_definitions(KeyKeyRegistration PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+add_custom_target(KeyKeyDeployment ALL
+    COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" publish
+            "${CMAKE_CURRENT_SOURCE_DIR}/Deployment/KeyKeyDeployment.csproj"
+            --configuration Release --runtime ${KEYKEY_SETTINGS_RID} --self-contained true
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+            -p:Version=${PROJECT_VERSION} -p:NuGetAudit=false
+            --output "$<TARGET_FILE_DIR:KeyKeyTsf>"
+    DEPENDS KeyKeyTsf KeyKeyRegistration ${KEYKEY_DEPLOYMENT_SOURCES}
+        "${KEYKEY_ROOT}/DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
+    VERBATIM)
+add_dependencies(KeyKeySettings KeyKeyDeployment)
+
 if(TARGET keykey_database)
     add_dependencies(KeyKeyTsf keykey_database)
 endif()
@@ -317,6 +244,10 @@ if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
 endif()
 
 if(BUILD_TESTING)
+    add_test(NAME KeyKeyDeploymentTransactions
+        COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
+            --project "${CMAKE_CURRENT_SOURCE_DIR}/Deployment.Tests/Deployment.Tests.csproj"
+            --configuration Release)
     add_executable(KeyKeyTsfInterfaceSmokeTest TsfInterfaceSmokeTest.cpp)
     target_compile_features(KeyKeyTsfInterfaceSmokeTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfInterfaceSmokeTest PRIVATE
@@ -328,9 +259,41 @@ if(BUILD_TESTING)
     if(MSVC)
         target_compile_options(KeyKeyTsfInterfaceSmokeTest PRIVATE /W4 /permissive- /utf-8)
     endif()
-    target_link_libraries(KeyKeyTsfInterfaceSmokeTest PRIVATE ole32 oleaut32 uuid)
+    target_link_libraries(KeyKeyTsfInterfaceSmokeTest PRIVATE ole32 oleaut32 uuid advapi32)
     add_dependencies(KeyKeyTsfInterfaceSmokeTest KeyKeyTsf)
     add_test(NAME KeyKeyTsfConfigureInterface COMMAND KeyKeyTsfInterfaceSmokeTest)
+
+    add_executable(KeyKeyTsfSystemTrayTest TsfSystemTrayTest.cpp
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp Diagnostics.cpp)
+    target_compile_features(KeyKeyTsfSystemTrayTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeyTsfSystemTrayTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    if(MSVC)
+        target_compile_options(KeyKeyTsfSystemTrayTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeyTsfSystemTrayTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32)
+    add_dependencies(KeyKeyTsfSystemTrayTest KeyKeyTsf keykey_database_deploy)
+    add_test(NAME KeyKeyTsfSystemTrayModes COMMAND KeyKeyTsfSystemTrayTest)
+
+    add_executable(KeyKeySharedInputMethodTest SharedInputMethodTest.cpp)
+    target_compile_features(KeyKeySharedInputMethodTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeySharedInputMethodTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    if(MSVC)
+        target_compile_options(KeyKeySharedInputMethodTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeySharedInputMethodTest PRIVATE keykey_core ole32 oleaut32 uuid userenv)
+    add_dependencies(KeyKeySharedInputMethodTest keykey_database_deploy)
+    add_test(NAME KeyKeySharedInputMethodProcesses COMMAND KeyKeySharedInputMethodTest)
+    add_test(NAME KeyKeySharedInputMethodAppContainer COMMAND KeyKeySharedInputMethodTest --container)
+
+    add_executable(KeyKeyTsfRegistrationIntegrationTest TsfRegistrationIntegrationTest.cpp)
+    target_compile_features(KeyKeyTsfRegistrationIntegrationTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeyTsfRegistrationIntegrationTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    if(MSVC)
+        target_compile_options(KeyKeyTsfRegistrationIntegrationTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeyTsfRegistrationIntegrationTest PRIVATE ole32 uuid advapi32)
+    add_dependencies(KeyKeyTsfRegistrationIntegrationTest KeyKeyTsf)
+    add_test(NAME KeyKeyTsfRegistrationIsolated COMMAND KeyKeyTsfRegistrationIntegrationTest)
 
     add_executable(KeyKeyEngineSmokeTest EngineSmokeTest.cpp)
     target_compile_features(KeyKeyEngineSmokeTest PRIVATE cxx_std_17)
@@ -358,6 +321,30 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyEngineBopomofo COMMAND KeyKeyEngineSmokeTest legacy)
     add_test(NAME KeyKeyEngineEscapeKeep COMMAND KeyKeyEngineSmokeTest keep)
     add_test(NAME KeyKeyEngineEscapeClear COMMAND KeyKeyEngineSmokeTest clear)
+
+    add_executable(KeyKeyTableInputTest TableInputTest.cpp)
+    target_compile_features(KeyKeyTableInputTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeyTableInputTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    if(MSVC)
+        target_compile_options(KeyKeyTableInputTest PRIVATE /W4 /permissive- /utf-8)
+    endif()
+    target_link_libraries(KeyKeyTableInputTest PRIVATE keykey_core advapi32 gdi32 ole32 shell32 user32 uuid)
+    add_dependencies(KeyKeyTableInputTest keykey_database_deploy)
+    add_test(NAME KeyKeyTableInputBasics COMMAND KeyKeyTableInputTest basic)
+    add_test(NAME KeyKeyTableLiveLookup COMMAND KeyKeyTableInputTest compose)
+    add_test(NAME KeyKeyTableLegacyAlias COMMAND KeyKeyTableInputTest alias)
+    add_test(NAME KeyKeyTableConcurrentLearning COMMAND KeyKeyTableInputTest dynamic)
+    add_test(NAME KeyKeyTableSettingsAndUnicode COMMAND KeyKeyTableInputTest settings)
+    add_test(NAME KeyKeySettingsPreferences
+        COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
+            --project "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern.Tests/SettingsModern.Tests.csproj"
+            --configuration Release)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        add_test(NAME KeyKeySettingsWpfControls
+            COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
+                --project "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern.UiTests/SettingsModern.UiTests.csproj"
+                --configuration Release "--property:KeyKeyRuntimeDirectory=$<TARGET_FILE_DIR:KeyKeyTsf>")
+    endif()
 
     add_executable(KeyKeyCandidateStateTest CandidateStateTest.cpp)
     target_compile_features(KeyKeyCandidateStateTest PRIVATE cxx_std_17)
@@ -388,6 +375,7 @@ endif()
 install(TARGETS KeyKeyTsf RUNTIME DESTINATION . LIBRARY DESTINATION .)
 install(TARGETS KeyKeySettingsBackend RUNTIME DESTINATION .)
 install(FILES "$<TARGET_FILE_DIR:KeyKeyTsf>/KeyKeySettings.exe" DESTINATION .)
+install(FILES "$<TARGET_FILE_DIR:KeyKeyTsf>/KeyKeyDeployment.exe" DESTINATION .)
 if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
     install(FILES "${KEYKEY_DEPLOY_DATABASE}" DESTINATION Databases)
 endif()

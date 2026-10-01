@@ -64,6 +64,7 @@ public protocol SmartMandarinSource {
         composition: SmartMandarinComposition?
     )
     func learnConfirmedComposition(_ composition: SmartMandarinComposition)
+    func evictionLength(readings: [String], composition: SmartMandarinComposition) -> Int
 }
 
 public extension SmartMandarinSource {
@@ -98,6 +99,9 @@ public extension SmartMandarinSource {
         }
     }
     func learnConfirmedComposition(_ composition: SmartMandarinComposition) {}
+    func evictionLength(readings: [String], composition: SmartMandarinComposition) -> Int {
+        composition.segments.first?.length ?? 0
+    }
 }
 
 /// A small, read-only Viterbi walker over the same `unigrams` and `bigrams`
@@ -311,6 +315,26 @@ public final class SmartMandarinStore: SmartMandarinSource {
 
     public func learnConfirmedComposition(_ composition: SmartMandarinComposition) {
         userData?.learnComposition(composition)
+    }
+
+    public func evictionLength(readings: [String], composition: SmartMandarinComposition) -> Int {
+        guard let first = composition.segments.first else { return 0 }
+        guard first.length == 1 else { return first.length }
+        // A learned single character can split a visible dictionary phrase.
+        // Match the desktop and Android walkers by committing that phrase whole.
+        var length = 0
+        var query = ""
+        var text = ""
+        for segment in composition.segments {
+            guard segment.start == length, length + segment.length <= readings.count else { break }
+            query += readings[length..<(length + segment.length)].joined()
+            length += segment.length
+            text += segment.text
+            if length < 2 { continue }
+            if length > maximumSpan { break }
+            if unigrams(for: query).contains(where: { $0.text == text }) { return length }
+        }
+        return first.length
     }
 
     private func finalScore(_ path: Path) -> Double {

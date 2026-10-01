@@ -1,0 +1,38 @@
+{
+  "version": "project-unigram-v2",
+  "partition": {
+    "seed": 20260926,
+    "training_articles": 800,
+    "validation_articles": 750,
+    "final_test_articles": 750
+  },
+  "counts": {
+    "method": "iterative Viterbi segmentation and occurrence recounting",
+    "floor": 1,
+    "max_iterations": 10,
+    "project_weight": 0.75,
+    "public_prior_weight": 0.25,
+    "integer_scale": 100000000
+  },
+  "readings": {
+    "primary": "local KeyKey data and curated Taiwan typing conventions",
+    "review_order": [
+      "ChatGPT assessment in Taiwan usage context",
+      "Ministry of Education dictionary only when uncertainty or conflict remains"
+    ],
+    "typing_overrides": "reading-overrides.tsv",
+    "review_log": "reading-review.tsv"
+  },
+  "selection": {
+    "accepted": false,
+    "status": "experimental candidate retained for reproducible comparison; not approved for production",
+    "reason": "Evaluated correction actions fall, but too many individual core, top-100 basic, and rank-101–1000 general characters regress. Rare/unranked characters and the v4 specialist source do not affect this decision.",
+    "latest_global_candidate": "blend-025-pruned",
+    "latest_global_candidate_status": "passed validation but rejected on confirmation because core-83 and top-100 regression shares exceeded the fixed 20% limit",
+    "latest_global_candidate_results": "unigram-vocabulary-results.json",
+    "predecessor": "project-unigram-v1",
+    "result_summary": "project-unigram-v2-results.json",
+    "confirmation_limit": "The second 750-article cohort was already used to evaluate v1; v2 still needs a new external blind cohort before release.",
+    "raw_artifacts": "typing-benchmarks/unigram-800-750-750-seed20260926-r3 (generated locally and gitignored)"
+  }
+}

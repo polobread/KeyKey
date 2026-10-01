@@ -37,7 +37,7 @@ end
 # character has to be Han or the entry can never be reached. The rest is left
 # alone: professional vocabulary is full of "F1分數" and "Adam最佳化器".
 LEADS_WITH_HAN = /\A\p{Han}/
-MAX_LENGTH = 20
+MAX_LENGTH = 6
 
 rows = []
 seen = {}

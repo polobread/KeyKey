@@ -52,8 +52,15 @@ SRC = $(TMPDIR)/bpmf-ext-absorder.cin \
 	
 TOOL = ../../../Frameworks/OpenVanilla/Tools/cin-to-sqlite.rb
 
-# creates the db file
-all: createdir $(DB)
+# Normal platform builds consume the checked-in database. Cooking remains an
+# explicit maintainer operation through the $(DB) target below.
+.PHONY: all verify clean
+all: verify
+
+verify: verify-smart-mandarin-db.py smart_mandarin_model.py \
+	$(COLLECTION_DIR)/AISyntheticBigram/smart-mandarin-model-manifest.json
+	test -s $(DB)
+	python3 ./verify-smart-mandarin-db.py $(DB)
 
 createdir:
 	mkdir -p $(TMPDIR)
@@ -109,5 +116,4 @@ $(NATIVE_BOPOMOFO_MAKEFILE): $(NATIVE_BOPOMOFO_EXTCONF)
 	ruby -C $(NATIVE_BOPOMOFO_DIR) extconf.rb
 
 clean:
-	rm $(DB)
 	rm -rf $(TMPDIR)

@@ -13,6 +13,8 @@ public partial class MainWindow : Window
         ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
     private static readonly string[] Layouts = ["Standard", "ETen", "ETen26", "Hsu", "Hanyu Pinyin"];
+    private static readonly string[] PunctuationTables =
+        ["", "Punctuations-cj-mixedwidth-cin", "Punctuations-cj-halfwidth-cin"];
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, IntPtr wparam,
@@ -25,6 +27,7 @@ public partial class MainWindow : Window
             .Concat(Scales.Skip(1).Select(s => s + "%")).ToArray();
         HighlightColor.ItemsSource = new[] { "紫色", "綠色", "黃色", "紅色" };
         PhoneticLayout.ItemsSource = new[] { "標準", "倚天", "倚天 26 鍵", "許氏鍵盤", "漢語拼音" };
+        CangjiePunctuation.ItemsSource = new[] { "字表預設（全形）", "混合全半形", "半形" };
 
         try
         {
@@ -54,6 +57,23 @@ public partial class MainWindow : Window
             .ToHashSet(StringComparer.Ordinal);
         ShowSmartMandarin.IsChecked = !suppressed.Contains("SmartMandarin");
         ShowTraditionalMandarin.IsChecked = !suppressed.Contains("TraditionalMandarin");
+        ShowCangjie.IsChecked = !suppressed.Contains("Generic-cj-cin");
+        ShowSimplex.IsChecked = !suppressed.Contains("Generic-simplex-cin");
+
+        var cangjie = SettingsStore.CangjiePath;
+        CangjieCommitAtMaximum.IsChecked = ReadBool(cangjie, "ShouldCommitAtMaximumRadicalLength", false);
+        CangjieDynamicFrequency.IsChecked = ReadBool(cangjie, "UseDynamicFrequency", false);
+        CangjieClearOnError.IsChecked = ReadBool(cangjie, "ClearReadingBufferAtCompositionError", true);
+        CangjieComposeWhileTyping.IsChecked = InputMethodSettings.ReadComposeWhileTyping(cangjie);
+        CangjieRareCharacters.IsChecked = SettingsStore.Read(cangjie,
+            "UseCharactersSupportedByEncoding", "") is "" or "UTF-8";
+        SelectValue(CangjiePunctuation, PunctuationTables,
+            SettingsStore.Read(cangjie, "UseOverrideTable", ""));
+        var simplex = SettingsStore.SimplexPath;
+        SimplexClearOnError.IsChecked = ReadBool(simplex, "ClearReadingBufferAtCompositionError", true);
+        SimplexComposeWhileTyping.IsChecked = InputMethodSettings.ReadComposeWhileTyping(simplex);
+        SimplexRareCharacters.IsChecked = SettingsStore.Read(simplex,
+            "UseCharactersSupportedByEncoding", "") is "" or "UTF-8";
 
         var phonetic = SettingsStore.TraditionalPath;
         SelectValue(PhoneticLayout, Layouts,
@@ -98,17 +118,14 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (ShowSmartMandarin.IsChecked != true && ShowTraditionalMandarin.IsChecked != true)
-            {
-                Status.Text = "請至少顯示一種輸入法";
-                return;
-            }
-            var primary = SettingsStore.Read(SettingsStore.LoaderPath,
-                "PrimaryInputMethod", "SmartMandarin");
-            if (primary == "SmartMandarin" && ShowSmartMandarin.IsChecked != true)
-                primary = "TraditionalMandarin";
-            else if (primary == "TraditionalMandarin" && ShowTraditionalMandarin.IsChecked != true)
-                primary = "SmartMandarin";
+            var visible = new[] {
+                ("SmartMandarin", ShowSmartMandarin.IsChecked == true),
+                ("TraditionalMandarin", ShowTraditionalMandarin.IsChecked == true),
+                ("Generic-cj-cin", ShowCangjie.IsChecked == true),
+                ("Generic-simplex-cin", ShowSimplex.IsChecked == true),
+            }.Where(item => item.Item2).Select(item => item.Item1).ToArray();
+            var primary = InputMethodSettings.SelectVisible(SettingsStore.Read(
+                SettingsStore.LoaderPath, "PrimaryInputMethod", "SmartMandarin"), visible);
             SettingsStore.Write(SettingsStore.LoaderPath, new Dictionary<string, string> {
                 ["PrimaryInputMethod"] = primary,
                 ["OneDimensionalCandidatePanelStyle"] = HorizontalCandidate.IsChecked == true ? "horizontal" : "vertical",
@@ -119,10 +136,9 @@ public partial class MainWindow : Window
             });
             var suppressed = SettingsStore.ReadArray(SettingsStore.LoaderPath,
                 "ModulesSuppressedFromUI")
-                .Where(id => id is not ("SmartMandarin" or "TraditionalMandarin"))
+                .Where(id => !InputMethodSettings.Identifiers.Contains(id))
                 .ToList();
-            if (ShowSmartMandarin.IsChecked != true) suppressed.Add("SmartMandarin");
-            if (ShowTraditionalMandarin.IsChecked != true) suppressed.Add("TraditionalMandarin");
+            suppressed.AddRange(InputMethodSettings.Identifiers.Except(visible));
             SettingsStore.WriteArray(SettingsStore.LoaderPath,
                 "ModulesSuppressedFromUI", suppressed);
             var layout = Layouts[Math.Max(0, PhoneticLayout.SelectedIndex)];
@@ -137,6 +153,24 @@ public partial class MainWindow : Window
                     ClearSmartCompositionWithEsc.IsChecked == true ? "true" : "false",
             };
             SettingsStore.Write(SettingsStore.SmartPath, smartValues);
+            SettingsStore.Write(SettingsStore.CangjiePath, new Dictionary<string, string> {
+                ["MaximumRadicalLength"] = "5",
+                ["ShouldCommitAtMaximumRadicalLength"] = BoolValue(CangjieCommitAtMaximum),
+                ["UseDynamicFrequency"] = BoolValue(CangjieDynamicFrequency),
+                ["ComposeWhileTyping"] = BoolValue(CangjieComposeWhileTyping),
+                ["ComposeWhenTypingMigrated"] = "true",
+                ["ClearReadingBufferAtCompositionError"] = BoolValue(CangjieClearOnError),
+                ["UseCharactersSupportedByEncoding"] = CangjieRareCharacters.IsChecked == true ? "" : "BIG-5",
+                ["UseOverrideTable"] = PunctuationTables[Math.Max(0, CangjiePunctuation.SelectedIndex)],
+            });
+            SettingsStore.Write(SettingsStore.SimplexPath, new Dictionary<string, string> {
+                ["MaximumRadicalLength"] = "2",
+                ["ShouldCommitAtMaximumRadicalLength"] = "true",
+                ["ComposeWhileTyping"] = BoolValue(SimplexComposeWhileTyping),
+                ["ComposeWhenTypingMigrated"] = "true",
+                ["ClearReadingBufferAtCompositionError"] = BoolValue(SimplexClearOnError),
+                ["UseCharactersSupportedByEncoding"] = SimplexRareCharacters.IsChecked == true ? "" : "BIG-5",
+            });
             SettingsStore.Write(SettingsStore.AssociatedPath, new Dictionary<string, string> {
                 ["EnabledCollections"] = string.Join(',', collections.Where(c => c.Enabled).Select(c => c.Source)),
             });
@@ -148,6 +182,24 @@ public partial class MainWindow : Window
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private static string BoolValue(CheckBox box) => box.IsChecked == true ? "true" : "false";
+
+    private void TableCompose_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender == CangjieComposeWhileTyping && CangjieClearOnError is not null)
+            CangjieClearOnError.IsChecked = false;
+        if (sender == SimplexComposeWhileTyping && SimplexClearOnError is not null)
+            SimplexClearOnError.IsChecked = false;
+    }
+
+    private void TableClear_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender == CangjieClearOnError && CangjieComposeWhileTyping is not null)
+            CangjieComposeWhileTyping.IsChecked = false;
+        if (sender == SimplexClearOnError && SimplexComposeWhileTyping is not null)
+            SimplexComposeWhileTyping.IsChecked = false;
+    }
 
     private void EnableAll_Click(object sender, RoutedEventArgs e)
     {
@@ -202,7 +254,7 @@ public partial class MainWindow : Window
 
     private void ResetLearning_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show(this, "要清除選字與前後文學習紀錄嗎？自訂詞會保留。",
+        if (MessageBox.Show(this, "要清除好打注音的選字與前後文學習紀錄嗎？自訂詞與倉頡／簡易排序紀錄會保留。",
                 "重設學習紀錄", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         try { Status.Text = NativeBackend.KeyKeyResetLearning() != 0 ? "學習紀錄已重設" : "重設學習紀錄失敗"; }
         catch (Exception ex) { Status.Text = $"重設失敗：{ex.Message}"; }

@@ -18,10 +18,12 @@ import java.util.Set;
 /** Lazy, read-only Viterbi walker over the same language model used by macOS and iOS. */
 final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     private static final String ASSET_NAME = "KeyKey.db";
-    private static final String INSTALLED_NAME = "KeyKey-smart-reading-v3.db";
+    // The shared-model verifier checks this fingerprint so an app upgrade
+    // cannot reuse a different model merely because its row count matches.
+    private static final String INSTALLED_NAME = "KeyKey-smart-28b18de318ac13ee.db";
     private static final String[] PREVIOUS_INSTALLED_NAMES = {
             "KeyKey-smart-885614.db", "KeyKey-smart-1.2.10.db",
-            "KeyKey-smart-reading-v2.db"
+            "KeyKey-smart-reading-v2.db", "KeyKey-smart-reading-v3.db"
     };
     private static final long EXPECTED_BIGRAM_ROWS = 885_627;
     private static final int MAXIMUM_SPAN = 8;
@@ -31,8 +33,11 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     private record Path(double score, double lastBackoff,
                         List<SmartMandarinSegment> segments) {}
 
+    SQLiteDatabase tableDatabase() { return database; }
+
     private final SQLiteDatabase database;
     private final SmartMandarinUserData userData;
+    private boolean bigramEnabled = true;
     private final Map<String, List<Unigram>> unigramCache = new HashMap<>();
     private final Map<String, Map<BigramKey, Double>> bigramCache = new HashMap<>();
 
@@ -79,6 +84,11 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     SmartMandarinStore(SQLiteDatabase database, SmartMandarinUserData userData) {
         this.database = database;
         this.userData = userData;
+    }
+
+    void setBigramEnabled(boolean enabled) {
+        bigramEnabled = enabled;
+        if (!enabled) bigramCache.clear();
     }
 
     @Override
@@ -142,7 +152,8 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                             bigram = bigramProbability(previous.query(), query,
                                     previous.text(), entry.text());
                         }
-                        double fallback = previousPath.lastBackoff() + entry.probability();
+                        double fallback = entry.probability()
+                                + (bigramEnabled ? previousPath.lastBackoff() : 0);
                         double transition = bigram == null
                                 ? fallback : Math.max(bigram, fallback);
                         ArrayList<SmartMandarinSegment> segments =
@@ -204,7 +215,7 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
         record Ranked(SmartMandarinCandidate candidate, double score) {}
         ArrayList<Ranked> ranked = new ArrayList<>();
         double previousBackoff = 0;
-        if (previous != null) {
+        if (bigramEnabled && previous != null) {
             for (Unigram item : unigrams(previous.query())) {
                 if (item.text().equals(previous.text())) {
                     previousBackoff = item.backoff();
@@ -254,8 +265,8 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
         try {
             userData.learnCandidate(String.join("", readings.subList(index,
                             index + candidate.length())), candidate.text(),
-                    previous == null ? null : previous.query(),
-                    previous == null ? null : previous.text());
+                    !bigramEnabled || previous == null ? null : previous.query(),
+                    !bigramEnabled || previous == null ? null : previous.text());
         } catch (RuntimeException ignored) {
             // A temporarily unavailable user database must not stop text input.
         }
@@ -263,7 +274,7 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
 
     @Override
     public void learnConfirmedComposition(SmartMandarinComposition composition) {
-        if (userData == null) return;
+        if (!bigramEnabled || userData == null) return;
         try {
             userData.learnComposition(composition);
         } catch (RuntimeException ignored) {
@@ -299,7 +310,7 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     }
 
     private double finalScore(Path path) {
-        if (path.segments().isEmpty()) return path.score();
+        if (!bigramEnabled || path.segments().isEmpty()) return path.score();
         SmartMandarinSegment last = path.segments().get(path.segments().size() - 1);
         Double ending = bigramProbability(last.query(), "$", last.text(), "");
         return path.score() + (ending == null
@@ -346,6 +357,8 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
 
     private Double bigramProbability(String previousQuery, String currentQuery,
                                      String previousText, String currentText) {
+        // Skip both learned and bundled context before touching either database.
+        if (!bigramEnabled) return null;
         if (userData != null) {
             try {
                 Double learned = userData.learnedBigram(previousQuery, currentQuery,

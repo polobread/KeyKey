@@ -131,6 +131,19 @@ public final class ImeTestActivity extends Activity {
     }
 
     private void applyTestConfiguration() {
+        String method = getIntent().getStringExtra("method");
+        if (method != null) {
+            ChineseInputMethodSettings.setMethod(this,
+                    ChineseInputMethod.valueOf(method.toUpperCase(java.util.Locale.ROOT)));
+        }
+        if (getIntent().hasExtra("supporter")) {
+            SupporterState.setSupporter(this,
+                    getIntent().getBooleanExtra("supporter", false));
+        }
+        if (getIntent().hasExtra("bigram")) {
+            BopomofoCompositionModeSettings.setBigramEnabled(this,
+                    getIntent().getBooleanExtra("bigram", true));
+        }
         String floating = getIntent().getStringExtra("floating");
         if ("off".equals(floating)) {
             CandidateWindowSettings.setFloatingEnabled(this, false);
@@ -194,7 +207,30 @@ public final class ImeTestActivity extends Activity {
         caption.setTextColor(Color.DKGRAY);
         content.addView(caption, matchWrap(dp(4), dp(0)));
 
-        EditText field = new EditText(this);
+        EditText field = new EditText(this) {
+            @Override
+            public android.view.inputmethod.InputConnection onCreateInputConnection(
+                    EditorInfo outAttrs) {
+                android.view.inputmethod.InputConnection connection =
+                        super.onCreateInputConnection(outAttrs);
+                String behavior = getIntent().getStringExtra("cursorUpdates");
+                if (connection == null || !("silent".equals(behavior)
+                        || "reject".equals(behavior))) return connection;
+                // Debug fault injection: an editor that never reports cursor geometry.
+                return new android.view.inputmethod.InputConnectionWrapper(connection, false) {
+                    @Override
+                    public boolean requestCursorUpdates(int mode) {
+                        return mode == 0 ? super.requestCursorUpdates(0)
+                                : "silent".equals(behavior);
+                    }
+
+                    @Override
+                    public boolean requestCursorUpdates(int mode, int filter) {
+                        return requestCursorUpdates(mode);
+                    }
+                };
+            }
+        };
         field.setHint(label + "測試");
         field.setInputType(inputType);
         field.setSingleLine(singleLine);

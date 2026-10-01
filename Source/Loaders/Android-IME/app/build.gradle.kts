@@ -5,10 +5,10 @@ plugins {
     id("com.android.application")
 }
 
-val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.3.0")
+val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.3.1")
 val keyKeyVersionCode = providers.gradleProperty("keykeyVersionCode")
     .map(String::toInt)
-    .getOrElse(1_003_000)
+    .getOrElse(1_003_001)
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH")
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD")
 val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS")
@@ -115,6 +115,14 @@ val smartMandarinVerifier =
     layout.projectDirectory.file(
         "../../../Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py"
     )
+val smartMandarinModelHelper =
+    layout.projectDirectory.file(
+        "../../../Distributions/Takao/DatabaseCooker/smart_mandarin_model.py"
+    )
+val smartMandarinModelManifest =
+    layout.projectDirectory.file(
+        "../../../../DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
+    )
 
 val verifySmartMandarinDatabase by tasks.registering(Exec::class) {
     val python = providers.environmentVariable("PYTHON3").orNull
@@ -125,7 +133,12 @@ val verifySmartMandarinDatabase by tasks.registering(Exec::class) {
     } else {
         commandLine("python3", smartMandarinVerifier.asFile, smartMandarinDatabase.asFile)
     }
-    inputs.files(smartMandarinDatabase, smartMandarinVerifier)
+    inputs.files(
+        smartMandarinDatabase,
+        smartMandarinVerifier,
+        smartMandarinModelHelper,
+        smartMandarinModelManifest,
+    )
 }
 
 val generateSmartMandarinAssets by tasks.registering(Sync::class) {
@@ -165,6 +178,8 @@ tasks.withType<Test>().configureEach {
     dependsOn(generateBopomofoAssets)
     dependsOn(generateAssociatedPhraseAssets)
     dependsOn(generateIndexedDictionaryAssets)
+    dependsOn(generateSmartMandarinAssets)
+    systemProperty("keykey.smart.database", smartMandarinDatabase.asFile.absolutePath)
     systemProperty(
         "keykey.bopomofo.cin",
         layout.buildDirectory.file("generated/bopomofoAssets/bpmf-ext.cin").get().asFile.absolutePath
@@ -196,4 +211,9 @@ dependencies {
         }
     }
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
 }
+
+// Shared macOS-baseline cases are also exercised against Android SQLite on device.
+android.sourceSets.getByName("androidTest").assets.srcDir("../../../../tests/fixtures/mobile-table-input")

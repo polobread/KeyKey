@@ -37,6 +37,7 @@ source_paths=(
   README.md
   DataSource/AssociatedPhraseCollectionNames.tsv
   DataSource/McBopomofo/LICENSE.txt
+  DataSource/McBopomofo/README.md
   DataSource/McBopomofo/phrase.occ
   DataSource/McBopomofo/BPMFMappings.txt
   DataSource/AISyntheticBigram/supplemental-lexicon.tsv
@@ -51,6 +52,22 @@ source_paths=(
   Source/DataTables/bpmf-punctuations.cin
   Source/DataTables/cj-ext.cin
   Source/DataTables/simplex-ext.cin
+  Source/Distributions/Takao/CookedDatabase/KeyKey.db
+  Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py
+  Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py
+  DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json
+  DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt
+  DataSource/AISyntheticBigram/common-unigram-supplement.tsv
+  DataSource/AISyntheticBigram/search-trend-unigram-source.txt
+  DataSource/AISyntheticBigram/search-trend-unigram.tsv
+  DataSource/AISyntheticBigram/search-trend-unigram-review.tsv
+  DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv
+  DataSource/AISyntheticArticles/typing-articles-v2.jsonl
+  DataSource/AISyntheticArticles/typing-articles-v3.jsonl
+  DataSource/AISyntheticArticles/typing-articles-v4.jsonl
+  DataSource/AISyntheticArticles/LICENSE.txt
+  DataSource/AISyntheticBigram/LICENSE.txt
+  LICENSES/AI-DATA-NOTICE.txt
   Source/Loaders/Linux-IME
 )
 

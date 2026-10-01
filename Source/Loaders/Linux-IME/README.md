@@ -1,6 +1,6 @@
 # chichi77 KeyKey for Linux
 
-Version 1.3.0 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
+Version 1.3.1 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
 LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
 as 傳統注音, Cangjie, and Simplex. See the
 [Linux installation and usage guide](../../../LINUX_INSTALL.md) for the package
@@ -8,16 +8,20 @@ set and setup steps.
 The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
-This directory contains the native Linux implementation. It does not link or
-modify the legacy KeyKeyEngine or OpenVanilla frameworks. The earlier 1.2.8
-release boundaries remain in the
+This directory contains the C++ engine, Fcitx 5 addon, runtime tables, tools,
+desktop integration, packaging, and platform tests. CMake verifies and installs
+the repository's pre-generated shared model. Runtime addon and data names remain
+`chichi77-keykey`, and the C++ namespace is `keykey::linux_ime`. The engine and
+addon do not link or modify the legacy KeyKeyEngine or OpenVanilla frameworks.
+
+The earlier 1.2.8 release boundaries remain in the
 [1.2.8 release record](docs/linux-1.2.8-release.md).
 
-## Version 1.3.0 features and verification
+## Version 1.3.1 features and verification
 
 The 1.2.8 phase established Traditional Bopomofo behavior across Standard,
 ETen, ETen 26-key, Hsu, and Hanyu Pinyin layouts, along with Cangjie, Simplex,
-and Traditional-to-Simplified output. Version 1.3.0 adds 好打注音 sentence
+and Traditional-to-Simplified output. Version 1.3.1 includes 好打注音 sentence
 composition and persistent candidate learning.
 
 The Linux implementation provides:
@@ -31,15 +35,16 @@ The Linux implementation provides:
   While candidates are open, Down moves the highlight and Enter replaces the
   selected word without committing the sentence; another Enter commits it.
   Left/Right/Home/End move within the composition, and Backspace/Delete edit
-  readings there. Completing the tenth syllable commits the first full word
+  readings there. Completing the eleventh syllable commits the first full word
   segment while the remaining sentence stays in preedit. A learned single
   character does not split a visible dictionary word at the eviction boundary,
   and the following word stays fixed while the buffer shifts. Switching input
   methods or Chinese/English mode finishes valid readings and commits the
-  visible composition; an unmatched partial reading remains literal. The model is built from the
-  repository's source lexicons and corpora during package creation. The current
-  2,300-article corpus produces 114,235 unigrams and 885,627 bigrams, matching
-  the macOS model. Existing
+  visible composition; an unmatched partial reading remains literal. Package builds
+  verify and install the repository's pre-generated shared model as
+  `smart-mandarin.db`; they do not recook it. The current model contains 114,392
+  unigrams and 885,627 bigrams and is byte-for-byte the same input used by the
+  other platforms. Existing
   configurations without a mode choice also use 好打注音;
 - 好打注音 candidate panels own editing keys until selection or Escape.
   Home/End address the full candidate list; horizontal arrows follow the panel
@@ -195,7 +200,7 @@ password purpose is stricter: Fcitx switches that input context to
 `keyboard-us` and rejects forcing the custom method back on.
 Further compatibility work includes IBus, physical monitor hotplug, more Apps
 and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. The supported
-1.3.0 Ubuntu package set and setup steps are in the
+1.3.1 Ubuntu package set and setup steps are in the
 [Linux installation guide](../../../LINUX_INSTALL.md); the 1.2.8 release record
 preserves that version's verified boundaries.
 

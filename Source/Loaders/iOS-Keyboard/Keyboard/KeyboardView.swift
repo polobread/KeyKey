@@ -23,6 +23,8 @@ final class KeyboardView: UIView {
         var highlightedIndex = -1
         var pageCount = 0
         var mode = BopomofoEngine.InputMode.bopomofo
+        var chineseInputMethod = ChineseInputMethod.smart
+        var keyboardLayout = BopomofoKeyboardLayout.standard
         var shifted = false
         var temporaryEnglish = false
         var statusOverride: String?
@@ -31,6 +33,12 @@ final class KeyboardView: UIView {
         var inputClicksEnabled = true
         var candidateColor = CandidateColor.purple
         var supportPromptVisible = false
+
+        var showsSmartSupportPrompt: Bool {
+            supportPromptVisible && smartMode && chineseInputMethod == .smart
+                && reading.isEmpty && smartCells.isEmpty && smartEditableCount == 0
+                && candidates.isEmpty && statusOverride == nil
+        }
     }
 
     /// A reading key carries two labels at fixed heights rather than two lines
@@ -213,6 +221,7 @@ final class KeyboardView: UIView {
         smartCellButtons = (0..<11).map { index in
             let button = UIButton(type: .system)
             button.tag = index
+            button.accessibilityIdentifier = "keyboard.smart-cell.\(index + 1)"
             button.backgroundColor = Palette.candidateCell
             button.layer.cornerRadius = 6
             button.titleLabel?.adjustsFontSizeToFitWidth = true
@@ -396,6 +405,8 @@ final class KeyboardView: UIView {
         if force || hasCandidates != hadCandidates
             || state.reading != previousState.reading
             || state.mode != previousState.mode
+            || state.keyboardLayout != previousState.keyboardLayout
+            || state.chineseInputMethod != previousState.chineseInputMethod
             || state.shifted != previousState.shifted
             || state.temporaryEnglish != previousState.temporaryEnglish
             || state.statusOverride != previousState.statusOverride
@@ -403,9 +414,10 @@ final class KeyboardView: UIView {
             candidateStrip.isHidden = !hasCandidates
             statusLabel.isHidden = hasCandidates
             statusLabel.font = .systemFont(ofSize: metrics.statusFont)
-            let normalStatus = KeyboardLayout.statusText(
+            let normalStatus = state.chineseInputMethod.isTable && state.mode == .bopomofo && state.reading.isEmpty
+                ? state.chineseInputMethod.displayName : KeyboardLayout.statusText(
                 reading: state.reading, mode: state.mode, shifted: state.shifted,
-                temporaryEnglish: state.temporaryEnglish
+                temporaryEnglish: state.temporaryEnglish, layout: state.keyboardLayout
             )
             if state.statusOverride == nil, state.supportPromptVisible,
                state.reading.isEmpty, state.mode == .bopomofo {
@@ -419,16 +431,24 @@ final class KeyboardView: UIView {
         candidateContainer.isHidden = state.smartMode && !hasCandidates
         if force || state.smartCells != previousState.smartCells
             || state.smartEditableCount != previousState.smartEditableCount
-            || state.smartMode != previousState.smartMode {
+            || state.smartMode != previousState.smartMode
+            || state.showsSmartSupportPrompt != previousState.showsSmartSupportPrompt {
             for (index, button) in smartCellButtons.enumerated() {
-                let value = index < state.smartCells.count ? state.smartCells[index] : ""
+                let isSupportCell = state.showsSmartSupportPrompt && index >= 8
+                let value = isSupportCell ? ["歡迎", "付費", "支持"][index - 8]
+                    : index < state.smartCells.count ? state.smartCells[index] : ""
                 button.setTitle(value, for: .normal)
                 button.setTitleColor(Palette.primaryText, for: .normal)
-                button.titleLabel?.font = .systemFont(ofSize: metrics.candidateFont)
-                button.isEnabled = index < state.smartEditableCount && !value.isEmpty
-                button.accessibilityLabel = button.isEnabled
+                button.setTitleColor(isSupportCell ? Palette.hintText : nil, for: .disabled)
+                button.titleLabel?.font = .systemFont(
+                    ofSize: isSupportCell ? metrics.statusFont : metrics.candidateFont
+                )
+                button.isEnabled = !isSupportCell
+                    && index < state.smartEditableCount && !value.isEmpty
+                button.accessibilityTraits = isSupportCell ? .staticText : .button
+                button.accessibilityLabel = isSupportCell ? value : button.isEnabled
                     ? "第 \(index + 1) 個組字，\(value)" : nil
-                button.isAccessibilityElement = button.isEnabled
+                button.isAccessibilityElement = button.isEnabled || isSupportCell
             }
         }
 
@@ -460,6 +480,8 @@ final class KeyboardView: UIView {
         }
 
         let keyPlaneChanged = force
+            || state.keyboardLayout != previousState.keyboardLayout
+            || state.chineseInputMethod != previousState.chineseInputMethod
             || state.mode != previousState.mode
             || state.shifted != previousState.shifted
             || state.temporaryEnglish != previousState.temporaryEnglish
@@ -501,7 +523,7 @@ final class KeyboardView: UIView {
                     continue
                 }
                 let caption = key == "MODE"
-                    ? state.fieldPolicy.modeCaption(for: state.mode)
+                    ? state.fieldPolicy.modeCaption(for: state.mode).replacingOccurrences(of: "ㄅ", with: state.chineseInputMethod.symbol)
                     : KeyboardLayout.caption(for: key, mode: state.mode)
                 button.setTitle(caption, for: .normal)
                 button.titleLabel?.font = .systemFont(
@@ -564,10 +586,15 @@ final class KeyboardView: UIView {
     /// row even where the glyph above them is a tone mark drawn half again as
     /// large. Anything without a second label -- English, digits, symbols,
     /// punctuation -- centres in the key instead.
+    private func inputGlyph(for key: String) -> String? {
+        state.chineseInputMethod.isTable ? ChineseInputMethod.root(for: key)
+            : KeyboardLayout.bopomofoGlyph(for: key, layout: state.keyboardLayout)
+    }
+
     private func configure(_ keyView: KeyView, for key: String) {
         let caption = KeyboardLayout.caption(for: key, mode: state.mode)
         guard state.mode == .bopomofo,
-              let glyph = KeyboardLayout.bopomofoGlyph(for: key)
+              let glyph = inputGlyph(for: key)
         else {
             keyView.glyph.text = caption
             keyView.glyph.font = .systemFont(
@@ -591,7 +618,7 @@ final class KeyboardView: UIView {
             return
         }
 
-        let scale = state.temporaryEnglish ? 1 : KeyboardLayout.glyphPointScale(for: key)
+        let scale = state.temporaryEnglish || state.chineseInputMethod.isTable ? 1 : KeyboardLayout.glyphPointScale(for: key)
         let glyphSize = metrics.keyGlyphFont * scale
         keyView.glyph.text = state.temporaryEnglish ? key : glyph
         keyView.glyph.font = .systemFont(ofSize: glyphSize)
@@ -620,7 +647,8 @@ final class KeyboardView: UIView {
         case "EMOJI": return "表情符號"
         case KeyboardLayout.inputModeSwitchKey: return "下一個鍵盤"
         default:
-            if state.mode == .bopomofo, let glyph = KeyboardLayout.bopomofoGlyph(for: key) {
+            if state.mode == .bopomofo,
+               let glyph = inputGlyph(for: key) {
                 return glyph
             }
             return key
@@ -675,6 +703,7 @@ final class KeyboardView: UIView {
     }
 
     @objc private func smartCellTapped(_ sender: UIButton) {
+        guard sender.isEnabled else { return }
         delegate?.keyboardView(self, didSelectSmartCellAt: sender.tag)
     }
 
@@ -723,7 +752,8 @@ final class KeyboardView: UIView {
             )
         }
         if key == "ENTER" { return state.returnKeyPolicy.accessibilityLabel }
-        if state.mode == .bopomofo, let glyph = KeyboardLayout.bopomofoGlyph(for: key) {
+        if state.mode == .bopomofo,
+           let glyph = inputGlyph(for: key) {
             return state.temporaryEnglish ? key.uppercased() : glyph
         }
         return KeyboardLayout.caption(for: key, mode: state.mode)

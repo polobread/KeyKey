@@ -43,7 +43,7 @@ file for terms.
 	
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(changeMenu:) name:@"NSPopUpButtonWillPopUpNotification" object:nil];
 	
-	[self setMenu:_standardMenu];
+	[self setMenu:_realMenu];
 }
 - (id)initWithCoder:(NSCoder *)decoder
 {
@@ -63,16 +63,8 @@ file for terms.
 }
 - (void)changeMenu:(NSNotification *)notification
 {
-	NSEvent *e = [NSApp currentEvent];
-	int index = [self indexOfSelectedItem];
-	
-	//	if ([e modifierFlags] & NSShiftKeyMask) {
-	if (([e modifierFlags] & (NSCommandKeyMask | NSShiftKeyMask)) == (NSCommandKeyMask | NSShiftKeyMask))  {		
-		[self setMenu:_realMenu];
-	}
-	else {
-		[self setMenu:_standardMenu];
-	}
+	// All supported layouts are visible without a modifier-key shortcut.
+	[self setMenu:_realMenu];
 }
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_4

@@ -1,0 +1,55 @@
+{
+  "format": 1,
+  "description": "Selected v1.3.1 Smart Mandarin language model shared by five product platforms",
+  "training_articles": 2300,
+  "validation_articles": 130,
+  "base_database_sha256": "c29d06c7a9586641f8a261a0ab97042d3f843879b65b35248d8b650f42a1cc92",
+  "unigram_rows": 114392,
+  "bigram_rows": 885627,
+  "semantic_sha256": "7b05aabbe8a8d53f905bc5ef3b915049288fbc4bff0da7c21e8efd19eb753676",
+  "canonical_database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
+  "unigram_total_count": 22604459,
+  "sources": {
+    "training_articles": [
+      {
+        "file": "typing-articles-v2.jsonl",
+        "articles": 1650,
+        "sha256": "ae70cc5274c5d131510a010aa07adf9eaca4be3f37345711e4c5516049cafe5d"
+      },
+      {
+        "file": "typing-articles-v3.jsonl",
+        "articles": 350,
+        "sha256": "8e783676d4a22cd92ae832e1a3be913d2e07252c8e2c4add76b55f6c725877de"
+      },
+      {
+        "file": "typing-articles-v4.jsonl",
+        "articles": 300,
+        "sha256": "ff625fc0b7be600347d7e61c9ddc3b4c4b8ada17f2b76950425f203505af6dc8"
+      }
+    ],
+    "protected_characters": {
+      "file": "basic-bigram-protected-characters.txt",
+      "characters": 122,
+      "sha256": "54c2a5eaa78b69d77b64ccffefe14c6da7cf6c20a2875c3fef9f60093f8d0cda"
+    },
+    "unigram_supplement": {
+      "file": "common-unigram-supplement.tsv",
+      "entries": 7,
+      "sha256": "b1bcff76f1551de638847680465113809579638d5794b256697a31ff6bba82ad"
+    },
+    "search_trend_unigram": {
+      "source_file": "search-trend-unigram-source.txt",
+      "source_terms": 550,
+      "source_sha256": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1",
+      "existing_terms_removed": 393,
+      "file": "search-trend-unigram.tsv",
+      "entries": 157,
+      "sha256": "565b57a2dd90167286fcde38c02686070709e0326b18c201dd9a5be278584c34",
+      "review_file": "search-trend-unigram-review.tsv",
+      "review_sha256": "91132f6613fcce2471664d783449452f6d417ce3557de38c753af401d71796b6",
+      "reading_overrides": 5,
+      "reading_overrides_sha256": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
+      "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))"
+    }
+  }
+}

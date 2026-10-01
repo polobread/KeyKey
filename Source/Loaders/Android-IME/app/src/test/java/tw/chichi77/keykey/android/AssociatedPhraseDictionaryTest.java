@@ -58,6 +58,16 @@ public final class AssociatedPhraseDictionaryTest {
     }
 
     @Test
+    public void phraseLengthIncludesHeadAndAllowsAtMostSixCodePoints() throws Exception {
+        String source = "甲乙丙丁戊己 100\n甲乙丙丁戊己庚 100\n"
+                + "𠀀乙丙丁戊己 100\n𠀀乙丙丁戊己庚 100\n";
+        Map<String, List<String>> parsed = AssociatedPhraseDictionary.parseCollection(
+                new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
+        assertEquals(List.of("乙丙丁戊己"), parsed.get("甲"));
+        assertEquals(List.of("乙丙丁戊己"), parsed.get("𠀀"));
+    }
+
+    @Test
     public void parserRemovesWordsOwnedByPeopleCollectionsFromBase() throws Exception {
         String source = "王小明 20\n王小華 10\n";
         Map<String, List<String>> parsed = AssociatedPhraseDictionary.parseCollection(

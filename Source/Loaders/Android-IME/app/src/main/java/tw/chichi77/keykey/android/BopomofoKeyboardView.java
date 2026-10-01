@@ -71,6 +71,19 @@ final class BopomofoKeyboardView extends View {
             {"←", "→", "↑", "↓", "↔", "↕", "↖", "↗", "↘", "↙", "⇒"},
             {"★", "☆", "●", "○", "■", "□", "▲", "△", "▼", "▽", "SHIFT"}
     };
+    private static final String[] HARDWARE_NUMBER_DIGITS = {
+            "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
+    };
+    private static final String[] HARDWARE_NUMBER_SYMBOLS = {
+            "!", "@", "#", "$", "%", "^", "&", "*", "(", ")"
+    };
+    private static final String[] HARDWARE_PUNCTUATION_KEYS = {
+            "-", "=", "[", "]", ";", "'", ",", ".", "/", "\\", "`"
+    };
+    private static final String[] HARDWARE_PUNCTUATION_SYMBOLS = {
+            "_", "+", "{", "}", ":", "\"", "<", ">", "?", "|", "~"
+    };
+    static final String HARDWARE_LITERAL_PREFIX = "HARDWARE_LITERAL:";
     private static final String[] FUNCTION_ROW = {
             "MODE", "SYMBOL", "SETTINGS", "，", "SPACE", "。", "BACKSPACE", "ENTER"
     };
@@ -79,6 +92,7 @@ final class BopomofoKeyboardView extends View {
     private static final int LANDSCAPE_CONTENT_HEIGHT_DP = 230;
     private static final int LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final int HARDWARE_CONTENT_HEIGHT_DP = 58;
+    private static final int HARDWARE_NUMBER_ROW_HEIGHT_DP = 48;
     private static final int HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
     private static final int HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final float TONE_SYMBOL_SCALE = 1.8f;
@@ -104,11 +118,16 @@ final class BopomofoKeyboardView extends View {
     private boolean smartMode;
     private List<String> smartCells = List.of();
     private int smartEditableCount;
+    private ChineseInputMethod chineseInputMethod = ChineseInputMethod.SMART;
     private BopomofoEngine.InputMode inputMode = BopomofoEngine.InputMode.BOPOMOFO;
+    private BopomofoKeyboardLayout keyboardLayout = BopomofoKeyboardLayout.STANDARD;
     private boolean shifted;
     private boolean temporaryEnglish;
     private boolean hardwareFullWidth;
+    private boolean hardwareNumberRowEnabled;
+    private boolean hardwareNumberShifted;
     private boolean supportPromptVisible;
+    private boolean associatedPhrasesVisible;
     private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
     private int page;
     private int pageCount;
@@ -149,6 +168,13 @@ final class BopomofoKeyboardView extends View {
         this.listener = listener;
     }
 
+    void setKeyboardLayout(BopomofoKeyboardLayout layout) {
+        if (keyboardLayout == layout) return;
+        keyboardLayout = layout;
+        previewHit = null;
+        invalidate();
+    }
+
     void setMode(Mode mode) {
         if (this.mode == mode) return;
         backspaceRepeater.stop();
@@ -156,6 +182,26 @@ final class BopomofoKeyboardView extends View {
         this.mode = mode;
         previewHit = null;
         requestLayout();
+        invalidate();
+    }
+
+    void setHardwareNumberRowEnabled(boolean enabled) {
+        if (hardwareNumberRowEnabled == enabled) return;
+        hardwareNumberRowEnabled = enabled;
+        hardwareNumberShifted = false;
+        if (mode == Mode.HARDWARE) requestLayout();
+        invalidate();
+    }
+
+    void toggleHardwareNumberShift() {
+        hardwareNumberShifted = !hardwareNumberShifted;
+        invalidate();
+    }
+
+    void setChineseInputMethod(ChineseInputMethod method) {
+        if (chineseInputMethod == method) return;
+        chineseInputMethod = method;
+        previewHit = null;
         invalidate();
     }
 
@@ -205,6 +251,12 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
+    void setAssociatedPhrasesVisible(boolean visible) {
+        if (associatedPhrasesVisible == visible) return;
+        associatedPhrasesVisible = visible;
+        invalidate();
+    }
+
     static String[][] shiftedEnglishRows() { return SHIFTED_ENGLISH_ROWS; }
     static String[][] shiftedNumberRows() { return SHIFTED_NUMBER_ROWS; }
 
@@ -212,7 +264,9 @@ final class BopomofoKeyboardView extends View {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int desiredHeight = switch (mode) {
             case HARDWARE_FLOATING -> dp(1);
-            case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP) + hardwareSystemAreaHeight();
+            case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
+                    + (hardwareNumberRowEnabled ? 2 * HARDWARE_NUMBER_ROW_HEIGHT_DP : 0))
+                    + hardwareSystemAreaHeight();
             case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
                     landscapeHeightPercent) + dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
             case PORTRAIT -> scaledContentHeight(PORTRAIT_CONTENT_HEIGHT_DP,
@@ -274,11 +328,17 @@ final class BopomofoKeyboardView extends View {
 
     private void drawSmartCellStrip(Canvas canvas, RectF area) {
         float cellWidth = area.width() / 11f;
+        boolean showSupport = supportPromptEligible() && reading.isEmpty()
+                && smartCells.isEmpty() && candidates.isEmpty() && !associatedPhrasesVisible;
         for (int index = 0; index < 11; index++) {
             RectF cell = new RectF(area.left + index * cellWidth + dp(2),
                     area.top + dp(2), area.left + (index + 1) * cellWidth - dp(2),
                     area.bottom - dp(2));
             canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
+            if (showSupport && index >= 8) {
+                drawSupportPromptWord(canvas, cell, index - 8);
+                continue;
+            }
             if (index >= smartCells.size()) continue;
             String value = smartCells.get(index);
             textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
@@ -298,15 +358,21 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawHardware(Canvas canvas) {
-        RectF area = new RectF(0, 0, getWidth(), contentHeight());
+        RectF area = new RectF(0, 0, getWidth(), dp(HARDWARE_CONTENT_HEIGHT_DP));
         float gap = dp(2);
         int cellCount = BopomofoEngine.CANDIDATES_PER_PAGE + 3;
         float cellWidth = area.width() / cellCount;
+        boolean showSupport = supportPromptEligible() && candidates.isEmpty();
         for (int i = 0; i < BopomofoEngine.CANDIDATES_PER_PAGE; i++) {
             RectF cell = new RectF(area.left + i * cellWidth + gap,
                     area.top + gap, area.left + (i + 1) * cellWidth - gap,
                     area.bottom - gap);
-            drawCandidate(canvas, cell, i);
+            if (showSupport && i >= 6) {
+                canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
+                drawSupportPromptWord(canvas, cell, i - 6);
+            } else {
+                drawCandidate(canvas, cell, i);
+            }
         }
         drawHardwareEmojiButton(canvas, new RectF(
                 area.left + BopomofoEngine.CANDIDATES_PER_PAGE * cellWidth,
@@ -315,12 +381,66 @@ final class BopomofoKeyboardView extends View {
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 1) * cellWidth,
                 area.top, area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
-                area.bottom), inputMode == BopomofoEngine.InputMode.BOPOMOFO ? "ㄅ" : "英",
+                area.bottom), inputMode == BopomofoEngine.InputMode.BOPOMOFO ? chineseInputMethod.symbol : "英",
                 "HARDWARE_LANGUAGE");
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
                 area.top, area.right, area.bottom), hardwareFullWidth ? "全" : "半",
                 "HARDWARE_WIDTH");
+        if (hardwareNumberRowEnabled) {
+            drawHardwareNumberRow(canvas, new RectF(0, area.bottom, getWidth(),
+                    area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP)));
+            drawHardwarePunctuationRow(canvas, new RectF(0,
+                    area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP), getWidth(),
+                    area.bottom + dp(2 * HARDWARE_NUMBER_ROW_HEIGHT_DP)));
+        }
+    }
+
+    private void drawHardwareNumberRow(Canvas canvas, RectF area) {
+        float cellWidth = area.width() / 12f;
+        for (int index = 0; index < 12; index++) {
+            RectF cell = new RectF(area.left + index * cellWidth, area.top,
+                    area.left + (index + 1) * cellWidth, area.bottom);
+            if (index < 10) {
+                drawHardwareLiteralKey(canvas, inset(cell, dp(2)), HARDWARE_NUMBER_DIGITS[index],
+                        HARDWARE_NUMBER_SYMBOLS[index]);
+            } else if (index == 10) {
+                drawHardwareStatusButton(canvas, cell, "符", "HARDWARE_SYMBOL");
+            } else {
+                drawHardwareStatusButton(canvas, cell, "設", "SETTINGS");
+            }
+        }
+    }
+
+    private void drawHardwarePunctuationRow(Canvas canvas, RectF area) {
+        float cellWidth = area.width() / 12f;
+        for (int index = 0; index < 11; index++) {
+            RectF cell = inset(new RectF(area.left + index * cellWidth, area.top,
+                    area.left + (index + 1) * cellWidth, area.bottom), dp(2));
+            drawHardwareLiteralKey(canvas, cell, HARDWARE_PUNCTUATION_KEYS[index],
+                    HARDWARE_PUNCTUATION_SYMBOLS[index]);
+        }
+        RectF shift = inset(new RectF(area.right - cellWidth, area.top,
+                area.right, area.bottom), dp(2));
+        canvas.drawRoundRect(shift, dp(6), dp(6), specialKeyPaint);
+        textPaint.setTextSize(dp(18));
+        textPaint.setFakeBoldText(hardwareNumberShifted);
+        canvas.drawText("⇧", shift.centerX(), textBaseline(shift, textPaint), textPaint);
+        hits.add(new Hit(new RectF(shift), HitKind.KEY, "HARDWARE_NUMBER_SHIFT", -1));
+    }
+
+    private void drawHardwareLiteralKey(Canvas canvas, RectF cell,
+                                        String unshifted, String shiftedValue) {
+        String primary = hardwareNumberShifted ? shiftedValue : unshifted;
+        String secondary = hardwareNumberShifted ? unshifted : shiftedValue;
+        canvas.drawRoundRect(cell, dp(6), dp(6), keyPaint);
+        textPaint.setTextSize(dp(17));
+        textPaint.setFakeBoldText(true);
+        canvas.drawText(primary, cell.centerX(), cell.centerY() + dp(1), textPaint);
+        hintPaint.setTextSize(dp(10));
+        canvas.drawText(secondary, cell.centerX(), cell.bottom - dp(5), hintPaint);
+        hits.add(new Hit(new RectF(cell), HitKind.KEY,
+                HARDWARE_LITERAL_PREFIX + primary, -1));
     }
 
     private void drawHardwareStatusButton(Canvas canvas, RectF bounds, String label,
@@ -417,15 +537,21 @@ final class BopomofoKeyboardView extends View {
                 drawSupportPrompt(canvas, area);
                 return;
             }
-            message = mode == Mode.HARDWARE
-                    ? "標準注音・候選 1–9・關聯詞 Shift+1–9" : "標準注音";
+            message = bopomofoLayoutName()
+                    + (mode == Mode.HARDWARE ? "・候選 1–9・關聯詞 Shift+1–9" : "");
         }
         hintPaint.setTextSize(standardHintTextSize());
         canvas.drawText(message, area.centerX(), textBaseline(area, hintPaint), hintPaint);
     }
 
+    private String bopomofoLayoutName() {
+        if (chineseInputMethod.isTable()) return chineseInputMethod.displayName;
+        return keyboardLayout == BopomofoKeyboardLayout.HSU
+                ? keyboardLayout.displayName : keyboardLayout.displayName + "注音";
+    }
+
     private void drawSupportPrompt(Canvas canvas, RectF area) {
-        String primary = "標準注音";
+        String primary = bopomofoLayoutName();
         String secondary = getResources().getString(R.string.supporter_prompt);
         float primarySize = standardHintTextSize();
         float secondarySize = primarySize * 0.70f;
@@ -444,6 +570,25 @@ final class BopomofoKeyboardView extends View {
         hintPaint.setTextSize(secondarySize);
         canvas.drawText(secondary, startX + primaryWidth + gap, baseline, hintPaint);
         hintPaint.setTextAlign(Paint.Align.CENTER);
+    }
+
+    private boolean supportPromptEligible() {
+        return supportPromptVisible && smartMode && chineseInputMethod == ChineseInputMethod.SMART
+                && inputMode == BopomofoEngine.InputMode.BOPOMOFO;
+    }
+
+    private void drawSupportPromptWord(Canvas canvas, RectF cell, int wordIndex) {
+        int[] words = {R.string.supporter_prompt_welcome, R.string.supporter_prompt_paid,
+                R.string.supporter_prompt_support};
+        String word = getResources().getString(words[wordIndex]);
+        hintPaint.setTextSize(standardHintTextSize());
+        hintPaint.setFakeBoldText(false);
+        float availableWidth = Math.max(1, cell.width() - dp(4));
+        float measuredWidth = hintPaint.measureText(word);
+        if (measuredWidth > availableWidth) {
+            hintPaint.setTextSize(hintPaint.getTextSize() * availableWidth / measuredWidth);
+        }
+        canvas.drawText(word, cell.centerX(), textBaseline(cell, hintPaint), hintPaint);
     }
 
     private float standardHintTextSize() {
@@ -779,7 +924,7 @@ final class BopomofoKeyboardView extends View {
 
     private String keyLabel(String key) {
         return switch (key) {
-            case "MODE" -> fieldPolicy.modeCaption(inputMode);
+            case "MODE" -> fieldPolicy.modeCaption(inputMode).replace("ㄅ", chineseInputMethod.symbol);
             case "SHIFT" -> shifted ? "⇧" : "⇧";
             case "BACKSPACE" -> "⌫";
             case "SPACE" -> "空白";
@@ -791,6 +936,10 @@ final class BopomofoKeyboardView extends View {
     }
 
     private String bopomofoSymbol(String key) {
+        if (chineseInputMethod.isTable())
+            return inputMode == BopomofoEngine.InputMode.BOPOMOFO && !temporaryEnglish
+                    ? ChineseInputMethod.root(key) : "";
+        if (keyboardLayout == BopomofoKeyboardLayout.HSU) return "";
         if (inputMode != BopomofoEngine.InputMode.BOPOMOFO && !temporaryEnglish
                 || key.length() != 1) return "";
         String symbol = BopomofoReading.symbolForKey(Character.toLowerCase(key.charAt(0)));

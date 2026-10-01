@@ -44,6 +44,39 @@ try
     if (SettingsStore.ReadSmartEscClearPreference(file))
         throw new Exception("使用者關閉 Esc 清句未生效");
     Console.WriteLine("Smart Mandarin Esc preference migration passed");
+
+    SettingsStore.Write(file, new Dictionary<string, string> {
+        ["ComposeWhileTyping"] = "false",
+        ["ComposeWhenTyping"] = "true",
+    });
+    if (!InputMethodSettings.ReadComposeWhileTyping(file))
+        throw new Exception("簡易舊鍵名未覆蓋舊版自動產生的預設值");
+    SettingsStore.Write(file, new Dictionary<string, string> {
+        ["ComposeWhenTypingMigrated"] = "true",
+        ["ComposeWhileTyping"] = "false",
+    });
+    if (InputMethodSettings.ReadComposeWhileTyping(file))
+        throw new Exception("舊鍵名覆蓋了新版明確選擇");
+    Console.WriteLine("Simplex legacy compose alias passed");
+
+    // All non-empty subsets must keep an enabled selection. Unknown modules
+    // cannot satisfy the requirement to retain one of our four input methods.
+    for (var mask = 1; mask < 16; mask++)
+    {
+        var visible = InputMethodSettings.Identifiers.Where((_, index) =>
+            (mask & (1 << index)) != 0).ToArray();
+        foreach (var primary in InputMethodSettings.Identifiers.Append("Unknown"))
+        {
+            var selected = InputMethodSettings.SelectVisible(primary, visible);
+            if (!visible.Contains(selected) || (visible.Contains(primary) && selected != primary))
+                throw new Exception("顯示模式與目前模式不一致");
+        }
+    }
+    try {
+        InputMethodSettings.SelectVisible("Generic-cj-cin", ["Unknown"]);
+        throw new Exception("允許隱藏全部輸入法");
+    } catch (InvalidOperationException) { }
+    Console.WriteLine("All four-mode visibility combinations passed");
 }
 finally { if (File.Exists(file)) File.Delete(file); }
 
@@ -60,6 +93,9 @@ try
     File.WriteAllText(Path.Combine(migrationDirectory,
         "org.openvanilla.chichi77-keykey.windows.TraditionalMandarin.plist"),
         "traditional preferences");
+    foreach (var suffix in new[] { "Generic-cj-cin", "Generic-simplex-cin" })
+        File.WriteAllText(Path.Combine(migrationDirectory,
+            $"org.openvanilla.chichi77-keykey.windows.{suffix}.plist"), suffix);
     SettingsStore.MigrateLegacyPreferences(migrationDirectory);
     if (File.ReadAllText(current) != "existing preferences" ||
         File.ReadAllText(Path.Combine(migrationDirectory,
@@ -72,5 +108,17 @@ try
     if (File.ReadAllText(current) != "new preferences")
         throw new Exception("新設定不應被舊設定覆寫");
     Console.WriteLine("Settings migration passed");
+    foreach (var suffix in new[] { "Generic-cj-cin", "Generic-simplex-cin" })
+    {
+        var migrated = Path.Combine(migrationDirectory,
+            $"com.polobread.chichi77-keykey.windows.{suffix}.plist");
+        if (File.ReadAllText(migrated) != suffix)
+            throw new Exception("倉頡／簡易設定未遷移");
+        File.WriteAllText(migrated, "current");
+        SettingsStore.MigrateLegacyPreferences(migrationDirectory);
+        if (File.ReadAllText(migrated) != "current")
+            throw new Exception("倉頡／簡易新版設定被覆寫");
+    }
+    Console.WriteLine("Cangjie and Simplex preference migration passed");
 }
 finally { Directory.Delete(migrationDirectory, true); }

@@ -2,7 +2,7 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 1.3.0 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
+Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
 共用 [`v1.3.0` Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
@@ -126,7 +126,7 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
-Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.3.0 安裝與使用指南](LINUX_INSTALL.md)；
+Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.3.1 安裝與使用指南](LINUX_INSTALL.md)；
 本節指令產生的本機套件仍需通過發布流程的驗證，才可作為 GitHub Release 安裝檔。
 
 Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
@@ -188,12 +188,12 @@ x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 - Visual Studio 2026，安裝「使用 C++ 的桌面開發」workload；也提供 Visual
   Studio 2022 相容 preset
 - CMake 3.25 以上；Visual Studio 內附版本即可
-- .NET 10 SDK（設定頁採 WPF Fluent；套件內已包含執行階段）
-- Ruby 3.x（從原始資料煮好打注音詞庫時需要；Windows CI 會安裝）
+- .NET 10 SDK（設定頁與部署工具皆 self-contained；使用者不需另裝 runtime）
+- Python 3（驗證預先產生的共用資料庫）
 - NSIS 3.12（只有建立 Store EXE 時需要）
 
-Windows 使用原生 C++ DatabaseCooker 與 macOS 共用的 SmartMandarinCooker.rb
-產生好打注音資料；SQLite 則連結 Windows 內建的 WinSQLite3。不需要 GNU Make、
+Windows 建置只驗證並複製正式共用 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`，
+不得自行 cooker；SQLite 連結 Windows 內建的 WinSQLite3。不需要 GNU Make、
 `awk`、`sed` 或外部 `sqlite3` 程式。
 
 ### 建置及測試 x64
@@ -207,7 +207,8 @@ cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release --target KeyKeySettings
+cmake --build --preset windows-x86-release
+ctest --test-dir .\out\build\x86 -C Release --output-on-failure
 ```
 
 輸出檔案為：
@@ -216,11 +217,12 @@ cmake --build --preset windows-x86-release --target KeyKeySettings
 out\build\x64-ninja\KeyKeyTsf.dll
 out\build\x64-ninja\KeyKeySettings.exe
 out\build\x64-ninja\KeyKeySettingsBackend.dll
+out\build\x64-ninja\KeyKeyDeployment.exe
+out\build\x64-ninja\KeyKeyRegistration.exe
 out\build\x64-ninja\Databases\KeyKey.db
 ```
 
-Windows DatabaseCooker 會固定納入公開 repository 內
-`DataSource/chichi77Collection` 的 29 份分類詞庫，不需另設 CMake 路徑。
+共用資料庫含 `DataSource/chichi77Collection` 的公開分類詞庫，平台建置不另煮資料。
 
 ### 本機註冊
 
@@ -231,9 +233,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
 ```
 
-Windows 會將註冊的 TSF 顯示於已安裝的繁體中文（台灣、香港或澳門）輸入法清單；
-註冊腳本不會改動使用者的語言清單。若沒有立即
-出現在 `Win+Space`，請登出再登入。解除註冊：
+註冊後，使用者自行到繁體中文（台灣、香港或澳門）的「語言選項 → 新增鍵盤」
+加入琦琦，再用 `Win+Space` 選用；註冊腳本不變更語言清單或預設輸入法。
+詳細 Win10／Win11 步驟見 [Windows 安裝指南](WINDOWS_INSTALL.md)。解除註冊：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
@@ -255,15 +257,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 或 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
-- 將檔案複製到 `C:\Program Files\chichi77 KeyKey`
-- 從固定路徑註冊 TSF
+- 將整套檔案複製到 `C:\Program Files\chichi77 KeyKey\1.3.1-內容指紋`
+- 驗證後才切換 TSF 註冊，保留仍供舊行程使用的 payload
 - 在 Windows「已安裝的應用程式」加入解除安裝項目
 
 請勿直接從網路磁碟、NAS 或 UNC 路徑安裝；UAC 後可能無法存取原路徑，且安裝
-視窗可能立即關閉。失敗記錄位於 `%TEMP%\chichi77-keykey-install.log`。
+視窗可能立即關閉。開始部署後的記錄位於 `%ProgramFiles%\chichi77 KeyKey\Deployment.log`。
 
-Windows 會在已安裝的繁體中文（台灣、香港或澳門）語言下顯示輸入法；若沒有立即出現，請登出
-再登入。這是未簽署的家用測試套件，因此從網路下載時 Windows 可能顯示安全警告。
+首次安裝須自行在 Windows 設定新增鍵盤；升級保留共用入口的選擇，舊香港／澳門入口使用者需改選共用入口。請登出再登入載入新版。
+這是未簽署的家用測試套件，因此從網路下載時 Windows 可能顯示安全警告。
 
 Windows x64 套件會同時安裝 x64 與 x86 TSF DLL，可供所有 32 位元應用程式使用；
 x86 套件供 32 位元 Windows 使用。
@@ -276,9 +278,9 @@ DLL 架構必須和載入它的應用程式架構相同。
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-產物是 `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`。
-產品版號維持 `1.3.0`；本機測試安裝目錄使用 `1.3.0-test-<內容指紋>`，避免
-重編後覆寫仍由應用程式載入的 DLL。正式簽章套件則使用 `1.3.0` 等一般版號目錄。
+產物是 `out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe`。
+產品版號維持 `1.3.1`；ZIP、未簽 EXE 與正式簽章包一律使用 `1.3.1-<內容指紋>`。
+修復使用 `1.3.1-<新實例 ID>`，新目錄不含 `test`；舊 `test` 目錄仍可辨識供遷移。
 
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
@@ -300,12 +302,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -TimestampUrl $timestampUrl
 ```
 
-腳本會在暫存副本依序簽署並驗證 x64 DLL、x86 DLL、設定 EXE 與設定後端 DLL，以 NSIS 建立離線安裝
+腳本會在暫存副本簽署並驗證 x64／x86 DLL、設定 EXE、設定後端 DLL、部署 EXE 及 x86 bridge，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
-`out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`。完整參數、`/S`
+`out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
-互動式完成頁可選擇開啟琦琦設定；版本升級時另提示登出再登入，讓工作列載入新版
-輸入法。升級時會保留可能仍被舊版文字宿主使用的版本目錄，等舊行程結束後再清理。
+解除安裝器沿用已簽署的部署 EXE。完成頁提供自行新增鍵盤的步驟；升級提示登出再登入，
+不自動開設定。版本目錄保留至移除時按清冊清理；個人設定、自訂詞與學習資料保留。
 
 ## Android
 
@@ -371,7 +373,7 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
 Actions 頁面按 **Run workflow** 手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag
-（例如 `v1.3.0`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
+（例如 `v1.3.1`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
 `release_tag` 輸入，留空時只保留測試 artifact。一般 commit、pull request 與不符合版號的
 tag 不會發布 Release。`Linux CI` 保留 pull request 與手動執行，並由 `v*` tag 觸發完整
 gate；`master` push 不觸發。tag run 在 Ubuntu 24.04 套件建置、安裝生命週期與 X11
@@ -418,7 +420,7 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 ## English
 
-Native Linux support began with version 1.2.8. Version 1.3.0 includes a
+Native Linux support began with version 1.2.8. Version 1.3.1 includes a
 Linux-only engine and Fcitx 5 addon. The GTK 3, GTK 4, and Qt 6 X11 matrix is
 implemented, and 76 cases that do not restart the desktop Fcitx process pass
 in an isolated Ubuntu 24.04 GNOME X11 session. A GNOME Wayland KVM guest also
@@ -581,15 +583,16 @@ installation, signing, and notarization.
 #### Requirements
 
 - Windows 10 or later (built and launched on Windows 11; Windows 10 needs device testing)
-- .NET 10 SDK to build the self-contained Fluent WPF settings app
+- .NET 10 SDK to build self-contained settings and deployment apps
 - Visual Studio 2026 with the **Desktop development with C++** workload;
   Visual Studio 2022-compatible presets are also included
 - CMake 3.25 or newer; the Visual Studio copy is sufficient
-- Ruby 3.x to cook the Smart Mandarin database from source (installed in Windows CI)
+- Python 3 to verify the pre-generated shared database
 - NSIS 3.12, only when building the Store EXE
 
-Windows uses its native C++ database cooker and the SmartMandarinCooker.rb
-shared with macOS. It links the system WinSQLite3 library. GNU Make, `awk`,
+Windows verifies and copies the canonical shared
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`; it does not cook the model.
+It links the system WinSQLite3 library. GNU Make, `awk`,
 `sed`, and a separate `sqlite3` program are not required.
 
 #### Build and test x64
@@ -603,7 +606,8 @@ cmake --preset windows-x64
 cmake --build --preset windows-x64-release
 ctest --test-dir .\out\build\x64-ninja --output-on-failure
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release --target KeyKeySettings
+cmake --build --preset windows-x86-release
+ctest --test-dir .\out\build\x86 -C Release --output-on-failure
 ```
 
 The outputs are:
@@ -612,11 +616,13 @@ The outputs are:
 out\build\x64-ninja\KeyKeyTsf.dll
 out\build\x64-ninja\KeyKeySettings.exe
 out\build\x64-ninja\KeyKeySettingsBackend.dll
+out\build\x64-ninja\KeyKeyDeployment.exe
+out\build\x64-ninja\KeyKeyRegistration.exe
 out\build\x64-ninja\Databases\KeyKey.db
 ```
 
-The Windows DatabaseCooker always includes the 29 public categorized collections
-from `DataSource/chichi77Collection`; no separate CMake path is required.
+The shared database includes the public categorized collections from
+`DataSource/chichi77Collection`; platform builds do not recook them.
 
 #### Register a development build
 
@@ -627,10 +633,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
   -DllPath .\out\build\x64-ninja\KeyKeyTsf.dll
 ```
 
-Windows lists the registered TSF under installed Traditional Chinese (Taiwan,
-Hong Kong, or Macao) languages. The script does not change the user's language
-list. Sign out and back in if it does not immediately appear in
-`Win+Space`. To unregister:
+Users add the registered TSF in a Traditional Chinese (Taiwan, Hong Kong or
+Macao) language's options using Add a keyboard, then select it with `Win+Space`.
+The script does not change the language list or default input method.
+See the [Windows installation guide](WINDOWS_INSTALL.md). To unregister:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
@@ -653,13 +659,15 @@ architecture. On the other PC, extract the complete ZIP and copy the folder
 to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
 become inaccessible after UAC elevation and the installer window can close
-immediately. Failures are logged to `%TEMP%\chichi77-keykey-install.log`. It copies the runtime to
-`C:\Program Files\chichi77 KeyKey`, registers
+immediately. Once deployment starts, records are in
+`%ProgramFiles%\chichi77 KeyKey\Deployment.log`. It stages the runtime in
+`C:\Program Files\chichi77 KeyKey\1.3.1-<fingerprint>`, then registers
 both x64 and x86 TSF DLLs on x64 Windows (for all 32-bit applications), or the
 x86 DLL on 32-bit Windows, and creates an
-entry in Windows Installed apps. Windows lists KeyKey under installed Traditional
-Chinese (Taiwan, Hong Kong, or Macao) languages in `Win+Space`.
-Sign out and back in if it does not appear immediately.
+entry in Windows Installed apps. First-time users add KeyKey in Windows
+Settings before selecting it with `Win+Space`. Upgrades preserve the shared
+entry selection and retire the two old Hong Kong/Macao entries. Users of those
+entries must add/select the shared entry. Sign out and back in to load the new DLLs.
 
 The home-testing package is unsigned, so Windows may warn about a downloaded
 copy.
@@ -671,11 +679,10 @@ To build an unsigned local NSIS test installer, run:
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-The output is `out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.unsigned.exe`.
-Its product version remains `1.3.0`; local test installations use a
-`1.3.0-test-<content fingerprint>` directory so rebuilding does not overwrite
-a DLL still loaded by an application. Signed production installers use plain
-version directories such as `1.3.0`.
+The output is `out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe`.
+Its product version remains `1.3.1`; ZIP and EXE, signed and unsigned, use
+`1.3.1-<content fingerprint>`. Repair uses a fresh `1.3.1-<instance-id>` path.
+New names do not contain `test`; old labelled directories remain recognizable.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
 deployment and verification information.
@@ -695,14 +702,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -TimestampUrl 'YOUR_CA_RFC3161_TIMESTAMP_URL'
 ```
 
-The script signs and verifies the four PE payloads, builds an offline NSIS
+The script signs and verifies all six PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
-`out\store-package\chichi77-KeyKey-1.3.0-windows-x64-setup.exe`. See the Windows
+`out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
-The interactive finish page can open KeyKey settings. An upgrade keeps older
-version directories available to text hosts that still have the previous DLL
-loaded; remove them after those processes exit.
+The signed deployment executable also serves as the uninstaller. The finish
+page explains manual keyboard setup and does not launch settings. Upgrades keep
+older payloads for running hosts and existing profile icon paths; removal uses
+an ownership-checked inventory, retaining personal preferences and learning.
 
 ### Android
 
@@ -764,7 +772,7 @@ shares the completed text. See the
 The Android debug packaging, Google Play release, and iOS Simulator workflows
 run only after **Run workflow** is selected on the GitHub Actions page. The
 macOS and Windows workflows publish to a Release when a tag that exactly
-matches the repository version, such as `v1.3.0`, is pushed. Both can also be
+matches the repository version, such as `v1.3.1`, is pushed. Both can also be
 run manually; the Windows workflow additionally takes a `release_tag` input,
 and leaving it blank produces a test artifact only. Commits, pull requests, and
 mismatched tags do not publish a Release. `Linux CI` keeps its pull-request and
@@ -816,3 +824,7 @@ and App Store Connect, not by the Simulator workflow. The other test packages
 use only the public dictionaries in this repository. Windows production signing
 is still deferred. Because the repository is public, readers may still download
 an artifact during its seven-day retention period.
+
+Windows 安裝包反覆測試時，若前一次 EXE 仍開啟，可在 `Package-Store-Windows.ps1`
+加上 `-BuildLabel fix-20261001-143000` 產生不同檔名，避免覆寫執行中的檔案。
+此參數只改安裝檔名，不改產品版號或 Program Files 下的版本目錄。

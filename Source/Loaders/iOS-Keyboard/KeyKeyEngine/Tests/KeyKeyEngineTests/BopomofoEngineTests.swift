@@ -104,11 +104,72 @@ private struct ContextSensitiveSmartSource: SmartMandarinSource {
     ) -> [String] { [] }
 }
 
+private final class LearningContextSource: SmartMandarinSource {
+    let first = TableCandidateSource.queryKey(for: "su3")
+    let second = TableCandidateSource.queryKey(for: "cl3")
+    var learnedComposition: SmartMandarinComposition?
+
+    func compose(readings: [String], overrides: [Int: String]) -> SmartMandarinComposition? {
+        let changed = overrides[1] == "郝"
+        let segments = readings.enumerated().map { index, query in
+            SmartMandarinSegment(start: index, length: 1, query: query,
+                text: overrides[index] ?? (query == first ? (changed ? "妳" : "你") : "好"))
+        }
+        return .init(text: segments.map(\.text).joined(), segments: segments)
+    }
+    func candidates(for readings: [String], at index: Int,
+                    composition: SmartMandarinComposition?) -> [String] { ["好", "郝"] }
+    func learnSelection(readings: [String], at index: Int, selected: String,
+                        composition: SmartMandarinComposition?) {
+        learnedComposition = composition
+    }
+}
+
 /// Ported from `BopomofoEngineTest.java`. Hardware cases are used by the
 /// containing App's editor; the keyboard extension itself still cannot receive
 /// physical key events.
 @Suite("Bopomofo engine")
 struct BopomofoEngineTests {
+    @Test("Hsu supports traditional candidates and returns to Standard without leaking state")
+    func hsuTraditionalSwitching() {
+        let engine = engine()
+        #expect(engine.keyboardLayout == .standard)
+        #expect(engine.setKeyboardLayout(.hsu) == .update)
+        _ = type(engine, "nef")
+        #expect(engine.readingText == "ㄋㄧˇ")
+        #expect(engine.displayedCandidates == ["你", "妳", "擬"])
+        #expect(engine.backspace() == .update)
+        #expect(engine.readingText == "ㄋㄧ")
+        _ = engine.handleSoftKey("f")
+        #expect(engine.handleHardwareCharacter("2") == .commit("妳"))
+        _ = engine.setKeyboardLayout(.standard)
+        _ = type(engine, "su3")
+        #expect(engine.displayedCandidates == ["你", "妳", "擬"])
+        #expect(engine.handleHardwareCharacter("1") == .commit("你"))
+    }
+
+    @Test("Hsu smart touch and hardware preserve composition through candidates and layout changes")
+    func hsuSmartSwitching() {
+        for hardware in [false, true] {
+            let engine = smartEngine(hardwareEditing: hardware)
+            _ = engine.setKeyboardLayout(.hsu)
+            for key in "nefhwf" {
+                _ = hardware ? engine.handleHardwareCharacter(key) : engine.handleSoftKey(String(key))
+            }
+            #expect(engine.composingText == "你好")
+            #expect(engine.handleSoftKey("q") == .update)
+            #expect(!engine.displayedCandidates.isEmpty)
+            #expect(engine.setKeyboardLayout(.standard) == .commit("你好"))
+            #expect(!engine.hasComposition)
+            _ = type(engine, "su3cl3")
+            #expect(engine.composingText == "你好")
+            #expect(engine.setKeyboardLayout(.hsu) == .commit("你好"))
+            _ = type(engine, "nefhwf")
+            #expect(engine.handleSoftKey(",") == .commit("你好，"))
+            #expect(engine.handleSoftKey("<") == .commit("〈"))
+        }
+    }
+
     private func engine(
         _ entries: [String: [String]] = ["su3": ["你", "妳", "擬"]],
         phrases: [String: [String]] = [:]
@@ -134,6 +195,70 @@ struct BopomofoEngineTests {
             compositionMode: .smart,
             hardwareSmartEditing: hardwareEditing
         )
+    }
+
+    @Test("hardware Enter preserves the prefix evicted by its unfinished reading")
+    func hardwareEnterKeepsEvictedPrefix() {
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource([:]),
+            smartSource: TableSmartSource(table: [
+                TableCandidateSource.queryKey(for: "su3"): ["你"],
+                TableCandidateSource.queryKey(for: "su"): ["尼"]
+            ]), compositionMode: .smart, hardwareSmartEditing: true
+        )
+        for key in String(repeating: "su3", count: 10) + "su" {
+            #expect(engine.handleHardwareCharacter(key).text.isEmpty)
+        }
+        #expect(engine.enter() == .commit(String(repeating: "你", count: 10) + "尼"))
+        #expect(!engine.hasComposition)
+        #expect(engine.finishCompositionForInputHandoff().text.isEmpty)
+    }
+
+    @Test("fallback selection preserves the sentence and hardware insertion position")
+    func fallbackKeepsSentence() {
+        for hardware in [false, true] {
+            let engine = BopomofoEngine(
+                dictionary: TableCandidateSource(["vup3": ["伈", "𨓇"]]),
+                smartSource: TableSmartSource(table: [
+                    TableCandidateSource.queryKey(for: "su3"): ["你"],
+                    TableCandidateSource.queryKey(for: "cl3"): ["好"]
+                ]), compositionMode: .smart, hardwareSmartEditing: hardware
+            )
+            _ = type(engine, "su3cl3")
+            if hardware { #expect(engine.moveSmartCompositionCursor(by: -1)) }
+            _ = type(engine, "vup3")
+            #expect(engine.displayedCandidates == ["伈", "𨓇"])
+            let result = engine.selectDisplayedCandidate(1)
+            #expect(result == .commit(hardware ? "你𨓇好" : "你好𨓇"))
+            #expect(!engine.hasComposition)
+        }
+    }
+
+    @Test("hardware uppercase stays literal and preserves unfinished readings")
+    func hardwareUppercaseIsLiteral() {
+        let engine = smartEngine(hardwareEditing: true)
+        _ = type(engine, "su3cl3")
+        #expect(engine.handleHardwareCharacter("A") == .commit("你好A"))
+        #expect(engine.handleHardwareCharacter("B") == .commit("B"))
+        _ = type(engine, "su3s")
+        #expect(engine.handleHardwareCharacter("C") == .update)
+        #expect(engine.composingText == "你ㄋ")
+    }
+
+    @Test("candidate learning sees the predecessor after recomposition")
+    func learningUsesRecomposedContext() {
+        for hardware in [false, true] {
+            let source = LearningContextSource()
+            let engine = BopomofoEngine(dictionary: TableCandidateSource([:]),
+                smartSource: source, compositionMode: .smart, hardwareSmartEditing: hardware)
+            _ = type(engine, "su3cl3")
+            if hardware { _ = engine.space() }
+            else { #expect(engine.selectTouchSmartCell(1)) }
+            _ = engine.selectDisplayedCandidate(1)
+            #expect(engine.composingText == "妳郝")
+            #expect(source.learnedComposition?.text == "妳郝")
+            #expect(source.learnedComposition?.segments.first?.text == "妳")
+        }
     }
 
     // MARK: Reading and candidates

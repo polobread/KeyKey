@@ -4,7 +4,6 @@ title chichi77 KeyKey Installer
 
 set "InstallerSource=%~dp0"
 set "InstallerStage=%TEMP%\chichi77-keykey-install-%RANDOM%-%RANDOM%-%RANDOM%"
-set "InstallerLog=%TEMP%\chichi77-keykey-install.log"
 
 echo Preparing chichi77 KeyKey installer...
 echo Source: "%InstallerSource%"
@@ -38,10 +37,16 @@ echo Requesting administrator permission...
 set "InstallExitCode=%ERRORLEVEL%"
 rmdir /s /q "%InstallerStage%" >nul 2>&1
 
-if not "%InstallExitCode%"=="0" (
+if "%InstallExitCode%"=="3010" (
+    echo Installation completed. Restart Windows to finish file cleanup.
+) else if not "%InstallExitCode%"=="0" (
     echo.
     echo Installation failed with exit code %InstallExitCode%.
-    echo Diagnostic log: %InstallerLog%
+    echo Run Payload\KeyKeyDeployment.exe inspect to view installation metadata.
+)
+if "%InstallExitCode%"=="0" (
+    echo Add chichi77 KeyKey in Windows Settings ^> Time and language ^> Language options ^> Add a keyboard.
+    echo After upgrading, sign out and back in to load the new input method.
 )
 pause
 exit /b %InstallExitCode%

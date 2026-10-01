@@ -1,0 +1,29 @@
+{
+  "version": "project-unigram-v1",
+  "partition": {
+    "seed": 20260926,
+    "training_articles": 800,
+    "validation_articles": 750,
+    "final_test_articles": 750
+  },
+  "counts": {
+    "method": "known dictionary substring occurrence",
+    "floor": 1,
+    "project_weight": 0.75,
+    "public_prior_weight": 0.25,
+    "integer_scale": 100000000
+  },
+  "readings": {
+    "primary": "local KeyKey data and curated Taiwan typing conventions",
+    "review_order": [
+      "ChatGPT assessment in Taiwan usage context",
+      "Ministry of Education dictionary only when uncertainty or conflict remains"
+    ],
+    "typing_overrides": "reading-overrides.tsv",
+    "review_log": "reading-review.tsv"
+  },
+  "selection": {
+    "result_summary": "project-unigram-v1-results.json",
+    "raw_artifacts": "typing-benchmarks/unigram-800-750-750-seed20260926-r3 (generated locally and gitignored)"
+  }
+}

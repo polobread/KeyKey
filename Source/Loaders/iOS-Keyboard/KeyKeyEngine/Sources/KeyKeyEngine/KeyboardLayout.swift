@@ -104,7 +104,10 @@ public enum KeyboardLayout {
 
     /// The Bopomofo glyph for a reading key, or nil for anything else. Keys
     /// carry both labels so the physical key position stays visible.
-    public static func bopomofoGlyph(for key: String) -> String? {
+    public static func bopomofoGlyph(
+        for key: String, layout: BopomofoKeyboardLayout = .standard
+    ) -> String? {
+        guard layout == .standard else { return nil }
         guard key.count == 1, let character = key.first else { return nil }
         return StandardBopomofoLayout.glyph(for: character).map(String.init)
     }
@@ -125,14 +128,15 @@ public enum KeyboardLayout {
         reading: String,
         mode: BopomofoEngine.InputMode,
         shifted: Bool,
-        temporaryEnglish: Bool
+        temporaryEnglish: Bool,
+        layout: BopomofoKeyboardLayout = .standard
     ) -> String {
         if !reading.isEmpty { return "\(reading)\u{3000}按空白選字" }
         if temporaryEnglish { return "暫時英文小寫" }
         switch mode {
         case .english: return shifted ? "英文大寫" : "英文小寫"
         case .number: return shifted ? "數字與符號（二）" : "數字與符號（一）"
-        case .bopomofo: return "標準注音"
+        case .bopomofo: return layout == .hsu ? "許氏鍵盤" : "標準注音"
         }
     }
 }

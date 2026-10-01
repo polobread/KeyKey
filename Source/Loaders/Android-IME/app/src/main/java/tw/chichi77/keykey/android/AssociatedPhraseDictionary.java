@@ -163,7 +163,7 @@ final class AssociatedPhraseDictionary {
                 long count = parseCount(fields[1]);
                 if (count == 0 || !startsWithHan(word) || exclusions.contains(word)) continue;
                 int codePointCount = word.codePointCount(0, word.length());
-                if (codePointCount < 2 || codePointCount > 20) continue;
+                if (codePointCount < 2 || codePointCount > 6) continue;
                 if (word.contains("媽的")) continue;
 
                 int firstCharacterLength = Character.charCount(word.codePointAt(0));

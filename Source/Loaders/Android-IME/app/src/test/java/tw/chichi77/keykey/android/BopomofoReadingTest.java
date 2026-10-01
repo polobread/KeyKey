@@ -8,6 +8,29 @@ import org.junit.Test;
 
 public final class BopomofoReadingTest {
     @Test
+    public void hsuTonesAndAmbiguitiesUseCanonicalDictionaryKeys() {
+        String[][] cases = {{"jxl", "5j/", "ㄓㄨㄥ"}, {"llf", "x/3", "ㄌㄥˇ"},
+                {"myd", "a86", "ㄇㄚˊ"}, {"myf", "a83", "ㄇㄚˇ"},
+                {"myj", "a84", "ㄇㄚˋ"}, {"mys", "a87", "ㄇㄚ˙"},
+                {"l", "-", "ㄦ"}, {"gef", "ru3", "ㄐㄧˇ"}, {"guf", "rm3", "ㄐㄩˇ"}};
+        for (String[] test : cases) {
+            BopomofoReading reading = new BopomofoReading();
+            reading.setLayout(BopomofoKeyboardLayout.HSU);
+            for (char key : test[0].toCharArray()) assertTrue(reading.combine(key));
+            assertEquals(test[1], reading.queryKey());
+            assertEquals(test[2], reading.displayText());
+            assertFalse(reading.combine('#'));
+            assertEquals(test[2], reading.displayText());
+            reading.clear();
+            assertTrue(reading.isEmpty());
+            assertEquals(BopomofoKeyboardLayout.HSU, reading.layout());
+        }
+        assertEquals(BopomofoKeyboardLayout.STANDARD, BopomofoKeyboardLayout.fromValue(null));
+        assertEquals(BopomofoKeyboardLayout.STANDARD, BopomofoKeyboardLayout.fromValue("invalid"));
+        assertEquals(BopomofoKeyboardLayout.HSU, BopomofoKeyboardLayout.fromValue("Hsu"));
+    }
+
+    @Test
     public void canonicalizesComponentsEnteredOutOfOrder() {
         BopomofoReading reading = new BopomofoReading();
 

@@ -1,0 +1,35 @@
+{
+  "format": 1,
+  "source": {
+    "file": "search-trend-unigram-source.txt",
+    "terms": 550,
+    "sha256": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1"
+  },
+  "database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
+  "training_sources": [
+    {
+      "file": "typing-articles-v2.jsonl",
+      "articles": 1650,
+      "sha256": "ae70cc5274c5d131510a010aa07adf9eaca4be3f37345711e4c5516049cafe5d"
+    },
+    {
+      "file": "typing-articles-v3.jsonl",
+      "articles": 350,
+      "sha256": "8e783676d4a22cd92ae832e1a3be913d2e07252c8e2c4add76b55f6c725877de"
+    },
+    {
+      "file": "typing-articles-v4.jsonl",
+      "articles": 300,
+      "sha256": "ff625fc0b7be600347d7e61c9ddc3b4c4b8ada17f2b76950425f203505af6dc8"
+    }
+  ],
+  "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))",
+  "input_duplicates": 0,
+  "existing_terms_removed": 393,
+  "custom_terms": 157,
+  "positive_custom_terms": 157,
+  "zero_count_review_terms": 0,
+  "reading_overrides": 5,
+  "output_sha256": "565b57a2dd90167286fcde38c02686070709e0326b18c201dd9a5be278584c34",
+  "review_sha256": "91132f6613fcce2471664d783449452f6d417ce3557de38c753af401d71796b6"
+}

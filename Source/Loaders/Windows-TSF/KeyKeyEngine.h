@@ -38,11 +38,12 @@ struct KeyEvent {
     bool numLock = false;
 };
 
-// Returns true only for Ctrl chords backed by entries in
+// Returns true only in Mandarin modes for Ctrl chords backed by entries in
 // DataTables/bpmf-punctuations.cin. General application shortcuts must remain
 // outside the input-method engine.
 bool IsInputMethodControlKey(const KeyEvent& event);
 std::string CurrentInputMethod();
+bool IsInputMethodAvailable(const char* identifier);
 bool SelectInputMethod(const char* identifier);
 
 class KeyKeyEngineSession final {

@@ -1,4 +1,5 @@
 #include "TextService.h"
+#include "InputModeState.h"
 
 #include <algorithm>
 #include <array>
@@ -378,7 +379,7 @@ STDMETHODIMP TextService::Activate(ITfThreadMgr* threadManager, TfClientId clien
 }
 
 STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId clientId,
-                                     DWORD) {
+                                     DWORD flags) {
     if (!threadManager || clientId == TF_CLIENTID_NULL) return E_INVALIDARG;
     if (threadManager_) return S_OK;
 
@@ -395,9 +396,18 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
               static_cast<unsigned long>(compositionDisplayAttributeAtom_));
     }
     engine_ = KeyKeyEngineSession::Create();
-    Trace("Activate process=%ls arch=%ls client=%lu engineReady=%d",
+    for (const auto& method : kInputMethods) {
+        Trace("InputMethod available method=%s available=%d", method.identifier,
+              IsInputMethodAvailable(method.identifier));
+    }
+    immersiveMode_ = (flags & TF_TMF_IMMERSIVEMODE) != 0;
+    const HRESULT sharedResult = sharedInputMethod_.connect(threadManager_.Get());
+    Trace("SharedInputMethod connect hr=0x%08lX", static_cast<unsigned long>(sharedResult));
+    syncInputMethod();
+    Trace("Activate process=%ls arch=%ls client=%lu flags=0x%08lX engineReady=%d",
           CurrentProcessName().c_str(), BuildArchitecture(),
-          static_cast<unsigned long>(clientId_), engine_ && engine_->ready());
+          static_cast<unsigned long>(clientId_), static_cast<unsigned long>(flags),
+          engine_ && engine_->ready());
     const HRESULT langBarResult = initializeLangBar();
     Trace("InitializeLangBar hr=0x%08lX",
           static_cast<unsigned long>(langBarResult));
@@ -425,6 +435,8 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
         unadviseSinks();
         uninitializeLangBar();
         engine_.reset();
+        sharedInputMethod_.reset();
+        lastLocalInputMethod_.clear();
         threadManager_.Reset();
         clientId_ = TF_CLIENTID_NULL;
     }
@@ -440,6 +452,8 @@ STDMETHODIMP TextService::Deactivate() {
     unadviseSinks();
     uninitializeLangBar();
     engine_.reset();
+    sharedInputMethod_.reset();
+    lastLocalInputMethod_.clear();
     threadManager_.Reset();
     clientId_ = TF_CLIENTID_NULL;
     compositionDisplayAttributeAtom_ = TF_INVALID_GUIDATOM;
@@ -595,8 +609,7 @@ HRESULT TextService::initializeLangBar() {
     HRESULT result = threadManager_.As(&manager);
     if (FAILED(result)) return result;
 
-    auto* modeIcon = new (std::nothrow)
-        LangBarButton(this, kLangBarInputModeGuid, LangBarButton::Kind::InputMode);
+    auto* modeIcon = LangBarButton::CreateInputMode(this);
     auto* switchLanguage = new (std::nothrow) LangBarButton(
         this, kLangBarSwitchLanguageGuid, LangBarButton::Kind::SwitchLanguage);
     auto* fullHalf = new (std::nothrow)
@@ -677,15 +690,10 @@ void TextService::setChineseMode(bool enabled) {
 
     HRESULT result = E_FAIL;
     ComPtr<ITfCompartmentMgr> manager;
-    ComPtr<ITfCompartment> compartment;
-    if (threadManager_ && SUCCEEDED(threadManager_.As(&manager)) &&
-        SUCCEEDED(manager->GetCompartment(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE,
-                                         &compartment))) {
-        VARIANT value;
-        VariantInit(&value);
-        value.vt = VT_I4;
-        value.lVal = enabled ? 1 : 0;
-        result = compartment->SetValue(clientId_, &value);
+    if (threadManager_ && SUCCEEDED(threadManager_.As(&manager))) {
+        updatingModeCompartments_ = true;
+        result = WriteChineseMode(manager.Get(), clientId_, enabled);
+        updatingModeCompartments_ = false;
     }
     Trace("InputMode chinese=%d hr=0x%08lX", enabled,
           static_cast<unsigned long>(result));
@@ -728,14 +736,48 @@ void TextService::setFullWidthMode(bool enabled) {
 void TextService::toggleFullWidthMode() { setFullWidthMode(!fullWidthMode_); }
 
 bool TextService::selectInputMethod(const char* identifier) {
-    if (!IsInputMethodVisible(identifier)) return false;
+    if (!IsInputMethodVisible(identifier) || !IsInputMethodAvailable(identifier)) return false;
     if (CurrentInputMethod() != identifier) {
         if (!requestCommitComposition()) return false;
         if (!SelectInputMethod(identifier)) return false;
     }
     if (!chineseMode_) setChineseMode(true);
+    lastLocalInputMethod_ = identifier;
+    if (threadManager_) {
+        const HRESULT result = sharedInputMethod_.write(clientId_, identifier);
+        Trace("SharedInputMethod publish method=%s hr=0x%08lX", identifier,
+              static_cast<unsigned long>(result));
+    }
+    Trace("SelectInputMethod method=%s", identifier);
     refreshLangBar();
     return true;
+}
+
+void TextService::syncInputMethod() {
+    if (!threadManager_ || syncingInputMethod_) return;
+    syncingInputMethod_ = true;
+    std::string local = CurrentInputMethod();
+    const auto* shared = sharedInputMethod_.read();
+    // A settings-file change in a desktop host is an explicit new selection.
+    // On first activation, however, a stale local profile must not overwrite
+    // the selection published by the host that previously had focus.
+    if ((!immersiveMode_ && !lastLocalInputMethod_.empty() && local != lastLocalInputMethod_) ||
+        (!shared && !immersiveMode_)) {
+        const HRESULT result = sharedInputMethod_.write(clientId_, local.c_str());
+        Trace("SharedInputMethod seed/update method=%s hr=0x%08lX", local.c_str(),
+              static_cast<unsigned long>(result));
+    } else if (shared && local != shared->identifier &&
+               IsInputMethodAvailable(shared->identifier)) {
+        // The engine preserves pending composition when its method changes.
+        // Do not request an edit session from a focus or test-key callback.
+        if (SelectInputMethod(shared->identifier)) {
+            local = shared->identifier;
+            Trace("SharedInputMethod adopt method=%s", local.c_str());
+            refreshLangBar();
+        }
+    }
+    lastLocalInputMethod_ = local;
+    syncingInputMethod_ = false;
 }
 
 KeyEvent TextService::translateKey(WPARAM wparam, LPARAM lparam) const {
@@ -789,6 +831,7 @@ bool TextService::isFullWidthCharacterKey(const KeyEvent& event) const {
 }
 
 STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
+    if (foreground) syncInputMethod();
     if (!foreground) {
         shiftTogglePending_ = false;
         if (!requestCommitComposition()) {
@@ -801,6 +844,7 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
 STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lparam,
                                         BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
+    syncInputMethod();
     const KeyEvent event = translateKey(wparam, lparam);
     if (!IsShiftKey(event.virtualKey)) {
         shiftTogglePending_ = false;
@@ -836,6 +880,7 @@ STDMETHODIMP TextService::OnTestKeyUp(ITfContext*, WPARAM wparam, LPARAM,
 STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM lparam,
                                     BOOL* eaten) {
     if (!context || !eaten) return E_INVALIDARG;
+    syncInputMethod();
     *eaten = FALSE;
     KeyEvent event = translateKey(wparam, lparam);
     if (IsShiftKey(event.virtualKey) && !event.control && !event.alt) {
@@ -938,7 +983,7 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
     Trace("Engine vk=%u handled=%d commitLen=%zu compositionLen=%zu candidates=%zu",
           event.virtualKey, result.handled, result.committedText.size(),
           result.compositionText.size(), result.candidates.size());
-    if (!result.handled) {
+    if (!result.handled && result.committedText.empty()) {
         // Around filters can dismiss a candidate panel while deliberately
         // passing the key through to the host (for example, an arrow key that
         // closes associated-phrase suggestions). Keep the native candidate
@@ -1383,6 +1428,7 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
     return S_OK;
 }
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
+    if (focused) syncInputMethod();
     ComPtr<ITfContext> focusedContext;
     if (focused) focused->GetTop(&focusedContext);
     if ((composition_ || candidateActive_) &&
@@ -1437,6 +1483,9 @@ STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
 
 STDMETHODIMP TextService::OnChange(REFGUID guid) {
     if (!threadManager_) return S_OK;
+    // The two synchronous writes represent one mode change. Don't let the
+    // first notification read the second compartment's previous value.
+    if (updatingModeCompartments_) return S_OK;
 
     if (guid == GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION) {
         ComPtr<ITfCompartmentMgr> manager;
@@ -1449,6 +1498,8 @@ STDMETHODIMP TextService::OnChange(REFGUID guid) {
             SUCCEEDED(compartment->GetValue(&value)) && value.vt == VT_I4) {
             fullWidthMode_ =
                 (value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_FULLSHAPE)) != 0;
+            const bool enabled = (value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_NATIVE)) != 0;
+            if (chineseMode_ != enabled) setChineseMode(enabled);
             refreshLangBar();
             Trace("InputWidth changed full=%d", fullWidthMode_);
         }

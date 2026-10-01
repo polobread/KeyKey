@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -45,6 +46,11 @@ KeyEvent VirtualKey(UINT virtualKey) {
     KeyEvent event;
     event.virtualKey = virtualKey;
     event.numLock = true;
+    // Real TSF events carry ToUnicodeEx control text for these virtual keys.
+    if (virtualKey == VK_BACK) event.text = L"\b";
+    if (virtualKey == VK_RETURN) event.text = L"\r";
+    if (virtualKey == VK_ESCAPE) event.text = L"\x1b";
+    if (virtualKey == VK_TAB) event.text = L"\t";
     return event;
 }
 
@@ -258,6 +264,11 @@ bool TestInputMethodControlKeyResults() {
 }  // namespace
 
 int main() {
+    const auto profile = std::filesystem::temp_directory_path() /
+        (L"keykey-candidate-test-" + std::to_wstring(GetCurrentProcessId()) + L"-" +
+         std::to_wstring(GetTickCount64()));
+    std::filesystem::create_directories(profile);
+    if (!SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR", profile.c_str())) return 5;
     if (!TestPlainVanillaHomeAndEnd()) return 1;
     if (!TestWindowsEngineCandidateKeys()) return 2;
     if (!TestInputMethodControlKeyClassification()) return 3;

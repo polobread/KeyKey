@@ -426,7 +426,7 @@ std::size_t ImportCollection(Database& database, const fs::path& path,
         size_t firstLength = 0;
         if (!LeadsWithHan(word, firstLength)) continue;
         const size_t length = Utf8CodePointCount(word);
-        if (length < 2 || length > 20) continue;
+        if (length < 2 || length > 6) continue;
 
         auto found = seen.find(word);
         if (found != seen.end()) {

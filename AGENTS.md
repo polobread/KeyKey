@@ -1,100 +1,80 @@
 # AGENTS.md — 開發指引
 
-此檔只記錄目前開發需要遵守的規則與入口。舊版逐日進度、測試數字和待辦已完整移到 [歷史交接紀錄](docs/AGENTS_HISTORY.md)；該紀錄僅供查證當時情況，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 和相關平台文件。
+此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-目前工作分支為 `v1.3.0`，五平台原始碼及對外安裝文件均以 1.3.0 為準。此分支合併後再建立發行 tag，由各平台流程產生安裝包與 GitHub Release Assets；文件中的下載檔名須與實際產物核對。舊版測試紀錄和 Android 私有資料庫清理清單中的 `1.2.10` 仍須保留原意。發布前依各平台建置與驗證流程確認產物，不能把本機套件測試當成所有平台的發行驗收。
+目前工作分支及產品版號為 `v1.3.1`。macOS、Windows、iOS、Android、Linux 必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
-Linux 好打注音的本機修正：第十一個音節完成時送出最前方完整詞；即使學習單字「假」讓走訪器拆開「請假」，若畫面開頭仍是詞庫完整詞，第十一音節仍須一次擠出「請假」，並固定下一詞段的字與跨度。句中可用方向下鍵開候選，支援 Fcitx preedit click 的客戶端也可點字改選；候選選擇須保留整詞跨度，Enter 先套用反白候選、下次 Enter 才送出。切換輸入法時先完成有效讀音再送出可見組字，無法完成的讀音照原樣保留。詳細跨平台對照與測試界線見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。本輪另修正 Fcitx 點字座標（字元索引，不是 UTF-8 byte offset）、Esc／Delete、候選導覽與攔鍵、組字中配置切換及無效讀音誤入傳統候選。先前的好打注音修正曾打包為 `fix5`；本工作樹的十／十一音節界線尚未重新打包或安裝，已安裝的 `+fix8` 不能代表本次原始碼。
+## 好打注音模型決策
 
-Linux 傳統注音接續檢查：切換時確認反白候選或保留原讀音，聯想詞不自動送出；補齊一般／排列專屬標點、橫排方向、候選翻頁、單一候選確認、Shift／CapsLock 字面輸入與符號 Big5 過濾。詳見 `Source/Loaders/Linux-IME/docs/traditional-mandarin-platform-review.md`；桌面與手機傳統模式的切換、選字鍵及 preedit 顯示仍有明列差異。另修正長按 Ctrl+反斜線時按住狀態被組字清理覆蓋、反覆切換中英的問題。修正包為 `fix6`，系統已安裝。
+- 本儲存庫五個 frontend 共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **114,392 筆 Unigram、885,627 筆 Bigram**，SHA-256 為 `28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252`。
+- Bigram 建模固定使用 `typing-articles-v2.jsonl`、`v3.jsonl`、`v4.jsonl` 共 **2,300 篇**。正式驗證固定使用 `typing-articles-v5-seed/tw-corpus-0001.md` 至 `0130.md` 共 **130 篇**，排除 `chat.md`；訓練與驗證沒有相同文章或 20 字以上相同段落。800／750／750 只屬已結束的 unigram 實驗分割，不再作為目前 Bigram 的建模或驗證依據。
+- 每篇文章、每個模型都啟動全新引擎程序，關閉 user table、Bigram learning 與 candidate override，測試間不得共享記憶。正式動作模型採 5 音節穩定、10 音節組字範圍、每頁 8 個候選；注音鍵、確認、點字開候選、選字及翻頁都計入。輸出須包含總動作、額外修正動作、修正字及各自成本；總動作越少越好。
+- Bigram 約只能影響仍在組字區內的 9～10 個字，不能期待後文完全救回前面的同音字。優先降低核心 83 字、前 100 名基本字與第 101～1,000 名一般字的修正；第 1,001～1,500 名、未排名罕字、專業詞及專有名詞只列診斷，不決定基礎模型是否採用，這些內容可由使用者學習改善。
+- 調整前先分析整批錯誤分布，再訂一條適用全體的規則並重跑完整驗證。不得看一篇修一篇、對單一 Bigram 邊加補丁，或只用總分掩蓋基本字、題材或個別文章的退步。隨機 50 篇可作快速探索，不能取代固定 130 篇驗收。
+- v1.3.1 以 McBopomofo unigram 為基準，只依 2,300 篇的跨文章證據調整既有 Bigram；122 個基本／常用字的 191 個讀音保留基準 Bigram，共保護 208,222 筆。另收錄經整體驗證的 7 個常用詞補充，以及搜尋熱門詞 550 詞去除 393 個既有詞後的 157 詞保守補充。
+- 固定 130 篇結果為總動作 **331,619 → 331,062（-557）**、額外修正動作 **11,000 → 10,443（-557）**；97 篇改善、19 篇相同、14 篇退步，節省 623、增加 66。搜尋熱門詞層另少 6 次動作，3 篇改善、127 篇相同、0 篇退步。正式細節在 `DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md` 與 `DataSource/AISyntheticArticles/typing-articles-v5-manifest.json`。
+- 自建 unigram、全域混合、剪枝、字級先驗及順位校準雖曾降低總動作，但在基本字分布、跨題材穩定性或外部驗證門檻失敗，因此都未取代正式基準。直接 unigram 順位問題主要集中於「做／作、新／心、裡／理、向／像」；「在／再、是／事、時／十」多數是上下文、多字候選或斷詞問題，應由整體語料與 Bigram 處理。既有 3,000 份外部提示已全部用過，下一次採用新規則需要新的完整自然文章 holdout，不能再宣稱舊資料是盲測。
+- 慣用讀音先依本地詞庫與臺灣輸入習慣判斷，可先請 ChatGPT 分析；只有仍有疑義或本地資料互相衝突時才個別查教育部辭典，不批次查詢。破音字須依文章語境固定實際慣用讀音。
 
-好打注音的 GTK 4 組字先前使用反白格式，會呈現整段藍底；失焦時 GTK 客戶端已送出組字，Fcitx 引擎再送一次會讓內容加倍。`fix7` 改用底線格式，並依 `ClientUnfocusCommit` 能力避免失焦二次提交；主動切換輸入法的送字路徑保留。隔離 GTK 4 宿主與真實 GNOME Text Editor 的 X11 路徑已重現並驗證單次送字；GNOME 原生 Wayland 移窗仍待手動確認。
+## 模型維護
 
-後續 Bigram 檢查的 `fix8` 已安裝：明確選字先重組、再從新詞段學習前詞；已學候選的組句分數上限改為 0；模型缺少或不足 885,627 筆 Bigram 時拒絕載入。Linux CTest、封裝後 CTest、套件完整性與四個隔離 X11／Fcitx 回歸（長句擠字、鍵盤選字、切換輸入法、GTK 4 移窗）通過。系統 `chichi77-keykey-data` 和 `fcitx5-chichi77-keykey` 均為 `1.3.0-1+ubuntu24.04+fix8`，Fcitx 已重啟並載入新版元件；原生 GNOME Wayland 移窗仍未自動化驗證。詳細五平台 Bigram 差異見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。
+- 不直接改 `DataSource/McBopomofo/phrase.occ` 或 `BPMFMappings.txt`；專案補充詞、讀音覆寫及語料放在 `DataSource/AISyntheticBigram/`。
+- 變更模型時同步更新正式 DB、`smart-mandarin-model-manifest.json`、130 篇驗證結果及內容雜湊。不能只看資料列數判斷新舊，也不能把罕見字改善換成基本字退步。
+- 量測工具入口與動作定義見 `DataSource/AISyntheticBigram/TYPING_COST.md`。`measure-typing-cost.py ARTICLE VERSION` 量單篇；批次工具先固定樣本、完整分析，再比較全域候選。模型調整程式不得覆寫來源 DB。
+- `verify-smart-mandarin-db.py` 驗證固定雜湊、完整性、資料列與首音節；`verify-shared-database-wiring.py` 驗證本儲存庫五個 frontend 都使用同一份 DB。iOS archive、Android asset、macOS App、Windows 打包目錄及 Linux 安裝後改名檔仍須各自核對。
+- Android 私有 DB 檔名是更新快取邊界；換模型時必須變更檔名或加入內容校驗。Windows 的 `keykey_database_deploy` 必須在 DB 更新但 DLL 未重新連結時同步打包目錄。
 
 ## 工作區與提交
 
-- 先執行 `git status --short --branch`；保留使用者既有的未提交修改。只逐檔 `git add` 本次工作，不用 `git add .` 或 `git add -A`。
-- 提交前檢查 diff、`git diff --check` 和測試結果。提交作者與提交者沿用儲存庫既有身分；不要改用公司信箱，也不要加入工具署名或 `Co-Authored-By`。
-- 產品 UI、About 和字串資源不加入開發者或工具署名。語料、測試與建置設定中必要的模型名稱屬資料內容，不能因署名規則刪除。
-- `Source/Distributions/Takao/CookedDatabase/KeyKey.db`、各平台建置目錄、`Installer/local-builds/`、影片、API 請求和執行紀錄都是產物，不要因它們出現在工作區就一併提交。不要提交 API 金鑰。
-- 對外宣稱「已修正」時，區分原始碼、建置產物、已安裝版本和實機行為；一層通過不代表其他層也通過。
+- 先執行 `git status --short --branch`，保留使用者既有修改。只逐檔 `git add` 本次內容，不用 `git add .` 或 `git add -A`。
+- 提交前檢查 diff、`git diff --check` 與測試結果。提交身分沿用儲存庫設定，不加入工具署名或 `Co-Authored-By`。
+- 建置目錄、`.typing-cache/`、`typing-benchmarks/`、`Installer/local-builds/`、影片、API 請求與執行紀錄是產物，不提交。不要提交 API 金鑰。
+- 授權範圍以 [LICENSING.md](LICENSING.md) 為準；Yahoo 舊碼與衍生修改保留 BSD 3-Clause 標頭，原創 frontend 與第三方資料維持各自授權。
 
-## 授權與資料來源
-
-- 授權範圍以 [LICENSING.md](LICENSING.md) 為準。Yahoo 舊碼與衍生修改保留 BSD 3-Clause 標頭、`LICENSE.txt`、About 出處及必要聲明；Android、iOS、Linux、Windows TSF 的原創 frontend 有各自的 MIT 範圍，第三方素材維持原授權。
-- 不直接改 `DataSource/McBopomofo/phrase.occ` 或 `BPMFMappings.txt` 這類上游副本；本專案補充詞放在 `DataSource/AISyntheticBigram/` 的詞庫與語料中。
-- `Source/DataTables/*.cin`、`DataSource/McBopomofo/` 和 `DataSource/chichi77Collection/` 會影響多個平台。修改共用資料後，逐平台核對產生的資料庫、資產與候選行為。
-
-## 五平台架構
+## 平台架構
 
 | 平台 | 好打注音執行路徑 | 語言模型來源 |
 |---|---|---|
-| macOS | `OSX-IMK`、`OVIMSmartMandarin`、Manjusri C++ | 共用 Ruby cooker 產生並打包 `KeyKey.db` |
-| Windows | `Windows-TSF`、`OVIMSmartMandarin`、Manjusri C++ | 原始資料 cook 或指定外部 `KeyKey.db`，建置時驗證後打包 |
-| iOS | `iOS-Keyboard/KeyKeyEngine` 的 Swift walker | 鍵盤 extension 內的共用 `KeyKey.db` |
-| Android | `Android-IME` 的 Java walker | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
-| Linux | `Linux-IME` 的 C++ walker、Fcitx 5 adapter | Python cooker 產生 `smart-mandarin.db` |
+| macOS | `OSX-IMK`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
+| Windows | `Windows-TSF`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
+| iOS | `iOS-Keyboard/KeyKeyEngine` Swift walker | 鍵盤 extension 內的共用 `KeyKey.db` |
+| Android | `Android-IME` Java walker | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
+| Linux | `Linux-IME` 的 Fcitx 5 C++ walker 與 adapter | 共用 DB 安裝時改名為 `smart-mandarin.db` |
 
-- macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 另有組句實作。改動 SmartMandarin 的詞頻、Bigram、backoff 或候選排序時，必須檢查五平台，不能只看同一份資料庫。
-- 目前 `v1.3.0` 模型有 **885,627 筆 Bigram**。第一音節應以該讀音的常用字為首選，例如「ㄅㄨˋ→不」、「ㄌㄧㄝˋ→列」；「列上去」要檢查整句組字。變動語料或 cooker 後，更新驗證預期值與測試，避免只用 Bigram 筆數判斷新舊。
-- `Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py` 檢查共用 DB 完整性、筆數與首音節。iOS archive、Android asset、macOS App 和 Windows 打包目錄仍要各自確認；Linux 使用自己的資料庫與核心測試。
-- Android 的私有 DB 檔名是更新快取的版本邊界。換模型後若不變更檔名或加入內容校驗，已安裝使用者可能繼續讀舊庫。Windows 的 `keykey_database_deploy` 須在 DB 更新而 DLL 未重新連結時同步打包目錄。
+macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 各有組句 frontend。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
 
-## iOS／Android 好打注音螢幕鍵盤
+## 輸入行為界線
 
-- 觸控版與實體鍵盤共用組字引擎，但操作契約不同。只調整螢幕鍵盤時，檢查 iOS 的 `KeyboardView.swift`、`KeyboardViewController.swift`、`BopomofoEngine.swift`，以及 Android 的 `BopomofoKeyboardView.java`、`BopomofoImeService.java`、`BopomofoEngine.java`；不要把觸控選字方式套到實體鍵盤游標。
-- iOS 容器 App 的實體鍵盤編輯器保留十個已完成音節；第十一個完成時擠出最前面的完整詞段，例如「請假」兩字。`HardwareKeyboardEditorViewController` 會把引擎回傳的詞段插入已確認文字區。Android 外接實體鍵盤和 macOS／Windows／Linux 使用相同的十／十一音節界線；完整交接見 [實體鍵盤好打注音交接](docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)。
-- 五平台實體鍵盤的固定回歸句是「**請假要去哪裡玩呢去海邊因為那裡有比基尼**」（19 音節），須檢查第 10 音節仍可改整段、第 11 音節擠出「請假」，及第 19 音節後全文無漏字或重複字；只打 1～2 字不足以驗證。iOS／Android 虛擬鍵盤受 11 格畫面限制，維持九／十音節界線，本輪不調整它們。iOS 實體鍵盤只在容器 App 前景的編輯器處理；extension 不接收一般硬體事件。測試要分別寫明引擎、建置、模擬器、實體鍵盤及已安裝版證據，不得互相代替；目前各平台狀態見上述交接文件。
-- 2026-09-26：最終 Android debug APK 已以保留資料方式安裝至 Pixel 11（API 37），裝置上的 APK SHA-256 與本機一致；使用者回報 Pixel 11 外接實體鍵盤實測 OK。完整 19 音節句及第 10／11／19 音節的逐項實機紀錄尚未提供，勿將此回報寫成已完成全部檢查點；詳見上述交接文件。
-- 好打注音上方固定 11 個組字格，最多保留 9 個已完成、可點選修正的音節，餘格顯示尚未完成的注音；已組好的中文字即時寫入 App，第 10 個音節完成時把最前面的完整詞段移出可修改範圍，並固定下一詞段已顯示的選字，不能只移出詞段首字後重新組句。選字格只指定候選目標，不能改變後續輸入的插入游標；修正句中第三字後再打字，應接在句尾。
-- iOS 和 Android 觸控好打注音都將已組好的中文字直接寫入使用者 App，只有未完成的注音留在鍵盤組字列；切換 App 或輸入法時不能依賴宿主保存 marked/composing text。兩平台生命週期可能連續回呼，不能重複送字，也不能把舊欄位文字送到新欄位。實體鍵盤路徑仍保留原本組字方式。
-- 跨越 9／10 音節邊界時，已擠出的詞段留在 host 欄位，但從可替換尾段移除；後續句中選字與 Backspace 只能替換尾段，不能刪改已擠出的詞段。iOS 不要在同一按鍵依序 unmark 前段、再 mark 後段，實機文字宿主可能漏掉前段或重複後段。
-- 觸控候選窗開啟時覆蓋第一排注音按鍵並攔截該排觸控，收起後恢復按鍵。開關候選窗不得調整鍵盤列的大小或位置。傳統注音仍使用原有候選列與輸入行為。
-- 修改上述行為時，至少驗證 9／10 音節邊界、句中改字後繼續輸入、未完成注音時回頭選字、跨越邊界的多字詞、候選窗開關，以及傳統注音與實體鍵盤回歸。引擎測試不能代替 App／鍵盤 extension 建置或實機版面檢查。
+- 桌面與實體鍵盤保留最多十個已完成音節，第十一音節完成時擠出最前方完整詞段並固定下一詞段。固定回歸句為「請假要去哪裡玩呢去海邊因為那裡有比基尼」；檢查第 10、11、19 音節及全文無漏字或重複字。詳見 `docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md`。
+- iOS／Android 觸控鍵盤維持九／十音節邊界；已擠出的前段不可被後續選字或 Backspace 修改。句中選字只改候選目標，後續輸入仍接在句尾。候選窗開關、切換 App／輸入法、未完成讀音及生命週期重複回呼都須另測。
+- iOS extension 不接收一般 USB／藍牙鍵盤事件；實體鍵盤編輯器只存在容器 App 前景。引擎測試不能代替 App、extension、模擬器或實機驗證。
+- Linux 的 unit、staged install、X11 與 GNOME Wayland 是不同證據層級；Windows TSF 必須在 Windows 文字宿主驗證。詳細平台差異見 `Source/Loaders/Linux-IME/docs/` 與各 frontend README。
 
 ## 建置與驗證入口
 
-完整依賴與發布流程見 [BUILDING.md](BUILDING.md) 及各平台 README。下列命令從儲存庫根目錄執行；需要相應平台的 SDK 和工具鏈。
-
 ```sh
-# macOS、iOS、Android 共用的 cooked DB；改資料或 cooker 後先重建
+# 共用模型，只驗證、不重建
 make -C Source/Distributions/Takao/DatabaseCooker
 python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
   Source/Distributions/Takao/CookedDatabase/KeyKey.db
+python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
 
-# macOS；xcconfig 不可省略
+# macOS
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
 
-# iOS 引擎；App／extension 使用 shared scheme 建置
+# iOS 引擎
 (cd Source/Loaders/iOS-Keyboard/KeyKeyEngine && swift test)
 
 # Android
 (cd Source/Loaders/Android-IME && ./gradlew lintDebug testDebugUnitTest assembleDebug)
 
-# Linux：於有 Fcitx 5 開發依賴的 Ubuntu 環境
+# Linux（需 Fcitx 5 開發依賴）
 (cd Source/Loaders/Linux-IME && ci/build-and-test.sh)
 ```
 
-- iOS 專案用 `-scheme 'chichi77 KeyKey'` 建置；`-target` 不能取代 Swift Package 依賴。DB 應只打包進 `Keyboard.appex`。Xcode Cloud 的 `ci_scripts/ci_post_clone.sh` 會於乾淨 checkout 重煮並驗證 DB。
-- `KeyKeyiOS.xcodeproj/xcshareddata/xcodecloud/manifest.json` 是 Xcode Cloud 的產品對應資料，須隨專案提交；不要將它當成 `xcuserdata` 暫存檔。工作流程本身仍在 Xcode Cloud 管理。
-- Windows 1.3.0 套件以 Windows 10 起為目標。x64 ZIP 內含 x64／x86 TSF DLL，供兩種位元數的所有應用程式使用；x86 ZIP 供 32 位元 Windows 使用，只含 x86 TSF DLL。NSIS 測試安裝器目前仍為 x64。設定程式改用 .NET 10 WPF Fluent 介面，跟隨系統明暗模式；x64／x86 各自編出設定 EXE 與同位元數的 `KeyKeySettingsBackend.dll`，設定 DLL 不會載入應用程式的 TSF 行程。兩種設定程式皆為獨立離線 EXE，不要求使用者另裝 .NET。已在 Windows 11 x64 建置並啟動兩種設定程式，Windows 10 x86／x64 尚待實機驗證。
-- Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets 建置。正常 cook 與 `KEYKEY_DATABASE_PATH` 覆寫都要通過 DB verifier。驗證 Windows TSF 行為須在 Windows 執行，macOS 靜態檢查不能算實測。
-- Windows 好打注音設定的 `UseCharactersSupportedByEncoding` 空值或 `UTF-8` 代表不限制字集；`WindowsEncodingService` 必須接受空值，否則詞庫查到的中文字候選會全部被濾掉，只留下底線注音。WPF 設定頁讀取兩者，但儲存時使用 `UTF-8`，讓尚未換掉舊 DLL 的行程也能輸入。引擎測試需實際驗證完整音節能組成中文字，不能只檢查注音鍵有被攔截。
-- Windows TSF 的組字底線由 `ITfDisplayAttributeProvider` 與 `GUID_PROP_ATTRIBUTE` 宣告，實際呈現仍由文字宿主決定；驗證需分別看記事本與其他 App。中英模式切換及 TIP 失焦時，應在可寫入的 edit session 以 `EndComposition` 保留組字文字，不可呼叫會清空 range 的 `abandonComposition()`。好打注音可能先把符號留在組字內，傳統注音可能直接送出，候選鍵測試需接受兩種有效狀態。
-- Windows TSF 以繁體中文（台灣）`0x0404` 為預設啟用的 profile，同時註冊繁體中文（香港）`0x0c04` 與繁體中文（澳門）`0x1404` 供使用者手動加入；不得註冊或安裝簡體中文。台灣原 GUID 必須保留，香港、澳門各有獨立 GUID。ZIP 安裝、解除安裝與 `Register-Tip.ps1` 不以 `Set-WinUserLanguageList` 改動 Windows 語言清單，也不要求使用者先安裝語言套件；NSIS 不開啟 Windows 語言設定頁。香港、澳門 profile 尚未在對應語言環境實測。
-- Windows NSIS 升級不可先以舊 DLL 執行 `regsvr32 /u`：2026-09-25 本機 A/B 驗證中，即使只註冊台灣 profile，先解除舊版再註冊新版仍會讓 Windows 的 `Microsoft.Windows.LanguageComponentsInstaller` 發出「簡體中文輸入法字典尚未就緒」通知；只重複註冊 DLL 不會。改成先將新版完整寫入獨立目錄、重新註冊相同 CLSID/profile；完整三 profile 套件安裝後，事件紀錄沒有新增通知，使用者也確認畫面未再出現。`Get-WinUserLanguageList` 仍只有 `zh-Hant-TW`，`Get-InstalledLanguage` 只有 `en-US`、`und-Hant` 字型與 `zh-TW`，沒有 `zh-CN`。ZIP 安裝仍使用舊的先解除註冊流程，後續要另行改成不中斷 profile 的升級。
-- Windows 文字宿主會長時間載入舊版 TSF DLL：2026-09-25 的 `explorer.exe` 與桌面程式仍載入 `1.2.9` DLL，舊版 `openSettings()` 從 DLL 旁尋找 `KeyKeySettings.exe`。NSIS 若在升級後立即刪除舊 payload，工作列「輸入法設定…」就沒有反應，舊 DLL 也可能失去旁邊的 DB。新版 DLL 改優先讀 HKLM 解除安裝項目的 `VersionLocation`；NSIS 升級保留舊 payload 供既有行程使用，舊目錄需待行程結束後另外清理。升級後仍載入舊 DLL 的工作列會暫時開啟舊版設定頁；登出再登入即可讓 Explorer 載入新版 DLL 與新設定頁。不要為此複製整份設定程式到每個舊版目錄。
-- Windows NSIS 同一份安裝檔重跑時不得覆寫已載入的 `KeyKeyTsf_x64.dll`：正式簽章套件的安裝目錄是清楚的版號（如 `1.3.0`），本機未簽署測試套件則以相同產品版號加內容指紋作獨立目錄（如 `1.3.0-test-xxxxxxxxxxxx`）。比較 HKLM `VersionLocation` 與 `PayloadFingerprint`，並確認所需檔案存在；完全相同就跳過檔案寫入及註冊，在完成頁顯示「已安裝」。不同內容不得覆寫相同目錄；正式升版仍使用 `1.3.1` 這類正常版號。
-- Windows 工作列選單的「輸入法」區直接選好打注音或傳統注音，選取時透過共用 loader 的 `setPrimaryInputMethod` 保存到 plist；其他 TSF 行程在下次按鍵同步。設定「一般」頁用 `ModulesSuppressedFromUI` plist 陣列控制可見項目，至少保留一種，隱藏目前模式時改選另一種；未加入 Windows 的倉頡與簡易不顯示。NSIS 升級完成頁與 ZIP 安裝腳本會提示登出再登入，首次安裝不顯示升級專用提示。
-- Windows 設定仍使用 OpenVanilla 的 plist XML 格式，但 Windows 共用寫入器原本就省略 `DOCTYPE`；WPF 設定頁也不產生它。讀取舊檔時 `XmlResolver = null` 且忽略 DTD，不連到 XML 裡的外部網址。
-- Windows loader 與三份模組 plist 改以 `com.polobread.chichi77-keykey.windows` 為識別前綴。TSF 啟動與 WPF 設定啟動時都會在新檔不存在的情況下從已使用的 `org.openvanilla...` 前綴複製設定；不覆寫新檔，也不刪舊檔，因為登出前舊版 TSF 行程可能仍在讀寫舊檔。`SmartMandarinUserData.db` 名稱不變。
-- Windows 1.3.0 在 Visual Studio 2026／CMake 4.3 建置時，Ruby 只需 Interpreter 元件；Windows SDK 的 WinSQLite 標頭可能在 `um/winsqlite/winsqlite3.h`；NSIS 3.12 編譯含繁中文字串的安裝腳本須指定 UTF-8 輸入字元集。現代設定頁另需 .NET 10 SDK，CMake 以 `dotnet publish` 為 x64／x86 各產生自包含 EXE；CI 必須安裝 .NET 10。若 x86 VS generator 的 MSBuild FileTracker 在代理環境回報存取被拒，可用 x86 VsDevCmd 與 Ninja 在獨立 `out/build/x86-ninja` 建置。x64／x86 DLL、885,614 筆 Bigram 的 DB 與 3 個 CTest 先前已建置驗證；較廣的 App 相容性尚待使用者測試。
-- Linux 的 unit、staged install、X11 與 GNOME Wayland 測試是不同層級。測試結果要寫明實際環境與輸入路徑；詳細 VM 診斷見 `Source/Loaders/Linux-IME/docs/`，不要把舊測試數字當成目前版本結果。
-- iOS 鍵盤 extension 接收不到一般實體鍵盤事件；實體鍵盤編輯器在容器 App，這兩條路徑需分別驗證。
-- 修改 Linux 與 Windows 的跨平台鍵盤語意時，先讀 macOS `OSX-IMK`、PlainVanilla 和模組事件流，再讀 Windows TSF；兩者不同時明列差異，不從單一平台推定另一平台。
+完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
 
 ## 改版號清單
 
@@ -102,23 +82,18 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 
 | 平台 | 版號來源 |
 |---|---|
-| macOS | `Source/Loaders/OSX-IMK/Takao-Info.plist`、`Source/PreferenceApplications/OSX/Info.plist`、`Source/Utilities/PhraseEditor/OSX/Info.plist`、`Source/Distributions/Takao/Installer-OSX-Help/Info.plist` 的 `CFBundleVersion` 與 `CFBundleShortVersionString` |
-| Windows | `Source/Loaders/Windows-TSF/CMakeLists.txt` 的 `project(... VERSION ...)`、`Package-Windows.ps1` 的 `$Version` |
-| iOS | `Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj/project.pbxproj` 的 `MARKETING_VERSION`；App 與 extension 都要一致 |
-| Android | `Source/Loaders/Android-IME/app/build.gradle.kts` 的預設 `keyKeyVersionName` 與 `keyKeyVersionCode` |
-| Linux | `Source/Loaders/Linux-IME/CMakeLists.txt` 的 `project(... VERSION ...)` |
+| macOS | 四份產品 plist 的 `CFBundleVersion`、`CFBundleShortVersionString` |
+| Windows | TSF `CMakeLists.txt`、`Package-Windows.ps1`、設定專案與可見 footer |
+| iOS | Xcode project 的 App／extension `MARKETING_VERSION` |
+| Android | `build.gradle.kts` 的 `keyKeyVersionName`、`keyKeyVersionCode` |
+| Linux | `Linux-IME/CMakeLists.txt`、支援矩陣及版本化套件／測試腳本 |
 
-再核對文件範例、各平台打包後的實際版本與發行流程；GitHub Release、App Store、Google Play 的版本不能由原始碼版號推定。
-
-## 1.3.0 待接手事項
-
-- **Windows 好打注音 Esc 已通過記事本實測。** 原始碼將預設改為保留完整句；候選窗開啟時 Esc 只關窗，讀音未完成時只清讀音。舊 Windows 預設 `ClearComposingTextWithEsc=true` 曾由 PlainVanilla 自動寫入 plist，因此只有新版設定頁寫入 `ClearComposingTextWithEscUserChoice=true` 才視為使用者明確選擇清句。x64／x86 TSF、設定程式已在本機建置，兩架構各 5 個 CTest 與設定 plist 測試通過。2026-09-26 本機登錄安裝目錄為 `1.3.0-test-49cb75705c0e`，其中 x64／x86 TSF DLL 與本次建置產物雜湊相同；使用者確認記事本中的完整句、候選窗和未完成注音 Esc 行為全部通過。其他文字宿主與 Windows 10 實機仍未驗證。對照見 `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`。
-- **Linux 原生 Wayland 移窗仍需手動重驗。** `fix7` 的底線組字與避免失焦二次送字已通過隔離 X11／GTK 4 宿主及真實 GNOME Text Editor 路徑；以目前 1.3.0 套件在 GNOME 原生 Wayland 有組字時移動視窗，確認沒有內容加倍、藍底或漏字，並記錄 App、session 與輸入路徑。
-- **Windows ZIP 升級路徑仍需修。** NSIS 已改為不先以舊 DLL 執行 `regsvr32 /u`；ZIP 的 `Install.cmd` 仍沿用舊解除註冊流程。升級前應比照不中斷 profile 的流程，驗證不再出現與簡體中文詞典相關的系統通知。
-- **發行產物須與文件核對。** 本機安裝的 Linux `+fix8` 只供驗證；公開 1.3.0 的 `.deb` 檔名應由 tag 的 Linux CI 產生 `1.3.0-1+ubuntu24.04`，並重建對應 `SHA256SUMS`，不可重用本機 `+fix8` 校驗檔。確認 macOS、Windows 與 Linux Assets 實際齊全，再核對安裝指南與平台支援矩陣；iOS／Android 仍依各自商店流程。
+再核對文件範例、打包後的實際版本及發行流程；GitHub Release、App Store、Google Play 的現況不能由原始碼版號推定。
 
 ## 專題文件
 
 - [CHANGELOG.md](CHANGELOG.md)：各平台版本變更。
-- [CANDIDATE_ORDER_1_3_PLAN.md](CANDIDATE_ORDER_1_3_PLAN.md)：候選順位與罕字顯示的未來規劃；尚未等同實作或驗收。
-- [歷史交接紀錄](docs/AGENTS_HISTORY.md)：整理前的逐日紀錄、測試細節與舊待辦；先核對當前程式與文件再使用。
+- `DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md`：正式模型來源與固定 130 篇結果。
+- `DataSource/AISyntheticBigram/TYPING_COST.md`：動作數工具與可重現評估方式。
+- `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`：跨平台好打注音行為差異。
+- [歷史交接紀錄](docs/AGENTS_HISTORY.md)：舊版逐日紀錄與已完成除錯細節。

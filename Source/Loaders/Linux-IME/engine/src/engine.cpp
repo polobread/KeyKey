@@ -784,7 +784,9 @@ EngineResult Engine::processSmartKey(InputContextState &context,
         }
         return resultFor(true);
     }
-    const std::string punctuationKey = punctuationQueryKey(event);
+    // Ordinary symbols use the same layout-aware table as traditional mode,
+    // including when there is no sentence prefix to commit.
+    const std::string punctuationKey = punctuationQueryKey(event, true);
     if (!punctuationKey.empty()) {
         if (hasReading) {
             return resultFor(true);

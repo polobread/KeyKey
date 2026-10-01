@@ -137,6 +137,8 @@ verify_install() {
     /usr/share/chichi77-keykey/data/associated-phrases/display-names.tsv
   cmp "$repository_root/DataSource/chichi77Collection/phrase.general.tsv" \
     /usr/share/chichi77-keykey/data/associated-phrases/phrase.general.tsv
+  cmp "$repository_root/Source/Distributions/Takao/CookedDatabase/KeyKey.db" \
+    /usr/share/chichi77-keykey/data/smart-mandarin.db
   dpkg --verify chichi77-keykey-data fcitx5-chichi77-keykey
   ldd "$addon" | tee "$absolute_artifact_dir/ldd-$expected_version.txt"
   if ldd "$addon" | grep -q 'not found'; then

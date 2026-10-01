@@ -192,6 +192,14 @@ void testAssociatedPhraseParserFiltersAndSorts() {
             "Whitespace-separated associated phrases were not parsed");
     require(entries.find("王") == entries.end(),
             "Associated-phrase exclusions were ignored");
+
+    std::istringstream boundaryInput(
+        "甲乙丙丁戊己 100\n甲乙丙丁戊己庚 100\n"
+        "𠀀乙丙丁戊己 100\n𠀀乙丙丁戊己庚 100\n");
+    const auto boundary = AssociatedPhraseDictionary::parseCollection(boundaryInput);
+    require(boundary.at("甲") == std::vector<std::string>({"乙丙丁戊己"}) &&
+                boundary.at("𠀀") == std::vector<std::string>({"乙丙丁戊己"}),
+            "Associated phrases must contain at most six code points including the head");
 }
 
 void testRealAssociatedPhraseCollections() {
@@ -1610,7 +1618,7 @@ void testSmartMandarinModelVersion() {
     const int bigrams = sqlite3_column_int(statement, 1);
     sqlite3_finalize(statement);
     sqlite3_close(database);
-    require(unigrams == 114235 && bigrams == 885627,
+    require(unigrams == 114392 && bigrams == 885627,
             "Smart Mandarin model version does not match macOS");
 }
 
@@ -1923,6 +1931,73 @@ void testSmartMandarinComposition() {
     }
     require(result.preedit == "ㄋㄧˇ" && !result.candidates.empty(),
             "Traditional mode did not restore single-reading candidates");
+}
+
+void testSmartMandarinPunctuation() {
+    Engine engine(loadRealBopomofoDictionary(), InputMethod::Bopomofo,
+                  BopomofoLayout::Standard,
+                  loadRealDictionary("bpmf-punctuations.cin"));
+    engine.setSmartMandarinStore(keykey::linux_ime::SmartMandarinStore::open(
+        KEYKEY_TEST_SMART_DB));
+    engine.setSmartMandarinMode(true);
+    struct Case {
+        char key;
+        KeyModifier modifiers;
+        const char *text;
+    };
+    // Fcitx may remove Shift after resolving the shifted keysym.
+    for (const auto &test : {
+             Case{'<', KeyModifier::Shift, "，"},
+             Case{'<', KeyModifier::None, "，"},
+             Case{'>', KeyModifier::Shift, "。"},
+             Case{'[', KeyModifier::None, "「"},
+             Case{',', KeyModifier::Control, "，"}}) {
+        const KeyEvent key{KeyCode::Character, test.key, test.modifiers};
+        for (const bool withPrefix : {false, true}) {
+            InputContextState context;
+            if (withPrefix) {
+                for (char c : std::string("su3cl3")) {
+                    engine.processKey(context, character(c));
+                }
+            }
+            const auto result = engine.processKey(context, key);
+            require(result.handled && !result.beep &&
+                        result.commit == std::string(withPrefix ? "你好" : "") +
+                                             test.text &&
+                        result.preedit.empty() && result.candidates.empty(),
+                    "Smart punctuation did not convert and commit exactly once");
+            require(engine.finishComposition(context).commit.empty(),
+                    "Smart punctuation left text to be committed twice");
+        }
+        InputContextState context;
+        for (char c : std::string("su3cl3f")) {
+            engine.processKey(context, character(c));
+        }
+        const auto result = engine.processKey(context, key);
+        require(result.handled && result.beep && result.commit.empty() &&
+                    result.preedit == "你好ㄑ",
+                "Punctuation discarded a sentence with an unfinished reading");
+    }
+
+    for (const bool withPrefix : {false, true}) {
+        InputContextState context;
+        if (withPrefix) {
+            for (char c : std::string("su3cl3")) {
+                engine.processKey(context, character(c));
+            }
+        }
+        auto result = engine.processKey(
+            context, KeyEvent{KeyCode::Character, '{', KeyModifier::Shift});
+        require(result.handled && !result.beep &&
+                    result.commit == (withPrefix ? "你好" : "") &&
+                    result.candidates.size() > 1 && result.preedit == "『",
+                "Smart ordinary punctuation did not open its candidate list");
+        const auto selected = result.candidates[1];
+        result = engine.processKey(context, character('2'));
+        require(result.commit == selected && result.preedit.empty() &&
+                    result.candidates.empty(),
+                "Smart ordinary punctuation selection lost or duplicated text");
+    }
 }
 
 void testSmartMandarinEditingTransitions() {
@@ -2405,6 +2480,7 @@ int main(int argc, char **argv) {
             testSmartMandarinModelVersion();
             testSmartMandarinRequiresBigrams();
             testSmartMandarinComposition();
+            testSmartMandarinPunctuation();
             testSmartMandarinEditingTransitions();
             testSmartMandarinUserData();
             testSmartMandarinBigramLearning();
@@ -2443,6 +2519,7 @@ int main(int argc, char **argv) {
         testSmartMandarinModelVersion();
         testSmartMandarinRequiresBigrams();
         testSmartMandarinComposition();
+        testSmartMandarinPunctuation();
         testSmartMandarinEditingTransitions();
         testSmartMandarinUserData();
         testSmartMandarinBigramLearning();

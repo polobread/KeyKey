@@ -77,6 +77,11 @@ public final class BopomofoEngine {
     private let smartSource: SmartMandarinSource?
     private let hardwareSmartEditing: Bool
 
+    public private(set) var chineseInputMethod: ChineseInputMethod = .traditional
+    public var tableOptions = TableInputOptions(method: .cangjie)
+    private var tableSource: TableCandidateSource?
+    private var tableCode = ""
+    private var tableCandidatesFinal = false
     private var reading = BopomofoReading()
     private var candidates: [String] = []
     private var pageIndex = 0
@@ -100,13 +105,32 @@ public final class BopomofoEngine {
         associatedPhrases: AssociatedPhraseSource? = nil,
         smartSource: SmartMandarinSource? = nil,
         compositionMode: BopomofoCompositionMode = .traditional,
-        hardwareSmartEditing: Bool = false
+        hardwareSmartEditing: Bool = false,
+        keyboardLayout: BopomofoKeyboardLayout = .standard
     ) {
         self.dictionary = dictionary
         self.associatedPhrases = associatedPhrases
         self.smartSource = smartSource
         self.hardwareSmartEditing = hardwareSmartEditing
+        self.reading = BopomofoReading(layout: keyboardLayout)
         self.compositionMode = smartSource == nil ? .traditional : compositionMode
+        chineseInputMethod = self.compositionMode == .smart ? .smart : .traditional
+    }
+
+    public func setTableCandidateSource(_ source: TableCandidateSource) { tableSource = source }
+
+    @discardableResult
+    public func setChineseInputMethod(_ method: ChineseInputMethod) -> Result {
+        guard method != chineseInputMethod else { return .update }
+        let result = finishCompositionForModeSwitch()
+        chineseInputMethod = method == .smart && smartSource == nil ? .traditional : method
+        compositionMode = chineseInputMethod == .smart ? .smart : .traditional
+        tableOptions = TableInputOptions(method: method)
+        return result
+    }
+
+    private var tableReadingText: String {
+        tableCode.map { tableSource?.keyName(method: chineseInputMethod, key: String($0)) ?? String($0) }.joined()
     }
 
     public func setAssociatedPhraseSource(_ source: AssociatedPhraseSource?) {
@@ -114,11 +138,22 @@ public final class BopomofoEngine {
         if showingAssociatedPhrases { clearComposition() }
     }
 
+    public var keyboardLayout: BopomofoKeyboardLayout { reading.layout }
+
+    @discardableResult
+    public func setKeyboardLayout(_ layout: BopomofoKeyboardLayout) -> Result {
+        guard layout != reading.layout else { return .update }
+        let result = finishCompositionForModeSwitch()
+        reading = BopomofoReading(layout: layout)
+        return result
+    }
+
     @discardableResult
     public func setCompositionMode(_ mode: BopomofoCompositionMode) -> Result {
-        guard mode != compositionMode else { return .update }
+        guard mode != compositionMode || chineseInputMethod.isTable else { return .update }
         let result = finishCompositionForModeSwitch()
         compositionMode = mode == .smart && smartSource == nil ? .traditional : mode
+        chineseInputMethod = compositionMode == .smart ? .smart : .traditional
         return result
     }
 
@@ -140,8 +175,9 @@ public final class BopomofoEngine {
 
     // MARK: - Display state
 
-    public var readingText: String { reading.displayText }
+    public var readingText: String { chineseInputMethod.isTable ? tableReadingText : reading.displayText }
     public var composingText: String {
+        if chineseInputMethod.isTable { return tableReadingText }
         guard compositionMode == .smart else { return reading.displayText }
         return (smartComposition?.text ?? "") + reading.displayText
     }
@@ -295,6 +331,16 @@ public final class BopomofoEngine {
 
     @discardableResult
     public func space() -> Result {
+        if chineseInputMethod.isTable, mode == .bopomofo {
+            if !candidates.isEmpty {
+                if chineseInputMethod == .cangjie, pageCount == 1, !showingAssociatedPhrases {
+                    return selectDisplayedCandidate(0)
+                }
+                changePage(by: 1)
+                return .update
+            }
+            return tableCode.isEmpty ? .commit(" ") : queryTable(final: true)
+        }
         if compositionMode == .smart, mode == .bopomofo {
             if !reading.isEmpty { return finishSmartReading() }
             if !smartReadings.isEmpty {
@@ -327,13 +373,12 @@ public final class BopomofoEngine {
             if !hardwareSmartEditing {
                 return .commitAndReturn(finishCompositionForModeSwitch().text)
             }
-            if !reading.isEmpty {
-                let result = finishSmartReading()
-                guard reading.isEmpty else { return result }
-            }
-            return commitSmartComposition()
+            let finishedReading = reading.isEmpty ? Result.update : finishSmartReading()
+            guard reading.isEmpty else { return finishedReading }
+            return .commit(finishedReading.text + commitSmartComposition().text)
         }
         if !candidates.isEmpty { return selectHighlightedCandidate() }
+        if chineseInputMethod.isTable, !tableCode.isEmpty { return queryTable(final: true) }
         if !reading.isEmpty { return query() }
         return .returnKey
     }
@@ -342,6 +387,17 @@ public final class BopomofoEngine {
     /// keyboard; only an empty reading reaches the document.
     @discardableResult
     public func backspace() -> Result {
+        if chineseInputMethod.isTable, mode == .bopomofo {
+            candidates = []
+            showingAssociatedPhrases = false
+            pageIndex = 0
+            highlight = 0
+            tableCandidatesFinal = false
+            if tableCode.isEmpty { return .delete }
+            tableCode.removeLast()
+            if tableOptions.composeWhileTyping, !tableCode.isEmpty { return queryTable(final: false) }
+            return .update
+        }
         if compositionMode == .smart, mode == .bopomofo {
             if !reading.isEmpty {
                 reading.backspace()
@@ -400,10 +456,6 @@ public final class BopomofoEngine {
         if compositionMode == .smart, showingSmartCandidates, !smartReadings.isEmpty {
             guard smartCandidateOptions.indices.contains(absolute) else { return .update }
             let option = smartCandidateOptions[absolute]
-            smartSource?.learnSelection(
-                readings: smartReadings, at: smartCandidateStart,
-                candidate: option, composition: smartComposition
-            )
             let end = smartCandidateStart + option.length
             smartOverrides = smartOverrides.filter { start, selection in
                 start >= end || start + selection.length <= smartCandidateStart
@@ -413,6 +465,10 @@ public final class BopomofoEngine {
             )
             if hardwareSmartEditing { smartCursor = end }
             rebuildSmartComposition()
+            smartSource?.learnSelection(
+                readings: smartReadings, at: smartCandidateStart,
+                candidate: option, composition: smartComposition
+            )
             return .update
         }
         if showingAssociatedPhrases {
@@ -484,12 +540,24 @@ public final class BopomofoEngine {
         }
         if mode == .number { return .commit(String(rawKey)) }
 
+        if !fromTouch, compositionMode == .smart, rawKey.isASCII, rawKey.isUppercase {
+            guard reading.isEmpty else { return .update }
+            return .commit(finishCompositionForModeSwitch().text + String(rawKey))
+        }
+        if chineseInputMethod.isTable { return tableCharacter(rawKey, fromTouch: fromTouch) }
         let key = Character(rawKey.lowercased())
         if !fromTouch, !showingAssociatedPhrases, !candidates.isEmpty,
            let number = key.wholeNumberValue, (1...9).contains(number) {
             return selectDisplayedCandidate(number - 1)
         }
-        if StandardBopomofoLayout.isReadingKey(key) {
+        if reading.layout == .hsu, key == "q", reading.isEmpty,
+           compositionMode == .smart, !smartReadings.isEmpty {
+            return space()
+        }
+        if reading.isEmpty, let punctuation = reading.layout.punctuation(for: key) {
+            return .commit(finishCompositionForModeSwitch().text + punctuation)
+        }
+        if reading.layout.isReadingKey(key) {
             if compositionMode == .smart {
                 candidates = []
                 showingAssociatedPhrases = false
@@ -520,6 +588,63 @@ public final class BopomofoEngine {
             return .commit(prefix + String(rawKey))
         }
         return .commit(String(rawKey))
+    }
+
+    private func tableCharacter(_ rawKey: Character, fromTouch: Bool) -> Result {
+        guard let source = tableSource else { return .update }
+        if !fromTouch, rawKey.isASCII, rawKey.isUppercase {
+            return .commit(finishCompositionForModeSwitch().text + String(rawKey))
+        }
+        let key = String(rawKey).lowercased()
+        if !showingAssociatedPhrases, !candidates.isEmpty,
+           let number = rawKey.wholeNumberValue, (1...9).contains(number) {
+            return selectDisplayedCandidate(number - 1)
+        }
+        if !showingAssociatedPhrases, !candidates.isEmpty, key == "<" || key == ">" {
+            changePage(by: key == "<" ? -1 : 1)
+            return .update
+        }
+        if fromTouch, rawKey == "，" || rawKey == "。" {
+            return .commit(finishCompositionForModeSwitch().text + String(rawKey))
+        }
+        guard source.keyName(method: chineseInputMethod, key: key) != nil else {
+            if !tableCode.isEmpty { return .update }
+            clearComposition()
+            return .commit(String(rawKey))
+        }
+        var prefix = ""
+        if showingAssociatedPhrases {
+            clearComposition()
+        } else if !candidates.isEmpty, tableCandidatesFinal || !tableOptions.composeWhileTyping
+                    || tableCode.count >= chineseInputMethod.maximumCodeLength {
+            prefix = selectHighlightedCandidate().text
+            clearComposition() // associated phrases must not obstruct the next code
+        }
+        guard tableCode.count < chineseInputMethod.maximumCodeLength else { return .update }
+        tableCode += key
+        let wildcard = chineseInputMethod == .cangjie && tableCode.count > 1 && (key == "?" || key == "*")
+        let final = (!wildcard && source.endKeys(method: chineseInputMethod).contains(key))
+            || (tableOptions.queryAtMaximum && tableCode.count >= chineseInputMethod.maximumCodeLength)
+        let result = final || tableOptions.composeWhileTyping ? queryTable(final: final) : .update
+        return prefix.isEmpty ? result : .commit(prefix + result.text)
+    }
+
+    private func queryTable(final: Bool) -> Result {
+        guard let source = tableSource else { return .update }
+        candidates = source.values(method: chineseInputMethod, code: tableCode, punctuation: tableOptions.punctuation)
+        if chineseInputMethod == .cangjie, tableOptions.dynamicFrequency {
+            candidates = source.ordered(candidates, code: tableCode)
+        }
+        showingAssociatedPhrases = false
+        tableCandidatesFinal = final
+        pageIndex = 0
+        highlight = 0
+        if candidates.isEmpty, final, tableOptions.clearOnError, !tableOptions.composeWhileTyping {
+            clearComposition()
+        } else if candidates.count == 1, final {
+            return commitPrimaryCandidate(candidates[0], offeringAssociatedPhrases: true)
+        }
+        return .update
     }
 
     private func query() -> Result {
@@ -562,21 +687,20 @@ public final class BopomofoEngine {
     }
 
     private func evictFirstSmartSegment() -> Result {
-        guard let first = smartComposition?.segments.first,
-              first.length > 0, !first.text.isEmpty else { return .update }
-        // The desktop walker keeps the next node's chosen text when it shifts
-        // away the head. Preserve that boundary here, before recomposing with
-        // less left-hand context.
-        let next = smartComposition?.segments.dropFirst().first
-        let committed = first.text
-        smartReadings.removeFirst(first.length)
+        guard let smartSource, let composition = smartComposition else { return .update }
+        let count = smartSource.evictionLength(readings: smartReadings, composition: composition)
+        guard count > 0, count <= smartReadings.count else { return .update }
+        let committed = composition.segments.filter { $0.start < count }.map(\.text).joined()
+        guard !committed.isEmpty else { return .update }
+        let next = composition.segments.first { $0.start == count }
+        smartReadings.removeFirst(count)
         smartOverrides = Dictionary(uniqueKeysWithValues: smartOverrides.compactMap { start, selection in
-            start >= first.length ? (start - first.length, selection) : nil
+            start >= count ? (start - count, selection) : nil
         })
         if let next {
             smartOverrides[0] = SmartMandarinSelection(length: next.length, text: next.text)
         }
-        smartCursor = max(0, smartCursor - first.length)
+        smartCursor = max(0, smartCursor - count)
         rebuildSmartComposition()
         return .commit(committed)
     }
@@ -649,11 +773,18 @@ public final class BopomofoEngine {
     /// replaces or dismisses this input view. The second call is harmless.
     @discardableResult
     public func finishCompositionForInputHandoff() -> Result {
-        guard isTouchSmartComposition, hasComposition else { return .update }
+        guard hasComposition else { return .update }
         return finishCompositionForModeSwitch()
     }
 
     private func finishCompositionForModeSwitch() -> Result {
+        if compositionMode == .traditional, mode == .bopomofo {
+            if showingAssociatedPhrases || !hasComposition { clearComposition(); return .update }
+            if !candidates.isEmpty { return selectHighlightedCandidateAndFinish() }
+            let text = readingText
+            clearComposition()
+            return text.isEmpty ? .update : .commit(text)
+        }
         guard compositionMode == .smart, mode == .bopomofo, hasComposition else {
             clearComposition()
             return .update
@@ -675,17 +806,35 @@ public final class BopomofoEngine {
         return .commit(text)
     }
 
+    private func selectHighlightedCandidateAndFinish() -> Result {
+        let result = selectHighlightedCandidate()
+        clearComposition()
+        return result
+    }
+
     /// Associated phrases only appear after a single Chinese character is
     /// committed from the dictionary -- never after a symbol, emoji or letter.
     private func commitPrimaryCandidate(
         _ selected: String, offeringAssociatedPhrases offering: Bool
     ) -> Result {
+        if chineseInputMethod == .cangjie, tableOptions.dynamicFrequency,
+           !tableCode.isEmpty, candidates.first != selected {
+            tableSource?.learn(code: tableCode, text: selected)
+        }
+        let text: String
+        if compositionMode == .smart, !smartReadings.isEmpty {
+            let characters = Array(smartComposition?.text ?? "")
+            let cursor = min(smartCursor, characters.count)
+            text = String(characters[..<cursor]) + selected + String(characters[cursor...])
+        } else {
+            text = selected
+        }
         clearComposition()
         if offering, let source = associatedPhrases {
             candidates = source.phrases(forHeadCharacter: selected)
             showingAssociatedPhrases = !candidates.isEmpty
         }
-        return .commit(selected)
+        return .commit(text)
     }
 
     /// Typing a new reading over a candidate list commits the first candidate
@@ -759,6 +908,8 @@ public final class BopomofoEngine {
     }
 
     private func clearComposition() {
+        tableCode = ""
+        tableCandidatesFinal = false
         reading.clear()
         smartReadings = []
         smartComposition = nil

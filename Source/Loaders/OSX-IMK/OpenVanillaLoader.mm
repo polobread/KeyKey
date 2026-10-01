@@ -916,7 +916,7 @@ using namespace OpenVanilla;
     }
 
     if (cleared) {
-        _loader->forceSyncModuleConfigForNextRound("SmartMandarin");
+        _loader->forceSyncModuleConfig("SmartMandarin");
     }
     return cleared;
 }

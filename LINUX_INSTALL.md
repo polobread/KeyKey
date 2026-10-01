@@ -1,19 +1,19 @@
-# Ubuntu 24.04 安裝與使用指南（v1.3.0）
+# Ubuntu 24.04 安裝與使用指南（v1.3.1）
 
-這份指南說明如何在 Ubuntu Desktop 24.04 安裝琦琦輸入法 1.3.0，並使用預設的「好打注音」。Linux 版透過 Fcitx 5 在一般文字欄位輸入，不會開啟獨立的打字視窗。若要自行編譯，請看 [Linux `./configure` 編譯安裝指南](LINUX_CONFIGURE_INSTALL.md)。
+這份指南說明如何在 Ubuntu Desktop 24.04 安裝琦琦輸入法 1.3.1，並使用預設的「好打注音」。Linux 版透過 Fcitx 5 在一般文字欄位輸入，不會開啟獨立的打字視窗。若要自行編譯，請看 [Linux `./configure` 編譯安裝指南](LINUX_CONFIGURE_INSTALL.md)。
 
 ## 安裝前確認
 
 本版的 Linux 安裝步驟適用於 **Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64**。在「設定 → 關於」確認 Ubuntu 版本，並執行 `dpkg --print-architecture`，結果應為 `amd64`。安裝需要管理員密碼，設定完成後需要重新啟動 Ubuntu。其他 Ubuntu 版本、ARM64、IBus 與其他桌面環境尚未列入這份指南的驗證範圍。
 
-## 1. 下載 v1.3.0 套件
+## 1. 下載 v1.3.1 套件
 
-開啟 [琦琦輸入法 v1.3.0 發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.0`。檔案尚未全部出現時，等 Assets 備齊再安裝。
+開啟 [琦琦輸入法 v1.3.1 發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.1)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.1`。檔案尚未全部出現時，等 Assets 備齊再安裝。
 
 | 檔案 | 用途 |
 | --- | --- |
-| `chichi77-keykey-data_1.3.0-1+ubuntu24.04_all.deb` | 注音、詞庫與語言模型資料 |
-| `fcitx5-chichi77-keykey_1.3.0-1+ubuntu24.04_amd64.deb` | Fcitx 5 輸入法與好打注音 |
+| `chichi77-keykey-data_1.3.1-1+ubuntu24.04_all.deb` | 注音、詞庫與語言模型資料 |
+| `fcitx5-chichi77-keykey_1.3.1-1+ubuntu24.04_amd64.deb` | Fcitx 5 輸入法與好打注音 |
 | `gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb` | GNOME 候選字面板 |
 | `gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_source.tar.gz` | 面板對應原始碼；只需校驗，不須安裝 |
 | `SHA256SUMS` | 上述四個檔案的校驗值 |
@@ -25,7 +25,7 @@
 在下載資料夾開啟終端機。若使用上面的範例路徑，執行：
 
 ```sh
-cd ~/Downloads/keykey-v1.3.0
+cd ~/Downloads/keykey-v1.3.1
 sha256sum -c SHA256SUMS
 ```
 
@@ -33,8 +33,8 @@ sha256sum -c SHA256SUMS
 
 ```sh
 sudo apt install \
-  ./chichi77-keykey-data_1.3.0-1+ubuntu24.04_all.deb \
-  ./fcitx5-chichi77-keykey_1.3.0-1+ubuntu24.04_amd64.deb \
+  ./chichi77-keykey-data_1.3.1-1+ubuntu24.04_all.deb \
+  ./fcitx5-chichi77-keykey_1.3.1-1+ubuntu24.04_amd64.deb \
   ./gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb \
   fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt6 \
   fcitx5-config-qt im-config
@@ -121,7 +121,7 @@ keykey-gnome-panel status
 
 | 情況 | 先檢查 |
 | --- | --- |
-| `sha256sum` 顯示 `FAILED` | 停止安裝，確認五個檔案都來自同一個 `v1.3.0` 發布頁，重新下載失敗的檔案。 |
+| `sha256sum` 顯示 `FAILED` | 停止安裝，確認五個檔案都來自同一個 `v1.3.1` 發布頁，重新下載失敗的檔案。 |
 | Fcitx 清單找不到琦琦注音 | 確認三個 `.deb` 已安裝、取消語言篩選，重新登入後再開設定工具。 |
 | 找得到輸入法，但打字只有英文 | 確認選到 Bopomofo，按 `Ctrl + \` 切回中文；第一聲讀音後按 **Space** 完成音節。 |
 | 只有「文字編輯器（琦琦注音）」可用，Firefox 或終端機只輸出英文 | 重新啟動 Ubuntu 後再開啟這些 App。執行 `printenv GTK_IM_MODULE QT_IM_MODULE XMODIFIERS`，三行應依序為 `fcitx`、`fcitx`、`@im=fcitx`；若仍是 `ibus`，重新執行 `im-config` 選 **fcitx5** 並重啟。 |

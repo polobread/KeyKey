@@ -1,9 +1,18 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(KeyKeyLinux VERSION 1.3.0 LANGUAGES CXX)
+project(KeyKeyLinux VERSION 1.3.1 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)
+option(KEYKEY_BUILD_X11_E2E_HOST
+    "Build the GTK 3, GTK 4, and Qt 6 X11 E2E test hosts" OFF)
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/install-layout.txt.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/keykey-install-layout.txt"
+    @ONLY
+)
+
 find_package(Iconv REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -14,16 +23,9 @@ else()
     set(KEYKEY_FCITX5_DEFAULT OFF)
 endif()
 option(KEYKEY_BUILD_FCITX5 "Build the Fcitx 5 addon" ${KEYKEY_FCITX5_DEFAULT})
-option(KEYKEY_BUILD_X11_E2E_HOST "Build the GTK 3, GTK 4, and Qt 6 X11 E2E test hosts" OFF)
 option(KEYKEY_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 option(KEYKEY_INSTALL_STANDALONE_LICENSE_FILES
-    "Install the non-Debian standalone license copies" ON)
-
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/install-layout.txt.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/keykey-install-layout.txt"
-    @ONLY
-)
+    "Install standalone license copies" ON)
 
 get_filename_component(KEYKEY_REPOSITORY_ROOT
     "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
@@ -36,33 +38,24 @@ set(KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR
 set(KEYKEY_LINUX_DATA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data")
 set(KEYKEY_SMART_SOURCE_DIR
     "${KEYKEY_REPOSITORY_ROOT}/DataSource/AISyntheticBigram")
-set(KEYKEY_SMART_CORPORA
-    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v1.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v2.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/corpus-v3.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/corpus-typing-feedback.txt"
-    "${KEYKEY_SMART_SOURCE_DIR}/article-corpus-2300-exact-dedup.txt")
-set(KEYKEY_SMART_DB "${CMAKE_CURRENT_BINARY_DIR}/smart-mandarin.db")
-add_custom_command(OUTPUT "${KEYKEY_SMART_DB}"
+set(KEYKEY_SMART_DB
+    "${KEYKEY_REPOSITORY_ROOT}/Source/Distributions/Takao/CookedDatabase/KeyKey.db")
+set(KEYKEY_SMART_MODEL_VERIFIER
+    "${KEYKEY_REPOSITORY_ROOT}/Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py")
+set(KEYKEY_SMART_MODEL_HELPER
+    "${KEYKEY_REPOSITORY_ROOT}/Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py")
+set(KEYKEY_SMART_MODEL_MANIFEST
+    "${KEYKEY_SMART_SOURCE_DIR}/smart-mandarin-model-manifest.json")
+add_custom_target(keykey_linux_smart_db ALL
     COMMAND "${Python3_EXECUTABLE}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tools/build-smart-mandarin-db.py"
+        "${KEYKEY_SMART_MODEL_VERIFIER}"
         "${KEYKEY_SMART_DB}"
-        "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"
-        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
-        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/BPMFMappings.txt"
-        "${KEYKEY_SMART_SOURCE_DIR}/supplemental-lexicon.tsv"
-        "${KEYKEY_SMART_SOURCE_DIR}/numeric-unit-lexicon.tsv"
-        ${KEYKEY_SMART_CORPORA}
     DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/tools/build-smart-mandarin-db.py"
-        "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"
-        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
-        "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/BPMFMappings.txt"
-        "${KEYKEY_SMART_SOURCE_DIR}/supplemental-lexicon.tsv"
-        "${KEYKEY_SMART_SOURCE_DIR}/numeric-unit-lexicon.tsv"
-        ${KEYKEY_SMART_CORPORA}
+        "${KEYKEY_SMART_DB}"
+        "${KEYKEY_SMART_MODEL_VERIFIER}"
+        "${KEYKEY_SMART_MODEL_HELPER}"
+        "${KEYKEY_SMART_MODEL_MANIFEST}"
     VERBATIM)
-add_custom_target(keykey_linux_smart_db ALL DEPENDS "${KEYKEY_SMART_DB}")
 set(KEYKEY_INSTALL_DATA_DIR
     "${CMAKE_INSTALL_DATADIR}/chichi77-keykey/data")
 set(KEYKEY_INSTALL_ASSOCIATED_PHRASE_DIR
@@ -150,15 +143,12 @@ if(BUILD_TESTING)
     add_test(NAME keykey_linux_engine COMMAND keykey_linux_engine_tests)
     add_test(NAME keykey_linux_support_matrix
         COMMAND "${CMAKE_COMMAND}" -P
-                "${CMAKE_CURRENT_SOURCE_DIR}/ci/validate-support-matrix.cmake"
-    )
+                "${CMAKE_CURRENT_SOURCE_DIR}/ci/validate-support-matrix.cmake")
     add_custom_target(check
         COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure
         DEPENDS keykey_linux_engine_tests
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-        USES_TERMINAL
-    )
-
+        USES_TERMINAL)
     if(KEYKEY_BUILD_X11_E2E_HOST)
         find_package(PkgConfig REQUIRED)
         pkg_check_modules(GTK3 REQUIRED IMPORTED_TARGET gtk+-3.0)
@@ -203,17 +193,6 @@ if(KEYKEY_BUILD_FCITX5)
         DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 endif()
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-    @ONLY
-)
-add_custom_target(uninstall
-    COMMAND "${CMAKE_COMMAND}" -P
-            "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-    USES_TERMINAL
-)
-
 install(FILES
     "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"
     "${KEYKEY_DATA_SOURCE_DIR}/cj-ext.cin"
@@ -226,6 +205,7 @@ install(FILES "${KEYKEY_LINUX_DATA_SOURCE_DIR}/tc2sc.cin"
 )
 install(FILES "${KEYKEY_SMART_DB}"
     DESTINATION "${KEYKEY_INSTALL_DATA_DIR}"
+    RENAME "smart-mandarin.db"
 )
 install(FILES
     "${KEYKEY_ASSOCIATED_PHRASE_SOURCE_DIR}/McBopomofo/phrase.occ"
@@ -264,3 +244,12 @@ if(KEYKEY_INSTALL_STANDALONE_LICENSE_FILES)
         DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/chichi77-keykey"
     )
 endif()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    @ONLY)
+add_custom_target(uninstall
+    COMMAND "${CMAKE_COMMAND}" -P
+            "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    USES_TERMINAL)

@@ -49,6 +49,9 @@ KeyKey::WindowsTsf::EngineResult PressKey(
     KeyKey::WindowsTsf::KeyKeyEngineSession& session, UINT virtualKey) {
     KeyKey::WindowsTsf::KeyEvent event;
     event.virtualKey = virtualKey;
+    if (virtualKey == VK_BACK) event.text = L"\b";
+    if (virtualKey == VK_RETURN) event.text = L"\r";
+    if (virtualKey == VK_ESCAPE) event.text = L"\x1b";
     return session.handleKey(event);
 }
 

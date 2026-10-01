@@ -14,6 +14,24 @@ import org.junit.Test;
 
 public final class FullDictionaryIntegrationTest {
     @Test
+    public void modelCacheNameTracksBundledContentAndRetiresPreviousVersion() throws Exception {
+        var digest = java.security.MessageDigest.getInstance("SHA-256");
+        try (InputStream input = Files.newInputStream(
+                Path.of(System.getProperty("keykey.smart.database")))) {
+            byte[] buffer = new byte[64 * 1024];
+            int count;
+            while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
+        }
+        String fingerprint = java.util.HexFormat.of().formatHex(digest.digest()).substring(0, 16);
+        var installed = SmartMandarinStore.class.getDeclaredField("INSTALLED_NAME");
+        installed.setAccessible(true);
+        assertEquals("KeyKey-smart-" + fingerprint + ".db", installed.get(null));
+        var previous = SmartMandarinStore.class.getDeclaredField("PREVIOUS_INSTALLED_NAMES");
+        previous.setAccessible(true);
+        assertTrue(List.of((String[]) previous.get(null)).contains("KeyKey-smart-reading-v3.db"));
+    }
+
+    @Test
     public void sharedDictionaryContainsTraditionalCandidatesInDesktopOrder() throws Exception {
         Path dictionaryPath = Path.of(System.getProperty("keykey.bopomofo.cin"));
         try (InputStream input = Files.newInputStream(dictionaryPath)) {

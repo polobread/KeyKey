@@ -1,7 +1,18 @@
 # AI synthetic article assignments
 
-This directory contains writing assignments only. It does not contain generated
-article prose and does not invoke a local or remote language model.
+## Data licensing / 資料授權
+
+**AI 文章、合成語料與衍生 bigram 資料目前暫不提供使用授權。**
+本目錄內適用的資料及其匯出、資料庫內相應部分，不適用本專案其他部分的
+MIT 或 BSD 授權。完整範圍、保留權利及例外見 [LICENSE.txt](LICENSE.txt)。
+
+No usage license is currently granted for the covered AI articles, synthetic
+corpora, or derived bigram data, including their exports and covered database
+portions. See [LICENSE.txt](LICENSE.txt) for scope and limitations. Technical
+instructions below do not grant data-use permission.
+
+This directory contains writing assignments, generated article prose, validation
+data, and supporting tools. Article versions and exports are documented below.
 
 Run `python3 generate-writing-prompts.py` to reproduce
 `writing-prompts-v1.jsonl` and the smaller Markdown preview. Every JSONL record

@@ -45,7 +45,6 @@ License: MIT
 
 Files: DataSource/AssociatedPhraseCollectionNames.tsv
  DataSource/chichi77Collection/*
- DataSource/AISyntheticBigram/*
 Copyright: 2026 Chui-Ping Cheng
 License: MIT
 
@@ -83,3 +82,17 @@ License: BSD-3-Clause
  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  POSSIBILITY OF SUCH DAMAGE.
+
+Files: DataSource/AISyntheticArticles/*
+ DataSource/AISyntheticBigram/*
+ Source/Distributions/Takao/CookedDatabase/KeyKey.db
+Copyright: 2026 Chui-Ping Cheng
+ 2011-2026 Mengjuei Hsieh et al.
+License: KeyKey-data-notice
+ The AI-generated articles, corpora, and derived Bigram portions are subject
+ to LICENSES/AI-DATA-NOTICE.txt. No usage license is currently granted for
+ those covered portions. Other source code, tools, documentation, and
+ third-party data retain their respective terms; the McBopomofo-derived
+ portions remain under MIT. See LICENSING.md for the complete scope.
+ The full notice is installed at
+ /usr/share/doc/chichi77-keykey-data/AI-DATA-NOTICE.txt.

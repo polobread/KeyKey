@@ -61,16 +61,49 @@ std::wstring Utf8ToWide(const std::string& text) {
     return result;
 }
 
+bool UsableProfileDirectory(const std::wstring& directory) {
+    if (directory.empty()) return false;
+    if (!CreateDirectoryW(directory.c_str(), nullptr) && GetLastError() != ERROR_ALREADY_EXISTS)
+        return false;
+    // AppContainer may see a Roaming directory's attributes while being
+    // unable to list or write its files. Probe directory access without
+    // creating a disposable file or broadening any ACL.
+    HANDLE handle = CreateFileW(directory.c_str(), FILE_LIST_DIRECTORY | FILE_ADD_FILE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+        OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) return false;
+    CloseHandle(handle);
+    return true;
+}
+
+std::wstring ProductionSettingsDirectory() {
+    wchar_t roaming[MAX_PATH]{};
+    if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA | CSIDL_FLAG_CREATE,
+                                  nullptr, SHGFP_TYPE_CURRENT, roaming))) {
+        const std::wstring directory = std::wstring(roaming) + L"\\chichi77 KeyKey";
+        if (UsableProfileDirectory(directory)) return directory;
+    }
+    // Search/Store processes have their own writable, sandboxed Temp path.
+    // Keep their preferences and learning there when Roaming is unavailable.
+    wchar_t temporary[32768]{};
+    const DWORD length = GetTempPathW(static_cast<DWORD>(std::size(temporary)), temporary);
+    if (!length || length >= std::size(temporary)) return {};
+    const std::wstring directory = std::wstring(temporary) + L"chichi77 KeyKey";
+    return UsableProfileDirectory(directory) ? directory : std::wstring();
+}
+
 }  // namespace
 
 std::wstring SettingsDirectory() {
-    wchar_t roaming[MAX_PATH]{};
-    if (FAILED(SHGetFolderPathW(nullptr, CSIDL_APPDATA | CSIDL_FLAG_CREATE,
-                                nullptr, SHGFP_TYPE_CURRENT, roaming))) {
-        return {};
+    std::wstring testDirectory(32768, L'\0');
+    const DWORD length = GetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",
+        testDirectory.data(), static_cast<DWORD>(testDirectory.size()));
+    if (length && length < testDirectory.size()) {
+        testDirectory.resize(length);
+        CreateDirectoryW(testDirectory.c_str(), nullptr);
+        return testDirectory;
     }
-    std::wstring directory = std::wstring(roaming) + L"\\chichi77 KeyKey";
-    CreateDirectoryW(directory.c_str(), nullptr);
+    static const std::wstring directory = ProductionSettingsDirectory();
     return directory;
 }
 
@@ -79,7 +112,7 @@ void MigrateLegacyPreferences() {
     if (directory.empty()) return;
     constexpr const wchar_t* suffixes[] = {
         L"", L".TraditionalMandarin", L".SmartMandarin",
-        L".AssociatedPhrase"};
+        L".AssociatedPhrase", L".Generic-cj-cin", L".Generic-simplex-cin"};
     for (const wchar_t* suffix : suffixes) {
         const std::wstring current = directory +
             L"\\com.polobread.chichi77-keykey.windows" + suffix + L".plist";

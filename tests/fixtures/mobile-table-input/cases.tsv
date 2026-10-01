@@ -1,0 +1,31 @@
+# name	method	keys	committed	reading	first candidate
+cangjie_single	cangjie	m SPACE	一	-	-
+cangjie_select	cangjie	a SPACE 2	曰	-	-
+cangjie_highlight	cangjie	a SPACE DOWN ENTER	曰	-	-
+cangjie_continuous	cangjie	a SPACE a SPACE 1	日日	-	-
+cangjie_limit	cangjie	aaaaaa	-	日日日日日	-
+cangjie_error	cangjie	zzzzz SPACE	-	-	-
+cangjie_wildcard_one	cangjie	a? SPACE 1	昌	-	-
+cangjie_wildcard_many	cangjie	a* SPACE 1	日	-	-
+cangjie_punctuation	cangjie	,	，	-	-
+cangjie_switch_incomplete	cangjie	ab ENGLISH	日月	-	-
+cangjie_switch_candidate	cangjie	a SPACE DOWN ENGLISH	曰	-	-
+cangjie_return_to_method	cangjie	ENGLISH A ENGLISH m SPACE	A一	-	-
+cangjie_uppercase	cangjie	a A	日A	-	-
+cangjie_escape	cangjie	ab ESCAPE	-	-	-
+simplex_single	simplex	m SPACE	一	-	-
+simplex_maximum	simplex	ab	-	日月	明
+simplex_select	simplex	ab 1	明	-	-
+simplex_highlight	simplex	ab DOWN ENTER	晞	-	-
+simplex_page	simplex	ab PAGE 1	曞	-	-
+simplex_continuous	simplex	ab a SPACE 1	明日	-	-
+simplex_backspace	simplex	aa BACKSPACE SPACE 2	曰	-	-
+simplex_error_keeps_roots	simplex	zz	-	重重	-
+simplex_punctuation	simplex	, 2	、	-	-
+simplex_switch	simplex	ab DOWN ENGLISH	晞	-	-
+simplex_repeated_handoff	simplex	a HANDOFF HANDOFF	日	-	-
+simplex_touch_punctuation	simplex	ab SOFT_COMMA	明，	-	-
+cangjie_symbol_switch	cangjie	SYMBOL ENGLISH	-	-	-
+simplex_emoji_switch	simplex	EMOJI ENGLISH	-	-	-
+traditional_symbol_switch	traditional	SYMBOL ENGLISH	-	-	-
+cangjie_realtime_continuation	cangjie	REALTIME aahafa	𪂇	日	日

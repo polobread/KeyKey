@@ -11,12 +11,22 @@
 肌肉記憶。觸控好打注音把已完成的中文字寫入宿主欄位，最近九個音節仍顯示在鍵盤
 上方的組字格，可點句中音節重新選字。
 
-鍵盤設定可選「好打注音」或「傳統注音」，新安裝預設好打注音。好打注音以同一份
+鍵盤設定可選「好打注音」、「傳統注音」、「倉頡」或「簡易」，新安裝預設好打注音。好打注音以同一份
 `KeyKey.db` Bigram 模型連續組句，輸入下一個音節前不必先選字；觸控鍵盤的 Enter／搜尋／
 前往會在確認組字後立即執行欄位動作，組字列中間的音節仍可選字。傳統注音維持原本
-逐字選字與關聯詞流程。
+逐字選字與關聯詞流程。倉頡與簡易也共用這些候選、翻頁、關聯詞與送字流程；
+點觸控鍵盤的「設」，或從容器 App 首頁進入「輸入法設定」，即可選擇四種輸入法。
+觸控鍵盤保留第二排末端的 @ 鍵；倉頡與簡易的 A–Z 顯示對應字根。
 
-容器 App 首頁的「輸入法設定」進入與鍵盤「設」頁相同的注音模式、候選字底色、
+倉頡／簡易直接查詢同一份唯讀 `KeyKey.db` 的 `Generic-cj-cin`／
+`Generic-simplex-cin` 表。倉頡最多五碼，支援 `?`／`*`；簡易最多兩碼、滿碼查詢。
+預設依 macOS：倉頡錯碼清除及選字排序開啟、滿五碼查詢關閉；簡易保留錯碼、
+固定候選順序。兩者即時候選預設關閉，啟用時與錯碼清除互斥。倉頡另可選原始、
+半形或混合標點。選字排序保存在各輸入入口的私有偏好設定，不修改內建字表。
+共用案例位於 `tests/fixtures/mobile-table-input/cases.tsv`；Swift 與 Android 同時驗證
+五碼／兩碼、候選、萬用字元、錯碼、切換保留與重複交接等行為。
+
+容器 App 首頁的「輸入法設定」進入與鍵盤「設」頁相同的輸入法、候選字底色、
 按鍵音、關聯詞詞庫、自訂詞及學習重設選項。App 將選項寫入 App Group；鍵盤在
 下次開啟時唯讀套用。鍵盤「設」頁仍可調整並存入鍵盤私有資料；App 無法讀回
 該私有值，所以 App 設定頁顯示的是上次從 App 設定的值。再次從 App 更改該選項
@@ -42,17 +52,25 @@ Keyboard/         UIInputViewController extension
 KeyKeyiOS.xcodeproj
 ```
 
+## 注音鍵盤配置
+
+「輸入法設定」、鍵盤「設」及 App 內實體鍵盤編輯器提供「標準／許氏鍵盤」配置，
+預設標準，好打與傳統注音共用。許氏虛擬鍵盤保留英文 QWERTY 鍵帽，
+例如 `nef` 輸入 `ㄋㄧˇ`，切回標準會恢復注音雙標籤。
+iOS 系統鍵盤 extension 仍只接收觸控；外接鍵盤使用 App 內實體鍵盤編輯器。
+
 ## 建置
 
 ```sh
-make -C ../../Distributions/Takao/DatabaseCooker
+python3 ../../Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
+  ../../Distributions/Takao/CookedDatabase/KeyKey.db
 xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   -configuration Debug -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-`KeyKey.db` 是建置輸入，但不進版控。Xcode Cloud 會自動執行
-`ci_scripts/ci_post_clone.sh` cook 資料庫，並以 `CI_BUILD_NUMBER` 同步容器 App 與
+`KeyKey.db` 是版控內的共用建置輸入。Xcode Cloud 會自動執行
+`ci_scripts/ci_post_clone.sh` 驗證資料庫，並以 `CI_BUILD_NUMBER` 同步容器 App 與
 Keyboard extension 的 build number；本機建置維持專案內的預設 build number。
 
 引擎的測試不需要模擬器：
@@ -103,7 +121,7 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
 ## 與其他平台的差異
 
 - **引擎是 Swift 重寫**，不載入 `Source/Frameworks` 的 C++ core。
-- **但資料層走已 cook 好的 `KeyKey.db`**，不像 Android 在執行時解析 `.cin`。
+- **但資料層走預先產生的共用 `KeyKey.db`**，不像 Android 在執行時解析 `.cin`。
   keyboard extension 的記憶體上限約 60 MB，超過會被系統直接終止且沒有 crash
   log；SQLite 只映射查詢用到的頁，資料層常駐足跡不到 1 MB。
 - `Mandarin-bpmf-cin` 的 key 是 Formosa 的 absolute-order 編碼，不是鍵盤按鍵，
@@ -134,18 +152,26 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
 - 候選選取底色可在鍵盤的「設」中選擇紫、綠、黃、紅；預設為與 macOS 相同的紫色，
   黃底自動使用黑字，其餘使用白字。設定重開 extension 後仍會保留。
 - 容器 App 提供產品 ID `chichi_supporter` 的非消耗型一次性支持。未購買不會鎖住任何
-  輸入功能；首次使用滿 30 天後，注音鍵盤只會在尚未輸入、沒有候選字時顯示
-  「歡迎付費支持」。購買或恢復購買成功後，容器 App 透過 App Group
+  輸入功能。首次使用滿 30 天且未付費時，好打注音虛擬鍵盤只在完全沒有組字、未完成
+  讀音、候選或關聯詞時，在 11 格組字列的第 9–11 格依序顯示「歡迎」「付費」「支持」，
+  每格兩字。購買或恢復購買成功後，容器 App 透過 App Group
   `group.io.github.polobread.inputmethod.chichi77.ios` 將授權快取給 extension，提示便會
-  永久隱藏。實際售價由 App Store 依地區顯示，設定頁也提供 Apple 要求的「恢復購買」。
+  隱藏。實際售價由 App Store 依地區顯示，未付費時 App 提供「恢復購買」。
+- App 的「支持開發」區塊未付費時放在標題與版本下方，付費後移到首頁最後面，
+  按鈕顯示「謝謝支持」並隱藏「恢復購買」。區塊位置只依付費狀態調整，不套用 30 天條件。
 
 ## 實體鍵盤編輯器
 
 容器 App 直接唯讀內嵌 `Keyboard.appex` 的同一份 `KeyKey.db`。從首頁「輸入法設定」
-調整的注音模式與關聯詞詞庫也會在下次開啟編輯器時套用；編輯器內調整的值則存在
+調整的輸入法與關聯詞詞庫也會在下次開啟編輯器時套用；編輯器內調整的值則存在
 容器 App 自己的 `UserDefaults`。
 編輯中的文字留在 App 內，只有使用者主動按下複製或分享時才交給 iOS 系統功能。
 
+- 首次使用滿 30 天且未付費時，好打注音在實體鍵盤連線狀態後方、同一列顯示
+  「歡迎付費支持」；購買或恢復購買成功後隱藏。
+- 上方以單列顯示左側輸入法與右側鍵盤配置。倉頡／簡易選用時，右側顯示固定的
+  「倉頡字根」；注音維持標準／許氏配置。倉頡只有一頁一般候選時，空白確定首選；
+  多頁候選則空白翻頁。簡易滿兩碼開啟候選，`1–9` 或 Enter 選字。
 - 候選固定直排 `1–9`，一般候選用 `1–9`，關聯詞用 `Shift+1–9`
   （`!@#$%^&*(`）。好打注音下可連續輸入下一個音節，數字列不會搶先選字；
   `Space` 開啟目前音節的候選後才用 `1–9` 選字，候選開啟後 `Space`、`Page Up`、

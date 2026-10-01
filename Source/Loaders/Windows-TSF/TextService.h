@@ -1,4 +1,5 @@
 #pragma once
+#include "SharedInputMethod.h"
 
 #include <Windows.h>
 #include <ctffunc.h>
@@ -89,6 +90,7 @@ public:
     void toggleChineseMode();
     void toggleFullWidthMode();
     bool selectInputMethod(const char* identifier);
+    void syncInputMethod();
     HRESULT openSettings(HWND parent = nullptr) const;
 
 private:
@@ -130,12 +132,17 @@ private:
     std::atomic<ULONG> referenceCount_{1};
     Microsoft::WRL::ComPtr<ITfThreadMgr> threadManager_;
     TfClientId clientId_ = TF_CLIENTID_NULL;
+    SharedInputMethod sharedInputMethod_;
+    std::string lastLocalInputMethod_;
+    bool immersiveMode_ = false;
+    bool syncingInputMethod_ = false;
     DWORD threadManagerCookie_ = TF_INVALID_COOKIE;
     DWORD inputModeCookie_ = TF_INVALID_COOKIE;
     DWORD conversionModeCookie_ = TF_INVALID_COOKIE;
     DWORD textEditCookie_ = TF_INVALID_COOKIE;
     TfGuidAtom compositionDisplayAttributeAtom_ = TF_INVALID_GUIDATOM;
     bool chineseMode_ = true;
+    bool updatingModeCompartments_ = false;
     bool fullWidthMode_ = false;
     bool shiftTogglePending_ = false;
     DWORD shiftPressedAt_ = 0;
