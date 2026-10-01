@@ -4,10 +4,17 @@ import static org.junit.Assert.*;
 
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.graphics.Rect;
+import android.os.Build;
 import android.os.Binder;
 import android.os.IBinder;
+import android.view.Gravity;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.WindowMetrics;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -75,6 +82,62 @@ public final class FloatingCandidateWindowInstrumentedTest {
         });
     }
 
+    @Test
+    public void supportFooterUsesApprovedTypographyAndNeverSelectsCandidates() {
+        onMain(() -> {
+            for (CandidateWindowSettings.Layout layout : CandidateWindowSettings.Layout.values()) {
+                Fixture fixture = new Fixture();
+                fixture.window.update(List.of("好", "豪"), 0, layout, null, true);
+                assertEquals(LinearLayout.VERTICAL, fixture.content.getOrientation());
+                LinearLayout candidates = (LinearLayout) fixture.content.getChildAt(0);
+                assertEquals(2, candidates.getChildCount());
+                TextView footer = (TextView) fixture.content.getChildAt(2);
+                assertEquals("歡迎付費支持", footer.getText().toString());
+                boolean horizontal = layout == CandidateWindowSettings.Layout.HORIZONTAL;
+                float density = fixture.content.getResources().getDisplayMetrics().density;
+                assertEquals(horizontal ? 15 : 13, footer.getTextSize() / density, 0.01f);
+                assertEquals(horizontal ? Gravity.END : Gravity.CENTER_HORIZONTAL,
+                        footer.getGravity() & Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK);
+                assertFalse(footer.isClickable());
+                assertFalse(footer.performClick());
+                assertTrue(fixture.selected.isEmpty());
+                assertTrue(candidates.getChildAt(1).performClick());
+                assertEquals(List.of(1), fixture.selected);
+                int heightWithFooter = fixture.parameters.height;
+
+                fixture.window.update(List.of("好", "豪"), 0, layout, null, false);
+                assertEquals(1, fixture.content.getChildCount());
+                assertTrue(fixture.parameters.height < heightWithFooter);
+                candidates = (LinearLayout) fixture.content.getChildAt(0);
+                assertEquals(2, candidates.getChildCount());
+                int attempts = fixture.attempts;
+                fixture.window.update(List.of(), -1, layout, null, true);
+                assertEquals(attempts, fixture.attempts);
+                assertEquals(1, fixture.removals);
+            }
+        });
+    }
+
+    @Test
+    public void footerHeightIsReservedBeforeFittingCandidatesToSafeBounds() {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R);
+        onMain(() -> {
+            for (CandidateWindowSettings.Layout layout : CandidateWindowSettings.Layout.values()) {
+                Fixture fixture = new Fixture();
+                float density = fixture.token.getResources().getDisplayMetrics().density;
+                fixture.safeHeight = Math.round(55 * density);
+                fixture.window.update(List.of("一", "二", "三", "四", "五", "六", "七", "八", "九"),
+                        0, layout, null, true);
+                assertTrue(fixture.parameters.height <= fixture.safeHeight);
+                assertTrue(fixture.parameters.y >= 0);
+                assertTrue(fixture.parameters.y + fixture.parameters.height <= fixture.safeHeight);
+                LinearLayout candidates = (LinearLayout) fixture.content.getChildAt(0);
+                assertTrue(candidates.getChildAt(0).getLayoutParams().height < Math.round(40 * density));
+                fixture.window.hide();
+            }
+        });
+    }
+
     private static void onMain(Runnable test) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(test);
     }
@@ -103,6 +166,11 @@ public final class FloatingCandidateWindowInstrumentedTest {
         final FloatingCandidateWindow window;
         int failuresRemaining;
         int attempts;
+        int removals;
+        Integer safeHeight;
+        LinearLayout content;
+        WindowManager.LayoutParams parameters;
+        final ArrayList<Integer> selected = new ArrayList<>();
 
         Fixture() {
             Context base = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -113,12 +181,21 @@ public final class FloatingCandidateWindowInstrumentedTest {
                         if (method.getName().equals("addView")
                                 || method.getName().equals("updateViewLayout")) {
                             attempts++;
+                            content = (LinearLayout) args[0];
+                            parameters = (WindowManager.LayoutParams) args[1];
                             if (failuresRemaining-- > 0) {
                                 throw new WindowManager.BadTokenException("test failure");
                             }
                             return null;
                         }
-                        if (method.getName().equals("removeViewImmediate")) return null;
+                        if (method.getName().equals("removeViewImmediate")) {
+                            removals++;
+                            return null;
+                        }
+                        if (method.getName().equals("getCurrentWindowMetrics") && safeHeight != null) {
+                            return new WindowMetrics(new Rect(0, 0, 600, safeHeight),
+                                    new WindowInsets.Builder().build());
+                        }
                         return method.invoke(real, args);
                     });
             Context context = new ContextWrapper(base) {
@@ -143,7 +220,7 @@ public final class FloatingCandidateWindowInstrumentedTest {
         }
 
         @Override public void onPress() {}
-        @Override public void onCandidate(int index) {}
+        @Override public void onCandidate(int index) { selected.add(index); }
         @Override public void onWindowUnavailable(CandidateWindowSettings.Failure failure) {
             failures.add(failure);
         }

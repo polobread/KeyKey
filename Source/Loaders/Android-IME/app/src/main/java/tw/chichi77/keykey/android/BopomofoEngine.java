@@ -75,6 +75,11 @@ final class BopomofoEngine {
     private boolean showingAssociatedPhrases;
     private boolean hardwareFullWidth;
     private EnumSet<InputMode> allowedInputModes = EnumSet.allOf(InputMode.class);
+    private ChineseInputMethod chineseInputMethod = ChineseInputMethod.TRADITIONAL;
+    TableInputOptions tableOptions = new TableInputOptions(ChineseInputMethod.CANGJIE);
+    private TableCandidateSource tableSource;
+    private String tableCode = "";
+    private boolean tableCandidatesFinal;
     private BopomofoCompositionMode compositionMode;
     private final List<String> smartReadings = new ArrayList<>();
     private SmartMandarinComposition smartComposition;
@@ -95,13 +100,39 @@ final class BopomofoEngine {
         this.smartSource = smartSource;
         this.compositionMode = smartSource == null
                 ? BopomofoCompositionMode.TRADITIONAL : compositionMode;
+        chineseInputMethod = this.compositionMode == BopomofoCompositionMode.SMART
+                ? ChineseInputMethod.SMART : ChineseInputMethod.TRADITIONAL;
+    }
+
+    ChineseInputMethod chineseInputMethod() { return chineseInputMethod; }
+    void setTableCandidateSource(TableCandidateSource source) { tableSource = source; }
+    Result setChineseInputMethod(ChineseInputMethod method) {
+        if (method == chineseInputMethod) return Result.update();
+        Result result = finishCompositionForModeSwitch();
+        chineseInputMethod = method == ChineseInputMethod.SMART && smartSource == null
+                ? ChineseInputMethod.TRADITIONAL : method;
+        compositionMode = chineseInputMethod == ChineseInputMethod.SMART
+                ? BopomofoCompositionMode.SMART : BopomofoCompositionMode.TRADITIONAL;
+        tableOptions = new TableInputOptions(method);
+        return result;
+    }
+    private String tableReadingText() {
+        StringBuilder text = new StringBuilder();
+        for (char c : tableCode.toCharArray()) {
+            String key = String.valueOf(c);
+            String name = tableSource == null ? null : tableSource.keyName(chineseInputMethod, key);
+            text.append(name == null ? key : name);
+        }
+        return text.toString();
     }
 
     Result setCompositionMode(BopomofoCompositionMode mode) {
-        if (mode == compositionMode) return Result.update();
+        if (mode == compositionMode && !chineseInputMethod.isTable()) return Result.update();
         Result result = finishCompositionForModeSwitch();
         compositionMode = mode == BopomofoCompositionMode.SMART && smartSource == null
                 ? BopomofoCompositionMode.TRADITIONAL : mode;
+        chineseInputMethod = compositionMode == BopomofoCompositionMode.SMART
+                ? ChineseInputMethod.SMART : ChineseInputMethod.TRADITIONAL;
         return result;
     }
 
@@ -197,17 +228,13 @@ final class BopomofoEngine {
 
     Result commitHardwarePunctuation(String punctuation) {
         prepareForHardwareInput();
-        if (!reading.isEmpty() && compositionMode != BopomofoCompositionMode.SMART) {
-            return Result.update();
-        }
+        if (!reading.isEmpty() && compositionMode != BopomofoCompositionMode.SMART) return Result.update();
         return Result.commit(finishCompositionForModeSwitch().committedText() + punctuation);
     }
 
     Result showHardwareSymbols() {
         prepareForHardwareInput();
-        if (!reading.isEmpty() && compositionMode != BopomofoCompositionMode.SMART) {
-            return Result.update();
-        }
+        if (!reading.isEmpty() && compositionMode != BopomofoCompositionMode.SMART) return Result.update();
         return symbols();
     }
 
@@ -227,6 +254,15 @@ final class BopomofoEngine {
     }
 
     Result space() {
+        if (chineseInputMethod.isTable() && inputMode == InputMode.BOPOMOFO) {
+            if (!candidates.isEmpty()) {
+                if (chineseInputMethod == ChineseInputMethod.CANGJIE && pageCount() == 1 && !showingAssociatedPhrases)
+                    return selectDisplayedCandidate(0);
+                changePage(1);
+                return Result.update();
+            }
+            return tableCode.isEmpty() ? Result.commit(" ") : queryTable(true);
+        }
         if (compositionMode == BopomofoCompositionMode.SMART
                 && inputMode == InputMode.BOPOMOFO) {
             if (!reading.isEmpty()) return finishSmartReading();
@@ -266,11 +302,20 @@ final class BopomofoEngine {
                     + commitSmartComposition().committedText());
         }
         if (!candidates.isEmpty()) return selectHighlightedCandidate();
+        if (chineseInputMethod.isTable() && !tableCode.isEmpty()) return queryTable(true);
         if (!reading.isEmpty()) return query();
         return Result.enter();
     }
 
     Result backspace() {
+        if (chineseInputMethod.isTable() && inputMode == InputMode.BOPOMOFO) {
+            candidates = List.of(); showingAssociatedPhrases = false;
+            page = 0; highlightedIndex = 0; tableCandidatesFinal = false;
+            if (tableCode.isEmpty()) return Result.delete();
+            tableCode = tableCode.substring(0, tableCode.length() - 1);
+            if (tableOptions.composeWhileTyping && !tableCode.isEmpty()) return queryTable(false);
+            return tableCode.isEmpty() ? Result.discardComposition() : Result.update();
+        }
         if (compositionMode == BopomofoCompositionMode.SMART
                 && inputMode == InputMode.BOPOMOFO) {
             if (!reading.isEmpty()) {
@@ -359,6 +404,9 @@ final class BopomofoEngine {
     }
 
     private Result commitPrimaryCandidate(String selected, boolean showAssociatedPhrases) {
+        if (chineseInputMethod == ChineseInputMethod.CANGJIE && tableOptions.dynamicFrequency
+                && !tableCode.isEmpty() && !candidates.isEmpty() && !candidates.get(0).equals(selected))
+            tableSource.learn(tableCode, selected);
         // Touch fallback candidates are outside the model, but the preceding
         // sentence is still present in the host and must survive this commit.
         String text = compositionMode == BopomofoCompositionMode.SMART && smartComposition != null
@@ -465,10 +513,11 @@ final class BopomofoEngine {
     }
 
     String readingText() {
-        return reading.displayText();
+        return chineseInputMethod.isTable() ? tableReadingText() : reading.displayText();
     }
 
     String composingText() {
+        if (chineseInputMethod.isTable()) return tableReadingText();
         if (compositionMode != BopomofoCompositionMode.SMART) return reading.displayText();
         return (smartComposition == null ? "" : smartComposition.text())
                 + reading.displayText();
@@ -546,6 +595,7 @@ final class BopomofoEngine {
             return Result.commit(String.valueOf(output));
         }
         if (inputMode == InputMode.NUMBER) return Result.commit(String.valueOf(rawKey));
+        if (chineseInputMethod.isTable()) return tableCharacter(rawKey, fromTouch);
 
         if (!fromTouch && compositionMode == BopomofoCompositionMode.SMART
                 && rawKey >= 'A' && rawKey <= 'Z') {
@@ -618,6 +668,51 @@ final class BopomofoEngine {
             } else converted.append(character);
         }
         return converted.toString();
+    }
+
+    private Result tableCharacter(char rawKey, boolean fromTouch) {
+        if (tableSource == null) return Result.update();
+        if (!fromTouch && rawKey >= 'A' && rawKey <= 'Z')
+            return Result.commit(finishCompositionForModeSwitch().committedText() + rawKey);
+        String key = String.valueOf(Character.toLowerCase(rawKey));
+        if (!showingAssociatedPhrases && !candidates.isEmpty() && rawKey >= '1' && rawKey <= '9')
+            return selectDisplayedCandidate(rawKey - '1');
+        if (!showingAssociatedPhrases && !candidates.isEmpty() && (key.equals("<") || key.equals(">"))) {
+            changePage(key.equals("<") ? -1 : 1); return Result.update();
+        }
+        if (fromTouch && (rawKey == '，' || rawKey == '。'))
+            return Result.commit(finishCompositionForModeSwitch().committedText() + rawKey);
+        if (tableSource.keyName(chineseInputMethod, key) == null) {
+            if (!tableCode.isEmpty()) return Result.update();
+            clearComposition();
+            return Result.commit(String.valueOf(rawKey));
+        }
+        String prefix = "";
+        if (showingAssociatedPhrases) clearComposition();
+        else if (!candidates.isEmpty() && (tableCandidatesFinal || !tableOptions.composeWhileTyping
+                || tableCode.length() >= chineseInputMethod.maximumCodeLength())) {
+            prefix = selectHighlightedCandidate().committedText();
+            clearComposition();
+        }
+        if (tableCode.length() >= chineseInputMethod.maximumCodeLength()) return Result.update();
+        tableCode += key;
+        boolean wildcard = chineseInputMethod == ChineseInputMethod.CANGJIE && tableCode.length() > 1
+                && (key.equals("?") || key.equals("*"));
+        boolean finalQuery = !wildcard && tableSource.endKeys(chineseInputMethod).contains(key)
+                || tableOptions.queryAtMaximum && tableCode.length() >= chineseInputMethod.maximumCodeLength();
+        Result result = finalQuery || tableOptions.composeWhileTyping ? queryTable(finalQuery) : Result.update();
+        return prefix.isEmpty() ? result : Result.commit(prefix + result.committedText());
+    }
+    private Result queryTable(boolean finalQuery) {
+        candidates = tableSource.values(chineseInputMethod, tableCode, tableOptions.punctuation);
+        if (chineseInputMethod == ChineseInputMethod.CANGJIE && tableOptions.dynamicFrequency)
+            candidates = tableSource.ordered(candidates, tableCode);
+        showingAssociatedPhrases = false; tableCandidatesFinal = finalQuery;
+        page = 0; highlightedIndex = 0;
+        if (candidates.isEmpty() && finalQuery && tableOptions.clearOnError && !tableOptions.composeWhileTyping)
+            return clearComposition() ? Result.discardComposition() : Result.update();
+        if (candidates.size() == 1 && finalQuery) return commitPrimaryCandidate(candidates.get(0), true);
+        return Result.update();
     }
 
     private Result query() {
@@ -763,6 +858,14 @@ final class BopomofoEngine {
     }
 
     Result finishCompositionForModeSwitch() {
+        if (compositionMode == BopomofoCompositionMode.TRADITIONAL && inputMode == InputMode.BOPOMOFO) {
+            if (showingAssociatedPhrases || !hasComposition()) { clearComposition(); return Result.update(); }
+            if (!candidates.isEmpty()) {
+                Result result = selectHighlightedCandidate(); clearComposition(); return result;
+            }
+            String text = readingText(); clearComposition();
+            return text.isEmpty() ? Result.update() : Result.commit(text);
+        }
         if (compositionMode == BopomofoCompositionMode.SMART
                 && inputMode == InputMode.BOPOMOFO && hasComposition()) {
             String evictedText = reading.isEmpty() ? "" : finishSmartReading().committedText();
@@ -783,7 +886,7 @@ final class BopomofoEngine {
     }
 
     Result finishCompositionForInputHandoff() {
-        if (!isTouchSmartComposition() || !hasComposition()) return Result.update();
+        if (!hasComposition()) return Result.update();
         return finishCompositionForModeSwitch();
     }
 
@@ -864,6 +967,7 @@ final class BopomofoEngine {
 
     private boolean clearComposition() {
         boolean hadReading = hasComposition();
+        tableCode = ""; tableCandidatesFinal = false;
         reading.clear();
         smartReadings.clear();
         smartComposition = null;

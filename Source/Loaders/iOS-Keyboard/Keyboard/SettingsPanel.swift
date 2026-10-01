@@ -3,6 +3,8 @@ import UIKit
 
 @MainActor
 protocol SettingsPanelDelegate: AnyObject {
+    func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod)
+    func settingsPanelDidChangeTableOptions(_ panel: SettingsPanel)
     func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>)
     func settingsPanel(
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
@@ -28,13 +30,15 @@ final class SettingsPanel: UIView {
     private var inputClicksEnabled: Bool
     private var candidateColor: CandidateColor
     private var compositionMode: BopomofoCompositionMode
+    private var chineseInputMethod: ChineseInputMethod
+    private let methodSettings: ChineseInputMethodSettings
     private var keyboardLayout: BopomofoKeyboardLayout
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
         items: ["紫", "綠", "黃", "紅"]
     )
     private let compositionModeControl = UISegmentedControl(
-        items: BopomofoCompositionMode.allCases.map(\.displayName)
+        items: ChineseInputMethod.allCases.map(\.displayName)
     )
     private var switches: [String: UISwitch] = [:]
     private let resetLearningButton = UIButton(configuration: .tinted())
@@ -44,6 +48,8 @@ final class SettingsPanel: UIView {
         collections: [AssociatedPhraseStore.Collection], enabled: Set<String>,
         inputClicksEnabled: Bool, candidateColor: CandidateColor,
         compositionMode: BopomofoCompositionMode,
+        chineseInputMethod: ChineseInputMethod = .smart,
+        methodSettings: ChineseInputMethodSettings = ChineseInputMethodSettings(),
         keyboardLayout: BopomofoKeyboardLayout = .standard
     ) {
         self.collections = collections
@@ -51,6 +57,8 @@ final class SettingsPanel: UIView {
         self.inputClicksEnabled = inputClicksEnabled
         self.candidateColor = candidateColor
         self.compositionMode = compositionMode
+        self.chineseInputMethod = chineseInputMethod
+        self.methodSettings = methodSettings
         self.keyboardLayout = keyboardLayout
         super.init(frame: .zero)
         backgroundColor = Palette.surface
@@ -95,7 +103,7 @@ final class SettingsPanel: UIView {
         let scroll = UIScrollView()
         scroll.alwaysBounceVertical = true
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), keyboardLayoutRow(), resetLearningButton, feedbackRow(), candidateColorRow(),
+            compositionModeRow(), tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex), keyboardLayoutRow(), resetLearningButton, feedbackRow(), candidateColorRow(),
             statusLabel, bulk, rows
         ])
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
@@ -199,25 +207,62 @@ final class SettingsPanel: UIView {
 
     private func compositionModeRow() -> UIView {
         let label = UILabel()
-        label.text = "注音模式"
+        label.text = "輸入法"
         label.font = .systemFont(ofSize: 15)
         label.textColor = Palette.primaryText
 
-        compositionModeControl.selectedSegmentIndex = BopomofoCompositionMode.allCases.firstIndex(
-            of: compositionMode
+        compositionModeControl.selectedSegmentIndex = ChineseInputMethod.allCases.firstIndex(
+            of: chineseInputMethod
         ) ?? 0
         compositionModeControl.accessibilityIdentifier = "bopomofo-composition-mode"
-        compositionModeControl.accessibilityLabel = "注音模式"
+        compositionModeControl.accessibilityLabel = "輸入法"
         compositionModeControl.addTarget(
             self, action: #selector(compositionModeChanged(_:)), for: .valueChanged
         )
 
-        let row = UIStackView(arrangedSubviews: [label, UIView(), compositionModeControl])
+        let row = UIStackView(arrangedSubviews: [label, compositionModeControl])
+        row.axis = .vertical
         row.alignment = .center
         row.spacing = 8
         row.isLayoutMarginsRelativeArrangement = true
         row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
         return row
+    }
+
+    private func tableOptionsButton(for method: ChineseInputMethod) -> UIButton {
+        let button = UIButton(configuration: .tinted())
+        button.setTitle(method.displayName + "設定", for: .normal)
+        button.accessibilityIdentifier = "table-options." + method.rawValue
+        button.showsMenuAsPrimaryAction = true
+        refreshTableOptions(button, for: method)
+        return button
+    }
+
+    private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod) {
+        let options = methodSettings.options(for: method)
+        var children: [UIMenuElement] = options.switches(for: method).map { item in
+            UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self, weak button] _ in
+                guard let self, let button else { return }
+                var next = self.methodSettings.options(for: method)
+                next.toggle(item.key)
+                self.methodSettings.setOptions(next, for: method)
+                self.delegate?.settingsPanelDidChangeTableOptions(self)
+                self.refreshTableOptions(button, for: method)
+            }
+        }
+        if method == .cangjie {
+            children.append(UIMenu(title: "標點", children: ["原字表", "中英混合", "半形"].enumerated().map { index, title in
+                UIAction(title: title, state: options.punctuation == index ? .on : .off) { [weak self, weak button] _ in
+                    guard let self, let button else { return }
+                    var next = self.methodSettings.options(for: method)
+                    next.punctuation = index
+                    self.methodSettings.setOptions(next, for: method)
+                    self.delegate?.settingsPanelDidChangeTableOptions(self)
+                    self.refreshTableOptions(button, for: method)
+                }
+            }))
+        }
+        button.menu = UIMenu(title: method.displayName + "設定", children: children)
     }
 
     private func keyboardLayoutRow() -> UIView {
@@ -296,10 +341,10 @@ final class SettingsPanel: UIView {
     }
 
     @objc private func compositionModeChanged(_ sender: UISegmentedControl) {
-        let modes = BopomofoCompositionMode.allCases
+        let modes = ChineseInputMethod.allCases
         let index = min(max(sender.selectedSegmentIndex, 0), modes.count - 1)
-        compositionMode = modes[index]
-        delegate?.settingsPanel(self, didChangeCompositionMode: compositionMode)
+        chineseInputMethod = modes[index]
+        delegate?.settingsPanel(self, didChangeInputMethod: chineseInputMethod)
     }
 
     @objc private func candidateColorChanged(_ sender: UISegmentedControl) {

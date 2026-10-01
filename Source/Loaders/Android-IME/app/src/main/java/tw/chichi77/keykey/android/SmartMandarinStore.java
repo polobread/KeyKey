@@ -33,6 +33,8 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     private record Path(double score, double lastBackoff,
                         List<SmartMandarinSegment> segments) {}
 
+    SQLiteDatabase tableDatabase() { return database; }
+
     private final SQLiteDatabase database;
     private final SmartMandarinUserData userData;
     private boolean bigramEnabled = true;

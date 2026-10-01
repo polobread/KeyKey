@@ -32,6 +32,7 @@ final class FloatingCandidateWindow {
     private static final int VERTICAL_ROW_HEIGHT_DP = 40;
     private static final int HORIZONTAL_CELL_WIDTH_DP = 68;
     private static final int HORIZONTAL_HEIGHT_DP = 48;
+    private static final int SUPPORT_FOOTER_HEIGHT_DP = 30;
     private static final int MAX_TOKEN_RETRIES = 15;
     private static final long TOKEN_RETRY_DELAY_MS = 100;
 
@@ -47,6 +48,7 @@ final class FloatingCandidateWindow {
     private List<String> candidates = List.of();
     private int highlightedIndex = -1;
     private int tokenRetryCount;
+    private boolean supportPromptVisible;
     private final Runnable windowRetry = this::showOrMove;
     private CandidateWindowSettings.Layout layout = CandidateWindowSettings.Layout.VERTICAL;
 
@@ -72,7 +74,14 @@ final class FloatingCandidateWindow {
 
     void update(List<String> candidates, int highlightedIndex,
                 CandidateWindowSettings.Layout layout, RectF cursorAnchor) {
+        update(candidates, highlightedIndex, layout, cursorAnchor, false);
+    }
+
+    void update(List<String> candidates, int highlightedIndex,
+                CandidateWindowSettings.Layout layout, RectF cursorAnchor,
+                boolean supportPromptVisible) {
         this.candidates = List.copyOf(candidates);
+        this.supportPromptVisible = supportPromptVisible;
         this.highlightedIndex = highlightedIndex;
         this.layout = layout;
         this.cursorAnchor = cursorAnchor == null ? null : new RectF(cursorAnchor);
@@ -106,16 +115,34 @@ final class FloatingCandidateWindow {
     private void rebuildContent() {
         content.removeAllViews();
         boolean horizontal = layout == CandidateWindowSettings.Layout.HORIZONTAL;
-        content.setOrientation(horizontal ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+        content.setOrientation(LinearLayout.VERTICAL);
         content.setBackground(windowBackground());
 
         Rect safeBounds = safeBounds();
-        int horizontalWidth = Math.min(safeBounds.width(),
-                dp(HORIZONTAL_CELL_WIDTH_DP) * candidates.size());
+        TextView supportFooter = supportPromptVisible ? createSupportFooter(horizontal) : null;
+        int footerHeight = supportPromptVisible
+                ? Math.min(dp(SUPPORT_FOOTER_HEIGHT_DP), safeBounds.height()) : 0;
+        int separatorHeight = supportPromptVisible
+                ? Math.min(dp(1), safeBounds.height() - footerHeight) : 0;
+        int availableCandidateHeight = Math.max(0,
+                safeBounds.height() - footerHeight - separatorHeight);
+        int horizontalWidth = dp(HORIZONTAL_CELL_WIDTH_DP) * candidates.size();
+        if (supportFooter != null) {
+            // Keep all six footer characters visible even with a single candidate.
+            horizontalWidth = Math.max(horizontalWidth,
+                    Math.round(supportFooter.getPaint().measureText(supportFooter.getText().toString()))
+                            + dp(20));
+        }
+        horizontalWidth = Math.min(safeBounds.width(), horizontalWidth);
         int cellWidth = candidates.isEmpty() ? 0 : horizontalWidth / candidates.size();
         float horizontalTextSize = cellWidth < dp(46) ? 10 : cellWidth < dp(58) ? 12 : 15;
+        int horizontalHeight = Math.min(dp(HORIZONTAL_HEIGHT_DP), availableCandidateHeight);
         int verticalRowHeight = Math.min(dp(VERTICAL_ROW_HEIGHT_DP),
-                safeBounds.height() / candidates.size());
+                availableCandidateHeight / candidates.size());
+        LinearLayout candidateList = new LinearLayout(context);
+        candidateList.setOrientation(horizontal ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+        content.addView(candidateList, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         CandidateColorSettings.CandidateColor candidateColor = CandidateColorSettings.color(context);
         int highlightColor = CandidateColorSettings.backgroundColor(candidateColor);
         int highlightTextColor = CandidateColorSettings.textColor(candidateColor);
@@ -149,17 +176,41 @@ final class FloatingCandidateWindow {
             LinearLayout.LayoutParams itemParameters;
             if (horizontal) {
                 itemParameters = new LinearLayout.LayoutParams(
-                        0, dp(HORIZONTAL_HEIGHT_DP), 1f);
+                        0, horizontalHeight, 1f);
             } else {
                 itemParameters = new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, verticalRowHeight);
             }
-            content.addView(item, itemParameters);
+            candidateList.addView(item, itemParameters);
         }
 
-        windowParameters.width = horizontal ? horizontalWidth : dp(VERTICAL_WIDTH_DP);
-        windowParameters.height = horizontal ? dp(HORIZONTAL_HEIGHT_DP)
-                : verticalRowHeight * candidates.size();
+        if (supportFooter != null) {
+            View separator = new View(context);
+            separator.setBackgroundColor(Color.rgb(218, 223, 232));
+            content.addView(separator, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, separatorHeight));
+            content.addView(supportFooter, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, footerHeight));
+        }
+        windowParameters.width = horizontal ? horizontalWidth
+                : Math.min(safeBounds.width(), dp(VERTICAL_WIDTH_DP));
+        windowParameters.height = (horizontal ? horizontalHeight
+                : verticalRowHeight * candidates.size()) + footerHeight + separatorHeight;
+    }
+
+    private TextView createSupportFooter(boolean horizontal) {
+        TextView footer = new TextView(context);
+        footer.setText(R.string.supporter_prompt);
+        footer.setSingleLine(true);
+        footer.setTextColor(Color.rgb(92, 102, 119));
+        footer.setTextSize(TypedValue.COMPLEX_UNIT_DIP, horizontal ? 15 : 13);
+        footer.setGravity(Gravity.CENTER_VERTICAL | (horizontal ? Gravity.END : Gravity.CENTER_HORIZONTAL));
+        footer.setPadding(horizontal ? dp(10) : dp(4), 0,
+                horizontal ? dp(10) : dp(4), 0);
+        // This is explanatory text, not a candidate or a purchase action.
+        footer.setClickable(false);
+        footer.setFocusable(false);
+        return footer;
     }
 
     private void showOrMove() {

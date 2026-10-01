@@ -36,14 +36,20 @@ public final class SettingsGroupsInstrumentedTest {
                 ViewGroup root = settings.findViewById(android.R.id.content);
                 ScrollView scroll = (ScrollView) root.getChildAt(0);
                 LinearLayout page = (LinearLayout) scroll.getChildAt(0);
-                assertEquals(6, page.getChildCount()); // title + four groups + supporter
+                assertEquals(8, page.getChildCount()); // title + method picker + five groups + supporter
 
                 View supporter = page.getChildAt(1);
                 assertTrue(containsText(supporter, "支持開發"));
-                for (int index = 2; index < page.getChildCount(); index++) {
-                    LinearLayout group = (LinearLayout) page.getChildAt(index);
+                for (String title : new String[]{"注音與選字", "倉頡與簡易", "外觀與操作", "實體鍵盤", "關聯詞詞庫"}) {
+                    LinearLayout group = findGroup(page, title);
                     assertEquals(View.GONE, group.getChildAt(1).getVisibility());
                 }
+                LinearLayout table = findGroup(page, "倉頡與簡易");
+                table.getChildAt(0).performClick();
+                assertEquals(View.VISIBLE, table.getChildAt(1).getVisibility());
+                assertTrue(containsText(table.getChildAt(1), "倉頡設定"));
+                assertTrue(containsText(table.getChildAt(1), "簡易設定"));
+                table.getChildAt(0).performClick();
 
                 // Simulate the billing result while the same settings screen remains open.
                 settings.onStateChanged(true, true, null);
@@ -54,7 +60,7 @@ public final class SettingsGroupsInstrumentedTest {
                         "關聯詞詞庫"));
                 settings.onStateChanged(true, false, null);
                 assertSame(supporter, page.getChildAt(1));
-                LinearLayout appearance = (LinearLayout) page.getChildAt(3);
+                LinearLayout appearance = findGroup(page, "外觀與操作");
                 assertTrue(containsText(appearance.getChildAt(0), "外觀與操作"));
                 appearance.getChildAt(0).performClick();
                 View appearanceBody = appearance.getChildAt(1);
@@ -64,16 +70,18 @@ public final class SettingsGroupsInstrumentedTest {
                 assertTrue(containsText(appearanceBody, "橫式虛擬鍵盤"));
                 appearance.getChildAt(0).performClick();
 
-                LinearLayout phrases = (LinearLayout) page.getChildAt(5);
+                LinearLayout phrases = findGroup(page, "關聯詞詞庫");
                 phrases.getChildAt(0).performClick();
                 assertEquals(View.VISIBLE, phrases.getChildAt(1).getVisibility());
                 assertEquals(30, countCollectionChecks(phrases.getChildAt(1)));
 
-                LinearLayout composition = (LinearLayout) page.getChildAt(2);
+                LinearLayout composition = findGroup(page, "注音與選字");
                 View header = composition.getChildAt(0);
                 View body = composition.getChildAt(1);
                 header.performClick();
                 assertEquals(View.VISIBLE, body.getVisibility());
+                assertFalse(containsText(body, "倉頡"));
+                assertFalse(containsText(body, "簡易"));
                 CheckBox bigram = findBigram(body);
                 assertNotNull(bigram);
                 bigram.setChecked(false);
@@ -89,6 +97,16 @@ public final class SettingsGroupsInstrumentedTest {
             SupporterState.setSupporter(context, oldSupporter);
             BopomofoCompositionModeSettings.setBigramEnabled(context, oldBigram);
         }
+    }
+
+    private static LinearLayout findGroup(LinearLayout page, String title) {
+        for (int i = 0; i < page.getChildCount(); i++) {
+            if (page.getChildAt(i) instanceof LinearLayout section && section.getChildCount() == 2) {
+                CharSequence description = section.getChildAt(0).getContentDescription();
+                if (description != null && description.toString().contains(title)) return section;
+            }
+        }
+        throw new AssertionError("Missing settings group: " + title);
     }
 
     private static int countCollectionChecks(View root) {

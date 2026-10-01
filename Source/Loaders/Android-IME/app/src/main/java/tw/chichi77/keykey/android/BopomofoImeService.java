@@ -97,6 +97,10 @@ public final class BopomofoImeService extends InputMethodService
         engine = new BopomofoEngine(dictionary, smartMandarinStore,
                 BopomofoCompositionModeSettings.mode(this));
         engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this));
+        if (smartMandarinStore != null) engine.setTableCandidateSource(new TableCandidateStore(
+                smartMandarinStore.tableDatabase(), getSharedPreferences("table_learning", MODE_PRIVATE)));
+        engine.setChineseInputMethod(ChineseInputMethodSettings.method(this));
+        engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod());
         schedulePhraseDictionaryReload();
         vibrator = getSystemService(Vibrator.class);
         CandidateWindowSettings.preferences(this)
@@ -187,7 +191,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onFinishInput() {
         stopHardwareBackspace();
-        commitPendingTouchSmartComposition();
+        commitPendingComposition();
         if (engine != null) engine.reset();
         pressedHardwareShortcutKeys.clear();
         pressedCandidateKeys.clear();
@@ -207,20 +211,20 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onFinishInputView(boolean finishingInput) {
-        commitPendingTouchSmartComposition();
+        commitPendingComposition();
         super.onFinishInputView(finishingInput);
     }
 
     @Override
     public void onWindowHidden() {
         stopHardwareBackspace();
-        commitPendingTouchSmartComposition();
+        commitPendingComposition();
         hideFloatingCandidates();
         super.onWindowHidden();
     }
 
-    private void commitPendingTouchSmartComposition() {
-        if (engine == null || !engine.isTouchSmartComposition() || !engine.hasComposition()
+    private void commitPendingComposition() {
+        if (engine == null || !engine.hasComposition()
                 || getCurrentInputConnection() == null) return;
         apply(engine.finishCompositionForInputHandoff());
     }
@@ -302,7 +306,7 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
 
-        commitPendingTouchSmartComposition();
+        commitPendingComposition();
         engine.reset();
         appliedComposingText = "";
         touchHostText.reset();
@@ -315,6 +319,15 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
+        if (key == null || ChineseInputMethodSettings.KEY_METHOD.equals(key) || key.startsWith("table_options.")) {
+            if (engine != null) {
+                if (key == null || key.startsWith("table_options.")) apply(engine.finishCompositionForModeSwitch());
+                apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
+                engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod());
+            }
+            refreshKeyboard();
+            return;
+        }
         if (BopomofoKeyboardLayoutSettings.KEY_LAYOUT.equals(key)) {
             if (engine != null) apply(engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this)));
             refreshKeyboard();
@@ -322,7 +335,8 @@ public final class BopomofoImeService extends InputMethodService
         }
         if (BopomofoCompositionModeSettings.KEY_MODE.equals(key)) {
             if (engine != null) {
-                apply(engine.setCompositionMode(BopomofoCompositionModeSettings.mode(this)));
+                apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
+                engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod());
             }
             refreshKeyboard();
             return;
@@ -759,6 +773,7 @@ public final class BopomofoImeService extends InputMethodService
 
     private void refreshKeyboard() {
         if (keyboardView == null || engine == null) return;
+        keyboardView.setChineseInputMethod(engine.chineseInputMethod());
         keyboardView.setKeyboardLayout(engine.keyboardLayout());
         keyboardView.setKeyPreviewEnabled(KeyPreviewSettings.enabled(this));
         updateKeyboardSize();
@@ -766,12 +781,17 @@ public final class BopomofoImeService extends InputMethodService
         keyboardView.setCandidateHighlightColors(
                 CandidateColorSettings.backgroundColor(candidateColor),
                 CandidateColorSettings.textColor(candidateColor));
+        boolean supportPromptVisible = SupporterState.shouldShowSupportPrompt(this);
+        boolean smartBopomofo = engine.chineseInputMethod() == ChineseInputMethod.SMART
+                && engine.compositionMode() == BopomofoCompositionMode.SMART
+                && engine.inputMode() == BopomofoEngine.InputMode.BOPOMOFO;
+        keyboardView.setAssociatedPhrasesVisible(engine.isShowingAssociatedPhrases());
         keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
                 engine.compositionMode() == BopomofoCompositionMode.SMART
                         && engine.inputMode() == BopomofoEngine.InputMode.BOPOMOFO,
                 engine.touchSmartCells(), engine.touchSmartEditableCount(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
-                engine.isHardwareFullWidth(), SupporterState.shouldShowSupportPrompt(this),
+                engine.isHardwareFullWidth(), supportPromptVisible,
                 engine.page(), engine.pageCount(),
                 engine.isShowingAssociatedPhrases() ? -1 : engine.highlightedIndex(), fieldPolicy);
         if (isFloatingCandidateMode() && floatingCandidateWindow != null) {
@@ -786,7 +806,8 @@ public final class BopomofoImeService extends InputMethodService
             }
             if (!candidatesVisible) mainHandler.removeCallbacks(cursorAnchorRetry);
             floatingCandidateWindow.update(engine.displayedCandidates(),
-                    engine.highlightedIndex(), floatingCandidateLayout, cursorAnchor);
+                    engine.highlightedIndex(), floatingCandidateLayout, cursorAnchor,
+                    supportPromptVisible && smartBopomofo);
         } else {
             hideFloatingCandidates();
         }

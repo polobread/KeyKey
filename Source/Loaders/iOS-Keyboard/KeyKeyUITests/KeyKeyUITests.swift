@@ -164,12 +164,14 @@ final class KeyKeyUITests: XCTestCase {
 
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(openEditor.waitForExistence(timeout: 3))
+        for _ in 0..<8 where !openEditor.isHittable { app.swipeUp() }
         XCTAssertTrue(openEditor.isHittable)
 
         app.terminate()
         app.launch()
         XCTAssertTrue(app.staticTexts["琦琦注音"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["open-hardware-editor"].isHittable)
+        for _ in 0..<8 where !openEditor.isHittable { app.swipeUp() }
+        XCTAssertTrue(openEditor.isHittable)
     }
 
     func testSmokeSettingsEntryOpensSystemSettings() {
@@ -213,6 +215,135 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(purchase.isHittable)
         XCTAssertTrue(restore.exists)
         XCTAssertTrue(restore.isHittable)
+    }
+
+    func testSupporterSectionOrderFollowsEntitlement() {
+        XCUIDevice.shared.orientation = .portrait
+        addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
+        for status in ["trial", "expired", "paid"] {
+            app = XCUIApplication()
+            app.launchArguments = ["-KeyKeySupporterFixture", status]
+            app.launch()
+            let title = app.staticTexts["supporter.title"]
+            let purchase = app.buttons["supporter.purchase"]
+            let restore = app.buttons["supporter.restore"]
+            XCTAssertTrue(title.waitForExistence(timeout: 8))
+            if status == "paid" {
+                for _ in 0..<8 where !purchase.isHittable { app.swipeUp() }
+                XCTAssertTrue(purchase.isHittable)
+                XCTAssertEqual(purchase.label, "謝謝支持")
+                XCTAssertFalse(purchase.isEnabled)
+                XCTAssertFalse(restore.exists)
+                XCTAssertLessThan(app.buttons["open-acknowledgements"].frame.maxY,
+                                  title.frame.minY)
+                XCTAssertLessThan(app.buttons["open-input-field-test"].frame.maxY,
+                                  title.frame.minY)
+            } else {
+                XCTAssertLessThan(app.staticTexts["app.version"].frame.maxY, title.frame.minY)
+                XCTAssertLessThan(restore.frame.maxY, app.staticTexts["app.subtitle"].frame.minY)
+                XCTAssertTrue(restore.exists)
+                XCTAssertTrue(waitForLayout { purchase.label == "付費支持" && purchase.isEnabled })
+            }
+            XCTAssertTrue(app.staticTexts["supporter.price"].exists)
+            let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            screenshot.name = "Supporter section order: \(status)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            app.terminate()
+        }
+    }
+
+    func testHardwareEditorSupportPromptGatingAndLongConnection() {
+        XCUIDevice.shared.orientation = .portrait
+        addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
+        let keyboardName = "Magic Keyboard Bluetooth USB Keyboard with a very long device name"
+        for status in ["expired", "trial", "paid"] {
+            app = XCUIApplication()
+            app.launchArguments = ["-KeyKeySupporterFixture", status,
+                                   "-KeyKeyHardwareKeyboardName", keyboardName]
+            app.launch()
+            let editor = app.buttons["open-hardware-editor"]
+            XCTAssertTrue(editor.waitForExistence(timeout: 8))
+            for _ in 0..<8 where !editor.isHittable { app.swipeUp() }
+            editor.tap()
+            let method = app.buttons["hardware-editor.composition-mode"]
+            XCTAssertTrue(method.waitForExistence(timeout: 3))
+            method.tap(); app.buttons["好打注音"].tap()
+            let prompt = app.staticTexts["hardware-editor.supporter-prompt"]
+            let connection = app.staticTexts["hardware-editor.connection"]
+            XCTAssertEqual(connection.label, "已連線：\(keyboardName)・可以直接輸入")
+            if status == "expired" {
+                XCTAssertTrue(prompt.waitForExistence(timeout: 3))
+                XCTAssertEqual(prompt.label, "歡迎付費支持")
+                XCTAssertFalse(app.buttons["hardware-editor.supporter-prompt"].exists)
+                XCTAssertEqual(connection.frame.midY, prompt.frame.midY, accuracy: 1)
+                XCTAssertLessThan(connection.frame.maxX, prompt.frame.minX)
+                XCTAssertGreaterThan(connection.frame.width, 0)
+                XCTAssertLessThanOrEqual(prompt.frame.maxX, app.frame.maxX)
+                let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                screenshot.name = "Hardware editor long connection and support prompt"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+                for name in ["傳統注音", "倉頡", "簡易"] {
+                    method.tap(); app.buttons[name].tap()
+                    XCTAssertFalse(prompt.exists, "提示應只出現在好打注音")
+                }
+                method.tap(); app.buttons["好打注音"].tap()
+                XCTAssertTrue(prompt.exists)
+                app.buttons["hardware-editor.mode"].tap()
+                XCTAssertFalse(prompt.exists)
+                app.buttons["hardware-editor.mode"].tap()
+                XCTAssertTrue(prompt.exists)
+                app.navigationBars["實體鍵盤編輯器"].buttons.element(boundBy: 0).tap()
+                let purchase = app.buttons["supporter.purchase"]
+                for _ in 0..<8 where !purchase.isHittable { app.swipeDown() }
+                XCTAssertTrue(waitForLayout { purchase.label == "付費支持" && purchase.isEnabled })
+                purchase.tap()
+                XCTAssertTrue(waitForLayout { purchase.label == "謝謝支持" })
+                for _ in 0..<8 where !editor.isHittable { app.swipeDown() }
+                editor.tap()
+                XCTAssertTrue(method.waitForExistence(timeout: 3))
+                XCTAssertFalse(prompt.exists, "購買完成後重進編輯器應刷新授權")
+            } else {
+                XCTAssertFalse(prompt.exists)
+            }
+            app.terminate()
+        }
+    }
+
+    func testSupporterRestoreReordersSectionAndHidesPrompt() {
+        XCUIDevice.shared.orientation = .portrait
+        addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
+        app = XCUIApplication()
+        app.launchArguments = ["-KeyKeySupporterFixture", "expired"]
+        app.launch()
+        let restore = app.buttons["supporter.restore"]
+        let purchase = app.buttons["supporter.purchase"]
+        XCTAssertTrue(restore.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitForLayout { restore.isEnabled })
+        for _ in 0..<8 where !restore.isHittable { app.swipeUp() }
+        restore.tap()
+        XCTAssertTrue(waitForLayout { purchase.label == "謝謝支持" })
+        XCTAssertFalse(purchase.isEnabled)
+        XCTAssertFalse(restore.exists)
+        for _ in 0..<8 where !purchase.isHittable { app.swipeUp() }
+        XCTAssertTrue(purchase.isHittable)
+        XCTAssertLessThan(app.buttons["open-acknowledgements"].frame.maxY,
+                          app.staticTexts["supporter.title"].frame.minY)
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "Restored supporter section at the bottom"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+
+        let editor = app.buttons["open-hardware-editor"]
+        for _ in 0..<8 where !editor.isHittable { app.swipeDown() }
+        XCTAssertTrue(editor.isHittable)
+        editor.tap()
+        let method = app.buttons["hardware-editor.composition-mode"]
+        XCTAssertTrue(method.waitForExistence(timeout: 3))
+        method.tap(); app.buttons["好打注音"].tap()
+        XCTAssertFalse(app.staticTexts["hardware-editor.supporter-prompt"].exists,
+                       "恢復購買後重進編輯器應隱藏提示")
     }
 
     func testHardwareKeyboardEditorHasCopyAndShareActions() {
@@ -376,6 +507,65 @@ final class KeyKeyUITests: XCTestCase {
         assertFrame(clear.frame, equals: portraitClearFrame, message: "橫式轉回直式的清除按鈕")
         assertFrame(copy.frame, equals: portraitCopyFrame, message: "橫式轉回直式的複製按鈕")
         assertFrame(share.frame, equals: portraitShareFrame, message: "橫式轉回直式的分享按鈕")
+    }
+
+    func testTableMethodsInHardwareEditorAndSingleRowControls() {
+        XCUIDevice.shared.orientation = .portrait
+        addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
+        app = XCUIApplication()
+        app.launch()
+        app.buttons["open-hardware-editor"].tap()
+        let method = app.buttons["hardware-editor.composition-mode"]
+        let layout = app.buttons["hardware-editor.keyboard-layout"]
+        XCTAssertTrue(method.waitForExistence(timeout: 3))
+        XCTAssertEqual(method.frame.midY, layout.frame.midY, accuracy: 1)
+        XCTAssertLessThan(method.frame.maxX, layout.frame.minX)
+        method.tap(); app.buttons["倉頡"].tap()
+        XCTAssertTrue(method.label.contains("倉頡"))
+        let output = app.textViews["hardware-editor.output"]
+        app.typeKey("m", modifierFlags: [])
+        app.buttons["hardware-editor.space"].tap()
+        XCTAssertEqual(output.value as? String, "一")
+        app.typeKey("a", modifierFlags: [])
+        app.buttons["hardware-editor.mode"].tap()
+        XCTAssertEqual(output.value as? String, "一日")
+        app.buttons["hardware-editor.mode"].tap()
+        method.tap(); app.buttons["簡易"].tap()
+        app.typeKey("a", modifierFlags: [])
+        app.typeKey("b", modifierFlags: [])
+        XCTAssertTrue(app.buttons["hardware-editor.candidate.1"].label.contains("明"))
+        app.buttons["hardware-editor.candidate.1"].tap()
+        XCTAssertEqual(output.value as? String, "一日明")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(waitForLayout { abs(method.frame.midY - layout.frame.midY) < 1 })
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "Table methods and single-row landscape controls"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        method.tap(); app.buttons["好打注音"].tap()
+    }
+
+    func testTouchCangjieAndSimplexUseExistingCandidateFlow() throws {
+        test00KeyboardOptInIsConfigured()
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        output.tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        try selectCompositionMode("倉頡")
+        XCTAssertEqual(app.buttons["a"].label, "日")
+        for key in ["0", "-", "@"] { XCTAssertTrue(app.buttons[key].exists) }
+        app.buttons["m"].tap(); app.buttons["SPACE"].tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "一" })
+        try selectCompositionMode("簡易")
+        app.buttons["a"].tap(); app.buttons["b"].tap()
+        let first = app.buttons["第 1 個候選，明"]
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        first.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "一明" })
+        try selectCompositionMode("好打注音")
+        app.buttons["@"].tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "一明@" })
     }
 
     func testHardwareEditorModeWidthAndFunctionButtonsKeepSmartText() {

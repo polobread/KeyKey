@@ -131,6 +131,11 @@ public final class ImeTestActivity extends Activity {
     }
 
     private void applyTestConfiguration() {
+        String method = getIntent().getStringExtra("method");
+        if (method != null) {
+            ChineseInputMethodSettings.setMethod(this,
+                    ChineseInputMethod.valueOf(method.toUpperCase(java.util.Locale.ROOT)));
+        }
         if (getIntent().hasExtra("supporter")) {
             SupporterState.setSupporter(this,
                     getIntent().getBooleanExtra("supporter", false));

@@ -21,6 +21,7 @@ final class KeyboardViewController: UIInputViewController {
     )
     private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
     private lazy var candidateColorSettings = CandidateColorSettings(sharedDefaults: sharedDefaults)
+    private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults)
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults
     )
@@ -104,9 +105,9 @@ final class KeyboardViewController: UIInputViewController {
     private func refreshAppSettings() {
         candidateColor = candidateColorSettings.color
         inputClicksEnabled = clickSettings.enabled
-        let mode = compositionModeSettings.mode
-        if engine?.bopomofoCompositionMode != mode {
-            if let engine { apply(engine.setCompositionMode(mode)) }
+        if let engine {
+            apply(engine.setChineseInputMethod(methodSettings.method))
+            engine.tableOptions = methodSettings.options(for: engine.chineseInputMethod)
         }
         applyPhraseSelection(phraseSettings.enabledCollections)
         if let engine { apply(engine.setKeyboardLayout(layoutSettings.layout)) }
@@ -143,7 +144,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     override func viewWillDisappear(_ animated: Bool) {
-        commitPendingTouchSmartComposition()
+        if let engine { apply(engine.finishCompositionForInputHandoff()) }
         super.viewWillDisappear(animated)
         keyboardView?.cancelBackspaceRepeat()
         resetInputState()
@@ -162,7 +163,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func commitBeforeInputModeSwitch() {
-        commitPendingTouchSmartComposition()
+        if let engine { apply(engine.finishCompositionForInputHandoff()) }
     }
 
     private func commitPendingTouchSmartComposition() {
@@ -249,6 +250,9 @@ final class KeyboardViewController: UIInputViewController {
                 compositionMode: compositionModeSettings.mode,
                 keyboardLayout: layoutSettings.layout
             )
+            engine?.setTableCandidateSource(TableCandidateStore(database: database))
+            engine?.setChineseInputMethod(methodSettings.method)
+            engine?.tableOptions = methodSettings.options(for: methodSettings.method)
         } catch {
             loadFailure = String(describing: error)
         }
@@ -265,10 +269,13 @@ final class KeyboardViewController: UIInputViewController {
 
     private func showSettingsPanel() {
         guard settingsPanel == nil, !collections.isEmpty else { return }
+        if let engine { apply(engine.finishCompositionForInputHandoff()) }
         let panel = SettingsPanel(
             collections: collections, enabled: phraseSettings.enabledCollections,
             inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
             compositionMode: engine?.bopomofoCompositionMode ?? .smart,
+            chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
+            methodSettings: methodSettings,
             keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout
         )
         panel.delegate = self
@@ -303,6 +310,7 @@ final class KeyboardViewController: UIInputViewController {
             ? -1 : engine.highlightedIndex
         state.pageCount = engine.pageCount
         state.mode = engine.inputMode
+        state.chineseInputMethod = engine.chineseInputMethod
         state.keyboardLayout = engine.keyboardLayout
         state.shifted = engine.isShifted
         state.temporaryEnglish = engine.isTemporaryEnglish
@@ -541,6 +549,22 @@ extension KeyboardViewController: KeyboardViewDelegate {
 }
 
 extension KeyboardViewController: SettingsPanelDelegate {
+    func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod) {
+        if let engine {
+            apply(engine.setChineseInputMethod(method))
+            engine.tableOptions = methodSettings.options(for: method)
+        }
+        methodSettings.setMethod(method)
+        refresh()
+    }
+    func settingsPanelDidChangeTableOptions(_ panel: SettingsPanel) {
+        if let engine {
+            apply(engine.finishCompositionForInputHandoff())
+            engine.tableOptions = methodSettings.options(for: engine.chineseInputMethod)
+        }
+        refresh()
+    }
+
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool {
         guard let smartUserData else { return false }
         do {
@@ -566,8 +590,9 @@ extension KeyboardViewController: SettingsPanelDelegate {
     func settingsPanel(
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
     ) {
-        if let engine { apply(engine.setCompositionMode(mode)) }
-        compositionModeSettings.setMode(mode)
+        let method: ChineseInputMethod = mode == .smart ? .smart : .traditional
+        if let engine { apply(engine.setChineseInputMethod(method)) }
+        methodSettings.setMethod(method)
         refresh()
     }
 

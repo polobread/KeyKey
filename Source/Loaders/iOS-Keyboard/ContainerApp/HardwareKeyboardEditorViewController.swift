@@ -163,6 +163,13 @@ private final class PhraseCollectionPickerViewController: UITableViewController 
 final class HardwareKeyboardEditorViewController: UIViewController {
     private let captureView = HardwareKeyboardCaptureView()
     private let connectionLabel = UILabel()
+    private let supporterPromptLabel = UILabel()
+    private let supporterState: SupporterState = {
+        #if DEBUG
+        if let state = SupporterUIFixture.state { return state }
+        #endif
+        return SupporterState()
+    }()
     private let outputView = UITextView()
     private let cursorIndicator = UIView()
     private let cursorPositionLabel = UILabel()
@@ -219,6 +226,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         suiteName: KeyboardPreferenceStore.appGroupIdentifier
     )
     private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
+    private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults)
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults
     )
@@ -256,6 +264,12 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         observeKeyboardConnection()
         refreshConnectionStatus()
         refresh()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        refreshConnectionStatus()
+        refreshSupporterPrompt()
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -298,8 +312,20 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private func configureViews() {
         connectionLabel.font = .preferredFont(forTextStyle: .subheadline)
         connectionLabel.adjustsFontForContentSizeCategory = true
-        connectionLabel.numberOfLines = 0
+        connectionLabel.numberOfLines = 1
+        connectionLabel.lineBreakMode = .byTruncatingTail
+        connectionLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         connectionLabel.accessibilityIdentifier = "hardware-editor.connection"
+
+        supporterPromptLabel.text = "歡迎付費支持"
+        supporterPromptLabel.font = .preferredFont(forTextStyle: .subheadline)
+        supporterPromptLabel.adjustsFontForContentSizeCategory = true
+        supporterPromptLabel.textColor = .secondaryLabel
+        supporterPromptLabel.numberOfLines = 1
+        supporterPromptLabel.isHidden = true
+        supporterPromptLabel.setContentHuggingPriority(.required, for: .horizontal)
+        supporterPromptLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        supporterPromptLabel.accessibilityIdentifier = "hardware-editor.supporter-prompt"
 
         outputView.isEditable = false
         outputView.isSelectable = false
@@ -348,7 +374,22 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         configureControlsColumn()
         configureActionsStack()
 
-        for view in [connectionLabel, compositionModeButton, keyboardLayoutButton, outputView, cursorPositionLabel] {
+        let methodRow = UIStackView(arrangedSubviews: [compositionModeButton, keyboardLayoutButton])
+        methodRow.axis = .horizontal
+        methodRow.spacing = 8
+        methodRow.alignment = .fill
+        compositionModeButton.widthAnchor.constraint(equalTo: methodRow.widthAnchor, multiplier: 0.60).isActive = true
+        methodRow.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        for button in [compositionModeButton, keyboardLayoutButton] {
+            button.titleLabel?.numberOfLines = 1
+            button.titleLabel?.adjustsFontSizeToFitWidth = true
+            button.titleLabel?.minimumScaleFactor = 0.65
+        }
+        let connectionRow = UIStackView(arrangedSubviews: [connectionLabel, supporterPromptLabel])
+        connectionRow.axis = .horizontal
+        connectionRow.alignment = .firstBaseline
+        connectionRow.spacing = 8
+        for view in [connectionRow, methodRow, outputView, cursorPositionLabel] {
             inputColumn.addArrangedSubview(view)
         }
         inputColumn.axis = .vertical
@@ -749,23 +790,57 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     private func refreshCompositionModeButton() {
         refreshKeyboardLayoutButton()
-        let selected = engine?.bopomofoCompositionMode ?? compositionModeSettings.mode
-        compositionModeButton.setTitle("注音：\(selected.displayName)", for: .normal)
-        compositionModeButton.menu = UIMenu(
-            title: "注音模式",
-            options: .singleSelection,
-            children: BopomofoCompositionMode.allCases.map { mode in
-                UIAction(
-                    title: mode.displayName,
-                    state: selected == mode ? .on : .off
-                ) { [weak self] _ in
-                    self?.selectCompositionMode(mode)
+        let selected = engine?.chineseInputMethod ?? methodSettings.method
+        compositionModeButton.setTitle("輸入法：\(selected.displayName)", for: .normal)
+        var children: [UIMenuElement] = ChineseInputMethod.allCases.map { method in
+            UIAction(title: method.displayName, state: selected == method ? .on : .off) { [weak self] _ in
+                self?.selectInputMethod(method)
+            }
+        }
+        for method in [ChineseInputMethod.cangjie, .simplex] {
+            let options = methodSettings.options(for: method)
+            var actions: [UIMenuElement] = options.switches(for: method).map { item in
+                UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self] _ in
+                    guard let self else { return }
+                    var next = self.methodSettings.options(for: method)
+                    next.toggle(item.key)
+                    self.applyTableOptions(next, for: method)
                 }
             }
-        )
+            if method == .cangjie {
+                actions.append(UIMenu(title: "標點", children: ["原字表", "中英混合", "半形"].enumerated().map { index, title in
+                    UIAction(title: title, state: options.punctuation == index ? .on : .off) { [weak self] _ in
+                        guard let self else { return }
+                        var next = self.methodSettings.options(for: method)
+                        next.punctuation = index
+                        self.applyTableOptions(next, for: method)
+                    }
+                }))
+            }
+            children.append(UIMenu(title: method.displayName + "設定", children: actions))
+        }
+        compositionModeButton.menu = UIMenu(title: "輸入法", children: children)
+    }
+
+    private func applyTableOptions(_ options: TableInputOptions, for method: ChineseInputMethod) {
+        if let engine, engine.chineseInputMethod == method {
+            apply(engine.finishCompositionForInputHandoff())
+            engine.tableOptions = options
+        }
+        methodSettings.setOptions(options, for: method)
+        refresh()
+        restoreCaptureFocusAfterControlAction()
     }
 
     private func refreshKeyboardLayoutButton() {
+        if (engine?.chineseInputMethod ?? methodSettings.method).isTable {
+            keyboardLayoutButton.setTitle("倉頡字根", for: .normal)
+            keyboardLayoutButton.menu = nil
+            keyboardLayoutButton.showsMenuAsPrimaryAction = false
+            keyboardLayoutButton.isEnabled = false
+            return
+        }
+        keyboardLayoutButton.isEnabled = true
         let selected = engine?.keyboardLayout ?? layoutSettings.layout
         keyboardLayoutButton.accessibilityIdentifier = "hardware-editor.keyboard-layout"
         keyboardLayoutButton.contentHorizontalAlignment = .leading
@@ -845,6 +920,9 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 hardwareSmartEditing: true,
                 keyboardLayout: layoutSettings.layout
             )
+            engine?.setTableCandidateSource(TableCandidateStore(database: database))
+            engine?.setChineseInputMethod(methodSettings.method)
+            engine?.tableOptions = methodSettings.options(for: methodSettings.method)
         } catch {
             transientStatus = "字庫載入失敗：\(error)"
         }
@@ -907,6 +985,23 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             self, selector: #selector(applicationWillResignActive(_:)),
             name: UIApplication.willResignActiveNotification, object: nil
         )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(applicationDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification, object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(supporterStateChanged),
+            name: UserDefaults.didChangeNotification, object: nil
+        )
+    }
+
+    @objc private func supporterStateChanged() {
+        refreshSupporterPrompt()
+    }
+
+    @objc private func applicationDidBecomeActive() {
+        refreshConnectionStatus()
+        refreshSupporterPrompt()
     }
 
     @objc private func applicationWillResignActive(_ notification: Notification) {
@@ -930,6 +1025,15 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     }
 
     private func refreshConnectionStatus() {
+        #if DEBUG
+        if SupporterUIFixture.state != nil,
+           let name = SupporterUIFixture.argument("-KeyKeyHardwareKeyboardName") {
+            connectionLabel.text = "已連線：\(name)・可以直接輸入"
+            connectionLabel.textColor = .systemGreen
+            connectionLabel.accessibilityLabel = connectionLabel.text
+            return
+        }
+        #endif
         if let keyboard = GCKeyboard.coalesced {
             let name = keyboard.vendorName.flatMap { $0.isEmpty ? nil : $0 } ?? "實體鍵盤"
             connectionLabel.text = "已連線：\(name)・可以直接輸入"
@@ -938,9 +1042,17 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             connectionLabel.text = "尚未偵測到實體鍵盤"
             connectionLabel.textColor = .secondaryLabel
         }
+        connectionLabel.accessibilityLabel = connectionLabel.text
+    }
+
+    private func refreshSupporterPrompt() {
+        supporterPromptLabel.isHidden = engine?.chineseInputMethod != .smart
+            || engine?.inputMode != .bopomofo
+            || !supporterState.shouldShowSupportPrompt()
     }
 
     private func refresh() {
+        refreshSupporterPrompt()
         insertionCharacterIndex = min(max(insertionCharacterIndex, 0), committedText.count)
         let insertionIndex = committedText.index(
             committedText.startIndex, offsetBy: insertionCharacterIndex
@@ -1005,9 +1117,9 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             // never changes the editor layout.
             pageIndicatorLabel.text = " "
         }
-        modeButton.setTitle(engine.inputMode == .bopomofo ? "ㄅ" : "英", for: .normal)
+        modeButton.setTitle(engine.inputMode == .bopomofo ? engine.chineseInputMethod.symbol : "英", for: .normal)
         modeButton.accessibilityLabel = engine.inputMode == .bopomofo
-            ? "目前注音模式，切換英文" : "目前英文模式，切換注音"
+            ? "目前\(engine.chineseInputMethod.displayName)，切換英文" : "目前英文模式，切換\(engine.chineseInputMethod.displayName)"
         widthButton.setTitle(isFullWidth ? "全" : "半", for: .normal)
         widthButton.accessibilityLabel = isFullWidth
             ? "目前全形，切換半形" : "目前半形，切換全形"
@@ -1159,10 +1271,11 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         restoreCaptureFocusAfterControlAction()
     }
 
-    private func selectCompositionMode(_ mode: BopomofoCompositionMode) {
+    private func selectInputMethod(_ method: ChineseInputMethod) {
         guard let engine else { return }
-        apply(engine.setCompositionMode(mode))
-        compositionModeSettings.setMode(mode)
+        apply(engine.setChineseInputMethod(method))
+        engine.tableOptions = methodSettings.options(for: method)
+        methodSettings.setMethod(method)
         transientStatus = nil
         refresh()
         restoreCaptureFocusAfterControlAction()
@@ -1402,10 +1515,11 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             : ""
         let message = """
         \(smartHelp)
+        倉頡最多五碼；簡易滿兩碼查詢。倉頡可用 ?／* 查詢字根。
         一般候選：1–9
         關聯候選：Shift+1–9（! @ # $ % ^ & * (）
-        候選翻頁：Space／Page Up／Page Down
-        切換ㄅ／英：Ctrl+Space
+        候選翻頁：Space／Page Up／Page Down（倉頡只有一頁時，Space 選第一候選）
+        切換中文／英：Ctrl+Space（沿用目前輸入法）
         切換半／全形：Shift+Space
         符號：Ctrl+0／Ctrl+1
         逗號／句號：Ctrl+,／Ctrl+.

@@ -72,16 +72,16 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         title.setGravity(Gravity.CENTER);
         content.addView(title, matchWrap(dp(0), dp(32)));
 
-        SettingsGroup compositionGroup = addSettingsGroup(content, savedInstanceState,
-                "composition", R.string.settings_group_composition,
-                R.string.settings_group_composition_summary, false);
-        LinearLayout compositionContent = compositionGroup.body;
-        updateCompositionSummary(compositionGroup.summary);
+        LinearLayout methodContent = new LinearLayout(this);
+        methodContent.setOrientation(LinearLayout.VERTICAL);
+        methodContent.setPadding(dp(16), dp(12), dp(16), dp(8));
+        methodContent.setBackground(sectionBackground());
+        content.addView(methodContent, matchWrap(dp(0), dp(16)));
         TextView compositionModeLabel = new TextView(this);
         compositionModeLabel.setText(R.string.composition_mode_title);
         compositionModeLabel.setTextSize(18);
         compositionModeLabel.setTextColor(Color.DKGRAY);
-        compositionContent.addView(compositionModeLabel, matchWrap(dp(0), dp(4)));
+        methodContent.addView(compositionModeLabel, matchWrap(dp(0), dp(4)));
 
         Spinner compositionMode = new Spinner(this);
         compositionMode.setContentDescription(getString(R.string.composition_mode_title));
@@ -89,24 +89,26 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 R.array.composition_modes, android.R.layout.simple_spinner_item);
         compositionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         compositionMode.setAdapter(compositionAdapter);
-        compositionMode.setSelection(BopomofoCompositionModeSettings.mode(this)
-                == BopomofoCompositionMode.SMART ? 0 : 1);
+        compositionMode.setSelection(ChineseInputMethodSettings.method(this).ordinal());
         compositionMode.setOnItemSelectedListener(
                 new android.widget.AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(android.widget.AdapterView<?> parent,
                                                android.view.View view, int position, long id) {
-                        BopomofoCompositionModeSettings.setMode(SettingsActivity.this,
-                                position == 0 ? BopomofoCompositionMode.SMART
-                                        : BopomofoCompositionMode.TRADITIONAL);
-                        updateCompositionSummary(compositionGroup.summary);
+                        ChineseInputMethodSettings.setMethod(SettingsActivity.this,
+                                ChineseInputMethod.values()[position]);
                     }
 
                     @Override public void onNothingSelected(
                             android.widget.AdapterView<?> parent) {}
                 });
-        compositionContent.addView(compositionMode, matchWrap(dp(0), dp(8)));
+        methodContent.addView(compositionMode, matchWrap(dp(0), dp(8)));
 
+        SettingsGroup compositionGroup = addSettingsGroup(content, savedInstanceState,
+                "composition", R.string.settings_group_composition,
+                R.string.settings_group_composition_summary, false);
+        LinearLayout compositionContent = compositionGroup.body;
+        updateCompositionSummary(compositionGroup.summary);
         TextView compositionModeDescription = new TextView(this);
         compositionModeDescription.setText(R.string.composition_mode_description);
         compositionModeDescription.setTextSize(14);
@@ -150,6 +152,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                     android.view.View view, int position, long id) {
                 BopomofoKeyboardLayoutSettings.setLayout(SettingsActivity.this,
                         position == 1 ? BopomofoKeyboardLayout.HSU : BopomofoKeyboardLayout.STANDARD);
+                updateCompositionSummary(compositionGroup.summary);
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
@@ -181,6 +184,18 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                     }
                 }).show());
         compositionContent.addView(resetLearning, matchWrap(dp(0), dp(24)));
+
+        LinearLayout tableContent = addSettingsGroup(content, savedInstanceState,
+                "table", R.string.settings_group_table,
+                R.string.settings_group_table_summary, false).body;
+        TextView tableDescription = new TextView(this);
+        tableDescription.setText(R.string.settings_group_table_description);
+        tableDescription.setTextSize(14);
+        tableDescription.setTextColor(Color.GRAY);
+        tableDescription.setLineSpacing(0, 1.2f);
+        tableContent.addView(tableDescription, matchWrap(dp(0), dp(16)));
+        addTableSettings(tableContent, ChineseInputMethod.CANGJIE);
+        addTableSettings(tableContent, ChineseInputMethod.SIMPLEX);
 
         LinearLayout appearanceContent = addSettingsGroup(content, savedInstanceState,
                 "appearance", R.string.settings_group_appearance,
@@ -533,11 +548,68 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 supporter ? settingsContent.getChildCount() : 1);
     }
 
+    private void addTableSettings(LinearLayout parent, ChineseInputMethod method) {
+        TextView heading = new TextView(this);
+        heading.setText(method.displayName + "設定");
+        heading.setTextSize(18);
+        parent.addView(heading, matchWrap(dp(0), dp(4)));
+        TableInputOptions initial = ChineseInputMethodSettings.options(this, method);
+        String[] keys = method == ChineseInputMethod.CANGJIE
+                ? new String[]{"realtime", "clear", "maximum", "learning"}
+                : new String[]{"realtime", "clear"};
+        String[] titles = {"即時候選", "錯碼清除", "滿五碼查詢", "依選字紀錄排序"};
+        CheckBox[] controls = new CheckBox[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            String key = keys[i];
+            CheckBox control = new CheckBox(this);
+            controls[i] = control;
+            control.setText(titles[i]);
+            control.setMinHeight(dp(44));
+            control.setChecked(switch (key) {
+                case "realtime" -> initial.composeWhileTyping;
+                case "clear" -> initial.clearOnError;
+                case "maximum" -> initial.queryAtMaximum;
+                default -> initial.dynamicFrequency;
+            });
+            control.setOnCheckedChangeListener((button, checked) -> {
+                TableInputOptions next = ChineseInputMethodSettings.options(this, method);
+                switch (key) {
+                    case "realtime" -> { next.composeWhileTyping = checked; if (checked) next.clearOnError = false; }
+                    case "clear" -> { next.clearOnError = checked; if (checked) next.composeWhileTyping = false; }
+                    case "maximum" -> next.queryAtMaximum = checked;
+                    default -> next.dynamicFrequency = checked;
+                }
+                ChineseInputMethodSettings.setOptions(this, method, next);
+                if (controls[0] != null) controls[0].setChecked(next.composeWhileTyping);
+                if (controls[1] != null) controls[1].setChecked(next.clearOnError);
+            });
+            parent.addView(control, matchWrap(dp(0), dp(0)));
+        }
+        if (method == ChineseInputMethod.CANGJIE) {
+            Spinner punctuation = new Spinner(this);
+            punctuation.setContentDescription("倉頡標點");
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                    android.R.layout.simple_spinner_item, new String[]{"標點：原字表", "標點：中英混合", "標點：半形"});
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            punctuation.setAdapter(adapter);
+            punctuation.setSelection(initial.punctuation);
+            punctuation.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                public void onItemSelected(android.widget.AdapterView<?> view, View item, int position, long id) {
+                    TableInputOptions next = ChineseInputMethodSettings.options(SettingsActivity.this, method);
+                    if (next.punctuation == position) return;
+                    next.punctuation = position;
+                    ChineseInputMethodSettings.setOptions(SettingsActivity.this, method, next);
+                }
+                public void onNothingSelected(android.widget.AdapterView<?> view) {}
+            });
+            parent.addView(punctuation, matchWrap(dp(0), dp(8)));
+        }
+    }
+
     private void updateCompositionSummary(TextView view) {
-        String mode = getResources().getStringArray(R.array.composition_modes)[
-                BopomofoCompositionModeSettings.mode(this) == BopomofoCompositionMode.SMART
-                        ? 0 : 1];
-        view.setText(getString(R.string.settings_group_composition_summary, mode,
+        String layout = getResources().getStringArray(R.array.bopomofo_keyboard_layouts)[
+                BopomofoKeyboardLayoutSettings.layout(this) == BopomofoKeyboardLayout.HSU ? 1 : 0];
+        view.setText(getString(R.string.settings_group_composition_summary, layout,
                 getString(BopomofoCompositionModeSettings.bigramEnabled(this)
                         ? R.string.settings_value_on : R.string.settings_value_off)));
     }

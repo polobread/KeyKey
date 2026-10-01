@@ -118,6 +118,7 @@ final class BopomofoKeyboardView extends View {
     private boolean smartMode;
     private List<String> smartCells = List.of();
     private int smartEditableCount;
+    private ChineseInputMethod chineseInputMethod = ChineseInputMethod.SMART;
     private BopomofoEngine.InputMode inputMode = BopomofoEngine.InputMode.BOPOMOFO;
     private BopomofoKeyboardLayout keyboardLayout = BopomofoKeyboardLayout.STANDARD;
     private boolean shifted;
@@ -126,6 +127,7 @@ final class BopomofoKeyboardView extends View {
     private boolean hardwareNumberRowEnabled;
     private boolean hardwareNumberShifted;
     private boolean supportPromptVisible;
+    private boolean associatedPhrasesVisible;
     private InputFieldPolicy fieldPolicy = InputFieldPolicy.DEFAULT;
     private int page;
     private int pageCount;
@@ -196,6 +198,13 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
+    void setChineseInputMethod(ChineseInputMethod method) {
+        if (chineseInputMethod == method) return;
+        chineseInputMethod = method;
+        previewHit = null;
+        invalidate();
+    }
+
     void setKeyPreviewEnabled(boolean enabled) {
         if (keyPreviewEnabled == enabled) return;
         keyPreviewEnabled = enabled;
@@ -239,6 +248,12 @@ final class BopomofoKeyboardView extends View {
         this.pageCount = pageCount;
         this.highlightedIndex = highlightedIndex;
         this.fieldPolicy = fieldPolicy == null ? InputFieldPolicy.DEFAULT : fieldPolicy;
+        invalidate();
+    }
+
+    void setAssociatedPhrasesVisible(boolean visible) {
+        if (associatedPhrasesVisible == visible) return;
+        associatedPhrasesVisible = visible;
         invalidate();
     }
 
@@ -313,11 +328,17 @@ final class BopomofoKeyboardView extends View {
 
     private void drawSmartCellStrip(Canvas canvas, RectF area) {
         float cellWidth = area.width() / 11f;
+        boolean showSupport = supportPromptEligible() && reading.isEmpty()
+                && smartCells.isEmpty() && candidates.isEmpty() && !associatedPhrasesVisible;
         for (int index = 0; index < 11; index++) {
             RectF cell = new RectF(area.left + index * cellWidth + dp(2),
                     area.top + dp(2), area.left + (index + 1) * cellWidth - dp(2),
                     area.bottom - dp(2));
             canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
+            if (showSupport && index >= 8) {
+                drawSupportPromptWord(canvas, cell, index - 8);
+                continue;
+            }
             if (index >= smartCells.size()) continue;
             String value = smartCells.get(index);
             textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
@@ -341,11 +362,17 @@ final class BopomofoKeyboardView extends View {
         float gap = dp(2);
         int cellCount = BopomofoEngine.CANDIDATES_PER_PAGE + 3;
         float cellWidth = area.width() / cellCount;
+        boolean showSupport = supportPromptEligible() && candidates.isEmpty();
         for (int i = 0; i < BopomofoEngine.CANDIDATES_PER_PAGE; i++) {
             RectF cell = new RectF(area.left + i * cellWidth + gap,
                     area.top + gap, area.left + (i + 1) * cellWidth - gap,
                     area.bottom - gap);
-            drawCandidate(canvas, cell, i);
+            if (showSupport && i >= 6) {
+                canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
+                drawSupportPromptWord(canvas, cell, i - 6);
+            } else {
+                drawCandidate(canvas, cell, i);
+            }
         }
         drawHardwareEmojiButton(canvas, new RectF(
                 area.left + BopomofoEngine.CANDIDATES_PER_PAGE * cellWidth,
@@ -354,7 +381,7 @@ final class BopomofoKeyboardView extends View {
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 1) * cellWidth,
                 area.top, area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
-                area.bottom), inputMode == BopomofoEngine.InputMode.BOPOMOFO ? "ㄅ" : "英",
+                area.bottom), inputMode == BopomofoEngine.InputMode.BOPOMOFO ? chineseInputMethod.symbol : "英",
                 "HARDWARE_LANGUAGE");
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
@@ -518,6 +545,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private String bopomofoLayoutName() {
+        if (chineseInputMethod.isTable()) return chineseInputMethod.displayName;
         return keyboardLayout == BopomofoKeyboardLayout.HSU
                 ? keyboardLayout.displayName : keyboardLayout.displayName + "注音";
     }
@@ -542,6 +570,25 @@ final class BopomofoKeyboardView extends View {
         hintPaint.setTextSize(secondarySize);
         canvas.drawText(secondary, startX + primaryWidth + gap, baseline, hintPaint);
         hintPaint.setTextAlign(Paint.Align.CENTER);
+    }
+
+    private boolean supportPromptEligible() {
+        return supportPromptVisible && smartMode && chineseInputMethod == ChineseInputMethod.SMART
+                && inputMode == BopomofoEngine.InputMode.BOPOMOFO;
+    }
+
+    private void drawSupportPromptWord(Canvas canvas, RectF cell, int wordIndex) {
+        int[] words = {R.string.supporter_prompt_welcome, R.string.supporter_prompt_paid,
+                R.string.supporter_prompt_support};
+        String word = getResources().getString(words[wordIndex]);
+        hintPaint.setTextSize(standardHintTextSize());
+        hintPaint.setFakeBoldText(false);
+        float availableWidth = Math.max(1, cell.width() - dp(4));
+        float measuredWidth = hintPaint.measureText(word);
+        if (measuredWidth > availableWidth) {
+            hintPaint.setTextSize(hintPaint.getTextSize() * availableWidth / measuredWidth);
+        }
+        canvas.drawText(word, cell.centerX(), textBaseline(cell, hintPaint), hintPaint);
     }
 
     private float standardHintTextSize() {
@@ -877,7 +924,7 @@ final class BopomofoKeyboardView extends View {
 
     private String keyLabel(String key) {
         return switch (key) {
-            case "MODE" -> fieldPolicy.modeCaption(inputMode);
+            case "MODE" -> fieldPolicy.modeCaption(inputMode).replace("ㄅ", chineseInputMethod.symbol);
             case "SHIFT" -> shifted ? "⇧" : "⇧";
             case "BACKSPACE" -> "⌫";
             case "SPACE" -> "空白";
@@ -889,6 +936,9 @@ final class BopomofoKeyboardView extends View {
     }
 
     private String bopomofoSymbol(String key) {
+        if (chineseInputMethod.isTable())
+            return inputMode == BopomofoEngine.InputMode.BOPOMOFO && !temporaryEnglish
+                    ? ChineseInputMethod.root(key) : "";
         if (keyboardLayout == BopomofoKeyboardLayout.HSU) return "";
         if (inputMode != BopomofoEngine.InputMode.BOPOMOFO && !temporaryEnglish
                 || key.length() != 1) return "";
