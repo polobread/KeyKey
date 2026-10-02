@@ -28,7 +28,7 @@
 #ifndef OVFileHelper_h
 #define OVFileHelper_h
 
-#if defined(__APPLE__)
+#if !defined(WIN32)
     #include <dirent.h>
     #include <stdio.h>
     #include <unistd.h>
@@ -40,6 +40,8 @@
 
 #include <sys/stat.h>
 
+#include <cstring>
+#include <ctime>
 #include <fstream>
 #include <algorithm>
 #include <vector>
@@ -124,7 +126,7 @@ namespace OpenVanilla {
         #elif defined(WIN32)
         OVFileTimestamp(time_t timestamp = 0, time_t subtimestamp = 0)
         #else
-            #error We don't know about Linux yet, sorry.
+        OVFileTimestamp(time_t timestamp = 0, long subtimestamp = 0)
         #endif
             : m_timestamp(timestamp)
             , m_subtimestamp(subtimestamp)
@@ -174,7 +176,8 @@ namespace OpenVanilla {
         time_t m_timestamp;
         time_t m_subtimestamp;
         #else
-            #error We don't know about Linux yet, sorry.
+        time_t m_timestamp;
+        long m_subtimestamp;
         #endif
     };
 
@@ -373,7 +376,11 @@ namespace OpenVanilla {
                 timestamp = OVFileTimestamp(buf.st_mtime);
             }
             #else
-                #error Sorry, no idea for Linux yet.
+            struct stat buf;
+            if (!stat(path.c_str(), &buf))
+            {
+                timestamp = OVFileTimestamp(buf.st_mtim.tv_sec, buf.st_mtim.tv_nsec);
+            }
             #endif
             return timestamp;
         }

@@ -63,10 +63,12 @@ Bigram 邊。其詞頻最多為 0.01，且分數至少比既有完整同音詞�
 仍按人名規則處理。已在小麥的同文字人名保留既有詞條，不重複加分。
 
 McBopomofo、CIN、補充詞表、v2/v3/v4、保護字、cooker 程式與本 workflow 的合併變更
-也會觸發重建。公式或上游詞频改動仍須通過驗證；不是保證每次來源變更都會發布。
+也會觸發重建。回歸用的 `typing_cost.py`、`typing-engine.cpp` 與其引擎來源／標頭
+變更也適用。公式或上游詞频改動仍須通過驗證；不是保證每次來源變更都會發布。
 
 ## 驗證與回存
 
+安裝依賴後先編譯回歸用輸入引擎，編譯成功才開始 cooker，後續回歸共用同一編譯快取。
 每次建立獨立候選，驗證 SQLite、採用清單、來源雜湊、低順位候選分數與無 Bigram 邊，
 再跑完整 131 篇固定回歸。文章間不共享學習，讀音參考固定。
 總動作增加至多 30 次可採用；超過 30 次不採用。個別文章、核心／基本字變化只列診斷。
@@ -121,6 +123,10 @@ python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
 [最新人名調整差異](../DataSource/AISyntheticBigram/rebuild-review/latest.json)及
 [第 131 篇歷次分析](../DataSource/AISyntheticBigram/rebuild-review/tw-corpus-0131-analysis.json)。
 本機完成來源 cooker、固定回歸、閾值與寫檔分流測試、workflow 語法檢查；
-尚未在遠端 GitHub Actions 執行。依使用者要求，不再追加平台／模擬器驗證。
+[首次遠端重建](https://github.com/polobread/KeyKey/actions/runs/36967861944)
+通過 27 項 cooker 測試，但 Ubuntu 編譯回歸引擎時誤用 Windows 標頭而中止，未回存產物。
+已補上 Linux 的 POSIX 標頭與時間戳處理，並加入 cooker 前的編譯步驟。
+修正已在 Ubuntu 24.04 驗證編譯、快取重用及「可以／有趣」輸入，macOS 引擎編譯也通過；
+完整 131 篇回歸留給合併後的 workflow，不額外追加平台／模擬器驗證。
 
 GitHub 事件條件依 [官方 merge 事件說明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#running-your-pull_request-workflow-when-a-pull-request-merges)。
