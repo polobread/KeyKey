@@ -47,6 +47,10 @@ tar -xzf "$archive" -C "$test_root/extracted"
 archive_root="$test_root/extracted/chichi77-keykey-linux-$version"
 test -x "$archive_root/Source/Loaders/Linux-IME/configure"
 test ! -e "$archive_root/.git"
+# Validate from the extracted tree before compiling, so missing Python modules
+# or model evidence cannot be hidden by the checkout beside the archive.
+python3 "$archive_root/Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py" \
+  "$archive_root/Source/Distributions/Takao/CookedDatabase/KeyKey.db"
 if find "$archive_root" \
     \( -name CMakeCache.txt -o -name build.ninja -o -name .ninja_deps \) \
     -print -quit | grep -q .; then

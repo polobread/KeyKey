@@ -55,9 +55,25 @@ source_paths=(
   Source/Distributions/Takao/CookedDatabase/KeyKey.db
   Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py
   Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py
+  Source/Distributions/Takao/DatabaseCooker/collection_unigram_supplement.py
+  Source/Distributions/Takao/DatabaseCooker/phrase_unigram_supplement.py
+  Source/Distributions/Takao/DatabaseCooker/unigram_collisions.py
   DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json
   DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt
   DataSource/AISyntheticBigram/common-unigram-supplement.tsv
+  DataSource/AISyntheticBigram/common-phrase-unigram.tsv
+  DataSource/AISyntheticBigram/whole-phrase-unigram-validation.json
+  DataSource/AISyntheticBigram/collection-unigram-import.json
+  DataSource/AISyntheticBigram/collection-unigram-validation.json
+  DataSource/AISyntheticBigram/collection-unigram-overrides.tsv
+  DataSource/AISyntheticBigram/collection-unigram.tsv
+  DataSource/AISyntheticBigram/collection-unigram-skipped.tsv
+  DataSource/AISyntheticBigram/search-trend-unigram-presence.tsv
+  DataSource/AISyntheticBigram/custom-unigram-excluded.tsv
+  DataSource/AISyntheticBigram/custom-unigram-downranked.tsv
+  DataSource/AISyntheticBigram/custom-unigram-partial-overlaps.tsv
+  DataSource/AISyntheticBigram/custom-unigram-cooker-report.json
+  DataSource/AISyntheticBigram/rebuild-review/latest.json
   DataSource/AISyntheticBigram/search-trend-unigram-source.txt
   DataSource/AISyntheticBigram/search-trend-unigram.tsv
   DataSource/AISyntheticBigram/search-trend-unigram-review.tsv
@@ -65,6 +81,7 @@ source_paths=(
   DataSource/AISyntheticArticles/typing-articles-v2.jsonl
   DataSource/AISyntheticArticles/typing-articles-v3.jsonl
   DataSource/AISyntheticArticles/typing-articles-v4.jsonl
+  DataSource/AISyntheticArticles/typing-articles-v5-seed
   DataSource/AISyntheticArticles/LICENSE.txt
   DataSource/AISyntheticBigram/LICENSE.txt
   LICENSES/AI-DATA-NOTICE.txt
