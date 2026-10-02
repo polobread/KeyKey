@@ -96,7 +96,7 @@
       "report": "../AISyntheticBigram/collection-unigram-validation.json"
     },
     "latest_automated_rebuild": {
-      "database_sha256": "1ffa53b37c8293b705d9bc0afafa24096d5ad53d35f971be1235beb17c59e2a1",
+      "database_sha256": "8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb",
       "semantic_sha256": "15b91545bb1ef7869ed7b4514c791c599ebe99918b5f59e3ba66049189383bda",
       "summary": {
         "total_actions": 333566,
@@ -676,8 +676,8 @@
       "delta_actions": 0,
       "reason": "總動作增加 0 次，未超過 30 次門檻",
       "validation_articles": 131,
-      "before_sha256": "ce6c2b124835122351a8399b894e36049ba6b0ad9d7cda16a80f26c6dec9a9e2",
-      "candidate_sha256": "1ffa53b37c8293b705d9bc0afafa24096d5ad53d35f971be1235beb17c59e2a1",
+      "before_sha256": "1ffa53b37c8293b705d9bc0afafa24096d5ad53d35f971be1235beb17c59e2a1",
+      "candidate_sha256": "8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb",
       "comparison": {
         "before": 333566,
         "after": 333566,

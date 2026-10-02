@@ -6,7 +6,7 @@
 
 ## 好打注音模型決策
 
-- 本儲存庫五個 frontend 共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **119,159 筆 Unigram、883,372 筆 Bigram**，SHA-256 為 `1ffa53b37c8293b705d9bc0afafa24096d5ad53d35f971be1235beb17c59e2a1`。
+- 本儲存庫五個 frontend 共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **119,159 筆 Unigram、883,372 筆 Bigram**，SHA-256 為 `8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb`。
 - Bigram 建模固定使用 `typing-articles-v2.jsonl`、`v3.jsonl`、`v4.jsonl` 共 **2,300 篇**。正式驗證固定使用 `typing-articles-v5-seed/tw-corpus-0001.md` 至 `0131.md` 共 **131 篇**，排除 `chat.md`；訓練與驗證沒有相同文章或 20 字以上相同段落。800／750／750 只屬已結束的 unigram 實驗分割，不再作為目前 Bigram 的建模或驗證依據。
 - 每篇文章、每個模型都啟動全新引擎程序，關閉 user table、Bigram learning 與 candidate override，測試間不得共享記憶。正式動作模型採 5 音節穩定、10 音節組字範圍、每頁 8 個候選；注音鍵、確認、點字開候選、選字及翻頁都計入。輸出須包含總動作、額外修正動作、修正字及各自成本；總動作越少越好。
 - Bigram 約只能影響仍在組字區內的 9～10 個字，不能期待後文完全救回前面的同音字。優先降低核心 83 字、前 100 名基本字與第 101～1,000 名一般字的修正；第 1,001～1,500 名、未排名罕字、專業詞及專有名詞只列診斷，不決定基礎模型是否採用，這些內容可由使用者學習改善。

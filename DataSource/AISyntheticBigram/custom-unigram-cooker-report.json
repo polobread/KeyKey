@@ -69,8 +69,8 @@
     "corpus_sha256": "b9a0bdaf3f85c0d4a70f0cd0d1d2040f8e0b0a0c4726c831601a1d5ba0175af0"
   },
   "refinement": {
-    "base_database_sha256": "0a310029e3ec8d21db52f57633e8c19b307f309cfedd4498606bad29e5e0af80",
-    "database_sha256": "8c8b9cc73a39ed58a6da6e5362038834e59d512a16abab0982c15c3c9fcd2b0f",
+    "base_database_sha256": "b6e0f8d37f9800a5acfb82dd67f0c309e9288e90f6a980e096d20a444ded111f",
+    "database_sha256": "9928a78a65b5919bdc02a56210aefea520ad6e45ff8477a6061142e0b45659f9",
     "semantic_sha256": "d990898925e098c87d75345123c4735147ed378dd307901486b4cfa06c4d7dd9",
     "training_articles": 2300,
     "training_sources": [

@@ -20,8 +20,9 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     private static final String ASSET_NAME = "KeyKey.db";
     // The shared-model verifier checks this fingerprint so an app upgrade
     // cannot reuse a different model merely because its row count matches.
-    private static final String INSTALLED_NAME = "KeyKey-smart-1ffa53b37c8293b7.db";
+    private static final String INSTALLED_NAME = "KeyKey-smart-8fc3aead36cefd16.db";
     private static final String[] PREVIOUS_INSTALLED_NAMES = {
+            "KeyKey-smart-1ffa53b37c8293b7.db",
             "KeyKey-smart-ce6c2b1248351223.db",
             "KeyKey-smart-573f733b2affa857.db",
             "KeyKey-smart-939baee5d956363f.db",
