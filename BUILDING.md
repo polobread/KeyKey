@@ -4,7 +4,7 @@
 
 Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-共用 [`v1.3.0` Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)。先前 Linux 版本的發布紀錄保留在
+共用對應版本的 [GitHub Release](https://github.com/polobread/KeyKey/releases)；目前原始碼版號為 `1.3.1`，正在準備發布。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -372,34 +372,52 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 ## GitHub Actions 封裝
 
 Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
-Actions 頁面按 **Run workflow** 手動執行。macOS 與 Windows 在推送完全符合專案版號的 tag
-（例如 `v1.3.1`）時會自動發布到該 Release；兩者也都可以手動執行，Windows 額外接受
-`release_tag` 輸入，留空時只保留測試 artifact。一般 commit、pull request 與不符合版號的
-tag 不會發布 Release。`Linux CI` 保留 pull request 與手動執行，並由 `v*` tag 觸發完整
-gate；`master` push 不觸發。tag run 在 Ubuntu 24.04 套件建置、安裝生命週期與 X11
-輸入測試成功後，核對版號及 `SHA256SUMS`，把三個 `.deb`、GNOME 面板原始碼和校驗檔
-加入同一個 Release；手動 run 仍只保留 artifact。
+Actions 頁面按 **Run workflow** 手動執行。macOS、Windows 與 Linux 則在 GitHub
+**Publish release** 後自動建置，各自驗證成功後上傳到同一個 Release。Release 的 tag
+必須完全符合原始碼版號，例如 `v1.3.1`，可在發布頁面同時建立。只推 tag 或儲存草稿
+不會觸發封裝；一般 commit 與 pull request 不會發布資產。`Linux CI` 另保留 PR smoke，
+發布前須通過 Ubuntu 24.04 完整測試與 Ubuntu 22.04 相容性驗證。
+
+單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
+**Run workflow**，將 **Use workflow from** 選為 `master`，並填入
+`release_tag=v1.3.1`。建置使用所選分支，版號仍須與 Release 相同；成功後自動補上或
+覆寫該平台的資產，其他平台不變。三個 workflow 都接受此欄位，留空則只保留 artifact。
+同平台、同 Release 的發布會依序執行。這些 workflow 修改須先合併到預設分支才可使用。
+
+也可以個別使用 CLI（只執行需要補發的平台）：
+
+```sh
+gh workflow run package-macos.yml --ref master -f release_tag=v1.3.1
+gh workflow run package-windows.yml --ref master -f release_tag=v1.3.1
+gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
+```
+
+**Re-run jobs** 使用原本的 commit，適合暫時性失敗；有程式修正時應使用上述
+**Run workflow**，才會建置新的 commit。
 建置完成後，以下檔案會以 Actions artifact 保留 7 天：
 
 | Workflow | 產物 | 限制 |
 |---|---|---|
-| Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 手動 run 未簽章；tag run 以 Developer ID 簽章並 notarize |
-| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`chichi77-KeyKey-版本-windows-x64-setup.unsigned.exe` | 兩者皆未簽章；EXE 只供測試，不能送 Store |
+| Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 發布到 Release 前以 Developer ID 簽章並 notarize；僅 artifact 的 run 未簽章 |
+| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章；EXE 只供測試，不能送 Store |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 手動執行並上傳到 Google Play internal testing，後續在 Play Console 推廣到封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
-| Linux CI | Ubuntu 22.04／24.04 `.deb`；Ubuntu 24.04 另有面板原始碼與 `SHA256SUMS` | PR 跑 smoke；tag 完整測試通過後只將 Ubuntu 24.04 的五個檔案加入 Release；手動 run 和 Ubuntu 22.04 套件只保留 artifact |
+| Linux CI | Ubuntu 22.04／24.04 `.deb`；Ubuntu 24.04 另有面板原始碼與 `SHA256SUMS` | 完整測試通過後，發布 run 只上傳 Ubuntu 24.04 的五個檔案；Ubuntu 22.04 套件僅保留 artifact |
 
-桌面版 artifact 另附同名 `.sha256`；Linux 使用涵蓋四個檔案的 `SHA256SUMS`。發布 run 會把產物與 checksum 上傳到既有 Release；若 Release
-尚不存在才建立。workflow 不會建立 tag，也不會覆寫同名資產。
+桌面版 artifact 另附同名 `.sha256`；Linux 使用涵蓋四個檔案的 `SHA256SUMS`。
+發布前會驗證全部 checksum，再上傳到既有、已發布的 Release，覆寫該平台的同名資產。
+每平台另上傳 `chichi77-KeyKey-版本-平台-build-info.json`，記錄實際建置 commit、
+tag commit、workflow 連結與檔案雜湊；修正後的補發可能與原 tag commit 不同。
+workflow 不建立 Release，也不建立或移動 tag。若上傳中斷，可重新執行補發。
 
 macOS workflow 拆成兩個 job。`build` 永遠會跑、拿不到任何 secret，產出未簽章 pkg；
-`publish` 只在 tag 觸發時跑，掛 `release` environment，取得 Developer ID 憑證後簽章、
+`publish` 在 Release 發布或手動填入 `release_tag` 時跑，掛 `release` environment，取得 Developer ID 憑證後簽章、
 notarize、staple，再發布到 Release。因此**從 Release 下載的 macOS pkg 不需要
-`xattr -d com.apple.quarantine`**，Gatekeeper 直接放行；手動 run 留下的 artifact 仍是
+`xattr -d com.apple.quarantine`**，Gatekeeper 直接放行；未填 `release_tag` 的手動 run 仍是
 未簽章的測試包。
 
-tag run 會留下兩個 macOS artifact，裡面的檔名相同但內容不同：`build` 的
+發布 run 會留下兩個 macOS artifact，裡面的檔名相同但內容不同：`build` 的
 `keykey-macos-版本-commit` 是未簽章的，`publish` 的 `keykey-macos-signed-版本` 才是已簽章
 並 notarize 的，也就是發布到 Release 的那一份。要給別人裝就取 Release 上的資產，不要從
 artifact 抓。
@@ -408,7 +426,10 @@ artifact 抓。
 `APPLE_DEVELOPER_ID_P12`（含 `Developer ID Application` 與 `Developer ID Installer`
 的 `.p12`，base64）、`APPLE_DEVELOPER_ID_P12_PASSWORD`、`APPLE_ID`、
 `APPLE_APP_SPECIFIC_PASSWORD`、`APPLE_TEAM_ID`。該 environment 的 deployment rule 必須
-限定 ref type 為 **tag** 的 `v*`，其他 workflow 與手動 branch run 才拿不到私鑰。
+只允許 ref type 為 **tag** 的 `v*` 與 ref type 為 **branch** 的 `master`，
+讓正式發布與修正後的手動補發都能執行；其他分支不開放。三個平台的發布 job 都使用此 environment。
+此規則需 repository 管理員在 **Settings → Environments → release → Deployment
+branches and tags** 設定：保留 `v*` tag，新增 `master` branch；只修改 workflow 不會更新此設定。
 
 Android Play workflow 需要 `google-play-release` environment 的上傳金鑰與 Play service
 account secret；正式 AAB 由 Google Play 管理及簽署。iOS 實機、TestFlight 與 App Store
@@ -771,39 +792,59 @@ shares the completed text. See the
 
 The Android debug packaging, Google Play release, and iOS Simulator workflows
 run only after **Run workflow** is selected on the GitHub Actions page. The
-macOS and Windows workflows publish to a Release when a tag that exactly
-matches the repository version, such as `v1.3.1`, is pushed. Both can also be
-run manually; the Windows workflow additionally takes a `release_tag` input,
-and leaving it blank produces a test artifact only. Commits, pull requests, and
-mismatched tags do not publish a Release. `Linux CI` keeps its pull-request and
-manual triggers, runs its full gate on `v*` tags, and does not run on `master`
-pushes. A tag run adds the three Ubuntu 24.04 `.deb` files, the GNOME panel
-source archive, and `SHA256SUMS` to the Release after the package and X11 typing
-checks pass. Manual runs keep artifacts without publishing. Successful runs
-retain these Actions artifacts for seven days:
+macOS, Windows, and Linux workflows start when a GitHub Release is published,
+and each independently uploads its verified packages. The tag must match the
+source version, such as `v1.3.1`, and can be created on the Release page.
+Pushing a tag or saving a draft alone does not trigger packaging. Commits and
+pull requests do not publish assets. Linux keeps PR smoke checks; publishing
+requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
+
+To recover one failed platform, merge the fix into `master`, select its workflow
+in Actions, choose **Run workflow**, set **Use workflow from** to `master`, and
+enter `v1.3.1` in `release_tag`. All three workflows accept this input. They build
+the selected revision and replace only that platform's assets; its source
+version must still match the Release. Leaving the input blank keeps artifacts
+only. Publishing runs for the same platform and Release are serialized.
+Merge these workflow changes into the default branch before using them.
+
+For example, run just the command for the platform needing recovery:
+
+```sh
+gh workflow run package-macos.yml --ref master -f release_tag=v1.3.1
+gh workflow run package-windows.yml --ref master -f release_tag=v1.3.1
+gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
+```
+
+**Re-run jobs** uses the original commit and suits transient failures; use
+**Run workflow** to include a new fix. Successful runs retain these Actions
+artifacts for seven days:
 
 | Workflow | Output | Limitation |
 |---|---|---|
-| Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Unsigned on a manual run; signed with a Developer ID and notarized on a tag run |
-| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `chichi77-KeyKey-VERSION-windows-x64-setup.unsigned.exe` | Both are unsigned; the EXE is test-only and cannot be submitted to the Store |
+| Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Signed with a Developer ID and notarized before Release upload; artifact-only runs remain unsigned |
+| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; the EXE is test-only and cannot be submitted to the Store |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Android Play Release | No public artifact; uploads the signed AAB directly | Manually uploads to Google Play internal testing; promotion to closed testing is managed in Play Console |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
-| Linux CI | Ubuntu 22.04 and 24.04 `.deb` packages; Ubuntu 24.04 panel source and `SHA256SUMS` | PR smoke; on a tag, adds the five verified Ubuntu 24.04 assets to the Release; manual runs and Ubuntu 22.04 packages remain Actions artifacts |
+| Linux CI | Ubuntu 22.04 and 24.04 `.deb` packages; Ubuntu 24.04 panel source and `SHA256SUMS` | Publishing runs upload five verified Ubuntu 24.04 assets after both gates pass; Ubuntu 22.04 packages remain Actions artifacts |
 
 Desktop outputs have matching `.sha256` files; Linux uses `SHA256SUMS` for its
-four downloadable files. A publishing run uploads its output
-and checksum to an existing Release, or creates the Release if it does not
-exist. It never creates a tag or overwrites an existing asset.
+four downloadable files. A publishing run verifies all checksums before
+replacing that platform's assets in an existing, published Release. Each
+platform also uploads `chichi77-KeyKey-VERSION-PLATFORM-build-info.json` with the
+actual source commit, tag commit, run URL, and asset hashes. A recovery build
+can therefore differ from the original tag. The workflow does not create a
+Release or create/move a tag. Retry publishing if an upload is interrupted.
 
 The macOS workflow is split in two jobs. `build` always runs and is given no
-secrets at all, producing the unsigned package; `publish` runs only for a tag,
+signing secrets, producing the unsigned package; `publish` runs for a published
+Release or a manual run with `release_tag`,
 uses the `release` environment, and signs, notarizes, and staples before
 publishing to the Release. A macOS package downloaded from a Release therefore
 needs no `xattr -d com.apple.quarantine`: Gatekeeper accepts it as it is. The
-artifact left behind by a manual run is still an unsigned test build.
+artifact from a manual run without `release_tag` is still an unsigned test build.
 
-A tag run leaves two macOS artifacts whose contents differ under the same file
+A publishing run leaves two macOS artifacts whose contents differ under the same file
 name: `keykey-macos-VERSION-COMMIT` from `build` is unsigned, and
 `keykey-macos-signed-VERSION` from `publish` is the signed and notarized one
 that also goes to the Release. Take the Release asset when handing the package
@@ -814,8 +855,12 @@ to someone else, not an artifact.
 Application and Developer ID Installer identities),
 `APPLE_DEVELOPER_ID_P12_PASSWORD`, `APPLE_ID`,
 `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`. That environment's
-deployment rule must be restricted to `v*` with a ref type of **tag**, so that
-no other workflow and no manual branch run can reach the private key.
+deployment rules must allow only `v*` with ref type **tag** and `master` with
+ref type **branch**, enabling both official releases and manual recovery from
+the fixed branch. All three platform publishing jobs use this environment.
+A repository administrator must configure this under **Settings → Environments
+→ release → Deployment branches and tags**: keep the `v*` tag rule and add the
+`master` branch rule. Editing the workflow does not update this setting.
 
 The Android Play workflow uses upload-key and Play service-account secrets in
 the `google-play-release` environment; Google Play manages the final app

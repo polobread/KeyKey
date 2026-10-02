@@ -190,7 +190,7 @@ func feature(_ variant: String, path: String) {
         c.text("注音照你的習慣",x:65,top:68,width:510,height:112,size:65,weight:.bold,color:plum)
         c.text("好打・傳統・接上鍵盤",x:68,top:193,width:485,height:105,size:38,weight:.medium,color:purple)
         c.rounded(65,352,458,76,38,plum)
-        c.text("琦琦注音 1.3.0",x:85,top:362,width:420,height:55,size:37,weight:.bold,color:white)
+        c.text("琦琦注音 1.3.1",x:85,top:362,width:420,height:55,size:37,weight:.bold,color:white)
     }
     let phone = NSImage(contentsOfFile: output + "/Sources/android-v130-smart-full.png")!
     let panel = c.rect(630,25,350,450)
@@ -244,7 +244,7 @@ func renderFivePlatforms(_ variant: String, path: String) {
     c.save(path)
 }
 
-// The selected 1.3.0 store artwork is variant A. Run this script from the
+// The 1.3.1 store artwork keeps variant A. Run this script from the
 // repository root so source paths and output paths remain portable.
 for (name, pages, width, height, destination) in [
     ("iPhone", iphone, 1206, 2622, "AppStore/iPhone-1206x2622"),

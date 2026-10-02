@@ -1,6 +1,8 @@
-# 琦琦注音 v1.3.0 商店圖
+# 琦琦注音 v1.3.1 商店圖準備
 
 2026-09-26 選定 **A 版**：延續深紫色版面。主軸是好打注音，並保留傳統注音與接上實體鍵盤各自的介紹。Apple 圖只呈現 iPhone／iPad 的使用方式；Google Play 第五張介紹 Android、iOS、macOS、Windows、Linux 五平台。
+
+產生器的版本文字已更新為 `1.3.1`。目前提交的 PNG 與來源截圖仍為 1.3.0 時期素材，尚未重新產圖或驗收為 1.3.1；以下保留真實來源版本。
 
 ## 上架圖位置
 
@@ -29,9 +31,9 @@ PNG 均為無 alpha 的 RGB 畫面。`1206 × 2622` 保留作 iPhone 模擬器�
 在儲存庫根目錄執行：
 
 ```sh
-swift -module-cache-path /private/tmp/keykey-store-v130-module-cache StoreAssets/generate-assets.swift
+swift -module-cache-path /private/tmp/keykey-store-v131-module-cache StoreAssets/generate-assets.swift
 ```
 
 此腳本會依來源截圖產生已選定的 A 版、兩種 iPhone 尺寸、iPad、Google Play 五張手機圖、主視覺及獨立五平台圖。`generate-five-platforms.py` 只會把現有的 Google Play 第五張同步到獨立五平台圖，不會重畫舊版「Linux 開發中」圖。
 
-先前的商店文案與 1.2.7 發布紀錄可在 Git 歷史查閱；本目錄圖片的內容與版號以這份 v1.3.0 說明為準。
+先前的商店文案與發布紀錄可在 Git 歷史查閱；發布前應重新核對上架圖與 1.3.1 實際介面。

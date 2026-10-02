@@ -1,23 +1,33 @@
 name: Package Windows
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing version tag to publish, for example v1.2.3; leave blank for artifact only'
+        description: 'Existing published release tag, e.g. v1.3.1; blank = artifact only. Build uses the selected ref.'
         required: false
         type: string
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: package-windows-${{ inputs.release_tag || github.event.release.tag_name || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   package:
     runs-on: windows-2025
     timeout-minutes: 60
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      artifact_name: ${{ steps.metadata.outputs.artifact_name }}
+      publish_release: ${{ steps.metadata.outputs.publish_release }}
+      release_tag: ${{ steps.metadata.outputs.release_tag }}
+      source_sha: ${{ steps.metadata.outputs.source_sha }}
+      tag_sha: ${{ steps.metadata.outputs.tag_sha }}
     defaults:
       run:
         shell: pwsh
@@ -29,7 +39,9 @@ jobs:
       - name: Resolve and verify version
         id: metadata
         env:
+          GH_TOKEN: ${{ github.token }}
           REQUESTED_RELEASE_TAG: ${{ inputs.release_tag }}
+          EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           $title = Get-Content -LiteralPath README.md -Encoding UTF8 -TotalCount 1
           if ($title -notmatch '([0-9]+\.[0-9]+\.[0-9]+)$') {
@@ -46,24 +58,12 @@ jobs:
               throw "Package-Windows.ps1 does not default to version $version."
           }
 
-          $expectedTag = "v$version"
-          $releaseTag = ''
-          if ($env:GITHUB_REF_TYPE -eq 'tag') {
-              $releaseTag = $env:GITHUB_REF_NAME
-          }
-          elseif (-not [string]::IsNullOrWhiteSpace($env:REQUESTED_RELEASE_TAG)) {
-              $releaseTag = $env:REQUESTED_RELEASE_TAG.Trim()
-          }
-          if ($releaseTag -and $releaseTag -ne $expectedTag) {
-              throw "Release tag must be $expectedTag, but received $releaseTag."
-          }
+          python .github/scripts/release-assets.py resolve --version $version
+          if ($LASTEXITCODE -ne 0) { throw 'Release validation failed.' }
 
           $shortSha = (git rev-parse --short=12 HEAD).Trim()
-          $publishRelease = if ($releaseTag) { 'true' } else { 'false' }
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "artifact_name=keykey-windows-$version-$shortSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          "publish_release=$publishRelease" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          "release_tag=$releaseTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Set up Ruby for Smart Mandarin database
@@ -165,44 +165,34 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Publish unsigned GitHub Release
-        if: steps.metadata.outputs.publish_release == 'true'
+  publish:
+    needs: package
+    if: needs.package.outputs.publish_release == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.package.outputs.version }}
+      RELEASE_TAG: ${{ needs.package.outputs.release_tag }}
+      BUILD_SOURCE_SHA: ${{ needs.package.outputs.source_sha }}
+      RELEASE_TAG_SHA: ${{ needs.package.outputs.tag_sha }}
+    steps:
+      - name: Check out the built revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.package.outputs.source_sha }}
+
+      - name: Download verified Windows packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.package.outputs.artifact_name }}
+          path: artifacts
+
+      - name: Publish unsigned Windows assets to the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.metadata.outputs.release_tag }}
-        run: |
-          if ($null -eq (Get-Command gh -ErrorAction SilentlyContinue)) {
-            choco install gh --yes --no-progress --limit-output
-          }
-          & gh --version
-          $assets = @(
-            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64.zip",
-            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64.zip.sha256",
-            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x86.zip",
-            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x86.zip.sha256",
-            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe",
-            "artifacts/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe.sha256"
-          )
-
-          $releaseQuery = (& gh release view $env:RELEASE_TAG `
-            --repo $env:GITHUB_REPOSITORY --json tagName 2>&1 | Out-String).Trim()
-          if ($LASTEXITCODE -eq 0) {
-              & gh release upload $env:RELEASE_TAG `
-                --repo $env:GITHUB_REPOSITORY @assets
-              if ($LASTEXITCODE -ne 0) {
-                  throw "Could not upload assets to existing release $env:RELEASE_TAG."
-              }
-          }
-          elseif ($releaseQuery -match '(?i)(release not found|HTTP 404)') {
-              & gh release create $env:RELEASE_TAG `
-                --repo $env:GITHUB_REPOSITORY `
-                --verify-tag `
-                --title "chichi77 KeyKey $env:VERSION" `
-                --generate-notes @assets
-              if ($LASTEXITCODE -ne 0) {
-                  throw "Could not create release $env:RELEASE_TAG."
-              }
-          }
-          else {
-              throw "Could not query release $env:RELEASE_TAG`: $releaseQuery"
-          }
+        run: >-
+          python3 .github/scripts/release-assets.py publish
+          --platform windows --version "$VERSION" --directory artifacts

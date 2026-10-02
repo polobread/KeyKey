@@ -301,14 +301,14 @@ the same version-and-fingerprint naming scheme.
 The finish page explains how users add KeyKey in Windows Settings. Installation
 does not launch the settings app, enable a keyboard, or change a default.
 
-Pushing a tag that exactly matches the repository version, such as `v1.3.1`,
-automatically publishes this unsigned EXE, the ZIP package, and SHA-256 files.
-The workflow uploads to the corresponding Release when it already exists, or
-creates the Release when needed; it never creates the tag or overwrites an
-existing asset. For recovery after a failed tag run, manually run the workflow
-from the version's branch and enter the existing tag in `release_tag`. Leave
-`release_tag` blank to keep the files only as a seven-day Actions artifact. The
-unsigned EXE must never be used for Store submission.
+Publishing a GitHub Release with a tag matching the repository version, such
+as `v1.3.1`, automatically builds and uploads this unsigned EXE, the x64/x86 ZIP
+packages, and SHA-256 files. To recover a failed build, merge the fix into
+`master`, manually run `Package Windows` from `master`, and enter the existing
+tag in `release_tag`. The workflow replaces only Windows assets and records the
+actual build commit in a build-info JSON asset; it does not move the tag.
+Leave `release_tag` blank to keep the files only as a seven-day Actions artifact.
+The unsigned EXE must never be used for Store submission.
 
 The NSIS installer displays the licensing pages in this order: the mixed-license
 scope map (`LICENSING.md`), the MIT terms for the original Windows TSF frontend,

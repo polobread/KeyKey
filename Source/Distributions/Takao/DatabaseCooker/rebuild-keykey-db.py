@@ -347,10 +347,10 @@ def main():
                                   'private static final String[] PREVIOUS_INSTALLED_NAMES = {\n            "' + old_name + '",')
     android = re.sub(r"EXPECTED_BIGRAM_ROWS = [\d_]+", f"EXPECTED_BIGRAM_ROWS = {rows[1]:_}", android)
     generated = [p for p in stage.rglob("*") if p.is_file() and not p.is_symlink()]
-    for relative, text in ((android_path, android),
-                           (Path("Source/Loaders/Linux-IME/tests/engine_tests.cpp"), re.sub(r"unigrams == \d+ && bigrams == \d+", f"unigrams == {rows[0]} && bigrams == {rows[1]}", (ROOT / "Source/Loaders/Linux-IME/tests/engine_tests.cpp").read_text()))):
-        path = stage / relative; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
-        generated.append(path)
+    android_output = stage / android_path
+    android_output.parent.mkdir(parents=True, exist_ok=True)
+    android_output.write_text(android)
+    generated.append(android_output)
     generated_constants = [
         ("Source/Loaders/Linux-IME/engine/src/smart_mandarin_store.cpp", r"ExpectedBigramRows = \d+", f"ExpectedBigramRows = {rows[1]}"),
         ("Source/Loaders/iOS-Keyboard/KeyKeyEngine/Tests/KeyKeyEngineTests/CandidateStoreTests.swift",
