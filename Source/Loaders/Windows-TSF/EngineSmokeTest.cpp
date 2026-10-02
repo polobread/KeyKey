@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <set>
 
 #include "ModuleState.h"
 #include "sqlite3.h"
@@ -53,6 +54,27 @@ KeyKey::WindowsTsf::EngineResult PressKey(
     if (virtualKey == VK_RETURN) event.text = L"\r";
     if (virtualKey == VK_ESCAPE) event.text = L"\x1b";
     return session.handleKey(event);
+}
+
+bool SelectTrailingCandidate(KeyKey::WindowsTsf::KeyKeyEngineSession& session,
+                             const std::wstring& text,
+                             KeyKey::WindowsTsf::EngineResult& result) {
+    result = PressKey(session, VK_DOWN);
+    std::set<std::wstring> visitedPages;
+    while (result.handled && result.candidatesVisible) {
+        std::wstring page;
+        for (const auto& candidate : result.candidates) {
+            if (candidate.text == text && candidate.selectionKey.size() == 1) {
+                result = Press(session, candidate.selectionKey.front());
+                return result.handled && !result.candidatesVisible &&
+                       result.committedText.empty();
+            }
+            page += candidate.text + L"\n";
+        }
+        if (!visitedPages.insert(page).second) break;
+        result = PressKey(session, VK_NEXT);
+    }
+    return false;
 }
 
 bool PrepareTestProfile(const std::string& mode) {
@@ -208,6 +230,12 @@ int main(int argc, char** argv) {
                 return 17;
             }
             committed += result.committedText;
+        }
+        // This fixture checks editing boundaries and text preservation. Select
+        // the intended homophone explicitly; model updates may prefer 完.
+        if (index == 6 && !SelectTrailingCandidate(*session, L"玩", result)) {
+            std::cerr << "Could not select 玩 for the desktop-limit fixture.\n";
+            return 22;
         }
         if (index == 9 &&
             (!committed.empty() || result.compositionText != L"請假要去哪裡玩呢去海")) {
