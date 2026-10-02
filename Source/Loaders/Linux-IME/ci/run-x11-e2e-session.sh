@@ -1889,13 +1889,13 @@ fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW; then
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
-  # Select 玩 explicitly for this boundary fixture (third candidate in the
+  # Select 玩 explicitly for this boundary fixture (second candidate in the
   # canonical model); automatic homophone ranking may otherwise prefer 完.
   run_case T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW \
     chichi77-keykey-bopomofo 請假要去哪裡玩呢去海邊因為那裡有比基尼 \
-    'fu/3ru84ul4fm4s83xu3j063sk7fm4c931u0 up jo4s84xu3u.31u3ru su6' \
+    'fu/3ru84ul4fm4s83xu3j062sk7fm4c931u0 up jo4s84xu3u.31u3ru su6' \
     '請假要去哪裡玩呢去,請假要去哪裡玩呢去海,要去哪裡玩呢去海邊,海邊因為那裡有比基尼' \
-    f u slash 3 r u 8 4 u l 4 f m 4 s 8 3 x u 3 j 0 6 Down 3 \
+    f u slash 3 r u 8 4 u l 4 f m 4 s 8 3 x u 3 j 0 6 Down 2 \
     s k 7 f m 4 c 9 3 1 u 0 space u p space j o 4 s 8 4 x u 3 \
     u period 3 1 u 3 r u space s u 6 Return
   set_bopomofo_mode Traditional
