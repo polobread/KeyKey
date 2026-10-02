@@ -108,14 +108,53 @@ public final class SmartMandarinBigramInstrumentedTest {
         assertTrue(store.candidates(READINGS, 0, compose()).contains("擬好"));
     }
 
-    @Test public void reenablingWritesAdjacentWordLearningAgain() {
+    @Test public void confirmationDoesNotLearnButExplicitSelectionStillDoes() {
         store.setBigramEnabled(false);
         store.learnConfirmedComposition(compose());
         assertNull(userData.learnedBigram(NI, HAO, "你", "好"));
         store.setBigramEnabled(true);
         SmartMandarinComposition sentence = compose();
         store.learnConfirmedComposition(sentence);
+        assertNull(userData.learnedBigram(NI, HAO, "妳", "郝"));
+        store.learnSelection(READINGS, 1, new SmartMandarinCandidate(1, "郝"), sentence);
         assertEquals(Double.valueOf(0), userData.learnedBigram(NI, HAO, "妳", "郝"));
+    }
+
+    @Test public void learnedSingleCharacterKeepsStrongerCookedPhrase() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        String ke = BopomofoReading.languageModelKeyForReading("ㄎㄜˇ");
+        String yi = BopomofoReading.languageModelKeyForReading("ㄧˇ");
+        List<String> phrase = List.of(ke, yi);
+        try (SmartMandarinStore real = SmartMandarinStore.open(context, userData)) {
+            String de = BopomofoReading.languageModelKeyForReading("ㄉㄜ˙");
+            assertEquals("舊的", real.composeSelections(List.of(
+                    BopomofoReading.languageModelKeyForReading("ㄐㄧㄡˋ"), de), Map.of()).text());
+            assertEquals("新的", real.composeSelections(List.of(
+                    BopomofoReading.languageModelKeyForReading("ㄒㄧㄣ"), de), Map.of()).text());
+            assertEquals("可以", real.composeSelections(phrase, Map.of()).text());
+            userData.learnCandidate(yi, "已", null, null);
+            assertEquals("已", real.candidates(List.of(yi), 0, null).get(0));
+            assertEquals("可以", real.composeSelections(phrase, Map.of()).text());
+            assertEquals("可已", real.composeSelections(phrase,
+                    Map.of(1, new SmartMandarinSelection(1, "已"))).text());
+            userData.resetLearning();
+            assertEquals("可以", real.composeSelections(phrase, Map.of()).text());
+        }
+    }
+
+    @Test public void collectionWordsAndChineseAliasesAreSelectable() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        String[][] rows = {{"神經網路", "ㄕㄣˊ", "ㄐㄧㄥ", "ㄨㄤˇ", "ㄌㄨˋ"},
+                {"蒙其迪魯夫", "ㄇㄥˊ", "ㄑㄧˊ", "ㄉㄧˊ", "ㄌㄨˇ", "ㄈㄨ"}};
+        try (SmartMandarinStore real = SmartMandarinStore.open(context, userData)) {
+            for (String[] row : rows) {
+                java.util.ArrayList<String> readings = new java.util.ArrayList<>();
+                for (int i = 1; i < row.length; i++) readings.add(BopomofoReading.languageModelKeyForReading(row[i]));
+                assertTrue(real.candidates(readings, 0, null).contains(row[0]));
+                assertEquals(row[0], real.composeSelections(readings,
+                        Map.of(0, new SmartMandarinSelection(readings.size(), row[0]))).text());
+            }
+        }
     }
 
     @Test public void preferenceDefaultsOnAndPersistsIndependentlyOfCompositionMode() {

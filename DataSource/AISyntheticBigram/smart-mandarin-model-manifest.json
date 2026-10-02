@@ -1,14 +1,14 @@
 {
   "format": 1,
-  "description": "Selected v1.3.1 Smart Mandarin language model shared by five product platforms",
+  "description": "McBopomofo with deduplicated custom Unigrams; source-cooked document-frequency Bigram; personal names, anime and homophone additions inserted after training",
   "training_articles": 2300,
-  "validation_articles": 130,
-  "base_database_sha256": "c29d06c7a9586641f8a261a0ab97042d3f843879b65b35248d8b650f42a1cc92",
-  "unigram_rows": 114392,
-  "bigram_rows": 885627,
-  "semantic_sha256": "7b05aabbe8a8d53f905bc5ef3b915049288fbc4bff0da7c21e8efd19eb753676",
-  "canonical_database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
-  "unigram_total_count": 22604459,
+  "validation_articles": 131,
+  "base_database_sha256": "0a310029e3ec8d21db52f57633e8c19b307f309cfedd4498606bad29e5e0af80",
+  "unigram_rows": 119159,
+  "bigram_rows": 883372,
+  "semantic_sha256": "15b91545bb1ef7869ed7b4514c791c599ebe99918b5f59e3ba66049189383bda",
+  "canonical_database_sha256": "1ffa53b37c8293b705d9bc0afafa24096d5ad53d35f971be1235beb17c59e2a1",
+  "unigram_total_count": 22609266.0,
   "sources": {
     "training_articles": [
       {
@@ -44,12 +44,177 @@
       "existing_terms_removed": 393,
       "file": "search-trend-unigram.tsv",
       "entries": 157,
-      "sha256": "565b57a2dd90167286fcde38c02686070709e0326b18c201dd9a5be278584c34",
+      "sha256": "10c759a7ac61a48668c88a76141335ab92ff8ee706e4b5176814df64c8079273",
       "review_file": "search-trend-unigram-review.tsv",
-      "review_sha256": "91132f6613fcce2471664d783449452f6d417ce3557de38c753af401d71796b6",
+      "review_sha256": "d1bdc4090947db2450ea37642733eb06c12da918d7d76ce55f3c542f6f24b68c",
       "reading_overrides": 5,
       "reading_overrides_sha256": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
       "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))"
+    },
+    "phrase_unigram_supplement": {
+      "file": "common-phrase-unigram.tsv",
+      "sha256": "6484348b2f9b440e894556b8eff43ded3b62b11fae6cce2d78b7e66958a0a667",
+      "entries": 2,
+      "inserted": 1,
+      "retained": 1,
+      "validation_file": "whole-phrase-unigram-validation.json",
+      "validation_sha256": "8ce428d08f9fc9fa626eff1d0c40ff10df812672bb2b4bfdbf6a16ede431151e",
+      "policy": "Insert missing reviewed whole phrases at the minimum integer count above same-reading unigram tokenizations; retain existing phrase probabilities. Do not change bigrams or existing unigrams."
+    },
+    "collection_unigram_supplement": {
+      "files": [
+        {
+          "file": "phrase.agriculture-food.tsv",
+          "sha256": "784ced9492d917f4c30d444d35c7df99597cc5cdc39c5b30cac04b92822e8b8f"
+        },
+        {
+          "file": "phrase.ai-data-science.tsv",
+          "sha256": "a45b36aadb604c531f010023c15214878c9ebc155d0b9c2c8d6799ebca0da9d8"
+        },
+        {
+          "file": "phrase.anime.tsv",
+          "sha256": "4b2f78ebd6a0ce23377f9ddf29f91ca7cf80c97be24f3d3f97447288aeec6e60"
+        },
+        {
+          "file": "phrase.biotech-pharma.tsv",
+          "sha256": "c62ad3ec34737928a11510d81fdfa853bbf1ca708325b5b0befa187766caa22f"
+        },
+        {
+          "file": "phrase.business.tsv",
+          "sha256": "15d02771e998f79fbd98cea499ea7fb71a40fc9e49c88bd852e1f2a1fb605852"
+        },
+        {
+          "file": "phrase.chinese.tsv",
+          "sha256": "8f1e92365022b66d3a2505f76833df829dffc153caf6e49446ec7d274d45f166"
+        },
+        {
+          "file": "phrase.civil-engineering.tsv",
+          "sha256": "d6160514eac652434bc723d1c62c74152d71230088c98d3f5608a149dcd80fd0"
+        },
+        {
+          "file": "phrase.education.tsv",
+          "sha256": "d26ed0c823e5db5e3614cbb52875f04860b0e6b11d911c3228ba65d18f31252e"
+        },
+        {
+          "file": "phrase.electronics.tsv",
+          "sha256": "135acb37abbe5becb24bb0f6cef63c611e1a458b68040b39ed1a97fd17a4d9d7"
+        },
+        {
+          "file": "phrase.energy-environment.tsv",
+          "sha256": "d2a0e7c370a77d8253ffa82f9e80ee0544085648ef7899bd6c5035a57f3b3a32"
+        },
+        {
+          "file": "phrase.finance.tsv",
+          "sha256": "d139eb1a10c9a935705cb3bf47b46ef5076fbc707e1e8bb70cf4e9555ed1c9aa"
+        },
+        {
+          "file": "phrase.general.tsv",
+          "sha256": "17fc26bcb91ce51e98752e672c49c76c028a50247857f1d05f516505714967e5"
+        },
+        {
+          "file": "phrase.government.tsv",
+          "sha256": "c5314c93b1b4146ac10237aee6f61a27f705974cf8d48b2d88677a866f8df55e"
+        },
+        {
+          "file": "phrase.history.tsv",
+          "sha256": "89fe6eab08580ceca972deae1c87797d9fe7932b211ca802e4a67ad604126b20"
+        },
+        {
+          "file": "phrase.industrial-engineering.tsv",
+          "sha256": "dcd3401750068579ac25fceba77fb728e351feda9d485b2c6ed277cd4685aad0"
+        },
+        {
+          "file": "phrase.law.tsv",
+          "sha256": "e0943e7f799de793e07152ae136c499350e71a499c4a29037eb580e2e2b7c854"
+        },
+        {
+          "file": "phrase.manufacturing.tsv",
+          "sha256": "1f74e498e34aaa0ffe2e048e34a74bfc806d484df072472d98e2883e67ec5e54"
+        },
+        {
+          "file": "phrase.materials-chemistry.tsv",
+          "sha256": "2c66ff21e2455c207daa7baeb4781da9801852b2db89a3a2ff8589414a149635"
+        },
+        {
+          "file": "phrase.media-design.tsv",
+          "sha256": "0cfa78ac0217e2fc6295c696cdf57005b2cd7e6497adc636e50c386340336cc8"
+        },
+        {
+          "file": "phrase.medicine.tsv",
+          "sha256": "b7e596ab11ba5de9be67a47ed33f254d6d26a5d3d1c56b2db77a2aef390e2f5d"
+        },
+        {
+          "file": "phrase.network-security.tsv",
+          "sha256": "31e1e16306dfd342f1782fa3b8128e1e5b26e7d69d5ea84c2857c23132bd5b7d"
+        },
+        {
+          "file": "phrase.people-contemporary.tsv",
+          "sha256": "84ae9402e67f30b7e9510c11d65a065235efb56c029d347c673036fc8284a839"
+        },
+        {
+          "file": "phrase.people-history.tsv",
+          "sha256": "0e26a707b52007c731952e8e90318a8a433ade0dbf9b51dd0a4bf12fb170b7d7"
+        },
+        {
+          "file": "phrase.people-oldnews.tsv",
+          "sha256": "a9e60b2083e89b89c893581bc6a1be8b2ea39c44f8b286747a255d74efde4362"
+        },
+        {
+          "file": "phrase.psychology-society.tsv",
+          "sha256": "236b7f2e5509e271042809d0181421e6a9aaa14922bf38a113dd1714e403d935"
+        },
+        {
+          "file": "phrase.science.tsv",
+          "sha256": "efe2ed2a4551a245b173794e818082d87a0079a85017fe4569ab860310500339"
+        },
+        {
+          "file": "phrase.semiconductor.tsv",
+          "sha256": "3504725ccee662529eb0f8182e0ac1f444e349e52751b5c826e9469417a204ba"
+        },
+        {
+          "file": "phrase.software.tsv",
+          "sha256": "29d5b5263db056ffb12ecc97f07d5f56f816c13cf4e07620ade59cee23362acf"
+        },
+        {
+          "file": "phrase.transport-logistics.tsv",
+          "sha256": "3b35634cc638940ebef1db5a09b6e5bbc838fd70336a612c59ec3cee2092cae6"
+        }
+      ],
+      "source_rows": 6560,
+      "inserted": 4765,
+      "existing_rows_skipped": 1745,
+      "duplicate_rows_skipped": 50,
+      "rejected": 0,
+      "frequency_policy": "minimum",
+      "overrides_file": "collection-unigram-overrides.tsv",
+      "list_file": "collection-unigram.tsv",
+      "skipped_file": "collection-unigram-skipped.tsv",
+      "search_presence_file": "search-trend-unigram-presence.tsv",
+      "report_file": "collection-unigram-import.json",
+      "validation_file": "collection-unigram-validation.json",
+      "overrides_sha256": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
+      "list_sha256": "aefa15cc58550311c71609c11bce9ad05c6992c38309facac4c3cbff722f54b7",
+      "skipped_sha256": "b1fe2a60e093281f954adaef314a92113bf25dd91640772568188c36fc6ed600",
+      "search_presence_sha256": "0e398aa45a4bb4f1b5d5ce09d99c80e84f8337ed5a60e9ed4e21b4819ec5a88a",
+      "report_sha256": "49081340222d7e9da606820e71f30b242147134c71208f1d92ad65939e3f6be8",
+      "validation_sha256": "eb069660cdb1d79e6cb78e54e3605190fe7148ee3586687bb8d1d61c1835bade",
+      "collision_rows_excluded": 0,
+      "collision_rows_downranked": 143,
+      "cooked": true
     }
+  },
+  "rebuild": {
+    "seed_commit": "63a5a33beb5a24a23c91cd74d5ff021c65affde2",
+    "seed_database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
+    "policy": "mcp-homophones-retained-low-ranked-long-partial-diagnostic-v3",
+    "validation": "collection-unigram-validation.json",
+    "excluded_file": "custom-unigram-excluded.tsv",
+    "excluded_sha256": "b5f3d08a29f84b5aa87efb8f0dd4a5e351711fe86df02ac82fd48524761a6a16",
+    "downranked_file": "custom-unigram-downranked.tsv",
+    "downranked_sha256": "4d0546d4cae1f3c9199a836df3c401174005f3577ae7fc5e0053c15dd6df8e77",
+    "partial_overlaps_file": "custom-unigram-partial-overlaps.tsv",
+    "partial_overlaps_sha256": "3b615f2bec55e8e22fba32ae121562acecca28a4b4ff78215bf413c90c087bc2",
+    "cooker_report_file": "custom-unigram-cooker-report.json",
+    "cooker_report_sha256": "7bcf3c1d025bb956cc3ed033ef5fb4fd74102214c0c15ba6a9f0e77a619593df"
   }
 }

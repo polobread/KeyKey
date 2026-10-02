@@ -54,8 +54,14 @@ TOOL = ../../../Frameworks/OpenVanilla/Tools/cin-to-sqlite.rb
 
 # Normal platform builds consume the checked-in database. Cooking remains an
 # explicit maintainer operation through the $(DB) target below.
-.PHONY: all verify clean
+.PHONY: all verify clean rebuild-custom
 all: verify
+
+# Explicit maintenance only; normal frontend builds still use verify.
+# A fresh OUTPUT directory is required. Add APPLY=1 to publish validated files.
+rebuild-custom:
+	test -n "$(OUTPUT)"
+	python3 -B ./rebuild-keykey-db.py --output "$(OUTPUT)" $(if $(filter 1,$(APPLY)),--apply,)
 
 verify: verify-smart-mandarin-db.py smart_mandarin_model.py \
 	$(COLLECTION_DIR)/AISyntheticBigram/smart-mandarin-model-manifest.json

@@ -1,0 +1,10 @@
+source	line	source_word	word	reading	reason	span_start	span_text	span_reading	conflict_word	conflict_reading	conflict_start	conflict_text	conflict_count
+search-trend-unigram-source.txt	9	空氣污染	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	full_homophone	1	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	空氣汙染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	1	空氣汙染	10
+search-trend-unigram-source.txt	128	車貸	車貸	ㄔㄜ ㄉㄞˋ	full_homophone	1	車貸	ㄔㄜ ㄉㄞˋ	車帶	ㄔㄜ ㄉㄞˋ	1	車帶	6
+search-trend-unigram-source.txt	128	車貸	車貸	ㄔㄜ ㄉㄞˋ	two_character_homophone	1	車貸	ㄔㄜ ㄉㄞˋ	連車帶人	ㄌㄧㄢˊ ㄔㄜ ㄉㄞˋ ㄖㄣˊ	2	車帶	2
+search-trend-unigram-source.txt	231	快充	快充	ㄎㄨㄞˋ ㄔㄨㄥ	full_homophone	1	快充	ㄎㄨㄞˋ ㄔㄨㄥ	快衝	ㄎㄨㄞˋ ㄔㄨㄥ	1	快衝	5
+search-trend-unigram-source.txt	364	課金	課金	ㄎㄜˋ ㄐㄧㄣ	two_character_homophone	1	課金	ㄎㄜˋ ㄐㄧㄣ	塔克金溪	ㄊㄚˇ ㄎㄜˋ ㄐㄧㄣ ㄒㄧ	2	克金	3
+search-trend-unigram-source.txt	364	課金	課金	ㄎㄜˋ ㄐㄧㄣ	two_character_homophone	1	課金	ㄎㄜˋ ㄐㄧㄣ	麥考利克金	ㄇㄞˋ ㄎㄠˇ ㄌㄧˋ ㄎㄜˋ ㄐㄧㄣ	4	克金	2
+search-trend-unigram-source.txt	387	指考	指考	ㄓˇ ㄎㄠˇ	full_homophone	1	指考	ㄓˇ ㄎㄠˇ	只考	ㄓˇ ㄎㄠˇ	1	只考	14
+search-trend-unigram-source.txt	387	指考	指考	ㄓˇ ㄎㄠˇ	two_character_homophone	1	指考	ㄓˇ ㄎㄠˇ	只考到	ㄓˇ ㄎㄠˇ ㄉㄠˋ	1	只考	1
+search-trend-unigram-source.txt	544	低醣	低醣	ㄉㄧ ㄊㄤˊ	full_homophone	1	低醣	ㄉㄧ ㄊㄤˊ	低糖	ㄉㄧ ㄊㄤˊ	1	低糖	5

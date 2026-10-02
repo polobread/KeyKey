@@ -1,0 +1,2189 @@
+source	line	source_word	word	reading	reason	span_start	span_text	span_reading	conflict_word	conflict_reading	conflict_start	conflict_text	conflict_count
+phrase.agriculture-food.tsv	4	分析	分析	ㄈㄣ ㄒㄧ	existing				分析				
+phrase.agriculture-food.tsv	6	危害	危害	ㄨㄟˊ ㄏㄞˋ	existing				危害				
+phrase.agriculture-food.tsv	23	殘留	殘留	ㄘㄢˊ ㄌㄧㄡˊ	existing				殘留				
+phrase.agriculture-food.tsv	24	殺菌	殺菌	ㄕㄚ ㄐㄩㄣˋ	existing				殺菌				
+phrase.agriculture-food.tsv	36	病蟲害	病蟲害	ㄅㄧㄥˋ ㄔㄨㄥˊ ㄏㄞˋ	existing				病蟲害				
+phrase.agriculture-food.tsv	39	瞬間	瞬間	ㄕㄨㄣˋ ㄐㄧㄢ	existing				瞬間				
+phrase.agriculture-food.tsv	41	管理	管理	ㄍㄨㄢˇ ㄌㄧˇ	existing				管理				
+phrase.agriculture-food.tsv	43	綜合	綜合	ㄗㄨㄥˋ ㄏㄜˊ	existing				綜合				
+phrase.agriculture-food.tsv	47	良好	良好	ㄌㄧㄤˊ ㄏㄠˇ	existing				良好				
+phrase.agriculture-food.tsv	49	葡萄球菌	葡萄球菌	ㄆㄨˊ ㄊㄠˊ ㄑㄧㄡˊ ㄐㄩㄣˋ	existing				葡萄球菌				
+phrase.agriculture-food.tsv	59	金黃色	金黃色	ㄐㄧㄣ ㄏㄨㄤˊ ㄙㄜˋ	existing				金黃色				
+phrase.agriculture-food.tsv	61	食品	食品	ㄕˊ ㄆㄧㄣˇ	existing				食品				
+phrase.agriculture-food.tsv	74	高溫	高溫	ㄍㄠ ㄨㄣ	existing				高溫				
+phrase.ai-data-science.tsv	8	人工智慧	人工智慧	ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	existing				人工智慧				
+phrase.ai-data-science.tsv	10	人類	人類	ㄖㄣˊ ㄌㄟˋ	existing				人類				
+phrase.ai-data-science.tsv	14	偏好	偏好	ㄆㄧㄢ ㄏㄠˋ	existing				偏好				
+phrase.ai-data-science.tsv	16	偏差	偏差	ㄆㄧㄢ ㄔㄚ	existing				偏差				
+phrase.ai-data-science.tsv	18	光學	光學	ㄍㄨㄤ ㄒㄩㄝˊ	existing				光學				
+phrase.ai-data-science.tsv	21	分析	分析	ㄈㄣ ㄒㄧ	existing				分析				
+phrase.ai-data-science.tsv	22	分類	分類	ㄈㄣ ㄌㄟˋ	existing				分類				
+phrase.ai-data-science.tsv	24	判別	判別	ㄆㄢˋ ㄅㄧㄝˊ	existing				判別				
+phrase.ai-data-science.tsv	29	參數	參數	ㄘㄢ ㄕㄨˋ	existing				參數				
+phrase.ai-data-science.tsv	34	命名	命名	ㄇㄧㄥˋ ㄇㄧㄥˊ	existing				命名				
+phrase.ai-data-science.tsv	36	單元	單元	ㄉㄢ ㄩㄢˊ	existing				單元				
+phrase.ai-data-science.tsv	37	回饋	回饋	ㄏㄨㄟˊ ㄎㄨㄟˋ	existing				回饋				
+phrase.ai-data-science.tsv	38	圖像	圖像	ㄊㄨˊ ㄒㄧㄤˋ	existing				圖像				
+phrase.ai-data-science.tsv	41	增強	增強	ㄗㄥ ㄑㄧㄤˊ	existing				增強				
+phrase.ai-data-science.tsv	50	字元	字元	ㄗˋ ㄩㄢˊ	existing				字元				
+phrase.ai-data-science.tsv	51	學習	學習	ㄒㄩㄝˊ ㄒㄧˊ	existing				學習				
+phrase.ai-data-science.tsv	56	實體	實體	ㄕˊ ㄊㄧˇ	existing				實體				
+phrase.ai-data-science.tsv	57	專家	專家	ㄓㄨㄢ ㄐㄧㄚ	existing				專家				
+phrase.ai-data-science.tsv	58	對抗	對抗	ㄉㄨㄟˋ ㄎㄤˋ	existing				對抗				
+phrase.ai-data-science.tsv	60	對齊	對齊	ㄉㄨㄟˋ ㄑㄧˊ	existing				對齊				
+phrase.ai-data-science.tsv	64	平均	平均	ㄆㄧㄥˊ ㄐㄩㄣ	existing				平均				
+phrase.ai-data-science.tsv	72	循環	循環	ㄒㄩㄣˊ ㄏㄨㄢˊ	existing				循環				
+phrase.ai-data-science.tsv	73	微調	微調	ㄨㄟˊ ㄊㄧㄠˊ	existing				微調				
+phrase.ai-data-science.tsv	86	提升	提升	ㄊㄧˊ ㄕㄥ	existing				提升				
+phrase.ai-data-science.tsv	90	文字	文字	ㄨㄣˊ ㄗˋ	existing				文字				
+phrase.ai-data-science.tsv	97	最佳化	最佳化	ㄗㄨㄟˋ ㄐㄧㄚ ㄏㄨㄚˋ	existing				最佳化				
+phrase.ai-data-science.tsv	99	梯度	梯度	ㄊㄧ ㄉㄨˋ	existing				梯度				
+phrase.ai-data-science.tsv	101	極端	極端	ㄐㄧˊ ㄉㄨㄢ	existing				極端				
+phrase.ai-data-science.tsv	103	模型	模型	ㄇㄛˊ ㄒㄧㄥˊ	existing				模型				
+phrase.ai-data-science.tsv	105	樸素	樸素	ㄆㄨˊ ㄙㄨˋ	existing				樸素				
+phrase.ai-data-science.tsv	106	檢索	檢索	ㄐㄧㄢˇ ㄙㄨㄛˇ	existing				檢索				
+phrase.ai-data-science.tsv	108	權衡	權衡	ㄑㄩㄢˊ ㄏㄥˊ	existing				權衡				
+phrase.ai-data-science.tsv	110	深層	深層	ㄕㄣ ㄘㄥˊ	existing				深層				
+phrase.ai-data-science.tsv	111	混合	混合	ㄏㄨㄣˋ ㄏㄜˊ	existing				混合				
+phrase.ai-data-science.tsv	112	演算法	演算法	ㄧㄢˇ ㄙㄨㄢˋ ㄈㄚˇ	existing				演算法				
+phrase.ai-data-science.tsv	113	獨立	獨立	ㄉㄨˊ ㄌㄧˋ	existing				獨立				
+phrase.ai-data-science.tsv	114	理解	理解	ㄌㄧˇ ㄐㄧㄝˇ	existing				理解				
+phrase.ai-data-science.tsv	115	生成	生成	ㄕㄥ ㄔㄥˊ	existing				生成				
+phrase.ai-data-science.tsv	117	監控	監控	ㄐㄧㄢ ㄎㄨㄥˋ	existing				監控				
+phrase.ai-data-science.tsv	121	直接	直接	ㄓˊ ㄐㄧㄝ	existing				直接				
+phrase.ai-data-science.tsv	123	結構化	結構化	ㄐㄧㄝˊ ㄍㄡˋ ㄏㄨㄚˋ	existing				結構化				
+phrase.ai-data-science.tsv	125	絕對誤差	絕對誤差	ㄐㄩㄝˊ ㄉㄨㄟˋ ㄨˋ ㄔㄚ	existing				絕對誤差				
+phrase.ai-data-science.tsv	126	維度	維度	ㄨㄟˊ ㄉㄨˋ	existing				維度				
+phrase.ai-data-science.tsv	127	網路	網路	ㄨㄤˇ ㄌㄨˋ	existing				網路				
+phrase.ai-data-science.tsv	128	線性	線性	ㄒㄧㄢˋ ㄒㄧㄥˋ	existing				線性				
+phrase.ai-data-science.tsv	130	緩慢	緩慢	ㄏㄨㄢˇ ㄇㄢˋ	existing				緩慢				
+phrase.ai-data-science.tsv	132	自然	自然	ㄗˋ ㄖㄢˊ	existing				自然				
+phrase.ai-data-science.tsv	136	蒸餾	蒸餾	ㄓㄥ ㄌㄧㄡˋ	existing				蒸餾				
+phrase.ai-data-science.tsv	137	視覺	視覺	ㄕˋ ㄐㄩㄝˊ	existing				視覺				
+phrase.ai-data-science.tsv	139	角色	角色	ㄐㄩㄝˊ ㄙㄜˋ	existing				角色				
+phrase.ai-data-science.tsv	140	解碼器	解碼器	ㄐㄧㄝˇ ㄇㄚˇ ㄑㄧˋ	existing				解碼器				
+phrase.ai-data-science.tsv	141	訓練	訓練	ㄒㄩㄣˋ ㄌㄧㄢˋ	existing				訓練				
+phrase.ai-data-science.tsv	142	記憶	記憶	ㄐㄧˋ ㄧˋ	existing				記憶				
+phrase.ai-data-science.tsv	143	評估	評估	ㄆㄧㄥˊ ㄍㄨ	existing				評估				
+phrase.ai-data-science.tsv	144	語意	語意	ㄩˇ ㄧˋ	existing				語意				
+phrase.ai-data-science.tsv	145	語言	語言	ㄩˇ ㄧㄢˊ	existing				語言				
+phrase.ai-data-science.tsv	148	識別	識別	ㄕˋ ㄅㄧㄝˊ	existing				識別				
+phrase.ai-data-science.tsv	150	變動	變動	ㄅㄧㄢˋ ㄉㄨㄥˋ	existing				變動				
+phrase.ai-data-science.tsv	151	變異	變異	ㄅㄧㄢˋ ㄧˋ	existing				變異				
+phrase.ai-data-science.tsv	152	貝氏	貝氏	ㄅㄟˋ ㄕˋ	existing				貝氏				
+phrase.ai-data-science.tsv	153	資料	資料	ㄗ ㄌㄧㄠˋ	existing				資料				
+phrase.ai-data-science.tsv	155	辨識	辨識	ㄅㄧㄢˋ ㄕˋ	existing				辨識				
+phrase.ai-data-science.tsv	157	部署	部署	ㄅㄨˋ ㄕㄨˋ	existing				部署				
+phrase.ai-data-science.tsv	158	量化	量化	ㄌㄧㄤˋ ㄏㄨㄚˋ	existing				量化				
+phrase.ai-data-science.tsv	163	隨機	隨機	ㄙㄨㄟˊ ㄐㄧ	existing				隨機				
+phrase.ai-data-science.tsv	168	高效	高效	ㄍㄠ ㄒㄧㄠˋ	existing				高效				
+phrase.ai-data-science.tsv	169	高斯	高斯	ㄍㄠ ㄙ	existing				高斯				
+phrase.anime.tsv	5	一個	一個	ㄧ ㄍㄜ˙	existing				一個				
+phrase.anime.tsv	7	一存	一存	ㄧ ㄘㄨㄣˊ	existing				一存				
+phrase.anime.tsv	8	一拳	一拳	ㄧ ㄑㄩㄢˊ	existing				一拳				
+phrase.anime.tsv	13	一次	一次	ㄧ ㄘˋ	existing				一次				
+phrase.anime.tsv	14	一百	一百	ㄧ ㄅㄞˇ	existing				一百				
+phrase.anime.tsv	23	七日	七日	ㄑㄧ ㄖˋ	existing				七日				
+phrase.anime.tsv	30	七龍珠	七龍珠	ㄑㄧ ㄌㄨㄥˊ ㄓㄨ	existing				七龍珠				
+phrase.anime.tsv	49	不可思議	不可思議	ㄅㄨˋ ㄎㄜˇ ㄙ ㄧˋ	existing				不可思議				
+phrase.anime.tsv	50	不存在	不存在	ㄅㄨˋ ㄘㄨㄣˊ ㄗㄞˋ	existing				不存在				
+phrase.anime.tsv	53	不時	不時	ㄅㄨˋ ㄕˊ	existing				不時				
+phrase.anime.tsv	54	不會	不會	ㄅㄨˋ ㄏㄨㄟˋ	existing				不會				
+phrase.anime.tsv	55	不死	不死	ㄅㄨˋ ㄙˇ	existing				不死				
+phrase.anime.tsv	60	不要	不要	ㄅㄨˊ ㄧㄠˋ	existing				不要				
+phrase.anime.tsv	62	世界	世界	ㄕˋ ㄐㄧㄝˋ	existing				世界				
+phrase.anime.tsv	66	中二病	中二病	ㄓㄨㄥ ㄦˋ ㄅㄧㄥˋ	existing				中二病				
+phrase.anime.tsv	94	之時	之時	ㄓ ㄕˊ	existing				之時				
+phrase.anime.tsv	95	之身	之身	ㄓ ㄕㄣ	existing				之身				
+phrase.anime.tsv	102	也要	也要	ㄧㄝˇ ㄧㄠˋ	existing				也要				
+phrase.anime.tsv	106	事件簿	事件簿	ㄕˋ ㄐㄧㄢˋ ㄅㄨˋ	existing				事件簿				
+phrase.anime.tsv	107	二世	二世	ㄦˋ ㄕˋ	existing				二世				
+phrase.anime.tsv	116	五月	五月	ㄨˇ ㄩㄝˋ	existing				五月				
+phrase.anime.tsv	137	亞當	亞當	ㄧㄚˇ ㄉㄤ	existing				亞當				
+phrase.anime.tsv	144	亡靈	亡靈	ㄨㄤˊ ㄌㄧㄥˊ	existing				亡靈				
+phrase.anime.tsv	145	交響情人夢	交響情人夢	ㄐㄧㄠ ㄒㄧㄤˇ ㄑㄧㄥˊ ㄖㄣˊ ㄇㄥˋ	existing				交響情人夢				
+phrase.anime.tsv	147	人偶	人偶	ㄖㄣˊ ㄡˇ	existing				人偶				
+phrase.anime.tsv	148	人生	人生	ㄖㄣˊ ㄕㄥ	existing				人生				
+phrase.anime.tsv	151	什麼	什麼	ㄕㄜˊ ㄇㄛ˙	existing				什麼				
+phrase.anime.tsv	154	今天	今天	ㄐㄧㄣ ㄊㄧㄢ	existing				今天				
+phrase.anime.tsv	158	代替	代替	ㄉㄞˋ ㄊㄧˋ	existing				代替				
+phrase.anime.tsv	172	伊莉莎白	伊莉莎白	ㄧ ㄌㄧˋ ㄕㄚ ㄅㄞˊ	existing				伊莉莎白				
+phrase.anime.tsv	201	你想	你想	ㄋㄧˇ ㄒㄧㄤˇ	existing				你想				
+phrase.anime.tsv	206	來自	來自	ㄌㄞˊ ㄗˋ	existing				來自				
+phrase.anime.tsv	209	侵略	侵略	ㄑㄧㄣ ㄌㄩㄝˋ	existing				侵略				
+phrase.anime.tsv	212	俄語	俄語	ㄜˋ ㄩˇ	existing				俄語				
+phrase.anime.tsv	216	保羅	保羅	ㄅㄠˇ ㄌㄨㄛˊ	existing				保羅				
+phrase.anime.tsv	220	修女	修女	ㄒㄧㄡ ㄋㄩˇ	existing				修女				
+phrase.anime.tsv	226	借力	借力	ㄐㄧㄝˋ ㄌㄧˋ	existing				借力				
+phrase.anime.tsv	229	偵探	偵探	ㄓㄣ ㄊㄢˋ	existing				偵探				
+phrase.anime.tsv	230	偶像	偶像	ㄡˇ ㄒㄧㄤˋ	existing				偶像				
+phrase.anime.tsv	236	傳奇	傳奇	ㄔㄨㄢˊ ㄑㄧˊ	existing				傳奇				
+phrase.anime.tsv	238	元氣	元氣	ㄩㄢˊ ㄑㄧˋ	existing				元氣				
+phrase.anime.tsv	239	元祿	元祿	ㄩㄢˊ ㄌㄨˋ	existing				元祿				
+phrase.anime.tsv	245	克拉	克拉	ㄎㄜˋ ㄌㄚ	existing				克拉				
+phrase.anime.tsv	290	出手	出手	ㄔㄨ ㄕㄡˇ	existing				出手				
+phrase.anime.tsv	302	前輩	前輩	ㄑㄧㄢˊ ㄅㄟˋ	existing				前輩				
+phrase.anime.tsv	304	剎那	剎那	ㄔㄚˋ ㄋㄚˋ	existing				剎那				
+phrase.anime.tsv	308	創作者	創作者	ㄔㄨㄤˋ ㄗㄨㄛˋ ㄓㄜˇ	existing				創作者				
+phrase.anime.tsv	314	加油	加油	ㄐㄧㄚ ㄧㄡˊ	existing				加油				
+phrase.anime.tsv	319	加速	加速	ㄐㄧㄚ ㄙㄨˋ	existing				加速				
+phrase.anime.tsv	335	十二生肖	十二生肖	ㄕˊ ㄦˋ ㄕㄥ ㄒㄧㄠˋ	existing				十二生肖				
+phrase.anime.tsv	346	千變萬化	千變萬化	ㄑㄧㄢ ㄅㄧㄢˋ ㄨㄢˋ ㄏㄨㄚˋ	existing				千變萬化				
+phrase.anime.tsv	360	南極	南極	ㄋㄢˊ ㄐㄧˊ	existing				南極				
+phrase.anime.tsv	363	博士	博士	ㄅㄛˊ ㄕˋ	existing				博士				
+phrase.anime.tsv	367	卡夫卡	卡夫卡	ㄎㄚˇ ㄈㄨ ㄎㄚˇ	existing				卡夫卡				
+phrase.anime.tsv	381	受傷	受傷	ㄕㄡˋ ㄕㄤ	existing				受傷				
+phrase.anime.tsv	395	只有	只有	ㄓˇ ㄧㄡˇ	existing				只有				
+phrase.anime.tsv	400	可不是	可不是	ㄎㄜˇ ㄅㄨˊ ㄕˋ	existing				可不是				
+phrase.anime.tsv	401	可愛	可愛	ㄎㄜˇ ㄞˋ	existing				可愛				
+phrase.anime.tsv	407	史密斯	史密斯	ㄕˇ ㄇㄧˋ ㄙ	existing				史密斯				
+phrase.anime.tsv	414	史萊姆	史萊姆	ㄕˇ ㄌㄞˊ ㄇㄨˇ	existing				史萊姆				
+phrase.anime.tsv	429	同學	同學	ㄊㄨㄥˊ ㄒㄩㄝˊ	existing				同學				
+phrase.anime.tsv	431	名偵探柯南	名偵探柯南	ㄇㄧㄥˊ ㄓㄣ ㄊㄢˋ ㄎㄜ ㄋㄢˊ	existing				名偵探柯南				
+phrase.anime.tsv	435	君主	君主	ㄐㄩㄣ ㄓㄨˇ	existing				君主				
+phrase.anime.tsv	438	吸血鬼	吸血鬼	ㄒㄧ ㄒㄧㄝˇ ㄍㄨㄟˇ	existing				吸血鬼				
+phrase.anime.tsv	442	告白	告白	ㄍㄠˋ ㄅㄞˊ	existing				告白				
+phrase.anime.tsv	453	咒術迴戰	咒術迴戰	ㄓㄡˋ ㄕㄨˋ ㄏㄨㄟˊ ㄓㄢˋ	existing				咒術迴戰				
+phrase.anime.tsv	464	哪有	哪有	ㄋㄚˇ ㄧㄡˇ	existing				哪有				
+phrase.anime.tsv	469	喜歡	喜歡	ㄒㄧˇ ㄏㄨㄢ	existing				喜歡				
+phrase.anime.tsv	482	嘆氣	嘆氣	ㄊㄢˋ ㄑㄧˋ	existing				嘆氣				
+phrase.anime.tsv	484	嘟嘟	嘟嘟	ㄉㄨ ㄉㄨ	existing				嘟嘟				
+phrase.anime.tsv	490	四月	四月	ㄙˋ ㄩㄝˋ	existing				四月				
+phrase.anime.tsv	495	四重奏	四重奏	ㄙˋ ㄔㄨㄥˊ ㄗㄡˋ	existing				四重奏				
+phrase.anime.tsv	505	圓桌會議	圓桌會議	ㄩㄢˊ ㄓㄨㄛ ㄏㄨㄟˋ ㄧˋ	existing				圓桌會議				
+phrase.anime.tsv	506	圖書	圖書	ㄊㄨˊ ㄕㄨ	existing				圖書				
+phrase.anime.tsv	515	地平線	地平線	ㄉㄧˋ ㄆㄧㄥˊ ㄒㄧㄢˋ	existing				地平線				
+phrase.anime.tsv	516	地方	地方	ㄉㄧˋ ㄈㄤ	existing				地方				
+phrase.anime.tsv	517	地獄	地獄	ㄉㄧˋ ㄩˋ	existing				地獄				
+phrase.anime.tsv	521	地球	地球	ㄉㄧˋ ㄑㄧㄡˊ	existing				地球				
+phrase.anime.tsv	542	埼玉	埼玉	ㄑㄧˊ ㄩˋ	existing				埼玉				
+phrase.anime.tsv	567	夏洛克	夏洛克	ㄒㄧㄚˋ ㄌㄨㄛˋ ㄎㄜˋ	existing				夏洛克				
+phrase.anime.tsv	572	夏美	夏美	ㄒㄧㄚˋ ㄇㄟˇ	existing				夏美				
+phrase.anime.tsv	588	夜夜	夜夜	ㄧㄝˋ ㄧㄝˋ	existing				夜夜				
+phrase.anime.tsv	596	夜襲	夜襲	ㄧㄝˋ ㄒㄧˊ	existing				夜襲				
+phrase.anime.tsv	599	夢想	夢想	ㄇㄥˋ ㄒㄧㄤˇ	existing				夢想				
+phrase.anime.tsv	600	大人	大人	ㄉㄚˋ ㄖㄣˊ	existing				大人				
+phrase.anime.tsv	612	大王	大王	ㄉㄚˋ ㄨㄤˊ	existing				大王				
+phrase.anime.tsv	613	大臣	大臣	ㄉㄚˋ ㄔㄣˊ	existing				大臣				
+phrase.anime.tsv	614	大衛	大衛	ㄉㄚˋ ㄨㄟˋ	existing				大衛				
+phrase.anime.tsv	619	大雄	大雄	ㄉㄚˋ ㄒㄩㄥˊ	existing				大雄				
+phrase.anime.tsv	621	天使	天使	ㄊㄧㄢ ㄕˇ	existing				天使				
+phrase.anime.tsv	622	天元	天元	ㄊㄧㄢ ㄩㄢˊ	existing				天元				
+phrase.anime.tsv	623	天國	天國	ㄊㄧㄢ ㄍㄨㄛˊ	existing				天國				
+phrase.anime.tsv	630	天氣	天氣	ㄊㄧㄢ ㄑㄧˋ	existing				天氣				
+phrase.anime.tsv	633	天空	天空	ㄊㄧㄢ ㄎㄨㄥ	existing				天空				
+phrase.anime.tsv	634	天空之城	天空之城	ㄊㄧㄢ ㄎㄨㄥ ㄓ ㄔㄥˊ	existing				天空之城				
+phrase.anime.tsv	666	女僕	女僕	ㄋㄩˇ ㄆㄨˊ	existing				女僕				
+phrase.anime.tsv	668	女孩	女孩	ㄋㄩˇ ㄏㄞˊ	existing				女孩				
+phrase.anime.tsv	669	女武神	女武神	ㄋㄩˇ ㄨˇ ㄕㄣˊ	existing				女武神				
+phrase.anime.tsv	672	女郎	女郎	ㄋㄩˇ ㄌㄤˊ	existing				女郎				
+phrase.anime.tsv	680	妖魔	妖魔	ㄧㄠ ㄇㄛˊ	existing				妖魔				
+phrase.anime.tsv	685	妹妹	妹妹	ㄇㄟˋ ㄇㄟˋ	existing				妹妹				
+phrase.anime.tsv	691	威廉	威廉	ㄨㄟ ㄌㄧㄢˊ	existing				威廉				
+phrase.anime.tsv	692	娃娃	娃娃	ㄨㄚˊ ㄨㄚˊ	existing				娃娃				
+phrase.anime.tsv	700	存在感	存在感	ㄘㄨㄣˊ ㄗㄞˋ ㄍㄢˇ	existing				存在感				
+phrase.anime.tsv	704	孫悟空	孫悟空	ㄙㄨㄣ ㄨˋ ㄎㄨㄥ	existing				孫悟空				
+phrase.anime.tsv	710	學姊	學姊	ㄒㄩㄝˊ ㄐㄧㄝˇ	existing				學姊				
+phrase.anime.tsv	711	學生會	學生會	ㄒㄩㄝˊ ㄕㄥ ㄏㄨㄟˋ	existing				學生會				
+phrase.anime.tsv	712	學長	學長	ㄒㄩㄝˊ ㄓㄤˇ	existing				學長				
+phrase.anime.tsv	724	安妮	安妮	ㄢ ㄋㄧˊ	existing				安妮				
+phrase.anime.tsv	737	安迪	安迪	ㄢ ㄉㄧˊ	existing				安迪				
+phrase.anime.tsv	755	家庭教師	家庭教師	ㄐㄧㄚ ㄊㄧㄥˊ ㄐㄧㄠˋ ㄕ	existing				家庭教師				
+phrase.anime.tsv	756	家族	家族	ㄐㄧㄚ ㄗㄨˊ	existing				家族				
+phrase.anime.tsv	764	寶可夢	寶可夢	ㄅㄠˇ ㄎㄜˇ ㄇㄥˋ	existing				寶可夢				
+phrase.anime.tsv	771	尋求	尋求	ㄒㄩㄣˊ ㄑㄧㄡˊ	existing				尋求				
+phrase.anime.tsv	776	小圓	小圓	ㄒㄧㄠˇ ㄩㄢˊ	existing				小圓				
+phrase.anime.tsv	800	小花	小花	ㄒㄧㄠˇ ㄏㄨㄚ	existing				小花				
+phrase.anime.tsv	813	少女	少女	ㄕㄠˋ ㄋㄩˇ	existing				少女				
+phrase.anime.tsv	816	少年	少年	ㄕㄠˋ ㄋㄧㄢˊ	existing				少年				
+phrase.anime.tsv	827	就是	就是	ㄐㄧㄡˋ ㄕˋ	existing				就是				
+phrase.anime.tsv	830	尼斯	尼斯	ㄋㄧˊ ㄙ	existing				尼斯				
+phrase.anime.tsv	846	山田	山田	ㄕㄢ ㄊㄧㄢˊ	existing				山田				
+phrase.anime.tsv	870	工作	工作	ㄍㄨㄥ ㄗㄨㄛˋ	existing				工作				
+phrase.anime.tsv	874	巨噬細胞	巨噬細胞	ㄐㄩˋ ㄕˋ ㄒㄧˋ ㄅㄠ	existing				巨噬細胞				
+phrase.anime.tsv	889	布朗	布朗	ㄅㄨˋ ㄌㄤˇ	existing				布朗				
+phrase.anime.tsv	900	布魯諾	布魯諾	ㄅㄨˋ ㄌㄨˇ ㄋㄨㄛˋ	existing				布魯諾				
+phrase.anime.tsv	924	幸運星	幸運星	ㄒㄧㄥˋ ㄩㄣˋ ㄒㄧㄥ	duplicate				幸運星				
+phrase.anime.tsv	928	幻燈	幻燈	ㄏㄨㄢˋ ㄉㄥ	existing				幻燈				
+phrase.anime.tsv	930	幽遊白書	幽遊白書	ㄧㄡ ㄧㄡˊ ㄅㄞˊ ㄕㄨ	existing				幽遊白書				
+phrase.anime.tsv	931	店主	店主	ㄉㄧㄢˋ ㄓㄨˇ	existing				店主				
+phrase.anime.tsv	945	彌勒	彌勒	ㄇㄧˊ ㄌㄜˋ	existing				彌勒				
+phrase.anime.tsv	950	影子	影子	ㄧㄥˇ ㄗ˙	existing				影子				
+phrase.anime.tsv	954	彼得	彼得	ㄅㄧˇ ㄉㄜˊ	existing				彼得				
+phrase.anime.tsv	963	復仇	復仇	ㄈㄨˋ ㄔㄡˊ	existing				復仇				
+phrase.anime.tsv	968	心中	心中	ㄒㄧㄣ ㄓㄨㄥ	existing				心中				
+phrase.anime.tsv	979	怎樣	怎樣	ㄗㄜˇ ㄧㄤˋ	existing				怎樣				
+phrase.anime.tsv	982	怪物	怪物	ㄍㄨㄞˋ ㄨˋ	existing				怪物				
+phrase.anime.tsv	988	悠悠哉哉	悠悠哉哉	ㄧㄡ ㄧㄡ ㄗㄞ ㄗㄞ	existing				悠悠哉哉				
+phrase.anime.tsv	1004	愛德華	愛德華	ㄞˋ ㄉㄜˊ ㄏㄨㄚˊ	existing				愛德華				
+phrase.anime.tsv	1008	愛麗絲	愛麗絲	ㄞˋ ㄌㄧˋ ㄙ	existing				愛麗絲				
+phrase.anime.tsv	1010	憂國	憂國	ㄧㄡ ㄍㄨㄛˊ	existing				憂國				
+phrase.anime.tsv	1011	憂鬱	憂鬱	ㄧㄡ ㄩˋ	existing				憂鬱				
+phrase.anime.tsv	1013	戀愛	戀愛	ㄌㄧㄢˋ ㄞˋ	existing				戀愛				
+phrase.anime.tsv	1017	成為	成為	ㄔㄥˊ ㄨㄟˊ	existing				成為				
+phrase.anime.tsv	1024	我推的孩子	我推的孩子	ㄨㄛˇ ㄊㄨㄟ ㄉㄜ˙ ㄏㄞˊ ㄗ˙	existing				我推的孩子				
+phrase.anime.tsv	1028	戰區	戰區	ㄓㄢˋ ㄑㄩ	existing				戰區				
+phrase.anime.tsv	1031	戰爭	戰爭	ㄓㄢˋ ㄓㄥ	existing				戰爭				
+phrase.anime.tsv	1032	戰記	戰記	ㄓㄢˋ ㄐㄧˋ	existing				戰記				
+phrase.anime.tsv	1033	戴安娜	戴安娜	ㄉㄞˋ ㄢ ㄋㄚˋ	existing				戴安娜				
+phrase.anime.tsv	1040	手記	手記	ㄕㄡˇ ㄐㄧˋ	existing				手記				
+phrase.anime.tsv	1045	投手	投手	ㄊㄡˊ ㄕㄡˇ	existing				投手				
+phrase.anime.tsv	1057	拉拉	拉拉	ㄌㄚ ㄌㄚ	existing				拉拉				
+phrase.anime.tsv	1058	拉斐爾	拉斐爾	ㄌㄚ ㄈㄟˇ ㄦˇ	existing				拉斐爾				
+phrase.anime.tsv	1066	拳擊	拳擊	ㄑㄩㄢˊ ㄐㄧˊ	existing				拳擊				
+phrase.anime.tsv	1069	振臂	振臂	ㄓㄣˋ ㄅㄧˋ	existing				振臂				
+phrase.anime.tsv	1070	捉弄	捉弄	ㄓㄨㄛ ㄋㄨㄥˋ	existing				捉弄				
+phrase.anime.tsv	1073	排球少年	排球少年	ㄆㄞˊ ㄑㄧㄡˊ ㄕㄠˋ ㄋㄧㄢˊ	existing				排球少年				
+phrase.anime.tsv	1076	換裝	換裝	ㄏㄨㄢˋ ㄓㄨㄤ	existing				換裝				
+phrase.anime.tsv	1082	擅長	擅長	ㄕㄢˋ ㄔㄤˊ	existing				擅長				
+phrase.anime.tsv	1084	攻殼機動隊	攻殼機動隊	ㄍㄨㄥ ㄎㄜˊ ㄐㄧ ㄉㄨㄥˋ ㄉㄨㄟˋ	existing				攻殼機動隊				
+phrase.anime.tsv	1088	教師	教師	ㄐㄧㄠˋ ㄕ	existing				教師				
+phrase.anime.tsv	1092	文豪	文豪	ㄨㄣˊ ㄏㄠˊ	existing				文豪				
+phrase.anime.tsv	1100	新世界	新世界	ㄒㄧㄣ ㄕˋ ㄐㄧㄝˋ	existing				新世界				
+phrase.anime.tsv	1101	新世紀	新世紀	ㄒㄧㄣ ㄕˋ ㄐㄧˋ	existing				新世紀				
+phrase.anime.tsv	1103	新娘	新娘	ㄒㄧㄣ ㄋㄧㄤˊ	existing				新娘				
+phrase.anime.tsv	1108	旅行	旅行	ㄌㄩˇ ㄒㄧㄥˊ	existing				旅行				
+phrase.anime.tsv	1117	日常	日常	ㄖˋ ㄔㄤˊ	existing				日常				
+phrase.anime.tsv	1128	明日	明日	ㄇㄧㄥˊ ㄖˋ	existing				明日				
+phrase.anime.tsv	1132	星子	星子	ㄒㄧㄥ ㄗ˙	existing				星子				
+phrase.anime.tsv	1134	星星	星星	ㄒㄧㄥ ㄒㄧㄥ	existing				星星				
+phrase.anime.tsv	1143	春風	春風	ㄔㄨㄣ ㄈㄥ	existing				春風				
+phrase.anime.tsv	1144	昭和	昭和	ㄓㄠ ㄏㄜˊ	existing				昭和				
+phrase.anime.tsv	1149	普羅	普羅	ㄆㄨˇ ㄌㄨㄛˊ	existing				普羅				
+phrase.anime.tsv	1158	更遠	更遠	ㄍㄥˋ ㄩㄢˇ	existing				更遠				
+phrase.anime.tsv	1159	書架	書架	ㄕㄨ ㄐㄧㄚˋ	existing				書架				
+phrase.anime.tsv	1161	替身	替身	ㄊㄧˋ ㄕㄣ	existing				替身				
+phrase.anime.tsv	1164	最高	最高	ㄗㄨㄟˋ ㄍㄠ	existing				最高				
+phrase.anime.tsv	1166	月亮	月亮	ㄩㄝˋ ㄌㄧㄤˋ	existing				月亮				
+phrase.anime.tsv	1168	月刊	月刊	ㄩㄝˋ ㄎㄢ	existing				月刊				
+phrase.anime.tsv	1182	朋友	朋友	ㄆㄥˊ ㄧㄡˇ	existing				朋友				
+phrase.anime.tsv	1225	村長	村長	ㄘㄨㄣ ㄓㄤˇ	existing				村長				
+phrase.anime.tsv	1249	柚子	柚子	ㄧㄡˋ ㄗ˙	existing				柚子				
+phrase.anime.tsv	1255	校園	校園	ㄒㄧㄠˋ ㄩㄢˊ	existing				校園				
+phrase.anime.tsv	1266	桃太郎	桃太郎	ㄊㄠˊ ㄊㄞˋ ㄌㄤˊ	existing				桃太郎				
+phrase.anime.tsv	1277	桔梗	桔梗	ㄐㄧㄝˊ ㄍㄥˇ	existing				桔梗				
+phrase.anime.tsv	1307	橘子	橘子	ㄐㄩˊ ㄗ˙	existing				橘子				
+phrase.anime.tsv	1309	機動戰士	機動戰士	ㄐㄧ ㄉㄨㄥˋ ㄓㄢˋ ㄕˋ	existing				機動戰士				
+phrase.anime.tsv	1310	機器人	機器人	ㄐㄧ ㄑㄧˋ ㄖㄣˊ	existing				機器人				
+phrase.anime.tsv	1311	機巧	機巧	ㄐㄧ ㄑㄧㄠˇ	existing				機巧				
+phrase.anime.tsv	1333	武藏	武藏	ㄨˇ ㄗㄤˋ	existing				武藏				
+phrase.anime.tsv	1342	死神	死神	ㄙˇ ㄕㄣˊ	existing				死神				
+phrase.anime.tsv	1346	殺手	殺手	ㄕㄚ ㄕㄡˇ	existing				殺手				
+phrase.anime.tsv	1350	殿下	殿下	ㄉㄧㄢˋ ㄒㄧㄚˋ	existing				殿下				
+phrase.anime.tsv	1353	比利	比利	ㄅㄧˇ ㄌㄧˋ	existing				比利				
+phrase.anime.tsv	1364	水準	水準	ㄕㄨㄟˇ ㄓㄨㄣˇ	existing				水準				
+phrase.anime.tsv	1373	永恆	永恆	ㄩㄥˇ ㄏㄥˊ	existing				永恆				
+phrase.anime.tsv	1375	永遠	永遠	ㄩㄥˇ ㄩㄢˇ	existing				永遠				
+phrase.anime.tsv	1380	池袋	池袋	ㄔˊ ㄉㄞˋ	existing				池袋				
+phrase.anime.tsv	1381	決定	決定	ㄐㄩㄝˊ ㄉㄧㄥˋ	existing				決定				
+phrase.anime.tsv	1394	法拉第	法拉第	ㄈㄚˇ ㄌㄚ ㄉㄧˋ	existing				法拉第				
+phrase.anime.tsv	1396	法蘭西	法蘭西	ㄈㄚˇ ㄌㄢˊ ㄒㄧ	existing				法蘭西				
+phrase.anime.tsv	1406	洛基	洛基	ㄌㄨㄛˋ ㄐㄧ	existing				洛基				
+phrase.anime.tsv	1407	洛夫	洛夫	ㄌㄨㄛˋ ㄈㄨ	existing				洛夫				
+phrase.anime.tsv	1412	活下去	活下去	ㄏㄨㄛˊ ㄒㄧㄚˋ ㄑㄩˋ	existing				活下去				
+phrase.anime.tsv	1413	活出	活出	ㄏㄨㄛˊ ㄔㄨ	existing				活出				
+phrase.anime.tsv	1422	海賊王	海賊王	ㄏㄞˇ ㄗㄟˊ ㄨㄤˊ	existing				海賊王				
+phrase.anime.tsv	1427	深不可測	深不可測	ㄕㄣ ㄅㄨˋ ㄎㄜˇ ㄘㄜˋ	existing				深不可測				
+phrase.anime.tsv	1428	深淵	深淵	ㄕㄣ ㄩㄢ	existing				深淵				
+phrase.anime.tsv	1442	測驗	測驗	ㄘㄜˋ ㄧㄢˋ	existing				測驗				
+phrase.anime.tsv	1448	溝通	溝通	ㄍㄡ ㄊㄨㄥ	existing				溝通				
+phrase.anime.tsv	1456	漫畫	漫畫	ㄇㄢˋ ㄏㄨㄚˋ	existing				漫畫				
+phrase.anime.tsv	1474	灌籃高手	灌籃高手	ㄍㄨㄢˋ ㄌㄢˊ ㄍㄠ ㄕㄡˇ	existing				灌籃高手				
+phrase.anime.tsv	1476	火影忍者	火影忍者	ㄏㄨㄛˇ ㄧㄥˇ ㄖㄣˇ ㄓㄜˇ	existing				火影忍者				
+phrase.anime.tsv	1479	火箭隊	火箭隊	ㄏㄨㄛˇ ㄐㄧㄢˋ ㄉㄨㄟˋ	existing				火箭隊				
+phrase.anime.tsv	1481	火龍	火龍	ㄏㄨㄛˇ ㄌㄨㄥˊ	existing				火龍				
+phrase.anime.tsv	1483	灰姑娘	灰姑娘	ㄏㄨㄟ ㄍㄨ ㄋㄧㄤˊ	existing				灰姑娘				
+phrase.anime.tsv	1485	灰狼	灰狼	ㄏㄨㄟ ㄌㄤˊ	existing				灰狼				
+phrase.anime.tsv	1487	災難	災難	ㄗㄞ ㄋㄢˋ	existing				災難				
+phrase.anime.tsv	1489	為了	為了	ㄨㄟˋ ㄌㄜ˙	existing				為了				
+phrase.anime.tsv	1496	烏龍茶	烏龍茶	ㄨ ㄌㄨㄥˊ ㄔㄚˊ	existing				烏龍茶				
+phrase.anime.tsv	1544	獵人	獵人	ㄌㄧㄝˋ ㄖㄣˊ	existing				獵人				
+phrase.anime.tsv	1545	獻上祝福	獻上祝福	ㄒㄧㄢˋ ㄕㄤˋ ㄓㄨˋ ㄈㄨˊ	existing				獻上祝福				
+phrase.anime.tsv	1553	王牌	王牌	ㄨㄤˊ ㄆㄞˊ	existing				王牌				
+phrase.anime.tsv	1557	珊瑚	珊瑚	ㄕㄢ ㄏㄨˊ	existing				珊瑚				
+phrase.anime.tsv	1563	琥珀	琥珀	ㄏㄨˇ ㄆㄛˋ	existing				琥珀				
+phrase.anime.tsv	1571	瑪利亞	瑪利亞	ㄇㄚˇ ㄌㄧˋ ㄧㄚˇ	existing				瑪利亞				
+phrase.anime.tsv	1579	瓦特	瓦特	ㄨㄚˇ ㄊㄜˋ	existing				瓦特				
+phrase.anime.tsv	1582	田中	田中	ㄊㄧㄢˊ ㄓㄨㄥ	existing				田中				
+phrase.anime.tsv	1592	男子	男子	ㄋㄢˊ ㄗˇ	existing				男子				
+phrase.anime.tsv	1602	異能	異能	ㄧˋ ㄋㄥˊ	existing				異能				
+phrase.anime.tsv	1603	症候群	症候群	ㄓㄥˋ ㄏㄡˋ ㄑㄩㄣˊ	existing				症候群				
+phrase.anime.tsv	1615	白血球	白血球	ㄅㄞˊ ㄒㄧㄝˇ ㄑㄧㄡˊ	existing				白血球				
+phrase.anime.tsv	1617	白雪	白雪	ㄅㄞˊ ㄒㄩㄝˇ	existing				白雪				
+phrase.anime.tsv	1620	百分之百	百分之百	ㄅㄞˇ ㄈㄣ ㄓ ㄅㄞˇ	existing				百分之百				
+phrase.anime.tsv	1621	百鬼夜行	百鬼夜行	ㄅㄞˇ ㄍㄨㄟˇ ㄧㄝˋ ㄒㄧㄥˊ	existing				百鬼夜行				
+phrase.anime.tsv	1624	皮卡丘	皮卡丘	ㄆㄧˊ ㄎㄚˇ ㄑㄧㄡ	existing				皮卡丘				
+phrase.anime.tsv	1627	目錄	目錄	ㄇㄨˋ ㄌㄨˋ	existing				目錄				
+phrase.anime.tsv	1634	相信	相信	ㄒㄧㄤ ㄒㄧㄣˋ	existing				相信				
+phrase.anime.tsv	1657	真相	真相	ㄓㄣ ㄒㄧㄤˋ	existing				真相				
+phrase.anime.tsv	1661	真難	真難	ㄓㄣ ㄋㄢˊ	existing				真難				
+phrase.anime.tsv	1669	石川	石川	ㄕˊ ㄔㄨㄢ	existing				石川				
+phrase.anime.tsv	1703	禁書	禁書	ㄐㄧㄣˋ ㄕㄨ	existing				禁書				
+phrase.anime.tsv	1705	福爾摩斯	福爾摩斯	ㄈㄨˊ ㄦˇ ㄇㄛˊ ㄙ	existing				福爾摩斯				
+phrase.anime.tsv	1706	福特	福特	ㄈㄨˊ ㄊㄜˋ	existing				福特				
+phrase.anime.tsv	1709	福音	福音	ㄈㄨˊ ㄧㄣ	existing				福音				
+phrase.anime.tsv	1716	科學	科學	ㄎㄜ ㄒㄩㄝˊ	existing				科學				
+phrase.anime.tsv	1730	突破	突破	ㄊㄨˊ ㄆㄛˋ	existing				突破				
+phrase.anime.tsv	1741	笨蛋	笨蛋	ㄅㄣˋ ㄉㄢˋ	existing				笨蛋				
+phrase.anime.tsv	1746	管家	管家	ㄍㄨㄢˇ ㄐㄧㄚ	existing				管家				
+phrase.anime.tsv	1747	管理員	管理員	ㄍㄨㄢˇ ㄌㄧˇ ㄩㄢˊ	existing				管理員				
+phrase.anime.tsv	1755	簽訂	簽訂	ㄑㄧㄢ ㄉㄧㄥˋ	existing				簽訂				
+phrase.anime.tsv	1761	米奇	米奇	ㄇㄧˇ ㄑㄧˊ	existing				米奇				
+phrase.anime.tsv	1767	精靈	精靈	ㄐㄧㄥ ㄌㄧㄥˊ	existing				精靈				
+phrase.anime.tsv	1768	糖分	糖分	ㄊㄤˊ ㄈㄣˋ	existing				糖分				
+phrase.anime.tsv	1775	約定	約定	ㄩㄝ ㄉㄧㄥˋ	existing				約定				
+phrase.anime.tsv	1783	紅血球	紅血球	ㄏㄨㄥˊ ㄒㄧㄝˇ ㄑㄧㄡˊ	existing				紅血球				
+phrase.anime.tsv	1789	紫羅蘭	紫羅蘭	ㄗˇ ㄌㄨㄛˊ ㄌㄢˊ	existing				紫羅蘭				
+phrase.anime.tsv	1793	細胞	細胞	ㄒㄧˋ ㄅㄠ	existing				細胞				
+phrase.anime.tsv	1800	結衣	結衣	ㄐㄧㄝˊ ㄧ	existing				結衣				
+phrase.anime.tsv	1842	老師	老師	ㄌㄠˇ ㄕ	existing				老師				
+phrase.anime.tsv	1847	聲音	聲音	ㄕㄥ ㄧㄣ	existing				聲音				
+phrase.anime.tsv	1850	胡桃	胡桃	ㄏㄨˊ ㄊㄠˊ	existing				胡桃				
+phrase.anime.tsv	1853	膽大黨	膽大黨	ㄉㄢˇ ㄉㄚˋ ㄉㄤˇ	existing				膽大黨				
+phrase.anime.tsv	1855	自動	自動	ㄗˋ ㄉㄨㄥˋ	existing				自動				
+phrase.anime.tsv	1857	自由式	自由式	ㄗˋ ㄧㄡˊ ㄕˋ	existing				自由式				
+phrase.anime.tsv	1860	航海王	航海王	ㄏㄤˊ ㄏㄞˇ ㄨㄤˊ	existing				航海王				
+phrase.anime.tsv	1881	艾瑪	艾瑪	ㄞˋ ㄇㄚˇ	existing				艾瑪				
+phrase.anime.tsv	1900	芥子	芥子	ㄐㄧㄝˋ ㄗˇ	existing				芥子				
+phrase.anime.tsv	1902	芭芭拉	芭芭拉	ㄅㄚ ㄅㄚ ㄌㄚ	existing				芭芭拉				
+phrase.anime.tsv	1904	花園	花園	ㄏㄨㄚ ㄩㄢˊ	existing				花園				
+phrase.anime.tsv	1917	花生	花生	ㄏㄨㄚ ㄕㄥ	existing				花生				
+phrase.anime.tsv	1921	芸芸	芸芸	ㄩㄣˊ ㄩㄣˊ	existing				芸芸				
+phrase.anime.tsv	1938	茴香	茴香	ㄏㄨㄟˊ ㄒㄧㄤ	existing				茴香				
+phrase.anime.tsv	1965	莎拉	莎拉	ㄕㄚ ㄌㄚ	existing				莎拉				
+phrase.anime.tsv	1994	葬儀社	葬儀社	ㄗㄤˋ ㄧˊ ㄕㄜˋ	existing				葬儀社				
+phrase.anime.tsv	1995	葬送	葬送	ㄗㄤˋ ㄙㄨㄥˋ	existing				葬送				
+phrase.anime.tsv	2001	蒼鷺	蒼鷺	ㄘㄤ ㄌㄨˋ	existing				蒼鷺				
+phrase.anime.tsv	2004	蕩漾	蕩漾	ㄉㄤˋ ㄧㄤˋ	existing				蕩漾				
+phrase.anime.tsv	2033	藥師	藥師	ㄧㄠˋ ㄕ	existing				藥師				
+phrase.anime.tsv	2038	蘇菲亞	蘇菲亞	ㄙㄨ ㄈㄟ ㄧㄚˇ	existing				蘇菲亞				
+phrase.anime.tsv	2043	處男	處男	ㄔㄨˋ ㄋㄢˊ	existing				處男				
+phrase.anime.tsv	2048	蜘蛛	蜘蛛	ㄓ ㄓㄨ	existing				蜘蛛				
+phrase.anime.tsv	2052	蜻蜓	蜻蜓	ㄑㄧㄥ ㄊㄧㄥˊ	existing				蜻蜓				
+phrase.anime.tsv	2060	血小板	血小板	ㄒㄧㄝˇ ㄒㄧㄠˇ ㄅㄢˇ	existing				血小板				
+phrase.anime.tsv	2073	西片	西片	ㄒㄧ ㄆㄧㄢˋ	existing				西片				
+phrase.anime.tsv	2077	西蒙	西蒙	ㄒㄧ ㄇㄥˊ	existing				西蒙				
+phrase.anime.tsv	2084	計程車	計程車	ㄐㄧˋ ㄔㄥˊ ㄔㄜ	existing				計程車				
+phrase.anime.tsv	2085	記錄	記錄	ㄐㄧˋ ㄌㄨˋ	existing				記錄				
+phrase.anime.tsv	2088	詹姆斯	詹姆斯	ㄓㄢ ㄇㄨˇ ㄙ	existing				詹姆斯				
+phrase.anime.tsv	2089	請問	請問	ㄑㄧㄥˇ ㄨㄣˋ	existing				請問				
+phrase.anime.tsv	2098	諾曼	諾曼	ㄋㄨㄛˋ ㄇㄢˋ	existing				諾曼				
+phrase.anime.tsv	2102	謊言	謊言	ㄏㄨㄤˇ ㄧㄢˊ	existing				謊言				
+phrase.anime.tsv	2106	變成	變成	ㄅㄧㄢˋ ㄔㄥˊ	existing				變成				
+phrase.anime.tsv	2107	讓人	讓人	ㄖㄤˋ ㄖㄣˊ	existing				讓人				
+phrase.anime.tsv	2112	豬頭	豬頭	ㄓㄨ ㄊㄡˊ	existing				豬頭				
+phrase.anime.tsv	2125	貴族	貴族	ㄍㄨㄟˋ ㄗㄨˊ	existing				貴族				
+phrase.anime.tsv	2131	賭博	賭博	ㄉㄨˇ ㄅㄛˊ	existing				賭博				
+phrase.anime.tsv	2152	距離感	距離感	ㄐㄩˋ ㄌㄧˊ ㄍㄢˇ	existing				距離感				
+phrase.anime.tsv	2155	路克	路克	ㄌㄨˋ ㄎㄜˋ	existing				路克				
+phrase.anime.tsv	2157	路易斯	路易斯	ㄌㄨˋ ㄧˋ ㄙ	existing				路易斯				
+phrase.anime.tsv	2160	身邊	身邊	ㄕㄣ ㄅㄧㄢ	existing				身邊				
+phrase.anime.tsv	2163	輕聲	輕聲	ㄑㄧㄥ ㄕㄥ	existing				輕聲				
+phrase.anime.tsv	2168	轉生	轉生	ㄓㄨㄢˇ ㄕㄥ	existing				轉生				
+phrase.anime.tsv	2185	迷糊	迷糊	ㄇㄧˊ ㄏㄨˊ	existing				迷糊				
+phrase.anime.tsv	2188	這麼	這麼	ㄓㄜˋ ㄇㄛ˙	existing				這麼				
+phrase.anime.tsv	2190	造就	造就	ㄗㄠˋ ㄐㄧㄡˋ	existing				造就				
+phrase.anime.tsv	2193	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	existing				進擊的巨人				
+phrase.anime.tsv	2195	遊戲	遊戲	ㄧㄡˊ ㄒㄧˋ	existing				遊戲				
+phrase.anime.tsv	2197	運動	運動	ㄩㄣˋ ㄉㄨㄥˋ	existing				運動				
+phrase.anime.tsv	2199	達令	達令	ㄉㄚˊ ㄌㄧㄥˋ	existing				達令				
+phrase.anime.tsv	2201	達文西	達文西	ㄉㄚˊ ㄨㄣˊ ㄒㄧ	existing				達文西				
+phrase.anime.tsv	2205	遠方	遠方	ㄩㄢˇ ㄈㄤ	existing				遠方				
+phrase.anime.tsv	2209	遮羞	遮羞	ㄓㄜ ㄒㄧㄡ	existing				遮羞				
+phrase.anime.tsv	2210	邂逅	邂逅	ㄒㄧㄝˋ ㄏㄡˋ	existing				邂逅				
+phrase.anime.tsv	2216	釋迦	釋迦	ㄕˋ ㄐㄧㄚ	existing				釋迦				
+phrase.anime.tsv	2218	里昂	里昂	ㄌㄧˇ ㄤˊ	existing				里昂				
+phrase.anime.tsv	2235	金髮	金髮	ㄐㄧㄣ ㄈㄚˇ	existing				金髮				
+phrase.anime.tsv	2241	鉤爪	鉤爪	ㄍㄡ ㄓㄠˇ	existing				鉤爪				
+phrase.anime.tsv	2247	鋼彈	鋼彈	ㄍㄤ ㄉㄢˋ	existing				鋼彈				
+phrase.anime.tsv	2267	關於	關於	ㄍㄨㄢ ㄩˊ	existing				關於				
+phrase.anime.tsv	2275	阿呆	阿呆	ㄚ ㄉㄞ	existing				阿呆				
+phrase.anime.tsv	2301	阿里	阿里	ㄚ ㄌㄧˇ	existing				阿里				
+phrase.anime.tsv	2304	降臨	降臨	ㄐㄧㄤˋ ㄌㄧㄣˊ	existing				降臨				
+phrase.anime.tsv	2314	隱退	隱退	ㄧㄣˇ ㄊㄨㄟˋ	existing				隱退				
+phrase.anime.tsv	2338	霍爾	霍爾	ㄏㄨㄛˋ ㄦˇ	existing				霍爾				
+phrase.anime.tsv	2349	露營	露營	ㄌㄨˋ ㄧㄥˊ	existing				露營				
+phrase.anime.tsv	2352	霹靂	霹靂	ㄆㄧ ㄌㄧˋ	existing				霹靂				
+phrase.anime.tsv	2356	靈異	靈異	ㄌㄧㄥˊ ㄧˋ	existing				靈異				
+phrase.anime.tsv	2363	青春	青春	ㄑㄧㄥ ㄔㄨㄣ	existing				青春				
+phrase.anime.tsv	2365	青春期	青春期	ㄑㄧㄥ ㄔㄨㄣ ㄑㄧˊ	existing				青春期				
+phrase.anime.tsv	2371	鞍馬	鞍馬	ㄢ ㄇㄚˇ	existing				鞍馬				
+phrase.anime.tsv	2372	韋伯	韋伯	ㄨㄟˊ ㄅㄛˊ	existing				韋伯				
+phrase.anime.tsv	2387	風平浪靜	風平浪靜	ㄈㄥ ㄆㄧㄥˊ ㄌㄤˋ ㄐㄧㄥˋ	existing				風平浪靜				
+phrase.anime.tsv	2408	香吉士	香吉士	ㄒㄧㄤ ㄐㄧˊ ㄕˋ	existing				香吉士				
+phrase.anime.tsv	2409	香格里拉	香格里拉	ㄒㄧㄤ ㄍㄜˊ ㄌㄧˇ ㄌㄚ	existing				香格里拉				
+phrase.anime.tsv	2420	騎士	騎士	ㄑㄧˊ ㄕˋ	existing				騎士				
+phrase.anime.tsv	2426	高中生	高中生	ㄍㄠ ㄓㄨㄥ ㄕㄥ	existing				高中生				
+phrase.anime.tsv	2438	高校	高校	ㄍㄠ ㄒㄧㄠˋ	existing				高校				
+phrase.anime.tsv	2455	鬧著玩	鬧著玩	ㄋㄠˋ ㄓㄜ˙ ㄨㄢˊ	existing				鬧著玩				
+phrase.anime.tsv	2459	鬼滅之刃	鬼滅之刃	ㄍㄨㄟˇ ㄇㄧㄝˋ ㄓ ㄖㄣˋ	existing				鬼滅之刃				
+phrase.anime.tsv	2464	魔人	魔人	ㄇㄛˊ ㄖㄣˊ	existing				魔人				
+phrase.anime.tsv	2467	魔法	魔法	ㄇㄛˊ ㄈㄚˇ	existing				魔法				
+phrase.anime.tsv	2480	鮮血	鮮血	ㄒㄧㄢ ㄒㄧㄝˇ	existing				鮮血				
+phrase.anime.tsv	2505	麻辣教師	麻辣教師	ㄇㄚˊ ㄌㄚˋ ㄐㄧㄠˋ ㄕ	existing				麻辣教師				
+phrase.anime.tsv	2528	黑貓	黑貓	ㄏㄟ ㄇㄠ	existing				黑貓				
+phrase.anime.tsv	2531	黛安娜	黛安娜	ㄉㄞˋ ㄢ ㄋㄚˋ	existing				黛安娜				
+phrase.anime.tsv	2544	龍王	龍王	ㄌㄨㄥˊ ㄨㄤˊ	existing				龍王				
+phrase.anime.tsv	2546	龍貓	龍貓	ㄌㄨㄥˊ ㄇㄠ	existing				龍貓				
+phrase.biotech-pharma.tsv	2	不良	不良	ㄅㄨˋ ㄌㄧㄤˊ	existing				不良				
+phrase.biotech-pharma.tsv	4	交互作用	交互作用	ㄐㄧㄠ ㄏㄨˋ ㄗㄨㄛˋ ㄩㄥˋ	existing				交互作用				
+phrase.biotech-pharma.tsv	8	優良	優良	ㄧㄡ ㄌㄧㄤˊ	existing				優良				
+phrase.biotech-pharma.tsv	10	免疫	免疫	ㄇㄧㄢˇ ㄧˋ	existing				免疫				
+phrase.biotech-pharma.tsv	15	分析	分析	ㄈㄣ ㄒㄧ	existing				分析				
+phrase.biotech-pharma.tsv	18	劑量	劑量	ㄐㄧˋ ㄌㄧㄤˋ	existing				劑量				
+phrase.biotech-pharma.tsv	19	加速	加速	ㄐㄧㄚ ㄙㄨˋ	existing				加速				
+phrase.biotech-pharma.tsv	22	即時	即時	ㄐㄧˊ ㄕˊ	existing				即時				
+phrase.biotech-pharma.tsv	25	反應	反應	ㄈㄢˇ ㄧㄥˋ	existing				反應				
+phrase.biotech-pharma.tsv	27	吸附	吸附	ㄒㄧ ㄈㄨˋ	existing				吸附				
+phrase.biotech-pharma.tsv	38	安全	安全	ㄢ ㄑㄩㄢˊ	existing				安全				
+phrase.biotech-pharma.tsv	39	安定性	安定性	ㄢ ㄉㄧㄥˋ ㄒㄧㄥˋ	existing				安定性				
+phrase.biotech-pharma.tsv	43	幹細胞	幹細胞	ㄍㄢˋ ㄒㄧˋ ㄅㄠ	existing				幹細胞				
+phrase.biotech-pharma.tsv	45	數位	數位	ㄕㄨˋ ㄨㄟˋ	existing				數位				
+phrase.biotech-pharma.tsv	47	方法	方法	ㄈㄤ ㄈㄚˇ	existing				方法				
+phrase.biotech-pharma.tsv	48	曲線	曲線	ㄑㄩ ㄒㄧㄢˋ	existing				曲線				
+phrase.biotech-pharma.tsv	52	治療	治療	ㄓˋ ㄌㄧㄠˊ	existing				治療				
+phrase.biotech-pharma.tsv	58	濃度	濃度	ㄋㄨㄥˊ ㄉㄨˋ	existing				濃度				
+phrase.biotech-pharma.tsv	63	監測	監測	ㄐㄧㄢ ㄘㄜˋ	existing				監測				
+phrase.biotech-pharma.tsv	64	監視	監視	ㄐㄧㄢ ㄕˋ	existing				監視				
+phrase.biotech-pharma.tsv	69	第三期	第三期	ㄉㄧˋ ㄙㄢ ㄑㄧˊ	existing				第三期				
+phrase.biotech-pharma.tsv	76	終點	終點	ㄓㄨㄥ ㄉㄧㄢˇ	existing				終點				
+phrase.biotech-pharma.tsv	79	聚合酶	聚合酶	ㄐㄩˋ ㄏㄜˊ ㄇㄟˊ	existing				聚合酶				
+phrase.biotech-pharma.tsv	83	藥品	藥品	ㄧㄠˋ ㄆㄧㄣˇ	existing				藥品				
+phrase.biotech-pharma.tsv	85	藥物	藥物	ㄧㄠˋ ㄨˋ	existing				藥物				
+phrase.biotech-pharma.tsv	98	製造規範	製造規範	ㄓˋ ㄗㄠˋ ㄍㄨㄟ ㄈㄢˋ	duplicate				製造規範				
+phrase.biotech-pharma.tsv	100	試驗	試驗	ㄕˋ ㄧㄢˋ	existing				試驗				
+phrase.biotech-pharma.tsv	107	連結	連結	ㄌㄧㄢˊ ㄐㄧㄝˊ	existing				連結				
+phrase.biotech-pharma.tsv	108	連鎖反應	連鎖反應	ㄌㄧㄢˊ ㄙㄨㄛˇ ㄈㄢˇ ㄧㄥˋ	existing				連鎖反應				
+phrase.biotech-pharma.tsv	109	酵素	酵素	ㄒㄧㄠˋ ㄙㄨˋ	existing				酵素				
+phrase.biotech-pharma.tsv	116	高效	高效	ㄍㄠ ㄒㄧㄠˋ	existing				高效				
+phrase.business.tsv	2	人力	人力	ㄖㄣˊ ㄌㄧˋ	existing				人力				
+phrase.business.tsv	15	企業	企業	ㄑㄧˋ ㄧㄝˋ	existing				企業				
+phrase.business.tsv	28	價值	價值	ㄐㄧㄚˋ ㄓˊ	existing				價值				
+phrase.business.tsv	34	分析	分析	ㄈㄣ ㄒㄧ	existing				分析				
+phrase.business.tsv	35	分解	分解	ㄈㄣ ㄐㄧㄝˇ	existing				分解				
+phrase.business.tsv	36	利害	利害	ㄌㄧˋ ㄏㄞˋ	existing				利害				
+phrase.business.tsv	37	取得	取得	ㄑㄩˇ ㄉㄜˊ	existing				取得				
+phrase.business.tsv	39	可行	可行	ㄎㄜˇ ㄒㄧㄥˊ	existing				可行				
+phrase.business.tsv	41	品牌	品牌	ㄆㄧㄣˇ ㄆㄞˊ	existing				品牌				
+phrase.business.tsv	60	定價	定價	ㄉㄧㄥˋ ㄐㄧㄚˋ	existing				定價				
+phrase.business.tsv	72	客戶	客戶	ㄎㄜˋ ㄏㄨˋ	existing				客戶				
+phrase.business.tsv	83	專案	專案	ㄓㄨㄢ ㄢˋ	existing				專案				
+phrase.business.tsv	84	工作	工作	ㄍㄨㄥ ㄗㄨㄛˋ	existing				工作				
+phrase.business.tsv	85	市占率	市占率	ㄕˋ ㄓㄢˋ ㄌㄩˋ	existing				市占率				
+phrase.business.tsv	90	市場	市場	ㄕˋ ㄔㄤˇ	existing				市場				
+phrase.business.tsv	95	庫存	庫存	ㄎㄨˋ ㄘㄨㄣˊ	existing				庫存				
+phrase.business.tsv	98	成本	成本	ㄔㄥˊ ㄅㄣˇ	existing				成本				
+phrase.business.tsv	99	成長率	成長率	ㄔㄥˊ ㄓㄤˇ ㄌㄩˋ	existing				成長率				
+phrase.business.tsv	100	採購	採購	ㄘㄞˇ ㄍㄡˋ	existing				採購				
+phrase.business.tsv	102	揭露	揭露	ㄐㄧㄝ ㄌㄡˋ	existing				揭露				
+phrase.business.tsv	103	搜尋引擎	搜尋引擎	ㄙㄡ ㄒㄩㄣˊ ㄧㄣˇ ㄑㄧㄥˊ	existing				搜尋引擎				
+phrase.business.tsv	104	敏捷	敏捷	ㄇㄧㄣˇ ㄐㄧㄝˊ	existing				敏捷				
+phrase.business.tsv	106	最佳化	最佳化	ㄗㄨㄟˋ ㄐㄧㄚ ㄏㄨㄚˋ	existing				最佳化				
+phrase.business.tsv	107	最小	最小	ㄗㄨㄟˋ ㄒㄧㄠˇ	existing				最小				
+phrase.business.tsv	110	氣候	氣候	ㄑㄧˋ ㄏㄡˋ	existing				氣候				
+phrase.business.tsv	112	治理	治理	ㄓˋ ㄌㄧˇ	existing				治理				
+phrase.business.tsv	125	營運	營運	ㄧㄥˊ ㄩㄣˋ	existing				營運				
+phrase.business.tsv	131	環境	環境	ㄏㄨㄢˊ ㄐㄧㄥˋ	existing				環境				
+phrase.business.tsv	134	產品	產品	ㄔㄢˇ ㄆㄧㄣˇ	existing				產品				
+phrase.business.tsv	135	產業	產業	ㄔㄢˇ ㄧㄝˋ	existing				產業				
+phrase.business.tsv	142	畫布	畫布	ㄏㄨㄚˋ ㄅㄨˋ	existing				畫布				
+phrase.business.tsv	143	目標	目標	ㄇㄨˋ ㄅㄧㄠ	existing				目標				
+phrase.business.tsv	144	相關	相關	ㄒㄧㄤ ㄍㄨㄢ	existing				相關				
+phrase.business.tsv	145	社會	社會	ㄕㄜˋ ㄏㄨㄟˋ	existing				社會				
+phrase.business.tsv	147	管理	管理	ㄍㄨㄢˇ ㄌㄧˇ	existing				管理				
+phrase.business.tsv	148	終身	終身	ㄓㄨㄥ ㄕㄣ	existing				終身				
+phrase.business.tsv	150	結構	結構	ㄐㄧㄝˊ ㄍㄡˋ	existing				結構				
+phrase.business.tsv	153	自然	自然	ㄗˋ ㄖㄢˊ	existing				自然				
+phrase.business.tsv	157	行銷	行銷	ㄒㄧㄥˊ ㄒㄧㄠ	existing				行銷				
+phrase.business.tsv	164	財務	財務	ㄘㄞˊ ㄨˋ	existing				財務				
+phrase.business.tsv	165	責任	責任	ㄗㄜˊ ㄖㄣˋ	existing				責任				
+phrase.business.tsv	168	趨勢	趨勢	ㄑㄩ ㄕˋ	existing				趨勢				
+phrase.business.tsv	174	通路	通路	ㄊㄨㄥ ㄌㄨˋ	existing				通路				
+phrase.business.tsv	177	銷售	銷售	ㄒㄧㄠ ㄕㄡˋ	existing				銷售				
+phrase.business.tsv	178	關係人	關係人	ㄍㄨㄢ ㄒㄧˋ ㄖㄣˊ	existing				關係人				
+phrase.business.tsv	180	預測	預測	ㄩˋ ㄘㄜˋ	existing				預測				
+phrase.business.tsv	181	顧客	顧客	ㄍㄨˋ ㄎㄜˋ	existing				顧客				
+phrase.business.tsv	184	風險	風險	ㄈㄥ ㄒㄧㄢˇ	existing				風險				
+phrase.chinese.tsv	15	余光中	余光中	ㄩˊ ㄍㄨㄤ ㄓㄨㄥ	existing				余光中				
+phrase.chinese.tsv	48	屈原	屈原	ㄑㄩ ㄩㄢˊ	existing				屈原				
+phrase.chinese.tsv	53	徐志摩	徐志摩	ㄒㄩˊ ㄓˋ ㄇㄛˊ	existing				徐志摩				
+phrase.chinese.tsv	76	曹雪芹	曹雪芹	ㄘㄠˊ ㄒㄩㄝˇ ㄑㄧㄣˊ	existing				曹雪芹				
+phrase.chinese.tsv	78	李清照	李清照	ㄌㄧˇ ㄑㄧㄥ ㄓㄠˋ	existing				李清照				
+phrase.chinese.tsv	79	李白	李白	ㄌㄧˇ ㄅㄞˊ	existing				李白				
+phrase.chinese.tsv	80	杜甫	杜甫	ㄉㄨˋ ㄈㄨˇ	existing				杜甫				
+phrase.chinese.tsv	82	柳宗元	柳宗元	ㄌㄧㄡˇ ㄗㄨㄥ ㄩㄢˊ	existing				柳宗元				
+phrase.chinese.tsv	88	歐陽修	歐陽修	ㄡ ㄧㄤˊ ㄒㄧㄡ	existing				歐陽修				
+phrase.chinese.tsv	99	白居易	白居易	ㄅㄞˊ ㄐㄩ ㄧˋ	existing				白居易				
+phrase.chinese.tsv	113	胡適	胡適	ㄏㄨˊ ㄕˋ	existing				胡適				
+phrase.chinese.tsv	118	蘇軾	蘇軾	ㄙㄨ ㄕˋ	existing				蘇軾				
+phrase.chinese.tsv	129	語言學	語言學	ㄩˇ ㄧㄢˊ ㄒㄩㄝˊ	existing				語言學				
+phrase.chinese.tsv	136	辛棄疾	辛棄疾	ㄒㄧㄣ ㄑㄧˋ ㄐㄧˊ	existing				辛棄疾				
+phrase.chinese.tsv	150	陶淵明	陶淵明	ㄊㄠˊ ㄩㄢ ㄇㄧㄥˊ	existing				陶淵明				
+phrase.chinese.tsv	158	韓愈	韓愈	ㄏㄢˊ ㄩˋ	existing				韓愈				
+phrase.chinese.tsv	163	魯迅	魯迅	ㄌㄨˇ ㄒㄩㄣˋ	existing				魯迅				
+phrase.civil-engineering.tsv	2	下水道	下水道	ㄒㄧㄚˋ ㄕㄨㄟˇ ㄉㄠˋ	existing				下水道				
+phrase.civil-engineering.tsv	5	使用	使用	ㄕˇ ㄩㄥˋ	existing				使用				
+phrase.civil-engineering.tsv	6	保留地	保留地	ㄅㄠˇ ㄌㄧㄡˊ ㄉㄧˋ	existing				保留地				
+phrase.civil-engineering.tsv	7	修復	修復	ㄒㄧㄡ ㄈㄨˋ	existing				修復				
+phrase.civil-engineering.tsv	10	公共設施	公共設施	ㄍㄨㄥ ㄍㄨㄥˋ ㄕㄜˋ ㄕ	existing				公共設施				
+phrase.civil-engineering.tsv	11	分區	分區	ㄈㄣ ㄑㄩ	existing				分區				
+phrase.civil-engineering.tsv	12	分析	分析	ㄈㄣ ㄒㄧ	existing				分析				
+phrase.civil-engineering.tsv	29	品質	品質	ㄆㄧㄣˇ ㄓˊ	existing				品質				
+phrase.civil-engineering.tsv	35	噴射	噴射	ㄆㄣ ㄕㄜˋ	existing				噴射				
+phrase.civil-engineering.tsv	37	圓錐	圓錐	ㄩㄢˊ ㄓㄨㄟ	existing				圓錐				
+phrase.civil-engineering.tsv	38	土地	土地	ㄊㄨˇ ㄉㄧˋ	existing				土地				
+phrase.civil-engineering.tsv	41	地下	地下	ㄉㄧˋ ㄒㄧㄚˋ	existing				地下				
+phrase.civil-engineering.tsv	42	地下水位	地下水位	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ ㄨㄟˋ	existing				地下水位				
+phrase.civil-engineering.tsv	45	地盤	地盤	ㄉㄧˋ ㄆㄢˊ	existing				地盤				
+phrase.civil-engineering.tsv	54	基層	基層	ㄐㄧ ㄘㄥˊ	existing				基層				
+phrase.civil-engineering.tsv	55	基礎	基礎	ㄐㄧ ㄔㄨˇ	existing				基礎				
+phrase.civil-engineering.tsv	62	填土	填土	ㄊㄧㄢˊ ㄊㄨˇ	existing				填土				
+phrase.civil-engineering.tsv	65	大眾運輸	大眾運輸	ㄉㄚˋ ㄓㄨㄥˋ ㄩㄣˋ ㄕㄨ	existing				大眾運輸				
+phrase.civil-engineering.tsv	66	孿生	孿生	ㄌㄨㄢˊ ㄕㄥ	existing				孿生				
+phrase.civil-engineering.tsv	67	安全	安全	ㄢ ㄑㄩㄢˊ	existing				安全				
+phrase.civil-engineering.tsv	68	定位	定位	ㄉㄧㄥˋ ㄨㄟˋ	existing				定位				
+phrase.civil-engineering.tsv	69	室內	室內	ㄕˋ ㄋㄟˋ	existing				室內				
+phrase.civil-engineering.tsv	71	密度	密度	ㄇㄧˋ ㄉㄨˋ	existing				密度				
+phrase.civil-engineering.tsv	72	導向	導向	ㄉㄠˇ ㄒㄧㄤˋ	existing				導向				
+phrase.civil-engineering.tsv	74	岩盤	岩盤	ㄧㄢˊ ㄆㄢˊ	existing				岩盤				
+phrase.civil-engineering.tsv	75	巡檢	巡檢	ㄒㄩㄣˊ ㄐㄧㄢˇ	existing				巡檢				
+phrase.civil-engineering.tsv	76	工地	工地	ㄍㄨㄥ ㄉㄧˋ	existing				工地				
+phrase.civil-engineering.tsv	79	工程	工程	ㄍㄨㄥ ㄔㄥˊ	existing				工程				
+phrase.civil-engineering.tsv	91	平板	平板	ㄆㄧㄥˊ ㄅㄢˇ	existing				平板				
+phrase.civil-engineering.tsv	94	建築	建築	ㄐㄧㄢˋ ㄓㄨˊ	existing				建築				
+phrase.civil-engineering.tsv	103	排水	排水	ㄆㄞˊ ㄕㄨㄟˇ	existing				排水				
+phrase.civil-engineering.tsv	104	排水系統	排水系統	ㄆㄞˊ ㄕㄨㄟˇ ㄒㄧˋ ㄊㄨㄥˇ	existing				排水系統				
+phrase.civil-engineering.tsv	108	攪拌	攪拌	ㄐㄧㄠˇ ㄅㄢˋ	existing				攪拌				
+phrase.civil-engineering.tsv	109	數位	數位	ㄕㄨˋ ㄨㄟˋ	existing				數位				
+phrase.civil-engineering.tsv	110	數量	數量	ㄕㄨˋ ㄌㄧㄤˋ	existing				數量				
+phrase.civil-engineering.tsv	112	施工	施工	ㄕ ㄍㄨㄥ	existing				施工				
+phrase.civil-engineering.tsv	122	梁柱	梁柱	ㄌㄧㄤˊ ㄓㄨˋ	existing				梁柱				
+phrase.civil-engineering.tsv	131	構造	構造	ㄍㄡˋ ㄗㄠˋ	existing				構造				
+phrase.civil-engineering.tsv	132	樓板	樓板	ㄌㄡˊ ㄅㄢˇ	existing				樓板				
+phrase.civil-engineering.tsv	139	標準	標準	ㄅㄧㄠ ㄓㄨㄣˇ	existing				標準				
+phrase.civil-engineering.tsv	140	模型	模型	ㄇㄛˊ ㄒㄧㄥˊ	existing				模型				
+phrase.civil-engineering.tsv	141	模板	模板	ㄇㄛˊ ㄅㄢˇ	existing				模板				
+phrase.civil-engineering.tsv	145	橋梁	橋梁	ㄑㄧㄠˊ ㄌㄧㄤˊ	existing				橋梁				
+phrase.civil-engineering.tsv	147	檢驗	檢驗	ㄐㄧㄢˇ ㄧㄢˋ	existing				檢驗				
+phrase.civil-engineering.tsv	149	洪水	洪水	ㄏㄨㄥˊ ㄕㄨㄟˇ	existing				洪水				
+phrase.civil-engineering.tsv	150	消防	消防	ㄒㄧㄠ ㄈㄤˊ	existing				消防				
+phrase.civil-engineering.tsv	151	深層	深層	ㄕㄣ ㄘㄥˊ	existing				深層				
+phrase.civil-engineering.tsv	152	混凝土	混凝土	ㄏㄨㄣˇ ㄋㄧㄥˊ ㄊㄨˇ	existing				混凝土				
+phrase.civil-engineering.tsv	162	測量	測量	ㄘㄜˋ ㄌㄧㄤˊ	existing				測量				
+phrase.civil-engineering.tsv	163	瀝青	瀝青	ㄌㄧˋ ㄑㄧㄥ	existing				瀝青				
+phrase.civil-engineering.tsv	165	灑水	灑水	ㄙㄚˇ ㄕㄨㄟˇ	existing				灑水				
+phrase.civil-engineering.tsv	166	火警	火警	ㄏㄨㄛˇ ㄐㄧㄥˇ	existing				火警				
+phrase.civil-engineering.tsv	171	發展	發展	ㄈㄚ ㄓㄢˇ	existing				發展				
+phrase.civil-engineering.tsv	172	監測	監測	ㄐㄧㄢ ㄘㄜˋ	existing				監測				
+phrase.civil-engineering.tsv	173	砂土	砂土	ㄕㄚ ㄊㄨˇ	existing				砂土				
+phrase.civil-engineering.tsv	176	空氣品質	空氣品質	ㄎㄨㄥ ㄑㄧˋ ㄆㄧㄣˇ ㄓˊ	existing				空氣品質				
+phrase.civil-engineering.tsv	177	管理	管理	ㄍㄨㄢˇ ㄌㄧˇ	existing				管理				
+phrase.civil-engineering.tsv	178	系統	系統	ㄒㄧˋ ㄊㄨㄥˇ	existing				系統				
+phrase.civil-engineering.tsv	185	耐震	耐震	ㄋㄞˋ ㄓㄣˋ	existing				耐震				
+phrase.civil-engineering.tsv	187	職業	職業	ㄓˊ ㄧㄝˋ	existing				職業				
+phrase.civil-engineering.tsv	188	自動警報	自動警報	ㄗˋ ㄉㄨㄥˋ ㄐㄧㄥˇ ㄅㄠˋ	existing				自動警報				
+phrase.civil-engineering.tsv	189	衛星	衛星	ㄨㄟˋ ㄒㄧㄥ	existing				衛星				
+phrase.civil-engineering.tsv	190	衛生	衛生	ㄨㄟˋ ㄕㄥ	existing				衛生				
+phrase.civil-engineering.tsv	191	補強	補強	ㄅㄨˇ ㄑㄧㄤˊ	existing				補強				
+phrase.civil-engineering.tsv	192	覆蓋	覆蓋	ㄈㄨˋ ㄍㄞˋ	existing				覆蓋				
+phrase.civil-engineering.tsv	193	計畫	計畫	ㄐㄧˋ ㄏㄨㄚˋ	existing				計畫				
+phrase.civil-engineering.tsv	194	計算	計算	ㄐㄧˋ ㄙㄨㄢˋ	existing				計算				
+phrase.civil-engineering.tsv	195	設計	設計	ㄕㄜˋ ㄐㄧˋ	existing				設計				
+phrase.civil-engineering.tsv	196	試驗	試驗	ㄕˋ ㄧㄢˋ	existing				試驗				
+phrase.civil-engineering.tsv	197	變更	變更	ㄅㄧㄢˋ ㄍㄥ	existing				變更				
+phrase.civil-engineering.tsv	199	資訊	資訊	ㄗ ㄒㄩㄣˋ	existing				資訊				
+phrase.civil-engineering.tsv	200	載重	載重	ㄗㄞˋ ㄓㄨㄥˋ	existing				載重				
+phrase.civil-engineering.tsv	201	道路	道路	ㄉㄠˋ ㄌㄨˋ	existing				道路				
+phrase.civil-engineering.tsv	203	都市計畫	都市計畫	ㄉㄨ ㄕˋ ㄐㄧˋ ㄏㄨㄚˋ	existing				都市計畫				
+phrase.civil-engineering.tsv	206	鋼筋	鋼筋	ㄍㄤ ㄐㄧㄣ	existing				鋼筋				
+phrase.civil-engineering.tsv	208	鋼骨	鋼骨	ㄍㄤ ㄍㄨˇ	existing				鋼骨				
+phrase.civil-engineering.tsv	217	隧道	隧道	ㄙㄨㄟˋ ㄉㄠˋ	existing				隧道				
+phrase.civil-engineering.tsv	222	頻率	頻率	ㄆㄧㄣˊ ㄌㄩˋ	existing				頻率				
+phrase.civil-engineering.tsv	223	高壓	高壓	ㄍㄠ ㄧㄚ	existing				高壓				
+phrase.civil-engineering.tsv	224	黏土	黏土	ㄋㄧㄢˊ ㄊㄨˇ	existing				黏土				
+phrase.education.tsv	2	不足	不足	ㄅㄨˋ ㄗㄨˊ	existing				不足				
+phrase.education.tsv	16	參照	參照	ㄘㄢ ㄓㄠˋ	existing				參照				
+phrase.education.tsv	17	反應	反應	ㄈㄢˇ ㄧㄥˋ	existing				反應				
+phrase.education.tsv	18	古典	古典	ㄍㄨˇ ㄉㄧㄢˇ	existing				古典				
+phrase.education.tsv	23	問題	問題	ㄨㄣˋ ㄊㄧˊ	existing				問題				
+phrase.education.tsv	24	國文	國文	ㄍㄨㄛˊ ㄨㄣˊ	existing				國文				
+phrase.education.tsv	30	委員會	委員會	ㄨㄟˇ ㄩㄢˊ ㄏㄨㄟˋ	existing				委員會				
+phrase.education.tsv	32	學生	學生	ㄒㄩㄝˊ ㄕㄥ	existing				學生				
+phrase.education.tsv	35	學習	學習	ㄒㄩㄝˊ ㄒㄧˊ	existing				學習				
+phrase.education.tsv	38	實作	實作	ㄕˊ ㄗㄨㄛˋ	existing				實作				
+phrase.education.tsv	39	寫作	寫作	ㄒㄧㄝˇ ㄗㄨㄛˋ	existing				寫作				
+phrase.education.tsv	40	專業	專業	ㄓㄨㄢ ㄧㄝˋ	existing				專業				
+phrase.education.tsv	41	專題	專題	ㄓㄨㄢ ㄊㄧˊ	existing				專題				
+phrase.education.tsv	42	導向	導向	ㄉㄠˇ ㄒㄧㄤˋ	existing				導向				
+phrase.education.tsv	47	彈性	彈性	ㄊㄢˊ ㄒㄧㄥˋ	existing				彈性				
+phrase.education.tsv	49	情緒	情緒	ㄑㄧㄥˊ ㄒㄩˋ	existing				情緒				
+phrase.education.tsv	50	探究	探究	ㄊㄢˋ ㄐㄧㄡˋ	existing				探究				
+phrase.education.tsv	53	支持	支持	ㄓ ㄔˊ	existing				支持				
+phrase.education.tsv	56	教學	教學	ㄐㄧㄠ ㄒㄩㄝˊ	existing				教學				
+phrase.education.tsv	61	教師	教師	ㄐㄧㄠˋ ㄕ	existing				教師				
+phrase.education.tsv	64	數位	數位	ㄕㄨˋ ㄨㄟˋ	existing				數位				
+phrase.education.tsv	65	數學	數學	ㄕㄨˋ ㄒㄩㄝˊ	existing				數學				
+phrase.education.tsv	68	標準	標準	ㄅㄧㄠ ㄓㄨㄣˇ	existing				標準				
+phrase.education.tsv	70	注意力	注意力	ㄓㄨˋ ㄧˋ ㄌㄧˋ	existing				注意力				
+phrase.education.tsv	71	測驗	測驗	ㄘㄜˋ ㄧㄢˋ	existing				測驗				
+phrase.education.tsv	73	理論	理論	ㄌㄧˇ ㄌㄨㄣˋ	existing				理論				
+phrase.education.tsv	74	生活科技	生活科技	ㄕㄥ ㄏㄨㄛˊ ㄎㄜ ㄐㄧˋ	existing				生活科技				
+phrase.education.tsv	75	發展	發展	ㄈㄚ ㄓㄢˇ	existing				發展				
+phrase.education.tsv	76	社會	社會	ㄕㄜˋ ㄏㄨㄟˋ	existing				社會				
+phrase.education.tsv	77	社會科學	社會科學	ㄕㄜˋ ㄏㄨㄟˋ ㄎㄜ ㄒㄩㄝˊ	existing				社會科學				
+phrase.education.tsv	78	科學	科學	ㄎㄜ ㄒㄩㄝˊ	existing				科學				
+phrase.education.tsv	79	素養	素養	ㄙㄨˋ ㄧㄤˇ	existing				素養				
+phrase.education.tsv	82	自我	自我	ㄗˋ ㄨㄛˇ	existing				自我				
+phrase.education.tsv	83	自然科學	自然科學	ㄗˋ ㄖㄢˊ ㄎㄜ ㄒㄩㄝˊ	existing				自然科學				
+phrase.education.tsv	84	自閉症	自閉症	ㄗˋ ㄅㄧˋ ㄓㄥˋ	existing				自閉症				
+phrase.education.tsv	85	英文	英文	ㄧㄥ ㄨㄣˊ	existing				英文				
+phrase.education.tsv	86	藝術	藝術	ㄧˋ ㄕㄨˋ	existing				藝術				
+phrase.education.tsv	87	行為	行為	ㄒㄧㄥˊ ㄨㄟˊ	existing				行為				
+phrase.education.tsv	89	計畫	計畫	ㄐㄧˋ ㄏㄨㄚˋ	existing				計畫				
+phrase.education.tsv	90	設計	設計	ㄕㄜˋ ㄐㄧˋ	existing				設計				
+phrase.education.tsv	93	評量	評量	ㄆㄧㄥˊ ㄌㄧㄤˊ	existing				評量				
+phrase.education.tsv	95	試題	試題	ㄕˋ ㄊㄧˊ	existing				試題				
+phrase.education.tsv	96	語言	語言	ㄩˇ ㄧㄢˊ	existing				語言				
+phrase.education.tsv	97	課程	課程	ㄎㄜˋ ㄔㄥˊ	existing				課程				
+phrase.education.tsv	99	調整	調整	ㄊㄧㄠˊ ㄓㄥˇ	existing				調整				
+phrase.education.tsv	100	資訊	資訊	ㄗ ㄒㄩㄣˋ	existing				資訊				
+phrase.education.tsv	104	身心障礙	身心障礙	ㄕㄣ ㄒㄧㄣ ㄓㄤˋ ㄞˋ	existing				身心障礙				
+phrase.education.tsv	105	通用	通用	ㄊㄨㄥ ㄩㄥˋ	existing				通用				
+phrase.education.tsv	109	閱讀	閱讀	ㄩㄝˋ ㄉㄨˊ	existing				閱讀				
+phrase.education.tsv	110	關聯	關聯	ㄍㄨㄢ ㄌㄧㄢˊ	existing				關聯				
+phrase.education.tsv	111	障礙	障礙	ㄓㄤˋ ㄞˋ	existing				障礙				
+phrase.education.tsv	113	電腦化	電腦化	ㄉㄧㄢˋ ㄋㄠˇ ㄏㄨㄚˋ	existing				電腦化				
+phrase.electronics.tsv	7	二極體	二極體	ㄦˋ ㄐㄧˊ ㄊㄧˇ	existing				二極體				
+phrase.electronics.tsv	18	充電器	充電器	ㄔㄨㄥ ㄉㄧㄢˋ ㄑㄧˋ	existing				充電器				
+phrase.electronics.tsv	38	功率	功率	ㄍㄨㄥ ㄌㄩˋ	existing				功率				
+phrase.electronics.tsv	57	天線	天線	ㄊㄧㄢ ㄒㄧㄢˋ	existing				天線				
+phrase.electronics.tsv	68	定律	定律	ㄉㄧㄥˋ ㄌㄩˋ	existing				定律				
+phrase.electronics.tsv	69	射頻	射頻	ㄕㄜˋ ㄆㄧㄣˊ	existing				射頻				
+phrase.electronics.tsv	84	快速	快速	ㄎㄨㄞˋ ㄙㄨˋ	existing				快速				
+phrase.electronics.tsv	86	感測器	感測器	ㄍㄢˇ ㄘㄜˋ ㄑㄧˋ	existing				感測器				
+phrase.electronics.tsv	94	振幅	振幅	ㄓㄣˋ ㄈㄨˊ	existing				振幅				
+phrase.electronics.tsv	97	控制	控制	ㄎㄨㄥˋ ㄓˋ	existing				控制				
+phrase.electronics.tsv	99	放大器	放大器	ㄈㄤˋ ㄉㄚˋ ㄑㄧˋ	existing				放大器				
+phrase.electronics.tsv	102	數位	數位	ㄕㄨˋ ㄨㄟˋ	existing				數位				
+phrase.electronics.tsv	112	施密特	施密特	ㄕ ㄇㄧˋ ㄊㄜˋ	existing				施密特				
+phrase.electronics.tsv	114	時脈	時脈	ㄕˊ ㄇㄞˋ	existing				時脈				
+phrase.electronics.tsv	124	最大	最大	ㄗㄨㄟˋ ㄉㄚˋ	existing				最大				
+phrase.electronics.tsv	126	校正	校正	ㄐㄧㄠˋ ㄓㄥˋ	existing				校正				
+phrase.electronics.tsv	127	模擬	模擬	ㄇㄛˊ ㄋㄧˇ	existing				模擬				
+phrase.electronics.tsv	128	正交	正交	ㄓㄥˋ ㄐㄧㄠ	existing				正交				
+phrase.electronics.tsv	132	混合	混合	ㄏㄨㄣˋ ㄏㄜˊ	existing				混合				
+phrase.electronics.tsv	143	直接	直接	ㄓˊ ㄐㄧㄝ	existing				直接				
+phrase.electronics.tsv	144	直流	直流	ㄓˊ ㄌㄧㄡˊ	existing				直流				
+phrase.electronics.tsv	158	繼電器	繼電器	ㄐㄧˋ ㄉㄧㄢˋ ㄑㄧˋ	existing				繼電器				
+phrase.electronics.tsv	161	訊號	訊號	ㄒㄩㄣˋ ㄏㄠˋ	existing				訊號				
+phrase.electronics.tsv	165	設計	設計	ㄕㄜˋ ㄐㄧˋ	existing				設計				
+phrase.electronics.tsv	170	轉換器	轉換器	ㄓㄨㄢˇ ㄏㄨㄢˋ ㄑㄧˋ	existing				轉換器				
+phrase.electronics.tsv	172	轉移	轉移	ㄓㄨㄢˇ ㄧˊ	existing				轉移				
+phrase.electronics.tsv	184	量測	量測	ㄌㄧㄤˊ ㄘㄜˋ	existing				量測				
+phrase.electronics.tsv	187	降壓	降壓	ㄐㄧㄤˋ ㄧㄚ	existing				降壓				
+phrase.electronics.tsv	189	除錯	除錯	ㄔㄨˊ ㄘㄨㄛˋ	existing				除錯				
+phrase.electronics.tsv	194	電晶體	電晶體	ㄉㄧㄢˋ ㄐㄧㄥ ㄊㄧˇ	existing				電晶體				
+phrase.electronics.tsv	195	電氣	電氣	ㄉㄧㄢˋ ㄑㄧˋ	existing				電氣				
+phrase.electronics.tsv	196	電池	電池	ㄉㄧㄢˋ ㄔˊ	existing				電池				
+phrase.electronics.tsv	198	電源	電源	ㄉㄧㄢˋ ㄩㄢˊ	existing				電源				
+phrase.electronics.tsv	201	電路	電路	ㄉㄧㄢˋ ㄌㄨˋ	existing				電路				
+phrase.electronics.tsv	202	電路板	電路板	ㄉㄧㄢˋ ㄌㄨˋ ㄅㄢˇ	existing				電路板				
+phrase.electronics.tsv	211	類比	類比	ㄌㄟˋ ㄅㄧˇ	existing				類比				
+phrase.electronics.tsv	213	馬達	馬達	ㄇㄚˇ ㄉㄚˊ	existing				馬達				
+phrase.electronics.tsv	217	驗證	驗證	ㄧㄢˋ ㄓㄥˋ	existing				驗證				
+phrase.energy-environment.tsv	5	二氧化碳	二氧化碳	ㄦˋ ㄧㄤˇ ㄏㄨㄚˋ ㄊㄢˋ	existing				二氧化碳				
+phrase.energy-environment.tsv	15	反應器	反應器	ㄈㄢˇ ㄧㄥˋ ㄑㄧˋ	existing				反應器				
+phrase.energy-environment.tsv	19	土壤	土壤	ㄊㄨˇ ㄖㄤˇ	existing				土壤				
+phrase.energy-environment.tsv	24	地下水	地下水	ㄉㄧˋ ㄒㄧㄚˋ ㄕㄨㄟˇ	existing				地下水				
+phrase.energy-environment.tsv	30	基礎	基礎	ㄐㄧ ㄔㄨˇ	existing				基礎				
+phrase.energy-environment.tsv	32	壓縮空氣	壓縮空氣	ㄧㄚ ㄙㄨㄛ ㄎㄨㄥ ㄑㄧˋ	existing				壓縮空氣				
+phrase.energy-environment.tsv	35	太陽能	太陽能	ㄊㄞˋ ㄧㄤˊ ㄋㄥˊ	existing				太陽能				
+phrase.energy-environment.tsv	41	廢棄物	廢棄物	ㄈㄟˋ ㄑㄧˋ ㄨˋ	existing				廢棄物				
+phrase.energy-environment.tsv	53	揮發性	揮發性	ㄏㄨㄟ ㄈㄚ ㄒㄧㄥˋ	existing				揮發性				
+phrase.energy-environment.tsv	56	有害	有害	ㄧㄡˇ ㄏㄞˋ	existing				有害				
+phrase.energy-environment.tsv	58	有機物	有機物	ㄧㄡˇ ㄐㄧ ㄨˋ	existing				有機物				
+phrase.energy-environment.tsv	63	水質	水質	ㄕㄨㄟˇ ㄓˊ	existing				水質				
+phrase.energy-environment.tsv	68	污染	污染	ㄨ ㄖㄢˇ	existing				污染				
+phrase.energy-environment.tsv	70	污染物	污染物	ㄨ ㄖㄢˇ ㄨˋ	existing				污染物				
+phrase.energy-environment.tsv	78	減量	減量	ㄐㄧㄢˇ ㄌㄧㄤˋ	existing				減量				
+phrase.energy-environment.tsv	83	環境	環境	ㄏㄨㄢˊ ㄐㄧㄥˋ	existing				環境				
+phrase.energy-environment.tsv	88	生態環境	生態環境	ㄕㄥ ㄊㄞˋ ㄏㄨㄢˊ ㄐㄧㄥˋ	existing				生態環境				
+phrase.energy-environment.tsv	91	當量	當量	ㄉㄤ ㄌㄧㄤˋ	existing				當量				
+phrase.energy-environment.tsv	92	監測	監測	ㄐㄧㄢ ㄘㄜˋ	existing				監測				
+phrase.energy-environment.tsv	93	盤查	盤查	ㄆㄢˊ ㄔㄚˊ	existing				盤查				
+phrase.energy-environment.tsv	94	目標	目標	ㄇㄨˋ ㄅㄧㄠ	existing				目標				
+phrase.energy-environment.tsv	100	科學	科學	ㄎㄜ ㄒㄩㄝˊ	existing				科學				
+phrase.energy-environment.tsv	102	稽核	稽核	ㄐㄧ ㄏㄜˊ	existing				稽核				
+phrase.energy-environment.tsv	103	空氣	空氣	ㄎㄨㄥ ㄑㄧˋ	existing				空氣				
+phrase.energy-environment.tsv	104	空氣品質	空氣品質	ㄎㄨㄥ ㄑㄧˋ ㄆㄧㄣˇ ㄓˊ	existing				空氣品質				
+phrase.energy-environment.tsv	105	空氣污染	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	existing				空氣污染				
+phrase.energy-environment.tsv	125	觸媒	觸媒	ㄔㄨˋ ㄇㄟˊ	existing				觸媒				
+phrase.energy-environment.tsv	126	設備	設備	ㄕㄜˋ ㄅㄟˋ	existing				設備				
+phrase.energy-environment.tsv	127	資料分析	資料分析	ㄗ ㄌㄧㄠˋ ㄈㄣ ㄒㄧ	duplicate				資料分析				
+phrase.energy-environment.tsv	133	逆變器	逆變器	ㄋㄧˋ ㄅㄧㄢˋ ㄑㄧˋ	duplicate				逆變器				
+phrase.energy-environment.tsv	135	選擇性	選擇性	ㄒㄩㄢˇ ㄗㄜˊ ㄒㄧㄥˋ	existing				選擇性				
+phrase.energy-environment.tsv	136	還原	還原	ㄏㄨㄢˊ ㄩㄢˊ	existing				還原				
+phrase.energy-environment.tsv	138	防制	防制	ㄈㄤˊ ㄓˋ	existing				防制				
+phrase.energy-environment.tsv	148	風險評估	風險評估	ㄈㄥ ㄒㄧㄢˇ ㄆㄧㄥˊ ㄍㄨ	duplicate				風險評估				
+phrase.finance.tsv	3	不動產	不動產	ㄅㄨˊ ㄉㄨㄥˋ ㄔㄢˇ	existing				不動產				
+phrase.finance.tsv	5	交易	交易	ㄐㄧㄠ ㄧˋ	existing				交易				
+phrase.finance.tsv	6	作業	作業	ㄗㄨㄛˋ ㄧㄝˋ	existing				作業				
+phrase.finance.tsv	9	保障	保障	ㄅㄠˇ ㄓㄤˋ	existing				保障				
+phrase.finance.tsv	12	修正	修正	ㄒㄧㄡ ㄓㄥˋ	existing				修正				
+phrase.finance.tsv	13	倍數	倍數	ㄅㄟˋ ㄕㄨˋ	existing				倍數				
+phrase.finance.tsv	20	利息	利息	ㄌㄧˋ ㄒㄧˊ	existing				利息				
+phrase.finance.tsv	24	加權	加權	ㄐㄧㄚ ㄑㄩㄢˊ	existing				加權				
+phrase.finance.tsv	28	商品	商品	ㄕㄤ ㄆㄧㄣˇ	existing				商品				
+phrase.finance.tsv	30	固定資產	固定資產	ㄍㄨˋ ㄉㄧㄥˋ ㄗ ㄔㄢˇ	existing				固定資產				
+phrase.finance.tsv	31	基礎	基礎	ㄐㄧ ㄔㄨˇ	existing				基礎				
+phrase.finance.tsv	32	報酬率	報酬率	ㄅㄠˋ ㄔㄡˊ ㄌㄩˋ	existing				報酬率				
+phrase.finance.tsv	36	存貨	存貨	ㄘㄨㄣˊ ㄏㄨㄛˋ	existing				存貨				
+phrase.finance.tsv	39	定價	定價	ㄉㄧㄥˋ ㄐㄧㄚˋ	existing				定價				
+phrase.finance.tsv	41	對手	對手	ㄉㄨㄟˋ ㄕㄡˇ	existing				對手				
+phrase.finance.tsv	44	平均	平均	ㄆㄧㄥˊ ㄐㄩㄣ	existing				平均				
+phrase.finance.tsv	45	廠房	廠房	ㄔㄤˇ ㄈㄤˊ	existing				廠房				
+phrase.finance.tsv	53	成本	成本	ㄔㄥˊ ㄅㄣˇ	existing				成本				
+phrase.finance.tsv	58	投資	投資	ㄊㄡˊ ㄗ	existing				投資				
+phrase.finance.tsv	64	收入	收入	ㄕㄡ ㄖㄨˋ	existing				收入				
+phrase.finance.tsv	77	模型	模型	ㄇㄛˊ ㄒㄧㄥˊ	existing				模型				
+phrase.finance.tsv	79	權益	權益	ㄑㄩㄢˊ ㄧˋ	existing				權益				
+phrase.finance.tsv	87	毛利	毛利	ㄇㄠˊ ㄌㄧˋ	existing				毛利				
+phrase.finance.tsv	95	營業利益	營業利益	ㄧㄥˊ ㄧㄝˋ ㄌㄧˋ ㄧˋ	duplicate				營業利益				
+phrase.finance.tsv	102	現金	現金	ㄒㄧㄢˋ ㄐㄧㄣ	existing				現金				
+phrase.finance.tsv	105	現金流	現金流	ㄒㄧㄢˋ ㄐㄧㄣ ㄌㄧㄡˊ	duplicate				現金流				
+phrase.finance.tsv	107	現金流預測	現金流預測	ㄒㄧㄢˋ ㄐㄧㄣ ㄌㄧㄡˊ ㄩˋ ㄘㄜˋ	duplicate				現金流預測				
+phrase.finance.tsv	114	稀釋	稀釋	ㄒㄧ ㄕˋ	existing				稀釋				
+phrase.finance.tsv	123	總資產	總資產	ㄗㄨㄥˇ ㄗ ㄔㄢˇ	existing				總資產				
+phrase.finance.tsv	126	股東	股東	ㄍㄨˇ ㄉㄨㄥ	existing				股東				
+phrase.finance.tsv	131	設備	設備	ㄕㄜˋ ㄅㄟˋ	existing				設備				
+phrase.finance.tsv	135	負債	負債	ㄈㄨˋ ㄓㄞˋ	existing				負債				
+phrase.finance.tsv	139	財務報表	財務報表	ㄘㄞˊ ㄨˋ ㄅㄠˋ ㄅㄧㄠˇ	existing				財務報表				
+phrase.finance.tsv	144	費用	費用	ㄈㄟˋ ㄩㄥˋ	existing				費用				
+phrase.finance.tsv	147	資本	資本	ㄗ ㄅㄣˇ	existing				資本				
+phrase.finance.tsv	153	資產	資產	ㄗ ㄔㄢˇ	existing				資產				
+phrase.finance.tsv	155	資金	資金	ㄗ ㄐㄧㄣ	existing				資金				
+phrase.finance.tsv	157	轉換	轉換	ㄓㄨㄢˇ ㄏㄨㄢˋ	existing				轉換				
+phrase.finance.tsv	159	週期	週期	ㄓㄡ ㄑㄧˊ	existing				週期				
+phrase.finance.tsv	160	週轉率	週轉率	ㄓㄡ ㄓㄨㄢˇ ㄌㄩˋ	existing				週轉率				
+phrase.finance.tsv	163	金融	金融	ㄐㄧㄣ ㄖㄨㄥˊ	existing				金融				
+phrase.finance.tsv	164	附註	附註	ㄈㄨˋ ㄓㄨˋ	existing				附註				
+phrase.finance.tsv	170	預測	預測	ㄩˋ ㄘㄜˋ	existing				預測				
+phrase.finance.tsv	172	風險	風險	ㄈㄥ ㄒㄧㄢˇ	existing				風險				
+phrase.finance.tsv	173	風險評估	風險評估	ㄈㄥ ㄒㄧㄢˇ ㄆㄧㄥˊ ㄍㄨ	duplicate				風險評估				
+phrase.general.tsv	2	一卡通	一卡通	ㄧ ㄎㄚˇ ㄊㄨㄥ	existing				一卡通				
+phrase.general.tsv	4	串流平台	串流平台	ㄔㄨㄢˋ ㄌㄧㄡˊ ㄆㄧㄥˊ ㄊㄞˊ	existing				串流平台				
+phrase.general.tsv	5	人工智慧	人工智慧	ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	existing				人工智慧				
+phrase.general.tsv	9	個資外洩	個資外洩	ㄍㄜˋ ㄗ ㄨㄞˋ ㄒㄧㄝˋ	existing				個資外洩				
+phrase.general.tsv	10	儲能	儲能	ㄔㄨˇ ㄋㄥˊ	duplicate				儲能				
+phrase.general.tsv	11	充電樁	充電樁	ㄔㄨㄥ ㄉㄧㄢˋ ㄓㄨㄤ	existing				充電樁				
+phrase.general.tsv	15	共享單車	共享單車	ㄍㄨㄥˋ ㄒㄧㄤˇ ㄉㄢ ㄔㄜ	existing				共享單車				
+phrase.general.tsv	19	分科測驗	分科測驗	ㄈㄣ ㄎㄜ ㄘㄜˋ ㄧㄢˋ	existing				分科測驗				
+phrase.general.tsv	20	加密貨幣	加密貨幣	ㄐㄧㄚ ㄇㄧˋ ㄏㄨㄛˋ ㄅㄧˋ	existing				加密貨幣				
+phrase.general.tsv	22	助理	助理	ㄓㄨˋ ㄌㄧˇ	existing				助理				
+phrase.general.tsv	24	區塊鏈	區塊鏈	ㄑㄩ ㄎㄨㄞˋ ㄌㄧㄢˋ	existing				區塊鏈				
+phrase.general.tsv	28	咒術迴戰	咒術迴戰	ㄓㄡˋ ㄕㄨˋ ㄏㄨㄟˊ ㄓㄢˋ	existing				咒術迴戰				
+phrase.general.tsv	29	哆啦A夢	哆啦欸夢	ㄉㄨㄛ ㄌㄚ ㄟ ㄇㄥˋ	duplicate				哆啦欸夢				
+phrase.general.tsv	30	哆啦a夢	哆啦欸夢	ㄉㄨㄛ ㄌㄚ ㄟ ㄇㄥˋ	duplicate				哆啦欸夢				
+phrase.general.tsv	33	地震速報	地震速報	ㄉㄧˋ ㄓㄣˋ ㄙㄨˋ ㄅㄠˋ	existing				地震速報				
+phrase.general.tsv	38	大型	大型	ㄉㄚˋ ㄒㄧㄥˊ	existing				大型				
+phrase.general.tsv	40	學習歷程	學習歷程	ㄒㄩㄝˊ ㄒㄧˊ ㄌㄧˋ ㄔㄥˊ	existing				學習歷程				
+phrase.general.tsv	45	實況主	實況主	ㄕˊ ㄎㄨㄤˋ ㄓㄨˇ	existing				實況主				
+phrase.general.tsv	46	寶可夢	寶可夢	ㄅㄠˇ ㄎㄜˇ ㄇㄥˋ	existing				寶可夢				
+phrase.general.tsv	49	居家辦公	居家辦公	ㄐㄩ ㄐㄧㄚ ㄅㄢˋ ㄍㄨㄥ	existing				居家辦公				
+phrase.general.tsv	51	影音平台	影音平台	ㄧㄥˇ ㄧㄣ ㄆㄧㄥˊ ㄊㄞˊ	existing				影音平台				
+phrase.general.tsv	53	志願序	志願序	ㄓˋ ㄩㄢˋ ㄒㄩˋ	existing				志願序				
+phrase.general.tsv	54	快充	快充	ㄎㄨㄞˋ ㄔㄨㄥ	existing				快充				
+phrase.general.tsv	60	手遊	手遊	ㄕㄡˇ ㄧㄡˊ	existing				手遊				
+phrase.general.tsv	64	排球少年	排球少年	ㄆㄞˊ ㄑㄧㄡˊ ㄕㄠˋ ㄋㄧㄢˊ	existing				排球少年				
+phrase.general.tsv	68	數位帳戶	數位帳戶	ㄕㄨˋ ㄨㄟˋ ㄓㄤˋ ㄏㄨˋ	existing				數位帳戶				
+phrase.general.tsv	75	晶片	晶片	ㄐㄧㄥ ㄆㄧㄢˋ	existing				晶片				
+phrase.general.tsv	76	梗圖	梗圖	ㄍㄥˇ ㄊㄨˊ	existing				梗圖				
+phrase.general.tsv	78	模型	模型	ㄇㄛˊ ㄒㄧㄥˊ	existing				模型				
+phrase.general.tsv	81	檔案	檔案	ㄉㄤˇ ㄢˋ	existing				檔案				
+phrase.general.tsv	82	比特幣	比特幣	ㄅㄧˇ ㄊㄜˋ ㄅㄧˋ	existing				比特幣				
+phrase.general.tsv	86	深度學習	深度學習	ㄕㄣ ㄉㄨˋ ㄒㄩㄝˊ ㄒㄧˊ	existing				深度學習				
+phrase.general.tsv	89	物聯網	物聯網	ㄨˋ ㄌㄧㄢˊ ㄨㄤˇ	existing				物聯網				
+phrase.general.tsv	91	生成式AI	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	existing				生成式人工智慧				
+phrase.general.tsv	92	生成式ＡＩ	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	existing				生成式人工智慧				
+phrase.general.tsv	94	直播主	直播主	ㄓˊ ㄅㄛ ㄓㄨˇ	existing				直播主				
+phrase.general.tsv	96	短影音	短影音	ㄉㄨㄢˇ ㄧㄥˇ ㄧㄣ	existing				短影音				
+phrase.general.tsv	100	社群媒體	社群媒體	ㄕㄜˋ ㄑㄩㄣˊ ㄇㄟˊ ㄊㄧˇ	existing				社群媒體				
+phrase.general.tsv	102	社群網站	社群網站	ㄕㄜˋ ㄑㄩㄣˊ ㄨㄤˇ ㄓㄢˋ	existing				社群網站				
+phrase.general.tsv	103	神經網路	神經網路	ㄕㄣˊ ㄐㄧㄥ ㄨㄤˇ ㄌㄨˋ	duplicate				神經網路				
+phrase.general.tsv	106	索尼	索尼	ㄙㄨㄛˇ ㄋㄧˊ	duplicate				索尼				
+phrase.general.tsv	108	網紅	網紅	ㄨㄤˇ ㄏㄨㄥˊ	existing				網紅				
+phrase.general.tsv	111	網路銀行	網路銀行	ㄨㄤˇ ㄌㄨˋ ㄧㄣˊ ㄏㄤˊ	existing				網路銀行				
+phrase.general.tsv	114	繁星推薦	繁星推薦	ㄈㄢˊ ㄒㄧㄥ ㄊㄨㄟ ㄐㄧㄢˋ	existing				繁星推薦				
+phrase.general.tsv	115	聊天機器人	聊天機器人	ㄌㄧㄠˊ ㄊㄧㄢ ㄐㄧ ㄑㄧˋ ㄖㄣˊ	existing				聊天機器人				
+phrase.general.tsv	118	自然	自然	ㄗˋ ㄖㄢˊ	existing				自然				
+phrase.general.tsv	119	自然語言	自然語言	ㄗˋ ㄖㄢˊ ㄩˇ ㄧㄢˊ	duplicate				自然語言				
+phrase.general.tsv	122	航海王	航海王	ㄏㄤˊ ㄏㄞˇ ㄨㄤˊ	existing				航海王				
+phrase.general.tsv	126	處理	處理	ㄔㄨˇ ㄌㄧˇ	existing				處理				
+phrase.general.tsv	128	虛擬貨幣	虛擬貨幣	ㄒㄩ ㄋㄧˇ ㄏㄨㄛˋ ㄅㄧˋ	existing				虛擬貨幣				
+phrase.general.tsv	130	蝦皮購物	蝦皮購物	ㄒㄧㄚ ㄆㄧˊ ㄍㄡˋ ㄨˋ	existing				蝦皮購物				
+phrase.general.tsv	132	行動支付	行動支付	ㄒㄧㄥˊ ㄉㄨㄥˋ ㄓ ㄈㄨˋ	existing				行動支付				
+phrase.general.tsv	140	語言	語言	ㄩˇ ㄧㄢˊ	existing				語言				
+phrase.general.tsv	141	語言模型	語言模型	ㄩˇ ㄧㄢˊ ㄇㄛˊ ㄒㄧㄥˊ	duplicate				語言模型				
+phrase.general.tsv	149	迷因	迷因	ㄇㄧˊ ㄧㄣ	existing				迷因				
+phrase.general.tsv	150	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	existing				進擊的巨人				
+phrase.general.tsv	151	遠距工作	遠距工作	ㄩㄢˇ ㄐㄩˋ ㄍㄨㄥ ㄗㄨㄛˋ	existing				遠距工作				
+phrase.general.tsv	161	長照	長照	ㄔㄤˊ ㄓㄠˋ	existing				長照				
+phrase.general.tsv	165	間諜家家酒	間諜家家酒	ㄐㄧㄢˋ ㄉㄧㄝˊ ㄐㄧㄚ ㄐㄧㄚ ㄐㄧㄡˇ	existing				間諜家家酒				
+phrase.general.tsv	166	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	existing				限時動態				
+phrase.general.tsv	167	雙重驗證	雙重驗證	ㄕㄨㄤ ㄔㄨㄥˊ ㄧㄢˋ ㄓㄥˋ	existing				雙重驗證				
+phrase.general.tsv	169	雲端發票	雲端發票	ㄩㄣˊ ㄉㄨㄢ ㄈㄚ ㄆㄧㄠˋ	existing				雲端發票				
+phrase.general.tsv	170	雲端運算	雲端運算	ㄩㄣˊ ㄉㄨㄢ ㄩㄣˋ ㄙㄨㄢˋ	existing				雲端運算				
+phrase.general.tsv	172	電動機車	電動機車	ㄉㄧㄢˋ ㄉㄨㄥˋ ㄐㄧ ㄔㄜ	existing				電動機車				
+phrase.general.tsv	173	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	existing				電子支付				
+phrase.general.tsv	174	電子發票	電子發票	ㄉㄧㄢˋ ㄗˇ ㄈㄚ ㄆㄧㄠˋ	existing				電子發票				
+phrase.general.tsv	177	鬼滅之刃	鬼滅之刃	ㄍㄨㄟˇ ㄇㄧㄝˋ ㄓ ㄖㄣˋ	existing				鬼滅之刃				
+phrase.government.tsv	3	交換	交換	ㄐㄧㄠ ㄏㄨㄢˋ	existing				交換				
+phrase.government.tsv	5	保護	保護	ㄅㄠˇ ㄏㄨˋ	existing				保護				
+phrase.government.tsv	6	保障	保障	ㄅㄠˇ ㄓㄤˋ	existing				保障				
+phrase.government.tsv	8	個人	個人	ㄍㄜˋ ㄖㄣˊ	existing				個人				
+phrase.government.tsv	9	備查	備查	ㄅㄟˋ ㄔㄚˊ	existing				備查				
+phrase.government.tsv	11	公務	公務	ㄍㄨㄥ ㄨˋ	existing				公務				
+phrase.government.tsv	12	公務人員	公務人員	ㄍㄨㄥ ㄨˋ ㄖㄣˊ ㄩㄢˊ	existing				公務人員				
+phrase.government.tsv	13	公務員	公務員	ㄍㄨㄥ ㄨˋ ㄩㄢˊ	existing				公務員				
+phrase.government.tsv	14	公文	公文	ㄍㄨㄥ ㄨㄣˊ	existing				公文				
+phrase.government.tsv	15	公開	公開	ㄍㄨㄥ ㄎㄞ	existing				公開				
+phrase.government.tsv	19	列管	列管	ㄌㄧㄝˋ ㄍㄨㄢˇ	existing				列管				
+phrase.government.tsv	21	利益	利益	ㄌㄧˋ ㄧˋ	existing				利益				
+phrase.government.tsv	23	契約	契約	ㄑㄧˋ ㄩㄝ	existing				契約				
+phrase.government.tsv	25	審查	審查	ㄕㄣˇ ㄔㄚˊ	existing				審查				
+phrase.government.tsv	27	年度	年度	ㄋㄧㄢˊ ㄉㄨˋ	existing				年度				
+phrase.government.tsv	29	彙整	彙整	ㄏㄨㄟˋ ㄓㄥˇ	existing				彙整				
+phrase.government.tsv	30	懲戒	懲戒	ㄔㄥˊ ㄐㄧㄝˋ	existing				懲戒				
+phrase.government.tsv	33	提報	提報	ㄊㄧˊ ㄅㄠˋ	existing				提報				
+phrase.government.tsv	35	政府	政府	ㄓㄥˋ ㄈㄨˇ	existing				政府				
+phrase.government.tsv	36	施政	施政	ㄕ ㄓㄥˋ	existing				施政				
+phrase.government.tsv	42	查照	查照	ㄔㄚˊ ㄓㄠˋ	existing				查照				
+phrase.government.tsv	44	核准	核准	ㄏㄜˊ ㄓㄨㄣˇ	existing				核准				
+phrase.government.tsv	45	核定	核定	ㄏㄜˊ ㄉㄧㄥˋ	existing				核定				
+phrase.government.tsv	46	核銷	核銷	ㄏㄜˊ ㄒㄧㄠ	existing				核銷				
+phrase.government.tsv	48	歸檔	歸檔	ㄍㄨㄟ ㄉㄤˇ	existing				歸檔				
+phrase.government.tsv	52	留職停薪	留職停薪	ㄌㄧㄡˊ ㄓˊ ㄊㄧㄥˊ ㄒㄧㄣ	existing				留職停薪				
+phrase.government.tsv	57	紀錄	紀錄	ㄐㄧˋ ㄌㄨˋ	existing				紀錄				
+phrase.government.tsv	58	線上	線上	ㄒㄧㄢˋ ㄕㄤˋ	existing				線上				
+phrase.government.tsv	59	績效指標	績效指標	ㄐㄧ ㄒㄧㄠˋ ㄓˇ ㄅㄧㄠ	duplicate				績效指標				
+phrase.government.tsv	60	考績	考績	ㄎㄠˇ ㄐㄧ	existing				考績				
+phrase.government.tsv	61	育嬰	育嬰	ㄩˋ ㄧㄥ	existing				育嬰				
+phrase.government.tsv	62	衝突	衝突	ㄔㄨㄥ ㄊㄨˊ	existing				衝突				
+phrase.government.tsv	65	計畫	計畫	ㄐㄧˋ ㄏㄨㄚˋ	existing				計畫				
+phrase.government.tsv	67	說明	說明	ㄕㄨㄛ ㄇㄧㄥˊ	existing				說明				
+phrase.government.tsv	68	調整	調整	ㄊㄧㄠˊ ㄓㄥˇ	existing				調整				
+phrase.government.tsv	69	資料	資料	ㄗ ㄌㄧㄠˋ	existing				資料				
+phrase.government.tsv	70	資訊	資訊	ㄗ ㄒㄩㄣˋ	existing				資訊				
+phrase.government.tsv	71	辦理	辦理	ㄅㄢˋ ㄌㄧˇ	existing				辦理				
+phrase.government.tsv	72	迴避	迴避	ㄏㄨㄟˊ ㄅㄧˋ	existing				迴避				
+phrase.government.tsv	73	追蹤	追蹤	ㄓㄨㄟ ㄗㄨㄥ	existing				追蹤				
+phrase.government.tsv	74	關鍵	關鍵	ㄍㄨㄢ ㄐㄧㄢˋ	existing				關鍵				
+phrase.government.tsv	77	電子	電子	ㄉㄧㄢˋ ㄗˇ	existing				電子				
+phrase.government.tsv	78	電話	電話	ㄉㄧㄢˋ ㄏㄨㄚˋ	existing				電話				
+phrase.history.tsv	5	世界大戰	世界大戰	ㄕˋ ㄐㄧㄝˋ ㄉㄚˋ ㄓㄢˋ	existing				世界大戰				
+phrase.history.tsv	9	亞歷山大	亞歷山大	ㄧㄚˇ ㄌㄧˋ ㄕㄢ ㄉㄚˋ	existing				亞歷山大				
+phrase.history.tsv	13	元代	元代	ㄩㄢˊ ㄉㄞˋ	existing				元代				
+phrase.history.tsv	21	公約	公約	ㄍㄨㄥ ㄩㄝ	existing				公約				
+phrase.history.tsv	27	北大西洋	北大西洋	ㄅㄟˇ ㄉㄚˋ ㄒㄧ ㄧㄤˊ	existing				北大西洋				
+phrase.history.tsv	31	危機	危機	ㄨㄟˊ ㄐㄧ	existing				危機				
+phrase.history.tsv	35	古巴	古巴	ㄍㄨˇ ㄅㄚ	existing				古巴				
+phrase.history.tsv	40	唐代	唐代	ㄊㄤˊ ㄉㄞˋ	existing				唐代				
+phrase.history.tsv	46	國民政府	國民政府	ㄍㄨㄛˊ ㄇㄧㄣˊ ㄓㄥˋ ㄈㄨˇ	existing				國民政府				
+phrase.history.tsv	57	太平天國	太平天國	ㄊㄞˋ ㄆㄧㄥˊ ㄊㄧㄢ ㄍㄨㄛˊ	existing				太平天國				
+phrase.history.tsv	58	宋代	宋代	ㄙㄨㄥˋ ㄉㄞˋ	existing				宋代				
+phrase.history.tsv	67	帝國	帝國	ㄉㄧˋ ㄍㄨㄛˊ	existing				帝國				
+phrase.history.tsv	76	戰爭	戰爭	ㄓㄢˋ ㄓㄥ	existing				戰爭				
+phrase.history.tsv	87	明代	明代	ㄇㄧㄥˊ ㄉㄞˋ	existing				明代				
+phrase.history.tsv	90	時期	時期	ㄕˊ ㄑㄧˊ	existing				時期				
+phrase.history.tsv	104	法典	法典	ㄈㄚˇ ㄉㄧㄢˇ	existing				法典				
+phrase.history.tsv	105	海上	海上	ㄏㄞˇ ㄕㄤˋ	existing				海上				
+phrase.history.tsv	108	清代	清代	ㄑㄧㄥ ㄉㄞˋ	existing				清代				
+phrase.history.tsv	112	漢代	漢代	ㄏㄢˋ ㄉㄞˋ	existing				漢代				
+phrase.history.tsv	124	秦代	秦代	ㄑㄧㄣˊ ㄉㄞˋ	existing				秦代				
+phrase.history.tsv	127	第一次	第一次	ㄉㄧˋ ㄧ ㄘˋ	existing				第一次				
+phrase.history.tsv	128	第二次	第二次	ㄉㄧˋ ㄦˋ ㄘˋ	existing				第二次				
+phrase.history.tsv	129	組織	組織	ㄗㄨˇ ㄓ	existing				組織				
+phrase.history.tsv	131	絲綢之路	絲綢之路	ㄙ ㄔㄡˊ ㄓ ㄌㄨˋ	existing				絲綢之路				
+phrase.history.tsv	147	華沙公約	華沙公約	ㄏㄨㄚˊ ㄕㄚ ㄍㄨㄥ ㄩㄝ	existing				華沙公約				
+phrase.history.tsv	154	設置	設置	ㄕㄜˋ ㄓˋ	existing				設置				
+phrase.history.tsv	155	請願	請願	ㄑㄧㄥˇ ㄩㄢˋ	existing				請願				
+phrase.history.tsv	156	議會	議會	ㄧˋ ㄏㄨㄟˋ	existing				議會				
+phrase.history.tsv	162	運動	運動	ㄩㄣˋ ㄉㄨㄥˋ	existing				運動				
+phrase.history.tsv	174	隋代	隋代	ㄙㄨㄟˊ ㄉㄞˋ	existing				隋代				
+phrase.history.tsv	179	飛彈	飛彈	ㄈㄟ ㄉㄢˋ	existing				飛彈				
+phrase.industrial-engineering.tsv	2	事件	事件	ㄕˋ ㄐㄧㄢˋ	existing				事件				
+phrase.industrial-engineering.tsv	3	人員	人員	ㄖㄣˊ ㄩㄢˊ	existing				人員				
+phrase.industrial-engineering.tsv	6	佈置	佈置	ㄅㄨˋ ㄓˋ	existing				佈置				
+phrase.industrial-engineering.tsv	7	位置	位置	ㄨㄟˋ ㄓˋ	existing				位置				
+phrase.industrial-engineering.tsv	9	供應鏈	供應鏈	ㄍㄨㄥ ㄧㄥˋ ㄌㄧㄢˋ	duplicate				供應鏈				
+phrase.industrial-engineering.tsv	12	全面	全面	ㄑㄩㄢˊ ㄇㄧㄢˋ	existing				全面				
+phrase.industrial-engineering.tsv	15	分析	分析	ㄈㄣ ㄒㄧ	existing				分析				
+phrase.industrial-engineering.tsv	17	動作	動作	ㄉㄨㄥˋ ㄗㄨㄛˋ	existing				動作				
+phrase.industrial-engineering.tsv	22	反應	反應	ㄈㄢˇ ㄧㄥˋ	existing				反應				
+phrase.industrial-engineering.tsv	24	可靠度分析	可靠度分析	ㄎㄜˇ ㄎㄠˋ ㄉㄨˋ ㄈㄣ ㄒㄧ	duplicate				可靠度分析				
+phrase.industrial-engineering.tsv	25	品質	品質	ㄆㄧㄣˇ ㄓˊ	existing				品質				
+phrase.industrial-engineering.tsv	27	品質管理	品質管理	ㄆㄧㄣˇ ㄓˊ ㄍㄨㄢˇ ㄌㄧˇ	duplicate				品質管理				
+phrase.industrial-engineering.tsv	30	固定	固定	ㄍㄨˋ ㄉㄧㄥˋ	existing				固定				
+phrase.industrial-engineering.tsv	35	安全	安全	ㄢ ㄑㄩㄢˊ	existing				安全				
+phrase.industrial-engineering.tsv	39	少量	少量	ㄕㄠˇ ㄌㄧㄤˋ	existing				少量				
+phrase.industrial-engineering.tsv	40	工作	工作	ㄍㄨㄥ ㄗㄨㄛˋ	existing				工作				
+phrase.industrial-engineering.tsv	46	工廠	工廠	ㄍㄨㄥ ㄔㄤˇ	existing				工廠				
+phrase.industrial-engineering.tsv	52	庫存	庫存	ㄎㄨˋ ㄘㄨㄣˊ	existing				庫存				
+phrase.industrial-engineering.tsv	56	指數	指數	ㄓˇ ㄕㄨˋ	existing				指數				
+phrase.industrial-engineering.tsv	65	方法	方法	ㄈㄤ ㄈㄚˇ	existing				方法				
+phrase.industrial-engineering.tsv	66	時間	時間	ㄕˊ ㄐㄧㄢ	existing				時間				
+phrase.industrial-engineering.tsv	67	曲面	曲面	ㄑㄩ ㄇㄧㄢˋ	existing				曲面				
+phrase.industrial-engineering.tsv	70	模擬	模擬	ㄇㄛˊ ㄋㄧˇ	existing				模擬				
+phrase.industrial-engineering.tsv	72	決策	決策	ㄐㄩㄝˊ ㄘㄜˋ	existing				決策				
+phrase.industrial-engineering.tsv	73	流程	流程	ㄌㄧㄡˊ ㄔㄥˊ	existing				流程				
+phrase.industrial-engineering.tsv	76	物料	物料	ㄨˋ ㄌㄧㄠˋ	existing				物料				
+phrase.industrial-engineering.tsv	77	物流	物流	ㄨˋ ㄌㄧㄡˊ	existing				物流				
+phrase.industrial-engineering.tsv	79	生產	生產	ㄕㄥ ㄔㄢˇ	existing				生產				
+phrase.industrial-engineering.tsv	80	生產線	生產線	ㄕㄥ ㄔㄢˇ ㄒㄧㄢˋ	existing				生產線				
+phrase.industrial-engineering.tsv	83	管制	管制	ㄍㄨㄢˇ ㄓˋ	existing				管制				
+phrase.industrial-engineering.tsv	84	系統	系統	ㄒㄧˋ ㄊㄨㄥˇ	existing				系統				
+phrase.industrial-engineering.tsv	85	系統分析	系統分析	ㄒㄧˋ ㄊㄨㄥˇ ㄈㄣ ㄒㄧ	existing				系統分析				
+phrase.industrial-engineering.tsv	86	統計	統計	ㄊㄨㄥˇ ㄐㄧˋ	existing				統計				
+phrase.industrial-engineering.tsv	87	維修	維修	ㄨㄟˊ ㄒㄧㄡ	existing				維修				
+phrase.industrial-engineering.tsv	89	績效評估	績效評估	ㄐㄧ ㄒㄧㄠˋ ㄆㄧㄥˊ ㄍㄨ	duplicate				績效評估				
+phrase.industrial-engineering.tsv	90	能力	能力	ㄋㄥˊ ㄌㄧˋ	existing				能力				
+phrase.industrial-engineering.tsv	91	蒙地卡羅	蒙地卡羅	ㄇㄥˊ ㄉㄧˋ ㄎㄚˇ ㄌㄨㄛˊ	existing				蒙地卡羅				
+phrase.industrial-engineering.tsv	92	製程	製程	ㄓˋ ㄔㄥˊ	existing				製程				
+phrase.industrial-engineering.tsv	93	訂單	訂單	ㄉㄧㄥˋ ㄉㄢ	existing				訂單				
+phrase.industrial-engineering.tsv	94	設備	設備	ㄕㄜˋ ㄅㄟˋ	existing				設備				
+phrase.industrial-engineering.tsv	95	設計	設計	ㄕㄜˋ ㄐㄧˋ	existing				設計				
+phrase.industrial-engineering.tsv	97	過程	過程	ㄍㄨㄛˋ ㄔㄥˊ	existing				過程				
+phrase.industrial-engineering.tsv	98	重複	重複	ㄔㄨㄥˊ ㄈㄨˋ	existing				重複				
+phrase.industrial-engineering.tsv	100	量測	量測	ㄌㄧㄤˊ ㄘㄜˋ	existing				量測				
+phrase.industrial-engineering.tsv	101	離散	離散	ㄌㄧˊ ㄙㄢˋ	existing				離散				
+phrase.industrial-engineering.tsv	103	預定	預定	ㄩˋ ㄉㄧㄥˋ	existing				預定				
+phrase.industrial-engineering.tsv	104	風險評估	風險評估	ㄈㄥ ㄒㄧㄢˇ ㄆㄧㄥˊ ㄍㄨ	duplicate				風險評估				
+phrase.law.tsv	2	一般	一般	ㄧ ㄅㄢ	existing				一般				
+phrase.law.tsv	13	主觀	主觀	ㄓㄨˇ ㄍㄨㄢ	existing				主觀				
+phrase.law.tsv	19	保留	保留	ㄅㄠˇ ㄌㄧㄡˊ	existing				保留				
+phrase.law.tsv	20	保護	保護	ㄅㄠˇ ㄏㄨˋ	existing				保護				
+phrase.law.tsv	21	信賴	信賴	ㄒㄧㄣˋ ㄌㄞˋ	existing				信賴				
+phrase.law.tsv	29	公寓	公寓	ㄍㄨㄥ ㄩˋ	existing				公寓				
+phrase.law.tsv	33	分配	分配	ㄈㄣ ㄆㄟˋ	existing				分配				
+phrase.law.tsv	35	剩餘	剩餘	ㄕㄥˋ ㄩˊ	existing				剩餘				
+phrase.law.tsv	36	區分	區分	ㄑㄩ ㄈㄣ	existing				區分				
+phrase.law.tsv	39	原則	原則	ㄩㄢˊ ㄗㄜˊ	existing				原則				
+phrase.law.tsv	43	同時	同時	ㄊㄨㄥˊ ㄕˊ	existing				同時				
+phrase.law.tsv	45	國家	國家	ㄍㄨㄛˊ ㄐㄧㄚ	existing				國家				
+phrase.law.tsv	48	大廈	大廈	ㄉㄚˋ ㄒㄧㄚˋ	existing				大廈				
+phrase.law.tsv	61	客觀	客觀	ㄎㄜˋ ㄍㄨㄢ	existing				客觀				
+phrase.law.tsv	69	居住	居住	ㄐㄩ ㄓㄨˋ	existing				居住				
+phrase.law.tsv	71	履行	履行	ㄌㄩˇ ㄒㄧㄥˊ	existing				履行				
+phrase.law.tsv	85	所有	所有	ㄙㄨㄛˇ ㄧㄡˇ	existing				所有				
+phrase.law.tsv	87	抗辯	抗辯	ㄎㄤˋ ㄅㄧㄢˋ	existing				抗辯				
+phrase.law.tsv	89	排除	排除	ㄆㄞˊ ㄔㄨˊ	existing				排除				
+phrase.law.tsv	95	效力	效力	ㄒㄧㄠˋ ㄌㄧˋ	existing				效力				
+phrase.law.tsv	96	明確性	明確性	ㄇㄧㄥˊ ㄑㄩㄝˋ ㄒㄧㄥˋ	existing				明確性				
+phrase.law.tsv	98	暫時	暫時	ㄓㄢˋ ㄕˊ	existing				暫時				
+phrase.law.tsv	103	業務	業務	ㄧㄝˋ ㄨˋ	existing				業務				
+phrase.law.tsv	104	構成	構成	ㄍㄡˋ ㄔㄥˊ	existing				構成				
+phrase.law.tsv	105	權利	權利	ㄑㄩㄢˊ ㄌㄧˋ	existing				權利				
+phrase.law.tsv	107	正當	正當	ㄓㄥˋ ㄉㄤ	existing				正當				
+phrase.law.tsv	108	正當行為	正當行為	ㄓㄥˋ ㄉㄤ ㄒㄧㄥˊ ㄨㄟˊ	existing				正當行為				
+phrase.law.tsv	124	犯罪	犯罪	ㄈㄢˋ ㄗㄨㄟˋ	existing				犯罪				
+phrase.law.tsv	125	瑕疵	瑕疵	ㄒㄧㄚˊ ㄘ	existing				瑕疵				
+phrase.law.tsv	130	程序	程序	ㄔㄥˊ ㄒㄩˋ	existing				程序				
+phrase.law.tsv	137	給付	給付	ㄐㄧˇ ㄈㄨˋ	existing				給付				
+phrase.law.tsv	141	義務	義務	ㄧˋ ㄨˋ	existing				義務				
+phrase.law.tsv	144	自由	自由	ㄗˋ ㄧㄡˊ	existing				自由				
+phrase.law.tsv	154	行政處分	行政處分	ㄒㄧㄥˊ ㄓㄥˋ ㄔㄨˇ ㄈㄣˋ	existing				行政處分				
+phrase.law.tsv	159	要件	要件	ㄧㄠˋ ㄐㄧㄢˋ	existing				要件				
+phrase.law.tsv	162	訴訟	訴訟	ㄙㄨˋ ㄙㄨㄥˋ	existing				訴訟				
+phrase.law.tsv	167	證據	證據	ㄓㄥˋ ㄐㄩˋ	existing				證據				
+phrase.law.tsv	171	財產	財產	ㄘㄞˊ ㄔㄢˇ	existing				財產				
+phrase.law.tsv	181	違法	違法	ㄨㄟˊ ㄈㄚˇ	existing				違法				
+phrase.law.tsv	183	遷徙	遷徙	ㄑㄧㄢ ㄒㄧˇ	existing				遷徙				
+phrase.manufacturing.tsv	6	企業	企業	ㄑㄧˋ ㄧㄝˋ	existing				企業				
+phrase.manufacturing.tsv	7	修復	修復	ㄒㄧㄡ ㄈㄨˋ	existing				修復				
+phrase.manufacturing.tsv	10	全員	全員	ㄑㄩㄢˊ ㄩㄢˊ	existing				全員				
+phrase.manufacturing.tsv	23	品質管制	品質管制	ㄆㄧㄣˇ ㄓˊ ㄍㄨㄢˇ ㄓˋ	existing				品質管制				
+phrase.manufacturing.tsv	24	執行	執行	ㄓˊ ㄒㄧㄥˊ	existing				執行				
+phrase.manufacturing.tsv	31	安全檢查	安全檢查	ㄢ ㄑㄩㄢˊ ㄐㄧㄢˇ ㄔㄚˊ	existing				安全檢查				
+phrase.manufacturing.tsv	38	平均	平均	ㄆㄧㄥˊ ㄐㄩㄣ	existing				平均				
+phrase.manufacturing.tsv	44	應力	應力	ㄧㄥˋ ㄌㄧˋ	existing				應力				
+phrase.manufacturing.tsv	47	成形	成形	ㄔㄥˊ ㄒㄧㄥˊ	existing				成形				
+phrase.manufacturing.tsv	50	抽樣檢驗	抽樣檢驗	ㄔㄡ ㄧㄤˋ ㄐㄧㄢˇ ㄧㄢˋ	duplicate				抽樣檢驗				
+phrase.manufacturing.tsv	52	指數	指數	ㄓˇ ㄕㄨˋ	existing				指數				
+phrase.manufacturing.tsv	55	故障	故障	ㄍㄨˋ ㄓㄤˋ	existing				故障				
+phrase.manufacturing.tsv	57	效率	效率	ㄒㄧㄠˋ ㄌㄩˋ	existing				效率				
+phrase.manufacturing.tsv	59	時間	時間	ㄕˊ ㄐㄧㄢ	existing				時間				
+phrase.manufacturing.tsv	70	殘留	殘留	ㄘㄢˊ ㄌㄧㄡˊ	existing				殘留				
+phrase.manufacturing.tsv	72	沉積	沉積	ㄔㄣˊ ㄐㄧ	existing				沉積				
+phrase.manufacturing.tsv	81	焊接	焊接	ㄏㄢˋ ㄐㄧㄝ	existing				焊接				
+phrase.manufacturing.tsv	85	熔融	熔融	ㄖㄨㄥˊ ㄖㄨㄥˊ	existing				熔融				
+phrase.manufacturing.tsv	87	物料	物料	ㄨˋ ㄌㄧㄠˋ	existing				物料				
+phrase.manufacturing.tsv	88	生產	生產	ㄕㄥ ㄔㄢˇ	existing				生產				
+phrase.manufacturing.tsv	90	生產方式	生產方式	ㄕㄥ ㄔㄢˇ ㄈㄤ ㄕˋ	existing				生產方式				
+phrase.manufacturing.tsv	92	產能分析	產能分析	ㄔㄢˇ ㄋㄥˊ ㄈㄣ ㄒㄧ	duplicate				產能分析				
+phrase.manufacturing.tsv	104	系統	系統	ㄒㄧˋ ㄊㄨㄥˇ	existing				系統				
+phrase.manufacturing.tsv	105	統計	統計	ㄊㄨㄥˇ ㄐㄧˋ	existing				統計				
+phrase.manufacturing.tsv	106	維護	維護	ㄨㄟˊ ㄏㄨˋ	existing				維護				
+phrase.manufacturing.tsv	109	總合	總合	ㄗㄨㄥˇ ㄏㄜˊ	existing				總合				
+phrase.manufacturing.tsv	110	能力	能力	ㄋㄥˊ ㄌㄧˋ	existing				能力				
+phrase.manufacturing.tsv	116	製程	製程	ㄓˋ ㄔㄥˊ	existing				製程				
+phrase.manufacturing.tsv	120	製造	製造	ㄓˋ ㄗㄠˋ	existing				製造				
+phrase.manufacturing.tsv	121	規劃	規劃	ㄍㄨㄟ ㄏㄨㄚˋ	existing				規劃				
+phrase.manufacturing.tsv	122	設備	設備	ㄕㄜˋ ㄅㄟˋ	existing				設備				
+phrase.manufacturing.tsv	124	豐田	豐田	ㄈㄥ ㄊㄧㄢˊ	existing				豐田				
+phrase.manufacturing.tsv	125	資源規劃	資源規劃	ㄗ ㄩㄢˊ ㄍㄨㄟ ㄏㄨㄚˋ	duplicate				資源規劃				
+phrase.manufacturing.tsv	128	車床	車床	ㄔㄜ ㄔㄨㄤˊ	existing				車床				
+phrase.manufacturing.tsv	132	選擇性	選擇性	ㄒㄩㄢˇ ㄗㄜˊ ㄒㄧㄥˋ	existing				選擇性				
+phrase.manufacturing.tsv	133	金屬	金屬	ㄐㄧㄣ ㄕㄨˇ	existing				金屬				
+phrase.manufacturing.tsv	135	銑床	銑床	ㄒㄧㄢˇ ㄔㄨㄤˊ	existing				銑床				
+phrase.manufacturing.tsv	137	間隔	間隔	ㄐㄧㄢˋ ㄍㄜˊ	existing				間隔				
+phrase.manufacturing.tsv	139	雷射	雷射	ㄌㄟˊ ㄕㄜˋ	existing				雷射				
+phrase.manufacturing.tsv	142	需求	需求	ㄒㄩ ㄑㄧㄡˊ	existing				需求				
+phrase.materials-chemistry.tsv	3	傅立葉	傅立葉	ㄈㄨˋ ㄌㄧˋ ㄧㄝˋ	existing				傅立葉				
+phrase.materials-chemistry.tsv	13	化合物	化合物	ㄏㄨㄚˋ ㄏㄜˊ ㄨˋ	existing				化合物				
+phrase.materials-chemistry.tsv	16	反應器	反應器	ㄈㄢˇ ㄧㄥˋ ㄑㄧˋ	existing				反應器				
+phrase.materials-chemistry.tsv	28	奈米材料	奈米材料	ㄋㄞˋ ㄇㄧˇ ㄘㄞˊ ㄌㄧㄠˋ	existing				奈米材料				
+phrase.materials-chemistry.tsv	35	應力	應力	ㄧㄥˋ ㄌㄧˋ	existing				應力				
+phrase.materials-chemistry.tsv	36	成分分析	成分分析	ㄔㄥˊ ㄈㄣˋ ㄈㄣ ㄒㄧ	duplicate				成分分析				
+phrase.materials-chemistry.tsv	40	掃描	掃描	ㄙㄠˇ ㄇㄧㄠˊ	existing				掃描				
+phrase.materials-chemistry.tsv	41	掃描式	掃描式	ㄙㄠˇ ㄇㄧㄠˊ ㄕˋ	existing				掃描式				
+phrase.materials-chemistry.tsv	43	方程	方程	ㄈㄤ ㄔㄥˊ	existing				方程				
+phrase.materials-chemistry.tsv	54	活性碳吸附	活性碳吸附	ㄏㄨㄛˊ ㄒㄧㄥˋ ㄊㄢˋ ㄒㄧ ㄈㄨˋ	duplicate				活性碳吸附				
+phrase.materials-chemistry.tsv	59	滴定	滴定	ㄉㄧ ㄉㄧㄥˋ	existing				滴定				
+phrase.materials-chemistry.tsv	64	熱處理	熱處理	ㄖㄜˋ ㄔㄨˇ ㄌㄧˇ	existing				熱處理				
+phrase.materials-chemistry.tsv	68	燃料電池	燃料電池	ㄖㄢˊ ㄌㄧㄠˋ ㄉㄧㄢˋ ㄔˊ	duplicate				燃料電池				
+phrase.materials-chemistry.tsv	69	玻璃	玻璃	ㄅㄛ ㄌㄧˊ	existing				玻璃				
+phrase.materials-chemistry.tsv	75	破壞韌性	破壞韌性	ㄆㄛˋ ㄏㄨㄞˋ ㄖㄣˋ ㄒㄧㄥˋ	duplicate				破壞韌性				
+phrase.materials-chemistry.tsv	85	腐蝕	腐蝕	ㄈㄨˇ ㄕˊ	existing				腐蝕				
+phrase.materials-chemistry.tsv	93	裂紋	裂紋	ㄌㄧㄝˋ ㄨㄣˊ	existing				裂紋				
+phrase.materials-chemistry.tsv	94	複合材料	複合材料	ㄈㄨˋ ㄏㄜˊ ㄘㄞˊ ㄌㄧㄠˋ	existing				複合材料				
+phrase.materials-chemistry.tsv	95	試驗	試驗	ㄕˋ ㄧㄢˋ	existing				試驗				
+phrase.materials-chemistry.tsv	99	轉換	轉換	ㄓㄨㄢˇ ㄏㄨㄢˋ	existing				轉換				
+phrase.materials-chemistry.tsv	102	連續	連續	ㄌㄧㄢˊ ㄒㄩˋ	existing				連續				
+phrase.materials-chemistry.tsv	109	鈦合金	鈦合金	ㄊㄞˋ ㄏㄜˊ ㄐㄧㄣ	existing				鈦合金				
+phrase.materials-chemistry.tsv	111	鋁合金	鋁合金	ㄌㄩˇ ㄏㄜˊ ㄐㄧㄣ	existing				鋁合金				
+phrase.materials-chemistry.tsv	112	鋼材	鋼材	ㄍㄤ ㄘㄞˊ	existing				鋼材				
+phrase.materials-chemistry.tsv	119	陶瓷	陶瓷	ㄊㄠˊ ㄘˊ	existing				陶瓷				
+phrase.materials-chemistry.tsv	125	電子	電子	ㄉㄧㄢˋ ㄗˇ	existing				電子				
+phrase.materials-chemistry.tsv	128	顯微鏡	顯微鏡	ㄒㄧㄢˇ ㄨㄟˊ ㄐㄧㄥˋ	existing				顯微鏡				
+phrase.materials-chemistry.tsv	129	高分子	高分子	ㄍㄠ ㄈㄣ ㄗˇ	existing				高分子				
+phrase.media-design.tsv	4	介面	介面	ㄐㄧㄝˋ ㄇㄧㄢˋ	existing				介面				
+phrase.media-design.tsv	7	使用者	使用者	ㄕˇ ㄩㄥˋ ㄓㄜˇ	existing				使用者				
+phrase.media-design.tsv	11	傳達	傳達	ㄔㄨㄢˊ ㄉㄚˊ	existing				傳達				
+phrase.media-design.tsv	19	匿名	匿名	ㄋㄧˋ ㄇㄧㄥˊ	existing				匿名				
+phrase.media-design.tsv	60	消息來源	消息來源	ㄒㄧㄠ ㄒㄧˊ ㄌㄞˊ ㄩㄢˊ	existing				消息來源				
+phrase.media-design.tsv	79	視覺	視覺	ㄕˋ ㄐㄩㄝˊ	existing				視覺				
+phrase.media-design.tsv	82	設計	設計	ㄕㄜˋ ㄐㄧˋ	existing				設計				
+phrase.media-design.tsv	96	體驗	體驗	ㄊㄧˇ ㄧㄢˋ	existing				體驗				
+phrase.medicine.tsv	6	不全	不全	ㄅㄨˋ ㄑㄩㄢˊ	existing				不全				
+phrase.medicine.tsv	7	不良	不良	ㄅㄨˋ ㄌㄧㄤˊ	existing				不良				
+phrase.medicine.tsv	11	中毒	中毒	ㄓㄨㄥˋ ㄉㄨˊ	existing				中毒				
+phrase.medicine.tsv	12	主動脈	主動脈	ㄓㄨˇ ㄉㄨㄥˋ ㄇㄞˋ	existing				主動脈				
+phrase.medicine.tsv	15	乳房	乳房	ㄖㄨˇ ㄈㄤˊ	existing				乳房				
+phrase.medicine.tsv	19	亢進	亢進	ㄎㄤˋ ㄐㄧㄣˋ	existing				亢進				
+phrase.medicine.tsv	20	人工	人工	ㄖㄣˊ ㄍㄨㄥ	existing				人工				
+phrase.medicine.tsv	25	傳導	傳導	ㄔㄨㄢˊ ㄉㄠˇ	existing				傳導				
+phrase.medicine.tsv	26	光學	光學	ㄍㄨㄤ ㄒㄩㄝˊ	existing				光學				
+phrase.medicine.tsv	27	免疫系統	免疫系統	ㄇㄧㄢˇ ㄧˋ ㄒㄧˋ ㄊㄨㄥˇ	existing				免疫系統				
+phrase.medicine.tsv	28	內分泌系統	內分泌系統	ㄋㄟˋ ㄈㄣ ㄇㄧˋ ㄒㄧˋ ㄊㄨㄥˇ	existing				內分泌系統				
+phrase.medicine.tsv	30	內膜	內膜	ㄋㄟˋ ㄇㄛˊ	existing				內膜				
+phrase.medicine.tsv	31	內視鏡	內視鏡	ㄋㄟˋ ㄕˋ ㄐㄧㄥˋ	existing				內視鏡				
+phrase.medicine.tsv	33	再生	再生	ㄗㄞˋ ㄕㄥ	existing				再生				
+phrase.medicine.tsv	34	冠狀動脈	冠狀動脈	ㄍㄨㄢ ㄓㄨㄤˋ ㄉㄨㄥˋ ㄇㄞˋ	existing				冠狀動脈				
+phrase.medicine.tsv	36	凝血	凝血	ㄋㄧㄥˊ ㄒㄧㄝˇ	existing				凝血				
+phrase.medicine.tsv	38	出血	出血	ㄔㄨ ㄒㄧㄝˇ	existing				出血				
+phrase.medicine.tsv	39	出血性	出血性	ㄔㄨ ㄒㄧㄝˇ ㄒㄧㄥˋ	existing				出血性				
+phrase.medicine.tsv	43	剝離	剝離	ㄅㄛ ㄌㄧˊ	existing				剝離				
+phrase.medicine.tsv	46	功能	功能	ㄍㄨㄥ ㄋㄥˊ	existing				功能				
+phrase.medicine.tsv	48	動脈	動脈	ㄉㄨㄥˋ ㄇㄞˋ	existing				動脈				
+phrase.medicine.tsv	49	化膿性	化膿性	ㄏㄨㄚˋ ㄋㄨㄥˊ ㄒㄧㄥˋ	existing				化膿性				
+phrase.medicine.tsv	50	十字	十字	ㄕˊ ㄗˋ	existing				十字				
+phrase.medicine.tsv	52	卵巢	卵巢	ㄌㄨㄢˇ ㄔㄠˊ	existing				卵巢				
+phrase.medicine.tsv	53	原發性	原發性	ㄩㄢˊ ㄈㄚ ㄒㄧㄥˋ	existing				原發性				
+phrase.medicine.tsv	55	口服	口服	ㄎㄡˇ ㄈㄨˊ	existing				口服				
+phrase.medicine.tsv	57	同調	同調	ㄊㄨㄥˊ ㄉㄧㄠˋ	existing				同調				
+phrase.medicine.tsv	58	周邊	周邊	ㄓㄡ ㄅㄧㄢ	existing				周邊				
+phrase.medicine.tsv	59	呼吸	呼吸	ㄏㄨ ㄒㄧ	existing				呼吸				
+phrase.medicine.tsv	61	呼吸系統	呼吸系統	ㄏㄨ ㄒㄧ ㄒㄧˋ ㄊㄨㄥˇ	existing				呼吸系統				
+phrase.medicine.tsv	64	增生	增生	ㄗㄥ ㄕㄥ	existing				增生				
+phrase.medicine.tsv	68	多發性	多發性	ㄉㄨㄛ ㄈㄚ ㄒㄧㄥˋ	existing				多發性				
+phrase.medicine.tsv	69	多重	多重	ㄉㄨㄛ ㄔㄨㄥˊ	existing				多重				
+phrase.medicine.tsv	72	天門	天門	ㄊㄧㄢ ㄇㄣˊ	existing				天門				
+phrase.medicine.tsv	74	子宮	子宮	ㄗˇ ㄍㄨㄥ	existing				子宮				
+phrase.medicine.tsv	92	心臟	心臟	ㄒㄧㄣ ㄗㄤˋ	existing				心臟				
+phrase.medicine.tsv	93	心臟病	心臟病	ㄒㄧㄣ ㄗㄤˋ ㄅㄧㄥˋ	existing				心臟病				
+phrase.medicine.tsv	96	心血管	心血管	ㄒㄧㄣ ㄒㄧㄝˇ ㄍㄨㄢˇ	existing				心血管				
+phrase.medicine.tsv	97	急性	急性	ㄐㄧˊ ㄒㄧㄥˋ	existing				急性				
+phrase.medicine.tsv	101	感染性	感染性	ㄍㄢˇ ㄖㄢˇ ㄒㄧㄥˋ	existing				感染性				
+phrase.medicine.tsv	102	慢性	慢性	ㄇㄢˋ ㄒㄧㄥˋ	existing				慢性				
+phrase.medicine.tsv	105	抗菌	抗菌	ㄎㄤˋ ㄐㄩㄣˋ	existing				抗菌				
+phrase.medicine.tsv	106	抗藥性	抗藥性	ㄎㄤˋ ㄧㄠˋ ㄒㄧㄥˋ	existing				抗藥性				
+phrase.medicine.tsv	107	掃描	掃描	ㄙㄠˇ ㄇㄧㄠˊ	existing				掃描				
+phrase.medicine.tsv	108	撕裂	撕裂	ㄙ ㄌㄧㄝˋ	existing				撕裂				
+phrase.medicine.tsv	110	攝影	攝影	ㄕㄜˋ ㄧㄥˇ	existing				攝影				
+phrase.medicine.tsv	111	攝護腺	攝護腺	ㄕㄜˋ ㄏㄨˋ ㄒㄧㄢˋ	existing				攝護腺				
+phrase.medicine.tsv	113	支氣管	支氣管	ㄓ ㄑㄧˋ ㄍㄨㄢˇ	existing				支氣管				
+phrase.medicine.tsv	114	支氣管鏡	支氣管鏡	ㄓ ㄑㄧˋ ㄍㄨㄢˇ ㄐㄧㄥˋ	existing				支氣管鏡				
+phrase.medicine.tsv	115	敏感性	敏感性	ㄇㄧㄣˇ ㄍㄢˇ ㄒㄧㄥˋ	existing				敏感性				
+phrase.medicine.tsv	116	數值	數值	ㄕㄨˋ ㄓˊ	existing				數值				
+phrase.medicine.tsv	117	斷層	斷層	ㄉㄨㄢˋ ㄘㄥˊ	existing				斷層				
+phrase.medicine.tsv	118	早期	早期	ㄗㄠˇ ㄑㄧˊ	existing				早期				
+phrase.medicine.tsv	119	時間	時間	ㄕˊ ㄐㄧㄢ	existing				時間				
+phrase.medicine.tsv	120	暫時性	暫時性	ㄓㄢˋ ㄕˊ ㄒㄧㄥˋ	existing				暫時性				
+phrase.medicine.tsv	121	栓塞	栓塞	ㄕㄨㄢ ㄙㄞ	existing				栓塞				
+phrase.medicine.tsv	127	檢查	檢查	ㄐㄧㄢˇ ㄔㄚˊ	existing				檢查				
+phrase.medicine.tsv	128	檢測	檢測	ㄐㄧㄢˇ ㄘㄜˋ	existing				檢測				
+phrase.medicine.tsv	129	檢驗	檢驗	ㄐㄧㄢˇ ㄧㄢˋ	existing				檢驗				
+phrase.medicine.tsv	130	氣喘	氣喘	ㄑㄧˋ ㄔㄨㄢˇ	existing				氣喘				
+phrase.medicine.tsv	132	治療	治療	ㄓˋ ㄌㄧㄠˊ	existing				治療				
+phrase.medicine.tsv	134	活化	活化	ㄏㄨㄛˊ ㄏㄨㄚˋ	existing				活化				
+phrase.medicine.tsv	136	消化系統	消化系統	ㄒㄧㄠ ㄏㄨㄚˋ ㄒㄧˋ ㄊㄨㄥˇ	existing				消化系統				
+phrase.medicine.tsv	138	游離	游離	ㄧㄡˊ ㄌㄧˊ	existing				游離				
+phrase.medicine.tsv	140	溶解	溶解	ㄖㄨㄥˊ ㄐㄧㄝˇ	existing				溶解				
+phrase.medicine.tsv	143	狀態	狀態	ㄓㄨㄤˋ ㄊㄞˋ	existing				狀態				
+phrase.medicine.tsv	144	狹窄	狹窄	ㄒㄧㄚˊ ㄓㄞˇ	existing				狹窄				
+phrase.medicine.tsv	145	狼瘡	狼瘡	ㄌㄤˊ ㄔㄨㄤ	existing				狼瘡				
+phrase.medicine.tsv	148	產前	產前	ㄔㄢˇ ㄑㄧㄢˊ	existing				產前				
+phrase.medicine.tsv	149	甲狀腺	甲狀腺	ㄐㄧㄚˇ ㄓㄨㄤˋ ㄒㄧㄢˋ	existing				甲狀腺				
+phrase.medicine.tsv	150	甲狀腺素	甲狀腺素	ㄐㄧㄚˇ ㄓㄨㄤˋ ㄒㄧㄢˋ ㄙㄨˋ	existing				甲狀腺素				
+phrase.medicine.tsv	154	異常	異常	ㄧˋ ㄔㄤˊ	existing				異常				
+phrase.medicine.tsv	155	疾病	疾病	ㄐㄧˊ ㄅㄧㄥˋ	existing				疾病				
+phrase.medicine.tsv	157	病變	病變	ㄅㄧㄥˋ ㄅㄧㄢˋ	existing				病變				
+phrase.medicine.tsv	158	症候群	症候群	ㄓㄥˋ ㄏㄡˋ ㄑㄩㄣˊ	existing				症候群				
+phrase.medicine.tsv	159	癲癇	癲癇	ㄉㄧㄢ ㄒㄧㄢˊ	existing				癲癇				
+phrase.medicine.tsv	160	發作	發作	ㄈㄚ ㄗㄨㄛˋ	existing				發作				
+phrase.medicine.tsv	161	發炎性	發炎性	ㄈㄚ ㄧㄢˊ ㄒㄧㄥˋ	existing				發炎性				
+phrase.medicine.tsv	164	皮膚炎	皮膚炎	ㄆㄧˊ ㄈㄨ ㄧㄢˊ	existing				皮膚炎				
+phrase.medicine.tsv	165	監測	監測	ㄐㄧㄢ ㄘㄜˋ	existing				監測				
+phrase.medicine.tsv	167	睡眠	睡眠	ㄕㄨㄟˋ ㄇㄧㄢˊ	existing				睡眠				
+phrase.medicine.tsv	168	硬化症	硬化症	ㄧㄥˋ ㄏㄨㄚˋ ㄓㄥˋ	existing				硬化症				
+phrase.medicine.tsv	172	神經	神經	ㄕㄣˊ ㄐㄧㄥ	existing				神經				
+phrase.medicine.tsv	173	神經系統	神經系統	ㄕㄣˊ ㄐㄧㄥ ㄒㄧˋ ㄊㄨㄥˇ	existing				神經系統				
+phrase.medicine.tsv	174	窘迫	窘迫	ㄐㄩㄥˇ ㄆㄛˋ	existing				窘迫				
+phrase.medicine.tsv	175	筋膜炎	筋膜炎	ㄐㄧㄣ ㄇㄛˊ ㄧㄢˊ	existing				筋膜炎				
+phrase.medicine.tsv	176	管理	管理	ㄍㄨㄢˇ ㄌㄧˇ	existing				管理				
+phrase.medicine.tsv	178	糖尿病	糖尿病	ㄊㄤˊ ㄋㄧㄠˋ ㄅㄧㄥˋ	existing				糖尿病				
+phrase.medicine.tsv	179	系統	系統	ㄒㄧˋ ㄊㄨㄥˇ	existing				系統				
+phrase.medicine.tsv	180	系統性	系統性	ㄒㄧˋ ㄊㄨㄥˇ ㄒㄧㄥˋ	existing				系統性				
+phrase.medicine.tsv	181	紅斑	紅斑	ㄏㄨㄥˊ ㄅㄢ	existing				紅斑				
+phrase.medicine.tsv	182	紅血球	紅血球	ㄏㄨㄥˊ ㄒㄧㄝˇ ㄑㄧㄡˊ	existing				紅血球				
+phrase.medicine.tsv	183	純音	純音	ㄔㄨㄣˊ ㄧㄣ	existing				純音				
+phrase.medicine.tsv	184	細菌	細菌	ㄒㄧˋ ㄐㄩㄣˋ	existing				細菌				
+phrase.medicine.tsv	189	維生素	維生素	ㄨㄟˊ ㄕㄥ ㄙㄨˋ	existing				維生素				
+phrase.medicine.tsv	192	缺血性	缺血性	ㄑㄩㄝ ㄒㄧㄝˇ ㄒㄧㄥˋ	existing				缺血性				
+phrase.medicine.tsv	193	置換	置換	ㄓˋ ㄏㄨㄢˋ	existing				置換				
+phrase.medicine.tsv	195	聽力	聽力	ㄊㄧㄥ ㄌㄧˋ	existing				聽力				
+phrase.medicine.tsv	196	肌肉	肌肉	ㄐㄧ ㄖㄡˋ	existing				肌肉				
+phrase.medicine.tsv	201	肝臟	肝臟	ㄍㄢ ㄗㄤˋ	existing				肝臟				
+phrase.medicine.tsv	203	肺病	肺病	ㄈㄟˋ ㄅㄧㄥˋ	existing				肺病				
+phrase.medicine.tsv	205	肺部	肺部	ㄈㄟˋ ㄅㄨˋ	existing				肺部				
+phrase.medicine.tsv	207	胎盤	胎盤	ㄊㄞ ㄆㄢˊ	existing				胎盤				
+phrase.medicine.tsv	209	腎上腺	腎上腺	ㄕㄣˋ ㄕㄤˋ ㄒㄧㄢˋ	existing				腎上腺				
+phrase.medicine.tsv	211	腎臟	腎臟	ㄕㄣˋ ㄗㄤˋ	existing				腎臟				
+phrase.medicine.tsv	212	腦中風	腦中風	ㄋㄠˇ ㄓㄨㄥˋ ㄈㄥ	existing				腦中風				
+phrase.medicine.tsv	215	腹部	腹部	ㄈㄨˋ ㄅㄨˋ	existing				腹部				
+phrase.medicine.tsv	216	膀胱	膀胱	ㄆㄤˊ ㄍㄨㄤ	existing				膀胱				
+phrase.medicine.tsv	217	膝關節	膝關節	ㄒㄧ ㄍㄨㄢ ㄐㄧㄝˊ	existing				膝關節				
+phrase.medicine.tsv	218	葡萄糖	葡萄糖	ㄆㄨˊ ㄊㄠˊ ㄊㄤˊ	existing				葡萄糖				
+phrase.medicine.tsv	219	藥物	藥物	ㄧㄠˋ ㄨˋ	existing				藥物				
+phrase.medicine.tsv	222	血小板	血小板	ㄒㄧㄝˇ ㄒㄧㄠˇ ㄅㄢˇ	existing				血小板				
+phrase.medicine.tsv	223	血栓	血栓	ㄒㄧㄝˇ ㄕㄨㄢ	existing				血栓				
+phrase.medicine.tsv	226	血糖	血糖	ㄒㄧㄝˇ ㄊㄤˊ	existing				血糖				
+phrase.medicine.tsv	228	視網膜	視網膜	ㄕˋ ㄨㄤˇ ㄇㄛˊ	existing				視網膜				
+phrase.medicine.tsv	229	試驗	試驗	ㄕˋ ㄧㄢˋ	existing				試驗				
+phrase.medicine.tsv	230	貧血	貧血	ㄆㄧㄣˊ ㄒㄧㄝˇ	existing				貧血				
+phrase.medicine.tsv	233	逆流	逆流	ㄋㄧˋ ㄌㄧㄡˊ	existing				逆流				
+phrase.medicine.tsv	235	速率	速率	ㄙㄨˋ ㄌㄩˋ	existing				速率				
+phrase.medicine.tsv	237	連續	連續	ㄌㄧㄢˊ ㄒㄩˋ	existing				連續				
+phrase.medicine.tsv	239	部分	部分	ㄅㄨˋ ㄈㄣˋ	existing				部分				
+phrase.medicine.tsv	243	鈣化	鈣化	ㄍㄞˋ ㄏㄨㄚˋ	existing				鈣化				
+phrase.medicine.tsv	246	關節炎	關節炎	ㄍㄨㄢ ㄐㄧㄝˊ ㄧㄢˊ	existing				關節炎				
+phrase.medicine.tsv	248	障礙	障礙	ㄓㄤˋ ㄞˋ	existing				障礙				
+phrase.medicine.tsv	250	電腦	電腦	ㄉㄧㄢˋ ㄋㄠˇ	existing				電腦				
+phrase.medicine.tsv	252	靜脈	靜脈	ㄐㄧㄥˋ ㄇㄞˋ	existing				靜脈				
+phrase.medicine.tsv	253	靜脈曲張	靜脈曲張	ㄐㄧㄥˋ ㄇㄞˋ ㄑㄩ ㄓㄤ	existing				靜脈曲張				
+phrase.medicine.tsv	255	韌帶	韌帶	ㄖㄣˋ ㄉㄞˋ	existing				韌帶				
+phrase.medicine.tsv	256	頸動脈	頸動脈	ㄐㄧㄥˇ ㄉㄨㄥˋ ㄇㄞˋ	existing				頸動脈				
+phrase.medicine.tsv	258	風險評估	風險評估	ㄈㄥ ㄒㄧㄢˇ ㄆㄧㄥˊ ㄍㄨ	duplicate				風險評估				
+phrase.medicine.tsv	259	食道	食道	ㄕˊ ㄉㄠˋ	existing				食道				
+phrase.medicine.tsv	260	骨折	骨折	ㄍㄨˇ ㄓㄜˊ	existing				骨折				
+phrase.medicine.tsv	261	骨盆腔	骨盆腔	ㄍㄨˇ ㄆㄣˊ ㄑㄧㄤ	existing				骨盆腔				
+phrase.medicine.tsv	262	骨骼	骨骼	ㄍㄨˇ ㄍㄜˊ	existing				骨骼				
+phrase.medicine.tsv	263	骨髓	骨髓	ㄍㄨˇ ㄙㄨㄟˇ	existing				骨髓				
+phrase.medicine.tsv	265	髖關節	髖關節	ㄎㄨㄢ ㄍㄨㄢ ㄐㄧㄝˊ	existing				髖關節				
+phrase.medicine.tsv	268	高滲透壓	高滲透壓	ㄍㄠ ㄕㄣˋ ㄊㄡˋ ㄧㄚ	existing				高滲透壓				
+phrase.medicine.tsv	269	高血糖	高血糖	ㄍㄠ ㄒㄧㄝˇ ㄊㄤˊ	existing				高血糖				
+phrase.medicine.tsv	271	黏膜	黏膜	ㄋㄧㄢˊ ㄇㄛˊ	existing				黏膜				
+phrase.network-security.tsv	6	中心	中心	ㄓㄨㄥ ㄒㄧㄣ	existing				中心				
+phrase.network-security.tsv	8	主機	主機	ㄓㄨˇ ㄐㄧ	existing				主機				
+phrase.network-security.tsv	9	事件	事件	ㄕˋ ㄐㄧㄢˋ	existing				事件				
+phrase.network-security.tsv	12	伺服器	伺服器	ㄙˋ ㄈㄨˊ ㄑㄧˋ	existing				伺服器				
+phrase.network-security.tsv	14	位址	位址	ㄨㄟˋ ㄓˇ	existing				位址				
+phrase.network-security.tsv	16	使用者	使用者	ㄕˇ ㄩㄥˋ ㄓㄜˇ	existing				使用者				
+phrase.network-security.tsv	17	供應鏈	供應鏈	ㄍㄨㄥ ㄧㄥˋ ㄌㄧㄢˋ	duplicate				供應鏈				
+phrase.network-security.tsv	21	偵測	偵測	ㄓㄣ ㄘㄜˋ	existing				偵測				
+phrase.network-security.tsv	23	偽造	偽造	ㄨㄟˋ ㄗㄠˋ	existing				偽造				
+phrase.network-security.tsv	24	傳輸	傳輸	ㄔㄨㄢˊ ㄕㄨ	existing				傳輸				
+phrase.network-security.tsv	25	入侵	入侵	ㄖㄨˋ ㄑㄧㄣ	existing				入侵				
+phrase.network-security.tsv	28	分散式	分散式	ㄈㄣ ㄙㄢˋ ㄕˋ	existing				分散式				
+phrase.network-security.tsv	29	分析	分析	ㄈㄣ ㄒㄧ	existing				分析				
+phrase.network-security.tsv	30	加密	加密	ㄐㄧㄚ ㄇㄧˋ	existing				加密				
+phrase.network-security.tsv	32	動態	動態	ㄉㄨㄥˋ ㄊㄞˋ	existing				動態				
+phrase.network-security.tsv	35	區域網路	區域網路	ㄑㄩ ㄩˋ ㄨㄤˇ ㄌㄨˋ	existing				區域網路				
+phrase.network-security.tsv	36	協作	協作	ㄒㄧㄝˊ ㄗㄨㄛˋ	existing				協作				
+phrase.network-security.tsv	37	協定	協定	ㄒㄧㄝˊ ㄉㄧㄥˋ	existing				協定				
+phrase.network-security.tsv	39	名稱	名稱	ㄇㄧㄥˊ ㄔㄥ	existing				名稱				
+phrase.network-security.tsv	41	商務	商務	ㄕㄤ ㄨˋ	existing				商務				
+phrase.network-security.tsv	43	單元	單元	ㄉㄢ ㄩㄢˊ	existing				單元				
+phrase.network-security.tsv	45	回應	回應	ㄏㄨㄟˊ ㄧㄥˋ	existing				回應				
+phrase.network-security.tsv	48	執行	執行	ㄓˊ ㄒㄧㄥˊ	existing				執行				
+phrase.network-security.tsv	49	基礎	基礎	ㄐㄧ ㄔㄨˇ	existing				基礎				
+phrase.network-security.tsv	56	安全	安全	ㄢ ㄑㄩㄢˊ	existing				安全				
+phrase.network-security.tsv	68	帳號	帳號	ㄓㄤˋ ㄏㄠˋ	existing				帳號				
+phrase.network-security.tsv	69	建設	建設	ㄐㄧㄢˋ ㄕㄜˋ	existing				建設				
+phrase.network-security.tsv	74	惡意	惡意	ㄜˋ ㄧˋ	existing				惡意				
+phrase.network-security.tsv	76	憑證	憑證	ㄆㄧㄥˊ ㄓㄥˋ	existing				憑證				
+phrase.network-security.tsv	80	應用	應用	ㄧㄥˋ ㄩㄥˋ	existing				應用				
+phrase.network-security.tsv	81	應用程式	應用程式	ㄧㄥˋ ㄩㄥˋ ㄔㄥˊ ㄕˋ	existing				應用程式				
+phrase.network-security.tsv	82	戰術	戰術	ㄓㄢˋ ㄕㄨˋ	existing				戰術				
+phrase.network-security.tsv	83	技術	技術	ㄐㄧˋ ㄕㄨˋ	existing				技術				
+phrase.network-security.tsv	84	授權	授權	ㄕㄡˋ ㄑㄩㄢˊ	existing				授權				
+phrase.network-security.tsv	85	控制	控制	ㄎㄨㄥˋ ㄓˋ	existing				控制				
+phrase.network-security.tsv	94	最大	最大	ㄗㄨㄟˋ ㄉㄚˋ	existing				最大				
+phrase.network-security.tsv	96	服務	服務	ㄈㄨˊ ㄨˋ	existing				服務				
+phrase.network-security.tsv	97	模組	模組	ㄇㄛˊ ㄗㄨˇ	existing				模組				
+phrase.network-security.tsv	104	治理	治理	ㄓˋ ㄌㄧˇ	existing				治理				
+phrase.network-security.tsv	109	特權	特權	ㄊㄜˋ ㄑㄩㄢˊ	existing				特權				
+phrase.network-security.tsv	111	硬體	硬體	ㄧㄥˋ ㄊㄧˇ	existing				硬體				
+phrase.network-security.tsv	114	程序	程序	ㄔㄥˊ ㄒㄩˋ	existing				程序				
+phrase.network-security.tsv	115	程式	程式	ㄔㄥˊ ㄕˋ	existing				程式				
+phrase.network-security.tsv	116	程式碼	程式碼	ㄔㄥˊ ㄕˋ ㄇㄚˇ	existing				程式碼				
+phrase.network-security.tsv	117	稽核	稽核	ㄐㄧ ㄏㄜˊ	existing				稽核				
+phrase.network-security.tsv	119	端點	端點	ㄉㄨㄢ ㄉㄧㄢˇ	existing				端點				
+phrase.network-security.tsv	122	管理	管理	ㄍㄨㄢˇ ㄌㄧˇ	existing				管理				
+phrase.network-security.tsv	123	系統	系統	ㄒㄧˋ ㄊㄨㄥˇ	existing				系統				
+phrase.network-security.tsv	128	網域	網域	ㄨㄤˇ ㄩˋ	existing				網域				
+phrase.network-security.tsv	130	網路	網路	ㄨㄤˇ ㄌㄨˋ	existing				網路				
+phrase.network-security.tsv	136	網頁	網頁	ㄨㄤˇ ㄧㄝˋ	existing				網頁				
+phrase.network-security.tsv	138	自動化	自動化	ㄗˋ ㄉㄨㄥˋ ㄏㄨㄚˋ	existing				自動化				
+phrase.network-security.tsv	140	虛擬	虛擬	ㄒㄩ ㄋㄧˇ	existing				虛擬				
+phrase.network-security.tsv	142	解析	解析	ㄐㄧㄝˇ ㄒㄧ	existing				解析				
+phrase.network-security.tsv	143	訊息	訊息	ㄒㄩㄣˋ ㄒㄧˊ	existing				訊息				
+phrase.network-security.tsv	146	設定	設定	ㄕㄜˋ ㄉㄧㄥˋ	existing				設定				
+phrase.network-security.tsv	147	詐騙	詐騙	ㄓㄚˋ ㄆㄧㄢˋ	existing				詐騙				
+phrase.network-security.tsv	148	請求	請求	ㄑㄧㄥˇ ㄑㄧㄡˊ	existing				請求				
+phrase.network-security.tsv	151	資料	資料	ㄗ ㄌㄧㄠˋ	existing				資料				
+phrase.network-security.tsv	153	資料庫	資料庫	ㄗ ㄌㄧㄠˋ ㄎㄨˋ	existing				資料庫				
+phrase.network-security.tsv	157	資訊	資訊	ㄗ ㄒㄩㄣˋ	existing				資訊				
+phrase.network-security.tsv	158	資訊安全	資訊安全	ㄗ ㄒㄩㄣˋ ㄢ ㄑㄩㄢˊ	duplicate				資訊安全				
+phrase.network-security.tsv	160	路徑	路徑	ㄌㄨˋ ㄐㄧㄥˋ	existing				路徑				
+phrase.network-security.tsv	162	轉換	轉換	ㄓㄨㄢˇ ㄏㄨㄢˋ	existing				轉換				
+phrase.network-security.tsv	164	遠端	遠端	ㄩㄢˇ ㄉㄨㄢ	existing				遠端				
+phrase.network-security.tsv	166	金鑰	金鑰	ㄐㄧㄣ ㄧㄠˋ	existing				金鑰				
+phrase.network-security.tsv	167	防火牆	防火牆	ㄈㄤˊ ㄏㄨㄛˇ ㄑㄧㄤˊ	existing				防火牆				
+phrase.network-security.tsv	168	防禦	防禦	ㄈㄤˊ ㄩˋ	existing				防禦				
+phrase.network-security.tsv	169	阻斷	阻斷	ㄗㄨˇ ㄉㄨㄢˋ	existing				阻斷				
+phrase.network-security.tsv	172	電子郵件	電子郵件	ㄉㄧㄢˋ ㄗˇ ㄧㄡˊ ㄐㄧㄢˋ	existing				電子郵件				
+phrase.network-security.tsv	174	風險評估	風險評估	ㄈㄥ ㄒㄧㄢˇ ㄆㄧㄥˊ ㄍㄨ	duplicate				風險評估				
+phrase.people-contemporary.tsv	2	劉德華	劉德華	ㄌㄧㄡˊ ㄉㄜˊ ㄏㄨㄚˊ	existing				劉德華				
+phrase.people-contemporary.tsv	3	吳宗憲	吳宗憲	ㄨˊ ㄗㄨㄥ ㄒㄧㄢˋ	existing				吳宗憲				
+phrase.people-contemporary.tsv	4	吳敦義	吳敦義	ㄨˊ ㄉㄨㄣ ㄧˋ	existing				吳敦義				
+phrase.people-contemporary.tsv	5	周杰倫	周杰倫	ㄓㄡ ㄐㄧㄝˊ ㄌㄨㄣˊ	existing				周杰倫				
+phrase.people-contemporary.tsv	6	姚明	姚明	ㄧㄠˊ ㄇㄧㄥˊ	existing				姚明				
+phrase.people-contemporary.tsv	8	宮崎駿	宮崎駿	ㄍㄨㄥ ㄑㄧˊ ㄐㄩㄣˋ	existing				宮崎駿				
+phrase.people-contemporary.tsv	9	川普	川普	ㄔㄨㄢ ㄆㄨˇ	existing				川普				
+phrase.people-contemporary.tsv	10	張忠謀	張忠謀	ㄓㄤ ㄓㄨㄥ ㄇㄡˊ	existing				張忠謀				
+phrase.people-contemporary.tsv	11	張惠妹	張惠妹	ㄓㄤ ㄏㄨㄟˋ ㄇㄟˋ	existing				張惠妹				
+phrase.people-contemporary.tsv	14	木村拓哉	木村拓哉	ㄇㄨˋ ㄘㄨㄣ ㄊㄨㄛˋ ㄗㄞ	existing				木村拓哉				
+phrase.people-contemporary.tsv	15	朱立倫	朱立倫	ㄓㄨ ㄌㄧˋ ㄌㄨㄣˊ	existing				朱立倫				
+phrase.people-contemporary.tsv	16	李光耀	李光耀	ㄌㄧˇ ㄍㄨㄤ ㄧㄠˋ	existing				李光耀				
+phrase.people-contemporary.tsv	17	李安	李安	ㄌㄧˇ ㄢ	existing				李安				
+phrase.people-contemporary.tsv	18	李連杰	李連杰	ㄌㄧˇ ㄌㄧㄢˊ ㄐㄧㄝˊ	existing				李連杰				
+phrase.people-contemporary.tsv	19	村上春樹	村上春樹	ㄘㄨㄣ ㄕㄤˋ ㄔㄨㄣ ㄕㄨˋ	existing				村上春樹				
+phrase.people-contemporary.tsv	20	林宥嘉	林宥嘉	ㄌㄧㄣˊ ㄧㄡˋ ㄐㄧㄚ	existing				林宥嘉				
+phrase.people-contemporary.tsv	21	林智勝	林智勝	ㄌㄧㄣˊ ㄓˋ ㄕㄥˋ	existing				林智勝				
+phrase.people-contemporary.tsv	22	林益世	林益世	ㄌㄧㄣˊ ㄧˋ ㄕˋ	existing				林益世				
+phrase.people-contemporary.tsv	23	柯文哲	柯文哲	ㄎㄜ ㄨㄣˊ ㄓㄜˊ	existing				柯文哲				
+phrase.people-contemporary.tsv	25	歐巴馬	歐巴馬	ㄡ ㄅㄚ ㄇㄚˇ	existing				歐巴馬				
+phrase.people-contemporary.tsv	26	比爾蓋茲	比爾蓋茲	ㄅㄧˇ ㄦˇ ㄍㄞˋ ㄗ	existing				比爾蓋茲				
+phrase.people-contemporary.tsv	27	洪秀柱	洪秀柱	ㄏㄨㄥˊ ㄒㄧㄡˋ ㄓㄨˋ	existing				洪秀柱				
+phrase.people-contemporary.tsv	28	王力宏	王力宏	ㄨㄤˊ ㄌㄧˋ ㄏㄨㄥˊ	existing				王力宏				
+phrase.people-contemporary.tsv	29	王定宇	王定宇	ㄨㄤˊ ㄉㄧㄥˋ ㄩˇ	existing				王定宇				
+phrase.people-contemporary.tsv	30	王建民	王建民	ㄨㄤˊ ㄐㄧㄢˋ ㄇㄧㄣˊ	existing				王建民				
+phrase.people-contemporary.tsv	31	王金平	王金平	ㄨㄤˊ ㄐㄧㄣ ㄆㄧㄥˊ	existing				王金平				
+phrase.people-contemporary.tsv	32	章子怡	章子怡	ㄓㄤ ㄗˇ ㄧˊ	existing				章子怡				
+phrase.people-contemporary.tsv	33	習近平	習近平	ㄒㄧˊ ㄐㄧㄣˋ ㄆㄧㄥˊ	existing				習近平				
+phrase.people-contemporary.tsv	34	胡志強	胡志強	ㄏㄨˊ ㄓˋ ㄑㄧㄤˊ	existing				胡志強				
+phrase.people-contemporary.tsv	35	蔡依林	蔡依林	ㄘㄞˋ ㄧ ㄌㄧㄣˊ	existing				蔡依林				
+phrase.people-contemporary.tsv	36	蔡卓妍	蔡卓妍	ㄘㄞˋ ㄓㄨㄛˊ ㄧㄢˊ	existing				蔡卓妍				
+phrase.people-contemporary.tsv	37	蔡明亮	蔡明亮	ㄘㄞˋ ㄇㄧㄥˊ ㄌㄧㄤˋ	existing				蔡明亮				
+phrase.people-contemporary.tsv	38	蔡英文	蔡英文	ㄘㄞˋ ㄧㄥ ㄨㄣˊ	existing				蔡英文				
+phrase.people-contemporary.tsv	39	蘇嘉全	蘇嘉全	ㄙㄨ ㄐㄧㄚ ㄑㄩㄢˊ	existing				蘇嘉全				
+phrase.people-contemporary.tsv	40	蘇貞昌	蘇貞昌	ㄙㄨ ㄓㄣ ㄔㄤ	existing				蘇貞昌				
+phrase.people-contemporary.tsv	41	賈伯斯	賈伯斯	ㄐㄧㄚˇ ㄅㄛˊ ㄙ	existing				賈伯斯				
+phrase.people-contemporary.tsv	42	賴清德	賴清德	ㄌㄞˋ ㄑㄧㄥ ㄉㄜˊ	existing				賴清德				
+phrase.people-contemporary.tsv	43	趙少康	趙少康	ㄓㄠˋ ㄕㄠˋ ㄎㄤ	existing				趙少康				
+phrase.people-contemporary.tsv	44	邱太三	邱太三	ㄑㄧㄡ ㄊㄞˋ ㄙㄢ	existing				邱太三				
+phrase.people-contemporary.tsv	45	邱毅	邱毅	ㄑㄧㄡ ㄧˋ	existing				邱毅				
+phrase.people-contemporary.tsv	46	郭台銘	郭台銘	ㄍㄨㄛ ㄊㄞˊ ㄇㄧㄥˊ	existing				郭台銘				
+phrase.people-contemporary.tsv	47	郭正亮	郭正亮	ㄍㄨㄛ ㄓㄥˋ ㄌㄧㄤˋ	existing				郭正亮				
+phrase.people-contemporary.tsv	48	鈴木一朗	鈴木一朗	ㄌㄧㄥˊ ㄇㄨˋ ㄧ ㄌㄤˇ	existing				鈴木一朗				
+phrase.people-contemporary.tsv	49	陳文茜	陳文茜	ㄔㄣˊ ㄨㄣˊ ㄑㄧㄢˋ	existing				陳文茜				
+phrase.people-contemporary.tsv	50	陳菊	陳菊	ㄔㄣˊ ㄐㄩˊ	existing				陳菊				
+phrase.people-contemporary.tsv	51	陳金鋒	陳金鋒	ㄔㄣˊ ㄐㄧㄣ ㄈㄥ	existing				陳金鋒				
+phrase.people-contemporary.tsv	53	香取慎吾	香取慎吾	ㄒㄧㄤ ㄑㄩˇ ㄕㄣˋ ㄨˊ	existing				香取慎吾				
+phrase.people-contemporary.tsv	55	馬英九	馬英九	ㄇㄚˇ ㄧㄥ ㄐㄧㄡˇ	existing				馬英九				
+phrase.people-contemporary.tsv	56	高行健	高行健	ㄍㄠ ㄒㄧㄥˊ ㄐㄧㄢˋ	existing				高行健				
+phrase.people-history.tsv	2	三島由紀夫	三島由紀夫	ㄙㄢ ㄉㄠˇ ㄧㄡˊ ㄐㄧˋ ㄈㄨ	existing				三島由紀夫				
+phrase.people-history.tsv	3	乾隆	乾隆	ㄑㄧㄢˊ ㄌㄨㄥˊ	existing				乾隆				
+phrase.people-history.tsv	4	亞當斯密	亞當斯密	ㄧㄚˇ ㄉㄤ ㄙ ㄇㄧˋ	existing				亞當斯密				
+phrase.people-history.tsv	5	亞里斯多德	亞里斯多德	ㄧㄚˇ ㄌㄧˇ ㄙ ㄉㄨㄛ ㄉㄜˊ	existing				亞里斯多德				
+phrase.people-history.tsv	6	伏羲	伏羲	ㄈㄨˊ ㄒㄧ	existing				伏羲				
+phrase.people-history.tsv	7	伽利略	伽利略	ㄐㄧㄚ ㄌㄧˋ ㄌㄩㄝˋ	existing				伽利略				
+phrase.people-history.tsv	8	佛洛伊德	佛洛伊德	ㄈㄛˊ ㄌㄨㄛˋ ㄧ ㄉㄜˊ	existing				佛洛伊德				
+phrase.people-history.tsv	9	佛洛依德	佛洛依德	ㄈㄛˊ ㄌㄨㄛˋ ㄧ ㄉㄜˊ	existing				佛洛依德				
+phrase.people-history.tsv	10	劉備	劉備	ㄌㄧㄡˊ ㄅㄟˋ	existing				劉備				
+phrase.people-history.tsv	11	劉邦	劉邦	ㄌㄧㄡˊ ㄅㄤ	existing				劉邦				
+phrase.people-history.tsv	12	劉銘傳	劉銘傳	ㄌㄧㄡˊ ㄇㄧㄥˊ ㄔㄨㄢˊ	existing				劉銘傳				
+phrase.people-history.tsv	13	卓別林	卓別林	ㄓㄨㄛˊ ㄅㄧㄝˊ ㄌㄧㄣˊ	existing				卓別林				
+phrase.people-history.tsv	14	南丁格爾	南丁格爾	ㄋㄢˊ ㄉㄧㄥ ㄍㄜˊ ㄦˇ	existing				南丁格爾				
+phrase.people-history.tsv	15	卡夫卡	卡夫卡	ㄎㄚˇ ㄈㄨ ㄎㄚˇ	existing				卡夫卡				
+phrase.people-history.tsv	16	史達林	史達林	ㄕˇ ㄉㄚˊ ㄌㄧㄣˊ	existing				史達林				
+phrase.people-history.tsv	17	司馬光	司馬光	ㄙ ㄇㄚˇ ㄍㄨㄤ	existing				司馬光				
+phrase.people-history.tsv	18	司馬遷	司馬遷	ㄙ ㄇㄚˇ ㄑㄧㄢ	existing				司馬遷				
+phrase.people-history.tsv	19	周文王	周文王	ㄓㄡ ㄨㄣˊ ㄨㄤˊ	existing				周文王				
+phrase.people-history.tsv	20	周武王	周武王	ㄓㄡ ㄨˇ ㄨㄤˊ	existing				周武王				
+phrase.people-history.tsv	21	周瑜	周瑜	ㄓㄡ ㄩˊ	existing				周瑜				
+phrase.people-history.tsv	22	哥白尼	哥白尼	ㄍㄜ ㄅㄞˊ ㄋㄧˊ	existing				哥白尼				
+phrase.people-history.tsv	24	塞尚	塞尚	ㄙㄞˋ ㄕㄤˋ	existing				塞尚				
+phrase.people-history.tsv	25	墨子	墨子	ㄇㄛˋ ㄗˇ	existing				墨子				
+phrase.people-history.tsv	26	墨索里尼	墨索里尼	ㄇㄛˋ ㄙㄨㄛˇ ㄌㄧˇ ㄋㄧˊ	existing				墨索里尼				
+phrase.people-history.tsv	27	姜太公	姜太公	ㄐㄧㄤ ㄊㄞˋ ㄍㄨㄥ	existing				姜太公				
+phrase.people-history.tsv	28	姜子牙	姜子牙	ㄐㄧㄤ ㄗˇ ㄧㄚˊ	existing				姜子牙				
+phrase.people-history.tsv	29	子思	子思	ㄗˇ ㄙ	existing				子思				
+phrase.people-history.tsv	30	子貢	子貢	ㄗˇ ㄍㄨㄥˋ	existing				子貢				
+phrase.people-history.tsv	31	子路	子路	ㄗˇ ㄌㄨˋ	existing				子路				
+phrase.people-history.tsv	32	孔子	孔子	ㄎㄨㄥˇ ㄗˇ	existing				孔子				
+phrase.people-history.tsv	33	孟子	孟子	ㄇㄥˋ ㄗˇ	existing				孟子				
+phrase.people-history.tsv	34	孟德爾	孟德爾	ㄇㄥˋ ㄉㄜˊ ㄦˇ	existing				孟德爾				
+phrase.people-history.tsv	35	孫中山	孫中山	ㄙㄨㄣ ㄓㄨㄥ ㄕㄢ	existing				孫中山				
+phrase.people-history.tsv	36	孫文	孫文	ㄙㄨㄣ ㄨㄣˊ	existing				孫文				
+phrase.people-history.tsv	37	孫權	孫權	ㄙㄨㄣ ㄑㄩㄢˊ	existing				孫權				
+phrase.people-history.tsv	38	孫武	孫武	ㄙㄨㄣ ㄨˇ	existing				孫武				
+phrase.people-history.tsv	39	孫立人	孫立人	ㄙㄨㄣ ㄌㄧˋ ㄖㄣˊ	existing				孫立人				
+phrase.people-history.tsv	40	孫逸仙	孫逸仙	ㄙㄨㄣ ㄧˋ ㄒㄧㄢ	existing				孫逸仙				
+phrase.people-history.tsv	41	尼采	尼采	ㄋㄧˊ ㄘㄞˇ	existing				尼采				
+phrase.people-history.tsv	42	居禮夫人	居禮夫人	ㄐㄩ ㄌㄧˇ ㄈㄨ ㄖㄣˊ	existing				居禮夫人				
+phrase.people-history.tsv	43	屈原	屈原	ㄑㄩ ㄩㄢˊ	existing				屈原				
+phrase.people-history.tsv	44	岳飛	岳飛	ㄩㄝˋ ㄈㄟ	existing				岳飛				
+phrase.people-history.tsv	45	左宗棠	左宗棠	ㄗㄨㄛˇ ㄗㄨㄥ ㄊㄤˊ	existing				左宗棠				
+phrase.people-history.tsv	46	巴赫	巴赫	ㄅㄚ ㄏㄜˋ	existing				巴赫				
+phrase.people-history.tsv	47	布拉姆斯	布拉姆斯	ㄅㄨˋ ㄌㄚ ㄇㄨˇ ㄙ	existing				布拉姆斯				
+phrase.people-history.tsv	48	希特勒	希特勒	ㄒㄧ ㄊㄜˋ ㄌㄜˋ	existing				希特勒				
+phrase.people-history.tsv	49	康德	康德	ㄎㄤ ㄉㄜˊ	existing				康德				
+phrase.people-history.tsv	50	康熙	康熙	ㄎㄤ ㄒㄧ	existing				康熙				
+phrase.people-history.tsv	51	張良	張良	ㄓㄤ ㄌㄧㄤˊ	existing				張良				
+phrase.people-history.tsv	52	張飛	張飛	ㄓㄤ ㄈㄟ	existing				張飛				
+phrase.people-history.tsv	53	徐光啟	徐光啟	ㄒㄩˊ ㄍㄨㄤ ㄑㄧˇ	existing				徐光啟				
+phrase.people-history.tsv	54	德川家康	德川家康	ㄉㄜˊ ㄔㄨㄢ ㄐㄧㄚ ㄎㄤ	existing				德川家康				
+phrase.people-history.tsv	55	德拉克洛瓦	德拉克洛瓦	ㄉㄜˊ ㄌㄚ ㄎㄜˋ ㄌㄨㄛˋ ㄨㄚˇ	existing				德拉克洛瓦				
+phrase.people-history.tsv	56	恩格斯	恩格斯	ㄣ ㄍㄜˊ ㄙ	existing				恩格斯				
+phrase.people-history.tsv	57	愛因斯坦	愛因斯坦	ㄞˋ ㄧㄣ ㄙ ㄊㄢˇ	existing				愛因斯坦				
+phrase.people-history.tsv	58	愛迪生	愛迪生	ㄞˋ ㄉㄧˊ ㄕㄥ	existing				愛迪生				
+phrase.people-history.tsv	59	成吉思汗	成吉思汗	ㄔㄥˊ ㄐㄧˊ ㄙ ㄏㄢˊ	existing				成吉思汗				
+phrase.people-history.tsv	60	戚繼光	戚繼光	ㄑㄧ ㄐㄧˋ ㄍㄨㄤ	existing				戚繼光				
+phrase.people-history.tsv	61	手塚治虫	手塚治虫	ㄕㄡˇ ㄓㄨㄥˇ ㄓˋ ㄏㄨㄟˇ	existing				手塚治虫				
+phrase.people-history.tsv	62	托爾斯泰	托爾斯泰	ㄊㄨㄛ ㄦˇ ㄙ ㄊㄞˋ	existing				托爾斯泰				
+phrase.people-history.tsv	63	拉斐爾	拉斐爾	ㄌㄚ ㄈㄟˇ ㄦˇ	existing				拉斐爾				
+phrase.people-history.tsv	64	摩西	摩西	ㄇㄛˊ ㄒㄧ	existing				摩西				
+phrase.people-history.tsv	65	文天祥	文天祥	ㄨㄣˊ ㄊㄧㄢ ㄒㄧㄤˊ	existing				文天祥				
+phrase.people-history.tsv	66	施琅	施琅	ㄕ ㄌㄤˊ	existing				施琅				
+phrase.people-history.tsv	67	晏嬰	晏嬰	ㄧㄢˋ ㄧㄥ	existing				晏嬰				
+phrase.people-history.tsv	68	晏子	晏子	ㄧㄢˋ ㄗˇ	existing				晏子				
+phrase.people-history.tsv	69	普希金	普希金	ㄆㄨˇ ㄒㄧ ㄐㄧㄣ	existing				普希金				
+phrase.people-history.tsv	70	曹操	曹操	ㄘㄠˊ ㄘㄠ	existing				曹操				
+phrase.people-history.tsv	71	曹植	曹植	ㄘㄠˊ ㄓˊ	existing				曹植				
+phrase.people-history.tsv	72	曹雪芹	曹雪芹	ㄘㄠˊ ㄒㄩㄝˇ ㄑㄧㄣˊ	existing				曹雪芹				
+phrase.people-history.tsv	73	曾國藩	曾國藩	ㄗㄥ ㄍㄨㄛˊ ㄈㄢˊ	existing				曾國藩				
+phrase.people-history.tsv	74	曾子	曾子	ㄗㄥ ㄗ˙	existing				曾子				
+phrase.people-history.tsv	75	本雅明	本雅明	ㄅㄣˇ ㄧㄚˇ ㄇㄧㄥˊ	existing				本雅明				
+phrase.people-history.tsv	76	朱元璋	朱元璋	ㄓㄨ ㄩㄢˊ ㄓㄤ	existing				朱元璋				
+phrase.people-history.tsv	77	朱熹	朱熹	ㄓㄨ ㄒㄧ	existing				朱熹				
+phrase.people-history.tsv	78	李商隱	李商隱	ㄌㄧˇ ㄕㄤ ㄧㄣˇ	existing				李商隱				
+phrase.people-history.tsv	79	李斯	李斯	ㄌㄧˇ ㄙ	existing				李斯				
+phrase.people-history.tsv	80	李斯特	李斯特	ㄌㄧˇ ㄙ ㄊㄜˋ	existing				李斯特				
+phrase.people-history.tsv	81	李時珍	李時珍	ㄌㄧˇ ㄕˊ ㄓㄣ	existing				李時珍				
+phrase.people-history.tsv	82	李白	李白	ㄌㄧˇ ㄅㄞˊ	existing				李白				
+phrase.people-history.tsv	83	李鴻章	李鴻章	ㄌㄧˇ ㄏㄨㄥˊ ㄓㄤ	existing				李鴻章				
+phrase.people-history.tsv	84	杜甫	杜甫	ㄉㄨˋ ㄈㄨˇ	existing				杜甫				
+phrase.people-history.tsv	85	林則徐	林則徐	ㄌㄧㄣˊ ㄗㄜˊ ㄒㄩˊ	existing				林則徐				
+phrase.people-history.tsv	86	林森	林森	ㄌㄧㄣˊ ㄙㄣ	existing				林森				
+phrase.people-history.tsv	87	林覺民	林覺民	ㄌㄧㄣˊ ㄐㄩㄝˊ ㄇㄧㄣˊ	existing				林覺民				
+phrase.people-history.tsv	88	柏拉圖	柏拉圖	ㄅㄛˊ ㄌㄚ ㄊㄨˊ	existing				柏拉圖				
+phrase.people-history.tsv	89	柳宗元	柳宗元	ㄌㄧㄡˇ ㄗㄨㄥ ㄩㄢˊ	existing				柳宗元				
+phrase.people-history.tsv	90	梁啟超	梁啟超	ㄌㄧㄤˊ ㄑㄧˇ ㄔㄠ	existing				梁啟超				
+phrase.people-history.tsv	91	梅蘭芳	梅蘭芳	ㄇㄟˊ ㄌㄢˊ ㄈㄤ	existing				梅蘭芳				
+phrase.people-history.tsv	92	梵谷	梵谷	ㄈㄢˋ ㄍㄨˇ	existing				梵谷				
+phrase.people-history.tsv	93	歌德	歌德	ㄍㄜ ㄉㄜˊ	existing				歌德				
+phrase.people-history.tsv	94	歐陽修	歐陽修	ㄡ ㄧㄤˊ ㄒㄧㄡ	existing				歐陽修				
+phrase.people-history.tsv	95	汪精衛	汪精衛	ㄨㄤ ㄐㄧㄥ ㄨㄟˋ	existing				汪精衛				
+phrase.people-history.tsv	96	沈葆楨	沈葆楨	ㄕㄣˇ ㄅㄠˇ ㄓㄣ	existing				沈葆楨				
+phrase.people-history.tsv	97	海明威	海明威	ㄏㄞˇ ㄇㄧㄥˊ ㄨㄟ	existing				海明威				
+phrase.people-history.tsv	98	漢武帝	漢武帝	ㄏㄢˋ ㄨˇ ㄉㄧˋ	existing				漢武帝				
+phrase.people-history.tsv	99	牛頓	牛頓	ㄋㄧㄡˊ ㄉㄨㄣˋ	existing				牛頓				
+phrase.people-history.tsv	100	特斯拉	特斯拉	ㄊㄜˋ ㄙ ㄌㄚ	existing				特斯拉				
+phrase.people-history.tsv	101	玄奘	玄奘	ㄒㄩㄢˊ ㄓㄨㄤˇ	existing				玄奘				
+phrase.people-history.tsv	102	王安石	王安石	ㄨㄤˊ ㄢ ㄕˊ	existing				王安石				
+phrase.people-history.tsv	103	王維	王維	ㄨㄤˊ ㄨㄟˊ	existing				王維				
+phrase.people-history.tsv	104	王羲之	王羲之	ㄨㄤˊ ㄒㄧ ㄓ	existing				王羲之				
+phrase.people-history.tsv	105	王莽	王莽	ㄨㄤˊ ㄇㄤˇ	existing				王莽				
+phrase.people-history.tsv	106	王陽明	王陽明	ㄨㄤˊ ㄧㄤˊ ㄇㄧㄥˊ	existing				王陽明				
+phrase.people-history.tsv	107	班固	班固	ㄅㄢ ㄍㄨˋ	existing				班固				
+phrase.people-history.tsv	108	班昭	班昭	ㄅㄢ ㄓㄠ	existing				班昭				
+phrase.people-history.tsv	109	班超	班超	ㄅㄢ ㄔㄠ	existing				班超				
+phrase.people-history.tsv	110	瓦特	瓦特	ㄨㄚˇ ㄊㄜˋ	existing				瓦特				
+phrase.people-history.tsv	111	甘地	甘地	ㄍㄢ ㄉㄧˋ	existing				甘地				
+phrase.people-history.tsv	112	田中角榮	田中角榮	ㄊㄧㄢˊ ㄓㄨㄥ ㄐㄧㄠˇ ㄖㄨㄥˊ	existing				田中角榮				
+phrase.people-history.tsv	113	畢卡索	畢卡索	ㄅㄧˋ ㄎㄚˇ ㄙㄨㄛˇ	existing				畢卡索				
+phrase.people-history.tsv	114	白居易	白居易	ㄅㄞˊ ㄐㄩ ㄧˋ	existing				白居易				
+phrase.people-history.tsv	115	神農	神農	ㄕㄣˊ ㄋㄨㄥˊ	existing				神農				
+phrase.people-history.tsv	116	秋瑾	秋瑾	ㄑㄧㄡ ㄐㄧㄣˇ	existing				秋瑾				
+phrase.people-history.tsv	117	秦始皇	秦始皇	ㄑㄧㄣˊ ㄕˇ ㄏㄨㄤˊ	existing				秦始皇				
+phrase.people-history.tsv	118	穆罕默德	穆罕默德	ㄇㄨˋ ㄏㄢˇ ㄇㄛˋ ㄉㄜˊ	existing				穆罕默德				
+phrase.people-history.tsv	119	管仲	管仲	ㄍㄨㄢˇ ㄓㄨㄥˋ	existing				管仲				
+phrase.people-history.tsv	120	米開朗基羅	米開朗基羅	ㄇㄧˇ ㄎㄞ ㄌㄤˇ ㄐㄧ ㄌㄨㄛˊ	existing				米開朗基羅				
+phrase.people-history.tsv	121	羅丹	羅丹	ㄌㄨㄛˊ ㄉㄢ	existing				羅丹				
+phrase.people-history.tsv	122	胡適	胡適	ㄏㄨˊ ㄕˋ	existing				胡適				
+phrase.people-history.tsv	123	舒伯特	舒伯特	ㄕㄨ ㄅㄛˊ ㄊㄜˋ	existing				舒伯特				
+phrase.people-history.tsv	124	舒曼	舒曼	ㄕㄨ ㄇㄢˋ	existing				舒曼				
+phrase.people-history.tsv	125	荀子	荀子	ㄒㄩㄣˊ ㄗˇ	existing				荀子				
+phrase.people-history.tsv	126	荊軻	荊軻	ㄐㄧㄥ ㄎㄜ	existing				荊軻				
+phrase.people-history.tsv	127	莊子	莊子	ㄓㄨㄤ ㄗˇ	existing				莊子				
+phrase.people-history.tsv	128	莎士比亞	莎士比亞	ㄕㄚ ㄕˋ ㄅㄧˇ ㄧㄚˇ	existing				莎士比亞				
+phrase.people-history.tsv	129	莫札特	莫札特	ㄇㄛˋ ㄓㄚˊ ㄊㄜˋ	existing				莫札特				
+phrase.people-history.tsv	130	華佗	華佗	ㄏㄨㄚˊ ㄊㄨㄛˊ	existing				華佗				
+phrase.people-history.tsv	131	蔡倫	蔡倫	ㄘㄞˋ ㄌㄨㄣˊ	existing				蔡倫				
+phrase.people-history.tsv	132	蔡元培	蔡元培	ㄘㄞˋ ㄩㄢˊ ㄆㄟˊ	existing				蔡元培				
+phrase.people-history.tsv	133	蔣中正	蔣中正	ㄐㄧㄤˇ ㄓㄨㄥ ㄓㄥˋ	existing				蔣中正				
+phrase.people-history.tsv	134	蔣介石	蔣介石	ㄐㄧㄤˇ ㄐㄧㄝˋ ㄕˊ	existing				蔣介石				
+phrase.people-history.tsv	135	蕭邦	蕭邦	ㄒㄧㄠ ㄅㄤ	existing				蕭邦				
+phrase.people-history.tsv	136	蘇東坡	蘇東坡	ㄙㄨ ㄉㄨㄥ ㄆㄛ	existing				蘇東坡				
+phrase.people-history.tsv	137	蘇格拉底	蘇格拉底	ㄙㄨ ㄍㄜˊ ㄌㄚ ㄉㄧˇ	existing				蘇格拉底				
+phrase.people-history.tsv	138	蘇軾	蘇軾	ㄙㄨ ㄕˋ	existing				蘇軾				
+phrase.people-history.tsv	139	袁世凱	袁世凱	ㄩㄢˊ ㄕˋ ㄎㄞˇ	existing				袁世凱				
+phrase.people-history.tsv	140	諸葛亮	諸葛亮	ㄓㄨ ㄍㄜˇ ㄌㄧㄤˋ	existing				諸葛亮				
+phrase.people-history.tsv	141	諾貝爾	諾貝爾	ㄋㄨㄛˋ ㄅㄟˋ ㄦˇ	existing				諾貝爾				
+phrase.people-history.tsv	142	貝多芬	貝多芬	ㄅㄟˋ ㄉㄨㄛ ㄈㄣ	existing				貝多芬				
+phrase.people-history.tsv	143	連橫	連橫	ㄌㄧㄢˊ ㄏㄥˊ	existing				連橫				
+phrase.people-history.tsv	144	達文西	達文西	ㄉㄚˊ ㄨㄣˊ ㄒㄧ	existing				達文西				
+phrase.people-history.tsv	145	達爾文	達爾文	ㄉㄚˊ ㄦˇ ㄨㄣˊ	existing				達爾文				
+phrase.people-history.tsv	146	鄭和	鄭和	ㄓㄥˋ ㄏㄜˊ	existing				鄭和				
+phrase.people-history.tsv	147	鄭成功	鄭成功	ㄓㄥˋ ㄔㄥˊ ㄍㄨㄥ	existing				鄭成功				
+phrase.people-history.tsv	148	鄭經	鄭經	ㄓㄥˋ ㄐㄧㄥ	existing				鄭經				
+phrase.people-history.tsv	149	鄭芝龍	鄭芝龍	ㄓㄥˋ ㄓ ㄌㄨㄥˊ	existing				鄭芝龍				
+phrase.people-history.tsv	150	釋迦牟尼	釋迦牟尼	ㄕˋ ㄐㄧㄚ ㄇㄡˊ ㄋㄧˊ	existing				釋迦牟尼				
+phrase.people-history.tsv	151	釋迦牟尼佛	釋迦牟尼佛	ㄕˋ ㄐㄧㄚ ㄇㄡˊ ㄋㄧˊ ㄈㄛˊ	existing				釋迦牟尼佛				
+phrase.people-history.tsv	152	關羽	關羽	ㄍㄨㄢ ㄩˇ	existing				關羽				
+phrase.people-history.tsv	153	陶淵明	陶淵明	ㄊㄠˊ ㄩㄢ ㄇㄧㄥˊ	existing				陶淵明				
+phrase.people-history.tsv	154	雍正	雍正	ㄩㄥ ㄓㄥˋ	existing				雍正				
+phrase.people-history.tsv	155	霍布斯	霍布斯	ㄏㄨㄛˋ ㄅㄨˋ ㄙ	existing				霍布斯				
+phrase.people-history.tsv	157	韋伯	韋伯	ㄨㄟˊ ㄅㄛˊ	existing				韋伯				
+phrase.people-history.tsv	158	韓信	韓信	ㄏㄢˊ ㄒㄧㄣˋ	existing				韓信				
+phrase.people-history.tsv	159	韓愈	韓愈	ㄏㄢˊ ㄩˋ	existing				韓愈				
+phrase.people-history.tsv	160	韓非	韓非	ㄏㄢˊ ㄈㄟ	existing				韓非				
+phrase.people-history.tsv	161	韓非子	韓非子	ㄏㄢˊ ㄈㄟ ㄗˇ	existing				韓非子				
+phrase.people-history.tsv	162	項羽	項羽	ㄒㄧㄤˋ ㄩˇ	existing				項羽				
+phrase.people-history.tsv	163	顏回	顏回	ㄧㄢˊ ㄏㄨㄟˊ	existing				顏回				
+phrase.people-history.tsv	164	顏淵	顏淵	ㄧㄢˊ ㄩㄢ	existing				顏淵				
+phrase.people-history.tsv	166	魯班	魯班	ㄌㄨˇ ㄅㄢ	existing				魯班				
+phrase.people-history.tsv	167	魯迅	魯迅	ㄌㄨˇ ㄒㄩㄣˋ	existing				魯迅				
+phrase.people-history.tsv	168	黃帝	黃帝	ㄏㄨㄤˊ ㄉㄧˋ	existing				黃帝				
+phrase.people-history.tsv	169	黃興	黃興	ㄏㄨㄤˊ ㄒㄧㄥ	existing				黃興				
+phrase.people-history.tsv	170	黑澤明	黑澤明	ㄏㄟ ㄗㄜˊ ㄇㄧㄥˊ	existing				黑澤明				
+phrase.people-history.tsv	171	齊桓公	齊桓公	ㄑㄧˊ ㄏㄨㄢˊ ㄍㄨㄥ	existing				齊桓公				
+phrase.people-oldnews.tsv	2	余光中	余光中	ㄩˊ ㄍㄨㄤ ㄓㄨㄥ	existing				余光中				
+phrase.people-oldnews.tsv	3	余政憲	余政憲	ㄩˊ ㄓㄥˋ ㄒㄧㄢˋ	existing				余政憲				
+phrase.people-oldnews.tsv	4	傅斯年	傅斯年	ㄈㄨˋ ㄙ ㄋㄧㄢˊ	existing				傅斯年				
+phrase.people-oldnews.tsv	5	卡斯楚	卡斯楚	ㄎㄚˇ ㄙ ㄔㄨˇ	existing				卡斯楚				
+phrase.people-oldnews.tsv	6	卡特	卡特	ㄎㄚˇ ㄊㄜˋ	existing				卡特				
+phrase.people-oldnews.tsv	7	史明	史明	ㄕˇ ㄇㄧㄥˊ	existing				史明				
+phrase.people-oldnews.tsv	8	吳伯雄	吳伯雄	ㄨˊ ㄅㄛˊ ㄒㄩㄥˊ	existing				吳伯雄				
+phrase.people-oldnews.tsv	9	吳念真	吳念真	ㄨˊ ㄋㄧㄢˋ ㄓㄣ	existing				吳念真				
+phrase.people-oldnews.tsv	10	呂秀蓮	呂秀蓮	ㄌㄩˇ ㄒㄧㄡˋ ㄌㄧㄢˊ	existing				呂秀蓮				
+phrase.people-oldnews.tsv	11	周恩來	周恩來	ㄓㄡ ㄣ ㄌㄞˊ	existing				周恩來				
+phrase.people-oldnews.tsv	12	嚴長壽	嚴長壽	ㄧㄢˊ ㄔㄤˊ ㄕㄡˋ	existing				嚴長壽				
+phrase.people-oldnews.tsv	13	大前研一	大前研一	ㄉㄚˋ ㄑㄧㄢˊ ㄧㄢˊ ㄧ	existing				大前研一				
+phrase.people-oldnews.tsv	14	姚嘉文	姚嘉文	ㄧㄠˊ ㄐㄧㄚ ㄨㄣˊ	existing				姚嘉文				
+phrase.people-oldnews.tsv	15	孫運璿	孫運璿	ㄙㄨㄣ ㄩㄣˋ ㄒㄩㄢˊ	existing				孫運璿				
+phrase.people-oldnews.tsv	16	安室奈美惠	安室奈美惠	ㄢ ㄕˋ ㄋㄞˋ ㄇㄟˇ ㄏㄨㄟˋ	existing				安室奈美惠				
+phrase.people-oldnews.tsv	17	宋楚瑜	宋楚瑜	ㄙㄨㄥˋ ㄔㄨˇ ㄩˊ	existing				宋楚瑜				
+phrase.people-oldnews.tsv	18	密特朗	密特朗	ㄇㄧˋ ㄊㄜˋ ㄌㄤˇ	existing				密特朗				
+phrase.people-oldnews.tsv	19	小室哲哉	小室哲哉	ㄒㄧㄠˇ ㄕˋ ㄓㄜˊ ㄗㄞ	existing				小室哲哉				
+phrase.people-oldnews.tsv	20	尹衍樑	尹衍樑	ㄧㄣˇ ㄧㄢˇ ㄌㄧㄤˊ	existing				尹衍樑				
+phrase.people-oldnews.tsv	21	尼克森	尼克森	ㄋㄧˊ ㄎㄜˋ ㄙㄣ	existing				尼克森				
+phrase.people-oldnews.tsv	22	布希	布希	ㄅㄨˋ ㄒㄧ	existing				布希				
+phrase.people-oldnews.tsv	23	廣末涼子	廣末涼子	ㄍㄨㄤˇ ㄇㄛˋ ㄌㄧㄤˊ ㄗˇ	existing				廣末涼子				
+phrase.people-oldnews.tsv	24	張俊雄	張俊雄	ㄓㄤ ㄐㄩㄣˋ ㄒㄩㄥˊ	existing				張俊雄				
+phrase.people-oldnews.tsv	25	張學友	張學友	ㄓㄤ ㄒㄩㄝˊ ㄧㄡˇ	existing				張學友				
+phrase.people-oldnews.tsv	26	張榮發	張榮發	ㄓㄤ ㄖㄨㄥˊ ㄈㄚ	existing				張榮發				
+phrase.people-oldnews.tsv	27	張清芳	張清芳	ㄓㄤ ㄑㄧㄥ ㄈㄤ	existing				張清芳				
+phrase.people-oldnews.tsv	28	彭明敏	彭明敏	ㄆㄥˊ ㄇㄧㄥˊ ㄇㄧㄣˇ	existing				彭明敏				
+phrase.people-oldnews.tsv	29	彭淮南	彭淮南	ㄆㄥˊ ㄏㄨㄞˊ ㄋㄢˊ	existing				彭淮南				
+phrase.people-oldnews.tsv	30	戈巴契夫	戈巴契夫	ㄍㄜ ㄅㄚ ㄑㄧˋ ㄈㄨ	existing				戈巴契夫				
+phrase.people-oldnews.tsv	31	施振榮	施振榮	ㄕ ㄓㄣˋ ㄖㄨㄥˊ	existing				施振榮				
+phrase.people-oldnews.tsv	32	曼德拉	曼德拉	ㄇㄢˋ ㄉㄜˊ ㄌㄚ	existing				曼德拉				
+phrase.people-oldnews.tsv	33	曾志朗	曾志朗	ㄗㄥ ㄓˋ ㄌㄤˇ	existing				曾志朗				
+phrase.people-oldnews.tsv	34	李國鼎	李國鼎	ㄌㄧˇ ㄍㄨㄛˊ ㄉㄧㄥˇ	existing				李國鼎				
+phrase.people-oldnews.tsv	35	李天祿	李天祿	ㄌㄧˇ ㄊㄧㄢ ㄌㄨˋ	existing				李天祿				
+phrase.people-oldnews.tsv	36	李宗盛	李宗盛	ㄌㄧˇ ㄗㄨㄥ ㄕㄥˋ	existing				李宗盛				
+phrase.people-oldnews.tsv	37	李家同	李家同	ㄌㄧˇ ㄐㄧㄚ ㄊㄨㄥˊ	existing				李家同				
+phrase.people-oldnews.tsv	38	李應元	李應元	ㄌㄧˇ ㄧㄥˋ ㄩㄢˊ	existing				李應元				
+phrase.people-oldnews.tsv	39	李敖	李敖	ㄌㄧˇ ㄠˊ	existing				李敖				
+phrase.people-oldnews.tsv	40	李泰祥	李泰祥	ㄌㄧˇ ㄊㄞˋ ㄒㄧㄤˊ	existing				李泰祥				
+phrase.people-oldnews.tsv	41	李登輝	李登輝	ㄌㄧˇ ㄉㄥ ㄏㄨㄟ	existing				李登輝				
+phrase.people-oldnews.tsv	42	李遠哲	李遠哲	ㄌㄧˇ ㄩㄢˇ ㄓㄜˊ	existing				李遠哲				
+phrase.people-oldnews.tsv	43	松下幸之助	松下幸之助	ㄙㄨㄥ ㄒㄧㄚˋ ㄒㄧㄥˋ ㄓ ㄓㄨˋ	existing				松下幸之助				
+phrase.people-oldnews.tsv	44	林慧萍	林慧萍	ㄌㄧㄣˊ ㄏㄨㄟˋ ㄆㄧㄥˊ	existing				林慧萍				
+phrase.people-oldnews.tsv	45	林懷民	林懷民	ㄌㄧㄣˊ ㄏㄨㄞˊ ㄇㄧㄣˊ	existing				林懷民				
+phrase.people-oldnews.tsv	46	林洋港	林洋港	ㄌㄧㄣˊ ㄧㄤˊ ㄍㄤˇ	existing				林洋港				
+phrase.people-oldnews.tsv	47	林海音	林海音	ㄌㄧㄣˊ ㄏㄞˇ ㄧㄣ	existing				林海音				
+phrase.people-oldnews.tsv	48	林清玄	林清玄	ㄌㄧㄣˊ ㄑㄧㄥ ㄒㄩㄢˊ	existing				林清玄				
+phrase.people-oldnews.tsv	49	林百里	林百里	ㄌㄧㄣˊ ㄅㄞˇ ㄌㄧˇ	existing				林百里				
+phrase.people-oldnews.tsv	50	林青霞	林青霞	ㄌㄧㄣˊ ㄑㄧㄥ ㄒㄧㄚˊ	existing				林青霞				
+phrase.people-oldnews.tsv	51	柯林頓	柯林頓	ㄎㄜ ㄌㄧㄣˊ ㄉㄨㄣˋ	existing				柯林頓				
+phrase.people-oldnews.tsv	52	楊朝祥	楊朝祥	ㄧㄤˊ ㄔㄠˊ ㄒㄧㄤˊ	existing				楊朝祥				
+phrase.people-oldnews.tsv	53	楊牧	楊牧	ㄧㄤˊ ㄇㄨˋ	existing				楊牧				
+phrase.people-oldnews.tsv	54	楊麗花	楊麗花	ㄧㄤˊ ㄌㄧˋ ㄏㄨㄚ	existing				楊麗花				
+phrase.people-oldnews.tsv	55	毛澤東	毛澤東	ㄇㄠˊ ㄗㄜˊ ㄉㄨㄥ	existing				毛澤東				
+phrase.people-oldnews.tsv	56	江澤民	江澤民	ㄐㄧㄤ ㄗㄜˊ ㄇㄧㄣˊ	existing				江澤民				
+phrase.people-oldnews.tsv	57	沈春華	沈春華	ㄔㄣˊ ㄔㄨㄣ ㄏㄨㄚˊ	existing				沈春華				
+phrase.people-oldnews.tsv	58	海珊	海珊	ㄏㄞˇ ㄕㄢ	existing				海珊				
+phrase.people-oldnews.tsv	59	游錫堃	游錫堃	ㄧㄡˊ ㄒㄧˊ ㄎㄨㄣ	existing				游錫堃				
+phrase.people-oldnews.tsv	60	王永慶	王永慶	ㄨㄤˊ ㄩㄥˇ ㄑㄧㄥˋ	existing				王永慶				
+phrase.people-oldnews.tsv	61	白先勇	白先勇	ㄅㄞˊ ㄒㄧㄢ ㄩㄥˇ	existing				白先勇				
+phrase.people-oldnews.tsv	62	石原慎太郎	石原慎太郎	ㄕˊ ㄩㄢˊ ㄕㄣˋ ㄊㄞˋ ㄌㄤˊ	existing				石原慎太郎				
+phrase.people-oldnews.tsv	63	羅大佑	羅大佑	ㄌㄨㄛˊ ㄉㄚˋ ㄧㄡˋ	existing				羅大佑				
+phrase.people-oldnews.tsv	64	胡耀邦	胡耀邦	ㄏㄨˊ ㄧㄠˋ ㄅㄤ	existing				胡耀邦				
+phrase.people-oldnews.tsv	65	胡錦濤	胡錦濤	ㄏㄨˊ ㄐㄧㄣˇ ㄊㄠ	existing				胡錦濤				
+phrase.people-oldnews.tsv	66	范振宗	范振宗	ㄈㄢˋ ㄓㄣˋ ㄗㄨㄥ	existing				范振宗				
+phrase.people-oldnews.tsv	67	葉石濤	葉石濤	ㄧㄝˋ ㄕˊ ㄊㄠ	existing				葉石濤				
+phrase.people-oldnews.tsv	68	蔡振南	蔡振南	ㄘㄞˋ ㄓㄣˋ ㄋㄢˊ	existing				蔡振南				
+phrase.people-oldnews.tsv	69	蔣經國	蔣經國	ㄐㄧㄤˇ ㄐㄧㄥ ㄍㄨㄛˊ	existing				蔣經國				
+phrase.people-oldnews.tsv	70	蕭萬長	蕭萬長	ㄒㄧㄠ ㄨㄢˋ ㄔㄤˊ	existing				蕭萬長				
+phrase.people-oldnews.tsv	71	裘海正	裘海正	ㄑㄧㄡˊ ㄏㄞˇ ㄓㄥˋ	existing				裘海正				
+phrase.people-oldnews.tsv	72	許水德	許水德	ㄒㄩˇ ㄕㄨㄟˇ ㄉㄜˊ	existing				許水德				
+phrase.people-oldnews.tsv	73	謝長廷	謝長廷	ㄒㄧㄝˋ ㄔㄤˊ ㄊㄧㄥˊ	existing				謝長廷				
+phrase.people-oldnews.tsv	74	連戰	連戰	ㄌㄧㄢˊ ㄓㄢˋ	existing				連戰				
+phrase.people-oldnews.tsv	75	郝柏村	郝柏村	ㄏㄠˇ ㄅㄛˊ ㄘㄨㄣ	existing				郝柏村				
+phrase.people-oldnews.tsv	76	郭婉容	郭婉容	ㄍㄨㄛ ㄨㄢˇ ㄖㄨㄥˊ	existing				郭婉容				
+phrase.people-oldnews.tsv	77	郭富城	郭富城	ㄍㄨㄛ ㄈㄨˋ ㄔㄥˊ	existing				郭富城				
+phrase.people-oldnews.tsv	78	鄧小平	鄧小平	ㄉㄥˋ ㄒㄧㄠˇ ㄆㄧㄥˊ	existing				鄧小平				
+phrase.people-oldnews.tsv	79	金大中	金大中	ㄐㄧㄣ ㄉㄚˋ ㄓㄨㄥ	existing				金大中				
+phrase.people-oldnews.tsv	80	金庸	金庸	ㄐㄧㄣ ㄩㄥ	existing				金庸				
+phrase.people-oldnews.tsv	81	錢復	錢復	ㄑㄧㄢˊ ㄈㄨˋ	existing				錢復				
+phrase.people-oldnews.tsv	82	阿拉法特	阿拉法特	ㄚ ㄌㄚ ㄈㄚˇ ㄊㄜˋ	existing				阿拉法特				
+phrase.people-oldnews.tsv	83	陳履安	陳履安	ㄔㄣˊ ㄌㄩˇ ㄢ	existing				陳履安				
+phrase.people-oldnews.tsv	84	陳水扁	陳水扁	ㄔㄣˊ ㄕㄨㄟˇ ㄅㄧㄢˇ	existing				陳水扁				
+phrase.people-oldnews.tsv	85	陶百川	陶百川	ㄊㄠˊ ㄅㄞˇ ㄔㄨㄢ	existing				陶百川				
+phrase.people-oldnews.tsv	86	雷根	雷根	ㄌㄟˊ ㄍㄣ	existing				雷根				
+phrase.people-oldnews.tsv	87	黃昆輝	黃昆輝	ㄏㄨㄤˊ ㄎㄨㄣ ㄏㄨㄟ	existing				黃昆輝				
+phrase.people-oldnews.tsv	88	黛安娜	黛安娜	ㄉㄞˋ ㄢ ㄋㄚˋ	existing				黛安娜				
+phrase.people-oldnews.tsv	89	龍應台	龍應台	ㄌㄨㄥˊ ㄧㄥˋ ㄊㄞˊ	existing				龍應台				
+phrase.psychology-society.tsv	27	工業	工業	ㄍㄨㄥ ㄧㄝˋ	existing				工業				
+phrase.psychology-society.tsv	29	心理學	心理學	ㄒㄧㄣ ㄌㄧˇ ㄒㄩㄝˊ	existing				心理學				
+phrase.psychology-society.tsv	35	效應	效應	ㄒㄧㄠˋ ㄧㄥˋ	existing				效應				
+phrase.psychology-society.tsv	46	沉沒成本	沉沒成本	ㄔㄣˊ ㄇㄛˋ ㄔㄥˊ ㄅㄣˇ	duplicate				沉沒成本				
+phrase.psychology-society.tsv	61	社會結構	社會結構	ㄕㄜˋ ㄏㄨㄟˋ ㄐㄧㄝˊ ㄍㄡˋ	duplicate				社會結構				
+phrase.psychology-society.tsv	65	組織	組織	ㄗㄨˇ ㄓ	existing				組織				
+phrase.science.tsv	3	不相容	不相容	ㄅㄨˋ ㄒㄧㄤ ㄖㄨㄥˊ	existing				不相容				
+phrase.science.tsv	10	力學	力學	ㄌㄧˋ ㄒㄩㄝˊ	existing				力學				
+phrase.science.tsv	15	原理	原理	ㄩㄢˊ ㄌㄧˇ	existing				原理				
+phrase.science.tsv	34	方程	方程	ㄈㄤ ㄔㄥˊ	existing				方程				
+phrase.science.tsv	78	酸鹼	酸鹼	ㄙㄨㄢ ㄐㄧㄢˇ	existing				酸鹼				
+phrase.science.tsv	80	重量	重量	ㄓㄨㄥˋ ㄌㄧㄤˋ	existing				重量				
+phrase.science.tsv	81	量子	量子	ㄌㄧㄤˋ ㄗˇ	existing				量子				
+phrase.semiconductor.tsv	6	保養	保養	ㄅㄠˇ ㄧㄤˇ	existing				保養				
+phrase.semiconductor.tsv	7	修正	修正	ㄒㄧㄡ ㄓㄥˋ	existing				修正				
+phrase.semiconductor.tsv	8	健康	健康	ㄐㄧㄢˋ ㄎㄤ	existing				健康				
+phrase.semiconductor.tsv	10	先進製程	先進製程	ㄒㄧㄢ ㄐㄧㄣˋ ㄓˋ ㄔㄥˊ	duplicate				先進製程				
+phrase.semiconductor.tsv	11	光學	光學	ㄍㄨㄤ ㄒㄩㄝˊ	existing				光學				
+phrase.semiconductor.tsv	13	內建	內建	ㄋㄟˋ ㄐㄧㄢˋ	existing				內建				
+phrase.semiconductor.tsv	14	分析	分析	ㄈㄣ ㄒㄧ	existing				分析				
+phrase.semiconductor.tsv	15	分類	分類	ㄈㄣ ㄌㄟˋ	existing				分類				
+phrase.semiconductor.tsv	16	加速	加速	ㄐㄧㄚ ㄙㄨˋ	existing				加速				
+phrase.semiconductor.tsv	17	動態	動態	ㄉㄨㄥˋ ㄊㄞˋ	existing				動態				
+phrase.semiconductor.tsv	18	化學	化學	ㄏㄨㄚˋ ㄒㄩㄝˊ	existing				化學				
+phrase.semiconductor.tsv	20	參數	參數	ㄘㄢ ㄕㄨˋ	existing				參數				
+phrase.semiconductor.tsv	21	參數最佳化	參數最佳化	ㄘㄢ ㄕㄨˋ ㄗㄨㄟˋ ㄐㄧㄚ ㄏㄨㄚˋ	duplicate				參數最佳化				
+phrase.semiconductor.tsv	22	反向	反向	ㄈㄢˇ ㄒㄧㄤˋ	existing				反向				
+phrase.semiconductor.tsv	23	反應式	反應式	ㄈㄢˇ ㄧㄥˋ ㄕˋ	existing				反應式				
+phrase.semiconductor.tsv	25	單元	單元	ㄉㄢ ㄩㄢˊ	existing				單元				
+phrase.semiconductor.tsv	28	場效電晶體	場效電晶體	ㄔㄤˇ ㄒㄧㄠˋ ㄉㄧㄢˋ ㄐㄧㄥ ㄊㄧˇ	duplicate				場效電晶體				
+phrase.semiconductor.tsv	29	壽命	壽命	ㄕㄡˋ ㄇㄧㄥˋ	existing				壽命				
+phrase.semiconductor.tsv	33	存取	存取	ㄘㄨㄣˊ ㄑㄩˇ	existing				存取				
+phrase.semiconductor.tsv	34	寄生	寄生	ㄐㄧˋ ㄕㄥ	existing				寄生				
+phrase.semiconductor.tsv	38	射頻	射頻	ㄕㄜˋ ㄆㄧㄣˊ	existing				射頻				
+phrase.semiconductor.tsv	40	尺寸	尺寸	ㄔˇ ㄘㄨㄣˋ	existing				尺寸				
+phrase.semiconductor.tsv	41	常數	常數	ㄔㄤˊ ㄕㄨˋ	existing				常數				
+phrase.semiconductor.tsv	46	應力	應力	ㄧㄥˋ ㄌㄧˋ	existing				應力				
+phrase.semiconductor.tsv	50	技術	技術	ㄐㄧˋ ㄕㄨˋ	existing				技術				
+phrase.semiconductor.tsv	54	控制	控制	ㄎㄨㄥˋ ㄓˋ	existing				控制				
+phrase.semiconductor.tsv	55	控制器	控制器	ㄎㄨㄥˋ ㄓˋ ㄑㄧˋ	existing				控制器				
+phrase.semiconductor.tsv	56	操作	操作	ㄘㄠ ㄗㄨㄛˋ	existing				操作				
+phrase.semiconductor.tsv	57	擴散	擴散	ㄎㄨㄛˋ ㄙㄢˋ	existing				擴散				
+phrase.semiconductor.tsv	59	擷取	擷取	ㄐㄧㄝˊ ㄑㄩˇ	existing				擷取				
+phrase.semiconductor.tsv	60	改善	改善	ㄍㄞˇ ㄕㄢˋ	existing				改善				
+phrase.semiconductor.tsv	61	放電	放電	ㄈㄤˋ ㄉㄧㄢˋ	existing				放電				
+phrase.semiconductor.tsv	62	故障	故障	ㄍㄨˋ ㄓㄤˋ	existing				故障				
+phrase.semiconductor.tsv	63	故障診斷	故障診斷	ㄍㄨˋ ㄓㄤˋ ㄓㄣˇ ㄉㄨㄢˋ	duplicate				故障診斷				
+phrase.semiconductor.tsv	64	效應	效應	ㄒㄧㄠˋ ㄧㄥˋ	existing				效應				
+phrase.semiconductor.tsv	65	數位	數位	ㄕㄨˋ ㄨㄟˋ	existing				數位				
+phrase.semiconductor.tsv	67	時序	時序	ㄕˊ ㄒㄩˋ	existing				時序				
+phrase.semiconductor.tsv	69	晶圓	晶圓	ㄐㄧㄥ ㄩㄢˊ	existing				晶圓				
+phrase.semiconductor.tsv	71	晶片	晶片	ㄐㄧㄥ ㄆㄧㄢˋ	existing				晶片				
+phrase.semiconductor.tsv	72	晶粒	晶粒	ㄐㄧㄥ ㄌㄧˋ	existing				晶粒				
+phrase.semiconductor.tsv	78	材料	材料	ㄘㄞˊ ㄌㄧㄠˋ	existing				材料				
+phrase.semiconductor.tsv	79	校正	校正	ㄐㄧㄠˋ ㄓㄥˋ	existing				校正				
+phrase.semiconductor.tsv	80	條件	條件	ㄊㄧㄠˊ ㄐㄧㄢˋ	existing				條件				
+phrase.semiconductor.tsv	83	機械	機械	ㄐㄧ ㄒㄧㄝˋ	existing				機械				
+phrase.semiconductor.tsv	84	檢查	檢查	ㄐㄧㄢˇ ㄔㄚˊ	existing				檢查				
+phrase.semiconductor.tsv	85	檢測	檢測	ㄐㄧㄢˇ ㄘㄜˋ	existing				檢測				
+phrase.semiconductor.tsv	90	污染控制	污染控制	ㄨ ㄖㄢˇ ㄎㄨㄥˋ ㄓˋ	duplicate				污染控制				
+phrase.semiconductor.tsv	92	沉積	沉積	ㄔㄣˊ ㄐㄧ	existing				沉積				
+phrase.semiconductor.tsv	96	混合	混合	ㄏㄨㄣˋ ㄏㄜˊ	existing				混合				
+phrase.semiconductor.tsv	97	清洗	清洗	ㄑㄧㄥ ㄒㄧˇ	existing				清洗				
+phrase.semiconductor.tsv	102	測試	測試	ㄘㄜˋ ㄕˋ	existing				測試				
+phrase.semiconductor.tsv	105	溫度	溫度	ㄨㄣ ㄉㄨˋ	existing				溫度				
+phrase.semiconductor.tsv	106	版圖	版圖	ㄅㄢˇ ㄊㄨˊ	existing				版圖				
+phrase.semiconductor.tsv	107	物理	物理	ㄨˋ ㄌㄧˇ	existing				物理				
+phrase.semiconductor.tsv	108	環繞	環繞	ㄏㄨㄢˊ ㄖㄠˋ	existing				環繞				
+phrase.semiconductor.tsv	109	異常	異常	ㄧˋ ㄔㄤˊ	existing				異常				
+phrase.semiconductor.tsv	111	監控	監控	ㄐㄧㄢ ㄎㄨㄥˋ	existing				監控				
+phrase.semiconductor.tsv	113	研磨	研磨	ㄧㄢˊ ㄇㄛˊ	existing				研磨				
+phrase.semiconductor.tsv	117	神經網路	神經網路	ㄕㄣˊ ㄐㄧㄥ ㄨㄤˇ ㄌㄨˋ	duplicate				神經網路				
+phrase.semiconductor.tsv	118	積體電路	積體電路	ㄐㄧ ㄊㄧˇ ㄉㄧㄢˋ ㄌㄨˋ	existing				積體電路				
+phrase.semiconductor.tsv	119	算術	算術	ㄙㄨㄢˋ ㄕㄨˋ	existing				算術				
+phrase.semiconductor.tsv	120	管理	管理	ㄍㄨㄢˇ ㄌㄧˇ	existing				管理				
+phrase.semiconductor.tsv	121	篩選	篩選	ㄕㄞ ㄒㄩㄢˇ	existing				篩選				
+phrase.semiconductor.tsv	122	約束	約束	ㄩㄝ ㄕㄨˋ	existing				約束				
+phrase.semiconductor.tsv	124	統計	統計	ㄊㄨㄥˇ ㄐㄧˋ	existing				統計				
+phrase.semiconductor.tsv	127	能力	能力	ㄋㄥˊ ㄌㄧˋ	existing				能力				
+phrase.semiconductor.tsv	128	臨界	臨界	ㄌㄧㄣˊ ㄐㄧㄝˋ	existing				臨界				
+phrase.semiconductor.tsv	129	自動	自動	ㄗˋ ㄉㄨㄥˋ	existing				自動				
+phrase.semiconductor.tsv	130	自我	自我	ㄗˋ ㄨㄛˇ	existing				自我				
+phrase.semiconductor.tsv	132	薄膜	薄膜	ㄅㄛˊ ㄇㄛˊ	existing				薄膜				
+phrase.semiconductor.tsv	135	處理器	處理器	ㄔㄨˇ ㄌㄧˇ ㄑㄧˋ	existing				處理器				
+phrase.semiconductor.tsv	136	蝕刻	蝕刻	ㄕˊ ㄎㄜ	existing				蝕刻				
+phrase.semiconductor.tsv	139	製程	製程	ㄓˋ ㄔㄥˊ	existing				製程				
+phrase.semiconductor.tsv	141	覆蓋率	覆蓋率	ㄈㄨˋ ㄍㄞˋ ㄌㄩˋ	existing				覆蓋率				
+phrase.semiconductor.tsv	142	規則	規則	ㄍㄨㄟ ㄗㄜˊ	existing				規則				
+phrase.semiconductor.tsv	143	訊號	訊號	ㄒㄩㄣˋ ㄏㄠˋ	existing				訊號				
+phrase.semiconductor.tsv	144	記憶體	記憶體	ㄐㄧˋ ㄧˋ ㄊㄧˇ	existing				記憶體				
+phrase.semiconductor.tsv	145	設備	設備	ㄕㄜˋ ㄅㄟˋ	existing				設備				
+phrase.semiconductor.tsv	148	設計	設計	ㄕㄜˋ ㄐㄧˋ	existing				設計				
+phrase.semiconductor.tsv	149	試驗	試驗	ㄕˋ ㄧㄢˋ	existing				試驗				
+phrase.semiconductor.tsv	150	誘發	誘發	ㄧㄡˋ ㄈㄚ	existing				誘發				
+phrase.semiconductor.tsv	152	資料準備	資料準備	ㄗ ㄌㄧㄠˋ ㄓㄨㄣˇ ㄅㄟˋ	duplicate				資料準備				
+phrase.semiconductor.tsv	153	退火	退火	ㄊㄨㄟˋ ㄏㄨㄛˇ	existing				退火				
+phrase.semiconductor.tsv	155	通用	通用	ㄊㄨㄥ ㄩㄥˋ	existing				通用				
+phrase.semiconductor.tsv	156	邏輯	邏輯	ㄌㄨㄛˊ ㄐㄧˊ	existing				邏輯				
+phrase.semiconductor.tsv	157	鄰近	鄰近	ㄌㄧㄣˊ ㄐㄧㄣˋ	existing				鄰近				
+phrase.semiconductor.tsv	158	配方	配方	ㄆㄟˋ ㄈㄤ	existing				配方				
+phrase.semiconductor.tsv	166	降低	降低	ㄐㄧㄤˋ ㄉㄧ	existing				降低				
+phrase.semiconductor.tsv	167	隨機	隨機	ㄙㄨㄟˊ ㄐㄧ	existing				隨機				
+phrase.semiconductor.tsv	169	雙極性	雙極性	ㄕㄨㄤ ㄐㄧˊ ㄒㄧㄥˋ	duplicate				雙極性				
+phrase.semiconductor.tsv	170	離子	離子	ㄌㄧˊ ㄗˇ	existing				離子				
+phrase.semiconductor.tsv	174	電晶體	電晶體	ㄉㄧㄢˋ ㄐㄧㄥ ㄊㄧˇ	existing				電晶體				
+phrase.semiconductor.tsv	175	電源	電源	ㄉㄧㄢˋ ㄩㄢˊ	existing				電源				
+phrase.semiconductor.tsv	177	靜態	靜態	ㄐㄧㄥˋ ㄊㄞˋ	existing				靜態				
+phrase.semiconductor.tsv	178	靜電	靜電	ㄐㄧㄥˋ ㄉㄧㄢˋ	existing				靜電				
+phrase.semiconductor.tsv	180	預防保養	預防保養	ㄩˋ ㄈㄤˊ ㄅㄠˇ ㄧㄤˇ	duplicate				預防保養				
+phrase.semiconductor.tsv	181	類比	類比	ㄌㄟˋ ㄅㄧˇ	existing				類比				
+phrase.semiconductor.tsv	182	顯示	顯示	ㄒㄧㄢˇ ㄕˋ	existing				顯示				
+phrase.semiconductor.tsv	183	驅動	驅動	ㄑㄩ ㄉㄨㄥˋ	existing				驅動				
+phrase.semiconductor.tsv	184	驗證	驗證	ㄧㄢˋ ㄓㄥˋ	existing				驗證				
+phrase.semiconductor.tsv	187	高溫	高溫	ㄍㄠ ㄨㄣ	existing				高溫				
+phrase.semiconductor.tsv	188	高速介面	高速介面	ㄍㄠ ㄙㄨˋ ㄐㄧㄝˋ ㄇㄧㄢˋ	duplicate				高速介面				
+phrase.software.tsv	2	上下文	上下文	ㄕㄤˋ ㄒㄧㄚˋ ㄨㄣˊ	existing				上下文				
+phrase.software.tsv	3	並行	並行	ㄅㄧㄥˋ ㄒㄧㄥˊ	existing				並行				
+phrase.software.tsv	4	事件	事件	ㄕˋ ㄐㄧㄢˋ	existing				事件				
+phrase.software.tsv	5	介面	介面	ㄐㄧㄝˋ ㄇㄧㄢˋ	existing				介面				
+phrase.software.tsv	6	佛洛伊德	佛洛伊德	ㄈㄛˊ ㄌㄨㄛˋ ㄧ ㄉㄜˊ	existing				佛洛伊德				
+phrase.software.tsv	7	依賴	依賴	ㄧ ㄌㄞˋ	existing				依賴				
+phrase.software.tsv	8	備援	備援	ㄅㄟˋ ㄩㄢˊ	existing				備援				
+phrase.software.tsv	9	優先	優先	ㄧㄡ ㄒㄧㄢ	existing				優先				
+phrase.software.tsv	11	分散式	分散式	ㄈㄣ ㄙㄢˋ ㄕˋ	existing				分散式				
+phrase.software.tsv	13	分離	分離	ㄈㄣ ㄌㄧˊ	existing				分離				
+phrase.software.tsv	16	升級	升級	ㄕㄥ ㄐㄧˊ	existing				升級				
+phrase.software.tsv	17	原則	原則	ㄩㄢˊ ㄗㄜˊ	existing				原則				
+phrase.software.tsv	18	反轉	反轉	ㄈㄢˇ ㄓㄨㄢˇ	existing				反轉				
+phrase.software.tsv	19	叢集	叢集	ㄘㄨㄥˊ ㄐㄧˊ	existing				叢集				
+phrase.software.tsv	21	命令	命令	ㄇㄧㄥˋ ㄌㄧㄥˋ	existing				命令				
+phrase.software.tsv	22	單一	單一	ㄉㄢ ㄧ	existing				單一				
+phrase.software.tsv	23	單元	單元	ㄉㄢ ㄩㄢˊ	existing				單元				
+phrase.software.tsv	26	契約	契約	ㄑㄧˋ ㄩㄝ	existing				契約				
+phrase.software.tsv	27	存取控制	存取控制	ㄘㄨㄣˊ ㄑㄩˇ ㄎㄨㄥˋ ㄓˋ	duplicate				存取控制				
+phrase.software.tsv	32	實作	實作	ㄕˊ ㄗㄨㄛˋ	existing				實作				
+phrase.software.tsv	33	工作	工作	ㄍㄨㄥ ㄗㄨㄛˋ	existing				工作				
+phrase.software.tsv	34	廣度	廣度	ㄍㄨㄤˇ ㄉㄨˋ	existing				廣度				
+phrase.software.tsv	36	微服務	微服務	ㄨㄟ ㄈㄨˊ ㄨˋ	duplicate				微服務				
+phrase.software.tsv	37	快取	快取	ㄎㄨㄞˋ ㄑㄩˇ	existing				快取				
+phrase.software.tsv	39	應用程式	應用程式	ㄧㄥˋ ㄩㄥˋ ㄔㄥˊ ㄕˋ	existing				應用程式				
+phrase.software.tsv	46	控制	控制	ㄎㄨㄥˋ ㄓˋ	existing				控制				
+phrase.software.tsv	47	搜尋	搜尋	ㄙㄡ ㄒㄩㄣˊ	existing				搜尋				
+phrase.software.tsv	48	搜尋引擎	搜尋引擎	ㄙㄡ ㄒㄩㄣˊ ㄧㄣˇ ㄑㄧㄥˊ	existing				搜尋引擎				
+phrase.software.tsv	50	擴充	擴充	ㄎㄨㄛˋ ㄔㄨㄥ	existing				擴充				
+phrase.software.tsv	54	文法	文法	ㄨㄣˊ ㄈㄚˇ	existing				文法				
+phrase.software.tsv	57	架構	架構	ㄐㄧㄚˋ ㄍㄡˋ	existing				架構				
+phrase.software.tsv	58	查詢	查詢	ㄔㄚˊ ㄒㄩㄣˊ	existing				查詢				
+phrase.software.tsv	60	模式	模式	ㄇㄛˊ ㄕˋ	existing				模式				
+phrase.software.tsv	64	消費者	消費者	ㄒㄧㄠ ㄈㄟˋ ㄓㄜˇ	existing				消費者				
+phrase.software.tsv	65	清單	清單	ㄑㄧㄥ ㄉㄢ	existing				清單				
+phrase.software.tsv	66	測試	測試	ㄘㄜˋ ㄕˋ	existing				測試				
+phrase.software.tsv	67	演算法	演算法	ㄧㄢˇ ㄙㄨㄢˋ ㄈㄚˇ	existing				演算法				
+phrase.software.tsv	69	無關	無關	ㄨˊ ㄍㄨㄢ	existing				無關				
+phrase.software.tsv	73	監控	監控	ㄐㄧㄢ ㄎㄨㄥˋ	existing				監控				
+phrase.software.tsv	74	福特	福特	ㄈㄨˊ ㄊㄜˋ	existing				福特				
+phrase.software.tsv	75	程式碼	程式碼	ㄔㄥˊ ㄕˋ ㄇㄚˇ	existing				程式碼				
+phrase.software.tsv	76	系統	系統	ㄒㄧˋ ㄊㄨㄥˇ	existing				系統				
+phrase.software.tsv	78	職責	職責	ㄓˊ ㄗㄜˊ	existing				職責				
+phrase.software.tsv	79	行動應用	行動應用	ㄒㄧㄥˊ ㄉㄨㄥˋ ㄧㄥˋ ㄩㄥˋ	duplicate				行動應用				
+phrase.software.tsv	84	設計	設計	ㄕㄜˋ ㄐㄧˋ	existing				設計				
+phrase.software.tsv	85	調校	調校	ㄊㄧㄠˊ ㄐㄧㄠˋ	existing				調校				
+phrase.software.tsv	87	資料庫	資料庫	ㄗ ㄌㄧㄠˋ ㄎㄨˋ	existing				資料庫				
+phrase.software.tsv	92	遷移	遷移	ㄑㄧㄢ ㄧˊ	existing				遷移				
+phrase.software.tsv	93	部署	部署	ㄅㄨˋ ㄕㄨˋ	existing				部署				
+phrase.software.tsv	96	除錯	除錯	ㄔㄨˊ ㄘㄨㄛˋ	existing				除錯				
+phrase.software.tsv	97	隔離	隔離	ㄍㄜˊ ㄌㄧˊ	existing				隔離				
+phrase.software.tsv	98	驅動	驅動	ㄑㄩ ㄉㄨㄥˋ	existing				驅動				
+phrase.software.tsv	99	驗證	驗證	ㄧㄢˋ ㄓㄥˋ	existing				驗證				
+phrase.transport-logistics.tsv	2	中心	中心	ㄓㄨㄥ ㄒㄧㄣ	existing				中心				
+phrase.transport-logistics.tsv	3	交通	交通	ㄐㄧㄠ ㄊㄨㄥ	existing				交通				
+phrase.transport-logistics.tsv	14	倉庫	倉庫	ㄘㄤ ㄎㄨˋ	existing				倉庫				
+phrase.transport-logistics.tsv	15	停車場	停車場	ㄊㄧㄥˊ ㄔㄜ ㄔㄤˇ	existing				停車場				
+phrase.transport-logistics.tsv	19	公車	公車	ㄍㄨㄥ ㄔㄜ	existing				公車				
+phrase.transport-logistics.tsv	25	危險	危險	ㄨㄟˊ ㄒㄧㄢˇ	existing				危險				
+phrase.transport-logistics.tsv	28	反應式	反應式	ㄈㄢˇ ㄧㄥˋ ㄕˋ	existing				反應式				
+phrase.transport-logistics.tsv	29	可靠度	可靠度	ㄎㄜˇ ㄎㄠˋ ㄉㄨˋ	duplicate				可靠度				
+phrase.transport-logistics.tsv	35	射頻	射頻	ㄕㄜˋ ㄆㄧㄣˊ	existing				射頻				
+phrase.transport-logistics.tsv	43	捷運	捷運	ㄐㄧㄝˊ ㄩㄣˋ	existing				捷運				
+phrase.transport-logistics.tsv	44	排程最佳化	排程最佳化	ㄆㄞˊ ㄔㄥˊ ㄗㄨㄟˋ ㄐㄧㄚ ㄏㄨㄚˋ	duplicate				排程最佳化				
+phrase.transport-logistics.tsv	47	控制	控制	ㄎㄨㄥˋ ㄓˋ	existing				控制				
+phrase.transport-logistics.tsv	48	操作	操作	ㄘㄠ ㄗㄨㄛˋ	existing				操作				
+phrase.transport-logistics.tsv	54	智慧	智慧	ㄓˋ ㄏㄨㄟˋ	existing				智慧				
+phrase.transport-logistics.tsv	60	機器人	機器人	ㄐㄧ ㄑㄧˋ ㄖㄣˊ	existing				機器人				
+phrase.transport-logistics.tsv	64	港區	港區	ㄍㄤˇ ㄑㄩ	existing				港區				
+phrase.transport-logistics.tsv	65	無線	無線	ㄨˊ ㄒㄧㄢˋ	existing				無線				
+phrase.transport-logistics.tsv	67	物品	物品	ㄨˋ ㄆㄧㄣˇ	existing				物品				
+phrase.transport-logistics.tsv	71	移動	移動	ㄧˊ ㄉㄨㄥˋ	existing				移動				
+phrase.transport-logistics.tsv	72	空中	空中	ㄎㄨㄥ ㄓㄨㄥ	existing				空中				
+phrase.transport-logistics.tsv	75	管制	管制	ㄍㄨㄢˇ ㄓˋ	existing				管制				
+phrase.transport-logistics.tsv	76	管理	管理	ㄍㄨㄢˇ ㄌㄧˇ	existing				管理				
+phrase.transport-logistics.tsv	79	自主	自主	ㄗˋ ㄓㄨˇ	existing				自主				
+phrase.transport-logistics.tsv	80	自動	自動	ㄗˋ ㄉㄨㄥˋ	existing				自動				
+phrase.transport-logistics.tsv	85	自由貿易	自由貿易	ㄗˋ ㄧㄡˊ ㄇㄠˋ ㄧˋ	existing				自由貿易				
+phrase.transport-logistics.tsv	89	行車	行車	ㄒㄧㄥˊ ㄔㄜ	existing				行車				
+phrase.transport-logistics.tsv	90	規則	規則	ㄍㄨㄟ ㄗㄜˊ	existing				規則				
+phrase.transport-logistics.tsv	91	評估	評估	ㄆㄧㄥˊ ㄍㄨ	existing				評估				
+phrase.transport-logistics.tsv	92	識別	識別	ㄕˋ ㄅㄧㄝˊ	existing				識別				
+phrase.transport-logistics.tsv	93	路口	路口	ㄌㄨˋ ㄎㄡˇ	existing				路口				
+phrase.transport-logistics.tsv	95	轉運站	轉運站	ㄓㄨㄢˇ ㄩㄣˋ ㄓㄢˋ	existing				轉運站				
+phrase.transport-logistics.tsv	96	運輸	運輸	ㄩㄣˋ ㄕㄨ	existing				運輸				
+phrase.transport-logistics.tsv	97	運輸系統	運輸系統	ㄩㄣˋ ㄕㄨ ㄒㄧˋ ㄊㄨㄥˇ	existing				運輸系統				
+phrase.transport-logistics.tsv	98	道路	道路	ㄉㄠˋ ㄌㄨˋ	existing				道路				
+phrase.transport-logistics.tsv	100	鐵路	鐵路	ㄊㄧㄝˇ ㄌㄨˋ	existing				鐵路				
+phrase.transport-logistics.tsv	102	防護	防護	ㄈㄤˊ ㄏㄨˋ	existing				防護				
+phrase.transport-logistics.tsv	103	需求	需求	ㄒㄩ ㄑㄧㄡˊ	existing				需求				
+search-trend-unigram-source.txt	1	颱風	颱風		existing				颱風				
+search-trend-unigram-source.txt	2	地震	地震		existing				地震				
+search-trend-unigram-source.txt	3	豪雨	豪雨		existing				豪雨				
+search-trend-unigram-source.txt	5	寒流	寒流		existing				寒流				
+search-trend-unigram-source.txt	6	梅雨	梅雨		existing				梅雨				
+search-trend-unigram-source.txt	7	高溫	高溫		existing				高溫				
+search-trend-unigram-source.txt	10	紫外線	紫外線		existing				紫外線				
+search-trend-unigram-source.txt	13	淹水	淹水		existing				淹水				
+search-trend-unigram-source.txt	14	土石流	土石流		existing				土石流				
+search-trend-unigram-source.txt	15	乾旱	乾旱		existing				乾旱				
+search-trend-unigram-source.txt	17	限水	限水		existing				限水				
+search-trend-unigram-source.txt	18	水庫	水庫		existing				水庫				
+search-trend-unigram-source.txt	19	蓄水量	蓄水量		existing				蓄水量				
+search-trend-unigram-source.txt	20	登革熱	登革熱		existing				登革熱				
+search-trend-unigram-source.txt	21	流感	流感		existing				流感				
+search-trend-unigram-source.txt	22	疫苗	疫苗		existing				疫苗				
+search-trend-unigram-source.txt	24	口罩	口罩		existing				口罩				
+search-trend-unigram-source.txt	26	疫情	疫情		existing				疫情				
+search-trend-unigram-source.txt	27	隔離	隔離		existing				隔離				
+search-trend-unigram-source.txt	30	防疫	防疫		existing				防疫				
+search-trend-unigram-source.txt	31	醫院	醫院		existing				醫院				
+search-trend-unigram-source.txt	32	急診	急診		existing				急診				
+search-trend-unigram-source.txt	33	掛號	掛號		existing				掛號				
+search-trend-unigram-source.txt	34	健保	健保		existing				健保				
+search-trend-unigram-source.txt	35	健保卡	健保卡		existing				健保卡				
+search-trend-unigram-source.txt	36	健康檢查	健康檢查		existing				健康檢查				
+search-trend-unigram-source.txt	37	血壓	血壓		existing				血壓				
+search-trend-unigram-source.txt	38	血糖	血糖		existing				血糖				
+search-trend-unigram-source.txt	39	膽固醇	膽固醇		existing				膽固醇				
+search-trend-unigram-source.txt	40	減肥	減肥		existing				減肥				
+search-trend-unigram-source.txt	42	健身	健身		existing				健身				
+search-trend-unigram-source.txt	43	運動	運動		existing				運動				
+search-trend-unigram-source.txt	44	跑步	跑步		existing				跑步				
+search-trend-unigram-source.txt	45	馬拉松	馬拉松		existing				馬拉松				
+search-trend-unigram-source.txt	46	瑜伽	瑜伽		existing				瑜伽				
+search-trend-unigram-source.txt	47	睡眠	睡眠		existing				睡眠				
+search-trend-unigram-source.txt	48	失眠	失眠		existing				失眠				
+search-trend-unigram-source.txt	49	過敏	過敏		existing				過敏				
+search-trend-unigram-source.txt	50	感冒	感冒		existing				感冒				
+search-trend-unigram-source.txt	51	發燒	發燒		existing				發燒				
+search-trend-unigram-source.txt	52	頭痛	頭痛		existing				頭痛				
+search-trend-unigram-source.txt	53	牙痛	牙痛		existing				牙痛				
+search-trend-unigram-source.txt	54	牙醫	牙醫		existing				牙醫				
+search-trend-unigram-source.txt	55	眼科	眼科		existing				眼科				
+search-trend-unigram-source.txt	56	皮膚科	皮膚科		existing				皮膚科				
+search-trend-unigram-source.txt	57	中醫	中醫		existing				中醫				
+search-trend-unigram-source.txt	58	復健	復健		existing				復健				
+search-trend-unigram-source.txt	59	心理諮商	心理諮商		existing				心理諮商				
+search-trend-unigram-source.txt	60	憂鬱症	憂鬱症		existing				憂鬱症				
+search-trend-unigram-source.txt	61	焦慮症	焦慮症		existing				焦慮症				
+search-trend-unigram-source.txt	62	失智症	失智症		existing				失智症				
+search-trend-unigram-source.txt	65	醫療險	醫療險		existing				醫療險				
+search-trend-unigram-source.txt	67	壽險	壽險		existing				壽險				
+search-trend-unigram-source.txt	68	保險	保險		existing				保險				
+search-trend-unigram-source.txt	69	理賠	理賠		existing				理賠				
+search-trend-unigram-source.txt	70	車禍	車禍		existing				車禍				
+search-trend-unigram-source.txt	71	交通事故	交通事故		existing				交通事故				
+search-trend-unigram-source.txt	72	肇事	肇事		existing				肇事				
+search-trend-unigram-source.txt	73	違規	違規		existing				違規				
+search-trend-unigram-source.txt	74	罰單	罰單		existing				罰單				
+search-trend-unigram-source.txt	77	酒駕	酒駕		existing				酒駕				
+search-trend-unigram-source.txt	78	紅綠燈	紅綠燈		existing				紅綠燈				
+search-trend-unigram-source.txt	80	塞車	塞車		existing				塞車				
+search-trend-unigram-source.txt	82	高速公路	高速公路		existing				高速公路				
+search-trend-unigram-source.txt	83	交流道	交流道		existing				交流道				
+search-trend-unigram-source.txt	84	休息站	休息站		existing				休息站				
+search-trend-unigram-source.txt	85	國道	國道		existing				國道				
+search-trend-unigram-source.txt	86	省道	省道		existing				省道				
+search-trend-unigram-source.txt	87	快速道路	快速道路		existing				快速道路				
+search-trend-unigram-source.txt	88	高鐵	高鐵		existing				高鐵				
+search-trend-unigram-source.txt	89	台鐵	台鐵		existing				台鐵				
+search-trend-unigram-source.txt	90	捷運	捷運		existing				捷運				
+search-trend-unigram-source.txt	91	輕軌	輕軌		existing				輕軌				
+search-trend-unigram-source.txt	92	火車	火車		existing				火車				
+search-trend-unigram-source.txt	93	公車	公車		existing				公車				
+search-trend-unigram-source.txt	94	客運	客運		existing				客運				
+search-trend-unigram-source.txt	95	計程車	計程車		existing				計程車				
+search-trend-unigram-source.txt	97	自行車	自行車		existing				自行車				
+search-trend-unigram-source.txt	98	機車	機車		existing				機車				
+search-trend-unigram-source.txt	100	汽車	汽車		existing				汽車				
+search-trend-unigram-source.txt	101	電動車	電動車		existing				電動車				
+search-trend-unigram-source.txt	103	停車場	停車場		existing				停車場				
+search-trend-unigram-source.txt	104	停車位	停車位		existing				停車位				
+search-trend-unigram-source.txt	105	停車費	停車費		existing				停車費				
+search-trend-unigram-source.txt	106	悠遊卡	悠遊卡		existing				悠遊卡				
+search-trend-unigram-source.txt	112	統一發票	統一發票		existing				統一發票				
+search-trend-unigram-source.txt	116	信用卡	信用卡		existing				信用卡				
+search-trend-unigram-source.txt	117	簽帳卡	簽帳卡		existing				簽帳卡				
+search-trend-unigram-source.txt	118	提款卡	提款卡		existing				提款卡				
+search-trend-unigram-source.txt	119	轉帳	轉帳		existing				轉帳				
+search-trend-unigram-source.txt	120	匯款	匯款		existing				匯款				
+search-trend-unigram-source.txt	123	定存	定存		existing				定存				
+search-trend-unigram-source.txt	124	活存	活存		existing				活存				
+search-trend-unigram-source.txt	125	利率	利率		existing				利率				
+search-trend-unigram-source.txt	126	房貸	房貸		existing				房貸				
+search-trend-unigram-source.txt	127	信貸	信貸		existing				信貸				
+search-trend-unigram-source.txt	129	貸款	貸款		existing				貸款				
+search-trend-unigram-source.txt	130	房價	房價		existing				房價				
+search-trend-unigram-source.txt	131	房租	房租		existing				房租				
+search-trend-unigram-source.txt	132	租屋	租屋		existing				租屋				
+search-trend-unigram-source.txt	134	房仲	房仲		existing				房仲				
+search-trend-unigram-source.txt	135	預售屋	預售屋		existing				預售屋				
+search-trend-unigram-source.txt	137	中古屋	中古屋		existing				中古屋				
+search-trend-unigram-source.txt	138	實價登錄	實價登錄		existing				實價登錄				
+search-trend-unigram-source.txt	139	房屋稅	房屋稅		existing				房屋稅				
+search-trend-unigram-source.txt	140	地價稅	地價稅		existing				地價稅				
+search-trend-unigram-source.txt	141	所得稅	所得稅		existing				所得稅				
+search-trend-unigram-source.txt	142	報稅	報稅		existing				報稅				
+search-trend-unigram-source.txt	143	退稅	退稅		existing				退稅				
+search-trend-unigram-source.txt	144	發票	發票		existing				發票				
+search-trend-unigram-source.txt	145	薪資	薪資		existing				薪資				
+search-trend-unigram-source.txt	146	基本工資	基本工資		existing				基本工資				
+search-trend-unigram-source.txt	147	年終獎金	年終獎金		existing				年終獎金				
+search-trend-unigram-source.txt	148	加薪	加薪		existing				加薪				
+search-trend-unigram-source.txt	149	獎金	獎金		existing				獎金				
+search-trend-unigram-source.txt	150	勞保	勞保		existing				勞保				
+search-trend-unigram-source.txt	152	退休金	退休金		existing				退休金				
+search-trend-unigram-source.txt	153	勞基法	勞基法		existing				勞基法				
+search-trend-unigram-source.txt	154	加班費	加班費		existing				加班費				
+search-trend-unigram-source.txt	156	請假	請假		existing				請假				
+search-trend-unigram-source.txt	157	育嬰假	育嬰假		existing				育嬰假				
+search-trend-unigram-source.txt	158	產假	產假		existing				產假				
+search-trend-unigram-source.txt	159	婚假	婚假		existing				婚假				
+search-trend-unigram-source.txt	160	失業	失業		existing				失業				
+search-trend-unigram-source.txt	161	求職	求職		existing				求職				
+search-trend-unigram-source.txt	162	面試	面試		existing				面試				
+search-trend-unigram-source.txt	163	履歷	履歷		existing				履歷				
+search-trend-unigram-source.txt	164	轉職	轉職		existing				轉職				
+search-trend-unigram-source.txt	165	兼職	兼職		existing				兼職				
+search-trend-unigram-source.txt	166	打工	打工		existing				打工				
+search-trend-unigram-source.txt	167	實習	實習		existing				實習				
+search-trend-unigram-source.txt	168	公務員	公務員		existing				公務員				
+search-trend-unigram-source.txt	170	證照	證照		existing				證照				
+search-trend-unigram-source.txt	171	職缺	職缺		existing				職缺				
+search-trend-unigram-source.txt	172	薪水	薪水		existing				薪水				
+search-trend-unigram-source.txt	173	職場	職場		existing				職場				
+search-trend-unigram-source.txt	177	人工智慧	人工智慧		existing				人工智慧				
+search-trend-unigram-source.txt	180	機器學習	機器學習		existing				機器學習				
+search-trend-unigram-source.txt	190	資安	資安		existing				資安				
+search-trend-unigram-source.txt	191	網路安全	網路安全		existing				網路安全				
+search-trend-unigram-source.txt	192	駭客	駭客		existing				駭客				
+search-trend-unigram-source.txt	193	詐騙	詐騙		existing				詐騙				
+search-trend-unigram-source.txt	201	密碼	密碼		existing				密碼				
+search-trend-unigram-source.txt	204	作業系統	作業系統		existing				作業系統				
+search-trend-unigram-source.txt	205	瀏覽器	瀏覽器		existing				瀏覽器				
+search-trend-unigram-source.txt	206	搜尋引擎	搜尋引擎		existing				搜尋引擎				
+search-trend-unigram-source.txt	207	輸入法	輸入法		existing				輸入法				
+search-trend-unigram-source.txt	208	注音	注音		existing				注音				
+search-trend-unigram-source.txt	209	倉頡	倉頡		existing				倉頡				
+search-trend-unigram-source.txt	211	翻譯	翻譯		existing				翻譯				
+search-trend-unigram-source.txt	213	雲端硬碟	雲端硬碟		existing				雲端硬碟				
+search-trend-unigram-source.txt	214	隨身碟	隨身碟		existing				隨身碟				
+search-trend-unigram-source.txt	215	硬碟	硬碟		existing				硬碟				
+search-trend-unigram-source.txt	217	記憶體	記憶體		existing				記憶體				
+search-trend-unigram-source.txt	218	處理器	處理器		existing				處理器				
+search-trend-unigram-source.txt	219	顯示卡	顯示卡		existing				顯示卡				
+search-trend-unigram-source.txt	220	主機板	主機板		existing				主機板				
+search-trend-unigram-source.txt	221	電源供應器	電源供應器		existing				電源供應器				
+search-trend-unigram-source.txt	222	筆記型電腦	筆記型電腦		existing				筆記型電腦				
+search-trend-unigram-source.txt	223	平板電腦	平板電腦		existing				平板電腦				
+search-trend-unigram-source.txt	230	充電器	充電器		existing				充電器				
+search-trend-unigram-source.txt	234	螢幕	螢幕		existing				螢幕				
+search-trend-unigram-source.txt	235	顯示器	顯示器		existing				顯示器				
+search-trend-unigram-source.txt	236	投影機	投影機		existing				投影機				
+search-trend-unigram-source.txt	237	印表機	印表機		existing				印表機				
+search-trend-unigram-source.txt	238	路由器	路由器		existing				路由器				
+search-trend-unigram-source.txt	239	無線網路	無線網路		existing				無線網路				
+search-trend-unigram-source.txt	241	光纖	光纖		existing				光纖				
+search-trend-unigram-source.txt	242	寬頻	寬頻		existing				寬頻				
+search-trend-unigram-source.txt	244	門號	門號		existing				門號				
+search-trend-unigram-source.txt	247	電信	電信		existing				電信				
+search-trend-unigram-source.txt	248	基地台	基地台		existing				基地台				
+search-trend-unigram-source.txt	256	直播	直播		existing				直播				
+search-trend-unigram-source.txt	267	追蹤	追蹤		existing				追蹤				
+search-trend-unigram-source.txt	269	分享	分享		existing				分享				
+search-trend-unigram-source.txt	270	轉發	轉發		existing				轉發				
+search-trend-unigram-source.txt	271	留言	留言		existing				留言				
+search-trend-unigram-source.txt	275	新聞	新聞		existing				新聞				
+search-trend-unigram-source.txt	276	即時新聞	即時新聞		existing				即時新聞				
+search-trend-unigram-source.txt	277	頭條	頭條		existing				頭條				
+search-trend-unigram-source.txt	278	社會新聞	社會新聞		existing				社會新聞				
+search-trend-unigram-source.txt	284	謠言	謠言		existing				謠言				
+search-trend-unigram-source.txt	285	闢謠	闢謠		existing				闢謠				
+search-trend-unigram-source.txt	286	媒體	媒體		existing				媒體				
+search-trend-unigram-source.txt	287	記者	記者		existing				記者				
+search-trend-unigram-source.txt	288	專訪	專訪		existing				專訪				
+search-trend-unigram-source.txt	289	爆料	爆料		existing				爆料				
+search-trend-unigram-source.txt	290	八卦	八卦		existing				八卦				
+search-trend-unigram-source.txt	291	緋聞	緋聞		existing				緋聞				
+search-trend-unigram-source.txt	292	明星	明星		existing				明星				
+search-trend-unigram-source.txt	293	藝人	藝人		existing				藝人				
+search-trend-unigram-source.txt	294	歌手	歌手		existing				歌手				
+search-trend-unigram-source.txt	295	演員	演員		existing				演員				
+search-trend-unigram-source.txt	296	偶像	偶像		existing				偶像				
+search-trend-unigram-source.txt	297	主持人	主持人		existing				主持人				
+search-trend-unigram-source.txt	298	導演	導演		existing				導演				
+search-trend-unigram-source.txt	300	演唱會	演唱會		existing				演唱會				
+search-trend-unigram-source.txt	301	音樂祭	音樂祭		existing				音樂祭				
+search-trend-unigram-source.txt	302	音樂會	音樂會		existing				音樂會				
+search-trend-unigram-source.txt	303	電影	電影		existing				電影				
+search-trend-unigram-source.txt	304	電影院	電影院		existing				電影院				
+search-trend-unigram-source.txt	305	影評	影評		existing				影評				
+search-trend-unigram-source.txt	306	票房	票房		existing				票房				
+search-trend-unigram-source.txt	307	預告片	預告片		existing				預告片				
+search-trend-unigram-source.txt	308	動畫	動畫		existing				動畫				
+search-trend-unigram-source.txt	309	動漫	動漫		existing				動漫				
+search-trend-unigram-source.txt	310	漫畫	漫畫		existing				漫畫				
+search-trend-unigram-source.txt	311	小說	小說		existing				小說				
+search-trend-unigram-source.txt	312	輕小說	輕小說		existing				輕小說				
+search-trend-unigram-source.txt	313	電視劇	電視劇		existing				電視劇				
+search-trend-unigram-source.txt	314	偶像劇	偶像劇		existing				偶像劇				
+search-trend-unigram-source.txt	315	八點檔	八點檔		existing				八點檔				
+search-trend-unigram-source.txt	316	韓劇	韓劇		existing				韓劇				
+search-trend-unigram-source.txt	317	日劇	日劇		existing				日劇				
+search-trend-unigram-source.txt	320	綜藝節目	綜藝節目		existing				綜藝節目				
+search-trend-unigram-source.txt	323	頒獎典禮	頒獎典禮		existing				頒獎典禮				
+search-trend-unigram-source.txt	324	金馬獎	金馬獎		existing				金馬獎				
+search-trend-unigram-source.txt	325	金鐘獎	金鐘獎		existing				金鐘獎				
+search-trend-unigram-source.txt	326	金曲獎	金曲獎		existing				金曲獎				
+search-trend-unigram-source.txt	331	火影忍者	火影忍者		existing				火影忍者				
+search-trend-unigram-source.txt	340	七龍珠	七龍珠		existing				七龍珠				
+search-trend-unigram-source.txt	344	天堂	天堂		existing				天堂				
+search-trend-unigram-source.txt	350	遊戲	遊戲		existing				遊戲				
+search-trend-unigram-source.txt	352	電競	電競		existing				電競				
+search-trend-unigram-source.txt	354	攻略	攻略		existing				攻略				
+search-trend-unigram-source.txt	355	下載	下載		existing				下載				
+search-trend-unigram-source.txt	356	更新	更新		existing				更新				
+search-trend-unigram-source.txt	357	版本	版本		existing				版本				
+search-trend-unigram-source.txt	358	伺服器	伺服器		existing				伺服器				
+search-trend-unigram-source.txt	359	帳號	帳號		existing				帳號				
+search-trend-unigram-source.txt	360	登入	登入		existing				登入				
+search-trend-unigram-source.txt	361	註冊	註冊		existing				註冊				
+search-trend-unigram-source.txt	362	序號	序號		existing				序號				
+search-trend-unigram-source.txt	363	禮包	禮包		existing				禮包				
+search-trend-unigram-source.txt	365	儲值	儲值		existing				儲值				
+search-trend-unigram-source.txt	366	點數	點數		existing				點數				
+search-trend-unigram-source.txt	368	限定	限定		existing				限定				
+search-trend-unigram-source.txt	369	角色	角色		existing				角色				
+search-trend-unigram-source.txt	370	造型	造型		existing				造型				
+search-trend-unigram-source.txt	371	活動	活動		existing				活動				
+search-trend-unigram-source.txt	372	周年慶	周年慶		existing				周年慶				
+search-trend-unigram-source.txt	373	學生	學生		existing				學生				
+search-trend-unigram-source.txt	374	國小	國小		existing				國小				
+search-trend-unigram-source.txt	375	國中	國中		existing				國中				
+search-trend-unigram-source.txt	376	高中	高中		existing				高中				
+search-trend-unigram-source.txt	377	大學	大學		existing				大學				
+search-trend-unigram-source.txt	378	研究所	研究所		existing				研究所				
+search-trend-unigram-source.txt	380	補習班	補習班		existing				補習班				
+search-trend-unigram-source.txt	381	家教	家教		existing				家教				
+search-trend-unigram-source.txt	382	升學	升學		existing				升學				
+search-trend-unigram-source.txt	383	學測	學測		existing				學測				
+search-trend-unigram-source.txt	384	會考	會考		existing				會考				
+search-trend-unigram-source.txt	386	統測	統測		existing				統測				
+search-trend-unigram-source.txt	388	模擬考	模擬考		existing				模擬考				
+search-trend-unigram-source.txt	389	段考	段考		existing				段考				
+search-trend-unigram-source.txt	390	期中考	期中考		existing				期中考				
+search-trend-unigram-source.txt	391	期末考	期末考		existing				期末考				
+search-trend-unigram-source.txt	392	考古題	考古題		existing				考古題				
+search-trend-unigram-source.txt	393	題庫	題庫		existing				題庫				
+search-trend-unigram-source.txt	394	作文	作文		existing				作文				
+search-trend-unigram-source.txt	397	數學	數學		existing				數學				
+search-trend-unigram-source.txt	398	國文	國文		existing				國文				
+search-trend-unigram-source.txt	399	英文	英文		existing				英文				
+search-trend-unigram-source.txt	400	自然	自然		existing				自然				
+search-trend-unigram-source.txt	401	社會	社會		existing				社會				
+search-trend-unigram-source.txt	402	物理	物理		existing				物理				
+search-trend-unigram-source.txt	403	化學	化學		existing				化學				
+search-trend-unigram-source.txt	404	生物	生物		existing				生物				
+search-trend-unigram-source.txt	405	地理	地理		existing				地理				
+search-trend-unigram-source.txt	406	歷史	歷史		existing				歷史				
+search-trend-unigram-source.txt	407	公民	公民		existing				公民				
+search-trend-unigram-source.txt	408	微積分	微積分		existing				微積分				
+search-trend-unigram-source.txt	409	統計	統計		existing				統計				
+search-trend-unigram-source.txt	410	程式設計	程式設計		existing				程式設計				
+search-trend-unigram-source.txt	412	遠距教學	遠距教學		existing				遠距教學				
+search-trend-unigram-source.txt	414	多元入學	多元入學		existing				多元入學				
+search-trend-unigram-source.txt	418	招生	招生		existing				招生				
+search-trend-unigram-source.txt	419	錄取	錄取		existing				錄取				
+search-trend-unigram-source.txt	420	榜單	榜單		existing				榜單				
+search-trend-unigram-source.txt	422	落點分析	落點分析		existing				落點分析				
+search-trend-unigram-source.txt	424	成績	成績		existing				成績				
+search-trend-unigram-source.txt	425	獎學金	獎學金		existing				獎學金				
+search-trend-unigram-source.txt	426	學費	學費		existing				學費				
+search-trend-unigram-source.txt	428	宿舍	宿舍		existing				宿舍				
+search-trend-unigram-source.txt	430	校園	校園		existing				校園				
+search-trend-unigram-source.txt	431	社團	社團		existing				社團				
+search-trend-unigram-source.txt	432	畢業	畢業		existing				畢業				
+search-trend-unigram-source.txt	433	畢業典禮	畢業典禮		existing				畢業典禮				
+search-trend-unigram-source.txt	434	畢業旅行	畢業旅行		existing				畢業旅行				
+search-trend-unigram-source.txt	435	寒假	寒假		existing				寒假				
+search-trend-unigram-source.txt	436	暑假	暑假		existing				暑假				
+search-trend-unigram-source.txt	437	開學	開學		existing				開學				
+search-trend-unigram-source.txt	438	放假	放假		existing				放假				
+search-trend-unigram-source.txt	439	補課	補課		existing				補課				
+search-trend-unigram-source.txt	440	補考	補考		existing				補考				
+search-trend-unigram-source.txt	441	翹課	翹課		existing				翹課				
+search-trend-unigram-source.txt	443	家長	家長		existing				家長				
+search-trend-unigram-source.txt	444	親子	親子		existing				親子				
+search-trend-unigram-source.txt	445	家庭	家庭		existing				家庭				
+search-trend-unigram-source.txt	446	夫妻	夫妻		existing				夫妻				
+search-trend-unigram-source.txt	447	婆媳	婆媳		existing				婆媳				
+search-trend-unigram-source.txt	448	婚姻	婚姻		existing				婚姻				
+search-trend-unigram-source.txt	449	離婚	離婚		existing				離婚				
+search-trend-unigram-source.txt	450	結婚	結婚		existing				結婚				
+search-trend-unigram-source.txt	451	婚禮	婚禮		existing				婚禮				
+search-trend-unigram-source.txt	452	婚紗	婚紗		existing				婚紗				
+search-trend-unigram-source.txt	453	喜餅	喜餅		existing				喜餅				
+search-trend-unigram-source.txt	454	蜜月	蜜月		existing				蜜月				
+search-trend-unigram-source.txt	455	懷孕	懷孕		existing				懷孕				
+search-trend-unigram-source.txt	456	孕婦	孕婦		existing				孕婦				
+search-trend-unigram-source.txt	457	生產	生產		existing				生產				
+search-trend-unigram-source.txt	458	坐月子	坐月子		existing				坐月子				
+search-trend-unigram-source.txt	459	育兒	育兒		existing				育兒				
+search-trend-unigram-source.txt	460	嬰兒	嬰兒		existing				嬰兒				
+search-trend-unigram-source.txt	461	奶粉	奶粉		existing				奶粉				
+search-trend-unigram-source.txt	462	尿布	尿布		existing				尿布				
+search-trend-unigram-source.txt	465	保母	保母		existing				保母				
+search-trend-unigram-source.txt	466	幼兒	幼兒		existing				幼兒				
+search-trend-unigram-source.txt	467	兒童	兒童		existing				兒童				
+search-trend-unigram-source.txt	468	青少年	青少年		existing				青少年				
+search-trend-unigram-source.txt	469	青春期	青春期		existing				青春期				
+search-trend-unigram-source.txt	470	教養	教養		existing				教養				
+search-trend-unigram-source.txt	471	補習	補習		existing				補習				
+search-trend-unigram-source.txt	472	零用錢	零用錢		existing				零用錢				
+search-trend-unigram-source.txt	475	家事	家事		existing				家事				
+search-trend-unigram-source.txt	476	打掃	打掃		existing				打掃				
+search-trend-unigram-source.txt	477	洗衣	洗衣		existing				洗衣				
+search-trend-unigram-source.txt	478	洗衣機	洗衣機		existing				洗衣機				
+search-trend-unigram-source.txt	479	烘衣機	烘衣機		existing				烘衣機				
+search-trend-unigram-source.txt	480	吸塵器	吸塵器		existing				吸塵器				
+search-trend-unigram-source.txt	482	除濕機	除濕機		existing				除濕機				
+search-trend-unigram-source.txt	483	空氣清淨機	空氣清淨機		existing				空氣清淨機				
+search-trend-unigram-source.txt	484	冷氣	冷氣		existing				冷氣				
+search-trend-unigram-source.txt	485	冰箱	冰箱		existing				冰箱				
+search-trend-unigram-source.txt	486	電鍋	電鍋		existing				電鍋				
+search-trend-unigram-source.txt	488	烤箱	烤箱		existing				烤箱				
+search-trend-unigram-source.txt	489	微波爐	微波爐		existing				微波爐				
+search-trend-unigram-source.txt	490	洗碗機	洗碗機		existing				洗碗機				
+search-trend-unigram-source.txt	491	熱水器	熱水器		existing				熱水器				
+search-trend-unigram-source.txt	492	瓦斯	瓦斯		existing				瓦斯				
+search-trend-unigram-source.txt	493	電費	電費		existing				電費				
+search-trend-unigram-source.txt	494	水費	水費		existing				水費				
+search-trend-unigram-source.txt	496	停電	停電		existing				停電				
+search-trend-unigram-source.txt	497	跳電	跳電		existing				跳電				
+search-trend-unigram-source.txt	498	漏水	漏水		existing				漏水				
+search-trend-unigram-source.txt	499	水電	水電		existing				水電				
+search-trend-unigram-source.txt	500	裝潢	裝潢		existing				裝潢				
+search-trend-unigram-source.txt	501	油漆	油漆		existing				油漆				
+search-trend-unigram-source.txt	502	木工	木工		existing				木工				
+search-trend-unigram-source.txt	503	家具	家具		existing				家具				
+search-trend-unigram-source.txt	504	床墊	床墊		existing				床墊				
+search-trend-unigram-source.txt	505	沙發	沙發		existing				沙發				
+search-trend-unigram-source.txt	506	收納	收納		existing				收納				
+search-trend-unigram-source.txt	507	搬家	搬家		existing				搬家				
+search-trend-unigram-source.txt	508	垃圾	垃圾		existing				垃圾				
+search-trend-unigram-source.txt	509	回收	回收		existing				回收				
+search-trend-unigram-source.txt	510	廚餘	廚餘		existing				廚餘				
+search-trend-unigram-source.txt	511	早餐	早餐		existing				早餐				
+search-trend-unigram-source.txt	512	午餐	午餐		existing				午餐				
+search-trend-unigram-source.txt	513	晚餐	晚餐		existing				晚餐				
+search-trend-unigram-source.txt	514	宵夜	宵夜		existing				宵夜				
+search-trend-unigram-source.txt	515	便當	便當		existing				便當				
+search-trend-unigram-source.txt	516	火鍋	火鍋		existing				火鍋				
+search-trend-unigram-source.txt	517	燒肉	燒肉		existing				燒肉				
+search-trend-unigram-source.txt	518	牛排	牛排		existing				牛排				
+search-trend-unigram-source.txt	519	拉麵	拉麵		existing				拉麵				
+search-trend-unigram-source.txt	520	壽司	壽司		existing				壽司				
+search-trend-unigram-source.txt	521	披薩	披薩		existing				披薩				
+search-trend-unigram-source.txt	522	漢堡	漢堡		existing				漢堡				
+search-trend-unigram-source.txt	523	炸雞	炸雞		existing				炸雞				
+search-trend-unigram-source.txt	524	滷味	滷味		existing				滷味				
+search-trend-unigram-source.txt	525	鹽酥雞	鹽酥雞		existing				鹽酥雞				
+search-trend-unigram-source.txt	526	雞排	雞排		existing				雞排				
+search-trend-unigram-source.txt	527	水餃	水餃		existing				水餃				
+search-trend-unigram-source.txt	528	牛肉麵	牛肉麵		existing				牛肉麵				
+search-trend-unigram-source.txt	529	滷肉飯	滷肉飯		existing				滷肉飯				
+search-trend-unigram-source.txt	530	小籠包	小籠包		existing				小籠包				
+search-trend-unigram-source.txt	531	蚵仔煎	蚵仔煎		existing				蚵仔煎				
+search-trend-unigram-source.txt	532	臭豆腐	臭豆腐		existing				臭豆腐				
+search-trend-unigram-source.txt	533	珍珠奶茶	珍珠奶茶		existing				珍珠奶茶				
+search-trend-unigram-source.txt	534	咖啡	咖啡		existing				咖啡				
+search-trend-unigram-source.txt	536	蛋糕	蛋糕		existing				蛋糕				
+search-trend-unigram-source.txt	537	甜點	甜點		existing				甜點				
+search-trend-unigram-source.txt	538	麵包	麵包		existing				麵包				
+search-trend-unigram-source.txt	539	烘焙	烘焙		existing				烘焙				
+search-trend-unigram-source.txt	540	食譜	食譜		existing				食譜				
+search-trend-unigram-source.txt	541	料理	料理		existing				料理				
+search-trend-unigram-source.txt	542	家常菜	家常菜		existing				家常菜				
+search-trend-unigram-source.txt	545	素食	素食		existing				素食				
+search-trend-unigram-source.txt	546	蔬食	蔬食		existing				蔬食				
+search-trend-unigram-source.txt	547	自助餐	自助餐		existing				自助餐				
+search-trend-unigram-source.txt	548	吃到飽	吃到飽		existing				吃到飽				
+search-trend-unigram-source.txt	550	外帶	外帶		existing				外帶				

@@ -7,6 +7,7 @@
 
 Encoding.default_external = Encoding::UTF_8
 Encoding.default_internal = Encoding::UTF_8
+require "json"
 
 MAX_PHRASE_LENGTH = 7
 # The bootstrap corpus is synthetic. A strong unigram prior prevents a pair
@@ -122,6 +123,11 @@ if ARGV.length < 3
 end
 
 counts_path, mappings_path, bpmf_cin_path = ARGV.shift(3)
+report_path = nil
+if ARGV.first == "--report"
+  ARGV.shift
+  report_path = ARGV.shift || abort("--report requires a path")
+end
 supplemental_lexicons = []
 while ["--lexicon", "--lexicon-preserve-counts"].include?(ARGV.first)
   option = ARGV.shift
@@ -153,6 +159,7 @@ File.foreach(mappings_path, encoding: "UTF-8") do |line|
 end
 
 inside_chardef = false
+phonetic_characters = {}
 File.foreach(bpmf_cin_path, encoding: "UTF-8") do |line|
   if line.match?(/%chardef\s+begin/)
     inside_chardef = true
@@ -165,6 +172,7 @@ File.foreach(bpmf_cin_path, encoding: "UTF-8") do |line|
   next unless inside_chardef
 
   qstring, word = line.split
+  phonetic_characters[[word, qstring]] = true if qstring && word && word.length == 1
   next unless qstring && word && word.length == 1 && counts.key?(word)
 
   readings[word][qstring] = true
@@ -179,9 +187,9 @@ supplemental_lexicons.each do |lexicon_path, override_existing_count|
     # three fields, while the project's small supplemental file has exactly
     # those three fields.
     word, raw_count, raw_reading = line.chomp.split("\t", -1).first(3)
-    next unless word && raw_count&.match?(/\A\d+\z/) && raw_reading
+    next unless word && raw_count&.match?(/\A\d+(?:\.\d+)?\z/) && raw_reading
 
-    count = raw_count.to_i
+    count = raw_count.to_f
     syllables = raw_reading.split
     unless count.positive? && (1..MAX_PHRASE_LENGTH).cover?(word.length) && syllables.length == word.length
       supplemental_skipped_count += 1
@@ -194,6 +202,13 @@ supplemental_lexicons.each do |lexicon_path, override_existing_count|
       # Associated-phrase collections can contain mixed-script entries such as
       # 哆啦A夢. They remain valid for phrase lookup, but Smart Mandarin cannot
       # encode Latin letters or symbols as Bopomofo syllables.
+      supplemental_skipped_count += 1
+      next
+    end
+    # A supplemental single-character reading must be selectable through the
+    # shared phonetic table too. Do not create engine-only readings (e.g. a
+    # neutral-tone 嗦 absent from CIN) while rebuilding the model from source.
+    if word.length == 1 && !phonetic_characters[[word, qstring]]
       supplemental_skipped_count += 1
       next
     end
@@ -343,6 +358,11 @@ bigram_counts.each do |(previous, current), count|
 end
 
 puts "COMMIT;"
+if report_path
+  File.write(report_path, JSON.pretty_generate({unigram_total_count: total_count,
+    unigram_rows: row_count + 3, bigram_rows: bigram_row_count,
+    sentences: sentence_count, tokens: token_count}) + "\n")
+end
 warn "SmartMandarinCooker: #{row_count} unigrams from #{readings.length} words; " \
      "#{bigram_row_count} bigrams from #{sentence_count} sentences and #{token_count} tokens; " \
      "prior strength #{BIGRAM_PRIOR_STRENGTH.to_i}, pair count capped at #{MAX_SYNTHETIC_BIGRAM_COUNT}, " \

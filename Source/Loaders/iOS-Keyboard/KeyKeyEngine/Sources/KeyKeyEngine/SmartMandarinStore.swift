@@ -178,7 +178,6 @@ public final class SmartMandarinStore: SmartMandarinSource {
                 }
 
                 var entries = unigrams(for: query)
-                let learned = userData?.learnedCandidate(for: query)
                 if let required = selections[start] {
                     entries = entries.filter { $0.text == required.text }
                 }
@@ -209,10 +208,8 @@ public final class SmartMandarinStore: SmartMandarinSource {
                             transition = max(observed ?? entry.probability, entry.probability)
                         }
 
-                        let learnedTransition = learned == entry.text
-                            ? max(transition, 0) : transition
                         let path = Path(
-                            score: previousPath.score + learnedTransition,
+                            score: previousPath.score + transition,
                             lastProbability: entry.probability,
                             lastBackoff: entry.backoff,
                             segments: previousPath.segments + [segment]
@@ -255,12 +252,9 @@ public final class SmartMandarinStore: SmartMandarinSource {
         var ranked: [(SmartMandarinCandidate, Double)] = []
         for length in 1...min(maximumSpan, readings.count - index) {
             let query = readings[index..<(index + length)].joined()
-            let learned = userData?.learnedCandidate(for: query)
             for entry in unigrams(for: query) {
                 let score: Double
-                if learned == entry.text {
-                    score = 0
-                } else if let previous {
+                if let previous {
                     let fallback = previousBackoff + entry.probability
                     let observed = bigramProbability(
                         previousQuery: previous.query,
@@ -314,7 +308,9 @@ public final class SmartMandarinStore: SmartMandarinSource {
     }
 
     public func learnConfirmedComposition(_ composition: SmartMandarinComposition) {
-        userData?.learnComposition(composition)
+        // Accepting an automatic guess (including buffer eviction) is not an
+        // explicit preference. Like the original desktop composer, learn only
+        // the selected candidate and its actual preceding segment.
     }
 
     public func evictionLength(readings: [String], composition: SmartMandarinComposition) -> Int {
@@ -372,8 +368,11 @@ public final class SmartMandarinStore: SmartMandarinSource {
             merged[item.text] = Unigram(text: item.text, probability: item.probability,
                                         backoff: item.backoff)
         }
-        if let learned, let item = merged[learned] {
-            merged[learned] = Unigram(text: learned, probability: 0,
+        if let learned, let item = merged[learned],
+           let highest = merged.values.map(\.probability).max() {
+            // Promote within this reading's probability scale, never to 0:
+            // a learned single character must still pay its lexical cost.
+            merged[learned] = Unigram(text: learned, probability: min(0, highest.nextUp),
                                       backoff: item.backoff)
         }
         return merged.values.sorted { $0.probability > $1.probability }

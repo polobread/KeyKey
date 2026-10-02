@@ -1,0 +1,551 @@
+word	status	existing_readings	action
+颱風	present	1	see custom-unigram-excluded.tsv
+地震	present	1	see custom-unigram-excluded.tsv
+豪雨	present	1	see custom-unigram-excluded.tsv
+停班停課	present	1	adopted
+寒流	present	1	see custom-unigram-excluded.tsv
+梅雨	present	1	see custom-unigram-excluded.tsv
+高溫	present	1	see custom-unigram-excluded.tsv
+空氣品質	present	1	adopted
+空氣污染	present	1	adopted
+紫外線	present	1	see custom-unigram-excluded.tsv
+即時雨量	present	1	adopted
+地震速報	present	1	adopted
+淹水	present	1	see custom-unigram-excluded.tsv
+土石流	present	1	see custom-unigram-excluded.tsv
+乾旱	present	1	see custom-unigram-excluded.tsv
+缺水	present	1	adopted
+限水	present	1	see custom-unigram-excluded.tsv
+水庫	present	1	see custom-unigram-excluded.tsv
+蓄水量	present	1	see custom-unigram-excluded.tsv
+登革熱	present	1	see custom-unigram-excluded.tsv
+流感	present	1	see custom-unigram-excluded.tsv
+疫苗	present	1	see custom-unigram-excluded.tsv
+快篩	present	1	adopted
+口罩	present	1	see custom-unigram-excluded.tsv
+新冠肺炎	present	1	adopted
+疫情	present	1	see custom-unigram-excluded.tsv
+隔離	present	1	see custom-unigram-excluded.tsv
+居家檢疫	present	1	adopted
+確診	present	1	adopted
+防疫	present	1	see custom-unigram-excluded.tsv
+醫院	present	1	see custom-unigram-excluded.tsv
+急診	present	1	see custom-unigram-excluded.tsv
+掛號	present	1	see custom-unigram-excluded.tsv
+健保	present	1	see custom-unigram-excluded.tsv
+健保卡	present	1	see custom-unigram-excluded.tsv
+健康檢查	present	1	see custom-unigram-excluded.tsv
+血壓	present	1	see custom-unigram-excluded.tsv
+血糖	present	1	see custom-unigram-excluded.tsv
+膽固醇	present	1	see custom-unigram-excluded.tsv
+減肥	present	1	see custom-unigram-excluded.tsv
+減重	present	1	adopted
+健身	present	1	see custom-unigram-excluded.tsv
+運動	present	1	see custom-unigram-excluded.tsv
+跑步	present	1	see custom-unigram-excluded.tsv
+馬拉松	present	1	see custom-unigram-excluded.tsv
+瑜伽	present	1	see custom-unigram-excluded.tsv
+睡眠	present	1	see custom-unigram-excluded.tsv
+失眠	present	1	see custom-unigram-excluded.tsv
+過敏	present	1	see custom-unigram-excluded.tsv
+感冒	present	1	see custom-unigram-excluded.tsv
+發燒	present	1	see custom-unigram-excluded.tsv
+頭痛	present	1	see custom-unigram-excluded.tsv
+牙痛	present	1	see custom-unigram-excluded.tsv
+牙醫	present	1	see custom-unigram-excluded.tsv
+眼科	present	1	see custom-unigram-excluded.tsv
+皮膚科	present	1	see custom-unigram-excluded.tsv
+中醫	present	1	see custom-unigram-excluded.tsv
+復健	present	1	see custom-unigram-excluded.tsv
+心理諮商	present	1	see custom-unigram-excluded.tsv
+憂鬱症	present	1	see custom-unigram-excluded.tsv
+焦慮症	present	1	see custom-unigram-excluded.tsv
+失智症	present	1	see custom-unigram-excluded.tsv
+長照	present	1	adopted
+居家照護	present	1	adopted
+醫療險	present	1	see custom-unigram-excluded.tsv
+防癌險	present	1	adopted
+壽險	present	1	see custom-unigram-excluded.tsv
+保險	present	1	see custom-unigram-excluded.tsv
+理賠	present	1	see custom-unigram-excluded.tsv
+車禍	present	1	see custom-unigram-excluded.tsv
+交通事故	present	1	see custom-unigram-excluded.tsv
+肇事	present	1	see custom-unigram-excluded.tsv
+違規	present	1	see custom-unigram-excluded.tsv
+罰單	present	1	see custom-unigram-excluded.tsv
+測速照相	present	1	adopted
+區間測速	present	1	adopted
+酒駕	present	1	see custom-unigram-excluded.tsv
+紅綠燈	present	1	see custom-unigram-excluded.tsv
+道路施工	present	1	adopted
+塞車	present	1	see custom-unigram-excluded.tsv
+即時路況	present	1	adopted
+高速公路	present	1	see custom-unigram-excluded.tsv
+交流道	present	1	see custom-unigram-excluded.tsv
+休息站	present	1	see custom-unigram-excluded.tsv
+國道	present	1	see custom-unigram-excluded.tsv
+省道	present	1	see custom-unigram-excluded.tsv
+快速道路	present	1	see custom-unigram-excluded.tsv
+高鐵	present	1	see custom-unigram-excluded.tsv
+台鐵	present	1	see custom-unigram-excluded.tsv
+捷運	present	1	see custom-unigram-excluded.tsv
+輕軌	present	1	see custom-unigram-excluded.tsv
+火車	present	1	see custom-unigram-excluded.tsv
+公車	present	1	see custom-unigram-excluded.tsv
+客運	present	1	see custom-unigram-excluded.tsv
+計程車	present	1	see custom-unigram-excluded.tsv
+共享單車	present	1	adopted
+自行車	present	1	see custom-unigram-excluded.tsv
+機車	present	1	see custom-unigram-excluded.tsv
+電動機車	present	1	adopted
+汽車	present	1	see custom-unigram-excluded.tsv
+電動車	present	1	see custom-unigram-excluded.tsv
+充電樁	present	1	adopted
+停車場	present	1	see custom-unigram-excluded.tsv
+停車位	present	1	see custom-unigram-excluded.tsv
+停車費	present	1	see custom-unigram-excluded.tsv
+悠遊卡	present	1	see custom-unigram-excluded.tsv
+一卡通	present	1	adopted
+電子票證	present	1	adopted
+行動支付	present	1	adopted
+電子支付	present	1	adopted
+電子發票	present	1	adopted
+統一發票	present	1	see custom-unigram-excluded.tsv
+發票對獎	present	1	adopted
+載具	present	1	adopted
+雲端發票	present	1	adopted
+信用卡	present	1	see custom-unigram-excluded.tsv
+簽帳卡	present	1	see custom-unigram-excluded.tsv
+提款卡	present	1	see custom-unigram-excluded.tsv
+轉帳	present	1	see custom-unigram-excluded.tsv
+匯款	present	1	see custom-unigram-excluded.tsv
+網路銀行	present	1	adopted
+數位帳戶	present	1	adopted
+定存	present	1	see custom-unigram-excluded.tsv
+活存	present	1	see custom-unigram-excluded.tsv
+利率	present	1	see custom-unigram-excluded.tsv
+房貸	present	1	see custom-unigram-excluded.tsv
+信貸	present	1	see custom-unigram-excluded.tsv
+車貸	present	1	adopted
+貸款	present	1	see custom-unigram-excluded.tsv
+房價	present	1	see custom-unigram-excluded.tsv
+房租	present	1	see custom-unigram-excluded.tsv
+租屋	present	1	see custom-unigram-excluded.tsv
+買房	present	1	adopted
+房仲	present	1	see custom-unigram-excluded.tsv
+預售屋	present	1	see custom-unigram-excluded.tsv
+新成屋	present	1	adopted
+中古屋	present	1	see custom-unigram-excluded.tsv
+實價登錄	present	1	see custom-unigram-excluded.tsv
+房屋稅	present	1	see custom-unigram-excluded.tsv
+地價稅	present	1	see custom-unigram-excluded.tsv
+所得稅	present	1	see custom-unigram-excluded.tsv
+報稅	present	1	see custom-unigram-excluded.tsv
+退稅	present	1	see custom-unigram-excluded.tsv
+發票	present	1	see custom-unigram-excluded.tsv
+薪資	present	1	see custom-unigram-excluded.tsv
+基本工資	present	1	see custom-unigram-excluded.tsv
+年終獎金	present	1	see custom-unigram-excluded.tsv
+加薪	present	1	see custom-unigram-excluded.tsv
+獎金	present	1	see custom-unigram-excluded.tsv
+勞保	present	1	see custom-unigram-excluded.tsv
+勞退	present	1	adopted
+退休金	present	1	see custom-unigram-excluded.tsv
+勞基法	present	1	see custom-unigram-excluded.tsv
+加班費	present	1	see custom-unigram-excluded.tsv
+特休	present	1	adopted
+請假	present	1	see custom-unigram-excluded.tsv
+育嬰假	present	1	see custom-unigram-excluded.tsv
+產假	present	1	see custom-unigram-excluded.tsv
+婚假	present	1	see custom-unigram-excluded.tsv
+失業	present	1	see custom-unigram-excluded.tsv
+求職	present	1	see custom-unigram-excluded.tsv
+面試	present	1	see custom-unigram-excluded.tsv
+履歷	present	1	see custom-unigram-excluded.tsv
+轉職	present	1	see custom-unigram-excluded.tsv
+兼職	present	1	see custom-unigram-excluded.tsv
+打工	present	1	see custom-unigram-excluded.tsv
+實習	present	1	see custom-unigram-excluded.tsv
+公務員	present	1	see custom-unigram-excluded.tsv
+國考	present	1	adopted
+證照	present	1	see custom-unigram-excluded.tsv
+職缺	present	1	see custom-unigram-excluded.tsv
+薪水	present	1	see custom-unigram-excluded.tsv
+職場	present	1	see custom-unigram-excluded.tsv
+遠距工作	present	1	adopted
+居家辦公	present	1	adopted
+視訊會議	present	1	adopted
+人工智慧	present	1	see custom-unigram-excluded.tsv
+生成式人工智慧	present	1	adopted
+聊天機器人	present	1	adopted
+機器學習	present	1	see custom-unigram-excluded.tsv
+深度學習	present	1	adopted
+大數據	present	1	adopted
+雲端運算	present	1	adopted
+物聯網	present	1	adopted
+區塊鏈	present	1	adopted
+比特幣	present	1	adopted
+虛擬貨幣	present	1	adopted
+加密貨幣	present	1	adopted
+挖礦	present	1	adopted
+資安	present	1	see custom-unigram-excluded.tsv
+網路安全	present	1	see custom-unigram-excluded.tsv
+駭客	present	1	see custom-unigram-excluded.tsv
+詐騙	present	1	see custom-unigram-excluded.tsv
+網路詐騙	present	1	adopted
+投資詐騙	present	1	adopted
+簡訊詐騙	present	1	adopted
+假冒客服	present	1	adopted
+釣魚網站	present	1	adopted
+個資	present	1	adopted
+個資外洩	present	1	adopted
+密碼	present	1	see custom-unigram-excluded.tsv
+雙重驗證	present	1	adopted
+防毒軟體	present	1	adopted
+作業系統	present	1	see custom-unigram-excluded.tsv
+瀏覽器	present	1	see custom-unigram-excluded.tsv
+搜尋引擎	present	1	see custom-unigram-excluded.tsv
+輸入法	present	1	see custom-unigram-excluded.tsv
+注音	present	1	see custom-unigram-excluded.tsv
+倉頡	present	1	see custom-unigram-excluded.tsv
+語音輸入	present	1	adopted
+翻譯	present	1	see custom-unigram-excluded.tsv
+線上翻譯	present	1	adopted
+雲端硬碟	present	1	see custom-unigram-excluded.tsv
+隨身碟	present	1	see custom-unigram-excluded.tsv
+硬碟	present	1	see custom-unigram-excluded.tsv
+固態硬碟	present	1	adopted
+記憶體	present	1	see custom-unigram-excluded.tsv
+處理器	present	1	see custom-unigram-excluded.tsv
+顯示卡	present	1	see custom-unigram-excluded.tsv
+主機板	present	1	see custom-unigram-excluded.tsv
+電源供應器	present	1	see custom-unigram-excluded.tsv
+筆記型電腦	present	1	see custom-unigram-excluded.tsv
+平板電腦	present	1	see custom-unigram-excluded.tsv
+智慧手機	present	1	adopted
+摺疊手機	present	1	adopted
+智慧手錶	present	1	adopted
+藍牙耳機	present	1	adopted
+無線耳機	present	1	adopted
+行動電源	present	1	adopted
+充電器	present	1	see custom-unigram-excluded.tsv
+快充	present	1	adopted
+無線充電	present	1	adopted
+傳輸線	present	1	adopted
+螢幕	present	1	see custom-unigram-excluded.tsv
+顯示器	present	1	see custom-unigram-excluded.tsv
+投影機	present	1	see custom-unigram-excluded.tsv
+印表機	present	1	see custom-unigram-excluded.tsv
+路由器	present	1	see custom-unigram-excluded.tsv
+無線網路	present	1	see custom-unigram-excluded.tsv
+網路速度	present	1	adopted
+光纖	present	1	see custom-unigram-excluded.tsv
+寬頻	present	1	see custom-unigram-excluded.tsv
+網路吃到飽	present	1	adopted
+門號	present	1	see custom-unigram-excluded.tsv
+攜碼	present	1	adopted
+預付卡	present	1	adopted
+電信	present	1	see custom-unigram-excluded.tsv
+基地台	present	1	see custom-unigram-excluded.tsv
+第五代行動通訊	present	1	adopted
+第四代行動通訊	present	1	adopted
+衛星網路	present	1	adopted
+網路電視	present	1	adopted
+串流平台	present	1	adopted
+影音平台	present	1	adopted
+短影音	present	1	adopted
+直播	present	2	see custom-unigram-excluded.tsv
+網紅	present	1	adopted
+直播主	present	1	adopted
+實況主	present	1	adopted
+社群媒體	present	1	adopted
+社群網站	present	1	adopted
+網路論壇	present	1	adopted
+迷因	present	1	adopted
+梗圖	present	1	adopted
+貼圖	present	1	adopted
+限時動態	present	1	adopted
+追蹤	present	1	see custom-unigram-excluded.tsv
+按讚	present	1	adopted
+分享	present	1	see custom-unigram-excluded.tsv
+轉發	present	1	see custom-unigram-excluded.tsv
+留言	present	1	see custom-unigram-excluded.tsv
+熱門話題	present	1	adopted
+搜尋排行榜	present	1	adopted
+熱搜	present	1	adopted
+新聞	present	1	see custom-unigram-excluded.tsv
+即時新聞	present	1	see custom-unigram-excluded.tsv
+頭條	present	1	see custom-unigram-excluded.tsv
+社會新聞	present	1	see custom-unigram-excluded.tsv
+國際新聞	present	1	adopted
+財經新聞	present	1	adopted
+娛樂新聞	present	1	adopted
+體育新聞	present	1	adopted
+假新聞	present	1	adopted
+謠言	present	1	see custom-unigram-excluded.tsv
+闢謠	present	1	see custom-unigram-excluded.tsv
+媒體	present	1	see custom-unigram-excluded.tsv
+記者	present	1	see custom-unigram-excluded.tsv
+專訪	present	1	see custom-unigram-excluded.tsv
+爆料	present	1	see custom-unigram-excluded.tsv
+八卦	present	1	see custom-unigram-excluded.tsv
+緋聞	present	1	see custom-unigram-excluded.tsv
+明星	present	1	see custom-unigram-excluded.tsv
+藝人	present	1	see custom-unigram-excluded.tsv
+歌手	present	1	see custom-unigram-excluded.tsv
+演員	present	1	see custom-unigram-excluded.tsv
+偶像	present	1	see custom-unigram-excluded.tsv
+主持人	present	1	see custom-unigram-excluded.tsv
+導演	present	1	see custom-unigram-excluded.tsv
+網路紅人	present	1	adopted
+演唱會	present	1	see custom-unigram-excluded.tsv
+音樂祭	present	1	see custom-unigram-excluded.tsv
+音樂會	present	1	see custom-unigram-excluded.tsv
+電影	present	1	see custom-unigram-excluded.tsv
+電影院	present	1	see custom-unigram-excluded.tsv
+影評	present	1	see custom-unigram-excluded.tsv
+票房	present	1	see custom-unigram-excluded.tsv
+預告片	present	1	see custom-unigram-excluded.tsv
+動畫	present	1	see custom-unigram-excluded.tsv
+動漫	present	1	see custom-unigram-excluded.tsv
+漫畫	present	1	see custom-unigram-excluded.tsv
+小說	present	1	see custom-unigram-excluded.tsv
+輕小說	present	1	see custom-unigram-excluded.tsv
+電視劇	present	1	see custom-unigram-excluded.tsv
+偶像劇	present	1	see custom-unigram-excluded.tsv
+八點檔	present	1	see custom-unigram-excluded.tsv
+韓劇	present	1	see custom-unigram-excluded.tsv
+日劇	present	1	see custom-unigram-excluded.tsv
+台劇	present	1	adopted
+陸劇	present	1	adopted
+綜藝節目	present	1	see custom-unigram-excluded.tsv
+實境節目	present	1	adopted
+選秀節目	present	1	adopted
+頒獎典禮	present	1	see custom-unigram-excluded.tsv
+金馬獎	present	1	see custom-unigram-excluded.tsv
+金鐘獎	present	1	see custom-unigram-excluded.tsv
+金曲獎	present	1	see custom-unigram-excluded.tsv
+進擊的巨人	present	1	adopted
+鬼滅之刃	present	1	adopted
+咒術迴戰	present	1	adopted
+航海王	present	1	adopted
+火影忍者	present	1	see custom-unigram-excluded.tsv
+名偵探柯南	present	1	adopted
+排球少年	present	1	adopted
+灌籃高手	present	1	adopted
+間諜家家酒	present	1	adopted
+葬送的芙莉蓮	present	1	adopted
+我推的孩子	present	1	adopted
+膽大黨	present	1	adopted
+寶可夢	present	1	adopted
+七龍珠	present	1	see custom-unigram-excluded.tsv
+神魔之塔	present	1	adopted
+傳說對決	present	1	adopted
+英雄聯盟	present	1	adopted
+天堂	present	1	see custom-unigram-excluded.tsv
+楓之谷	present	1	adopted
+仙境傳說	present	1	adopted
+原神	present	1	adopted
+崩壞星穹鐵道	present	1	adopted
+鳴潮	present	1	adopted
+遊戲	present	1	see custom-unigram-excluded.tsv
+手遊	present	1	adopted
+電競	present	1	see custom-unigram-excluded.tsv
+遊戲直播	present	1	adopted
+攻略	present	1	see custom-unigram-excluded.tsv
+下載	present	1	see custom-unigram-excluded.tsv
+更新	present	2	see custom-unigram-excluded.tsv
+版本	present	1	see custom-unigram-excluded.tsv
+伺服器	present	1	see custom-unigram-excluded.tsv
+帳號	present	1	see custom-unigram-excluded.tsv
+登入	present	1	see custom-unigram-excluded.tsv
+註冊	present	1	see custom-unigram-excluded.tsv
+序號	present	1	see custom-unigram-excluded.tsv
+禮包	present	1	see custom-unigram-excluded.tsv
+課金	present	1	adopted
+儲值	present	1	see custom-unigram-excluded.tsv
+點數	present	2	see custom-unigram-excluded.tsv
+抽卡	present	1	adopted
+限定	present	1	see custom-unigram-excluded.tsv
+角色	present	2	see custom-unigram-excluded.tsv
+造型	present	1	see custom-unigram-excluded.tsv
+活動	present	1	see custom-unigram-excluded.tsv
+周年慶	present	1	see custom-unigram-excluded.tsv
+學生	present	1	see custom-unigram-excluded.tsv
+國小	present	1	see custom-unigram-excluded.tsv
+國中	present	1	see custom-unigram-excluded.tsv
+高中	present	2	see custom-unigram-excluded.tsv
+大學	present	1	see custom-unigram-excluded.tsv
+研究所	present	1	see custom-unigram-excluded.tsv
+幼兒園	present	1	adopted
+補習班	present	1	see custom-unigram-excluded.tsv
+家教	present	1	see custom-unigram-excluded.tsv
+升學	present	1	see custom-unigram-excluded.tsv
+學測	present	1	see custom-unigram-excluded.tsv
+會考	present	1	see custom-unigram-excluded.tsv
+分科測驗	present	1	adopted
+統測	present	1	see custom-unigram-excluded.tsv
+指考	present	1	adopted
+模擬考	present	1	see custom-unigram-excluded.tsv
+段考	present	1	see custom-unigram-excluded.tsv
+期中考	present	1	see custom-unigram-excluded.tsv
+期末考	present	1	see custom-unigram-excluded.tsv
+考古題	present	1	see custom-unigram-excluded.tsv
+題庫	present	1	see custom-unigram-excluded.tsv
+作文	present	1	see custom-unigram-excluded.tsv
+英文作文	present	1	adopted
+閱讀測驗	present	1	adopted
+數學	present	1	see custom-unigram-excluded.tsv
+國文	present	1	see custom-unigram-excluded.tsv
+英文	present	1	see custom-unigram-excluded.tsv
+自然	present	1	see custom-unigram-excluded.tsv
+社會	present	1	see custom-unigram-excluded.tsv
+物理	present	1	see custom-unigram-excluded.tsv
+化學	present	1	see custom-unigram-excluded.tsv
+生物	present	1	see custom-unigram-excluded.tsv
+地理	present	1	see custom-unigram-excluded.tsv
+歷史	present	1	see custom-unigram-excluded.tsv
+公民	present	1	see custom-unigram-excluded.tsv
+微積分	present	1	see custom-unigram-excluded.tsv
+統計	present	1	see custom-unigram-excluded.tsv
+程式設計	present	1	see custom-unigram-excluded.tsv
+線上課程	present	1	adopted
+遠距教學	present	2	see custom-unigram-excluded.tsv
+學習歷程	present	1	adopted
+多元入學	present	1	see custom-unigram-excluded.tsv
+繁星推薦	present	1	adopted
+申請入學	present	1	adopted
+考試分發	present	1	adopted
+招生	present	1	see custom-unigram-excluded.tsv
+錄取	present	1	see custom-unigram-excluded.tsv
+榜單	present	1	see custom-unigram-excluded.tsv
+志願序	present	1	adopted
+落點分析	present	1	see custom-unigram-excluded.tsv
+級分	present	1	adopted
+成績	present	1	see custom-unigram-excluded.tsv
+獎學金	present	1	see custom-unigram-excluded.tsv
+學費	present	1	see custom-unigram-excluded.tsv
+就學貸款	present	1	adopted
+宿舍	present	1	see custom-unigram-excluded.tsv
+租屋處	present	1	adopted
+校園	present	1	see custom-unigram-excluded.tsv
+社團	present	1	see custom-unigram-excluded.tsv
+畢業	present	1	see custom-unigram-excluded.tsv
+畢業典禮	present	1	see custom-unigram-excluded.tsv
+畢業旅行	present	1	see custom-unigram-excluded.tsv
+寒假	present	1	see custom-unigram-excluded.tsv
+暑假	present	1	see custom-unigram-excluded.tsv
+開學	present	1	see custom-unigram-excluded.tsv
+放假	present	1	see custom-unigram-excluded.tsv
+補課	present	1	see custom-unigram-excluded.tsv
+補考	present	1	see custom-unigram-excluded.tsv
+翹課	present	1	see custom-unigram-excluded.tsv
+請假單	present	1	adopted
+家長	present	1	see custom-unigram-excluded.tsv
+親子	present	1	see custom-unigram-excluded.tsv
+家庭	present	1	see custom-unigram-excluded.tsv
+夫妻	present	1	see custom-unigram-excluded.tsv
+婆媳	present	1	see custom-unigram-excluded.tsv
+婚姻	present	1	see custom-unigram-excluded.tsv
+離婚	present	1	see custom-unigram-excluded.tsv
+結婚	present	1	see custom-unigram-excluded.tsv
+婚禮	present	1	see custom-unigram-excluded.tsv
+婚紗	present	1	see custom-unigram-excluded.tsv
+喜餅	present	1	see custom-unigram-excluded.tsv
+蜜月	present	1	see custom-unigram-excluded.tsv
+懷孕	present	1	see custom-unigram-excluded.tsv
+孕婦	present	1	see custom-unigram-excluded.tsv
+生產	present	1	see custom-unigram-excluded.tsv
+坐月子	present	1	see custom-unigram-excluded.tsv
+育兒	present	1	see custom-unigram-excluded.tsv
+嬰兒	present	1	see custom-unigram-excluded.tsv
+奶粉	present	1	see custom-unigram-excluded.tsv
+尿布	present	1	see custom-unigram-excluded.tsv
+副食品	present	1	adopted
+托嬰	present	1	adopted
+保母	present	1	see custom-unigram-excluded.tsv
+幼兒	present	1	see custom-unigram-excluded.tsv
+兒童	present	1	see custom-unigram-excluded.tsv
+青少年	present	1	see custom-unigram-excluded.tsv
+青春期	present	1	see custom-unigram-excluded.tsv
+教養	present	1	see custom-unigram-excluded.tsv
+補習	present	1	see custom-unigram-excluded.tsv
+零用錢	present	1	see custom-unigram-excluded.tsv
+手機成癮	present	1	adopted
+網路成癮	present	1	adopted
+家事	present	1	see custom-unigram-excluded.tsv
+打掃	present	1	see custom-unigram-excluded.tsv
+洗衣	present	1	see custom-unigram-excluded.tsv
+洗衣機	present	1	see custom-unigram-excluded.tsv
+烘衣機	present	1	see custom-unigram-excluded.tsv
+吸塵器	present	1	see custom-unigram-excluded.tsv
+掃地機器人	present	1	adopted
+除濕機	present	1	see custom-unigram-excluded.tsv
+空氣清淨機	present	1	see custom-unigram-excluded.tsv
+冷氣	present	1	see custom-unigram-excluded.tsv
+冰箱	present	1	see custom-unigram-excluded.tsv
+電鍋	present	1	see custom-unigram-excluded.tsv
+氣炸鍋	present	1	adopted
+烤箱	present	1	see custom-unigram-excluded.tsv
+微波爐	present	2	see custom-unigram-excluded.tsv
+洗碗機	present	1	see custom-unigram-excluded.tsv
+熱水器	present	1	see custom-unigram-excluded.tsv
+瓦斯	present	1	see custom-unigram-excluded.tsv
+電費	present	1	see custom-unigram-excluded.tsv
+水費	present	1	see custom-unigram-excluded.tsv
+電價	present	1	adopted
+停電	present	1	see custom-unigram-excluded.tsv
+跳電	present	1	see custom-unigram-excluded.tsv
+漏水	present	1	see custom-unigram-excluded.tsv
+水電	present	1	see custom-unigram-excluded.tsv
+裝潢	present	1	see custom-unigram-excluded.tsv
+油漆	present	1	see custom-unigram-excluded.tsv
+木工	present	1	see custom-unigram-excluded.tsv
+家具	present	1	see custom-unigram-excluded.tsv
+床墊	present	1	see custom-unigram-excluded.tsv
+沙發	present	1	see custom-unigram-excluded.tsv
+收納	present	1	see custom-unigram-excluded.tsv
+搬家	present	1	see custom-unigram-excluded.tsv
+垃圾	present	1	see custom-unigram-excluded.tsv
+回收	present	1	see custom-unigram-excluded.tsv
+廚餘	present	1	see custom-unigram-excluded.tsv
+早餐	present	1	see custom-unigram-excluded.tsv
+午餐	present	1	see custom-unigram-excluded.tsv
+晚餐	present	1	see custom-unigram-excluded.tsv
+宵夜	present	1	see custom-unigram-excluded.tsv
+便當	present	1	see custom-unigram-excluded.tsv
+火鍋	present	1	see custom-unigram-excluded.tsv
+燒肉	present	1	see custom-unigram-excluded.tsv
+牛排	present	1	see custom-unigram-excluded.tsv
+拉麵	present	1	see custom-unigram-excluded.tsv
+壽司	present	1	see custom-unigram-excluded.tsv
+披薩	present	1	see custom-unigram-excluded.tsv
+漢堡	present	1	see custom-unigram-excluded.tsv
+炸雞	present	1	see custom-unigram-excluded.tsv
+滷味	present	1	see custom-unigram-excluded.tsv
+鹽酥雞	present	1	see custom-unigram-excluded.tsv
+雞排	present	1	see custom-unigram-excluded.tsv
+水餃	present	1	see custom-unigram-excluded.tsv
+牛肉麵	present	1	see custom-unigram-excluded.tsv
+滷肉飯	present	1	see custom-unigram-excluded.tsv
+小籠包	present	1	see custom-unigram-excluded.tsv
+蚵仔煎	present	4	see custom-unigram-excluded.tsv
+臭豆腐	present	1	see custom-unigram-excluded.tsv
+珍珠奶茶	present	1	see custom-unigram-excluded.tsv
+咖啡	present	1	see custom-unigram-excluded.tsv
+手搖飲	present	1	adopted
+蛋糕	present	1	see custom-unigram-excluded.tsv
+甜點	present	1	see custom-unigram-excluded.tsv
+麵包	present	1	see custom-unigram-excluded.tsv
+烘焙	present	1	see custom-unigram-excluded.tsv
+食譜	present	1	see custom-unigram-excluded.tsv
+料理	present	1	see custom-unigram-excluded.tsv
+家常菜	present	1	see custom-unigram-excluded.tsv
+減醣	present	1	adopted
+低醣	present	1	adopted
+素食	present	1	see custom-unigram-excluded.tsv
+蔬食	present	1	see custom-unigram-excluded.tsv
+自助餐	present	1	see custom-unigram-excluded.tsv
+吃到飽	present	1	see custom-unigram-excluded.tsv
+外送	present	1	adopted
+外帶	present	1	see custom-unigram-excluded.tsv

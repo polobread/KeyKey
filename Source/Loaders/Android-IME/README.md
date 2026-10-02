@@ -226,7 +226,7 @@ cd Source\Loaders\Android-IME
 載入，不阻塞虛擬鍵盤顯示。原始文字檔仍是唯一資料來源，不能手動修改 generated 索引。
 分類詞庫由自動化方式生成、推論與整理，沒有逐筆人工校正，也不保證正確性或完整性。
 建置也會把 `Source/Distributions/Takao/CookedDatabase/KeyKey.db` 複製為好打注音的唯讀
-語言模型資產，建置時驗證其 Bigram 恰為 885,627 筆且 SQLite 完整性正常；首次載入
+語言模型資產，建置時驗證其 Bigram 恰為 883,372 筆且 SQLite 完整性正常；首次載入
 輸入法時安裝到 App 的 no-backup 目錄，後續以 SQLite 懶查詢。
 
 APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。

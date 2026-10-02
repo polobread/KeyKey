@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the fixed 130-article Smart Mandarin holdout and leakage boundary."""
+"""Verify the contiguous Smart Mandarin regression set and training boundary."""
 from __future__ import annotations
 
 import argparse
@@ -23,9 +23,9 @@ def normalize(text: str) -> str:
 
 def inspect(article_dir: Path) -> dict[str, object]:
     paths = sorted(article_dir.glob("tw-corpus-*.md"))
-    expected_names = [f"tw-corpus-{number:04d}.md" for number in range(1, 131)]
-    if [path.name for path in paths] != expected_names:
-        raise ValueError(f"{article_dir}: expected tw-corpus-0001.md through tw-corpus-0130.md")
+    expected_names = [f"tw-corpus-{number:04d}.md" for number in range(1, len(paths) + 1)]
+    if len(paths) < 131 or [path.name for path in paths] != expected_names:
+        raise ValueError(f"{article_dir}: expected contiguous tw-corpus files, including 0001 through 0131")
     texts = [path.read_text(encoding="utf-8") for path in paths]
     if any(not text.strip() for text in texts):
         raise ValueError(f"{article_dir}: validation articles must not be empty")

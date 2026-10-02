@@ -8,7 +8,6 @@ from pathlib import Path
 from smart_mandarin_model import verify_manifest
 
 
-EXPECTED_BIGRAM_ROWS = 885_627
 MODEL_MANIFEST = (
     Path(__file__).resolve().parents[4]
     / "DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
@@ -41,6 +40,7 @@ def main() -> int:
 
     try:
         model = verify_manifest(path, MODEL_MANIFEST)
+        expected_bigram_rows = model["rows"]["bigrams"]
         with sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True) as database:
             bigram_rows = database.execute("SELECT COUNT(*) FROM bigrams").fetchone()[0]
             integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
@@ -77,10 +77,10 @@ def main() -> int:
         print(f"Unable to verify Smart Mandarin database {path}: {error}", file=sys.stderr)
         return 1
 
-    if bigram_rows != EXPECTED_BIGRAM_ROWS or integrity != "ok":
+    if bigram_rows != expected_bigram_rows or integrity != "ok":
         print(
             f"Smart Mandarin database {path}: {bigram_rows} bigrams, "
-            f"integrity={integrity}; expected {EXPECTED_BIGRAM_ROWS} and ok",
+            f"integrity={integrity}; expected {expected_bigram_rows} and ok",
             file=sys.stderr,
         )
         return 1

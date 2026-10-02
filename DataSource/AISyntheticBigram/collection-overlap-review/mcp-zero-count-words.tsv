@@ -1,0 +1,42 @@
+word	reading	category	target_count	source_count	mcp_same_text_source_count	mcp_exact_words	mcp_best_exact_score	new_log10_probability	new_minus_best_exact	mcp_best_split	new_minus_best_split	mcp_best_path	new_minus_best_path	before_text	after_text	before_segments	after_segments	default_changed	new_word_default	new_word_candidate_rank	mcp_raw_mapping_words	file	line	source_word
+佐賀	ㄗㄨㄛˇ ㄏㄜˋ	動漫	1	22	0			-7.354194117						左和	左和	左/和	左/和	False	False	1		phrase.anime.tsv	196	
+供應鏈	ㄍㄨㄥ ㄧㄥˋ ㄌㄧㄢˋ	商業	1	16	0			-7.354194117						供應鏈	供應鏈	供應/鏈	供應/鏈	False	True	1		phrase.business.tsv	18	
+兩津勘吉	ㄌㄧㄤˇ ㄐㄧㄣ ㄎㄢ ㄐㄧˊ	動漫	1	24	0			-7.354194117						兩今看及	兩津勘吉	兩/今/看/及	兩津勘吉	True	True	1		phrase.anime.tsv	263	
+六道輪迴	ㄌㄧㄡˋ ㄉㄠˋ ㄌㄨㄣˊ ㄏㄨㄟˊ	動漫	1	17	0			-7.354194117		六道/輪迴	5.621800358	六道/輪迴	5.621800358	六到輪迴	六道輪迴	六/到/輪迴	六道輪迴	True	True	1		phrase.anime.tsv	278	
+共基極	ㄍㄨㄥˋ ㄐㄧ ㄐㄧˊ	電子電機	1	12	0			-7.354194117						共積極	共積極	共/積極	共/積極	False	False	1		phrase.electronics.tsv	30	
+再借不難	ㄗㄞˋ ㄐㄧㄝˋ ㄅㄨˋ ㄋㄢˊ	動漫	1	15	0			-7.354194117		再借/不難	5.264289006	再借/不難	5.264289006	在界不難	再借不難	在/界/不難	再借不難	True	True	1		phrase.anime.tsv	281	
+功率因數	ㄍㄨㄥ ㄌㄩˋ ㄧㄣ ㄕㄨˋ	電子電機	1	10	0			-7.354194117		功率/因數	4.479132854	功率/因數	4.479132854	功率因數	功率因數	功率/因/數	功率因數	False	True	1		phrase.electronics.tsv	39	
+哆啦美	ㄉㄨㄛ ㄌㄚ ㄇㄟˇ	動漫	1	13	0			-7.354194117						多拉美	哆啦美	多/拉/美	哆啦美	True	True	1		phrase.anime.tsv	456	
+固定床	ㄍㄨˋ ㄉㄧㄥˋ ㄔㄨㄤˊ	材料化工	1	11	0			-7.354194117						固定床	固定床	固定/床	固定/床	False	True	1		phrase.materials-chemistry.tsv	21	
+圖靈	ㄊㄨˊ ㄌㄧㄥˊ	人名-歷史	1	11	0			-7.354194117						圖靈	圖靈	圖/靈	圖/靈	False	True	1		phrase.people-history.tsv	23	
+多工	ㄉㄨㄛ ㄍㄨㄥ	電子電機	1	11	0			-7.354194117						多工	多工	多/工	多/工	False	True	1		phrase.electronics.tsv	54	
+安倍晉三	ㄢ ㄅㄟˋ ㄐㄧㄣˋ ㄙㄢ	人名-當代	1	13	0			-7.354194117						安倍進三	安倍晉三	安/倍/進/三	安倍晉三	True	True	1		phrase.people-contemporary.tsv	7	
+帷幕牆	ㄨㄟˊ ㄇㄨˋ ㄑㄧㄤˊ	建築土木	1	16	0			-7.354194117						帷幕牆	帷幕牆	帷幕/牆	帷幕/牆	False	True	1		phrase.civil-engineering.tsv	83	
+庫洛魔法使	ㄎㄨˋ ㄌㄨㄛˋ ㄇㄛˊ ㄈㄚˇ ㄕˇ	動漫	1	24	0			-7.354194117						庫落魔法使	庫洛魔法使	庫/落/魔法/使	庫洛魔法使	True	True	1		phrase.anime.tsv	936	
+戴資穎	ㄉㄞˋ ㄗ ㄧㄥˇ	人名-當代	1	18	0			-7.354194117						代資影	戴資穎	代/資/影	戴資穎	True	True	1		phrase.people-contemporary.tsv	12	
+拜登	ㄅㄞˋ ㄉㄥ	人名-當代	1	13	0			-7.354194117						拜登	拜登	拜/登	拜/登	False	True	1		phrase.people-contemporary.tsv	13	
+排程	ㄆㄞˊ ㄔㄥˊ	工業工程	1	21	0	排成	-5.576042867	-7.354194117	-1.77815125			排成	-1.77815125	排成	排成	排成	排成	False	False	2	排成	phrase.industrial-engineering.tsv	59	
+方塊圖	ㄈㄤ ㄎㄨㄞˋ ㄊㄨˊ	工業工程	1	11	0			-7.354194117						方塊圖	方塊圖	方塊/圖	方塊圖	False	True	1		phrase.industrial-engineering.tsv	64	
+暫存器	ㄓㄢˋ ㄘㄨㄣˊ ㄑㄧˋ	晶片半導體	1	11	0			-7.354194117						暫存器	暫存器	暫存/器	暫存/器	False	True	1		phrase.semiconductor.tsv	73	
+核備	ㄏㄜˊ ㄅㄟˋ	公務員公文	1	8	0			-7.354194117						和被	和被	和/被	和/被	False	False	1		phrase.government.tsv	43	
+梅克爾	ㄇㄟˊ ㄎㄜˋ ㄦˇ	人名-當代	1	13	0			-7.354194117						沒克爾	梅克爾	沒/克爾	梅克爾	True	True	1		phrase.people-contemporary.tsv	24	
+永磁	ㄩㄥˇ ㄘˊ	電子電機	1	12	0			-7.354194117						永磁	永磁	永/磁	永/磁	False	True	1	永辭	phrase.electronics.tsv	131	
+江戶川亂步	ㄐㄧㄤ ㄏㄨˋ ㄔㄨㄢ ㄌㄨㄢˋ ㄅㄨˋ	動漫	1	11	0			-7.354194117						江戶川亂不	江戶川亂步	江戶川/亂/不	江戶川亂步	True	True	1		phrase.anime.tsv	1376	
+沉降	ㄔㄣˊ ㄐㄧㄤˋ	醫學	1	12	0	沈降	-7.354194117	-7.354194117	0.0			沈降	0.0	陳將	陳將	陳/將	陳/將	False	False	2	沈降	phrase.medicine.tsv	131	
+沖床	ㄔㄨㄥ ㄔㄨㄤˊ	製造機械	1	14	0			-7.354194117						沖床	沖床	沖/床	沖/床	False	True	1		phrase.manufacturing.tsv	74	
+灌漿	ㄍㄨㄢˋ ㄐㄧㄤ	建築土木	1	10	0			-7.354194117						灌將	灌將	灌/將	灌/將	False	False	1		phrase.civil-engineering.tsv	164	
+現金流	ㄒㄧㄢˋ ㄐㄧㄣ ㄌㄧㄡˊ	商業	1	16	0			-7.354194117						現金流	現金流	現金/流	現金/流	False	True	1		phrase.business.tsv	126	
+異世界	ㄧˋ ㄕˋ ㄐㄧㄝˋ	動漫	1	23	0			-7.354194117						一世界	一世界	一/世界	一/世界	False	False	1		phrase.anime.tsv	1596	
+磨床	ㄇㄛˊ ㄔㄨㄤˊ	製造機械	1	14	0			-7.354194117						磨床	磨床	磨/床	磨/床	False	True	1		phrase.manufacturing.tsv	97	
+結腸炎	ㄐㄧㄝˊ ㄔㄤˊ ㄧㄢˊ	醫學	1	10	0			-7.354194117						截腸炎	結腸炎	截/腸炎	結腸炎	True	True	1		phrase.medicine.tsv	186	
+編碼器	ㄅㄧㄢ ㄇㄚˇ ㄑㄧˋ	AI資料科學	1	11	0			-7.354194117						編碼器	編碼器	編碼/器	編碼/器	False	True	1		phrase.ai-data-science.tsv	129	
+芙莉蓮	ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	動漫	1	27	0			-7.354194117						福利連	芙莉蓮	福利/連	芙莉蓮	True	True	1		phrase.anime.tsv	1898	
+蠟筆小新	ㄌㄚˋ ㄅㄧˇ ㄒㄧㄠˇ ㄒㄧㄣ	動漫	1	28	0			-7.354194117		蠟筆/小心	2.920264352	蠟筆/小心	2.920264352	蠟筆小心	蠟筆小新	蠟筆/小心	蠟筆小新	True	True	1		phrase.anime.tsv	2059	
+觸發器	ㄔㄨˋ ㄈㄚ ㄑㄧˋ	電子電機	1	10	0			-7.354194117						觸發器	觸發器	觸發/器	觸發器	False	True	1		phrase.electronics.tsv	160	
+過載	ㄍㄨㄛˋ ㄗㄞˋ	電子電機	1	12	0			-7.354194117						過在	過在	過/在	過/在	False	False	1		phrase.electronics.tsv	183	
+阿瑞尼士	ㄚ ㄖㄨㄟˋ ㄋㄧˊ ㄕˋ	材料化工	1	12	0			-7.354194117						阿瑞尼是	阿瑞尼士	阿/瑞/尼/是	阿瑞尼士	True	True	1		phrase.materials-chemistry.tsv	117	
+霍金	ㄏㄨㄛˋ ㄐㄧㄣ	人名-歷史	1	11	0			-7.354194117						或今	或今	或/今	或/今	False	False	1		phrase.people-history.tsv	156	
+韓國瑜	ㄏㄢˊ ㄍㄨㄛˊ ㄩˊ	人名-當代	1	13	0			-7.354194117						韓國於	韓國於	韓國/於	韓國/於	False	False	1		phrase.people-contemporary.tsv	52	
+餓狼	ㄜˋ ㄌㄤˊ	動漫	1	12	0			-7.354194117						呃郎	餓狼	呃/郎	餓狼	True	True	1		phrase.anime.tsv	2406	
+馬克士威	ㄇㄚˇ ㄎㄜˋ ㄕˋ ㄨㄟ	科學	1	10	0			-7.354194117		馬克/示威	2.790096439	馬克/示威	2.790096439	馬克示威	馬克士威	馬克/示威	馬克士威	True	True	1		phrase.science.tsv	88	
+馮紐曼	ㄈㄥˊ ㄋㄧㄡˇ ㄇㄢˋ	人名-歷史	1	11	0			-7.354194117						逢紐曼	馮紐曼	逢/紐/曼	馮紐曼	True	True	1		phrase.people-history.tsv	165	

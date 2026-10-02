@@ -76,8 +76,8 @@ pass "KeyKey.db is packaged exactly once"
 
 verifier="$(cd "$(dirname "$0")/../../Distributions/Takao/DatabaseCooker" && pwd)/verify-smart-mandarin-db.py"
 python3 "$verifier" "$DATABASE_PATH" \
-  || fail "Keyboard.appex/KeyKey.db does not contain the 885627-row Smart Mandarin model"
-pass "Keyboard.appex contains the 885627-row Smart Mandarin model"
+  || fail "Keyboard.appex/KeyKey.db does not match the shared Smart Mandarin manifest"
+pass "Keyboard.appex contains the verified shared Smart Mandarin model"
 
 plist_value() {
   /usr/libexec/PlistBuddy -c "Print :$2" "$1" 2>/dev/null

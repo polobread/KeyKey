@@ -14,6 +14,8 @@ import shutil
 import sqlite3
 
 from smart_mandarin_model import file_sha256, load_manifest, semantic_sha256, validate_schema
+from phrase_unigram_supplement import apply as apply_phrase_supplement
+from collection_unigram_supplement import apply as apply_collections, verify_sources as verify_collections, load_overrides
 
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -124,7 +126,7 @@ def load_search_trend(path: Path) -> list[dict[str, object]]:
         seen = set()
         for number, row in enumerate(reader, 2):
             word = row["詞"]
-            count = int(row["詞頻"])
+            count = float(row["詞頻"])
             syllables = row["注音"].split()
             if not word or word in seen or count < 0 or len(syllables) != len(word):
                 raise ValueError(f"{path}:{number}: invalid or duplicate search-trend row")
@@ -134,8 +136,6 @@ def load_search_trend(path: Path) -> list[dict[str, object]]:
                 "count": count,
                 "query": "".join(absolute_query(syllable) for syllable in syllables),
             })
-    if not entries:
-        raise ValueError(f"{path}: no search-trend entries")
     return entries
 
 
@@ -281,11 +281,23 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
             f"base database SHA-256 {base_digest}; expected {expected_base_digest}"
         )
     verify_sources(manifest, training_paths, protected_path, supplement_path, search_trend_path)
+    phrase_source = manifest.get("sources", {}).get("phrase_unigram_supplement")
+    phrase_path = manifest_path.parent / phrase_source["file"] if phrase_source else None
+    if phrase_path and file_sha256(phrase_path) != phrase_source["sha256"]:
+        raise ValueError("whole-phrase supplement differs from the selected manifest")
+    collection_source = manifest.get("sources", {}).get("collection_unigram_supplement")
+    collection_paths = sorted((ROOT / "DataSource/chichi77Collection").glob("phrase.*.tsv")) if collection_source else []
+    if collection_source:
+        verify_collections(collection_paths, collection_source["files"])
+        override_path = manifest_path.parent / collection_source["overrides_file"]
+        if file_sha256(override_path) != collection_source["overrides_sha256"]:
+            raise ValueError("collection overrides differ from manifest")
+        collection_overrides = load_overrides(override_path)
     articles, training_sources = load_training(training_paths)
     protected_characters = load_protected_characters(protected_path)
     supplement = load_supplement(supplement_path, counts_path)
     search_trend = load_search_trend(search_trend_path)
-    unigram_total_count = int(manifest["unigram_total_count"])
+    unigram_total_count = manifest["unigram_total_count"]
     temporary = database_path.with_name(f".{database_path.name}.finalize-{os.getpid()}")
     if temporary.exists():
         temporary.unlink()
@@ -310,7 +322,7 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
             text_pairs = set(database.execute("SELECT DISTINCT previous,current FROM bigrams"))
             evidence = {
                 pair: 1.0 + math.log2(max(1, frequencies[pair]))
-                for pair in text_pairs
+                for pair in sorted(text_pairs)
             }
             outgoing: Counter[str] = Counter()
             for (previous, _), value in evidence.items():
@@ -393,7 +405,7 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
             for entry in search_trend:
                 if not entry["count"]:
                     continue
-                probability = math.log10(int(entry["count"]) / unigram_total_count)
+                probability = math.log10(entry["count"] / unigram_total_count)
                 existing = database.execute(
                     "SELECT probability FROM main.unigrams WHERE qstring=? AND current=?",
                     (entry["query"], entry["word"]),
@@ -409,6 +421,11 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
                     raise ValueError(f"search-trend probability changed for {entry['word']}")
                 else:
                     search_trend_existing += 1
+            phrase_entries = apply_phrase_supplement(database, phrase_path, unigram_total_count) if phrase_path else []
+            collection_result = apply_collections(database, collection_paths, unigram_total_count,
+                                                 collection_overrides, collection_source["frequency_policy"]) if collection_source else None
+            if collection_result and collection_result["totals"]["rejected"]:
+                raise ValueError("unresolved collection readings")
             database.commit()
             database.execute("DETACH DATABASE base")
 
@@ -455,6 +472,8 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
         "supplemented_unigrams": changed_unigram_probabilities,
         "search_trend_inserted": search_trend_inserted,
         "search_trend_existing": search_trend_existing,
+        "whole_phrase_supplement": phrase_entries,
+        "collection_supplement": collection_result,
         "unigram_backoffs_changed_vs_base": 0,
         "rows": rows,
     }

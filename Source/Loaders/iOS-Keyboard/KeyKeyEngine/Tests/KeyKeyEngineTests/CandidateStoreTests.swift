@@ -66,7 +66,7 @@ struct SmartMandarinStoreTests {
         let database = try Database(url: try cookedDatabaseURL())
         let rows = try database.prepare("SELECT COUNT(*) FROM bigrams")
             .firstColumnStrings([])
-        #expect((Int(rows.first ?? "") ?? 0) == 885_627)
+        #expect((Int(rows.first ?? "") ?? 0) == 883_372)
     }
 
     private func query(_ keys: String) -> String {
@@ -150,8 +150,13 @@ struct SmartMandarinStoreTests {
             let database = try Database(url: try cookedDatabaseURL())
             let store = try SmartMandarinStore(database: database, userData: user)
             let split = try #require(store.compose(readings: [query("fu/3"), query("ru84")], overrides: [:]))
-            #expect(split.segments.map(\.text) == ["請", "假"])
+            #expect(split.segments.map(\.text) == ["請假"])
             #expect(store.evictionLength(readings: [query("fu/3"), query("ru84")], composition: split) == 2)
+            let legacySplit = SmartMandarinComposition(text: "請假", segments: [
+                SmartMandarinSegment(start: 0, length: 1, query: query("fu/3"), text: "請"),
+                SmartMandarinSegment(start: 1, length: 1, query: query("ru84"), text: "假")
+            ])
+            #expect(store.evictionLength(readings: [query("fu/3"), query("ru84")], composition: legacySplit) == 2)
             let engine = BopomofoEngine(dictionary: try CandidateStore(database: database),
                 smartSource: store, compositionMode: .smart, hardwareSmartEditing: hardware)
             let keys = ["fu/3", "ru84", "ul4", "fm4", "s83", "xu3", "j06", "sk7", "fm4", "c93", "1u0 "]
@@ -245,6 +250,65 @@ struct SmartMandarinStoreTests {
             readings: [reading], overrides: [0: "妳"]
         ))
         #expect(composition.text == "妳")
+    }
+
+    @Test("reviewed whole phrases compose without learning")
+    func wholePhraseSupplement() throws {
+        let store = try SmartMandarinStore(database: Database(url: try cookedDatabaseURL()))
+        #expect(store.compose(readings: [query("ru.4"), query("2k7")], overrides: [:])?.text == "舊的")
+        #expect(store.compose(readings: [query("vup"), query("2k7")], overrides: [:])?.text == "新的")
+    }
+
+    @Test("collection words and Chinese aliases remain selectable at conservative frequency")
+    func collectionSupplement() throws {
+        let store = try SmartMandarinStore(database: Database(url: try cookedDatabaseURL()))
+        for (keys, expected) in [(["gp6", "ru/", "j;3", "xj4"], "神經網路"),
+                                 (["a/6", "fu6", "2u6", "xj3", "zj"], "蒙其迪魯夫")] {
+            let readings = keys.map { query($0) }
+            #expect(store.candidates(for: readings, at: 0, composition: nil).contains(expected))
+            #expect(store.compose(readings: readings, selections: [
+                0: SmartMandarinSelection(length: readings.count, text: expected)
+            ])?.text == expected)
+        }
+    }
+
+    @Test("learning a single homophone does not dismantle stronger dictionary words")
+    func learnedHomophoneKeepsWordPrior() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let user = try SmartMandarinUserData(
+            phrasesURL: directory.appendingPathComponent("phrases.db"),
+            learningURL: directory.appendingPathComponent("learning.db"), writablePhrases: true
+        )
+        let store = try SmartMandarinStore(database: Database(url: try cookedDatabaseURL()), userData: user)
+        let ke = query("dk3"), yi = query("u3")
+        #expect(store.compose(readings: [ke, yi], overrides: [:])?.text == "可以")
+        user.learnCandidate(query: yi, current: "已")
+        #expect(store.candidates(for: [yi], at: 0, composition: nil).first == "已")
+        #expect(store.compose(readings: [ke, yi], overrides: [:])?.text == "可以")
+        #expect(store.compose(readings: [ke, yi], selections: [
+            1: SmartMandarinSelection(length: 1, text: "已")
+        ])?.text == "可已")
+        try user.resetLearning()
+        #expect(store.compose(readings: [ke, yi], overrides: [:])?.text == "可以")
+    }
+
+    @Test("accepting default text does not turn inferred word pairs into explicit learning")
+    func confirmingDefaultDoesNotLearn() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let user = try SmartMandarinUserData(
+            phrasesURL: directory.appendingPathComponent("phrases.db"),
+            learningURL: directory.appendingPathComponent("learning.db"), writablePhrases: true
+        )
+        let store = try SmartMandarinStore(database: Database(url: try cookedDatabaseURL()), userData: user)
+        let readings = [query("su3"), query("cl3")]
+        let composition = SmartMandarinComposition(text: "妳好", segments: [
+            SmartMandarinSegment(start: 0, length: 1, query: readings[0], text: "妳"),
+            SmartMandarinSegment(start: 1, length: 1, query: readings[1], text: "好")
+        ])
+        store.learnConfirmedComposition(composition)
+        #expect(user.learnedBigram(previousQuery: readings[0], query: readings[1], previous: "妳", current: "好") == nil)
     }
 
     @Test("shared custom phrases and private learning affect composition without changing cooked data")

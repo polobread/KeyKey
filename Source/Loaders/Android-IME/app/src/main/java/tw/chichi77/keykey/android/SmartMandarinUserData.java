@@ -90,23 +90,6 @@ final class SmartMandarinUserData implements AutoCloseable {
         }
     }
 
-    void learnComposition(SmartMandarinComposition composition) {
-        List<SmartMandarinSegment> segments = composition.segments();
-        if (segments.size() < 2) return;
-        database.beginTransaction();
-        try {
-            for (int index = 1; index < segments.size(); index++) {
-                SmartMandarinSegment previous = segments.get(index - 1);
-                SmartMandarinSegment current = segments.get(index);
-                learnBigramInTransaction(previous.query(), current.query(),
-                        previous.text(), current.text());
-            }
-            database.setTransactionSuccessful();
-        } finally {
-            database.endTransaction();
-        }
-    }
-
     private void learnBigramInTransaction(String previousQuery, String query,
                                           String previous, String current) {
         String combined = previousQuery + " " + query;

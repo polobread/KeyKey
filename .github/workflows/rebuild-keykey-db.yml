@@ -1,0 +1,113 @@
+name: Rebuild KeyKey database
+
+# Generated DB/manifests/lists are excluded, so importing a build cannot loop.
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [master]
+    paths:
+      - 'DataSource/chichi77Collection/phrase.*.tsv'
+      - 'DataSource/AssociatedPhraseCollectionNames.tsv'
+      - 'DataSource/AISyntheticBigram/common-unigram-supplement.tsv'
+      - 'DataSource/AISyntheticBigram/common-phrase-unigram.tsv'
+      - 'DataSource/AISyntheticBigram/search-trend-unigram-source.txt'
+      - 'DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv'
+      - 'DataSource/AISyntheticBigram/collection-unigram-overrides.tsv'
+      - 'DataSource/McBopomofo/phrase.occ'
+      - 'DataSource/McBopomofo/BPMFMappings.txt'
+      - 'DataSource/AISyntheticBigram/supplemental-lexicon.tsv'
+      - 'DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv'
+      - 'DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt'
+      - 'DataSource/AISyntheticArticles/typing-articles-v[234].jsonl'
+      - 'DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-*.md'
+      - 'DataSource/AISyntheticArticles/verify-typing-articles-v5.py'
+      - 'DataSource/AISyntheticBigram/benchmark-bigram-structure.py'
+      - 'Source/DataTables/bpmf-ext.cin'
+      - 'Source/Distributions/Takao/DatabaseCooker/**'
+      - 'DataSource/AISyntheticBigram/build-search-trend-unigram.py'
+      - 'DataSource/AISyntheticBigram/build-versioned-article-corpus.py'
+      - '.github/workflows/rebuild-keykey-db.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rebuild-keykey-db-master
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      # Only merged, trusted master code runs with the write token. Never
+      # check out the PR head or execute unmerged fork code in this workflow.
+      - name: Check out current master after the merge
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends g++ libsqlite3-dev python3 ruby
+
+      - name: Filter custom words and cook Unigram and Bigram
+        run: |
+          python3 -B -m unittest discover -s Source/Distributions/Takao/DatabaseCooker -p 'test_*.py' -v
+          python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
+            --output "$RUNNER_TEMP/keykey-rebuild" --jobs 2 --max-regression-actions 30 --apply
+          python3 -B Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
+            Source/Distributions/Takao/CookedDatabase/KeyKey.db
+          python3 -B Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
+          git diff --check
+
+      - name: Commit accepted model or rejection report back to master
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          built_revision=$(git rev-parse HEAD)
+          gh auth setup-git
+          git fetch origin master
+          if [[ "$(git rev-parse origin/master)" != "$built_revision" ]]; then
+            echo "master changed during the rebuild; rerun this workflow on current master." >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          work = pathlib.Path(os.environ['RUNNER_TEMP']) / 'keykey-rebuild'
+          files = json.loads((work / 'generated-files.json').read_text())
+          subprocess.run(['git', 'add', '--', *files], check=True)
+          PY
+          if git diff --cached --quiet; then
+            echo "No generated changes."
+            exit 0
+          fi
+          decision=$(python3 -c 'import json,os,pathlib; print(json.loads((pathlib.Path(os.environ["RUNNER_TEMP"])/"keykey-rebuild/build-report.json").read_text())["decision"])')
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "KeyKey dictionary rebuild: $decision (30-action threshold)"
+          # A concurrent update is also rejected by this non-force push.
+          git push origin HEAD:master
+
+      - name: Write build result to workflow summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+          path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'keykey-rebuild/build-report.json'
+          if path.exists():
+              report = json.loads(path.read_text())
+              delta = report['regression']
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                  summary.write(f"DB SHA-256: `{report['database_sha256']}`\n\n")
+                  summary.write(f"{report['validation_articles']} articles: {delta['before']} → {delta['after']} actions ({delta['delta']:+d}).\n\n")
+                  summary.write(report['reason'] + '\n\n')
+                  summary.write('See the commit step for publication status. No database artifact is uploaded.\n')
+          PY

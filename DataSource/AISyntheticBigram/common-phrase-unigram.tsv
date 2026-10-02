@@ -1,0 +1,3 @@
+word	target_count	reading	training_occurrences	training_documents	reason
+舊的	1715	ㄐㄧㄡˋ ㄉㄜ˙	40	34	使用者指定完整詞補償；剛好超過同音拆詞「就／的」的 Unigram 路徑，不修改「舊／就」單字或 Bigram
+新的	1761	ㄒㄧㄣ ㄉㄜ˙	220	195	既有完整詞已勝過同音拆詞，保留原始詞頻，不重複新增或加分

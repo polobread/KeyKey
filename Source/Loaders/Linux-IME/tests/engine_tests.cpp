@@ -1618,7 +1618,7 @@ void testSmartMandarinModelVersion() {
     const int bigrams = sqlite3_column_int(statement, 1);
     sqlite3_finalize(statement);
     sqlite3_close(database);
-    require(unigrams == 114392 && bigrams == 885627,
+    require(unigrams == 119159 && bigrams == 883372,
             "Smart Mandarin model version does not match macOS");
 }
 
@@ -1691,6 +1691,9 @@ void testSmartMandarinComposition() {
                 longSentence.text == "請假要去哪裡玩呢去海邊因為那裡有比基尼",
             "Smart Mandarin did not compose the complete nineteen-syllable sentence: " +
                 longSentence.text);
+    require(store->compose(longReadings, {{6, {1, "玩"}}}, longSentence) &&
+                longSentence.text == "請假要去哪裡玩呢去海邊因為那裡有比基尼",
+            "The intended 玩 must remain explicitly selectable");
     sqlite3 *auditDatabase = nullptr;
     require(sqlite3_open_v2(KEYKEY_TEST_SMART_DB, &auditDatabase,
                             SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK,
@@ -2282,6 +2285,30 @@ void testSmartMandarinBigramLearning() {
             "Learning 夜 split the stronger 熬夜 word path");
     require(user->resetLearning(), "Could not clear learned 夜");
 
+    const std::string ke = SmartMandarinUserData::readingToQuery("ㄎㄜˇ");
+    const std::string yi = SmartMandarinUserData::readingToQuery("ㄧˇ");
+    require(user->learn(yi, "已", {}, {}), "Could not learn 已");
+    require(store->compose({ke, yi}, {}, composition) && composition.text == "可以",
+            "Learning 已 dismantled the stronger 可以 phrase");
+    require(store->candidates({yi}, 0, {}).front() == "已",
+            "Single-reading preference for 已 was lost");
+    require(store->compose({ke, yi}, {{1, {1, "已"}}}, composition) && composition.text == "可已",
+            "An explicit current-composition choice must still be honored");
+    require(user->resetLearning(), "Could not clear learned 已");
+    const std::vector<std::string> collectionReadings = {
+        SmartMandarinUserData::readingToQuery("ㄒㄧㄥˋ"), SmartMandarinUserData::readingToQuery("ㄩㄣˋ"),
+        SmartMandarinUserData::readingToQuery("ㄒㄧㄥ")};
+    const auto collectionCandidates = store->candidates(collectionReadings, 0, {});
+    require(std::find(collectionCandidates.begin(), collectionCandidates.end(), "幸運星") != collectionCandidates.end(),
+            "Chinese collection alias was missing from candidates");
+    require(store->compose(collectionReadings, {{0, {3, "幸運星"}}}, composition) && composition.text == "幸運星",
+            "Could not select a complete Chinese collection alias");
+    const auto de = SmartMandarinUserData::readingToQuery("ㄉㄜ˙");
+    require(store->compose({SmartMandarinUserData::readingToQuery("ㄐㄧㄡˋ"), de}, {}, composition)
+                && composition.text == "舊的", "Whole phrase 舊的 was not selected");
+    require(store->compose({SmartMandarinUserData::readingToQuery("ㄒㄧㄣ"), de}, {}, composition)
+                && composition.text == "新的", "Whole phrase 新的 was not selected");
+
     Engine engine(loadRealBopomofoDictionary());
     engine.setSmartMandarinStore(store);
     engine.setSmartMandarinMode(true);
@@ -2349,8 +2376,8 @@ void testSmartMandarinLearnedWordEviction() {
         SmartComposition composition;
         require(store->compose(readings, {}, composition) &&
                     composition.text == "請假要去哪裡玩呢去海" &&
-                    composition.segments.front().length == 1,
-                "Learned 假 no longer reproduces the split word");
+                    composition.segments.front().length == 2,
+                "Learning 假 split the stronger 請假 phrase");
         require(store->evictionLength(readings, composition) == 2,
                 "The visible dictionary word 請假 was split on eviction");
 

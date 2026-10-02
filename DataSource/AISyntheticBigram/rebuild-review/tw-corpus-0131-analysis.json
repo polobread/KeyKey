@@ -1,0 +1,73 @@
+{
+  "article": "tw-corpus-0131",
+  "historical_rejected": {
+    "article": "tw-corpus-0131",
+    "before_actions": 2482,
+    "candidate_actions": 2547,
+    "delta": 65,
+    "method": "Existing before/filtered traces only; no new model experiments. Costs grouped by corrected names, including adjacent characters corrected in the same action.",
+    "groups": [
+      {
+        "word": "亞絲娜",
+        "delta": 40,
+        "occurrences_needing_correction": 8,
+        "conflicts": [
+          "亞斯",
+          "亞斯伯格"
+        ],
+        "detail": "絲 16 + 娜 16 (one event also fixes 依) + 亞 8"
+      },
+      {
+        "word": "刀劍神域",
+        "delta": 18,
+        "occurrences_needing_correction": 3,
+        "conflicts": [
+          "神諭"
+        ],
+        "detail": "劍 6 + 域 6 + 神 6; selecting 域 can recompose 神 into 什"
+      },
+      {
+        "word": "西莉卡",
+        "delta": 5,
+        "occurrences_needing_correction": 1,
+        "conflicts": [
+          "犀利",
+          "吸力",
+          "西曆"
+        ],
+        "detail": "西 2 + 莉 3, including one page turn"
+      },
+      {
+        "word": "桐人",
+        "delta": 2,
+        "conflicts": [
+          "同人",
+          "同仁",
+          "瞳仁"
+        ],
+        "detail": "Both models need eight corrections; candidate adds two page turns for rank-9 桐"
+      }
+    ],
+    "conclusion": "All four complete names are excluded by the collision rule; this is a loss of whole-word candidates, not merely anime score lowering."
+  },
+  "retained_homophones": {
+    "database_sha256": "ce6c2b124835122351a8399b894e36049ba6b0ad9d7cda16a80f26c6dec9a9e2",
+    "before_actions": 2482,
+    "candidate_actions": 2498,
+    "delta": 16,
+    "remaining": {
+      "word": "亞絲娜",
+      "whole_word_selections": 8,
+      "actions_per_selection": 2,
+      "delta": 16
+    },
+    "note": "完整詞已保留，低頻拆詞競爭仍需整詞選取；其餘刀劍神域、西莉卡、桐人相對原 DB 的額外成本已消失。"
+  },
+  "people_after_training": {
+    "database_sha256": "1ffa53b37c8293b705d9bc0afafa24096d5ad53d35f971be1235beb17c59e2a1",
+    "article_actions": 2498,
+    "delta_from_retained_homophones": 0,
+    "all_articles_delta": 0
+  },
+  "method": "讀取既有固定 131 篇 benchmark trace；未另跑模型或平台實驗。"
+}

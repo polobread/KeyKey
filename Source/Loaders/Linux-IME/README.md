@@ -42,8 +42,8 @@ The Linux implementation provides:
   methods or Chinese/English mode finishes valid readings and commits the
   visible composition; an unmatched partial reading remains literal. Package builds
   verify and install the repository's pre-generated shared model as
-  `smart-mandarin.db`; they do not recook it. The current model contains 114,392
-  unigrams and 885,627 bigrams and is byte-for-byte the same input used by the
+  `smart-mandarin.db`; they do not recook it. The current model contains 119,159
+  unigrams and 883,372 bigrams and is byte-for-byte the same input used by the
   other platforms. Existing
   configurations without a mode choice also use 好打注音;
 - 好打注音 candidate panels own editing keys until selection or Escape.

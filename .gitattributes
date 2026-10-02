@@ -8,3 +8,6 @@ DataSource/AISyntheticBigram/search-trend-unigram-source.txt text eol=lf
 DataSource/AISyntheticBigram/search-trend-unigram.tsv text eol=lf
 DataSource/AISyntheticBigram/search-trend-unigram-review.tsv text eol=lf
 DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv text eol=lf
+
+# Empty final TSV fields require a trailing tab; preserve their column count.
+DataSource/AISyntheticBigram/**/*.tsv text eol=lf whitespace=-blank-at-eol

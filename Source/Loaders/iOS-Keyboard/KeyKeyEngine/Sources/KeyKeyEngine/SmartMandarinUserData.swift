@@ -120,25 +120,6 @@ public final class SmartMandarinUserData {
         }
     }
 
-    public func learnComposition(_ composition: SmartMandarinComposition) {
-        let segments = composition.segments
-        guard segments.count > 1 else { return }
-        do {
-            try Self.execute(learning, "BEGIN IMMEDIATE")
-            for index in 1..<segments.count {
-                let previous = segments[index - 1]
-                let current = segments[index]
-                try learnBigramInTransaction(
-                    previousQuery: previous.query, query: current.query,
-                    previous: previous.text, current: current.text
-                )
-            }
-            try Self.execute(learning, "COMMIT")
-        } catch {
-            try? Self.execute(learning, "ROLLBACK")
-        }
-    }
-
     public func resetLearning() throws {
         try Self.execute(learning, "BEGIN IMMEDIATE")
         do {
