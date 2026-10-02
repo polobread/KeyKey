@@ -396,8 +396,13 @@ private final class InputMethodSettingsViewController: UIViewController {
         modeControl.accessibilityIdentifier = "app-settings.composition-mode"
         modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(modeControl)
-        stack.addArrangedSubview(tableOptionsButton(for: .cangjie))
-        stack.addArrangedSubview(tableOptionsButton(for: .simplex))
+
+        let phrases = button("管理好打注音自訂詞", #selector(openPhrases))
+        phrases.accessibilityIdentifier = "app-settings.user-phrases"
+        stack.addArrangedSubview(phrases)
+        let reset = button("重設好打注音學習紀錄", #selector(confirmLearningReset))
+        reset.accessibilityIdentifier = "app-settings.reset-learning"
+        stack.addArrangedSubview(reset)
 
         stack.addArrangedSubview(label("注音鍵盤", size: 18))
         let layouts = BopomofoKeyboardLayout.allCases
@@ -407,6 +412,9 @@ private final class InputMethodSettingsViewController: UIViewController {
         layoutControl.addTarget(self, action: #selector(layoutChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(layoutControl)
         stack.addArrangedSubview(label("好打與傳統注音共用配置。選許氏鍵盤時，虛擬鍵盤維持英文鍵帽。", size: 14))
+
+        stack.addArrangedSubview(tableOptionsButton(for: .cangjie))
+        stack.addArrangedSubview(tableOptionsButton(for: .simplex))
 
         stack.addArrangedSubview(label("候選字底色", size: 18))
         let colors = CandidateColor.allCases
@@ -460,13 +468,6 @@ private final class InputMethodSettingsViewController: UIViewController {
                 stack.addArrangedSubview(row)
             }
         }
-
-        let phrases = button("管理好打注音自訂詞", #selector(openPhrases))
-        phrases.accessibilityIdentifier = "app-settings.user-phrases"
-        stack.addArrangedSubview(phrases)
-        let reset = button("重設好打注音學習紀錄", #selector(confirmLearningReset))
-        reset.accessibilityIdentifier = "app-settings.reset-learning"
-        stack.addArrangedSubview(reset)
 
         let note = label(
             "在這裡變更後，鍵盤下次開啟會套用。鍵盤內「設」頁的修改保存在鍵盤自己的資料區，無法顯示回 App。重設學習紀錄會在下次開啟鍵盤時生效。",
