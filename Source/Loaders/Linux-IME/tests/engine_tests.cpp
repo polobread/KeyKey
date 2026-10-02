@@ -47,6 +47,18 @@ KeyEvent character(char value) {
     return KeyEvent{KeyCode::Character, value, KeyModifier::None, false, false};
 }
 
+EngineResult selectSmartWord(Engine &engine, InputContextState &context,
+                             std::size_t index, const std::string &word) {
+    const auto choices = engine.selectSmartCharacter(context, index);
+    require(choices.commit.empty(), "Opening word candidates committed the composition");
+    const auto chosen = std::find(choices.candidates.begin(), choices.candidates.end(), word);
+    require(chosen != choices.candidates.end(), "The intended word is not selectable: " + word);
+    auto result = engine.selectDisplayedCandidate(
+        context, static_cast<std::size_t>(chosen - choices.candidates.begin()));
+    require(result.commit.empty(), "Selecting a word committed the composition");
+    return result;
+}
+
 void combineSequence(BopomofoReading &reading, const std::string &sequence,
                      BopomofoLayout layout) {
     for (const char key : sequence) {
@@ -1666,10 +1678,28 @@ void testSmartMandarinComposition() {
             keykey::linux_ime::SmartMandarinUserData::readingToQuery(syllable));
     }
     keykey::linux_ime::SmartComposition longSentence;
-    require(store->compose(longReadings, {}, longSentence) &&
-                longSentence.text == "請假要去哪裡玩呢去海邊因為那裡有比基尼",
+    const bool composedLongSentence = store->compose(longReadings, {}, longSentence);
+    // A direct 19-reading walk exceeds the frontend's ten-reading window.
+    // Model updates may change homophone ranking here; verify coverage, then
+    // verify the intended spelling through explicit selection below.
+    const auto characterCount = [](const std::string &text) {
+        return static_cast<std::size_t>(std::count_if(text.begin(), text.end(),
+            [](unsigned char byte) { return (byte & 0xc0) != 0x80; }));
+    };
+    require(composedLongSentence && characterCount(longSentence.text) == longReadings.size(),
             "Smart Mandarin did not compose the complete nineteen-syllable sentence: " +
                 longSentence.text);
+    std::size_t coveredReadings = 0;
+    std::string segmentText;
+    for (const auto &segment : longSentence.segments) {
+        require(segment.start == coveredReadings && segment.length > 0 &&
+                    characterCount(segment.text) == segment.length,
+                "The nineteen-syllable composition has missing or duplicated segments");
+        coveredReadings += segment.length;
+        segmentText += segment.text;
+    }
+    require(coveredReadings == longReadings.size() && segmentText == longSentence.text,
+            "The nineteen-syllable segments do not cover the complete composition");
     require(store->compose(longReadings, {{6, {1, "玩"}}}, longSentence) &&
                 longSentence.text == "請假要去哪裡玩呢去海邊因為那裡有比基尼",
             "The intended 玩 must remain explicitly selectable");
@@ -1798,7 +1828,14 @@ void testSmartMandarinComposition() {
 
     context.reset();
     std::string committed;
-    for (char key : std::string("fu/3ru84ul4fm4s83xu3j06sk7fm4")) {
+    for (char key : std::string("fu/3ru84ul4fm4s83xu3j06")) {
+        result = engine.processKey(context, character(key));
+        committed += result.commit;
+    }
+    // Select the intended homophone before testing window/eviction mechanics.
+    // Those mechanics must not depend on the current database's 玩/完 rank.
+    result = selectSmartWord(engine, context, 6, "玩");
+    for (char key : std::string("sk7fm4")) {
         result = engine.processKey(context, character(key));
         committed += result.commit;
     }
@@ -2354,7 +2391,7 @@ void testSmartMandarinLearnedWordEviction() {
         }
         SmartComposition composition;
         require(store->compose(readings, {}, composition) &&
-                    composition.text == "請假要去哪裡玩呢去海" &&
+                    composition.text.rfind("請假", 0) == 0 &&
                     composition.segments.front().length == 2,
                 "Learning 假 split the stronger 請假 phrase");
         require(store->evictionLength(readings, composition) == 2,
@@ -2385,7 +2422,12 @@ void testSmartMandarinLearnedWordEviction() {
         InputContextState context;
         EngineResult result;
         std::string committed;
-        for (char key : std::string("fu/3ru84ul4fm4s83xu3j06sk7fm4c93")) {
+        for (char key : std::string("fu/3ru84ul4fm4s83xu3j06")) {
+            result = engine.processKey(context, character(key));
+            committed += result.commit;
+        }
+        result = selectSmartWord(engine, context, 6, "玩");
+        for (char key : std::string("sk7fm4c93")) {
             result = engine.processKey(context, character(key));
             committed += result.commit;
         }
