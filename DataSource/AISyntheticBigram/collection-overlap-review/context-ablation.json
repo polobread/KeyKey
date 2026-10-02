@@ -1,0 +1,10 @@
+{
+  "database_sha256": "573f733b2affa857058d162745afaed2f4ba9605484febf124c72455cf815a75",
+  "before_sha256": "2d2d2bbf9d3acbcfda5f4d333c0f2ed78ba2c986e7f385e3b61dd01584e72f9a",
+  "reference_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
+  "before_trace_sha256": "44430e2bd0e56c14c8bca9267d067f2963b4dcd24ac42be87a12380fa732d051",
+  "after_trace_sha256": "a81831ac6346f0d5a9f2c474b198493206729c605533b1ac1dc91230269616e7",
+  "script_sha256": "8afffa4a124bb80613bcb29ec5617a435b2fd8cfbd71e77e4c6c9843839204ed",
+  "result_sha256": "39675f025be5386b738e16c971a69484c125b8fa94516f546d301f7ca1cf9553",
+  "scope": "individual word ablation in changed blocks of regressed articles; not a full corpus deletion recommendation"
+}

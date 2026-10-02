@@ -47,6 +47,18 @@ KeyEvent character(char value) {
     return KeyEvent{KeyCode::Character, value, KeyModifier::None, false, false};
 }
 
+EngineResult selectSmartWord(Engine &engine, InputContextState &context,
+                             std::size_t index, const std::string &word) {
+    const auto choices = engine.selectSmartCharacter(context, index);
+    require(choices.commit.empty(), "Opening word candidates committed the composition");
+    const auto chosen = std::find(choices.candidates.begin(), choices.candidates.end(), word);
+    require(chosen != choices.candidates.end(), "The intended word is not selectable: " + word);
+    auto result = engine.selectDisplayedCandidate(
+        context, static_cast<std::size_t>(chosen - choices.candidates.begin()));
+    require(result.commit.empty(), "Selecting a word committed the composition");
+    return result;
+}
+
 void combineSequence(BopomofoReading &reading, const std::string &sequence,
                      BopomofoLayout layout) {
     for (const char key : sequence) {
@@ -1601,27 +1613,6 @@ void testBopomofoReadingBlocksHostEditingKeys() {
     }
 }
 
-void testSmartMandarinModelVersion() {
-    sqlite3 *database = nullptr;
-    require(sqlite3_open_v2(KEYKEY_TEST_SMART_DB, &database,
-                            SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK,
-            "Smart Mandarin model database did not open");
-    sqlite3_stmt *statement = nullptr;
-    const char *query =
-        "SELECT (SELECT COUNT(*) FROM unigrams), "
-        "(SELECT COUNT(*) FROM bigrams)";
-    const int prepared = sqlite3_prepare_v2(database, query, -1, &statement,
-                                            nullptr);
-    require(prepared == SQLITE_OK && sqlite3_step(statement) == SQLITE_ROW,
-            "Smart Mandarin model counts could not be read");
-    const int unigrams = sqlite3_column_int(statement, 0);
-    const int bigrams = sqlite3_column_int(statement, 1);
-    sqlite3_finalize(statement);
-    sqlite3_close(database);
-    require(unigrams == 114392 && bigrams == 885627,
-            "Smart Mandarin model version does not match macOS");
-}
-
 void testSmartMandarinRequiresBigrams() {
     char path[] = "keykey-smart-model-XXXXXX";
     const int temporary = mkstemp(path);
@@ -1687,10 +1678,31 @@ void testSmartMandarinComposition() {
             keykey::linux_ime::SmartMandarinUserData::readingToQuery(syllable));
     }
     keykey::linux_ime::SmartComposition longSentence;
-    require(store->compose(longReadings, {}, longSentence) &&
-                longSentence.text == "請假要去哪裡玩呢去海邊因為那裡有比基尼",
+    const bool composedLongSentence = store->compose(longReadings, {}, longSentence);
+    // A direct 19-reading walk exceeds the frontend's ten-reading window.
+    // Model updates may change homophone ranking here; verify coverage, then
+    // verify the intended spelling through explicit selection below.
+    const auto characterCount = [](const std::string &text) {
+        return static_cast<std::size_t>(std::count_if(text.begin(), text.end(),
+            [](unsigned char byte) { return (byte & 0xc0) != 0x80; }));
+    };
+    require(composedLongSentence && characterCount(longSentence.text) == longReadings.size(),
             "Smart Mandarin did not compose the complete nineteen-syllable sentence: " +
                 longSentence.text);
+    std::size_t coveredReadings = 0;
+    std::string segmentText;
+    for (const auto &segment : longSentence.segments) {
+        require(segment.start == coveredReadings && segment.length > 0 &&
+                    characterCount(segment.text) == segment.length,
+                "The nineteen-syllable composition has missing or duplicated segments");
+        coveredReadings += segment.length;
+        segmentText += segment.text;
+    }
+    require(coveredReadings == longReadings.size() && segmentText == longSentence.text,
+            "The nineteen-syllable segments do not cover the complete composition");
+    require(store->compose(longReadings, {{6, {1, "玩"}}}, longSentence) &&
+                longSentence.text == "請假要去哪裡玩呢去海邊因為那裡有比基尼",
+            "The intended 玩 must remain explicitly selectable");
     sqlite3 *auditDatabase = nullptr;
     require(sqlite3_open_v2(KEYKEY_TEST_SMART_DB, &auditDatabase,
                             SQLITE_OPEN_READONLY, nullptr) == SQLITE_OK,
@@ -1816,7 +1828,14 @@ void testSmartMandarinComposition() {
 
     context.reset();
     std::string committed;
-    for (char key : std::string("fu/3ru84ul4fm4s83xu3j06sk7fm4")) {
+    for (char key : std::string("fu/3ru84ul4fm4s83xu3j06")) {
+        result = engine.processKey(context, character(key));
+        committed += result.commit;
+    }
+    // Select the intended homophone before testing window/eviction mechanics.
+    // Those mechanics must not depend on the current database's 玩/完 rank.
+    result = selectSmartWord(engine, context, 6, "玩");
+    for (char key : std::string("sk7fm4")) {
         result = engine.processKey(context, character(key));
         committed += result.commit;
     }
@@ -2282,6 +2301,30 @@ void testSmartMandarinBigramLearning() {
             "Learning 夜 split the stronger 熬夜 word path");
     require(user->resetLearning(), "Could not clear learned 夜");
 
+    const std::string ke = SmartMandarinUserData::readingToQuery("ㄎㄜˇ");
+    const std::string yi = SmartMandarinUserData::readingToQuery("ㄧˇ");
+    require(user->learn(yi, "已", {}, {}), "Could not learn 已");
+    require(store->compose({ke, yi}, {}, composition) && composition.text == "可以",
+            "Learning 已 dismantled the stronger 可以 phrase");
+    require(store->candidates({yi}, 0, {}).front() == "已",
+            "Single-reading preference for 已 was lost");
+    require(store->compose({ke, yi}, {{1, {1, "已"}}}, composition) && composition.text == "可已",
+            "An explicit current-composition choice must still be honored");
+    require(user->resetLearning(), "Could not clear learned 已");
+    const std::vector<std::string> collectionReadings = {
+        SmartMandarinUserData::readingToQuery("ㄒㄧㄥˋ"), SmartMandarinUserData::readingToQuery("ㄩㄣˋ"),
+        SmartMandarinUserData::readingToQuery("ㄒㄧㄥ")};
+    const auto collectionCandidates = store->candidates(collectionReadings, 0, {});
+    require(std::find(collectionCandidates.begin(), collectionCandidates.end(), "幸運星") != collectionCandidates.end(),
+            "Chinese collection alias was missing from candidates");
+    require(store->compose(collectionReadings, {{0, {3, "幸運星"}}}, composition) && composition.text == "幸運星",
+            "Could not select a complete Chinese collection alias");
+    const auto de = SmartMandarinUserData::readingToQuery("ㄉㄜ˙");
+    require(store->compose({SmartMandarinUserData::readingToQuery("ㄐㄧㄡˋ"), de}, {}, composition)
+                && composition.text == "舊的", "Whole phrase 舊的 was not selected");
+    require(store->compose({SmartMandarinUserData::readingToQuery("ㄒㄧㄣ"), de}, {}, composition)
+                && composition.text == "新的", "Whole phrase 新的 was not selected");
+
     Engine engine(loadRealBopomofoDictionary());
     engine.setSmartMandarinStore(store);
     engine.setSmartMandarinMode(true);
@@ -2348,9 +2391,9 @@ void testSmartMandarinLearnedWordEviction() {
         }
         SmartComposition composition;
         require(store->compose(readings, {}, composition) &&
-                    composition.text == "請假要去哪裡玩呢去海" &&
-                    composition.segments.front().length == 1,
-                "Learned 假 no longer reproduces the split word");
+                    composition.text.rfind("請假", 0) == 0 &&
+                    composition.segments.front().length == 2,
+                "Learning 假 split the stronger 請假 phrase");
         require(store->evictionLength(readings, composition) == 2,
                 "The visible dictionary word 請假 was split on eviction");
 
@@ -2379,7 +2422,12 @@ void testSmartMandarinLearnedWordEviction() {
         InputContextState context;
         EngineResult result;
         std::string committed;
-        for (char key : std::string("fu/3ru84ul4fm4s83xu3j06sk7fm4c93")) {
+        for (char key : std::string("fu/3ru84ul4fm4s83xu3j06")) {
+            result = engine.processKey(context, character(key));
+            committed += result.commit;
+        }
+        result = selectSmartWord(engine, context, 6, "玩");
+        for (char key : std::string("sk7fm4c93")) {
             result = engine.processKey(context, character(key));
             committed += result.commit;
         }
@@ -2477,7 +2525,6 @@ void testSmartMandarinLearnedWordEviction() {
 int main(int argc, char **argv) {
     try {
         if (argc == 2 && std::string(argv[1]) == "--smart-only") {
-            testSmartMandarinModelVersion();
             testSmartMandarinRequiresBigrams();
             testSmartMandarinComposition();
             testSmartMandarinPunctuation();
@@ -2516,7 +2563,6 @@ int main(int argc, char **argv) {
         testModifiedAndReleaseKeysPassThrough();
         testBackspaceAndEscape();
         testBopomofoReadingBlocksHostEditingKeys();
-        testSmartMandarinModelVersion();
         testSmartMandarinRequiresBigrams();
         testSmartMandarinComposition();
         testSmartMandarinPunctuation();

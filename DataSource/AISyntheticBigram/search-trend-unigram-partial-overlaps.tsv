@@ -1,0 +1,354 @@
+source	line	source_word	word	reading	reason	span_start	span_text	span_reading	conflict_word	conflict_reading	conflict_start	conflict_text	conflict_count
+search-trend-unigram-source.txt	8	空氣品質	空氣品質	ㄎㄨㄥ ㄑㄧˋ ㄆㄧㄣˇ ㄓˊ	two_character_homophone	1	空氣	ㄎㄨㄥ ㄑㄧˋ	航空器	ㄏㄤˊ ㄎㄨㄥ ㄑㄧˋ	2	空器	10
+search-trend-unigram-source.txt	9	空氣污染	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	two_character_homophone	1	空氣	ㄎㄨㄥ ㄑㄧˋ	航空器	ㄏㄤˊ ㄎㄨㄥ ㄑㄧˋ	2	空器	10
+search-trend-unigram-source.txt	9	空氣污染	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	two_character_homophone	2	氣污	ㄑㄧˋ ㄨ	空氣汙染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	2	氣汙	10
+search-trend-unigram-source.txt	9	空氣污染	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	two_character_homophone	3	污染	ㄨ ㄖㄢˇ	汙染	ㄨ ㄖㄢˇ	1	汙染	157
+search-trend-unigram-source.txt	9	空氣污染	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	two_character_homophone	3	污染	ㄨ ㄖㄢˇ	汙染物	ㄨ ㄖㄢˇ ㄨˋ	1	汙染	6
+search-trend-unigram-source.txt	9	空氣污染	空氣污染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	two_character_homophone	3	污染	ㄨ ㄖㄢˇ	空氣汙染	ㄎㄨㄥ ㄑㄧˋ ㄨ ㄖㄢˇ	3	汙染	10
+search-trend-unigram-source.txt	11	即時雨量	即時雨量	ㄐㄧˊ ㄕˊ ㄩˇ ㄌㄧㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	以卵擊石	ㄧˇ ㄌㄨㄢˇ ㄐㄧˊ ㄕˊ	3	擊石	2
+search-trend-unigram-source.txt	11	即時雨量	即時雨量	ㄐㄧˊ ㄕˊ ㄩˇ ㄌㄧㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	及時	ㄐㄧˊ ㄕˊ	1	及時	204
+search-trend-unigram-source.txt	11	即時雨量	即時雨量	ㄐㄧˊ ㄕˊ ㄩˇ ㄌㄧㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	及時傳訊	ㄐㄧˊ ㄕˊ ㄔㄨㄢˊ ㄒㄩㄣˋ	1	及時	1
+search-trend-unigram-source.txt	11	即時雨量	即時雨量	ㄐㄧˊ ㄕˊ ㄩˇ ㄌㄧㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	及時行樂	ㄐㄧˊ ㄕˊ ㄒㄧㄥˊ ㄌㄜˋ	1	及時	6
+search-trend-unigram-source.txt	11	即時雨量	即時雨量	ㄐㄧˊ ㄕˊ ㄩˇ ㄌㄧㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	及時雨	ㄐㄧˊ ㄕˊ ㄩˇ	1	及時	3
+search-trend-unigram-source.txt	11	即時雨量	即時雨量	ㄐㄧˊ ㄕˊ ㄩˇ ㄌㄧㄤˋ	two_character_homophone	3	雨量	ㄩˇ ㄌㄧㄤˋ	羽量級	ㄩˇ ㄌㄧㄤˋ ㄐㄧˊ	1	羽量	4
+search-trend-unigram-source.txt	25	新冠肺炎	新冠肺炎	ㄒㄧㄣ ㄍㄨㄢ ㄈㄟˋ ㄧㄢˊ	two_character_homophone	1	新冠	ㄒㄧㄣ ㄍㄨㄢ	新官	ㄒㄧㄣ ㄍㄨㄢ	1	新官	3
+search-trend-unigram-source.txt	25	新冠肺炎	新冠肺炎	ㄒㄧㄣ ㄍㄨㄢ ㄈㄟˋ ㄧㄢˊ	two_character_homophone	1	新冠	ㄒㄧㄣ ㄍㄨㄢ	新官上任	ㄒㄧㄣ ㄍㄨㄢ ㄕㄤˋ ㄖㄣˋ	1	新官	2
+search-trend-unigram-source.txt	25	新冠肺炎	新冠肺炎	ㄒㄧㄣ ㄍㄨㄢ ㄈㄟˋ ㄧㄢˊ	two_character_homophone	1	新冠	ㄒㄧㄣ ㄍㄨㄢ	新觀念	ㄒㄧㄣ ㄍㄨㄢ ㄋㄧㄢˋ	1	新觀	11
+search-trend-unigram-source.txt	25	新冠肺炎	新冠肺炎	ㄒㄧㄣ ㄍㄨㄢ ㄈㄟˋ ㄧㄢˊ	two_character_homophone	1	新冠	ㄒㄧㄣ ㄍㄨㄢ	新觀點	ㄒㄧㄣ ㄍㄨㄢ ㄉㄧㄢˇ	1	新觀	4
+search-trend-unigram-source.txt	25	新冠肺炎	新冠肺炎	ㄒㄧㄣ ㄍㄨㄢ ㄈㄟˋ ㄧㄢˊ	two_character_homophone	3	肺炎	ㄈㄟˋ ㄧㄢˊ	不以人廢言	ㄅㄨˋ ㄧˇ ㄖㄣˊ ㄈㄟˋ ㄧㄢˊ	4	廢言	1
+search-trend-unigram-source.txt	25	新冠肺炎	新冠肺炎	ㄒㄧㄣ ㄍㄨㄢ ㄈㄟˋ ㄧㄢˊ	two_character_homophone	3	肺炎	ㄈㄟˋ ㄧㄢˊ	以人廢言	ㄧˇ ㄖㄣˊ ㄈㄟˋ ㄧㄢˊ	3	廢言	3
+search-trend-unigram-source.txt	28	居家檢疫	居家檢疫	ㄐㄩ ㄐㄧㄚ ㄐㄧㄢˇ ㄧˋ	two_character_homophone	2	家檢	ㄐㄧㄚ ㄐㄧㄢˇ	加剪	ㄐㄧㄚ ㄐㄧㄢˇ	1	加剪	3
+search-trend-unigram-source.txt	28	居家檢疫	居家檢疫	ㄐㄩ ㄐㄧㄚ ㄐㄧㄢˇ ㄧˋ	two_character_homophone	2	家檢	ㄐㄧㄚ ㄐㄧㄢˇ	加減	ㄐㄧㄚ ㄐㄧㄢˇ	1	加減	34
+search-trend-unigram-source.txt	28	居家檢疫	居家檢疫	ㄐㄩ ㄐㄧㄚ ㄐㄧㄢˇ ㄧˋ	two_character_homophone	2	家檢	ㄐㄧㄚ ㄐㄧㄢˇ	加減乘除	ㄐㄧㄚ ㄐㄧㄢˇ ㄔㄥˊ ㄔㄨˊ	1	加減	4
+search-trend-unigram-source.txt	28	居家檢疫	居家檢疫	ㄐㄩ ㄐㄧㄚ ㄐㄧㄢˇ ㄧˋ	two_character_homophone	3	檢疫	ㄐㄧㄢˇ ㄧˋ	簡易	ㄐㄧㄢˇ ㄧˋ	1	簡易	131
+search-trend-unigram-source.txt	28	居家檢疫	居家檢疫	ㄐㄩ ㄐㄧㄚ ㄐㄧㄢˇ ㄧˋ	two_character_homophone	3	檢疫	ㄐㄧㄢˇ ㄧˋ	言簡意賅	ㄧㄢˊ ㄐㄧㄢˇ ㄧˋ ㄍㄞ	2	簡意	9
+search-trend-unigram-source.txt	28	居家檢疫	居家檢疫	ㄐㄩ ㄐㄧㄚ ㄐㄧㄢˇ ㄧˋ	two_character_homophone	3	檢疫	ㄐㄧㄢˇ ㄧˋ	鹼液	ㄐㄧㄢˇ ㄧˋ	1	鹼液	3
+search-trend-unigram-source.txt	75	測速照相	測速照相	ㄘㄜˋ ㄙㄨˋ ㄓㄠˋ ㄒㄧㄤˋ	two_character_homophone	3	照相	ㄓㄠˋ ㄒㄧㄤˋ	照像	ㄓㄠˋ ㄒㄧㄤˋ	1	照像	9
+search-trend-unigram-source.txt	75	測速照相	測速照相	ㄘㄜˋ ㄙㄨˋ ㄓㄠˋ ㄒㄧㄤˋ	two_character_homophone	3	照相	ㄓㄠˋ ㄒㄧㄤˋ	照像機	ㄓㄠˋ ㄒㄧㄤˋ ㄐㄧ	1	照像	4
+search-trend-unigram-source.txt	76	區間測速	區間測速	ㄑㄩ ㄐㄧㄢ ㄘㄜˋ ㄙㄨˋ	two_character_homophone	2	間測	ㄐㄧㄢ ㄘㄜˋ	監測	ㄐㄧㄢ ㄘㄜˋ	1	監測	218
+search-trend-unigram-source.txt	76	區間測速	區間測速	ㄑㄩ ㄐㄧㄢ ㄘㄜˋ ㄙㄨˋ	two_character_homophone	2	間測	ㄐㄧㄢ ㄘㄜˋ	監測器	ㄐㄧㄢ ㄘㄜˋ ㄑㄧˋ	1	監測	3
+search-trend-unigram-source.txt	79	道路施工	道路施工	ㄉㄠˋ ㄌㄨˋ ㄕ ㄍㄨㄥ	two_character_homophone	1	道路	ㄉㄠˋ ㄌㄨˋ	盜錄	ㄉㄠˋ ㄌㄨˋ	1	盜錄	8
+search-trend-unigram-source.txt	79	道路施工	道路施工	ㄉㄠˋ ㄌㄨˋ ㄕ ㄍㄨㄥ	two_character_homophone	3	施工	ㄕ ㄍㄨㄥ	律師公會	ㄌㄩˋ ㄕ ㄍㄨㄥ ㄏㄨㄟˋ	2	師公	8
+search-trend-unigram-source.txt	79	道路施工	道路施工	ㄉㄠˋ ㄌㄨˋ ㄕ ㄍㄨㄥ	two_character_homophone	3	施工	ㄕ ㄍㄨㄥ	施公奇案	ㄕ ㄍㄨㄥ ㄑㄧˊ ㄢˋ	1	施公	1
+search-trend-unigram-source.txt	79	道路施工	道路施工	ㄉㄠˋ ㄌㄨˋ ㄕ ㄍㄨㄥ	two_character_homophone	3	施工	ㄕ ㄍㄨㄥ	醫師公會	ㄧ ㄕ ㄍㄨㄥ ㄏㄨㄟˋ	2	師公	6
+search-trend-unigram-source.txt	81	即時路況	即時路況	ㄐㄧˊ ㄕˊ ㄌㄨˋ ㄎㄨㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	以卵擊石	ㄧˇ ㄌㄨㄢˇ ㄐㄧˊ ㄕˊ	3	擊石	2
+search-trend-unigram-source.txt	81	即時路況	即時路況	ㄐㄧˊ ㄕˊ ㄌㄨˋ ㄎㄨㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	及時	ㄐㄧˊ ㄕˊ	1	及時	204
+search-trend-unigram-source.txt	81	即時路況	即時路況	ㄐㄧˊ ㄕˊ ㄌㄨˋ ㄎㄨㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	及時傳訊	ㄐㄧˊ ㄕˊ ㄔㄨㄢˊ ㄒㄩㄣˋ	1	及時	1
+search-trend-unigram-source.txt	81	即時路況	即時路況	ㄐㄧˊ ㄕˊ ㄌㄨˋ ㄎㄨㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	及時行樂	ㄐㄧˊ ㄕˊ ㄒㄧㄥˊ ㄌㄜˋ	1	及時	6
+search-trend-unigram-source.txt	81	即時路況	即時路況	ㄐㄧˊ ㄕˊ ㄌㄨˋ ㄎㄨㄤˋ	two_character_homophone	1	即時	ㄐㄧˊ ㄕˊ	及時雨	ㄐㄧˊ ㄕˊ ㄩˇ	1	及時	3
+search-trend-unigram-source.txt	81	即時路況	即時路況	ㄐㄧˊ ㄕˊ ㄌㄨˋ ㄎㄨㄤˋ	two_character_homophone	2	時路	ㄕˊ ㄌㄨˋ	十路	ㄕˊ ㄌㄨˋ	1	十路	3
+search-trend-unigram-source.txt	81	即時路況	即時路況	ㄐㄧˊ ㄕˊ ㄌㄨˋ ㄎㄨㄤˋ	two_character_homophone	2	時路	ㄕˊ ㄌㄨˋ	實錄	ㄕˊ ㄌㄨˋ	1	實錄	63
+search-trend-unigram-source.txt	81	即時路況	即時路況	ㄐㄧˊ ㄕˊ ㄌㄨˋ ㄎㄨㄤˋ	two_character_homophone	2	時路	ㄕˊ ㄌㄨˋ	碎石路	ㄙㄨㄟˋ ㄕˊ ㄌㄨˋ	2	石路	2
+search-trend-unigram-source.txt	99	電動機車	電動機車	ㄉㄧㄢˋ ㄉㄨㄥˋ ㄐㄧ ㄔㄜ	two_character_homophone	2	動機	ㄉㄨㄥˋ ㄐㄧ	勞動基準	ㄌㄠˊ ㄉㄨㄥˋ ㄐㄧ ㄓㄨㄣˇ	2	動基	17
+search-trend-unigram-source.txt	99	電動機車	電動機車	ㄉㄧㄢˋ ㄉㄨㄥˋ ㄐㄧ ㄔㄜ	two_character_homophone	2	動機	ㄉㄨㄥˋ ㄐㄧ	勞動基準法	ㄌㄠˊ ㄉㄨㄥˋ ㄐㄧ ㄓㄨㄣˇ ㄈㄚˇ	2	動基	14
+search-trend-unigram-source.txt	99	電動機車	電動機車	ㄉㄧㄢˋ ㄉㄨㄥˋ ㄐㄧ ㄔㄜ	two_character_homophone	3	機車	ㄐㄧ ㄔㄜ	野雞車	ㄧㄝˇ ㄐㄧ ㄔㄜ	2	雞車	17
+search-trend-unigram-source.txt	109	行動支付	行動支付	ㄒㄧㄥˊ ㄉㄨㄥˋ ㄓ ㄈㄨˋ	two_character_homophone	3	支付	ㄓ ㄈㄨˋ	有夫之婦	ㄧㄡˇ ㄈㄨ ㄓ ㄈㄨˋ	3	之婦	2
+search-trend-unigram-source.txt	110	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	two_character_homophone	2	子支	ㄗˇ ㄓ	君子之交	ㄐㄩㄣ ㄗˇ ㄓ ㄐㄧㄠ	2	子之	1
+search-trend-unigram-source.txt	110	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	two_character_homophone	2	子支	ㄗˇ ㄓ	君子之爭	ㄐㄩㄣ ㄗˇ ㄓ ㄓㄥ	2	子之	4
+search-trend-unigram-source.txt	110	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	two_character_homophone	2	子支	ㄗˇ ㄓ	君子之道	ㄐㄩㄣ ㄗˇ ㄓ ㄉㄠˋ	2	子之	2
+search-trend-unigram-source.txt	110	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	two_character_homophone	2	子支	ㄗˇ ㄓ	夫子之道	ㄈㄨ ㄗˇ ㄓ ㄉㄠˋ	2	子之	1
+search-trend-unigram-source.txt	110	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	two_character_homophone	2	子支	ㄗˇ ㄓ	床笫之間	ㄔㄨㄤˊ ㄗˇ ㄓ ㄐㄧㄢ	2	笫之	1
+search-trend-unigram-source.txt	110	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	two_character_homophone	2	子支	ㄗˇ ㄓ	赤子之心	ㄔˋ ㄗˇ ㄓ ㄒㄧㄣ	2	子之	25
+search-trend-unigram-source.txt	110	電子支付	電子支付	ㄉㄧㄢˋ ㄗˇ ㄓ ㄈㄨˋ	two_character_homophone	3	支付	ㄓ ㄈㄨˋ	有夫之婦	ㄧㄡˇ ㄈㄨ ㄓ ㄈㄨˋ	3	之婦	2
+search-trend-unigram-source.txt	113	發票對獎	發票對獎	ㄈㄚ ㄆㄧㄠˋ ㄉㄨㄟˋ ㄐㄧㄤˇ	two_character_homophone	3	對獎	ㄉㄨㄟˋ ㄐㄧㄤˇ	兌獎	ㄉㄨㄟˋ ㄐㄧㄤˇ	1	兌獎	1
+search-trend-unigram-source.txt	113	發票對獎	發票對獎	ㄈㄚ ㄆㄧㄠˋ ㄉㄨㄟˋ ㄐㄧㄤˇ	two_character_homophone	3	對獎	ㄉㄨㄟˋ ㄐㄧㄤˇ	對講機	ㄉㄨㄟˋ ㄐㄧㄤˇ ㄐㄧ	1	對講	10
+search-trend-unigram-source.txt	122	數位帳戶	數位帳戶	ㄕㄨˋ ㄨㄟˋ ㄓㄤˋ ㄏㄨˋ	two_character_homophone	3	帳戶	ㄓㄤˋ ㄏㄨˋ	賬戶	ㄓㄤˋ ㄏㄨˋ	1	賬戶	5
+search-trend-unigram-source.txt	136	新成屋	新成屋	ㄒㄧㄣ ㄔㄥˊ ㄨ	two_character_homophone	1	新成	ㄒㄧㄣ ㄔㄥˊ	心誠	ㄒㄧㄣ ㄔㄥˊ	1	心誠	15
+search-trend-unigram-source.txt	136	新成屋	新成屋	ㄒㄧㄣ ㄔㄥˊ ㄨ	two_character_homophone	1	新成	ㄒㄧㄣ ㄔㄥˊ	心誠則靈	ㄒㄧㄣ ㄔㄥˊ ㄗㄜˊ ㄌㄧㄥˊ	1	心誠	4
+search-trend-unigram-source.txt	136	新成屋	新成屋	ㄒㄧㄣ ㄔㄥˊ ㄨ	two_character_homophone	1	新成	ㄒㄧㄣ ㄔㄥˊ	新城	ㄒㄧㄣ ㄔㄥˊ	1	新城	41
+search-trend-unigram-source.txt	136	新成屋	新成屋	ㄒㄧㄣ ㄔㄥˊ ㄨ	two_character_homophone	1	新成	ㄒㄧㄣ ㄔㄥˊ	新城鄉	ㄒㄧㄣ ㄔㄥˊ ㄒㄧㄤ	1	新城	4
+search-trend-unigram-source.txt	136	新成屋	新成屋	ㄒㄧㄣ ㄔㄥˊ ㄨ	two_character_homophone	1	新成	ㄒㄧㄣ ㄔㄥˊ	誠心誠意	ㄔㄥˊ ㄒㄧㄣ ㄔㄥˊ ㄧˋ	2	心誠	6
+search-trend-unigram-source.txt	174	遠距工作	遠距工作	ㄩㄢˇ ㄐㄩˋ ㄍㄨㄥ ㄗㄨㄛˋ	two_character_homophone	2	距工	ㄐㄩˋ ㄍㄨㄥ	足恭	ㄐㄩˋ ㄍㄨㄥ	1	足恭	4
+search-trend-unigram-source.txt	174	遠距工作	遠距工作	ㄩㄢˇ ㄐㄩˋ ㄍㄨㄥ ㄗㄨㄛˋ	two_character_homophone	3	工作	ㄍㄨㄥ ㄗㄨㄛˋ	供作	ㄍㄨㄥ ㄗㄨㄛˋ	1	供作	21
+search-trend-unigram-source.txt	174	遠距工作	遠距工作	ㄩㄢˇ ㄐㄩˋ ㄍㄨㄥ ㄗㄨㄛˋ	two_character_homophone	3	工作	ㄍㄨㄥ ㄗㄨㄛˋ	天公作美	ㄊㄧㄢ ㄍㄨㄥ ㄗㄨㄛˋ ㄇㄟˇ	2	公作	3
+search-trend-unigram-source.txt	174	遠距工作	遠距工作	ㄩㄢˇ ㄐㄩˋ ㄍㄨㄥ ㄗㄨㄛˋ	two_character_homophone	3	工作	ㄍㄨㄥ ㄗㄨㄛˋ	打躬作揖	ㄉㄚˇ ㄍㄨㄥ ㄗㄨㄛˋ ㄧ	2	躬作	1
+search-trend-unigram-source.txt	175	居家辦公	居家辦公	ㄐㄩ ㄐㄧㄚ ㄅㄢˋ ㄍㄨㄥ	two_character_homophone	2	家辦	ㄐㄧㄚ ㄅㄢˋ	堪察加半島	ㄎㄢ ㄔㄚˊ ㄐㄧㄚ ㄅㄢˋ ㄉㄠˇ	3	加半	5
+search-trend-unigram-source.txt	175	居家辦公	居家辦公	ㄐㄩ ㄐㄧㄚ ㄅㄢˋ ㄍㄨㄥ	two_character_homophone	3	辦公	ㄅㄢˋ ㄍㄨㄥ	事半功倍	ㄕˋ ㄅㄢˋ ㄍㄨㄥ ㄅㄟˋ	2	半功	25
+search-trend-unigram-source.txt	175	居家辦公	居家辦公	ㄐㄩ ㄐㄧㄚ ㄅㄢˋ ㄍㄨㄥ	two_character_homophone	3	辦公	ㄅㄢˋ ㄍㄨㄥ	半工半讀	ㄅㄢˋ ㄍㄨㄥ ㄅㄢˋ ㄉㄨˊ	1	半工	10
+search-trend-unigram-source.txt	176	視訊會議	視訊會議	ㄕˋ ㄒㄩㄣˋ ㄏㄨㄟˋ ㄧˋ	two_character_homophone	1	視訊	ㄕˋ ㄒㄩㄣˋ	軍事訓練	ㄐㄩㄣ ㄕˋ ㄒㄩㄣˋ ㄌㄧㄢˋ	2	事訓	20
+search-trend-unigram-source.txt	176	視訊會議	視訊會議	ㄕˋ ㄒㄩㄣˋ ㄏㄨㄟˋ ㄧˋ	two_character_homophone	2	訊會	ㄒㄩㄣˋ ㄏㄨㄟˋ	訓誨	ㄒㄩㄣˋ ㄏㄨㄟˋ	1	訓誨	3
+search-trend-unigram-source.txt	176	視訊會議	視訊會議	ㄕˋ ㄒㄩㄣˋ ㄏㄨㄟˋ ㄧˋ	two_character_homophone	3	會議	ㄏㄨㄟˋ ㄧˋ	會意	ㄏㄨㄟˋ ㄧˋ	1	會意	63
+search-trend-unigram-source.txt	176	視訊會議	視訊會議	ㄕˋ ㄒㄩㄣˋ ㄏㄨㄟˋ ㄧˋ	two_character_homophone	3	會議	ㄏㄨㄟˋ ㄧˋ	社會意識	ㄕㄜˋ ㄏㄨㄟˋ ㄧˋ ㄕˋ	2	會意	13
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	1	生成	ㄕㄥ ㄔㄥˊ	升成	ㄕㄥ ㄔㄥˊ	1	升成	3
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	主程式	ㄓㄨˇ ㄔㄥˊ ㄕˋ	2	程式	15
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	乘勢	ㄔㄥˊ ㄕˋ	1	乘勢	9
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	副程式	ㄈㄨˋ ㄔㄥˊ ㄕˋ	2	程式	17
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	原始程式	ㄩㄢˊ ㄕˇ ㄔㄥˊ ㄕˋ	3	程式	7
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	各城市	ㄍㄜˋ ㄔㄥˊ ㄕˋ	2	城市	4
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	啟動程式	ㄑㄧˇ ㄉㄨㄥˋ ㄔㄥˊ ㄕˋ	3	程式	3
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	土城市	ㄊㄨˇ ㄔㄥˊ ㄕˋ	2	城市	4
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	城市	ㄔㄥˊ ㄕˋ	1	城市	1902
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	城市光廊	ㄔㄥˊ ㄕˋ ㄍㄨㄤ ㄌㄤˊ	1	城市	7
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	城市裡	ㄔㄥˊ ㄕˋ ㄌㄧˇ	1	城市	11
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	城市規劃	ㄔㄥˊ ㄕˋ ㄍㄨㄟ ㄏㄨㄚˋ	1	城市	5
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	寫程式	ㄒㄧㄝˇ ㄔㄥˊ ㄕˋ	2	程式	90
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	應用程式	ㄧㄥˋ ㄩㄥˋ ㄔㄥˊ ㄕˋ	3	程式	99
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	成事	ㄔㄥˊ ㄕˋ	1	成事	24
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	成事不足	ㄔㄥˊ ㄕˋ ㄅㄨˋ ㄗㄨˊ	1	成事	2
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	播放程式	ㄅㄛ ㄈㄤˋ ㄔㄥˊ ㄕˋ	3	程式	8
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	方程式	ㄈㄤ ㄔㄥˊ ㄕˋ	2	程式	76
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	既成事實	ㄐㄧˋ ㄔㄥˊ ㄕˋ ㄕˊ	2	成事	4
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	物件導向程式	ㄨˋ ㄐㄧㄢˋ ㄉㄠˇ ㄒㄧㄤˋ ㄔㄥˊ ㄕˋ	5	程式	2
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	看成是	ㄎㄢˋ ㄔㄥˊ ㄕˋ	2	成是	9
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式	ㄔㄥˊ ㄕˋ	1	程式	1551
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式化	ㄔㄥˊ ㄕˋ ㄏㄨㄚˋ	1	程式	5
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式庫	ㄔㄥˊ ㄕˋ ㄎㄨˋ	1	程式	5
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式碼	ㄔㄥˊ ㄕˋ ㄇㄚˇ	1	程式	106
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式碼裡	ㄔㄥˊ ㄕˋ ㄇㄚˇ ㄌㄧˇ	1	程式	5
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式組	ㄔㄥˊ ㄕˋ ㄗㄨˇ	1	程式	2
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式設計	ㄔㄥˊ ㄕˋ ㄕㄜˋ ㄐㄧˋ	1	程式	59
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式設計師	ㄔㄥˊ ㄕˋ ㄕㄜˋ ㄐㄧˋ ㄕ	1	程式	26
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	程式語言	ㄔㄥˊ ㄕˋ ㄩˇ ㄧㄢˊ	1	程式	20
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	積非成是	ㄐㄧ ㄈㄟ ㄔㄥˊ ㄕˋ	3	成是	3
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	編譯程式	ㄅㄧㄢ ㄧˋ ㄔㄥˊ ㄕˋ	3	程式	2
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	聯立方程式	ㄌㄧㄢˊ ㄌㄧˋ ㄈㄤ ㄔㄥˊ ㄕˋ	4	程式	1
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	螢幕保護程式	ㄧㄥˊ ㄇㄨˋ ㄅㄠˇ ㄏㄨˋ ㄔㄥˊ ㄕˋ	5	程式	6
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	電腦程式	ㄉㄧㄢˋ ㄋㄠˇ ㄔㄥˊ ㄕˋ	3	程式	19
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	2	成式	ㄔㄥˊ ㄕˋ	驅動程式	ㄑㄩ ㄉㄨㄥˋ ㄔㄥˊ ㄕˋ	3	程式	8
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	世人	ㄕˋ ㄖㄣˊ	1	世人	167
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	北市人	ㄅㄟˇ ㄕˋ ㄖㄣˊ	2	市人	6
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	台南市人	ㄊㄞˊ ㄋㄢˊ ㄕˋ ㄖㄣˊ	3	市人	1
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	士人	ㄕˋ ㄖㄣˊ	1	士人	26
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	沒事人	ㄇㄟˊ ㄕˋ ㄖㄣˊ	2	事人	1
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	瑞士人	ㄖㄨㄟˋ ㄕˋ ㄖㄣˊ	2	士人	13
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	當事人	ㄉㄤ ㄕˋ ㄖㄣˊ	2	事人	247
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	監誓人	ㄐㄧㄢ ㄕˋ ㄖㄣˊ	2	誓人	1
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	示人	ㄕˋ ㄖㄣˊ	1	示人	13
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	苗栗市人	ㄇㄧㄠˊ ㄌㄧˋ ㄕˋ ㄖㄣˊ	3	市人	1
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	都市人	ㄉㄨ ㄕˋ ㄖㄣˊ	2	市人	35
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	3	式人	ㄕˋ ㄖㄣˊ	都市人口	ㄉㄨ ㄕˋ ㄖㄣˊ ㄎㄡˇ	2	市人	2
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	4	人工	ㄖㄣˊ ㄍㄨㄥ	主人公	ㄓㄨˇ ㄖㄣˊ ㄍㄨㄥ	2	人公	19
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	4	人工	ㄖㄣˊ ㄍㄨㄥ	梁任公	ㄌㄧㄤˊ ㄖㄣˊ ㄍㄨㄥ	2	任公	2
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	5	工智	ㄍㄨㄥ ㄓˋ	供製	ㄍㄨㄥ ㄓˋ	1	供製	3
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	5	工智	ㄍㄨㄥ ㄓˋ	公制	ㄍㄨㄥ ㄓˋ	1	公制	2
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	6	智慧	ㄓˋ ㄏㄨㄟˋ	不容置喙	ㄅㄨˋ ㄖㄨㄥˊ ㄓˋ ㄏㄨㄟˋ	3	置喙	1
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	6	智慧	ㄓˋ ㄏㄨㄟˋ	甚至會	ㄕㄣˋ ㄓˋ ㄏㄨㄟˋ	2	至會	29
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	6	智慧	ㄓˋ ㄏㄨㄟˋ	置喙	ㄓˋ ㄏㄨㄟˋ	1	置喙	17
+search-trend-unigram-source.txt	178	生成式人工智慧	生成式人工智慧	ㄕㄥ ㄔㄥˊ ㄕˋ ㄖㄣˊ ㄍㄨㄥ ㄓˋ ㄏㄨㄟˋ	two_character_homophone	6	智慧	ㄓˋ ㄏㄨㄟˋ	自治會	ㄗˋ ㄓˋ ㄏㄨㄟˋ	2	治會	23
+search-trend-unigram-source.txt	179	聊天機器人	聊天機器人	ㄌㄧㄠˊ ㄊㄧㄢ ㄐㄧ ㄑㄧˋ ㄖㄣˊ	two_character_homophone	4	器人	ㄑㄧˋ ㄖㄣˊ	氣人	ㄑㄧˋ ㄖㄣˊ	1	氣人	8
+search-trend-unigram-source.txt	182	大數據	大數據	ㄉㄚˋ ㄕㄨˋ ㄐㄩˋ	two_character_homophone	1	大數	ㄉㄚˋ ㄕㄨˋ	大樹	ㄉㄚˋ ㄕㄨˋ	1	大樹	126
+search-trend-unigram-source.txt	182	大數據	大數據	ㄉㄚˋ ㄕㄨˋ ㄐㄩˋ	two_character_homophone	1	大數	ㄉㄚˋ ㄕㄨˋ	大樹群	ㄉㄚˋ ㄕㄨˋ ㄑㄩㄣˊ	1	大樹	1
+search-trend-unigram-source.txt	182	大數據	大數據	ㄉㄚˋ ㄕㄨˋ ㄐㄩˋ	two_character_homophone	1	大數	ㄉㄚˋ ㄕㄨˋ	大樹鄉	ㄉㄚˋ ㄕㄨˋ ㄒㄧㄤ	1	大樹	9
+search-trend-unigram-source.txt	184	物聯網	物聯網	ㄨˋ ㄌㄧㄢˊ ㄨㄤˇ	two_character_homophone	1	物聯	ㄨˋ ㄌㄧㄢˊ	比物連類	ㄅㄧˇ ㄨˋ ㄌㄧㄢˊ ㄌㄟˋ	2	物連	1
+search-trend-unigram-source.txt	184	物聯網	物聯網	ㄨˋ ㄌㄧㄢˊ ㄨㄤˇ	two_character_homophone	2	聯網	ㄌㄧㄢˊ ㄨㄤˇ	互連網	ㄏㄨˋ ㄌㄧㄢˊ ㄨㄤˇ	2	連網	1
+search-trend-unigram-source.txt	186	比特幣	比特幣	ㄅㄧˇ ㄊㄜˋ ㄅㄧˋ	two_character_homophone	1	比特	ㄅㄧˇ ㄊㄜˋ	布萊德彼特	ㄅㄨˋ ㄌㄞˊ ㄉㄜˊ ㄅㄧˇ ㄊㄜˋ	4	彼特	4
+search-trend-unigram-source.txt	197	假冒客服	假冒客服	ㄐㄧㄚˇ ㄇㄠˋ ㄎㄜˋ ㄈㄨˊ	two_character_homophone	3	客服	ㄎㄜˋ ㄈㄨˊ	克服	ㄎㄜˋ ㄈㄨˊ	1	克服	343
+search-trend-unigram-source.txt	197	假冒客服	假冒客服	ㄐㄧㄚˇ ㄇㄠˋ ㄎㄜˋ ㄈㄨˊ	two_character_homophone	3	客服	ㄎㄜˋ ㄈㄨˊ	克服困難	ㄎㄜˋ ㄈㄨˊ ㄎㄨㄣˋ ㄋㄢˊ	1	克服	3
+search-trend-unigram-source.txt	197	假冒客服	假冒客服	ㄐㄧㄚˇ ㄇㄠˋ ㄎㄜˋ ㄈㄨˊ	two_character_homophone	3	客服	ㄎㄜˋ ㄈㄨˊ	法蘭克福	ㄈㄚˇ ㄌㄢˊ ㄎㄜˋ ㄈㄨˊ	3	克福	13
+search-trend-unigram-source.txt	198	釣魚網站	釣魚網站	ㄉㄧㄠˋ ㄩˊ ㄨㄤˇ ㄓㄢˋ	two_character_homophone	2	魚網	ㄩˊ ㄨㄤˇ	漁網	ㄩˊ ㄨㄤˇ	1	漁網	17
+search-trend-unigram-source.txt	210	語音輸入	語音輸入	ㄩˇ ㄧㄣ ㄕㄨ ㄖㄨˋ	two_character_homophone	2	音輸	ㄧㄣ ㄕㄨ	福音書	ㄈㄨˊ ㄧㄣ ㄕㄨ	2	音書	2
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	無限上綱	ㄨˊ ㄒㄧㄢˋ ㄕㄤˋ ㄍㄤ	2	限上	5
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上	ㄒㄧㄢˋ ㄕㄤˋ	1	獻上	33
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上一束花	ㄒㄧㄢˋ ㄕㄤˋ ㄧ ㄕㄨˋ ㄏㄨㄚ	1	獻上	1
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上一束花	ㄒㄧㄢˋ ㄕㄤˋ ㄧˊ ㄕㄨˋ ㄏㄨㄚ	1	獻上	1
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上一杯	ㄒㄧㄢˋ ㄕㄤˋ ㄧ ㄅㄟ	1	獻上	1
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上一杯	ㄒㄧㄢˋ ㄕㄤˋ ㄧˋ ㄅㄟ	1	獻上	1
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上最高敬意	ㄒㄧㄢˋ ㄕㄤˋ ㄗㄨㄟˋ ㄍㄠ ㄐㄧㄥˋ ㄧˋ	1	獻上	1
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上祝福	ㄒㄧㄢˋ ㄕㄤˋ ㄓㄨˋ ㄈㄨˊ	1	獻上	4
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上祝詞	ㄒㄧㄢˋ ㄕㄤˋ ㄓㄨˋ ㄘˊ	1	獻上	1
+search-trend-unigram-source.txt	212	線上翻譯	線上翻譯	ㄒㄧㄢˋ ㄕㄤˋ ㄈㄢ ㄧˋ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上謝意	ㄒㄧㄢˋ ㄕㄤˋ ㄒㄧㄝˋ ㄧˋ	1	獻上	1
+search-trend-unigram-source.txt	216	固態硬碟	固態硬碟	ㄍㄨˋ ㄊㄞˋ ㄧㄥˋ ㄉㄧㄝˊ	two_character_homophone	1	固態	ㄍㄨˋ ㄊㄞˋ	故態	ㄍㄨˋ ㄊㄞˋ	1	故態	4
+search-trend-unigram-source.txt	216	固態硬碟	固態硬碟	ㄍㄨˋ ㄊㄞˋ ㄧㄥˋ ㄉㄧㄝˊ	two_character_homophone	1	固態	ㄍㄨˋ ㄊㄞˋ	故態復萌	ㄍㄨˋ ㄊㄞˋ ㄈㄨˋ ㄇㄥˊ	1	故態	3
+search-trend-unigram-source.txt	224	智慧手機	智慧手機	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄐㄧ	two_character_homophone	1	智慧	ㄓˋ ㄏㄨㄟˋ	不容置喙	ㄅㄨˋ ㄖㄨㄥˊ ㄓˋ ㄏㄨㄟˋ	3	置喙	1
+search-trend-unigram-source.txt	224	智慧手機	智慧手機	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄐㄧ	two_character_homophone	1	智慧	ㄓˋ ㄏㄨㄟˋ	甚至會	ㄕㄣˋ ㄓˋ ㄏㄨㄟˋ	2	至會	29
+search-trend-unigram-source.txt	224	智慧手機	智慧手機	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄐㄧ	two_character_homophone	1	智慧	ㄓˋ ㄏㄨㄟˋ	置喙	ㄓˋ ㄏㄨㄟˋ	1	置喙	17
+search-trend-unigram-source.txt	224	智慧手機	智慧手機	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄐㄧ	two_character_homophone	1	智慧	ㄓˋ ㄏㄨㄟˋ	自治會	ㄗˋ ㄓˋ ㄏㄨㄟˋ	2	治會	23
+search-trend-unigram-source.txt	224	智慧手機	智慧手機	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄐㄧ	two_character_homophone	2	慧手	ㄏㄨㄟˋ ㄕㄡˇ	會首	ㄏㄨㄟˋ ㄕㄡˇ	1	會首	49
+search-trend-unigram-source.txt	224	智慧手機	智慧手機	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄐㄧ	two_character_homophone	2	慧手	ㄏㄨㄟˋ ㄕㄡˇ	部會首長	ㄅㄨˋ ㄏㄨㄟˋ ㄕㄡˇ ㄓㄤˇ	2	會首	25
+search-trend-unigram-source.txt	224	智慧手機	智慧手機	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄐㄧ	two_character_homophone	3	手機	ㄕㄡˇ ㄐㄧ	手跡	ㄕㄡˇ ㄐㄧ	1	手跡	1
+search-trend-unigram-source.txt	225	摺疊手機	摺疊手機	ㄓㄜˊ ㄉㄧㄝˊ ㄕㄡˇ ㄐㄧ	two_character_homophone	1	摺疊	ㄓㄜˊ ㄉㄧㄝˊ	折疊	ㄓㄜˊ ㄉㄧㄝˊ	1	折疊	37
+search-trend-unigram-source.txt	225	摺疊手機	摺疊手機	ㄓㄜˊ ㄉㄧㄝˊ ㄕㄡˇ ㄐㄧ	two_character_homophone	1	摺疊	ㄓㄜˊ ㄉㄧㄝˊ	折疊式	ㄓㄜˊ ㄉㄧㄝˊ ㄕˋ	1	折疊	8
+search-trend-unigram-source.txt	225	摺疊手機	摺疊手機	ㄓㄜˊ ㄉㄧㄝˊ ㄕㄡˇ ㄐㄧ	two_character_homophone	3	手機	ㄕㄡˇ ㄐㄧ	手跡	ㄕㄡˇ ㄐㄧ	1	手跡	1
+search-trend-unigram-source.txt	226	智慧手錶	智慧手錶	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄅㄧㄠˇ	two_character_homophone	1	智慧	ㄓˋ ㄏㄨㄟˋ	不容置喙	ㄅㄨˋ ㄖㄨㄥˊ ㄓˋ ㄏㄨㄟˋ	3	置喙	1
+search-trend-unigram-source.txt	226	智慧手錶	智慧手錶	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄅㄧㄠˇ	two_character_homophone	1	智慧	ㄓˋ ㄏㄨㄟˋ	甚至會	ㄕㄣˋ ㄓˋ ㄏㄨㄟˋ	2	至會	29
+search-trend-unigram-source.txt	226	智慧手錶	智慧手錶	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄅㄧㄠˇ	two_character_homophone	1	智慧	ㄓˋ ㄏㄨㄟˋ	置喙	ㄓˋ ㄏㄨㄟˋ	1	置喙	17
+search-trend-unigram-source.txt	226	智慧手錶	智慧手錶	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄅㄧㄠˇ	two_character_homophone	1	智慧	ㄓˋ ㄏㄨㄟˋ	自治會	ㄗˋ ㄓˋ ㄏㄨㄟˋ	2	治會	23
+search-trend-unigram-source.txt	226	智慧手錶	智慧手錶	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄅㄧㄠˇ	two_character_homophone	2	慧手	ㄏㄨㄟˋ ㄕㄡˇ	會首	ㄏㄨㄟˋ ㄕㄡˇ	1	會首	49
+search-trend-unigram-source.txt	226	智慧手錶	智慧手錶	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄅㄧㄠˇ	two_character_homophone	2	慧手	ㄏㄨㄟˋ ㄕㄡˇ	部會首長	ㄅㄨˋ ㄏㄨㄟˋ ㄕㄡˇ ㄓㄤˇ	2	會首	25
+search-trend-unigram-source.txt	226	智慧手錶	智慧手錶	ㄓˋ ㄏㄨㄟˋ ㄕㄡˇ ㄅㄧㄠˇ	two_character_homophone	3	手錶	ㄕㄡˇ ㄅㄧㄠˇ	手表	ㄕㄡˇ ㄅㄧㄠˇ	1	手表	18
+search-trend-unigram-source.txt	227	藍牙耳機	藍牙耳機	ㄌㄢˊ ㄧㄚˊ ㄦˇ ㄐㄧ	two_character_homophone	1	藍牙	ㄌㄢˊ ㄧㄚˊ	藍芽	ㄌㄢˊ ㄧㄚˊ	1	藍芽	11
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	漫無限制	ㄇㄢˋ ㄨˊ ㄒㄧㄢˋ ㄓˋ	2	無限	4
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限	ㄨˊ ㄒㄧㄢˋ	1	無限	482
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限上綱	ㄨˊ ㄒㄧㄢˋ ㄕㄤˋ ㄍㄤ	1	無限	5
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限制	ㄨˊ ㄒㄧㄢˋ ㄓˋ	1	無限	28
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限大	ㄨˊ ㄒㄧㄢˋ ㄉㄚˋ	1	無限	3
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限暢飲	ㄨˊ ㄒㄧㄢˋ ㄔㄤˋ ㄧㄣˇ	1	無限	1
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限期	ㄨˊ ㄒㄧㄢˋ ㄑㄧˊ	1	無限	15
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限的	ㄨˊ ㄒㄧㄢˋ ㄉㄜ˙	1	無限	54
+search-trend-unigram-source.txt	228	無線耳機	無線耳機	ㄨˊ ㄒㄧㄢˋ ㄦˇ ㄐㄧ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	誣陷	ㄨˊ ㄒㄧㄢˋ	1	誣陷	7
+search-trend-unigram-source.txt	229	行動電源	行動電源	ㄒㄧㄥˊ ㄉㄨㄥˋ ㄉㄧㄢˋ ㄩㄢˊ	two_character_homophone	3	電源	ㄉㄧㄢˋ ㄩㄢˊ	伊甸園	ㄧ ㄉㄧㄢˋ ㄩㄢˊ	2	甸園	10
+search-trend-unigram-source.txt	229	行動電源	行動電源	ㄒㄧㄥˊ ㄉㄨㄥˋ ㄉㄧㄢˋ ㄩㄢˊ	two_character_homophone	3	電源	ㄉㄧㄢˋ ㄩㄢˊ	女店員	ㄋㄩˇ ㄉㄧㄢˋ ㄩㄢˊ	2	店員	4
+search-trend-unigram-source.txt	229	行動電源	行動電源	ㄒㄧㄥˊ ㄉㄨㄥˋ ㄉㄧㄢˋ ㄩㄢˊ	two_character_homophone	3	電源	ㄉㄧㄢˋ ㄩㄢˊ	店員	ㄉㄧㄢˋ ㄩㄢˊ	1	店員	105
+search-trend-unigram-source.txt	229	行動電源	行動電源	ㄒㄧㄥˊ ㄉㄨㄥˋ ㄉㄧㄢˋ ㄩㄢˊ	two_character_homophone	3	電源	ㄉㄧㄢˋ ㄩㄢˊ	男店員	ㄋㄢˊ ㄉㄧㄢˋ ㄩㄢˊ	2	店員	3
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	漫無限制	ㄇㄢˋ ㄨˊ ㄒㄧㄢˋ ㄓˋ	2	無限	4
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限	ㄨˊ ㄒㄧㄢˋ	1	無限	482
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限上綱	ㄨˊ ㄒㄧㄢˋ ㄕㄤˋ ㄍㄤ	1	無限	5
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限制	ㄨˊ ㄒㄧㄢˋ ㄓˋ	1	無限	28
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限大	ㄨˊ ㄒㄧㄢˋ ㄉㄚˋ	1	無限	3
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限暢飲	ㄨˊ ㄒㄧㄢˋ ㄔㄤˋ ㄧㄣˇ	1	無限	1
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限期	ㄨˊ ㄒㄧㄢˋ ㄑㄧˊ	1	無限	15
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	無限的	ㄨˊ ㄒㄧㄢˋ ㄉㄜ˙	1	無限	54
+search-trend-unigram-source.txt	232	無線充電	無線充電	ㄨˊ ㄒㄧㄢˋ ㄔㄨㄥ ㄉㄧㄢˋ	two_character_homophone	1	無線	ㄨˊ ㄒㄧㄢˋ	誣陷	ㄨˊ ㄒㄧㄢˋ	1	誣陷	7
+search-trend-unigram-source.txt	240	網路速度	網路速度	ㄨㄤˇ ㄌㄨˋ ㄙㄨˋ ㄉㄨˋ	two_character_homophone	2	路速	ㄌㄨˋ ㄙㄨˋ	露宿	ㄌㄨˋ ㄙㄨˋ	1	露宿	12
+search-trend-unigram-source.txt	240	網路速度	網路速度	ㄨㄤˇ ㄌㄨˋ ㄙㄨˋ ㄉㄨˋ	two_character_homophone	2	路速	ㄌㄨˋ ㄙㄨˋ	露宿街頭	ㄌㄨˋ ㄙㄨˋ ㄐㄧㄝ ㄊㄡˊ	1	露宿	3
+search-trend-unigram-source.txt	240	網路速度	網路速度	ㄨㄤˇ ㄌㄨˋ ㄙㄨˋ ㄉㄨˋ	two_character_homophone	2	路速	ㄌㄨˋ ㄙㄨˋ	餐風露宿	ㄘㄢ ㄈㄥ ㄌㄨˋ ㄙㄨˋ	3	露宿	2
+search-trend-unigram-source.txt	243	網路吃到飽	網路吃到飽	ㄨㄤˇ ㄌㄨˋ ㄔ ㄉㄠˋ ㄅㄠˇ	two_character_homophone	2	路吃	ㄌㄨˋ ㄔ	路癡	ㄌㄨˋ ㄔ	1	路癡	3
+search-trend-unigram-source.txt	246	預付卡	預付卡	ㄩˋ ㄈㄨˋ ㄎㄚˇ	two_character_homophone	2	付卡	ㄈㄨˋ ㄎㄚˇ	副卡	ㄈㄨˋ ㄎㄚˇ	1	副卡	1
+search-trend-unigram-source.txt	249	第五代行動通訊	第五代行動通訊	ㄉㄧˋ ㄨˇ ㄉㄞˋ ㄒㄧㄥˊ ㄉㄨㄥˋ ㄊㄨㄥ ㄒㄩㄣˋ	two_character_homophone	1	第五	ㄉㄧˋ ㄨˇ	山地舞	ㄕㄢ ㄉㄧˋ ㄨˇ	2	地舞	7
+search-trend-unigram-source.txt	249	第五代行動通訊	第五代行動通訊	ㄉㄧˋ ㄨˇ ㄉㄞˋ ㄒㄧㄥˊ ㄉㄨㄥˋ ㄊㄨㄥ ㄒㄩㄣˋ	two_character_homophone	1	第五	ㄉㄧˋ ㄨˇ	絕地武士	ㄐㄩㄝˊ ㄉㄧˋ ㄨˇ ㄕˋ	2	地武	3
+search-trend-unigram-source.txt	249	第五代行動通訊	第五代行動通訊	ㄉㄧˋ ㄨˇ ㄉㄞˋ ㄒㄧㄥˊ ㄉㄨㄥˋ ㄊㄨㄥ ㄒㄩㄣˋ	two_character_homophone	3	代行	ㄉㄞˋ ㄒㄧㄥˊ	攜帶型	ㄒㄧ ㄉㄞˋ ㄒㄧㄥˊ	2	帶型	5
+search-trend-unigram-source.txt	250	第四代行動通訊	第四代行動通訊	ㄉㄧˋ ㄙˋ ㄉㄞˋ ㄒㄧㄥˊ ㄉㄨㄥˋ ㄊㄨㄥ ㄒㄩㄣˋ	two_character_homophone	3	代行	ㄉㄞˋ ㄒㄧㄥˊ	攜帶型	ㄒㄧ ㄉㄞˋ ㄒㄧㄥˊ	2	帶型	5
+search-trend-unigram-source.txt	252	網路電視	網路電視	ㄨㄤˇ ㄌㄨˋ ㄉㄧㄢˋ ㄕˋ	two_character_homophone	3	電視	ㄉㄧㄢˋ ㄕˋ	充電式	ㄔㄨㄥ ㄉㄧㄢˋ ㄕˋ	2	電式	1
+search-trend-unigram-source.txt	252	網路電視	網路電視	ㄨㄤˇ ㄌㄨˋ ㄉㄧㄢˋ ㄕˋ	two_character_homophone	3	電視	ㄉㄧㄢˋ ㄕˋ	宮殿式	ㄍㄨㄥ ㄉㄧㄢˋ ㄕˋ	2	殿式	2
+search-trend-unigram-source.txt	252	網路電視	網路電視	ㄨㄤˇ ㄌㄨˋ ㄉㄧㄢˋ ㄕˋ	two_character_homophone	3	電視	ㄉㄧㄢˋ ㄕˋ	新店市	ㄒㄧㄣ ㄉㄧㄢˋ ㄕˋ	2	店市	14
+search-trend-unigram-source.txt	252	網路電視	網路電視	ㄨㄤˇ ㄌㄨˋ ㄉㄧㄢˋ ㄕˋ	two_character_homophone	3	電視	ㄉㄧㄢˋ ㄕˋ	殿試	ㄉㄧㄢˋ ㄕˋ	1	殿試	2
+search-trend-unigram-source.txt	252	網路電視	網路電視	ㄨㄤˇ ㄌㄨˋ ㄉㄧㄢˋ ㄕˋ	two_character_homophone	3	電視	ㄉㄧㄢˋ ㄕˋ	閃電式	ㄕㄢˇ ㄉㄧㄢˋ ㄕˋ	2	電式	2
+search-trend-unigram-source.txt	254	影音平台	影音平台	ㄧㄥˇ ㄧㄣ ㄆㄧㄥˊ ㄊㄞˊ	two_character_homophone	2	音平	ㄧㄣ ㄆㄧㄥˊ	陰平	ㄧㄣ ㄆㄧㄥˊ	1	陰平	2
+search-trend-unigram-source.txt	258	直播主	直播主	ㄓˊ ㄅㄛ ㄓㄨˇ	two_character_homophone	1	直播	ㄓˊ ㄅㄛ	直撥	ㄓˊ ㄅㄛ	1	直撥	18
+search-trend-unigram-source.txt	259	實況主	實況主	ㄕˊ ㄎㄨㄤˋ ㄓㄨˇ	two_character_homophone	1	實況	ㄕˊ ㄎㄨㄤˋ	石礦	ㄕˊ ㄎㄨㄤˋ	1	石礦	10
+search-trend-unigram-source.txt	259	實況主	實況主	ㄕˊ ㄎㄨㄤˋ ㄓㄨˇ	two_character_homophone	1	實況	ㄕˊ ㄎㄨㄤˋ	鑽石礦	ㄗㄨㄢˋ ㄕˊ ㄎㄨㄤˋ	2	石礦	5
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	1	限時	ㄒㄧㄢˋ ㄕˊ	大發現時代	ㄉㄚˋ ㄈㄚ ㄒㄧㄢˋ ㄕˊ ㄉㄞˋ	3	現時	1
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	1	限時	ㄒㄧㄢˋ ㄕˊ	現實	ㄒㄧㄢˋ ㄕˊ	1	現實	1068
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	1	限時	ㄒㄧㄢˋ ㄕˊ	現實主義	ㄒㄧㄢˋ ㄕˊ ㄓㄨˇ ㄧˋ	1	現實	7
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	1	限時	ㄒㄧㄢˋ ㄕˊ	現實性	ㄒㄧㄢˋ ㄕˊ ㄒㄧㄥˋ	1	現實	1
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	1	限時	ㄒㄧㄢˋ ㄕˊ	超現實	ㄔㄠ ㄒㄧㄢˋ ㄕˊ	2	現實	32
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	1	限時	ㄒㄧㄢˋ ㄕˊ	超現實主義	ㄔㄠ ㄒㄧㄢˋ ㄕˊ ㄓㄨˇ ㄧˋ	2	現實	3
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	1	限時	ㄒㄧㄢˋ ㄕˊ	逃避現實	ㄊㄠˊ ㄅㄧˋ ㄒㄧㄢˋ ㄕˊ	3	現實	5
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	1	限時	ㄒㄧㄢˋ ㄕˊ	面對現實	ㄇㄧㄢˋ ㄉㄨㄟˋ ㄒㄧㄢˋ ㄕˊ	3	現實	6
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	2	時動	ㄕˊ ㄉㄨㄥˋ	石洞	ㄕˊ ㄉㄨㄥˋ	1	石洞	11
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	2	時動	ㄕˊ ㄉㄨㄥˋ	肉食動物	ㄖㄡˋ ㄕˊ ㄉㄨㄥˋ ㄨˋ	2	食動	2
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	2	時動	ㄕˊ ㄉㄨㄥˋ	鐘乳石洞	ㄓㄨㄥ ㄖㄨˇ ㄕˊ ㄉㄨㄥˋ	3	石洞	4
+search-trend-unigram-source.txt	266	限時動態	限時動態	ㄒㄧㄢˋ ㄕˊ ㄉㄨㄥˋ ㄊㄞˋ	two_character_homophone	2	時動	ㄕˊ ㄉㄨㄥˋ	隕石洞	ㄩㄣˇ ㄕˊ ㄉㄨㄥˋ	2	石洞	1
+search-trend-unigram-source.txt	272	熱門話題	熱門話題	ㄖㄜˋ ㄇㄣˊ ㄏㄨㄚˋ ㄊㄧˊ	two_character_homophone	2	門話	ㄇㄣˊ ㄏㄨㄚˋ	專門化	ㄓㄨㄢ ㄇㄣˊ ㄏㄨㄚˋ	2	門化	2
+search-trend-unigram-source.txt	272	熱門話題	熱門話題	ㄖㄜˋ ㄇㄣˊ ㄏㄨㄚˋ ㄊㄧˊ	two_character_homophone	3	話題	ㄏㄨㄚˋ ㄊㄧˊ	畫題	ㄏㄨㄚˋ ㄊㄧˊ	1	畫題	2
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	1	國際	ㄍㄨㄛˊ ㄐㄧˋ	全國紀錄	ㄑㄩㄢˊ ㄍㄨㄛˊ ㄐㄧˋ ㄌㄨˋ	2	國紀	3
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	1	國際	ㄍㄨㄛˊ ㄐㄧˋ	國計	ㄍㄨㄛˊ ㄐㄧˋ	1	國計	11
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	1	國際	ㄍㄨㄛˊ ㄐㄧˋ	國計民生	ㄍㄨㄛˊ ㄐㄧˋ ㄇㄧㄣˊ ㄕㄥ	1	國計	3
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	際新	ㄐㄧˋ ㄒㄧㄣ	季辛吉	ㄐㄧˋ ㄒㄧㄣ ㄐㄧˊ	1	季辛	16
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ	1	新文	6
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化運動	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ ㄩㄣˋ ㄉㄨㄥˋ	1	新文	1
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文學	ㄒㄧㄣ ㄨㄣˊ ㄒㄩㄝˊ	1	新文	27
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文章	ㄒㄧㄣ ㄨㄣˊ ㄓㄤ	1	新文	13
+search-trend-unigram-source.txt	279	國際新聞	國際新聞	ㄍㄨㄛˊ ㄐㄧˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文藝	ㄒㄧㄣ ㄨㄣˊ ㄧˋ	1	新文	3
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	不經心	ㄅㄨˋ ㄐㄧㄥ ㄒㄧㄣ	2	經心	18
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	怵目驚心	ㄔㄨˋ ㄇㄨˋ ㄐㄧㄥ ㄒㄧㄣ	3	驚心	16
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	漠不經心	ㄇㄛˋ ㄅㄨˋ ㄐㄧㄥ ㄒㄧㄣ	3	經心	1
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	漫不經心	ㄇㄢˋ ㄅㄨˋ ㄐㄧㄥ ㄒㄧㄣ	3	經心	12
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	精心	ㄐㄧㄥ ㄒㄧㄣ	1	精心	122
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	精心傑作	ㄐㄧㄥ ㄒㄧㄣ ㄐㄧㄝˊ ㄗㄨㄛˋ	1	精心	1
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	精心製作	ㄐㄧㄥ ㄒㄧㄣ ㄓˋ ㄗㄨㄛˋ	1	精心	2
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	精心設計	ㄐㄧㄥ ㄒㄧㄣ ㄕㄜˋ ㄐㄧˋ	1	精心	17
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	經心	ㄐㄧㄥ ㄒㄧㄣ	1	經心	21
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	觸目驚心	ㄔㄨˋ ㄇㄨˋ ㄐㄧㄥ ㄒㄧㄣ	3	驚心	10
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	驚心	ㄐㄧㄥ ㄒㄧㄣ	1	驚心	54
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	驚心動魄	ㄐㄧㄥ ㄒㄧㄣ ㄉㄨㄥˋ ㄆㄛˋ	1	驚心	18
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	經新	ㄐㄧㄥ ㄒㄧㄣ	驚心肉跳	ㄐㄧㄥ ㄒㄧㄣ ㄖㄡˋ ㄊㄧㄠˋ	1	驚心	1
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ	1	新文	6
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化運動	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ ㄩㄣˋ ㄉㄨㄥˋ	1	新文	1
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文學	ㄒㄧㄣ ㄨㄣˊ ㄒㄩㄝˊ	1	新文	27
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文章	ㄒㄧㄣ ㄨㄣˊ ㄓㄤ	1	新文	13
+search-trend-unigram-source.txt	280	財經新聞	財經新聞	ㄘㄞˊ ㄐㄧㄥ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文藝	ㄒㄧㄣ ㄨㄣˊ ㄧˋ	1	新文	3
+search-trend-unigram-source.txt	281	娛樂新聞	娛樂新聞	ㄩˊ ㄌㄜˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	1	娛樂	ㄩˊ ㄌㄜˋ	寓教於樂	ㄩˋ ㄐㄧㄠˋ ㄩˊ ㄌㄜˋ	3	於樂	24
+search-trend-unigram-source.txt	281	娛樂新聞	娛樂新聞	ㄩˊ ㄌㄜˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	1	娛樂	ㄩˊ ㄌㄜˋ	釣魚樂	ㄉㄧㄠˋ ㄩˊ ㄌㄜˋ	2	魚樂	3
+search-trend-unigram-source.txt	281	娛樂新聞	娛樂新聞	ㄩˊ ㄌㄜˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ	1	新文	6
+search-trend-unigram-source.txt	281	娛樂新聞	娛樂新聞	ㄩˊ ㄌㄜˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化運動	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ ㄩㄣˋ ㄉㄨㄥˋ	1	新文	1
+search-trend-unigram-source.txt	281	娛樂新聞	娛樂新聞	ㄩˊ ㄌㄜˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文學	ㄒㄧㄣ ㄨㄣˊ ㄒㄩㄝˊ	1	新文	27
+search-trend-unigram-source.txt	281	娛樂新聞	娛樂新聞	ㄩˊ ㄌㄜˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文章	ㄒㄧㄣ ㄨㄣˊ ㄓㄤ	1	新文	13
+search-trend-unigram-source.txt	281	娛樂新聞	娛樂新聞	ㄩˊ ㄌㄜˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文藝	ㄒㄧㄣ ㄨㄣˊ ㄧˋ	1	新文	3
+search-trend-unigram-source.txt	282	體育新聞	體育新聞	ㄊㄧˇ ㄩˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	育新	ㄩˋ ㄒㄧㄣ	教育心理學	ㄐㄧㄠˋ ㄩˋ ㄒㄧㄣ ㄌㄧˇ ㄒㄩㄝˊ	2	育心	1
+search-trend-unigram-source.txt	282	體育新聞	體育新聞	ㄊㄧˇ ㄩˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	育新	ㄩˋ ㄒㄧㄣ	榮譽心	ㄖㄨㄥˊ ㄩˋ ㄒㄧㄣ	2	譽心	3
+search-trend-unigram-source.txt	282	體育新聞	體育新聞	ㄊㄧˇ ㄩˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	育新	ㄩˋ ㄒㄧㄣ	芋心甘薯	ㄩˋ ㄒㄧㄣ ㄍㄢ ㄕㄨˇ	1	芋心	2
+search-trend-unigram-source.txt	282	體育新聞	體育新聞	ㄊㄧˇ ㄩˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ	1	新文	6
+search-trend-unigram-source.txt	282	體育新聞	體育新聞	ㄊㄧˇ ㄩˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化運動	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ ㄩㄣˋ ㄉㄨㄥˋ	1	新文	1
+search-trend-unigram-source.txt	282	體育新聞	體育新聞	ㄊㄧˇ ㄩˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文學	ㄒㄧㄣ ㄨㄣˊ ㄒㄩㄝˊ	1	新文	27
+search-trend-unigram-source.txt	282	體育新聞	體育新聞	ㄊㄧˇ ㄩˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文章	ㄒㄧㄣ ㄨㄣˊ ㄓㄤ	1	新文	13
+search-trend-unigram-source.txt	282	體育新聞	體育新聞	ㄊㄧˇ ㄩˋ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	3	新聞	ㄒㄧㄣ ㄨㄣˊ	新文藝	ㄒㄧㄣ ㄨㄣˊ ㄧˋ	1	新文	3
+search-trend-unigram-source.txt	283	假新聞	假新聞	ㄐㄧㄚˇ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ	1	新文	6
+search-trend-unigram-source.txt	283	假新聞	假新聞	ㄐㄧㄚˇ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	新聞	ㄒㄧㄣ ㄨㄣˊ	新文化運動	ㄒㄧㄣ ㄨㄣˊ ㄏㄨㄚˋ ㄩㄣˋ ㄉㄨㄥˋ	1	新文	1
+search-trend-unigram-source.txt	283	假新聞	假新聞	ㄐㄧㄚˇ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	新聞	ㄒㄧㄣ ㄨㄣˊ	新文學	ㄒㄧㄣ ㄨㄣˊ ㄒㄩㄝˊ	1	新文	27
+search-trend-unigram-source.txt	283	假新聞	假新聞	ㄐㄧㄚˇ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	新聞	ㄒㄧㄣ ㄨㄣˊ	新文章	ㄒㄧㄣ ㄨㄣˊ ㄓㄤ	1	新文	13
+search-trend-unigram-source.txt	283	假新聞	假新聞	ㄐㄧㄚˇ ㄒㄧㄣ ㄨㄣˊ	two_character_homophone	2	新聞	ㄒㄧㄣ ㄨㄣˊ	新文藝	ㄒㄧㄣ ㄨㄣˊ ㄧˋ	1	新文	3
+search-trend-unigram-source.txt	299	網路紅人	網路紅人	ㄨㄤˇ ㄌㄨˋ ㄏㄨㄥˊ ㄖㄣˊ	two_character_homophone	3	紅人	ㄏㄨㄥˊ ㄖㄣˊ	宏仁	ㄏㄨㄥˊ ㄖㄣˊ	1	宏仁	2
+search-trend-unigram-source.txt	299	網路紅人	網路紅人	ㄨㄤˇ ㄌㄨˋ ㄏㄨㄥˊ ㄖㄣˊ	two_character_homophone	3	紅人	ㄏㄨㄥˊ ㄖㄣˊ	弘仁	ㄏㄨㄥˊ ㄖㄣˊ	1	弘仁	3
+search-trend-unigram-source.txt	321	實境節目	實境節目	ㄕˊ ㄐㄧㄥˋ ㄐㄧㄝˊ ㄇㄨˋ	two_character_homophone	1	實境	ㄕˊ ㄐㄧㄥˋ	石徑	ㄕˊ ㄐㄧㄥˋ	1	石徑	2
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	1	進擊	ㄐㄧㄣˋ ㄐㄧˊ	晉級	ㄐㄧㄣˋ ㄐㄧˊ	1	晉級	123
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	1	進擊	ㄐㄧㄣˋ ㄐㄧˊ	進級	ㄐㄧㄣˋ ㄐㄧˊ	1	進級	1
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	2	擊的	ㄐㄧˊ ㄉㄜ˙	奈米級的	ㄋㄞˋ ㄇㄧˇ ㄐㄧˊ ㄉㄜ˙	3	級的	5
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	2	擊的	ㄐㄧˊ ㄉㄜ˙	層級的	ㄘㄥˊ ㄐㄧˊ ㄉㄜ˙	2	級的	28
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	2	擊的	ㄐㄧˊ ㄉㄜ˙	微米級的	ㄨㄟˊ ㄇㄧˇ ㄐㄧˊ ㄉㄜ˙	3	級的	2
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	2	擊的	ㄐㄧˊ ㄉㄜ˙	消極的	ㄒㄧㄠ ㄐㄧˊ ㄉㄜ˙	2	極的	18
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	2	擊的	ㄐㄧˊ ㄉㄜ˙	涉及的	ㄕㄜˋ ㄐㄧˊ ㄉㄜ˙	2	及的	22
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	2	擊的	ㄐㄧˊ ㄉㄜ˙	積極的	ㄐㄧ ㄐㄧˊ ㄉㄜ˙	2	極的	134
+search-trend-unigram-source.txt	327	進擊的巨人	進擊的巨人	ㄐㄧㄣˋ ㄐㄧˊ ㄉㄜ˙ ㄐㄩˋ ㄖㄣˊ	two_character_homophone	2	擊的	ㄐㄧˊ ㄉㄜ˙	高級的	ㄍㄠ ㄐㄧˊ ㄉㄜ˙	2	級的	20
+search-trend-unigram-source.txt	332	名偵探柯南	名偵探柯南	ㄇㄧㄥˊ ㄓㄣ ㄊㄢˋ ㄎㄜ ㄋㄢˊ	two_character_homophone	1	名偵	ㄇㄧㄥˊ ㄓㄣ	查明真相	ㄔㄚˊ ㄇㄧㄥˊ ㄓㄣ ㄒㄧㄤˋ	2	明真	3
+search-trend-unigram-source.txt	332	名偵探柯南	名偵探柯南	ㄇㄧㄥˊ ㄓㄣ ㄊㄢˋ ㄎㄜ ㄋㄢˊ	two_character_homophone	1	名偵	ㄇㄧㄥˊ ㄓㄣ	陳明真	ㄔㄣˊ ㄇㄧㄥˊ ㄓㄣ	2	明真	2
+search-trend-unigram-source.txt	334	灌籃高手	灌籃高手	ㄍㄨㄢˋ ㄌㄢˊ ㄍㄠ ㄕㄡˇ	two_character_homophone	2	籃高	ㄌㄢˊ ㄍㄠ	陳蘭皋	ㄔㄣˊ ㄌㄢˊ ㄍㄠ	2	蘭皋	4
+search-trend-unigram-source.txt	335	間諜家家酒	間諜家家酒	ㄐㄧㄢˋ ㄉㄧㄝˊ ㄐㄧㄚ ㄐㄧㄚ ㄐㄧㄡˇ	two_character_homophone	2	諜家	ㄉㄧㄝˊ ㄐㄧㄚ	疊加	ㄉㄧㄝˊ ㄐㄧㄚ	1	疊加	5
+search-trend-unigram-source.txt	335	間諜家家酒	間諜家家酒	ㄐㄧㄢˋ ㄉㄧㄝˊ ㄐㄧㄚ ㄐㄧㄚ ㄐㄧㄡˇ	two_character_homophone	3	家家	ㄐㄧㄚ ㄐㄧㄚ	加加	ㄐㄧㄚ ㄐㄧㄚ	1	加加	18
+search-trend-unigram-source.txt	335	間諜家家酒	間諜家家酒	ㄐㄧㄢˋ ㄉㄧㄝˊ ㄐㄧㄚ ㄐㄧㄚ ㄐㄧㄡˇ	two_character_homophone	3	家家	ㄐㄧㄚ ㄐㄧㄚ	加加林	ㄐㄧㄚ ㄐㄧㄚ ㄌㄧㄣˊ	1	加加	10
+search-trend-unigram-source.txt	335	間諜家家酒	間諜家家酒	ㄐㄧㄢˋ ㄉㄧㄝˊ ㄐㄧㄚ ㄐㄧㄚ ㄐㄧㄡˇ	two_character_homophone	4	家酒	ㄐㄧㄚ ㄐㄧㄡˇ	伏特加酒	ㄈㄨˊ ㄊㄜˋ ㄐㄧㄚ ㄐㄧㄡˇ	3	加酒	1
+search-trend-unigram-source.txt	335	間諜家家酒	間諜家家酒	ㄐㄧㄢˋ ㄉㄧㄝˊ ㄐㄧㄚ ㄐㄧㄚ ㄐㄧㄡˇ	two_character_homophone	4	家酒	ㄐㄧㄚ ㄐㄧㄡˇ	加酒	ㄐㄧㄚ ㄐㄧㄡˇ	1	加酒	6
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	兒童福利	ㄦˊ ㄊㄨㄥˊ ㄈㄨˊ ㄌㄧˋ	3	福利	26
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	兒童福利法	ㄦˊ ㄊㄨㄥˊ ㄈㄨˊ ㄌㄧˋ ㄈㄚˇ	3	福利	4
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	兒童福利聯盟	ㄦˊ ㄊㄨㄥˊ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ ㄇㄥˊ	3	福利	10
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	員工福利	ㄩㄢˊ ㄍㄨㄥ ㄈㄨˊ ㄌㄧˋ	3	福利	3
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	少年福利法	ㄕㄠˋ ㄋㄧㄢˊ ㄈㄨˊ ㄌㄧˋ ㄈㄚˇ	3	福利	12
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	浮力	ㄈㄨˊ ㄌㄧˋ	1	浮力	7
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	社會福利	ㄕㄜˋ ㄏㄨㄟˋ ㄈㄨˊ ㄌㄧˋ	3	福利	231
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	社會福利彩券	ㄕㄜˋ ㄏㄨㄟˋ ㄈㄨˊ ㄌㄧˋ ㄘㄞˇ ㄑㄩㄢˋ	3	福利	1
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	社會福利政策	ㄕㄜˋ ㄏㄨㄟˋ ㄈㄨˊ ㄌㄧˋ ㄓㄥˋ ㄘㄜˋ	3	福利	3
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	福利	ㄈㄨˊ ㄌㄧˋ	1	福利	1094
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	福利品	ㄈㄨˊ ㄌㄧˋ ㄆㄧㄣˇ	1	福利	2
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	福利社	ㄈㄨˊ ㄌㄧˋ ㄕㄜˋ	1	福利	32
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	福利金	ㄈㄨˊ ㄌㄧˋ ㄐㄧㄣ	1	福利	40
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	老人社會福利	ㄌㄠˇ ㄖㄣˊ ㄕㄜˋ ㄏㄨㄟˋ ㄈㄨˊ ㄌㄧˋ	5	福利	1
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	老人福利法	ㄌㄠˇ ㄖㄣˊ ㄈㄨˊ ㄌㄧˋ ㄈㄚˇ	3	福利	2
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	老驥伏櫪	ㄌㄠˇ ㄐㄧˋ ㄈㄨˊ ㄌㄧˋ	3	伏櫪	2
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	說服力	ㄕㄨㄟˋ ㄈㄨˊ ㄌㄧˋ	2	服力	52
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	4	芙莉	ㄈㄨˊ ㄌㄧˋ	謀福利	ㄇㄡˊ ㄈㄨˊ ㄌㄧˋ	2	福利	1
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	5	莉蓮	ㄌㄧˋ ㄌㄧㄢˊ	兒童福利聯盟	ㄦˊ ㄊㄨㄥˊ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ ㄇㄥˊ	4	利聯	10
+search-trend-unigram-source.txt	336	葬送的芙莉蓮	葬送的芙莉蓮	ㄗㄤˋ ㄙㄨㄥˋ ㄉㄜ˙ ㄈㄨˊ ㄌㄧˋ ㄌㄧㄢˊ	two_character_homophone	5	莉蓮	ㄌㄧˋ ㄌㄧㄢˊ	瑪麗蓮夢露	ㄇㄚˇ ㄌㄧˋ ㄌㄧㄢˊ ㄇㄥˋ ㄌㄨˋ	2	麗蓮	10
+search-trend-unigram-source.txt	345	楓之谷	楓之谷	ㄈㄥ ㄓ ㄍㄨˇ	two_character_homophone	2	之谷	ㄓ ㄍㄨˇ	下肢骨	ㄒㄧㄚˋ ㄓ ㄍㄨˇ	2	肢骨	2
+search-trend-unigram-source.txt	345	楓之谷	楓之谷	ㄈㄥ ㄓ ㄍㄨˇ	two_character_homophone	2	之谷	ㄓ ㄍㄨˇ	肢骨	ㄓ ㄍㄨˇ	1	肢骨	2
+search-trend-unigram-source.txt	353	遊戲直播	遊戲直播	ㄧㄡˊ ㄒㄧˋ ㄓˊ ㄅㄛ	two_character_homophone	3	直播	ㄓˊ ㄅㄛ	直撥	ㄓˊ ㄅㄛ	1	直撥	18
+search-trend-unigram-source.txt	379	幼兒園	幼兒園	ㄧㄡˋ ㄦˊ ㄩㄢˊ	two_character_homophone	1	幼兒	ㄧㄡˋ ㄦˊ	由右而左	ㄧㄡˊ ㄧㄡˋ ㄦˊ ㄗㄨㄛˇ	2	右而	1
+search-trend-unigram-source.txt	379	幼兒園	幼兒園	ㄧㄡˋ ㄦˊ ㄩㄢˊ	two_character_homophone	1	幼兒	ㄧㄡˋ ㄦˊ	顧左右而言他	ㄍㄨˋ ㄗㄨㄛˇ ㄧㄡˋ ㄦˊ ㄧㄢˊ ㄊㄚ	3	右而	5
+search-trend-unigram-source.txt	395	英文作文	英文作文	ㄧㄥ ㄨㄣˊ ㄗㄨㄛˋ ㄨㄣˊ	two_character_homophone	3	作文	ㄗㄨㄛˋ ㄨㄣˊ	做文章	ㄗㄨㄛˋ ㄨㄣˊ ㄓㄤ	1	做文	12
+search-trend-unigram-source.txt	395	英文作文	英文作文	ㄧㄥ ㄨㄣˊ ㄗㄨㄛˋ ㄨㄣˊ	two_character_homophone	3	作文	ㄗㄨㄛˋ ㄨㄣˊ	大做文章	ㄉㄚˋ ㄗㄨㄛˋ ㄨㄣˊ ㄓㄤ	2	做文	2
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	無限上綱	ㄨˊ ㄒㄧㄢˋ ㄕㄤˋ ㄍㄤ	2	限上	5
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上	ㄒㄧㄢˋ ㄕㄤˋ	1	獻上	33
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上一束花	ㄒㄧㄢˋ ㄕㄤˋ ㄧ ㄕㄨˋ ㄏㄨㄚ	1	獻上	1
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上一束花	ㄒㄧㄢˋ ㄕㄤˋ ㄧˊ ㄕㄨˋ ㄏㄨㄚ	1	獻上	1
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上一杯	ㄒㄧㄢˋ ㄕㄤˋ ㄧ ㄅㄟ	1	獻上	1
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上一杯	ㄒㄧㄢˋ ㄕㄤˋ ㄧˋ ㄅㄟ	1	獻上	1
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上最高敬意	ㄒㄧㄢˋ ㄕㄤˋ ㄗㄨㄟˋ ㄍㄠ ㄐㄧㄥˋ ㄧˋ	1	獻上	1
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上祝福	ㄒㄧㄢˋ ㄕㄤˋ ㄓㄨˋ ㄈㄨˊ	1	獻上	4
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上祝詞	ㄒㄧㄢˋ ㄕㄤˋ ㄓㄨˋ ㄘˊ	1	獻上	1
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	1	線上	ㄒㄧㄢˋ ㄕㄤˋ	獻上謝意	ㄒㄧㄢˋ ㄕㄤˋ ㄒㄧㄝˋ ㄧˋ	1	獻上	1
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	2	上課	ㄕㄤˋ ㄎㄜˋ	上客	ㄕㄤˋ ㄎㄜˋ	1	上客	13
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	2	上課	ㄕㄤˋ ㄎㄜˋ	座上客	ㄗㄨㄛˋ ㄕㄤˋ ㄎㄜˋ	2	上客	8
+search-trend-unigram-source.txt	411	線上課程	線上課程	ㄒㄧㄢˋ ㄕㄤˋ ㄎㄜˋ ㄔㄥˊ	two_character_homophone	3	課程	ㄎㄜˋ ㄔㄥˊ	刻成	ㄎㄜˋ ㄔㄥˊ	1	刻成	13
+search-trend-unigram-source.txt	413	學習歷程	學習歷程	ㄒㄩㄝˊ ㄒㄧˊ ㄌㄧˋ ㄔㄥˊ	two_character_homophone	3	歷程	ㄌㄧˋ ㄔㄥˊ	因利乘便	ㄧㄣ ㄌㄧˋ ㄔㄥˊ ㄅㄧㄢˋ	2	利乘	1
+search-trend-unigram-source.txt	413	學習歷程	學習歷程	ㄒㄩㄝˊ ㄒㄧˊ ㄌㄧˋ ㄔㄥˊ	two_character_homophone	3	歷程	ㄌㄧˋ ㄔㄥˊ	建立成	ㄐㄧㄢˋ ㄌㄧˋ ㄔㄥˊ	2	立成	1
+search-trend-unigram-source.txt	413	學習歷程	學習歷程	ㄒㄩㄝˊ ㄒㄧˊ ㄌㄧˋ ㄔㄥˊ	two_character_homophone	3	歷程	ㄌㄧˋ ㄔㄥˊ	立成	ㄌㄧˋ ㄔㄥˊ	1	立成	20
+search-trend-unigram-source.txt	415	繁星推薦	繁星推薦	ㄈㄢˊ ㄒㄧㄥ ㄊㄨㄟ ㄐㄧㄢˋ	two_character_homophone	3	推薦	ㄊㄨㄟ ㄐㄧㄢˋ	推荐	ㄊㄨㄟ ㄐㄧㄢˋ	1	推荐	30
+search-trend-unigram-source.txt	415	繁星推薦	繁星推薦	ㄈㄢˊ ㄒㄧㄥ ㄊㄨㄟ ㄐㄧㄢˋ	two_character_homophone	3	推薦	ㄊㄨㄟ ㄐㄧㄢˋ	推荐給	ㄊㄨㄟ ㄐㄧㄢˋ ㄍㄟˇ	1	推荐	3
+search-trend-unigram-source.txt	417	考試分發	考試分發	ㄎㄠˇ ㄕˋ ㄈㄣ ㄈㄚ	two_character_homophone	1	考試	ㄎㄠˇ ㄕˋ	參考室	ㄘㄢ ㄎㄠˇ ㄕˋ	2	考室	4
+search-trend-unigram-source.txt	417	考試分發	考試分發	ㄎㄠˇ ㄕˋ ㄈㄣ ㄈㄚ	two_character_homophone	2	試分	ㄕˋ ㄈㄣ	市分	ㄕˋ ㄈㄣ	1	市分	7
+search-trend-unigram-source.txt	427	就學貸款	就學貸款	ㄐㄧㄡˋ ㄒㄩㄝˊ ㄉㄞˋ ㄎㄨㄢˇ	two_character_homophone	1	就學	ㄐㄧㄡˋ ㄒㄩㄝˊ	舊學	ㄐㄧㄡˋ ㄒㄩㄝˊ	1	舊學	1
+search-trend-unigram-source.txt	442	請假單	請假單	ㄑㄧㄥˇ ㄐㄧㄚˋ ㄉㄢ	two_character_homophone	2	假單	ㄐㄧㄚˋ ㄉㄢ	報價單	ㄅㄠˋ ㄐㄧㄚˋ ㄉㄢ	2	價單	8
+search-trend-unigram-source.txt	463	副食品	副食品	ㄈㄨˋ ㄕˊ ㄆㄧㄣˇ	two_character_homophone	1	副食	ㄈㄨˋ ㄕˊ	名不副實	ㄇㄧㄥˊ ㄅㄨˊ ㄈㄨˋ ㄕˊ	3	副實	2
+search-trend-unigram-source.txt	463	副食品	副食品	ㄈㄨˋ ㄕˊ ㄆㄧㄣˇ	two_character_homophone	1	副食	ㄈㄨˋ ㄕˊ	名不副實	ㄇㄧㄥˊ ㄅㄨˋ ㄈㄨˋ ㄕˊ	3	副實	2
+search-trend-unigram-source.txt	463	副食品	副食品	ㄈㄨˋ ㄕˊ ㄆㄧㄣˇ	two_character_homophone	2	食品	ㄕˊ ㄆㄧㄣˇ	實品屋	ㄕˊ ㄆㄧㄣˇ ㄨ	1	實品	4
+search-trend-unigram-source.txt	473	手機成癮	手機成癮	ㄕㄡˇ ㄐㄧ ㄔㄥˊ ㄧㄣˇ	two_character_homophone	1	手機	ㄕㄡˇ ㄐㄧ	手跡	ㄕㄡˇ ㄐㄧ	1	手跡	1
+search-trend-unigram-source.txt	473	手機成癮	手機成癮	ㄕㄡˇ ㄐㄧ ㄔㄥˊ ㄧㄣˇ	two_character_homophone	2	機成	ㄐㄧ ㄔㄥˊ	土雞城	ㄊㄨˇ ㄐㄧ ㄔㄥˊ	2	雞城	4
+search-trend-unigram-source.txt	473	手機成癮	手機成癮	ㄕㄡˇ ㄐㄧ ㄔㄥˊ ㄧㄣˇ	two_character_homophone	2	機成	ㄐㄧ ㄔㄥˊ	堆積成	ㄉㄨㄟ ㄐㄧ ㄔㄥˊ	2	積成	3
+search-trend-unigram-source.txt	473	手機成癮	手機成癮	ㄕㄡˇ ㄐㄧ ㄔㄥˊ ㄧㄣˇ	two_character_homophone	2	機成	ㄐㄧ ㄔㄥˊ	堆積成山	ㄉㄨㄟ ㄐㄧ ㄔㄥˊ ㄕㄢ	2	積成	2
+search-trend-unigram-source.txt	473	手機成癮	手機成癮	ㄕㄡˇ ㄐㄧ ㄔㄥˊ ㄧㄣˇ	two_character_homophone	2	機成	ㄐㄧ ㄔㄥˊ	沖積成	ㄔㄨㄥ ㄐㄧ ㄔㄥˊ	2	積成	1
+search-trend-unigram-source.txt	473	手機成癮	手機成癮	ㄕㄡˇ ㄐㄧ ㄔㄥˊ ㄧㄣˇ	two_character_homophone	2	機成	ㄐㄧ ㄔㄥˊ	香雞城	ㄒㄧㄤ ㄐㄧ ㄔㄥˊ	2	雞城	1
+search-trend-unigram-source.txt	474	網路成癮	網路成癮	ㄨㄤˇ ㄌㄨˋ ㄔㄥˊ ㄧㄣˇ	two_character_homophone	2	路成	ㄌㄨˋ ㄔㄥˊ	路程	ㄌㄨˋ ㄔㄥˊ	1	路程	94
+search-trend-unigram-source.txt	474	網路成癮	網路成癮	ㄨㄤˇ ㄌㄨˋ ㄔㄥˊ ㄧㄣˇ	two_character_homophone	2	路成	ㄌㄨˋ ㄔㄥˊ	錄成	ㄌㄨˋ ㄔㄥˊ	1	錄成	9
+search-trend-unigram-source.txt	481	掃地機器人	掃地機器人	ㄙㄠˇ ㄉㄧˋ ㄐㄧ ㄑㄧˋ ㄖㄣˊ	two_character_homophone	2	地機	ㄉㄧˋ ㄐㄧ	地基	ㄉㄧˋ ㄐㄧ	1	地基	39
+search-trend-unigram-source.txt	481	掃地機器人	掃地機器人	ㄙㄠˇ ㄉㄧˋ ㄐㄧ ㄑㄧˋ ㄖㄣˊ	two_character_homophone	2	地機	ㄉㄧˋ ㄐㄧ	地基主	ㄉㄧˋ ㄐㄧ ㄓㄨˇ	1	地基	2
+search-trend-unigram-source.txt	481	掃地機器人	掃地機器人	ㄙㄠˇ ㄉㄧˋ ㄐㄧ ㄑㄧˋ ㄖㄣˊ	two_character_homophone	2	地機	ㄉㄧˋ ㄐㄧ	地積	ㄉㄧˋ ㄐㄧ	1	地積	1
+search-trend-unigram-source.txt	481	掃地機器人	掃地機器人	ㄙㄠˇ ㄉㄧˋ ㄐㄧ ㄑㄧˋ ㄖㄣˊ	two_character_homophone	4	器人	ㄑㄧˋ ㄖㄣˊ	氣人	ㄑㄧˋ ㄖㄣˊ	1	氣人	8

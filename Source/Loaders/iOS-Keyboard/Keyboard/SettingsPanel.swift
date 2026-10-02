@@ -103,7 +103,9 @@ final class SettingsPanel: UIView {
         let scroll = UIScrollView()
         scroll.alwaysBounceVertical = true
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex), keyboardLayoutRow(), resetLearningButton, feedbackRow(), candidateColorRow(),
+            compositionModeRow(), resetLearningButton, keyboardLayoutRow(),
+            tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
+            candidateColorRow(), feedbackRow(),
             statusLabel, bulk, rows
         ])
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)

@@ -11,10 +11,13 @@ import math
 from pathlib import Path
 import re
 import sqlite3
+import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "Source/Distributions/Takao/DatabaseCooker"))
+from unigram_collisions import CollisionIndex, write_exclusions, POLICY
 DEFAULT_SOURCE = HERE / "search-trend-unigram-source.txt"
 DEFAULT_OUTPUT = HERE / "search-trend-unigram.tsv"
 DEFAULT_REVIEW = HERE / "search-trend-unigram-review.tsv"
@@ -61,9 +64,6 @@ def load_terms(path: Path) -> list[str]:
     terms = [line.strip() for line in path.read_text(encoding="utf-8-sig").splitlines()]
     if not terms or any(not term or not HAN(term) or not 1 <= len(term) <= 7 for term in terms):
         raise ValueError(f"{path}: every line must be one 1-7 character Han term")
-    if len(terms) != len(set(terms)):
-        duplicates = sorted(term for term in set(terms) if terms.count(term) > 1)
-        raise ValueError(f"{path}: duplicate terms: {duplicates}")
     return terms
 
 
@@ -176,6 +176,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--review", type=Path, default=DEFAULT_REVIEW)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
+    parser.add_argument("--excluded", type=Path)
     parser.add_argument(
         "--minimum-count", type=int, choices=(0, 1), default=1,
         help="Use 1 to retain every deduplicated search term; 0 keeps corpus-unseen terms as audit-only rows",
@@ -188,16 +189,27 @@ def main() -> None:
         base_words.update(load_project_lexicon_words())
         mappings = load_mappings()
         overrides = load_overrides(args.overrides)
+        collision_index = CollisionIndex()
         custom_words = set(terms) - base_words
         lexicon = DatabaseLexicon(args.database, custom_words)
         texts, sources = training_texts()
         custom = []
         review = []
         used_overrides = set()
-        for term in terms:
+        exclusions, partial_overlaps, downranked, seen = [], [], [], set()
+        existing_count = collisions = duplicates = 0
+        for line, term in enumerate(terms, 1):
+            item = dict(source=args.source.name, line=line, source_word=term, word=term, reading="")
+            if term in seen:
+                duplicates += 1
+                exclusions.append(dict(item, reason="duplicate", conflict_word=term))
+                continue
+            seen.add(term)
             documents = sum(term in text for text in texts)
             occurrences = sum(text.count(term) for text in texts)
             if term in base_words:
+                existing_count += 1
+                exclusions.append(dict(item, reason="existing", conflict_word=term))
                 review.append({
                     "詞": term,
                     "處理": "既有詞，剔除重複",
@@ -222,10 +234,18 @@ def main() -> None:
                 syllables = [reading(query[index:index + 2]) for index in range(0, len(query), 2)]
                 reading_source = "本地 KeyKey unigram 分詞：" + "+".join(token.word for token in tokens)
             count = min(MAX_COUNT, max(args.minimum_count, occurrences))
-            custom.append({"詞": term, "詞頻": count, "注音": " ".join(syllables)})
+            item["reading"] = " ".join(syllables)
+            conflicts = collision_index.ranking_conflicts(term, item["reading"])
+            if conflicts:
+                collisions += 1
+                downranked.extend(dict(item, **conflict) for conflict in conflicts)
+                if count:
+                    count = 0.01
+            partial_overlaps.extend(dict(item, **conflict) for conflict in collision_index.conflicts(term, item["reading"]) if conflict not in conflicts)
+            custom.append({"詞": term, "詞頻": count, "注音": item["reading"]})
             review.append({
                 "詞": term,
-                "處理": "新增" if count else "保留審核，詞頻 0",
+                "處理": "讀音碰撞，保留低順位候選" if conflicts and count else "新增" if count else "保留審核，詞頻 0",
                 "小麥詞頻": source_counts.get(term, ""),
                 "建模文章數": documents,
                 "建模出現次數": occurrences,
@@ -234,8 +254,9 @@ def main() -> None:
                 "讀音來源": reading_source,
             })
         unused = set(overrides) - used_overrides
-        if unused:
-            raise ValueError(f"unused reading overrides: {sorted(unused)}")
+        write_exclusions(args.excluded or args.output.with_name("search-trend-unigram-excluded.tsv"), exclusions)
+        write_exclusions(args.output.with_name("search-trend-unigram-partial-overlaps.tsv"), partial_overlaps)
+        write_exclusions(args.output.with_name("search-trend-unigram-downranked.tsv"), downranked)
         write_tsv(args.output, ["詞", "詞頻", "注音"], custom)
         write_tsv(
             args.review,
@@ -250,11 +271,15 @@ def main() -> None:
             "frequency_policy": (
                 f"min({MAX_COUNT}, max({args.minimum_count}, exact substring occurrences in all 2300 training articles))"
             ),
-            "input_duplicates": 0,
-            "existing_terms_removed": len(terms) - len(custom),
+            "input_duplicates": duplicates,
+            "existing_terms_removed": existing_count,
+            "collision_terms_removed": 0,
+            "collision_terms_downranked": collisions,
+            "collision_policy": POLICY,
+            "unused_overrides": sorted(unused),
             "custom_terms": len(custom),
-            "positive_custom_terms": sum(int(row["詞頻"]) > 0 for row in custom),
-            "zero_count_review_terms": sum(int(row["詞頻"]) == 0 for row in custom),
+            "positive_custom_terms": sum(float(row["詞頻"]) > 0 for row in custom),
+            "zero_count_review_terms": sum(float(row["詞頻"]) == 0 for row in custom),
             "reading_overrides": len(used_overrides),
             "output_sha256": sha256(args.output),
             "review_sha256": sha256(args.review),

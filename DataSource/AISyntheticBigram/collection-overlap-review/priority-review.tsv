@@ -1,0 +1,7 @@
+word	reading	category	mcp_exact_words	context_overlaps	contexts	observed_extra_actions	review_reason	source_file	source_line
+宇崎	ㄩˇ ㄑㄧˊ	動漫	與其	雨騎	不一定要冒雨騎	1	removing this word alone restores lower correction cost in the listed contexts	phrase.anime.tsv	714
+河原	ㄏㄜˊ ㄩㄢˊ	動漫		和原	第一次還原出來的檔名後綴和原檔相同	2	removing this word alone restores lower correction cost in the listed contexts	phrase.anime.tsv	1387
+瑪荷	ㄇㄚˇ ㄏㄜˊ	動漫		碼和	確認銀行代碼和末五碼	2	removing this word alone restores lower correction cost in the listed contexts	phrase.anime.tsv	1574
+示現	ㄕˋ ㄒㄧㄢˋ	中文	釋憲|視線	是餡	是餡裡水太多	1	removing this word alone restores lower correction cost in the listed contexts	phrase.chinese.tsv	101
+艾娜	ㄞˋ ㄋㄚˋ	動漫		愛那	她沒有因上次不愛那杯	2	removing this word alone restores lower correction cost in the listed contexts	phrase.anime.tsv	1870
+貼文	ㄊㄧㄝ ㄨㄣˊ	一般		貼文 | 貼文	不照社群貼文裡互相矛盾的日期亂填 | 她在貼文裡寫	4	removing this word alone restores lower correction cost in the listed contexts	phrase.general.tsv	143

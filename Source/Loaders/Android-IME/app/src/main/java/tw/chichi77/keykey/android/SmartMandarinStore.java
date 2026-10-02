@@ -20,12 +20,18 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     private static final String ASSET_NAME = "KeyKey.db";
     // The shared-model verifier checks this fingerprint so an app upgrade
     // cannot reuse a different model merely because its row count matches.
-    private static final String INSTALLED_NAME = "KeyKey-smart-28b18de318ac13ee.db";
+    private static final String INSTALLED_NAME = "KeyKey-smart-1ffa53b37c8293b7.db";
     private static final String[] PREVIOUS_INSTALLED_NAMES = {
+            "KeyKey-smart-ce6c2b1248351223.db",
+            "KeyKey-smart-573f733b2affa857.db",
+            "KeyKey-smart-939baee5d956363f.db",
+            "KeyKey-smart-e8f034598d2e153e.db",
+            "KeyKey-smart-8f1cb45f51fb2c27.db",
+            "KeyKey-smart-28b18de318ac13ee.db",
             "KeyKey-smart-885614.db", "KeyKey-smart-1.2.10.db",
             "KeyKey-smart-reading-v2.db", "KeyKey-smart-reading-v3.db"
     };
-    private static final long EXPECTED_BIGRAM_ROWS = 885_627;
+    private static final long EXPECTED_BIGRAM_ROWS = 883_372;
     private static final int MAXIMUM_SPAN = 8;
 
     private record Unigram(String text, double probability, double backoff) {}
@@ -65,7 +71,7 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                 databaseFile.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
         try (Cursor cursor = database.rawQuery("SELECT COUNT(*) FROM bigrams", null)) {
             if (!cursor.moveToFirst() || cursor.getLong(0) != EXPECTED_BIGRAM_ROWS) {
-                throw new IOException("The bundled Smart Mandarin database must have 885627 bigrams");
+                throw new IOException("The bundled Smart Mandarin database must have " + EXPECTED_BIGRAM_ROWS + " bigrams");
             }
         } catch (IOException | RuntimeException error) {
             database.close();
@@ -129,7 +135,6 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                         && required.length() == length)) continue;
 
                 List<Unigram> entries = unigrams(query);
-                String learned = learnedCandidate(query);
                 if (required != null) {
                     ArrayList<Unigram> matching = new ArrayList<>();
                     for (Unigram row : entries) {
@@ -159,9 +164,6 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                         ArrayList<SmartMandarinSegment> segments =
                                 new ArrayList<>(previousPath.segments());
                         segments.add(segment);
-                        if (entry.text().equals(learned)) {
-                            transition = Math.max(transition, 0);
-                        }
                         Path path = new Path(previousPath.score() + transition,
                                 entry.backoff(), List.copyOf(segments));
                         String stateKey = query + '\u001f' + entry.text();
@@ -226,7 +228,6 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
         int largestSpan = Math.min(MAXIMUM_SPAN, readings.size() - index);
         for (int length = 1; length <= largestSpan; length++) {
             String query = String.join("", readings.subList(index, index + length));
-            String learned = learnedCandidate(query);
             for (Unigram entry : unigrams(query)) {
                 Double bigram = previous == null
                         ? bigramProbability("!", query, "", entry.text())
@@ -234,8 +235,7 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                                 previous.text(), entry.text());
                 double fallback = previousBackoff + entry.probability();
                 ranked.add(new Ranked(new SmartMandarinCandidate(length, entry.text()),
-                        entry.text().equals(learned) ? 0
-                                : bigram == null ? fallback : Math.max(bigram, fallback)));
+                        bigram == null ? fallback : Math.max(bigram, fallback)));
             }
         }
         ranked.sort((left, right) -> Double.compare(right.score(), left.score()));
@@ -274,12 +274,9 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
 
     @Override
     public void learnConfirmedComposition(SmartMandarinComposition composition) {
-        if (!bigramEnabled || userData == null) return;
-        try {
-            userData.learnComposition(composition);
-        } catch (RuntimeException ignored) {
-            // The cooked model can still commit the completed text.
-        }
+        // Confirmation and buffer eviction accept automatic guesses. Only an
+        // explicit candidate selection is evidence of a preference, as in the
+        // original desktop composer.
     }
 
     @Override
@@ -348,7 +345,10 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
         String learned = learnedCandidate(query);
         if (learned != null && merged.containsKey(learned)) {
             Unigram item = merged.get(learned);
-            merged.put(learned, new Unigram(learned, 0, item.backoff()));
+            double highest = merged.values().stream().mapToDouble(Unigram::probability).max().orElseThrow();
+            // Retain a lexical cost so learning a character cannot make it
+            // overwhelm a stronger dictionary phrase such as 可以.
+            merged.put(learned, new Unigram(learned, Math.min(0, Math.nextUp(highest)), item.backoff()));
         }
         ArrayList<Unigram> result = new ArrayList<>(merged.values());
         result.sort((left, right) -> Double.compare(right.probability(), left.probability()));

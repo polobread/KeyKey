@@ -6,20 +6,27 @@
 
 ## 好打注音模型決策
 
-- 本儲存庫五個 frontend 共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **114,392 筆 Unigram、885,627 筆 Bigram**，SHA-256 為 `28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252`。
-- Bigram 建模固定使用 `typing-articles-v2.jsonl`、`v3.jsonl`、`v4.jsonl` 共 **2,300 篇**。正式驗證固定使用 `typing-articles-v5-seed/tw-corpus-0001.md` 至 `0130.md` 共 **130 篇**，排除 `chat.md`；訓練與驗證沒有相同文章或 20 字以上相同段落。800／750／750 只屬已結束的 unigram 實驗分割，不再作為目前 Bigram 的建模或驗證依據。
+- 本儲存庫五個 frontend 共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **119,159 筆 Unigram、883,372 筆 Bigram**，SHA-256 為 `1ffa53b37c8293b705d9bc0afafa24096d5ad53d35f971be1235beb17c59e2a1`。
+- Bigram 建模固定使用 `typing-articles-v2.jsonl`、`v3.jsonl`、`v4.jsonl` 共 **2,300 篇**。正式驗證固定使用 `typing-articles-v5-seed/tw-corpus-0001.md` 至 `0131.md` 共 **131 篇**，排除 `chat.md`；訓練與驗證沒有相同文章或 20 字以上相同段落。800／750／750 只屬已結束的 unigram 實驗分割，不再作為目前 Bigram 的建模或驗證依據。
 - 每篇文章、每個模型都啟動全新引擎程序，關閉 user table、Bigram learning 與 candidate override，測試間不得共享記憶。正式動作模型採 5 音節穩定、10 音節組字範圍、每頁 8 個候選；注音鍵、確認、點字開候選、選字及翻頁都計入。輸出須包含總動作、額外修正動作、修正字及各自成本；總動作越少越好。
 - Bigram 約只能影響仍在組字區內的 9～10 個字，不能期待後文完全救回前面的同音字。優先降低核心 83 字、前 100 名基本字與第 101～1,000 名一般字的修正；第 1,001～1,500 名、未排名罕字、專業詞及專有名詞只列診斷，不決定基礎模型是否採用，這些內容可由使用者學習改善。
-- 調整前先分析整批錯誤分布，再訂一條適用全體的規則並重跑完整驗證。不得看一篇修一篇、對單一 Bigram 邊加補丁，或只用總分掩蓋基本字、題材或個別文章的退步。隨機 50 篇可作快速探索，不能取代固定 130 篇驗收。
+- 調整前先分析整批錯誤分布，再訂一條適用全體的規則並重跑完整驗證。不得看一篇修一篇、對單一 Bigram 邊加補丁，或只用總分掩蓋基本字、題材或個別文章的退步。隨機 50 篇可作快速探索，不能取代目前固定 131 篇驗收。
 - v1.3.1 以 McBopomofo unigram 為基準，只依 2,300 篇的跨文章證據調整既有 Bigram；122 個基本／常用字的 191 個讀音保留基準 Bigram，共保護 208,222 筆。另收錄經整體驗證的 7 個常用詞補充，以及搜尋熱門詞 550 詞去除 393 個既有詞後的 157 詞保守補充。
 - 固定 130 篇結果為總動作 **331,619 → 331,062（-557）**、額外修正動作 **11,000 → 10,443（-557）**；97 篇改善、19 篇相同、14 篇退步，節省 623、增加 66。搜尋熱門詞層另少 6 次動作，3 篇改善、127 篇相同、0 篇退步。正式細節在 `DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md` 與 `DataSource/AISyntheticArticles/typing-articles-v5-manifest.json`。
 - 自建 unigram、全域混合、剪枝、字級先驗及順位校準雖曾降低總動作，但在基本字分布、跨題材穩定性或外部驗證門檻失敗，因此都未取代正式基準。直接 unigram 順位問題主要集中於「做／作、新／心、裡／理、向／像」；「在／再、是／事、時／十」多數是上下文、多字候選或斷詞問題，應由整體語料與 Bigram 處理。既有 3,000 份外部提示已全部用過，下一次採用新規則需要新的完整自然文章 holdout，不能再宣稱舊資料是盲測。
 - 慣用讀音先依本地詞庫與臺灣輸入習慣判斷，可先請 ChatGPT 分析；只有仍有疑義或本地資料互相衝突時才個別查教育部辭典，不批次查詢。破音字須依文章語境固定實際慣用讀音。
 
+- `bigram` 分支另依使用者指定加入完整詞「舊的」的 Unigram 補償；「新的」保留既有詞頻。130 篇由 331,062 降至 331,058 動作，2 篇改善、128 篇相同、0 篇退步，基本字不變。明確詞條補充只經固定回歸驗證，不是新的盲測。全域 Bigram 候選尚未採用，詳見 `docs/SMART_MANDARIN_BIGRAM_LEARNING_REVIEW.md`。
+- 歷史完整匯入（已由後續來源重建取代）：使用者曾要求匯入 29 份分類詞庫並接受當次回歸：中文化後新增 4,765 詞，1,745 筆已有詞及 50 筆重複跳過。當時新增詞一律詞頻 1，既有詞與 Bigram 不改。固定 130 篇總動作 331,058 → 331,068，1 篇改善、122 篇相同、7 篇退步，基本字「裡」多修 2 次。後續採用依使用者最新 30 次總動作門檻。逐筆清單見 `DataSource/AISyntheticBigram/COLLECTION_UNIGRAM_IMPORT.md`。
+
 ## 模型維護
 
+- 三份 `phrase.people-*.tsv` 及「人名…」分類的新詞在 Bigram 訓練完成後才加入 Unigram；普通人名詞頻至多 1，動漫／碰撞人名至多 0.01。即使人名也出現在搜尋來源，仍排除於訓練；已存在小麥的同文字詞保留原模型處理。
+
+- 自訂詞以小麥正詞頻詞為主體，僅同文字去重；完整同音詞保留低順位候選供選字學習。雙方連續兩字同音異字列診斷：新詞只有兩字時降權，三字以上詞不因部分碰撞刪除或額外降權。動漫新詞及需降權的碰撞詞不參與 Bigram 訓練，詞頻至多 0.01 且低於既有完整同音詞，不強制低於拆詞路徑。使用者指定固定 131 篇總動作增加 **至多 30 次可採用、超過 30 次不採用**，文章與基本字差異列診斷、不另設硬門檻。超標時保留原 DB、只 commit 候選清單與拒用原因；最新結果見 `DataSource/AISyntheticBigram/rebuild-review/latest.json`。
+- 自訂詞來源合併進 master 後由 `.github/workflows/rebuild-keykey-db.yml` 重建；來源界線、固定 Git 基底與本機入口見 `docs/KEYKEY_DATABASE_WORKFLOW.md`。使用者已授權驗證成功後由 workflow commit 回 master，不另存 DB artifact；總動作增加超過 30 次時僅提交拒用報告，DB 維持原版。`collection-unigram.tsv` 是產物，修改原始分類詞庫及覆寫表；不可對同一 DB 反覆累加補償。
 - 不直接改 `DataSource/McBopomofo/phrase.occ` 或 `BPMFMappings.txt`；專案補充詞、讀音覆寫及語料放在 `DataSource/AISyntheticBigram/`。
-- 變更模型時同步更新正式 DB、`smart-mandarin-model-manifest.json`、130 篇驗證結果及內容雜湊。不能只看資料列數判斷新舊，也不能把罕見字改善換成基本字退步。
+- 變更模型時同步更新正式 DB、`smart-mandarin-model-manifest.json`、目前 131 篇驗證結果及內容雜湊。不能只看資料列數判斷新舊；所有字級／文章差異需明列，採用依使用者最新 30 次總動作門檻。
 - 量測工具入口與動作定義見 `DataSource/AISyntheticBigram/TYPING_COST.md`。`measure-typing-cost.py ARTICLE VERSION` 量單篇；批次工具先固定樣本、完整分析，再比較全域候選。模型調整程式不得覆寫來源 DB。
 - `verify-smart-mandarin-db.py` 驗證固定雜湊、完整性、資料列與首音節；`verify-shared-database-wiring.py` 驗證本儲存庫五個 frontend 都使用同一份 DB。iOS archive、Android asset、macOS App、Windows 打包目錄及 Linux 安裝後改名檔仍須各自核對。
 - Android 私有 DB 檔名是更新快取邊界；換模型時必須變更檔名或加入內容校驗。Windows 的 `keykey_database_deploy` 必須在 DB 更新但 DLL 未重新連結時同步打包目錄。

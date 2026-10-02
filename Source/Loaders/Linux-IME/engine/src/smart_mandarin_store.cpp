@@ -4,6 +4,7 @@
 #include <sqlite3.h>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <map>
 #include <set>
@@ -55,7 +56,7 @@ SmartMandarinStore::open(
             return nullptr;
         }
     }
-    constexpr sqlite3_int64 ExpectedBigramRows = 885627;
+    constexpr sqlite3_int64 ExpectedBigramRows = 883372;
     bool complete = false;
     {
         Statement count;
@@ -76,6 +77,20 @@ SmartMandarinStore::~SmartMandarinStore() { sqlite3_close(database_); }
 
 std::vector<SmartMandarinStore::Unigram>
 SmartMandarinStore::unigrams(const std::string &query) const {
+    const auto applyPreference = [this, &query](std::vector<Unigram> &rows) {
+        if (!userData_ || rows.empty()) return;
+        const std::string learned = userData_->learnedCandidate(query);
+        const double highest = std::max_element(rows.begin(), rows.end(),
+            [](const Unigram &a, const Unigram &b) { return a.probability < b.probability; })->probability;
+        for (Unigram &row : rows) {
+            if (row.text == learned) {
+                // Rank preference within one reading; keep its lexical cost
+                // so it cannot erase a stronger multi-character word.
+                row.probability = std::min(0.0, std::nextafter(highest,
+                    std::numeric_limits<double>::infinity()));
+            }
+        }
+    };
     const auto cached = unigramCache_.find(query);
     if (cached != unigramCache_.end()) {
         std::vector<Unigram> result = cached->second;
@@ -84,6 +99,7 @@ SmartMandarinStore::unigrams(const std::string &query) const {
                 result.push_back({entry.text, entry.probability, entry.backoff});
             }
         }
+        applyPreference(result);
         return result;
     }
     Statement statement;
@@ -109,6 +125,7 @@ SmartMandarinStore::unigrams(const std::string &query) const {
             result.push_back({entry.text, entry.probability, entry.backoff});
         }
     }
+    applyPreference(result);
     return result;
 }
 
@@ -170,8 +187,6 @@ bool SmartMandarinStore::compose(
         for (std::size_t length = 1;
              length <= 8 && start + length <= readings.size(); ++length) {
             query += readings[start + length - 1];
-            const std::string learned =
-                userData_ ? userData_->learnedCandidate(query) : std::string{};
             const auto overlapping = std::find_if(
                 overrides.begin(), overrides.end(),
                 [start, length](const auto &selection) {
@@ -210,8 +225,7 @@ bool SmartMandarinStore::compose(
                         transition = fallback;
                     }
                     Path path = previousPath;
-                    path.score += entry.text == learned
-                                      ? std::max(transition, 0.0) : transition;
+                    path.score += transition;
                     path.backoff = entry.backoff;
                     path.segments.push_back(
                         {start, length, query, entry.text});
@@ -285,8 +299,6 @@ std::vector<SmartCandidate> SmartMandarinStore::candidateOptions(
     for (std::size_t length = 1;
          length <= 8 && index + length <= readings.size(); ++length) {
         query += readings[index + length - 1];
-        const std::string learned =
-            userData_ ? userData_->learnedCandidate(query) : std::string{};
         for (const Unigram &entry : unigrams(query)) {
             if (restrictToBig5 && !isBig5HkscsRepresentable(entry.text)) {
                 continue;
@@ -298,8 +310,7 @@ std::vector<SmartCandidate> SmartMandarinStore::candidateOptions(
                        previous ? previous->text : "", entry.text, observed)) {
                 score = std::max(observed, fallback);
             }
-            ranked.push_back({{length, entry.text},
-                              entry.text == learned ? 0.0 : score});
+            ranked.push_back({{length, entry.text}, score});
         }
     }
     std::stable_sort(ranked.begin(), ranked.end(),

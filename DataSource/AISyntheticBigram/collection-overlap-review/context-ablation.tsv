@@ -1,0 +1,16 @@
+word	article	block	context	overlap_text	before_correction_actions	after_correction_actions	without_word_correction_actions	removed_word_saves	block_regression
+宇崎	tw-corpus-0049	41	不一定要冒雨騎	雨騎	2	3	2	1	1
+河原	tw-corpus-0054	65	第一次還原出來的檔名後綴和原檔相同	和原	0	2	0	2	2
+小蘭	tw-corpus-0057	5	小嵐第一次和爸爸包水餃	小嵐	2	2	2	0	0
+示現	tw-corpus-0057	31	是餡裡水太多	是餡	7	8	7	1	1
+小蘭	tw-corpus-0057	41	小嵐則把尚未使用的麵皮蓋好	小嵐	2	2	2	0	0
+小蘭	tw-corpus-0057	73	小嵐問是不是每次浮起來就能吃	小嵐	4	4	4	0	0
+小蘭	tw-corpus-0057	101	小嵐不服氣	小嵐	2	2	2	0	0
+小蘭	tw-corpus-0057	133	小嵐看著一排不太整齊的餃子	小嵐	4	4	4	0	0
+瑪荷	tw-corpus-0066	21	確認銀行代碼和末五碼	碼和	0	2	0	2	2
+陰上	tw-corpus-0077	105	她沒有因上次不愛那杯	因上	2	4	4	0	2
+艾娜	tw-corpus-0077	105	她沒有因上次不愛那杯	愛那	2	4	2	2	2
+宇崎	tw-corpus-0083	7	大學生林哲宇騎機車經過路口時	宇騎	2	2	2	0	0
+貼文	tw-corpus-0083	103	不照社群貼文裡互相矛盾的日期亂填	貼文	0	2	0	2	2
+貼文	tw-corpus-0088	47	她在貼文裡寫	貼文	2	4	2	2	2
+過載	tw-corpus-0088	105	不過再精確	過再	2	2	2	0	0

@@ -1,5 +1,10 @@
 # v1.3.1 好打注音模型
 
+本文件主體記錄原 1.3.1 的建模與結果；未發布「舊的」完整詞補充見文末。
+`bigram` 分支另已納入 29 分類詞庫的 4,765 個缺詞，目前共 119,159 筆 Unigram、883,372 筆 Bigram。
+最新來源重建採 131 篇驗證；人名、動漫及降權碰撞新詞於 Bigram 完成後才加入。
+最新模型及完整新增／跳過清單見 [分類詞庫匯入](COLLECTION_UNIGRAM_IMPORT.md)。
+
 這一版把語言模型固定為一份預先產生且已驗證的
 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`。macOS、iOS、Android、Windows、
 Linux 都直接驗證並複製相同檔案；平台建置不再各自執行 cooker。
@@ -71,3 +76,27 @@ python3 Source/Distributions/Takao/DatabaseCooker/finalize-smart-mandarin-model.
 
 候選必須重新跑固定 130 篇的獨立測驗並看整體分布；不能根據單篇錯誤逐筆補詞。通過後
 才更新正式 `KeyKey.db` 與 manifest 的內容雜湊。
+
+## bigram 分支：未發布的完整詞補充
+
+依使用者明確指定，將「舊的、新的」放在完整 Unigram 詞層處理。
+新增缺少的「舊的」，補償詞頻 1715 為超過最佳同音拆詞路徑的最小整數；
+既有「新的」詞頻 1761 已足夠，不改分數。來源為 `common-phrase-unigram.tsv`。
+既有 Unigram 與所有 Bigram 完全不變。finalizer 已接上相同補充層。
+
+更新後 114,393 筆 Unigram、885,627 筆 Bigram，SHA-256：
+`8f1cb45f51fb2c27abfafd7bcd3b27b5999177805abff98ad35a599f398796f4`。
+固定 130 篇總動作 331,062 → 331,058，2 篇改善、128 篇相同、0 篇退步；
+核心及基本字不變。完整來源與逐篇比較在 `whole-phrase-unigram-validation.json`。
+
+可從原 1.3.1 DB 產生新副本：
+
+```sh
+python3 -B Source/Distributions/Takao/DatabaseCooker/apply-phrase-unigram-supplement.py \
+  /path/to/v1.3.1-KeyKey.db /path/to/new-whole-phrase.db
+```
+
+本次驗證了從原 1.3.1 DB 套用補充的路徑；未取得 `c29d06c7…` 原始基準，
+因此沒有宣稱完整舊 finalizer 流程已重新產生並核對。
+五平台學習比較與尚未採用的全域 Bigram 實驗見
+`docs/SMART_MANDARIN_BIGRAM_LEARNING_REVIEW.md`。

@@ -1,7 +1,7 @@
 # 琦琦輸入法 / chichi77 KeyKey 1.3.1
 
-`v1.3.0` 的 macOS、Windows 與 Ubuntu 24.04 安裝包集中在同一個
-[GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)；
+目前原始碼版號為 `1.3.1`，正在準備發布。macOS、Windows 與 Ubuntu 24.04 的同版安裝包集中在同一個
+[GitHub Release](https://github.com/polobread/KeyKey/releases)；
 Android 與 iOS 依各自的商店管道安裝。
 
 [下載目前最新的 GitHub Release](https://github.com/polobread/KeyKey/releases/latest)
@@ -75,7 +75,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS、Windows 與
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
-- Linux 的三個 `.deb`、面板原始碼及 `SHA256SUMS` 與桌面版同放在 [`v1.3.0` Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)。
+- Linux 的三個 `.deb`、面板原始碼及 `SHA256SUMS` 與桌面版同放在對應版本的 [GitHub Release](https://github.com/polobread/KeyKey/releases)。
 - Android 正式 AAB 由 `Android Play Release` workflow 簽署並手動送到 Google Play；
   1.2.7 已送交封閉測試。`Package Android` 只產生供開發測試的 debug APK。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
@@ -88,10 +88,11 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 [Code signing policy](CODE_SIGNING_POLICY.md)。`v1.2.9` Windows 發行檔早於此整合，
 目前仍未簽章；SignPath Foundation 核准申請並完成驗證流程後，政策才適用於後續正式版。
 
-推送符合專案版號的 tag（例如 `v1.3.1`）會啟動 `Package macOS`、
-`Package Windows` 與完整 `Linux CI`。macOS 和 Windows 的產物，以及通過 Ubuntu 24.04
-套件安裝與輸入測試的 Linux 套件，會加入同一個 GitHub Release。手動執行 Linux CI
-只保留 Actions artifact，不發布 Release。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
+發布符合專案版號的 GitHub Release（例如 `v1.3.1`，可同時建立 tag）會啟動
+`Package macOS`、`Package Windows` 與完整 `Linux CI`；各平台通過建置及驗證後，
+自動上傳自己的 assets。若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
+選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
+留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
 完整產物、簽章與限制見 [BUILDING.md](BUILDING.md#github-actions-封裝)。
 
 ## 文件
@@ -145,8 +146,9 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 
 ## English
 
-The macOS, Windows, and Ubuntu 24.04 installers for `v1.3.0` share one
-[GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0).
+The source version is `1.3.1`, currently being prepared for release. Matching
+macOS, Windows, and Ubuntu 24.04 installers share one
+[GitHub Release](https://github.com/polobread/KeyKey/releases).
 Android and iOS use their respective store distribution channels.
 
 Version 1.3.1 implements Smart Phonetic sentence composition on macOS,
@@ -219,7 +221,7 @@ iOS.
   notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP
   and installer are currently unsigned and may trigger a security warning.
 - The three Linux `.deb` files, panel source archive, and `SHA256SUMS` share the
-  [`v1.3.0` Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0) with the desktop builds.
+  corresponding [GitHub Release](https://github.com/polobread/KeyKey/releases) with the desktop builds.
 - The signed Android AAB is uploaded manually to Google Play by the
   `Android Play Release` workflow. Version 1.2.7 has been submitted to closed
   testing. `Package Android` produces a debug APK for development only.
@@ -236,11 +238,13 @@ predate this integration and remain unsigned; the policy applies to later
 official releases after the application is accepted and the verified workflow
 is enabled.
 
-Pushing a tag that exactly matches the project version, such as `v1.3.1`,
-starts `Package macOS`, `Package Windows`, and the full `Linux CI`. The desktop
-outputs and the Linux packages that pass the Ubuntu 24.04 package checks are
-added to the same GitHub Release. Manual Linux CI runs retain Actions artifacts
-without publishing a Release. The [Linux installation guide](LINUX_INSTALL.md)
+Publishing a GitHub Release with a matching tag, such as `v1.3.1`, starts
+`Package macOS`, `Package Windows`, and the full `Linux CI`. Each workflow
+uploads its verified packages to that Release independently. After fixing a
+failed platform on `master`, manually run that workflow from `master` with
+`release_tag=v1.3.1` to replace its assets; other platforms are untouched.
+Leaving `release_tag` blank retains Actions artifacts only.
+The [Linux installation guide](LINUX_INSTALL.md)
 describes the supported desktop and application environments.
 See [BUILDING.md](BUILDING.md#github-actions-packaging) for the
 complete output and signing details.

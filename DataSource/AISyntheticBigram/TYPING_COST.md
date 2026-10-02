@@ -58,8 +58,8 @@ python3 DataSource/AISyntheticBigram/measure-typing-cost.py 文章.txt /tmp/候�
 ## 正式資料範圍
 
 - Bigram 以 2,300 篇 `typing-articles-v2`、`v3`、`v4` 建模。
-- 固定驗證集是 `DataSource/AISyntheticArticles/typing-articles-v5-seed/` 的 130 篇 Markdown，排除 `chat.md`。
-- 隨機抽 50 篇只用於探索問題分布，不能取代固定 130 篇驗收。
+- 固定驗證集是 `DataSource/AISyntheticArticles/typing-articles-v5-seed/` 的 131 篇 Markdown，排除 `chat.md`。
+- 隨機抽 50 篇只用於探索問題分布，不能取代固定 131 篇驗收。
 - 800／750／750 是已結束的 unigram 實驗切分，不再用來判斷 bigram。
 
 完整正式模型來源、保護規則與 130 篇結果見 [SMART_MANDARIN_MODEL_V1_3_1.md](SMART_MANDARIN_MODEL_V1_3_1.md)。
@@ -104,6 +104,11 @@ python3 DataSource/AISyntheticBigram/analyze-typing-benchmark.py \
 
 ## 測試
 
+結構性 cooker 與學習機制的獨立診斷見
+[2026-10-02 分析](../../docs/SMART_MANDARIN_BIGRAM_LEARNING_REVIEW.md)。
+`benchmark-bigram-structure.py` 會完整重播固定 131 篇並輸出基本字分層結果；
+該回歸集已經被分析，不能再宣稱是新的盲測。
+
 ```sh
 python3 -m unittest discover \
   -s DataSource/AISyntheticBigram -p 'test_typing_*.py' -v
@@ -112,3 +117,8 @@ python3 -B DataSource/AISyntheticArticles/verify-typing-articles-v5.py
 ```
 
 第一次執行測試會自動編譯小型 C++ adapter；輸出位於忽略的 `.typing-cache/`。
+# 分類詞庫逐筆清單
+
+本次 29 分類詞庫新增 4,765 詞、跳過重複與特殊詞中文化對照，見
+[COLLECTION_UNIGRAM_IMPORT.md](COLLECTION_UNIGRAM_IMPORT.md)。固定 130 篇淨多 10 次
+動作的差異已由使用者明確接受；不可將此結果描述為輸入準確度改善。

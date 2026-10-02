@@ -5,7 +5,7 @@
     "terms": 550,
     "sha256": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1"
   },
-  "database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
+  "database_sha256": "e8167c517936cd051cb8c7ba176b0ef769b9ee6b746a221f8008e00944dc0f01",
   "training_sources": [
     {
       "file": "typing-articles-v2.jsonl",
@@ -26,10 +26,14 @@
   "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))",
   "input_duplicates": 0,
   "existing_terms_removed": 393,
+  "collision_terms_removed": 0,
+  "collision_terms_downranked": 6,
+  "collision_policy": "mcp-homophones-retained-low-ranked-long-partial-diagnostic-v3",
+  "unused_overrides": [],
   "custom_terms": 157,
   "positive_custom_terms": 157,
   "zero_count_review_terms": 0,
   "reading_overrides": 5,
-  "output_sha256": "565b57a2dd90167286fcde38c02686070709e0326b18c201dd9a5be278584c34",
-  "review_sha256": "91132f6613fcce2471664d783449452f6d417ce3557de38c753af401d71796b6"
+  "output_sha256": "10c759a7ac61a48668c88a76141335ab92ff8ee706e4b5176814df64c8079273",
+  "review_sha256": "d1bdc4090947db2450ea37642733eb06c12da918d7d76ce55f3c542f6f24b68c"
 }

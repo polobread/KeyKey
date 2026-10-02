@@ -1,0 +1,17 @@
+{
+  "source_list_sha256": "f88412131b611c403318417610962f884d0c56ac31700e5afe3043ff2a33f7a0",
+  "database_sha256": "573f733b2affa857058d162745afaed2f4ba9605484febf124c72455cf815a75",
+  "without_collection_semantic_sha256": "029d7d94e931c2be91306707bf3ddb0598e1b88796bb34df5ca82050bdf5259e",
+  "mcp_counts_sha256": "0fc51c5245a8820e1003e3fa3fb2759b0d1b502a71da81bbfa265e9ac6c9fb5a",
+  "mcp_mappings_sha256": "51715ee5c731f9994be3b168d7681ed9692b8c335ae6fc2e7cfd4af6fd0e0781",
+  "engine_sha256": "23bd58d5a26cae90439ded6f416d64813345841ec246c987da56b3f2b062860d",
+  "script_sha256": "36f22b4d57c718de72477a9d913afc71697bf78fc919bd7d3621628d554df6c2",
+  "words": 4765,
+  "exact_homophone_words": 92,
+  "exact_pairs": 135,
+  "exact_default_changes": 0,
+  "exact_top_ties_or_outranking": 5,
+  "isolated_default_changes": 1956,
+  "split_score_risks": 1633,
+  "method": "Source mappings and positive counts intersected with pre-import DB; scores retain actual reading weights. Fresh desktop engine per word/model, no learning. Isolated default changes are not proof of errors in context."
+}
