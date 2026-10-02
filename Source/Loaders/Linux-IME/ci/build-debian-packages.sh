@@ -124,28 +124,14 @@ cp -a \
   "$repository_root/DataSource/AISyntheticBigram/article-corpus-2300-exact-dedup.txt" \
   "$source_root/DataSource/AISyntheticBigram/"
 # Include the canonical model and every source fingerprint checked by its verifier.
-model_paths=(
-  Source/Distributions/Takao/CookedDatabase/KeyKey.db
-  Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py
-  Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py
-  DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json
-  DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt
-  DataSource/AISyntheticBigram/common-unigram-supplement.tsv
-  DataSource/AISyntheticBigram/search-trend-unigram-source.txt
-  DataSource/AISyntheticBigram/search-trend-unigram.tsv
-  DataSource/AISyntheticBigram/search-trend-unigram-review.tsv
-  DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv
-  DataSource/AISyntheticArticles/typing-articles-v2.jsonl
-  DataSource/AISyntheticArticles/typing-articles-v3.jsonl
-  DataSource/AISyntheticArticles/typing-articles-v4.jsonl
-  DataSource/AISyntheticArticles/LICENSE.txt
-  DataSource/AISyntheticBigram/LICENSE.txt
-  LICENSES/AI-DATA-NOTICE.txt
-)
+source "$script_dir/model-source-paths.sh"
 for model_path in "${model_paths[@]}"; do
   mkdir -p "$source_root/$(dirname -- "$model_path")"
   cp -a "$repository_root/$model_path" "$source_root/$model_path"
 done
+# Check the staged tree before an expensive native package build.
+python3 "$source_root/Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py" \
+  "$source_root/Source/Distributions/Takao/CookedDatabase/KeyKey.db"
 cp -a "$repository_root/LICENSING.md" "$source_root/LICENSING.md"
 cp -a "$repository_root/LICENSE.txt" "$source_root/LICENSE.txt"
 cp -a "$repository_root/LICENSES/MIT.txt" "$source_root/LICENSES/MIT.txt"
