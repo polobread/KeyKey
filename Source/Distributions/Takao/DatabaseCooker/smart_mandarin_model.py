@@ -85,7 +85,7 @@ def verify_source_hashes(manifest: dict[str, object], manifest_path: Path) -> di
     pending_inputs = {}
     review_path = bigram / "rebuild-review/latest.json"
     if review_path.is_file():
-        review = json.loads(review_path.read_text())
+        review = json.loads(review_path.read_text(encoding="utf-8"))
         if (review.get("decision") == "rejected"
                 and review.get("before_sha256") == manifest.get("canonical_database_sha256")):
             pending_inputs = review["inputs"]
@@ -124,7 +124,7 @@ def verify_source_hashes(manifest: dict[str, object], manifest_path: Path) -> di
         if key + "_file" in rebuild:
             checks.append((bigram / rebuild[key + "_file"], rebuild[key + "_sha256"]))
     if rebuild.get("cooker_report_file"):
-        report = json.loads((bigram / rebuild["cooker_report_file"]).read_text())
+        report = json.loads((bigram / rebuild["cooker_report_file"]).read_text(encoding="utf-8"))
         checks.extend((bigram.parent.parent / row["file"], row["sha256"]) for row in report["sources"])
     checks.extend((
         (bigram / trend["source_file"], trend["source_sha256"]),
@@ -201,7 +201,7 @@ def verify_manifest(path: Path, manifest_path: Path) -> dict[str, object]:
                 adopted.extend((row["詞"], row["注音"]) for row in csv.DictReader(stream, delimiter="\t"))
             if len(adopted) != len({word for word, _ in adopted}):
                 raise ValueError("duplicate word across adopted custom sources")
-            report = json.loads((manifest_path.parent / rebuild["cooker_report_file"]).read_text())
+            report = json.loads((manifest_path.parent / rebuild["cooker_report_file"]).read_text(encoding="utf-8"))
             convenience = report.get("convenience", report["anime"])
             convenience_words = {row["word"] for row in convenience}
             people_words = {row["word"] for row in report.get("people", [])}

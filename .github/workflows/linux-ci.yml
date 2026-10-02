@@ -7,6 +7,8 @@ on:
       - '.github/scripts/release-assets.py'
       - 'Source/Loaders/Linux-IME/**'
       - 'Source/DataTables/**'
+      - 'Source/Distributions/Takao/DatabaseCooker/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
       - 'DataSource/**'
       - 'LINUX_DEVELOPMENT_PLAN.md'
       - 'LINUX_TEST_PLAN.md'
