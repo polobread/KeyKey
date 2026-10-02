@@ -31,7 +31,12 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
+
+#ifndef WIN32
+    #include <strings.h>
+#endif
 
 #if defined(__APPLE__)
     #include <OpenVanilla/OVFileHelper.h>

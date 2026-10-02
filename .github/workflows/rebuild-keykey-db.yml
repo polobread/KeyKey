@@ -22,6 +22,14 @@ on:
       - 'DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-*.md'
       - 'DataSource/AISyntheticArticles/verify-typing-articles-v5.py'
       - 'DataSource/AISyntheticBigram/benchmark-bigram-structure.py'
+      - 'DataSource/AISyntheticBigram/typing_cost.py'
+      - 'DataSource/AISyntheticBigram/typing-engine.cpp'
+      - 'Source/Frameworks/OpenVanilla/Headers/**'
+      - 'Source/Frameworks/Formosa/Headers/**'
+      - 'Source/Frameworks/Formosa/Source/Mandarin.cpp'
+      - 'Source/Frameworks/Manjusri/Headers/**'
+      - 'Source/Frameworks/Manjusri/Source/Node.cpp'
+      - 'Source/ModulePackages/OVIMMandarin/OVIMSmartMandarin.h'
       - 'Source/DataTables/bpmf-ext.cin'
       - 'Source/Distributions/Takao/DatabaseCooker/**'
       - 'DataSource/AISyntheticBigram/build-search-trend-unigram.py'
@@ -56,6 +64,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends g++ libsqlite3-dev python3 ruby
+
+      - name: Compile regression typing engine
+        run: |
+          python3 -B - <<'PY'
+          import sys
+          sys.path.insert(0, 'DataSource/AISyntheticBigram')
+          from typing_cost import build_engine
+          print(build_engine())
+          PY
 
       - name: Filter custom words and cook Unigram and Bigram
         run: |
