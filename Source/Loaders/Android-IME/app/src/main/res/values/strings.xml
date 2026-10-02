@@ -78,7 +78,7 @@
     <string name="floating_candidate_item_horizontal">%1$d %2$s</string>
     <string name="floating_candidate_description">第 %1$d 個候選，%2$s</string>
     <string name="supporter_section_title">支持開發</string>
-    <string name="supporter_description">琦琦輸入法即使未付費也可以繼續完整使用。如果覺得好用，歡迎一次付費支持後續維護與開發。</string>
+    <string name="supporter_description">琦琦輸入法未付費也能完整使用。若覺得好用，歡迎一次付費支持後續維護與開發。付費支持後，鍵盤上將不再顯示「歡迎付費支持」提示。</string>
     <string name="supporter_button">付費支持</string>
     <string name="supporter_thank_you">謝謝支持</string>
     <string name="supporter_supported_description">感謝你支持琦琦注音的維護與開發。</string>

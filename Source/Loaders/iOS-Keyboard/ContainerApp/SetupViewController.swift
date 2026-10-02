@@ -97,7 +97,7 @@ final class SetupViewController: UIViewController {
         supporterTitle.accessibilityIdentifier = "supporter.title"
 
         let supporterDescription = label(
-            "琦琦輸入法即使未付費也可以繼續完整使用。如果覺得好用，歡迎一次付費支持後續維護與開發。",
+            "琦琦輸入法未付費也能完整使用。若覺得好用，歡迎一次付費支持後續維護與開發。付費支持後，鍵盤上將不再顯示「歡迎付費支持」提示。",
             size: 14, weight: .regular
         )
         supporterDescription.textColor = .secondaryLabel
