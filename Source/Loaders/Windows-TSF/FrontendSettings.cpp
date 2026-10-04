@@ -5,6 +5,11 @@
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
+#include <filesystem>
+#include <sstream>
+#include <memory>
+#include <chrono>
+#include "PVPropertyList.h"
 
 namespace KeyKey::WindowsTsf {
 namespace {
@@ -174,7 +179,53 @@ FrontendSettings LoadFrontendSettings() {
         xml, "ToggleInputMethodWithControlBackslash", true);
     settings.playSoundOnTypingError =
         PlistBool(xml, "ShouldPlaySoundOnTypingError", true);
+    settings.simplifiedChineseOutput = PlistBool(xml, "SimplifiedChineseOutput", false);
     return settings;
+}
+
+std::string SmartMandarinSettingsSignature() {
+    const auto xml = ReadFile(SmartMandarinPreferencesPath());
+    std::string signature;
+    for (const auto* key : {"KeyboardLayout", "CandidateSelectionKeys",
+            "CandidateCursorAtEndOfTargetBlock", "ShowCandidateListWithSpace",
+            "ComposingTextBufferSize", "ClearComposingTextWithEsc",
+            "ClearComposingTextWithEscUserChoice", "UseCharactersSupportedByEncoding"}) {
+        signature += std::string(key) + "=" + PlistString(xml, key, "") + "\n";
+    }
+    return signature;
+}
+
+bool SaveSimplifiedOutputPreference(bool enabled) {
+    const auto path = LoaderPreferencesPath();
+    if (path.empty()) return false;
+    std::error_code error;
+    const bool existing = std::filesystem::exists(path, error);
+    if (error) return false;
+    const auto previous = existing ? std::filesystem::last_write_time(path, error)
+        : std::filesystem::file_time_type::min();
+    if (error) return false;
+    const auto source = ReadFile(path);
+    if (existing && source.empty()) return false;
+    std::unique_ptr<OpenVanilla::PVPlistValue> dictionary(source.empty()
+        ? new OpenVanilla::PVPlistValue(OpenVanilla::PVPlistValue::Dictionary)
+        : OpenVanilla::PVPropertyList::ParsePlistFromString(source.c_str()));
+    if (!dictionary || dictionary->type() != OpenVanilla::PVPlistValue::Dictionary) return false;
+    dictionary->setKeyValue("SimplifiedChineseOutput", enabled ? "true" : "false");
+    std::ostringstream serialized;
+    serialized << "<plist version=\"1.0\">" << *dictionary << "</plist>";
+    const auto xml = serialized.str();
+    const auto temporary = path + L".tmp." + std::to_wstring(GetCurrentProcessId());
+    { std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
+      if (!stream || !(stream << xml)) return false; }
+    if (!MoveFileExW(temporary.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+        DeleteFileW(temporary.c_str());
+        return false;
+    }
+    // PlainVanilla compares whole-second timestamps; quick toggles must advance.
+    const auto now = std::filesystem::file_time_type::clock::now();
+    std::filesystem::last_write_time(path, now > previous + std::chrono::seconds(1)
+        ? now : previous + std::chrono::seconds(1), error);
+    return !error;
 }
 
 bool IsInputMethodVisible(const char* identifier) {

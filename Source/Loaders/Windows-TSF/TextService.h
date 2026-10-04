@@ -12,6 +12,8 @@
 
 #include "CandidateWindow.h"
 #include "KeyKeyEngine.h"
+#include "SharedOutputState.h"
+#include "SymbolPanel.h"
 
 namespace KeyKey::WindowsTsf {
 
@@ -84,16 +86,22 @@ public:
                        const KeyEvent& event, bool* handled);
     HRESULT terminateComposition(TfEditCookie editCookie);
     HRESULT commitCompositionForModeSwitch(TfEditCookie editCookie,
-                                           ITfContext* context);
+                                           ITfContext* context, ITfComposition* expected = nullptr);
     bool isChineseMode() const noexcept { return chineseMode_; }
     bool isFullWidthMode() const noexcept { return fullWidthMode_; }
     void toggleChineseMode();
     void toggleFullWidthMode();
     bool selectInputMethod(const char* identifier);
     void syncInputMethod();
+    bool isSimplifiedOutput() const noexcept { return simplifiedOutput_; }
+    void toggleSimplifiedOutput();
+    HRESULT showSymbols();
+    HRESULT insertSymbol(TfEditCookie cookie, ITfContext* context,
+                         const std::wstring& text, unsigned long generation);
     HRESULT openSettings(HWND parent = nullptr) const;
 
 private:
+    friend struct TextServiceTestAccess;
     ~TextService();
 
     bool isPotentialKey(const KeyEvent& event) const;
@@ -109,6 +117,8 @@ private:
     HRESULT initializeLangBar();
     void uninitializeLangBar();
     void refreshLangBar();
+    void syncOutputSettings();
+    void closeSymbols();
     void setChineseMode(bool enabled);
     void setFullWidthMode(bool enabled);
     KeyEvent translateKey(WPARAM wparam, LPARAM lparam) const;
@@ -133,6 +143,14 @@ private:
     Microsoft::WRL::ComPtr<ITfThreadMgr> threadManager_;
     TfClientId clientId_ = TF_CLIENTID_NULL;
     SharedInputMethod sharedInputMethod_;
+    SharedOutputState sharedOutputState_;
+    bool simplifiedOutput_ = false;
+    bool compositionSimplifiedOutput_ = false;
+    bool lastLocalSimplifiedOutput_ = false;
+    bool outputSettingsInitialized_ = false;
+    SymbolPanel symbolPanel_;
+    Microsoft::WRL::ComPtr<ITfContext> symbolContext_;
+    unsigned long symbolGeneration_ = 0;
     std::string lastLocalInputMethod_;
     bool immersiveMode_ = false;
     bool syncingInputMethod_ = false;

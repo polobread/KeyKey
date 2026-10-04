@@ -55,10 +55,11 @@ function Resolve-BuildArtifact {
         [Parameter(Mandatory = $true)][string] $RelativePath
     )
 
-    foreach ($candidate in @(
-        (Join-Path $Directory $RelativePath),
-        (Join-Path (Join-Path $Directory 'Release') $RelativePath)
-    )) {
+    $cache = Join-Path $Directory 'CMakeCache.txt'
+    $multiConfig = (Test-Path -LiteralPath $cache -PathType Leaf) -and
+        ((Get-Content -LiteralPath $cache -Raw) -match '(?m)^CMAKE_CONFIGURATION_TYPES:')
+    $runtimeDirectory = if ($multiConfig) { Join-Path $Directory 'Release' } else { $Directory }
+    foreach ($candidate in @((Join-Path $runtimeDirectory $RelativePath))) {
         if (Test-Path -LiteralPath $candidate -PathType Leaf) {
             return (Resolve-Path -LiteralPath $candidate).Path
         }
@@ -345,6 +346,8 @@ try {
             'chichi77Collection-LICENSE.txt')
     Copy-Item -LiteralPath (
         Join-Path $repositoryRoot 'THIRD-PARTY-NOTICES.md') `
+        -Destination $licenseDirectory
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSES\OpenVanilla-HanConvert.txt') `
         -Destination $licenseDirectory
 
     if (-not $UnsignedTest) {

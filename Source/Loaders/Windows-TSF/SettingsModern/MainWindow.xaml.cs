@@ -9,6 +9,8 @@ namespace KeyKeySettings;
 public partial class MainWindow : Window
 {
     private readonly ObservableCollection<CollectionRow> collections = new();
+    private readonly List<ComboBox> readingChoices = new();
+    private bool updatingReadings;
     private static readonly string[] Scales =
         ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
@@ -53,6 +55,13 @@ public partial class MainWindow : Window
             SettingsStore.Read(loader, "HighlightColor", "Default"));
         ControlBackslash.IsChecked = ReadBool(loader, "ToggleInputMethodWithControlBackslash", true);
         TypingBeep.IsChecked = ReadBool(loader, "ShouldPlaySoundOnTypingError", true);
+        SimplifiedChineseOutput.IsChecked = ReadBool(loader, "SimplifiedChineseOutput", false);
+        var sharedOutput = NativeBackend.KeyKeyReadSimplifiedOutput();
+        if (sharedOutput >= 0) SimplifiedChineseOutput.IsChecked = sharedOutput != 0;
+        ShowCandidateListWithSpace.IsChecked = ReadBool(SettingsStore.SmartPath, "ShowCandidateListWithSpace", false);
+        CandidateCursorAtEndOfTargetBlock.IsChecked = ReadBool(SettingsStore.SmartPath, "CandidateCursorAtEndOfTargetBlock", false);
+        CandidateSelectionKeys.Text = SettingsStore.Read(SettingsStore.SmartPath, "CandidateSelectionKeys", "");
+        ComposingTextBufferSize.Text = SettingsStore.Read(SettingsStore.SmartPath, "ComposingTextBufferSize", "10");
         var suppressed = SettingsStore.ReadArray(loader, "ModulesSuppressedFromUI")
             .ToHashSet(StringComparer.Ordinal);
         ShowSmartMandarin.IsChecked = !suppressed.Contains("SmartMandarin");
@@ -118,6 +127,7 @@ public partial class MainWindow : Window
     {
         try
         {
+            var bufferSize = SmartMandarinSettings.Validate(CandidateSelectionKeys.Text, ComposingTextBufferSize.Text);
             var visible = new[] {
                 ("SmartMandarin", ShowSmartMandarin.IsChecked == true),
                 ("TraditionalMandarin", ShowTraditionalMandarin.IsChecked == true),
@@ -133,6 +143,7 @@ public partial class MainWindow : Window
                 ["CandidateWindowScalePercent"] = Scales[Math.Max(0, CandidateScale.SelectedIndex)],
                 ["ToggleInputMethodWithControlBackslash"] = ControlBackslash.IsChecked == true ? "true" : "false",
                 ["ShouldPlaySoundOnTypingError"] = TypingBeep.IsChecked == true ? "true" : "false",
+                ["SimplifiedChineseOutput"] = BoolValue(SimplifiedChineseOutput),
             });
             var suppressed = SettingsStore.ReadArray(SettingsStore.LoaderPath,
                 "ModulesSuppressedFromUI")
@@ -148,6 +159,10 @@ public partial class MainWindow : Window
             };
             SettingsStore.Write(SettingsStore.TraditionalPath, phoneticValues);
             var smartValues = new Dictionary<string, string>(phoneticValues) {
+                ["ShowCandidateListWithSpace"] = BoolValue(ShowCandidateListWithSpace),
+                ["CandidateCursorAtEndOfTargetBlock"] = BoolValue(CandidateCursorAtEndOfTargetBlock),
+                ["CandidateSelectionKeys"] = CandidateSelectionKeys.Text,
+                ["ComposingTextBufferSize"] = bufferSize.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["ClearComposingTextWithEscUserChoice"] = "true",
                 ["ClearComposingTextWithEsc"] =
                     ClearSmartCompositionWithEsc.IsChecked == true ? "true" : "false",
@@ -176,12 +191,14 @@ public partial class MainWindow : Window
             });
             SendMessageTimeout(new IntPtr(0xffff), 0x001A, IntPtr.Zero,
                 "chichi77 KeyKey", 0x0002, 250, out _);
-            Status.Text = "設定已套用";
+            Status.Text = NativeBackend.KeyKeyPublishSimplifiedOutput(SimplifiedChineseOutput.IsChecked == true ? 1 : 0) != 0
+                ? "設定已套用" : "設定已儲存；簡體狀態同步失敗，請重新開啟輸入法。";
         }
         catch (Exception ex) { Status.Text = $"設定儲存失敗：{ex.Message}"; }
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
+    private void UseNumericSelectionKeys_Click(object sender, RoutedEventArgs e) => CandidateSelectionKeys.Text = "12345678";
 
     private static string BoolValue(CheckBox box) => box.IsChecked == true ? "true" : "false";
 
@@ -218,6 +235,75 @@ public partial class MainWindow : Window
             PhraseText.Text = row.Text;
             PhraseReading.Text = row.Reading;
         }
+    }
+
+    private void PhraseText_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (CharacterReadingPanel is null) return;
+        updatingReadings = true;
+        CharacterReadingPanel.Children.Clear();
+        readingChoices.Clear();
+        WholePhraseReadings.ItemsSource = null;
+        WholePhraseReadings.Visibility = Visibility.Collapsed;
+        ReadingStatus.Text = "";
+        updatingReadings = false;
+    }
+
+    private void LookupReadings_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var result = NativeBackend.LookupReadings(PhraseText.Text.Trim());
+            if (result.Status < 0) {
+                ReadingStatus.Text = result.Status == -1 ? "請輸入 1 至 64 個字的詞語。" : "正式詞庫讀取失敗，請確認 Databases\\KeyKey.db。";
+                return;
+            }
+            updatingReadings = true;
+            CharacterReadingPanel.Children.Clear();
+            readingChoices.Clear();
+            WholePhraseReadings.ItemsSource = result.WholePhraseReadings;
+            WholePhraseReadings.Visibility = result.WholePhraseReadings.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            WholePhraseReadings.SelectedIndex = result.WholePhraseReadings.Count > 0 ? 0 : -1;
+            foreach (var character in result.Characters) {
+                var panel = new StackPanel { Margin = new Thickness(0, 0, 12, 8) };
+                panel.Children.Add(new TextBlock { Text = character.Text });
+                var choice = new ComboBox { IsEditable = true, MinWidth = 100, ItemsSource = character.Readings,
+                    SelectedIndex = character.Readings.Count > 0 ? 0 : -1 };
+                System.Windows.Automation.AutomationProperties.SetName(choice, character.Text + "的讀音");
+                choice.SelectionChanged += (_, _) => SynchronizeReadingChoices();
+                choice.AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler((_, _) => SynchronizeReadingChoices()));
+                panel.Children.Add(choice);
+                if (character.Readings.Count == 0) panel.Children.Add(new TextBlock { Text = "缺少讀音，請手動補充" });
+                readingChoices.Add(choice);
+                CharacterReadingPanel.Children.Add(panel);
+            }
+            updatingReadings = false;
+            if (result.WholePhraseReadings.Count > 0) SelectWholePhraseReading(result.WholePhraseReadings[0]);
+            else SynchronizeReadingChoices();
+            ReadingStatus.Text = result.Characters.Any(c => c.Readings.Count == 0)
+                ? "部分字沒有讀音；請補齊後儲存。" : result.WholePhraseReadings.Count > 0
+                ? "優先使用詞庫完整詞讀音；可逐字修正。" : "逐字候選僅供參考，請依語境確認破音字。";
+        }
+        catch (Exception ex) { updatingReadings = false; ReadingStatus.Text = "讀音查詢失敗：" + ex.Message; }
+    }
+
+    private void WholePhraseReadings_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!updatingReadings && WholePhraseReadings.SelectedItem is string reading) SelectWholePhraseReading(reading);
+    }
+
+    private void SelectWholePhraseReading(string reading)
+    {
+        updatingReadings = true;
+        var syllables = reading.Split(',');
+        for (int i = 0; i < readingChoices.Count && i < syllables.Length; ++i) readingChoices[i].Text = syllables[i];
+        updatingReadings = false;
+        PhraseReading.Text = reading;
+    }
+
+    private void SynchronizeReadingChoices()
+    {
+        if (!updatingReadings) PhraseReading.Text = string.Join(',', readingChoices.Select(c => c.Text.Trim()));
     }
 
     private void SavePhrase(long rowid)

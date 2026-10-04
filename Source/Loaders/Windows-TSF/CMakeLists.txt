@@ -58,6 +58,10 @@ set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON
 
 add_library(keykey_core STATIC
     FrontendSettings.cpp
+    OutputConversion.cpp
+    "${KEYKEY_SOURCE}/ModulePackages/OVOFHanConvert/OVOFHanConvert.cpp"
+    "${KEYKEY_SOURCE}/ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c"
+    "${KEYKEY_SOURCE}/ModulePackages/OVOFHanConvert/VXHCSC2TCTable.c"
     WindowsTableInputMethod.cpp
     "${KEYKEY_SOURCE}/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
     "${KEYKEY_SOURCE}/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
@@ -123,10 +127,23 @@ add_library(KeyKeyTsf SHARED
     ComServer.cpp
     Diagnostics.cpp
     LangBarButton.cpp
+    SymbolPanel.cpp
     KeyKeyTsf.rc
     TextService.cpp
     KeyKeyTsf.def
 )
+set(KEYKEY_SYMBOL_HEADER "${CMAKE_CURRENT_BINARY_DIR}/generated/SymbolResources.generated.h")
+add_custom_command(OUTPUT "${KEYKEY_SYMBOL_HEADER}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/generated"
+    COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File
+        "${CMAKE_CURRENT_SOURCE_DIR}/Generate-SymbolResources.ps1" -Output "${KEYKEY_SYMBOL_HEADER}"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Generate-SymbolResources.ps1"
+        "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/CannedMessages.plist"
+    VERBATIM)
+add_custom_target(keykey_symbol_resources DEPENDS
+    "${KEYKEY_SYMBOL_HEADER}")
+add_dependencies(KeyKeyTsf keykey_symbol_resources)
+target_include_directories(KeyKeyTsf BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_compile_features(KeyKeyTsf PRIVATE cxx_std_17)
 target_compile_definitions(KeyKeyTsf PRIVATE
     ${KEYKEY_VERSION_DEFINITIONS}
@@ -170,6 +187,9 @@ target_link_libraries(KeyKeySettingsBackend PRIVATE
     keykey_core
     shell32
     user32
+    ole32
+    oleaut32
+    uuid
 )
 find_program(KEYKEY_DOTNET_EXECUTABLE dotnet REQUIRED)
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -244,6 +264,42 @@ if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
 endif()
 
 if(BUILD_TESTING)
+    add_executable(KeyKeyTsfOutputBehaviorTest TsfOutputBehaviorTest.cpp
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp Diagnostics.cpp)
+    target_compile_features(KeyKeyTsfOutputBehaviorTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeyTsfOutputBehaviorTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_compile_options(KeyKeyTsfOutputBehaviorTest PRIVATE /utf-8)
+    target_include_directories(KeyKeyTsfOutputBehaviorTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32)
+    add_dependencies(KeyKeyTsfOutputBehaviorTest keykey_symbol_resources keykey_database_deploy)
+    add_test(NAME KeyKeyTsfOutputCommitBehavior COMMAND KeyKeyTsfOutputBehaviorTest)
+    add_executable(KeyKeyFrontendPreferencesTest FrontendPreferencesTest.cpp)
+    target_link_libraries(KeyKeyFrontendPreferencesTest PRIVATE keykey_core)
+    add_test(NAME KeyKeyFrontendPreferences COMMAND KeyKeyFrontendPreferencesTest)
+    add_executable(KeyKeyEngineAdvancedSettingsTest EngineAdvancedSettingsTest.cpp)
+    target_compile_options(KeyKeyEngineAdvancedSettingsTest PRIVATE /utf-8)
+    target_link_libraries(KeyKeyEngineAdvancedSettingsTest PRIVATE keykey_core shell32 user32)
+    add_dependencies(KeyKeyEngineAdvancedSettingsTest keykey_database_deploy)
+    foreach(mode custom hsu eten26 invalid four-output)
+        add_test(NAME KeyKeyEngineAdvanced-${mode} COMMAND KeyKeyEngineAdvancedSettingsTest ${mode})
+    endforeach()
+    add_executable(KeyKeySymbolPanelTest SymbolPanelTest.cpp SymbolPanel.cpp)
+    add_dependencies(KeyKeySymbolPanelTest keykey_symbol_resources)
+    target_include_directories(KeyKeySymbolPanelTest BEFORE PRIVATE
+        "${CMAKE_CURRENT_BINARY_DIR}/generated" "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_compile_features(KeyKeySymbolPanelTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeySymbolPanelTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_link_libraries(KeyKeySymbolPanelTest PRIVATE user32 gdi32 advapi32)
+    add_test(NAME KeyKeySymbolPanelResourcesAndFocus COMMAND KeyKeySymbolPanelTest)
+    add_executable(KeyKeyOutputConversionTest OutputConversionTest.cpp)
+    target_link_libraries(KeyKeyOutputConversionTest PRIVATE keykey_core)
+    add_test(NAME KeyKeyOutputConversion COMMAND KeyKeyOutputConversionTest)
+    add_executable(KeyKeySharedOutputStateTest SharedOutputStateTest.cpp)
+    target_compile_features(KeyKeySharedOutputStateTest PRIVATE cxx_std_17)
+    target_compile_definitions(KeyKeySharedOutputStateTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_link_libraries(KeyKeySharedOutputStateTest PRIVATE ole32 oleaut32 uuid user32 userenv advapi32)
+    add_test(NAME KeyKeySharedOutputStateProcesses COMMAND KeyKeySharedOutputStateTest)
+    add_test(NAME KeyKeySharedOutputStateAppContainer COMMAND KeyKeySharedOutputStateTest --container)
     add_test(NAME KeyKeyDeploymentTransactions
         COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
             --project "${CMAKE_CURRENT_SOURCE_DIR}/Deployment.Tests/Deployment.Tests.csproj"
@@ -264,7 +320,9 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyTsfConfigureInterface COMMAND KeyKeyTsfInterfaceSmokeTest)
 
     add_executable(KeyKeyTsfSystemTrayTest TsfSystemTrayTest.cpp
-        LangBarButton.cpp TextService.cpp CandidateWindow.cpp Diagnostics.cpp)
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp Diagnostics.cpp)
+    add_dependencies(KeyKeyTsfSystemTrayTest keykey_symbol_resources)
+    target_include_directories(KeyKeyTsfSystemTrayTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
     target_compile_features(KeyKeyTsfSystemTrayTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfSystemTrayTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
     if(MSVC)

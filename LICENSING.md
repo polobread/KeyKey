@@ -65,6 +65,10 @@ data, or separately licensed collections such as `DataSource/chichi77Collection`
   AI-derived portions remain subject to the no-license notice above.
 - OpenVanilla, PlainVanilla, Formosa, Manjusri, and module packages retain the
   licenses and copyright notices stated in their source files.
+- Windows simplified output links the existing `OVOFHanConvert` implementation
+  and both conversion tables. Their MIT and BSD notices and Encode::HanConvert
+  attribution are retained in [`LICENSES/OpenVanilla-HanConvert.txt`](LICENSES/OpenVanilla-HanConvert.txt)
+  and included in Windows packages.
 - `Source/Loaders/Linux-IME/data/tc2sc.cin` is generated from the read-only
   OpenVanilla `VXHCTC2SCTable.c` mapping and retains that table's BSD 3-Clause
   terms and attribution, including its recorded Encode::HanConvert origin.

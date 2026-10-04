@@ -19,6 +19,8 @@ constexpr UINT kMenuToggleLanguage = 1;
 constexpr UINT kMenuHalfWidth = 2;
 constexpr UINT kMenuFullWidth = 3;
 constexpr UINT kMenuSettings = 4;
+constexpr UINT kMenuSymbols = 5;
+constexpr UINT kMenuSimplified = 6;
 
 HICON CreateLabelIcon(const wchar_t* label, COLORREF background) {
     HDC screen = GetDC(nullptr);
@@ -184,6 +186,9 @@ STDMETHODIMP LangBarButton::OnClick(TfLBIClick click, POINT point, const RECT*) 
                     kMenuFullWidth, L"全形");
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
         AppendMenuW(menu, MF_STRING, kMenuSettings, L"輸入法設定…");
+        AppendMenuW(menu, MF_STRING, kMenuSymbols, L"符號表…");
+        AppendMenuW(menu, MF_STRING | (service_->isSimplifiedOutput() ? MF_CHECKED : 0),
+                    kMenuSimplified, L"簡體中文輸出");
         // The fallback popup must be owned by the current host, so Search's
         // light-dismiss surface does not dismiss itself when the menu opens.
         HWND owner = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
@@ -251,8 +256,12 @@ STDMETHODIMP LangBarButton::InitMenu(ITfMenu* menu) {
     result = menu->AddMenuItem(0, TF_LBMENUF_SEPARATOR, nullptr, nullptr,
                                nullptr, 0, nullptr);
     if (FAILED(result)) return result;
-    return menu->AddMenuItem(kMenuSettings, 0, nullptr, nullptr, L"輸入法設定…", 6,
-                             nullptr);
+    result = menu->AddMenuItem(kMenuSettings, 0, nullptr, nullptr, L"輸入法設定…", 6, nullptr);
+    if (FAILED(result)) return result;
+    result = menu->AddMenuItem(kMenuSymbols, 0, nullptr, nullptr, L"符號表…", 4, nullptr);
+    if (FAILED(result)) return result;
+    return menu->AddMenuItem(kMenuSimplified, service_->isSimplifiedOutput() ? TF_LBMENUF_CHECKED : 0,
+                             nullptr, nullptr, L"簡體中文輸出", 6, nullptr);
 }
 
 STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
@@ -266,6 +275,8 @@ STDMETHODIMP LangBarButton::OnMenuSelect(UINT id) {
     if (id == kMenuFullWidth && !service_->isFullWidthMode())
         service_->toggleFullWidthMode();
     if (id == kMenuSettings) return service_->openSettings();
+    if (id == kMenuSymbols) return service_->showSymbols();
+    if (id == kMenuSimplified) service_->toggleSimplifiedOutput();
     return S_OK;
 }
 

@@ -3,6 +3,7 @@
 #include <mutex>
 #include <algorithm>
 #include <utility>
+#include <cstdlib>
 
 #include "ModuleState.h"
 #include "FrontendSettings.h"
@@ -106,6 +107,33 @@ std::string TestProfileDirectory() {
     return OVUTF8::FromUTF16(path);
 }
 
+class WindowsSmartMandarin final : public OVIMSmartMandarin {
+public:
+    void loadConfig(OVKeyValueMap* config, OVLoaderService* service) override {
+        const auto keys = config->stringValueForKey("CandidateSelectionKeys");
+        bool valid = keys.empty() || keys.size() == 8;
+        std::string seen;
+        for (unsigned char key : keys) {
+            if (key < 0x21 || key > 0x7e || seen.find(key) != std::string::npos) valid = false;
+            seen += static_cast<char>(key);
+        }
+        const auto buffer = config->stringValueForKey("ComposingTextBufferSize");
+        char* end = nullptr;
+        const auto length = std::strtol(buffer.c_str(), &end, 10);
+        const bool validLength = !buffer.empty() && end && *end == 0 && length >= 10 && length <= 20;
+        OVIMSmartMandarin::loadConfig(config, service);
+        // PlainVanilla supplies a read-only map. Normalize the Windows module
+        // fields after loading instead of trying to mutate that map.
+        m_cfgCandidateSelectionKeys = valid ? keys : "";
+        m_cfgComposingTextBufferSize = validLength ? static_cast<size_t>(length) : 10;
+    }
+    void saveConfig(OVKeyValueMap* config, OVLoaderService* service) override {
+        OVIMSmartMandarin::saveConfig(config, service);
+        config->setKeyStringValue("CandidateSelectionKeys", m_cfgCandidateSelectionKeys);
+        config->setKeyIntValue("ComposingTextBufferSize", static_cast<int>(m_cfgComposingTextBufferSize));
+    }
+};
+
 class WindowsMandarinPackage final : public OVModulePackage {
 public:
     explicit WindowsMandarinPackage(bool includeSmart) : includeSmart_(includeSmart) {}
@@ -113,7 +141,7 @@ public:
     bool initialize(OVPathInfo*, OVLoaderService*) override {
         m_moduleVector.push_back(new OVModuleClassWrapper<OVIMTraditionalMandarin>);
         if (includeSmart_) {
-            m_moduleVector.push_back(new OVModuleClassWrapper<OVIMSmartMandarin>);
+            m_moduleVector.push_back(new OVModuleClassWrapper<WindowsSmartMandarin>);
         }
         m_moduleVector.push_back(new OVModuleClassWrapper<OVAFAssociatedPhrase>);
         return true;
@@ -556,6 +584,7 @@ KeyKeyEngineSession::KeyKeyEngineSession(PVLoaderContext* context) : context_(co
         std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
         inputMethod_ = Runtime().primaryInputMethod();
         context_->activate();
+        smartSettingsSignature_ = SmartMandarinSettingsSignature();
     }
 }
 
@@ -600,8 +629,9 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
     std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
     Runtime().syncSettings();
     const std::string selectedMethod = Runtime().primaryInputMethod();
+    const auto signature = SmartMandarinSettingsSignature();
     std::wstring previousComposition;
-    if (selectedMethod != inputMethod_) {
+    if (selectedMethod != inputMethod_ || signature != smartSettingsSignature_) {
         // Settings can change the selection while another host is composing.
         // Preserve its visible text before the loader replaces its old context.
         PVCombinedUTF16TextBuffer combined(*context_->composingText(), *context_->readingText());
@@ -615,6 +645,7 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
         }
         inputMethod_ = selectedMethod;
         context_->activate();
+        smartSettingsSignature_ = SmartMandarinSettingsSignature();
     }
     PVKeyImpl keyImplementation = MakeKey(event);
     OVKey key(keyImplementation.copy());

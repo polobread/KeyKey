@@ -5,6 +5,16 @@ This file records third-party notices and does not define the license of
 original chichi77 KeyKey frontend code. See `LICENSING.md` for the complete
 repository scope map.
 
+## OpenVanilla Han conversion
+
+The Windows frontend links `Source/ModulePackages/OVOFHanConvert/OVOFHanConvert.cpp`
+and its traditional/simplified character tables. The implementation retains
+the OpenVanilla Project's MIT notice; the tables retain its BSD 3-Clause notice
+and recorded origin in Perl Encode::HanConvert 0.31 by Autrijus Tang.
+The complete notices are in `LICENSES/OpenVanilla-HanConvert.txt`, copied into
+the Windows package's `LICENSES` directory. Conversion uses the existing
+character mapping only at document output boundaries.
+
 ## McBopomofo data
 
 `DataSource/McBopomofo/` holds two data files vendored from
