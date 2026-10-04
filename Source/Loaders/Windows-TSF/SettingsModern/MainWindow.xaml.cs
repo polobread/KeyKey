@@ -341,9 +341,9 @@ public partial class MainWindow : Window
     private void ResetLearning_Click(object sender, RoutedEventArgs e)
     {
         if (MessageBox.Show(this, "要清除好打注音的選字與前後文學習紀錄嗎？自訂詞與倉頡／簡易排序紀錄會保留。",
-                "重設學習紀錄", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
-        try { Status.Text = NativeBackend.KeyKeyResetLearning() != 0 ? "學習紀錄已重設" : "重設學習紀錄失敗"; }
-        catch (Exception ex) { Status.Text = $"重設失敗：{ex.Message}"; }
+                "重設好打注音學習紀錄", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        try { Status.Text = NativeBackend.KeyKeyResetLearning() != 0 ? "好打注音學習紀錄已重設" : "重設好打注音學習紀錄失敗"; }
+        catch (Exception ex) { Status.Text = $"重設好打注音學習紀錄失敗：{ex.Message}"; }
     }
 
     private void Import_Click(object sender, RoutedEventArgs e)
