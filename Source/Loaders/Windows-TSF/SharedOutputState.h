@@ -8,8 +8,7 @@ namespace KeyKey::WindowsTsf {
 inline constexpr GUID kSimplifiedOutputCompartment =
     {0xe9f8731a, 0xc194, 0x4557, {0x8d, 0x6b, 0x12, 0x20, 0xac, 0x44, 0x23, 0x7a}};
 
-inline GUID OutputCompartmentGuid() {
-    GUID guid = kSimplifiedOutputCompartment;
+inline GUID OutputCompartmentGuid(GUID guid = kSimplifiedOutputCompartment) {
     wchar_t profile[32768];
     const auto length = GetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR", profile, 32768);
     if (length && length < 32768) {

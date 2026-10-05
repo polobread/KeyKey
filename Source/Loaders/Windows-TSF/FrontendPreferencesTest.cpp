@@ -23,6 +23,13 @@ int main() {
     try {
         const auto loader = LoaderPreferencesPath();
         const auto smart = SmartMandarinPreferencesPath();
+        Check(LoadFrontendSettings().defaultChineseMode, "Missing startup preference must default to Chinese");
+        for (const auto* value : {"English", "Chinese", "invalid", ""}) {
+            { std::ofstream out(loader); out << "<plist><dict><key>DefaultInputMode</key><string>"
+                << value << "</string></dict></plist>"; }
+            Check(LoadFrontendSettings().defaultChineseMode == (std::string(value) != "English"),
+                  "Startup mode must accept English and fall back to Chinese");
+        }
         { std::ofstream out(loader); out << "<plist version=\"1.0\"><dict>"
             "<key>HighlightColor</key><string>Green</string>"
             "<key>ModulesSuppressedFromUI</key><array><string>TraditionalMandarin</string></array>"

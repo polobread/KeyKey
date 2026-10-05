@@ -23,6 +23,8 @@ public:
     void hide();
 
 private:
+    friend struct TextServiceTestAccess;
+    friend struct PopupLifecycleTestAccess;
     static bool ensureWindowClass();
     static LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
     LRESULT handleMessage(UINT message, WPARAM wparam, LPARAM lparam);
@@ -33,6 +35,7 @@ private:
     SIZE windowSizeForContent(const SIZE& content) const;
 
     HWND window_ = nullptr;
+    bool shown_ = false;
     HFONT font_ = nullptr;
     std::vector<EngineCandidate> candidates_;
     std::vector<int> cellWidths_;

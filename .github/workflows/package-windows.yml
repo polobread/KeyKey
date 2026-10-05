@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing published release tag, e.g. v1.3.1; blank = artifact only. Build uses the selected ref.'
+        description: 'Existing published Windows release tag, e.g. v1.3.2; blank = artifact only. Build uses the selected ref.'
         required: false
         type: string
 
@@ -43,16 +43,11 @@ jobs:
           REQUESTED_RELEASE_TAG: ${{ inputs.release_tag }}
           EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          $title = Get-Content -LiteralPath README.md -Encoding UTF8 -TotalCount 1
-          if ($title -notmatch '([0-9]+\.[0-9]+\.[0-9]+)$') {
-              throw 'README.md does not end its title with an x.y.z version.'
+          $cmake = Get-Content -LiteralPath Source/Loaders/Windows-TSF/CMakeLists.txt -Raw -Encoding UTF8
+          if ($cmake -notmatch 'project\(KeyKeyWindowsTsf VERSION ([0-9]+\.[0-9]+\.[0-9]+) LANGUAGES C CXX\)') {
+              throw 'CMakeLists.txt does not declare a Windows x.y.z project version.'
           }
           $version = $Matches[1]
-
-          $cmake = Get-Content -LiteralPath Source/Loaders/Windows-TSF/CMakeLists.txt -Raw -Encoding UTF8
-          if ($cmake -notmatch "project\(KeyKeyWindowsTsf VERSION $([regex]::Escape($version)) LANGUAGES C CXX\)") {
-              throw "CMakeLists.txt does not declare version $version."
-          }
           $packager = Get-Content -LiteralPath Source/Loaders/Windows-TSF/Package-Windows.ps1 -Raw -Encoding UTF8
           if ($packager -notmatch "\[string\] \`$Version = '$([regex]::Escape($version))'") {
               throw "Package-Windows.ps1 does not default to version $version."

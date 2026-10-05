@@ -30,7 +30,7 @@
     </StackPanel>
     <Grid DockPanel.Dock="Bottom" Margin="0,14,0,0">
       <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-      <TextBlock Text="版本 1.3.1" VerticalAlignment="Center" Opacity="0.65" />
+      <TextBlock Text="版本 1.3.2" VerticalAlignment="Center" Opacity="0.65" />
       <TextBlock x:Name="Status" Grid.Column="1" Margin="20,0" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
       <StackPanel Grid.Column="2" Orientation="Horizontal">
         <Button x:Name="ApplyButton" Content="套用" Click="Apply_Click" IsDefault="True" />
@@ -44,6 +44,12 @@
             <StackPanel>
               <TextBlock Text="實體鍵盤配置" FontWeight="SemiBold" />
               <TextBlock Text="美式鍵盤（固定）" Margin="0,6,0,8" />
+              <TextBlock Text="啟動時預設輸入模式" FontWeight="SemiBold" Margin="0,10,0,8" />
+              <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <RadioButton x:Name="DefaultChineseMode" Content="中文" GroupName="DefaultInputMode" Margin="0,0,22,0" />
+                <RadioButton x:Name="DefaultEnglishMode" Content="英文" GroupName="DefaultInputMode" />
+              </StackPanel>
+              <TextBlock Text="下次啟用琦琦輸入法時生效；中文沿用目前選擇的好打注音、傳統注音、倉頡或簡易。仍可按 Shift 切換中英文。" TextWrapping="Wrap" Opacity="0.7" />
               <TextBlock Text="在工作列輸入法選單顯示" FontWeight="SemiBold" Margin="0,10,0,8" />
               <CheckBox x:Name="ShowSmartMandarin" Content="好打注音" Margin="0,0,0,8" />
               <CheckBox x:Name="ShowTraditionalMandarin" Content="傳統注音" Margin="0,0,0,8" />

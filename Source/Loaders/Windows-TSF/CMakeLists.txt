@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(KeyKeyWindowsTsf VERSION 1.3.1 LANGUAGES C CXX)
+project(KeyKeyWindowsTsf VERSION 1.3.2 LANGUAGES C CXX)
 
 set(KEYKEY_VERSION_TWEAK 0)
 if(NOT "${PROJECT_VERSION_TWEAK}" STREQUAL "")
@@ -27,6 +27,37 @@ if(MSVC)
     # A TSF DLL is injected into many client processes. Statically link the
     # runtime so deployment does not depend on a particular VC redist version.
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if(CMAKE_GENERATOR MATCHES "^Ninja")
+        # Capture cl's localized pipe output without transcoding. The compiler
+        # launcher below normalizes its prefix for Ninja's byte-based parser.
+        set(KEYKEY_INCLUDE_PROBE "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/KeyKeyHeaderDependencyProbe")
+        file(WRITE "${KEYKEY_INCLUDE_PROBE}.h" "\n")
+        file(WRITE "${KEYKEY_INCLUDE_PROBE}.c" "#include \"KeyKeyHeaderDependencyProbe.h\"\n")
+        execute_process(COMMAND "${CMAKE_CXX_COMPILER}" /nologo /showIncludes /EP "${KEYKEY_INCLUDE_PROBE}.c"
+            OUTPUT_VARIABLE KEYKEY_INCLUDE_OUTPUT ERROR_VARIABLE KEYKEY_INCLUDE_ERRORS
+            RESULT_VARIABLE KEYKEY_INCLUDE_STATUS ENCODING NONE)
+        string(REGEX MATCH "[^\r\n]*KeyKeyHeaderDependencyProbe.h" KEYKEY_INCLUDE_LINE
+            "${KEYKEY_INCLUDE_OUTPUT}\n${KEYKEY_INCLUDE_ERRORS}")
+        string(REGEX REPLACE "[A-Za-z]:[\\\\/].*" "" KEYKEY_INCLUDE_PREFIX "${KEYKEY_INCLUDE_LINE}")
+        if(NOT KEYKEY_INCLUDE_STATUS EQUAL 0 OR NOT KEYKEY_INCLUDE_PREFIX OR
+           KEYKEY_INCLUDE_PREFIX STREQUAL KEYKEY_INCLUDE_LINE)
+            message(FATAL_ERROR "Cannot determine MSVC /showIncludes prefix for Ninja header dependencies")
+        endif()
+        set(KEYKEY_INCLUDE_PREFIX_FILE "${KEYKEY_INCLUDE_PROBE}.prefix")
+        file(WRITE "${KEYKEY_INCLUDE_PREFIX_FILE}" "${KEYKEY_INCLUDE_PREFIX}")
+        set(CMAKE_CL_SHOWINCLUDES_PREFIX "Note: including file: ")
+        set(CMAKE_C_CL_SHOWINCLUDES_PREFIX "Note: including file: ")
+        set(CMAKE_CXX_CL_SHOWINCLUDES_PREFIX "Note: including file: ")
+    endif()
+endif()
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+if(MSVC AND CMAKE_GENERATOR MATCHES "^Ninja")
+    foreach(language C CXX)
+        set(CMAKE_${language}_COMPILER_LAUNCHER "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/MsvcCompiler.py" "${KEYKEY_INCLUDE_PREFIX_FILE}"
+            ${CMAKE_${language}_COMPILER_LAUNCHER})
+    endforeach()
 endif()
 
 get_filename_component(KEYKEY_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
@@ -106,7 +137,6 @@ if(MSVC)
 endif()
 
 set(KEYKEY_DEPLOY_DATABASE "${KEYKEY_DATABASE_PATH}")
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
 if(NOT KEYKEY_DATABASE_PATH)
     message(FATAL_ERROR
         "KEYKEY_DATABASE_PATH must name the pre-generated shared KeyKey.db")
@@ -139,6 +169,8 @@ add_custom_command(OUTPUT "${KEYKEY_SYMBOL_HEADER}"
         "${CMAKE_CURRENT_SOURCE_DIR}/Generate-SymbolResources.ps1" -Output "${KEYKEY_SYMBOL_HEADER}"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Generate-SymbolResources.ps1"
         "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/CannedMessages.plist"
+        "${KEYKEY_SOURCE}/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift"
+        "${CMAKE_CURRENT_SOURCE_DIR}/SymbolEmojiSupplement.json"
     VERBATIM)
 add_custom_target(keykey_symbol_resources DEPENDS
     "${KEYKEY_SYMBOL_HEADER}")
@@ -157,6 +189,7 @@ if(MSVC)
     target_compile_options(KeyKeyTsf PRIVATE /W4 /permissive- /utf-8)
 endif()
 target_link_libraries(KeyKeyTsf PRIVATE
+    d2d1 dwrite
     keykey_core
     advapi32
     gdi32
@@ -264,13 +297,21 @@ if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
 endif()
 
 if(BUILD_TESTING)
+    add_executable(KeyKeyPopupLifecycleTest PopupLifecycleTest.cpp CandidateWindow.cpp SymbolPanel.cpp)
+    add_dependencies(KeyKeyPopupLifecycleTest keykey_symbol_resources)
+    target_include_directories(KeyKeyPopupLifecycleTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    target_compile_features(KeyKeyPopupLifecycleTest PRIVATE cxx_std_17)
+    target_compile_options(KeyKeyPopupLifecycleTest PRIVATE /utf-8)
+    target_link_libraries(KeyKeyPopupLifecycleTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
+    add_test(NAME KeyKeyPopupLifecycle COMMAND KeyKeyPopupLifecycleTest)
+    set_tests_properties(KeyKeyPopupLifecycle PROPERTIES RUN_SERIAL TRUE)
     add_executable(KeyKeyTsfOutputBehaviorTest TsfOutputBehaviorTest.cpp
         LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp Diagnostics.cpp)
     target_compile_features(KeyKeyTsfOutputBehaviorTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfOutputBehaviorTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
     target_compile_options(KeyKeyTsfOutputBehaviorTest PRIVATE /utf-8)
     target_include_directories(KeyKeyTsfOutputBehaviorTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
-    target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32)
+    target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
     add_dependencies(KeyKeyTsfOutputBehaviorTest keykey_symbol_resources keykey_database_deploy)
     add_test(NAME KeyKeyTsfOutputCommitBehavior COMMAND KeyKeyTsfOutputBehaviorTest)
     add_executable(KeyKeyFrontendPreferencesTest FrontendPreferencesTest.cpp)
@@ -289,7 +330,7 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_BINARY_DIR}/generated" "${CMAKE_CURRENT_SOURCE_DIR}")
     target_compile_features(KeyKeySymbolPanelTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeySymbolPanelTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
-    target_link_libraries(KeyKeySymbolPanelTest PRIVATE user32 gdi32 advapi32)
+    target_link_libraries(KeyKeySymbolPanelTest PRIVATE user32 gdi32 advapi32 d2d1 dwrite)
     add_test(NAME KeyKeySymbolPanelResourcesAndFocus COMMAND KeyKeySymbolPanelTest)
     add_executable(KeyKeyOutputConversionTest OutputConversionTest.cpp)
     target_link_libraries(KeyKeyOutputConversionTest PRIVATE keykey_core)
@@ -328,7 +369,7 @@ if(BUILD_TESTING)
     if(MSVC)
         target_compile_options(KeyKeyTsfSystemTrayTest PRIVATE /W4 /permissive- /utf-8)
     endif()
-    target_link_libraries(KeyKeyTsfSystemTrayTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32)
+    target_link_libraries(KeyKeyTsfSystemTrayTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
     add_dependencies(KeyKeyTsfSystemTrayTest KeyKeyTsf keykey_database_deploy)
     add_test(NAME KeyKeyTsfSystemTrayModes COMMAND KeyKeyTsfSystemTrayTest)
 
@@ -377,6 +418,7 @@ if(BUILD_TESTING)
         add_dependencies(KeyKeyEngineSmokeTest keykey_database)
     endif()
     add_test(NAME KeyKeyEngineBopomofo COMMAND KeyKeyEngineSmokeTest legacy)
+    add_test(NAME KeyKeyEngineNumpad COMMAND KeyKeyEngineSmokeTest numpad)
     add_test(NAME KeyKeyEngineEscapeKeep COMMAND KeyKeyEngineSmokeTest keep)
     add_test(NAME KeyKeyEngineEscapeClear COMMAND KeyKeyEngineSmokeTest clear)
 

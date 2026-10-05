@@ -7,6 +7,7 @@
 #include "UserDataStore.h"
 #include "sqlite3.h"
 #include "SharedOutputState.h"
+#include "StartupInputMode.h"
 
 namespace {
 struct Collection { std::wstring source; std::wstring display; };
@@ -35,18 +36,24 @@ __declspec(dllexport) int __cdecl KeyKeyReadSimplifiedOutput() {
     manager->Deactivate();
     return value.has_value() ? (*value ? 1 : 0) : -1;
 }
-__declspec(dllexport) int __cdecl KeyKeyPublishSimplifiedOutput(int enabled) {
+static int PublishBooleanPreference(int enabled, REFGUID guid) {
     Microsoft::WRL::ComPtr<ITfThreadMgrEx> manager;
     if (FAILED(CoCreateInstance(CLSID_TF_ThreadMgr, nullptr, CLSCTX_INPROC_SERVER,
             IID_PPV_ARGS(&manager)))) return 0;
     TfClientId client = TF_CLIENTID_NULL;
     if (FAILED(manager->ActivateEx(&client, TF_TMAE_NOACTIVATETIP | TF_TMAE_NOACTIVATEKEYBOARDLAYOUT))) return 0;
     KeyKey::WindowsTsf::SharedOutputState state;
-    const auto connected = state.connect(manager.Get());
+    const auto connected = state.connect(manager.Get(), guid);
     const auto written = SUCCEEDED(connected) ? state.write(client, enabled != 0) : connected;
     state.reset();
     manager->Deactivate();
     return SUCCEEDED(written) ? 1 : 0;
+}
+__declspec(dllexport) int __cdecl KeyKeyPublishSimplifiedOutput(int enabled) {
+    return PublishBooleanPreference(enabled, KeyKey::WindowsTsf::OutputCompartmentGuid());
+}
+__declspec(dllexport) int __cdecl KeyKeyPublishDefaultChineseMode(int enabled) {
+    return PublishBooleanPreference(enabled, KeyKey::WindowsTsf::StartupInputModeGuid());
 }
 // Each lookup owns an immutable snapshot. Caller releases it exactly once;
 // buffers are caller-owned UTF-16 and capacities include the trailing NUL.

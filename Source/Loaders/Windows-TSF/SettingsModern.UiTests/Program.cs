@@ -42,6 +42,10 @@ internal static class Program
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var window = new MainWindow();
             var status = Control<TextBlock>(window, "Status");
+            Check(Control<RadioButton>(window, "DefaultChineseMode").IsChecked == true &&
+                  Control<RadioButton>(window, "DefaultEnglishMode").IsChecked == false,
+                "Startup mode must default to Chinese");
+            Control<RadioButton>(window, "DefaultEnglishMode").IsChecked = true;
             Check(!status.Text.Contains("失敗") && !status.Text.Contains("找不到"),
                 "Native settings backend or database failed to load");
             Check(Control<CheckBox>(window, "ShowCangjie").IsChecked == true &&
@@ -80,6 +84,7 @@ internal static class Program
             apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(status.Text == "設定已套用", "Apply failed: " + status.Text);
             var loader = XDocument.Load(Path.Combine(directory, "com.polobread.chichi77-keykey.windows.plist"));
+            Check(Value(loader, "DefaultInputMode") == "English", "English startup mode did not persist");
             Check(Value(loader, "PrimaryInputMethod") == "Generic-simplex-cin",
                 "Hiding the current input method did not select Simplex");
             var simplex = XDocument.Load(Path.Combine(directory,
@@ -132,6 +137,8 @@ internal static class Program
             Check(NativeBackend.KeyKeySavePhrase(0, "😀", "") == 0, "Incomplete missing reading saved");
             window.Close();
             var reopened = new MainWindow();
+            Check(Control<RadioButton>(reopened, "DefaultEnglishMode").IsChecked == true,
+                "English startup mode did not survive reopening");
             Check(Control<CheckBox>(reopened, "ShowSimplex").IsChecked == true &&
                   Control<CheckBox>(reopened, "ShowCangjie").IsChecked == false &&
                   Control<CheckBox>(reopened, "SimplexComposeWhileTyping").IsChecked == true &&
@@ -143,7 +150,14 @@ internal static class Program
                 NativeBackend.LoadPhrases().Single(p => p.RowId == savedPhrase.RowId);
             Check(Control<TextBox>(reopened, "PhraseReading").Text == "ㄧㄣˊ,ㄏㄤˊ",
                 "Saved reading lost on reopen selection");
+            Control<RadioButton>(reopened, "DefaultChineseMode").IsChecked = true;
+            Control<Button>(reopened, "ApplyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(Control<TextBlock>(reopened, "Status").Text == "設定已套用", "Restore Chinese startup mode failed");
             reopened.Close();
+            var chineseReopened = new MainWindow();
+            Check(Control<RadioButton>(chineseReopened, "DefaultChineseMode").IsChecked == true,
+                "Chinese startup mode did not survive reopening");
+            chineseReopened.Close();
             Console.WriteLine("WPF settings controls, validation, native backend and Apply/reopen passed");
             return 0;
         }

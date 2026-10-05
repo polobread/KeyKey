@@ -4,7 +4,7 @@
 
 Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-共用對應版本的 [GitHub Release](https://github.com/polobread/KeyKey/releases)；目前原始碼版號為 `1.3.1`，正在準備發布。先前 Linux 版本的發布紀錄保留在
+依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；目前 Windows 原始碼版號為 `1.3.2`，尚未發布，macOS、iOS、Android、Linux 與共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -257,7 +257,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 或 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
-- 將整套檔案複製到 `C:\Program Files\chichi77 KeyKey\1.3.1-內容指紋`
+- 將整套檔案複製到 `C:\Program Files\chichi77 KeyKey\1.3.2-內容指紋`
 - 驗證後才切換 TSF 註冊，保留仍供舊行程使用的 payload
 - 在 Windows「已安裝的應用程式」加入解除安裝項目
 
@@ -278,9 +278,9 @@ DLL 架構必須和載入它的應用程式架構相同。
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-產物是 `out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe`。
-產品版號維持 `1.3.1`；ZIP、未簽 EXE 與正式簽章包一律使用 `1.3.1-<內容指紋>`。
-修復使用 `1.3.1-<新實例 ID>`，新目錄不含 `test`；舊 `test` 目錄仍可辨識供遷移。
+產物是 `out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.unsigned.exe`。
+Windows 產品版號為 `1.3.2`；ZIP、未簽 EXE 與正式簽章包一律使用 `1.3.2-<內容指紋>`。
+修復使用 `1.3.2-<新實例 ID>`，新目錄不含 `test`；舊 `test` 目錄仍可辨識供遷移。
 
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
@@ -304,7 +304,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本會在暫存副本簽署並驗證 x64／x86 DLL、設定 EXE、設定後端 DLL、部署 EXE 及 x86 bridge，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
-`out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe`。完整參數、`/S`
+`out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
 解除安裝器沿用已簽署的部署 EXE。完成頁提供自行新增鍵盤的步驟；升級提示登出再登入，
 不自動開設定。版本目錄保留至移除時按清冊清理；個人設定、自訂詞與學習資料保留。
@@ -374,13 +374,16 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
 Actions 頁面按 **Run workflow** 手動執行。macOS、Windows 與 Linux 則在 GitHub
 **Publish release** 後自動建置，各自驗證成功後上傳到同一個 Release。Release 的 tag
-必須完全符合原始碼版號，例如 `v1.3.1`，可在發布頁面同時建立。只推 tag 或儲存草稿
+必須完全符合該平台原始碼版號，可在發布頁面同時建立。目前 Windows 為 `v1.3.2`，
+macOS、Linux 仍為 `v1.3.1`；同一 Release 的三平台產物只在各平台同版時成立，不能期待
+發布 `v1.3.2` 讓其餘兩平台也成功封裝。只推 tag 或儲存草稿
 不會觸發封裝；一般 commit 與 pull request 不會發布資產。`Linux CI` 另保留 PR smoke，
 發布前須通過 Ubuntu 24.04 完整測試與 Ubuntu 22.04 相容性驗證。
 
 單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
 **Run workflow**，將 **Use workflow from** 選為 `master`，並填入
-`release_tag=v1.3.1`。建置使用所選分支，版號仍須與 Release 相同；成功後自動補上或
+Windows 填 `release_tag=v1.3.2`，macOS／Linux 填 `release_tag=v1.3.1`。建置使用所選分支，
+平台版號仍須與 Release 相同；成功後自動補上或
 覆寫該平台的資產，其他平台不變。三個 workflow 都接受此欄位，留空則只保留 artifact。
 同平台、同 Release 的發布會依序執行。這些 workflow 修改須先合併到預設分支才可使用。
 
@@ -388,7 +391,7 @@ Actions 頁面按 **Run workflow** 手動執行。macOS、Windows 與 Linux 則�
 
 ```sh
 gh workflow run package-macos.yml --ref master -f release_tag=v1.3.1
-gh workflow run package-windows.yml --ref master -f release_tag=v1.3.1
+gh workflow run package-windows.yml --ref master -f release_tag=v1.3.2
 gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 ```
 
@@ -682,7 +685,7 @@ there. Do not install directly from a mapped drive, NAS, or UNC path; it may
 become inaccessible after UAC elevation and the installer window can close
 immediately. Once deployment starts, records are in
 `%ProgramFiles%\chichi77 KeyKey\Deployment.log`. It stages the runtime in
-`C:\Program Files\chichi77 KeyKey\1.3.1-<fingerprint>`, then registers
+`C:\Program Files\chichi77 KeyKey\1.3.2-<fingerprint>`, then registers
 both x64 and x86 TSF DLLs on x64 Windows (for all 32-bit applications), or the
 x86 DLL on 32-bit Windows, and creates an
 entry in Windows Installed apps. First-time users add KeyKey in Windows
@@ -700,9 +703,9 @@ To build an unsigned local NSIS test installer, run:
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-The output is `out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe`.
-Its product version remains `1.3.1`; ZIP and EXE, signed and unsigned, use
-`1.3.1-<content fingerprint>`. Repair uses a fresh `1.3.1-<instance-id>` path.
+The output is `out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.unsigned.exe`.
+Its Windows product version is `1.3.2`; ZIP and EXE, signed and unsigned, use
+`1.3.2-<content fingerprint>`. Repair uses a fresh `1.3.2-<instance-id>` path.
 New names do not contain `test`; old labelled directories remain recognizable.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
@@ -725,7 +728,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 The script signs and verifies all six PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
-`out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe`. See the Windows
+`out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
 The signed deployment executable also serves as the uninstaller. The finish
@@ -794,14 +797,18 @@ The Android debug packaging, Google Play release, and iOS Simulator workflows
 run only after **Run workflow** is selected on the GitHub Actions page. The
 macOS, Windows, and Linux workflows start when a GitHub Release is published,
 and each independently uploads its verified packages. The tag must match the
-source version, such as `v1.3.1`, and can be created on the Release page.
+platform's source version and can be created on the Release page. Windows is now
+`v1.3.2`; macOS and Linux remain at `v1.3.1`. Uploading all three platforms to one
+Release applies when their versions match; publishing `v1.3.2` cannot produce
+matching macOS/Linux packages from this branch.
 Pushing a tag or saving a draft alone does not trigger packaging. Commits and
 pull requests do not publish assets. Linux keeps PR smoke checks; publishing
 requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
 
 To recover one failed platform, merge the fix into `master`, select its workflow
 in Actions, choose **Run workflow**, set **Use workflow from** to `master`, and
-enter `v1.3.1` in `release_tag`. All three workflows accept this input. They build
+enter `v1.3.2` for Windows or `v1.3.1` for macOS/Linux in `release_tag`.
+All three workflows accept this input. They build
 the selected revision and replace only that platform's assets; its source
 version must still match the Release. Leaving the input blank keeps artifacts
 only. Publishing runs for the same platform and Release are serialized.
@@ -811,7 +818,7 @@ For example, run just the command for the platform needing recovery:
 
 ```sh
 gh workflow run package-macos.yml --ref master -f release_tag=v1.3.1
-gh workflow run package-windows.yml --ref master -f release_tag=v1.3.1
+gh workflow run package-windows.yml --ref master -f release_tag=v1.3.2
 gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 ```
 

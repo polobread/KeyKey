@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <chrono>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -14,6 +16,8 @@
 #include "Guids.h"
 #include "InputMethods.h"
 #include "InputModeState.h"
+#include "StartupInputMode.h"
+#include "FrontendSettings.h"
 #include "LangBarButton.h"
 #include "TextService.h"
 #include "ModuleState.h"
@@ -22,6 +26,20 @@ namespace KeyKey::WindowsTsf {
 HMODULE g_module = nullptr;
 std::atomic<long> g_objectCount{0};
 std::atomic<long> g_serverLocks{0};
+struct TextServiceTestAccess {
+    static void start(TextService& service, ITfThreadMgr* manager, TfClientId client) {
+        // Exercise the activation's mode initialization with real compartments.
+        // An application client cannot register a TIP key sink, so this test
+        // deliberately does not claim to exercise full ActivateEx registration.
+        service.threadManager_ = manager;
+        service.clientId_ = client;
+        service.engine_ = KeyKeyEngineSession::Create();
+        service.applyStartupInputMode();
+    }
+};
+struct LangBarButtonTestAccess {
+    static HMENU popup(LangBarButton& button) { return button.createPopupMenu(); }
+};
 }
 
 namespace {
@@ -49,9 +67,11 @@ public:
                             const WCHAR*, ULONG, ITfMenu** submenu) override {
         if (submenu) *submenu = nullptr;
         if (!(flags & (TF_LBMENUF_SEPARATOR | TF_LBMENUF_GRAYED))) ids.push_back(id);
+        entries.push_back({id, flags});
         return S_OK;
     }
     std::vector<UINT> ids;
+    std::vector<std::pair<UINT,DWORD>> entries;
 private:
     ULONG references_ = 1;
 };
@@ -124,6 +144,26 @@ int wmain() {
               "System tray mode item must expose the whole button as a native menu.");
         Menu menu;
         Success(button->InitMenu(&menu), "System tray menu unavailable.");
+        const std::vector<UINT> tail{2,3,6,0,5,4};
+        Check(menu.entries.size() >= tail.size(), "Tray menu tail missing");
+        for (size_t i=0; i<tail.size(); ++i) {
+            const auto& entry=menu.entries[menu.entries.size()-tail.size()+i];
+            Check(entry.first==tail[i], "Tray menu order must be width, simplified, separator, symbols, settings");
+            Check(((entry.second & TF_LBMENUF_SEPARATOR)!=0)==(i==3), "Tray menu separator misplaced");
+        }
+        auto* nativeButton=static_cast<LangBarButton*>(mode.Get());
+        HMENU popup=LangBarButtonTestAccess::popup(*nativeButton);
+        Check(popup!=nullptr, "Fallback popup unavailable");
+        const int count=GetMenuItemCount(popup);
+        Check(count>=static_cast<int>(tail.size()), "Fallback menu tail missing");
+        for (size_t i=0; i<tail.size(); ++i) {
+            MENUITEMINFOW entry{sizeof(entry)}; entry.fMask=MIIM_ID | MIIM_FTYPE;
+            Check(GetMenuItemInfoW(popup,count-static_cast<int>(tail.size())+static_cast<int>(i),TRUE,&entry)!=FALSE,
+                  "Fallback menu item unavailable");
+            Check(entry.wID==tail[i], "Fallback menu order differs from tray menu");
+            Check(((entry.fType & MFT_SEPARATOR)!=0)==(i==3), "Fallback separator misplaced");
+        }
+        DestroyMenu(popup);
         for (const auto& method : kInputMethods) {
             Check(std::find(menu.ids.begin(), menu.ids.end(), method.menuId) != menu.ids.end(), "System tray menu omitted an input method.");
             Success(button->OnMenuSelect(method.menuId), "Input method menu selection failed.");
@@ -137,6 +177,37 @@ int wmain() {
         item.Reset();
         const HRESULT removed = items->GetItem(GUID_LBI_INPUTMODE, &item);
         Check(FAILED(removed) || !item, "Removal left a stale mode item.");
+        // Use real TSF compartments with an isolated profile, without installing
+        // or switching the user's active keyboard layout.
+        for (const auto& method : kInputMethods) {
+            for (const bool startChinese : {true, false}) {
+                const auto loader = LoaderPreferencesPath();
+                const auto previousTime = std::filesystem::last_write_time(loader);
+                { std::ofstream out(loader); out << "<plist><dict><key>PrimaryInputMethod</key><string>"
+                    << method.identifier << "</string><key>DefaultInputMode</key><string>"
+                    << (startChinese ? "Chinese" : "English") << "</string></dict></plist>"; }
+                std::filesystem::last_write_time(loader, previousTime + std::chrono::seconds(2));
+                ComPtr<TextService> startup; startup.Attach(new TextService);
+                TextServiceTestAccess::start(*startup.Get(), manager.Get(), client);
+                Check(startup->isChineseMode()==startChinese && CurrentInputMethod()==method.identifier,
+                      "Startup preference lost mode or selected Chinese input method");
+                Success(openClose->GetValue(&value), "Startup compartment read failed");
+                Check(value.vt==VT_I4 && value.lVal==(startChinese ? 1 : 0), "Startup state was not published to Windows");
+                VariantClear(&value);
+                startup->toggleChineseMode();
+                Success(startup->OnSetFocus(TRUE), "Focus after manual toggle failed");
+                Check(startup->isChineseMode()!=startChinese && LoadFrontendSettings().defaultChineseMode==startChinese,
+                      "Focus reset live mode or toggle changed startup preference");
+                Success(startup->Deactivate(), "Startup deactivation failed");
+                TextServiceTestAccess::start(*startup.Get(), manager.Get(), client);
+                Check(startup->isChineseMode()==startChinese, "Reactivation did not reapply startup preference");
+                Success(startup->Deactivate(), "Startup cleanup failed");
+            }
+        }
+        Check(!ResolveStartupChineseMode(manager.Get(),client,false,false), "Desktop English preference failed");
+        Check(!ResolveStartupChineseMode(manager.Get(),client,true,true), "Immersive host ignored desktop English preference");
+        Check(ResolveStartupChineseMode(manager.Get(),client,false,true), "Desktop Chinese preference failed");
+        Check(ResolveStartupChineseMode(manager.Get(),client,true,false), "Immersive host ignored desktop Chinese preference");
         Success(manager->Deactivate(), "TSF manager deactivation failed.");
         std::cout << "TSF system tray mode item and four input method selections passed.\n";
         return 0;

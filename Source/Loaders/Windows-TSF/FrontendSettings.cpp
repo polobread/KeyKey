@@ -111,6 +111,10 @@ std::wstring SettingsDirectory() {
     static const std::wstring directory = ProductionSettingsDirectory();
     return directory;
 }
+std::string LoadInputMethodPreference(const std::string& fallback) {
+    return PlistString(ReadFile(SettingsDirectory()+L"\\com.polobread.chichi77-keykey.windows.plist"),
+                       "PrimaryInputMethod",fallback);
+}
 
 void MigrateLegacyPreferences() {
     const std::wstring directory = SettingsDirectory();
@@ -180,6 +184,8 @@ FrontendSettings LoadFrontendSettings() {
     settings.playSoundOnTypingError =
         PlistBool(xml, "ShouldPlaySoundOnTypingError", true);
     settings.simplifiedChineseOutput = PlistBool(xml, "SimplifiedChineseOutput", false);
+    // Only an explicit English preference changes the backward-compatible default.
+    settings.defaultChineseMode = PlistString(xml, "DefaultInputMode", "Chinese") != "English";
     return settings;
 }
 

@@ -18,6 +18,7 @@ struct FrontendSettings {
     bool toggleWithControlBackslash = true;
     bool playSoundOnTypingError = true;
     bool simplifiedChineseOutput = false;
+    bool defaultChineseMode = true;
 };
 
 std::wstring SettingsDirectory();
@@ -30,6 +31,7 @@ std::wstring AssociatedPhrasePreferencesPath();
 FrontendSettings LoadFrontendSettings();
 bool SaveSimplifiedOutputPreference(bool enabled);
 std::string SmartMandarinSettingsSignature();
+std::string LoadInputMethodPreference(const std::string& fallback);
 bool IsInputMethodVisible(const char* identifier);
 COLORREF HighlightColorValue(const std::wstring& name);
 

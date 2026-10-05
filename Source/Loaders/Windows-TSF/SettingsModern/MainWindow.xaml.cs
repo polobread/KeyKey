@@ -55,6 +55,8 @@ public partial class MainWindow : Window
             SettingsStore.Read(loader, "HighlightColor", "Default"));
         ControlBackslash.IsChecked = ReadBool(loader, "ToggleInputMethodWithControlBackslash", true);
         TypingBeep.IsChecked = ReadBool(loader, "ShouldPlaySoundOnTypingError", true);
+        DefaultChineseMode.IsChecked = SettingsStore.Read(loader, "DefaultInputMode", "Chinese") != "English";
+        DefaultEnglishMode.IsChecked = !DefaultChineseMode.IsChecked;
         SimplifiedChineseOutput.IsChecked = ReadBool(loader, "SimplifiedChineseOutput", false);
         var sharedOutput = NativeBackend.KeyKeyReadSimplifiedOutput();
         if (sharedOutput >= 0) SimplifiedChineseOutput.IsChecked = sharedOutput != 0;
@@ -144,6 +146,7 @@ public partial class MainWindow : Window
                 ["ToggleInputMethodWithControlBackslash"] = ControlBackslash.IsChecked == true ? "true" : "false",
                 ["ShouldPlaySoundOnTypingError"] = TypingBeep.IsChecked == true ? "true" : "false",
                 ["SimplifiedChineseOutput"] = BoolValue(SimplifiedChineseOutput),
+                ["DefaultInputMode"] = DefaultEnglishMode.IsChecked == true ? "English" : "Chinese",
             });
             var suppressed = SettingsStore.ReadArray(SettingsStore.LoaderPath,
                 "ModulesSuppressedFromUI")
@@ -191,8 +194,10 @@ public partial class MainWindow : Window
             });
             SendMessageTimeout(new IntPtr(0xffff), 0x001A, IntPtr.Zero,
                 "chichi77 KeyKey", 0x0002, 250, out _);
-            Status.Text = NativeBackend.KeyKeyPublishSimplifiedOutput(SimplifiedChineseOutput.IsChecked == true ? 1 : 0) != 0
-                ? "設定已套用" : "設定已儲存；簡體狀態同步失敗，請重新開啟輸入法。";
+            var outputSynced = NativeBackend.KeyKeyPublishSimplifiedOutput(SimplifiedChineseOutput.IsChecked == true ? 1 : 0) != 0;
+            var startupSynced = NativeBackend.KeyKeyPublishDefaultChineseMode(DefaultEnglishMode.IsChecked == true ? 0 : 1) != 0;
+            Status.Text = outputSynced && startupSynced
+                ? "設定已套用" : "設定已儲存；跨程式狀態同步失敗，請重新開啟輸入法。";
         }
         catch (Exception ex) { Status.Text = $"設定儲存失敗：{ex.Message}"; }
     }

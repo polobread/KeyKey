@@ -47,6 +47,8 @@ public:
     void update();
 
 private:
+    friend struct LangBarButtonTestAccess;
+    HMENU createPopupMenu() const;
     ~LangBarButton();
     const wchar_t* label() const;
 

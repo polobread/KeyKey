@@ -1,5 +1,6 @@
 #include "TextService.h"
 #include "InputModeState.h"
+#include "StartupInputMode.h"
 
 #include <algorithm>
 #include <array>
@@ -39,44 +40,6 @@ HRESULT RangeText(ITfRange* range, TfEditCookie cookie, std::wstring& text) {
         if (text.size() > 65536) { text.clear(); return E_FAIL; }
     }
 }
-
-class KeyEditSession final : public ITfEditSession {
-public:
-    KeyEditSession(TextService* service, ITfContext* context, KeyEvent event)
-        : service_(service), context_(context), event_(std::move(event)) {
-        service_->AddRef();
-    }
-
-    STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
-        if (!object) return E_INVALIDARG;
-        *object = nullptr;
-        if (iid == IID_IUnknown || iid == IID_ITfEditSession) {
-            *object = static_cast<ITfEditSession*>(this);
-            AddRef();
-            return S_OK;
-        }
-        return E_NOINTERFACE;
-    }
-    STDMETHODIMP_(ULONG) AddRef() override { return ++references_; }
-    STDMETHODIMP_(ULONG) Release() override {
-        const ULONG remaining = --references_;
-        if (!remaining) delete this;
-        return remaining;
-    }
-    STDMETHODIMP DoEditSession(TfEditCookie editCookie) override {
-        return service_->processKey(editCookie, context_.Get(), event_, &handled_);
-    }
-
-    bool handled() const { return handled_; }
-
-private:
-    ~KeyEditSession() { service_->Release(); }
-    std::atomic<ULONG> references_{1};
-    TextService* service_;
-    ComPtr<ITfContext> context_;
-    KeyEvent event_;
-    bool handled_ = false;
-};
 
 class TerminateEditSession final : public ITfEditSession {
 public:
@@ -119,10 +82,11 @@ private:
     bool simplified_;
 };
 
-class SymbolEditSession final : public ITfEditSession {
+class CandidateLayoutEditSession final : public ITfEditSession {
 public:
-    SymbolEditSession(TextService* service, ITfContext* context, std::wstring text, unsigned long generation)
-        : service_(service), context_(context), text_(std::move(text)), generation_(generation) { service_->AddRef(); }
+    CandidateLayoutEditSession(TextService* service, ITfContext* context,
+                               unsigned long long generation)
+        : service_(service), context_(context), generation_(generation) { service_->AddRef(); }
     STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
         if (!object) return E_INVALIDARG;
         *object = nullptr;
@@ -130,51 +94,23 @@ public:
         *object = static_cast<ITfEditSession*>(this); AddRef(); return S_OK;
     }
     STDMETHODIMP_(ULONG) AddRef() override { return ++references_; }
-    STDMETHODIMP_(ULONG) Release() override { const auto left = --references_; if (!left) delete this; return left; }
-    STDMETHODIMP DoEditSession(TfEditCookie cookie) override {
-        return service_->insertSymbol(cookie, context_.Get(), text_, generation_);
-    }
-private:
-    ~SymbolEditSession() { service_->Release(); }
-    std::atomic<ULONG> references_{1};
-    TextService* service_;
-    ComPtr<ITfContext> context_;
-    std::wstring text_;
-    unsigned long generation_;
-};
-
-class CommitModeSwitchEditSession final : public ITfEditSession {
-public:
-    CommitModeSwitchEditSession(TextService* service, ITfContext* context, ITfComposition* composition)
-        : service_(service), context_(context), composition_(composition) {
-        service_->AddRef();
-    }
-    STDMETHODIMP QueryInterface(REFIID iid, void** object) override {
-        if (!object) return E_INVALIDARG;
-        *object = nullptr;
-        if (iid == IID_IUnknown || iid == IID_ITfEditSession) {
-            *object = static_cast<ITfEditSession*>(this);
-            AddRef();
-            return S_OK;
-        }
-        return E_NOINTERFACE;
-    }
-    STDMETHODIMP_(ULONG) AddRef() override { return ++references_; }
     STDMETHODIMP_(ULONG) Release() override {
-        const ULONG remaining = --references_;
-        if (!remaining) delete this;
-        return remaining;
+        const auto left = --references_; if (!left) delete this; return left;
     }
-    STDMETHODIMP DoEditSession(TfEditCookie editCookie) override {
-        return service_->commitCompositionForModeSwitch(editCookie, context_.Get(), composition_.Get());
+    STDMETHODIMP DoEditSession(TfEditCookie cookie) override {
+        executed_=true;
+        return service_->refreshCandidateLayout(cookie, context_.Get(), generation_);
     }
-
 private:
-    ~CommitModeSwitchEditSession() { service_->Release(); }
+    ~CandidateLayoutEditSession() {
+        if (!executed_) service_->cancelCandidateLayout(context_.Get(),generation_);
+        service_->Release();
+    }
     std::atomic<ULONG> references_{1};
     TextService* service_;
     ComPtr<ITfContext> context_;
-    ComPtr<ITfComposition> composition_;
+    unsigned long long generation_;
+    bool executed_=false;
 };
 
 class CompositionDisplayAttributeInfo final : public ITfDisplayAttributeInfo {
@@ -373,6 +309,223 @@ std::wstring CurrentProcessName() {
 
 }  // namespace
 
+struct TextService::InputOperation {
+    enum class Kind { Key, Mode, Commit, Symbol };
+    Kind kind=Kind::Key;
+    ModeChange change=ModeChange::Chinese;
+    ComPtr<ITfContext> context;
+    KeyEvent event;
+    std::string method;
+    std::string settingsSignature;
+    std::wstring text;
+    unsigned long symbolGeneration=0;
+    unsigned long long token=0,generation=0;
+    bool enabled=false,handled=false,completed=false,accepted=false,ordered=false,processed=false;
+    HRESULT result=E_PENDING;
+};
+
+class TextService::InputEditSession final : public ITfEditSession {
+public:
+    InputEditSession(TextService* service,std::shared_ptr<InputOperation> operation)
+        : service_(service),operation_(std::move(operation)) { service_->AddRef(); }
+    STDMETHODIMP QueryInterface(REFIID iid,void** object) override {
+        if (!object) return E_POINTER; *object=nullptr;
+        if (iid!=IID_IUnknown && iid!=IID_ITfEditSession) return E_NOINTERFACE;
+        *object=static_cast<ITfEditSession*>(this); AddRef(); return S_OK;
+    }
+    STDMETHODIMP_(ULONG) AddRef() override { return ++references_; }
+    STDMETHODIMP_(ULONG) Release() override {
+        const auto left=--references_; if (!left) delete this; return left;
+    }
+    STDMETHODIMP DoEditSession(TfEditCookie cookie) override {
+        if (executed_) return result_;
+        executed_=true;
+        service_->editingInput_=true;
+        result_=service_->runInput(cookie,operation_);
+        service_->editingInput_=false;
+        service_->completeInput(operation_,result_,false);
+        return result_;
+    }
+private:
+    ~InputEditSession() {
+        if (!executed_) service_->completeInput(operation_,E_ABORT,true);
+        service_->Release();
+    }
+    std::atomic<ULONG> references_{1};
+    TextService* service_;
+    std::shared_ptr<InputOperation> operation_;
+    bool executed_=false;
+    HRESULT result_=S_FALSE;
+};
+
+ComPtr<ITfContext> TextService::inputContext() const {
+    if (!inputQueue_.empty()) return inputQueue_.back()->context;
+    if (compositionContext_) return compositionContext_;
+    ComPtr<ITfDocumentMgr> document; ComPtr<ITfContext> context;
+    if (threadManager_ && SUCCEEDED(threadManager_->GetFocus(&document)) && document)
+        document->GetTop(&context);
+    return context ? context : textEditContext_;
+}
+bool TextService::projectedChineseMode() const {
+    bool value=chineseMode_;
+    for (const auto& op : inputQueue_) if (op->kind==InputOperation::Kind::Mode) {
+        if (op->change==ModeChange::Chinese) value=op->enabled;
+        if (op->change==ModeChange::Method) value=op->enabled;
+    }
+    return value;
+}
+bool TextService::projectedWidthMode() const {
+    bool value=fullWidthMode_;
+    for (const auto& op : inputQueue_) if (op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Width) value=op->enabled;
+    return value;
+}
+bool TextService::orderedPrintableKey(const KeyEvent& event) const {
+    return !event.control && !event.alt && PrintableCharacter(event)!=0;
+}
+void TextService::cancelInput() {
+    ++inputGeneration_;
+    for (auto& op : inputQueue_) { op->completed=true; op->result=E_ABORT; }
+    inputQueue_.clear(); activeInput_.reset(); pendingModeCommit_=false; blockedInput_=false;
+    retainedInputResult_.reset(); retainedInputContext_.Reset(); retainedCommitWritten_=false;
+    retainedCommitRange_.Reset(); retainedCommitCaretSet_=false; retainedCommitNeedsEnd_=false;
+    if (inputLease_) { inputLease_=false; EndOrderedEngineInput(); }
+}
+void TextService::completeInput(const std::shared_ptr<InputOperation>& op,HRESULT result,bool cancelled) {
+    if (op->completed || op->generation!=inputGeneration_ || activeInput_!=op) return;
+    if (!cancelled && FAILED(result) && op->kind==InputOperation::Kind::Key && (op->accepted || op->ordered)) {
+        // An already accepted key is retained in this original context. Retry
+        // only on a subsequent input request; never rerun a processed engine key.
+        op->result=result; activeInput_.reset(); blockedInput_=true; return;
+    }
+    op->completed=true; op->result=result;
+    if (cancelled) {
+        // TSF may cancel without DoEditSession. Do not retain a service-wide
+        // pending latch or replay accepted input into a future context.
+        cancelInput(); return;
+    }
+    activeInput_.reset();
+    if (!inputQueue_.empty() && inputQueue_.front()==op) inputQueue_.pop_front();
+    pendingModeCommit_=std::any_of(inputQueue_.begin(),inputQueue_.end(),[](const auto& item) {
+        return item->kind!=InputOperation::Kind::Key;
+    });
+    if (inputQueue_.empty() && inputLease_) { inputLease_=false; EndOrderedEngineInput(); }
+    if (!pumpingInput_) pumpInput();
+}
+void TextService::pumpInput() {
+    if (pumpingInput_ || activeInput_ || blockedInput_) return;
+    pumpingInput_=true;
+    while (!activeInput_ && !blockedInput_ && !inputQueue_.empty()) {
+        auto op=inputQueue_.front(); activeInput_=op;
+        if (!op->context) {
+            const auto result=runInput(0,op); completeInput(op,result,false); continue;
+        }
+        auto* session=new (std::nothrow) InputEditSession(this,op);
+        if (!session) { completeInput(op,E_OUTOFMEMORY,false); continue; }
+        HRESULT edited=E_FAIL;
+        auto requested=op->context->RequestEditSession(clientId_,session,TF_ES_SYNC|TF_ES_READWRITE,&edited);
+        if (!op->completed && (requested==TF_E_SYNCHRONOUS || requested==TF_E_LOCKED ||
+            (SUCCEEDED(requested) && (edited==TF_E_SYNCHRONOUS || edited==TF_E_LOCKED)))) {
+            edited=E_FAIL;
+            requested=op->context->RequestEditSession(clientId_,session,TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,&edited);
+        }
+        if (!op->completed && SUCCEEDED(requested) && SUCCEEDED(edited)) op->accepted=true;
+        else if (!op->completed) completeInput(op,FAILED(requested)?requested:edited,false);
+        session->Release();
+    }
+    pumpingInput_=false;
+}
+bool TextService::enqueueInput(const std::shared_ptr<InputOperation>& op) {
+    if (op->context && ((!inputQueue_.empty() && inputQueue_.front()->context.Get()!=op->context.Get()) ||
+        (retainedInputContext_ && retainedInputContext_.Get()!=op->context.Get()))) {
+        cancelInput(); abandonComposition();
+    }
+    op->token=++nextInputToken_; op->generation=inputGeneration_;
+    op->ordered=!inputQueue_.empty();
+    if (!inputLease_) { BeginOrderedEngineInput(); inputLease_=true; }
+    inputQueue_.push_back(op);
+    blockedInput_=false;
+    if (op->kind!=InputOperation::Kind::Key) pendingModeCommit_=true;
+    pumpInput();
+    return op->completed ? (op->kind==InputOperation::Kind::Key ? op->handled : SUCCEEDED(op->result))
+                         : (op->accepted || op->ordered);
+}
+bool TextService::requestModeChange(ModeChange change,bool enabled,const std::string& method) {
+    auto op=std::make_shared<InputOperation>(); op->kind=InputOperation::Kind::Mode;
+    op->change=change; op->enabled=enabled; op->method=method; op->context=inputContext();
+    if (change==ModeChange::Method) op->settingsSignature=EngineSettingsSignature(method);
+    return enqueueInput(op);
+}
+bool TextService::requestKey(ITfContext* context,const KeyEvent& event) {
+    if (!context || !isPotentialKey(event)) return false;
+    auto op=std::make_shared<InputOperation>(); op->context=context; op->event=event;
+    return enqueueInput(op);
+}
+bool TextService::requestSymbol(ITfContext* context,const std::wstring& text,unsigned long generation) {
+    auto op=std::make_shared<InputOperation>(); op->kind=InputOperation::Kind::Symbol;
+    op->context=context; op->text=text; op->symbolGeneration=generation;
+    return enqueueInput(op);
+}
+HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOperation>& op) {
+    if (op->completed || op->generation!=inputGeneration_ || activeInput_!=op) return S_FALSE;
+    auto* context=op->context.Get();
+    if (context) {
+        const auto result=retryInputResult(cookie,context);
+        if (FAILED(result)) return result;
+    }
+    if (op->kind==InputOperation::Kind::Key) {
+        const auto result=op->processed ? S_OK : processKey(cookie,context,op->event,&op->handled,&op->processed);
+        if (op->processed && op->handled) return result;
+        // A printable key accepted while an earlier edit was pending cannot
+        // later be returned to TSF. Preserve the engine's pass-through result
+        // by inserting the same character in this operation's original context.
+        if (SUCCEEDED(result) && !op->handled && (op->ordered || op->accepted) &&
+            !op->event.control && !op->event.alt && PrintableCharacter(op->event)) {
+            auto status=commitCompositionForModeSwitch(cookie,context);
+            if (FAILED(status)) return status;
+            auto text=std::wstring(1,PrintableCharacter(op->event));
+            if (fullWidthMode_) text=ToFullWidth(std::move(text));
+            retainedInputResult_=std::make_unique<EngineResult>(); retainedInputResult_->committedText=text;
+            retainedInputContext_=context; retainedCommitWritten_=false;
+            op->processed=true; op->handled=true;
+            return retryInputResult(cookie,context);
+        }
+        return result;
+    }
+    if (op->kind==InputOperation::Kind::Symbol)
+        return insertSymbol(cookie,context,op->text,op->symbolGeneration);
+    std::unique_ptr<KeyKeyEngineSession> prepared;
+    if (op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Method) {
+        prepared=KeyKeyEngineSession::CreateControlled(op->method);
+        if (!prepared || !prepared->ready()) return E_FAIL;
+    }
+    const auto committed=commitCompositionForModeSwitch(cookie,context);
+    if (FAILED(committed)) {
+        if (op->kind==InputOperation::Kind::Mode &&
+            (op->change==ModeChange::Chinese || op->change==ModeChange::Width)) {
+            publishChineseMode(chineseMode_); setFullWidthMode(fullWidthMode_);
+        }
+        return committed;
+    }
+    if (op->kind==InputOperation::Kind::Commit) return S_OK;
+    closeSymbols();
+    switch (op->change) {
+        case ModeChange::Chinese: publishChineseMode(op->enabled); break;
+        case ModeChange::Width: setFullWidthMode(op->enabled); break;
+        case ModeChange::Method:
+            if (!SelectInputMethod(op->method.c_str())) return E_FAIL;
+            engine_=std::move(prepared); effectiveInputMethod_=op->method;
+            effectiveSettingsSignature_=EngineSettingsSignature(op->method); lastLocalInputMethod_=op->method;
+            if (threadManager_) sharedInputMethod_.write(clientId_,op->method.c_str());
+            publishChineseMode(op->enabled); break;
+        case ModeChange::Simplified:
+            if (FAILED(sharedOutputState_.write(clientId_,op->enabled)) && !SaveSimplifiedOutputPreference(op->enabled)) return E_FAIL;
+            SaveSimplifiedOutputPreference(op->enabled);
+            simplifiedOutput_=op->enabled; lastLocalSimplifiedOutput_=op->enabled; outputSettingsInitialized_=true;
+            refreshLangBar(); break;
+    }
+    return S_OK;
+}
+
 TextService::TextService() { ++g_objectCount; }
 TextService::~TextService() { --g_objectCount; }
 
@@ -399,6 +552,8 @@ STDMETHODIMP TextService::QueryInterface(REFIID iid, void** object) {
         *object = static_cast<ITfCompositionSink*>(this);
     } else if (iid == IID_ITfTextEditSink) {
         *object = static_cast<ITfTextEditSink*>(this);
+    } else if (iid == IID_ITfTextLayoutSink) {
+        *object = static_cast<ITfTextLayoutSink*>(this);
     } else if (iid == IID_ITfThreadMgrEventSink) {
         *object = static_cast<ITfThreadMgrEventSink*>(this);
     } else if (iid == IID_ITfCompartmentEventSink) {
@@ -444,7 +599,10 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
               static_cast<unsigned long>(attributeResult),
               static_cast<unsigned long>(compositionDisplayAttributeAtom_));
     }
-    engine_ = KeyKeyEngineSession::Create();
+    effectiveInputMethod_=ObservedInputMethod();
+    lastLocalInputMethod_=effectiveInputMethod_;
+    engine_ = KeyKeyEngineSession::CreateControlled(effectiveInputMethod_);
+    effectiveSettingsSignature_=EngineSettingsSignature(effectiveInputMethod_);
     for (const auto& method : kInputMethods) {
         Trace("InputMethod available method=%s available=%d", method.identifier,
               IsInputMethodAvailable(method.identifier));
@@ -477,8 +635,7 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
     }
     Trace("AdviseSinks hr=0x%08lX", static_cast<unsigned long>(result));
     if (SUCCEEDED(result)) {
-        setChineseMode(true);
-        setFullWidthMode(false);
+        applyStartupInputMode();
     }
     if (FAILED(result)) {
         unadviseFunctionProvider();
@@ -496,9 +653,7 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
 STDMETHODIMP TextService::Deactivate() {
     Trace("Deactivate");
     closeSymbols();
-    if (!requestCommitComposition()) {
-        Trace("Deactivate: composition could not be committed");
-    }
+    cancelInput(); abandonComposition();
     unadviseFunctionProvider();
     unadviseSinks();
     uninitializeLangBar();
@@ -556,7 +711,7 @@ void TextService::unadviseSinks() {
 
 HRESULT TextService::adviseTextEditSink(ITfContext* context) {
     if (textEditContext_.Get() == context &&
-        textEditCookie_ != TF_INVALID_COOKIE) {
+        (textEditCookie_ != TF_INVALID_COOKIE || textLayoutCookie_ != TF_INVALID_COOKIE)) {
         return S_OK;
     }
     unadviseTextEditSink();
@@ -568,18 +723,24 @@ HRESULT TextService::adviseTextEditSink(ITfContext* context) {
     result = source->AdviseSink(IID_ITfTextEditSink,
                                 static_cast<ITfTextEditSink*>(this),
                                 &textEditCookie_);
-    if (SUCCEEDED(result)) textEditContext_ = context;
+    const HRESULT layoutResult = source->AdviseSink(IID_ITfTextLayoutSink,
+        static_cast<ITfTextLayoutSink*>(this), &textLayoutCookie_);
+    if (SUCCEEDED(result) || SUCCEEDED(layoutResult)) textEditContext_ = context;
+    Trace("AdviseTextLayout hr=0x%08lX", static_cast<unsigned long>(layoutResult));
     return result;
 }
 
 void TextService::unadviseTextEditSink() {
-    if (textEditContext_ && textEditCookie_ != TF_INVALID_COOKIE) {
+    if (textEditContext_) {
         ComPtr<ITfSource> source;
         if (SUCCEEDED(textEditContext_.As(&source))) {
-            source->UnadviseSink(textEditCookie_);
+            if (textEditCookie_ != TF_INVALID_COOKIE) source->UnadviseSink(textEditCookie_);
+            if (textLayoutCookie_ != TF_INVALID_COOKIE) source->UnadviseSink(textLayoutCookie_);
         }
     }
     textEditCookie_ = TF_INVALID_COOKIE;
+    textLayoutCookie_ = TF_INVALID_COOKIE;
+    clearCandidateWindow();
     textEditContext_.Reset();
 }
 
@@ -729,32 +890,26 @@ void TextService::refreshLangBar() {
     }
 }
 
-void TextService::setChineseMode(bool enabled) {
-    closeSymbols();
-    // Ending a TSF composition without clearing its range commits the visible
-    // text. Clearing it here used to discard the user's unfinished sentence.
-    if (!enabled && !requestCommitComposition()) {
-        Trace("InputMode switch deferred: composition commit unavailable");
-        setChineseMode(true);
-        return;
-    }
-    chineseMode_ = enabled;
-    shiftTogglePending_ = false;
-    shiftPressedAt_ = 0;
-
-    HRESULT result = E_FAIL;
-    ComPtr<ITfCompartmentMgr> manager;
-    if (threadManager_ && SUCCEEDED(threadManager_.As(&manager))) {
-        updatingModeCompartments_ = true;
-        result = WriteChineseMode(manager.Get(), clientId_, enabled);
-        updatingModeCompartments_ = false;
-    }
-    Trace("InputMode chinese=%d hr=0x%08lX", enabled,
-          static_cast<unsigned long>(result));
-    refreshLangBar();
+void TextService::applyStartupInputMode() {
+    setChineseMode(ResolveStartupChineseMode(threadManager_.Get(), clientId_, immersiveMode_,
+                                            LoadFrontendSettings().defaultChineseMode));
+    setFullWidthMode(false);
 }
 
-void TextService::toggleChineseMode() { setChineseMode(!chineseMode_); }
+void TextService::setChineseMode(bool enabled) {
+    requestModeChange(ModeChange::Chinese,enabled);
+}
+void TextService::publishChineseMode(bool enabled) {
+    chineseMode_=enabled; shiftTogglePending_=false; shiftPressedAt_=0;
+    ComPtr<ITfCompartmentMgr> manager;
+    if (threadManager_ && SUCCEEDED(threadManager_.As(&manager))) {
+        updatingModeCompartments_=true;
+        WriteChineseMode(manager.Get(),clientId_,enabled);
+        updatingModeCompartments_=false;
+    }
+    refreshLangBar();
+}
+void TextService::toggleChineseMode() { setChineseMode(!projectedChineseMode()); }
 
 void TextService::setFullWidthMode(bool enabled) {
     fullWidthMode_ = enabled;
@@ -780,62 +935,46 @@ void TextService::setFullWidthMode(bool enabled) {
         VariantInit(&value);
         value.vt = VT_I4;
         value.lVal = mode;
+        updatingModeCompartments_=true;
         result = compartment->SetValue(clientId_, &value);
+        updatingModeCompartments_=false;
     }
     Trace("InputWidth full=%d hr=0x%08lX", enabled,
           static_cast<unsigned long>(result));
     refreshLangBar();
 }
 
-void TextService::toggleFullWidthMode() { setFullWidthMode(!fullWidthMode_); }
+void TextService::toggleFullWidthMode() { requestModeChange(ModeChange::Width,!projectedWidthMode()); }
 
 bool TextService::selectInputMethod(const char* identifier) {
-    closeSymbols();
     if (!IsInputMethodVisible(identifier) || !IsInputMethodAvailable(identifier)) return false;
-    if (CurrentInputMethod() != identifier) {
-        if (!requestCommitComposition()) return false;
-        if (!SelectInputMethod(identifier)) return false;
-    }
-    if (!chineseMode_) setChineseMode(true);
-    lastLocalInputMethod_ = identifier;
-    if (threadManager_) {
-        const HRESULT result = sharedInputMethod_.write(clientId_, identifier);
-        Trace("SharedInputMethod publish method=%s hr=0x%08lX", identifier,
-              static_cast<unsigned long>(result));
-    }
-    Trace("SelectInputMethod method=%s", identifier);
-    refreshLangBar();
-    return true;
+    return requestModeChange(ModeChange::Method,true,identifier);
 }
 
 void TextService::syncInputMethod() {
     if (!threadManager_ || syncingInputMethod_) return;
-    syncingInputMethod_ = true;
+    syncingInputMethod_=true;
     syncOutputSettings();
-    std::string local = CurrentInputMethod();
-    if (!lastLocalInputMethod_.empty() && local != lastLocalInputMethod_) closeSymbols();
-    const auto* shared = sharedInputMethod_.read();
-    // A settings-file change in a desktop host is an explicit new selection.
-    // On first activation, however, a stale local profile must not overwrite
-    // the selection published by the host that previously had focus.
-    if ((!immersiveMode_ && !lastLocalInputMethod_.empty() && local != lastLocalInputMethod_) ||
-        (!shared && !immersiveMode_)) {
-        const HRESULT result = sharedInputMethod_.write(clientId_, local.c_str());
-        Trace("SharedInputMethod seed/update method=%s hr=0x%08lX", local.c_str(),
-              static_cast<unsigned long>(result));
-    } else if (shared && local != shared->identifier &&
-               IsInputMethodAvailable(shared->identifier)) {
-        // The engine preserves pending composition when its method changes.
-        // Do not request an edit session from a focus or test-key callback.
-        if (SelectInputMethod(shared->identifier)) {
-            closeSymbols();
-            local = shared->identifier;
-            Trace("SharedInputMethod adopt method=%s", local.c_str());
-            refreshLangBar();
+    const auto local=ObservedInputMethod();
+    const auto* shared=sharedInputMethod_.read();
+    std::string desired=local;
+    if (shared && (immersiveMode_ || lastLocalInputMethod_.empty() || local==lastLocalInputMethod_)) desired=shared->identifier;
+    std::string projected=effectiveInputMethod_;
+    auto projectedSignature=effectiveSettingsSignature_;
+    for (const auto& op : inputQueue_)
+        if (op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Method) {
+            projected=op->method; projectedSignature=op->settingsSignature;
         }
-    }
-    lastLocalInputMethod_ = local;
-    syncingInputMethod_ = false;
+    // An explicit queued choice has not yet been published to the profile or
+    // shared compartment. Observing those unchanged values must not undo it.
+    if (projected!=effectiveInputMethod_ && desired==effectiveInputMethod_ &&
+        local==lastLocalInputMethod_) desired=projected;
+    const auto signature=EngineSettingsSignature(desired);
+    if (IsInputMethodAvailable(desired.c_str()) &&
+        (desired!=projected || signature!=projectedSignature))
+        requestModeChange(ModeChange::Method,projectedChineseMode(),desired);
+    lastLocalInputMethod_=local;
+    syncingInputMethod_=false;
 }
 
 void TextService::syncOutputSettings() {
@@ -849,25 +988,24 @@ void TextService::syncOutputSettings() {
         next = *shared;
         if (!immersiveMode_ && next != local) SaveSimplifiedOutputPreference(next);
     }
-    const bool changed = next != simplifiedOutput_;
-    simplifiedOutput_ = next;
+    if (!outputSettingsInitialized_) {
+        simplifiedOutput_=next;
+    } else {
+        bool projected=simplifiedOutput_;
+        for (const auto& op : inputQueue_) if (op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Simplified) projected=op->enabled;
+        if (projected!=simplifiedOutput_ && next==simplifiedOutput_ &&
+            local==lastLocalSimplifiedOutput_) next=projected;
+        if (next!=projected) requestModeChange(ModeChange::Simplified,next);
+    }
     lastLocalSimplifiedOutput_ = LoadFrontendSettings().simplifiedChineseOutput;
     outputSettingsInitialized_ = true;
-    if (changed) refreshLangBar();
 }
 
 void TextService::toggleSimplifiedOutput() {
     syncOutputSettings();
-    const bool next = !simplifiedOutput_;
-    if (!requestCommitComposition()) return;
-    // Sandboxed hosts publish the state even if their private plist cannot be shared.
-    const auto published = sharedOutputState_.write(clientId_, next);
-    const bool saved = SaveSimplifiedOutputPreference(next);
-    if (FAILED(published) && !saved) return;
-    simplifiedOutput_ = next;
-    lastLocalSimplifiedOutput_ = LoadFrontendSettings().simplifiedChineseOutput;
-    outputSettingsInitialized_ = true;
-    refreshLangBar();
+    bool next=!simplifiedOutput_;
+    for (const auto& op : inputQueue_) if (op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Simplified) next=!op->enabled;
+    requestModeChange(ModeChange::Simplified,next);
 }
 
 void TextService::closeSymbols() {
@@ -892,15 +1030,7 @@ HRESULT TextService::showSymbols() {
     const auto generation = symbolGeneration_;
     if (!symbolPanel_.show(owner, anchor, [this, context, generation](const std::wstring& text) {
         if (!threadManager_ || generation != symbolGeneration_ || symbolContext_.Get() != context.Get()) return;
-        auto* session = new (std::nothrow) SymbolEditSession(this, context.Get(), text, generation);
-        if (!session) return;
-        HRESULT edited = E_FAIL;
-        HRESULT requested = context->RequestEditSession(clientId_, session, TF_ES_SYNC | TF_ES_READWRITE, &edited);
-        if (requested == TF_E_SYNCHRONOUS || requested == TF_E_LOCKED ||
-            (SUCCEEDED(requested) && edited == TF_E_SYNCHRONOUS)) {
-            context->RequestEditSession(clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE, &edited);
-        }
-        session->Release();
+        requestSymbol(context.Get(),text,generation);
     })) { closeSymbols(); return E_FAIL; }
     return S_OK;
 }
@@ -916,7 +1046,9 @@ HRESULT TextService::insertSymbol(TfEditCookie cookie, ITfContext* context,
     auto result = commitCompositionForModeSwitch(cookie, context);
     if (FAILED(result)) return result;
     // Symbols bypass width conversion and learning; commitText applies only Han conversion.
-    return commitText(cookie, context, text);
+    retainedInputResult_=std::make_unique<EngineResult>(); retainedInputResult_->committedText=text;
+    retainedInputContext_=context; retainedCommitWritten_=false;
+    return retryInputResult(cookie,context);
 }
 
 KeyEvent TextService::translateKey(WPARAM wparam, LPARAM lparam) const {
@@ -940,6 +1072,7 @@ KeyEvent TextService::translateKey(WPARAM wparam, LPARAM lparam) const {
 }
 
 bool TextService::isPotentialKey(const KeyEvent& event) const {
+    if (!inputQueue_.empty()) return orderedPrintableKey(event);
     if (isFullWidthCharacterKey(event)) return true;
     if (!chineseMode_ || !engine_ || !engine_->ready()) return false;
     // Outside a real TSF composition, application editing/navigation keys
@@ -948,7 +1081,7 @@ bool TextService::isPotentialKey(const KeyEvent& event) const {
     if (!composition_ && !candidateActive_ && IsHostEditingKey(event.virtualKey)) {
         return false;
     }
-    if (IsInputMethodControlKey(event)) return true;
+    if (IsInputMethodControlKey(event,effectiveInputMethod_)) return true;
     return engine_->wantsKey(event);
 }
 
@@ -973,10 +1106,9 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
     if (foreground) syncInputMethod();
     if (!foreground) {
         closeSymbols();
+        clearCandidateWindow();
         shiftTogglePending_ = false;
-        if (!requestCommitComposition()) {
-            Trace("Input focus lost: composition could not be committed");
-        }
+        cancelInput(); abandonComposition();
     }
     return S_OK;
 }
@@ -1046,29 +1178,8 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     const UINT virtualKey = event.virtualKey;
     const size_t textLength = event.text.size();
 
-    auto* session = new (std::nothrow) KeyEditSession(this, context, std::move(event));
-    if (!session) return E_OUTOFMEMORY;
-    HRESULT editResult = E_FAIL;
-    HRESULT requestResult = context->RequestEditSession(
-        clientId_, session, TF_ES_SYNC | TF_ES_READWRITE, &editResult);
-    if (requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
-        (SUCCEEDED(requestResult) && editResult == TF_E_SYNCHRONOUS)) {
-        editResult = E_FAIL;
-        requestResult = context->RequestEditSession(
-            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE,
-            &editResult);
-        if (SUCCEEDED(requestResult) && SUCCEEDED(editResult)) {
-            // The edit session may run after this callback. We already promised
-            // TSF to handle this key, and KeyEditSession keeps the service alive.
-            *eaten = TRUE;
-        }
-    } else if (SUCCEEDED(requestResult) && SUCCEEDED(editResult)) {
-        *eaten = session->handled();
-    }
-    Trace("KeyDown vk=%u textLen=%zu request=0x%08lX edit=0x%08lX eaten=%d mode=%d",
-          virtualKey, textLength, static_cast<unsigned long>(requestResult),
-          static_cast<unsigned long>(editResult), *eaten, chineseMode_);
-    session->Release();
+    *eaten=requestKey(context,event);
+    Trace("KeyDown vk=%u textLen=%zu eaten=%d mode=%d",virtualKey,textLength,*eaten,chineseMode_);
     // ITfKeyEventSink callbacks must not leak a transient context-lock error
     // back to TSF. If no edit session was accepted, leave the key uneaten so
     // the application can handle it normally.
@@ -1099,17 +1210,11 @@ STDMETHODIMP TextService::OnPreservedKey(ITfContext*, REFGUID, BOOL* eaten) {
 }
 
 HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
-                                const KeyEvent& event, bool* handled) {
+                                const KeyEvent& event, bool* handled, bool* producedResult) {
     if (!context || !handled) return E_INVALIDARG;
-    if (pendingModeCommit_ && compositionContext_.Get() == context) {
-        const auto status = commitCompositionForModeSwitch(editCookie, context);
-        if (FAILED(status)) return status;
-    }
+    *handled=false;
+    if (producedResult) *producedResult=false;
     if (composition_ && compositionContext_.Get() != context) {
-        if (pendingModeCommit_) {
-            *handled = false;
-            return S_OK;
-        }
         // A focus/context switch can happen without giving the old context a
         // writable edit cookie. Detach it before processing the new key so an
         // old composition cannot permanently block the new document.
@@ -1120,11 +1225,21 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
         if (FAILED(status)) return status;
     }
     EngineResult result;
-    if (!chineseMode_ && isFullWidthCharacterKey(event)) {
+    if (!chineseMode_) {
+        if (event.control || event.alt || !PrintableCharacter(event)) return S_OK;
         result.handled = true;
-        result.committedText = ToFullWidth(std::wstring(1, PrintableCharacter(event)));
+        result.committedText = std::wstring(1, PrintableCharacter(event));
+        if (fullWidthMode_) result.committedText=ToFullWidth(std::move(result.committedText));
     } else {
         if (!engine_) return E_UNEXPECTED;
+        // Ask the host before mutating the engine. StartComposition is allowed
+        // to succeed with a null result when the host refuses a composition.
+        const bool numpad=event.virtualKey>=VK_NUMPAD0 && event.virtualKey<=VK_DIVIDE;
+        if (!composition_ && chineseMode_ && !numpad &&
+            (engine_->wantsKey(event) || IsInputMethodControlKey(event,effectiveInputMethod_))) {
+            const auto status=ensureComposition(editCookie,context);
+            if (FAILED(status)) return status;
+        }
         result = engine_->handleKey(event);
         if (fullWidthMode_ && !result.committedText.empty()) {
             result.committedText = ToFullWidth(std::move(result.committedText));
@@ -1140,18 +1255,21 @@ HRESULT TextService::processKey(TfEditCookie editCookie, ITfContext* context,
         // closes associated-phrase suggestions). Keep the native candidate
         // window in sync even though no composition edit is required.
         updateCandidateWindow(editCookie, context, result);
+        if (composition_ && result.compositionText.empty()) endComposition(editCookie,false);
         return S_OK;
     }
     if (result.beep && LoadFrontendSettings().playSoundOnTypingError) {
         MessageBeep(MB_OK);
     }
-    const HRESULT status = updateComposition(editCookie, context, result);
+    retainedInputResult_=std::make_unique<EngineResult>(std::move(result));
+    if (producedResult) *producedResult=true;
+    retainedInputContext_=context; retainedCommitWritten_=false;
+    const HRESULT status = retryInputResult(editCookie,context);
     Trace("UpdateComposition hr=0x%08lX", static_cast<unsigned long>(status));
     if (FAILED(status)) {
-        OutputDebugStringW(L"琦琦輸入法 TSF: composition update failed; resetting state.\n");
-        *handled = false;
-        abandonComposition();
-        return S_OK;
+        // Retain the result and its write stage; Snapshot may already have
+        // consumed committedText. Retrying must not handle/learn this key twice.
+        return status;
     }
     return S_OK;
 }
@@ -1187,6 +1305,7 @@ HRESULT TextService::ensureComposition(TfEditCookie editCookie, ITfContext* cont
                                                    &composition_);
     Trace("EnsureComposition Start hr=0x%08lX composition=%d",
           static_cast<unsigned long>(result), composition_ != nullptr);
+    if (SUCCEEDED(result) && !composition_) return E_ACCESSDENIED;
     if (SUCCEEDED(result)) compositionContext_ = context;
     return result;
 }
@@ -1194,7 +1313,7 @@ HRESULT TextService::ensureComposition(TfEditCookie editCookie, ITfContext* cont
 HRESULT TextService::replaceCompositionText(TfEditCookie editCookie, ITfContext* context,
                                             const std::wstring& text, LONG cursor) {
     HRESULT result = ensureComposition(editCookie, context);
-    if (FAILED(result)) return result;
+    if (FAILED(result) || !composition_) return FAILED(result) ? result : E_ACCESSDENIED;
     ComPtr<ITfRange> range;
     result = composition_->GetRange(&range);
     if (FAILED(result)) {
@@ -1264,10 +1383,13 @@ HRESULT TextService::commitText(TfEditCookie editCookie, ITfContext* context,
         // the caret explicitly at the end of the committed range before
         // ending the composition; otherwise the next composition can start
         // in front of the character just committed (for example, 囉哈).
-        result = range->Collapse(editCookie, TF_ANCHOR_END);
+        ComPtr<ITfRange> caret;
+        result=range->Clone(&caret);
+        if (FAILED(result)) return result;
+        result = caret->Collapse(editCookie, TF_ANCHOR_END);
         if (FAILED(result)) return result;
         TF_SELECTION selection{};
-        selection.range = range.Get();
+        selection.range = caret.Get();
         selection.style.ase = TF_AE_NONE;
         selection.style.fInterimChar = FALSE;
         result = context->SetSelection(editCookie, 1, &selection);
@@ -1321,37 +1443,13 @@ HRESULT TextService::endComposition(TfEditCookie editCookie, bool clearText) {
 }
 
 bool TextService::requestCommitComposition() {
-    if (pendingModeCommit_) return true;
-    if (!composition_) {
-        candidateWindow_.hide();
-        candidateActive_ = false;
-        candidateAnchor_.Reset();
-        if (engine_) engine_->reset();
-        return true;
+    if (!composition_ && inputQueue_.empty()) {
+        clearCandidateWindow(); if (engine_) engine_->reset(); return true;
     }
-    if (!compositionContext_ || clientId_ == TF_CLIENTID_NULL) return false;
-
-    auto* session = new (std::nothrow)
-        CommitModeSwitchEditSession(this, compositionContext_.Get(), composition_.Get());
-    if (!session) return false;
-    pendingModeCommit_ = true;
-    HRESULT editResult = E_FAIL;
-    HRESULT requestResult = compositionContext_->RequestEditSession(
-        clientId_, session, TF_ES_SYNC | TF_ES_READWRITE, &editResult);
-    if (requestResult == TF_E_SYNCHRONOUS || requestResult == TF_E_LOCKED ||
-        (SUCCEEDED(requestResult) && editResult == TF_E_SYNCHRONOUS)) {
-        editResult = E_FAIL;
-        requestResult = compositionContext_->RequestEditSession(
-            clientId_, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE,
-            &editResult);
-    }
-    const bool accepted = SUCCEEDED(requestResult) && SUCCEEDED(editResult);
-    if (!accepted) pendingModeCommit_ = false;
-    Trace("ModeCommit request=0x%08lX edit=0x%08lX accepted=%d",
-          static_cast<unsigned long>(requestResult),
-          static_cast<unsigned long>(editResult), accepted);
-    session->Release();
-    return accepted;
+    auto op=std::make_shared<InputOperation>(); op->kind=InputOperation::Kind::Commit;
+    op->context=inputContext();
+    if (!op->context || clientId_==TF_CLIENTID_NULL) return false;
+    return enqueueInput(op);
 }
 
 HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
@@ -1382,14 +1480,8 @@ HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
         }
     }
     if (SUCCEEDED(result)) {
-        candidateWindow_.hide();
-        candidateActive_ = false;
-        candidateAnchor_.Reset();
+        clearCandidateWindow();
         if (engine_) engine_->reset();
-    }
-    pendingModeCommit_ = false;
-    if (FAILED(result) && !chineseMode_ && threadManager_) {
-        setChineseMode(true);
     }
     Trace("ModeCommit complete hr=0x%08lX",
           static_cast<unsigned long>(result));
@@ -1397,17 +1489,13 @@ HRESULT TextService::commitCompositionForModeSwitch(TfEditCookie editCookie,
 }
 
 HRESULT TextService::terminateComposition(TfEditCookie editCookie) {
-    candidateWindow_.hide();
-    candidateActive_ = false;
-    candidateAnchor_.Reset();
+    clearCandidateWindow();
     if (engine_) engine_->reset();
     return endComposition(editCookie, true);
 }
 
 void TextService::abandonComposition() {
-    candidateWindow_.hide();
-    candidateActive_ = false;
-    candidateAnchor_.Reset();
+    clearCandidateWindow();
     if (engine_) engine_->reset();
 
     ComPtr<ITfComposition> oldComposition = composition_;
@@ -1441,56 +1529,149 @@ HRESULT TextService::updateComposition(TfEditCookie editCookie, ITfContext* cont
     return S_OK;
 }
 
+HRESULT TextService::retryInputResult(TfEditCookie cookie,ITfContext* context) {
+    if (!retainedInputResult_) return S_OK;
+    if (retainedInputContext_.Get()!=context) return E_ABORT;
+    const auto& result=*retainedInputResult_;
+    HRESULT status=S_OK;
+    if (!retainedCommitWritten_) {
+        retainedCommitNeedsEnd_=composition_ && compositionContext_.Get()==context && !result.committedText.empty();
+        if (!result.committedText.empty()) {
+            const auto text=ConvertOutput(result.committedText,retainedCommitNeedsEnd_ ? compositionSimplifiedOutput_ : simplifiedOutput_);
+            if (retainedCommitNeedsEnd_) {
+                status=composition_->GetRange(&retainedCommitRange_);
+                if (SUCCEEDED(status)) status=retainedCommitRange_->SetText(cookie,0,text.data(),static_cast<LONG>(text.size()));
+            } else {
+                ComPtr<ITfInsertAtSelection> insertion;
+                status=context->QueryInterface(IID_PPV_ARGS(&insertion));
+                if (SUCCEEDED(status)) status=insertion->InsertTextAtSelection(cookie,0,text.data(),static_cast<LONG>(text.size()),&retainedCommitRange_);
+            }
+            if (FAILED(status)) return status;
+        }
+        // Persist immediately after the write, before Clone/Collapse/selection.
+        // A host may accept insertion yet reject the following caret operation.
+        retainedCommitWritten_=true;
+    }
+    if (!result.committedText.empty()) {
+        if (!retainedCommitCaretSet_) {
+            if (!retainedCommitRange_) return E_UNEXPECTED;
+            ComPtr<ITfRange> caret; status=retainedCommitRange_->Clone(&caret);
+            if (SUCCEEDED(status)) status=caret->Collapse(cookie,TF_ANCHOR_END);
+            if (SUCCEEDED(status)) {
+                TF_SELECTION selection{}; selection.range=caret.Get(); selection.style.ase=TF_AE_NONE;
+                status=context->SetSelection(cookie,1,&selection);
+            }
+            if (FAILED(status)) return status;
+            retainedCommitCaretSet_=true;
+        }
+        if (retainedCommitNeedsEnd_) {
+            status=endComposition(cookie,false); if (FAILED(status)) return status;
+            retainedCommitNeedsEnd_=false;
+        }
+    }
+    if (!result.compositionText.empty()) {
+        status=replaceCompositionText(cookie,context,result.compositionText,result.compositionCursor);
+    } else if (composition_ && result.committedText.empty()) status=endComposition(cookie,true);
+    if (FAILED(status)) return status;
+    updateCandidateWindow(cookie,context,result);
+    retainedInputResult_.reset(); retainedInputContext_.Reset(); retainedCommitWritten_=false;
+    retainedCommitRange_.Reset(); retainedCommitCaretSet_=false; retainedCommitNeedsEnd_=false;
+    return S_OK;
+}
+
+void TextService::clearCandidateWindow() {
+    ++candidateGeneration_;
+    pendingLayoutGeneration_ = 0;
+    candidateWindow_.hide();
+    candidateActive_ = false;
+    candidateAnchor_.Reset();
+    candidateContext_.Reset();
+    layoutCandidates_.clear();
+}
+void TextService::cancelCandidateLayout(ITfContext* context,unsigned long long generation) {
+    if (pendingLayoutGeneration_==generation && candidateGeneration_==generation && candidateContext_.Get()==context)
+        pendingLayoutGeneration_=0;
+}
+
 void TextService::updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
                                         const EngineResult& result) {
     if (!result.candidatesVisible || result.candidates.empty()) {
-        candidateWindow_.hide();
-        candidateActive_ = false;
-        candidateAnchor_.Reset();
-        Trace("Candidate active=0");
+        clearCandidateWindow();
         return;
     }
+    ++candidateGeneration_;
+    pendingLayoutGeneration_ = 0;
+    candidateAnchor_.Reset();
 
-    ComPtr<ITfRange> range;
-    if (composition_) composition_->GetRange(&range);
-    if (!range) {
+    candidateContext_ = context;
+    layoutCandidates_ = result.candidates;
+    layoutHighlightedCandidate_ = result.highlightedCandidate;
+    // Candidate activity is an engine state, even while the host has no layout.
+    candidateActive_ = true;
+    if (!composition_) {
         TF_SELECTION selection{};
         ULONG fetched = 0;
         if (FAILED(context->GetSelection(editCookie, TF_DEFAULT_SELECTION, 1,
                                          &selection, &fetched)) || !fetched) {
-            candidateWindow_.hide();
-            candidateActive_ = false;
-            candidateAnchor_.Reset();
+            clearCandidateWindow();
             return;
         }
-        range.Attach(selection.range);
+        candidateAnchor_.Attach(selection.range);
+        candidateAnchor_->Collapse(editCookie, TF_ANCHOR_END);
     }
+    refreshCandidateLayout(editCookie, context, candidateGeneration_);
+}
+
+HRESULT TextService::refreshCandidateLayout(TfEditCookie editCookie, ITfContext* context,
+                                             unsigned long long generation) {
+    // A queued layout callback must not resurrect candidates after Esc, a new
+    // key, focus loss, a mode switch, or deactivation.
+    if (generation != candidateGeneration_ || candidateContext_.Get() != context ||
+        !candidateActive_) return S_OK;
+    if (pendingLayoutGeneration_ == generation) pendingLayoutGeneration_ = 0;
+    ComPtr<ITfRange> range;
+    if (composition_ && compositionContext_.Get() == context) composition_->GetRange(&range);
+    if (!range) range = candidateAnchor_;
+    if (!range) return S_OK;
 
     ComPtr<ITfContextView> view;
-    if (FAILED(context->GetActiveView(&view))) {
-        candidateWindow_.hide();
-        candidateActive_ = false;
-        candidateAnchor_.Reset();
-        return;
-    }
+    HRESULT status = context->GetActiveView(&view);
     RECT textRect{};
     BOOL clipped = FALSE;
     HWND owner = nullptr;
-    if (FAILED(view->GetTextExt(editCookie, range.Get(), &textRect, &clipped)) ||
-        FAILED(view->GetWnd(&owner))) {
+    if (SUCCEEDED(status)) status = view->GetTextExt(editCookie, range.Get(), &textRect, &clipped);
+    if (SUCCEEDED(status)) status = view->GetWnd(&owner);
+    if (FAILED(status) || textRect.bottom <= textRect.top || textRect.right < textRect.left) {
+        // TS_E_NOLAYOUT is transient. Keep the candidates and wait for the
+        // host's ITfTextLayoutSink notification instead of requiring a key.
         candidateWindow_.hide();
-        candidateActive_ = false;
-        candidateAnchor_.Reset();
-        return;
+        Trace("Candidate layout deferred hr=0x%08lX generation=%llu",
+              static_cast<unsigned long>(status), generation);
+        return S_OK;
     }
-    candidateWindow_.show(owner, textRect, result.candidates,
-                          result.highlightedCandidate);
-    candidateActive_ = true;
-    candidateAnchor_.Reset();
-    if (!composition_ && SUCCEEDED(range->Clone(&candidateAnchor_))) {
-        candidateAnchor_->Collapse(editCookie, TF_ANCHOR_END);
-    }
-    Trace("Candidate active=1 count=%zu", result.candidates.size());
+    candidateWindow_.show(owner, textRect, layoutCandidates_, layoutHighlightedCandidate_);
+    Trace("Candidate active=1 count=%zu generation=%llu", layoutCandidates_.size(), generation);
+    return S_OK;
+}
+
+STDMETHODIMP TextService::OnLayoutChange(ITfContext* context, TfLayoutCode code,
+                                         ITfContextView*) {
+    if (code != TF_LC_CHANGE || !context || context != candidateContext_.Get() ||
+        !candidateActive_ || clientId_ == TF_CLIENTID_NULL ||
+        pendingLayoutGeneration_ == candidateGeneration_) return S_OK;
+    const auto generation = candidateGeneration_;
+    auto* session = new (std::nothrow) CandidateLayoutEditSession(this, context, generation);
+    if (!session) return E_OUTOFMEMORY;
+    pendingLayoutGeneration_ = generation;
+    HRESULT editResult = E_FAIL;
+    const HRESULT request = context->RequestEditSession(
+        clientId_, session, TF_ES_ASYNC | TF_ES_READ, &editResult);
+    session->Release();
+    if ((FAILED(request) || FAILED(editResult)) && pendingLayoutGeneration_ == generation)
+        pendingLayoutGeneration_ = 0;
+    Trace("Candidate layout request=0x%08lX edit=0x%08lX generation=%llu",
+          static_cast<unsigned long>(request), static_cast<unsigned long>(editResult), generation);
+    return S_OK;
 }
 
 bool TextService::selectionMatchesTrackedState(TfEditCookie editCookie,
@@ -1535,8 +1716,8 @@ bool TextService::selectionMatchesTrackedState(TfEditCookie editCookie,
 
 STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie,
                                     ITfEditRecord* editRecord) {
-    if (!context || !editRecord ||
-        (!composition_ && !candidateActive_)) {
+    if (!context || !editRecord || editingInput_ ||
+        (!composition_ && !candidateActive_ && inputQueue_.empty())) {
         return S_OK;
     }
 
@@ -1545,11 +1726,14 @@ STDMETHODIMP TextService::OnEndEdit(ITfContext* context, TfEditCookie editCookie
         !selectionChanged) {
         return S_OK;
     }
+    if (!composition_ && !candidateActive_ && !inputQueue_.empty()) {
+        // Before the first deferred composition exists, a host caret move is
+        // still a different insertion target even within the same context.
+        cancelInput(); return S_OK;
+    }
     if (!selectionMatchesTrackedState(editCookie, context)) {
-        if (!pendingModeCommit_) {
-            Trace("Selection left active input state; abandoning composition");
-            abandonComposition();
-        }
+        Trace("Selection left active input state; abandoning composition");
+        cancelInput(); abandonComposition();
     }
     return S_OK;
 }
@@ -1569,11 +1753,9 @@ STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie,
         }
         composition_.Reset();
         compositionContext_.Reset();
-        pendingModeCommit_ = false;
         if (!endingComposition_) {
-            candidateWindow_.hide();
-            candidateActive_ = false;
-            candidateAnchor_.Reset();
+            cancelInput();
+            clearCandidateWindow();
             if (engine_) engine_->reset();
         }
     }
@@ -1583,76 +1765,33 @@ STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie,
 STDMETHODIMP TextService::OnInitDocumentMgr(ITfDocumentMgr*) { return S_OK; }
 STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
     closeSymbols();
-    if (compositionContext_ && !pendingModeCommit_) {
-        ComPtr<ITfDocumentMgr> owner;
-        if (SUCCEEDED(compositionContext_->GetDocumentMgr(&owner)) &&
-            owner.Get() == documentManager) {
-            requestCommitComposition();
-        }
-    }
-    if (textEditContext_) {
-        ComPtr<ITfDocumentMgr> owner;
-        if (SUCCEEDED(textEditContext_->GetDocumentMgr(&owner)) &&
-            owner.Get() == documentManager) {
-            if (!pendingModeCommit_) requestCommitComposition();
-            unadviseTextEditSink();
-        }
+    auto context=inputContext(); ComPtr<ITfDocumentMgr> owner;
+    if (context && SUCCEEDED(context->GetDocumentMgr(&owner)) && owner.Get()==documentManager) {
+        cancelInput(); abandonComposition(); unadviseTextEditSink();
     }
     return S_OK;
 }
-STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr*) {
-    closeSymbols();
+STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused,ITfDocumentMgr*) {
+    closeSymbols(); ComPtr<ITfContext> context;
+    if (focused) focused->GetTop(&context);
+    auto previous=inputContext();
+    if (previous && previous.Get()!=context.Get()) { cancelInput(); abandonComposition(); }
+    adviseTextEditSink(context.Get());
     if (focused) syncInputMethod();
-    ComPtr<ITfContext> focusedContext;
-    if (focused) focused->GetTop(&focusedContext);
-    if ((composition_ || candidateActive_) &&
-        textEditContext_.Get() != focusedContext.Get() && !pendingModeCommit_) {
-        if (!requestCommitComposition()) {
-            Trace("Document focus changed: composition could not be committed");
-        }
-    }
-    const HRESULT textEditResult = adviseTextEditSink(focusedContext.Get());
-    Trace("Focus AdviseTextEdit hr=0x%08lX",
-          static_cast<unsigned long>(textEditResult));
-    if (!focused) {
-        candidateWindow_.hide();
-        candidateActive_ = false;
-        candidateAnchor_.Reset();
-        if (engine_) engine_->reset();
-    }
     return S_OK;
 }
 STDMETHODIMP TextService::OnPushContext(ITfContext* context) {
-    closeSymbols();
-    if ((composition_ || candidateActive_) && textEditContext_.Get() != context &&
-        !pendingModeCommit_) {
-        requestCommitComposition();
-    }
-    const HRESULT result = adviseTextEditSink(context);
-    Trace("PushContext AdviseTextEdit hr=0x%08lX",
-          static_cast<unsigned long>(result));
-    // A host that does not expose ITfSource still needs the context push to
-    // complete; key processing remains usable without selection tracking.
-    return S_OK;
+    closeSymbols(); auto previous=inputContext();
+    if (previous && previous.Get()!=context) { cancelInput(); abandonComposition(); }
+    adviseTextEditSink(context); return S_OK;
 }
 STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
     closeSymbols();
-    if (compositionContext_.Get() == context) {
-        if (!pendingModeCommit_) requestCommitComposition();
-    } else {
-        candidateWindow_.hide();
-        candidateActive_ = false;
-        candidateAnchor_.Reset();
-        if (engine_) engine_->reset();
-    }
-    if (textEditContext_.Get() == context) {
-        unadviseTextEditSink();
-        ComPtr<ITfDocumentMgr> focused;
-        ComPtr<ITfContext> top;
-        if (threadManager_ && SUCCEEDED(threadManager_->GetFocus(&focused)) &&
-            focused && SUCCEEDED(focused->GetTop(&top)) && top.Get() != context) {
-            adviseTextEditSink(top.Get());
-        }
+    if (inputContext().Get()==context) { cancelInput(); abandonComposition(); }
+    if (textEditContext_.Get()==context) {
+        unadviseTextEditSink(); ComPtr<ITfDocumentMgr> focused; ComPtr<ITfContext> top;
+        if (threadManager_ && SUCCEEDED(threadManager_->GetFocus(&focused)) && focused &&
+            SUCCEEDED(focused->GetTop(&top)) && top.Get()!=context) adviseTextEditSink(top.Get());
     }
     return S_OK;
 }
@@ -1672,10 +1811,10 @@ STDMETHODIMP TextService::OnChange(REFGUID guid) {
             SUCCEEDED(manager->GetCompartment(
                 GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION, &compartment)) &&
             SUCCEEDED(compartment->GetValue(&value)) && value.vt == VT_I4) {
-            fullWidthMode_ =
-                (value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_FULLSHAPE)) != 0;
+            const bool full=(value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_FULLSHAPE))!=0;
+            if (projectedWidthMode()!=full) requestModeChange(ModeChange::Width,full);
             const bool enabled = (value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_NATIVE)) != 0;
-            if (chineseMode_ != enabled) setChineseMode(enabled);
+            if (projectedChineseMode() != enabled) setChineseMode(enabled);
             refreshLangBar();
             Trace("InputWidth changed full=%d", fullWidthMode_);
         }
@@ -1694,7 +1833,7 @@ STDMETHODIMP TextService::OnChange(REFGUID guid) {
                                          &compartment)) &&
         SUCCEEDED(compartment->GetValue(&value)) && value.vt == VT_I4) {
         const bool enabled = value.lVal != 0;
-        if (chineseMode_ != enabled) {
+        if (projectedChineseMode() != enabled) {
             setChineseMode(enabled);
         }
         Trace("InputMode changed chinese=%d", chineseMode_);

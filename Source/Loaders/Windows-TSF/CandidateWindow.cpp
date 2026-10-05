@@ -126,16 +126,33 @@ void CandidateWindow::show(HWND owner, const RECT& textRect,
         y = std::max(y, static_cast<int>(monitorInfo.rcWork.top));
     }
 
-    SetWindowPos(window_, HWND_TOPMOST, x, y, windowSize.cx, windowSize.cy,
-                 SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    if (!SetWindowPos(window_, HWND_TOPMOST, x, y, windowSize.cx, windowSize.cy,
+                      SWP_NOACTIVATE | SWP_SHOWWINDOW)) {
+        hide();
+        return;
+    }
+    shown_ = true;
     InvalidateRect(window_, nullptr, FALSE);
     NotifyWinEvent(EVENT_OBJECT_IME_SHOW, window_, OBJID_CLIENT, CHILDID_SELF);
 }
 
 void CandidateWindow::hide() {
-    if (window_ && IsWindowVisible(window_)) {
-        ShowWindow(window_, SW_HIDE);
-        NotifyWinEvent(EVENT_OBJECT_IME_HIDE, window_, OBJID_CLIENT, CHILDID_SELF);
+    const bool wasShown = shown_;
+    shown_ = false;
+    if (window_) {
+        const bool wasVisible = IsWindowVisible(window_) != FALSE;
+        // ShowOwnedPopups(FALSE) can hide a shown popup while retaining a
+        // pending restore. SW_HIDE on that hidden HWND does not cancel it.
+        // Retire the suppressed window so the host cannot restore empty UI.
+        const bool suppressed = wasShown && !wasVisible;
+        if (wasShown) {
+            NotifyWinEvent(EVENT_OBJECT_IME_HIDE, window_, OBJID_CLIENT, CHILDID_SELF);
+        }
+        if (suppressed) {
+            DestroyWindow(window_);
+        } else {
+            ShowWindow(window_, SW_HIDE);
+        }
     }
     candidates_.clear();
     cellWidths_.clear();
@@ -183,6 +200,8 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
         case WM_NCDESTROY: {
             HWND destroyedWindow = window_;
             window_ = nullptr;
+            shown_ = false;
+            SetWindowLongPtrW(destroyedWindow, GWLP_USERDATA, 0);
             return DefWindowProcW(destroyedWindow, message, wparam, lparam);
         }
         default:
