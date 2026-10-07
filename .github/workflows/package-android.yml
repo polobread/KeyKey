@@ -20,9 +20,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version=$(sed -nE '1s/^.* ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' README.md)
+          version=$(sed -nE 's/^val keyKeyVersionName = .*getOrElse\("([0-9]+\.[0-9]+\.[0-9]+)"\)$/\1/p' Source/Loaders/Android-IME/app/build.gradle.kts)
           if [[ -z "$version" ]]; then
-            echo "README.md does not end its title with an x.y.z version." >&2
+            echo "Android app/build.gradle.kts does not declare an x.y.z default version." >&2
             exit 1
           fi
 

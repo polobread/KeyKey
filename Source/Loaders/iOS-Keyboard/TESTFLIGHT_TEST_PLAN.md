@@ -1,6 +1,6 @@
 # iOS TestFlight 自動化測試計畫
 
-適用產品：琦琦注音 iOS（容器 App、keyboard extension、App 內實體鍵盤編輯器）
+適用產品：琦琦輸入法 iOS（容器 App、keyboard extension、App 內實體鍵盤編輯器）
 
 目的：以 automated smoke test 與 functional test 擋住不合格的 TestFlight build。
 
@@ -70,7 +70,7 @@ TestFlight build ready
 | S03 | 開啟授權與致謝 | 內容包含 Yahoo! KeyKey 與 McBopomofo | 已有 |
 | S04 | 開啟實體鍵盤編輯器 | 輸入區、1–9 候選、複製、分享、清除可操作 | 已有 |
 | S05 | 編輯器最小輸入流程 | 以觸控備援鍵產生候選並選字，輸出區更新 | 待補 |
-| S06 | extension 註冊 | 系統鍵盤清單能找到「琦琦注音」 | 已有 opt-in 測試 |
+| S06 | extension 註冊 | 系統鍵盤清單能找到「琦琦輸入法」 | 已有 opt-in 測試 |
 | S07 | 正式 App 設定入口 | 可從首頁開啟系統鍵盤設定並返回 | 待補 |
 | S08 | 首頁旋轉與重啟 | 直／橫式無裁切；終止再啟動仍正常 | 待補 |
 
@@ -126,7 +126,7 @@ swift test
 
 ### C. Keyboard extension XCUITest
 
-這組需要 Simulator 已將琦琦注音加入並選成目前鍵盤：
+這組需要 Simulator 已將琦琦輸入法加入並選成目前鍵盤：
 
 - ㄅ→英→數→ㄅ。
 - `ㄋㄧˇ` 選字與 inline marked text。
@@ -136,10 +136,10 @@ swift test
 - 直／橫式核心按鍵與固定版面。
 
 iOS 沒有受支援的 API 可靜默授予第三方鍵盤 opt-in；目前測試可以自動把鍵盤加入清單，
-但在部分 Simulator runtime 無法穩定從 `InputSwitcherView` 切換到琦琦注音。因此：
+但在部分 Simulator runtime 無法穩定從 `InputSwitcherView` 切換到琦琦輸入法。因此：
 
 - Xcode Cloud：跑 Container／editor suite，不把 extension 測試標成成功或 skip 後放行。
-- persistent local Simulator：一次人工選定琦琦注音後，由 runner 全自動跑 extension suite。
+- persistent local Simulator：一次人工選定琦琦輸入法後，由 runner 全自動跑 extension suite。
 - runner 發現任何 skipped extension test 時必須回傳非 0。
 
 現有入口：
@@ -148,7 +148,7 @@ iOS 沒有受支援的 API 可靜默授予第三方鍵盤 opt-in；目前測試�
 # 乾淨環境／Xcode Cloud 可跑
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
 
-# 五台 persistent Simulator 已選定琦琦注音後跑完整 functional suite
+# 五台 persistent Simulator 已選定琦琦輸入法後跑完整 functional suite
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh
 ```
 
@@ -231,7 +231,7 @@ runner 前保持人工 promote，避免把「archive 成功」誤當成「功能
 在一台專用 iPhone／iPad 上：
 
 1. 從 TestFlight 安裝指定 build。
-2. 確認琦琦注音已加入系統鍵盤，完整取用保持關閉。
+2. 確認琦琦輸入法已加入系統鍵盤，完整取用保持關閉。
 3. 由不依賴 App target build product 的獨立 XCUITest runner，以正式 bundle identifier 啟動 App。
 4. 執行 S01–S08；若要測 extension，另以備忘錄作正式宿主；不得使用
    `-KeyKeyInputFieldTest` 或其他 Debug launch argument。

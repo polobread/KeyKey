@@ -124,6 +124,13 @@ final class BopomofoKeyboardView extends View {
     private boolean shifted;
     private boolean temporaryEnglish;
     private boolean hardwareFullWidth;
+    private int measuredContentHeight;
+    private Mode lastMeasuredMode;
+    private int lastDesiredContentHeight = -1;
+    private int lastReservedHeight = -1;
+    private int lastSystemAreaHeight = -1;
+    private boolean touchBottomSpaceEnabled = true;
+    private boolean hardwareBottomSpaceEnabled = true;
     private boolean hardwareNumberRowEnabled;
     private boolean hardwareNumberShifted;
     private boolean supportPromptVisible;
@@ -190,6 +197,15 @@ final class BopomofoKeyboardView extends View {
         hardwareNumberRowEnabled = enabled;
         hardwareNumberShifted = false;
         if (mode == Mode.HARDWARE) requestLayout();
+        invalidate();
+    }
+
+    void setBottomSpaceEnabled(boolean touchEnabled, boolean hardwareEnabled) {
+        if (touchBottomSpaceEnabled == touchEnabled
+                && hardwareBottomSpaceEnabled == hardwareEnabled) return;
+        touchBottomSpaceEnabled = touchEnabled;
+        hardwareBottomSpaceEnabled = hardwareEnabled;
+        requestLayout();
         invalidate();
     }
 
@@ -262,19 +278,42 @@ final class BopomofoKeyboardView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int desiredHeight = switch (mode) {
+        int desiredContentHeight = switch (mode) {
             case HARDWARE_FLOATING -> dp(1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
-                    + (hardwareNumberRowEnabled ? 2 * HARDWARE_NUMBER_ROW_HEIGHT_DP : 0))
-                    + hardwareSystemAreaHeight();
+                    + (hardwareNumberRowEnabled ? 2 * HARDWARE_NUMBER_ROW_HEIGHT_DP : 0));
             case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
-                    landscapeHeightPercent) + dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
+                    landscapeHeightPercent);
             case PORTRAIT -> scaledContentHeight(PORTRAIT_CONTENT_HEIGHT_DP,
-                    portraitHeightPercent) + dp(PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
+                    portraitHeightPercent);
         };
+        // Budget the reserved area before clamping the keyboard content, even
+        // when that area is disabled. Otherwise a capped IME keeps its height
+        // and gives the removed padding to the keys instead of the host app.
+        int reservedHeight = reservedSystemAreaHeight();
+        int systemAreaHeight = systemAreaHeight();
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        setMeasuredDimension(resolveSize(width, widthMeasureSpec),
-                resolveSize(desiredHeight, heightMeasureSpec));
+        int availableHeight = resolveSize(desiredContentHeight + reservedHeight, heightMeasureSpec);
+        // Once the IME window has been sized, the framework measures its child
+        // again within that exact window. This is our requested height, not a
+        // new screen limit: subtracting the reservation again leaves a blank strip.
+        boolean withinRequestedWindow = MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.UNSPECIFIED
+                && MeasureSpec.getSize(heightMeasureSpec) == getMeasuredHeight()
+                && width == getMeasuredWidth()
+                && mode == lastMeasuredMode
+                && desiredContentHeight == lastDesiredContentHeight
+                && reservedHeight == lastReservedHeight
+                && systemAreaHeight == lastSystemAreaHeight;
+        if (!withinRequestedWindow) {
+            measuredContentHeight = Math.min(desiredContentHeight,
+                    Math.max(0, availableHeight - reservedHeight));
+        }
+        int desiredHeight = Math.min(availableHeight, measuredContentHeight + systemAreaHeight);
+        setMeasuredDimension(resolveSize(width, widthMeasureSpec), desiredHeight);
+        lastMeasuredMode = mode;
+        lastDesiredContentHeight = desiredContentHeight;
+        lastReservedHeight = reservedHeight;
+        lastSystemAreaHeight = systemAreaHeight;
     }
 
     @Override
@@ -980,13 +1019,21 @@ final class BopomofoKeyboardView extends View {
     }
 
     private float contentHeight() {
-        int systemAreaHeight = switch (mode) {
+        return measuredContentHeight;
+    }
+
+    private int systemAreaHeight() {
+        boolean enabled = mode == Mode.HARDWARE ? hardwareBottomSpaceEnabled : touchBottomSpaceEnabled;
+        return enabled ? reservedSystemAreaHeight() : 0;
+    }
+
+    private int reservedSystemAreaHeight() {
+        return switch (mode) {
             case HARDWARE_FLOATING -> 0;
             case PORTRAIT -> dp(PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
             case LANDSCAPE -> dp(LANDSCAPE_SYSTEM_AREA_HEIGHT_DP);
             case HARDWARE -> hardwareSystemAreaHeight();
         };
-        return Math.max(0, getHeight() - systemAreaHeight);
     }
 
     private int hardwareSystemAreaHeight() {

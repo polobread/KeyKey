@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>zh_TW</string>
 	<key>CFBundleDisplayName</key>
-	<string>琦琦注音</string>
+	<string>琦琦輸入法</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

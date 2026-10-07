@@ -20,16 +20,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version=$(sed -nE '1s/^.* ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' README.md)
-          if [[ -z "$version" ]]; then
-            echo "README.md does not end its title with an x.y.z version." >&2
-            exit 1
-          fi
-
-          configured_versions=$(sed -nE 's/^[[:space:]]*MARKETING_VERSION = ([^;]+);/\1/p' \
+          version=$(sed -nE 's/^[[:space:]]*MARKETING_VERSION = ([^;]+);/\1/p' \
             Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj/project.pbxproj | sort -u)
-          if [[ "$configured_versions" != "$version" ]]; then
-            echo "The iOS project has MARKETING_VERSION values '$configured_versions'; expected $version." >&2
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "The iOS project must have one consistent x.y.z MARKETING_VERSION; found '$version'." >&2
             exit 1
           fi
 
@@ -78,8 +72,9 @@ jobs:
             "$database"
 
           built_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Info.plist")
-          if [[ "$built_version" != "$VERSION" ]]; then
-            echo "Built iOS app has version $built_version; expected $VERSION." >&2
+          extension_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$extension/Info.plist")
+          if [[ "$built_version" != "$VERSION" || "$extension_version" != "$VERSION" ]]; then
+            echo "Built iOS app has version $built_version and keyboard has version $extension_version; expected $VERSION." >&2
             exit 1
           fi
 

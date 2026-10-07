@@ -1,6 +1,6 @@
-# 琦琦輸入法 / chichi77 KeyKey — Windows 1.3.2；其他平台 1.3.1
+# 琦琦輸入法 / chichi77 KeyKey — Windows／Android／iOS 1.3.2；其他平台 1.3.1
 
-目前 Windows 原始碼版號為 `1.3.2`，尚未發布；macOS、iOS、Android 與 Linux 仍為 `1.3.1`。
+目前 Windows、Android 與 iOS 原始碼版號為 `1.3.2`，尚未發布；macOS 與 Linux 仍為 `1.3.1`。
 macOS、Windows 與 Ubuntu 24.04 安裝包依各自版本提供於
 [GitHub Release](https://github.com/polobread/KeyKey/releases)；
 Android 與 iOS 依各自的商店管道安裝。
@@ -71,7 +71,7 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 - [Windows 1.3.2 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
 - Ubuntu 24.04 使用者請看[Linux 1.3.1 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
-- iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦注音》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939)安裝。
+- iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939)安裝。
 - Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；目前透過 Google 群組及 Google Play 封閉測試加入後安裝。
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS、Windows 與
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
@@ -91,8 +91,8 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 
 發布 GitHub Release（可同時建立 tag）會啟動
 `Package macOS`、`Package Windows` 與完整 `Linux CI`；各平台通過建置及驗證後，
-自動上傳自己的 assets。各平台版號須符合該 Release；目前 Windows 為 `v1.3.2`，其他平台
-仍為 `v1.3.1`，不能以 Windows 的新 tag 封裝其餘平台。若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
+自動上傳自己的 assets。各平台版號須符合該 Release；目前 Windows 為 `v1.3.2`，macOS／Linux
+仍為 `v1.3.1`，不能以 Windows 的新 tag 封裝這兩個平台。若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
 留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
 完整產物、簽章與限制見 [BUILDING.md](BUILDING.md#github-actions-封裝)。
@@ -138,7 +138,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-Windows 1.3.2 與 macOS、iOS、Android、Linux 1.3.1 原始碼均提供「好打注音」整句組字模式，
+Windows／Android／iOS 1.3.2 與 macOS、Linux 1.3.1 原始碼均提供「好打注音」整句組字模式，
 並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。語言模型由
 McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yahoo 未釋出的中研院語料；
 另加入可替換的 11,180 句 AI 合成 bootstrap corpora 產生初版 bigram 上下文資料。這份
@@ -148,12 +148,12 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 
 ## English
 
-The Windows source version is `1.3.2`, not yet released. macOS, iOS, Android,
-and Linux remain at `1.3.1`. Desktop installers are provided by platform version on
+The Windows, Android, and iOS source versions are `1.3.2`, not yet released.
+macOS and Linux remain at `1.3.1`. Desktop installers are provided by platform version on
 [GitHub Release](https://github.com/polobread/KeyKey/releases).
 Android and iOS use their respective store distribution channels.
 
-Windows 1.3.2 and macOS, iOS, Android, and Linux 1.3.1 implement Smart Phonetic
+Windows, Android, and iOS 1.3.2 and macOS and Linux 1.3.1 implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
 option. For published builds, consult the installation guide for that version.
 Its redistributable unigram model is generated from the MIT-licensed
@@ -243,8 +243,8 @@ is enabled.
 Publishing a GitHub Release starts
 `Package macOS`, `Package Windows`, and the full `Linux CI`. Each workflow
 uploads its verified packages when its version matches that Release. Windows
-uses `v1.3.2`; the other platforms retain `v1.3.1`. A Windows version tag cannot
-package the other platforms from this branch. After fixing a
+uses `v1.3.2`; macOS and Linux retain `v1.3.1`. A Windows version tag cannot
+package those two platforms from this branch. After fixing a
 failed platform on `master`, manually run that workflow from `master` with
 the matching platform's `release_tag` to replace its assets; other platforms are untouched.
 Leaving `release_tag` blank retains Actions artifacts only.

@@ -4,7 +4,7 @@
 
 Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；目前 Windows 原始碼版號為 `1.3.2`，尚未發布，macOS、iOS、Android、Linux 與共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
+依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；目前 Windows、Android 與 iOS 原始碼版號為 `1.3.2`，尚未發布，macOS、Linux 與共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -328,7 +328,7 @@ cd Source\Loaders\Android-IME
 29 個 TSV 產生 `.kki` 索引，並把 cook 好的 `KeyKey.db` 加入 APK，供預設的好打注音
 整句組字使用；Android 執行時讀取索引，關聯詞索引在背景載入。
 Debug APK 位於
-`app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦注音」，依畫面按鈕
+`app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦輸入法」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
 [Source/Loaders/Android-IME/README.md](Source/Loaders/Android-IME/README.md)。
 

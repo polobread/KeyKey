@@ -23,8 +23,8 @@
 ## 前置
 
 1. 在每台 Simulator 安裝 Debug container app。
-2. 到 `設定 → 一般 → 鍵盤 → 鍵盤 → 加入新的鍵盤` 啟用「琦琦注音」；不開啟完整取用權限。
-3. 開啟 container app 的「開啟輸入欄位測試」，點選欄位後用地球鍵切到琦琦注音。
+2. 到 `設定 → 一般 → 鍵盤 → 鍵盤 → 加入新的鍵盤` 啟用「琦琦輸入法」；不開啟完整取用權限。
+3. 開啟 container app 的「開啟輸入欄位測試」，點選欄位後用地球鍵切到琦琦輸入法。
 4. 每個項目先跑淺色，再切深色重跑與顏色有關的檢查。
 
 ## 矩陣
@@ -53,7 +53,7 @@
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
 ```
 
-在五台都已切到琦琦注音後，跑 extension-required 套件：
+在五台都已切到琦琦輸入法後，跑 extension-required 套件：
 
 ```sh
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh
@@ -72,10 +72,10 @@ runner 會依名稱尋找本計畫的五台 Simulator、等待開機、共用 De
 | 實體鍵盤編輯器入口 UI 測試 | J 宿主側 | 驗證共用字庫成功載入、固定直排 1–9 候選、`1/n` 頁碼、插入游標、詞庫、ㄅ／英、半／全、符號、`🙂`、Esc／Backspace／Enter／四方向／空白、右上角快捷鍵說明，以及直式底部橫排的清除／複製／分享控制項；直式候選有無不可造成任何區塊位移；4.7 吋 iPhone SE 直式須套用緊湊輸入區，讓 1–9 候選、頁碼及全部操作鍵保持可見可點；橫式固定由左至右為輸入、候選、按鍵、動作四欄，最右欄由上至下排列清除／複製／分享文字；iPad 保留方向鍵與空白，iPhone 高度不足時收起這組輔助鍵；直式轉橫式再轉回直式後，各區塊須精確恢復旋轉前的 frame；一般候選 1–9、關聯詞 `Shift+1–9`、Space／Page Up／Page Down 翻頁、`Ctrl+C`／`⌘C` 複製、`Ctrl+S`／`⌘S` 分享、`Ctrl+K`／`⌘K` 開啟清除確認窗及以 Enter 確認／Esc 取消、無候選時方向鍵移動游標須另用真機人工測試 |
 | 設定導覽與鍵盤 opt-in | A、J 前置 | XCUITest 只操作受控 Simulator；iOS 26 的標籤是「新增鍵盤」 |
 | 14 種 Debug host 欄位可到達 | G、H 宿主側 | 驗證欄位存在、可捲動到且可點擊 |
-| ㄅ→英→數→ㄅ、`ㄋㄧˇ` 選字 | C、D、F | 只有目前軟體鍵盤已是琦琦注音時執行 |
+| ㄅ→英→數→ㄅ、`ㄋㄧˇ` 選字 | C、D、F | 只有目前軟體鍵盤已是琦琦輸入法時執行 |
 | 直式／橫式核心按鍵可見可點 | B | iPhone 與 iPad 都執行；要求 extension 已選定 |
 
-iOS 的第三方鍵盤 opt-in 與「目前輸入法」是兩件事。XCUITest 可以自動把琦琦注音加入系統清單，但 iOS 26 的 `InputSwitcherView` 可能只把選項反白而不接受合成 tap／drag，因此 runner 不會把「已加入」誤當成「已切換」。無人值守時用 `--host-only`；完整模式會要求 extension，不能取得 `keyboard.status` 就直接失敗。
+iOS 的第三方鍵盤 opt-in 與「目前輸入法」是兩件事。XCUITest 可以自動把琦琦輸入法加入系統清單，但 iOS 26 的 `InputSwitcherView` 可能只把選項反白而不接受合成 tap／drag，因此 runner 不會把「已加入」誤當成「已切換」。無人值守時用 `--host-only`；完整模式會要求 extension，不能取得 `keyboard.status` 就直接失敗。
 
 按住時的放大預覽、按鍵音、VoiceOver 實際朗讀、顏色視認、連續壓力與 iOS 強制換回 secure／phone 系統鍵盤等仍需依 A–K 人工確認。每次在 commit／PR 說明記錄：runner 模式、實際 runtime patch、五台裝置、自動結果、人工通過區塊及任何已知系統限制；不能只寫「XCUITest 通過」就宣稱 A–K 完成。
 

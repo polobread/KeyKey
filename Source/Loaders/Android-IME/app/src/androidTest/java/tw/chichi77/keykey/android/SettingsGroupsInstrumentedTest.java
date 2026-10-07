@@ -54,7 +54,7 @@ public final class SettingsGroupsInstrumentedTest {
                 // Simulate the billing result while the same settings screen remains open.
                 settings.onStateChanged(true, true, null);
                 assertSame(supporter, page.getChildAt(page.getChildCount() - 1));
-                assertTrue(containsText(supporter, "感謝你支持琦琦注音"));
+                assertTrue(containsText(supporter, "感謝你支持琦琦輸入法"));
                 assertFalse(containsText(supporter, "歡迎一次付費支持"));
                 assertTrue(containsText(page.getChildAt(page.getChildCount() - 2),
                         "關聯詞詞庫"));
