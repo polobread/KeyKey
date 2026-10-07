@@ -91,6 +91,30 @@ swift test --scratch-path /tmp/keykey-supporter-flow-tests
 此測試套件不加入 keyboard extension 或 `KeyKeyEngine`；仍須另用 Sandbox Apple ID
 驗證真實交易與 App Store Connect 商品設定。
 
+### USB 真機安裝
+
+從儲存庫根目錄執行，使用已配對的 iPhone／iPad、Xcode 開發者帳號及可用的
+開發簽章。`devicectl list devices` 顯示的真機 UDID 用於指定裝置：
+
+```sh
+xcrun devicectl list devices
+keykey_device_id="YOUR_IPHONE_UDID"
+xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
+  -scheme 'chichi77 KeyKey' -configuration Release \
+  -destination "platform=iOS,id=$keykey_device_id" \
+  -derivedDataPath Installer/local-builds/ios-device build
+xcrun devicectl device install app --device "$keykey_device_id" \
+  'Installer/local-builds/ios-device/Build/Products/Release-iphoneos/chichi77 KeyKey.app'
+xcrun devicectl device info apps --device "$keykey_device_id" \
+  --bundle-id io.github.polobread.inputmethod.chichi77.ios --include-default-apps
+xcrun devicectl device process launch --device "$keykey_device_id" \
+  io.github.polobread.inputmethod.chichi77.ios
+```
+
+安裝後核對裝置上的名稱與版號。App 和鍵盤 extension 皆為「琦琦輸入法」`1.3.2`；
+本機 build number 使用專案預設值，Xcode Cloud 則使用 `CI_BUILD_NUMBER`。
+USB 開發簽章安裝與 App Store／TestFlight 發行是不同流程。
+
 首次在一台新機器上需要先取得模擬器 runtime：`xcodebuild -downloadPlatform iOS`。
 
 ### 本機 MacBook 心經長文測試

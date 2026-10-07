@@ -27,6 +27,19 @@ The Windows assets in release `v1.2.9` predate the SignPath integration and
 remain unsigned. This policy applies after the SignPath Foundation application
 is accepted and the verified signing workflow is enabled.
 
+## Source review and merge
+
+All source, documentation, build-script, and CI changes, including agent-assisted
+changes, are committed and pushed to a working branch. They reach `master` only
+through a pull request reviewed and merged by [polobread](https://github.com/polobread).
+Agents must not commit or push directly to `master`, merge PRs, or enable auto-merge.
+
+This repository's maintainer-controlled PR process supports the
+[SignPath Foundation conditions](https://signpath.org/terms.html): contributions
+from non-committers require team review, and each release requires manual signing
+approval. Build scripts and CI configuration are part of that review. PR approval
+and signing approval are separate decisions made by the maintainer.
+
 ## Team roles
 
 - Authors and committers: [polobread](https://github.com/polobread)
