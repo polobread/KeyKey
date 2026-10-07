@@ -371,13 +371,21 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 ## GitHub Actions 封裝
 
-Android 的 debug 封裝、Google Play 正式上傳與 iOS Simulator workflow 都從 GitHub
-Actions 頁面按 **Run workflow** 手動執行。macOS、Windows 與 Linux 則在 GitHub
+Android 的 debug 封裝與 iOS Simulator workflow 從 GitHub Actions 頁面按
+**Run workflow** 手動執行。`Android Play Release` 在 PR 合併回 `master` 時自動建置、
+簽署並上傳 AAB 到 Google Play 內部測試，也保留手動執行；直接 push `master`、
+開啟或更新 PR、關閉但未合併的 PR 都不發布。自動執行使用該次合併 commit，
+手動執行使用所選分支或 tag 的 commit。Google 要求的 `changesNotSentForReview: true`
+會將上傳變更先儲存在 Console，再由 Console 送審。
+
+所有修改先在工作分支提交，再由維護者親自 review 和 merge PR 回 `master`；agent 不自行合併。
+原始碼、建置腳本與 CI 都依 [Code signing policy](CODE_SIGNING_POLICY.md) 納入審查。
+macOS、Windows 與 Linux 則在 GitHub
 **Publish release** 後自動建置，各自驗證成功後上傳到同一個 Release。Release 的 tag
 必須完全符合該平台原始碼版號，可在發布頁面同時建立。目前 Windows 為 `v1.3.2`，
 macOS、Linux 仍為 `v1.3.1`；同一 Release 的三平台產物只在各平台同版時成立，不能期待
 發布 `v1.3.2` 讓其餘兩平台也成功封裝。只推 tag 或儲存草稿
-不會觸發封裝；一般 commit 與 pull request 不會發布資產。`Linux CI` 另保留 PR smoke，
+不會觸發桌面封裝；一般 commit 與尚未合併的 pull request 不會發布桌面資產。`Linux CI` 另保留 PR smoke，
 發布前須通過 Ubuntu 24.04 完整測試與 Ubuntu 22.04 相容性驗證。
 
 單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
@@ -793,16 +801,24 @@ shares the completed text. See the
 
 ### GitHub Actions packaging
 
-The Android debug packaging, Google Play release, and iOS Simulator workflows
-run only after **Run workflow** is selected on the GitHub Actions page. The
-macOS, Windows, and Linux workflows start when a GitHub Release is published,
+Android debug packaging and iOS Simulator packaging run after **Run workflow**
+is selected in GitHub Actions. `Android Play Release` also runs automatically after
+a PR merges into `master`, building and uploading that exact merged commit to
+Google Play internal testing. Direct pushes, open or updated PRs, and PRs closed
+without merging do not publish. Manual runs build the selected branch or tag.
+`changesNotSentForReview: true` saves the upload for submission from Play Console.
+
+Commit all changes on a working branch; the maintainer reviews and merges the PR.
+Agents must not merge PRs. Source, build scripts, and CI are covered by the
+[Code signing policy](CODE_SIGNING_POLICY.md). The macOS, Windows, and Linux
+workflows start when a GitHub Release is published,
 and each independently uploads its verified packages. The tag must match the
 platform's source version and can be created on the Release page. Windows is now
 `v1.3.2`; macOS and Linux remain at `v1.3.1`. Uploading all three platforms to one
 Release applies when their versions match; publishing `v1.3.2` cannot produce
 matching macOS/Linux packages from this branch.
-Pushing a tag or saving a draft alone does not trigger packaging. Commits and
-pull requests do not publish assets. Linux keeps PR smoke checks; publishing
+Pushing a tag or saving a draft alone does not trigger desktop packaging.
+Ordinary commits and unmerged pull requests do not publish desktop assets. Linux keeps PR smoke checks; publishing
 requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
 
 To recover one failed platform, merge the fix into `master`, select its workflow

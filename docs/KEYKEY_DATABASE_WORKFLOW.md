@@ -1,5 +1,13 @@
 # 合併 master 後重建共用詞庫
 
+現行提交規則：重建產物與拒用報告都在工作分支 commit 和 push，再以 PR 合併到
+`master`。PR 由使用者親自 review 和 merge，agent 不自行合併；不得直接 commit
+或 push `master`，詳見 [AGENTS.md](../AGENTS.md)。
+
+目前 `.github/workflows/rebuild-keykey-db.yml` 仍包含直接回存 `master` 的舊步驟，
+須先改為產物 PR 流程再使用。本次文件更新沒有修改該 workflow；以下說明其現有
+觸發條件與重建邏輯，舊回存記錄不再作為直接寫入 `master` 的授權。
+
 Workflow：`.github/workflows/rebuild-keykey-db.yml`。
 只接受 `pull_request_target.closed` 且 `merged == true`、目標分支為 `master`，並且 PR
 改動至少一個下列來源。開 PR、更新 PR、關閉但未合併、直接 push 或修改其他檔案都不重建。
@@ -76,17 +84,17 @@ McBopomofo、CIN、補充詞表、v2/v3/v4、保護字、cooker 程式與本 wor
 此為固定回歸，不宣稱是新盲測。
 
 通過門檻後將 DB、採用／去重／降權／部分重疊清單、來源雜湊、cooker 報告、完整回歸結果、v5 最新紀錄、
-Android 快取檔名及各平台模型列數一起 commit 回 master。不存 DB artifact、不另開 PR。
+Android 快取檔名及各平台模型列數一起提交到工作分支，再開 PR 合併回 master。不存 DB artifact。
 只 stage `generated-files.json` 列出的檔案；一般平台 build 仍只驗證與複製共用 DB。
 
 超過 30 次時仍成功產生 `rebuild-review/latest.json`、完整比較、候選採用／排除清單
-及 cooker 報告，僅將這些 review 檔 commit 回 master。原 DB、manifest、正式清單、
+及 cooker 報告，僅將這些 review 檔提交到工作分支，再以 PR 合併。原 DB、manifest、正式清單、
 Android cache 及平台列數不動。驗證器以拒用報告中的原 DB 雜湊與當前來源雜湊綁定
 「來源已改、模型未採用」狀態，因此舊 DB 仍可建置；再改來源而未重建則驗證失敗。
 
-只有已合併事件的 job 取得 `contents: write`，checkout 已合併後的 master，不執行
-未合併 PR head。推送前檢查 master 沒有前進，並使用非強制 push。
-若 master 前進或分支保護禁止 bot 推送，明確失敗，需重跑或由管理者調整授權。
+現有 workflow 只有已合併事件的 job 取得 `contents: write`，checkout 合併後的
+master，並在推送前檢查 master 沒有前進。其最後的 `git push origin HEAD:master`
+與現行 PR 規則不符，待改為推送產物分支並建立 PR；不要放寬 master 權限來沿用舊回存。
 
 ## 本機執行
 

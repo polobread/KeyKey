@@ -211,9 +211,24 @@ App 首頁會避開狀態列與前相機挖孔，標題下顯示目前安裝的�
 App 設定頁的「支持開發」區塊未付費時放在最上方，付費後移到最後面，
 位置只依付費狀態調整，不套用 30 天條件。
 
+## Google Play 發布
+
+`Android Play Release` 在 PR 合併回 `master` 時自動建置、簽署並上傳 AAB 到
+Google Play 內部測試；也保留 Actions 頁面的 **Run workflow**。直接 push `master`、
+開啟或更新 PR、關閉但未合併的 PR 都不發布。自動建置使用該次合併的 commit，
+手動建置使用所選分支或 tag。
+
+Workflow 依序執行 release lint、單元測試、AAB 建置、簽章與共用 DB 驗證，
+再以 `changesNotSentForReview: true` 儲存上傳變更。送審及測試群組推廣由
+Play Console 操作；Actions 上傳成功不代表已公開發布。`Package Android`
+則只提供 debug APK，與正式上傳流程分開。
+
+所有原始碼、文件與 CI 修改都在工作分支提交，再透過 PR 合併回 `master`。
+版號來源為本專案的 `app/build.gradle.kts`，上傳版號須符合 Play 的版本要求。
+
 ## 建置
 
-需求：Android Studio、JDK 17 以上、Android SDK 36、Python 3，以及版控內預先產生的
+需求：Android Studio、JDK 17 以上、Android SDK 36.1／Build Tools 36.0.0、Python 3，以及版控內預先產生的
 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`。從 repo 根目錄可先驗證共用檔：
 
 ```sh

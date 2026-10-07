@@ -24,7 +24,7 @@
 - 三份 `phrase.people-*.tsv` 及「人名…」分類的新詞在 Bigram 訓練完成後才加入 Unigram；普通人名詞頻至多 1，動漫／碰撞人名至多 0.01。即使人名也出現在搜尋來源，仍排除於訓練；已存在小麥的同文字詞保留原模型處理。
 
 - 自訂詞以小麥正詞頻詞為主體，僅同文字去重；完整同音詞保留低順位候選供選字學習。雙方連續兩字同音異字列診斷：新詞只有兩字時降權，三字以上詞不因部分碰撞刪除或額外降權。動漫新詞及需降權的碰撞詞不參與 Bigram 訓練，詞頻至多 0.01 且低於既有完整同音詞，不強制低於拆詞路徑。使用者指定固定 131 篇總動作增加 **至多 30 次可採用、超過 30 次不採用**，文章與基本字差異列診斷、不另設硬門檻。超標時保留原 DB、只 commit 候選清單與拒用原因；最新結果見 `DataSource/AISyntheticBigram/rebuild-review/latest.json`。
-- 自訂詞來源合併進 master 後由 `.github/workflows/rebuild-keykey-db.yml` 重建；來源界線、固定 Git 基底與本機入口見 `docs/KEYKEY_DATABASE_WORKFLOW.md`。使用者已授權驗證成功後由 workflow commit 回 master，不另存 DB artifact；總動作增加超過 30 次時僅提交拒用報告，DB 維持原版。`collection-unigram.tsv` 是產物，修改原始分類詞庫及覆寫表；不可對同一 DB 反覆累加補償。
+- 自訂詞來源合併進 master 後由 `.github/workflows/rebuild-keykey-db.yml` 重建；來源界線、固定 Git 基底與本機入口見 `docs/KEYKEY_DATABASE_WORKFLOW.md`。重建產物與拒用報告須在工作分支提交，再以 PR 合併，不另存 DB artifact。既有 workflow 的直接回存 master 步驟尚待遷移；遷移前不得按舊流程執行；總動作增加超過 30 次時僅提交拒用報告，DB 維持原版。`collection-unigram.tsv` 是產物，修改原始分類詞庫及覆寫表；不可對同一 DB 反覆累加補償。
 - 不直接改 `DataSource/McBopomofo/phrase.occ` 或 `BPMFMappings.txt`；專案補充詞、讀音覆寫及語料放在 `DataSource/AISyntheticBigram/`。
 - 變更模型時同步更新正式 DB、`smart-mandarin-model-manifest.json`、目前 131 篇驗證結果及內容雜湊。不能只看資料列數判斷新舊；所有字級／文章差異需明列，採用依使用者最新 30 次總動作門檻。
 - 量測工具入口與動作定義見 `DataSource/AISyntheticBigram/TYPING_COST.md`。`measure-typing-cost.py ARTICLE VERSION` 量單篇；批次工具先固定樣本、完整分析，再比較全域候選。模型調整程式不得覆寫來源 DB。
@@ -33,6 +33,9 @@
 
 ## 工作區與提交
 
+- 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`；目前使用 `v1.3.2`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
+- PR 必須由使用者親自 review 和 merge；agent 不得自行合併 PR、啟用 auto-merge 或繞過使用者審查。
+- 此流程配合 SignPath 的變更審查與人工簽章核准要求；原始碼、建置腳本及 CI 設定都納入審查。角色與簽章流程見 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
 - 先執行 `git status --short --branch`，保留使用者既有修改。只逐檔 `git add` 本次內容，不用 `git add .` 或 `git add -A`。
 - 提交前檢查 diff、`git diff --check` 與測試結果。提交身分沿用儲存庫設定，不加入工具署名或 `Co-Authored-By`。
 - 建置目錄、`.typing-cache/`、`typing-benchmarks/`、`Installer/local-builds/`、影片、API 請求與執行紀錄是產物，不提交。不要提交 API 金鑰。

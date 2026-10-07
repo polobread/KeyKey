@@ -77,8 +77,9 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
 - Linux 的三個 `.deb`、面板原始碼及 `SHA256SUMS` 與桌面版同放在對應版本的 [GitHub Release](https://github.com/polobread/KeyKey/releases)。
-- Android 正式 AAB 由 `Android Play Release` workflow 簽署並手動送到 Google Play；
-  1.2.7 已送交封閉測試。`Package Android` 只產生供開發測試的 debug APK。
+- Android 正式 AAB 在 PR 合併回 `master` 時由 `Android Play Release` 自動建置、簽署並上傳到 Google Play 內部測試；也可手動 **Run workflow**。
+  直接 push `master` 不觸發。上傳後先儲存變更，再從 Play Console 送審或推廣測試群組。
+  `Package Android` 只產生供開發測試的 debug APK。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
   Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
@@ -96,6 +97,15 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
 留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
 完整產物、簽章與限制見 [BUILDING.md](BUILDING.md#github-actions-封裝)。
+
+## 開發與提交
+
+目前在 `v1.3.2` 工作分支開發；所有程式、文件與 CI 修改都在工作分支 commit 和 push，
+再建立 PR，由維護者親自 review 和 merge 到 `master`。Agent 不得自行合併或啟用自動合併，
+也不要直接在 `master` commit 或 push。
+同步最新主分支可在工作分支執行 `git pull --no-rebase origin master`；提交前保留既有修改，
+檢查差異並完成與變更相關的驗證。此流程也配合 SignPath 的變更審查與人工簽章核准要求；
+詳細規則見 [AGENTS.md](AGENTS.md) 與 [Code signing policy](CODE_SIGNING_POLICY.md)。
 
 ## 文件
 
@@ -224,9 +234,10 @@ iOS.
   and installer are currently unsigned and may trigger a security warning.
 - The three Linux `.deb` files, panel source archive, and `SHA256SUMS` share the
   corresponding [GitHub Release](https://github.com/polobread/KeyKey/releases) with the desktop builds.
-- The signed Android AAB is uploaded manually to Google Play by the
-  `Android Play Release` workflow. Version 1.2.7 has been submitted to closed
-  testing. `Package Android` produces a debug APK for development only.
+- `Android Play Release` builds, signs, and uploads the Android AAB to Google Play
+  internal testing after a PR merges into `master`, or when **Run workflow** is selected.
+  Direct pushes to `master` do not trigger it. Uploaded changes are saved for review
+  or promotion in Play Console. `Package Android` produces a development debug APK only.
 - Device builds for iOS are distributed through the App Store.
   `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
   be installed on an iPhone or iPad.
@@ -245,13 +256,24 @@ Publishing a GitHub Release starts
 uploads its verified packages when its version matches that Release. Windows
 uses `v1.3.2`; macOS and Linux retain `v1.3.1`. A Windows version tag cannot
 package those two platforms from this branch. After fixing a
-failed platform on `master`, manually run that workflow from `master` with
+failed platform through a PR into `master`, manually run that workflow from `master` with
 the matching platform's `release_tag` to replace its assets; other platforms are untouched.
 Leaving `release_tag` blank retains Actions artifacts only.
 The [Linux installation guide](LINUX_INSTALL.md)
 describes the supported desktop and application environments.
 See [BUILDING.md](BUILDING.md#github-actions-packaging) for the
 complete output and signing details.
+
+### Development and contributions
+
+Development currently uses `v1.3.2`. Commit and push code, documentation, and CI
+changes on a working branch, then open a pull request for the maintainer to review
+and merge. Agents must not merge PRs, enable auto-merge, or commit or push directly
+to `master`. Run `git pull --no-rebase origin master` from the working
+branch to synchronize it; preserve existing changes and review the diff and relevant
+validation before committing. This also supports SignPath review and manual signing
+approval requirements. See [AGENTS.md](AGENTS.md) and the
+[Code signing policy](CODE_SIGNING_POLICY.md).
 
 ### Documentation
 
