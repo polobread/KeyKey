@@ -2,6 +2,7 @@
 
 ## Android 1.3.2（未發布）
 
+- Google Play 發布改為 PR 合併回 master 時自動執行，保留手動 Run workflow；直接 push master 不觸發。
 - 修正 Google Play 拒絕 API 自動送審時發布流程失敗的問題；上傳後先儲存變更，供 Play Console 送審。
 - App、系統輸入法入口與安裝引導統一改名為「琦琦輸入法」。
 - Android 產品版號更新為 1.3.2，versionCode 更新為 1003002；自動封裝及 Google Play 發布流程改從 Android 設定取版號。

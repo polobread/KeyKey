@@ -404,7 +404,7 @@ gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 發布到 Release 前以 Developer ID 簽章並 notarize；僅 artifact 的 run 未簽章 |
 | Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章；EXE 只供測試，不能送 Store |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
-| Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 自動建置、簽署並上傳到 Google Play internal testing；儲存變更後由 Play Console 送審及推廣到封閉測試 |
+| Android Play Release | 無公開 artifact；直接上傳簽署 AAB | PR 合併到 master 或手動 Run workflow 時建置、簽署並上傳到 Google Play internal testing；直接 push master 不觸發，儲存變更後由 Play Console 送審及推廣到封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 | Linux CI | Ubuntu 22.04／24.04 `.deb`；Ubuntu 24.04 另有面板原始碼與 `SHA256SUMS` | 完整測試通過後，發布 run 只上傳 Ubuntu 24.04 的五個檔案；Ubuntu 22.04 套件僅保留 artifact |
 
@@ -831,7 +831,7 @@ artifacts for seven days:
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Signed with a Developer ID and notarized before Release upload; artifact-only runs remain unsigned |
 | Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; the EXE is test-only and cannot be submitted to the Store |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
-| Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads to Google Play internal testing; saved changes are submitted for review and promoted to closed testing in Play Console |
+| Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads after a PR merges into master or a manual Run workflow; direct pushes to master do not trigger it. Saved changes are submitted for review and promoted to closed testing in Play Console |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 | Linux CI | Ubuntu 22.04 and 24.04 `.deb` packages; Ubuntu 24.04 panel source and `SHA256SUMS` | Publishing runs upload five verified Ubuntu 24.04 assets after both gates pass; Ubuntu 22.04 packages remain Actions artifacts |
 
