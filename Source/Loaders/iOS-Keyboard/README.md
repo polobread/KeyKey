@@ -2,8 +2,9 @@
 
 一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。以下是開發與測試資訊。
 
-琦琦注音的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
-容器 App。
+琦琦輸入法的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
+容器 App。App 與鍵盤 extension 的產品版號皆為 `1.3.2`，由 Xcode project 的
+`MARKETING_VERSION` 統一設定，Simulator 封裝流程也從此讀取版號。
 首頁會從 container app bundle 的 `CFBundleShortVersionString` 顯示目前版本，避免畫面
 版號和 Xcode 的 `MARKETING_VERSION` 失同步。
 
@@ -96,7 +97,7 @@ swift test --scratch-path /tmp/keykey-supporter-flow-tests
 
 在開發機的 iOS 17 Simulator 執行 shared scheme `chichi77 KeyKey` 的
 `KeyKeyHeartSutra.xctestplan`。測試會在乾淨 Simulator 透過「設定」加入並切換到
-琦琦注音 keyboard extension，關閉全部關聯詞庫，逐字點完 268 個心經注音字與標點；
+琦琦輸入法 keyboard extension，關閉全部關聯詞庫，逐字點完 268 個心經注音字與標點；
 每字檢查提交後全文前綴和候選絕對順位，最後在 `.xcresult` 留下 `ios.txt` 與
 `ios.positions.tsv` attachments。若鍵盤沒真正啟動會失敗，不能以 skip 當通過。
 

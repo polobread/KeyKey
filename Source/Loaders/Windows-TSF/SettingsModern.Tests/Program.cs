@@ -3,6 +3,14 @@ using KeyKeySettings;
 var file = Path.Combine(Path.GetTempPath(), "keykey-settings-test-" + Guid.NewGuid().ToString("N") + ".plist");
 try
 {
+    if (SmartMandarinSettings.Validate("asdfjkl;", "20") != 20) throw new Exception("自訂選字鍵／長度驗證失敗");
+    if (SmartMandarinSettings.Validate("", "10") != 10) throw new Exception("鍵盤配置自動選字鍵未保留");
+    foreach (var invalid in new[] { ("12345677", "10"), ("1234567 ", "10"), ("12345678", "9"), ("12345678", "21"), ("12345678", "10.0"), ("１２３４５６７８", "10") }) {
+        bool rejected = false;
+        try { SmartMandarinSettings.Validate(invalid.Item1, invalid.Item2); }
+        catch (ArgumentException) { rejected = true; }
+        if (!rejected) throw new Exception("無效進階設定未拒絕");
+    }
     File.WriteAllText(file, """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

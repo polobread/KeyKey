@@ -296,6 +296,14 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_landscape,
                 KeyboardSizeSettings.landscapePercent(this), false);
 
+        CheckBox touchBottomSpace = bottomSpaceCheckBox(
+                KeyboardBottomSpaceSettings.touchEnabled(this));
+        touchBottomSpace.setOnCheckedChangeListener((button, checked) ->
+                KeyboardBottomSpaceSettings.setTouchEnabled(SettingsActivity.this, checked));
+        appearanceContent.addView(touchBottomSpace, matchWrap(dp(8), dp(8)));
+        appearanceContent.addView(bottomSpaceDescription(R.string.touch_bottom_space_description),
+                matchWrap(dp(0), dp(16)));
+
         LinearLayout hardwareContent = addSettingsGroup(content, savedInstanceState,
                 "hardware", R.string.settings_group_hardware,
                 R.string.settings_group_hardware_summary, false).body;
@@ -338,16 +346,29 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         hardwareNumberRow.setTextColor(Color.DKGRAY);
         hardwareNumberRow.setMinHeight(dp(48));
         hardwareNumberRow.setChecked(CandidateWindowSettings.numberRowEnabled(this));
-        hardwareNumberRow.setEnabled(!floatingCandidates.isChecked());
+        setDependentControlEnabled(hardwareNumberRow, !floatingCandidates.isChecked());
         hardwareContent.addView(hardwareNumberRow, matchWrap(dp(0), dp(8)));
         hardwareNumberRow.setOnCheckedChangeListener((button, checked) ->
                 CandidateWindowSettings.setNumberRowEnabled(SettingsActivity.this, checked));
+
+        CheckBox hardwareBottomSpace = bottomSpaceCheckBox(
+                KeyboardBottomSpaceSettings.hardwareEnabled(this));
+        TextView hardwareBottomSpaceDescription = bottomSpaceDescription(
+                R.string.hardware_bottom_space_description);
+        setDependentControlEnabled(hardwareBottomSpace, !floatingCandidates.isChecked());
+        setDependentControlEnabled(hardwareBottomSpaceDescription, !floatingCandidates.isChecked());
+        hardwareBottomSpace.setOnCheckedChangeListener((button, checked) ->
+                KeyboardBottomSpaceSettings.setHardwareEnabled(SettingsActivity.this, checked));
+        hardwareContent.addView(hardwareBottomSpace, matchWrap(dp(0), dp(8)));
+        hardwareContent.addView(hardwareBottomSpaceDescription, matchWrap(dp(0), dp(16)));
 
         floatingCandidates.setOnCheckedChangeListener((button, checked) -> {
             CandidateWindowSettings.setFloatingEnabled(SettingsActivity.this, checked);
             floatingLayout.setEnabled(checked);
             floatingLayoutLabel.setEnabled(checked);
-            hardwareNumberRow.setEnabled(!checked);
+            setDependentControlEnabled(hardwareNumberRow, !checked);
+            setDependentControlEnabled(hardwareBottomSpace, !checked);
+            setDependentControlEnabled(hardwareBottomSpaceDescription, !checked);
             updateFloatingFailure(floatingFailure);
         });
         floatingLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
@@ -801,6 +822,30 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             view.setText(getString(R.string.haptic_value_seconds,
                     String.format(Locale.TAIWAN, "%.3f", durationMs / 1000f), durationMs));
         }
+    }
+
+    private CheckBox bottomSpaceCheckBox(boolean checked) {
+        CheckBox check = new CheckBox(this);
+        check.setText(R.string.bottom_language_space_enabled);
+        check.setTextSize(16);
+        check.setTextColor(Color.DKGRAY);
+        check.setMinHeight(dp(48));
+        check.setChecked(checked);
+        return check;
+    }
+
+    private TextView bottomSpaceDescription(int text) {
+        TextView description = new TextView(this);
+        description.setText(text);
+        description.setTextSize(14);
+        description.setTextColor(Color.GRAY);
+        description.setLineSpacing(0, 1.2f);
+        return description;
+    }
+
+    private static void setDependentControlEnabled(View control, boolean enabled) {
+        control.setEnabled(enabled);
+        control.setAlpha(enabled ? 1f : 0.45f);
     }
 
     private TextView endpointLabel(int text, int gravity) {

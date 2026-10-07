@@ -52,6 +52,7 @@ def verify(package):
         if architecture == "x64":
             required.add("keykeytsf_x64.dll")
         assert required <= seen, "incomplete payload"
+        assert "licenses/openvanilla-hanconvert.txt" in seen, "missing Han conversion notices"
         guide = archive.read(prefix + "README.txt").decode("utf-8-sig")
         assert "新增鍵盤" in guide and "Windows 10" in guide and "Windows 11" in guide
         assert "chichi77-keykey-install.log" not in guide

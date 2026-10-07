@@ -8,5 +8,6 @@
   <ItemGroup>
     <Compile Include="../SettingsModern/SettingsStore.cs" Link="SettingsStore.cs" />
     <Compile Include="../SettingsModern/InputMethodSettings.cs" Link="InputMethodSettings.cs" />
+    <Compile Include="../SettingsModern/SmartMandarinSettings.cs" Link="SmartMandarinSettings.cs" />
   </ItemGroup>
 </Project>

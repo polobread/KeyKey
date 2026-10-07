@@ -31,7 +31,7 @@ final class SetupViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
-        let title = label("琦琦注音", size: 28, weight: .bold)
+        let title = label("琦琦輸入法", size: 28, weight: .bold)
         let version = label(appVersionText, size: 14, weight: .regular)
         version.textColor = .secondaryLabel
         version.accessibilityIdentifier = "app.version"
@@ -73,8 +73,8 @@ final class SetupViewController: UIViewController {
         let steps = label(
             """
             1. 開啟「設定 → 一般 → 鍵盤 → 鍵盤 → 加入新的鍵盤」
-            2. 在「第三方鍵盤」中選擇「琦琦注音」
-            3. 打字時長按地球鍵切換到琦琦注音
+            2. 在「第三方鍵盤」中選擇「琦琦輸入法」
+            3. 打字時長按地球鍵切換到琦琦輸入法
 
             鍵盤上的「設」鍵可以調整關聯詞詞庫。
             """,
@@ -921,7 +921,7 @@ private final class InputFieldTestViewController: UIViewController, UITextFieldD
         )
 
         let note = UILabel()
-        note.text = "選欄位後長按地球鍵選「琦琦注音」。每個欄位會把 keyboardType 與 returnKeyType 傳給鍵盤。"
+        note.text = "選欄位後長按地球鍵選「琦琦輸入法」。每個欄位會把 keyboardType 與 returnKeyType 傳給鍵盤。"
         note.font = .preferredFont(forTextStyle: .footnote)
         note.textColor = .secondaryLabel
         note.numberOfLines = 0

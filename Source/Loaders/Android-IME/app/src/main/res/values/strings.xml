@@ -6,16 +6,16 @@
         <item>標準</item>
         <item>許氏鍵盤</item>
     </string-array>
-    <string name="app_name">琦琦注音</string>
-    <string name="ime_name">琦琦注音輸入法</string>
+    <string name="app_name">琦琦輸入法</string>
+    <string name="ime_name">@string/app_name</string>
     <string name="ime_subtype_name">繁體中文（標準注音）</string>
-    <string name="setup_title">琦琦注音輸入法</string>
+    <string name="setup_title">@string/app_name</string>
     <string name="version_info">版本 %1$s</string>
     <string name="setup_description">使用與電腦相同的標準注音鍵位，支援可選關聯詞詞庫、直式、橫式以及 USB／藍牙實體鍵盤。</string>
     <string name="enable_ime">1. 啟用輸入法</string>
-    <string name="choose_ime">2. 選擇琦琦注音</string>
+    <string name="choose_ime">2. 選擇琦琦輸入法</string>
     <string name="open_settings">3. 調整設定</string>
-    <string name="settings_title">琦琦注音設定</string>
+    <string name="settings_title">琦琦輸入法設定</string>
     <string name="settings_group_composition">注音與選字</string>
     <string name="settings_group_composition_summary">注音鍵盤：%1$s · 上下文：%2$s</string>
     <string name="settings_value_on">開啟</string>
@@ -24,9 +24,9 @@
     <string name="settings_group_table_summary">即時候選、錯碼清除、倉頡標點與選字排序</string>
     <string name="settings_group_table_description">倉頡最多五碼，簡易滿兩碼查詢；兩者使用逐字選字與關聯詞。下方可分別調整兩種輸入法的選項。點鍵盤的「設」即可選擇輸入法。</string>
     <string name="settings_group_appearance">外觀與操作</string>
-    <string name="settings_group_appearance_summary">鍵盤高度、震動、按鍵預覽、候選顏色</string>
+    <string name="settings_group_appearance_summary">鍵盤高度、底部空間、震動、按鍵預覽、候選顏色</string>
     <string name="settings_group_hardware">實體鍵盤</string>
-    <string name="settings_group_hardware_summary">浮動候選窗、候選按鍵</string>
+    <string name="settings_group_hardware_summary">浮動候選窗、數字符號鍵、底部空間</string>
     <string name="settings_group_phrases">關聯詞詞庫</string>
     <string name="settings_group_phrases_summary">選擇要啟用的詞庫</string>
     <string name="settings_group_expand">展開%1$s</string>
@@ -64,12 +64,15 @@
         <item>黃色</item>
         <item>紅色</item>
     </string-array>
-    <string name="floating_candidates_enabled">實體鍵盤使用浮動候選字窗</string>
+    <string name="floating_candidates_enabled">使用浮動候選字窗</string>
     <string name="floating_candidates_failure_token">已改用一般候選列：系統或目標 App 未提供可用的輸入法視窗 token。重新勾選可再試一次。</string>
     <string name="floating_candidates_failure_cursor_anchor">已關閉浮動候選字窗並改用一般候選列：目前 App 持續未提供有效的游標位置。重新勾選可再試一次。</string>
     <string name="floating_candidates_failure_attach">已改用一般候選列：系統拒絕附掛浮動候選字窗。重新勾選可再試一次。</string>
     <string name="floating_candidates_layout">浮動候選字窗排列</string>
-    <string name="hardware_number_row_enabled">關閉浮動候選字窗時顯示虛擬數字與符號鍵</string>
+    <string name="hardware_number_row_enabled">顯示虛擬數字與符號鍵</string>
+    <string name="bottom_language_space_enabled">預留底部切換語言空間</string>
+    <string name="touch_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時虛擬鍵盤貼齊底部。</string>
+    <string name="hardware_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時候選列貼齊底部。使用浮動候選字窗時無法調整。</string>
     <string-array name="floating_candidate_layouts">
         <item>垂直選字窗</item>
         <item>水平選字窗</item>
@@ -81,7 +84,7 @@
     <string name="supporter_description">琦琦輸入法未付費也能完整使用。若覺得好用，歡迎一次付費支持後續維護與開發。付費支持後，鍵盤上將不再顯示「歡迎付費支持」提示。</string>
     <string name="supporter_button">付費支持</string>
     <string name="supporter_thank_you">謝謝支持</string>
-    <string name="supporter_supported_description">感謝你支持琦琦注音的維護與開發。</string>
+    <string name="supporter_supported_description">感謝你支持琦琦輸入法的維護與開發。</string>
     <string name="supporter_checking">正在確認…</string>
     <string name="supporter_price">一次付費支持：%1$s</string>
     <string name="supporter_prompt">歡迎付費支持</string>

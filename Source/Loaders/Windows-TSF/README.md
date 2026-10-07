@@ -1,10 +1,80 @@
 # 琦琦輸入法 Windows TSF frontend
 
+本機 `v1.3.2` 功能分支新增進階設定、讀音輔助、符號表與簡體輸出；
+Windows 產品版號為 1.3.2，尚未發布；其他平台及共用模型維持 1.3.1。實作與驗證記錄見
+[Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
+
+「一般」新增「啟動時預設輸入模式」中文／英文，預設為中文。設定在輸入法服務下次
+啟用時生效；中文沿用目前選擇的好打注音、傳統注音、倉頡或簡易，Shift 仍可切換。
+切換輸入欄位不會強制還原啟動偏好。設定另以獨立 TSF compartment 提供給受限宿主；
+若該宿主尚未取得桌面發布的偏好，沿用其本地設定（未設定時為中文）。
+
+Num Lock 開啟時，右側數字鍵盤的數字與小數點直接輸入；加減乘除也直接輸入。
+有組字時先送出目前顯示的文字（包含未完成注音），再插入數字或運算符並關閉候選窗。
+主鍵盤數字列保留注音及選字功能，Num Lock 關閉時的導覽鍵維持原行為。
+此處只修改 Windows adapter，未改動其他平台共用的注音核心。
+
+2026-10-05：以上三項修正以 MSVC/Ninja 完成 x64、x86 建置，選定回歸分別
+13/13、12/12 通過，涵蓋數字鍵盤、既有注音／倉頡／簡易、Esc、候選狀態、
+候選窗延遲版面、偏好讀取、四種輸入法的啟動模式及 x64 WPF 套用／重開。
+啟動模式測試使用真實 TSF compartments 與隔離設定，直接呼叫服務啟動時的模式
+初始化；不註冊 TIP，也不能代替完整 ActivateEx 或實際 Firefox 驗收。
+TSF 共享狀態與 WPF 測試需一般使用者環境，受限命令沙箱會拒絕狀態寫入。
+
+2026-10-06：同一 TSF 服務的按鍵、輸入法／中英文／全半形／輸出模式切換與符號插入，
+依同一佇列執行。已接受的非同步按鍵先完成，再取得切換時的組字快照；成功送出原文字、
+未完成注音或字根後才切換引擎及工作列狀態。內部設定刷新保留當前中英文模式，
+焦點與按鍵查詢不會把尚未發布的顯式選擇改回舊設定。宿主拒絕建立組字時不先修改引擎；
+宿主已接受但送字失敗的按鍵保留結果，下一次同欄位輸入先重試，不重跑原按鍵或重複插入。
+TSF 取消未執行的 session 會撤銷其待處理狀態，過期或重複回呼不影響新作業。
+
+失焦、欄位銷毀或尚無組字的待處理按鍵期間移動游標，會取消未執行的舊按鍵；不重播到
+新欄位。舊欄位仍存在時只盡力結束原組字，無法保證已銷毀欄位可寫回。導覽鍵與快捷鍵
+仍交宿主處理；隔離測試不能代替 Firefox、Office 或其他實際宿主驗收。Windows 引擎
+固定每個服務已生效的方法，並在佇列邊界載入指定方法的設定；共用模組欄位未做完整設定
+快照隔離，送字重試也不回滾已發生的候選／學習決策。
+
+候選窗與符號表在宿主暫時隱藏 owned popup 後取消，會退役待還原的視窗，避免 Windows
+之後自動還原空白框。此生命週期序列已有兩架構原生回歸；其他白塊與分類 hover 消字
+未確認相同原因，仍待使用者實機複測。
+
+本輪 x64／x86 各 27 項原生回歸全數通過，包括進階設定、表格輸入、候選狀態及 popup
+生命週期。每架構先在沙箱通過 25 項，再以一般使用者權限重跑被檔案／HKCU 權限阻擋的
+兩項隔離測試；沒有安裝或切換使用者輸入法。完整證據與限制見功能驗證文件。
+
+「注音」頁可設定空白開候選、選字目標在游標前方或後方、8 個唯一的可輸入 ASCII 候選鍵，
+以及 10–20 音節的組字長度。候選鍵留空時沿用鍵盤配置（許氏 `asdfzxcv`、倚天26 `asdfjkl;`、
+其餘 `12345678`）；可按「使用數字」明確改用數字。無效設定不會先儲存其他欄位。
+套用後，下一次輸入先保留並送出原組字，再啟用新設定；關閉未套用視窗不更改引擎。
+
+「自訂詞」頁輸入詞語後按「取得讀音」，優先查本地正式詞庫的完整詞讀音，
+再提供逐字下拉選單供修改。多音字須按語境確認；沒有讀音的位置會標出並須手動補齊。
+手動逗號分隔讀音仍可使用，編輯既有詞語不會自動覆蓋讀音。最多 64 個 Unicode 字元、
+每字及完整詞最多 32 個讀音選項，不展開所有組合；查詢不修改正式詞庫。
+
+工作列輸入法選單依序排列「半形／全形 → 簡體中文輸出 → 分隔線 → 符號表… → 輸入法設定…」。
+「符號表…」提供原有 17 個分類、807 個符號與完整顏文字，保留手機版 90 個 emoji 的
+順序並加入 110 個 Windows 專用補充，共 18 個分類、1,007 項。Emoji 共 200 個，
+一般大小每頁 40 個、五頁；頁面容量會依工作區及 DPI 調整。
+分類使用下拉選單；符號與 Emoji 使用最多十欄的格狀按鈕，顏文字以整列顯示。
+Emoji 使用 Direct2D／DirectWrite 的 Segoe UI Emoji 彩色字型，圖案依作業系統字型版本；
+高對比模式或彩色渲染不可用時回退 GDI 單色，不下載圖片或改動手機資料。
+視窗從滑鼠所在螢幕的工作區右側開啟，可由標題列拖曳；位置只在同一輸入服務生命週期內
+記住，不跨 App 或重新啟動保存，重開及 DPI 變更時會限制於可用工作區。
+以滑鼠選取後送入原輸入欄位並關閉。面板開啟時保留組字；選取時先送出原組字，再插入符號。
+Esc、關閉或切換輸入欄位只關閉面板；符號保留原全半形格式，避免全形模式破壞顏文字。
+
+「簡體中文輸出」可在工作列選單或一般設定切換，四種輸入法與關聯詞皆適用。
+組字與候選維持繁體，自訂詞及選字學習保存繁體；只在送出文字時使用既有繁簡字表。
+切換時以舊設定完成目前組字，後續輸入採新設定。符號中的漢字也使用同一輸出策略，
+英文、數字、標點、emoji 與無對照字維持原樣。各文字宿主透過 TSF 全域 compartment
+同步狀態；受限宿主採用隔離的本地設定，桌面宿主會保存其最新全域選項。
+
 Windows 1.3.1 的兩種安裝流程稽核、舊版遷移設計與待驗收矩陣見
 [Windows 安裝與舊版遷移規劃](../../../docs/WINDOWS_INSTALLATION_1_3_1_PLAN.md)。
 共用安裝核心、兩種入口與文件已依規劃修改；歷代實際安裝包的 VM 升級／移除驗收仍待完成。
 
-Windows 1.3.1 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
+Windows 1.3.2 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
 
 The standard `GUID_LBI_INPUTMODE` item exposes a menu style (without a split-button arrow):
 Windows can invoke `InitMenu`/`OnMenuSelect` to switch all four methods even when
@@ -74,7 +144,7 @@ reference and is not linked into this DLL.
 
 ### Cangjie and Simplex development build
 
-This source adds these modes to 1.3.1 local builds; published installers and
+This source includes these modes in Windows 1.3.2 local builds; published installers and
 already installed DLLs are separate artifacts and may still contain only Mandarin.
 Cangjie retains up to five radicals and queries with Space/Enter; Simplex queries
 at two radicals. Number keys select candidates, Page Up/Down page, Backspace
@@ -104,6 +174,53 @@ settings backend. Desktop visual QA, actual TSF host input, and installer
 upgrade verification remain separate acceptance steps.
 
 ## Screenshots
+
+### First-character candidate layout investigation (2026-10-05)
+
+A user video of Firefox's address bar shows Bopomofo by about 1.5 seconds
+and the first Chinese character (`書`) by about 3 seconds, with no candidate
+window during the following pause. A candidate window is visible later for
+`法`. The video does not show physical key events, so the pause cannot be
+reported as a measured key-to-display latency or attributed to CPU/GPU speed.
+
+The TSF frontend used to hide and discard its candidate display state whenever
+`GetTextExt` failed. It did not subscribe to `ITfTextLayoutSink`, so a host
+returning `TS_E_NOLAYOUT` could finish layout without the candidate window ever
+being retried until another key arrived. This path is also present in tag
+`v1.3.1`. Microsoft's [layout notification contract](https://learn.microsoft.com/en-us/windows/win32/api/msctf/nf-msctf-itfcontextownerservices-onlayoutchange)
+requires hosts to notify when the layout becomes available.
+
+The frontend now retains the candidates and requests an asynchronous read-only
+layout refresh on that notification. Each candidate update invalidates older
+requests; cancellation, focus loss, mode completion and deactivation discard
+pending display state. This does not replay keys, query the language model,
+or modify the document. A zero-width caret remains a valid anchor; invisible
+text with an empty bounding rectangle keeps the window hidden.
+
+`KeyKeyTsfOutputBehaviorTest` covers no-layout recovery without another key,
+duplicate notifications, cancellation and stale callbacks, failed requests,
+new candidate pages, another document, associated-phrase anchors, and invisible
+text. These isolated COM tests are separate from actual Firefox acceptance.
+The x64 and x86 MSVC/Ninja builds and all six selected CTest entries per
+architecture passed (layout/output behavior, TSF interface, Bopomofo, both Esc
+policies, and candidate key state machine). The Visual Studio x86 generator
+encountered a sandbox FileTracker access error; the existing x86 Ninja build
+provided the x86 verification. No installed input method was replaced.
+On the reporting PC, repeat the first syllable in Firefox's address bar, a web
+text field and Notepad, then test Esc and switching focus while candidates are
+pending. Record the installed version and whether this happens only after
+launch or on every new composition. `%TEMP%\KeyKeyTsf.log` now records
+`Candidate layout deferred` with the HRESULT and the later refresh request,
+which distinguishes a layout failure from slow engine input. Only the relevant
+reproduction interval is needed; review the log before sharing it.
+
+For comparison, a local isolated Traditional Mandarin engine run on the
+unmodified branch measured 0.1–0.5 ms per key (including candidate lookup and
+selection). Its first session creation took 244 ms, versus 24 ms in the next
+fresh process with warm OS caches. This excludes TSF, Firefox, window painting
+and the reporting PC. Startup still counts the full shared unigram/bigram
+tables and initializes available modules; it remains a separate performance
+lead, not the explanation for missing candidates after text is already visible.
 
 The [Windows installation guide](../../../WINDOWS_INSTALL.md) uses clearly
 labelled 1.3.0 reference captures; the 1.3.1 installer has no destination page.
@@ -174,6 +291,12 @@ to use the checked-in shared database.
 
 ## Build and register (x64 and x86)
 
+MSVC/Ninja builds detect the compiler's localized `/showIncludes` prefix and
+normalize it through `MsvcCompiler.py`, using the required Python interpreter.
+This preserves header dependencies on Windows hosts whose console and compiler
+output encodings differ. Existing Ninja build directories with missing header
+dependencies need a clean rebuild after reconfiguration.
+
 Open an **x64 Native Tools Command Prompt/PowerShell for Visual Studio**, then
 run from this directory:
 
@@ -200,7 +323,7 @@ The same tab can import a `SmartMandarinUserData.db` backup: user phrases are
 merged by reading and text, while the imported candidate and contextual
 learning replace the current learning tables. Export uses SQLite's online
 backup API, so a database can be saved while the input method is active.
-The settings window footer shows `1.3.1`; the frontend validation script checks
+The settings window footer shows `1.3.2`; the frontend validation script checks
 that this visible version matches the CMake project and packaging version.
 Language-model source changes do not alter a platform build automatically.
 Generate and validate a new canonical `KeyKey.db` first, then commit the file
@@ -264,7 +387,7 @@ immediately. Record any exit code; once deployment starts, diagnostics are in
 The elevated installer:
 
 - copies the x64 and x86 DLLs, settings app, database, and notices to
-  `C:\Program Files\chichi77 KeyKey\1.3.1-<fingerprint>`;
+  `C:\Program Files\chichi77 KeyKey\1.3.2-<fingerprint>`;
 - registers the TSF from that permanent location; and
 - adds **琦琦輸入法** to Windows Installed apps for uninstallation.
 
@@ -279,7 +402,7 @@ The Windows GitHub Actions workflow installs NSIS 3.12 and emits this test-only
 installer in addition to the ZIP package:
 
 ```text
-out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe
+out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.unsigned.exe
 ```
 
 To build the same unsigned installer locally after building x64 and x86, run:
@@ -292,8 +415,8 @@ To build the same unsigned installer locally after building x64 and x86, run:
 The `.unsigned.exe` artifact supports `/S` silent installation but is not
 eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
 settings executable, and the outer installer is unsigned as well.
-It retains product version `1.3.1` and installs into a fingerprinted directory
-such as `C:\Program Files\chichi77 KeyKey\1.3.1-xxxxxxxxxxxx`.
+Its product version is `1.3.2` and installs into a fingerprinted directory
+such as `C:\Program Files\chichi77 KeyKey\1.3.2-xxxxxxxxxxxx`.
 Rebuilding changed binaries gets a new directory, so an existing text host
 can continue using its previously loaded DLL. Signed production packages use
 the same version-and-fingerprint naming scheme.
@@ -302,7 +425,7 @@ The finish page explains how users add KeyKey in Windows Settings. Installation
 does not launch the settings app, enable a keyboard, or change a default.
 
 Publishing a GitHub Release with a tag matching the repository version, such
-as `v1.3.1`, automatically builds and uploads this unsigned EXE, the x64/x86 ZIP
+as `v1.3.2`, automatically builds and uploads this unsigned EXE, the x64/x86 ZIP
 packages, and SHA-256 files. To recover a failed build, merge the fix into
 `master`, manually run `Package Windows` from `master`, and enter the existing
 tag in `release_tag`. The workflow replaces only Windows assets and records the
@@ -351,8 +474,8 @@ recorded after signing, so the manifest describes the actual installed bytes.
 The output is:
 
 ```text
-out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe
-out\store-package\chichi77-KeyKey-1.3.1-windows-x64-setup.exe.sha256
+out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.exe
+out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.exe.sha256
 ```
 
 Test the signed installer's silent installation and uninstallation on a
@@ -360,17 +483,18 @@ disposable clean Windows 11 VM before submission. NSIS treats `/S` as
 case-sensitive:
 
 ```powershell
-.\chichi77-KeyKey-1.3.1-windows-x64-setup.exe /S
+.\chichi77-KeyKey-1.3.2-windows-x64-setup.exe /S
 & "$env:ProgramFiles\chichi77 KeyKey\Uninstall.exe" uninstall --quiet
 ```
 
 For an EXE Store submission, Partner Center takes a versioned HTTPS package URL
 rather than a direct file upload. The automated version Release contains only
 the unsigned test assets. Upload the separately signed EXE as a distinct asset
-to that existing Release, then use a URL such as:
+to that existing Release, then use its versioned URL. The following is a Windows
+1.3.2 URL template; it does not mean that this version or signed file has been published:
 
 ```text
-https://github.com/polobread/KeyKey/releases/download/v1.3.1/chichi77-KeyKey-1.3.1-windows-x64-setup.exe
+https://github.com/polobread/KeyKey/releases/download/v1.3.2/chichi77-KeyKey-1.3.2-windows-x64-setup.exe
 ```
 
 Do not replace an asset after submitting its URL. In Partner Center select
@@ -397,8 +521,8 @@ LICENSES/
 ```
 
 ZIP and NSIS invoke the same deployment executable and use the same layout in
-`C:\Program Files\chichi77 KeyKey\1.3.1-<fingerprint>`. Repair or reinstall before
-a pending reboot uses a fresh `1.3.1-<instance-id>` path. New directory names do
+`C:\Program Files\chichi77 KeyKey\1.3.2-<fingerprint>`. Repair or reinstall before
+a pending reboot uses a fresh `1.3.2-<instance-id>` path. New directory names do
 not contain `test` or `repair`; old directories with those labels remain
 recognizable for migration. The product root holds protected state, a durable
 transaction journal while installing, diagnostics and compatibility uninstall

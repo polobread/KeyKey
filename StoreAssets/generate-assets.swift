@@ -145,7 +145,7 @@ func render(_ page: Page, index: Int, count: Int, variant: String,
     } else {
         c.fill(col(0xFAF7FD))
         c.rounded(0, 0, w, 104*k, 0, plum)
-        c.text("琦琦注音  /  \(kind)", x: 68*k, top: 30*k,
+        c.text("琦琦輸入法  /  \(kind)", x: 68*k, top: 30*k,
                width: w-136*k, height: 54*k, size: 38*k,
                weight: .semibold, color: white)
         c.rounded(80*k, 155*k, 16*k, 216*k, 8*k, purple)
@@ -183,14 +183,14 @@ func feature(_ variant: String, path: String) {
         c.text("注音照你的習慣",x:55,top:75,width:520,height:100,size:65,weight:.bold,color:white)
         c.text("好打注音・傳統注音・實體鍵盤",x:58,top:190,width:500,height:95,size:31,weight:.medium,color:lavender)
         c.rounded(55,332,500,68,34,gold)
-        c.text("琦琦注音輸入法",x:75,top:343,width:460,height:53,size:34,weight:.bold,color:plum)
+        c.text("琦琦輸入法",x:75,top:343,width:460,height:53,size:34,weight:.bold,color:plum)
     } else {
         c.fill(col(0xFAF7FD))
         c.rounded(0,0,22,500,0,purple)
         c.text("注音照你的習慣",x:65,top:68,width:510,height:112,size:65,weight:.bold,color:plum)
         c.text("好打・傳統・接上鍵盤",x:68,top:193,width:485,height:105,size:38,weight:.medium,color:purple)
         c.rounded(65,352,458,76,38,plum)
-        c.text("琦琦注音 1.3.1",x:85,top:362,width:420,height:55,size:37,weight:.bold,color:white)
+        c.text("琦琦輸入法 1.3.1",x:85,top:362,width:420,height:55,size:37,weight:.bold,color:white)
     }
     let phone = NSImage(contentsOfFile: output + "/Sources/android-v130-smart-full.png")!
     let panel = c.rect(630,25,350,450)
@@ -214,7 +214,7 @@ func renderFivePlatforms(_ variant: String, path: String) {
     } else {
         c.fill(col(0xFAF7FD))
         c.rounded(0,0,1080,92,0,plum)
-        c.text("琦琦注音  /  Google Play",x:58,top:25,width:950,height:55,
+        c.text("琦琦輸入法  /  Google Play",x:58,top:25,width:950,height:55,
                size:34,weight:.semibold,color:white)
     }
     let head = darkTheme ? white : plum

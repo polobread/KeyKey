@@ -6,6 +6,8 @@
 
 #include "UserDataStore.h"
 #include "sqlite3.h"
+#include "SharedOutputState.h"
+#include "StartupInputMode.h"
 
 namespace {
 struct Collection { std::wstring source; std::wstring display; };
@@ -21,6 +23,80 @@ void CopyTo(const std::wstring& source, wchar_t* target, int capacity) {
 }
 
 extern "C" {
+__declspec(dllexport) int __cdecl KeyKeyReadSimplifiedOutput() {
+    Microsoft::WRL::ComPtr<ITfThreadMgrEx> manager;
+    if (FAILED(CoCreateInstance(CLSID_TF_ThreadMgr, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&manager)))) return -1;
+    TfClientId client = TF_CLIENTID_NULL;
+    if (FAILED(manager->ActivateEx(&client, TF_TMAE_NOACTIVATETIP | TF_TMAE_NOACTIVATEKEYBOARDLAYOUT))) return -1;
+    KeyKey::WindowsTsf::SharedOutputState state;
+    const auto connected = state.connect(manager.Get());
+    const auto value = SUCCEEDED(connected) ? state.read() : std::optional<bool>{};
+    state.reset();
+    manager->Deactivate();
+    return value.has_value() ? (*value ? 1 : 0) : -1;
+}
+static int PublishBooleanPreference(int enabled, REFGUID guid) {
+    Microsoft::WRL::ComPtr<ITfThreadMgrEx> manager;
+    if (FAILED(CoCreateInstance(CLSID_TF_ThreadMgr, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&manager)))) return 0;
+    TfClientId client = TF_CLIENTID_NULL;
+    if (FAILED(manager->ActivateEx(&client, TF_TMAE_NOACTIVATETIP | TF_TMAE_NOACTIVATEKEYBOARDLAYOUT))) return 0;
+    KeyKey::WindowsTsf::SharedOutputState state;
+    const auto connected = state.connect(manager.Get(), guid);
+    const auto written = SUCCEEDED(connected) ? state.write(client, enabled != 0) : connected;
+    state.reset();
+    manager->Deactivate();
+    return SUCCEEDED(written) ? 1 : 0;
+}
+__declspec(dllexport) int __cdecl KeyKeyPublishSimplifiedOutput(int enabled) {
+    return PublishBooleanPreference(enabled, KeyKey::WindowsTsf::OutputCompartmentGuid());
+}
+__declspec(dllexport) int __cdecl KeyKeyPublishDefaultChineseMode(int enabled) {
+    return PublishBooleanPreference(enabled, KeyKey::WindowsTsf::StartupInputModeGuid());
+}
+// Each lookup owns an immutable snapshot. Caller releases it exactly once;
+// buffers are caller-owned UTF-16 and capacities include the trailing NUL.
+__declspec(dllexport) void* __cdecl KeyKeyLookupReadings(const wchar_t* path, const wchar_t* phrase, int* status) {
+    if (!status) return nullptr;
+    *status = -1;
+    if (!path || !phrase) return nullptr;
+    try {
+        auto* result = new KeyKey::WindowsTsf::ReadingLookup(
+            KeyKey::WindowsTsf::LookupPhraseReadings(path, phrase));
+        *status = static_cast<int>(result->status);
+        return result;
+    } catch (...) { *status = -2; return nullptr; }
+}
+__declspec(dllexport) void __cdecl KeyKeyFreeReadings(void* handle) {
+    delete static_cast<KeyKey::WindowsTsf::ReadingLookup*>(handle);
+}
+__declspec(dllexport) int __cdecl KeyKeyReadingCount(void* handle, int character) {
+    const auto* result = static_cast<KeyKey::WindowsTsf::ReadingLookup*>(handle);
+    if (!result) return -1;
+    if (character == -2) return static_cast<int>(result->characters.size());
+    if (character == -1) return static_cast<int>(result->wholePhraseReadings.size());
+    if (character < 0 || static_cast<size_t>(character) >= result->characters.size()) return -1;
+    return static_cast<int>(result->characters[character].readings.size());
+}
+// index -1 with a character index returns its original code point. Returns
+// required capacity; writes only when the complete string fits (no truncation).
+__declspec(dllexport) int __cdecl KeyKeyReadingAt(void* handle, int character, int index, wchar_t* target, int capacity) {
+    const auto* result = static_cast<KeyKey::WindowsTsf::ReadingLookup*>(handle);
+    if (!result) return 0;
+    const std::wstring* value = nullptr;
+    if (character == -1 && index >= 0 && static_cast<size_t>(index) < result->wholePhraseReadings.size())
+        value = &result->wholePhraseReadings[index];
+    else if (character >= 0 && static_cast<size_t>(character) < result->characters.size()) {
+        const auto& item = result->characters[character];
+        if (index == -1) value = &item.text;
+        else if (index >= 0 && static_cast<size_t>(index) < item.readings.size()) value = &item.readings[index];
+    }
+    if (!value) return 0;
+    const int required = static_cast<int>(value->size() + 1);
+    if (target && capacity >= required) CopyTo(*value, target, capacity);
+    return required;
+}
 __declspec(dllexport) int __cdecl KeyKeyLoadPhrases() {
     phrases = KeyKey::WindowsTsf::LoadUserPhrases();
     return static_cast<int>(phrases.size());

@@ -30,7 +30,7 @@
     </StackPanel>
     <Grid DockPanel.Dock="Bottom" Margin="0,14,0,0">
       <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-      <TextBlock Text="版本 1.3.1" VerticalAlignment="Center" Opacity="0.65" />
+      <TextBlock Text="版本 1.3.2" VerticalAlignment="Center" Opacity="0.65" />
       <TextBlock x:Name="Status" Grid.Column="1" Margin="20,0" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
       <StackPanel Grid.Column="2" Orientation="Horizontal">
         <Button x:Name="ApplyButton" Content="套用" Click="Apply_Click" IsDefault="True" />
@@ -44,6 +44,12 @@
             <StackPanel>
               <TextBlock Text="實體鍵盤配置" FontWeight="SemiBold" />
               <TextBlock Text="美式鍵盤（固定）" Margin="0,6,0,8" />
+              <TextBlock Text="啟動時預設輸入模式" FontWeight="SemiBold" Margin="0,10,0,8" />
+              <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <RadioButton x:Name="DefaultChineseMode" Content="中文" GroupName="DefaultInputMode" Margin="0,0,22,0" />
+                <RadioButton x:Name="DefaultEnglishMode" Content="英文" GroupName="DefaultInputMode" />
+              </StackPanel>
+              <TextBlock Text="下次啟用琦琦輸入法時生效；中文沿用目前選擇的好打注音、傳統注音、倉頡或簡易。仍可按 Shift 切換中英文。" TextWrapping="Wrap" Opacity="0.7" />
               <TextBlock Text="在工作列輸入法選單顯示" FontWeight="SemiBold" Margin="0,10,0,8" />
               <CheckBox x:Name="ShowSmartMandarin" Content="好打注音" Margin="0,0,0,8" />
               <CheckBox x:Name="ShowTraditionalMandarin" Content="傳統注音" Margin="0,0,0,8" />
@@ -70,6 +76,8 @@
             <StackPanel>
               <CheckBox x:Name="ControlBackslash" Content="使用 Ctrl + \ 切換中英文模式" Margin="0,0,0,12" />
               <CheckBox x:Name="TypingBeep" Content="輸入錯誤時發出提示聲" Margin="0,0,0,12" />
+              <CheckBox x:Name="SimplifiedChineseOutput" Content="簡體中文輸出（四種輸入法）" Margin="0,0,0,12" />
+              <TextBlock Text="切換時先以原設定送出目前組字，後續輸入使用新設定。" Opacity="0.7" Margin="0,0,0,12" />
               <TextBlock Text="單按 Shift 或 Ctrl+Space 切換中英文；Shift+Space 切換全半形。" Opacity="0.7" />
             </StackPanel>
           </GroupBox>
@@ -83,10 +91,25 @@
               <ComboBox x:Name="PhoneticLayout" />
               <CheckBox x:Name="RareCharacters" Content="使用全字庫罕用字（CNS11643）" Margin="0,10,0,10" />
               <TextBlock Text="關閉時僅顯示 Big-5 可表示的候選字。設定會在下一次按鍵時生效。" Opacity="0.7" />
-              <CheckBox x:Name="ClearSmartCompositionWithEsc" Content="按 Esc 清除好打注音已完成的整句" Margin="0,18,0,8" />
-              <TextBlock Text="預設保留整句；候選窗開啟時 Esc 只關閉候選，未完成讀音則只清除讀音。" Opacity="0.7" />
             </StackPanel>
           </GroupBox>
+          <GroupBox Header="好打注音進階設定"><StackPanel>
+            <CheckBox x:Name="ShowCandidateListWithSpace" Content="空白鍵開啟候選" Margin="0,0,0,12" />
+            <CheckBox x:Name="CandidateCursorAtEndOfTargetBlock" Content="選字目標在游標前方" Margin="0,0,0,8" />
+            <TextBlock Text="例如「今天｜天氣」：勾選時選前方的「今天」，取消時選後方的「天氣」。這是候選目標，不是選字後游標位置。" Opacity="0.7" Margin="0,0,0,12" />
+            <TextBlock Text="選字按鍵（留空依鍵盤配置自動；或 8 個不重複 ASCII 按鍵）" />
+            <TextBox x:Name="CandidateSelectionKeys" MaxLength="8" Margin="0,5,0,12" />
+            <Button Content="使用數字 12345678" Click="UseNumericSelectionKeys_Click" HorizontalAlignment="Left" Margin="0,0,0,12" />
+            <TextBlock Text="組字區長度（10–20 音節）" />
+            <TextBox x:Name="ComposingTextBufferSize" MaxLength="3" Margin="0,5,0,8" />
+            <CheckBox x:Name="ClearSmartCompositionWithEsc" Content="按 Esc 清除好打注音已完成的整句" Margin="0,18,0,8" />
+            <TextBlock Text="預設保留整句；候選窗開啟時 Esc 只關閉候選，未完成讀音則只清除讀音。" Opacity="0.7" />
+            <TextBlock Text="套用後，下一次輸入先送出原組字，再啟用新設定。" Opacity="0.7" Margin="0,12,0,0" />
+          </StackPanel></GroupBox>
+          <GroupBox Header="好打注音學習紀錄"><StackPanel>
+            <TextBlock Text="重設會清除好打注音的選字與前後文學習紀錄；自訂詞與倉頡／簡易排序紀錄會保留。" Opacity="0.7" Margin="0,0,0,12" />
+            <Button Content="重設好打注音學習紀錄…" Click="ResetLearning_Click" HorizontalAlignment="Left" />
+          </StackPanel></GroupBox>
           <TextBlock Text="好打注音會整句組字並學習選字；輸入法可從工作列直接切換。" Opacity="0.7" />
         </StackPanel></ScrollViewer>
       </TabItem>
@@ -142,7 +165,7 @@
       </TabItem>
       <TabItem Header="自訂詞">
         <Grid Margin="16,20,20,8">
-          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
           <TextBlock Text="自訂詞用於好打注音；每個字的讀音以半形逗號分隔。" Margin="0,0,0,12" />
           <DataGrid x:Name="UserPhrases" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
                     CanUserAddRows="False" SelectionMode="Single" SelectionChanged="UserPhrases_SelectionChanged">
@@ -153,19 +176,24 @@
           </DataGrid>
           <Grid Grid.Row="2" Margin="0,12,0,10">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
-            <StackPanel><TextBlock Text="詞語"/><TextBox x:Name="PhraseText" Margin="0,5,0,0"/></StackPanel>
+            <StackPanel><TextBlock Text="詞語"/><TextBox x:Name="PhraseText" Margin="0,5,0,0" TextChanged="PhraseText_Changed"/></StackPanel>
             <StackPanel Grid.Column="2"><TextBlock Text="注音讀音"/><TextBox x:Name="PhraseReading" Margin="0,5,0,0"/></StackPanel>
           </Grid>
           <WrapPanel Grid.Row="3" Margin="0,0,0,10">
+            <Button x:Name="LookupReadingsButton" Content="取得讀音" Click="LookupReadings_Click" />
             <Button Content="新增" Click="AddPhrase_Click" />
             <Button Content="修改選取詞" Click="UpdatePhrase_Click" />
             <Button Content="刪除選取詞" Click="DeletePhrase_Click" />
-            <Button Content="重設學習紀錄…" Click="ResetLearning_Click" />
           </WrapPanel>
-          <WrapPanel Grid.Row="4">
+          <StackPanel Grid.Row="4" Margin="0,0,0,10">
+            <ComboBox x:Name="WholePhraseReadings" Visibility="Collapsed" SelectionChanged="WholePhraseReadings_Changed" AutomationProperties.Name="詞庫完整詞讀音" />
+            <ScrollViewer MaxHeight="125" VerticalScrollBarVisibility="Auto"><WrapPanel x:Name="CharacterReadingPanel" /></ScrollViewer>
+            <TextBlock x:Name="ReadingStatus" AutomationProperties.LiveSetting="Polite" />
+          </StackPanel>
+          <WrapPanel Grid.Row="5">
             <Button Content="匯入使用者資料庫…" Click="Import_Click" />
             <Button Content="匯出使用者資料庫…" Click="Export_Click" />
-            <TextBlock Text="匯入會合併自訂詞並載入學習紀錄；重設僅清除學習。" VerticalAlignment="Center" Opacity="0.7" />
+            <TextBlock Text="匯入會合併自訂詞並載入好打注音學習紀錄。" VerticalAlignment="Center" Opacity="0.7" />
           </WrapPanel>
         </Grid>
       </TabItem>

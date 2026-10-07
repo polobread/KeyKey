@@ -11,6 +11,7 @@
 #include <set>
 
 #include "ModuleState.h"
+#include "InputMethods.h"
 #include "sqlite3.h"
 
 namespace KeyKey::WindowsTsf {
@@ -117,15 +118,63 @@ bool TypeHello(KeyKey::WindowsTsf::KeyKeyEngineSession& session) {
     return true;
 }
 
+bool TestNumpad() {
+    using namespace KeyKey::WindowsTsf;
+    for (const auto& method : kInputMethods) {
+        if (!SelectInputMethod(method.identifier)) return false;
+        auto session = KeyKeyEngineSession::Create();
+        if (!session || !session->ready()) return false;
+        auto number = [&](UINT vk, wchar_t expected, const std::wstring& prefix = L"") {
+            KeyEvent event; event.virtualKey = vk; event.numLock = true;
+            if (!session->wantsKey(event)) return false;
+            const auto result = session->handleKey(event);
+            return result.handled && !result.beep && result.committedText == prefix + expected &&
+                   result.compositionText.empty() && !result.candidatesVisible && !session->hasComposition();
+        };
+        for (UINT digit = 0; digit < 10; ++digit)
+            if (!number(VK_NUMPAD0 + digit, static_cast<wchar_t>(L'0' + digit))) return false;
+        for (auto pair : {std::pair<UINT,wchar_t>{VK_DECIMAL,L'.'}, {VK_ADD,L'+'},
+                          {VK_SUBTRACT,L'-'}, {VK_MULTIPLY,L'*'}, {VK_DIVIDE,L'/'}})
+            if (!number(pair.first, pair.second)) return false;
+        KeyEvent shortcut; shortcut.virtualKey = VK_NUMPAD1; shortcut.numLock = true;
+        shortcut.control = true;
+        if (session->wantsKey(shortcut)) return false;
+        shortcut.control = false; shortcut.alt = true;
+        if (session->wantsKey(shortcut)) return false;
+        KeyEvent navigation; navigation.virtualKey = VK_END;
+        if (session->wantsKey(navigation)) return false;
+        const auto reading = Press(*session, IsTableInputMethod(method.identifier) ? L'a' : L'1');
+        if (!reading.handled || reading.compositionText.empty() ||
+            !number(VK_NUMPAD2, L'2', reading.compositionText)) return false;
+        // A fresh main-keyboard reading must still work after the numpad commit.
+        const auto next = Press(*session, IsTableInputMethod(method.identifier) ? L'a' : L'1');
+        if (!next.handled || next.compositionText.empty()) return false;
+        session->reset();
+        if (!IsTableInputMethod(method.identifier)) {
+            Press(*session, L'1'); Press(*session, L'j');
+            auto composed = Press(*session, L'4');
+            if (std::string(method.identifier) == "SmartMandarin") composed = PressKey(*session, VK_DOWN);
+            if (!composed.candidatesVisible || composed.compositionText.empty() ||
+                !number(VK_NUMPAD8, L'8', composed.compositionText)) return false;
+        }
+    }
+    return true;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
     using namespace KeyKey::WindowsTsf;
     const std::string mode = argc > 1 ? argv[1] : "legacy";
-    if (mode != "legacy" && mode != "keep" && mode != "clear") return 12;
+    if (mode != "legacy" && mode != "keep" && mode != "clear" && mode != "numpad") return 12;
     if (!PrepareTestProfile(mode)) {
         std::cerr << "Unable to prepare isolated Esc test profile.\n";
         return 13;
+    }
+    if (mode == "numpad") {
+        if (!TestNumpad()) { std::cerr << "Numpad input/preservation failed.\n"; return 20; }
+        std::cout << "Numpad digits, operators, composition and candidate preservation passed.\n";
+        return 0;
     }
     const bool clearSentenceWithEsc = mode == "clear";
     const std::string originalMethod = CurrentInputMethod();

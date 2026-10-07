@@ -3,6 +3,10 @@
 #include <mutex>
 #include <algorithm>
 #include <utility>
+#include <cstdlib>
+#include <map>
+#include <fstream>
+#include <iterator>
 
 #include "ModuleState.h"
 #include "FrontendSettings.h"
@@ -106,6 +110,33 @@ std::string TestProfileDirectory() {
     return OVUTF8::FromUTF16(path);
 }
 
+class WindowsSmartMandarin final : public OVIMSmartMandarin {
+public:
+    void loadConfig(OVKeyValueMap* config, OVLoaderService* service) override {
+        const auto keys = config->stringValueForKey("CandidateSelectionKeys");
+        bool valid = keys.empty() || keys.size() == 8;
+        std::string seen;
+        for (unsigned char key : keys) {
+            if (key < 0x21 || key > 0x7e || seen.find(key) != std::string::npos) valid = false;
+            seen += static_cast<char>(key);
+        }
+        const auto buffer = config->stringValueForKey("ComposingTextBufferSize");
+        char* end = nullptr;
+        const auto length = std::strtol(buffer.c_str(), &end, 10);
+        const bool validLength = !buffer.empty() && end && *end == 0 && length >= 10 && length <= 20;
+        OVIMSmartMandarin::loadConfig(config, service);
+        // PlainVanilla supplies a read-only map. Normalize the Windows module
+        // fields after loading instead of trying to mutate that map.
+        m_cfgCandidateSelectionKeys = valid ? keys : "";
+        m_cfgComposingTextBufferSize = validLength ? static_cast<size_t>(length) : 10;
+    }
+    void saveConfig(OVKeyValueMap* config, OVLoaderService* service) override {
+        OVIMSmartMandarin::saveConfig(config, service);
+        config->setKeyStringValue("CandidateSelectionKeys", m_cfgCandidateSelectionKeys);
+        config->setKeyIntValue("ComposingTextBufferSize", static_cast<int>(m_cfgComposingTextBufferSize));
+    }
+};
+
 class WindowsMandarinPackage final : public OVModulePackage {
 public:
     explicit WindowsMandarinPackage(bool includeSmart) : includeSmart_(includeSmart) {}
@@ -113,7 +144,7 @@ public:
     bool initialize(OVPathInfo*, OVLoaderService*) override {
         m_moduleVector.push_back(new OVModuleClassWrapper<OVIMTraditionalMandarin>);
         if (includeSmart_) {
-            m_moduleVector.push_back(new OVModuleClassWrapper<OVIMSmartMandarin>);
+            m_moduleVector.push_back(new OVModuleClassWrapper<WindowsSmartMandarin>);
         }
         m_moduleVector.push_back(new OVModuleClassWrapper<OVAFAssociatedPhrase>);
         return true;
@@ -183,6 +214,33 @@ std::string FindDatabase() {
     }
     return {};
 }
+
+// TSF owns adoption boundaries. A pending key must not let PlainVanilla's
+// shouldEnter replace its sandwich because another service changed the loader.
+class OrderedLoaderContext final : public PVLoaderContext {
+public:
+    OrderedLoaderContext(PVLoader* loader, OVModule* method, OVModule* associated)
+        : PVLoaderContext(loader) {
+        m_sandwich = new PVContextSandwich;
+        m_sandwich->inputMethods.push_back(method->createContext());
+        if (associated) m_sandwich->aroundFilters.push_back(associated->createContext());
+        m_sandwich->prepareShortcutContexts();
+    }
+    void invalidate() override {} // This sandwich lives until its service's barrier.
+    void activate() override {
+        m_candidateService->resetAll();
+        m_sandwich->startAllContexts(m_loader->loaderService()); m_focusedContext=nullptr;
+    }
+    void deactivate() override {
+        m_sandwich->stopAllContexts(m_loader->loaderService());
+        m_candidateService->resetAll(); m_focusedContext=nullptr;
+        // Do not save stale module settings over an external settings edit.
+    }
+protected:
+    bool shouldEnter(OVLoaderService*,bool=false,bool=false) override {
+        return m_loader && m_sandwich && !m_loader->locked();
+    }
+};
 
 class EngineRuntime final {
 public:
@@ -254,8 +312,13 @@ public:
         loader_->syncSandwichConfig();
         for (const auto& method : kInputMethods) {
             auto* module = loader_->moduleWithName(method.identifier);
-            if (module && module->isUsable()) availableMethods_.push_back(method.identifier);
+            if (module && module->isUsable()) {
+                availableMethods_.push_back(method.identifier); modules_[method.identifier]=module;
+            }
         }
+        associated_=loader_->moduleWithName(kAssociatedPhraseFilter);
+        for (const auto& method : availableMethods_) moduleRevisions_[method]=moduleRevision(method);
+        moduleRevisions_[kAssociatedPhraseFilter]=moduleRevision(kAssociatedPhraseFilter);
         ready_ = !availableMethods_.empty();
     }
 
@@ -265,7 +328,30 @@ public:
     }
 
     PVLoaderService* service() const { return service_.get(); }
-    void syncSettings() {
+    std::string moduleRevision(const std::string& method) const {
+        if (!policy_) return {};
+        std::ifstream file(OVUTF16::FromUTF8(policy_->propertyListPathFromIdentifier(method)),std::ios::binary);
+        return std::string(std::istreambuf_iterator<char>(file),std::istreambuf_iterator<char>());
+    }
+    void syncNamedModule(const std::string& method) {
+        if (!loader_) return;
+        const auto revision=moduleRevision(method);
+        if (moduleRevisions_[method]!=revision) {
+            // forceSyncModuleConfigForNextRound only marks dirty. A cached,
+            // non-primary module needs the actual load before start/stopSession.
+            loader_->forceSyncModuleConfig(method);
+            moduleRevisions_[method]=moduleRevision(method);
+        }
+    }
+    PVLoaderContext* createOrderedContext(const std::string& method) {
+        const auto found=modules_.find(method);
+        return ready_ && found!=modules_.end()
+            ? new OrderedLoaderContext(loader_.get(),found->second,associated_) : nullptr;
+    }
+    void beginOrdered() { ++orderedInputs_; }
+    void endOrdered() { if (orderedInputs_) --orderedInputs_; }
+    void syncSettings(bool barrier=false) {
+        if (orderedInputs_ && !barrier) return;
         if (loader_) {
             loader_->syncLoaderConfig();
             // The settings app writes the attached user database from another
@@ -277,11 +363,15 @@ public:
                 if (version && version->step() == SQLITE_ROW) {
                     const int current = version->intOfColumn(0);
                     if (lastUserDataVersion_ && current != lastUserDataVersion_) {
-                        loader_->forceSyncModuleConfigForNextRound(kSmartInputMethod);
+                        loader_->forceSyncModuleConfig(kSmartInputMethod);
                     }
                     lastUserDataVersion_ = current;
                 }
             }
+            // A changed file may retain its timestamp (copy/restore). Only
+            // acknowledge its content after an actual named-module load.
+            syncNamedModule(primaryInputMethod());
+            syncNamedModule(kAssociatedPhraseFilter);
             loader_->syncSandwichConfig();
         }
     }
@@ -291,7 +381,7 @@ public:
     bool selectInputMethod(const std::string& identifier) {
         if (!loader_ || std::find(availableMethods_.begin(), availableMethods_.end(),
                                  identifier) == availableMethods_.end()) return false;
-        loader_->syncLoaderConfig();
+        if (!orderedInputs_) loader_->syncLoaderConfig();
         loader_->setPrimaryInputMethod(identifier);
         return loader_->primaryInputMethod() == identifier;
     }
@@ -312,6 +402,10 @@ private:
     int lastUserDataVersion_ = 0;
     bool ready_ = false;
     std::vector<std::string> availableMethods_;
+    std::map<std::string,OVModule*> modules_;
+    std::map<std::string,std::string> moduleRevisions_;
+    OVModule* associated_=nullptr;
+    unsigned orderedInputs_=0;
 };
 
 EngineRuntime& Runtime() {
@@ -389,6 +483,11 @@ char PrintableAsciiFromVirtualKey(const KeyEvent& event) {
         return static_cast<char>('0' + event.virtualKey - VK_NUMPAD0);
     }
     switch (event.virtualKey) {
+        case VK_MULTIPLY: return '*';
+        case VK_ADD: return '+';
+        case VK_SUBTRACT: return '-';
+        case VK_DIVIDE: return '/';
+        case VK_DECIMAL: return event.numLock ? '.' : 0;
         case VK_SPACE: return ' ';
         case VK_OEM_1: return event.shift ? ':' : ';';
         case VK_OEM_PLUS: return event.shift ? '+' : '=';
@@ -497,6 +596,20 @@ void Snapshot(PVLoaderContext* context, EngineResult& result) {
 }  // namespace
 
 std::string CurrentInputMethod() { return CurrentInputMethodLocked(); }
+std::string ObservedInputMethod() {
+    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    return LoadInputMethodPreference(Runtime().primaryInputMethod());
+}
+std::string EngineSettingsSignature(const std::string& method) {
+    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    return Runtime().moduleRevision(method);
+}
+void BeginOrderedEngineInput() {
+    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex()); Runtime().beginOrdered();
+}
+void EndOrderedEngineInput() {
+    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex()); Runtime().endOrdered();
+}
 
 bool IsInputMethodAvailable(const char* identifier) {
     if (!identifier) return false;
@@ -511,8 +624,11 @@ bool SelectInputMethod(const char* identifier) {
 }
 
 bool IsInputMethodControlKey(const KeyEvent& event) {
+    return IsInputMethodControlKey(event,CurrentInputMethod());
+}
+bool IsInputMethodControlKey(const KeyEvent& event, const std::string& method) {
     if (!event.control) return false;
-    if (IsTableInputMethod(CurrentInputMethod())) return false;
+    if (IsTableInputMethod(method)) return false;
 
     const char character = PrintableAsciiFromVirtualKey(event);
     if (event.alt) {
@@ -550,19 +666,33 @@ std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::Create() {
     return std::unique_ptr<KeyKeyEngineSession>(
         new KeyKeyEngineSession(Runtime().createContext()));
 }
+std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::CreateControlled(const std::string& method) {
+    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    Runtime().syncSettings(true);
+    Runtime().syncNamedModule(method);
+    auto* context=Runtime().createOrderedContext(method);
+    if (!context) return nullptr;
+    auto result=std::unique_ptr<KeyKeyEngineSession>(new KeyKeyEngineSession(context));
+    result->inputMethod_=method; result->controlled_=true;
+    return result;
+}
 
 KeyKeyEngineSession::KeyKeyEngineSession(PVLoaderContext* context) : context_(context) {
     if (context_) {
         std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
         inputMethod_ = Runtime().primaryInputMethod();
         context_->activate();
+        smartSettingsSignature_ = SmartMandarinSettingsSignature();
     }
 }
 
 KeyKeyEngineSession::~KeyKeyEngineSession() {
     if (!context_) return;
     std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
-    Runtime().syncSettings();
+    // Reconcile an externally reset learning database before stopSession can
+    // save the old module's caches back. Retirement is an adoption boundary.
+    Runtime().syncSettings(controlled_);
+    if (controlled_) Runtime().syncNamedModule(inputMethod_);
     context_->deactivate();
     delete context_;
 }
@@ -598,23 +728,36 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
     if (!context_) return result;
 
     std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
-    Runtime().syncSettings();
+    if (!controlled_) Runtime().syncSettings();
     const std::string selectedMethod = Runtime().primaryInputMethod();
+    const auto signature = SmartMandarinSettingsSignature();
     std::wstring previousComposition;
-    if (selectedMethod != inputMethod_) {
+    if (!controlled_ && (selectedMethod != inputMethod_ || signature != smartSettingsSignature_)) {
         // Settings can change the selection while another host is composing.
         // Preserve its visible text before the loader replaces its old context.
         PVCombinedUTF16TextBuffer combined(*context_->composingText(), *context_->readingText());
         previousComposition = combined.wideComposedText();
-        context_->deactivate();
-        delete context_;
-        context_ = Runtime().createContext();
-        if (!context_) {
-            result.committedText = previousComposition;
+        auto* replacement=Runtime().createContext();
+        if (!replacement) return result;
+        replacement->activate();
+        context_->deactivate(); delete context_; context_=replacement;
+        inputMethod_ = selectedMethod;
+        smartSettingsSignature_ = SmartMandarinSettingsSignature();
+    }
+    // Numpad text must not enter Bopomofo or candidate-selection handling.
+    // Commit exactly the visible composition (including unfinished readings)
+    // before the number, matching the frontend's mode-switch preservation.
+    if (!event.control && !event.alt && event.virtualKey >= VK_NUMPAD0 &&
+        event.virtualKey <= VK_DIVIDE) {
+        if (const char character = PrintableAsciiFromVirtualKey(event)) {
+            PVCombinedUTF16TextBuffer combined(*context_->composingText(), *context_->readingText());
+            result.committedText = previousComposition + combined.wideComposedText() +
+                                   static_cast<wchar_t>(character);
+            context_->clear();
+            Runtime().service()->resetState();
+            result.handled = true;
             return result;
         }
-        inputMethod_ = selectedMethod;
-        context_->activate();
     }
     PVKeyImpl keyImplementation = MakeKey(event);
     OVKey key(keyImplementation.copy());

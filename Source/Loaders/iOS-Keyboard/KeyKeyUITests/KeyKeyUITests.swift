@@ -19,7 +19,7 @@ final class KeyKeyUITests: XCTestCase {
         app = XCUIApplication()
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["琦琦注音"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["琦琦輸入法"].waitForExistence(timeout: 8))
         let version = app.staticTexts["app.version"]
         XCTAssertTrue(version.exists)
         XCTAssertTrue(version.label.hasPrefix("版本 "))
@@ -169,7 +169,7 @@ final class KeyKeyUITests: XCTestCase {
 
         app.terminate()
         app.launch()
-        XCTAssertTrue(app.staticTexts["琦琦注音"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["琦琦輸入法"].waitForExistence(timeout: 8))
         for _ in 0..<8 where !openEditor.isHittable { app.swipeUp() }
         XCTAssertTrue(openEditor.isHittable)
     }
@@ -692,7 +692,7 @@ final class KeyKeyUITests: XCTestCase {
         settings.launch()
 
         XCTAssertTrue(openKeyboardList(in: settings), "無法在此 iOS 版本導覽到系統鍵盤清單")
-        if settingRow(named: ["琦琦注音"], in: settings).exists { return }
+        if settingRow(named: ["琦琦輸入法"], in: settings).exists { return }
 
         XCTAssertTrue(tapSettingRow(
             named: [
@@ -702,7 +702,7 @@ final class KeyKeyUITests: XCTestCase {
             ],
             in: settings
         ), "鍵盤清單中找不到「加入新的鍵盤」")
-        XCTAssertTrue(tapSettingRow(named: ["琦琦注音"], in: settings), "第三方鍵盤清單中找不到琦琦注音")
+        XCTAssertTrue(tapSettingRow(named: ["琦琦輸入法"], in: settings), "第三方鍵盤清單中找不到琦琦輸入法")
     }
 
     /// Run locally on the development Mac's iOS 17 Simulator. It drives the
@@ -718,14 +718,14 @@ final class KeyKeyUITests: XCTestCase {
         let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
         settings.launch()
         XCTAssertTrue(openKeyboardList(in: settings), "無法開啟系統鍵盤清單")
-        if !settingRow(named: ["琦琦注音"], in: settings).exists {
+        if !settingRow(named: ["琦琦輸入法"], in: settings).exists {
             XCTAssertTrue(tapSettingRow(
                 named: ["新增鍵盤", "新增鍵盤…", "新增鍵盤⋯", "新增鍵盤...",
                         "加入新的鍵盤…", "加入新的鍵盤⋯", "加入新的鍵盤...",
                         "Add New Keyboard", "Add New Keyboard…", "Add New Keyboard..."],
                 in: settings
             ), "找不到加入鍵盤的設定")
-            XCTAssertTrue(tapSettingRow(named: ["琦琦注音"], in: settings), "無法加入琦琦注音")
+            XCTAssertTrue(tapSettingRow(named: ["琦琦輸入法"], in: settings), "無法加入琦琦輸入法")
         }
 
         launchHostApp()
@@ -1034,7 +1034,7 @@ final class KeyKeyUITests: XCTestCase {
     }
 
     private var keyboardActivationFailureMessage: String {
-        "找不到琦琦鍵盤。請先在此 Simulator 的「設定 → 一般 → 鍵盤 → 鍵盤 → 加入新的鍵盤」加入琦琦注音；自動測試不得把鍵盤項目標成 skip。"
+        "找不到琦琦鍵盤。請先在此 Simulator 的「設定 → 一般 → 鍵盤 → 鍵盤 → 加入新的鍵盤」加入琦琦輸入法；自動測試不得把鍵盤項目標成 skip。"
     }
 
     /// Switches among keyboards already enabled for this Simulator. iOS intentionally
@@ -1058,7 +1058,7 @@ final class KeyKeyUITests: XCTestCase {
         if let nextKeyboard = nextKeyboardButton() {
             nextKeyboard.press(forDuration: 1)
             let keyKeyPredicate = NSPredicate(
-                format: "label BEGINSWITH '琦琦注音' OR label CONTAINS 'KeyKey'"
+                format: "label BEGINSWITH '琦琦輸入法' OR label CONTAINS 'KeyKey'"
             )
             let keyKeyButton = app.buttons.matching(keyKeyPredicate).firstMatch
             let keyKeyCell = app.cells.matching(keyKeyPredicate).firstMatch

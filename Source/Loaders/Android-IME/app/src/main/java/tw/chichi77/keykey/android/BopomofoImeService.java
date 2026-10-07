@@ -372,6 +372,10 @@ public final class BopomofoImeService extends InputMethodService
             schedulePhraseDictionaryReload();
             return;
         }
+        if (KeyboardBottomSpaceSettings.isSettingKey(key)) {
+            updateKeyboardBottomSpace();
+            return;
+        }
         if (KeyboardSizeSettings.isSizeKey(key)) {
             updateKeyboardSize();
             return;
@@ -855,6 +859,12 @@ public final class BopomofoImeService extends InputMethodService
                 KeyboardSizeSettings.landscapePercent(this));
     }
 
+    private void updateKeyboardBottomSpace() {
+        if (keyboardView == null) return;
+        keyboardView.setBottomSpaceEnabled(KeyboardBottomSpaceSettings.touchEnabled(this),
+                KeyboardBottomSpaceSettings.hardwareEnabled(this));
+    }
+
     private void updateKeyboardMode() {
         Configuration configuration = getResources().getConfiguration();
         hardwareKeyboard = configuration.keyboard != Configuration.KEYBOARD_NOKEYS
@@ -863,6 +873,7 @@ public final class BopomofoImeService extends InputMethodService
         floatingCandidatesEnabled = CandidateWindowSettings.floatingEnabled(this);
         floatingCandidateLayout = CandidateWindowSettings.layout(this);
         if (keyboardView == null) return;
+        updateKeyboardBottomSpace();
         keyboardView.setHardwareNumberRowEnabled(CandidateWindowSettings.numberRowEnabled(this));
         if (hardwareKeyboard) {
             keyboardView.setMode(isFloatingCandidateMode()

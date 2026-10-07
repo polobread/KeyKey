@@ -161,10 +161,10 @@ if [[ "$MODE" == "functional-host" ]]; then
   echo
   echo "Functional host mode validates production smoke, Settings opt-in, acknowledgements,"
   echo "all 14 input-field hosts, and the hardware-keyboard editor."
-  echo "Run --functional-extension after selecting 琦琦注音 to exercise the extension."
+  echo "Run --functional-extension after selecting 琦琦輸入法 to exercise the extension."
 elif [[ "$MODE" == "functional-extension" ]]; then
   echo
-  echo "Extension mode requires 琦琦注音 to be selected on every Simulator."
+  echo "Extension mode requires 琦琦輸入法 to be selected on every Simulator."
 elif [[ "$MODE" == "smoke" ]]; then
   echo
   echo "Smoke mode validates the Release container UI without Debug-only launch arguments."
