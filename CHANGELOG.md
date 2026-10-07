@@ -2,6 +2,7 @@
 
 ## Android 1.3.2（未發布）
 
+- 修正 Google Play 拒絕 API 自動送審時發布流程失敗的問題；上傳後先儲存變更，供 Play Console 送審。
 - App、系統輸入法入口與安裝引導統一改名為「琦琦輸入法」。
 - Android 產品版號更新為 1.3.2，versionCode 更新為 1003002；自動封裝及 Google Play 發布流程改從 Android 設定取版號。
 - 安裝後的 App 圖示改為與 Google Play 商店、iOS 相同的白底黑字「琦」，取代藍色鍵盤圖示。一般、圓形與單色主題啟動器使用同一字形。

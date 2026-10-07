@@ -120,8 +120,10 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: tw.chichi77.keykey.android
           releaseFiles: Source/Loaders/Android-IME/app/build/outputs/bundle/release/app-release.aab
-          track: internal
+          tracks: internal
           status: completed
+          # Play requires Console review after a rejected submission.
+          changesNotSentForReview: true
 
       - name: Remove temporary upload key
         if: always()
