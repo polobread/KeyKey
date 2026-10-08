@@ -1,9 +1,6 @@
 name: Android Play Release
 
 on:
-  pull_request_target:
-    branches: [master]
-    types: [closed]
   workflow_dispatch:
 
 permissions:
@@ -15,12 +12,6 @@ concurrency:
 
 jobs:
   release-google-play:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request_target' &&
-       github.event.action == 'closed' &&
-       github.event.pull_request.merged == true &&
-       github.event.pull_request.base.ref == 'master')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: google-play-release
@@ -28,9 +19,6 @@ jobs:
     steps:
       - name: Check out selected revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # Build the commit merged into master; never check out an unmerged PR head.
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Resolve and validate build metadata
         shell: bash
@@ -134,8 +122,6 @@ jobs:
           releaseFiles: Source/Loaders/Android-IME/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
           status: completed
-          # Play requires Console review after a rejected submission.
-          changesNotSentForReview: true
 
       - name: Remove temporary upload key
         if: always()
