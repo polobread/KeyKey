@@ -1,6 +1,6 @@
 # 琦琦輸入法 / chichi77 KeyKey — Windows／Android／iOS 1.3.2；其他平台 1.3.1
 
-目前 Windows、Android 與 iOS 原始碼版號為 `1.3.2`，尚未發布；macOS 與 Linux 仍為 `1.3.1`。
+Android 與 iOS `1.3.2` 已分別在 Google Play 與 App Store 正式上線。Android 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。Windows `1.3.2` 尚未發布；macOS 與 Linux 仍為 `1.3.1`。
 macOS、Windows 與 Ubuntu 24.04 安裝包依各自版本提供於
 [GitHub Release](https://github.com/polobread/KeyKey/releases)；
 Android 與 iOS 依各自的商店管道安裝。
@@ -71,14 +71,14 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 - [Windows 1.3.2 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
 - Ubuntu 24.04 使用者請看[Linux 1.3.1 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
-- iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939)安裝。
-- Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；目前透過 Google 群組及 Google Play 封閉測試加入後安裝。
+- iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/id6807832939)安裝。
+- Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；可直接從[Google Play 商店](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)安裝正式版，無須加入測試。
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS、Windows 與
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
 - Linux 的三個 `.deb`、面板原始碼及 `SHA256SUMS` 與桌面版同放在對應版本的 [GitHub Release](https://github.com/polobread/KeyKey/releases)。
 - Android 正式 AAB 在 PR 合併回 `master` 時由 `Android Play Release` 自動建置、簽署並上傳到 Google Play 內部測試；也可手動 **Run workflow**。
-  直接 push `master` 不觸發。上傳後先儲存變更，再從 Play Console 送審或推廣測試群組。
+  直接 push `master` 不觸發。上傳後先儲存變更，再從 Play Console 推廣至正式版並送審。正式版已開放一般使用者安裝，不需再經封閉測試。
   `Package Android` 只產生供開發測試的 debug APK。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
   Simulator 測試包，不能安裝到 iPhone 或 iPad。
@@ -100,7 +100,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 
 ## 開發與提交
 
-目前在 `v1.3.2` 工作分支開發；所有程式、文件與 CI 修改都在工作分支 commit 和 push，
+本輪發布文件更新使用 `v1.3.2-doc` 工作分支；所有程式、文件與 CI 修改都在工作分支 commit 和 push，
 再建立 PR，由維護者親自 review 和 merge 到 `master`。Agent 不得自行合併或啟用自動合併，
 也不要直接在 `master` commit 或 push。
 同步最新主分支可在工作分支執行 `git pull --no-rebase origin master`；提交前保留既有修改，
@@ -116,7 +116,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 - [Linux 安裝與使用指南](LINUX_INSTALL.md)：Ubuntu 24.04 的套件安裝、Fcitx 5 設定、注音選字與實拍圖
 - [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：Ubuntu 24.04 的原始碼安裝、啟用、試打與移除
 - [iOS 安裝與使用指南](IOS_INSTALL.md)：App Store 安裝、加入鍵盤、日常操作與實體鍵盤編輯器
-- [Android 安裝與使用指南](ANDROID_INSTALL.md)：Google Play 測試安裝、啟用鍵盤、觸控與實體鍵盤操作
+- [Android 安裝與使用指南](ANDROID_INSTALL.md)：Google Play 正式版安裝、啟用鍵盤、觸控與實體鍵盤操作
 - [BUILDING.md](BUILDING.md)：各平台建置、測試、安裝與打包
 - [五平台心經長文 functional test](tests/HEART_SUTRA_FUNCTIONAL.md)：關閉關聯詞庫後逐字輸入，核對全文及每字候選順位
 - [Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](LINUX_TEST_PLAN.md)：
@@ -158,7 +158,9 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 
 ## English
 
-The Windows, Android, and iOS source versions are `1.3.2`, not yet released.
+Android and iOS `1.3.2` are available on Google Play and the App Store.
+Android entered production on **2026-10-08**; installation no longer requires
+a Google Group or closed-test enrollment. Windows `1.3.2` is not yet released;
 macOS and Linux remain at `1.3.1`. Desktop installers are provided by platform version on
 [GitHub Release](https://github.com/polobread/KeyKey/releases).
 Android and iOS use their respective store distribution channels.
@@ -226,8 +228,8 @@ iOS.
 - The [Windows 1.3.2 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the installer, typing modes, and settings; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
 - Build and install the Ubuntu 24.04 version from source with `./configure`: [Linux source installation and usage guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md).
-- iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E6%B3%A8%E9%9F%B3/id6807832939).
-- Android setup and daily use: [Android installation guide (Traditional Chinese)](ANDROID_INSTALL.md). Installation currently uses a Google Group and Google Play closed testing.
+- iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/id6807832939).
+- Android setup and daily use: [Android installation guide (Traditional Chinese)](ANDROID_INSTALL.md). Install the production version directly from [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android); test enrollment is not required.
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) provides the
   macOS, Windows, and Ubuntu 24.04 builds. The macOS package is Developer ID signed,
   notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP
@@ -237,7 +239,8 @@ iOS.
 - `Android Play Release` builds, signs, and uploads the Android AAB to Google Play
   internal testing after a PR merges into `master`, or when **Run workflow** is selected.
   Direct pushes to `master` do not trigger it. Uploaded changes are saved for review
-  or promotion in Play Console. `Package Android` produces a development debug APK only.
+  and promotion to production in Play Console. Closed testing is no longer required
+  for public installation. `Package Android` produces a development debug APK only.
 - Device builds for iOS are distributed through the App Store.
   `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
   be installed on an iPhone or iPad.
@@ -266,7 +269,7 @@ complete output and signing details.
 
 ### Development and contributions
 
-Development currently uses `v1.3.2`. Commit and push code, documentation, and CI
+This release documentation update uses `v1.3.2-doc`. Commit and push code, documentation, and CI
 changes on a working branch, then open a pull request for the maintainer to review
 and merge. Agents must not merge PRs, enable auto-merge, or commit or push directly
 to `master`. Run `git pull --no-rebase origin master` from the working
@@ -281,7 +284,7 @@ approval requirements. See [AGENTS.md](AGENTS.md) and the
 - [Windows 1.3.2 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
-- [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play testing, keyboard setup, touch and hardware keyboard use
+- [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play production installation, keyboard setup, touch and hardware keyboard use
 - [BUILDING.md](BUILDING.md): build, test, installation, and packaging instructions
 - [Linux development plan](LINUX_DEVELOPMENT_PLAN.md) and
   [automated test plan](LINUX_TEST_PLAN.md): scope and acceptance criteria for

@@ -1,6 +1,6 @@
 # 琦琦輸入法 Android IME 1.3.2
 
-產品版號為 `1.3.2`，`versionCode` 為 `1003002`，尚未發布。版本預設值及 Android
+產品版號為 `1.3.2`，`versionCode` 為 `1003002`，已於 **2026-10-08** 在 Google Play 正式發布；一般使用者可直接安裝，不需加入群組或封閉測試。版本預設值及 Android
 自動封裝均以 `app/build.gradle.kts` 為準，獨立於其他平台的版號。
 
 一般使用者請先看[Android 手機、平板安裝與使用指南](../../../ANDROID_INSTALL.md)；本頁包含開發、建置與實作細節。

@@ -1,19 +1,14 @@
 # Android 手機、平板安裝與使用指南
 
-新版 App 及系統鍵盤名稱統一為「琦琦輸入法」。本頁沿用部分舊版截圖，
-畫面上的「琦琦注音」對應新版名稱；商店資訊須隨新版同步更新。
+Android **1.3.2** 已於 **2026-10-08** 在 Google Play 正式上線，App 及系統鍵盤名稱統一為「琦琦輸入法」。本頁沿用部分舊版截圖，畫面上的「琦琦注音」對應新版名稱。
 
 琦琦輸入法適用於 **Android 8 以上**的手機和平板，可用螢幕鍵盤，也可接 USB／藍牙實體鍵盤。安裝 App 後，還要在 Android 設定中啟用輸入法，再選它作為目前的鍵盤。**打字功能免費，不需要付費支持。**
 
 ## 1. 取得並安裝 App
 
-目前 Android 版透過 **Google Play 封閉測試**提供安裝。請在 Android 裝置上依序完成：
+在 Android 裝置上[開啟琦琦輸入法的 Google Play 商店頁面](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)，確認名稱是 **琦琦輸入法**，點 **安裝**即可取得正式版。
 
-1. [加入琦琦輸入法的 Google 測試群組](https://groups.google.com/g/chichi77keykey/about)。依群組頁面的指示登入並加入。
-2. [加入 Google Play 封閉測試](https://play.google.com/apps/testing/tw.chichi77.keykey.android)。在測試頁面確認加入。
-3. [開啟琦琦輸入法的 Google Play 商店頁面](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)，確認名稱是 **琦琦輸入法**，點 **安裝**。
-
-**三個步驟都要使用同一個 Google 帳號。**加入後請**至少保留測試資格 14 天，不要中途退出**。如果商店顯示「無法使用」或沒有安裝按鈕，先確認群組與封閉測試都已加入，再檢查目前 Play 商店登入的帳號是否相同。
+**不需加入 Google 群組或封閉測試，也不需保留 14 天測試資格。**
 
 請從 Google Play 安裝；GitHub Actions 的 **debug APK** 不供一般使用者安裝。
 
@@ -138,7 +133,8 @@
 
 | 情況 | 先檢查 |
 | --- | --- |
-| Google Play 找不到 App 或無法安裝 | 依序加入上方的 Google 測試群組及封閉測試，再確認 Play 商店使用同一個 Google 帳號。 |
+| Google Play 找不到 App 或無法安裝 | 直接開啟上方商店連結，確認裝置為 Android 8 以上，並檢查 Play 商店帳號地區及裝置相容性。 |
+| 商店顯示「內部 Beta 版」或測試人員提示 | 該 Google 帳號仍參加測試；若要改用正式版，在[測試加入頁面](https://play.google.com/apps/testing/tw.chichi77.keykey.android)退出測試。這不表示一般使用者仍需加入封測。 |
 | 安裝後找不到鍵盤 | 先開啟琦琦輸入法 App，依序完成「1. 啟用輸入法」及「2. 選擇琦琦輸入法」。 |
 | 打字時仍出現原本鍵盤 | 回琦琦輸入法 App 點「2. 選擇琦琦輸入法」，再點文字欄位；部分 Android 裝置也能從鍵盤切換按鈕改選。 |
 | 看不到注音鍵 | 先在記事本的一般文字欄位測試；密碼、電子郵件、電話等欄位可能顯示其他版面。 |
@@ -147,4 +143,4 @@
 
 仍無法使用時，請記下 Android 版本、手機或平板型號、正在輸入的 App、使用螢幕鍵盤或實體鍵盤，以及卡住的步驟。
 
-Google Play 測試加入方式可參考 [Google 的封閉測試說明](https://support.google.com/googleplay/android-developer/answer/9845334?hl=zh-Hant)；程式架構、建置與進階快捷鍵另見 [Android IME 技術文件](Source/Loaders/Android-IME/README.md)。
+測試帳號切回正式版可參考 [Google 的退出測試說明](https://support.google.com/googleplay/answer/15654751?hl=zh-Hant)。若要依該流程解除安裝再重裝，請先備份自訂詞與設定。程式架構、建置與進階快捷鍵另見 [Android IME 技術文件](Source/Loaders/Android-IME/README.md)。
