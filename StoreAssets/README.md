@@ -2,25 +2,25 @@
 
 2026-09-26 選定 **A 版**：延續深紫色版面。主軸是好打注音，並保留傳統注音與接上實體鍵盤各自的介紹。Apple 圖只呈現 iPhone／iPad 的使用方式；Google Play 第五張介紹 Android、iOS、macOS、Windows、Linux 五平台。
 
-Android／iOS `1.3.2` 已分別在 Google Play／App Store 正式上線（iOS build 41）。Android 於 2026-10-08 正式發布，可直接從商店安裝，不需加入封閉測試。Google Play A 版主視覺已改為「琦琦輸入法」；本目錄已納入版控的其餘 PNG 與來源截圖主要沿用 1.3.0 時期素材，以下保留真實來源版本。App Store 上的 iPhone／iPad 第三、第四張已另以 1.3.2 Release 模擬器實拍更新，第四張文案為「好打注音・傳統注音／倉頡・簡易，隨你切換」。
+Android／iOS `1.3.2` 已分別在 Google Play／App Store 正式上線（iOS build 41）。Android 於 2026-10-08 正式發布，可直接從商店安裝，不需加入封閉測試。Google Play A 版主視覺已改為「琦琦輸入法」；iPhone／iPad 的第三張實體鍵盤與第四張設定頁已使用 1.3.2 Release 模擬器重拍，第四張文案為「好打注音・傳統注音／倉頡・簡易，隨你切換」。其餘上架 PNG 與來源截圖主要沿用 1.3.0 時期素材，以下保留真實來源版本。
 
 ## 上架圖位置
 
 | 用途 | 目錄或檔案 | 尺寸 | 順序 |
 | --- | --- | --- | --- |
-| App Store iPhone 預覽 | `AppStore/iPhone-1206x2622/01.png`～`04.png` | 1206 × 2622 | 好打、傳統、實體鍵盤、切換模式 |
+| App Store iPhone 中型顯示器上架 | `AppStore/iPhone-1206x2622/01.png`～`04.png` | 1206 × 2622 | 好打、傳統、實體鍵盤、四種輸入法切換 |
 | App Store iPhone 上架 | `AppStore/iPhone-1242x2688/01.png`～`04.png` | 1242 × 2688 | 同上 |
 | App Store iPad 上架 | `AppStore/iPad-2048x2732/01.png`～`04.png` | 2048 × 2732 | 同上 |
 | Google Play 手機 | `GooglePlay/Phone/01.png`～`05.png` | 1080 × 1920 | 好打整句、句中改字、傳統、實體鍵盤、五平台 |
 | Google Play 主視覺 | `GooglePlay/feature-graphic-1024x500.png` | 1024 × 500 | 好打、傳統、實體鍵盤 |
 | 五平台獨立圖 | `FivePlatforms/five-platforms.png` | 1080 × 1920 | 與 Google Play `05.png` 相同 |
 
-PNG 均為無 alpha 的 RGB 畫面。`1206 × 2622` 保留作 iPhone 模擬器比例預覽；既有 App Store Connect 上架組使用 `1242 × 2688`。正式上傳前仍須以 App Store Connect／Play Console 的實際預覽核對裁切、尺寸和文字可讀性。
+PNG 均為無 alpha 的 RGB 畫面。App Store Connect 的 iPhone 中型顯示器組使用 `1206 × 2622`，大型顯示器組使用 `1242 × 2688`；iPad 13 吋組使用 `2048 × 2732`。正式上傳前仍須以 App Store Connect／Play Console 的實際預覽核對裁切、尺寸和文字可讀性。
 
 ## 截圖來源
 
-- iPhone 好打注音、實體鍵盤、設定：`docs/images/keykey-ios-v130-smart-typing.png`、`keykey-ios-v130-hardware-editor-boundary.png`、`keykey-ios-v130-keyboard-settings.png`；傳統注音沿用 `Sources/ios-notes-qi.png`。
-- iPad 好打注音：`Sources/ios-ipad-v130-smart-full.png`，從 iPad 模擬器實際輸入「請假要去哪裡玩呢去海邊」並擷取。傳統注音沿用 `Sources/ios-ipad-notes-qi.png`；實體鍵盤與設定來自 iPad 模擬器的 `Sources/ios-ipad-v130-hardware-editor.png`、`ios-ipad-v130-settings.png`。
+- iPhone 好打注音沿用 `docs/images/keykey-ios-v130-smart-typing.png`，傳統注音沿用 `Sources/ios-notes-qi.png`；實體鍵盤與設定頁使用 1.3.2 Release 模擬器實拍 `Sources/ios-iphone-v132-hardware-editor.png`、`ios-iphone-v132-settings.png`。
+- iPad 好打注音沿用 `Sources/ios-ipad-v130-smart-full.png`，傳統注音沿用 `Sources/ios-ipad-notes-qi.png`；實體鍵盤與設定頁使用 1.3.2 Release 模擬器實拍 `Sources/ios-ipad-v132-hardware-editor.png`、`ios-ipad-v132-settings.png`，設定頁可見「琦琦輸入法」及 1.3.2 版號。
 - Android 好打注音：新拍的 Android 模擬器畫面 `Sources/android-v130-smart-full.png` 與 `android-v130-smart-middle-candidate.png`；傳統注音、實體鍵盤沿用先前實拍的 `android-phone-touch-portrait.png` 與 `android-notes-floating-qi.png`。
 - 五平台圖：Android、iOS 使用上述好打注音實拍；macOS、Linux 使用 `docs/images/keykey-macos-v130-candidates.png`、`keykey-linux-v130-smart-candidates.png`；Windows 使用 `Sources/chichi-windows.png`。Linux 格不再標「開發中」。
 
@@ -62,5 +62,5 @@ archive 的圖示及安裝後主畫面，不能以原始碼圖示替代已上架
 ## 行動版改名
 
 Android 與 iOS 的 App／系統鍵盤名稱統一為「琦琦輸入法」。商店圖產生器及
-Google Play 主視覺的品牌文字同步更新；來源截圖保留實際舊版畫面，尚未重拍為新名稱。
+Google Play 主視覺的品牌文字同步更新；iPhone／iPad 第三、第四張已更新為 1.3.2 的實體鍵盤編輯器與設定頁；第四張介紹好打注音、傳統注音、倉頡與簡易四種輸入方式；第一、第二張保留原始畫面。
 上架時須同步更新 Google Play 與 App Store 的名稱及使用新版介面截圖。
