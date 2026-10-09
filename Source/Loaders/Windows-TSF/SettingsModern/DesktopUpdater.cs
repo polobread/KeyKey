@@ -16,6 +16,7 @@ internal sealed class DesktopUpdater : IDisposable
     private readonly CanShutdownCallback canShutdown;
     private readonly ShutdownCallback shutdown;
     public bool Available => initialized;
+    internal bool CanShutdown => !unsavedChanges;
     public string Status { get; private set; } = "此建置尚未設定簽章更新服務，不會連線。";
     public bool Automatic => initialized && win_sparkle_get_automatic_check_for_updates() == 1;
 
@@ -23,7 +24,7 @@ internal sealed class DesktopUpdater : IDisposable
     {
         // Native callbacks must not synchronously wait for WPF: cleanup on the
         // UI thread could otherwise deadlock against a pending shutdown query.
-        canShutdown = () => unsavedChanges ? 0 : 1;
+        canShutdown = () => CanShutdown ? 1 : 0;
         shutdown = () => Application.Current.Dispatcher.BeginInvoke(() => Application.Current.Shutdown());
     }
 

@@ -181,8 +181,8 @@
           </Grid>
           <WrapPanel Grid.Row="3" Margin="0,0,0,10">
             <Button x:Name="LookupReadingsButton" Content="取得讀音" Click="LookupReadings_Click" />
-            <Button Content="新增" Click="AddPhrase_Click" />
-            <Button Content="修改選取詞" Click="UpdatePhrase_Click" />
+            <Button x:Name="AddPhraseButton" Content="新增" Click="AddPhrase_Click" />
+            <Button x:Name="UpdatePhraseButton" Content="修改選取詞" Click="UpdatePhrase_Click" />
             <Button Content="刪除選取詞" Click="DeletePhrase_Click" />
           </WrapPanel>
           <StackPanel Grid.Row="4" Margin="0,0,0,10">

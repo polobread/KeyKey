@@ -233,6 +233,7 @@ endif()
 file(GLOB KEYKEY_SETTINGS_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.cs"
     "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.xaml"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.manifest"
     "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.csproj")
 add_custom_target(KeyKeySettings ALL
     COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" publish

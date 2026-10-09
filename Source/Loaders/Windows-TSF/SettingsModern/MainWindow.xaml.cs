@@ -13,6 +13,9 @@ public partial class MainWindow : Window
     private readonly List<ComboBox> readingChoices = new();
     private bool updatingReadings;
     private bool trackingUpdateChanges;
+    private bool unsavedSettings;
+    private string savedPhraseText = "";
+    private string savedPhraseReading = "";
     private static readonly string[] Scales =
         ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
@@ -33,7 +36,6 @@ public partial class MainWindow : Window
             UpdateStatus.Text = App.Updater.Status;
             CheckUpdate.IsEnabled = AutomaticUpdates.IsEnabled = App.Updater.Available;
             AutomaticUpdates.IsChecked = App.Updater.Automatic;
-            trackingUpdateChanges = true;
         };
         AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(UpdateSettingsChanged));
         AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
@@ -55,6 +57,9 @@ public partial class MainWindow : Window
         {
             Status.Text = $"讀取設定失敗：{ex.Message}";
         }
+        CapturePhraseEditor();
+        trackingUpdateChanges = true;
+        UpdateShutdownProtection();
     }
 
     private void LoadSettings()
@@ -112,9 +117,28 @@ public partial class MainWindow : Window
     private void CheckUpdate_Click(object sender, RoutedEventArgs e) => App.Updater.Check();
     private void UpdateSettingsChanged(object sender, RoutedEventArgs e)
     {
-        if (trackingUpdateChanges && e.OriginalSource != AutomaticUpdates && e.OriginalSource is not TabControl)
-            App.Updater.SetUnsavedChanges(true);
+        if (!trackingUpdateChanges) return;
+        // Phrase text/readings are saved by their own buttons. Selection, reading
+        // lookup and tab navigation must not mark the general settings as edited.
+        var source = e.OriginalSource;
+        if (source == CandidateSelectionKeys || source == ComposingTextBufferSize ||
+            source == CandidateScale || source == HighlightColor ||
+            source == PhoneticLayout || source == CangjiePunctuation ||
+            source is ToggleButton toggle && (toggle is CheckBox or RadioButton) && toggle != AutomaticUpdates &&
+                toggle.DataContext is not CollectionRow)
+            unsavedSettings = true;
+        UpdateShutdownProtection();
     }
+
+    private void CapturePhraseEditor()
+    {
+        savedPhraseText = PhraseText.Text;
+        savedPhraseReading = PhraseReading.Text;
+        UpdateShutdownProtection();
+    }
+
+    private void UpdateShutdownProtection() => App.Updater.SetUnsavedChanges(
+        unsavedSettings || PhraseText.Text != savedPhraseText || PhraseReading.Text != savedPhraseReading);
     private void AutomaticUpdates_Changed(object sender, RoutedEventArgs e) =>
         App.Updater.SetAutomatic(AutomaticUpdates.IsChecked == true);
 
@@ -128,6 +152,12 @@ public partial class MainWindow : Window
         foreach (var row in NativeBackend.LoadCollections())
         {
             row.Enabled = enabled.Contains(row.Source);
+            row.PropertyChanged += (_, _) =>
+            {
+                if (!trackingUpdateChanges) return;
+                unsavedSettings = true;
+                UpdateShutdownProtection();
+            };
             collections.Add(row);
         }
         Collections.ItemsSource = collections;
@@ -221,7 +251,8 @@ public partial class MainWindow : Window
             var startupSynced = NativeBackend.KeyKeyPublishDefaultChineseMode(DefaultEnglishMode.IsChecked == true ? 0 : 1) != 0;
             Status.Text = outputSynced && startupSynced
                 ? "設定已套用" : "設定已儲存；跨程式狀態同步失敗，請重新開啟輸入法。";
-            App.Updater.SetUnsavedChanges(false);
+            unsavedSettings = false;
+            UpdateShutdownProtection();
         }
         catch (Exception ex) { Status.Text = $"設定儲存失敗：{ex.Message}"; }
     }
@@ -263,6 +294,7 @@ public partial class MainWindow : Window
         {
             PhraseText.Text = row.Text;
             PhraseReading.Text = row.Reading;
+            CapturePhraseEditor();
         }
     }
 
@@ -341,7 +373,11 @@ public partial class MainWindow : Window
         {
             var ok = NativeBackend.KeyKeySavePhrase(rowid,
                 PhraseText.Text.Trim(), PhraseReading.Text.Trim()) != 0;
-            if (ok) RefreshPhrases();
+            if (ok)
+            {
+                RefreshPhrases();
+                CapturePhraseEditor();
+            }
             Status.Text = ok ? "自訂詞已儲存" : "儲存失敗：請檢查詞語、讀音數量與重複項目";
         }
         catch (Exception ex) { Status.Text = $"儲存失敗：{ex.Message}"; }

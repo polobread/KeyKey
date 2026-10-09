@@ -8,6 +8,7 @@
     <AssemblyName>KeyKeySettings</AssemblyName>
     <Version>1.3.2</Version>
     <ApplicationIcon>../chichi77.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>

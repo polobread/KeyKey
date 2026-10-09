@@ -142,5 +142,7 @@ python3 -m unittest discover -s .github/scripts -v
 目前本機已驗證 macOS Release 編譯、含 Sparkle helper 的 ad-hoc 深層簽章與未簽章
 pkg 打包，及 Windows Settings 的 win-x64／win-x86 self-contained 交叉編譯。
 metadata 9 項與既有 release-assets 8 項測試通過，共用模型檢查通過。
-Windows Deployment.Tests 已能編譯，但執行依賴 Windows 路徑／維護工具語意，在 macOS
-未通過；需 Windows runner 執行。完整 TSF／NSIS 建置與 GUI 升級驗收尚未完成。
+Windows 已通過 30 項隔離 Deployment.Tests，及 x64／x86 WPF 設定回歸；新增回歸涵蓋
+Windows 10／11 manifest 的最低系統版本檢查，以及套用設定、成功／失敗儲存自訂詞、
+選取已儲存詞與關聯詞庫變更時的更新關閉保護。WPF 測試使用既有已編譯原生後端與
+隔離個人資料；不執行 WinSparkle 下載或安裝。完整 TSF／NSIS 建置與 GUI 升級驗收尚未完成。

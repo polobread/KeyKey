@@ -4,6 +4,7 @@
 
 - macOS 加入 Sparkle 更新入口與預設關閉的自動檢查；由 IMK 主程式管理更新，舊版預設開啟的 Yahoo 更新旗標不視為連網同意。安裝包保留更新元件的 XPC/helper 權限並由內而外簽章，所有 pkg 元件固定安裝位置。
 - Windows 現代設定加入 WinSparkle 更新分頁；只在設定程式開啟時檢查，不在 TSF 宿主內連網。x64／x86 元件依執行行程位元數打包，沿用版本化安裝與保留舊 DLL 的升級流程。
+- Windows 設定程式宣告支援 Windows 10／11，避免更新最低系統版本檢查誤判；分別保護未套用設定與未儲存自訂詞，套用設定不會解除自訂詞草稿保護，成功儲存自訂詞也不會誤擋更新或清除其他設定的保護。
 - 新增共用 Ed25519 metadata、平台 appcast 及跨平台簽章驗證證明工具。自動更新資產使用 SHA-256 內容位址，拒絕同版 recovery build、未 notarize 的 macOS pkg 與 unsigned Windows installer；Linux／FreeBSD 保留套件管理路徑。
 - 尚未設定正式公開金鑰與 feed，也未啟用自動 feed 發布；目前建置維持離線。未替換已安裝版本，未修改各平台產品版號或共用模型。
 
