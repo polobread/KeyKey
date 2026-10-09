@@ -1,5 +1,6 @@
 # The bucket is supplied by AWS_TERRAFORM_STATE_BUCKET in GitHub Actions.
-key          = "keykey/release-mirror/terraform.tfstate"
-region       = "ap-east-2"
-encrypt      = true
-use_lockfile = true
+key                    = "keykey/release-mirror/terraform.tfstate"
+region                 = "ap-east-2"
+skip_region_validation = true
+encrypt                = true
+use_lockfile           = true
