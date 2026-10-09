@@ -109,6 +109,48 @@ class ReleaseAssetsTests(unittest.TestCase):
                 release.publish("macos", "1.3.1", self.root)
             run.assert_not_called()
 
+    def test_mirror_uploads_only_verified_platform_assets_with_immutable_paths(self):
+        names = self.packages("macos")
+        info = self.root / "chichi77-KeyKey-1.3.1-macos-build-info.json"
+        info.write_text(json.dumps(dict(
+            platform="macos", version="1.3.1", release_tag="v1.3.1")))
+        env = dict(RELEASE_TAG="v1.3.1", RELEASE_MIRROR_BUCKET="downloads-example",
+                   RELEASE_MIRROR_DISTRIBUTION_ID="EDISTRIBUTION",
+                   RELEASE_MIRROR_BASE_URL="https://downloads.example.com/",
+                   GITHUB_STEP_SUMMARY=str(self.root / "summary"))
+        with patch.dict(os.environ, env), patch.object(release.subprocess, "run") as run:
+            release.mirror("macos", "1.3.1", self.root)
+
+        self.assertEqual(run.call_count, 4)
+        destinations = [call.args[0][4] for call in run.call_args_list[:3]]
+        self.assertEqual(destinations, [
+            f"s3://downloads-example/keykey/releases/download/v1.3.1/{names[0]}",
+            f"s3://downloads-example/keykey/releases/download/v1.3.1/{names[0]}.sha256",
+            "s3://downloads-example/keykey/releases/download/v1.3.1/"
+            "chichi77-KeyKey-1.3.1-macos-build-info.json",
+        ])
+        for call in run.call_args_list[:3]:
+            self.assertIn("public,max-age=0,s-maxage=31536000,must-revalidate", call.args[0])
+        invalidation = run.call_args_list[3].args[0]
+        self.assertEqual(invalidation[:5], [
+            "aws", "cloudfront", "create-invalidation", "--distribution-id", "EDISTRIBUTION"])
+        self.assertIn(f"/keykey/releases/download/v1.3.1/{names[0]}", invalidation)
+        summary = (self.root / "summary").read_text()
+        self.assertIn("https://downloads.example.com/keykey/releases/download/v1.3.1/", summary)
+
+    def test_mirror_rejects_mismatched_build_info_before_upload(self):
+        self.packages("macos")
+        info = self.root / "chichi77-KeyKey-1.3.1-macos-build-info.json"
+        info.write_text(json.dumps(dict(
+            platform="windows", version="1.3.1", release_tag="v1.3.1")))
+        env = dict(RELEASE_TAG="v1.3.1", RELEASE_MIRROR_BUCKET="downloads-example",
+                   RELEASE_MIRROR_DISTRIBUTION_ID="EDISTRIBUTION",
+                   GITHUB_STEP_SUMMARY=str(self.root / "summary"))
+        with patch.dict(os.environ, env), patch.object(release.subprocess, "run") as run:
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                release.mirror("macos", "1.3.1", self.root)
+            run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
