@@ -77,6 +77,9 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
 - Linux 的三個 `.deb`、面板原始碼及 `SHA256SUMS` 與桌面版同放在對應版本的 [GitHub Release](https://github.com/polobread/KeyKey/releases)。
+- 桌面版發行檔也可由私有 S3 origin 加 CloudFront 提供下載 mirror；部署與 GitHub
+  OIDC 設定見 [`terraform/infra`](terraform/infra/README.md)。mirror 使用固定的
+  `keykey/releases/download/VERSION/FILE` 路徑，不取代 GitHub Release 作為發行來源。
 - Android 正式 AAB 只在 Actions 頁面手動執行 `Android Play Release` 時建置、簽署並上傳到 Google Play 內部測試；PR 合併與直接 push 都不觸發。
   從 Play Console 推廣至正式版。正式版已開放一般使用者安裝，不需再經封閉測試。
   `Package Android` 只產生供開發測試的 debug APK。
@@ -95,6 +98,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 自動上傳自己的 assets。各平台版號須符合該 Release；目前 Windows 為 `v1.3.2`，macOS／Linux
 仍為 `v1.3.1`，不能以 Windows 的新 tag 封裝這兩個平台。若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
+設定 release environment 的 AWS mirror variables 後，同一批已驗證檔案也會同步到 S3；
 留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
 完整產物、簽章與限制見 [BUILDING.md](BUILDING.md#github-actions-封裝)。
 

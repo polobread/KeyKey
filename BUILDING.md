@@ -862,6 +862,15 @@ actual source commit, tag commit, run URL, and asset hashes. A recovery build
 can therefore differ from the original tag. The workflow does not create a
 Release or create/move a tag. Retry publishing if an upload is interrupted.
 
+After the AWS variables are configured on the `release` environment, the same
+validated files are uploaded to the private S3 origin and served through
+CloudFront at `keykey/releases/download/TAG/FILE`. The workflow uses GitHub OIDC rather
+than stored AWS access keys. Browsers revalidate downloads, CloudFront caches
+them for up to one year, and each upload invalidates only the exact paths that
+changed so same-tag recovery builds take effect. Provisioning, least-privilege
+IAM, and environment-variable setup are documented in
+[`terraform/infra`](terraform/infra/README.md).
+
 The macOS workflow is split in two jobs. `build` always runs and is given no
 signing secrets, producing the unsigned package; `publish` runs for a published
 Release or a manual run with `release_tag`,

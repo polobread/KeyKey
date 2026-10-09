@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import mimetypes
 import os
 from pathlib import Path
 import re
@@ -90,6 +91,53 @@ def verified_assets(directory, platform, version):
     return paths
 
 
+def mirror(platform, version, directory):
+    tag = os.environ["RELEASE_TAG"]
+    release_tag("workflow_dispatch", "", tag, version)
+    bucket = os.environ["RELEASE_MIRROR_BUCKET"].strip()
+    if not bucket or "/" in bucket:
+        raise ValueError("RELEASE_MIRROR_BUCKET must be an S3 bucket name")
+    distribution_id = os.environ["RELEASE_MIRROR_DISTRIBUTION_ID"].strip()
+    if not distribution_id:
+        raise ValueError("RELEASE_MIRROR_DISTRIBUTION_ID is required")
+
+    assets = verified_assets(directory, platform, version)
+    info = directory / f"chichi77-KeyKey-{version}-{platform}-build-info.json"
+    if not info.is_file() or info.stat().st_size == 0:
+        raise ValueError("build info is missing/empty; publish the GitHub Release assets first")
+    metadata = json.loads(info.read_text(encoding="utf-8"))
+    if metadata.get("platform") != platform or metadata.get("version") != version \
+            or metadata.get("release_tag") != tag:
+        raise ValueError("build info does not match the mirror target")
+
+    mirrored = [*assets, info]
+    prefix = f"keykey/releases/download/{tag}"
+    for path in mirrored:
+        content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        subprocess.run([
+            "aws", "s3", "cp", str(path), f"s3://{bucket}/{prefix}/{path.name}",
+            "--only-show-errors", "--checksum-algorithm", "SHA256",
+            "--cache-control", "public,max-age=0,s-maxage=31536000,must-revalidate",
+            "--content-type", content_type,
+        ], check=True)
+
+    invalidation_paths = [f"/{prefix}/{path.name}" for path in mirrored]
+    subprocess.run([
+        "aws", "cloudfront", "create-invalidation",
+        "--distribution-id", distribution_id,
+        "--paths", *invalidation_paths,
+        "--no-cli-pager", "--output", "json",
+    ], check=True)
+
+    base_url = os.environ.get("RELEASE_MIRROR_BASE_URL", "").rstrip("/")
+    with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as stream:
+        stream.write(f"Mirrored {platform} assets to `s3://{bucket}/{prefix}/` and "
+                     f"invalidated their CloudFront paths.\n\n")
+        if base_url:
+            stream.write("\n".join(
+                f"- [{path.name}]({base_url}/{prefix}/{path.name})" for path in mirrored) + "\n")
+
+
 def resolve(version):
     tag = release_tag(os.environ["GITHUB_EVENT_NAME"], os.environ.get("EVENT_RELEASE_TAG", ""),
                       os.environ.get("REQUESTED_RELEASE_TAG", ""), version)
@@ -140,7 +188,7 @@ def publish(platform, version, directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("resolve", "publish"))
+    parser.add_argument("command", choices=("resolve", "publish", "mirror"))
     parser.add_argument("--version", required=True)
     parser.add_argument("--platform", choices=("macos", "windows", "linux"))
     parser.add_argument("--directory", type=Path)
@@ -148,9 +196,11 @@ def main():
     if args.command == "resolve":
         resolve(args.version)
     elif not args.platform or not args.directory:
-        parser.error("publish requires --platform and --directory")
-    else:
+        parser.error(f"{args.command} requires --platform and --directory")
+    elif args.command == "publish":
         publish(args.platform, args.version, args.directory)
+    else:
+        mirror(args.platform, args.version, args.directory)
 
 
 if __name__ == "__main__":

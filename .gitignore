@@ -18,3 +18,9 @@ Source/Loaders/Linux-IME/out/
 /Source/Loaders/Linux-IME/Makefile
 DataSource/AISyntheticArticles/article-api-runs/
 DataSource/AISyntheticArticles/article-batches-v2/
+terraform/infra/.terraform/
+terraform/infra/*.tfstate
+terraform/infra/*.tfstate.*
+terraform/infra/*.tfvars
+!terraform/infra/terraform.tfvars.example
+terraform/infra/crash.log
