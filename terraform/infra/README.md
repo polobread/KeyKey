@@ -45,7 +45,8 @@ role's `release-mirror-upload` inline policy. The stack reads the existing
 upload role by `github_release_role_name`; it does not own or replace that
 role's trust policy.
 
-The stack owns `download.aws.polobread.com` in the existing public hosted zone
+The stack creates the regional mirror resources in `ap-east-2` and owns
+`download.aws.polobread.com` in the existing public hosted zone
 `Z01457382FBLRWQELDR4Z` (`aws.polobread.com`). It requests the required ACM
 certificate in `us-east-1`, creates its DNS validation record, waits for
 validation, and then creates IPv4 and IPv6 Route 53 Alias records for the

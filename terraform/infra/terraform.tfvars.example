@@ -1,4 +1,5 @@
 bucket_name = "keykey-release-mirror-679046566270"
+aws_region  = "ap-east-2"
 
 domain_name    = "download.aws.polobread.com"
 hosted_zone_id = "Z01457382FBLRWQELDR4Z"

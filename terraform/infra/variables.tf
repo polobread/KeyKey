@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS Region for the S3 origin."
   type        = string
-  default     = "ap-northeast-1"
+  default     = "ap-east-2"
 }
 
 variable "bucket_name" {
