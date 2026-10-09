@@ -1,0 +1,38 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadStateBucketLocation",
+      "Effect": "Allow",
+      "Action": "s3:GetBucketLocation",
+      "Resource": "arn:aws:s3:::keykey-terraform-state-679046566270"
+    },
+    {
+      "Sid": "ListTerraformStateAndLock",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::keykey-terraform-state-679046566270",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "keykey/release-mirror/terraform.tfstate",
+            "keykey/release-mirror/terraform.tfstate.tflock"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadWriteTerraformStateAndLock",
+      "Effect": "Allow",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::keykey-terraform-state-679046566270/keykey/release-mirror/terraform.tfstate",
+        "arn:aws:s3:::keykey-terraform-state-679046566270/keykey/release-mirror/terraform.tfstate.tflock"
+      ]
+    }
+  ]
+}

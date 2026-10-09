@@ -18,18 +18,51 @@ using `s-maxage`, while browsers revalidate before reusing a download. After an
 upload the workflow invalidates only the exact paths it changed, which also
 supports the repository's same-tag recovery builds.
 
-## Provision AWS
+## Bootstrap persistent state once
 
-Copy the example variables and apply with the pre-created Terraform deploy role:
+Terraform cannot create the S3 bucket containing its own remote state. In the
+AWS Console, create the private bucket named
+`keykey-terraform-state-679046566270` in `ap-east-2`, then enable **Block all
+public access**, **Bucket owner enforced** object ownership, **versioning**, and
+default **SSE-S3** encryption. Do not configure it as a website or CloudFront
+origin.
 
-```sh
-cd terraform/infra
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform plan
-terraform apply
-terraform output
+On the Console-created `keykey-github-terraform-deploy` role, add a second
+inline policy named `release-mirror-terraform-state` using
+[`bootstrap/terraform-deploy-state-policy.json`](bootstrap/terraform-deploy-state-policy.json).
+It grants access only to this stack's state object and S3 lockfile; it does not
+change the role's existing release-mirror resource policy.
+
+The backend state object is:
+
+```text
+s3://keykey-terraform-state-679046566270/keykey/release-mirror/terraform.tfstate
 ```
+
+It is versioned and protected by the adjacent `.tflock` object. The GitHub
+workflow supplies this backend from `backend.hcl.example`; do not commit a
+local `terraform.tfstate` file.
+
+## Deploy from GitHub Actions
+
+The [Terraform Release Mirror workflow](../../.github/workflows/terraform-release-mirror.yml)
+is manual only and accepts `plan` or `apply`. It runs exclusively from `master`,
+uses the protected `terraform` GitHub Environment, and applies the plan created
+in that same run. It never applies on a push or pull request.
+
+Create the `terraform` GitHub Environment with required reviewers, then add
+these non-secret environment variables:
+
+| GitHub variable | Value |
+|---|---|
+| `AWS_ACCOUNT_ID` | `679046566270` |
+| `AWS_TERRAFORM_DEPLOY_ROLE_ARN` | `arn:aws:iam::679046566270:role/keykey-github-terraform-deploy` |
+| `AWS_TERRAFORM_STATE_BUCKET` | `keykey-terraform-state-679046566270` |
+
+Run the workflow with `plan` first and inspect the output. Run it again with
+`apply` only after approval. Its checked-in
+`terraform.tfvars.example` supplies the mirror bucket name, hostname, hosted
+zone, and `ap-east-2` origin region.
 
 The account-wide GitHub OIDC provider and the two bootstrap roles are managed
 outside this stack so Terraform never needs permission to create or modify its
@@ -69,10 +102,6 @@ these non-secret variables from the Terraform outputs:
 
 No AWS access key or GitHub secret is needed. Keep the existing `release`
 environment deployment rules: they are also part of the OIDC boundary.
-
-For a Terraform deployment workflow, use the `terraform` GitHub Environment
-and set `AWS_TERRAFORM_DEPLOY_ROLE_ARN` to
-`arn:aws:iam::679046566270:role/keykey-github-terraform-deploy`.
 
 After these variables exist, every successful macOS, Windows, or Linux publish
 uploads the same verified files to GitHub and S3. A mirror failure fails the

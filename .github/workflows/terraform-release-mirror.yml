@@ -1,0 +1,95 @@
+name: Terraform Release Mirror
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Run a reviewed plan or apply the plan"
+        required: true
+        default: plan
+        type: choice
+        options:
+          - plan
+          - apply
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-release-mirror
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/master'
+    name: ${{ inputs.operation }} release mirror infrastructure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: terraform
+    defaults:
+      run:
+        working-directory: terraform/infra
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      AWS_REGION: ap-east-2
+      AWS_DEFAULT_REGION: ap-east-2
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      AWS_TERRAFORM_STATE_BUCKET: ${{ vars.AWS_TERRAFORM_STATE_BUCKET }}
+
+    steps:
+      - name: Check out master
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify Terraform environment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${AWS_ACCOUNT_ID:?Set AWS_ACCOUNT_ID in the terraform environment}"
+          : "${AWS_TERRAFORM_STATE_BUCKET:?Set AWS_TERRAFORM_STATE_BUCKET in the terraform environment}"
+
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_DEPLOY_ROLE_ARN }}
+          role-session-name: github-actions-terraform-release-mirror
+          aws-region: ap-east-2
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.10.5
+          terraform_wrapper: false
+
+      - name: Initialize the versioned S3 state backend
+        shell: bash
+        run: >-
+          terraform init
+          -backend-config=backend.hcl.example
+          -backend-config="bucket=$AWS_TERRAFORM_STATE_BUCKET"
+          -input=false
+
+      - name: Validate configuration
+        shell: bash
+        run: terraform validate -no-color
+
+      - name: Create execution plan
+        shell: bash
+        run: >-
+          terraform plan
+          -input=false
+          -no-color
+          -var-file=terraform.tfvars.example
+          -out=tfplan
+
+      - name: Apply reviewed execution plan
+        if: inputs.operation == 'apply'
+        shell: bash
+        run: terraform apply -input=false -no-color -auto-approve tfplan
+
+      - name: Show release environment values
+        if: inputs.operation == 'apply'
+        shell: bash
+        run: terraform output -no-color
