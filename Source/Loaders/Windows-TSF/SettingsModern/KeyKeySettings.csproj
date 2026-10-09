@@ -11,4 +11,17 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../../../Updates/config.json" LogicalName="KeyKey.UpdateConfig" />
+  </ItemGroup>
+  <PropertyGroup>
+    <WinSparkleArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x86'">Win32</WinSparkleArchitecture>
+    <WinSparkleArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x64'">x64</WinSparkleArchitecture>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(WinSparkleArchitecture)' != ''">
+    <Content Include="../../../../Updates/.cache/windows-0.9.4/WinSparkle-0.9.4/$(WinSparkleArchitecture)/Release/WinSparkle.dll"
+             Link="WinSparkle.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" ExcludeFromSingleFile="true" />
+    <Content Include="../../../../Updates/.cache/windows-0.9.4/WinSparkle-0.9.4/COPYING"
+             Link="WinSparkle-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" ExcludeFromSingleFile="true" />
+  </ItemGroup>
 </Project>

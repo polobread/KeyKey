@@ -74,6 +74,7 @@ jobs:
       - name: Configure and build x64
         working-directory: Source/Loaders/Windows-TSF
         run: |
+          python ../../../Updates/prepare.py fetch windows
           cmake --preset windows-x64-vs2026
           cmake --build --preset windows-x64-vs2026-release
 

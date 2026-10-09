@@ -66,6 +66,10 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 ## 下載與發行
 
+macOS／Windows 的簽章更新功能目前仍在開發，預設不連網；正式公開金鑰、feed 與
+發布流程尚未啟用。共用 metadata、GitHub Release／CDN 設定及 FreeBSD ports/pkg
+的界線見[桌面更新說明](Updates/README.md)。
+
 - [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
 - [Windows 1.3.2 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。

@@ -149,7 +149,7 @@ public static class SafeFiles
     public static void ValidatePayload(IEnumerable<PackageFile> files)
     {
         string[] names = ["KeyKeyTsf_x64.dll", "KeyKeyTsf_x86.dll", "KeyKeySettings.exe", "KeyKeyRegistration_x86.exe",
-            "KeyKeySettingsBackend.dll", "KeyKeyDeployment.exe", "Databases\\KeyKey.db"];
+            "KeyKeySettingsBackend.dll", "KeyKeyDeployment.exe", "WinSparkle.dll", "Databases\\KeyKey.db"];
         foreach (var file in files)
         {
             var normalized = file.Path.Replace('/', '\\');

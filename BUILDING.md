@@ -138,6 +138,11 @@ extension 處理方式見 [面板說明](Source/Loaders/Linux-IME/gnome-panel/RE
 
 ## macOS
 
+建置前先在 repository root 執行 `python3 Updates/prepare.py fetch macos`，準備
+校驗固定版本的 Sparkle SDK。桌面更新未設定正式 key／feed 時維持離線，見
+[更新建置與發布說明](Updates/README.md)。Windows 本機建置同樣需先執行
+`python Updates/prepare.py fetch windows`。
+
 ### 需求
 
 - macOS 15 以上
@@ -572,6 +577,12 @@ horizontal—runs once after reinstall, for eighty-three cases in that final sta
 Local outputs from these commands require the release workflow's checks before distribution.
 
 ### macOS
+
+Prepare the checksum-pinned Sparkle SDK from the repository root with
+`python3 Updates/prepare.py fetch macos` before invoking Xcode. Windows builds
+similarly require `python Updates/prepare.py fetch windows`. See
+[desktop update setup](Updates/README.md); SDK preparation does not enable
+network update checks in an unconfigured application.
 
 #### Requirements and build
 

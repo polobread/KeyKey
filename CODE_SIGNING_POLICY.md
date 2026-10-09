@@ -16,7 +16,9 @@ The intended signing coverage is:
 - the x64 `KeyKeyTsf.dll`;
 - the x86 `KeyKeyTsf.dll`;
 - `KeyKeySettings.exe`;
-- `KeyKeySettingsBackend.dll`; and
+- `KeyKeySettingsBackend.dll`;
+- `KeyKeyDeployment.exe` and the x86 registration bridge;
+- the packaged `WinSparkle.dll`; and
 - the outer NSIS installer containing the signed payload files.
 
 Signatures must use SHA-256 and an RFC 3161 timestamp. The release workflow must
@@ -58,3 +60,10 @@ candidate selections, preferences, or other user information to networked
 systems. Information is transferred only when a user explicitly invokes an
 operating-system feature such as sharing text or downloading an application
 release. See the project [privacy policy](PRIVACY.md) for details.
+
+The desktop updater is default-off and transfers release/version requests only
+after a manual check or explicit opt-in. Ed25519 signatures protect downloaded
+updates separately from Authenticode. The stable update-metadata tool rejects
+unsigned or untimestamped Windows installers; the existing unsigned CI artifacts
+are test/manual-download artifacts, not automatic-update candidates. See
+[desktop update setup](Updates/README.md). The SignPath approval requirement remains unchanged.

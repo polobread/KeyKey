@@ -253,7 +253,11 @@ $x86RegistrationPath = Resolve-BuildArtifact $resolvedX86BuildDirectory 'KeyKeyR
 $settingsPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeySettings.exe'
 $settingsBackendPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeySettingsBackend.dll'
 $deploymentPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyDeployment.exe'
+$updaterPath = Resolve-BuildArtifact $resolvedBuildDirectory 'WinSparkle.dll'
+$updaterLicense = Resolve-BuildArtifact $resolvedBuildDirectory 'WinSparkle-LICENSE.txt'
 $databasePath = Resolve-BuildArtifact $resolvedBuildDirectory 'Databases\KeyKey.db'
+Assert-PeMachine -FilePath $updaterPath -ExpectedMachine 0x8664 `
+    -Description 'The x64 updater DLL'
 Assert-PeMachine -FilePath $x64DllPath -ExpectedMachine 0x8664 `
     -Description 'The x64 TSF DLL'
 Assert-PeMachine -FilePath $x86DllPath -ExpectedMachine 0x014C `
@@ -322,11 +326,14 @@ try {
     $stagedSettingsBackend = Join-Path $payloadDirectory 'KeyKeySettingsBackend.dll'
     $stagedDeployment = Join-Path $payloadDirectory 'KeyKeyDeployment.exe'
     $stagedRegistration = Join-Path $payloadDirectory 'KeyKeyRegistration_x86.exe'
+    $stagedUpdater = Join-Path $payloadDirectory 'WinSparkle.dll'
     Copy-Item -LiteralPath $x64DllPath -Destination $stagedX64Dll
     Copy-Item -LiteralPath $x86DllPath -Destination $stagedX86Dll
     Copy-Item -LiteralPath $settingsPath -Destination $stagedSettings
     Copy-Item -LiteralPath $settingsBackendPath -Destination $stagedSettingsBackend
     Copy-Item -LiteralPath $deploymentPath -Destination $stagedDeployment
+    Copy-Item -LiteralPath $updaterPath -Destination $stagedUpdater
+    Copy-Item -LiteralPath $updaterLicense -Destination $licenseDirectory
     Copy-Item -LiteralPath $x86RegistrationPath -Destination $stagedRegistration
     Copy-Item -LiteralPath $databasePath -Destination $databaseDirectory
 
@@ -351,7 +358,7 @@ try {
         -Destination $licenseDirectory
 
     if (-not $UnsignedTest) {
-        $peFiles = @($stagedX64Dll, $stagedX86Dll, $stagedSettings, $stagedSettingsBackend, $stagedDeployment, $stagedRegistration)
+        $peFiles = @($stagedX64Dll, $stagedX86Dll, $stagedSettings, $stagedSettingsBackend, $stagedDeployment, $stagedRegistration, $stagedUpdater)
         Invoke-SignFiles -FilePath $peFiles -ToolPath $resolvedSignTool `
             -Thumbprint $normalizedThumbprint `
             -Rfc3161TimestampUrl $TimestampUrl `

@@ -27,6 +27,7 @@ file for terms.
 	}
 
 	[array addObject:PhraseToolbarItemIdentifier];
+	[array addObject:UpdateToolbarItemIdentifier];
 	
 	return array;
 
@@ -42,6 +43,7 @@ file for terms.
 		PhraseToolbarItemIdentifier,
 		GenericToolbarItemIdentifier,
 		PluginToolbarItemIdentifier,
+		UpdateToolbarItemIdentifier,
 		nil];
 }
 
@@ -55,6 +57,7 @@ file for terms.
 		PhraseToolbarItemIdentifier,
 		GenericToolbarItemIdentifier,
 		PluginToolbarItemIdentifier,
+		UpdateToolbarItemIdentifier,
 		nil];
 }
 
@@ -100,6 +103,12 @@ file for terms.
 	else if ([identifier isEqualToString:PhraseToolbarItemIdentifier]) {
 		[item setLabel:LFLSTR(PhraseToolbarItemIdentifier)];
 		[item setImage:[NSImage imageNamed:@"phrase"]];
+		[item setTarget:self];
+		[item setAction:@selector(toggleActivePreferenceView:)];
+	}
+	else if ([identifier isEqualToString:UpdateToolbarItemIdentifier]) {
+		[item setLabel:UpdateToolbarItemIdentifier];
+		[item setImage:[NSImage imageWithSystemSymbolName:@"arrow.down.circle" accessibilityDescription:@"更新"]];
 		[item setTarget:self];
 		[item setAction:@selector(toggleActivePreferenceView:)];
 	}

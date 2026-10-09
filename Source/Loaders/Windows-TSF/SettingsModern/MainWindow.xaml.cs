@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using Microsoft.Win32;
 
 namespace KeyKeySettings;
@@ -11,6 +12,7 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<CollectionRow> collections = new();
     private readonly List<ComboBox> readingChoices = new();
     private bool updatingReadings;
+    private bool trackingUpdateChanges;
     private static readonly string[] Scales =
         ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
@@ -25,6 +27,18 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Loaded += (_, _) =>
+        {
+            App.Updater.Initialize();
+            UpdateStatus.Text = App.Updater.Status;
+            CheckUpdate.IsEnabled = AutomaticUpdates.IsEnabled = App.Updater.Available;
+            AutomaticUpdates.IsChecked = App.Updater.Automatic;
+            trackingUpdateChanges = true;
+        };
+        AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(UpdateSettingsChanged));
+        AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
+        AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
+        AddHandler(Selector.SelectionChangedEvent, new SelectionChangedEventHandler(UpdateSettingsChanged));
         CandidateScale.ItemsSource = new[] { "跟隨 Windows（預設）" }
             .Concat(Scales.Skip(1).Select(s => s + "%")).ToArray();
         HighlightColor.ItemsSource = new[] { "紫色", "綠色", "黃色", "紅色" };
@@ -94,6 +108,15 @@ public partial class MainWindow : Window
         ClearSmartCompositionWithEsc.IsChecked =
             SettingsStore.ReadSmartEscClearPreference(SettingsStore.SmartPath);
     }
+
+    private void CheckUpdate_Click(object sender, RoutedEventArgs e) => App.Updater.Check();
+    private void UpdateSettingsChanged(object sender, RoutedEventArgs e)
+    {
+        if (trackingUpdateChanges && e.OriginalSource != AutomaticUpdates && e.OriginalSource is not TabControl)
+            App.Updater.SetUnsavedChanges(true);
+    }
+    private void AutomaticUpdates_Changed(object sender, RoutedEventArgs e) =>
+        App.Updater.SetAutomatic(AutomaticUpdates.IsChecked == true);
 
     private void LoadCollections()
     {
@@ -198,6 +221,7 @@ public partial class MainWindow : Window
             var startupSynced = NativeBackend.KeyKeyPublishDefaultChineseMode(DefaultEnglishMode.IsChecked == true ? 0 : 1) != 0;
             Status.Text = outputSynced && startupSynced
                 ? "設定已套用" : "設定已儲存；跨程式狀態同步失敗，請重新開啟輸入法。";
+            App.Updater.SetUnsavedChanges(false);
         }
         catch (Exception ex) { Status.Text = $"設定儲存失敗：{ex.Message}"; }
     }

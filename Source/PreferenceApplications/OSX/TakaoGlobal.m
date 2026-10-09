@@ -241,10 +241,17 @@ file for terms.
 	else
 		[_soundCheckBox setIntValue:0];
 	
-	if ([[_takaoDictionary valueForKey:@"ShouldCheckUpdateOnLaunch"] isEqualToString:@"true"])
-		[_useUpdateCheckBox setIntValue:1];
-	else
-		[_useUpdateCheckBox setIntValue:0];
+	// The old default-true flag is NOT consent for a newly enabled network feature.
+	[_useUpdateCheckBox setIntValue:0];
+	[_useUpdateCheckBox setEnabled:NO];
+	[_useUpdateCheckBox setTitle:@"自動檢查更新（連線至發行伺服器）"];
+	@try {
+		id service = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
+		[service setProtocolForProxy:@protocol(OpenVanillaService)];
+		NSDictionary *status = [service desktopUpdateStatus];
+		[_useUpdateCheckBox setEnabled:[[status objectForKey:@"configured"] boolValue]];
+		[_useUpdateCheckBox setIntValue:[[status objectForKey:@"automatic"] boolValue]];
+	} @catch (NSException *exception) { /* Old installed loader: leave disabled. */ }
 	
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)	
 	if ([[_takaoDictionary valueForKey:@"ToggleInputMethodWithControlBackslash"] isEqualToString:@"true"])
@@ -434,6 +441,13 @@ file for terms.
 
 - (IBAction)writePreference:(id)sender
 {
+	if (sender == _useUpdateCheckBox) {
+		@try {
+			id service = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
+			[service setProtocolForProxy:@protocol(OpenVanillaService)];
+			[service setAutomaticDesktopUpdates:[_useUpdateCheckBox intValue] != 0];
+		} @catch (NSException *exception) { [_useUpdateCheckBox setIntValue:0]; }
+	}
 	[self updateDictionary];
 	[self doWrite];
 }

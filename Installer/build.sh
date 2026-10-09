@@ -17,33 +17,19 @@ STAGED="$STAGE/Library/Input Methods/$(basename "$APP")"
 # resource is missing or invalid". Notarisation rejects that. Headers are of no
 # use at runtime, so drop them before anything signs or seals the bundle.
 for f in "$STAGED"/Contents/Frameworks/*.framework; do
+    # Preserve Sparkle's vendor-signed resources and helper entitlements.
+    [[ "$(basename "$f")" == "Sparkle.framework" ]] && continue
     rm -rf "$f/Versions/A/Headers" "$f/Headers"
 done
 
 SIGN_IDENTITY=${DEVELOPER_ID_APPLICATION:--}
-if [ "$SIGN_IDENTITY" != "-" ]; then
-    # Developer ID packages need Hardened Runtime and a secure timestamp.
-    sign_staged() {
-        codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$1"
-    }
-else
+if [ "$SIGN_IDENTITY" == "-" ]; then
     echo "DEVELOPER_ID_APPLICATION is not set, signing the local app ad hoc" >&2
-    sign_staged() {
-        codesign --force --sign - "$1"
-    }
 fi
 
 # Removing framework headers invalidates the original build signatures. Sign
 # nested code first, then the app, even for an unsigned local test package.
-for f in "$STAGED"/Contents/Frameworks/*.framework; do
-    sign_staged "$f"
-done
-
-for f in "$STAGED"/Contents/SharedSupport/*.app; do
-    sign_staged "$f"
-done
-
-sign_staged "$STAGED"
+python3 ../Updates/sign-macos.py "$STAGED" "$SIGN_IDENTITY"
 codesign --verify --deep --strict --verbose=2 "$STAGED"
 
 # pkgbuild marks app bundles relocatable by default, which lets installer
@@ -54,10 +40,15 @@ codesign --verify --deep --strict --verbose=2 "$STAGED"
 COMPONENTS="$STAGE.plist"
 trap 'rm -rf "$STAGE" "$COMPONENTS"' EXIT
 pkgbuild --analyze --root "$STAGE" "$COMPONENTS"
-if ! /usr/libexec/PlistBuddy -c "Set :0:BundleIsRelocatable false" "$COMPONENTS" 2>/dev/null; then
-    # Recent pkgbuild versions may omit the key instead of emitting its default.
-    /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" "$COMPONENTS"
-fi
+component_index=0
+while /usr/libexec/PlistBuddy -c "Print :$component_index" "$COMPONENTS" >/dev/null 2>&1; do
+    # Sparkle adds nested bundles; index 0 is no longer necessarily the IMK app.
+    # Pin every component rather than allowing any helper to relocate separately.
+    if ! /usr/libexec/PlistBuddy -c "Set :$component_index:BundleIsRelocatable false" "$COMPONENTS" 2>/dev/null; then
+        /usr/libexec/PlistBuddy -c "Add :$component_index:BundleIsRelocatable bool false" "$COMPONENTS"
+    fi
+    component_index=$((component_index + 1))
+done
 
 pkgbuild \
     --root "$STAGE" \

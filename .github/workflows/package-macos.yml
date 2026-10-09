@@ -83,6 +83,7 @@ jobs:
       - name: Build input method
         shell: bash
         run: |
+          python3 Updates/prepare.py fetch macos
           cd Source
           xcodebuild \
             -project Takao.xcodeproj \

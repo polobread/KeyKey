@@ -15,46 +15,25 @@ file for terms.
 	[super dealloc];
 }
 - (void)_getVersionInfo
-{	
-	id ovService;
-	
-    // @try {
-		ovService = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];		
-    // }
-    // @catch(NSException *e) {
-        // NSLog(@"Exceptions raise on retreiving version info");
-        // [_currentVersionTextField setStringValue:@""];          
-        // [_latestVersionTextField setStringValue:@""];        
-        // [_latestCheckTextField setStringValue:@""];          
-        // return;
-    // }
-
-	if (ovService) {
-		[ovService setProtocolForProxy:@protocol(OpenVanillaService)];
-		NSString *version = [ovService version];
-		if (version) 
-			[_currentVersionTextField setStringValue:version];
-		else
-			[_currentVersionTextField setStringValue:@""];	
-			
-		NSString *latestVersion = [ovService latestVersion];		
-		if (latestVersion)
-			[_latestVersionTextField setStringValue:latestVersion];
-		else
-			[_latestVersionTextField setStringValue:@""];
-			
-		NSString *latestCheck = [ovService latestCheck];
-		if (latestCheck)
-			[_latestCheckTextField setStringValue:latestCheck];
-		else
-			[_latestCheckTextField setStringValue:@""];	
-	}
-	else {
-		[_currentVersionTextField setStringValue:@""];			
-		[_latestVersionTextField setStringValue:@""];		
-		[_latestCheckTextField setStringValue:@""];			
+{
+	[_currentVersionTextField setStringValue:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @""];
+	[_latestVersionTextField setStringValue:@"由簽章更新服務檢查"];
+	[_latestCheckTextField setStringValue:@"尚未檢查"];
+	@try {
+		id service = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
+		[service setProtocolForProxy:@protocol(OpenVanillaService)];
+		NSDictionary *status = [service desktopUpdateStatus];
+		if (![[status objectForKey:@"configured"] boolValue])
+			[_latestVersionTextField setStringValue:@"尚未設定更新服務"];
+		id date = [status objectForKey:@"lastCheck"];
+		if ([date isKindOfClass:[NSDate class]])
+			[_latestCheckTextField setStringValue:[NSDateFormatter localizedStringFromDate:date
+				dateStyle:NSDateFormatterShortStyle timeStyle:NSDateFormatterShortStyle]];
+	} @catch (NSException *exception) {
+		[_latestVersionTextField setStringValue:@"請先手動安裝支援更新的版本"];
 	}
 }
+
 - (void)awakeFromNib
 {
 	[_checkProgressIndicator setHidden:YES];
@@ -64,8 +43,19 @@ file for terms.
 
 - (IBAction)checkUpdateNow:(id)sender
 {
-	NSAlert *alert = [NSAlert alertWithMessageText:LFLSTR(@"This build does not check for updates.") defaultButton:LFLSTR(@"OK") alternateButton:nil otherButton:nil informativeTextWithFormat:LFLSTR(@"chichi77 KeyKey does not connect to the Internet.")];
-	[alert beginSheetModalForWindow:_window modalDelegate:self didEndSelector:nil contextInfo:nil];
+	@try {
+		id service = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
+		[service setProtocolForProxy:@protocol(OpenVanillaService)];
+		if ([[[service desktopUpdateStatus] objectForKey:@"configured"] boolValue]) {
+			[service checkForDesktopUpdates];
+			[self _getVersionInfo];
+			return;
+		}
+	} @catch (NSException *exception) { /* Show a local message without networking. */ }
+	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+	[alert setMessageText:@"此版本尚未設定更新服務"];
+	[alert setInformativeText:@"需先安裝內含正式公開金鑰與更新網址的版本。此建置不會連線，也不會安裝未驗證的更新。"];
+	[alert beginSheetModalForWindow:_window completionHandler:nil];
 }
 
 @end

@@ -54,6 +54,8 @@ $settingsBuildDirectory = if ($Architecture -eq 'x86') {
 $settingsPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeySettings.exe'
 $settingsBackendPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeySettingsBackend.dll'
 $deploymentPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeyDeployment.exe'
+$updaterPath = Resolve-BuildArtifact $settingsBuildDirectory 'WinSparkle.dll'
+$updaterLicense = Resolve-BuildArtifact $settingsBuildDirectory 'WinSparkle-LICENSE.txt'
 if ($Architecture -eq 'x64') {
     $nativeDllPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyTsf.dll'
 }
@@ -86,6 +88,8 @@ try {
     Copy-Item -LiteralPath $settingsBackendPath `
         -Destination $payloadDirectory
     Copy-Item -LiteralPath $deploymentPath -Destination $payloadDirectory
+    Copy-Item -LiteralPath $updaterPath -Destination $payloadDirectory
+    Copy-Item -LiteralPath $updaterLicense -Destination $licenseDirectory
     Copy-Item -LiteralPath $x86RegistrationPath -Destination (Join-Path $payloadDirectory 'KeyKeyRegistration_x86.exe')
     Copy-Item -LiteralPath $databasePath -Destination $databaseDirectory
 

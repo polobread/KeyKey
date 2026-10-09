@@ -3922,6 +3922,7 @@
 				6AFC805E0D9900BD007588D8 /* ShellScript */,
 				6AE950B20D998B1E003FC2F3 /* Copy Files (trompe-l'oeil) */,
 				6AB931A30EA42E8D005CD336 /* Copy Files (Modules) */,
+				77AA13200000000000000001 /* Embed desktop updater */,
 			);
 			buildRules = (
 			);
@@ -4676,6 +4677,16 @@
 /* End PBXRezBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		77AA13200000000000000001 /* Embed desktop updater */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "python3 \"$SRCROOT/../Updates/prepare.py\" embed-macos \"$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME\"";
+		};
 		6AB74BCD0DA15C3900D9544B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

@@ -26,7 +26,8 @@
 	
     OpenVanillaLoader* _loader;
 	
-	NSMutableDictionary *_versionInfo;	
+	NSMutableDictionary *_versionInfo;
+	id _desktopUpdaterController;
 	
     NSPort *_serverPort;
     NSConnection *_serverConnection;

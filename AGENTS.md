@@ -70,6 +70,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
 
 # macOS
+python3 Updates/prepare.py fetch macos
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
@@ -85,6 +86,8 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.
 ```
 
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
+Windows 建置前準備 `python Updates/prepare.py fetch windows`。桌面更新預設關閉、
+key／feed 未設定時不得連網；正式啟用與各平台簽章驗收見 [Updates/README.md](Updates/README.md)。
 
 ## 改版號清單
 

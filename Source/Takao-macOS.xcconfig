@@ -9,3 +9,4 @@ CLANG_CXX_LANGUAGE_STANDARD = gnu++17
 CLANG_CXX_LIBRARY = libc++
 HEADER_SEARCH_PATHS = $(inherited) $(OPENSSL_PREFIX)/include
 OTHER_LDFLAGS = $(inherited) -lsqlite3 $(OPENSSL_PREFIX)/lib/libcrypto.a
+FRAMEWORK_SEARCH_PATHS = $(inherited) $(SRCROOT)/../Updates/.cache/macos-2.10.0

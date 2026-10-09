@@ -197,6 +197,17 @@
           </WrapPanel>
         </Grid>
       </TabItem>
+      <TabItem Header="更新">
+        <StackPanel Margin="24">
+          <TextBlock Text="琦琦輸入法更新" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16" />
+          <TextBlock x:Name="UpdateStatus" Margin="0,0,0,20" />
+          <CheckBox x:Name="AutomaticUpdates" Content="設定視窗開啟時自動檢查更新（每天一次）"
+                    IsEnabled="False" Checked="AutomaticUpdates_Changed" Unchecked="AutomaticUpdates_Changed" Margin="0,0,0,20" />
+          <Button x:Name="CheckUpdate" Content="立即檢查更新" Click="CheckUpdate_Click" IsEnabled="False" HorizontalAlignment="Left" />
+          <TextBlock Text="下載與安裝仍需確認。請先套用設定；若有未儲存的編輯，更新程式不會關閉此視窗啟動安裝。更新會保留個人設定、自訂詞與學習紀錄。安裝後請登出再登入。"
+                     Margin="0,20,0,0" Opacity="0.7" />
+        </StackPanel>
+      </TabItem>
     </TabControl>
   </DockPanel>
 </Window>

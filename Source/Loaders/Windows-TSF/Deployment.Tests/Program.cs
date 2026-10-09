@@ -15,6 +15,23 @@ void Reject(Action operation)
     try { operation(); } catch (DeploymentException) { return; }
     throw new Exception("Unsafe operation was accepted.");
 }
+Test("updater sidecar is validated and retained with its versioned payload", f =>
+{
+    var package = f.Package("1.3.2");
+    var updater = Path.Combine(package, "Payload", "WinSparkle.dll");
+    File.WriteAllText(updater, "isolated updater test fixture");
+    var manifestPath = Path.Combine(package, "PackageManifest.json");
+    var manifest = SafeFiles.Read<PackageManifest>(manifestPath);
+    manifest.Files.Add(new PackageFile("WinSparkle.dll", SafeFiles.Hash(updater)));
+    SafeFiles.Write(manifestPath, manifest);
+    f.Engine.Install(package);
+    var old = f.Engine.Inspect().Current!;
+    Check(File.Exists(Path.Combine(old.Directory, "WinSparkle.dll")));
+    f.Engine.Install(f.Package("1.3.3"));
+    Check(f.Engine.Inspect().Retired.Any(p => p.Id == old.Id));
+    Check(SafeFiles.Matches(old.Directory, old.Files));
+    Reject(() => SafeFiles.ValidatePayload([new PackageFile("UnexpectedUpdater.dll", new string('a', 64))]));
+});
 Test("upgrade keeps the complete previous payload and switches both registrations", f =>
 {
     f.Engine.Install(f.Package("1.3.0"));

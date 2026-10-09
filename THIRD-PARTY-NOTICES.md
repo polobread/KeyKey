@@ -5,6 +5,22 @@ This file records third-party notices and does not define the license of
 original chichi77 KeyKey frontend code. See `LICENSING.md` for the complete
 repository scope map.
 
+## Desktop update components
+
+The macOS desktop application embeds Sparkle 2.10.0 (MIT/BSD notices, including
+its bundled third-party components). Its complete upstream `LICENSE` is copied
+into the application at `Contents/Resources/LICENSES/Sparkle-LICENSE.txt`.
+Upstream: https://github.com/sparkle-project/Sparkle/tree/2.10.0
+
+The Windows settings application loads WinSparkle 0.9.4 as a separately packaged
+DLL (MIT license, Copyright (c) 2009-2026 Vaclav Slavik). Its complete upstream
+`COPYING`, including its OpenSSL acknowledgement, is copied into the payload's
+`LICENSES/WinSparkle-LICENSE.txt`. Upstream:
+https://github.com/vslavik/winsparkle/tree/v0.9.4
+
+Official SDK archives are checksum-pinned in `Updates/dependencies.json` and
+downloaded only during explicit build preparation; clients never download SDKs.
+
 ## OpenVanilla Han conversion
 
 The Windows frontend links `Source/ModulePackages/OVOFHanConvert/OVOFHanConvert.cpp`
