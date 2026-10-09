@@ -1,9 +1,9 @@
 # iOS 鍵盤
 
-一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。以下是開發與測試資訊。
+一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。**1.3.2（build 41）** 已在 App Store 正式上線，一般使用者不需加入 TestFlight。以下是開發與測試資訊。
 
 琦琦輸入法的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
-容器 App。App 與鍵盤 extension 的產品版號皆為 `1.3.2`，由 Xcode project 的
+容器 App。目前 App 與鍵盤 extension 的開發版號皆為 `1.3.3`，由 Xcode project 的
 `MARKETING_VERSION` 統一設定，Simulator 封裝流程也從此讀取版號。
 首頁會從 container app bundle 的 `CFBundleShortVersionString` 顯示目前版本，避免畫面
 版號和 Xcode 的 `MARKETING_VERSION` 失同步。
@@ -111,7 +111,7 @@ xcrun devicectl device process launch --device "$keykey_device_id" \
   io.github.polobread.inputmethod.chichi77.ios
 ```
 
-安裝後核對裝置上的名稱與版號。App 和鍵盤 extension 皆為「琦琦輸入法」`1.3.2`；
+安裝後核對裝置上的名稱與版號。開發版 App 和鍵盤 extension 皆為「琦琦輸入法」`1.3.3`；
 本機 build number 使用專案預設值，Xcode Cloud 則使用 `CI_BUILD_NUMBER`。
 USB 開發簽章安裝與 App Store／TestFlight 發行是不同流程。
 

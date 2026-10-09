@@ -1,6 +1,6 @@
-# 琦琦輸入法 Android IME 1.3.2
+# 琦琦輸入法 Android IME 1.3.3
 
-產品版號為 `1.3.2`，`versionCode` 為 `1003002`，尚未發布。版本預設值及 Android
+目前開發版號為 `1.3.3`，`versionCode` 為 `1003003`；Google Play 正式版仍為 **1.3.2**，已於 **2026-10-08** 發布，一般使用者可直接安裝，不需加入群組或封閉測試。版本預設值及 Android
 自動封裝均以 `app/build.gradle.kts` 為準，獨立於其他平台的版號。
 
 一般使用者請先看[Android 手機、平板安裝與使用指南](../../../ANDROID_INSTALL.md)；本頁包含開發、建置與實作細節。
@@ -213,14 +213,12 @@ App 設定頁的「支持開發」區塊未付費時放在最上方，付費後�
 
 ## Google Play 發布
 
-`Android Play Release` 在 PR 合併回 `master` 時自動建置、簽署並上傳 AAB 到
-Google Play 內部測試；也保留 Actions 頁面的 **Run workflow**。直接 push `master`、
-開啟或更新 PR、關閉但未合併的 PR 都不發布。自動建置使用該次合併的 commit，
-手動建置使用所選分支或 tag。
+`Android Play Release` 只在 Actions 頁面按 **Run workflow** 時建置、簽署並上傳 AAB 到
+Google Play 內部測試；PR 合併與直接 push 都不觸發。手動建置使用所選分支或 tag。
 
 Workflow 依序執行 release lint、單元測試、AAB 建置、簽章與共用 DB 驗證，
-再以 `changesNotSentForReview: true` 儲存上傳變更。送審及測試群組推廣由
-Play Console 操作；Actions 上傳成功不代表已公開發布。`Package Android`
+再提交到內部測試，且不設定 `changesNotSentForReview`。正式版推廣由 Play Console
+操作；Actions 上傳成功不代表已公開發布。`Package Android`
 則只提供 debug APK，與正式上傳流程分開。
 
 所有原始碼、文件與 CI 修改都在工作分支提交，再透過 PR 合併回 `master`。

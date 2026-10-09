@@ -4,7 +4,7 @@
 
 Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；目前 Windows、Android 與 iOS 原始碼版號為 `1.3.2`，尚未發布，macOS、Linux 與共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
+依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 與 iOS 原始碼開發版號為 `1.3.3`，商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線（iOS build 41）；Android 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。Windows `1.3.2` 尚未發布，macOS、Linux 與共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -371,12 +371,12 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 ## GitHub Actions 封裝
 
-Android 的 debug 封裝與 iOS Simulator workflow 從 GitHub Actions 頁面按
-**Run workflow** 手動執行。`Android Play Release` 在 PR 合併回 `master` 時自動建置、
-簽署並上傳 AAB 到 Google Play 內部測試，也保留手動執行；直接 push `master`、
-開啟或更新 PR、關閉但未合併的 PR 都不發布。自動執行使用該次合併 commit，
-手動執行使用所選分支或 tag 的 commit。Google 要求的 `changesNotSentForReview: true`
-會將上傳變更先儲存在 Console，再由 Console 送審。
+Android 的 debug 封裝、iOS Simulator 與 `Android Play Release` workflow 都從
+GitHub Actions 頁面按 **Run workflow** 手動執行。Android Play workflow 使用所選分支
+或 tag 的 commit 建置、簽署並上傳 AAB 到 Google Play 內部測試；PR 合併與直接 push
+都不觸發，也不設定 `changesNotSentForReview`。正式版推廣由 Play Console 操作。
+Android 1.3.2 已於 2026-10-08 正式上線；後續正式發布不需再以封閉測試作為前置步驟。
+CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不同流程。
 
 所有修改先在工作分支提交，再由維護者親自 review 和 merge PR 回 `master`；agent 不自行合併。
 原始碼、建置腳本與 CI 都依 [Code signing policy](CODE_SIGNING_POLICY.md) 納入審查。
@@ -412,7 +412,7 @@ gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 發布到 Release 前以 Developer ID 簽章並 notarize；僅 artifact 的 run 未簽章 |
 | Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章；EXE 只供測試，不能送 Store |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
-| Android Play Release | 無公開 artifact；直接上傳簽署 AAB | PR 合併到 master 或手動 Run workflow 時建置、簽署並上傳到 Google Play internal testing；直接 push master 不觸發，儲存變更後由 Play Console 送審及推廣到封閉測試 |
+| Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 只在手動 Run workflow 時建置、簽署並上傳到 Google Play internal testing；PR 合併與直接 push 都不觸發，由 Play Console 推廣至正式版；一般使用者不需加入封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 | Linux CI | Ubuntu 22.04／24.04 `.deb`；Ubuntu 24.04 另有面板原始碼與 `SHA256SUMS` | 完整測試通過後，發布 run 只上傳 Ubuntu 24.04 的五個檔案；Ubuntu 22.04 套件僅保留 artifact |
 
@@ -801,12 +801,15 @@ shares the completed text. See the
 
 ### GitHub Actions packaging
 
-Android debug packaging and iOS Simulator packaging run after **Run workflow**
-is selected in GitHub Actions. `Android Play Release` also runs automatically after
-a PR merges into `master`, building and uploading that exact merged commit to
-Google Play internal testing. Direct pushes, open or updated PRs, and PRs closed
-without merging do not publish. Manual runs build the selected branch or tag.
-`changesNotSentForReview: true` saves the upload for submission from Play Console.
+Android debug packaging, iOS Simulator packaging, and `Android Play Release` run only
+after **Run workflow** is selected in GitHub Actions. The Android Play workflow builds
+the selected branch or tag and uploads it to Google Play internal testing. PR merges
+and direct pushes do not trigger it, and the workflow does not set
+`changesNotSentForReview`. Production promotion is performed in Play Console.
+Android 1.3.2 entered production on
+2026-10-08; closed testing is no longer a prerequisite for subsequent production
+releases or public installation. CI uploads to internal testing; users install
+the production release from Google Play. iOS 1.3.2 (build 41) is available on the App Store.
 
 Commit all changes on a working branch; the maintainer reviews and merges the PR.
 Agents must not merge PRs. Source, build scripts, and CI are covered by the
@@ -847,7 +850,7 @@ artifacts for seven days:
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Signed with a Developer ID and notarized before Release upload; artifact-only runs remain unsigned |
 | Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; the EXE is test-only and cannot be submitted to the Store |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
-| Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads after a PR merges into master or a manual Run workflow; direct pushes to master do not trigger it. Saved changes are submitted for review and promoted to closed testing in Play Console |
+| Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads only after a manual Run workflow; PR merges and direct pushes do not trigger it. Promote the build to production in Play Console; public installation does not require closed testing |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 | Linux CI | Ubuntu 22.04 and 24.04 `.deb` packages; Ubuntu 24.04 panel source and `SHA256SUMS` | Publishing runs upload five verified Ubuntu 24.04 assets after both gates pass; Ubuntu 22.04 packages remain Actions artifacts |
 

@@ -2,7 +2,7 @@
 
 2026-09-26 選定 **A 版**：延續深紫色版面。主軸是好打注音，並保留傳統注音與接上實體鍵盤各自的介紹。Apple 圖只呈現 iPhone／iPad 的使用方式；Google Play 第五張介紹 Android、iOS、macOS、Windows、Linux 五平台。
 
-Android／iOS 產品版號目前為 `1.3.2`。Google Play A 版主視覺已改為「琦琦輸入法」；其餘上架 PNG 與來源截圖主要沿用 1.3.0 時期素材，以下保留真實來源版本。
+Android／iOS `1.3.2` 已分別在 Google Play／App Store 正式上線（iOS build 41）。Android 於 2026-10-08 正式發布，可直接從商店安裝，不需加入封閉測試。Google Play A 版主視覺已改為「琦琦輸入法」；本目錄已納入版控的其餘 PNG 與來源截圖主要沿用 1.3.0 時期素材，以下保留真實來源版本。App Store 上的 iPhone／iPad 第三、第四張已另以 1.3.2 Release 模擬器實拍更新，第四張文案為「好打注音・傳統注音／倉頡・簡易，隨你切換」。
 
 ## 上架圖位置
 
