@@ -3,6 +3,7 @@
 ## Android 1.3.3（未發布）
 
 - 開發版號更新為 1.3.3，versionCode 更新為 1003003，避免後續 Google Play 建置沿用已發布的 1.3.2 版號。
+- Google Play 發布改為只從 Actions 頁面手動執行；PR 合併與直接 push 不再觸發，並移除只適用於先前遭拒狀態的 `changesNotSentForReview` 設定。
 
 ## iOS 1.3.3（未發布）
 

@@ -77,8 +77,8 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
 - Linux 的三個 `.deb`、面板原始碼及 `SHA256SUMS` 與桌面版同放在對應版本的 [GitHub Release](https://github.com/polobread/KeyKey/releases)。
-- Android 正式 AAB 在 PR 合併回 `master` 時由 `Android Play Release` 自動建置、簽署並上傳到 Google Play 內部測試；也可手動 **Run workflow**。
-  直接 push `master` 不觸發。上傳後先儲存變更，再從 Play Console 推廣至正式版並送審。正式版已開放一般使用者安裝，不需再經封閉測試。
+- Android 正式 AAB 只在 Actions 頁面手動執行 `Android Play Release` 時建置、簽署並上傳到 Google Play 內部測試；PR 合併與直接 push 都不觸發。
+  從 Play Console 推廣至正式版。正式版已開放一般使用者安裝，不需再經封閉測試。
   `Package Android` 只產生供開發測試的 debug APK。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
   Simulator 測試包，不能安裝到 iPhone 或 iPad。
@@ -237,9 +237,8 @@ iOS.
 - The three Linux `.deb` files, panel source archive, and `SHA256SUMS` share the
   corresponding [GitHub Release](https://github.com/polobread/KeyKey/releases) with the desktop builds.
 - `Android Play Release` builds, signs, and uploads the Android AAB to Google Play
-  internal testing after a PR merges into `master`, or when **Run workflow** is selected.
-  Direct pushes to `master` do not trigger it. Uploaded changes are saved for review
-  and promotion to production in Play Console. Closed testing is no longer required
+  internal testing only when **Run workflow** is selected. PR merges and direct pushes
+  do not trigger it. Promote the uploaded build to production in Play Console. Closed testing is no longer required
   for public installation. `Package Android` produces a development debug APK only.
 - Device builds for iOS are distributed through the App Store.
   `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
