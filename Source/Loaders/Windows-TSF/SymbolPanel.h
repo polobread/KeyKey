@@ -33,6 +33,7 @@ private:
                         COLORREF background, COLORREF foreground);
     void position(const RECT& desired);
     void notifyVisibility(bool visible);
+    void traceState(const char* event) const;
     int scaled(int value) const;
     HWND window_ = nullptr;
     HWND viewport_ = nullptr;

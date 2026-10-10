@@ -274,8 +274,10 @@ int wmain(int argc,wchar_t** argv) {
         Check(host!=nullptr,"Host creation"); SetFocus(host);
         Check(GetFocus()==host,"Test requires real host focus");
         SymbolPanel panel; RECT anchor{20,20,30,40}; int calls=0; std::wstring chosen;
-        auto show=[&] { Check(panel.show(host,anchor,[&](const std::wstring& text) { ++calls; chosen=text; }),"Panel creation"); };
-        show(); HWND hwnd=SymbolPanelTestAccess::window(panel);
+        HWND hwnd=nullptr;
+        auto show=[&] { Check(panel.show(host,anchor,[&](const std::wstring& text) { ++calls; chosen=text; }),"Panel creation");
+            hwnd=SymbolPanelTestAccess::window(panel); };
+        show();
         Check(panel.visible() && (GetWindowLongPtrW(hwnd,GWL_EXSTYLE)&WS_EX_NOACTIVATE),"Noactivate panel missing");
         Check(GetFocus()==host,"Showing panel changed host focus");
         RECT first{},tenth{}; GetWindowRect(PanelControl(hwnd,100),&first); GetWindowRect(PanelControl(hwnd,109),&tenth);
@@ -395,7 +397,9 @@ int wmain(int argc,wchar_t** argv) {
         Check(SymbolPanelTestAccess::offset(panel)==0,"Category selection must reset scroll position");
         Click(hwnd,100);
         Check(calls==1 && chosen==emojis.items[0].text && !panel.visible() && GetFocus()==host,"Emoji click must insert once and close");
-        Click(hwnd,100); Check(calls==1,"Stale click ignored");
+        Check(!IsWindow(hwnd) && !SymbolPanelTestAccess::window(panel) &&
+            !PostMessageW(hwnd,WM_COMMAND,MAKEWPARAM(100,BN_CLICKED),0) && calls==1,
+            "Closed symbols retained an HWND that accepts stale commands");
         {
             SymbolPanel lastPanel; std::wstring lastText;
             Check(lastPanel.show(host,anchor,[&](const std::wstring& text) { lastText=text; }),"Last emoji panel show");

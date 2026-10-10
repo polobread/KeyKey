@@ -52,6 +52,7 @@ namespace OpenVanilla {
         vector<PVPlistValue*> stack;
         vector<string> keyStack;
         PVPlistValue* current;
+        string stringBuffer;
         
         PVPlistValue* validLast()
         {
@@ -66,8 +67,6 @@ namespace OpenVanilla {
             : current(0)
             , last(0)
         {
-            if (!stringBuffer)
-                stringBuffer = new string;
         }
 
         ~PVExpatPlistParser()
@@ -121,7 +120,7 @@ namespace OpenVanilla {
             PVExpatPlistParser* parsedData = (PVExpatPlistParser*)data;
 
             string element = el;
-            *stringBuffer = "";
+            parsedData->stringBuffer.clear();
 
             if (element == "plist") {
             }
@@ -169,7 +168,7 @@ namespace OpenVanilla {
             PVPlistValue* current = parsedData->current;
             if (current) {
                 if (current->type() == PVPlistValue::String)
-                    current->setStringValue(*stringBuffer);
+                    current->setStringValue(parsedData->stringBuffer);
                 
                 if (previous) {
                     switch(previous->type()) {
@@ -192,20 +191,17 @@ namespace OpenVanilla {
             }
 
             if (element == "key")
-                parsedData->keyStack.push_back(*stringBuffer);
+                parsedData->keyStack.push_back(parsedData->stringBuffer);
 
             parsedData->current = previous;
         }
             
         static void CharData(void *data, const XML_Char *s, int len)
         {
-            *stringBuffer += string(s, len);
+            PVExpatPlistParser* parsedData = (PVExpatPlistParser*)data;
+            parsedData->stringBuffer.append(s, len);
         }
-
-        static string* stringBuffer;
     };
-    
-    string* PVExpatPlistParser::stringBuffer;
 };
 
 namespace OpenVanilla {

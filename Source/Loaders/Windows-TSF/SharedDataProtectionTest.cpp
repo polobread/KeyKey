@@ -116,9 +116,29 @@ void ProcessChecks(const std::filesystem::path& profile,const std::wstring& exec
         std::cout<<"Native writer honored managed lock and resumed after release\n";
     }
 }
+struct InspectableLanguageModel : Manjusri::LanguageModel {
+    using LanguageModel::LanguageModel;
+    bool pendingWithinCapacity() const {
+        return m_pendingBigrams.size()<=200 && m_pendingOverrides.size()<=200 &&
+            m_pendingBigramOrder.size()==m_pendingBigrams.size() &&
+            m_pendingOverrideOrder.size()==m_pendingOverrides.size();
+    }
+    bool pendingEmpty() const {
+        return m_pendingBigrams.empty() && m_pendingOverrides.empty() &&
+            m_pendingBigramOrder.empty() && m_pendingOverrideOrder.empty();
+    }
+};
+struct CountingExternalTable : OVKeyValueDataTableInterface {
+    int& destroyed;
+    explicit CountingExternalTable(int& count) : destroyed(count) {}
+    ~CountingExternalTable() override { ++destroyed; }
+    const std::vector<std::string> valuesForKey(const std::string&) override { return {}; }
+    const std::vector<std::pair<std::string,std::string>> valuesForKey(const OVWildcard&) override { return {}; }
+    const std::string valueForProperty(const std::string&) override { return {}; }
+};
 struct Model {
     std::unique_ptr<OVSQLiteConnection> connection;
-    std::unique_ptr<Manjusri::LanguageModel> model;
+    std::unique_ptr<InspectableLanguageModel> model;
     Model(const std::filesystem::path& profile) {
         connection.reset(OVSQLiteConnection::Open(OVUTF8::FromUTF16((profile/L"model.db").wstring())));
         Check(connection!=nullptr,"Model connection");
@@ -126,7 +146,7 @@ struct Model {
             connection->execute("CREATE TABLE IF NOT EXISTS bigrams(qstring,previous,current,probability)")==SQLITE_OK,"Test model schema");
         if (connection->execute("ATTACH DATABASE %Q AS userdb",OVUTF8::FromUTF16((profile/L"SmartMandarinUserData.db").wstring()).c_str())!=SQLITE_OK)
             throw std::runtime_error(std::string("Attach learning DB: ")+connection->lastErrorMessage());
-        model=std::make_unique<Manjusri::LanguageModel>(connection.get(),nullptr,true,false,false,true,true);
+        model=std::make_unique<InspectableLanguageModel>(connection.get(),nullptr,true,false,false,true,true);
         model->loadUserBigramCache(); model->loadUserCandidateOverrideCache();
     }
     int count(const char* table,const char* key=nullptr) {
@@ -138,9 +158,23 @@ struct Model {
     }
     bool save() { return model->saveUserBigramCacheAndCandidateOverrideCache(true,true); }
 };
+void ExternalTableOwnershipChecks(OVSQLiteConnection* connection) {
+    int destroyed=0;
+    for (int i=0;i<100;++i) {
+        { Manjusri::LanguageModel owned(connection,new CountingExternalTable(destroyed),false,false,false,false,false,true); }
+        Check(destroyed==i+1,"Owned external table was not released exactly once");
+    }
+    int borrowedDestroyed=0;
+    auto borrowed=std::make_unique<CountingExternalTable>(borrowedDestroyed);
+    { Manjusri::LanguageModel model(connection,borrowed.get(),false,false,false); }
+    Check(borrowedDestroyed==0,"Model released a caller-owned external table");
+    borrowed.reset(); Check(borrowedDestroyed==1,"Borrowed table cleanup failed");
+    std::cout<<"100 owned table retirements and borrowed table lifetime passed\n";
+}
 void LearningChecks(const std::filesystem::path& profile) {
     Check(ResetUserLearning(),"Create test learning database");
     Model a(profile),b(profile);
+    ExternalTableOwnershipChecks(a.connection.get());
     a.model->cacheOverrideSelection("A","甲"); a.model->cacheUserBigram("A","前","甲");
     b.model->cacheOverrideSelection("B","乙"); b.model->cacheUserBigram("B","前","乙");
     Check(a.save() && b.save(),"Save independent learning deltas");
@@ -158,6 +192,7 @@ void LearningChecks(const std::filesystem::path& profile) {
     a.model->cacheOverrideSelection("stale","舊");
     b.model->cacheOverrideSelection("older","更舊");
     Check(ResetUserLearning() && a.save() && b.save(),"Learning reset reconciliation failed");
+    Check(a.model->pendingEmpty() && b.model->pendingEmpty(),"Reset retained pending learning recency");
     Check(a.count("user_candidate_override_cache")==0 && a.count("user_bigram_cache")==0,"Old host resurrected reset learning");
     a.model->cacheOverrideSelection("exported","匯出"); Check(a.save(),"Prepare learning export");
     const auto backup=(profile/L"backup.db").wstring(); Check(ExportUserData(backup),"Export isolated learning");
@@ -167,9 +202,36 @@ void LearningChecks(const std::filesystem::path& profile) {
     a.model->cacheOverrideSelection("fresh","新"); Check(a.save(),"Learning after reset stopped working");
     for (int i=0;i<220;++i) a.model->cacheOverrideSelection("bounded-"+std::to_string(i),"字");
     Check(a.save() && a.count("user_candidate_override_cache")<=200,"Shared learning exceeded cache capacity");
+    Check(a.model->pendingEmpty(),"Successful save retained pending learning recency");
+    Check(ResetUserLearning() && a.save() && b.save(),"Reset before locked-capacity test");
+    a.model->loadUserBigramCache(); a.model->loadUserCandidateOverrideCache();
+    a.model->cacheOverrideSelection("erase-on-retry","刪除");
+    Check(a.save() && a.count("user_candidate_override_cache","erase-on-retry")==1,"Prepare persisted deletion");
+    Check(b.connection->execute("BEGIN IMMEDIATE")==SQLITE_OK,"Hold writer during capacity stress");
+    for (int i=0;i<1000;++i) {
+        const auto key="overflow-"+std::to_string(i), value="value-"+std::to_string(i);
+        a.model->cacheOverrideSelection(key,value); a.model->cacheUserBigram(key,"前",value);
+        a.model->cacheOverrideSelection("hot",value); a.model->cacheUserBigram("hot","前",value);
+        // Refresh a deletion marker while other distinct keys overflow capacity.
+        a.model->cacheOverrideSelection("erase-on-retry","刪除");
+        a.model->removeCachedSelection("erase-on-retry");
+        Check(a.model->pendingWithinCapacity(),"Failed saves exceeded pending capacity or duplicated recency keys");
+        if (i%100==99) Check(!a.save(),"Locked capacity stress falsely reported saved");
+    }
+    Check(b.connection->execute("ROLLBACK")==SQLITE_OK && a.save(),"Capacity stress failed to recover");
+    Check(a.model->pendingEmpty() && a.count("user_candidate_override_cache")<=200 &&
+        a.count("user_bigram_cache")<=200,"Recovered learning retained excess memory or rows");
+    for (const auto* table : {"user_candidate_override_cache","user_bigram_cache"}) {
+        Check(a.count(table,"overflow-0")==0 && a.count(table,"overflow-999")==1,"Pending eviction lost recent learning or retained oldest key");
+        std::unique_ptr<OVSQLiteStatement> latest(a.connection->prepare(
+            ("SELECT current FROM userdb."+std::string(table)+" WHERE qstring='hot'").c_str()));
+        Check(latest && latest->step()==SQLITE_ROW && std::string(latest->textOfColumn(0))=="value-999",
+            "Repeated pending key lost its newest value");
+    }
+    Check(a.count("user_candidate_override_cache","erase-on-retry")==0,"Bounded retry lost deletion marker");
     std::unique_ptr<OVSQLiteStatement> integrity(a.connection->prepare("PRAGMA userdb.integrity_check"));
     Check(integrity && integrity->step()==SQLITE_ROW && std::string(integrity->textOfColumn(0))=="ok","Learning integrity check");
-    std::cout<<"Learning deltas, busy rollback/retry, reset generation and capacity passed\n";
+    std::cout<<"Learning deltas, locked pending capacity/recency/deletions, recovery and reset generation passed\n";
 }
 void LearnInChild(const std::filesystem::path& profile) {
     SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());

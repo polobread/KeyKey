@@ -14,7 +14,9 @@ file for terms.
 #include <iostream>
 #include <map>
 #include <deque>
+#include <memory>
 #ifdef KEYKEY_WINDOWS_SHARED_DATA
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #endif
@@ -165,9 +167,10 @@ namespace Manjusri {
 
     class LanguageModel {
     public:
-        // owns the connection, owns the externalTable
+        // Owns the connection only when ownsDBConnection is true. External
+        // tables are borrowed unless ownsExternalTable explicitly transfers ownership.
         // if you have userTable (user_unigrams), it must be attached under the db name "userdb"
-        LanguageModel(OVSQLiteConnection* connection, OVKeyValueDataTableInterface* externalTable = 0, bool useUserTable = false, bool combineBigramQueryString = false, bool ownsDBConnection = true, bool useUserBigramCache = false, bool useUserCandidateOverrideCache = false);
+        LanguageModel(OVSQLiteConnection* connection, OVKeyValueDataTableInterface* externalTable = 0, bool useUserTable = false, bool combineBigramQueryString = false, bool ownsDBConnection = true, bool useUserBigramCache = false, bool useUserCandidateOverrideCache = false, bool ownsExternalTable = false);
         virtual ~LanguageModel();
 
         virtual const BigramVector findBigrams(const string& queryString, StringFilter* filter = 0);
@@ -210,6 +213,7 @@ namespace Manjusri {
         OVSQLiteConnection* m_connection;
         bool m_ownsDBConnection;
         OVKeyValueDataTableInterface* m_externalUnigramDataTable;
+        std::unique_ptr<OVKeyValueDataTableInterface> m_ownedExternalUnigramDataTable;
         
         bool m_cfgUseUserTable;
         bool m_cfgCombineBigramQueryString;
@@ -244,6 +248,24 @@ namespace Manjusri {
 #ifdef KEYKEY_WINDOWS_SHARED_DATA
         map<string,Bigram> m_pendingBigrams;
         map<string,pair<bool,string>> m_pendingOverrides;
+        deque<string> m_pendingBigramOrder;
+        deque<string> m_pendingOverrideOrder;
+        // Bound unsaved learning independently of the normal caches. Repeated
+        // changes refresh recency; deletion markers use the same capacity.
+        template<class Value> static void recordPendingChange(map<string,Value>& changes,
+            deque<string>& order, const string& key, const Value& value, size_t capacity) {
+            auto previous=std::find(order.begin(),order.end(),key);
+            if (previous!=order.end()) order.erase(previous);
+            changes[key]=value;
+            order.push_back(key);
+            while (order.size()>capacity) {
+                changes.erase(order.front()); order.pop_front();
+            }
+        }
+        void clearPendingUserCache() {
+            m_pendingBigrams.clear(); m_pendingOverrides.clear();
+            m_pendingBigramOrder.clear(); m_pendingOverrideOrder.clear();
+        }
         std::int64_t m_learningGeneration=-1;
         std::int64_t sharedLearningGeneration() {
             OVSQLiteStatement* query=m_connection->prepare("SELECT generation FROM userdb.keykey_learning_metadata WHERE id=1");
@@ -380,7 +402,8 @@ namespace Manjusri {
         if (m_cfgUseUserBigramCache) {    
             m_userBigramCache.forcePush(combinedQueryString, Bigram(combinedQueryString, previous, current, cachedMaxUnigramProbability()));
 #ifdef KEYKEY_WINDOWS_SHARED_DATA
-            m_pendingBigrams[combinedQueryString]=Bigram(combinedQueryString,previous,current,cachedMaxUnigramProbability());
+            recordPendingChange(m_pendingBigrams,m_pendingBigramOrder,combinedQueryString,
+                Bigram(combinedQueryString,previous,current,cachedMaxUnigramProbability()),m_userBigramCache.capacity());
 #endif
         }
     }    
@@ -390,7 +413,8 @@ namespace Manjusri {
         if (m_cfgUseUserCandidateOverrideCache) {
             m_candidateOverrideCache.forcePush(qstring, current);
 #ifdef KEYKEY_WINDOWS_SHARED_DATA
-            m_pendingOverrides[qstring]={false,current};
+            recordPendingChange(m_pendingOverrides,m_pendingOverrideOrder,qstring,
+                pair<bool,string>(false,current),m_candidateOverrideCache.capacity());
 #endif
         }
     }
@@ -401,7 +425,8 @@ namespace Manjusri {
             if (m_candidateOverrideCache.find(qstring) != m_candidateOverrideCache.end()) {
                 m_candidateOverrideCache.removeKey(qstring);
 #ifdef KEYKEY_WINDOWS_SHARED_DATA
-                m_pendingOverrides[qstring]={true,string()};
+                recordPendingChange(m_pendingOverrides,m_pendingOverrideOrder,qstring,
+                    pair<bool,string>(true,string()),m_candidateOverrideCache.capacity());
 #endif
             }
         }
@@ -418,9 +443,10 @@ namespace Manjusri {
         return string();
     }
 
-	inline LanguageModel::LanguageModel(OVSQLiteConnection* connection, OVKeyValueDataTableInterface* externalTable, bool useUserTable, bool combineBigramQueryString, bool ownsDBConnection, bool useUserBigramCache, bool useUserCandidateOverrideCache)
+	inline LanguageModel::LanguageModel(OVSQLiteConnection* connection, OVKeyValueDataTableInterface* externalTable, bool useUserTable, bool combineBigramQueryString, bool ownsDBConnection, bool useUserBigramCache, bool useUserCandidateOverrideCache, bool ownsExternalTable)
         : m_connection(connection)
         , m_externalUnigramDataTable(externalTable)
+        , m_ownedExternalUnigramDataTable(ownsExternalTable ? externalTable : nullptr)
         , m_cfgUseUserTable(useUserTable)
         , m_cfgCombineBigramQueryString(combineBigramQueryString)
         , m_selectBigram(0)
@@ -493,6 +519,8 @@ namespace Manjusri {
         if (m_insertUserUnigram)
             delete m_insertUserUnigram;
         
+        // Retire the table while its backing connection is still alive.
+        m_ownedExternalUnigramDataTable.reset();
         if (m_ownsDBConnection)
             delete m_connection;
     }
@@ -806,7 +834,7 @@ namespace Manjusri {
         const auto generation=ok ? sharedLearningGeneration() : -1;
         if (generation>=0 && generation!=m_learningGeneration) {
             m_connection->execute("ROLLBACK");
-            m_pendingBigrams.clear(); m_pendingOverrides.clear();
+            clearPendingUserCache();
             m_userBigramCache.flush(); m_candidateOverrideCache.flush();
             m_learningGeneration=generation;
             loadUserBigramCache(); loadUserCandidateOverrideCache();
@@ -834,7 +862,7 @@ namespace Manjusri {
             static_cast<int>(m_candidateOverrideCache.capacity()))==SQLITE_OK;
         if (ok) ok=m_connection->execute("COMMIT")==SQLITE_OK;
         if (!ok) { m_connection->execute("ROLLBACK"); return false; }
-        m_pendingBigrams.clear(); m_pendingOverrides.clear();
+        clearPendingUserCache();
         return true;
     }
 #endif

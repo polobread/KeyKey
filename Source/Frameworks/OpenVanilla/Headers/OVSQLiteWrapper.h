@@ -102,10 +102,14 @@ namespace OpenVanilla {
     
     inline OVSQLiteConnection* OVSQLiteConnection::Open(const string& filename)
     {
-        sqlite3* connection;
+        sqlite3* connection = 0;
         
-        if (sqlite3_open(filename.c_str(), &connection) != SQLITE_OK)
+        if (sqlite3_open(filename.c_str(), &connection) != SQLITE_OK) {
+            // SQLite can return an allocated handle even when opening fails.
+            if (connection)
+                sqlite3_close(connection);
             return 0;
+        }
             
         if (!connection)
             return 0;

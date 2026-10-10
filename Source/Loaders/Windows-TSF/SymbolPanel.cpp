@@ -4,6 +4,7 @@
 #include <SymbolResources.generated.h>
 #include "ModuleState.h"
 #include "FrontendSettings.h"
+#include "Diagnostics.h"
 #include <algorithm>
 #include <map>
 #include <tuple>
@@ -237,6 +238,7 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
         kClass, L"\x7B26\x865F\x8868", WS_POPUP | WS_BORDER | WS_CLIPCHILDREN,
         0, 0, 1, 1, owner, nullptr, g_module, this);
     if (!window_) return false;
+    traceState("create");
     SetWindowLongPtrW(window_, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(owner));
     MONITORINFO monitor{sizeof(monitor)};
     RECT reference = anchor;
@@ -261,7 +263,8 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
     const int y = hasPosition_ ? position_.y : monitor.rcWork.bottom-height-scaled(200);
     position({x,y,x+width,y+height});
     scrollOffset_ = 0; wheelRemainder_ = 0; selection_ = std::move(selection);
-    rebuild(); ShowWindow(window_, SW_SHOWNOACTIVATE); notifyVisibility(true); return true;
+    rebuild(); ShowWindow(window_, SW_SHOWNOACTIVATE); notifyVisibility(true);
+    traceState("show"); return true;
 }
 void SymbolPanel::notifyVisibility(bool visible) {
     if (shown_==visible) return;
@@ -270,18 +273,31 @@ void SymbolPanel::notifyVisibility(bool visible) {
         window_,OBJID_CLIENT,CHILDID_SELF);
 }
 void SymbolPanel::hide() {
-    // A host-suppressed owned popup has a pending ShowOwnedPopups restore;
-    // hiding its already hidden HWND does not cancel that restore.
-    const bool suppressed = window_ && selection_ && !IsWindowVisible(window_);
+    if (window_) traceState("hide-begin");
     ++generation_; selection_ = {};
     if (menuOpen_) { menuOpen_=false; EndMenu(); }
     dragging_ = false;
     if (window_ && GetCapture() == window_) ReleaseCapture();
     if (window_) {
         notifyVisibility(false);
-        if (suppressed) DestroyWindow(window_);
-        else ShowWindow(window_, SW_HIDE);
+        // Cancellation ends this native surface's lifetime, including a
+        // normally hidden panel that a host/compositor might restore later.
+        // Fonts, emoji bitmaps, category and remembered position remain reusable.
+        if (!DestroyWindow(window_)) {
+            const DWORD error=GetLastError();
+            SetWindowPos(window_,HWND_NOTOPMOST,0,0,0,0,
+                SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE|SWP_HIDEWINDOW);
+            Trace("SymbolPanel destroy-failed hwnd=%p error=%lu",window_,error);
+        }
     }
+}
+void SymbolPanel::traceState(const char* event) const {
+    if (!DiagnosticsEnabled()) return;
+    RECT bounds{}; if (window_) GetWindowRect(window_,&bounds);
+    Trace("SymbolPanel %s object=%p hwnd=%p owner=%p foreground=%p logical=%d visible=%d category=%zu controls=%zu generation=%lu rect=(%ld,%ld,%ld,%ld)",
+        event,this,window_,window_ ? GetWindow(window_,GW_OWNER) : nullptr,GetForegroundWindow(),
+        static_cast<bool>(selection_),window_ && IsWindowVisible(window_),category_,controls_.size(),generation_,
+        bounds.left,bounds.top,bounds.right,bounds.bottom);
 }
 void SymbolPanel::scrollTo(int offset) {
     if (!content_ || !viewport_) return;
@@ -455,6 +471,7 @@ LRESULT CALLBACK SymbolPanel::WindowProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp)
 LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
     switch (msg) {
     case WM_NCDESTROY: {
+        traceState("destroy");
         HWND destroyed=window_;
         notifyVisibility(false);
         ++generation_; selection_ = {}; dragging_=false; controls_.clear();
@@ -466,6 +483,7 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
     }
     case WM_MOUSEACTIVATE: return MA_NOACTIVATE;
     case WM_SHOWWINDOW:
+        traceState("visibility");
         notifyVisibility(wp!=0 && static_cast<bool>(selection_));
         return DefWindowProcW(window_,msg,wp,lp);
     case WM_WINDOWPOSCHANGED: {
@@ -558,6 +576,7 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
         return 1;
     }
     case WM_PAINT: {
+        traceState("paint");
         PAINTSTRUCT ps{}; HDC dc=BeginPaint(window_,&ps);
         const int saved=SaveDC(dc);
         SelectObject(dc,font_); SetBkMode(dc,TRANSPARENT); SetTextColor(dc,foreground_);

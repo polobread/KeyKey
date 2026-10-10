@@ -104,7 +104,8 @@ namespace OpenVanilla {
                         continue;
 
                     if (OVWildcard::MultiWildcardMatchAny(module->identifier(), excludedModuleIdentifiers)) {
-                        // this name is excluded, we don't love it
+                        // moduleAtIndex creates an object even when excluded.
+                        delete module;
                     }
                     else {
                         m_moduleStore[module->identifier()] = ModuleMetadata(*iter, module);
@@ -122,8 +123,9 @@ namespace OpenVanilla {
                 if (meta.module) {
                     if (meta.module->isInitialized()) {
                         meta.module->finalize();
-                        delete meta.module;
                     }
+                    // The manager also owns modules that were never used.
+                    delete meta.module;
                 }
                 
                 if (meta.propertyList)

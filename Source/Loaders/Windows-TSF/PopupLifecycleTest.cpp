@@ -191,12 +191,16 @@ void SymbolLifecycle() {
     Check(firstItem && IsWindowEnabled(firstItem), "Symbol item missing for stale command check");
     CheckNoActivation(active, focused, window);
     popup.hide();
-    Check(SymbolPanelTestAccess::window(popup) == window && IsWindow(window),
-        "Normal symbol hide must reuse its HWND");
+    Check(!SymbolPanelTestAccess::window(popup) && !IsWindow(window),
+        "Normal symbol cancellation retained its native surface");
+    Check(!SetWindowPos(window,HWND_TOPMOST,0,0,0,0,
+        SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW),
+        "Canceled symbol HWND can still be shown topmost");
     SendMessageW(window, WM_COMMAND, MAKEWPARAM(100, BN_CLICKED),
         reinterpret_cast<LPARAM>(firstItem));
     Check(selections == 0, "Normally hidden symbol panel dispatched stale selection");
     Check(popup.show(host.window, kAnchor, select), "Symbol panel did not reopen for suppression");
+    window = SymbolPanelTestAccess::window(popup);
     firstItem = SymbolPanelTestAccess::item(popup);
     Check(firstItem && IsWindowEnabled(firstItem), "Reopened symbol item missing");
     Check(ShowOwnedPopups(host.window, FALSE) != FALSE &&
@@ -236,6 +240,18 @@ void SymbolLifecycle() {
     Host replacement;
     Check(popup.show(replacement.window, kAnchor, select), "Symbols did not recreate for replacement owner");
     CheckNoActivation(replacement.window, replacement.edit, SymbolPanelTestAccess::window(popup));
+    popup.hide();
+    // Cancel before painting and with an owner-restore message already queued.
+    Check(popup.show(replacement.window,kAnchor,select),"Delayed symbol panel show");
+    window=SymbolPanelTestAccess::window(popup);
+    Check(PostMessageW(window,WM_SHOWWINDOW,TRUE,SW_PARENTOPENING)!=FALSE,
+        "Cannot queue owner restore for symbols");
+    popup.hide(); PumpMessages();
+    Check(!IsWindow(window) && !SymbolPanelTestAccess::window(popup) && selections==1,
+        "Queued owner restore retained canceled symbols or selected stale text");
+    Check(popup.show(replacement.window,kAnchor,select),"Reopen canceled symbols");
+    window=SymbolPanelTestAccess::window(popup);
+    Check(UpdateWindow(window)!=FALSE && IsWindowVisible(window),"Recreated symbols did not paint");
     popup.hide();
 }
 

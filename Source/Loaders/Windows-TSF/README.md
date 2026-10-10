@@ -1,6 +1,6 @@
 # 琦琦輸入法 Windows TSF frontend
 
-本機 `v1.3.2` 功能分支新增進階設定、讀音輔助、符號表與簡體輸出；
+本機 `v1.3.2` 工作分支持續修正 Windows 進階設定、讀音輔助、符號表與簡體輸出；
 Windows 產品版號為 1.3.2，尚未發布；iOS、Android 1.3.2 已在各自商店正式上線，macOS、Linux 及共用模型維持 1.3.1。實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
 
@@ -57,11 +57,13 @@ TSF 取消未執行的 session 會撤銷其待處理狀態，過期或重複回�
 固定每個服務已生效的方法，並在佇列邊界載入指定方法的設定；共用模組欄位未做完整設定
 快照隔離，送字重試也不回滾已發生的候選／學習決策。
 
-候選窗取消時一律退役 HWND，保留字型；新的候選結果重新建立視窗。符號表仍在宿主
-暫時隱藏 owned popup 後取消時退役。候選窗不再保留清空內容的置頂 HWND，避免其他
+候選窗與符號表取消時一律退役 HWND；候選保留字型，符號表另保留 emoji 快取、分類與
+拖曳位置。新的候選／符號表重新建立視窗與控制項，不再保留已取消的置頂 HWND，避免其他
 宿主還原或畫面合成持續使用舊視窗。明確啟用本機診斷時，顯示、隱藏、重繪、位置與銷毀狀態寫入
-`%TEMP%\KeyKeyTsf.log`，只記錄 HWND、旗標、候選數與矩形，不記錄候選文字。
-Codex／Edge 的偶發白框尚未抓到精確觸發事件，不能由原生生命週期測試推定實機已修好；
+`%TEMP%\KeyKeyTsf.log`，只記錄 HWND、旗標、候選數、符號分類索引、控制項數與矩形，不記錄輸入文字。
+使用者白框截圖與 440×430 的隱藏符號表吻合，但最初觸發事件與合成狀態仍未確認；
+不能由原生生命週期測試推定實機已修好。新增修正與驗證見
+[額外記憶體及符號表修正](../../../docs/WINDOWS_TSF_ADDITIONAL_MEMORY_LEAK_FIX.md)；
 符號分類 hover 消字也未確認相同原因。
 
 本輪 x64／x86 各 27 項原生回歸全數通過，包括進階設定、表格輸入、候選狀態及 popup
@@ -89,7 +91,7 @@ Codex／Edge 的偶發白框尚未抓到精確觸發事件，不能由原生生�
 沿用所在螢幕的縮放比例。縮放及工作區較小時會重新排列欄數，所有項目仍可捲動選取。
 Emoji 使用 Direct2D／DirectWrite 的 Segoe UI Emoji 彩色字型，圖案依作業系統字型版本；
 高對比模式或彩色渲染不可用時回退 GDI 單色，不下載圖片或改動手機資料。
-彩色 Emoji 只繪製可見項目，最多快取 256 張圖；捲動或同分類重開重用控制項及字型，
+彩色 Emoji 只繪製可見項目，最多快取 256 張圖；捲動重用控制項，重開重用字型與適用的繪圖快取，
 縮放或主題改變時清除不適用的繪圖快取。首次開啟仍需初始化系統彩色字型。
 視窗從滑鼠所在螢幕的工作區右側開啟，可由標題列拖曳；位置只在同一輸入服務生命週期內
 記住，不跨 App 或重新啟動保存，重開及 DPI 變更時會限制於可用工作區。
@@ -633,7 +635,9 @@ Readers allow delete sharing so an open reader does not prevent replacement.
 Learning saves write only the host's pending changes in one SQLite transaction,
 with at most 200 entries per cache. Reset and import advance a database generation;
 old pending caches cannot repopulate the reset/imported state. Busy transactions
-retain pending changes for retry. Newly created user databases use UTF-8 to match
+retain pending changes for retry, with at most 200 distinct pending entries per
+cache including deletion markers. Updating a pending key refreshes its recency;
+overflow drops the oldest unsaved learning. Newly created user databases use UTF-8 to match
 the model's attachment encoding. Existing files are not silently converted.
 These protections require participating processes to run the new code; sign out
 and back in after upgrading to retire hosts that still have an old DLL loaded.
