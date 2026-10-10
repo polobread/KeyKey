@@ -14,13 +14,17 @@
 #include "FrontendSettings.h"
 #include "Mandarin.h"
 #include "sqlite3.h"
+#include "TsfCompartmentTestSupport.h"
+#include "InputModeState.h"
 namespace KeyKey::WindowsTsf {
 HMODULE g_module = nullptr;
 std::atomic<long> g_objectCount{0}, g_serverLocks{0};
 struct TextServiceTestAccess {
     static void fresh(TextService& s) { s.composition_.Reset(); s.compositionContext_.Reset(); }
     static size_t queued(TextService& s) { return s.inputQueue_.size(); }
-    static void manager(TextService& s,ITfThreadMgr* manager) { s.threadManager_=manager; }
+    static void manager(TextService& s,ITfThreadMgr* manager) {
+        s.threadManager_=manager; s.sharedInputMethod_.connect(manager);
+    }
     static bool symbol(TextService& s,ITfContext* context,const std::wstring& text) {
         s.symbolContext_=context; return s.requestSymbol(context,text,s.symbolGeneration_);
     }
@@ -32,6 +36,8 @@ struct TextServiceTestAccess {
     static bool key(TextService& s,ITfContext* c,const KeyEvent& event) { return s.requestKey(c,event); }
     static bool wants(TextService& s,const KeyEvent& event) { return s.isPotentialKey(event); }
     static bool engineComposition(TextService& s) { return s.engine_ && s.engine_->hasComposition(); }
+    static const void* engine(TextService& s) { return s.engine_.get(); }
+    static bool recovery(TextService& s) { return s.modeRecoveryPending_; }
     static bool pending(TextService& s) { return s.pendingModeCommit_; }
     static bool retained(TextService& s) { return bool(s.retainedInputResult_); }
     static void cancel(TextService& s) { s.cancelInput(); }
@@ -58,6 +64,10 @@ struct TextServiceTestAccess {
         return s.candidateWindow_.window_ && IsWindowVisible(s.candidateWindow_.window_);
     }
     static HRESULT track(TextService& s, ITfContext* c) { return s.adviseTextEditSink(c); }
+    static HRESULT modes(TextService& s) { return s.adviseInputModeSink(); }
+    static void unmodes(TextService& s) { s.unadviseInputModeSink(); }
+    static void pump(TextService& s) { s.pumpInput(); }
+    static HWND candidateOwner(TextService& s) { return GetWindow(s.candidateWindow_.window_,GW_OWNER); }
     static void untrack(TextService& s) { s.unadviseTextEditSink(); }
 };
 }
@@ -72,6 +82,8 @@ struct Document {
     bool failWrite = false;
     bool failSelection = false;
     int failReadAfter = -1, reads = 0;
+    int malformedReadAt = -1;
+    ULONG malformedCount = 1025;
 };
 class Range final : public ITfRange {
 public:
@@ -88,6 +100,8 @@ public:
         *count = std::min<ULONG>(capacity, static_cast<ULONG>(end-start));
         std::copy_n(document->text.data()+start,*count,buffer);
         if (flags & TF_TF_MOVESTART) start += *count;
+        // Copy only legal bytes, then simulate a host violating the count contract.
+        if (document->reads - 1 == document->malformedReadAt) *count = document->malformedCount;
         return S_OK;
     }
     STDMETHODIMP SetText(TfEditCookie, DWORD, const WCHAR* text, LONG count) override {
@@ -155,6 +169,7 @@ private:
 };
 class LayoutView final : public ITfContextView {
 public:
+    LayoutView() { owner=CreateWindowExW(0,L"STATIC",L"KeyKey layout test",WS_POPUP,0,0,200,100,nullptr,nullptr,g_module,nullptr); }
     STDMETHODIMP QueryInterface(REFIID iid, void** result) override {
         if (!result) return E_POINTER; *result = nullptr;
         if (iid != IID_IUnknown && iid != IID_ITfContextView) return E_NOINTERFACE;
@@ -167,18 +182,24 @@ public:
         ++queries; *rect=bounds; *clipped=FALSE; return layoutResult;
     }
     STDMETHODIMP GetScreenExt(RECT*) override { return E_NOTIMPL; }
-    STDMETHODIMP GetWnd(HWND* window) override { *window=nullptr; return S_OK; }
+    STDMETHODIMP GetWnd(HWND* window) override { *window=returnNullOwner ? nullptr : owner; return ownerResult; }
+    HWND owner=nullptr;
+    HRESULT ownerResult=S_OK;
+    bool returnNullOwner=false;
     HRESULT layoutResult = TS_E_NOLAYOUT;
     RECT bounds{100,100,120,120};
     int queries = 0;
-private: ULONG references=1;
+private:
+    ~LayoutView() { if (owner) DestroyWindow(owner); }
+    ULONG references=1;
 };
 class Context final : public ITfContext, public ITfInsertAtSelection, public ITfContextComposition,
                       public ITfSource {
 public:
-    explicit Context(std::shared_ptr<Document> d) : document(std::move(d)) {}
+    explicit Context(std::shared_ptr<Document> d) : document(std::move(d)) { compartments.Attach(new Test::Compartments); }
     STDMETHODIMP QueryInterface(REFIID iid, void** result) override {
         if (!result) return E_POINTER; *result = nullptr;
+        if (iid==IID_ITfCompartmentMgr) return compartments->QueryInterface(iid,result);
         if (iid == IID_IUnknown || iid == IID_ITfContext) *result = static_cast<ITfContext*>(this);
         else if (iid == IID_ITfInsertAtSelection) *result = static_cast<ITfInsertAtSelection*>(this);
         else if (iid == IID_ITfContextComposition) *result = static_cast<ITfContextComposition*>(this);
@@ -192,7 +213,7 @@ public:
         ++requests; lastFlags=flags;
         if (rejectRequest) { *result=E_FAIL; return E_FAIL; }
         if (rejectSync && (flags & TF_ES_SYNC)) { *result=TF_E_SYNCHRONOUS; return TF_E_SYNCHRONOUS; }
-        if (queue && !(flags & TF_ES_SYNC)) {
+        if ((flags & TF_ES_ASYNC) || (queue && !(flags & TF_ES_SYNC))) {
             if (!pending) pending=session; else queued.emplace_back(session);
             *result = TF_S_ASYNC;
         }
@@ -243,7 +264,7 @@ public:
         if (cookie==2) layoutSink.Reset(); return S_OK;
     }
     STDMETHODIMP EnumViews(IEnumTfContextViews**) override { return E_NOTIMPL; }
-    STDMETHODIMP GetStatus(TF_STATUS*) override { return E_NOTIMPL; }
+    STDMETHODIMP GetStatus(TF_STATUS* result) override { *result={}; result->dwDynamicFlags=readOnly ? TF_SD_READONLY : 0; return S_OK; }
     STDMETHODIMP GetAppProperty(REFGUID,ITfReadOnlyProperty**) override { return E_NOTIMPL; }
     STDMETHODIMP TrackProperties(const GUID**,ULONG,const GUID**,ULONG,ITfReadOnlyProperty**) override { return E_NOTIMPL; }
     STDMETHODIMP EnumProperties(IEnumTfProperties**) override { return E_NOTIMPL; }
@@ -255,6 +276,8 @@ public:
     STDMETHODIMP TakeOwnership(TfEditCookie,ITfCompositionView*,ITfCompositionSink*,ITfComposition**) override { return E_NOTIMPL; }
     std::shared_ptr<Document> document;
     bool queue = false;
+    bool readOnly = false;
+    ComPtr<Test::Compartments> compartments;
     bool rejectSync = false;
     bool rejectRequest = false;
     bool rejectComposition = false;
@@ -266,22 +289,27 @@ public:
     std::deque<ComPtr<ITfEditSession>> queued;
 private: ULONG references = 1;
 };
+ITfThreadMgr* MakeFocusManager(ITfContext* context);
 struct Fixture {
     ComPtr<TextService> service;
     std::shared_ptr<Document> document = std::make_shared<Document>();
     ComPtr<Context> context;
     ComPtr<Composition> composition;
     ~Fixture() {
+        TextServiceTestAccess::unmodes(*service.Get());
         TextServiceTestAccess::cancel(*service.Get()); TextServiceTestAccess::untrack(*service.Get());
         context->pending.Reset(); context->queued.clear();
     }
     Fixture(const std::wstring& text, bool snapshot = true, bool next = true) {
         service.Attach(new TextService); document->text = text;
         context.Attach(new Context(document));
+        serviceManager.Attach(MakeFocusManager(context.Get()));
+        TextServiceTestAccess::manager(*service.Get(),serviceManager.Get());
         ComPtr<Range> range; range.Attach(new Range(document,0,static_cast<LONG>(text.size())));
         composition.Attach(new Composition(range.Get(),service.Get()));
         TextServiceTestAccess::state(*service.Get(),context.Get(),composition.Get(),snapshot,next);
     }
+    ComPtr<ITfThreadMgr> serviceManager;
 };
 void TestCandidateLayout() {
     const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/std::to_string(GetCurrentProcessId());
@@ -377,7 +405,6 @@ void TestCandidateLayout() {
       f.service->OnLayoutChange(f.context.Get(),TF_LC_CHANGE,f.context->view.Get());
       f.context->drain();
       Check(TextServiceTestAccess::candidateVisible(*f.service.Get()),"Associated candidates recover after layout"); }
-    SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",nullptr);
 }
 
 KeyEvent Character(wchar_t character) {
@@ -409,9 +436,12 @@ private: ULONG references_=1;
 };
 class FocusManager final : public ITfThreadMgr,public ITfDocumentMgr {
 public:
-    explicit FocusManager(ITfContext* context) : context_(context) {}
+    explicit FocusManager(ITfContext* context) : context_(context) {
+        compartments.Attach(new Test::Compartments); global.Attach(new Test::Compartments);
+    }
     STDMETHODIMP QueryInterface(REFIID iid,void** result) override {
         if (!result) return E_POINTER; *result=nullptr;
+        if (iid==IID_ITfCompartmentMgr) return compartments->QueryInterface(iid,result);
         if (iid==IID_IUnknown || iid==IID_ITfThreadMgr) *result=static_cast<ITfThreadMgr*>(this);
         else if (iid==IID_ITfDocumentMgr) *result=static_cast<ITfDocumentMgr*>(this);
         else return E_NOINTERFACE;
@@ -426,18 +456,361 @@ public:
     STDMETHODIMP GetFocus(ITfDocumentMgr** document) override { *document=static_cast<ITfDocumentMgr*>(this); AddRef(); return S_OK; }
     STDMETHODIMP SetFocus(ITfDocumentMgr*) override { return E_NOTIMPL; }
     STDMETHODIMP AssociateFocus(HWND,ITfDocumentMgr*,ITfDocumentMgr**) override { return E_NOTIMPL; }
-    STDMETHODIMP IsThreadFocus(BOOL* focus) override { *focus=TRUE; return S_OK; }
+    STDMETHODIMP IsThreadFocus(BOOL* focus) override { *focus=threadFocused; return S_OK; }
     STDMETHODIMP GetFunctionProvider(REFCLSID,ITfFunctionProvider**) override { return E_NOTIMPL; }
     STDMETHODIMP EnumFunctionProviders(IEnumTfFunctionProviders**) override { return E_NOTIMPL; }
-    STDMETHODIMP GetGlobalCompartment(ITfCompartmentMgr**) override { return E_NOINTERFACE; }
+    STDMETHODIMP GetGlobalCompartment(ITfCompartmentMgr** manager) override {
+        *manager=global.Get(); (*manager)->AddRef(); return S_OK;
+    }
     STDMETHODIMP CreateContext(TfClientId,DWORD,IUnknown*,ITfContext**,TfEditCookie*) override { return E_NOTIMPL; }
     STDMETHODIMP Push(ITfContext*) override { return E_NOTIMPL; }
     STDMETHODIMP Pop(DWORD) override { return E_NOTIMPL; }
-    STDMETHODIMP GetTop(ITfContext** context) override { *context=context_.Get(); (*context)->AddRef(); return S_OK; }
+    STDMETHODIMP GetTop(ITfContext** context) override { *context=context_.Get(); if (*context) (*context)->AddRef(); return S_OK; }
     STDMETHODIMP GetBase(ITfContext** context) override { return GetTop(context); }
     STDMETHODIMP EnumContexts(IEnumTfContexts**) override { return E_NOTIMPL; }
+    bool threadFocused=true;
+    void context(ITfContext* value) { context_=value; }
+    ComPtr<Test::Compartments> compartments;
+    ComPtr<Test::Compartments> global;
 private: ULONG references_=1; ComPtr<ITfContext> context_;
 };
+ITfThreadMgr* MakeFocusManager(ITfContext* context) { return new FocusManager(context); }
+void TestHostContracts() {
+    const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/std::to_string(GetCurrentProcessId());
+    std::filesystem::create_directories(profile);
+    SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+    { Fixture f(L"\x3105",false,false);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+      auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+      conversion->type=open->type=VT_I4; conversion->value=TF_CONVERSIONMODE_NATIVE|TF_CONVERSIONMODE_FULLSHAPE; open->value=1;
+      Success(TextServiceTestAccess::modes(*f.service.Get()),"Subscribe host mode changes");
+      VARIANT value{}; value.vt=VT_I4; value.lVal=0;
+      Success(conversion->SetValue(1,&value),"Host conversion change");
+      Check(conversion->writes==1 && conversion->reentrantWrites==0 && open->writes==0,
+            "Mode notification wrote back into TSF");
+      Check(f.context->requests==1 && f.context->lastFlags==(TF_ES_ASYNC|TF_ES_READWRITE) && f.context->pending,
+            "Host mode requested synchronous edit");
+      Check(f.composition->ends==0 && f.service->isChineseMode() && f.service->isFullWidthMode(),
+            "Host mode committed or switched during notification");
+      f.context->drainAll();
+      Check(!f.service->isChineseMode() && !f.service->isFullWidthMode() && f.composition->ends==1 &&
+            f.document->text==L"\x3105" && conversion->writes==1 && open->writes==1 && open->value==0,
+            "Host mode did not adopt both flags without echo and reconcile outside notification");
+      open->writeResult=E_ACCESSDENIED; f.service->toggleChineseMode();
+      Check(!f.service->isChineseMode() && conversion->writes==1,"Rejected mode write changed local state");
+      open->writeResult=S_OK; conversion->writeResult=E_ACCESSDENIED;
+      f.service->toggleChineseMode();
+      Check(!f.service->isChineseMode() && open->value==0 && conversion->value==0,
+            "Second compartment failure left a partially changed mode");
+      f.service->toggleFullWidthMode();
+      Check(!f.service->isFullWidthMode(),"Rejected width write changed local state"); }
+    { Fixture f(L"text",false,false);
+      f.context->view.Attach(new LayoutView);
+      f.context->view->layoutResult=S_OK;
+      EngineResult candidates; candidates.candidatesVisible=true; candidates.candidates={{L"1",L"candidate"}};
+      TextServiceTestAccess::candidates(*f.service.Get(),f.context.Get(),candidates);
+      Check(TextServiceTestAccess::candidateVisible(*f.service.Get()) &&
+            TextServiceTestAccess::candidateOwner(*f.service.Get())==f.context->view->owner,"Candidate lacks native owner");
+      f.service->OnLayoutChange(f.context.Get(),TF_LC_CHANGE,nullptr);
+      auto stale=f.context->pending; f.context->pending.Reset();
+      Check(bool(stale),"Deferred candidate callback missing");
+      f.service->OnKillThreadFocus(); stale->DoEditSession(1);
+      Check(!TextServiceTestAccess::candidateVisible(*f.service.Get()) && f.composition->ends==0 &&
+            TextServiceTestAccess::candidateActive(*f.service.Get()),"UI focus loss replayed UI or destroyed composition");
+      f.service->OnSetThreadFocus(); f.context->drainAll();
+      Check(TextServiceTestAccess::candidateVisible(*f.service.Get()),"Refocus did not restore valid candidates");
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get()); manager->threadFocused=false;
+      f.service->OnLayoutChange(f.context.Get(),TF_LC_CHANGE,nullptr);
+      TextServiceTestAccess::candidates(*f.service.Get(),f.context.Get(),candidates);
+      Check(!TextServiceTestAccess::candidateVisible(*f.service.Get()) && !f.context->pending,"Unfocused UI thread displayed candidates");
+      manager->threadFocused=true;
+      f.context->view->returnNullOwner=true;
+      HWND previous=GetFocus(); SetFocus(nullptr);
+      TextServiceTestAccess::candidates(*f.service.Get(),f.context.Get(),candidates);
+      Check(!TextServiceTestAccess::candidateVisible(*f.service.Get()),"NULL owner produced unowned popup");
+      SetFocus(f.context->view->owner);
+      TextServiceTestAccess::candidates(*f.service.Get(),f.context.Get(),candidates);
+      Check(TextServiceTestAccess::candidateVisible(*f.service.Get()) &&
+            TextServiceTestAccess::candidateOwner(*f.service.Get())==f.context->view->owner,"NULL GetWnd did not use GetFocus fallback");
+      f.context->view->ownerResult=E_FAIL;
+      TextServiceTestAccess::candidates(*f.service.Get(),f.context.Get(),candidates);
+      Check(TextServiceTestAccess::candidateVisible(*f.service.Get()),"Failed GetWnd did not use valid focus fallback");
+      SetFocus(previous);
+      manager->context(nullptr);
+      TextServiceTestAccess::candidates(*f.service.Get(),f.context.Get(),candidates);
+      Check(!TextServiceTestAccess::candidateVisible(*f.service.Get()),"Non-top context displayed candidates"); }
+    { Fixture f(L"\x3105",false,false);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+      conversion->type=VT_I4; conversion->value=TF_CONVERSIONMODE_NATIVE|TF_CONVERSIONMODE_FULLSHAPE;
+      Success(TextServiceTestAccess::modes(*f.service.Get()),"Subscribe denied host mode");
+      f.context->rejectRequest=true;
+      VARIANT value{}; value.vt=VT_I4; value.lVal=0;
+      Success(conversion->SetValue(1,&value),"External mode with denied session");
+      Check(conversion->writes==1 && conversion->reentrantWrites==0 && f.composition->ends==0,
+            "Denied session wrote rollback during notification or discarded composition");
+      TextServiceTestAccess::pump(*f.service.Get());
+      Check(f.service->isChineseMode() && f.service->isFullWidthMode() &&
+            conversion->value==(TF_CONVERSIONMODE_NATIVE|TF_CONVERSIONMODE_FULLSHAPE) && f.document->text==L"\x3105",
+            "Denied mode session failed to restore retained host mode"); }
+    for (int kind=0;kind<3;++kind) {
+      Fixture f(L"",false,false);
+      if (kind==2) f.context->readOnly=true;
+      else { auto* compartment=f.context->compartments->get(kind ? GUID_COMPARTMENT_EMPTYCONTEXT : GUID_COMPARTMENT_KEYBOARD_DISABLED);
+        compartment->type=VT_I4; compartment->value=1; }
+      BOOL eaten=TRUE;
+      Success(f.service->OnTestKeyDown(f.context.Get(),VK_SHIFT,0,&eaten),"Disabled context test key");
+      Check(!eaten,"Disabled context ate Shift test");
+      Success(f.service->OnKeyDown(f.context.Get(),VK_SHIFT,0,&eaten),"Disabled context key");
+      Check(!eaten,"Disabled context ate Shift");
+      Check(!TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Character(L'a')) && f.context->requests==0,
+            "Disabled context requested edit");
+      Check(FAILED(f.service->showSymbols()),"Disabled context opened symbols"); }
+    { Fixture f(L"",false,false);
+      TextServiceTestAccess::fresh(*f.service.Get());
+      TextServiceTestAccess::start(*f.service.Get(),"SmartMandarin",true,false);
+      Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Character(L'1')) && f.document->text==L"\x3105",
+            "Normal empty input field was treated as EMPTYCONTEXT"); }
+    { Fixture f(L"",false,false);
+      TextServiceTestAccess::fresh(*f.service.Get());
+      TextServiceTestAccess::start(*f.service.Get(),"SmartMandarin",true,false);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      manager->context(nullptr);
+      Success(TextServiceTestAccess::modes(*f.service.Get()),"Subscribe before first field");
+      VARIANT value{}; value.vt=VT_I4; value.lVal=0;
+      Success(manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE)->SetValue(1,&value),"Host mode before field");
+      Check(f.service->isChineseMode(),"No-context mode was not deferred");
+      manager->context(f.context.Get());
+      Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Character(L'a')) &&
+            !f.service->isChineseMode() && f.document->text==L"a" && !TextServiceTestAccess::engineComposition(*f.service.Get()),
+            "First field canceled posted host mode or used old Chinese state"); }
+    std::cout<<"Host mode notification, owner fallback, UI thread focus and disabled/read-only context contracts passed\n";
+}
+void TestModeFailureAndCancellation() {
+    for (int denied=0;denied<3;++denied) {
+        Check(SelectInputMethod("SmartMandarin"),"Seed method rollback preference");
+        Fixture f(L"",false,false); Fresh(f,"SmartMandarin",false,true);
+        auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+        auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+        auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+        auto* shared=manager->global->get(kSelectedInputMethodCompartment);
+        open->type=conversion->type=shared->type=VT_I4;
+        open->value=0; conversion->value=TF_CONVERSIONMODE_FULLSHAPE;
+        shared->value=FindInputMethod("SmartMandarin")->menuId;
+        const auto* engine=TextServiceTestAccess::engine(*f.service.Get());
+        auto* rejected=denied==0 ? open : denied==1 ? conversion : shared;
+        rejected->writeResult=E_ACCESSDENIED;
+        Check(!f.service->selectInputMethod("TraditionalMandarin"),"Rejected method switch reported success");
+        Check(f.service->effectiveInputMethod()=="SmartMandarin" &&
+              TextServiceTestAccess::engine(*f.service.Get())==engine && ObservedInputMethod()=="SmartMandarin" &&
+              !f.service->isChineseMode() && f.service->isFullWidthMode() && open->value==0 &&
+              conversion->value==TF_CONVERSIONMODE_FULLSHAPE && shared->value==FindInputMethod("SmartMandarin")->menuId,
+              "Rejected method switch left engine, preference, shared state or mode changed");
+        rejected->writeResult=S_OK;
+        Check(f.service->selectInputMethod("TraditionalMandarin") &&
+              f.service->effectiveInputMethod()=="TraditionalMandarin" && ObservedInputMethod()=="TraditionalMandarin" &&
+              f.service->isChineseMode() && f.service->isFullWidthMode() && open->value==1 &&
+              shared->value==FindInputMethod("TraditionalMandarin")->menuId,"Method switch did not recover after write refusal");
+    }
+    Check(SelectInputMethod("SmartMandarin"),"Restore method after rollback tests");
+    for (bool initialChinese : {false,true}) for (bool fromConversion : {false,true})
+    for (bool contextChange : {false,true}) {
+        const bool chinese=!initialChinese;
+        Fixture f(L"\x3105",false,false);
+        f.document->caret=static_cast<LONG>(f.document->text.size());
+        TextServiceTestAccess::start(*f.service.Get(),"SmartMandarin",initialChinese,true);
+        auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+        auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+        auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+        open->type=conversion->type=VT_I4; open->value=initialChinese ? 1 : 0;
+        conversion->value=(initialChinese ? TF_CONVERSIONMODE_NATIVE : 0)|TF_CONVERSIONMODE_FULLSHAPE;
+        Success(TextServiceTestAccess::modes(*f.service.Get()),"Subscribe canceled host modes");
+        VARIANT value{}; value.vt=VT_I4;
+        value.lVal=fromConversion ? (chinese ? TF_CONVERSIONMODE_NATIVE : 0) : (chinese ? 1 : 0);
+        Success((fromConversion ? conversion : open)->SetValue(1,&value),"Queue canceled host mode");
+        Check(bool(f.context->pending) && f.service->isChineseMode()==initialChinese,"Host mode was not pending before cancellation");
+        // Make the latest conversion differ from the first queued snapshot.
+        if (fromConversion) {
+            value.lVal=(chinese ? TF_CONVERSIONMODE_NATIVE : 0)|TF_CONVERSIONMODE_FULLSHAPE;
+            Success(conversion->SetValue(1,&value),"Publish newer mode before cancellation");
+        }
+        auto newDocument=std::make_shared<Document>();
+        ComPtr<Context> next; next.Attach(new Context(newDocument));
+        ComPtr<ITfEditSession> stale;
+        if (contextChange) {
+            stale=f.context->pending; f.context->pending.Reset();
+            manager->context(next.Get());
+            Success(f.service->OnSetFocus(static_cast<ITfDocumentMgr*>(manager),nullptr),"Change field before host mode edit");
+        } else {
+            // TSF can release an accepted session without calling DoEditSession.
+            f.context->pending.Reset();
+        }
+        // No message pump before the next key: it must resynchronize first.
+        Check(TextServiceTestAccess::key(*f.service.Get(),contextChange ? next.Get() : f.context.Get(),Character(L'1')),
+              "First key after canceled mode was not accepted");
+        const std::wstring inserted=chinese ? L"\x3105" : L"\xFF11";
+        Check((contextChange ? newDocument : f.document)->text==(contextChange ? inserted : L"\x3105"+inserted),
+              "First key used old Chinese mode after cancellation");
+        if (stale) Success(stale->DoEditSession(1),"Canceled old mode callback");
+        f.context->drainAll();
+        Check(f.service->isChineseMode()==chinese && f.service->isFullWidthMode() && open->value==(chinese ? 1 : 0) &&
+              conversion->value==((chinese ? TF_CONVERSIONMODE_NATIVE : 0)|TF_CONVERSIONMODE_FULLSHAPE) &&
+              TextServiceTestAccess::queued(*f.service.Get())==0 &&
+              f.document->text==(contextChange ? L"\x3105" : L"\x3105"+inserted),
+              "Stale mode callback changed the new mode or replayed text");
+    }
+    for (bool deactivate : {false,true}) {
+        Fixture f(L"\x3105",false,false);
+        auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+        auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+        conversion->type=VT_I4; conversion->value=TF_CONVERSIONMODE_NATIVE;
+        Success(TextServiceTestAccess::modes(*f.service.Get()),"Subscribe cancellation read/teardown test");
+        VARIANT value{}; value.vt=VT_I4; value.lVal=0;
+        Success(conversion->SetValue(1,&value),"Queue mode before read/teardown test");
+        if (deactivate) {
+            auto stale=f.context->pending; f.context->pending.Reset();
+            Success(f.service->Deactivate(),"Deactivate with pending host mode");
+            TextServiceTestAccess::pump(*f.service.Get());
+            Success(stale->DoEditSession(1),"Stale mode after deactivation");
+            Check(conversion->writes==1 && f.document->text==L"\x3105","Deactivation republished mode or replayed text");
+        } else {
+            conversion->readResult=E_ACCESSDENIED;
+            f.context->pending.Reset();
+            TextServiceTestAccess::pump(*f.service.Get());
+            Check(f.service->isChineseMode() && conversion->writes==1,"Failed resync read invented or wrote a mode");
+            conversion->readResult=S_OK;
+            Success(f.service->OnSetThreadFocus(),"Retry canceled mode on thread focus");
+            Check(!f.service->isChineseMode() && !f.service->isFullWidthMode(),"Failed resync read was not retried on focus");
+        }
+        f.context->drainAll();
+    }
+    std::cout<<"Method publication failure rollback and canceled host mode resynchronization passed\n";
+}
+void TestPersistentModeRecovery() {
+    const LONG extra=TF_CONVERSIONMODE_ROMAN|TF_CONVERSIONMODE_SYMBOL;
+    for (bool chinese : {false,true}) {
+        Fixture f(L"",false,false); Fresh(f,"SmartMandarin",chinese,true);
+        auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+        auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+        auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+        open->type=conversion->type=VT_I4; open->value=chinese ? 1 : 0;
+        const LONG original=(chinese ? TF_CONVERSIONMODE_NATIVE : 0)|TF_CONVERSIONMODE_FULLSHAPE|extra;
+        conversion->value=original;
+        Success(TextServiceTestAccess::modes(*f.service.Get()),"Subscribe persistent mode recovery");
+        Type(f,L"1"); const auto text=f.document->text;
+        const auto* engine=TextServiceTestAccess::engine(*f.service.Get());
+        open->writeResults={S_OK,E_ACCESSDENIED}; open->writeResult=E_ACCESSDENIED;
+        conversion->writeResult=E_ACCESSDENIED;
+        f.service->toggleChineseMode();
+        Check(f.service->isChineseMode()==chinese && f.service->isFullWidthMode() &&
+              TextServiceTestAccess::engine(*f.service.Get())==engine && f.document->text==text &&
+              open->value==(chinese ? 0 : 1) && conversion->value==original && TextServiceTestAccess::recovery(*f.service.Get()),
+              "Failed write/rollback did not retain recovery target and engine/text");
+        MSG message{}; int messages=0;
+        while (messages<50 && PeekMessageW(&message,nullptr,0,0,PM_REMOVE)) {
+            TranslateMessage(&message); DispatchMessageW(&message); ++messages;
+        }
+        Check(messages<50 && open->attempts==3 && conversion->attempts==1 &&
+              TextServiceTestAccess::recovery(*f.service.Get()),"Persistent denial reposted a retry loop or lost recovery");
+        Success(f.service->OnSetThreadFocus(),"Retry recovery on focus while denied");
+        Check(open->attempts==4 && TextServiceTestAccess::recovery(*f.service.Get()),"Focus failed to retry retained recovery once");
+        open->writeResult=S_OK;
+        // CONVERSION is still read-only, but already equals the retained value.
+        Success(f.service->OnSetThreadFocus(),"Recover when rollback target is writable");
+        Check(!TextServiceTestAccess::recovery(*f.service.Get()) && f.service->isChineseMode()==chinese &&
+              open->value==(chinese ? 1 : 0) && conversion->value==original && conversion->attempts==1 &&
+              f.document->text==text && open->reentrantWrites==0 && conversion->reentrantWrites==0,
+              "Recovery failed, overwrote other conversion flags, echoed notification or replayed text");
+    }
+    { Fixture f(L"",false,false); Fresh(f,"SmartMandarin",false,true);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+      auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+      conversion->type=VT_I4; conversion->value=TF_CONVERSIONMODE_FULLSHAPE;
+      conversion->writeResult=E_ACCESSDENIED;
+      ChineseModeWriteStatus status;
+      Check(FAILED(WriteChineseMode(manager->compartments.Get(),1,true,&status)) &&
+            status.partiallyWritten && status.rollback==E_UNEXPECTED && open->type==VT_I4 && open->value==1,
+            "Unset OPENCLOSE rollback was silently reported or predefined compartment cleared");
+      // Exercise the same unset-state failure through the service as well.
+      open->type=VT_EMPTY;
+      Check(!f.service->selectInputMethod("TraditionalMandarin") && TextServiceTestAccess::recovery(*f.service.Get()),
+            "Unset rollback did not schedule logical recovery");
+      TextServiceTestAccess::pump(*f.service.Get());
+      Check(open->value==0 && !TextServiceTestAccess::recovery(*f.service.Get()),"Unset rollback failed to restore retained logical mode"); }
+    { Check(SelectInputMethod("SmartMandarin"),"Seed method rollback recovery");
+      Fixture f(L"",false,false); Fresh(f,"SmartMandarin",false,true);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+      auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+      auto* shared=manager->global->get(kSelectedInputMethodCompartment);
+      open->type=conversion->type=shared->type=VT_I4; open->value=0;
+      conversion->value=TF_CONVERSIONMODE_FULLSHAPE|extra;
+      shared->value=FindInputMethod("SmartMandarin")->menuId; shared->writeResult=E_ACCESSDENIED;
+      open->writeResults={S_OK,E_ACCESSDENIED}; open->writeResult=E_ACCESSDENIED;
+      const auto* engine=TextServiceTestAccess::engine(*f.service.Get());
+      Check(!f.service->selectInputMethod("TraditionalMandarin") && !f.service->isChineseMode() &&
+            f.service->effectiveInputMethod()=="SmartMandarin" && ObservedInputMethod()=="SmartMandarin" &&
+            TextServiceTestAccess::engine(*f.service.Get())==engine && TextServiceTestAccess::recovery(*f.service.Get()),
+            "Method rollback failure left new local mode/engine or lost recovery");
+      open->writeResult=S_OK; TextServiceTestAccess::pump(*f.service.Get());
+      Check(open->value==0 && conversion->value==(TF_CONVERSIONMODE_FULLSHAPE|extra) &&
+            !TextServiceTestAccess::recovery(*f.service.Get()),"Method rollback did not recover both mode compartments"); }
+    { Fixture f(L"",false,false); Fresh(f,"SmartMandarin",true,true);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+      auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+      open->type=conversion->type=VT_I4; open->value=1;
+      conversion->value=TF_CONVERSIONMODE_NATIVE|TF_CONVERSIONMODE_FULLSHAPE;
+      Success(TextServiceTestAccess::modes(*f.service.Get()),"Subscribe denied host reconciliation");
+      open->writeResult=E_ACCESSDENIED;
+      VARIANT value{}; value.vt=VT_I4; value.lVal=extra;
+      Success(conversion->SetValue(1,&value),"External mode with denied peer write");
+      TextServiceTestAccess::pump(*f.service.Get());
+      Check(!f.service->isChineseMode() && !f.service->isFullWidthMode() &&
+            TextServiceTestAccess::recovery(*f.service.Get()),"Host peer write refusal lost recovery target");
+      TextServiceTestAccess::pump(*f.service.Get());
+      Check(TextServiceTestAccess::recovery(*f.service.Get()) && open->value==1 && conversion->value==extra,
+            "Failed host restore discarded recovery or overwrote source");
+      open->writeResult=S_OK;
+      Check(!TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Character(L'a')) &&
+            !TextServiceTestAccess::recovery(*f.service.Get()) && open->value==0 && conversion->value==extra,
+            "Input did not recover failed host reconciliation before English pass-through"); }
+    for (bool sameMode : {false,true}) {
+        Fixture f(L"",false,false); Fresh(f,"SmartMandarin",true,true);
+        auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+        auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+        auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+        open->type=conversion->type=VT_I4; open->value=1;
+        conversion->value=TF_CONVERSIONMODE_NATIVE|TF_CONVERSIONMODE_FULLSHAPE;
+        Success(TextServiceTestAccess::modes(*f.service.Get()),"Subscribe newer host mode during recovery");
+        open->writeResults={S_OK,E_ACCESSDENIED}; open->writeResult=E_ACCESSDENIED; conversion->writeResult=E_ACCESSDENIED;
+        f.service->toggleChineseMode();
+        Check(TextServiceTestAccess::recovery(*f.service.Get()),"Missing old recovery before host override");
+        open->writeResult=conversion->writeResult=S_OK;
+        VARIANT value{}; value.vt=VT_I4;
+        value.lVal=sameMode ? TF_CONVERSIONMODE_NATIVE|TF_CONVERSIONMODE_FULLSHAPE : 0;
+        Success(conversion->SetValue(1,&value),"New host mode supersedes recovery");
+        TextServiceTestAccess::pump(*f.service.Get());
+        Check(!TextServiceTestAccess::recovery(*f.service.Get()) && f.service->isChineseMode()==sameMode &&
+              f.service->isFullWidthMode()==sameMode && open->value==(sameMode ? 1 : 0) && conversion->value==value.lVal,
+              "Old recovery overwrote newer host state or ignored a matching logical notification");
+    }
+    { Fixture f(L"",false,false); Fresh(f);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      auto* open=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
+      auto* conversion=manager->compartments->get(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION);
+      open->type=VT_I4; open->value=1; conversion->type=VT_UI4; conversion->value=0;
+      f.service->toggleChineseMode();
+      Check(open->attempts==0 && conversion->attempts==0 && conversion->type==VT_UI4 &&
+            TextServiceTestAccess::recovery(*f.service.Get()),"Unexpected compartment type was overwritten");
+      Success(f.service->Deactivate(),"Deactivate persistent recovery");
+      TextServiceTestAccess::pump(*f.service.Get());
+      Check(!TextServiceTestAccess::recovery(*f.service.Get()) && open->attempts==0 && conversion->attempts==0,
+            "Deactivation retained or executed recovery"); }
+    std::cout<<"Persistent mode write/rollback recovery, bounded retries, unset/type safety and host override passed\n";
+}
 void TestControlledBoundaries() {
     const auto settings=SmartMandarinPreferencesPath();
     std::ifstream before(settings,std::ios::binary);
@@ -651,13 +1024,15 @@ void TestOrderedInput() {
       Check(f.document->text==selected && !f.service->isChineseMode(),"Selected candidate/mid-sentence switch lost visible text"); }
     std::cout << "Ordered TSF input: 20 directed mode pairs / 68 applicable states plus refusal, cancellation, FIFO, caret retry and stale callbacks passed\n";
     TestControlledBoundaries();
-    SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",nullptr);
 }
 
 int main() {
     try {
         g_module = GetModuleHandleW(nullptr);
         TestCandidateLayout();
+        TestHostContracts();
+        TestModeFailureAndCancellation();
+        TestPersistentModeRecovery();
         TestOrderedInput();
         const std::wstring traditional=L"\x81FA\x7063", simplified=L"\x53F0\x6E7E";
         { Fixture f(traditional);
@@ -743,7 +1118,44 @@ int main() {
           Check(FAILED(f.service->commitCompositionForModeSwitch(1,f.context.Get())),"Oversized range rejected");
           Check(f.document->text==original && f.document->writes.empty() && f.composition->ends==0,
                 "Read size bound cannot commit truncated text"); }
+        for (int badRead : {0,1}) for (ULONG count : {1025UL, 0xffffffffUL}) {
+          for (int route : {0,1,2}) {
+            const std::wstring original(2200,L'\x81FA');
+            Fixture f(original); f.document->malformedReadAt=badRead; f.document->malformedCount=count;
+            if (route==0) {
+              Check(FAILED(f.service->commitCompositionForModeSwitch(1,f.context.Get())),"Invalid host count rejected");
+              Check(TextServiceTestAccess::composition(*f.service.Get())==f.composition.Get(),"Invalid count preserves composition");
+            } else if (route==1) {
+              f.context->queue=true; TextServiceTestAccess::abandon(*f.service.Get());
+              Check(FAILED(f.context->drain()),"Deferred invalid host count rejected");
+            } else {
+              Success(f.service->OnCompositionTerminated(1,f.composition.Get()),"Host termination with invalid count");
+            }
+            Check(f.document->text==original && f.document->writes.empty() && f.composition->ends==0,
+                  "Malformed first/partial read never writes or ends composition");
+          }
+        }
+        for (size_t length : {size_t(1024),size_t(65536),size_t(65537)}) {
+          const std::wstring original(length,L'a'); Fixture f(original,false,false);
+          const auto result=f.service->commitCompositionForModeSwitch(1,f.context.Get());
+          Check(length<=65536 ? SUCCEEDED(result) : FAILED(result),"Exact range length boundary");
+          Check(f.document->text==original,"Range boundary preserves all characters");
+          Check(f.composition->ends==(length<=65536 ? 1 : 0),"Only valid lengths end composition");
+        }
         Check(g_objectCount==0,"TextService object cleanup");
+        Check(ShutdownEngineRuntime(),"Idle engine cleanup");
+        Check(ShutdownEngineRuntime(),"Repeated idle cleanup");
+        for (int cycle=0;cycle<3;++cycle) {
+          auto session=KeyKeyEngineSession::CreateControlled("SmartMandarin");
+          Check(session && session->ready(),"Recreate runtime after cleanup");
+          Check(!ShutdownEngineRuntime(),"Live session prevents runtime cleanup");
+          session.reset();
+          BeginOrderedEngineInput();
+          Check(!ShutdownEngineRuntime(),"Ordered input prevents runtime cleanup");
+          EndOrderedEngineInput();
+          Check(ShutdownEngineRuntime(),"Release recreated runtime");
+        }
+        SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",nullptr);
         std::cout << "TSF candidate layout recovery, output snapshots, commit/preedit, focus, symbols, and stale callbacks passed\n";
         return 0;
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }

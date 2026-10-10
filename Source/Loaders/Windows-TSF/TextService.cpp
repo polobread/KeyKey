@@ -1,6 +1,7 @@
 #include "TextService.h"
 #include "InputModeState.h"
 #include "StartupInputMode.h"
+#include "TsfHost.h"
 
 #include <algorithm>
 #include <array>
@@ -23,6 +24,7 @@ namespace {
 using Microsoft::WRL::ComPtr;
 
 constexpr DWORD kShiftTapTimeoutMilliseconds = 300;
+constexpr UINT kPumpModeMessage = WM_APP + 71;
 
 HRESULT RangeText(ITfRange* range, TfEditCookie cookie, std::wstring& text) {
     ComPtr<ITfRange> reader;
@@ -31,13 +33,16 @@ HRESULT RangeText(ITfRange* range, TfEditCookie cookie, std::wstring& text) {
     if (FAILED(result)) return result;
     text.clear();
     wchar_t buffer[1024];
-    ULONG count = 0;
     for (;;) {
-        result = reader->GetText(cookie, TF_TF_MOVESTART, buffer, 1024, &count);
+        ULONG count = 0;
+        result = reader->GetText(cookie, TF_TF_MOVESTART, buffer,
+                                 static_cast<ULONG>(std::size(buffer)), &count);
         if (FAILED(result)) { text.clear(); return result; }
+        if (count > std::size(buffer) || count > 65536 - text.size()) {
+            text.clear(); return E_FAIL;
+        }
         if (!count) return S_OK;
         text.append(buffer, count);
-        if (text.size() > 65536) { text.clear(); return E_FAIL; }
     }
 }
 
@@ -320,7 +325,7 @@ struct TextService::InputOperation {
     std::wstring text;
     unsigned long symbolGeneration=0;
     unsigned long long token=0,generation=0;
-    bool enabled=false,handled=false,completed=false,accepted=false,ordered=false,processed=false;
+    bool enabled=false,fullWidth=false,fromConversion=false,handled=false,completed=false,accepted=false,ordered=false,processed=false;
     HRESULT result=E_PENDING;
 };
 
@@ -369,25 +374,37 @@ ComPtr<ITfContext> TextService::inputContext() const {
 bool TextService::projectedChineseMode() const {
     bool value=chineseMode_;
     for (const auto& op : inputQueue_) if (op->kind==InputOperation::Kind::Mode) {
-        if (op->change==ModeChange::Chinese) value=op->enabled;
+        if (op->change==ModeChange::Chinese || op->change==ModeChange::Host) value=op->enabled;
         if (op->change==ModeChange::Method) value=op->enabled;
     }
     return value;
 }
 bool TextService::projectedWidthMode() const {
     bool value=fullWidthMode_;
-    for (const auto& op : inputQueue_) if (op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Width) value=op->enabled;
+    for (const auto& op : inputQueue_) if (op->kind==InputOperation::Kind::Mode) {
+        if (op->change==ModeChange::Width) value=op->enabled;
+        if (op->change==ModeChange::Host) value=op->fullWidth;
+    }
     return value;
 }
 bool TextService::orderedPrintableKey(const KeyEvent& event) const {
     return !event.control && !event.alt && PrintableCharacter(event)!=0;
 }
-void TextService::cancelInput() {
+void TextService::cancelInput(bool resyncHost) {
+    // Text operations belong to their original context; host modes belong to
+    // this thread. Discard the operations but reread live modes after cleanup.
+    const bool lostHostMode=restoreHostMode_ || std::any_of(inputQueue_.begin(),inputQueue_.end(),[](const auto& op) {
+        return op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Host;
+    });
     ++inputGeneration_;
     for (auto& op : inputQueue_) { op->completed=true; op->result=E_ABORT; }
     inputQueue_.clear(); activeInput_.reset(); pendingModeCommit_=false; blockedInput_=false;
     retainedInputResult_.reset(); retainedInputContext_.Reset(); retainedCommitWritten_=false;
     retainedCommitRange_.Reset(); retainedCommitCaretSet_=false; retainedCommitNeedsEnd_=false;
+    restoreHostMode_=false;
+    resyncHostMode_=resyncHost && (resyncHostMode_ || lostHostMode);
+    if (!resyncHost || resyncHostMode_) modeRecoveryPending_=false;
+    if (resyncHostMode_) postModePump();
     if (inputLease_) { inputLease_=false; EndOrderedEngineInput(); }
 }
 void TextService::completeInput(const std::shared_ptr<InputOperation>& op,HRESULT result,bool cancelled) {
@@ -397,11 +414,18 @@ void TextService::completeInput(const std::shared_ptr<InputOperation>& op,HRESUL
         // only on a subsequent input request; never rerun a processed engine key.
         op->result=result; activeInput_.reset(); blockedInput_=true; return;
     }
+    if (!cancelled && FAILED(result) && op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Host) {
+        // The host may deny a write session before DoEditSession is called.
+        // Reconcile to our retained composition/mode outside its notification.
+        restoreHostMode_=true; postModePump();
+    }
     op->completed=true; op->result=result;
     if (cancelled) {
         // TSF may cancel without DoEditSession. Do not retain a service-wide
         // pending latch or replay accepted input into a future context.
-        cancelInput(); return;
+        cancelInput();
+        if (resyncHostMode_) abandonComposition();
+        return;
     }
     activeInput_.reset();
     if (!inputQueue_.empty() && inputQueue_.front()==op) inputQueue_.pop_front();
@@ -414,16 +438,33 @@ void TextService::completeInput(const std::shared_ptr<InputOperation>& op,HRESUL
 void TextService::pumpInput() {
     if (pumpingInput_ || activeInput_ || blockedInput_) return;
     pumpingInput_=true;
+    if (resyncHostMode_ && !inModeNotification_ && !composition_ && !retainedInputResult_)
+        resyncCancelledHostMode();
+    if (modeRecoveryPending_ && !inModeNotification_) retryModeRecovery();
+    if (restoreHostMode_ && !inModeNotification_) {
+        restoreHostMode_=false;
+        const auto chinese=publishChineseMode(chineseMode_);
+        const auto width=setFullWidthMode(fullWidthMode_);
+        if (FAILED(chinese) || FAILED(width)) Trace("Host mode restore failed chinese=0x%08lX width=0x%08lX",
+            static_cast<unsigned long>(chinese),static_cast<unsigned long>(width));
+    }
     while (!activeInput_ && !blockedInput_ && !inputQueue_.empty()) {
-        auto op=inputQueue_.front(); activeInput_=op;
+        auto op=inputQueue_.front();
+        // A host can change mode before there is a text store. Posting to our
+        // UI thread also handles that case without any write inside OnChange.
+        if (!op->context && inModeNotification_ && postModePump()) break;
+        activeInput_=op;
         if (!op->context) {
             const auto result=runInput(0,op); completeInput(op,result,false); continue;
         }
         auto* session=new (std::nothrow) InputEditSession(this,op);
         if (!session) { completeInput(op,E_OUTOFMEMORY,false); continue; }
         HRESULT edited=E_FAIL;
-        auto requested=op->context->RequestEditSession(clientId_,session,TF_ES_SYNC|TF_ES_READWRITE,&edited);
-        if (!op->completed && (requested==TF_E_SYNCHRONOUS || requested==TF_E_LOCKED ||
+        const bool defer = inModeNotification_ ||
+            (op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Host);
+        auto requested=op->context->RequestEditSession(clientId_,session,
+            (defer ? TF_ES_ASYNC : TF_ES_SYNC)|TF_ES_READWRITE,&edited);
+        if (!defer && !op->completed && (requested==TF_E_SYNCHRONOUS || requested==TF_E_LOCKED ||
             (SUCCEEDED(requested) && (edited==TF_E_SYNCHRONOUS || edited==TF_E_LOCKED)))) {
             edited=E_FAIL;
             requested=op->context->RequestEditSession(clientId_,session,TF_ES_ASYNCDONTCARE|TF_ES_READWRITE,&edited);
@@ -435,9 +476,16 @@ void TextService::pumpInput() {
     pumpingInput_=false;
 }
 bool TextService::enqueueInput(const std::shared_ptr<InputOperation>& op) {
+    // A no-context host mode can be posted just before the first field/key
+    // appears. Adopt it before changing contexts rather than canceling it.
+    if (op->context && !inputQueue_.empty() && !inputQueue_.front()->context &&
+        !inModeNotification_) pumpInput();
     if (op->context && ((!inputQueue_.empty() && inputQueue_.front()->context.Get()!=op->context.Get()) ||
         (retainedInputContext_ && retainedInputContext_.Get()!=op->context.Get()))) {
         cancelInput(); abandonComposition();
+        // The first operation in a new field must see the live host mode,
+        // even if the posted resynchronization has not run yet.
+        if (resyncHostMode_ && !inModeNotification_) pumpInput();
     }
     op->token=++nextInputToken_; op->generation=inputGeneration_;
     op->ordered=!inputQueue_.empty();
@@ -456,7 +504,8 @@ bool TextService::requestModeChange(ModeChange change,bool enabled,const std::st
     return enqueueInput(op);
 }
 bool TextService::requestKey(ITfContext* context,const KeyEvent& event) {
-    if (!context || !isPotentialKey(event)) return false;
+    if ((resyncHostMode_ || modeRecoveryPending_ || restoreHostMode_) && !inModeNotification_) pumpInput();
+    if (!IsInputContextEnabled(context) || !isPotentialKey(event)) return false;
     auto op=std::make_shared<InputOperation>(); op->context=context; op->event=event;
     return enqueueInput(op);
 }
@@ -468,6 +517,10 @@ bool TextService::requestSymbol(ITfContext* context,const std::wstring& text,uns
 HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOperation>& op) {
     if (op->completed || op->generation!=inputGeneration_ || activeInput_!=op) return S_FALSE;
     auto* context=op->context.Get();
+    if (context && !IsInputContextEnabled(context) && op->kind!=InputOperation::Kind::Mode) {
+        completeInput(op,E_ABORT,true);
+        return S_FALSE;
+    }
     if (context) {
         const auto result=retryInputResult(cookie,context);
         if (FAILED(result)) return result;
@@ -509,14 +562,43 @@ HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOpe
     if (op->kind==InputOperation::Kind::Commit) return S_OK;
     closeSymbols();
     switch (op->change) {
-        case ModeChange::Chinese: publishChineseMode(op->enabled); break;
-        case ModeChange::Width: setFullWidthMode(op->enabled); break;
-        case ModeChange::Method:
-            if (!SelectInputMethod(op->method.c_str())) return E_FAIL;
+        case ModeChange::Chinese: return publishChineseMode(op->enabled);
+        case ModeChange::Width: return setFullWidthMode(op->enabled);
+        case ModeChange::Host:
+            // The host already published this state. Never echo its notification.
+            chineseMode_=op->enabled; fullWidthMode_=op->fullWidth;
+            shiftTogglePending_=false; shiftPressedAt_=0; refreshLangBar();
+            return inModeNotification_ ? S_OK : reconcileHostMode(op->enabled,op->fromConversion);
+        case ModeChange::Method: {
+            // Keep the old engine and effective state until all publication
+            // steps succeed. A failed TSF write must not persist a new method.
+            const auto previousMethod=ObservedInputMethod();
+            const bool previousChinese=chineseMode_;
+            const auto restoreMode=[&] {
+                const auto restored=publishChineseMode(previousChinese);
+                if (FAILED(restored)) {
+                    chineseMode_=previousChinese; refreshLangBar();
+                    scheduleModeRecovery(previousChinese,fullWidthMode_);
+                    Trace("Method switch mode rollback failed hr=0x%08lX",static_cast<unsigned long>(restored));
+                }
+            };
+            const auto restoreSelection=[&] {
+                if (!SelectInputMethod(previousMethod.c_str())) Trace("Method switch preference rollback failed");
+                restoreMode();
+            };
+            auto result=publishChineseMode(op->enabled);
+            if (FAILED(result)) return result;
+            if (!SelectInputMethod(op->method.c_str())) { restoreSelection(); return E_FAIL; }
+            result=threadManager_ ? sharedInputMethod_.write(clientId_,op->method.c_str()) : S_OK;
+            if (FAILED(result)) {
+                restoreSelection();
+                return result;
+            }
             engine_=std::move(prepared); effectiveInputMethod_=op->method;
             effectiveSettingsSignature_=EngineSettingsSignature(op->method); lastLocalInputMethod_=op->method;
-            if (threadManager_) sharedInputMethod_.write(clientId_,op->method.c_str());
-            publishChineseMode(op->enabled); break;
+            refreshLangBar();
+            return S_OK;
+        }
         case ModeChange::Simplified:
             if (FAILED(sharedOutputState_.write(clientId_,op->enabled)) && !SaveSimplifiedOutputPreference(op->enabled)) return E_FAIL;
             SaveSimplifiedOutputPreference(op->enabled);
@@ -526,8 +608,42 @@ HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOpe
     return S_OK;
 }
 
-TextService::TextService() { ++g_objectCount; }
-TextService::~TextService() { --g_objectCount; }
+TextService::TextService() = default;
+TextService::~TextService() { if (modeWindow_) DestroyWindow(modeWindow_); }
+
+LRESULT CALLBACK TextService::ModeWindowProc(HWND window,UINT message,WPARAM wp,LPARAM lp) {
+    auto* service=reinterpret_cast<TextService*>(GetWindowLongPtrW(window,GWLP_USERDATA));
+    const auto original=service ? service->modeOriginalProc_ : nullptr;
+    if (service && message==kPumpModeMessage) {
+        service->AddRef();
+        service->modePumpPosted_=false; service->pumpInput();
+        service->Release(); return 0;
+    }
+    if (message==WM_NCDESTROY && service) {
+        service->modeWindow_=nullptr; service->modePumpPosted_=false;
+        service->modeOriginalProc_=nullptr;
+        SetWindowLongPtrW(window,GWLP_USERDATA,0);
+    }
+    return original ? CallWindowProcW(original,window,message,wp,lp) : DefWindowProcW(window,message,wp,lp);
+}
+
+bool TextService::postModePump() {
+    if (modePumpPosted_) return true;
+    if (!modeWindow_) {
+        // Subclass the system class instead of leaving a DLL-owned window
+        // class registered after a text service DLL unload/reload.
+        modeWindow_=CreateWindowExW(0,L"STATIC",L"KeyKey mode dispatch",0,0,0,0,0,HWND_MESSAGE,nullptr,g_module,nullptr);
+        if (modeWindow_) {
+            SetWindowLongPtrW(modeWindow_,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(this));
+            modeOriginalProc_=reinterpret_cast<WNDPROC>(SetWindowLongPtrW(modeWindow_,GWLP_WNDPROC,
+                reinterpret_cast<LONG_PTR>(ModeWindowProc)));
+            if (!modeOriginalProc_) { DestroyWindow(modeWindow_); modeWindow_=nullptr; }
+        }
+    }
+    modePumpPosted_=modeWindow_ && PostMessageW(modeWindow_,kPumpModeMessage,0,0);
+    if (!modePumpPosted_) Trace("Host mode dispatch failed error=%lu",GetLastError());
+    return modePumpPosted_;
+}
 
 HRESULT TextService::CreateInstance(IUnknown* outer, REFIID iid, void** object) {
     if (!object) return E_INVALIDARG;
@@ -556,6 +672,8 @@ STDMETHODIMP TextService::QueryInterface(REFIID iid, void** object) {
         *object = static_cast<ITfTextLayoutSink*>(this);
     } else if (iid == IID_ITfThreadMgrEventSink) {
         *object = static_cast<ITfThreadMgrEventSink*>(this);
+    } else if (iid == IID_ITfThreadFocusSink) {
+        *object = static_cast<ITfThreadFocusSink*>(this);
     } else if (iid == IID_ITfCompartmentEventSink) {
         *object = static_cast<ITfCompartmentEventSink*>(this);
     } else if (iid == IID_ITfDisplayAttributeProvider) {
@@ -608,6 +726,11 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
               IsInputMethodAvailable(method.identifier));
     }
     immersiveMode_ = (flags & TF_TMF_IMMERSIVEMODE) != 0;
+    ComPtr<ITfThreadMgrEx> extended;
+    DWORD activeFlags=0;
+    if (SUCCEEDED(threadManager_.As(&extended)) && SUCCEEDED(extended->GetActiveFlags(&activeFlags)))
+        immersiveMode_=(activeFlags & TF_TMF_IMMERSIVEMODE)!=0;
+    uiThreadFocused_=true;
     const HRESULT sharedResult = sharedInputMethod_.connect(threadManager_.Get());
     sharedOutputState_.connect(threadManager_.Get());
     Trace("SharedInputMethod connect hr=0x%08lX", static_cast<unsigned long>(sharedResult));
@@ -638,11 +761,14 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
         applyStartupInputMode();
     }
     if (FAILED(result)) {
+        closeSymbols(); cancelInput(false); clearCandidateWindow();
+        if (modeWindow_) DestroyWindow(modeWindow_);
         unadviseFunctionProvider();
         unadviseSinks();
         uninitializeLangBar();
         engine_.reset();
         sharedInputMethod_.reset();
+        sharedOutputState_.reset();
         lastLocalInputMethod_.clear();
         threadManager_.Reset();
         clientId_ = TF_CLIENTID_NULL;
@@ -653,7 +779,8 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
 STDMETHODIMP TextService::Deactivate() {
     Trace("Deactivate");
     closeSymbols();
-    cancelInput(); abandonComposition();
+    cancelInput(false); abandonComposition();
+    if (modeWindow_) DestroyWindow(modeWindow_);
     unadviseFunctionProvider();
     unadviseSinks();
     uninitializeLangBar();
@@ -684,10 +811,18 @@ HRESULT TextService::adviseSinks() {
     result = source->AdviseSink(IID_ITfThreadMgrEventSink,
                                 static_cast<ITfThreadMgrEventSink*>(this),
                                 &threadManagerCookie_);
-    if (FAILED(result)) keystrokes->UnadviseKeyEventSink(clientId_);
+    if (SUCCEEDED(result)) result=source->AdviseSink(IID_ITfThreadFocusSink,
+        static_cast<ITfThreadFocusSink*>(this), &threadFocusCookie_);
+    if (FAILED(result)) {
+        if (threadManagerCookie_!=TF_INVALID_COOKIE) {
+            source->UnadviseSink(threadManagerCookie_); threadManagerCookie_=TF_INVALID_COOKIE;
+        }
+        keystrokes->UnadviseKeyEventSink(clientId_);
+    }
     if (SUCCEEDED(result)) {
         const HRESULT modeResult = adviseInputModeSink();
         Trace("AdviseInputMode hr=0x%08lX", static_cast<unsigned long>(modeResult));
+        if (FAILED(modeResult)) result=modeResult;
     }
     return result;
 }
@@ -696,6 +831,11 @@ void TextService::unadviseSinks() {
     if (!threadManager_) return;
     unadviseTextEditSink();
     unadviseInputModeSink();
+    if (threadFocusCookie_!=TF_INVALID_COOKIE) {
+        ComPtr<ITfSource> source;
+        if (SUCCEEDED(threadManager_.As(&source))) source->UnadviseSink(threadFocusCookie_);
+        threadFocusCookie_=TF_INVALID_COOKIE;
+    }
     ComPtr<ITfKeystrokeMgr> keystrokes;
     if (SUCCEEDED(threadManager_.As(&keystrokes)) && clientId_ != TF_CLIENTID_NULL) {
         keystrokes->UnadviseKeyEventSink(clientId_);
@@ -899,33 +1039,75 @@ void TextService::applyStartupInputMode() {
 void TextService::setChineseMode(bool enabled) {
     requestModeChange(ModeChange::Chinese,enabled);
 }
-void TextService::publishChineseMode(bool enabled) {
-    chineseMode_=enabled; shiftTogglePending_=false; shiftPressedAt_=0;
+HRESULT TextService::publishChineseMode(bool enabled) {
+    HRESULT result=S_OK;
+    ChineseModeWriteStatus status;
     ComPtr<ITfCompartmentMgr> manager;
-    if (threadManager_ && SUCCEEDED(threadManager_.As(&manager))) {
+    if (threadManager_) {
+        result=threadManager_.As(&manager);
+        if (FAILED(result)) { scheduleModeRecovery(chineseMode_,fullWidthMode_); return result; }
         updatingModeCompartments_=true;
-        WriteChineseMode(manager.Get(),clientId_,enabled);
+        result=WriteChineseMode(manager.Get(),clientId_,enabled,&status);
         updatingModeCompartments_=false;
     }
+    if (FAILED(result)) {
+        scheduleModeRecovery(chineseMode_,fullWidthMode_);
+        Trace("InputMode write failed hr=0x%08lX partial=%d rollback=0x%08lX",static_cast<unsigned long>(result),
+              status.partiallyWritten,static_cast<unsigned long>(status.rollback));
+        return result;
+    }
+    chineseMode_=enabled; shiftTogglePending_=false; shiftPressedAt_=0;
+    if (modeRecoveryPending_ && !modeRecoveryRunning_) {
+        recoveryChinese_=chineseMode_; recoveryFullWidth_=fullWidthMode_;
+    }
     refreshLangBar();
+    return S_OK;
 }
 void TextService::toggleChineseMode() { setChineseMode(!projectedChineseMode()); }
 
-void TextService::setFullWidthMode(bool enabled) {
-    fullWidthMode_ = enabled;
-    HRESULT result = E_FAIL;
+void TextService::scheduleModeRecovery(bool chinese,bool fullWidth) {
+    if (!threadManager_) return;
+    const bool first=!modeRecoveryPending_;
+    modeRecoveryPending_=true;
+    if (!modeRecoveryRunning_) { recoveryChinese_=chinese; recoveryFullWidth_=fullWidth; }
+    // One deferred attempt per failure episode. Persistent denial is retried
+    // only on later focus/input activity, never by reposting an endless loop.
+    if (first && !modeRecoveryRunning_) postModePump();
+}
+
+void TextService::retryModeRecovery() {
+    if (!modeRecoveryPending_ || modeRecoveryRunning_ || inModeNotification_ || !threadManager_) return;
+    modeRecoveryRunning_=true;
+    const bool chinese=recoveryChinese_,width=recoveryFullWidth_;
+    const auto chineseResult=publishChineseMode(chinese);
+    const auto widthResult=setFullWidthMode(width);
+    modeRecoveryPending_=FAILED(chineseResult) || FAILED(widthResult);
+    modeRecoveryRunning_=false;
+    if (modeRecoveryPending_) Trace("Mode recovery pending chinese=0x%08lX width=0x%08lX",
+        static_cast<unsigned long>(chineseResult),static_cast<unsigned long>(widthResult));
+}
+
+HRESULT TextService::setFullWidthMode(bool enabled) {
+    HRESULT result = S_OK;
     ComPtr<ITfCompartmentMgr> manager;
     ComPtr<ITfCompartment> compartment;
-    if (threadManager_ && SUCCEEDED(threadManager_.As(&manager)) &&
-        SUCCEEDED(manager->GetCompartment(
-            GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION, &compartment))) {
+    if (threadManager_) {
+        result=threadManager_.As(&manager);
+        if (FAILED(result)) { scheduleModeRecovery(chineseMode_,fullWidthMode_); return result; }
+        result=manager->GetCompartment(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION, &compartment);
+        if (FAILED(result)) { scheduleModeRecovery(chineseMode_,fullWidthMode_); return result; }
         LONG mode = 0;
         VARIANT current;
         VariantInit(&current);
-        if (SUCCEEDED(compartment->GetValue(&current)) && current.vt == VT_I4) {
+        result=compartment->GetValue(&current);
+        const bool valid=current.vt==VT_I4;
+        const LONG previous=valid ? current.lVal : 0;
+        if (SUCCEEDED(result) && current.vt == VT_I4) {
             mode = current.lVal;
         }
+        if (SUCCEEDED(result) && !valid && current.vt!=VT_EMPTY) result=E_INVALIDARG;
         VariantClear(&current);
+        if (FAILED(result)) { scheduleModeRecovery(chineseMode_,fullWidthMode_); return result; }
         if (enabled) {
             mode |= TF_CONVERSIONMODE_FULLSHAPE;
         } else {
@@ -936,12 +1118,18 @@ void TextService::setFullWidthMode(bool enabled) {
         value.vt = VT_I4;
         value.lVal = mode;
         updatingModeCompartments_=true;
-        result = compartment->SetValue(clientId_, &value);
+        result = valid && previous==mode ? S_OK : compartment->SetValue(clientId_, &value);
         updatingModeCompartments_=false;
     }
     Trace("InputWidth full=%d hr=0x%08lX", enabled,
           static_cast<unsigned long>(result));
+    if (FAILED(result)) { scheduleModeRecovery(chineseMode_,fullWidthMode_); return result; }
+    fullWidthMode_ = enabled;
+    if (modeRecoveryPending_ && !modeRecoveryRunning_) {
+        recoveryChinese_=chineseMode_; recoveryFullWidth_=fullWidthMode_;
+    }
     refreshLangBar();
+    return S_OK;
 }
 
 void TextService::toggleFullWidthMode() { requestModeChange(ModeChange::Width,!projectedWidthMode()); }
@@ -953,6 +1141,7 @@ bool TextService::selectInputMethod(const char* identifier) {
 
 void TextService::syncInputMethod() {
     if (!threadManager_ || syncingInputMethod_) return;
+    if ((resyncHostMode_ || modeRecoveryPending_ || restoreHostMode_) && !inModeNotification_) pumpInput();
     syncingInputMethod_=true;
     syncOutputSettings();
     const auto local=ObservedInputMethod();
@@ -1021,9 +1210,9 @@ HRESULT TextService::showSymbols() {
     if (FAILED(threadManager_->GetFocus(&document)) || !document) return E_UNEXPECTED;
     ComPtr<ITfContext> context;
     if (FAILED(document->GetTop(&context)) || !context) return E_UNEXPECTED;
-    ComPtr<ITfContextView> view;
-    HWND owner = GetFocus();
-    if (SUCCEEDED(context->GetActiveView(&view))) view->GetWnd(&owner);
+    if (!isFocusedContext(context.Get()) || !IsInputContextEnabled(context.Get())) return E_UNEXPECTED;
+    const HWND owner = ResolvePopupOwner(context.Get());
+    if (!owner) return E_UNEXPECTED;
     POINT point; GetCursorPos(&point);
     RECT anchor{point.x, point.y, point.x, point.y};
     symbolContext_ = context;
@@ -1038,6 +1227,7 @@ HRESULT TextService::showSymbols() {
 HRESULT TextService::insertSymbol(TfEditCookie cookie, ITfContext* context,
                                   const std::wstring& text, unsigned long generation) {
     if (!threadManager_ || generation != symbolGeneration_ || symbolContext_.Get() != context) return S_FALSE;
+    if (!isFocusedContext(context) || !IsInputContextEnabled(context)) { closeSymbols(); return S_FALSE; }
     ComPtr<ITfDocumentMgr> document;
     ComPtr<ITfContext> focused;
     if (FAILED(threadManager_->GetFocus(&document)) || !document ||
@@ -1113,9 +1303,38 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lparam,
+bool TextService::isFocusedContext(ITfContext* context) const {
+    if (!uiThreadFocused_ || !threadManager_ || !context) return false;
+    BOOL focused=FALSE;
+    ComPtr<ITfDocumentMgr> document;
+    ComPtr<ITfContext> top;
+    return SUCCEEDED(threadManager_->IsThreadFocus(&focused)) && focused &&
+        SUCCEEDED(threadManager_->GetFocus(&document)) && document &&
+        SUCCEEDED(document->GetTop(&top)) && top.Get()==context;
+}
+
+STDMETHODIMP TextService::OnKillThreadFocus() {
+    uiThreadFocused_=false;
+    closeSymbols(); hideCandidateUi();
+    shiftTogglePending_=false; shiftPressedAt_=0;
+    // UI focus loss is not destruction of the host's composition. Keep text
+    // and engine state; document/context/TIP changes already cancel input.
+    return S_OK;
+}
+
+STDMETHODIMP TextService::OnSetThreadFocus() {
+    uiThreadFocused_=true;
+    if (resyncHostMode_ || modeRecoveryPending_ || restoreHostMode_) pumpInput();
+    if (candidateActive_ && isFocusedContext(candidateContext_.Get()))
+        OnLayoutChange(candidateContext_.Get(),TF_LC_CHANGE,nullptr);
+    return S_OK;
+}
+
+STDMETHODIMP TextService::OnTestKeyDown(ITfContext* context, WPARAM wparam, LPARAM lparam,
                                         BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
+    *eaten=FALSE;
+    if (!IsInputContextEnabled(context)) { shiftTogglePending_=false; return S_OK; }
     syncInputMethod();
     const KeyEvent event = translateKey(wparam, lparam);
     if (symbolPanel_.visible() && event.virtualKey == VK_ESCAPE) { *eaten = TRUE; return S_OK; }
@@ -1137,9 +1356,11 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext*, WPARAM wparam, LPARAM lpara
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnTestKeyUp(ITfContext*, WPARAM wparam, LPARAM,
+STDMETHODIMP TextService::OnTestKeyUp(ITfContext* context, WPARAM wparam, LPARAM,
                                       BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
+    *eaten=FALSE;
+    if (!IsInputContextEnabled(context)) { shiftTogglePending_=false; return S_OK; }
     *eaten = IsShiftKey(static_cast<UINT>(wparam)) && shiftTogglePending_ &&
               !IsKeyDown(VK_CONTROL) && !IsKeyDown(VK_MENU) &&
               GetTickCount() - shiftPressedAt_ <= kShiftTapTimeoutMilliseconds;
@@ -1153,6 +1374,8 @@ STDMETHODIMP TextService::OnTestKeyUp(ITfContext*, WPARAM wparam, LPARAM,
 STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM lparam,
                                     BOOL* eaten) {
     if (!context || !eaten) return E_INVALIDARG;
+    *eaten=FALSE;
+    if (!IsInputContextEnabled(context)) { closeSymbols(); hideCandidateUi(); shiftTogglePending_=false; return S_OK; }
     syncInputMethod();
     *eaten = FALSE;
     KeyEvent event = translateKey(wparam, lparam);
@@ -1186,9 +1409,10 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnKeyUp(ITfContext*, WPARAM wparam, LPARAM, BOOL* eaten) {
+STDMETHODIMP TextService::OnKeyUp(ITfContext* context, WPARAM wparam, LPARAM, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
+    if (!IsInputContextEnabled(context)) { shiftTogglePending_=false; return S_OK; }
     if (IsShiftKey(static_cast<UINT>(wparam)) && shiftTogglePending_ &&
         !IsKeyDown(VK_CONTROL) && !IsKeyDown(VK_MENU) &&
         GetTickCount() - shiftPressedAt_ <= kShiftTapTimeoutMilliseconds) {
@@ -1579,10 +1803,13 @@ HRESULT TextService::retryInputResult(TfEditCookie cookie,ITfContext* context) {
     return S_OK;
 }
 
-void TextService::clearCandidateWindow() {
+void TextService::hideCandidateUi() {
     ++candidateGeneration_;
     pendingLayoutGeneration_ = 0;
     candidateWindow_.hide();
+}
+void TextService::clearCandidateWindow() {
+    hideCandidateUi();
     candidateActive_ = false;
     candidateAnchor_.Reset();
     candidateContext_.Reset();
@@ -1629,6 +1856,9 @@ HRESULT TextService::refreshCandidateLayout(TfEditCookie editCookie, ITfContext*
     if (generation != candidateGeneration_ || candidateContext_.Get() != context ||
         !candidateActive_) return S_OK;
     if (pendingLayoutGeneration_ == generation) pendingLayoutGeneration_ = 0;
+    if (!isFocusedContext(context) || !IsInputContextEnabled(context)) {
+        candidateWindow_.hide(); return S_OK;
+    }
     ComPtr<ITfRange> range;
     if (composition_ && compositionContext_.Get() == context) composition_->GetRange(&range);
     if (!range) range = candidateAnchor_;
@@ -1640,8 +1870,8 @@ HRESULT TextService::refreshCandidateLayout(TfEditCookie editCookie, ITfContext*
     BOOL clipped = FALSE;
     HWND owner = nullptr;
     if (SUCCEEDED(status)) status = view->GetTextExt(editCookie, range.Get(), &textRect, &clipped);
-    if (SUCCEEDED(status)) status = view->GetWnd(&owner);
-    if (FAILED(status) || textRect.bottom <= textRect.top || textRect.right < textRect.left) {
+    if (SUCCEEDED(status)) owner = ResolvePopupOwner(context);
+    if (FAILED(status) || !owner || textRect.bottom <= textRect.top || textRect.right < textRect.left) {
         // TS_E_NOLAYOUT is transient. Keep the candidates and wait for the
         // host's ITfTextLayoutSink notification instead of requiring a key.
         candidateWindow_.hide();
@@ -1656,7 +1886,9 @@ HRESULT TextService::refreshCandidateLayout(TfEditCookie editCookie, ITfContext*
 
 STDMETHODIMP TextService::OnLayoutChange(ITfContext* context, TfLayoutCode code,
                                          ITfContextView*) {
+    if (code == TF_LC_DESTROY && context == candidateContext_.Get()) { hideCandidateUi(); return S_OK; }
     if (code != TF_LC_CHANGE || !context || context != candidateContext_.Get() ||
+        !isFocusedContext(context) || !IsInputContextEnabled(context) ||
         !candidateActive_ || clientId_ == TF_CLIENTID_NULL ||
         pendingLayoutGeneration_ == candidateGeneration_) return S_OK;
     const auto generation = candidateGeneration_;
@@ -1796,12 +2028,85 @@ STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
     return S_OK;
 }
 
+HRESULT TextService::reconcileHostMode(bool chinese,bool fromConversion) {
+    const auto checked=[&](HRESULT result) {
+        if (FAILED(result)) scheduleModeRecovery(chinese,fullWidthMode_);
+        return result;
+    };
+    ComPtr<ITfCompartmentMgr> manager;
+    ComPtr<ITfCompartment> other;
+    auto result=threadManager_.As(&manager);
+    if (FAILED(result)) return checked(result);
+    result=manager->GetCompartment(fromConversion ? GUID_COMPARTMENT_KEYBOARD_OPENCLOSE :
+        GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION,&other);
+    if (FAILED(result)) return checked(result);
+    VARIANT value{};
+    result=other->GetValue(&value);
+    if (FAILED(result)) { VariantClear(&value); return checked(result); }
+    if (value.vt!=VT_I4 && value.vt!=VT_EMPTY) { VariantClear(&value); return checked(E_INVALIDARG); }
+    const bool valid=value.vt==VT_I4;
+    LONG previous=valid ? value.lVal : 0;
+    VariantClear(&value);
+    const LONG next=fromConversion ? (chinese ? 1 : 0) :
+        (chinese ? previous|TF_CONVERSIONMODE_NATIVE : previous&~static_cast<LONG>(TF_CONVERSIONMODE_NATIVE));
+    if (valid && previous==next) return S_OK;
+    value.vt=VT_I4; value.lVal=next;
+    updatingModeCompartments_=true;
+    result=other->SetValue(clientId_,&value);
+    updatingModeCompartments_=false;
+    if (FAILED(result)) Trace("Host mode reconcile failed hr=0x%08lX",static_cast<unsigned long>(result));
+    return checked(result);
+}
+
+void TextService::observeInputMode(bool chinese,bool fullWidth,bool fromConversion) {
+    // A new external notification supersedes our retained recovery target,
+    // including when its logical mode already matches the local engine.
+    const bool recovering=modeRecoveryPending_ || restoreHostMode_;
+    modeRecoveryPending_=false; restoreHostMode_=false;
+    lastHostModeFromConversion_=fromConversion;
+    if (!recovering && projectedChineseMode()==chinese && projectedWidthMode()==fullWidth) return;
+    auto op=std::make_shared<InputOperation>(); op->kind=InputOperation::Kind::Mode;
+    op->change=ModeChange::Host; op->enabled=chinese; op->fullWidth=fullWidth;
+    op->fromConversion=fromConversion;
+    op->context=inputContext();
+    if (!composition_ && !retainedInputResult_ && inputQueue_.empty()) op->context.Reset();
+    enqueueInput(op);
+}
+
+HRESULT TextService::resyncCancelledHostMode() {
+    ComPtr<ITfCompartmentMgr> manager;
+    auto result=threadManager_.As(&manager);
+    if (FAILED(result)) return result;
+    ComPtr<ITfCompartment> open,conversion;
+    result=manager->GetCompartment(GUID_COMPARTMENT_KEYBOARD_OPENCLOSE,&open);
+    if (FAILED(result)) return result;
+    result=manager->GetCompartment(GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION,&conversion);
+    if (FAILED(result)) return result;
+    VARIANT openValue{},conversionValue{};
+    result=open->GetValue(&openValue);
+    if (SUCCEEDED(result)) result=conversion->GetValue(&conversionValue);
+    const bool hasOpen=openValue.vt==VT_I4,hasConversion=conversionValue.vt==VT_I4;
+    const bool fromConversion=hasConversion && (lastHostModeFromConversion_ || !hasOpen);
+    const bool chinese=fromConversion ? (conversionValue.lVal & TF_CONVERSIONMODE_NATIVE)!=0 : openValue.lVal!=0;
+    const bool width=hasConversion ? (conversionValue.lVal & TF_CONVERSIONMODE_FULLSHAPE)!=0 : fullWidthMode_;
+    VariantClear(&openValue); VariantClear(&conversionValue);
+    // Leave the latch set on a read failure; the next focus/key can retry.
+    if (FAILED(result)) { Trace("Canceled host mode read failed hr=0x%08lX",static_cast<unsigned long>(result)); return result; }
+    resyncHostMode_=false;
+    if (!hasOpen && !hasConversion) return S_FALSE;
+    chineseMode_=chinese; fullWidthMode_=width;
+    shiftTogglePending_=false; shiftPressedAt_=0; refreshLangBar();
+    return reconcileHostMode(chinese,fromConversion);
+}
+
 STDMETHODIMP TextService::OnChange(REFGUID guid) {
     if (!threadManager_) return S_OK;
     // The two synchronous writes represent one mode change. Don't let the
     // first notification read the second compartment's previous value.
     if (updatingModeCompartments_) return S_OK;
 
+    const bool previousNotification=inModeNotification_;
+    inModeNotification_=true;
     if (guid == GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION) {
         ComPtr<ITfCompartmentMgr> manager;
         ComPtr<ITfCompartment> compartment;
@@ -1812,17 +2117,16 @@ STDMETHODIMP TextService::OnChange(REFGUID guid) {
                 GUID_COMPARTMENT_KEYBOARD_INPUTMODE_CONVERSION, &compartment)) &&
             SUCCEEDED(compartment->GetValue(&value)) && value.vt == VT_I4) {
             const bool full=(value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_FULLSHAPE))!=0;
-            if (projectedWidthMode()!=full) requestModeChange(ModeChange::Width,full);
             const bool enabled = (value.lVal & static_cast<LONG>(TF_CONVERSIONMODE_NATIVE)) != 0;
-            if (projectedChineseMode() != enabled) setChineseMode(enabled);
-            refreshLangBar();
+            observeInputMode(enabled,full,true);
             Trace("InputWidth changed full=%d", fullWidthMode_);
         }
         VariantClear(&value);
+        inModeNotification_=previousNotification;
         return S_OK;
     }
 
-    if (guid != GUID_COMPARTMENT_KEYBOARD_OPENCLOSE) return S_OK;
+    if (guid != GUID_COMPARTMENT_KEYBOARD_OPENCLOSE) { inModeNotification_=previousNotification; return S_OK; }
 
     ComPtr<ITfCompartmentMgr> manager;
     ComPtr<ITfCompartment> compartment;
@@ -1833,12 +2137,11 @@ STDMETHODIMP TextService::OnChange(REFGUID guid) {
                                          &compartment)) &&
         SUCCEEDED(compartment->GetValue(&value)) && value.vt == VT_I4) {
         const bool enabled = value.lVal != 0;
-        if (projectedChineseMode() != enabled) {
-            setChineseMode(enabled);
-        }
+        observeInputMode(enabled,projectedWidthMode(),false);
         Trace("InputMode changed chinese=%d", chineseMode_);
     }
     VariantClear(&value);
+    inModeNotification_=previousNotification;
     return S_OK;
 }
 

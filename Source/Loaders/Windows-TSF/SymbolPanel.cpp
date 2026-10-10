@@ -1,9 +1,10 @@
 #include "SymbolPanel.h"
+#include "TsfHost.h"
+#include "WindowClass.h"
 #include <SymbolResources.generated.h>
 #include "ModuleState.h"
 #include "FrontendSettings.h"
 #include <algorithm>
-#include <mutex>
 #include <map>
 #include <tuple>
 #include <windowsx.h>
@@ -18,8 +19,7 @@ constexpr wchar_t kClass[] = L"chichi77.KeyKey.TSF.SymbolPanel";
 constexpr wchar_t kContentClass[] = L"chichi77.KeyKey.TSF.SymbolContent";
 constexpr UINT kCategory = 1, kClose = 3, kFirstItem = 100;
 constexpr int kTitleHeight = 30, kGap = 6, kToolbarHeight = 34, kCellSize = 34;
-std::once_flag registration;
-bool registered = false;
+WindowClass panelClass, contentClass;
 struct ScopedDC {
     HDC dc;
     int state;
@@ -174,6 +174,11 @@ struct SymbolPanel::ColorEmojiRenderer {
 };
 
 SymbolPanel::SymbolPanel() = default;
+bool SymbolPanel::releaseWindowClasses() {
+    const bool contentReleased = contentClass.retire();
+    const bool panelReleased = panelClass.retire();
+    return contentReleased && panelReleased;
+}
 bool SymbolPanel::drawColorEmoji(HDC dc, const RECT& bounds, const std::wstring& text,
                                  COLORREF background, COLORREF foreground) {
     if (highContrast_) return false;
@@ -221,16 +226,13 @@ void SymbolPanel::position(const RECT& desired) {
 }
 bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
     hide();
-    if (!selection || BuiltinSymbolCategories().empty()) return false;
-    std::call_once(registration, [] {
-        WNDCLASSEXW wc{sizeof(wc)};
-        wc.hInstance = g_module; wc.lpfnWndProc = WindowProc;
-        wc.hCursor = LoadCursorW(nullptr, IDC_ARROW); wc.lpszClassName = kClass;
-        registered = RegisterClassExW(&wc) || GetLastError() == ERROR_CLASS_ALREADY_EXISTS;
-        wc.lpfnWndProc = ContentProc; wc.lpszClassName = kContentClass;
-        registered = registered && (RegisterClassExW(&wc) || GetLastError() == ERROR_CLASS_ALREADY_EXISTS);
-    });
-    if (!registered) return false;
+    if (!IsPopupOwner(owner) || !selection || BuiltinSymbolCategories().empty()) return false;
+    WNDCLASSEXW wc{sizeof(wc)};
+    wc.hInstance = g_module; wc.lpfnWndProc = WindowProc;
+    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW); wc.lpszClassName = kClass;
+    if (!panelClass.ensure(wc)) return false;
+    wc.lpfnWndProc = ContentProc; wc.lpszClassName = kContentClass;
+    if (!contentClass.ensure(wc)) return false;
     if (!window_) window_ = CreateWindowExW(WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
         kClass, L"\x7B26\x865F\x8868", WS_POPUP | WS_BORDER | WS_CLIPCHILDREN,
         0, 0, 1, 1, owner, nullptr, g_module, this);
@@ -259,7 +261,13 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
     const int y = hasPosition_ ? position_.y : monitor.rcWork.bottom-height-scaled(200);
     position({x,y,x+width,y+height});
     scrollOffset_ = 0; wheelRemainder_ = 0; selection_ = std::move(selection);
-    rebuild(); ShowWindow(window_, SW_SHOWNOACTIVATE); return true;
+    rebuild(); ShowWindow(window_, SW_SHOWNOACTIVATE); notifyVisibility(true); return true;
+}
+void SymbolPanel::notifyVisibility(bool visible) {
+    if (shown_==visible) return;
+    shown_=visible;
+    if (window_) NotifyWinEvent(visible ? EVENT_OBJECT_IME_SHOW : EVENT_OBJECT_IME_HIDE,
+        window_,OBJID_CLIENT,CHILDID_SELF);
 }
 void SymbolPanel::hide() {
     // A host-suppressed owned popup has a pending ShowOwnedPopups restore;
@@ -270,6 +278,7 @@ void SymbolPanel::hide() {
     dragging_ = false;
     if (window_ && GetCapture() == window_) ReleaseCapture();
     if (window_) {
+        notifyVisibility(false);
         if (suppressed) DestroyWindow(window_);
         else ShowWindow(window_, SW_HIDE);
     }
@@ -447,6 +456,7 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
     switch (msg) {
     case WM_NCDESTROY: {
         HWND destroyed=window_;
+        notifyVisibility(false);
         ++generation_; selection_ = {}; dragging_=false; controls_.clear();
         viewport_=content_=scrollbar_=nullptr; renderedCategory_=static_cast<size_t>(-1);
         if (menuOpen_) { menuOpen_=false; EndMenu(); }
@@ -455,6 +465,16 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
         return DefWindowProcW(destroyed,msg,wp,lp);
     }
     case WM_MOUSEACTIVATE: return MA_NOACTIVATE;
+    case WM_SHOWWINDOW:
+        notifyVisibility(wp!=0 && static_cast<bool>(selection_));
+        return DefWindowProcW(window_,msg,wp,lp);
+    case WM_WINDOWPOSCHANGED: {
+        const auto* pos=reinterpret_cast<const WINDOWPOS*>(lp);
+        if (shown_ && !(pos->flags & SWP_HIDEWINDOW) &&
+            (!(pos->flags & SWP_NOMOVE) || !(pos->flags & SWP_NOSIZE)))
+            NotifyWinEvent(EVENT_OBJECT_IME_CHANGE,window_,OBJID_CLIENT,CHILDID_SELF);
+        return DefWindowProcW(window_,msg,wp,lp);
+    }
     case WM_CLOSE: hide(); return 0;
     case WM_LBUTTONDOWN:
         if (GET_Y_LPARAM(lp)<scaled(kTitleHeight) && visible()) {

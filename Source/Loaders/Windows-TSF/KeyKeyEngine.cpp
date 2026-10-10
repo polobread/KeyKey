@@ -333,7 +333,6 @@ public:
     }
 
     PVLoaderContext* createContext() {
-        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return ready_ ? loader_->createContext() : nullptr;
     }
 
@@ -361,6 +360,7 @@ public:
     }
     void beginOrdered() { ++orderedInputs_; }
     void endOrdered() { if (orderedInputs_) --orderedInputs_; }
+    bool hasOrderedInput() const { return orderedInputs_ != 0; }
     void syncSettings(bool barrier=false) {
         if (orderedInputs_ && !barrier) return;
         if (loader_) {
@@ -400,10 +400,8 @@ public:
         return std::find(availableMethods_.begin(), availableMethods_.end(), identifier) !=
                availableMethods_.end();
     }
-    std::recursive_mutex& mutex() { return mutex_; }
 
 private:
-    std::recursive_mutex mutex_;
     std::unique_ptr<OVSQLiteDatabaseService> database_;
     WindowsEncodingService encodingService_;
     WindowsLogEmitter logEmitter_;
@@ -420,15 +418,19 @@ private:
     unsigned orderedInputs_=0;
 };
 
+std::recursive_mutex g_runtimeMutex;
+EngineRuntime* g_runtime = nullptr;
+size_t g_runtimeSessions = 0;
+
 EngineRuntime& Runtime() {
-    // Avoid running the legacy core's destructor graph while Windows owns the
-    // loader lock during process shutdown.
-    static EngineRuntime* runtime = new EngineRuntime();
-    return *runtime;
+    // All callers hold g_runtimeMutex, which outlives individual runtimes.
+    // Explicit cleanup avoids legacy destructors under DllMain's loader lock.
+    if (!g_runtime) g_runtime = new EngineRuntime();
+    return *g_runtime;
 }
 
 std::string CurrentInputMethodLocked() {
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     Runtime().syncSettings();
     return Runtime().primaryInputMethod();
 }
@@ -607,31 +609,39 @@ void Snapshot(PVLoaderContext* context, EngineResult& result) {
 
 }  // namespace
 
+bool ShutdownEngineRuntime() {
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
+    if (g_runtimeSessions || (g_runtime && g_runtime->hasOrderedInput())) return false;
+    delete g_runtime;
+    g_runtime = nullptr;
+    return true;
+}
+
 std::string CurrentInputMethod() { return CurrentInputMethodLocked(); }
 std::string ObservedInputMethod() {
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     return LoadInputMethodPreference(Runtime().primaryInputMethod());
 }
 std::string EngineSettingsSignature(const std::string& method) {
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     return Runtime().moduleRevision(method);
 }
 void BeginOrderedEngineInput() {
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex()); Runtime().beginOrdered();
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex); Runtime().beginOrdered();
 }
 void EndOrderedEngineInput() {
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex()); Runtime().endOrdered();
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex); Runtime().endOrdered();
 }
 
 bool IsInputMethodAvailable(const char* identifier) {
     if (!identifier) return false;
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     return Runtime().isAvailable(identifier);
 }
 
 bool SelectInputMethod(const char* identifier) {
     if (!identifier) return false;
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     return Runtime().selectInputMethod(identifier);
 }
 
@@ -675,11 +685,12 @@ bool IsInputMethodControlKey(const KeyEvent& event, const std::string& method) {
 }
 
 std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::Create() {
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     return std::unique_ptr<KeyKeyEngineSession>(
         new KeyKeyEngineSession(Runtime().createContext()));
 }
 std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::CreateControlled(const std::string& method) {
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     Runtime().syncSettings(true);
     Runtime().syncNamedModule(method);
     auto* context=Runtime().createOrderedContext(method);
@@ -691,16 +702,18 @@ std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::CreateControlled(const
 
 KeyKeyEngineSession::KeyKeyEngineSession(PVLoaderContext* context) : context_(context) {
     if (context_) {
-        std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+        std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
         inputMethod_ = Runtime().primaryInputMethod();
         context_->activate();
         smartSettingsSignature_ = SmartMandarinSettingsSignature();
     }
+    ++g_runtimeSessions;
 }
 
 KeyKeyEngineSession::~KeyKeyEngineSession() {
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
+    --g_runtimeSessions;
     if (!context_) return;
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
     // Reconcile an externally reset learning database before stopSession can
     // save the old module's caches back. Retirement is an adoption boundary.
     Runtime().syncSettings(controlled_);
@@ -713,7 +726,7 @@ bool KeyKeyEngineSession::ready() const noexcept { return context_ != nullptr; }
 
 bool KeyKeyEngineSession::hasComposition() const {
     if (!context_) return false;
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     OVCandidatePanel* panel = context_->candidateService()->lastUsedPanel();
     return !context_->composingText()->isEmpty() || !context_->readingText()->isEmpty() ||
            (panel && panel->isVisible());
@@ -739,7 +752,7 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
     EngineResult result;
     if (!context_) return result;
 
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     if (!controlled_) Runtime().syncSettings();
     const std::string selectedMethod = Runtime().primaryInputMethod();
     const auto signature = SmartMandarinSettingsSignature();
@@ -783,7 +796,7 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
 
 void KeyKeyEngineSession::reset() {
     if (!context_) return;
-    std::lock_guard<std::recursive_mutex> lock(Runtime().mutex());
+    std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     context_->clear();
     Runtime().service()->resetState();
 }

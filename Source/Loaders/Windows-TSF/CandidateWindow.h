@@ -13,6 +13,7 @@ class CandidateWindow final {
 public:
     CandidateWindow() = default;
     ~CandidateWindow();
+    static bool releaseWindowClass(); // Only when the module has no service objects.
 
     CandidateWindow(const CandidateWindow&) = delete;
     CandidateWindow& operator=(const CandidateWindow&) = delete;
@@ -30,6 +31,7 @@ private:
     LRESULT handleMessage(UINT message, WPARAM wparam, LPARAM lparam);
     void paint();
     void traceState(const char* event) const;
+    void notifyVisibility(bool visible);
     void ensureWindow(HWND owner);
     void updateFont(UINT dpi);
     SIZE measureContent();
@@ -37,6 +39,7 @@ private:
 
     HWND window_ = nullptr;
     bool shown_ = false;
+    bool reportedVisible_ = false;
     HFONT font_ = nullptr;
     std::vector<EngineCandidate> candidates_;
     std::vector<int> cellWidths_;

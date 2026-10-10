@@ -13,6 +13,7 @@ public:
     using Selection = std::function<void(const std::wstring&)>;
     SymbolPanel();
     ~SymbolPanel();
+    static bool releaseWindowClasses(); // Only when the module has no service objects.
     SymbolPanel(const SymbolPanel&) = delete;
     SymbolPanel& operator=(const SymbolPanel&) = delete;
     bool show(HWND owner, const RECT& anchor, Selection selection);
@@ -31,6 +32,7 @@ private:
     bool drawColorEmoji(HDC dc, const RECT& bounds, const std::wstring& text,
                         COLORREF background, COLORREF foreground);
     void position(const RECT& desired);
+    void notifyVisibility(bool visible);
     int scaled(int value) const;
     HWND window_ = nullptr;
     HWND viewport_ = nullptr;
@@ -61,6 +63,7 @@ private:
     unsigned emojiRasterizations_ = 0;
     unsigned long generation_ = 0;
     bool menuOpen_ = false;
+    bool shown_ = false;
     bool dragging_ = false;
     bool hasPosition_ = false;
     POINT position_{};

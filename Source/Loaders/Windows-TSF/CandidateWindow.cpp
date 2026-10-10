@@ -1,11 +1,12 @@
 #include "CandidateWindow.h"
 
 #include <algorithm>
-#include <mutex>
 
 #include "FrontendSettings.h"
 #include "Diagnostics.h"
 #include "ModuleState.h"
+#include "TsfHost.h"
+#include "WindowClass.h"
 
 namespace KeyKey::WindowsTsf {
 namespace {
@@ -18,8 +19,7 @@ constexpr int kTextGap = 12;
 constexpr int kMinimumWidth = 80;
 constexpr int kAnchorGap = 2;
 
-std::once_flag g_windowClassOnce;
-bool g_windowClassRegistered = false;
+WindowClass g_windowClass;
 
 int ScaleForDpi(int value, UINT dpi) {
     return MulDiv(value, static_cast<int>(dpi), USER_DEFAULT_SCREEN_DPI);
@@ -37,22 +37,22 @@ CandidateWindow::~CandidateWindow() {
 }
 
 bool CandidateWindow::ensureWindowClass() {
-    std::call_once(g_windowClassOnce, [] {
-        WNDCLASSEXW windowClass{};
-        windowClass.cbSize = sizeof(windowClass);
-        windowClass.hInstance = g_module;
-        windowClass.lpfnWndProc = CandidateWindow::WindowProc;
-        windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-        windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
-        windowClass.lpszClassName = kCandidateWindowClass;
-        g_windowClassRegistered = RegisterClassExW(&windowClass) != 0 ||
-                                  GetLastError() == ERROR_CLASS_ALREADY_EXISTS;
-    });
-    return g_windowClassRegistered;
+    WNDCLASSEXW windowClass{};
+    windowClass.cbSize = sizeof(windowClass);
+    windowClass.hInstance = g_module;
+    windowClass.lpfnWndProc = CandidateWindow::WindowProc;
+    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+    windowClass.lpszClassName = kCandidateWindowClass;
+    return g_windowClass.ensure(windowClass);
+}
+
+bool CandidateWindow::releaseWindowClass() {
+    return g_windowClass.retire();
 }
 
 void CandidateWindow::ensureWindow(HWND owner) {
-    if (window_ || !ensureWindowClass()) {
+    if (window_ || !IsPopupOwner(owner) || !ensureWindowClass()) {
         return;
     }
 
@@ -75,6 +75,7 @@ void CandidateWindow::ensureWindow(HWND owner) {
 void CandidateWindow::show(HWND owner, const RECT& textRect,
                            const std::vector<EngineCandidate>& candidates,
                            size_t highlightedIndex) {
+    if (!IsPopupOwner(owner)) { hide(); return; }
     candidates_ = candidates;
     highlightedIndex_ = highlightedIndex;
     const FrontendSettings settings = LoadFrontendSettings();
@@ -121,17 +122,21 @@ void CandidateWindow::show(HWND owner, const RECT& textRect,
     shown_ = true;
     InvalidateRect(window_, nullptr, FALSE);
     traceState("show");
-    NotifyWinEvent(EVENT_OBJECT_IME_SHOW, window_, OBJID_CLIENT, CHILDID_SELF);
+    notifyVisibility(IsWindowVisible(window_)!=FALSE);
+}
+
+void CandidateWindow::notifyVisibility(bool visible) {
+    if (reportedVisible_==visible) return;
+    reportedVisible_=visible;
+    if (window_) NotifyWinEvent(visible ? EVENT_OBJECT_IME_SHOW : EVENT_OBJECT_IME_HIDE,
+        window_,OBJID_CLIENT,CHILDID_SELF);
 }
 
 void CandidateWindow::hide() {
     if (window_) traceState("hide-begin");
-    const bool wasShown = shown_;
     shown_ = false;
     if (window_) {
-        if (wasShown) {
-            NotifyWinEvent(EVENT_OBJECT_IME_HIDE, window_, OBJID_CLIENT, CHILDID_SELF);
-        }
+        notifyVisibility(false);
         // A canceled popup has no display lifetime left. Do not keep an empty
         // topmost HWND (or its redirected surface) for a later host restore.
         // Keep the font; a new candidate result recreates only the native window.
@@ -189,11 +194,15 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
             Trace("CandidateWindow visibility-message hwnd=%p show=%llu reason=%lld",
                   window_, static_cast<unsigned long long>(wparam), static_cast<long long>(lparam));
             traceState("visibility");
+            notifyVisibility(wparam!=0 && !candidates_.empty());
             return DefWindowProcW(window_, message, wparam, lparam);
         case WM_WINDOWPOSCHANGED: {
             const auto* position = reinterpret_cast<const WINDOWPOS*>(lparam);
             Trace("CandidateWindow position-message hwnd=%p flags=0x%08X", window_, position->flags);
             traceState("position");
+            if (reportedVisible_ && !(position->flags & SWP_HIDEWINDOW) &&
+                (!(position->flags & SWP_NOMOVE) || !(position->flags & SWP_NOSIZE)))
+                NotifyWinEvent(EVENT_OBJECT_IME_CHANGE,window_,OBJID_CLIENT,CHILDID_SELF);
             return DefWindowProcW(window_, message, wparam, lparam);
         }
         case WM_DPICHANGED: {
@@ -212,6 +221,7 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
         case WM_NCDESTROY: {
             traceState("destroy");
             HWND destroyedWindow = window_;
+            notifyVisibility(false);
             window_ = nullptr;
             shown_ = false;
             SetWindowLongPtrW(destroyedWindow, GWLP_USERDATA, 0);

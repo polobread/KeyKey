@@ -4,6 +4,29 @@
 Windows 產品版號為 1.3.2，尚未發布；iOS、Android 1.3.2 已在各自商店正式上線，macOS、Linux 及共用模型維持 1.3.1。實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
 
+2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、
+禁用／唯讀 context 與 light dismiss 事件。宿主通知採用非同步處理，不寫回通知來源；
+OPENCLOSE 與 NATIVE 的另一個欄位於通知結束後才協調。暫時失去 UI 執行緒焦點只隱藏
+候選、關閉符號表並撤銷舊定位回呼，保留原組字；重新取得焦點須符合當前 context 才還原。
+修正只在 Windows TSF adapter，沒有修改 macOS、共用引擎或正式模型。
+後續補上輸入法發布失敗回滾：原引擎與有效方法在 TSF／共用狀態寫入成功後才更換。
+模式通知因換欄位或 session 取消時，於通知外重新讀取宿主最新模式；第一個按鍵前也會同步，
+不採用已取消的舊快照。讀取失敗留待下一次焦點／輸入重試，停用時不再寫回模式。
+TSF 模式部分寫入／回滾失敗也保留恢復目標：先延後嘗試一次，持續被拒絕時只在後續
+焦點／輸入重試，不反覆送訊息。恢復略過已一致的欄位，保留其他轉換旗標；宿主新通知
+取代舊恢復目標。未設定的欄位恢復為保留的邏輯模式，不清除預定義 compartment；
+異常資料型態不覆寫。系統持續拒絕期間仍可能不一致，解除拒絕後由下一次活動恢復。
+研究、實作範圍與實機待驗收項目見
+[各 App 狀態與 TSF 用法](../../../docs/WINDOWS_TSF_APP_STATE_REVIEW.md)。
+
+2026-10-10 記憶體安全修正：`DllCanUnloadNow` 在 loader lock 外清理三個候選／符號
+視窗類別與引擎 runtime；服務成員析構完成前保留 COM 物件計數，仍有視窗、引擎 session
+或有序輸入時拒絕卸載。類別與 runtime 可在清理後重新建立，DLL 重載不再留下舊 runtime。
+`RangeText` 在 append 前檢查宿主回傳字元數與 65,536 字元總量上限，異常值不寫回組字。
+回歸入口為 `KeyKeyModuleLifetime` 與 `KeyKeyTsfOutputCommitBehavior`；前者使用測試專用
+DLL，不註冊 TIP。MSVC ASan 建置停用 DLL 卸載測試，仍驗證同一模組內的 runtime 清理。
+證據與實機驗收界線見 [記憶體安全檢查](../../../docs/WINDOWS_TSF_MEMORY_SAFETY_REVIEW.md)。
+
 「一般」新增「啟動時預設輸入模式」中文／英文，預設為中文。設定在輸入法服務下次
 啟用時生效；中文沿用目前選擇的好打注音、傳統注音、倉頡或簡易，Shift 仍可切換。
 切換輸入欄位不會強制還原啟動偏好。設定另以獨立 TSF compartment 提供給受限宿主；

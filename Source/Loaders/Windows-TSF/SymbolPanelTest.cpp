@@ -458,10 +458,12 @@ int wmain(int argc,wchar_t** argv) {
         Check(calls==2 && !panel.visible(),"Close cancels");
         show(); Popup(panel,host,3);
         Check(!panel.visible() && calls==2,"Owner destruction during popup left stale panel");
-        Check(panel.show(nullptr,anchor,[&](const std::wstring&) { ++calls; }),"Reopen after owner destruction");
-        Check(panel.visible(),"Recreated ownerless panel visible"); panel.hide();
+        Check(!panel.show(nullptr,anchor,[&](const std::wstring&) { ++calls; }) && !panel.visible(),
+              "Owner destruction must not allow an unowned symbol popup");
         host=CreateWindowExW(0,L"EDIT",L"",WS_POPUP | WS_VISIBLE,0,0,100,100,nullptr,nullptr,g_module,nullptr);
         SetFocus(host); Check(GetFocus()==host,"Destruction test requires host focus");
+        Check(panel.show(host,anchor,[&](const std::wstring&) { ++calls; }),"Reopen with replacement owner");
+        Check(panel.visible(),"Recreated owned panel not visible"); panel.hide();
         auto* disposable=new SymbolPanel;
         Check(disposable->show(host,anchor,[&](const std::wstring&) { ++calls; }),"Disposable panel show");
         Popup(*disposable,host,4);

@@ -27,6 +27,10 @@ HMODULE g_module = nullptr;
 std::atomic<long> g_objectCount{0};
 std::atomic<long> g_serverLocks{0};
 struct TextServiceTestAccess {
+    static void observe(TextService& service,ITfThreadMgr* manager,TfClientId client) {
+        service.threadManager_=manager; service.clientId_=client;
+        if (FAILED(service.adviseInputModeSink())) throw std::runtime_error("Mode sinks unavailable");
+    }
     static void start(TextService& service, ITfThreadMgr* manager, TfClientId client) {
         // Exercise the activation's mode initialization with real compartments.
         // An application client cannot register a TIP key sink, so this test
@@ -91,6 +95,7 @@ std::wstring Text(ITfLangBarItemButton* button) {
 
 int wmain() {
     try {
+        g_module=GetModuleHandleW(nullptr);
         const auto profile = std::filesystem::temp_directory_path() /
             (L"keykey-tray-test-" + std::to_wstring(GetCurrentProcessId()) + L"-" +
              std::to_wstring(GetTickCount64()));
@@ -129,6 +134,26 @@ int wmain() {
             Success(openClose->GetValue(&value), "Open/close read failed.");
             Check(value.vt == VT_I4 && value.lVal == (chinese ? 1 : 0), "IME open/close and native mode disagree.");
             VariantClear(&value);
+        }
+        {
+            ComPtr<TextService> observer; observer.Attach(new TextService);
+            TextServiceTestAccess::observe(*observer.Get(),manager.Get(),client);
+            value.vt=VT_I4; value.lVal=TF_CONVERSIONMODE_FULLSHAPE;
+            Success(conversion->SetValue(client,&value),"External conversion write");
+            Check(observer->isChineseMode() && !observer->isFullWidthMode(),"No-context host mode ran inside notification");
+            MSG message{};
+            while (PeekMessageW(&message,nullptr,0,0,PM_REMOVE)) { TranslateMessage(&message); DispatchMessageW(&message); }
+            Check(!observer->isChineseMode() && observer->isFullWidthMode(),"Posted no-context mode did not adopt host state");
+            VariantClear(&value); Success(openClose->GetValue(&value),"Read reconciled open state");
+            Check(value.vt==VT_I4 && value.lVal==0,"Host conversion did not reconcile open state");
+            value.vt=VT_I4; value.lVal=1;
+            Success(openClose->SetValue(client,&value),"External open write");
+            while (PeekMessageW(&message,nullptr,0,0,PM_REMOVE)) { TranslateMessage(&message); DispatchMessageW(&message); }
+            Check(observer->isChineseMode() && observer->isFullWidthMode(),"Host open change lost width");
+            VariantClear(&value); Success(conversion->GetValue(&value),"Read reconciled conversion");
+            Check(value.vt==VT_I4 && (value.lVal & TF_CONVERSIONMODE_NATIVE) &&
+                  (value.lVal & TF_CONVERSIONMODE_FULLSHAPE),"Host open did not reconcile Native while retaining width");
+            Success(observer->Deactivate(),"Observer cleanup");
         }
         ComPtr<ITfLangBarItemMgr> items;
         Success(manager.As(&items), "Language-bar manager unavailable.");

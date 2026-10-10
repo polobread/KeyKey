@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <iterator>
 #include <new>
+#include <mutex>
 #include <string>
 
 #include "Guids.h"
@@ -18,6 +19,9 @@ std::atomic<long> KeyKey::WindowsTsf::g_serverLocks{0};
 namespace {
 
 thread_local DWORD g_registrationStage = 0;
+// Serialize an idle cleanup with new class-factory acquisition. Existing
+// factories/services keep g_objectCount nonzero throughout member destruction.
+std::mutex g_unloadMutex;
 
 class ClassFactory final : public IClassFactory {
 public:
@@ -348,11 +352,18 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
 }
 
 extern "C" HRESULT __stdcall DllCanUnloadNow() {
-    return g_objectCount.load() == 0 && g_serverLocks.load() == 0 ? S_OK : S_FALSE;
+    std::lock_guard<std::mutex> lock(g_unloadMutex);
+    if (g_objectCount.load() || g_serverLocks.load()) return S_FALSE;
+    // COM calls this outside DllMain. Do not move User32 or engine teardown
+    // into DLL_PROCESS_DETACH, where the loader lock would be held.
+    if (!CandidateWindow::releaseWindowClass() || !SymbolPanel::releaseWindowClasses())
+        return S_FALSE;
+    return ShutdownEngineRuntime() ? S_OK : S_FALSE;
 }
 
 extern "C" HRESULT __stdcall DllGetClassObject(REFCLSID clsid, REFIID iid,
                                                 void** object) {
+    std::lock_guard<std::mutex> lock(g_unloadMutex);
     if (!object) return E_INVALIDARG;
     *object = nullptr;
     if (clsid != kTextServiceClsid) return CLASS_E_CLASSNOTAVAILABLE;

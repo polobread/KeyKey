@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 
 namespace KeyKey::WindowsTsf {
 HMODULE g_module = nullptr;
@@ -39,6 +40,19 @@ const std::vector<EngineCandidate> kCandidates{{L"1", L"candidate"}, {L"2", L"se
 
 void Check(bool condition, const char* message) {
     if (!condition) throw std::runtime_error(message);
+}
+
+std::vector<std::pair<DWORD,HWND>> imeEvents;
+void CALLBACK RecordImeEvent(HWINEVENTHOOK,DWORD event,HWND window,LONG,LONG,DWORD,DWORD) {
+    imeEvents.emplace_back(event,window);
+}
+void PumpMessages() {
+    MSG message{};
+    while (PeekMessageW(&message,nullptr,0,0,PM_REMOVE)) { TranslateMessage(&message); DispatchMessageW(&message); }
+}
+int EventCount(DWORD event,HWND window) {
+    PumpMessages();
+    return static_cast<int>(std::count(imeEvents.begin(),imeEvents.end(),std::make_pair(event,window)));
 }
 
 struct Host {
@@ -224,6 +238,45 @@ void SymbolLifecycle() {
     CheckNoActivation(replacement.window, replacement.edit, SymbolPanelTestAccess::window(popup));
     popup.hide();
 }
+
+void LightDismissEvents() {
+    const auto hook=SetWinEventHook(EVENT_OBJECT_IME_SHOW,EVENT_OBJECT_IME_CHANGE,nullptr,
+        RecordImeEvent,GetCurrentProcessId(),GetCurrentThreadId(),WINEVENT_OUTOFCONTEXT);
+    Check(hook!=nullptr,"Cannot observe IME light-dismiss notifications");
+    Host host;
+    {
+        CandidateWindow popup; popup.show(host.window,kAnchor,kCandidates,0);
+        const HWND window=PopupLifecycleTestAccess::window(popup);
+        Check(EventCount(EVENT_OBJECT_IME_SHOW,window)==1,"Candidate missing SHOW event");
+        RECT moved=kAnchor; moved.left+=20; moved.right+=20;
+        popup.show(host.window,moved,kCandidates,1);
+        Check(EventCount(EVENT_OBJECT_IME_SHOW,window)==1,"Candidate update repeated SHOW event");
+        Check(EventCount(EVENT_OBJECT_IME_CHANGE,window)>=1,"Candidate move missing CHANGE event");
+        ShowOwnedPopups(host.window,FALSE);
+        Check(EventCount(EVENT_OBJECT_IME_HIDE,window)==1,"Owner-hidden candidate missing HIDE event");
+        ShowOwnedPopups(host.window,TRUE);
+        Check(EventCount(EVENT_OBJECT_IME_SHOW,window)==2,"Owner-restored candidate missing SHOW event");
+        popup.hide();
+        Check(EventCount(EVENT_OBJECT_IME_HIDE,window)==2,"Canceled candidate missing HIDE event");
+    }
+    imeEvents.clear();
+    {
+        SymbolPanel popup;
+        Check(popup.show(host.window,kAnchor,[](const std::wstring&){}),"Symbol event panel show");
+        const HWND window=SymbolPanelTestAccess::window(popup);
+        Check(EventCount(EVENT_OBJECT_IME_SHOW,window)==1,"Symbols missing SHOW event");
+        RECT bounds{}; GetWindowRect(window,&bounds);
+        SetWindowPos(window,nullptr,bounds.left+10,bounds.top+10,0,0,SWP_NOACTIVATE|SWP_NOSIZE|SWP_NOZORDER);
+        Check(EventCount(EVENT_OBJECT_IME_CHANGE,window)>=1,"Symbol move missing CHANGE event");
+        ShowOwnedPopups(host.window,FALSE);
+        Check(EventCount(EVENT_OBJECT_IME_HIDE,window)==1,"Owner-hidden symbols missing HIDE event");
+        ShowOwnedPopups(host.window,TRUE);
+        Check(EventCount(EVENT_OBJECT_IME_SHOW,window)==2,"Owner-restored symbols missing SHOW event");
+        popup.hide();
+        Check(EventCount(EVENT_OBJECT_IME_HIDE,window)==2,"Canceled symbols missing HIDE event");
+    }
+    UnhookWinEvent(hook);
+}
 }  // namespace
 
 int main() {
@@ -237,6 +290,7 @@ int main() {
             "Cannot isolate popup test preferences");
         CandidateLifecycle();
         SymbolLifecycle();
+        LightDismissEvents();
         std::cout << "Candidate and symbol popup native lifecycle checks passed\n";
         return 0;
     } catch (const std::exception& error) {
