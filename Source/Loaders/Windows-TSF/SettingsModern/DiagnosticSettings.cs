@@ -26,7 +26,8 @@ internal static class DiagnosticSettings
         try
         {
             if (!File.Exists(Path) || new FileInfo(Path).Length > 16384) return default;
-            using var reader = XmlReader.Create(Path, new XmlReaderSettings {
+            using var stream=SharedSettingsFile.OpenRead(Path);
+            using var reader = XmlReader.Create(stream, new XmlReaderSettings {
                 DtdProcessing = DtdProcessing.Ignore, XmlResolver = null });
             var elements = XDocument.Load(reader).Root?.Element("dict")?.Elements().ToArray() ?? [];
             long Number(string key)
@@ -43,6 +44,9 @@ internal static class DiagnosticSettings
 
     internal static DiagnosticSession Save(bool enabled)
     {
+        using var lease=SharedSettingsFile.Lock(Path);
+        var existing=Read();
+        if (enabled && existing.Active) return existing;
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var session = enabled ? new DiagnosticSession(now, now + DiagnosticSession.DurationSeconds) : default;
         SettingsWrite(session);
@@ -56,10 +60,7 @@ internal static class DiagnosticSettings
                 new XElement("string", session.StartedAtUtc.ToString(CultureInfo.InvariantCulture)),
                 new XElement("key", "ExpiresAtUtc"),
                 new XElement("string", session.ExpiresAtUtc.ToString(CultureInfo.InvariantCulture)))));
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
-        var temporary = Path + ".tmp." + Environment.ProcessId;
-        try { document.Save(temporary); File.Move(temporary, Path, true); }
-        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        SharedSettingsFile.Write(Path,document.ToString());
     }
 
     // Deployment operations already hold their global deployment mutex.

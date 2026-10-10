@@ -100,6 +100,22 @@ jobs:
           dotnet run --project Deployment.Tests/Deployment.Tests.csproj --configuration Release
           if ($LASTEXITCODE -ne 0) { throw 'Deployment regression failed.' }
 
+      - name: Test shared data across x64, x86 and settings processes
+        working-directory: Source/Loaders/Windows-TSF
+        run: |
+          $x64 = (Resolve-Path './out/build/x64-vs2026/Release/KeyKeySharedDataProtectionTest.exe').Path
+          $x86 = (Resolve-Path './out/build/x86/Release/KeyKeySharedDataProtectionTest.exe').Path
+          & $x64 $x86
+          if ($LASTEXITCODE -ne 0) { throw 'x64 to x86 data protection regression failed.' }
+          & $x86 $x64
+          if ($LASTEXITCODE -ne 0) { throw 'x86 to x64 data protection regression failed.' }
+          $managed = (Resolve-Path './SettingsModern.Tests/bin/Release/net10.0/SettingsModern.Tests.dll').Path
+          $dotnet = (Get-Command dotnet).Source
+          foreach ($native in @($x64, $x86)) {
+            & $native --managed $dotnet $managed
+            if ($LASTEXITCODE -ne 0) { throw 'Native and managed settings writer regression failed.' }
+          }
+
       - name: Install NSIS 3.12
         run: |
           choco install nsis --version=3.12.0 --yes --no-progress --limit-output

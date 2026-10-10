@@ -20,6 +20,7 @@ struct PopupLifecycleTestAccess {
 };
 struct SymbolPanelTestAccess {
     static HWND window(const SymbolPanel& popup) { return popup.window_; }
+    static HWND item(const SymbolPanel& popup) { return GetDlgItem(popup.content_,100); }
     static void rememberPosition(SymbolPanel& popup) {
         RECT bounds{}; GetWindowRect(popup.window_, &bounds);
         popup.position_ = {bounds.left, bounds.top}; popup.hasPosition_ = true;
@@ -172,7 +173,7 @@ void SymbolLifecycle() {
     const HWND active = GetActiveWindow(), focused = GetFocus();
     Check(popup.show(host.window, kAnchor, select), "Symbol panel did not show");
     HWND window = SymbolPanelTestAccess::window(popup);
-    HWND firstItem = GetDlgItem(window, 100);
+    HWND firstItem = SymbolPanelTestAccess::item(popup);
     Check(firstItem && IsWindowEnabled(firstItem), "Symbol item missing for stale command check");
     CheckNoActivation(active, focused, window);
     popup.hide();
@@ -182,7 +183,7 @@ void SymbolLifecycle() {
         reinterpret_cast<LPARAM>(firstItem));
     Check(selections == 0, "Normally hidden symbol panel dispatched stale selection");
     Check(popup.show(host.window, kAnchor, select), "Symbol panel did not reopen for suppression");
-    firstItem = GetDlgItem(window, 100);
+    firstItem = SymbolPanelTestAccess::item(popup);
     Check(firstItem && IsWindowEnabled(firstItem), "Reopened symbol item missing");
     Check(ShowOwnedPopups(host.window, FALSE) != FALSE &&
           ShowOwnedPopups(host.window, TRUE) != FALSE && popup.visible(),
@@ -210,7 +211,7 @@ void SymbolLifecycle() {
           SymbolPanelTestAccess::dpi(popup) == dpi,
         "Recreated symbols lost remembered position or DPI");
     CheckNoActivation(active, focused, window);
-    firstItem = GetDlgItem(window, 100);
+    firstItem = SymbolPanelTestAccess::item(popup);
     Check(firstItem && IsWindowEnabled(firstItem), "Recreated symbol item missing");
     SendMessageW(window, WM_COMMAND, MAKEWPARAM(100, BN_CLICKED),
         reinterpret_cast<LPARAM>(firstItem));

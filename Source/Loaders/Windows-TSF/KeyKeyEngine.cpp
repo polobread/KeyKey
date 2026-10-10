@@ -13,6 +13,7 @@
 #include "FrontendSettings.h"
 #include "InputMethods.h"
 #include "WindowsTableInputMethod.h"
+#include "SharedFileAccess.h"
 
 #include "OpenVanilla.h"
 #include "PlainVanilla.h"
@@ -339,8 +340,9 @@ public:
     PVLoaderService* service() const { return service_.get(); }
     std::string moduleRevision(const std::string& method) const {
         if (!policy_) return {};
-        std::ifstream file(OVUTF16::FromUTF8(policy_->propertyListPathFromIdentifier(method)),std::ios::binary);
-        return std::string(std::istreambuf_iterator<char>(file),std::istreambuf_iterator<char>());
+        std::string result;
+        ReadSharedSettingsFile(OVUTF16::FromUTF8(policy_->propertyListPathFromIdentifier(method)),result);
+        return result;
     }
     void syncNamedModule(const std::string& method) {
         if (!loader_) return;

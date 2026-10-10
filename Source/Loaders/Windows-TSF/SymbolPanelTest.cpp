@@ -1,6 +1,7 @@
 #include "SymbolPanel.h"
 #include <SymbolResources.generated.h>
 #include "ModuleState.h"
+#include "FrontendSettings.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -13,10 +14,12 @@ std::atomic<long> g_serverLocks{0};
 struct SymbolPanelTestAccess {
     static HWND window(SymbolPanel& panel) { return panel.window_; }
     static size_t category(SymbolPanel& panel) { return panel.category_; }
-    static size_t capacity(SymbolPanel& panel) { return panel.capacity_; }
-    static size_t page(SymbolPanel& panel) { return panel.page_; }
+    static int offset(SymbolPanel& panel) { return panel.scrollOffset_; }
+    static unsigned renders(SymbolPanel& panel) { return panel.emojiRasterizations_; }
+    static UINT dpi(SymbolPanel& panel) { return panel.dpi_; }
+    static UINT hostDpi(SymbolPanel& panel) { return panel.hostDpi_; }
     static void category(SymbolPanel& panel,size_t index) {
-        panel.category_=index; panel.page_=0;
+        panel.category_=index; panel.scrollOffset_=0;
         RECT rect{}; GetWindowRect(panel.window_,&rect);
         rect.bottom=rect.top+panel.scaled(BuiltinSymbolCategories()[index].layout==SymbolLayout::List ? 430 : 310);
         panel.position(rect); panel.rebuild();
@@ -42,9 +45,16 @@ struct SymbolPanelTestAccess {
 };
 }
 using namespace KeyKey::WindowsTsf;
+HWND PanelControl(HWND panel,UINT id) {
+    return GetDlgItem(id>=100 ? GetDlgItem(GetDlgItem(panel,10),11) : panel,id);
+}
+HWND ScrollControl(HWND panel) { return GetDlgItem(PanelControl(panel,10),12); }
+void Scroll(HWND panel,UINT request) {
+    SendMessageW(PanelControl(panel,10),WM_VSCROLL,request,reinterpret_cast<LPARAM>(ScrollControl(panel)));
+}
 void Check(bool ok,const char* message) { if (!ok) throw std::runtime_error(message); }
 void Click(HWND panel,UINT id) {
-    HWND item=GetDlgItem(panel,id);
+    HWND item=PanelControl(panel,id);
     Check(item && IsWindowEnabled(item),"Clickable control missing");
     SendMessageW(item,WM_LBUTTONDOWN,MK_LBUTTON,MAKELPARAM(5,5));
     SendMessageW(item,WM_LBUTTONUP,0,MAKELPARAM(5,5));
@@ -62,12 +72,30 @@ void CheckBounds(HWND panel) {
               rect.right>rect.left && rect.bottom>rect.top,"Control exceeds panel bounds");
     }
 }
-void Render(HWND panel,const std::filesystem::path& file,bool requireColor=false,bool requireMonochromeGlyph=false) {
+std::vector<unsigned char> Render(HWND panel,const std::filesystem::path& file,bool requireColor=false,bool requireMonochromeGlyph=false) {
     RECT rect{}; GetClientRect(panel,&rect);
     HDC screen=GetDC(panel), dc=CreateCompatibleDC(screen);
     HBITMAP bitmap=CreateCompatibleBitmap(screen,rect.right,rect.bottom);
     auto old=SelectObject(dc,bitmap);
-    Check(PrintWindow(panel,dc,PW_CLIENTONLY)!=FALSE,"Native panel render failed");
+    FillRect(dc,&rect,GetSysColorBrush(COLOR_WINDOW));
+    wchar_t windowClass[32]{}; GetClassNameW(panel,windowClass,32);
+    if (_wcsicmp(windowClass,L"ScrollBar")==0)
+        SendMessageW(panel,WM_PAINT,reinterpret_cast<WPARAM>(dc),0);
+    else Check(PrintWindow(panel,dc,PW_CLIENTONLY)!=FALSE,"Native panel render failed");
+    // ScrollBar paints into a supplied WM_PAINT DC rather than WM_PRINTCLIENT.
+    // Composite its drawing into the panel artifact.
+    if (const HWND scrollbar=ScrollControl(panel)) {
+        RECT bounds{}; GetWindowRect(scrollbar,&bounds);
+        MapWindowPoints(nullptr,panel,reinterpret_cast<POINT*>(&bounds),2);
+        const int width=bounds.right-bounds.left,height=bounds.bottom-bounds.top;
+        HDC scrollDC=CreateCompatibleDC(screen);
+        HBITMAP scrollBitmap=CreateCompatibleBitmap(screen,width,height);
+        const auto previous=SelectObject(scrollDC,scrollBitmap);
+        RECT local{0,0,width,height}; FillRect(scrollDC,&local,GetSysColorBrush(COLOR_WINDOW));
+        SendMessageW(scrollbar,WM_PAINT,reinterpret_cast<WPARAM>(scrollDC),0);
+        BitBlt(dc,bounds.left,bounds.top,width,height,scrollDC,0,0,SRCCOPY);
+        SelectObject(scrollDC,previous); DeleteObject(scrollBitmap); DeleteDC(scrollDC);
+    }
     SelectObject(dc,old);
     BITMAPINFO info{}; info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);
     info.bmiHeader.biWidth=rect.right; info.bmiHeader.biHeight=-rect.bottom;
@@ -75,7 +103,12 @@ void Render(HWND panel,const std::filesystem::path& file,bool requireColor=false
     std::vector<unsigned char> pixels(static_cast<size_t>(rect.right)*rect.bottom*4);
     Check(GetDIBits(dc,bitmap,0,rect.bottom,pixels.data(),&info,DIB_RGB_COLORS)!=0,"Bitmap read failed");
     if (requireColor || requireMonochromeGlyph) {
-        RECT emoji{}; GetWindowRect(GetDlgItem(panel,100),&emoji);
+        RECT viewport{}; GetWindowRect(PanelControl(panel,10),&viewport);
+        RECT emoji{};
+        for (UINT id=100;PanelControl(panel,id);++id) {
+            GetWindowRect(PanelControl(panel,id),&emoji);
+            if (emoji.top>=viewport.top && emoji.bottom<=viewport.bottom) break;
+        }
         MapWindowPoints(nullptr,panel,reinterpret_cast<POINT*>(&emoji),2);
         size_t colored=0,ink=0;
         for (int y=emoji.top+2;y<emoji.bottom-2;++y) for (int x=emoji.left+2;x<emoji.right-2;++x) {
@@ -97,9 +130,10 @@ void Render(HWND panel,const std::filesystem::path& file,bool requireColor=false
     out.write(reinterpret_cast<const char*>(pixels.data()),static_cast<std::streamsize>(pixels.size()));
     Check(out.good(),"Native render artifact write failed");
     DeleteObject(bitmap); DeleteDC(dc); ReleaseDC(panel,screen);
+    return pixels;
 }
 void CheckDrawState(HWND panel,UINT id) {
-    HWND item=GetDlgItem(panel,id);
+    HWND item=PanelControl(panel,id);
     RECT bounds{}; GetClientRect(item,&bounds);
     HDC screen=GetDC(item),dc=CreateCompatibleDC(screen);
     HBITMAP bitmap=CreateCompatibleBitmap(screen,bounds.right,bounds.bottom);
@@ -116,6 +150,23 @@ void CheckDrawState(HWND panel,UINT id) {
     SelectObject(dc,oldBitmap); DeleteObject(bitmap); DeleteDC(dc); ReleaseDC(item,screen);
 }
 namespace {
+HWND nativeScroll=nullptr,nativeScrollHost=nullptr;
+bool nativeScrollFocus=true;
+int nativeScrollTarget=0;
+void CALLBACK NativeScrollRelease(HWND,UINT,UINT_PTR timer,DWORD) {
+    nativeScrollFocus=nativeScrollFocus && GetFocus()==nativeScrollHost;
+    KillTimer(nullptr,timer);
+    PostMessageW(nativeScroll,WM_LBUTTONUP,0,MAKELPARAM(5,nativeScrollTarget));
+}
+void ScrollArrow(HWND scrollbar,HWND host,int y) {
+    nativeScroll=scrollbar; nativeScrollHost=host;
+    nativeScrollFocus=true; nativeScrollTarget=y;
+    const UINT_PTR timer=SetTimer(nullptr,0,50,NativeScrollRelease);
+    Check(timer!=0,"Native scrollbar test timer failed");
+    SendMessageW(scrollbar,WM_LBUTTONDOWN,MK_LBUTTON,MAKELPARAM(5,y));
+    KillTimer(nullptr,timer);
+    Check(nativeScrollFocus && GetFocus()==host,"Native scrollbar mouse operation stole host focus");
+}
 HWND popupHost=nullptr, popupOwner=nullptr;
 SymbolPanel* popupPanel=nullptr;
 int popupAction=0, timerTicks=0;
@@ -177,7 +228,24 @@ void Popup(SymbolPanel& panel,HWND host,int action) {
 }
 }
 int wmain(int argc,wchar_t** argv) {
+    wchar_t temp[MAX_PATH]{}; GetTempPathW(MAX_PATH,temp);
+    const auto profile=std::filesystem::path(temp)/(L"keykey-symbols-"+std::to_wstring(GetCurrentProcessId()));
+    std::filesystem::create_directories(profile);
+    SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+    struct Cleanup { std::filesystem::path path; ~Cleanup() { std::error_code error; std::filesystem::remove_all(path,error); } } cleanup{profile};
     try {
+        const auto manifest=profile/L"controls.manifest";
+        { std::ofstream out(manifest); out<<"<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">"
+            "<assemblyIdentity version=\"1.0.0.0\" processorArchitecture=\"*\" name=\"KeyKey.SymbolPanel.Test\" type=\"win32\"/>"
+            "<dependency><dependentAssembly><assemblyIdentity type=\"win32\" name=\"Microsoft.Windows.Common-Controls\" "
+            "version=\"6.0.0.0\" processorArchitecture=\"*\" publicKeyToken=\"6595b64144ccf1df\" language=\"*\"/>"
+            "</dependentAssembly></dependency></assembly>"; }
+        ACTCTXW context{sizeof(context)}; context.lpSource=manifest.c_str();
+        const HANDLE activation=CreateActCtxW(&context);
+        Check(activation!=INVALID_HANDLE_VALUE,"Cannot create themed host activation context");
+        ULONG_PTR cookie=0;
+        Check(ActivateActCtx(activation,&cookie)!=FALSE,"Cannot activate themed host controls");
+        struct ThemeCleanup { HANDLE activation; ULONG_PTR cookie; ~ThemeCleanup() { DeactivateActCtx(0,cookie); ReleaseActCtx(activation); } } themeCleanup{activation,cookie};
         SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         g_module=GetModuleHandleW(nullptr);
         const auto& categories=BuiltinSymbolCategories();
@@ -210,10 +278,41 @@ int wmain(int argc,wchar_t** argv) {
         show(); HWND hwnd=SymbolPanelTestAccess::window(panel);
         Check(panel.visible() && (GetWindowLongPtrW(hwnd,GWL_EXSTYLE)&WS_EX_NOACTIVATE),"Noactivate panel missing");
         Check(GetFocus()==host,"Showing panel changed host focus");
-        RECT first{},tenth{}; GetWindowRect(GetDlgItem(hwnd,100),&first); GetWindowRect(GetDlgItem(hwnd,109),&tenth);
+        RECT first{},tenth{}; GetWindowRect(PanelControl(hwnd,100),&first); GetWindowRect(PanelControl(hwnd,109),&tenth);
         Check(first.top==tenth.top && first.right<tenth.left,"Symbols must use ten columns");
         CheckBounds(hwnd);
         if (argc>1) { std::filesystem::create_directories(argv[1]); Render(hwnd,std::filesystem::path(argv[1])/L"symbols-light.bmp"); }
+        const auto setScale=[&](int scale) {
+            std::ofstream out(LoaderPreferencesPath());
+            out<<"<plist><dict><key>CandidateWindowScalePercent</key><string>"<<scale<<"</string></dict></plist>";
+            Check(out.good(),"Test scale preference write failed");
+        };
+        RECT normal{}; GetWindowRect(hwnd,&normal);
+        setScale(125); panel.hide(); show();
+        RECT enlarged{}; GetWindowRect(hwnd,&enlarged);
+        const UINT expected=ContentDpiForScale(SymbolPanelTestAccess::hostDpi(panel),
+            MonitorFromWindow(hwnd,MONITOR_DEFAULTTONEAREST),125);
+        Check(SymbolPanelTestAccess::dpi(panel)==expected && enlarged.right-enlarged.left==MulDiv(440,expected,96),
+            "Symbol panel must use candidate window scale for window and font sizes");
+        GetWindowRect(PanelControl(hwnd,100),&first);
+        Check(first.bottom-first.top==MulDiv(34,expected,96),"Symbol cells must use candidate window scale");
+        CheckBounds(hwnd);
+        if (argc>1) Render(hwnd,std::filesystem::path(argv[1])/L"symbols-125percent.bmp");
+        SymbolPanelTestAccess::category(panel,17);
+        if (argc>1) Render(hwnd,std::filesystem::path(argv[1])/L"emoji-125percent.bmp",true);
+        setScale(0); SendMessageW(hwnd,WM_SETTINGCHANGE,0,0);
+        Check(SymbolPanelTestAccess::dpi(panel)==SymbolPanelTestAccess::hostDpi(panel),
+            "Follow Windows scale must restore host DPI on settings change");
+        SymbolPanelTestAccess::category(panel,0);
+        for (size_t category=0;category<categories.size();++category) {
+            SymbolPanelTestAccess::category(panel,category);
+            for (size_t item=0;item<categories[category].items.size();++item)
+                Check(Label(PanelControl(hwnd,100+static_cast<UINT>(item)))==categories[category].items[item].label,
+                    "A category must expose all entries in original order");
+            Check(!PanelControl(hwnd,100+static_cast<UINT>(categories[category].items.size())),
+                "Category change left stale entries");
+        }
+        SymbolPanelTestAccess::category(panel,0);
         Popup(panel,host,0);
         Check(GetFocus()==host && panel.visible() && calls==0,"Cancel dropdown changed selection/focus");
         for (int iteration=0;iteration<20;++iteration) {
@@ -224,17 +323,16 @@ int wmain(int argc,wchar_t** argv) {
         popupArtifact.clear(); CheckDrawState(hwnd,1); CheckDrawState(hwnd,100);
         Popup(panel,host,1);
         Check(GetFocus()==host && SymbolPanelTestAccess::category(panel)==17 &&
-              SymbolPanelTestAccess::page(panel)==0 && calls==0,"Dropdown did not select Emoji safely");
-        Check(SymbolPanelTestAccess::capacity(panel)==40,"Default emoji grid must show five pages of forty");
+              SymbolPanelTestAccess::offset(panel)==0 && calls==0,"Dropdown did not select Emoji safely");
+        Check(!PanelControl(hwnd,4) && !PanelControl(hwnd,5),"Paging controls must be removed");
+        Check(PanelControl(hwnd,299) && !PanelControl(hwnd,300),"All 200 emoji must exist in one scrollable list");
         Check(SymbolPanelTestAccess::unavailable(panel),"Invalid color render DC must fail safely");
         CheckDrawState(hwnd,100);
         if (argc>1) {
             Render(hwnd,std::filesystem::path(argv[1])/L"emoji-color-page1.bmp",true);
-            for (int page=2;page<=5;++page) {
-                Click(hwnd,5);
-                Render(hwnd,std::filesystem::path(argv[1])/(L"emoji-color-page"+std::to_wstring(page)+L".bmp"),true);
-            }
-            for (int page=5;page>1;--page) Click(hwnd,4);
+            Scroll(hwnd,SB_BOTTOM);
+            Render(hwnd,std::filesystem::path(argv[1])/L"emoji-color-bottom.bmp",true);
+            Scroll(hwnd,SB_TOP);
             SymbolPanelTestAccess::palette(panel,RGB(245,245,245),RGB(32,32,32));
             Render(hwnd,std::filesystem::path(argv[1])/L"emoji-color-dark.bmp",true);
             SymbolPanelTestAccess::palette(panel,RGB(0,0,0),RGB(255,255,255));
@@ -243,24 +341,71 @@ int wmain(int argc,wchar_t** argv) {
             Render(hwnd,std::filesystem::path(argv[1])/L"emoji-high-contrast-fallback.bmp",false,true);
             SymbolPanelTestAccess::contrast(panel,false);
         }
-        // Visit every emoji through the rendered pages, including the partial last page.
+        // All entries exist at once; scrolling reuses HWNDs and does not paginate.
         size_t seen=0;
-        do {
-            for (UINT id=100;GetDlgItem(hwnd,id);++id) {
-                Check(Label(GetDlgItem(hwnd,id))==emojis.items[seen].label,"Emoji paging repeats or loses entries");
-                ++seen;
+        for (UINT id=100;PanelControl(hwnd,id);++id) {
+            Check(Label(PanelControl(hwnd,id))==emojis.items[seen].label,"Emoji list repeats or loses entries"); ++seen;
+        }
+        Check(seen==200,"Emoji scroll list omitted entries");
+        const HWND firstEmoji=PanelControl(hwnd,100), lastEmoji=PanelControl(hwnd,299);
+        SendMessageW(firstEmoji,WM_MOUSEWHEEL,MAKEWPARAM(0,static_cast<WORD>(-WHEEL_DELTA)),0);
+        Check(SymbolPanelTestAccess::offset(panel)>0 && GetFocus()==host,"Wheel over an emoji must scroll without moving focus");
+        Scroll(hwnd,SB_BOTTOM);
+        RECT last{},viewport{}; GetWindowRect(lastEmoji,&last); GetWindowRect(PanelControl(hwnd,10),&viewport);
+        Check(last.top>=viewport.top && last.bottom<=viewport.bottom &&
+            PanelControl(hwnd,100)==firstEmoji && PanelControl(hwnd,299)==lastEmoji,"Scroll bottom lost items or rebuilt HWNDs");
+        Scroll(hwnd,SB_TOP);
+        SCROLLBARINFO topBar{sizeof(topBar)};
+        Check(GetScrollBarInfo(ScrollControl(hwnd),OBJID_CLIENT,&topBar)!=FALSE,"Cannot read native scrollbar geometry");
+        const auto topPixels=Render(ScrollControl(hwnd),(argc>1 ? std::filesystem::path(argv[1]) : profile)/L"scroll-top.bmp");
+        Scroll(hwnd,SB_BOTTOM);
+        SCROLLBARINFO bottomBar{sizeof(bottomBar)};
+        Check(GetScrollBarInfo(ScrollControl(hwnd),OBJID_CLIENT,&bottomBar)!=FALSE &&
+            bottomBar.xyThumbTop>topBar.xyThumbTop,"Native scrollbar thumb must follow content scrolling");
+        const auto bottomPixels=Render(ScrollControl(hwnd),(argc>1 ? std::filesystem::path(argv[1]) : profile)/L"scroll-bottom.bmp");
+        Check(topPixels!=bottomPixels,"Scrollbar painting must visibly move its thumb with content");
+        RECT scrollRect{}; GetClientRect(ScrollControl(hwnd),&scrollRect);
+        const int width=scrollRect.right,height=scrollRect.bottom,arrow=topBar.dxyLineButton;
+        for (const auto& pixels : {topPixels,bottomPixels}) for (int start : {0,height-arrow}) {
+            size_t nonBlack=0;
+            for (int y=start;y<start+arrow;++y) for (int x=0;x<width;++x) {
+                const auto index=(static_cast<size_t>(y)*width+x)*4;
+                if (std::max({pixels[index],pixels[index+1],pixels[index+2]})>100) ++nonBlack;
             }
-            if (!IsWindowEnabled(GetDlgItem(hwnd,5))) break;
-            Click(hwnd,5);
-        } while (true);
-        Check(seen==200,"Emoji paging omitted entries");
-        SendMessageW(hwnd,WM_COMMAND,MAKEWPARAM(100,BN_CLICKED),reinterpret_cast<LPARAM>(GetDlgItem(hwnd,1)));
+            Check(nonBlack>static_cast<size_t>(width*arrow/4),"Scrollbar arrows must not render as black blocks");
+        }
+        Scroll(hwnd,SB_TOP);
+        ScrollArrow(ScrollControl(hwnd),host,height-5);
+        Check(SymbolPanelTestAccess::offset(panel)>0,"Native scrollbar arrow click must scroll content");
+        Scroll(hwnd,SB_TOP);
+        Scroll(hwnd,SB_PAGEDOWN);
+        Check(SymbolPanelTestAccess::offset(panel)>0,"Native scrollbar page request must scroll content");
+        SCROLLINFO nativeInfo{sizeof(nativeInfo),SIF_POS};
+        Check(GetScrollInfo(ScrollControl(hwnd),SB_CTL,&nativeInfo)!=FALSE &&
+            nativeInfo.nPos==SymbolPanelTestAccess::offset(panel),"Native thumb and content offsets differ");
+        Scroll(hwnd,SB_TOP);
+        RedrawWindow(hwnd,nullptr,nullptr,RDW_INVALIDATE|RDW_UPDATENOW|RDW_ALLCHILDREN);
+        const unsigned renders=SymbolPanelTestAccess::renders(panel);
+        Check(renders>0,"Emoji cache must have rasterized visible glyphs");
+        RedrawWindow(hwnd,nullptr,nullptr,RDW_INVALIDATE|RDW_UPDATENOW|RDW_ALLCHILDREN);
+        Check(SymbolPanelTestAccess::renders(panel)==renders,"Warm repaint rerasterized emoji");
+        SendMessageW(hwnd,WM_COMMAND,MAKEWPARAM(100,BN_CLICKED),reinterpret_cast<LPARAM>(PanelControl(hwnd,1)));
         Check(calls==0,"Unrelated/stale control command accepted");
         Popup(panel,host,1);
-        Check(SymbolPanelTestAccess::page(panel)==0,"Category selection must reset page");
+        Check(SymbolPanelTestAccess::offset(panel)==0,"Category selection must reset scroll position");
         Click(hwnd,100);
         Check(calls==1 && chosen==emojis.items[0].text && !panel.visible() && GetFocus()==host,"Emoji click must insert once and close");
         Click(hwnd,100); Check(calls==1,"Stale click ignored");
+        {
+            SymbolPanel lastPanel; std::wstring lastText;
+            Check(lastPanel.show(host,anchor,[&](const std::wstring& text) { lastText=text; }),"Last emoji panel show");
+            SymbolPanelTestAccess::category(lastPanel,17);
+            const HWND lastWindow=SymbolPanelTestAccess::window(lastPanel);
+            Scroll(lastWindow,SB_BOTTOM);
+            Click(lastWindow,299);
+            Check(lastText==emojis.items.back().text && !lastPanel.visible() && GetFocus()==host,
+                "Scroll-bottom selection lost the last emoji or host focus");
+        }
         {
             SymbolPanel fallback; std::wstring fallbackText;
             Check(fallback.show(host,anchor,[&](const std::wstring& text) { fallbackText=text; }),"Fallback panel show");
@@ -322,7 +467,7 @@ int wmain(int argc,wchar_t** argv) {
         Popup(*disposable,host,4);
         Check(!popupPanel && calls==2 && GetFocus()==host,"Panel destruction during nested popup was unsafe");
         DestroyWindow(host);
-        std::cout<<"Symbol resources, native category popup, paging, focus, drag, DPI and cancellation tests passed\n";
+        std::cout<<"Symbol resources, scroll inventory, emoji cache, focus, drag, DPI and cancellation tests passed\n";
         return 0;
     } catch (const std::exception& error) { std::cerr<<error.what()<<'\n'; return 1; }
 }

@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../SettingsModern/DiagnosticSettings.cs" Link="DiagnosticSettings.cs" />
+    <Compile Include="../SettingsModern/SharedSettingsFile.cs" Link="SharedSettingsFile.cs" />
     <EmbeddedResource Include="../../../../DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json"
                       LogicalName="KeyKey.ModelManifest.json"/>
   </ItemGroup>

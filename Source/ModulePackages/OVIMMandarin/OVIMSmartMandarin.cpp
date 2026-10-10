@@ -1070,6 +1070,10 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo, OVLoaderService* loader
             // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "pragma execution failed" << endl;
         }                
 
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        userDB->execute("CREATE TABLE IF NOT EXISTS keykey_learning_metadata (id INTEGER PRIMARY KEY CHECK(id=1), generation INTEGER NOT NULL)");
+        userDB->execute("INSERT OR IGNORE INTO keykey_learning_metadata VALUES(1,0)");
+#endif
         // close userDB, now we'll attach the new stuff
         delete userDB;
 

@@ -32,6 +32,11 @@
 #include "PVPropertyList.h"
 #include <iostream>
 #include <sstream>
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+#include "SharedFileAccess.h"
+#include <memory>
+#include <mutex>
+#endif
 #include <string>
 #include <expat.h>
 #include <stdio.h>
@@ -93,7 +98,13 @@ namespace OpenVanilla {
             XML_SetUserData(parser, &parsedData);
 
 			try {
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+                if (XML_Parse(parser,buf,static_cast<int>(readSize),1)==XML_STATUS_ERROR) {
+                    XML_ParserFree(parser); return nullptr;
+                }
+#else
 				XML_Parse(parser, buf, (int)readSize, 1);
+#endif
 			}
 			catch (...) {
 				XML_ParserFree(parser);
@@ -201,11 +212,21 @@ namespace OpenVanilla {
     
 PVPlistValue* PVPropertyList::ParsePlistFromString(const char* stringData)
 {
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+    // The legacy Expat adapter has a static character-data buffer.
+    static std::mutex parserMutex;
+    std::lock_guard<std::mutex> guard(parserMutex);
+#endif
     return PVExpatPlistParser::Parse(stringData, strlen(stringData));  
 }
     
 PVPlistValue* PVPropertyList::ParsePlist(const string& filename)
 {
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+    std::string data;
+    if (!KeyKey::WindowsTsf::ReadSharedSettingsFile(OVUTF16::FromUTF8(filename),data) || data.empty()) return nullptr;
+    return ParsePlistFromString(data.c_str());
+#else
     pair<char*, size_t> data = OVFileHelper::SlurpFile(filename);
     if (!data.first || !data.second) {
         return 0;
@@ -214,7 +235,40 @@ PVPlistValue* PVPropertyList::ParsePlist(const string& filename)
     PVPlistValue* dictValue = PVExpatPlistParser::Parse(data.first, data.second);  
     free(data.first);
     return dictValue;
+#endif
 }
+
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+bool PVPropertyList::WriteMergedPlist(const string& filename,PVPlistValue* root,PVPlistValue* baseline)
+{
+    using namespace KeyKey::WindowsTsf;
+    if (!root || root->type()!=PVPlistValue::Dictionary) return false;
+    const auto path=OVUTF16::FromUTF8(filename);
+    SettingsFileLock lock(path);
+    if (!lock) return false;
+    std::string source;
+    const bool existing=ReadSharedSettingsFile(path,source);
+    if (!existing && GetLastError()!=ERROR_FILE_NOT_FOUND && GetLastError()!=ERROR_PATH_NOT_FOUND) return false;
+    std::unique_ptr<PVPlistValue> latest(existing ? ParsePlistFromString(source.c_str()) : new PVPlistValue(PVPlistValue::Dictionary));
+    if (!latest || latest->type()!=PVPlistValue::Dictionary) return false;
+    auto equal=[](PVPlistValue* left,PVPlistValue* right) { return left && right ? *left==*right : left==right; };
+    std::set<std::string> keys;
+    for (const auto& key : root->dictionaryKeys()) keys.insert(key);
+    if (baseline) for (const auto& key : baseline->dictionaryKeys()) keys.insert(key);
+    bool changed=false;
+    for (const auto& key : keys) {
+        auto* old=baseline ? baseline->valueForKey(key) : nullptr;
+        auto* local=root->valueForKey(key);
+        auto* disk=latest->valueForKey(key);
+        if (equal(local,old) || !equal(disk,old)) continue;
+        latest->setKeyValue(key,local); changed=true;
+    }
+    if (!changed) return true;
+    std::ostringstream output;
+    output<<"<?xml version=\"1.0\" encoding=\"UTF-8\"?><plist version=\"1.0\">"<<*latest<<"</plist>";
+    return WriteSharedSettingsFile(path,output.str());
+}
+#endif
 
 void PVPropertyList::WritePlist(const string& filename, PVPlistValue* rootDictionary)
 {

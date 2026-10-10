@@ -67,7 +67,7 @@
               </StackPanel>
               <TextBlock Text="大小" FontWeight="SemiBold" />
               <ComboBox x:Name="CandidateScale" />
-              <TextBlock Text="跟隨 Windows 時，會使用目前顯示器的縮放比例。" Opacity="0.7" Margin="0,0,0,12" />
+              <TextBlock Text="也套用到符號表與 Emoji；跟隨 Windows 時，使用目前顯示器的縮放比例。" TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,12" />
               <TextBlock Text="反白顏色" FontWeight="SemiBold" />
               <ComboBox x:Name="HighlightColor" />
             </StackPanel>

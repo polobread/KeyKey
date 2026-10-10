@@ -107,6 +107,7 @@ add_library(keykey_core STATIC
 )
 target_compile_features(keykey_core PUBLIC cxx_std_17)
 target_compile_definitions(keykey_core PUBLIC
+    KEYKEY_WINDOWS_SHARED_DATA
     OV_USE_SQLITE
     OVIMGENERIC_IDENTIFIER_PREFIX=\"Generic\"
     OVIMMANDARIN_IDENTIFIER=\"Mandarin\"
@@ -131,7 +132,7 @@ target_include_directories(keykey_core PUBLIC
     "${KEYKEY_SOURCE}/ModulePackages/OVIMGeneric"
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-target_link_libraries(keykey_core PUBLIC keykey_third_party)
+target_link_libraries(keykey_core PUBLIC keykey_third_party shcore)
 set_target_properties(keykey_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(MSVC)
     target_compile_options(keykey_core PRIVATE /utf-8)
@@ -189,7 +190,7 @@ if(MSVC)
     target_compile_options(KeyKeyTsf PRIVATE /W4 /permissive- /utf-8)
 endif()
 target_link_libraries(KeyKeyTsf PRIVATE
-    d2d1 dwrite
+    d2d1 dwrite uxtheme
     keykey_core
     advapi32
     gdi32
@@ -298,6 +299,10 @@ if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
 endif()
 
 if(BUILD_TESTING)
+    add_executable(KeyKeySharedDataProtectionTest SharedDataProtectionTest.cpp UserDataStore.cpp)
+    target_link_libraries(KeyKeySharedDataProtectionTest PRIVATE keykey_core shell32 user32)
+    target_compile_options(KeyKeySharedDataProtectionTest PRIVATE /utf-8)
+    add_test(NAME KeyKeySharedDataProtection COMMAND KeyKeySharedDataProtectionTest)
     add_executable(KeyKeyDiagnosticsTest DiagnosticsTest.cpp)
     target_link_libraries(KeyKeyDiagnosticsTest PRIVATE keykey_core shell32 user32)
     add_test(NAME KeyKeyDiagnostics COMMAND KeyKeyDiagnosticsTest)
@@ -306,7 +311,7 @@ if(BUILD_TESTING)
     target_include_directories(KeyKeyPopupLifecycleTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
     target_compile_features(KeyKeyPopupLifecycleTest PRIVATE cxx_std_17)
     target_compile_options(KeyKeyPopupLifecycleTest PRIVATE /utf-8)
-    target_link_libraries(KeyKeyPopupLifecycleTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
+    target_link_libraries(KeyKeyPopupLifecycleTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme)
     add_test(NAME KeyKeyPopupLifecycle COMMAND KeyKeyPopupLifecycleTest)
     set_tests_properties(KeyKeyPopupLifecycle PROPERTIES RUN_SERIAL TRUE)
     add_executable(KeyKeyTsfOutputBehaviorTest TsfOutputBehaviorTest.cpp
@@ -315,7 +320,7 @@ if(BUILD_TESTING)
     target_compile_definitions(KeyKeyTsfOutputBehaviorTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
     target_compile_options(KeyKeyTsfOutputBehaviorTest PRIVATE /utf-8)
     target_include_directories(KeyKeyTsfOutputBehaviorTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
-    target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
+    target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme)
     add_dependencies(KeyKeyTsfOutputBehaviorTest keykey_symbol_resources keykey_database_deploy)
     add_test(NAME KeyKeyTsfOutputCommitBehavior COMMAND KeyKeyTsfOutputBehaviorTest)
     add_executable(KeyKeyFrontendPreferencesTest FrontendPreferencesTest.cpp)
@@ -334,7 +339,7 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_BINARY_DIR}/generated" "${CMAKE_CURRENT_SOURCE_DIR}")
     target_compile_features(KeyKeySymbolPanelTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeySymbolPanelTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
-    target_link_libraries(KeyKeySymbolPanelTest PRIVATE user32 gdi32 advapi32 d2d1 dwrite)
+    target_link_libraries(KeyKeySymbolPanelTest PRIVATE keykey_core shell32 user32 gdi32 advapi32 d2d1 dwrite uxtheme)
     add_test(NAME KeyKeySymbolPanelResourcesAndFocus COMMAND KeyKeySymbolPanelTest)
     add_executable(KeyKeyOutputConversionTest OutputConversionTest.cpp)
     target_link_libraries(KeyKeyOutputConversionTest PRIVATE keykey_core)
@@ -373,7 +378,7 @@ if(BUILD_TESTING)
     if(MSVC)
         target_compile_options(KeyKeyTsfSystemTrayTest PRIVATE /W4 /permissive- /utf-8)
     endif()
-    target_link_libraries(KeyKeyTsfSystemTrayTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
+    target_link_libraries(KeyKeyTsfSystemTrayTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme)
     add_dependencies(KeyKeyTsfSystemTrayTest KeyKeyTsf keykey_database_deploy)
     add_test(NAME KeyKeyTsfSystemTrayModes COMMAND KeyKeyTsfSystemTrayTest)
 

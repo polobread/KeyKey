@@ -38,6 +38,7 @@ std::wstring SmartMandarinPreferencesPath();
 std::wstring AssociatedPhrasePreferencesPath();
 
 FrontendSettings LoadFrontendSettings();
+UINT ContentDpiForScale(UINT hostDpi, HMONITOR monitor, int scalePercent);
 bool SaveSimplifiedOutputPreference(bool enabled);
 std::string SmartMandarinSettingsSignature();
 std::string LoadInputMethodPreference(const std::string& fallback);

@@ -1,17 +1,22 @@
 #include "SymbolPanel.h"
 #include <SymbolResources.generated.h>
 #include "ModuleState.h"
+#include "FrontendSettings.h"
 #include <algorithm>
 #include <mutex>
+#include <map>
+#include <tuple>
 #include <windowsx.h>
 #include <d2d1.h>
 #include <dwrite.h>
 #include <wrl/client.h>
+#include <uxtheme.h>
 
 namespace KeyKey::WindowsTsf {
 namespace {
 constexpr wchar_t kClass[] = L"chichi77.KeyKey.TSF.SymbolPanel";
-constexpr UINT kCategory = 1, kClose = 3, kPreviousPage = 4, kNextPage = 5, kFirstItem = 100;
+constexpr wchar_t kContentClass[] = L"chichi77.KeyKey.TSF.SymbolContent";
+constexpr UINT kCategory = 1, kClose = 3, kFirstItem = 100;
 constexpr int kTitleHeight = 30, kGap = 6, kToolbarHeight = 34, kCellSize = 34;
 std::once_flag registration;
 bool registered = false;
@@ -25,6 +30,7 @@ struct ScopedDC {
 LRESULT CALLBACK PassiveButtonProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     auto original = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (msg == WM_MOUSEACTIVATE) return MA_NOACTIVATE;
+    if (msg == WM_MOUSEWHEEL) return SendMessageW(GetParent(hwnd), msg, wp, lp);
     if (msg == WM_LBUTTONDOWN) {
         if (!IsWindowEnabled(hwnd)) return 0;
         SetCapture(hwnd); SendMessageW(hwnd, BM_SETSTATE, TRUE, 0); return 0;
@@ -40,6 +46,12 @@ LRESULT CALLBACK PassiveButtonProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     }
     if (msg == WM_CAPTURECHANGED) SendMessageW(hwnd, BM_SETSTATE, FALSE, 0);
     return CallWindowProcW(original, hwnd, msg, wp, lp);
+}
+LRESULT CALLBACK PassiveScrollProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    if (msg == WM_MOUSEACTIVATE) return MA_NOACTIVATE;
+    if (msg == WM_MOUSEWHEEL) return SendMessageW(GetParent(hwnd),msg,wp,lp);
+    const auto original=reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hwnd,GWLP_USERDATA));
+    return CallWindowProcW(original,hwnd,msg,wp,lp);
 }
 bool DarkAppearance() {
     DWORD light = 1, bytes = sizeof(light);
@@ -57,6 +69,9 @@ bool HighContrast() {
 }
 }
 struct SymbolPanel::ColorEmojiRenderer {
+    using Key = std::tuple<std::wstring, int, int, UINT, COLORREF, COLORREF>;
+    std::map<Key, HBITMAP> cache;
+    HDC cacheDC = nullptr;
     Microsoft::WRL::ComPtr<ID2D1Factory> factory;
     Microsoft::WRL::ComPtr<IDWriteFactory> writeFactory;
     Microsoft::WRL::ComPtr<IDWriteTextFormat> format;
@@ -64,14 +79,21 @@ struct SymbolPanel::ColorEmojiRenderer {
     Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> brush;
     bool unavailable = false;
     unsigned recreations = 0;
+    unsigned rasterizations = 0;
+
+    void clearCache() {
+        for (const auto& entry : cache) DeleteObject(entry.second);
+        cache.clear();
+    }
+    ~ColorEmojiRenderer() { clearCache(); if (cacheDC) DeleteDC(cacheDC); }
 
     void retry() {
-        if (unavailable) { brush.Reset(); target.Reset(); }
+        if (unavailable) { brush.Reset(); target.Reset(); clearCache(); }
         unavailable = false;
         recreations = 0;
     }
 
-    bool draw(HDC dc, const RECT& bounds, const std::wstring& text, UINT dpi,
+    bool rasterize(HDC dc, const RECT& bounds, const std::wstring& text, UINT dpi,
               COLORREF background, COLORREF foreground) {
         if (unavailable || !dc || bounds.right <= bounds.left || bounds.bottom <= bounds.top) return false;
         auto fail = [&] { unavailable = true; return false; };
@@ -117,6 +139,38 @@ struct SymbolPanel::ColorEmojiRenderer {
         recreations = 0;
         return true;
     }
+
+    bool draw(HDC dc, const RECT& bounds, const std::wstring& text, UINT dpi,
+              COLORREF background, COLORREF foreground) {
+        const int width = bounds.right - bounds.left, height = bounds.bottom - bounds.top;
+        if (unavailable || !dc || width <= 0 || height <= 0) return false;
+        if (!cacheDC) cacheDC = CreateCompatibleDC(dc);
+        if (!cacheDC) return false;
+        const Key key{text, width, height, dpi, background, foreground};
+        auto found = cache.find(key);
+        if (found == cache.end() && cache.size() >= 256) { clearCache(); found = cache.end(); }
+        HBITMAP bitmap = found == cache.end() ? nullptr : found->second;
+        const bool fresh = !bitmap;
+        if (fresh) {
+            BITMAPINFO info{}; info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+            info.bmiHeader.biWidth = width; info.bmiHeader.biHeight = -height;
+            info.bmiHeader.biPlanes = 1; info.bmiHeader.biBitCount = 32;
+            info.bmiHeader.biCompression = BI_RGB;
+            void* pixels = nullptr;
+            bitmap = CreateDIBSection(dc, &info, DIB_RGB_COLORS, &pixels, nullptr, 0);
+            if (!bitmap) return false;
+        }
+        const auto previous = SelectObject(cacheDC, bitmap);
+        RECT local{0, 0, width, height};
+        const bool rendered = !fresh || rasterize(cacheDC, local, text, dpi, background, foreground);
+        const bool copied = rendered && BitBlt(dc, bounds.left, bounds.top, width, height, cacheDC, 0, 0, SRCCOPY);
+        SelectObject(cacheDC, previous);
+        if (fresh) {
+            if (rendered) { cache.emplace(key, bitmap); ++rasterizations; }
+            else DeleteObject(bitmap);
+        }
+        return copied;
+    }
 };
 
 SymbolPanel::SymbolPanel() = default;
@@ -124,7 +178,9 @@ bool SymbolPanel::drawColorEmoji(HDC dc, const RECT& bounds, const std::wstring&
                                  COLORREF background, COLORREF foreground) {
     if (highContrast_) return false;
     if (!colorEmoji_) colorEmoji_ = std::make_unique<ColorEmojiRenderer>();
-    return colorEmoji_->draw(dc, bounds, text, dpi_, background, foreground);
+    const bool drawn = colorEmoji_->draw(dc, bounds, text, dpi_, background, foreground);
+    emojiRasterizations_ = colorEmoji_->rasterizations;
+    return drawn;
 }
 SymbolPanel::~SymbolPanel() {
     *alive_ = false;
@@ -136,8 +192,9 @@ SymbolPanel::~SymbolPanel() {
     if (background_) DeleteObject(background_);
 }
 int SymbolPanel::scaled(int value) const { return MulDiv(value, dpi_, 96); }
-size_t SymbolPanel::pageSize() const { return capacity_; }
 void SymbolPanel::updateFonts() {
+    if (fontDpi_ == dpi_ && font_ && symbolFont_ && emojiFont_) return;
+    if (colorEmoji_) colorEmoji_->clearCache();
     auto font = [&](HFONT& target, int size, const wchar_t* face) {
         if (target) DeleteObject(target);
         target = CreateFontW(-scaled(size), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
@@ -147,6 +204,7 @@ void SymbolPanel::updateFonts() {
     font(font_, 16, L"Segoe UI");
     font(symbolFont_, 22, L"Segoe UI");
     font(emojiFont_, 25, L"Segoe UI Emoji");
+    fontDpi_ = dpi_;
 }
 void SymbolPanel::position(const RECT& desired) {
     MONITORINFO monitor{sizeof(monitor)};
@@ -169,10 +227,12 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
         wc.hInstance = g_module; wc.lpfnWndProc = WindowProc;
         wc.hCursor = LoadCursorW(nullptr, IDC_ARROW); wc.lpszClassName = kClass;
         registered = RegisterClassExW(&wc) || GetLastError() == ERROR_CLASS_ALREADY_EXISTS;
+        wc.lpfnWndProc = ContentProc; wc.lpszClassName = kContentClass;
+        registered = registered && (RegisterClassExW(&wc) || GetLastError() == ERROR_CLASS_ALREADY_EXISTS);
     });
     if (!registered) return false;
     if (!window_) window_ = CreateWindowExW(WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
-        kClass, L"\x7B26\x865F\x8868", WS_POPUP | WS_BORDER,
+        kClass, L"\x7B26\x865F\x8868", WS_POPUP | WS_BORDER | WS_CLIPCHILDREN,
         0, 0, 1, 1, owner, nullptr, g_module, this);
     if (!window_) return false;
     SetWindowLongPtrW(window_, GWLP_HWNDPARENT, reinterpret_cast<LONG_PTR>(owner));
@@ -180,9 +240,11 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
     RECT reference = anchor;
     if (hasPosition_) reference = {position_.x,position_.y,position_.x+1,position_.y+1};
     if (!GetMonitorInfoW(MonitorFromRect(&reference, MONITOR_DEFAULTTONEAREST), &monitor)) return false;
-    const UINT targetDpi = hasPosition_ ? dpi_ :
+    const UINT targetDpi = hasPosition_ ? hostDpi_ :
         owner ? GetDpiForWindow(owner) : GetDpiForWindow(window_);
-    dpi_ = targetDpi ? targetDpi : 96;
+    hostDpi_ = targetDpi ? targetDpi : 96;
+    scalePercent_ = LoadFrontendSettings().candidateScalePercent;
+    dpi_ = ContentDpiForScale(hostDpi_,MonitorFromRect(&reference,MONITOR_DEFAULTTONEAREST),scalePercent_);
     updateFonts();
     if (colorEmoji_) colorEmoji_->retry();
     foreground_ = DarkAppearance() ? RGB(245,245,245) : GetSysColor(COLOR_WINDOWTEXT);
@@ -190,13 +252,13 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
     backgroundColor_ = DarkAppearance() ? RGB(32,32,32) : GetSysColor(COLOR_WINDOW);
     if (background_) DeleteObject(background_);
     background_ = CreateSolidBrush(backgroundColor_);
-    const int width = std::min(scaled(420), static_cast<int>(monitor.rcWork.right-monitor.rcWork.left));
+    const int width = std::min(scaled(440), static_cast<int>(monitor.rcWork.right-monitor.rcWork.left));
     const bool list = BuiltinSymbolCategories()[category_].layout == SymbolLayout::List;
     const int height = std::min(scaled(list ? 430 : 310), static_cast<int>(monitor.rcWork.bottom-monitor.rcWork.top));
     const int x = hasPosition_ ? position_.x : monitor.rcWork.right-width-scaled(12);
     const int y = hasPosition_ ? position_.y : monitor.rcWork.bottom-height-scaled(200);
     position({x,y,x+width,y+height});
-    page_ = 0; selection_ = std::move(selection);
+    scrollOffset_ = 0; wheelRemainder_ = 0; selection_ = std::move(selection);
     rebuild(); ShowWindow(window_, SW_SHOWNOACTIVATE); return true;
 }
 void SymbolPanel::hide() {
@@ -212,12 +274,21 @@ void SymbolPanel::hide() {
         else ShowWindow(window_, SW_HIDE);
     }
 }
-void SymbolPanel::page(int delta) {
-    const size_t count = BuiltinSymbolCategories()[category_].items.size();
-    const size_t pages = std::max<size_t>(1,(count+pageSize()-1)/pageSize());
-    if (delta<0 && page_>0) --page_;
-    if (delta>0 && page_+1<pages) ++page_;
-    rebuild();
+void SymbolPanel::scrollTo(int offset) {
+    if (!content_ || !viewport_) return;
+    scrollOffset_ = std::clamp(offset, 0, std::max(0, contentHeight_ - viewportHeight_));
+    SetWindowPos(content_, nullptr, 0, -scrollOffset_, 0, 0,
+        SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE);
+    SCROLLINFO info{sizeof(info), SIF_POS}; info.nPos = scrollOffset_;
+    SetScrollInfo(scrollbar_, SB_CTL, &info, TRUE);
+}
+void SymbolPanel::scrollWheel(int delta) {
+    UINT lines = 3; SystemParametersInfoW(SPI_GETWHEELSCROLLLINES, 0, &lines, 0);
+    wheelRemainder_ += delta;
+    const int steps = wheelRemainder_ / WHEEL_DELTA;
+    wheelRemainder_ %= WHEEL_DELTA;
+    const int distance = lines == WHEEL_PAGESCROLL ? viewportHeight_ : rowStep_ * static_cast<int>(lines);
+    scrollTo(scrollOffset_ - steps * distance);
 }
 void SymbolPanel::chooseCategory() {
     HMENU menu = CreatePopupMenu();
@@ -240,50 +311,128 @@ void SymbolPanel::chooseCategory() {
     // TrackPopupMenu runs a nested message loop: focus/context may have been cancelled.
     if (current!=window_ || !IsWindow(current) || !visible() || !selection_ ||
         generation!=generation_ || !selected || selected>categories.size()) return;
-    category_ = selected-1; page_ = 0;
+    category_ = selected-1; scrollOffset_ = 0; wheelRemainder_ = 0;
     RECT panel{}; GetWindowRect(window_,&panel);
     panel.bottom = panel.top+scaled(categories[category_].layout==SymbolLayout::List ? 430 : 310);
     position(panel); rebuild();
 }
 void SymbolPanel::rebuild() {
-    for (HWND control : controls_) DestroyWindow(control);
-    controls_.clear();
     RECT rect{}; GetClientRect(window_,&rect);
     const int gap=scaled(kGap), toolbar=scaled(kToolbarHeight), title=scaled(kTitleHeight);
-    auto button = [&](UINT id,const std::wstring& label,int x,int y,int w,int h) {
-        HWND control=CreateWindowExW(WS_EX_NOACTIVATE,L"BUTTON",label.c_str(),
-            WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,x,y,std::max(1,w),std::max(1,h),window_,
-            reinterpret_cast<HMENU>(static_cast<UINT_PTR>(id)),g_module,nullptr);
+    auto button = [&](HWND parent,UINT id,const std::wstring& label,int x,int y,int w,int h) {
+        HWND control=GetDlgItem(parent,id);
+        if (!control) {
+            control=CreateWindowExW(WS_EX_NOACTIVATE,L"BUTTON",label.c_str(),
+                WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,x,y,std::max(1,w),std::max(1,h),parent,
+                reinterpret_cast<HMENU>(static_cast<UINT_PTR>(id)),g_module,nullptr);
+            if (!control) return;
+            auto original=reinterpret_cast<WNDPROC>(SetWindowLongPtrW(control,GWLP_WNDPROC,
+                reinterpret_cast<LONG_PTR>(PassiveButtonProc)));
+            SetWindowLongPtrW(control,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(original));
+            controls_.push_back(control);
+        } else {
+            SetWindowTextW(control,label.c_str());
+            SetWindowPos(control,nullptr,x,y,std::max(1,w),std::max(1,h),SWP_NOACTIVATE|SWP_NOZORDER);
+        }
         SendMessageW(control,WM_SETFONT,reinterpret_cast<WPARAM>(font_),FALSE);
-        auto original=reinterpret_cast<WNDPROC>(SetWindowLongPtrW(control,GWLP_WNDPROC,
-            reinterpret_cast<LONG_PTR>(PassiveButtonProc)));
-        SetWindowLongPtrW(control,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(original));
-        controls_.push_back(control);
     };
     const auto& category=BuiltinSymbolCategories()[category_];
-    button(kClose,L"\x00D7",rect.right-title-gap,gap/2,title,title-gap);
-    button(kCategory,category.name+L"  \x25BE",gap,title+gap,rect.right-2*gap,toolbar);
-    const int top=title+toolbar+2*gap, footer=rect.bottom-toolbar-gap;
-    const int contentHeight=std::max(1,footer-top-gap), contentWidth=std::max(1,static_cast<int>(rect.right)-2*gap);
+    button(window_,kClose,L"\x00D7",rect.right-title-gap,gap/2,title,title-gap);
+    button(window_,kCategory,category.name+L"  \x25BE",gap,title+gap,rect.right-2*gap,toolbar);
+    const int top=title+toolbar+2*gap;
+    viewportHeight_=std::max(1,static_cast<int>(rect.bottom)-top-gap);
+    if (!viewport_) viewport_=CreateWindowExW(WS_EX_NOACTIVATE,kContentClass,L"",
+        WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,gap,top,std::max(1,static_cast<int>(rect.right)-2*gap),
+        viewportHeight_,window_,reinterpret_cast<HMENU>(10),g_module,this);
+    if (!viewport_) return;
+    SetWindowPos(viewport_,nullptr,gap,top,std::max(1,static_cast<int>(rect.right)-2*gap),
+        viewportHeight_,SWP_NOACTIVATE|SWP_NOZORDER);
+    if (!content_) content_=CreateWindowExW(WS_EX_NOACTIVATE,kContentClass,L"",
+        WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,0,0,1,1,viewport_,reinterpret_cast<HMENU>(11),g_module,this);
+    if (!content_) return;
+    if (!scrollbar_) {
+        // A client-area control owns its painting; the host's themed nonclient
+        // scrollbar can leave invisible thumbs or black arrow rectangles here.
+        scrollbar_=CreateWindowExW(WS_EX_NOACTIVATE,L"SCROLLBAR",L"",WS_CHILD|WS_VISIBLE|SBS_VERT,
+            0,0,1,1,viewport_,reinterpret_cast<HMENU>(12),g_module,nullptr);
+        if (!scrollbar_) return;
+        // Keep a full, visible thumb and arrows even when the host uses thin
+        // overlay scrollbars. System colors still follow high-contrast settings.
+        SetWindowTheme(scrollbar_,L"",L"");
+        const auto original=SetWindowLongPtrW(scrollbar_,GWLP_WNDPROC,reinterpret_cast<LONG_PTR>(PassiveScrollProc));
+        SetWindowLongPtrW(scrollbar_,GWLP_USERDATA,original);
+    }
+    // Keep the scrollbar present even when a small category fits, so columns
+    // do not shift when changing categories.
+    RECT viewport{}; GetClientRect(viewport_,&viewport);
+    const int scrollbarWidth=std::min(static_cast<int>(viewport.right)-1,
+        GetSystemMetricsForDpi(SM_CXVSCROLL,hostDpi_));
+    const int contentWidth=std::max(1,static_cast<int>(viewport.right)-scrollbarWidth);
+    SetWindowPos(scrollbar_,nullptr,contentWidth,0,std::max(1,scrollbarWidth),viewportHeight_,SWP_NOACTIVATE|SWP_NOZORDER);
     const bool list=category.layout==SymbolLayout::List;
     columns_=list ? 1 : std::max<size_t>(1,std::min<size_t>(10,(contentWidth+gap)/(scaled(kCellSize)+gap)));
-    const size_t rows=std::max<size_t>(1,std::min<size_t>(list ? 8 : 5,(contentHeight+gap)/(scaled(list ? 32 : kCellSize)+gap)));
-    capacity_=columns_*rows;
-    const size_t pages=std::max<size_t>(1,(category.items.size()+capacity_-1)/capacity_);
-    page_=std::min(page_,pages-1);
+    const size_t rows=std::max<size_t>(1,(category.items.size()+columns_-1)/columns_);
     const int cellWidth=(contentWidth-gap*static_cast<int>(columns_-1))/static_cast<int>(columns_);
-    const int cellHeight=list ? (contentHeight-gap*static_cast<int>(rows-1))/static_cast<int>(rows) :
-        std::min(cellWidth,(contentHeight-gap*static_cast<int>(rows-1))/static_cast<int>(rows));
-    for (size_t i=0; i<capacity_ && page_*capacity_+i<category.items.size(); ++i)
-        button(kFirstItem+static_cast<UINT>(i),category.items[page_*capacity_+i].label,
-            gap+static_cast<int>(i%columns_)*(cellWidth+gap),
-            top+static_cast<int>(i/columns_)*(cellHeight+gap),cellWidth,cellHeight);
-    const int pageButton=std::min(scaled(72),std::max(1,(contentWidth-scaled(80))/2));
-    button(kPreviousPage,L"\x4E0A\x4E00\x9801",gap,footer,pageButton,toolbar);
-    button(kNextPage,L"\x4E0B\x4E00\x9801",rect.right-pageButton-gap,footer,pageButton,toolbar);
-    EnableWindow(controls_[controls_.size()-2],page_>0);
-    EnableWindow(controls_.back(),page_+1<pages);
+    const int cellHeight=list ? scaled(32) : std::max(1,std::min(cellWidth,scaled(kCellSize)));
+    rowStep_=cellHeight+gap;
+    contentHeight_=static_cast<int>(rows)*rowStep_-gap;
+    if (renderedCategory_!=category_) {
+        for (HWND control : controls_) if (GetParent(control)==content_) DestroyWindow(control);
+        controls_.erase(std::remove_if(controls_.begin(),controls_.end(),
+            [](HWND control){ return !IsWindow(control); }),controls_.end());
+        renderedCategory_=category_;
+    }
+    SetWindowPos(content_,nullptr,0,0,contentWidth,contentHeight_,SWP_NOACTIVATE|SWP_NOZORDER);
+    for (size_t i=0; i<category.items.size(); ++i)
+        button(content_,kFirstItem+static_cast<UINT>(i),category.items[i].label,
+            static_cast<int>(i%columns_)*(cellWidth+gap),
+            static_cast<int>(i/columns_)*rowStep_,cellWidth,cellHeight);
+    SCROLLINFO info{sizeof(info),SIF_RANGE|SIF_PAGE|SIF_DISABLENOSCROLL};
+    info.nMax=std::max(0,contentHeight_-1); info.nPage=viewportHeight_;
+    SetScrollInfo(scrollbar_,SB_CTL,&info,TRUE);
+    scrollTo(scrollOffset_);
     InvalidateRect(window_,nullptr,TRUE);
+}
+LRESULT CALLBACK SymbolPanel::ContentProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
+    auto self=reinterpret_cast<SymbolPanel*>(GetWindowLongPtrW(hwnd,GWLP_USERDATA));
+    if (msg==WM_NCCREATE) {
+        self=static_cast<SymbolPanel*>(reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams);
+        SetWindowLongPtrW(hwnd,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(self));
+    }
+    if (!self) return DefWindowProcW(hwnd,msg,wp,lp);
+    if (msg==WM_MOUSEACTIVATE) return MA_NOACTIVATE;
+    if (msg==WM_COMMAND || msg==WM_DRAWITEM) return SendMessageW(self->window_,msg,wp,lp);
+    if (msg==WM_MOUSEWHEEL) { if (self->visible() && self->selection_) self->scrollWheel(GET_WHEEL_DELTA_WPARAM(wp)); return 0; }
+    if (msg==WM_VSCROLL && hwnd==self->viewport_ && reinterpret_cast<HWND>(lp)==self->scrollbar_ &&
+        self->visible() && self->selection_) {
+        int offset=self->scrollOffset_;
+        switch (LOWORD(wp)) {
+        case SB_LINEUP: offset-=self->rowStep_; break;
+        case SB_LINEDOWN: offset+=self->rowStep_; break;
+        case SB_PAGEUP: offset-=self->viewportHeight_; break;
+        case SB_PAGEDOWN: offset+=self->viewportHeight_; break;
+        case SB_TOP: offset=0; break;
+        case SB_BOTTOM: offset=self->contentHeight_; break;
+        case SB_THUMBPOSITION:
+        case SB_THUMBTRACK: {
+            SCROLLINFO info{sizeof(info),SIF_TRACKPOS}; GetScrollInfo(self->scrollbar_,SB_CTL,&info);
+            offset=info.nTrackPos; break;
+        }
+        default: return 0;
+        }
+        self->scrollTo(offset); return 0;
+    }
+    if (msg==WM_ERASEBKGND) {
+        RECT rect{}; GetClientRect(hwnd,&rect);
+        if (self->background_) FillRect(reinterpret_cast<HDC>(wp),&rect,self->background_);
+        return 1;
+    }
+    if (msg==WM_PAINT) {
+        PAINTSTRUCT paint{}; HDC dc=BeginPaint(hwnd,&paint);
+        if (self->background_) FillRect(dc,&paint.rcPaint,self->background_);
+        EndPaint(hwnd,&paint); return 0;
+    }
+    return DefWindowProcW(hwnd,msg,wp,lp);
 }
 LRESULT CALLBACK SymbolPanel::WindowProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
     auto self=reinterpret_cast<SymbolPanel*>(GetWindowLongPtrW(hwnd,GWLP_USERDATA));
@@ -299,6 +448,7 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
     case WM_NCDESTROY: {
         HWND destroyed=window_;
         ++generation_; selection_ = {}; dragging_=false; controls_.clear();
+        viewport_=content_=scrollbar_=nullptr; renderedCategory_=static_cast<size_t>(-1);
         if (menuOpen_) { menuOpen_=false; EndMenu(); }
         window_=nullptr;
         SetWindowLongPtrW(destroyed,GWLP_USERDATA,0);
@@ -331,13 +481,31 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
     case WM_CAPTURECHANGED: dragging_=false; return 0;
     case WM_DPICHANGED:
         if (colorEmoji_) colorEmoji_->retry();
-        dpi_=HIWORD(wp); updateFonts(); position(*reinterpret_cast<RECT*>(lp));
+        hostDpi_=HIWORD(wp);
+        dpi_=ContentDpiForScale(hostDpi_,MonitorFromRect(reinterpret_cast<RECT*>(lp),MONITOR_DEFAULTTONEAREST),scalePercent_);
+        updateFonts();
+        {
+            RECT desired=*reinterpret_cast<RECT*>(lp);
+            desired.right=desired.left+scaled(440);
+            desired.bottom=desired.top+scaled(BuiltinSymbolCategories()[category_].layout==SymbolLayout::List ? 430 : 310);
+            position(desired);
+        }
         if (hasPosition_) { RECT rect{}; GetWindowRect(window_,&rect); position_={rect.left,rect.top}; }
         if (selection_) rebuild();
         return 0;
     case WM_SETTINGCHANGE:
     case WM_THEMECHANGED:
         if (colorEmoji_) colorEmoji_->retry();
+        if (colorEmoji_) colorEmoji_->clearCache();
+        scalePercent_=LoadFrontendSettings().candidateScalePercent;
+        {
+            RECT rect{}; GetWindowRect(window_,&rect);
+            dpi_=ContentDpiForScale(hostDpi_,MonitorFromRect(&rect,MONITOR_DEFAULTTONEAREST),scalePercent_);
+            updateFonts();
+            rect.right=rect.left+scaled(440);
+            rect.bottom=rect.top+scaled(BuiltinSymbolCategories()[category_].layout==SymbolLayout::List ? 430 : 310);
+            position(rect);
+        }
         highContrast_ = HighContrast();
         foreground_=DarkAppearance() ? RGB(245,245,245) : GetSysColor(COLOR_WINDOWTEXT);
         backgroundColor_=DarkAppearance() ? RGB(32,32,32) : GetSysColor(COLOR_WINDOW);
@@ -346,16 +514,16 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
         if (font_) rebuild();
         return 0;
     case WM_KEYDOWN: if (wp==VK_ESCAPE) { hide(); return 0; } break;
-    case WM_MOUSEWHEEL: if (visible() && selection_) page(GET_WHEEL_DELTA_WPARAM(wp)>0 ? -1 : 1); return 0;
+    case WM_MOUSEWHEEL: if (visible() && selection_) scrollWheel(GET_WHEEL_DELTA_WPARAM(wp)); return 0;
     case WM_COMMAND: {
         if (!visible() || !selection_ || HIWORD(wp)!=BN_CLICKED) return 0;
         const UINT id=LOWORD(wp); HWND control=reinterpret_cast<HWND>(lp);
-        if (!control || control!=GetDlgItem(window_,id) || !IsWindowEnabled(control)) return 0;
+        const HWND parent=id>=kFirstItem ? content_ : window_;
+        if (!control || control!=GetDlgItem(parent,id) || !IsWindowEnabled(control)) return 0;
         if (id==kClose) hide();
         else if (id==kCategory) chooseCategory();
-        else if (id==kPreviousPage || id==kNextPage) page(id==kPreviousPage ? -1 : 1);
-        else if (id>=kFirstItem && id<kFirstItem+pageSize()) {
-            const size_t index=page_*pageSize()+id-kFirstItem;
+        else if (id>=kFirstItem) {
+            const size_t index=id-kFirstItem;
             const auto& items=BuiltinSymbolCategories()[category_].items;
             if (index<items.size()) {
                 std::wstring text=items[index].text; auto callback=std::move(selection_);
@@ -376,21 +544,21 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
         RECT rect{}; GetClientRect(window_,&rect);
         rect.left=scaled(12); rect.right-=scaled(44); rect.top=0; rect.bottom=scaled(kTitleHeight);
         DrawTextW(dc,L"\x7B26\x865F\x8868",-1,&rect,DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-        const auto& category=BuiltinSymbolCategories()[category_];
-        GetClientRect(window_,&rect);
-        rect.left=scaled(86); rect.right-=scaled(86); rect.top=rect.bottom-scaled(kToolbarHeight+kGap);
-        const std::wstring label=std::to_wstring(page_+1)+L" / "+
-            std::to_wstring(std::max<size_t>(1,(category.items.size()+pageSize()-1)/pageSize()));
-        DrawTextW(dc,label.c_str(),-1,&rect,DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         if (saved) RestoreDC(dc,saved);
         EndPaint(window_,&ps); return 0;
     }
     case WM_DRAWITEM: {
         auto draw=reinterpret_cast<DRAWITEMSTRUCT*>(lp);
-        if (!draw || draw->CtlType != ODT_BUTTON || GetParent(draw->hwndItem) != window_) break;
+        if (!draw || draw->CtlType != ODT_BUTTON ||
+            (GetParent(draw->hwndItem) != window_ && GetParent(draw->hwndItem) != content_)) break;
         ScopedDC saved(draw->hDC);
         const auto& category=BuiltinSymbolCategories()[category_];
         const bool item=draw->CtlID>=kFirstItem;
+        if (item) {
+            RECT visible{}; GetWindowRect(draw->hwndItem,&visible);
+            MapWindowPoints(nullptr,viewport_,reinterpret_cast<POINT*>(&visible),2);
+            if (visible.bottom<=0 || visible.top>=viewportHeight_) return TRUE;
+        }
         const COLORREF background=draw->itemState & ODS_SELECTED ? GetSysColor(COLOR_HIGHLIGHT) : backgroundColor_;
         const COLORREF foreground=draw->itemState & ODS_DISABLED ? GetSysColor(COLOR_GRAYTEXT) :
             draw->itemState & ODS_SELECTED ? GetSysColor(COLOR_HIGHLIGHTTEXT) : foreground_;

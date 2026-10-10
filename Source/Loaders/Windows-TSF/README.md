@@ -58,10 +58,16 @@ Codex／Edge 的偶發白框尚未抓到精確觸發事件，不能由原生生�
 工作列輸入法選單依序排列「半形／全形 → 簡體中文輸出 → 分隔線 → 符號表… → 輸入法設定…」。
 「符號表…」提供原有 17 個分類、807 個符號與完整顏文字，保留手機版 90 個 emoji 的
 順序並加入 110 個 Windows 專用補充，共 18 個分類、1,007 項。Emoji 共 200 個，
-一般大小每頁 40 個、五頁；頁面容量會依工作區及 DPI 調整。
+同一分類全部列出，以右側捲軸或滑鼠滾輪瀏覽，不再分頁。
+捲軸以獨立原生控制項持續顯示完整滑塊及箭頭，使用系統色彩；不套用宿主的細線 overlay
+主題，滑塊位置與內容及滾輪同步。捲軸沒有 Tab stop，滑鼠操作仍保留輸入欄位焦點。
 分類使用下拉選單；符號與 Emoji 使用最多十欄的格狀按鈕，顏文字以整列顯示。
+字型、Emoji、格子及視窗尺寸共用「一般 → 選字窗 → 大小」設定；「跟隨 Windows」
+沿用所在螢幕的縮放比例。縮放及工作區較小時會重新排列欄數，所有項目仍可捲動選取。
 Emoji 使用 Direct2D／DirectWrite 的 Segoe UI Emoji 彩色字型，圖案依作業系統字型版本；
 高對比模式或彩色渲染不可用時回退 GDI 單色，不下載圖片或改動手機資料。
+彩色 Emoji 只繪製可見項目，最多快取 256 張圖；捲動或同分類重開重用控制項及字型，
+縮放或主題改變時清除不適用的繪圖快取。首次開啟仍需初始化系統彩色字型。
 視窗從滑鼠所在螢幕的工作區右側開啟，可由標題列拖曳；位置只在同一輸入服務生命週期內
 記住，不跨 App 或重新啟動保存，重開及 DPI 變更時會限制於可用工作區。
 以滑鼠選取後送入原輸入欄位並關閉。面板開啟時保留組字；選取時先送出原組字，再插入符號。
@@ -592,6 +598,31 @@ frontend settings share the PlainVanilla loader plist, while Traditional
 Mandarin and associated-phrase options use their module plists. Settings are
 picked up on the next key or candidate-window update. `KeyKey.db` remains
 external runtime data rather than being compiled into the TSF DLL.
+
+Windows TSF defines `KEYKEY_WINDOWS_SHARED_DATA` only in its CMake core target.
+The native loader/module plists and C# settings app share a per-file named mutex
+and replace a flushed temporary file rather than exposing partial XML. Native
+saves merge changed keys against the current file; a conflicting stale snapshot
+preserves the newer disk value. Invalid existing files are preserved. Input hosts
+wait at most 250 ms for this lock; a failed save retains its unsaved snapshot.
+Readers allow delete sharing so an open reader does not prevent replacement.
+
+Learning saves write only the host's pending changes in one SQLite transaction,
+with at most 200 entries per cache. Reset and import advance a database generation;
+old pending caches cannot repopulate the reset/imported state. Busy transactions
+retain pending changes for retry. Newly created user databases use UTF-8 to match
+the model's attachment encoding. Existing files are not silently converted.
+These protections require participating processes to run the new code; sign out
+and back in after upgrading to retire hosts that still have an old DLL loaded.
+The shared model and other frontend behavior remain unchanged.
+
+`KeyKeySharedDataProtectionTest` uses isolated temporary profiles to test stale
+settings snapshots, malformed files, atomic readers, concurrent parser threads,
+learning deltas, transaction contention, reset/import, and cache bounds. Pass an
+opposite-architecture test executable to exercise mixed x64/x86 processes. The
+`--managed <dotnet> <SettingsModern.Tests.dll>` mode also checks that a native
+writer obeys the mutex held by the C# settings implementation. The Windows
+packaging workflow runs both architecture directions and both managed pairings.
 
 ## Verification checklist
 

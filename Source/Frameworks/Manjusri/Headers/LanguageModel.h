@@ -14,6 +14,10 @@ file for terms.
 #include <iostream>
 #include <map>
 #include <deque>
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+#include <cstdint>
+#include <cstdlib>
+#endif
 
 #define MANJUSRI_USE_CACHE
 
@@ -68,6 +72,9 @@ namespace Manjusri {
             m_deque.clear();
         }
         
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        size_t capacity() const { return m_capacity; }
+#endif
     protected:
         map<KeyType, ValueType> m_map;
         deque<KeyType> m_deque;
@@ -234,12 +241,27 @@ namespace Manjusri {
         OVBenchmark m_userCacheTimer;
 
         string m_unigramTableName;
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        map<string,Bigram> m_pendingBigrams;
+        map<string,pair<bool,string>> m_pendingOverrides;
+        std::int64_t m_learningGeneration=-1;
+        std::int64_t sharedLearningGeneration() {
+            OVSQLiteStatement* query=m_connection->prepare("SELECT generation FROM userdb.keykey_learning_metadata WHERE id=1");
+            if (!query) return -1;
+            const auto value=query->step()==SQLITE_ROW ? std::strtoll(query->textOfColumn(0),nullptr,10) : -1;
+            delete query; return value;
+        }
+        bool saveSharedUserCache();
+#endif
     };
     
     inline void LanguageModel::loadUserBigramCache()
     {
         if (!m_cfgUseUserBigramCache)
             return;
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        if (m_pendingBigrams.empty() && m_pendingOverrides.empty()) m_learningGeneration=sharedLearningGeneration();
+#endif
         
         OVSQLiteStatement* statement = m_connection->prepare("SELECT qstring, previous, current, probability FROM user_bigram_cache ORDER BY rowid");
         if (!statement)
@@ -257,6 +279,9 @@ namespace Manjusri {
     
     inline void LanguageModel::saveUserBigramCache(bool useTransaction)
     {
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        saveSharedUserCache(); return;
+#endif
         if (!m_cfgUseUserBigramCache)
             return;
 
@@ -298,6 +323,9 @@ namespace Manjusri {
     
     inline void LanguageModel::saveUserCandidateOverrideCache(bool useTransaction)
     {
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        saveSharedUserCache(); return;
+#endif
         if (!m_cfgUseUserCandidateOverrideCache)
             return;
             
@@ -325,6 +353,11 @@ namespace Manjusri {
         if (m_userCacheTimer.elapsedSeconds() < 3.5 && !forced)
             return false;
             
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        const bool saved=saveSharedUserCache();
+        if (saved) m_userCacheTimer.start();
+        return saved;
+#endif
         m_userCacheTimer.start();
 
         if (useTransaction) {
@@ -346,6 +379,9 @@ namespace Manjusri {
     {
         if (m_cfgUseUserBigramCache) {    
             m_userBigramCache.forcePush(combinedQueryString, Bigram(combinedQueryString, previous, current, cachedMaxUnigramProbability()));
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+            m_pendingBigrams[combinedQueryString]=Bigram(combinedQueryString,previous,current,cachedMaxUnigramProbability());
+#endif
         }
     }    
     
@@ -353,14 +389,21 @@ namespace Manjusri {
     {
         if (m_cfgUseUserCandidateOverrideCache) {
             m_candidateOverrideCache.forcePush(qstring, current);
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+            m_pendingOverrides[qstring]={false,current};
+#endif
         }
     }
     
     inline void LanguageModel::removeCachedSelection(const string& qstring)
     {
         if (m_cfgUseUserCandidateOverrideCache) {
-            if (m_candidateOverrideCache.find(qstring) != m_candidateOverrideCache.end())
+            if (m_candidateOverrideCache.find(qstring) != m_candidateOverrideCache.end()) {
                 m_candidateOverrideCache.removeKey(qstring);
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+                m_pendingOverrides[qstring]={true,string()};
+#endif
+            }
         }
     }
     
@@ -747,9 +790,54 @@ namespace Manjusri {
     
     inline void LanguageModel::flushUserCache()
     {
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        if (!saveSharedUserCache()) return;
+#endif
         m_userBigramCache.flush();
         m_candidateOverrideCache.flush();
     }
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+    inline bool LanguageModel::saveSharedUserCache()
+    {
+        if (m_pendingBigrams.empty() && m_pendingOverrides.empty()) return true;
+        if (m_learningGeneration<0 || m_connection->execute("BEGIN")!=SQLITE_OK) return false;
+        // Lock only the writable user database, allowing a read-only model DB.
+        bool ok=m_connection->execute("UPDATE userdb.keykey_learning_metadata SET generation=generation WHERE id=1")==SQLITE_OK;
+        const auto generation=ok ? sharedLearningGeneration() : -1;
+        if (generation>=0 && generation!=m_learningGeneration) {
+            m_connection->execute("ROLLBACK");
+            m_pendingBigrams.clear(); m_pendingOverrides.clear();
+            m_userBigramCache.flush(); m_candidateOverrideCache.flush();
+            m_learningGeneration=generation;
+            loadUserBigramCache(); loadUserCandidateOverrideCache();
+            return true;
+        }
+        ok=ok && generation>=0;
+        for (const auto& entry : m_pendingBigrams) {
+            if (!ok) break;
+            const auto& value=entry.second;
+            ok=m_connection->execute("DELETE FROM userdb.user_bigram_cache WHERE qstring=%Q",entry.first.c_str())==SQLITE_OK &&
+                m_connection->execute("INSERT INTO userdb.user_bigram_cache VALUES(%Q,%Q,%Q,%f)",
+                    entry.first.c_str(),value.previous.c_str(),value.current.c_str(),value.probability)==SQLITE_OK;
+        }
+        for (const auto& entry : m_pendingOverrides) {
+            if (!ok) break;
+            ok=m_connection->execute("DELETE FROM userdb.user_candidate_override_cache WHERE qstring=%Q",entry.first.c_str())==SQLITE_OK;
+            if (ok && !entry.second.first) ok=m_connection->execute("INSERT INTO userdb.user_candidate_override_cache VALUES(%Q,%Q)",
+                entry.first.c_str(),entry.second.second.c_str())==SQLITE_OK;
+        }
+        if (ok && !m_pendingBigrams.empty()) ok=m_connection->execute(
+            "DELETE FROM userdb.user_bigram_cache WHERE rowid NOT IN (SELECT rowid FROM userdb.user_bigram_cache ORDER BY rowid DESC LIMIT %d)",
+            static_cast<int>(m_userBigramCache.capacity()))==SQLITE_OK;
+        if (ok && !m_pendingOverrides.empty()) ok=m_connection->execute(
+            "DELETE FROM userdb.user_candidate_override_cache WHERE rowid NOT IN (SELECT rowid FROM userdb.user_candidate_override_cache ORDER BY rowid DESC LIMIT %d)",
+            static_cast<int>(m_candidateOverrideCache.capacity()))==SQLITE_OK;
+        if (ok) ok=m_connection->execute("COMMIT")==SQLITE_OK;
+        if (!ok) { m_connection->execute("ROLLBACK"); return false; }
+        m_pendingBigrams.clear(); m_pendingOverrides.clear();
+        return true;
+    }
+#endif
 };
 
 #endif

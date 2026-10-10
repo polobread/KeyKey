@@ -1,7 +1,5 @@
 #include "CandidateWindow.h"
 
-#include <ShellScalingApi.h>
-
 #include <algorithm>
 #include <mutex>
 
@@ -25,19 +23,6 @@ bool g_windowClassRegistered = false;
 
 int ScaleForDpi(int value, UINT dpi) {
     return MulDiv(value, static_cast<int>(dpi), USER_DEFAULT_SCREEN_DPI);
-}
-
-UINT ContentDpiForScale(UINT hostDpi, HMONITOR monitor, int scalePercent) {
-    if (scalePercent <= 0) return hostDpi;
-
-    DEVICE_SCALE_FACTOR monitorScale = SCALE_100_PERCENT;
-    if (FAILED(GetScaleFactorForMonitor(monitor, &monitorScale)) ||
-        monitorScale <= 0) {
-        monitorScale = SCALE_100_PERCENT;
-    }
-    return static_cast<UINT>(std::max(
-        1, MulDiv(static_cast<int>(hostDpi), scalePercent,
-                  static_cast<int>(monitorScale))));
 }
 
 }  // namespace

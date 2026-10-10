@@ -44,8 +44,14 @@ internal static class SettingsStore
             var legacy = Path.Combine(directory, LegacyPrefix + suffix + ".plist");
             if (File.Exists(legacy) && !File.Exists(current))
             {
-                try { File.Copy(legacy, current, false); }
-                catch (IOException) when (File.Exists(current)) { }
+                using var lease=SharedSettingsFile.Lock(current);
+                if (File.Exists(current)) continue;
+                using var stream=SharedSettingsFile.OpenRead(legacy);
+                using var reader=new StreamReader(stream);
+                var source=reader.ReadToEnd();
+                try {
+                    if (XDocument.Parse(source).Root?.Element("dict") is not null) SharedSettingsFile.Write(current,source);
+                } catch (XmlException) { /* Keep malformed legacy files for recovery. */ }
             }
         }
     }
@@ -81,6 +87,7 @@ internal static class SettingsStore
 
     public static void Write(string path, IReadOnlyDictionary<string, string> values)
     {
+        using var lease=SharedSettingsFile.Lock(path);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var document = File.Exists(path) ? Open(path) : NewDocument();
         var dict = document.Root?.Element("dict")
@@ -95,6 +102,7 @@ internal static class SettingsStore
 
     public static void WriteArray(string path, string key, IEnumerable<string> values)
     {
+        using var lease=SharedSettingsFile.Lock(path);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         var document = File.Exists(path) ? Open(path) : NewDocument();
         var dict = document.Root?.Element("dict")
@@ -120,26 +128,13 @@ internal static class SettingsStore
 
     private static void Save(string path, XDocument document)
     {
-        var previousTime = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
-        var temporary = path + ".tmp." + Environment.ProcessId;
-        try
-        {
-            using (var stream = File.Create(temporary))
-            using (var writer = XmlWriter.Create(stream, new XmlWriterSettings {
-                Encoding = new System.Text.UTF8Encoding(false), Indent = true,
-                NewLineChars = "\r\n", NewLineHandling = NewLineHandling.Replace }))
-                document.Save(writer);
-            File.Move(temporary, path, true);
-            var now = DateTime.UtcNow;
-            if (now <= previousTime.AddSeconds(1)) now = previousTime.AddSeconds(1);
-            File.SetLastWriteTimeUtc(path, now);
-        }
-        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        SharedSettingsFile.Write(path,document.ToString());
     }
 
     private static XDocument Open(string path)
     {
-        using var reader = XmlReader.Create(path, new XmlReaderSettings {
+        using var stream=SharedSettingsFile.OpenRead(path);
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings {
             DtdProcessing = DtdProcessing.Ignore, XmlResolver = null });
         return XDocument.Load(reader);
     }

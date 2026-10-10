@@ -345,3 +345,123 @@ WPF 使用隔離設定並建構實際控制項，未開啟桌面視窗或改動�
 正式 DB SHA-256 仍為
 `8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb`。
 本輪未安裝或發布；前述 Firefox、Office、Win+Space 與偶發顯示問題的實機驗收界線仍適用。
+
+## 符號表捲動、Emoji 快取與共用大小設定（2026-10-10）
+
+同一分類的項目一次建立，以原生垂直捲軸與滑鼠滾輪瀏覽，移除上一頁／下一頁及頁碼。
+18 個分類、1,007 項與原始字串順序維持不變；200 個 Emoji 不再分為五頁。
+捲動只移動內容容器，保留項目 HWND；切換分類才更換項目，同分類重開重用控制項及字型。
+字型、Emoji、格子及視窗尺寸共用 `CandidateWindowScalePercent`。候選窗與符號表使用同一
+縮放計算；固定 125% 及「跟隨 Windows」皆可套用，重新開啟會讀取最新設定，跨螢幕 DPI
+變更時重新計算並限制於工作區。
+
+彩色 Emoji 只 rasterize 可見項目，以字串、尺寸、DPI 及前景／背景色快取最多 256 張 DIB；
+重繪使用 BitBlt，DPI 或主題改變時清除不適用的快取。高對比／渲染不可用時保留 GDI fallback。
+隔離 x64 Release 探針在本機量到舊版重開與重繪 74–82 ms，新版 9.35–11.94 ms。
+首次切換加繪製仍約 298 ms：新版可見 60 項，舊版可見 40 項，且仍有系統字型初始化，
+不能據此宣稱首次開啟加速。量測程式與紀錄位於 ignored `out/symbol-scroll/`。
+
+x64 CTest 8／8、x86 受影響原生 CTest 6／6 通過；兩架構隔離 WPF 測試通過。
+首次 x64 整批執行曾有一次原生分類選單未開啟；獨立執行、兩架構畫面測試及 x64 整批
+重跑均通過，未以移除該檢查處理。原生符號表測試以獨立 profile 驗證全分類順序、200 項
+完整性、捲到最後一項的插入、滾輪、控制項重用、快取重繪、125%／Windows 縮放、DPI、
+宿主焦點、拖曳、分類選單反白及取消／銷毀。生命週期、TSF output、工作列、偏好設定與
+診斷測試亦通過。渲染產物位於 `out/symbol-scroll/visuals-{x64,x86}/`；125% 的符號與
+彩色 Emoji、末尾項目、顏文字及高對比 fallback 已視覺核對。
+
+本機未簽署測試安裝檔為
+`out/store-package/chichi77-KeyKey-1.3.2-windows-x64-setup-symbol-scroll-20261010.unsigned.exe`，
+92,281,419 bytes，SHA-256 為
+`b58db6baa408826e71e84399459bd9273465b4edfdeb9bdded5f88ab90d2c411`。
+解包核對 17 項 manifest 雜湊及八項建置／來源比對通過；版本為 1.3.2、NotSigned，兩架構
+TSF DLL 與最新建置一致，共用 DB 仍為正式固定雜湊，未預先啟用診斷。
+本輪只建置、渲染及解包驗證，未安裝或發布；使用者遇到的間歇白框仍待新版文字宿主實測。
+
+### 捲軸黑塊與位置不易辨識修正（2026-10-10）
+
+使用者實機截圖回報捲軸上下出現黑色方塊，內容捲動時難以看出滑塊跟著移動。
+原生位置數值測試顯示首尾位置仍會改變，故不能只檢查 `nPos` 就判定顯示正確。
+改以獨立的 `ScrollBar` 子控制項取代內容視窗的非客戶區捲軸；滑塊範圍、頁面大小、
+位置及拖曳通知統一使用 `SB_CTL`。控制項停用 visual style overlay，持續呈現完整滑塊
+及箭頭，仍使用 Windows 系統色彩。沒有 Tab stop，且滑鼠啟用與滾輪不切換宿主焦點。
+
+兩架構測試啟用 Common Controls v6 宿主 activation context，確認首尾滑塊幾何及實際像素
+都改變、上下箭頭沒有整塊黑色填滿，直接操作原生箭頭與滾輪仍保留輸入欄位焦點，
+分頁通知與內容位置同步。原生控制項以提供 DC 的 `WM_PAINT` 輸出測試圖；先初始化
+畫布，避免未繪區域造成假通過，再將捲軸圖合成至完整面板圖。首尾圖、125%、Emoji、
+顏文字與高對比 fallback 已核對，產物為 `out/symbol-scroll/visuals-scrollfix-{x64,x86}/`。
+
+x64／x86 各 4／4 受影響 CTest 通過，涵蓋符號表、popup 生命週期、TSF 插入及工作列。
+未改動桌面游標或使用 SendInput；實際滑鼠拖曳由使用者在新版文字宿主確認。
+未完整重現原宿主黑塊的觸發條件，也未把它判定為之前候選窗／符號表置頂白框的同一原因。
+
+最終未簽署測試包為
+`out/store-package/chichi77-KeyKey-1.3.2-windows-x64-setup-scrollbar-fix-20261010-r2.unsigned.exe`，
+92,279,249 bytes，SHA-256 為
+`b39d734ac98488f2d3450961b775ff9f693cbbbefa7c057fffef0217860350dc`。
+解包 17 項 manifest、八項建置／來源比對及正式 DB 固定雜湊均通過；版本仍為 1.3.2。
+僅產生並驗證安裝檔，未安裝或發布。
+
+### x64／x86 共用資料與白框假設檢查（2026-10-10）
+
+依使用者提出的跨位元數型態不一致假設，檢查 TSF frontend 的 IPC、共用檔案及視窗狀態。
+候選窗與符號表為各 TextService 的程序內成員，沒有跨程序共享其物件、候選向量、GDI
+資源或原始 C++ 指標的路徑。SharedInputMethod 及 SharedOutputState 經 TSF global
+compartment 傳遞 `VARIANT VT_I4` 的方法 ID／1、2 狀態；接收端檢查型態及有效值，
+沒有用 `size_t`、原始 VARIANT 記憶體或指標作為跨架構資料格式。診斷共用 UTF-8 文字
+log，具名 mutex 只協調寫入；設定使用 XML plist，學習資料使用 SQLite 的文字及數值欄位。
+
+重新建置兩架構共用狀態測試，以獨立 GUID 實測 x64→x86 及 x86→x64：兩方向的四種
+輸入法選擇、子程序實際組字與回傳狀態均通過；兩方向簡繁狀態交換亦通過，共四組。
+沒有啟用真實 TIP、切換使用者正在使用的輸入法或改動使用者 profile；此結果不能代替
+跨 App 視窗焦點與回呼時序的驗證，也不能排除非共用記憶體路徑的記憶體錯誤。
+
+另找到與位元數無關的共用寫入風險：`PVPropertyList::WritePlist` 直接以 `"w"` 開啟目的
+檔再寫入，缺少暫存檔替換與跨程序協調；loader／module 初始化及保存會呼叫此路徑。
+即使兩邊都是 x64，同時保存也可能讓讀者看到短暫不完整 XML，或由較舊的設定快照覆蓋
+較新的欄位。現代設定程式及 SaveSimplifiedOutputPreference 已使用暫存檔替換，但仍需
+留意讀改寫間的競爭。這是靜態程式碼發現的風險，尚未重現它造成設定損壞或白框，
+本輪未修改五平台共用框架。
+
+白框症狀仍優先追查失焦取消、owned popup 還原、過期回呼及升級後宿主保留舊 DLL；
+後續須將白框的 PID／位元數／實際 DLL 路徑與顯示、取消、重繪事件對應，不能僅憑跨
+App 切換或兩種架構共用目錄就判定為型態錯誤。未核對本輪所有實際宿主載入的 DLL。
+
+### 多宿主共用資料保護（2026-10-10）
+
+依後續要求加入寫入保護。Windows TSF CMake 的 `KEYKEY_WINDOWS_SHARED_DATA` 才啟用
+共用框架內的新路徑；macOS／其他 frontend 保留原路徑，正式模型不變。
+
+- 原生 loader／module plist 與 C# 設定、診斷及設定遷移共用每檔案具名 mutex。
+  檔案先完整寫入同目錄暫存檔並 flush，再 replace；讀取使用 share-delete。
+  原生保存比較本地與基線，只合併本宿主改動且磁碟尚未改動的欄位；同欄位衝突保留
+  磁碟新值，未改動欄位及陣列維持。損壞／不可讀的現有檔案不以預設值覆寫。
+  原生鎖等待上限 250 ms，失敗不承認快照已保存；設定 App 上限 5 秒並回報失敗。
+  App 的 Apply 仍保存明確提交的設定值，不提供多視窗逐欄位編輯合併 UI。
+- Windows plist 解析序列化共用靜態字串緩衝區，並檢查 Expat 解析失敗，避免多執行緒
+  混入文字或接受未完成 XML。診斷 session 已啟用時不由另一設定程序延長三天期限。
+- SQLite 學習快取只以交易寫入本宿主 pending 項目，不再全表刪除後回存舊快照。
+  任一步失敗 rollback 並保留 pending；修改過的快取表維持至多 200 筆。
+  清除／匯入與 generation 更新在同一交易；保存前取得 userdb 寫鎖並檢查 generation，
+  已過期宿主清除待寫入資料並載入新快取，避免把已清除或匯入的資料覆蓋回舊內容。
+- 測試發現 `sqlite3_open16` 在設定先建立使用者 DB 時預設 UTF-16，無法 attach 到正式
+  UTF-8 model。新建 DB 在建立資料表前指定 UTF-8；現有資料不直接轉碼或刪除。
+
+兩架構原生 CTest 各 29／29 通過；設定 plist 七組、WPF x64／x86 控制項與 31 項隔離部署
+測試通過。另以獨立 profile 實測 x64→x86、x86→x64 的同檔 60 次並行保存及 SQLite
+各宿主學習保存，兩方向均保留兩方資料。x64／x86 各與 C# 程序並行寫入亦通過，並
+由 C# 持有鎖確認原生保存會等待逾時、不改檔，釋放後可保存，驗證兩種實作的鎖名稱
+相同。新增 `KeyKeySharedDataProtectionTest` 涵蓋過期快照／同鍵衝突、保留陣列、損壞
+XML 保留、鎖逾時重試、八條解析執行緒、atomic replacement 讀者、busy rollback／重試、
+清除／匯入 generation、同鍵新選擇不被舊快取覆蓋、容量及實際 `integrity_check=ok`。
+GitHub Actions 加入兩方向與兩組原生／managed 配對；本機通過不代表遠端已執行。
+
+本次未證明共用寫入就是白框原因。升級後舊宿主尚未卸載的 DLL 不會遵守新鎖或
+generation，因此需登出再登入讓宿主全數載入新版；仍需文字宿主實測白框與焦點時序。
+
+未簽署測試安裝檔為
+`out/store-package/chichi77-KeyKey-1.3.2-windows-x64-setup-shared-data-20261010.unsigned.exe`，
+92,277,528 bytes，SHA-256 為
+`c27ad4f528f4a694aa6f0fb4109a609f944bb115a9402a2621b0f25624c2cca7`。
+解包核對 17 項 manifest、八項建置／來源比對、1.3.2 版本、NotSigned 及正式 DB 固定
+雜湊均通過，含兩架構新版 TSF 與先前符號表捲軸修正；未安裝或發布。

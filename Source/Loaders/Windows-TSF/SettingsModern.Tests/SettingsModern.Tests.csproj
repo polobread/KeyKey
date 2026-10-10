@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../SettingsModern/SharedSettingsFile.cs" Link="SharedSettingsFile.cs" />
     <Compile Include="../SettingsModern/SettingsStore.cs" Link="SettingsStore.cs" />
     <Compile Include="../SettingsModern/DiagnosticSettings.cs" Link="DiagnosticSettings.cs" />
     <Compile Include="../SettingsModern/InputMethodSettings.cs" Link="InputMethodSettings.cs" />
