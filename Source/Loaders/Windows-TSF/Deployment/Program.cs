@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Security.Principal;
 using System.Text.Json;
 using System.Runtime.InteropServices;
+using KeyKeySettings;
 
 namespace KeyKey.Deployment;
 internal static class Program
@@ -24,16 +25,16 @@ internal static class Program
     private static void Report(string message)
     {
         Console.WriteLine(message);
-        if (logPath == null) return;
+        if (logPath == null || !DiagnosticSettings.Read().Active) return;
         SafeFiles.NoLinks(logPath);
-        File.AppendAllText(logPath, $"{DateTimeOffset.Now:O} {message}{Environment.NewLine}");
+        DiagnosticSettings.AppendDeploymentLog(logPath, message);
     }
     private static int Failure(string message, int code)
     {
         Console.Error.WriteLine(message);
         try { Report($"FAILED ({code}): {message}"); } catch { /* preserve the original error */ }
         if (!quiet && operation is "uninstall" or "cleanup")
-            MessageBox(IntPtr.Zero, $"操作未完成（{code}）。請保留安裝包並查閱 Deployment.log。\n{message}", "chichi77 KeyKey", 0x10);
+            MessageBox(IntPtr.Zero, $"操作未完成（{code}）。請保留安裝包與錯誤碼。\n{message}", "chichi77 KeyKey", 0x10);
         return code;
     }
     [STAThread]
@@ -90,8 +91,6 @@ internal static class Program
                     system.ValidateRoot(WindowsSystem.DefaultRoot);
                     system.PrepareDirectory(WindowsSystem.DefaultRoot);
                     logPath = SafeFiles.Child(WindowsSystem.DefaultRoot, "Deployment.log");
-                    if (File.Exists(logPath) && new FileInfo(logPath).Length > 1024 * 1024)
-                        File.WriteAllText(logPath, "");
                     Report("Starting " + operation);
                 }
                 var engine = new DeploymentEngine(WindowsSystem.DefaultRoot, system, Report);

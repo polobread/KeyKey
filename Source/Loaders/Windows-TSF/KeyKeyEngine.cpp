@@ -9,6 +9,7 @@
 #include <iterator>
 
 #include "ModuleState.h"
+#include "Diagnostics.h"
 #include "FrontendSettings.h"
 #include "InputMethods.h"
 #include "WindowsTableInputMethod.h"
@@ -27,6 +28,14 @@ using namespace OpenVanilla;
 constexpr char kSmartInputMethod[] = OVIMSMARTMANDARIN_IDENTIFIER;
 constexpr char kTraditionalInputMethod[] = OVIMTRADITIONALMANDARIN_IDENTIFIER;
 constexpr char kAssociatedPhraseFilter[] = OVAFASSOCIATEDPHRASE_IDENTIFIER;
+
+// Keep legacy module logs under the Windows diagnostic switch as well.
+class WindowsLogEmitter final : public PVLogEmitter {
+public:
+    void emitLog(const std::string& entry) override {
+        if (DiagnosticsEnabled()) PVLogEmitter::emitLog(entry);
+    }
+};
 
 class WindowsEncodingService final : public OVEncodingService {
 public:
@@ -247,18 +256,18 @@ public:
     EngineRuntime() {
         const std::string databasePath = FindDatabase();
         if (databasePath.empty()) {
-            OutputDebugStringW(L"chichi77 KeyKey TSF: Databases\\KeyKey.db was not found.\n");
+            if (DiagnosticsEnabled()) OutputDebugStringW(L"chichi77 KeyKey TSF: Databases\\KeyKey.db was not found.\n");
             return;
         }
 
         database_.reset(OVSQLiteDatabaseService::Create(databasePath));
         if (!database_) {
-            OutputDebugStringW(L"chichi77 KeyKey TSF: unable to open KeyKey.db.\n");
+            if (DiagnosticsEnabled()) OutputDebugStringW(L"chichi77 KeyKey TSF: unable to open KeyKey.db.\n");
             return;
         }
         const bool smartAvailable = HasSmartMandarinData(database_->connection());
         if (!smartAvailable) {
-            OutputDebugStringW(L"chichi77 KeyKey TSF: Smart Mandarin language model is missing; using Traditional Mandarin.\n");
+            if (DiagnosticsEnabled()) OutputDebugStringW(L"chichi77 KeyKey TSF: Smart Mandarin language model is missing; using Traditional Mandarin.\n");
         }
 
         const std::string resourcePath = OVUTF8::FromUTF16(ModuleDirectory());
@@ -268,7 +277,7 @@ public:
         const std::string testProfileDirectory = TestProfileDirectory();
         pathInfo.writablePath = OVUTF8::FromUTF16(SettingsDirectory());
         if (pathInfo.writablePath.empty()) {
-            OutputDebugStringW(L"chichi77 KeyKey TSF: no accessible profile directory.\n");
+            if (DiagnosticsEnabled()) OutputDebugStringW(L"chichi77 KeyKey TSF: no accessible profile directory.\n");
             return;
         }
         OVDirectoryHelper::CheckDirectory(pathInfo.writablePath);
@@ -280,7 +289,7 @@ public:
         const bool existingProfile =
             GetFileAttributesW(loaderPreferences.c_str()) != INVALID_FILE_ATTRIBUTES;
         service_ = std::make_unique<PVLoaderService>(
-            "zh_TW", nullptr, database_.get(), nullptr, &encodingService_);
+            "zh_TW", nullptr, database_.get(), &logEmitter_, &encodingService_);
         packages_ = std::make_unique<PVStaticModulePackageLoadingSystem>(pathInfo, true);
 
         auto* mandarin = new WindowsMandarinPackage(smartAvailable);
@@ -395,6 +404,7 @@ private:
     std::recursive_mutex mutex_;
     std::unique_ptr<OVSQLiteDatabaseService> database_;
     WindowsEncodingService encodingService_;
+    WindowsLogEmitter logEmitter_;
     std::unique_ptr<WindowsLoaderPolicy> policy_;
     std::unique_ptr<PVLoaderService> service_;
     std::unique_ptr<PVStaticModulePackageLoadingSystem> packages_;

@@ -92,6 +92,14 @@ jobs:
         working-directory: Source/Loaders/Windows-TSF
         run: ctest --test-dir .\out\build\x86 -C Release --output-on-failure
 
+      - name: Test default-off diagnostic settings and deployment
+        working-directory: Source/Loaders/Windows-TSF
+        run: |
+          dotnet run --project SettingsModern.Tests/SettingsModern.Tests.csproj --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw 'Diagnostic settings regression failed.' }
+          dotnet run --project Deployment.Tests/Deployment.Tests.csproj --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw 'Deployment regression failed.' }
+
       - name: Install NSIS 3.12
         run: |
           choco install nsis --version=3.12.0 --yes --no-progress --limit-output

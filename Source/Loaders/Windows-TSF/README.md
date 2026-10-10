@@ -34,9 +34,12 @@ TSF 取消未執行的 session 會撤銷其待處理狀態，過期或重複回�
 固定每個服務已生效的方法，並在佇列邊界載入指定方法的設定；共用模組欄位未做完整設定
 快照隔離，送字重試也不回滾已發生的候選／學習決策。
 
-候選窗與符號表在宿主暫時隱藏 owned popup 後取消，會退役待還原的視窗，避免 Windows
-之後自動還原空白框。此生命週期序列已有兩架構原生回歸；其他白塊與分類 hover 消字
-未確認相同原因，仍待使用者實機複測。
+候選窗取消時一律退役 HWND，保留字型；新的候選結果重新建立視窗。符號表仍在宿主
+暫時隱藏 owned popup 後取消時退役。候選窗不再保留清空內容的置頂 HWND，避免其他
+宿主還原或畫面合成持續使用舊視窗。明確啟用本機診斷時，顯示、隱藏、重繪、位置與銷毀狀態寫入
+`%TEMP%\KeyKeyTsf.log`，只記錄 HWND、旗標、候選數與矩形，不記錄候選文字。
+Codex／Edge 的偶發白框尚未抓到精確觸發事件，不能由原生生命週期測試推定實機已修好；
+符號分類 hover 消字也未確認相同原因。
 
 本輪 x64／x86 各 27 項原生回歸全數通過，包括進階設定、表格輸入、候選狀態及 popup
 生命週期。每架構先在沙箱通過 25 項，再以一般使用者權限重跑被檔案／HKCU 權限阻擋的
@@ -210,7 +213,7 @@ On the reporting PC, repeat the first syllable in Firefox's address bar, a web
 text field and Notepad, then test Esc and switching focus while candidates are
 pending. Record the installed version and whether this happens only after
 launch or on every new composition. `%TEMP%\KeyKeyTsf.log` now records
-`Candidate layout deferred` with the HRESULT and the later refresh request,
+`Candidate layout deferred` with the HRESULT and the later refresh request when diagnostics are explicitly enabled,
 which distinguishes a layout failure from slow engine input. Only the relevant
 reproduction interval is needed; review the log before sharing it.
 
@@ -290,6 +293,25 @@ reconfigure with `cmake --fresh --preset windows-x64` (and likewise for x86)
 to use the checked-in shared database.
 
 ## Build and register (x64 and x86)
+
+Windows diagnostic logging defaults to **off**, including Release and Debug builds.
+In Settings → 一般 → 問題診斷, enable the single **啟用診斷記錄** checkbox and
+press 套用 to start a fixed three-day session. There is no duration selector.
+Without an active session, TSF key/composition/popup file logs, `OutputDebugString`,
+legacy module log output, and `Deployment.log` stay off, including GitHub Actions builds.
+Installation status and failure codes remain visible.
+
+The deadline is persisted in a separate `diagnostics.plist` in the user's KeyKey
+profile and survives closing Settings, restarting hosts, and rebooting. Applying
+unrelated settings does not renew it. Hosts refresh this preference at most once
+per second and check expiration before each record; an expired session stays off
+without needing the Settings app to run. Settings shows the checkbox off at expiry.
+TSF logs retain one 10 MiB current file and one 10 MiB backup; rotation overwrites
+the old backup. A busy cross-process log write may be skipped rather than block typing.
+Deployment logs are limited to 1 MiB. No log is created or appended while disabled.
+The earlier `candidate-fix-20261010` test EXE retains diagnostics; changing source
+does not change that already-created installer. TSF logs can include key codes,
+modifier state, and process/window identifiers; enable only for a local investigation.
 
 MSVC/Ninja builds detect the compiler's localized `/showIncludes` prefix and
 normalize it through `MsvcCompiler.py`, using the required Python interpreter.
@@ -382,8 +404,8 @@ architecture. On the other PC, extract the entire ZIP and copy the folder to a l
 `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd` there. Do not
 install directly from a mapped network drive, NAS, or UNC path: it can become
 inaccessible after UAC elevation and the installer window can close
-immediately. Record any exit code; once deployment starts, diagnostics are in
-`%ProgramFiles%\chichi77 KeyKey\Deployment.log`.
+immediately. Record any exit code. Only an active diagnostic session
+writes `%ProgramFiles%\chichi77 KeyKey\Deployment.log`.
 The elevated installer:
 
 - copies the x64 and x86 DLLs, settings app, database, and notices to

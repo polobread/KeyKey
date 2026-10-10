@@ -9,6 +9,7 @@
 #include <sstream>
 #include <memory>
 #include <chrono>
+#include <charconv>
 #include "PVPropertyList.h"
 
 namespace KeyKey::WindowsTsf {
@@ -187,6 +188,36 @@ FrontendSettings LoadFrontendSettings() {
     // Only an explicit English preference changes the backward-compatible default.
     settings.defaultChineseMode = PlistString(xml, "DefaultInputMode", "Chinese") != "English";
     return settings;
+}
+
+bool DiagnosticSession::activeAt(std::int64_t now) const {
+    constexpr std::int64_t duration = 3 * 24 * 60 * 60;
+    return startedAt > 0 && expiresAt > startedAt &&
+           expiresAt - startedAt == duration && now >= startedAt && now < expiresAt;
+}
+
+std::wstring DiagnosticSettingsPath() {
+    const auto directory = SettingsDirectory();
+    return directory.empty() ? std::wstring() : directory + L"\\diagnostics.plist";
+}
+
+DiagnosticSession LoadDiagnosticSession() {
+    // Separate from loader preferences so module config saves cannot renew or
+    // overwrite the diagnostic deadline. Missing/invalid settings stay off.
+    const auto path = DiagnosticSettingsPath();
+    std::error_code error;
+    if (path.empty() || std::filesystem::file_size(path, error) > 16384 || error) return {};
+    const auto xml = ReadFile(path);
+    std::unique_ptr<OpenVanilla::PVPlistValue> dictionary(
+        OpenVanilla::PVPropertyList::ParsePlistFromString(xml.c_str()));
+    if (!dictionary || dictionary->type() != OpenVanilla::PVPlistValue::Dictionary) return {};
+    const auto number = [&](const char* key) {
+        const auto text = dictionary->stringValueForKey(key);
+        std::int64_t value = 0;
+        const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+        return parsed.ec == std::errc() && parsed.ptr == text.data() + text.size() ? value : 0;
+    };
+    return {number("StartedAtUtc"), number("ExpiresAtUtc")};
 }
 
 std::string SmartMandarinSettingsSignature() {

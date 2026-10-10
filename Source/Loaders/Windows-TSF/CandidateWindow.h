@@ -29,6 +29,7 @@ private:
     static LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
     LRESULT handleMessage(UINT message, WPARAM wparam, LPARAM lparam);
     void paint();
+    void traceState(const char* event) const;
     void ensureWindow(HWND owner);
     void updateFont(UINT dpi);
     SIZE measureContent();

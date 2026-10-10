@@ -88,6 +88,7 @@ target_link_libraries(keykey_third_party PUBLIC winsqlite3)
 set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(keykey_core STATIC
+    Diagnostics.cpp
     FrontendSettings.cpp
     OutputConversion.cpp
     "${KEYKEY_SOURCE}/ModulePackages/OVOFHanConvert/OVOFHanConvert.cpp"
@@ -155,7 +156,6 @@ add_custom_target(keykey_database ALL
 add_library(KeyKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp
-    Diagnostics.cpp
     LangBarButton.cpp
     SymbolPanel.cpp
     KeyKeyTsf.rc
@@ -298,6 +298,9 @@ if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
 endif()
 
 if(BUILD_TESTING)
+    add_executable(KeyKeyDiagnosticsTest DiagnosticsTest.cpp)
+    target_link_libraries(KeyKeyDiagnosticsTest PRIVATE keykey_core shell32 user32)
+    add_test(NAME KeyKeyDiagnostics COMMAND KeyKeyDiagnosticsTest)
     add_executable(KeyKeyPopupLifecycleTest PopupLifecycleTest.cpp CandidateWindow.cpp SymbolPanel.cpp)
     add_dependencies(KeyKeyPopupLifecycleTest keykey_symbol_resources)
     target_include_directories(KeyKeyPopupLifecycleTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
@@ -307,7 +310,7 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyPopupLifecycle COMMAND KeyKeyPopupLifecycleTest)
     set_tests_properties(KeyKeyPopupLifecycle PROPERTIES RUN_SERIAL TRUE)
     add_executable(KeyKeyTsfOutputBehaviorTest TsfOutputBehaviorTest.cpp
-        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp Diagnostics.cpp)
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp)
     target_compile_features(KeyKeyTsfOutputBehaviorTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfOutputBehaviorTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
     target_compile_options(KeyKeyTsfOutputBehaviorTest PRIVATE /utf-8)
@@ -362,7 +365,7 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyTsfConfigureInterface COMMAND KeyKeyTsfInterfaceSmokeTest)
 
     add_executable(KeyKeyTsfSystemTrayTest TsfSystemTrayTest.cpp
-        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp Diagnostics.cpp)
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp)
     add_dependencies(KeyKeyTsfSystemTrayTest keykey_symbol_resources)
     target_include_directories(KeyKeyTsfSystemTrayTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
     target_compile_features(KeyKeyTsfSystemTrayTest PRIVATE cxx_std_17)

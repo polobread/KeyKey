@@ -267,7 +267,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 - 在 Windows「已安裝的應用程式」加入解除安裝項目
 
 請勿直接從網路磁碟、NAS 或 UNC 路徑安裝；UAC 後可能無法存取原路徑，且安裝
-視窗可能立即關閉。開始部署後的記錄位於 `%ProgramFiles%\chichi77 KeyKey\Deployment.log`。
+視窗可能立即關閉。所有建置（含 GitHub Actions）診斷預設關閉；需至設定的一般頁
+勾選「啟用診斷記錄」並套用，固定 3 天後自動停止，沒有天數選項。有效期限內才寫
+`%TEMP%\KeyKeyTsf.log` 與 `%ProgramFiles%\chichi77 KeyKey\Deployment.log`。
+輸入記錄含備份最多 20 MiB，部署記錄最多 1 MiB；安裝錯誤仍需記錄錯誤碼。
 
 首次安裝須自行在 Windows 設定新增鍵盤；升級保留共用入口的選擇，舊香港／澳門入口使用者需改選共用入口。請登出再登入載入新版。
 這是未簽署的家用測試套件，因此從網路下載時 Windows 可能顯示安全警告。
@@ -703,7 +706,11 @@ to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
 become inaccessible after UAC elevation and the installer window can close
 immediately. Once deployment starts, records are in
-`%ProgramFiles%\chichi77 KeyKey\Deployment.log`. It stages the runtime in
+`%ProgramFiles%\chichi77 KeyKey\Deployment.log` only during an active diagnostic
+session. Diagnostics default to off, including GitHub Actions builds. Enable the
+single checkbox in Settings to record for three days; it then stops automatically.
+TSF logs retain at most 20 MiB including the backup; deployment logs at most 1 MiB.
+It stages the runtime in
 `C:\Program Files\chichi77 KeyKey\1.3.2-<fingerprint>`, then registers
 both x64 and x86 TSF DLLs on x64 Windows (for all 32-bit applications), or the
 x86 DLL on 32-bit Windows, and creates an

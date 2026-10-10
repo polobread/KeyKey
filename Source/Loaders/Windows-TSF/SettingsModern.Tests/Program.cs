@@ -3,6 +3,31 @@ using KeyKeySettings;
 var file = Path.Combine(Path.GetTempPath(), "keykey-settings-test-" + Guid.NewGuid().ToString("N") + ".plist");
 try
 {
+    var previousProfile = Environment.GetEnvironmentVariable("KEYKEY_TSF_TEST_PROFILE_DIR");
+    var diagnosticDirectory = file + "-diagnostics";
+    Directory.CreateDirectory(diagnosticDirectory);
+    Environment.SetEnvironmentVariable("KEYKEY_TSF_TEST_PROFILE_DIR", diagnosticDirectory);
+    try
+    {
+        if (DiagnosticSettings.Read().Active) throw new Exception("診斷記錄應預設關閉");
+        var session = DiagnosticSettings.Save(true);
+        if (!DiagnosticSettings.Read().Active || session.ExpiresAtUtc - session.StartedAtUtc != 3 * 86400 ||
+            session.ActiveAt(session.ExpiresAtUtc) || session.ActiveAt(session.StartedAtUtc - 1) ||
+            !session.ActiveAt(session.ExpiresAtUtc - 1)) throw new Exception("診斷記錄期限不正確");
+        if (new DiagnosticSession(session.StartedAtUtc, session.StartedAtUtc + 4 * 86400).Active)
+            throw new Exception("診斷記錄不應接受超過 3 天的期限");
+        DiagnosticSettings.Save(false);
+        if (DiagnosticSettings.Read().Active) throw new Exception("手動關閉診斷記錄失敗");
+        File.WriteAllText(DiagnosticSettings.Path, "invalid XML");
+        if (DiagnosticSettings.Read().Active) throw new Exception("無效診斷設定應視為關閉");
+        Console.WriteLine("Diagnostics default-off, manual toggle and three-day expiry passed");
+    }
+    finally
+    {
+        Environment.SetEnvironmentVariable("KEYKEY_TSF_TEST_PROFILE_DIR", previousProfile);
+        File.Delete(Path.Combine(diagnosticDirectory, "diagnostics.plist"));
+        Directory.Delete(diagnosticDirectory);
+    }
     if (SmartMandarinSettings.Validate("asdfjkl;", "20") != 20) throw new Exception("自訂選字鍵／長度驗證失敗");
     if (SmartMandarinSettings.Validate("", "10") != 10) throw new Exception("鍵盤配置自動選字鍵未保留");
     foreach (var invalid in new[] { ("12345677", "10"), ("1234567 ", "10"), ("12345678", "9"), ("12345678", "21"), ("12345678", "10.0"), ("１２３４５６７８", "10") }) {

@@ -81,6 +81,14 @@
               <TextBlock Text="單按 Shift 或 Ctrl+Space 切換中英文；Shift+Space 切換全半形。" Opacity="0.7" />
             </StackPanel>
           </GroupBox>
+          <GroupBox Header="問題診斷">
+            <StackPanel>
+              <CheckBox x:Name="DiagnosticLogging" Content="啟用診斷記錄" Margin="0,0,0,10"
+                        Checked="DiagnosticLogging_Changed" Unchecked="DiagnosticLogging_Changed" />
+              <TextBlock Text="預設關閉。開啟並套用後記錄 3 天，到期自動停止；輸入記錄最多保留 20 MB。記錄包含按鍵代碼與視窗狀態，供追查輸入問題。" Opacity="0.7" />
+              <TextBlock x:Name="DiagnosticStatus" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+          </GroupBox>
         </StackPanel></ScrollViewer>
       </TabItem>
       <TabItem Header="注音">

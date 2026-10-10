@@ -6,6 +6,7 @@
 #include <mutex>
 
 #include "FrontendSettings.h"
+#include "Diagnostics.h"
 #include "ModuleState.h"
 
 namespace KeyKey::WindowsTsf {
@@ -83,6 +84,7 @@ void CandidateWindow::ensureWindow(HWND owner) {
         nullptr,
         g_module,
         this);
+    traceState("create");
 }
 
 void CandidateWindow::show(HWND owner, const RECT& textRect,
@@ -133,29 +135,42 @@ void CandidateWindow::show(HWND owner, const RECT& textRect,
     }
     shown_ = true;
     InvalidateRect(window_, nullptr, FALSE);
+    traceState("show");
     NotifyWinEvent(EVENT_OBJECT_IME_SHOW, window_, OBJID_CLIENT, CHILDID_SELF);
 }
 
 void CandidateWindow::hide() {
+    if (window_) traceState("hide-begin");
     const bool wasShown = shown_;
     shown_ = false;
     if (window_) {
-        const bool wasVisible = IsWindowVisible(window_) != FALSE;
-        // ShowOwnedPopups(FALSE) can hide a shown popup while retaining a
-        // pending restore. SW_HIDE on that hidden HWND does not cancel it.
-        // Retire the suppressed window so the host cannot restore empty UI.
-        const bool suppressed = wasShown && !wasVisible;
         if (wasShown) {
             NotifyWinEvent(EVENT_OBJECT_IME_HIDE, window_, OBJID_CLIENT, CHILDID_SELF);
         }
-        if (suppressed) {
-            DestroyWindow(window_);
-        } else {
-            ShowWindow(window_, SW_HIDE);
+        // A canceled popup has no display lifetime left. Do not keep an empty
+        // topmost HWND (or its redirected surface) for a later host restore.
+        // Keep the font; a new candidate result recreates only the native window.
+        if (!DestroyWindow(window_)) {
+            const DWORD error = GetLastError();
+            // If destruction fails, still remove both visibility and topmost
+            // status. Retain the handle so the next hide/destructor can retry.
+            SetWindowPos(window_, HWND_NOTOPMOST, 0, 0, 0, 0,
+                         SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_HIDEWINDOW);
+            Trace("CandidateWindow destroy-failed hwnd=%p error=%lu", window_, error);
         }
     }
     candidates_.clear();
     cellWidths_.clear();
+}
+
+void CandidateWindow::traceState(const char* event) const {
+    if (!DiagnosticsEnabled()) return;
+    RECT bounds{};
+    if (window_) GetWindowRect(window_, &bounds);
+    Trace("CandidateWindow %s object=%p hwnd=%p owner=%p foreground=%p logical=%d visible=%d count=%zu rowHeight=%d rect=(%ld,%ld,%ld,%ld)",
+          event, this, window_, window_ ? GetWindow(window_, GW_OWNER) : nullptr,
+          GetForegroundWindow(), shown_, window_ && IsWindowVisible(window_),
+          candidates_.size(), rowHeight_, bounds.left, bounds.top, bounds.right, bounds.bottom);
 }
 
 LRESULT CALLBACK CandidateWindow::WindowProc(HWND window, UINT message,
@@ -182,8 +197,20 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
         case WM_MOUSEACTIVATE:
             return MA_NOACTIVATE;
         case WM_PAINT:
+            traceState("paint");
             paint();
             return 0;
+        case WM_SHOWWINDOW:
+            Trace("CandidateWindow visibility-message hwnd=%p show=%llu reason=%lld",
+                  window_, static_cast<unsigned long long>(wparam), static_cast<long long>(lparam));
+            traceState("visibility");
+            return DefWindowProcW(window_, message, wparam, lparam);
+        case WM_WINDOWPOSCHANGED: {
+            const auto* position = reinterpret_cast<const WINDOWPOS*>(lparam);
+            Trace("CandidateWindow position-message hwnd=%p flags=0x%08X", window_, position->flags);
+            traceState("position");
+            return DefWindowProcW(window_, message, wparam, lparam);
+        }
         case WM_DPICHANGED: {
             const auto* suggested = reinterpret_cast<const RECT*>(lparam);
             HMONITOR monitor =
@@ -198,6 +225,7 @@ LRESULT CandidateWindow::handleMessage(UINT message, WPARAM wparam, LPARAM lpara
             return 0;
         }
         case WM_NCDESTROY: {
+            traceState("destroy");
             HWND destroyedWindow = window_;
             window_ = nullptr;
             shown_ = false;

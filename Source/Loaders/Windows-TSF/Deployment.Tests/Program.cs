@@ -15,6 +15,40 @@ void Reject(Action operation)
     try { operation(); } catch (DeploymentException) { return; }
     throw new Exception("Unsafe operation was accepted.");
 }
+Test("deployment diagnostic logging follows the default-off three-day setting", f =>
+{
+    Directory.CreateDirectory(f.Root);
+    var path = Path.Combine(f.Root, "Deployment.log");
+    var program = typeof(DeploymentEngine).Assembly.GetType("KeyKey.Deployment.Program", true)!;
+    const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
+    var logPath = program.GetField("logPath", flags);
+    var previous = Environment.GetEnvironmentVariable("KEYKEY_TSF_TEST_PROFILE_DIR");
+    Environment.SetEnvironmentVariable("KEYKEY_TSF_TEST_PROFILE_DIR", f.Root);
+    var settings = Path.Combine(f.Root, "diagnostics.plist");
+    var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    void Session(long start, long end) => File.WriteAllText(settings,
+        $"<plist><dict><key>StartedAtUtc</key><string>{start}</string><key>ExpiresAtUtc</key><string>{end}</string></dict></plist>");
+    try
+    {
+        logPath?.SetValue(null, path);
+        program.GetMethod("Report", flags)!.Invoke(null, ["diagnostics-switch-test"]);
+        Check(!File.Exists(path));
+        Session(now, now + 3 * 86400);
+        program.GetMethod("Report", flags)!.Invoke(null, ["enabled"]);
+        Check(File.ReadAllText(path).Contains("enabled"));
+        File.WriteAllText(path, "existing record");
+        foreach (var session in new[] { (0L, 0L), (now - 3 * 86400, now), (now, now + 4 * 86400) }) {
+            Session(session.Item1, session.Item2);
+            program.GetMethod("Report", flags)!.Invoke(null, ["must not append"]);
+            Check(File.ReadAllText(path) == "existing record");
+        }
+        Session(now, now + 3 * 86400);
+        using (var stream = File.Create(path)) stream.SetLength(1024 * 1024);
+        program.GetMethod("Report", flags)!.Invoke(null, ["bounded deployment log"]);
+        Check(new FileInfo(path).Length < 1024 * 1024);
+    }
+    finally { logPath?.SetValue(null, null); Environment.SetEnvironmentVariable("KEYKEY_TSF_TEST_PROFILE_DIR", previous); }
+});
 Test("updater sidecar is validated and retained with its versioned payload", f =>
 {
     var package = f.Package("1.3.2");

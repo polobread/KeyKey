@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 #include <string>
+#include <cstdint>
 
 namespace KeyKey::WindowsTsf {
 
@@ -20,6 +21,14 @@ struct FrontendSettings {
     bool simplifiedChineseOutput = false;
     bool defaultChineseMode = true;
 };
+
+struct DiagnosticSession {
+    std::int64_t startedAt = 0;
+    std::int64_t expiresAt = 0;
+    bool activeAt(std::int64_t now) const;
+};
+std::wstring DiagnosticSettingsPath();
+DiagnosticSession LoadDiagnosticSession();
 
 std::wstring SettingsDirectory();
 void MigrateLegacyPreferences();

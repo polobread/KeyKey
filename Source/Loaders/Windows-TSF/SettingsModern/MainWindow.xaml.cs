@@ -14,6 +14,9 @@ public partial class MainWindow : Window
     private bool updatingReadings;
     private bool trackingUpdateChanges;
     private bool unsavedSettings;
+    private bool diagnosticsEdited;
+    private DiagnosticSession diagnosticSession;
+    private readonly System.Windows.Threading.DispatcherTimer diagnosticTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private string savedPhraseText = "";
     private string savedPhraseReading = "";
     private static readonly string[] Scales =
@@ -59,12 +62,29 @@ public partial class MainWindow : Window
         }
         CapturePhraseEditor();
         trackingUpdateChanges = true;
+        diagnosticTimer.Tick += (_, _) =>
+        {
+            if (diagnosticsEdited) return;
+            var active = diagnosticSession.Active;
+            if (DiagnosticLogging.IsChecked != active)
+            {
+                trackingUpdateChanges = false;
+                DiagnosticLogging.IsChecked = active;
+                trackingUpdateChanges = true;
+            }
+            UpdateDiagnosticStatus();
+        };
+        diagnosticTimer.Start();
+        Closed += (_, _) => diagnosticTimer.Stop();
         UpdateShutdownProtection();
     }
 
     private void LoadSettings()
     {
         var loader = SettingsStore.LoaderPath;
+        diagnosticSession = DiagnosticSettings.Read();
+        DiagnosticLogging.IsChecked = diagnosticSession.Active;
+        UpdateDiagnosticStatus();
         VerticalCandidate.IsChecked = SettingsStore.Read(loader,
             "OneDimensionalCandidatePanelStyle", "vertical") != "horizontal";
         HorizontalCandidate.IsChecked = !VerticalCandidate.IsChecked;
@@ -115,6 +135,21 @@ public partial class MainWindow : Window
     }
 
     private void CheckUpdate_Click(object sender, RoutedEventArgs e) => App.Updater.Check();
+    private void DiagnosticLogging_Changed(object sender, RoutedEventArgs e)
+    {
+        if (trackingUpdateChanges) diagnosticsEdited = true;
+        UpdateDiagnosticStatus();
+    }
+
+    private void UpdateDiagnosticStatus()
+    {
+        if (DiagnosticStatus == null) return;
+        DiagnosticStatus.Text = DiagnosticLogging.IsChecked == true
+            ? diagnosticsEdited ? "套用後開始記錄，3 天後自動關閉。"
+                : $"記錄中，將於 {DateTimeOffset.FromUnixTimeSeconds(diagnosticSession.ExpiresAtUtc).ToLocalTime():yyyy/MM/dd HH:mm} 自動關閉。"
+            : diagnosticSession.StartedAtUtc > 0 && !diagnosticSession.Active && !diagnosticsEdited
+                ? "診斷記錄已到期，自動關閉。" : diagnosticsEdited ? "套用後停止記錄。" : "診斷記錄已關閉。";
+    }
     private void UpdateSettingsChanged(object sender, RoutedEventArgs e)
     {
         if (!trackingUpdateChanges) return;
@@ -245,6 +280,13 @@ public partial class MainWindow : Window
             SettingsStore.Write(SettingsStore.AssociatedPath, new Dictionary<string, string> {
                 ["EnabledCollections"] = string.Join(',', collections.Where(c => c.Enabled).Select(c => c.Source)),
             });
+            // Other settings changes must not extend an existing deadline.
+            if (diagnosticsEdited)
+            {
+                diagnosticSession = DiagnosticSettings.Save(DiagnosticLogging.IsChecked == true);
+                diagnosticsEdited = false;
+                UpdateDiagnosticStatus();
+            }
             SendMessageTimeout(new IntPtr(0xffff), 0x001A, IntPtr.Zero,
                 "chichi77 KeyKey", 0x0002, 250, out _);
             var outputSynced = NativeBackend.KeyKeyPublishSimplifiedOutput(SimplifiedChineseOutput.IsChecked == true ? 1 : 0) != 0;

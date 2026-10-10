@@ -13,6 +13,7 @@ std::atomic<long> g_serverLocks{0};
 struct PopupLifecycleTestAccess {
     static HWND window(const CandidateWindow& popup) { return popup.window_; }
     static void create(CandidateWindow& popup, HWND owner) { popup.ensureWindow(owner); }
+    static HFONT font(const CandidateWindow& popup) { return popup.font_; }
     static bool empty(const CandidateWindow& popup) {
         return popup.candidates_.empty() && popup.cellWidths_.empty();
     }
@@ -73,19 +74,39 @@ void CandidateLifecycle() {
     HWND window = PopupLifecycleTestAccess::window(popup);
     Check(window && !IsWindowVisible(window), "New popup must be initially hidden");
     popup.hide();
+    Check(!IsWindow(window) && !PopupLifecycleTestAccess::window(popup),
+        "Unused candidate HWND was not retired");
     Check(ShowOwnedPopups(host.window, TRUE) != FALSE, "Owner restore failed");
     Check(!IsWindowVisible(window), "Initially hidden popup appeared on owner restore");
 
     popup.show(host.window, kAnchor, kCandidates, 0);
     window = PopupLifecycleTestAccess::window(popup);
+    const HFONT font = PopupLifecycleTestAccess::font(popup);
+    Check(font && GetObjectType(font) == OBJ_FONT, "Candidate font missing");
     popup.hide();
-    Check(PopupLifecycleTestAccess::window(popup) == window && IsWindow(window) &&
-          !IsWindowVisible(window), "Normal candidate hide must reuse its HWND");
+    Check(!PopupLifecycleTestAccess::window(popup) && !IsWindow(window) &&
+          PopupLifecycleTestAccess::empty(popup), "Normal cancel retained an empty candidate HWND");
+    Check(PopupLifecycleTestAccess::font(popup) == font && GetObjectType(font) == OBJ_FONT,
+        "Normal cancel discarded the reusable candidate font");
+    Check(!SetWindowPos(window, HWND_TOPMOST, 0, 0, 0, 0,
+                       SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW),
+        "A canceled candidate HWND can still be shown topmost");
     popup.show(host.window, kAnchor, kCandidates, 0);
+    window = PopupLifecycleTestAccess::window(popup);
     Check(ShowOwnedPopups(host.window, FALSE) != FALSE &&
           ShowOwnedPopups(host.window, TRUE) != FALSE && IsWindowVisible(window) &&
           !PopupLifecycleTestAccess::empty(popup),
         "Temporary owner hide must restore live candidate content");
+
+    // A host restoration message already queued before cancellation cannot
+    // act on the empty old popup. No new HWND is created until a new result.
+    Check(PostMessageW(window, WM_SHOWWINDOW, TRUE, SW_PARENTOPENING) != FALSE,
+        "Cannot queue owner restore for candidate");
+    popup.hide();
+    MSG message{};
+    while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) DispatchMessageW(&message);
+    Check(!IsWindow(window) && !PopupLifecycleTestAccess::window(popup),
+        "Queued owner restore retained a canceled candidate");
 
     for (int cycle = 0; cycle < 5; ++cycle) {
         const HWND active = GetActiveWindow(), focused = GetFocus();
@@ -121,6 +142,24 @@ void CandidateLifecycle() {
     Check(!PopupLifecycleTestAccess::window(popup) ||
           !IsWindowVisible(PopupLifecycleTestAccess::window(popup)),
         "Empty candidate update returned on owner restore");
+    popup.hide();
+
+    // A busy host can delay painting after the first candidate is shown.
+    // Cancel without pumping WM_PAINT: the pending blank surface must retire,
+    // and the next result must still have a valid region that can be painted.
+    popup.show(replacement.window, kAnchor, kCandidates, 0);
+    window = PopupLifecycleTestAccess::window(popup);
+    Check(GetUpdateRect(window, nullptr, FALSE) != FALSE,
+        "First candidate paint was not pending for delayed-paint check");
+    popup.hide();
+    Check(!IsWindow(window) && !PopupLifecycleTestAccess::window(popup),
+        "Cancel before painting retained a candidate HWND");
+    popup.show(replacement.window, kAnchor, kCandidates, 1);
+    window = PopupLifecycleTestAccess::window(popup);
+    Check(UpdateWindow(window) != FALSE &&
+          !GetUpdateRect(window, nullptr, FALSE) && IsWindowVisible(window),
+        "Candidate did not paint after a delayed-paint cancellation");
+    CheckNoActivation(replacement.window, replacement.edit, window);
     popup.hide();
 }
 

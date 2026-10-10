@@ -88,6 +88,41 @@ internal static class Program
         Console.WriteLine("Updater Windows compatibility and settings/phrase shutdown protection passed");
     }
 
+    private static void VerifyDiagnosticSwitch(MainWindow window)
+    {
+        var toggle = Control<CheckBox>(window, "DiagnosticLogging");
+        var apply = Control<Button>(window, "ApplyButton");
+        Check(toggle.IsChecked == false && !DiagnosticSettings.Read().Active,
+            "Diagnostic switch must default to off");
+        toggle.IsChecked = true;
+        Check(!App.Updater.CanShutdown && !DiagnosticSettings.Read().Active,
+            "Unsaved diagnostic toggle must be protected and must not start logging");
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        var session = DiagnosticSettings.Read();
+        Check(session.Active && session.ExpiresAtUtc - session.StartedAtUtc == 3 * 86400,
+            "Applying diagnostic switch did not persist the three-day deadline");
+        Control<CheckBox>(window, "TypingBeep").IsChecked = !Control<CheckBox>(window, "TypingBeep").IsChecked;
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(DiagnosticSettings.Read() == session, "Unrelated Apply extended the diagnostic deadline");
+        var reopened = new MainWindow();
+        Check(Control<CheckBox>(reopened, "DiagnosticLogging").IsChecked == true &&
+              Control<TextBlock>(reopened, "DiagnosticStatus").Text.Contains("自動關閉"),
+            "Diagnostic state did not survive reopening");
+        reopened.Close();
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        File.WriteAllText(DiagnosticSettings.Path,
+            $"<plist><dict><key>StartedAtUtc</key><string>{now - 3 * 86400}</string><key>ExpiresAtUtc</key><string>{now}</string></dict></plist>");
+        var expired = new MainWindow();
+        Check(Control<CheckBox>(expired, "DiagnosticLogging").IsChecked == false &&
+              Control<TextBlock>(expired, "DiagnosticStatus").Text.Contains("已到期"),
+            "Expired diagnostics reopened as enabled");
+        expired.Close();
+        toggle.IsChecked = false;
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(!DiagnosticSettings.Read().Active, "Manual diagnostic disable was not saved");
+        Console.WriteLine("WPF diagnostic toggle, deadline preservation and expiry passed");
+    }
+
     [DllImport("KeyKeySettingsBackend.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
     private static extern IntPtr KeyKeyLookupReadings(string path, string phrase, out int status);
     [DllImport("KeyKeySettingsBackend.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -239,6 +274,7 @@ internal static class Program
             Check(Control<RadioButton>(chineseReopened, "DefaultChineseMode").IsChecked == true,
                 "Chinese startup mode did not survive reopening");
             VerifyUpdateShutdownProtection(chineseReopened);
+            VerifyDiagnosticSwitch(chineseReopened);
             chineseReopened.Close();
             Console.WriteLine("WPF settings controls, validation, native backend and Apply/reopen passed");
             return 0;
