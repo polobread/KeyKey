@@ -61,8 +61,20 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
    不應在沒有過渡方案時直接換 key。
 
 3. 設定 `macos_feed_url`、`windows_x64_feed_url` 為 HTTPS 的固定平台 feed。
-   可用 CDN 的 `keykey/updates/stable/macos-arm64.xml`、`windows-x64.xml`；未建立 x86
-   installer 前保持 `windows_x86_feed_url` 空白。這些網址必須先實際建立、驗證，不填猜測網址。
+   各平台共用 CDN 的 `keykey/updates/stable/` 目錄，以獨立檔案提供 feed，不另外
+   增加平台子目錄，也不將不同平台合併成同一份 XML。預定配置如下，尚未上傳或啟用：
+
+   ```text
+   https://download.aws.polobread.com/keykey/updates/stable/
+     macos-arm64.xml
+     windows-x64.xml
+     metadata.json
+     metadata.json.sig
+   ```
+
+   未來建立 x86 installer 時，再於同一目錄加入 `windows-x86.xml`；在此之前保持
+   `windows_x86_feed_url` 空白。各 feed URL 必須先實際建立、驗證，再寫入 `config.json`。
+   安裝包仍放在 `keykey/releases/download/TAG/FILE`，不放進 feed 目錄。
 
 ## 產生與驗證更新資料
 
