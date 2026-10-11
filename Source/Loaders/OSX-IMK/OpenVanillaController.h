@@ -27,6 +27,7 @@ using namespace OpenVanilla;
     BOOL _updateCommitStringBeforeCommit;
 }
 + (void)setActiveContext:(OpenVanillaController*)context sender:(id)sender;
++ (BOOL)hasPendingComposition;
 #pragma mark Send string to client.
 + (void)sendComposedStringToCurrentlyActiveContext:(NSString*)text;
 - (void)sendComposedStringToClient:(NSString*)text sender:(id)sender;

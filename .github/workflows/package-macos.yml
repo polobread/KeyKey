@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing published release tag, e.g. v1.3.1; blank = artifact only. Build uses the selected ref.'
+        description: 'Existing published macOS release tag, e.g. v1.3.2; blank = artifact only. Build uses the selected ref.'
         required: false
         type: string
 
@@ -42,9 +42,9 @@ jobs:
           EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          version=$(sed -nE '1s/^.* ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' README.md)
-          if [[ -z "$version" ]]; then
-            echo "README.md does not end its title with an x.y.z version." >&2
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Source/Loaders/OSX-IMK/Takao-Info.plist)
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "The macOS app does not declare an x.y.z version." >&2
             exit 1
           fi
 
@@ -84,6 +84,9 @@ jobs:
         shell: bash
         run: |
           python3 update/prepare.py fetch macos
+          bash update/test-macos.sh
+          KEYKEY_TEST_OPENSSL="$(brew --prefix openssl@3)/bin/openssl" \
+            python3 -m unittest discover -s update -p test_macos_release.py -v
           cd Source
           xcodebuild \
             -project Takao.xcodeproj \
@@ -267,6 +270,39 @@ jobs:
         with:
           name: keykey-macos-signed-${{ env.VERSION }}
           path: artifacts/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Prepare signed macOS updater candidate
+        if: vars.MACOS_UPDATE_METADATA_ENABLED == 'true' && needs.build.outputs.source_sha == needs.build.outputs.tag_sha
+        env:
+          UPDATE_KEY_PEM: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_PEM }}
+          UPDATE_MIRROR_BASE: ${{ vars.AWS_RELEASE_MIRROR_BASE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${UPDATE_KEY_PEM:?Configure the reviewed update signing key in the release environment}"
+          brew install openssl@3
+          umask 077
+          update_key=$(mktemp "$RUNNER_TEMP/update-key.XXXXXX")
+          trap 'rm -f "$update_key"' EXIT
+          printf '%s' "$UPDATE_KEY_PEM" > "$update_key"
+          asset_base="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download"
+          if [[ -n "$UPDATE_MIRROR_BASE" ]]; then
+            asset_base="${UPDATE_MIRROR_BASE%/}/keykey/releases/download"
+          fi
+          python3 update/macos_release.py --openssl "$(brew --prefix openssl@3)/bin/openssl" \
+            --package "artifacts/chichi77-KeyKey-$VERSION-macos-arm64.pkg.zip" \
+            --version "$VERSION" --tag "$RELEASE_TAG" \
+            --source-sha "$BUILD_SOURCE_SHA" --tag-sha "$RELEASE_TAG_SHA" \
+            --key "$update_key" --base-url "$asset_base" --out update/out/macos-release
+
+      - name: Upload verified updater candidate for review
+        if: vars.MACOS_UPDATE_METADATA_ENABLED == 'true' && needs.build.outputs.source_sha == needs.build.outputs.tag_sha
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: keykey-macos-updater-${{ env.VERSION }}
+          path: update/out/macos-release/
           if-no-files-found: error
           retention-days: 7
 

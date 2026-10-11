@@ -1,14 +1,14 @@
 # 桌面更新（開發中）
 
-此目錄是在 local `v1.3.2` 接上的第一階段實作，**不是已上線的自動更新服務**。
+此目錄在 local `v1.3.2` 開發 macOS／Windows 更新客戶端與發布工具，**不是已上線的自動更新服務**。
 `config.json` 的公開金鑰與 feed 目前留空，因此建置不連線。未使用 Yahoo 舊服務、
 RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 
 ## 目錄與維護入口
 
 更新設定、建置／發布工具與 feed 統一放在小寫單數 `update/`。
-GitHub Raw 與 CDN 的固定 feed 路徑仍是 `update/stable/windows-x64.xml` 和
-`windows-x86.xml`。
+GitHub Raw 與 CDN 的固定 feed 檔名為 `macos-arm64.xml`、`windows-x64.xml` 和
+`windows-x86.xml`，放在各自的 `update/stable/` prefix。
 
 | 檔案／目錄 | 何時維護 |
 |---|---|
@@ -16,6 +16,7 @@ GitHub Raw 與 CDN 的固定 feed 路徑仍是 `update/stable/windows-x64.xml` �
 | `dependencies.json` | 升級 Sparkle／WinSparkle SDK 時更新版本與 SHA-256 |
 | `prepare.py` | 建置前準備 SDK；由各平台建置流程呼叫 |
 | `metadata.py` | 發布時驗證 manifest 與安裝包，產生簽章、metadata 及 feed |
+| `macos_release.py` | 核對 macOS 四份版號及正式設定，再產生經驗證的單平台更新候選，不發布 |
 | `verify-windows.ps1`、`sign-macos.py` | 平台驗證／簽章實作，由發布或建置工具呼叫 |
 | `test_*` | 測試，由 CI 執行 |
 | `stable/` | 固定網址的 feed；發布時提交已驗證的輸出，經 PR review／merge |
@@ -33,6 +34,9 @@ GitHub Raw 與 CDN 的固定 feed 路徑仍是 `update/stable/windows-x64.xml` �
 - macOS：Sparkle 2.10.0，由 IMK 主程式持有 updater，Preferences 透過既有本機服務
   檢查與切換自動檢查。更新 `.pkg.zip`，保留 `/Library/Input Methods` 的安裝方式。
   套件仍需管理員同意，安裝後登出／登入；不啟用靜默安裝或背景自動下載。
+  原生回呼同步檢查／下載／錯誤／取消狀態；組字未完成時延後更新重啟，真正結束前
+  再檢查新組字，不自行送字或清除。這是客戶端保護，不是所有 App 實機驗收的替代品。
+  保護範圍是此 IMK 行程的活動組字；手動安裝與其他登入工作階段不經過此回呼。
 - Windows：WinSparkle 0.9.4，只在現代 Settings 執行檢查；**沒有登入排程／背景服務**。
   native DLL 與 feed 依 Settings 的 bitness 選擇。安裝沿用現有 NSIS＋版本化 Deployment。
   目前 NSIS 只有 x64 installer，故 x86 feed 只提供手動下載資訊，不把 ZIP 當自動安裝器。
@@ -54,6 +58,7 @@ GitHub Raw 與 CDN 的固定 feed 路徑仍是 `update/stable/windows-x64.xml` �
 
 ```sh
 python3 update/prepare.py fetch macos
+bash update/test-macos.sh
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
@@ -64,6 +69,42 @@ python3 update/prepare.py fetch macos
 Windows TSF CMake presets。Package macOS／Windows workflows 已加入準備步驟。
 下載會校驗官方 SDK 的固定 SHA-256；cache 與產物不提交。macOS SDK 內全部授權通知及
 Windows WinSparkle 的 COPYING 都會隨安裝包保留。
+
+### macOS 1.3.2 開發與啟用
+
+macOS 原始碼版號為 1.3.2（未發布）；四份產品 plist 必須一致，封裝不再讀取
+README 的 Linux 版號。更新設定頁每秒讀取 IMK 的本機狀態；Sparkle 自己呈現下載
+進度與簽章／安裝錯誤。自動檢查預設關閉，舊 Yahoo 旗標不算同意；開啟後只在 IMK
+主程式執行時每日檢查，不新增 launch agent。系統 profile 與背景下載均強制關閉。
+
+固定來源可選擇以下之一，macOS 尚未實作來源失敗自動切換：
+
+- CDN：`https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml`
+- GitHub Raw：`https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/macos-arm64.xml`
+
+初始 `stable/macos-arm64.xml` 只有已發布 1.3.1 的手動下載連結，沒有更新 item。
+分支內檔案不表示 Raw master 或 CDN 已部署。舊版沒有正式更新設定，因此第一次
+導入必須手動下載並安裝含公開金鑰與 feed 的 notarized 版本，再登出／登入。
+後續更新必須使用更高版號；同版本重新打包不是自動升級。
+
+`package-macos.yml` 的受保護 `release` environment 簽章 job 支援選擇性候選產生：
+
+1. 先審查並設定 `config.json` 的正式公開金鑰及已可存取的 macOS feed。
+2. 在有人工核准的 environment 設定 secret `UPDATE_ED25519_PRIVATE_KEY_PEM`，內容為
+   對應公開金鑰的 PEM 私鑰；不要貼在聊天、提交 Git 或放進 artifact。
+3. 設定 variable `MACOS_UPDATE_METADATA_ENABLED=true`。可選的
+   `AWS_RELEASE_MIRROR_BASE_URL` 決定 enclosure 指向 CDN，未設定則指向 GitHub Release。
+4. 使用已審查的正式 tag 建置，且 `source_sha == tag_sha`；同版 recovery 不產生更新候選。
+   job 先驗證 Developer ID／notarization，再產生 `keykey-macos-updater-VERSION` artifact，
+   包含內容位址安裝包、`macos-arm64.xml` 與單平台 signed metadata。私鑰暫存檔離開步驟即移除。
+5. 維護者 review 候選，按下方發布順序上傳不可變 `packages/`，確認可下載且 SHA-256 相同，
+   才以 PR 提升 GitHub feed／部署 CDN feed。此 workflow 不自動上傳更新候選或改寫 feed，
+   原有 Release 下載資產發布仍照既有流程執行。
+
+本機 `bash update/test-macos.sh` 使用 fake engine 與離屏設定頁，無網路、安裝或已安裝 loader 變動。
+`KEYKEY_TEST_OPENSSL=/opt/homebrew/bin/openssl python3 -m unittest discover -s update -p test_macos_release.py -v`
+使用臨時測試金鑰驗證候選簽章，正向 OS 驗證為 mock；不能宣稱已完成 notarized 升級。
+正式啟用前須完成本文最後列出的已安裝版本驗收，包含組字中／新組字及個人詞庫保留。
 
 ## 正式金鑰與網址設定（需維護者審查）
 

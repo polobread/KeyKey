@@ -87,7 +87,7 @@ def embed_macos(app):
     shutil.copyfile(sdk / "LICENSE", notices / "Sparkle-LICENSE.txt")
     info_path = contents / "Info.plist"
     info = plistlib.loads(info_path.read_bytes())
-    info.update(SUEnableAutomaticChecks=False, SUAllowsAutomaticUpdates=False,
+    info.update(SUEnableAutomaticChecks=False, SUAllowsAutomaticUpdates=False, SUAutomaticallyUpdate=False,
                 SUSendProfileInfo=False, SUVerifyUpdateBeforeExtraction=True,
                 SUScheduledCheckInterval=86400)
     for name, value in (("SUFeedURL", config["macos_feed_url"]),

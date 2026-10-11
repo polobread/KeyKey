@@ -146,6 +146,8 @@ static void OVCLaunchApplication(const string& value)
 @implementation OpenVanillaController
 - (void)dealloc
 {
+    if (OVCActiveContext == self)
+        [OpenVanillaController setActiveContext:nil sender:nil];
     // delete C++ objects here
     delete _context;
     [_composingBuffer release];
@@ -180,6 +182,15 @@ static void OVCLaunchApplication(const string& value)
 	id tmp = OVCActiveContextSender;	
     OVCActiveContextSender = [sender retain];
 	[tmp release];
+}
+
++ (BOOL)hasPendingComposition
+{
+    // Read-only: an update must never commit or discard text on the user's behalf.
+    return OVCActiveContext && OVCActiveContext->_context &&
+        ([OVCActiveContext->_composingBuffer length] > 0 ||
+         !OVCActiveContext->_context->composingText()->isEmpty() ||
+         !OVCActiveContext->_context->readingText()->isEmpty());
 }
 
 #pragma mark Send string to client

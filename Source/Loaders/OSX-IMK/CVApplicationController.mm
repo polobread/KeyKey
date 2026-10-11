@@ -7,7 +7,7 @@
 #import "Minotaur.h"
 //#import "Version.h"
 #import "OpenVanillaController.h"
-#import <Sparkle/Sparkle.h>
+#import "KeyKeyMacUpdater.h"
 
 #if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5)
 #import <zlib.h>
@@ -55,49 +55,22 @@ extern size_t VendorMotcleSize;
 //	NSLog(@"finished retaining loader %@", _loader);
 }
 
-// Load only the embedded, code-signed framework; no runtime SDK downloads.
-// Dynamic loading keeps Sparkle out of the legacy framework link graph.
 - (void)startDesktopUpdater
 {
-    NSBundle *host = [NSBundle mainBundle];
-    NSString *feedString = [host objectForInfoDictionaryKey:@"SUFeedURL"];
-    NSString *keyString = [host objectForInfoDictionaryKey:@"SUPublicEDKey"];
-    if (![feedString length] || ![keyString length])
-        return;
-    NSURL *feed = [NSURL URLWithString:feedString];
-    NSData *key = [[[NSData alloc] initWithBase64EncodedString:
-        keyString options:0] autorelease];
-    if (![[feed scheme] isEqualToString:@"https"] || ![feed host] || [key length] != 32)
-        return; // An unconfigured development build remains completely offline.
-    NSString *path = [[host privateFrameworksPath] stringByAppendingPathComponent:@"Sparkle.framework"];
-    if (![[NSBundle bundleWithPath:path] load])
-        return;
-    Class controllerClass = NSClassFromString(@"SPUStandardUpdaterController");
-    _desktopUpdaterController = [[controllerClass alloc] initWithStartingUpdater:NO
-        updaterDelegate:nil userDriverDelegate:nil];
-    NSError *error = nil;
-    SPUUpdater *updater = [(SPUStandardUpdaterController *)_desktopUpdaterController updater];
-    if (![updater startUpdater:&error]) {
-        NSLog(@"Desktop updater could not start: %@", error);
-        [_desktopUpdaterController release];
-        _desktopUpdaterController = nil;
-    }
+    if (_desktopUpdaterController) return;
+    _desktopUpdaterController = [[KeyKeyMacUpdater alloc] initWithHostBundle:[NSBundle mainBundle]
+        engine:nil compositionCheck:^BOOL { return [OpenVanillaController hasPendingComposition]; }];
+    [_desktopUpdaterController start];
 }
 
 - (NSDictionary *)desktopUpdateStatus
 {
-    SPUUpdater *updater = [(SPUStandardUpdaterController *)_desktopUpdaterController updater];
-    return [NSDictionary dictionaryWithObjectsAndKeys:
-        [NSNumber numberWithBool:updater != nil], @"configured",
-        [NSNumber numberWithBool:[updater automaticallyChecksForUpdates]], @"automatic",
-        [updater lastUpdateCheckDate] ?: (id)@"", @"lastCheck", nil];
+    return [_desktopUpdaterController snapshot];
 }
 
 - (void)performDesktopUpdateCheck
 {
-    SPUUpdater *updater = [(SPUStandardUpdaterController *)_desktopUpdaterController updater];
-    if ([updater canCheckForUpdates])
-        [updater checkForUpdates];
+    [_desktopUpdaterController checkForUpdates];
 }
 
 - (oneway void)checkForDesktopUpdates
@@ -107,8 +80,7 @@ extern size_t VendorMotcleSize;
 
 - (void)applyAutomaticDesktopUpdates:(NSNumber *)enabled
 {
-    SPUUpdater *updater = [(SPUStandardUpdaterController *)_desktopUpdaterController updater];
-    [updater setAutomaticallyChecksForUpdates:[enabled boolValue]];
+    [_desktopUpdaterController setAutomaticChecks:[enabled boolValue]];
 }
 
 - (oneway void)setAutomaticDesktopUpdates:(BOOL)enabled
@@ -632,6 +604,16 @@ extern size_t VendorMotcleSize;
 {
 	[self startDesktopUpdater];
 	[[NSAppleEventManager sharedAppleEventManager] setEventHandler:self andSelector:@selector(handleIncomingURL:withReplyEvent:) forEventClass:kInternetEventClass andEventID:kAEGetURL];
+}
+
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
+{
+    return (!_desktopUpdaterController || [_desktopUpdaterController mayTerminateForUpdate]) ? NSTerminateNow : NSTerminateCancel;
+}
+
+- (void)applicationWillTerminate:(NSNotification *)notification
+{
+    [_desktopUpdaterController stop];
 }
 
 @end

@@ -1,6 +1,6 @@
-# 琦琦輸入法 / chichi77 KeyKey — Android／iOS 開發版 1.3.3；Windows 1.3.2；其他平台 1.3.1
+# 琦琦輸入法 / chichi77 KeyKey — Android／iOS 開發版 1.3.3；macOS／Windows 開發版 1.3.2；Linux 1.3.1
 
-Android 與 iOS 原始碼開發版號已更新為 `1.3.3`；商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線。Android 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。Windows `1.3.2` 尚未發布；macOS 與 Linux 仍為 `1.3.1`。
+Android 與 iOS 原始碼開發版號已更新為 `1.3.3`；商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線。Android 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。macOS／Windows `1.3.2` 尚未發布；macOS 已發布版與 Linux 仍為 `1.3.1`。
 macOS、Windows 與 Ubuntu 24.04 安裝包依各自版本提供於
 [GitHub Release](https://github.com/polobread/KeyKey/releases)；
 Android 與 iOS 依各自的商店管道安裝。

@@ -244,7 +244,7 @@ file for terms.
 	// The old default-true flag is NOT consent for a newly enabled network feature.
 	[_useUpdateCheckBox setIntValue:0];
 	[_useUpdateCheckBox setEnabled:NO];
-	[_useUpdateCheckBox setTitle:@"自動檢查更新（連線至發行伺服器）"];
+	[_useUpdateCheckBox setTitle:@"每日自動檢查更新（需連線）"];
 	@try {
 		id service = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
 		[service setProtocolForProxy:@protocol(OpenVanillaService)];

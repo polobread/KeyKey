@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-目前工作分支為 `v1.3.2`。Android 與 iOS 開發版號為 `1.3.3`；商店正式版仍為 `1.3.2`（iOS build 41），Android 於 2026-10-08 正式發布。Windows 產品版號為 `1.3.2`，尚未發布；macOS、Linux 仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+目前工作分支為 `v1.3.2`。Android 與 iOS 開發版號為 `1.3.3`；商店正式版仍為 `1.3.2`（iOS build 41），Android 於 2026-10-08 正式發布。macOS 與 Windows 產品開發版號為 `1.3.2`，尚未發布；macOS 已發布版與 Linux 仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -71,6 +71,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.
 
 # macOS
 python3 update/prepare.py fetch macos
+bash update/test-macos.sh
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
@@ -112,7 +113,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 
 ## 改版號清單
 
-`README.md` 內文明列各平台版本；標題尾版號保留給 macOS、Linux 的既有封裝流程；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
+`README.md` 內文明列各平台版本；標題尾版號僅保留給 Linux 的既有封裝流程。macOS 封裝從 IMK plist 讀取版本並核對四份產品 plist；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
 
 | 平台 | 版號來源 |
 |---|---|

@@ -1,5 +1,14 @@
 # 更新紀錄
 
+## macOS 1.3.2（未發布）
+
+- 四份 macOS 產品 plist 獨立升版至 1.3.2；已發布 macOS 1.3.1、Linux 版號與共用好打注音模型不變。
+- IMK 主程式加入可測試的 Sparkle 生命週期管理；設定頁顯示檢查、新版、下載、取消及錯誤狀態，阻止重複檢查，離線或取消後可重試。
+- 更新重啟遇到未完成組字時延後，完成後才繼續；不自行送字或清除組字，真正結束前再檢查新輸入。
+- 更新來源固定為建置時審查的 HTTPS feed；未設定公開金鑰與 feed 保持離線。每日自動檢查需使用者開啟，強制關閉系統 profile 與背景自動下載。
+- macOS CI 版號改從 plist 讀取，執行隔離更新測試；受保護簽章 job 可選擇產生已 notarize、Ed25519 簽章的不可變更新候選 artifact，不自動發布或提升 feed。
+- 初始 macOS RSS 只有既有 1.3.1 手動下載資訊，無自動安裝項目。第一次導入需手動安裝含正式更新設定的版本；正式金鑰、feed 部署及已安裝 notarized 版本的端到端驗收仍待維護者完成。
+
 ## 桌面更新機制（開發中，未發布）
 
 - macOS 加入 Sparkle 更新入口與預設關閉的自動檢查；由 IMK 主程式管理更新，舊版預設開啟的 Yahoo 更新旗標不視為連網同意。安裝包保留更新元件的 XPC/helper 權限並由內而外簽章，所有 pkg 元件固定安裝位置。
@@ -12,7 +21,7 @@
 - Windows 日常開發分成 TSF、設定、部署、更新、封裝與文件，按實際變更選擇 target／測試及必要架構；發布 CI 排除已由獨立步驟執行的 managed 設定／部署案例，避免重複跑。
 - 新增共用 Ed25519 metadata、平台 appcast 及跨平台簽章驗證證明工具。自動更新資產使用 SHA-256 內容位址，拒絕同版 recovery build 與未 notarize 的 macOS pkg；Linux／FreeBSD 保留套件管理路徑。
 - Windows stable 可明確宣告 `unsigned-transition` 暫用無 Authenticode 的 EXE，仍要求 Ed25519 安裝包簽章、HTTPS 與 tag／版本驗證；更新說明顯示未知發行者提示。預設仍要求有效且帶 timestamp 的 Authenticode，過渡模式拒絕無效或不受信任的簽章。日後以更高版號的 signed EXE 沿用原 stable feed 升級。
-- 尚未設定正式公開金鑰與 feed，也未啟用自動 feed 發布；目前建置維持離線。未替換已安裝版本，未修改各平台產品版號或共用模型。
+- 尚未設定正式公開金鑰與 feed，也未啟用自動 feed 發布；目前建置維持離線。未替換已安裝版本，macOS 開發升版見上節，共用模型不變。
 
 ## Android 1.3.3（未發布）
 
