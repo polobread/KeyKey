@@ -29,7 +29,7 @@ fi
 
 # Removing framework headers invalidates the original build signatures. Sign
 # nested code first, then the app, even for an unsigned local test package.
-python3 ../Updates/sign-macos.py "$STAGED" "$SIGN_IDENTITY"
+python3 ../update/sign-macos.py "$STAGED" "$SIGN_IDENTITY"
 codesign --verify --deep --strict --verbose=2 "$STAGED"
 
 # pkgbuild marks app bundles relocatable by default, which lets installer

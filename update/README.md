@@ -4,6 +4,25 @@
 `config.json` 的公開金鑰與 feed 目前留空，因此建置不連線。未使用 Yahoo 舊服務、
 RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 
+## 目錄與維護入口
+
+更新設定、建置／發布工具與 feed 統一放在小寫單數 `update/`。
+GitHub Raw 與 CDN 的固定 feed 路徑仍是 `update/stable/windows-x64.xml` 和
+`windows-x86.xml`。
+
+| 檔案／目錄 | 何時維護 |
+|---|---|
+| `config.json` | 設定正式公開金鑰與各平台 feed URL；私鑰放在 repository 外 |
+| `dependencies.json` | 升級 Sparkle／WinSparkle SDK 時更新版本與 SHA-256 |
+| `prepare.py` | 建置前準備 SDK；由各平台建置流程呼叫 |
+| `metadata.py` | 發布時驗證 manifest 與安裝包，產生簽章、metadata 及 feed |
+| `verify-windows.ps1`、`sign-macos.py` | 平台驗證／簽章實作，由發布或建置工具呼叫 |
+| `test_*` | 測試，由 CI 執行 |
+| `stable/` | 固定網址的 feed；發布時提交已驗證的輸出，經 PR review／merge |
+| `.cache/`、`out/` | SDK 快取與產物，不提交 |
+
+日常建置只需要 `prepare.py`；發布依下方 manifest 流程操作，不必逐一編輯這些工具。
+
 ## 共用與平台邊界
 
 - 共用的是 manifest 格式、Ed25519 金鑰／簽章規格與發布工具，不是同一個安裝包。
@@ -16,7 +35,7 @@ RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
   套件仍需管理員同意，安裝後登出／登入；不啟用靜默安裝或背景自動下載。
 - Windows：WinSparkle 0.9.4，只在現代 Settings 執行檢查；**沒有登入排程／背景服務**。
   native DLL 與 feed 依 Settings 的 bitness 選擇。安裝沿用現有 NSIS＋版本化 Deployment。
-  目前 NSIS 只有 x64 installer，故 x86 feed 維持空白，不把 ZIP 當自動安裝器。
+  目前 NSIS 只有 x64 installer，故 x86 feed 只提供手動下載資訊，不把 ZIP 當自動安裝器。
   更新分頁會顯示檢查結果、錯誤及取消狀態。安裝入口重查未儲存內容；如果安裝器
   已啟動後才有新的編輯，設定視窗會保持開啟以保留草稿。這項保護不會取消已啟動的
   安裝器，也不能從啟動成功推定安裝成功。WinSparkle 管理下載進度、簽章及 UAC；
@@ -29,14 +48,14 @@ RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 在 repository root 執行：
 
 ```sh
-python3 Updates/prepare.py fetch macos
+python3 update/prepare.py fetch macos
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
 (cd Installer && ./build.sh)
 ```
 
-在 Windows 建置前執行 `python Updates/prepare.py fetch windows`，再使用既有
+在 Windows 建置前執行 `python update/prepare.py fetch windows`，再使用既有
 Windows TSF CMake presets。Package macOS／Windows workflows 已加入準備步驟。
 下載會校驗官方 SDK 的固定 SHA-256；cache 與產物不提交。macOS SDK 內全部授權通知及
 Windows WinSparkle 的 COPYING 都會隨安裝包保留。
@@ -56,7 +75,7 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
 2. 取得公開金鑰：
 
    ```sh
-   python3 Updates/metadata.py --openssl /opt/homebrew/bin/openssl public-key \
+   python3 update/metadata.py --openssl /opt/homebrew/bin/openssl public-key \
      --key /absolute/protected/path/keykey-update-private.pem
    ```
 
@@ -94,10 +113,17 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
 | GitHub Raw x86 | `https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/windows-x86.xml` |
 
 `update/stable/windows-x64.xml` 與 `windows-x86.xml` 是 GitHub 來源的初始 RSS，
-沒有任何版本或下載項目。
+目前記錄已發布的 Windows 1.3.1 手動下載資訊：x64 指向 unsigned EXE，x86 指向 ZIP。
+資訊放在 RSS channel 的 `link` 與 `description`，沒有自動更新 `item`／`enclosure`，
+WinSparkle 讀取後仍回報無可用更新，不會自動下載或執行這些檔案。
 待使用者 review 並將 PR 合併至 `master` 後，才會出現在上述 Raw 網址；CDN 副本仍需
-完成 IAM／cache 設定並實際上傳。空 feed 只表示目前沒有可用更新，不是已完成正式發布。
+完成 IAM／cache 設定並實際上傳。手動下載資訊不表示已完成自動更新發布。
 正式公鑰與客戶端 feed 設定目前仍留空。
+
+v1.3.1 的 GitHub Release 尚無 x86 EXE 或安裝包 Ed25519 更新簽章；其 Windows
+build-info 的 `source_sha` 與 `tag_sha` 不同，屬既有同版 recovery 下載資產。
+這批檔案可供手動下載，但不直接通過現有 stable 自動更新的來源驗證。
+後續自動更新需另有符合 review／tag／版本規則、已完成 Ed25519 簽章的安裝器。
 
 每次正式發布使用同一組 Ed25519 金鑰與同一個已通過所宣告簽章模式驗證的安裝包，
 兩個來源的版本、檔案內容／SHA-256 及安裝包簽章必須一致。各來源的 feed 使用自己的
@@ -145,9 +171,9 @@ macOS 會實際檢查 Gatekeeper installer assessment 與 stapled notarization�
 把驗證證明及安裝包集中後，可在單一 runner 產生共用 metadata 與所有平台 feed：
 
 ```sh
-python3 Updates/metadata.py build --manifest /path/all-platforms.json \
+python3 update/metadata.py build --manifest /path/all-platforms.json \
   --attestations /path/attestations --key /protected/key.pem \
-  --base-url https://YOUR-CDN/keykey/releases/download --out Updates/out/signed-release
+  --base-url https://YOUR-CDN/keykey/releases/download --out update/out/signed-release
 ```
 
 不提供 `--attestations` 時，工具在當前 OS 直接驗證每個包，適合單平台發布。
@@ -155,7 +181,7 @@ python3 Updates/metadata.py build --manifest /path/all-platforms.json \
 與 base64 detached signature `metadata.json.sig`。已有 output directory 一律拒絕覆寫。
 
 ```sh
-python3 Updates/metadata.py verify --file /path/metadata.json \
+python3 update/metadata.py verify --file /path/metadata.json \
   --signature /path/metadata.json.sig
 ```
 
@@ -216,7 +242,7 @@ timestamp，再以原本的 Ed25519 私鑰簽署最終 bytes，重新產生 meta
 ## 測試
 
 ```sh
-KEYKEY_TEST_OPENSSL=/opt/homebrew/bin/openssl python3 -m unittest discover -s Updates -v
+KEYKEY_TEST_OPENSSL=/opt/homebrew/bin/openssl python3 -m unittest discover -s update -v
 python3 -m unittest discover -s .github/scripts -v
 ```
 
@@ -248,7 +274,7 @@ UAC、NSIS 升級或安裝成功證據；取消與關閉競態由隔離 managed 
 
 ```powershell
 # 一般使用者環境；需 OpenSSL 3（例如 Git for Windows 內附版本）
-python Updates/prepare.py fetch windows
+python update/prepare.py fetch windows
 $openssl = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
 foreach ($architecture in @('x64', 'x86')) {
     dotnet run --project Source/Loaders/Windows-TSF/DesktopUpdater.Tests/DesktopUpdater.Tests.csproj `

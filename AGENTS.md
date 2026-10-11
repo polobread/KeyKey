@@ -70,7 +70,7 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
 
 # macOS
-python3 Updates/prepare.py fetch macos
+python3 update/prepare.py fetch macos
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
@@ -86,11 +86,27 @@ python3 Updates/prepare.py fetch macos
 ```
 
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
-Windows 建置前準備 `python Updates/prepare.py fetch windows`。桌面更新預設關閉、
-key／feed 未設定時不得連網；正式啟用與各平台簽章驗收見 [Updates/README.md](Updates/README.md)。
+Windows 建置前準備 `python update/prepare.py fetch windows`。桌面更新預設關閉、
+key／feed 未設定時不得連網；正式啟用與各平台簽章驗收見 [update/README.md](update/README.md)。
 Windows stable 在 Authenticode 尚未就緒時可逐版明確宣告 `unsigned-transition`，仍須
 Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產；無效或不受信任簽章不得
 降級成 unsigned。日後 signed EXE 使用更高版號，沿用原 stable feed 與 Ed25519 金鑰。
+
+### Windows 日常開發測試範圍
+
+- 開始修改前依實際 diff 分類：`tsf` 輸入／候選／原生視窗、`settings` 設定介面／儲存、
+  `deployment` 安裝／移除／遷移、`updater` 更新客戶端／feed／簽章、`package` 封裝／CI、
+  `docs` 文件。先簡述本次類型與必要驗證，再執行；跨類型只取實際受影響項目的聯集。
+- 只建置受影響 target、跑對應測試；TSF 也用 `ctest -R` 選出受影響功能，不預設全套。
+  updater 的 feed、發布工具、客戶端分別驗證，不因更動其中一項就全跑三項。
+- 日常先驗證目前開發架構（通常 x64）；只有 bitness、ABI、P/Invoke、SDK、平台條件或
+  架構打包受影響時才加 x86。既有原生後端未變時可供設定 UI 回歸使用，不重建 TSF。
+- 純文件只檢查 diff／連結；單純搬移路徑只檢查引用與必要建置，不重跑功能全套。
+  測試通過後，沒有相關新修改、失敗或未解疑慮就不重跑；不要重複執行 CTest 已涵蓋的
+  dotnet 測試，也不為 Windows 專屬改動跑其他平台、模型或 release-assets 全套。
+- 只有明確進入發布驗收才跑 Windows 完整矩陣；不為了結束一次開發修改就打包／安裝。
+  共用引擎或模型變更仍按前述跨平台／模型規則驗證。各類命令與必要擴充條件見
+  [Windows 開發型態與測試](Source/Loaders/Windows-TSF/README.md#windows-日常開發型態與測試)。
 
 ## 改版號清單
 

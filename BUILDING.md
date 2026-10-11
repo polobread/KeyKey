@@ -138,10 +138,12 @@ extension 處理方式見 [面板說明](Source/Loaders/Linux-IME/gnome-panel/RE
 
 ## macOS
 
-建置前先在 repository root 執行 `python3 Updates/prepare.py fetch macos`，準備
+建置前先在 repository root 執行 `python3 update/prepare.py fetch macos`，準備
 校驗固定版本的 Sparkle SDK。桌面更新未設定正式 key／feed 時維持離線，見
-[更新建置與發布說明](Updates/README.md)。Windows 本機建置同樣需先執行
-`python Updates/prepare.py fetch windows`。
+[更新建置與發布說明](update/README.md)。Windows 本機建置同樣需先執行
+`python update/prepare.py fetch windows`。
+Windows 日常開發依 [開發型態與測試範圍](Source/Loaders/Windows-TSF/README.md#windows-日常開發型態與測試)
+只建置及驗證受影響項目；以下完整平台建置流程用於初次準備或發布。
 
 ### 需求
 
@@ -418,7 +420,7 @@ gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 | Workflow | 產物 | 限制 |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 發布到 Release 前以 Developer ID 簽章並 notarize；僅 artifact 的 run 未簽章 |
-| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章，不能送 Store；tag 建置的 EXE 可依 [unsigned 過渡流程](Updates/README.md#windows-stable-的-unsigned-過渡模式) 驗證後發布 stable 更新 |
+| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章，不能送 Store；tag 建置的 EXE 可依 [unsigned 過渡流程](update/README.md#windows-stable-的-unsigned-過渡模式) 驗證後發布 stable 更新 |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 只在手動 Run workflow 時建置、簽署並上傳到 Google Play internal testing；PR 合併與直接 push 都不觸發，由 Play Console 推廣至正式版；一般使用者不需加入封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
@@ -582,9 +584,9 @@ Local outputs from these commands require the release workflow's checks before d
 ### macOS
 
 Prepare the checksum-pinned Sparkle SDK from the repository root with
-`python3 Updates/prepare.py fetch macos` before invoking Xcode. Windows builds
-similarly require `python Updates/prepare.py fetch windows`. See
-[desktop update setup](Updates/README.md); SDK preparation does not enable
+`python3 update/prepare.py fetch macos` before invoking Xcode. Windows builds
+similarly require `python update/prepare.py fetch windows`. See
+[desktop update setup](update/README.md); SDK preparation does not enable
 network update checks in an unconfigured application.
 
 #### Requirements and build
@@ -866,7 +868,7 @@ artifacts for seven days:
 | Workflow | Output | Limitation |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Signed with a Developer ID and notarized before Release upload; artifact-only runs remain unsigned |
-| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; cannot be submitted to the Store. Tag-built EXEs may be validated for stable updates under the explicit [unsigned transition policy](Updates/README.md#windows-stable-的-unsigned-過渡模式) |
+| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; cannot be submitted to the Store. Tag-built EXEs may be validated for stable updates under the explicit [unsigned transition policy](update/README.md#windows-stable-的-unsigned-過渡模式) |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads only after a manual Run workflow; PR merges and direct pushes do not trigger it. Promote the build to production in Play Console; public installation does not require closed testing |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |

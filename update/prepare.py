@@ -76,7 +76,7 @@ def embed_macos(app):
     sdk = ROOT / ".cache" / "macos-2.10.0"
     framework = sdk / "Sparkle.framework"
     if not framework.is_dir():
-        raise ValueError("run python3 Updates/prepare.py fetch macos before building")
+        raise ValueError("run python3 update/prepare.py fetch macos before building")
     contents = app / "Contents"
     destination = contents / "Frameworks" / "Sparkle.framework"
     if destination.exists():

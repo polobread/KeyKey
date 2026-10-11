@@ -1,5 +1,66 @@
 # 琦琦輸入法 Windows TSF frontend
 
+## Windows 日常開發型態與測試
+
+每次先依實際變更選類型，再建置與測試。以下是驗證入口，不是每次都執行的清單；
+同一類仍只選本次受影響功能。跨類型取所需項目的聯集，已通過的項目不重複跑。
+
+| 類型 | 變更範圍 | 日常驗證 |
+|---|---|---|
+| `tsf` | `TextService`、引擎 adapter、候選、符號、工作列與原生生命週期 | 建置修改的原生 target，用 `ctest -R` 選對應案例；宿主行為修改再驗證相關 Windows 文字宿主 |
+| `settings` | WPF 介面、設定讀寫、自訂詞、設定 backend | 儲存邏輯跑 `SettingsModern.Tests`；介面／草稿行為跑 `SettingsModern.UiTests`，可使用同架構既有 backend；純 XAML 外觀做必要建置與畫面檢查 |
+| `deployment` | `Deployment/`、註冊、安裝／移除與舊版遷移 | `Deployment.Tests`；原生註冊／跨架構橋接改動才補相應隔離原生案例，實際安裝驗收另在明確授權後進行 |
+| `updater` | `update/`、`DesktopUpdater.cs`、`WinSparkleBackend.cs` | feed 資訊只檢查 XML／網址；發布簽章工具跑 `update/test_metadata.py`；回呼與狀態跑 updater managed 回歸；SDK、P/Invoke、下載／簽章行為才加 `--native` |
+| `package` | CMake／csproj、`Package-*.ps1`、NSIS、Windows CI | 腳本／路徑／target 檢查及受影響 target 建置；封裝內容變更才產生對應架構套件並驗證 manifest、PE、DB 與授權內容；只有更動共用 release-assets 工具才跑其測試 |
+| `docs` | README、政策、交接與開發說明 | `git diff --check`、相關路徑／連結檢查；不編譯、不跑功能測試 |
+
+日常預設目前開發架構（通常 x64）。修改 bitness、ABI、P/Invoke、SDK、平台條件或
+架構封裝時，才擴充到 x86。同一功能經相關測試通過後，只在有新的相關修改、失敗或
+未解疑慮時重跑。目錄搬移檢查引用與必要建置即可，不重跑原生功能及安裝流程。
+共用引擎與模型變更仍依根目錄 AGENTS 的跨平台／模型規則驗證。
+
+下面命令從此目錄執行；建置目錄以本機實際 preset 為準，範例使用既有 x64 Ninja。
+原生 CMake／CTest 命令使用已載入 MSVC、CMake 與 Ninja 的 Developer PowerShell。
+選定測試 executable target 與 CTest 名稱是兩件事。例如只修 TSF 送字：
+
+```powershell
+cmake --build out/build/x64-ninja --target KeyKeyTsfOutputBehaviorTest
+ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=error `
+  -R '^KeyKeyTsfOutputCommitBehavior$'
+```
+
+其他常見 TSF 範圍：候選選鍵選 `KeyKeyCandidateKeyStateMachine`、符號表選
+`KeyKeySymbolPanelResourcesAndFocus`、popup 生命週期選 `KeyKeyPopupLifecycle`、
+DLL 卸載選 `KeyKeyModuleLifetime`、工作列模式選 `KeyKeyTsfSystemTrayModes`。
+只在變更真的影響另一功能時才一起選它，不因修改 `TextService.cpp` 就全部執行。
+
+設定儲存與設定 UI 是分開的入口，依修改內容選其一或兩者：
+
+```powershell
+dotnet run --project SettingsModern.Tests/SettingsModern.Tests.csproj --configuration Release
+# 只在介面／草稿流程受影響時；需要既有同架構 SettingsBackend 與 Databases/KeyKey.db
+dotnet run --project SettingsModern.UiTests/SettingsModern.UiTests.csproj --configuration Release `
+  -r win-x64 --self-contained -p:KeyKeyRuntimeDirectory="$PWD/out/build/x64-ninja"
+```
+
+部署邏輯、自動更新狀態、更新發布工具也分別選用：
+
+```powershell
+# deployment
+dotnet run --project Deployment.Tests/Deployment.Tests.csproj --configuration Release
+# updater：客戶端狀態／回呼，預設不載入原生 SDK、不連線
+dotnet run --project DesktopUpdater.Tests/DesktopUpdater.Tests.csproj --configuration Release
+# updater：只在修改發布簽章／manifest 工具時，需要 OpenSSL 3；金鑰是暫存測試金鑰
+$env:KEYKEY_TEST_OPENSSL = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
+python -m unittest discover -s ../../../update -v
+```
+
+Windows Package workflow 是正式封裝／發布入口，保留完整發布驗證；它只在已發布
+Release 或手動 dispatch 時執行，日常 push 不會觸發。CTest 中的 managed 設定／部署
+案例在 workflow 另一步各跑一次，原生矩陣會排除這兩項，避免重複執行。
+完整 TSF／NSIS、UAC、舊版升級、資料保留與 signed 憑證驗收屬發布工作，不能把
+上述局部開發驗證當成已發布或已安裝的證據。
+
 本機 `v1.3.2` 工作分支持續修正 Windows 進階設定、讀音輔助、符號表與簡體輸出；
 Windows 產品版號為 1.3.2，尚未發布；iOS、Android 1.3.2 已在各自商店正式上線，macOS、Linux 及共用模型維持 1.3.1。實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。

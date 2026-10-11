@@ -199,7 +199,7 @@ def build(manifest, key, base_url, destination, pinned_key, openssl, attestation
     if parsed.scheme != "https" or not parsed.hostname or parsed.query or parsed.fragment or parsed.username or parsed.password:
         raise ValueError("asset base URL must be HTTPS without query/credentials/fragments")
     if not pinned_key or public_key(key, openssl) != pinned_key:
-        raise ValueError("private key does not match the reviewed public key in Updates/config.json")
+        raise ValueError("private key does not match the reviewed public key in update/config.json")
     # Verify every package before producing any signed output.
     checksums = [digest(Path(entry["file"])) for entry in entries]
     for entry in entries:

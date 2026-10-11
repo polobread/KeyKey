@@ -18,7 +18,7 @@ DLL (MIT license, Copyright (c) 2009-2026 Vaclav Slavik). Its complete upstream
 `LICENSES/WinSparkle-LICENSE.txt`. Upstream:
 https://github.com/vslavik/winsparkle/tree/v0.9.4
 
-Official SDK archives are checksum-pinned in `Updates/dependencies.json` and
+Official SDK archives are checksum-pinned in `update/dependencies.json` and
 downloaded only during explicit build preparation; clients never download SDKs.
 
 ## OpenVanilla Han conversion

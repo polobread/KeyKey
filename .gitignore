@@ -1,6 +1,6 @@
 .DS_Store
-/Updates/.cache/
-/Updates/out/
+/update/.cache/
+/update/out/
 Source/Loaders/Windows-TSF/SettingsModern/bin/
 Source/Loaders/Windows-TSF/SettingsModern/obj/
 Source/Loaders/Windows-TSF/DesktopUpdater.Tests/bin/

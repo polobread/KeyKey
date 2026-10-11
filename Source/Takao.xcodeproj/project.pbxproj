@@ -4685,7 +4685,7 @@
 			outputPaths = ();
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "python3 \"$SRCROOT/../Updates/prepare.py\" embed-macos \"$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME\"";
+			shellScript = "python3 \"$SRCROOT/../update/prepare.py\" embed-macos \"$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME\"";
 		};
 		6AB74BCD0DA15C3900D9544B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

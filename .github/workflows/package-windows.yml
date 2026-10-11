@@ -74,13 +74,14 @@ jobs:
       - name: Configure and build x64
         working-directory: Source/Loaders/Windows-TSF
         run: |
-          python ../../../Updates/prepare.py fetch windows
+          python ../../../update/prepare.py fetch windows
           cmake --preset windows-x64-vs2026
           cmake --build --preset windows-x64-vs2026-release
 
       - name: Test x64
         working-directory: Source/Loaders/Windows-TSF
-        run: ctest --test-dir .\out\build\x64-vs2026 -C Release --output-on-failure
+        # Managed settings/deployment cases run once in the dedicated step below.
+        run: ctest --test-dir .\out\build\x64-vs2026 -C Release --output-on-failure -E '^(KeyKeyDeploymentTransactions|KeyKeySettingsPreferences)$'
 
       - name: Configure and build x86
         working-directory: Source/Loaders/Windows-TSF
@@ -90,7 +91,7 @@ jobs:
 
       - name: Test x86
         working-directory: Source/Loaders/Windows-TSF
-        run: ctest --test-dir .\out\build\x86 -C Release --output-on-failure
+        run: ctest --test-dir .\out\build\x86 -C Release --output-on-failure -E '^(KeyKeyDeploymentTransactions|KeyKeySettingsPreferences)$'
 
       - name: Test default-off diagnostic settings and deployment
         working-directory: Source/Loaders/Windows-TSF
@@ -124,7 +125,7 @@ jobs:
             throw 'OpenSSL is required for the native updater signature regressions.'
           }
           $env:KEYKEY_TEST_OPENSSL = $openssl
-          python -m unittest discover -s ../../../Updates -v
+          python -m unittest discover -s ../../../update -v
           if ($LASTEXITCODE -ne 0) { throw 'Update metadata and Windows signing policy regression failed.' }
           foreach ($architecture in @('x64', 'x86')) {
             dotnet run --project DesktopUpdater.Tests/DesktopUpdater.Tests.csproj `

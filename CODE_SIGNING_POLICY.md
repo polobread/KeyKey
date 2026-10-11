@@ -80,4 +80,4 @@ after a manual check or explicit opt-in. Ed25519 signatures protect downloaded
 updates separately from Authenticode. The stable update-metadata tool requires
 timestamped Authenticode by default; the explicit unsigned transition above is
 the only exception. Unsigned CI artifacts are not automatically promoted to
-update candidates. See [desktop update setup](Updates/README.md).
+update candidates. See [desktop update setup](update/README.md).
