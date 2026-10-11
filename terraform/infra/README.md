@@ -12,11 +12,17 @@ https://download.aws.polobread.com/keykey/releases/download/v1.3.2/FILE
 
 S3 Block Public Access remains enabled. CloudFront reads the bucket through an
 Origin Access Control (OAC), while GitHub Actions receives a short-lived AWS
-session through OIDC. The upload role cannot delete objects or write outside
-`keykey/releases/download/`. Release paths receive a one-year CloudFront cache lifetime
+session through OIDC. The upload role cannot delete objects. It can write release assets under
+`keykey/releases/download/` and XML feeds under `keykey/update/stable/*.xml`, not arbitrary
+files outside those scopes. Release paths receive a one-year CloudFront cache lifetime
 using `s-maxage`, while browsers revalidate before reusing a download. After an
 upload the workflow invalidates only the exact paths it changed, which also
 supports the repository's same-tag recovery builds.
+
+Stable XML feeds have a separate CloudFront cache behavior: minimum TTL 0,
+default TTL 60 seconds, maximum TTL 300 seconds. The feed publisher sets edge
+TTL 60 seconds and browser revalidation, invalidates exact feed paths, waits
+for completion, and verifies CDN bytes. This leaves release-asset caching unchanged.
 
 ## Bootstrap persistent state once
 
@@ -111,3 +117,26 @@ S3 versioning preserves the prior object for 90 days.
 Existing releases are not copied automatically. To backfill one, manually run
 each applicable package workflow with its existing `release_tag`; the normal
 recovery path rebuilds, verifies, republishes, and mirrors that platform.
+
+## Stable XML feed sync
+
+After reviewed Terraform plan/apply deploys the new feed permissions/cache policy,
+the [Sync Update Feeds to CDN workflow](../../.github/workflows/sync-update-feeds.yml)
+uploads `update/stable/*.xml` when they change on `master`. It reuses the same
+protected `release` environment variables and OIDC role. PR runs only validate.
+Manual dispatch from `master` backfills existing feeds; queued/retried publishers
+always check out current master and sync all current XML files to avoid restoring
+an older event snapshot or dropping another platform's change.
+
+The destination is `s3://BUCKET/keykey/update/stable/FILE.xml`, exposed at
+`https://download.aws.polobread.com/keykey/update/stable/FILE.xml`. The added
+IAM statement grants only `s3:PutObject`/`s3:GetObject` for this XML scope and
+`cloudfront:GetInvalidation` for the existing distribution's completion waiter.
+There is no delete permission, feed signing, JSON upload, installer publication,
+or Git write in this workflow. Repository deletion does not remove remote objects;
+publish an empty-item RSS to disable a feed. Partial failures can be retried;
+existing S3 versioning preserves prior objects for recovery.
+
+Source/workflow changes alone do not deploy IAM or CloudFront changes. Run the
+manual Terraform workflow with `plan`, review, then `apply` before the first feed
+sync; no Terraform apply or production upload is performed by local tests.

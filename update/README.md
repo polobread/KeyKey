@@ -101,13 +101,51 @@ CDN（主要）與 GitHub（備用）手動下載連結，沒有更新 item。ch
    job 先驗證 Developer ID／notarization，再產生 `keykey-macos-updater-VERSION` artifact，
    包含內容位址安裝包、`macos-arm64.xml` 與單平台 signed metadata。私鑰暫存檔離開步驟即移除。
 5. 維護者 review 候選，按下方發布順序上傳不可變 `packages/`，確認可下載且 SHA-256 相同，
-   才以 PR 提升 GitHub feed／部署 CDN feed。此 workflow 不自動上傳更新候選或改寫 feed，
+   才以 PR 提升 GitHub feed；合併後由下節的 XML 同步 workflow 部署 CDN feed。
+   macOS 封裝 workflow 不自動上傳更新候選或改寫 feed，
    原有 Release 下載資產發布仍照既有流程執行。
 
 本機 `bash update/test-macos.sh` 使用 fake engine 與離屏設定頁，無網路、安裝或已安裝 loader 變動。
 `KEYKEY_TEST_OPENSSL=/opt/homebrew/bin/openssl python3 -m unittest discover -s update -p test_macos_release.py -v`
 使用臨時測試金鑰驗證候選簽章，正向 OS 驗證為 mock；不能宣稱已完成 notarized 升級。
 正式啟用前須完成本文最後列出的已安裝版本驗收，包含組字中／新組字及個人詞庫保留。
+
+## XML feed 自動同步到 CDN
+
+[`Sync Update Feeds to CDN`](../.github/workflows/sync-update-feeds.yml) 在 `master` 的
+`update/stable/*.xml` 新增或變更後觸發；工作分支／PR 只做驗證，不部署。
+發布沿用受保護的 `release` environment 與 AWS OIDC role；若 environment 設定人工
+核准，仍需維護者核准該 job，不繞過現有發布規則。
+
+每次同步目前 `master` 的全部頂層 XML，對應位置為
+`update/stable/FILE.xml` → `s3://AWS_RELEASE_MIRROR_BUCKET/keykey/update/stable/FILE.xml`，
+公開網址為 `AWS_RELEASE_MIRROR_BASE_URL/keykey/update/stable/FILE.xml`。
+使用最新 master 而非舊事件 commit，並串行發布，避免舊 run 重跑或被替換的 pending
+run 遺漏另一平台的 feed。Actions summary 記錄實際發布 commit 與 CDN 連結。
+
+工具先驗證所有 XML／RSS 與安全檔名，再上傳相同 bytes，以 SHA-256 與 S3 回讀比對，
+設定 `application/rss+xml; charset=utf-8` 和
+`public,max-age=0,s-maxage=60,must-revalidate`。最後只 invalidate 精確 XML 路徑，等待完成，
+再比對 CDN 回傳內容；上傳、驗證或 cache invalidation 失敗會讓 job 失敗。
+多份 feed 不是原子交易，部分上傳後失敗可重新執行同步；S3 versioning 保留舊版本供維護者恢復。
+
+此流程只鏡像已 review 的 XML，不產生新版本、簽章或 installer，不修改 Git、不發布
+metadata JSON、不刪除 CDN 檔案。移除 repository XML 不會刪除遠端 feed；停用更新可
+改為無 item 的 RSS 再提交。增加手動下載連結不代表已啟用客戶端自動更新。
+
+首次使用需先 review／merge 並依 [Terraform 流程](../terraform/infra/README.md) plan／apply
+新增的 XML 路徑寫入權限、CloudFront `GetInvalidation` 權限與獨立短快取 behavior。
+原 Release 安裝包的長快取與權限保持不變；本次程式開發不執行 Terraform apply 或線上上傳。
+沿用 `release` environment 的現有 `AWS_ACCOUNT_ID` 與 `AWS_RELEASE_MIRROR_*` variables，
+不新增 AWS 長期金鑰。完成基礎設施部署後，可在 Actions 選擇此 workflow、`master`、
+**Run workflow** 補同步既有三份 feed；後續 XML 變更會觸發同步。
+
+本機唯讀／隔離驗證：
+
+```sh
+python3 .github/scripts/sync-update-feeds.py --check-only
+python3 -m unittest discover -s .github/scripts -p test_sync_update_feeds.py -v
+```
 
 ## 正式金鑰與網址設定（需維護者審查）
 
@@ -169,7 +207,7 @@ GitHub 兩個手動下載連結。維持一個標準 RSS `link`，不放重複�
 資訊放在 RSS channel 的 `link` 與 `description`，沒有自動更新 `item`／`enclosure`，
 WinSparkle 讀取後仍回報無可用更新，不會自動下載或執行這些檔案。
 待使用者 review 並將 PR 合併至 `master` 後，才會出現在上述 Raw 網址；CDN 副本仍需
-完成 IAM／cache 設定並實際上傳。手動下載資訊不表示已完成自動更新發布。
+先部署 XML 同步所需的 IAM／cache 設定，再由上述 workflow 上傳。手動下載資訊不表示已完成自動更新發布。
 正式公鑰與客戶端 feed 設定目前仍留空。
 
 v1.3.1 的 GitHub Release 尚無 x86 EXE 或安裝包 Ed25519 更新簽章；其 Windows
@@ -186,7 +224,8 @@ CDN 指向 `https://download.aws.polobread.com/keykey/releases/download/TAG/FILE
 
 GitHub feed 變更在工作分支提交，再由使用者 review／merge 至 `master`，不得由
 workflow 直接回存 `master`。CDN feed 使用短快取及精確 invalidation。現有 metadata
-工具可針對不同 `--base-url` 產生兩份輸出，但雙來源發布協調尚未接入 workflow；
+工具可針對不同 `--base-url` 產生兩份輸出；XML CDN 鏡像已接入獨立 workflow，
+但兩套安裝包／feed 的發布協調尚未自動化；
 Windows 客戶端也仍只接受單一 feed URL，來源設定與失敗切換功能尚待實作。
 
 ## 產生與驗證更新資料
@@ -270,7 +309,7 @@ timestamp，再以原本的 Ed25519 私鑰簽署最終 bytes，重新產生 meta
 不能覆蓋已發布的同版 unsigned EXE，也不能直接把簽章加到既有不可變下載檔；
 同版重新簽章不會讓已安裝相同版本的客戶端偵測到新版本。
 
-## GitHub Release／CDN 發布順序（尚未自動化）
+## GitHub Release／CDN 發布順序（安裝包先發布，再同步 feed）
 
 1. 通過原始碼 review 與發布核准。Windows workflow 目前仍產生 unsigned installer；
    只有從相應 release tag 建置、驗證版本並明確宣告 `unsigned-transition` 的 EXE，
@@ -282,8 +321,8 @@ timestamp，再以原本的 Ed25519 私鑰簽署最終 bytes，重新產生 meta
    size 與 SHA-256 正確後，最後才更新固定 feed。GitHub Releases 可放不可變資產，
    固定 feed 另外放在 CDN／靜態網站，不能把 GitHub Release API 當 appcast。
 4. packages 使用長快取；feeds／metadata 使用短 TTL 與精確 invalidation。
-   現有 Terraform mirror role 僅允許 release download prefix；使用新的
-   `keykey/update/stable/` 前需 review IAM／cache 設定，這次沒有 apply 或修改線上資源。
+   Terraform 為 `keykey/update/stable/*.xml` 新增限定寫入權限與獨立短快取；需 review
+   並 apply 後才可使用 XML 同步 workflow。這次沒有 apply 或修改線上資源。
 5. 分平台 promotion，避免尚未完成的 Windows 發布拖累 macOS。最終的共用 metadata
    可以集合獨立版本，但 feed、簽章與安裝程序仍是平台各自的。
 
