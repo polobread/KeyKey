@@ -65,11 +65,11 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
    不應在沒有過渡方案時直接換 key。
 
 3. 設定 `macos_feed_url`、`windows_x64_feed_url` 為 HTTPS 的固定平台 feed。
-   各平台共用 CDN 的 `keykey/updates/stable/` 目錄，以獨立檔案提供 feed，不另外
+   各平台共用 CDN 的 `keykey/update/stable/` 目錄，以獨立檔案提供 feed，不另外
    增加平台子目錄，也不將不同平台合併成同一份 XML。預定配置如下，尚未上傳或啟用：
 
    ```text
-   https://download.aws.polobread.com/keykey/updates/stable/
+   https://download.aws.polobread.com/keykey/update/stable/
      macos-arm64.xml
      windows-x64.xml
      metadata.json
@@ -79,6 +79,32 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
    未來建立 x86 installer 時，再於同一目錄加入 `windows-x86.xml`；在此之前保持
    `windows_x86_feed_url` 空白。各 feed URL 必須先實際建立、驗證，再寫入 `config.json`。
    安裝包仍放在 `keykey/releases/download/TAG/FILE`，不放進 feed 目錄。
+
+### Windows x64 的 CDN 與 GitHub Raw 來源
+
+正式來源規劃如下；CDN 為主要來源，GitHub Raw 為備援，不使用 GitHub Pages：
+
+| 來源 | 固定 feed URL |
+|---|---|
+| CDN | `https://download.aws.polobread.com/keykey/update/stable/windows-x64.xml` |
+| GitHub Raw | `https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/windows-x64.xml` |
+
+`update/stable/windows-x64.xml` 是 GitHub 來源的初始 RSS，沒有任何版本或下載項目。
+待使用者 review 並將 PR 合併至 `master` 後，才會出現在上述 Raw 網址；CDN 副本仍需
+完成 IAM／cache 設定並實際上傳。空 feed 只表示目前沒有可用更新，不是已完成正式發布。
+正式公鑰與客戶端 feed 設定目前仍留空。
+
+每次正式發布使用同一組 Ed25519 金鑰與同一個已完成 Authenticode 簽章的安裝包，
+兩個來源的版本、檔案內容／SHA-256 及安裝包簽章必須一致。各來源的 feed 使用自己的
+安裝包下載網址：GitHub 指向 `https://github.com/polobread/KeyKey/releases/download/TAG/FILE`，
+CDN 指向 `https://download.aws.polobread.com/keykey/releases/download/TAG/FILE`。
+必須先分別上傳並驗證安裝包，再發布該來源的 feed；只備份 XML、卻共用唯一下載來源，
+不能提供完整的下載備援。
+
+GitHub feed 變更在工作分支提交，再由使用者 review／merge 至 `master`，不得由
+workflow 直接回存 `master`。CDN feed 使用短快取及精確 invalidation。現有 metadata
+工具可針對不同 `--base-url` 產生兩份輸出，但雙來源發布協調尚未接入 workflow；
+Windows 客戶端也仍只接受單一 feed URL，來源設定與失敗切換功能尚待實作。
 
 ## 產生與驗證更新資料
 
@@ -137,7 +163,7 @@ python3 Updates/metadata.py verify --file /path/metadata.json \
    固定 feed 另外放在 CDN／靜態網站，不能把 GitHub Release API 當 appcast。
 4. packages 使用長快取；feeds／metadata 使用短 TTL 與精確 invalidation。
    現有 Terraform mirror role 僅允許 release download prefix；使用新的
-   `keykey/updates/stable/` 前需 review IAM／cache 設定，這次沒有 apply 或修改線上資源。
+   `keykey/update/stable/` 前需 review IAM／cache 設定，這次沒有 apply 或修改線上資源。
 5. 分平台 promotion，避免尚未完成的 Windows 發布拖累 macOS。最終的共用 metadata
    可以集合獨立版本，但 feed、簽章與安裝程序仍是平台各自的。
 
@@ -164,9 +190,9 @@ Windows 10／11 manifest 的最低系統版本檢查，以及套用設定、成�
 隔離個人資料；不執行 WinSparkle 下載或安裝。完整 TSF／NSIS 建置與 GUI 升級驗收尚未完成。
 
 2026-10-11 Windows 客戶端補充驗證：x64／x86 Settings 建置、WPF 設定／自訂詞回歸
-及固定 WinSparkle 0.9.4 DLL 的 6 個原生案例各通過。原生案例以 loopback HTTP 提供
+及固定 WinSparkle 0.9.4 DLL 的 7 個原生案例各通過。原生案例以 loopback HTTP 提供
 測試 appcast／無法執行的測試 bytes，暫存 Ed25519 金鑰及隨機 HKCU 測試區在結束後
-移除；不修改正式 config，也不執行安裝器。涵蓋同版無更新、合法簽章下載、檔案竄改、
+移除；不修改正式 config，也不執行安裝器。涵蓋同版無更新、初始空 feed、合法簽章下載、檔案竄改、
 錯 key、缺少簽章與損壞 feed。只有測試直接呼叫原生 backend 使用 HTTP；正式客戶端
 仍只接受設定內的 HTTPS URL。合法簽章正例只是下載與驗證證據，不是 Authenticode、
 UAC、NSIS 升級或安裝成功證據；取消與關閉競態由隔離 managed backend 測試驗證。

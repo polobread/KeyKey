@@ -39,7 +39,7 @@ internal static class NativeTests
             RunOpenSsl(openssl, "pkeyutl", "-sign", "-rawin", "-inkey", Path.Combine(directory, "test.pem"),
                 "-in", package, "-out", signature);
             var signed = Convert.ToBase64String(File.ReadAllBytes(signature));
-            foreach (var mode in new[] { "no-update", "valid", "tampered", "wrong-key", "missing-signature", "broken-feed" })
+            foreach (var mode in new[] { "no-update", "empty-feed", "valid", "tampered", "wrong-key", "missing-signature", "broken-feed" })
             {
                 using var done = new ManualResetEventSlim();
                 using var server = new LoopbackServer(mode, payload, signed);
@@ -68,9 +68,9 @@ internal static class NativeTests
                     if (mode == "valid")
                         Program.Check(found == 1 && installs == 1 && shutdowns == 1 && errors == 0 && matchingPayload,
                             "Valid signed payload did not reach the interception callback intact");
-                    else if (mode == "no-update")
+                    else if (mode is "no-update" or "empty-feed")
                         Program.Check(notFound == 1 && errors == 0 && installs == 0 && shutdowns == 0,
-                            "Native version comparison did not reject the same version");
+                            "Native same-version or empty feed was not reported as no update");
                     else
                         Program.Check(errors == 1 && installs == 0 && shutdowns == 0,
                             "Invalid update reached installer handling: " + mode);
@@ -141,6 +141,8 @@ internal static class NativeTests
                         var version = mode == "no-update" ? "1.0.0" : "2.0.0";
                         var sig = mode == "missing-signature" ? "" : $"sparkle:edSignature=\"{signature}\"";
                         var xml = $"<rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\"><channel><title>Test</title><item><title>Test {version}</title><enclosure url=\"{Feed.Replace("appcast.xml", "payload.exe")}\" sparkle:version=\"{version}\" length=\"{payload.Length}\" type=\"application/octet-stream\" {sig}/></item></channel></rss>";
+                        if (mode == "empty-feed")
+                            xml = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "windows-x64.xml"));
                         body = Encoding.UTF8.GetBytes(mode == "broken-feed" ? "<broken>" : xml);
                     }
                     var header = Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
