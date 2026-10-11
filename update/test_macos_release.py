@@ -91,6 +91,16 @@ class MacReleaseTests(unittest.TestCase):
         xml = ET.parse(Path(__file__).with_name("stable") / "macos-arm64.xml")
         self.assertIsNone(xml.find("./channel/item"))
         self.assertIsNone(xml.find(".//enclosure"))
+        asset = "v1.3.1/chichi77-KeyKey-1.3.1-macos-arm64.pkg.zip"
+        cdn = "https://download.aws.polobread.com/keykey/releases/download/" + asset
+        github = "https://github.com/polobread/KeyKey/releases/download/" + asset
+        self.assertEqual(len(xml.findall("./channel/link")), 1)
+        self.assertEqual(xml.findtext("./channel/link"), cdn)
+        description = xml.findtext("./channel/description")
+        self.assertIn(f'href="{cdn}"', description)
+        self.assertIn(f'href="{github}"', description)
+        self.assertIn("CDN（主要）", description)
+        self.assertIn("GitHub（備用）", description)
 
     def test_embedded_settings_enforce_offline_opt_in_and_safe_package_defaults(self):
         sdk = self.root / ".cache/macos-2.10.0"

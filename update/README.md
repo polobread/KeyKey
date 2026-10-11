@@ -82,7 +82,10 @@ README 的 Linux 版號。更新設定頁每秒讀取 IMK 的本機狀態；Spar
 - CDN：`https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml`
 - GitHub Raw：`https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/macos-arm64.xml`
 
-初始 `stable/macos-arm64.xml` 只有已發布 1.3.1 的手動下載連結，沒有更新 item。
+初始 `stable/macos-arm64.xml` 提供已發布 1.3.1 Apple Silicon `.pkg.zip` 的
+CDN（主要）與 GitHub（備用）手動下載連結，沒有更新 item。channel 保留一個標準
+`link` 指向 CDN；`description` 的 HTML 列出兩個下載來源，沿用 Windows 初始 RSS 格式。
+兩個安裝包網址已確認存在，沒有把既有安裝包當成 Ed25519 自動更新資產。
 分支內檔案不表示 Raw master 或 CDN 已部署。舊版沒有正式更新設定，因此第一次
 導入必須手動下載並安裝含公開金鑰與 feed 的 notarized 版本，再登出／登入。
 後續更新必須使用更高版號；同版本重新打包不是自動升級。
