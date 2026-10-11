@@ -88,6 +88,8 @@ python3 update/prepare.py fetch macos
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
 Windows 建置前準備 `python update/prepare.py fetch windows`。桌面更新預設關閉、
 key／feed 未設定時不得連網；正式啟用與各平台簽章驗收見 [update/README.md](update/README.md)。
+手動同版本下載入口只有使用者明確按下「重新安裝目前版本…」時才查詢官方 Release，
+不依賴自動更新 key／feed；只開啟相同版號／架構的下載頁，不自行下載或啟動安裝器。
 Windows stable 在 Authenticode 尚未就緒時可逐版明確宣告 `unsigned-transition`，仍須
 Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產；無效或不受信任簽章不得
 降級成 unsigned。日後 signed EXE 使用更高版號，沿用原 stable feed 與 Ed25519 金鑰。

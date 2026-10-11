@@ -42,6 +42,7 @@ internal static class Program
         try
         {
             LifecycleTests();
+            ReinstallTests();
             if (args.Contains("--native")) NativeTests.Run(args);
             return 0;
         }
@@ -125,5 +126,67 @@ internal static class Program
         failed.Dispose(); oldCallbacks.Shutdown(); Pump();
         Check(shutdowns == 1 && failing.Cleanups == 2, "Retried initialization retained shutdown after disposal");
         Console.WriteLine("Updater configuration, architecture, retry, opt-in, threaded callbacks and shutdown races passed");
+    }
+
+    private static void ReinstallTests()
+    {
+        string Release(string version, string architecture, string suffix = "-setup.unsigned.exe", long size = 1) =>
+            JsonSerializer.Serialize(new { tag_name = "v" + version, draft = false,
+                html_url = "https://untrusted.invalid/", assets = new[] {
+                    new { name = $"chichi77-KeyKey-{version}-windows-{architecture}{suffix}", size } } });
+        Check(SameVersionDownload.SelectPage(Release("1.3.2", "x64"), "1.3.2", "x64").AbsoluteUri ==
+            "https://github.com/polobread/KeyKey/releases/tag/v1.3.2", "Reinstall trusts an external page URL");
+        Check(SameVersionDownload.SelectPage(Release("1.3.2", "x86", ".zip"), "1.3.2", "x86").Scheme == "https",
+            "Manual x86 ZIP download is unavailable");
+        foreach (var json in new[] { Release("1.3.3", "x64"), Release("1.3.1", "x64"),
+            Release("1.3.2", "x86"), Release("1.3.2", "x64", size: 0),
+            Release("1.3.2", "x64").Replace("\"draft\":false", "\"draft\":true") })
+        {
+            bool rejected = false;
+            try { SameVersionDownload.SelectPage(json, "1.3.2", "x64"); }
+            catch (InvalidOperationException) { rejected = true; }
+            Check(rejected, "Reinstall accepted a different version, architecture, empty or draft package");
+        }
+
+        int requests = 0, opened = 0;
+        var pending = new TaskCompletionSource<Uri>();
+        var backend = new FakeBackend();
+        DesktopUpdater Create() => new(backend, Dispatcher.CurrentDispatcher, () => throw new Exception("Manual download shut down Settings"),
+            () => new MemoryStream(Encoding.UTF8.GetBytes(Config(key: ""))),
+            (version, architecture, token) =>
+            {
+                Check(architecture == (Environment.Is64BitProcess ? "x64" : "x86"), "Reinstall chose another architecture");
+                requests++; return pending.Task;
+            }, _ => opened++);
+        void Finish(Task task)
+        {
+            while (!task.IsCompleted) Pump();
+            task.GetAwaiter().GetResult();
+        }
+        using var updater = Create();
+        updater.Initialize();
+        Check(!updater.Available && updater.CanReinstall && requests == 0, "Manual download depends on update keys or connects on startup");
+        updater.SetUnsavedChanges(true); Finish(updater.ReinstallAsync());
+        Check(requests == 0 && !updater.CanReinstall, "Reinstall ignored existing drafts");
+        updater.SetUnsavedChanges(false);
+        var first = updater.ReinstallAsync(); Finish(updater.ReinstallAsync()); updater.Check();
+        Check(requests == 1 && updater.Busy && !updater.CanReinstall && backend.Checks == 0, "Concurrent reinstall or update requests started");
+        updater.SetUnsavedChanges(true);
+        pending.SetResult(new Uri("https://github.com/polobread/KeyKey/releases/tag/v1.3.2")); Finish(first);
+        Check(opened == 0 && !updater.Busy && updater.Status.Contains("儲存"), "A newly edited draft did not stop manual reinstall");
+        updater.SetUnsavedChanges(false);
+        pending = new TaskCompletionSource<Uri>();
+        var retry = updater.ReinstallAsync(); pending.SetException(new System.Net.Http.HttpRequestException("offline")); Finish(retry);
+        Check(updater.CanReinstall && updater.Status.Contains("offline"), "Failed reinstall prevents retry");
+        pending = new TaskCompletionSource<Uri>();
+        var success = updater.ReinstallAsync();
+        pending.SetResult(new Uri("https://github.com/polobread/KeyKey/releases/tag/v1.3.2")); Finish(success);
+        Check(opened == 1 && updater.CanReinstall && updater.Status.Contains("手動"), "Same-version page did not open or retry remained disabled");
+        pending = new TaskCompletionSource<Uri>();
+        var closing = updater.ReinstallAsync(); updater.Dispose();
+        var before = updater.Status;
+        pending.SetResult(new Uri("https://github.com/polobread/KeyKey/releases/tag/v1.3.2")); Finish(closing);
+        Check(opened == 1 && updater.Status == before && !updater.CanReinstall, "Disposed Settings opened a page or changed state");
+        Console.WriteLine("Same-version manual reinstall, exact version/architecture, draft, retry and disposal cases passed");
     }
 }

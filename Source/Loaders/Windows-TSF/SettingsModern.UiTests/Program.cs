@@ -40,10 +40,14 @@ internal static class Program
         var apply = Control<Button>(window, "ApplyButton");
         var add = Control<Button>(window, "AddPhraseButton");
         Check(App.Updater.CanShutdown, "Fresh window incorrectly blocks an update");
+        var reinstall = Control<Button>(window, "ReinstallCurrent");
+        Check(reinstall.IsEnabled && !Control<Button>(window, "CheckUpdate").IsEnabled,
+            "Manual reinstall should remain available without a signed update configuration");
 
         text.Text = "更新";
         reading.Text = "ㄍㄥ,ㄒㄧㄣ";
         Check(!App.Updater.CanShutdown, "Phrase draft does not block update shutdown");
+        Check(!reinstall.IsEnabled, "Phrase draft does not disable manual reinstall");
         apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(status.Text == "設定已套用" && !App.Updater.CanShutdown &&
               NativeBackend.LoadPhrases().All(p => p.Text != "更新"),
@@ -56,6 +60,7 @@ internal static class Program
         add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(status.Text == "自訂詞已儲存" && App.Updater.CanShutdown,
               "Successfully saved phrase still blocks an update");
+        Check(reinstall.IsEnabled, "Saved phrase did not enable manual reinstall");
 
         var phrases = Control<DataGrid>(window, "UserPhrases");
         phrases.SelectedItem = phrases.Items.OfType<PhraseRow>().Single(p => p.Text == "更新");
@@ -63,12 +68,14 @@ internal static class Program
         var beep = Control<CheckBox>(window, "TypingBeep");
         beep.IsChecked = !beep.IsChecked;
         Check(!App.Updater.CanShutdown, "Unsaved general setting does not block an update");
+        Check(!reinstall.IsEnabled, "Unsaved settings do not disable manual reinstall");
         reading.Text = "ㄍㄥˋ,ㄒㄧㄣ";
         Control<Button>(window, "UpdatePhraseButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(status.Text == "自訂詞已儲存" && !App.Updater.CanShutdown,
               "Saving a phrase incorrectly cleared unsaved general settings");
         apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(App.Updater.CanShutdown, "Applying settings after saving phrase still blocks an update");
+        Check(reinstall.IsEnabled, "Applying saved settings did not enable manual reinstall");
 
         // A second phrase edit must be tracked against the successfully saved value.
         phrases.SelectedItem = phrases.Items.OfType<PhraseRow>().Single(p => p.Text == "更新");
@@ -143,7 +150,7 @@ internal static class Program
         finally { if (handle != IntPtr.Zero) KeyKeyFreeReadings(handle); }
     }
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
         var directory = Path.Combine(Path.GetTempPath(), "keykey-wpf-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
@@ -157,6 +164,12 @@ internal static class Program
             app.InitializeComponent();
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var window = new MainWindow();
+            if (args.Contains("--updater"))
+            {
+                VerifyUpdateShutdownProtection(window);
+                window.Close();
+                return 0;
+            }
             var status = Control<TextBlock>(window, "Status");
             Check(Control<RadioButton>(window, "DefaultChineseMode").IsChecked == true &&
                   Control<RadioButton>(window, "DefaultEnglishMode").IsChecked == false,

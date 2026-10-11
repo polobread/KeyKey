@@ -139,10 +139,12 @@ public partial class MainWindow : Window
     }
 
     private void CheckUpdate_Click(object sender, RoutedEventArgs e) => App.Updater.Check();
+    private async void ReinstallCurrent_Click(object sender, RoutedEventArgs e) => await App.Updater.ReinstallAsync();
     private void RefreshUpdateState()
     {
         UpdateStatus.Text = App.Updater.Status;
         CheckUpdate.IsEnabled = App.Updater.Available && !App.Updater.Busy;
+        ReinstallCurrent.IsEnabled = App.Updater.CanReinstall;
         AutomaticUpdates.IsEnabled = App.Updater.Available;
     }
     private void DiagnosticLogging_Changed(object sender, RoutedEventArgs e)

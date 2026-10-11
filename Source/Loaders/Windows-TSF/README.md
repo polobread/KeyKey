@@ -55,6 +55,10 @@ $env:KEYKEY_TEST_OPENSSL = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
 python -m unittest discover -s ../../../update -v
 ```
 
+只修改更新頁與草稿保護時，可在上述 WPF 命令最後加 `-- --updater`，只執行更新頁
+相關回歸。重新安裝下載頁的版本／架構選擇與非同步生命週期在 updater managed 測試內，
+不載入原生 WinSparkle、不連線或開啟瀏覽器。
+
 Windows Package workflow 是正式封裝／發布入口，保留完整發布驗證；它只在已發布
 Release 或手動 dispatch 時執行，日常 push 不會觸發。CTest 中的 managed 設定／部署
 案例在 workflow 另一步各跑一次，原生矩陣會排除這兩項，避免重複執行。
