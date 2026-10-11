@@ -418,7 +418,7 @@ gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 | Workflow | 產物 | 限制 |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 發布到 Release 前以 Developer ID 簽章並 notarize；僅 artifact 的 run 未簽章 |
-| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章；EXE 只供測試，不能送 Store |
+| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章，不能送 Store；tag 建置的 EXE 可依 [unsigned 過渡流程](Updates/README.md#windows-stable-的-unsigned-過渡模式) 驗證後發布 stable 更新 |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 只在手動 Run workflow 時建置、簽署並上傳到 Google Play internal testing；PR 合併與直接 push 都不觸發，由 Play Console 推廣至正式版；一般使用者不需加入封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
@@ -866,7 +866,7 @@ artifacts for seven days:
 | Workflow | Output | Limitation |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Signed with a Developer ID and notarized before Release upload; artifact-only runs remain unsigned |
-| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; the EXE is test-only and cannot be submitted to the Store |
+| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; cannot be submitted to the Store. Tag-built EXEs may be validated for stable updates under the explicit [unsigned transition policy](Updates/README.md#windows-stable-的-unsigned-過渡模式) |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads only after a manual Run workflow; PR merges and direct pushes do not trigger it. Promote the build to production in Play Console; public installation does not require closed testing |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |

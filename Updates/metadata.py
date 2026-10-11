@@ -89,10 +89,18 @@ def validate_manifest(manifest):
         if not path.is_file() or path.stat().st_size == 0:
             raise ValueError("update package is missing or empty")
         if target == "macos-arm64":
+            if "windows_signing" in entry:
+                raise ValueError("windows_signing is only supported for Windows")
             if not path.name.endswith(".pkg.zip"):
                 raise ValueError("macOS update must be a pkg.zip")
-        elif path.suffix.lower() != ".exe" or "unsigned" in path.name.lower():
-            raise ValueError("Windows update requires a signed setup.exe, not a ZIP/unsigned installer")
+        else:
+            mode = entry.get("windows_signing", "authenticode")
+            if mode not in ("authenticode", "unsigned-transition"):
+                raise ValueError("windows_signing must be authenticode or unsigned-transition")
+            if path.suffix.lower() != ".exe":
+                raise ValueError("Windows update requires a setup.exe, not a ZIP")
+            if mode == "authenticode" and "unsigned" in path.name.lower():
+                raise ValueError("Windows update requires a signed setup.exe unless unsigned-transition is explicit")
         if not re.fullmatch(r"\d+\.\d+(?:\.\d+)?", entry["minimum_system_version"]):
             raise ValueError("minimum system version is required")
         if not isinstance(entry.get("notes", ""), str):
@@ -104,10 +112,11 @@ def verify_platform_package(entry):
     path = Path(entry["file"]).resolve()
     if entry["target"].startswith("windows-"):
         if sys.platform != "win32":
-            raise ValueError("verify and sign Windows update metadata on Windows after Authenticode signing")
-        subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-File",
+            raise ValueError("verify Windows installer signing state and version on Windows")
+        subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
             str(Path(__file__).with_name("verify-windows.ps1")), "-Installer", str(path),
-            "-ExpectedVersion", entry["version"]], check=True)
+            "-ExpectedVersion", entry["version"],
+            "-SigningMode", entry.get("windows_signing", "authenticode")], check=True)
     else:
         if sys.platform != "darwin":
             raise ValueError("verify macOS package notarization on macOS")
@@ -138,7 +147,10 @@ def appcast(entry):
     ET.SubElement(item, f"{{{SPARKLE}}}shortVersionString").text = entry["version"]
     ET.SubElement(item, f"{{{SPARKLE}}}minimumSystemVersion").text = entry["minimum_system_version"]
     # Plain text, XML-escaped notes, not a remote page that can change after signing.
-    ET.SubElement(item, "description").text = "<p>" + html.escape(entry.get("notes", "")) + "</p><p>安裝後請登出再登入。</p>"
+    description = "<p>" + html.escape(entry.get("notes", "")) + "</p>"
+    if entry.get("windows_signing") == "unsigned-transition":
+        description += "<p>此版本尚無 Windows 發行者簽章，安裝時可能顯示未知的發行者或 SmartScreen 警告。更新下載仍須通過 Ed25519 簽章驗證。</p>"
+    ET.SubElement(item, "description").text = description + "<p>安裝後請登出再登入。</p>"
     attributes = {"url": entry["url"], "length": str(entry["size"]),
         "type": "application/octet-stream", f"{{{SPARKLE}}}edSignature": entry["ed25519_signature"]}
     if entry["target"] == "macos-arm64":
@@ -214,6 +226,8 @@ def build(manifest, key, base_url, destination, pinned_key, openssl, attestation
         signature = sign(package, key, openssl)
         verify(package, signature, pinned_key, openssl)
         release = {k: v for k, v in entry.items() if k != "file"}
+        if entry["target"].startswith("windows-"):
+            release["windows_signing"] = entry.get("windows_signing", "authenticode")
         release.update(url=f"{base_url.rstrip('/')}/{entry['release_tag']}/{name}",
             name=name, size=package.stat().st_size, sha256=checksum, ed25519_signature=signature)
         releases.append(release)

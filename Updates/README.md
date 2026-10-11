@@ -99,7 +99,7 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
 完成 IAM／cache 設定並實際上傳。空 feed 只表示目前沒有可用更新，不是已完成正式發布。
 正式公鑰與客戶端 feed 設定目前仍留空。
 
-每次正式發布使用同一組 Ed25519 金鑰與同一個已完成 Authenticode 簽章的安裝包，
+每次正式發布使用同一組 Ed25519 金鑰與同一個已通過所宣告簽章模式驗證的安裝包，
 兩個來源的版本、檔案內容／SHA-256 及安裝包簽章必須一致。各來源的 feed 使用自己的
 安裝包下載網址：GitHub 指向 `https://github.com/polobread/KeyKey/releases/download/TAG/FILE`，
 CDN 指向 `https://download.aws.polobread.com/keykey/releases/download/TAG/FILE`。
@@ -130,13 +130,15 @@ Manifest 是 JSON，`schema_version: 1`、`channel: "stable"`、`releases` 陣�
 ```
 
 上例的 SHA 是占位文字，必須由實際 tag checkout／建置來源取得；不能當正式來源證明。
-Windows target 為 `windows-x64`，檔案需是已簽章的 `.exe`；最低 OS 依產品需求填寫。
+Windows target 為 `windows-x64` 或 `windows-x86`，檔案需是安裝器 `.exe`，不能用 ZIP；
+最低 OS 依產品需求填寫。`windows_signing` 未設定時預設為 `authenticode`，要求有效且
+帶 timestamp 的 Windows 發行者簽章。過渡發布方式見下節。
 各平台可以有不同版本。穩定自動更新必須 `source_sha == tag_sha`，不可用同版 recovery
 覆蓋已公布的更新；既有 `release-assets.py --clobber` 流程僅供原下載資產，不用於 updater。
 
 在各平台的受保護簽章 job 上，先執行 `metadata.py attest --manifest ... --key ... --out ...`。
 macOS 會實際檢查 Gatekeeper installer assessment 與 stapled notarization；Windows
-會實際檢查有效且帶 timestamp 的 Authenticode。各平台產生
+會實際檢查所宣告的 Windows 簽章狀態與 installer product version。各平台產生
 `TARGET.attestation.json` 與 `.sig`，用來將 OS 驗證結果綁定到檔案 SHA-256／版本／commit。
 這是受信任簽章 job 的證明，工具本身不能從 binary 推導或證明 source commit。
 
@@ -157,10 +159,45 @@ python3 Updates/metadata.py verify --file /path/metadata.json \
   --signature /path/metadata.json.sig
 ```
 
+### Windows stable 的 unsigned 過渡模式
+
+維護者決定在 Windows 正式發行者簽章尚未就緒時，stable 可以使用 unsigned EXE。
+這只免除 Authenticode，不免除安裝包的 Ed25519 更新簽章、正式公鑰、HTTPS、來源 review、
+tag／版本一致性及不可變資產要求。每一版的 manifest 必須明確宣告：
+
+```json
+{
+  "target": "windows-x64",
+  "version": "1.3.2",
+  "release_tag": "v1.3.2",
+  "source_sha": "0000000000000000000000000000000000000000",
+  "tag_sha": "0000000000000000000000000000000000000000",
+  "file": "C:/release/chichi77-KeyKey-1.3.2-windows-x64-setup.unsigned.exe",
+  "windows_signing": "unsigned-transition",
+  "minimum_system_version": "10.0.0",
+  "notes": "Windows 1.3.2 正式版；發行者簽章仍在準備中。"
+}
+```
+
+此物件放在前述 `releases` 陣列中；SHA 仍是占位文字，必須換成實際建置 tag commit。
+Windows 驗證器只接受 `NotSigned` 且無簽章憑證的 EXE，不把無效、遭竄改或不受信任的
+簽章降級成 unsigned。簽章模式一起綁入 Ed25519 attestation 與 metadata；unsigned
+驗證證明不能改標為 Authenticode。工具自動在 appcast 加入未知發行者／SmartScreen
+提示；Ed25519 驗證不會讓 Windows 認定已驗證發行者，也不會略過 UAC 或系統封鎖。
+
+之後取得 Authenticode 簽章時，使用**更高的產品版號**、相應 tag 與新安裝包，將
+`windows_signing` 改為 `authenticode`（或移除，採用預設）。先完成 Authenticode 與
+timestamp，再以原本的 Ed25519 私鑰簽署最終 bytes，重新產生 metadata／appcast。
+沿用同一個 stable URL 與 Ed25519 公鑰即可升級，不需要另外開 channel 或換金鑰。
+不能覆蓋已發布的同版 unsigned EXE，也不能直接把簽章加到既有不可變下載檔；
+同版重新簽章不會讓已安裝相同版本的客戶端偵測到新版本。
+
 ## GitHub Release／CDN 發布順序（尚未自動化）
 
-1. 通過原始碼 review 與各平台簽章核准；目前 Windows workflow 仍只產生 unsigned test
-   installer，**不得**用它建立正式更新 feed。需先完成 SignPath 或等效的簽章流程。
+1. 通過原始碼 review 與發布核准。Windows workflow 目前仍產生 unsigned installer；
+   只有從相應 release tag 建置、驗證版本並明確宣告 `unsigned-transition` 的 EXE，
+   才能以正式 Ed25519 私鑰建立過渡 stable feed。無 tag 的手動 artifact 仍是測試包。
+   Authenticode 發布則需先完成 SignPath 或等效的簽章與人工核准流程。
 2. 上傳 `packages/` 的内容位址檔案到指定 Release；不使用 `--clobber`。
    base URL 使用 GitHub 時填 `https://github.com/OWNER/REPO/releases/download`。
 3. CDN 模式先將相同 bytes 鏡像到 `keykey/releases/download/TAG/FILE`；校驗遠端可取得、
@@ -186,9 +223,15 @@ python3 -m unittest discover -s .github/scripts -v
 測試金鑰只存在 TemporaryDirectory，OS 簽章正例由 mock 隔離；真實 Ed25519 簽章、
 防竄改與錯 key 驗證使用 OpenSSL。mock 正例不能當 notarization／Authenticode 驗收。
 
+Windows unsigned 過渡模式的 metadata 12 項回歸已通過，其中 Windows runner 包含
+16 個隔離簽章／版號案例；驗證明確 opt-in、unsigned bytes 的 Ed25519 防竄改，以及
+unsigned attestation 不能改標為 signed。已唯讀確認既有本機 unsigned 1.3.2 測試 EXE
+通過過渡簽章狀態與版號檢查；沒有替它產生正式更新簽章或發布 feed。Windows CI
+已加入這組回歸，尚待 Actions 執行。signed EXE 的真實憑證驗收仍待正式簽章流程。
+
 目前本機已驗證 macOS Release 編譯、含 Sparkle helper 的 ad-hoc 深層簽章與未簽章
 pkg 打包，及 Windows Settings 的 win-x64／win-x86 self-contained 交叉編譯。
-metadata 9 項與既有 release-assets 8 項測試通過，共用模型檢查通過。
+既有 metadata、release-assets 測試與共用模型檢查通過。
 Windows 已通過 30 項隔離 Deployment.Tests，及 x64／x86 WPF 設定回歸；新增回歸涵蓋
 Windows 10／11 manifest 的最低系統版本檢查，以及套用設定、成功／失敗儲存自訂詞、
 選取已儲存詞與關聯詞庫變更時的更新關閉保護。WPF 測試使用既有已編譯原生後端與

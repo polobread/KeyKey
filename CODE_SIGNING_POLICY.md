@@ -29,6 +29,20 @@ The Windows assets in release `v1.2.9` predate the SignPath integration and
 remain unsigned. This policy applies after the SignPath Foundation application
 is accepted and the verified signing workflow is enabled.
 
+Until Windows publisher signing is available, the maintainer permits unsigned
+EXE installers on the stable update channel only when each release manifest
+explicitly declares `windows_signing: "unsigned-transition"`. These releases
+still require reviewed tag builds, version verification, immutable HTTPS assets,
+and an Ed25519 signature made with the reviewed update key. The verifier accepts
+only an actually unsigned installer, never an invalid or untrusted Authenticode
+signature. Update notes disclose the missing Windows publisher signature.
+
+Once publisher signing is available, publish a higher product version using
+`windows_signing: "authenticode"` (the default), complete signing and timestamping
+before Ed25519 signing, and keep the same stable feed and update key. Do not
+replace an already published unsigned artifact in place. SignPath signing
+requests continue to require manual approval.
+
 ## Source review and merge
 
 All source, documentation, build-script, and CI changes, including agent-assisted
@@ -63,7 +77,7 @@ release. See the project [privacy policy](PRIVACY.md) for details.
 
 The desktop updater is default-off and transfers release/version requests only
 after a manual check or explicit opt-in. Ed25519 signatures protect downloaded
-updates separately from Authenticode. The stable update-metadata tool rejects
-unsigned or untimestamped Windows installers; the existing unsigned CI artifacts
-are test/manual-download artifacts, not automatic-update candidates. See
-[desktop update setup](Updates/README.md). The SignPath approval requirement remains unchanged.
+updates separately from Authenticode. The stable update-metadata tool requires
+timestamped Authenticode by default; the explicit unsigned transition above is
+the only exception. Unsigned CI artifacts are not automatically promoted to
+update candidates. See [desktop update setup](Updates/README.md).

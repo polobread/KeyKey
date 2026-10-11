@@ -91,6 +91,56 @@ class MetadataTests(unittest.TestCase):
                 metadata.build(self.manifest, self.key, "https://example.com", self.root / "out", self.public, OPENSSL)
         self.assertFalse((self.root / "out").exists())
 
+    def test_unsigned_stable_requires_explicit_mode_and_keeps_package_signatures(self):
+        unsigned = self.root / "setup.unsigned.exe"
+        unsigned.write_bytes(b"unsigned-transition-fixture")
+        manifest = copy.deepcopy(self.manifest)
+        entry = manifest["releases"][0]
+        entry.update(target="windows-x64", file=str(unsigned), minimum_system_version="10.0.0",
+                     windows_signing="unsigned-transition")
+        result = self.build(manifest)
+        release = result["releases"][0]
+        self.assertEqual(release["windows_signing"], "unsigned-transition")
+        package = self.root / "out/packages" / release["name"]
+        metadata.verify(package, release["ed25519_signature"], self.public, OPENSSL)
+        description = ET.parse(self.root / "out/windows-x64.xml").findtext("./channel/item/description")
+        self.assertIn("未知的發行者", description)
+        self.assertIn("Ed25519", description)
+        package.write_bytes(b"tampered-unsigned-installer")
+        with self.assertRaisesRegex(ValueError, "verification failed"):
+            metadata.verify(package, release["ed25519_signature"], self.public, OPENSSL)
+        for changes in (dict(windows_signing="optional"), dict(windows_signing=None),
+                        dict(target="macos-arm64"), dict(file=str(self.package))):
+            with self.subTest(changes=changes):
+                invalid = copy.deepcopy(manifest)
+                invalid["releases"][0].update(changes)
+                with self.assertRaises(ValueError):
+                    metadata.validate_manifest(invalid)
+
+    def test_unsigned_attestation_cannot_be_reused_for_signed_release(self):
+        installer = self.root / "setup.exe"
+        installer.write_bytes(b"unsigned-transition-fixture")
+        manifest = copy.deepcopy(self.manifest)
+        entry = manifest["releases"][0]
+        entry.update(target="windows-x86", file=str(installer), windows_signing="unsigned-transition")
+        directory = self.root / "attestations"
+        with patch.object(metadata, "verify_platform_package"):
+            metadata.attest(manifest, self.key, directory, self.public, OPENSSL)
+        metadata.verify_attestation(entry, directory, self.public, OPENSSL)
+        for mode in ("authenticode", None):
+            changed = dict(entry)
+            if mode is None:
+                changed.pop("windows_signing")
+            else:
+                changed["windows_signing"] = mode
+            with self.subTest(mode=mode), self.assertRaisesRegex(ValueError, "does not match"):
+                metadata.verify_attestation(changed, directory, self.public, OPENSSL)
+
+    @unittest.skipUnless(os.name == "nt", "PowerShell installer verification runs on Windows")
+    def test_windows_signing_state_and_version_gate(self):
+        subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
+                        str(Path(__file__).with_name("test_verify_windows.ps1"))], check=True)
+
     def test_existing_signed_output_is_never_overwritten(self):
         self.build()
         before = (self.root / "out/metadata.json").read_bytes()
