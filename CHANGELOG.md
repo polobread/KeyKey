@@ -6,7 +6,7 @@
 - Windows 現代設定加入 WinSparkle 更新分頁；只在設定程式開啟時檢查，不在 TSF 宿主內連網。x64／x86 元件依執行行程位元數打包，沿用版本化安裝與保留舊 DLL 的升級流程。
 - Windows 設定程式宣告支援 Windows 10／11，避免更新最低系統版本檢查誤判；分別保護未套用設定與未儲存自訂詞，套用設定不會解除自訂詞草稿保護，成功儲存自訂詞也不會誤擋更新或清除其他設定的保護。
 - Windows 更新分頁同步顯示檢查、新版本、失敗與取消狀態；檢查中避免重複請求。啟動安裝前及真正關閉設定視窗時重查未儲存內容，避免延遲回呼遺失新編輯；結束或初始化失敗後的舊回呼不再修改設定視窗。新增 x64／x86 原生 WinSparkle 簽章拒絕測試並納入 Windows CI。
-- Windows 更新來源規劃為 CDN 主來源與 GitHub Raw 備援，統一使用小寫 `update/stable/windows-x64.xml` 路徑；加入尚無更新項目的初始 RSS 與 x64／x86 原生讀取回歸。雙來源切換與正式發布流程尚待實作。
+- Windows 更新來源規劃為 CDN 主來源與 GitHub Raw 備援，統一放在小寫 `update/stable/`，提供 `windows-x64.xml` 與 `windows-x86.xml`；加入尚無更新項目的初始 RSS 與 x64／x86 原生讀取回歸。雙來源切換與正式發布流程尚待實作。
 - 新增共用 Ed25519 metadata、平台 appcast 及跨平台簽章驗證證明工具。自動更新資產使用 SHA-256 內容位址，拒絕同版 recovery build、未 notarize 的 macOS pkg 與 unsigned Windows installer；Linux／FreeBSD 保留套件管理路徑。
 - 尚未設定正式公開金鑰與 feed，也未啟用自動 feed 發布；目前建置維持離線。未替換已安裝版本，未修改各平台產品版號或共用模型。
 

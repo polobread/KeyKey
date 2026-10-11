@@ -12,6 +12,7 @@
     <Compile Include="../SettingsModern/WinSparkleBackend.cs" Link="WinSparkleBackend.cs" />
     <EmbeddedResource Include="../../../../Updates/config.json" LogicalName="KeyKey.UpdateConfig" />
     <Content Include="../../../../update/stable/windows-x64.xml" Link="windows-x64.xml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../../../update/stable/windows-x86.xml" Link="windows-x86.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <PropertyGroup>
     <WinSparkleArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x86'">Win32</WinSparkleArchitecture>
