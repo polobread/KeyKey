@@ -48,11 +48,13 @@ def verify(package):
                   if p.startswith(payload_prefix) and not p.endswith("/")}
         assert actual == seen, "payload/manifest inventory mismatch"
         required = {"keykeytsf_x86.dll", "keykeysettings.exe", "keykeysettingsbackend.dll",
-                    "keykeydeployment.exe", "keykeyregistration_x86.exe", "databases/keykey.db"}
+                    "keykeydeployment.exe", "keykeyregistration_x86.exe", "databases/keykey.db",
+                    "winsparkle.dll"}
         if architecture == "x64":
             required.add("keykeytsf_x64.dll")
         assert required <= seen, "incomplete payload"
         assert "licenses/openvanilla-hanconvert.txt" in seen, "missing Han conversion notices"
+        assert "licenses/winsparkle-license.txt" in seen, "missing WinSparkle notices"
         guide = archive.read(prefix + "README.txt").decode("utf-8-sig")
         assert "新增鍵盤" in guide and "Windows 10" in guide and "Windows 11" in guide
         assert "chichi77-keykey-install.log" not in guide

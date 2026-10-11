@@ -1,40 +1,52 @@
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
-using Microsoft.Win32;
+using System.Windows.Threading;
 
 namespace KeyKeySettings;
 
 // Runs only in Settings, never inside another application's TSF process.
 internal sealed class DesktopUpdater : IDisposable
 {
-    private const string RegistryPath = @"Software\chichi77\KeyKey\DesktopUpdates";
+    private readonly IDesktopUpdateBackend backend;
+    private readonly Dispatcher dispatcher;
+    private readonly Action requestShutdown;
+    private readonly Func<Stream> readConfiguration;
     private bool initialized;
+    private int generation;
+    private volatile bool disposed;
     private volatile bool unsavedChanges;
-    private readonly CanShutdownCallback canShutdown;
-    private readonly ShutdownCallback shutdown;
-    public bool Available => initialized;
-    internal bool CanShutdown => !unsavedChanges;
+    public bool Available => initialized && !disposed;
+    internal bool CanShutdown => !disposed && !unsavedChanges;
+    public bool Busy { get; private set; }
     public string Status { get; private set; } = "此建置尚未設定簽章更新服務，不會連線。";
-    public bool Automatic => initialized && win_sparkle_get_automatic_check_for_updates() == 1;
+    public bool Automatic => Available && backend.Automatic;
+    public event Action? StateChanged;
 
-    public DesktopUpdater()
+    public DesktopUpdater() : this(new WinSparkleBackend(), Dispatcher.CurrentDispatcher,
+        () => Application.Current.Shutdown(),
+        () => Assembly.GetExecutingAssembly().GetManifestResourceStream("KeyKey.UpdateConfig")
+            ?? throw new InvalidOperationException("缺少更新設定")) { }
+
+    internal DesktopUpdater(IDesktopUpdateBackend backend, Dispatcher dispatcher,
+        Action requestShutdown, Func<Stream> readConfiguration)
     {
-        // Native callbacks must not synchronously wait for WPF: cleanup on the
-        // UI thread could otherwise deadlock against a pending shutdown query.
-        canShutdown = () => CanShutdown ? 1 : 0;
-        shutdown = () => Application.Current.Dispatcher.BeginInvoke(() => Application.Current.Shutdown());
+        this.backend = backend;
+        this.dispatcher = dispatcher;
+        this.requestShutdown = requestShutdown;
+        this.readConfiguration = readConfiguration;
     }
 
     public void Initialize()
     {
-        if (initialized) return;
+        if (initialized || disposed) return;
+        var session = ++generation;
+        void Dispatch(Action action) => Post(session, action);
+        bool configured = false;
         try
         {
-            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("KeyKey.UpdateConfig")
-                ?? throw new InvalidOperationException("缺少更新設定");
+            using var stream = readConfiguration();
             using var document = JsonDocument.Parse(stream);
             var config = document.RootElement;
             if (config.GetProperty("schema_version").GetInt32() != 1)
@@ -48,70 +60,76 @@ internal sealed class DesktopUpdater : IDisposable
                 uri.UserInfo.Length != 0 || uri.Fragment.Length != 0)
                 throw new InvalidOperationException("更新網址或公開金鑰無效");
 
-            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), (name, assembly, path) =>
-                name == "WinSparkle.dll" ? NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, name)) : IntPtr.Zero);
             var version = Assembly.GetExecutingAssembly().GetName().Version!;
-            win_sparkle_set_app_details("chichi77", "琦琦輸入法", $"{version.Major}.{version.Minor}.{version.Build}");
-            win_sparkle_set_registry_path(RegistryPath);
-            win_sparkle_set_appcast_url(uri.AbsoluteUri);
-            if (win_sparkle_set_eddsa_public_key(key) != 1)
-                throw new InvalidOperationException("WinSparkle 拒絕公開金鑰");
-            win_sparkle_set_update_check_interval(86400);
-            win_sparkle_set_can_shutdown_callback(canShutdown);
-            win_sparkle_set_shutdown_request_callback(shutdown);
-            using var preferences = Registry.CurrentUser.CreateSubKey(RegistryPath);
-            if (preferences.GetValue("ConsentInitialized") is null)
-            {
-                win_sparkle_set_automatic_check_for_updates(0);
-                preferences.SetValue("ConsentInitialized", 1, RegistryValueKind.DWord);
-            }
-            win_sparkle_init();
+            backend.Configure(key, uri.AbsoluteUri, $"{version.Major}.{version.Minor}.{version.Build}",
+                new UpdateCallbacks(
+                    () => CanShutdown ? 1 : 0,
+                    () => Dispatch(() =>
+                    {
+                        // WinSparkle queries readiness BEFORE launching the installer.
+                        // An edit made in that interval must survive its shutdown request.
+                        if (CanShutdown) requestShutdown();
+                        else SetState("安裝程式已啟動；設定有新的未儲存編輯，視窗將保持開啟。", false);
+                    }),
+                    () => Dispatch(() => SetState("更新未完成。請查看更新視窗的錯誤訊息，關閉後可重試。", false)),
+                    () => Dispatch(() => SetState("有新版本可用。請在更新視窗確認下載與安裝。", true)),
+                    () => Dispatch(() => SetState("目前已是最新版本。", false)),
+                    () => Dispatch(() => SetState("已取消更新，可稍後重新檢查。", false)),
+                    () => Dispatch(() => SetState(Busy ? "更新視窗已關閉，可重新檢查。" : Status, false)),
+                    _ =>
+                    {
+                        if (CanShutdown) return 0; // Keep WinSparkle's normal interactive/UAC handling.
+                        Dispatch(() => SetState("請先套用設定或儲存自訂詞，再重新檢查更新。", false));
+                        return -1; // WINSPARKLE_RETURN_ERROR: never fall through to launching the file.
+                    }));
+            configured = true;
             initialized = true;
-            Status = "只檢查發行版本，不傳送輸入內容。下載通過 Ed25519 驗證後，才啟動安裝程式並要求管理員授權。";
+            SetState("只檢查發行版本，不傳送輸入內容。下載通過簽章驗證後，才啟動安裝程式並要求管理員授權。", false);
+            backend.Initialize();
         }
         catch (Exception error) when (error is DllNotFoundException or BadImageFormatException
             or EntryPointNotFoundException or InvalidOperationException or FormatException
-            or JsonException or KeyNotFoundException or IOException or UnauthorizedAccessException)
+            or JsonException or KeyNotFoundException or IOException or UnauthorizedAccessException
+            or System.Security.SecurityException)
         {
-            Status = $"更新服務無法啟用：{error.Message}（未開始檢查更新）";
+            initialized = false;
+            generation++;
+            if (configured) backend.Cleanup();
+            SetState($"更新服務無法啟用：{error.Message}（未開始檢查更新）", false);
         }
     }
 
-    public void Check() { if (initialized) win_sparkle_check_update_with_ui(); }
+    // Native callbacks must not wait for WPF: cleanup on the UI thread waits
+    // for native threads, and synchronous dispatch would deadlock that shutdown.
+    private void Post(int session, Action action)
+    {
+        if (disposed || dispatcher.HasShutdownStarted) return;
+        dispatcher.BeginInvoke(() => { if (!disposed && initialized && session == generation) action(); });
+    }
+
+    private void SetState(string status, bool busy)
+    {
+        Status = status;
+        Busy = busy;
+        StateChanged?.Invoke();
+    }
+
+    public void Check()
+    {
+        if (!Available || Busy) return;
+        SetState("正在檢查更新…", true);
+        backend.Check();
+    }
     public void SetUnsavedChanges(bool value) => unsavedChanges = value;
     public void SetAutomatic(bool value)
     {
-        if (initialized) win_sparkle_set_automatic_check_for_updates(value ? 1 : 0);
+        if (Available) backend.Automatic = value;
     }
     public void Dispose()
     {
-        if (initialized) { win_sparkle_cleanup(); initialized = false; }
+        if (disposed) return;
+        disposed = true; // Drop callbacks already queued on the WPF dispatcher.
+        Busy = false;
+        if (initialized) { initialized = false; backend.Cleanup(); }
     }
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int CanShutdownCallback();
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void ShutdownCallback();
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_init();
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_cleanup();
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-    private static extern void win_sparkle_set_app_details(string company, string app, string version);
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_set_registry_path([MarshalAs(UnmanagedType.LPUTF8Str)] string path);
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_set_appcast_url([MarshalAs(UnmanagedType.LPUTF8Str)] string url);
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern int win_sparkle_set_eddsa_public_key([MarshalAs(UnmanagedType.LPUTF8Str)] string key);
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_set_update_check_interval(int seconds);
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern int win_sparkle_get_automatic_check_for_updates();
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_set_automatic_check_for_updates(int value);
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_check_update_with_ui();
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_set_can_shutdown_callback(CanShutdownCallback callback);
-    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void win_sparkle_set_shutdown_request_callback(ShutdownCallback callback);
 }

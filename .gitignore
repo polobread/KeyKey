@@ -3,6 +3,8 @@
 /Updates/out/
 Source/Loaders/Windows-TSF/SettingsModern/bin/
 Source/Loaders/Windows-TSF/SettingsModern/obj/
+Source/Loaders/Windows-TSF/DesktopUpdater.Tests/bin/
+Source/Loaders/Windows-TSF/DesktopUpdater.Tests/obj/
 ._*
 __pycache__/
 *.pkg

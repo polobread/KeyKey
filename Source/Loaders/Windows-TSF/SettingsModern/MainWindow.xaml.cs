@@ -36,10 +36,10 @@ public partial class MainWindow : Window
         Loaded += (_, _) =>
         {
             App.Updater.Initialize();
-            UpdateStatus.Text = App.Updater.Status;
-            CheckUpdate.IsEnabled = AutomaticUpdates.IsEnabled = App.Updater.Available;
+            RefreshUpdateState();
             AutomaticUpdates.IsChecked = App.Updater.Automatic;
         };
+        App.Updater.StateChanged += RefreshUpdateState;
         AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(UpdateSettingsChanged));
         AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
         AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
@@ -75,7 +75,11 @@ public partial class MainWindow : Window
             UpdateDiagnosticStatus();
         };
         diagnosticTimer.Start();
-        Closed += (_, _) => diagnosticTimer.Stop();
+        Closed += (_, _) =>
+        {
+            diagnosticTimer.Stop();
+            App.Updater.StateChanged -= RefreshUpdateState;
+        };
         UpdateShutdownProtection();
     }
 
@@ -135,6 +139,12 @@ public partial class MainWindow : Window
     }
 
     private void CheckUpdate_Click(object sender, RoutedEventArgs e) => App.Updater.Check();
+    private void RefreshUpdateState()
+    {
+        UpdateStatus.Text = App.Updater.Status;
+        CheckUpdate.IsEnabled = App.Updater.Available && !App.Updater.Busy;
+        AutomaticUpdates.IsEnabled = App.Updater.Available;
+    }
     private void DiagnosticLogging_Changed(object sender, RoutedEventArgs e)
     {
         if (trackingUpdateChanges) diagnosticsEdited = true;

@@ -116,6 +116,20 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Native and managed settings writer regression failed.' }
           }
 
+      - name: Test Windows updater lifecycle and native signatures
+        working-directory: Source/Loaders/Windows-TSF
+        run: |
+          $openssl = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
+          if (-not (Test-Path -LiteralPath $openssl -PathType Leaf)) {
+            throw 'OpenSSL is required for the native updater signature regressions.'
+          }
+          foreach ($architecture in @('x64', 'x86')) {
+            dotnet run --project DesktopUpdater.Tests/DesktopUpdater.Tests.csproj `
+              --configuration Release -r "win-$architecture" --self-contained `
+              -- --native --openssl $openssl
+            if ($LASTEXITCODE -ne 0) { throw "Windows updater regression failed: $architecture" }
+          }
+
       - name: Install NSIS 3.12
         run: |
           choco install nsis --version=3.12.0 --yes --no-progress --limit-output

@@ -17,6 +17,10 @@ RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 - Windows：WinSparkle 0.9.4，只在現代 Settings 執行檢查；**沒有登入排程／背景服務**。
   native DLL 與 feed 依 Settings 的 bitness 選擇。安裝沿用現有 NSIS＋版本化 Deployment。
   目前 NSIS 只有 x64 installer，故 x86 feed 維持空白，不把 ZIP 當自動安裝器。
+  更新分頁會顯示檢查結果、錯誤及取消狀態。安裝入口重查未儲存內容；如果安裝器
+  已啟動後才有新的編輯，設定視窗會保持開啟以保留草稿。這項保護不會取消已啟動的
+  安裝器，也不能從啟動成功推定安裝成功。WinSparkle 管理下載進度、簽章及 UAC；
+  設定視窗的回呼只非同步送往 WPF，避免清理時互相等待。
 - Linux：交給發行版套件庫；現有 `.deb` 下載不等於已架設 APT 更新庫。
 - FreeBSD：交給 ports/pkg；此變更沒有新增 port，也不讓輸入法繞過套件管理器覆寫檔案。
 
@@ -158,3 +162,29 @@ Windows 已通過 30 項隔離 Deployment.Tests，及 x64／x86 WPF 設定回歸
 Windows 10／11 manifest 的最低系統版本檢查，以及套用設定、成功／失敗儲存自訂詞、
 選取已儲存詞與關聯詞庫變更時的更新關閉保護。WPF 測試使用既有已編譯原生後端與
 隔離個人資料；不執行 WinSparkle 下載或安裝。完整 TSF／NSIS 建置與 GUI 升級驗收尚未完成。
+
+2026-10-11 Windows 客戶端補充驗證：x64／x86 Settings 建置、WPF 設定／自訂詞回歸
+及固定 WinSparkle 0.9.4 DLL 的 6 個原生案例各通過。原生案例以 loopback HTTP 提供
+測試 appcast／無法執行的測試 bytes，暫存 Ed25519 金鑰及隨機 HKCU 測試區在結束後
+移除；不修改正式 config，也不執行安裝器。涵蓋同版無更新、合法簽章下載、檔案竄改、
+錯 key、缺少簽章與損壞 feed。只有測試直接呼叫原生 backend 使用 HTTP；正式客戶端
+仍只接受設定內的 HTTPS URL。合法簽章正例只是下載與驗證證據，不是 Authenticode、
+UAC、NSIS 升級或安裝成功證據；取消與關閉競態由隔離 managed backend 測試驗證。
+
+```powershell
+# 一般使用者環境；需 OpenSSL 3（例如 Git for Windows 內附版本）
+python Updates/prepare.py fetch windows
+$openssl = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
+foreach ($architecture in @('x64', 'x86')) {
+    dotnet run --project Source/Loaders/Windows-TSF/DesktopUpdater.Tests/DesktopUpdater.Tests.csproj `
+      --configuration Release -r "win-$architecture" --self-contained -- --native --openssl $openssl
+    if ($LASTEXITCODE -ne 0) { throw "Updater tests failed: $architecture" }
+}
+```
+
+不加 `--native` 可只跑無登錄／連線的 managed 生命週期回歸，包含離線預設、無效設定、
+架構 feed 選擇、重複檢查、重試、取消、背景回呼、初始化失敗重試、釋放及草稿保護。
+Windows package workflow 會跑兩種架構的 managed＋原生案例，並要求 ZIP 含相同架構
+的 WinSparkle DLL 與授權通知。本機兩份 1.3.2 測試 ZIP 已通過內容雜湊、PE 架構、
+共用 DB 及授權通知檢查；使用此次 Settings publish 產物與既有已編譯 native／Deployment
+產物，沒有重跑完整 TSF／NSIS 建置或實際安裝。workflow 尚待 GitHub Actions 執行驗證。
