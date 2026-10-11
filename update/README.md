@@ -114,6 +114,9 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
 
 `update/stable/windows-x64.xml` 與 `windows-x86.xml` 是 GitHub 來源的初始 RSS，
 目前記錄已發布的 Windows 1.3.1 手動下載資訊：x64 指向 unsigned EXE，x86 指向 ZIP。
+每份 feed 的 channel `link` 使用 CDN 主來源，`description` 以 HTML 列出 CDN 與
+GitHub 兩個手動下載連結。維持一個標準 RSS `link`，不放重複的 channel `link`。
+兩個來源的連結都由使用者自行選用，客戶端尚未實作自動切換。
 資訊放在 RSS channel 的 `link` 與 `description`，沒有自動更新 `item`／`enclosure`，
 WinSparkle 讀取後仍回報無可用更新，不會自動下載或執行這些檔案。
 待使用者 review 並將 PR 合併至 `master` 後，才會出現在上述 Raw 網址；CDN 副本仍需
