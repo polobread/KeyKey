@@ -1,7 +1,7 @@
 # 桌面更新（開發中）
 
 此目錄在 local `v1.3.2` 開發 macOS／Windows 更新客戶端與發布工具，**不是已上線的自動更新服務**。
-`config.json` 的公開金鑰與 feed 目前留空，因此建置不連線。未使用 Yahoo 舊服務、
+`config.json` 已設定維護者提供的正式公開金鑰；各平台 feed 仍留空，因此更新客戶端不連線。未使用 Yahoo 舊服務、
 RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 
 ## 目錄與維護入口
@@ -149,6 +149,13 @@ python3 -m unittest discover -s .github/scripts -p test_sync_update_feeds.py -v
 
 ## 正式金鑰與網址設定（需維護者審查）
 
+2026-10-13 已將維護者提供的 32-byte base64 Ed25519 公鑰寫入 `config.json`。
+公鑰原始 bytes 的 SHA-256 為
+`abbbf302de90de80897a16e275dcf8db199509bc908bfe432d917f1222d9f273`。
+此次只驗證公開金鑰格式，未讀取私鑰、驗證私鑰配對或設定 CI secret。
+同日 macOS CDN feed 仍回傳 HTTP 403，故各平台 feed URL 暫保持空白；
+待部署與可存取性驗證完成再設定，不因公鑰就緒而啟用連網。
+
 1. 在 repository **外部**產生並備份 PEM Ed25519 私鑰，例如在受保護的金鑰目錄執行：
 
    ```sh
@@ -208,7 +215,7 @@ GitHub 兩個手動下載連結。維持一個標準 RSS `link`，不放重複�
 WinSparkle 讀取後仍回報無可用更新，不會自動下載或執行這些檔案。
 待使用者 review 並將 PR 合併至 `master` 後，才會出現在上述 Raw 網址；CDN 副本仍需
 先部署 XML 同步所需的 IAM／cache 設定，再由上述 workflow 上傳。手動下載資訊不表示已完成自動更新發布。
-正式公鑰與客戶端 feed 設定目前仍留空。
+正式公鑰已設定；客戶端 feed 設定目前仍留空。
 
 v1.3.1 的 GitHub Release 尚無 x86 EXE 或安裝包 Ed25519 更新簽章；其 Windows
 build-info 的 `source_sha` 與 `tag_sha` 不同，屬既有同版 recovery 下載資產。
