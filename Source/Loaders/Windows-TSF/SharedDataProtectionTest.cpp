@@ -40,7 +40,12 @@ void Writer(const std::wstring& path,const std::string& key,int iterations,bool 
             while (Parse(path)->stringValueForKey(key)!=std::to_string(i) && GetTickCount64()<deadline) {
                 Sleep(10); file.write();
             }
-            Check(Parse(path)->stringValueForKey(key)==std::to_string(i),"Native pending settings save did not recover");
+            if (Parse(path)->stringValueForKey(key)!=std::to_string(i)) {
+                std::cerr<<"Pending save: key="<<key<<", expected="<<i<<", local="
+                    <<file.rootDictionary()->stringValueForKey(key)<<", disk="<<Parse(path)->stringValueForKey(key)
+                    <<"\n"<<Read(path)<<'\n';
+                throw std::runtime_error("Native pending settings save did not recover");
+            }
         }
     }
 }
@@ -139,6 +144,25 @@ DWORD Launch(const std::wstring& executable,std::wstring command,std::function<v
 }
 void ProcessChecks(const std::filesystem::path& profile,const std::wstring& executable,const std::wstring& prefix=L"") {
     const auto path=(profile/L"settings.plist").wstring();
+    if (!prefix.empty()) {
+        Put(path,"<plist><dict><key>A</key><string>60</string><key>B</key><string>60</string></dict></plist>");
+        const auto ready=(profile/L"lock-ready").wstring(),release=(profile/L"lock-release").wstring();
+        bool acquired=false,preserved=false;
+        const auto held=Launch(executable,L"\""+executable+L"\" "+prefix+L"--hold-lock \""+path+L"\" \""+ready+L"\" \""+release+L"\"",[&] {
+            const auto deadline=GetTickCount64()+5000;
+            while (GetFileAttributesW(ready.c_str())==INVALID_FILE_ATTRIBUTES && GetTickCount64()<deadline) Sleep(10);
+            acquired=GetFileAttributesW(ready.c_str())!=INVALID_FILE_ATTRIBUTES;
+            if (acquired) {
+                std::cerr<<"Native mutex: "<<OVUTF8::FromUTF16(SettingsLockName(path))
+                    <<"\nManaged mutex: "<<Read(ready)<<'\n';
+                Writer(path,"A",1); preserved=Parse(path)->stringValueForKey("A")=="60";
+            }
+            std::ofstream(std::filesystem::path(release))<<"release";
+        });
+        Check(held==0 && acquired && preserved,"Native writer did not honor managed settings mutex");
+        Writer(path,"A",1); Check(Parse(path)->stringValueForKey("A")=="1","Save after managed lock release failed");
+        std::cout<<"Native writer honored managed lock and resumed after release\n";
+    }
     Put(path,"<plist><dict><key>A</key><string>0</string><key>B</key><string>0</string></dict></plist>");
     const auto command=L"\""+executable+L"\" "+prefix+L"--writer \""+path+L"\" B 60";
     const DWORD result=Launch(executable,command,[&] { Writer(path,"A",60,true); });
@@ -148,20 +172,6 @@ void ProcessChecks(const std::filesystem::path& profile,const std::wstring& exec
         std::cerr<<"Mixed-process final fields: A="<<data->stringValueForKey("A")<<", B="<<data->stringValueForKey("B")<<'\n';
     Check(data->stringValueForKey("A")=="60" && data->stringValueForKey("B")=="60","Mixed-process writers lost a field");
     std::cout<<"Mixed-process settings writers preserved both fields\n";
-    if (!prefix.empty()) {
-        const auto ready=(profile/L"lock-ready").wstring(),release=(profile/L"lock-release").wstring();
-        bool acquired=false,preserved=false;
-        const auto held=Launch(executable,L"\""+executable+L"\" "+prefix+L"--hold-lock \""+path+L"\" \""+ready+L"\" \""+release+L"\"",[&] {
-            const auto deadline=GetTickCount64()+5000;
-            while (GetFileAttributesW(ready.c_str())==INVALID_FILE_ATTRIBUTES && GetTickCount64()<deadline) Sleep(10);
-            acquired=GetFileAttributesW(ready.c_str())!=INVALID_FILE_ATTRIBUTES;
-            if (acquired) { Writer(path,"A",1); preserved=Parse(path)->stringValueForKey("A")=="60"; }
-            std::ofstream(std::filesystem::path(release))<<"release";
-        });
-        Check(held==0 && acquired && preserved,"Native writer did not honor managed settings mutex");
-        Writer(path,"A",1); Check(Parse(path)->stringValueForKey("A")=="1","Save after managed lock release failed");
-        std::cout<<"Native writer honored managed lock and resumed after release\n";
-    }
 }
 struct InspectableLanguageModel : Manjusri::LanguageModel {
     using LanguageModel::LanguageModel;

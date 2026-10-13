@@ -3,7 +3,7 @@ using KeyKeySettings;
 if (args.Length==4 && args[0]=="--hold-lock")
 {
     using var lease=SharedSettingsFile.Lock(args[1]);
-    File.WriteAllText(args[2],"ready");
+    File.WriteAllText(args[2],SharedSettingsFile.LockName(args[1]));
     var timeout=DateTime.UtcNow.AddSeconds(10);
     while (!File.Exists(args[3]) && DateTime.UtcNow<timeout) Thread.Sleep(10);
     if (!File.Exists(args[3])) throw new Exception("共享設定鎖測試逾時");
