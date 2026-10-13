@@ -7,6 +7,7 @@
 
 ## macOS 1.3.2（未發布）
 
+- 修正 beta1 公證報告指出的三個輔助 App 除錯權限：Release 禁止注入 `get-task-allow`，重簽只移除此權限並保留 Sparkle 必要權限；簽後逐架構檢查。公證僅在命令成功且 JSON 為 `Accepted` 時 staple／validate，失敗保存 Apple 報告與 CI artifact。加入隔離簽章／公證回歸；實際 Developer ID 公證與安裝驗收仍待完成，未重發 beta 或修改 Latest。
 - 四份 macOS 產品 plist 獨立升版至 1.3.2；已發布 macOS 1.3.1、Linux 版號與共用好打注音模型不變。
 - IMK 主程式加入可測試的 Sparkle 生命週期管理；設定頁顯示檢查、新版、下載、取消及錯誤狀態，阻止重複檢查，離線或取消後可重試。
 - 更新重啟遇到未完成組字時延後，完成後才繼續；不自行送字或清除組字，真正結束前再檢查新輸入。

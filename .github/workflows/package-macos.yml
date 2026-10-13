@@ -91,6 +91,8 @@ jobs:
           bash update/test-macos.sh
           KEYKEY_TEST_OPENSSL="$(brew --prefix openssl@3)/bin/openssl" \
             python3 -m unittest discover -s update -p test_macos_release.py -v
+          python3 -m unittest discover -s update -p 'test_macos_signing.py' -v
+          python3 -m unittest discover -s update -p 'test_macos_notarization.py' -v
           cd Source
           xcodebuild \
             -project Takao.xcodeproj \
@@ -249,6 +251,8 @@ jobs:
             --keychain "$KEYCHAIN"
 
       - name: Sign, package, and notarise
+        env:
+          NOTARY_LOG_DIR: ${{ runner.temp }}/keykey-notary
         shell: bash
         run: |
           set -euo pipefail
@@ -261,6 +265,15 @@ jobs:
           set -euo pipefail
           xcrun stapler validate Installer/chichi77KeyKey.pkg
           spctl --assess --type install -vv Installer/chichi77KeyKey.pkg
+
+      - name: Upload notarization diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: keykey-macos-notary-${{ env.VERSION }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/keykey-notary/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Stage artifact and checksum
         shell: bash

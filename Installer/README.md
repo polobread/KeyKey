@@ -86,6 +86,35 @@ service rejects it. Headers are of no use at runtime.
 Local packages re-sign the staged app ad hoc and verify its seal. They remain
 unsigned at the installer level and are not notarized.
 
+Release builds use `CODE_SIGN_INJECT_BASE_ENTITLEMENTS[config=Release] = NO`
+in `Takao-macOS.xcconfig`; Debug builds keep their debugger access. The signing
+helper removes only `com.apple.security.get-task-allow` from existing
+entitlements, preserving Sparkle's sandbox/XPC and other runtime permissions.
+It checks all Mach-O slices after signing and fails if permissions change or
+debug access remains. Different runtime permissions between universal slices
+are rejected rather than silently replaced by the runner's native slice.
+
+`NOTARY_PROFILE` uses `update/notarize-macos.py`: it saves the JSON submission
+response, stderr and the downloadable Apple report in a separate attempt
+directory under `Installer/notarization-logs/` (override with `NOTARY_LOG_DIR`).
+It staples and validates only when `submit --wait` exits successfully **and**
+the JSON status is `Accepted`. Rejections, timeouts, malformed responses and
+missing status stop packaging; a failed log download does not hide the original
+rejection. When using a non-default signing keychain, set `KEYCHAIN` too.
+
+Run the isolated regressions from the repository root:
+
+```sh
+python3 -m unittest discover -s update -p 'test_macos_signing.py' -v
+python3 -m unittest discover -s update -p 'test_macos_notarization.py' -v
+```
+
+On macOS, the signing test also compiles temporary universal helper/XPC/framework
+fixtures and re-signs them ad hoc. Notarization tests mock Apple responses;
+neither test installs an input method, accesses private signing identities,
+submits to Apple, or publishes a Release. Successful tests do not prove actual
+Developer ID notarization or Gatekeeper installation acceptance.
+
 ## Signing in GitHub Actions
 
 The `publish` job of `.github/workflows/package-macos.yml` does the same thing
@@ -102,6 +131,11 @@ not obvious:
   - `notarytool store-credentials` writes the profile into that same keychain,
     which is also made the default keychain, so the `--keychain-profile` lookup
     above resolves without being passed a path.
+
+The signing job uploads only the `NOTARY_LOG_DIR` diagnostics as
+`keykey-macos-notary-VERSION-ATTEMPT` even when signing/notarization fails.
+It never uploads the temporary keychain or certificate files. A rejection
+cannot proceed to signed installer/Release/CDN publication.
 
 Verifying a `.p12` by hand needs one more: do not put the scratch keychain under
 `mktemp -d`. `/var` is a symlink to `private/var`, `securityd` stores the

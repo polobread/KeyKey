@@ -1,6 +1,7 @@
 .DS_Store
 /update/.cache/
 /update/out/
+/Installer/notarization-logs/
 Source/Loaders/Windows-TSF/SettingsModern/bin/
 Source/Loaders/Windows-TSF/SettingsModern/obj/
 Source/Loaders/Windows-TSF/DesktopUpdater.Tests/bin/

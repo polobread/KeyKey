@@ -18,6 +18,7 @@ GitHub Raw 與 CDN 的固定 feed 檔名為 `macos-arm64.xml`、`windows-x64.xml
 | `metadata.py` | 發布時驗證 manifest 與安裝包，產生簽章、metadata 及 feed |
 | `macos_release.py` | 核對 macOS 四份版號及正式設定，再產生經驗證的單平台更新候選，不發布 |
 | `verify-windows.ps1`、`sign-macos.py` | 平台驗證／簽章實作，由發布或建置工具呼叫 |
+| `notarize-macos.py` | 保存 Apple 公證報告，僅 `Accepted` 且成功退出後 staple／validate |
 | `test_*` | 測試，由 CI 執行 |
 | `stable/` | 固定網址的 feed；發布時提交已驗證的輸出，經 PR review／merge |
 | `beta/` | 獨立測試版 feed，絕不提升至 stable；初始 XML 無更新項目 |
@@ -111,6 +112,12 @@ CDN（主要）與 GitHub（備用）手動下載連結，沒有更新 item。ch
 `KEYKEY_TEST_OPENSSL=/opt/homebrew/bin/openssl python3 -m unittest discover -s update -p test_macos_release.py -v`
 使用臨時測試金鑰驗證候選簽章，正向 OS 驗證為 mock；不能宣稱已完成 notarized 升級。
 正式啟用前須完成本文最後列出的已安裝版本驗收，包含組字中／新組字及個人詞庫保留。
+
+macOS 發行建置禁止注入 `get-task-allow` 除錯權限；重新簽章只移除此權限，
+保留 Sparkle 的 sandbox／XPC 必要權限，並逐一驗證所有架構。公證結果不是 `Accepted`
+或命令失敗時停止封裝；Apple submission JSON、錯誤輸出及拒絕報告會保存為 CI artifact，
+不再把缺少票證的 stapler Error 65 當成第一個錯誤。隔離回歸及報告路徑見
+[`Installer/README.md`](../Installer/README.md#signing-and-notarising)。測試不送件或發布 Release。
 
 ## XML feed 自動同步到 CDN
 

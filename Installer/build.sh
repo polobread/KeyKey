@@ -30,7 +30,6 @@ fi
 # Removing framework headers invalidates the original build signatures. Sign
 # nested code first, then the app, even for an unsigned local test package.
 python3 ../update/sign-macos.py "$STAGED" "$SIGN_IDENTITY"
-codesign --verify --deep --strict --verbose=2 "$STAGED"
 
 # pkgbuild marks app bundles relocatable by default, which lets installer
 # redirect the payload onto any copy of the same bundle id it can find --
@@ -78,8 +77,11 @@ fi
 rm -f chichi77KeyKeyApp.pkg
 
 if [ -n "${NOTARY_PROFILE:-}" ]; then
-    xcrun notarytool submit chichi77KeyKey.pkg --keychain-profile "$NOTARY_PROFILE" --wait
-    xcrun stapler staple chichi77KeyKey.pkg
+    notary_args=(--profile "$NOTARY_PROFILE" --out "${NOTARY_LOG_DIR:-notarization-logs}")
+    if [ -n "${KEYCHAIN:-}" ]; then
+        notary_args+=(--keychain "$KEYCHAIN")
+    fi
+    python3 ../update/notarize-macos.py chichi77KeyKey.pkg "${notary_args[@]}"
 fi
 
 rm -f chichi77KeyKey.pkg.zip

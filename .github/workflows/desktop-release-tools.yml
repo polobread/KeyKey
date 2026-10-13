@@ -8,6 +8,8 @@ on:
       - '.github/scripts/*sync*'
       - '.github/workflows/desktop-release-tools.yml'
       - '.github/workflows/package-macos.yml'
+      - 'Installer/build.sh'
+      - 'Source/Takao-macOS.xcconfig'
       - '.github/workflows/package-windows.yml'
       - 'Source/Loaders/OSX-IMK/KeyKeyMacUpdater.*'
       - 'Source/Loaders/OSX-IMK/Tests/MacUpdaterTests.m'
@@ -42,6 +44,10 @@ jobs:
       - run: python3 update/prepare.py fetch macos
       - name: Test updater and native Sparkle beta version ordering without installation
         run: bash update/test-macos.sh
+      - name: Test native ad-hoc signing and notarization status gates without Apple submission
+        run: |
+          python3 -m unittest discover -s update -p 'test_macos_signing.py' -v
+          python3 -m unittest discover -s update -p 'test_macos_notarization.py' -v
 
   windows-updater:
     runs-on: windows-2025

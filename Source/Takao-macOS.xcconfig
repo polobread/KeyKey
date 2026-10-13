@@ -10,3 +10,7 @@ CLANG_CXX_LIBRARY = libc++
 HEADER_SEARCH_PATHS = $(inherited) $(OPENSSL_PREFIX)/include
 OTHER_LDFLAGS = $(inherited) -lsqlite3 $(OPENSSL_PREFIX)/lib/libcrypto.a
 FRAMEWORK_SEARCH_PATHS = $(inherited) $(SRCROOT)/../update/.cache/macos-2.10.0
+
+// Distribution builds must not acquire the debugger entitlement. Keep Debug
+// unchanged so developers can still attach a debugger locally.
+CODE_SIGN_INJECT_BASE_ENTITLEMENTS[config=Release] = NO
