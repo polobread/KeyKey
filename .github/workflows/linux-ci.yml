@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing published release tag, e.g. v1.3.1; blank = artifact only. Build uses the selected ref.'
+        description: 'Existing published release tag, e.g. v1.3.2 or v1.3.2-beta2; blank = artifact only. Beta builds must use the exact tag commit.'
         required: false
         type: string
 

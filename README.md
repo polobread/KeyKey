@@ -1,6 +1,6 @@
-# 琦琦輸入法 / chichi77 KeyKey — Android／iOS 開發版 1.3.3；macOS／Windows 開發版 1.3.2；Linux 1.3.1
+# 琦琦輸入法 / chichi77 KeyKey — Android／iOS 開發版 1.3.3；macOS／Windows／Linux 開發版 1.3.2
 
-Android 與 iOS 原始碼開發版號已更新為 `1.3.3`；商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線。Android 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。macOS／Windows `1.3.2` 尚未發布；macOS 已發布版與 Linux 仍為 `1.3.1`。
+Android 與 iOS 原始碼開發版號已更新為 `1.3.3`；商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線。Android 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。macOS／Windows／Linux 開發版為 `1.3.2`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。
 macOS、Windows 與 Ubuntu 24.04 安裝包依各自版本提供於
 [GitHub Release](https://github.com/polobread/KeyKey/releases)；
 Android 與 iOS 依各自的商店管道安裝。
@@ -99,8 +99,8 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 
 發布 GitHub Release（可同時建立 tag）會啟動
 `Package macOS`、`Package Windows` 與完整 `Linux CI`；各平台通過建置及驗證後，
-自動上傳自己的 assets。各平台版號須符合該 Release；目前 Windows 為 `v1.3.2`，macOS／Linux
-仍為 `v1.3.1`，不能以 Windows 的新 tag 封裝這兩個平台。若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
+自動上傳自己的 assets。各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
+均為 `1.3.2`，可使用對應的 `v1.3.2` 或 `v1.3.2-betaN` tag。beta 必須標記 Pre-release，且只能從原 tag commit 建置，不改 Latest；修正後需建立新的 beta tag。正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
 設定 release environment 的 AWS mirror variables 後，同一批已驗證檔案也會同步到 S3；
 留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
@@ -156,7 +156,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-Windows 1.3.2、Android／iOS 1.3.3 與 macOS、Linux 1.3.1 原始碼均提供「好打注音」整句組字模式，
+macOS／Windows／Linux 1.3.2 與 Android／iOS 1.3.3 原始碼均提供「好打注音」整句組字模式，
 並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。語言模型由
 McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yahoo 未釋出的中研院語料；
 另加入可替換的 11,180 句 AI 合成 bootstrap corpora 產生初版 bigram 上下文資料。這份
@@ -168,12 +168,13 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 
 Android and iOS source development versions are now `1.3.3`; version `1.3.2` is available on Google Play and the App Store.
 Android entered production on **2026-10-08**; installation no longer requires
-a Google Group or closed-test enrollment. Windows `1.3.2` is not yet released;
-macOS and Linux remain at `1.3.1`. Desktop installers are provided by platform version on
+a Google Group or closed-test enrollment. macOS, Windows, and Linux development
+versions are `1.3.2`, not yet stable releases; published macOS and Linux stable
+versions remain `1.3.1`. Desktop installers are provided by platform version on
 [GitHub Release](https://github.com/polobread/KeyKey/releases).
 Android and iOS use their respective store distribution channels.
 
-Windows 1.3.2, Android and iOS 1.3.3, and macOS and Linux 1.3.1 implement Smart Phonetic
+macOS, Windows, and Linux 1.3.2, and Android and iOS 1.3.3 implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
 option. For published builds, consult the installation guide for that version.
 Its redistributable unigram model is generated from the MIT-licensed
@@ -263,10 +264,11 @@ is enabled.
 
 Publishing a GitHub Release starts
 `Package macOS`, `Package Windows`, and the full `Linux CI`. Each workflow
-uploads its verified packages when its version matches that Release. Windows
-uses `v1.3.2`; macOS and Linux retain `v1.3.1`. A Windows version tag cannot
-package those two platforms from this branch. After fixing a
-failed platform through a PR into `master`, manually run that workflow from `master` with
+uploads its verified packages when its version matches that Release. macOS,
+Windows, and Linux development versions are `1.3.2`, accepting `v1.3.2` and
+`v1.3.2-betaN`. Betas require Pre-release and the exact tag commit; they do not
+change Latest. Fixes require a new beta tag. After fixing a failed stable
+platform through a PR into `master`, manually run that workflow from `master` with
 the matching platform's `release_tag` to replace its assets; other platforms are untouched.
 Leaving `release_tag` blank retains Actions artifacts only.
 The [Linux installation guide](LINUX_INSTALL.md)

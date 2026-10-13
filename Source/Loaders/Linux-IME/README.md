@@ -1,10 +1,19 @@
 # chichi77 KeyKey for Linux
 
-Version 1.3.1 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
+Development version 1.3.2 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
 LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
 as 傳統注音, Cangjie, and Simplex. See the
 [Linux installation and usage guide](../../../LINUX_INSTALL.md) for the package
 set and setup steps.
+Version 1.3.2 is not release-qualified yet. It fixes Shift tap mode switching
+swallowing the key release after forwarding the press, which could leave
+applications treating Shift as held. The published 1.3.1 installation guide
+remains separate from development packages.
+With Fcitx enabled, CTest runs `keykey_linux_fcitx5_mode_keys` against the real
+adapter and checks that Shift releases are filtered but not accepted (the
+frontend must still deliver them to the application), alongside tap/hold mode
+selection, reset, Shift combinations, and shortcut pass-through. This isolated
+test does not replace GTK/Qt X11 or GNOME Wayland desktop acceptance.
 The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
@@ -17,7 +26,7 @@ addon do not link or modify the legacy KeyKeyEngine or OpenVanilla frameworks.
 The earlier 1.2.8 release boundaries remain in the
 [1.2.8 release record](docs/linux-1.2.8-release.md).
 
-## Version 1.3.1 features and verification
+## Features and verification
 
 The 1.2.8 phase established Traditional Bopomofo behavior across Standard,
 ETen, ETen 26-key, Hsu, and Hanyu Pinyin layouts, along with Cangjie, Simplex,
