@@ -697,6 +697,12 @@ preserves the newer disk value. Invalid existing files are preserved. Input host
 wait at most 250 ms for this lock; a failed save retains its unsaved snapshot.
 Readers allow delete sharing so an open reader does not prevent replacement.
 
+Mutex names use the full path with DOS 8.3 aliases expanded before hashing, matching
+.NET `Path.GetFullPath`. The native implementation expands the existing ancestor
+when the file or its parent directories do not exist yet. This keeps the same
+mutex before and after file creation and prevents native/managed concurrent
+writers from taking different locks for the same settings file.
+
 Learning saves write only the host's pending changes in one SQLite transaction,
 with at most 200 entries per cache. Reset and import advance a database generation;
 old pending caches cannot repopulate the reset/imported state. Busy transactions
@@ -715,6 +721,13 @@ opposite-architecture test executable to exercise mixed x64/x86 processes. The
 `--managed <dotnet> <SettingsModern.Tests.dll>` mode also checks that a native
 writer obeys the mutex held by the C# settings implementation. The Windows
 packaging workflow runs both architecture directions and both managed pairings.
+The focused Windows Shared Data PR workflow builds only this native test target
+for each architecture and runs the same pairings plus managed settings tests.
+Child failures include their exit code and captured output in the CI log.
+Path regression cases compare native and peer mutex names for long/short aliases,
+missing files and parents, file creation, case, separators and paths beyond MAX_PATH.
+These cases explicitly report a skip when the temp volume has no 8.3 aliases;
+the focused CI sets `KEYKEY_TEST_REQUIRE_SHORT_PATHS=1` to require this coverage.
 
 ## Verification checklist
 

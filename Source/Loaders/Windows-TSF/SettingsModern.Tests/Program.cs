@@ -1,9 +1,15 @@
 using KeyKeySettings;
 
+if (args.Length==3 && args[0]=="--lock-names")
+{
+    File.WriteAllLines(args[2],File.ReadAllLines(args[1]).Select(SharedSettingsFile.LockName));
+    return;
+}
 if (args.Length==4 && args[0]=="--hold-lock")
 {
     using var lease=SharedSettingsFile.Lock(args[1]);
-    File.WriteAllText(args[2],"ready");
+    File.WriteAllText(args[2]+".tmp",SharedSettingsFile.LockName(args[1]));
+    File.Move(args[2]+".tmp",args[2]);
     var timeout=DateTime.UtcNow.AddSeconds(10);
     while (!File.Exists(args[3]) && DateTime.UtcNow<timeout) Thread.Sleep(10);
     if (!File.Exists(args[3])) throw new Exception("共享設定鎖測試逾時");

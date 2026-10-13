@@ -83,38 +83,137 @@ void PlistChecks(const std::filesystem::path& profile) {
 }
 DWORD Launch(const std::wstring& executable,std::wstring command,std::function<void()> concurrent={}) {
     STARTUPINFOW startup{sizeof(startup)}; PROCESS_INFORMATION process{};
-    Check(CreateProcessW(executable.c_str(),command.data(),nullptr,nullptr,FALSE,CREATE_NO_WINDOW,nullptr,nullptr,&startup,&process),"Create isolated child");
+    const auto log=std::filesystem::temp_directory_path()/(L"keykey-child-"+std::to_wstring(GetCurrentProcessId())+L".log");
+    SECURITY_ATTRIBUTES security{sizeof(security),nullptr,TRUE};
+    const auto output=CreateFileW(log.c_str(),GENERIC_WRITE,FILE_SHARE_READ,&security,CREATE_ALWAYS,FILE_ATTRIBUTE_TEMPORARY,nullptr);
+    Check(output!=INVALID_HANDLE_VALUE,"Create child output log");
+    struct OutputCleanup {
+        HANDLE handle; std::filesystem::path path;
+        ~OutputCleanup() { CloseHandle(handle); std::error_code error; std::filesystem::remove(path,error); }
+    } outputCleanup{output,log};
+    startup.dwFlags=STARTF_USESTDHANDLES;
+    startup.hStdOutput=output; startup.hStdError=output;
+    startup.hStdInput=GetStdHandle(STD_INPUT_HANDLE);
+    Check(CreateProcessW(executable.c_str(),command.data(),nullptr,nullptr,TRUE,CREATE_NO_WINDOW,nullptr,nullptr,&startup,&process),"Create isolated child");
     CloseHandle(process.hThread);
+    struct ProcessCleanup {
+        HANDLE handle;
+        ~ProcessCleanup() {
+            if (WaitForSingleObject(handle,0)!=WAIT_OBJECT_0) {
+                TerminateProcess(handle,1); WaitForSingleObject(handle,5000);
+            }
+            CloseHandle(handle);
+        }
+    } processCleanup{process.hProcess};
     if (concurrent) concurrent();
     const DWORD wait=WaitForSingleObject(process.hProcess,30000);
     DWORD result=1;
     if (wait==WAIT_OBJECT_0) GetExitCodeProcess(process.hProcess,&result);
-    else TerminateProcess(process.hProcess,1);
-    CloseHandle(process.hProcess); Check(wait==WAIT_OBJECT_0,"Child timed out"); return result;
+    else { TerminateProcess(process.hProcess,1); WaitForSingleObject(process.hProcess,5000); }
+    if (result!=0 || wait!=WAIT_OBJECT_0) {
+        std::cerr<<"Child exit code: "<<result<<"\n";
+        std::ifstream captured(log); std::cerr<<captured.rdbuf();
+    }
+    Check(wait==WAIT_OBJECT_0,"Child timed out"); return result;
+}
+void WriteLockNames(const std::filesystem::path& input,const std::filesystem::path& output) {
+    std::ifstream paths(input);
+    std::ofstream names(output);
+    std::string path;
+    while (std::getline(paths,path)) names<<OVUTF8::FromUTF16(SettingsLockName(OVUTF16::FromUTF8(path)))<<'\n';
+    Check(paths.eof() && names.good(),"Write native lock names");
+}
+void LockPathChecks(const std::filesystem::path& profile,const std::wstring& executable,const std::wstring& prefix) {
+    const auto directory=profile/L"Settings mutex path aliases";
+    std::filesystem::create_directory(directory);
+    wchar_t longBuffer[32768]{},shortBuffer[32768]{};
+    Check(GetLongPathNameW(directory.c_str(),longBuffer,32768)!=0,"Resolve long test directory");
+    Check(GetShortPathNameW(directory.c_str(),shortBuffer,32768)!=0,"Resolve short test directory");
+    const std::wstring longDirectory=longBuffer,shortDirectory=shortBuffer;
+    if (shortDirectory.find(L'~')==std::wstring::npos || shortDirectory==longDirectory) {
+        Check(GetEnvironmentVariableW(L"KEYKEY_TEST_REQUIRE_SHORT_PATHS",nullptr,0)==0,
+            "Short-path regression requires a test volume with 8.3 aliases enabled");
+        std::cout<<"Short-path cases skipped: test volume has no 8.3 aliases\n";
+        return;
+    }
+    std::vector<std::pair<std::wstring,std::wstring>> paths;
+    const auto add=[&](const std::wstring& suffix) {
+        paths.emplace_back(shortDirectory+suffix,longDirectory+suffix);
+    };
+    add(L"\\settings.plist"); // The file does not exist yet.
+    add(L"\\missing parent\\missing child\\settings.plist");
+    add(L"\\literal~name\\settings.plist");
+    add(L"\\設定 資料\\settings.plist");
+    std::wstring deep;
+    for (int i=0;i<20;++i) deep+=L"\\missing directory";
+    add(deep+L"\\settings.plist"); // Expansion must also work beyond MAX_PATH.
+    auto alternate=shortDirectory+L"/./missing/../settings.plist";
+    paths.emplace_back(alternate,longDirectory+L"\\settings.plist");
+    for (auto& value : alternate) if (value>=L'a' && value<=L'z') value-=L'a'-L'A';
+    paths.emplace_back(alternate,longDirectory+L"\\settings.plist");
+    const auto before=SettingsLockName(shortDirectory+L"\\settings.plist");
+    const auto check=[&] {
+        const auto input=profile/L"lock-paths.txt",output=profile/L"lock-names.txt";
+        {
+            std::ofstream file(input);
+            for (const auto& [alias,expected] : paths) {
+                Check(SettingsLockName(alias)==SettingsLockName(expected),"Native short/long path mutex mismatch");
+                file<<OVUTF8::FromUTF16(alias)<<'\n'<<OVUTF8::FromUTF16(expected)<<'\n';
+            }
+        }
+        Check(Launch(executable,L"\""+executable+L"\" "+prefix+L"--lock-names \""+input.wstring()+L"\" \""+output.wstring()+L"\"")==0,
+            "Peer lock-name check failed");
+        std::ifstream names(output);
+        for (const auto& [alias,expected] : paths) {
+            for (const auto& path : {alias,expected}) {
+                std::string name; Check(static_cast<bool>(std::getline(names,name)),"Missing peer lock name");
+                if (name!=OVUTF8::FromUTF16(SettingsLockName(path)))
+                    std::cerr<<"Path: "<<OVUTF8::FromUTF16(path)<<"\nPeer: "<<name<<"\nNative: "<<OVUTF8::FromUTF16(SettingsLockName(path))<<'\n';
+                Check(name==OVUTF8::FromUTF16(SettingsLockName(path)),"Peer path normalization differs from native");
+            }
+        }
+    };
+    check();
+    Put(longDirectory+L"\\settings.plist","<plist><dict/></plist>");
+    Check(before==SettingsLockName(shortDirectory+L"\\settings.plist"),"File creation changed mutex identity");
+    Check(GetShortPathNameW((longDirectory+L"\\settings.plist").c_str(),shortBuffer,32768)!=0,"Resolve short file name");
+    paths.emplace_back(shortBuffer,longDirectory+L"\\settings.plist");
+    std::filesystem::create_directories(directory/L"missing parent"/L"missing child");
+    check();
+    std::cout<<"Short/long path mutex identity, absent parents, file creation, case and long paths passed\n";
 }
 void ProcessChecks(const std::filesystem::path& profile,const std::wstring& executable,const std::wstring& prefix=L"") {
+    LockPathChecks(profile,executable,prefix);
     const auto path=(profile/L"settings.plist").wstring();
+    if (!prefix.empty()) {
+        Put(path,"<plist><dict><key>A</key><string>60</string><key>B</key><string>60</string></dict></plist>");
+        const auto ready=(profile/L"lock-ready").wstring(),release=(profile/L"lock-release").wstring();
+        bool acquired=false,preserved=false,sameName=false;
+        const auto held=Launch(executable,L"\""+executable+L"\" "+prefix+L"--hold-lock \""+path+L"\" \""+ready+L"\" \""+release+L"\"",[&] {
+            const auto deadline=GetTickCount64()+5000;
+            while (GetFileAttributesW(ready.c_str())==INVALID_FILE_ATTRIBUTES && GetTickCount64()<deadline) Sleep(10);
+            acquired=GetFileAttributesW(ready.c_str())!=INVALID_FILE_ATTRIBUTES;
+            if (acquired) {
+                sameName=Read(ready)==OVUTF8::FromUTF16(SettingsLockName(path));
+                std::cerr<<"Native mutex: "<<OVUTF8::FromUTF16(SettingsLockName(path))
+                    <<"\nManaged mutex: "<<Read(ready)<<'\n';
+                Writer(path,"A",1); preserved=Parse(path)->stringValueForKey("A")=="60";
+            }
+            std::ofstream(std::filesystem::path(release))<<"release";
+        });
+        Check(held==0 && acquired && sameName && preserved,"Native writer did not honor managed settings mutex");
+        Writer(path,"A",1); Check(Parse(path)->stringValueForKey("A")=="1","Save after managed lock release failed");
+        std::cout<<"Native writer honored managed lock and resumed after release\n";
+    }
     Put(path,"<plist><dict><key>A</key><string>0</string><key>B</key><string>0</string></dict></plist>");
     const auto command=L"\""+executable+L"\" "+prefix+L"--writer \""+path+L"\" B 60";
     const DWORD result=Launch(executable,command,[&] { Writer(path,"A",60); });
     Check(result==0,"Concurrent peer writer failed");
     auto data=Parse(path);
+    if (data->stringValueForKey("A")!="60" || data->stringValueForKey("B")!="60")
+        std::cerr<<"Mixed-process final fields: A="<<data->stringValueForKey("A")<<", B="<<data->stringValueForKey("B")<<'\n';
     Check(data->stringValueForKey("A")=="60" && data->stringValueForKey("B")=="60","Mixed-process writers lost a field");
     std::cout<<"Mixed-process settings writers preserved both fields\n";
-    if (!prefix.empty()) {
-        const auto ready=(profile/L"lock-ready").wstring(),release=(profile/L"lock-release").wstring();
-        bool acquired=false,preserved=false;
-        const auto held=Launch(executable,L"\""+executable+L"\" "+prefix+L"--hold-lock \""+path+L"\" \""+ready+L"\" \""+release+L"\"",[&] {
-            const auto deadline=GetTickCount64()+5000;
-            while (GetFileAttributesW(ready.c_str())==INVALID_FILE_ATTRIBUTES && GetTickCount64()<deadline) Sleep(10);
-            acquired=GetFileAttributesW(ready.c_str())!=INVALID_FILE_ATTRIBUTES;
-            if (acquired) { Writer(path,"A",1); preserved=Parse(path)->stringValueForKey("A")=="60"; }
-            std::ofstream(std::filesystem::path(release))<<"release";
-        });
-        Check(held==0 && acquired && preserved,"Native writer did not honor managed settings mutex");
-        Writer(path,"A",1); Check(Parse(path)->stringValueForKey("A")=="1","Save after managed lock release failed");
-        std::cout<<"Native writer honored managed lock and resumed after release\n";
-    }
 }
 struct InspectableLanguageModel : Manjusri::LanguageModel {
     using LanguageModel::LanguageModel;
@@ -252,6 +351,7 @@ void ProcessLearningChecks(const std::filesystem::path& profile,const std::wstri
 }
 int wmain(int argc,wchar_t** argv) {
     try {
+        if (argc==4 && std::wstring(argv[1])==L"--lock-names") { WriteLockNames(argv[2],argv[3]); return 0; }
         if (argc==5 && std::wstring(argv[1])==L"--writer") { Writer(argv[2],OVUTF8::FromUTF16(argv[3]),_wtoi(argv[4])); return 0; }
         if (argc==3 && std::wstring(argv[1])==L"--learn") { LearnInChild(argv[2]); return 0; }
         const auto profile=std::filesystem::temp_directory_path()/(L"keykey-shared-data-"+std::to_wstring(GetCurrentProcessId())+L"-"+std::to_wstring(GetTickCount64()));

@@ -5,14 +5,46 @@
 #include <string>
 
 namespace KeyKey::WindowsTsf {
-// The C++ frontend and C# settings app use the same UTF-16 FNV-1a lock name.
-inline std::wstring SettingsLockName(const std::wstring& path) {
+// Match .NET Path.GetFullPath: expand DOS short names even when the settings
+// file (or some of its parent directories) has not been created yet.
+inline std::wstring SettingsLockPath(const std::wstring& path) {
+    // .NET preserves explicit extended paths without normalizing them.
+    if (path.compare(0,4,L"\\\\?\\")==0) return path;
     wchar_t absolute[32768]{};
     const DWORD length=GetFullPathNameW(path.c_str(),32768,absolute,nullptr);
     if (!length || length>=32768) return {};
+    const std::wstring full(absolute,length);
+    if (full.find(L'~')==std::wstring::npos) return full;
+
+    const bool device=full.compare(0,4,L"\\\\.\\")==0;
+    const bool unc=!device && full.compare(0,2,L"\\\\")==0;
+    // GetLongPathName needs extended syntax when expansion exceeds MAX_PATH.
+    std::wstring input=device ? full : unc ? L"\\\\?\\UNC\\"+full.substr(2) : L"\\\\?\\"+full;
+    if (device) input[2]=L'?';
+    const auto prefixLength=device ? 0u : unc ? 6u : 4u;
+    size_t end=input.size();
+    while (true) {
+        const DWORD expanded=GetLongPathNameW(input.substr(0,end).c_str(),absolute,32768);
+        if (expanded && expanded<32768) {
+            std::wstring result(absolute,expanded);
+            result+=input.substr(end);
+            if (device) result[2]=L'.';
+            if (unc) result[6]=L'\\';
+            return result.substr(prefixLength);
+        }
+        const auto error=GetLastError();
+        if (expanded || (error!=ERROR_FILE_NOT_FOUND && error!=ERROR_PATH_NOT_FOUND)) return full;
+        const auto parent=input.find_last_of(L'\\',end-1);
+        if (parent==std::wstring::npos || parent<=prefixLength+2) return full;
+        end=parent;
+    }
+}
+// The C++ frontend and C# settings app use the same UTF-16 FNV-1a lock name.
+inline std::wstring SettingsLockName(const std::wstring& path) {
+    const auto absolute=SettingsLockPath(path);
+    if (absolute.empty()) return {};
     std::uint64_t hash=14695981039346656037ULL;
-    for (DWORD i=0;i<length;++i) {
-        wchar_t value=absolute[i];
+    for (wchar_t value : absolute) {
         if (value==L'/') value=L'\\';
         if (value>=L'A' && value<=L'Z') value+=L'a'-L'A';
         hash^=static_cast<std::uint16_t>(value); hash*=1099511628211ULL;
