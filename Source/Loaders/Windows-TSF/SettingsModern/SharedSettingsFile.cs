@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -40,21 +39,6 @@ internal static class SharedSettingsFile
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool MoveFileEx(string source,string target,uint flags);
 
-    private static void ReplaceWindowsFile(string source,string target)
-    {
-        // Readers outside the settings mutex (including file metadata queries)
-        // can briefly deny delete sharing. Retry the same flushed temporary file
-        // while the caller still owns the mutex; never delete the destination.
-        var elapsed=Stopwatch.StartNew();
-        while (!MoveFileEx(source,target,1|8))
-        {
-            var error=Marshal.GetLastWin32Error();
-            if ((error!=5 && error!=32) || elapsed.ElapsedMilliseconds>=250)
-                throw new IOException("無法替換設定檔。",new System.ComponentModel.Win32Exception(error));
-            Thread.Sleep(10);
-        }
-    }
-
     // Caller holds the shared lock through reading and editing the latest file.
     internal static void Write(string path,string text)
     {
@@ -72,7 +56,7 @@ internal static class SharedSettingsFile
             File.SetLastWriteTimeUtc(temporary,now>previous.AddSeconds(1) ? now : previous.AddSeconds(1));
             if (OperatingSystem.IsWindows())
             {
-                ReplaceWindowsFile(temporary,path);
+                if (!MoveFileEx(temporary,path,1|8)) throw new IOException("無法替換設定檔。",new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()));
             }
             else File.Move(temporary,path,true);
         }

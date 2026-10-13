@@ -696,11 +696,12 @@ saves merge changed keys against the current file; a conflicting stale snapshot
 preserves the newer disk value. Invalid existing files are preserved. Input hosts
 wait at most 250 ms for this lock; a failed save retains its unsaved snapshot.
 Readers allow delete sharing so an open reader does not prevent replacement.
-The native and managed settings writers retry access-denied and sharing-violation errors
-from atomic replacement for up to 250 ms while retaining the mutex and the same
-flushed temporary file. Persistent failures preserve the old file, remove the
-temporary file; managed saves report the Windows error and native saves retain
-their pending snapshot for retry.
+
+Mutex names use the full path with DOS 8.3 aliases expanded before hashing, matching
+.NET `Path.GetFullPath`. The native implementation expands the existing ancestor
+when the file or its parent directories do not exist yet. This keeps the same
+mutex before and after file creation and prevents native/managed concurrent
+writers from taking different locks for the same settings file.
 
 Learning saves write only the host's pending changes in one SQLite transaction,
 with at most 200 entries per cache. Reset and import advance a database generation;
@@ -723,8 +724,10 @@ packaging workflow runs both architecture directions and both managed pairings.
 The focused Windows Shared Data PR workflow builds only this native test target
 for each architecture and runs the same pairings plus managed settings tests.
 Child failures include their exit code and captured output in the CI log.
-Concurrent native test writers retry pending saves before starting the next edit;
-the dedicated lock-timeout tests still check deferred saves without retry.
+Path regression cases compare native and peer mutex names for long/short aliases,
+missing files and parents, file creation, case, separators and paths beyond MAX_PATH.
+These cases explicitly report a skip when the temp volume has no 8.3 aliases;
+the focused CI sets `KEYKEY_TEST_REQUIRE_SHORT_PATHS=1` to require this coverage.
 
 ## Verification checklist
 

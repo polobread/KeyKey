@@ -18,6 +18,8 @@ jobs:
   shared-data:
     runs-on: windows-2025
     timeout-minutes: 15
+    env:
+      KEYKEY_TEST_REQUIRE_SHORT_PATHS: '1'
     defaults:
       run:
         shell: pwsh
