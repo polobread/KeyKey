@@ -79,6 +79,51 @@ try
         throw new Exception("設定檔往返測試失敗");
     Console.WriteLine("Settings plist round-trip passed");
 
+    if (OperatingSystem.IsWindows())
+    {
+        // A reader without delete sharing can briefly block atomic replacement.
+        var original=File.ReadAllText(file);
+        using var started=new ManualResetEventSlim();
+        Exception? writerError=null;
+        using (var reader=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite))
+        {
+            var writer=new Thread(() => {
+                started.Set();
+                try { SettingsStore.Write(file,new Dictionary<string,string> { ["ReplacementRetry"]="saved" }); }
+                catch (Exception error) { writerError=error; }
+            });
+            writer.Start();
+            started.Wait();
+            // Wait until the replacement file exists, so release overlaps the save.
+            var deadline=DateTime.UtcNow.AddSeconds(5);
+            var directory=Path.GetDirectoryName(file)!;
+            var pattern=Path.GetFileName(file)+".tmp.*";
+            while (Directory.GetFiles(directory,pattern).Length==0 && writer.IsAlive && DateTime.UtcNow<deadline)
+                Thread.Sleep(1);
+            Thread.Sleep(50);
+            if (File.ReadAllText(file)!=original) throw new Exception("替換受阻時原設定檔被更動");
+            reader.Dispose();
+            if (!writer.Join(TimeSpan.FromSeconds(10))) throw new Exception("設定替換重試未結束");
+        }
+        if (writerError is not null) throw new Exception("短暫讀取鎖解除後應完成原子替換",writerError);
+        if (SettingsStore.Read(file,"ReplacementRetry","")!="saved") throw new Exception("重試儲存未保留設定");
+
+        original=File.ReadAllText(file);
+        using (var reader=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite))
+        {
+            var elapsed=System.Diagnostics.Stopwatch.StartNew();
+            bool rejected=false;
+            try { SettingsStore.Write(file,new Dictionary<string,string> { ["ReplacementRetry"]="blocked" }); }
+            catch (IOException) { rejected=true; }
+            if (!rejected || elapsed.Elapsed>TimeSpan.FromSeconds(3) || File.ReadAllText(file)!=original ||
+                Directory.GetFiles(Path.GetDirectoryName(file)!,Path.GetFileName(file)+".tmp.*").Length!=0)
+                throw new Exception("持續讀取鎖應有界失敗、保留舊檔並清除暫存檔");
+        }
+        SettingsStore.Write(file,new Dictionary<string,string> { ["ReplacementRetry"]="recovered" });
+        if (SettingsStore.Read(file,"ReplacementRetry","")!="recovered") throw new Exception("替換失敗後無法再次儲存");
+        Console.WriteLine("Atomic replacement retries transient readers, bounds persistent failures and recovers passed");
+    }
+
     SettingsStore.Write(file, new Dictionary<string, string> {
         ["ClearComposingTextWithEsc"] = "true",
     });
