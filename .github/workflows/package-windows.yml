@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing published Windows release tag, e.g. v1.3.2; blank = artifact only. Build uses the selected ref.'
+        description: 'Published Windows tag: v1.3.2 or v1.3.2-beta1; blank = artifact only. Build uses the selected ref.'
         required: false
         type: string
 
@@ -55,6 +55,11 @@ jobs:
 
           python .github/scripts/release-assets.py resolve --version $version
           if ($LASTEXITCODE -ne 0) { throw 'Release validation failed.' }
+          $tag = if ($env:REQUESTED_RELEASE_TAG) { $env:REQUESTED_RELEASE_TAG } else { $env:EVENT_RELEASE_TAG }
+          $config = Join-Path $env:RUNNER_TEMP 'keykey-update-config.json'
+          python update/prepare.py select-release --tag "$tag" --version $version --out $config
+          if ($LASTEXITCODE -ne 0) { throw 'Release update configuration failed.' }
+          "KEYKEY_UPDATE_CONFIG=$config" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
           $shortSha = (git rev-parse --short=12 HEAD).Trim()
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append

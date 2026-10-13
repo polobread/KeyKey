@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing published macOS release tag, e.g. v1.3.2; blank = artifact only. Build uses the selected ref.'
+        description: 'Published macOS tag: v1.3.2 or v1.3.2-beta1; blank = artifact only. Build uses the selected ref.'
         required: false
         type: string
 
@@ -64,6 +64,10 @@ jobs:
           done
 
           python3 .github/scripts/release-assets.py resolve --version "$version"
+          python3 update/prepare.py select-release \
+            --tag "${REQUESTED_RELEASE_TAG:-$EVENT_RELEASE_TAG}" --version "$version" \
+            --out "$RUNNER_TEMP/keykey-update-config.json"
+          echo "KEYKEY_UPDATE_CONFIG=$RUNNER_TEMP/keykey-update-config.json" >> "$GITHUB_ENV"
           short_sha=$(git rev-parse --short=12 HEAD)
           {
             echo "version=$version"
@@ -94,6 +98,8 @@ jobs:
             -configuration Release \
             -xcconfig Takao-macOS.xcconfig \
             build
+          cd ..
+          python3 update/prepare.py stamp-macos "Source/build/Release/chichi77 KeyKey.app"
 
       - name: Verify packaged language model
         shell: bash

@@ -39,7 +39,7 @@ internal static class NativeTests
             RunOpenSsl(openssl, "pkeyutl", "-sign", "-rawin", "-inkey", Path.Combine(directory, "test.pem"),
                 "-in", package, "-out", signature);
             var signed = Convert.ToBase64String(File.ReadAllBytes(signature));
-            foreach (var mode in new[] { "no-update", "empty-feed-x64", "empty-feed-x86", "valid", "tampered", "wrong-key", "missing-signature", "broken-feed" })
+            foreach (var mode in new[] { "no-update", "empty-feed-x64", "empty-feed-x86", "valid", "beta-next", "beta-same", "beta-older", "beta-to-final", "tampered", "wrong-key", "missing-signature", "broken-feed" })
             {
                 using var done = new ManualResetEventSlim();
                 using var server = new LoopbackServer(mode, payload, signed);
@@ -49,7 +49,8 @@ internal static class NativeTests
                 bool matchingPayload = false;
                 try
                 {
-                    backend.Configure(mode == "wrong-key" ? wrongKey : key, server.Feed, "1.0.0",
+                    backend.Configure(mode == "wrong-key" ? wrongKey : key, server.Feed,
+                        mode.StartsWith("beta-", StringComparison.Ordinal) ? "1.3.2b2" : "1.0.0",
                         new UpdateCallbacks(() => 1,
                             () => { Interlocked.Increment(ref shutdowns); done.Set(); },
                             () => { Interlocked.Increment(ref errors); done.Set(); },
@@ -65,10 +66,10 @@ internal static class NativeTests
                     backend.Initialize();
                     win_sparkle_check_update_with_ui_and_install();
                     Program.Check(done.Wait(TimeSpan.FromSeconds(30)), "Native updater timed out: " + mode);
-                    if (mode == "valid")
+                    if (mode is "valid" or "beta-next" or "beta-to-final")
                         Program.Check(found == 1 && installs == 1 && shutdowns == 1 && errors == 0 && matchingPayload,
                             "Valid signed payload did not reach the interception callback intact");
-                    else if (mode == "no-update" || mode.StartsWith("empty-feed-", StringComparison.Ordinal))
+                    else if (mode is "no-update" or "beta-same" or "beta-older" || mode.StartsWith("empty-feed-", StringComparison.Ordinal))
                         Program.Check(notFound == 1 && errors == 0 && installs == 0 && shutdowns == 0,
                             "Native same-version or empty feed was not reported as no update");
                     else
@@ -138,7 +139,11 @@ internal static class NativeTests
                     }
                     else
                     {
-                        var version = mode == "no-update" ? "1.0.0" : "2.0.0";
+                        var version = mode switch
+                        {
+                            "no-update" => "1.0.0", "beta-next" => "1.3.2b10", "beta-same" => "1.3.2b2",
+                            "beta-older" => "1.3.2b1", "beta-to-final" => "1.3.2", _ => "2.0.0"
+                        };
                         var sig = mode == "missing-signature" ? "" : $"sparkle:edSignature=\"{signature}\"";
                         var xml = $"<rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\"><channel><title>Test</title><item><title>Test {version}</title><enclosure url=\"{Feed.Replace("appcast.xml", "payload.exe")}\" sparkle:version=\"{version}\" length=\"{payload.Length}\" type=\"application/octet-stream\" {sig}/></item></channel></rss>";
                         if (mode.StartsWith("empty-feed-", StringComparison.Ordinal))

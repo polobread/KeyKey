@@ -11,6 +11,7 @@
 
 ## 桌面更新機制（開發中，未發布）
 
+- macOS／Windows 封裝支援 `vX.Y.Z-betaN`（例如 `v1.3.2-beta1`、`beta2`），要求 GitHub Pre-release 與固定 tag commit，不改 Latest。更新 metadata 增加 beta channel，原生比較版號使用 `X.Y.ZbN`；beta 建置選獨立 feed，未設定不回退 stable。新增 `update/beta/` 三份空 RSS、stable 防混入驗證、雙 channel CDN 同步及對應 Terraform 權限／短快取；未發布 beta 或執行 Terraform apply。Windows signed beta 的同產品版號安裝保護仍須另行處理。
 - 新增 stable XML CDN 同步 workflow：master feed 變更後經既有 release environment 發布，PR 只驗證。沿用 OIDC、比對 S3／CDN bytes、精確清除快取，不發布 installer／JSON 或刪除遠端檔案；Terraform 增加限定 XML 權限及短快取，仍須維護者 review／apply。
 - macOS 加入 Sparkle 更新入口與預設關閉的自動檢查；由 IMK 主程式管理更新，舊版預設開啟的 Yahoo 更新旗標不視為連網同意。安裝包保留更新元件的 XPC/helper 權限並由內而外簽章，所有 pkg 元件固定安裝位置。
 - Windows 現代設定加入 WinSparkle 更新分頁；只在設定程式開啟時檢查，不在 TSF 宿主內連網。x64／x86 元件依執行行程位元數打包，沿用版本化安裝與保留舊 DLL 的升級流程。

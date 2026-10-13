@@ -44,6 +44,28 @@ class MetadataTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "verification failed"):
             metadata.verify(path, signature, self.public, OPENSSL)
 
+    def test_beta_metadata_signature_and_machine_version(self):
+        manifest = copy.deepcopy(self.manifest)
+        manifest["channel"] = "beta"
+        entry = manifest["releases"][0]
+        entry.update(version="1.3.2-beta2", release_tag="v1.3.2-beta2")
+        result = self.build(manifest)
+        self.assertEqual(result["channel"], "beta")
+        self.assertIn("/v1.3.2-beta2/", result["releases"][0]["url"])
+        xml = ET.parse(self.root / "out/macos-arm64.xml")
+        self.assertEqual(xml.findtext(f"./channel/item/{{{metadata.SPARKLE}}}version"), "1.3.2b2")
+        self.assertEqual(xml.findtext(f"./channel/item/{{{metadata.SPARKLE}}}shortVersionString"), "1.3.2-beta2")
+        path = self.root / "out/metadata.json"
+        metadata.verify(path, path.with_suffix(".json.sig").read_text().strip(), self.public, OPENSSL)
+
+    def test_stable_and_beta_manifests_cannot_be_cross_promoted(self):
+        for channel, version in (("stable", "1.3.2-beta1"), ("beta", "1.3.2")):
+            manifest = copy.deepcopy(self.manifest)
+            manifest["channel"] = channel
+            manifest["releases"][0].update(version=version, release_tag="v" + version)
+            with self.subTest(channel=channel), self.assertRaisesRegex(ValueError, "update channel"):
+                metadata.validate_manifest(manifest)
+
     def test_platform_feeds_and_immutable_package_signature(self):
         windows = self.root / "setup.exe"
         windows.write_bytes(b"isolated-windows-test")

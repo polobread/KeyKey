@@ -11,9 +11,11 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <KeyKeyUpdateConfig Condition="'$(KEYKEY_UPDATE_CONFIG)' == ''">../../../../update/config.json</KeyKeyUpdateConfig>
+    <KeyKeyUpdateConfig Condition="'$(KEYKEY_UPDATE_CONFIG)' != ''">$(KEYKEY_UPDATE_CONFIG)</KeyKeyUpdateConfig>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="../../../../update/config.json" LogicalName="KeyKey.UpdateConfig" />
+    <EmbeddedResource Include="$(KeyKeyUpdateConfig)" LogicalName="KeyKey.UpdateConfig" />
   </ItemGroup>
   <PropertyGroup>
     <WinSparkleArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x86'">Win32</WinSparkleArchitecture>

@@ -45,11 +45,11 @@ class SyncFeedsTests(unittest.TestCase):
             return dict(Invalidation=dict(Id="INVALIDATION1"))
         self.fail(f"unexpected AWS operation: {args}")
 
-    def execute(self, aws=None):
+    def execute(self, aws=None, channel="stable", directory=None):
         with patch.dict(os.environ, self.env), patch.object(mirror, "aws", side_effect=aws or self.fake_aws) as calls, \
              patch.object(mirror.subprocess, "check_output", return_value="a" * 40), \
              patch.object(mirror.subprocess, "run") as wait, patch.object(mirror, "verify_cdn") as verify:
-            mirror.sync(self.root)
+            mirror.sync(directory or self.root, channel)
             return calls, wait, verify
 
     def test_current_platform_feeds_validate_without_network(self):
@@ -91,6 +91,39 @@ class SyncFeedsTests(unittest.TestCase):
         self.assertEqual(verify.call_args_list[0].args,
             ("https://cdn.example.invalid/keykey/update/stable/macos-arm64.xml", RSS))
         self.assertIn("S3 and CDN bytes verified", (self.root / "summary").read_text())
+
+    def test_beta_sync_is_isolated_and_all_channels_keep_exact_paths(self):
+        for channel in ("stable", "beta"):
+            directory = self.root / channel
+            directory.mkdir()
+            (directory / "macos-arm64.xml").write_bytes(RSS)
+        calls, _, verify = self.execute(channel="beta", directory=self.root / "beta")
+        self.assertEqual(set(self.objects), {"keykey/update/beta/macos-arm64.xml"})
+        self.assertEqual(verify.call_args.args[0], "https://cdn.example.invalid/keykey/update/beta/macos-arm64.xml")
+        self.objects.clear()
+        calls, _, _ = self.execute(channel="all")
+        self.assertEqual(set(self.objects), {"keykey/update/stable/macos-arm64.xml", "keykey/update/beta/macos-arm64.xml"})
+        self.assertEqual(calls.call_args_list[-1].args[-2:],
+            ("/keykey/update/stable/macos-arm64.xml", "/keykey/update/beta/macos-arm64.xml"))
+
+    def test_beta_item_or_beta_asset_cannot_enter_stable(self):
+        base = b'<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel><title>Test</title><item><sparkle:version>1.3.2b1</sparkle:version><enclosure url="https://example.invalid/v1.3.2-beta1/package.pkg.zip"/></item></channel></rss>'
+        for data in (base, base.replace(b"1.3.2b1", b"1.3.2"),
+                     base.replace(b"1.3.2b1", b"1.3.2").replace(b"-beta1", b"").replace(
+                         b"</item>", b"<sparkle:shortVersionString>1.3.2-beta1</sparkle:shortVersionString></item>")):
+            self.fixture(data=data)
+            with self.assertRaisesRegex(ValueError, "cannot be published to stable"):
+                mirror.feeds(self.root, "stable")
+            self.assertTrue(mirror.feeds(self.root, "beta"))
+
+    def test_invalid_beta_snapshot_prevents_stable_uploads_too(self):
+        for channel, data in (("stable", RSS), ("beta", b"<broken>")):
+            directory = self.root / channel
+            directory.mkdir()
+            (directory / "macos-arm64.xml").write_bytes(data)
+        with patch.object(mirror, "aws") as calls, self.assertRaises(ET.ParseError):
+            mirror.sync(self.root, "all")
+        calls.assert_not_called()
 
     def test_invalid_xml_prevents_every_external_write(self):
         self.fixture()

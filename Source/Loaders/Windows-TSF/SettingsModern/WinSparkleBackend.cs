@@ -38,7 +38,9 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
     public void Configure(string key, string feed, string version, UpdateCallbacks callbacks)
     {
         win_sparkle_set_app_details("chichi77", "琦琦輸入法", version);
-        win_sparkle_set_registry_path(registryPath);
+        // Beta consent/skipped versions must not change stable updater preferences.
+        var preferencesPath = version.Contains('b') ? registryPath + @"\Beta" : registryPath;
+        win_sparkle_set_registry_path(preferencesPath);
         win_sparkle_set_appcast_url(feed);
         if (win_sparkle_set_eddsa_public_key(key) != 1)
             throw new InvalidOperationException("WinSparkle 拒絕公開金鑰");
@@ -59,7 +61,7 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
         win_sparkle_set_update_cancelled_callback(cancelled);
         win_sparkle_set_update_dismissed_callback(dismissed);
         win_sparkle_set_user_run_installer_callback(beforeInstall);
-        using var preferences = Registry.CurrentUser.CreateSubKey(registryPath);
+        using var preferences = Registry.CurrentUser.CreateSubKey(preferencesPath);
         if (preferences.GetValue("ConsentInitialized") is null)
         {
             Automatic = false;

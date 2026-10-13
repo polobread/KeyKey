@@ -8,18 +8,26 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import time
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 from urllib.request import urlopen
 import xml.etree.ElementTree as ET
 
-PREFIX = "keykey/update/stable"
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "update"))
+import channels
+
+PREFIX = "keykey/update"
+CHANNELS = ("stable", "beta")
+SPARKLE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 CACHE_CONTROL = "public,max-age=0,s-maxage=60,must-revalidate"
 MAX_SIZE = 1024 * 1024
 
 
-def feeds(directory):
+def feeds(directory, update_channel="stable"):
+    if update_channel not in CHANNELS:
+        raise ValueError("unsupported feed channel")
     if directory.is_symlink() or not directory.is_dir():
         raise ValueError("feed directory must be a real directory")
     result = []
@@ -45,10 +53,31 @@ def feeds(directory):
             link = urlsplit(element.text or "")
             if link.scheme != "https" or not link.hostname or link.username or link.password:
                 raise ValueError(f"channel link must be HTTPS without credentials: {path.name}")
+        for item in channel.findall("item"):
+            enclosure = item.find("enclosure")
+            version = item.findtext(f"{{{SPARKLE}}}version")
+            if enclosure is not None:
+                version = version or enclosure.get(f"{{{SPARKLE}}}version")
+            if not version or not re.fullmatch(rf"{channels.VERSION}(?:b[1-9]\d*)?", version):
+                raise ValueError(f"update item requires a supported machine version: {path.name}")
+            if update_channel == "stable":
+                display = item.findtext(f"{{{SPARKLE}}}shortVersionString") or version
+                url = enclosure.get("url", "") if enclosure is not None else item.findtext("link", "")
+                if not re.fullmatch(channels.VERSION, version) or "beta" in display.lower() \
+                        or re.search(r"/v[^/]*-beta", unquote(urlsplit(url).path)):
+                    raise ValueError(f"beta updates cannot be published to stable: {path.name}")
         result.append((path.name, data))
     if not result:
         raise ValueError("no XML feeds to sync; remote objects are never deleted")
     return result
+
+
+def snapshot(directory, update_channel):
+    if update_channel == "all":
+        # Validate both channels before any writes, preserving exact relative keys.
+        return [(f"{channel}/{name}", data) for channel in CHANNELS
+                for name, data in feeds(directory / channel, channel)]
+    return [(f"{update_channel}/{name}", data) for name, data in feeds(directory, update_channel)]
 
 
 def aws(*arguments):
@@ -69,8 +98,8 @@ def verify_cdn(url, expected):
             time.sleep(2 * (attempt + 1))
 
 
-def sync(directory):
-    snapshot = feeds(directory)  # Validate every file before the first external write.
+def sync(directory, update_channel="stable"):
+    captured = snapshot(directory, update_channel)  # Validate all channels before external writes.
     bucket = os.environ["RELEASE_MIRROR_BUCKET"].strip()
     distribution = os.environ["RELEASE_MIRROR_DISTRIBUTION_ID"].strip()
     base = os.environ["RELEASE_MIRROR_BASE_URL"].strip().rstrip("/")
@@ -88,8 +117,9 @@ def sync(directory):
 
     paths = []
     with tempfile.TemporaryDirectory(prefix="keykey-update-feeds-") as temporary:
-        for name, data in snapshot:
+        for name, data in captured:
             staged = Path(temporary) / name
+            staged.parent.mkdir(parents=True, exist_ok=True)
             staged.write_bytes(data)
             key = f"{PREFIX}/{name}"
             checksum = base64.b64encode(hashlib.sha256(data).digest()).decode()
@@ -110,10 +140,10 @@ def sync(directory):
         "--paths", *paths)["Invalidation"]["Id"]
     subprocess.run(["aws", "cloudfront", "wait", "invalidation-completed",
         "--distribution-id", distribution, "--id", invalidation, "--no-cli-pager"], check=True)
-    for name, data in snapshot:
+    for name, data in captured:
         verify_cdn(f"{base}/{PREFIX}/{name}", data)
-    summary = f"Synced {len(snapshot)} XML feeds from master commit `{commit}`; S3 and CDN bytes verified.\n\n"
-    summary += "\n".join(f"- [{name}]({base}/{PREFIX}/{name})" for name, _ in snapshot) + "\n"
+    summary = f"Synced {len(captured)} XML feeds from master commit `{commit}`; S3 and CDN bytes verified.\n\n"
+    summary += "\n".join(f"- [{name}]({base}/{PREFIX}/{name})" for name, _ in captured) + "\n"
     print(summary)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as stream:
@@ -122,13 +152,15 @@ def sync(directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--directory", type=Path, default=Path("update/stable"))
+    parser.add_argument("--directory", type=Path, default=Path("update"))
+    parser.add_argument("--channel", choices=(*CHANNELS, "all"), default="all",
+        help="all: directory contains stable/ and beta/; single channel: directory contains XML files")
     parser.add_argument("--check-only", action="store_true")
     args = parser.parse_args()
     if args.check_only:
-        print(f"Validated {len(feeds(args.directory))} RSS XML feeds; no AWS/network writes.")
+        print(f"Validated {len(snapshot(args.directory, args.channel))} RSS XML feeds; no AWS/network writes.")
     else:
-        sync(args.directory)
+        sync(args.directory, args.channel)
 
 
 if __name__ == "__main__":

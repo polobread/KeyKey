@@ -4,6 +4,7 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 import plistlib
 import shutil
@@ -13,15 +14,20 @@ from urllib.parse import urlsplit
 from urllib.request import urlopen
 import zipfile
 
+import channels
+
 ROOT = Path(__file__).resolve().parent
 
 
-def load_config():
-    config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
+def load_config(path=None):
+    config_path = Path(path or os.environ.get("KEYKEY_UPDATE_CONFIG", ROOT / "config.json"))
+    config = json.loads(config_path.read_text(encoding="utf-8"))
     if config.get("schema_version") != 1:
         raise ValueError("unsupported update configuration")
     key = config["public_ed25519_key"]
-    feeds = [config[name] for name in ("macos_feed_url", "windows_x64_feed_url", "windows_x86_feed_url")]
+    fields = ("macos_feed_url", "windows_x64_feed_url", "windows_x86_feed_url",
+              "macos_beta_feed_url", "windows_x64_beta_feed_url", "windows_x86_beta_feed_url")
+    feeds = [config.get(name, "") for name in fields]
     if key and len(base64.b64decode(key, validate=True)) != 32:
         raise ValueError("public Ed25519 key must be base64 of 32 bytes")
     if any(feeds) and not key:
@@ -30,7 +36,44 @@ def load_config():
         parsed = urlsplit(url)
         if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
             raise ValueError("update feed must be an HTTPS URL without credentials or fragments")
+    if "release_version" in config:
+        _, channel, _ = channels.parse_version(config["release_version"])
+        if config.get("update_channel") != channel:
+            raise ValueError("release version does not match the build update channel")
+        if channel == "beta" and any(config.get(f"{platform}_feed_url", "") !=
+                config.get(f"{platform}_beta_feed_url", "") for platform in ("macos", "windows_x64", "windows_x86")):
+            raise ValueError("beta build must use only its reviewed beta feeds")
     return config
+
+
+def select_release_config(tag, version, destination):
+    release_version = channels.release_version(tag, version)
+    channel = channels.parse_version(release_version)[1]
+    # Always start from the reviewed config, never a previously selected beta build.
+    config = load_config(ROOT / "config.json")
+    config.update(release_version=release_version, update_channel=channel)
+    if channel == "beta":
+        for platform in ("macos", "windows_x64", "windows_x86"):
+            # No fallback to stable when the beta endpoint is unconfigured.
+            config[f"{platform}_feed_url"] = config.get(f"{platform}_beta_feed_url", "")
+    if destination.exists():
+        raise ValueError("build config output must not exist")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+
+
+def stamp_macos(app):
+    config = load_config()
+    version = config.get("release_version")
+    if not version:
+        return
+    base, _, _ = channels.parse_version(version)
+    info_path = app / "Contents/Info.plist"
+    info = plistlib.loads(info_path.read_bytes())
+    if info.get("CFBundleShortVersionString") != base:
+        raise ValueError("built macOS product does not match the requested release")
+    info.update(CFBundleVersion=channels.native_version(version), KeyKeyReleaseVersion=version)
+    info_path.write_bytes(plistlib.dumps(info))
 
 
 def fetch(platform):
@@ -106,12 +149,22 @@ def main():
     fetch_parser.add_argument("platform", choices=("macos", "windows"))
     embed = sub.add_parser("embed-macos")
     embed.add_argument("app", type=Path)
+    stamp = sub.add_parser("stamp-macos")
+    stamp.add_argument("app", type=Path)
+    select = sub.add_parser("select-release")
+    select.add_argument("--tag", default="")
+    select.add_argument("--version", required=True)
+    select.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     load_config()
     if args.command == "fetch":
         fetch(args.platform)
-    else:
+    elif args.command == "embed-macos":
         embed_macos(args.app)
+    elif args.command == "stamp-macos":
+        stamp_macos(args.app)
+    else:
+        select_release_config(args.tag, args.version, args.out)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 
 更新設定、建置／發布工具與 feed 統一放在小寫單數 `update/`。
 GitHub Raw 與 CDN 的固定 feed 檔名為 `macos-arm64.xml`、`windows-x64.xml` 和
-`windows-x86.xml`，放在各自的 `update/stable/` prefix。
+`windows-x86.xml`，stable 與 beta 分別放在 `update/stable/`、`update/beta/` prefix。
 
 | 檔案／目錄 | 何時維護 |
 |---|---|
@@ -20,6 +20,8 @@ GitHub Raw 與 CDN 的固定 feed 檔名為 `macos-arm64.xml`、`windows-x64.xml
 | `verify-windows.ps1`、`sign-macos.py` | 平台驗證／簽章實作，由發布或建置工具呼叫 |
 | `test_*` | 測試，由 CI 執行 |
 | `stable/` | 固定網址的 feed；發布時提交已驗證的輸出，經 PR review／merge |
+| `beta/` | 獨立測試版 feed，絕不提升至 stable；初始 XML 無更新項目 |
+| `channels.py` | 正式／`-betaN` tag、顯示版號與原生比較版號的共用規則 |
 | `.cache/`、`out/` | SDK 快取與產物，不提交 |
 
 日常建置只需要 `prepare.py`；發布依下方 manifest 流程操作，不必逐一編輯這些工具。
@@ -113,13 +115,15 @@ CDN（主要）與 GitHub（備用）手動下載連結，沒有更新 item。ch
 ## XML feed 自動同步到 CDN
 
 [`Sync Update Feeds to CDN`](../.github/workflows/sync-update-feeds.yml) 在 `master` 的
-`update/stable/*.xml` 新增或變更後觸發；工作分支／PR 只做驗證，不部署。
+`update/stable/*.xml` 或 `update/beta/*.xml` 新增或變更後觸發；工作分支／PR 只做驗證，不部署。
 發布沿用受保護的 `release` environment 與 AWS OIDC role；若 environment 設定人工
 核准，仍需維護者核准該 job，不繞過現有發布規則。
 
-每次同步目前 `master` 的全部頂層 XML，對應位置為
-`update/stable/FILE.xml` → `s3://AWS_RELEASE_MIRROR_BUCKET/keykey/update/stable/FILE.xml`，
-公開網址為 `AWS_RELEASE_MIRROR_BASE_URL/keykey/update/stable/FILE.xml`。
+每次同步目前 `master` 的 stable／beta 全部頂層 XML，對應位置為
+`update/CHANNEL/FILE.xml` → `s3://AWS_RELEASE_MIRROR_BUCKET/keykey/update/CHANNEL/FILE.xml`，
+公開網址為 `AWS_RELEASE_MIRROR_BASE_URL/keykey/update/CHANNEL/FILE.xml`。
+`CHANNEL` 僅接受 `stable`／`beta`；兩者先完整驗證，再開始任何上傳。
+stable XML 拒絕 beta 比較版號、顯示版號或 beta tag 安裝包網址，避免誤投放。
 使用最新 master 而非舊事件 commit，並串行發布，避免舊 run 重跑或被替換的 pending
 run 遺漏另一平台的 feed。Actions summary 記錄實際發布 commit 與 CDN 連結。
 
@@ -138,14 +142,77 @@ metadata JSON、不刪除 CDN 檔案。移除 repository XML 不會刪除遠端 
 原 Release 安裝包的長快取與權限保持不變；本次程式開發不執行 Terraform apply 或線上上傳。
 沿用 `release` environment 的現有 `AWS_ACCOUNT_ID` 與 `AWS_RELEASE_MIRROR_*` variables，
 不新增 AWS 長期金鑰。完成基礎設施部署後，可在 Actions 選擇此 workflow、`master`、
-**Run workflow** 補同步既有三份 feed；後續 XML 變更會觸發同步。
+**Run workflow** 補同步兩個 channel 的六份初始 feed；後續 XML 變更會觸發同步。
 
 本機唯讀／隔離驗證：
 
 ```sh
 python3 .github/scripts/sync-update-feeds.py --check-only
 python3 -m unittest discover -s .github/scripts -p test_sync_update_feeds.py -v
+# 僅驗證 beta 目錄，不發出 AWS 請求
+python3 .github/scripts/sync-update-feeds.py --channel beta --directory update/beta --check-only
 ```
+
+## Numbered beta tags 與隔離的更新來源
+
+macOS／Windows 封裝支援 `v1.3.2-beta1`、`v1.3.2-beta2` 等 `vX.Y.Z-betaN`，
+N 是不含前導零的正整數。產品原始碼仍保持 X.Y.Z，不連帶修改其他平台版號。
+GitHub Release 必須標記 **Pre-release**；工具只上傳已存在 Release 的資產，
+不建立／編輯 Release、不改 Latest。正式 `vX.Y.Z` 不接受 Pre-release 標記。
+beta 的手動重跑也必須選該 tag 的 commit，不提供同版 recovery 替換。
+
+| 用途 | beta1 | beta2 | 正式版 |
+|---|---|---|---|
+| GitHub tag／顯示更新版號 | `v1.3.2-beta1`／`1.3.2-beta1` | `v1.3.2-beta2`／`1.3.2-beta2` | `v1.3.2`／`1.3.2` |
+| 原生比較版號 | `1.3.2b1` | `1.3.2b2` | `1.3.2` |
+| metadata channel／XML 目錄 | `beta`／`update/beta/` | `beta`／`update/beta/` | `stable`／`update/stable/` |
+
+原生排序須通過 SDK 測試：`1.3.2b1 < 1.3.2b2 < 1.3.2b10 < 1.3.2`。
+macOS 在簽章前將建置後 IMK App 的 `CFBundleVersion` 設為比較版號，
+`KeyKeyReleaseVersion` 設為顯示版號；`CFBundleShortVersionString` 及四份原始碼 plist
+仍保持產品 X.Y.Z。pkg 的 PackageInfo 版號跟隨比較版號，notarization 驗證不放寬。
+Windows PE／Deployment 產品版號保持 X.Y.Z；Settings 內嵌 beta 更新設定並把比較
+版號交給 WinSparkle。beta 使用獨立 registry 更新偏好，不改 stable 的連網同意／跳過版本。
+既有 GitHub 下載檔名仍含產品 X.Y.Z，但 beta1／beta2 放在各自不同的 tag 下載目錄；
+簽章更新候選檔名則含完整 beta 版號及 SHA-256。
+
+建置 workflow 用 `prepare.py select-release` 產生暫存設定（不改 tracked config）：
+beta 只選 `macos_beta_feed_url`／`windows_x64_beta_feed_url`／`windows_x86_beta_feed_url`；
+缺少 beta URL 時保持離線，不回退 stable。公開金鑰共用。這三個欄位目前留空，
+必須先部署並驗證以下對應 XML，才設定／建置可連線的 beta 客戶端：
+
+```text
+https://download.aws.polobread.com/keykey/update/beta/macos-arm64.xml
+https://download.aws.polobread.com/keykey/update/beta/windows-x64.xml
+https://download.aws.polobread.com/keykey/update/beta/windows-x86.xml
+```
+
+若選 GitHub Raw，路徑為 `https://raw.githubusercontent.com/polobread/KeyKey/master/update/beta/FILE.xml`。
+目前只有空 RSS，沒有 beta 包、下載項目或 beta channel 切換 UI。
+測試者需手動安裝 beta 建置，不能只改遠端 XML 就把 stable 客戶端切成 beta。
+beta feed 暫只接受 beta manifest；轉回 stable 需手動安裝正式版，未提供自動換 channel。
+Windows 目前仍使用既有 unsigned EXE；真實 beta 升級須在 Windows 驗收。
+日後 signed beta 還須調整 Deployment 的「同產品版號不同 official build」保護，
+不能從 WinSparkle 版號比較通過推定 signed beta1 → beta2 安裝已支援。
+
+發布 manifest 將 `channel` 設為 `beta`，entry 的 `version` 為 `1.3.2-beta1`、
+`release_tag` 為 `v1.3.2-beta1`；同樣要求 source/tag commit 相等、平台簽章與
+不可變資產。`metadata.py build` 回傳 beta metadata，appcast 的比較版號為 `1.3.2b1`。
+輸出平台 XML 經 review 後只放 `update/beta/`，包先上傳並驗證，才提升 feed。
+macOS CI 的 `MACOS_UPDATE_METADATA_ENABLED` 仍控制候選產生，候選不自動發布。
+
+本機選擇 beta 設定與版本標記（只供建置，不安裝）：
+
+```sh
+python3 update/prepare.py select-release --tag v1.3.2-beta1 --version 1.3.2 \
+  --out update/out/beta1-build-config.json
+export KEYKEY_UPDATE_CONFIG="$PWD/update/out/beta1-build-config.json"
+# 接既有 macOS／Windows 建置；macOS 在 build 後、簽章前另執行：
+python3 update/prepare.py stamp-macos "Source/build/Release/chichi77 KeyKey.app"
+```
+
+`Desktop Release Tools` PR workflow 只跑共用工具、隔離 macOS 測試及 Windows x64
+updater 測試，不建置 TSF、不安裝、不發布、不取得 release secret。
 
 ## 正式金鑰與網址設定（需維護者審查）
 

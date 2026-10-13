@@ -90,7 +90,7 @@
         @(ready), @"configured", @(ready && [_engine automaticallyChecksForUpdates]), @"automatic",
         @(ready && !_busy && !_pendingInstallation && [_engine canCheckForUpdates] && ![_engine sessionInProgress]), @"canCheck",
         @(_busy), @"checking", _phase ?: @"unconfigured", @"phase", _message ?: @"", @"message",
-        [_host objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"", @"currentVersion",
+        [_host objectForInfoDictionaryKey:@"KeyKeyReleaseVersion"] ?: [_host objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"", @"currentVersion",
         _latestVersion ?: @"", @"latestVersion", [_engine lastUpdateCheckDate] ?: (id)@"", @"lastCheck", nil];
 }
 

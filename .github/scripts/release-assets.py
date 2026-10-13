@@ -8,6 +8,10 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "update"))
+import channels
 
 
 def output(*args):
@@ -25,16 +29,18 @@ def release_tag(event, event_tag, requested, version):
         tag = requested.strip()
     else:
         raise ValueError(f"unsupported publishing event: {event}")
-    if tag and tag != f"v{version}":
-        raise ValueError(f"Release tag must be v{version}, received {tag!r}")
+    channels.release_version(tag, version)
     return tag
 
 
 def verify_release(tag, repository):
     release = json.loads(output("gh", "release", "view", tag, "--repo", repository,
-                                "--json", "tagName,isDraft,url"))
+                                "--json", "tagName,isDraft,isPrerelease,url"))
     if release["tagName"] != tag or release["isDraft"]:
         raise ValueError("publish the matching GitHub Release before uploading assets")
+    expected_beta = channels.parse_version(tag[1:])[1] == "beta"
+    if release.get("isPrerelease", False) != expected_beta:
+        raise ValueError("beta tags require a GitHub Pre-release; stable tags require a full release")
     return release["url"]
 
 
@@ -148,8 +154,12 @@ def resolve(version):
         target_sha = tag_commit(tag)
         if os.environ["GITHUB_EVENT_NAME"] == "release" and source_sha != target_sha:
             raise ValueError("automatic release build must use the published tag's commit")
+        if channels.parse_version(tag[1:])[1] == "beta" and source_sha != target_sha:
+            raise ValueError("beta packages must be built from the beta tag commit")
     values = dict(release_tag=tag, publish_release=str(bool(tag)).lower(),
-                  source_sha=source_sha, tag_sha=target_sha)
+                  source_sha=source_sha, tag_sha=target_sha,
+                  release_version=channels.release_version(tag, version),
+                  update_channel=channels.parse_version(channels.release_version(tag, version))[1])
     with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as stream:
         for key, value in values.items():
             stream.write(f"{key}={value}\n")
@@ -166,10 +176,14 @@ def publish(platform, version, directory):
     target_sha = tag_commit(tag)
     if source_sha != os.environ["BUILD_SOURCE_SHA"] or target_sha != os.environ["RELEASE_TAG_SHA"]:
         raise ValueError("build source or release tag changed since validation")
+    if channels.parse_version(tag[1:])[1] == "beta" and source_sha != target_sha:
+        raise ValueError("beta packages must be built from the beta tag commit")
     assets = verified_assets(directory, platform, version)
     info = directory / f"chichi77-KeyKey-{version}-{platform}-build-info.json"
     run_url = f"{os.environ['GITHUB_SERVER_URL']}/{repository}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
     info.write_text(json.dumps(dict(platform=platform, version=version, release_tag=tag,
+        release_version=channels.release_version(tag, version),
+        update_channel=channels.parse_version(tag[1:])[1],
         source_sha=source_sha, tag_sha=target_sha, run_url=run_url,
         run_attempt=os.environ["GITHUB_RUN_ATTEMPT"],
         assets=[dict(name=p.name, size=p.stat().st_size, sha256=digest(p)) for p in assets]),

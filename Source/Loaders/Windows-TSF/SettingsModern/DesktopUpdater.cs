@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -25,6 +26,15 @@ internal sealed class DesktopUpdater : IDisposable
     private volatile bool unsavedChanges;
     private bool updateBusy;
     private bool reinstalling;
+    private static string ProductVersion
+    {
+        get
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version!;
+            return $"{version.Major}.{version.Minor}.{version.Build}";
+        }
+    }
+    private string releaseVersion = ProductVersion;
     public bool Available => initialized && !disposed;
     public bool CanReinstall => !disposed && !Busy && !unsavedChanges;
     internal bool CanShutdown => !disposed && !unsavedChanges;
@@ -65,6 +75,16 @@ internal sealed class DesktopUpdater : IDisposable
             var config = document.RootElement;
             if (config.GetProperty("schema_version").GetInt32() != 1)
                 throw new InvalidOperationException("不支援的更新設定");
+            if (config.TryGetProperty("release_version", out var configuredVersion))
+            {
+                var candidate = configuredVersion.GetString() ?? "";
+                if (!Regex.IsMatch(candidate, "^" + Regex.Escape(ProductVersion) + @"(?:-beta[1-9]\d*)?$"))
+                    throw new InvalidOperationException("更新版號與產品不符");
+                var expectedChannel = candidate.Contains("-beta", StringComparison.Ordinal) ? "beta" : "stable";
+                if (!config.TryGetProperty("update_channel", out var channel) || channel.GetString() != expectedChannel)
+                    throw new InvalidOperationException("更新版號與 channel 不符");
+                releaseVersion = candidate;
+            }
             var key = config.GetProperty("public_ed25519_key").GetString() ?? "";
             var feed = config.GetProperty(Environment.Is64BitProcess
                 ? "windows_x64_feed_url" : "windows_x86_feed_url").GetString() ?? "";
@@ -74,8 +94,7 @@ internal sealed class DesktopUpdater : IDisposable
                 uri.UserInfo.Length != 0 || uri.Fragment.Length != 0)
                 throw new InvalidOperationException("更新網址或公開金鑰無效");
 
-            var version = Assembly.GetExecutingAssembly().GetName().Version!;
-            backend.Configure(key, uri.AbsoluteUri, $"{version.Major}.{version.Minor}.{version.Build}",
+            backend.Configure(key, uri.AbsoluteUri, releaseVersion.Replace("-beta", "b", StringComparison.Ordinal),
                 new UpdateCallbacks(
                     () => CanShutdown ? 1 : 0,
                     () => Dispatch(() =>
@@ -137,8 +156,7 @@ internal sealed class DesktopUpdater : IDisposable
     public async Task ReinstallAsync()
     {
         if (!CanReinstall) return;
-        var version = Assembly.GetExecutingAssembly().GetName().Version!;
-        var current = $"{version.Major}.{version.Minor}.{version.Build}";
+        var current = releaseVersion;
         var architecture = Environment.Is64BitProcess ? "x64" : "x86";
         reinstalling = true;
         SetState($"正在確認版本 {current} 的 Windows {architecture} 下載…", false);
@@ -213,10 +231,13 @@ internal static class SameVersionDownload
     {
         using var document = JsonDocument.Parse(json);
         var release = document.RootElement;
-        var prefix = $"chichi77-KeyKey-{version}-windows-{architecture}";
+        var productVersion = version.Split("-beta", StringSplitOptions.None)[0];
+        var prefix = $"chichi77-KeyKey-{productVersion}-windows-{architecture}";
         var names = new[] { prefix + "-setup.exe", prefix + "-setup.unsigned.exe", prefix + ".zip" };
         if (release.GetProperty("tag_name").GetString() != "v" + version ||
             release.GetProperty("draft").GetBoolean() ||
+            (version.Contains("-beta", StringComparison.Ordinal) &&
+                (!release.TryGetProperty("prerelease", out var prerelease) || !prerelease.GetBoolean())) ||
             !release.GetProperty("assets").EnumerateArray().Any(asset =>
                 names.Contains(asset.GetProperty("name").GetString(), StringComparer.Ordinal) &&
                 asset.GetProperty("size").GetInt64() > 0))

@@ -20,6 +20,8 @@ from urllib.parse import urlsplit
 import xml.etree.ElementTree as ET
 import zipfile
 
+import channels
+
 SPARKLE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 PUBLIC_DER_PREFIX = bytes.fromhex("302a300506032b6570032100")
 ET.register_namespace("sparkle", SPARKLE)
@@ -66,8 +68,8 @@ def digest(path):
 
 
 def validate_manifest(manifest):
-    if manifest.get("schema_version") != 1 or manifest.get("channel") != "stable":
-        raise ValueError("only schema 1 stable releases are supported")
+    if manifest.get("schema_version") != 1 or manifest.get("channel") not in ("stable", "beta"):
+        raise ValueError("only schema 1 stable/beta releases are supported")
     entries = manifest.get("releases", [])
     if not entries:
         raise ValueError("at least one desktop release is required")
@@ -78,11 +80,12 @@ def validate_manifest(manifest):
             raise ValueError("unsupported or duplicate update target")
         targets.add(target)
         version = entry["version"]
-        if not re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", version):
-            raise ValueError("version must be x.y.z")
+        _, channel, _ = channels.parse_version(version)
+        if channel != manifest["channel"]:
+            raise ValueError("release version does not match the update channel")
         if entry["release_tag"] != f"v{version}" or not re.fullmatch(r"[a-f0-9]{40}", entry["source_sha"]):
             raise ValueError("release tag/version or source commit mismatch")
-        # A stable release cannot silently ship a recovery build from a different commit.
+        # Neither stable nor beta may silently ship a recovery build.
         if entry["source_sha"] != entry["tag_sha"]:
             raise ValueError("automatic update must be built from the release tag commit")
         path = Path(entry["file"])
@@ -115,7 +118,7 @@ def verify_platform_package(entry):
             raise ValueError("verify Windows installer signing state and version on Windows")
         subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
             str(Path(__file__).with_name("verify-windows.ps1")), "-Installer", str(path),
-            "-ExpectedVersion", entry["version"],
+            "-ExpectedVersion", channels.parse_version(entry["version"])[0],
             "-SigningMode", entry.get("windows_signing", "authenticode")], check=True)
     else:
         if sys.platform != "darwin":
@@ -133,7 +136,7 @@ def verify_platform_package(entry):
             expanded = Path(directory) / "expanded"
             subprocess.run(["pkgutil", "--expand", str(package), str(expanded)], check=True)
             versions = [ET.parse(info).getroot().attrib.get("version") for info in expanded.rglob("PackageInfo")]
-            if not versions or any(version != entry["version"] for version in versions):
+            if not versions or any(version != channels.native_version(entry["version"]) for version in versions):
                 raise ValueError("macOS package version does not match update metadata")
 
 
@@ -143,7 +146,7 @@ def appcast(entry):
     ET.SubElement(channel, "title").text = "琦琦輸入法更新"
     item = ET.SubElement(channel, "item")
     ET.SubElement(item, "title").text = f"琦琦輸入法 {entry['version']}"
-    ET.SubElement(item, f"{{{SPARKLE}}}version").text = entry["version"]
+    ET.SubElement(item, f"{{{SPARKLE}}}version").text = channels.native_version(entry["version"])
     ET.SubElement(item, f"{{{SPARKLE}}}shortVersionString").text = entry["version"]
     ET.SubElement(item, f"{{{SPARKLE}}}minimumSystemVersion").text = entry["minimum_system_version"]
     # Plain text, XML-escaped notes, not a remote page that can change after signing.
@@ -159,6 +162,8 @@ def appcast(entry):
     else:
         attributes[f"{{{SPARKLE}}}os"] = entry["target"]
     ET.SubElement(item, "enclosure", attributes)
+    if channels.parse_version(entry["version"])[1] == "beta":
+        ET.SubElement(channel, "description").text = "測試版更新來源，非穩定版本。"
     return ET.tostring(rss, encoding="utf-8", xml_declaration=True) + b"\n"
 
 
@@ -232,7 +237,7 @@ def build(manifest, key, base_url, destination, pinned_key, openssl, attestation
             name=name, size=package.stat().st_size, sha256=checksum, ed25519_signature=signature)
         releases.append(release)
         (destination / f"{entry['target']}.xml").write_bytes(appcast(release))
-    metadata = dict(schema_version=1, channel="stable", generated_at=datetime.now(timezone.utc).isoformat(),
+    metadata = dict(schema_version=1, channel=manifest["channel"], generated_at=datetime.now(timezone.utc).isoformat(),
         releases=releases, package_managers={"linux": "distribution repository", "freebsd": "ports/pkg"})
     metadata_path = destination / "metadata.json"
     metadata_path.write_text(json.dumps(metadata, sort_keys=True, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

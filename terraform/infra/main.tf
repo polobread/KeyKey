@@ -124,7 +124,7 @@ resource "aws_cloudfront_cache_policy" "releases" {
 
 resource "aws_cloudfront_cache_policy" "update_feeds" {
   name        = "keykey-update-feeds"
-  comment     = "Short-lived stable updater XML feeds"
+  comment     = "Short-lived stable and beta updater XML feeds"
   default_ttl = 60
   max_ttl     = 300
   min_ttl     = 0
@@ -199,6 +199,17 @@ resource "aws_cloudfront_distribution" "releases" {
 
   ordered_cache_behavior {
     path_pattern               = "keykey/update/stable/*.xml"
+    target_origin_id           = "release-s3-origin"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = false
+    cache_policy_id            = aws_cloudfront_cache_policy.update_feeds.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.releases.id
+  }
+
+  ordered_cache_behavior {
+    path_pattern               = "keykey/update/beta/*.xml"
     target_origin_id           = "release-s3-origin"
     viewer_protocol_policy     = "redirect-to-https"
     allowed_methods            = ["GET", "HEAD"]
@@ -296,9 +307,12 @@ data "aws_iam_policy_document" "github_release_mirror" {
   }
 
   statement {
-    sid       = "WriteAndVerifyUpdateFeeds"
-    actions   = ["s3:GetObject", "s3:PutObject"]
-    resources = ["${aws_s3_bucket.releases.arn}/keykey/update/stable/*.xml"]
+    sid     = "WriteAndVerifyUpdateFeeds"
+    actions = ["s3:GetObject", "s3:PutObject"]
+    resources = [
+      "${aws_s3_bucket.releases.arn}/keykey/update/stable/*.xml",
+      "${aws_s3_bucket.releases.arn}/keykey/update/beta/*.xml",
+    ]
   }
 
   statement {

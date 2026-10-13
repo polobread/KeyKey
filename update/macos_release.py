@@ -7,6 +7,7 @@ import re
 
 import metadata
 import prepare
+import channels
 
 REPOSITORY = Path(__file__).resolve().parent.parent
 PLISTS = ("Source/Loaders/OSX-IMK/Takao-Info.plist", "Source/PreferenceApplications/OSX/Info.plist",
@@ -27,9 +28,14 @@ def prepare_candidate(package, version, tag, source_sha, tag_sha, key, base_url,
     if version != source_version():
         raise ValueError("requested update version does not match the macOS sources")
     config = prepare.load_config()
-    if not config["macos_feed_url"]:
+    update_version = channels.release_version(tag, version)
+    channel = channels.parse_version(update_version)[1]
+    if "release_version" in config and config["release_version"] != update_version:
+        raise ValueError("selected build configuration does not match the requested macOS release")
+    feed_field = "macos_beta_feed_url" if channel == "beta" else "macos_feed_url"
+    if not config.get(feed_field):
         raise ValueError("configure and review the macOS feed before preparing a production updater candidate")
-    manifest = dict(schema_version=1, channel="stable", releases=[dict(target="macos-arm64", version=version,
+    manifest = dict(schema_version=1, channel=channel, releases=[dict(target="macos-arm64", version=update_version,
         release_tag=tag, source_sha=source_sha, tag_sha=tag_sha, file=str(package), minimum_system_version="15.0.0",
         notes="macOS 琦琦輸入法更新。安裝需要管理員確認；完成後請登出再登入。")])
     return metadata.build(manifest, key, base_url, destination, config["public_ed25519_key"], openssl)

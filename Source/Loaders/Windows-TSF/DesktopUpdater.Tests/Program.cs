@@ -28,10 +28,10 @@ internal static class Program
         public bool Automatic { get; set; }
         public int Configures, Starts, Checks, Cleanups;
         public bool FailStart;
-        public string Feed = "";
+        public string Feed = "", Version = "";
         public UpdateCallbacks Callbacks = null!;
         public void Configure(string key, string feed, string version, UpdateCallbacks callbacks)
-        { Configures++; Feed = feed; Callbacks = callbacks; }
+        { Configures++; Feed = feed; Version = version; Callbacks = callbacks; }
         public void Initialize() { Starts++; if (FailStart) throw new IOException("test initialization failure"); }
         public void Check() => Checks++;
         public void Cleanup() { Cleanups++; Callbacks.Error(); Callbacks.Shutdown(); }
@@ -66,6 +66,25 @@ internal static class Program
                 "Disabled/invalid config reached the native SDK");
         }
         var backend = new FakeBackend();
+        var product = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!;
+        var baseVersion = $"{product.Major}.{product.Minor}.{product.Build}";
+        string BetaConfig(string version, string channel) => Config().TrimEnd('}') +
+            $",\"release_version\":\"{version}\",\"update_channel\":\"{channel}\"}}";
+        foreach (var beta in new[] { 1, 2, 10 })
+        {
+            var fake = new FakeBackend();
+            using var client = Create(fake, BetaConfig(baseVersion + "-beta" + beta, "beta"));
+            client.Initialize();
+            Check(client.Available && fake.Version == baseVersion + "b" + beta, "Beta machine version was lost");
+        }
+        foreach (var json in new[] { BetaConfig(baseVersion + "-beta1", "stable"),
+            BetaConfig(baseVersion + "-beta0", "beta"), BetaConfig("99.0.0-beta1", "beta") })
+        {
+            var fake = new FakeBackend();
+            using var client = Create(fake, json);
+            client.Initialize();
+            Check(fake.Configures == 0, "Invalid beta configuration reached native updater");
+        }
         using var session = Create(backend, Config());
         int notifications = 0;
         var uiDispatcher = Dispatcher.CurrentDispatcher;
@@ -132,12 +151,15 @@ internal static class Program
     {
         string Release(string version, string architecture, string suffix = "-setup.unsigned.exe", long size = 1) =>
             JsonSerializer.Serialize(new { tag_name = "v" + version, draft = false,
+                prerelease = version.Contains("-beta", StringComparison.Ordinal),
                 html_url = "https://untrusted.invalid/", assets = new[] {
-                    new { name = $"chichi77-KeyKey-{version}-windows-{architecture}{suffix}", size } } });
+                    new { name = $"chichi77-KeyKey-{version.Split("-beta", StringSplitOptions.None)[0]}-windows-{architecture}{suffix}", size } } });
         Check(SameVersionDownload.SelectPage(Release("1.3.2", "x64"), "1.3.2", "x64").AbsoluteUri ==
             "https://github.com/polobread/KeyKey/releases/tag/v1.3.2", "Reinstall trusts an external page URL");
         Check(SameVersionDownload.SelectPage(Release("1.3.2", "x86", ".zip"), "1.3.2", "x86").Scheme == "https",
             "Manual x86 ZIP download is unavailable");
+        Check(SameVersionDownload.SelectPage(Release("1.3.2-beta2", "x64"), "1.3.2-beta2", "x64").AbsoluteUri ==
+            "https://github.com/polobread/KeyKey/releases/tag/v1.3.2-beta2", "Beta reinstall queried the stable tag");
         foreach (var json in new[] { Release("1.3.3", "x64"), Release("1.3.1", "x64"),
             Release("1.3.2", "x86"), Release("1.3.2", "x64", size: 0),
             Release("1.3.2", "x64").Replace("\"draft\":false", "\"draft\":true") })

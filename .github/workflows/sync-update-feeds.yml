@@ -5,9 +5,12 @@ on:
     branches: [master]
     paths:
       - 'update/stable/*.xml'
+      - 'update/beta/*.xml'
   pull_request:
     paths:
       - 'update/stable/*.xml'
+      - 'update/beta/*.xml'
+      - 'update/channels.py'
       - '.github/scripts/sync-update-feeds.py'
       - '.github/scripts/test_sync_update_feeds.py'
       - '.github/workflows/sync-update-feeds.yml'

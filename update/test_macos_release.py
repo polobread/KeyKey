@@ -63,6 +63,22 @@ class MacReleaseTests(unittest.TestCase):
         self.assertEqual(xml.findtext(f"./channel/item/{{{metadata.SPARKLE}}}minimumSystemVersion"), "15.0.0")
         self.assertEqual(xml.find("./channel/item/enclosure").get(f"{{{metadata.SPARKLE}}}installationType"), "package")
 
+    def test_beta_candidate_requires_beta_feed_and_beta_tag(self):
+        config = dict(self.config, macos_beta_feed_url="https://example.invalid/update/beta/macos-arm64.xml")
+        with patch.object(macos_release, "source_version", return_value="1.3.2"), \
+             patch.object(prepare, "load_config", return_value=config), \
+             patch.object(metadata, "verify_platform_package"):
+            result = macos_release.prepare_candidate(self.package, "1.3.2", "v1.3.2-beta1", "a" * 40, "a" * 40,
+                self.key, "https://example.invalid/download", self.root / "beta", OPENSSL)
+        self.assertEqual(result["channel"], "beta")
+        self.assertEqual(result["releases"][0]["version"], "1.3.2-beta1")
+        with patch.object(macos_release, "source_version", return_value="1.3.2"), \
+             patch.object(prepare, "load_config", return_value=self.config), patch.object(metadata, "build") as build:
+            with self.assertRaisesRegex(ValueError, "macOS feed"):
+                macos_release.prepare_candidate(self.package, "1.3.2", "v1.3.2-beta2", "a" * 40, "a" * 40,
+                    self.key, "https://example.invalid/download", self.root / "disabled-beta", OPENSSL)
+            build.assert_not_called()
+
     def test_unconfigured_feed_and_wrong_version_fail_before_signing(self):
         with patch.object(metadata, "build") as build:
             with self.assertRaisesRegex(ValueError, "macOS feed"):
@@ -112,7 +128,7 @@ class MacReleaseTests(unittest.TestCase):
         info_path = app / "Contents/Info.plist"
         info_path.write_bytes(plistlib.dumps(dict(CFBundleVersion="1.3.2", SUAutomaticallyUpdate=True,
             SUEnableAutomaticChecks=True, SUSendProfileInfo=True)))
-        with patch.object(prepare, "ROOT", self.root):
+        with patch.object(prepare, "ROOT", self.root), patch.dict(os.environ, KEYKEY_UPDATE_CONFIG=str(self.root / "config.json")):
             prepare.embed_macos(app)
         info = plistlib.loads(info_path.read_bytes())
         self.assertFalse(info["SUAutomaticallyUpdate"])
@@ -123,7 +139,7 @@ class MacReleaseTests(unittest.TestCase):
         self.assertEqual(info["SUPublicEDKey"], self.public)
         self.assertEqual(info["SUFeedURL"], self.config["macos_feed_url"])
         (self.root / "config.json").write_text(json.dumps(dict(self.config, public_ed25519_key="", macos_feed_url="")))
-        with patch.object(prepare, "ROOT", self.root):
+        with patch.object(prepare, "ROOT", self.root), patch.dict(os.environ, KEYKEY_UPDATE_CONFIG=str(self.root / "config.json")):
             prepare.embed_macos(app)
         info = plistlib.loads(info_path.read_bytes())
         self.assertNotIn("SUFeedURL", info)

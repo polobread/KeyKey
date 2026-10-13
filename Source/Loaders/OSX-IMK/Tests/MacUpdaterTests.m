@@ -55,6 +55,17 @@ static NSBundle *Bundle(NSString *root, id feed, id key)
 int main(int argc, const char *argv[])
 {
     @autoreleasepool {
+        // Load only the pinned SDK's comparator; never start its network updater.
+        NSString *framework = [NSString stringWithUTF8String:getenv("KEYKEY_TEST_SPARKLE_FRAMEWORK") ?: ""];
+        NSError *loadError = nil;
+        Check([[NSBundle bundleWithPath:framework] loadAndReturnError:&loadError], @"pinned Sparkle comparator loads");
+        id<SUVersionComparison> comparator = [[[NSClassFromString(@"SUStandardVersionComparator") alloc] init] autorelease];
+        for (NSArray *pair in @[@[@"1.3.1", @"1.3.2b1"], @[@"1.3.2b1", @"1.3.2b2"],
+                               @[@"1.3.2b2", @"1.3.2b10"], @[@"1.3.2b10", @"1.3.2"],
+                               @[@"1.3.2", @"1.3.3b1"]]) {
+            Check([comparator compareVersion:pair[0] toVersion:pair[1]] == NSOrderedAscending,
+                @"beta iterations and final release are monotonically ordered");
+        }
         NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSUUID UUID].UUIDString];
         NSString *key = [[NSData dataWithBytes:(unsigned char[32]){1} length:32] base64EncodedStringWithOptions:0];
         // Missing/malformed configuration must never start or call a network engine.
