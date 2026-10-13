@@ -71,8 +71,17 @@ inline bool WriteSharedSettingsFile(const std::wstring& path,const std::string& 
     now={timestamp.LowPart,timestamp.HighPart};
     ok=ok && SetFileTime(file,nullptr,nullptr,&now) && FlushFileBuffers(file);
     CloseHandle(file);
-    if (ok) ok=MoveFileExW(temporary.c_str(),path.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=FALSE;
-    if (!ok) DeleteFileW(temporary.c_str());
+    if (ok) {
+        const auto started=GetTickCount64();
+        while (!MoveFileExW(temporary.c_str(),path.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)) {
+            const auto error=GetLastError();
+            if ((error!=ERROR_ACCESS_DENIED && error!=ERROR_SHARING_VIOLATION) || GetTickCount64()-started>=250) {
+                ok=false; SetLastError(error); break;
+            }
+            Sleep(10);
+        }
+    }
+    if (!ok) { const auto error=GetLastError(); DeleteFileW(temporary.c_str()); SetLastError(error); }
     return ok;
 }
 }

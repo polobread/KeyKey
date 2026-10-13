@@ -696,10 +696,11 @@ saves merge changed keys against the current file; a conflicting stale snapshot
 preserves the newer disk value. Invalid existing files are preserved. Input hosts
 wait at most 250 ms for this lock; a failed save retains its unsaved snapshot.
 Readers allow delete sharing so an open reader does not prevent replacement.
-The managed settings writer retries access-denied and sharing-violation errors
+The native and managed settings writers retry access-denied and sharing-violation errors
 from atomic replacement for up to 250 ms while retaining the mutex and the same
 flushed temporary file. Persistent failures preserve the old file, remove the
-temporary file and report the Windows error.
+temporary file; managed saves report the Windows error and native saves retain
+their pending snapshot for retry.
 
 Learning saves write only the host's pending changes in one SQLite transaction,
 with at most 200 entries per cache. Reset and import advance a database generation;
@@ -722,6 +723,8 @@ packaging workflow runs both architecture directions and both managed pairings.
 The focused Windows Shared Data PR workflow builds only this native test target
 for each architecture and runs the same pairings plus managed settings tests.
 Child failures include their exit code and captured output in the CI log.
+Concurrent native test writers retry pending saves before starting the next edit;
+the dedicated lock-timeout tests still check deferred saves without retry.
 
 ## Verification checklist
 

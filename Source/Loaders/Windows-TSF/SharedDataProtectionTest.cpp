@@ -29,10 +29,19 @@ std::unique_ptr<PVPlistValue> Parse(const std::wstring& path) {
     std::unique_ptr<PVPlistValue> result(PVPropertyList::ParsePlistFromString(Read(path).c_str()));
     Check(result && result->type()==PVPlistValue::Dictionary,"Settings reader saw incomplete XML"); return result;
 }
-void Writer(const std::wstring& path,const std::string& key,int iterations) {
+void Writer(const std::wstring& path,const std::string& key,int iterations,bool retryPending=false) {
     PVPropertyList file(OVUTF8::FromUTF16(path));
     for (int i=1;i<=iterations;++i) {
         file.readSync(true); file.rootDictionary()->setKeyValue(key,std::to_string(i)); file.write();
+        if (retryPending) {
+            // Native hosts intentionally retain pending edits on lock timeout.
+            // Retry that snapshot before readSync can replace it on the next edit.
+            const auto deadline=GetTickCount64()+5000;
+            while (Parse(path)->stringValueForKey(key)!=std::to_string(i) && GetTickCount64()<deadline) {
+                Sleep(10); file.write();
+            }
+            Check(Parse(path)->stringValueForKey(key)==std::to_string(i),"Native pending settings save did not recover");
+        }
     }
 }
 void PlistChecks(const std::filesystem::path& profile) {
@@ -79,6 +88,26 @@ void PlistChecks(const std::filesystem::path& profile) {
     std::atomic<bool> stop{false};
     std::thread reader([&] { while (!stop) { try { Parse(path); } catch (...) { good=false; } } });
     Writer(path,"A",60); stop=true; reader.join(); Check(good,"Atomic replacement exposed incomplete file to readers");
+    const auto original=Read(path),replacement=original+"\n";
+    HANDLE blocked=CreateFileW(path.c_str(),GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE,
+        nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+    Check(blocked!=INVALID_HANDLE_VALUE,"Open reader without delete sharing");
+    std::thread releaser([&] { Sleep(50); CloseHandle(blocked); });
+    bool saved=false;
+    { SettingsFileLock lock(path); saved=lock && WriteSharedSettingsFile(path,replacement); }
+    releaser.join(); Check(saved && Read(path)==replacement,"Native atomic replacement did not recover from transient reader");
+    blocked=CreateFileW(path.c_str(),GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE,
+        nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+    Check(blocked!=INVALID_HANDLE_VALUE,"Open persistent reader without delete sharing");
+    const auto started=GetTickCount64();
+    { SettingsFileLock lock(path); saved=lock && WriteSharedSettingsFile(path,original); }
+    const auto elapsed=GetTickCount64()-started;
+    CloseHandle(blocked);
+    Check(!saved && elapsed<3000 && Read(path)==replacement,"Native persistent replacement failure modified original or exceeded bound");
+    for (const auto& entry : std::filesystem::directory_iterator(profile))
+        Check(entry.path().filename().wstring().find(L"settings.plist.tmp.")!=0,"Native failed replacement left a temporary file");
+    Put(path,original); Check(Read(path)==original,"Native save after replacement failure did not recover");
+    std::cout<<"Native atomic replacement retry, persistent failure, cleanup and recovery passed\n";
     std::cout<<"Plist merge, conflicts, malformed input, lock timeout, parser threads and atomic readers passed\n";
 }
 DWORD Launch(const std::wstring& executable,std::wstring command,std::function<void()> concurrent={}) {
@@ -112,9 +141,11 @@ void ProcessChecks(const std::filesystem::path& profile,const std::wstring& exec
     const auto path=(profile/L"settings.plist").wstring();
     Put(path,"<plist><dict><key>A</key><string>0</string><key>B</key><string>0</string></dict></plist>");
     const auto command=L"\""+executable+L"\" "+prefix+L"--writer \""+path+L"\" B 60";
-    const DWORD result=Launch(executable,command,[&] { Writer(path,"A",60); });
+    const DWORD result=Launch(executable,command,[&] { Writer(path,"A",60,true); });
     Check(result==0,"Concurrent peer writer failed");
     auto data=Parse(path);
+    if (data->stringValueForKey("A")!="60" || data->stringValueForKey("B")!="60")
+        std::cerr<<"Mixed-process final fields: A="<<data->stringValueForKey("A")<<", B="<<data->stringValueForKey("B")<<'\n';
     Check(data->stringValueForKey("A")=="60" && data->stringValueForKey("B")=="60","Mixed-process writers lost a field");
     std::cout<<"Mixed-process settings writers preserved both fields\n";
     if (!prefix.empty()) {
@@ -268,7 +299,7 @@ void ProcessLearningChecks(const std::filesystem::path& profile,const std::wstri
 }
 int wmain(int argc,wchar_t** argv) {
     try {
-        if (argc==5 && std::wstring(argv[1])==L"--writer") { Writer(argv[2],OVUTF8::FromUTF16(argv[3]),_wtoi(argv[4])); return 0; }
+        if (argc==5 && std::wstring(argv[1])==L"--writer") { Writer(argv[2],OVUTF8::FromUTF16(argv[3]),_wtoi(argv[4]),true); return 0; }
         if (argc==3 && std::wstring(argv[1])==L"--learn") { LearnInChild(argv[2]); return 0; }
         const auto profile=std::filesystem::temp_directory_path()/(L"keykey-shared-data-"+std::to_wstring(GetCurrentProcessId())+L"-"+std::to_wstring(GetTickCount64()));
         std::filesystem::create_directories(profile); SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
