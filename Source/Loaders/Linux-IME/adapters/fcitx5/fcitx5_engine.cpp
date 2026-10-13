@@ -820,7 +820,10 @@ bool FcitxState::processModeKey(bool toggleWithControlBackslash,
             toggleChineseMode();
         }
         if (trackedShift) {
-            event.filterAndAccept();
+            // The press was passed to the client. Filter other IM handlers
+            // without accepting its release, so the client can clear Shift.
+            // Accepting only the release leaves applications with Shift held.
+            event.filter();
             return true;
         }
         return false;

@@ -4,7 +4,7 @@
 
 Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 與 iOS 原始碼開發版號為 `1.3.3`，商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線（iOS build 41）；Android 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。macOS／Windows 開發版 `1.3.2` 尚未發布，macOS 已發布版、Linux 與共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
+依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 與 iOS 原始碼開發版號為 `1.3.3`，商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線（iOS build 41）；Android 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。macOS／Windows／Linux 開發版為 `1.3.2`，尚未正式發布；macOS 與 Linux 已發布正式版及共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -392,15 +392,16 @@ CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不�
 原始碼、建置腳本與 CI 都依 [Code signing policy](CODE_SIGNING_POLICY.md) 納入審查。
 macOS、Windows 與 Linux 則在 GitHub
 **Publish release** 後自動建置，各自驗證成功後上傳到同一個 Release。Release 的 tag
-必須完全符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows 原始碼為 `v1.3.2`，
-Linux 仍為 `v1.3.1`；同一 Release 的三平台產物只在各平台同版時成立，不能期待
-發布 `v1.3.2` 也產生 Linux 封裝。macOS 從四份產品 plist 讀取並核對版號，與 README 尾端的 Linux 版號獨立。只推 tag 或儲存草稿
+必須符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows／Linux 原始碼皆為 `1.3.2`，
+接受 `v1.3.2` 或 `v1.3.2-betaN`；同一 Release 的三平台產物只在各平台同版時成立。
+beta 必須為 Pre-release 且只從原 tag commit 建置，不改 Latest；修正後應建立新的 beta tag，不移動或補建舊 beta。
+macOS 從四份產品 plist 讀取並核對版號，與 README 尾端的 Linux 版號獨立。只推 tag 或儲存草稿
 不會觸發桌面封裝；一般 commit 與尚未合併的 pull request 不會發布桌面資產。`Linux CI` 另保留 PR smoke，
 發布前須通過 Ubuntu 24.04 完整測試與 Ubuntu 22.04 相容性驗證。
 
-單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
+正式版單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
 **Run workflow**，將 **Use workflow from** 選為 `master`，並填入
-macOS／Windows 填 `release_tag=v1.3.2`，Linux 填 `release_tag=v1.3.1`；對應 Release 必須已發布。建置使用所選分支，
+macOS／Windows／Linux 填 `release_tag=v1.3.2`；對應 Release 必須已發布。建置使用所選分支，
 平台版號仍須與 Release 相同；成功後自動補上或
 覆寫該平台的資產，其他平台不變。三個 workflow 都接受此欄位，留空則只保留 artifact。
 同平台、同 Release 的發布會依序執行。這些 workflow 修改須先合併到預設分支才可使用。
@@ -410,7 +411,7 @@ macOS／Windows 填 `release_tag=v1.3.2`，Linux 填 `release_tag=v1.3.1`；對�
 ```sh
 gh workflow run package-macos.yml --ref master -f release_tag=v1.3.2
 gh workflow run package-windows.yml --ref master -f release_tag=v1.3.2
-gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
+gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.2
 ```
 
 **Re-run jobs** 使用原本的 commit，適合暫時性失敗；有程式修正時應使用上述
@@ -836,18 +837,20 @@ Agents must not merge PRs. Source, build scripts, and CI are covered by the
 [Code signing policy](CODE_SIGNING_POLICY.md). The macOS, Windows, and Linux
 workflows start when a GitHub Release is published,
 and each independently uploads its verified packages. The tag must match the
-platform's source version and can be created on the Release page. macOS and Windows sources are now
-`v1.3.2`; Linux remains at `v1.3.1`. Uploading all three platforms to one
-Release applies when their versions match; publishing `v1.3.2` cannot produce
-matching Linux packages from this branch. macOS packaging reads and checks the four
+platform's source version and can be created on the Release page. macOS, Windows,
+and Linux development sources are now `1.3.2`, accepting `v1.3.2` or `v1.3.2-betaN`.
+Betas require Pre-release and the exact tag commit; Latest is unchanged. Fixes
+require a new beta tag, not recovery builds or moving an existing tag.
+Uploading all three platforms to one Release applies when their versions match.
+macOS packaging reads and checks the four
 product plists independently of the Linux version at the end of the README title.
 Pushing a tag or saving a draft alone does not trigger desktop packaging.
 Ordinary commits and unmerged pull requests do not publish desktop assets. Linux keeps PR smoke checks; publishing
 requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
 
-To recover one failed platform, merge the fix into `master`, select its workflow
+To recover one failed stable platform, merge the fix into `master`, select its workflow
 in Actions, choose **Run workflow**, set **Use workflow from** to `master`, and
-enter `v1.3.2` for macOS/Windows or `v1.3.1` for Linux in `release_tag`; the corresponding Release must already be published.
+enter `v1.3.2` for macOS/Windows/Linux in `release_tag`; the corresponding Release must already be published.
 All three workflows accept this input. They build
 the selected revision and replace only that platform's assets; its source
 version must still match the Release. Leaving the input blank keeps artifacts
@@ -859,7 +862,7 @@ For example, run just the command for the platform needing recovery:
 ```sh
 gh workflow run package-macos.yml --ref master -f release_tag=v1.3.2
 gh workflow run package-windows.yml --ref master -f release_tag=v1.3.2
-gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
+gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.2
 ```
 
 **Re-run jobs** uses the original commit and suits transient failures; use

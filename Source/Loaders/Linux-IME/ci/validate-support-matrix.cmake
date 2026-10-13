@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.22)
 
 file(READ "${CMAKE_CURRENT_LIST_DIR}/support-matrix.json" matrix)
+file(READ "${CMAKE_CURRENT_LIST_DIR}/../CMakeLists.txt" project_file)
+string(REGEX MATCH "project\\(KeyKeyLinux VERSION ([0-9]+\\.[0-9]+\\.[0-9]+)" project_match "${project_file}")
+set(project_version "${CMAKE_MATCH_1}")
+string(JSON matrix_version GET "${matrix}" productVersion)
+if(NOT project_version OR NOT "${matrix_version}" STREQUAL "${project_version}")
+    message(FATAL_ERROR "Linux support matrix version must match CMake project version")
+endif()
 string(JSON target_count LENGTH "${matrix}" targets)
 
 if(NOT target_count EQUAL 20)

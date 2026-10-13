@@ -17,14 +17,14 @@ class ReleaseAssetsTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
 
-    def packages(self, platform):
-        prefix = "chichi77-KeyKey-1.3.1"
+    def packages(self, platform, version="1.3.1"):
+        prefix = f"chichi77-KeyKey-{version}"
         names = {
             "macos": [f"{prefix}-macos-arm64.pkg.zip"],
             "windows": [f"{prefix}-windows-x64.zip", f"{prefix}-windows-x86.zip",
                         f"{prefix}-windows-x64-setup.unsigned.exe"],
-            "linux": ["chichi77-keykey-data_1.3.1-1+ubuntu24.04_all.deb",
-                      "fcitx5-chichi77-keykey_1.3.1-1+ubuntu24.04_amd64.deb",
+            "linux": [f"chichi77-keykey-data_{version}-1+ubuntu24.04_all.deb",
+                      f"fcitx5-chichi77-keykey_{version}-1+ubuntu24.04_amd64.deb",
                       "gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb",
                       "gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_source.tar.gz"],
         }[platform]
@@ -55,6 +55,15 @@ class ReleaseAssetsTests(unittest.TestCase):
                 paths = release.verified_assets(self.root, platform, "1.3.1")
                 self.assertEqual(len(paths), count)
                 self.assertNotIn("unrelated-release-asset.zip", [p.name for p in paths])
+
+    def test_linux_132_packages_and_release_tags(self):
+        names = self.packages("linux", "1.3.2")
+        paths = release.verified_assets(self.root, "linux", "1.3.2")
+        self.assertEqual({path.name for path in paths}, set(names) | {"SHA256SUMS"})
+        for tag in ("v1.3.2", "v1.3.2-beta1", "v1.3.2-beta2"):
+            self.assertEqual(release.release_tag("release", tag, "", "1.3.2"), tag)
+        with self.assertRaises(ValueError):
+            release.release_tag("release", "v1.3.1", "", "1.3.2")
 
     def test_numbered_beta_tags_require_matching_prerelease(self):
         for tag in ("v1.3.2-beta1", "v1.3.2-beta2"):
