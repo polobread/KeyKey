@@ -13,6 +13,8 @@
 #import "CVInputMethodToggleWindowController.h"
 #import "OpenVanillaService.h"
 
+@class KeyKeyMacUpdater;
+
 @interface CVApplicationController : NSObject <OpenVanillaService>
 {
 	CVPlainTextCandidateController *_plainTextCandidateController;	
@@ -26,7 +28,8 @@
 	
     OpenVanillaLoader* _loader;
 	
-	NSMutableDictionary *_versionInfo;	
+	NSMutableDictionary *_versionInfo;
+	KeyKeyMacUpdater *_desktopUpdaterController;
 	
     NSPort *_serverPort;
     NSConnection *_serverConnection;

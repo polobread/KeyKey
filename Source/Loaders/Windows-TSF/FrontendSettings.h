@@ -3,6 +3,7 @@
 #include <Windows.h>
 
 #include <string>
+#include <cstdint>
 
 namespace KeyKey::WindowsTsf {
 
@@ -21,6 +22,14 @@ struct FrontendSettings {
     bool defaultChineseMode = true;
 };
 
+struct DiagnosticSession {
+    std::int64_t startedAt = 0;
+    std::int64_t expiresAt = 0;
+    bool activeAt(std::int64_t now) const;
+};
+std::wstring DiagnosticSettingsPath();
+DiagnosticSession LoadDiagnosticSession();
+
 std::wstring SettingsDirectory();
 void MigrateLegacyPreferences();
 std::wstring LoaderPreferencesPath();
@@ -29,6 +38,7 @@ std::wstring SmartMandarinPreferencesPath();
 std::wstring AssociatedPhrasePreferencesPath();
 
 FrontendSettings LoadFrontendSettings();
+UINT ContentDpiForScale(UINT hostDpi, HMONITOR monitor, int scalePercent);
 bool SaveSimplifiedOutputPreference(bool enabled);
 std::string SmartMandarinSettingsSignature();
 std::string LoadInputMethodPreference(const std::string& fallback);

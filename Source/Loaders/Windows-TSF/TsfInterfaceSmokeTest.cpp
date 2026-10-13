@@ -84,6 +84,11 @@ int wmain() {
     if (FAILED(result) || !textEditSink) return 6;
     textEditSink->Release();
 
+    ITfThreadFocusSink* threadFocus=nullptr;
+    result=configure->QueryInterface(IID_ITfThreadFocusSink,reinterpret_cast<void**>(&threadFocus));
+    if (FAILED(result) || !threadFocus) return 17;
+    threadFocus->Release();
+
     ITfDisplayAttributeProvider* displayProvider = nullptr;
     result = configure->QueryInterface(IID_ITfDisplayAttributeProvider,
                                        reinterpret_cast<void**>(&displayProvider));

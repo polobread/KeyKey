@@ -88,6 +88,7 @@ target_link_libraries(keykey_third_party PUBLIC winsqlite3)
 set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(keykey_core STATIC
+    Diagnostics.cpp
     FrontendSettings.cpp
     OutputConversion.cpp
     "${KEYKEY_SOURCE}/ModulePackages/OVOFHanConvert/OVOFHanConvert.cpp"
@@ -106,6 +107,7 @@ add_library(keykey_core STATIC
 )
 target_compile_features(keykey_core PUBLIC cxx_std_17)
 target_compile_definitions(keykey_core PUBLIC
+    KEYKEY_WINDOWS_SHARED_DATA
     OV_USE_SQLITE
     OVIMGENERIC_IDENTIFIER_PREFIX=\"Generic\"
     OVIMMANDARIN_IDENTIFIER=\"Mandarin\"
@@ -130,7 +132,7 @@ target_include_directories(keykey_core PUBLIC
     "${KEYKEY_SOURCE}/ModulePackages/OVIMGeneric"
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-target_link_libraries(keykey_core PUBLIC keykey_third_party)
+target_link_libraries(keykey_core PUBLIC keykey_third_party shcore)
 set_target_properties(keykey_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(MSVC)
     target_compile_options(keykey_core PRIVATE /utf-8)
@@ -155,7 +157,6 @@ add_custom_target(keykey_database ALL
 add_library(KeyKeyTsf SHARED
     CandidateWindow.cpp
     ComServer.cpp
-    Diagnostics.cpp
     LangBarButton.cpp
     SymbolPanel.cpp
     KeyKeyTsf.rc
@@ -189,7 +190,7 @@ if(MSVC)
     target_compile_options(KeyKeyTsf PRIVATE /W4 /permissive- /utf-8)
 endif()
 target_link_libraries(KeyKeyTsf PRIVATE
-    d2d1 dwrite
+    d2d1 dwrite uxtheme
     keykey_core
     advapi32
     gdi32
@@ -233,6 +234,7 @@ endif()
 file(GLOB KEYKEY_SETTINGS_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.cs"
     "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.xaml"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.manifest"
     "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern/*.csproj")
 add_custom_target(KeyKeySettings ALL
     COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" publish
@@ -297,21 +299,51 @@ if(TARGET keykey_database OR EXISTS "${KEYKEY_DEPLOY_DATABASE}")
 endif()
 
 if(BUILD_TESTING)
+    add_library(KeyKeyTsfLifetimeProbe SHARED ModuleLifetimeProbe.cpp
+        ComServer.cpp LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp KeyKeyTsf.def)
+    add_dependencies(KeyKeyTsfLifetimeProbe keykey_symbol_resources keykey_database_deploy)
+    target_include_directories(KeyKeyTsfLifetimeProbe BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    target_compile_options(KeyKeyTsfLifetimeProbe PRIVATE /utf-8)
+    target_link_libraries(KeyKeyTsfLifetimeProbe PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme)
+    add_executable(KeyKeyModuleLifetimeTest ModuleLifetimeTest.cpp)
+    target_compile_features(KeyKeyModuleLifetimeTest PRIVATE cxx_std_17)
+    target_compile_options(KeyKeyModuleLifetimeTest PRIVATE /utf-8)
+    target_compile_definitions(KeyKeyModuleLifetimeTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_link_libraries(KeyKeyModuleLifetimeTest PRIVATE ole32 uuid user32 psapi)
+    add_dependencies(KeyKeyModuleLifetimeTest KeyKeyTsfLifetimeProbe)
+    add_test(NAME KeyKeyModuleLifetime COMMAND KeyKeyModuleLifetimeTest)
+    set_tests_properties(KeyKeyModuleLifetime PROPERTIES RUN_SERIAL TRUE LABELS "dll-unload")
+    # MSVC ASan does not support unloading instrumented DLLs. Runtime teardown
+    # within one module is still covered by KeyKeyTsfOutputCommitBehavior.
+    if(CMAKE_CXX_FLAGS MATCHES "fsanitize=address")
+        set_tests_properties(KeyKeyModuleLifetime PROPERTIES DISABLED TRUE)
+    endif()
+    add_executable(KeyKeySharedDataProtectionTest SharedDataProtectionTest.cpp UserDataStore.cpp)
+    target_link_libraries(KeyKeySharedDataProtectionTest PRIVATE keykey_core shell32 user32)
+    target_compile_options(KeyKeySharedDataProtectionTest PRIVATE /utf-8)
+    add_test(NAME KeyKeySharedDataProtection COMMAND KeyKeySharedDataProtectionTest)
+    add_executable(KeyKeyMemoryResourcesTest MemoryResourceTest.cpp)
+    target_link_libraries(KeyKeyMemoryResourcesTest PRIVATE keykey_core shell32 user32)
+    target_compile_options(KeyKeyMemoryResourcesTest PRIVATE /utf-8)
+    add_test(NAME KeyKeyMemoryResources COMMAND KeyKeyMemoryResourcesTest)
+    add_executable(KeyKeyDiagnosticsTest DiagnosticsTest.cpp)
+    target_link_libraries(KeyKeyDiagnosticsTest PRIVATE keykey_core shell32 user32)
+    add_test(NAME KeyKeyDiagnostics COMMAND KeyKeyDiagnosticsTest)
     add_executable(KeyKeyPopupLifecycleTest PopupLifecycleTest.cpp CandidateWindow.cpp SymbolPanel.cpp)
     add_dependencies(KeyKeyPopupLifecycleTest keykey_symbol_resources)
     target_include_directories(KeyKeyPopupLifecycleTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
     target_compile_features(KeyKeyPopupLifecycleTest PRIVATE cxx_std_17)
     target_compile_options(KeyKeyPopupLifecycleTest PRIVATE /utf-8)
-    target_link_libraries(KeyKeyPopupLifecycleTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
+    target_link_libraries(KeyKeyPopupLifecycleTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme)
     add_test(NAME KeyKeyPopupLifecycle COMMAND KeyKeyPopupLifecycleTest)
     set_tests_properties(KeyKeyPopupLifecycle PROPERTIES RUN_SERIAL TRUE)
     add_executable(KeyKeyTsfOutputBehaviorTest TsfOutputBehaviorTest.cpp
-        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp Diagnostics.cpp)
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp)
     target_compile_features(KeyKeyTsfOutputBehaviorTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfOutputBehaviorTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
     target_compile_options(KeyKeyTsfOutputBehaviorTest PRIVATE /utf-8)
     target_include_directories(KeyKeyTsfOutputBehaviorTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
-    target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
+    target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme)
     add_dependencies(KeyKeyTsfOutputBehaviorTest keykey_symbol_resources keykey_database_deploy)
     add_test(NAME KeyKeyTsfOutputCommitBehavior COMMAND KeyKeyTsfOutputBehaviorTest)
     add_executable(KeyKeyFrontendPreferencesTest FrontendPreferencesTest.cpp)
@@ -330,7 +362,7 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_BINARY_DIR}/generated" "${CMAKE_CURRENT_SOURCE_DIR}")
     target_compile_features(KeyKeySymbolPanelTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeySymbolPanelTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
-    target_link_libraries(KeyKeySymbolPanelTest PRIVATE user32 gdi32 advapi32 d2d1 dwrite)
+    target_link_libraries(KeyKeySymbolPanelTest PRIVATE keykey_core shell32 user32 gdi32 advapi32 d2d1 dwrite uxtheme)
     add_test(NAME KeyKeySymbolPanelResourcesAndFocus COMMAND KeyKeySymbolPanelTest)
     add_executable(KeyKeyOutputConversionTest OutputConversionTest.cpp)
     target_link_libraries(KeyKeyOutputConversionTest PRIVATE keykey_core)
@@ -361,7 +393,7 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyTsfConfigureInterface COMMAND KeyKeyTsfInterfaceSmokeTest)
 
     add_executable(KeyKeyTsfSystemTrayTest TsfSystemTrayTest.cpp
-        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp Diagnostics.cpp)
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp)
     add_dependencies(KeyKeyTsfSystemTrayTest keykey_symbol_resources)
     target_include_directories(KeyKeyTsfSystemTrayTest BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
     target_compile_features(KeyKeyTsfSystemTrayTest PRIVATE cxx_std_17)
@@ -369,7 +401,7 @@ if(BUILD_TESTING)
     if(MSVC)
         target_compile_options(KeyKeyTsfSystemTrayTest PRIVATE /W4 /permissive- /utf-8)
     endif()
-    target_link_libraries(KeyKeyTsfSystemTrayTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite)
+    target_link_libraries(KeyKeyTsfSystemTrayTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme)
     add_dependencies(KeyKeyTsfSystemTrayTest KeyKeyTsf keykey_database_deploy)
     add_test(NAME KeyKeyTsfSystemTrayModes COMMAND KeyKeyTsfSystemTrayTest)
 

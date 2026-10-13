@@ -105,14 +105,14 @@ let ios = root + "/docs/images/"
 let iphone: [Page] = [
     .init(title: "好打注音，整句順著打", subtitle: "請假要去哪裡玩呢去海邊", tag: "連續組句", image: ios + "keykey-ios-v130-smart-typing.png"),
     .init(title: "傳統注音，逐字精準選", subtitle: "熟悉的 1–9 候選與標準鍵位", tag: "傳統注音", image: root + "/StoreAssets/Sources/ios-notes-qi.png"),
-    .init(title: "接上鍵盤，選字也順手", subtitle: "在琦琦 App 內輸入，再複製或分享", tag: "實體鍵盤", image: ios + "keykey-ios-v130-hardware-editor-boundary.png"),
-    .init(title: "好打或傳統，隨時切換", subtitle: "兩種注音節奏，依你的習慣選", tag: "自由切換", image: ios + "keykey-ios-v130-keyboard-settings.png")
+    .init(title: "接上鍵盤，選字也順手", subtitle: "在琦琦 App 內輸入，再複製或分享", tag: "實體鍵盤", image: output + "/Sources/ios-iphone-v132-hardware-editor.png"),
+    .init(title: "好打注音・傳統注音\n倉頡・簡易，隨你切換", subtitle: "四種輸入方式，依你的習慣選", tag: "自由切換", image: output + "/Sources/ios-iphone-v132-settings.png")
 ]
 let ipad: [Page] = [
     .init(title: "好打注音，整句順著打", subtitle: "請假要去哪裡玩呢去海邊", tag: "iPad 原生畫面", image: output + "/Sources/ios-ipad-v130-smart-full.png"),
     .init(title: "傳統注音，逐字精準選", subtitle: "熟悉的 1–9 候選與標準鍵位", tag: "傳統注音", image: root + "/StoreAssets/Sources/ios-ipad-notes-qi.png"),
-    .init(title: "接上鍵盤，選字也順手", subtitle: "在琦琦 App 內輸入，再複製或分享", tag: "實體鍵盤", image: output + "/Sources/ios-ipad-v130-hardware-editor.png"),
-    .init(title: "好打或傳統，隨時切換", subtitle: "兩種注音節奏，依你的習慣選", tag: "自由切換", image: output + "/Sources/ios-ipad-v130-settings.png")
+    .init(title: "接上鍵盤，選字也順手", subtitle: "在琦琦 App 內輸入，再複製或分享", tag: "實體鍵盤", image: output + "/Sources/ios-ipad-v132-hardware-editor.png"),
+    .init(title: "好打注音・傳統注音\n倉頡・簡易，隨你切換", subtitle: "四種輸入方式，依你的習慣選", tag: "自由切換", image: output + "/Sources/ios-ipad-v132-settings.png")
 ]
 let android: [Page] = [
     .init(title: "好打注音，整句順著打", subtitle: "請假要去哪裡玩呢去海邊", tag: "連續組句", image: output + "/Sources/android-v130-smart-full.png"),
@@ -137,10 +137,12 @@ func render(_ page: Page, index: Int, count: Int, variant: String,
         c.rounded(82*k, 95*k, 255*k, 72*k, 36*k, white.withAlphaComponent(0.17))
         c.text(page.tag, x: 95*k, top: 112*k, width: 230*k, height: 50*k,
                size: 37*k, weight: .semibold, color: white, align: .center)
-        c.text(page.title, x: 80*k, top: 210*k, width: w-160*k,
-               height: 145*k, size: 76*k, weight: .bold, color: white)
-        c.text(page.subtitle, x: 85*k, top: 365*k, width: w-170*k,
-               height: 105*k, size: 45*k, weight: .medium, color: lavender)
+        let multilineTitle = page.title.contains("\n")
+        c.text(page.title, x: 80*k, top: (multilineTitle ? 195 : 210)*k, width: w-160*k,
+               height: (multilineTitle ? 185 : 145)*k, size: (multilineTitle ? 64 : 76)*k,
+               weight: .bold, color: white)
+        c.text(page.subtitle, x: 85*k, top: (multilineTitle ? 400 : 365)*k, width: w-170*k,
+               height: (multilineTitle ? 90 : 105)*k, size: 45*k, weight: .medium, color: lavender)
         c.rounded(80*k, 505*k, w-160*k, 5*k, 2*k, gold)
     } else {
         c.fill(col(0xFAF7FD))

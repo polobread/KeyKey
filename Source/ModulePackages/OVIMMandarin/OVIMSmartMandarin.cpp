@@ -1039,6 +1039,9 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo, OVLoaderService* loader
                         // #warning do we need to free textOfColumn()'s return value? look-it up at SQLite doc
                         userDB->execute("INSERT INTO user_unigrams VALUES(%Q, %Q, %Q, %f)", fetch->textOfColumn(0), fetch->textOfColumn(1), fetch->textOfColumn(2), fetch->doubleOfColumn(3));
                     }
+                    // Finalize before closing oldUserDB; an outstanding
+                    // statement otherwise makes sqlite3_close return BUSY.
+                    delete fetch;
                 }
                 else {
                     // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "prepare failed" << endl;
@@ -1070,6 +1073,10 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo, OVLoaderService* loader
             // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "pragma execution failed" << endl;
         }                
 
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        userDB->execute("CREATE TABLE IF NOT EXISTS keykey_learning_metadata (id INTEGER PRIMARY KEY CHECK(id=1), generation INTEGER NOT NULL)");
+        userDB->execute("INSERT OR IGNORE INTO keykey_learning_metadata VALUES(1,0)");
+#endif
         // close userDB, now we'll attach the new stuff
         delete userDB;
 
@@ -1096,7 +1103,13 @@ bool OVIMSmartMandarin::initialize(OVPathInfo* pathInfo, OVLoaderService* loader
     //     loaderService->logger(OVIMMANDARIN_IDENTIFIER) <<  "no user table is being used" << endl;
 
     // important! set ownsDBConnection to false!
-    m_LM = new LanguageModel(lmdb, externalBPMFTable, useUserTable, false, false, useUserTable, useUserTable);    
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+    // Windows owns this newly allocated table through the model. Other callers
+    // (including typing-cost tools) may supply their own borrowed table.
+    m_LM = new LanguageModel(lmdb, externalBPMFTable, useUserTable, false, false, useUserTable, useUserTable, true);
+#else
+    m_LM = new LanguageModel(lmdb, externalBPMFTable, useUserTable, false, false, useUserTable, useUserTable);
+#endif
 
     // loaderService->logger(OVIMMANDARIN_IDENTIFIER) << "loading user bigram cache" << endl;
     m_LM->loadUserBigramCache();

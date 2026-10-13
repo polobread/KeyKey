@@ -37,8 +37,9 @@
   儲存工作後重新開機即可，不需要再次解除安裝。正常移除會移除應用程式清單項目，
   只有失敗才保留重試入口。額外／修改過的檔案、根目錄的診斷與狀態記錄會保留。
   升級後請勿使用另存的舊 ZIP 或舊解除安裝 EXE。
-- 安裝／移除失敗請記下錯誤碼；開始部署後的記錄在
-  Program Files\chichi77 KeyKey\Deployment.log（不是 TEMP 下的舊記錄路徑）。
+- 安裝／移除失敗請記下錯誤碼並保留安裝包。一般建置與 GitHub Actions 預設關閉診斷；
+  設定內開啟診斷後固定記錄 3 天，到期自動停止，有效期限內才寫
+  Program Files\chichi77 KeyKey\Deployment.log。
 
 未簽署 ZIP 僅供可信來源的測試，不要關閉安全防護。x64 包支援 x64／x86 程式，
 x86 包供 32 位元 Windows。目前不支援 ARM64。歷代發布包的實際升級、移除與重裝
@@ -89,8 +90,9 @@ is needed. The app list entry is removed after all deletions are completed or
 queued. Only failures keep a retry entry. Modified/extra files and root diagnostic
 logs/state records are retained.
 
-On errors, record the exit code. Once deployment starts, its records are in
-Program Files\chichi77 KeyKey\Deployment.log. Do not disable security protection.
+On errors, record the exit code and retain the package. Diagnostics default to off,
+including GitHub Actions builds. Only an active three-day diagnostic session enabled in Settings
+write Program Files\chichi77 KeyKey\Deployment.log. Do not disable security protection.
 This unsigned ZIP is for trusted-source testing. The x64 package supports x64
 and x86 applications; x86 is for 32-bit Windows. ARM64 is not supported. Each
 historical release still needs device migration verification; damaged or custom

@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-目前工作分支為 `v1.3.3`。Android 與 iOS 開發版號為 `1.3.3`；商店正式版仍為 `1.3.2`（iOS build 41），Android 於 2026-10-08 正式發布。Windows 產品版號為 `1.3.2`，尚未發布；macOS、Linux 仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+目前工作分支為 `v1.3.2`。Android 與 iOS 開發版號為 `1.3.3`；商店正式版仍為 `1.3.2`（iOS build 41），Android 於 2026-10-08 正式發布。macOS 與 Windows 產品開發版號為 `1.3.2`，尚未發布；macOS 已發布版與 Linux 仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -33,7 +33,7 @@
 
 ## 工作區與提交
 
-- 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`；目前使用 `v1.3.3`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
+- 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`；目前使用 `v1.3.2`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
 - PR 必須由使用者親自 review 和 merge；agent 不得自行合併 PR、啟用 auto-merge 或繞過使用者審查。
 - 此流程配合 SignPath 的變更審查與人工簽章核准要求；原始碼、建置腳本及 CI 設定都納入審查。角色與簽章流程見 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
 - 先執行 `git status --short --branch`，保留使用者既有修改。只逐檔 `git add` 本次內容，不用 `git add .` 或 `git add -A`。
@@ -70,6 +70,8 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
 
 # macOS
+python3 update/prepare.py fetch macos
+bash update/test-macos.sh
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
@@ -85,10 +87,33 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.
 ```
 
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
+Windows 建置前準備 `python update/prepare.py fetch windows`。桌面更新預設關閉、
+key／feed 未設定時不得連網；正式啟用與各平台簽章驗收見 [update/README.md](update/README.md)。
+手動同版本下載入口只有使用者明確按下「重新安裝目前版本…」時才查詢官方 Release，
+不依賴自動更新 key／feed；只開啟相同版號／架構的下載頁，不自行下載或啟動安裝器。
+Windows stable 在 Authenticode 尚未就緒時可逐版明確宣告 `unsigned-transition`，仍須
+Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產；無效或不受信任簽章不得
+降級成 unsigned。日後 signed EXE 使用更高版號，沿用原 stable feed 與 Ed25519 金鑰。
+
+### Windows 日常開發測試範圍
+
+- 開始修改前依實際 diff 分類：`tsf` 輸入／候選／原生視窗、`settings` 設定介面／儲存、
+  `deployment` 安裝／移除／遷移、`updater` 更新客戶端／feed／簽章、`package` 封裝／CI、
+  `docs` 文件。先簡述本次類型與必要驗證，再執行；跨類型只取實際受影響項目的聯集。
+- 只建置受影響 target、跑對應測試；TSF 也用 `ctest -R` 選出受影響功能，不預設全套。
+  updater 的 feed、發布工具、客戶端分別驗證，不因更動其中一項就全跑三項。
+- 日常先驗證目前開發架構（通常 x64）；只有 bitness、ABI、P/Invoke、SDK、平台條件或
+  架構打包受影響時才加 x86。既有原生後端未變時可供設定 UI 回歸使用，不重建 TSF。
+- 純文件只檢查 diff／連結；單純搬移路徑只檢查引用與必要建置，不重跑功能全套。
+  測試通過後，沒有相關新修改、失敗或未解疑慮就不重跑；不要重複執行 CTest 已涵蓋的
+  dotnet 測試，也不為 Windows 專屬改動跑其他平台、模型或 release-assets 全套。
+- 只有明確進入發布驗收才跑 Windows 完整矩陣；不為了結束一次開發修改就打包／安裝。
+  共用引擎或模型變更仍按前述跨平台／模型規則驗證。各類命令與必要擴充條件見
+  [Windows 開發型態與測試](Source/Loaders/Windows-TSF/README.md#windows-日常開發型態與測試)。
 
 ## 改版號清單
 
-`README.md` 內文明列各平台版本；標題尾版號保留給 macOS、Linux 的既有封裝流程；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
+`README.md` 內文明列各平台版本；標題尾版號僅保留給 Linux 的既有封裝流程。macOS 封裝從 IMK plist 讀取版本並核對四份產品 plist；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
 
 | 平台 | 版號來源 |
 |---|---|

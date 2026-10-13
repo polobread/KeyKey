@@ -25,6 +25,9 @@ file for terms.
 	IBOutlet id _latestVersionTextField;
 	IBOutlet id _latestCheckTextField;
 	IBOutlet id _window;
+	NSTextField *_statusTextField;
+	NSButton *_checkButton;
+	NSTimer *_statusTimer;
 }
 
 /*!

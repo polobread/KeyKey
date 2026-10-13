@@ -1,8 +1,96 @@
 # 琦琦輸入法 Windows TSF frontend
 
-本機 `v1.3.2` 功能分支新增進階設定、讀音輔助、符號表與簡體輸出；
+## Windows 日常開發型態與測試
+
+每次先依實際變更選類型，再建置與測試。以下是驗證入口，不是每次都執行的清單；
+同一類仍只選本次受影響功能。跨類型取所需項目的聯集，已通過的項目不重複跑。
+
+| 類型 | 變更範圍 | 日常驗證 |
+|---|---|---|
+| `tsf` | `TextService`、引擎 adapter、候選、符號、工作列與原生生命週期 | 建置修改的原生 target，用 `ctest -R` 選對應案例；宿主行為修改再驗證相關 Windows 文字宿主 |
+| `settings` | WPF 介面、設定讀寫、自訂詞、設定 backend | 儲存邏輯跑 `SettingsModern.Tests`；介面／草稿行為跑 `SettingsModern.UiTests`，可使用同架構既有 backend；純 XAML 外觀做必要建置與畫面檢查 |
+| `deployment` | `Deployment/`、註冊、安裝／移除與舊版遷移 | `Deployment.Tests`；原生註冊／跨架構橋接改動才補相應隔離原生案例，實際安裝驗收另在明確授權後進行 |
+| `updater` | `update/`、`DesktopUpdater.cs`、`WinSparkleBackend.cs` | feed 資訊只檢查 XML／網址；發布簽章工具跑 `update/test_metadata.py`；回呼與狀態跑 updater managed 回歸；SDK、P/Invoke、下載／簽章行為才加 `--native` |
+| `package` | CMake／csproj、`Package-*.ps1`、NSIS、Windows CI | 腳本／路徑／target 檢查及受影響 target 建置；封裝內容變更才產生對應架構套件並驗證 manifest、PE、DB 與授權內容；只有更動共用 release-assets 工具才跑其測試 |
+| `docs` | README、政策、交接與開發說明 | `git diff --check`、相關路徑／連結檢查；不編譯、不跑功能測試 |
+
+日常預設目前開發架構（通常 x64）。修改 bitness、ABI、P/Invoke、SDK、平台條件或
+架構封裝時，才擴充到 x86。同一功能經相關測試通過後，只在有新的相關修改、失敗或
+未解疑慮時重跑。目錄搬移檢查引用與必要建置即可，不重跑原生功能及安裝流程。
+共用引擎與模型變更仍依根目錄 AGENTS 的跨平台／模型規則驗證。
+
+下面命令從此目錄執行；建置目錄以本機實際 preset 為準，範例使用既有 x64 Ninja。
+原生 CMake／CTest 命令使用已載入 MSVC、CMake 與 Ninja 的 Developer PowerShell。
+選定測試 executable target 與 CTest 名稱是兩件事。例如只修 TSF 送字：
+
+```powershell
+cmake --build out/build/x64-ninja --target KeyKeyTsfOutputBehaviorTest
+ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=error `
+  -R '^KeyKeyTsfOutputCommitBehavior$'
+```
+
+其他常見 TSF 範圍：候選選鍵選 `KeyKeyCandidateKeyStateMachine`、符號表選
+`KeyKeySymbolPanelResourcesAndFocus`、popup 生命週期選 `KeyKeyPopupLifecycle`、
+DLL 卸載選 `KeyKeyModuleLifetime`、工作列模式選 `KeyKeyTsfSystemTrayModes`。
+只在變更真的影響另一功能時才一起選它，不因修改 `TextService.cpp` 就全部執行。
+
+設定儲存與設定 UI 是分開的入口，依修改內容選其一或兩者：
+
+```powershell
+dotnet run --project SettingsModern.Tests/SettingsModern.Tests.csproj --configuration Release
+# 只在介面／草稿流程受影響時；需要既有同架構 SettingsBackend 與 Databases/KeyKey.db
+dotnet run --project SettingsModern.UiTests/SettingsModern.UiTests.csproj --configuration Release `
+  -r win-x64 --self-contained -p:KeyKeyRuntimeDirectory="$PWD/out/build/x64-ninja"
+```
+
+部署邏輯、自動更新狀態、更新發布工具也分別選用：
+
+```powershell
+# deployment
+dotnet run --project Deployment.Tests/Deployment.Tests.csproj --configuration Release
+# updater：客戶端狀態／回呼，預設不載入原生 SDK、不連線
+dotnet run --project DesktopUpdater.Tests/DesktopUpdater.Tests.csproj --configuration Release
+# updater：只在修改發布簽章／manifest 工具時，需要 OpenSSL 3；金鑰是暫存測試金鑰
+$env:KEYKEY_TEST_OPENSSL = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
+python -m unittest discover -s ../../../update -v
+```
+
+只修改更新頁與草稿保護時，可在上述 WPF 命令最後加 `-- --updater`，只執行更新頁
+相關回歸。重新安裝下載頁的版本／架構選擇與非同步生命週期在 updater managed 測試內，
+不載入原生 WinSparkle、不連線或開啟瀏覽器。
+
+Windows Package workflow 是正式封裝／發布入口，保留完整發布驗證；它只在已發布
+Release 或手動 dispatch 時執行，日常 push 不會觸發。CTest 中的 managed 設定／部署
+案例在 workflow 另一步各跑一次，原生矩陣會排除這兩項，避免重複執行。
+完整 TSF／NSIS、UAC、舊版升級、資料保留與 signed 憑證驗收屬發布工作，不能把
+上述局部開發驗證當成已發布或已安裝的證據。
+
+本機 `v1.3.2` 工作分支持續修正 Windows 進階設定、讀音輔助、符號表與簡體輸出；
 Windows 產品版號為 1.3.2，尚未發布；iOS、Android 1.3.2 已在各自商店正式上線，macOS、Linux 及共用模型維持 1.3.1。實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
+
+2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、
+禁用／唯讀 context 與 light dismiss 事件。宿主通知採用非同步處理，不寫回通知來源；
+OPENCLOSE 與 NATIVE 的另一個欄位於通知結束後才協調。暫時失去 UI 執行緒焦點只隱藏
+候選、關閉符號表並撤銷舊定位回呼，保留原組字；重新取得焦點須符合當前 context 才還原。
+修正只在 Windows TSF adapter，沒有修改 macOS、共用引擎或正式模型。
+後續補上輸入法發布失敗回滾：原引擎與有效方法在 TSF／共用狀態寫入成功後才更換。
+模式通知因換欄位或 session 取消時，於通知外重新讀取宿主最新模式；第一個按鍵前也會同步，
+不採用已取消的舊快照。讀取失敗留待下一次焦點／輸入重試，停用時不再寫回模式。
+TSF 模式部分寫入／回滾失敗也保留恢復目標：先延後嘗試一次，持續被拒絕時只在後續
+焦點／輸入重試，不反覆送訊息。恢復略過已一致的欄位，保留其他轉換旗標；宿主新通知
+取代舊恢復目標。未設定的欄位恢復為保留的邏輯模式，不清除預定義 compartment；
+異常資料型態不覆寫。系統持續拒絕期間仍可能不一致，解除拒絕後由下一次活動恢復。
+研究、實作範圍與實機待驗收項目見
+[各 App 狀態與 TSF 用法](../../../docs/WINDOWS_TSF_APP_STATE_REVIEW.md)。
+
+2026-10-10 記憶體安全修正：`DllCanUnloadNow` 在 loader lock 外清理三個候選／符號
+視窗類別與引擎 runtime；服務成員析構完成前保留 COM 物件計數，仍有視窗、引擎 session
+或有序輸入時拒絕卸載。類別與 runtime 可在清理後重新建立，DLL 重載不再留下舊 runtime。
+`RangeText` 在 append 前檢查宿主回傳字元數與 65,536 字元總量上限，異常值不寫回組字。
+回歸入口為 `KeyKeyModuleLifetime` 與 `KeyKeyTsfOutputCommitBehavior`；前者使用測試專用
+DLL，不註冊 TIP。MSVC ASan 建置停用 DLL 卸載測試，仍驗證同一模組內的 runtime 清理。
+證據與實機驗收界線見 [記憶體安全檢查](../../../docs/WINDOWS_TSF_MEMORY_SAFETY_REVIEW.md)。
 
 「一般」新增「啟動時預設輸入模式」中文／英文，預設為中文。設定在輸入法服務下次
 啟用時生效；中文沿用目前選擇的好打注音、傳統注音、倉頡或簡易，Shift 仍可切換。
@@ -34,9 +122,14 @@ TSF 取消未執行的 session 會撤銷其待處理狀態，過期或重複回�
 固定每個服務已生效的方法，並在佇列邊界載入指定方法的設定；共用模組欄位未做完整設定
 快照隔離，送字重試也不回滾已發生的候選／學習決策。
 
-候選窗與符號表在宿主暫時隱藏 owned popup 後取消，會退役待還原的視窗，避免 Windows
-之後自動還原空白框。此生命週期序列已有兩架構原生回歸；其他白塊與分類 hover 消字
-未確認相同原因，仍待使用者實機複測。
+候選窗與符號表取消時一律退役 HWND；候選保留字型，符號表另保留 emoji 快取、分類與
+拖曳位置。新的候選／符號表重新建立視窗與控制項，不再保留已取消的置頂 HWND，避免其他
+宿主還原或畫面合成持續使用舊視窗。明確啟用本機診斷時，顯示、隱藏、重繪、位置與銷毀狀態寫入
+`%TEMP%\KeyKeyTsf.log`，只記錄 HWND、旗標、候選數、符號分類索引、控制項數與矩形，不記錄輸入文字。
+使用者白框截圖與 440×430 的隱藏符號表吻合，但最初觸發事件與合成狀態仍未確認；
+不能由原生生命週期測試推定實機已修好。新增修正與驗證見
+[額外記憶體及符號表修正](../../../docs/WINDOWS_TSF_ADDITIONAL_MEMORY_LEAK_FIX.md)；
+符號分類 hover 消字也未確認相同原因。
 
 本輪 x64／x86 各 27 項原生回歸全數通過，包括進階設定、表格輸入、候選狀態及 popup
 生命週期。每架構先在沙箱通過 25 項，再以一般使用者權限重跑被檔案／HKCU 權限阻擋的
@@ -55,10 +148,16 @@ TSF 取消未執行的 session 會撤銷其待處理狀態，過期或重複回�
 工作列輸入法選單依序排列「半形／全形 → 簡體中文輸出 → 分隔線 → 符號表… → 輸入法設定…」。
 「符號表…」提供原有 17 個分類、807 個符號與完整顏文字，保留手機版 90 個 emoji 的
 順序並加入 110 個 Windows 專用補充，共 18 個分類、1,007 項。Emoji 共 200 個，
-一般大小每頁 40 個、五頁；頁面容量會依工作區及 DPI 調整。
+同一分類全部列出，以右側捲軸或滑鼠滾輪瀏覽，不再分頁。
+捲軸以獨立原生控制項持續顯示完整滑塊及箭頭，使用系統色彩；不套用宿主的細線 overlay
+主題，滑塊位置與內容及滾輪同步。捲軸沒有 Tab stop，滑鼠操作仍保留輸入欄位焦點。
 分類使用下拉選單；符號與 Emoji 使用最多十欄的格狀按鈕，顏文字以整列顯示。
+字型、Emoji、格子及視窗尺寸共用「一般 → 選字窗 → 大小」設定；「跟隨 Windows」
+沿用所在螢幕的縮放比例。縮放及工作區較小時會重新排列欄數，所有項目仍可捲動選取。
 Emoji 使用 Direct2D／DirectWrite 的 Segoe UI Emoji 彩色字型，圖案依作業系統字型版本；
 高對比模式或彩色渲染不可用時回退 GDI 單色，不下載圖片或改動手機資料。
+彩色 Emoji 只繪製可見項目，最多快取 256 張圖；捲動重用控制項，重開重用字型與適用的繪圖快取，
+縮放或主題改變時清除不適用的繪圖快取。首次開啟仍需初始化系統彩色字型。
 視窗從滑鼠所在螢幕的工作區右側開啟，可由標題列拖曳；位置只在同一輸入服務生命週期內
 記住，不跨 App 或重新啟動保存，重開及 DPI 變更時會限制於可用工作區。
 以滑鼠選取後送入原輸入欄位並關閉。面板開啟時保留組字；選取時先送出原組字，再插入符號。
@@ -210,7 +309,7 @@ On the reporting PC, repeat the first syllable in Firefox's address bar, a web
 text field and Notepad, then test Esc and switching focus while candidates are
 pending. Record the installed version and whether this happens only after
 launch or on every new composition. `%TEMP%\KeyKeyTsf.log` now records
-`Candidate layout deferred` with the HRESULT and the later refresh request,
+`Candidate layout deferred` with the HRESULT and the later refresh request when diagnostics are explicitly enabled,
 which distinguishes a layout failure from slow engine input. Only the relevant
 reproduction interval is needed; review the log before sharing it.
 
@@ -290,6 +389,25 @@ reconfigure with `cmake --fresh --preset windows-x64` (and likewise for x86)
 to use the checked-in shared database.
 
 ## Build and register (x64 and x86)
+
+Windows diagnostic logging defaults to **off**, including Release and Debug builds.
+In Settings → 一般 → 問題診斷, enable the single **啟用診斷記錄** checkbox and
+press 套用 to start a fixed three-day session. There is no duration selector.
+Without an active session, TSF key/composition/popup file logs, `OutputDebugString`,
+legacy module log output, and `Deployment.log` stay off, including GitHub Actions builds.
+Installation status and failure codes remain visible.
+
+The deadline is persisted in a separate `diagnostics.plist` in the user's KeyKey
+profile and survives closing Settings, restarting hosts, and rebooting. Applying
+unrelated settings does not renew it. Hosts refresh this preference at most once
+per second and check expiration before each record; an expired session stays off
+without needing the Settings app to run. Settings shows the checkbox off at expiry.
+TSF logs retain one 10 MiB current file and one 10 MiB backup; rotation overwrites
+the old backup. A busy cross-process log write may be skipped rather than block typing.
+Deployment logs are limited to 1 MiB. No log is created or appended while disabled.
+The earlier `candidate-fix-20261010` test EXE retains diagnostics; changing source
+does not change that already-created installer. TSF logs can include key codes,
+modifier state, and process/window identifiers; enable only for a local investigation.
 
 MSVC/Ninja builds detect the compiler's localized `/showIncludes` prefix and
 normalize it through `MsvcCompiler.py`, using the required Python interpreter.
@@ -382,8 +500,8 @@ architecture. On the other PC, extract the entire ZIP and copy the folder to a l
 `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd` there. Do not
 install directly from a mapped network drive, NAS, or UNC path: it can become
 inaccessible after UAC elevation and the installer window can close
-immediately. Record any exit code; once deployment starts, diagnostics are in
-`%ProgramFiles%\chichi77 KeyKey\Deployment.log`.
+immediately. Record any exit code. Only an active diagnostic session
+writes `%ProgramFiles%\chichi77 KeyKey\Deployment.log`.
 The elevated installer:
 
 - copies the x64 and x86 DLLs, settings app, database, and notices to
@@ -570,6 +688,33 @@ frontend settings share the PlainVanilla loader plist, while Traditional
 Mandarin and associated-phrase options use their module plists. Settings are
 picked up on the next key or candidate-window update. `KeyKey.db` remains
 external runtime data rather than being compiled into the TSF DLL.
+
+Windows TSF defines `KEYKEY_WINDOWS_SHARED_DATA` only in its CMake core target.
+The native loader/module plists and C# settings app share a per-file named mutex
+and replace a flushed temporary file rather than exposing partial XML. Native
+saves merge changed keys against the current file; a conflicting stale snapshot
+preserves the newer disk value. Invalid existing files are preserved. Input hosts
+wait at most 250 ms for this lock; a failed save retains its unsaved snapshot.
+Readers allow delete sharing so an open reader does not prevent replacement.
+
+Learning saves write only the host's pending changes in one SQLite transaction,
+with at most 200 entries per cache. Reset and import advance a database generation;
+old pending caches cannot repopulate the reset/imported state. Busy transactions
+retain pending changes for retry, with at most 200 distinct pending entries per
+cache including deletion markers. Updating a pending key refreshes its recency;
+overflow drops the oldest unsaved learning. Newly created user databases use UTF-8 to match
+the model's attachment encoding. Existing files are not silently converted.
+These protections require participating processes to run the new code; sign out
+and back in after upgrading to retire hosts that still have an old DLL loaded.
+The shared model and other frontend behavior remain unchanged.
+
+`KeyKeySharedDataProtectionTest` uses isolated temporary profiles to test stale
+settings snapshots, malformed files, atomic readers, concurrent parser threads,
+learning deltas, transaction contention, reset/import, and cache bounds. Pass an
+opposite-architecture test executable to exercise mixed x64/x86 processes. The
+`--managed <dotnet> <SettingsModern.Tests.dll>` mode also checks that a native
+writer obeys the mutex held by the C# settings implementation. The Windows
+packaging workflow runs both architecture directions and both managed pairings.
 
 ## Verification checklist
 

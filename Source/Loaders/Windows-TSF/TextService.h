@@ -13,6 +13,7 @@
 
 #include "CandidateWindow.h"
 #include "KeyKeyEngine.h"
+#include "ModuleState.h"
 #include "SharedOutputState.h"
 #include "SymbolPanel.h"
 
@@ -20,12 +21,14 @@ namespace KeyKey::WindowsTsf {
 
 class LangBarButton;
 
-class TextService final : public ITfTextInputProcessorEx,
+class TextService final : private ModuleObjectLifetime,
+                          public ITfTextInputProcessorEx,
                           public ITfKeyEventSink,
                           public ITfCompositionSink,
                           public ITfTextEditSink,
                           public ITfTextLayoutSink,
                           public ITfThreadMgrEventSink,
+                          public ITfThreadFocusSink,
                           public ITfCompartmentEventSink,
                           public ITfDisplayAttributeProvider,
                           public ITfFunctionProvider,
@@ -68,6 +71,10 @@ public:
     STDMETHODIMP OnSetFocus(ITfDocumentMgr* focused, ITfDocumentMgr* previous) override;
     STDMETHODIMP OnPushContext(ITfContext* context) override;
     STDMETHODIMP OnPopContext(ITfContext* context) override;
+
+    // ITfThreadFocusSink (UI thread focus, distinct from document/TIP focus)
+    STDMETHODIMP OnSetThreadFocus() override;
+    STDMETHODIMP OnKillThreadFocus() override;
 
     // ITfCompartmentEventSink
     STDMETHODIMP OnChange(REFGUID guid) override;
@@ -132,7 +139,16 @@ private:
     void closeSymbols();
     void setChineseMode(bool enabled);
     void applyStartupInputMode();
-    void setFullWidthMode(bool enabled);
+    HRESULT setFullWidthMode(bool enabled);
+    bool isFocusedContext(ITfContext* context) const;
+    void hideCandidateUi();
+    void observeInputMode(bool chinese, bool fullWidth, bool fromConversion);
+    bool postModePump();
+    static LRESULT CALLBACK ModeWindowProc(HWND window,UINT message,WPARAM wp,LPARAM lp);
+    HRESULT reconcileHostMode(bool chinese, bool fromConversion);
+    HRESULT resyncCancelledHostMode();
+    void scheduleModeRecovery(bool chinese, bool fullWidth);
+    void retryModeRecovery();
     KeyEvent translateKey(WPARAM wparam, LPARAM lparam) const;
     HRESULT adviseSinks();
     void unadviseSinks();
@@ -147,19 +163,19 @@ private:
     bool requestCommitComposition();
     struct InputOperation;
     class InputEditSession;
-    enum class ModeChange { Chinese, Width, Method, Simplified };
+    enum class ModeChange { Chinese, Width, Method, Simplified, Host };
     bool enqueueInput(const std::shared_ptr<InputOperation>& operation);
     bool requestModeChange(ModeChange change, bool enabled, const std::string& method = {});
     void pumpInput();
     HRESULT runInput(TfEditCookie cookie, const std::shared_ptr<InputOperation>& operation);
     void completeInput(const std::shared_ptr<InputOperation>& operation, HRESULT result, bool cancelled);
-    void cancelInput();
+    void cancelInput(bool resyncHost = true);
     Microsoft::WRL::ComPtr<ITfContext> inputContext() const;
     bool projectedChineseMode() const;
     bool projectedWidthMode() const;
     bool orderedPrintableKey(const KeyEvent& event) const;
     HRESULT retryInputResult(TfEditCookie cookie, ITfContext* context);
-    void publishChineseMode(bool enabled);
+    HRESULT publishChineseMode(bool enabled);
     void abandonComposition();
     void updateCandidateWindow(TfEditCookie editCookie, ITfContext* context,
                                const EngineResult& result);
@@ -183,6 +199,7 @@ private:
     bool immersiveMode_ = false;
     bool syncingInputMethod_ = false;
     DWORD threadManagerCookie_ = TF_INVALID_COOKIE;
+    DWORD threadFocusCookie_ = TF_INVALID_COOKIE;
     DWORD inputModeCookie_ = TF_INVALID_COOKIE;
     DWORD conversionModeCookie_ = TF_INVALID_COOKIE;
     DWORD textEditCookie_ = TF_INVALID_COOKIE;
@@ -190,6 +207,18 @@ private:
     TfGuidAtom compositionDisplayAttributeAtom_ = TF_INVALID_GUIDATOM;
     bool chineseMode_ = true;
     bool updatingModeCompartments_ = false;
+    bool inModeNotification_ = false;
+    HWND modeWindow_ = nullptr;
+    WNDPROC modeOriginalProc_ = nullptr;
+    bool modePumpPosted_ = false;
+    bool restoreHostMode_ = false;
+    bool resyncHostMode_ = false;
+    bool lastHostModeFromConversion_ = true;
+    bool modeRecoveryPending_ = false;
+    bool modeRecoveryRunning_ = false;
+    bool recoveryChinese_ = true;
+    bool recoveryFullWidth_ = false;
+    bool uiThreadFocused_ = true;
     bool fullWidthMode_ = false;
     bool shiftTogglePending_ = false;
     DWORD shiftPressedAt_ = 0;

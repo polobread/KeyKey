@@ -22,6 +22,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		77AA13200000000000000002 /* KeyKeyMacUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = 77AA13200000000000000003 /* KeyKeyMacUpdater.m */; };
 		6A0138F50ED1D47900715577 /* YKAFWordCount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0138F20ED1D47900715577 /* YKAFWordCount.cpp */; };
 		6A0139040ED1D4A000715577 /* PackageMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0139030ED1D4A000715577 /* PackageMain.cpp */; };
 		6A01390F0ED1D50500715577 /* OpenVanilla.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A476EE70D5C48CE00C6C744 /* OpenVanilla.framework */; };
@@ -1235,6 +1236,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		77AA13200000000000000003 /* KeyKeyMacUpdater.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "Loaders/OSX-IMK/KeyKeyMacUpdater.m"; sourceTree = "<group>"; };
+		77AA13200000000000000004 /* KeyKeyMacUpdater.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Loaders/OSX-IMK/KeyKeyMacUpdater.h"; sourceTree = "<group>"; };
 		6A0138EB0ED1D44200715577 /* YKAFWordCount.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YKAFWordCount.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A0138F20ED1D47900715577 /* YKAFWordCount.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = YKAFWordCount.cpp; path = ModulePackages/YKAFWordCount/YKAFWordCount.cpp; sourceTree = "<group>"; };
 		6A0138F30ED1D47900715577 /* YKAFWordCount.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = YKAFWordCount.h; path = ModulePackages/YKAFWordCount/YKAFWordCount.h; sourceTree = "<group>"; };
@@ -2959,6 +2962,8 @@
 				6A4772FD0D5C607200C6C744 /* main.mm */,
 				6A4772DC0D5C607200C6C744 /* CVApplicationController.h */,
 				6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */,
+				77AA13200000000000000003 /* KeyKeyMacUpdater.m */,
+				77AA13200000000000000004 /* KeyKeyMacUpdater.h */,
 				6A4772E60D5C607200C6C744 /* CVEncodingService.h */,
 				6A4772E70D5C607200C6C744 /* CVEncodingService.mm */,
 				6A4772FF0D5C607200C6C744 /* OpenVanillaConfig.h */,
@@ -3922,6 +3927,7 @@
 				6AFC805E0D9900BD007588D8 /* ShellScript */,
 				6AE950B20D998B1E003FC2F3 /* Copy Files (trompe-l'oeil) */,
 				6AB931A30EA42E8D005CD336 /* Copy Files (Modules) */,
+				77AA13200000000000000001 /* Embed desktop updater */,
 			);
 			buildRules = (
 			);
@@ -4676,6 +4682,16 @@
 /* End PBXRezBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		77AA13200000000000000001 /* Embed desktop updater */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "python3 \"$SRCROOT/../update/prepare.py\" embed-macos \"$TARGET_BUILD_DIR/$FULL_PRODUCT_NAME\"";
+		};
 		6AB74BCD0DA15C3900D9544B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -4838,6 +4854,7 @@
 			files = (
 				D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */,
 				6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */,
+				77AA13200000000000000002 /* KeyKeyMacUpdater.m in Sources */,
 				6A4773070D5C607200C6C744 /* CVBubbleTextView.m in Sources */,
 				6A4773080D5C607200C6C744 /* CVBubbleTextWindow.m in Sources */,
 				6A47730B0D5C607200C6C744 /* CVEncodingService.mm in Sources */,

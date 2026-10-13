@@ -1,0 +1,248 @@
+using System.IO;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Http;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Windows;
+using System.Windows.Threading;
+
+namespace KeyKeySettings;
+
+// Runs only in Settings, never inside another application's TSF process.
+internal sealed class DesktopUpdater : IDisposable
+{
+    private readonly IDesktopUpdateBackend backend;
+    private readonly Dispatcher dispatcher;
+    private readonly Action requestShutdown;
+    private readonly Func<Stream> readConfiguration;
+    private readonly Func<string, string, CancellationToken, Task<Uri>> findReinstallDownload;
+    private readonly Action<Uri> openDownloadPage;
+    private readonly CancellationTokenSource lifetime = new();
+    private bool initialized;
+    private int generation;
+    private volatile bool disposed;
+    private volatile bool unsavedChanges;
+    private bool updateBusy;
+    private bool reinstalling;
+    private static string ProductVersion
+    {
+        get
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version!;
+            return $"{version.Major}.{version.Minor}.{version.Build}";
+        }
+    }
+    private string releaseVersion = ProductVersion;
+    public bool Available => initialized && !disposed;
+    public bool CanReinstall => !disposed && !Busy && !unsavedChanges;
+    internal bool CanShutdown => !disposed && !unsavedChanges;
+    public bool Busy => updateBusy || reinstalling;
+    public string Status { get; private set; } = "此建置尚未設定簽章更新服務；可手動下載目前版本重新安裝。";
+    public bool Automatic => Available && backend.Automatic;
+    public event Action? StateChanged;
+
+    public DesktopUpdater() : this(new WinSparkleBackend(), Dispatcher.CurrentDispatcher,
+        () => Application.Current.Shutdown(),
+        () => Assembly.GetExecutingAssembly().GetManifestResourceStream("KeyKey.UpdateConfig")
+            ?? throw new InvalidOperationException("缺少更新設定")) { }
+
+    internal DesktopUpdater(IDesktopUpdateBackend backend, Dispatcher dispatcher,
+        Action requestShutdown, Func<Stream> readConfiguration,
+        Func<string, string, CancellationToken, Task<Uri>>? findReinstallDownload = null,
+        Action<Uri>? openDownloadPage = null)
+    {
+        this.backend = backend;
+        this.dispatcher = dispatcher;
+        this.requestShutdown = requestShutdown;
+        this.readConfiguration = readConfiguration;
+        this.findReinstallDownload = findReinstallDownload ?? SameVersionDownload.FindAsync;
+        this.openDownloadPage = openDownloadPage ?? (uri => Process.Start(
+            new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }));
+    }
+
+    public void Initialize()
+    {
+        if (initialized || disposed) return;
+        var session = ++generation;
+        void Dispatch(Action action) => Post(session, action);
+        bool configured = false;
+        try
+        {
+            using var stream = readConfiguration();
+            using var document = JsonDocument.Parse(stream);
+            var config = document.RootElement;
+            if (config.GetProperty("schema_version").GetInt32() != 1)
+                throw new InvalidOperationException("不支援的更新設定");
+            if (config.TryGetProperty("release_version", out var configuredVersion))
+            {
+                var candidate = configuredVersion.GetString() ?? "";
+                if (!Regex.IsMatch(candidate, "^" + Regex.Escape(ProductVersion) + @"(?:-beta[1-9]\d*)?$"))
+                    throw new InvalidOperationException("更新版號與產品不符");
+                var expectedChannel = candidate.Contains("-beta", StringComparison.Ordinal) ? "beta" : "stable";
+                if (!config.TryGetProperty("update_channel", out var channel) || channel.GetString() != expectedChannel)
+                    throw new InvalidOperationException("更新版號與 channel 不符");
+                releaseVersion = candidate;
+            }
+            var key = config.GetProperty("public_ed25519_key").GetString() ?? "";
+            var feed = config.GetProperty(Environment.Is64BitProcess
+                ? "windows_x64_feed_url" : "windows_x86_feed_url").GetString() ?? "";
+            if (key.Length == 0 || feed.Length == 0) return;
+            if (Convert.FromBase64String(key).Length != 32 ||
+                !Uri.TryCreate(feed, UriKind.Absolute, out var uri) || uri.Scheme != "https" ||
+                uri.UserInfo.Length != 0 || uri.Fragment.Length != 0)
+                throw new InvalidOperationException("更新網址或公開金鑰無效");
+
+            backend.Configure(key, uri.AbsoluteUri, releaseVersion.Replace("-beta", "b", StringComparison.Ordinal),
+                new UpdateCallbacks(
+                    () => CanShutdown ? 1 : 0,
+                    () => Dispatch(() =>
+                    {
+                        // WinSparkle queries readiness BEFORE launching the installer.
+                        // An edit made in that interval must survive its shutdown request.
+                        if (CanShutdown) requestShutdown();
+                        else SetState("安裝程式已啟動；設定有新的未儲存編輯，視窗將保持開啟。", false);
+                    }),
+                    () => Dispatch(() => SetState("更新未完成。請查看更新視窗的錯誤訊息，關閉後可重試。", false)),
+                    () => Dispatch(() => SetState("有新版本可用。請在更新視窗確認下載與安裝。", true)),
+                    () => Dispatch(() => SetState("目前已是最新版本。", false)),
+                    () => Dispatch(() => SetState("已取消更新，可稍後重新檢查。", false)),
+                    () => Dispatch(() => SetState(Busy ? "更新視窗已關閉，可重新檢查。" : Status, false)),
+                    _ =>
+                    {
+                        if (CanShutdown) return 0; // Keep WinSparkle's normal interactive/UAC handling.
+                        Dispatch(() => SetState("請先套用設定或儲存自訂詞，再重新檢查更新。", false));
+                        return -1; // WINSPARKLE_RETURN_ERROR: never fall through to launching the file.
+                    }));
+            configured = true;
+            initialized = true;
+            SetState("只檢查發行版本，不傳送輸入內容。下載通過簽章驗證後，才啟動安裝程式並要求管理員授權。", false);
+            backend.Initialize();
+        }
+        catch (Exception error) when (error is DllNotFoundException or BadImageFormatException
+            or EntryPointNotFoundException or InvalidOperationException or FormatException
+            or JsonException or KeyNotFoundException or IOException or UnauthorizedAccessException
+            or System.Security.SecurityException)
+        {
+            initialized = false;
+            generation++;
+            if (configured) backend.Cleanup();
+            SetState($"更新服務無法啟用：{error.Message}（未開始檢查更新）", false);
+        }
+    }
+
+    // Native callbacks must not wait for WPF: cleanup on the UI thread waits
+    // for native threads, and synchronous dispatch would deadlock that shutdown.
+    private void Post(int session, Action action)
+    {
+        if (disposed || dispatcher.HasShutdownStarted) return;
+        dispatcher.BeginInvoke(() => { if (!disposed && initialized && session == generation) action(); });
+    }
+
+    private void SetState(string status, bool busy)
+    {
+        Status = status;
+        updateBusy = busy;
+        StateChanged?.Invoke();
+    }
+
+    public void Check()
+    {
+        if (!Available || Busy) return;
+        SetState("正在檢查更新…", true);
+        backend.Check();
+    }
+    public async Task ReinstallAsync()
+    {
+        if (!CanReinstall) return;
+        var current = releaseVersion;
+        var architecture = Environment.Is64BitProcess ? "x64" : "x86";
+        reinstalling = true;
+        SetState($"正在確認版本 {current} 的 Windows {architecture} 下載…", false);
+        try
+        {
+            var page = await findReinstallDownload(current, architecture, lifetime.Token);
+            if (disposed) return;
+            if (unsavedChanges)
+            {
+                SetState("請先套用設定或儲存自訂詞，再重新安裝目前版本。", updateBusy);
+                return;
+            }
+            openDownloadPage(page);
+            SetState($"已開啟版本 {current} 的官方下載頁。請下載 Windows {architecture} 套件，手動重新安裝。", updateBusy);
+        }
+        catch (Exception error) when (error is HttpRequestException or OperationCanceledException
+            or JsonException or InvalidOperationException or KeyNotFoundException or FormatException
+            or System.ComponentModel.Win32Exception)
+        {
+            if (!disposed) SetState($"無法重新安裝：{error.Message}", updateBusy);
+        }
+        finally
+        {
+            reinstalling = false;
+            if (!disposed) StateChanged?.Invoke();
+        }
+    }
+    public void SetUnsavedChanges(bool value)
+    {
+        if (unsavedChanges == value) return;
+        unsavedChanges = value;
+        StateChanged?.Invoke();
+    }
+    public void SetAutomatic(bool value)
+    {
+        if (Available) backend.Automatic = value;
+    }
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true; // Drop callbacks already queued on the WPF dispatcher.
+        lifetime.Cancel();
+        lifetime.Dispose();
+        updateBusy = false;
+        reinstalling = false;
+        if (initialized) { initialized = false; backend.Cleanup(); }
+    }
+}
+
+// Manual download is separate from signed WinSparkle updates and runs only on a user click.
+internal static class SameVersionDownload
+{
+    private static readonly HttpClient Client = new(new HttpClientHandler { AllowAutoRedirect = false })
+    {
+        Timeout = TimeSpan.FromSeconds(15),
+        MaxResponseContentBufferSize = 1024 * 1024
+    };
+
+    internal static async Task<Uri> FindAsync(string version, string architecture, CancellationToken token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get,
+            $"https://api.github.com/repos/polobread/KeyKey/releases/tags/v{version}");
+        request.Headers.UserAgent.ParseAdd("KeyKeySettings/" + version);
+        using var response = await Client.SendAsync(request, token);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            throw new InvalidOperationException($"版本 {version} 尚未發布下載套件。");
+        response.EnsureSuccessStatusCode();
+        return SelectPage(await response.Content.ReadAsStringAsync(token), version, architecture);
+    }
+
+    internal static Uri SelectPage(string json, string version, string architecture)
+    {
+        using var document = JsonDocument.Parse(json);
+        var release = document.RootElement;
+        var productVersion = version.Split("-beta", StringSplitOptions.None)[0];
+        var prefix = $"chichi77-KeyKey-{productVersion}-windows-{architecture}";
+        var names = new[] { prefix + "-setup.exe", prefix + "-setup.unsigned.exe", prefix + ".zip" };
+        if (release.GetProperty("tag_name").GetString() != "v" + version ||
+            release.GetProperty("draft").GetBoolean() ||
+            (version.Contains("-beta", StringComparison.Ordinal) &&
+                (!release.TryGetProperty("prerelease", out var prerelease) || !prerelease.GetBoolean())) ||
+            !release.GetProperty("assets").EnumerateArray().Any(asset =>
+                names.Contains(asset.GetProperty("name").GetString(), StringComparer.Ordinal) &&
+                asset.GetProperty("size").GetInt64() > 0))
+            throw new InvalidOperationException($"版本 {version} 尚無 Windows {architecture} 下載套件。");
+        // Construct the trusted page URL; never launch a URL returned in release JSON.
+        return new Uri($"https://github.com/polobread/KeyKey/releases/tag/v{version}");
+    }
+}

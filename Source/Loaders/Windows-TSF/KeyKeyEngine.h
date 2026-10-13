@@ -50,6 +50,9 @@ void BeginOrderedEngineInput();
 void EndOrderedEngineInput();
 bool IsInputMethodAvailable(const char* identifier);
 bool SelectInputMethod(const char* identifier);
+// Called outside loader lock after all TSF objects are gone. Refuses cleanup
+// while any session or ordered input still owns runtime state; may be retried.
+bool ShutdownEngineRuntime();
 
 class KeyKeyEngineSession final {
 public:

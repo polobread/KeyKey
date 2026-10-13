@@ -4,7 +4,7 @@
 
 Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 與 iOS 原始碼開發版號為 `1.3.3`，商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線（iOS build 41）；Android 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。Windows `1.3.2` 尚未發布，macOS、Linux 與共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
+依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 與 iOS 原始碼開發版號為 `1.3.3`，商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線（iOS build 41）；Android 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。macOS／Windows 開發版 `1.3.2` 尚未發布，macOS 已發布版、Linux 與共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -138,6 +138,13 @@ extension 處理方式見 [面板說明](Source/Loaders/Linux-IME/gnome-panel/RE
 
 ## macOS
 
+建置前先在 repository root 執行 `python3 update/prepare.py fetch macos`，準備
+校驗固定版本的 Sparkle SDK。桌面更新未設定正式 key／feed 時維持離線，見
+[更新建置與發布說明](update/README.md)。Windows 本機建置同樣需先執行
+`python update/prepare.py fetch windows`。
+Windows 日常開發依 [開發型態與測試範圍](Source/Loaders/Windows-TSF/README.md#windows-日常開發型態與測試)
+只建置及驗證受影響項目；以下完整平台建置流程用於初次準備或發布。
+
 ### 需求
 
 - macOS 15 以上
@@ -262,7 +269,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 - 在 Windows「已安裝的應用程式」加入解除安裝項目
 
 請勿直接從網路磁碟、NAS 或 UNC 路徑安裝；UAC 後可能無法存取原路徑，且安裝
-視窗可能立即關閉。開始部署後的記錄位於 `%ProgramFiles%\chichi77 KeyKey\Deployment.log`。
+視窗可能立即關閉。所有建置（含 GitHub Actions）診斷預設關閉；需至設定的一般頁
+勾選「啟用診斷記錄」並套用，固定 3 天後自動停止，沒有天數選項。有效期限內才寫
+`%TEMP%\KeyKeyTsf.log` 與 `%ProgramFiles%\chichi77 KeyKey\Deployment.log`。
+輸入記錄含備份最多 20 MiB，部署記錄最多 1 MiB；安裝錯誤仍需記錄錯誤碼。
 
 首次安裝須自行在 Windows 設定新增鍵盤；升級保留共用入口的選擇，舊香港／澳門入口使用者需改選共用入口。請登出再登入載入新版。
 這是未簽署的家用測試套件，因此從網路下載時 Windows 可能顯示安全警告。
@@ -382,15 +392,15 @@ CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不�
 原始碼、建置腳本與 CI 都依 [Code signing policy](CODE_SIGNING_POLICY.md) 納入審查。
 macOS、Windows 與 Linux 則在 GitHub
 **Publish release** 後自動建置，各自驗證成功後上傳到同一個 Release。Release 的 tag
-必須完全符合該平台原始碼版號，可在發布頁面同時建立。目前 Windows 為 `v1.3.2`，
-macOS、Linux 仍為 `v1.3.1`；同一 Release 的三平台產物只在各平台同版時成立，不能期待
-發布 `v1.3.2` 讓其餘兩平台也成功封裝。只推 tag 或儲存草稿
+必須完全符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows 原始碼為 `v1.3.2`，
+Linux 仍為 `v1.3.1`；同一 Release 的三平台產物只在各平台同版時成立，不能期待
+發布 `v1.3.2` 也產生 Linux 封裝。macOS 從四份產品 plist 讀取並核對版號，與 README 尾端的 Linux 版號獨立。只推 tag 或儲存草稿
 不會觸發桌面封裝；一般 commit 與尚未合併的 pull request 不會發布桌面資產。`Linux CI` 另保留 PR smoke，
 發布前須通過 Ubuntu 24.04 完整測試與 Ubuntu 22.04 相容性驗證。
 
 單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
 **Run workflow**，將 **Use workflow from** 選為 `master`，並填入
-Windows 填 `release_tag=v1.3.2`，macOS／Linux 填 `release_tag=v1.3.1`。建置使用所選分支，
+macOS／Windows 填 `release_tag=v1.3.2`，Linux 填 `release_tag=v1.3.1`；對應 Release 必須已發布。建置使用所選分支，
 平台版號仍須與 Release 相同；成功後自動補上或
 覆寫該平台的資產，其他平台不變。三個 workflow 都接受此欄位，留空則只保留 artifact。
 同平台、同 Release 的發布會依序執行。這些 workflow 修改須先合併到預設分支才可使用。
@@ -398,7 +408,7 @@ Windows 填 `release_tag=v1.3.2`，macOS／Linux 填 `release_tag=v1.3.1`。建�
 也可以個別使用 CLI（只執行需要補發的平台）：
 
 ```sh
-gh workflow run package-macos.yml --ref master -f release_tag=v1.3.1
+gh workflow run package-macos.yml --ref master -f release_tag=v1.3.2
 gh workflow run package-windows.yml --ref master -f release_tag=v1.3.2
 gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 ```
@@ -410,7 +420,7 @@ gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 | Workflow | 產物 | 限制 |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 發布到 Release 前以 Developer ID 簽章並 notarize；僅 artifact 的 run 未簽章 |
-| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章；EXE 只供測試，不能送 Store |
+| Package Windows | `chichi77-KeyKey-版本-windows-x64.zip`、`windows-x86.zip`、`windows-x64-setup.unsigned.exe`（同前綴） | 全部未簽章，不能送 Store；tag 建置的 EXE 可依 [unsigned 過渡流程](update/README.md#windows-stable-的-unsigned-過渡模式) 驗證後發布 stable 更新 |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 只在手動 Run workflow 時建置、簽署並上傳到 Google Play internal testing；PR 合併與直接 push 都不觸發，由 Play Console 推廣至正式版；一般使用者不需加入封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
@@ -573,6 +583,12 @@ Local outputs from these commands require the release workflow's checks before d
 
 ### macOS
 
+Prepare the checksum-pinned Sparkle SDK from the repository root with
+`python3 update/prepare.py fetch macos` before invoking Xcode. Windows builds
+similarly require `python update/prepare.py fetch windows`. See
+[desktop update setup](update/README.md); SDK preparation does not enable
+network update checks in an unconfigured application.
+
 #### Requirements and build
 
 Requirements:
@@ -692,7 +708,11 @@ to a local `C:\` path such as `C:\KeyKeyInstaller`, and run `Install.cmd`
 there. Do not install directly from a mapped drive, NAS, or UNC path; it may
 become inaccessible after UAC elevation and the installer window can close
 immediately. Once deployment starts, records are in
-`%ProgramFiles%\chichi77 KeyKey\Deployment.log`. It stages the runtime in
+`%ProgramFiles%\chichi77 KeyKey\Deployment.log` only during an active diagnostic
+session. Diagnostics default to off, including GitHub Actions builds. Enable the
+single checkbox in Settings to record for three days; it then stops automatically.
+TSF logs retain at most 20 MiB including the backup; deployment logs at most 1 MiB.
+It stages the runtime in
 `C:\Program Files\chichi77 KeyKey\1.3.2-<fingerprint>`, then registers
 both x64 and x86 TSF DLLs on x64 Windows (for all 32-bit applications), or the
 x86 DLL on 32-bit Windows, and creates an
@@ -816,17 +836,18 @@ Agents must not merge PRs. Source, build scripts, and CI are covered by the
 [Code signing policy](CODE_SIGNING_POLICY.md). The macOS, Windows, and Linux
 workflows start when a GitHub Release is published,
 and each independently uploads its verified packages. The tag must match the
-platform's source version and can be created on the Release page. Windows is now
-`v1.3.2`; macOS and Linux remain at `v1.3.1`. Uploading all three platforms to one
+platform's source version and can be created on the Release page. macOS and Windows sources are now
+`v1.3.2`; Linux remains at `v1.3.1`. Uploading all three platforms to one
 Release applies when their versions match; publishing `v1.3.2` cannot produce
-matching macOS/Linux packages from this branch.
+matching Linux packages from this branch. macOS packaging reads and checks the four
+product plists independently of the Linux version at the end of the README title.
 Pushing a tag or saving a draft alone does not trigger desktop packaging.
 Ordinary commits and unmerged pull requests do not publish desktop assets. Linux keeps PR smoke checks; publishing
 requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
 
 To recover one failed platform, merge the fix into `master`, select its workflow
 in Actions, choose **Run workflow**, set **Use workflow from** to `master`, and
-enter `v1.3.2` for Windows or `v1.3.1` for macOS/Linux in `release_tag`.
+enter `v1.3.2` for macOS/Windows or `v1.3.1` for Linux in `release_tag`; the corresponding Release must already be published.
 All three workflows accept this input. They build
 the selected revision and replace only that platform's assets; its source
 version must still match the Release. Leaving the input blank keeps artifacts
@@ -836,7 +857,7 @@ Merge these workflow changes into the default branch before using them.
 For example, run just the command for the platform needing recovery:
 
 ```sh
-gh workflow run package-macos.yml --ref master -f release_tag=v1.3.1
+gh workflow run package-macos.yml --ref master -f release_tag=v1.3.2
 gh workflow run package-windows.yml --ref master -f release_tag=v1.3.2
 gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.1
 ```
@@ -848,7 +869,7 @@ artifacts for seven days:
 | Workflow | Output | Limitation |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Signed with a Developer ID and notarized before Release upload; artifact-only runs remain unsigned |
-| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; the EXE is test-only and cannot be submitted to the Store |
+| Package Windows | `chichi77-KeyKey-VERSION-windows-x64.zip`, `windows-x86.zip`, `windows-x64-setup.unsigned.exe` (same prefix) | All unsigned; cannot be submitted to the Store. Tag-built EXEs may be validated for stable updates under the explicit [unsigned transition policy](update/README.md#windows-stable-的-unsigned-過渡模式) |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads only after a manual Run workflow; PR merges and direct pushes do not trigger it. Promote the build to production in Play Console; public installation does not require closed testing |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |

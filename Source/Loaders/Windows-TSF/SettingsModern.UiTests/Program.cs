@@ -8,6 +8,128 @@ using System.Text;
 
 internal static class Program
 {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct OSVersion
+    {
+        public uint Size, Major, Minor, Build, Platform;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string ServicePack;
+        public ushort ServicePackMajor, ServicePackMinor, Suite;
+        public byte ProductType, Reserved;
+    }
+    [DllImport("kernel32.dll")]
+    private static extern ulong VerSetConditionMask(ulong mask, uint type, byte condition);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool VerifyVersionInfoW(ref OSVersion version, uint type, ulong mask);
+
+    private static void VerifyUpdateWindowsCompatibility()
+    {
+        // Same check used by WinSparkle for a Windows 10+ appcast. The test host
+        // embeds the Settings manifest so missing supportedOS fails on Windows 11 too.
+        var version = new OSVersion { Size = (uint)Marshal.SizeOf<OSVersion>(), Major = 10, ServicePack = "" };
+        ulong mask = 0;
+        foreach (uint field in new uint[] { 2, 1, 4 }) mask = VerSetConditionMask(mask, field, 3);
+        Check(VerifyVersionInfoW(ref version, 7, mask), "Windows 10+ update rejected by the application manifest");
+    }
+
+    private static void VerifyUpdateShutdownProtection(MainWindow window)
+    {
+        var text = Control<TextBox>(window, "PhraseText");
+        var reading = Control<TextBox>(window, "PhraseReading");
+        var status = Control<TextBlock>(window, "Status");
+        var apply = Control<Button>(window, "ApplyButton");
+        var add = Control<Button>(window, "AddPhraseButton");
+        Check(App.Updater.CanShutdown, "Fresh window incorrectly blocks an update");
+        var reinstall = Control<Button>(window, "ReinstallCurrent");
+        Check(reinstall.IsEnabled && !Control<Button>(window, "CheckUpdate").IsEnabled,
+            "Manual reinstall should remain available without a signed update configuration");
+
+        text.Text = "更新";
+        reading.Text = "ㄍㄥ,ㄒㄧㄣ";
+        Check(!App.Updater.CanShutdown, "Phrase draft does not block update shutdown");
+        Check(!reinstall.IsEnabled, "Phrase draft does not disable manual reinstall");
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(status.Text == "設定已套用" && !App.Updater.CanShutdown &&
+              NativeBackend.LoadPhrases().All(p => p.Text != "更新"),
+              "Applying general settings discarded protection for an unsaved phrase");
+        reading.Text = "ㄍㄥ";
+        add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(status.Text.StartsWith("儲存失敗") && !App.Updater.CanShutdown,
+              "Failed phrase save removed update shutdown protection");
+        reading.Text = "ㄍㄥ,ㄒㄧㄣ";
+        add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(status.Text == "自訂詞已儲存" && App.Updater.CanShutdown,
+              "Successfully saved phrase still blocks an update");
+        Check(reinstall.IsEnabled, "Saved phrase did not enable manual reinstall");
+
+        var phrases = Control<DataGrid>(window, "UserPhrases");
+        phrases.SelectedItem = phrases.Items.OfType<PhraseRow>().Single(p => p.Text == "更新");
+        Check(App.Updater.CanShutdown, "Selecting a saved phrase incorrectly marks settings as edited");
+        var beep = Control<CheckBox>(window, "TypingBeep");
+        beep.IsChecked = !beep.IsChecked;
+        Check(!App.Updater.CanShutdown, "Unsaved general setting does not block an update");
+        Check(!reinstall.IsEnabled, "Unsaved settings do not disable manual reinstall");
+        reading.Text = "ㄍㄥˋ,ㄒㄧㄣ";
+        Control<Button>(window, "UpdatePhraseButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(status.Text == "自訂詞已儲存" && !App.Updater.CanShutdown,
+              "Saving a phrase incorrectly cleared unsaved general settings");
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(App.Updater.CanShutdown, "Applying settings after saving phrase still blocks an update");
+        Check(reinstall.IsEnabled, "Applying saved settings did not enable manual reinstall");
+
+        // A second phrase edit must be tracked against the successfully saved value.
+        phrases.SelectedItem = phrases.Items.OfType<PhraseRow>().Single(p => p.Text == "更新");
+        Check(App.Updater.CanShutdown, "Selecting the modified saved phrase blocks an update");
+        reading.Text = "ㄍㄥ,ㄒㄧㄣ";
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(!App.Updater.CanShutdown, "Apply cleared a modified existing phrase draft");
+        Control<Button>(window, "UpdatePhraseButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(status.Text == "自訂詞已儲存" && App.Updater.CanShutdown,
+              "Modified phrase did not clear its own protection after saving");
+
+        var collection = Control<DataGrid>(window, "Collections").Items.OfType<CollectionRow>().First();
+        collection.Enabled = !collection.Enabled;
+        Check(!App.Updater.CanShutdown, "Collection model changes do not block an update");
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(App.Updater.CanShutdown, "Saved collection settings still block an update");
+        Console.WriteLine("Updater Windows compatibility and settings/phrase shutdown protection passed");
+    }
+
+    private static void VerifyDiagnosticSwitch(MainWindow window)
+    {
+        var toggle = Control<CheckBox>(window, "DiagnosticLogging");
+        var apply = Control<Button>(window, "ApplyButton");
+        Check(toggle.IsChecked == false && !DiagnosticSettings.Read().Active,
+            "Diagnostic switch must default to off");
+        toggle.IsChecked = true;
+        Check(!App.Updater.CanShutdown && !DiagnosticSettings.Read().Active,
+            "Unsaved diagnostic toggle must be protected and must not start logging");
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        var session = DiagnosticSettings.Read();
+        Check(session.Active && session.ExpiresAtUtc - session.StartedAtUtc == 3 * 86400,
+            "Applying diagnostic switch did not persist the three-day deadline");
+        Control<CheckBox>(window, "TypingBeep").IsChecked = !Control<CheckBox>(window, "TypingBeep").IsChecked;
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(DiagnosticSettings.Read() == session, "Unrelated Apply extended the diagnostic deadline");
+        var reopened = new MainWindow();
+        Check(Control<CheckBox>(reopened, "DiagnosticLogging").IsChecked == true &&
+              Control<TextBlock>(reopened, "DiagnosticStatus").Text.Contains("自動關閉"),
+            "Diagnostic state did not survive reopening");
+        reopened.Close();
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        File.WriteAllText(DiagnosticSettings.Path,
+            $"<plist><dict><key>StartedAtUtc</key><string>{now - 3 * 86400}</string><key>ExpiresAtUtc</key><string>{now}</string></dict></plist>");
+        var expired = new MainWindow();
+        Check(Control<CheckBox>(expired, "DiagnosticLogging").IsChecked == false &&
+              Control<TextBlock>(expired, "DiagnosticStatus").Text.Contains("已到期"),
+            "Expired diagnostics reopened as enabled");
+        expired.Close();
+        toggle.IsChecked = false;
+        apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(!DiagnosticSettings.Read().Active, "Manual diagnostic disable was not saved");
+        Console.WriteLine("WPF diagnostic toggle, deadline preservation and expiry passed");
+    }
+
     [DllImport("KeyKeySettingsBackend.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
     private static extern IntPtr KeyKeyLookupReadings(string path, string phrase, out int status);
     [DllImport("KeyKeySettingsBackend.dll", CallingConvention = CallingConvention.Cdecl)]
@@ -28,19 +150,26 @@ internal static class Program
         finally { if (handle != IntPtr.Zero) KeyKeyFreeReadings(handle); }
     }
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
         var directory = Path.Combine(Path.GetTempPath(), "keykey-wpf-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         Environment.SetEnvironmentVariable("KEYKEY_TSF_TEST_PROFILE_DIR", directory);
         try
         {
+            VerifyUpdateWindowsCompatibility();
             // Construct real WPF controls and exercise their routed events without
             // opening a desktop window or touching the user's active settings.
             var app = new App();
             app.InitializeComponent();
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var window = new MainWindow();
+            if (args.Contains("--updater"))
+            {
+                VerifyUpdateShutdownProtection(window);
+                window.Close();
+                return 0;
+            }
             var status = Control<TextBlock>(window, "Status");
             Check(Control<RadioButton>(window, "DefaultChineseMode").IsChecked == true &&
                   Control<RadioButton>(window, "DefaultEnglishMode").IsChecked == false,
@@ -157,6 +286,8 @@ internal static class Program
             var chineseReopened = new MainWindow();
             Check(Control<RadioButton>(chineseReopened, "DefaultChineseMode").IsChecked == true,
                 "Chinese startup mode did not survive reopening");
+            VerifyUpdateShutdownProtection(chineseReopened);
+            VerifyDiagnosticSwitch(chineseReopened);
             chineseReopened.Close();
             Console.WriteLine("WPF settings controls, validation, native backend and Apply/reopen passed");
             return 0;

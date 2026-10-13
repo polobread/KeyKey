@@ -13,6 +13,7 @@ public:
     using Selection = std::function<void(const std::wstring&)>;
     SymbolPanel();
     ~SymbolPanel();
+    static bool releaseWindowClasses(); // Only when the module has no service objects.
     SymbolPanel(const SymbolPanel&) = delete;
     SymbolPanel& operator=(const SymbolPanel&) = delete;
     bool show(HWND owner, const RECT& anchor, Selection selection);
@@ -21,17 +22,23 @@ public:
 private:
     friend struct SymbolPanelTestAccess;
     static LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
+    static LRESULT CALLBACK ContentProc(HWND, UINT, WPARAM, LPARAM);
     LRESULT message(UINT, WPARAM, LPARAM);
     void rebuild();
-    void page(int delta);
+    void scrollTo(int offset);
+    void scrollWheel(int delta);
     void chooseCategory();
     void updateFonts();
     bool drawColorEmoji(HDC dc, const RECT& bounds, const std::wstring& text,
                         COLORREF background, COLORREF foreground);
     void position(const RECT& desired);
-    size_t pageSize() const;
+    void notifyVisibility(bool visible);
+    void traceState(const char* event) const;
     int scaled(int value) const;
     HWND window_ = nullptr;
+    HWND viewport_ = nullptr;
+    HWND content_ = nullptr;
+    HWND scrollbar_ = nullptr;
     HFONT font_ = nullptr;
     HFONT symbolFont_ = nullptr;
     HFONT emojiFont_ = nullptr;
@@ -43,12 +50,21 @@ private:
     Selection selection_;
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
     size_t category_ = 0;
-    size_t page_ = 0;
     UINT dpi_ = 96;
+    UINT hostDpi_ = 96;
+    int scalePercent_ = 0;
+    UINT fontDpi_ = 0;
     size_t columns_ = 10;
-    size_t capacity_ = 50;
+    size_t renderedCategory_ = static_cast<size_t>(-1);
+    int scrollOffset_ = 0;
+    int contentHeight_ = 0;
+    int viewportHeight_ = 0;
+    int rowStep_ = 40;
+    int wheelRemainder_ = 0;
+    unsigned emojiRasterizations_ = 0;
     unsigned long generation_ = 0;
     bool menuOpen_ = false;
+    bool shown_ = false;
     bool dragging_ = false;
     bool hasPosition_ = false;
     POINT position_{};

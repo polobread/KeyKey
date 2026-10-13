@@ -21,6 +21,7 @@ static NSString *PhraseToolbarItemIdentifier				= @"Phrase";
 static NSString *MiscToolbarItemIdentifier					= @"Misc";
 static NSString *GenericToolbarItemIdentifier				= @"Generic";
 static NSString *PluginToolbarItemIdentifier				= @"Plugins";
+static NSString *UpdateToolbarItemIdentifier                = @"更新";
 
 /*!
 	@class TakaoPreference

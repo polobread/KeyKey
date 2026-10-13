@@ -7,6 +7,7 @@
 #import "Minotaur.h"
 //#import "Version.h"
 #import "OpenVanillaController.h"
+#import "KeyKeyMacUpdater.h"
 
 #if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5)
 #import <zlib.h>
@@ -34,6 +35,7 @@ extern size_t VendorMotcleSize;
 	[_aboutController release];
 	[_inputMethodToggleWindowController release];
 	[_versionInfo release];
+	[_desktopUpdaterController release];
 	[super dealloc];
 }
 - (void)setLoader:(OpenVanillaLoader *)aLoader
@@ -51,6 +53,40 @@ extern size_t VendorMotcleSize;
     }
 	
 //	NSLog(@"finished retaining loader %@", _loader);
+}
+
+- (void)startDesktopUpdater
+{
+    if (_desktopUpdaterController) return;
+    _desktopUpdaterController = [[KeyKeyMacUpdater alloc] initWithHostBundle:[NSBundle mainBundle]
+        engine:nil compositionCheck:^BOOL { return [OpenVanillaController hasPendingComposition]; }];
+    [_desktopUpdaterController start];
+}
+
+- (NSDictionary *)desktopUpdateStatus
+{
+    return [_desktopUpdaterController snapshot];
+}
+
+- (void)performDesktopUpdateCheck
+{
+    [_desktopUpdaterController checkForUpdates];
+}
+
+- (oneway void)checkForDesktopUpdates
+{
+    [self performSelectorOnMainThread:@selector(performDesktopUpdateCheck) withObject:nil waitUntilDone:NO];
+}
+
+- (void)applyAutomaticDesktopUpdates:(NSNumber *)enabled
+{
+    [_desktopUpdaterController setAutomaticChecks:[enabled boolValue]];
+}
+
+- (oneway void)setAutomaticDesktopUpdates:(BOOL)enabled
+{
+    [self performSelectorOnMainThread:@selector(applyAutomaticDesktopUpdates:)
+        withObject:[NSNumber numberWithBool:enabled] waitUntilDone:NO];
 }
 - (OpenVanillaLoader*)loader
 {
@@ -566,7 +602,18 @@ extern size_t VendorMotcleSize;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+	[self startDesktopUpdater];
 	[[NSAppleEventManager sharedAppleEventManager] setEventHandler:self andSelector:@selector(handleIncomingURL:withReplyEvent:) forEventClass:kInternetEventClass andEventID:kAEGetURL];
+}
+
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
+{
+    return (!_desktopUpdaterController || [_desktopUpdaterController mayTerminateForUpdate]) ? NSTerminateNow : NSTerminateCancel;
+}
+
+- (void)applicationWillTerminate:(NSNotification *)notification
+{
+    [_desktopUpdaterController stop];
 }
 
 @end

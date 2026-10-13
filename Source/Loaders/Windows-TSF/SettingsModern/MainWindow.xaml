@@ -67,7 +67,7 @@
               </StackPanel>
               <TextBlock Text="大小" FontWeight="SemiBold" />
               <ComboBox x:Name="CandidateScale" />
-              <TextBlock Text="跟隨 Windows 時，會使用目前顯示器的縮放比例。" Opacity="0.7" Margin="0,0,0,12" />
+              <TextBlock Text="也套用到符號表與 Emoji；跟隨 Windows 時，使用目前顯示器的縮放比例。" TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,12" />
               <TextBlock Text="反白顏色" FontWeight="SemiBold" />
               <ComboBox x:Name="HighlightColor" />
             </StackPanel>
@@ -79,6 +79,14 @@
               <CheckBox x:Name="SimplifiedChineseOutput" Content="簡體中文輸出（四種輸入法）" Margin="0,0,0,12" />
               <TextBlock Text="切換時先以原設定送出目前組字，後續輸入使用新設定。" Opacity="0.7" Margin="0,0,0,12" />
               <TextBlock Text="單按 Shift 或 Ctrl+Space 切換中英文；Shift+Space 切換全半形。" Opacity="0.7" />
+            </StackPanel>
+          </GroupBox>
+          <GroupBox Header="問題診斷">
+            <StackPanel>
+              <CheckBox x:Name="DiagnosticLogging" Content="啟用診斷記錄" Margin="0,0,0,10"
+                        Checked="DiagnosticLogging_Changed" Unchecked="DiagnosticLogging_Changed" />
+              <TextBlock Text="預設關閉。開啟並套用後記錄 3 天，到期自動停止；輸入記錄最多保留 20 MB。記錄包含按鍵代碼與視窗狀態，供追查輸入問題。" Opacity="0.7" />
+              <TextBlock x:Name="DiagnosticStatus" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite" />
             </StackPanel>
           </GroupBox>
         </StackPanel></ScrollViewer>
@@ -181,8 +189,8 @@
           </Grid>
           <WrapPanel Grid.Row="3" Margin="0,0,0,10">
             <Button x:Name="LookupReadingsButton" Content="取得讀音" Click="LookupReadings_Click" />
-            <Button Content="新增" Click="AddPhrase_Click" />
-            <Button Content="修改選取詞" Click="UpdatePhrase_Click" />
+            <Button x:Name="AddPhraseButton" Content="新增" Click="AddPhrase_Click" />
+            <Button x:Name="UpdatePhraseButton" Content="修改選取詞" Click="UpdatePhrase_Click" />
             <Button Content="刪除選取詞" Click="DeletePhrase_Click" />
           </WrapPanel>
           <StackPanel Grid.Row="4" Margin="0,0,0,10">
@@ -196,6 +204,23 @@
             <TextBlock Text="匯入會合併自訂詞並載入好打注音學習紀錄。" VerticalAlignment="Center" Opacity="0.7" />
           </WrapPanel>
         </Grid>
+      </TabItem>
+      <TabItem Header="更新">
+        <StackPanel Margin="24">
+          <TextBlock Text="琦琦輸入法更新" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16" />
+          <TextBlock x:Name="UpdateStatus" Margin="0,0,0,20" />
+          <CheckBox x:Name="AutomaticUpdates" Content="設定視窗開啟時自動檢查更新（每天一次）"
+                    IsEnabled="False" Checked="AutomaticUpdates_Changed" Unchecked="AutomaticUpdates_Changed" Margin="0,0,0,20" />
+          <WrapPanel>
+            <Button x:Name="CheckUpdate" Content="立即檢查更新" Click="CheckUpdate_Click" IsEnabled="False" />
+            <Button x:Name="ReinstallCurrent" Content="重新安裝目前版本…" Click="ReinstallCurrent_Click"
+                    ToolTip="開啟目前版本的官方下載頁，下載後手動重新安裝。" />
+          </WrapPanel>
+          <TextBlock Text="重新安裝會開啟目前版本的官方下載頁，由您下載對應架構的套件並手動安裝。請先套用設定並儲存自訂詞。"
+                     Margin="0,12,0,0" Opacity="0.7" />
+          <TextBlock Text="下載與安裝仍需確認。請先套用設定；若有未儲存的編輯，更新程式不會關閉此視窗啟動安裝。更新會保留個人設定、自訂詞與學習紀錄。安裝後請登出再登入。"
+                     Margin="0,20,0,0" Opacity="0.7" />
+        </StackPanel>
       </TabItem>
     </TabControl>
   </DockPanel>

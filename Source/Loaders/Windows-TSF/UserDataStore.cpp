@@ -41,6 +41,9 @@ struct Connection {
         }
         sqlite3_busy_timeout(db, 3000);
         const char* schema =
+            // sqlite3_open16 defaults a new DB to UTF-16. The engine attaches
+            // this file to the shared UTF-8 model, so initialize UTF-8 first.
+            "PRAGMA encoding='UTF-8';"
             "CREATE TABLE IF NOT EXISTS user_unigrams "
             "(qstring, current, probability, backoff);"
             "CREATE INDEX IF NOT EXISTS user_unigrams_index "
@@ -52,7 +55,10 @@ struct Connection {
             "CREATE TABLE IF NOT EXISTS user_candidate_override_cache "
             "(qstring, current);"
             "CREATE INDEX IF NOT EXISTS user_candidate_override_cache_index "
-            "ON user_candidate_override_cache(qstring);";
+            "ON user_candidate_override_cache(qstring);"
+            "CREATE TABLE IF NOT EXISTS keykey_learning_metadata "
+            "(id INTEGER PRIMARY KEY CHECK(id=1), generation INTEGER NOT NULL);"
+            "INSERT OR IGNORE INTO keykey_learning_metadata VALUES(1,0);";
         if (sqlite3_exec(db, schema, nullptr, nullptr, nullptr) != SQLITE_OK) {
             sqlite3_close(db);
             db = nullptr;
@@ -258,7 +264,8 @@ bool ResetUserLearning() {
         return false;
     const bool cleared =
         sqlite3_exec(connection.db, "DELETE FROM user_bigram_cache;"
-                    "DELETE FROM user_candidate_override_cache;",
+                    "DELETE FROM user_candidate_override_cache;"
+                    "UPDATE keykey_learning_metadata SET generation=generation+1 WHERE id=1;",
                     nullptr, nullptr, nullptr) == SQLITE_OK;
     if (!cleared || sqlite3_exec(connection.db, "COMMIT", nullptr, nullptr, nullptr) != SQLITE_OK) {
         sqlite3_exec(connection.db, "ROLLBACK", nullptr, nullptr, nullptr);
@@ -301,6 +308,7 @@ bool ImportUserData(const std::wstring& databasePath) {
         "INSERT INTO main.user_candidate_override_cache (qstring, current) "
         "SELECT qstring, current FROM imported.user_candidate_override_cache "
         "ORDER BY rowid;"
+        "UPDATE main.keykey_learning_metadata SET generation=generation+1 WHERE id=1;"
         "COMMIT;";
     const bool copied = sqlite3_exec(connection.db, copySql, nullptr, nullptr, nullptr) == SQLITE_OK;
     if (!copied) sqlite3_exec(connection.db, "ROLLBACK", nullptr, nullptr, nullptr);

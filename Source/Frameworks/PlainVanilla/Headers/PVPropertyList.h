@@ -103,8 +103,15 @@ namespace OpenVanilla {
             string directory = OVPathHelper::DirectoryFromPath(m_filename);
             OVDirectoryHelper::MakeDirectoryWithImmediates(directory);
             
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+            if (!WriteMergedPlist(m_filename,m_rootDictionary,m_mirroredRootDictionary)) return;
+            // Adopt merged disk values on the next load, without invalidating a
+            // caller's current rootDictionary pointer during this save.
+            m_timestamp = OVFileTimestamp();
+#else
             WritePlist(m_filename, m_rootDictionary);
             m_timestamp = OVPathHelper::TimestampForPath(m_filename);
+#endif
             
             if (m_mirroredRootDictionary)
                 delete m_mirroredRootDictionary;
@@ -138,6 +145,9 @@ namespace OpenVanilla {
     protected:
         static PVPlistValue* ParsePlist(const string& filename);
         static void WritePlist(const string& filename, PVPlistValue* rootDictionary);
+#ifdef KEYKEY_WINDOWS_SHARED_DATA
+        static bool WriteMergedPlist(const string& filename,PVPlistValue* root,PVPlistValue* baseline);
+#endif
       
         OVFileTimestamp m_timestamp;
         string m_filename;

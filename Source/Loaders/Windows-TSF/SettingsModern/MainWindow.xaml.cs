@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using Microsoft.Win32;
 
 namespace KeyKeySettings;
@@ -11,6 +12,13 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<CollectionRow> collections = new();
     private readonly List<ComboBox> readingChoices = new();
     private bool updatingReadings;
+    private bool trackingUpdateChanges;
+    private bool unsavedSettings;
+    private bool diagnosticsEdited;
+    private DiagnosticSession diagnosticSession;
+    private readonly System.Windows.Threading.DispatcherTimer diagnosticTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private string savedPhraseText = "";
+    private string savedPhraseReading = "";
     private static readonly string[] Scales =
         ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
@@ -25,6 +33,17 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Loaded += (_, _) =>
+        {
+            App.Updater.Initialize();
+            RefreshUpdateState();
+            AutomaticUpdates.IsChecked = App.Updater.Automatic;
+        };
+        App.Updater.StateChanged += RefreshUpdateState;
+        AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(UpdateSettingsChanged));
+        AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
+        AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
+        AddHandler(Selector.SelectionChangedEvent, new SelectionChangedEventHandler(UpdateSettingsChanged));
         CandidateScale.ItemsSource = new[] { "跟隨 Windows（預設）" }
             .Concat(Scales.Skip(1).Select(s => s + "%")).ToArray();
         HighlightColor.ItemsSource = new[] { "紫色", "綠色", "黃色", "紅色" };
@@ -41,11 +60,35 @@ public partial class MainWindow : Window
         {
             Status.Text = $"讀取設定失敗：{ex.Message}";
         }
+        CapturePhraseEditor();
+        trackingUpdateChanges = true;
+        diagnosticTimer.Tick += (_, _) =>
+        {
+            if (diagnosticsEdited) return;
+            var active = diagnosticSession.Active;
+            if (DiagnosticLogging.IsChecked != active)
+            {
+                trackingUpdateChanges = false;
+                DiagnosticLogging.IsChecked = active;
+                trackingUpdateChanges = true;
+            }
+            UpdateDiagnosticStatus();
+        };
+        diagnosticTimer.Start();
+        Closed += (_, _) =>
+        {
+            diagnosticTimer.Stop();
+            App.Updater.StateChanged -= RefreshUpdateState;
+        };
+        UpdateShutdownProtection();
     }
 
     private void LoadSettings()
     {
         var loader = SettingsStore.LoaderPath;
+        diagnosticSession = DiagnosticSettings.Read();
+        DiagnosticLogging.IsChecked = diagnosticSession.Active;
+        UpdateDiagnosticStatus();
         VerticalCandidate.IsChecked = SettingsStore.Read(loader,
             "OneDimensionalCandidatePanelStyle", "vertical") != "horizontal";
         HorizontalCandidate.IsChecked = !VerticalCandidate.IsChecked;
@@ -95,6 +138,57 @@ public partial class MainWindow : Window
             SettingsStore.ReadSmartEscClearPreference(SettingsStore.SmartPath);
     }
 
+    private void CheckUpdate_Click(object sender, RoutedEventArgs e) => App.Updater.Check();
+    private async void ReinstallCurrent_Click(object sender, RoutedEventArgs e) => await App.Updater.ReinstallAsync();
+    private void RefreshUpdateState()
+    {
+        UpdateStatus.Text = App.Updater.Status;
+        CheckUpdate.IsEnabled = App.Updater.Available && !App.Updater.Busy;
+        ReinstallCurrent.IsEnabled = App.Updater.CanReinstall;
+        AutomaticUpdates.IsEnabled = App.Updater.Available;
+    }
+    private void DiagnosticLogging_Changed(object sender, RoutedEventArgs e)
+    {
+        if (trackingUpdateChanges) diagnosticsEdited = true;
+        UpdateDiagnosticStatus();
+    }
+
+    private void UpdateDiagnosticStatus()
+    {
+        if (DiagnosticStatus == null) return;
+        DiagnosticStatus.Text = DiagnosticLogging.IsChecked == true
+            ? diagnosticsEdited ? "套用後開始記錄，3 天後自動關閉。"
+                : $"記錄中，將於 {DateTimeOffset.FromUnixTimeSeconds(diagnosticSession.ExpiresAtUtc).ToLocalTime():yyyy/MM/dd HH:mm} 自動關閉。"
+            : diagnosticSession.StartedAtUtc > 0 && !diagnosticSession.Active && !diagnosticsEdited
+                ? "診斷記錄已到期，自動關閉。" : diagnosticsEdited ? "套用後停止記錄。" : "診斷記錄已關閉。";
+    }
+    private void UpdateSettingsChanged(object sender, RoutedEventArgs e)
+    {
+        if (!trackingUpdateChanges) return;
+        // Phrase text/readings are saved by their own buttons. Selection, reading
+        // lookup and tab navigation must not mark the general settings as edited.
+        var source = e.OriginalSource;
+        if (source == CandidateSelectionKeys || source == ComposingTextBufferSize ||
+            source == CandidateScale || source == HighlightColor ||
+            source == PhoneticLayout || source == CangjiePunctuation ||
+            source is ToggleButton toggle && (toggle is CheckBox or RadioButton) && toggle != AutomaticUpdates &&
+                toggle.DataContext is not CollectionRow)
+            unsavedSettings = true;
+        UpdateShutdownProtection();
+    }
+
+    private void CapturePhraseEditor()
+    {
+        savedPhraseText = PhraseText.Text;
+        savedPhraseReading = PhraseReading.Text;
+        UpdateShutdownProtection();
+    }
+
+    private void UpdateShutdownProtection() => App.Updater.SetUnsavedChanges(
+        unsavedSettings || PhraseText.Text != savedPhraseText || PhraseReading.Text != savedPhraseReading);
+    private void AutomaticUpdates_Changed(object sender, RoutedEventArgs e) =>
+        App.Updater.SetAutomatic(AutomaticUpdates.IsChecked == true);
+
     private void LoadCollections()
     {
         collections.Clear();
@@ -105,6 +199,12 @@ public partial class MainWindow : Window
         foreach (var row in NativeBackend.LoadCollections())
         {
             row.Enabled = enabled.Contains(row.Source);
+            row.PropertyChanged += (_, _) =>
+            {
+                if (!trackingUpdateChanges) return;
+                unsavedSettings = true;
+                UpdateShutdownProtection();
+            };
             collections.Add(row);
         }
         Collections.ItemsSource = collections;
@@ -192,12 +292,21 @@ public partial class MainWindow : Window
             SettingsStore.Write(SettingsStore.AssociatedPath, new Dictionary<string, string> {
                 ["EnabledCollections"] = string.Join(',', collections.Where(c => c.Enabled).Select(c => c.Source)),
             });
+            // Other settings changes must not extend an existing deadline.
+            if (diagnosticsEdited)
+            {
+                diagnosticSession = DiagnosticSettings.Save(DiagnosticLogging.IsChecked == true);
+                diagnosticsEdited = false;
+                UpdateDiagnosticStatus();
+            }
             SendMessageTimeout(new IntPtr(0xffff), 0x001A, IntPtr.Zero,
                 "chichi77 KeyKey", 0x0002, 250, out _);
             var outputSynced = NativeBackend.KeyKeyPublishSimplifiedOutput(SimplifiedChineseOutput.IsChecked == true ? 1 : 0) != 0;
             var startupSynced = NativeBackend.KeyKeyPublishDefaultChineseMode(DefaultEnglishMode.IsChecked == true ? 0 : 1) != 0;
             Status.Text = outputSynced && startupSynced
                 ? "設定已套用" : "設定已儲存；跨程式狀態同步失敗，請重新開啟輸入法。";
+            unsavedSettings = false;
+            UpdateShutdownProtection();
         }
         catch (Exception ex) { Status.Text = $"設定儲存失敗：{ex.Message}"; }
     }
@@ -239,6 +348,7 @@ public partial class MainWindow : Window
         {
             PhraseText.Text = row.Text;
             PhraseReading.Text = row.Reading;
+            CapturePhraseEditor();
         }
     }
 
@@ -317,7 +427,11 @@ public partial class MainWindow : Window
         {
             var ok = NativeBackend.KeyKeySavePhrase(rowid,
                 PhraseText.Text.Trim(), PhraseReading.Text.Trim()) != 0;
-            if (ok) RefreshPhrases();
+            if (ok)
+            {
+                RefreshPhrases();
+                CapturePhraseEditor();
+            }
             Status.Text = ok ? "自訂詞已儲存" : "儲存失敗：請檢查詞語、讀音數量與重複項目";
         }
         catch (Exception ex) { Status.Text = $"儲存失敗：{ex.Message}"; }

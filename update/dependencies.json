@@ -1,0 +1,12 @@
+{
+  "macos": {
+    "version": "2.10.0",
+    "url": "https://github.com/sparkle-project/Sparkle/releases/download/2.10.0/Sparkle-2.10.0.tar.xz",
+    "sha256": "c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c"
+  },
+  "windows": {
+    "version": "0.9.4",
+    "url": "https://github.com/vslavik/winsparkle/releases/download/v0.9.4/WinSparkle-0.9.4.zip",
+    "sha256": "6037df37fc263bd1650a1c4949681a9d40ffe991d01f35892a406cb5d103c976"
+  }
+}

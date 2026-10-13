@@ -1,0 +1,71 @@
+name: Desktop Release Tools
+
+on:
+  pull_request:
+    paths:
+      - 'update/**'
+      - '.github/scripts/*release*'
+      - '.github/scripts/*sync*'
+      - '.github/workflows/desktop-release-tools.yml'
+      - '.github/workflows/package-macos.yml'
+      - '.github/workflows/package-windows.yml'
+      - 'Source/Loaders/OSX-IMK/KeyKeyMacUpdater.*'
+      - 'Source/Loaders/OSX-IMK/Tests/MacUpdaterTests.m'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/DesktopUpdater.cs'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/WinSparkleBackend.cs'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/KeyKeySettings.csproj'
+      - 'Source/Loaders/Windows-TSF/DesktopUpdater.Tests/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tools:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test release validation, signed metadata and channel isolation
+        env:
+          KEYKEY_TEST_OPENSSL: openssl
+        run: |
+          python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+          python3 -m unittest discover -s update -p 'test_*.py' -v
+          python3 .github/scripts/sync-update-feeds.py --check-only
+
+  macos-updater:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python3 update/prepare.py fetch macos
+      - name: Test updater and native Sparkle beta version ordering without installation
+        run: bash update/test-macos.sh
+
+  windows-updater:
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test x64 managed updater and native WinSparkle beta comparisons
+        shell: pwsh
+        run: |
+          python update/prepare.py fetch windows
+          if ($LASTEXITCODE -ne 0) { throw 'Updater SDK preparation failed.' }
+          $openssl = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
+          dotnet run --project Source/Loaders/Windows-TSF/DesktopUpdater.Tests/DesktopUpdater.Tests.csproj `
+            --configuration Release -r win-x64 --self-contained -- --native --openssl $openssl
+          if ($LASTEXITCODE -ne 0) { throw 'Updater beta regressions failed.' }
+      - name: Build Settings with the isolated beta configuration resource
+        shell: pwsh
+        run: |
+          $config = Join-Path $env:RUNNER_TEMP 'keykey-beta-build-config.json'
+          python update/prepare.py select-release --tag v1.3.2-beta1 --version 1.3.2 --out $config
+          if ($LASTEXITCODE -ne 0) { throw 'Beta configuration selection failed.' }
+          $env:KEYKEY_UPDATE_CONFIG = $config
+          dotnet build Source/Loaders/Windows-TSF/SettingsModern/KeyKeySettings.csproj --configuration Release -r win-x64
+          if ($LASTEXITCODE -ne 0) { throw 'Settings beta resource build failed.' }

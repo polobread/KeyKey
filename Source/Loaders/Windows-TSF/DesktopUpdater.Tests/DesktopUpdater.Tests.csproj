@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>../SettingsModern/app.manifest</ApplicationManifest>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../SettingsModern/DesktopUpdater.cs" Link="DesktopUpdater.cs" />
+    <Compile Include="../SettingsModern/WinSparkleBackend.cs" Link="WinSparkleBackend.cs" />
+    <EmbeddedResource Include="../../../../update/config.json" LogicalName="KeyKey.UpdateConfig" />
+    <Content Include="../../../../update/stable/windows-x64.xml" Link="windows-x64.xml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../../../update/stable/windows-x86.xml" Link="windows-x86.xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <PropertyGroup>
+    <WinSparkleArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x86'">Win32</WinSparkleArchitecture>
+    <WinSparkleArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x64'">x64</WinSparkleArchitecture>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(WinSparkleArchitecture)' != ''">
+    <Content Include="../../../../update/.cache/windows-0.9.4/WinSparkle-0.9.4/$(WinSparkleArchitecture)/Release/WinSparkle.dll"
+             Link="WinSparkle.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

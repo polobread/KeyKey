@@ -1,6 +1,8 @@
 #include "FrontendSettings.h"
 
 #include <ShlObj.h>
+#include <ShellScalingApi.h>
+#include <algorithm>
 
 #include <cstdlib>
 #include <fstream>
@@ -9,16 +11,15 @@
 #include <sstream>
 #include <memory>
 #include <chrono>
+#include <charconv>
 #include "PVPropertyList.h"
+#include "SharedFileAccess.h"
 
 namespace KeyKey::WindowsTsf {
 namespace {
 
 std::string ReadFile(const std::wstring& path) {
-    std::ifstream input(path, std::ios::binary);
-    if (!input) return {};
-    return std::string(std::istreambuf_iterator<char>(input),
-                       std::istreambuf_iterator<char>());
+    std::string result; ReadSharedSettingsFile(path,result); return result;
 }
 
 std::string PlistString(const std::string& xml, const std::string& key,
@@ -128,7 +129,12 @@ void MigrateLegacyPreferences() {
         const std::wstring legacy = directory +
             L"\\org.openvanilla.chichi77-keykey.windows" + suffix + L".plist";
         // Keep the old file for text hosts still using the previous DLL.
-        CopyFileW(legacy.c_str(), current.c_str(), TRUE);
+        SettingsFileLock guard(current);
+        if (!guard || GetFileAttributesW(current.c_str())!=INVALID_FILE_ATTRIBUTES) continue;
+        std::string source;
+        if (!ReadSharedSettingsFile(legacy,source)) continue;
+        std::unique_ptr<OpenVanilla::PVPlistValue> parsed(OpenVanilla::PVPropertyList::ParsePlistFromString(source.c_str()));
+        if (parsed && parsed->type()==OpenVanilla::PVPlistValue::Dictionary) WriteSharedSettingsFile(current,source);
     }
 }
 
@@ -189,6 +195,45 @@ FrontendSettings LoadFrontendSettings() {
     return settings;
 }
 
+UINT ContentDpiForScale(UINT hostDpi, HMONITOR monitor, int scalePercent) {
+    if (scalePercent <= 0) return hostDpi;
+    DEVICE_SCALE_FACTOR monitorScale = SCALE_100_PERCENT;
+    if (FAILED(GetScaleFactorForMonitor(monitor, &monitorScale)) || monitorScale <= 0)
+        monitorScale = SCALE_100_PERCENT;
+    return static_cast<UINT>(std::max(1, MulDiv(static_cast<int>(hostDpi), scalePercent,
+        static_cast<int>(monitorScale))));
+}
+
+bool DiagnosticSession::activeAt(std::int64_t now) const {
+    constexpr std::int64_t duration = 3 * 24 * 60 * 60;
+    return startedAt > 0 && expiresAt > startedAt &&
+           expiresAt - startedAt == duration && now >= startedAt && now < expiresAt;
+}
+
+std::wstring DiagnosticSettingsPath() {
+    const auto directory = SettingsDirectory();
+    return directory.empty() ? std::wstring() : directory + L"\\diagnostics.plist";
+}
+
+DiagnosticSession LoadDiagnosticSession() {
+    // Separate from loader preferences so module config saves cannot renew or
+    // overwrite the diagnostic deadline. Missing/invalid settings stay off.
+    const auto path = DiagnosticSettingsPath();
+    std::error_code error;
+    if (path.empty() || std::filesystem::file_size(path, error) > 16384 || error) return {};
+    const auto xml = ReadFile(path);
+    std::unique_ptr<OpenVanilla::PVPlistValue> dictionary(
+        OpenVanilla::PVPropertyList::ParsePlistFromString(xml.c_str()));
+    if (!dictionary || dictionary->type() != OpenVanilla::PVPlistValue::Dictionary) return {};
+    const auto number = [&](const char* key) {
+        const auto text = dictionary->stringValueForKey(key);
+        std::int64_t value = 0;
+        const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+        return parsed.ec == std::errc() && parsed.ptr == text.data() + text.size() ? value : 0;
+    };
+    return {number("StartedAtUtc"), number("ExpiresAtUtc")};
+}
+
 std::string SmartMandarinSettingsSignature() {
     const auto xml = ReadFile(SmartMandarinPreferencesPath());
     std::string signature;
@@ -204,11 +249,10 @@ std::string SmartMandarinSettingsSignature() {
 bool SaveSimplifiedOutputPreference(bool enabled) {
     const auto path = LoaderPreferencesPath();
     if (path.empty()) return false;
+    SettingsFileLock guard(path);
+    if (!guard) return false;
     std::error_code error;
     const bool existing = std::filesystem::exists(path, error);
-    if (error) return false;
-    const auto previous = existing ? std::filesystem::last_write_time(path, error)
-        : std::filesystem::file_time_type::min();
     if (error) return false;
     const auto source = ReadFile(path);
     if (existing && source.empty()) return false;
@@ -220,18 +264,7 @@ bool SaveSimplifiedOutputPreference(bool enabled) {
     std::ostringstream serialized;
     serialized << "<plist version=\"1.0\">" << *dictionary << "</plist>";
     const auto xml = serialized.str();
-    const auto temporary = path + L".tmp." + std::to_wstring(GetCurrentProcessId());
-    { std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
-      if (!stream || !(stream << xml)) return false; }
-    if (!MoveFileExW(temporary.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-        DeleteFileW(temporary.c_str());
-        return false;
-    }
-    // PlainVanilla compares whole-second timestamps; quick toggles must advance.
-    const auto now = std::filesystem::file_time_type::clock::now();
-    std::filesystem::last_write_time(path, now > previous + std::chrono::seconds(1)
-        ? now : previous + std::chrono::seconds(1), error);
-    return !error;
+    return WriteSharedSettingsFile(path,xml);
 }
 
 bool IsInputMethodVisible(const char* identifier) {

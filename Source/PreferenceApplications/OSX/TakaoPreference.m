@@ -146,7 +146,9 @@ file for terms.
 	else if ([[sender itemIdentifier] isEqualToString:GenericToolbarItemIdentifier])
 		view = _genericSettingView;	
 	else if ([[sender itemIdentifier] isEqualToString:PluginToolbarItemIdentifier])
-		view = _pluginView;	
+		view = _pluginView;
+	else if ([[sender itemIdentifier] isEqualToString:UpdateToolbarItemIdentifier])
+		view = _updateView;
 	
 	if (view != _generalView) {
 		[[NSColorPanel sharedColorPanel] orderOut:self];

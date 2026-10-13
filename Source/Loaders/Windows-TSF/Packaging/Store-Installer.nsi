@@ -66,6 +66,6 @@ Section "Install"
     SetErrorLevel 3010
   ${ElseIf} $0 != 0
     SetErrorLevel $0
-    Abort "Installation failed (error $0). See $PROGRAMFILES64\chichi77 KeyKey\Deployment.log for details; rerun to retry recovery."
+    Abort "Installation failed (error $0). Retain the package and error code; rerun to retry recovery."
   ${EndIf}
 SectionEnd

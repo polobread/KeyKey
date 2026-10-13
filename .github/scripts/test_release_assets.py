@@ -56,6 +56,33 @@ class ReleaseAssetsTests(unittest.TestCase):
                 self.assertEqual(len(paths), count)
                 self.assertNotIn("unrelated-release-asset.zip", [p.name for p in paths])
 
+    def test_numbered_beta_tags_require_matching_prerelease(self):
+        for tag in ("v1.3.2-beta1", "v1.3.2-beta2"):
+            self.assertEqual(release.release_tag("release", tag, "", "1.3.2"), tag)
+            self.assertEqual(release.release_tag("workflow_dispatch", "", tag, "1.3.2"), tag)
+            with patch.object(release, "output", return_value=json.dumps(
+                    dict(tagName=tag, isDraft=False, isPrerelease=True, url="https://example.invalid/beta"))):
+                self.assertEqual(release.verify_release(tag, "owner/repo"), "https://example.invalid/beta")
+        for tag, prerelease in (("v1.3.2-beta1", False), ("v1.3.2", True)):
+            with patch.object(release, "output", return_value=json.dumps(
+                    dict(tagName=tag, isDraft=False, isPrerelease=prerelease, url="https://example.invalid/release"))):
+                with self.assertRaisesRegex(ValueError, "Pre-release"):
+                    release.verify_release(tag, "owner/repo")
+
+    def test_beta_resolution_records_channel_and_refuses_recovery(self):
+        env = dict(GITHUB_EVENT_NAME="workflow_dispatch", REQUESTED_RELEASE_TAG="v1.3.2-beta2",
+                   GITHUB_REPOSITORY="owner/repo", GITHUB_OUTPUT=str(self.root / "outputs"))
+        with patch.dict(os.environ, env), patch.object(release, "output", return_value="a" * 40), \
+             patch.object(release, "verify_release"), patch.object(release, "tag_commit", return_value="a" * 40):
+            release.resolve("1.3.2")
+        result = (self.root / "outputs").read_text()
+        self.assertIn("release_version=1.3.2-beta2", result)
+        self.assertIn("update_channel=beta", result)
+        with patch.dict(os.environ, env), patch.object(release, "output", return_value="b" * 40), \
+             patch.object(release, "verify_release"), patch.object(release, "tag_commit", return_value="a" * 40):
+            with self.assertRaisesRegex(ValueError, "beta tag commit"):
+                release.resolve("1.3.2")
+
     def test_corrupted_missing_and_duplicate_checksum_assets_fail(self):
         names = self.packages("macos")
         package = self.root / names[0]
