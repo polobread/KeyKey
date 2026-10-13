@@ -83,14 +83,30 @@ void PlistChecks(const std::filesystem::path& profile) {
 }
 DWORD Launch(const std::wstring& executable,std::wstring command,std::function<void()> concurrent={}) {
     STARTUPINFOW startup{sizeof(startup)}; PROCESS_INFORMATION process{};
-    Check(CreateProcessW(executable.c_str(),command.data(),nullptr,nullptr,FALSE,CREATE_NO_WINDOW,nullptr,nullptr,&startup,&process),"Create isolated child");
+    const auto log=std::filesystem::temp_directory_path()/(L"keykey-child-"+std::to_wstring(GetCurrentProcessId())+L".log");
+    SECURITY_ATTRIBUTES security{sizeof(security),nullptr,TRUE};
+    const auto output=CreateFileW(log.c_str(),GENERIC_WRITE,FILE_SHARE_READ,&security,CREATE_ALWAYS,FILE_ATTRIBUTE_TEMPORARY,nullptr);
+    Check(output!=INVALID_HANDLE_VALUE,"Create child output log");
+    struct OutputCleanup {
+        HANDLE handle; std::filesystem::path path;
+        ~OutputCleanup() { CloseHandle(handle); std::error_code error; std::filesystem::remove(path,error); }
+    } outputCleanup{output,log};
+    startup.dwFlags=STARTF_USESTDHANDLES;
+    startup.hStdOutput=output; startup.hStdError=output;
+    startup.hStdInput=GetStdHandle(STD_INPUT_HANDLE);
+    Check(CreateProcessW(executable.c_str(),command.data(),nullptr,nullptr,TRUE,CREATE_NO_WINDOW,nullptr,nullptr,&startup,&process),"Create isolated child");
     CloseHandle(process.hThread);
     if (concurrent) concurrent();
     const DWORD wait=WaitForSingleObject(process.hProcess,30000);
     DWORD result=1;
     if (wait==WAIT_OBJECT_0) GetExitCodeProcess(process.hProcess,&result);
     else TerminateProcess(process.hProcess,1);
-    CloseHandle(process.hProcess); Check(wait==WAIT_OBJECT_0,"Child timed out"); return result;
+    CloseHandle(process.hProcess);
+    if (result!=0 || wait!=WAIT_OBJECT_0) {
+        std::cerr<<"Child exit code: "<<result<<"\n";
+        std::ifstream captured(log); std::cerr<<captured.rdbuf();
+    }
+    Check(wait==WAIT_OBJECT_0,"Child timed out"); return result;
 }
 void ProcessChecks(const std::filesystem::path& profile,const std::wstring& executable,const std::wstring& prefix=L"") {
     const auto path=(profile/L"settings.plist").wstring();

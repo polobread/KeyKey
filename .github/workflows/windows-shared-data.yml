@@ -1,0 +1,60 @@
+name: Windows Shared Data
+
+on:
+  pull_request:
+    paths:
+      - 'Source/Loaders/Windows-TSF/SharedDataProtectionTest.cpp'
+      - 'Source/Loaders/Windows-TSF/SharedFileAccess.h'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/SharedSettingsFile.cs'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/SettingsStore.cs'
+      - 'Source/Loaders/Windows-TSF/SettingsModern.Tests/**'
+      - '.github/workflows/windows-shared-data.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shared-data:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: Source/Loaders/Windows-TSF
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build shared data test targets
+        run: |
+          python ../../../update/prepare.py fetch windows
+          if ($LASTEXITCODE -ne 0) { throw 'Updater SDK preparation failed.' }
+          cmake --preset windows-x64-vs2026
+          if ($LASTEXITCODE -ne 0) { throw 'x64 configure failed.' }
+          cmake --build --preset windows-x64-vs2026-release --target KeyKeySharedDataProtectionTest
+          if ($LASTEXITCODE -ne 0) { throw 'x64 test build failed.' }
+          cmake --preset windows-x86
+          if ($LASTEXITCODE -ne 0) { throw 'x86 configure failed.' }
+          cmake --build --preset windows-x86-release --target KeyKeySharedDataProtectionTest
+          if ($LASTEXITCODE -ne 0) { throw 'x86 test build failed.' }
+          dotnet run --project SettingsModern.Tests/SettingsModern.Tests.csproj --configuration Release
+          if ($LASTEXITCODE -ne 0) { throw 'Managed settings tests failed.' }
+      - name: Test native and managed shared data pairings
+        run: |
+          $x64 = (Resolve-Path './out/build/x64-vs2026/Release/KeyKeySharedDataProtectionTest.exe').Path
+          $x86 = (Resolve-Path './out/build/x86/Release/KeyKeySharedDataProtectionTest.exe').Path
+          & $x64 $x86
+          if ($LASTEXITCODE -ne 0) { throw 'x64 to x86 shared data test failed.' }
+          & $x86 $x64
+          if ($LASTEXITCODE -ne 0) { throw 'x86 to x64 shared data test failed.' }
+          $managed = (Resolve-Path './SettingsModern.Tests/bin/Release/net10.0/SettingsModern.Tests.dll').Path
+          $dotnet = (Get-Command dotnet).Source
+          foreach ($native in @($x64, $x86)) {
+            & $native --managed $dotnet $managed
+            if ($LASTEXITCODE -ne 0) { throw 'Native and managed shared data test failed.' }
+          }
