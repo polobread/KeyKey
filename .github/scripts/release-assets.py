@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "update"))
 import channels
@@ -141,7 +142,7 @@ def mirror(platform, version, directory):
                      f"invalidated their CloudFront paths.\n\n")
         if base_url:
             stream.write("\n".join(
-                f"- [{path.name}]({base_url}/{prefix}/{path.name})" for path in mirrored) + "\n")
+                f"- [{path.name}]({base_url}/{prefix}/{quote(path.name, safe='')})" for path in mirrored) + "\n")
 
 
 def resolve(version):

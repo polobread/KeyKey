@@ -215,6 +215,28 @@ class ReleaseAssetsTests(unittest.TestCase):
         summary = (self.root / "summary").read_text()
         self.assertIn("https://downloads.example.com/keykey/releases/download/v1.3.1/", summary)
 
+    def test_linux_mirror_links_encode_plus_without_changing_storage_keys(self):
+        names = self.packages("linux", "1.3.2")
+        info = self.root / "chichi77-KeyKey-1.3.2-linux-build-info.json"
+        info.write_text(json.dumps(dict(
+            platform="linux", version="1.3.2", release_tag="v1.3.2-beta1")))
+        env = dict(RELEASE_TAG="v1.3.2-beta1", RELEASE_MIRROR_BUCKET="downloads-example",
+                   RELEASE_MIRROR_DISTRIBUTION_ID="EDISTRIBUTION",
+                   RELEASE_MIRROR_BASE_URL="https://downloads.example.com",
+                   GITHUB_STEP_SUMMARY=str(self.root / "summary"))
+        with patch.dict(os.environ, env), patch.object(release.subprocess, "run") as run:
+            release.mirror("linux", "1.3.2", self.root)
+        summary = (self.root / "summary").read_text()
+        prefix = "keykey/releases/download/v1.3.2-beta1"
+        destinations = [call.args[0][4] for call in run.call_args_list[:-1]]
+        invalidation = run.call_args_list[-1].args[0]
+        for name in names:
+            # URLs need %2B, while AWS CLI keys and invalidation paths use the literal name.
+            encoded = name.replace("+", "%2B")
+            self.assertIn(f"[{name}](https://downloads.example.com/{prefix}/{encoded})", summary)
+            self.assertIn(f"s3://downloads-example/{prefix}/{name}", destinations)
+            self.assertIn(f"/{prefix}/{name}", invalidation)
+
     def test_mirror_rejects_mismatched_build_info_before_upload(self):
         self.packages("macos")
         info = self.root / "chichi77-KeyKey-1.3.1-macos-build-info.json"
