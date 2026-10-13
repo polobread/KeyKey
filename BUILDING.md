@@ -394,7 +394,9 @@ macOS、Windows 與 Linux 則在 GitHub
 **Publish release** 後自動建置，各自驗證成功後上傳到同一個 Release。Release 的 tag
 必須符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows／Linux 原始碼皆為 `1.3.2`，
 接受 `v1.3.2` 或 `v1.3.2-betaN`；同一 Release 的三平台產物只在各平台同版時成立。
-beta 必須為 Pre-release 且只從原 tag commit 建置，不改 Latest；修正後應建立新的 beta tag，不移動或補建舊 beta。
+beta 必須為 Pre-release 且只從原 tag commit 建置，不改 Latest；產品來源修正後應建立新的 beta tag，不移動既有 beta tag。
+Linux 手動 beta 重跑可選 `master` 上的 workflow 並填 `release_tag`；兩個 Ubuntu job
+都固定 checkout 該 beta tag，發布仍核對原 tag commit、產品版號及套件校驗，避免混入後續來源修改。
 macOS 從四份產品 plist 讀取並核對版號，與 README 尾端的 Linux 版號獨立。只推 tag 或儲存草稿
 不會觸發桌面封裝；一般 commit 與尚未合併的 pull request 不會發布桌面資產。`Linux CI` 另保留 PR smoke，
 發布前須通過 Ubuntu 24.04 完整測試與 Ubuntu 22.04 相容性驗證。

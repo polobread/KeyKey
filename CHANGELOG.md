@@ -2,6 +2,7 @@
 
 ## Linux 1.3.2（未發布）
 
+- Linux 發布檢查改用共用 channel 版號驗證，接受同產品版號的正式與 beta tag；手動 beta 重跑固定使用原 tag 的來源，保留套件集合、SHA-256 與 tag commit 檢查。補上實際發布 shell 步驟的 beta、錯誤版號及損壞套件回歸。
 - Linux CMake 產品版號、支援矩陣、設定頁驗證及 GNOME VM 套件路徑升至 1.3.2；其他平台及共用好打注音模型不變，已發布的 1.3.1 安裝指南保留。
 - 修正輕按 Shift 切換中英時，放開事件被吞掉、App 持續認為 Shift 按住的問題；保留切換與組字送出流程，讓按下／放開事件成對傳回 App。新增實際 Fcitx mode-key 回歸；Linux 桌面實機複測仍待完成。
 

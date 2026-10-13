@@ -92,6 +92,9 @@ jobs:
     steps:
       - name: Check out selected revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Beta retries keep the original source even when the workflow is run from master.
+          ref: ${{ github.event_name == 'workflow_dispatch' && contains(inputs.release_tag, '-beta') && inputs.release_tag || github.sha }}
 
       - name: Resolve and verify release target
         id: metadata
@@ -216,10 +219,11 @@ jobs:
           set -euo pipefail
           version=$(sed -nE '1s/^.* ([0-9]+\.[0-9]+\.[0-9]+)$/\1/p' README.md)
           linux_version=$(sed -nE 's/^project\(KeyKeyLinux VERSION ([0-9]+\.[0-9]+\.[0-9]+) LANGUAGES.*$/\1/p' Source/Loaders/Linux-IME/CMakeLists.txt)
-          if [[ -z "$version" || "$linux_version" != "$version" || "$RELEASE_TAG" != "v$version" ]]; then
-            echo "The tag, README, and Linux package version must match." >&2
+          if [[ -z "$version" || "$linux_version" != "$version" ]]; then
+            echo "The README and Linux package version must match." >&2
             exit 1
           fi
+          python3 -c 'import sys; sys.path.insert(0, "update"); import channels; channels.release_version(sys.argv[1], sys.argv[2]) if sys.argv[1] else sys.exit("Release tag is required.")' "$RELEASE_TAG" "$version"
 
           cd "$RUNNER_TEMP/linux-packages"
           data="chichi77-keykey-data_${version}-1+ubuntu24.04_all.deb"
@@ -290,6 +294,8 @@ jobs:
 
       - name: Check out selected revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && contains(inputs.release_tag, '-beta') && inputs.release_tag || github.sha }}
 
       - name: Install minimum native build dependencies
         run: |
