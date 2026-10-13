@@ -2,7 +2,11 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 import tempfile
+import textwrap
 import unittest
 from unittest.mock import patch
 
@@ -35,7 +39,7 @@ class ReleaseAssetsTests(unittest.TestCase):
                 path.with_name(name + ".sha256").write_text(f"{release.digest(path)}  {name}\n")
         if platform == "linux":
             (self.root / "SHA256SUMS").write_text("".join(
-                f"{release.digest(self.root / name)}  ./{name}\n" for name in names))
+                f"{release.digest(self.root / name)}  ./{name}\n" for name in names), newline="\n")
         return names
 
     def test_published_release_and_manual_recovery_targets(self):
@@ -64,6 +68,43 @@ class ReleaseAssetsTests(unittest.TestCase):
             self.assertEqual(release.release_tag("release", tag, "", "1.3.2"), tag)
         with self.assertRaises(ValueError):
             release.release_tag("release", "v1.3.1", "", "1.3.2")
+
+    def test_linux_publish_workflow_accepts_beta_and_preserves_asset_checks(self):
+        repository = Path(__file__).resolve().parents[2]
+        workflow = (repository / ".github/workflows/linux-ci.yml").read_text(encoding="utf-8")
+        step = workflow.split("      - name: Verify version, package set, and checksums\n", 1)[1]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1].split("      - name:", 1)[0])
+        bash = (str(Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Git/bin/bash.exe")
+                if os.name == "nt" else shutil.which("bash"))
+        self.assertTrue(bash, "Bash is required to test the actual Linux publish step")
+        # Use the same Python interpreter on Windows Git Bash and Linux.
+        script = 'python3() { "' + Path(sys.executable).as_posix() + '" "$@"; }\n' + script
+        names = self.packages("linux", "1.3.2")
+        packages = self.root / "linux-packages"
+        packages.mkdir()
+        for name in names + ["SHA256SUMS"]:
+            (self.root / name).replace(packages / name)
+        source = self.root / "Source/Loaders/Linux-IME"
+        source.mkdir(parents=True)
+        (self.root / "README.md").write_text("# KeyKey 1.3.2\n")
+        (self.root / "update").mkdir()
+        shutil.copyfile(repository / "update/channels.py", self.root / "update/channels.py")
+        cases = [("v1.3.2", "1.3.2", True), ("v1.3.2-beta1", "1.3.2", True),
+                 ("v1.3.2-beta2", "1.3.2", True), ("v1.3.1-beta1", "1.3.2", False),
+                 ("v1.3.2-beta0", "1.3.2", False), ("", "1.3.2", False),
+                 ("v1.3.2-beta1", "1.3.1", False)]
+        def run(tag):
+            env = dict(os.environ, RELEASE_TAG=tag, RUNNER_TEMP=self.root.as_posix(),
+                       GITHUB_ENV=(self.root / "env").as_posix())
+            return subprocess.run([bash, "-c", script], cwd=self.root, env=env, capture_output=True, text=True)
+        for tag, version, accepted in cases:
+            with self.subTest(tag=tag, source=version):
+                (source / "CMakeLists.txt").write_text(f"project(KeyKeyLinux VERSION {version} LANGUAGES CXX)\n")
+                result = run(tag)
+                self.assertEqual(result.returncode == 0, accepted, result.stdout + result.stderr)
+        (source / "CMakeLists.txt").write_text("project(KeyKeyLinux VERSION 1.3.2 LANGUAGES CXX)\n")
+        (packages / names[0]).write_bytes(b"tampered")
+        self.assertNotEqual(run("v1.3.2-beta1").returncode, 0, "Beta publication accepted a corrupt package")
 
     def test_numbered_beta_tags_require_matching_prerelease(self):
         for tag in ("v1.3.2-beta1", "v1.3.2-beta2"):
