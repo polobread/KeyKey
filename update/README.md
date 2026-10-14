@@ -1,7 +1,7 @@
 # 桌面更新（開發中）
 
-此目錄在 local `v1.3.2` 開發 macOS／Windows 更新客戶端與發布工具，**不是已上線的自動更新服務**。
-`config.json` 已設定維護者提供的正式公開金鑰；各平台 feed 仍留空，因此更新客戶端不連線。未使用 Yahoo 舊服務、
+此目錄開發 macOS／Windows 更新客戶端與發布工具，**不是已完成端到端驗收的自動更新服務**。
+`config.json` 已設定維護者提供的正式公開金鑰與已可存取的 stable／beta CDN feed。每日檢查與 beta 選項預設關閉，尚未重包已發布 beta2；舊版第一次導入仍須手動安裝含新設定的版本。未使用 Yahoo 舊服務、
 RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 
 ## 目錄與維護入口
@@ -182,14 +182,13 @@ macOS 在簽章前將建置後 IMK App 的 `CFBundleVersion` 設為比較版號�
 `KeyKeyReleaseVersion` 設為顯示版號；`CFBundleShortVersionString` 及四份原始碼 plist
 仍保持產品 X.Y.Z。pkg 的 PackageInfo 版號跟隨比較版號，notarization 驗證不放寬。
 Windows PE／Deployment 產品版號保持 X.Y.Z；Settings 內嵌 beta 更新設定並把比較
-版號交給 WinSparkle。beta 使用獨立 registry 更新偏好，不改 stable 的連網同意／跳過版本。
+版號交給 WinSparkle。使用者選擇 beta 時使用獨立 registry 更新偏好，不改 stable 的連網同意／跳過版本；不由已安裝版本的 beta 後綴代替使用者選擇。
 既有 GitHub 下載檔名仍含產品 X.Y.Z，但 beta1／beta2 放在各自不同的 tag 下載目錄；
 簽章更新候選檔名則含完整 beta 版號及 SHA-256。
 
 建置 workflow 用 `prepare.py select-release` 產生暫存設定（不改 tracked config）：
-beta 只選 `macos_beta_feed_url`／`windows_x64_beta_feed_url`／`windows_x86_beta_feed_url`；
-缺少 beta URL 時保持離線，不回退 stable。公開金鑰共用。這三個欄位目前留空，
-必須先部署並驗證以下對應 XML，才設定／建置可連線的 beta 客戶端：
+設定保留 stable／beta 兩組已審查網址，另記錄 tag 來源及 `channel_selection=user-opt-in`。
+macOS／Windows 的「接收 beta 測試版更新」預設關閉，beta 建置也不自動開啟；使用者選擇會保存。只允許這兩個建置時固定的來源，不能任填網址。缺少所選 beta URL 時保持離線，不回退 stable。公開金鑰共用。以下對應 XML 已可存取：
 
 ```text
 https://download.aws.polobread.com/keykey/update/beta/macos-arm64.xml
@@ -198,9 +197,9 @@ https://download.aws.polobread.com/keykey/update/beta/windows-x86.xml
 ```
 
 若選 GitHub Raw，路徑為 `https://raw.githubusercontent.com/polobread/KeyKey/master/update/beta/FILE.xml`。
-目前只有空 RSS，沒有 beta 包、下載項目或 beta channel 切換 UI。
-測試者需手動安裝 beta 建置，不能只改遠端 XML 就把 stable 客戶端切成 beta。
-beta feed 暫只接受 beta manifest；轉回 stable 需手動安裝正式版，未提供自動換 channel。
+目前 master 的 beta RSS 尚無自動安裝項目；選項的原始碼修改也不代表已安裝程式已有此 UI。
+測試者需手動安裝含新設定的建置，不能只改遠端 XML 就把 stable 客戶端切成 beta。
+beta feed 只接受 beta manifest。取消 beta 只更換檢查來源，不會自動降版；需等 stable 發布更高版號，或自行手動安裝。
 Windows 目前仍使用既有 unsigned EXE；真實 beta 升級須在 Windows 驗收。
 日後 signed beta 還須調整 Deployment 的「同產品版號不同 official build」保護，
 不能從 WinSparkle 版號比較通過推定 signed beta1 → beta2 安裝已支援。

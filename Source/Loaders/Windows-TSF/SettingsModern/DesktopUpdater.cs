@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Threading;
+using Microsoft.Win32;
 
 namespace KeyKeySettings;
 
@@ -19,6 +20,9 @@ internal sealed class DesktopUpdater : IDisposable
     private readonly Func<Stream> readConfiguration;
     private readonly Func<string, string, CancellationToken, Task<Uri>> findReinstallDownload;
     private readonly Action<Uri> openDownloadPage;
+    private readonly Func<bool> readBetaPreference;
+    private readonly Action<bool> writeBetaPreference;
+    private bool betaEnabled, betaAvailable;
     private readonly CancellationTokenSource lifetime = new();
     private bool initialized;
     private int generation;
@@ -41,6 +45,8 @@ internal sealed class DesktopUpdater : IDisposable
     public bool Busy => updateBusy || reinstalling;
     public string Status { get; private set; } = "此建置尚未設定簽章更新服務；可手動下載目前版本重新安裝。";
     public bool Automatic => Available && backend.Automatic;
+    public bool BetaEnabled => betaEnabled;
+    public bool CanChangeBeta => Available && betaAvailable && !Busy && !unsavedChanges;
     public event Action? StateChanged;
 
     public DesktopUpdater() : this(new WinSparkleBackend(), Dispatcher.CurrentDispatcher,
@@ -51,7 +57,8 @@ internal sealed class DesktopUpdater : IDisposable
     internal DesktopUpdater(IDesktopUpdateBackend backend, Dispatcher dispatcher,
         Action requestShutdown, Func<Stream> readConfiguration,
         Func<string, string, CancellationToken, Task<Uri>>? findReinstallDownload = null,
-        Action<Uri>? openDownloadPage = null)
+        Action<Uri>? openDownloadPage = null,
+        Func<bool>? readBetaPreference = null, Action<bool>? writeBetaPreference = null)
     {
         this.backend = backend;
         this.dispatcher = dispatcher;
@@ -60,6 +67,8 @@ internal sealed class DesktopUpdater : IDisposable
         this.findReinstallDownload = findReinstallDownload ?? SameVersionDownload.FindAsync;
         this.openDownloadPage = openDownloadPage ?? (uri => Process.Start(
             new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }));
+        this.readBetaPreference = readBetaPreference ?? BetaUpdatePreferences.Read;
+        this.writeBetaPreference = writeBetaPreference ?? BetaUpdatePreferences.Write;
     }
 
     public void Initialize()
@@ -70,6 +79,7 @@ internal sealed class DesktopUpdater : IDisposable
         bool configured = false;
         try
         {
+            betaEnabled = readBetaPreference();
             using var stream = readConfiguration();
             using var document = JsonDocument.Parse(stream);
             var config = document.RootElement;
@@ -86,8 +96,15 @@ internal sealed class DesktopUpdater : IDisposable
                 releaseVersion = candidate;
             }
             var key = config.GetProperty("public_ed25519_key").GetString() ?? "";
-            var feed = config.GetProperty(Environment.Is64BitProcess
-                ? "windows_x64_feed_url" : "windows_x86_feed_url").GetString() ?? "";
+            var platform = Environment.Is64BitProcess ? "windows_x64" : "windows_x86";
+            var stableFeed = config.GetProperty(platform + "_feed_url").GetString() ?? "";
+            var betaFeed = config.TryGetProperty(platform + "_beta_feed_url", out var betaUrl)
+                ? betaUrl.GetString() ?? "" : "";
+            static bool ReviewedFeed(string value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+                uri.Scheme == "https" && uri.UserInfo.Length == 0 && uri.Fragment.Length == 0;
+            betaAvailable = ReviewedFeed(stableFeed) && ReviewedFeed(betaFeed);
+            // Missing beta configuration is never silently replaced with stable.
+            var feed = betaEnabled ? betaFeed : stableFeed;
             if (key.Length == 0 || feed.Length == 0) return;
             if (Convert.FromBase64String(key).Length != 32 ||
                 !Uri.TryCreate(feed, UriKind.Absolute, out var uri) || uri.Scheme != "https" ||
@@ -114,7 +131,7 @@ internal sealed class DesktopUpdater : IDisposable
                         if (CanShutdown) return 0; // Keep WinSparkle's normal interactive/UAC handling.
                         Dispatch(() => SetState("請先套用設定或儲存自訂詞，再重新檢查更新。", false));
                         return -1; // WINSPARKLE_RETURN_ERROR: never fall through to launching the file.
-                    }));
+                    }), betaEnabled);
             configured = true;
             initialized = true;
             SetState("只檢查發行版本，不傳送輸入內容。下載通過簽章驗證後，才啟動安裝程式並要求管理員授權。", false);
@@ -194,6 +211,35 @@ internal sealed class DesktopUpdater : IDisposable
     {
         if (Available) backend.Automatic = value;
     }
+    public bool SetBeta(bool value)
+    {
+        if (value == betaEnabled) return true;
+        if (!CanChangeBeta) return false;
+        var previous = betaEnabled;
+        try
+        {
+            writeBetaPreference(value);
+            // Drop old callbacks BEFORE cleanup joins its native threads.
+            generation++;
+            initialized = false;
+            backend.Cleanup();
+            Initialize();
+            if (!Available) throw new InvalidOperationException("無法啟用選擇的更新來源");
+            SetState(value ? "已選擇 beta 測試版來源；下載與安裝仍需確認。" : "已選擇正式版來源。", false);
+            return true;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or
+                                      InvalidOperationException or System.Security.SecurityException)
+        {
+            try { writeBetaPreference(previous); }
+            catch (Exception rollback) when (rollback is IOException or UnauthorizedAccessException or
+                                             System.Security.SecurityException) { }
+            betaEnabled = previous;
+            if (!initialized) Initialize();
+            SetState($"無法切換更新來源：{error.Message}", false);
+            return false;
+        }
+    }
     public void Dispose()
     {
         if (disposed) return;
@@ -203,6 +249,21 @@ internal sealed class DesktopUpdater : IDisposable
         updateBusy = false;
         reinstalling = false;
         if (initialized) { initialized = false; backend.Cleanup(); }
+    }
+}
+
+internal static class BetaUpdatePreferences
+{
+    private const string Path = @"Software\chichi77\KeyKey\DesktopUpdatePreferences";
+    internal static bool Read()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(Path);
+        return key?.GetValue("IncludeBeta") is int value && value == 1;
+    }
+    internal static void Write(bool enabled)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(Path);
+        key.SetValue("IncludeBeta", enabled ? 1 : 0, RegistryValueKind.DWord);
     }
 }
 

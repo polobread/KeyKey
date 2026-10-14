@@ -31,7 +31,7 @@ class ChannelTests(unittest.TestCase):
             with self.subTest(tag=tag), self.assertRaises(ValueError):
                 channels.release_version(tag, "1.3.2")
 
-    def test_beta_build_config_never_falls_back_to_stable(self):
+    def test_beta_build_keeps_both_endpoints_for_default_off_user_selection(self):
         import base64
         self.config.update(public_ed25519_key=base64.b64encode(bytes(32)).decode(),
             macos_feed_url="https://example.invalid/update/stable/macos-arm64.xml",
@@ -43,11 +43,11 @@ class ChannelTests(unittest.TestCase):
                 prepare.select_release_config(tag, "1.3.2", output)
             result = json.loads(output.read_text())
             self.assertEqual(result["release_version"], tag[1:])
-            if "beta" in tag:
-                self.assertIn("/beta/", result["macos_feed_url"])
-                self.assertEqual(result["windows_x64_feed_url"], "")
-            else:
-                self.assertIn("/stable/", result["windows_x64_feed_url"])
+            self.assertEqual(result["channel_selection"], "user-opt-in")
+            self.assertIn("/stable/", result["macos_feed_url"])
+            self.assertIn("/beta/", result["macos_beta_feed_url"])
+            self.assertIn("/stable/", result["windows_x64_feed_url"])
+            self.assertEqual(result.get("windows_x64_beta_feed_url", ""), "")
         self.assertIn("/stable/", self.config["macos_feed_url"])
 
     def test_stamp_beta_bundle_without_changing_source_product_version(self):

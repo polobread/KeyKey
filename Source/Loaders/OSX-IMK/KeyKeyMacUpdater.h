@@ -12,6 +12,7 @@
 - (void)checkForUpdates;
 - (void)setSendsSystemProfile:(BOOL)value;
 - (void)setAutomaticallyDownloadsUpdates:(BOOL)value;
+- (void)resetUpdateCycle;
 @end
 
 @interface KeyKeyMacUpdater : NSObject <SPUUpdaterDelegate>
@@ -20,10 +21,13 @@
     id _controller;
     id<KeyKeyMacUpdateEngine> _engine;
     NSURL *_feed;
+    NSURL *_stableFeed, *_betaFeed;
+    NSUserDefaults *_preferences;
     NSString *_phase;
     NSString *_message;
     NSString *_latestVersion;
     BOOL _configured, _started, _stopped, _busy, _installationRequested;
+    BOOL _betaEnabled, _keyValid;
     BOOL (^_compositionCheck)(void);
     void (^_pendingInstallation)(void);
     NSTimer *_installationTimer;
@@ -35,6 +39,7 @@
 - (NSDictionary *)snapshot;
 - (void)checkForUpdates;
 - (void)setAutomaticChecks:(BOOL)enabled;
+- (BOOL)setBetaUpdates:(BOOL)enabled;
 - (BOOL)mayTerminateForUpdate;
 - (void)resumeInstallationIfSafe;
 @end

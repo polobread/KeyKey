@@ -1,6 +1,18 @@
 name: Desktop Release Tools
 
 on:
+  push:
+    branches: ['codex/beta*-update-feeds']
+    paths:
+      - 'update/**'
+      - 'Source/Loaders/OSX-IMK/KeyKeyMacUpdater.*'
+      - 'Source/Loaders/OSX-IMK/Tests/*Update*Tests.m'
+      - 'Source/PreferenceApplications/OSX/TakaoUpdate.*'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/DesktopUpdater.cs'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/WinSparkleBackend.cs'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/MainWindow.xaml*'
+      - 'Source/Loaders/Windows-TSF/DesktopUpdater.Tests/**'
+      - '.github/workflows/desktop-release-tools.yml'
   pull_request:
     paths:
       - 'update/**'
@@ -13,8 +25,11 @@ on:
       - '.github/workflows/package-windows.yml'
       - 'Source/Loaders/OSX-IMK/KeyKeyMacUpdater.*'
       - 'Source/Loaders/OSX-IMK/Tests/MacUpdaterTests.m'
+      - 'Source/Loaders/OSX-IMK/Tests/MacUpdatePreferencesTests.m'
+      - 'Source/PreferenceApplications/OSX/TakaoUpdate.*'
       - 'Source/Loaders/Windows-TSF/SettingsModern/DesktopUpdater.cs'
       - 'Source/Loaders/Windows-TSF/SettingsModern/WinSparkleBackend.cs'
+      - 'Source/Loaders/Windows-TSF/SettingsModern/MainWindow.xaml*'
       - 'Source/Loaders/Windows-TSF/SettingsModern/KeyKeySettings.csproj'
       - 'Source/Loaders/Windows-TSF/DesktopUpdater.Tests/**'
   workflow_dispatch:
@@ -66,6 +81,12 @@ jobs:
           dotnet run --project Source/Loaders/Windows-TSF/DesktopUpdater.Tests/DesktopUpdater.Tests.csproj `
             --configuration Release -r win-x64 --self-contained -- --native --openssl $openssl
           if ($LASTEXITCODE -ne 0) { throw 'Updater beta regressions failed.' }
+      - name: Test x86 managed channel selection without rebuilding TSF
+        shell: pwsh
+        run: |
+          dotnet run --project Source/Loaders/Windows-TSF/DesktopUpdater.Tests/DesktopUpdater.Tests.csproj `
+            --configuration Release -r win-x86 --self-contained
+          if ($LASTEXITCODE -ne 0) { throw 'x86 channel selection regressions failed.' }
       - name: Build Settings with the isolated beta configuration resource
         shell: pwsh
         run: |

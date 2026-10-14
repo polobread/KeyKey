@@ -88,6 +88,16 @@ extern size_t VendorMotcleSize;
     [self performSelectorOnMainThread:@selector(applyAutomaticDesktopUpdates:)
         withObject:[NSNumber numberWithBool:enabled] waitUntilDone:NO];
 }
+- (void)applyBetaDesktopUpdates:(NSNumber *)enabled
+{
+    [_desktopUpdaterController setBetaUpdates:[enabled boolValue]];
+}
+
+- (oneway void)setBetaDesktopUpdates:(BOOL)enabled
+{
+    [self performSelectorOnMainThread:@selector(applyBetaDesktopUpdates:)
+        withObject:[NSNumber numberWithBool:enabled] waitUntilDone:NO];
+}
 - (OpenVanillaLoader*)loader
 {
     return _loader;

@@ -31,9 +31,12 @@ file for terms.
 		id service = [self updateService];
 		NSDictionary *status = [service desktopUpdateStatus];
 		if (!status) [NSException raise:@"KeyKeyUpdateServiceUnavailable" format:@"No IMK update status"];
+		if ([[status objectForKey:@"currentVersion"] length]) [_currentVersionTextField setStringValue:[status objectForKey:@"currentVersion"]];
 		[_statusTextField setStringValue:[status objectForKey:@"message"] ?: @"尚未設定更新服務；此建置不會連線。"];
 		[_latestVersionTextField setStringValue:[[status objectForKey:@"latestVersion"] length] ? [status objectForKey:@"latestVersion"] : @"—"];
 		[_checkButton setEnabled:[[status objectForKey:@"canCheck"] boolValue]];
+		[_betaButton setState:[[status objectForKey:@"beta"] boolValue] ? NSControlStateValueOn : NSControlStateValueOff];
+		[_betaButton setEnabled:[[status objectForKey:@"canChangeBeta"] boolValue]];
 		BOOL checking = [[status objectForKey:@"checking"] boolValue];
 		[_checkProgressIndicator setHidden:!checking];
 		if (checking) [_checkProgressIndicator startAnimation:self];
@@ -44,6 +47,7 @@ file for terms.
 				dateStyle:NSDateFormatterShortStyle timeStyle:NSDateFormatterShortStyle]];
 	} @catch (NSException *exception) {
 		[_checkButton setEnabled:NO];
+		[_betaButton setEnabled:NO];
 		[_checkProgressIndicator stopAnimation:self];
 		[_checkProgressIndicator setHidden:YES];
 		[_statusTextField setStringValue:@"更新服務無法連接。第一次升級需手動安裝支援更新的版本。"];
@@ -58,12 +62,12 @@ file for terms.
 	[view setAutoresizesSubviews:NO];
 	NSArray *children = [[view subviews] copy];
 	for (NSView *child in children) {
-		NSRect frame = [child frame]; frame.origin.y += 64; [child setFrame:frame];
+		NSRect frame = [child frame]; frame.origin.y += 88; [child setFrame:frame];
 		if ([child isKindOfClass:[NSButton class]] && [(NSButton *)child action] == @selector(checkUpdateNow:))
 			_checkButton = (NSButton *)child;
 	}
 	[children release];
-	NSRect frame = [view frame]; frame.size.height += 64; [view setFrame:frame];
+	NSRect frame = [view frame]; frame.size.height += 88; [view setFrame:frame];
 	[view setAutoresizesSubviews:autoresizes];
 	_statusTextField = [[[NSTextField alloc] initWithFrame:NSMakeRect(24, 6, frame.size.width - 48, 54)] autorelease];
 	[_statusTextField setEditable:NO]; [_statusTextField setSelectable:YES];
@@ -71,6 +75,12 @@ file for terms.
 	[_statusTextField setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
 	[[_statusTextField cell] setWraps:YES];
 	[view addSubview:_statusTextField];
+	_betaButton = [[[NSButton alloc] initWithFrame:NSMakeRect(24, 70, frame.size.width - 48, 22)] autorelease];
+	[_betaButton setButtonType:NSButtonTypeSwitch];
+	[_betaButton setTitle:@"接收 beta 測試版更新（預設關閉）"];
+	[_betaButton setTarget:self]; [_betaButton setAction:@selector(betaUpdatesChanged:)];
+	[_betaButton setState:NSControlStateValueOff];
+	[view addSubview:_betaButton];
 	[self _getVersionInfo];
 	_statusTimer = [[NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(_getVersionInfo) userInfo:nil repeats:YES] retain];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(stopStatusTimer:)
@@ -82,6 +92,13 @@ file for terms.
 	[_statusTimer invalidate]; [_statusTimer release]; _statusTimer = nil;
 }
 #pragma mark Interface Builder actions
+
+- (IBAction)betaUpdatesChanged:(id)sender
+{
+	@try { [[self updateService] setBetaDesktopUpdates:[sender state] == NSControlStateValueOn]; }
+	@catch (NSException *exception) { [_betaButton setEnabled:NO]; }
+	[self _getVersionInfo];
+}
 
 - (IBAction)checkUpdateNow:(id)sender
 {

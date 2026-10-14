@@ -3,6 +3,14 @@
 
 @implementation KeyKeyMacUpdater
 
+static NSURL *ReviewedFeed(id value)
+{
+    if (![value isKindOfClass:[NSString class]] || ![value length]) return nil;
+    NSURL *url = [NSURL URLWithString:value];
+    return [[url scheme] isEqualToString:@"https"] && [url host].length > 0 &&
+        ![url user] && ![url password] && ![url fragment] ? url : nil;
+}
+
 - (void)setPhase:(NSString *)phase message:(NSString *)message
 {
     [_phase release]; _phase = [phase copy];
@@ -15,16 +23,18 @@
     if ((self = [super init])) {
         _host = [host retain]; _engine = [engine retain];
         _compositionCheck = [compositionCheck copy];
-        id feed = [host objectForInfoDictionaryKey:@"SUFeedURL"];
+        _stableFeed = [ReviewedFeed([host objectForInfoDictionaryKey:@"SUFeedURL"]) retain];
+        _betaFeed = [ReviewedFeed([host objectForInfoDictionaryKey:@"KeyKeyBetaFeedURL"]) retain];
         id key = [host objectForInfoDictionaryKey:@"SUPublicEDKey"];
-        if ([feed isKindOfClass:[NSString class]] && [key isKindOfClass:[NSString class]] &&
-            [feed length] > 0 && [key length] <= 64) {
-            NSURL *url = [NSURL URLWithString:feed];
+        if ([key isKindOfClass:[NSString class]] && [key length] <= 64) {
             NSData *bytes = [[[NSData alloc] initWithBase64EncodedString:key options:0] autorelease];
-            _configured = [[url scheme] isEqualToString:@"https"] && [url host].length > 0 &&
-                ![url user] && ![url password] && ![url fragment] && [bytes length] == 32;
-            if (_configured) _feed = [url retain];
+            _keyValid = [bytes length] == 32;
         }
+        _preferences = [[NSUserDefaults alloc] initWithSuiteName:[host bundleIdentifier]];
+        id consent = [_preferences objectForKey:@"KeyKeyBetaUpdates"];
+        _betaEnabled = [consent isKindOfClass:[NSNumber class]] && [consent boolValue];
+        _feed = [(_betaEnabled ? _betaFeed : _stableFeed) retain];
+        _configured = _keyValid && _feed != nil;
         [self setPhase:@"unconfigured" message:@"尚未設定正式更新網址與公開金鑰；此建置不會連線。"];
         _latestVersion = [@"" copy];
     }
@@ -35,6 +45,7 @@
 {
     [self stop];
     [_host release]; [_feed release]; [_phase release]; [_message release]; [_latestVersion release];
+    [_stableFeed release]; [_betaFeed release]; [_preferences release];
     [_compositionCheck release];
     [super dealloc];
 }
@@ -88,6 +99,8 @@
     BOOL ready = _configured && _started && !_stopped;
     return [NSDictionary dictionaryWithObjectsAndKeys:
         @(ready), @"configured", @(ready && [_engine automaticallyChecksForUpdates]), @"automatic",
+        @(_betaEnabled), @"beta", @(!_stopped && _keyValid && _stableFeed && _betaFeed && !_busy &&
+            !_pendingInstallation && !_installationRequested && ![_engine sessionInProgress]), @"canChangeBeta",
         @(ready && !_busy && !_pendingInstallation && [_engine canCheckForUpdates] && ![_engine sessionInProgress]), @"canCheck",
         @(_busy), @"checking", _phase ?: @"unconfigured", @"phase", _message ?: @"", @"message",
         [_host objectForInfoDictionaryKey:@"KeyKeyReleaseVersion"] ?: [_host objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"", @"currentVersion",
@@ -106,6 +119,24 @@
 - (void)setAutomaticChecks:(BOOL)enabled
 {
     if (!_stopped && _configured && _started) [_engine setAutomaticallyChecksForUpdates:enabled];
+}
+
+- (BOOL)setBetaUpdates:(BOOL)enabled
+{
+    NSAssert([NSThread isMainThread], @"macOS updater runs on the main thread");
+    if (enabled == _betaEnabled) return YES;
+    if (![[self snapshot][@"canChangeBeta"] boolValue]) return NO;
+    _betaEnabled = enabled;
+    [_preferences setBool:enabled forKey:@"KeyKeyBetaUpdates"];
+    [_feed release]; _feed = [(enabled ? _betaFeed : _stableFeed) retain];
+    _configured = _keyValid && _feed != nil;
+    [_latestVersion release]; _latestVersion = [@"" copy];
+    if (!_started) [self start];
+    if (!_started) return NO;
+    // Recompute the schedule without performing a network check here.
+    if ([_engine respondsToSelector:@selector(resetUpdateCycle)]) [_engine resetUpdateCycle];
+    [self setPhase:@"idle" message:enabled ? @"已選擇 beta 測試版來源；下載與安裝仍需確認。" : @"已選擇正式版來源。"];
+    return YES;
 }
 
 - (NSString *)feedURLStringForUpdater:(SPUUpdater *)updater

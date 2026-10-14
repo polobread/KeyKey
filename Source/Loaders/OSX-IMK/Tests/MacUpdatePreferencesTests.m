@@ -11,10 +11,16 @@ static void Check(BOOL value, NSString *message)
 @interface TestService : NSObject
 @property(nonatomic, copy) NSDictionary *status;
 @property(nonatomic) int checks;
+- (void)setBetaDesktopUpdates:(BOOL)enabled;
 @end
 @implementation TestService
 - (NSDictionary *)desktopUpdateStatus { return self.status; }
 - (void)checkForDesktopUpdates { self.checks++; }
+- (void)setBetaDesktopUpdates:(BOOL)enabled
+{
+    NSMutableDictionary *status = [[self.status mutableCopy] autorelease];
+    status[@"beta"] = @(enabled); self.status = status;
+}
 - (void)dealloc { [_status release]; [super dealloc]; }
 @end
 
@@ -52,18 +58,25 @@ int main(void)
         [controller setValue:progress forKey:@"_checkProgressIndicator"];
         [controller awakeFromNib];
         NSTextField *message = [controller valueForKey:@"_statusTextField"];
-        Check(view.frame.size.height == 235 && button.frame.origin.y == 191 && progress.frame.origin.y == 199,
+        Check(view.frame.size.height == 259 && button.frame.origin.y == 215 && progress.frame.origin.y == 223,
               @"legacy autoresizing does not double-shift existing controls");
         Check(NSMaxY(message.frame) <= NSMinY(box.frame) && NSMaxY(button.frame) <= view.bounds.size.height,
               @"status and original controls fit without overlap");
         Check(!button.enabled && progress.hidden && [message.stringValue containsString:@"公開金鑰"],
               @"unconfigured service disables check and explains configuration");
         NSDate *date = [NSDate date];
-        service.status = @{@"canCheck":@YES, @"checking":@NO, @"latestVersion":@"1.3.3", @"lastCheck":date, @"message":@"可手動檢查"};
+        NSButton *beta = [controller valueForKey:@"_betaButton"];
+        Check(beta.state == NSControlStateValueOff && !beta.enabled, @"beta checkbox defaults off while unconfigured");
+        Check(NSMaxY(message.frame) <= NSMinY(beta.frame) && NSMaxY(beta.frame) <= NSMinY(box.frame), @"beta control fits without overlapping status or version box");
+        service.status = @{@"canCheck":@YES, @"checking":@NO, @"latestVersion":@"1.3.3", @"lastCheck":date, @"message":@"可手動檢查",
+                           @"beta":@NO, @"canChangeBeta":@YES};
         [controller _getVersionInfo];
         Check(button.enabled && [[[controller valueForKey:@"_latestVersionTextField"] stringValue] isEqualToString:@"1.3.3"],
               @"available version and check readiness render");
         Check(![[[controller valueForKey:@"_latestCheckTextField"] stringValue] isEqualToString:@"尚未檢查"], @"last check renders");
+        Check(beta.enabled && beta.state == NSControlStateValueOff, @"ready client offers explicit beta opt-in");
+        [beta setState:NSControlStateValueOn]; [controller betaUpdatesChanged:beta];
+        Check(beta.state == NSControlStateValueOn && [service.status[@"beta"] boolValue], @"beta checkbox reaches IMK service");
         [controller checkUpdateNow:button];
         Check(service.checks == 1 && !button.enabled, @"manual request disables button until status refresh");
         service.status = @{@"canCheck":@NO, @"checking":@YES, @"message":@"正在檢查"};
