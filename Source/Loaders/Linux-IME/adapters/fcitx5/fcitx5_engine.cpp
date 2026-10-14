@@ -131,6 +131,9 @@ FCITX_CONFIGURATION(
     fcitx::Option<VersionInfoConfig> versionInfo{
         this, "VersionInfo",
         "琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING};
+    fcitx::ExternalOption updates{
+        this, "UpdateNotification", "更新通知與下載…",
+        "keykey-update-notify"};
     fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
         bopomofoLayout{this, "BopomofoLayout", "Bopomofo keyboard layout",
                        "Standard"};

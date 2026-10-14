@@ -30,6 +30,10 @@ Architecture: any
 Depends:
  chichi77-keykey-data (= ${source:Version}),
  fcitx5,
+ python3,
+ python3-gi,
+ gir1.2-gtk-3.0,
+ ca-certificates,
  ${misc:Depends},
  ${shlibs:Depends},
 Recommends:

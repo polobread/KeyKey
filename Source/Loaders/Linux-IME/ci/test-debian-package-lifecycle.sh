@@ -96,6 +96,12 @@ verify_install() {
   test -f /usr/share/fcitx5/inputmethod/chichi77-keykey-cangjie.conf
   test -f /usr/share/fcitx5/inputmethod/chichi77-keykey-simplex.conf
   test -x /usr/bin/keykey-fcitx-app
+  test -x /usr/bin/keykey-update-notify
+  test -f /usr/share/chichi77-keykey/update_notify.py
+  test -f /usr/share/chichi77-keykey/update_notify_gui.py
+  test -f /usr/share/applications/org.chichi77.KeyKey.UpdateNotification.desktop
+  python3 -c 'import gi; gi.require_version("Gtk", "3.0"); from gi.repository import Gtk, Gio'
+  env -u DISPLAY -u DBUS_SESSION_BUS_ADDRESS keykey-update-notify --background
   test -f /usr/share/applications/org.chichi77.KeyKey.TextEditor.desktop
   # Ubuntu's minimal container image excludes man pages at dpkg extraction time.
   # Verify the package still ships the page, and require the installed copy
@@ -170,6 +176,9 @@ run_installed_e2e() {
   KEYKEY_E2E_CONFIG_UI="$config_ui" \
   KEYKEY_BUILD_DIR="$build_dir" \
     ci/run-x11-e2e.sh
+  if [[ "$label" == reinstalled ]]; then
+    dbus-run-session -- xvfb-run -a python3 tests/test_update_notify_install.py
+  fi
 }
 
 if [[ -n "$fixture_dir" ]]; then

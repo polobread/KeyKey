@@ -17,6 +17,13 @@ find_package(Iconv REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+set(KEYKEY_UPDATE_VERSION "${PROJECT_VERSION}" CACHE STRING
+    "Installed notification version, including -betaN for beta packages")
+string(REPLACE "." "\\." KEYKEY_UPDATE_BASE_PATTERN "${PROJECT_VERSION}")
+if(NOT KEYKEY_UPDATE_VERSION MATCHES "^${KEYKEY_UPDATE_BASE_PATTERN}(-beta[1-9][0-9]*)?$")
+    message(FATAL_ERROR "KEYKEY_UPDATE_VERSION must match the Unix product version")
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(KEYKEY_FCITX5_DEFAULT ON)
 else()
@@ -185,12 +192,31 @@ if(KEYKEY_BUILD_FCITX5)
     find_package(Fcitx5Core REQUIRED)
     include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
     add_subdirectory(adapters/fcitx5)
+    configure_file(tools/keykey-update-notify.in keykey-update-notify @ONLY)
+    configure_file(data/org.chichi77.KeyKey.UpdateNotification.desktop.in
+        org.chichi77.KeyKey.UpdateNotification.desktop @ONLY)
+    install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/keykey-update-notify"
+        DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(FILES tools/update_notify.py tools/update_notify_gui.py
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/chichi77-keykey")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.chichi77.KeyKey.UpdateNotification.desktop"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
     install(PROGRAMS tools/keykey-fcitx-app
         DESTINATION "${CMAKE_INSTALL_BINDIR}")
     install(FILES data/org.chichi77.KeyKey.TextEditor.desktop
         DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
     install(FILES docs/keykey-fcitx-app.1
         DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
+endif()
+
+if(BUILD_TESTING)
+    add_test(NAME keykey_unix_update_notifications
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_update_notify.py")
+    if(KEYKEY_BUILD_X11_E2E_HOST)
+        add_test(NAME keykey_unix_update_notification_gui
+            COMMAND dbus-run-session -- xvfb-run -a "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_update_notify_gui.py")
+    endif()
 endif()
 
 install(FILES

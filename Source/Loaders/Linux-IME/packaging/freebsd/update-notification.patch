@@ -1,0 +1,31 @@
+diff --git a/chinese/fcitx5-keykey/Makefile b/chinese/fcitx5-keykey/Makefile
+--- a/chinese/fcitx5-keykey/Makefile
++++ b/chinese/fcitx5-keykey/Makefile
+@@ -20,3 +20,6 @@
+-USES=		cmake compiler:c++17-lang iconv pkgconfig python:build sqlite
++RUN_DEPENDS=	ca_root_nss>0:security/ca_root_nss
++
++USES=		cmake compiler:c++17-lang gnome iconv pkgconfig python sqlite
++USE_GNOME=	gtk30 pygobject3
+-
++
+ WRKSRC_SUBDIR=	Source/Loaders/Linux-IME
+@@ -27,3 +30,4 @@
+ CMAKE_ARGS+=	-DBUILD_TESTING=OFF -DKEYKEY_BUILD_FCITX5=ON
++CMAKE_ARGS+=	-DPython3_EXECUTABLE=${PYTHON_CMD}
+-
++
+ .include <bsd.port.mk>
+diff --git a/chinese/fcitx5-keykey/pkg-plist b/chinese/fcitx5-keykey/pkg-plist
+--- a/chinese/fcitx5-keykey/pkg-plist
++++ b/chinese/fcitx5-keykey/pkg-plist
+@@ -1,5 +1,9 @@
+ bin/keykey-fcitx-app
+ bin/keykey-smart-phrases
++bin/keykey-update-notify
+ lib/fcitx5/chichi77-keykey.so
+ share/applications/org.chichi77.KeyKey.TextEditor.desktop
++share/applications/org.chichi77.KeyKey.UpdateNotification.desktop
++share/chichi77-keykey/update_notify.py
++share/chichi77-keykey/update_notify_gui.py
+ share/chichi77-keykey/data/associated-phrases/McBopomofo.occ

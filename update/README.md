@@ -52,8 +52,11 @@ GitHub Raw 與 CDN 的固定 feed 檔名為 `macos-arm64.xml`、`windows-x64.xml
   Release 頁，由使用者下載並執行安裝。這個入口不依賴更新 key／feed，不下載、驗證或
   啟動安裝器，也不關閉設定視窗；仍要求先儲存設定／自訂詞，查詢期間新增草稿會阻止
   開頁。沒有發布下載檔、離線或查詢失敗時顯示原因，不改用其他版本或架構。
-- Linux：交給發行版套件庫；現有 `.deb` 下載不等於已架設 APT 更新庫。
-- FreeBSD：交給 ports/pkg；此變更沒有新增 port，也不讓輸入法繞過套件管理器覆寫檔案。
+- Linux／FreeBSD：Fcitx 設定中的「更新通知與下載…」提供手動新版檢查、預設關閉的每日
+  通知及官方發行頁入口。Linux 確認對應架構套件存在；FreeBSD 顯示上游原始碼新版，
+  明示由 ports/pkg 更新及套件庫可能較晚上架。詳細設定與既有 port 的封裝修改見
+  [更新通知](../Source/Loaders/Linux-IME/docs/update-notifications.md)。安裝仍交給套件
+  管理器；沒有建立 APT/pkg 更新庫，也不在輸入法內下載或執行安裝包。
 
 ## 本機建置
 

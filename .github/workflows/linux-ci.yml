@@ -46,7 +46,7 @@ jobs:
             binutils build-essential cmake dbus-x11 fcitx5 \
             fcitx5-frontend-gtk3 fonts-wqy-zenhei g++ libcanberra-dev \
             libfcitx5core-dev libgtk-3-dev libgtk-4-dev libsqlite3-dev ninja-build \
-            pkg-config python3 qt6-base-dev x11-utils xdotool xvfb
+            pkg-config python3 python3-gi gir1.2-gtk-3.0 qt6-base-dev x11-utils xdotool xvfb
 
       - name: Build, run unit tests, and verify staged installation
         working-directory: Source/Loaders/Linux-IME

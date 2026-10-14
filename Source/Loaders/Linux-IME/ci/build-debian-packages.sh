@@ -46,6 +46,27 @@ if [[ ! "$product_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
+# Preserve beta identity for notification comparisons even though the existing
+# Debian artifact names use the base product version. Source archive builds can
+# supply KEYKEY_UPDATE_VERSION explicitly; exact-tag builds derive it here.
+if [[ -z "${KEYKEY_UPDATE_VERSION:-}" ]]; then
+  exact_tag=$(git -c "safe.directory=$repository_root" -C "$repository_root" \
+    describe --tags --exact-match HEAD 2>/dev/null || true)
+  if [[ "${exact_tag%-beta*}" == "v$product_version" &&
+        ( "$exact_tag" == "v$product_version" || "$exact_tag" =~ -beta[1-9][0-9]*$ ) ]]; then
+    export KEYKEY_UPDATE_VERSION=${exact_tag#v}
+  else
+    export KEYKEY_UPDATE_VERSION=$product_version
+  fi
+fi
+python3 - "$linux_dir/tools" "$KEYKEY_UPDATE_VERSION" "$product_version" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from update_notify import version_key
+if version_key(sys.argv[2])[:3] != version_key(sys.argv[3])[:3]:
+    raise SystemExit("KEYKEY_UPDATE_VERSION must match the Unix product version")
+PY
+
 case "$variant" in
   release-candidate)
     debian_version="${product_version}-1+${version_suffix}"
