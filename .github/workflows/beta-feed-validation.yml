@@ -28,7 +28,9 @@ jobs:
       - name: Verify existing beta installer on Windows without installation
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: pwsh
+        # Match the Windows PowerShell verifier's module search path; a pwsh
+        # parent otherwise injects incompatible PowerShell 7 module paths.
+        shell: powershell
         run: |
           python .github/scripts/verify-beta-windows.py --out "$env:RUNNER_TEMP/native-verification"
           if ($LASTEXITCODE -ne 0) { throw 'Native beta installer verification failed.' }
