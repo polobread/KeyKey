@@ -24,6 +24,8 @@ def load_config(path=None):
     config = json.loads(config_path.read_text(encoding="utf-8"))
     if config.get("schema_version") != 1:
         raise ValueError("unsupported update configuration")
+    if config.get("channel_selection") not in (None, "user-opt-in"):
+        raise ValueError("unsupported update channel selection")
     key = config["public_ed25519_key"]
     fields = ("macos_feed_url", "windows_x64_feed_url", "windows_x86_feed_url",
               "macos_beta_feed_url", "windows_x64_beta_feed_url", "windows_x86_beta_feed_url")
@@ -40,7 +42,7 @@ def load_config(path=None):
         _, channel, _ = channels.parse_version(config["release_version"])
         if config.get("update_channel") != channel:
             raise ValueError("release version does not match the build update channel")
-        if channel == "beta" and any(config.get(f"{platform}_feed_url", "") !=
+        if channel == "beta" and config.get("channel_selection") != "user-opt-in" and any(config.get(f"{platform}_feed_url", "") !=
                 config.get(f"{platform}_beta_feed_url", "") for platform in ("macos", "windows_x64", "windows_x86")):
             raise ValueError("beta build must use only its reviewed beta feeds")
     return config
@@ -52,10 +54,9 @@ def select_release_config(tag, version, destination):
     # Always start from the reviewed config, never a previously selected beta build.
     config = load_config(ROOT / "config.json")
     config.update(release_version=release_version, update_channel=channel)
-    if channel == "beta":
-        for platform in ("macos", "windows_x64", "windows_x86"):
-            # No fallback to stable when the beta endpoint is unconfigured.
-            config[f"{platform}_feed_url"] = config.get(f"{platform}_beta_feed_url", "")
+    # Build provenance stays beta/stable, independently of the user's opt-in.
+    # Keep both reviewed endpoints; every fresh client starts on stable.
+    config["channel_selection"] = "user-opt-in"
     if destination.exists():
         raise ValueError("build config output must not exist")
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -134,6 +135,7 @@ def embed_macos(app):
                 SUSendProfileInfo=False, SUVerifyUpdateBeforeExtraction=True,
                 SUScheduledCheckInterval=86400)
     for name, value in (("SUFeedURL", config["macos_feed_url"]),
+                        ("KeyKeyBetaFeedURL", config.get("macos_beta_feed_url", "")),
                         ("SUPublicEDKey", config["public_ed25519_key"])):
         if value:
             info[name] = value

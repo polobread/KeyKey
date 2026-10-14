@@ -27,6 +27,7 @@ static void Check(BOOL condition, NSString *message)
 - (void)checkForUpdates { self.checks++; }
 - (void)setSendsSystemProfile:(BOOL)value { self.sendsProfile = value; }
 - (void)setAutomaticallyDownloadsUpdates:(BOOL)value { self.downloadsAutomatically = value; }
+- (void)resetUpdateCycle { }
 - (void)dealloc { [_lastUpdateCheckDate release]; [super dealloc]; }
 @end
 
@@ -44,9 +45,11 @@ static NSBundle *Bundle(NSString *root, id feed, id key)
     NSString *contents = [app stringByAppendingPathComponent:@"Contents"];
     [[NSFileManager defaultManager] createDirectoryAtPath:contents withIntermediateDirectories:YES attributes:nil error:NULL];
     NSMutableDictionary *info = [NSMutableDictionary dictionaryWithDictionary:@{
-        @"CFBundleIdentifier":@"io.github.polobread.KeyKeyUpdaterIsolatedTest",
+        @"CFBundleIdentifier":[@"io.github.polobread.KeyKeyUpdaterIsolatedTest." stringByAppendingString:[NSUUID UUID].UUIDString],
         @"CFBundleVersion":@"1.3.2", @"CFBundleShortVersionString":@"1.3.2", @"CFBundlePackageType":@"APPL"}];
     if (feed) [info setObject:feed forKey:@"SUFeedURL"];
+    if ([feed isEqual:@"https://example.invalid/channels/stable.xml"])
+        [info setObject:@"https://example.invalid/channels/beta.xml" forKey:@"KeyKeyBetaFeedURL"];
     if (key) [info setObject:key forKey:@"SUPublicEDKey"];
     [info writeToFile:[contents stringByAppendingPathComponent:@"Info.plist"] atomically:YES];
     return [NSBundle bundleWithPath:app];
@@ -154,6 +157,26 @@ int main(int argc, const char *argv[])
         [failed start]; [failed checkForUpdates];
         Check(![[failed snapshot][@"configured"] boolValue] && broken.checks == 0, @"initialization failure stays offline");
         Check([[failed snapshot][@"message"] containsString:@"invalid helper"], @"initialization error is reported");
+        NSBundle *channelHost = Bundle(root, @"https://example.invalid/channels/stable.xml", key);
+        FakeEngine *channelEngine = [[[FakeEngine alloc] init] autorelease];
+        KeyKeyMacUpdater *channelClient = [[[KeyKeyMacUpdater alloc] initWithHostBundle:channelHost
+            engine:channelEngine compositionCheck:nil] autorelease];
+        [channelClient start];
+        Check(![[channelClient snapshot][@"beta"] boolValue], @"beta defaults off including beta-capable builds");
+        Check([[channelClient feedURLStringForUpdater:nil] hasSuffix:@"/stable.xml"], @"fresh client uses stable");
+        Check([channelClient setBetaUpdates:YES] && [[channelClient snapshot][@"beta"] boolValue] &&
+            [[channelClient feedURLStringForUpdater:nil] hasSuffix:@"/beta.xml"], @"explicit beta opt-in uses reviewed endpoint");
+        Check(channelEngine.checks == 0, @"channel toggle does not initiate a network check");
+        [channelClient checkForUpdates];
+        Check(![channelClient setBetaUpdates:NO], @"cannot change channels during update cycle");
+        [channelClient updater:nil didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:nil];
+        channelEngine.sessionInProgress = YES;
+        Check(![channelClient setBetaUpdates:NO], @"cannot change channels during native session");
+        channelEngine.sessionInProgress = NO;
+        Check([channelClient setBetaUpdates:NO] && ![[channelClient snapshot][@"beta"] boolValue] &&
+            [[channelClient feedURLStringForUpdater:nil] hasSuffix:@"/stable.xml"], @"opt-out returns to stable");
+        Check(![failed setBetaUpdates:YES], @"missing beta endpoint cannot silently fall back");
+        [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[channelHost bundleIdentifier]];
         [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
         printf("PASS %d macOS updater assertions (isolated engine; no install or network)\n", passed);
     }

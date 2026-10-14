@@ -29,6 +29,7 @@
 - (NSDictionary *)desktopUpdateStatus;
 - (oneway void)checkForDesktopUpdates;
 - (oneway void)setAutomaticDesktopUpdates:(BOOL)enabled;
+- (oneway void)setBetaDesktopUpdates:(BOOL)enabled;
 
 #pragma mark Loaded Module Package related
 

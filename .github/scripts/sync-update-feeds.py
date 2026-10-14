@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mirror reviewed RSS XML files only; never generate feeds or publish installers."""
+"""Mirror reviewed appcasts and signed metadata; never generate or promote releases."""
 import argparse
 import base64
 import hashlib
@@ -17,12 +17,17 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "update"))
 import channels
+import metadata
 
 PREFIX = "keykey/update"
 CHANNELS = ("stable", "beta")
 SPARKLE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 CACHE_CONTROL = "public,max-age=0,s-maxage=60,must-revalidate"
 MAX_SIZE = 1024 * 1024
+
+
+def reviewed_key():
+    return json.loads(Path(__file__).resolve().parents[2].joinpath("update/config.json").read_text())["public_ed25519_key"]
 
 
 def feeds(directory, update_channel="stable"):
@@ -72,12 +77,89 @@ def feeds(directory, update_channel="stable"):
     return result
 
 
+def channel_snapshot(directory, update_channel):
+    captured = feeds(directory, update_channel)
+    automatic = {name: data for name, data in captured
+                 if ET.fromstring(data).find("./channel/item/enclosure") is not None}
+    path = directory / "metadata.json"
+    signature = directory / "metadata.json.sig"
+    if not path.exists() and not signature.exists():
+        if automatic:
+            raise ValueError("Automatic appcasts require reviewed signed metadata")
+        return captured
+    for candidate in (path, signature):
+        if candidate.is_symlink() or not candidate.is_file() or not 0 < candidate.stat().st_size <= MAX_SIZE:
+            raise ValueError("Metadata and signature must be nonempty real files")
+    public = reviewed_key()
+    metadata.verify(path, signature.read_text(encoding="ascii").strip(), public,
+                    os.environ.get("KEYKEY_TEST_OPENSSL", "openssl"))
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if document.get("schema_version") != 1 or document.get("channel") != update_channel:
+        raise ValueError("Signed metadata schema/channel mismatch")
+    entries = document.get("releases", [])
+    targets = set()
+    if not entries:
+        raise ValueError("Signed metadata must contain at least one release")
+    for entry in entries:
+        target = entry["target"]
+        version = entry["version"]
+        if target not in metadata.TARGETS or target in targets \
+                or channels.parse_version(version)[1] != update_channel \
+                or entry["release_tag"] != "v" + version \
+                or not re.fullmatch(r"[a-f0-9]{40}", entry["source_sha"]) \
+                or entry["source_sha"] != entry["tag_sha"] \
+                or not re.fullmatch(r"[a-f0-9]{64}", entry["sha256"]) \
+                or type(entry["size"]) is not int or entry["size"] <= 0:
+            raise ValueError("Signed release target/version/source/checksum mismatch")
+        suffix = ".pkg.zip" if target == "macos-arm64" else ".exe"
+        name = f"KeyKey-{version}-{target}-{entry['sha256']}{suffix}"
+        if entry["name"] != name or entry["url"] not in (
+                f"https://download.aws.polobread.com/keykey/releases/download/v{version}/{name}",
+                f"https://github.com/polobread/KeyKey/releases/download/v{version}/{name}"):
+            raise ValueError("Updates must use reviewed immutable SHA-256 copy URLs")
+        if len(base64.b64decode(entry["ed25519_signature"], validate=True)) != 64:
+            raise ValueError("Invalid package signature")
+        if target.startswith("windows-") and entry.get("windows_signing") not in ("authenticode", "unsigned-transition"):
+            raise ValueError("Explicit Windows signing policy required")
+        if automatic.get(target + ".xml") != metadata.appcast(entry):
+            raise ValueError("Appcast differs from the reviewed signed metadata")
+        targets.add(target)
+    if set(automatic) != {target + ".xml" for target in targets}:
+        raise ValueError("Automatic appcasts are not fully covered by signed metadata")
+    return captured + [(path.name, path.read_bytes()), (signature.name, signature.read_bytes())]
+
+
 def snapshot(directory, update_channel):
     if update_channel == "all":
         # Validate both channels before any writes, preserving exact relative keys.
         return [(f"{channel}/{name}", data) for channel in CHANNELS
-                for name, data in feeds(directory / channel, channel)]
-    return [(f"{update_channel}/{name}", data) for name, data in feeds(directory, update_channel)]
+                for name, data in channel_snapshot(directory / channel, channel)]
+    return [(f"{update_channel}/{name}", data) for name, data in channel_snapshot(directory, update_channel)]
+
+
+def verify_assets(directory, update_channel, captured=None):
+    """Read each immutable enclosure and verify bytes/signature before CDN writes."""
+    captured = captured if captured is not None else snapshot(directory, update_channel)
+    public = reviewed_key()
+    for name, data in captured:
+        if not name.endswith("/metadata.json"):
+            continue
+        for entry in json.loads(data)["releases"]:
+            with tempfile.TemporaryDirectory(prefix="keykey-verify-update-") as scratch:
+                path = Path(scratch) / entry["name"]
+                with urlopen(entry["url"], timeout=60) as response, path.open("wb") as stream:
+                    if urlsplit(response.geturl()).scheme != "https":
+                        raise ValueError("Update asset redirected away from HTTPS")
+                    count = 0
+                    for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                        count += len(chunk)
+                        if count > entry["size"]:
+                            raise ValueError("Update asset size mismatch")
+                        stream.write(chunk)
+                if path.stat().st_size != entry["size"] or metadata.digest(path) != entry["sha256"]:
+                    raise ValueError("Update asset size/checksum mismatch")
+                metadata.verify(path, entry["ed25519_signature"], public,
+                                os.environ.get("KEYKEY_TEST_OPENSSL", "openssl"))
 
 
 def aws(*arguments):
@@ -100,6 +182,7 @@ def verify_cdn(url, expected):
 
 def sync(directory, update_channel="stable"):
     captured = snapshot(directory, update_channel)  # Validate all channels before external writes.
+    verify_assets(directory, update_channel, captured)
     bucket = os.environ["RELEASE_MIRROR_BUCKET"].strip()
     distribution = os.environ["RELEASE_MIRROR_DISTRIBUTION_ID"].strip()
     base = os.environ["RELEASE_MIRROR_BASE_URL"].strip().rstrip("/")
@@ -124,7 +207,9 @@ def sync(directory, update_channel="stable"):
             key = f"{PREFIX}/{name}"
             checksum = base64.b64encode(hashlib.sha256(data).digest()).decode()
             record = aws("s3api", "put-object", "--bucket", bucket, "--key", key,
-                "--body", str(staged), "--content-type", "application/rss+xml; charset=utf-8",
+                "--body", str(staged), "--content-type",
+                ("application/rss+xml; charset=utf-8" if name.endswith(".xml") else
+                 "application/json; charset=utf-8" if name.endswith(".json") else "text/plain; charset=us-ascii"),
                 "--cache-control", CACHE_CONTROL, "--checksum-algorithm", "SHA256",
                 "--checksum-sha256", checksum, "--metadata", f"source-sha={commit}")
             if record.get("ChecksumSHA256") != checksum:
@@ -142,7 +227,7 @@ def sync(directory, update_channel="stable"):
         "--distribution-id", distribution, "--id", invalidation, "--no-cli-pager"], check=True)
     for name, data in captured:
         verify_cdn(f"{base}/{PREFIX}/{name}", data)
-    summary = f"Synced {len(captured)} XML feeds from master commit `{commit}`; S3 and CDN bytes verified.\n\n"
+    summary = f"Synced {len(captured)} reviewed feed/metadata files from master commit `{commit}`; S3 and CDN bytes verified.\n\n"
     summary += "\n".join(f"- [{name}]({base}/{PREFIX}/{name})" for name, _ in captured) + "\n"
     print(summary)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
@@ -156,9 +241,13 @@ def main():
     parser.add_argument("--channel", choices=(*CHANNELS, "all"), default="all",
         help="all: directory contains stable/ and beta/; single channel: directory contains XML files")
     parser.add_argument("--check-only", action="store_true")
+    parser.add_argument("--verify-assets", action="store_true",
+                        help="also download and verify immutable update packages (read-only)")
     args = parser.parse_args()
+    if args.verify_assets and args.check_only:
+        verify_assets(args.directory, args.channel)
     if args.check_only:
-        print(f"Validated {len(snapshot(args.directory, args.channel))} RSS XML feeds; no AWS/network writes.")
+        print(f"Validated {len(snapshot(args.directory, args.channel))} feed/metadata files; no AWS/network writes.")
     else:
         sync(args.directory, args.channel)
 

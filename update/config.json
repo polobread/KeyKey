@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "public_ed25519_key": "S9cqSGAlXz+KF3GDeDgdXmwyKT1ErG5LLPwcmCU5PW4=",
-  "macos_feed_url": "",
-  "windows_x64_feed_url": "",
-  "windows_x86_feed_url": "",
-  "macos_beta_feed_url": "",
-  "windows_x64_beta_feed_url": "",
-  "windows_x86_beta_feed_url": ""
+  "macos_feed_url": "https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml",
+  "windows_x64_feed_url": "https://download.aws.polobread.com/keykey/update/stable/windows-x64.xml",
+  "windows_x86_feed_url": "https://download.aws.polobread.com/keykey/update/stable/windows-x86.xml",
+  "macos_beta_feed_url": "https://download.aws.polobread.com/keykey/update/beta/macos-arm64.xml",
+  "windows_x64_beta_feed_url": "https://download.aws.polobread.com/keykey/update/beta/windows-x64.xml",
+  "windows_x86_beta_feed_url": "https://download.aws.polobread.com/keykey/update/beta/windows-x86.xml"
 }

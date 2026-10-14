@@ -11,7 +11,7 @@ internal sealed record UpdateCallbacks(Func<int> CanShutdown, Action Shutdown,
 internal interface IDesktopUpdateBackend
 {
     bool Automatic { get; set; }
-    void Configure(string key, string feed, string version, UpdateCallbacks callbacks);
+    void Configure(string key, string feed, string version, UpdateCallbacks callbacks, bool betaChannel = false);
     void Initialize();
     void Check();
     void Cleanup();
@@ -35,11 +35,11 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
         get => win_sparkle_get_automatic_check_for_updates() == 1;
         set => win_sparkle_set_automatic_check_for_updates(value ? 1 : 0);
     }
-    public void Configure(string key, string feed, string version, UpdateCallbacks callbacks)
+    public void Configure(string key, string feed, string version, UpdateCallbacks callbacks, bool betaChannel = false)
     {
         win_sparkle_set_app_details("chichi77", "琦琦輸入法", version);
         // Beta consent/skipped versions must not change stable updater preferences.
-        var preferencesPath = version.Contains('b') ? registryPath + @"\Beta" : registryPath;
+        var preferencesPath = betaChannel ? registryPath + @"\Beta" : registryPath;
         win_sparkle_set_registry_path(preferencesPath);
         win_sparkle_set_appcast_url(feed);
         if (win_sparkle_set_eddsa_public_key(key) != 1)

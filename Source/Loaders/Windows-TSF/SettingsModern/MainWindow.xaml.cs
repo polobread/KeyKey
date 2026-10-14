@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     private readonly List<ComboBox> readingChoices = new();
     private bool updatingReadings;
     private bool trackingUpdateChanges;
+    private bool refreshingUpdateOptions;
     private bool unsavedSettings;
     private bool diagnosticsEdited;
     private DiagnosticSession diagnosticSession;
@@ -146,6 +147,14 @@ public partial class MainWindow : Window
         CheckUpdate.IsEnabled = App.Updater.Available && !App.Updater.Busy;
         ReinstallCurrent.IsEnabled = App.Updater.CanReinstall;
         AutomaticUpdates.IsEnabled = App.Updater.Available;
+        BetaUpdates.IsEnabled = App.Updater.CanChangeBeta;
+        refreshingUpdateOptions = true;
+        try
+        {
+            AutomaticUpdates.IsChecked = App.Updater.Automatic;
+            BetaUpdates.IsChecked = App.Updater.BetaEnabled;
+        }
+        finally { refreshingUpdateOptions = false; }
     }
     private void DiagnosticLogging_Changed(object sender, RoutedEventArgs e)
     {
@@ -171,7 +180,7 @@ public partial class MainWindow : Window
         if (source == CandidateSelectionKeys || source == ComposingTextBufferSize ||
             source == CandidateScale || source == HighlightColor ||
             source == PhoneticLayout || source == CangjiePunctuation ||
-            source is ToggleButton toggle && (toggle is CheckBox or RadioButton) && toggle != AutomaticUpdates &&
+            source is ToggleButton toggle && (toggle is CheckBox or RadioButton) && toggle != AutomaticUpdates && toggle != BetaUpdates &&
                 toggle.DataContext is not CollectionRow)
             unsavedSettings = true;
         UpdateShutdownProtection();
@@ -186,8 +195,16 @@ public partial class MainWindow : Window
 
     private void UpdateShutdownProtection() => App.Updater.SetUnsavedChanges(
         unsavedSettings || PhraseText.Text != savedPhraseText || PhraseReading.Text != savedPhraseReading);
-    private void AutomaticUpdates_Changed(object sender, RoutedEventArgs e) =>
-        App.Updater.SetAutomatic(AutomaticUpdates.IsChecked == true);
+    private void AutomaticUpdates_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!refreshingUpdateOptions) App.Updater.SetAutomatic(AutomaticUpdates.IsChecked == true);
+    }
+    private void BetaUpdates_Changed(object sender, RoutedEventArgs e)
+    {
+        if (refreshingUpdateOptions) return;
+        App.Updater.SetBeta(BetaUpdates.IsChecked == true);
+        RefreshUpdateState();
+    }
 
     private void LoadCollections()
     {

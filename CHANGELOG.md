@@ -20,6 +20,9 @@
 
 ## 桌面更新機制（開發中，未發布）
 
+- macOS／Windows 更新設定新增預設關閉的 beta 頻道選項，Linux 沿用既有選項。建置 beta tag 不等於同意接收 beta；只能選擇建置時審查的 stable／beta HTTPS 網址。檢查、下載、安裝或未儲存 Windows 編輯期間不允許切換，舊回呼不能修改新頻道狀態。首次使用仍須手動安裝含新設定的版本，不重包已發布 beta2。
+- Windows beta 安裝包原生驗證整合進 `Sync Update Feeds to CDN`：驗證已發布檔案的 SHA-256、build/tag 來源、簽章狀態與產品版號，未執行安裝器。工作分支／PR 不取得發布權限；feed 由維護者要求建立 PR、親自 review／merge 後才同步 CDN。保留 SHA-256 副本方案；FreeBSD 公告 PR 固定延後 48 小時，不檢查套件是否已上架。
+- 同一 workflow 增加 master-only 手動副本準備入口，Mac 實際驗證公證、Windows 使用同次原生驗證報告，GitHub 禁止覆蓋、S3 條件式新增並回讀比對。feed 同步增加 signed metadata／安裝包簽章及可下載性門檻，拒絕尚未上線的副本。Terraform 限定新增 metadata／signature 物件權限與短快取，需維護者 review／apply；本次不發布新 release 或直接上傳 feed。
 - CDN 發布摘要的下載網址會編碼檔名中的特殊字元，修正 Linux 套件檔名含 `+` 時連結回傳 403 的問題；S3 物件名稱與 CloudFront invalidation 路徑保留原名，避免把網址編碼套用到儲存鍵。
 - macOS／Windows 封裝支援 `vX.Y.Z-betaN`（例如 `v1.3.2-beta1`、`beta2`），要求 GitHub Pre-release 與固定 tag commit，不改 Latest。更新 metadata 增加 beta channel，原生比較版號使用 `X.Y.ZbN`；beta 建置選獨立 feed，未設定不回退 stable。新增 `update/beta/` 三份空 RSS、stable 防混入驗證、雙 channel CDN 同步及對應 Terraform 權限／短快取；未發布 beta 或執行 Terraform apply。Windows signed beta 的同產品版號安裝保護仍須另行處理。
 - 新增 stable XML CDN 同步 workflow：master feed 變更後經既有 release environment 發布，PR 只驗證。沿用 OIDC、比對 S3／CDN bytes、精確清除快取，不發布 installer／JSON 或刪除遠端檔案；Terraform 增加限定 XML 權限及短快取，仍須維護者 review／apply。

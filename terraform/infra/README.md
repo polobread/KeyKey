@@ -14,13 +14,14 @@ S3 Block Public Access remains enabled. CloudFront reads the bucket through an
 Origin Access Control (OAC), while GitHub Actions receives a short-lived AWS
 session through OIDC. The upload role cannot delete objects. It can write release assets under
 `keykey/releases/download/` and XML feeds under `keykey/update/stable/*.xml` or
-`keykey/update/beta/*.xml`, not arbitrary
+`keykey/update/beta/*.xml`, plus the exact `metadata.json` and `metadata.json.sig`
+objects in each channel, not arbitrary
 files outside those scopes. Release paths receive a one-year CloudFront cache lifetime
 using `s-maxage`, while browsers revalidate before reusing a download. After an
 upload the workflow invalidates only the exact paths it changed, which also
 supports the repository's same-tag recovery builds.
 
-Stable XML feeds have a separate CloudFront cache behavior: minimum TTL 0,
+Stable/beta feed and metadata paths have separate short CloudFront cache behaviors: minimum TTL 0,
 default TTL 60 seconds, maximum TTL 300 seconds. The feed publisher sets edge
 TTL 60 seconds and browser revalidation, invalidates exact feed paths, waits
 for completion, and verifies CDN bytes. This leaves release-asset caching unchanged.
@@ -123,21 +124,27 @@ recovery path rebuilds, verifies, republishes, and mirrors that platform.
 
 After reviewed Terraform plan/apply deploys the new feed permissions/cache policy,
 the [Sync Update Feeds to CDN workflow](../../.github/workflows/sync-update-feeds.yml)
-uploads `update/stable/*.xml` and `update/beta/*.xml` when either changes on `master`. It reuses the same
+uploads `update/stable/*.xml`, `update/beta/*.xml` and reviewed signed metadata when they change on `master`. It reuses the same
 protected `release` environment variables and OIDC role. PR runs only validate.
 Manual dispatch from `master` backfills existing feeds; queued/retried publishers
-always check out current master and sync all current XML files to avoid restoring
-an older event snapshot or dropping another platform's change.
+use the exact snapshot validated by the native jobs and reject it if master has
+advanced before publication; run the latest master instead of restoring an old snapshot.
 
 The destination is `s3://BUCKET/keykey/update/CHANNEL/FILE.xml`, exposed at
 `https://download.aws.polobread.com/keykey/update/CHANNEL/FILE.xml`, where CHANNEL
 is exactly `stable` or `beta`. Both use the short-cache policy; their XML paths
-and IAM object scopes remain separate. All feeds are validated before any upload.
+and IAM object scopes remain separate. Metadata signatures, appcast agreement,
+and downloadable SHA-256-copy bytes/package signatures are validated before any upload.
 The added
-IAM statement grants only `s3:PutObject`/`s3:GetObject` for this XML scope and
+IAM statement grants only `s3:PutObject`/`s3:GetObject` for these XML and exact metadata scopes and
 `cloudfront:GetInvalidation` for the existing distribution's completion waiter.
-There is no delete permission, feed signing, JSON upload, installer publication,
-or Git write in this workflow. Repository deletion does not remove remote objects;
+The default sync operation does not sign files, publish installers or write Git.
+Its separate `stage-beta-assets` operation is master-only manual dispatch with
+protected release approval. It adds byte-identical SHA-256-named copies of existing
+verified beta installers to GitHub/S3, never overwrites originals/copies, never
+changes tags/Latest/feeds, and verifies GitHub/S3/CDN downloads. No new IAM asset
+scope is needed; the release asset prefix already covers these copies.
+There is no delete permission. Repository deletion does not remove remote objects;
 publish an empty-item RSS to disable a feed. Partial failures can be retried;
 existing S3 versioning preserves prior objects for recovery.
 

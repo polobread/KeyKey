@@ -27,6 +27,7 @@ file for terms.
 	IBOutlet id _window;
 	NSTextField *_statusTextField;
 	NSButton *_checkButton;
+	NSButton *_betaButton;
 	NSTimer *_statusTimer;
 }
 
@@ -36,4 +37,5 @@ file for terms.
 	@param sender The sender object.
 */
 - (IBAction)checkUpdateNow:(id)sender;
+- (IBAction)betaUpdatesChanged:(id)sender;
 @end

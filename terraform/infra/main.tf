@@ -198,7 +198,7 @@ resource "aws_cloudfront_distribution" "releases" {
   }
 
   ordered_cache_behavior {
-    path_pattern               = "keykey/update/stable/*.xml"
+    path_pattern               = "keykey/update/stable/*"
     target_origin_id           = "release-s3-origin"
     viewer_protocol_policy     = "redirect-to-https"
     allowed_methods            = ["GET", "HEAD"]
@@ -209,7 +209,7 @@ resource "aws_cloudfront_distribution" "releases" {
   }
 
   ordered_cache_behavior {
-    path_pattern               = "keykey/update/beta/*.xml"
+    path_pattern               = "keykey/update/beta/*"
     target_origin_id           = "release-s3-origin"
     viewer_protocol_policy     = "redirect-to-https"
     allowed_methods            = ["GET", "HEAD"]
@@ -312,6 +312,10 @@ data "aws_iam_policy_document" "github_release_mirror" {
     resources = [
       "${aws_s3_bucket.releases.arn}/keykey/update/stable/*.xml",
       "${aws_s3_bucket.releases.arn}/keykey/update/beta/*.xml",
+      "${aws_s3_bucket.releases.arn}/keykey/update/stable/metadata.json",
+      "${aws_s3_bucket.releases.arn}/keykey/update/stable/metadata.json.sig",
+      "${aws_s3_bucket.releases.arn}/keykey/update/beta/metadata.json",
+      "${aws_s3_bucket.releases.arn}/keykey/update/beta/metadata.json.sig",
     ]
   }
 

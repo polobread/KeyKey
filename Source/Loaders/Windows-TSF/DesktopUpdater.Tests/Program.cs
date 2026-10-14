@@ -29,9 +29,10 @@ internal static class Program
         public int Configures, Starts, Checks, Cleanups;
         public bool FailStart;
         public string Feed = "", Version = "";
+        public bool BetaChannel;
         public UpdateCallbacks Callbacks = null!;
-        public void Configure(string key, string feed, string version, UpdateCallbacks callbacks)
-        { Configures++; Feed = feed; Version = version; Callbacks = callbacks; }
+        public void Configure(string key, string feed, string version, UpdateCallbacks callbacks, bool betaChannel = false)
+        { Configures++; Feed = feed; Version = version; Callbacks = callbacks; BetaChannel = betaChannel; }
         public void Initialize() { Starts++; if (FailStart) throw new IOException("test initialization failure"); }
         public void Check() => Checks++;
         public void Cleanup() { Cleanups++; Callbacks.Error(); Callbacks.Shutdown(); }
@@ -42,6 +43,7 @@ internal static class Program
         try
         {
             LifecycleTests();
+            BetaChannelTests();
             ReinstallTests();
             if (args.Contains("--native")) NativeTests.Run(args);
             return 0;
@@ -52,7 +54,8 @@ internal static class Program
     {
         int shutdowns = 0;
         DesktopUpdater Create(FakeBackend fake, string json) => new(fake, Dispatcher.CurrentDispatcher,
-            () => shutdowns++, () => new MemoryStream(Encoding.UTF8.GetBytes(json)));
+            () => shutdowns++, () => new MemoryStream(Encoding.UTF8.GetBytes(json)),
+            readBetaPreference: () => false, writeBetaPreference: _ => { });
         foreach (var json in new[] { Config(key: ""), Config(x64: "", x86: ""), Config(key: "bad"),
             Config(key: Convert.ToBase64String(new byte[31])), Config(x64: "http://example.invalid/", x86: "http://example.invalid/"),
             Config(x64: "https://user:pass@example.invalid/", x86: "https://user:pass@example.invalid/"),
@@ -145,6 +148,35 @@ internal static class Program
         failed.Dispose(); oldCallbacks.Shutdown(); Pump();
         Check(shutdowns == 1 && failing.Cleanups == 2, "Retried initialization retained shutdown after disposal");
         Console.WriteLine("Updater configuration, architecture, retry, opt-in, threaded callbacks and shutdown races passed");
+    }
+
+    private static void BetaChannelTests()
+    {
+        bool consent = false;
+        int shutdowns = 0;
+        string configuration = Config().TrimEnd('}') +
+            ",\"windows_x64_beta_feed_url\":\"https://example.invalid/beta-x64.xml\",\"windows_x86_beta_feed_url\":\"https://example.invalid/beta-x86.xml\"}";
+        var backend = new FakeBackend();
+        using var client = new DesktopUpdater(backend, Dispatcher.CurrentDispatcher, () => shutdowns++,
+            () => new MemoryStream(Encoding.UTF8.GetBytes(configuration)),
+            readBetaPreference: () => consent, writeBetaPreference: value => consent = value);
+        client.Initialize();
+        Check(!client.BetaEnabled && !backend.BetaChannel && client.CanChangeBeta, "Beta must default off");
+        var oldCallbacks = backend.Callbacks;
+        Check(client.SetBeta(true) && consent && client.BetaEnabled && backend.BetaChannel &&
+            backend.Feed.Contains("/beta-"), "Explicit beta opt-in did not choose pinned architecture feed");
+        oldCallbacks.Found(); oldCallbacks.Shutdown(); Pump();
+        Check(!client.Busy && shutdowns == 0, "Old-channel callback affected the new session");
+        client.Check();
+        Check(!client.SetBeta(false) && client.BetaEnabled, "Channel changed during a native update cycle");
+        backend.Callbacks.Cancelled(); Pump();
+        client.SetUnsavedChanges(true);
+        Check(!client.SetBeta(false), "Channel changed with unsaved edits");
+        client.SetUnsavedChanges(false);
+        Check(client.SetBeta(false) && !consent && !backend.BetaChannel && !backend.Feed.Contains("/beta-"),
+            "Opt-out did not return to stable");
+        Check(backend.Checks == 1 && shutdowns == 0, "Channel toggle performed a network check or shutdown");
+        Console.WriteLine("Default-off beta channel, architecture feeds, busy/unsaved guards and stale callbacks passed");
     }
 
     private static void ReinstallTests()

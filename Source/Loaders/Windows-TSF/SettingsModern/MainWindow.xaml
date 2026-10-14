@@ -211,6 +211,8 @@
           <TextBlock x:Name="UpdateStatus" Margin="0,0,0,20" />
           <CheckBox x:Name="AutomaticUpdates" Content="設定視窗開啟時自動檢查更新（每天一次）"
                     IsEnabled="False" Checked="AutomaticUpdates_Changed" Unchecked="AutomaticUpdates_Changed" Margin="0,0,0,20" />
+          <CheckBox x:Name="BetaUpdates" Content="接收 beta 測試版更新（預設關閉）"
+                    IsChecked="False" IsEnabled="False" Checked="BetaUpdates_Changed" Unchecked="BetaUpdates_Changed" Margin="0,0,0,20" />
           <WrapPanel>
             <Button x:Name="CheckUpdate" Content="立即檢查更新" Click="CheckUpdate_Click" IsEnabled="False" />
             <Button x:Name="ReinstallCurrent" Content="重新安裝目前版本…" Click="ReinstallCurrent_Click"

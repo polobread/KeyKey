@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-目前工作分支為 `codex/macos-notarization-fix`（原 `v1.3.2` 已合併並刪除遠端分支，Linux Shift 修正已合併 PR 26）。Android 與 iOS 開發版號為 `1.3.3`；商店正式版仍為 `1.3.2`（iOS build 41），Android 於 2026-10-08 正式發布。macOS、Windows 與 Linux 產品開發版號為 `1.3.2`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+目前工作分支為 `codex/beta2-update-feeds`（原 `v1.3.2` 已合併並刪除遠端分支）。Android 與 iOS 開發版號為 `1.3.3`；商店正式版仍為 `1.3.2`（iOS build 41），Android 於 2026-10-08 正式發布。macOS、Windows 與 Linux 產品版號為 `1.3.2`，已發布 `v1.3.2-beta2`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -33,8 +33,9 @@
 
 ## 工作區與提交
 
-- 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`；目前使用 `codex/macos-notarization-fix`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
+- 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`；目前使用 `codex/beta2-update-feeds`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
 - PR 必須由使用者親自 review 和 merge；agent 不得自行合併 PR、啟用 auto-merge 或繞過使用者審查。
+- 更新 feed 由維護者請 AI 手動準備 PR；不隨 release 自動改寫 Git／CDN。merge master 後才由 Actions 同步 CDN。保留 SHA-256 內容位址副本，不覆蓋已發布的 beta 安裝包。FreeBSD 公告固定等 release 發布滿 48 小時才加入 PR，不檢查 ports/pkg 可用性、不新增排程。
 - 此流程配合 SignPath 的變更審查與人工簽章核准要求；原始碼、建置腳本及 CI 設定都納入審查。角色與簽章流程見 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
 - 先執行 `git status --short --branch`，保留使用者既有修改。只逐檔 `git add` 本次內容，不用 `git add .` 或 `git add -A`。
 - 提交前檢查 diff、`git diff --check` 與測試結果。提交身分沿用儲存庫設定，不加入工具署名或 `Co-Authored-By`。
