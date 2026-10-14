@@ -45,8 +45,8 @@ class Application(Gtk.Application):
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
-        action = Gio.SimpleAction.new("download", None)
-        action.connect("activate", lambda *_: self.open_download())
+        action = Gio.SimpleAction.new("download", GLib.VariantType.new("s"))
+        action.connect("activate", lambda action, value: self.open_download(value.get_string()))
         self.add_action(action)
         self.update_timer()
 
@@ -180,8 +180,9 @@ class Application(Gtk.Application):
             body += ("請透過 ports／pkg 更新，套件庫可能較晚上架。"
                      if self.system == "FreeBSD" else "開啟官方發行頁查看下載。")
             notification.set_body(body)
-            notification.set_default_action("app.download")
-            notification.add_button("開啟官方發行頁", "app.download")
+            target = GLib.Variant("s", result["version"])
+            notification.set_default_action_and_target("app.download", target)
+            notification.add_button_with_target("開啟官方發行頁", "app.download", target)
             self.send_notification("update", notification)
             self.state["last_notified"] = result["version"]
             try:
@@ -192,8 +193,17 @@ class Application(Gtk.Application):
         self.release()
         return GLib.SOURCE_REMOVE
 
-    def open_download(self):
-        url = self.result["url"] if self.result else updates.RELEASES
+    def open_download(self, version=None):
+        if version is not None:
+            try:
+                updates.version_key(version)
+            except ValueError:
+                return
+            # A notification keeps its exact release target even while another
+            # check clears/replaces the current UI result.
+            url = f"{updates.RELEASES}/tag/v{version}"
+        else:
+            url = self.result["url"] if self.result else updates.RELEASES
         try:
             Gtk.show_uri_on_window(self.window, url, Gtk.get_current_event_time())
         except GLib.Error:

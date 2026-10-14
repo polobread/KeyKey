@@ -121,7 +121,8 @@ class GuiTests(unittest.TestCase):
             pump(lambda: not app.busy)
             notify.assert_called_once()
             with patch("update_notify_gui.Gtk.show_uri_on_window") as open_uri:
-                app.lookup_action("download").activate(None)
+                app.result = None
+                app.lookup_action("download").activate(GLib.Variant("s", "1.3.2"))
                 self.assertEqual(open_uri.call_args.args[1], updates.RELEASES + "/tag/v1.3.2")
             app.enabled.set_active(False)
 
@@ -183,12 +184,19 @@ class GuiTests(unittest.TestCase):
         self.assertIn("ports／pkg", notices[0][4])
         self.assertIn("1.3.2", notices[0][4])
         with patch("update_notify_gui.Gtk.show_uri_on_window") as open_uri:
+            app.result = None
             connection.emit_signal(None, "/org/freedesktop/Notifications",
                                    "org.freedesktop.Notifications", "ActionInvoked",
                                    GLib.Variant("(us)", (7, "default")))
             pump(lambda: open_uri.called)
             self.assertEqual(open_uri.call_args.args[1], updates.RELEASES + "/tag/v1.3.2")
         app.enabled.set_active(False)
+
+    def test_notification_action_rejects_invalid_version(self):
+        app = self.app()
+        with patch("update_notify_gui.Gtk.show_uri_on_window") as open_uri:
+            app.lookup_action("download").activate(GLib.Variant("s", "../evil.invalid"))
+            open_uri.assert_not_called()
 
 
 if __name__ == "__main__":
