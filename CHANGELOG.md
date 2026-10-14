@@ -18,6 +18,7 @@
 
 ## 桌面更新機制（開發中，未發布）
 
+- CDN 發布摘要的下載網址會編碼檔名中的特殊字元，修正 Linux 套件檔名含 `+` 時連結回傳 403 的問題；S3 物件名稱與 CloudFront invalidation 路徑保留原名，避免把網址編碼套用到儲存鍵。
 - macOS／Windows 封裝支援 `vX.Y.Z-betaN`（例如 `v1.3.2-beta1`、`beta2`），要求 GitHub Pre-release 與固定 tag commit，不改 Latest。更新 metadata 增加 beta channel，原生比較版號使用 `X.Y.ZbN`；beta 建置選獨立 feed，未設定不回退 stable。新增 `update/beta/` 三份空 RSS、stable 防混入驗證、雙 channel CDN 同步及對應 Terraform 權限／短快取；未發布 beta 或執行 Terraform apply。Windows signed beta 的同產品版號安裝保護仍須另行處理。
 - 新增 stable XML CDN 同步 workflow：master feed 變更後經既有 release environment 發布，PR 只驗證。沿用 OIDC、比對 S3／CDN bytes、精確清除快取，不發布 installer／JSON 或刪除遠端檔案；Terraform 增加限定 XML 權限及短快取，仍須維護者 review／apply。
 - macOS 加入 Sparkle 更新入口與預設關閉的自動檢查；由 IMK 主程式管理更新，舊版預設開啟的 Yahoo 更新旗標不視為連網同意。安裝包保留更新元件的 XPC/helper 權限並由內而外簽章，所有 pkg 元件固定安裝位置。
