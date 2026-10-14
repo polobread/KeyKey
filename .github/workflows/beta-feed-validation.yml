@@ -1,0 +1,41 @@
+name: Beta Feed Native Validation
+
+on:
+  push:
+    branches: ['codex/beta*-update-feeds']
+    paths:
+      - 'update/beta/**'
+      - '.github/scripts/verify-beta-windows.py'
+      - '.github/workflows/beta-feed-validation.yml'
+  pull_request:
+    paths:
+      - 'update/beta/**'
+      - '.github/scripts/verify-beta-windows.py'
+      - '.github/workflows/beta-feed-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify existing beta installer on Windows without installation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          python .github/scripts/verify-beta-windows.py --out "$env:RUNNER_TEMP/native-verification"
+          if ($LASTEXITCODE -ne 0) { throw 'Native beta installer verification failed.' }
+      - name: Upload public native verification report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: beta-windows-native-verification
+          path: ${{ runner.temp }}/native-verification/
+          if-no-files-found: error
+          retention-days: 7
