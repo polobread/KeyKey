@@ -2,17 +2,23 @@ name: Sync Update Feeds to CDN
 
 on:
   push:
-    branches: [master]
+    branches: [master, 'codex/beta*-update-feeds']
     paths:
       - 'update/stable/*.xml'
       - 'update/beta/*.xml'
+      - 'update/beta/*.json'
+      - '.github/scripts/verify-beta-windows.py'
+      - '.github/workflows/sync-update-feeds.yml'
   pull_request:
     paths:
       - 'update/stable/*.xml'
       - 'update/beta/*.xml'
+      - 'update/beta/*.json'
       - 'update/channels.py'
       - '.github/scripts/sync-update-feeds.py'
       - '.github/scripts/test_sync_update_feeds.py'
+      - '.github/scripts/verify-beta-windows.py'
+      - '.github/scripts/test_verify_beta_windows.py'
       - '.github/workflows/sync-update-feeds.yml'
   workflow_dispatch:
 
@@ -21,21 +27,72 @@ permissions:
 
 jobs:
   validate:
+    outputs:
+      verify_windows: ${{ steps.targets.outputs.verify_windows }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Check out the revision for validation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Determine whether Windows beta metadata changed
+        id: targets
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$BASE_SHA" =~ ^[a-f0-9]{40}$ && "$BASE_SHA" != 0000000000000000000000000000000000000000 ]]; then
+            changed=$(git diff --name-only "$BASE_SHA" HEAD)
+          else
+            changed=$(git diff --name-only HEAD^ HEAD)
+          fi
+          verify=false
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || \
+            rg -q '^(update/beta/(windows-x64\.xml|release\.json|metadata\.json)|\.github/scripts/verify-beta-windows\.py|\.github/workflows/sync-update-feeds\.yml)$' <<< "$changed"; then
+            [[ -f update/beta/release.json ]] && verify=true
+          fi
+          echo "verify_windows=$verify" >> "$GITHUB_OUTPUT"
       - name: Test and validate feeds without AWS access
         shell: bash
         run: |
           set -euo pipefail
           python3 -m unittest discover -s .github/scripts -p test_sync_update_feeds.py -v
+          python3 -m unittest discover -s .github/scripts -p test_verify_beta_windows.py -v
           python3 .github/scripts/sync-update-feeds.py --check-only
 
-  publish:
+  windows-native:
     needs: validate
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    if: needs.validate.outputs.verify_windows == 'true'
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify existing beta installer without installation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: powershell
+        run: |
+          python .github/scripts/verify-beta-windows.py --out "$env:RUNNER_TEMP/native-verification"
+          if ($LASTEXITCODE -ne 0) { throw 'Native beta installer verification failed.' }
+      - name: Upload public native verification report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: beta-windows-native-verification
+          path: ${{ runner.temp }}/native-verification/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [validate, windows-native]
+    if: >-
+      always() && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+      && needs.validate.result == 'success'
+      && (needs.windows-native.result == 'success' || needs.windows-native.result == 'skipped')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: release

@@ -68,7 +68,7 @@ def verify(config, destination):
                       verifier_run_id=os.environ["GITHUB_RUN_ID"],
                       verification="native-windows-signing-state-and-product-version")
         destination.mkdir(parents=True, exist_ok=True)
-        (destination / "windows-x64.verified.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
+        (destination / "windows-x64.verified.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"Verified {tag}: {installer_name}, SHA-256 {checksum}, policy {mode}; installer not executed.")
 
 
