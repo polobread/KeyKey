@@ -7,20 +7,37 @@ on:
       - 'update/stable/*.xml'
       - 'update/beta/*.xml'
       - 'update/beta/*.json'
+      - 'update/stable/metadata.json*'
+      - 'update/beta/metadata.json*'
+      - 'update/metadata.py'
+      - '.github/scripts/sync-update-feeds.py'
       - '.github/scripts/verify-beta-windows.py'
+      - '.github/scripts/stage-beta-assets.py'
+      - '.github/scripts/test_stage_beta_assets.py'
       - '.github/workflows/sync-update-feeds.yml'
   pull_request:
     paths:
       - 'update/stable/*.xml'
       - 'update/beta/*.xml'
       - 'update/beta/*.json'
+      - 'update/stable/metadata.json*'
+      - 'update/beta/metadata.json*'
+      - 'update/metadata.py'
       - 'update/channels.py'
       - '.github/scripts/sync-update-feeds.py'
       - '.github/scripts/test_sync_update_feeds.py'
       - '.github/scripts/verify-beta-windows.py'
       - '.github/scripts/test_verify_beta_windows.py'
+      - '.github/scripts/stage-beta-assets.py'
+      - '.github/scripts/test_stage_beta_assets.py'
       - '.github/workflows/sync-update-feeds.yml'
   workflow_dispatch:
+    inputs:
+      operation:
+        description: 'sync reviewed feeds, or add immutable beta asset copies (no feed changes)'
+        type: choice
+        options: [sync-feeds, stage-beta-assets]
+        default: sync-feeds
 
 permissions:
   contents: read
@@ -49,7 +66,7 @@ jobs:
           else
             changed=$(git diff --name-only HEAD^ HEAD)
           fi
-          verify=$(printf '%s' "$changed" | python3 -c 'import re,sys; print(str(any(re.fullmatch(r"update/beta/(windows-x64\.xml|release\.json|metadata\.json)|\.github/scripts/verify-beta-windows\.py|\.github/workflows/sync-update-feeds\.yml", p) for p in sys.stdin.read().splitlines())).lower())')
+          verify=$(printf '%s' "$changed" | python3 -c 'import re,sys; print(str(any(re.fullmatch(r"update/beta/(windows-x64\.xml|release\.json|metadata\.json(?:\.sig)?)|\.github/scripts/verify-beta-windows\.py|\.github/workflows/sync-update-feeds\.yml", p) for p in sys.stdin.read().splitlines())).lower())')
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -f update/beta/release.json ]]; then verify=true; fi
           echo "verify_windows=$verify" >> "$GITHUB_OUTPUT"
       - name: Test and validate feeds without AWS access
@@ -58,7 +75,8 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s .github/scripts -p test_sync_update_feeds.py -v
           python3 -m unittest discover -s .github/scripts -p test_verify_beta_windows.py -v
-          python3 .github/scripts/sync-update-feeds.py --check-only
+          python3 -m unittest discover -s .github/scripts -p test_stage_beta_assets.py -v
+          python3 .github/scripts/sync-update-feeds.py --check-only --verify-assets
 
   windows-native:
     needs: validate
@@ -88,6 +106,7 @@ jobs:
     needs: [validate, windows-native]
     if: >-
       always() && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+      && inputs.operation != 'stage-beta-assets'
       && needs.validate.result == 'success'
       && (needs.windows-native.result == 'success' || needs.windows-native.result == 'skipped')
     runs-on: ubuntu-24.04
@@ -104,12 +123,12 @@ jobs:
       RELEASE_MIRROR_DISTRIBUTION_ID: ${{ vars.AWS_RELEASE_MIRROR_DISTRIBUTION_ID }}
       RELEASE_MIRROR_BASE_URL: ${{ vars.AWS_RELEASE_MIRROR_BASE_URL }}
     steps:
-      # An approved/queued old run must not restore its old event snapshot.
-      # Sync all current feeds so replaced pending runs cannot omit a platform.
-      - name: Check out current reviewed master
+      # The published snapshot must be the exact revision validated by native jobs.
+      # Reject a stale approved/retried run instead of rolling the CDN back.
+      - name: Check out the validated reviewed master snapshot
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: master
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Validate the current snapshot and configuration
         shell: bash
@@ -118,7 +137,8 @@ jobs:
           : "${RELEASE_MIRROR_BUCKET:?Set AWS_RELEASE_MIRROR_BUCKET in the release environment}"
           : "${RELEASE_MIRROR_DISTRIBUTION_ID:?Set AWS_RELEASE_MIRROR_DISTRIBUTION_ID in the release environment}"
           : "${RELEASE_MIRROR_BASE_URL:?Set AWS_RELEASE_MIRROR_BASE_URL in the release environment}"
-          python3 .github/scripts/sync-update-feeds.py --check-only
+          python3 .github/scripts/sync-update-feeds.py --check-only --verify-assets
+          test "$(git ls-remote origin refs/heads/master | cut -f1)" = "$(git rev-parse HEAD)"
           git rev-parse HEAD
       - name: Configure AWS credentials through OIDC
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -128,4 +148,53 @@ jobs:
           aws-region: ${{ vars.AWS_RELEASE_MIRROR_REGION }}
           allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
       - name: Upload, verify and invalidate the exact feed paths
-        run: python3 .github/scripts/sync-update-feeds.py
+        run: |
+          test "$(git ls-remote origin refs/heads/master | cut -f1)" = "$(git rev-parse HEAD)"
+          python3 .github/scripts/sync-update-feeds.py
+
+  stage-beta-assets:
+    needs: [validate, windows-native]
+    if: >-
+      always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
+      && inputs.operation == 'stage-beta-assets'
+      && needs.validate.result == 'success' && needs.windows-native.result == 'success'
+    runs-on: macos-15
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+    concurrency:
+      group: immutable-beta-assets
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_MIRROR_BUCKET: ${{ vars.AWS_RELEASE_MIRROR_BUCKET }}
+      RELEASE_MIRROR_BASE_URL: ${{ vars.AWS_RELEASE_MIRROR_BASE_URL }}
+      RELEASE_MIRROR_DISTRIBUTION_ID: ${{ vars.AWS_RELEASE_MIRROR_DISTRIBUTION_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download same-run public Windows native report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: beta-windows-native-verification
+          path: ${{ runner.temp }}/native-verification
+      - name: Verify notarized Mac package and prepare identical copies
+        run: |
+          python3 .github/scripts/stage-beta-assets.py prepare \
+            --directory "$RUNNER_TEMP/beta-copies" \
+            --report "$RUNNER_TEMP/native-verification/windows-x64.verified.json"
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_RELEASE_MIRROR_ROLE_ARN }}
+          role-session-name: github-actions-beta-copies
+          aws-region: ${{ vars.AWS_RELEASE_MIRROR_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Add copies without overwriting any asset or publishing feeds
+        run: |
+          python3 .github/scripts/stage-beta-assets.py publish \
+            --directory "$RUNNER_TEMP/beta-copies" \
+            --report "$RUNNER_TEMP/native-verification/windows-x64.verified.json"

@@ -2,9 +2,12 @@ import base64
 from contextlib import nullcontext
 import hashlib
 import importlib.util
+import io
+import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -48,7 +51,8 @@ class SyncFeedsTests(unittest.TestCase):
     def execute(self, aws=None, channel="stable", directory=None):
         with patch.dict(os.environ, self.env), patch.object(mirror, "aws", side_effect=aws or self.fake_aws) as calls, \
              patch.object(mirror.subprocess, "check_output", return_value="a" * 40), \
-             patch.object(mirror.subprocess, "run") as wait, patch.object(mirror, "verify_cdn") as verify:
+             patch.object(mirror.subprocess, "run") as wait, patch.object(mirror, "verify_cdn") as verify, \
+             patch.object(mirror, "verify_assets"):
             mirror.sync(directory or self.root, channel)
             return calls, wait, verify
 
@@ -71,7 +75,7 @@ class SyncFeedsTests(unittest.TestCase):
     def test_uploads_all_xml_only_to_exact_keys_and_verifies_before_invalidation(self):
         for name in ("windows-x64.xml", "macos-arm64.xml", "windows-x86.xml"):
             self.fixture(name)
-        self.fixture("metadata.json", b"not an XML feed")
+        self.fixture("other.json", b"not a reviewed metadata file")
         self.fixture("installer.exe", b"never publish this")
         calls, wait, verify = self.execute()
         uploads = [call.args for call in calls.call_args_list if call.args[:2] == ("s3api", "put-object")]
@@ -202,22 +206,106 @@ class SyncFeedsTests(unittest.TestCase):
             self.execute(denied)
         self.assertFalse((self.root / "summary").exists())
 
+
     def test_failed_invalidation_wait_or_cdn_verification_never_reports_success(self):
         self.fixture()
         with patch.dict(os.environ, self.env), patch.object(mirror, "aws", side_effect=self.fake_aws), \
              patch.object(mirror.subprocess, "check_output", return_value="a" * 40), \
              patch.object(mirror.subprocess, "run", side_effect=subprocess.CalledProcessError(1, "aws")), \
-             patch.object(mirror, "verify_cdn") as verify:
+             patch.object(mirror, "verify_assets"), patch.object(mirror, "verify_cdn") as verify:
             with self.assertRaises(subprocess.CalledProcessError):
                 mirror.sync(self.root)
             verify.assert_not_called()
         with patch.dict(os.environ, self.env), patch.object(mirror, "aws", side_effect=self.fake_aws), \
              patch.object(mirror.subprocess, "check_output", return_value="a" * 40), \
-             patch.object(mirror.subprocess, "run"), \
+             patch.object(mirror.subprocess, "run"), patch.object(mirror, "verify_assets"), \
              patch.object(mirror, "verify_cdn", side_effect=ValueError("CDN mismatch")):
             with self.assertRaisesRegex(ValueError, "CDN mismatch"):
                 mirror.sync(self.root)
         self.assertFalse((self.root / "summary").exists())
+
+
+class SignedMetadataTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.openssl = os.environ.get("KEYKEY_TEST_OPENSSL", shutil.which("openssl"))
+        self.key = self.root / "key.pem"
+        subprocess.run([self.openssl, "genpkey", "-algorithm", "ED25519", "-out", str(self.key)], check=True)
+        self.public = mirror.metadata.public_key(self.key, self.openssl)
+        self.package = self.root / "fixture.pkg.zip"
+        self.data = b"test package, not an installable release"
+        self.package.write_bytes(self.data)
+        checksum = hashlib.sha256(self.data).hexdigest()
+        name = f"KeyKey-1.3.2-beta2-macos-arm64-{checksum}.pkg.zip"
+        self.entry = dict(target="macos-arm64", version="1.3.2-beta2", release_tag="v1.3.2-beta2",
+                          source_sha="a" * 40, tag_sha="a" * 40, minimum_system_version="15.0.0",
+                          name=name, sha256=checksum, size=len(self.data),
+                          ed25519_signature=mirror.metadata.sign(self.package, self.key, self.openssl),
+                          url=f"https://download.aws.polobread.com/keykey/releases/download/v1.3.2-beta2/{name}")
+        self.path = self.root / "metadata.json"
+        self.document = dict(schema_version=1, channel="beta", releases=[self.entry])
+        self.write_signed()
+        (self.root / "macos-arm64.xml").write_bytes(mirror.metadata.appcast(self.entry))
+        self.addCleanup(patch.stopall)
+        patch.object(mirror, "reviewed_key", return_value=self.public).start()
+        patch.dict(os.environ, KEYKEY_TEST_OPENSSL=self.openssl).start()
+
+    def write_signed(self):
+        self.path.write_text(json.dumps(self.document), encoding="utf-8")
+        self.path.with_suffix(".json.sig").write_text(mirror.metadata.sign(self.path, self.key, self.openssl))
+
+    def test_metadata_and_signature_are_captured_without_rewriting(self):
+        captured = dict(mirror.snapshot(self.root, "beta"))
+        self.assertEqual(set(captured), {"beta/macos-arm64.xml", "beta/metadata.json", "beta/metadata.json.sig"})
+        self.assertEqual(captured["beta/metadata.json"], self.path.read_bytes())
+
+    def test_tampered_missing_wrong_channel_and_appcast_mismatch_are_rejected(self):
+        self.path.write_bytes(self.path.read_bytes() + b" ")
+        with self.assertRaisesRegex(ValueError, "signature verification"):
+            mirror.snapshot(self.root, "beta")
+        self.document["channel"] = "stable"
+        self.write_signed()
+        with self.assertRaisesRegex(ValueError, "schema/channel"):
+            mirror.snapshot(self.root, "beta")
+        self.document["channel"] = "beta"
+        self.write_signed()
+        (self.root / "macos-arm64.xml").write_bytes(mirror.metadata.appcast(dict(self.entry, size=1)))
+        with self.assertRaisesRegex(ValueError, "Appcast differs"):
+            mirror.snapshot(self.root, "beta")
+        self.path.unlink()
+        self.path.with_suffix(".json.sig").unlink()
+        with self.assertRaisesRegex(ValueError, "require reviewed signed metadata"):
+            mirror.snapshot(self.root, "beta")
+
+    def test_nonimmutable_asset_cannot_be_published_even_if_metadata_is_signed(self):
+        self.entry["url"] = "https://download.aws.polobread.com/keykey/releases/download/v1.3.2-beta2/original.pkg.zip"
+        self.write_signed()
+        with self.assertRaisesRegex(ValueError, "immutable SHA-256"):
+            mirror.snapshot(self.root, "beta")
+
+    def test_remote_package_requires_exact_size_digest_and_signature(self):
+        def response(data):
+            stream = io.BytesIO(data)
+            stream.geturl = lambda: self.entry["url"]
+            return stream
+        with patch.object(mirror, "urlopen", side_effect=lambda *a, **k: response(self.data)):
+            mirror.verify_assets(self.root, "beta")
+        for data in (self.data + b"extra", b"x" * len(self.data)):
+            with patch.object(mirror, "urlopen", side_effect=lambda *a, **k: response(data)), self.assertRaisesRegex(ValueError, "size|checksum"):
+                mirror.verify_assets(self.root, "beta")
+        self.entry["ed25519_signature"] = base64.b64encode(bytes(64)).decode()
+        self.write_signed()
+        (self.root / "macos-arm64.xml").write_bytes(mirror.metadata.appcast(self.entry))
+        with patch.object(mirror, "urlopen", side_effect=lambda *a, **k: response(self.data)), self.assertRaisesRegex(ValueError, "signature verification"):
+            mirror.verify_assets(self.root, "beta")
+
+    def test_missing_remote_copy_stops_before_every_aws_write(self):
+        with patch.object(mirror, "urlopen", side_effect=OSError("copy not published")), \
+                patch.object(mirror, "aws") as calls, self.assertRaisesRegex(OSError, "not published"):
+            mirror.sync(self.root, "beta")
+        calls.assert_not_called()
 
     def test_cdn_verification_retries_errors_and_rejects_wrong_bytes_or_http_redirect(self):
         url = "https://cdn.example.invalid/keykey/update/stable/macos-arm64.xml"

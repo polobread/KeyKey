@@ -17,6 +17,7 @@ class BetaWindowsVerificationTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        (self.root / "update/beta").mkdir(parents=True)
         self.sha = "a" * 40
         self.config = dict(release_tag="v1.3.2-beta2", source_sha=self.sha, windows_signing="unsigned-transition")
         self.name = "chichi77-KeyKey-1.3.2-windows-x64-setup.unsigned.exe"
@@ -43,6 +44,7 @@ class BetaWindowsVerificationTests(unittest.TestCase):
                 path.write_bytes(self.data)
 
         with patch.object(verifier.sys, "platform", "win32"), \
+             patch.object(verifier, "ROOT", self.root), \
              patch.dict(os.environ, GITHUB_RUN_ID="123"), \
              patch.object(verifier.subprocess, "check_output", side_effect=output), \
              patch.object(verifier.subprocess, "run", side_effect=download), \
@@ -87,6 +89,13 @@ class BetaWindowsVerificationTests(unittest.TestCase):
         self.release["assets"][0]["digest"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(ValueError, "asset/build-info mismatch"):
             self.execute()
+
+    def test_metadata_cannot_claim_a_different_native_verified_file(self):
+        path = self.root / "update/beta/metadata.json"
+        path.write_text(json.dumps(dict(releases=[dict(target="windows-x64", sha256="0" * 64)])))
+        with self.assertRaisesRegex(ValueError, "metadata differs"):
+            self.execute()
+        self.assertFalse((self.root / "out").exists())
 
 
 if __name__ == "__main__":

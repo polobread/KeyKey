@@ -62,6 +62,14 @@ def verify(config, destination):
                      file=str(installer), minimum_system_version="10.0.0", windows_signing=mode,
                      notes="Windows beta 測試版。此版本尚無發行者簽章，安裝可能顯示未知發行者或 SmartScreen 提示。")
         metadata.verify_platform_package(entry)
+        signed_metadata = ROOT / "update/beta/metadata.json"
+        if signed_metadata.exists():
+            candidates = [e for e in json.loads(signed_metadata.read_text(encoding="utf-8"))["releases"]
+                          if e["target"] == "windows-x64"]
+            if len(candidates) != 1 or any(candidates[0].get(k) != v for k, v in entry.items()
+                                          if k not in ("file", "notes")) \
+                    or candidates[0].get("sha256") != checksum or candidates[0].get("size") != installer.stat().st_size:
+                raise ValueError("Reviewed Windows metadata differs from the native-verified original")
         record = dict(schema_version=1, release={key: value for key, value in entry.items() if key != "file"},
                       sha256=checksum, size=installer.stat().st_size,
                       verifier_source_sha=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),

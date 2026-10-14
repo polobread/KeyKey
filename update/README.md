@@ -122,33 +122,31 @@ macOS 發行建置禁止注入 `get-task-allow` 除錯權限；重新簽章只�
 不再把缺少票證的 stapler Error 65 當成第一個錯誤。隔離回歸及報告路徑見
 [`Installer/README.md`](../Installer/README.md#signing-and-notarising)。測試不送件或發布 Release。
 
-## XML feed 自動同步到 CDN
+## Feed／signed metadata 自動同步到 CDN
 
 [`Sync Update Feeds to CDN`](../.github/workflows/sync-update-feeds.yml) 在 `master` 的
-`update/stable/*.xml` 或 `update/beta/*.xml` 新增或變更後觸發；工作分支／PR 只做驗證，不部署。
+`update/stable/*.xml`、`update/beta/*.xml` 或對應 `metadata.json`／`.sig` 變更後觸發；工作分支／PR 只做驗證，不部署。Windows beta 原生驗證已整合在同一 workflow，不另設發布 workflow。
 發布沿用受保護的 `release` environment 與 AWS OIDC role；若 environment 設定人工
 核准，仍需維護者核准該 job，不繞過現有發布規則。
 
-每次同步目前 `master` 的 stable／beta 全部頂層 XML，對應位置為
+每次同步已驗證 master snapshot 的 stable／beta 全部頂層 XML 與 signed metadata，對應位置為
 `update/CHANNEL/FILE.xml` → `s3://AWS_RELEASE_MIRROR_BUCKET/keykey/update/CHANNEL/FILE.xml`，
 公開網址為 `AWS_RELEASE_MIRROR_BASE_URL/keykey/update/CHANNEL/FILE.xml`。
 `CHANNEL` 僅接受 `stable`／`beta`；兩者先完整驗證，再開始任何上傳。
 stable XML 拒絕 beta 比較版號、顯示版號或 beta tag 安裝包網址，避免誤投放。
-使用最新 master 而非舊事件 commit，並串行發布，避免舊 run 重跑或被替換的 pending
-run 遺漏另一平台的 feed。Actions summary 記錄實際發布 commit 與 CDN 連結。
+發布使用原生驗證所對應的同一 commit，並在發布前確認仍為目前 master；舊的等待核准／重跑執行若已過時就失敗，請執行最新 master，不讓舊驗證套用到新 snapshot 或將 CDN 回滾。發布串行化，Actions summary 記錄實際 commit 與 CDN 連結。
 
-工具先驗證所有 XML／RSS 與安全檔名，再上傳相同 bytes，以 SHA-256 與 S3 回讀比對，
+工具先驗證所有 XML／RSS、安全檔名與 metadata 的正式公鑰簽章，自動安裝 XML 必須完全對應 signed metadata。再下載 SHA-256 副本驗證大小、雜湊及安裝包 Ed25519 簽章；副本尚未上線或被竄改時，禁止任何 CDN 寫入。通過後上傳相同 bytes，以 SHA-256 與 S3 回讀比對，
 設定 `application/rss+xml; charset=utf-8` 和
-`public,max-age=0,s-maxage=60,must-revalidate`。最後只 invalidate 精確 XML 路徑，等待完成，
+`public,max-age=0,s-maxage=60,must-revalidate`（JSON／signature 使用各自 content type）。最後只 invalidate 精確 feed／metadata 路徑，等待完成，
 再比對 CDN 回傳內容；上傳、驗證或 cache invalidation 失敗會讓 job 失敗。
 多份 feed 不是原子交易，部分上傳後失敗可重新執行同步；S3 versioning 保留舊版本供維護者恢復。
 
-此流程只鏡像已 review 的 XML，不產生新版本、簽章或 installer，不修改 Git、不發布
-metadata JSON、不刪除 CDN 檔案。移除 repository XML 不會刪除遠端 feed；停用更新可
+預設同步入口只鏡像已 review 的 XML 與 `metadata.json`／`.sig`，不產生新版本、簽章或 installer，不修改 Git、不刪除 CDN 檔案。移除 repository 檔案不會刪除遠端 feed；停用更新可
 改為無 item 的 RSS 再提交。增加手動下載連結不代表已啟用客戶端自動更新。
 
 首次使用需先 review／merge 並依 [Terraform 流程](../terraform/infra/README.md) plan／apply
-新增的 XML 路徑寫入權限、CloudFront `GetInvalidation` 權限與獨立短快取 behavior。
+新增的 XML／精確 metadata 路徑寫入權限、CloudFront `GetInvalidation` 權限與獨立短快取 behavior。
 原 Release 安裝包的長快取與權限保持不變；本次程式開發不執行 Terraform apply 或線上上傳。
 沿用 `release` environment 的現有 `AWS_ACCOUNT_ID` 與 `AWS_RELEASE_MIRROR_*` variables，
 不新增 AWS 長期金鑰。完成基礎設施部署後，可在 Actions 選擇此 workflow、`master`、
@@ -161,7 +159,20 @@ python3 .github/scripts/sync-update-feeds.py --check-only
 python3 -m unittest discover -s .github/scripts -p test_sync_update_feeds.py -v
 # 僅驗證 beta 目錄，不發出 AWS 請求
 python3 .github/scripts/sync-update-feeds.py --channel beta --directory update/beta --check-only
+# 另下載安裝包副本並驗證 Ed25519；仍不寫 GitHub／AWS
+python3 .github/scripts/sync-update-feeds.py --check-only --verify-assets
 ```
+
+### 已發布 beta 的 SHA-256 副本（兩階段審查）
+
+保留 `metadata.py` 的內容位址方案，新增 `KeyKey-VERSION-TARGET-SHA256.pkg.zip`／`.exe`；內容與既有 beta 安裝包逐 byte 相同，不重新打包或重簽平台憑證。原檔、tag、Pre-release 與 Latest 不變。
+
+1. 先 review／merge 副本工具與頻道選項 PR。不要將尚不存在的副本網址當成可部署 feed。
+2. 在同一 `Sync Update Feeds to CDN` 的 **Run workflow** 選擇 `master`、`operation=stage-beta-assets`，按既有 `release` environment 規則核准。這個入口只接受 master 手動執行；工作分支／PR 不取得寫入權限。
+3. Windows job 先對既有 EXE 原生驗證。macOS job 驗證同一次 run／revision 的公開報告，實際檢查 pkg 的 Gatekeeper、公證票證與 beta 版號，再下載並新增副本。GitHub 不使用 `--clobber`；S3 使用 `If-None-Match: *`，已存在物件只回讀確認，差異或權限錯誤一律停止。
+4. GitHub／S3／CDN 副本雜湊與大小全部確認後，請 AI 使用受保護的既有更新私鑰準備 signed metadata／appcasts、建立第二份 feed PR。私鑰不在 Git 或 artifact。你 review／merge master 後，才由預設同步入口部署 feed／metadata。
+
+Windows x86 ZIP 只公告手動下載；Linux 仍透過套件管理器安裝。FreeBSD 公告 PR 固定等 release 發布滿 48 小時，不檢查 ports/pkg 是否已上架，並揭露可能尚不可用；不新增自動排程。beta2 最早為 **2026-10-16 10:05:04（臺灣）**。
 
 ## Numbered beta tags 與隔離的更新來源
 
@@ -229,8 +240,7 @@ updater 測試，不建置 TSF、不安裝、不發布、不取得 release secre
 公鑰原始 bytes 的 SHA-256 為
 `abbbf302de90de80897a16e275dcf8db199509bc908bfe432d917f1222d9f273`。
 此次只驗證公開金鑰格式，未讀取私鑰、驗證私鑰配對或設定 CI secret。
-同日 macOS CDN feed 仍回傳 HTTP 403，故各平台 feed URL 暫保持空白；
-待部署與可存取性驗證完成再設定，不因公鑰就緒而啟用連網。
+當時 macOS CDN feed 回傳 HTTP 403，因此沒有設定網址；2026-10-14 已確認六份 stable／beta CDN feed 回傳 HTTP 200，現在設定於 `config.json`。自動檢查與 beta 同意仍預設關閉，不因公鑰或 URL 就緒而啟用背景連網。
 
 1. 在 repository **外部**產生並備份 PEM Ed25519 私鑰，例如在受保護的金鑰目錄執行：
 
@@ -255,7 +265,7 @@ updater 測試，不建置 TSF、不安裝、不發布、不取得 release secre
 
 3. 設定 `macos_feed_url`、`windows_x64_feed_url` 為 HTTPS 的固定平台 feed。
    各平台共用 CDN 的 `keykey/update/stable/` 目錄，以獨立檔案提供 feed，不另外
-   增加平台子目錄，也不將不同平台合併成同一份 XML。預定配置如下，尚未上傳或啟用：
+   增加平台子目錄，也不將不同平台合併成同一份 XML。配置如下；XML 已可存取，signed metadata 待副本驗證後以 PR 加入：
 
    ```text
    https://download.aws.polobread.com/keykey/update/stable/
@@ -267,7 +277,7 @@ updater 測試，不建置 TSF、不安裝、不發布、不取得 release secre
    ```
 
    `windows-x86.xml` 目前提供無更新項目的初始 RSS；建立並驗證正式 x86 installer 後，
-   才加入版本與下載項目。在此之前保持 `windows_x86_feed_url` 空白。
+   才加入自動安裝項目；目前已設定 x86 feed URL，仍只提供手動 ZIP 下載資訊。
    各 feed URL 必須先實際建立、驗證，再寫入 `config.json`。
    安裝包仍放在 `keykey/releases/download/TAG/FILE`，不放進 feed 目錄。
 
@@ -291,7 +301,7 @@ GitHub 兩個手動下載連結。維持一個標準 RSS `link`，不放重複�
 WinSparkle 讀取後仍回報無可用更新，不會自動下載或執行這些檔案。
 待使用者 review 並將 PR 合併至 `master` 後，才會出現在上述 Raw 網址；CDN 副本仍需
 先部署 XML 同步所需的 IAM／cache 設定，再由上述 workflow 上傳。手動下載資訊不表示已完成自動更新發布。
-正式公鑰已設定；客戶端 feed 設定目前仍留空。
+正式公鑰與兩個 channel 的 CDN feed 設定已加入原始碼；已發布 beta2 未重新打包，不能據此推定舊安裝版本已啟用。
 
 v1.3.1 的 GitHub Release 尚無 x86 EXE 或安裝包 Ed25519 更新簽章；其 Windows
 build-info 的 `source_sha` 與 `tag_sha` 不同，屬既有同版 recovery 下載資產。
