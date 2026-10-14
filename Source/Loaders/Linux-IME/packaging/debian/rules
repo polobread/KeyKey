@@ -11,8 +11,10 @@ override_dh_auto_configure:
 		--sourcedirectory=Source/Loaders/Linux-IME -- \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DPython3_EXECUTABLE=/usr/bin/python3 \
 		-DKEYKEY_BUILD_FCITX5=ON \
 		-DKEYKEY_BUILD_X11_E2E_HOST=OFF \
+		$(if $(KEYKEY_UPDATE_VERSION),-DKEYKEY_UPDATE_VERSION=$(KEYKEY_UPDATE_VERSION)) \
 		-DKEYKEY_INSTALL_STANDALONE_LICENSE_FILES=OFF
 
 override_dh_strip:

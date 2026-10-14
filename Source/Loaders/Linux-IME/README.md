@@ -17,6 +17,11 @@ test does not replace GTK/Qt X11 or GNOME Wayland desktop acceptance.
 The Fcitx configuration page shows the CMake project version in a read-only
 information group, so the addon metadata and visible settings use one source.
 
+The **更新通知與下載…** setting opens a separate notification tool with manual
+checks, optional daily checks (off by default), and an official release-page
+button. It also supports the `chinese/fcitx5-keykey` FreeBSD port through the
+same prefix-aware installation. See [update notifications and ports integration](docs/update-notifications.md).
+
 This directory contains the C++ engine, Fcitx 5 addon, runtime tables, tools,
 desktop integration, packaging, and platform tests. CMake verifies and installs
 the repository's pre-generated shared model. Runtime addon and data names remain
