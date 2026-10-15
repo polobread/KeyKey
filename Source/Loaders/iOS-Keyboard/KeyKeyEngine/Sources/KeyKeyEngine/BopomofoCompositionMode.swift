@@ -98,6 +98,22 @@ public final class BopomofoCompositionModeSettings {
     }
 }
 
+/// One App Group value for both input surfaces. Only the container App writes it;
+/// the extension can read it without requesting Full Access.
+public struct SmartMandarinSpaceSettings {
+    public static let key = "smartSpaceSelectsCandidates"
+    private let sharedDefaults: UserDefaults?
+
+    public init(sharedDefaults: UserDefaults? = UserDefaults(
+        suiteName: KeyboardPreferenceStore.appGroupIdentifier
+    )) {
+        self.sharedDefaults = sharedDefaults
+    }
+
+    public var enabled: Bool { sharedDefaults?.bool(forKey: Self.key) ?? false }
+    public func setEnabled(_ enabled: Bool) { sharedDefaults?.set(enabled, forKey: Self.key) }
+}
+
 public struct KeyboardClickSettings {
     private static let key = "inputClicksEnabled"
     private let store: KeyboardPreferenceStore
@@ -120,22 +136,27 @@ public struct KeyboardLearningResetRequest {
     private static let appliedKey = "smartMandarinLearningResetApplied"
     private let localDefaults: UserDefaults
     private let sharedDefaults: UserDefaults?
+    private let glyphSupport: CandidateGlyphSupport
 
     public init(
-        localDefaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil
+        localDefaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
+        glyphSupport: CandidateGlyphSupport = .shared
     ) {
         self.localDefaults = localDefaults
         self.sharedDefaults = sharedDefaults
+        self.glyphSupport = glyphSupport
     }
 
     public func request() {
+        glyphSupport.reset()
         sharedDefaults?.set(UUID().uuidString, forKey: Self.sharedKey)
     }
 
     public func applyIfNeeded(to userData: SmartMandarinUserData?) -> Bool {
         guard let request = sharedDefaults?.string(forKey: Self.sharedKey),
-              request != localDefaults.string(forKey: Self.appliedKey),
-              let userData else { return false }
+              request != localDefaults.string(forKey: Self.appliedKey) else { return false }
+        glyphSupport.reset()
+        guard let userData else { return false }
         do {
             try userData.resetLearning()
             localDefaults.set(request, forKey: Self.appliedKey)

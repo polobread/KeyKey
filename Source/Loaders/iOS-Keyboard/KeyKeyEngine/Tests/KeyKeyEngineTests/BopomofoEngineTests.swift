@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import KeyKeyEngine
@@ -184,6 +185,169 @@ struct BopomofoEngineTests {
         keys.map { engine.handleSoftKey(String($0)) }
     }
 
+    @Test("literal Space stays editable on both keyboards without duplicating host text")
+    func smartSpaceDefaultsOff() {
+        for hardware in [false, true] {
+            let engine = smartEngine(hardwareEditing: hardware)
+            #expect(!engine.spaceSelectsCandidates)
+            #expect(engine.space() == .commit(" "))
+            _ = type(engine, "su3cl3")
+            var host = TouchSmartHostTextState()
+            _ = host.update(to: engine.completedSmartText)
+            #expect(engine.space() == .update)
+            #expect(engine.composingText == "你好 ")
+            let edit = host.update(to: engine.completedSmartText)
+            #expect(edit.deleteCount == 0 && edit.insertion == " ")
+            #expect(engine.hasComposition && engine.displayedCandidates.isEmpty)
+            #expect(engine.space() == .update)
+            #expect(engine.composingText == "你好  ")
+            _ = host.update(to: engine.completedSmartText)
+            let result = engine.finishCompositionForInputHandoff()
+            #expect(result == .commit("你好  "))
+            #expect(host.finish(with: result.text).isEmpty)
+            #expect(engine.finishCompositionForInputHandoff() == .update)
+        }
+    }
+
+    @Test("Space preserves unknown readings and closes candidates without committing the sentence")
+    func smartLiteralSpacePreservesText() {
+        for hardware in [false, true] {
+            let engine = smartEngine(hardwareEditing: hardware)
+            _ = type(engine, "su3s")
+            #expect(engine.space() == .update)
+            #expect(engine.composingText == "你ㄋ")
+            #expect(engine.finishCompositionForInputHandoff() == .commit("你ㄋ"))
+            _ = type(engine, "su3cl3")
+            #expect(engine.openSmartCandidates() == .update)
+            #expect(engine.isShowingSmartCandidates)
+            #expect(engine.space() == .update)
+            #expect(engine.composingText == "你好 ")
+            #expect(engine.displayedCandidates.isEmpty)
+        }
+    }
+
+    @Test("Space selection can toggle during composition without confirming text")
+    func smartSpaceSettingChanges() {
+        for hardware in [false, true] {
+            let engine = smartEngine(hardwareEditing: hardware)
+            engine.spaceSelectsCandidates = true
+            #expect(engine.space() == .commit(" "))
+            _ = type(engine, "su3")
+            #expect(engine.space() == .update)
+            #expect(engine.isShowingSmartCandidates)
+            #expect(engine.selectDisplayedCandidate(1) == .update)
+            engine.spaceSelectsCandidates = false
+            #expect(engine.space() == .update)
+            #expect(engine.composingText == "妳 ")
+            #expect(engine.backspace() == .update)
+            #expect(engine.composingText == "妳")
+        }
+    }
+
+    @Test("first-tone completion and half/full-width spaces remain separate editable actions")
+    func firstToneSpaceCompletesReading() {
+        for hardware in [false, true] {
+            let engine = BopomofoEngine(dictionary: TableCandidateSource([:]),
+                smartSource: TableSmartSource(table: [TableCandidateSource.queryKey(for: "ru"): ["雞"]]),
+                compositionMode: .smart, hardwareSmartEditing: hardware)
+            _ = type(engine, "ru")
+            #expect(engine.space() == .update)
+            #expect(engine.composingText == "雞" && engine.readingText.isEmpty)
+            #expect(engine.space() == .update)
+            #expect(engine.space(fullWidth: true) == .update)
+            #expect(engine.composingText == "雞 　")
+            #expect(engine.finishCompositionForInputHandoff() == .commit("雞 　"))
+        }
+    }
+
+    @Test("Space pages only when enabled; disabling it inserts an editable space")
+    func smartSpacePaging() {
+        for hardware in [false, true] {
+            let candidates = (1...12).map { "候選\($0)" }
+            let engine = BopomofoEngine(dictionary: TableCandidateSource([:]),
+                smartSource: TableSmartSource(table: [TableCandidateSource.queryKey(for: "su3"): candidates]),
+                compositionMode: .smart, hardwareSmartEditing: hardware)
+            #expect(engine.openSmartCandidates() == .update)
+            _ = type(engine, "su3")
+            engine.spaceSelectsCandidates = true
+            #expect(engine.space() == .update)
+            #expect(engine.displayedCandidates == Array(candidates.prefix(9)))
+            #expect(engine.space() == .update)
+            #expect(engine.displayedCandidates == Array(candidates.suffix(3)))
+            engine.spaceSelectsCandidates = false
+            #expect(engine.space() == .update)
+            #expect(engine.composingText == "候選1 ")
+            #expect(engine.displayedCandidates.isEmpty)
+        }
+    }
+
+    @Test("typing and correcting across a space keeps both sides editable")
+    func smartSpaceKeepsEditing() {
+        for hardware in [false, true] {
+            let engine = smartEngine(hardwareEditing: hardware)
+            _ = type(engine, "su3cl3")
+            #expect(engine.space() == .update)
+            _ = type(engine, "su3")
+            #expect(engine.composingText == "你好 你")
+            if hardware {
+                #expect(engine.moveSmartCompositionCursor(by: -4))
+                #expect(engine.openSmartCandidates() == .update)
+            } else { #expect(engine.selectTouchSmartCell(0)) }
+            #expect(engine.selectDisplayedCandidate(1) == .update)
+            #expect(engine.composingText == "妳好 你")
+            if hardware { #expect(engine.moveSmartCompositionCursor(by: 99)) }
+            #expect(engine.backspace() == .update)
+            #expect(engine.composingText == "妳好 ")
+            #expect(engine.backspace() == .update)
+            #expect(engine.composingText == "妳好")
+            #expect(engine.finishCompositionForInputHandoff() == .commit("妳好"))
+        }
+    }
+
+    @Test("overflow evicts a leading word together with following spaces")
+    func smartSpaceEviction() {
+        for hardware in [false, true] {
+            let engine = smartEngine(hardwareEditing: hardware)
+            let limit = hardware ? 10 : 9
+            _ = type(engine, "su3")
+            #expect(engine.space() == .update)
+            #expect(engine.space() == .update)
+            var committed = ""
+            for _ in 0..<(limit - 2) { committed += type(engine, "su3").map(\.text).joined() }
+            #expect(committed == "你  ")
+            #expect(engine.composingText == String(repeating: "你", count: limit - 2))
+            #expect(engine.smartCompositionReadingCount <= limit)
+        }
+    }
+
+    @Test("glyph filtering preserves page order and hardware selection")
+    func glyphFilteringPages() {
+        let values = ["缺", "你", "妳", "擬", "泥", "尼", "倪", "霓", "逆", "匿", "溺", "睨"]
+        let engine = BopomofoEngine(dictionary: TableCandidateSource(["su3": values]),
+            candidateFilter: { $0 != "缺" })
+        _ = type(engine, "su3")
+        #expect(engine.displayedCandidates.first == "你")
+        #expect(engine.pageCount == 2)
+        engine.changePage(by: 1)
+        #expect(engine.displayedCandidates == ["溺", "睨"])
+        #expect(engine.handleHardwareCharacter("1") == .commit("溺"))
+    }
+
+    @Test("filtered smart candidates retain their original phrase lengths")
+    func smartGlyphFiltering() {
+        let ni = TableCandidateSource.queryKey(for: "su3")
+        let hao = TableCandidateSource.queryKey(for: "cl3")
+        let engine = BopomofoEngine(dictionary: TableCandidateSource([:]),
+            smartSource: TableSmartSource(table: [ni: ["你", "妳"], hao: ["好"], ni + hao: ["您好"]]),
+            compositionMode: .smart, hardwareSmartEditing: true, candidateFilter: { $0 != "你" })
+        _ = type(engine, "su3cl3")
+        #expect(engine.moveSmartCompositionCursor(by: -2))
+        _ = engine.openSmartCandidates()
+        #expect(engine.displayedCandidates == ["妳", "您好"])
+        #expect(engine.handleHardwareCharacter("2") == .update)
+        #expect(engine.composingText == "您好")
+    }
+
     private func smartEngine(hardwareEditing: Bool = false) -> BopomofoEngine {
         let table = [
             TableCandidateSource.queryKey(for: "su3"): ["你", "妳", "擬"],
@@ -252,7 +416,10 @@ struct BopomofoEngineTests {
             let engine = BopomofoEngine(dictionary: TableCandidateSource([:]),
                 smartSource: source, compositionMode: .smart, hardwareSmartEditing: hardware)
             _ = type(engine, "su3cl3")
-            if hardware { _ = engine.space() }
+            if hardware {
+                engine.spaceSelectsCandidates = true
+                _ = engine.space()
+            }
             else { #expect(engine.selectTouchSmartCell(1)) }
             _ = engine.selectDisplayedCandidate(1)
             #expect(engine.composingText == "妳郝")
@@ -498,6 +665,7 @@ struct BopomofoEngineTests {
     func hardwareSmartCandidatePanel() {
         let engine = smartEngine(hardwareEditing: true)
         _ = type(engine, "su3")
+        engine.spaceSelectsCandidates = true
         #expect(engine.space() == .update)
         #expect(engine.isShowingSmartCandidates)
         #expect(engine.displayedCandidates == ["你", "妳", "擬"])
@@ -517,6 +685,7 @@ struct BopomofoEngineTests {
     func hardwareSmartEnterCandidate() {
         let engine = smartEngine(hardwareEditing: true)
         _ = type(engine, "su3")
+        engine.spaceSelectsCandidates = true
         _ = engine.space()
         engine.moveHighlight(by: 1)
         #expect(engine.enter() == .update)
@@ -532,6 +701,7 @@ struct BopomofoEngineTests {
         #expect(engine.moveSmartCompositionCursor(by: -2))
         #expect(engine.smartCompositionCursor == 0)
         #expect(engine.composingCaretUTF16Offset == 0)
+        engine.spaceSelectsCandidates = true
         #expect(engine.space() == .update)
         #expect(engine.displayedCandidates == ["你", "妳", "擬"])
         #expect(engine.selectDisplayedCandidate(1) == .update)
@@ -555,6 +725,7 @@ struct BopomofoEngineTests {
         )
         _ = type(engine, "su3cl3")
         #expect(engine.moveSmartCompositionCursor(by: -2))
+        engine.spaceSelectsCandidates = true
         _ = engine.space()
         #expect(engine.displayedCandidates == ["你", "妳", "你好", "您好"])
         #expect(engine.selectDisplayedCandidate(3) == .update)
@@ -946,4 +1117,24 @@ struct BopomofoEngineTests {
         #expect(engine.inputMode == .bopomofo)
         #expect(!engine.isTemporaryEnglish)
     }
+}
+
+@Suite("Shared Smart Mandarin Space settings")
+struct SmartMandarinSpaceSettingsTests {
+    @Test("Space selection defaults off and both input surfaces follow one App Group value")
+    func sharedSpaceSelection() {
+        let name = "space-shared-\(UUID())"
+        let defaults = UserDefaults(suiteName: name)!
+        defer { defaults.removePersistentDomain(forName: name) }
+        let app = SmartMandarinSpaceSettings(sharedDefaults: defaults)
+        let keyboard = SmartMandarinSpaceSettings(sharedDefaults: UserDefaults(suiteName: name))
+        let editor = SmartMandarinSpaceSettings(sharedDefaults: UserDefaults(suiteName: name))
+        #expect(!app.enabled && !keyboard.enabled && !editor.enabled)
+        app.setEnabled(true)
+        #expect(keyboard.enabled && editor.enabled)
+        app.setEnabled(false)
+        #expect(!keyboard.enabled && !editor.enabled)
+        #expect(!SmartMandarinSpaceSettings(sharedDefaults: nil).enabled)
+    }
+
 }

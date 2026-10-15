@@ -44,6 +44,20 @@ public struct SmartMandarinCandidate: Equatable, Sendable {
     }
 }
 
+/// Fixed literal nodes use the same passthrough convention as desktop Manjusri.
+public enum SmartMandarinLiteral {
+    public static let space = "_passthru_space "
+    public static let fullWidthSpace = "_passthru_fullwidth_space "
+
+    public static func text(for query: String) -> String? {
+        switch query {
+        case space: " "
+        case fullWidthSpace: "　"
+        default: nil
+        }
+    }
+}
+
 public protocol SmartMandarinSource {
     func compose(readings: [String], overrides: [Int: String]) -> SmartMandarinComposition?
     func compose(
@@ -244,7 +258,8 @@ public final class SmartMandarinStore: SmartMandarinSource {
     public func candidateOptions(
         for readings: [String], at index: Int, composition: SmartMandarinComposition?
     ) -> [SmartMandarinCandidate] {
-        guard readings.indices.contains(index) else { return [] }
+        guard readings.indices.contains(index),
+              SmartMandarinLiteral.text(for: readings[index]) == nil else { return [] }
         let previous = composition?.segments.last(where: { $0.start + $0.length == index })
         let previousBackoff = previous.flatMap { segment in
             unigrams(for: segment.query).first(where: { $0.text == segment.text })?.backoff
@@ -299,7 +314,9 @@ public final class SmartMandarinStore: SmartMandarinSource {
     ) {
         guard readings.indices.contains(index), candidate.length > 0,
               index + candidate.length <= readings.count else { return }
-        let previous = composition?.segments.last(where: { $0.start + $0.length == index })
+        let previous = composition?.segments.last(where: {
+            $0.start + $0.length == index && SmartMandarinLiteral.text(for: $0.query) == nil
+        })
         userData?.learnCandidate(
             query: readings[index..<(index + candidate.length)].joined(),
             current: candidate.text,
@@ -345,6 +362,9 @@ public final class SmartMandarinStore: SmartMandarinSource {
     }
 
     private func unigrams(for query: String) -> [Unigram] {
+        if let text = SmartMandarinLiteral.text(for: query) {
+            return [Unigram(text: text, probability: 0, backoff: 0)]
+        }
         let base: [Unigram]
         if let cached = unigramCache[query] {
             base = cached

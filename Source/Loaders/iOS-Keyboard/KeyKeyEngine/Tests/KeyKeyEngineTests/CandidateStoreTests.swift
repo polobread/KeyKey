@@ -61,6 +61,31 @@ struct CandidateStoreTests {
 
 @Suite("Smart Mandarin language model")
 struct SmartMandarinStoreTests {
+    @Test("literal spaces compose from the bundled model and preserve editing across the separator")
+    func editableLiteralSpaces() throws {
+        let database = try Database(url: try cookedDatabaseURL())
+        let source = try SmartMandarinStore(database: database)
+        for hardware in [false, true] {
+            let engine = BopomofoEngine(dictionary: try CandidateStore(database: database),
+                smartSource: source, compositionMode: .smart, hardwareSmartEditing: hardware)
+            for key in "su3cl3" { _ = engine.handleSoftKey(String(key)) }
+            #expect(engine.space() == .update)
+            #expect(engine.composingText == "你好 ")
+            for key in "su3" { _ = engine.handleSoftKey(String(key)) }
+            #expect(engine.composingText == "你好 你")
+            if hardware { #expect(engine.moveSmartCompositionCursor(by: -4)); _ = engine.openSmartCandidates() }
+            else { #expect(engine.selectTouchSmartCell(0)) }
+            let index = try #require(engine.displayedCandidates.firstIndex(of: "妳"))
+            #expect(engine.selectDisplayedCandidate(index) == .update)
+            #expect(engine.composingText == "妳好 你")
+            if hardware { #expect(engine.moveSmartCompositionCursor(by: 99)) }
+            #expect(engine.backspace() == .update)
+            #expect(engine.backspace() == .update)
+            #expect(engine.composingText == "妳好")
+            #expect(engine.finishCompositionForInputHandoff() == .commit("妳好"))
+        }
+    }
+
     @Test("the cooked mobile language model includes the current bigram corpus")
     func bigramCorpusSize() throws {
         let database = try Database(url: try cookedDatabaseURL())
@@ -101,7 +126,7 @@ struct SmartMandarinStoreTests {
 
         let engine = BopomofoEngine(
             dictionary: try CandidateStore(database: database),
-            smartSource: store, compositionMode: .smart
+            smartSource: store, compositionMode: .smart, spaceSelectsCandidates: true
         )
         let keys = ["fu/3", "ru84", "ul4", "fm4", "s83", "xu3",
                     "j06", "sk7", "fm4", "c93", "1u0"]
@@ -123,7 +148,7 @@ struct SmartMandarinStoreTests {
 
         let handoff = BopomofoEngine(
             dictionary: try CandidateStore(database: database),
-            smartSource: store, compositionMode: .smart
+            smartSource: store, compositionMode: .smart, spaceSelectsCandidates: true
         )
         var alreadySent = ""
         for syllable in keys.prefix(10) {
@@ -158,7 +183,7 @@ struct SmartMandarinStoreTests {
             ])
             #expect(store.evictionLength(readings: [query("fu/3"), query("ru84")], composition: legacySplit) == 2)
             let engine = BopomofoEngine(dictionary: try CandidateStore(database: database),
-                smartSource: store, compositionMode: .smart, hardwareSmartEditing: hardware)
+                smartSource: store, compositionMode: .smart, hardwareSmartEditing: hardware, spaceSelectsCandidates: true)
             let keys = ["fu/3", "ru84", "ul4", "fm4", "s83", "xu3", "j06", "sk7", "fm4", "c93", "1u0 "]
             var committed = ""
             for syllable in keys.prefix(hardware ? 11 : 10) {
@@ -179,7 +204,7 @@ struct SmartMandarinStoreTests {
             dictionary: try CandidateStore(database: database),
             smartSource: try SmartMandarinStore(database: database),
             compositionMode: .smart,
-            hardwareSmartEditing: true
+            hardwareSmartEditing: true, spaceSelectsCandidates: true
         )
         let keys = ["fu/3", "ru84", "ul4", "fm4", "s83", "xu3",
                     "j06", "sk7", "fm4", "c93", "1u0", "up", "jo4",

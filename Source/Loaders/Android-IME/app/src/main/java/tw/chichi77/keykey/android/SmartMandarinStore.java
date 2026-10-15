@@ -207,7 +207,8 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     @Override
     public List<SmartMandarinCandidate> candidateOptions(
             List<String> readings, int index, SmartMandarinComposition composition) {
-        if (index < 0 || index >= readings.size()) return List.of();
+        if (index < 0 || index >= readings.size()
+                || SmartMandarinLiteral.text(readings.get(index)) != null) return List.of();
         SmartMandarinSegment previous = null;
         if (composition != null) {
             for (SmartMandarinSegment segment : composition.segments()) {
@@ -263,6 +264,7 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
                 if (segment.start() + segment.length() == index) previous = segment;
             }
         }
+        if (previous != null && SmartMandarinLiteral.text(previous.query()) != null) previous = null;
         try {
             userData.learnCandidate(String.join("", readings.subList(index,
                             index + candidate.length())), candidate.text(),
@@ -316,6 +318,8 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
     }
 
     private List<Unigram> unigrams(String query) {
+        String literal = SmartMandarinLiteral.text(query);
+        if (literal != null) return List.of(new Unigram(literal, 0, 0));
         List<Unigram> cached = unigramCache.get(query);
         if (cached == null) {
             ArrayList<Unigram> rows = new ArrayList<>();

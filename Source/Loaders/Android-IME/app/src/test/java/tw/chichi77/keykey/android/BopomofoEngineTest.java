@@ -727,6 +727,7 @@ public final class BopomofoEngineTest {
         BopomofoEngine engine = new BopomofoEngine(dictionary, source,
                 BopomofoCompositionMode.SMART);
 
+        engine.setSpaceSelectsCandidates(true);
         StringBuilder committed = new StringBuilder();
         for (int index = 0; index < keys.length; index++) {
             BopomofoEngine.Result result = BopomofoEngine.Result.update();
@@ -765,6 +766,7 @@ public final class BopomofoEngineTest {
 
         BopomofoEngine hardware = new BopomofoEngine(dictionary, source,
                 BopomofoCompositionMode.SMART);
+        hardware.setSpaceSelectsCandidates(true);
         StringBuilder hardwareCommitted = new StringBuilder();
         for (int index = 0; index < keys.length; index++) {
             for (char key : keys[index].toCharArray()) {
@@ -820,6 +822,7 @@ public final class BopomofoEngineTest {
         };
         BopomofoEngine learnedHardware = new BopomofoEngine(dictionary, learnedSplit,
                 BopomofoCompositionMode.SMART);
+        learnedHardware.setSpaceSelectsCandidates(true);
         StringBuilder learnedCommitted = new StringBuilder();
         for (String syllable : java.util.Arrays.copyOf(keys, 11)) {
             for (char key : syllable.toCharArray()) {
@@ -978,6 +981,7 @@ public final class BopomofoEngineTest {
         assertEquals(2, engine.smartCompositionCursor());
         assertTrue(engine.moveSmartCompositionCursor(-2));
         assertEquals(0, engine.composingCaretUtf16Offset());
+        engine.setSpaceSelectsCandidates(true);
         engine.handleHardwareSpace();
         assertEquals(List.of("你", "妳"), engine.displayedCandidates());
         assertEquals("", engine.selectDisplayedCandidate(1).committedText());
@@ -990,6 +994,7 @@ public final class BopomofoEngineTest {
         BopomofoEngine engine = smartEngine();
         typeHardware(engine, "su3");
         assertTrue(engine.displayedCandidates().isEmpty());
+        engine.setSpaceSelectsCandidates(true);
         engine.handleHardwareSpace();
         assertTrue(engine.isShowingSmartCandidates());
         engine.moveHighlight(1);
@@ -1051,6 +1056,7 @@ public final class BopomofoEngineTest {
                 BopomofoCompositionMode.SMART);
         typeHardware(engine, "su3cl3");
         assertTrue(engine.moveSmartCompositionCursor(-2));
+        engine.setSpaceSelectsCandidates(true);
         engine.handleHardwareSpace();
         assertEquals(List.of("你", "您好"), engine.displayedCandidates());
         engine.selectDisplayedCandidate(1);
@@ -1101,6 +1107,7 @@ public final class BopomofoEngineTest {
                     BopomofoCompositionMode.SMART);
             if (hardware) {
                 typeHardware(engine, "su3cl3");
+                engine.setSpaceSelectsCandidates(true);
                 engine.handleHardwareSpace();
             } else {
                 type(engine, "su3cl3");
@@ -1110,6 +1117,174 @@ public final class BopomofoEngineTest {
             assertEquals("妳郝", engine.composingText());
             assertEquals(List.of("妳郝"), learned);
         }
+    }
+
+    @Test
+    public void smartSpaceDefaultsOffKeepsBothKeyboardsEditableWithoutDuplicatingHostText() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            BopomofoEngine engine = smartEngine();
+            assertEquals(" ", engine.space().committedText());
+            if (hardware) typeHardware(engine, "su3cl3"); else type(engine, "su3cl3");
+            TouchSmartHostTextState host = new TouchSmartHostTextState();
+            host.update(engine.completedSmartText(), "");
+            assertEquals("", (hardware ? engine.handleHardwareSpace() : engine.space()).committedText());
+            assertEquals("你好 ", engine.composingText());
+            TouchSmartHostTextState.Edit change = host.update(engine.completedSmartText(), "");
+            assertEquals(0, change.deleteCount());
+            assertEquals(" ", change.insertion());
+            assertTrue(engine.hasComposition());
+            assertTrue(engine.displayedCandidates().isEmpty());
+            assertEquals("", engine.space().committedText());
+            assertEquals("你好  ", engine.composingText());
+            host.update(engine.completedSmartText(), "");
+            String finished = engine.finishCompositionForInputHandoff().committedText();
+            assertEquals("你好  ", finished);
+            assertTrue(host.finish(finished).isEmpty());
+            assertEquals("", engine.finishCompositionForInputHandoff().committedText());
+        }
+    }
+
+    @Test
+    public void smartSpaceKeepsUnknownReadingAndClosesCandidatesWithoutConfirmingText() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            BopomofoEngine engine = smartEngine();
+            if (hardware) typeHardware(engine, "su3s"); else type(engine, "su3s");
+            assertEquals("", engine.space().committedText());
+            assertEquals("你ㄋ", engine.composingText());
+            assertEquals("你ㄋ", engine.finishCompositionForInputHandoff().committedText());
+            if (hardware) typeHardware(engine, "su3cl3"); else type(engine, "su3cl3");
+            engine.openSmartCandidates();
+            assertTrue(engine.isShowingSmartCandidates());
+            assertEquals("", engine.space().committedText());
+            assertEquals("你好 ", engine.composingText());
+            assertTrue(engine.displayedCandidates().isEmpty());
+        }
+    }
+
+    @Test
+    public void smartSpaceSelectionTogglesWithoutConfirmingAndRetainsBothSpaceWidths() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            BopomofoEngine engine = smartEngine();
+            engine.setSpaceSelectsCandidates(true);
+            assertEquals(" ", engine.space().committedText());
+            if (hardware) typeHardware(engine, "su3"); else type(engine, "su3");
+            engine.space();
+            assertTrue(engine.isShowingSmartCandidates());
+            engine.selectDisplayedCandidate(1);
+            engine.setSpaceSelectsCandidates(false);
+            assertEquals("", engine.space().committedText());
+            assertEquals("妳 ", engine.composingText());
+            engine.backspace();
+            assertEquals("妳", engine.composingText());
+        }
+        BopomofoEngine engine = smartEngine();
+        typeHardware(engine, "su3");
+        engine.toggleHardwareWidth();
+        assertEquals("", engine.handleHardwareSpace().committedText());
+        assertEquals("你　", engine.composingText());
+        engine.toggleHardwareWidth();
+        engine.handleHardwareSpace();
+        assertEquals("你　 ", engine.enter().committedText());
+    }
+
+    @Test
+    public void firstToneAndPagingKeepLiteralSpacesInsideComposition() {
+        List<String> options = java.util.stream.IntStream.rangeClosed(1, 12)
+                .mapToObj(index -> "候選" + index).toList();
+        SmartMandarinSource source = new SmartMandarinSource() {
+            @Override public SmartMandarinComposition compose(List<String> readings,
+                    Map<Integer, String> overrides) {
+                java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
+                StringBuilder text = new StringBuilder();
+                for (int index = 0; index < readings.size(); index++) {
+                    String value = overrides.getOrDefault(index, options.get(0));
+                    segments.add(new SmartMandarinSegment(index, 1, readings.get(index), value));
+                    text.append(value);
+                }
+                return new SmartMandarinComposition(text.toString(), List.copyOf(segments));
+            }
+            @Override public List<String> candidates(List<String> readings, int index,
+                    SmartMandarinComposition composition) { return options; }
+        };
+        for (boolean hardware : new boolean[]{false, true}) {
+            BopomofoEngine engine = new BopomofoEngine(CinDictionary.empty(), source,
+                    BopomofoCompositionMode.SMART);
+            if (hardware) typeHardware(engine, "ru"); else type(engine, "ru");
+            assertEquals("", engine.space().committedText());
+            assertTrue(engine.readingText().isEmpty());
+            engine.setSpaceSelectsCandidates(true);
+            engine.space();
+            assertEquals(options.subList(0, 9), engine.displayedCandidates());
+            engine.space();
+            assertEquals(options.subList(9, 12), engine.displayedCandidates());
+            engine.setSpaceSelectsCandidates(false);
+            assertEquals("", engine.space().committedText());
+            assertEquals("候選1 ", engine.composingText());
+        }
+    }
+
+    @Test
+    public void smartSpaceKeepsEarlierCorrectionsAndBackspaceEditable() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            BopomofoEngine engine = smartEngine();
+            if (hardware) typeHardware(engine, "su3cl3"); else type(engine, "su3cl3");
+            engine.space();
+            if (hardware) typeHardware(engine, "su3"); else type(engine, "su3");
+            assertEquals("你好 你", engine.composingText());
+            if (hardware) { engine.moveSmartCompositionCursor(-4); engine.openSmartCandidates(); }
+            else assertTrue(engine.selectTouchSmartCell(0));
+            engine.selectDisplayedCandidate(1);
+            assertEquals("妳好 你", engine.composingText());
+            if (hardware) engine.moveSmartCompositionCursor(99);
+            engine.backspace();
+            assertEquals("妳好 ", engine.composingText());
+            engine.backspace();
+            assertEquals("妳好", engine.composingText());
+        }
+    }
+
+    @Test
+    public void overflowEvictsLeadingWordTogetherWithFollowingSpaces() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            BopomofoEngine engine = smartEngine();
+            int limit = hardware ? 10 : 9;
+            if (hardware) typeHardware(engine, "su3"); else type(engine, "su3");
+            engine.space(); engine.space();
+            StringBuilder committed = new StringBuilder();
+            for (int count = 0; count < limit - 2; count++) {
+                for (char key : "su3".toCharArray()) committed.append((hardware
+                        ? engine.handleHardwareCharacter(key) : engine.handleSoftKey(String.valueOf(key))).committedText());
+            }
+            assertEquals("你  ", committed.toString());
+            assertEquals("你".repeat(limit - 2), engine.composingText());
+        }
+    }
+
+    @Test
+    public void glyphFilteringPrecedesPagingAndHardwareSelection() throws Exception {
+        BopomofoEngine engine = engineWith("su3 缺\nsu3 你\nsu3 妳\nsu3 擬\nsu3 泥\nsu3 尼\nsu3 倪\nsu3 霓\nsu3 逆\nsu3 匿\nsu3 溺\nsu3 睨\n");
+        engine.setCandidateFilter(text -> !text.equals("缺"));
+        typeHardware(engine, "su3");
+        assertEquals("你", engine.displayedCandidates().get(0));
+        assertEquals(2, engine.pageCount());
+        engine.changePage(1);
+        assertEquals(List.of("溺", "睨"), engine.displayedCandidates());
+        assertEquals("溺", engine.handleHardwareCharacter('1').committedText());
+        engine.setCandidateFilter(text -> false);
+        typeHardware(engine, "su3");
+        assertTrue(engine.displayedCandidates().isEmpty());
+        assertEquals("", engine.handleHardwareCharacter('1').committedText());
+    }
+
+    @Test
+    public void smartGlyphFilteringPreservesCandidateSelectionMapping() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        engine.setCandidateFilter(text -> !text.equals("你"));
+        typeHardware(engine, "su3");
+        engine.openSmartCandidates();
+        assertEquals(List.of("妳"), engine.displayedCandidates());
+        assertEquals("", engine.handleHardwareCharacter('1').committedText());
+        assertEquals("妳", engine.composingText());
     }
 
     private BopomofoEngine smartEngine() throws Exception {
@@ -1127,7 +1302,7 @@ public final class BopomofoEngineTest {
             public SmartMandarinComposition compose(List<String> readings,
                                                      Map<Integer, String> overrides) {
                 if (readings.stream().anyMatch(query -> !query.equals(firstQuery)
-                        && !query.equals(secondQuery))) return null;
+                        && !query.equals(secondQuery) && SmartMandarinLiteral.text(query) == null)) return null;
                 StringBuilder text = new StringBuilder();
                 java.util.ArrayList<SmartMandarinSegment> segments = new java.util.ArrayList<>();
                 for (int index = 0; index < readings.size(); index++) {

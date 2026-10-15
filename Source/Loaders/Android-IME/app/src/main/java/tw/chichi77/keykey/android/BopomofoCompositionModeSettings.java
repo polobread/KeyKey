@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 final class BopomofoCompositionModeSettings {
     static final String KEY_MODE = "bopomofo_composition_mode";
     static final String KEY_BIGRAM_ENABLED = "smart_bigram_enabled";
+    static final String KEY_SPACE_SELECTS_CANDIDATES = "smart_space_selects_candidates";
     private static final String SMART = "smart";
     private static final String TRADITIONAL = "traditional";
 
@@ -17,6 +18,14 @@ final class BopomofoCompositionModeSettings {
 
     static void setMode(Context context, BopomofoCompositionMode mode) {
         preferences(context).edit().putString(KEY_MODE, valueForMode(mode)).apply();
+    }
+
+    static boolean spaceSelectsCandidates(Context context) {
+        return preferences(context).getBoolean(KEY_SPACE_SELECTS_CANDIDATES, false);
+    }
+
+    static void setSpaceSelectsCandidates(Context context, boolean enabled) {
+        preferences(context).edit().putBoolean(KEY_SPACE_SELECTS_CANDIDATES, enabled).apply();
     }
 
     static boolean bigramEnabled(Context context) {

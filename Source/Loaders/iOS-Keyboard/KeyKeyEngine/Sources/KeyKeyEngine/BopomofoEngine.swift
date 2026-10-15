@@ -72,6 +72,7 @@ public final class BopomofoEngine {
         "🚗", "🚌", "🚆", "✈️", "🚀", "🏠", "🎁", "🎈", "🔔"
     ]
 
+    private let candidateFilter: (String) -> Bool
     private let dictionary: CandidateSource
     private var associatedPhrases: AssociatedPhraseSource?
     private let smartSource: SmartMandarinSource?
@@ -99,6 +100,7 @@ public final class BopomofoEngine {
     private var smartCandidateStart = 0
     private var smartCandidateOptions: [SmartMandarinCandidate] = []
     private var showingSmartCandidates = false
+    public var spaceSelectsCandidates: Bool
 
     public init(
         dictionary: CandidateSource,
@@ -106,12 +108,16 @@ public final class BopomofoEngine {
         smartSource: SmartMandarinSource? = nil,
         compositionMode: BopomofoCompositionMode = .traditional,
         hardwareSmartEditing: Bool = false,
-        keyboardLayout: BopomofoKeyboardLayout = .standard
+        keyboardLayout: BopomofoKeyboardLayout = .standard,
+        spaceSelectsCandidates: Bool = false,
+        candidateFilter: @escaping (String) -> Bool = { _ in true }
     ) {
         self.dictionary = dictionary
+        self.candidateFilter = candidateFilter
         self.associatedPhrases = associatedPhrases
         self.smartSource = smartSource
         self.hardwareSmartEditing = hardwareSmartEditing
+        self.spaceSelectsCandidates = spaceSelectsCandidates
         self.reading = BopomofoReading(layout: keyboardLayout)
         self.compositionMode = smartSource == nil ? .traditional : compositionMode
         chineseInputMethod = self.compositionMode == .smart ? .smart : .traditional
@@ -330,7 +336,8 @@ public final class BopomofoEngine {
     }
 
     @discardableResult
-    public func space() -> Result {
+    public func space(fullWidth: Bool = false) -> Result {
+        let literalSpace = fullWidth ? "　" : " "
         if chineseInputMethod.isTable, mode == .bopomofo {
             if !candidates.isEmpty {
                 if chineseInputMethod == .cangjie, pageCount == 1, !showingAssociatedPhrases {
@@ -339,25 +346,33 @@ public final class BopomofoEngine {
                 changePage(by: 1)
                 return .update
             }
-            return tableCode.isEmpty ? .commit(" ") : queryTable(final: true)
+            return tableCode.isEmpty ? .commit(literalSpace) : queryTable(final: true)
         }
         if compositionMode == .smart, mode == .bopomofo {
+            // Space still completes an unfinished first-tone reading, as on desktop.
             if !reading.isEmpty { return finishSmartReading() }
-            if !smartReadings.isEmpty {
-                if !showingSmartCandidates {
-                    showHardwareSmartCandidates()
-                } else {
-                    changePage(by: 1)
-                }
-                return .update
+            if !spaceSelectsCandidates {
+                return insertSmartSpace(fullWidth: fullWidth)
             }
+            if reading.isEmpty, smartReadings.isEmpty, candidates.isEmpty { return .commit(literalSpace) }
+            return openSmartCandidates()
         }
         if !candidates.isEmpty {
             changePage(by: 1)
             return .update
         }
-        guard mode == .bopomofo, !reading.isEmpty else { return .commit(" ") }
+        guard mode == .bopomofo, !reading.isEmpty else { return .commit(literalSpace) }
         return query()
+    }
+
+    /// Down-arrow and Hsu q select candidates independently of the Space preference.
+    @discardableResult
+    public func openSmartCandidates() -> Result {
+        guard compositionMode == .smart, mode == .bopomofo else { return .update }
+        if !reading.isEmpty { return finishSmartReading() }
+        if !smartReadings.isEmpty, !showingSmartCandidates { showHardwareSmartCandidates() }
+        else if !candidates.isEmpty { changePage(by: 1) }
+        return .update
     }
 
     @discardableResult
@@ -552,7 +567,7 @@ public final class BopomofoEngine {
         }
         if reading.layout == .hsu, key == "q", reading.isEmpty,
            compositionMode == .smart, !smartReadings.isEmpty {
-            return space()
+            return openSmartCandidates()
         }
         if reading.isEmpty, let punctuation = reading.layout.punctuation(for: key) {
             return .commit(finishCompositionForModeSwitch().text + punctuation)
@@ -635,6 +650,7 @@ public final class BopomofoEngine {
         if chineseInputMethod == .cangjie, tableOptions.dynamicFrequency {
             candidates = source.ordered(candidates, code: tableCode)
         }
+        candidates = candidates.filter(candidateFilter)
         showingAssociatedPhrases = false
         tableCandidatesFinal = final
         pageIndex = 0
@@ -648,7 +664,7 @@ public final class BopomofoEngine {
     }
 
     private func query() -> Result {
-        candidates = dictionary.candidates(for: reading)
+        candidates = dictionary.candidates(for: reading).filter(candidateFilter)
         showingAssociatedPhrases = false
         pageIndex = 0
         highlight = 0
@@ -659,37 +675,54 @@ public final class BopomofoEngine {
     }
 
     private func finishSmartReading() -> Result {
-        guard let smartSource, !reading.isEmpty else { return .update }
-        let query = reading.queryKey
+        guard smartSource != nil, !reading.isEmpty else { return .update }
+        if let result = insertSmartQuery(reading.queryKey) { return result }
+        candidates = dictionary.candidates(for: reading).filter(candidateFilter)
+        showingSmartCandidates = false
+        pageIndex = 0
+        highlight = 0
+        return .update
+    }
+
+    private func insertSmartSpace(fullWidth: Bool) -> Result {
+        let text = fullWidth ? "　" : " "
+        guard !smartReadings.isEmpty else {
+            clearComposition()
+            return .commit(text)
+        }
+        let query = fullWidth ? SmartMandarinLiteral.fullWidthSpace : SmartMandarinLiteral.space
+        return insertSmartQuery(query, literal: text) ?? .update
+    }
+
+    private func insertSmartQuery(_ query: String, literal: String? = nil) -> Result? {
+        guard let smartSource else { return nil }
         var trialReadings = smartReadings
         trialReadings.insert(query, at: smartCursor)
-        let shiftedOverrides = shiftedSmartOverrides(afterInserting: smartCursor)
+        var shiftedOverrides = shiftedSmartOverrides(afterInserting: smartCursor)
+        if let literal {
+            shiftedOverrides[smartCursor] = SmartMandarinSelection(length: 1, text: literal)
+        }
         guard smartSource.compose(readings: trialReadings, selections: shiftedOverrides) != nil else {
-            candidates = dictionary.candidates(for: reading)
-            showingSmartCandidates = false
-            pageIndex = 0
-            highlight = 0
-            return .update
+            return nil
         }
         smartReadings = trialReadings
         smartOverrides = shiftedOverrides
         smartCursor += 1
         reading.clear()
         rebuildSmartComposition()
-        // The container App's hardware editor uses the same bounded walker as
-        // the touch keyboard: the leading whole segment becomes committed text.
         let editableLimit = hardwareSmartEditing
             ? Self.hardwareSmartEditableLimit : Self.touchSmartEditableLimit
-        if smartReadings.count > editableLimit {
-            return evictFirstSmartSegment()
-        }
-        return .update
+        return smartReadings.count > editableLimit ? evictFirstSmartSegment() : .update
     }
 
     private func evictFirstSmartSegment() -> Result {
         guard let smartSource, let composition = smartComposition else { return .update }
-        let count = smartSource.evictionLength(readings: smartReadings, composition: composition)
+        var count = smartSource.evictionLength(readings: smartReadings, composition: composition)
         guard count > 0, count <= smartReadings.count else { return .update }
+        // Desktop pops spaces following an evicted phrase with that phrase.
+        while count < smartReadings.count, SmartMandarinLiteral.text(for: smartReadings[count]) != nil {
+            count += 1
+        }
         let committed = composition.segments.filter { $0.start < count }.map(\.text).joined()
         guard !committed.isEmpty else { return .update }
         let next = composition.segments.first { $0.start == count }
@@ -729,7 +762,7 @@ public final class BopomofoEngine {
             for: smartReadings,
             at: smartCandidateStart,
             composition: smartComposition
-        )
+        ).filter { candidateFilter($0.text) }
         candidates = smartCandidateOptions.map(\.text)
         showingSmartCandidates = !candidates.isEmpty
         pageIndex = 0
@@ -831,7 +864,7 @@ public final class BopomofoEngine {
         }
         clearComposition()
         if offering, let source = associatedPhrases {
-            candidates = source.phrases(forHeadCharacter: selected)
+            candidates = source.phrases(forHeadCharacter: selected).filter(candidateFilter)
             showingAssociatedPhrases = !candidates.isEmpty
         }
         return .commit(text)
@@ -897,13 +930,13 @@ public final class BopomofoEngine {
 
     private func showSymbols() -> Result {
         let result = finishCompositionForModeSwitch()
-        candidates = Self.symbols
+        candidates = Self.symbols.filter(candidateFilter)
         return result
     }
 
     private func showEmojis() -> Result {
         let result = finishCompositionForModeSwitch()
-        candidates = Self.emojis
+        candidates = Self.emojis.filter(candidateFilter)
         return result
     }
 
