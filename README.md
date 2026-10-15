@@ -138,17 +138,17 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 - [CHANGELOG.md](CHANGELOG.md)：版本更新內容
 - [App Store / Google Play 素材](StoreAssets/README.md)：商店圖片、來源截圖、內文與發布管道
 - [Installer README](Installer/README.md)：macOS 安裝包、簽署及 notarization
-- [LICENSING.md](LICENSING.md)：Yahoo BSD、原創 frontend MIT 與第三方授權範圍
+- [LICENSING.md](LICENSING.md)：Yahoo BSD、原創 frontend／AI 資料 MIT 與第三方授權範圍
 - [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)：第三方素材與授權
 
 ## 詞庫與限制
 
-**AI 文章與 bigram 資料目前暫不提供使用授權。**
+**本專案可授權的 AI 文章與資料庫原創內容採 MIT 授權。**
 `DataSource/AISyntheticArticles/` 的 AI 文章，以及
-`DataSource/AISyntheticBigram/` 的 AI 合成語料與衍生 bigram 資料，
-包括匯出檔及併入資料庫的相應部分，均不因公開存放而適用 MIT 或 BSD。
-使用、重製、修改、散布、商用、模型訓練或評測須另行取得明確書面許可；
-依法無須許可的使用及已有效取得的權利不受影響。範圍詳見
+`DataSource/AISyntheticBigram/` 的 AI 合成語料與本專案原創的衍生資料庫內容、
+bigram 資料、計數及權重，包括匯出檔及併入資料庫的相應部分，
+在專案權利人有權授權的範圍內允許使用、重製、修改、散布、商用、模型訓練與評測，
+須保留適用的 MIT 著作權與授權聲明；第三方資料維持各自授權。範圍詳見
 [AI 資料聲明](LICENSES/AI-DATA-NOTICE.txt)。
 
 公開 repository 內含 McBopomofo 的字音與詞頻資料，以及 29 份以 MIT License
@@ -323,18 +323,19 @@ item by item, and may contain errors. Accuracy and completeness are not
 guaranteed; see
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md).
 
-**AI articles and bigram data are not currently offered under a usage license.**
+**Project-original AI articles and database content are licensed under MIT.**
 This covers AI articles in `DataSource/AISyntheticArticles/`, AI-generated corpora
-and derived bigram data in `DataSource/AISyntheticBigram/`, and covered portions
-of exports and bundled databases. Reuse, modification, redistribution, commercial
-use, and model training or evaluation require separate express written permission,
-subject to statutory rights and valid prior grants. See the
+and project-original derived database content, bigram data, counts, and weights in
+`DataSource/AISyntheticBigram/`, and covered portions of exports and bundled databases.
+To the extent the project rights holder can grant rights, reuse, modification,
+redistribution, commercial use, and model training or evaluation are permitted
+under MIT, subject to retaining the copyright and permission notices. Third-party
+material retains its respective terms. See the
 [AI data notice](LICENSES/AI-DATA-NOTICE.txt).
 
 Smart Mandarin combines McBopomofo data with project AI-generated data. The
-licenses for the McBopomofo inputs do not grant permission to reuse the covered
-AI-derived portions of the combined model. Yahoo's proprietary Sinica corpus
-is not included.
+McBopomofo inputs retain their MIT License; project-original AI-derived portions
+use the MIT grant described above. Yahoo's proprietary Sinica corpus is not included.
 
 ## License
 

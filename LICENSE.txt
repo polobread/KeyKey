@@ -35,7 +35,8 @@ Additional project licensing notice
 
 The BSD 3-Clause terms above continue to govern the original Yahoo! KeyKey
 source and modifications derived from it. Original platform frontend files
-identified in LICENSING.md are instead licensed under the MIT License, with
+and project-original AI data/database material identified in LICENSING.md are
+licensed under the MIT License, with
 copyright held by Chui-Ping Cheng.
 Third-party components and data remain under their respective licenses.
 Nothing in this notice relicenses Yahoo! KeyKey or third-party material.
@@ -43,6 +44,8 @@ Nothing in this notice relicenses Yahoo! KeyKey or third-party material.
 See LICENSING.md for the authoritative scope map and
 LICENSES/MIT.txt for the MIT License text covering the original frontends.
 
-AI-generated articles and bigram data identified in LICENSING.md are not
-currently offered under a usage license. They are not covered by the BSD or MIT
-grants above. See LICENSES/AI-DATA-NOTICE.txt for scope and limitations.
+AI-generated articles and project-original database content identified in
+LICENSING.md are available under the MIT License to the extent the project
+rights holder can grant rights. See LICENSES/AI-DATA-NOTICE.txt for the scope
+and complete MIT License text. Third-party database portions retain their
+respective terms.

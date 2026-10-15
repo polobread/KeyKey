@@ -1,40 +1,57 @@
-AI 文章與 Bigram 資料：暫不提供使用授權
-AI articles and bigram data: no license granted at this time
+AI 文章與資料庫原創內容：MIT 授權
+AI articles and original database content: MIT License
+
+Copyright (c) 2026 Chui-Ping Cheng
 
 適用範圍
 本聲明適用於 DataSource/AISyntheticArticles/ 中由本專案以 AI 產生的文章
 （包括樣本、訓練及驗證文章、seed 檔與 JSONL 匯出），以及
-DataSource/AISyntheticBigram/ 中的 AI 合成語料、文章語料快照與衍生的
-bigram 資料、計數及權重。上述資料被轉檔、匯出或併入 KeyKey.db 等資料庫時，
-其中屬於上述資料的部分仍適用本聲明。
+DataSource/AISyntheticBigram/ 中的 AI 合成語料、文章語料快照與本專案原創的
+衍生資料庫內容、bigram 資料、計數及權重。上述資料被轉檔、匯出或併入
+KeyKey.db 等資料庫時，其中屬於本專案可授權原創內容的部分依 MIT 授權提供。
 
-目前未就上述資料提供使用、重製、修改、散布、再授權、商業利用、模型訓練或
-評測的許可。需要上述授權者，須另行取得專案權利人的明確書面許可。
-公開可見或可下載，不代表這些資料適用本專案其他部分的 MIT 或 BSD 授權。
-
-本聲明僅保留依法可主張的權利，不主張 AI 輸出、個別詞彙、事實或統計數字
-必然享有著作權；不限制依法無須許可的使用，也不撤回已有效授予的權利或
-平台條款另行賦予的權利。第三方資料、已另行授權的詞庫及程式碼仍依各自
-授權處理；本聲明不把這兩個目錄內的工具程式或其他文件一概改為限制授權。
+在專案權利人有權授權的範圍內，MIT 授權允許使用、重製、修改、散布、
+再授權及商業利用，包括模型訓練與評測；條件為保留適用的著作權與授權聲明。
+本聲明不主張 AI 輸出、個別詞彙、事實或統計數字必然享有著作權，也不限制
+依法無須許可的使用或縮減已有效授予的權利。第三方資料、已另行授權的詞庫、
+工具程式及其他文件仍依各自授權，不因併入同一資料庫而被重新授權。
 
 Scope
 This notice covers project AI-generated articles in DataSource/AISyntheticArticles/
 (including samples, training and validation articles, seed files, and JSONL exports),
-and AI-generated corpora, article corpus snapshots, and derived bigram data,
-counts, and weights in DataSource/AISyntheticBigram/. Covered portions remain
-subject to this notice when converted, exported, or incorporated into databases
-such as KeyKey.db.
+and AI-generated corpora, article corpus snapshots, and project-original derived
+database content, bigram data, counts, and weights in DataSource/AISyntheticBigram/.
+The project-original portions remain available under the MIT License when
+converted, exported, or incorporated into databases such as KeyKey.db.
 
-No permission is currently granted to use, reproduce, modify, distribute,
-sublicense, commercially exploit, train models on, or evaluate models with the
-covered data. Obtain separate express written permission from the project rights
-holder for those permissions. Public availability does not place the covered data
-under the MIT or BSD licenses used elsewhere in this repository.
+To the extent the project rights holder can grant rights, the MIT License below
+permits use, reproduction, modification, distribution, sublicensing, and commercial
+use, including model training and evaluation, subject to retaining the applicable
+copyright and permission notices. This grant does not assert that AI output,
+individual words, facts, or statistics necessarily qualify for copyright protection.
+It does not restrict uses requiring no permission under law or reduce valid prior
+grants. Third-party data, separately licensed collections, tools, and other
+documentation retain their respective terms and are not relicensed by inclusion
+in the same database.
 
-Only rights recognized by applicable law are reserved. This notice does not assert
-that AI output, individual words, facts, or statistics necessarily qualify for
-copyright protection. It does not restrict uses that require no permission under
-law, revoke valid permissions previously granted, or override platform-granted
-rights. Third-party data, separately licensed collections, and source code retain
-their respective terms. This is not a blanket restriction on tools or documentation
-in these directories.
+MIT License
+
+Copyright (c) 2026 Chui-Ping Cheng
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
