@@ -72,6 +72,7 @@ public final class BopomofoEngine {
         "🚗", "🚌", "🚆", "✈️", "🚀", "🏠", "🎁", "🎈", "🔔"
     ]
 
+    private let candidateFilter: (String) -> Bool
     private let dictionary: CandidateSource
     private var associatedPhrases: AssociatedPhraseSource?
     private let smartSource: SmartMandarinSource?
@@ -108,9 +109,11 @@ public final class BopomofoEngine {
         compositionMode: BopomofoCompositionMode = .traditional,
         hardwareSmartEditing: Bool = false,
         keyboardLayout: BopomofoKeyboardLayout = .standard,
-        spaceSelectsCandidates: Bool = false
+        spaceSelectsCandidates: Bool = false,
+        candidateFilter: @escaping (String) -> Bool = { _ in true }
     ) {
         self.dictionary = dictionary
+        self.candidateFilter = candidateFilter
         self.associatedPhrases = associatedPhrases
         self.smartSource = smartSource
         self.hardwareSmartEditing = hardwareSmartEditing
@@ -647,6 +650,7 @@ public final class BopomofoEngine {
         if chineseInputMethod == .cangjie, tableOptions.dynamicFrequency {
             candidates = source.ordered(candidates, code: tableCode)
         }
+        candidates = candidates.filter(candidateFilter)
         showingAssociatedPhrases = false
         tableCandidatesFinal = final
         pageIndex = 0
@@ -660,7 +664,7 @@ public final class BopomofoEngine {
     }
 
     private func query() -> Result {
-        candidates = dictionary.candidates(for: reading)
+        candidates = dictionary.candidates(for: reading).filter(candidateFilter)
         showingAssociatedPhrases = false
         pageIndex = 0
         highlight = 0
@@ -673,7 +677,7 @@ public final class BopomofoEngine {
     private func finishSmartReading() -> Result {
         guard smartSource != nil, !reading.isEmpty else { return .update }
         if let result = insertSmartQuery(reading.queryKey) { return result }
-        candidates = dictionary.candidates(for: reading)
+        candidates = dictionary.candidates(for: reading).filter(candidateFilter)
         showingSmartCandidates = false
         pageIndex = 0
         highlight = 0
@@ -758,7 +762,7 @@ public final class BopomofoEngine {
             for: smartReadings,
             at: smartCandidateStart,
             composition: smartComposition
-        )
+        ).filter { candidateFilter($0.text) }
         candidates = smartCandidateOptions.map(\.text)
         showingSmartCandidates = !candidates.isEmpty
         pageIndex = 0
@@ -860,7 +864,7 @@ public final class BopomofoEngine {
         }
         clearComposition()
         if offering, let source = associatedPhrases {
-            candidates = source.phrases(forHeadCharacter: selected)
+            candidates = source.phrases(forHeadCharacter: selected).filter(candidateFilter)
             showingAssociatedPhrases = !candidates.isEmpty
         }
         return .commit(text)
@@ -926,13 +930,13 @@ public final class BopomofoEngine {
 
     private func showSymbols() -> Result {
         let result = finishCompositionForModeSwitch()
-        candidates = Self.symbols
+        candidates = Self.symbols.filter(candidateFilter)
         return result
     }
 
     private func showEmojis() -> Result {
         let result = finishCompositionForModeSwitch()
-        candidates = Self.emojis
+        candidates = Self.emojis.filter(candidateFilter)
         return result
     }
 

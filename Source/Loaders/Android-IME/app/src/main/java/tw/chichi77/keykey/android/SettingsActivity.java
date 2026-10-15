@@ -191,6 +191,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 .setMessage("這會清除已學習的選字和相鄰詞關係，自訂詞會保留。")
                 .setNegativeButton("取消", null)
                 .setPositiveButton("重設", (dialog, which) -> {
+                    CandidateGlyphSupport.shared().reset();
                     try (SmartMandarinUserData data = SmartMandarinUserData.open(this)) {
                         data.resetLearning();
                         Toast.makeText(this, "學習紀錄已重設", Toast.LENGTH_SHORT).show();

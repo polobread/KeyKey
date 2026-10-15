@@ -67,6 +67,15 @@ final class BopomofoEngine {
     private final BopomofoReading reading = new BopomofoReading();
     private AssociatedPhraseDictionary associatedPhrases = AssociatedPhraseDictionary.empty();
     private List<String> candidates = List.of();
+    private java.util.function.Predicate<String> candidateFilter = text -> true;
+
+    void setCandidateFilter(java.util.function.Predicate<String> filter) { candidateFilter = filter; }
+
+    private List<String> visibleCandidates(List<String> values) {
+        ArrayList<String> visible = new ArrayList<>();
+        for (String text : values) if (candidateFilter.test(text)) visible.add(text);
+        return List.copyOf(visible);
+    }
     private int page;
     private int highlightedIndex;
     private InputMode inputMode = InputMode.BOPOMOFO;
@@ -427,7 +436,7 @@ final class BopomofoEngine {
                 ? smartComposition.text() + selected : selected;
         clearComposition();
         if (showAssociatedPhrases) {
-            candidates = associatedPhrases.candidates(selected);
+            candidates = visibleCandidates(associatedPhrases.candidates(selected));
             this.showingAssociatedPhrases = !candidates.isEmpty();
         }
         return Result.commit(text);
@@ -721,6 +730,7 @@ final class BopomofoEngine {
         candidates = tableSource.values(chineseInputMethod, tableCode, tableOptions.punctuation);
         if (chineseInputMethod == ChineseInputMethod.CANGJIE && tableOptions.dynamicFrequency)
             candidates = tableSource.ordered(candidates, tableCode);
+        candidates = visibleCandidates(candidates);
         showingAssociatedPhrases = false; tableCandidatesFinal = finalQuery;
         page = 0; highlightedIndex = 0;
         if (candidates.isEmpty() && finalQuery && tableOptions.clearOnError && !tableOptions.composeWhileTyping)
@@ -730,7 +740,7 @@ final class BopomofoEngine {
     }
 
     private Result query() {
-        candidates = dictionary.candidates(reading.queryKey());
+        candidates = visibleCandidates(dictionary.candidates(reading.queryKey()));
         showingAssociatedPhrases = false;
         page = 0;
         highlightedIndex = 0;
@@ -746,7 +756,7 @@ final class BopomofoEngine {
         Result result = insertSmartQuery(reading.languageModelKey(), null);
         if (result != null) return result;
         if (!hardwareSmartEditing) {
-            candidates = dictionary.candidates(reading.queryKey());
+            candidates = visibleCandidates(dictionary.candidates(reading.queryKey()));
             showingSmartCandidates = false;
             page = 0;
             highlightedIndex = 0;
@@ -839,8 +849,12 @@ final class BopomofoEngine {
     private void showSmartCandidatesAt(int index) {
         if (smartSource == null || smartReadings.isEmpty()) return;
         smartCandidateStart = index;
-        smartCandidateOptions = smartSource.candidateOptions(smartReadings,
-                smartCandidateStart, smartComposition);
+        ArrayList<SmartMandarinCandidate> visible = new ArrayList<>();
+        for (SmartMandarinCandidate option : smartSource.candidateOptions(smartReadings,
+                smartCandidateStart, smartComposition)) {
+            if (candidateFilter.test(option.text())) visible.add(option);
+        }
+        smartCandidateOptions = List.copyOf(visible);
         ArrayList<String> texts = new ArrayList<>();
         for (SmartMandarinCandidate candidate : smartCandidateOptions) {
             texts.add(candidate.text());
@@ -977,7 +991,7 @@ final class BopomofoEngine {
 
     private Result symbols() {
         Result result = finishCompositionForModeSwitch();
-        candidates = SYMBOLS;
+        candidates = visibleCandidates(SYMBOLS);
         showingAssociatedPhrases = false;
         highlightedIndex = 0;
         return result;
@@ -985,7 +999,7 @@ final class BopomofoEngine {
 
     private Result emojis() {
         Result result = finishCompositionForModeSwitch();
-        candidates = EMOJIS;
+        candidates = visibleCandidates(EMOJIS);
         showingAssociatedPhrases = false;
         highlightedIndex = 0;
         return result;

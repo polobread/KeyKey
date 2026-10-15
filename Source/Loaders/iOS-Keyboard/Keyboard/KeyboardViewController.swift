@@ -253,7 +253,8 @@ final class KeyboardViewController: UIInputViewController {
                 smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
                 compositionMode: compositionModeSettings.mode,
                 keyboardLayout: layoutSettings.layout,
-                spaceSelectsCandidates: spaceSettings.enabled
+                spaceSelectsCandidates: spaceSettings.enabled,
+                candidateFilter: CandidateGlyphSupport.shared.canDisplay
             )
             engine?.setTableCandidateSource(TableCandidateStore(database: database))
             engine?.setChineseInputMethod(methodSettings.method)
@@ -571,6 +572,7 @@ extension KeyboardViewController: SettingsPanelDelegate {
     }
 
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool {
+        CandidateGlyphSupport.shared.reset()
         guard let smartUserData else { return false }
         do {
             try smartUserData.resetLearning()

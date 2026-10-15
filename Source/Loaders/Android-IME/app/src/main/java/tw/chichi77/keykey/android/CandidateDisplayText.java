@@ -23,7 +23,7 @@ final class CandidateDisplayText {
         return end < text.length() ? text.substring(0, end) + "…" : text;
     }
 
-    private static int nextGraphemeEnd(String text, int start) {
+    static int nextGraphemeEnd(String text, int start) {
         int end = nextComponentEnd(text, start);
         int first = text.codePointAt(start);
         if (isRegionalIndicator(first) && end < text.length()) {

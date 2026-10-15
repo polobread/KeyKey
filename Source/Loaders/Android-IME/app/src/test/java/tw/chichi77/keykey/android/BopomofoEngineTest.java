@@ -1260,6 +1260,33 @@ public final class BopomofoEngineTest {
         }
     }
 
+    @Test
+    public void glyphFilteringPrecedesPagingAndHardwareSelection() throws Exception {
+        BopomofoEngine engine = engineWith("su3 缺\nsu3 你\nsu3 妳\nsu3 擬\nsu3 泥\nsu3 尼\nsu3 倪\nsu3 霓\nsu3 逆\nsu3 匿\nsu3 溺\nsu3 睨\n");
+        engine.setCandidateFilter(text -> !text.equals("缺"));
+        typeHardware(engine, "su3");
+        assertEquals("你", engine.displayedCandidates().get(0));
+        assertEquals(2, engine.pageCount());
+        engine.changePage(1);
+        assertEquals(List.of("溺", "睨"), engine.displayedCandidates());
+        assertEquals("溺", engine.handleHardwareCharacter('1').committedText());
+        engine.setCandidateFilter(text -> false);
+        typeHardware(engine, "su3");
+        assertTrue(engine.displayedCandidates().isEmpty());
+        assertEquals("", engine.handleHardwareCharacter('1').committedText());
+    }
+
+    @Test
+    public void smartGlyphFilteringPreservesCandidateSelectionMapping() throws Exception {
+        BopomofoEngine engine = smartEngine();
+        engine.setCandidateFilter(text -> !text.equals("你"));
+        typeHardware(engine, "su3");
+        engine.openSmartCandidates();
+        assertEquals(List.of("妳"), engine.displayedCandidates());
+        assertEquals("", engine.handleHardwareCharacter('1').committedText());
+        assertEquals("妳", engine.composingText());
+    }
+
     private BopomofoEngine smartEngine() throws Exception {
         String cin = "%chardef begin\nsu3 你\nsu3 妳\ncl3 好\nvup3 伈\nvup3 𨓇\n%chardef end\n";
         CinDictionary dictionary = CinDictionary.load(new ByteArrayInputStream(

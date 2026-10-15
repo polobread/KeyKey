@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C77000000000000000000061 /* KeyKeyEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C77000000000000000000062 /* KeyKeyEngine */; };
 		C77000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000002 /* AppDelegate.swift */; };
 		C77000000000000000000003 /* SetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000004 /* SetupViewController.swift */; };
 		C77000000000000000000005 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000006 /* KeyboardViewController.swift */; };
@@ -106,6 +107,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C77000000000000000000061 /* KeyKeyEngine in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,6 +242,9 @@
 				C7700000000000000000004D /* PBXTargetDependency */,
 			);
 			name = KeyKeyUITests;
+			packageProductDependencies = (
+				C77000000000000000000062 /* KeyKeyEngine */,
+			);
 			productName = KeyKeyUITests;
 			productReference = C77000000000000000000043 /* KeyKeyUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -551,6 +556,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C77000000000000000000062 /* KeyKeyEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KeyKeyEngine;
+		};
 		C7700000000000000000000C /* KeyKeyEngine */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = KeyKeyEngine;

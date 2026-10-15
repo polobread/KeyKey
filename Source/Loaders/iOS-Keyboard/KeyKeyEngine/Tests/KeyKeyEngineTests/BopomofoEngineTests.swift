@@ -320,6 +320,34 @@ struct BopomofoEngineTests {
         }
     }
 
+    @Test("glyph filtering preserves page order and hardware selection")
+    func glyphFilteringPages() {
+        let values = ["缺", "你", "妳", "擬", "泥", "尼", "倪", "霓", "逆", "匿", "溺", "睨"]
+        let engine = BopomofoEngine(dictionary: TableCandidateSource(["su3": values]),
+            candidateFilter: { $0 != "缺" })
+        _ = type(engine, "su3")
+        #expect(engine.displayedCandidates.first == "你")
+        #expect(engine.pageCount == 2)
+        engine.changePage(by: 1)
+        #expect(engine.displayedCandidates == ["溺", "睨"])
+        #expect(engine.handleHardwareCharacter("1") == .commit("溺"))
+    }
+
+    @Test("filtered smart candidates retain their original phrase lengths")
+    func smartGlyphFiltering() {
+        let ni = TableCandidateSource.queryKey(for: "su3")
+        let hao = TableCandidateSource.queryKey(for: "cl3")
+        let engine = BopomofoEngine(dictionary: TableCandidateSource([:]),
+            smartSource: TableSmartSource(table: [ni: ["你", "妳"], hao: ["好"], ni + hao: ["您好"]]),
+            compositionMode: .smart, hardwareSmartEditing: true, candidateFilter: { $0 != "你" })
+        _ = type(engine, "su3cl3")
+        #expect(engine.moveSmartCompositionCursor(by: -2))
+        _ = engine.openSmartCandidates()
+        #expect(engine.displayedCandidates == ["妳", "您好"])
+        #expect(engine.handleHardwareCharacter("2") == .update)
+        #expect(engine.composingText == "您好")
+    }
+
     private func smartEngine(hardwareEditing: Bool = false) -> BopomofoEngine {
         let table = [
             TableCandidateSource.queryKey(for: "su3"): ["你", "妳", "擬"],

@@ -1,4 +1,5 @@
 import XCTest
+import KeyKeyEngine
 
 @MainActor
 final class KeyKeyUITests: XCTestCase {
@@ -13,6 +14,22 @@ final class KeyKeyUITests: XCTestCase {
         app.launchArguments = ["-KeyKeyInputFieldTest"]
         app.launch()
         XCTAssertTrue(app.navigationBars["輸入欄位測試"].waitForExistence(timeout: 8))
+    }
+
+    func testNativeGlyphSupportAndResetOnIOS() {
+        let native = CandidateGlyphSupport()
+        for text in ["你好", "妳", "𠮷", "e\u{301}", "✌️", "🇹🇼", "👩‍💻", "你\u{E0100}"] {
+            XCTAssertTrue(native.canDisplay(text), text)
+        }
+        XCTAssertFalse(native.canDisplay("\u{10FFFF}"))
+        XCTAssertFalse(native.canDisplay("你\u{10FFFF}"))
+        var available = false
+        let cached = CandidateGlyphSupport { _ in available }
+        XCTAssertFalse(cached.canDisplay("字"))
+        available = true
+        XCTAssertFalse(cached.canDisplay("字"))
+        cached.reset()
+        XCTAssertTrue(cached.canDisplay("字"))
     }
 
     func testSmokeContainerAppLaunchesWithProductionControls() {

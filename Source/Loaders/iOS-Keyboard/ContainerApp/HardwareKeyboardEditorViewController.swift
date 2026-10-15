@@ -923,7 +923,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 compositionMode: compositionModeSettings.mode,
                 hardwareSmartEditing: true,
                 keyboardLayout: layoutSettings.layout,
-                spaceSelectsCandidates: spaceSettings.enabled
+                spaceSelectsCandidates: spaceSettings.enabled,
+                candidateFilter: CandidateGlyphSupport.shared.canDisplay
             )
             engine?.setTableCandidateSource(TableCandidateStore(database: database))
             engine?.setChineseInputMethod(methodSettings.method)

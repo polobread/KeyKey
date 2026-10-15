@@ -96,6 +96,7 @@ public final class BopomofoImeService extends InputMethodService
         }
         engine = new BopomofoEngine(dictionary, smartMandarinStore,
                 BopomofoCompositionModeSettings.mode(this));
+        engine.setCandidateFilter(CandidateGlyphSupport.shared()::canDisplay);
         engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this));
         engine.setSpaceSelectsCandidates(BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
         if (smartMandarinStore != null) engine.setTableCandidateSource(new TableCandidateStore(
