@@ -38,20 +38,24 @@ directories. It does not change the license of libraries, modules, data,
 generated assets, or other material that a frontend reads, links, copies, or
 packages.
 
-## AI articles and bigram data — no license currently granted
+## AI articles and original database content — MIT
 
-AI-generated articles in `DataSource/AISyntheticArticles/` and AI-generated
-corpora and derived bigram data, counts, and weights in
-`DataSource/AISyntheticBigram/` are not currently offered under a usage license.
+Copyright (c) 2026 Chui-Ping Cheng
+
+To the extent the project rights holder can grant rights, AI-generated articles
+in `DataSource/AISyntheticArticles/` and AI-generated corpora and project-original
+derived database content, bigram data, counts, and weights in
+`DataSource/AISyntheticBigram/` are licensed under the MIT License.
 This includes article samples, training and validation articles, seed files,
 JSONL exports, corpus snapshots, and covered portions incorporated into `KeyKey.db`.
-No permission is granted for reuse, modification, redistribution, commercial use,
-or model training or evaluation without separate express written permission.
+The grant permits reuse, modification, redistribution, commercial use, and model
+training or evaluation, subject to the MIT copyright and permission notice requirements.
 
 See [`LICENSES/AI-DATA-NOTICE.txt`](LICENSES/AI-DATA-NOTICE.txt) and the matching
-notices in both data directories for the full scope and limitations. This notice
-reserves only legally protectable rights; it does not revoke valid prior grants,
-restrict statutory or platform-granted rights, or relicense tools, third-party
+notices in both data directories for the scope and full MIT License text. This grant
+does not assert that AI output, individual words, facts, or statistics necessarily
+qualify for copyright protection. It does not reduce valid prior grants, restrict
+uses requiring no permission under law, or relicense tools, third-party
 data, or separately licensed collections such as `DataSource/chichi77Collection`.
 
 ## Exceptions
@@ -61,8 +65,8 @@ data, or separately licensed collections such as `DataSource/chichi77Collection`
   upstream notices and licenses.
 - McBopomofo data under `DataSource/McBopomofo/` remains under its MIT License.
 - A generated or bundled `KeyKey.db` retains the licenses of its input data;
-  packaging it with an MIT frontend does not relicense the database. Its covered
-  AI-derived portions remain subject to the no-license notice above.
+  its project-original AI-derived portions are licensed under the MIT grant above.
+  Packaging or combining the data does not relicense third-party portions.
 - OpenVanilla, PlainVanilla, Formosa, Manjusri, and module packages retain the
   licenses and copyright notices stated in their source files.
 - Windows simplified output links the existing `OVOFHanConvert` implementation
@@ -103,6 +107,6 @@ A binary distribution must reproduce the applicable Yahoo BSD, frontend MIT,
 and third-party notices in its documentation or other accompanying materials.
 The MIT License does not require a distributor to publish modified source.
 
-Preserving open-source notices alone does not authorize redistribution of the
-covered AI data or database portions. Those portions require separate permission
-unless the distributor already holds applicable rights.
+Distributions containing the covered AI data or project-original database portions
+must retain the applicable MIT copyright and permission notices. Third-party
+portions of a combined database remain subject to their own license requirements.
