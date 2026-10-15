@@ -103,4 +103,6 @@
     <string name="phrase_collections_unavailable">找不到詞庫資料</string>
     <string name="phrase_collection_item">%1$s　%2$s</string>
     <string name="privacy_note">字典、組字與選字均在裝置上執行；付費支持由 Google Play 結帳服務處理。輸入內容不會傳送給開發者。</string>
+    <string name="smart_space_selects_candidates">使用空白鍵選字</string>
+    <string name="smart_space_selects_candidates_description">僅適用好打注音，虛擬與實體鍵盤共用。預設關閉：讀音完成後，在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。關閉時仍可點選組字或按實體鍵盤 ↓ 開啟候選。</string>
 </resources>

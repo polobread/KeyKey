@@ -103,7 +103,7 @@ final class SettingsPanel: UIView {
         let scroll = UIScrollView()
         scroll.alwaysBounceVertical = true
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), resetLearningButton, keyboardLayoutRow(),
+            compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
             candidateColorRow(), feedbackRow(),
             statusLabel, bulk, rows
@@ -265,6 +265,17 @@ final class SettingsPanel: UIView {
             }))
         }
         button.menu = UIMenu(title: method.displayName + "設定", children: children)
+    }
+
+    private func spaceSelectionRow() -> UIView {
+        let label = UILabel()
+        let enabled = SmartMandarinSpaceSettings().enabled
+        label.text = "使用空白鍵選字：\(enabled ? "開啟" : "關閉")\n與實體鍵盤共用；請至琦琦 App 的「輸入法設定」調整。"
+        label.font = .systemFont(ofSize: 14)
+        label.textColor = Palette.primaryText
+        label.numberOfLines = 0
+        label.accessibilityIdentifier = "space-selects-candidates"
+        return label
     }
 
     private func keyboardLayoutRow() -> UIView {

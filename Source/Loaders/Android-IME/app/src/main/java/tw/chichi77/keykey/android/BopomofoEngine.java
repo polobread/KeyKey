@@ -89,6 +89,9 @@ final class BopomofoEngine {
     private List<SmartMandarinCandidate> smartCandidateOptions = List.of();
     private boolean hardwareSmartEditing;
     private boolean showingSmartCandidates;
+    private boolean spaceSelectsCandidates;
+
+    void setSpaceSelectsCandidates(boolean enabled) { spaceSelectsCandidates = enabled; }
 
     BopomofoEngine(CinDictionary dictionary) {
         this(dictionary, null, BopomofoCompositionMode.TRADITIONAL);
@@ -208,7 +211,7 @@ final class BopomofoEngine {
 
     Result handleHardwareSpace() {
         prepareForHardwareInput();
-        return applyHardwareWidth(space());
+        return space(hardwareFullWidth);
     }
 
     Result toggleHardwareLanguage() {
@@ -253,7 +256,10 @@ final class BopomofoEngine {
         }
     }
 
-    Result space() {
+    Result space() { return space(false); }
+
+    private Result space(boolean fullWidth) {
+        String literalSpace = fullWidth ? "　" : " ";
         if (chineseInputMethod.isTable() && inputMode == InputMode.BOPOMOFO) {
             if (!candidates.isEmpty()) {
                 if (chineseInputMethod == ChineseInputMethod.CANGJIE && pageCount() == 1 && !showingAssociatedPhrases)
@@ -261,26 +267,34 @@ final class BopomofoEngine {
                 changePage(1);
                 return Result.update();
             }
-            return tableCode.isEmpty() ? Result.commit(" ") : queryTable(true);
+            return tableCode.isEmpty() ? Result.commit(literalSpace) : queryTable(true);
         }
         if (compositionMode == BopomofoCompositionMode.SMART
                 && inputMode == InputMode.BOPOMOFO) {
+            // Space still completes an unfinished first-tone reading, as on desktop.
             if (!reading.isEmpty()) return finishSmartReading();
-            if (!smartReadings.isEmpty()) {
-                if (!showingSmartCandidates) {
-                    showHardwareSmartCandidates();
-                } else {
-                    changePage(1);
-                }
-                return Result.update();
+            if (!spaceSelectsCandidates) {
+                return insertSmartSpace(fullWidth);
             }
+            if (reading.isEmpty() && smartReadings.isEmpty() && candidates.isEmpty()) return Result.commit(literalSpace);
+            return openSmartCandidates();
         }
         if (!candidates.isEmpty()) {
             changePage(1);
             return Result.update();
         }
-        if (inputMode != InputMode.BOPOMOFO || reading.isEmpty()) return Result.commit(" ");
+        if (inputMode != InputMode.BOPOMOFO || reading.isEmpty()) return Result.commit(literalSpace);
         return query();
+    }
+
+    // Down-arrow and Hsu q select candidates independently of the Space preference.
+    Result openSmartCandidates() {
+        if (compositionMode != BopomofoCompositionMode.SMART
+                || inputMode != InputMode.BOPOMOFO) return Result.update();
+        if (!reading.isEmpty()) return finishSmartReading();
+        if (!smartReadings.isEmpty() && !showingSmartCandidates) showHardwareSmartCandidates();
+        else if (!candidates.isEmpty()) changePage(1);
+        return Result.update();
     }
 
     Result enter() {
@@ -612,7 +626,7 @@ final class BopomofoEngine {
 
         if (reading.layout() == BopomofoKeyboardLayout.HSU && key == 'q' && reading.isEmpty()
                 && compositionMode == BopomofoCompositionMode.SMART && !smartReadings.isEmpty()) {
-            return space();
+            return openSmartCandidates();
         }
         String layoutPunctuation = reading.layout().punctuation(key);
         if (reading.isEmpty() && layoutPunctuation != null) {
@@ -729,22 +743,35 @@ final class BopomofoEngine {
 
     private Result finishSmartReading() {
         if (smartSource == null || reading.isEmpty()) return Result.update();
-        String dictionaryQuery = reading.queryKey();
-        String query = reading.languageModelKey();
+        Result result = insertSmartQuery(reading.languageModelKey(), null);
+        if (result != null) return result;
+        if (!hardwareSmartEditing) {
+            candidates = dictionary.candidates(reading.queryKey());
+            showingSmartCandidates = false;
+            page = 0;
+            highlightedIndex = 0;
+        }
+        return Result.update();
+    }
+
+    private Result insertSmartSpace(boolean fullWidth) {
+        String text = fullWidth ? "　" : " ";
+        if (smartReadings.isEmpty()) {
+            clearComposition();
+            return Result.commit(text);
+        }
+        Result result = insertSmartQuery(fullWidth
+                ? SmartMandarinLiteral.FULL_WIDTH_SPACE : SmartMandarinLiteral.SPACE, text);
+        return result == null ? Result.update() : result;
+    }
+
+    private Result insertSmartQuery(String query, String literal) {
+        if (smartSource == null) return null;
         ArrayList<String> trialReadings = new ArrayList<>(smartReadings);
         trialReadings.add(smartCursor, query);
         Map<Integer, SmartMandarinSelection> shifted = shiftedSmartOverridesAfterInserting(smartCursor);
-        if (smartSource.composeSelections(trialReadings, shifted) == null) {
-            if (!hardwareSmartEditing) {
-                candidates = dictionary.candidates(dictionaryQuery);
-                showingSmartCandidates = false;
-                page = 0;
-                highlightedIndex = 0;
-            }
-            // Hardware editing must retain its sentence and reading if the
-            // language model cannot compose this syllable.
-            return Result.update();
-        }
+        if (literal != null) shifted.put(smartCursor, new SmartMandarinSelection(1, literal));
+        if (smartSource.composeSelections(trialReadings, shifted) == null) return null;
         smartReadings.clear();
         smartReadings.addAll(trialReadings);
         smartOverrides.clear();
@@ -754,10 +781,7 @@ final class BopomofoEngine {
         rebuildSmartComposition();
         int editableLimit = hardwareSmartEditing
                 ? HARDWARE_SMART_EDITABLE_LIMIT : TOUCH_SMART_EDITABLE_LIMIT;
-        if (smartReadings.size() > editableLimit) {
-            return evictFirstSmartSegment();
-        }
-        return Result.update();
+        return smartReadings.size() > editableLimit ? evictFirstSmartSegment() : Result.update();
     }
 
     private Result evictFirstSmartSegment() {
@@ -766,6 +790,8 @@ final class BopomofoEngine {
         }
         int count = smartSource.evictionLength(smartReadings, smartComposition);
         if (count <= 0 || count > smartReadings.size()) return Result.update();
+        // Desktop pops spaces following an evicted phrase with that phrase.
+        while (count < smartReadings.size() && SmartMandarinLiteral.text(smartReadings.get(count)) != null) count++;
         // Match the desktop walker: retain the following node's chosen text
         // when its preceding context leaves the editable window.
         SmartMandarinSegment next = null;

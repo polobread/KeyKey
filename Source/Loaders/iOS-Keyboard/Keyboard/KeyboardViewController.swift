@@ -27,6 +27,7 @@ final class KeyboardViewController: UIInputViewController {
     )
     private lazy var clickSettings = KeyboardClickSettings(sharedDefaults: sharedDefaults)
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
+    private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
@@ -110,7 +111,10 @@ final class KeyboardViewController: UIInputViewController {
             engine.tableOptions = methodSettings.options(for: engine.chineseInputMethod)
         }
         applyPhraseSelection(phraseSettings.enabledCollections)
-        if let engine { apply(engine.setKeyboardLayout(layoutSettings.layout)) }
+        if let engine {
+            apply(engine.setKeyboardLayout(layoutSettings.layout))
+            engine.spaceSelectsCandidates = spaceSettings.enabled
+        }
         if learningResetRequest.applyIfNeeded(to: smartUserData) {
             discardMarkedText()
             engine?.reset()
@@ -248,7 +252,8 @@ final class KeyboardViewController: UIInputViewController {
                 associatedPhrases: phrases,
                 smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
                 compositionMode: compositionModeSettings.mode,
-                keyboardLayout: layoutSettings.layout
+                keyboardLayout: layoutSettings.layout,
+                spaceSelectsCandidates: spaceSettings.enabled
             )
             engine?.setTableCandidateSource(TableCandidateStore(database: database))
             engine?.setChineseInputMethod(methodSettings.method)

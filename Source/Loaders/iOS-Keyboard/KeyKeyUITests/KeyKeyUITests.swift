@@ -61,6 +61,107 @@ final class KeyKeyUITests: XCTestCase {
         mode.buttons["好打注音"].tap()
     }
 
+    func testTouchKeyboardUsesSharedSpaceSetting() {
+        test00KeyboardOptInIsConfigured()
+        app = XCUIApplication()
+        app.launch()
+        app.buttons["open-input-method-settings"].tap()
+        app.segmentedControls["app-settings.composition-mode"].buttons["好打注音"].tap()
+        app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
+        let toggle = app.switches["app-settings.space-selects-candidates"]
+        if toggle.value as? String != "0" { toggle.tap() }
+        app.buttons["app-settings.reset-learning"].tap()
+        app.alerts.buttons["重設"].tap()
+        launchHostApp()
+        XCTAssertTrue(revealField("message"))
+        let output = field("message")
+        output.tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        for key in "su3" { app.buttons[String(key)].tap() }
+        app.buttons["SPACE"].tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "你 " })
+        app.buttons["BACKSPACE"].tap() // Remove the space, then correct the earlier character.
+        app.buttons["keyboard.smart-cell.1"].tap()
+        let alternate = app.buttons["第 2 個候選，妳"]
+        XCTAssertTrue(alternate.waitForExistence(timeout: 3))
+        alternate.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "妳" })
+        app.buttons["keyboard.smart-cell.1"].tap()
+        let original = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "候選，你")).firstMatch
+        XCTAssertTrue(original.waitForExistence(timeout: 3))
+        original.tap() // Restore the learning preference before testing the enabled setting.
+        XCTAssertTrue(waitForLayout { output.value as? String == "你" })
+        app.terminate()
+        app = XCUIApplication()
+        app.launch()
+        app.buttons["open-input-method-settings"].tap()
+        app.switches["app-settings.space-selects-candidates"].tap()
+        launchHostApp()
+        XCTAssertTrue(revealField("message"))
+        let secondOutput = field("message")
+        secondOutput.tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        for key in "su3" { app.buttons[String(key)].tap() }
+        app.buttons["SPACE"].tap()
+        XCTAssertTrue(app.buttons["第 1 個候選，你"].waitForExistence(timeout: 3))
+        XCTAssertEqual(secondOutput.value as? String, "你")
+        app.terminate()
+        app = XCUIApplication()
+        app.launch()
+        app.buttons["open-input-method-settings"].tap()
+        app.switches["app-settings.space-selects-candidates"].tap()
+    }
+
+    func testSharedSpaceSelectionAndIndependentDownArrow() {
+        app = XCUIApplication()
+        app.launch()
+        let settings = app.buttons["open-input-method-settings"]
+        settings.tap()
+        app.segmentedControls["app-settings.composition-mode"].buttons["好打注音"].tap()
+        app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
+        let toggle = app.switches["app-settings.space-selects-candidates"]
+        XCTAssertTrue(toggle.exists)
+        if toggle.value as? String != "0" { toggle.tap() }
+        app.buttons["app-settings.reset-learning"].tap()
+        app.alerts.buttons["重設"].tap()
+        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
+        app.buttons["open-hardware-editor"].tap()
+        let output = app.textViews["hardware-editor.output"]
+        XCTAssertTrue(output.waitForExistence(timeout: 3))
+        for key in "su3" { app.typeKey(String(key), modifierFlags: []) }
+        app.buttons["hardware-editor.down"].tap()
+        XCTAssertTrue(app.buttons["hardware-editor.candidate.1"].label.contains("你"))
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertEqual(output.value as? String, "") // Space remains in preedit.
+        app.buttons["hardware-editor.backspace"].tap()
+        app.buttons["hardware-editor.down"].tap()
+        XCTAssertTrue(app.buttons["hardware-editor.candidate.1"].label.contains("你"))
+        app.buttons["hardware-editor.candidate.1"].tap()
+        app.buttons["hardware-editor.enter"].tap()
+        XCTAssertEqual(output.value as? String, "你")
+        app.navigationBars["實體鍵盤編輯器"].buttons.element(boundBy: 0).tap()
+        settings.tap()
+        toggle.tap()
+        XCTAssertEqual(toggle.value as? String, "1")
+        app.terminate()
+        app.launch()
+        settings.tap()
+        XCTAssertEqual(toggle.value as? String, "1")
+        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
+        app.buttons["open-hardware-editor"].tap()
+        for key in "su3" { app.typeKey(String(key), modifierFlags: []) }
+        app.buttons["hardware-editor.space"].tap()
+        XCTAssertTrue(app.buttons["hardware-editor.candidate.1"].label.contains("你"))
+        XCTAssertEqual(output.value as? String, "") // Candidate selection retains uncommitted composition.
+        app.buttons["hardware-editor.candidate.1"].tap()
+        app.buttons["hardware-editor.enter"].tap()
+        XCTAssertEqual(output.value as? String, "你")
+        app.navigationBars["實體鍵盤編輯器"].buttons.element(boundBy: 0).tap()
+        settings.tap()
+        toggle.tap()
+        XCTAssertEqual(toggle.value as? String, "0")
+    }
+
     func testHsuLayoutSettingsPersistAndKeyboardKeepsEnglishKeycaps() {
         test00KeyboardOptInIsConfigured()
         app = XCUIApplication()

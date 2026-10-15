@@ -203,6 +203,7 @@ public final class SmartMandarinBigramInstrumentedTest {
                     actual.setBigramEnabled(contextEnabled);
                     BopomofoEngine engine = new BopomofoEngine(CinDictionary.empty(), actual,
                             BopomofoCompositionMode.SMART);
+                    engine.setSpaceSelectsCandidates(true);
                     StringBuilder committed = new StringBuilder();
                     int limit = hardware ? 10 : 9;
                     for (int index = 0; index < keys.length; index++) {

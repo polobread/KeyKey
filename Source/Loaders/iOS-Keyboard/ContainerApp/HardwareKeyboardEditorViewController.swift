@@ -231,6 +231,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         sharedDefaults: sharedDefaults
     )
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
+    private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
     private var committedText = ""
     private var insertionCharacterIndex = 0
     private var displayedCaretUTF16Offset = 0
@@ -274,7 +275,10 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        if let engine { apply(engine.setKeyboardLayout(layoutSettings.layout)) }
+        if let engine {
+            apply(engine.setKeyboardLayout(layoutSettings.layout))
+            engine.spaceSelectsCandidates = spaceSettings.enabled
+        }
         captureView.becomeFirstResponder()
     }
 
@@ -918,7 +922,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
                 compositionMode: compositionModeSettings.mode,
                 hardwareSmartEditing: true,
-                keyboardLayout: layoutSettings.layout
+                keyboardLayout: layoutSettings.layout,
+                spaceSelectsCandidates: spaceSettings.enabled
             )
             engine?.setTableCandidateSource(TableCandidateStore(database: database))
             engine?.setChineseInputMethod(methodSettings.method)
@@ -1360,7 +1365,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     @objc private func pressSpace() {
         guard let engine else { return }
-        apply(engine.space(), widenASCII: true)
+        apply(engine.space(fullWidth: isFullWidth))
         restoreCaptureFocusAfterControlAction()
     }
 
@@ -1511,14 +1516,14 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     @objc private func showHelp() {
         let smartHelp = engine?.bopomofoCompositionMode == .smart
-            ? "好打注音：連續輸入注音；滿十個音節後，下一個音節會擠出最前面的完整詞組。←／→ 移動組字游標，Space／↓ 開啟游標處的字詞候選，開啟後 ↑／↓ 與 1–9 選字詞；Enter 確定整句。\n"
+            ? "好打注音：連續輸入注音；滿十個音節後，下一個音節會擠出最前面的完整詞組。←／→ 移動組字游標，↓ 開啟游標處的字詞候選；開啟「使用空白鍵選字」後也可按 Space，開啟後 ↑／↓ 與 1–9 選字詞；Enter 確定整句。\n"
             : ""
         let message = """
         \(smartHelp)
         倉頡最多五碼；簡易滿兩碼查詢。倉頡可用 ?／* 查詢字根。
         一般候選：1–9
         關聯候選：Shift+1–9（! @ # $ % ^ & * (）
-        候選翻頁：Space／Page Up／Page Down（倉頡只有一頁時，Space 選第一候選）
+        候選翻頁：Page Up／Page Down；好打注音開啟「使用空白鍵選字」後也可按 Space（倉頡只有一頁時，Space 選第一候選）
         切換中文／英：Ctrl+Space（沿用目前輸入法）
         切換半／全形：Shift+Space
         符號：Ctrl+0／Ctrl+1
@@ -1600,7 +1605,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 if engine.isShowingSmartCandidates {
                     engine.moveHighlight(by: 1)
                 } else {
-                    apply(engine.space())
+                    apply(engine.openSmartCandidates())
                 }
             }
             transientStatus = nil
@@ -1788,7 +1793,7 @@ extension HardwareKeyboardEditorViewController: HardwareKeyboardCaptureViewDeleg
         case .tab:
             apply(engine.handleSoftKey("\t"), widenASCII: true)
         case .space:
-            apply(engine.space(), widenASCII: true)
+            apply(engine.space(fullWidth: isFullWidth))
         case .pageUp:
             engine.changePage(by: -1)
             transientStatus = nil

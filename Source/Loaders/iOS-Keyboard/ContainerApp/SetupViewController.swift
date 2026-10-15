@@ -346,6 +346,7 @@ private final class InputMethodSettingsViewController: UIViewController {
     private lazy var modeSettings = ChineseInputMethodSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
+    private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
@@ -396,6 +397,19 @@ private final class InputMethodSettingsViewController: UIViewController {
         modeControl.accessibilityIdentifier = "app-settings.composition-mode"
         modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(modeControl)
+
+        let spaceRow = UIStackView()
+        spaceRow.alignment = .center
+        spaceRow.addArrangedSubview(label("使用空白鍵選字", size: 18))
+        spaceRow.addArrangedSubview(UIView())
+        let spaceSelection = UISwitch()
+        spaceSelection.isOn = spaceSettings.enabled
+        spaceSelection.accessibilityIdentifier = "app-settings.space-selects-candidates"
+        spaceSelection.accessibilityLabel = "使用空白鍵選字"
+        spaceSelection.addTarget(self, action: #selector(spaceSelectionChanged(_:)), for: .valueChanged)
+        spaceRow.addArrangedSubview(spaceSelection)
+        stack.addArrangedSubview(spaceRow)
+        stack.addArrangedSubview(label("僅適用好打注音，虛擬與實體鍵盤共用。預設關閉：讀音完成後，在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。關閉時仍可點選組字或按實體鍵盤 ↓ 開啟候選。", size: 14))
 
         let phrases = button("管理好打注音自訂詞", #selector(openPhrases))
         phrases.accessibilityIdentifier = "app-settings.user-phrases"
@@ -550,6 +564,10 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     @objc private func modeChanged(_ sender: UISegmentedControl) {
         modeSettings.setMethod(ChineseInputMethod.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func spaceSelectionChanged(_ sender: UISwitch) {
+        spaceSettings.setEnabled(sender.isOn)
     }
 
     @objc private func layoutChanged(_ sender: UISegmentedControl) {

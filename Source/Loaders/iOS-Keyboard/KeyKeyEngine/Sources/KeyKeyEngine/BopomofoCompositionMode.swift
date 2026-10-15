@@ -98,6 +98,22 @@ public final class BopomofoCompositionModeSettings {
     }
 }
 
+/// One App Group value for both input surfaces. Only the container App writes it;
+/// the extension can read it without requesting Full Access.
+public struct SmartMandarinSpaceSettings {
+    public static let key = "smartSpaceSelectsCandidates"
+    private let sharedDefaults: UserDefaults?
+
+    public init(sharedDefaults: UserDefaults? = UserDefaults(
+        suiteName: KeyboardPreferenceStore.appGroupIdentifier
+    )) {
+        self.sharedDefaults = sharedDefaults
+    }
+
+    public var enabled: Bool { sharedDefaults?.bool(forKey: Self.key) ?? false }
+    public func setEnabled(_ enabled: Bool) { sharedDefaults?.set(enabled, forKey: Self.key) }
+}
+
 public struct KeyboardClickSettings {
     private static let key = "inputClicksEnabled"
     private let store: KeyboardPreferenceStore

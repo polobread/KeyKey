@@ -97,6 +97,7 @@ public final class BopomofoImeService extends InputMethodService
         engine = new BopomofoEngine(dictionary, smartMandarinStore,
                 BopomofoCompositionModeSettings.mode(this));
         engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this));
+        engine.setSpaceSelectsCandidates(BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
         if (smartMandarinStore != null) engine.setTableCandidateSource(new TableCandidateStore(
                 smartMandarinStore.tableDatabase(), getSharedPreferences("table_learning", MODE_PRIVATE)));
         engine.setChineseInputMethod(ChineseInputMethodSettings.method(this));
@@ -321,6 +322,8 @@ public final class BopomofoImeService extends InputMethodService
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
         if (key == null || ChineseInputMethodSettings.KEY_METHOD.equals(key) || key.startsWith("table_options.")) {
             if (engine != null) {
+                if (key == null) engine.setSpaceSelectsCandidates(
+                        BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
                 if (key == null || key.startsWith("table_options.")) apply(engine.finishCompositionForModeSwitch());
                 apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
                 engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod());
@@ -331,6 +334,11 @@ public final class BopomofoImeService extends InputMethodService
         if (BopomofoKeyboardLayoutSettings.KEY_LAYOUT.equals(key)) {
             if (engine != null) apply(engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this)));
             refreshKeyboard();
+            return;
+        }
+        if (BopomofoCompositionModeSettings.KEY_SPACE_SELECTS_CANDIDATES.equals(key)) {
+            if (engine != null) engine.setSpaceSelectsCandidates(
+                    BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
             return;
         }
         if (BopomofoCompositionModeSettings.KEY_MODE.equals(key)) {
@@ -527,7 +535,7 @@ public final class BopomofoImeService extends InputMethodService
                         engine.moveHighlight(1);
                         refreshKeyboard();
                     } else {
-                        apply(engine.handleHardwareSpace());
+                        apply(engine.openSmartCandidates());
                     }
                     return true;
                 }

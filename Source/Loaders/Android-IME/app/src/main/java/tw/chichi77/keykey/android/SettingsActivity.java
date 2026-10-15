@@ -116,6 +116,21 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         compositionModeDescription.setLineSpacing(0, 1.2f);
         compositionContent.addView(compositionModeDescription, matchWrap(dp(0), dp(24)));
 
+        CheckBox spaceSelectsCandidates = new CheckBox(this);
+        spaceSelectsCandidates.setText(R.string.smart_space_selects_candidates);
+        spaceSelectsCandidates.setTextSize(16);
+        spaceSelectsCandidates.setTextColor(Color.DKGRAY);
+        spaceSelectsCandidates.setMinHeight(dp(48));
+        spaceSelectsCandidates.setChecked(BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
+        spaceSelectsCandidates.setOnCheckedChangeListener((button, checked) ->
+                BopomofoCompositionModeSettings.setSpaceSelectsCandidates(SettingsActivity.this, checked));
+        compositionContent.addView(spaceSelectsCandidates, matchWrap(dp(0), dp(8)));
+        TextView spaceDescription = new TextView(this);
+        spaceDescription.setText(R.string.smart_space_selects_candidates_description);
+        spaceDescription.setTextSize(14);
+        spaceDescription.setTextColor(Color.GRAY);
+        compositionContent.addView(spaceDescription, matchWrap(dp(0), dp(24)));
+
         CheckBox bigramContext = new CheckBox(this);
         bigramContext.setText(R.string.smart_bigram_enabled);
         bigramContext.setTextSize(16);

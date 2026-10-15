@@ -3,6 +3,19 @@ package tw.chichi77.keykey.android;
 import java.util.List;
 import java.util.Map;
 
+final class SmartMandarinLiteral {
+    static final String SPACE = "_passthru_space ";
+    static final String FULL_WIDTH_SPACE = "_passthru_fullwidth_space ";
+
+    static String text(String query) {
+        if (SPACE.equals(query)) return " ";
+        if (FULL_WIDTH_SPACE.equals(query)) return "　";
+        return null;
+    }
+
+    private SmartMandarinLiteral() {}
+}
+
 interface SmartMandarinSource {
     SmartMandarinComposition compose(List<String> readings, Map<Integer, String> overrides);
 
