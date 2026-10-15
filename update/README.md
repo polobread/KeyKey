@@ -1,6 +1,6 @@
 # 桌面更新（開發中）
 
-此目錄開發 macOS／Windows 更新客戶端與發布工具，**不是已完成端到端驗收的自動更新服務**。
+此目錄開發 macOS／Windows 更新通知與手動確認後的更新流程，以及發布工具；**端到端驗收尚未完成**。
 `config.json` 已設定維護者提供的正式公開金鑰與已可存取的 stable／beta CDN feed。每日檢查與 beta 選項預設關閉，尚未重包已發布 beta2；舊版第一次導入仍須手動安裝含新設定的版本。未使用 Yahoo 舊服務、
 RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 
@@ -28,6 +28,19 @@ GitHub Raw 與 CDN 的固定 feed 檔名為 `macos-arm64.xml`、`windows-x64.xml
 日常建置只需要 `prepare.py`；發布依下方 manifest 流程操作，不必逐一編輯這些工具。
 
 ## 共用與平台邊界
+
+三個桌面平台統一採「檢查並通知新版，使用者按下更新後才下載與安裝」：
+每日檢查只代表新版通知，不授權自動安裝或預先下載安裝包。Windows／macOS 由更新視窗
+接受使用者確認後下載、驗證及安裝；Linux／FreeBSD 的按鈕開啟官方發行頁，
+由使用者下載並透過套件管理器安裝。關閉或略過通知不會開始下載。
+
+macOS、Windows、Linux／FreeBSD 的更新查詢都在背景執行，整輪查詢時限為 **10 秒**。
+失敗或逾時後顯示結果，由使用者按「立即檢查」／「檢查新版」重試，不做自動重試或來源切換。
+每日檢查仍需明確開啟，失敗也記錄嘗試時間，不在同一天反覆請求。
+macOS／Windows 由客戶端以同一條可取消的查詢路徑排程每日檢查，停用 SDK 自己的背景排程；
+SDK 繼續負責版本選擇、套件簽章與安裝確認。macOS 查無更新直接顯示於設定頁，
+設定頁與一般頁的更新狀態／同意設定透過有時限的背景本機呼叫讀取；Windows 原生取消與
+清理不在 WPF 執行緒等待。晚到的查詢結果與關閉視窗後的回覆不再修改介面。
 
 - 共用的是 manifest 格式、Ed25519 金鑰／簽章規格與發布工具，不是同一個安裝包。
 - `metadata.json` 的 detached signature 用於發布驗證與後續消費者；Sparkle／WinSparkle

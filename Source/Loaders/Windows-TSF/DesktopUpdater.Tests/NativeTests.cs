@@ -4,6 +4,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using KeyKeySettings;
 
@@ -39,6 +41,8 @@ internal static class NativeTests
             RunOpenSsl(openssl, "pkeyutl", "-sign", "-rawin", "-inkey", Path.Combine(directory, "test.pem"),
                 "-in", package, "-out", signature);
             var signed = Convert.ToBase64String(File.ReadAllBytes(signature));
+            NotificationOnlyTest(key, background: false);
+            NotificationOnlyTest(key, background: true);
             foreach (var mode in new[] { "no-update", "empty-feed-x64", "empty-feed-x86", "valid", "beta-next", "beta-same", "beta-older", "beta-to-final", "tampered", "wrong-key", "missing-signature", "broken-feed" })
             {
                 using var done = new ManualResetEventSlim();
@@ -83,11 +87,83 @@ internal static class NativeTests
                     Registry.CurrentUser.DeleteSubKeyTree(registryPath, throwOnMissingSubKey: false);
                 }
             }
+            StalledQueryTest(key);
         }
         finally
         {
             // Exact randomly-created directory, no enumeration of outside paths.
             Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static void NotificationOnlyTest(string key, bool background)
+    {
+        using var server = new LoopbackServer("valid", Array.Empty<byte>(), "");
+        using var found = new ManualResetEventSlim();
+        var registryPath = @"Software\chichi77\KeyKey\UpdaterTests\" + Guid.NewGuid().ToString("N");
+        var backend = new WinSparkleBackend(registryPath);
+        int installs = 0, shutdowns = 0, errors = 0;
+        try
+        {
+            backend.Configure(key, server.Feed, "1.0.0", new UpdateCallbacks(() => 1,
+                () => Interlocked.Increment(ref shutdowns), () => Interlocked.Increment(ref errors),
+                () => found.Set(), () => { }, () => { }, () => { }, _ =>
+                {
+                    Interlocked.Increment(ref installs);
+                    return 1; // Never execute an installer, even if this regression fails.
+                }));
+            backend.Initialize();
+            backend.Check(background);
+            Program.Check(found.Wait(TimeSpan.FromSeconds(10)), "Native update notification was not shown");
+            // Give an unintended prefetch time to reach the loopback server.
+            Thread.Sleep(300);
+            Program.Check(server.PayloadRequests == 0 && installs == 0 && shutdowns == 0 && errors == 0,
+                "Checking for updates downloaded a package or started installation without user confirmation");
+            Console.WriteLine($"Native WinSparkle {(background ? "daily" : "manual")} notification did not prefetch or install");
+        }
+        finally
+        {
+            backend.Cleanup();
+            Registry.CurrentUser.DeleteSubKeyTree(registryPath, throwOnMissingSubKey: false);
+        }
+    }
+
+    internal static void StalledQueryTest(string key)
+    {
+        using var server = new LoopbackServer("stalled", Array.Empty<byte>(), "");
+        var registryPath = @"Software\chichi77\KeyKey\UpdaterTests\" + Guid.NewGuid().ToString("N");
+        var configuration = JsonSerializer.Serialize(new { schema_version = 1, public_ed25519_key = key,
+            windows_x64_feed_url = server.Feed, windows_x86_feed_url = server.Feed });
+        using var updater = new DesktopUpdater(new WinSparkleBackend(registryPath), Dispatcher.CurrentDispatcher,
+            () => throw new Exception("Stalled query requested shutdown"),
+            () => new MemoryStream(Encoding.UTF8.GetBytes(configuration)),
+            readBetaPreference: () => false, writeBetaPreference: _ => { });
+        try
+        {
+            updater.Initialize();
+            Program.Check(updater.Available, "Native stalled-query updater did not initialize");
+            var elapsed = Stopwatch.StartNew();
+            updater.Check(background: true);
+            bool heartbeat = false;
+            Dispatcher.CurrentDispatcher.BeginInvoke(() => heartbeat = true);
+            while (elapsed.Elapsed < TimeSpan.FromSeconds(15) &&
+                (!updater.Status.Contains("逾時") || !updater.Available))
+            {
+                var frame = new DispatcherFrame();
+                Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => frame.Continue = false);
+                Dispatcher.PushFrame(frame);
+                Thread.Sleep(1);
+            }
+            Program.Check(heartbeat && elapsed.Elapsed >= TimeSpan.FromSeconds(9.5) &&
+                updater.Status.Contains("逾時") && updater.Available && !updater.Busy,
+                "Native stalled TLS query did not cancel in 10 seconds and restore manual retry");
+            Console.WriteLine("Native WinSparkle stalled TLS query cancelled after 10 seconds without blocking WPF");
+        }
+        finally
+        {
+            updater.Dispose();
+            Program.Check(updater.NativeCleanup.Wait(TimeSpan.FromSeconds(10)), "Native timeout cleanup did not finish");
+            Registry.CurrentUser.DeleteSubKeyTree(registryPath, throwOnMissingSubKey: false);
         }
     }
 
@@ -112,13 +188,17 @@ internal static class NativeTests
         private readonly string mode;
         private readonly byte[] payload;
         private readonly string signature;
+        private int payloadRequests;
+        internal int PayloadRequests => Volatile.Read(ref payloadRequests);
         public string Feed { get; }
         public LoopbackServer(string mode, byte[] payload, string signature)
         {
             this.mode = mode; this.payload = payload; this.signature = signature;
             listener.Start();
-            Feed = $"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/appcast.xml";
-            serving = Serve();
+            Feed = $"{(mode == "stalled" ? "https" : "http")}://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/appcast.xml";
+            // Native cases synchronously wait on the STA thread. Keep server
+            // continuations off its WPF context, including cancellation on dispose.
+            serving = Task.Run(Serve);
         }
         private async Task Serve()
         {
@@ -127,6 +207,12 @@ internal static class NativeTests
                 while (!stop.IsCancellationRequested)
                 {
                     using var client = await listener.AcceptTcpClientAsync(stop.Token);
+                    if (mode == "stalled")
+                    {
+                        // Accept TCP but never answer the TLS handshake.
+                        await Task.Delay(Timeout.Infinite, stop.Token);
+                        continue;
+                    }
                     using var stream = client.GetStream();
                     using var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
                     var request = await reader.ReadLineAsync(stop.Token) ?? "";
@@ -134,6 +220,7 @@ internal static class NativeTests
                     byte[] body;
                     if (request.Contains("/payload.exe"))
                     {
+                        Interlocked.Increment(ref payloadRequests);
                         body = payload.ToArray();
                         if (mode == "tampered") body[0] ^= 1;
                     }

@@ -127,6 +127,8 @@ file for terms.
 
 - (void)dealloc
 {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [_updateServiceQueue cancelAllOperations]; [_updateServiceQueue release];
     if (_sound) {
         if ([_sound isPlaying]) 
 			[_sound stop];
@@ -244,14 +246,8 @@ file for terms.
 	// The old default-true flag is NOT consent for a newly enabled network feature.
 	[_useUpdateCheckBox setIntValue:0];
 	[_useUpdateCheckBox setEnabled:NO];
-	[_useUpdateCheckBox setTitle:@"每日自動檢查更新（需連線）"];
-	@try {
-		id service = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
-		[service setProtocolForProxy:@protocol(OpenVanillaService)];
-		NSDictionary *status = [service desktopUpdateStatus];
-		[_useUpdateCheckBox setEnabled:[[status objectForKey:@"configured"] boolValue]];
-		[_useUpdateCheckBox setIntValue:[[status objectForKey:@"automatic"] boolValue]];
-	} @catch (NSException *exception) { /* Old installed loader: leave disabled. */ }
+	[_useUpdateCheckBox setTitle:@"每日檢查新版並通知（不預先下載）"];
+	[self requestUpdateConsent:nil];
 	
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)	
 	if ([[_takaoDictionary valueForKey:@"ToggleInputMethodWithControlBackslash"] isEqualToString:@"true"])
@@ -442,14 +438,54 @@ file for terms.
 - (IBAction)writePreference:(id)sender
 {
 	if (sender == _useUpdateCheckBox) {
-		@try {
-			id service = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
-			[service setProtocolForProxy:@protocol(OpenVanillaService)];
-			[service setAutomaticDesktopUpdates:[_useUpdateCheckBox intValue] != 0];
-		} @catch (NSException *exception) { [_useUpdateCheckBox setIntValue:0]; }
+		[self requestUpdateConsent:@([_useUpdateCheckBox intValue] != 0)];
 	}
 	[self updateDictionary];
 	[self doWrite];
+}
+
+- (void)requestUpdateConsent:(NSNumber *)enabled
+{
+	if (_updateServiceStopped) return;
+	if (!_updateServiceQueue) {
+		_updateServiceQueue = [[NSOperationQueue alloc] init];
+		[_updateServiceQueue setMaxConcurrentOperationCount:1];
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(stopUpdateConsent:)
+			name:NSWindowWillCloseNotification object:nil];
+	}
+	NSUInteger generation = ++_updateServiceGeneration;
+	[_useUpdateCheckBox setEnabled:NO];
+	NSButton *button = _useUpdateCheckBox; // The copied block retains the view through completion.
+	[_updateServiceQueue addOperationWithBlock:^{
+		@autoreleasepool {
+			NSConnection *connection = nil;
+			NSDictionary *status = nil;
+			@try {
+				connection = [NSConnection connectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
+				[connection setRequestTimeout:2]; [connection setReplyTimeout:2];
+				id service = [connection rootProxy];
+				[service setProtocolForProxy:@protocol(OpenVanillaService)];
+				if (enabled) [service setAutomaticDesktopUpdates:[enabled boolValue]];
+				NSDictionary *remote = [service desktopUpdateStatus];
+				if (remote) status = [[NSDictionary alloc] initWithDictionary:remote copyItems:YES];
+			} @catch (NSException *exception) { /* Old or unresponsive IMK leaves the control disabled. */ }
+			@finally { [connection invalidate]; }
+			[[NSOperationQueue mainQueue] addOperationWithBlock:^{
+				if (!_updateServiceStopped && generation == _updateServiceGeneration) {
+					[button setEnabled:[status[@"configured"] boolValue]];
+					[button setIntValue:[status[@"automatic"] boolValue]];
+				}
+			}];
+			[status release];
+		}
+	}];
+}
+
+- (void)stopUpdateConsent:(NSNotification *)notification
+{
+	if ([notification object] != [_useUpdateCheckBox window]) return;
+	_updateServiceStopped = YES; _updateServiceGeneration++;
+	[_updateServiceQueue cancelAllOperations];
 }
 - (IBAction)testSound:(id)sender
 {

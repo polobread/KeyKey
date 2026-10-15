@@ -1,5 +1,8 @@
 // Copyright (c) 2026 Chui Ping Cheng. MIT License.
 #import "../KeyKeyMacUpdater.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
 static int passed;
 static void Check(BOOL condition, NSString *message)
@@ -96,8 +99,9 @@ int main(int argc, const char *argv[])
         Check(engine.starts == 1 && [[client snapshot][@"configured"] boolValue], @"start is idempotent");
         Check(!engine.sendsProfile && !engine.downloadsAutomatically, @"privacy and visible installation are enforced");
         Check(!engine.automaticallyChecksForUpdates, @"first start does not opt in");
-        [client setAutomaticChecks:YES]; Check(engine.automaticallyChecksForUpdates, @"explicit opt in works");
-        [client setAutomaticChecks:NO]; Check(!engine.automaticallyChecksForUpdates, @"explicit opt out works");
+        [client setAutomaticChecks:YES]; Check([[client snapshot][@"automatic"] boolValue] && !engine.automaticallyChecksForUpdates,
+            @"explicit opt in uses the bounded daily query path instead of native background queries");
+        [client setAutomaticChecks:NO]; Check(![[client snapshot][@"automatic"] boolValue], @"explicit opt out works");
         Check([[client feedURLStringForUpdater:nil] isEqualToString:@"https://example.invalid/feed.xml"], @"reviewed feed is pinned");
         Check([[client feedParametersForUpdater:nil sendingSystemProfile:YES] count] == 0, @"no custom profiling parameters");
         [client checkForUpdates]; [client checkForUpdates];
@@ -131,6 +135,27 @@ int main(int argc, const char *argv[])
             error:[NSError errorWithDomain:@"SUSparkleErrorDomain" code:SUNoUpdateError userInfo:nil]];
         Check([[client snapshot][@"phase"] isEqualToString:@"no-update"] && [[client snapshot][@"canCheck"] boolValue],
               @"no-update result is not reported as a failure and allows retry");
+        [client checkForUpdates];
+        __block int cancellations = 0;
+        [client beginCheckWithCancellation:^{ cancellations++; }];
+        NSTimer *deadlineTimer = [client valueForKey:@"_checkTimer"];
+        Check(fabs([deadlineTimer.fireDate timeIntervalSinceNow] - 10) < 0.5, @"query total deadline is 10 seconds");
+        [client checkTimedOut:deadlineTimer];
+        [client updater:(id)engine didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:nil];
+        Check(cancellations == 1 && ![[client snapshot][@"checking"] boolValue] &&
+            [[client snapshot][@"canCheck"] boolValue] && [[client snapshot][@"message"] containsString:@"逾時"],
+            @"timeout cancels native query, preserves timeout result, and permits manual retry");
+        int previousChecks = engine.checks;
+        [client updater:nil didFindValidUpdate:(id)item];
+        Check([[client snapshot][@"message"] containsString:@"逾時"] && [client valueForKey:@"_checkTimer"] == nil,
+            @"late results cannot replace timeout and no retry is scheduled");
+        [client checkForUpdates];
+        Check(engine.checks == previousChecks + 1, @"manual retry starts a new native query");
+        [client beginCheckWithCancellation:^{ cancellations++; }];
+        [client updaterDidNotFindUpdate:(id)engine error:nil];
+        Check([client valueForKey:@"_checkTimer"] == nil && ![[client snapshot][@"checking"] boolValue],
+            @"no-update result ends checking before any user acknowledgement");
+        [client updater:(id)engine didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:nil];
         __block int installs = 0;
         composing = YES;
         Check([client updater:nil shouldPostponeRelaunchForUpdate:(id)item untilInvokingBlock:^{ installs++; }], @"pending composition postpones restart");
@@ -177,8 +202,42 @@ int main(int argc, const char *argv[])
             [[channelClient feedURLStringForUpdater:nil] hasSuffix:@"/stable.xml"], @"opt-out returns to stable");
         Check(![failed setBetaUpdates:YES], @"missing beta endpoint cannot silently fall back");
         [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[channelHost bundleIdentifier]];
+        [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[[client valueForKey:@"_host"] bundleIdentifier]];
+
+        // Real pinned Sparkle + a loopback TCP listener that never completes
+        // TLS. This models a dead CDN without any external traffic or alerts.
+        [NSApplication sharedApplication];
+        int listener = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in address = {0};
+        address.sin_family = AF_INET; address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        Check(listener >= 0 && bind(listener, (struct sockaddr *)&address, sizeof(address)) == 0 && listen(listener, 4) == 0,
+            @"inert loopback endpoint starts");
+        socklen_t addressSize = sizeof(address);
+        getsockname(listener, (struct sockaddr *)&address, &addressSize);
+        NSBundle *networkHost = Bundle(root, [NSString stringWithFormat:@"https://127.0.0.1:%u/feed.xml", ntohs(address.sin_port)], key);
+        KeyKeyMacUpdater *networkClient = [[[KeyKeyMacUpdater alloc] initWithHostBundle:networkHost engine:nil compositionCheck:nil] autorelease];
+        id<SPUUserDriver> driver = [[[NSClassFromString(@"KeyKeyMacUserDriver") alloc] init] autorelease];
+        [(id)driver setValue:networkClient forKey:@"owner"];
+        id<KeyKeyMacUpdateEngine> native = [[[NSClassFromString(@"SPUUpdater") alloc]
+            initWithHostBundle:networkHost applicationBundle:networkHost userDriver:driver delegate:networkClient] autorelease];
+        [networkClient setValue:native forKey:@"_engine"];
+        [networkClient start];
+        Check([[networkClient snapshot][@"configured"] boolValue], [NSString stringWithFormat:@"real updater starts: %@", [networkClient snapshot][@"message"]]);
+        NSTimeInterval began = [NSDate timeIntervalSinceReferenceDate];
+        [networkClient checkForUpdates];
+        __block BOOL heartbeat = NO;
+        [[NSOperationQueue mainQueue] addOperationWithBlock:^{ heartbeat = YES; }];
+        while ([NSDate timeIntervalSinceReferenceDate] - began < 13 &&
+            (![[networkClient snapshot][@"message"] containsString:@"逾時"] || [native sessionInProgress]))
+            [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        NSTimeInterval elapsed = [NSDate timeIntervalSinceReferenceDate] - began;
+        Check(heartbeat && elapsed >= 9.5 && elapsed < 12 && [[networkClient snapshot][@"message"] containsString:@"逾時"] &&
+            ![native sessionInProgress] && [[networkClient snapshot][@"canCheck"] boolValue],
+            [NSString stringWithFormat:@"native stalled query cancels after 10 seconds without blocking UI (%.2fs, %@)", elapsed, [networkClient snapshot]]);
+        [networkClient stop]; close(listener);
+        [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[networkHost bundleIdentifier]];
         [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
-        printf("PASS %d macOS updater assertions (isolated engine; no install or network)\n", passed);
+        printf("PASS %d macOS updater assertions (isolated engine + stalled loopback TLS; no install/external network)\n", passed);
     }
     return 0;
 }

@@ -90,6 +90,7 @@ bash update/test-macos.sh
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
 Windows 建置前準備 `python update/prepare.py fetch windows`。桌面更新預設關閉、
 key／feed 未設定時不得連網；正式啟用與各平台簽章驗收見 [update/README.md](update/README.md)。
+Windows／macOS／Linux 的每日檢查只通知新版，不預先下載安裝包或自動安裝；使用者按下更新後才下載與安裝。Linux／FreeBSD 維持官方下載頁及套件管理器流程。
 手動同版本下載入口只有使用者明確按下「重新安裝目前版本…」時才查詢官方 Release，
 不依賴自動更新 key／feed；只開啟相同版號／架構的下載頁，不自行下載或啟動安裝器。
 Windows stable 在 Authenticode 尚未就緒時可逐版明確宣告 `unsigned-transition`，仍須

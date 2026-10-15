@@ -1,7 +1,6 @@
 """Out-of-process GTK notification UI; never loaded into a typing host."""
 
 import platform
-from http.client import HTTPException
 import sys
 import threading
 import time
@@ -29,12 +28,19 @@ def notification_available():
 
 
 class Application(Gtk.Application):
-    def __init__(self, current, system, executable, get=updates.fetch):
+    def __init__(self, current, system, executable, get=updates.fetch,
+                 timeout=updates.CHECK_TIMEOUT):
         super().__init__(application_id="org.chichi77.KeyKey.UpdateNotification",
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         updates.version_key(current)
         self.current, self.system, self.executable = current, system, executable
         self.get = get
+        self.check_timeout_seconds = timeout
+        self.check_timeout = None
+        self.check_generation = 0
+        self.active_check = None
+        self.check_cancelled = None
+        self.manual_check = False
         self.window = None
         self.busy = False
         self.timer = None
@@ -70,7 +76,7 @@ class Application(Gtk.Application):
         box.pack_start(Gtk.Label(label=f"目前版本：{self.current}", xalign=0), False, False, 0)
         policy = ("新版通知顯示上游版本。請透過 ports／pkg 更新；\n"
                   "套件庫可能較晚上架。" if self.system == "FreeBSD" else
-                  "只通知新版並開啟官方下載頁，由您選擇下載與安裝。")
+                  "只檢查並通知新版，不預先下載。按下「開啟官方下載頁」後，由您下載並透過套件管理器安裝。")
         box.pack_start(Gtk.Label(label=policy, xalign=0, wrap=True), False, False, 0)
         self.status = Gtk.Label(label="按下「檢查新版」開始檢查。", xalign=0, wrap=True)
         box.pack_start(self.status, False, False, 0)
@@ -94,6 +100,9 @@ class Application(Gtk.Application):
 
     def window_closed(self, *_):
         self.window = None
+        if self.busy and self.manual_check:
+            self.check_cancelled.set()
+            self.checked(None, True, True, self.active_check)
 
     def refresh_buttons(self):
         if self.window:
@@ -152,23 +161,49 @@ class Application(Gtk.Application):
         if self.window:
             self.status.set_text("正在檢查新版…")
         beta = self.settings["include_beta"]
+        self.check_generation += 1
+        generation = self.active_check = self.check_generation
+        cancelled = self.check_cancelled = threading.Event()
+        self.manual_check = manual
+        self.check_timeout = GLib.timeout_add(max(1, int(self.check_timeout_seconds * 1000)),
+                                             self.check_expired, generation, manual)
 
         def work():
             try:
                 result = updates.latest_release(self.current, self.system,
-                                                platform.machine(), beta, self.get)
+                                                platform.machine(), beta, self.get,
+                                                self.check_timeout_seconds, cancelled)
                 error = False
-            except (OSError, ValueError, TypeError, KeyError, HTTPException):
+            except TimeoutError:
+                result, error = None, "timeout"
+            except Exception:
+                # An unexpected worker error must also release the UI's busy
+                # state; no worker exception should leave checks disabled.
                 result, error = None, True
-            GLib.idle_add(self.checked, result, error, manual)
+            GLib.idle_add(self.checked, result, error, manual, generation)
 
         threading.Thread(target=work, daemon=True).start()
 
-    def checked(self, result, error, manual):
+    def check_expired(self, generation, manual):
+        if generation != self.active_check:
+            return GLib.SOURCE_REMOVE
+        self.check_timeout = None
+        self.check_cancelled.set()
+        return self.checked(None, True, manual, generation, timed_out=True)
+
+    def checked(self, result, error, manual, generation, timed_out=False):
+        if generation != self.active_check:
+            return GLib.SOURCE_REMOVE
+        self.active_check = None
+        if self.check_timeout is not None:
+            GLib.source_remove(self.check_timeout)
+            self.check_timeout = None
         self.busy = False
         self.result = result
+        timed_out = timed_out or error == "timeout"
         if self.window:
-            text = ("檢查失敗，請確認網路連線後再試。" if error else
+            text = ("檢查更新逾時（10 秒）；請稍後按「檢查新版」再試。" if timed_out else
+                    "檢查失敗，請確認網路連線後再試。" if error else
                     f"發現上游新版：{result['version']}" if result else
                     "目前沒有較新的可用版本。")
             self.status.set_text(text)

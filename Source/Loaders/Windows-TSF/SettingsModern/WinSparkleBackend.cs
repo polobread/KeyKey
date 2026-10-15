@@ -11,9 +11,10 @@ internal sealed record UpdateCallbacks(Func<int> CanShutdown, Action Shutdown,
 internal interface IDesktopUpdateBackend
 {
     bool Automatic { get; set; }
+    DateTimeOffset LastAttempt { get; set; }
     void Configure(string key, string feed, string version, UpdateCallbacks callbacks, bool betaChannel = false);
     void Initialize();
-    void Check();
+    void Check(bool background = false);
     void Cleanup();
 }
 
@@ -21,6 +22,7 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
 {
     private const string RegistryPath = @"Software\chichi77\KeyKey\DesktopUpdates";
     private readonly string registryPath;
+    private string preferencesPath = RegistryPath;
     internal WinSparkleBackend(string registryPath = RegistryPath) => this.registryPath = registryPath;
     // Keep managed delegates rooted until AFTER native cleanup joins its threads.
     private CanShutdownCallback? canShutdown;
@@ -32,14 +34,36 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
 
     public bool Automatic
     {
-        get => win_sparkle_get_automatic_check_for_updates() == 1;
-        set => win_sparkle_set_automatic_check_for_updates(value ? 1 : 0);
+        get
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(preferencesPath);
+            return key?.GetValue("KeyKeyAutomaticChecks") is int value && value == 1;
+        }
+        set
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(preferencesPath);
+            key.SetValue("KeyKeyAutomaticChecks", value ? 1 : 0, RegistryValueKind.DWord);
+        }
+    }
+    public DateTimeOffset LastAttempt
+    {
+        get
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(preferencesPath);
+            return key?.GetValue("KeyKeyLastAttempt") is long ticks && ticks >= DateTimeOffset.MinValue.Ticks &&
+                ticks <= DateTimeOffset.MaxValue.Ticks ? new DateTimeOffset(ticks, TimeSpan.Zero) : DateTimeOffset.MinValue;
+        }
+        set
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(preferencesPath);
+            key.SetValue("KeyKeyLastAttempt", value.UtcTicks, RegistryValueKind.QWord);
+        }
     }
     public void Configure(string key, string feed, string version, UpdateCallbacks callbacks, bool betaChannel = false)
     {
         win_sparkle_set_app_details("chichi77", "琦琦輸入法", version);
         // Beta consent/skipped versions must not change stable updater preferences.
-        var preferencesPath = betaChannel ? registryPath + @"\Beta" : registryPath;
+        preferencesPath = betaChannel ? registryPath + @"\Beta" : registryPath;
         win_sparkle_set_registry_path(preferencesPath);
         win_sparkle_set_appcast_url(feed);
         if (win_sparkle_set_eddsa_public_key(key) != 1)
@@ -67,9 +91,19 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
             Automatic = false;
             preferences.SetValue("ConsentInitialized", 1, RegistryValueKind.DWord);
         }
+        else if (preferences.GetValue("KeyKeyAutomaticChecks") is null)
+            Automatic = win_sparkle_get_automatic_check_for_updates() == 1;
+        // Settings schedules daily checks through the same 10-second path as a
+        // manual check. Native automatic checks have no start/cancel callback.
+        win_sparkle_set_automatic_check_for_updates(0);
     }
     public void Initialize() => win_sparkle_init();
-    public void Check() => win_sparkle_check_update_with_ui();
+    // Both APIs start native workers immediately; never wait for network on WPF.
+    public void Check(bool background = false)
+    {
+        if (background) win_sparkle_check_update_without_ui();
+        else win_sparkle_check_update_with_ui();
+    }
     public void Cleanup()
     {
         win_sparkle_cleanup();
@@ -99,6 +133,7 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
     [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)] private static extern void win_sparkle_set_update_check_interval(int seconds);
     [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int win_sparkle_get_automatic_check_for_updates();
     [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)] private static extern void win_sparkle_set_automatic_check_for_updates(int value);
+    [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)] private static extern void win_sparkle_check_update_without_ui();
     [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)] private static extern void win_sparkle_check_update_with_ui();
     [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)] private static extern void win_sparkle_set_can_shutdown_callback(CanShutdownCallback callback);
     [DllImport("WinSparkle.dll", CallingConvention = CallingConvention.Cdecl)] private static extern void win_sparkle_set_shutdown_request_callback(NotificationCallback callback);

@@ -42,6 +42,9 @@ file for terms.
 	NSMutableArray *_inputMethods;
 	
 	BOOL _init;
+	NSOperationQueue *_updateServiceQueue;
+	NSUInteger _updateServiceGeneration;
+	BOOL _updateServiceStopped;
 }
 
 #pragma mark Interface Builder actions

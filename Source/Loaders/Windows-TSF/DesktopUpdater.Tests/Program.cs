@@ -17,6 +17,14 @@ internal static class Program
             () => frame.Continue = false);
         Dispatcher.PushFrame(frame);
     }
+    private static void Until(Func<bool> ready)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!ready() && DateTime.UtcNow < deadline) { Pump(); Thread.Sleep(1); }
+        Check(ready(), "Asynchronous updater operation did not finish");
+    }
+    private static void Finish(Task task) { Until(() => task.IsCompleted); task.GetAwaiter().GetResult(); }
+    private static T Finish<T>(Task<T> task) { Finish((Task)task); return task.GetAwaiter().GetResult(); }
     private static string Config(string? key = null, string x64 = "https://example.invalid/x64.xml",
         string x86 = "https://example.invalid/x86.xml") => JsonSerializer.Serialize(new
         {
@@ -26,25 +34,29 @@ internal static class Program
     private sealed class FakeBackend : IDesktopUpdateBackend
     {
         public bool Automatic { get; set; }
+        public DateTimeOffset LastAttempt { get; set; }
         public int Configures, Starts, Checks, Cleanups;
         public bool FailStart;
+        public ManualResetEventSlim? CleanupGate;
         public string Feed = "", Version = "";
         public bool BetaChannel;
         public UpdateCallbacks Callbacks = null!;
         public void Configure(string key, string feed, string version, UpdateCallbacks callbacks, bool betaChannel = false)
         { Configures++; Feed = feed; Version = version; Callbacks = callbacks; BetaChannel = betaChannel; }
         public void Initialize() { Starts++; if (FailStart) throw new IOException("test initialization failure"); }
-        public void Check() => Checks++;
-        public void Cleanup() { Cleanups++; Callbacks.Error(); Callbacks.Shutdown(); }
+        public void Check(bool background = false) => Checks++;
+        public void Cleanup() { Cleanups++; CleanupGate?.Wait(); Callbacks.Error(); Callbacks.Shutdown(); }
     }
     [STAThread]
     private static int Main(string[] args)
     {
         try
         {
+            SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
             LifecycleTests();
             BetaChannelTests();
             ReinstallTests();
+            TimeoutTests();
             if (args.Contains("--native")) NativeTests.Run(args);
             return 0;
         }
@@ -128,7 +140,7 @@ internal static class Program
         Check(shutdowns == 1, "Clean shutdown was not dispatched");
         backend.Callbacks.Found();
         var beforeDispose = notifications;
-        session.Dispose(); session.Dispose(); Pump();
+        session.Dispose(); session.Dispose(); Finish(session.NativeCleanup); Pump();
         Check(!session.Available && !session.CanShutdown && !session.Busy &&
             backend.Cleanups == 1 && notifications == beforeDispose && shutdowns == 1,
             "Cleanup callbacks, queued callbacks or double disposal changed disposed state");
@@ -138,6 +150,7 @@ internal static class Program
         var failing = new FakeBackend { FailStart = true };
         using var failed = Create(failing, Config());
         failed.Initialize();
+        Finish(failed.NativeCleanup);
         Check(!failed.Available && failing.Cleanups == 1 && failed.Status.Contains("無法啟用") && shutdowns == 1,
             "Failed initialization did not clean up or retained stale callbacks");
         failing.FailStart = false;
@@ -145,7 +158,7 @@ internal static class Program
         Check(failed.Available && !failed.Status.Contains("未完成") && shutdowns == 1,
             "A callback queued by failed initialization changed the retried session");
         var oldCallbacks = failing.Callbacks;
-        failed.Dispose(); oldCallbacks.Shutdown(); Pump();
+        failed.Dispose(); oldCallbacks.Shutdown(); Finish(failed.NativeCleanup); Pump();
         Check(shutdowns == 1 && failing.Cleanups == 2, "Retried initialization retained shutdown after disposal");
         Console.WriteLine("Updater configuration, architecture, retry, opt-in, threaded callbacks and shutdown races passed");
     }
@@ -163,20 +176,65 @@ internal static class Program
         client.Initialize();
         Check(!client.BetaEnabled && !backend.BetaChannel && client.CanChangeBeta, "Beta must default off");
         var oldCallbacks = backend.Callbacks;
-        Check(client.SetBeta(true) && consent && client.BetaEnabled && backend.BetaChannel &&
+        Check(Finish(client.SetBetaAsync(true)) && consent && client.BetaEnabled && backend.BetaChannel &&
             backend.Feed.Contains("/beta-"), "Explicit beta opt-in did not choose pinned architecture feed");
         oldCallbacks.Found(); oldCallbacks.Shutdown(); Pump();
         Check(!client.Busy && shutdowns == 0, "Old-channel callback affected the new session");
         client.Check();
-        Check(!client.SetBeta(false) && client.BetaEnabled, "Channel changed during a native update cycle");
+        Check(!Finish(client.SetBetaAsync(false)) && client.BetaEnabled, "Channel changed during a native update cycle");
         backend.Callbacks.Cancelled(); Pump();
         client.SetUnsavedChanges(true);
-        Check(!client.SetBeta(false), "Channel changed with unsaved edits");
+        Check(!Finish(client.SetBetaAsync(false)), "Channel changed with unsaved edits");
         client.SetUnsavedChanges(false);
-        Check(client.SetBeta(false) && !consent && !backend.BetaChannel && !backend.Feed.Contains("/beta-"),
+        Check(Finish(client.SetBetaAsync(false)) && !consent && !backend.BetaChannel && !backend.Feed.Contains("/beta-"),
             "Opt-out did not return to stable");
         Check(backend.Checks == 1 && shutdowns == 0, "Channel toggle performed a network check or shutdown");
         Console.WriteLine("Default-off beta channel, architecture feeds, busy/unsaved guards and stale callbacks passed");
+    }
+
+    private static void TimeoutTests()
+    {
+        int shutdowns = 0;
+        var backend = new FakeBackend();
+        using var cleanupGate = new ManualResetEventSlim();
+        backend.CleanupGate = cleanupGate;
+        using var client = new DesktopUpdater(backend, Dispatcher.CurrentDispatcher, () => shutdowns++,
+            () => new MemoryStream(Encoding.UTF8.GetBytes(Config())),
+            readBetaPreference: () => false, writeBetaPreference: _ => { }, checkTimeout: TimeSpan.FromMilliseconds(30));
+        client.Initialize(); client.Check();
+        var expiredCallbacks = backend.Callbacks;
+        Until(() => !client.Busy);
+        Check(client.Status.Contains("逾時") && !client.Available && backend.Checks == 1,
+            "Unresponsive CDN did not expire, or timeout automatically retried");
+        bool uiRan = false;
+        Dispatcher.CurrentDispatcher.BeginInvoke(() => uiRan = true); Pump();
+        Check(uiRan && !client.NativeCleanup.IsCompleted, "Native cancellation blocked the WPF thread");
+        expiredCallbacks.Found(); expiredCallbacks.Shutdown(); Pump();
+        Check(expiredCallbacks.CanShutdown() == 0 && expiredCallbacks.BeforeInstall("unused.exe") == -1,
+            "Expired native session could still launch an installer");
+        Check(!client.Busy && client.Status.Contains("逾時") && shutdowns == 0,
+            "Expired native callback changed state or shut down Settings");
+        cleanupGate.Set(); Finish(client.NativeCleanup); Pump();
+        Check(client.Available && backend.Starts == 1 && backend.Checks == 1,
+            "Cleanup did not restore manual retry or performed an automatic query");
+        client.Check(); expiredCallbacks.Error(); Pump();
+        Check(client.Busy && backend.Starts == 2 && backend.Checks == 2,
+            "Manual retry did not create a new session or accepted an expired callback");
+        backend.Callbacks.NotFound(); Pump();
+        Check(!client.Busy && client.Status.Contains("最新版本"), "Retry result was lost");
+        client.Dispose(); Finish(client.NativeCleanup);
+
+        var pending = new TaskCompletionSource<Uri>();
+        int pages = 0;
+        using var reinstall = new DesktopUpdater(new FakeBackend(), Dispatcher.CurrentDispatcher, () => { },
+            () => new MemoryStream(Encoding.UTF8.GetBytes(Config(key: ""))),
+            (_, _, _) => pending.Task, _ => pages++, checkTimeout: TimeSpan.FromMilliseconds(30));
+        reinstall.Initialize(); Finish(reinstall.ReinstallAsync());
+        Check(reinstall.Status.Contains("逾時") && reinstall.CanReinstall,
+            "Download-page lookup ignored timeout or blocked retry");
+        pending.SetResult(new Uri("https://github.com/polobread/KeyKey/releases/tag/v1.3.2")); Pump();
+        Check(pages == 0 && reinstall.Status.Contains("逾時"), "Expired lookup opened a browser or overwrote timeout");
+        Console.WriteLine("Query timeout, nonblocking native cancellation, manual retry and stale response cases passed");
     }
 
     private static void ReinstallTests()
