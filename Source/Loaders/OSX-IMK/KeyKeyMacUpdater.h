@@ -15,7 +15,7 @@
 - (void)resetUpdateCycle;
 @end
 
-@interface KeyKeyMacUpdater : NSObject <SPUUpdaterDelegate>
+@interface KeyKeyMacUpdater : NSObject <SPUUpdaterDelegate, SPUStandardUserDriverDelegate>
 {
     NSBundle *_host;
     id _controller;
@@ -28,9 +28,12 @@
     NSString *_latestVersion;
     BOOL _configured, _started, _stopped, _busy, _installationRequested;
     BOOL _betaEnabled, _keyValid;
+    BOOL _manualCheck, _automaticChecks, _checkTimedOut;
     BOOL (^_compositionCheck)(void);
     void (^_pendingInstallation)(void);
     NSTimer *_installationTimer;
+    NSTimer *_checkTimer, *_automaticTimer;
+    void (^_cancelCheck)(void);
 }
 - (instancetype)initWithHostBundle:(NSBundle *)host engine:(id<KeyKeyMacUpdateEngine>)engine
                  compositionCheck:(BOOL (^)(void))compositionCheck;
@@ -42,4 +45,6 @@
 - (BOOL)setBetaUpdates:(BOOL)enabled;
 - (BOOL)mayTerminateForUpdate;
 - (void)resumeInstallationIfSafe;
+- (void)beginCheckWithCancellation:(void (^)(void))cancellation;
+- (void)checkTimedOut:(NSTimer *)timer;
 @end

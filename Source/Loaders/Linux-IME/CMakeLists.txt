@@ -212,6 +212,8 @@ endif()
 if(BUILD_TESTING)
     add_test(NAME keykey_unix_update_notifications
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_update_notify.py")
+    add_test(NAME keykey_unix_update_notification_lifecycle
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_update_notify_lifecycle.py")
     if(KEYKEY_BUILD_X11_E2E_HOST)
         add_test(NAME keykey_unix_update_notification_gui
             COMMAND dbus-run-session -- xvfb-run -a "${Python3_EXECUTABLE}"

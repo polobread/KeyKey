@@ -26,7 +26,7 @@
 - (NSString *)latestCheck;
 
 // Desktop updater is owned by the IMK application, not the nested preferences.
-- (NSDictionary *)desktopUpdateStatus;
+- (bycopy NSDictionary *)desktopUpdateStatus;
 - (oneway void)checkForDesktopUpdates;
 - (oneway void)setAutomaticDesktopUpdates:(BOOL)enabled;
 - (oneway void)setBetaDesktopUpdates:(BOOL)enabled;

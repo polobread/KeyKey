@@ -35,7 +35,12 @@ the upstream release. It does not claim a package is already available in pkg.
 This tool does not download or run packages, modify the installed input method,
 query privileged package managers, or create an APT/pkg repository. Release URLs
 are constructed from strict version tags, never taken from untrusted metadata.
-Network access uses HTTPS, a bounded response size and a ten-second socket timeout;
+Network access uses HTTPS and a bounded response size. A background check has a
+ten-second total UI deadline, shared across the release list and tag requests;
+individual requests use the remaining time as their socket timeout. Timeout
+restores the check button without retrying automatically. Manual retry ignores
+late results from the expired worker, and closing a manual check cancels further
+requests. The existing daily schedule still waits 24 hours after any attempt;
 cross-host and non-HTTPS redirects are rejected. No typing text is sent.
 
 Preferences: `$XDG_CONFIG_HOME/chichi77-keykey/update-notification.json`.
@@ -87,6 +92,7 @@ the compiled product version, not `1.3.1_1`, is the notification's current versi
 
 ```sh
 python3 tests/test_update_notify.py
+python3 tests/test_update_notify_lifecycle.py
 dbus-run-session -- xvfb-run -a python3 tests/test_update_notify_gui.py
 # After installing only in an isolated test container/session:
 dbus-run-session -- xvfb-run -a python3 tests/test_update_notify_install.py

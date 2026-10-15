@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import unittest
 from unittest.mock import patch
 
@@ -90,6 +91,45 @@ class ReleaseTests(unittest.TestCase):
         for url in ("http://api.github.com/data", "https://evil.invalid", "https://api.github.com:444/data"):
             with self.assertRaises(ValueError):
                 updates.SameHostRedirect().redirect_request(request, None, 302, "", {}, url)
+
+    def test_total_deadline_covers_all_requests(self):
+        calls = []
+        clock = [0]
+        def get(url):
+            calls.append(url)
+            clock[0] += 6
+            return (json.dumps([release("1.3.2")]).encode() if url == updates.API else
+                    b"project(KeyKeyLinux VERSION 1.3.2 LANGUAGES CXX)\n")
+        with patch.object(updates.time, "monotonic", side_effect=lambda: clock[0]):
+            with self.assertRaises(TimeoutError):
+                updates.latest_release("1.3.1", "Linux", "x86_64", get=get)
+        self.assertEqual(len(calls), 2)
+
+    def test_cancelled_check_starts_no_further_requests(self):
+        cancelled = threading.Event()
+        calls = []
+        def get(url):
+            calls.append(url)
+            cancelled.set()
+            return json.dumps([release("1.3.2")]).encode()
+        with self.assertRaises(TimeoutError):
+            updates.latest_release("1.3.1", "Linux", "x86_64", get=get, cancelled=cancelled)
+        self.assertEqual(calls, [updates.API])
+
+    def test_trickling_response_cannot_extend_query_forever(self):
+        clock = [0]
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self, *_): pass
+            def read1(self, _):
+                clock[0] += 6
+                return b"x"
+        with patch.object(updates, "build_opener") as opener, \
+                patch.object(updates.time, "monotonic", side_effect=lambda: clock[0]):
+            opener.return_value.open.return_value = Response()
+            with self.assertRaises(TimeoutError):
+                updates.fetch(updates.API)
+        self.assertEqual(clock[0], 12)
 
 
 class PreferenceTests(unittest.TestCase):

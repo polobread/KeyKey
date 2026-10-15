@@ -1,6 +1,53 @@
 // Copyright (c) 2026 Chui Ping Cheng. MIT License.
 #import "KeyKeyMacUpdater.h"
 
+// Keep Sparkle's download/install UI and signature validation. Query progress,
+// no-update results and query errors belong in Preferences instead of modal
+// dialogs owned by the background input method.
+@interface KeyKeyMacUserDriver : NSObject <SPUUserDriver>
+@property(nonatomic, assign) KeyKeyMacUpdater *owner;
+@property(nonatomic, retain) id<SPUUserDriver> standard;
+@end
+
+@implementation KeyKeyMacUserDriver
+- (void)dealloc { [_standard release]; [super dealloc]; }
+- (void)showUpdatePermissionRequest:(SPUUpdatePermissionRequest *)request reply:(void (^)(SUUpdatePermissionResponse *))reply
+{ [_standard showUpdatePermissionRequest:request reply:reply]; }
+- (void)showUserInitiatedUpdateCheckWithCancellation:(void (^)(void))cancellation
+{ [_owner beginCheckWithCancellation:cancellation]; }
+- (void)showUpdateFoundWithAppcastItem:(SUAppcastItem *)item state:(SPUUserUpdateState *)state reply:(void (^)(SPUUserUpdateChoice))reply
+{ [_standard showUpdateFoundWithAppcastItem:item state:state reply:reply]; }
+- (void)showUpdateReleaseNotesWithDownloadData:(SPUDownloadData *)data
+{ [_standard showUpdateReleaseNotesWithDownloadData:data]; }
+- (void)showUpdateReleaseNotesFailedToDownloadWithError:(NSError *)error
+{ [_standard showUpdateReleaseNotesFailedToDownloadWithError:error]; }
+- (void)showUpdateNotFoundWithError:(NSError *)error acknowledgement:(void (^)(void))acknowledgement
+{ acknowledgement(); }
+- (void)showUpdaterError:(NSError *)error acknowledgement:(void (^)(void))acknowledgement
+{
+    NSString *phase = [_owner snapshot][@"phase"];
+    if ([phase isEqualToString:@"checking"] || [phase isEqualToString:@"failed"])
+        acknowledgement();
+    else [_standard showUpdaterError:error acknowledgement:acknowledgement];
+}
+- (void)showDownloadInitiatedWithCancellation:(void (^)(void))cancellation
+{ [_standard showDownloadInitiatedWithCancellation:cancellation]; }
+- (void)showDownloadDidReceiveExpectedContentLength:(uint64_t)length
+{ [_standard showDownloadDidReceiveExpectedContentLength:length]; }
+- (void)showDownloadDidReceiveDataOfLength:(uint64_t)length
+{ [_standard showDownloadDidReceiveDataOfLength:length]; }
+- (void)showDownloadDidStartExtractingUpdate { [_standard showDownloadDidStartExtractingUpdate]; }
+- (void)showExtractionReceivedProgress:(double)progress { [_standard showExtractionReceivedProgress:progress]; }
+- (void)showReadyToInstallAndRelaunch:(void (^)(SPUUserUpdateChoice))reply
+{ [_standard showReadyToInstallAndRelaunch:reply]; }
+- (void)showInstallingUpdateWithApplicationTerminated:(BOOL)terminated retryTerminatingApplication:(void (^)(void))retry
+{ [_standard showInstallingUpdateWithApplicationTerminated:terminated retryTerminatingApplication:retry]; }
+- (void)showUpdateInstalledAndRelaunched:(BOOL)relaunched acknowledgement:(void (^)(void))acknowledgement
+{ [_standard showUpdateInstalledAndRelaunched:relaunched acknowledgement:acknowledgement]; }
+- (void)dismissUpdateInstallation { [_standard dismissUpdateInstallation]; }
+- (void)showUpdateInFocus { if ([_standard respondsToSelector:_cmd]) [_standard showUpdateInFocus]; }
+@end
+
 @implementation KeyKeyMacUpdater
 
 static NSURL *ReviewedFeed(id value)
@@ -31,6 +78,9 @@ static NSURL *ReviewedFeed(id value)
             _keyValid = [bytes length] == 32;
         }
         _preferences = [[NSUserDefaults alloc] initWithSuiteName:[host bundleIdentifier]];
+        id automatic = [_preferences objectForKey:@"KeyKeyAutomaticChecks"];
+        if (!automatic) automatic = [_preferences objectForKey:@"SUEnableAutomaticChecks"];
+        _automaticChecks = [automatic isKindOfClass:[NSNumber class]] && [automatic boolValue];
         id consent = [_preferences objectForKey:@"KeyKeyBetaUpdates"];
         _betaEnabled = [consent isKindOfClass:[NSNumber class]] && [consent boolValue];
         _feed = [(_betaEnabled ? _betaFeed : _stableFeed) retain];
@@ -62,14 +112,23 @@ static NSURL *ReviewedFeed(id value)
             [self setPhase:@"failed" message:@"無法載入已嵌入的 Sparkle 更新元件。"];
             return;
         }
-        Class controllerClass = NSClassFromString(@"SPUStandardUpdaterController");
-        _controller = [[controllerClass alloc] initWithStartingUpdater:NO updaterDelegate:self userDriverDelegate:nil];
-        _engine = [(id<KeyKeyMacUpdateEngine>)[_controller updater] retain];
+        KeyKeyMacUserDriver *driver = [[KeyKeyMacUserDriver alloc] init];
+        driver.owner = self;
+        driver.standard = [[[NSClassFromString(@"SPUStandardUserDriver") alloc]
+            initWithHostBundle:_host delegate:self] autorelease];
+        _controller = driver;
+        _engine = (id<KeyKeyMacUpdateEngine>)[[NSClassFromString(@"SPUUpdater") alloc]
+            initWithHostBundle:_host applicationBundle:_host userDriver:driver delegate:self];
     }
     // Enforce privacy and visible, consent-based package installation even when
     // an old user default requests profile submission or automatic downloads.
     [_engine setSendsSystemProfile:NO];
     [_engine setAutomaticallyDownloadsUpdates:NO];
+    // Use one cancellable 10-second query path for manual and daily checks.
+    // Sparkle's own background query has no public cancellation handle.
+    if (_automaticChecks && ![_preferences objectForKey:@"KeyKeyAutomaticChecks"])
+        [_preferences setBool:YES forKey:@"KeyKeyAutomaticChecks"];
+    [_engine setAutomaticallyChecksForUpdates:NO];
     NSError *error = nil;
     if (![_engine startUpdater:&error]) {
         _configured = NO;
@@ -77,6 +136,7 @@ static NSURL *ReviewedFeed(id value)
         return;
     }
     _started = YES;
+    [self updateAutomaticTimer];
     [self setPhase:@"idle" message:@"可手動檢查，或開啟每日自動檢查。下載與安裝仍需確認。"];
 }
 
@@ -89,7 +149,12 @@ static NSURL *ReviewedFeed(id value)
 - (void)stop
 {
     _stopped = YES; _busy = NO; _installationRequested = NO;
+    void (^cancel)(void) = [_cancelCheck copy];
+    [self clearCheckDeadline];
+    if (cancel) { cancel(); [cancel release]; }
+    [_automaticTimer invalidate]; [_automaticTimer release]; _automaticTimer = nil;
     [self clearPendingInstallation];
+    if ([_controller isKindOfClass:[KeyKeyMacUserDriver class]]) [(KeyKeyMacUserDriver *)_controller setOwner:nil];
     [_controller release]; _controller = nil;
     [_engine release]; _engine = nil;
 }
@@ -98,11 +163,11 @@ static NSURL *ReviewedFeed(id value)
 {
     BOOL ready = _configured && _started && !_stopped;
     return [NSDictionary dictionaryWithObjectsAndKeys:
-        @(ready), @"configured", @(ready && [_engine automaticallyChecksForUpdates]), @"automatic",
+        @(ready), @"configured", @(ready && _automaticChecks), @"automatic",
         @(_betaEnabled), @"beta", @(!_stopped && _keyValid && _stableFeed && _betaFeed && !_busy &&
             !_pendingInstallation && !_installationRequested && ![_engine sessionInProgress]), @"canChangeBeta",
         @(ready && !_busy && !_pendingInstallation && [_engine canCheckForUpdates] && ![_engine sessionInProgress]), @"canCheck",
-        @(_busy), @"checking", _phase ?: @"unconfigured", @"phase", _message ?: @"", @"message",
+        @(_busy && [_phase isEqualToString:@"checking"]), @"checking", _phase ?: @"unconfigured", @"phase", _message ?: @"", @"message",
         [_host objectForInfoDictionaryKey:@"KeyKeyReleaseVersion"] ?: [_host objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"", @"currentVersion",
         _latestVersion ?: @"", @"latestVersion", [_engine lastUpdateCheckDate] ?: (id)@"", @"lastCheck", nil];
 }
@@ -111,6 +176,9 @@ static NSURL *ReviewedFeed(id value)
 {
     NSAssert([NSThread isMainThread], @"macOS updater runs on the main thread");
     if (![[[self snapshot] objectForKey:@"canCheck"] boolValue]) return;
+    _manualCheck = YES;
+    _checkTimedOut = NO;
+    [_preferences setObject:[NSDate date] forKey:@"KeyKeyLastUpdateAttempt"];
     _busy = YES;
     [self setPhase:@"checking" message:@"正在檢查簽章更新…"];
     [_engine checkForUpdates];
@@ -118,7 +186,57 @@ static NSURL *ReviewedFeed(id value)
 
 - (void)setAutomaticChecks:(BOOL)enabled
 {
-    if (!_stopped && _configured && _started) [_engine setAutomaticallyChecksForUpdates:enabled];
+    if (_stopped || !_configured || !_started) return;
+    _automaticChecks = enabled;
+    [_preferences setBool:enabled forKey:@"KeyKeyAutomaticChecks"];
+    [self updateAutomaticTimer];
+}
+
+- (void)updateAutomaticTimer
+{
+    [_automaticTimer invalidate]; [_automaticTimer release]; _automaticTimer = nil;
+    if (_automaticChecks && !_stopped) {
+        _automaticTimer = [[NSTimer timerWithTimeInterval:60 target:self
+            selector:@selector(checkAutomatically:) userInfo:nil repeats:YES] retain];
+        [[NSRunLoop mainRunLoop] addTimer:_automaticTimer forMode:NSRunLoopCommonModes];
+    }
+}
+
+- (void)checkAutomatically:(NSTimer *)timer
+{
+    id last = [_preferences objectForKey:@"KeyKeyLastUpdateAttempt"];
+    if (_automaticChecks && [[[self snapshot] objectForKey:@"canCheck"] boolValue] &&
+        (![last isKindOfClass:[NSDate class]] || -[last timeIntervalSinceNow] >= 86400)) {
+        [self checkForUpdates];
+        _manualCheck = NO;
+    }
+}
+
+- (void)clearCheckDeadline
+{
+    [_checkTimer invalidate]; [_checkTimer release]; _checkTimer = nil;
+    [_cancelCheck release]; _cancelCheck = nil;
+}
+
+- (void)beginCheckWithCancellation:(void (^)(void))cancellation
+{
+    [self clearCheckDeadline];
+    if (_stopped) { cancellation(); return; }
+    _cancelCheck = [cancellation copy];
+    _checkTimer = [[NSTimer timerWithTimeInterval:10 target:self selector:@selector(checkTimedOut:)
+        userInfo:nil repeats:NO] retain];
+    [[NSRunLoop mainRunLoop] addTimer:_checkTimer forMode:NSRunLoopCommonModes];
+}
+
+- (void)checkTimedOut:(NSTimer *)timer
+{
+    if (_stopped || timer != _checkTimer) return;
+    void (^cancel)(void) = [_cancelCheck copy];
+    [self clearCheckDeadline];
+    _checkTimedOut = YES;
+    _busy = NO;
+    [self setPhase:@"failed" message:@"檢查更新逾時（10 秒）；請稍後按「立即檢查」再試。"];
+    if (cancel) { cancel(); [cancel release]; }
 }
 
 - (BOOL)setBetaUpdates:(BOOL)enabled
@@ -165,7 +283,7 @@ static NSURL *ReviewedFeed(id value)
 - (BOOL)updater:(SPUUpdater *)updater shouldProceedWithUpdate:(SUAppcastItem *)item
     updateCheck:(SPUUpdateCheck)check error:(NSError **)error
 {
-    if (_stopped) return NO;
+    if (_stopped || _checkTimedOut) return NO;
     NSURL *url = [item fileURL];
     NSString *path = [[url path] lowercaseString];
     BOOL valid = [[url scheme] isEqualToString:@"https"] && [url host].length > 0 &&
@@ -182,14 +300,24 @@ static NSURL *ReviewedFeed(id value)
 
 - (void)updater:(SPUUpdater *)updater didFindValidUpdate:(SUAppcastItem *)item
 {
-    if (_stopped) return;
+    if (_stopped || _checkTimedOut) return;
+    [self clearCheckDeadline];
     [_latestVersion release]; _latestVersion = [[item displayVersionString] copy];
     [self setPhase:@"available" message:@"找到可安裝的新版本；請在更新視窗確認是否下載。"];
 }
 
 - (void)updaterDidNotFindUpdate:(SPUUpdater *)updater error:(NSError *)error
 {
-    if (!_stopped) [self setPhase:@"no-update" message:@"目前沒有適用的更新。版本或系統需求請以更新視窗說明為準。"];
+    if (_stopped || _checkTimedOut) return;
+    [self clearCheckDeadline];
+    [self setPhase:@"no-update" message:@"目前沒有適用的更新。"];
+}
+
+- (void)standardUserDriverWillShowModalAlert
+{
+    // The updater belongs to the background IMK app, not Preferences. Bring a
+    // manual check's result forward so it cannot wait unseen behind Settings.
+    if (!_stopped && _manualCheck) [NSApp activateIgnoringOtherApps:YES];
 }
 
 - (void)updater:(SPUUpdater *)updater willDownloadUpdate:(SUAppcastItem *)item withRequest:(NSMutableURLRequest *)request
@@ -270,7 +398,10 @@ static NSURL *ReviewedFeed(id value)
 - (void)updater:(SPUUpdater *)updater didFinishUpdateCycleForUpdateCheck:(SPUUpdateCheck)check error:(NSError *)error
 {
     if (_stopped) return;
+    [self clearCheckDeadline];
     _busy = NO;
+    _manualCheck = NO;
+    if (_checkTimedOut) return;
     if (error) {
         if ([error code] == SUNoUpdateError && [[error domain] isEqualToString:@"SUSparkleErrorDomain"])
             [self updaterDidNotFindUpdate:updater error:error];

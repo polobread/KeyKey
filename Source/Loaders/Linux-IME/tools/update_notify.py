@@ -13,6 +13,7 @@ from urllib.request import build_opener, HTTPRedirectHandler, Request
 API = "https://api.github.com/repos/polobread/KeyKey/releases?per_page=100"
 RELEASES = "https://github.com/polobread/KeyKey/releases"
 INTERVAL = 24 * 60 * 60
+CHECK_TIMEOUT = 10
 LIMIT = 4 * 1024 * 1024
 VERSION = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-beta([1-9][0-9]*))?"
 
@@ -33,17 +34,28 @@ class SameHostRedirect(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def fetch(url):
+def fetch(url, timeout=CHECK_TIMEOUT):
+    deadline = time.monotonic() + timeout
     request = Request(url, headers={"User-Agent": "KeyKey-update-notification",
                                     "Accept": "application/vnd.github+json"})
-    with build_opener(SameHostRedirect()).open(request, timeout=10) as response:
-        data = response.read(LIMIT + 1)
+    with build_opener(SameHostRedirect()).open(request, timeout=timeout) as response:
+        data = bytearray()
+        # read1 returns after a single network read. A peer sending a trickle
+        # must not keep response.read(LIMIT) alive indefinitely.
+        while len(data) <= LIMIT:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Update response timed out")
+            chunk = response.read1(min(64 * 1024, LIMIT + 1 - len(data)))
+            if not chunk:
+                break
+            data.extend(chunk)
     if len(data) > LIMIT:
         raise ValueError("Update response is too large")
-    return data
+    return bytes(data)
 
 
-def latest_release(current, system, machine, include_beta=False, get=fetch):
+def latest_release(current, system, machine, include_beta=False, get=fetch,
+                   timeout=CHECK_TIMEOUT, cancelled=None):
     """Verify the Unix product version at the tag; mobile-only tags do not count.
 
     FreeBSD checks upstream source availability, independently of .deb assets.
@@ -51,7 +63,18 @@ def latest_release(current, system, machine, include_beta=False, get=fetch):
     Links are derived from strict tags, never from response-provided URLs.
     """
     current_key = version_key(current)
-    releases = json.loads(get(API))
+    deadline = time.monotonic() + timeout
+
+    def download(url):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or (cancelled is not None and cancelled.is_set()):
+            raise TimeoutError("Update check timed out")
+        data = fetch(url, timeout=remaining) if get is fetch else get(url)
+        if time.monotonic() >= deadline or (cancelled is not None and cancelled.is_set()):
+            raise TimeoutError("Update check timed out")
+        return data
+
+    releases = json.loads(download(API))
     if not isinstance(releases, list):
         raise ValueError("Invalid release list")
     candidates = []
@@ -85,7 +108,7 @@ def latest_release(current, system, machine, include_beta=False, get=fetch):
                 continue
         elif system != "FreeBSD":
             raise ValueError("Unsupported notification platform")
-        source = get(f"https://raw.githubusercontent.com/polobread/KeyKey/{tag}/"
+        source = download(f"https://raw.githubusercontent.com/polobread/KeyKey/{tag}/"
                      "Source/Loaders/Linux-IME/CMakeLists.txt").decode("utf-8")
         match = re.search(r"^project\(KeyKeyLinux VERSION ([0-9]+\.[0-9]+\.[0-9]+) ",
                           source, re.MULTILINE)

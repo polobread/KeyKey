@@ -14,7 +14,7 @@ xcrun clang -fblocks -fno-objc-arc -mmacosx-version-min=15.0 \
     "$task_root/Source/Loaders/OSX-IMK/Tests/MacUpdaterTests.m" \
     -o "$task_build/mac-updater-tests"
 KEYKEY_TEST_SPARKLE_FRAMEWORK="$sdk/Sparkle.framework" "$task_build/mac-updater-tests"
-xcrun clang -fno-objc-arc -mmacosx-version-min=15.0 -framework Cocoa \
+xcrun clang -fblocks -fno-objc-arc -mmacosx-version-min=15.0 -framework Cocoa \
     '-DOPENVANILLA_DO_CONNECTION_NAME=@"io.github.polobread.KeyKeyUpdaterIsolatedTest"' \
     -I "$task_root/Source/Loaders/OSX-IMK" -I "$task_root/Source/Frameworks/LFExtensions" \
     "$task_root/Source/PreferenceApplications/OSX/TakaoUpdate.m" \

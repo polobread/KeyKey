@@ -11,26 +11,38 @@ file for terms.
 
 - (id)updateService
 {
-	id service = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
-	[service setProtocolForProxy:@protocol(OpenVanillaService)];
-	return service;
+	// Set deadlines before rootProxy, which itself performs a synchronous RPC.
+	NSConnection *connection = [NSConnection connectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
+	[connection setRequestTimeout:2];
+	[connection setReplyTimeout:2];
+	@try {
+		id service = [connection rootProxy];
+		[service setProtocolForProxy:@protocol(OpenVanillaService)];
+		return service;
+	} @catch (NSException *exception) {
+		[connection invalidate];
+		@throw;
+	}
 }
 
 - (void)dealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	[_statusTimer invalidate]; [_statusTimer release];
+	[_serviceQueue cancelAllOperations]; [_serviceQueue release];
 	[super dealloc];
 }
 - (void)_getVersionInfo
 {
+	[self requestStatusWithAction:nil beta:NO];
+}
+
+- (void)renderStatus:(NSDictionary *)status
+{
 	[_currentVersionTextField setStringValue:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @""];
 	[_latestVersionTextField setStringValue:@"—"];
 	[_latestCheckTextField setStringValue:@"尚未檢查"];
-	@try {
-		id service = [self updateService];
-		NSDictionary *status = [service desktopUpdateStatus];
-		if (!status) [NSException raise:@"KeyKeyUpdateServiceUnavailable" format:@"No IMK update status"];
+	if (status) {
 		if ([[status objectForKey:@"currentVersion"] length]) [_currentVersionTextField setStringValue:[status objectForKey:@"currentVersion"]];
 		[_statusTextField setStringValue:[status objectForKey:@"message"] ?: @"尚未設定更新服務；此建置不會連線。"];
 		[_latestVersionTextField setStringValue:[[status objectForKey:@"latestVersion"] length] ? [status objectForKey:@"latestVersion"] : @"—"];
@@ -45,13 +57,49 @@ file for terms.
 		if ([date isKindOfClass:[NSDate class]])
 			[_latestCheckTextField setStringValue:[NSDateFormatter localizedStringFromDate:date
 				dateStyle:NSDateFormatterShortStyle timeStyle:NSDateFormatterShortStyle]];
-	} @catch (NSException *exception) {
+	} else {
 		[_checkButton setEnabled:NO];
 		[_betaButton setEnabled:NO];
 		[_checkProgressIndicator stopAnimation:self];
 		[_checkProgressIndicator setHidden:YES];
 		[_statusTextField setStringValue:@"更新服務無法連接。第一次升級需手動安裝支援更新的版本。"];
 	}
+}
+
+- (void)requestStatusWithAction:(NSString *)action beta:(BOOL)beta
+{
+	if (_statusStopped || _statusRequestPending) return;
+	if (!_serviceQueue) {
+		_serviceQueue = [[NSOperationQueue alloc] init];
+		[_serviceQueue setMaxConcurrentOperationCount:1];
+	}
+	_statusRequestPending = YES;
+	NSUInteger generation = _statusGeneration;
+	// Never wait for the IMK service on the AppKit thread. Also materialize the
+	// remote dictionary here, so rendering cannot make further proxy calls.
+	[_serviceQueue addOperationWithBlock:^{
+		@autoreleasepool {
+			NSDictionary *status = nil;
+			id service = nil;
+			@try {
+				service = [self updateService];
+				if ([action isEqualToString:@"check"]) [service checkForDesktopUpdates];
+				else if ([action isEqualToString:@"beta"]) [service setBetaDesktopUpdates:beta];
+				NSDictionary *remote = [service desktopUpdateStatus];
+				if (remote) status = [[NSDictionary alloc] initWithDictionary:remote copyItems:YES];
+			} @catch (NSException *exception) { /* Report service failure on the UI thread. */ }
+			@finally {
+				if ([service isProxy]) [[service connectionForProxy] invalidate];
+			}
+			[[NSOperationQueue mainQueue] addOperationWithBlock:^{
+				if (!_statusStopped && generation == _statusGeneration) {
+					_statusRequestPending = NO;
+					[self renderStatus:status];
+				}
+			}];
+			[status release];
+		}
+	}];
 }
 
 - (void)awakeFromNib
@@ -90,31 +138,24 @@ file for terms.
 - (void)stopStatusTimer:(NSNotification *)notification
 {
 	[_statusTimer invalidate]; [_statusTimer release]; _statusTimer = nil;
+	_statusStopped = YES; _statusGeneration++;
+	[_serviceQueue cancelAllOperations];
 }
 #pragma mark Interface Builder actions
 
 - (IBAction)betaUpdatesChanged:(id)sender
 {
-	@try { [[self updateService] setBetaDesktopUpdates:[sender state] == NSControlStateValueOn]; }
-	@catch (NSException *exception) { [_betaButton setEnabled:NO]; }
-	[self _getVersionInfo];
+	if (_statusStopped || _statusRequestPending) return;
+	[_checkButton setEnabled:NO]; [_betaButton setEnabled:NO];
+	[self requestStatusWithAction:@"beta" beta:[sender state] == NSControlStateValueOn];
 }
 
 - (IBAction)checkUpdateNow:(id)sender
 {
-	@try {
-		id service = [self updateService];
-		if ([[[service desktopUpdateStatus] objectForKey:@"canCheck"] boolValue]) {
-			[_checkButton setEnabled:NO];
-			[_statusTextField setStringValue:@"正在檢查簽章更新…"];
-			[service checkForDesktopUpdates];
-			return;
-		}
-	} @catch (NSException *exception) { /* Show a local message without networking. */ }
-	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
-	[alert setMessageText:@"此版本尚未設定更新服務"];
-	[alert setInformativeText:@"需先安裝內含正式公開金鑰與更新網址的版本。此建置不會連線，也不會安裝未驗證的更新。"];
-	[alert beginSheetModalForWindow:_window completionHandler:nil];
+	if (_statusStopped || _statusRequestPending || ![_checkButton isEnabled]) return;
+	[_checkButton setEnabled:NO]; [_betaButton setEnabled:NO];
+	[_statusTextField setStringValue:@"正在檢查簽章更新…"];
+	[self requestStatusWithAction:@"check" beta:NO];
 }
 
 @end

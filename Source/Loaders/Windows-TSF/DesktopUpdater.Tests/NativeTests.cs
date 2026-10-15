@@ -4,6 +4,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using KeyKeySettings;
 
@@ -83,11 +85,51 @@ internal static class NativeTests
                     Registry.CurrentUser.DeleteSubKeyTree(registryPath, throwOnMissingSubKey: false);
                 }
             }
+            StalledQueryTest(key);
         }
         finally
         {
             // Exact randomly-created directory, no enumeration of outside paths.
             Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    internal static void StalledQueryTest(string key)
+    {
+        using var server = new LoopbackServer("stalled", Array.Empty<byte>(), "");
+        var registryPath = @"Software\chichi77\KeyKey\UpdaterTests\" + Guid.NewGuid().ToString("N");
+        var configuration = JsonSerializer.Serialize(new { schema_version = 1, public_ed25519_key = key,
+            windows_x64_feed_url = server.Feed, windows_x86_feed_url = server.Feed });
+        using var updater = new DesktopUpdater(new WinSparkleBackend(registryPath), Dispatcher.CurrentDispatcher,
+            () => throw new Exception("Stalled query requested shutdown"),
+            () => new MemoryStream(Encoding.UTF8.GetBytes(configuration)),
+            readBetaPreference: () => false, writeBetaPreference: _ => { });
+        try
+        {
+            updater.Initialize();
+            Program.Check(updater.Available, "Native stalled-query updater did not initialize");
+            var elapsed = Stopwatch.StartNew();
+            updater.Check(background: true);
+            bool heartbeat = false;
+            Dispatcher.CurrentDispatcher.BeginInvoke(() => heartbeat = true);
+            while (elapsed.Elapsed < TimeSpan.FromSeconds(15) &&
+                (!updater.Status.Contains("逾時") || !updater.Available))
+            {
+                var frame = new DispatcherFrame();
+                Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => frame.Continue = false);
+                Dispatcher.PushFrame(frame);
+                Thread.Sleep(1);
+            }
+            Program.Check(heartbeat && elapsed.Elapsed >= TimeSpan.FromSeconds(9.5) &&
+                updater.Status.Contains("逾時") && updater.Available && !updater.Busy,
+                "Native stalled TLS query did not cancel in 10 seconds and restore manual retry");
+            Console.WriteLine("Native WinSparkle stalled TLS query cancelled after 10 seconds without blocking WPF");
+        }
+        finally
+        {
+            updater.Dispose();
+            Program.Check(updater.NativeCleanup.Wait(TimeSpan.FromSeconds(10)), "Native timeout cleanup did not finish");
+            Registry.CurrentUser.DeleteSubKeyTree(registryPath, throwOnMissingSubKey: false);
         }
     }
 
@@ -117,7 +159,7 @@ internal static class NativeTests
         {
             this.mode = mode; this.payload = payload; this.signature = signature;
             listener.Start();
-            Feed = $"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/appcast.xml";
+            Feed = $"{(mode == "stalled" ? "https" : "http")}://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/appcast.xml";
             serving = Serve();
         }
         private async Task Serve()
@@ -127,6 +169,12 @@ internal static class NativeTests
                 while (!stop.IsCancellationRequested)
                 {
                     using var client = await listener.AcceptTcpClientAsync(stop.Token);
+                    if (mode == "stalled")
+                    {
+                        // Accept TCP but never answer the TLS handshake.
+                        await Task.Delay(Timeout.Infinite, stop.Token);
+                        continue;
+                    }
                     using var stream = client.GetStream();
                     using var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
                     var request = await reader.ReadLineAsync(stop.Token) ?? "";

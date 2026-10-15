@@ -24,12 +24,17 @@ internal sealed class DesktopUpdater : IDisposable
     private readonly Action<bool> writeBetaPreference;
     private bool betaEnabled, betaAvailable;
     private readonly CancellationTokenSource lifetime = new();
-    private bool initialized;
+    private volatile bool initialized;
     private int generation;
     private volatile bool disposed;
     private volatile bool unsavedChanges;
     private bool updateBusy;
     private bool reinstalling;
+    private bool waitingForRetry;
+    private Task nativeCleanup = Task.CompletedTask;
+    private DispatcherTimer? checkTimer, automaticTimer;
+    private readonly TimeSpan checkTimeout;
+    internal Task NativeCleanup => nativeCleanup;
     private static string ProductVersion
     {
         get
@@ -39,7 +44,7 @@ internal sealed class DesktopUpdater : IDisposable
         }
     }
     private string releaseVersion = ProductVersion;
-    public bool Available => initialized && !disposed;
+    public bool Available => !disposed && (initialized || (waitingForRetry && nativeCleanup.IsCompletedSuccessfully));
     public bool CanReinstall => !disposed && !Busy && !unsavedChanges;
     internal bool CanShutdown => !disposed && !unsavedChanges;
     public bool Busy => updateBusy || reinstalling;
@@ -58,7 +63,8 @@ internal sealed class DesktopUpdater : IDisposable
         Action requestShutdown, Func<Stream> readConfiguration,
         Func<string, string, CancellationToken, Task<Uri>>? findReinstallDownload = null,
         Action<Uri>? openDownloadPage = null,
-        Func<bool>? readBetaPreference = null, Action<bool>? writeBetaPreference = null)
+        Func<bool>? readBetaPreference = null, Action<bool>? writeBetaPreference = null,
+        TimeSpan? checkTimeout = null)
     {
         this.backend = backend;
         this.dispatcher = dispatcher;
@@ -69,13 +75,15 @@ internal sealed class DesktopUpdater : IDisposable
             new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }));
         this.readBetaPreference = readBetaPreference ?? BetaUpdatePreferences.Read;
         this.writeBetaPreference = writeBetaPreference ?? BetaUpdatePreferences.Write;
+        this.checkTimeout = checkTimeout ?? TimeSpan.FromSeconds(10);
     }
 
     public void Initialize()
     {
-        if (initialized || disposed) return;
+        if (initialized || disposed || !nativeCleanup.IsCompletedSuccessfully) return;
         var session = ++generation;
         void Dispatch(Action action) => Post(session, action);
+        bool ActiveSession() => !disposed && initialized && session == Volatile.Read(ref generation);
         bool configured = false;
         try
         {
@@ -113,7 +121,7 @@ internal sealed class DesktopUpdater : IDisposable
 
             backend.Configure(key, uri.AbsoluteUri, releaseVersion.Replace("-beta", "b", StringComparison.Ordinal),
                 new UpdateCallbacks(
-                    () => CanShutdown ? 1 : 0,
+                    () => ActiveSession() && CanShutdown ? 1 : 0,
                     () => Dispatch(() =>
                     {
                         // WinSparkle queries readiness BEFORE launching the installer.
@@ -128,7 +136,7 @@ internal sealed class DesktopUpdater : IDisposable
                     () => Dispatch(() => SetState(Busy ? "更新視窗已關閉，可重新檢查。" : Status, false)),
                     _ =>
                     {
-                        if (CanShutdown) return 0; // Keep WinSparkle's normal interactive/UAC handling.
+                        if (ActiveSession() && CanShutdown) return 0; // Keep normal interactive/UAC handling.
                         Dispatch(() => SetState("請先套用設定或儲存自訂詞，再重新檢查更新。", false));
                         return -1; // WINSPARKLE_RETURN_ERROR: never fall through to launching the file.
                     }), betaEnabled);
@@ -136,6 +144,7 @@ internal sealed class DesktopUpdater : IDisposable
             initialized = true;
             SetState("只檢查發行版本，不傳送輸入內容。下載通過簽章驗證後，才啟動安裝程式並要求管理員授權。", false);
             backend.Initialize();
+            UpdateAutomaticTimer();
         }
         catch (Exception error) when (error is DllNotFoundException or BadImageFormatException
             or EntryPointNotFoundException or InvalidOperationException or FormatException
@@ -144,7 +153,7 @@ internal sealed class DesktopUpdater : IDisposable
         {
             initialized = false;
             generation++;
-            if (configured) backend.Cleanup();
+            if (configured) nativeCleanup = Task.Run(backend.Cleanup);
             SetState($"更新服務無法啟用：{error.Message}（未開始檢查更新）", false);
         }
     }
@@ -159,16 +168,71 @@ internal sealed class DesktopUpdater : IDisposable
 
     private void SetState(string status, bool busy)
     {
+        StopCheckTimer();
         Status = status;
         updateBusy = busy;
         StateChanged?.Invoke();
     }
 
-    public void Check()
+    public void Check(bool background = false)
     {
         if (!Available || Busy) return;
+        if (waitingForRetry)
+        {
+            waitingForRetry = false;
+            Initialize();
+            if (!initialized) return;
+        }
+        try { backend.LastAttempt = DateTimeOffset.UtcNow; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        { SetState($"無法儲存檢查時間：{error.Message}", false); return; }
         SetState("正在檢查更新…", true);
-        backend.Check();
+        var session = generation;
+        checkTimer = new DispatcherTimer(DispatcherPriority.Normal, dispatcher) { Interval = checkTimeout };
+        checkTimer.Tick += (_, _) => { _ = TimeoutCheckAsync(session); };
+        checkTimer.Start();
+        try { backend.Check(background); }
+        catch (Exception error) when (error is InvalidOperationException or IOException)
+        { SetState($"檢查失敗：{error.Message}，請稍後按「立即檢查更新」再試。", false); }
+    }
+
+    private void StopCheckTimer()
+    {
+        checkTimer?.Stop();
+        checkTimer = null;
+    }
+
+    private async Task TimeoutCheckAsync(int session)
+    {
+        if (disposed || !initialized || session != generation || checkTimer is null) return;
+        // Invalidate callbacks BEFORE cancelling the native worker. Cleanup
+        // joins its helper threads, so it must never run on the WPF thread.
+        initialized = false;
+        generation++;
+        waitingForRetry = true;
+        nativeCleanup = Task.Run(backend.Cleanup);
+        SetState("檢查更新逾時（10 秒）；請稍後按「立即檢查更新」再試。", false);
+        try { await nativeCleanup; }
+        catch (Exception error) when (error is InvalidOperationException or IOException)
+        {
+            waitingForRetry = false;
+            if (!disposed) SetState($"檢查已逾時，請關閉設定視窗後重試：{error.Message}", false);
+        }
+        if (!disposed) StateChanged?.Invoke();
+    }
+
+    private void UpdateAutomaticTimer()
+    {
+        automaticTimer?.Stop();
+        automaticTimer = null;
+        if (!Available || !backend.Automatic) return;
+        automaticTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromMinutes(1) };
+        automaticTimer.Tick += (_, _) =>
+        {
+            if (Available && !Busy && backend.Automatic &&
+                DateTimeOffset.UtcNow - backend.LastAttempt >= TimeSpan.FromDays(1)) Check(background: true);
+        };
+        automaticTimer.Start();
     }
     public async Task ReinstallAsync()
     {
@@ -179,7 +243,9 @@ internal sealed class DesktopUpdater : IDisposable
         SetState($"正在確認版本 {current} 的 Windows {architecture} 下載…", false);
         try
         {
-            var page = await findReinstallDownload(current, architecture, lifetime.Token);
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+            deadline.CancelAfter(checkTimeout);
+            var page = await findReinstallDownload(current, architecture, deadline.Token).WaitAsync(deadline.Token);
             if (disposed) return;
             if (unsavedChanges)
             {
@@ -193,7 +259,8 @@ internal sealed class DesktopUpdater : IDisposable
             or JsonException or InvalidOperationException or KeyNotFoundException or FormatException
             or System.ComponentModel.Win32Exception)
         {
-            if (!disposed) SetState($"無法重新安裝：{error.Message}", updateBusy);
+            if (!disposed) SetState(error is OperationCanceledException
+                ? "查詢下載頁逾時（10 秒）；請稍後再試。" : $"無法重新安裝：{error.Message}", updateBusy);
         }
         finally
         {
@@ -209,9 +276,9 @@ internal sealed class DesktopUpdater : IDisposable
     }
     public void SetAutomatic(bool value)
     {
-        if (Available) backend.Automatic = value;
+        if (Available) { backend.Automatic = value; UpdateAutomaticTimer(); }
     }
-    public bool SetBeta(bool value)
+    public async Task<bool> SetBetaAsync(bool value)
     {
         if (value == betaEnabled) return true;
         if (!CanChangeBeta) return false;
@@ -221,8 +288,13 @@ internal sealed class DesktopUpdater : IDisposable
             writeBetaPreference(value);
             // Drop old callbacks BEFORE cleanup joins its native threads.
             generation++;
+            var cleanupRequired = initialized;
             initialized = false;
-            backend.Cleanup();
+            waitingForRetry = false;
+            SetState("正在切換更新來源…", true);
+            if (cleanupRequired) nativeCleanup = Task.Run(backend.Cleanup);
+            await nativeCleanup;
+            if (disposed) return false;
             Initialize();
             if (!Available) throw new InvalidOperationException("無法啟用選擇的更新來源");
             SetState(value ? "已選擇 beta 測試版來源；下載與安裝仍需確認。" : "已選擇正式版來源。", false);
@@ -244,11 +316,13 @@ internal sealed class DesktopUpdater : IDisposable
     {
         if (disposed) return;
         disposed = true; // Drop callbacks already queued on the WPF dispatcher.
+        StopCheckTimer();
+        automaticTimer?.Stop(); automaticTimer = null;
         lifetime.Cancel();
         lifetime.Dispose();
         updateBusy = false;
         reinstalling = false;
-        if (initialized) { initialized = false; backend.Cleanup(); }
+        if (initialized) { initialized = false; generation++; nativeCleanup = Task.Run(backend.Cleanup); }
     }
 }
 
@@ -272,7 +346,7 @@ internal static class SameVersionDownload
 {
     private static readonly HttpClient Client = new(new HttpClientHandler { AllowAutoRedirect = false })
     {
-        Timeout = TimeSpan.FromSeconds(15),
+        Timeout = TimeSpan.FromSeconds(10),
         MaxResponseContentBufferSize = 1024 * 1024
     };
 

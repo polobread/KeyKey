@@ -35,7 +35,7 @@ extern size_t VendorMotcleSize;
 	[_aboutController release];
 	[_inputMethodToggleWindowController release];
 	[_versionInfo release];
-	[_desktopUpdaterController release];
+	[_desktopUpdaterController stop]; [_desktopUpdaterController release];
 	[super dealloc];
 }
 - (void)setLoader:(OpenVanillaLoader *)aLoader
@@ -63,7 +63,7 @@ extern size_t VendorMotcleSize;
     [_desktopUpdaterController start];
 }
 
-- (NSDictionary *)desktopUpdateStatus
+- (bycopy NSDictionary *)desktopUpdateStatus
 {
     return [_desktopUpdaterController snapshot];
 }
@@ -75,7 +75,8 @@ extern size_t VendorMotcleSize;
 
 - (oneway void)checkForDesktopUpdates
 {
-    [self performSelectorOnMainThread:@selector(performDesktopUpdateCheck) withObject:nil waitUntilDone:NO];
+    if ([NSThread isMainThread]) [self performDesktopUpdateCheck];
+    else [self performSelectorOnMainThread:@selector(performDesktopUpdateCheck) withObject:nil waitUntilDone:NO];
 }
 
 - (void)applyAutomaticDesktopUpdates:(NSNumber *)enabled
@@ -85,6 +86,7 @@ extern size_t VendorMotcleSize;
 
 - (oneway void)setAutomaticDesktopUpdates:(BOOL)enabled
 {
+    if ([NSThread isMainThread]) { [self applyAutomaticDesktopUpdates:@(enabled)]; return; }
     [self performSelectorOnMainThread:@selector(applyAutomaticDesktopUpdates:)
         withObject:[NSNumber numberWithBool:enabled] waitUntilDone:NO];
 }
@@ -95,6 +97,7 @@ extern size_t VendorMotcleSize;
 
 - (oneway void)setBetaDesktopUpdates:(BOOL)enabled
 {
+    if ([NSThread isMainThread]) { [self applyBetaDesktopUpdates:@(enabled)]; return; }
     [self performSelectorOnMainThread:@selector(applyBetaDesktopUpdates:)
         withObject:[NSNumber numberWithBool:enabled] waitUntilDone:NO];
 }
@@ -174,6 +177,9 @@ extern size_t VendorMotcleSize;
     
     // NSConnection *connection = [NSConnection defaultConnection];
     [_serverConnection setRootObject:self];
+    // Sparkle runs alerts in a modal loop. Preferences must still be able to
+    // read update status while the user is deciding what to do in that alert.
+    [_serverConnection addRequestMode:NSModalPanelRunLoopMode];
     
     if ([_serverConnection registerName:OPENVANILLA_DO_CONNECTION_NAME]) {
 //	    NSLog(@"OpenVanilla DO service registered: %@", OPENVANILLA_DO_CONNECTION_NAME);

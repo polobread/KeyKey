@@ -199,10 +199,10 @@ public partial class MainWindow : Window
     {
         if (!refreshingUpdateOptions) App.Updater.SetAutomatic(AutomaticUpdates.IsChecked == true);
     }
-    private void BetaUpdates_Changed(object sender, RoutedEventArgs e)
+    private async void BetaUpdates_Changed(object sender, RoutedEventArgs e)
     {
         if (refreshingUpdateOptions) return;
-        App.Updater.SetBeta(BetaUpdates.IsChecked == true);
+        await App.Updater.SetBetaAsync(BetaUpdates.IsChecked == true);
         RefreshUpdateState();
     }
 

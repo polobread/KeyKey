@@ -29,6 +29,9 @@ file for terms.
 	NSButton *_checkButton;
 	NSButton *_betaButton;
 	NSTimer *_statusTimer;
+	NSOperationQueue *_serviceQueue;
+	BOOL _statusRequestPending, _statusStopped;
+	NSUInteger _statusGeneration;
 }
 
 /*!

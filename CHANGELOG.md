@@ -20,6 +20,7 @@
 
 ## 桌面更新機制（開發中，未發布）
 
+- macOS、Windows、Linux／FreeBSD 更新查詢在背景執行，整輪最多等待 10 秒；逾時顯示原因並恢復手動檢查，不自動重試，舊回覆不覆蓋新結果。macOS 查無更新直接顯示於設定頁，本機狀態讀取與每日檢查設定不再同步阻塞介面；Windows 原生取消／清理不阻塞 WPF，下載頁查詢也採 10 秒時限。新增模態服務、實際 Sparkle 停滯 TLS、WinSparkle 停滯 TLS 與 Linux 背景生命週期回歸；原生跨平台驗收與發布另行執行。
 - macOS／Windows 更新設定新增預設關閉的 beta 頻道選項，Linux 沿用既有選項。建置 beta tag 不等於同意接收 beta；只能選擇建置時審查的 stable／beta HTTPS 網址。檢查、下載、安裝或未儲存 Windows 編輯期間不允許切換，舊回呼不能修改新頻道狀態。首次使用仍須手動安裝含新設定的版本，不重包已發布 beta2。
 - Windows beta 安裝包原生驗證整合進 `Sync Update Feeds to CDN`：驗證已發布檔案的 SHA-256、build/tag 來源、簽章狀態與產品版號，未執行安裝器。工作分支／PR 不取得發布權限；feed 由維護者要求建立 PR、親自 review／merge 後才同步 CDN。保留 SHA-256 副本方案；FreeBSD 公告 PR 固定延後 48 小時，不檢查套件是否已上架。
 - 同一 workflow 增加 master-only 手動副本準備入口，Mac 實際驗證公證、Windows 使用同次原生驗證報告，GitHub 禁止覆蓋、S3 條件式新增並回讀比對。feed 同步增加 signed metadata／安裝包簽章及可下載性門檻，拒絕尚未上線的副本。Terraform 限定新增 metadata／signature 物件權限與短快取，需維護者 review／apply；本次不發布新 release 或直接上傳 feed。

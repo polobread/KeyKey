@@ -87,6 +87,43 @@ class GuiTests(unittest.TestCase):
         pump(lambda: not app.busy)
         self.assertIn("沒有較新", app.status.get_text())
 
+    def test_timeout_is_async_and_late_result_cannot_replace_retry(self):
+        self.new_release()
+        self.block = threading.Event()
+        app = self.app()
+        app.check_timeout_seconds = 0.04
+        app.check(True)
+        pump(lambda: len(self.requests) == 1)
+        first = app.active_check
+        pump(lambda: not app.busy)
+        self.assertIn("逾時", app.status.get_text())
+        self.assertTrue(app.check_button.get_sensitive())
+        self.assertEqual(len(self.requests), 1)  # No automatic retry.
+        gate = self.block
+        self.block = None
+        self.releases = []
+        app.check_timeout_seconds = 10
+        app.check(True)
+        pump(lambda: not app.busy)
+        self.assertIn("沒有較新", app.status.get_text())
+        app.checked({"version": "99.0.0", "url": updates.RELEASES}, False, True, first)
+        self.assertIsNone(app.result)
+        self.assertIn("沒有較新", app.status.get_text())
+        gate.set()
+
+    def test_closing_manual_check_retires_result(self):
+        self.block = threading.Event()
+        app = self.app()
+        app.check(True)
+        pump(lambda: len(self.requests) == 1)
+        request = app.active_check
+        app.window.destroy()
+        self.assertFalse(app.busy)
+        self.assertIsNone(app.check_timeout)
+        app.checked({"version": "99.0.0"}, False, True, request)
+        self.assertIsNone(app.result)
+        self.block.set()
+
     def test_repeated_click_and_disable_inflight(self):
         self.new_release()
         self.block = threading.Event()
