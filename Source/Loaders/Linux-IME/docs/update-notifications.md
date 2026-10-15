@@ -6,6 +6,11 @@ does not check the network. **檢查新版** explicitly checks official GitHub
 release metadata and the Unix product version at the release tag. The download
 button opens the official release page in the default browser.
 
+All desktop platforms use notification-only checks: installer packages are not
+prefetched. Updating starts only after the user chooses it. On Linux/FreeBSD,
+the user opens the release page, downloads the package and installs it through
+the platform package manager.
+
 **每日檢查新版並通知** is off by default. Enabling it creates a per-user XDG
 autostart entry and keeps one Gio application running during the desktop session.
 It attempts a check at most once every 24 hours, including after failed checks;

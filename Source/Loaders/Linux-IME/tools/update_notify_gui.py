@@ -76,7 +76,7 @@ class Application(Gtk.Application):
         box.pack_start(Gtk.Label(label=f"目前版本：{self.current}", xalign=0), False, False, 0)
         policy = ("新版通知顯示上游版本。請透過 ports／pkg 更新；\n"
                   "套件庫可能較晚上架。" if self.system == "FreeBSD" else
-                  "只通知新版並開啟官方下載頁，由您選擇下載與安裝。")
+                  "只檢查並通知新版，不預先下載。按下「開啟官方下載頁」後，由您下載並透過套件管理器安裝。")
         box.pack_start(Gtk.Label(label=policy, xalign=0, wrap=True), False, False, 0)
         self.status = Gtk.Label(label="按下「檢查新版」開始檢查。", xalign=0, wrap=True)
         box.pack_start(self.status, False, False, 0)

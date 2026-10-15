@@ -137,7 +137,7 @@ static NSURL *ReviewedFeed(id value)
     }
     _started = YES;
     [self updateAutomaticTimer];
-    [self setPhase:@"idle" message:@"可手動檢查，或開啟每日自動檢查。下載與安裝仍需確認。"];
+    [self setPhase:@"idle" message:@"可手動檢查，或開啟每日新版通知。不預先下載；按下更新後才下載與安裝。"];
 }
 
 - (void)clearPendingInstallation

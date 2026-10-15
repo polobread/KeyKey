@@ -142,7 +142,7 @@ internal sealed class DesktopUpdater : IDisposable
                     }), betaEnabled);
             configured = true;
             initialized = true;
-            SetState("只檢查發行版本，不傳送輸入內容。下載通過簽章驗證後，才啟動安裝程式並要求管理員授權。", false);
+            SetState("只檢查並通知新版，不預先下載。按下更新後才下載，通過簽章驗證後啟動安裝程式並要求管理員授權。", false);
             backend.Initialize();
             UpdateAutomaticTimer();
         }
