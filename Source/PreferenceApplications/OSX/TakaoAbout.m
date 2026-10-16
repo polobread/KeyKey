@@ -117,8 +117,8 @@ static NSString *const KKLatestReleaseURL = @"https://github.com/polobread/KeyKe
     NSTextField *heading = [NSTextField labelWithString:NSLocalizedString(@"Development Motivation", nil)];
     heading.translatesAutoresizingMaskIntoConstraints = NO;
     heading.font = [NSFont systemFontOfSize:14 weight:NSFontWeightSemibold];
-    [heading.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
     [stack addArrangedSubview:heading];
+    [heading.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
 
     NSURL *motivationURL = [[NSBundle mainBundle] URLForResource:@"ProjectMotivation" withExtension:@"txt"];
     NSString *motivation = motivationURL
@@ -136,10 +136,10 @@ static NSString *const KKLatestReleaseURL = @"https://github.com/polobread/KeyKe
         NSForegroundColorAttributeName: NSColor.labelColor,
         NSParagraphStyleAttributeName: paragraph
     }] autorelease];
-    [introduction.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
     [introduction setContentCompressionResistancePriority:NSLayoutPriorityRequired
         forOrientation:NSLayoutConstraintOrientationVertical];
     [stack addArrangedSubview:introduction];
+    [introduction.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
 
     NSTextField *credits = [NSTextField wrappingLabelWithString:NSLocalizedString(@"KeyKey Source Credits", nil)];
     credits.translatesAutoresizingMaskIntoConstraints = NO;
@@ -147,8 +147,8 @@ static NSString *const KKLatestReleaseURL = @"https://github.com/polobread/KeyKe
     credits.textColor = NSColor.secondaryLabelColor;
     credits.alignment = NSTextAlignmentCenter;
     credits.selectable = YES;
-    [credits.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
     [stack addArrangedSubview:credits];
+    [credits.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
 
     if (_wordCountController) {
         NSView *counts = [_wordCountController view];
