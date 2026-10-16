@@ -364,6 +364,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         hardwareNumberRow.setChecked(CandidateWindowSettings.numberRowEnabled(this));
         setDependentControlEnabled(hardwareNumberRow, !floatingCandidates.isChecked());
         hardwareContent.addView(hardwareNumberRow, matchWrap(dp(0), dp(8)));
+        hardwareContent.addView(bottomSpaceDescription(R.string.hardware_collapse_description),
+                matchWrap(dp(0), dp(12)));
         hardwareNumberRow.setOnCheckedChangeListener((button, checked) ->
                 CandidateWindowSettings.setNumberRowEnabled(SettingsActivity.this, checked));
 
