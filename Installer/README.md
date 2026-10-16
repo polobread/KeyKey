@@ -56,9 +56,11 @@ It uses Apple's TIS APIs, not private HIToolbox preference writes.
 First installs and intentionally disabled sources are registered but not enabled.
 
 The helper verifies state changes, attempts recovery on failures, and has a
-20-second deadline (old-process termination is limited to 3 seconds). Failed
-refreshes make postinstall fail with instructions to re-add KeyKey before logout;
-the payload may already be installed. No console user or a non-startup target
+20-second deadline (old-process termination is limited to 3 seconds). During an
+upgrade, a still-selected source takes precedence over TIS briefly reporting it
+disabled or absent after the bundle replacement. A failed refresh warns the user
+to re-add KeyKey before logout but does not turn an already completed payload
+installation into a package failure. No console user or a non-startup target
 volume defers setup to Keyboard settings. Other login sessions are not refreshed.
 See [investigation, Apple references, and validation limits](../docs/MACOS_INPUT_SOURCE_UPGRADE.md).
 

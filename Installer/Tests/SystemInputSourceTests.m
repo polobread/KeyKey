@@ -73,7 +73,9 @@ int main(void) {
         Check(![system selectFallback], @"NULL fallback list fails safely"); nullList = NO;
         nullCurrent = YES; Check(![system readEnabled:&wasEnabled selected:&selected], @"unreadable current source rejects snapshot"); nullCurrent = NO;
         missingCurrentID = YES; Check(![system readEnabled:&wasEnabled selected:&selected], @"missing current ID rejects snapshot"); missingCurrentID = NO;
-        absent = YES; Check(![system readEnabled:&wasEnabled selected:&selected], @"current KeyKey absent from source list rejects snapshot");
+        absent = YES;
+        Check([system readEnabled:&wasEnabled selected:&selected] && !wasEnabled && selected,
+              @"selected KeyKey missing from source list preserves its selection signal");
         current = fallback[(id)kTISPropertyInputSourceID];
         Check([system readEnabled:&wasEnabled selected:&selected] && !wasEnabled && !selected, @"absent source is disabled/unselected");
         Check(![system applyEnabled:YES] && ![system selectInputMethod], @"missing source cannot be enabled or selected"); absent = NO;

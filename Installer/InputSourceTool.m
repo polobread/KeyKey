@@ -23,8 +23,11 @@ static BOOL KKRefreshInputSource(id<KKInputSourceOperations> system)
 {
     BOOL enabled = NO, selected = NO;
     if (![system readEnabled:&enabled selected:&selected]) return NO;
-    // An inconsistent snapshot is not permission to disable the active source.
-    if (selected && !enabled) return NO;
+    BOOL needsDisable = enabled;
+    // Replacing an input-method bundle can briefly leave TIS reporting the
+    // selected source as disabled. Selection is still proof that the user had
+    // enabled KeyKey before the upgrade, so preserve that restore intent.
+    if (selected) enabled = YES;
     BOOL switched = NO, disabled = NO, safeToReselect = YES;
     if (selected) {
         if (![system selectFallback]) return NO;
@@ -32,7 +35,7 @@ static BOOL KKRefreshInputSource(id<KKInputSourceOperations> system)
     }
     if (enabled) {
         disabled = YES; // A failing API may still have partially changed state.
-        if (![system applyEnabled:NO]) goto restore;
+        if (needsDisable && ![system applyEnabled:NO]) goto restore;
         safeToReselect = NO;
         if (![system stopInstalledInputMethod]) goto restore;
     }
@@ -136,11 +139,16 @@ static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
         TISInputSourceRef source = (TISInputSourceRef)CFArrayGetValueAtIndex(sources, 0);
         *enabled = KKBoolean(source, kTISPropertyInputSourceIsEnabled);
         *selected = currentIsKeyKey;
+    } else if (currentIsKeyKey) {
+        // Atomic package replacement can temporarily remove the old bundle
+        // from an inclusive source-list query while it remains selected.
+        // Preserve the selection signal and let registration recreate it.
+        *enabled = NO;
+        *selected = YES;
     }
-    BOOL consistent = CFArrayGetCount(sources) || !currentIsKeyKey;
     CFRelease(current);
     CFRelease(sources);
-    return consistent;
+    return YES;
 }
 - (BOOL)selectFallback
 {

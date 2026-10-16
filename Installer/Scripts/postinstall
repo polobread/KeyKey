@@ -21,5 +21,8 @@ helper="/Library/Input Methods/chichi77 KeyKey.app/Contents/MacOS/KeyKeyInputSou
 # register the bundle but leave enabling it to the user.
 if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- "$helper" --refresh; then
     echo "KeyKey: files were installed, but input-source refresh failed. Re-add 琦琦輸入法 in System Settings > Keyboard > Text Input before logging out." >&2
-    exit 1
+    # The payload is already installed. Do not make Installer report the whole
+    # package as failed when only this best-effort session refresh was unable
+    # to complete; the user can recover through Keyboard settings.
+    exit 0
 fi

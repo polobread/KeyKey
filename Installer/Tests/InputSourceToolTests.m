@@ -67,8 +67,10 @@ int main(void)
         Check([inactive.calls isEqual:@[@"read", @"disable", @"stop", @"register", @"enable"]] && !inactive.selected,
               @"does not change a different selected input source");
         FakeSources *inconsistent = Source(NO, YES);
-        Check(!KKRefreshInputSource(inconsistent) && [inconsistent.calls isEqual:@[@"read"]],
-              @"inconsistent snapshot does not mutate sources");
+        Check(KKRefreshInputSource(inconsistent) &&
+              [inconsistent.calls isEqual:@[@"read", @"fallback", @"stop", @"register", @"enable", @"select"]] &&
+              inconsistent.enabled && inconsistent.selected,
+              @"selected source preserves enable intent across a transient disabled snapshot");
         for (NSString *failure in @[@"read", @"fallback", @"disable", @"stop", @"register", @"enable", @"select"]) {
             FakeSources *source = Source(YES, YES); source.failOperation = failure;
             Check(!KKRefreshInputSource(source), [@"failure reported: " stringByAppendingString:failure]);

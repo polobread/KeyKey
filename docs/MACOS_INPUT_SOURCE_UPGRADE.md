@@ -49,8 +49,10 @@
 不載入詞庫、不開網路、不修改 HIToolbox plist。postinstall 在目前 console
 使用者的 GUI bootstrap 與帳號權限下執行，避免以 Installer 的 root 身分操作 TIS。
 
-1. 用精確 input-source ID 讀取 TIS enabled 與目前 selection；無法取得目前來源 ID、
-   或目前琦琦不在來源清單時停止，不把讀取失敗推定為未選取。
+1. 用精確 input-source ID 讀取 TIS enabled 與目前 selection；無法取得目前來源 ID
+   時停止。pkg 原子替換 bundle 後，若琦琦仍是目前來源但 inclusive 清單暫時回報
+   未啟用或找不到，保留「原本已啟用」的恢復意圖並略過已無意義的停用呼叫；
+   後續仍須重新註冊成功才能啟用及選回。
 2. 若目前選取琦琦，先切到已啟用、可選取的 ASCII 鍵盤配置。
 3. 只有原本已啟用的琦琦才暫時停用；確認停用後，結束同一使用者、
    相同安裝 executable path 的舊程序。使用 NSRunningApplication 正常 terminate，
@@ -67,7 +69,8 @@
 首次安裝或原本停用者只註冊，不自動啟用。沒有登入使用者、設定帳號、
 非開機磁碟安裝都不碰目前使用者來源。其他快速切換使用者工作階段不會被
 全域終止，也尚未涵蓋自動更新其註冊。啟用清單中的排序可能因重新加入而改變。
-安裝失敗提示不代表 payload 已回復；檔案可能已安裝，註冊尚未完成。
+註冊失敗時 postinstall 會留下復原提示但成功結束，避免 payload 已安裝卻讓
+Installer 顯示整個套件安裝失敗；此結果仍不代表輸入來源已可使用。
 postinstall 是在 payload 覆蓋後執行，尚未解決覆蓋期間舊 IMK 程序可能載入
 新舊混合資源的問題；多使用者範圍只保證不主動終止其他工作階段，
 不宣稱所有已登入工作階段都完成升級。
@@ -84,7 +87,8 @@ postinstall 是在 payload 覆蓋後執行，尚未解決覆蓋期間舊 IMK 程
 bash Installer/test-input-sources.sh
 ```
 
-測試以 fake TIS/假命令覆蓋首次安裝、原本停用、原本選取、其他來源仍被選取、
+測試以 fake TIS/假命令覆蓋首次安裝、原本停用、原本選取、bundle 替換後暫時
+回報未啟用／找不到、其他來源仍被選取、
 各階段失敗的恢復與套件腳本帳號路由。正式 helper 僅執行拒絕參數的入口；
 測試不安裝、不切換輸入法、不登出。macOS target 另需編譯，
 macOS 僅支援 arm64；封裝會拒絕其他架構或 universal App，helper 固定編譯 arm64。

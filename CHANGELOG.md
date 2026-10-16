@@ -10,6 +10,7 @@
 
 ## macOS 1.3.2（未發布）
 
+- 修正 beta5 升級時，TIS 在 bundle 原子替換後暫時把仍選取的琦琦回報為未啟用或找不到，導致輸入來源更新提前失敗、postinstall 令 Installer 顯示整體安裝失敗的問題。現在保留目前選取來源的啟用意圖並重新註冊；即使 session refresh 仍失敗，也保留已完成的 payload 安裝並提示從鍵盤設定重新加入。
 - 針對 beta4 手動安裝後登出卡住的回報，安裝流程改在目前登入使用者的 GUI session 透過 TIS API 切離、停用、結束舊程序、重新註冊並恢復原先啟用／選取狀態；首次安裝及原本停用者不自動啟用。新增有時限、失敗恢復及隔離回歸的已簽章輔助工具，取代全域程序名稱終止。另修正鍵盤清單錯誤釋放 TIS 借用物件與空清單處理。當機根因及 USB 登入失效尚未證實排除，未替換已發布套件；詳見 `docs/MACOS_INPUT_SOURCE_UPGRADE.md`。
 - 修正 beta1 公證報告指出的三個輔助 App 除錯權限：Release 禁止注入 `get-task-allow`，重簽只移除此權限並保留 Sparkle 必要權限；簽後逐架構檢查。公證僅在命令成功且 JSON 為 `Accepted` 時 staple／validate，失敗保存 Apple 報告與 CI artifact。加入隔離簽章／公證回歸；實際 Developer ID 公證與安裝驗收仍待完成，未重發 beta 或修改 Latest。
 - 四份 macOS 產品 plist 獨立升版至 1.3.2；已發布 macOS 1.3.1、Linux 版號與共用好打注音模型不變。

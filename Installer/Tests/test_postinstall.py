@@ -47,11 +47,12 @@ class PostinstallTests(unittest.TestCase):
                 self.assertEqual(self.run_script(uid=uid).returncode, 0)
                 self.assertFalse(self.calls.exists())
 
-    def test_failed_refresh_and_timeout_are_not_reported_as_success(self):
+    def test_failed_refresh_and_timeout_preserve_completed_package_install(self):
         for status in ("1", "124", "75"):
             with self.subTest(status=status):
                 result = self.run_script(result=status)
-                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.returncode, 0)
+                self.assertIn("files were installed", result.stderr)
                 self.assertIn("before logging out", result.stderr)
 
 
