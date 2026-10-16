@@ -205,13 +205,13 @@ def main():
     base_collection = wait_for_node(dialog, "check box", "小麥注音")
     agriculture_collection = wait_for_node(dialog, "check box", "農業食品")
     error_sound = wait_for_node(
-        dialog, "check box", "Play a sound on typing errors"
+        dialog, "check box", "輸入錯誤時播放提示音"
     )
     control_backslash = wait_for_node(
-        dialog, "check box", "Toggle Chinese/English with Ctrl+\\"
+        dialog, "check box", "使用 Ctrl+\\ 切換中英文"
     )
     candidate_window_style = wait_for_node(
-        dialog, "combo box", "Vertical"
+        dialog, "combo box", "直式"
     )
     if has_state(base_collection, pyatspi.STATE_CHECKED) is not True:
         raise RuntimeError("Expected the McBopomofo collection to be enabled")
@@ -231,7 +231,7 @@ def main():
     perform_action(error_sound, "Toggle")
     perform_action(control_backslash, "Toggle")
     select_last_combo_value(candidate_window_style)
-    wait_for_node(dialog, "combo box", "Horizontal")
+    wait_for_node(dialog, "combo box", "橫式")
     wait_for_state(base_collection, pyatspi.STATE_CHECKED, False)
     wait_for_state(agriculture_collection, pyatspi.STATE_CHECKED, True)
     wait_for_state(error_sound, pyatspi.STATE_CHECKED, False)

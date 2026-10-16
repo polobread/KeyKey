@@ -189,6 +189,13 @@ if(BUILD_TESTING)
 endif()
 
 if(KEYKEY_BUILD_FCITX5)
+    foreach(KEYKEY_ABOUT_RESOURCE IN ITEMS ProjectMotivation.txt chichi77.png)
+        if(NOT EXISTS "${KEYKEY_REPOSITORY_ROOT}/Source/Branding/${KEYKEY_ABOUT_RESOURCE}")
+            message(FATAL_ERROR
+                "Missing About resource: Source/Branding/${KEYKEY_ABOUT_RESOURCE}. "
+                "Use a complete source archive including the shared branding resources.")
+        endif()
+    endforeach()
     find_package(Fcitx5Core REQUIRED)
     include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
     add_subdirectory(adapters/fcitx5)

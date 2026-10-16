@@ -32,10 +32,14 @@ struct SmartSelection {
 struct SmartCandidate {
     std::size_t length = 0;
     std::string text;
+    std::size_t start = 0;
 };
 
 class SmartMandarinStore {
 public:
+    static constexpr const char *SpaceQuery = "_passthru_space ";
+    static constexpr const char *FullWidthSpaceQuery = "_passthru_fullwidth_space ";
+
     static std::shared_ptr<const SmartMandarinStore> open(
         const std::string &path,
         std::shared_ptr<SmartMandarinUserData> userData = nullptr);
@@ -48,7 +52,8 @@ public:
                  SmartComposition &result, bool restrictToBig5 = false) const;
     std::vector<SmartCandidate> candidateOptions(
         const std::vector<std::string> &readings, std::size_t index,
-        const SmartComposition &composition, bool restrictToBig5 = false) const;
+        const SmartComposition &composition, bool restrictToBig5 = false,
+        bool cursorAtEnd = false) const;
     std::vector<std::string> candidates(
         const std::vector<std::string> &readings, std::size_t index,
         const SmartComposition &composition) const;

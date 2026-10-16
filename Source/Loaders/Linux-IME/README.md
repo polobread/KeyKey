@@ -29,6 +29,18 @@ or through `keykey-about`. Linux and FreeBSD share this GTK interface and the
 same motivation text bundled with the macOS and Windows About pages. Opening
 About reads local resources; the browser opens only when a link is clicked.
 
+The About icon and introduction come from `Source/Branding/chichi77.png` and
+`Source/Branding/ProjectMotivation.txt`. The Debian source staging and standalone
+source archive share `ci/about-source-paths.sh` to include both canonical files.
+CMake stops during configuration if either file is missing; installation does
+not rely on manually copying resources into a temporary build directory.
+
+The KeyKey configuration labels and dropdown names use Taiwan Traditional Chinese,
+including **注音鍵盤配置**, **候選字窗方向**, **直式／橫式**, and **關聯詞庫**.
+Stored configuration keys and values such as `Standard` and `Vertical` remain
+unchanged. Fcitx/Qt supplies shared buttons such as Restore Defaults, Cancel, and
+OK; their language follows the desktop locale and installed Fcitx/Qt translations.
+
 This directory contains the C++ engine, Fcitx 5 addon, runtime tables, tools,
 desktop integration, packaging, and platform tests. CMake verifies and installs
 the repository's pre-generated shared model. Runtime addon and data names remain
@@ -51,7 +63,8 @@ The Linux implementation provides:
 - a persistent Bopomofo mode setting with 好打注音 as the first-run default
   and 傳統注音 as the alternate. Smart mode composes multiple readings with
   the same unigram/bigram model used by macOS, commits with Enter, and lets
-  Space or Down open candidates at the cursor. Clicking a composed character
+  Down open candidates at the cursor; Space can optionally do so through the
+  Smart Mandarin preferences described below. Clicking a composed character
   opens its candidates in clients that send Fcitx preedit click events.
   While candidates are open, Down moves the highlight and Enter replaces the
   selected word without committing the sentence; another Enter commits it.
@@ -205,6 +218,24 @@ The Linux implementation provides:
   associated-phrase collection checkboxes, exposed directly from the
   `chichi77 KeyKey Bopomofo` input method. The earlier comma-separated field is
   hidden and migrated when an earlier configuration is loaded.
+
+### Smart Mandarin preferences in 1.3.2
+
+Linux and FreeBSD expose **好打注音進階設定** in the Fcitx configuration page.
+These options apply to 好打注音 only:
+
+| Setting | Default | Behavior |
+| --- | --- | --- |
+| 空白鍵開啟候選 | Off | Space completes an unfinished first-tone reading. With no unfinished reading, it inserts an editable space into the composition. Enabling this option instead opens candidates; an already open candidate panel still uses Space to change pages. |
+| 選字目標在游標前方（取消為後方） | Off (after cursor) | At `今天｜天氣`, the default queries words starting after the cursor, such as `天氣`; enabling it queries words ending before the cursor, such as `今天`. At either end, selection falls back to the available side. |
+| Esc 清除整句（候選窗／未完成讀音優先取消） | Off | Esc first closes candidates or clears an unfinished reading. With neither present, enabling this option clears the remaining editable composition; the default preserves it. Text already committed to the application is never removed. |
+
+Down and clicking a composed character open candidates independently of the Space
+option. A click always targets the clicked character, independently of the keyboard
+candidate direction. Normal and full-width spaces remain editable until committed
+or evicted by the existing composition limit. Saving changed Smart Mandarin options
+finishes the original composition on the next key before applying the new options.
+Existing configurations without these keys use the defaults above.
 
 The engine now opens candidates as soon as an explicit tone is entered, and
 commits the highlighted candidate before starting a new reading when the next

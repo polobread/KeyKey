@@ -77,6 +77,10 @@ SmartMandarinStore::~SmartMandarinStore() { sqlite3_close(database_); }
 
 std::vector<SmartMandarinStore::Unigram>
 SmartMandarinStore::unigrams(const std::string &query) const {
+    // Literal spaces stay editable in the composition, as on desktop KeyKey.
+    // These entries are local input tokens, not changes to the shared model.
+    if (query == SpaceQuery) return {{" ", 0, 0}};
+    if (query == FullWidthSpaceQuery) return {{"　", 0, 0}};
     const auto applyPreference = [this, &query](std::vector<Unigram> &rows) {
         if (!userData_ || rows.empty()) return;
         const std::string learned = userData_->learnedCandidate(query);
@@ -275,43 +279,57 @@ bool SmartMandarinStore::compose(
 
 std::vector<SmartCandidate> SmartMandarinStore::candidateOptions(
     const std::vector<std::string> &readings, std::size_t index,
-    const SmartComposition &composition, bool restrictToBig5) const {
-    if (index >= readings.size()) {
+    const SmartComposition &composition, bool restrictToBig5,
+    bool cursorAtEnd) const {
+    if (cursorAtEnd ? index == 0 || index > readings.size()
+                    : index >= readings.size()) {
         return {};
     }
-    const SmartSegment *previous = nullptr;
-    for (const auto &segment : composition.segments) {
-        if (segment.start + segment.length == index) {
-            previous = &segment;
-        }
-    }
     std::vector<std::pair<SmartCandidate, double>> ranked;
-    double previousBackoff = 0;
-    if (previous) {
-        for (const Unigram &entry : unigrams(previous->query)) {
-            if (entry.text == previous->text) {
-                previousBackoff = entry.backoff;
-                break;
+    const auto collect = [&](std::size_t start, std::size_t minLength,
+                             std::size_t maxLength) {
+        const SmartSegment *previous = nullptr;
+        for (const auto &segment : composition.segments) {
+            if (segment.start + segment.length == start) {
+                previous = &segment;
             }
         }
-    }
-    std::string query;
-    for (std::size_t length = 1;
-         length <= 8 && index + length <= readings.size(); ++length) {
-        query += readings[index + length - 1];
-        for (const Unigram &entry : unigrams(query)) {
-            if (restrictToBig5 && !isBig5HkscsRepresentable(entry.text)) {
-                continue;
+        double previousBackoff = 0;
+        if (previous) {
+            for (const Unigram &entry : unigrams(previous->query)) {
+                if (entry.text == previous->text) {
+                    previousBackoff = entry.backoff;
+                    break;
+                }
             }
-            const double fallback = previousBackoff + entry.probability;
-            double score = fallback;
-            double observed = 0;
-            if (bigram(previous ? previous->query : "!", query,
-                       previous ? previous->text : "", entry.text, observed)) {
-                score = std::max(observed, fallback);
-            }
-            ranked.push_back({{length, entry.text}, score});
         }
+        std::string query;
+        for (std::size_t length = 1;
+             length <= maxLength && start + length <= readings.size(); ++length) {
+            query += readings[start + length - 1];
+            if (length < minLength) continue;
+            for (const Unigram &entry : unigrams(query)) {
+                if (restrictToBig5 && !isBig5HkscsRepresentable(entry.text)) {
+                    continue;
+                }
+                const double fallback = previousBackoff + entry.probability;
+                double score = fallback;
+                double observed = 0;
+                if (bigram(previous ? previous->query : "!", query,
+                           previous ? previous->text : "", entry.text, observed)) {
+                    score = std::max(observed, fallback);
+                }
+                ranked.push_back({{length, entry.text, start}, score});
+            }
+        }
+    };
+    if (cursorAtEnd) {
+        const std::size_t first = index > 8 ? index - 8 : 0;
+        for (std::size_t start = first; start < index; ++start) {
+            collect(start, index - start, index - start);
+        }
+    } else {
+        collect(index, 1, 8);
     }
     std::stable_sort(ranked.begin(), ranked.end(),
                      [](const auto &left, const auto &right) {
@@ -360,12 +378,17 @@ bool SmartMandarinStore::learnCandidate(
             previous = &segment;
         }
     }
-    std::string previousQuery = previous ? previous->query : std::string{};
-    std::string previousText = previous ? previous->text : std::string{};
+    const bool previousIsLiteral = previous &&
+        (previous->query == SpaceQuery || previous->query == FullWidthSpaceQuery);
+    std::string previousQuery = previous && !previousIsLiteral
+        ? previous->query : std::string{};
+    std::string previousText = previous && !previousIsLiteral
+        ? previous->text : std::string{};
     std::string query;
     for (std::size_t offset = 0; offset < chosen.length; ++offset) {
         query += readings[index + offset];
     }
+    if (query == SpaceQuery || query == FullWidthSpaceQuery) return false;
     return userData_->learn(query, chosen.text, previousQuery,
                             previousText);
 }

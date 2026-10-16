@@ -75,6 +75,19 @@ struct EngineResult {
 
 enum class InputMethod { Bopomofo, Cangjie, Simplex };
 
+struct SmartMandarinPreferences {
+    bool showCandidateListWithSpace = false;
+    bool candidateCursorAtEndOfTargetBlock = false;
+    bool clearComposingTextWithEsc = false;
+
+    bool operator==(const SmartMandarinPreferences &other) const noexcept {
+        return showCandidateListWithSpace == other.showCandidateListWithSpace &&
+               candidateCursorAtEndOfTargetBlock ==
+                   other.candidateCursorAtEndOfTargetBlock &&
+               clearComposingTextWithEsc == other.clearComposingTextWithEsc;
+    }
+};
+
 class InputContextState {
 public:
     void reset() noexcept;
@@ -95,7 +108,6 @@ private:
     std::map<std::size_t, SmartSelection> smartOverrides_;
     std::vector<SmartCandidate> smartCandidateOptions_;
     std::size_t smartCursor_ = 0;
-    std::size_t smartCandidateIndex_ = 0;
     bool showingSmartCandidates_ = false;
 };
 
@@ -116,6 +128,8 @@ public:
     void setSmartMandarinStore(
         std::shared_ptr<const SmartMandarinStore> store) noexcept;
     void setSmartMandarinMode(bool enabled) noexcept;
+    void setSmartMandarinPreferences(SmartMandarinPreferences preferences) noexcept;
+    const SmartMandarinPreferences &smartMandarinPreferences() const noexcept;
 
     EngineResult processKey(InputContextState &context,
                             const KeyEvent &event) const;
@@ -158,6 +172,11 @@ private:
                                  const KeyEvent &event) const;
     bool finishSmartReading(InputContextState &context,
                             std::string &pendingCommit) const;
+    bool insertSmartQuery(InputContextState &context, const std::string &query,
+                          std::string &pendingCommit) const;
+    EngineResult openSmartCandidates(InputContextState &context,
+                                     std::size_t index, bool cursorAtEnd) const;
+    EngineResult openSmartCandidatesAtCursor(InputContextState &context) const;
     void rebuildSmartComposition(InputContextState &context) const;
 
     std::shared_ptr<const CinDictionary> dictionary_;
@@ -171,6 +190,7 @@ private:
     BopomofoLayout bopomofoLayout_;
     bool restrictBopomofoCandidatesToBig5_ = false;
     bool smartMandarinMode_ = false;
+    SmartMandarinPreferences smartMandarinPreferences_;
     std::shared_ptr<const SmartMandarinStore> smartMandarinStore_;
 };
 
