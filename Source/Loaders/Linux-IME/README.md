@@ -14,15 +14,16 @@ adapter and checks that Shift releases are filtered but not accepted (the
 frontend must still deliver them to the application), alongside tap/hold mode
 selection, reset, Shift combinations, and shortcut pass-through. This isolated
 test does not replace GTK/Qt X11 or GNOME Wayland desktop acceptance.
-The Fcitx configuration page shows the CMake project version in a read-only
-information group, so the addon metadata and visible settings use one source.
+The Fcitx configuration page shows the CMake project version in the About entry's
+label, so the addon metadata and visible settings use one source without an empty
+information group.
 
 The **更新通知與下載…** setting opens a separate notification tool with manual
 checks, optional daily checks (off by default), and an official release-page
 button. It also supports the `chinese/fcitx5-keykey` FreeBSD port through the
 same prefix-aware installation. See [update notifications and ports integration](docs/update-notifications.md).
 
-The **關於琦琦輸入法…** setting opens a scrollable About window with the installed
+The **關於琦琦輸入法 — 版本 …** setting opens a scrollable About window with the installed
 version, project motivation, source credits, GitHub homepage, and latest stable
 release link. It is also available as **關於琦琦輸入法** in the applications menu
 or through `keykey-about`. Linux and FreeBSD share this GTK interface and the
