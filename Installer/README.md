@@ -47,33 +47,43 @@ The `ls` matters. `installer` reports success even when it has written the
 payload somewhere else, so confirm the bundle actually landed before going any
 further.
 
-The package includes a standalone, signed `KeyKeyInputSourceTool`.
-`postinstall` runs it in the current console user's GUI session and credentials.
-The helper captures existing KeyKey process identities, registers the installed
-bundle with `TISRegisterInputSource`, confirms the source can be found by ID,
-and requests normal termination of only the captured installed processes.
-macOS can launch the installed version when the user selects KeyKey.
-The helper never calls enable, disable or select APIs and does not read private
-HIToolbox preferences. It does not infer pre-install settings from the state
-after the bundle was replaced. First installs and intentionally disabled sources
-are not automatically enabled.
+The package includes a standalone, signed `KeyKeyInputSourceTool`. Both scripts
+run it in the current console user's GUI session and credentials:
 
-The operation has a 20-second deadline; normal old-process exit is limited to
-3 seconds. Failures and timeouts cannot leave a source disabled by this helper.
-A failed setup opens a separate GUI warning with an Open Keyboard Settings
-button, without keeping Installer waiting for a response. The warning and log
-distinguish file installation from input-source setup. The completed payload
-does not become a package failure. No console user or a non-startup target
-volume defers setup to Keyboard settings. Other login sessions are not refreshed.
+1. Before replacing files, `preinstall` reads KeyKey's enabled state and the
+   selected input source. If KeyKey is selected, it switches to an already
+   enabled ASCII keyboard layout and verifies that selection. It then requests
+   normal termination of captured KeyKey processes at the installed path.
+   Unreadable state, a failed fallback or an unconfirmed exit aborts installation
+   while the old bundle is still intact.
+2. The package replaces the bundle. `postinstall` registers the installed path
+   and confirms the source can be found by ID. It restores enabled state only
+   when this same account had KeyKey enabled before replacement. A separate
+   helper process must confirm that restoration too. It does not terminate
+   newly launched processes or select KeyKey automatically.
+
+The preparation helper is copied from the package's signed payload to a unique,
+root-owned temporary directory so the GUI user can execute it even when the
+PackageKit Scripts directory is private. The directory is removed on exit.
+Saved state stays in that installation's private Scripts directory; no global
+state or HIToolbox preferences are read or written. First installs and previously
+disabled sources are not automatically enabled. No source is ever disabled.
+
+Each helper operation has a 20-second deadline; normal old-process exit is
+limited to 3 seconds per process. A failed post-install setup opens a separate
+GUI warning with an Open Keyboard Settings button, without keeping Installer
+waiting for a response. The completed payload does not become a package failure.
+No console user or a non-startup target volume defers setup to Keyboard settings.
+Other login sessions are not refreshed.
 See [investigation, Apple references, and validation limits](../docs/MACOS_INPUT_SOURCE_UPGRADE.md).
 
 After installation, select KeyKey from the Input menu and verify typing in
-TextEdit and the version in Preferences. For an upgrade, selecting ABC and then
-KeyKey again can activate a new session. Add a missing entry through Keyboard
-settings; an existing entry does not need to be removed first. If typing works,
+TextEdit and the version in Preferences. An upgrade can leave ABC selected while
+the old process exits; select KeyKey to start a new session. Add a missing entry
+through Keyboard settings; an existing entry does not need to be removed first. If typing works,
 no logout is required. A first installation may still need a new login before
 macOS lists the source. Do not use repeated logout/forced shutdown as a recovery
-loop for the reported hang. Registration and confirmed old-process exit do not
+loop for the reported hang. State restoration and confirmed old-process exit do not
 prove that a new IMK session can type; real installation acceptance is separate.
 
 Run isolated regressions without installing or changing input sources:

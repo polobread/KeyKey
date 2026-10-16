@@ -10,18 +10,32 @@ static NSString *const KKInstalledPath = @"/Library/Input Methods/chichi77 KeyKe
 
 // Keep policy independently testable without touching the user's input sources.
 @protocol KKInputSourceOperations <NSObject>
+- (BOOL)readEnabled:(BOOL *)enabled;
+- (BOOL)enableInstalledInputMethod;
+- (BOOL)readSelected:(BOOL *)selected;
+- (BOOL)selectFallback;
 - (BOOL)stopInstalledInputMethod;
 - (BOOL)registerInstalledInputMethod;
 @end
 
-static BOOL KKRefreshInputSource(id<KKInputSourceOperations> system)
+static BOOL KKPrepareInputSource(id<KKInputSourceOperations> system, BOOL *enabled)
 {
-    // Registration does not require reading the current selection. In
-    // particular, a transient post-replacement snapshot is not evidence that
-    // the user disabled KeyKey. Leave enabling and selection entirely to TIS
-    // and the user's Keyboard settings, including when a step fails or hangs.
-    if (![system registerInstalledInputMethod]) return NO;
+    BOOL selected = NO;
+    if (![system readEnabled:enabled] || ![system readSelected:&selected]) return NO;
+    if (selected) *enabled = YES;
+    if (selected && ![system selectFallback]) return NO;
+    // Failure aborts preinstall while the old bundle is still intact.
     return [system stopInstalledInputMethod];
+}
+
+static BOOL KKRefreshInputSource(id<KKInputSourceOperations> system, BOOL restoreEnabled)
+{
+    // Restore only the intent captured by preinstall, before replacement.
+    // Never infer that intent from the new bundle's initial TIS state.
+    if (![system registerInstalledInputMethod]) return NO;
+    // preinstall already retired the old process before replacing its files.
+    // Any process launched after replacement belongs to the new installation.
+    return !restoreEnabled || [system enableInstalledInputMethod];
 }
 
 #ifndef KEYKEY_INPUT_SOURCE_TEST
@@ -30,10 +44,11 @@ static BOOL KKRefreshInputSource(id<KKInputSourceOperations> system)
 }
 @end
 
-static TISInputSourceRef KKCopySource(void)
+static TISInputSourceRef KKCopySource(BOOL *readable)
 {
     NSDictionary *filter = @{(id)kTISPropertyInputSourceID: KKSourceID};
     CFArrayRef sources = TISCreateInputSourceList((CFDictionaryRef)filter, true);
+    if (readable) *readable = sources != NULL;
     TISInputSourceRef source = sources && CFArrayGetCount(sources)
         ? (TISInputSourceRef)CFRetain(CFArrayGetValueAtIndex(sources, 0)) : NULL;
     if (sources) CFRelease(sources);
@@ -70,11 +85,78 @@ static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
 }
 
 @implementation KKSystemInputSources
+- (BOOL)readSelected:(BOOL *)selected
+{
+    TISInputSourceRef current = TISCopyCurrentKeyboardInputSource();
+    CFTypeRef identifier = current ? TISGetInputSourceProperty(current, kTISPropertyInputSourceID) : NULL;
+    BOOL valid = identifier && CFGetTypeID(identifier) == CFStringGetTypeID();
+    if (valid) *selected = CFEqual(identifier, (CFStringRef)KKSourceID);
+    if (current) CFRelease(current);
+    if (!valid) fprintf(stderr, "KeyKey input source: pre-install selection unavailable; replacement must wait.\n");
+    return valid;
+}
+- (BOOL)selectFallback
+{
+    NSDictionary *filter = @{
+        (id)kTISPropertyInputSourceType: (id)kTISTypeKeyboardLayout,
+        (id)kTISPropertyInputSourceIsASCIICapable: @YES,
+        (id)kTISPropertyInputSourceIsSelectCapable: @YES
+    };
+    CFArrayRef sources = TISCreateInputSourceList((CFDictionaryRef)filter, false);
+    BOOL selected = NO;
+    for (CFIndex i = 0; sources && i < CFArrayGetCount(sources); i++) {
+        TISInputSourceRef source = (TISInputSourceRef)CFArrayGetValueAtIndex(sources, i);
+        if (TISSelectInputSource(source) != noErr) continue;
+        TISInputSourceRef current = TISCopyCurrentKeyboardInputSource();
+        CFTypeRef expected = TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
+        CFTypeRef actual = current ? TISGetInputSourceProperty(current, kTISPropertyInputSourceID) : NULL;
+        selected = expected && actual && CFEqual(expected, actual);
+        if (current) CFRelease(current);
+        if (selected) break;
+    }
+    if (sources) CFRelease(sources);
+    if (!selected) fprintf(stderr, "KeyKey input source: enabled ASCII fallback could not be selected; replacement must wait.\n");
+    return selected;
+}
+- (BOOL)readEnabled:(BOOL *)enabled
+{
+    BOOL readable = NO;
+    TISInputSourceRef source = KKCopySource(&readable);
+    if (!readable) {
+        fprintf(stderr, "KeyKey input source: enabled snapshot unavailable.\n");
+        return NO;
+    }
+    *enabled = NO;
+    if (!source) return YES; // No registered source before a first install.
+    CFTypeRef value = TISGetInputSourceProperty(source, kTISPropertyInputSourceIsEnabled);
+    BOOL valid = value && CFGetTypeID(value) == CFBooleanGetTypeID();
+    if (valid) *enabled = CFBooleanGetValue(value);
+    CFRelease(source);
+    if (!valid) fprintf(stderr, "KeyKey input source: enabled property unavailable.\n");
+    return valid;
+}
+- (BOOL)enableInstalledInputMethod
+{
+    TISInputSourceRef source = KKCopySource(NULL);
+    if (!source) {
+        fprintf(stderr, "KeyKey input source: previously enabled source is unavailable.\n");
+        return NO;
+    }
+    BOOL success = KKStatus(TISEnableInputSource(source), "restore enabled");
+    CFRelease(source);
+    if (!success) return NO;
+    BOOL enabled = NO;
+    if (![self readEnabled:&enabled] || !enabled) {
+        fprintf(stderr, "KeyKey input source: enabled restoration did not verify.\n");
+        return NO;
+    }
+    fprintf(stderr, "KeyKey input source: pre-install enabled state restored.\n");
+    return YES;
+}
 - (id)init
 {
     if ((self = [super init])) {
-        // Retain process identities before registration: a process macOS
-        // launches afterwards belongs to the new installation.
+        // Retain process identities at the start of preinstall preparation.
         _previousApplications = [[NSRunningApplication runningApplicationsWithBundleIdentifier:KKSourceID] copy];
     }
     return self;
@@ -100,9 +182,9 @@ static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
     if (!KKStatus(TISRegisterInputSource((CFURLRef)[NSURL fileURLWithPath:KKInstalledPath]),
                   "register")) return NO;
     // noErr is only registration's result, not proof that the new source can
-    // be found. Disabled sources are valid too; enabling remains the user's
-    // choice. This does not verify an IMK text session or actual typing.
-    TISInputSourceRef source = KKCopySource();
+    // be found. Disabled sources are valid too; only preinstall's saved enabled
+    // intent can authorize restoration. This does not verify actual typing.
+    TISInputSourceRef source = KKCopySource(NULL);
     if (!source) {
         fprintf(stderr, "KeyKey input source: register returned noErr but the installed source is not available.\n");
         return NO;
@@ -116,7 +198,7 @@ static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
 static void KKDeadline(int signalNumber)
 {
     (void)signalNumber;
-    const char message[] = "KeyKey input source: setup timed out; input-source enabling and selection were not changed by this tool.\n";
+    const char message[] = "KeyKey input source: setup timed out; this setup step is unconfirmed.\n";
     write(STDERR_FILENO, message, sizeof(message) - 1);
     _exit(124);
 }
@@ -143,16 +225,28 @@ static void KKShowSetupWarning(void)
 int main(int argc, const char *argv[])
 {
     @autoreleasepool {
-        BOOL refresh = argc == 2 && strcmp(argv[1], "--refresh") == 0;
+        BOOL restoreEnabled = argc == 2 && strcmp(argv[1], "--refresh-enabled") == 0;
+        BOOL refresh = restoreEnabled || (argc == 2 && strcmp(argv[1], "--refresh") == 0);
+        BOOL snapshot = argc == 2 && strcmp(argv[1], "--snapshot") == 0;
+        BOOL prepare = argc == 2 && strcmp(argv[1], "--prepare-upgrade") == 0;
         BOOL warning = argc == 2 && strcmp(argv[1], "--show-setup-warning") == 0;
-        if ((!refresh && !warning) || geteuid() == 0) {
-            fprintf(stderr, "Run KeyKeyInputSourceTool --refresh or --show-setup-warning in the logged-in user's GUI session, not as root.\n");
+        if ((!refresh && !warning && !snapshot && !prepare) || geteuid() == 0) {
+            fprintf(stderr, "Run KeyKeyInputSourceTool with a supported setup command in the logged-in user's GUI session, not as root.\n");
             return 64;
         }
         struct stat console;
         if (stat("/dev/console", &console) != 0 || console.st_uid != geteuid()) {
             fprintf(stderr, "KeyKey input source: console session changed; refresh skipped.\n");
             return 75;
+        }
+        if (snapshot || prepare) {
+            signal(SIGALRM, KKDeadline); alarm(20);
+            BOOL enabled = NO;
+            KKSystemInputSources *system = [[[KKSystemInputSources alloc] init] autorelease];
+            BOOL success = prepare ? KKPrepareInputSource(system, &enabled) : [system readEnabled:&enabled];
+            alarm(0);
+            if (success) printf("%s\n", enabled ? "enabled" : "disabled");
+            return success ? 0 : 1;
         }
         NSDictionary *info = [NSDictionary dictionaryWithContentsOfFile:
             [KKInstalledPath stringByAppendingPathComponent:@"Contents/Info.plist"]];
@@ -164,7 +258,7 @@ int main(int argc, const char *argv[])
         if (warning) { KKShowSetupWarning(); return 0; }
         signal(SIGALRM, KKDeadline);
         alarm(20);
-        BOOL success = KKRefreshInputSource([[[KKSystemInputSources alloc] init] autorelease]);
+        BOOL success = KKRefreshInputSource([[[KKSystemInputSources alloc] init] autorelease], restoreEnabled);
         alarm(0);
         fprintf(stderr, "KeyKey input source: setup %s; choose KeyKey from the Input menu and verify typing.\n",
                 success ? "completed" : "incomplete");
