@@ -1,53 +1,35 @@
 // Copyright (c) 2026 Chui-Ping Cheng. BSD-3-Clause; see ../../LICENSE.txt.
-// Compile the production adapter against fake TIS functions, never real TIS.
+// Compile the production adapter against fake TIS functions.
 #define TISCreateInputSourceList KKFakeCreateList
-#define TISGetInputSourceProperty KKFakeProperty
-#define TISCopyCurrentKeyboardInputSource KKFakeCurrent
-#define TISEnableInputSource KKFakeEnable
-#define TISDisableInputSource KKFakeDisable
-#define TISSelectInputSource KKFakeSelect
+#define TISEnableInputSource KKUnexpectedEnable
+#define TISDisableInputSource KKUnexpectedDisable
+#define TISSelectInputSource KKUnexpectedSelect
+#define TISCopyCurrentKeyboardInputSource KKUnexpectedCurrent
 #define TISRegisterInputSource KKFakeRegister
 #define main KKUnusedToolMain
 #import "../InputSourceTool.m"
 #undef main
 
-static NSDictionary *keykey, *fallback;
-static NSString *current;
-static BOOL nullList, absent, nullCurrent, missingCurrentID, enabled, changeEnabled, changeSelection;
-static OSStatus enableStatus, selectStatus;
-static int passed;
+static BOOL nullList, absent;
+static int passed, sourceQueries, unexpectedCalls;
+static OSStatus registerStatus;
 static void Check(BOOL value, NSString *message) {
     if (!value) { NSLog(@"FAIL: %@", message); exit(1); } passed++;
 }
 CFArrayRef KKFakeCreateList(CFDictionaryRef filter, Boolean all) {
+    sourceQueries++;
+    Check(all && [((NSDictionary *)filter)[(id)kTISPropertyInputSourceID] isEqual:KKSourceID] &&
+          [(NSDictionary *)filter count] == 1, @"inclusive ID query accepts disabled sources too");
     if (nullList) return NULL;
-    NSDictionary *query = (NSDictionary *)filter;
-    if (query[(id)kTISPropertyInputSourceID]) {
-        Check(all && [query[(id)kTISPropertyInputSourceID] isEqual:KKSourceID], @"precise inclusive KeyKey query");
-        return (CFArrayRef)[(absent ? @[] : @[keykey]) retain];
-    }
-    Check(!all && [query[(id)kTISPropertyInputSourceType] isEqual:(id)kTISTypeKeyboardLayout] &&
-          [query[(id)kTISPropertyInputSourceIsASCIICapable] boolValue] &&
-          [query[(id)kTISPropertyInputSourceIsSelectCapable] boolValue], @"fallback query excludes disabled and non-ASCII input methods");
-    return (CFArrayRef)[@[fallback] retain];
+    return (CFArrayRef)[(absent ? @[] : @[@{}]) retain];
 }
-void *KKFakeProperty(TISInputSourceRef source, CFStringRef property) {
-    if (CFEqual(property, kTISPropertyInputSourceIsEnabled)) return (void *)(enabled ? kCFBooleanTrue : kCFBooleanFalse);
-    return (void *)[(NSDictionary *)source objectForKey:(id)property];
-}
-TISInputSourceRef KKFakeCurrent(void) {
-    if (nullCurrent) return NULL;
-    if (missingCurrentID) return (TISInputSourceRef)[@{} retain];
-    return (TISInputSourceRef)[@{(id)kTISPropertyInputSourceID:current} retain];
-}
-OSStatus KKFakeEnable(TISInputSourceRef source) { (void)source; if (changeEnabled) enabled = YES; return enableStatus; }
-OSStatus KKFakeDisable(TISInputSourceRef source) { (void)source; if (changeEnabled) enabled = NO; return enableStatus; }
-OSStatus KKFakeSelect(TISInputSourceRef source) {
-    if (changeSelection) current = [(NSDictionary *)source objectForKey:(id)kTISPropertyInputSourceID];
-    return selectStatus;
-}
+TISInputSourceRef KKUnexpectedCurrent(void) { unexpectedCalls++; return NULL; }
+OSStatus KKUnexpectedEnable(TISInputSourceRef source) { (void)source; unexpectedCalls++; return -50; }
+OSStatus KKUnexpectedDisable(TISInputSourceRef source) { (void)source; unexpectedCalls++; return -50; }
+OSStatus KKUnexpectedSelect(TISInputSourceRef source) { (void)source; unexpectedCalls++; return -50; }
 OSStatus KKFakeRegister(CFURLRef url) {
-    Check([[(NSURL *)url path] isEqual:KKInstalledPath], @"registration uses fixed installed path"); return noErr;
+    Check([[(NSURL *)url path] isEqual:KKInstalledPath], @"registration uses fixed installed path");
+    return registerStatus;
 }
 
 @interface FakeApplication : NSObject
@@ -55,40 +37,27 @@ OSStatus KKFakeRegister(CFURLRef url) {
 @property BOOL acceptsTermination, exitsImmediately;
 @property pid_t processIdentifier;
 @property int terminateCalls;
+@property(nonatomic, retain) NSURL *executableURL;
 - (BOOL)terminate;
 @end
 @implementation FakeApplication
 - (BOOL)terminate { self.terminateCalls++; if (self.exitsImmediately) self.terminated = YES; return self.acceptsTermination; }
+- (void)dealloc { [_executableURL release]; [super dealloc]; }
 @end
 
 int main(void) {
     @autoreleasepool {
-        keykey = @{(id)kTISPropertyInputSourceID:KKSourceID};
-        fallback = @{(id)kTISPropertyInputSourceID:@"com.apple.keylayout.ABC"};
-        current = KKSourceID; enabled = YES; changeEnabled = YES; changeSelection = YES;
         KKSystemInputSources *system = [[[KKSystemInputSources alloc] init] autorelease];
-        BOOL wasEnabled = NO, selected = NO;
-        Check([system readEnabled:&wasEnabled selected:&selected] && wasEnabled && selected, @"read enabled/current source");
-        nullList = YES; Check(![system readEnabled:&wasEnabled selected:&selected], @"NULL snapshot fails safely");
-        Check(![system selectFallback], @"NULL fallback list fails safely"); nullList = NO;
-        nullCurrent = YES; Check(![system readEnabled:&wasEnabled selected:&selected], @"unreadable current source rejects snapshot"); nullCurrent = NO;
-        missingCurrentID = YES; Check(![system readEnabled:&wasEnabled selected:&selected], @"missing current ID rejects snapshot"); missingCurrentID = NO;
+        Check([system registerInstalledInputMethod], @"registration works without readable current source or enabled property");
+        nullList = YES;
+        Check(![system registerInstalledInputMethod], @"noErr with unavailable snapshot is a reported failure"); nullList = NO;
         absent = YES;
-        Check([system readEnabled:&wasEnabled selected:&selected] && !wasEnabled && selected,
-              @"selected KeyKey missing from source list preserves its selection signal");
-        current = fallback[(id)kTISPropertyInputSourceID];
-        Check([system readEnabled:&wasEnabled selected:&selected] && !wasEnabled && !selected, @"absent source is disabled/unselected");
-        Check(![system applyEnabled:YES] && ![system selectInputMethod], @"missing source cannot be enabled or selected"); absent = NO;
-        Check([system selectFallback] && [current isEqual:fallback[(id)kTISPropertyInputSourceID]], @"fallback selection verified");
-        current = KKSourceID; changeSelection = NO;
-        Check(![system selectFallback], @"noErr without actual fallback selection fails");
-        current = fallback[(id)kTISPropertyInputSourceID];
-        Check(![system selectInputMethod], @"noErr without KeyKey selection fails"); changeSelection = YES;
-        Check([system applyEnabled:NO] && !enabled && [system applyEnabled:YES] && enabled, @"enable and disable verified with fresh snapshots");
-        changeEnabled = NO; Check(![system applyEnabled:NO], @"noErr without disable state change fails");
-        enabled = NO; Check(![system applyEnabled:YES], @"noErr without enable state change fails");
-        changeEnabled = YES; enableStatus = -50; Check(![system applyEnabled:YES], @"API failure stays failure despite partial state change"); enableStatus = noErr;
-        Check([system registerInstalledInputMethod], @"registration result returned");
+        Check(![system registerInstalledInputMethod], @"noErr without the installed source is a reported failure"); absent = NO;
+        registerStatus = -50; int previousQueries = sourceQueries;
+        Check(![system registerInstalledInputMethod] && sourceQueries == previousQueries,
+              @"registration OSStatus failure cannot be mistaken for success"); registerStatus = noErr;
+        Check(unexpectedCalls == 0, @"no current-source dependency or enable, disable, select operations");
+
         FakeApplication *app = [[[FakeApplication alloc] init] autorelease];
         app.processIdentifier = -1;
         Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls, @"missing PID never terminates");
@@ -104,6 +73,16 @@ int main(void) {
         Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 2, @"termination acceptance without exit times out");
         app.exitsImmediately = YES;
         Check(KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 3, @"confirmed normal exit succeeds");
-        NSLog(@"PASS: %d system-adapter checks (fake TIS and application; no user settings or processes touched)", passed);
+        app.terminated = NO;
+        app.executableURL = [NSURL fileURLWithPath:@"/tmp/chichi77 KeyKey.app/Contents/MacOS/chichi77 KeyKey"];
+        [system setValue:@[app] forKey:@"_previousApplications"];
+        Check([system stopInstalledInputMethod] && app.terminateCalls == 3, @"same bundle in another path is untouched");
+        app.executableURL = [NSURL fileURLWithPath:[KKInstalledPath stringByAppendingPathComponent:@"Contents/MacOS/chichi77 KeyKey"]];
+        Check([system stopInstalledInputMethod] && app.terminateCalls == 4,
+              @"only captured installed process identity is retired");
+        [system setValue:@[] forKey:@"_previousApplications"];
+        app.terminated = NO;
+        Check([system stopInstalledInputMethod] && app.terminateCalls == 4, @"no captured old process needs no termination");
+        NSLog(@"PASS: %d system-adapter checks (fake TIS and process termination)", passed);
     }
 }

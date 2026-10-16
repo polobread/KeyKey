@@ -8,7 +8,10 @@ if [[ "${3:-/}" != "/" ]]; then
     exit 0
 fi
 
-console_uid=$(/usr/bin/stat -f %u /dev/console)
+if ! console_uid=$(/usr/bin/stat -f %u /dev/console); then
+    echo "KeyKey: console user is unavailable; add the input source in Keyboard settings after login."
+    exit 0
+fi
 if [[ ! "$console_uid" =~ ^[0-9]+$ ]] || (( console_uid < 500 )); then
     echo "KeyKey: no logged-in console user; add the input source in Keyboard settings after login."
     exit 0
@@ -17,12 +20,13 @@ fi
 helper="/Library/Input Methods/chichi77 KeyKey.app/Contents/MacOS/KeyKeyInputSourceTool"
 # launchctl supplies the GUI bootstrap namespace; sudo supplies the user
 # credentials. Running TIS as the Installer's root user updates the wrong state.
-# The helper only refreshes an already-enabled KeyKey source. First installs
-# register the bundle but leave enabling it to the user.
+# Register the installed bundle and retire only this user's old process.
+# Enabling and selection remain unchanged by the helper.
 if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- "$helper" --refresh; then
-    echo "KeyKey: files were installed, but input-source refresh failed. Re-add 琦琦輸入法 in System Settings > Keyboard > Text Input before logging out." >&2
-    # The payload is already installed. Do not make Installer report the whole
-    # package as failed when only this best-effort session refresh was unable
-    # to complete; the user can recover through Keyboard settings.
-    exit 0
+    echo "KeyKey: files were installed, but input-source setup needs attention. Open System Settings > Keyboard > Text Input." >&2
+    # A separate GUI process makes the failure visible without keeping the
+    # Installer waiting for a modal alert. Close inherited Installer log pipes.
+    /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- \
+        "$helper" --show-setup-warning </dev/null >/dev/null 2>&1 &
 fi
+exit 0

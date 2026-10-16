@@ -160,12 +160,11 @@ int main(int argc, const char *argv[])
         composing = YES;
         Check([client updater:nil shouldPostponeRelaunchForUpdate:(id)item untilInvokingBlock:^{ installs++; }], @"pending composition postpones restart");
         [client resumeInstallationIfSafe];
-        Check(installs == 0 && ![client mayTerminateForUpdate], @"composition is never committed/discarded by updater");
+        Check(installs == 0 && ![client updaterShouldRelaunchApplication:(id)engine], @"composition is never committed/discarded by updater");
         composing = NO;
         [client resumeInstallationIfSafe]; [client resumeInstallationIfSafe];
-        Check(installs == 1 && [client mayTerminateForUpdate], @"finished composition resumes exactly once");
+        Check(installs == 1 && [client updaterShouldRelaunchApplication:(id)engine], @"finished composition resumes exactly once");
         composing = YES;
-        Check(![client mayTerminateForUpdate], @"late new composition blocks termination");
         Check(![client updaterShouldRelaunchApplication:(id)engine], @"new composition also blocks resumed native installation");
         Check([client updater:nil shouldPostponeRelaunchForUpdate:(id)item untilInvokingBlock:^{ installs++; }], @"second pending install can be cancelled on stop");
         [client stop]; composing = NO; [client resumeInstallationIfSafe];

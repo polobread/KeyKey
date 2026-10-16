@@ -43,7 +43,6 @@
 - (void)checkForUpdates;
 - (void)setAutomaticChecks:(BOOL)enabled;
 - (BOOL)setBetaUpdates:(BOOL)enabled;
-- (BOOL)mayTerminateForUpdate;
 - (void)resumeInstallationIfSafe;
 - (void)beginCheckWithCancellation:(void (^)(void))cancellation;
 - (void)checkTimedOut:(NSTimer *)timer;

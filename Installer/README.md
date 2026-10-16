@@ -12,10 +12,13 @@ Xcode, and Homebrew's `openssl@3`:
 
 ## Building from scratch
 
-Three steps, from the repository root. `make` rebuilds the dictionary when
-its source tables, phrase data, corpora, lexicons, or cooker change.
+From the repository root. `make` verifies the checked-in shared dictionary;
+platform builds do not rebuild the production model. Prepare the pinned updater SDK
+before building the app.
 
     cd Source/Distributions/Takao/DatabaseCooker && make && cd -
+
+    python3 update/prepare.py fetch macos
 
     cd Source
     xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
@@ -46,29 +49,32 @@ further.
 
 The package includes a standalone, signed `KeyKeyInputSourceTool`.
 `postinstall` runs it in the current console user's GUI session and credentials.
-It snapshots KeyKey's TIS state, switches an active KeyKey source to an already
-enabled ASCII layout, disables the old source, stops only that user's installed
-KeyKey executable, registers the new bundle, and restores its enabled/selected
-state on success. After termination or registration has begun, failure recovery
-attempts to restore enabling while keeping the ASCII layout selected; a failed
-final selection also attempts to switch back to ASCII. Recovery is best effort.
-It uses Apple's TIS APIs, not private HIToolbox preference writes.
-First installs and intentionally disabled sources are registered but not enabled.
+The helper captures existing KeyKey process identities, registers the installed
+bundle with `TISRegisterInputSource`, confirms the source can be found by ID,
+and requests normal termination of only the captured installed processes.
+macOS can launch the installed version when the user selects KeyKey.
+The helper never calls enable, disable or select APIs and does not read private
+HIToolbox preferences. It does not infer pre-install settings from the state
+after the bundle was replaced. First installs and intentionally disabled sources
+are not automatically enabled.
 
-The helper verifies state changes, attempts recovery on failures, and has a
-20-second deadline (old-process termination is limited to 3 seconds). During an
-upgrade, a still-selected source takes precedence over TIS briefly reporting it
-disabled or absent after the bundle replacement. A failed refresh warns the user
-to re-add KeyKey before logout but does not turn an already completed payload
-installation into a package failure. No console user or a non-startup target
+The operation has a 20-second deadline; normal old-process exit is limited to
+3 seconds. Failures and timeouts cannot leave a source disabled by this helper.
+A failed setup opens a separate GUI warning with an Open Keyboard Settings
+button, without keeping Installer waiting for a response. The warning and log
+distinguish file installation from input-source setup. The completed payload
+does not become a package failure. No console user or a non-startup target
 volume defers setup to Keyboard settings. Other login sessions are not refreshed.
 See [investigation, Apple references, and validation limits](../docs/MACOS_INPUT_SOURCE_UPGRADE.md).
 
-After installation, verify source selection, typing, and version. A first
-installation may still need a new login before macOS lists the source. For an
-upgrade that is missing or unusable, keep ABC enabled and remove/re-add KeyKey
-in Keyboard settings before logout. Do not use repeated logout/forced shutdown
-as a recovery loop for the reported hang.
+After installation, select KeyKey from the Input menu and verify typing in
+TextEdit and the version in Preferences. For an upgrade, selecting ABC and then
+KeyKey again can activate a new session. Add a missing entry through Keyboard
+settings; an existing entry does not need to be removed first. If typing works,
+no logout is required. A first installation may still need a new login before
+macOS lists the source. Do not use repeated logout/forced shutdown as a recovery
+loop for the reported hang. Registration and confirmed old-process exit do not
+prove that a new IMK session can type; real installation acceptance is separate.
 
 Run isolated regressions without installing or changing input sources:
 

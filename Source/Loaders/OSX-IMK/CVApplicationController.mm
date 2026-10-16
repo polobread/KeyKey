@@ -622,11 +622,6 @@ extern size_t VendorMotcleSize;
 	[[NSAppleEventManager sharedAppleEventManager] setEventHandler:self andSelector:@selector(handleIncomingURL:withReplyEvent:) forEventClass:kInternetEventClass andEventID:kAEGetURL];
 }
 
-- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
-{
-    return (!_desktopUpdaterController || [_desktopUpdaterController mayTerminateForUpdate]) ? NSTerminateNow : NSTerminateCancel;
-}
-
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
     [_desktopUpdaterController stop];

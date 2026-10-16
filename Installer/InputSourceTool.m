@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Chui-Ping Cheng. BSD-3-Clause; see ../LICENSE.txt.
 #import <AppKit/AppKit.h>
 #import <Carbon/Carbon.h>
-#include <errno.h>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -11,56 +10,24 @@ static NSString *const KKInstalledPath = @"/Library/Input Methods/chichi77 KeyKe
 
 // Keep policy independently testable without touching the user's input sources.
 @protocol KKInputSourceOperations <NSObject>
-- (BOOL)readEnabled:(BOOL *)enabled selected:(BOOL *)selected;
-- (BOOL)selectFallback;
-- (BOOL)applyEnabled:(BOOL)enabled;
 - (BOOL)stopInstalledInputMethod;
 - (BOOL)registerInstalledInputMethod;
-- (BOOL)selectInputMethod;
 @end
 
 static BOOL KKRefreshInputSource(id<KKInputSourceOperations> system)
 {
-    BOOL enabled = NO, selected = NO;
-    if (![system readEnabled:&enabled selected:&selected]) return NO;
-    BOOL needsDisable = enabled;
-    // Replacing an input-method bundle can briefly leave TIS reporting the
-    // selected source as disabled. Selection is still proof that the user had
-    // enabled KeyKey before the upgrade, so preserve that restore intent.
-    if (selected) enabled = YES;
-    BOOL switched = NO, disabled = NO, safeToReselect = YES;
-    if (selected) {
-        if (![system selectFallback]) return NO;
-        switched = YES;
-    }
-    if (enabled) {
-        disabled = YES; // A failing API may still have partially changed state.
-        if (needsDisable && ![system applyEnabled:NO]) goto restore;
-        safeToReselect = NO;
-        if (![system stopInstalledInputMethod]) goto restore;
-    }
-    safeToReselect = NO;
-    if (![system registerInstalledInputMethod]) goto restore;
-    if (enabled && ![system applyEnabled:YES]) goto restore;
-    disabled = NO;
-    if (selected && ![system selectInputMethod]) {
-        // Selection may have changed before its verification failed.
-        [system selectFallback];
-        goto restore;
-    }
-    return YES;
-
-restore:
-    // Best effort recovery; never remove other input sources or edit HIToolbox
-    // preferences. Keep the working fallback if KeyKey cannot be enabled.
-    if (!disabled || [system applyEnabled:YES]) {
-        if (switched && safeToReselect) [system selectInputMethod];
-    }
-    return NO;
+    // Registration does not require reading the current selection. In
+    // particular, a transient post-replacement snapshot is not evidence that
+    // the user disabled KeyKey. Leave enabling and selection entirely to TIS
+    // and the user's Keyboard settings, including when a step fails or hangs.
+    if (![system registerInstalledInputMethod]) return NO;
+    return [system stopInstalledInputMethod];
 }
 
 #ifndef KEYKEY_INPUT_SOURCE_TEST
-@interface KKSystemInputSources : NSObject <KKInputSourceOperations>
+@interface KKSystemInputSources : NSObject <KKInputSourceOperations> {
+    NSArray *_previousApplications;
+}
 @end
 
 static TISInputSourceRef KKCopySource(void)
@@ -71,22 +38,6 @@ static TISInputSourceRef KKCopySource(void)
         ? (TISInputSourceRef)CFRetain(CFArrayGetValueAtIndex(sources, 0)) : NULL;
     if (sources) CFRelease(sources);
     return source;
-}
-
-static BOOL KKBoolean(TISInputSourceRef source, CFStringRef key)
-{
-    CFTypeRef value = source ? TISGetInputSourceProperty(source, key) : NULL;
-    return value && CFGetTypeID(value) == CFBooleanGetTypeID() && CFBooleanGetValue(value);
-}
-
-static BOOL KKIsCurrentSource(TISInputSourceRef source)
-{
-    TISInputSourceRef current = TISCopyCurrentKeyboardInputSource();
-    CFStringRef expected = source ? TISGetInputSourceProperty(source, kTISPropertyInputSourceID) : NULL;
-    CFStringRef actual = current ? TISGetInputSourceProperty(current, kTISPropertyInputSourceID) : NULL;
-    BOOL matches = expected && actual && CFEqual(expected, actual);
-    if (current) CFRelease(current);
-    return matches;
 }
 
 static BOOL KKStatus(OSStatus status, const char *operation)
@@ -119,117 +70,83 @@ static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
 }
 
 @implementation KKSystemInputSources
-- (BOOL)readEnabled:(BOOL *)enabled selected:(BOOL *)selected
+- (id)init
 {
-    // A fresh, narrowly filtered TIS snapshot is authoritative. Reading the
-    // private AppleEnabledInputSources preference is not a supported TIS API.
-    NSDictionary *filter = @{(id)kTISPropertyInputSourceID: KKSourceID};
-    CFArrayRef sources = TISCreateInputSourceList((CFDictionaryRef)filter, true);
-    if (!sources) return NO;
-    TISInputSourceRef current = TISCopyCurrentKeyboardInputSource();
-    CFTypeRef currentID = current ? TISGetInputSourceProperty(current, kTISPropertyInputSourceID) : NULL;
-    if (!currentID || CFGetTypeID(currentID) != CFStringGetTypeID()) {
-        if (current) CFRelease(current);
-        CFRelease(sources);
-        return NO;
+    if ((self = [super init])) {
+        // Retain process identities before registration: a process macOS
+        // launches afterwards belongs to the new installation.
+        _previousApplications = [[NSRunningApplication runningApplicationsWithBundleIdentifier:KKSourceID] copy];
     }
-    *enabled = NO; *selected = NO;
-    BOOL currentIsKeyKey = CFEqual(currentID, (CFStringRef)KKSourceID);
-    if (CFArrayGetCount(sources)) {
-        TISInputSourceRef source = (TISInputSourceRef)CFArrayGetValueAtIndex(sources, 0);
-        *enabled = KKBoolean(source, kTISPropertyInputSourceIsEnabled);
-        *selected = currentIsKeyKey;
-    } else if (currentIsKeyKey) {
-        // Atomic package replacement can temporarily remove the old bundle
-        // from an inclusive source-list query while it remains selected.
-        // Preserve the selection signal and let registration recreate it.
-        *enabled = NO;
-        *selected = YES;
-    }
-    CFRelease(current);
-    CFRelease(sources);
-    return YES;
+    return self;
 }
-- (BOOL)selectFallback
+- (void)dealloc
 {
-    // Use an already-enabled ASCII keyboard layout, not another third-party
-    // input method. Switching first lets IMK deactivate the old input session.
-    NSDictionary *filter = @{
-        (id)kTISPropertyInputSourceType: (id)kTISTypeKeyboardLayout,
-        (id)kTISPropertyInputSourceIsASCIICapable: @YES,
-        (id)kTISPropertyInputSourceIsSelectCapable: @YES
-    };
-    CFArrayRef sources = TISCreateInputSourceList((CFDictionaryRef)filter, false);
-    BOOL success = NO;
-    if (sources) {
-        for (CFIndex i = 0; i < CFArrayGetCount(sources); i++) {
-            TISInputSourceRef source = (TISInputSourceRef)CFArrayGetValueAtIndex(sources, i);
-            if (TISSelectInputSource(source) == noErr && KKIsCurrentSource(source)) {
-                success = YES;
-                break;
-            }
-        }
-        CFRelease(sources);
-    }
-    if (!success) fprintf(stderr, "KeyKey input source: no selectable enabled ASCII layout.\n");
-    return success;
-}
-- (BOOL)applyEnabled:(BOOL)enabled
-{
-    TISInputSourceRef source = KKCopySource();
-    if (!source) return NO;
-    BOOL success = KKStatus(enabled ? TISEnableInputSource(source) : TISDisableInputSource(source),
-                            enabled ? "enable" : "disable");
-    CFRelease(source);
-    if (!success) return NO;
-    // Do not treat noErr alone as proof that the state actually changed.
-    source = KKCopySource();
-    success = source && KKBoolean(source, kTISPropertyInputSourceIsEnabled) == enabled;
-    if (source) CFRelease(source);
-    if (!success) fprintf(stderr, "KeyKey input source: enable state verification failed.\n");
-    return success;
+    [_previousApplications release];
+    [super dealloc];
 }
 - (BOOL)stopInstalledInputMethod
 {
     NSString *executable = [KKInstalledPath stringByAppendingPathComponent:@"Contents/MacOS/chichi77 KeyKey"];
-    for (NSRunningApplication *app in [NSRunningApplication runningApplicationsWithBundleIdentifier:KKSourceID]) {
+    for (NSRunningApplication *app in _previousApplications) {
         if (![app.executableURL.path isEqualToString:executable]) continue;
-        // The helper runs as the console user, never as root. The old source has
-        // already been deselected and disabled; no global process-name kill.
+        // The helper runs as the console user, never as root. Let macOS
+        // relaunch the installed version on demand; no global process kill.
         if (!KKStopApplication(app, 3)) return NO;
     }
     return YES;
 }
 - (BOOL)registerInstalledInputMethod
 {
-    // Apple TextInputSources.h documents this specifically for installers:
-    // notify TIS of the installed bundle and rebuild its source caches.
-    return KKStatus(TISRegisterInputSource((CFURLRef)[NSURL fileURLWithPath:KKInstalledPath]),
-                    "register");
-}
-- (BOOL)selectInputMethod
-{
+    if (!KKStatus(TISRegisterInputSource((CFURLRef)[NSURL fileURLWithPath:KKInstalledPath]),
+                  "register")) return NO;
+    // noErr is only registration's result, not proof that the new source can
+    // be found. Disabled sources are valid too; enabling remains the user's
+    // choice. This does not verify an IMK text session or actual typing.
     TISInputSourceRef source = KKCopySource();
-    if (!source) return NO;
-    BOOL success = KKStatus(TISSelectInputSource(source), "select") && KKIsCurrentSource(source);
+    if (!source) {
+        fprintf(stderr, "KeyKey input source: register returned noErr but the installed source is not available.\n");
+        return NO;
+    }
     CFRelease(source);
-    return success;
+    fprintf(stderr, "KeyKey input source: registered source found.\n");
+    return YES;
 }
 @end
 
 static void KKDeadline(int signalNumber)
 {
     (void)signalNumber;
-    const char message[] = "KeyKey input source: registration timed out; use Keyboard settings to re-add KeyKey before logging out.\n";
+    const char message[] = "KeyKey input source: setup timed out; input-source enabling and selection were not changed by this tool.\n";
     write(STDERR_FILENO, message, sizeof(message) - 1);
     _exit(124);
+}
+
+static void KKShowSetupWarning(void)
+{
+    BOOL chinese = [[[NSLocale preferredLanguages] firstObject] hasPrefix:@"zh"];
+    [NSApplication sharedApplication];
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+    NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+    alert.alertStyle = NSAlertStyleWarning;
+    alert.messageText = chinese ? @"琦琦輸入法需要確認" : @"Check KeyKey input-source setup";
+    alert.informativeText = chinese
+        ? @"檔案已安裝，但目前帳號的輸入法準備未完成。\n\n請從輸入法選單先選 ABC，再選「琦琦輸入法」或「chichi77 KeyKey」，到「文字編輯」試打。\n\n若找不到項目，開啟「系統設定 → 鍵盤 → 文字輸入 → 編輯… → ＋」，從「繁體中文」加入琦琦。仍無法使用時，請回報安裝檔名與 macOS 版本。"
+        : @"The files were installed, but setup for this account did not finish.\n\nSelect ABC, then chichi77 KeyKey from the Input menu, and try typing in TextEdit.\n\nIf KeyKey is missing, open System Settings → Keyboard → Text Input → Edit → + and add it under Traditional Chinese. If it still does not work, report the package name and macOS version.";
+    [alert addButtonWithTitle:chinese ? @"開啟鍵盤設定" : @"Open Keyboard Settings"];
+    [alert addButtonWithTitle:chinese ? @"稍後" : @"Later"];
+    [NSApp activateIgnoringOtherApps:YES];
+    if ([alert runModal] == NSAlertFirstButtonReturn)
+        [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:
+            @"x-apple.systempreferences:com.apple.Keyboard-Settings.extension"]];
 }
 
 int main(int argc, const char *argv[])
 {
     @autoreleasepool {
-        if (argc != 2 || strcmp(argv[1], "--refresh") != 0 || geteuid() == 0) {
-            fprintf(stderr, "Run KeyKeyInputSourceTool --refresh in the logged-in user's GUI session, not as root.\n");
+        BOOL refresh = argc == 2 && strcmp(argv[1], "--refresh") == 0;
+        BOOL warning = argc == 2 && strcmp(argv[1], "--show-setup-warning") == 0;
+        if ((!refresh && !warning) || geteuid() == 0) {
+            fprintf(stderr, "Run KeyKeyInputSourceTool --refresh or --show-setup-warning in the logged-in user's GUI session, not as root.\n");
             return 64;
         }
         struct stat console;
@@ -240,12 +157,17 @@ int main(int argc, const char *argv[])
         NSDictionary *info = [NSDictionary dictionaryWithContentsOfFile:
             [KKInstalledPath stringByAppendingPathComponent:@"Contents/Info.plist"]];
         if (![info[@"CFBundleIdentifier"] isEqual:KKSourceID] ||
-            ![info[@"TISInputSourceID"] isEqual:KKSourceID]) return 65;
+            ![info[@"TISInputSourceID"] isEqual:KKSourceID]) {
+            fprintf(stderr, "KeyKey input source: installed bundle identity is invalid.\n");
+            return 65;
+        }
+        if (warning) { KKShowSetupWarning(); return 0; }
         signal(SIGALRM, KKDeadline);
         alarm(20);
         BOOL success = KKRefreshInputSource([[[KKSystemInputSources alloc] init] autorelease]);
         alarm(0);
-        if (!success) fprintf(stderr, "KeyKey input source: refresh incomplete; re-add KeyKey in Keyboard settings before logging out.\n");
+        fprintf(stderr, "KeyKey input source: setup %s; choose KeyKey from the Input menu and verify typing.\n",
+                success ? "completed" : "incomplete");
         return success ? 0 : 1;
     }
 }

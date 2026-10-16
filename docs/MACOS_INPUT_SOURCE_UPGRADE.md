@@ -1,117 +1,97 @@
-# macOS 安裝註冊與登出異常調查
+# macOS 安裝與升級流程
 
-## 現況與證據界線
+## 設計與 Apple 依據
 
-使用者回報：手動下載並執行 1.3.2-beta4 的 pkg 後，若沒有先在
-「系統設定 → 鍵盤」移除再加入琦琦，登出會只剩背景與滑鼠游標，沒有登入欄位。
-多次測試須強制關機；重新開機時 USB 鍵盤也無法登入，須用內建鍵盤登入後重新連接。
-這是嚴重的實機回報，不能以程序正在執行或目前可打字認定已排除。
+安裝器負責將簽章後的 App 放在 `/Library/Input Methods/chichi77 KeyKey.app`，
+並通知目前登入帳號的 Text Input Sources 重新註冊。啟用與選取由系統及使用者管理。
+檔案已安裝、來源可查詢、舊行程已退出、新 IMK session 可輸入，是不同的驗證層級。
 
-目前證據的界線：
+- Apple SDK 的 Carbon/HIToolbox `TextInputSources.h` 定義：
+  `TISRegisterInputSource` 供安裝器註冊指定位置的來源，更新必要快取並取得來源參照；
+  `TISEnableInputSource` 讓來源可選，`TISSelectInputSource` 才更換目前來源，
+  `TISDisableInputSource` 會將來源從可選介面移除。Apple 沒有要求升級前先停用來源。
+- [QA1810](https://developer.apple.com/library/archive/qa/qa1810/_index.html)
+  說明鍵盤輸入法由鍵盤設定管理；palette 範例不能作為整套升級順序的保證。
+- [Core Foundation Ownership Policy](https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html)
+  與 SDK 都要求遵循 Get rule：不可釋放 `TISGetInputSourceProperty` 借出的物件。
+- [Apple Installer Distribution XML](https://developer.apple.com/library/archive/documentation/DeveloperTools/Reference/DistributionDefinitionRef/Chapters/Distribution_XML_Ref.html)
+  提供 `RequireLogout`／`RequireRestart`；是否要求這些動作是套件的選擇。
+- [App 正常結束流程](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/AppArchitecture/Tasks/GracefulAppTermination.html)
+  也涵蓋登出與關機。更新器的組字延後應限定於 Sparkle 的重啟回呼。
 
-- loginwindow 的生命週期紀錄不足以證明登入畫面已顯示且可操作，
-  也不能直接把問題歸因於輸入法取消結束。
-- 強制關機紀錄不是可定位輸入法根因的呼叫堆疊。
-- TIS 即時狀態與 defaults 偏好讀值的差異只能作為診斷線索；
-  不能據此判定資料遺失，或直接改寫私有 HIToolbox plist。
+## 從 1.3.1 收斂的範圍
 
-尚未取得登入卡住的根因證據，也未證明 USB 問題與輸入法有共同根因。
+`c771e96` 的 postinstall 直接以全域 `pkill` 結束舊行程。
+`603f2a6b` 加入讀取狀態、切 ASCII、停用、結束、註冊、啟用及選回；
+`e9504db7` 補部分替換後快照，並讓 session refresh 失敗不再使整包安裝失敗。
+後兩者仍無法從覆蓋後的狀態還原原本意圖，也可能在逾時後留下已停用的來源。
+只有安裝日誌提示失敗，不能作為一般使用者的復原介面。
 
-## Apple 官方依據
+目前移除上述啟用／選取管理，保留固定安裝路徑、簽章／公證、來源註冊、
+有範圍的正常行程退出，以及 `CVKeyboardHelper` 的借用物件與空清單修正。
+安裝 helper 沒有 enable、disable、select 或目前來源查詢呼叫，
+也不讀寫私有 HIToolbox 偏好。來源排序不由安裝器重建。
 
-- Apple 隨 Xcode SDK 提供的 Carbon/HIToolbox **TextInputSources.h**：
-  TISRegisterInputSource 明確提供給輸入法安裝程式，讓系統重新找到安裝的
-  bundle 並更新必要快取；支援 /Library/Input Methods 與使用者同名目錄。
-  TISEnableInputSource / TISDisableInputSource 管理是否可供選用，
-  TISSelectInputSource 管理目前選擇，三者不是同一件事。
-- [QA1810：第三方輸入法管理](https://developer.apple.com/library/archive/qa/qa1810/_index.html)：
-  Apple 的範例以 TIS API 啟用／停用輸入來源；鍵盤輸入法仍由鍵盤設定管理。
-  此文件的主要範例是 palette input method，不是新版 macOS 升級流程的保證。
-- [Core Foundation Ownership Policy](https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html)：
-  Get rule 回傳物件不屬於呼叫者。TextInputSources.h 也明列
-  TISGetInputSourceProperty 的結果不可由呼叫者直接 release。
-- [Graceful Application Termination](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/AppArchitecture/Tasks/GracefulAppTermination.html)：
-  登出、重啟、關機都可能進入 App 結束流程；更新重啟的保護不能直接當成
-  系統登出卡住的證據。
-- [允許 USB 與其他配件連接](https://support.apple.com/zh-tw/102282)：
-  Apple Silicon 筆電的配件授權可能要求先解鎖。此說明只是 USB 排查依據，
-  不能據此認定本次失效是正常行為，也不能把「一律允許」當作輸入法修正。
+## 安裝後的操作
 
-以下更新順序是依 API 契約與本次回報設計的候選修正，並非 Apple 保證可修復
-所有登出或 USB 異常的官方配方。
+postinstall 只在開機磁碟且有有效 console 使用者時，透過
+`launchctl asuser` 與該帳號憑證執行已簽章的獨立 helper。
 
-## 候選修正
+1. 捕捉執行當下的 KeyKey 行程身分，避免結束註冊後才啟動的行程。
+2. 對固定安裝位置呼叫 `TISRegisterInputSource`，檢查 OSStatus。
+3. 以精確 source ID 查 inclusive 清單。找得到就接受，即使來源尚未啟用；
+   找不到或清單不可讀則回報失敗，不停止既有行程。無須先取得目前選取來源。
+4. 正常結束捕捉到、executable path 符合固定安裝位置的行程。
+   使用保留身分的 `NSRunningApplication`，拒絕無效 PID 與自身，不使用全域 kill。
+   每個行程最多等 3 秒；macOS 可在之後選取 KeyKey 時啟動新版。
 
-舊 postinstall 在覆蓋 bundle 後，以全域 pkill 直接終止輸入法；沒有處理
-仍被選取的舊來源，也沒有更新 TIS 註冊。
+整個操作最多 20 秒。逾時直接返回失敗；因 helper 從未停用或切換來源，
+不需要再用另一組 TIS 變更回滾。每個失敗階段記錄可識別的原因。
 
-新的獨立 KeyKeyInputSourceTool 隨 App 由內而外簽章；不啟動 IMK、
-不載入詞庫、不開網路、不修改 HIToolbox plist。postinstall 在目前 console
-使用者的 GUI bootstrap 與帳號權限下執行，避免以 Installer 的 root 身分操作 TIS。
+失敗時 payload 仍已完成安裝；postinstall 成功結束，另以相同帳號的 GUI process
+顯示「琦琦輸入法需要確認」，提供「開啟鍵盤設定」與「稍後」。
+提示不讓 Installer 等待回應，也不自動加入或切換來源。無 GUI session 時不顯示提示，
+由完成頁與安裝日誌提供加入方式。
 
-1. 用精確 input-source ID 讀取 TIS enabled 與目前 selection；無法取得目前來源 ID
-   時停止。pkg 原子替換 bundle 後，若琦琦仍是目前來源但 inclusive 清單暫時回報
-   未啟用或找不到，保留「原本已啟用」的恢復意圖並略過已無意義的停用呼叫；
-   後續仍須重新註冊成功才能啟用及選回。
-2. 若目前選取琦琦，先切到已啟用、可選取的 ASCII 鍵盤配置。
-3. 只有原本已啟用的琦琦才暫時停用；確認停用後，結束同一使用者、
-   相同安裝 executable path 的舊程序。使用 NSRunningApplication 正常 terminate，
-   拒絕無效 PID 與自身，確認程序已退出，最多等 3 秒；不送原始 kill 或 SIGKILL。
-4. 對固定安裝 bundle 呼叫 TISRegisterInputSource。
-5. 恢復原先啟用狀態；只有原本正在使用琦琦時才選回。
-6. 失敗時盡力恢復 enabled。尚未進入停止程序／重新註冊前，才嘗試恢復原選取；
-   進入該階段後若失敗，維持已切換的 ASCII，不自動選回未證實安全的琦琦。
-   最後選回琦琦若只部分成功，也再次盡力切回 ASCII；系統 API 仍可能失敗，
-   不能保證恢復成功。TIS 選取驗證成功也不代表 IMK 已能實際輸入。
-   整個 helper 最多 20 秒。逾時可能已完成部分步驟，不能宣告註冊成功；
-   安裝記錄要求使用者在登出前透過鍵盤設定重新加入。
+使用者完成流程：從輸入法選單選取琦琦，在「文字編輯」試打並核對偏好設定版本。
+升級時可先選 ABC 再切回琦琦；缺少項目才從鍵盤設定加入，已有項目不必先刪除。
+能正常輸入即可繼續使用。首次安裝若仍未出現在加入清單，可儲存工作後重新登入一次。
+完成頁、更新器訊息與新產生的發行說明使用相同指引，不宣稱 helper 已驗證實際輸入。
+已發布的套件及 feed 不因來源訊息變更而改變。
 
-首次安裝或原本停用者只註冊，不自動啟用。沒有登入使用者、設定帳號、
-非開機磁碟安裝都不碰目前使用者來源。其他快速切換使用者工作階段不會被
-全域終止，也尚未涵蓋自動更新其註冊。啟用清單中的排序可能因重新加入而改變。
-註冊失敗時 postinstall 會留下復原提示但成功結束，避免 payload 已安裝卻讓
-Installer 顯示整個套件安裝失敗；此結果仍不代表輸入來源已可使用。
-postinstall 是在 payload 覆蓋後執行，尚未解決覆蓋期間舊 IMK 程序可能載入
-新舊混合資源的問題；多使用者範圍只保證不主動終止其他工作階段，
-不宣稱所有已登入工作階段都完成升級。
+一般 App 結束、登出與關機不再交給更新器否決；未完成組字的更新延後及再次檢查，
+保留於 Sparkle 的更新重啟回呼。手動 pkg 安裝及其他登入帳號不經過此組字保護。
 
-另修正 CVKeyboardHelper：不再 release TIS 借出的 type/source ID，
-查詢限於鍵盤配置，並處理 NULL 清單、缺少 ID 與重載快取。這是可獨立確認的
-記憶體管理錯誤，但尚不能宣稱是本次系統卡住的根因。
-
-## 驗證與發布門檻
-
-隔離入口：
+## 驗證與限制
 
 ```sh
 bash Installer/test-input-sources.sh
+bash update/test-macos.sh
+python3 -m unittest discover -s update -p test_macos_release.py -v
 ```
 
-測試以 fake TIS/假命令覆蓋首次安裝、原本停用、原本選取、bundle 替換後暫時
-回報未啟用／找不到、其他來源仍被選取、
-各階段失敗的恢復與套件腳本帳號路由。正式 helper 僅執行拒絕參數的入口；
-測試不安裝、不切換輸入法、不登出。macOS target 另需編譯，
-macOS 僅支援 arm64；封裝會拒絕其他架構或 universal App，helper 固定編譯 arm64。
-封裝需確認 helper 與 App 均為 arm64、已被簽章且存在於安裝 payload。
+隔離驗證覆蓋註冊失敗不停止舊行程、註冊 noErr 但來源缺少、不可讀快照、
+無目前來源也能註冊、不呼叫 enable／disable／select、行程身分／路徑檢查、
+拒絕終止、退出逾時、無登入帳號／其他磁碟，以及失敗時獨立啟動可見提示。
+測試不安裝、不切換真實輸入來源、不終止使用者行程、不登出。
+提示的顯示及鍵盤設定按鈕仍需實機 GUI 驗收。
 
-隔離驗證：32 項生命週期 policy、43 項真實 adapter 接假 TIS／
-假程序、9 項鍵盤 helper 借用物件與快取、4 項 postinstall 路由測試全部通過。
-包含持續 enable 失敗、部分 disable／select 後失敗、無法讀取目前來源、無效 PID、
-拒絕終止與終止逾時。正式 helper 以 arm64 編譯通過；shell syntax 與
-git diff --check 通過。macOS IMK Release target 已編譯通過。
+發布前仍須在可恢復的測試 Mac／獨立帳號完成：
 
-另由既有 arm64 Release App 在獨立目錄產生 ad hoc 簽章 pkg，僅展開、不安裝：
-helper 與主程式均為 arm64，展開 App 通過 codesign --verify --deep --strict
---all-architectures，postinstall 與來源內容相同。PackageInfo 為 relocatable=false，
-relocate 清單為空。
-此處是 ad hoc 封裝證據，尚未完成 Developer ID／notarization；Intel 不在支援範圍。
+| 情境 | 驗收內容 |
+| --- | --- |
+| 首次安裝 | 可從鍵盤設定加入，從選單選取，在 TextEdit 輸入「台北」並確認版本 |
+| 1.3.1／既有 beta 升級，KeyKey 作用中 | 來源仍可選；切 ABC 再選回後啟動新版且可輸入 |
+| 升級時選用 ABC／其他來源 | 安裝器不主動更換使用中的來源；可自行切到新版 KeyKey |
+| 原本停用 KeyKey | 不自動啟用；可自行從鍵盤設定加入 |
+| 準備失敗／舊行程不退出 | Installer 不等待提示回應；使用者看得到原因與鍵盤設定入口 |
+| 登出／多帳號／不同文字宿主 | 確認登入畫面可操作、內建／USB 鍵盤可輸入，各帳號獨立驗收 |
 
-目前屬候選修正，不能因隔離測試或編譯成功宣告實機問題已排除。仍需在可恢復的
-測試 Mac／獨立測試帳號驗證：beta4 手動升級、首次安裝、原本停用、其他來源被選取、
-組字中安裝、每份文件自動切換輸入來源的設定、快速使用者切換，以及登出後登入欄位、
-內建／USB 鍵盤輸入。背景 helper 的選取及 IMK deactivation 時序仍須平台觀察。
-測試遇到相同背景與游標
-停滯應停止重複操作，取得安全的系統診斷再分析。不得要求使用者反覆強制關機驗收。
+使用者曾回報 beta4 安裝後登出停在背景與游標，以及 USB 鍵盤登入失效；
+目前未取得足以定位共同根因的呼叫堆疊。更新器拒絕結束是程式碼可確認的風險，
+尚不能宣稱就是該實機問題的根因。測試若再次遇到停滯，應停止反覆登出或強制關機，
+取得系統診斷後分析。
 
-已發布 beta4、商店版號與已安裝 App 不因原始碼修改而改變；此修正須先經 PR
-人工 review，完成實機與簽章驗收後另行發布。
+postinstall 仍發生在 payload 替換後，覆蓋期間舊 IMK 可能讀取新舊混合資源；
+其他已登入帳號不會自動更新其行程。編譯、隔離回歸、簽章與來源可查詢，
+都不能取代上述實機驗收，也不能保證所有安裝都不需要重新登入。
