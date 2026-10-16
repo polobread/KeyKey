@@ -678,6 +678,8 @@
 		D4FF80500F462074006F4025 /* InputMethodToggleWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */; };
 		AA01AB010000000000000003 /* TakaoAbout.m in Sources */ = {isa = PBXBuildFile; fileRef = AA01AB010000000000000002 /* TakaoAbout.m */; };
 		AA01AB010000000000000004 /* TakaoAbout.m in Sources */ = {isa = PBXBuildFile; fileRef = AA01AB010000000000000002 /* TakaoAbout.m */; };
+		AA01AB020000000000000002 /* ProjectMotivation.txt in Resources */ = {isa = PBXBuildFile; fileRef = AA01AB020000000000000001 /* ProjectMotivation.txt */; };
+		AA01AB020000000000000003 /* ProjectMotivation.txt in Resources */ = {isa = PBXBuildFile; fileRef = AA01AB020000000000000001 /* ProjectMotivation.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1729,6 +1731,7 @@
 		D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = InputMethodToggleWindowController.xib; path = "Loaders/OSX-IMK/Interface/InputMethodToggleWindowController.xib"; sourceTree = "<group>"; };
 		AA01AB010000000000000001 /* TakaoAbout.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TakaoAbout.h; path = PreferenceApplications/OSX/TakaoAbout.h; sourceTree = "<group>"; };
 		AA01AB010000000000000002 /* TakaoAbout.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = TakaoAbout.m; path = PreferenceApplications/OSX/TakaoAbout.m; sourceTree = "<group>"; };
+		AA01AB020000000000000001 /* ProjectMotivation.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = ProjectMotivation.txt; path = Branding/ProjectMotivation.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -3107,6 +3110,7 @@
 				D455A6371062575F00CC2B47 /* plugin.tiff */,
 				D47D5E770D5EDE120093524C /* InfoPlist.strings */,
 				D47D5E790D5EDE120093524C /* Localizable.strings */,
+				AA01AB020000000000000001 /* ProjectMotivation.txt */,
 			);
 			name = Resource;
 			sourceTree = "<group>";
@@ -4509,6 +4513,7 @@
 				D42FE9080DA17C3000D2EA44 /* chichi77.icns in Resources */,
 				6AB89EF90D8A25C400D087E3 /* InfoPlist.strings in Resources */,
 				6AB89EFA0D8A25C400D087E3 /* Localizable.strings in Resources */,
+				AA01AB020000000000000003 /* ProjectMotivation.txt in Resources */,
 				6AB89EFF0D8A25C400D087E3 /* generic.tiff in Resources */,
 				6AB89F000D8A25C400D087E3 /* phrase.tiff in Resources */,
 				6AB89F020D8A25C400D087E3 /* simplex.tiff in Resources */,
@@ -4603,6 +4608,7 @@
 				D4466AAE0D912A6800A530D4 /* chichi77.icns in Resources */,
 				D47D5E7F0D5EDE120093524C /* InfoPlist.strings in Resources */,
 				D47D5E800D5EDE120093524C /* Localizable.strings in Resources */,
+				AA01AB020000000000000002 /* ProjectMotivation.txt in Resources */,
 				D47D5E900D5EDE440093524C /* generic.tiff in Resources */,
 				D47D5E920D5EDE440093524C /* phrase.tiff in Resources */,
 				D47D5E940D5EDE440093524C /* simplex.tiff in Resources */,

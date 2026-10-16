@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +35,17 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        var assembly = typeof(MainWindow).Assembly;
+        AboutVersion.Text = $"版本 {assembly.GetName().Version?.ToString(3) ?? "—"}";
+        using (var motivation = assembly.GetManifestResourceStream("KeyKey.ProjectMotivation"))
+        {
+            if (motivation is null) AboutMotivation.Text = "無法載入開發初衷。";
+            else
+            {
+                using var reader = new StreamReader(motivation);
+                AboutMotivation.Text = reader.ReadToEnd().Trim();
+            }
+        }
         Loaded += (_, _) =>
         {
             App.Updater.Initialize();
@@ -137,6 +149,19 @@ public partial class MainWindow : Window
             "UseCharactersSupportedByEncoding", "BIG-5") is "" or "UTF-8";
         ClearSmartCompositionWithEsc.IsChecked =
             SettingsStore.ReadSmartEscClearPreference(SettingsStore.SmartPath);
+    }
+
+    private void ProjectHomepage_Click(object sender, RoutedEventArgs e)
+        => OpenAboutLink("https://github.com/polobread/KeyKey");
+    private void LatestRelease_Click(object sender, RoutedEventArgs e)
+        => OpenAboutLink("https://github.com/polobread/KeyKey/releases/latest");
+    private void OpenAboutLink(string url)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex) { Status.Text = $"無法開啟網頁：{ex.Message}"; }
     }
 
     private void CheckUpdate_Click(object sender, RoutedEventArgs e) => App.Updater.Check();

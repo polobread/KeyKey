@@ -224,6 +224,31 @@
                      Margin="0,20,0,0" Opacity="0.7" />
         </StackPanel>
       </TabItem>
+      <TabItem Header="關於">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="24" MaxWidth="720">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+              <Image Source="AboutIcon.png" Width="72" Height="72" Margin="0,0,18,0"
+                     AutomationProperties.Name="琦琦輸入法圖示" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="琦琦輸入法" FontSize="24" FontWeight="SemiBold" />
+                <TextBlock x:Name="AboutVersion" Margin="0,6,0,0" Opacity="0.7" />
+              </StackPanel>
+            </StackPanel>
+            <WrapPanel Margin="0,0,0,22">
+              <Button Content="GitHub 專案首頁" Click="ProjectHomepage_Click"
+                      ToolTip="https://github.com/polobread/KeyKey" />
+              <Button Content="最新正式版本" Click="LatestRelease_Click"
+                      ToolTip="https://github.com/polobread/KeyKey/releases/latest" />
+            </WrapPanel>
+            <GroupBox Header="開發初衷">
+              <TextBlock x:Name="AboutMotivation" FontSize="15" LineHeight="26" />
+            </GroupBox>
+            <TextBlock Text="以 OpenVanilla 專案為基礎&#10;原始碼來自 Yahoo! 奇摩輸入法（Yahoo! KeyKey）&#10;© 2008–2010 Yahoo! Taiwan，依 New BSD 授權發布。"
+                       FontSize="12" Opacity="0.7" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
     </TabControl>
   </DockPanel>
 </Window>

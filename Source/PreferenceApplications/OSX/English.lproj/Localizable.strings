@@ -2,6 +2,8 @@
 "Customized..." = "Customized...";
 "General" = "General"; 
 "About" = "About";
+"Development Motivation" = "Development Motivation";
+"Unable to load the project introduction." = "Unable to load the project introduction.";
 "chichi77 KeyKey" = "chichi77 KeyKey";
 "Version %@" = "Version %@";
 "GitHub Project" = "GitHub Project";

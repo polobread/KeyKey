@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=關於琦琦輸入法
+Comment=查看版本、開發初衷與官方連結
+Exec="@CMAKE_INSTALL_FULL_BINDIR@/keykey-about"
+Icon=@CMAKE_INSTALL_FULL_DATADIR@/chichi77-keykey/chichi77.png
+Terminal=false
+Categories=Utility;
+StartupNotify=true

@@ -10,6 +10,12 @@ file for terms.
 static NSString *const KKProjectURL = @"https://github.com/polobread/KeyKey";
 static NSString *const KKLatestReleaseURL = @"https://github.com/polobread/KeyKey/releases/latest";
 
+@interface KKAboutDocumentView : NSView
+@end
+@implementation KKAboutDocumentView
+- (BOOL)isFlipped { return YES; }
+@end
+
 @implementation TakaoAbout
 
 - (id)initWithModuleInfo:(NSArray *)modules
@@ -45,20 +51,33 @@ static NSString *const KKLatestReleaseURL = @"https://github.com/polobread/KeyKe
     NSString *version = [product objectForInfoDictionaryKey:@"KeyKeyReleaseVersion"] ?:
         [product objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"—";
 
-    NSView *view = [[[NSView alloc] initWithFrame:NSMakeRect(0, 0, 480,
-        _wordCountController ? 496 : 376)] autorelease];
+    NSView *view = [[[NSView alloc] initWithFrame:NSMakeRect(0, 0, 480, 520)] autorelease];
     self.view = view;
+    NSScrollView *scroll = [[[NSScrollView alloc] initWithFrame:view.bounds] autorelease];
+    scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    scroll.hasVerticalScroller = YES;
+    scroll.autohidesScrollers = YES;
+    scroll.drawsBackground = NO;
+    [view addSubview:scroll];
+    NSView *document = [[[KKAboutDocumentView alloc] initWithFrame:NSZeroRect] autorelease];
+    document.translatesAutoresizingMaskIntoConstraints = NO;
+    scroll.documentView = document;
+    [NSLayoutConstraint activateConstraints:@[
+        [document.topAnchor constraintEqualToAnchor:scroll.contentView.topAnchor],
+        [document.leadingAnchor constraintEqualToAnchor:scroll.contentView.leadingAnchor],
+        [document.widthAnchor constraintEqualToAnchor:scroll.contentView.widthAnchor]
+    ]];
     NSStackView *stack = [[[NSStackView alloc] initWithFrame:NSZeroRect] autorelease];
     stack.orientation = NSUserInterfaceLayoutOrientationVertical;
     stack.alignment = NSLayoutAttributeCenterX;
     stack.spacing = 12;
     stack.translatesAutoresizingMaskIntoConstraints = NO;
-    [view addSubview:stack];
+    [document addSubview:stack];
     [NSLayoutConstraint activateConstraints:@[
-        [stack.topAnchor constraintEqualToAnchor:view.topAnchor constant:24],
-        [stack.centerXAnchor constraintEqualToAnchor:view.centerXAnchor],
-        [stack.widthAnchor constraintEqualToConstant:424],
-        [stack.bottomAnchor constraintLessThanOrEqualToAnchor:view.bottomAnchor constant:-24]
+        [stack.topAnchor constraintEqualToAnchor:document.topAnchor constant:24],
+        [stack.leadingAnchor constraintEqualToAnchor:document.leadingAnchor constant:28],
+        [stack.trailingAnchor constraintEqualToAnchor:document.trailingAnchor constant:-28],
+        [stack.bottomAnchor constraintEqualToAnchor:document.bottomAnchor constant:-24]
     ]];
 
     NSImageView *icon = [NSImageView imageViewWithImage:NSApp.applicationIconImage];
@@ -95,13 +114,40 @@ static NSString *const KKLatestReleaseURL = @"https://github.com/polobread/KeyKe
     links.spacing = 12;
     [stack addArrangedSubview:links];
 
+    NSTextField *heading = [NSTextField labelWithString:NSLocalizedString(@"Development Motivation", nil)];
+    heading.translatesAutoresizingMaskIntoConstraints = NO;
+    heading.font = [NSFont systemFontOfSize:14 weight:NSFontWeightSemibold];
+    [heading.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
+    [stack addArrangedSubview:heading];
+
+    NSURL *motivationURL = [[NSBundle mainBundle] URLForResource:@"ProjectMotivation" withExtension:@"txt"];
+    NSString *motivation = motivationURL
+        ? [NSString stringWithContentsOfURL:motivationURL encoding:NSUTF8StringEncoding error:NULL] : nil;
+    motivation = [motivation stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet]
+        ?: NSLocalizedString(@"Unable to load the project introduction.", nil);
+    NSTextField *introduction = [NSTextField wrappingLabelWithString:motivation];
+    introduction.translatesAutoresizingMaskIntoConstraints = NO;
+    introduction.selectable = YES;
+    introduction.maximumNumberOfLines = 0;
+    NSMutableParagraphStyle *paragraph = [[[NSMutableParagraphStyle alloc] init] autorelease];
+    paragraph.lineSpacing = 4;
+    introduction.attributedStringValue = [[[NSAttributedString alloc] initWithString:motivation attributes:@{
+        NSFontAttributeName: [NSFont systemFontOfSize:14],
+        NSForegroundColorAttributeName: NSColor.labelColor,
+        NSParagraphStyleAttributeName: paragraph
+    }] autorelease];
+    [introduction.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
+    [introduction setContentCompressionResistancePriority:NSLayoutPriorityRequired
+        forOrientation:NSLayoutConstraintOrientationVertical];
+    [stack addArrangedSubview:introduction];
+
     NSTextField *credits = [NSTextField wrappingLabelWithString:NSLocalizedString(@"KeyKey Source Credits", nil)];
     credits.translatesAutoresizingMaskIntoConstraints = NO;
     credits.font = [NSFont systemFontOfSize:NSFont.smallSystemFontSize];
     credits.textColor = NSColor.secondaryLabelColor;
     credits.alignment = NSTextAlignmentCenter;
     credits.selectable = YES;
-    [credits.widthAnchor constraintEqualToConstant:424].active = YES;
+    [credits.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
     [stack addArrangedSubview:credits];
 
     if (_wordCountController) {

@@ -13,7 +13,7 @@ Android 與 iOS 依各自的商店管道安裝。
 Yahoo! KeyKey。這兩套輸入法後來都沒有持續維護；Android 與 iOS 即使接上實體鍵盤，
 也很難沿用「ㄅ半」養成的注音輸入肌肉記憶。因此，我利用自己閒置的生成式 AI 額度，
 著手把琦琦輸入法做成跨平台輸入法，希望大家換到不同裝置時，仍能盡量維持熟悉的
-按鍵配置與操作習慣，在 macOS、Windows、Android 與 iOS 上快樂地輸入注音。這就是
+按鍵配置與操作習慣，在 macOS、Windows、Linux、FreeBSD、Android 與 iOS 上快樂地輸入注音。這就是
 這個專案的初衷。
 
 也謝謝小麥注音以 MIT License 提供詞庫資料，讓本專案能在它的基礎上繼續擴充。我另外

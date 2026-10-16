@@ -193,13 +193,20 @@ if(KEYKEY_BUILD_FCITX5)
     include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
     add_subdirectory(adapters/fcitx5)
     configure_file(tools/keykey-update-notify.in keykey-update-notify @ONLY)
+    configure_file(tools/keykey-about.in keykey-about @ONLY)
+    configure_file(data/org.chichi77.KeyKey.About.desktop.in
+        org.chichi77.KeyKey.About.desktop @ONLY)
     configure_file(data/org.chichi77.KeyKey.UpdateNotification.desktop.in
         org.chichi77.KeyKey.UpdateNotification.desktop @ONLY)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/keykey-update-notify"
+        "${CMAKE_CURRENT_BINARY_DIR}/keykey-about"
         DESTINATION "${CMAKE_INSTALL_BINDIR}")
-    install(FILES tools/update_notify.py tools/update_notify_gui.py
+    install(FILES tools/update_notify.py tools/update_notify_gui.py tools/about_gui.py
+        "${KEYKEY_REPOSITORY_ROOT}/Source/Branding/ProjectMotivation.txt"
+        "${KEYKEY_REPOSITORY_ROOT}/Source/Branding/chichi77.png"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/chichi77-keykey")
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.chichi77.KeyKey.UpdateNotification.desktop"
+        "${CMAKE_CURRENT_BINARY_DIR}/org.chichi77.KeyKey.About.desktop"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
     install(PROGRAMS tools/keykey-fcitx-app
         DESTINATION "${CMAKE_INSTALL_BINDIR}")

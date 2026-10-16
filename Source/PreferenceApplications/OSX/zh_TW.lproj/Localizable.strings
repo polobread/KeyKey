@@ -2,6 +2,8 @@
 "Customized..." = "自訂…";
 "General" = "一般"; 
 "About" = "關於";
+"Development Motivation" = "開發初衷";
+"Unable to load the project introduction." = "無法載入開發初衷。";
 "chichi77 KeyKey" = "琦琦輸入法";
 "Version %@" = "版本 %@";
 "GitHub Project" = "GitHub 專案首頁";

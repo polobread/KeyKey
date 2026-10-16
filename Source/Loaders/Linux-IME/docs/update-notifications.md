@@ -66,7 +66,8 @@ At implementation time it packages `v1.3.1` with `PORTREVISION=1` and uses
 `python:build`. Python must now also be a runtime dependency, with GTK 3 and the
 matching Python-flavored PyGObject binding. See the supplied
 [`update-notification.patch`](../packaging/freebsd/update-notification.patch),
-which adds those dependencies and all four new installed files. It also fixes
+which adds those dependencies and the notification and About launchers, desktop
+entries, shared Python modules, motivation text, and icon. It also fixes
 the chosen interpreter with `-DPython3_EXECUTABLE=${PYTHON_CMD}`. GNUInstallDirs
 uses the selected prefix; `/usr/local/bin`, `/usr/local/share` and the selected
 Python interpreter are baked into the launcher, with no `/usr/bin/python3` or
@@ -93,6 +94,9 @@ button, manually check, open the upstream page, enable/disable periodic checks,
 log out/in and verify the notification action. Confirm no Linux package is
 installed and a ports/pkg revision suffix does not affect the upstream comparison:
 the compiled product version, not `1.3.1_1`, is the notification's current version.
+Also open **關於琦琦輸入法…** from Fcitx settings and the applications menu;
+confirm the installed version, full scrollable motivation text, icon, and both
+official links are available.
 
 ## Local regression commands
 
