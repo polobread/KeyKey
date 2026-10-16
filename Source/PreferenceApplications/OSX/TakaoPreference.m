@@ -9,8 +9,16 @@ file for terms.
 #import "TakaoWindow.h"
 #import "TakaoGeneric.h"
 #import "TakaoGlobal.h"
+#import "TakaoAbout.h"
 
 @implementation TakaoPreference
+
+- (void)dealloc
+{
+    [_aboutController release];
+    [_defaultApplicationImage release];
+    [super dealloc];
+}
 
 - (void)awakeFromNib
 {
@@ -60,6 +68,7 @@ file for terms.
 		// return;
 	}
 	
+    _aboutController = [[TakaoAbout alloc] initWithModuleInfo:loadedModules];
 	id toolbar = [[[NSToolbar alloc] initWithIdentifier:@"preferences toolbar"] autorelease];
     [toolbar setAllowsUserCustomization:NO];
     [toolbar setAutosavesConfiguration:NO];
@@ -149,6 +158,12 @@ file for terms.
 		view = _pluginView;
 	else if ([[sender itemIdentifier] isEqualToString:UpdateToolbarItemIdentifier])
 		view = _updateView;
+    else if ([[sender itemIdentifier] isEqualToString:AboutToolbarItemIdentifier]) {
+        view = [_aboutController view];
+        [_aboutController refresh];
+    }
+
+    if (!view) return;
 	
 	if (view != _generalView) {
 		[[NSColorPanel sharedColorPanel] orderOut:self];
@@ -157,6 +172,19 @@ file for terms.
 	[self setActiveView:view animate:YES];
 	[self setAppIcon:[sender image]];	
 	[window setTitle:LFLSTR([sender itemIdentifier])];
+}
+
+- (IBAction)showAbout:(id)sender
+{
+    NSToolbar *toolbar = [window toolbar];
+    for (NSToolbarItem *item in [toolbar items]) {
+        if ([item.itemIdentifier isEqualToString:AboutToolbarItemIdentifier]) {
+            [toolbar setSelectedItemIdentifier:AboutToolbarItemIdentifier];
+            [self toggleActivePreferenceView:item];
+            [window makeKeyAndOrderFront:sender];
+            break;
+        }
+    }
 }
 
 #pragma mark NSWindow delegate methods

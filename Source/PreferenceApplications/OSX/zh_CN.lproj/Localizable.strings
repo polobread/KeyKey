@@ -1,6 +1,12 @@
 "Default" = "预置";
 "Customized..." = "自定…";
 "General" = "通用"; 
+"About" = "关于";
+"chichi77 KeyKey" = "琦琦输入法";
+"Version %@" = "版本 %@";
+"GitHub Project" = "GitHub 项目主页";
+"Latest Release" = "最新正式版本";
+"KeyKey Source Credits" = "以 OpenVanilla 项目为基础\n原始代码来自 Yahoo! 奇摩输入法（Yahoo! KeyKey）\n© 2008–2010 Yahoo! Taiwan，依 New BSD 许可发布。";
 "Phonetic" = "注音";
 "Smart Phonetic" = "好打注音";
 "Unable to launch user phrase editor." = "无法启动词汇编辑工具。";

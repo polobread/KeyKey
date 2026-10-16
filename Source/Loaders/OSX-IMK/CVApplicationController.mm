@@ -32,7 +32,6 @@ extern size_t VendorMotcleSize;
 	[_searchController release];
 	[_symbolController release];
 	[_tooltipController release];
-	[_aboutController release];
 	[_inputMethodToggleWindowController release];
 	[_versionInfo release];
 	[_desktopUpdaterController stop]; [_desktopUpdaterController release];
@@ -150,13 +149,6 @@ extern size_t VendorMotcleSize;
 
     return _searchController;
 }
-- (CVAboutController *)aboutController
-{
-    if (!_aboutController)
-        _aboutController = [CVAboutController new];
-
-    return _aboutController;
-}
 - (CVInputMethodToggleWindowController *)inputMethodToggleWindowController
 {
     if (!_inputMethodToggleWindowController)
@@ -189,10 +181,6 @@ extern size_t VendorMotcleSize;
     }
 }
 
-- (IBAction)showAboutWindow:(id)sender
-{
-	[[self aboutController] showWindow:sender];
-}
 - (NSDictionary *)_dictionaryWithIdentifier:(string)identifier localizedName:(NSString *)localizedName
 {
 	NSString *identifierString = [NSString stringWithUTF8String:identifier.c_str()];

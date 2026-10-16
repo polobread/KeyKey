@@ -597,12 +597,6 @@
 		D482C3B70ECB41D8005E8D68 /* SymbolWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D482C39C0ECB41D8005E8D68 /* SymbolWindow.xib */; };
 		D482C3B80ECB41D8005E8D68 /* TooltipWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D482C39D0ECB41D8005E8D68 /* TooltipWindow.xib */; };
 		D482C3B90ECB41D8005E8D68 /* VerticalCandidateWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D482C39E0ECB41D8005E8D68 /* VerticalCandidateWindow.xib */; };
-		D484CF5B0EC226850051B6CA /* CVAboutController.h in Headers */ = {isa = PBXBuildFile; fileRef = D484CF590EC226850051B6CA /* CVAboutController.h */; };
-		D484CF5C0EC226850051B6CA /* CVAboutController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D484CF5A0EC226850051B6CA /* CVAboutController.mm */; };
-		D484CF5D0EC226850051B6CA /* CVAboutController.h in Headers */ = {isa = PBXBuildFile; fileRef = D484CF590EC226850051B6CA /* CVAboutController.h */; };
-		D484CF5E0EC226850051B6CA /* CVAboutController.mm in Sources */ = {isa = PBXBuildFile; fileRef = D484CF5A0EC226850051B6CA /* CVAboutController.mm */; };
-		D484CF660EC2277E0051B6CA /* AboutWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D484CF640EC2277E0051B6CA /* AboutWindow.xib */; };
-		D484CF670EC2277E0051B6CA /* AboutWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D484CF640EC2277E0051B6CA /* AboutWindow.xib */; };
 		D48695E70DE44CFC0078C221 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AB5B30D0D5C8DBA0040CD26 /* WebKit.framework */; };
 		D48696A50DE44E500078C221 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AB5B30D0D5C8DBA0040CD26 /* WebKit.framework */; };
 		D4987D130E17FA5A001D4197 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4F7DB130D9B8F3E00AA67B9 /* Carbon.framework */; };
@@ -682,6 +676,8 @@
 		D4FF7F9C0F4613AE006F4025 /* NSColor+LFColorExtensions.mm in Sources */ = {isa = PBXBuildFile; fileRef = D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */; };
 		D4FF804F0F462074006F4025 /* InputMethodToggleWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */; };
 		D4FF80500F462074006F4025 /* InputMethodToggleWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */; };
+		AA01AB010000000000000003 /* TakaoAbout.m in Sources */ = {isa = PBXBuildFile; fileRef = AA01AB010000000000000002 /* TakaoAbout.m */; };
+		AA01AB010000000000000004 /* TakaoAbout.m in Sources */ = {isa = PBXBuildFile; fileRef = AA01AB010000000000000002 /* TakaoAbout.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1674,11 +1670,6 @@
 		D482C39C0ECB41D8005E8D68 /* SymbolWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = SymbolWindow.xib; path = "Loaders/OSX-IMK/Interface/SymbolWindow.xib"; sourceTree = "<group>"; };
 		D482C39D0ECB41D8005E8D68 /* TooltipWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = TooltipWindow.xib; path = "Loaders/OSX-IMK/Interface/TooltipWindow.xib"; sourceTree = "<group>"; };
 		D482C39E0ECB41D8005E8D68 /* VerticalCandidateWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = VerticalCandidateWindow.xib; path = "Loaders/OSX-IMK/Interface/VerticalCandidateWindow.xib"; sourceTree = "<group>"; };
-		D484CF590EC226850051B6CA /* CVAboutController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVAboutController.h; path = "Loaders/OSX-IMK/CVAboutController.h"; sourceTree = "<group>"; };
-		D484CF5A0EC226850051B6CA /* CVAboutController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CVAboutController.mm; path = "Loaders/OSX-IMK/CVAboutController.mm"; sourceTree = "<group>"; };
-		D484CF650EC2277E0051B6CA /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "Loaders/OSX-IMK/English.lproj/AboutWindow.xib"; sourceTree = "<group>"; };
-		D484CFA80EC22C1C0051B6CA /* zh_TW */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_TW; path = "Loaders/OSX-IMK/zh_TW.lproj/AboutWindow.xib"; sourceTree = "<group>"; };
-		D484CFA90EC22C210051B6CA /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_CN; path = "Loaders/OSX-IMK/zh_CN.lproj/AboutWindow.xib"; sourceTree = "<group>"; };
 		D4987D1D0E17FB37001D4197 /* CVKeyboardHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CVKeyboardHelper.h; path = "Loaders/OSX-IMK/CVKeyboardHelper.h"; sourceTree = "<group>"; };
 		D4987D1E0E17FB37001D4197 /* CVKeyboardHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CVKeyboardHelper.m; path = "Loaders/OSX-IMK/CVKeyboardHelper.m"; sourceTree = "<group>"; };
 		D4A1F1A90EE30AF20064FF77 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = zh_CN; path = Utilities/PhraseEditor/OSX/zh_CN.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -1736,6 +1727,8 @@
 		D4FF7F970F4613AE006F4025 /* NSColor+LFColorExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSColor+LFColorExtensions.h"; path = "Loaders/OSX-IMK/NSColor+LFColorExtensions.h"; sourceTree = "<group>"; };
 		D4FF7F980F4613AE006F4025 /* NSColor+LFColorExtensions.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "NSColor+LFColorExtensions.mm"; path = "Loaders/OSX-IMK/NSColor+LFColorExtensions.mm"; sourceTree = "<group>"; };
 		D4FF804E0F462074006F4025 /* InputMethodToggleWindowController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = InputMethodToggleWindowController.xib; path = "Loaders/OSX-IMK/Interface/InputMethodToggleWindowController.xib"; sourceTree = "<group>"; };
+		AA01AB010000000000000001 /* TakaoAbout.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TakaoAbout.h; path = PreferenceApplications/OSX/TakaoAbout.h; sourceTree = "<group>"; };
+		AA01AB010000000000000002 /* TakaoAbout.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = TakaoAbout.m; path = PreferenceApplications/OSX/TakaoAbout.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2564,7 +2557,6 @@
 			isa = PBXGroup;
 			children = (
 				D482C3930ECB41BE005E8D68 /* Interface */,
-				D484CF640EC2277E0051B6CA /* AboutWindow.xib */,
 				D4112E780D631726001475CB /* Images */,
 				D479FD9E0D604E5700B33AA2 /* WebUI */,
 				6A4772970D5C5FCE00C6C744 /* Takao-Info.plist */,
@@ -3077,6 +3069,8 @@
 				D47D5E510D5EDDC40093524C /* TakaoPhrases.m */,
 				AA01C0110000000000000004 /* TakaoPhraseCollections.h */,
 				AA01C0110000000000000001 /* TakaoPhraseCollections.m */,
+				AA01AB010000000000000001 /* TakaoAbout.h */,
+				AA01AB010000000000000002 /* TakaoAbout.m */,
 				D47D5E520D5EDDC40093524C /* TakaoPreference.h */,
 				D47D5E530D5EDDC40093524C /* TakaoPreference.m */,
 				D47D5E640D5EDDDD0093524C /* TakaoPreference_Toolbar.m */,
@@ -3138,7 +3132,6 @@
 			isa = PBXGroup;
 			children = (
 				D4FF7E5B0F45DB76006F4025 /* Input Method Toggle */,
-				D484CF6D0EC2288C0051B6CA /* AboutWindow */,
 				D484CF4E0EC2245C0051B6CA /* Symbol */,
 				D484CEF80EC21EFB0051B6CA /* Dictionary */,
 				D484CEEB0EC21AEF0051B6CA /* Search */,
@@ -3254,15 +3247,6 @@
 				D41C8F650EF3DFCF00BA9742 /* CVSmileyViewController.mm */,
 			);
 			name = Symbol;
-			sourceTree = "<group>";
-		};
-		D484CF6D0EC2288C0051B6CA /* AboutWindow */ = {
-			isa = PBXGroup;
-			children = (
-				D484CF590EC226850051B6CA /* CVAboutController.h */,
-				D484CF5A0EC226850051B6CA /* CVAboutController.mm */,
-			);
-			name = AboutWindow;
 			sourceTree = "<group>";
 		};
 		D4B3E7120DC7A616000980D8 /* Installer Help */ = {
@@ -3571,7 +3555,6 @@
 				6ACC87E30D8A6373008D5924 /* InputMethodKitTiger.h in Headers */,
 				6A04B66F0D9C872300F39B34 /* CVSendKey.h in Headers */,
 				D45A178E0DDE0EC300DCEE21 /* CVSymbolController.h in Headers */,
-				D484CF5B0EC226850051B6CA /* CVAboutController.h in Headers */,
 				D4FC914C0EC896210087648C /* CVHorizontalCandidateController.h in Headers */,
 				D4FC91730EC89A470087648C /* CVHorizontalCandidateControl.h in Headers */,
 				D4FC91790EC89A830087648C /* CVHorizontalCandidateCell.h in Headers */,
@@ -3667,7 +3650,6 @@
 			files = (
 				D45A178C0DDE0EC300DCEE21 /* CVSymbolController.h in Headers */,
 				D4987D1F0E17FB37001D4197 /* CVKeyboardHelper.h in Headers */,
-				D484CF5D0EC226850051B6CA /* CVAboutController.h in Headers */,
 				D4FC914E0EC896210087648C /* CVHorizontalCandidateController.h in Headers */,
 				D4FC91710EC89A470087648C /* CVHorizontalCandidateControl.h in Headers */,
 				D4FC917B0EC89A830087648C /* CVHorizontalCandidateCell.h in Headers */,
@@ -4470,7 +4452,6 @@
 				D450DE5F0D5F1117009A9C2A /* chichi7732.icns in Resources */,
 				D4112E860D631738001475CB /* FontSmaller.tiff in Resources */,
 				D4112E870D631738001475CB /* FontBigger.tiff in Resources */,
-				D484CF660EC2277E0051B6CA /* AboutWindow.xib in Resources */,
 				D482C3A90ECB41D8005E8D68 /* HorizontalCandidateWindow.xib in Resources */,
 				D482C3AA0ECB41D8005E8D68 /* MainMenu.xib in Resources */,
 				D482C3AB0ECB41D8005E8D68 /* NotifyWindow.xib in Resources */,
@@ -4507,7 +4488,6 @@
 				6AB89EB90D8A25A600D087E3 /* chichi7732.icns in Resources */,
 				6AB89EBA0D8A25A600D087E3 /* FontSmaller.tiff in Resources */,
 				6AB89EBB0D8A25A600D087E3 /* FontBigger.tiff in Resources */,
-				D484CF670EC2277E0051B6CA /* AboutWindow.xib in Resources */,
 				D482C3B20ECB41D8005E8D68 /* HorizontalCandidateWindow.xib in Resources */,
 				D482C3B30ECB41D8005E8D68 /* MainMenu.xib in Resources */,
 				D482C3B40ECB41D8005E8D68 /* NotifyWindow.xib in Resources */,
@@ -4874,7 +4854,6 @@
 				D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */,
 				D4F7DB080D9B8E8000AA67B9 /* CVSendKey.m in Sources */,
 				D4987D200E17FB37001D4197 /* CVKeyboardHelper.m in Sources */,
-				D484CF5E0EC226850051B6CA /* CVAboutController.mm in Sources */,
 				D4FC914F0EC896210087648C /* CVHorizontalCandidateController.mm in Sources */,
 				D4FC91720EC89A470087648C /* CVHorizontalCandidateControl.m in Sources */,
 				D4FC917C0EC89A830087648C /* CVHorizontalCandidateCell.m in Sources */,
@@ -4942,7 +4921,6 @@
 				6AE46A590D8AC06800B7DD36 /* InputMethodKitTiger.mm in Sources */,
 				6A04B6700D9C872300F39B34 /* CVSendKey.m in Sources */,
 				D45A178F0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */,
-				D484CF5C0EC226850051B6CA /* CVAboutController.mm in Sources */,
 				D4FC914D0EC896210087648C /* CVHorizontalCandidateController.mm in Sources */,
 				D4FC91740EC89A470087648C /* CVHorizontalCandidateControl.m in Sources */,
 				D4FC917A0EC89A830087648C /* CVHorizontalCandidateCell.m in Sources */,
@@ -4971,6 +4949,7 @@
 				6AB89F0E0D8A25C400D087E3 /* TakaoPhonetic.m in Sources */,
 				6AB89F0F0D8A25C400D087E3 /* TakaoPhrases.m in Sources */,
 				AA01C0110000000000000002 /* TakaoPhraseCollections.m in Sources */,
+				AA01AB010000000000000004 /* TakaoAbout.m in Sources */,
 				6AB89F100D8A25C400D087E3 /* TakaoPreference.m in Sources */,
 				6AB89F110D8A25C400D087E3 /* TakaoPreference_Toolbar.m in Sources */,
 				6AB89F120D8A25C400D087E3 /* TakaoSimplex.m in Sources */,
@@ -5142,6 +5121,7 @@
 				D47D5E5C0D5EDDC40093524C /* TakaoPhonetic.m in Sources */,
 				D47D5E5D0D5EDDC40093524C /* TakaoPhrases.m in Sources */,
 				AA01C0110000000000000003 /* TakaoPhraseCollections.m in Sources */,
+				AA01AB010000000000000003 /* TakaoAbout.m in Sources */,
 				D47D5E5E0D5EDDC40093524C /* TakaoPreference.m in Sources */,
 				D47D5E6E0D5EDDDD0093524C /* TakaoPreference_Toolbar.m in Sources */,
 				D47D5E6F0D5EDDDD0093524C /* TakaoSimplex.m in Sources */,
@@ -5618,16 +5598,6 @@
 				D47F7D5C0EC9FA7100D0762B /* zh_CN */,
 			);
 			name = TakaoGenericSettings.xib;
-			sourceTree = "<group>";
-		};
-		D484CF640EC2277E0051B6CA /* AboutWindow.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D484CF650EC2277E0051B6CA /* English */,
-				D484CFA80EC22C1C0051B6CA /* zh_TW */,
-				D484CFA90EC22C210051B6CA /* zh_CN */,
-			);
-			name = AboutWindow.xib;
 			sourceTree = "<group>";
 		};
 		D4B3E7330DC7A6C4000980D8 /* preference.png */ = {

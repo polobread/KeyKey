@@ -28,6 +28,7 @@ file for terms.
 
 	[array addObject:PhraseToolbarItemIdentifier];
 	[array addObject:UpdateToolbarItemIdentifier];
+    [array addObject:AboutToolbarItemIdentifier];
 	
 	return array;
 
@@ -44,6 +45,7 @@ file for terms.
 		GenericToolbarItemIdentifier,
 		PluginToolbarItemIdentifier,
 		UpdateToolbarItemIdentifier,
+        AboutToolbarItemIdentifier,
 		nil];
 }
 
@@ -58,6 +60,7 @@ file for terms.
 		GenericToolbarItemIdentifier,
 		PluginToolbarItemIdentifier,
 		UpdateToolbarItemIdentifier,
+        AboutToolbarItemIdentifier,
 		nil];
 }
 
@@ -112,6 +115,13 @@ file for terms.
 		[item setTarget:self];
 		[item setAction:@selector(toggleActivePreferenceView:)];
 	}
+    else if ([identifier isEqualToString:AboutToolbarItemIdentifier]) {
+        [item setLabel:LFLSTR(AboutToolbarItemIdentifier)];
+        [item setImage:[NSImage imageWithSystemSymbolName:@"info.circle"
+            accessibilityDescription:LFLSTR(AboutToolbarItemIdentifier)]];
+        [item setTarget:self];
+        [item setAction:@selector(toggleActivePreferenceView:)];
+    }
 	else
 		item = nil;
 	return item; 

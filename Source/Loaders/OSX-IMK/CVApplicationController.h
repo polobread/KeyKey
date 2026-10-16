@@ -9,7 +9,6 @@
 #import "CVSymbolController.h"
 #import "CVToolTipController.h"
 #import "CVSearchController.h"
-#import "CVAboutController.h"
 #import "CVInputMethodToggleWindowController.h"
 #import "OpenVanillaService.h"
 
@@ -23,7 +22,6 @@
 	CVSearchController *_searchController;
 	CVSymbolController *_symbolController;
 	CVToolTipController *_tooltipController;
-	CVAboutController *_aboutController;
 	CVInputMethodToggleWindowController *_inputMethodToggleWindowController;
 	
     OpenVanillaLoader* _loader;
@@ -47,10 +45,8 @@
 - (CVSymbolController *)symbolController;
 - (CVToolTipController *)tooltipController;
 - (CVSearchController *)searchController;
-- (CVAboutController *)aboutController;
 - (CVInputMethodToggleWindowController *)inputMethodToggleWindowController;
 
-- (IBAction)showAboutWindow:(id)sender;
 - (NSArray *)inputMethodsArray;
 
 - (NSDictionary *)shouldUpdateWithVersionInfoData:(NSData *)infoData versionInfoSignatureData:(NSData *)sigData;
