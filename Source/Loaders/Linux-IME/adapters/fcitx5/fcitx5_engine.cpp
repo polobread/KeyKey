@@ -124,8 +124,6 @@ FCITX_CONFIGURATION(
 
 #undef KEYKEY_DECLARE_ASSOCIATED_PHRASE_OPTION
 
-FCITX_CONFIGURATION(VersionInfoConfig, )
-
 FCITX_CONFIGURATION(
     SmartMandarinConfig,
     fcitx::Option<bool> showCandidateListWithSpace{
@@ -139,14 +137,12 @@ FCITX_CONFIGURATION(
 
 FCITX_CONFIGURATION(
     KeyKeyConfig,
-    fcitx::Option<VersionInfoConfig> versionInfo{
-        this, "VersionInfo",
-        "琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING};
+    fcitx::ExternalOption about{
+        this, "About", "關於琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING "…",
+        "keykey-about"};
     fcitx::ExternalOption updates{
         this, "UpdateNotification", "更新通知與下載…",
         "keykey-update-notify"};
-    fcitx::ExternalOption about{
-        this, "About", "關於琦琦輸入法…", "keykey-about"};
     fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
         bopomofoLayout{this, "BopomofoLayout", "注音鍵盤配置",
                        "Standard"};
