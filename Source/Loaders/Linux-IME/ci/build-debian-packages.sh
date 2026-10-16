@@ -117,6 +117,11 @@ cp -a \
   "$linux_dir/tools" \
   "$source_root/Source/Loaders/Linux-IME/"
 cp -a "$linux_dir/packaging/debian" "$source_root/debian"
+source "$script_dir/about-source-paths.sh"
+for about_path in "${about_source_paths[@]}"; do
+  mkdir -p "$source_root/$(dirname -- "$about_path")"
+  cp -a "$repository_root/$about_path" "$source_root/$about_path"
+done
 cp -a \
   "$repository_root/Source/DataTables/bpmf-ext.cin" \
   "$repository_root/Source/DataTables/cj-ext.cin" \

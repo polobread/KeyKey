@@ -73,6 +73,12 @@ uses the selected prefix; `/usr/local/bin`, `/usr/local/share` and the selected
 Python interpreter are baked into the launcher, with no `/usr/bin/python3` or
 systemd assumption. GTK opens the browser through Gio's default URI handler.
 
+Use the complete upstream source or the standalone source archive, which includes
+`Source/Branding/ProjectMotivation.txt` and `Source/Branding/chichi77.png`. The port
+installs these through CMake into `${PREFIX}/share/chichi77-keykey`, matching the
+About module and plist. A partial source tree missing either resource is rejected
+at CMake configuration time; do not patch only the temporary staging directory.
+
 The patch is for the ports maintainer **after selecting a new immutable upstream
 release tag containing this feature**. Select that release when updating
 DISTVERSION/distinfo; do not select a tag that predates the notification tool.

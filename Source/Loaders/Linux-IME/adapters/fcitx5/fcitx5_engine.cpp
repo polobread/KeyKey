@@ -47,15 +47,15 @@ public:
     void dumpDescription(fcitx::RawConfig &config) const {
         fcitx::EnumAnnotation::dumpDescription(config);
         config.setValueByPath("Enum/0", "Standard");
-        config.setValueByPath("EnumI18n/0", "Standard");
+        config.setValueByPath("EnumI18n/0", "標準");
         config.setValueByPath("Enum/1", "ETen");
-        config.setValueByPath("EnumI18n/1", "ETen");
+        config.setValueByPath("EnumI18n/1", "倚天");
         config.setValueByPath("Enum/2", "ETen26");
-        config.setValueByPath("EnumI18n/2", "ETen 26-key");
+        config.setValueByPath("EnumI18n/2", "倚天 26 鍵");
         config.setValueByPath("Enum/3", "Hsu");
-        config.setValueByPath("EnumI18n/3", "Hsu");
+        config.setValueByPath("EnumI18n/3", "許氏");
         config.setValueByPath("Enum/4", "HanyuPinyin");
-        config.setValueByPath("EnumI18n/4", "Hanyu Pinyin");
+        config.setValueByPath("EnumI18n/4", "漢語拼音");
     }
 };
 
@@ -75,9 +75,9 @@ public:
     void dumpDescription(fcitx::RawConfig &config) const {
         fcitx::EnumAnnotation::dumpDescription(config);
         config.setValueByPath("Enum/0", "Vertical");
-        config.setValueByPath("EnumI18n/0", "Vertical");
+        config.setValueByPath("EnumI18n/0", "直式");
         config.setValueByPath("Enum/1", "Horizontal");
-        config.setValueByPath("EnumI18n/1", "Horizontal");
+        config.setValueByPath("EnumI18n/1", "橫式");
     }
 };
 
@@ -148,7 +148,7 @@ FCITX_CONFIGURATION(
     fcitx::ExternalOption about{
         this, "About", "關於琦琦輸入法…", "keykey-about"};
     fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
-        bopomofoLayout{this, "BopomofoLayout", "Bopomofo keyboard layout",
+        bopomofoLayout{this, "BopomofoLayout", "注音鍵盤配置",
                        "Standard"};
     fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation>
         bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"};
@@ -156,23 +156,23 @@ FCITX_CONFIGURATION(
         this, "SmartMandarin", "好打注音進階設定"};
     fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation>
         candidateWindowStyle{this, "CandidateWindowStyle",
-                             "Candidate window style", "Vertical"};
+                             "候選字窗方向", "Vertical"};
     fcitx::Option<bool> traditionalToSimplified{
         this, "TraditionalToSimplified",
-        "Convert Traditional Chinese output to Simplified Chinese", false};
+        "繁體轉簡體輸出", false};
     fcitx::Option<bool> useAllUnicodeCharacters{
         this, "UseAllUnicodeCharacters",
-        "Include candidates outside Big-5", true};
+        "顯示 Big5 以外的候選字", true};
     fcitx::Option<bool> playSoundOnTypingError{
-        this, "PlaySoundOnTypingError", "Play a sound on typing errors", true};
+        this, "PlaySoundOnTypingError", "輸入錯誤時播放提示音", true};
     fcitx::Option<bool> toggleWithControlBackslash{
         this, "ToggleInputMethodWithControlBackslash",
-        "Toggle Chinese/English with Ctrl+\\", true};
+        "使用 Ctrl+\\ 切換中英文", true};
     fcitx::Option<AssociatedPhraseConfig> associatedPhrases{
-        this, "AssociatedPhrases", "Associated phrase collections"};
+        this, "AssociatedPhrases", "關聯詞庫"};
     fcitx::HiddenOption<std::string> associatedPhraseCollections{
         this, "AssociatedPhraseCollections",
-        "Legacy associated phrase collections", "McBopomofo"};)
+        "舊版關聯詞庫設定", "McBopomofo"};)
 
 std::vector<std::string>
 enabledAssociatedPhraseCollections(const AssociatedPhraseConfig &config) {

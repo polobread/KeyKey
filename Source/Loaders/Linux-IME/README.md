@@ -29,6 +29,18 @@ or through `keykey-about`. Linux and FreeBSD share this GTK interface and the
 same motivation text bundled with the macOS and Windows About pages. Opening
 About reads local resources; the browser opens only when a link is clicked.
 
+The About icon and introduction come from `Source/Branding/chichi77.png` and
+`Source/Branding/ProjectMotivation.txt`. The Debian source staging and standalone
+source archive share `ci/about-source-paths.sh` to include both canonical files.
+CMake stops during configuration if either file is missing; installation does
+not rely on manually copying resources into a temporary build directory.
+
+The KeyKey configuration labels and dropdown names use Taiwan Traditional Chinese,
+including **注音鍵盤配置**, **候選字窗方向**, **直式／橫式**, and **關聯詞庫**.
+Stored configuration keys and values such as `Standard` and `Vertical` remain
+unchanged. Fcitx/Qt supplies shared buttons such as Restore Defaults, Cancel, and
+OK; their language follows the desktop locale and installed Fcitx/Qt translations.
+
 This directory contains the C++ engine, Fcitx 5 addon, runtime tables, tools,
 desktop integration, packaging, and platform tests. CMake verifies and installs
 the repository's pre-generated shared model. Runtime addon and data names remain

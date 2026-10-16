@@ -28,6 +28,7 @@ archive_parent=$(CDPATH='' cd -- "$archive_parent" && pwd)
 archive="$archive_parent/$archive_name"
 
 source "$script_dir/model-source-paths.sh"
+source "$script_dir/about-source-paths.sh"
 
 source_paths=(
   BUILDING.md
@@ -54,6 +55,7 @@ source_paths=(
   Source/DataTables/bpmf-punctuations.cin
   Source/DataTables/cj-ext.cin
   Source/DataTables/simplex-ext.cin
+  "${about_source_paths[@]}"
   "${model_paths[@]}"
   Source/Loaders/Linux-IME
 )
