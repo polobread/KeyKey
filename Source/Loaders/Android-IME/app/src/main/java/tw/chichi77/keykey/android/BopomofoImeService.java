@@ -38,6 +38,7 @@ public final class BopomofoImeService extends InputMethodService
     private Set<String> pendingPhraseCollections;
     private volatile int phraseLoadGeneration;
     private boolean hardwareKeyboard;
+    private boolean hardwareCandidatesCollapsed;
     private boolean floatingCandidatesEnabled;
     private boolean floatingCandidateWindowAvailable = true;
     private CandidateWindowSettings.Layout floatingCandidateLayout =
@@ -134,7 +135,18 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public boolean onEvaluateInputViewShown() {
         super.onEvaluateInputViewShown();
-        return true;
+        return !hardwareCandidatesCollapsed;
+    }
+
+    @Override
+    public boolean onShowInputRequested(int flags, boolean configChange) {
+        // Rotation or another configuration replay must not undo a manual hide.
+        if (configChange && hardwareCandidatesCollapsed) return false;
+        boolean restoreCollapsedCandidates = !configChange && hardwareCandidatesCollapsed;
+        if (!configChange) hardwareCandidatesCollapsed = false;
+        boolean show = super.onShowInputRequested(flags, configChange);
+        // A fresh editor-tap request may be implicit with a physical keyboard.
+        return show || restoreCollapsedCandidates;
     }
 
     @Override
@@ -400,6 +412,10 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onKey(String key) {
+        if (key.equals("HARDWARE_COLLAPSE")) {
+            collapseHardwareCandidates();
+            return;
+        }
         if (key.equals("HARDWARE_NUMBER_SHIFT")) {
             keyboardView.toggleHardwareNumberShift();
             return;
@@ -878,6 +894,7 @@ public final class BopomofoImeService extends InputMethodService
         Configuration configuration = getResources().getConfiguration();
         hardwareKeyboard = configuration.keyboard != Configuration.KEYBOARD_NOKEYS
                 && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
+        if (!hardwareKeyboard) hardwareCandidatesCollapsed = false;
         if (engine != null) engine.setHardwareSmartEditing(hardwareKeyboard);
         floatingCandidatesEnabled = CandidateWindowSettings.floatingEnabled(this);
         floatingCandidateLayout = CandidateWindowSettings.layout(this);
@@ -898,6 +915,17 @@ public final class BopomofoImeService extends InputMethodService
 
     private boolean isFloatingCandidateMode() {
         return hardwareKeyboard && floatingCandidatesEnabled && floatingCandidateWindowAvailable;
+    }
+
+    private void collapseHardwareCandidates() {
+        if (!hardwareKeyboard || isFloatingCandidateMode()) return;
+        hardwareCandidatesCollapsed = true;
+        stopHardwareBackspace();
+        commitPendingComposition();
+        hideFloatingCandidates();
+        // Hide the IME window as well as its contents so Android returns the
+        // candidate, number/symbol and bottom-reserve area to the host app.
+        requestHideSelf(0);
     }
 
     private boolean handleFloatingCandidateNavigation(int keyCode) {

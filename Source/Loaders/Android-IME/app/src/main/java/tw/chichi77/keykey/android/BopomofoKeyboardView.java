@@ -424,8 +424,7 @@ final class BopomofoKeyboardView extends View {
                 "HARDWARE_LANGUAGE");
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
-                area.top, area.right, area.bottom), hardwareFullWidth ? "全" : "半",
-                "HARDWARE_WIDTH");
+                area.top, area.right, area.bottom), "▼", "HARDWARE_COLLAPSE");
         if (hardwareNumberRowEnabled) {
             drawHardwareNumberRow(canvas, new RectF(0, area.bottom, getWidth(),
                     area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP)));
@@ -487,8 +486,9 @@ final class BopomofoKeyboardView extends View {
         RectF inset = inset(bounds, dp(2));
         canvas.drawRoundRect(inset, dp(6), dp(6), specialKeyPaint);
 
-        textPaint.setTextSize(dp(18));
-        textPaint.setFakeBoldText(true);
+        boolean collapse = key.equals("HARDWARE_COLLAPSE");
+        textPaint.setTextSize(dp(collapse ? 14 : 18));
+        textPaint.setFakeBoldText(!collapse);
         canvas.drawText(label, inset.centerX(), textBaseline(inset, textPaint), textPaint);
         hits.add(new Hit(new RectF(inset), HitKind.KEY, key, -1));
     }

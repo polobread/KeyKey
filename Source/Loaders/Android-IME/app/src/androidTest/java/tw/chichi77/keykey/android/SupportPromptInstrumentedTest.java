@@ -98,7 +98,7 @@ public final class SupportPromptInstrumentedTest {
             assertTrue(fixture.events.isEmpty());
             assertTrue(canvas.has("☺"));
             assertTrue(canvas.has("ㄅ"));
-            assertTrue(canvas.has("半"));
+            assertTrue(canvas.has("▼"));
             fixture.state(NINE_CANDIDATES, "ㄏㄠˇ", List.of(), true, true,
                     BopomofoEngine.InputMode.BOPOMOFO, false);
             RecordingCanvas candidates = fixture.draw();
