@@ -2,6 +2,7 @@
 
 ## Linux 1.3.2（未發布）
 
+- Linux／FreeBSD 的 Fcitx 設定新增「好打注音進階設定」：空白鍵開候選（預設關閉）、選字目標在游標前方／後方（預設後方）、Esc 清除整句（預設關閉）。空白鍵關閉開候選時可在組字中插入空白；↓ 與點字仍可開候選。候選窗與未完成讀音優先由 Esc 取消，變更設定後先完成原組字再套用。
 - Fcitx 設定與應用程式選單新增「關於琦琦輸入法」入口；Linux／FreeBSD 顯示版本、開發初衷、來源與授權說明，以及 GitHub 專案首頁和最新正式版本連結。初衷原文與 macOS、Windows 共用。
 - 新增獨立的 Linux／FreeBSD 更新通知工具：Fcitx 設定入口、手動檢查、可選每日通知（預設關閉）、beta 選項與官方發行頁按鈕。先核對 tag 的 Unix 產品版號，避免誤報行動平台版本；Linux 檢查對應架構套件，FreeBSD 提醒透過 ports/pkg 更新並保留套件上架延遲界線。採 XDG 使用者登入啟動、GTK／Gio 通知，不依賴 systemd；附現有 `chinese/fcitx5-keykey` port 的相依套件／plist 修改與本機回歸。FreeBSD 原生桌面驗收仍待完成。
 

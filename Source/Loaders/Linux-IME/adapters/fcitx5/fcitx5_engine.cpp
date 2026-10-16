@@ -127,6 +127,17 @@ FCITX_CONFIGURATION(
 FCITX_CONFIGURATION(VersionInfoConfig, )
 
 FCITX_CONFIGURATION(
+    SmartMandarinConfig,
+    fcitx::Option<bool> showCandidateListWithSpace{
+        this, "ShowCandidateListWithSpace", "空白鍵開啟候選", false};
+    fcitx::Option<bool> candidateCursorAtEndOfTargetBlock{
+        this, "CandidateCursorAtEndOfTargetBlock",
+        "選字目標在游標前方（取消為後方）", false};
+    fcitx::Option<bool> clearComposingTextWithEsc{
+        this, "ClearComposingTextWithEsc",
+        "Esc 清除整句（候選窗／未完成讀音優先取消）", false};)
+
+FCITX_CONFIGURATION(
     KeyKeyConfig,
     fcitx::Option<VersionInfoConfig> versionInfo{
         this, "VersionInfo",
@@ -141,6 +152,8 @@ FCITX_CONFIGURATION(
                        "Standard"};
     fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation>
         bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"};
+    fcitx::Option<SmartMandarinConfig> smartMandarin{
+        this, "SmartMandarin", "好打注音進階設定"};
     fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation>
         candidateWindowStyle{this, "CandidateWindowStyle",
                              "Candidate window style", "Vertical"};
@@ -492,11 +505,16 @@ private:
 
     void applyConfig() {
         const bool smart = *config_.bopomofoMode != "Traditional";
+        const auto &preferences = *config_.smartMandarin;
         for (linux_ime::Engine *engine : {&standardEngine_, &etenEngine_,
                                           &eten26Engine_, &hsuEngine_,
                                           &hanyuPinyinEngine_}) {
             engine->setSmartMandarinStore(smartMandarinStore_);
             engine->setSmartMandarinMode(smart);
+            engine->setSmartMandarinPreferences({
+                *preferences.showCandidateListWithSpace,
+                *preferences.candidateCursorAtEndOfTargetBlock,
+                *preferences.clearComposingTextWithEsc});
         }
         const std::vector<std::string> enabled =
             enabledAssociatedPhraseCollections(*config_.associatedPhrases);
@@ -680,7 +698,11 @@ void FcitxState::process(const linux_ime::Engine &sourceEngine,
                          const linux_ime::KeyEvent &event,
                          fcitx::KeyEvent &fcitxEvent) {
     candidateLayout_ = candidateLayout;
-    if (sourceEngine_ != &sourceEngine || smartMode_ != smartMode) {
+    const bool smartPreferencesChanged = smartMode && activeEngine_ &&
+        !(activeEngine_->smartMandarinPreferences() ==
+          sourceEngine.smartMandarinPreferences());
+    if (sourceEngine_ != &sourceEngine || smartMode_ != smartMode ||
+        smartPreferencesChanged) {
         commitAndReset();
         activeEngine_.reset();
         sourceEngine_ = &sourceEngine;

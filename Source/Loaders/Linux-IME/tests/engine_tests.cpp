@@ -1734,6 +1734,7 @@ void testSmartMandarinComposition() {
     Engine engine(loadRealBopomofoDictionary());
     engine.setSmartMandarinStore(store);
     engine.setSmartMandarinMode(true);
+    engine.setSmartMandarinPreferences({true, false, false});
     InputContextState context;
     EngineResult result;
     for (char key : std::string("fu/3ru84")) {
@@ -1959,6 +1960,7 @@ void testSmartMandarinPunctuation() {
     engine.setSmartMandarinStore(keykey::linux_ime::SmartMandarinStore::open(
         KEYKEY_TEST_SMART_DB));
     engine.setSmartMandarinMode(true);
+    engine.setSmartMandarinPreferences({true, false, false});
     struct Case {
         char key;
         KeyModifier modifiers;
@@ -2026,6 +2028,7 @@ void testSmartMandarinEditingTransitions() {
     engine.setSmartMandarinStore(keykey::linux_ime::SmartMandarinStore::open(
         KEYKEY_TEST_SMART_DB));
     engine.setSmartMandarinMode(true);
+    engine.setSmartMandarinPreferences({true, false, false});
     InputContextState context;
     const auto type = [&](const std::string &keys) {
         EngineResult result;
@@ -2195,6 +2198,7 @@ void testSmartMandarinUserData() {
         Engine engine(loadRealBopomofoDictionary());
         engine.setSmartMandarinStore(store);
         engine.setSmartMandarinMode(true);
+        engine.setSmartMandarinPreferences({true, false, false});
         InputContextState context;
         EngineResult result;
         for (char key : std::string("su3cl3")) {
@@ -2219,6 +2223,7 @@ void testSmartMandarinUserData() {
         Engine engine(loadRealBopomofoDictionary());
         engine.setSmartMandarinStore(store);
         engine.setSmartMandarinMode(true);
+        engine.setSmartMandarinPreferences({true, false, false});
         InputContextState context;
         for (char key : std::string("cl3")) {
             engine.processKey(context, character(key));
@@ -2248,6 +2253,7 @@ void testSmartMandarinUserData() {
         Engine engine(loadRealBopomofoDictionary());
         engine.setSmartMandarinStore(learnedStore);
         engine.setSmartMandarinMode(true);
+        engine.setSmartMandarinPreferences({true, false, false});
         InputContextState context;
         for (char key : std::string("su3cl3")) {
             engine.processKey(context, character(key));
@@ -2328,6 +2334,7 @@ void testSmartMandarinBigramLearning() {
     Engine engine(loadRealBopomofoDictionary());
     engine.setSmartMandarinStore(store);
     engine.setSmartMandarinMode(true);
+    engine.setSmartMandarinPreferences({true, false, false});
     InputContextState context;
     EngineResult result;
     for (char key : std::string("5j/")) {
@@ -2419,6 +2426,7 @@ void testSmartMandarinLearnedWordEviction() {
         Engine engine(loadRealBopomofoDictionary());
         engine.setSmartMandarinStore(store);
         engine.setSmartMandarinMode(true);
+        engine.setSmartMandarinPreferences({true, false, false});
         InputContextState context;
         EngineResult result;
         std::string committed;

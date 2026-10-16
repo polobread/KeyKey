@@ -594,6 +594,8 @@ write_keykey_config() {
       "$toggle_with_control_backslash"
     printf 'AssociatedPhraseCollections=%s\n\n' \
       "$associated_phrase_collections"
+    # Existing candidate-key cases explicitly exercise the enabled option.
+    printf '[SmartMandarin]\nShowCandidateListWithSpace=True\n\n'
     printf '[AssociatedPhrases]\n'
     for source in "${associated_phrase_sources[@]}"; do
       enabled=False
@@ -673,7 +675,7 @@ associated_phrase_config_variant() {
     fi
     entries+="'$source': <'$enabled'>"
   done
-  printf "<{'BopomofoLayout': <'%s'>, 'BopomofoMode': <'%s'>, 'CandidateWindowStyle': <'%s'>, 'TraditionalToSimplified': <'%s'>, 'UseAllUnicodeCharacters': <'%s'>, 'PlaySoundOnTypingError': <'%s'>, 'ToggleInputMethodWithControlBackslash': <'%s'>, 'AssociatedPhrases': <{%s}>}>" \
+  printf "<{'BopomofoLayout': <'%s'>, 'BopomofoMode': <'%s'>, 'CandidateWindowStyle': <'%s'>, 'TraditionalToSimplified': <'%s'>, 'UseAllUnicodeCharacters': <'%s'>, 'PlaySoundOnTypingError': <'%s'>, 'ToggleInputMethodWithControlBackslash': <'%s'>, 'SmartMandarin': <{'ShowCandidateListWithSpace': <'True'>}>, 'AssociatedPhrases': <{%s}>}>" \
     "$bopomofo_layout" "$bopomofo_mode" "$candidate_window_style" \
     "$traditional_to_simplified" \
     "$use_all_unicode_characters" "$play_sound_on_typing_error" \
