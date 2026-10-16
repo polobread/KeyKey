@@ -2,25 +2,20 @@
 
 ## 現況與證據界線
 
-2026-10-16 使用者回報：手動下載並執行 1.3.2-beta4 的 pkg 後，若沒有先在
+使用者回報：手動下載並執行 1.3.2-beta4 的 pkg 後，若沒有先在
 「系統設定 → 鍵盤」移除再加入琦琦，登出會只剩背景與滑鼠游標，沒有登入欄位。
 多次測試須強制關機；重新開機時 USB 鍵盤也無法登入，須用內建鍵盤登入後重新連接。
 這是嚴重的實機回報，不能以程序正在執行或目前可打字認定已排除。
 
-唯讀取得的同日紀錄：
+目前證據的界線：
 
-- 08:26:56、08:31:20、08:34:23 左右，loginwindow 已完成關閉 App 的階段，
-  隨後記錄建立新登入工作階段。這不能證明登入畫面實際顯示或可操作，
-  也不支持直接把問題歸因於 KeyKey 的 applicationShouldTerminate 回傳取消。
-- 08:29:02、08:33:11、08:35:44 有 ResetCounter 記錄；已檢視的最後一份含
-  force_off。這不是可定位 KeyKey stack 的 crash report。
-- 安裝後 TIS 即時狀態曾顯示 KeyKey enabled/selected，而 defaults 讀出的
-  AppleEnabledInputSources 沒有 KeyKey。該偏好是未公開的儲存細節；
-  差異只能列為診斷，不能單憑它判定資料遺失或直接寫回修復。
+- loginwindow 的生命週期紀錄不足以證明登入畫面已顯示且可操作，
+  也不能直接把問題歸因於輸入法取消結束。
+- 強制關機紀錄不是可定位輸入法根因的呼叫堆疊。
+- TIS 即時狀態與 defaults 偏好讀值的差異只能作為診斷線索；
+  不能據此判定資料遺失，或直接改寫私有 HIToolbox plist。
 
-原始紀錄僅存在 Installer/local-builds/macos-logout-investigation-20261016，
-不提交使用者系統紀錄。尚未重現登入卡住的呼叫堆疊，也未證明 USB 問題與
-輸入法有共同根因。
+尚未取得登入卡住的根因證據，也未證明 USB 問題與輸入法有共同根因。
 
 ## Apple 官方依據
 
@@ -95,7 +90,7 @@ bash Installer/test-input-sources.sh
 macOS 僅支援 arm64；封裝會拒絕其他架構或 universal App，helper 固定編譯 arm64。
 封裝需確認 helper 與 App 均為 arm64、已被簽章且存在於安裝 payload。
 
-2026-10-16 本機隔離驗證：32 項生命週期 policy、43 項真實 adapter 接假 TIS／
+隔離驗證：32 項生命週期 policy、43 項真實 adapter 接假 TIS／
 假程序、9 項鍵盤 helper 借用物件與快取、4 項 postinstall 路由測試全部通過。
 包含持續 enable 失敗、部分 disable／select 後失敗、無法讀取目前來源、無效 PID、
 拒絕終止與終止逾時。正式 helper 以 arm64 編譯通過；shell syntax 與
@@ -104,8 +99,7 @@ git diff --check 通過。macOS IMK Release target 已編譯通過。
 另由既有 arm64 Release App 在獨立目錄產生 ad hoc 簽章 pkg，僅展開、不安裝：
 helper 與主程式均為 arm64，展開 App 通過 codesign --verify --deep --strict
 --all-architectures，postinstall 與來源內容相同。PackageInfo 為 relocatable=false，
-relocate 清單為空；建置紀錄曾出現 PlistBuddy 的 write: Permission denied 診斷，
-但展開結果未啟用 relocation，不能僅依該診斷判斷封裝失效。
+relocate 清單為空。
 此處是 ad hoc 封裝證據，尚未完成 Developer ID／notarization；Intel 不在支援範圍。
 
 目前屬候選修正，不能因隔離測試或編譯成功宣告實機問題已排除。仍需在可恢復的
