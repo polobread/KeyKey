@@ -100,7 +100,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 發布 GitHub Release（可同時建立 tag）會啟動
 `Package macOS`、`Package Windows` 與完整 `Linux CI`；各平台通過建置及驗證後，
 自動上傳自己的 assets。各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
-均為 `1.3.2`，可使用對應的 `v1.3.2` 或 `v1.3.2-betaN` tag。beta 必須標記 Pre-release，且只能從原 tag commit 建置，不改 Latest；修正後需建立新的 beta tag。正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
+均為 `1.3.2`，對應的正式版 tag 為 `v1.3.2`。正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
 設定 release environment 的 AWS mirror variables 後，同一批已驗證檔案也會同步到 S3；
 留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
@@ -108,7 +108,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 
 ## 開發與提交
 
-本輪發布文件更新使用 `v1.3.2-doc` 工作分支；所有程式、文件與 CI 修改都在工作分支 commit 和 push，
+所有程式、文件與 CI 修改都在工作分支 commit 和 push，
 再建立 PR，由維護者親自 review 和 merge 到 `master`。Agent 不得自行合併或啟用自動合併，
 也不要直接在 `master` commit 或 push。
 同步最新主分支可在工作分支執行 `git pull --no-rebase origin master`；提交前保留既有修改，
@@ -265,9 +265,8 @@ is enabled.
 Publishing a GitHub Release starts
 `Package macOS`, `Package Windows`, and the full `Linux CI`. Each workflow
 uploads its verified packages when its version matches that Release. macOS,
-Windows, and Linux development versions are `1.3.2`, accepting `v1.3.2` and
-`v1.3.2-betaN`. Betas require Pre-release and the exact tag commit; they do not
-change Latest. Fixes require a new beta tag. After fixing a failed stable
+Windows, and Linux development versions are `1.3.2`, with `v1.3.2` as the
+corresponding stable release tag. After fixing a failed stable
 platform through a PR into `master`, manually run that workflow from `master` with
 the matching platform's `release_tag` to replace its assets; other platforms are untouched.
 Leaving `release_tag` blank retains Actions artifacts only.
@@ -278,7 +277,7 @@ complete output and signing details.
 
 ### Development and contributions
 
-Development currently uses `v1.3.3`. Commit and push code, documentation, and CI
+Commit and push code, documentation, and CI
 changes on a working branch, then open a pull request for the maintainer to review
 and merge. Agents must not merge PRs, enable auto-merge, or commit or push directly
 to `master`. Run `git pull --no-rebase origin master` from the working
