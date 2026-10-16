@@ -1,9 +1,25 @@
 #!/bin/bash
+set -euo pipefail
 
-# Replacing the bundle leaves the running input method holding file descriptors
-# for the files that were just swapped out, including the dictionary, so it
-# stops producing candidates. Ending it lets Text Input Services start the
-# version that was just installed.
-/usr/bin/pkill -f "/Library/Input Methods/chichi77 KeyKey.app/Contents/MacOS/chichi77 KeyKey"
+# A non-startup volume has no matching GUI session. Do not modify the running
+# system's input sources when installing to another volume.
+if [[ "${3:-/}" != "/" ]]; then
+    echo "KeyKey: add the input source after starting from the target volume."
+    exit 0
+fi
 
-exit 0
+console_uid=$(/usr/bin/stat -f %u /dev/console)
+if [[ ! "$console_uid" =~ ^[0-9]+$ ]] || (( console_uid < 500 )); then
+    echo "KeyKey: no logged-in console user; add the input source in Keyboard settings after login."
+    exit 0
+fi
+
+helper="/Library/Input Methods/chichi77 KeyKey.app/Contents/MacOS/KeyKeyInputSourceTool"
+# launchctl supplies the GUI bootstrap namespace; sudo supplies the user
+# credentials. Running TIS as the Installer's root user updates the wrong state.
+# The helper only refreshes an already-enabled KeyKey source. First installs
+# register the bundle but leave enabling it to the user.
+if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- "$helper" --refresh; then
+    echo "KeyKey: files were installed, but input-source refresh failed. Re-add 琦琦輸入法 in System Settings > Keyboard > Text Input before logging out." >&2
+    exit 1
+fi
