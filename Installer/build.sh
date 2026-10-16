@@ -11,6 +11,19 @@ cp -R "$APP" "$STAGE/Library/Input Methods/"
 
 STAGED="$STAGE/Library/Input Methods/$(basename "$APP")"
 
+# The standalone TIS tool does not start IMK or load the user's database.
+# macOS releases support Apple Silicon only; reject a mismatched payload.
+# Sign the standalone helper with the rest of the app below.
+executable=$(/usr/bin/plutil -extract CFBundleExecutable raw "$STAGED/Contents/Info.plist")
+payload_arch=$(/usr/bin/lipo -archs "$STAGED/Contents/MacOS/$executable")
+if [[ "$payload_arch" != "arm64" ]]; then
+    echo "macOS packaging requires an arm64-only app; found: $payload_arch" >&2
+    exit 1
+fi
+xcrun clang -fno-objc-arc -mmacosx-version-min=15.0 -arch arm64 \
+    -framework Cocoa -framework Carbon InputSourceTool.m \
+    -o "$STAGED/Contents/MacOS/KeyKeyInputSourceTool"
+
 # The framework targets sign their own output while Headers is still populated,
 # then the app's Copy Files phase strips it, so the seal keeps listing files
 # that are no longer there and every --deep --strict verify reports "a sealed

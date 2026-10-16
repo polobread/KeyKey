@@ -44,15 +44,38 @@ The `ls` matters. `installer` reports success even when it has written the
 payload somewhere else, so confirm the bundle actually landed before going any
 further.
 
-On a first install, log out and back in -- that is when Text Input Services
-scans `/Library/Input Methods` -- then add the input source under System
-Settings, Keyboard, Input Sources. Upgrading over a version that is already
-installed and enabled needs neither: `postinstall` ends the running input
-method and Text Input Services starts the new one in its place.
+The package includes a standalone, signed `KeyKeyInputSourceTool`.
+`postinstall` runs it in the current console user's GUI session and credentials.
+It snapshots KeyKey's TIS state, switches an active KeyKey source to an already
+enabled ASCII layout, disables the old source, stops only that user's installed
+KeyKey executable, registers the new bundle, and restores its enabled/selected
+state on success. After termination or registration has begun, failure recovery
+attempts to restore enabling while keeping the ASCII layout selected; a failed
+final selection also attempts to switch back to ASCII. Recovery is best effort.
+It uses Apple's TIS APIs, not private HIToolbox preference writes.
+First installs and intentionally disabled sources are registered but not enabled.
 
-The Installer completion screen deliberately does not force a logout. It tells
-first-time users to sign out when convenient while letting upgrades finish
-without interrupting the current session.
+The helper verifies state changes, attempts recovery on failures, and has a
+20-second deadline (old-process termination is limited to 3 seconds). Failed
+refreshes make postinstall fail with instructions to re-add KeyKey before logout;
+the payload may already be installed. No console user or a non-startup target
+volume defers setup to Keyboard settings. Other login sessions are not refreshed.
+See [investigation, Apple references, and validation limits](../docs/MACOS_INPUT_SOURCE_UPGRADE.md).
+
+After installation, verify source selection, typing, and version. A first
+installation may still need a new login before macOS lists the source. For an
+upgrade that is missing or unusable, keep ABC enabled and remove/re-add KeyKey
+in Keyboard settings before logout. Do not use repeated logout/forced shutdown
+as a recovery loop for the reported hang.
+
+Run isolated regressions without installing or changing input sources:
+
+```sh
+bash Installer/test-input-sources.sh
+```
+
+The app payload and standalone helper are arm64 only. Packaging rejects other
+app architectures; the isolated tests also compile explicitly for arm64.
 
 ## Signing and notarising
 

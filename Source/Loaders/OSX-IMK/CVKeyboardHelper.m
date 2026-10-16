@@ -28,25 +28,19 @@ static CVKeyboardHelper *_sharedHelper = nil;
 }
 - (void)loadValidKeyboardLayouts
 {
-	CFArrayRef list = TISCreateInputSourceList(NULL, true);
-	int i = 0;
-	for (i = 0; i < CFArrayGetCount(list); i++) {		
-		TISInputSourceRef source = (TISInputSourceRef)CFArrayGetValueAtIndex(list, i);
-		
-		CFStringRef type = TISGetInputSourceProperty(source, kTISPropertyInputSourceType);		
-		if (CFStringCompare(type, kTISTypeKeyboardLayout, kCFCompareEqualTo)) {
-			CFRelease(type);
-			continue;
-		}		
-
-		CFStringRef sourceId = TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
-		NSString *sourceIdString = [NSString stringWithString:(NSString *)sourceId];		
-		[_validKeyboardLayouts addObject:sourceIdString];
-		
-		CFRelease(sourceId);
-		//CFRelease(source);		
-	}
-	CFRelease(list);
+    [_validKeyboardLayouts removeAllObjects];
+    NSDictionary *filter = [NSDictionary dictionaryWithObject:(id)kTISTypeKeyboardLayout
+                                                       forKey:(id)kTISPropertyInputSourceType];
+    CFArrayRef list = TISCreateInputSourceList((CFDictionaryRef)filter, true);
+    if (!list) return;
+    for (CFIndex i = 0; i < CFArrayGetCount(list); i++) {
+        TISInputSourceRef source = (TISInputSourceRef)CFArrayGetValueAtIndex(list, i);
+        CFStringRef sourceId = TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
+        if (sourceId && CFGetTypeID(sourceId) == CFStringGetTypeID())
+            [_validKeyboardLayouts addObject:(NSString *)sourceId];
+        // Get-rule properties are borrowed. The array retains the identifier.
+    }
+    CFRelease(list);
 }
 - (NSArray *)validKeyboardLayouts
 {
