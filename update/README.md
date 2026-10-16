@@ -1,7 +1,7 @@
 # 桌面更新（開發中）
 
 此目錄開發 macOS／Windows 更新通知與手動確認後的更新流程，以及發布工具；**端到端驗收尚未完成**。
-`config.json` 已設定維護者提供的正式公開金鑰與已可存取的 stable／beta CDN feed。每日檢查與 beta 選項預設關閉，尚未重包已發布 beta2；舊版第一次導入仍須手動安裝含新設定的版本。未使用 Yahoo 舊服務、
+`config.json` 已設定維護者提供的正式公開金鑰與 stable／beta CDN feed。每日檢查與 beta 選項預設關閉；舊版第一次導入仍須手動安裝含新設定的版本。未使用 Yahoo 舊服務、
 RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 
 ## 目錄與維護入口
@@ -49,9 +49,11 @@ SDK 繼續負責版本選擇、套件簽章與安裝確認。macOS 查無更新�
   feed 本身仍依賴 HTTPS 與託管端控制，尚未實作 signed-feed 驗證／metadata 到期與防重播。
 - macOS：Sparkle 2.10.0，由 IMK 主程式持有 updater，Preferences 透過既有本機服務
   檢查與切換自動檢查。更新 `.pkg.zip`，保留 `/Library/Input Methods` 的安裝方式。
-  套件仍需管理員同意，安裝後登出／登入；不啟用靜默安裝或背景自動下載。
+  套件仍需管理員同意；完成後從輸入法選單選取琦琦，並在「文字編輯」試打、核對版本。
+  能正常輸入即可繼續使用；來源缺少時從鍵盤設定加入。不啟用靜默安裝或背景自動下載。
   原生回呼同步檢查／下載／錯誤／取消狀態；組字未完成時延後更新重啟，真正結束前
-  再檢查新組字，不自行送字或清除。這是客戶端保護，不是所有 App 實機驗收的替代品。
+  由 Sparkle 重啟回呼再檢查新組字，不自行送字或清除。一般結束、登出與關機不經過
+  更新器的拒絕結束判斷。這是客戶端保護，不是所有 App 實機驗收的替代品。
   保護範圍是此 IMK 行程的活動組字；手動安裝與其他登入工作階段不經過此回呼。
 - Windows：WinSparkle 0.9.4，只在現代 Settings 執行檢查；**沒有登入排程／背景服務**。
   native DLL 與 feed 依 Settings 的 bitness 選擇。安裝沿用現有 NSIS＋版本化 Deployment。
@@ -106,7 +108,7 @@ CDN（主要）與 GitHub（備用）手動下載連結，沒有更新 item。ch
 `link` 指向 CDN；`description` 的 HTML 列出兩個下載來源，沿用 Windows 初始 RSS 格式。
 兩個安裝包網址已確認存在，沒有把既有安裝包當成 Ed25519 自動更新資產。
 分支內檔案不表示 Raw master 或 CDN 已部署。舊版沒有正式更新設定，因此第一次
-導入必須手動下載並安裝含公開金鑰與 feed 的 notarized 版本，再登出／登入。
+導入必須手動下載並安裝含公開金鑰與 feed 的 notarized 版本，再選取琦琦並試打、核對版本。
 後續更新必須使用更高版號；同版本重新打包不是自動升級。
 
 `package-macos.yml` 的受保護 `release` environment 簽章 job 支援選擇性候選產生：
@@ -185,34 +187,36 @@ python3 .github/scripts/sync-update-feeds.py --check-only --verify-assets
 3. Windows job 先對既有 EXE 原生驗證。macOS job 驗證同一次 run／revision 的公開報告，實際檢查 pkg 的 Gatekeeper、公證票證與 beta 版號，再下載並新增副本。GitHub 不使用 `--clobber`；S3 使用 `If-None-Match: *`，已存在物件只回讀確認，差異或權限錯誤一律停止。
 4. GitHub／S3／CDN 副本雜湊與大小全部確認後，請 AI 使用受保護的既有更新私鑰準備 signed metadata／appcasts、建立第二份 feed PR。私鑰不在 Git 或 artifact。你 review／merge master 後，才由預設同步入口部署 feed／metadata。
 
-Windows x86 ZIP 只公告手動下載；Linux 仍透過套件管理器安裝。FreeBSD 公告 PR 固定等 release 發布滿 48 小時，不檢查 ports/pkg 是否已上架，並揭露可能尚不可用；不新增自動排程。beta2 最早為 **2026-10-16 10:05:04（臺灣）**。
+Windows x86 ZIP 只公告手動下載；Linux 仍透過套件管理器安裝。FreeBSD 公告 PR 固定等 release 發布滿 48 小時，不檢查 ports/pkg 是否已上架，並揭露可能尚不可用；不新增自動排程。
 
-## Numbered beta tags 與隔離的更新來源
+## 發布版本與隔離的更新來源
 
-macOS／Windows 封裝支援 `v1.3.2-beta1`、`v1.3.2-beta2` 等 `vX.Y.Z-betaN`，
-N 是不含前導零的正整數。產品原始碼仍保持 X.Y.Z，不連帶修改其他平台版號。
-GitHub Release 必須標記 **Pre-release**；工具只上傳已存在 Release 的資產，
-不建立／編輯 Release、不改 Latest。正式 `vX.Y.Z` 不接受 Pre-release 標記。
+正式版 tag 使用 `vX.Y.Z`，測試頻道使用 `vX.Y.Z-betaN`；
+X.Y.Z 為對應平台的產品版號，N 是不含前導零的正整數。
+產品原始碼保持 X.Y.Z，不連帶修改其他平台版號。
+測試頻道的 GitHub Release 必須標記 **Pre-release**，不改 Latest；
+正式 `vX.Y.Z` 不接受 Pre-release 標記。工具只上傳已存在 Release 的資產，
+不建立／編輯 Release。
 beta 的手動重跑也必須選該 tag 的 commit，不提供同版 recovery 替換。
 
-| 用途 | beta1 | beta2 | 正式版 |
-|---|---|---|---|
-| GitHub tag／顯示更新版號 | `v1.3.2-beta1`／`1.3.2-beta1` | `v1.3.2-beta2`／`1.3.2-beta2` | `v1.3.2`／`1.3.2` |
-| 原生比較版號 | `1.3.2b1` | `1.3.2b2` | `1.3.2` |
-| metadata channel／XML 目錄 | `beta`／`update/beta/` | `beta`／`update/beta/` | `stable`／`update/stable/` |
+| 用途 | 正式版 | 測試頻道 |
+|---|---|---|
+| GitHub tag／顯示更新版號 | `vX.Y.Z`／`X.Y.Z` | `vX.Y.Z-betaN`／`X.Y.Z-betaN` |
+| 原生比較版號 | `X.Y.Z` | `X.Y.ZbN` |
+| metadata channel／XML 目錄 | `stable`／`update/stable/` | `beta`／`update/beta/` |
 
-原生排序須通過 SDK 測試：`1.3.2b1 < 1.3.2b2 < 1.3.2b10 < 1.3.2`。
+原生排序須通過 SDK 測試：同產品版號的測試頻道按 N 的數值遞增，正式版高於所有測試版本。
 macOS 在簽章前將建置後 IMK App 的 `CFBundleVersion` 設為比較版號，
 `KeyKeyReleaseVersion` 設為顯示版號；`CFBundleShortVersionString` 及四份原始碼 plist
 仍保持產品 X.Y.Z。pkg 的 PackageInfo 版號跟隨比較版號，notarization 驗證不放寬。
 Windows PE／Deployment 產品版號保持 X.Y.Z；Settings 內嵌 beta 更新設定並把比較
 版號交給 WinSparkle。使用者選擇 beta 時使用獨立 registry 更新偏好，不改 stable 的連網同意／跳過版本；不由已安裝版本的 beta 後綴代替使用者選擇。
-既有 GitHub 下載檔名仍含產品 X.Y.Z，但 beta1／beta2 放在各自不同的 tag 下載目錄；
+既有 GitHub 下載檔名仍含產品 X.Y.Z，各次測試建置放在各自不同的 tag 下載目錄；
 簽章更新候選檔名則含完整 beta 版號及 SHA-256。
 
 建置 workflow 用 `prepare.py select-release` 產生暫存設定（不改 tracked config）：
 設定保留 stable／beta 兩組已審查網址，另記錄 tag 來源及 `channel_selection=user-opt-in`。
-macOS／Windows 的「接收 beta 測試版更新」預設關閉，beta 建置也不自動開啟；使用者選擇會保存。只允許這兩個建置時固定的來源，不能任填網址。缺少所選 beta URL 時保持離線，不回退 stable。公開金鑰共用。以下對應 XML 已可存取：
+macOS／Windows 的「接收 beta 測試版更新」預設關閉，beta 建置也不自動開啟；使用者選擇會保存。只允許這兩個建置時固定的來源，不能任填網址。缺少所選 beta URL 時保持離線，不回退 stable。公開金鑰共用，對應的 XML 網址為：
 
 ```text
 https://download.aws.polobread.com/keykey/update/beta/macos-arm64.xml
@@ -221,25 +225,24 @@ https://download.aws.polobread.com/keykey/update/beta/windows-x86.xml
 ```
 
 若選 GitHub Raw，路徑為 `https://raw.githubusercontent.com/polobread/KeyKey/master/update/beta/FILE.xml`。
-目前 master 的 beta RSS 尚無自動安裝項目；選項的原始碼修改也不代表已安裝程式已有此 UI。
-測試者需手動安裝含新設定的建置，不能只改遠端 XML 就把 stable 客戶端切成 beta。
+首次使用測試頻道需手動安裝含新設定的版本，不能只改遠端 XML 就把 stable 客戶端切成 beta。
 beta feed 只接受 beta manifest。取消 beta 只更換檢查來源，不會自動降版；需等 stable 發布更高版號，或自行手動安裝。
 Windows 目前仍使用既有 unsigned EXE；真實 beta 升級須在 Windows 驗收。
 日後 signed beta 還須調整 Deployment 的「同產品版號不同 official build」保護，
-不能從 WinSparkle 版號比較通過推定 signed beta1 → beta2 安裝已支援。
+不能從 WinSparkle 版號比較通過推定同產品版號的 signed 測試版本互相升級已支援。
 
-發布 manifest 將 `channel` 設為 `beta`，entry 的 `version` 為 `1.3.2-beta1`、
-`release_tag` 為 `v1.3.2-beta1`；同樣要求 source/tag commit 相等、平台簽章與
-不可變資產。`metadata.py build` 回傳 beta metadata，appcast 的比較版號為 `1.3.2b1`。
+測試頻道的發布 manifest 將 `channel` 設為 `beta`，entry 的 `version` 為 `X.Y.Z-betaN`、
+`release_tag` 為 `vX.Y.Z-betaN`；同樣要求 source/tag commit 相等、平台簽章與
+不可變資產。`metadata.py build` 回傳 beta metadata，appcast 的比較版號為 `X.Y.ZbN`。
 輸出平台 XML 經 review 後只放 `update/beta/`，包先上傳並驗證，才提升 feed。
 macOS CI 的 `MACOS_UPDATE_METADATA_ENABLED` 仍控制候選產生，候選不自動發布。
 
-本機選擇 beta 設定與版本標記（只供建置，不安裝）：
+本機選擇發布設定與版本標記（以下以正式產品版號為例，只供建置，不安裝；測試頻道套用上表的 tag 規則）：
 
 ```sh
-python3 update/prepare.py select-release --tag v1.3.2-beta1 --version 1.3.2 \
-  --out update/out/beta1-build-config.json
-export KEYKEY_UPDATE_CONFIG="$PWD/update/out/beta1-build-config.json"
+python3 update/prepare.py select-release --tag v1.3.2 --version 1.3.2 \
+  --out update/out/release-build-config.json
+export KEYKEY_UPDATE_CONFIG="$PWD/update/out/release-build-config.json"
 # 接既有 macOS／Windows 建置；macOS 在 build 後、簽章前另執行：
 python3 update/prepare.py stamp-macos "Source/build/Release/chichi77 KeyKey.app"
 ```
@@ -249,11 +252,12 @@ updater 測試，不建置 TSF、不安裝、不發布、不取得 release secre
 
 ## 正式金鑰與網址設定（需維護者審查）
 
-2026-10-13 已將維護者提供的 32-byte base64 Ed25519 公鑰寫入 `config.json`。
+`config.json` 使用維護者提供的 32-byte base64 Ed25519 公鑰。
 公鑰原始 bytes 的 SHA-256 為
 `abbbf302de90de80897a16e275dcf8db199509bc908bfe432d917f1222d9f273`。
-此次只驗證公開金鑰格式，未讀取私鑰、驗證私鑰配對或設定 CI secret。
-當時 macOS CDN feed 回傳 HTTP 403，因此沒有設定網址；2026-10-14 已確認六份 stable／beta CDN feed 回傳 HTTP 200，現在設定於 `config.json`。自動檢查與 beta 同意仍預設關閉，不因公鑰或 URL 就緒而啟用背景連網。
+私鑰配對與受保護的 CI secret 須由維護者另行確認。
+兩個頻道的各平台 CDN feed 網址設定於 `config.json`；發布時須確認可下載性。
+自動檢查與 beta 同意預設關閉，不因公鑰或 URL 就緒而啟用背景連網。
 
 1. 在 repository **外部**產生並備份 PEM Ed25519 私鑰，例如在受保護的金鑰目錄執行：
 
@@ -314,7 +318,7 @@ GitHub 兩個手動下載連結。維持一個標準 RSS `link`，不放重複�
 WinSparkle 讀取後仍回報無可用更新，不會自動下載或執行這些檔案。
 待使用者 review 並將 PR 合併至 `master` 後，才會出現在上述 Raw 網址；CDN 副本仍需
 先部署 XML 同步所需的 IAM／cache 設定，再由上述 workflow 上傳。手動下載資訊不表示已完成自動更新發布。
-正式公鑰與兩個 channel 的 CDN feed 設定已加入原始碼；已發布 beta2 未重新打包，不能據此推定舊安裝版本已啟用。
+正式公鑰與兩個 channel 的 CDN feed 設定已加入原始碼；既有安裝版本須另行核對是否包含這些設定。
 
 v1.3.1 的 GitHub Release 尚無 x86 EXE 或安裝包 Ed25519 更新簽章；其 Windows
 build-info 的 `source_sha` 與 `tag_sha` 不同，屬既有同版 recovery 下載資產。

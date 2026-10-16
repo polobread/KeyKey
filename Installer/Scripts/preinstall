@@ -1,0 +1,30 @@
+#!/bin/bash
+set -euo pipefail
+
+[[ "${3:-/}" == "/" ]] || exit 0
+if ! console_uid=$(/usr/bin/stat -f %u /dev/console); then exit 0; fi
+if [[ ! "$console_uid" =~ ^[0-9]+$ ]] || (( console_uid < 500 )); then exit 0; fi
+
+# Use this package's signed helper even when the installed version has no
+# snapshot command. Its temporary directory is root-owned and read/execute-only
+# for the GUI user; PackageKit's Scripts parents need not be user-readable.
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+helper_dir=$(/usr/bin/mktemp -d /private/var/tmp/keykey-preinstall.XXXXXXXX)
+trap 'rm -rf "$helper_dir"' EXIT
+cp "$script_dir/KeyKeyInputSourceTool" "$helper_dir/KeyKeyInputSourceTool"
+chmod 755 "$helper_dir" "$helper_dir/KeyKeyInputSourceTool"
+state=unknown
+if snapshot=$(/bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- \
+    "$helper_dir/KeyKeyInputSourceTool" --prepare-upgrade); then
+    case "$snapshot" in enabled|disabled) state="$snapshot" ;; esac
+else
+    echo "KeyKey: could not safely stop the old input method; the installed bundle has not been replaced." >&2
+    exit 1
+fi
+if [[ "$state" == unknown ]]; then
+    echo "KeyKey: invalid pre-install state; the installed bundle has not been replaced." >&2
+    exit 1
+fi
+umask 077
+printf '%s %s\n' "$console_uid" "$state" > "$script_dir/keykey-input-source-state"
+echo "KeyKey: pre-install source state for console uid $console_uid: $state."

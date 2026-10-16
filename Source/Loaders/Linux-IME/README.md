@@ -22,6 +22,13 @@ checks, optional daily checks (off by default), and an official release-page
 button. It also supports the `chinese/fcitx5-keykey` FreeBSD port through the
 same prefix-aware installation. See [update notifications and ports integration](docs/update-notifications.md).
 
+The **關於琦琦輸入法…** setting opens a scrollable About window with the installed
+version, project motivation, source credits, GitHub homepage, and latest stable
+release link. It is also available as **關於琦琦輸入法** in the applications menu
+or through `keykey-about`. Linux and FreeBSD share this GTK interface and the
+same motivation text bundled with the macOS and Windows About pages. Opening
+About reads local resources; the browser opens only when a link is clicked.
+
 This directory contains the C++ engine, Fcitx 5 addon, runtime tables, tools,
 desktop integration, packaging, and platform tests. CMake verifies and installs
 the repository's pre-generated shared model. Runtime addon and data names remain

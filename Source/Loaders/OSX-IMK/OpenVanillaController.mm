@@ -951,12 +951,6 @@ static void OVCLaunchApplication(const string& value)
 	}
 }
 
-- (void)aboutAction:(id)sender
-{
-	[[NSApp delegate] showAboutWindow:sender];
-	[self _resetUI];	
-}
-
 #pragma mark The Input Menu
 
 - (NSMenuItem *)_createMenuItemWithIndentifer: (string)identifier localizedName:(NSString *)localizedName keyEquivalent:(NSString *)key
@@ -1097,11 +1091,6 @@ static void OVCLaunchApplication(const string& value)
 	[prefMenuItem setTitle:LFLSTR(@"Preferences...")];
 	[menu addItem:prefMenuItem];
 
-	NSMenuItem *aboutMenuItem = [[[NSMenuItem alloc] init] autorelease];
-	[aboutMenuItem setTarget:self];
-	[aboutMenuItem setAction:@selector(aboutAction:)];
-	[aboutMenuItem setTitle:LFLSTR(@"About chichi77 KeyKey")];
-	[menu addItem:aboutMenuItem];
     
     return menu;
 }

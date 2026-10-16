@@ -3,100 +3,69 @@
 #import "../InputSourceTool.m"
 
 @interface FakeSources : NSObject <KKInputSourceOperations>
-@property BOOL enabled, selected;
+@property BOOL registrationSucceeds, stopSucceeds, enableSucceeds, enabled, selected, fallbackSucceeds;
+@property BOOL enabledReadable, selectedReadable;
 @property(nonatomic, retain) NSMutableArray *calls;
-@property(nonatomic, copy) NSString *failOperation;
-@property(nonatomic, copy) NSString *persistentFailure;
-@property BOOL partialDisableFailure;
-@property BOOL partialSelectFailure;
 @end
 @implementation FakeSources
-- (id)init { if ((self = [super init])) _calls = [NSMutableArray new]; return self; }
-- (void)dealloc { [_calls release]; [_failOperation release]; [_persistentFailure release]; [super dealloc]; }
-- (BOOL)perform:(NSString *)operation {
-    [self.calls addObject:operation];
-    if ([self.persistentFailure isEqual:operation]) return NO;
-    if ([self.failOperation isEqual:operation]) { self.failOperation = nil; return NO; }
-    return YES;
-}
-- (BOOL)readEnabled:(BOOL *)enabled selected:(BOOL *)selected {
-    *enabled = self.enabled; *selected = self.selected; return [self perform:@"read"];
-}
-- (BOOL)selectFallback { if (![self perform:@"fallback"]) return NO; self.selected = NO; return YES; }
-- (BOOL)applyEnabled:(BOOL)value {
-    if (!value && self.partialDisableFailure) {
-        [self.calls addObject:@"disable"]; self.enabled = NO; self.selected = NO; return NO;
+- (id)init {
+    if ((self = [super init])) {
+        _calls = [NSMutableArray new];
+        _registrationSucceeds = YES; _stopSucceeds = YES; _enableSucceeds = YES; _fallbackSucceeds = YES;
+        _enabledReadable = YES; _selectedReadable = YES;
     }
-    if (![self perform:value ? @"enable" : @"disable"]) return NO;
-    self.enabled = value; if (!value) self.selected = NO; return YES;
+    return self;
 }
-- (BOOL)stopInstalledInputMethod { return [self perform:@"stop"]; }
-- (BOOL)registerInstalledInputMethod { return [self perform:@"register"]; }
-- (BOOL)selectInputMethod {
-    if (self.partialSelectFailure) { [self.calls addObject:@"select"]; self.selected = YES; return NO; }
-    if (![self perform:@"select"]) return NO; self.selected = YES; return YES;
-}
+- (void)dealloc { [_calls release]; [super dealloc]; }
+- (BOOL)registerInstalledInputMethod { [self.calls addObject:@"register"]; return self.registrationSucceeds; }
+- (BOOL)stopInstalledInputMethod { [self.calls addObject:@"stop"]; return self.stopSucceeds; }
+- (BOOL)readEnabled:(BOOL *)enabled { [self.calls addObject:@"read"]; *enabled = self.enabled; return self.enabledReadable; }
+- (BOOL)readSelected:(BOOL *)selected { [self.calls addObject:@"selected"]; *selected = self.selected; return self.selectedReadable; }
+- (BOOL)selectFallback { [self.calls addObject:@"fallback"]; return self.fallbackSucceeds; }
+- (BOOL)enableInstalledInputMethod { [self.calls addObject:@"enable"]; return self.enableSucceeds; }
 @end
 
 static int passed;
 static void Check(BOOL value, NSString *message)
 {
-    if (!value) { NSLog(@"FAIL: %@", message); exit(1); }
-    passed++;
+    if (!value) { NSLog(@"FAIL: %@", message); exit(1); } passed++;
 }
-static FakeSources *Source(BOOL enabled, BOOL selected)
-{
-    FakeSources *source = [[[FakeSources alloc] init] autorelease];
-    source.enabled = enabled; source.selected = selected;
-    return source;
-}
+
 int main(void)
 {
     @autoreleasepool {
-        FakeSources *first = Source(NO, NO);
-        Check(KKRefreshInputSource(first), @"first installation registers");
-        Check([first.calls isEqual:@[@"read", @"register"]] && !first.enabled && !first.selected,
-              @"first installation and intentionally disabled source stay disabled");
-        FakeSources *active = Source(YES, YES);
-        Check(KKRefreshInputSource(active), @"active source refresh succeeds");
-        Check([active.calls isEqual:@[@"read", @"fallback", @"disable", @"stop", @"register", @"enable", @"select"]],
-              @"switch away and disable before stopping; register before restoring");
-        Check(active.enabled && active.selected, @"active selection restored");
-        FakeSources *inactive = Source(YES, NO);
-        Check(KKRefreshInputSource(inactive), @"enabled inactive source refresh succeeds");
-        Check([inactive.calls isEqual:@[@"read", @"disable", @"stop", @"register", @"enable"]] && !inactive.selected,
-              @"does not change a different selected input source");
-        FakeSources *inconsistent = Source(NO, YES);
-        Check(!KKRefreshInputSource(inconsistent) && [inconsistent.calls isEqual:@[@"read"]],
-              @"inconsistent snapshot does not mutate sources");
-        for (NSString *failure in @[@"read", @"fallback", @"disable", @"stop", @"register", @"enable", @"select"]) {
-            FakeSources *source = Source(YES, YES); source.failOperation = failure;
-            Check(!KKRefreshInputSource(source), [@"failure reported: " stringByAppendingString:failure]);
-            BOOL early = [@[@"read", @"fallback", @"disable"] containsObject:failure];
-            Check(source.enabled && source.selected == early, [@"enabled state recovered with safe selection: " stringByAppendingString:failure]);
-            if (early) {
-                Check(![source.calls containsObject:@"stop"] && ![source.calls containsObject:@"register"],
-                      @"early failure prevents process termination and registration");
-            }
-        }
-        FakeSources *partial = Source(YES, YES); partial.partialDisableFailure = YES;
-        Check(!KKRefreshInputSource(partial), @"partial disable failure is reported");
-        Check([partial.calls isEqual:@[@"read", @"fallback", @"disable", @"enable", @"select"]] &&
-              partial.enabled && partial.selected, @"partially disabled source is restored without stopping process");
-        FakeSources *partialSelect = Source(YES, YES); partialSelect.partialSelectFailure = YES;
-        Check(!KKRefreshInputSource(partialSelect) && partialSelect.enabled && !partialSelect.selected &&
-              [partialSelect.calls.lastObject isEqual:@"fallback"], @"partial final selection failure attempts fallback again");
-        FakeSources *unrecoverable = Source(YES, YES); unrecoverable.persistentFailure = @"enable";
-        Check(!KKRefreshInputSource(unrecoverable), @"persistent enable failure is reported");
-        Check([unrecoverable.calls isEqual:@[@"read", @"fallback", @"disable", @"stop", @"register", @"enable", @"enable"]] &&
-              !unrecoverable.enabled && !unrecoverable.selected, @"failed recovery preserves fallback and never reselects disabled KeyKey");
-        FakeSources *unselected = Source(YES, NO); unselected.failOperation = @"register";
-        Check(!KKRefreshInputSource(unselected) && unselected.enabled && !unselected.selected &&
-              ![unselected.calls containsObject:@"fallback"] && ![unselected.calls containsObject:@"select"],
-              @"inactive source recovery preserves the user's different selection");
-        FakeSources *newFailure = Source(NO, NO); newFailure.failOperation = @"register";
-        Check(!KKRefreshInputSource(newFailure) && [newFailure.calls isEqual:@[@"read", @"register"]],
-              @"first install registration failure never enables or selects source");
+        FakeSources *source = [[[FakeSources alloc] init] autorelease];
+        Check(KKRefreshInputSource(source, NO), @"first install or previously disabled source stays unchanged");
+        Check([source.calls isEqual:@[@"register"]],
+              @"postinstall does not terminate a newly launched input method");
+        [source.calls removeAllObjects]; source.registrationSucceeds = NO;
+        Check(!KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"register"]],
+              @"registration failure prevents attempted restoration");
+        [source.calls removeAllObjects]; source.registrationSucceeds = YES;
+        Check(KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"register", @"enable"]],
+              @"upgrade registers and restores only the saved enabled intent");
+        [source.calls removeAllObjects]; source.enableSucceeds = NO;
+        Check(!KKRefreshInputSource(source, YES), @"failed enabled restoration is reported, never silently accepted");
+        [source.calls removeAllObjects]; source.enabled = YES; source.selected = YES;
+        BOOL enabled = NO;
+        Check(KKPrepareInputSource(source, &enabled) && enabled &&
+              [source.calls isEqual:@[@"read", @"selected", @"fallback", @"stop"]],
+              @"active source is captured and safely retired before payload replacement");
+        [source.calls removeAllObjects]; source.fallbackSucceeds = NO;
+        Check(!KKPrepareInputSource(source, &enabled) && ![source.calls containsObject:@"stop"],
+              @"failed fallback prevents both termination and payload replacement");
+        [source.calls removeAllObjects]; source.selected = NO; source.enabled = NO;
+        Check(KKPrepareInputSource(source, &enabled) && !enabled &&
+              [source.calls isEqual:@[@"read", @"selected", @"stop"]],
+              @"inactive or first install does not change the user's selection");
+        [source.calls removeAllObjects]; source.stopSucceeds = NO;
+        Check(!KKPrepareInputSource(source, &enabled), @"old process remaining alive prevents replacement");
+        [source.calls removeAllObjects]; source.enabledReadable = NO;
+        Check(!KKPrepareInputSource(source, &enabled) && [source.calls isEqual:@[@"read"]],
+              @"unknown enabled intent prevents replacement before changing selection");
+        [source.calls removeAllObjects]; source.enabledReadable = YES; source.selectedReadable = NO;
+        Check(!KKPrepareInputSource(source, &enabled) && [source.calls isEqual:@[@"read", @"selected"]],
+              @"unknown selected input source prevents replacement before termination");
         NSLog(@"PASS: %d input-source lifecycle checks (fake system; no user settings touched)", passed);
     }
 }

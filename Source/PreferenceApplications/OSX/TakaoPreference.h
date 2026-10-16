@@ -11,6 +11,7 @@ file for terms.
 
 #import <Cocoa/Cocoa.h>
 #import "TakaoSettings.h"
+@class TakaoAbout;
 #define WINDOW_TITLE_HEIGHT 78
 
 static NSString *GeneralToolbarItemIdentifier				= @"General";
@@ -22,6 +23,7 @@ static NSString *MiscToolbarItemIdentifier					= @"Misc";
 static NSString *GenericToolbarItemIdentifier				= @"Generic";
 static NSString *PluginToolbarItemIdentifier				= @"Plugins";
 static NSString *UpdateToolbarItemIdentifier                = @"更新";
+static NSString *AboutToolbarItemIdentifier                 = @"About";
 
 /*!
 	@class TakaoPreference
@@ -49,6 +51,7 @@ static NSString *UpdateToolbarItemIdentifier                = @"更新";
 	IBOutlet id _takaoGlobalController;
 	IBOutlet id _takaoLoadedModuleController;
 	NSImage *_defaultApplicationImage;
+    TakaoAbout *_aboutController;
 
 	BOOL _hasGenericInputMethods;
 	BOOL _hasLoadedModules;
@@ -68,5 +71,6 @@ static NSString *UpdateToolbarItemIdentifier                = @"更新";
 	@param sender The sender object.
 */
 - (void)toggleActivePreferenceView:(id)sender;
+- (IBAction)showAbout:(id)sender;
 
 @end

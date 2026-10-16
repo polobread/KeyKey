@@ -393,8 +393,9 @@ CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不�
 macOS、Windows 與 Linux 則在 GitHub
 **Publish release** 後自動建置，各自驗證成功後上傳到同一個 Release。Release 的 tag
 必須符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows／Linux 原始碼皆為 `1.3.2`，
-接受 `v1.3.2` 或 `v1.3.2-betaN`；同一 Release 的三平台產物只在各平台同版時成立。
-beta 必須為 Pre-release 且只從原 tag commit 建置，不改 Latest；產品來源修正後應建立新的 beta tag，不移動既有 beta tag。
+對應正式版 tag 為 `v1.3.2`；同一 Release 的三平台產物只在各平台同版時成立。
+測試頻道使用通用 `vX.Y.Z-betaN` 格式，X.Y.Z 對應平台產品版號，N 為不含前導零的正整數；
+必須標記 Pre-release 且只從原 tag commit 建置，不改 Latest。產品來源修正後應建立新的測試 tag，不移動既有 tag。
 Linux 手動 beta 重跑可選 `master` 上的 workflow 並填 `release_tag`；兩個 Ubuntu job
 都固定 checkout 該 beta tag，發布仍核對原 tag commit、產品版號及套件校驗，避免混入後續來源修改。
 macOS 從四份產品 plist 讀取並核對版號，與 README 尾端的 Linux 版號獨立。只推 tag 或儲存草稿
@@ -840,7 +841,9 @@ Agents must not merge PRs. Source, build scripts, and CI are covered by the
 workflows start when a GitHub Release is published,
 and each independently uploads its verified packages. The tag must match the
 platform's source version and can be created on the Release page. macOS, Windows,
-and Linux development sources are now `1.3.2`, accepting `v1.3.2` or `v1.3.2-betaN`.
+and Linux development sources are now `1.3.2`, with `v1.3.2` as the stable release tag.
+The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product
+version and N is a positive integer without leading zeros.
 Betas require Pre-release and the exact tag commit; Latest is unchanged. Fixes
 require a new beta tag, not recovery builds or moving an existing tag.
 Uploading all three platforms to one Release applies when their versions match.

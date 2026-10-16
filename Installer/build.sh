@@ -50,17 +50,28 @@ python3 ../update/sign-macos.py "$STAGED" "$SIGN_IDENTITY"
 # /Library/Input Methods is left untouched. An input method only works from
 # the path Text Input Services scans, so pin it.
 COMPONENTS="$STAGE.plist"
-trap 'rm -rf "$STAGE" "$COMPONENTS"' EXIT
+SCRIPTS="$STAGE-scripts"
+trap 'rm -rf "$STAGE" "$COMPONENTS" "$SCRIPTS"' EXIT
+mkdir -p "$SCRIPTS"
+cp Scripts/preinstall Scripts/postinstall "$SCRIPTS/"
+chmod 755 "$SCRIPTS/preinstall" "$SCRIPTS/postinstall"
+cp "$STAGED/Contents/MacOS/KeyKeyInputSourceTool" "$SCRIPTS/KeyKeyInputSourceTool"
 pkgbuild --analyze --root "$STAGE" "$COMPONENTS"
-component_index=0
-while /usr/libexec/PlistBuddy -c "Print :$component_index" "$COMPONENTS" >/dev/null 2>&1; do
-    # Sparkle adds nested bundles; index 0 is no longer necessarily the IMK app.
-    # Pin every component rather than allowing any helper to relocate separately.
-    if ! /usr/libexec/PlistBuddy -c "Set :$component_index:BundleIsRelocatable false" "$COMPONENTS" 2>/dev/null; then
-        /usr/libexec/PlistBuddy -c "Add :$component_index:BundleIsRelocatable bool false" "$COMPONENTS"
-    fi
-    component_index=$((component_index + 1))
-done
+# Sparkle adds nested bundles; index 0 is not necessarily the IMK app.
+# Write every component's relocation policy together and fail on a write error.
+python3 - "$COMPONENTS" <<'PY'
+from pathlib import Path
+import plistlib
+import sys
+
+path = Path(sys.argv[1])
+components = plistlib.loads(path.read_bytes())
+if not isinstance(components, list) or not components:
+    raise ValueError("pkgbuild returned no bundle components")
+for component in components:
+    component["BundleIsRelocatable"] = False
+path.write_bytes(plistlib.dumps(components))
+PY
 
 pkgbuild \
     --root "$STAGE" \
@@ -68,7 +79,7 @@ pkgbuild \
     --identifier io.github.polobread.chichi77.installerpackage \
     --version "$VERSION" \
     --ownership recommended \
-    --scripts Scripts \
+    --scripts "$SCRIPTS" \
     chichi77KeyKeyApp.pkg
 
 if [ -n "${DEVELOPER_ID_INSTALLER:-}" ]; then

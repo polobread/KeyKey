@@ -8,18 +8,54 @@ if [[ "${3:-/}" != "/" ]]; then
     exit 0
 fi
 
-console_uid=$(/usr/bin/stat -f %u /dev/console)
+if ! console_uid=$(/usr/bin/stat -f %u /dev/console); then
+    echo "KeyKey: console user is unavailable; add the input source in Keyboard settings after login."
+    exit 0
+fi
 if [[ ! "$console_uid" =~ ^[0-9]+$ ]] || (( console_uid < 500 )); then
     echo "KeyKey: no logged-in console user; add the input source in Keyboard settings after login."
     exit 0
 fi
 
 helper="/Library/Input Methods/chichi77 KeyKey.app/Contents/MacOS/KeyKeyInputSourceTool"
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+state_file="$script_dir/keykey-input-source-state"
+saved_uid=unknown
+state=unknown
+if [[ -f "$state_file" && ! -L "$state_file" ]]; then
+    read -r saved_uid state < "$state_file" || state=unknown
+fi
+mode=--refresh
+if [[ "$saved_uid" != "$console_uid" ]]; then state=unknown; fi
+case "$state" in
+    enabled) mode=--refresh-enabled ;;
+    disabled) ;;
+    *) state=unknown ;;
+esac
 # launchctl supplies the GUI bootstrap namespace; sudo supplies the user
 # credentials. Running TIS as the Installer's root user updates the wrong state.
-# The helper only refreshes an already-enabled KeyKey source. First installs
-# register the bundle but leave enabling it to the user.
-if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- "$helper" --refresh; then
-    echo "KeyKey: files were installed, but input-source refresh failed. Re-add 琦琦輸入法 in System Settings > Keyboard > Text Input before logging out." >&2
-    exit 1
+# Restore only this same user's pre-install enabled intent; never disable or
+# change selection, and never guess intent from a post-replacement snapshot.
+setup_failed=false
+if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- "$helper" "$mode"; then
+    setup_failed=true
 fi
+# A fresh process must see restoration too; the mutating helper's cached
+# snapshot alone is insufficient evidence that the user can select KeyKey.
+if [[ "$state" == enabled && "$setup_failed" == false ]]; then
+    current_state=unknown
+    if ! current_state=$(/bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- \
+        "$helper" --snapshot) || [[ "$current_state" != enabled ]]; then
+        echo "KeyKey: independent post-install enabled verification failed ($current_state)." >&2
+        setup_failed=true
+    fi
+fi
+if [[ "$state" == unknown ]]; then setup_failed=true; fi
+if [[ "$setup_failed" == true ]]; then
+    echo "KeyKey: files were installed, but input-source setup needs attention. Open System Settings > Keyboard > Text Input." >&2
+    # A separate GUI process makes the failure visible without keeping the
+    # Installer waiting for a modal alert. Close inherited Installer log pipes.
+    /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- \
+        "$helper" --show-setup-warning </dev/null >/dev/null 2>&1 &
+fi
+exit 0

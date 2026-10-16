@@ -134,6 +134,8 @@ FCITX_CONFIGURATION(
     fcitx::ExternalOption updates{
         this, "UpdateNotification", "更新通知與下載…",
         "keykey-update-notify"};
+    fcitx::ExternalOption about{
+        this, "About", "關於琦琦輸入法…", "keykey-about"};
     fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
         bopomofoLayout{this, "BopomofoLayout", "Bopomofo keyboard layout",
                        "Standard"};

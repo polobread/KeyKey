@@ -16,6 +16,8 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(KeyKeyUpdateConfig)" LogicalName="KeyKey.UpdateConfig" />
+    <EmbeddedResource Include="../../../Branding/ProjectMotivation.txt" LogicalName="KeyKey.ProjectMotivation" />
+    <Resource Include="../../../Branding/chichi77.png" Link="AboutIcon.png" LogicalName="AboutIcon.png" />
   </ItemGroup>
   <PropertyGroup>
     <WinSparkleArchitecture Condition="'$(RuntimeIdentifier)' == 'win-x86'">Win32</WinSparkleArchitecture>

@@ -351,7 +351,7 @@ static NSURL *ReviewedFeed(id value)
 {
     if (_stopped) return;
     _installationRequested = YES;
-    [self setPhase:@"installing" message:@"安裝將要求管理員授權；完成後請登出再登入。"];
+    [self setPhase:@"installing" message:@"安裝將要求管理員授權；完成後從輸入法選單選取琦琦，並在「文字編輯」試打。"];
 }
 
 - (BOOL)updater:(SPUUpdater *)updater shouldPostponeRelaunchForUpdate:(SUAppcastItem *)item
@@ -373,12 +373,12 @@ static NSURL *ReviewedFeed(id value)
     if (_stopped || !_pendingInstallation || (_compositionCheck && _compositionCheck())) return;
     void (^handler)(void) = [_pendingInstallation copy];
     [self clearPendingInstallation];
-    [self setPhase:@"installing" message:@"組字已完成，繼續更新；安裝後請登出再登入。"];
+    [self setPhase:@"installing" message:@"組字已完成，繼續更新；完成後從輸入法選單選取琦琦，並試打確認。"];
     handler();
     [handler release];
 }
 
-- (BOOL)mayTerminateForUpdate
+- (BOOL)mayRelaunchForUpdate
 {
     if (!_stopped && _installationRequested && _compositionCheck && _compositionCheck()) {
         [self setPhase:@"waiting-for-input" message:@"更新暫停：請先完成目前組字，再重新選擇安裝更新。"];
@@ -392,7 +392,9 @@ static NSURL *ReviewedFeed(id value)
     // Sparkle rechecks this before sending its installer the resume request,
     // including retries that no longer call the one-shot postponement delegate.
     // The first attempt must reach that delegate so it can wait for composition.
-    return !_stopped && [self mayTerminateForUpdate];
+    // This guard belongs only to Sparkle's update restart. Normal quit,
+    // logout and shutdown use AppKit's termination flow without this veto.
+    return !_stopped && [self mayRelaunchForUpdate];
 }
 
 - (void)updater:(SPUUpdater *)updater didFinishUpdateCycleForUpdateCheck:(SPUUpdateCheck)check error:(NSError *)error

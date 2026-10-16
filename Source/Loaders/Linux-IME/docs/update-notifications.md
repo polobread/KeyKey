@@ -22,9 +22,10 @@ from an already running request. An existing request can finish within its timeo
 The notification daemon must support freedesktop/Gio desktop notifications.
 
 Stable releases are the default. **也通知 beta 測試版** explicitly includes beta
-releases. Comparison is numeric, with `beta10 > beta9` and stable following beta
-for the same base version. For beta builds pass
-`-DKEYKEY_UPDATE_VERSION=1.3.2-betaN`; CMake rejects a different base product version.
+releases. Comparison uses the numeric prerelease suffix, with stable following
+all beta versions for the same base version. For beta builds pass
+`-DKEYKEY_UPDATE_VERSION=X.Y.Z-betaN`, replacing X.Y.Z with the product version
+and N with a positive integer without leading zeros; CMake rejects a different base product version.
 The Debian build script derives this from an exact matching checkout tag, or
 accepts an explicit `KEYKEY_UPDATE_VERSION` for source archives. This metadata
 does not change existing Debian artifact naming/version conventions.
@@ -65,15 +66,16 @@ At implementation time it packages `v1.3.1` with `PORTREVISION=1` and uses
 `python:build`. Python must now also be a runtime dependency, with GTK 3 and the
 matching Python-flavored PyGObject binding. See the supplied
 [`update-notification.patch`](../packaging/freebsd/update-notification.patch),
-which adds those dependencies and all four new installed files. It also fixes
+which adds those dependencies and the notification and About launchers, desktop
+entries, shared Python modules, motivation text, and icon. It also fixes
 the chosen interpreter with `-DPython3_EXECUTABLE=${PYTHON_CMD}`. GNUInstallDirs
 uses the selected prefix; `/usr/local/bin`, `/usr/local/share` and the selected
 Python interpreter are baked into the launcher, with no `/usr/bin/python3` or
 systemd assumption. GTK opens the browser through Gio's default URI handler.
 
 The patch is for the ports maintainer **after selecting a new immutable upstream
-release tag containing this feature**. It deliberately does not change
-DISTVERSION/distinfo to the existing beta1 tag: that tag predates this code.
+release tag containing this feature**. Select that release when updating
+DISTVERSION/distinfo; do not select a tag that predates the notification tool.
 Update DISTVERSION, reset PORTREVISION when appropriate, regenerate distinfo,
 then apply the dependency/plist changes. The source change does not itself
 publish a FreeBSD port update. Do not execute network checks during package
@@ -92,6 +94,9 @@ button, manually check, open the upstream page, enable/disable periodic checks,
 log out/in and verify the notification action. Confirm no Linux package is
 installed and a ports/pkg revision suffix does not affect the upstream comparison:
 the compiled product version, not `1.3.1_1`, is the notification's current version.
+Also open **關於琦琦輸入法…** from Fcitx settings and the applications menu;
+confirm the installed version, full scrollable motivation text, icon, and both
+official links are available.
 
 ## Local regression commands
 

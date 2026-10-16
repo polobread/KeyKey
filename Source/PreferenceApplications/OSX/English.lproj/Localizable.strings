@@ -1,6 +1,14 @@
 "Default" = "Default";
 "Customized..." = "Customized...";
 "General" = "General"; 
+"About" = "About";
+"Development Motivation" = "Development Motivation";
+"Unable to load the project introduction." = "Unable to load the project introduction.";
+"chichi77 KeyKey" = "chichi77 KeyKey";
+"Version %@" = "Version %@";
+"GitHub Project" = "GitHub Project";
+"Latest Release" = "Latest Release";
+"KeyKey Source Credits" = "Based on the OpenVanilla Project\nOriginal source: Yahoo! KeyKey\n© 2008–2010 Yahoo! Taiwan. Distributed under the New BSD License.";
 "Phonetic" = "Phonetic";
 "Smart Phonetic" = "Smart Phonetic";
 "Unable to launch user phrase editor." = "Unable to launch user phrase editor.";
