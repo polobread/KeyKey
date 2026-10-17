@@ -5,6 +5,7 @@
 @interface FakeSources : NSObject <KKInputSourceOperations>
 @property BOOL registrationSucceeds, stopSucceeds, enableSucceeds, enabled, selected, fallbackSucceeds;
 @property BOOL enabledReadable, selectedReadable;
+@property BOOL replacedStopSucceeds;
 @property(nonatomic, retain) NSMutableArray *calls;
 @end
 @implementation FakeSources
@@ -13,12 +14,14 @@
         _calls = [NSMutableArray new];
         _registrationSucceeds = YES; _stopSucceeds = YES; _enableSucceeds = YES; _fallbackSucceeds = YES;
         _enabledReadable = YES; _selectedReadable = YES;
+        _replacedStopSucceeds = YES;
     }
     return self;
 }
 - (void)dealloc { [_calls release]; [super dealloc]; }
 - (BOOL)registerInstalledInputMethod { [self.calls addObject:@"register"]; return self.registrationSucceeds; }
 - (BOOL)stopInstalledInputMethod { [self.calls addObject:@"stop"]; return self.stopSucceeds; }
+- (BOOL)stopReplacedInputMethod { [self.calls addObject:@"stop-replaced"]; return self.replacedStopSucceeds; }
 - (BOOL)readEnabled:(BOOL *)enabled { [self.calls addObject:@"read"]; *enabled = self.enabled; return self.enabledReadable; }
 - (BOOL)readSelected:(BOOL *)selected { [self.calls addObject:@"selected"]; *selected = self.selected; return self.selectedReadable; }
 - (BOOL)selectFallback { [self.calls addObject:@"fallback"]; return self.fallbackSucceeds; }
@@ -36,14 +39,18 @@ int main(void)
     @autoreleasepool {
         FakeSources *source = [[[FakeSources alloc] init] autorelease];
         Check(KKRefreshInputSource(source, NO), @"first install or previously disabled source stays unchanged");
-        Check([source.calls isEqual:@[@"register"]],
-              @"postinstall does not terminate a newly launched input method");
+        Check([source.calls isEqual:@[@"stop-replaced", @"register"]],
+              @"postinstall checks for replaced databases before registration");
         [source.calls removeAllObjects]; source.registrationSucceeds = NO;
-        Check(!KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"register"]],
+        Check(!KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"stop-replaced", @"register"]],
               @"registration failure prevents attempted restoration");
         [source.calls removeAllObjects]; source.registrationSucceeds = YES;
-        Check(KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"register", @"enable"]],
+        Check(KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"stop-replaced", @"register", @"enable"]],
               @"upgrade registers and restores only the saved enabled intent");
+        [source.calls removeAllObjects]; source.replacedStopSucceeds = NO;
+        Check(!KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"stop-replaced"]],
+              @"unverified or unretired stale process is a visible setup failure");
+        source.replacedStopSucceeds = YES;
         [source.calls removeAllObjects]; source.enableSucceeds = NO;
         Check(!KKRefreshInputSource(source, YES), @"failed enabled restoration is reported, never silently accepted");
         [source.calls removeAllObjects]; source.enabled = YES; source.selected = YES;

@@ -17,6 +17,7 @@ static NSArray *fallbackSources;
 static NSDictionary *currentSource;
 static int passed, sourceQueries, unexpectedCalls, enableCalls, selectCalls, currentCalls;
 static OSStatus registerStatus, enableStatus, selectStatus;
+static BOOL databaseReplaced, processUnreadable;
 static void Check(BOOL value, NSString *message) {
     if (!value) { NSLog(@"FAIL: %@", message); exit(1); } passed++;
 }
@@ -56,6 +57,14 @@ OSStatus KKFakeRegister(CFURLRef url) {
     Check([[(NSURL *)url path] isEqual:KKInstalledPath], @"registration uses fixed installed path");
     return registerStatus;
 }
+@interface FakeSystemInputSources : KKSystemInputSources
+@end
+@implementation FakeSystemInputSources
+- (KKDatabaseState)databaseStateForProcess:(pid_t)pid {
+    (void)pid;
+    return processUnreadable ? KKDatabaseUnknown : databaseReplaced ? KKDatabaseReplaced : KKDatabaseCurrent;
+}
+@end
 
 @interface FakeApplication : NSObject
 @property(getter=isTerminated) BOOL terminated;
@@ -72,7 +81,7 @@ OSStatus KKFakeRegister(CFURLRef url) {
 
 int main(void) {
     @autoreleasepool {
-        KKSystemInputSources *system = [[[KKSystemInputSources alloc] init] autorelease];
+        KKSystemInputSources *system = [[[FakeSystemInputSources alloc] init] autorelease];
         Check([system registerInstalledInputMethod], @"registration works without readable current source or enabled property");
         nullList = YES;
         Check(![system registerInstalledInputMethod], @"noErr with unavailable snapshot is a reported failure"); nullList = NO;
@@ -147,6 +156,23 @@ int main(void) {
         [system setValue:@[] forKey:@"_previousApplications"];
         app.terminated = NO;
         Check([system stopInstalledInputMethod] && app.terminateCalls == 4, @"no captured old process needs no termination");
+        [system setValue:@[app] forKey:@"_previousApplications"];
+        Check([system stopReplacedInputMethod] && app.terminateCalls == 4,
+              @"postinstall preserves a process holding the current database");
+        processUnreadable = YES;
+        Check(![system stopReplacedInputMethod] && app.terminateCalls == 4,
+              @"unreadable process state is reported without termination"); processUnreadable = NO;
+        databaseReplaced = YES;
+        app.executableURL = [NSURL fileURLWithPath:@"/tmp/chichi77 KeyKey.app/Contents/MacOS/chichi77 KeyKey"];
+        Check([system stopReplacedInputMethod] && app.terminateCalls == 4,
+              @"postinstall leaves other executable paths untouched");
+        app.executableURL = [NSURL fileURLWithPath:[KKInstalledPath stringByAppendingPathComponent:@"Contents/MacOS/chichi77 KeyKey"]];
+        app.acceptsTermination = NO; app.exitsImmediately = NO;
+        Check(![system stopReplacedInputMethod] && app.terminateCalls == 5,
+              @"stale process refusing normal exit is a setup failure");
+        app.acceptsTermination = YES; app.exitsImmediately = YES;
+        Check([system stopReplacedInputMethod] && app.terminateCalls == 6,
+              @"process relaunched during replacement is normally retired after payload installation");
         NSLog(@"PASS: %d system-adapter checks (fake TIS and process termination)", passed);
     }
 }

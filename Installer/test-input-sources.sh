@@ -22,6 +22,10 @@ xcrun clang -fno-objc-arc -mmacosx-version-min=15.0 -arch arm64 -Wall -Wextra -f
     "$task_root/Installer/Tests/SystemInputSourceTests.m" -o "$task_build/system-input-source-tests"
 "$task_build/system-input-source-tests"
 
+xcrun clang -fno-objc-arc -mmacosx-version-min=15.0 -arch arm64 -Wall -Wextra -framework Cocoa -framework Carbon \
+    "$task_root/Installer/Tests/DatabaseIdentityTests.m" -o "$task_build/database-identity-tests"
+"$task_build/database-identity-tests"
+
 xcrun clang -fno-objc-arc -mmacosx-version-min=15.0 -arch arm64 -framework Cocoa -framework Carbon \
     -DTISCreateInputSourceList=KKTestCreateInputSourceList \
     -DTISGetInputSourceProperty=KKTestGetInputSourceProperty \
