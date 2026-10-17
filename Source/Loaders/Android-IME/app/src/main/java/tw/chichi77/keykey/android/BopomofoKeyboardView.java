@@ -216,6 +216,10 @@ final class BopomofoKeyboardView extends View {
         return usesHardwareSmartTwoRows() && !candidates.isEmpty();
     }
 
+    private int hardwareNumberRowCount() {
+        return hardwareNumberRowEnabled ? 2 : hardwareSmartTwoRowsEnabled ? 1 : 0;
+    }
+
     void setBottomSpaceEnabled(boolean touchEnabled, boolean hardwareEnabled) {
         if (touchBottomSpaceEnabled == touchEnabled
                 && hardwareBottomSpaceEnabled == hardwareEnabled) return;
@@ -266,7 +270,6 @@ final class BopomofoKeyboardView extends View {
                   boolean shifted, boolean temporaryEnglish, boolean hardwareFullWidth,
                   boolean supportPromptVisible, int page, int pageCount,
                   int highlightedIndex, InputFieldPolicy fieldPolicy) {
-        boolean hadCandidateRow = showsHardwareSmartCandidateRow();
         this.candidates = List.copyOf(candidates);
         this.reading = reading;
         this.smartMode = smartMode;
@@ -281,7 +284,6 @@ final class BopomofoKeyboardView extends View {
         this.pageCount = pageCount;
         this.highlightedIndex = highlightedIndex;
         this.fieldPolicy = fieldPolicy == null ? InputFieldPolicy.DEFAULT : fieldPolicy;
-        if (hadCandidateRow != showsHardwareSmartCandidateRow()) requestLayout();
         invalidate();
     }
 
@@ -299,8 +301,7 @@ final class BopomofoKeyboardView extends View {
         int desiredContentHeight = switch (mode) {
             case HARDWARE_FLOATING -> dp(1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
-                    * (showsHardwareSmartCandidateRow() ? 2 : 1)
-                    + (hardwareNumberRowEnabled ? 2 * HARDWARE_NUMBER_ROW_HEIGHT_DP : 0));
+                    + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
             case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
                     landscapeHeightPercent);
             case PORTRAIT -> scaledContentHeight(PORTRAIT_CONTENT_HEIGHT_DP,
@@ -456,19 +457,21 @@ final class BopomofoKeyboardView extends View {
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
                 area.top, area.right, area.bottom), "▼", "HARDWARE_COLLAPSE");
-        float numberRowsTop = area.bottom;
-        if (showsHardwareSmartCandidateRow()) {
-            RectF candidateArea = new RectF(0, area.bottom, getWidth(),
-                    area.bottom + dp(HARDWARE_CONTENT_HEIGHT_DP));
-            drawCandidateStrip(canvas, candidateArea);
-            numberRowsTop = candidateArea.bottom;
+        if (hardwareNumberRowCount() > 0) {
+            RectF numberArea = new RectF(0, area.bottom, getWidth(),
+                    area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP));
+            // Candidates occupy the existing number row without resizing the IME.
+            // Draw only the active row so covered number/settings keys have no hits.
+            if (showsHardwareSmartCandidateRow()) {
+                drawCandidateStrip(canvas, numberArea);
+            } else {
+                drawHardwareNumberRow(canvas, numberArea);
+            }
         }
         if (hardwareNumberRowEnabled) {
-            drawHardwareNumberRow(canvas, new RectF(0, numberRowsTop, getWidth(),
-                    numberRowsTop + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP)));
             drawHardwarePunctuationRow(canvas, new RectF(0,
-                    numberRowsTop + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP), getWidth(),
-                    numberRowsTop + dp(2 * HARDWARE_NUMBER_ROW_HEIGHT_DP)));
+                    area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP), getWidth(),
+                    area.bottom + dp(2 * HARDWARE_NUMBER_ROW_HEIGHT_DP)));
         }
     }
 

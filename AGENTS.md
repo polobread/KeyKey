@@ -59,7 +59,7 @@ macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 各有組�
 
 - 桌面與實體鍵盤保留最多十個已完成音節，第十一音節完成時擠出最前方完整詞段並固定下一詞段。固定回歸句為「請假要去哪裡玩呢去海邊因為那裡有比基尼」；檢查第 10、11、19 音節及全文無漏字或重複字。詳見 `docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md`。
 - iOS／Android 觸控鍵盤維持九／十音節邊界；已擠出的前段不可被後續選字或 Backspace 修改。句中選字只改候選目標，後續輸入仍接在句尾。候選窗開關、切換 App／輸入法、未完成讀音及生命週期重複回呼都須另測。
-- Android 實體鍵盤的「啟用好打注音雙排選字」預設關閉，僅在未使用浮動候選窗時生效；啟用後沿用觸控好打注音的九／十音節與 host-text 流程，上排 9 格組字區及 Emoji、ㄅ／英、▼，點字在下排開候選。一般實體模式仍依前述十／十一音節規則；切換模式須先保留舊組字。
+- Android 實體鍵盤的「啟用好打注音雙排選字」預設關閉，僅在未使用浮動候選窗時生效；啟用後沿用觸控好打注音的九／十音節與 host-text 流程，上排 9 格組字區及 Emoji、ㄅ／英、▼。下方固定保留既有數字鍵列，候選覆蓋同一列、不動態增高；數字符號鍵選項控制是否另保留符號列。一般實體模式仍依前述十／十一音節規則；切換模式須先保留舊組字。
 - iOS extension 不接收一般 USB／藍牙鍵盤事件；實體鍵盤編輯器只存在容器 App 前景。引擎測試不能代替 App、extension、模擬器或實機驗證。
 - Linux 的 unit、staged install、X11 與 GNOME Wayland 是不同證據層級；Windows TSF 必須在 Windows 文字宿主驗證。詳細平台差異見 `Source/Loaders/Linux-IME/docs/` 與各 frontend README。
 
