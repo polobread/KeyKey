@@ -246,7 +246,7 @@ file for terms.
 	// The old default-true flag is NOT consent for a newly enabled network feature.
 	[_useUpdateCheckBox setIntValue:0];
 	[_useUpdateCheckBox setEnabled:NO];
-	[_useUpdateCheckBox setTitle:@"每日檢查新版並通知（不預先下載）"];
+	[_useUpdateCheckBox setTitle:@"每週檢查新版並通知（不預先下載）"];
 	[self requestUpdateConsent:nil];
 	
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)	

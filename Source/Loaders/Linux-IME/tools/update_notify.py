@@ -12,7 +12,7 @@ from urllib.request import build_opener, HTTPRedirectHandler, Request
 
 API = "https://api.github.com/repos/polobread/KeyKey/releases?per_page=100"
 RELEASES = "https://github.com/polobread/KeyKey/releases"
-INTERVAL = 24 * 60 * 60
+INTERVAL = 7 * 24 * 60 * 60
 CHECK_TIMEOUT = 10
 LIMIT = 4 * 1024 * 1024
 VERSION = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-beta([1-9][0-9]*))?"
@@ -149,7 +149,7 @@ def save_json(path, value):
 
 def due(state, now=None):
     now = time.time() if now is None else now
-    previous = state.get("last_attempt", 0)
+    previous = state.get("last_attempt")
     if (not isinstance(previous, (int, float)) or not math.isfinite(previous)
             or previous < 0 or previous > now):
         return True
@@ -175,7 +175,10 @@ def set_preferences(enabled, include_beta, executable):
 
 
 def preferences():
-    value = load_json(config_home() / "chichi77-keykey/update-notification.json")
-    # Invalid/corrupt values never imply consent to network activity.
+    path = config_home() / "chichi77-keykey/update-notification.json"
+    if not path.exists():
+        return {"enabled": True, "include_beta": False}
+    value = load_json(path)
+    # Preserve saved opt-outs; malformed existing settings stay offline.
     return {"enabled": value.get("enabled") is True,
             "include_beta": value.get("include_beta") is True}

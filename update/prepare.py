@@ -133,7 +133,7 @@ def embed_macos(app):
     info = plistlib.loads(info_path.read_bytes())
     info.update(SUEnableAutomaticChecks=False, SUAllowsAutomaticUpdates=False, SUAutomaticallyUpdate=False,
                 SUSendProfileInfo=False, SUVerifyUpdateBeforeExtraction=True,
-                SUScheduledCheckInterval=86400)
+                SUScheduledCheckInterval=604800)
     for name, value in (("SUFeedURL", config["macos_feed_url"]),
                         ("KeyKeyBetaFeedURL", config.get("macos_beta_feed_url", "")),
                         ("SUPublicEDKey", config["public_ed25519_key"])):

@@ -11,12 +11,18 @@ prefetched. Updating starts only after the user chooses it. On Linux/FreeBSD,
 the user opens the release page, downloads the package and installs it through
 the platform package manager.
 
-**每日檢查新版並通知** is off by default. Enabling it creates a per-user XDG
-autostart entry and keeps one Gio application running during the desktop session.
-It attempts a check at most once every 24 hours, including after failed checks;
+**每週檢查新版並通知** is on by default for a user without saved settings.
+The package installs an XDG desktop autostart entry under
+`${CMAKE_INSTALL_FULL_SYSCONFDIR}/xdg/autostart` (`/etc/xdg/autostart` for Debian packages,
+`/usr/local/etc/xdg/autostart` for the FreeBSD port). It starts one Gio application
+after desktop login, without running a network request during package installation.
+Existing saved choices are preserved; a saved opt-out exits before GTK startup
+or any request. Enabling the option also creates a per-user XDG autostart entry,
+compatible with older installations.
+It attempts a check at most once every 7 days, including after failed checks;
 restarting the desktop does not reset the interval. Each newer version is notified
 once. There is no systemd or privileged service, so FreeBSD XDG desktops can use
-the same tool. Closing the window retains explicitly enabled checks; disabling
+the same tool. Closing the window retains enabled checks; disabling
 the option removes its autostart entry, stops the timer and suppresses notification
 from an already running request. An existing request can finish within its timeout.
 The notification daemon must support freedesktop/Gio desktop notifications.
@@ -46,16 +52,17 @@ ten-second total UI deadline, shared across the release list and tag requests;
 individual requests use the remaining time as their socket timeout. Timeout
 restores the check button without retrying automatically. Manual retry ignores
 late results from the expired worker, and closing a manual check cancels further
-requests. The existing daily schedule still waits 24 hours after any attempt;
+requests. The existing weekly schedule still waits 7 days after any attempt;
 cross-host and non-HTTPS redirects are rejected. No typing text is sent.
 
 Preferences: `$XDG_CONFIG_HOME/chichi77-keykey/update-notification.json`.
 Attempt time and last notified version:
 `$XDG_STATE_HOME/chichi77-keykey/update-notification.json`.
 The defaults are `~/.config` and `~/.local/state` respectively. Invalid consent
-values are treated as disabled. User state remains after package removal; the
-autostart command points to the installed executable and cannot check after that
-executable has been removed. Disable the option before uninstalling to remove
+values are treated as disabled. Only an absent preferences file uses the new
+default; an existing malformed file stays offline. User state remains after
+package removal. The system entry uses `TryExec`, and any remaining autostart
+command cannot check after the executable is removed. Disable the option before uninstalling to remove
 the entry, or remove the user autostart file manually.
 
 ## FreeBSD ports integration
@@ -84,8 +91,11 @@ release tag containing this feature**. Select that release when updating
 DISTVERSION/distinfo; do not select a tag that predates the notification tool.
 Update DISTVERSION, reset PORTREVISION when appropriate, regenerate distinfo,
 then apply the dependency/plist changes. The source change does not itself
-publish a FreeBSD port update. Do not execute network checks during package
-installation or enable periodic checks for every user.
+publish a FreeBSD port update. Do not execute network checks during package installation. The packaged XDG
+entry starts the default weekly check only after desktop login and honors saved
+opt-outs. Prefixes outside the desktop's `XDG_CONFIG_DIRS` require adding their
+`etc/xdg` directory to the session configuration or enabling the option once in
+the UI to create a per-user entry.
 
 Native FreeBSD acceptance before port publication:
 
@@ -117,5 +127,5 @@ ctest --test-dir out/build/notify -R 'update_notification|mode_keys' --output-on
 
 The core tests cover both platforms. The GTK tests exercise the real widgets and
 Gio action with isolated responses, including duplicate checks, failures/retry,
-default-off, disabling an in-flight check and notification deduplication. They do
+default-on, saved opt-outs, disabling an in-flight check and notification deduplication. They do
 not replace native FreeBSD desktop or GNOME Wayland acceptance.

@@ -80,7 +80,7 @@ class Application(Gtk.Application):
         box.pack_start(Gtk.Label(label=policy, xalign=0, wrap=True), False, False, 0)
         self.status = Gtk.Label(label="按下「檢查新版」開始檢查。", xalign=0, wrap=True)
         box.pack_start(self.status, False, False, 0)
-        self.enabled = Gtk.CheckButton(label="每日檢查新版並通知（登入桌面後）")
+        self.enabled = Gtk.CheckButton(label="每週檢查新版並通知（登入桌面後）")
         self.enabled.set_active(self.settings["enabled"])
         self.beta = Gtk.CheckButton(label="也通知 beta 測試版")
         self.beta.set_active(self.settings["include_beta"])
@@ -247,7 +247,7 @@ class Application(Gtk.Application):
 
 
 def main(current, system, executable):
-    # Default-off autostart must not require a display or contact any service.
+    # A saved opt-out exits before starting GTK or contacting any service.
     if "--background" in sys.argv and not updates.preferences()["enabled"]:
         return
     Application(current, system, executable).run(sys.argv)

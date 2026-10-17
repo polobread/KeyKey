@@ -38,9 +38,22 @@ def main():
         shutil.copyfile(Path(__file__).parent / "fixtures/fcitx5-profile", config / "profile")
         helper = shutil.which("keykey-update-notify")
         assert helper, "Installed notification helper is missing"
-        subprocess.run([helper, "--background"], check=True, timeout=5)
-        assert not (root / "state").exists(), "Default-off startup wrote check state"
+        autostart = Path("/etc/xdg/autostart/org.chichi77.KeyKey.UpdateNotification.desktop")
+        assert f'Exec="{helper}" --background' in autostart.read_text()
+        assert updates.preferences() == {"enabled": True, "include_beta": False}
+        state_path = updates.state_home() / "chichi77-keykey/update-notification.json"
+        updates.save_json(state_path, {"last_attempt": time.time()})  # Keep default-on startup offline.
         try:
+            initial = subprocess.Popen([helper, "--background"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            processes.append(initial)
+            time.sleep(1)
+            assert initial.poll() is None, initial.communicate()
+            initial.terminate()
+            initial.communicate(timeout=5)
+            updates.set_preferences(False, False, helper)
+            state_path.unlink()
+            subprocess.run([helper, "--background"], check=True, timeout=5)
+            assert not state_path.exists(), "Saved opt-out startup wrote check state"
             processes.append(subprocess.Popen(["fcitx5"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
             bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
             deadline = time.monotonic() + 15
@@ -82,9 +95,9 @@ def main():
                     break
                 time.sleep(0.05)
             assert window, "Fcitx update button did not launch the installed helper"
-            checkbox = wait_for_node(window, "check box", "每日檢查新版並通知（登入桌面後）")
+            checkbox = wait_for_node(window, "check box", "每週檢查新版並通知（登入桌面後）")
             assert not checkbox.getState().contains(pyatspi.STATE_CHECKED)
-            assert not (root / "state").exists(), "Opening the UI performed a network check"
+            assert not state_path.exists(), "Opening the opted-out UI performed a network check"
             # Stop the manually opened helper before testing its background launch.
             bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
             reply = bus.call_sync("org.freedesktop.DBus", "/org/freedesktop/DBus",
@@ -102,7 +115,7 @@ def main():
             secondary = subprocess.run([helper], capture_output=True, timeout=5)
             assert secondary.returncode == 0, secondary.stderr.decode()
             assert background.poll() is None, "Second launch replaced the background instance"
-            print("PASS: installed Fcitx entry, default-off, background flag and single-instance activation")
+            print("PASS: installed Fcitx entry, default-on, saved opt-out, background flag and single-instance activation")
         finally:
             for process in reversed(processes):
                 if process.poll() is None:

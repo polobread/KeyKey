@@ -230,7 +230,7 @@ internal sealed class DesktopUpdater : IDisposable
         automaticTimer.Tick += (_, _) =>
         {
             if (Available && !Busy && backend.Automatic &&
-                DateTimeOffset.UtcNow - backend.LastAttempt >= TimeSpan.FromDays(1)) Check(background: true);
+                DateTimeOffset.UtcNow - backend.LastAttempt >= TimeSpan.FromDays(7)) Check(background: true);
         };
         automaticTimer.Start();
     }

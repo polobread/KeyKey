@@ -209,7 +209,7 @@
         <StackPanel Margin="24">
           <TextBlock Text="琦琦輸入法更新" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16" />
           <TextBlock x:Name="UpdateStatus" Margin="0,0,0,20" />
-          <CheckBox x:Name="AutomaticUpdates" Content="設定視窗開啟時每日檢查新版並通知"
+          <CheckBox x:Name="AutomaticUpdates" Content="設定視窗開啟時每週檢查新版並通知"
                     IsEnabled="False" Checked="AutomaticUpdates_Changed" Unchecked="AutomaticUpdates_Changed" Margin="0,0,0,20" />
           <CheckBox x:Name="BetaUpdates" Content="接收 beta 測試版更新（預設關閉）"
                     IsChecked="False" IsEnabled="False" Checked="BetaUpdates_Changed" Unchecked="BetaUpdates_Changed" Margin="0,0,0,20" />

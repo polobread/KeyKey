@@ -205,6 +205,11 @@ if(KEYKEY_BUILD_FCITX5)
         org.chichi77.KeyKey.About.desktop @ONLY)
     configure_file(data/org.chichi77.KeyKey.UpdateNotification.desktop.in
         org.chichi77.KeyKey.UpdateNotification.desktop @ONLY)
+    configure_file(data/org.chichi77.KeyKey.UpdateNotification.autostart.desktop.in
+        org.chichi77.KeyKey.UpdateNotification.autostart.desktop @ONLY)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.chichi77.KeyKey.UpdateNotification.autostart.desktop"
+        DESTINATION "${CMAKE_INSTALL_FULL_SYSCONFDIR}/xdg/autostart"
+        RENAME org.chichi77.KeyKey.UpdateNotification.desktop)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/keykey-update-notify"
         "${CMAKE_CURRENT_BINARY_DIR}/keykey-about"
         DESTINATION "${CMAKE_INSTALL_BINDIR}")

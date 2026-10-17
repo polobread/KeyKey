@@ -19,11 +19,12 @@ diff --git a/chinese/fcitx5-keykey/Makefile b/chinese/fcitx5-keykey/Makefile
 diff --git a/chinese/fcitx5-keykey/pkg-plist b/chinese/fcitx5-keykey/pkg-plist
 --- a/chinese/fcitx5-keykey/pkg-plist
 +++ b/chinese/fcitx5-keykey/pkg-plist
-@@ -1,5 +1,14 @@
+@@ -1,5 +1,15 @@
  bin/keykey-fcitx-app
  bin/keykey-smart-phrases
 +bin/keykey-update-notify
 +bin/keykey-about
++etc/xdg/autostart/org.chichi77.KeyKey.UpdateNotification.desktop
  lib/fcitx5/chichi77-keykey.so
  share/applications/org.chichi77.KeyKey.TextEditor.desktop
 +share/applications/org.chichi77.KeyKey.UpdateNotification.desktop

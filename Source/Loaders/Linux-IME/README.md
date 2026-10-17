@@ -19,7 +19,7 @@ label, so the addon metadata and visible settings use one source without an empt
 information group.
 
 The **更新通知與下載…** setting opens a separate notification tool with manual
-checks, optional daily checks (off by default), and an official release-page
+checks, weekly checks (on by default, with a saved opt-out), and an official release-page
 button. It also supports the `chinese/fcitx5-keykey` FreeBSD port through the
 same prefix-aware installation. See [update notifications and ports integration](docs/update-notifications.md).
 

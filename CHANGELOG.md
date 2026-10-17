@@ -6,7 +6,7 @@
 - Linux／FreeBSD 的琦琦設定欄位、注音鍵盤配置與候選字窗方向統一使用台灣繁體中文；保存的設定鍵與選項值維持相容。修正 Debian 封裝來源與獨立原始碼壓縮檔漏帶關於頁圖示、開發初衷的問題，兩個入口共用素材清單，缺檔時於 CMake 設定階段明確中止。
 - Linux／FreeBSD 的 Fcitx 設定新增「好打注音進階設定」：空白鍵開候選（預設關閉）、選字目標在游標前方／後方（預設後方）、Esc 清除整句（預設關閉）。空白鍵關閉開候選時可在組字中插入空白；↓ 與點字仍可開候選。候選窗與未完成讀音優先由 Esc 取消，變更設定後先完成原組字再套用。
 - Fcitx 設定與應用程式選單新增「關於琦琦輸入法」入口；Linux／FreeBSD 顯示版本、開發初衷、來源與授權說明，以及 GitHub 專案首頁和最新正式版本連結。初衷原文與 macOS、Windows 共用。
-- 新增獨立的 Linux／FreeBSD 更新通知工具：Fcitx 設定入口、手動檢查、可選每日通知（預設關閉）、beta 選項與官方發行頁按鈕。先核對 tag 的 Unix 產品版號，避免誤報行動平台版本；Linux 檢查對應架構套件，FreeBSD 提醒透過 ports/pkg 更新並保留套件上架延遲界線。採 XDG 使用者登入啟動、GTK／Gio 通知，不依賴 systemd；附現有 `chinese/fcitx5-keykey` port 的相依套件／plist 修改與本機回歸。FreeBSD 原生桌面驗收仍待完成。
+- 新增獨立的 Linux／FreeBSD 更新通知工具：Fcitx 設定入口、手動檢查、每週通知（預設開啟，可關閉）、beta 選項與官方發行頁按鈕。先核對 tag 的 Unix 產品版號，避免誤報行動平台版本；Linux 檢查對應架構套件，FreeBSD 提醒透過 ports/pkg 更新並保留套件上架延遲界線。採 XDG 使用者登入啟動、GTK／Gio 通知，不依賴 systemd；附現有 `chinese/fcitx5-keykey` port 的相依套件／plist 修改與本機回歸。FreeBSD 原生桌面驗收仍待完成。
 
 - Linux 發布檢查改用共用 channel 版號驗證，接受同產品版號的正式與 beta tag；手動 beta 重跑固定使用原 tag 的來源，保留套件集合、SHA-256 與 tag commit 檢查。補上實際發布 shell 步驟的 beta、錯誤版號及損壞套件回歸。
 - Linux CMake 產品版號、支援矩陣、設定頁驗證及 GNOME VM 套件路徑升至 1.3.2；其他平台及共用好打注音模型不變，已發布的 1.3.1 安裝指南保留。
@@ -22,21 +22,23 @@
 - 四份 macOS 產品 plist 獨立升版至 1.3.2；已發布 macOS 1.3.1、Linux 版號與共用好打注音模型不變。
 - IMK 主程式加入可測試的 Sparkle 生命週期管理；設定頁顯示檢查、新版、下載、取消及錯誤狀態，阻止重複檢查，離線或取消後可重試。
 - 更新重啟遇到未完成組字時延後，完成後才繼續；不自行送字或清除組字，Sparkle 準備重啟時再檢查新輸入。
-- 更新來源固定為建置時審查的 HTTPS feed；未設定公開金鑰與 feed 保持離線。每日自動檢查需使用者開啟，強制關閉系統 profile 與背景自動下載。
+- 更新來源固定為建置時審查的 HTTPS feed；未設定公開金鑰與 feed 保持離線。每週自動檢查預設開啟，保留既有關閉設定；強制關閉系統 profile 與背景自動下載。
 - macOS CI 版號改從 plist 讀取，執行隔離更新測試；受保護簽章 job 可選擇產生已 notarize、Ed25519 簽章的不可變更新候選 artifact，不自動發布或提升 feed。
 - 初始 macOS RSS 提供既有 1.3.1 Apple Silicon 安裝包的 CDN（主要）與 GitHub（備用）手動下載連結，無自動安裝項目。第一次導入需手動安裝含正式更新設定的版本；私鑰 CI 設定、feed 部署及已安裝 notarized 版本的端到端驗收仍待維護者完成。
 
 ## 桌面更新機制（開發中，未發布）
 
-- 統一 Windows／macOS／Linux 的更新政策與設定說明：每日檢查只通知新版，不預先下載安裝包；使用者按下更新後才開始下載與安裝。Linux／FreeBSD 維持官方下載頁與套件管理器流程。新增 Windows 原生通知階段不下載安裝包的回歸。
-- macOS、Windows、Linux／FreeBSD 更新查詢在背景執行，整輪最多等待 10 秒；逾時顯示原因並恢復手動檢查，不自動重試，舊回覆不覆蓋新結果。macOS 查無更新直接顯示於設定頁，本機狀態讀取與每日檢查設定不再同步阻塞介面；Windows 原生取消／清理不阻塞 WPF，下載頁查詢也採 10 秒時限。新增模態服務、實際 Sparkle 停滯 TLS、WinSparkle 停滯 TLS 與 Linux 背景生命週期回歸；原生跨平台驗收與發布另行執行。
+- v1.3.2 的 macOS、Windows、Linux／FreeBSD 每週新版檢查改為預設開啟，保留使用者既有關閉設定，beta 頻道仍預設關閉。Linux／FreeBSD 安裝 XDG 登入啟動項目，已關閉時直接退出；安裝套件時不執行網路查詢。每週檢查只通知新版，使用者確認後才下載與安裝。
+
+- 統一 Windows／macOS／Linux 的更新政策與設定說明：每週檢查只通知新版，不預先下載安裝包；使用者按下更新後才開始下載與安裝。Linux／FreeBSD 維持官方下載頁與套件管理器流程。新增 Windows 原生通知階段不下載安裝包的回歸。
+- macOS、Windows、Linux／FreeBSD 更新查詢在背景執行，整輪最多等待 10 秒；逾時顯示原因並恢復手動檢查，不自動重試，舊回覆不覆蓋新結果。macOS 查無更新直接顯示於設定頁，本機狀態讀取與每週檢查設定不再同步阻塞介面；Windows 原生取消／清理不阻塞 WPF，下載頁查詢也採 10 秒時限。新增模態服務、實際 Sparkle 停滯 TLS、WinSparkle 停滯 TLS 與 Linux 背景生命週期回歸；原生跨平台驗收與發布另行執行。
 - macOS／Windows 更新設定新增預設關閉的 beta 頻道選項，Linux 沿用既有選項。建置 beta tag 不等於同意接收 beta；只能選擇建置時審查的 stable／beta HTTPS 網址。檢查、下載、安裝或未儲存 Windows 編輯期間不允許切換，舊回呼不能修改新頻道狀態。首次使用仍須手動安裝含新設定的版本。
 - Windows beta 安裝包原生驗證整合進 `Sync Update Feeds to CDN`：驗證已發布檔案的 SHA-256、build/tag 來源、簽章狀態與產品版號，未執行安裝器。工作分支／PR 不取得發布權限；feed 由維護者要求建立 PR、親自 review／merge 後才同步 CDN。保留 SHA-256 副本方案；FreeBSD 公告 PR 固定延後 48 小時，不檢查套件是否已上架。
 - 同一 workflow 增加 master-only 手動副本準備入口，Mac 實際驗證公證、Windows 使用同次原生驗證報告，GitHub 禁止覆蓋、S3 條件式新增並回讀比對。feed 同步增加 signed metadata／安裝包簽章及可下載性門檻，拒絕尚未上線的副本。Terraform 限定新增 metadata／signature 物件權限與短快取，需維護者 review／apply；本次不發布新 release 或直接上傳 feed。
 - CDN 發布摘要的下載網址會編碼檔名中的特殊字元，修正 Linux 套件檔名含 `+` 時連結回傳 403 的問題；S3 物件名稱與 CloudFront invalidation 路徑保留原名，避免把網址編碼套用到儲存鍵。
 - macOS／Windows 封裝支援獨立測試頻道，要求 GitHub Pre-release 與固定 tag commit，不改 Latest。更新 metadata 增加 beta channel；測試頻道使用獨立 feed，未設定不回退 stable。新增 `update/beta/` RSS、stable 防混入驗證、雙 channel CDN 同步及對應 Terraform 權限／短快取。Windows signed beta 的同產品版號安裝保護仍須另行處理。
 - 新增 stable XML CDN 同步 workflow：master feed 變更後經既有 release environment 發布，PR 只驗證。沿用 OIDC、比對 S3／CDN bytes、精確清除快取，不發布 installer／JSON 或刪除遠端檔案；Terraform 增加限定 XML 權限及短快取，仍須維護者 review／apply。
-- macOS 加入 Sparkle 更新入口與預設關閉的自動檢查；由 IMK 主程式管理更新，舊版預設開啟的 Yahoo 更新旗標不視為連網同意。安裝包保留更新元件的 XPC/helper 權限並由內而外簽章，所有 pkg 元件固定安裝位置。
+- macOS 加入 Sparkle 更新入口與預設開啟的每週檢查；由 IMK 主程式管理更新，沿用目前更新設定，保留使用者既有關閉選擇，不讀取舊 Yahoo 更新旗標。安裝包保留更新元件的 XPC/helper 權限並由內而外簽章，所有 pkg 元件固定安裝位置。
 - Windows 現代設定加入 WinSparkle 更新分頁；只在設定程式開啟時檢查，不在 TSF 宿主內連網。x64／x86 元件依執行行程位元數打包，沿用版本化安裝與保留舊 DLL 的升級流程。
 - Windows 設定程式宣告支援 Windows 10／11，避免更新最低系統版本檢查誤判；分別保護未套用設定與未儲存自訂詞，套用設定不會解除自訂詞草稿保護，成功儲存自訂詞也不會誤擋更新或清除其他設定的保護。
 - Windows 更新分頁同步顯示檢查、新版本、失敗與取消狀態；檢查中避免重複請求。啟動安裝前及真正關閉設定視窗時重查未儲存內容，避免延遲回呼遺失新編輯；結束或初始化失敗後的舊回呼不再修改設定視窗。新增 x64／x86 原生 WinSparkle 簽章拒絕測試並納入 Windows CI。

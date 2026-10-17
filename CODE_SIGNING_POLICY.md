@@ -71,12 +71,12 @@ signing credential or private key is stored in the repository.
 
 The input-method functionality does not transfer entered text, keystrokes,
 candidate selections, preferences, or other user information to networked
-systems. Information is transferred only when a user explicitly invokes an
-operating-system feature such as sharing text or downloading an application
-release. See the project [privacy policy](PRIVACY.md) for details.
+systems. Sharing text through an operating-system feature requires an explicit
+user action. See the project [privacy policy](PRIVACY.md) for details.
 
-The desktop updater is default-off and transfers release/version requests only
-after a manual check or explicit opt-in. Ed25519 signatures protect downloaded
+The desktop updater defaults to weekly release/version checks and preserves saved
+opt-outs. Users can disable checks; beta updates still require explicit opt-in.
+Checks do not prefetch installers or authorize installation. Ed25519 signatures protect downloaded
 updates separately from Authenticode. The stable update-metadata tool requires
 timestamped Authenticode by default; the explicit unsigned transition above is
 the only exception. Unsigned CI artifacts are not automatically promoted to
