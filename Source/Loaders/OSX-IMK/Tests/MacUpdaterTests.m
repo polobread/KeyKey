@@ -99,7 +99,7 @@ int main(int argc, const char *argv[])
         Check(engine.starts == 1 && [[client snapshot][@"configured"] boolValue], @"start is idempotent");
         Check(!engine.sendsProfile && !engine.downloadsAutomatically, @"privacy and visible installation are enforced");
         Check([[client snapshot][@"automatic"] boolValue] && [client valueForKey:@"_automaticTimer"] != nil &&
-            !engine.automaticallyChecksForUpdates, @"fresh client defaults to bounded daily checks with native scheduling disabled");
+            !engine.automaticallyChecksForUpdates, @"fresh client defaults to bounded weekly checks with native scheduling disabled");
         for (NSString *preference in @[@"KeyKeyAutomaticChecks", @"SUEnableAutomaticChecks"]) {
             for (NSNumber *saved in @[@NO, @YES]) {
                 NSBundle *host = Bundle(root, @"https://example.invalid/feed.xml", key);
@@ -122,7 +122,7 @@ int main(int argc, const char *argv[])
             }
         }
         [client setAutomaticChecks:YES]; Check([[client snapshot][@"automatic"] boolValue] && !engine.automaticallyChecksForUpdates,
-            @"explicit opt in uses the bounded daily query path instead of native background queries");
+            @"explicit opt in uses the bounded weekly query path instead of native background queries");
         [client setAutomaticChecks:NO]; Check(![[client snapshot][@"automatic"] boolValue], @"explicit opt out works");
         Check([[client feedURLStringForUpdater:nil] isEqualToString:@"https://example.invalid/feed.xml"], @"reviewed feed is pinned");
         Check([[client feedParametersForUpdater:nil sendingSystemProfile:YES] count] == 0, @"no custom profiling parameters");

@@ -80,7 +80,7 @@ static NSURL *ReviewedFeed(id value)
         _preferences = [[NSUserDefaults alloc] initWithSuiteName:[host bundleIdentifier]];
         id automatic = [_preferences objectForKey:@"KeyKeyAutomaticChecks"];
         if (!automatic) automatic = [_preferences objectForKey:@"SUEnableAutomaticChecks"];
-        // New installations check daily; preserve an existing explicit choice.
+        // New installations check weekly; preserve an existing explicit choice.
         _automaticChecks = !automatic || ([automatic isKindOfClass:[NSNumber class]] && [automatic boolValue]);
         id consent = [_preferences objectForKey:@"KeyKeyBetaUpdates"];
         _betaEnabled = [consent isKindOfClass:[NSNumber class]] && [consent boolValue];
@@ -125,7 +125,7 @@ static NSURL *ReviewedFeed(id value)
     // an old user default requests profile submission or automatic downloads.
     [_engine setSendsSystemProfile:NO];
     [_engine setAutomaticallyDownloadsUpdates:NO];
-    // Use one cancellable 10-second query path for manual and daily checks.
+    // Use one cancellable 10-second query path for manual and weekly checks.
     // Sparkle's own background query has no public cancellation handle.
     if (_automaticChecks && ![_preferences objectForKey:@"KeyKeyAutomaticChecks"])
         [_preferences setBool:YES forKey:@"KeyKeyAutomaticChecks"];
@@ -138,7 +138,7 @@ static NSURL *ReviewedFeed(id value)
     }
     _started = YES;
     [self updateAutomaticTimer];
-    [self setPhase:@"idle" message:@"可手動檢查或設定每日新版通知。不預先下載；按下更新後才下載與安裝。"];
+    [self setPhase:@"idle" message:@"可手動檢查或設定每週新版通知。不預先下載；按下更新後才下載與安裝。"];
 }
 
 - (void)clearPendingInstallation
@@ -207,7 +207,7 @@ static NSURL *ReviewedFeed(id value)
 {
     id last = [_preferences objectForKey:@"KeyKeyLastUpdateAttempt"];
     if (_automaticChecks && [[[self snapshot] objectForKey:@"canCheck"] boolValue] &&
-        (![last isKindOfClass:[NSDate class]] || -[last timeIntervalSinceNow] >= 86400)) {
+        (![last isKindOfClass:[NSDate class]] || -[last timeIntervalSinceNow] >= 604800)) {
         [self checkForUpdates];
         _manualCheck = NO;
     }

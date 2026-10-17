@@ -11,7 +11,7 @@ prefetched. Updating starts only after the user chooses it. On Linux/FreeBSD,
 the user opens the release page, downloads the package and installs it through
 the platform package manager.
 
-**每日檢查新版並通知** is on by default for a user without saved settings.
+**每週檢查新版並通知** is on by default for a user without saved settings.
 The package installs an XDG desktop autostart entry under
 `${CMAKE_INSTALL_FULL_SYSCONFDIR}/xdg/autostart` (`/etc/xdg/autostart` for Debian packages,
 `/usr/local/etc/xdg/autostart` for the FreeBSD port). It starts one Gio application
@@ -19,7 +19,7 @@ after desktop login, without running a network request during package installati
 Existing saved choices are preserved; a saved opt-out exits before GTK startup
 or any request. Enabling the option also creates a per-user XDG autostart entry,
 compatible with older installations.
-It attempts a check at most once every 24 hours, including after failed checks;
+It attempts a check at most once every 7 days, including after failed checks;
 restarting the desktop does not reset the interval. Each newer version is notified
 once. There is no systemd or privileged service, so FreeBSD XDG desktops can use
 the same tool. Closing the window retains enabled checks; disabling
@@ -52,7 +52,7 @@ ten-second total UI deadline, shared across the release list and tag requests;
 individual requests use the remaining time as their socket timeout. Timeout
 restores the check button without retrying automatically. Manual retry ignores
 late results from the expired worker, and closing a manual check cancels further
-requests. The existing daily schedule still waits 24 hours after any attempt;
+requests. The existing weekly schedule still waits 7 days after any attempt;
 cross-host and non-HTTPS redirects are rejected. No typing text is sent.
 
 Preferences: `$XDG_CONFIG_HOME/chichi77-keykey/update-notification.json`.
@@ -92,7 +92,7 @@ DISTVERSION/distinfo; do not select a tag that predates the notification tool.
 Update DISTVERSION, reset PORTREVISION when appropriate, regenerate distinfo,
 then apply the dependency/plist changes. The source change does not itself
 publish a FreeBSD port update. Do not execute network checks during package installation. The packaged XDG
-entry starts the default daily check only after desktop login and honors saved
+entry starts the default weekly check only after desktop login and honors saved
 opt-outs. Prefixes outside the desktop's `XDG_CONFIG_DIRS` require adding their
 `etc/xdg` directory to the session configuration or enabling the option once in
 the UI to create a per-user entry.

@@ -69,7 +69,7 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
         win_sparkle_set_appcast_url(feed);
         if (win_sparkle_set_eddsa_public_key(key) != 1)
             throw new InvalidOperationException("WinSparkle 拒絕公開金鑰");
-        win_sparkle_set_update_check_interval(86400);
+        win_sparkle_set_update_check_interval(604800);
         canShutdown = () => callbacks.CanShutdown();
         shutdown = () => callbacks.Shutdown();
         error = () => callbacks.Error();
@@ -92,7 +92,7 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
             Automatic = preferences.GetValue("ConsentInitialized") is null ||
                 win_sparkle_get_automatic_check_for_updates() == 1;
         preferences.SetValue("ConsentInitialized", 1, RegistryValueKind.DWord);
-        // Settings schedules daily checks through the same 10-second path as a
+        // Settings schedules weekly checks through the same 10-second path as a
         // manual check. Native automatic checks have no start/cancel callback.
         win_sparkle_set_automatic_check_for_updates(0);
     }

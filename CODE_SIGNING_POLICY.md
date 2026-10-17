@@ -74,7 +74,7 @@ candidate selections, preferences, or other user information to networked
 systems. Sharing text through an operating-system feature requires an explicit
 user action. See the project [privacy policy](PRIVACY.md) for details.
 
-The desktop updater defaults to daily release/version checks and preserves saved
+The desktop updater defaults to weekly release/version checks and preserves saved
 opt-outs. Users can disable checks; beta updates still require explicit opt-in.
 Checks do not prefetch installers or authorize installation. Ed25519 signatures protect downloaded
 updates separately from Authenticode. The stable update-metadata tool requires

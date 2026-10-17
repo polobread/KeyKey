@@ -39,7 +39,7 @@ Apple 對交易資料的處理方式適用於 [Apple 隱私權政策](https://ww
 
 ## 桌面更新（開發中）
 
-macOS、Windows、Linux／FreeBSD 桌面版每日新版檢查預設開啟，使用者可隨時關閉；
+macOS、Windows、Linux／FreeBSD 桌面版每週新版檢查預設開啟，使用者可隨時關閉；
 已儲存的關閉設定會保留，beta 頻道預設關閉。檢查會連線到專案指定的 GitHub 或 CDN，
 取得版本資訊與發行說明，不預先下載安裝包。macOS／Windows 未設定正式更新網址或
 公開金鑰的開發建置不會連線。

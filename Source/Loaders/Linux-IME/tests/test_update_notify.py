@@ -161,10 +161,10 @@ class PreferenceTests(unittest.TestCase):
         self.assertFalse(path.exists())
         self.assertEqual(updates.preferences(), {"enabled": False, "include_beta": True})
 
-    def test_daily_throttle_and_clock_rollback(self):
+    def test_weekly_throttle_and_clock_rollback(self):
         self.assertTrue(updates.due({}, now=100000))
-        self.assertFalse(updates.due({"last_attempt": 100000}, now=100060))
-        self.assertTrue(updates.due({"last_attempt": 100000}, now=186400))
+        self.assertFalse(updates.due({"last_attempt": 100000}, now=704799))
+        self.assertTrue(updates.due({"last_attempt": 100000}, now=704800))
         self.assertTrue(updates.due({"last_attempt": 200000}, now=100000))
         self.assertTrue(updates.due({"last_attempt": "corrupt"}, now=100000))
         self.assertTrue(updates.due({"last_attempt": float("nan")}, now=100000))

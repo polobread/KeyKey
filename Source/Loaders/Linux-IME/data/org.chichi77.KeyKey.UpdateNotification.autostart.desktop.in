@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=琦琦輸入法更新通知
-Comment=每日檢查新版並通知
+Comment=每週檢查新版並通知
 Exec="@CMAKE_INSTALL_FULL_BINDIR@/keykey-update-notify" --background
 TryExec=@CMAKE_INSTALL_FULL_BINDIR@/keykey-update-notify
 Icon=system-software-update

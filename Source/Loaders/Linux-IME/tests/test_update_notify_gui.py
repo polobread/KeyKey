@@ -59,7 +59,7 @@ class GuiTests(unittest.TestCase):
     def new_release(self):
         self.releases = [{"tag_name": "v1.3.2", "draft": False, "prerelease": False, "assets": []}]
 
-    def test_fresh_settings_start_daily_timer_and_keep_beta_off(self):
+    def test_fresh_settings_start_weekly_timer_and_keep_beta_off(self):
         (updates.config_home() / "chichi77-keykey/update-notification.json").unlink()
         app = self.app()
         self.assertTrue(app.enabled.get_active())
@@ -70,7 +70,7 @@ class GuiTests(unittest.TestCase):
         pump(lambda: not app.busy)
         self.assertEqual(self.requests, [updates.API])
         app.periodic()
-        self.assertEqual(self.requests, [updates.API])  # Same-day attempts stay throttled.
+        self.assertEqual(self.requests, [updates.API])  # Same-week attempts stay throttled.
         app.enabled.set_active(False)
         self.assertIsNone(app.timer)
         self.assertFalse(updates.preferences()["enabled"])
@@ -158,7 +158,7 @@ class GuiTests(unittest.TestCase):
             notify.assert_not_called()
             self.assertIsNone(app.timer)
 
-    def test_daily_deduplication_and_notification_action(self):
+    def test_weekly_deduplication_and_notification_action(self):
         self.new_release()
         app = self.app()
         with patch.object(app, "send_notification") as notify, \

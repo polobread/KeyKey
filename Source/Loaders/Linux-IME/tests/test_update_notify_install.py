@@ -95,7 +95,7 @@ def main():
                     break
                 time.sleep(0.05)
             assert window, "Fcitx update button did not launch the installed helper"
-            checkbox = wait_for_node(window, "check box", "每日檢查新版並通知（登入桌面後）")
+            checkbox = wait_for_node(window, "check box", "每週檢查新版並通知（登入桌面後）")
             assert not checkbox.getState().contains(pyatspi.STATE_CHECKED)
             assert not state_path.exists(), "Opening the opted-out UI performed a network check"
             # Stop the manually opened helper before testing its background launch.

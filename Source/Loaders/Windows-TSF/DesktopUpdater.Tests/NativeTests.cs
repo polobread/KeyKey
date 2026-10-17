@@ -67,7 +67,7 @@ internal static class NativeTests
                                 Interlocked.Increment(ref installs);
                                 return 1; // Handled by the test, NEVER fall through to ShellExecute.
                             }));
-                    Program.Check(backend.Automatic, "Fresh updater did not default to daily checks");
+                    Program.Check(backend.Automatic, "Fresh updater did not default to weekly checks");
                     backend.Initialize();
                     win_sparkle_check_update_with_ui_and_install();
                     Program.Check(done.Wait(TimeSpan.FromSeconds(30)), "Native updater timed out: " + mode);
@@ -119,12 +119,12 @@ internal static class NativeTests
                     if (initialized) preferences.SetValue("ConsentInitialized", 1);
                 }
                 Start(backend);
-                Program.Check(backend.Automatic == (saved ?? true), "Initialization changed the saved daily-check choice");
+                Program.Check(backend.Automatic == (saved ?? true), "Initialization changed the saved weekly-check choice");
                 backend.Automatic = false;
                 backend.Cleanup();
                 backend = new WinSparkleBackend(registryPath);
                 Start(backend);
-                Program.Check(!backend.Automatic, "Saved daily-check opt-out did not survive restart");
+                Program.Check(!backend.Automatic, "Saved weekly-check opt-out did not survive restart");
             }
             finally
             {
@@ -132,7 +132,7 @@ internal static class NativeTests
                 Registry.CurrentUser.DeleteSubKeyTree(registryPath, throwOnMissingSubKey: false);
             }
         }
-        Console.WriteLine("Daily checks default on; existing choices and opt-outs survive initialization/restart");
+        Console.WriteLine("Weekly checks default on; existing choices and opt-outs survive initialization/restart");
     }
 
     private static void NotificationOnlyTest(string key, bool background)
@@ -158,7 +158,7 @@ internal static class NativeTests
             Thread.Sleep(300);
             Program.Check(server.PayloadRequests == 0 && installs == 0 && shutdowns == 0 && errors == 0,
                 "Checking for updates downloaded a package or started installation without user confirmation");
-            Console.WriteLine($"Native WinSparkle {(background ? "daily" : "manual")} notification did not prefetch or install");
+            Console.WriteLine($"Native WinSparkle {(background ? "weekly" : "manual")} notification did not prefetch or install");
         }
         finally
         {

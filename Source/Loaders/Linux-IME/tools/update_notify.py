@@ -12,7 +12,7 @@ from urllib.request import build_opener, HTTPRedirectHandler, Request
 
 API = "https://api.github.com/repos/polobread/KeyKey/releases?per_page=100"
 RELEASES = "https://github.com/polobread/KeyKey/releases"
-INTERVAL = 24 * 60 * 60
+INTERVAL = 7 * 24 * 60 * 60
 CHECK_TIMEOUT = 10
 LIMIT = 4 * 1024 * 1024
 VERSION = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-beta([1-9][0-9]*))?"
