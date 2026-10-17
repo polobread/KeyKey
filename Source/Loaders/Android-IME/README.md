@@ -284,7 +284,7 @@ adb -s emulator-XXXX shell am instrument -w -r \
 
 
 任何 Android IME 行為、版面、設定、字典或建置變更，都必須依
-[`VIRTUAL_DEVICE_TEST_PLAN.md`](VIRTUAL_DEVICE_TEST_PLAN.md) 跑完 API 26、28、30、33、35、37
+[`ANDROID_VIRTUAL_DEVICE_TEST_PLAN.md`](../../../docs/ANDROID_VIRTUAL_DEVICE_TEST_PLAN.md) 跑完 API 26、28、30、33、35、37
 六台 AVD 的完整功能矩陣；只完成單元測試、安裝或單一輸入情境不算測試完成。debug APK
 另含 `ImeTestActivity`，用來實測所有欄位型態與 Enter action，release APK 不包含該頁。
 

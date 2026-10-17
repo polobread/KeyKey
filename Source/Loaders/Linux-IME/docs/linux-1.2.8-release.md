@@ -78,5 +78,5 @@ and isolated desktop results; physical dual-monitor hardware was not tested.
   claim. Ubuntu 22.04 has development build and package checks only.
 
 The remaining compatibility work is tracked in
-[`LINUX_DEVELOPMENT_PLAN.md`](../../../../LINUX_DEVELOPMENT_PLAN.md) and
-[`LINUX_TEST_PLAN.md`](../../../../LINUX_TEST_PLAN.md).
+[`docs/LINUX_DEVELOPMENT_PLAN.md`](../../../../docs/LINUX_DEVELOPMENT_PLAN.md) and
+[`docs/LINUX_TEST_PLAN.md`](../../../../docs/LINUX_TEST_PLAN.md).

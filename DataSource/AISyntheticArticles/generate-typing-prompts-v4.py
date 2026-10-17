@@ -33,7 +33,7 @@ ANIME = COLLECTION_ROOT / "phrase.anime.tsv"
 
 OUTPUT = ROOT / "typing-prompts-v4.jsonl"
 STATS = ROOT / "typing-prompts-v4-stats.json"
-PLAN = ROOT / "typing-prompts-v4-plan.md"
+PLAN = REPO / "docs" / "AI_TYPING_PROMPTS_V4_PLAN.md"
 PREVIEW = ROOT / "typing-prompts-v4-preview.md"
 ASSIGNMENTS = ROOT / "typing-prompts-v4-term-assignments.tsv"
 

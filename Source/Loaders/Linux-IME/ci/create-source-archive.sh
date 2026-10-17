@@ -35,8 +35,8 @@ source_paths=(
   LICENSING.md
   LICENSE.txt
   LICENSES/MIT.txt
-  LINUX_DEVELOPMENT_PLAN.md
-  LINUX_TEST_PLAN.md
+  docs/LINUX_DEVELOPMENT_PLAN.md
+  docs/LINUX_TEST_PLAN.md
   README.md
   DataSource/AssociatedPhraseCollectionNames.tsv
   DataSource/McBopomofo/LICENSE.txt

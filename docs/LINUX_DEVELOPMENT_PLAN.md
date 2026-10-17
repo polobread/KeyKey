@@ -5,7 +5,7 @@ GNOME Shell 46、Fcitx 5、amd64 作為正式支援範圍，使用獨立
 `linux-v1.2.8` 標籤及三個 `.deb`。以下原訂九個 Ubuntu 版本、IBus、ARM64、
 更多 App 與實體多螢幕的完整矩陣改列後續相容性工作，不阻擋這一版。
 首版的實際證據、限制與安裝步驟以
-[Linux 1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)
+[Linux 1.2.8 發布說明](../Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)
 為準；下文保留原規劃與調查紀錄，舊的全 Ubuntu gate 不再是首版條件。
 
 狀態：開發中。已建立第一段 Linux-only 引擎、Fcitx 5 外掛、container scripts 與
@@ -36,7 +36,7 @@ Linux 首版目標：**1.2.8**，自此版起納入 Linux 支援；需完成下�
 對外宣告已支援。目前四平台版號已同步至 1.2.8；Linux 已有開發中的 staged install
 與 `.deb`，但缺少完整功能、桌面矩陣與 release gate，仍不可正式發布。
 
-接手順序：[AGENTS.md](AGENTS.md) → [BUILDING.md](BUILDING.md) → 本檔 →
+接手順序：[AGENTS.md](../AGENTS.md) → [BUILDING.md](../BUILDING.md) → 本檔 →
 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。本計畫取代「Linux 只比照行動版注音」的範圍。
 
 ## 1. 已確定的產品方向
@@ -822,7 +822,7 @@ WSLg XWayland 的 GTK3 gedit 經 Fcitx 5.1.7 確認中文輸入；終止候選�
 兩個候選區域的約 59 ms 畫面已清除且半秒後像素一致，英文負控制通過。這補上
 隔離 GNOME X11 的局部證據；同日使用者在瀏覽器端確認問題解決、試打成功。
 後續在 Windows／WSL 提供人工試打時優先使用
-[固定交接流程](Source/Loaders/Linux-IME/docs/manual-desktop.md)，版控 launcher 位於
+[固定交接流程](../Source/Loaders/Linux-IME/docs/manual-desktop.md)，版控 launcher 位於
 `tools/manual-desktop/`。完整 GNOME session 及 native Wayland 仍未完成，詳細量測
 邊界見測試計畫。
 先前的 container／WSLg 單窗測試不具備完整 GNOME session；新增的獨立 X11 診斷也

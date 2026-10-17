@@ -121,7 +121,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 ## 文件
 
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
-- [macOS App Store Connect 上架可行性與發行計畫](MACOS_APP_STORE_PLAN.md)：Apple
+- [macOS App Store Connect 上架可行性與發行計畫](docs/MACOS_APP_STORE_PLAN.md)：Apple
   現行政策阻礙、第三方輸入法經驗、商店外發行改善與未來上架 gate
 - [Windows 1.3.3 安裝與使用指南](WINDOWS_INSTALL.md)：新版安裝精靈、啟用、選字、設定與解除安裝
 - [Linux 安裝與使用指南](LINUX_INSTALL.md)：Ubuntu 24.04 的套件安裝、Fcitx 5 設定、注音選字與實拍圖
@@ -130,7 +130,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 - [Android 安裝與使用指南](ANDROID_INSTALL.md)：Google Play 正式版安裝、啟用鍵盤、觸控與實體鍵盤操作
 - [BUILDING.md](BUILDING.md)：各平台建置、測試、安裝與打包
 - [五平台心經長文 functional test](tests/HEART_SUTRA_FUNCTIONAL.md)：關閉關聯詞庫後逐字輸入，核對全文及每字候選順位
-- [Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](LINUX_TEST_PLAN.md)：
+- [Linux 開發計畫](docs/LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](docs/LINUX_TEST_PLAN.md)：
   1.2.8 起的原生 Linux 支援目標、目前進度、功能範圍與驗收門檻
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md)：Windows frontend
   的實作、部署及驗證細節
@@ -297,14 +297,14 @@ approval requirements. See [AGENTS.md](AGENTS.md) and the
 
 ### Documentation
 
-- [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
+- [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](docs/MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
 - [Windows 1.3.3 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
 - [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play production installation, keyboard setup, touch and hardware keyboard use
 - [BUILDING.md](BUILDING.md): build, test, installation, and packaging instructions
-- [Linux development plan](LINUX_DEVELOPMENT_PLAN.md) and
-  [automated test plan](LINUX_TEST_PLAN.md): scope and acceptance criteria for
+- [Linux development plan](docs/LINUX_DEVELOPMENT_PLAN.md) and
+  [automated test plan](docs/LINUX_TEST_PLAN.md): scope and acceptance criteria for
   native Linux support targeted for 1.2.8 onward, including current progress
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md): frontend
   implementation, deployment, and verification details

@@ -17,8 +17,8 @@ Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有
 雙欄焦點正負控制 16/16 通過並量到失焦語意依輸入路徑而異。
 更廣的視窗／App 相容性與實體雙螢幕仍待驗收。GNOME Shell 46 的獨立候選
 面板套件已在 Ubuntu 24.04 VM 測過安裝、升級、停用與再啟用。開發／套件規格見
-[LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
-驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
+[LINUX_DEVELOPMENT_PLAN.md](docs/LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
+驗收見 [LINUX_TEST_PLAN.md](docs/LINUX_TEST_PLAN.md)。
 
 [English](#english)
 
@@ -366,7 +366,7 @@ swift test
 `KeyKey.db` 是建置輸入但不進版控；Xcode Cloud 會由
 `Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` 自動 cook。五台受控 Simulator
 與完整 A–K 驗證方式見
-[iOS Simulator 測試計畫](Source/Loaders/iOS-Keyboard/IOS_SIMULATOR_TEST_PLAN.md)；可先從
+[iOS Simulator 測試計畫](docs/IOS_SIMULATOR_TEST_PLAN.md)；可先從
 repository 根目錄執行可無人值守的宿主基線：
 
 ```sh
@@ -487,7 +487,7 @@ T01 and pointer T06 also passed 16/16. Firefox Snap and Epiphany passed 15
 real browser field/mode cases across native Wayland and XWayland, covering
 `<textarea>`, `<input>` and `contenteditable` with DOM input checks and
 literal controls. See the
-[development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
+[development plan](docs/LINUX_DEVELOPMENT_PLAN.md) and [test plan](docs/LINUX_TEST_PLAN.md).
 
 ### Linux source build
 
@@ -814,7 +814,7 @@ unattended host baseline from the repository root with:
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
 ```
 
-See the [iOS Simulator test plan](Source/Loaders/iOS-Keyboard/IOS_SIMULATOR_TEST_PLAN.md)
+See the [iOS Simulator test plan](docs/IOS_SIMULATOR_TEST_PLAN.md)
 for the five-device A–K matrix. Device Debug builds use an Apple Developer Team
 and Automatic Signing in Xcode; Xcode Cloud and App Store Connect handle
 TestFlight and App Store archives. A third-party keyboard extension cannot

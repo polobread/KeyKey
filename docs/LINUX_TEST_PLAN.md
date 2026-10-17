@@ -5,7 +5,7 @@
 Fcitx 5、amd64；已安裝套件的 X11 83 案、GNOME X11 76 案、GNOME
 Wayland/XWayland 168 案、候選四角 32 案、雙虛擬顯示 16 案與瀏覽器 DOM
 15 案構成首版主要證據。GTK bridge 差異與未測硬體／App 在
-[發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)明列。
+[發布說明](../Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)明列。
 下文原訂全 Ubuntu、IBus、ARM64 與所有 App 的 gate 留作後續相容性目標，
 不能再解讀成首版發布 blocker，也不能從首版推論那些組合已支援。
 
@@ -43,7 +43,7 @@ QMP 的 VM 鍵盤事件經 GTK3、GTK4、Qt6 原生 Wayland 欄位各自提交�
 三段 preedit 為「ㄓ／ㄓㄨ／ㄓㄨㄥ」，改用 `keyboard-us` 後同鍵序精確提交
 `5j/ 1`；GTK3／GTK4 另各以未設 `GTK_IM_MODULE` 的預設 Wayland IM 路徑
 通過相同案例，合計 5/5。事件 trace 在 guest 的 `/tmp/keykey-wayland-smoke-*`；
-入口與重建流程見 [VM 手冊](Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md)。
+入口與重建流程見 [VM 手冊](../Source/Loaders/Linux-IME/docs/gnome-wayland-vm.md)。
 一次 GTK3 直式候選的 QMP 截圖顯示完整九列候選窗緊鄰欄位下方；同時出現
 Fcitx「Wayland Diagnose」建議安裝 GNOME Shell Input Method Panel 的通知。
 畫面保存在忽略版控的 `out/gnome-vm/wayland-popup-before.png` 與
@@ -281,7 +281,7 @@ preedit，再以 XTest 送 `dj941` 與 `Shift+1`，三次精確提交「快樂�
 與同目錄 before／after PNG；本機 web 連結已從 Windows 確認 HTTP 200。這只補上
 隔離 GNOME X11 診斷。同日使用者在此瀏覽器桌面確認一秒延遲與多重殘窗解決，
 人工試打成功。後續重現及交付步驟固定見
-[Ubuntu 手動試打交接](Source/Loaders/Linux-IME/docs/manual-desktop.md)，啟動入口
+[Ubuntu 手動試打交接](../Source/Loaders/Linux-IME/docs/manual-desktop.md)，啟動入口
 已置於版控的 `tools/manual-desktop/`。不增加正式 83 案計數，不代表 native Wayland、
 完整登入／桌面服務或發布 gate 通過。
 
