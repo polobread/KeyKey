@@ -24,6 +24,13 @@ int main() {
         const auto loader = LoaderPreferencesPath();
         const auto smart = SmartMandarinPreferencesPath();
         Check(LoadFrontendSettings().defaultChineseMode, "Missing startup preference must default to Chinese");
+        Check(LoadFrontendSettings().symbolPanelShortcutEnabled, "Symbol shortcut must default to enabled");
+        for (const auto* value : {"false", "true"}) {
+            { std::ofstream out(loader); out << "<plist><dict><key>SymbolPanelShortcutEnabled</key><string>"
+                << value << "</string></dict></plist>"; }
+            Check(LoadFrontendSettings().symbolPanelShortcutEnabled == (std::string(value) == "true"),
+                  "Symbol shortcut preference not read");
+        }
         for (const auto* value : {"English", "Chinese", "invalid", ""}) {
             { std::ofstream out(loader); out << "<plist><dict><key>DefaultInputMode</key><string>"
                 << value << "</string></dict></plist>"; }

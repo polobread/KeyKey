@@ -65,8 +65,8 @@ Release 或手動 dispatch 時執行，日常 push 不會觸發。CTest 中的 m
 完整 TSF／NSIS、UAC、舊版升級、資料保留與 signed 憑證驗收屬發布工作，不能把
 上述局部開發驗證當成已發布或已安裝的證據。
 
-本機 `v1.3.2` 工作分支持續修正 Windows 進階設定、讀音輔助、符號表與簡體輸出；
-Windows 產品版號為 1.3.2，尚未發布；iOS、Android 1.3.2 已在各自商店正式上線，macOS、Linux 及共用模型維持 1.3.1。實作與驗證記錄見
+Windows `1.3.3` 開發版持續修正進階設定、讀音輔助、符號表與簡體輸出；
+Windows 產品版號為 1.3.3，尚未發布；iOS、Android 1.3.2 已在各自商店正式上線，macOS、Linux 開發版同為 1.3.3；共用模型維持 1.3.1。實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
 
 2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、
@@ -146,6 +146,11 @@ TSF 取消未執行的 session 會撤銷其待處理狀態，過期或重複回�
 每字及完整詞最多 32 個讀音選項，不展開所有組合；查詢不修改正式詞庫。
 
 工作列輸入法選單依序排列「半形／全形 → 簡體中文輸出 → 分隔線 → 符號表… → 輸入法設定…」。
+也可按 `Ctrl+Alt+,`（使用左 Alt）開啟同一符號表，四種輸入法僅在中文模式觸發；
+「一般 → 快捷鍵與提示聲」的「使用 Ctrl + Alt + , 開啟符號表（僅中文模式）」預設開啟。
+關閉或切換英文模式時解除 TSF 保留鍵註冊並放行此按鍵；設定套用後回到輸入欄位即採用，
+重新開啟或回到中文模式時恢復註冊。右 Alt／AltGr 不觸發；一般按鍵路徑使用同一入口，
+重複觸發只保留已開啟的面板。關閉快捷鍵仍可從工作列開啟符號表；`Ctrl+,` 的既有標點輸入保持不變。
 「符號表…」提供原有 17 個分類、807 個符號與完整顏文字，保留手機版 90 個 emoji 的
 順序並加入 110 個 Windows 專用補充，共 18 個分類、1,007 項。Emoji 共 200 個，
 同一分類全部列出，以右側捲軸或滑鼠滾輪瀏覽，不再分頁。
@@ -173,7 +178,7 @@ Windows 1.3.1 的兩種安裝流程稽核、舊版遷移設計與待驗收矩陣
 [Windows 安裝與舊版遷移規劃](../../../docs/WINDOWS_INSTALLATION_1_3_1_PLAN.md)。
 共用安裝核心、兩種入口與文件已依規劃修改；歷代實際安裝包的 VM 升級／移除驗收仍待完成。
 
-Windows 1.3.2 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
+Windows 1.3.3 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
 
 The standard `GUID_LBI_INPUTMODE` item exposes a menu style (without a split-button arrow):
 Windows can invoke `InitMenu`/`OnMenuSelect` to switch all four methods even when
@@ -243,7 +248,7 @@ reference and is not linked into this DLL.
 
 ### Cangjie and Simplex development build
 
-This source includes these modes in Windows 1.3.2 local builds; published installers and
+This source includes these modes in Windows 1.3.3 local builds; published installers and
 already installed DLLs are separate artifacts and may still contain only Mandarin.
 Cangjie retains up to five radicals and queries with Space/Enter; Simplex queries
 at two radicals. Number keys select candidates, Page Up/Down page, Backspace
@@ -441,7 +446,7 @@ The same tab can import a `SmartMandarinUserData.db` backup: user phrases are
 merged by reading and text, while the imported candidate and contextual
 learning replace the current learning tables. Export uses SQLite's online
 backup API, so a database can be saved while the input method is active.
-The settings window footer shows `1.3.2`; the frontend validation script checks
+The settings window footer shows `1.3.3`; the frontend validation script checks
 that this visible version matches the CMake project and packaging version.
 Language-model source changes do not alter a platform build automatically.
 Generate and validate a new canonical `KeyKey.db` first, then commit the file
@@ -505,7 +510,7 @@ writes `%ProgramFiles%\chichi77 KeyKey\Deployment.log`.
 The elevated installer:
 
 - copies the x64 and x86 DLLs, settings app, database, and notices to
-  `C:\Program Files\chichi77 KeyKey\1.3.2-<fingerprint>`;
+  `C:\Program Files\chichi77 KeyKey\1.3.3-<fingerprint>`;
 - registers the TSF from that permanent location; and
 - adds **琦琦輸入法** to Windows Installed apps for uninstallation.
 
@@ -520,7 +525,7 @@ The Windows GitHub Actions workflow installs NSIS 3.12 and emits this test-only
 installer in addition to the ZIP package:
 
 ```text
-out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.unsigned.exe
+out\store-package\chichi77-KeyKey-1.3.3-windows-x64-setup.unsigned.exe
 ```
 
 To build the same unsigned installer locally after building x64 and x86, run:
@@ -533,8 +538,8 @@ To build the same unsigned installer locally after building x64 and x86, run:
 The `.unsigned.exe` artifact supports `/S` silent installation but is not
 eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
 settings executable, and the outer installer is unsigned as well.
-Its product version is `1.3.2` and installs into a fingerprinted directory
-such as `C:\Program Files\chichi77 KeyKey\1.3.2-xxxxxxxxxxxx`.
+Its product version is `1.3.3` and installs into a fingerprinted directory
+such as `C:\Program Files\chichi77 KeyKey\1.3.3-xxxxxxxxxxxx`.
 Rebuilding changed binaries gets a new directory, so an existing text host
 can continue using its previously loaded DLL. Signed production packages use
 the same version-and-fingerprint naming scheme.
@@ -543,7 +548,7 @@ The finish page explains how users add KeyKey in Windows Settings. Installation
 does not launch the settings app, enable a keyboard, or change a default.
 
 Publishing a GitHub Release with a tag matching the repository version, such
-as `v1.3.2`, automatically builds and uploads this unsigned EXE, the x64/x86 ZIP
+as `v1.3.3`, automatically builds and uploads this unsigned EXE, the x64/x86 ZIP
 packages, and SHA-256 files. To recover a failed build, merge the fix into
 `master`, manually run `Package Windows` from `master`, and enter the existing
 tag in `release_tag`. The workflow replaces only Windows assets and records the
@@ -592,8 +597,8 @@ recorded after signing, so the manifest describes the actual installed bytes.
 The output is:
 
 ```text
-out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.exe
-out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.exe.sha256
+out\store-package\chichi77-KeyKey-1.3.3-windows-x64-setup.exe
+out\store-package\chichi77-KeyKey-1.3.3-windows-x64-setup.exe.sha256
 ```
 
 Test the signed installer's silent installation and uninstallation on a
@@ -601,7 +606,7 @@ disposable clean Windows 11 VM before submission. NSIS treats `/S` as
 case-sensitive:
 
 ```powershell
-.\chichi77-KeyKey-1.3.2-windows-x64-setup.exe /S
+.\chichi77-KeyKey-1.3.3-windows-x64-setup.exe /S
 & "$env:ProgramFiles\chichi77 KeyKey\Uninstall.exe" uninstall --quiet
 ```
 
@@ -609,10 +614,10 @@ For an EXE Store submission, Partner Center takes a versioned HTTPS package URL
 rather than a direct file upload. The automated version Release contains only
 the unsigned test assets. Upload the separately signed EXE as a distinct asset
 to that existing Release, then use its versioned URL. The following is a Windows
-1.3.2 URL template; it does not mean that this version or signed file has been published:
+1.3.3 URL template; it does not mean that this version or signed file has been published:
 
 ```text
-https://github.com/polobread/KeyKey/releases/download/v1.3.2/chichi77-KeyKey-1.3.2-windows-x64-setup.exe
+https://github.com/polobread/KeyKey/releases/download/v1.3.3/chichi77-KeyKey-1.3.3-windows-x64-setup.exe
 ```
 
 Do not replace an asset after submitting its URL. In Partner Center select
@@ -639,8 +644,8 @@ LICENSES/
 ```
 
 ZIP and NSIS invoke the same deployment executable and use the same layout in
-`C:\Program Files\chichi77 KeyKey\1.3.2-<fingerprint>`. Repair or reinstall before
-a pending reboot uses a fresh `1.3.2-<instance-id>` path. New directory names do
+`C:\Program Files\chichi77 KeyKey\1.3.3-<fingerprint>`. Repair or reinstall before
+a pending reboot uses a fresh `1.3.3-<instance-id>` path. New directory names do
 not contain `test` or `repair`; old directories with those labels remain
 recognizable for migration. The product root holds protected state, a durable
 transaction journal while installing, diagnostics and compatibility uninstall

@@ -25,6 +25,7 @@ using Microsoft::WRL::ComPtr;
 
 constexpr DWORD kShiftTapTimeoutMilliseconds = 300;
 constexpr UINT kPumpModeMessage = WM_APP + 71;
+constexpr TF_PRESERVEDKEY kSymbolShortcut = {VK_OEM_COMMA, TF_MOD_CONTROL | TF_MOD_ALT};
 
 HRESULT RangeText(ITfRange* range, TfEditCookie cookie, std::wstring& text) {
     ComPtr<ITfRange> reader;
@@ -731,6 +732,7 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
     if (SUCCEEDED(threadManager_.As(&extended)) && SUCCEEDED(extended->GetActiveFlags(&activeFlags)))
         immersiveMode_=(activeFlags & TF_TMF_IMMERSIVEMODE)!=0;
     uiThreadFocused_=true;
+    keyEventSinkForeground_=true;
     const HRESULT sharedResult = sharedInputMethod_.connect(threadManager_.Get());
     sharedOutputState_.connect(threadManager_.Get());
     Trace("SharedInputMethod connect hr=0x%08lX", static_cast<unsigned long>(sharedResult));
@@ -801,6 +803,8 @@ HRESULT TextService::adviseSinks() {
     if (FAILED(result)) return result;
     result = keystrokes->AdviseKeyEventSink(clientId_, this, TRUE);
     if (FAILED(result)) return result;
+    keyEventSinkAdvised_ = true;
+    preserveSymbolShortcut();
 
     ComPtr<ITfSource> source;
     result = threadManager_.As(&source);
@@ -828,7 +832,9 @@ HRESULT TextService::adviseSinks() {
 }
 
 void TextService::unadviseSinks() {
+    keyEventSinkAdvised_ = false;
     if (!threadManager_) return;
+    unpreserveSymbolShortcut();
     unadviseTextEditSink();
     unadviseInputModeSink();
     if (threadFocusCookie_!=TF_INVALID_COOKIE) {
@@ -1014,6 +1020,7 @@ void TextService::uninitializeLangBar() {
 }
 
 void TextService::refreshLangBar() {
+    preserveSymbolShortcut();
     std::array<LangBarButton*, 4> buttons{};
     {
         std::lock_guard<std::mutex> lock(langBarMutex_);
@@ -1164,6 +1171,7 @@ void TextService::syncInputMethod() {
         requestModeChange(ModeChange::Method,projectedChineseMode(),desired);
     lastLocalInputMethod_=local;
     syncingInputMethod_=false;
+    preserveSymbolShortcut();
 }
 
 void TextService::syncOutputSettings() {
@@ -1201,6 +1209,49 @@ void TextService::closeSymbols() {
     symbolPanel_.hide();
     symbolContext_.Reset();
     ++symbolGeneration_;
+}
+
+void TextService::preserveSymbolShortcut() {
+    if (!keyEventSinkAdvised_ || !keyEventSinkForeground_ || !chineseMode_ ||
+        !LoadFrontendSettings().symbolPanelShortcutEnabled) {
+        unpreserveSymbolShortcut();
+        return;
+    }
+    if (symbolShortcutPreserved_ || !threadManager_ || clientId_ == TF_CLIENTID_NULL) return;
+    ComPtr<ITfKeystrokeMgr> keystrokes;
+    HRESULT result = threadManager_.As(&keystrokes);
+    constexpr wchar_t description[] = L"符號表";
+    if (SUCCEEDED(result)) result = keystrokes->PreserveKey(clientId_, kSymbolShortcutGuid,
+        &kSymbolShortcut, description, static_cast<ULONG>(std::size(description) - 1));
+    symbolShortcutPreserved_ = SUCCEEDED(result);
+    // A conflicting shortcut must not prevent the input method from activating.
+    Trace("PreserveSymbolShortcut hr=0x%08lX", static_cast<unsigned long>(result));
+}
+
+void TextService::unpreserveSymbolShortcut() {
+    if (!symbolShortcutPreserved_) return;
+    ComPtr<ITfKeystrokeMgr> keystrokes;
+    if (threadManager_ && SUCCEEDED(threadManager_.As(&keystrokes)))
+        keystrokes->UnpreserveKey(kSymbolShortcutGuid, &kSymbolShortcut);
+    symbolShortcutPreserved_ = false;
+}
+
+bool TextService::isSymbolShortcutKey(const KeyEvent& event) const {
+    // Right Alt can represent AltGr text input. Do not reserve that as a command.
+    return event.virtualKey == VK_OEM_COMMA && event.control && event.alt && !event.shift &&
+        !IsKeyDown(VK_RMENU) && !IsKeyDown(VK_LWIN) && !IsKeyDown(VK_RWIN);
+}
+
+bool TextService::handleSymbolShortcut(ITfContext* context) {
+    if (!keyEventSinkForeground_ || !chineseMode_ || !LoadFrontendSettings().symbolPanelShortcutEnabled) return false;
+    if (!isFocusedContext(context) || !IsInputContextEnabled(context)) return false;
+    shiftTogglePending_ = false;
+    shiftPressedAt_ = 0;
+    // Autorepeat or duplicate delivery must not rebuild an already visible panel.
+    if (symbolPanel_.visible() && symbolContext_.Get() == context) return true;
+    const HRESULT result = showSymbols();
+    Trace("SymbolShortcut show hr=0x%08lX", static_cast<unsigned long>(result));
+    return result == S_OK;
 }
 
 HRESULT TextService::showSymbols() {
@@ -1293,8 +1344,10 @@ bool TextService::isFullWidthCharacterKey(const KeyEvent& event) const {
 }
 
 STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
+    keyEventSinkForeground_=foreground != FALSE;
     if (foreground) syncInputMethod();
     if (!foreground) {
+        unpreserveSymbolShortcut();
         closeSymbols();
         clearCandidateWindow();
         shiftTogglePending_ = false;
@@ -1325,6 +1378,7 @@ STDMETHODIMP TextService::OnKillThreadFocus() {
 STDMETHODIMP TextService::OnSetThreadFocus() {
     uiThreadFocused_=true;
     if (resyncHostMode_ || modeRecoveryPending_ || restoreHostMode_) pumpInput();
+    preserveSymbolShortcut();
     if (candidateActive_ && isFocusedContext(candidateContext_.Get()))
         OnLayoutChange(candidateContext_.Get(),TF_LC_CHANGE,nullptr);
     return S_OK;
@@ -1337,6 +1391,11 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext* context, WPARAM wparam, LPAR
     if (!IsInputContextEnabled(context)) { shiftTogglePending_=false; return S_OK; }
     syncInputMethod();
     const KeyEvent event = translateKey(wparam, lparam);
+    if (isSymbolShortcutKey(event)) {
+        *eaten = keyEventSinkForeground_ && chineseMode_ &&
+            LoadFrontendSettings().symbolPanelShortcutEnabled && isFocusedContext(context);
+        return S_OK;
+    }
     if (symbolPanel_.visible() && event.virtualKey == VK_ESCAPE) { *eaten = TRUE; return S_OK; }
     if (!IsShiftKey(event.virtualKey)) {
         shiftTogglePending_ = false;
@@ -1379,6 +1438,10 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
     syncInputMethod();
     *eaten = FALSE;
     KeyEvent event = translateKey(wparam, lparam);
+    if (isSymbolShortcutKey(event)) {
+        *eaten = handleSymbolShortcut(context);
+        return S_OK;
+    }
     if (symbolPanel_.visible() && event.virtualKey == VK_ESCAPE) { closeSymbols(); *eaten = TRUE; return S_OK; }
     if (symbolPanel_.visible()) closeSymbols();
     if (IsShiftKey(event.virtualKey) && !event.control && !event.alt) {
@@ -1427,9 +1490,15 @@ STDMETHODIMP TextService::OnKeyUp(ITfContext* context, WPARAM wparam, LPARAM, BO
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnPreservedKey(ITfContext*, REFGUID, BOOL* eaten) {
+STDMETHODIMP TextService::OnPreservedKey(ITfContext* context, REFGUID guid, BOOL* eaten) {
     if (!eaten) return E_INVALIDARG;
     *eaten = FALSE;
+    if (guid != kSymbolShortcutGuid) return S_OK;
+    preserveSymbolShortcut();
+    if (IsKeyDown(VK_RMENU) || IsKeyDown(VK_SHIFT) ||
+        IsKeyDown(VK_LWIN) || IsKeyDown(VK_RWIN)) return S_OK;
+    *eaten = handleSymbolShortcut(context);
+    Trace("PreservedSymbolShortcut eaten=%d", *eaten);
     return S_OK;
 }
 

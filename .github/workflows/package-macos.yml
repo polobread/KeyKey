@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Published macOS tag: v1.3.2 or v1.3.2-beta1; blank = artifact only. Build uses the selected ref.'
+        description: 'Published macOS tag: vX.Y.Z or vX.Y.Z-betaN; blank = artifact only. Build uses the selected ref.'
         required: false
         type: string
 

@@ -22,6 +22,10 @@ inline constexpr GUID kMacaoProfileGuid = {
 inline constexpr GUID kCompositionDisplayAttributeGuid = {
     0xd6a94965, 0x4202, 0x4da7, {0x8d, 0x62, 0x1e, 0x4a, 0xcf, 0x48, 0x2d, 0x3d}};
 
+// TSF command for the symbol panel (Ctrl+Alt+comma).
+inline constexpr GUID kSymbolShortcutGuid = {
+    0xf10f83d4, 0xd621, 0x44c1, {0x87, 0x31, 0x36, 0x89, 0x6d, 0x5e, 0x47, 0x92}};
+
 inline constexpr LANGID kTraditionalChineseLangId = 0x0404;
 inline constexpr LANGID kHongKongLangId = 0x0c04;
 inline constexpr LANGID kMacaoLangId = 0x1404;

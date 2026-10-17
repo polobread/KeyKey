@@ -8,6 +8,26 @@ using System.Text;
 
 internal static class Program
 {
+    private static void VerifySymbolShortcut(MainWindow window, string directory)
+    {
+        var option = Control<CheckBox>(window, "SymbolPanelShortcut");
+        Check(option.IsChecked == true, "Symbol shortcut must default to enabled");
+        option.IsChecked = false;
+        Control<Button>(window, "ApplyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(Control<TextBlock>(window, "Status").Text == "設定已套用", "Disable shortcut Apply failed");
+        var loader = XDocument.Load(Path.Combine(directory, "com.polobread.chichi77-keykey.windows.plist"));
+        Check(Value(loader, "SymbolPanelShortcutEnabled") == "false", "Disabled shortcut not saved");
+        var reopened = new MainWindow();
+        Check(Control<CheckBox>(reopened, "SymbolPanelShortcut").IsChecked == false, "Disabled shortcut not restored");
+        Control<CheckBox>(reopened, "SymbolPanelShortcut").IsChecked = true;
+        Control<Button>(reopened, "ApplyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(Control<TextBlock>(reopened, "Status").Text == "設定已套用", "Enable shortcut Apply failed");
+        reopened.Close();
+        var enabled = new MainWindow();
+        Check(Control<CheckBox>(enabled, "SymbolPanelShortcut").IsChecked == true, "Enabled shortcut not restored");
+        enabled.Close();
+        Console.WriteLine("Symbol shortcut default, disable/enable, Apply and reopen passed");
+    }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct OSVersion
     {
@@ -164,6 +184,12 @@ internal static class Program
             app.InitializeComponent();
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var window = new MainWindow();
+            if (args.Contains("--symbol-shortcut"))
+            {
+                VerifySymbolShortcut(window, directory);
+                window.Close();
+                return 0;
+            }
             if (args.Contains("--updater"))
             {
                 VerifyUpdateShutdownProtection(window);
