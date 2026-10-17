@@ -22,6 +22,9 @@ class PackageRemovalTests(unittest.TestCase):
         self.env.pop("DPKG_ROOT", None)
 
     def database(self, states):
+        states = dict(states)
+        if "triggers-awaited" in states.values():
+            states["keykey-trigger-fixture"] = "triggers-pending"
         entries = []
         for package, state in states.items():
             entries.append(
@@ -29,6 +32,10 @@ class PackageRemovalTests(unittest.TestCase):
                 "Architecture: all\nVersion: 1.3.2-1\n"
                 "Maintainer: Test <test@example.invalid>\n"
                 "Description: Isolated package removal fixture\n"
+                + ("Triggers-Awaited: keykey-trigger-fixture\n"
+                   if state == "triggers-awaited" else "")
+                + ("Triggers-Pending: keykey-test-trigger\n"
+                   if state == "triggers-pending" else "")
                 + ("Conffiles:\n /etc/xdg/autostart/org.chichi77.KeyKey.UpdateNotification.desktop "
                    "0123456789abcdef0123456789abcdef\n" if state == "config-files" else "")
                 + "\n")
@@ -72,6 +79,11 @@ class PackageRemovalTests(unittest.TestCase):
                       "triggers-awaited", "triggers-pending"):
             with self.subTest(state=state):
                 self.database({PACKAGES[0]: state})
+                query = subprocess.run(
+                    ["dpkg-query", "-W", "-f=${db:Status-Status}", PACKAGES[0]],
+                    env=self.env, text=True, capture_output=True, timeout=5)
+                self.assertEqual(query.returncode, 0, query.stderr)
+                self.assertEqual(query.stdout, state)
                 self.assertIn(state, self.check(1).stderr)
 
     def test_database_error_is_not_treated_as_removal(self):
