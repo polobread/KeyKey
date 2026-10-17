@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
+     xmlns:keykey="urn:chichi77:keykey:update:1">
+  <channel>
+    <title>琦琦輸入法 Linux／FreeBSD stable 更新通知</title>
+    <link>https://github.com/polobread/KeyKey/releases</link>
+    <keykey:schemaVersion>1</keykey:schemaVersion>
+    <description>Linux／FreeBSD 共用每週更新通知。套件完成並驗證後，以人工 PR 加入版本。Linux 請下載套件後透過套件管理器安裝；FreeBSD 請透過 ports／pkg 更新，套件可能較晚上架。本 feed 不下載或自動安裝套件，目前尚無公告項目。</description>
+  </channel>
+</rss>

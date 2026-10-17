@@ -21,7 +21,12 @@ information group.
 The **更新通知與下載…** setting opens a separate notification tool with manual
 checks, weekly checks (on by default, with a saved opt-out), and an official release-page
 button. It also supports the `chinese/fcitx5-keykey` FreeBSD port through the
-same prefix-aware installation. See [update notifications and ports integration](docs/update-notifications.md).
+same prefix-aware installation. Linux and FreeBSD read the shared CDN
+`keykey/update/stable/unix-fcitx5.xml`; beta opt-in additionally reads the
+matching `beta/` feed. Clients do not query the GitHub API or tag source files.
+Reviewed feed PRs announce verified Linux releases to both platforms at once;
+FreeBSD still uses ports/pkg and its packages may arrive later.
+See [update notifications and ports integration](docs/update-notifications.md).
 
 The **關於琦琦輸入法 — 版本 …** setting opens a scrollable About window with the installed
 version, project motivation, source credits, GitHub homepage, and latest stable

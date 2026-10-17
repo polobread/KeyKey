@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Run with dbus-run-session -- xvfb-run -a python3 (no external network)."""
-import json
 import os
 from pathlib import Path
 import sys
@@ -14,6 +13,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from update_notify_gui import Application, Gio, GLib
 import update_notify as updates
+from test_update_notify import feed
 
 
 def pump(predicate, timeout=5):
@@ -36,6 +36,7 @@ class GuiTests(unittest.TestCase):
         updates.set_preferences(False, False, "/usr/local/bin/keykey-update-notify")
         self.requests = []
         self.releases = []
+        self.betas = []
         self.block = None
 
     def get(self, url):
@@ -44,8 +45,10 @@ class GuiTests(unittest.TestCase):
             self.block.wait(3)
         if self.releases is None:
             raise OSError("offline")
-        return (json.dumps(self.releases).encode() if url == updates.API else
-                b"project(KeyKeyLinux VERSION 1.3.2 LANGUAGES CXX)\n")
+        if url not in updates.FEEDS.values():
+            raise AssertionError("Unexpected update URL: " + url)
+        return feed(*(self.betas if url == updates.FEEDS["beta"] else self.releases),
+                    architectures=("amd64", "arm64"))
 
     def app(self, system="FreeBSD"):
         app = Application("1.3.1", system, "/usr/local/bin/keykey-update-notify", self.get)
@@ -57,7 +60,7 @@ class GuiTests(unittest.TestCase):
         return app
 
     def new_release(self):
-        self.releases = [{"tag_name": "v1.3.2", "draft": False, "prerelease": False, "assets": []}]
+        self.releases = ["1.3.2"]
 
     def test_fresh_settings_start_weekly_timer_and_keep_beta_off(self):
         (updates.config_home() / "chichi77-keykey/update-notification.json").unlink()
@@ -68,9 +71,9 @@ class GuiTests(unittest.TestCase):
         self.assertEqual(self.requests, [])  # Opening the window is not a manual check.
         app.periodic()
         pump(lambda: not app.busy)
-        self.assertEqual(self.requests, [updates.API])
+        self.assertEqual(self.requests, [updates.FEEDS["stable"]])
         app.periodic()
-        self.assertEqual(self.requests, [updates.API])  # Same-week attempts stay throttled.
+        self.assertEqual(self.requests, [updates.FEEDS["stable"]])  # Same-week attempts stay throttled.
         app.enabled.set_active(False)
         self.assertIsNone(app.timer)
         self.assertFalse(updates.preferences()["enabled"])
@@ -92,6 +95,27 @@ class GuiTests(unittest.TestCase):
             app.open_download()
             self.assertEqual(open_uri.call_args.args[1], updates.RELEASES + "/tag/v1.3.2")
         self.assertFalse(updates.preferences()["enabled"])
+
+    def test_linux_manual_check_uses_shared_feed(self):
+        self.new_release()
+        app = self.app(system="Linux")
+        app.check(True)
+        pump(lambda: not app.busy)
+        self.assertEqual(self.requests, [updates.FEEDS["stable"]])
+        self.assertEqual(app.result["version"], "1.3.2")
+        with patch("update_notify_gui.Gtk.show_uri_on_window") as open_uri:
+            app.open_download()
+            self.assertEqual(open_uri.call_args.args[1], updates.RELEASES + "/tag/v1.3.2")
+
+    def test_beta_checkbox_adds_only_the_reviewed_beta_feed(self):
+        self.betas = ["1.3.2-beta10"]
+        app = self.app()
+        app.beta.set_active(True)
+        self.assertEqual(self.requests, [])
+        app.check(True)
+        pump(lambda: not app.busy)
+        self.assertEqual(self.requests, [updates.FEEDS["stable"], updates.FEEDS["beta"]])
+        self.assertEqual(app.result["version"], "1.3.2-beta10")
 
     def test_offline_can_retry(self):
         self.releases = None
