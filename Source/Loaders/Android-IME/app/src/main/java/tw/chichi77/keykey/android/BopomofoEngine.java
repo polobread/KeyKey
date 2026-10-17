@@ -97,6 +97,7 @@ final class BopomofoEngine {
     private int smartCandidateStart;
     private List<SmartMandarinCandidate> smartCandidateOptions = List.of();
     private boolean hardwareSmartEditing;
+    private boolean hardwareTouchSmartEditing;
     private boolean showingSmartCandidates;
     private boolean spaceSelectsCandidates;
 
@@ -252,7 +253,11 @@ final class BopomofoEngine {
 
     void prepareForHardwareInput() {
         if (temporaryEnglish) endTemporaryEnglish();
-        setHardwareSmartEditing(true);
+        setHardwareSmartEditing(!hardwareTouchSmartEditing);
+    }
+
+    void setHardwareTouchSmartEditing(boolean enabled) {
+        hardwareTouchSmartEditing = enabled;
     }
 
     void setHardwareSmartEditing(boolean enabled) {
@@ -470,6 +475,10 @@ final class BopomofoEngine {
     }
 
     List<String> touchSmartCells() {
+        return touchSmartCells(11);
+    }
+
+    List<String> touchSmartCells(int cellCount) {
         if (compositionMode != BopomofoCompositionMode.SMART
                 || inputMode != InputMode.BOPOMOFO || hardwareSmartEditing) return List.of();
         ArrayList<String> cells = new ArrayList<>();
@@ -484,8 +493,9 @@ final class BopomofoEngine {
             }
         }
         reading.displayText().codePoints().forEach(point -> {
-            if (cells.size() < 11) cells.add(new String(Character.toChars(point)));
-            else cells.set(10, cells.get(10) + new String(Character.toChars(point)));
+            if (cells.size() < cellCount) cells.add(new String(Character.toChars(point)));
+            else cells.set(cellCount - 1,
+                    cells.get(cellCount - 1) + new String(Character.toChars(point)));
         });
         return List.copyOf(cells);
     }

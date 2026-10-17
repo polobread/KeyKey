@@ -39,6 +39,7 @@ public final class BopomofoImeService extends InputMethodService
     private volatile int phraseLoadGeneration;
     private boolean hardwareKeyboard;
     private boolean hardwareCandidatesCollapsed;
+    private boolean hardwareSmartTwoRows;
     private boolean floatingCandidatesEnabled;
     private boolean floatingCandidateWindowAvailable = true;
     private CandidateWindowSettings.Layout floatingCandidateLayout =
@@ -403,7 +404,8 @@ public final class BopomofoImeService extends InputMethodService
         }
         if (!CandidateWindowSettings.KEY_FLOATING_ENABLED.equals(key)
                 && !CandidateWindowSettings.KEY_LAYOUT.equals(key)
-                && !CandidateWindowSettings.KEY_NUMBER_ROW.equals(key)) return;
+                && !CandidateWindowSettings.KEY_NUMBER_ROW.equals(key)
+                && !CandidateWindowSettings.KEY_SMART_TWO_ROWS.equals(key)) return;
         floatingCandidateWindowAvailable = CandidateWindowSettings.floatingEnabled(this);
         updateKeyboardMode();
         requestCursorAnchorUpdates();
@@ -818,7 +820,7 @@ public final class BopomofoImeService extends InputMethodService
         keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
                 engine.compositionMode() == BopomofoCompositionMode.SMART
                         && engine.inputMode() == BopomofoEngine.InputMode.BOPOMOFO,
-                engine.touchSmartCells(), engine.touchSmartEditableCount(),
+                engine.touchSmartCells(hardwareSmartTwoRows ? 9 : 11), engine.touchSmartEditableCount(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
                 engine.isHardwareFullWidth(), supportPromptVisible,
                 engine.page(), engine.pageCount(),
@@ -895,11 +897,21 @@ public final class BopomofoImeService extends InputMethodService
         hardwareKeyboard = configuration.keyboard != Configuration.KEYBOARD_NOKEYS
                 && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
         if (!hardwareKeyboard) hardwareCandidatesCollapsed = false;
-        if (engine != null) engine.setHardwareSmartEditing(hardwareKeyboard);
         floatingCandidatesEnabled = CandidateWindowSettings.floatingEnabled(this);
         floatingCandidateLayout = CandidateWindowSettings.layout(this);
+        boolean nextSmartTwoRows = hardwareKeyboard && !isFloatingCandidateMode()
+                && CandidateWindowSettings.smartTwoRowsEnabled(this);
+        // Finish using the old host-text strategy before switching between
+        // marked desktop composition and the touch keyboard's editable tail.
+        if (nextSmartTwoRows != hardwareSmartTwoRows) commitPendingComposition();
+        hardwareSmartTwoRows = nextSmartTwoRows;
+        if (engine != null) {
+            engine.setHardwareTouchSmartEditing(hardwareSmartTwoRows);
+            engine.setHardwareSmartEditing(hardwareKeyboard && !hardwareSmartTwoRows);
+        }
         if (keyboardView == null) return;
         updateKeyboardBottomSpace();
+        keyboardView.setHardwareSmartTwoRowsEnabled(hardwareSmartTwoRows);
         keyboardView.setHardwareNumberRowEnabled(CandidateWindowSettings.numberRowEnabled(this));
         if (hardwareKeyboard) {
             keyboardView.setMode(isFloatingCandidateMode()
