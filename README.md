@@ -108,7 +108,10 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 
 ## 開發與提交
 
-所有程式、文件與 CI 修改都在工作分支 commit 和 push，
+如果用起來有哪裡不順手，或有想保留的輸入習慣，歡迎告訴我。因為個人時間有限，
+目前暫時不接受外部 PR；問題回報與資料授權的說明放在[參與說明](CONTRIBUTING.md)。
+
+維護者與協助開發的 agent 修改程式、文件與 CI 時，都在工作分支 commit 和 push，
 再建立 PR，由維護者親自 review 和 merge 到 `master`。Agent 不得自行合併或啟用自動合併，
 也不要直接在 `master` commit 或 push。
 同步最新主分支可在工作分支執行 `git pull --no-rebase origin master`；提交前保留既有修改，
@@ -277,7 +280,13 @@ complete output and signing details.
 
 ### Development and contributions
 
-Commit and push code, documentation, and CI
+If something feels awkward or you miss a familiar typing habit, please let me
+know. My time is limited, so I am not accepting external pull requests for now.
+Bug reports and suggestions are still welcome. See the
+[contribution notes (Traditional Chinese)](CONTRIBUTING.md) for reporting and
+licensing details.
+
+For maintenance by the maintainer and assisting agents, commit and push code, documentation, and CI
 changes on a working branch, then open a pull request for the maintainer to review
 and merge. Agents must not merge PRs, enable auto-merge, or commit or push directly
 to `master`. Run `git pull --no-rebase origin master` from the working
