@@ -149,7 +149,7 @@ def save_json(path, value):
 
 def due(state, now=None):
     now = time.time() if now is None else now
-    previous = state.get("last_attempt", 0)
+    previous = state.get("last_attempt")
     if (not isinstance(previous, (int, float)) or not math.isfinite(previous)
             or previous < 0 or previous > now):
         return True
