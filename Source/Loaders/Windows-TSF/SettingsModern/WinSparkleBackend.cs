@@ -37,7 +37,8 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
         get
         {
             using var key = Registry.CurrentUser.OpenSubKey(preferencesPath);
-            return key?.GetValue("KeyKeyAutomaticChecks") is int value && value == 1;
+            var saved = key?.GetValue("KeyKeyAutomaticChecks");
+            return saved is null || saved is int value && value == 1;
         }
         set
         {
@@ -86,13 +87,11 @@ internal sealed class WinSparkleBackend : IDesktopUpdateBackend
         win_sparkle_set_update_dismissed_callback(dismissed);
         win_sparkle_set_user_run_installer_callback(beforeInstall);
         using var preferences = Registry.CurrentUser.CreateSubKey(preferencesPath);
-        if (preferences.GetValue("ConsentInitialized") is null)
-        {
-            Automatic = false;
-            preferences.SetValue("ConsentInitialized", 1, RegistryValueKind.DWord);
-        }
-        else if (preferences.GetValue("KeyKeyAutomaticChecks") is null)
-            Automatic = win_sparkle_get_automatic_check_for_updates() == 1;
+        // Preserve saved opt-outs, including when the initialization marker is missing.
+        if (preferences.GetValue("KeyKeyAutomaticChecks") is null)
+            Automatic = preferences.GetValue("ConsentInitialized") is null ||
+                win_sparkle_get_automatic_check_for_updates() == 1;
+        preferences.SetValue("ConsentInitialized", 1, RegistryValueKind.DWord);
         // Settings schedules daily checks through the same 10-second path as a
         // manual check. Native automatic checks have no start/cancel callback.
         win_sparkle_set_automatic_check_for_updates(0);

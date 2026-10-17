@@ -101,7 +101,24 @@ verify_install() {
   test -f /usr/share/chichi77-keykey/update_notify_gui.py
   test -f /usr/share/applications/org.chichi77.KeyKey.UpdateNotification.desktop
   python3 -c 'import gi; gi.require_version("Gtk", "3.0"); from gi.repository import Gtk, Gio'
-  env -u DISPLAY -u DBUS_SESSION_BUS_ADDRESS keykey-update-notify --background
+  test -f /etc/xdg/autostart/org.chichi77.KeyKey.UpdateNotification.desktop
+  # A saved opt-out must exit without a desktop session or a network query.
+  python3 - <<'PYTHON'
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+with tempfile.TemporaryDirectory(prefix="keykey-notify-opt-out-") as directory:
+    path = Path(directory) / "chichi77-keykey/update-notification.json"
+    path.parent.mkdir()
+    path.write_text(json.dumps({"enabled": False, "include_beta": False}))
+    environment = dict(os.environ, XDG_CONFIG_HOME=directory)
+    environment.pop("DISPLAY", None)
+    environment.pop("DBUS_SESSION_BUS_ADDRESS", None)
+    subprocess.run(["keykey-update-notify", "--background"], env=environment,
+                   check=True, timeout=5)
+PYTHON
   test -f /usr/share/applications/org.chichi77.KeyKey.TextEditor.desktop
   # Ubuntu's minimal container image excludes man pages at dpkg extraction time.
   # Verify the package still ships the page, and require the installed copy

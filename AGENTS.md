@@ -90,7 +90,7 @@ bash update/test-macos.sh
 ```
 
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
-Windows 建置前準備 `python update/prepare.py fetch windows`。桌面更新預設關閉、
+Windows 建置前準備 `python update/prepare.py fetch windows`。桌面每日更新檢查預設開啟，保留使用者既有關閉設定；beta 頻道仍預設關閉，
 key／feed 未設定時不得連網；正式啟用與各平台簽章驗收見 [update/README.md](update/README.md)。
 Windows／macOS／Linux 的每日檢查只通知新版，不預先下載安裝包或自動安裝；使用者按下更新後才下載與安裝。Linux／FreeBSD 維持官方下載頁及套件管理器流程。
 macOS preinstall 退出舊行程後，系統仍可能在 payload 覆蓋完成前重啟 IMK；postinstall 須比較執行中詞庫 descriptor 與安裝位置的 device／inode，只正常退出持有已替換詞庫的固定位置行程。TIS 註冊成功不能代替這項檢查，也不能代替選回後的實際中文輸入驗收。

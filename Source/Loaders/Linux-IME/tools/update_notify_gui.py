@@ -247,7 +247,7 @@ class Application(Gtk.Application):
 
 
 def main(current, system, executable):
-    # Default-off autostart must not require a display or contact any service.
+    # A saved opt-out exits before starting GTK or contacting any service.
     if "--background" in sys.argv and not updates.preferences()["enabled"]:
         return
     Application(current, system, executable).run(sys.argv)

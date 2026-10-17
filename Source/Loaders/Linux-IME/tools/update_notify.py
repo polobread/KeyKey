@@ -175,7 +175,10 @@ def set_preferences(enabled, include_beta, executable):
 
 
 def preferences():
-    value = load_json(config_home() / "chichi77-keykey/update-notification.json")
-    # Invalid/corrupt values never imply consent to network activity.
+    path = config_home() / "chichi77-keykey/update-notification.json"
+    if not path.exists():
+        return {"enabled": True, "include_beta": False}
+    value = load_json(path)
+    # Preserve saved opt-outs; malformed existing settings stay offline.
     return {"enabled": value.get("enabled") is True,
             "include_beta": value.get("include_beta") is True}

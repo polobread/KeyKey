@@ -5,6 +5,7 @@ usr/share/fcitx5/inputmethod/chichi77-keykey-cangjie.conf
 usr/share/fcitx5/inputmethod/chichi77-keykey-simplex.conf
 usr/bin/keykey-fcitx-app
 usr/bin/keykey-update-notify
+etc/xdg/autostart/org.chichi77.KeyKey.UpdateNotification.desktop
 usr/bin/keykey-about
 usr/share/chichi77-keykey/update_notify.py
 usr/share/chichi77-keykey/update_notify_gui.py

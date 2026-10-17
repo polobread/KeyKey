@@ -142,10 +142,10 @@ class PreferenceTests(unittest.TestCase):
         self.env.start()
         self.addCleanup(self.env.stop)
 
-    def test_default_off_and_invalid_consent(self):
-        self.assertEqual(updates.preferences(), {"enabled": False, "include_beta": False})
+    def test_default_on_and_invalid_settings(self):
+        self.assertEqual(updates.preferences(), {"enabled": True, "include_beta": False})
         path = updates.config_home() / "chichi77-keykey/update-notification.json"
-        for enabled in ("true", 1, None):
+        for enabled in (False, "true", 1, None):
             updates.save_json(path, {"enabled": enabled})
             self.assertFalse(updates.preferences()["enabled"])
         path.write_text("corrupt", encoding="utf-8")

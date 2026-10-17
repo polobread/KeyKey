@@ -98,7 +98,29 @@ int main(int argc, const char *argv[])
         [client start]; [client start];
         Check(engine.starts == 1 && [[client snapshot][@"configured"] boolValue], @"start is idempotent");
         Check(!engine.sendsProfile && !engine.downloadsAutomatically, @"privacy and visible installation are enforced");
-        Check(!engine.automaticallyChecksForUpdates, @"first start does not opt in");
+        Check([[client snapshot][@"automatic"] boolValue] && [client valueForKey:@"_automaticTimer"] != nil &&
+            !engine.automaticallyChecksForUpdates, @"fresh client defaults to bounded daily checks with native scheduling disabled");
+        for (NSString *preference in @[@"KeyKeyAutomaticChecks", @"SUEnableAutomaticChecks"]) {
+            for (NSNumber *saved in @[@NO, @YES]) {
+                NSBundle *host = Bundle(root, @"https://example.invalid/feed.xml", key);
+                NSUserDefaults *defaults = [[[NSUserDefaults alloc] initWithSuiteName:[host bundleIdentifier]] autorelease];
+                [defaults setBool:[saved boolValue] forKey:preference];
+                FakeEngine *savedEngine = [[[FakeEngine alloc] init] autorelease];
+                KeyKeyMacUpdater *savedClient = [[[KeyKeyMacUpdater alloc] initWithHostBundle:host
+                    engine:savedEngine compositionCheck:nil] autorelease];
+                [savedClient start];
+                Check([[savedClient snapshot][@"automatic"] boolValue] == [saved boolValue],
+                    @"saved automatic preference survives initialization");
+                [savedClient setAutomaticChecks:NO];
+                [savedClient stop];
+                KeyKeyMacUpdater *reopened = [[[KeyKeyMacUpdater alloc] initWithHostBundle:host
+                    engine:[[[FakeEngine alloc] init] autorelease] compositionCheck:nil] autorelease];
+                [reopened start];
+                Check(![[reopened snapshot][@"automatic"] boolValue], @"explicit opt-out survives restart");
+                [reopened stop];
+                [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[host bundleIdentifier]];
+            }
+        }
         [client setAutomaticChecks:YES]; Check([[client snapshot][@"automatic"] boolValue] && !engine.automaticallyChecksForUpdates,
             @"explicit opt in uses the bounded daily query path instead of native background queries");
         [client setAutomaticChecks:NO]; Check(![[client snapshot][@"automatic"] boolValue], @"explicit opt out works");

@@ -41,6 +41,7 @@ internal static class NativeTests
             RunOpenSsl(openssl, "pkeyutl", "-sign", "-rawin", "-inkey", Path.Combine(directory, "test.pem"),
                 "-in", package, "-out", signature);
             var signed = Convert.ToBase64String(File.ReadAllBytes(signature));
+            AutomaticPreferenceTest(key);
             NotificationOnlyTest(key, background: false);
             NotificationOnlyTest(key, background: true);
             foreach (var mode in new[] { "no-update", "empty-feed-x64", "empty-feed-x86", "valid", "beta-next", "beta-same", "beta-older", "beta-to-final", "tampered", "wrong-key", "missing-signature", "broken-feed" })
@@ -66,7 +67,7 @@ internal static class NativeTests
                                 Interlocked.Increment(ref installs);
                                 return 1; // Handled by the test, NEVER fall through to ShellExecute.
                             }));
-                    Program.Check(!backend.Automatic, "Native updater did not default to off");
+                    Program.Check(backend.Automatic, "Fresh updater did not default to daily checks");
                     backend.Initialize();
                     win_sparkle_check_update_with_ui_and_install();
                     Program.Check(done.Wait(TimeSpan.FromSeconds(30)), "Native updater timed out: " + mode);
@@ -94,6 +95,44 @@ internal static class NativeTests
             // Exact randomly-created directory, no enumeration of outside paths.
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    private static void AutomaticPreferenceTest(string key)
+    {
+        foreach (var (saved, initialized) in new (bool?, bool)[] {
+            (null, false), (false, false), (false, true), (true, false), (true, true) })
+        {
+            var registryPath = @"Software\chichi77\KeyKey\UpdaterTests\" + Guid.NewGuid().ToString("N");
+            void Start(WinSparkleBackend backend)
+            {
+                backend.Configure(key, "https://example.invalid/feed.xml", "1.3.2",
+                    new UpdateCallbacks(() => 0, () => { }, () => { }, () => { },
+                        () => { }, () => { }, () => { }, _ => 1));
+                backend.Initialize(); // Native scheduling stays disabled; no query is requested.
+            }
+            var backend = new WinSparkleBackend(registryPath);
+            try
+            {
+                using (var preferences = Registry.CurrentUser.CreateSubKey(registryPath))
+                {
+                    if (saved.HasValue) preferences.SetValue("KeyKeyAutomaticChecks", saved.Value ? 1 : 0);
+                    if (initialized) preferences.SetValue("ConsentInitialized", 1);
+                }
+                Start(backend);
+                Program.Check(backend.Automatic == (saved ?? true), "Initialization changed the saved daily-check choice");
+                backend.Automatic = false;
+                backend.Cleanup();
+                backend = new WinSparkleBackend(registryPath);
+                Start(backend);
+                Program.Check(!backend.Automatic, "Saved daily-check opt-out did not survive restart");
+            }
+            finally
+            {
+                backend.Cleanup();
+                Registry.CurrentUser.DeleteSubKeyTree(registryPath, throwOnMissingSubKey: false);
+            }
+        }
+        Console.WriteLine("Daily checks default on; existing choices and opt-outs survive initialization/restart");
     }
 
     private static void NotificationOnlyTest(string key, bool background)

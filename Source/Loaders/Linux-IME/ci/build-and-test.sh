@@ -41,6 +41,7 @@ if ! nm -D --defined-only "$addon" |
   exit 1
 fi
 
+test -f "$stage_dir/etc/xdg/autostart/org.chichi77.KeyKey.UpdateNotification.desktop"
 test -f "$stage_dir/usr/share/fcitx5/addon/chichi77-keykey.conf"
 test -f "$stage_dir/usr/share/fcitx5/inputmethod/chichi77-keykey-bopomofo.conf"
 test -f "$stage_dir/usr/share/fcitx5/inputmethod/chichi77-keykey-cangjie.conf"

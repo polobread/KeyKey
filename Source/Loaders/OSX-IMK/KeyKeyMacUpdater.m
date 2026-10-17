@@ -80,7 +80,8 @@ static NSURL *ReviewedFeed(id value)
         _preferences = [[NSUserDefaults alloc] initWithSuiteName:[host bundleIdentifier]];
         id automatic = [_preferences objectForKey:@"KeyKeyAutomaticChecks"];
         if (!automatic) automatic = [_preferences objectForKey:@"SUEnableAutomaticChecks"];
-        _automaticChecks = [automatic isKindOfClass:[NSNumber class]] && [automatic boolValue];
+        // New installations check daily; preserve an existing explicit choice.
+        _automaticChecks = !automatic || ([automatic isKindOfClass:[NSNumber class]] && [automatic boolValue]);
         id consent = [_preferences objectForKey:@"KeyKeyBetaUpdates"];
         _betaEnabled = [consent isKindOfClass:[NSNumber class]] && [consent boolValue];
         _feed = [(_betaEnabled ? _betaFeed : _stableFeed) retain];
@@ -137,7 +138,7 @@ static NSURL *ReviewedFeed(id value)
     }
     _started = YES;
     [self updateAutomaticTimer];
-    [self setPhase:@"idle" message:@"可手動檢查，或開啟每日新版通知。不預先下載；按下更新後才下載與安裝。"];
+    [self setPhase:@"idle" message:@"可手動檢查或設定每日新版通知。不預先下載；按下更新後才下載與安裝。"];
 }
 
 - (void)clearPendingInstallation
