@@ -2,9 +2,18 @@
 
 Open **更新通知與下載…** in the KeyKey Fcitx configuration, or launch
 `keykey-update-notify` from the applications menu/terminal. Opening this window
-does not check the network. **檢查新版** explicitly checks official GitHub
-release metadata and the Unix product version at the release tag. The download
-button opens the official release page in the default browser.
+does not check the network. **檢查新版** reads the reviewed shared notification RSS:
+
+- Stable: `https://download.aws.polobread.com/keykey/update/stable/unix-fcitx5.xml`
+- Beta opt-in additionally reads: `https://download.aws.polobread.com/keykey/update/beta/unix-fcitx5.xml`
+
+The download button opens the exact official GitHub Release page in the default
+browser, where both CDN and GitHub downloads can be listed. Clients do not query
+the GitHub Releases API, raw tag sources, ports or pkg. Existing installed
+clients need a new build containing this reader; publishing XML alone does not
+redirect an older client. Deploy the empty initial feeds before shipping it.
+See [shared feed publishing](https://github.com/polobread/KeyKey/blob/master/update/README.md#linuxfreebsd-共用-cdn-feed)
+for the format and reviewed release process.
 
 All desktop platforms use notification-only checks: installer packages are not
 prefetched. Updating starts only after the user chooses it. On Linux/FreeBSD,
@@ -36,24 +45,25 @@ The Debian build script derives this from an exact matching checkout tag, or
 accepts an explicit `KEYKEY_UPDATE_VERSION` for source archives. This metadata
 does not change existing Debian artifact naming/version conventions.
 
-Mobile and Unix product versions are independent: a newer mobile-only tag whose
-`Source/Loaders/Linux-IME/CMakeLists.txt` still has an older Unix version is not
-reported. Linux additionally requires the published Ubuntu 24.04 data and frontend
-packages for the current amd64/arm64 architecture. The FreeBSD notification is an
-**upstream source release** notice and does not require `.deb` assets. It clearly
-asks the user to update through ports/pkg; the port and binary repository may lag
-the upstream release. It does not claim a package is already available in pkg.
+Only verified Unix releases are added through feed PRs. Mobile-only releases
+are excluded during publication by checking the tag's Unix product version.
+Each item declares the verified Linux package architectures (`amd64`/`arm64`);
+Linux filters on the current architecture. FreeBSD reads the same item as an
+**upstream source release** notice and asks the user to update through ports/pkg.
+Both platforms are announced together, without an extra FreeBSD delay or a
+package-availability query. The port and binary repository may lag the upstream
+release; the notice does not claim a pkg package is already available.
 
 This tool does not download or run packages, modify the installed input method,
 query privileged package managers, or create an APT/pkg repository. Release URLs
 are constructed from strict version tags, never taken from untrusted metadata.
 Network access uses HTTPS and a bounded response size. A background check has a
-ten-second total UI deadline, shared across the release list and tag requests;
+ten-second total UI deadline, shared across the stable and optional beta feed requests;
 individual requests use the remaining time as their socket timeout. Timeout
 restores the check button without retrying automatically. Manual retry ignores
 late results from the expired worker, and closing a manual check cancels further
 requests. The existing weekly schedule still waits 7 days after any attempt;
-cross-host and non-HTTPS redirects are rejected. No typing text is sent.
+cross-host and non-HTTPS redirects are rejected. XML must be bounded UTF-8 RSS with the reviewed schema, version/channel, architecture and canonical Release link; DTD/entities and installer enclosures are rejected. No typing text is sent.
 
 Preferences: `$XDG_CONFIG_HOME/chichi77-keykey/update-notification.json`.
 Attempt time and last notified version:

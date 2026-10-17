@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Exercise real query control with a headless event loop (no GTK/network)."""
 import importlib.util
-import json
 import os
 from pathlib import Path
 import queue
@@ -16,6 +15,7 @@ from unittest.mock import patch
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 sys.path.insert(0, str(TOOLS))
 import update_notify as updates
+from test_update_notify import feed
 
 
 class Loop:
@@ -102,7 +102,7 @@ class LifecycleTests(unittest.TestCase):
     def blocked_get(self, url):
         self.requests.append(url)
         self.block.wait(2)
-        return b"[]"
+        return feed()
 
     def test_ten_second_deadline_does_not_block_ui_or_retry(self):
         app = self.app(self.blocked_get)
@@ -126,7 +126,7 @@ class LifecycleTests(unittest.TestCase):
         self.loop.pump_until(lambda: bool(self.requests))
         expired = app.active_check
         self.loop.expire(app.check_timeout)
-        app.get = lambda _: b"[]"
+        app.get = lambda _: feed()
         app.check(True)
         self.loop.pump_until(lambda: not app.busy)
         app.checked({"version": "99.0.0"}, False, True, expired)
@@ -157,7 +157,7 @@ class LifecycleTests(unittest.TestCase):
         app.check(True)
         self.loop.pump_until(lambda: not app.busy)
         self.assertIn("檢查失敗", app.status.text)
-        app.get = lambda _: json.dumps([]).encode()
+        app.get = lambda _: feed()
         app.check(True)
         self.loop.pump_until(lambda: not app.busy)
         self.assertIn("沒有較新", app.status.text)

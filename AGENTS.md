@@ -35,7 +35,7 @@
 
 - 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
 - PR 必須由使用者親自 review 和 merge；agent 不得自行合併 PR、啟用 auto-merge 或繞過使用者審查。
-- 更新 feed 由維護者請 AI 手動準備 PR；不隨 release 自動改寫 Git／CDN。merge master 後才由 Actions 同步 CDN。保留 SHA-256 內容位址副本，不覆蓋已發布的 beta 安裝包。FreeBSD 公告固定等 release 發布滿 48 小時才加入 PR，不檢查 ports/pkg 可用性、不新增排程。
+- 更新 feed 由維護者請 AI 手動準備 PR；不隨 release 自動改寫 Git／CDN。merge master 後才由 Actions 同步 CDN。保留 SHA-256 內容位址副本，不覆蓋已發布的 beta 安裝包。Linux／FreeBSD 共用 `update/CHANNEL/unix-fcitx5.xml`，每週檢查並同步公告；不延後 FreeBSD 公告，不檢查 ports/pkg 可用性、不新增排程，須提示透過 ports/pkg 更新且套件可能較晚上架。
 - 使用者文件與更新紀錄按正式產品版號整理，不記錄 beta 輪次與逐次測試／除錯過程；尚未正式發布的版本標示「未發布」。發布工具需要的測試頻道規格使用通用 `X.Y.Z-betaN` 格式，不綁定某次測試版或公告時間。
 - 此流程配合 SignPath 的變更審查與人工簽章核准要求；原始碼、建置腳本及 CI 設定都納入審查。角色與簽章流程見 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
 - 先執行 `git status --short --branch`，保留使用者既有修改。只逐檔 `git add` 本次內容，不用 `git add .` 或 `git add -A`。

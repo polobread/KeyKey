@@ -80,8 +80,11 @@ def main():
             wait_for_state(item, pyatspi.STATE_SELECTED, True)
             click_node(wait_for_node(app, "push button", "Configure"))
             dialog = wait_for_node(app, "dialog", "chichi77 KeyKey Bopomofo")
-            # This is the real generated ExternalOption, not a direct helper launch.
-            button = wait_for_node(dialog, "push button", "Configure")
+            # ExternalOptions share the same Configure button name. Select the
+            # update row explicitly so the preceding About entry is not opened.
+            # This still exercises the real generated option and installed helper.
+            update_row = wait_for_node(dialog, "filler", "更新通知與下載…:")
+            button = wait_for_node(update_row, "push button", "Configure")
             click_node(button)
             deadline = time.monotonic() + 10
             window = None

@@ -18,6 +18,8 @@ import xml.etree.ElementTree as ET
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "update"))
 import channels
 import metadata
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Source/Loaders/Linux-IME/tools"))
+import update_notify as unix_updates
 
 PREFIX = "keykey/update"
 CHANNELS = ("stable", "beta")
@@ -44,7 +46,7 @@ def feeds(directory, update_channel="stable"):
         data = path.read_bytes()
         # Require UTF-8; reject DTD/entity declarations, including UTF-16 bypasses.
         text = data.decode("utf-8-sig")
-        if re.search(r"<!\s*(DOCTYPE|ENTITY)\b", text, re.IGNORECASE):
+        if "\x00" in text or re.search(r"<!\s*(DOCTYPE|ENTITY)\b", text, re.IGNORECASE):
             raise ValueError(f"DTD/entities are not allowed: {path.name}")
         root = ET.fromstring(data)
         if root.tag != "rss" or root.get("version") != "2.0" or len(root.findall("channel")) != 1:
@@ -58,6 +60,10 @@ def feeds(directory, update_channel="stable"):
             link = urlsplit(element.text or "")
             if link.scheme != "https" or not link.hostname or link.username or link.password:
                 raise ValueError(f"channel link must be HTTPS without credentials: {path.name}")
+        if path.name == "unix-fcitx5.xml":
+            unix_updates.parse_feed(data, update_channel)
+            result.append((path.name, data))
+            continue
         for item in channel.findall("item"):
             enclosure = item.find("enclosure")
             version = item.findtext(f"{{{SPARKLE}}}version")

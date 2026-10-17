@@ -7,8 +7,7 @@ RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 ## 目錄與維護入口
 
 更新設定、建置／發布工具與 feed 統一放在小寫單數 `update/`。
-GitHub Raw 與 CDN 的固定 feed 檔名為 `macos-arm64.xml`、`windows-x64.xml` 和
-`windows-x86.xml`，stable 與 beta 分別放在 `update/stable/`、`update/beta/` prefix。
+GitHub Raw 與 CDN 的固定 feed 檔名為 `macos-arm64.xml`、`windows-x64.xml`、`windows-x86.xml` 和 `unix-fcitx5.xml`，stable 與 beta 分別放在 `update/stable/`、`update/beta/` prefix。
 
 | 檔案／目錄 | 何時維護 |
 |---|---|
@@ -68,7 +67,7 @@ SDK 繼續負責版本選擇、套件簽章與安裝確認。macOS 查無更新�
   啟動安裝器，也不關閉設定視窗；仍要求先儲存設定／自訂詞，查詢期間新增草稿會阻止
   開頁。沒有發布下載檔、離線或查詢失敗時顯示原因，不改用其他版本或架構。
 - Linux／FreeBSD：Fcitx 設定中的「更新通知與下載…」提供手動新版檢查、預設開啟且可關閉的每週
-  通知及官方發行頁入口。Linux 確認對應架構套件存在；FreeBSD 顯示上游原始碼新版，
+  通知及官方發行頁入口。兩者共用 CDN `unix-fcitx5.xml`，客戶端不查 GitHub API／tag 原始碼。Linux 依公告的已驗證架構篩選；FreeBSD 同步顯示上游原始碼新版，
   明示由 ports/pkg 更新及套件庫可能較晚上架。詳細設定與既有 port 的封裝修改見
   [更新通知](../Source/Loaders/Linux-IME/docs/update-notifications.md)。安裝仍交給套件
   管理器；沒有建立 APT/pkg 更新庫，也不在輸入法內下載或執行安裝包。
@@ -165,7 +164,7 @@ stable XML 拒絕 beta 比較版號、顯示版號或 beta tag 安裝包網址�
 原 Release 安裝包的長快取與權限保持不變；本次程式開發不執行 Terraform apply 或線上上傳。
 沿用 `release` environment 的現有 `AWS_ACCOUNT_ID` 與 `AWS_RELEASE_MIRROR_*` variables，
 不新增 AWS 長期金鑰。完成基礎設施部署後，可在 Actions 選擇此 workflow、`master`、
-**Run workflow** 補同步兩個 channel 的六份初始 feed；後續 XML 變更會觸發同步。
+**Run workflow** 補同步兩個 channel 的八份初始 feed；後續 XML 變更會觸發同步。
 
 本機唯讀／隔離驗證：
 
@@ -187,7 +186,7 @@ python3 .github/scripts/sync-update-feeds.py --check-only --verify-assets
 3. Windows job 先對既有 EXE 原生驗證。macOS job 驗證同一次 run／revision 的公開報告，實際檢查 pkg 的 Gatekeeper、公證票證與 beta 版號，再下載並新增副本。GitHub 不使用 `--clobber`；S3 使用 `If-None-Match: *`，已存在物件只回讀確認，差異或權限錯誤一律停止。
 4. GitHub／S3／CDN 副本雜湊與大小全部確認後，請 AI 使用受保護的既有更新私鑰準備 signed metadata／appcasts、建立第二份 feed PR。私鑰不在 Git 或 artifact。你 review／merge master 後，才由預設同步入口部署 feed／metadata。
 
-Windows x86 ZIP 只公告手動下載；Linux 仍透過套件管理器安裝。FreeBSD 公告 PR 固定等 release 發布滿 48 小時，不檢查 ports/pkg 是否已上架，並揭露可能尚不可用；不新增自動排程。
+Windows x86 ZIP 只公告手動下載；Linux 仍透過套件管理器安裝。Linux／FreeBSD 共用 Unix feed 並同步公告，不延後 FreeBSD 通知；不檢查 ports/pkg 是否已上架，並揭露可能尚不可用，不新增自動排程。
 
 ## 發布版本與隔離的更新來源
 
@@ -418,6 +417,62 @@ timestamp，再以原本的 Ed25519 私鑰簽署最終 bytes，重新產生 meta
 沿用同一個 stable URL 與 Ed25519 公鑰即可升級，不需要另外開 channel 或換金鑰。
 不能覆蓋已發布的同版 unsigned EXE，也不能直接把簽章加到既有不可變下載檔；
 同版重新簽章不會讓已安裝相同版本的客戶端偵測到新版本。
+
+## Linux／FreeBSD 共用 CDN feed
+
+固定網址：
+
+- `https://download.aws.polobread.com/keykey/update/stable/unix-fcitx5.xml`
+- 勾選 beta 後，另外讀取 `https://download.aws.polobread.com/keykey/update/beta/unix-fcitx5.xml`
+
+每週檢查、失敗節流與使用者既有關閉設定保持一致；手動檢查可提前執行。
+Linux／FreeBSD 共用同一公告，同步通知，不延後 FreeBSD。FreeBSD 始終提示透過
+ports／pkg 更新、套件可能較晚上架，不查套件庫，也不增加排程。
+新版客戶端只讀這些固定 CDN URL；開啟下載頁仍使用該版本的官方 GitHub Release。
+發行頁及 RSS description 可以同時列出 CDN／GitHub 下載連結。
+舊版客戶端仍查 GitHub API，必須安裝含新 reader 的版本才會切換。
+
+初始 stable／beta XML 都沒有 item，避免尚未完成 Linux 發布驗證就通知升級。
+新 reader 出貨前須先合併並部署初始 feed，確認 CDN 可取得相同 bytes。
+此 feed 只通知並開啟下載頁，不提供 installer `enclosure` 或自動安裝。
+同步工具使用與客戶端相同的 XML 驗證，不改變既有 macOS／Windows signed metadata 規則。
+既有 Terraform 的 `keykey/update/CHANNEL/*.xml` 權限與短快取已涵蓋新路徑。
+
+發布流程：
+
+1. Linux Release 的建置、套件生命週期及發布 jobs 完成後，取得正式套件、`SHA256SUMS`
+   與 build-info，校驗套件大小／SHA-256、版本、架構與 CDN／GitHub 副本。
+   同時核對該 tag 的 Unix CMake 產品版號，排除只更新行動平台的 tag。
+2. 請 AI 手動準備對應頻道的 feed PR，只宣告已驗證的 Linux 架構；同一 item 也公告 FreeBSD。
+   每個版本只能有一個 item，stable 不接受 beta；beta 顯示 `X.Y.Z-betaN`，比較版號為 `X.Y.ZbN`。
+3. PR 需附套件驗證證據並由維護者 review／merge；Release workflow 不自動改寫 feed 或 Git。
+4. 合併 master 後沿用 `Sync Update Feeds to CDN`，上傳、回讀比對、精確 invalidation 及 CDN bytes
+   驗證。客戶端下次每週／手動檢查便讀取公告。Linux 下載後透過套件管理器安裝；FreeBSD 走 ports/pkg。
+
+以下僅為格式範例，不表示該版本已驗證或可發布：
+
+```xml
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
+     xmlns:keykey="urn:chichi77:keykey:update:1">
+  <channel>
+    <title>琦琦輸入法 Linux／FreeBSD 更新通知</title>
+    <link>https://github.com/polobread/KeyKey/releases</link>
+    <keykey:schemaVersion>1</keykey:schemaVersion>
+    <item>
+      <title>琦琦輸入法 1.3.2</title>
+      <sparkle:version>1.3.2</sparkle:version>
+      <sparkle:shortVersionString>1.3.2</sparkle:shortVersionString>
+      <link>https://github.com/polobread/KeyKey/releases/tag/v1.3.2</link>
+      <keykey:linuxArchitecture>amd64</keykey:linuxArchitecture>
+      <description>Linux 請透過套件管理器安裝；FreeBSD 請透過 ports/pkg 更新，套件可能較晚上架。</description>
+    </item>
+  </channel>
+</rss>
+```
+
+同時驗證 arm64 套件後才可另加 `<keykey:linuxArchitecture>arm64</keykey:linuxArchitecture>`。
+`link` 必須是該版本的官方 Release，版本、頻道或架構不一致及 DTD／entities 一律拒絕。
+`--check-only` 檢查格式與同步範圍；Unix 的套件完成與校驗證據仍需在 feed PR 審查，不能用 XML 通過代替套件驗證。
 
 ## GitHub Release／CDN 發布順序（安裝包先發布，再同步 feed）
 

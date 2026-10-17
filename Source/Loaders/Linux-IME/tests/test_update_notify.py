@@ -1,37 +1,44 @@
 #!/usr/bin/env python3
 """Network-free update regressions, including the FreeBSD ports boundary."""
-import json
 import os
 from pathlib import Path
 import sys
 import tempfile
 import threading
 import unittest
+import xml.etree.ElementTree as ET
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import update_notify as updates
 
 
-def release(version, assets=True):
-    base = version.split("-beta")[0]
-    return {"tag_name": "v" + version, "draft": False,
-            "prerelease": "-beta" in version,
-            "html_url": "https://evil.invalid/installer",
-            "assets": [{"name": name, "size": 20, "state": "uploaded"} for name in (
-                f"chichi77-keykey-data_{base}-1+ubuntu24.04_all.deb",
-                f"fcitx5-chichi77-keykey_{base}-1+ubuntu24.04_amd64.deb")]
-            if assets else []}
+def feed(*versions, architectures=("amd64",)):
+    root = ET.Element("rss", version="2.0")
+    channel = ET.SubElement(root, "channel")
+    ET.SubElement(channel, "title").text = "Unix notifications"
+    ET.SubElement(channel, f"{{{updates.UNIX}}}schemaVersion").text = "1"
+    for version in versions:
+        key = updates.version_key(version)
+        item = ET.SubElement(channel, "item")
+        ET.SubElement(item, f"{{{updates.SPARKLE}}}shortVersionString").text = version
+        ET.SubElement(item, f"{{{updates.SPARKLE}}}version").text = (
+            ".".join(str(part) for part in key[:3]) + ("" if key[3] else f"b{key[4]}"))
+        ET.SubElement(item, "link").text = updates.RELEASES + "/tag/v" + version
+        for arch in architectures:
+            ET.SubElement(item, f"{{{updates.UNIX}}}linuxArchitecture").text = arch
+    return ET.tostring(root, encoding="utf-8")
 
 
 class ReleaseTests(unittest.TestCase):
-    def check(self, releases, system="Linux", current="1.3.1", beta=False,
-              source="1.3.2", machine="x86_64"):
+    def check(self, versions=(), system="Linux", current="1.3.1", beta=False,
+              betas=(), machine="x86_64", architectures=("amd64",)):
         self.urls = []
         def get(url):
             self.urls.append(url)
-            return (json.dumps(releases).encode() if url == updates.API else
-                    f"project(KeyKeyLinux VERSION {source} LANGUAGES CXX)\n".encode())
+            self.assertIn(url, updates.FEEDS.values())
+            return feed(*(betas if url == updates.FEEDS["beta"] else versions),
+                        architectures=architectures)
         return updates.latest_release(current, system, machine, beta, get)
 
     def test_order(self):
@@ -43,78 +50,105 @@ class ReleaseTests(unittest.TestCase):
             with self.subTest(version=version), self.assertRaises(ValueError):
                 updates.version_key(version)
 
-    def test_stable_ignores_beta(self):
-        self.assertIsNone(self.check([release("1.3.2-beta1")]))
-        self.assertEqual(self.urls, [updates.API])
+    def test_stable_checks_only_one_fixed_cdn_url(self):
+        self.assertIsNone(self.check(betas=("1.3.2-beta1",)))
+        self.assertEqual(self.urls, [updates.FEEDS["stable"]])
 
-    def test_explicit_beta_opt_in(self):
-        self.assertEqual(self.check([release("1.3.2-beta10")], beta=True)["version"], "1.3.2-beta10")
+    def test_explicit_beta_opt_in_checks_both_channels(self):
+        self.assertEqual(self.check(beta=True, betas=("1.3.2-beta10",))["version"], "1.3.2-beta10")
+        self.assertEqual(self.urls, [updates.FEEDS["stable"], updates.FEEDS["beta"]])
 
     def test_beta_can_upgrade_to_stable(self):
-        self.assertEqual(self.check([release("1.3.2")], current="1.3.2-beta1")["version"], "1.3.2")
+        self.assertEqual(self.check(("1.3.2",), current="1.3.2-beta1")["version"], "1.3.2")
+        self.assertEqual(self.check(("1.3.2",), beta=True, betas=("1.3.2-beta10",))["version"], "1.3.2")
 
     def test_no_downgrade_or_same_version(self):
-        self.assertIsNone(self.check([release("1.3.1"), release("1.3.2-beta10")], current="1.3.2", beta=True))
+        self.assertIsNone(self.check(("1.3.1", "1.3.2"), current="1.3.2", beta=True,
+                                     betas=("1.3.2-beta10",)))
 
-    def test_linux_requires_complete_matching_architecture(self):
-        self.assertIsNone(self.check([release("1.3.2", assets=False)]))
-        self.assertIsNone(self.check([release("1.3.2")], machine="aarch64"))
-        self.assertIsNone(self.check([release("1.3.2")], machine="riscv64"))
+    def test_newest_version_wins_independent_of_item_order(self):
+        self.assertEqual(self.check(("1.3.2", "1.4.0", "1.3.10"))["version"], "1.4.0")
 
-    def test_freebsd_does_not_require_deb(self):
-        result = self.check([release("1.3.2", assets=False)], system="FreeBSD", machine="amd64")
+    def test_linux_requires_reviewed_matching_architecture(self):
+        self.assertIsNone(self.check(("1.3.2",), machine="aarch64"))
+        self.assertIsNone(self.check(("1.3.2",), machine="riscv64"))
+        for machine in ("aarch64", "arm64"):
+            self.assertEqual(self.check(("1.3.2",), machine=machine,
+                                       architectures=("amd64", "arm64"))["version"], "1.3.2")
+
+    def test_freebsd_shares_feed_without_waiting_or_querying_pkg(self):
+        result = self.check(("1.3.2",), system="FreeBSD", machine="amd64")
         self.assertEqual(result, {"version": "1.3.2", "url": updates.RELEASES + "/tag/v1.3.2"})
+        self.assertEqual(self.urls, [updates.FEEDS["stable"]])
 
-    def test_mobile_tag_is_not_unix_upgrade(self):
-        for system in ("Linux", "FreeBSD"):
-            with self.subTest(system=system):
-                self.assertIsNone(self.check([release("1.3.3")], system=system, source="1.3.2"))
+    def test_unsupported_platform_is_rejected_without_network(self):
+        with self.assertRaises(ValueError):
+            updates.latest_release("1.3.1", "Windows", "amd64", get=lambda _: self.fail("network"))
 
-    def test_invalid_source_and_untrusted_url(self):
-        self.assertIsNone(self.check([release("1.3.2")], source="garbage"))
-        self.assertEqual(self.check([release("1.3.2")])["url"], updates.RELEASES + "/tag/v1.3.2")
+    def test_inconsistent_version_channel_link_architecture_or_enclosure_rejected(self):
+        source = feed("1.3.2")
+        variants = [source.replace(b"/tag/v1.3.2", b"/tag/v1.3.3"),
+                    source.replace(b"https://github.com", b"https://evil.invalid"),
+                    source.replace(b"amd64", b"riscv64"),
+                    source.replace(b"</item>", b'<enclosure url="https://evil.invalid/install"/></item>')]
+        document = ET.fromstring(source)
+        document.find(f"./channel/item/{{{updates.SPARKLE}}}version").text = "1.3.3"
+        variants.extend([ET.tostring(document), feed("1.3.2-beta1"), feed("1.3.2", architectures=()),
+                         feed("1.3.2", "1.3.2"), feed("1.3.2", architectures=("amd64", "amd64"))])
+        for data in variants:
+            with self.subTest(data=data), self.assertRaises(ValueError):
+                updates.parse_feed(data, "stable")
+        with self.assertRaises(ValueError):
+            updates.parse_feed(source, "beta")
 
-    def test_drafts_and_inconsistent_channel(self):
-        for changes in ({"draft": True}, {"prerelease": True}, {"tag_name": "v1.3.2/../bad"}):
-            value = release("1.3.2")
-            value.update(changes)
-            self.assertIsNone(self.check([value], beta=True))
+    def test_xml_errors_dtd_utf16_oversize_and_schema_rejected(self):
+        for data in (b"", b"not xml", b"<not-rss/>", b"x" * (updates.LIMIT + 1),
+                     b'<!DOCTYPE rss>' + feed(), ('<!DOCTYPE rss>' + feed().decode()).encode("utf-16"),
+                     ('<!DOCTYPE rss>' + feed().decode()).encode("utf-16-be"),
+                     ('<!DOCTYPE rss>' + feed().decode()).encode("utf-16-le"),
+                     feed().replace(b">1<", b">2<"), feed().replace(b"</rss>", b"<channel/></rss>")):
+            with self.subTest(data=data[:30]), self.assertRaises((ValueError, UnicodeError, ET.ParseError)):
+                updates.parse_feed(data, "stable")
 
-    def test_api_error(self):
-        for data in (b"bad json", b'{"message": "rate limit"}'):
-            with self.assertRaises(ValueError):
-                updates.latest_release("1.3.1", "FreeBSD", "amd64", get=lambda _: data)
+    def test_missing_or_duplicate_version_link_field_is_rejected(self):
+        for field in ("link", f"{{{updates.SPARKLE}}}version", f"{{{updates.SPARKLE}}}shortVersionString"):
+            for duplicate in (False, True):
+                root = ET.fromstring(feed("1.3.2"))
+                item = root.find("./channel/item")
+                if duplicate:
+                    ET.SubElement(item, field).text = item.findtext(field)
+                else:
+                    item.remove(item.find(field))
+                with self.subTest(field=field, duplicate=duplicate), self.assertRaises(ValueError):
+                    updates.parse_feed(ET.tostring(root), "stable")
 
     def test_https_redirect_boundary(self):
         from urllib.request import Request
-        request = Request(updates.API)
-        for url in ("http://api.github.com/data", "https://evil.invalid", "https://api.github.com:444/data"):
+        request = Request(updates.FEEDS["stable"])
+        for url in ("http://download.aws.polobread.com/data", "https://evil.invalid", "https://download.aws.polobread.com:444/data"):
             with self.assertRaises(ValueError):
                 updates.SameHostRedirect().redirect_request(request, None, 302, "", {}, url)
 
-    def test_total_deadline_covers_all_requests(self):
-        calls = []
-        clock = [0]
+    def test_total_deadline_covers_both_feeds(self):
+        calls, clock = [], [0]
         def get(url):
             calls.append(url)
             clock[0] += 6
-            return (json.dumps([release("1.3.2")]).encode() if url == updates.API else
-                    b"project(KeyKeyLinux VERSION 1.3.2 LANGUAGES CXX)\n")
+            return feed()
         with patch.object(updates.time, "monotonic", side_effect=lambda: clock[0]):
             with self.assertRaises(TimeoutError):
-                updates.latest_release("1.3.1", "Linux", "x86_64", get=get)
-        self.assertEqual(len(calls), 2)
+                updates.latest_release("1.3.1", "Linux", "x86_64", include_beta=True, get=get)
+        self.assertEqual(calls, [updates.FEEDS["stable"], updates.FEEDS["beta"]])
 
     def test_cancelled_check_starts_no_further_requests(self):
-        cancelled = threading.Event()
-        calls = []
+        cancelled, calls = threading.Event(), []
         def get(url):
             calls.append(url)
             cancelled.set()
-            return json.dumps([release("1.3.2")]).encode()
+            return feed()
         with self.assertRaises(TimeoutError):
-            updates.latest_release("1.3.1", "Linux", "x86_64", get=get, cancelled=cancelled)
-        self.assertEqual(calls, [updates.API])
+            updates.latest_release("1.3.1", "Linux", "x86_64", include_beta=True, get=get, cancelled=cancelled)
+        self.assertEqual(calls, [updates.FEEDS["stable"]])
 
     def test_trickling_response_cannot_extend_query_forever(self):
         clock = [0]
@@ -128,7 +162,7 @@ class ReleaseTests(unittest.TestCase):
                 patch.object(updates.time, "monotonic", side_effect=lambda: clock[0]):
             opener.return_value.open.return_value = Response()
             with self.assertRaises(TimeoutError):
-                updates.fetch(updates.API)
+                updates.fetch(updates.FEEDS["stable"])
         self.assertEqual(clock[0], 12)
 
 

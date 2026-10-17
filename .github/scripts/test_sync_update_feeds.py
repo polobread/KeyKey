@@ -58,7 +58,7 @@ class SyncFeedsTests(unittest.TestCase):
 
     def test_current_platform_feeds_validate_without_network(self):
         directory = Path(__file__).resolve().parents[2] / "update/stable"
-        self.assertTrue({"macos-arm64.xml", "windows-x64.xml", "windows-x86.xml"}.issubset(
+        self.assertTrue({"macos-arm64.xml", "windows-x64.xml", "windows-x86.xml", "unix-fcitx5.xml"}.issubset(
             {name for name, _ in mirror.feeds(directory)}))
 
     def test_existing_metadata_appcast_is_accepted_without_rewriting_its_bytes(self):
@@ -139,7 +139,9 @@ class SyncFeedsTests(unittest.TestCase):
 
     def test_empty_oversized_dtd_non_rss_duplicate_channels_and_unsafe_links_rejected(self):
         for data in (b"", b"x" * (mirror.MAX_SIZE + 1), b'<!DOCTYPE rss>' + RSS,
-                     ('<!DOCTYPE rss>' + RSS.decode()).encode("utf-16"), b"<not-rss/>",
+                     ('<!DOCTYPE rss>' + RSS.decode()).encode("utf-16"),
+                     ('<!DOCTYPE rss>' + RSS.decode()).encode("utf-16-be"),
+                     ('<!DOCTYPE rss>' + RSS.decode()).encode("utf-16-le"), b"<not-rss/>",
                      RSS.replace(b"</rss>", b"<channel/></rss>"),
                      RSS.replace(b"</link>", b"</link><link>https://example.invalid/second</link>"),
                      RSS.replace(b"https://example.invalid", b"http://example.invalid"),
@@ -223,6 +225,61 @@ class SyncFeedsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "CDN mismatch"):
                 mirror.sync(self.root)
         self.assertFalse((self.root / "summary").exists())
+
+
+class UnixFeedTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def fixture(self, version="1.3.2", native="1.3.2"):
+        data = f'''<rss version="2.0" xmlns:sparkle="{mirror.SPARKLE}"
+            xmlns:keykey="{mirror.unix_updates.UNIX}"><channel><title>Unix</title>
+            <keykey:schemaVersion>1</keykey:schemaVersion><item>
+            <sparkle:version>{native}</sparkle:version>
+            <sparkle:shortVersionString>{version}</sparkle:shortVersionString>
+            <link>https://github.com/polobread/KeyKey/releases/tag/v{version}</link>
+            <keykey:linuxArchitecture>amd64</keykey:linuxArchitecture>
+            </item></channel></rss>'''.encode()
+        (self.root / "unix-fcitx5.xml").write_bytes(data)
+        return data
+
+    def test_repository_unix_feeds_validate_as_notifications(self):
+        repository = Path(__file__).resolve().parents[2]
+        for channel in ("stable", "beta"):
+            data = (repository / f"update/{channel}/unix-fcitx5.xml").read_bytes()
+            self.assertIsInstance(mirror.unix_updates.parse_feed(data, channel), list)
+            self.assertIn(("unix-fcitx5.xml", data), mirror.channel_snapshot(repository / f"update/{channel}", channel))
+
+    def test_reviewed_notification_items_do_not_require_installer_metadata(self):
+        data = self.fixture()
+        self.assertEqual(mirror.channel_snapshot(self.root, "stable"), [("unix-fcitx5.xml", data)])
+        data = self.fixture("1.3.2-beta10", "1.3.2b10")
+        self.assertEqual(mirror.channel_snapshot(self.root, "beta"), [("unix-fcitx5.xml", data)])
+        with self.assertRaises(ValueError):
+            mirror.channel_snapshot(self.root, "stable")
+
+    def test_invalid_unix_items_stop_before_aws_writes(self):
+        data = self.fixture()
+        for invalid in (data.replace(b"amd64", b"bad-arch"), data.replace(b"github.com", b"evil.invalid"),
+                        data.replace(b"</item>", b'<enclosure url="https://evil.invalid/package"/></item>')):
+            (self.root / "unix-fcitx5.xml").write_bytes(invalid)
+            with patch.object(mirror, "aws") as aws, self.assertRaises(ValueError):
+                mirror.sync(self.root, "stable")
+            aws.assert_not_called()
+
+    def test_unix_feeds_use_exact_cdn_keys_cache_and_invalidation(self):
+        data = self.fixture()
+        helper = SyncFeedsTests()
+        helper.setUp()
+        self.addCleanup(helper.doCleanups)
+        helper.fixture("unix-fcitx5.xml", data)
+        calls, _, verify = helper.execute()
+        key = "keykey/update/stable/unix-fcitx5.xml"
+        self.assertEqual(helper.objects, {key: data})
+        self.assertEqual(calls.call_args_list[-1].args[-1], "/" + key)
+        self.assertEqual(verify.call_args.args, ("https://cdn.example.invalid/" + key, data))
 
 
 class SignedMetadataTests(unittest.TestCase):
