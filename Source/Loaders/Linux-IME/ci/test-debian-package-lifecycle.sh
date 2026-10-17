@@ -218,10 +218,9 @@ fi
 test -f "$test_config_root/chichi77-keykey/package-test-sentinel"
 
 apt-get remove --yes fcitx5-chichi77-keykey chichi77-keykey-data
-if dpkg-query -W chichi77-keykey-data fcitx5-chichi77-keykey >/dev/null 2>&1; then
-  echo "One or more KeyKey packages remain installed after removal." >&2
-  exit 1
-fi
+bash "$script_dir/verify-debian-package-removal.sh" \
+  chichi77-keykey-data fcitx5-chichi77-keykey \
+  | tee "$absolute_artifact_dir/removal-status.txt"
 test ! -e /usr/share/fcitx5/addon/chichi77-keykey.conf
 test ! -e /usr/share/chichi77-keykey/data/bpmf-ext.cin
 test ! -e /usr/share/chichi77-keykey/data/tc2sc.cin
