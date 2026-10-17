@@ -356,6 +356,21 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         floatingLayoutLabel.setEnabled(floatingCandidates.isChecked());
         hardwareContent.addView(floatingLayout, matchWrap(dp(0), dp(36)));
 
+        CheckBox hardwareSmartTwoRows = new CheckBox(this);
+        hardwareSmartTwoRows.setText(R.string.hardware_smart_two_rows_enabled);
+        hardwareSmartTwoRows.setTextSize(16);
+        hardwareSmartTwoRows.setTextColor(Color.DKGRAY);
+        hardwareSmartTwoRows.setMinHeight(dp(48));
+        hardwareSmartTwoRows.setChecked(CandidateWindowSettings.smartTwoRowsEnabled(this));
+        setDependentControlEnabled(hardwareSmartTwoRows, !floatingCandidates.isChecked());
+        hardwareContent.addView(hardwareSmartTwoRows, matchWrap(dp(0), dp(8)));
+        TextView hardwareSmartTwoRowsDescription = bottomSpaceDescription(
+                R.string.hardware_smart_two_rows_description);
+        setDependentControlEnabled(hardwareSmartTwoRowsDescription, !floatingCandidates.isChecked());
+        hardwareContent.addView(hardwareSmartTwoRowsDescription, matchWrap(dp(0), dp(12)));
+        hardwareSmartTwoRows.setOnCheckedChangeListener((button, checked) ->
+                CandidateWindowSettings.setSmartTwoRowsEnabled(SettingsActivity.this, checked));
+
         CheckBox hardwareNumberRow = new CheckBox(this);
         hardwareNumberRow.setText(R.string.hardware_number_row_enabled);
         hardwareNumberRow.setTextSize(16);
@@ -384,6 +399,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             CandidateWindowSettings.setFloatingEnabled(SettingsActivity.this, checked);
             floatingLayout.setEnabled(checked);
             floatingLayoutLabel.setEnabled(checked);
+            setDependentControlEnabled(hardwareSmartTwoRows, !checked);
+            setDependentControlEnabled(hardwareSmartTwoRowsDescription, !checked);
             setDependentControlEnabled(hardwareNumberRow, !checked);
             setDependentControlEnabled(hardwareBottomSpace, !checked);
             setDependentControlEnabled(hardwareBottomSpaceDescription, !checked);

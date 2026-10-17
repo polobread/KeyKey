@@ -12,6 +12,7 @@ final class CandidateWindowSettings {
     static final String KEY_LAYOUT = "hardware_candidate_layout";
     static final String KEY_FAILURE = "hardware_floating_candidates_failure";
     static final String KEY_NUMBER_ROW = "hardware_number_row_enabled";
+    static final String KEY_SMART_TWO_ROWS = "hardware_smart_two_rows_enabled";
 
     private static final String LAYOUT_VERTICAL = "vertical";
     private static final String LAYOUT_HORIZONTAL = "horizontal";
@@ -58,6 +59,14 @@ final class CandidateWindowSettings {
 
     static void setNumberRowEnabled(Context context, boolean enabled) {
         preferences(context).edit().putBoolean(KEY_NUMBER_ROW, enabled).apply();
+    }
+
+    static boolean smartTwoRowsEnabled(Context context) {
+        return preferences(context).getBoolean(KEY_SMART_TWO_ROWS, false);
+    }
+
+    static void setSmartTwoRowsEnabled(Context context, boolean enabled) {
+        preferences(context).edit().putBoolean(KEY_SMART_TWO_ROWS, enabled).apply();
     }
 
     static Layout layoutFromValue(String value) {

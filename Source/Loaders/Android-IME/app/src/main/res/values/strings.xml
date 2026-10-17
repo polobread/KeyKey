@@ -70,6 +70,8 @@
     <string name="floating_candidates_failure_attach">已改用一般候選列：系統拒絕附掛浮動候選字窗。重新勾選可再試一次。</string>
     <string name="floating_candidates_layout">浮動候選字窗排列</string>
     <string name="hardware_number_row_enabled">顯示虛擬數字與符號鍵</string>
+    <string name="hardware_smart_two_rows_enabled">啟用好打注音雙排選字</string>
+    <string name="hardware_smart_two_rows_description">上排顯示 9 格組字區，右側保留 Emoji、ㄅ／英與 ▼。下排固定顯示既有數字鍵（1–0、符、設），點字選候選時覆蓋數字鍵列，選完恢復數字鍵，面板高度不變。「顯示虛擬數字與符號鍵」控制是否再顯示符號列。預設關閉；使用浮動候選字窗時無法啟用。</string>
     <string name="hardware_collapse_description">未使用浮動候選字窗時，可按候選列右側的「▼」收起候選列與數字符號列，直到下次點選輸入框才重新顯示。全／半形仍可用 Shift+Space 切換。</string>
     <string name="bottom_language_space_enabled">預留底部切換語言空間</string>
     <string name="touch_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時虛擬鍵盤貼齊底部。</string>

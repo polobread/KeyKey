@@ -132,6 +132,7 @@ final class BopomofoKeyboardView extends View {
     private boolean touchBottomSpaceEnabled = true;
     private boolean hardwareBottomSpaceEnabled = true;
     private boolean hardwareNumberRowEnabled;
+    private boolean hardwareSmartTwoRowsEnabled;
     private boolean hardwareNumberShifted;
     private boolean supportPromptVisible;
     private boolean associatedPhrasesVisible;
@@ -198,6 +199,25 @@ final class BopomofoKeyboardView extends View {
         hardwareNumberShifted = false;
         if (mode == Mode.HARDWARE) requestLayout();
         invalidate();
+    }
+
+    void setHardwareSmartTwoRowsEnabled(boolean enabled) {
+        if (hardwareSmartTwoRowsEnabled == enabled) return;
+        hardwareSmartTwoRowsEnabled = enabled;
+        if (mode == Mode.HARDWARE) requestLayout();
+        invalidate();
+    }
+
+    private boolean usesHardwareSmartTwoRows() {
+        return mode == Mode.HARDWARE && hardwareSmartTwoRowsEnabled && smartMode;
+    }
+
+    private boolean showsHardwareSmartCandidateRow() {
+        return usesHardwareSmartTwoRows() && !candidates.isEmpty();
+    }
+
+    private int hardwareNumberRowCount() {
+        return hardwareNumberRowEnabled ? 2 : hardwareSmartTwoRowsEnabled ? 1 : 0;
     }
 
     void setBottomSpaceEnabled(boolean touchEnabled, boolean hardwareEnabled) {
@@ -281,7 +301,7 @@ final class BopomofoKeyboardView extends View {
         int desiredContentHeight = switch (mode) {
             case HARDWARE_FLOATING -> dp(1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
-                    + (hardwareNumberRowEnabled ? 2 * HARDWARE_NUMBER_ROW_HEIGHT_DP : 0));
+                    + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
             case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
                     landscapeHeightPercent);
             case PORTRAIT -> scaledContentHeight(PORTRAIT_CONTENT_HEIGHT_DP,
@@ -366,16 +386,20 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawSmartCellStrip(Canvas canvas, RectF area) {
-        float cellWidth = area.width() / 11f;
+        drawSmartCellStrip(canvas, area, 11);
+    }
+
+    private void drawSmartCellStrip(Canvas canvas, RectF area, int cellCount) {
+        float cellWidth = area.width() / cellCount;
         boolean showSupport = supportPromptEligible() && reading.isEmpty()
                 && smartCells.isEmpty() && candidates.isEmpty() && !associatedPhrasesVisible;
-        for (int index = 0; index < 11; index++) {
+        for (int index = 0; index < cellCount; index++) {
             RectF cell = new RectF(area.left + index * cellWidth + dp(2),
                     area.top + dp(2), area.left + (index + 1) * cellWidth - dp(2),
                     area.bottom - dp(2));
             canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
-            if (showSupport && index >= 8) {
-                drawSupportPromptWord(canvas, cell, index - 8);
+            if (showSupport && index >= cellCount - 3) {
+                drawSupportPromptWord(canvas, cell, index - (cellCount - 3));
                 continue;
             }
             if (index >= smartCells.size()) continue;
@@ -385,8 +409,10 @@ final class BopomofoKeyboardView extends View {
             float availableWidth = Math.max(1, cell.width() - dp(4));
             float measuredWidth = textPaint.measureText(value);
             if (measuredWidth > availableWidth) {
-                textPaint.setTextSize(Math.max(dp(8),
-                        textPaint.getTextSize() * availableWidth / measuredWidth));
+                float fittedSize = textPaint.getTextSize() * availableWidth / measuredWidth;
+                // The ninth hardware cell may also contain an unfinished reading.
+                textPaint.setTextSize(usesHardwareSmartTwoRows()
+                        ? fittedSize : Math.max(dp(8), fittedSize));
             }
             canvas.drawText(value, cell.centerX(),
                     textBaseline(cell, textPaint), textPaint);
@@ -402,15 +428,21 @@ final class BopomofoKeyboardView extends View {
         int cellCount = BopomofoEngine.CANDIDATES_PER_PAGE + 3;
         float cellWidth = area.width() / cellCount;
         boolean showSupport = supportPromptEligible() && candidates.isEmpty();
-        for (int i = 0; i < BopomofoEngine.CANDIDATES_PER_PAGE; i++) {
-            RectF cell = new RectF(area.left + i * cellWidth + gap,
-                    area.top + gap, area.left + (i + 1) * cellWidth - gap,
-                    area.bottom - gap);
-            if (showSupport && i >= 6) {
-                canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
-                drawSupportPromptWord(canvas, cell, i - 6);
-            } else {
-                drawCandidate(canvas, cell, i);
+        if (usesHardwareSmartTwoRows()) {
+            drawSmartCellStrip(canvas, new RectF(area.left, area.top,
+                    area.left + BopomofoEngine.CANDIDATES_PER_PAGE * cellWidth, area.bottom),
+                    BopomofoEngine.CANDIDATES_PER_PAGE);
+        } else {
+            for (int i = 0; i < BopomofoEngine.CANDIDATES_PER_PAGE; i++) {
+                RectF cell = new RectF(area.left + i * cellWidth + gap,
+                        area.top + gap, area.left + (i + 1) * cellWidth - gap,
+                        area.bottom - gap);
+                if (showSupport && i >= 6) {
+                    canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
+                    drawSupportPromptWord(canvas, cell, i - 6);
+                } else {
+                    drawCandidate(canvas, cell, i);
+                }
             }
         }
         drawHardwareEmojiButton(canvas, new RectF(
@@ -425,9 +457,18 @@ final class BopomofoKeyboardView extends View {
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (BopomofoEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
                 area.top, area.right, area.bottom), "▼", "HARDWARE_COLLAPSE");
+        if (hardwareNumberRowCount() > 0) {
+            RectF numberArea = new RectF(0, area.bottom, getWidth(),
+                    area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP));
+            // Candidates occupy the existing number row without resizing the IME.
+            // Draw only the active row so covered number/settings keys have no hits.
+            if (showsHardwareSmartCandidateRow()) {
+                drawCandidateStrip(canvas, numberArea);
+            } else {
+                drawHardwareNumberRow(canvas, numberArea);
+            }
+        }
         if (hardwareNumberRowEnabled) {
-            drawHardwareNumberRow(canvas, new RectF(0, area.bottom, getWidth(),
-                    area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP)));
             drawHardwarePunctuationRow(canvas, new RectF(0,
                     area.bottom + dp(HARDWARE_NUMBER_ROW_HEIGHT_DP), getWidth(),
                     area.bottom + dp(2 * HARDWARE_NUMBER_ROW_HEIGHT_DP)));
