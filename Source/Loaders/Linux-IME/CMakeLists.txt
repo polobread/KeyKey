@@ -151,6 +151,9 @@ if(BUILD_TESTING)
     add_test(NAME keykey_linux_support_matrix
         COMMAND "${CMAKE_COMMAND}" -P
                 "${CMAKE_CURRENT_SOURCE_DIR}/ci/validate-support-matrix.cmake")
+    add_test(NAME keykey_debian_package_removal
+        COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_debian_package_removal.py")
     add_custom_target(check
         COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure
         DEPENDS keykey_linux_engine_tests
