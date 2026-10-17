@@ -1,6 +1,6 @@
-# 琦琦輸入法 / chichi77 KeyKey — Android 開發版 1.3.6；iOS 開發版 1.3.5；macOS／Windows／Linux 開發版 1.3.2
+# 琦琦輸入法 / chichi77 KeyKey — Android 開發版 1.3.6；iOS 開發版 1.3.5；macOS／Windows／Linux 開發版 1.3.3
 
-Android 原始碼開發版號為 `1.3.6`，iOS 為 `1.3.5`；商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線。Android 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。macOS／Windows／Linux 開發版為 `1.3.2`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。
+Android 原始碼開發版號為 `1.3.6`，iOS 為 `1.3.5`；商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線。Android 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。macOS／Windows／Linux 開發版為 `1.3.3`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。
 macOS、Windows 與 Ubuntu 24.04 安裝包依各自版本提供於
 [GitHub Release](https://github.com/polobread/KeyKey/releases)；
 Android 與 iOS 依各自的商店管道安裝。
@@ -48,7 +48,7 @@ Windows、Android 與 iOS 建立現代化 frontend。
 | 平台 | 實作與支援範圍 |
 |---|---|
 | macOS | InputMethodKit；macOS 15 以上、Apple Silicon |
-| Windows | 原生 TSF；1.3.2 提供 Windows 10 起的 x64／x86 建置；Windows 10 尚待實機驗證 |
+| Windows | 原生 TSF；1.3.3 提供 Windows 10 起的 x64／x86 建置；Windows 10 尚待實機驗證 |
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
 | Linux | Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；注音、倉頡、簡易 |
@@ -56,7 +56,7 @@ Windows、Android 與 iOS 建立現代化 frontend。
 五個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
 
-1.3.2 的 Windows 版包含好打注音與傳統注音的工作列快速切換、跟隨系統明暗模式的
+1.3.3 的 Windows 版包含好打注音與傳統注音的工作列快速切換、跟隨系統明暗模式的
 四頁設定介面，以及 x64／x86 TSF。x64 套件同時包含 x64 與 x86 DLL，供兩種位元數的
 應用程式使用；x86 套件供 32 位元 Windows 使用。升級後須登出再登入，讓工作列載入新版輸入法。
 
@@ -72,7 +72,7 @@ macOS／Windows 的簽章更新功能目前仍在開發，預設不連網；正�
 
 - [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
-- [Windows 1.3.2 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
+- [Windows 1.3.3 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
 - Ubuntu 24.04 使用者請看[Linux 1.3.1 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/id6807832939)安裝。
@@ -100,7 +100,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 發布 GitHub Release（可同時建立 tag）會啟動
 `Package macOS`、`Package Windows` 與完整 `Linux CI`；各平台通過建置及驗證後，
 自動上傳自己的 assets。各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
-均為 `1.3.2`，對應的正式版 tag 為 `v1.3.2`。正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
+均為 `1.3.3`，對應的正式版 tag 為 `v1.3.3`。正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
 設定 release environment 的 AWS mirror variables 後，同一批已驗證檔案也會同步到 S3；
 留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
@@ -108,7 +108,10 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 
 ## 開發與提交
 
-所有程式、文件與 CI 修改都在工作分支 commit 和 push，
+如果用起來有哪裡不順手，或有想保留的輸入習慣，歡迎告訴我。因為個人時間有限，
+目前暫時不接受外部 PR；問題回報與資料授權的說明放在[參與說明](CONTRIBUTING.md)。
+
+維護者與協助開發的 agent 修改程式、文件與 CI 時，都在工作分支 commit 和 push，
 再建立 PR，由維護者親自 review 和 merge 到 `master`。Agent 不得自行合併或啟用自動合併，
 也不要直接在 `master` commit 或 push。
 同步最新主分支可在工作分支執行 `git pull --no-rebase origin master`；提交前保留既有修改，
@@ -118,16 +121,16 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 ## 文件
 
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
-- [macOS App Store Connect 上架可行性與發行計畫](MACOS_APP_STORE_PLAN.md)：Apple
+- [macOS App Store Connect 上架可行性與發行計畫](docs/MACOS_APP_STORE_PLAN.md)：Apple
   現行政策阻礙、第三方輸入法經驗、商店外發行改善與未來上架 gate
-- [Windows 1.3.2 安裝與使用指南](WINDOWS_INSTALL.md)：新版安裝精靈、啟用、選字、設定與解除安裝
+- [Windows 1.3.3 安裝與使用指南](WINDOWS_INSTALL.md)：新版安裝精靈、啟用、選字、設定與解除安裝
 - [Linux 安裝與使用指南](LINUX_INSTALL.md)：Ubuntu 24.04 的套件安裝、Fcitx 5 設定、注音選字與實拍圖
 - [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：Ubuntu 24.04 的原始碼安裝、啟用、試打與移除
 - [iOS 安裝與使用指南](IOS_INSTALL.md)：App Store 安裝、加入鍵盤、日常操作與實體鍵盤編輯器
 - [Android 安裝與使用指南](ANDROID_INSTALL.md)：Google Play 正式版安裝、啟用鍵盤、觸控與實體鍵盤操作
 - [BUILDING.md](BUILDING.md)：各平台建置、測試、安裝與打包
 - [五平台心經長文 functional test](tests/HEART_SUTRA_FUNCTIONAL.md)：關閉關聯詞庫後逐字輸入，核對全文及每字候選順位
-- [Linux 開發計畫](LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](LINUX_TEST_PLAN.md)：
+- [Linux 開發計畫](docs/LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](docs/LINUX_TEST_PLAN.md)：
   1.2.8 起的原生 Linux 支援目標、目前進度、功能範圍與驗收門檻
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md)：Windows frontend
   的實作、部署及驗證細節
@@ -156,7 +159,7 @@ bigram 資料、計數及權重，包括匯出檔及併入資料庫的相應部�
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-macOS／Windows／Linux 1.3.2、Android 1.3.6 與 iOS 1.3.5 原始碼均提供「好打注音」整句組字模式，
+macOS／Windows／Linux 1.3.3、Android 1.3.6 與 iOS 1.3.5 原始碼均提供「好打注音」整句組字模式，
 並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。語言模型由
 McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yahoo 未釋出的中研院語料；
 另加入可替換的 11,180 句 AI 合成 bootstrap corpora 產生初版 bigram 上下文資料。這份
@@ -169,12 +172,12 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 Android's source development version is `1.3.6`, and iOS's is `1.3.5`; version `1.3.2` is available on Google Play and the App Store.
 Android entered production on **2026-10-08**; installation no longer requires
 a Google Group or closed-test enrollment. macOS, Windows, and Linux development
-versions are `1.3.2`, not yet stable releases; published macOS and Linux stable
+versions are `1.3.3`, not yet stable releases; published macOS and Linux stable
 versions remain `1.3.1`. Desktop installers are provided by platform version on
 [GitHub Release](https://github.com/polobread/KeyKey/releases).
 Android and iOS use their respective store distribution channels.
 
-macOS, Windows, and Linux 1.3.2, Android 1.3.6, and iOS 1.3.5 implement Smart Phonetic
+macOS, Windows, and Linux 1.3.3, Android 1.3.6, and iOS 1.3.5 implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
 option. For published builds, consult the installation guide for that version.
 Its redistributable unigram model is generated from the MIT-licensed
@@ -209,7 +212,7 @@ by, or sponsored by Yahoo.**
 | Platform | Implementation and support |
 |---|---|
 | macOS | InputMethodKit; macOS 15 or later on Apple Silicon |
-| Windows | Native TSF; 1.3.2 provides x64/x86 builds for Windows 10 or later; Windows 10 device verification is pending |
+| Windows | Native TSF; 1.3.3 provides x64/x86 builds for Windows 10 or later; Windows 10 device verification is pending |
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
 | iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
 | Linux | Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, amd64; Bopomofo, Cangjie, Simplex |
@@ -217,7 +220,7 @@ by, or sponsored by Yahoo.**
 All five platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
 
-The 1.3.2 Windows version includes direct Smart/Traditional Phonetic selection from
+The 1.3.3 Windows version includes direct Smart/Traditional Phonetic selection from
 the taskbar, a four-page settings app that follows the system light/dark mode,
 and x64/x86 TSF builds. The x64 package includes both DLL architectures for
 64-bit and 32-bit applications; the x86 package is for 32-bit Windows. After
@@ -234,7 +237,7 @@ iOS.
 
 - [Latest release](https://github.com/polobread/KeyKey/releases/latest) always opens the release currently marked Latest on GitHub.
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
-- The [Windows 1.3.2 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the installer, typing modes, and settings; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
+- The [Windows 1.3.3 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the installer, typing modes, and settings; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
 - Build and install the Ubuntu 24.04 version from source with `./configure`: [Linux source installation and usage guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md).
 - iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/id6807832939).
@@ -265,7 +268,7 @@ is enabled.
 Publishing a GitHub Release starts
 `Package macOS`, `Package Windows`, and the full `Linux CI`. Each workflow
 uploads its verified packages when its version matches that Release. macOS,
-Windows, and Linux development versions are `1.3.2`, with `v1.3.2` as the
+Windows, and Linux development versions are `1.3.3`, with `v1.3.3` as the
 corresponding stable release tag. After fixing a failed stable
 platform through a PR into `master`, manually run that workflow from `master` with
 the matching platform's `release_tag` to replace its assets; other platforms are untouched.
@@ -277,7 +280,13 @@ complete output and signing details.
 
 ### Development and contributions
 
-Commit and push code, documentation, and CI
+If something feels awkward or you miss a familiar typing habit, please let me
+know. My time is limited, so I am not accepting external pull requests for now.
+Bug reports and suggestions are still welcome. See the
+[contribution notes (Traditional Chinese)](CONTRIBUTING.md) for reporting and
+licensing details.
+
+For maintenance by the maintainer and assisting agents, commit and push code, documentation, and CI
 changes on a working branch, then open a pull request for the maintainer to review
 and merge. Agents must not merge PRs, enable auto-merge, or commit or push directly
 to `master`. Run `git pull --no-rebase origin master` from the working
@@ -288,14 +297,14 @@ approval requirements. See [AGENTS.md](AGENTS.md) and the
 
 ### Documentation
 
-- [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
-- [Windows 1.3.2 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
+- [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](docs/MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
+- [Windows 1.3.3 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
 - [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play production installation, keyboard setup, touch and hardware keyboard use
 - [BUILDING.md](BUILDING.md): build, test, installation, and packaging instructions
-- [Linux development plan](LINUX_DEVELOPMENT_PLAN.md) and
-  [automated test plan](LINUX_TEST_PLAN.md): scope and acceptance criteria for
+- [Linux development plan](docs/LINUX_DEVELOPMENT_PLAN.md) and
+  [automated test plan](docs/LINUX_TEST_PLAN.md): scope and acceptance criteria for
   native Linux support targeted for 1.2.8 onward, including current progress
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md): frontend
   implementation, deployment, and verification details

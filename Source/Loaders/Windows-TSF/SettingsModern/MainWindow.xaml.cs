@@ -110,6 +110,7 @@ public partial class MainWindow : Window
         SelectValue(HighlightColor, Colors,
             SettingsStore.Read(loader, "HighlightColor", "Default"));
         ControlBackslash.IsChecked = ReadBool(loader, "ToggleInputMethodWithControlBackslash", true);
+        SymbolPanelShortcut.IsChecked = ReadBool(loader, "SymbolPanelShortcutEnabled", true);
         TypingBeep.IsChecked = ReadBool(loader, "ShouldPlaySoundOnTypingError", true);
         DefaultChineseMode.IsChecked = SettingsStore.Read(loader, "DefaultInputMode", "Chinese") != "English";
         DefaultEnglishMode.IsChecked = !DefaultChineseMode.IsChecked;
@@ -286,6 +287,7 @@ public partial class MainWindow : Window
                 ["HighlightColor"] = Colors[Math.Max(0, HighlightColor.SelectedIndex)],
                 ["CandidateWindowScalePercent"] = Scales[Math.Max(0, CandidateScale.SelectedIndex)],
                 ["ToggleInputMethodWithControlBackslash"] = ControlBackslash.IsChecked == true ? "true" : "false",
+                ["SymbolPanelShortcutEnabled"] = BoolValue(SymbolPanelShortcut),
                 ["ShouldPlaySoundOnTypingError"] = TypingBeep.IsChecked == true ? "true" : "false",
                 ["SimplifiedChineseOutput"] = BoolValue(SimplifiedChineseOutput),
                 ["DefaultInputMode"] = DefaultEnglishMode.IsChecked == true ? "English" : "Chinese",

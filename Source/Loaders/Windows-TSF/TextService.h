@@ -125,6 +125,10 @@ private:
     bool isPotentialKey(const KeyEvent& event) const;
     bool isModeToggleKey(const KeyEvent& event) const;
     bool isWidthToggleKey(const KeyEvent& event) const;
+    bool isSymbolShortcutKey(const KeyEvent& event) const;
+    bool handleSymbolShortcut(ITfContext* context);
+    void preserveSymbolShortcut();
+    void unpreserveSymbolShortcut();
     bool isFullWidthCharacterKey(const KeyEvent& event) const;
     HRESULT adviseInputModeSink();
     void unadviseInputModeSink();
@@ -195,6 +199,9 @@ private:
     SymbolPanel symbolPanel_;
     Microsoft::WRL::ComPtr<ITfContext> symbolContext_;
     unsigned long symbolGeneration_ = 0;
+    bool symbolShortcutPreserved_ = false;
+    bool keyEventSinkAdvised_ = false;
+    bool keyEventSinkForeground_ = true;
     std::string lastLocalInputMethod_;
     bool immersiveMode_ = false;
     bool syncingInputMethod_ = false;

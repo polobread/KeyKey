@@ -10,14 +10,14 @@ on:
       - 'Source/Distributions/Takao/DatabaseCooker/**'
       - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
       - 'DataSource/**'
-      - 'LINUX_DEVELOPMENT_PLAN.md'
-      - 'LINUX_TEST_PLAN.md'
+      - 'docs/LINUX_DEVELOPMENT_PLAN.md'
+      - 'docs/LINUX_TEST_PLAN.md'
   release:
     types: [published]
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Existing published release tag, e.g. v1.3.2 or v1.3.2-beta2; blank = artifact only. Beta builds must use the exact tag commit.'
+        description: 'Existing published release tag, e.g. vX.Y.Z or vX.Y.Z-betaN; blank = artifact only. Beta builds must use the exact tag commit.'
         required: false
         type: string
 

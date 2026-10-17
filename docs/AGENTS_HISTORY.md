@@ -84,7 +84,7 @@ JVM tests、`lintDebug`、`assembleDebug` 全過，Pixel 9a／API 37 實測設�
 `PhraseEditor.app` 為主、新 bundle id 為備援，缺檔時顯示三語提示。三語 strings lint、
 selector wiring audit 與 macOS arm64 Release build 通過。Yahoo 線上字典／更新／追蹤、
 MobileMe 備份及舊 Extra Modules 與 SmartMandarin 詞庫無直接關係，未混入本次恢復；詳見
-`SMART_MANDARIN_FEATURE_AUDIT.md`。
+`docs/SMART_MANDARIN_FEATURE_AUDIT.md`。
 
 **2026-09-24 macOS 1650 篇試打包：** 已在 `v1.2.10` branch 以三份 bootstrap corpus、
 `corpus-typing-feedback.txt` 與 `article-corpus-1650.txt` 重煮 SmartMandarin；核心詞彙僅用
@@ -1424,7 +1424,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   USB／藍牙實體鍵盤同樣維持完整字元與快捷鍵，不要在 `onKeyDown` 用 `inputType`
   擋實體鍵；欄位最後接受哪些內容仍由 App 驗證。
 - **Android 測試完成以完整 AVD 計畫為準**：Android IME 行為、版面、設定、字典或建置有變更時，
-  必須依 `Source/Loaders/Android-IME/VIRTUAL_DEVICE_TEST_PLAN.md` 在 API 26、28、30、33、35、37
+  必須依 `docs/ANDROID_VIRTUAL_DEVICE_TEST_PLAN.md` 在 API 26、28、30、33、35、37
   六台 AVD 跑完 A–L 矩陣；只跑 JVM test、安裝 APK、打出一個字或只測實體鍵盤都不算完成。
   debug-only `ImeTestActivity` 是欄位型態與 Enter action 的 host，不能加入 release source set。
 - **Android 軟 Enter action 與實體 Enter 必須分流**：直橫式觸控 Enter 在沒有 reading／
@@ -1905,13 +1905,13 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       熱插拔與實體多螢幕；
       詳見 `docs/gnome-candidate-panel.md`。
 - [ ] 決定並實作 F07 琦琦注音專屬候選 renderer；完整分解見
-      `LINUX_DEVELOPMENT_PLAN.md` 的「F07 專屬 renderer」TODO。決策前須先比較
+      `docs/LINUX_DEVELOPMENT_PLAN.md` 的「F07 專屬 renderer」TODO。決策前須先比較
       Fcitx 5.0.14 相容 UI addon 與 5.0.24+ callback／22.04 相容層，涵蓋 system 與
       75–350% 的完整 geometry／hit area、直橫候選、X11／XWayland／native Wayland、
       mixed DPI、設定遷移、套件 dependency／授權及 GTK3／GTK4／Qt6 證據；不可用
       會影響其他輸入法的 Classic UI 全域字型縮放代替，也不可先露出無作用選項。
 
-- [x] 2026-09-13 完成 `LINUX_DEVELOPMENT_PLAN.md` 第 5.1 節的基本 configure／GNU Make
+- [x] 2026-09-13 完成 `docs/LINUX_DEVELOPMENT_PLAN.md` 第 5.1 節的基本 configure／GNU Make
       入口：平行建置、check、source-directory／out-of-source、prefix／libdir／datadir、
       編譯環境旗標、DESTDIR、manifest install／uninstall、clean／distclean 與 source
       tarball 腳本；納入 Ubuntu 22.04／24.04 workflow。24.04 local amd64 已通過兩種
@@ -2286,14 +2286,14 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
       另將 one-shot Docker build context 從整個 repository 縮到不含 source 的 container
       定義目錄。這些時間只代表目前 Rancher Desktop 主機，不是 CI SLA；乾淨 package
       lifecycle 與 amd64 release gate 仍使用既有獨立路徑。
-- [ ] 依 `LINUX_DEVELOPMENT_PLAN.md` P0 先凍結 macOS 行為 baseline，再以
+- [ ] 依 `docs/LINUX_DEVELOPMENT_PLAN.md` P0 先凍結 macOS 行為 baseline，再以
       Windows TSF 交叉檢查並凍結第一階段功能範圍，確認五布局、連續輸入、
       錯誤鍵、候選與設定行為；優先實證 Ubuntu 24.04 + Fcitx 5 三條 session
       路徑的真打字、addon 身分與負控制，再擴充其他 GNOME／KWin 組合。
 - [ ] 完成 Linux-only 注音引擎、兩 adapter 與完整原生視窗／設定；禁止為此
       修改、搬動或連結四平台既有核心；資料唯讀共用。保留既有五布局、倉頡／簡易與
       繁轉簡切片的可擴充架構；候選學習／動態頻率、注音自動修正與 F12–F15 不加入。
-- [ ] 依 `LINUX_TEST_PLAN.md` 建立逐鍵 golden、App 最終文字 assertion、Ubuntu 四年矩陣
+- [ ] 依 `docs/LINUX_TEST_PLAN.md` 建立逐鍵 golden、App 最終文字 assertion、Ubuntu 四年矩陣
       packages／安裝升級驗證，以及 PR／手動完整測試／release workflows；Linux desktop
       workflow 不設排程，未實跑不勾選。
 - [x] 2026-09-13 在 Windows 11 x64 + WSL2 Ubuntu 24.04.4 + rootless Linux container
@@ -2379,7 +2379,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
 
 - [x] 2026-09-20 完成 macOS 候選／loader／SQLite 與 cooker 專項 review，
       重建資料庫並完成副本大小、順序、快取及 statement 洩漏實驗；結果在
-      `MACOS_CODE_REVIEW.md`；後續同日另依使用者要求修正三項 P2。
+      `docs/MACOS_CODE_REVIEW.md`；後續同日另依使用者要求修正三項 P2。
 - [x] 修正直式候選與通知 attributed-string ownership，以及詞彙編輯器查詢
       statement 洩漏；arm64 Release build／analyze 與 1,000 次資料層 probe 通過。
 - [ ] 在實際 1.2.9 IMK 行程反覆重畫候選、開關通知、詞彙編輯 save／close，

@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-工作分支以 `git status --short --branch` 的實際結果為準。Android 開發版號為 `1.3.6`，iOS 為 `1.3.5`；商店正式版仍為 `1.3.2`（iOS build 41），Android 於 2026-10-08 正式發布。macOS、Windows 與 Linux 產品版號為 `1.3.2`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+工作分支以 `git status --short --branch` 的實際結果為準。Android 開發版號為 `1.3.6`，iOS 為 `1.3.5`；商店正式版仍為 `1.3.2`（iOS build 41），Android 於 2026-10-08 正式發布。macOS、Windows 與 Linux 產品版號為 `1.3.3`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -37,6 +37,7 @@
 - PR 必須由使用者親自 review 和 merge；agent 不得自行合併 PR、啟用 auto-merge 或繞過使用者審查。
 - 更新 feed 由維護者請 AI 手動準備 PR；不隨 release 自動改寫 Git／CDN。merge master 後才由 Actions 同步 CDN。保留 SHA-256 內容位址副本，不覆蓋已發布的 beta 安裝包。Linux／FreeBSD 共用 `update/CHANNEL/unix-fcitx5.xml`，每週檢查並同步公告；不延後 FreeBSD 公告，不檢查 ports/pkg 可用性、不新增排程，須提示透過 ports/pkg 更新且套件可能較晚上架。
 - 使用者文件與更新紀錄按正式產品版號整理，不記錄 beta 輪次與逐次測試／除錯過程；尚未正式發布的版本標示「未發布」。發布工具需要的測試頻道規格使用通用 `X.Y.Z-betaN` 格式，不綁定某次測試版或公告時間。
+- 開發計畫、測試規劃與開發評估文件集中於根目錄 `docs/`；集中後的檔名須包含可辨識的平台或功能前綴。根目錄保留 README、安裝／建置指南、更新紀錄、重要宣告與 AGENTS；搬移時同步修正連結、CI、封裝與文件產生器路徑。
 - 此流程配合 SignPath 的變更審查與人工簽章核准要求；原始碼、建置腳本及 CI 設定都納入審查。角色與簽章流程見 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
 - 先執行 `git status --short --branch`，保留使用者既有修改。只逐檔 `git add` 本次內容，不用 `git add .` 或 `git add -A`。
 - 提交前檢查 diff、`git diff --check` 與測試結果。提交身分沿用儲存庫設定，不加入工具署名或 `Co-Authored-By`。

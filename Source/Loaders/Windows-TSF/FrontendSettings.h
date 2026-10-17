@@ -17,6 +17,7 @@ struct FrontendSettings {
     int candidateScalePercent = 0;
     std::wstring highlightColor = L"Default";
     bool toggleWithControlBackslash = true;
+    bool symbolPanelShortcutEnabled = true;
     bool playSoundOnTypingError = true;
     bool simplifiedChineseOutput = false;
     bool defaultChineseMode = true;

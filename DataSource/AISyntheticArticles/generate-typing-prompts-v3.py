@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / "typing-prompts-v3.jsonl"
 PREVIEW = ROOT / "typing-prompts-v3-preview.md"
 STATS = ROOT / "typing-prompts-v3-stats.json"
-PLAN = ROOT / "typing-prompts-v3-plan.md"
+PLAN = ROOT.parents[1] / "docs" / "AI_TYPING_PROMPTS_V3_PLAN.md"
 
 
 ERA_CONFIG = [

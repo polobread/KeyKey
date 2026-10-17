@@ -150,7 +150,7 @@ noVNC 1.3.0。三次 `dj941` → `Shift+1` 得到「快樂」；十次「ㄎ」�
 
 原本機證據為 `out/manual-vnc/popup-timing-20260914-011529.json` 及 before／after
 PNG；`out/` 不進版控，換機不可假設這些證據還存在。摘要與使用者確認已記入
-[測試計畫](../../../../LINUX_TEST_PLAN.md)。2026-09-14 使用者在瀏覽器端確認問題
+[測試計畫](../../../../docs/LINUX_TEST_PLAN.md)。2026-09-14 使用者在瀏覽器端確認問題
 解決、試打成功；不再列成「待使用者確認」。
 
 2026-09-16 另以同一類獨立 GNOME Shell 46／Mutter／TigerVNC X11 session，對系統

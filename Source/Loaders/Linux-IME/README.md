@@ -1,11 +1,11 @@
 # chichi77 KeyKey for Linux
 
-Development version 1.3.2 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
+Development version 1.3.3 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
 LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
 as 傳統注音, Cangjie, and Simplex. See the
 [Linux installation and usage guide](../../../LINUX_INSTALL.md) for the package
 set and setup steps.
-Version 1.3.2 is not release-qualified yet. It fixes Shift tap mode switching
+Version 1.3.3 is not release-qualified yet. It fixes Shift tap mode switching
 swallowing the key release after forwarding the press, which could leave
 applications treating Shift as held. The published 1.3.1 installation guide
 remains separate from development packages.
@@ -225,7 +225,7 @@ The Linux implementation provides:
   `chichi77 KeyKey Bopomofo` input method. The earlier comma-separated field is
   hidden and migrated when an earlier configuration is loaded.
 
-### Smart Mandarin preferences in 1.3.2
+### Smart Mandarin preferences in 1.3.3
 
 Linux and FreeBSD expose **好打注音進階設定** in the Fcitx configuration page.
 These options apply to 好打注音 only:

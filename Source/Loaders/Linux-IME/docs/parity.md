@@ -4,7 +4,7 @@ This ledger records evidence; it is not a product-support claim. Behavior
 investigations inspect the macOS OSX-IMK/PlainVanilla/module flow first, then
 compare Windows TSF; phase-one scope remains bounded by the Windows runtime.
 Linux desktop acceptance remains pending unless an entry links to concrete
-evidence. Test IDs refer to `LINUX_TEST_PLAN.md`.
+evidence. Test IDs refer to `docs/LINUX_TEST_PLAN.md`.
 
 | ID | Scope | Reference source (macOS first, then Windows) | Behavior/scope evidence | Linux implementation | Tests | Known difference | Status |
 |---|---|---|---|---|---|---|---|

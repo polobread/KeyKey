@@ -16,10 +16,17 @@
 #include "sqlite3.h"
 #include "TsfCompartmentTestSupport.h"
 #include "InputModeState.h"
+#include "Guids.h"
+#include "PVPropertyList.h"
 namespace KeyKey::WindowsTsf {
 HMODULE g_module = nullptr;
 std::atomic<long> g_objectCount{0}, g_serverLocks{0};
 struct TextServiceTestAccess {
+    static void preserveSymbols(TextService& s) { s.keyEventSinkAdvised_=true; s.preserveSymbolShortcut(); }
+    static void unpreserveSymbols(TextService& s) { s.unpreserveSymbolShortcut(); }
+    static bool symbolsVisible(TextService& s) { return s.symbolPanel_.visible(); }
+    static unsigned long symbolGeneration(TextService& s) { return s.symbolGeneration_; }
+    static void closeSymbols(TextService& s) { s.closeSymbols(); }
     static void fresh(TextService& s) { s.composition_.Reset(); s.compositionContext_.Reset(); }
     static size_t queued(TextService& s) { return s.inputQueue_.size(); }
     static void manager(TextService& s,ITfThreadMgr* manager) {
@@ -434,7 +441,7 @@ public:
     STDMETHODIMP GetTextAndPropertyUpdates(DWORD,const GUID**,ULONG,IEnumTfRanges**) override { return E_NOTIMPL; }
 private: ULONG references_=1;
 };
-class FocusManager final : public ITfThreadMgr,public ITfDocumentMgr {
+class FocusManager final : public ITfThreadMgr,public ITfDocumentMgr,public ITfKeystrokeMgr {
 public:
     explicit FocusManager(ITfContext* context) : context_(context) {
         compartments.Attach(new Test::Compartments); global.Attach(new Test::Compartments);
@@ -444,6 +451,7 @@ public:
         if (iid==IID_ITfCompartmentMgr) return compartments->QueryInterface(iid,result);
         if (iid==IID_IUnknown || iid==IID_ITfThreadMgr) *result=static_cast<ITfThreadMgr*>(this);
         else if (iid==IID_ITfDocumentMgr) *result=static_cast<ITfDocumentMgr*>(this);
+        else if (iid==IID_ITfKeystrokeMgr) *result=static_cast<ITfKeystrokeMgr*>(this);
         else return E_NOINTERFACE;
         AddRef(); return S_OK;
     }
@@ -468,6 +476,30 @@ public:
     STDMETHODIMP GetTop(ITfContext** context) override { *context=context_.Get(); if (*context) (*context)->AddRef(); return S_OK; }
     STDMETHODIMP GetBase(ITfContext** context) override { return GetTop(context); }
     STDMETHODIMP EnumContexts(IEnumTfContexts**) override { return E_NOTIMPL; }
+    STDMETHODIMP AdviseKeyEventSink(TfClientId,ITfKeyEventSink*,BOOL) override { return S_OK; }
+    STDMETHODIMP UnadviseKeyEventSink(TfClientId) override { return S_OK; }
+    STDMETHODIMP GetForeground(CLSID*) override { return E_NOTIMPL; }
+    STDMETHODIMP TestKeyDown(WPARAM,LPARAM,BOOL*) override { return E_NOTIMPL; }
+    STDMETHODIMP TestKeyUp(WPARAM,LPARAM,BOOL*) override { return E_NOTIMPL; }
+    STDMETHODIMP KeyDown(WPARAM,LPARAM,BOOL*) override { return E_NOTIMPL; }
+    STDMETHODIMP KeyUp(WPARAM,LPARAM,BOOL*) override { return E_NOTIMPL; }
+    STDMETHODIMP GetPreservedKey(ITfContext*,const TF_PRESERVEDKEY*,GUID*) override { return E_NOTIMPL; }
+    STDMETHODIMP IsPreservedKey(REFGUID,const TF_PRESERVEDKEY*,BOOL*) override { return E_NOTIMPL; }
+    STDMETHODIMP PreserveKey(TfClientId client,REFGUID guid,const TF_PRESERVEDKEY* key,const WCHAR*,ULONG) override {
+        Check(client==1 && guid==kSymbolShortcutGuid && key->uVKey==VK_OEM_COMMA &&
+              key->uModifiers==(TF_MOD_CONTROL|TF_MOD_ALT),"Wrong preserved symbol chord");
+        ++preserves; return preserveResult;
+    }
+    STDMETHODIMP UnpreserveKey(REFGUID guid,const TF_PRESERVEDKEY* key) override {
+        Check(guid==kSymbolShortcutGuid && key->uVKey==VK_OEM_COMMA &&
+              key->uModifiers==(TF_MOD_CONTROL|TF_MOD_ALT),"Wrong unpreserved symbol chord");
+        ++unpreserves; return S_OK;
+    }
+    STDMETHODIMP SetPreservedKeyDescription(REFGUID,const WCHAR*,ULONG) override { return E_NOTIMPL; }
+    STDMETHODIMP GetPreservedKeyDescription(REFGUID,BSTR*) override { return E_NOTIMPL; }
+    STDMETHODIMP SimulatePreservedKey(ITfContext*,REFGUID,BOOL*) override { return E_NOTIMPL; }
+    int preserves=0,unpreserves=0;
+    HRESULT preserveResult=S_OK;
     bool threadFocused=true;
     void context(ITfContext* value) { context_=value; }
     ComPtr<Test::Compartments> compartments;
@@ -475,6 +507,127 @@ public:
 private: ULONG references_=1; ComPtr<ITfContext> context_;
 };
 ITfThreadMgr* MakeFocusManager(ITfContext* context) { return new FocusManager(context); }
+void TestSymbolShortcut() {
+    const auto saveShortcutPreference=[](bool enabled) {
+        std::ifstream input(LoaderPreferencesPath(),std::ios::binary);
+        const std::string xml{std::istreambuf_iterator<char>(input),std::istreambuf_iterator<char>()};
+        std::unique_ptr<OpenVanilla::PVPlistValue> values(xml.empty()
+            ? new OpenVanilla::PVPlistValue(OpenVanilla::PVPlistValue::Dictionary)
+            : OpenVanilla::PVPropertyList::ParsePlistFromString(xml.c_str()));
+        Check(bool(values),"Read symbol shortcut preferences");
+        values->setKeyValue("SymbolPanelShortcutEnabled",enabled ? "true" : "false");
+        std::ofstream output(LoaderPreferencesPath(),std::ios::binary);
+        output << "<plist>" << *values << "</plist>";
+    };
+    BYTE previous[256]{}; Check(GetKeyboardState(previous)!=0,"Read keyboard state");
+    struct RestoreKeyboard { BYTE* state; ~RestoreKeyboard() { SetKeyboardState(state); } } restore{previous};
+    BYTE keys[256]{}; SetKeyboardState(keys);
+    { Fixture f(L"");
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      TextServiceTestAccess::preserveSymbols(*f.service.Get());
+      TextServiceTestAccess::preserveSymbols(*f.service.Get());
+      Check(manager->preserves==1,"Symbol chord registered twice");
+      Success(f.service->Deactivate(),"Deactivate preserved symbol chord");
+      Check(manager->unpreserves==1,"Deactivate left symbol chord registered");
+      TextServiceTestAccess::unpreserveSymbols(*f.service.Get());
+      Check(manager->unpreserves==1,"Symbol chord unregistered twice"); }
+    { Fixture f(L"");
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      manager->preserveResult=TF_E_ALREADY_EXISTS;
+      TextServiceTestAccess::preserveSymbols(*f.service.Get());
+      TextServiceTestAccess::unpreserveSymbols(*f.service.Get());
+      Check(manager->unpreserves==0,"Failed registration removed another command"); }
+    for (const auto& method : {"SmartMandarin","TraditionalMandarin","Generic-cj-cin","Generic-simplex-cin"})
+      for (bool chinese : {false,true}) {
+        Check(SelectInputMethod(method),"Select symbol shortcut method");
+        Fixture f(L"\x3105",false,false);
+        f.context->view.Attach(new LayoutView);
+        TextServiceTestAccess::start(*f.service.Get(),method,chinese);
+        BOOL eaten=FALSE;
+        Success(f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten),"Open preserved symbols");
+        if (!chinese) {
+          Check(!eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()) && f.document->writes.empty(),
+                "English mode intercepted symbol shortcut");
+          continue;
+        }
+        Check(eaten && TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Symbol chord unavailable in input mode");
+        const auto generation=TextServiceTestAccess::symbolGeneration(*f.service.Get());
+        Success(f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten),"Repeat preserved symbols");
+        Check(eaten && TextServiceTestAccess::symbolGeneration(*f.service.Get())==generation,
+              "Repeated shortcut rebuilt the panel");
+        Check(f.document->text==L"\x3105" && f.composition->ends==0 && f.document->writes.empty(),
+              "Opening symbols changed unfinished composition");
+        Success(f.service->OnKeyDown(f.context.Get(),VK_ESCAPE,0,&eaten),"Escape symbols");
+        Check(eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()) && f.composition->ends==0,
+              "Escape did not dismiss only symbols");
+        Success(f.service->OnPreservedKey(f.context.Get(),GUID_NULL,&eaten),"Unknown preserved command");
+        Check(!eaten,"Unknown preserved command swallowed");
+        auto* manager=static_cast<FocusManager*>(f.serviceManager.Get()); manager->threadFocused=false;
+        f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten);
+        Check(!eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Unfocused symbols opened");
+        manager->threadFocused=true;
+        for (UINT blocked : {VK_RMENU,VK_SHIFT,VK_LWIN,VK_RWIN}) {
+          keys[blocked]=0x80; SetKeyboardState(keys);
+          f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten);
+          Check(!eaten,"AltGr/extra modifier opened symbols");
+          keys[blocked]=0; SetKeyboardState(keys);
+        }
+        f.context->compartments->get(GUID_COMPARTMENT_KEYBOARD_DISABLED)->value=1;
+        f.context->compartments->get(GUID_COMPARTMENT_KEYBOARD_DISABLED)->type=VT_I4;
+        f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten);
+        Check(!eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Disabled symbols opened");
+      }
+    Check(SelectInputMethod("SmartMandarin"),"Restore shortcut input method");
+    { Fixture f(L"\x3105",false,false); f.context->view.Attach(new LayoutView);
+      TextServiceTestAccess::start(*f.service.Get(),"SmartMandarin");
+      keys[VK_CONTROL]=keys[VK_LCONTROL]=keys[VK_MENU]=keys[VK_LMENU]=0x80; SetKeyboardState(keys);
+      BOOL eaten=FALSE;
+      Success(f.service->OnTestKeyDown(f.context.Get(),VK_OEM_COMMA,0,&eaten),"Test normal symbol chord");
+      Check(eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()),"TestKeyDown changed UI");
+      Success(f.service->OnKeyDown(f.context.Get(),VK_OEM_COMMA,0,&eaten),"Normal symbol chord");
+      Check(eaten && TextServiceTestAccess::symbolsVisible(*f.service.Get()) && f.document->writes.empty(),
+            "Normal key path fell through to punctuation engine");
+      f.service->OnKillThreadFocus();
+      Check(!TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Focus loss retained symbol panel"); }
+    { Fixture f(L"",false,false); Fresh(f);
+      f.context->view.Attach(new LayoutView);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      TextServiceTestAccess::preserveSymbols(*f.service.Get());
+      Check(manager->preserves==1,"Enabled Chinese chord not registered");
+      f.service->toggleChineseMode();
+      Check(!f.service->isChineseMode() && manager->unpreserves==1,"English retained preserved chord");
+      BOOL eaten=TRUE;
+      f.service->OnTestKeyDown(f.context.Get(),VK_OEM_COMMA,0,&eaten);
+      Check(!eaten,"English TestKeyDown intercepted chord");
+      f.service->OnKeyDown(f.context.Get(),VK_OEM_COMMA,0,&eaten);
+      Check(!eaten && f.document->text.empty(),"English KeyDown intercepted chord");
+      f.service->toggleChineseMode();
+      Check(f.service->isChineseMode() && manager->preserves==2,"Chinese did not restore preserved chord");
+      saveShortcutPreference(false);
+      f.service->OnSetThreadFocus();
+      Check(manager->unpreserves==2,"Disabled setting retained preserved chord after focus");
+      f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten);
+      Check(!eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Disabled preserved chord opened symbols");
+      f.service->OnTestKeyDown(f.context.Get(),VK_OEM_COMMA,0,&eaten);
+      Check(!eaten,"Disabled setting TestKeyDown intercepted chord");
+      f.service->OnKeyDown(f.context.Get(),VK_OEM_COMMA,0,&eaten);
+      Check(!eaten && f.document->text.empty(),"Disabled setting fell through to punctuation");
+      Success(f.service->showSymbols(),"Disabled shortcut retains menu symbols");
+      Check(TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Disabled shortcut hid menu entry");
+      TextServiceTestAccess::closeSymbols(*f.service.Get());
+      saveShortcutPreference(true);
+      f.service->OnSetThreadFocus();
+      Check(manager->preserves==3,"Re-enabled setting did not register on focus");
+      f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten);
+      Check(eaten && TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Re-enabled shortcut did not open symbols");
+      f.service->OnSetFocus(FALSE);
+      Check(manager->unpreserves==3,"Inactive input method retained preserved chord");
+      f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten);
+      Check(!eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Inactive input method reopened symbols");
+      f.service->OnSetFocus(TRUE);
+      Check(manager->preserves==4,"Active input method did not restore preserved chord");
+    }
+}
 void TestHostContracts() {
     const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/std::to_string(GetCurrentProcessId());
     std::filesystem::create_directories(profile);
@@ -1031,6 +1184,7 @@ int main() {
         g_module = GetModuleHandleW(nullptr);
         TestCandidateLayout();
         TestHostContracts();
+        TestSymbolShortcut();
         TestModeFailureAndCancellation();
         TestPersistentModeRecovery();
         TestOrderedInput();

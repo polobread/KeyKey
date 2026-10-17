@@ -4,7 +4,7 @@
 
 Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 原始碼開發版號為 `1.3.6`，iOS 為 `1.3.5`，商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線（iOS build 41）；Android 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。macOS／Windows／Linux 開發版為 `1.3.2`，尚未正式發布；macOS 與 Linux 已發布正式版及共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
+依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 原始碼開發版號為 `1.3.6`，iOS 為 `1.3.5`，商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線（iOS build 41）；Android 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。macOS／Windows／Linux 開發版為 `1.3.3`，尚未正式發布；macOS 與 Linux 已發布正式版及共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -17,8 +17,8 @@ Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有
 雙欄焦點正負控制 16/16 通過並量到失焦語意依輸入路徑而異。
 更廣的視窗／App 相容性與實體雙螢幕仍待驗收。GNOME Shell 46 的獨立候選
 面板套件已在 Ubuntu 24.04 VM 測過安裝、升級、停用與再啟用。開發／套件規格見
-[LINUX_DEVELOPMENT_PLAN.md](LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
-驗收見 [LINUX_TEST_PLAN.md](LINUX_TEST_PLAN.md)。
+[LINUX_DEVELOPMENT_PLAN.md](docs/LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
+驗收見 [LINUX_TEST_PLAN.md](docs/LINUX_TEST_PLAN.md)。
 
 [English](#english)
 
@@ -264,7 +264,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 或 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
-- 將整套檔案複製到 `C:\Program Files\chichi77 KeyKey\1.3.2-內容指紋`
+- 將整套檔案複製到 `C:\Program Files\chichi77 KeyKey\1.3.3-內容指紋`
 - 驗證後才切換 TSF 註冊，保留仍供舊行程使用的 payload
 - 在 Windows「已安裝的應用程式」加入解除安裝項目
 
@@ -288,9 +288,9 @@ DLL 架構必須和載入它的應用程式架構相同。
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-產物是 `out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.unsigned.exe`。
-Windows 產品版號為 `1.3.2`；ZIP、未簽 EXE 與正式簽章包一律使用 `1.3.2-<內容指紋>`。
-修復使用 `1.3.2-<新實例 ID>`，新目錄不含 `test`；舊 `test` 目錄仍可辨識供遷移。
+產物是 `out\store-package\chichi77-KeyKey-1.3.3-windows-x64-setup.unsigned.exe`。
+Windows 產品版號為 `1.3.3`；ZIP、未簽 EXE 與正式簽章包一律使用 `1.3.3-<內容指紋>`。
+修復使用 `1.3.3-<新實例 ID>`，新目錄不含 `test`；舊 `test` 目錄仍可辨識供遷移。
 
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
@@ -314,7 +314,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 腳本會在暫存副本簽署並驗證 x64／x86 DLL、設定 EXE、設定後端 DLL、部署 EXE 及 x86 bridge，以 NSIS 建立離線安裝
 程式後再簽署並驗證外層 EXE；不會修改原建置輸出，也不會儲存 PFX 密碼。結果位於
-`out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.exe`。完整參數、`/S`
+`out\store-package\chichi77-KeyKey-1.3.3-windows-x64-setup.exe`。完整參數、`/S`
 靜默安裝測試及 Partner Center 的版本化 HTTPS URL 說明見 Windows TSF README。
 解除安裝器沿用已簽署的部署 EXE。完成頁提供自行新增鍵盤的步驟；升級提示登出再登入，
 不自動開設定。版本目錄保留至移除時按清冊清理；個人設定、自訂詞與學習資料保留。
@@ -366,7 +366,7 @@ swift test
 `KeyKey.db` 是建置輸入但不進版控；Xcode Cloud 會由
 `Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` 自動 cook。五台受控 Simulator
 與完整 A–K 驗證方式見
-[iOS Simulator 測試計畫](Source/Loaders/iOS-Keyboard/IOS_SIMULATOR_TEST_PLAN.md)；可先從
+[iOS Simulator 測試計畫](docs/IOS_SIMULATOR_TEST_PLAN.md)；可先從
 repository 根目錄執行可無人值守的宿主基線：
 
 ```sh
@@ -392,8 +392,8 @@ CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不�
 原始碼、建置腳本與 CI 都依 [Code signing policy](CODE_SIGNING_POLICY.md) 納入審查。
 macOS、Windows 與 Linux 則在 GitHub
 **Publish release** 後自動建置，各自驗證成功後上傳到同一個 Release。Release 的 tag
-必須符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows／Linux 原始碼皆為 `1.3.2`，
-對應正式版 tag 為 `v1.3.2`；同一 Release 的三平台產物只在各平台同版時成立。
+必須符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows／Linux 原始碼皆為 `1.3.3`，
+對應正式版 tag 為 `v1.3.3`；同一 Release 的三平台產物只在各平台同版時成立。
 測試頻道使用通用 `vX.Y.Z-betaN` 格式，X.Y.Z 對應平台產品版號，N 為不含前導零的正整數；
 必須標記 Pre-release 且只從原 tag commit 建置，不改 Latest。產品來源修正後應建立新的測試 tag，不移動既有 tag。
 Linux 手動 beta 重跑可選 `master` 上的 workflow 並填 `release_tag`；兩個 Ubuntu job
@@ -404,7 +404,7 @@ macOS 從四份產品 plist 讀取並核對版號，與 README 尾端的 Linux �
 
 正式版單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
 **Run workflow**，將 **Use workflow from** 選為 `master`，並填入
-macOS／Windows／Linux 填 `release_tag=v1.3.2`；對應 Release 必須已發布。建置使用所選分支，
+macOS／Windows／Linux 填 `release_tag=v1.3.3`；對應 Release 必須已發布。建置使用所選分支，
 平台版號仍須與 Release 相同；成功後自動補上或
 覆寫該平台的資產，其他平台不變。三個 workflow 都接受此欄位，留空則只保留 artifact。
 同平台、同 Release 的發布會依序執行。這些 workflow 修改須先合併到預設分支才可使用。
@@ -412,9 +412,9 @@ macOS／Windows／Linux 填 `release_tag=v1.3.2`；對應 Release 必須已發�
 也可以個別使用 CLI（只執行需要補發的平台）：
 
 ```sh
-gh workflow run package-macos.yml --ref master -f release_tag=v1.3.2
-gh workflow run package-windows.yml --ref master -f release_tag=v1.3.2
-gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.2
+gh workflow run package-macos.yml --ref master -f release_tag=v1.3.3
+gh workflow run package-windows.yml --ref master -f release_tag=v1.3.3
+gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.3
 ```
 
 **Re-run jobs** 使用原本的 commit，適合暫時性失敗；有程式修正時應使用上述
@@ -487,7 +487,7 @@ T01 and pointer T06 also passed 16/16. Firefox Snap and Epiphany passed 15
 real browser field/mode cases across native Wayland and XWayland, covering
 `<textarea>`, `<input>` and `contenteditable` with DOM input checks and
 literal controls. See the
-[development plan](LINUX_DEVELOPMENT_PLAN.md) and [test plan](LINUX_TEST_PLAN.md).
+[development plan](docs/LINUX_DEVELOPMENT_PLAN.md) and [test plan](docs/LINUX_TEST_PLAN.md).
 
 ### Linux source build
 
@@ -717,7 +717,7 @@ session. Diagnostics default to off, including GitHub Actions builds. Enable the
 single checkbox in Settings to record for three days; it then stops automatically.
 TSF logs retain at most 20 MiB including the backup; deployment logs at most 1 MiB.
 It stages the runtime in
-`C:\Program Files\chichi77 KeyKey\1.3.2-<fingerprint>`, then registers
+`C:\Program Files\chichi77 KeyKey\1.3.3-<fingerprint>`, then registers
 both x64 and x86 TSF DLLs on x64 Windows (for all 32-bit applications), or the
 x86 DLL on 32-bit Windows, and creates an
 entry in Windows Installed apps. First-time users add KeyKey in Windows
@@ -735,9 +735,9 @@ To build an unsigned local NSIS test installer, run:
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-The output is `out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.unsigned.exe`.
-Its Windows product version is `1.3.2`; ZIP and EXE, signed and unsigned, use
-`1.3.2-<content fingerprint>`. Repair uses a fresh `1.3.2-<instance-id>` path.
+The output is `out\store-package\chichi77-KeyKey-1.3.3-windows-x64-setup.unsigned.exe`.
+Its Windows product version is `1.3.3`; ZIP and EXE, signed and unsigned, use
+`1.3.3-<content fingerprint>`. Repair uses a fresh `1.3.3-<instance-id>` path.
 New names do not contain `test`; old labelled directories remain recognizable.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
@@ -760,7 +760,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 The script signs and verifies all six PE payloads, builds an offline NSIS
 installer, then signs and verifies the outer EXE. It writes
-`out\store-package\chichi77-KeyKey-1.3.2-windows-x64-setup.exe`. See the Windows
+`out\store-package\chichi77-KeyKey-1.3.3-windows-x64-setup.exe`. See the Windows
 TSF README for all parameters, `/S` silent-install testing, and the versioned
 HTTPS URL used by Partner Center.
 The signed deployment executable also serves as the uninstaller. The finish
@@ -814,7 +814,7 @@ unattended host baseline from the repository root with:
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
 ```
 
-See the [iOS Simulator test plan](Source/Loaders/iOS-Keyboard/IOS_SIMULATOR_TEST_PLAN.md)
+See the [iOS Simulator test plan](docs/IOS_SIMULATOR_TEST_PLAN.md)
 for the five-device A–K matrix. Device Debug builds use an Apple Developer Team
 and Automatic Signing in Xcode; Xcode Cloud and App Store Connect handle
 TestFlight and App Store archives. A third-party keyboard extension cannot
@@ -841,7 +841,7 @@ Agents must not merge PRs. Source, build scripts, and CI are covered by the
 workflows start when a GitHub Release is published,
 and each independently uploads its verified packages. The tag must match the
 platform's source version and can be created on the Release page. macOS, Windows,
-and Linux development sources are now `1.3.2`, with `v1.3.2` as the stable release tag.
+and Linux development sources are now `1.3.3`, with `v1.3.3` as the stable release tag.
 The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product
 version and N is a positive integer without leading zeros.
 Betas require Pre-release and the exact tag commit; Latest is unchanged. Fixes
@@ -855,7 +855,7 @@ requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
 
 To recover one failed stable platform, merge the fix into `master`, select its workflow
 in Actions, choose **Run workflow**, set **Use workflow from** to `master`, and
-enter `v1.3.2` for macOS/Windows/Linux in `release_tag`; the corresponding Release must already be published.
+enter `v1.3.3` for macOS/Windows/Linux in `release_tag`; the corresponding Release must already be published.
 All three workflows accept this input. They build
 the selected revision and replace only that platform's assets; its source
 version must still match the Release. Leaving the input blank keeps artifacts
@@ -865,9 +865,9 @@ Merge these workflow changes into the default branch before using them.
 For example, run just the command for the platform needing recovery:
 
 ```sh
-gh workflow run package-macos.yml --ref master -f release_tag=v1.3.2
-gh workflow run package-windows.yml --ref master -f release_tag=v1.3.2
-gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.2
+gh workflow run package-macos.yml --ref master -f release_tag=v1.3.3
+gh workflow run package-windows.yml --ref master -f release_tag=v1.3.3
+gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.3
 ```
 
 **Re-run jobs** uses the original commit and suits transient failures; use

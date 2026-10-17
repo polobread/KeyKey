@@ -187,6 +187,7 @@ FrontendSettings LoadFrontendSettings() {
         Utf8ToWide(PlistString(xml, "HighlightColor", "Default"));
     settings.toggleWithControlBackslash = PlistBool(
         xml, "ToggleInputMethodWithControlBackslash", true);
+    settings.symbolPanelShortcutEnabled = PlistBool(xml, "SymbolPanelShortcutEnabled", true);
     settings.playSoundOnTypingError =
         PlistBool(xml, "ShouldPlaySoundOnTypingError", true);
     settings.simplifiedChineseOutput = PlistBool(xml, "SimplifiedChineseOutput", false);

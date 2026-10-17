@@ -147,7 +147,7 @@ Run `python3 generate-typing-prompts-v3.py` to reproduce:
 - `typing-prompts-v3.jsonl`
 - `typing-prompts-v3-preview.md`
 - `typing-prompts-v3-stats.json`
-- `typing-prompts-v3-plan.md`
+- [`AI_TYPING_PROMPTS_V3_PLAN.md`](../../docs/AI_TYPING_PROMPTS_V3_PLAN.md)
 
 V3's 350 validated articles live in `typing-articles-v3-seed/` and are exported
 to `typing-articles-v3.jsonl`, separate from the 1,650 accepted v2 bodies.
@@ -178,7 +178,7 @@ Run `python3 generate-typing-prompts-v4.py` to reproduce:
 - `typing-prompts-v4.jsonl`
 - `typing-prompts-v4-preview.md`
 - `typing-prompts-v4-stats.json`
-- `typing-prompts-v4-plan.md`
+- [`AI_TYPING_PROMPTS_V4_PLAN.md`](../../docs/AI_TYPING_PROMPTS_V4_PLAN.md)
 - `typing-prompts-v4-term-assignments.tsv`
 
 V4's 300 validated articles live in `typing-articles-v4-seed/` and are exported

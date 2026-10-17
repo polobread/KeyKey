@@ -146,7 +146,7 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
 但既有切換測試被系統略過。這個完整測試保留給開發機執行，不列入 Xcode Cloud。
 
 送審用的 iPhone 16 Plus 實機錄影步驟見
-[`APP_REVIEW_RECORDING_PLAN.md`](APP_REVIEW_RECORDING_PLAN.md)。
+[`IOS_APP_REVIEW_RECORDING_PLAN.md`](../../../docs/IOS_APP_REVIEW_RECORDING_PLAN.md)。
 
 ## 與其他平台的差異
 
