@@ -462,7 +462,7 @@ pkg 打包，及 Windows Settings 的 win-x64／win-x86 self-contained 交叉編
 Windows 已通過 30 項隔離 Deployment.Tests，及 x64／x86 WPF 設定回歸；新增回歸涵蓋
 Windows 10／11 manifest 的最低系統版本檢查，以及套用設定、成功／失敗儲存自訂詞、
 選取已儲存詞與關聯詞庫變更時的更新關閉保護。WPF 測試使用既有已編譯原生後端與
-隔離個人資料；不執行 WinSparkle 下載或安裝。完整 TSF／NSIS 建置與 GUI 升級驗收尚未完成。
+隔離個人資料；這組 WPF 回歸不執行 WinSparkle 下載或安裝。另行完成的本機真實升級範圍見下節。
 
 2026-10-11 Windows 客戶端補充驗證：x64／x86 Settings 建置、WPF 設定／自訂詞回歸
 及固定 WinSparkle 0.9.4 DLL 的 8 個原生案例各通過。原生案例以 loopback HTTP 提供
@@ -490,3 +490,20 @@ Windows package workflow 會跑兩種架構的 managed＋原生案例，並要�
 的 WinSparkle DLL 與授權通知。本機兩份 1.3.2 測試 ZIP 已通過內容雜湊、PE 架構、
 共用 DB 及授權通知檢查；使用此次 Settings publish 產物與既有已編譯 native／Deployment
 產物，沒有重跑完整 TSF／NSIS 建置或實際安裝。workflow 尚待 GitHub Actions 執行驗證。
+
+### Windows 本機真實安裝與升級驗證
+
+已在 Windows x64 完成同包重新安裝，以及已安裝 1.3.2 升至本機測試版 1.3.3。
+升級案例重新編譯 x64／x86 TSF、設定與部署所需元件，確認安裝器及產品版號一致；
+隔離入口使用實際已安裝版號、正式 `WinSparkleBackend` 與固定版本 WinSparkle DLL，
+由 loopback feed 提供臨時 Ed25519 金鑰簽署的真實 unsigned NSIS 安裝包。
+下載及簽章驗證後沿用原生安裝器啟動流程，由使用者核准 UAC 並完成安裝精靈。
+
+安裝後核對 17 個 payload 檔案雜湊、x64／x86 COM 註冊、移除入口及設定頁版號；
+12 個個人設定／詞庫檔案在升級前後完全相同，舊版目錄保留，沒有未完成部署交易。
+升級後重新查詢相同 feed 回報無更新，沒有重複下載。測試入口、金鑰、feed 及執行資料
+屬本機產物，不納入 Git；正式 `config.json`、stable／beta feed 與來源產品版號未變更。
+
+此結果證明隔離原生更新入口至真實安裝器的本機升級路徑；尚未涵蓋已安裝設定程式
+透過正式 HTTPS feed 的完整流程、正式金鑰／Authenticode、取消 UAC、安裝失敗、
+多帳號及登出後文字宿主載入新版 DLL 的驗收，不能代替正式發布矩陣。
