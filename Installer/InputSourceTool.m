@@ -4,6 +4,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <libproc.h>
+#include <errno.h>
 
 static NSString *const KKSourceID = @"io.github.polobread.inputmethod.chichi77";
 static NSString *const KKInstalledPath = @"/Library/Input Methods/chichi77 KeyKey.app";
@@ -15,6 +17,7 @@ static NSString *const KKInstalledPath = @"/Library/Input Methods/chichi77 KeyKe
 - (BOOL)readSelected:(BOOL *)selected;
 - (BOOL)selectFallback;
 - (BOOL)stopInstalledInputMethod;
+- (BOOL)stopReplacedInputMethod;
 - (BOOL)registerInstalledInputMethod;
 @end
 
@@ -32,16 +35,22 @@ static BOOL KKRefreshInputSource(id<KKInputSourceOperations> system, BOOL restor
 {
     // Restore only the intent captured by preinstall, before replacement.
     // Never infer that intent from the new bundle's initial TIS state.
+    // macOS can relaunch IMK between preinstall and payload replacement. Retire
+    // only processes holding a replaced database, keeping genuine new sessions.
+    if (![system stopReplacedInputMethod]) return NO;
     if (![system registerInstalledInputMethod]) return NO;
-    // preinstall already retired the old process before replacing its files.
-    // Any process launched after replacement belongs to the new installation.
     return !restoreEnabled || [system enableInstalledInputMethod];
 }
 
 #ifndef KEYKEY_INPUT_SOURCE_TEST
+typedef NS_ENUM(NSInteger, KKDatabaseState) {
+    KKDatabaseUnknown, KKDatabaseCurrent, KKDatabaseReplaced
+};
+
 @interface KKSystemInputSources : NSObject <KKInputSourceOperations> {
     NSArray *_previousApplications;
 }
+- (KKDatabaseState)databaseStateForProcess:(pid_t)pid;
 @end
 
 static TISInputSourceRef KKCopySource(BOOL *readable)
@@ -82,6 +91,41 @@ static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
     }
     if (!app.terminated) fprintf(stderr, "KeyKey input source: old process did not exit within deadline.\n");
     return app.terminated;
+}
+
+// Inspect only the installed input method's database descriptor. Comparing the
+// actual vnode with stat(path) catches a process relaunched during replacement,
+// even when both bundles advertise the same version and have identical bytes.
+static KKDatabaseState KKDatabaseStateForProcess(pid_t pid, NSString *path)
+{
+    struct stat installed;
+    if (stat(path.fileSystemRepresentation, &installed) != 0) return KKDatabaseUnknown;
+    int size = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, NULL, 0);
+    if (size <= 0) return KKDatabaseUnknown;
+    size += 32 * sizeof(struct proc_fdinfo);
+    struct proc_fdinfo *fds = malloc(size);
+    if (!fds) return KKDatabaseUnknown;
+    int bytes = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, fds, size);
+    KKDatabaseState result = bytes > 0 && bytes < size ? KKDatabaseCurrent : KKDatabaseUnknown;
+    for (int i = 0; bytes <= size && i < bytes / (int)sizeof(*fds); i++) {
+        if (fds[i].proc_fdtype != PROX_FDTYPE_VNODE) continue;
+        struct vnode_fdinfowithpath vnode = {0};
+        int count = proc_pidfdinfo(pid, fds[i].proc_fd, PROC_PIDFDVNODEPATHINFO, &vnode, sizeof(vnode));
+        if (count != sizeof(vnode)) {
+            // A descriptor closed while inspecting is harmless. Other failures
+            // cannot establish that the database is current.
+            if (errno != EBADF && errno != ENOENT) result = KKDatabaseUnknown;
+            continue;
+        }
+        if (strcmp(vnode.pvip.vip_path, path.fileSystemRepresentation) != 0) continue;
+        struct vinfo_stat opened = vnode.pvip.vip_vi.vi_stat;
+        if (opened.vst_dev != (uint32_t)installed.st_dev || opened.vst_ino != installed.st_ino) {
+            result = KKDatabaseReplaced;
+            break;
+        }
+    }
+    free(fds);
+    return result;
 }
 
 @implementation KKSystemInputSources
@@ -176,6 +220,29 @@ static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
         if (!KKStopApplication(app, 3)) return NO;
     }
     return YES;
+}
+- (BOOL)stopReplacedInputMethod
+{
+    NSString *executable = [KKInstalledPath stringByAppendingPathComponent:@"Contents/MacOS/chichi77 KeyKey"];
+    for (NSRunningApplication *app in _previousApplications) {
+        if (app.terminated || ![app.executableURL.path isEqualToString:executable]) continue;
+        KKDatabaseState state = [self databaseStateForProcess:app.processIdentifier];
+        if (app.terminated) continue;
+        if (state == KKDatabaseUnknown) {
+            fprintf(stderr, "KeyKey input source: running database identity could not be verified.\n");
+            return NO;
+        }
+        if (state == KKDatabaseReplaced) {
+            fprintf(stderr, "KeyKey input source: retiring process holding the replaced database.\n");
+            if (!KKStopApplication(app, 3)) return NO;
+        }
+    }
+    return YES;
+}
+- (KKDatabaseState)databaseStateForProcess:(pid_t)pid
+{
+    NSString *database = [KKInstalledPath stringByAppendingPathComponent:@"Contents/Resources/Databases/KeyKey.db"];
+    return KKDatabaseStateForProcess(pid, database);
 }
 - (BOOL)registerInstalledInputMethod
 {

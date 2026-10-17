@@ -36,6 +36,8 @@ esac
 # credentials. Running TIS as the Installer's root user updates the wrong state.
 # Restore only this same user's pre-install enabled intent; never disable or
 # change selection, and never guess intent from a post-replacement snapshot.
+# The helper also retires an IMK process relaunched during replacement if its
+# database descriptor no longer matches the installed file.
 setup_failed=false
 if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- "$helper" "$mode"; then
     setup_failed=true

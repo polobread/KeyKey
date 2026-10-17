@@ -25,6 +25,8 @@
 正式版 1.3.1 的 postinstall 以全域 `pkill` 結束舊行程。
 1.3.2 將狀態保存和有範圍的正常退出移到覆蓋前，避免舊行程繼續使用被替換的詞庫；
 覆蓋後註冊新版，並只恢復同一帳號原本已啟用的來源。安裝後準備失敗提供可見提示與設定入口。
+macOS 可能在覆蓋完成前再次啟動輸入法，因此覆蓋後另查固定位置行程開啟的詞庫檔案身分；
+若仍持有已被替換的詞庫，正常退出該行程，避免只剩注音、無法查字。
 
 保留固定安裝路徑、簽章／公證，以及 `CVKeyboardHelper` 的借用物件與空清單修正。
 任何階段都不呼叫 disable，不讀寫私有 HIToolbox 偏好、不重建其他來源或其排序。
@@ -56,11 +58,15 @@ preinstall 失敗時 Installer 顯示失敗，舊 bundle 尚未被覆蓋。若�
 
 ### postinstall：新版 bundle 已安裝時
 
-1. 對固定安裝位置呼叫 `TISRegisterInputSource`，檢查 OSStatus 與精確 ID 可查詢。
-2. 只有保存的 UID 仍為目前 console 使用者、且原本 enabled 時，才呼叫 enable。
+1. 檢查目前帳號、固定 executable path 的輸入法行程，透過公開 libproc API 比較
+   詞庫 descriptor 的 device／inode 與安裝位置。只有持有已替換詞庫的行程才正常退出，
+   每個行程最多等 3 秒；已使用目前詞庫的行程保留。無法確認或不能退出時回報準備失敗。
+   這處理 preinstall 結束後、payload 覆蓋前被系統重新啟動的行程，不使用全域 kill。
+2. 對固定安裝位置呼叫 `TISRegisterInputSource`，檢查 OSStatus 與精確 ID 可查詢。
+3. 只有保存的 UID 仍為目前 console 使用者、且原本 enabled 時，才呼叫 enable。
    首次安裝、原本 disabled 或狀態不明時不自動啟用。
-3. enable 後重新查詢，再用另一個 helper 行程確認 enabled，避免只靠呼叫端快取。
-   不會自動選回 KeyKey，也不結束覆蓋後才啟動的新版行程。
+4. enable 後重新查詢，再用另一個 helper 行程確認 enabled，避免只靠呼叫端快取。
+   不會自動選回 KeyKey，也不結束持有目前詞庫的行程。
 
 每次 helper 操作最多 20 秒，每個失敗階段記錄可識別原因。
 獨立行程驗證只代表當下 TIS 狀態，不能保證後續 PackageKit／系統通知或選單行為。
@@ -89,7 +95,8 @@ python3 -m unittest discover -s update -p test_macos_release.py -v
 
 隔離驗證覆蓋覆蓋前保存狀態／暫切既有 ASCII／退出順序、不可讀狀態或退出失敗中止、
 註冊 noErr 但來源缺少、enable 結果與新行程再次確認、不呼叫 disable、
-安裝後不改選取或退出新版行程、行程身分／路徑檢查、無登入帳號／其他磁碟、
+安裝後不改選取或退出使用目前詞庫的行程、持有舊詞庫的行程正常退出或失敗回報、
+真實暫存檔原子替換後的 descriptor 身分比較、行程身分／路徑檢查、無登入帳號／其他磁碟、
 帳號切換不沿用狀態，以及失敗時獨立啟動提示。
 測試不安裝、不切換真實輸入來源、不終止使用者行程、不登出。
 提示的顯示及鍵盤設定按鈕仍需實機 GUI 驗收。
@@ -101,6 +108,7 @@ python3 -m unittest discover -s update -p test_macos_release.py -v
 | 首次安裝 | 可從鍵盤設定加入，從選單選取，在 TextEdit 輸入「台北」並確認版本 |
 | 從正式版 1.3.1 升級，KeyKey 作用中 | 覆蓋前暫切 ASCII 且舊行程退出，來源仍可選；選回後啟動新版且可輸入 |
 | 升級時選用 ABC／其他來源 | 安裝器不主動更換使用中的來源；可自行切到新版 KeyKey |
+| 覆蓋期間系統重新啟動 KeyKey | postinstall 退出持有舊詞庫的行程；選回後可輸入中文且使用目前詞庫 |
 | 原本停用 KeyKey | 不自動啟用；可自行從鍵盤設定加入 |
 | 覆蓋前準備失敗／舊行程不退出 | Installer 中止、舊 bundle 保留；可重新選取原版本 |
 | 安裝後恢復失敗 | 檔案安裝成功；使用者看得到確認提示與鍵盤設定入口 |
