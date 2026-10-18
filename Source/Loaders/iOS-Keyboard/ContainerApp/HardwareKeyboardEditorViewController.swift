@@ -807,7 +807,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self] _ in
                     guard let self else { return }
                     var next = self.methodSettings.options(for: method)
-                    next.toggle(item.key)
+                    next.toggle(item.key, preserveClearOnError: method == .cangjie)
                     self.applyTableOptions(next, for: method)
                 }
             }
@@ -821,7 +821,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                     }
                 }))
             }
-            children.append(UIMenu(title: method.displayName + "設定", children: actions))
+            children.append(UIMenu(title: method.displayName + (method == .cangjie ? "設定（實體鍵盤）" : "設定"), children: actions))
         }
         compositionModeButton.menu = UIMenu(title: "輸入法", children: children)
     }

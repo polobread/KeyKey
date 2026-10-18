@@ -33,6 +33,8 @@ final class ChineseInputMethodSettings {
         result.composeWhileTyping = p.getBoolean(key + "realtime", false);
         result.dynamicFrequency = p.getBoolean(key + "learning", result.dynamicFrequency);
         result.punctuation = p.getInt(key + "punctuation", 0);
+        if (method == ChineseInputMethod.CANGJIE && !virtualKeyboard)
+            result.prefixCandidates = p.getBoolean(key + "physical.prefix", false);
         if (method == ChineseInputMethod.CANGJIE && virtualKeyboard) {
             result.composeWhileTyping = p.getBoolean(key + "virtual.realtime",
                     p.getBoolean(key + "realtime", true));
@@ -58,7 +60,8 @@ final class ChineseInputMethodSettings {
             if (virtualKeyboard) {
                 edit.putBoolean(key + "virtual.realtime", options.composeWhileTyping)
                     .putBoolean(key + "virtual.prefix", options.prefixCandidates);
-            } else edit.putBoolean(key + "realtime", options.composeWhileTyping);
+            } else edit.putBoolean(key + "realtime", options.composeWhileTyping)
+                    .putBoolean(key + "physical.prefix", options.prefixCandidates);
         } else edit.putBoolean(key + "realtime", options.composeWhileTyping);
         edit.apply();
     }

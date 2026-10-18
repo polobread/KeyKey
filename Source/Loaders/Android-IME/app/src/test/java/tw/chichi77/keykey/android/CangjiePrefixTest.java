@@ -41,6 +41,49 @@ public final class CangjiePrefixTest {
         assertEquals("喬", engine.enter().committedText());
         assertFalse(engine.hasComposition());
     }
+    @Test public void physicalPreviewsHonorAllFourOptionCombinations() throws Exception {
+        for (boolean realtime : new boolean[]{false, true}) {
+            for (boolean prefix : new boolean[]{false, true}) {
+                var engine = engine();
+                engine.tableOptions.composeWhileTyping = realtime;
+                engine.tableOptions.prefixCandidates = prefix;
+                for (char key : "hk".toCharArray())
+                    assertEquals("", engine.handleHardwareCharacter(key).committedText());
+                assertEquals("竹大", engine.readingText());
+                assertEquals(!realtime && !prefix, engine.displayedCandidates().isEmpty());
+                assertEquals(prefix, engine.displayedCandidates().contains("喬"));
+                if (prefix) {
+                    assertEquals("夭", engine.displayedCandidates().get(0));
+                    assertEquals("喬", engine.selectDisplayedCandidate(
+                            engine.displayedCandidates().indexOf("喬")).committedText());
+                } else if (realtime) {
+                    assertEquals("夭", engine.handleHardwareSpace().committedText());
+                    assertEquals("", engine.readingText());
+                } else {
+                    assertEquals("", engine.handleHardwareSpace().committedText());
+                    assertFalse(engine.displayedCandidates().isEmpty());
+                    assertFalse(all(engine).contains("喬"));
+                }
+            }
+        }
+    }
+
+    @Test public void physicalFifthRootDoesNotCommitAndBackspaceRefreshes() throws Exception {
+        var engine = engine();
+        engine.tableOptions.queryAtMaximum = true;
+        for (int i = 0; i < 5; i++) {
+            assertEquals("", engine.handleHardwareCharacter("hkrbr".charAt(i)).committedText());
+            assertEquals(i > 0, engine.displayedCandidates().contains("喬"));
+            if (i == 1) { engine.changePage(1); assertFalse(engine.displayedCandidates().contains("喬")); }
+        }
+        assertEquals("竹大口月口", engine.readingText());
+        assertEquals(List.of("喬"), engine.displayedCandidates());
+        engine.backspace();
+        assertEquals(List.of("喬", "䀉"), engine.displayedCandidates());
+        assertEquals("喬", engine.enter().committedText());
+        assertFalse(engine.hasComposition());
+    }
+
     @Test public void prefixDoesNotAffectWildcardOrSimplex() throws Exception {
         var engine = engine();
         for (char key : "hk?".toCharArray()) engine.handleSoftKey(String.valueOf(key));

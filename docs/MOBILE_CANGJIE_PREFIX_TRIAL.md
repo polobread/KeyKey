@@ -1,6 +1,6 @@
 # 手機倉頡前綴候選試用
 
-此輪只提供 iOS／Android 虛擬鍵盤。桌面與手機實體鍵盤的前綴功能仍在[跨平台計畫](CANGJIE_PREFIX_CANDIDATES_PLAN.md)中，尚未接入。
+提供 iOS／Android 虛擬及實體鍵盤試用。桌面接入仍在[跨平台計畫](CANGJIE_PREFIX_CANDIDATES_PLAN.md)中，尚未開發。
 
 ## 試打方式
 
@@ -13,18 +13,27 @@
 
 完整碼維持原排序並一律在前，前綴才使用固定 1,500 字排名，未收錄字依字表列序補足。前綴去重、過濾缺字與標點／符號後最多 36 字；完整碼數量另計。要比較原行為，可關閉「未打完也能選字」，再依需要切換「即時候選」。
 
-虛擬與實體的即時候選分開保存；新安裝實體即時候選預設關閉，舊選擇保留。本輪實體入口沒有新前綴開關。
+虛擬與實體各有「即時候選」及「未打完也能選字」，共四個獨立開關；虛擬缺值預設開啟，實體缺值預設關閉，舊選擇保留。其餘倉頡選項維持共用。
+
+## 實體鍵盤試打
+
+1. iOS App「輸入法設定」→「倉頡設定（實體鍵盤）」，或進入實體鍵盤編輯器的輸入法選單；Android App 設定的「倉頡設定（實體鍵盤）」。開啟實體組「未打完也能選字」，即時候選可保持關閉。
+2. 輸入 HK（竹大），依畫面候選編號按數字鍵選「喬」；字型過濾可能影響編號，以畫面為準。
+3. 使用 Page Up／Page Down 翻頁，再增碼或退格，候選須回到符合目前字根的結果。打滿 HKRBR（竹大口月口）只預覽，按 Enter 或數字確認。
+4. 關閉實體組的前綴與即時候選後，恢復原本按確認鍵才查字的流程；虛擬組的兩個開關應維持原選擇。
+
+iOS 外接 USB／藍牙鍵盤僅由琦琦 App 前景實體編輯器接收；keyboard extension 無法在備忘錄等其他 App 接管一般外接鍵盤。Android 既有實體候選列與浮動候選窗皆可使用。
 
 ## 開發驗證
 
 - 排名資源：`python3 tests/generate_cangjie_ranking.py --check`，確認 Swift／Java 同源、1,500 個不同字及固定內容。
-- Swift：`swift test --filter 'CangjiePrefixTests|TableInputTests'`，8 個相關測試通過，涵蓋實際 DB、逐碼、退格、萬用字元、學習隔離與 App Group 設定。
-- iOS Simulator 26.5：3 個實際 UI 測試通過，涵蓋 extension 提前選「喬」、簡易與實體編輯器原流程；保留 HK 候選截圖於本機 xcresult。
+- Swift：`swift test --filter 'CangjiePrefixTests|TableInputTests'`，10 個相關測試通過（含實體四種開關組合），涵蓋實際 DB、逐碼、退格、萬用字元、學習隔離與 App Group 設定。
+- iOS Simulator 26.5：實際 UI 測試通過，涵蓋實體預設關閉、開啟後以數字選「喬」、關閉還原、extension 提前選「喬」，以及簡易與實體編輯器原流程；保留 HK 候選截圖於本機 xcresult。
 - iOS Debug 實機 App 與 extension 簽署建置及實機安裝成功；實機觸控效果仍由使用者試用確認。
-- Android：`lintDebug testDebugUnitTest assembleDebug assembleDebugAndroidTest` 通過；125 個 JVM 測試通過，API 33 模擬器的 4 個 SQLite／字型／設定裝置測試通過。
-- Android 實際觸控 IME：在 debug 文字宿主輸入 HK，第一頁點「喬」，宿主內容驗證為「喬」。
+- Android：`lintDebug testDebugUnitTest assembleDebug assembleDebugAndroidTest` 通過；127 個 JVM 測試通過，API 33 模擬器的 4 個 SQLite／字型／設定裝置測試通過。
+- Android 實際觸控 IME：在 debug 文字宿主輸入 HK，第一頁點「喬」，宿主內容驗證為「喬」。實體候選列與浮動窗另以硬體鍵事件 HK、數字 2 驗證宿主輸出「喬」，虛擬組預覽關閉時仍可使用實體組前綴；使用 API 33 模擬器，實際 USB／藍牙裝置效果仍由使用者試用確認。
 - iOS extension 與 Android APK 包內 DB 的 SHA-256 均為 `8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb`，與未修改的正式 DB 一致。
-- 完整 `swift test`：23 個 suite 的 171 個 Swift Testing 測試及 4 個 XCTest 全部通過。
+- 完整 `swift test`：23 個 suite 的 173 個 Swift Testing 測試及 4 個 XCTest 全部通過。
 - 好打注音的 3 個長句邊界測試，以同一模型直接組句的結果核對逐鍵輸入、擠字與交接後的文字，不再把「玩／完」等同音字順位當成邊界驗收條件；仍檢查「請假」整詞擠出、觸控九／十與實體十／十一音節界線、19 音節全文完整，以及交接後不可重複送出。本輪未修改注音引擎或正式 DB。
 
 本機建置產物與截圖放在 `Installer/local-builds/` 及 Android `app/build/`，不納入提交。iOS 開發版維持 1.3.5，Android 維持 1.3.6；這些驗證不代表商店正式版或其他平台已更新。

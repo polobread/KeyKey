@@ -614,7 +614,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 ? new String[]{"realtime", "prefix", "clear", "maximum", "learning"}
                 : new String[]{"realtime", "clear"};
         String[] titles = method == ChineseInputMethod.CANGJIE
-                ? new String[]{"即時候選", "未打完也能選字", "錯碼清除", "滿五碼查詢", "依選字紀錄排序"}
+                ? new String[]{"即時候選", "未打完也能選字", "錯碼清除（預覽關閉時）", "滿五碼查詢", "依選字紀錄排序"}
                 : new String[]{"即時候選", "錯碼清除"};
         CheckBox[] controls = new CheckBox[keys.length];
         for (int i = 0; i < keys.length; i++) {
@@ -651,16 +651,24 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             explanation.setText("輸入字根時，提前顯示相同開頭的候選字，常用字優先。兩項預覽皆關閉時才套用錯碼清除。");
             explanation.setTextSize(14);
             parent.addView(explanation, matchWrap(dp(0), dp(4)));
-            CheckBox hardwareRealtime = new CheckBox(this);
-            hardwareRealtime.setText("實體鍵盤：即時候選");
-            hardwareRealtime.setMinHeight(dp(44));
-            hardwareRealtime.setChecked(ChineseInputMethodSettings.options(this, method).composeWhileTyping);
-            hardwareRealtime.setOnCheckedChangeListener((button, checked) -> {
+            TextView hardwareHeading = new TextView(this);
+            hardwareHeading.setText("倉頡設定（實體鍵盤）");
+            hardwareHeading.setTextSize(18);
+            parent.addView(hardwareHeading, matchWrap(dp(0), dp(8)));
+            for (boolean prefix : new boolean[]{false, true}) {
+                CheckBox control = new CheckBox(this);
+                control.setText(prefix ? "實體鍵盤：未打完也能選字" : "實體鍵盤：即時候選");
+                control.setMinHeight(dp(44));
                 TableInputOptions hardware = ChineseInputMethodSettings.options(this, method);
-                hardware.composeWhileTyping = checked;
-                ChineseInputMethodSettings.setOptions(this, method, hardware);
-            });
-            parent.addView(hardwareRealtime, matchWrap(dp(0), dp(8)));
+                control.setChecked(prefix ? hardware.prefixCandidates : hardware.composeWhileTyping);
+                control.setOnCheckedChangeListener((button, checked) -> {
+                    TableInputOptions next = ChineseInputMethodSettings.options(this, method);
+                    if (prefix) next.prefixCandidates = checked;
+                    else next.composeWhileTyping = checked;
+                    ChineseInputMethodSettings.setOptions(this, method, next);
+                });
+                parent.addView(control, matchWrap(dp(0), dp(0)));
+            }
             Spinner punctuation = new Spinner(this);
             punctuation.setContentDescription("倉頡標點");
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this,

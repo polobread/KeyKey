@@ -42,34 +42,37 @@ public final class ChineseInputMethodSettings {
         if !method.isTable { store.set(method.rawValue, forKey: BopomofoCompositionModeSettings.key) }
     }
     public func options(for method: ChineseInputMethod, virtualKeyboard: Bool = false) -> TableInputOptions {
-        var options = TableInputOptions(method: method)
-        if let data = store.object(forKey: "tableOptions." + method.rawValue) as? Data,
-           let decoded = try? JSONDecoder().decode(TableInputOptions.self, from: data) { options = decoded }
-        if method == .cangjie, virtualKeyboard {
-            // Missing old data means a new virtual-keyboard installation.
-            let legacy = store.object(forKey: "tableOptions." + method.rawValue) as? Data
-            options.composeWhileTyping = store.object(forKey: "tablePreview.cangjie.virtual.realtime") as? Bool
-                ?? (legacy == nil ? true : options.composeWhileTyping)
-            options.prefixCandidates = store.object(forKey: "tablePreview.cangjie.virtual.prefix") as? Bool ?? true
+        let legacy = (store.object(forKey: "tableOptions." + method.rawValue) as? Data)
+            .flatMap { try? JSONDecoder().decode(TableInputOptions.self, from: $0) }
+        var options = legacy ?? TableInputOptions(method: method)
+        if method == .cangjie {
+            if let data = store.object(forKey: "tableOptions.cangjie.shared") as? Data,
+               let decoded = try? JSONDecoder().decode(TableInputOptions.self, from: data) {
+                options = decoded
+            }
+            let profile = virtualKeyboard ? "virtual" : "physical"
+            // The legacy blob is read-only: changing one profile must not alter
+            // the other profile's migration fallback or App Group revision.
+            options.composeWhileTyping = store.object(forKey: "tablePreview.cangjie." + profile + ".realtime") as? Bool
+                ?? legacy?.composeWhileTyping ?? virtualKeyboard
+            options.prefixCandidates = store.object(forKey: "tablePreview.cangjie." + profile + ".prefix") as? Bool
+                ?? virtualKeyboard
         }
         return options
     }
     public func setOptions(_ options: TableInputOptions, for method: ChineseInputMethod,
                            virtualKeyboard: Bool = false) {
-        var shared = options
-        if method == .cangjie, !virtualKeyboard,
-           store.object(forKey: "tablePreview.cangjie.virtual.realtime") == nil {
-            store.set(self.options(for: method, virtualKeyboard: true).composeWhileTyping,
-                      forKey: "tablePreview.cangjie.virtual.realtime")
+        let key: String
+        if method == .cangjie {
+            let profile = virtualKeyboard ? "virtual" : "physical"
+            store.set(options.composeWhileTyping, forKey: "tablePreview.cangjie." + profile + ".realtime")
+            store.set(options.prefixCandidates, forKey: "tablePreview.cangjie." + profile + ".prefix")
+            key = "tableOptions.cangjie.shared"
+        } else {
+            key = "tableOptions." + method.rawValue
         }
-        if method == .cangjie, virtualKeyboard {
-            // Freeze the old physical preference before saving shared non-preview options.
-            shared.composeWhileTyping = self.options(for: method).composeWhileTyping
-            store.set(options.composeWhileTyping, forKey: "tablePreview.cangjie.virtual.realtime")
-            store.set(options.prefixCandidates, forKey: "tablePreview.cangjie.virtual.prefix")
-        }
-        if let data = try? JSONEncoder().encode(shared) {
-            store.set(data, forKey: "tableOptions." + method.rawValue)
+        if let data = try? JSONEncoder().encode(options) {
+            store.set(data, forKey: key)
         }
     }
 }
@@ -183,17 +186,17 @@ public final class TableCandidateStore: TableCandidateSource {
 }
 
 public extension TableInputOptions {
-    func switches(for method: ChineseInputMethod, virtualKeyboard: Bool = false) -> [(key: String, title: String, enabled: Bool)] {
+    func switches(for method: ChineseInputMethod) -> [(key: String, title: String, enabled: Bool)] {
         var rows = [("realtime", "即時候選", composeWhileTyping),
-                    ("clear", virtualKeyboard && method == .cangjie ? "錯碼清除（預覽關閉時）" : "錯碼清除", clearOnError)]
+                    ("clear", method == .cangjie ? "錯碼清除（預覽關閉時）" : "錯碼清除", clearOnError)]
         if method == .cangjie {
-            if virtualKeyboard { rows.insert(("prefix", "未打完也能選字", prefixCandidates), at: 1) }
+            rows.insert(("prefix", "未打完也能選字", prefixCandidates), at: 1)
             rows += [("maximum", "滿五碼查詢", queryAtMaximum), ("learning", "依選字紀錄排序", dynamicFrequency)]
         }
         return rows
     }
-    mutating func toggle(_ key: String, virtualKeyboard: Bool = false) {
-        if virtualKeyboard {
+    mutating func toggle(_ key: String, preserveClearOnError: Bool = false) {
+        if preserveClearOnError {
             if key == "realtime" { composeWhileTyping.toggle(); return }
             if key == "clear" { clearOnError.toggle(); return }
         }
