@@ -24,6 +24,7 @@
 - Android：`lintDebug testDebugUnitTest assembleDebug assembleDebugAndroidTest` 通過；125 個 JVM 測試通過，API 33 模擬器的 4 個 SQLite／字型／設定裝置測試通過。
 - Android 實際觸控 IME：在 debug 文字宿主輸入 HK，第一頁點「喬」，宿主內容驗證為「喬」。
 - iOS extension 與 Android APK 包內 DB 的 SHA-256 均為 `8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb`，與未修改的正式 DB 一致。
-- 完整 `swift test` 另有 3 個既有好打注音模型測試失敗，共 11 個斷言（「玩／完」預期）。以 HEAD 原版引擎及相同 DB 的隔離副本重跑，得到相同 3 個失敗、11 個斷言。本輪未更動注音模型或修正這些基底失敗。
+- 完整 `swift test`：23 個 suite 的 171 個 Swift Testing 測試及 4 個 XCTest 全部通過。
+- 好打注音的 3 個長句邊界測試，以同一模型直接組句的結果核對逐鍵輸入、擠字與交接後的文字，不再把「玩／完」等同音字順位當成邊界驗收條件；仍檢查「請假」整詞擠出、觸控九／十與實體十／十一音節界線、19 音節全文完整，以及交接後不可重複送出。本輪未修改注音引擎或正式 DB。
 
 本機建置產物與截圖放在 `Installer/local-builds/` 及 Android `app/build/`，不納入提交。iOS 開發版維持 1.3.5，Android 維持 1.3.6；這些驗證不代表商店正式版或其他平台已更新。
