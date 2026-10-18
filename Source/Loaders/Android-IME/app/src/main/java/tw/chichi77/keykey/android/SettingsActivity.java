@@ -606,14 +606,16 @@ public final class SettingsActivity extends Activity implements SupporterBilling
 
     private void addTableSettings(LinearLayout parent, ChineseInputMethod method) {
         TextView heading = new TextView(this);
-        heading.setText(method.displayName + "設定");
+        heading.setText(method.displayName + (method == ChineseInputMethod.CANGJIE ? "設定（虛擬鍵盤）" : "設定"));
         heading.setTextSize(18);
         parent.addView(heading, matchWrap(dp(0), dp(4)));
-        TableInputOptions initial = ChineseInputMethodSettings.options(this, method);
+        TableInputOptions initial = ChineseInputMethodSettings.options(this, method, true);
         String[] keys = method == ChineseInputMethod.CANGJIE
-                ? new String[]{"realtime", "clear", "maximum", "learning"}
+                ? new String[]{"realtime", "prefix", "clear", "maximum", "learning"}
                 : new String[]{"realtime", "clear"};
-        String[] titles = {"即時候選", "錯碼清除", "滿五碼查詢", "依選字紀錄排序"};
+        String[] titles = method == ChineseInputMethod.CANGJIE
+                ? new String[]{"即時候選", "未打完也能選字", "錯碼清除", "滿五碼查詢", "依選字紀錄排序"}
+                : new String[]{"即時候選", "錯碼清除"};
         CheckBox[] controls = new CheckBox[keys.length];
         for (int i = 0; i < keys.length; i++) {
             String key = keys[i];
@@ -623,25 +625,42 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             control.setMinHeight(dp(44));
             control.setChecked(switch (key) {
                 case "realtime" -> initial.composeWhileTyping;
+                case "prefix" -> initial.prefixCandidates;
                 case "clear" -> initial.clearOnError;
                 case "maximum" -> initial.queryAtMaximum;
                 default -> initial.dynamicFrequency;
             });
             control.setOnCheckedChangeListener((button, checked) -> {
-                TableInputOptions next = ChineseInputMethodSettings.options(this, method);
+                TableInputOptions next = ChineseInputMethodSettings.options(this, method, true);
                 switch (key) {
-                    case "realtime" -> { next.composeWhileTyping = checked; if (checked) next.clearOnError = false; }
-                    case "clear" -> { next.clearOnError = checked; if (checked) next.composeWhileTyping = false; }
+                    case "realtime" -> { next.composeWhileTyping = checked; if (checked && method != ChineseInputMethod.CANGJIE) next.clearOnError = false; }
+                    case "prefix" -> next.prefixCandidates = checked;
+                    case "clear" -> { next.clearOnError = checked; if (checked && method != ChineseInputMethod.CANGJIE) next.composeWhileTyping = false; }
                     case "maximum" -> next.queryAtMaximum = checked;
                     default -> next.dynamicFrequency = checked;
                 }
-                ChineseInputMethodSettings.setOptions(this, method, next);
+                ChineseInputMethodSettings.setOptions(this, method, next, true);
                 if (controls[0] != null) controls[0].setChecked(next.composeWhileTyping);
-                if (controls[1] != null) controls[1].setChecked(next.clearOnError);
+                int clearIndex = method == ChineseInputMethod.CANGJIE ? 2 : 1;
+                if (controls[clearIndex] != null) controls[clearIndex].setChecked(next.clearOnError);
             });
             parent.addView(control, matchWrap(dp(0), dp(0)));
         }
         if (method == ChineseInputMethod.CANGJIE) {
+            TextView explanation = new TextView(this);
+            explanation.setText("輸入字根時，提前顯示相同開頭的候選字，常用字優先。兩項預覽皆關閉時才套用錯碼清除。");
+            explanation.setTextSize(14);
+            parent.addView(explanation, matchWrap(dp(0), dp(4)));
+            CheckBox hardwareRealtime = new CheckBox(this);
+            hardwareRealtime.setText("實體鍵盤：即時候選");
+            hardwareRealtime.setMinHeight(dp(44));
+            hardwareRealtime.setChecked(ChineseInputMethodSettings.options(this, method).composeWhileTyping);
+            hardwareRealtime.setOnCheckedChangeListener((button, checked) -> {
+                TableInputOptions hardware = ChineseInputMethodSettings.options(this, method);
+                hardware.composeWhileTyping = checked;
+                ChineseInputMethodSettings.setOptions(this, method, hardware);
+            });
+            parent.addView(hardwareRealtime, matchWrap(dp(0), dp(8)));
             Spinner punctuation = new Spinner(this);
             punctuation.setContentDescription("倉頡標點");
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
@@ -651,10 +670,10 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             punctuation.setSelection(initial.punctuation);
             punctuation.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
                 public void onItemSelected(android.widget.AdapterView<?> view, View item, int position, long id) {
-                    TableInputOptions next = ChineseInputMethodSettings.options(SettingsActivity.this, method);
+                    TableInputOptions next = ChineseInputMethodSettings.options(SettingsActivity.this, method, true);
                     if (next.punctuation == position) return;
                     next.punctuation = position;
-                    ChineseInputMethodSettings.setOptions(SettingsActivity.this, method, next);
+                    ChineseInputMethodSettings.setOptions(SettingsActivity.this, method, next, true);
                 }
                 public void onNothingSelected(android.widget.AdapterView<?> view) {}
             });

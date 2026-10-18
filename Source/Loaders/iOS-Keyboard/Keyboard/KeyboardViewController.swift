@@ -108,7 +108,9 @@ final class KeyboardViewController: UIInputViewController {
         inputClicksEnabled = clickSettings.enabled
         if let engine {
             apply(engine.setChineseInputMethod(methodSettings.method))
-            engine.tableOptions = methodSettings.options(for: engine.chineseInputMethod)
+            let nextOptions = methodSettings.options(for: engine.chineseInputMethod, virtualKeyboard: true)
+            if engine.tableOptions != nextOptions { apply(engine.finishCompositionForInputHandoff()) }
+            engine.tableOptions = nextOptions
         }
         applyPhraseSelection(phraseSettings.enabledCollections)
         if let engine {
@@ -258,7 +260,7 @@ final class KeyboardViewController: UIInputViewController {
             )
             engine?.setTableCandidateSource(TableCandidateStore(database: database))
             engine?.setChineseInputMethod(methodSettings.method)
-            engine?.tableOptions = methodSettings.options(for: methodSettings.method)
+            engine?.tableOptions = methodSettings.options(for: methodSettings.method, virtualKeyboard: true)
         } catch {
             loadFailure = String(describing: error)
         }
@@ -558,7 +560,7 @@ extension KeyboardViewController: SettingsPanelDelegate {
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod) {
         if let engine {
             apply(engine.setChineseInputMethod(method))
-            engine.tableOptions = methodSettings.options(for: method)
+            engine.tableOptions = methodSettings.options(for: method, virtualKeyboard: true)
         }
         methodSettings.setMethod(method)
         refresh()
@@ -566,7 +568,7 @@ extension KeyboardViewController: SettingsPanelDelegate {
     func settingsPanelDidChangeTableOptions(_ panel: SettingsPanel) {
         if let engine {
             apply(engine.finishCompositionForInputHandoff())
-            engine.tableOptions = methodSettings.options(for: engine.chineseInputMethod)
+            engine.tableOptions = methodSettings.options(for: engine.chineseInputMethod, virtualKeyboard: true)
         }
         refresh()
     }

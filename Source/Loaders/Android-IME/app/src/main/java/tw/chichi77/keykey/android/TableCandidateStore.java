@@ -40,6 +40,15 @@ final class TableCandidateStore implements TableCandidateSource {
         }
         return rows(method.tableName(), code, wildcard);
     }
+    public void forEachPrefixValue(String code, java.util.function.Consumer<String> action) {
+        if (!CangjiePrefixSelection.isPrefixCode(code)) return;
+        try (Cursor cursor = database.rawQuery(
+                "SELECT value FROM 'Generic-cj-cin' WHERE key GLOB ? "
+                + "AND length(key) <= 5 AND key NOT GLOB '*[^a-z]*' ORDER BY rowid",
+                new String[]{code + "?*"})) {
+            while (cursor.moveToNext()) action.accept(cursor.getString(0));
+        }
+    }
     public String keyName(ChineseInputMethod method, String key) {
         List<String> names = rows(method.tableName(), "__property_keyname-" + key, false);
         return names.isEmpty() ? null : names.get(0);

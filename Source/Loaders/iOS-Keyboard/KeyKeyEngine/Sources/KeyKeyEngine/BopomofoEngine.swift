@@ -80,6 +80,9 @@ public final class BopomofoEngine {
 
     public private(set) var chineseInputMethod: ChineseInputMethod = .traditional
     public var tableOptions = TableInputOptions(method: .cangjie)
+    private var tableExactCandidates: Set<String> = []
+    private var tablePrefixMode: Bool { chineseInputMethod == .cangjie && tableOptions.prefixCandidates }
+    private var tablePreviewsCandidates: Bool { tableOptions.composeWhileTyping || tablePrefixMode }
     private var tableSource: TableCandidateSource?
     private var tableCode = ""
     private var tableCandidatesFinal = false
@@ -410,7 +413,7 @@ public final class BopomofoEngine {
             tableCandidatesFinal = false
             if tableCode.isEmpty { return .delete }
             tableCode.removeLast()
-            if tableOptions.composeWhileTyping, !tableCode.isEmpty { return queryTable(final: false) }
+            if tablePreviewsCandidates, !tableCode.isEmpty { return queryTable(final: false) }
             return .update
         }
         if compositionMode == .smart, mode == .bopomofo {
@@ -630,7 +633,7 @@ public final class BopomofoEngine {
         var prefix = ""
         if showingAssociatedPhrases {
             clearComposition()
-        } else if !candidates.isEmpty, tableCandidatesFinal || !tableOptions.composeWhileTyping
+        } else if !candidates.isEmpty, tableCandidatesFinal || !tablePreviewsCandidates
                     || tableCode.count >= chineseInputMethod.maximumCodeLength {
             prefix = selectHighlightedCandidate().text
             clearComposition() // associated phrases must not obstruct the next code
@@ -640,7 +643,8 @@ public final class BopomofoEngine {
         let wildcard = chineseInputMethod == .cangjie && tableCode.count > 1 && (key == "?" || key == "*")
         let final = (!wildcard && source.endKeys(method: chineseInputMethod).contains(key))
             || (tableOptions.queryAtMaximum && tableCode.count >= chineseInputMethod.maximumCodeLength)
-        let result = final || tableOptions.composeWhileTyping ? queryTable(final: final) : .update
+        // A preview never commits merely because the fifth root leaves one result.
+        let result = final || tablePreviewsCandidates ? queryTable(final: final && (!tablePrefixMode || tableCode.contains("?") || tableCode.contains("*"))) : .update
         return prefix.isEmpty ? result : .commit(prefix + result.text)
     }
 
@@ -651,11 +655,21 @@ public final class BopomofoEngine {
             candidates = source.ordered(candidates, code: tableCode)
         }
         candidates = candidates.filter(candidateFilter)
+        tableExactCandidates = Set(candidates)
+        if tablePrefixMode, !tableCode.contains("?"), !tableCode.contains("*") {
+            var seen: Set<String> = []
+            candidates = candidates.filter { seen.insert($0).inserted }
+            var selection = CangjiePrefixSelection(excluding: candidates)
+            source.enumeratePrefixValues(code: tableCode) {
+                selection.consider($0, filter: candidateFilter)
+            }
+            candidates += selection.values
+        }
         showingAssociatedPhrases = false
         tableCandidatesFinal = final
         pageIndex = 0
         highlight = 0
-        if candidates.isEmpty, final, tableOptions.clearOnError, !tableOptions.composeWhileTyping {
+        if candidates.isEmpty, final, tableOptions.clearOnError, !tablePreviewsCandidates {
             clearComposition()
         } else if candidates.count == 1, final {
             return commitPrimaryCandidate(candidates[0], offeringAssociatedPhrases: true)
@@ -851,7 +865,7 @@ public final class BopomofoEngine {
         _ selected: String, offeringAssociatedPhrases offering: Bool
     ) -> Result {
         if chineseInputMethod == .cangjie, tableOptions.dynamicFrequency,
-           !tableCode.isEmpty, candidates.first != selected {
+           !tableCode.isEmpty, candidates.first != selected, tableExactCandidates.contains(selected) {
             tableSource?.learn(code: tableCode, text: selected)
         }
         let text: String

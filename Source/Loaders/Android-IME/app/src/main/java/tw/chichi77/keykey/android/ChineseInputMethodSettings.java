@@ -22,6 +22,9 @@ final class ChineseInputMethodSettings {
         editor.apply();
     }
     static TableInputOptions options(Context context, ChineseInputMethod method) {
+        return options(context, method, false);
+    }
+    static TableInputOptions options(Context context, ChineseInputMethod method, boolean virtualKeyboard) {
         TableInputOptions result = new TableInputOptions(method);
         SharedPreferences p = preferences(context);
         String key = "table_options." + method.name() + ".";
@@ -30,14 +33,33 @@ final class ChineseInputMethodSettings {
         result.composeWhileTyping = p.getBoolean(key + "realtime", false);
         result.dynamicFrequency = p.getBoolean(key + "learning", result.dynamicFrequency);
         result.punctuation = p.getInt(key + "punctuation", 0);
+        if (method == ChineseInputMethod.CANGJIE && virtualKeyboard) {
+            result.composeWhileTyping = p.getBoolean(key + "virtual.realtime",
+                    p.getBoolean(key + "realtime", true));
+            result.prefixCandidates = p.getBoolean(key + "virtual.prefix", true);
+        }
         return result;
     }
     static void setOptions(Context context, ChineseInputMethod method, TableInputOptions options) {
+        setOptions(context, method, options, false);
+    }
+    static void setOptions(Context context, ChineseInputMethod method, TableInputOptions options,
+                           boolean virtualKeyboard) {
         String key = "table_options." + method.name() + ".";
-        preferences(context).edit().putBoolean(key + "maximum", options.queryAtMaximum)
+        SharedPreferences p = preferences(context);
+        SharedPreferences.Editor edit = p.edit().putBoolean(key + "maximum", options.queryAtMaximum)
                 .putBoolean(key + "clear", options.clearOnError)
-                .putBoolean(key + "realtime", options.composeWhileTyping)
                 .putBoolean(key + "learning", options.dynamicFrequency)
-                .putInt(key + "punctuation", options.punctuation).apply();
+                .putInt(key + "punctuation", options.punctuation);
+        if (method == ChineseInputMethod.CANGJIE) {
+            // Resolve the old shared choice once, before either input source edits it.
+            if (!p.contains(key + "virtual.realtime"))
+                edit.putBoolean(key + "virtual.realtime", options(context, method, true).composeWhileTyping);
+            if (virtualKeyboard) {
+                edit.putBoolean(key + "virtual.realtime", options.composeWhileTyping)
+                    .putBoolean(key + "virtual.prefix", options.prefixCandidates);
+            } else edit.putBoolean(key + "realtime", options.composeWhileTyping);
+        } else edit.putBoolean(key + "realtime", options.composeWhileTyping);
+        edit.apply();
     }
 }

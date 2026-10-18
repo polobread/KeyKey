@@ -528,7 +528,7 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     private func tableOptionsButton(for method: ChineseInputMethod) -> UIButton {
         let button = UIButton(configuration: .tinted())
-        button.setTitle(method.displayName + "設定", for: .normal)
+        button.setTitle(method.displayName + (method == .cangjie ? "設定（虛擬鍵盤）" : "設定"), for: .normal)
         button.accessibilityIdentifier = "table-options." + method.rawValue
         button.showsMenuAsPrimaryAction = true
         refreshTableOptions(button, for: method)
@@ -536,13 +536,13 @@ private final class InputMethodSettingsViewController: UIViewController {
     }
 
     private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod) {
-        let options = modeSettings.options(for: method)
-        var children: [UIMenuElement] = options.switches(for: method).map { item in
+        let options = modeSettings.options(for: method, virtualKeyboard: true)
+        var children: [UIMenuElement] = options.switches(for: method, virtualKeyboard: true).map { item in
             UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self, weak button] _ in
                 guard let self, let button else { return }
-                var next = self.modeSettings.options(for: method)
-                next.toggle(item.key)
-                self.modeSettings.setOptions(next, for: method)
+                var next = self.modeSettings.options(for: method, virtualKeyboard: true)
+                next.toggle(item.key, virtualKeyboard: method == .cangjie)
+                self.modeSettings.setOptions(next, for: method, virtualKeyboard: true)
 
                 self.refreshTableOptions(button, for: method)
             }
@@ -551,9 +551,9 @@ private final class InputMethodSettingsViewController: UIViewController {
             children.append(UIMenu(title: "標點", children: ["原字表", "中英混合", "半形"].enumerated().map { index, title in
                 UIAction(title: title, state: options.punctuation == index ? .on : .off) { [weak self, weak button] _ in
                     guard let self, let button else { return }
-                    var next = self.modeSettings.options(for: method)
+                    var next = self.modeSettings.options(for: method, virtualKeyboard: true)
                     next.punctuation = index
-                    self.modeSettings.setOptions(next, for: method)
+                    self.modeSettings.setOptions(next, for: method, virtualKeyboard: true)
 
                     self.refreshTableOptions(button, for: method)
                 }

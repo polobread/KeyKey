@@ -86,6 +86,11 @@ final class BopomofoEngine {
     private EnumSet<InputMode> allowedInputModes = EnumSet.allOf(InputMode.class);
     private ChineseInputMethod chineseInputMethod = ChineseInputMethod.TRADITIONAL;
     TableInputOptions tableOptions = new TableInputOptions(ChineseInputMethod.CANGJIE);
+    private java.util.Set<String> tableExactCandidates = java.util.Set.of();
+    private boolean tablePrefixMode() {
+        return chineseInputMethod == ChineseInputMethod.CANGJIE && tableOptions.prefixCandidates;
+    }
+    private boolean tablePreviewsCandidates() { return tableOptions.composeWhileTyping || tablePrefixMode(); }
     private TableCandidateSource tableSource;
     private String tableCode = "";
     private boolean tableCandidatesFinal;
@@ -341,7 +346,7 @@ final class BopomofoEngine {
             page = 0; highlightedIndex = 0; tableCandidatesFinal = false;
             if (tableCode.isEmpty()) return Result.delete();
             tableCode = tableCode.substring(0, tableCode.length() - 1);
-            if (tableOptions.composeWhileTyping && !tableCode.isEmpty()) return queryTable(false);
+            if (tablePreviewsCandidates() && !tableCode.isEmpty()) return queryTable(false);
             return tableCode.isEmpty() ? Result.discardComposition() : Result.update();
         }
         if (compositionMode == BopomofoCompositionMode.SMART
@@ -433,7 +438,8 @@ final class BopomofoEngine {
 
     private Result commitPrimaryCandidate(String selected, boolean showAssociatedPhrases) {
         if (chineseInputMethod == ChineseInputMethod.CANGJIE && tableOptions.dynamicFrequency
-                && !tableCode.isEmpty() && !candidates.isEmpty() && !candidates.get(0).equals(selected))
+                && !tableCode.isEmpty() && !candidates.isEmpty() && !candidates.get(0).equals(selected)
+                && tableExactCandidates.contains(selected))
             tableSource.learn(tableCode, selected);
         // Touch fallback candidates are outside the model, but the preceding
         // sentence is still present in the host and must survive this commit.
@@ -722,7 +728,7 @@ final class BopomofoEngine {
         }
         String prefix = "";
         if (showingAssociatedPhrases) clearComposition();
-        else if (!candidates.isEmpty() && (tableCandidatesFinal || !tableOptions.composeWhileTyping
+        else if (!candidates.isEmpty() && (tableCandidatesFinal || !tablePreviewsCandidates()
                 || tableCode.length() >= chineseInputMethod.maximumCodeLength())) {
             prefix = selectHighlightedCandidate().committedText();
             clearComposition();
@@ -733,7 +739,8 @@ final class BopomofoEngine {
                 && (key.equals("?") || key.equals("*"));
         boolean finalQuery = !wildcard && tableSource.endKeys(chineseInputMethod).contains(key)
                 || tableOptions.queryAtMaximum && tableCode.length() >= chineseInputMethod.maximumCodeLength();
-        Result result = finalQuery || tableOptions.composeWhileTyping ? queryTable(finalQuery) : Result.update();
+        Result result = finalQuery || tablePreviewsCandidates()
+                ? queryTable(finalQuery && (!tablePrefixMode() || tableCode.contains("?") || tableCode.contains("*"))) : Result.update();
         return prefix.isEmpty() ? result : Result.commit(prefix + result.committedText());
     }
     private Result queryTable(boolean finalQuery) {
@@ -741,9 +748,20 @@ final class BopomofoEngine {
         if (chineseInputMethod == ChineseInputMethod.CANGJIE && tableOptions.dynamicFrequency)
             candidates = tableSource.ordered(candidates, tableCode);
         candidates = visibleCandidates(candidates);
+        tableExactCandidates = new java.util.HashSet<>(candidates);
+        if (tablePrefixMode() && !tableCode.contains("?") && !tableCode.contains("*")) {
+            var unique = new java.util.LinkedHashMap<String, String>();
+            for (String value : candidates) unique.putIfAbsent(CangjieCommonRanking.identity(value), value);
+            candidates = List.copyOf(unique.values());
+            var selection = new CangjiePrefixSelection(candidates);
+            tableSource.forEachPrefixValue(tableCode, value -> selection.consider(value, candidateFilter));
+            var combined = new java.util.ArrayList<>(candidates);
+            combined.addAll(selection.values());
+            candidates = List.copyOf(combined);
+        }
         showingAssociatedPhrases = false; tableCandidatesFinal = finalQuery;
         page = 0; highlightedIndex = 0;
-        if (candidates.isEmpty() && finalQuery && tableOptions.clearOnError && !tableOptions.composeWhileTyping)
+        if (candidates.isEmpty() && finalQuery && tableOptions.clearOnError && !tablePreviewsCandidates())
             return clearComposition() ? Result.discardComposition() : Result.update();
         if (candidates.size() == 1 && finalQuery) return commitPrimaryCandidate(candidates.get(0), true);
         return Result.update();
