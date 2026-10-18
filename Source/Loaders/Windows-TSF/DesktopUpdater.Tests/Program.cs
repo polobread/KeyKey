@@ -54,6 +54,7 @@ internal static class Program
         {
             SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
             LifecycleTests();
+            AutomaticScheduleTests();
             BetaChannelTests();
             ReinstallTests();
             TimeoutTests();
@@ -61,6 +62,33 @@ internal static class Program
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+    }
+    private static void AutomaticScheduleTests()
+    {
+        var backend = new FakeBackend { Automatic = true };
+        using var updater = new DesktopUpdater(backend, Dispatcher.CurrentDispatcher, () => { },
+            () => new MemoryStream(Encoding.UTF8.GetBytes(Config())),
+            readBetaPreference: () => false, writeBetaPreference: _ => { });
+        DispatcherTimer? Timer() => (DispatcherTimer?)typeof(DesktopUpdater)
+            .GetField("automaticTimer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetValue(updater);
+        updater.Initialize();
+        Check(backend.Checks == 0 && Timer()!.Interval.TotalSeconds is > 590 and <= 600,
+            "Startup did not defer the first check for ten minutes");
+        backend.LastAttempt = DateTimeOffset.UtcNow.AddDays(-1);
+        updater.SetAutomatic(true);
+        Check(Timer()!.Interval > TimeSpan.FromDays(5.99),
+            "A recent persisted attempt did not preserve the remaining weekly interval");
+        backend.LastAttempt = DateTimeOffset.UtcNow.AddDays(-8);
+        updater.SetAutomatic(true);
+        Check(Timer()!.Interval.TotalSeconds is > 590 and <= 600,
+            "An overdue client skipped the startup delay");
+        updater.Check();
+        Check(backend.Checks == 1 && Timer()!.Interval > TimeSpan.FromDays(6.99),
+            "A manual attempt did not move the next deadline seven days ahead");
+        backend.Callbacks.NotFound(); Pump();
+        updater.SetAutomatic(false);
+        Check(Timer() is null, "Opt-out left an automatic timer running");
     }
     private static void LifecycleTests()
     {

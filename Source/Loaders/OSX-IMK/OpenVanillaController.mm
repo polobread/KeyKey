@@ -378,6 +378,7 @@ static void OVCLaunchApplication(const string& value)
 		kvm.stringValueForKey("CandidateWindowScalePercent"));
 	[[[NSApp delegate] verticalCandidateController] setCandidateWindowScale:candidateWindowScale];
 	[[[NSApp delegate] horizontalCandidateController] setCandidateWindowScale:candidateWindowScale];
+	[[[NSApp delegate] symbolController] setCandidateWindowScale:candidateWindowScale];
     
 	if (kvm.hasKey("CandidateTextFontHeight")) {
 		float fontHeight = atof(kvm.stringValueForKey("CandidateTextFontHeight").c_str());
@@ -886,6 +887,9 @@ static void OVCLaunchApplication(const string& value)
 }
 - (void)symbolAction:(id)sender
 {
+	[OpenVanillaLoader sharedLoader]->syncLoaderConfig();
+	[[[NSApp delegate] symbolController] setCandidateWindowScale:OVCCandidateWindowScale(
+		[OpenVanillaLoader sharedLoader]->configKeyValueMap().stringValueForKey("CandidateWindowScalePercent"))];
 	if ([[[[NSApp delegate] symbolController] window] isVisible]) {
 		[[[NSApp delegate] symbolController] hide:self];
 	}

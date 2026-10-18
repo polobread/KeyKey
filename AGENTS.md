@@ -80,6 +80,9 @@ bash update/test-macos.sh
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
 
+# macOS 符號表（隔離 AppKit 初始化順序，不連已安裝 IMK）
+python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py
+
 # iOS 引擎
 (cd Source/Loaders/iOS-Keyboard/KeyKeyEngine && swift test)
 
@@ -91,9 +94,9 @@ bash update/test-macos.sh
 ```
 
 完整依賴與發布流程見 [BUILDING.md](BUILDING.md)。Windows 使用 `Source/Loaders/Windows-TSF` 的 CMake presets。
-Windows 建置前準備 `python update/prepare.py fetch windows`。桌面每週更新檢查預設開啟，保留使用者既有關閉設定；beta 頻道仍預設關閉，
+Windows 建置前準備 `python update/prepare.py fetch windows`。桌面自動更新檢查預設開啟，保留使用者既有關閉設定；所有桌面版按上次嘗試時間每 7 天檢查一次，更新程式啟動後至少等 10 分鐘；未到期直接排至滿 7 天，不逐分鐘輪詢，保留上次嘗試與關閉設定。beta 頻道仍預設關閉，
 key／feed 未設定時不得連網；正式啟用與各平台簽章驗收見 [update/README.md](update/README.md)。
-Windows／macOS／Linux 的每週檢查只通知新版，不預先下載安裝包或自動安裝；使用者按下更新後才下載與安裝。Linux／FreeBSD 維持官方下載頁及套件管理器流程。
+Windows／macOS／Linux 的排程檢查只通知新版，不預先下載安裝包或自動安裝；使用者按下更新後才下載與安裝。Linux／FreeBSD 維持官方下載頁及套件管理器流程。
 macOS preinstall 退出舊行程後，系統仍可能在 payload 覆蓋完成前重啟 IMK；postinstall 須比較執行中詞庫 descriptor 與安裝位置的 device／inode，只正常退出持有已替換詞庫的固定位置行程。TIS 註冊成功不能代替這項檢查，也不能代替選回後的實際中文輸入驗收。
 手動同版本下載入口只有使用者明確按下「重新安裝目前版本…」時才查詢官方 Release，
 不依賴自動更新 key／feed；只開啟相同版號／架構的下載頁，不自行下載或啟動安裝器。

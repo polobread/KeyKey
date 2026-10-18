@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 public final class TableInputTest {
-    private static final class Source implements TableCandidateSource {
+    static final class Source implements TableCandidateSource {
         private final CinDictionary dictionary;
         private final Map<String, String> names = new HashMap<>();
         private String endKeys = "";
@@ -33,6 +33,13 @@ public final class TableInputTest {
                 return result;
             }
             return dictionary.candidates(code);
+        }
+        public void forEachPrefixValue(String code, java.util.function.Consumer<String> action) {
+            if (!CangjiePrefixSelection.isPrefixCode(code)) return;
+            for (String key : dictionary.keys())
+                if (key.startsWith(code) && key.length() > code.length() && key.length() <= 5
+                        && key.matches("[a-z]+"))
+                    for (String value : dictionary.candidates(key)) action.accept(value);
         }
         public String keyName(ChineseInputMethod method, String key) { return names.get(key); }
         public String endKeys(ChineseInputMethod method) { return endKeys; }

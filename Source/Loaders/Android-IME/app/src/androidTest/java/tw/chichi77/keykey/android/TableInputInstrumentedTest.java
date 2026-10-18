@@ -42,6 +42,149 @@ public final class TableInputInstrumentedTest {
             engine.backspace(); assertEquals("日", engine.readingText());
         } finally { learning.edit().clear().commit(); }
     }
+
+    @Test public void virtualDefaultsAreIndependentOfPhysicalAndLegacyChoices() {
+        Context target = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        var prefs = target.getSharedPreferences("table_prefix_settings_test", Context.MODE_PRIVATE);
+        prefs.edit().clear().commit();
+        Context context = new android.content.ContextWrapper(target) {
+            @Override public android.content.SharedPreferences getSharedPreferences(String name, int mode) {
+                return prefs;
+            }
+        };
+        try {
+            var virtual = ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE, true);
+            assertTrue(virtual.composeWhileTyping); assertTrue(virtual.prefixCandidates);
+            assertFalse(ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE).composeWhileTyping);
+            assertFalse(ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE).prefixCandidates);
+            virtual.composeWhileTyping = false; virtual.prefixCandidates = false;
+            ChineseInputMethodSettings.setOptions(context, ChineseInputMethod.CANGJIE, virtual, true);
+            var physical = ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE);
+            physical.composeWhileTyping = true;
+            physical.prefixCandidates = true;
+            ChineseInputMethodSettings.setOptions(context, ChineseInputMethod.CANGJIE, physical);
+            virtual = ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE, true);
+            assertFalse(virtual.composeWhileTyping); assertFalse(virtual.prefixCandidates);
+            assertTrue(ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE).composeWhileTyping);
+            assertTrue(ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE).prefixCandidates);
+            virtual.prefixCandidates = true;
+            ChineseInputMethodSettings.setOptions(context, ChineseInputMethod.CANGJIE, virtual, true);
+            assertTrue(ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE).prefixCandidates);
+            assertTrue(ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE).composeWhileTyping);
+            prefs.edit().clear().putBoolean("table_options.CANGJIE.realtime", false).commit();
+            virtual = ChineseInputMethodSettings.options(context, ChineseInputMethod.CANGJIE, true);
+            assertFalse(virtual.composeWhileTyping); assertTrue(virtual.prefixCandidates);
+            assertFalse(ChineseInputMethodSettings.options(context, ChineseInputMethod.SIMPLEX, true).composeWhileTyping);
+        } finally { prefs.edit().clear().commit(); }
+    }
+
+    @Test public void qiaoPrefixesUseSQLiteRankingAndDoNotLearnPartialCodes() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        var learning = context.getSharedPreferences("table_prefix_qiao_test", Context.MODE_PRIVATE);
+        learning.edit().clear().commit();
+        try (SmartMandarinStore model = SmartMandarinStore.open(context, null)) {
+            var source = new TableCandidateStore(model.tableDatabase(), learning);
+            var engine = new BopomofoEngine(CinDictionary.empty());
+            engine.setTableCandidateSource(source);
+            engine.setChineseInputMethod(ChineseInputMethod.CANGJIE);
+            engine.tableOptions.prefixCandidates = true;
+            engine.tableOptions.composeWhileTyping = true;
+            engine.tableOptions.queryAtMaximum = true;
+            String[] roots = {"竹", "竹大", "竹大口", "竹大口月", "竹大口月口"};
+            int[] counts = {38, 40, 11, 2, 1};
+            for (int i = 0; i < 5; i++) {
+                long start = System.nanoTime();
+                assertEquals("", engine.handleSoftKey("hkrbr".substring(i, i + 1)).committedText());
+                android.util.Log.i("CangjiePrefixTest", roots[i] + " query ms=" + (System.nanoTime() - start) / 1_000_000.0);
+                assertEquals(roots[i], engine.readingText());
+                var all = new java.util.ArrayList<String>();
+                for (int page = 0; page < engine.pageCount(); page++) {
+                    all.addAll(engine.displayedCandidates()); engine.changePage(1);
+                }
+                assertEquals(counts[i], all.size());
+                assertEquals(all.size(), new java.util.HashSet<>(all).size());
+                if (i == 0) assertFalse(all.contains("喬"));
+                else assertTrue(engine.displayedCandidates().contains("喬"));
+            }
+            engine.backspace(); assertEquals(java.util.List.of("喬", "䀉"), engine.displayedCandidates());
+            engine.backspace();
+            assertEquals("喬", engine.selectDisplayedCandidate(5).committedText());
+            assertEquals(0, learning.getInt("cangjie_order.hkr.喬", 0));
+            // Actual font filtering happens before selection/truncation.
+            engine.setCandidateFilter(CandidateGlyphSupport.shared()::canDisplay);
+            engine.handleSoftKey("h"); engine.handleSoftKey("k");
+            assertTrue(engine.displayedCandidates().contains("喬"));
+            engine.escape();
+            for (char key : "hk?".toCharArray()) engine.handleSoftKey(String.valueOf(key));
+            assertFalse(engine.displayedCandidates().contains("喬"));
+        } finally { learning.edit().clear().commit(); }
+    }
+
+    @Test public void settingsUiEnforcesRealtimeClearAndDependentPrefixForBothProfiles() throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = ChineseInputMethodSettings.preferences(context);
+        var previous = preferences.getAll();
+        android.app.Activity activity = null;
+        try {
+            activity = instrumentation.startActivitySync(new android.content.Intent(context,
+                    SettingsActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+            android.app.Activity settings = activity;
+            instrumentation.runOnMainSync(() -> {
+                android.view.View root = settings.findViewById(android.R.id.content);
+                for (String profile : new String[]{"", "實體鍵盤："}) {
+                    var realtime = findCheckbox(root, profile + "即時候選");
+                    var prefix = findCheckbox(root, profile + "未打完也能選字");
+                    var clear = findCheckbox(root, profile + "錯碼清除");
+                    assertNotNull(realtime); assertNotNull(prefix); assertNotNull(clear);
+                    realtime.setChecked(false);
+                    clear.setChecked(true);
+                    assertFalse(prefix.isEnabled());
+                    assertFalse(realtime.isChecked());
+                    realtime.performClick();
+                    assertTrue(realtime.isChecked());
+                    assertFalse(clear.isChecked());
+                    assertTrue(prefix.isEnabled());
+                    prefix.setChecked(true);
+                    clear.performClick();
+                    assertTrue(clear.isChecked());
+                    assertFalse(realtime.isChecked());
+                    assertFalse(prefix.isEnabled());
+                    assertTrue(prefix.isChecked());
+                    realtime.performClick();
+                    assertFalse(clear.isChecked());
+                    assertTrue(prefix.isEnabled());
+                    assertTrue(prefix.isChecked());
+                }
+            });
+        } finally {
+            if (activity != null) {
+                android.app.Activity settings = activity;
+                instrumentation.runOnMainSync(settings::finish);
+            }
+            var restore = preferences.edit();
+            for (String key : preferences.getAll().keySet())
+                if (key.startsWith("table_options.CANGJIE.")) restore.remove(key);
+            for (var entry : previous.entrySet()) {
+                if (!entry.getKey().startsWith("table_options.CANGJIE.")) continue;
+                if (entry.getValue() instanceof Boolean value) restore.putBoolean(entry.getKey(), value);
+                else if (entry.getValue() instanceof Integer value) restore.putInt(entry.getKey(), value);
+            }
+            restore.commit();
+        }
+    }
+
+    private android.widget.CheckBox findCheckbox(android.view.View view, String title) {
+        if (view instanceof android.widget.CheckBox box && title.contentEquals(box.getText())) return box;
+        if (view instanceof android.view.ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                var found = findCheckbox(group.getChildAt(i), title);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
     private void runCases(String text, java.util.function.Function<ChineseInputMethod, TableCandidateSource> sources) {
         for (String line : text.split("\\n")) {
             if (line.startsWith("#") || line.isBlank()) continue;

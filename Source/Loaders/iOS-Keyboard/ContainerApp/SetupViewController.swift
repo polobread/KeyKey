@@ -428,6 +428,7 @@ private final class InputMethodSettingsViewController: UIViewController {
         stack.addArrangedSubview(label("好打與傳統注音共用配置。選許氏鍵盤時，虛擬鍵盤維持英文鍵帽。", size: 14))
 
         stack.addArrangedSubview(tableOptionsButton(for: .cangjie))
+        stack.addArrangedSubview(tableOptionsButton(for: .cangjie, virtualKeyboard: false))
         stack.addArrangedSubview(tableOptionsButton(for: .simplex))
 
         stack.addArrangedSubview(label("候選字底色", size: 18))
@@ -526,36 +527,36 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     @objc private func close() { dismiss(animated: true) }
 
-    private func tableOptionsButton(for method: ChineseInputMethod) -> UIButton {
+    private func tableOptionsButton(for method: ChineseInputMethod, virtualKeyboard: Bool = true) -> UIButton {
         let button = UIButton(configuration: .tinted())
-        button.setTitle(method.displayName + "設定", for: .normal)
-        button.accessibilityIdentifier = "table-options." + method.rawValue
+        button.setTitle(method.displayName + (method == .cangjie ? (virtualKeyboard ? "設定（虛擬鍵盤）" : "設定（實體鍵盤）") : "設定"), for: .normal)
+        button.accessibilityIdentifier = "table-options." + method.rawValue + (virtualKeyboard ? "" : ".physical")
         button.showsMenuAsPrimaryAction = true
-        refreshTableOptions(button, for: method)
+        refreshTableOptions(button, for: method, virtualKeyboard: virtualKeyboard)
         return button
     }
 
-    private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod) {
-        let options = modeSettings.options(for: method)
+    private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod, virtualKeyboard: Bool) {
+        let options = modeSettings.options(for: method, virtualKeyboard: virtualKeyboard)
         var children: [UIMenuElement] = options.switches(for: method).map { item in
-            UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self, weak button] _ in
+            UIAction(title: item.title, attributes: item.key == "prefix" && !options.composeWhileTyping ? .disabled : [], state: item.enabled ? .on : .off) { [weak self, weak button] _ in
                 guard let self, let button else { return }
-                var next = self.modeSettings.options(for: method)
+                var next = self.modeSettings.options(for: method, virtualKeyboard: virtualKeyboard)
                 next.toggle(item.key)
-                self.modeSettings.setOptions(next, for: method)
+                self.modeSettings.setOptions(next, for: method, virtualKeyboard: virtualKeyboard)
 
-                self.refreshTableOptions(button, for: method)
+                self.refreshTableOptions(button, for: method, virtualKeyboard: virtualKeyboard)
             }
         }
         if method == .cangjie {
             children.append(UIMenu(title: "標點", children: ["原字表", "中英混合", "半形"].enumerated().map { index, title in
                 UIAction(title: title, state: options.punctuation == index ? .on : .off) { [weak self, weak button] _ in
                     guard let self, let button else { return }
-                    var next = self.modeSettings.options(for: method)
+                    var next = self.modeSettings.options(for: method, virtualKeyboard: virtualKeyboard)
                     next.punctuation = index
-                    self.modeSettings.setOptions(next, for: method)
+                    self.modeSettings.setOptions(next, for: method, virtualKeyboard: virtualKeyboard)
 
-                    self.refreshTableOptions(button, for: method)
+                    self.refreshTableOptions(button, for: method, virtualKeyboard: virtualKeyboard)
                 }
             }))
         }

@@ -233,7 +233,7 @@ final class SettingsPanel: UIView {
 
     private func tableOptionsButton(for method: ChineseInputMethod) -> UIButton {
         let button = UIButton(configuration: .tinted())
-        button.setTitle(method.displayName + "設定", for: .normal)
+        button.setTitle(method.displayName + (method == .cangjie ? "設定（虛擬鍵盤）" : "設定"), for: .normal)
         button.accessibilityIdentifier = "table-options." + method.rawValue
         button.showsMenuAsPrimaryAction = true
         refreshTableOptions(button, for: method)
@@ -241,13 +241,13 @@ final class SettingsPanel: UIView {
     }
 
     private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod) {
-        let options = methodSettings.options(for: method)
+        let options = methodSettings.options(for: method, virtualKeyboard: true)
         var children: [UIMenuElement] = options.switches(for: method).map { item in
-            UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self, weak button] _ in
+            UIAction(title: item.title, attributes: item.key == "prefix" && !options.composeWhileTyping ? .disabled : [], state: item.enabled ? .on : .off) { [weak self, weak button] _ in
                 guard let self, let button else { return }
-                var next = self.methodSettings.options(for: method)
+                var next = self.methodSettings.options(for: method, virtualKeyboard: true)
                 next.toggle(item.key)
-                self.methodSettings.setOptions(next, for: method)
+                self.methodSettings.setOptions(next, for: method, virtualKeyboard: true)
                 self.delegate?.settingsPanelDidChangeTableOptions(self)
                 self.refreshTableOptions(button, for: method)
             }
@@ -256,9 +256,9 @@ final class SettingsPanel: UIView {
             children.append(UIMenu(title: "標點", children: ["原字表", "中英混合", "半形"].enumerated().map { index, title in
                 UIAction(title: title, state: options.punctuation == index ? .on : .off) { [weak self, weak button] _ in
                     guard let self, let button else { return }
-                    var next = self.methodSettings.options(for: method)
+                    var next = self.methodSettings.options(for: method, virtualKeyboard: true)
                     next.punctuation = index
-                    self.methodSettings.setOptions(next, for: method)
+                    self.methodSettings.setOptions(next, for: method, virtualKeyboard: true)
                     self.delegate?.settingsPanelDidChangeTableOptions(self)
                     self.refreshTableOptions(button, for: method)
                 }

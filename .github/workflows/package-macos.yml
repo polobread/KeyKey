@@ -90,6 +90,7 @@ jobs:
           python3 update/prepare.py fetch macos
           bash update/test-macos.sh
           bash Installer/test-input-sources.sh
+          python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py
           KEYKEY_TEST_OPENSSL="$(brew --prefix openssl@3)/bin/openssl" \
             python3 -m unittest discover -s update -p test_macos_release.py -v
           python3 -m unittest discover -s update -p 'test_macos_signing.py' -v

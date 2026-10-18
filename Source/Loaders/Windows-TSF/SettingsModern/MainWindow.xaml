@@ -129,7 +129,8 @@
               <TextBlock Text="最多五碼；空白或 Enter 查詢候選，數字選字。? 代表一個字根，* 代表任意長度字根。" Opacity="0.7" Margin="0,0,0,12" />
               <CheckBox x:Name="CangjieCommitAtMaximum" Content="輸入滿五碼時自動查詢或送出單一候選" Margin="0,0,0,12" />
               <CheckBox x:Name="CangjieDynamicFrequency" Content="依選字紀錄調整候選順序" Margin="0,0,0,12" />
-              <CheckBox x:Name="CangjieComposeWhileTyping" Content="邊打邊顯示候選" Checked="TableCompose_Checked" Margin="0,0,0,12" />
+              <CheckBox x:Name="CangjieComposeWhileTyping" Content="即時候選" Checked="TableCompose_Checked" Margin="0,0,0,12" />
+              <CheckBox x:Name="CangjiePrefixCandidates" Content="未打完也能選字" IsEnabled="{Binding IsChecked, ElementName=CangjieComposeWhileTyping}" ToolTip="輸入字根時，提前顯示相同開頭的候選字，常用字優先。" Margin="0,0,0,12" />
               <CheckBox x:Name="CangjieClearOnError" Content="找不到候選時清除字根" Checked="TableClear_Checked" Margin="0,0,0,12" />
               <CheckBox x:Name="CangjieRareCharacters" Content="使用全字庫罕用字（CNS11643）" Margin="0,0,0,12" />
               <TextBlock Text="標點配置" FontWeight="SemiBold" />
@@ -211,6 +212,7 @@
           <TextBlock Text="琦琦輸入法更新" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16" />
           <TextBlock x:Name="UpdateStatus" Margin="0,0,0,20" />
           <CheckBox x:Name="AutomaticUpdates" Content="設定視窗開啟時每週檢查新版並通知"
+                    ToolTip="上次檢查已滿 7 天時，啟動 10 分鐘後檢查；持續開啟時每 7 天一次。"
                     IsEnabled="False" Checked="AutomaticUpdates_Changed" Unchecked="AutomaticUpdates_Changed" Margin="0,0,0,20" />
           <CheckBox x:Name="BetaUpdates" Content="接收 beta 測試版更新（預設關閉）"
                     IsChecked="False" IsEnabled="False" Checked="BetaUpdates_Changed" Unchecked="BetaUpdates_Changed" Margin="0,0,0,20" />

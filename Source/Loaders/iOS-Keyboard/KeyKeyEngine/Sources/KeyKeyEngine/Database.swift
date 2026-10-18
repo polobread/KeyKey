@@ -78,6 +78,15 @@ public final class Statement {
         return rows
     }
 
+    /// Streams a query without retaining its entire candidate set.
+    public func forEachFirstColumnString(_ arguments: [String], _ body: (String) -> Void) {
+        bind(arguments)
+        defer { sqlite3_reset(handle) }
+        while sqlite3_step(handle) == SQLITE_ROW {
+            if let text = sqlite3_column_text(handle, 0) { body(String(cString: text)) }
+        }
+    }
+
     /// Collects every column of every row as text. Used for the small
     /// collection-name query, not on the typing path.
     public func allRows(_ arguments: [String] = [], columnCount: Int32) -> [[String]] {

@@ -804,7 +804,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         for method in [ChineseInputMethod.cangjie, .simplex] {
             let options = methodSettings.options(for: method)
             var actions: [UIMenuElement] = options.switches(for: method).map { item in
-                UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self] _ in
+                UIAction(title: item.title, attributes: item.key == "prefix" && !options.composeWhileTyping ? .disabled : [], state: item.enabled ? .on : .off) { [weak self] _ in
                     guard let self else { return }
                     var next = self.methodSettings.options(for: method)
                     next.toggle(item.key)
@@ -821,7 +821,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                     }
                 }))
             }
-            children.append(UIMenu(title: method.displayName + "設定", children: actions))
+            children.append(UIMenu(title: method.displayName + (method == .cangjie ? "設定（實體鍵盤）" : "設定"), children: actions))
         }
         compositionModeButton.menu = UIMenu(title: "輸入法", children: children)
     }

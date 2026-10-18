@@ -5,6 +5,7 @@ final class TableInputOptions {
     boolean queryAtMaximum;
     boolean clearOnError;
     boolean composeWhileTyping;
+    boolean prefixCandidates;
     boolean dynamicFrequency;
     int punctuation;
     TableInputOptions(ChineseInputMethod method) {

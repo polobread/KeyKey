@@ -1,7 +1,10 @@
 #include "SharedInputMethod.h"
 #include "KeyKeyEngine.h"
 #include "ModuleState.h"
+#include "FrontendSettings.h"
+#include "Mandarin.h"
 #include <atomic>
+#include <fstream>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
@@ -95,11 +98,23 @@ int wmain(int argc, wchar_t** argv) {
         Success(manager->ActivateEx(&client, TF_TMAE_NOACTIVATETIP |
             TF_TMAE_NOACTIVATEKEYBOARDLAYOUT), "TSF activation");
         GUID guid{};
-        const bool child = argc == 4 && std::wstring(argv[1]) == L"--child";
+        const bool child = argc == 5 && std::wstring(argv[1]) == L"--child";
         if (child) Success(CLSIDFromString(argv[2], &guid), "Test GUID parse");
         else Success(CoCreateGuid(&guid), "Test GUID creation");
         SharedInputMethod shared;
         Success(shared.connect(manager.Get(), guid), "Global compartment connection");
+        GUID previewGuid = guid;
+        previewGuid.Data1 ^= 0x7734ac21;
+        SharedTableSettings preview;
+        Success(preview.connect(manager.Get(), previewGuid), "Cangjie settings connection");
+        GUID simplexGuid = previewGuid;
+        simplexGuid.Data1 ^= 0x6921138f;
+        SharedTableSettings simplexPreview;
+        Success(simplexPreview.connect(manager.Get(), simplexGuid), "Simplex settings connection");
+        GUID preferencesGuid = guid;
+        preferencesGuid.Data1 ^= 0xb8103ef6;
+        SharedRuntimePreferences preferences;
+        Success(preferences.connect(manager.Get(), preferencesGuid), "Runtime preferences connection");
         if (child) {
             const int index = _wtoi(argv[3]);
             Check(index >= 0 && index < 4, "Invalid child method index");
@@ -109,6 +124,21 @@ int wmain(int argc, wchar_t** argv) {
                 (L"keykey-shared-test-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(GetTickCount64()));
             std::filesystem::create_directories(profile);
             Check(SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR", profile.c_str()), "Isolated profile");
+            const int previewFlags = _wtoi(argv[4]);
+            const bool simplex = index == 3;
+            auto& tablePreview = simplex ? simplexPreview : preview;
+            const TablePreviewSettings expected{(previewFlags & 1) != 0,
+                !simplex && (previewFlags & 2) != 0, (previewFlags & 1) == 0};
+            if (index >= 2) {
+                std::ofstream config(profile / (simplex
+                    ? L"com.polobread.chichi77-keykey.windows.Generic-simplex-cin.plist"
+                    : L"com.polobread.chichi77-keykey.windows.Generic-cj-cin.plist"));
+                config << "<plist><dict><key>ComposeWhenTyping</key><string>"
+                    << (expected.composeWhileTyping ? "false" : "true")
+                    << "</string><key>PrefixCandidates</key><string>"
+                    << (expected.prefixCandidates ? "false" : "true")
+                    << "</string><key>RetainedText</key><string>private</string></dict></plist>";
+            }
             auto engine = KeyKeyEngineSession::Create();
             Check(engine && engine->ready(), "Child engine creation");
             Check(SelectInputMethod("TraditionalMandarin"), "Stale local selection");
@@ -122,6 +152,83 @@ int wmain(int argc, wchar_t** argv) {
             const auto result = engine->handleKey(key);
             Check(result.handled && result.compositionText == (index >= 2 ? L"日" : L"ㄋ"),
                   "Child engine did not compose with the selected method");
+            if (index >= 2) {
+                const auto otherMethod = simplex ? "Generic-cj-cin" : "Generic-simplex-cin";
+                const auto otherRevision = EngineSettingsSignature(otherMethod);
+                Check(SyncTablePreviewSettings(tablePreview, client, true, simplex), "Restricted settings synchronization");
+                Check(LoadTablePreviewSettings(simplex).encoded() == expected.encoded(), "Private settings kept stale defaults");
+                Check(tablePreview.read() && tablePreview.read()->encoded() == expected.encoded(), "Restricted host overwrote desktop preferences");
+                Check(EngineSettingsSignature(otherMethod) == otherRevision, "Table sync contaminated the other method");
+                const auto revision = EngineSettingsSignature(selected->identifier);
+                Check(revision.find("private") != std::string::npos, "Sync lost unrelated private settings");
+                Check(SyncTablePreviewSettings(tablePreview, client, true, simplex) &&
+                    EngineSettingsSignature(selected->identifier) == revision, "Unchanged settings were rewritten");
+                engine->reset();
+                KeyEvent h; h.virtualKey = simplex ? 'A' : 'H'; h.text = simplex ? L"a" : L"h";
+                KeyEvent k; k.virtualKey = 'K'; k.text = L"k";
+                auto hk = engine->handleKey(h);
+                if (!simplex) hk = engine->handleKey(k);
+                bool qiao = false;
+                for (const auto& candidate : hk.candidates) qiao |= candidate.text == L"喬";
+                Check(hk.handled && hk.committedText.empty() && hk.compositionText == (simplex ? L"日" : L"竹大"),
+                    "Restricted table radicals were lost or committed");
+                Check(hk.candidatesVisible == expected.composeWhileTyping,
+                    "Restricted host did not apply realtime candidates");
+                Check(qiao == (expected.composeWhileTyping && expected.prefixCandidates),
+                    "Restricted host did not apply prefix candidates");
+            }
+            engine->reset();
+            const auto sourceSnapshot = preferences.read();
+            if (!sourceSnapshot) {
+                ComPtr<ITfCompartmentMgr> global;
+                Success(manager->GetGlobalCompartment(&global), "Inspect preferences manager");
+                ComPtr<ITfCompartment> raw;
+                Success(global->GetCompartment(preferencesGuid, &raw), "Inspect preferences compartment");
+                VARIANT value{};
+                const auto status = raw->GetValue(&value);
+                const auto size = value.vt == VT_BSTR && value.bstrVal ? SysStringLen(value.bstrVal) : 0;
+                const auto message = "Missing shared runtime preferences: hr=" + std::to_string(status) +
+                    " type=" + std::to_string(value.vt) + " length=" + std::to_string(size);
+                VariantClear(&value);
+                Check(false, message.c_str());
+            }
+            Check(preferences.write(client, std::wstring(SharedRuntimePreferences::maximumLength + 1, L'x')) == E_INVALIDARG,
+                "Unbounded settings snapshot accepted");
+            const auto beforeInvalid = EngineSettingsSignature(selected->identifier);
+            Success(preferences.write(client, L"<plist><dict><key>Version</key><string>2</string></dict></plist>"), "Publish invalid test snapshot");
+            Check(!SyncRuntimePreferences(preferences, client, true) &&
+                EngineSettingsSignature(selected->identifier) == beforeInvalid, "Invalid snapshot changed settings");
+            Success(preferences.write(client, *sourceSnapshot), "Restore valid preferences snapshot");
+            Check(SyncRuntimePreferences(preferences, client, true), "Apply cross-process input preferences");
+            const auto frontend = LoadFrontendSettings();
+            Check(frontend.candidateLayout == CandidateLayout::Horizontal && frontend.candidateScalePercent == 150 &&
+                frontend.highlightColor == L"Green" && !frontend.symbolPanelShortcutEnabled &&
+                !frontend.toggleWithControlBackslash && !frontend.playSoundOnTypingError,
+                "Restricted frontend retained stale appearance/shortcut/sound preferences");
+            Check(!IsInputMethodVisible("TraditionalMandarin") && IsInputMethodVisible("Generic-cj-cin"),
+                "Restricted method visibility diverged from desktop");
+            const auto afterSnapshot = RuntimePreferencesSnapshot();
+            Check(afterSnapshot == *sourceSnapshot && SyncRuntimePreferences(preferences, client, true) &&
+                RuntimePreferencesSnapshot() == afterSnapshot, "Preference groups diverged or unchanged sync rewrote values");
+            if (index < 2) {
+                const auto* layout = Formosa::Mandarin::BopomofoKeyboardLayout::LayoutForName("Hsu");
+                const auto syllable = Formosa::Mandarin::BopomofoSyllable::FromComposedString("ㄋㄧˇ");
+                for (char c : layout->keySequenceFromSyllable(syllable)) {
+                    KeyEvent event; event.virtualKey = static_cast<UINT>(c >= 'a' && c <= 'z' ? c - 'a' + 'A' : c);
+                    event.text.assign(1, static_cast<wchar_t>(c));
+                    Check(engine->handleKey(event).handled, "Shared phonetic layout did not handle a key");
+                }
+                if (index == 0) {
+                    KeyEvent space; space.virtualKey = VK_SPACE; space.text = L" ";
+                    const auto candidates = engine->handleKey(space);
+                    Check(candidates.candidatesVisible && candidates.candidates.size() == 8 &&
+                        candidates.candidates[0].selectionKey == L"q", "Shared Smart Mandarin layout/space/candidate keys not applied");
+                    KeyEvent escape; escape.virtualKey = VK_ESCAPE; escape.text = L"\x1b";
+                    engine->handleKey(escape);
+                    const auto cleared = engine->handleKey(escape);
+                    Check(cleared.compositionText.empty(), "Shared Esc clear preference not applied");
+                }
+            }
             Success(shared.write(client, kInputMethods[(index + 1) % 4].identifier), "Child publish");
         } else {
             Check(!shared.read(), "New test compartment was not empty");
@@ -132,10 +239,70 @@ int wmain(int argc, wchar_t** argv) {
             const bool restricted = argc == 2 && std::wstring(argv[1]) == L"--container";
             const std::wstring executable = restricted ? container.prepare(self) : argc == 2 ? argv[1] : self;
             const wchar_t* childExecutable = executable.c_str();
-            for (int index = 0; index < 4; ++index) {
+            const auto parentProfile = std::filesystem::temp_directory_path() /
+                (L"keykey-preferences-parent-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(GetTickCount64()));
+            std::filesystem::create_directories(parentProfile);
+            Check(SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR", parentProfile.c_str()), "Parent isolated preferences");
+            const auto seed = [&](const wchar_t* module, const char* values) {
+                std::ofstream file(parentProfile / (std::wstring(L"com.polobread.chichi77-keykey.windows") + module + L".plist"));
+                file << "<plist><dict>" << values << "</dict></plist>";
+            };
+            seed(L"", "<key>OneDimensionalCandidatePanelStyle</key><string>horizontal</string>"
+                "<key>CandidateWindowScalePercent</key><string>150</string><key>HighlightColor</key><string>Green</string>"
+                "<key>SymbolPanelShortcutEnabled</key><string>false</string>"
+                "<key>ToggleInputMethodWithControlBackslash</key><string>false</string>"
+                "<key>ShouldPlaySoundOnTypingError</key><string>false</string>"
+                "<key>ModulesSuppressedFromUI</key><array><string>TraditionalMandarin</string></array>"
+                "<key>Secret</key><string>do-not-publish</string>");
+            seed(L".SmartMandarin", "<key>KeyboardLayout</key><string>Hsu</string>"
+                "<key>ShowCandidateListWithSpace</key><string>true</string>"
+                "<key>CandidateCursorAtEndOfTargetBlock</key><string>true</string>"
+                "<key>CandidateSelectionKeys</key><string>qwertyui</string>"
+                "<key>ComposingTextBufferSize</key><string>15</string>"
+                "<key>ClearComposingTextWithEscUserChoice</key><string>true</string>"
+                "<key>ClearComposingTextWithEsc</key><string>true</string>");
+            seed(L".TraditionalMandarin", "<key>KeyboardLayout</key><string>Hsu</string>"
+                "<key>UseCharactersSupportedByEncoding</key><string>UTF-8</string>");
+            seed(L".Generic-cj-cin", "<key>ShouldCommitAtMaximumRadicalLength</key><string>true</string>"
+                "<key>UseDynamicFrequency</key><string>true</string>"
+                "<key>UseCharactersSupportedByEncoding</key><string>BIG-5</string>"
+                "<key>UseOverrideTable</key><string>Punctuations-cj-halfwidth-cin</string>");
+            seed(L".Generic-simplex-cin", "<key>ShouldCommitAtMaximumRadicalLength</key><string>true</string>"
+                "<key>UseCharactersSupportedByEncoding</key><string>BIG-5</string>");
+            seed(L".AssociatedPhrase", "<key>EnabledCollections</key><string></string>");
+            const auto snapshot = RuntimePreferencesSnapshot();
+            Check(!snapshot.empty() && snapshot.find(L"Secret") == std::wstring::npos &&
+                snapshot.find(L"do-not-publish") == std::wstring::npos, "Private keys leaked into shared preferences");
+            Success(preferences.write(client, snapshot), "Seed complete settings publication");
+            ComPtr<ITfCompartmentMgr> publicationManager;
+            Success(manager->GetGlobalCompartment(&publicationManager), "Publication test manager");
+            ComPtr<ITfCompartment> publication;
+            Success(publicationManager->GetCompartment(preferencesGuid, &publication), "Publication revision");
+            VARIANT interrupted{};
+            Success(publication->GetValue(&interrupted), "Read complete revision");
+            Check(interrupted.vt == VT_I4, "Unexpected publication revision type");
+            interrupted.lVal |= 1;
+            Success(publication->SetValue(client, &interrupted), "Simulate interrupted publisher");
+            VariantClear(&interrupted);
+            Check(!preferences.read(), "Incomplete publication returned cached/partial settings");
+            Success(preferences.write(client, snapshot), "Recover interrupted publisher");
+            Check(preferences.read() == std::optional<std::wstring>(snapshot), "Recovered publication differs");
+            const int methods[] = {0, 1, 2, 2, 2, 2, 3, 3};
+            for (int test = 0; test < 8; ++test) {
+                const int index = methods[test];
+                const int flags = index == 2 ? test - 2 : index == 3 ? test - 6 : 0;
+                Success(preview.write(client, {(flags & 1) != 0, (flags & 2) != 0,
+                    (flags & 1) == 0}), "Parent Cangjie settings publish");
+                Success(simplexPreview.write(client, {(flags & 1) != 0, false,
+                    (flags & 1) == 0}), "Parent Simplex settings publish");
+                Success(preferences.write(client, snapshot), "Parent runtime preferences publish");
+                Check(preferences.read() == std::optional<std::wstring>(snapshot), "Parent preferences readback");
                 Success(shared.write(client, kInputMethods[index].identifier), "Parent publish");
+                const auto childError = std::filesystem::temp_directory_path() /
+                    (L"keykey-shared-error-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(test) + L".txt");
+                Check(SetEnvironmentVariableW(L"KEYKEY_TEST_CHILD_ERROR_PATH", childError.c_str()), "Child error path");
                 std::wstring command = L"\"" + std::wstring(childExecutable) + L"\" --child " +
-                    guidText + L" " + std::to_wstring(index);
+                    guidText + L" " + std::to_wstring(index) + L" " + std::to_wstring(flags);
                 STARTUPINFOEXW startup{};
                 startup.StartupInfo.cb = restricted ? sizeof(startup) : sizeof(STARTUPINFOW);
                 startup.lpAttributeList = container.attributes;
@@ -156,10 +323,16 @@ int wmain(int argc, wchar_t** argv) {
                 }
                 DWORD exitCode = 1;
                 GetExitCodeProcess(process.hProcess, &exitCode);
-                if (exitCode) std::cerr << "Child exit code: " << std::hex << exitCode << '\n';
+                if (exitCode) {
+                    std::cerr << "Child exit code: " << std::hex << exitCode << '\n';
+                    std::ifstream details(childError);
+                    std::cerr << details.rdbuf();
+                }
                 if (wait != WAIT_OBJECT_0) TerminateProcess(process.hProcess, 1);
                 CloseHandle(process.hThread);
                 CloseHandle(process.hProcess);
+                std::error_code cleanupError;
+                std::filesystem::remove(childError, cleanupError);
                 Check(wait == WAIT_OBJECT_0 && exitCode == 0, "Cross-process child failed");
                 const auto* returned = shared.read();
                 Check(returned && returned->menuId == kInputMethods[(index + 1) % 4].menuId,
@@ -168,15 +341,27 @@ int wmain(int argc, wchar_t** argv) {
             ComPtr<ITfCompartmentMgr> global;
             Success(manager->GetGlobalCompartment(&global), "Global manager cleanup");
             Success(global->ClearCompartment(client, guid), "Test compartment cleanup");
-            std::cout << "Four methods shared across processes, composed with isolated profiles, and returned successfully.\n";
+            Success(global->ClearCompartment(client, previewGuid), "Cangjie compartment cleanup");
+            Success(global->ClearCompartment(client, simplexGuid), "Simplex compartment cleanup");
+            Success(preferences.clear(client), "Runtime preferences cleanup");
+            std::cout << "Four methods, four Cangjie preview combinations and Simplex on/off passed across isolated profiles.\n";
         }
         shared.reset();
+        preview.reset();
+        simplexPreview.reset();
+        preferences.reset();
         manager->Deactivate();
         manager.Reset();
         CoUninitialize();
         return 0;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
+        wchar_t path[32768]{};
+        const auto size = GetEnvironmentVariableW(L"KEYKEY_TEST_CHILD_ERROR_PATH", path, 32768);
+        if (size && size < 32768) {
+            std::ofstream details(path);
+            details << error.what() << '\n';
+        }
         return 1;
     }
 }

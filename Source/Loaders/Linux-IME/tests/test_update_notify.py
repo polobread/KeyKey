@@ -203,6 +203,17 @@ class PreferenceTests(unittest.TestCase):
         self.assertTrue(updates.due({"last_attempt": "corrupt"}, now=100000))
         self.assertTrue(updates.due({"last_attempt": float("nan")}, now=100000))
 
+    def test_startup_and_weekly_deadline_without_polling(self):
+        now = 1000000
+        self.assertEqual(updates.next_check_delay({}, now + 600, now), 600)
+        self.assertEqual(updates.next_check_delay({"last_attempt": now - 100}, now + 600, now),
+                         updates.INTERVAL - 100)
+        self.assertEqual(updates.next_check_delay({"last_attempt": now - updates.INTERVAL},
+                                                now + 600, now), 600)
+        self.assertEqual(updates.next_check_delay({"last_attempt": now}, now - 1, now),
+                         updates.INTERVAL)
+        self.assertEqual(updates.next_check_delay({"last_attempt": float("nan")}, now + 600, now), 600)
+
     def test_atomic_state_roundtrip(self):
         path = updates.state_home() / "chichi77-keykey/update-notification.json"
         value = {"last_attempt": 12345, "last_notified": "1.3.2"}

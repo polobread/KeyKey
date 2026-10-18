@@ -18,6 +18,7 @@
 
 
 #import <zlib.h>
+#import <os/log.h>
 
 #include <sstream>
 #include <set>
@@ -303,6 +304,7 @@ using namespace OpenVanilla;
 
 - (void)_firstTimeUpdateUserData
 {
+	os_log(OS_LOG_DEFAULT, "KeyKey symbols event=initial-data-start");
 	[self mergeOneKeyData];
 	[self mergeCannedMessagesData];
 	[[NSNotificationCenter defaultCenter] postNotificationName:CVLoaderUpdateCannedMessagesNotification object:self];	
@@ -923,10 +925,14 @@ using namespace OpenVanilla;
 
 - (void)mergeCannedMessagesData
 {
+	NSUInteger sourceBytes = 0;
+	NSUInteger categoryCount = 0;
+	BOOL parsedPropertyList = NO;
 	@synchronized(self) {	
 		[_mergedCannedMessagesArray removeAllObjects];
 
 		string cannedMsgs = _userPersistence->fetchLatestValueByKeyAndPopulateUserDB("canned_messages");
+		sourceBytes = cannedMsgs.size();
 		PVPlistValue *parsed = PVPropertyList::ParsePlistFromString(cannedMsgs.c_str());
 	
 	
@@ -1001,6 +1007,7 @@ using namespace OpenVanilla;
 	
 		NSData *cmData = [NSData dataWithBytesNoCopy:(void*)ndc length:s.length() freeWhenDone:NO];		
 		id cmPlist = [NSPropertyListSerialization propertyListFromData:cmData mutabilityOption:NSPropertyListMutableContainersAndLeaves format:NULL errorDescription:NULL];
+		parsedPropertyList = (cmPlist != nil);
 		if (cmPlist) {
 			NSArray *a = [cmPlist objectForKey:@"CannedMessages"];
 			if (a) {
@@ -1009,9 +1016,13 @@ using namespace OpenVanilla;
 				}
 			}
 		}
+		categoryCount = [_mergedCannedMessagesArray count];
 	}
-	
-	[[NSNotificationCenter defaultCenter] postNotificationName:CVLoaderUpdateCannedMessagesNotification object:self];	
+
+	// Counts and ordering only: never record symbols, custom phrases or typed text.
+	os_log(OS_LOG_DEFAULT, "KeyKey symbols event=data-notification source_bytes=%{public}lu parsed=%{public}d categories=%{public}lu",
+	       (unsigned long)sourceBytes, parsedPropertyList, (unsigned long)categoryCount);
+	[[NSNotificationCenter defaultCenter] postNotificationName:CVLoaderUpdateCannedMessagesNotification object:self];
 }
 
 - (NSArray *)mergedCannedMessagesArray;

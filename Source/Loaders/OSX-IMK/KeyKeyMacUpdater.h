@@ -23,6 +23,7 @@
     NSURL *_feed;
     NSURL *_stableFeed, *_betaFeed;
     NSUserDefaults *_preferences;
+    NSDate *_automaticNotBefore, *_lastUpdateAttempt;
     NSString *_phase;
     NSString *_message;
     NSString *_latestVersion;

@@ -38,6 +38,7 @@ public final class BopomofoImeService extends InputMethodService
     private Set<String> pendingPhraseCollections;
     private volatile int phraseLoadGeneration;
     private boolean hardwareKeyboard;
+    private boolean tableVirtualKeyboard = true;
     private boolean hardwareCandidatesCollapsed;
     private boolean hardwareSmartTwoRows;
     private boolean floatingCandidatesEnabled;
@@ -104,7 +105,7 @@ public final class BopomofoImeService extends InputMethodService
         if (smartMandarinStore != null) engine.setTableCandidateSource(new TableCandidateStore(
                 smartMandarinStore.tableDatabase(), getSharedPreferences("table_learning", MODE_PRIVATE)));
         engine.setChineseInputMethod(ChineseInputMethodSettings.method(this));
-        engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod());
+        engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), tableVirtualKeyboard);
         schedulePhraseDictionaryReload();
         vibrator = getSystemService(Vibrator.class);
         CandidateWindowSettings.preferences(this)
@@ -340,7 +341,7 @@ public final class BopomofoImeService extends InputMethodService
                         BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
                 if (key == null || key.startsWith("table_options.")) apply(engine.finishCompositionForModeSwitch());
                 apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
-                engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod());
+                engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), tableVirtualKeyboard);
             }
             refreshKeyboard();
             return;
@@ -358,7 +359,7 @@ public final class BopomofoImeService extends InputMethodService
         if (BopomofoCompositionModeSettings.KEY_MODE.equals(key)) {
             if (engine != null) {
                 apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
-                engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod());
+                engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), tableVirtualKeyboard);
             }
             refreshKeyboard();
             return;
@@ -453,6 +454,7 @@ public final class BopomofoImeService extends InputMethodService
                     fieldPolicy.preferredMode(), false);
         }
         if (!fieldPolicy.isKeyEnabled(key, engine.inputMode(), engine.isShifted())) return;
+        useTableKeyboard(!hardwareKeyboard);
         apply(engine.handleSoftKey(key), key.equals("ENTER"));
     }
 
@@ -483,6 +485,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        useTableKeyboard(false);
         if (keyCode == KeyEvent.KEYCODE_DEL && hardwareBackspaceHeld) return true;
         if (keyCode != KeyEvent.KEYCODE_DEL && hardwareBackspaceHeld) stopHardwareBackspace();
         if (event.getRepeatCount() > 0 && (pressedCandidateKeys.contains(keyCode)
@@ -892,10 +895,18 @@ public final class BopomofoImeService extends InputMethodService
                 KeyboardBottomSpaceSettings.hardwareEnabled(this));
     }
 
+    private void useTableKeyboard(boolean virtualKeyboard) {
+        if (engine == null || tableVirtualKeyboard == virtualKeyboard) return;
+        if (engine.chineseInputMethod().isTable()) apply(engine.finishCompositionForInputHandoff());
+        tableVirtualKeyboard = virtualKeyboard;
+        engine.tableOptions = ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), virtualKeyboard);
+    }
+
     private void updateKeyboardMode() {
         Configuration configuration = getResources().getConfiguration();
         hardwareKeyboard = configuration.keyboard != Configuration.KEYBOARD_NOKEYS
                 && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
+        useTableKeyboard(!hardwareKeyboard);
         if (!hardwareKeyboard) hardwareCandidatesCollapsed = false;
         floatingCandidatesEnabled = CandidateWindowSettings.floatingEnabled(this);
         floatingCandidateLayout = CandidateWindowSettings.layout(this);

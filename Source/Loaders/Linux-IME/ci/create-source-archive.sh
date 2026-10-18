@@ -35,6 +35,8 @@ source_paths=(
   LICENSING.md
   LICENSE.txt
   LICENSES/MIT.txt
+  docs/CANGJIE_PREFIX_CANDIDATES_PLAN.md
+  docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md
   docs/LINUX_DEVELOPMENT_PLAN.md
   docs/LINUX_TEST_PLAN.md
   README.md
@@ -53,6 +55,7 @@ source_paths=(
   DataSource/chichi77Collection
   Source/DataTables/bpmf-ext.cin
   Source/DataTables/bpmf-punctuations.cin
+  Source/Shared
   Source/DataTables/cj-ext.cin
   Source/DataTables/simplex-ext.cin
   "${about_source_paths[@]}"

@@ -40,6 +40,10 @@ file for terms.
 	else
 		[_composeWhenTypingCheckBox setIntValue:0];	
 
+    [_prefixCandidatesCheckBox setIntValue:[[_cangjieDictionary valueForKey:@"PrefixCandidates"] isEqualToString:@"true"]];
+    [_prefixCandidatesCheckBox setEnabled:[_composeWhenTypingCheckBox intValue] != 0];
+    if ([_composeWhenTypingCheckBox intValue]) [_clearReadingBufferAtCompositionErrorCheckBox setIntValue:0];
+
 	if ([[_cangjieDictionary valueForKey:@"UseCharactersSupportedByEncoding"] isEqualToString:@""])
 		[_useCharactersSupportedByEncodingCheckBox setIntValue:1];
 	else
@@ -59,6 +63,7 @@ file for terms.
 	[_cangjieDictionary setValue:@"true" forKey:@"UseDynamicFrequency"];
 	[_cangjieDictionary setValue:@"true" forKey:@"ClearReadingBufferAtCompositionError"];
 	[_cangjieDictionary setValue:@"false" forKey:@"ComposeWhileTyping"];
+    [_cangjieDictionary setValue:@"false" forKey:@"PrefixCandidates"];
 	[_cangjieDictionary setValue:@"false" forKey:@"ShouldCommitAtMaximumRadicalLength"];	
 	[_cangjieDictionary setValue:@"" forKey:@"UseCharactersSupportedByEncoding"];
 	[_cangjieDictionary setValue:@"Punctuations-punctuations-cin" forKey:@"UseOverrideTable"];
@@ -100,6 +105,8 @@ file for terms.
 	else
 		[_cangjieDictionary setValue:@"false" forKey:@"ComposeWhileTyping"];	
 
+    [_cangjieDictionary setValue:([_prefixCandidatesCheckBox intValue] ? @"true" : @"false") forKey:@"PrefixCandidates"];
+
 	if ([_useCharactersSupportedByEncodingCheckBox intValue])
 		[_cangjieDictionary setValue:@"" forKey:@"UseCharactersSupportedByEncoding"];
 	else
@@ -136,6 +143,7 @@ file for terms.
 }
 - (IBAction)writePreference:(id)sender
 {
+    [_prefixCandidatesCheckBox setEnabled:[_composeWhenTypingCheckBox intValue] != 0];
     NSString *errorString = nil;
 	[self updateDictionary];
     NSData *data = [NSPropertyListSerialization dataFromPropertyList:_cangjieDictionary format:NSPropertyListXMLFormat_v1_0 errorDescription:&errorString];

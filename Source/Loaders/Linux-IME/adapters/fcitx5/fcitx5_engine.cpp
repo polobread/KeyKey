@@ -136,6 +136,13 @@ FCITX_CONFIGURATION(
         "Esc 清除整句（候選窗／未完成讀音優先取消）", false};)
 
 FCITX_CONFIGURATION(
+    CangjieConfig,
+    fcitx::ExternalOption settings{this, "Settings", "開啟倉頡設定…", "keykey-cangjie-settings"};
+    fcitx::HiddenOption<bool> composeWhileTyping{this, "ComposeWhileTyping", "即時候選", false};
+    fcitx::HiddenOption<bool> prefixCandidates{this, "PrefixCandidates", "未打完也能選字", false};
+    fcitx::HiddenOption<bool> clearOnError{this, "ClearOnError", "錯碼清除", true};)
+
+FCITX_CONFIGURATION(
     KeyKeyConfig,
     fcitx::ExternalOption about{
         this, "About", "關於琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING "…",
@@ -148,6 +155,7 @@ FCITX_CONFIGURATION(
                        "Standard"};
     fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation>
         bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"};
+    fcitx::Option<CangjieConfig> cangjie{this, "Cangjie", "倉頡設定"};
     fcitx::Option<SmartMandarinConfig> smartMandarin{
         this, "SmartMandarin", "好打注音進階設定"};
     fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation>
@@ -222,6 +230,9 @@ public:
     bool selectSmartCharacter(std::size_t preeditCharacterIndex);
     void reset();
     void commitAndReset();
+    void commitIfEngine(const linux_ime::Engine *engine) {
+        if (sourceEngine_ == engine) commitAndReset();
+    }
     bool chineseMode() const noexcept { return chineseMode_; }
 
 private:
@@ -500,6 +511,22 @@ private:
     }
 
     void applyConfig() {
+        auto &cangjie = *config_.cangjie.mutableValue();
+        if (*cangjie.composeWhileTyping) cangjie.clearOnError.setValue(false);
+        const linux_ime::TablePreferences nextCangjie{
+            *cangjie.composeWhileTyping, *cangjie.prefixCandidates, *cangjie.clearOnError};
+        if (cangjieOptionsLoaded_ &&
+            (nextCangjie.composeWhileTyping != cangjieOptions_.composeWhileTyping ||
+             nextCangjie.prefixCandidates != cangjieOptions_.prefixCandidates ||
+             nextCangjie.clearOnError != cangjieOptions_.clearOnError)) {
+            instance_->inputContextManager().foreach([this](fcitx::InputContext *context) {
+                context->propertyFor(&factory_)->commitIfEngine(&cangjieEngine_);
+                return true;
+            });
+        }
+        cangjieOptions_ = nextCangjie;
+        cangjieOptionsLoaded_ = true;
+        cangjieEngine_.setTablePreferences(nextCangjie);
         const bool smart = *config_.bopomofoMode != "Traditional";
         const auto &preferences = *config_.smartMandarin;
         for (linux_ime::Engine *engine : {&standardEngine_, &etenEngine_,
@@ -677,6 +704,8 @@ private:
     fcitx5_adapter::ErrorSound errorSound_;
     fcitx::FactoryFor<FcitxState> factory_;
     KeyKeyConfig config_;
+    linux_ime::TablePreferences cangjieOptions_;
+    bool cangjieOptionsLoaded_ = false;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
         keyEventWatcher_;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>

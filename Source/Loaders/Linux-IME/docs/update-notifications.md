@@ -28,6 +28,11 @@ after desktop login, without running a network request during package installati
 Existing saved choices are preserved; a saved opt-out exits before GTK startup
 or any request. Enabling the option also creates a per-user XDG autostart entry,
 compatible with older installations.
+The first automatic check waits at least ten minutes after this application
+starts and only runs when the previous attempt is at least seven days old.
+Otherwise one timer waits until that weekly deadline. Continuous sessions
+schedule the next check seven days later, without minute polling or catch-up
+requests after sleep. Manual checks move the same weekly deadline.
 It attempts a check at most once every 7 days, including after failed checks;
 restarting the desktop does not reset the interval. Each newer version is notified
 once. There is no systemd or privileged service, so FreeBSD XDG desktops can use

@@ -14,6 +14,26 @@ xcrun clang -fblocks -fno-objc-arc -mmacosx-version-min=15.0 \
     "$task_root/Source/Loaders/OSX-IMK/Tests/MacUpdaterTests.m" \
     -o "$task_build/mac-updater-tests"
 KEYKEY_TEST_SPARKLE_FRAMEWORK="$sdk/Sparkle.framework" "$task_build/mac-updater-tests"
+# Run the same updater under a real, isolated main-bundle identity. A foreign
+# fake bundle cannot expose Foundation rejecting a suite named after this app.
+task_self_host="$task_build/SelfHost.app/Contents"
+mkdir -p "$task_self_host/MacOS"
+cp "$task_build/mac-updater-tests" "$task_self_host/MacOS/UpdaterTest"
+python3 - "$task_self_host/Info.plist" <<'PY'
+from pathlib import Path
+import base64
+import plistlib
+import sys
+import uuid
+Path(sys.argv[1]).write_bytes(plistlib.dumps({
+    "CFBundleIdentifier": "io.github.polobread.KeyKeyUpdaterIsolatedTest.SelfHost." + str(uuid.uuid4()),
+    "CFBundleExecutable": "UpdaterTest", "CFBundlePackageType": "APPL",
+    "CFBundleVersion": "1.3.3", "CFBundleShortVersionString": "1.3.3",
+    "SUFeedURL": "https://example.invalid/feed.xml",
+    "SUPublicEDKey": base64.b64encode(bytes([1]) + bytes(31)).decode(),
+}))
+PY
+"$task_self_host/MacOS/UpdaterTest" --self-host
 xcrun clang -fblocks -fno-objc-arc -mmacosx-version-min=15.0 -framework Cocoa \
     '-DOPENVANILLA_DO_CONNECTION_NAME=@"io.github.polobread.KeyKeyUpdaterIsolatedTest"' \
     -I "$task_root/Source/Loaders/OSX-IMK" -I "$task_root/Source/Frameworks/LFExtensions" \

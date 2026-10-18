@@ -7,6 +7,7 @@
 @interface CVSymbolController : NSWindowController <NSWindowDelegate>
 {
 	BOOL _isVisible;
+	float _candidateWindowScale;
 	
 	IBOutlet NSPopUpButton *_popUpButton;
 	IBOutlet NSView	*_symbolContentView;	
@@ -18,6 +19,7 @@
 - (void)restoreWindowStatus;
 - (BOOL)isVisible;
 - (void)toggleActiveView:(NSView *)view;
+- (void)setCandidateWindowScale:(float)scale;
 
 #pragma mark Interface Builder actions
 

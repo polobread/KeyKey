@@ -1,0 +1,27 @@
+name: macOS Symbol Table
+
+on:
+  pull_request:
+    paths:
+      - 'Source/Loaders/OSX-IMK/**'
+      - 'Source/Loaders/Windows-TSF/SymbolEmojiSupplement.json'
+      - 'Source/Loaders/Windows-TSF/Generate-SymbolResources.ps1'
+      - 'Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift'
+      - 'Source/Frameworks/OpenVanilla/Headers/**'
+      - 'Source/Frameworks/PlainVanilla/Headers/**'
+      - 'Source/Frameworks/LFExtensions/LFUtilities.h'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - '.github/workflows/macos-symbols.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  symbol-startup:
+    runs-on: macos-15
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test symbol startup ordering and native views without installation
+        run: python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py

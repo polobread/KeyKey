@@ -18,3 +18,5 @@ usr/bin/keykey-smart-phrases
 usr/share/applications/org.chichi77.KeyKey.TextEditor.desktop
 usr/share/man/man1/keykey-fcitx-app.1
 usr/share/man/man1/keykey-smart-phrases.1
+usr/bin/keykey-cangjie-settings
+usr/share/chichi77-keykey/cangjie_settings.py

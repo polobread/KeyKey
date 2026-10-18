@@ -129,6 +129,8 @@ def embed_macos(app):
     notices = contents / "Resources" / "LICENSES"
     notices.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(sdk / "LICENSE", notices / "Sparkle-LICENSE.txt")
+    shutil.copyfile(Path(__file__).resolve().parents[1] / "Source/Shared/Unicode-LICENSE.txt", notices / "Unicode-LICENSE.txt")
+    shutil.copyfile(Path(__file__).resolve().parents[1] / "Source/Shared/LICENSE.txt", notices / "KeyKey-Shared-MIT.txt")
     info_path = contents / "Info.plist"
     info = plistlib.loads(info_path.read_bytes())
     info.update(SUEnableAutomaticChecks=False, SUAllowsAutomaticUpdates=False, SUAutomaticallyUpdate=False,

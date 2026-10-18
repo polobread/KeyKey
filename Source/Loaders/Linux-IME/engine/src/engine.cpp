@@ -2,6 +2,7 @@
 
 #include "keykey/linux_ime/candidate_encoding.h"
 
+#include "../../../../Shared/CangjiePrefix.h"
 #include <algorithm>
 #include <cctype>
 #include <stdexcept>
@@ -170,6 +171,7 @@ void InputContextState::reset() noexcept {
     page_ = 0;
     highlightedIndex_ = 0;
     showingAssociatedPhrases_ = false;
+    tablePreview_ = false;
     smartReadings_.clear();
     smartComposition_ = {};
     smartOverrides_.clear();
@@ -224,6 +226,11 @@ void Engine::setTraditionalToSimplifiedMode(InputContextState &context,
 void Engine::setAssociatedPhraseCollections(
     std::vector<std::string> enabledCollections) {
     enabledAssociatedPhraseCollections_ = std::move(enabledCollections);
+}
+
+void Engine::setTablePreferences(TablePreferences preferences) noexcept {
+    if (preferences.composeWhileTyping) preferences.clearOnError = false;
+    tablePreferences_ = preferences;
 }
 
 void Engine::setRestrictBopomofoCandidatesToBig5(bool enabled) noexcept {
@@ -393,7 +400,8 @@ EngineResult Engine::processKey(InputContextState &context,
                 static_cast<std::size_t>(event.character - '1');
             return selectDisplayedCandidate(context, displayedIndex);
         }
-        if (!context.candidates_.empty() && acceptsCharacter(event.character)) {
+        if (!context.candidates_.empty() && acceptsCharacter(event.character) &&
+            !(context.tablePreview_ && context.tableCode_.size() < maximumCodeLength())) {
             const std::size_t absoluteIndex =
                 context.page_ * CandidatesPerPage + context.highlightedIndex_;
             pendingCommit = outputText(
@@ -454,6 +462,8 @@ EngineResult Engine::processKey(InputContextState &context,
             isEndKey(event.character) && !cangjieWildcard) {
             return includePendingCommit(query(context, true));
         }
+        if (inputMethod_ == InputMethod::Cangjie && tablePreferences_.composeWhileTyping)
+            return includePendingCommit(query(context, false, true));
         if (inputMethod_ == InputMethod::Simplex &&
             context.tableCode_.size() == maximumCodeLength()) {
             return includePendingCommit(query(context, true));
@@ -490,6 +500,8 @@ EngineResult Engine::processKey(InputContextState &context,
         if (!compositionEmpty(context)) {
             backspace(context);
         }
+        if (inputMethod_ == InputMethod::Cangjie && tablePreferences_.composeWhileTyping &&
+            !context.tableCode_.empty()) return query(context, false, true);
         break;
     case KeyCode::Escape:
         if (compositionEmpty(context) && context.candidates_.empty()) {
@@ -1058,7 +1070,7 @@ EngineResult Engine::snapshot(const InputContextState &context) const {
 }
 
 EngineResult Engine::query(InputContextState &context,
-                           bool commitSingleCandidate) const {
+                           bool commitSingleCandidate, bool preview) const {
     const std::string key = queryKey(context);
     if (inputMethod_ == InputMethod::Cangjie && key.size() > 1 &&
         key.find_first_of("?*") != std::string::npos) {
@@ -1071,6 +1083,17 @@ EngineResult Engine::query(InputContextState &context,
         context.candidates_ =
             filterBig5HkscsCandidates(context.candidates_);
     }
+    if (inputMethod_ == InputMethod::Cangjie && tablePreferences_.composeWhileTyping &&
+        tablePreferences_.prefixCandidates && KeyKeyCangjie::isCode(key)) {
+        context.candidates_ = KeyKeyCangjie::unique(context.candidates_);
+        KeyKeyCangjie::Selection selection(context.candidates_);
+        dictionary_->forEachPrefixValue(key, [&selection](const std::string &value) {
+            selection.consider(value, [](const std::string &) { return true; });
+        });
+        const auto extra = selection.values();
+        context.candidates_.insert(context.candidates_.end(), extra.begin(), extra.end());
+    }
+    context.tablePreview_ = preview;
     context.candidatePreedit_.clear();
     context.showingAssociatedPhrases_ = false;
     context.page_ = 0;
@@ -1079,7 +1102,7 @@ EngineResult Engine::query(InputContextState &context,
         return selectAbsoluteCandidate(context, 0);
     }
     if (context.candidates_.empty() &&
-        inputMethod_ == InputMethod::Cangjie) {
+        inputMethod_ == InputMethod::Cangjie && !preview && tablePreferences_.clearOnError) {
         context.tableCode_.clear();
     }
     EngineResult result = snapshot(context);
@@ -1294,6 +1317,7 @@ EngineResult Engine::selectAbsoluteCandidate(InputContextState &context,
 }
 
 void Engine::clearCandidates(InputContextState &context) const noexcept {
+    context.tablePreview_ = false;
     context.candidatePreedit_.clear();
     context.candidates_.clear();
     context.page_ = 0;

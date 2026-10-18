@@ -41,15 +41,50 @@ public final class ChineseInputMethodSettings {
         store.set(method.rawValue, forKey: Self.key)
         if !method.isTable { store.set(method.rawValue, forKey: BopomofoCompositionModeSettings.key) }
     }
-    public func options(for method: ChineseInputMethod) -> TableInputOptions {
-        var options = TableInputOptions(method: method)
-        if let data = store.object(forKey: "tableOptions." + method.rawValue) as? Data,
-           let decoded = try? JSONDecoder().decode(TableInputOptions.self, from: data) { options = decoded }
+    public func options(for method: ChineseInputMethod, virtualKeyboard: Bool = false) -> TableInputOptions {
+        let legacy = (store.object(forKey: "tableOptions." + method.rawValue) as? Data)
+            .flatMap { try? JSONDecoder().decode(TableInputOptions.self, from: $0) }
+        var options = legacy ?? TableInputOptions(method: method)
+        if method == .cangjie {
+            if let data = store.object(forKey: "tableOptions.cangjie.shared") as? Data,
+               let decoded = try? JSONDecoder().decode(TableInputOptions.self, from: data) {
+                options = decoded
+            }
+            let profile = virtualKeyboard ? "virtual" : "physical"
+            // The legacy blob is read-only: changing one profile must not alter
+            // the other profile's migration fallback or App Group revision.
+            options.composeWhileTyping = store.object(forKey: "tablePreview.cangjie." + profile + ".realtime") as? Bool
+                ?? legacy?.composeWhileTyping ?? virtualKeyboard
+            options.clearOnError = store.object(forKey: "tablePreview.cangjie." + profile + ".clear") as? Bool
+                ?? options.clearOnError
+            options.prefixCandidates = store.object(forKey: "tablePreview.cangjie." + profile + ".prefix") as? Bool
+                ?? virtualKeyboard
+        }
+        if options.composeWhileTyping { options.clearOnError = false }
         return options
     }
-    public func setOptions(_ options: TableInputOptions, for method: ChineseInputMethod) {
+    public func setOptions(_ options: TableInputOptions, for method: ChineseInputMethod,
+                           virtualKeyboard: Bool = false) {
+        var options = options
+        if options.composeWhileTyping { options.clearOnError = false }
+        let key: String
+        if method == .cangjie {
+            let profile = virtualKeyboard ? "virtual" : "physical"
+            store.set(options.composeWhileTyping, forKey: "tablePreview.cangjie." + profile + ".realtime")
+            store.set(options.clearOnError, forKey: "tablePreview.cangjie." + profile + ".clear")
+            store.set(options.prefixCandidates, forKey: "tablePreview.cangjie." + profile + ".prefix")
+            key = "tableOptions.cangjie.shared"
+            // Keep the former shared clear value only as a migration fallback.
+            // The active choice now lives in each profile's own key.
+            options.clearOnError = [key, "tableOptions.cangjie"].compactMap { storedKey in
+                (store.object(forKey: storedKey) as? Data)
+                    .flatMap { try? JSONDecoder().decode(TableInputOptions.self, from: $0) }
+            }.first?.clearOnError ?? TableInputOptions(method: .cangjie).clearOnError
+        } else {
+            key = "tableOptions." + method.rawValue
+        }
         if let data = try? JSONEncoder().encode(options) {
-            store.set(data, forKey: "tableOptions." + method.rawValue)
+            store.set(data, forKey: key)
         }
     }
 }
@@ -59,6 +94,10 @@ public struct TableInputOptions: Equatable, Codable, Sendable {
     public var queryAtMaximum: Bool
     public var clearOnError: Bool
     public var composeWhileTyping: Bool = false
+    public var prefixCandidates: Bool = false
+    private enum CodingKeys: String, CodingKey {
+        case queryAtMaximum, clearOnError, composeWhileTyping, dynamicFrequency, punctuation
+    }
     public var dynamicFrequency: Bool
     /// 0: original CIN punctuation, 1: mixed width, 2: half width (Cangjie).
     public var punctuation: Int = 0
@@ -71,6 +110,7 @@ public struct TableInputOptions: Equatable, Codable, Sendable {
 
 public protocol TableCandidateSource {
     func values(method: ChineseInputMethod, code: String, punctuation: Int) -> [String]
+    func enumeratePrefixValues(code: String, _ body: (String) -> Void)
     func keyName(method: ChineseInputMethod, key: String) -> String?
     func endKeys(method: ChineseInputMethod) -> String
     func learn(code: String, text: String)
@@ -78,6 +118,7 @@ public protocol TableCandidateSource {
 }
 
 public extension TableCandidateSource {
+    func enumeratePrefixValues(code: String, _ body: (String) -> Void) {}
     func learn(code: String, text: String) {}
     func ordered(_ values: [String], code: String) -> [String] { values }
 }
@@ -121,6 +162,21 @@ public final class TableCandidateStore: TableCandidateSource {
         }
         return rows(table: method.tableName, code: code, wildcard: wildcard)
     }
+    public func enumeratePrefixValues(code: String, _ body: (String) -> Void) {
+        guard CangjiePrefixSelection.isPrefixCode(code) else { return }
+        let key = "cangjie:prefix"
+        let statement: Statement
+        if let cached = statements[key] { statement = cached }
+        else {
+            guard let prepared = try? database.prepare(
+                "SELECT value FROM 'Generic-cj-cin' WHERE key GLOB ? "
+                + "AND length(key) <= 5 AND key NOT GLOB '*[^a-z]*' ORDER BY rowid"
+            ) else { return }
+            statements[key] = prepared
+            statement = prepared
+        }
+        statement.forEachFirstColumnString([code + "?*"], body)
+    }
     public func keyName(method: ChineseInputMethod, key: String) -> String? {
         rows(table: method.tableName, code: "__property_keyname-" + key).first
     }
@@ -143,8 +199,10 @@ public final class TableCandidateStore: TableCandidateSource {
 
 public extension TableInputOptions {
     func switches(for method: ChineseInputMethod) -> [(key: String, title: String, enabled: Bool)] {
-        var rows = [("realtime", "即時候選", composeWhileTyping), ("clear", "錯碼清除", clearOnError)]
+        var rows = [("realtime", "即時候選", composeWhileTyping),
+                    ("clear", "錯碼清除", clearOnError)]
         if method == .cangjie {
+            rows.insert(("prefix", "未打完也能選字", prefixCandidates), at: 1)
             rows += [("maximum", "滿五碼查詢", queryAtMaximum), ("learning", "依選字紀錄排序", dynamicFrequency)]
         }
         return rows
@@ -153,6 +211,7 @@ public extension TableInputOptions {
         switch key {
         case "realtime": composeWhileTyping.toggle(); if composeWhileTyping { clearOnError = false }
         case "clear": clearOnError.toggle(); if clearOnError { composeWhileTyping = false }
+        case "prefix": if composeWhileTyping { prefixCandidates.toggle() }
         case "maximum": queryAtMaximum.toggle()
         case "learning": dynamicFrequency.toggle()
         default: break

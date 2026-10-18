@@ -663,6 +663,86 @@ final class KeyKeyUITests: XCTestCase {
         method.tap(); app.buttons["好打注音"].tap()
     }
 
+    func testPhysicalCangjiePrefixSettingAndNumberSelection() throws {
+        app = XCUIApplication()
+        app.launch()
+        app.buttons["open-hardware-editor"].tap()
+        let method = app.buttons["hardware-editor.composition-mode"]
+        XCTAssertTrue(method.waitForExistence(timeout: 3))
+        method.tap(); app.buttons["倉頡"].tap()
+        app.typeKey("h", modifierFlags: [])
+        app.typeKey("k", modifierFlags: [])
+        let qiao = app.buttons.matching(NSPredicate(
+            format: "identifier BEGINSWITH %@ AND label CONTAINS %@",
+            "hardware-editor.candidate.", "喬")).firstMatch
+        XCTAssertFalse(qiao.exists, "Physical prefix must default off")
+        app.buttons["hardware-editor.escape"].tap()
+        method.tap(); app.buttons["倉頡設定（實體鍵盤）"].tap()
+        XCTAssertFalse(app.buttons["未打完也能選字"].isEnabled)
+        app.buttons["即時候選"].tap()
+        method.tap(); app.buttons["倉頡設定（實體鍵盤）"].tap()
+        XCTAssertTrue(app.buttons["未打完也能選字"].isEnabled)
+        app.buttons["未打完也能選字"].tap()
+        app.typeKey("h", modifierFlags: [])
+        app.typeKey("k", modifierFlags: [])
+        XCTAssertTrue(qiao.waitForExistence(timeout: 3))
+        let preview = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        preview.name = "Physical Cangjie HK prefix candidates"
+        preview.lifetime = .keepAlways
+        add(preview)
+        let number = try XCTUnwrap(qiao.identifier.split(separator: ".").last)
+        app.typeKey(String(number), modifierFlags: [])
+        let output = app.textViews["hardware-editor.output"]
+        XCTAssertEqual(output.value as? String, "喬")
+        // Disabling the physical preview restores the original wait-for-Space flow.
+        method.tap(); app.buttons["倉頡設定（實體鍵盤）"].tap()
+        app.buttons["錯碼清除"].tap()
+        method.tap(); app.buttons["倉頡設定（實體鍵盤）"].tap()
+        XCTAssertFalse(app.buttons["未打完也能選字"].isEnabled)
+        app.buttons["即時候選"].tap()
+        method.tap(); app.buttons["倉頡設定（實體鍵盤）"].tap()
+        app.buttons["未打完也能選字"].tap()
+        method.tap(); app.buttons["倉頡設定（實體鍵盤）"].tap()
+        app.buttons["即時候選"].tap()
+        app.typeKey("h", modifierFlags: [])
+        app.typeKey("k", modifierFlags: [])
+        XCTAssertFalse(qiao.exists)
+        app.buttons["hardware-editor.escape"].tap()
+        method.tap(); app.buttons["好打注音"].tap()
+    }
+
+    func testTouchCangjiePrefixesKeepQiaoSelectable() throws {
+        test00KeyboardOptInIsConfigured()
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        output.tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        try selectCompositionMode("倉頡")
+        let qiao = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "候選，喬")).firstMatch
+        app.buttons["h"].tap()
+        XCTAssertFalse(qiao.exists)
+        app.buttons["k"].tap()
+        XCTAssertTrue(qiao.waitForExistence(timeout: 3))
+        XCTAssertTrue(qiao.isHittable)
+        let preview = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        preview.name = "Cangjie HK prefix candidates"
+        preview.lifetime = .keepAlways
+        add(preview)
+        app.buttons["r"].tap()
+        XCTAssertTrue(qiao.waitForExistence(timeout: 3))
+        app.buttons["b"].tap()
+        XCTAssertTrue(app.buttons["第 1 個候選，喬"].waitForExistence(timeout: 3))
+        app.buttons["r"].tap()
+        XCTAssertTrue(app.buttons["第 1 個候選，喬"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForLayout { output.value as? String == "竹大口月口" })
+        app.buttons["BACKSPACE"].tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "竹大口月" })
+        app.buttons["第 1 個候選，喬"].tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "喬" })
+        try selectCompositionMode("好打注音")
+    }
+
     func testTouchCangjieAndSimplexUseExistingCandidateFlow() throws {
         test00KeyboardOptInIsConfigured()
         launchHostApp()
@@ -673,7 +753,10 @@ final class KeyKeyUITests: XCTestCase {
         try selectCompositionMode("倉頡")
         XCTAssertEqual(app.buttons["a"].label, "日")
         for key in ["0", "-", "@"] { XCTAssertTrue(app.buttons[key].exists) }
-        app.buttons["m"].tap(); app.buttons["SPACE"].tap()
+        app.buttons["m"].tap()
+        let exact = app.buttons["第 1 個候選，一"]
+        XCTAssertTrue(exact.waitForExistence(timeout: 3))
+        exact.tap()
         XCTAssertTrue(waitForLayout { output.value as? String == "一" })
         try selectCompositionMode("簡易")
         app.buttons["a"].tap(); app.buttons["b"].tap()
