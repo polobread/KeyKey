@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'Source/Loaders/OSX-IMK/**'
+      - 'Source/Loaders/Windows-TSF/SymbolEmojiSupplement.json'
+      - 'Source/Loaders/Windows-TSF/Generate-SymbolResources.ps1'
+      - 'Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift'
       - 'Source/Frameworks/OpenVanilla/Headers/**'
       - 'Source/Frameworks/PlainVanilla/Headers/**'
       - 'Source/Frameworks/LFExtensions/LFUtilities.h'

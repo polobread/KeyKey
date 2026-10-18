@@ -61,7 +61,8 @@ macOS 統一紀錄以 `KeyKey symbols event=` 識別：
 ```
 
 若 `data-notification` 顯示解析失敗或分類數 0，先查資料來源；
-若資料完整但 `window-loaded` 筆數不符，查視窗載入；
+目前資料庫 17 類另加視窗端 Emoji 1 類，正常 `window-loaded` 為來源 17、選單與控制器各 18；
+若不符合「來源分類數 + 1」，查視窗載入；
 若筆數皆正確但看不到，另查視窗層級／焦點，勿混成相同原因。
 
 ## 隔離回歸
@@ -91,3 +92,50 @@ python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py --baseline-r
 PR 的 `macos-symbols.yml` 及 macOS 封裝流程會執行此回歸。
 這些證據覆蓋資料與真實 AppKit 視窗的銜接；已安裝 IMK 的啟動、選單顯示及宿主送字
 仍是另一層驗證，不能用隔離測試宣稱實機驗收完成。
+
+## 分類間距與 Emoji
+
+下拉選單原本隨視窗自動縮放，但視窗總高度以固定 65 點估算，包含標題列後，
+下拉選單下緣與符號區上緣只剩約 2 點；系統控制項外觀會畫到這段空間，形成視覺重疊。
+改用 `frameRectForContentRect:` 計算包含標題列的實際視窗尺寸，明確排列內容：
+底部 8 點、符號區、12 點間距、26 點下拉選單、頂部 8 點。
+分類切換直接套用完整幾何，避免視窗尺寸動畫與內容尺寸更新不同步。
+
+Emoji 加在既有分類後方，來源與 Windows `Generate-SymbolResources.ps1` 相同：
+手機 `BopomofoEngine.emojis` 的 90 個加 `SymbolEmojiSupplement.json` 的 110 個，
+共 200 個且順序相同。生成器輸出 `CVEmojiData.generated.h`，不更動正式 DB。
+
+```sh
+# 兩份共用來源更新時重生 macOS 字串表，將來源與生成結果一起提交
+python3 Source/Loaders/OSX-IMK/Generate-EmojiResources.py
+# CI 原生回歸也會執行這項內容同步檢查
+python3 Source/Loaders/OSX-IMK/Generate-EmojiResources.py --check
+```
+
+Emoji 使用 10 欄、34 點格子及 Apple Color Emoji 字型，一次顯示最多 8 列並可捲動，
+保留所有 200 個完整字串，不按 UTF-16 字元拆開。原有符號仍維持 25 點格子。
+資料尚未載入時仍保持空狀態，避免補充分類掩蓋原本的空內容補載條件。
+
+第六個隔離原生案例確認 200 個標題字串與來源逐筆一致、首尾可捲入顯示範圍及送出，
+包含 variation selector 的字串不被截斷；所有分類切換皆檢查下拉選單與內容區的間距及邊界。
+可用 `run-symbol-controller-tests.py --snapshots Installer/local-builds/macos-symbol-emoji-preview`
+輸出隔離內容繪製圖確認 Emoji 字型。圖像不代表已安裝 IMK 或原生下拉控制項的實機驗收。
+
+## 跟隨候選字窗比例
+
+`OpenVanillaController.activateServer:` 將既有 `CandidateWindowScalePercent` 解析結果
+同時套到橫式、直式候選窗與符號表。符號表選單開啟時也重新同步設定；
+從偏好設定回到輸入宿主後，原本已開啟的符號表會以新比例恢復。
+不另設第二個比例值，也不新增輪詢或排程。
+
+符號表沿用候選窗的實體尺寸／邏輯 bounds 縮放方式，包含原有表格、符號按鈕、
+Emoji、捲動條及 12 點邏輯間距；系統標題列維持原生尺寸。
+展開的分類選單有獨立原生視窗，另依實際比例設定 menu font，避免只有收合控制項變大。
+使用相同 `CVFitCandidateScale` 在螢幕可用範圍內限制最大比例，避免視窗超出畫面。
+重新套用比例會從原始邏輯尺寸計算，保留目前分類，不累積縮放。
+同時修正舊顯示路徑把 Y 座標上限寫成 MaxX、Y 下限寫成 MinX 的錯字。
+
+第七個原生隔離案例涵蓋 75%、100%、150%、350%、切換分類及恢復 100%，
+確認一般比例正確、兩軸與間距同比縮放、展開選單字體同步、視窗留在可用範圍、
+分類選擇保留且不累積縮放。紀錄 `event=layout` 的 requested／applied scale 可辨識螢幕限制。
+已安裝 IMK 的設定頁往返與選單互動仍需實機確認。

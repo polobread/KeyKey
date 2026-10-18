@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Isolated AppKit regression for symbol startup ordering; no installed IMK access."""
 import argparse
+import os
+import sys
 from pathlib import Path
 import plistlib
 import subprocess
@@ -15,7 +17,11 @@ def run(*args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-ref", help="Confirm the old failure against a Git revision as well")
+    parser.add_argument("--snapshots", type=Path, help="Save isolated AppKit view renders")
     args = parser.parse_args()
+    if args.snapshots:
+        args.snapshots.mkdir(parents=True, exist_ok=True)
+        os.environ["KEYKEY_SYMBOL_SNAPSHOT_DIR"] = str(args.snapshots.resolve())
     with tempfile.TemporaryDirectory(prefix="keykey-symbol-tests-") as scratch:
         tmp = Path(scratch)
         # Header-only framework layout; no dependency on a previous Xcode build.
@@ -34,6 +40,8 @@ def main():
         for name in ["SymbolWindow", "SmileyView"]:
             run("xcrun", "ibtool", "--compile", resources / (name + ".nib"),
                 LOADER / "Interface" / (name + ".xib"))
+        run(sys.executable, LOADER / "Generate-EmojiResources.py", "--check",
+            "--json-output", resources / "ExpectedEmoji.json")
         binary = contents / "MacOS/SymbolTests"
         database = ROOT / "Source/Distributions/Takao/CookedDatabase/KeyKey.db"
         def compile_controller(source):
@@ -51,15 +59,15 @@ def main():
                 "git", "show", args.baseline_ref + ":Source/Loaders/OSX-IMK/CVSymbolController.mm"], cwd=ROOT))
             compile_controller(baseline)
             # The same old controller succeeds when its observer exists first.
-            run(binary, database, "after")
+            run(binary, database, "after", "legacy")
             for scenario in ["before", "retry"]:
-                result = subprocess.run([str(binary), str(database), scenario], capture_output=True, text=True, timeout=30)
+                result = subprocess.run([str(binary), str(database), scenario, "legacy"], capture_output=True, text=True, timeout=30)
                 print(result.stdout, end="")
                 if result.returncode != 1 or "the window contains every category" not in result.stderr:
                     raise SystemExit("Baseline did not reproduce the expected empty-window failure: " + result.stderr)
                 print("EXPECTED BASELINE FAILURE: " + scenario, flush=True)
         compile_controller(LOADER / "CVSymbolController.mm")
-        for scenario in ["before", "after", "retry", "refresh", "empty"]:
+        for scenario in ["before", "after", "retry", "refresh", "empty", "emoji", "scale"]:
             run(binary, database, scenario)
 
 if __name__ == "__main__":
