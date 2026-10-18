@@ -4,6 +4,7 @@
 #import "CVSymbolController.h"
 #import "CVSmileyViewController.h"
 #import "CVButtonViewController.h"
+#import <os/log.h>
 
 @implementation CVSymbolController
 
@@ -11,9 +12,12 @@
 {
 	self = [super init];
 	if (self != nil) {
-		BOOL loaded = [NSBundle loadNibNamed:@"SymbolWindow" owner:self];
-		NSAssert((loaded == YES), @"NIB did not load");	
 		_viewArray = [NSMutableArray new];
+		BOOL loaded = [NSBundle loadNibNamed:@"SymbolWindow" owner:self];
+		NSAssert((loaded == YES), @"NIB did not load");
+		// The loader may have posted its initial notification before this
+		// lazily created controller existed. Read its current data as well.
+		[self loadSymbolTable:nil];
 	}
 	return self;
 }
@@ -25,12 +29,14 @@
 }
 - (void)loadSymbolTable:(NSNotification *)notification
 {
-	// NSLog(@"received %@", notification);
+	os_log(OS_LOG_DEFAULT, "KeyKey symbols event=window-load trigger=%{public}s",
+	       notification ? "notification" : "snapshot");
 	
 	if ([_viewArray count])
 		[_viewArray removeAllObjects];
 	
-	NSString *locale = [NSString stringWithUTF8String:[OpenVanillaLoader sharedLoaderService]->locale().c_str()];
+	PVLoaderService *service = [OpenVanillaLoader sharedLoaderService];
+	NSString *locale = service ? [NSString stringWithUTF8String:service->locale().c_str()] : @"en";
 	NSArray *array = [[OpenVanillaLoader sharedInstance] mergedCannedMessagesArray];
 	[_popUpButton removeAllItems];
 	NSDictionary *d = nil;
@@ -50,11 +56,10 @@
 		NSString *name = [[d valueForKey:@"Name"] fallbackableLocalizedStringValueForLocale:locale];
 		[_popUpButton addItemWithTitle:name];
 	}
-	if ([_viewArray count]) {
-		id item = [_viewArray objectAtIndex:0];
-		NSView *view = [item view];	
-		[self toggleActiveView:view];		
-	}
+	NSView *view = [_viewArray count] ? [[_viewArray objectAtIndex:0] view] : nil;
+	[self toggleActiveView:view];
+	os_log(OS_LOG_DEFAULT, "KeyKey symbols event=window-loaded source_categories=%{public}lu menu_items=%{public}ld views=%{public}lu",
+	       (unsigned long)[array count], (long)[_popUpButton numberOfItems], (unsigned long)[_viewArray count]);
 }
 
 - (void)awakeFromNib
@@ -72,8 +77,9 @@
 
 	[[self window] setFrame:NSMakeRect(x, y, windowRect.size.width, windowRect.size.height) display:YES];
 	
-	// NSLog(@"addObserver");
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(loadSymbolTable:) name:CVLoaderUpdateCannedMessagesNotification object:nil];
+	os_log(OS_LOG_DEFAULT, "KeyKey symbols event=observer-registered cached_categories=%{public}lu",
+	       (unsigned long)[[[OpenVanillaLoader sharedInstance] mergedCannedMessagesArray] count]);
 	
 }
 
@@ -113,7 +119,9 @@
 
 - (IBAction)toggleSymbol:(id)sender
 {
-	int selectedIndex = [_popUpButton indexOfItem:[_popUpButton selectedItem]];
+	NSInteger selectedIndex = [_popUpButton indexOfSelectedItem];
+	if (selectedIndex < 0 || (NSUInteger)selectedIndex >= [_viewArray count])
+		return;
 	id item = [_viewArray objectAtIndex:selectedIndex];
 	NSView *view = [item view];
 	[self toggleActiveView:view];
@@ -121,6 +129,12 @@
 }
 - (IBAction)showWindow:(id)sender
 {
+	// Retry if the window was created before the loader had any data.
+	if (![_viewArray count]) {
+		os_log(OS_LOG_DEFAULT, "KeyKey symbols event=empty-window-retry");
+		[self loadSymbolTable:nil];
+	}
+
 	NSPoint point = [[self window] frame].origin;
 	
 	NSScreen *screen = nil;

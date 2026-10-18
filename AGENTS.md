@@ -80,6 +80,9 @@ bash update/test-macos.sh
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
   -xcconfig Takao-macOS.xcconfig build)
 
+# macOS 符號表（隔離 AppKit 初始化順序，不連已安裝 IMK）
+python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py
+
 # iOS 引擎
 (cd Source/Loaders/iOS-Keyboard/KeyKeyEngine && swift test)
 
