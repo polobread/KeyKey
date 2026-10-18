@@ -130,6 +130,9 @@ class MacReleaseTests(unittest.TestCase):
             SUEnableAutomaticChecks=True, SUSendProfileInfo=True)))
         with patch.object(prepare, "ROOT", self.root), patch.dict(os.environ, KEYKEY_UPDATE_CONFIG=str(self.root / "config.json")):
             prepare.embed_macos(app)
+        self.assertTrue((app / "Contents/Resources/LICENSES/KeyKey-Shared-MIT.txt").is_file())
+        self.assertEqual((app / "Contents/Resources/LICENSES/Unicode-LICENSE.txt").read_bytes(),
+                         (Path(__file__).resolve().parents[1] / "Source/Shared/Unicode-LICENSE.txt").read_bytes())
         info = plistlib.loads(info_path.read_bytes())
         self.assertFalse(info["SUAutomaticallyUpdate"])
         self.assertFalse(info["SUEnableAutomaticChecks"])

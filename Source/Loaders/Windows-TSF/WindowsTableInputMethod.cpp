@@ -32,7 +32,7 @@ public:
         // A short write transaction makes the increment atomic across text hosts.
         // Contention or an unwritable learning file must never prevent input.
         syncFrequency();
-        if (frequency_ && index && frequency_->execute("BEGIN IMMEDIATE") == SQLITE_OK) {
+        if (frequency_ && index && isExactCandidate(text) && frequency_->execute("BEGIN IMMEDIATE") == SQLITE_OK) {
             const std::string query = combineQueryString();
             std::unique_ptr<OVSQLiteStatement> update(frequency_->prepare(
                 "UPDATE user_frequency SET count = count + 1 WHERE key = ? AND value = ?"));
@@ -93,7 +93,8 @@ protected:
         auto* list = panel->candidateList();
         std::vector<std::string> values;
         for (size_t i = 0; i < list->size(); ++i) values.push_back(list->candidateAtIndex(i));
-        std::stable_sort(values.begin(), values.end(), [&](const auto& a, const auto& b) {
+        const size_t exactCount = m_prefixPreview ? m_exactCandidates.size() : values.size();
+        std::stable_sort(values.begin(), values.begin() + std::min(exactCount, values.size()), [&](const auto& a, const auto& b) {
             return counts[a] > counts[b];
         });
         list->setCandidates(values);

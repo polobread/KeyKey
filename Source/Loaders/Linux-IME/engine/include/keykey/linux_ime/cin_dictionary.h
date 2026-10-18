@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <istream>
+#include <functional>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -18,6 +20,8 @@ public:
     std::vector<std::string>
     candidatesMatching(const std::string &pattern, char matchOne,
                        char matchZeroOrMore) const;
+    void forEachPrefixValue(const std::string &prefix,
+                            const std::function<void(const std::string &)> &visitor) const;
     const std::string &keyName(const std::string &key) const;
     bool hasKeyName(const std::string &key) const noexcept;
     bool isEndKey(const std::string &key) const noexcept;
@@ -26,7 +30,11 @@ public:
     std::size_t entryCount() const noexcept;
 
 private:
-    std::unordered_map<std::string, std::vector<std::string>> entries_;
+    struct Entry {
+        std::vector<std::string> values;
+        std::vector<std::size_t> rows;
+    };
+    std::map<std::string, Entry> entries_;
     std::unordered_map<std::string, std::string> keyNames_;
     std::unordered_set<std::string> endKeys_;
     std::size_t entryCount_ = 0;

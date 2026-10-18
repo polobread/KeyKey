@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate mobile Cangjie rank tables from the shared 1,500-character source."""
+"""Generate shared Cangjie rank tables from the shared 1,500-character source."""
 import argparse
 import csv
 import hashlib
@@ -49,7 +49,10 @@ final class CangjieCommonRanking {
     private CangjieCommonRanking() {}
 }
 """ % characters
+    cpp = header + "#ifndef KEYKEY_CANGJIE_RANKING_DATA_H\n#define KEYKEY_CANGJIE_RANKING_DATA_H\n"
+    cpp += 'namespace KeyKeyCangjie {\nstatic const char RankedCharacters[] = "' + characters + '";\n}\n#endif\n'
     return {
+        ROOT / "Source/Shared/CangjieRankingData.h": cpp,
         ROOT / "Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/CangjieCommonRanking.swift": swift,
         ROOT / "Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/CangjieCommonRanking.java": java,
     }
@@ -64,7 +67,7 @@ def main():
                 raise SystemExit("Stale Cangjie ranking: " + str(path))
         else:
             path.write_text(text, encoding="utf-8")
-    print("Cangjie ranking: 1,500 unique characters; Swift/Java agree.")
+    print("Cangjie ranking: 1,500 unique characters; Swift/Java/C++ agree.")
 
 if __name__ == "__main__":
     main()

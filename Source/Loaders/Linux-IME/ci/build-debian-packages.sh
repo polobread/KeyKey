@@ -98,6 +98,8 @@ mkdir -p \
   "$source_root/LICENSES" \
   "$output_dir"
 
+cp -a "$repository_root/Source/Shared" "$source_root/Source/"
+
 mkdir -p "$source_root/Source/Loaders/Linux-IME"
 cp -a \
   "$linux_dir/CMakeLists.txt" \

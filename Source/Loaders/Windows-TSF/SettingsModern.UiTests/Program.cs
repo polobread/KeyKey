@@ -208,6 +208,19 @@ internal static class Program
                 "New table modes were not displayed by default");
             Check(Control<CheckBox>(window, "CangjieDynamicFrequency").IsChecked == false,
                 "Old Windows dynamic-frequency default changed");
+            var cangjieCompose = Control<CheckBox>(window, "CangjieComposeWhileTyping");
+            var cangjiePrefix = Control<CheckBox>(window, "CangjiePrefixCandidates");
+            var cangjieClear = Control<CheckBox>(window, "CangjieClearOnError");
+            Check(cangjieCompose.IsChecked == false && cangjiePrefix.IsChecked == false &&
+                  !cangjiePrefix.IsEnabled, "Cangjie preview defaults/dependency changed");
+            cangjieCompose.IsChecked = true;
+            Check(cangjiePrefix.IsEnabled && cangjieClear.IsChecked == false,
+                "Cangjie realtime did not enable prefix and disable error clearing");
+            cangjiePrefix.IsChecked = true;
+            cangjieClear.IsChecked = true;
+            Check(!cangjiePrefix.IsEnabled && cangjiePrefix.IsChecked == true &&
+                  cangjieCompose.IsChecked == false, "Cangjie error clearing did not suspend prefix");
+            cangjieCompose.IsChecked = true;
             var compose = Control<CheckBox>(window, "SimplexComposeWhileTyping");
             var clear = Control<CheckBox>(window, "SimplexClearOnError");
             Check(clear.IsChecked == true, "Simplex clear-on-error default changed");
@@ -248,6 +261,11 @@ internal static class Program
                   Value(simplex, "ClearReadingBufferAtCompositionError") == "false" &&
                   Value(simplex, "ShouldCommitAtMaximumRadicalLength") == "true",
                 "Table options did not persist");
+            var cangjieSaved = XDocument.Load(Path.Combine(directory,
+                "com.polobread.chichi77-keykey.windows.Generic-cj-cin.plist"));
+            Check(Value(cangjieSaved, "PrefixCandidates") == "true" &&
+                  Value(cangjieSaved, "ComposeWhileTyping") == "true",
+                  "Cangjie prefix choices did not persist");
             var smart = XDocument.Load(Path.Combine(directory, "com.polobread.chichi77-keykey.windows.SmartMandarin.plist"));
             Check(Value(smart, "CandidateSelectionKeys") == "asdfjkl;" && Value(smart, "ComposingTextBufferSize") == "15",
                 "Advanced settings did not persist");

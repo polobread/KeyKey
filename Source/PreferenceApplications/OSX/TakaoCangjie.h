@@ -24,6 +24,7 @@ file for terms.
 	IBOutlet id _shouldCommitAtMaximumRadicalLengthCheckBox;
     IBOutlet id _clearReadingBufferAtCompositionErrorCheckBox;
     IBOutlet id _composeWhenTypingCheckBox;
+    IBOutlet id _prefixCandidatesCheckBox;
     IBOutlet id _useCharactersSupportedByEncodingCheckBox;
 	IBOutlet id _useOverrideTablePopUpButton;
 

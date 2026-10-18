@@ -133,6 +133,7 @@ public partial class MainWindow : Window
         CangjieDynamicFrequency.IsChecked = ReadBool(cangjie, "UseDynamicFrequency", false);
         CangjieClearOnError.IsChecked = ReadBool(cangjie, "ClearReadingBufferAtCompositionError", true);
         CangjieComposeWhileTyping.IsChecked = InputMethodSettings.ReadComposeWhileTyping(cangjie);
+        CangjiePrefixCandidates.IsChecked = ReadBool(cangjie, "PrefixCandidates", false);
         CangjieRareCharacters.IsChecked = SettingsStore.Read(cangjie,
             "UseCharactersSupportedByEncoding", "") is "" or "UTF-8";
         SelectValue(CangjiePunctuation, PunctuationTables,
@@ -320,6 +321,7 @@ public partial class MainWindow : Window
                 ["ShouldCommitAtMaximumRadicalLength"] = BoolValue(CangjieCommitAtMaximum),
                 ["UseDynamicFrequency"] = BoolValue(CangjieDynamicFrequency),
                 ["ComposeWhileTyping"] = BoolValue(CangjieComposeWhileTyping),
+                ["PrefixCandidates"] = BoolValue(CangjiePrefixCandidates),
                 ["ComposeWhenTypingMigrated"] = "true",
                 ["ClearReadingBufferAtCompositionError"] = BoolValue(CangjieClearOnError),
                 ["UseCharactersSupportedByEncoding"] = CangjieRareCharacters.IsChecked == true ? "" : "BIG-5",

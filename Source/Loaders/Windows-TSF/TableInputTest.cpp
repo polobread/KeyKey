@@ -80,13 +80,31 @@ std::filesystem::path Prepare(const std::string& mode) {
                   "<key>UseDynamicFrequency</key><string>"
                << (mode == "dynamic" ? "true" : "false") << "</string>"
                   "<key>ComposeWhileTyping</key><string>"
-               << (mode == "compose" ? "true" : "false") << "</string>";
+               << ((mode == "compose" || mode == "prefix") ? "true" : "false") << "</string>";
+        if (mode == "prefix")
+            config << "<key>PrefixCandidates</key><string>true</string>"
+                      "<key>ShouldCommitAtMaximumRadicalLength</key><string>true</string>";
         if (mode == "alias")
             config << "<key>ComposeWhenTyping</key><string>true</string>";
         config << "</dict></plist>";
         Check(config.good(), "Could not write table preferences.");
     }
     return profile;
+}
+
+void TestPrefixes() {
+    auto session = KeyKeyEngineSession::Create();
+    Check(session && session->ready(), "Prefix session did not initialize");
+    auto result = Type(*session, "h");
+    Check(result.committedText.empty() && !HasCandidate(result, L"喬"), "One root preview changed");
+    result = Type(*session, "k");
+    Check(result.committedText.empty() && HasCandidate(result, L"喬"), "HK did not preview Qiao");
+    result = Type(*session, "rbr");
+    Check(result.committedText.empty() && HasCandidate(result, L"喬"), "Fifth root committed without confirmation");
+    result = session->handleKey(Key(VK_BACK));
+    Check(result.committedText.empty() && HasCandidate(result, L"喬"), "Backspace lost prefix candidates");
+    result = session->handleKey(Key(VK_RETURN));
+    Check(result.committedText == L"喬", "Enter failed to confirm Qiao");
 }
 
 void TestBasics() {
@@ -314,6 +332,7 @@ int main(int argc, char** argv) {
         const auto profile = Prepare(mode);
         if (mode == "basic") TestBasics();
         else if (mode == "compose" || mode == "alias") TestCompose();
+        else if (mode == "prefix") TestPrefixes();
         else if (mode == "dynamic") TestLearning(profile);
         else if (mode == "settings") TestSettings(profile);
         else throw std::runtime_error("Unknown test mode.");

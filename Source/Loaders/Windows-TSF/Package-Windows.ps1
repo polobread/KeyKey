@@ -117,6 +117,8 @@ try {
         -Destination $licenseDirectory
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSES\OpenVanilla-HanConvert.txt') `
         -Destination $licenseDirectory
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'Source\Shared\Unicode-LICENSE.txt') `
+        -Destination $licenseDirectory
     Copy-Item -LiteralPath $licenseDirectory -Destination $payloadDirectory -Recurse
     New-KeyKeyPackageManifest -PackageDirectory $packageRoot -Version $Version `
         -Architecture $Architecture

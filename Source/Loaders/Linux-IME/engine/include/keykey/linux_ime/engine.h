@@ -88,6 +88,12 @@ struct SmartMandarinPreferences {
     }
 };
 
+struct TablePreferences {
+    bool composeWhileTyping = false;
+    bool prefixCandidates = false;
+    bool clearOnError = true;
+};
+
 class InputContextState {
 public:
     void reset() noexcept;
@@ -103,6 +109,7 @@ private:
     bool fullWidthMode_ = false;
     bool traditionalToSimplifiedMode_ = false;
     bool showingAssociatedPhrases_ = false;
+    bool tablePreview_ = false;
     std::vector<std::string> smartReadings_;
     SmartComposition smartComposition_;
     std::map<std::size_t, SmartSelection> smartOverrides_;
@@ -131,6 +138,7 @@ public:
     void setSmartMandarinPreferences(SmartMandarinPreferences preferences) noexcept;
     const SmartMandarinPreferences &smartMandarinPreferences() const noexcept;
 
+    void setTablePreferences(TablePreferences preferences) noexcept;
     EngineResult processKey(InputContextState &context,
                             const KeyEvent &event) const;
     void setTraditionalToSimplifiedMode(InputContextState &context,
@@ -148,7 +156,7 @@ public:
 
 private:
     EngineResult query(InputContextState &context,
-                       bool commitSingleCandidate = false) const;
+                       bool commitSingleCandidate = false, bool preview = false) const;
     EngineResult queryPunctuation(InputContextState &context,
                                   const std::string &key) const;
     EngineResult selectAbsoluteCandidate(InputContextState &context,
@@ -191,6 +199,7 @@ private:
     bool restrictBopomofoCandidatesToBig5_ = false;
     bool smartMandarinMode_ = false;
     SmartMandarinPreferences smartMandarinPreferences_;
+    TablePreferences tablePreferences_;
     std::shared_ptr<const SmartMandarinStore> smartMandarinStore_;
 };
 

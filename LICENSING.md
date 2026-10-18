@@ -27,6 +27,7 @@ are licensed under the MIT License:
 - `Source/Loaders/iOS-Keyboard/`
 - `Source/Loaders/Linux-IME/`
 - `Source/Loaders/Windows-TSF/`
+- `Source/Shared/` (except Unicode-derived data; see below)
 
 The MIT License text for these frontends is in
 [`LICENSES/MIT.txt`](LICENSES/MIT.txt). Each frontend also has a directory-level
@@ -59,6 +60,10 @@ uses requiring no permission under law, or relicense tools, third-party
 data, or separately licensed collections such as `DataSource/chichi77Collection`.
 
 ## Exceptions
+
+- `Source/Shared/CangjieUnicodeData.h` derives canonical CJK mappings and category ranges
+  from Unicode 16.0.0. Its data retains Unicode License V3 in
+  `Source/Shared/Unicode-LICENSE.txt`, included in desktop distributions.
 
 - The Gradle wrapper files under `Source/Loaders/Android-IME/gradle/wrapper/`,
   `gradlew`, `gradlew.bat`, and generated Gradle JVM criteria retain their

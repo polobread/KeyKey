@@ -878,19 +878,19 @@
             <rect key="frame" x="0.0" y="0.0" width="480" height="218"/>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
-                <textField verticalHuggingPriority="750" id="838">
-                    <rect key="frame" x="151" y="84" width="316" height="32"/>
+                <button imageHugsTitle="YES" id="cangjie-prefix">
+                    <rect key="frame" x="152" y="98" width="316" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" title="&quot;Clear radical reading when composition fails&quot; and Compose at each keystroke&quot; are mutally exclusive." id="839">
-                        <font key="font" metaFont="smallSystem"/>
-                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
+                    <buttonCell key="cell" type="check" title="Select before finishing the code" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="cangjie-prefix-cell">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections><action selector="writePreference:" target="569" id="cangjie-prefix-action"/></connections>
+                </button>
                 <button imageHugsTitle="YES" id="539">
                     <rect key="frame" x="152" y="122" width="270" height="18"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                    <buttonCell key="cell" type="check" title="Compose at each keystroke." bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="540">
+                    <buttonCell key="cell" type="check" title="Realtime candidates" bezelStyle="regularSquare" imagePosition="leading" alignment="left" inset="2" id="540">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -1528,6 +1528,7 @@
             <connections>
                 <outlet property="_clearReadingBufferAtCompositionErrorCheckBox" destination="428" id="966"/>
                 <outlet property="_composeWhenTypingCheckBox" destination="539" id="969"/>
+                <outlet property="_prefixCandidatesCheckBox" destination="cangjie-prefix" id="cangjie-prefix-outlet"/>
                 <outlet property="_shouldCommitAtMaximumRadicalLengthCheckBox" destination="877" id="965"/>
                 <outlet property="_useCharactersSupportedByEncodingCheckBox" destination="408" id="967"/>
                 <outlet property="_useDynamicFrequencyCheckBox" destination="429" id="964"/>

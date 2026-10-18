@@ -66,6 +66,8 @@ assert_installed_tree() {
   local data_root="$root/$datadir/chichi77-keykey/data"
 
   test -f "$addon"
+  test -x "$root/bin/keykey-cangjie-settings"
+  test -f "$root/$datadir/chichi77-keykey/cangjie_settings.py"
   test -f "$root/$datadir/fcitx5/addon/chichi77-keykey.conf"
   test -f "$root/$datadir/fcitx5/inputmethod/chichi77-keykey-bopomofo.conf"
   test -f "$root/$datadir/fcitx5/inputmethod/chichi77-keykey-cangjie.conf"

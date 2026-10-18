@@ -832,6 +832,57 @@ void testBopomofoBig5CandidateFilter() {
             "Big-5 filtered candidate selection committed the wrong text");
 }
 
+void testCangjiePrefixCandidates() {
+    const auto dictionary = loadRealDictionary("cj-ext.cin");
+    for (bool realtime : {false, true}) for (bool prefix : {false, true}) {
+        Engine engine(dictionary, InputMethod::Cangjie);
+        engine.setTablePreferences({realtime, prefix, true});
+        InputContextState context;
+        engine.processKey(context, character('h'));
+        auto result = engine.processKey(context, character('k'));
+        require(result.commit.empty() && result.preedit == "竹大", "Preview committed a radical");
+        require(result.candidates.empty() == !realtime, "Realtime dependency ignored");
+        require((std::find(result.candidates.begin(), result.candidates.end(), "喬") != result.candidates.end()) ==
+                    (realtime && prefix), "Prefix dependency ignored");
+    }
+    Engine engine(dictionary, InputMethod::Cangjie);
+    engine.setTablePreferences({true, true, false});
+    InputContextState context;
+    const std::vector<std::string> roots{"竹", "竹大", "竹大口", "竹大口月", "竹大口月口"};
+    std::size_t index = 0;
+    for (char key : std::string("hkrbr")) {
+        const auto result = engine.processKey(context, character(key));
+        require(result.commit.empty() && result.preedit == roots[index], "Root preview committed early");
+        require((std::find(result.candidates.begin(), result.candidates.end(), "喬") != result.candidates.end()) ==
+                    (index > 0), "Qiao not selectable from its prefix");
+        if (index++ == 1) engine.processKey(context, KeyEvent{KeyCode::PageDown});
+    }
+    auto result = engine.processKey(context, KeyEvent{KeyCode::Backspace});
+    require(result.candidates == std::vector<std::string>({"喬", "䀉"}), "Backspace did not refresh the prefix");
+    result = engine.processKey(context, KeyEvent{KeyCode::Enter});
+    require(result.commit == "喬" && result.preedit.empty(), "Enter did not confirm Qiao");
+    engine.processKey(context, character('h'));
+    result = engine.processKey(context, character('k'));
+    std::size_t total = result.candidates.size();
+    for (std::size_t page = 1; page < result.candidatePageCount; ++page) {
+        result = engine.processKey(context, KeyEvent{KeyCode::PageDown});
+        total += result.candidates.size();
+    }
+    require(total == dictionary->candidates("hk").size() + 36, "Prefix cap changed");
+    context.reset();
+    for (char key : std::string("hk?")) result = engine.processKey(context, character(key));
+    require(result.candidatePageCount > 4, "Wildcard was truncated as a prefix");
+    context.reset();
+    for (char key : std::string("hkrbra")) result = engine.processKey(context, character(key));
+    require(result.commit == "喬" && result.preedit == "日", "Sixth root did not start the next code");
+
+    std::istringstream rows("%keyname begin\na 日\n%keyname end\n%chardef begin\nab 甲\naa 乙\nac 的\nab 乙\n%chardef end\n");
+    const auto fixture = CinDictionary::load(rows);
+    std::vector<std::string> values;
+    fixture.forEachPrefixValue("a", [&](const std::string &value) { values.push_back(value); });
+    require(values == std::vector<std::string>({"甲", "乙", "的", "乙"}), "Prefix lost source row order");
+}
+
 void testRealCangjieTypingFlow() {
     Engine engine(loadRealDictionary("cj-ext.cin"), InputMethod::Cangjie);
     InputContextState context;
@@ -2558,6 +2609,7 @@ int main(int argc, char **argv) {
         testRealBopomofoDictionaryRoundTripsAcrossSymbolLayouts();
         testContextsAreIndependent();
         testBopomofoBig5CandidateFilter();
+        testCangjiePrefixCandidates();
         testRealCangjieTypingFlow();
         testRealSimplexTypingFlowAndCodeLimit();
         testCandidatePagingAndSelection();

@@ -170,7 +170,9 @@ CinDictionary CinDictionary::load(std::istream &input) {
         if (key.empty() || value.empty()) {
             continue;
         }
-        dictionary.entries_[key].push_back(value);
+        auto &entry = dictionary.entries_[key];
+        entry.values.push_back(value);
+        entry.rows.push_back(dictionary.entryCount_);
         ++dictionary.entryCount_;
     }
     if (!input.eof() && input.fail()) {
@@ -192,7 +194,25 @@ const std::vector<std::string> &
 CinDictionary::candidates(const std::string &key) const {
     static const std::vector<std::string> empty;
     const auto found = entries_.find(key);
-    return found == entries_.end() ? empty : found->second;
+    return found == entries_.end() ? empty : found->second.values;
+}
+
+void CinDictionary::forEachPrefixValue(
+    const std::string &prefix,
+    const std::function<void(const std::string &)> &visitor) const {
+    if (prefix.empty() || prefix.size() >= 5 ||
+        prefix.find_first_not_of("abcdefghijklmnopqrstuvwxyz") != std::string::npos) return;
+    std::vector<std::pair<std::size_t, const std::string *>> matches;
+    for (auto it = entries_.lower_bound(prefix); it != entries_.end() &&
+         it->first.compare(0, prefix.size(), prefix) == 0; ++it) {
+        const auto &key = it->first;
+        if (key.size() <= prefix.size() || key.size() > 5 ||
+            key.find_first_not_of("abcdefghijklmnopqrstuvwxyz") != std::string::npos) continue;
+        for (std::size_t i = 0; i < it->second.values.size(); ++i)
+            matches.emplace_back(it->second.rows[i], &it->second.values[i]);
+    }
+    std::sort(matches.begin(), matches.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+    for (const auto &item : matches) visitor(*item.second);
 }
 
 std::vector<std::string>

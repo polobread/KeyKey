@@ -28,6 +28,7 @@
 
 #include "OVIMGeneric.h"
 #include <ctype.h>
+#include "../../Shared/CangjiePrefix.h"
 
 namespace OpenVanilla {
 
@@ -124,6 +125,7 @@ OVIMGenericContext::OVIMGenericContext(OVIMGeneric* module)
 	, m_updateStatement(0)
     , m_findOrderStatement(0)
 {
+    m_prefixPreview = false;
 }
 
 void OVIMGenericContext::startSession(OVLoaderService* loaderService)
@@ -197,9 +199,37 @@ void OVIMGenericContext::stopSession(OVLoaderService* loaderService)
     }
 }
 
+bool OVIMGenericContext::previewingPrefixCode() const
+{
+    string code;
+    for (size_t i = 0; i < m_components.size(); ++i) code += m_components[i];
+    return m_module->m_name == "Generic-cj-cin" &&
+        m_module->m_cfgComposeWhileTyping && m_module->m_cfgPrefixCandidates &&
+        KeyKeyCangjie::isCode(code);
+}
+
+namespace {
+struct GenericCandidateFilter {
+    OVEncodingService* service;
+    string encoding;
+    bool operator()(const string& text) const {
+        return encoding.empty() ? service->stringSupportedBySystem(text) :
+            service->stringSupportedByEncoding(text, encoding);
+    }
+};
+}
+
 bool OVIMGenericContext::compose(OVTextBuffer* readingText, OVTextBuffer* composingText, OVCandidateService* candidateService, OVLoaderService* loaderService, bool sendIfOnlyOneCandidate)
 {
     string queryString = combineQueryString();
+    m_prefixPreview = previewingPrefixCode();
+    m_exactCandidates.clear();
+    if (m_module->m_cfgPrefixCandidates && queryString.empty()) {
+        OVOneDimensionalCandidatePanel* panel = candidateService->useOneDimensionalCandidatePanel();
+        panel->hide();
+        panel->cancelEventHandler();
+        return false;
+    }
 
     vector<string> rawResults;
     
@@ -235,7 +265,53 @@ bool OVIMGenericContext::compose(OVTextBuffer* readingText, OVTextBuffer* compos
                 results.push_back(*rsi);        
     }    
         
+    if (m_prefixPreview) results = KeyKeyCangjie::unique(results);
+    if (m_findOrderStatement) {
+        m_findOrderStatement->bindTextToColumn(queryString, 1);
+        std::set<string> available(results.begin(), results.end()), ordered;
+        vector<string> sorted;
+        while (m_findOrderStatement->step() == SQLITE_ROW) {
+            const string value = m_findOrderStatement->textOfColumn(0);
+            if (available.count(value) && ordered.insert(value).second) sorted.push_back(value);
+        }
+        m_findOrderStatement->reset();
+        for (size_t i = 0; i < results.size(); ++i)
+            if (!ordered.count(results[i])) sorted.push_back(results[i]);
+        results.swap(sorted);
+    }
+    if (m_prefixPreview) {
+        m_exactCandidates.insert(results.begin(), results.end());
+        KeyKeyCangjie::Selection selection(results);
+        GenericCandidateFilter filter = {encodingService, m_module->m_cfgUseCharactersSupportedByEncoding};
+        if (queryString.size() < 5) {
+            OVSQLiteDatabaseService* sqlite = dynamic_cast<OVSQLiteDatabaseService*>(m_module->m_databaseService);
+            if (sqlite) {
+                OVSQLiteStatement* rows = sqlite->connection()->prepare(
+                    "SELECT value FROM %Q WHERE key GLOB ? AND length(key) <= 5 "
+                    "AND key NOT GLOB '*[^a-z]*' ORDER BY rowid", m_module->m_name.c_str());
+                if (rows) {
+                    rows->bindTextToColumn(queryString + "?*", 1);
+                    while (rows->step() == SQLITE_ROW) selection.consider(rows->textOfColumn(0), filter);
+                    delete rows;
+                }
+            } else {
+                const vector<pair<string, string> > rows = m_module->m_dataTable->valuesForKey(
+                    OVWildcard(queryString + "?*", '?', '*'));
+                for (size_t i = 0; i < rows.size(); ++i)
+                    if (KeyKeyCangjie::isCode(rows[i].first))
+                        selection.consider(rows[i].second, filter);
+            }
+        }
+        const vector<string> extra = selection.values();
+        results.insert(results.end(), extra.begin(), extra.end());
+    }
+
     if (!results.size()) {
+        if (m_module->m_cfgComposeWhileTyping) {
+            OVOneDimensionalCandidatePanel* panel = candidateService->useOneDimensionalCandidatePanel();
+            panel->hide();
+            panel->cancelEventHandler();
+        }
         if (sendIfOnlyOneCandidate)
             loaderService->beep();
         
@@ -265,34 +341,11 @@ bool OVIMGenericContext::compose(OVTextBuffer* readingText, OVTextBuffer* compos
         return true;
     }
     else {
-        // sort the results
-        if (m_findOrderStatement) {
-            m_findOrderStatement->bindTextToColumn(queryString, 1);
-            map<string, bool> orderedResult;
-            vector<string> userResults;
-            
-            while (m_findOrderStatement->step() == SQLITE_ROW) {
-                orderedResult[m_findOrderStatement->textOfColumn(0)] = true;
-                userResults.push_back(m_findOrderStatement->textOfColumn(0));
-            }
-            
-            vector<string> newResults;    
-            newResults.insert(newResults.end(), userResults.begin(), userResults.end());
-            
-            for (vector<string>::iterator iter = results.begin() ; iter != results.end() ; ++iter) {
-                if (orderedResult.find(*iter) == orderedResult.end())
-                    newResults.push_back(*iter);
-            }
-            
-            results = newResults;            
-            
-            m_findOrderStatement->reset();
-        }
-        
         OVOneDimensionalCandidatePanel* panel = candidateService->useOneDimensionalCandidatePanel();
         
         OVCandidateList* candidates = panel->candidateList();            
         candidates->setCandidates(results);
+        if (m_prefixPreview) panel->goToPage(0);
         
         string candidateKeys;
         if (m_module->m_cfgUseSpaceAsFirstCandidateSelectionKey)
@@ -493,7 +546,7 @@ bool OVIMGenericContext::handleKey(OVKey* key, OVTextBuffer* readingText, OVText
     bool excludeEndKey = (m_components.size() > 1) && (key->keyCode() == m_module->m_cfgMatchOneChar || key->keyCode() == m_module->m_cfgMatchZeroOrMoreChar);
 
     if ((isEndKey(key) && !excludeEndKey) || (m_module->m_cfgShouldCommitAtMaximumRadicalLength && m_components.size() >= m_module->m_cfgMaximumRadicalLength)) {        
-        compose(readingText, composingText, candidateService, loaderService);
+        compose(readingText, composingText, candidateService, loaderService, !previewingPrefixCode());
     }
     else {
         if (m_module->m_cfgComposeWhileTyping) {
@@ -518,7 +571,7 @@ bool OVIMGenericContext::candidateSelected(OVCandidateService* candidateService,
     
     // we increase the dynamic frequency only when the candidate is not the first
     // (what's the use of increasing a candidate's count then it's already on top?)
-    if (m_selectStatement && index != 0) {
+    if (m_selectStatement && index != 0 && isExactCandidate(text)) {
         m_selectStatement->bindTextToColumn(combineQueryString(), 1);
         m_selectStatement->bindTextToColumn(text, 2);
         if (m_selectStatement->step() == SQLITE_ROW) {
@@ -595,7 +648,7 @@ bool OVIMGenericContext::candidateNonPanelKeyReceived(OVCandidateService* candid
                 bool hasCandidates = false;
 
                 if ((isEndKey(key) && !excludeEndKey) || (m_module->m_cfgShouldCommitAtMaximumRadicalLength && m_components.size() >= m_module->m_cfgMaximumRadicalLength)) {        
-                    hasCandidates = compose(readingText, composingText, candidateService, loaderService);
+                    hasCandidates = compose(readingText, composingText, candidateService, loaderService, !previewingPrefixCode());
                 }
                 else {
                     if (m_module->m_cfgComposeWhileTyping) {
@@ -631,7 +684,10 @@ bool OVIMGenericContext::candidateNonPanelKeyReceived(OVCandidateService* candid
 
         // compose if reaches end key
         if ((isEndKey(key) && !excludeEndKey) || (m_module->m_cfgShouldCommitAtMaximumRadicalLength && m_components.size() >= m_module->m_cfgMaximumRadicalLength)) {        
-            hasCandidates = compose(readingText, composingText, candidateService, loaderService);
+            hasCandidates = compose(readingText, composingText, candidateService, loaderService, !previewingPrefixCode());
+        }
+        else if (m_module->m_cfgComposeWhileTyping) {
+            compose(readingText, composingText, candidateService, loaderService, false);
         }
 
         return true;
@@ -672,7 +728,7 @@ bool OVIMGenericContext::candidateNonPanelKeyReceived(OVCandidateService* candid
                 bool hasCandidates = false;
 
                 if ((isEndKey(key) && !excludeEndKey) || (m_module->m_cfgShouldCommitAtMaximumRadicalLength && m_components.size() >= m_module->m_cfgMaximumRadicalLength)) {        
-                    hasCandidates = compose(readingText, composingText, candidateService, loaderService);
+                    hasCandidates = compose(readingText, composingText, candidateService, loaderService, !previewingPrefixCode());
                 }
                 else {
                     if (m_module->m_cfgComposeWhileTyping) {
@@ -713,6 +769,7 @@ OVIMGeneric::OVIMGeneric(const string& name, OVDatabaseService* databaseService)
     , m_cfgUseDynamicFrequency(true)
     , m_cfgUseSpaceAsFirstCandidateSelectionKey(false)
     , m_cfgComposeWhileTyping(false)
+    , m_cfgPrefixCandidates(false)
     , m_cfgSendFirstCandidateWithSpaceWithOnePageList(false)
     , m_cfgCandidateSelectionKeys("12345678990")
     , m_overrideTable(0)
@@ -848,6 +905,10 @@ void OVIMGeneric::loadConfig(OVKeyValueMap* moduleConfig, OVLoaderService* loade
         m_cfgComposeWhileTyping = moduleConfig->isKeyTrue("ComposeWhileTyping");
     }
     
+    m_cfgPrefixCandidates = m_name == "Generic-cj-cin" &&
+        moduleConfig->hasKey("PrefixCandidates") && moduleConfig->isKeyTrue("PrefixCandidates");
+    if (m_cfgComposeWhileTyping) m_cfgClearReadingBufferAtCompositionError = false;
+
     if (moduleConfig->hasKey("SendFirstCandidateWithSpaceWithOnePageList")) {
         m_cfgSendFirstCandidateWithSpaceWithOnePageList = moduleConfig->isKeyTrue("SendFirstCandidateWithSpaceWithOnePageList");
     }
@@ -916,6 +977,8 @@ void OVIMGeneric::saveConfig(OVKeyValueMap* moduleConfig, OVLoaderService* loade
     moduleConfig->setKeyStringValue("UseCharactersSupportedByEncoding", m_cfgUseCharactersSupportedByEncoding);
     moduleConfig->setKeyBoolValue("UseSpaceAsFirstCandidateSelectionKey", m_cfgUseSpaceAsFirstCandidateSelectionKey);
     moduleConfig->setKeyBoolValue("ComposeWhileTyping", m_cfgComposeWhileTyping);
+    if (m_name == "Generic-cj-cin")
+        moduleConfig->setKeyBoolValue("PrefixCandidates", m_cfgPrefixCandidates);
     moduleConfig->setKeyStringValue("UseOverrideTable", m_cfgUseOverrideTable);
     moduleConfig->setKeyBoolValue("SendFirstCandidateWithSpaceWithOnePageList", m_cfgSendFirstCandidateWithSpaceWithOnePageList);
 }

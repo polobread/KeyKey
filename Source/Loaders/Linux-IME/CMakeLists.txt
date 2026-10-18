@@ -204,6 +204,7 @@ if(KEYKEY_BUILD_FCITX5)
     add_subdirectory(adapters/fcitx5)
     configure_file(tools/keykey-update-notify.in keykey-update-notify @ONLY)
     configure_file(tools/keykey-about.in keykey-about @ONLY)
+    configure_file(tools/keykey-cangjie-settings.in keykey-cangjie-settings @ONLY)
     configure_file(data/org.chichi77.KeyKey.About.desktop.in
         org.chichi77.KeyKey.About.desktop @ONLY)
     configure_file(data/org.chichi77.KeyKey.UpdateNotification.desktop.in
@@ -215,8 +216,9 @@ if(KEYKEY_BUILD_FCITX5)
         RENAME org.chichi77.KeyKey.UpdateNotification.desktop)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/keykey-update-notify"
         "${CMAKE_CURRENT_BINARY_DIR}/keykey-about"
+        "${CMAKE_CURRENT_BINARY_DIR}/keykey-cangjie-settings"
         DESTINATION "${CMAKE_INSTALL_BINDIR}")
-    install(FILES tools/update_notify.py tools/update_notify_gui.py tools/about_gui.py
+    install(FILES tools/update_notify.py tools/update_notify_gui.py tools/about_gui.py tools/cangjie_settings.py
         "${KEYKEY_REPOSITORY_ROOT}/Source/Branding/ProjectMotivation.txt"
         "${KEYKEY_REPOSITORY_ROOT}/Source/Branding/chichi77.png"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/chichi77-keykey")
@@ -237,6 +239,9 @@ if(BUILD_TESTING)
     add_test(NAME keykey_unix_update_notification_lifecycle
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_update_notify_lifecycle.py")
     if(KEYKEY_BUILD_X11_E2E_HOST)
+        add_test(NAME keykey_cangjie_settings_gui
+            COMMAND dbus-run-session -- xvfb-run -a "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_cangjie_settings.py")
         add_test(NAME keykey_unix_update_notification_gui
             COMMAND dbus-run-session -- xvfb-run -a "${Python3_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_update_notify_gui.py")
@@ -275,6 +280,8 @@ if(KEYKEY_INSTALL_STANDALONE_LICENSE_FILES)
         RENAME LICENSE-linux-frontend.txt
         DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/chichi77-keykey"
     )
+    install(FILES "${KEYKEY_REPOSITORY_ROOT}/Source/Shared/Unicode-LICENSE.txt"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/chichi77-keykey")
     install(FILES "${KEYKEY_REPOSITORY_ROOT}/LICENSES/MIT.txt"
         RENAME LICENSE-MIT.txt
         DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/chichi77-keykey"

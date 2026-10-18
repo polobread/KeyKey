@@ -38,6 +38,7 @@
 #else
     #include "OpenVanilla.h"
 #endif
+#include <set>
 
 namespace OpenVanilla {
     using namespace std;
@@ -67,6 +68,12 @@ namespace OpenVanilla {
         virtual bool stringContainsWildcard(const string& str);
         virtual const string keynameForKeyString(const string& keystr);
         
+        bool previewingPrefixCode() const;
+        bool isExactCandidate(const string& text) const {
+            return !m_prefixPreview || m_exactCandidates.count(text) != 0;
+        }
+        bool m_prefixPreview;
+        std::set<string> m_exactCandidates;
         vector<string> m_components;
         OVIMGeneric* m_module;
         
@@ -115,6 +122,7 @@ namespace OpenVanilla {
         bool m_cfgUseDynamicFrequency;
         bool m_cfgUseSpaceAsFirstCandidateSelectionKey;
         bool m_cfgComposeWhileTyping;
+        bool m_cfgPrefixCandidates;
         bool m_cfgSendFirstCandidateWithSpaceWithOnePageList;
         char m_cfgMatchOneChar;
         char m_cfgMatchZeroOrMoreChar;

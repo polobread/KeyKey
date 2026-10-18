@@ -19,11 +19,12 @@ diff --git a/chinese/fcitx5-keykey/Makefile b/chinese/fcitx5-keykey/Makefile
 diff --git a/chinese/fcitx5-keykey/pkg-plist b/chinese/fcitx5-keykey/pkg-plist
 --- a/chinese/fcitx5-keykey/pkg-plist
 +++ b/chinese/fcitx5-keykey/pkg-plist
-@@ -1,5 +1,15 @@
+@@ -1,5 +1,18 @@
  bin/keykey-fcitx-app
  bin/keykey-smart-phrases
 +bin/keykey-update-notify
 +bin/keykey-about
++bin/keykey-cangjie-settings
 +etc/xdg/autostart/org.chichi77.KeyKey.UpdateNotification.desktop
  lib/fcitx5/chichi77-keykey.so
  share/applications/org.chichi77.KeyKey.TextEditor.desktop
@@ -32,6 +33,8 @@ diff --git a/chinese/fcitx5-keykey/pkg-plist b/chinese/fcitx5-keykey/pkg-plist
 +share/chichi77-keykey/update_notify.py
 +share/chichi77-keykey/update_notify_gui.py
 +share/chichi77-keykey/about_gui.py
++share/chichi77-keykey/cangjie_settings.py
++share/doc/chichi77-keykey/Unicode-LICENSE.txt
 +share/chichi77-keykey/ProjectMotivation.txt
 +share/chichi77-keykey/chichi77.png
  share/chichi77-keykey/data/associated-phrases/McBopomofo.occ

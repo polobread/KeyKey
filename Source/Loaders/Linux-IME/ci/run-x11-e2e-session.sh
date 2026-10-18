@@ -75,6 +75,7 @@ known_cases=(
   T04-X11-GTK3-CANGJIE
   T04-X11-GTK3-CANGJIE-ENDKEY-ERROR
   T04-X11-GTK3-CANGJIE-WILDCARD
+  T04-X11-GTK3-CANGJIE-PREFIX
   T05-X11-GTK3-SIMPLEX
   T05-X11-GTK3-SIMPLEX-FULL-CODE
   T06-X11-GTK3-CANDIDATE-NAVIGATION
@@ -2212,6 +2213,21 @@ if case_selected T04-X11-GTK3-CANGJIE-WILDCARD; then
     '昌日' 'a? 1a* 1' \
     '日,日？,日,日＊' \
     a question space 1 a asterisk space 1
+fi
+if case_selected T04-X11-GTK3-CANGJIE-PREFIX; then
+  # Use the installed settings writer, including real top-level Fcitx options.
+  python3 - "$keykey_config_path" <<'PY'
+import sys
+sys.path.insert(0, "/usr/share/chichi77-keykey")
+from cangjie_settings import save
+save(__import__("pathlib").Path(sys.argv[1]), True, True, False)
+PY
+  reload_keykey_config
+  run_case T04-X11-GTK3-CANGJIE-PREFIX chichi77-keykey-cangjie \
+    '喬喬' 'hk5hkrbr' '竹,竹大,竹大口,竹大口月,竹大口月口' \
+    h k 5 h k r b r Return
+  write_keykey_config
+  reload_keykey_config
 fi
 if case_selected T05-X11-GTK3-SIMPLEX; then
   run_case T05-X11-GTK3-SIMPLEX chichi77-keykey-simplex \

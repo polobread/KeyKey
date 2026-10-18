@@ -1,0 +1,5 @@
+#!@Python3_EXECUTABLE@
+import sys
+sys.path.insert(0, "@CMAKE_INSTALL_FULL_DATADIR@/chichi77-keykey")
+from cangjie_settings import main
+main()
