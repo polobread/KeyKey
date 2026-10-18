@@ -81,7 +81,7 @@ public final class BopomofoEngine {
     public private(set) var chineseInputMethod: ChineseInputMethod = .traditional
     public var tableOptions = TableInputOptions(method: .cangjie)
     private var tableExactCandidates: Set<String> = []
-    private var tablePrefixMode: Bool { chineseInputMethod == .cangjie && tableOptions.prefixCandidates }
+    private var tablePrefixMode: Bool { chineseInputMethod == .cangjie && tableOptions.composeWhileTyping && tableOptions.prefixCandidates }
     private var tablePreviewsCandidates: Bool { tableOptions.composeWhileTyping || tablePrefixMode }
     private var tableSource: TableCandidateSource?
     private var tableCode = ""

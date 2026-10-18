@@ -40,6 +40,10 @@ final class ChineseInputMethodSettings {
                     p.getBoolean(key + "realtime", true));
             result.prefixCandidates = p.getBoolean(key + "virtual.prefix", true);
         }
+        if (method == ChineseInputMethod.CANGJIE)
+            result.clearOnError = p.getBoolean(key + (virtualKeyboard ? "virtual.clear" : "physical.clear"),
+                    result.clearOnError);
+        if (result.composeWhileTyping) result.clearOnError = false;
         return result;
     }
     static void setOptions(Context context, ChineseInputMethod method, TableInputOptions options) {
@@ -50,10 +54,11 @@ final class ChineseInputMethodSettings {
         String key = "table_options." + method.name() + ".";
         SharedPreferences p = preferences(context);
         SharedPreferences.Editor edit = p.edit().putBoolean(key + "maximum", options.queryAtMaximum)
-                .putBoolean(key + "clear", options.clearOnError)
                 .putBoolean(key + "learning", options.dynamicFrequency)
                 .putInt(key + "punctuation", options.punctuation);
         if (method == ChineseInputMethod.CANGJIE) {
+            edit.putBoolean(key + (virtualKeyboard ? "virtual.clear" : "physical.clear"),
+                    options.clearOnError && !options.composeWhileTyping);
             // Resolve the old shared choice once, before either input source edits it.
             if (!p.contains(key + "virtual.realtime"))
                 edit.putBoolean(key + "virtual.realtime", options(context, method, true).composeWhileTyping);
@@ -62,7 +67,8 @@ final class ChineseInputMethodSettings {
                     .putBoolean(key + "virtual.prefix", options.prefixCandidates);
             } else edit.putBoolean(key + "realtime", options.composeWhileTyping)
                     .putBoolean(key + "physical.prefix", options.prefixCandidates);
-        } else edit.putBoolean(key + "realtime", options.composeWhileTyping);
+        } else edit.putBoolean(key + "realtime", options.composeWhileTyping)
+                .putBoolean(key + "clear", options.clearOnError && !options.composeWhileTyping);
         edit.apply();
     }
 }

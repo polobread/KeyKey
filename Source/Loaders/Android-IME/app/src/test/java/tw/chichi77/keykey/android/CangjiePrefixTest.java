@@ -13,6 +13,7 @@ public final class CangjiePrefixTest {
         engine.setTableCandidateSource(new TableInputTest.Source(root.resolve("Source/DataTables/cj-ext.cin")));
         engine.setChineseInputMethod(ChineseInputMethod.CANGJIE);
         engine.tableOptions.prefixCandidates = true;
+        engine.tableOptions.composeWhileTyping = true;
         return engine;
     }
     private List<String> all(BopomofoEngine engine) {
@@ -50,9 +51,9 @@ public final class CangjiePrefixTest {
                 for (char key : "hk".toCharArray())
                     assertEquals("", engine.handleHardwareCharacter(key).committedText());
                 assertEquals("竹大", engine.readingText());
-                assertEquals(!realtime && !prefix, engine.displayedCandidates().isEmpty());
-                assertEquals(prefix, engine.displayedCandidates().contains("喬"));
-                if (prefix) {
+                assertEquals(!realtime, engine.displayedCandidates().isEmpty());
+                assertEquals(realtime && prefix, engine.displayedCandidates().contains("喬"));
+                if (realtime && prefix) {
                     assertEquals("夭", engine.displayedCandidates().get(0));
                     assertEquals("喬", engine.selectDisplayedCandidate(
                             engine.displayedCandidates().indexOf("喬")).committedText());

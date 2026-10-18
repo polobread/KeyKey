@@ -88,6 +88,7 @@ public final class TableInputInstrumentedTest {
             engine.setTableCandidateSource(source);
             engine.setChineseInputMethod(ChineseInputMethod.CANGJIE);
             engine.tableOptions.prefixCandidates = true;
+            engine.tableOptions.composeWhileTyping = true;
             engine.tableOptions.queryAtMaximum = true;
             String[] roots = {"竹", "竹大", "竹大口", "竹大口月", "竹大口月口"};
             int[] counts = {38, 40, 11, 2, 1};
@@ -117,6 +118,71 @@ public final class TableInputInstrumentedTest {
             for (char key : "hk?".toCharArray()) engine.handleSoftKey(String.valueOf(key));
             assertFalse(engine.displayedCandidates().contains("喬"));
         } finally { learning.edit().clear().commit(); }
+    }
+
+    @Test public void settingsUiEnforcesRealtimeClearAndDependentPrefixForBothProfiles() throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = ChineseInputMethodSettings.preferences(context);
+        var previous = preferences.getAll();
+        android.app.Activity activity = null;
+        try {
+            activity = instrumentation.startActivitySync(new android.content.Intent(context,
+                    SettingsActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+            android.app.Activity settings = activity;
+            instrumentation.runOnMainSync(() -> {
+                android.view.View root = settings.findViewById(android.R.id.content);
+                for (String profile : new String[]{"", "實體鍵盤："}) {
+                    var realtime = findCheckbox(root, profile + "即時候選");
+                    var prefix = findCheckbox(root, profile + "未打完也能選字");
+                    var clear = findCheckbox(root, profile + "錯碼清除");
+                    assertNotNull(realtime); assertNotNull(prefix); assertNotNull(clear);
+                    realtime.setChecked(false);
+                    clear.setChecked(true);
+                    assertFalse(prefix.isEnabled());
+                    assertFalse(realtime.isChecked());
+                    realtime.performClick();
+                    assertTrue(realtime.isChecked());
+                    assertFalse(clear.isChecked());
+                    assertTrue(prefix.isEnabled());
+                    prefix.setChecked(true);
+                    clear.performClick();
+                    assertTrue(clear.isChecked());
+                    assertFalse(realtime.isChecked());
+                    assertFalse(prefix.isEnabled());
+                    assertTrue(prefix.isChecked());
+                    realtime.performClick();
+                    assertFalse(clear.isChecked());
+                    assertTrue(prefix.isEnabled());
+                    assertTrue(prefix.isChecked());
+                }
+            });
+        } finally {
+            if (activity != null) {
+                android.app.Activity settings = activity;
+                instrumentation.runOnMainSync(settings::finish);
+            }
+            var restore = preferences.edit();
+            for (String key : preferences.getAll().keySet())
+                if (key.startsWith("table_options.CANGJIE.")) restore.remove(key);
+            for (var entry : previous.entrySet()) {
+                if (!entry.getKey().startsWith("table_options.CANGJIE.")) continue;
+                if (entry.getValue() instanceof Boolean value) restore.putBoolean(entry.getKey(), value);
+                else if (entry.getValue() instanceof Integer value) restore.putInt(entry.getKey(), value);
+            }
+            restore.commit();
+        }
+    }
+
+    private android.widget.CheckBox findCheckbox(android.view.View view, String title) {
+        if (view instanceof android.widget.CheckBox box && title.contentEquals(box.getText())) return box;
+        if (view instanceof android.view.ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                var found = findCheckbox(group.getChildAt(i), title);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     private void runCases(String text, java.util.function.Function<ChineseInputMethod, TableCandidateSource> sources) {

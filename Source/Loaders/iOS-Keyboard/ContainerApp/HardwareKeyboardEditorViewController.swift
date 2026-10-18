@@ -804,10 +804,10 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         for method in [ChineseInputMethod.cangjie, .simplex] {
             let options = methodSettings.options(for: method)
             var actions: [UIMenuElement] = options.switches(for: method).map { item in
-                UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self] _ in
+                UIAction(title: item.title, attributes: item.key == "prefix" && !options.composeWhileTyping ? .disabled : [], state: item.enabled ? .on : .off) { [weak self] _ in
                     guard let self else { return }
                     var next = self.methodSettings.options(for: method)
-                    next.toggle(item.key, preserveClearOnError: method == .cangjie)
+                    next.toggle(item.key)
                     self.applyTableOptions(next, for: method)
                 }
             }

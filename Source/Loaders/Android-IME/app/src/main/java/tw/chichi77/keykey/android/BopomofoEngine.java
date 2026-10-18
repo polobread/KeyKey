@@ -88,7 +88,7 @@ final class BopomofoEngine {
     TableInputOptions tableOptions = new TableInputOptions(ChineseInputMethod.CANGJIE);
     private java.util.Set<String> tableExactCandidates = java.util.Set.of();
     private boolean tablePrefixMode() {
-        return chineseInputMethod == ChineseInputMethod.CANGJIE && tableOptions.prefixCandidates;
+        return chineseInputMethod == ChineseInputMethod.CANGJIE && tableOptions.composeWhileTyping && tableOptions.prefixCandidates;
     }
     private boolean tablePreviewsCandidates() { return tableOptions.composeWhileTyping || tablePrefixMode(); }
     private TableCandidateSource tableSource;

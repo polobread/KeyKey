@@ -54,13 +54,17 @@ struct CangjiePrefixTests {
         #expect(engine.readingText.isEmpty)
     }
 
-    @Test("Exact learning stays first; prefix works independently of exact realtime")
+    @Test("Prefix requires realtime; exact learning stays first and wildcard is unchanged")
     func exactAndWildcard() throws {
         let name = "PrefixExact." + UUID().uuidString
         let defaults = try #require(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         let engine = try engine(defaults)
         engine.tableOptions.composeWhileTyping = false
+        engine.handleSoftKey("h"); engine.handleSoftKey("k")
+        #expect(engine.displayedCandidates.isEmpty)
+        engine.escape()
+        engine.tableOptions.composeWhileTyping = true
         engine.handleSoftKey("h"); engine.handleSoftKey("k")
         #expect(engine.displayedCandidates[4] == "喬")
         #expect(engine.selectDisplayedCandidate(4).text == "喬")
@@ -94,9 +98,9 @@ struct CangjiePrefixTests {
         let engine = try engine(defaults, virtualKeyboard: false)
         for key in "hk" { #expect(engine.handleHardwareCharacter(key).text.isEmpty) }
         #expect(engine.readingText == "竹大")
-        #expect(engine.displayedCandidates.isEmpty == (!realtime && !prefix))
-        #expect(engine.displayedCandidates.contains("喬") == prefix)
-        if prefix {
+        #expect(engine.displayedCandidates.isEmpty == !realtime)
+        #expect(engine.displayedCandidates.contains("喬") == (realtime && prefix))
+        if realtime && prefix {
             #expect(engine.displayedCandidates.first == "夭")
             let index = try #require(engine.displayedCandidates.firstIndex(of: "喬"))
             #expect(engine.selectDisplayedCandidate(index).text == "喬")
@@ -121,6 +125,7 @@ struct CangjiePrefixTests {
         let settings = ChineseInputMethodSettings(defaults: defaults)
         var options = settings.options(for: .cangjie)
         options.prefixCandidates = true
+        options.composeWhileTyping = true
         options.queryAtMaximum = true
         settings.setOptions(options, for: .cangjie)
         let engine = try engine(defaults, virtualKeyboard: false)
@@ -170,6 +175,40 @@ struct CangjiePrefixTests {
         #expect(!CangjiePrefixSelection.isPrefixCode("hkrbr"))
     }
 
+    @Test("Realtime and clear are exclusive in each profile; disabled prefix retains its choice",
+          arguments: [false, true])
+    func mutuallyExclusiveSettings(virtualKeyboard: Bool) throws {
+        let name = "PrefixExclusive." + UUID().uuidString
+        let defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let settings = ChineseInputMethodSettings(defaults: defaults)
+        let other = settings.options(for: .cangjie, virtualKeyboard: !virtualKeyboard)
+        var options = settings.options(for: .cangjie, virtualKeyboard: virtualKeyboard)
+        options.composeWhileTyping = true
+        options.prefixCandidates = true
+        options.clearOnError = true // Normalize the previous build's conflicting saved values.
+        settings.setOptions(options, for: .cangjie, virtualKeyboard: virtualKeyboard)
+        options = settings.options(for: .cangjie, virtualKeyboard: virtualKeyboard)
+        #expect(options.composeWhileTyping)
+        #expect(!options.clearOnError)
+        #expect(settings.options(for: .cangjie, virtualKeyboard: !virtualKeyboard).clearOnError == other.clearOnError)
+        options.toggle("clear")
+        #expect(options.clearOnError)
+        #expect(!options.composeWhileTyping)
+        options.toggle("prefix")
+        #expect(options.prefixCandidates)
+        settings.setOptions(options, for: .cangjie, virtualKeyboard: virtualKeyboard)
+        let reopened = ChineseInputMethodSettings(defaults: defaults)
+        options = reopened.options(for: .cangjie, virtualKeyboard: virtualKeyboard)
+        #expect(options.clearOnError && !options.composeWhileTyping)
+        #expect(options.prefixCandidates)
+        let preserved = reopened.options(for: .cangjie, virtualKeyboard: !virtualKeyboard)
+        #expect(preserved.composeWhileTyping == other.composeWhileTyping)
+        #expect(preserved.clearOnError == other.clearOnError)
+        options.toggle("realtime")
+        #expect(options.composeWhileTyping && !options.clearOnError)
+    }
+
     @Test("Virtual preferences preserve legacy physical options and independent app-group revisions")
     func settings() throws {
         let localName = "PrefixSettings." + UUID().uuidString
@@ -205,7 +244,7 @@ struct CangjiePrefixTests {
         #expect(reopened.options(for: .cangjie).prefixCandidates)
         #expect(reopened.options(for: .cangjie).composeWhileTyping)
         var toggled = reopened.options(for: .cangjie)
-        toggled.toggle("realtime", preserveClearOnError: true)
+        toggled.toggle("clear")
         #expect(toggled.clearOnError)
         #expect(toggled.switches(for: .cangjie).contains { $0.key == "prefix" })
         // An App physical edit cannot override an extension-local virtual choice.

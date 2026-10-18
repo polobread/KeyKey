@@ -539,10 +539,10 @@ private final class InputMethodSettingsViewController: UIViewController {
     private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod, virtualKeyboard: Bool) {
         let options = modeSettings.options(for: method, virtualKeyboard: virtualKeyboard)
         var children: [UIMenuElement] = options.switches(for: method).map { item in
-            UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self, weak button] _ in
+            UIAction(title: item.title, attributes: item.key == "prefix" && !options.composeWhileTyping ? .disabled : [], state: item.enabled ? .on : .off) { [weak self, weak button] _ in
                 guard let self, let button else { return }
                 var next = self.modeSettings.options(for: method, virtualKeyboard: virtualKeyboard)
-                next.toggle(item.key, preserveClearOnError: method == .cangjie)
+                next.toggle(item.key)
                 self.modeSettings.setOptions(next, for: method, virtualKeyboard: virtualKeyboard)
 
                 self.refreshTableOptions(button, for: method, virtualKeyboard: virtualKeyboard)

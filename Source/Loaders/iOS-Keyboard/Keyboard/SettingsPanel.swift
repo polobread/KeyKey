@@ -243,10 +243,10 @@ final class SettingsPanel: UIView {
     private func refreshTableOptions(_ button: UIButton, for method: ChineseInputMethod) {
         let options = methodSettings.options(for: method, virtualKeyboard: true)
         var children: [UIMenuElement] = options.switches(for: method).map { item in
-            UIAction(title: item.title, state: item.enabled ? .on : .off) { [weak self, weak button] _ in
+            UIAction(title: item.title, attributes: item.key == "prefix" && !options.composeWhileTyping ? .disabled : [], state: item.enabled ? .on : .off) { [weak self, weak button] _ in
                 guard let self, let button else { return }
                 var next = self.methodSettings.options(for: method, virtualKeyboard: true)
-                next.toggle(item.key, preserveClearOnError: method == .cangjie)
+                next.toggle(item.key)
                 self.methodSettings.setOptions(next, for: method, virtualKeyboard: true)
                 self.delegate?.settingsPanelDidChangeTableOptions(self)
                 self.refreshTableOptions(button, for: method)

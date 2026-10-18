@@ -605,70 +605,76 @@ public final class SettingsActivity extends Activity implements SupporterBilling
     }
 
     private void addTableSettings(LinearLayout parent, ChineseInputMethod method) {
+        addTableSettings(parent, method, true);
+        if (method == ChineseInputMethod.CANGJIE) addTableSettings(parent, method, false);
+    }
+
+    private void addTableSettings(LinearLayout parent, ChineseInputMethod method, boolean virtualKeyboard) {
+        boolean cangjie = method == ChineseInputMethod.CANGJIE;
         TextView heading = new TextView(this);
-        heading.setText(method.displayName + (method == ChineseInputMethod.CANGJIE ? "設定（虛擬鍵盤）" : "設定"));
+        heading.setText(method.displayName + (cangjie
+                ? (virtualKeyboard ? "設定（虛擬鍵盤）" : "設定（實體鍵盤）") : "設定"));
         heading.setTextSize(18);
         parent.addView(heading, matchWrap(dp(0), dp(4)));
-        TableInputOptions initial = ChineseInputMethodSettings.options(this, method, true);
-        String[] keys = method == ChineseInputMethod.CANGJIE
-                ? new String[]{"realtime", "prefix", "clear", "maximum", "learning"}
+        TableInputOptions initial = ChineseInputMethodSettings.options(this, method, virtualKeyboard);
+        String[] keys = cangjie
+                ? (virtualKeyboard ? new String[]{"realtime", "prefix", "clear", "maximum", "learning"}
+                                   : new String[]{"realtime", "prefix", "clear"})
                 : new String[]{"realtime", "clear"};
-        String[] titles = method == ChineseInputMethod.CANGJIE
-                ? new String[]{"即時候選", "未打完也能選字", "錯碼清除（預覽關閉時）", "滿五碼查詢", "依選字紀錄排序"}
-                : new String[]{"即時候選", "錯碼清除"};
         CheckBox[] controls = new CheckBox[keys.length];
+        boolean[] updating = {false};
+        Runnable refresh = () -> {
+            TableInputOptions saved = ChineseInputMethodSettings.options(this, method, virtualKeyboard);
+            updating[0] = true;
+            for (int i = 0; i < keys.length; i++) {
+                if (controls[i] == null) continue;
+                controls[i].setChecked(switch (keys[i]) {
+                    case "realtime" -> saved.composeWhileTyping;
+                    case "prefix" -> saved.prefixCandidates;
+                    case "clear" -> saved.clearOnError;
+                    case "maximum" -> saved.queryAtMaximum;
+                    default -> saved.dynamicFrequency;
+                });
+                controls[i].setEnabled(!keys[i].equals("prefix") || saved.composeWhileTyping);
+            }
+            updating[0] = false;
+        };
         for (int i = 0; i < keys.length; i++) {
             String key = keys[i];
             CheckBox control = new CheckBox(this);
             controls[i] = control;
-            control.setText(titles[i]);
+            String title = switch (key) {
+                case "realtime" -> "即時候選";
+                case "prefix" -> "未打完也能選字";
+                case "clear" -> "錯碼清除";
+                case "maximum" -> "滿五碼查詢";
+                default -> "依選字紀錄排序";
+            };
+            control.setText(virtualKeyboard ? title : "實體鍵盤：" + title);
             control.setMinHeight(dp(44));
-            control.setChecked(switch (key) {
-                case "realtime" -> initial.composeWhileTyping;
-                case "prefix" -> initial.prefixCandidates;
-                case "clear" -> initial.clearOnError;
-                case "maximum" -> initial.queryAtMaximum;
-                default -> initial.dynamicFrequency;
-            });
             control.setOnCheckedChangeListener((button, checked) -> {
-                TableInputOptions next = ChineseInputMethodSettings.options(this, method, true);
+                if (updating[0]) return;
+                TableInputOptions next = ChineseInputMethodSettings.options(this, method, virtualKeyboard);
                 switch (key) {
-                    case "realtime" -> { next.composeWhileTyping = checked; if (checked && method != ChineseInputMethod.CANGJIE) next.clearOnError = false; }
-                    case "prefix" -> next.prefixCandidates = checked;
-                    case "clear" -> { next.clearOnError = checked; if (checked && method != ChineseInputMethod.CANGJIE) next.composeWhileTyping = false; }
+                    case "realtime" -> { next.composeWhileTyping = checked; if (checked) next.clearOnError = false; }
+                    case "prefix" -> { if (next.composeWhileTyping) next.prefixCandidates = checked; }
+                    case "clear" -> { next.clearOnError = checked; if (checked) next.composeWhileTyping = false; }
                     case "maximum" -> next.queryAtMaximum = checked;
                     default -> next.dynamicFrequency = checked;
                 }
-                ChineseInputMethodSettings.setOptions(this, method, next, true);
-                if (controls[0] != null) controls[0].setChecked(next.composeWhileTyping);
-                int clearIndex = method == ChineseInputMethod.CANGJIE ? 2 : 1;
-                if (controls[clearIndex] != null) controls[clearIndex].setChecked(next.clearOnError);
+                ChineseInputMethodSettings.setOptions(this, method, next, virtualKeyboard);
+                refresh.run();
             });
             parent.addView(control, matchWrap(dp(0), dp(0)));
         }
-        if (method == ChineseInputMethod.CANGJIE) {
+        refresh.run();
+        if (cangjie) {
             TextView explanation = new TextView(this);
-            explanation.setText("輸入字根時，提前顯示相同開頭的候選字，常用字優先。兩項預覽皆關閉時才套用錯碼清除。");
+            explanation.setText("即時候選與錯碼清除互斥。開啟即時候選後，才能啟用「未打完也能選字」，提前顯示相同開頭的候選字，常用字優先。");
             explanation.setTextSize(14);
             parent.addView(explanation, matchWrap(dp(0), dp(4)));
-            TextView hardwareHeading = new TextView(this);
-            hardwareHeading.setText("倉頡設定（實體鍵盤）");
-            hardwareHeading.setTextSize(18);
-            parent.addView(hardwareHeading, matchWrap(dp(0), dp(8)));
-            for (boolean prefix : new boolean[]{false, true}) {
-                CheckBox control = new CheckBox(this);
-                control.setText(prefix ? "實體鍵盤：未打完也能選字" : "實體鍵盤：即時候選");
-                control.setMinHeight(dp(44));
-                TableInputOptions hardware = ChineseInputMethodSettings.options(this, method);
-                control.setChecked(prefix ? hardware.prefixCandidates : hardware.composeWhileTyping);
-                control.setOnCheckedChangeListener((button, checked) -> {
-                    TableInputOptions next = ChineseInputMethodSettings.options(this, method);
-                    if (prefix) next.prefixCandidates = checked;
-                    else next.composeWhileTyping = checked;
-                    ChineseInputMethodSettings.setOptions(this, method, next);
-                });
-                parent.addView(control, matchWrap(dp(0), dp(0)));
-            }
+        }
+        if (cangjie && virtualKeyboard) {
             Spinner punctuation = new Spinner(this);
             punctuation.setContentDescription("倉頡標點");
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this,

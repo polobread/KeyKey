@@ -55,19 +55,31 @@ public final class ChineseInputMethodSettings {
             // the other profile's migration fallback or App Group revision.
             options.composeWhileTyping = store.object(forKey: "tablePreview.cangjie." + profile + ".realtime") as? Bool
                 ?? legacy?.composeWhileTyping ?? virtualKeyboard
+            options.clearOnError = store.object(forKey: "tablePreview.cangjie." + profile + ".clear") as? Bool
+                ?? options.clearOnError
             options.prefixCandidates = store.object(forKey: "tablePreview.cangjie." + profile + ".prefix") as? Bool
                 ?? virtualKeyboard
         }
+        if options.composeWhileTyping { options.clearOnError = false }
         return options
     }
     public func setOptions(_ options: TableInputOptions, for method: ChineseInputMethod,
                            virtualKeyboard: Bool = false) {
+        var options = options
+        if options.composeWhileTyping { options.clearOnError = false }
         let key: String
         if method == .cangjie {
             let profile = virtualKeyboard ? "virtual" : "physical"
             store.set(options.composeWhileTyping, forKey: "tablePreview.cangjie." + profile + ".realtime")
+            store.set(options.clearOnError, forKey: "tablePreview.cangjie." + profile + ".clear")
             store.set(options.prefixCandidates, forKey: "tablePreview.cangjie." + profile + ".prefix")
             key = "tableOptions.cangjie.shared"
+            // Keep the former shared clear value only as a migration fallback.
+            // The active choice now lives in each profile's own key.
+            options.clearOnError = [key, "tableOptions.cangjie"].compactMap { storedKey in
+                (store.object(forKey: storedKey) as? Data)
+                    .flatMap { try? JSONDecoder().decode(TableInputOptions.self, from: $0) }
+            }.first?.clearOnError ?? TableInputOptions(method: .cangjie).clearOnError
         } else {
             key = "tableOptions." + method.rawValue
         }
@@ -188,22 +200,18 @@ public final class TableCandidateStore: TableCandidateSource {
 public extension TableInputOptions {
     func switches(for method: ChineseInputMethod) -> [(key: String, title: String, enabled: Bool)] {
         var rows = [("realtime", "即時候選", composeWhileTyping),
-                    ("clear", method == .cangjie ? "錯碼清除（預覽關閉時）" : "錯碼清除", clearOnError)]
+                    ("clear", "錯碼清除", clearOnError)]
         if method == .cangjie {
             rows.insert(("prefix", "未打完也能選字", prefixCandidates), at: 1)
             rows += [("maximum", "滿五碼查詢", queryAtMaximum), ("learning", "依選字紀錄排序", dynamicFrequency)]
         }
         return rows
     }
-    mutating func toggle(_ key: String, preserveClearOnError: Bool = false) {
-        if preserveClearOnError {
-            if key == "realtime" { composeWhileTyping.toggle(); return }
-            if key == "clear" { clearOnError.toggle(); return }
-        }
+    mutating func toggle(_ key: String) {
         switch key {
         case "realtime": composeWhileTyping.toggle(); if composeWhileTyping { clearOnError = false }
         case "clear": clearOnError.toggle(); if clearOnError { composeWhileTyping = false }
-        case "prefix": prefixCandidates.toggle()
+        case "prefix": if composeWhileTyping { prefixCandidates.toggle() }
         case "maximum": queryAtMaximum.toggle()
         case "learning": dynamicFrequency.toggle()
         default: break
