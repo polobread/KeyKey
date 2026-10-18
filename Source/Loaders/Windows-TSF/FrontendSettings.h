@@ -4,6 +4,8 @@
 
 #include <string>
 #include <cstdint>
+#include "SharedTableSettings.h"
+#include "SharedRuntimePreferences.h"
 
 namespace KeyKey::WindowsTsf {
 
@@ -41,6 +43,10 @@ std::wstring AssociatedPhrasePreferencesPath();
 FrontendSettings LoadFrontendSettings();
 UINT ContentDpiForScale(UINT hostDpi, HMONITOR monitor, int scalePercent);
 bool SaveSimplifiedOutputPreference(bool enabled);
+TablePreviewSettings LoadTablePreviewSettings(bool simplex = false);
+bool SyncTablePreviewSettings(SharedTableSettings& shared, TfClientId client, bool immersive, bool simplex = false);
+std::wstring RuntimePreferencesSnapshot();
+bool SyncRuntimePreferences(SharedRuntimePreferences& shared, TfClientId client, bool immersive);
 std::string SmartMandarinSettingsSignature();
 std::string LoadInputMethodPreference(const std::string& fallback);
 bool IsInputMethodVisible(const char* identifier);

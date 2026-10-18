@@ -8,6 +8,8 @@
 #include "sqlite3.h"
 #include "SharedOutputState.h"
 #include "StartupInputMode.h"
+#include "SharedTableSettings.h"
+#include "FrontendSettings.h"
 
 namespace {
 struct Collection { std::wstring source; std::wstring display; };
@@ -54,6 +56,34 @@ __declspec(dllexport) int __cdecl KeyKeyPublishSimplifiedOutput(int enabled) {
 }
 __declspec(dllexport) int __cdecl KeyKeyPublishDefaultChineseMode(int enabled) {
     return PublishBooleanPreference(enabled, KeyKey::WindowsTsf::StartupInputModeGuid());
+}
+__declspec(dllexport) int __cdecl KeyKeyPublishTablePreviewSettings(int simplex, int compose, int prefix, int clear) {
+    Microsoft::WRL::ComPtr<ITfThreadMgrEx> manager;
+    if (FAILED(CoCreateInstance(CLSID_TF_ThreadMgr, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&manager)))) return 0;
+    TfClientId client = TF_CLIENTID_NULL;
+    if (FAILED(manager->ActivateEx(&client, TF_TMAE_NOACTIVATETIP | TF_TMAE_NOACTIVATEKEYBOARDLAYOUT))) return 0;
+    KeyKey::WindowsTsf::SharedTableSettings state;
+    const auto connected = state.connect(manager.Get(), KeyKey::WindowsTsf::TableSettingsGuid(simplex != 0));
+    const auto written = SUCCEEDED(connected)
+        ? state.write(client, {compose != 0, !simplex && prefix != 0, clear != 0}) : connected;
+    state.reset();
+    manager->Deactivate();
+    return SUCCEEDED(written) ? 1 : 0;
+}
+__declspec(dllexport) int __cdecl KeyKeyPublishRuntimePreferences() {
+    Microsoft::WRL::ComPtr<ITfThreadMgrEx> manager;
+    if (FAILED(CoCreateInstance(CLSID_TF_ThreadMgr, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&manager)))) return 0;
+    TfClientId client = TF_CLIENTID_NULL;
+    if (FAILED(manager->ActivateEx(&client, TF_TMAE_NOACTIVATETIP | TF_TMAE_NOACTIVATEKEYBOARDLAYOUT))) return 0;
+    KeyKey::WindowsTsf::SharedRuntimePreferences state;
+    const auto connected = state.connect(manager.Get());
+    const auto snapshot = KeyKey::WindowsTsf::RuntimePreferencesSnapshot();
+    const auto written = SUCCEEDED(connected) ? state.write(client, snapshot) : connected;
+    state.reset();
+    manager->Deactivate();
+    return SUCCEEDED(written) ? 1 : 0;
 }
 // Each lookup owns an immutable snapshot. Caller releases it exactly once;
 // buffers are caller-owned UTF-16 and capacities include the trailing NUL.

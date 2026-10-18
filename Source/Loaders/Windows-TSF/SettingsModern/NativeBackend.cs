@@ -13,6 +13,10 @@ internal static class NativeBackend
     public static extern int KeyKeyPublishSimplifiedOutput(int enabled);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)]
     public static extern int KeyKeyPublishDefaultChineseMode(int enabled);
+    [DllImport(Library, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int KeyKeyPublishTablePreviewSettings(int simplex, int compose, int prefix, int clear);
+    [DllImport(Library, CallingConvention = CallingConvention.Cdecl)]
+    public static extern int KeyKeyPublishRuntimePreferences();
 
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
     private static extern IntPtr KeyKeyLookupReadings(string path, string phrase, out int status);

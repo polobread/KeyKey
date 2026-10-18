@@ -32,6 +32,11 @@ struct TextServiceTestAccess {
     static void manager(TextService& s,ITfThreadMgr* manager) {
         s.threadManager_=manager; s.sharedInputMethod_.connect(manager);
     }
+    static void tableSettings(TextService& s,bool immersive) {
+        s.immersiveMode_=immersive;
+        s.sharedCangjieSettings_.connect(s.threadManager_.Get());
+        s.sharedSimplexSettings_.connect(s.threadManager_.Get(),TableSettingsGuid(true));
+    }
     static bool symbol(TextService& s,ITfContext* context,const std::wstring& text) {
         s.symbolContext_=context; return s.requestSymbol(context,text,s.symbolGeneration_);
     }
@@ -964,6 +969,98 @@ void TestPersistentModeRecovery() {
             "Deactivation retained or executed recovery"); }
     std::cout<<"Persistent mode write/rollback recovery, bounded retries, unset/type safety and host override passed\n";
 }
+void TestTablePreviewSettings(bool simplex) {
+    const std::string method=simplex ? "Generic-simplex-cin" : "Generic-cj-cin";
+    const std::wstring radicals=simplex ? L"日" : L"竹大";
+    const wchar_t* keys=simplex ? L"a" : L"hk";
+    const auto path=SettingsDirectory()+L"\\com.polobread.chichi77-keykey.windows."+std::wstring(method.begin(),method.end())+L".plist";
+    std::ifstream before(path,std::ios::binary);
+    const std::string original{std::istreambuf_iterator<char>(before),std::istreambuf_iterator<char>()};
+    before.close();
+    { std::ofstream file(path,std::ios::binary);
+      file<<"<plist><dict><key>ComposeWhileTyping</key><string>false</string>"
+            "<key>PrefixCandidates</key><string>false</string>"
+            "<key>RetainedText</key><string>private</string></dict></plist>"; }
+    Check(SelectInputMethod(method.c_str()),"Select table for restricted preview sync");
+    { Fixture f(L"",false,false); Fresh(f,method);
+      TextServiceTestAccess::tableSettings(*f.service.Get(),true);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      auto* published=manager->global->get(TableSettingsGuid(simplex));
+      SharedTableSettings state;
+      Success(state.connect(manager,TableSettingsGuid(simplex)),"Connect Cangjie contract test");
+      const auto unchanged=EngineSettingsSignature(method);
+      for (LONG invalid : {0L,0x108L,0x105L,-1L}) {
+          published->type=VT_I4; published->value=invalid;
+          Check(!state.read(),"Malformed Cangjie snapshot accepted");
+          f.service->syncInputMethod();
+          Check(EngineSettingsSignature(method)==unchanged && published->attempts==0,
+                "Invalid snapshot changed private preferences or published restricted defaults");
+      }
+      published->type=VT_UI4; published->value=0x103;
+      Check(!state.read(),"Wrong snapshot type accepted");
+      published->type=VT_EMPTY;
+      f.service->syncInputMethod();
+      Check(EngineSettingsSignature(method)==unchanged,"Unset snapshot lost local settings");
+      Type(f,keys);
+      Check(f.document->text==radicals && !TextServiceTestAccess::candidateActive(*f.service.Get()),
+            "Disabled preview baseline changed");
+      published->type=VT_I4; published->value=TablePreviewSettings{true,!simplex,false}.encoded();
+      f.document->failWrite=true;
+      f.service->syncInputMethod();
+      Check(f.document->text==radicals && TextServiceTestAccess::engineComposition(*f.service.Get()),
+            "Rejected settings boundary lost old radicals");
+      f.document->failWrite=false;
+      f.service->syncInputMethod(); f.context->drainAll();
+      Check(f.document->text==radicals && !TextServiceTestAccess::engineComposition(*f.service.Get()),
+            "Preview sync failed to preserve/finish old composition");
+      Type(f,keys);
+      Check(f.document->text==radicals+radicals && TextServiceTestAccess::candidateActive(*f.service.Get()),
+            "Restricted TSF did not show candidates after settings synchronization");
+      Check(EngineSettingsSignature(method).find("private")!=std::string::npos && published->attempts==0,
+            "Restricted sync lost unrelated settings or overwrote the shared snapshot");
+      const auto revision=EngineSettingsSignature(method);
+      f.service->syncInputMethod();
+      Check(EngineSettingsSignature(method)==revision && f.document->text==radicals+radicals &&
+            TextServiceTestAccess::engineComposition(*f.service.Get()),"Unchanged settings disturbed active composition");
+      published->value=TablePreviewSettings{false,!simplex,true}.encoded();
+      f.service->syncInputMethod(); f.context->drainAll();
+      Type(f,keys);
+      Check(f.document->text==radicals+radicals+radicals && !TextServiceTestAccess::candidateActive(*f.service.Get()),
+            "Restricted TSF did not disable preview without losing radicals");
+      TextServiceTestAccess::tableSettings(*f.service.Get(),false);
+      f.service->syncInputMethod();
+      Check(state.read() && state.read()->encoded()==LoadTablePreviewSettings(simplex).encoded(),
+            "Desktop did not publish saved candidate settings");
+    }
+    { std::ofstream restore(path,std::ios::binary); restore<<original; }
+    std::cout<<method<<" restricted settings, malformed/unset snapshots and ordered composition boundaries passed\n";
+}
+
+void TestHiddenSharedMethod() {
+    Check(SelectInputMethod("Generic-cj-cin"),"Seed hidden shared Cangjie selection");
+    const auto path=LoaderPreferencesPath();
+    std::ifstream input(path,std::ios::binary);
+    const std::string original{std::istreambuf_iterator<char>(input),std::istreambuf_iterator<char>()};
+    input.close();
+    { Fixture f(L"",false,false); Fresh(f,"Generic-cj-cin");
+      TextServiceTestAccess::tableSettings(*f.service.Get(),true);
+      auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+      auto* selected=manager->global->get(kSelectedInputMethodCompartment);
+      selected->type=VT_I4; selected->value=FindInputMethod("Generic-cj-cin")->menuId;
+      Type(f,L"hk");
+      { std::ofstream file(path,std::ios::binary);
+        file<<"<plist><dict><key>PrimaryInputMethod</key><string>Generic-cj-cin</string>"
+              "<key>ModulesSuppressedFromUI</key><array><string>Generic-cj-cin</string>"
+              "<string>TraditionalMandarin</string><string>SmartMandarin</string></array></dict></plist>"; }
+      f.service->syncInputMethod(); f.context->drainAll();
+      Check(f.service->effectiveInputMethod()=="Generic-simplex-cin" && f.document->text==L"竹大" &&
+            !TextServiceTestAccess::engineComposition(*f.service.Get()) &&
+            selected->value==FindInputMethod("Generic-simplex-cin")->menuId,
+            "Hidden shared method survived or fallback lost original radicals");
+    }
+    { std::ofstream restore(path,std::ios::binary); restore<<original; }
+}
+
 void TestControlledBoundaries() {
     const auto settings=SmartMandarinPreferencesPath();
     std::ifstream before(settings,std::ios::binary);
@@ -1177,6 +1274,9 @@ void TestOrderedInput() {
       Check(f.document->text==selected && !f.service->isChineseMode(),"Selected candidate/mid-sentence switch lost visible text"); }
     std::cout << "Ordered TSF input: 20 directed mode pairs / 68 applicable states plus refusal, cancellation, FIFO, caret retry and stale callbacks passed\n";
     TestControlledBoundaries();
+    TestTablePreviewSettings(false);
+    TestTablePreviewSettings(true);
+    TestHiddenSharedMethod();
 }
 
 int main() {

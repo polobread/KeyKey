@@ -735,6 +735,9 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
     keyEventSinkForeground_=true;
     const HRESULT sharedResult = sharedInputMethod_.connect(threadManager_.Get());
     sharedOutputState_.connect(threadManager_.Get());
+    sharedCangjieSettings_.connect(threadManager_.Get());
+    sharedSimplexSettings_.connect(threadManager_.Get(), TableSettingsGuid(true));
+    sharedRuntimePreferences_.connect(threadManager_.Get());
     Trace("SharedInputMethod connect hr=0x%08lX", static_cast<unsigned long>(sharedResult));
     syncInputMethod();
     Trace("Activate process=%ls arch=%ls client=%lu flags=0x%08lX engineReady=%d",
@@ -771,6 +774,9 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
         engine_.reset();
         sharedInputMethod_.reset();
         sharedOutputState_.reset();
+        sharedCangjieSettings_.reset();
+        sharedSimplexSettings_.reset();
+        sharedRuntimePreferences_.reset();
         lastLocalInputMethod_.clear();
         threadManager_.Reset();
         clientId_ = TF_CLIENTID_NULL;
@@ -789,6 +795,9 @@ STDMETHODIMP TextService::Deactivate() {
     engine_.reset();
     sharedInputMethod_.reset();
     sharedOutputState_.reset();
+    sharedCangjieSettings_.reset();
+    sharedSimplexSettings_.reset();
+    sharedRuntimePreferences_.reset();
     outputSettingsInitialized_ = false;
     lastLocalInputMethod_.clear();
     threadManager_.Reset();
@@ -1150,11 +1159,24 @@ void TextService::syncInputMethod() {
     if (!threadManager_ || syncingInputMethod_) return;
     if ((resyncHostMode_ || modeRecoveryPending_ || restoreHostMode_) && !inModeNotification_) pumpInput();
     syncingInputMethod_=true;
+    SyncRuntimePreferences(sharedRuntimePreferences_, clientId_, immersiveMode_);
     syncOutputSettings();
+    SyncTablePreviewSettings(sharedCangjieSettings_, clientId_, immersiveMode_);
+    SyncTablePreviewSettings(sharedSimplexSettings_, clientId_, immersiveMode_, true);
     const auto local=ObservedInputMethod();
     const auto* shared=sharedInputMethod_.read();
     std::string desired=local;
     if (shared && (immersiveMode_ || lastLocalInputMethod_.empty() || local==lastLocalInputMethod_)) desired=shared->identifier;
+    // A visibility update can hide the shared method while a private profile
+    // still selects it. Pick a visible method before adopting that stale state.
+    if (!IsInputMethodVisible(desired.c_str())) {
+        desired.clear();
+        if (IsInputMethodVisible(local.c_str()) && IsInputMethodAvailable(local.c_str())) desired=local;
+        else for (const auto& method : kInputMethods)
+            if (IsInputMethodVisible(method.identifier) && IsInputMethodAvailable(method.identifier)) {
+                desired=method.identifier; break;
+            }
+    }
     std::string projected=effectiveInputMethod_;
     auto projectedSignature=effectiveSettingsSignature_;
     for (const auto& op : inputQueue_)
@@ -1164,7 +1186,7 @@ void TextService::syncInputMethod() {
     // An explicit queued choice has not yet been published to the profile or
     // shared compartment. Observing those unchanged values must not undo it.
     if (projected!=effectiveInputMethod_ && desired==effectiveInputMethod_ &&
-        local==lastLocalInputMethod_) desired=projected;
+        local==lastLocalInputMethod_ && IsInputMethodVisible(projected.c_str())) desired=projected;
     const auto signature=EngineSettingsSignature(desired);
     if (IsInputMethodAvailable(desired.c_str()) &&
         (desired!=projected || signature!=projectedSignature))

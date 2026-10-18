@@ -349,7 +349,16 @@ public partial class MainWindow : Window
                 "chichi77 KeyKey", 0x0002, 250, out _);
             var outputSynced = NativeBackend.KeyKeyPublishSimplifiedOutput(SimplifiedChineseOutput.IsChecked == true ? 1 : 0) != 0;
             var startupSynced = NativeBackend.KeyKeyPublishDefaultChineseMode(DefaultEnglishMode.IsChecked == true ? 0 : 1) != 0;
-            Status.Text = outputSynced && startupSynced
+            var cangjieSynced = NativeBackend.KeyKeyPublishTablePreviewSettings(
+                0,
+                CangjieComposeWhileTyping.IsChecked == true ? 1 : 0,
+                CangjiePrefixCandidates.IsChecked == true ? 1 : 0,
+                CangjieClearOnError.IsChecked == true ? 1 : 0) != 0;
+            var simplexSynced = NativeBackend.KeyKeyPublishTablePreviewSettings(
+                1, SimplexComposeWhileTyping.IsChecked == true ? 1 : 0, 0,
+                SimplexClearOnError.IsChecked == true ? 1 : 0) != 0;
+            var preferencesSynced = NativeBackend.KeyKeyPublishRuntimePreferences() != 0;
+            Status.Text = outputSynced && startupSynced && cangjieSynced && simplexSynced && preferencesSynced
                 ? "設定已套用" : "設定已儲存；跨程式狀態同步失敗，請重新開啟輸入法。";
             unsavedSettings = false;
             UpdateShutdownProtection();

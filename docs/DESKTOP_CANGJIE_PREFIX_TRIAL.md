@@ -42,7 +42,9 @@ python3 tests/test_macos_cangjie_settings.py
 - Ubuntu 24.04 amd64 隔離容器完成 Linux 引擎、Fcitx mode-key、GTK 設定控制器測試及安裝；X11／GTK3 實際宿主通過既有倉頡、錯碼、萬用字元，以及 HK 數字鍵提前選喬與 HKRBR Enter 確認。測試主機為 Apple Silicon，amd64 使用模擬執行，不能作原生效能數據。
 - 獨立 Linux 原始碼壓縮檔經解壓後 CMake／Ninja 建置及 /usr/local staged install 通過，確認共用排名、Unicode 資料與設定工具齊備；此項不等同 Debian 套件或 FreeBSD 原生驗收。
 - Linux 引擎候選以有序字碼查找，保留原 CIN 列序；SQLite 使用既有 key 索引並串流選出前 36 字。沒有新增無上限候選快取或每鍵排名 DB 查詢。
-- Windows 原生回歸入口為 `KeyKeyTablePrefixCandidates` 與既有表格／WPF 設定案例；本機沒有 Windows 執行環境，TSF／WPF 尚待 Windows x64 驗證。GNOME Wayland、FreeBSD 原生桌面、各平台實際連打效能與焦點切換仍待驗收，未宣稱完成發布驗收。
+- Windows 已完成 x64 表格／WPF／組字邊界、x64 與 x86 的跨程序／AppContainer、雙向 x64↔x86 設定同步回歸。使用獨立 profile 與隨機 TSF compartment，涵蓋倉頡四種開關組合、簡易即時候選開關、許氏配置／空白開候選／自訂選字鍵／Esc，以及外觀、顯示與字集設定；不安裝或註冊 TIP。使用者在搜尋列發現的隔離設定差異已於 Windows adapter 補上同步，修正版 Search／記事本實際宿主複測仍待完成。GNOME Wayland、FreeBSD 原生桌面、各平台實際連打效能與焦點切換仍待驗收，未宣稱完成發布驗收。
 - 共用好打注音模型、原始 CIN 與平台版號不變。C++ 排名由同一 TSV 產生；漢字去重涵蓋單一 CJK 相容漢字的標準等價對應，顯示仍保留來源字形。
 
 Windows 日常建置範圍為 `tsf＋settings`，另有 `package` 授權檔複製，先建置受影響 x64 target，使用 CTest 篩選表格及 WPF 測試，不需重跑 updater／deployment 或 x86。命令與環境見 [Windows README](../Source/Loaders/Windows-TSF/README.md)。
+
+搜尋列同步修正另涉及 native settings bridge 與跨架構狀態，因此增加 x86 與雙向同步驗證；一般後續變更仍依實際影響選擇範圍。安裝新的 Windows 測試包後登出再登入，在設定按一次「套用」，再分別於搜尋列與記事本測試倉頡 HK 提前選「喬」及簡易即時候選。個人學習內容保持隔離，不能用候選個人排序不同判定設定同步失敗。

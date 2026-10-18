@@ -356,6 +356,8 @@ try {
         -Destination $licenseDirectory
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSES\OpenVanilla-HanConvert.txt') `
         -Destination $licenseDirectory
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'Source\Shared\Unicode-LICENSE.txt') `
+        -Destination $licenseDirectory
 
     if (-not $UnsignedTest) {
         $peFiles = @($stagedX64Dll, $stagedX86Dll, $stagedSettings, $stagedSettingsBackend, $stagedDeployment, $stagedRegistration, $stagedUpdater)

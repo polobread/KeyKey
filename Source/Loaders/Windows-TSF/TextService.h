@@ -15,6 +15,8 @@
 #include "KeyKeyEngine.h"
 #include "ModuleState.h"
 #include "SharedOutputState.h"
+#include "SharedTableSettings.h"
+#include "SharedRuntimePreferences.h"
 #include "SymbolPanel.h"
 
 namespace KeyKey::WindowsTsf {
@@ -192,6 +194,9 @@ private:
     TfClientId clientId_ = TF_CLIENTID_NULL;
     SharedInputMethod sharedInputMethod_;
     SharedOutputState sharedOutputState_;
+    SharedTableSettings sharedCangjieSettings_;
+    SharedTableSettings sharedSimplexSettings_;
+    SharedRuntimePreferences sharedRuntimePreferences_;
     bool simplifiedOutput_ = false;
     bool compositionSimplifiedOutput_ = false;
     bool lastLocalSimplifiedOutput_ = false;
