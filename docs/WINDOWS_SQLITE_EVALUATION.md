@@ -35,7 +35,8 @@
   **0.4–0.6 MiB**；三個正式 binary 合計預估增加約 **1.3–1.8 MiB**，仍須以 MSVC
   Release build 實測。
 - Defender 曾將 `KeyKeySettings.exe` 判為 Wacatac ML 類別；檔案已送 Microsoft 分析。
-- SignPath Foundation 申請已送出，正式簽章資格仍待核准。
+- 當時已送出 SignPath Foundation 申請；目前已由維護者確認未達申請門檻。
+  僅在專案條件或方案要求改變後重新評估，待辦見 [Windows SignPath TODO](WINDOWS_SIGNPATH_TODO.md)。
 
 ## Windows 實機驗收清單
 

@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   package:
+    # Retained unsigned release path. Disabled unless the maintainer explicitly switches modes.
+    if: vars.WINDOWS_RELEASE_MODE == 'unsigned'
     runs-on: windows-2025
     timeout-minutes: 60
     outputs:
@@ -210,7 +212,7 @@ jobs:
 
   publish:
     needs: package
-    if: needs.package.outputs.publish_release == 'true'
+    if: vars.WINDOWS_RELEASE_MODE == 'unsigned' && needs.package.outputs.publish_release == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: release

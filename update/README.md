@@ -483,10 +483,12 @@ ports／pkg 更新、套件可能較晚上架，不查套件庫，也不增加�
 
 ## GitHub Release／CDN 發布順序（安裝包先發布，再同步 feed）
 
-1. 通過原始碼 review 與發布核准。Windows workflow 目前仍產生 unsigned installer；
-   只有從相應 release tag 建置、驗證版本並明確宣告 `unsigned-transition` 的 EXE，
+1. 通過原始碼 review 與發布核准。Windows 預設由獨立 workflow 產生待簽輸入，
+   再依 [Certum 本機半自動流程](../docs/WINDOWS_CERTUM_RELEASE.md)完成 Authenticode、
+   時間戳記、驗收與人工發布核准。原 unsigned workflow 保留並預設停用；明確切回後，
+   只有從相應 release tag 建置、驗證版本並宣告 `unsigned-transition` 的 EXE，
    才能以正式 Ed25519 私鑰建立過渡 stable feed。無 tag 的手動 artifact 仍是測試包。
-   Authenticode 發布則需先完成 SignPath 或等效的簽章與人工核准流程。
+   目前未達 SignPath Foundation 的申請門檻；專案條件或方案要求改變後的待辦另見 [TODO](../docs/WINDOWS_SIGNPATH_TODO.md)。
 2. 上傳 `packages/` 的内容位址檔案到指定 Release；不使用 `--clobber`。
    base URL 使用 GitHub 時填 `https://github.com/OWNER/REPO/releases/download`。
 3. CDN 模式先將相同 bytes 鏡像到 `keykey/releases/download/TAG/FILE`；校驗遠端可取得、

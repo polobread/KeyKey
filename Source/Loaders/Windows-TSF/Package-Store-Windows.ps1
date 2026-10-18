@@ -12,10 +12,12 @@ param(
 
     [string] $MakensisPath,
 
+    [string] $OutputDirectory,
+
     [ValidatePattern('^[A-Za-z0-9-]{1,40}$')]
     [string] $BuildLabel,
 
-    [Parameter(Mandatory = $true, ParameterSetName = 'Signed')]
+    [Parameter(ParameterSetName = 'Signed')]
     [string] $CertificateThumbprint,
 
     [Parameter(Mandatory = $true, ParameterSetName = 'Signed')]
@@ -184,11 +186,11 @@ function Assert-SigningCertificate {
     )
 
     $certificatePath = "Cert:\$StoreLocation\My\$Thumbprint"
-    if (-not (Test-Path -LiteralPath $certificatePath -PathType Leaf)) {
-        throw "The signing certificate was not found: $certificatePath"
+    try {
+        $certificate = Get-Item -LiteralPath $certificatePath -ErrorAction Stop
+    } catch {
+        throw 'The signing certificate could not be opened. Check the store and SimplySign connection.'
     }
-
-    $certificate = Get-Item -LiteralPath $certificatePath
     if (-not $certificate.HasPrivateKey) {
         throw 'The selected certificate does not expose an accessible private key.'
     }
@@ -223,12 +225,18 @@ function Invoke-SignFiles {
         '/tr', $Rfc3161TimestampUrl.AbsoluteUri,
         '/td', 'SHA256',
         '/d', 'chichi77 KeyKey',
-        '/v'
+        '/q'
     )
     $arguments += $FilePath
 
-    & $ToolPath @arguments
-    if ($LASTEXITCODE -ne 0) {
+    try {
+        # Discard both streams, including provider errors which can contain certificate IDs.
+        $null = & $ToolPath @arguments 2>&1
+        $signExitCode = $LASTEXITCODE
+    } catch {
+        throw 'Signing failed. Check the SimplySign session, PIN and timestamp service.'
+    }
+    if ($signExitCode -ne 0) {
         throw "Signing failed: $($FilePath -join ', ')"
     }
 }
@@ -236,11 +244,20 @@ function Invoke-SignFiles {
 function Invoke-VerifySignature {
     param(
         [Parameter(Mandatory = $true)][string] $FilePath,
-        [Parameter(Mandatory = $true)][string] $ToolPath
+        [Parameter(Mandatory = $true)][string] $ToolPath,
+        [Parameter(Mandatory = $true)][string] $ExpectedThumbprint
     )
 
-    & $ToolPath verify /pa /all /v $FilePath
-    if ($LASTEXITCODE -ne 0) {
+    try {
+        $null = & $ToolPath verify /pa /all /tw /q $FilePath 2>&1
+        $verifyExitCode = $LASTEXITCODE
+        $signature = Get-AuthenticodeSignature -LiteralPath $FilePath -ErrorAction Stop
+    } catch {
+        throw 'Signature verification failed. Certificate details were suppressed.'
+    }
+    if ($verifyExitCode -ne 0 -or $signature.Status -ne 'Valid' -or
+        -not $signature.TimeStamperCertificate -or
+        $signature.SignerCertificate.Thumbprint -ne $ExpectedThumbprint) {
         throw "Signature verification failed: $FilePath"
     }
 }
@@ -286,7 +303,8 @@ $productVersion = $versionParts[0..3] -join '.'
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $packagingDirectory = Join-Path $PSScriptRoot 'Packaging'
 $nsisSourcePath = Join-Path $packagingDirectory 'Store-Installer.nsi'
-$outputDirectory = Join-Path $PSScriptRoot 'out\store-package'
+if (-not $OutputDirectory) { $OutputDirectory = Join-Path $PSScriptRoot 'out\store-package' }
+$outputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 $workDirectory = Join-Path $outputDirectory (
     '.work-' + [Guid]::NewGuid().ToString('N'))
 $payloadDirectory = Join-Path $workDirectory 'Payload'
@@ -303,10 +321,24 @@ $builtInstallerPath = Join-Path $workDirectory (
 $normalizedThumbprint = $null
 $resolvedSignTool = $null
 if (-not $UnsignedTest) {
+    if ((Test-Path -LiteralPath $installerPath) -or (Test-Path -LiteralPath $checksumPath)) {
+        throw 'Signed output already exists. Use Publish after acceptance; signed packages are not overwritten.'
+    }
     if ($TimestampUrl.Scheme -notin @('http', 'https')) {
         throw 'The RFC 3161 timestamp URL must use HTTP or HTTPS.'
     }
+    if (-not $CertificateThumbprint) {
+        $secureThumbprint = Read-Host 'Certificate thumbprint (hidden; memory only)' -AsSecureString
+        $thumbprintPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureThumbprint)
+        try {
+            $CertificateThumbprint = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($thumbprintPointer)
+        } finally {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($thumbprintPointer)
+            $secureThumbprint.Dispose()
+        }
+    }
     $normalizedThumbprint = $CertificateThumbprint -replace '[^0-9A-Fa-f]', ''
+    $CertificateThumbprint = $null
     if ($normalizedThumbprint.Length -ne 40) {
         throw 'The certificate thumbprint must be a 40-character SHA-1 hexadecimal value.'
     }
@@ -366,7 +398,8 @@ try {
             -Rfc3161TimestampUrl $TimestampUrl `
             -StoreLocation $CertificateStoreLocation
         foreach ($file in $peFiles) {
-            Invoke-VerifySignature -FilePath $file -ToolPath $resolvedSignTool
+            Invoke-VerifySignature -FilePath $file -ToolPath $resolvedSignTool `
+                -ExpectedThumbprint $normalizedThumbprint
         }
     }
 
@@ -403,13 +436,17 @@ try {
             -Rfc3161TimestampUrl $TimestampUrl `
             -StoreLocation $CertificateStoreLocation
         Invoke-VerifySignature -FilePath $builtInstallerPath `
-            -ToolPath $resolvedSignTool
+            -ToolPath $resolvedSignTool -ExpectedThumbprint $normalizedThumbprint
     }
 
-    if (Test-Path -LiteralPath $installerPath -PathType Leaf) {
+    if (-not $UnsignedTest -and ((Test-Path -LiteralPath $installerPath) -or
+        (Test-Path -LiteralPath $checksumPath))) {
+        throw 'Signed output already exists. Use a new output directory; signed packages are not overwritten.'
+    }
+    if ($UnsignedTest -and (Test-Path -LiteralPath $installerPath -PathType Leaf)) {
         Remove-Item -LiteralPath $installerPath -Force
     }
-    if (Test-Path -LiteralPath $checksumPath -PathType Leaf) {
+    if ($UnsignedTest -and (Test-Path -LiteralPath $checksumPath -PathType Leaf)) {
         Remove-Item -LiteralPath $checksumPath -Force
     }
     Move-Item -LiteralPath $builtInstallerPath -Destination $installerPath
@@ -420,6 +457,8 @@ try {
         Set-Content -LiteralPath $checksumPath -Encoding ascii
 }
 finally {
+    $normalizedThumbprint = $null
+    $CertificateThumbprint = $null
     if (Test-Path -LiteralPath $workDirectory -PathType Container) {
         $resolvedStage = (Resolve-Path -LiteralPath $workDirectory).Path
         $resolvedOutput = [IO.Path]::GetFullPath($outputDirectory).TrimEnd('\')

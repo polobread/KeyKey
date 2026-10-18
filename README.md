@@ -92,15 +92,17 @@ macOS／Windows 的簽章更新功能目前仍在開發，預設不連網；正�
 
 ### Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io/), certificate
-by [SignPath Foundation](https://signpath.org/)。詳見
-[Code signing policy](CODE_SIGNING_POLICY.md)。`v1.2.9` Windows 發行檔早於此整合，
-目前仍未簽章；SignPath Foundation 核准申請並完成驗證流程後，政策才適用於後續正式版。
+Windows 發行者簽章採 Certum／SimplySign 本機半自動流程，首次真實簽章與發布驗收仍待完成；
+既有未簽章發行檔維持原狀。詳見 [Code signing policy](CODE_SIGNING_POLICY.md) 與
+[Windows Certum 發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
+目前未達 SignPath Foundation 的申請門檻；整合待辦與致謝文字收至 [Windows SignPath TODO](docs/WINDOWS_SIGNPATH_TODO.md)。
 
 發布 GitHub Release（可同時建立 tag）會啟動
-`Package macOS`、`Package Windows` 與完整 `Linux CI`；各平台通過建置及驗證後，
-自動上傳自己的 assets。各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
-均為 `1.3.3`，對應的正式版 tag 為 `v1.3.3`。正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
+`Package macOS`、`Prepare Windows Signing Inputs` 與完整 `Linux CI`；macOS／Linux 通過建置及驗證後，
+自動上傳自己的 assets。Windows 待簽產物交由本機簽包、人工驗收與核准後發布；
+原 `Package Windows` unsigned workflow 保留並預設停用，模式切換見上述發布指南。
+各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
+均為 `1.3.3`，對應的正式版 tag 為 `v1.3.3`。macOS／Linux 正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
 設定 release environment 的 AWS mirror variables 後，同一批已驗證檔案也會同步到 S3；
 留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
@@ -115,7 +117,7 @@ by [SignPath Foundation](https://signpath.org/)。詳見
 再建立 PR，由維護者親自 review 和 merge 到 `master`。Agent 不得自行合併或啟用自動合併，
 也不要直接在 `master` commit 或 push。
 同步最新主分支可在工作分支執行 `git pull --no-rebase origin master`；提交前保留既有修改，
-檢查差異並完成與變更相關的驗證。此流程也配合 SignPath 的變更審查與人工簽章核准要求；
+檢查差異並完成與變更相關的驗證。發布另保留變更審查與人工核准；
 詳細規則見 [AGENTS.md](AGENTS.md) 與 [Code signing policy](CODE_SIGNING_POLICY.md)。
 
 ## 文件
@@ -258,18 +260,21 @@ iOS.
 
 #### Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io/), certificate
-by [SignPath Foundation](https://signpath.org/). See the
-[Code signing policy](CODE_SIGNING_POLICY.md). The Windows assets in `v1.2.9`
-predate this integration and remain unsigned; the policy applies to later
-official releases after the application is accepted and the verified workflow
-is enabled.
+Windows publisher signing uses the semi-automated local Certum/SimplySign flow;
+first real signing and release acceptance remain pending. Existing unsigned
+releases remain unchanged. See the [Code signing policy](CODE_SIGNING_POLICY.md)
+and [Windows Certum release guide](docs/WINDOWS_CERTUM_RELEASE.md).
+KeyKey does not currently meet the SignPath Foundation application requirements. Deferred integration and attribution are kept in the
+[Windows SignPath TODO](docs/WINDOWS_SIGNPATH_TODO.md).
 
 Publishing a GitHub Release starts
-`Package macOS`, `Package Windows`, and the full `Linux CI`. Each workflow
-uploads its verified packages when its version matches that Release. macOS,
+`Package macOS`, `Prepare Windows Signing Inputs`, and the full `Linux CI`.
+macOS/Linux upload their verified packages when their version matches that Release.
+Windows signing inputs go through local signing, manual acceptance and publication
+approval; the original unsigned `Package Windows` workflow is retained and disabled
+by default. See the release guide for mode selection. macOS,
 Windows, and Linux development versions are `1.3.3`, with `v1.3.3` as the
-corresponding stable release tag. After fixing a failed stable
+corresponding stable release tag. After fixing a failed stable macOS/Linux
 platform through a PR into `master`, manually run that workflow from `master` with
 the matching platform's `release_tag` to replace its assets; other platforms are untouched.
 Leaving `release_tag` blank retains Actions artifacts only.
@@ -291,8 +296,8 @@ changes on a working branch, then open a pull request for the maintainer to revi
 and merge. Agents must not merge PRs, enable auto-merge, or commit or push directly
 to `master`. Run `git pull --no-rebase origin master` from the working
 branch to synchronize it; preserve existing changes and review the diff and relevant
-validation before committing. This also supports SignPath review and manual signing
-approval requirements. See [AGENTS.md](AGENTS.md) and the
+validation before committing. Releases retain separate change review and manual
+approval. See [AGENTS.md](AGENTS.md) and the
 [Code signing policy](CODE_SIGNING_POLICY.md).
 
 ### Documentation
