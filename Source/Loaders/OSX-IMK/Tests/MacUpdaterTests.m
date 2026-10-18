@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <string.h>
 
 static int passed;
 static void Check(BOOL condition, NSString *message)
@@ -61,6 +62,46 @@ static NSBundle *Bundle(NSString *root, id feed, id key)
 int main(int argc, const char *argv[])
 {
     @autoreleasepool {
+        if (argc > 1 && strcmp(argv[1], "--self-host") == 0) {
+            NSBundle *host = [NSBundle mainBundle];
+            Check([[host bundleIdentifier] hasPrefix:@"io.github.polobread.KeyKeyUpdaterIsolatedTest.SelfHost."],
+                  @"self-host regression must use an isolated app identity");
+            FakeEngine *localEngine = [[[FakeEngine alloc] init] autorelease];
+            KeyKeyMacUpdater *local = [[[KeyKeyMacUpdater alloc] initWithHostBundle:host
+                engine:localEngine compositionCheck:nil] autorelease];
+            Check([local valueForKey:@"_preferences"] == [NSUserDefaults standardUserDefaults],
+                  @"own bundle must use standard defaults, not an invalid same-name suite");
+            [local start];
+            NSTimer *first = [local valueForKey:@"_automaticTimer"];
+            Check(first && [first.fireDate timeIntervalSinceNow] > 590 &&
+                  [first.fireDate timeIntervalSinceNow] <= 600 && first.timeInterval == 0,
+                  @"first check is one deadline ten minutes after startup");
+            Check(localEngine.checks == 0, @"startup does not immediately contact the feed");
+            [local checkForUpdates];
+            NSTimer *next = [local valueForKey:@"_automaticTimer"];
+            Check([next.fireDate timeIntervalSinceNow] > 604790 &&
+                  [next.fireDate timeIntervalSinceNow] <= 604800 && next.timeInterval == 0,
+                  @"an attempt schedules one weekly deadline without minute polling");
+            Check([[NSUserDefaults standardUserDefaults] objectForKey:@"KeyKeyLastUpdateAttempt"] != nil,
+                  @"production identity persists its attempt date");
+            [local updater:nil didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:nil];
+            // A missing preferences store must still retain the weekly memory deadline.
+            [local setValue:nil forKey:@"_preferences"];
+            [local checkForUpdates];
+            Check([[[local valueForKey:@"_automaticTimer"] fireDate] timeIntervalSinceNow] > 604790,
+                  @"persistence failure cannot cause a rapid retry");
+            [local stop];
+            Check([local valueForKey:@"_automaticTimer"] == nil, @"stop removes weekly scheduling");
+            KeyKeyMacUpdater *reopened = [[[KeyKeyMacUpdater alloc] initWithHostBundle:host
+                engine:[[[FakeEngine alloc] init] autorelease] compositionCheck:nil] autorelease];
+            [reopened start];
+            Check([[[reopened valueForKey:@"_automaticTimer"] fireDate] timeIntervalSinceNow] > 604780,
+                  @"restart retains the last attempt instead of checking again in ten minutes");
+            [reopened stop];
+            [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[host bundleIdentifier]];
+            NSLog(@"Self-host update scheduling checks passed");
+            return 0;
+        }
         // Load only the pinned SDK's comparator; never start its network updater.
         NSString *framework = [NSString stringWithUTF8String:getenv("KEYKEY_TEST_SPARKLE_FRAMEWORK") ?: ""];
         NSError *loadError = nil;

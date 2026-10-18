@@ -247,6 +247,7 @@ file for terms.
 	[_useUpdateCheckBox setIntValue:0];
 	[_useUpdateCheckBox setEnabled:NO];
 	[_useUpdateCheckBox setTitle:@"每週檢查新版並通知（不預先下載）"];
+	[_useUpdateCheckBox setToolTip:@"上次檢查已滿 7 天時，啟動 10 分鐘後檢查；之後每 7 天一次，保留上次嘗試紀錄。"];
 	[self requestUpdateConsent:nil];
 	
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)	

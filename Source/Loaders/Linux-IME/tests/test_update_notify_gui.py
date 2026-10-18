@@ -70,6 +70,9 @@ class GuiTests(unittest.TestCase):
         self.assertIsNotNone(app.timer)
         self.assertEqual(self.requests, [])  # Opening the window is not a manual check.
         app.periodic()
+        self.assertEqual(self.requests, [])  # The startup deadline has not arrived.
+        app.not_before = time.time() - 1
+        app.periodic()
         pump(lambda: not app.busy)
         self.assertEqual(self.requests, [updates.FEEDS["stable"]])
         app.periodic()
@@ -171,6 +174,8 @@ class GuiTests(unittest.TestCase):
         app = self.app()
         with patch.object(app, "send_notification") as notify:
             app.enabled.set_active(True)
+            app.not_before = time.time() - 1
+            app.periodic()
             pump(lambda: len(self.requests) == 1)
             app.check(True)
             app.periodic()
@@ -188,6 +193,8 @@ class GuiTests(unittest.TestCase):
         with patch.object(app, "send_notification") as notify, \
                 patch("update_notify_gui.notification_available", return_value=True):
             app.enabled.set_active(True)
+            app.not_before = time.time() - 1
+            app.periodic()
             pump(lambda: not app.busy)
             notify.assert_called_once()
             self.assertEqual(app.state["last_notified"], "1.3.2")
@@ -195,6 +202,7 @@ class GuiTests(unittest.TestCase):
             app.periodic()
             self.assertEqual(len(self.requests), requests)
             app.state["last_attempt"] = 0
+            app.not_before = time.time() - 1
             app.periodic()
             pump(lambda: not app.busy)
             notify.assert_called_once()
@@ -210,6 +218,8 @@ class GuiTests(unittest.TestCase):
         with patch("update_notify_gui.notification_available", return_value=False), \
                 patch.object(app, "send_notification") as notify:
             app.enabled.set_active(True)
+            app.not_before = time.time() - 1
+            app.periodic()
             pump(lambda: not app.busy)
             notify.assert_not_called()
             self.assertNotIn("last_notified", app.state)
@@ -219,6 +229,8 @@ class GuiTests(unittest.TestCase):
         app = self.app()
         with patch("update_notify.set_preferences", side_effect=PermissionError):
             app.enabled.set_active(True)
+            app.not_before = time.time() - 1
+            app.periodic()
         self.assertFalse(app.enabled.get_active())
         self.assertEqual(self.requests, [])
         self.assertIsNone(app.timer)
@@ -258,6 +270,8 @@ class GuiTests(unittest.TestCase):
         self.new_release()
         app = self.app()
         app.enabled.set_active(True)
+        app.not_before = time.time() - 1
+        app.periodic()
         pump(lambda: bool(notices))
         self.assertIn("ports／pkg", notices[0][4])
         self.assertIn("1.3.2", notices[0][4])

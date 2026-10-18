@@ -34,6 +34,9 @@ internal sealed class DesktopUpdater : IDisposable
     private Task nativeCleanup = Task.CompletedTask;
     private DispatcherTimer? checkTimer, automaticTimer;
     private readonly TimeSpan checkTimeout;
+    private static readonly TimeSpan AutomaticInterval = TimeSpan.FromDays(7);
+    private DateTimeOffset automaticNotBefore = DateTimeOffset.UtcNow.AddMinutes(10);
+    private DateTimeOffset lastAttemptInMemory = DateTimeOffset.MinValue;
     internal Task NativeCleanup => nativeCleanup;
     private static string ProductVersion
     {
@@ -183,9 +186,11 @@ internal sealed class DesktopUpdater : IDisposable
             Initialize();
             if (!initialized) return;
         }
-        try { backend.LastAttempt = DateTimeOffset.UtcNow; }
+        lastAttemptInMemory = DateTimeOffset.UtcNow;
+        try { backend.LastAttempt = lastAttemptInMemory; }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
-        { SetState($"無法儲存檢查時間：{error.Message}", false); return; }
+        { UpdateAutomaticTimer(); SetState($"無法儲存檢查時間：{error.Message}", false); return; }
+        UpdateAutomaticTimer();
         SetState("正在檢查更新…", true);
         var session = generation;
         checkTimer = new DispatcherTimer(DispatcherPriority.Normal, dispatcher) { Interval = checkTimeout };
@@ -226,13 +231,36 @@ internal sealed class DesktopUpdater : IDisposable
         automaticTimer?.Stop();
         automaticTimer = null;
         if (!Available || !backend.Automatic) return;
-        automaticTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromMinutes(1) };
-        automaticTimer.Tick += (_, _) =>
+        var now = DateTimeOffset.UtcNow;
+        var last = lastAttemptInMemory;
+        try
         {
-            if (Available && !Busy && backend.Automatic &&
-                DateTimeOffset.UtcNow - backend.LastAttempt >= TimeSpan.FromDays(7)) Check(background: true);
+            var persisted = backend.LastAttempt;
+            if (persisted > last) last = persisted;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            // A storage error defers the next attempt; it must not create a retry loop.
+            last = now;
+        }
+        if (last > now) last = now;
+        var next = automaticNotBefore;
+        if (last != DateTimeOffset.MinValue && last + AutomaticInterval > next)
+            next = last + AutomaticInterval;
+        var delay = next - now;
+        if (delay < TimeSpan.FromSeconds(1)) delay = TimeSpan.FromSeconds(1);
+        var timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = delay };
+        automaticTimer = timer;
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (!ReferenceEquals(automaticTimer, timer) || disposed) return;
+            automaticTimer = null;
+            automaticNotBefore = DateTimeOffset.UtcNow + AutomaticInterval;
+            if (Available && !Busy && backend.Automatic) Check(background: true);
+            else UpdateAutomaticTimer();
         };
-        automaticTimer.Start();
+        timer.Start();
     }
     public async Task ReinstallAsync()
     {
@@ -276,7 +304,12 @@ internal sealed class DesktopUpdater : IDisposable
     }
     public void SetAutomatic(bool value)
     {
-        if (Available) { backend.Automatic = value; UpdateAutomaticTimer(); }
+        if (Available)
+        {
+            if (value && !backend.Automatic) automaticNotBefore = DateTimeOffset.UtcNow.AddMinutes(10);
+            backend.Automatic = value;
+            UpdateAutomaticTimer();
+        }
     }
     public async Task<bool> SetBetaAsync(bool value)
     {

@@ -1,6 +1,7 @@
 """Out-of-process GTK notification UI; never loaded into a typing host."""
 
 import platform
+import math
 import sys
 import threading
 import time
@@ -44,6 +45,8 @@ class Application(Gtk.Application):
         self.window = None
         self.busy = False
         self.timer = None
+        self.timer_held = False
+        self.not_before = time.time() + 600
         self.result = None
         self.settings = updates.preferences()
         self.state_path = updates.state_home() / "chichi77-keykey/update-notification.json"
@@ -60,7 +63,7 @@ class Application(Gtk.Application):
         if "--background" not in command_line.get_arguments():
             self.activate()
         elif self.settings["enabled"]:
-            self.periodic()
+            self.update_timer()
         return 0
 
     def do_activate(self):
@@ -81,6 +84,7 @@ class Application(Gtk.Application):
         self.status = Gtk.Label(label="按下「檢查新版」開始檢查。", xalign=0, wrap=True)
         box.pack_start(self.status, False, False, 0)
         self.enabled = Gtk.CheckButton(label="每週檢查新版並通知（登入桌面後）")
+        self.enabled.set_tooltip_text("上次檢查已滿 7 天時，啟動 10 分鐘後檢查；持續執行時每 7 天一次。")
         self.enabled.set_active(self.settings["enabled"])
         self.beta = Gtk.CheckButton(label="也通知 beta 測試版")
         self.beta.set_active(self.settings["include_beta"])
@@ -122,32 +126,46 @@ class Application(Gtk.Application):
                 widget.set_active(value)
                 widget.handler_unblock_by_func(self.preferences_changed)
             return
+        if enabled and not self.settings["enabled"]:
+            self.not_before = time.time() + 600
         self.settings = {"enabled": enabled, "include_beta": beta}
         self.result = None
         self.update_timer()
-        if enabled:
-            self.periodic()
 
     def update_timer(self):
-        if self.settings["enabled"] and self.timer is None:
-            self.hold()
-            self.timer = GLib.timeout_add_seconds(60, self.periodic)
-        elif not self.settings["enabled"] and self.timer is not None:
+        if self.timer is not None:
             GLib.source_remove(self.timer)
             self.timer = None
+        if self.settings["enabled"]:
+            if not self.timer_held:
+                self.hold()
+                self.timer_held = True
+            delay = updates.next_check_delay(self.state, self.not_before)
+            self.timer = GLib.timeout_add_seconds(math.ceil(delay), self.periodic)
+        elif self.timer_held:
+            self.timer_held = False
             self.release()
             self.withdraw_notification("update")
 
     def periodic(self):
-        if self.settings["enabled"] and not self.busy and updates.due(self.state):
-            self.check(manual=False)
-        return GLib.SOURCE_CONTINUE
+        if self.timer is not None:
+            GLib.source_remove(self.timer)
+            self.timer = None
+        now = time.time()
+        if self.settings["enabled"] and now >= self.not_before and updates.due(self.state, now):
+            self.not_before = now + updates.INTERVAL
+            if not self.busy:
+                self.check(manual=False)
+        self.update_timer()
+        return GLib.SOURCE_REMOVE
 
     def check(self, manual):
         if self.busy or (not manual and not self.settings["enabled"]):
             return
         # Persist attempts before network activity: failures do not hammer GitHub.
         self.state["last_attempt"] = time.time()
+        if self.timer_held:
+            self.update_timer()
         try:
             updates.save_json(self.state_path, self.state)
         except OSError:

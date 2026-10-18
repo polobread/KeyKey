@@ -170,6 +170,17 @@ def due(state, now=None):
     return now - previous >= INTERVAL
 
 
+def next_check_delay(state, not_before, now=None):
+    """One startup/weekly deadline; no minute polling or catch-up requests."""
+    now = time.time() if now is None else now
+    previous = state.get("last_attempt")
+    deadline = not_before
+    if (isinstance(previous, (int, float)) and math.isfinite(previous)
+            and 0 <= previous <= now):
+        deadline = max(deadline, previous + INTERVAL)
+    return max(1, deadline - now)
+
+
 def set_preferences(enabled, include_beta, executable):
     path = config_home() / "chichi77-keykey/update-notification.json"
     autostart = config_home() / "autostart/org.chichi77.KeyKey.UpdateNotification.desktop"

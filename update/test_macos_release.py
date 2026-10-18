@@ -134,6 +134,7 @@ class MacReleaseTests(unittest.TestCase):
         self.assertEqual((app / "Contents/Resources/LICENSES/Unicode-LICENSE.txt").read_bytes(),
                          (Path(__file__).resolve().parents[1] / "Source/Shared/Unicode-LICENSE.txt").read_bytes())
         info = plistlib.loads(info_path.read_bytes())
+        self.assertEqual(info["SUScheduledCheckInterval"], 604800)
         self.assertFalse(info["SUAutomaticallyUpdate"])
         self.assertFalse(info["SUEnableAutomaticChecks"])
         self.assertFalse(info["SUAllowsAutomaticUpdates"])

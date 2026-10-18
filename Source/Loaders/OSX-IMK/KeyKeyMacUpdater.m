@@ -77,7 +77,15 @@ static NSURL *ReviewedFeed(id value)
             NSData *bytes = [[[NSData alloc] initWithBase64EncodedString:key options:0] autorelease];
             _keyValid = [bytes length] == 32;
         }
-        _preferences = [[NSUserDefaults alloc] initWithSuiteName:[host bundleIdentifier]];
+        // A suite with the running app's own identifier is rejected by Foundation.
+        NSBundle *mainBundle = [NSBundle mainBundle];
+        BOOL mainHost = host == mainBundle ||
+            [[host bundleIdentifier] isEqualToString:[mainBundle bundleIdentifier]];
+        _preferences = mainHost ? [[NSUserDefaults standardUserDefaults] retain] :
+            [[NSUserDefaults alloc] initWithSuiteName:[host bundleIdentifier]];
+        id lastAttempt = [_preferences objectForKey:@"KeyKeyLastUpdateAttempt"];
+        if (![lastAttempt isKindOfClass:[NSDate class]]) lastAttempt = [_preferences objectForKey:@"SULastCheckTime"];
+        if ([lastAttempt isKindOfClass:[NSDate class]]) _lastUpdateAttempt = [lastAttempt retain];
         id automatic = [_preferences objectForKey:@"KeyKeyAutomaticChecks"];
         if (!automatic) automatic = [_preferences objectForKey:@"SUEnableAutomaticChecks"];
         // New installations check weekly; preserve an existing explicit choice.
@@ -97,6 +105,7 @@ static NSURL *ReviewedFeed(id value)
     [self stop];
     [_host release]; [_feed release]; [_phase release]; [_message release]; [_latestVersion release];
     [_stableFeed release]; [_betaFeed release]; [_preferences release];
+    [_automaticNotBefore release]; [_lastUpdateAttempt release];
     [_compositionCheck release];
     [super dealloc];
 }
@@ -137,8 +146,9 @@ static NSURL *ReviewedFeed(id value)
         return;
     }
     _started = YES;
+    _automaticNotBefore = [[NSDate dateWithTimeIntervalSinceNow:600] retain];
     [self updateAutomaticTimer];
-    [self setPhase:@"idle" message:@"可手動檢查或設定每週新版通知。不預先下載；按下更新後才下載與安裝。"];
+    [self setPhase:@"idle" message:@"啟動 10 分鐘後檢查新版，之後每 7 天一次。不預先下載；按下更新後才下載與安裝。"];
 }
 
 - (void)clearPendingInstallation
@@ -179,7 +189,11 @@ static NSURL *ReviewedFeed(id value)
     if (![[[self snapshot] objectForKey:@"canCheck"] boolValue]) return;
     _manualCheck = YES;
     _checkTimedOut = NO;
-    [_preferences setObject:[NSDate date] forKey:@"KeyKeyLastUpdateAttempt"];
+    [_lastUpdateAttempt release];
+    _lastUpdateAttempt = [[NSDate date] retain];
+    [_preferences setObject:_lastUpdateAttempt forKey:@"KeyKeyLastUpdateAttempt"];
+    // Keep a memory deadline too: a failed disk write must never cause a retry loop.
+    [self updateAutomaticTimer];
     _busy = YES;
     [self setPhase:@"checking" message:@"正在檢查簽章更新…"];
     [_engine checkForUpdates];
@@ -188,6 +202,10 @@ static NSURL *ReviewedFeed(id value)
 - (void)setAutomaticChecks:(BOOL)enabled
 {
     if (_stopped || !_configured || !_started) return;
+    if (enabled && !_automaticChecks) {
+        [_automaticNotBefore release];
+        _automaticNotBefore = [[NSDate dateWithTimeIntervalSinceNow:600] retain];
+    }
     _automaticChecks = enabled;
     [_preferences setBool:enabled forKey:@"KeyKeyAutomaticChecks"];
     [self updateAutomaticTimer];
@@ -196,20 +214,30 @@ static NSURL *ReviewedFeed(id value)
 - (void)updateAutomaticTimer
 {
     [_automaticTimer invalidate]; [_automaticTimer release]; _automaticTimer = nil;
-    if (_automaticChecks && !_stopped) {
-        _automaticTimer = [[NSTimer timerWithTimeInterval:60 target:self
-            selector:@selector(checkAutomatically:) userInfo:nil repeats:YES] retain];
-        [[NSRunLoop mainRunLoop] addTimer:_automaticTimer forMode:NSRunLoopCommonModes];
+    if (!_automaticChecks || _stopped || !_started) return;
+
+    NSDate *next = _automaticNotBefore ?: [NSDate dateWithTimeIntervalSinceNow:600];
+    if (_lastUpdateAttempt) {
+        NSDate *weekly = [_lastUpdateAttempt dateByAddingTimeInterval:604800];
+        if ([weekly compare:next] == NSOrderedDescending) next = weekly;
     }
+    // One deadline, no per-minute polling. Resume from sleep with at most one check.
+    _automaticTimer = [[NSTimer alloc] initWithFireDate:next interval:0 target:self
+        selector:@selector(checkAutomatically:) userInfo:nil repeats:NO];
+    [[NSRunLoop mainRunLoop] addTimer:_automaticTimer forMode:NSRunLoopCommonModes];
 }
 
 - (void)checkAutomatically:(NSTimer *)timer
 {
-    id last = [_preferences objectForKey:@"KeyKeyLastUpdateAttempt"];
-    if (_automaticChecks && [[[self snapshot] objectForKey:@"canCheck"] boolValue] &&
-        (![last isKindOfClass:[NSDate class]] || -[last timeIntervalSinceNow] >= 604800)) {
+    if (_stopped || !_automaticChecks || timer != _automaticTimer) return;
+    // Even if the engine is busy or persistence is unavailable, defer for another week.
+    [_automaticNotBefore release];
+    _automaticNotBefore = [[NSDate dateWithTimeIntervalSinceNow:604800] retain];
+    if ([[[self snapshot] objectForKey:@"canCheck"] boolValue]) {
         [self checkForUpdates];
         _manualCheck = NO;
+    } else {
+        [self updateAutomaticTimer];
     }
 }
 
