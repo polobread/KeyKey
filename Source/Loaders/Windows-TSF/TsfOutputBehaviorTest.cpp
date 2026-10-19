@@ -687,6 +687,46 @@ void TestSymbolShortcut() {
       Check(manager->preserves==4,"Active input method did not restore preserved chord");
     }
 }
+void TestSymbolReopen() {
+    BYTE previous[256]{}; Check(GetKeyboardState(previous)!=0,"Read reopen keyboard state");
+    struct RestoreKeyboard { BYTE* state; ~RestoreKeyboard() { SetKeyboardState(state); } } restore{previous};
+    BYTE keys[256]{}; Check(SetKeyboardState(keys)!=0,"Clear reopen modifiers");
+    const HWND previousFocus=GetFocus(); SetFocus(nullptr);
+    struct RestoreFocus { HWND window; ~RestoreFocus() { if (IsWindow(window)) SetFocus(window); } } focus{previousFocus};
+    for (int ownerMode=0; ownerMode<4; ++ownerMode) {
+        Fixture f(L"",false,false); Fresh(f);
+        f.context->view.Attach(new LayoutView);
+        // Establish the same successful first opening as the reported flow.
+        Success(f.service->showSymbols(),"Initial symbol opening");
+        Check(TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Initial palette not visible");
+        if (ownerMode==1) f.context->view->returnNullOwner=true;
+        if (ownerMode==2) f.context->view->ownerResult=E_FAIL;
+        if (ownerMode==3) f.context->view.Reset();
+        for (int cycle=0; cycle<3; ++cycle) {
+            BOOL eaten=FALSE;
+            Success(f.service->OnTestKeyDown(f.context.Get(),VK_ESCAPE,0,&eaten),"Test palette Escape");
+            Check(eaten,"Palette Escape was not reserved");
+            Success(f.service->OnKeyDown(f.context.Get(),VK_ESCAPE,0,&eaten),"Close palette with Escape");
+            MSG message{}; while (PeekMessageW(&message,nullptr,0,0,PM_REMOVE)) DispatchMessageW(&message);
+            Check(eaten && !SymbolPanel::visibleWindow(),"Escape retained a visible palette");
+            if (cycle%2==0) Success(f.service->showSymbols(),"Menu reopen without editor HWND");
+            else {
+                Success(f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten),"Shortcut reopen without editor HWND");
+                Check(eaten,"Shortcut refused focused windowless context");
+            }
+            Check(TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Reopened palette not visible");
+            Check(GetWindow(SymbolPanel::visibleWindow(),GW_OWNER)==TextServiceTestAccess::symbolDispatch(*f.service.Get()),
+                "Reopened palette lost its independent owner");
+        }
+        TextServiceTestAccess::closeSymbols(*f.service.Get());
+        f.context->readOnly=true;
+        Check(FAILED(f.service->showSymbols()),"Read-only windowless context opened palette");
+        f.context->readOnly=false;
+        auto* manager=static_cast<FocusManager*>(f.serviceManager.Get()); manager->threadFocused=false;
+        Check(FAILED(f.service->showSymbols()),"Unfocused windowless context opened palette");
+    }
+    std::cout << "Symbol menu/shortcut Escape reopen with normal, NULL, failed and missing view HWND passed\n";
+}
 void TestHostContracts() {
     const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/std::to_string(GetCurrentProcessId());
     std::filesystem::create_directories(profile);
@@ -1496,6 +1536,13 @@ void TestSymbolPaletteRouting() {
 int main(int argc,char** argv) {
     try {
         g_module = GetModuleHandleW(nullptr);
+        if (argc==2 && std::string(argv[1])=="--symbol-reopen") {
+            const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
+                ("symbol-reopen-"+std::to_string(GetCurrentProcessId()));
+            std::filesystem::create_directories(profile);
+            SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+            TestSymbolReopen(); return 0;
+        }
         if (argc==2 && std::string(argv[1])=="--caps-lock") {
             const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
                 ("caps-lock-"+std::to_string(GetCurrentProcessId()));

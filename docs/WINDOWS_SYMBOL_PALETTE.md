@@ -10,6 +10,8 @@ macOS 的 `CVDictionaryWindow` 使用非啟用浮動 `NSPanel`、`NSStatusWindow
 
 - 符號表使用獨立、不可啟用的隱藏 owner，不跟著原編輯視窗最小化；
   顯示期間於 `WM_WINDOWPOSCHANGING` 保持 topmost，不搶鍵盤焦點。
+  開啟只要求有效且有焦點的可寫 TSF context，不再要求文字宿主 HWND；
+  `ITfContextView::GetWnd` 可以成功但回傳 NULL，候選窗的宿主定位規則不套用於獨立符號表。
 - 文件、欄位、輸入執行緒與中英模式變動只撤銷舊送字目標；一般打字和選取符號後
   保留符號表、分類與捲動位置，可連續選取。關閉按鈕或前景琦琦收到 Esc 時關閉；
   同一桌面再次開啟會重用可見符號表。
@@ -37,13 +39,20 @@ Win32 契約：[SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/ap
 
 ```powershell
 cmake --build out/build/x64-ninja --target KeyKeyTsf KeyKeyTsfOutputBehaviorTest KeyKeyPopupLifecycleTest KeyKeySymbolPanelTest
-ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=error -R '^(KeyKeySymbolPaletteRouting|KeyKeyTsfOutputCommitBehavior|KeyKeyPopupLifecycle|KeyKeySymbolPanelResourcesAndFocus)$'
+ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=error -R '^(KeyKeySymbolPaletteReopen|KeyKeySymbolPaletteRouting|KeyKeyTsfOutputCommitBehavior|KeyKeyPopupLifecycle|KeyKeySymbolPanelResourcesAndFocus)$'
 ```
 
 `KeyKeySymbolPaletteRouting` 使用可見的隔離原生宿主及真實子程序，測試非輸入區、
 最小化、唯讀及非輸入區停用／恢復、無效 IPC、欄位切換、延後選取取消、快速連點
 與跨程序連續選字；無互動前景桌面時
 回傳 77，由 CTest 明確標為 skipped，不能算通過。測試不註冊或安裝 TIP，不讀寫使用者詞庫。
+
+`KeyKeySymbolPaletteReopen` 驗證一般 HWND、GetWnd 回傳 NULL／失敗、沒有 active view
+四種情境下，Esc 關閉後可反覆從選單與保留鍵開啟，且唯讀與失焦仍拒絕開啟。
+TSF 行為測試使用獨立測試視窗類別及送字入口名稱，避免重用使用者已開啟的正式符號表。
+隔離重現曾因舊宿主 HWND 檢查而失敗，移除後仍需 Windows 搜尋／Office 實機確認；
+不能以這項測試斷言兩個 App 的實際失敗原因已全部排除。GetWnd 契約見
+[微軟文件](https://learn.microsoft.com/windows/win32/api/msctf/nf-msctf-itfcontextview-getwnd)。
 
 跨 x64／x86 時先建置兩邊的 `KeyKeyTsfOutputBehaviorTest`，再指定另一邊的完整路徑：
 

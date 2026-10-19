@@ -16,8 +16,13 @@
 
 namespace KeyKey::WindowsTsf {
 namespace {
+#ifdef KEYKEY_SYMBOL_TEST_WINDOWS
+constexpr wchar_t kClass[] = L"chichi77.KeyKey.TSF.Test.SymbolPanel";
+constexpr wchar_t kContentClass[] = L"chichi77.KeyKey.TSF.Test.SymbolContent";
+#else
 constexpr wchar_t kClass[] = L"chichi77.KeyKey.TSF.SymbolPanel";
 constexpr wchar_t kContentClass[] = L"chichi77.KeyKey.TSF.SymbolContent";
+#endif
 constexpr UINT kCategory = 1, kClose = 3, kFirstItem = 100;
 constexpr int kTitleHeight = 30, kGap = 6, kToolbarHeight = 34, kCellSize = 34;
 WindowClass panelClass, contentClass;

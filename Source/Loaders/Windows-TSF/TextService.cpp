@@ -27,7 +27,11 @@ using Microsoft::WRL::ComPtr;
 constexpr DWORD kShiftTapTimeoutMilliseconds = 300;
 constexpr UINT kPumpModeMessage = WM_APP + 71;
 constexpr UINT kQuerySymbolTargetMessage = WM_APP + 72;
+#ifdef KEYKEY_SYMBOL_TEST_WINDOWS
+constexpr wchar_t kSymbolDispatchTitle[] = L"KeyKey test symbol dispatch v1";
+#else
 constexpr wchar_t kSymbolDispatchTitle[] = L"KeyKey symbol dispatch v1";
+#endif
 constexpr ULONG_PTR kSymbolCopyData = 0x4B535931;
 constexpr DWORD kMaxSymbolBytes = 4096;
 constexpr TF_PRESERVEDKEY kSymbolShortcut = {VK_OEM_COMMA, TF_MOD_CONTROL | TF_MOD_ALT};
@@ -1414,20 +1418,38 @@ bool TextService::handleSymbolShortcut(ITfContext* context) {
 }
 
 HRESULT TextService::showSymbols() {
-    if (!threadManager_ || clientId_ == TF_CLIENTID_NULL) return E_UNEXPECTED;
+    if (!threadManager_ || clientId_ == TF_CLIENTID_NULL) {
+        Trace("ShowSymbols rejected: inactive service"); return E_UNEXPECTED;
+    }
     ComPtr<ITfDocumentMgr> document;
-    if (FAILED(threadManager_->GetFocus(&document)) || !document) return E_UNEXPECTED;
+    if (FAILED(threadManager_->GetFocus(&document)) || !document) {
+        Trace("ShowSymbols rejected: no focused document"); return E_UNEXPECTED;
+    }
     ComPtr<ITfContext> context;
-    if (FAILED(document->GetTop(&context)) || !context) return E_UNEXPECTED;
-    if (!isFocusedContext(context.Get()) || !IsInputContextEnabled(context.Get())) return E_UNEXPECTED;
-    if (!ResolvePopupOwner(context.Get()) || !ensureSymbolDispatch()) return E_UNEXPECTED;
-    if (SymbolPanel::visibleWindow()) return S_OK;
+    if (FAILED(document->GetTop(&context)) || !context) {
+        Trace("ShowSymbols rejected: no top context"); return E_UNEXPECTED;
+    }
+    if (!isFocusedContext(context.Get()) || !IsInputContextEnabled(context.Get())) {
+        Trace("ShowSymbols rejected: unfocused or disabled context"); return E_UNEXPECTED;
+    }
+    // The palette uses our independent dispatch window as owner. A valid TSF
+    // document can be windowless (GetWnd succeeds with NULL); requiring an
+    // editor HWND here wrongly rejects both the menu and preserved shortcut.
+    if (!ensureSymbolDispatch()) {
+        Trace("ShowSymbols rejected: dispatch creation error=%lu",GetLastError()); return E_UNEXPECTED;
+    }
+    if (const HWND existing=SymbolPanel::visibleWindow()) {
+        Trace("ShowSymbols reusing hwnd=%p",existing); return S_OK;
+    }
     closeSymbols();
     POINT point; GetCursorPos(&point);
     RECT anchor{point.x, point.y, point.x, point.y};
     if (!symbolPanel_.show(symbolDispatchWindow_, anchor, [this](const std::wstring& text) {
         routeSymbol(text);
-    }, [this] { return symbolTargetAvailable(); })) { closeSymbols(); return E_FAIL; }
+    }, [this] { return symbolTargetAvailable(); })) {
+        Trace("ShowSymbols failed: panel creation error=%lu",GetLastError()); closeSymbols(); return E_FAIL;
+    }
+    Trace("ShowSymbols opened");
     return S_OK;
 }
 
