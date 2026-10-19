@@ -52,6 +52,7 @@ ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=e
 `KeyKeySymbolPanelResourcesAndFocus`、popup 生命週期選 `KeyKeyPopupLifecycle`、
 DLL 卸載選 `KeyKeyModuleLifetime`、工作列模式選 `KeyKeyTsfSystemTrayModes`。
 符號表跨 App 浮動與送字另選 `KeyKeySymbolPaletteRouting`，需要可取得前景焦點的互動桌面；
+受限宿主入口查找與訊息傳送選 `KeyKeySymbolTargetAppContainer`，使用暫時的隔離 AppContainer。
 跨架構與實機驗收界線見[符號表浮動與送字](../../../docs/WINDOWS_SYMBOL_PALETTE.md)。
 只在變更真的影響另一功能時才一起選它，不因修改 `TextService.cpp` 就全部執行。
 

@@ -25,6 +25,8 @@ macOS 的 `CVDictionaryWindow` 使用非啟用浮動 `NSPanel`、`NSStatusWindow
 - 每個 TSF 服務以系統 `STATIC` 視窗類別建立隱藏送字入口，停用或析構時銷毀。
   符號表仍由開啟它的宿主程序持有，該服務停用或程序結束時會關閉，不是常駐外部程序。
 - 選取時透過 `GetGUIThreadInfo` 找前景 App 的真正文字焦點執行緒，再找該執行緒的琦琦入口，
+  使用固定 `STATIC` 類別與入口名稱查找後核對程序／執行緒，避免 `EnumThreadWindows`
+  略過 Windows 搜尋的 immersive 視窗，導致可寫欄位仍被誤判為停用。
   以有時限的 `WM_COPYDATA` 傳送完整 UTF-16。主視窗與編輯器可以在不同 UI 執行緒；
   焦點程序仍須等於前景程序，接收端另須符合當前 TSF 焦點。
   接收端只接受有長度上限的內建符號清單，並重新確認前景程序／執行緒、啟用中的
@@ -43,8 +45,8 @@ Win32 契約：[SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/ap
 在已載入 MSVC 的 Developer PowerShell，從 Windows-TSF 目錄執行：
 
 ```powershell
-cmake --build out/build/x64-ninja --target KeyKeyTsf KeyKeyTsfOutputBehaviorTest KeyKeyPopupLifecycleTest KeyKeySymbolPanelTest
-ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=error -R '^(KeyKeySymbolPaletteReopen|KeyKeySymbolPaletteWorkerThread|KeyKeySymbolPaletteRouting|KeyKeyTsfOutputCommitBehavior|KeyKeyPopupLifecycle|KeyKeySymbolPanelResourcesAndFocus)$'
+cmake --build out/build/x64-ninja --target KeyKeyTsf KeyKeyTsfOutputBehaviorTest KeyKeySymbolTargetTest KeyKeyPopupLifecycleTest KeyKeySymbolPanelTest
+ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=error -R '^(KeyKeySymbolTargetAppContainer|KeyKeySymbolPaletteReopen|KeyKeySymbolPaletteWorkerThread|KeyKeySymbolPaletteRouting|KeyKeyTsfOutputCommitBehavior|KeyKeyPopupLifecycle|KeyKeySymbolPanelResourcesAndFocus)$'
 ```
 
 `KeyKeySymbolPaletteRouting` 使用可見的隔離原生宿主及真實子程序，測試非輸入區、
@@ -59,6 +61,9 @@ ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=e
 `KeyKeySymbolPaletteWorkerThread` 使用不同執行緒的頂層視窗與子編輯器，驗證符號送入
 真正有鍵盤焦點的編輯器一次；此項與跨程序測試皆需互動桌面，無法取得前景焦點時跳過。
 TSF 行為測試使用獨立測試視窗類別及送字入口名稱，避免重用使用者已開啟的正式符號表。
+`KeyKeySymbolTargetAppContainer` 建立暫時的 AppContainer 與隔離原生視窗，驗證固定入口
+查找、可輸入狀態查詢與三次符號傳送；只授予測試目錄讀取／執行權限，不改產品 ACL，
+不註冊 TIP。退出後清除測試 profile 與執行檔；無互動前景桌面時跳過。
 隔離回歸不能代替 Windows 搜尋、Office 與筆記本的安裝後確認。GetWnd 契約見
 [微軟文件](https://learn.microsoft.com/windows/win32/api/msctf/nf-msctf-itfcontextview-getwnd)。
 焦點執行緒與 DWM cloak 定義見

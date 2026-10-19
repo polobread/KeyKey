@@ -2,6 +2,7 @@
 #include "InputModeState.h"
 #include "StartupInputMode.h"
 #include "TsfHost.h"
+#include "SymbolTarget.h"
 #include <SymbolResources.generated.h>
 
 #include <algorithm>
@@ -40,31 +41,6 @@ bool IsBuiltinSymbol(const std::wstring& text) {
     for (const auto& category : BuiltinSymbolCategories())
         for (const auto& item : category.items) if (item.text==text) return true;
     return false;
-}
-
-DWORD SymbolInputThread(HWND foreground) {
-    DWORD process=0;
-    const DWORD rootThread=GetWindowThreadProcessId(foreground,&process);
-    GUITHREADINFO info{sizeof(info)};
-    if (!rootThread || !GetGUIThreadInfo(rootThread,&info) || !info.hwndFocus) return 0;
-    DWORD focusedProcess=0;
-    const DWORD thread=GetWindowThreadProcessId(info.hwndFocus,&focusedProcess);
-    return focusedProcess==process && GetForegroundWindow()==foreground ? thread : 0;
-}
-
-std::vector<HWND> SymbolTargets(HWND foreground) {
-    std::vector<HWND> targets;
-    // Packaged Notepad and other split-thread hosts put the editor on a
-    // different input thread from their foreground top-level frame.
-    const DWORD thread=SymbolInputThread(foreground);
-    if (thread) EnumThreadWindows(thread,[](HWND window,LPARAM parameter)->BOOL {
-        wchar_t title[64]{};
-        GetWindowTextW(window,title,static_cast<int>(std::size(title)));
-        if (wcscmp(title,kSymbolDispatchTitle)) return TRUE;
-        auto& targets=*reinterpret_cast<std::vector<HWND>*>(parameter);
-        targets.push_back(window); return targets.size()<8;
-    },reinterpret_cast<LPARAM>(&targets));
-    return targets;
 }
 
 HRESULT RangeText(ITfRange* range, TfEditCookie cookie, std::wstring& text) {
@@ -709,7 +685,7 @@ bool TextService::routeSymbol(const std::wstring& text) {
     if (!IsBuiltinSymbol(text) || (text.size()+1)*sizeof(wchar_t)>kMaxSymbolBytes) return false;
     COPYDATASTRUCT data{kSymbolCopyData,static_cast<DWORD>((text.size()+1)*sizeof(wchar_t)),
         const_cast<wchar_t*>(text.c_str())};
-    for (const HWND target : SymbolTargets(foreground)) {
+    for (const HWND target : SymbolTargets(foreground,kSymbolDispatchTitle)) {
         if (GetForegroundWindow()!=foreground) return false;
         DWORD_PTR accepted=FALSE;
         // Only try another service after an explicit rejection. Never retry
@@ -724,7 +700,7 @@ bool TextService::routeSymbol(const std::wstring& text) {
 bool TextService::symbolTargetAvailable() {
     const HWND foreground=GetForegroundWindow();
     const ULONGLONG deadline=GetTickCount64()+80;
-    for (const HWND target : SymbolTargets(foreground)) {
+    for (const HWND target : SymbolTargets(foreground,kSymbolDispatchTitle)) {
         const auto now=GetTickCount64();
         if (GetForegroundWindow()!=foreground || now>=deadline) return false;
         DWORD_PTR available=FALSE;
