@@ -42,9 +42,21 @@ bool IsBuiltinSymbol(const std::wstring& text) {
     return false;
 }
 
+DWORD SymbolInputThread(HWND foreground) {
+    DWORD process=0;
+    const DWORD rootThread=GetWindowThreadProcessId(foreground,&process);
+    GUITHREADINFO info{sizeof(info)};
+    if (!rootThread || !GetGUIThreadInfo(rootThread,&info) || !info.hwndFocus) return 0;
+    DWORD focusedProcess=0;
+    const DWORD thread=GetWindowThreadProcessId(info.hwndFocus,&focusedProcess);
+    return focusedProcess==process && GetForegroundWindow()==foreground ? thread : 0;
+}
+
 std::vector<HWND> SymbolTargets(HWND foreground) {
     std::vector<HWND> targets;
-    const DWORD thread=GetWindowThreadProcessId(foreground,nullptr);
+    // Packaged Notepad and other split-thread hosts put the editor on a
+    // different input thread from their foreground top-level frame.
+    const DWORD thread=SymbolInputThread(foreground);
     if (thread) EnumThreadWindows(thread,[](HWND window,LPARAM parameter)->BOOL {
         wchar_t title[64]{};
         GetWindowTextW(window,title,static_cast<int>(std::size(title)));
@@ -725,7 +737,9 @@ bool TextService::symbolTargetAvailable() {
 
 ComPtr<ITfContext> TextService::focusedSymbolContext() {
     DWORD process=0;
-    const DWORD thread=GetWindowThreadProcessId(GetForegroundWindow(),&process);
+    const HWND foreground=GetForegroundWindow();
+    GetWindowThreadProcessId(foreground,&process);
+    const DWORD thread=SymbolInputThread(foreground);
     if (process!=GetCurrentProcessId() || thread!=GetCurrentThreadId() ||
         !threadManager_ || !keyEventSinkForeground_ || !uiThreadFocused_) return {};
     ComPtr<ITfDocumentMgr> document;
@@ -1411,7 +1425,6 @@ bool TextService::handleSymbolShortcut(ITfContext* context) {
     shiftTogglePending_ = false;
     shiftPressedAt_ = 0;
     // Autorepeat or duplicate delivery must not rebuild an already visible panel.
-    if (symbolPanel_.visible() && symbolContext_.Get() == context) return true;
     const HRESULT result = showSymbols();
     Trace("SymbolShortcut show hr=0x%08lX", static_cast<unsigned long>(result));
     return result == S_OK;
@@ -1438,15 +1451,30 @@ HRESULT TextService::showSymbols() {
     if (!ensureSymbolDispatch()) {
         Trace("ShowSymbols rejected: dispatch creation error=%lu",GetLastError()); return E_UNEXPECTED;
     }
-    if (const HWND existing=SymbolPanel::visibleWindow()) {
+    if (const HWND existing=SymbolPanel::restoreVisibleWindow()) {
         Trace("ShowSymbols reusing hwnd=%p",existing); return S_OK;
     }
     closeSymbols();
     POINT point; GetCursorPos(&point);
     RECT anchor{point.x, point.y, point.x, point.y};
-    if (!symbolPanel_.show(symbolDispatchWindow_, anchor, [this](const std::wstring& text) {
-        routeSymbol(text);
-    }, [this] { return symbolTargetAvailable(); })) {
+    const auto open=[&](HWND owner) {
+        return symbolPanel_.show(owner,anchor,[this](const std::wstring& text) { routeSymbol(text); },
+            [this] { return symbolTargetAvailable(); });
+    };
+    // Shell-managed/AppContainer hosts can cloak independent hidden owners.
+    // Prefer the document owner only in that case; desktop palettes retain
+    // the independent owner that survives minimizing the original editor.
+    HWND owner=symbolDispatchWindow_;
+    if (SymbolPanel::windowCloaked(owner)) {
+        const HWND documentOwner=ResolvePopupOwner(context.Get());
+        if (documentOwner && !SymbolPanel::windowCloaked(documentOwner)) owner=documentOwner;
+    }
+    bool opened=open(owner);
+    if (!opened && owner==symbolDispatchWindow_) {
+        const HWND documentOwner=ResolvePopupOwner(context.Get());
+        if (documentOwner && !SymbolPanel::windowCloaked(documentOwner)) opened=open(documentOwner);
+    }
+    if (!opened) {
         Trace("ShowSymbols failed: panel creation error=%lu",GetLastError()); closeSymbols(); return E_FAIL;
     }
     Trace("ShowSymbols opened");

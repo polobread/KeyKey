@@ -13,6 +13,7 @@
 #include <dwrite.h>
 #include <wrl/client.h>
 #include <uxtheme.h>
+#include <dwmapi.h>
 
 namespace KeyKey::WindowsTsf {
 namespace {
@@ -24,6 +25,7 @@ constexpr wchar_t kClass[] = L"chichi77.KeyKey.TSF.SymbolPanel";
 constexpr wchar_t kContentClass[] = L"chichi77.KeyKey.TSF.SymbolContent";
 #endif
 constexpr UINT kCategory = 1, kClose = 3, kFirstItem = 100;
+constexpr UINT kRestorePanel = WM_APP + 75;
 constexpr int kTitleHeight = 30, kGap = 6, kToolbarHeight = 34, kCellSize = 34;
 WindowClass panelClass, contentClass;
 struct ScopedDC {
@@ -180,10 +182,30 @@ struct SymbolPanel::ColorEmojiRenderer {
 };
 
 SymbolPanel::SymbolPanel() = default;
+bool SymbolPanel::windowCloaked(HWND window) {
+    DWORD cloaked=0;
+    return window && SUCCEEDED(DwmGetWindowAttribute(window,DWMWA_CLOAKED,&cloaked,sizeof(cloaked))) && cloaked;
+}
+bool SymbolPanel::visible() const {
+    return window_ && IsWindowVisible(window_) && !IsIconic(window_) && !windowCloaked(window_);
+}
 HWND SymbolPanel::visibleWindow() {
     HWND window=nullptr;
     while ((window=FindWindowExW(nullptr,window,kClass,nullptr)))
-        if (IsWindowVisible(window)) return window;
+        if (IsWindowVisible(window) && !IsIconic(window) && !windowCloaked(window)) return window;
+    return nullptr;
+}
+HWND SymbolPanel::restoreVisibleWindow() {
+    HWND window=nullptr;
+    const auto deadline=GetTickCount64()+100;
+    while ((window=FindWindowExW(nullptr,window,kClass,nullptr))) {
+        if (!IsWindowVisible(window) || IsIconic(window) || windowCloaked(window)) continue;
+        const auto now=GetTickCount64();
+        if (now>=deadline) break;
+        DWORD_PTR restored=FALSE;
+        if (SendMessageTimeoutW(window,kRestorePanel,0,0,SMTO_ABORTIFHUNG|SMTO_BLOCK,
+            static_cast<UINT>(deadline-now),&restored) && restored) return window;
+    }
     return nullptr;
 }
 bool SymbolPanel::releaseWindowClasses() {
@@ -280,7 +302,9 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection, Avai
         if (!SetTimer(window_,1,250,nullptr)) { hide(); return false; }
         refreshAvailability();
     }
-    traceState("show"); return true;
+    traceState("show");
+    if (!visible()) { hide(); return false; }
+    return true;
 }
 void SymbolPanel::notifyVisibility(bool visible) {
     if (shown_==visible) return;
@@ -514,6 +538,15 @@ LRESULT CALLBACK SymbolPanel::WindowProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp)
 }
 LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
     switch (msg) {
+    case kRestorePanel: {
+        if (!selection_ || !visible()) return FALSE;
+        RECT bounds{}; if (!GetWindowRect(window_,&bounds)) return FALSE;
+        position(bounds); ShowWindow(window_,SW_SHOWNOACTIVATE);
+        InvalidateRect(window_,nullptr,FALSE);
+        // Do not query availability inside synchronous cross-thread IPC.
+        // The timer will refresh it after the caller can process messages.
+        return visible();
+    }
     case WM_NCDESTROY: {
         traceState("destroy");
         HWND destroyed=window_;
@@ -603,7 +636,11 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
         if (font_) rebuild();
         return 0;
     case WM_KEYDOWN: if (wp==VK_ESCAPE) { hide(); return 0; } break;
-    case WM_TIMER: if (wp==1) { refreshAvailability(); return 0; } break;
+    case WM_TIMER: if (wp==1) {
+        if (windowCloaked(window_)) hide();
+        else refreshAvailability();
+        return 0;
+    } break;
     case WM_CTLCOLORSTATIC:
         SetTextColor(reinterpret_cast<HDC>(wp),foreground_);
         SetBkColor(reinterpret_cast<HDC>(wp),backgroundColor_);

@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <vector>
 #include <deque>
+#include <thread>
+#include <dwmapi.h>
 #include "InputMethods.h"
 #include "FrontendSettings.h"
 #include "Mandarin.h"
@@ -725,7 +727,34 @@ void TestSymbolReopen() {
         auto* manager=static_cast<FocusManager*>(f.serviceManager.Get()); manager->threadFocused=false;
         Check(FAILED(f.service->showSymbols()),"Unfocused windowless context opened palette");
     }
-    std::cout << "Symbol menu/shortcut Escape reopen with normal, NULL, failed and missing view HWND passed\n";
+    { Fixture stale(L"",false,false); Fresh(stale);
+      Success(stale.service->showSymbols(),"Show palette before DWM cloak");
+      const HWND old=SymbolPanel::visibleWindow();
+      BOOL cloak=TRUE;
+      Success(DwmSetWindowAttribute(old,DWMWA_CLOAK,&cloak,sizeof(cloak)),"Cloak stale palette");
+      DwmFlush();
+      Check(IsWindowVisible(old),"Cloak fixture must retain WS_VISIBLE");
+      Fixture active(L"",false,false); Fresh(active);
+      Success(active.service->showSymbols(),"Open past cloaked palette");
+      Check(TextServiceTestAccess::symbolsVisible(*active.service.Get()),"Cloaked palette blocked a new opening"); }
+    { Fixture f(L"",false,false); Fresh(f); f.context->view.Attach(new LayoutView);
+      Success(f.service->OnSetThreadFocus(),"Create independent dispatch owner");
+      BOOL cloak=TRUE;
+      const HWND dispatch=TextServiceTestAccess::symbolDispatch(*f.service.Get());
+      Success(DwmSetWindowAttribute(dispatch,DWMWA_CLOAK,&cloak,sizeof(cloak)),"Cloak independent owner");
+      DwmFlush();
+      Success(f.service->showSymbols(),"Use document owner in a cloaked host");
+      Check(TextServiceTestAccess::symbolsVisible(*f.service.Get()) &&
+          GetWindow(SymbolPanel::visibleWindow(),GW_OWNER)==f.context->view->owner,
+          "Cloaked independent owner hid its palette");
+      const HWND palette=SymbolPanel::visibleWindow();
+      SetWindowPos(palette,nullptr,-30000,-30000,0,0,SWP_NOZORDER|SWP_NOSIZE|SWP_NOACTIVATE);
+      Success(f.service->showSymbols(),"Restore misplaced existing palette");
+      RECT bounds{}; GetWindowRect(palette,&bounds); MONITORINFO monitor{sizeof(monitor)};
+      GetMonitorInfoW(MonitorFromWindow(palette,MONITOR_DEFAULTTONEAREST),&monitor);
+      Check(bounds.left>=monitor.rcWork.left && bounds.top>=monitor.rcWork.top,
+          "Existing palette remained outside the work area"); }
+    std::cout << "Symbol Escape reopen, windowless contexts and cloaked palette replacement passed\n";
 }
 void TestHostContracts() {
     const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/std::to_string(GetCurrentProcessId());
@@ -1417,6 +1446,58 @@ int SymbolReceiver(const char* readyName) {
     return 0;
 }
 
+void TestSymbolWorkerThread() {
+    Fixture root(L"",false,false); Fresh(root); ForegroundSymbolHost(root);
+    const HWND owner=root.context->view->owner;
+    const DWORD ownerThread=GetCurrentThreadId();
+    root.service->OnSetFocus(FALSE);
+    const auto symbol=BuiltinSymbolCategories().front().items.front().text;
+    HANDLE ready=CreateEventW(nullptr,TRUE,FALSE,nullptr), done=CreateEventW(nullptr,TRUE,FALSE,nullptr);
+    Check(ready && done,"Worker routing events");
+    std::atomic<bool> stop{false},received{false},failed{false};
+    std::string error;
+    std::thread worker([&] {
+        try {
+            Fixture editor(L"",false,false); Fresh(editor);
+            editor.context->view.Attach(new LayoutView);
+            Check(AttachThreadInput(GetCurrentThreadId(),ownerThread,TRUE)!=FALSE,"Attach editor input queue");
+            HWND edit=CreateWindowExW(0,L"EDIT",L"",WS_CHILD|WS_VISIBLE,0,0,100,40,owner,nullptr,g_module,nullptr);
+            Check(edit!=nullptr,"Worker editor window");
+            SetFocus(edit);
+            Check(GetFocus()==edit,"Focus worker editor");
+            editor.service->OnSetThreadFocus();
+            SetEvent(ready);
+            while (!stop) {
+                PumpSymbolMessages(); editor.context->drainAll();
+                if (editor.document->text==symbol) received=true;
+                Sleep(1);
+            }
+            DestroyWindow(edit);
+            AttachThreadInput(GetCurrentThreadId(),ownerThread,FALSE);
+        } catch (const std::exception& exception) { error=exception.what(); failed=true; SetEvent(ready); }
+        SetEvent(done);
+    });
+    struct Cleanup {
+        std::atomic<bool>& stop; std::thread& worker; HANDLE ready,done;
+        ~Cleanup() {
+            stop=true;
+            while (WaitForSingleObject(done,0)!=WAIT_OBJECT_0) { PumpSymbolMessages(); Sleep(1); }
+            worker.join(); CloseHandle(ready); CloseHandle(done);
+        }
+    } cleanup{stop,worker,ready,done};
+    const auto until=GetTickCount64()+5000;
+    while (WaitForSingleObject(ready,0)!=WAIT_OBJECT_0 && GetTickCount64()<until) { PumpSymbolMessages(); Sleep(1); }
+    Check(!failed,error.c_str());
+    Check(WaitForSingleObject(ready,0)==WAIT_OBJECT_0,"Worker editor ready timeout");
+    GUITHREADINFO info{sizeof(info)};
+    Check(GetGUIThreadInfo(ownerThread,&info)!=FALSE && info.hwndFocus &&
+        GetWindowThreadProcessId(info.hwndFocus,nullptr)!=ownerThread,"Fixture must focus a different UI thread");
+    Check(TextServiceTestAccess::routeSymbol(*root.service.Get(),symbol),"Foreground root thread hid worker TSF target");
+    const auto insertedUntil=GetTickCount64()+2000;
+    while (!received && GetTickCount64()<insertedUntil) { PumpSymbolMessages(); Sleep(1); }
+    Check(received,"Symbol did not reach focused worker editor");
+    std::cout << "Foreground top-level and focused editor on separate UI threads routed once\n";
+}
 void TestSymbolPaletteRouting() {
     Fixture f(L"",false,false); Fresh(f); ForegroundSymbolHost(f);
     auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
@@ -1509,7 +1590,13 @@ void TestSymbolPaletteRouting() {
         if (WaitForSingleObject(process,0)==WAIT_TIMEOUT) { TerminateProcess(process,2); WaitForSingleObject(process,2000); }
         CloseHandle(process); CloseHandle(ready);
     } } cleanup{child.hProcess,ready};
-    Check(WaitForSingleObject(ready,8000)==WAIT_OBJECT_0,"Cross-process receiver did not become ready");
+    const auto readyUntil=GetTickCount64()+8000;
+    // The receiver explicitly asks the existing palette's UI thread to
+    // restore itself. Keep that thread responsive during child startup.
+    while (WaitForSingleObject(ready,0)!=WAIT_OBJECT_0 && GetTickCount64()<readyUntil) {
+        PumpSymbolMessages(); Sleep(1);
+    }
+    Check(WaitForSingleObject(ready,0)==WAIT_OBJECT_0,"Cross-process receiver did not become ready");
     const HWND sharedPalette=SymbolPanel::visibleWindow();
     DWORD paletteProcess=0; GetWindowThreadProcessId(sharedPalette,&paletteProcess);
     Check(sharedPalette && paletteProcess==GetCurrentProcessId() && IsWindowVisible(sharedPalette),
@@ -1536,6 +1623,13 @@ void TestSymbolPaletteRouting() {
 int main(int argc,char** argv) {
     try {
         g_module = GetModuleHandleW(nullptr);
+        if (argc==2 && std::string(argv[1])=="--symbol-worker-thread") {
+            const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
+                ("symbol-worker-"+std::to_string(GetCurrentProcessId()));
+            std::filesystem::create_directories(profile);
+            SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+            TestSymbolWorkerThread(); return 0;
+        }
         if (argc==2 && std::string(argv[1])=="--symbol-reopen") {
             const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
                 ("symbol-reopen-"+std::to_string(GetCurrentProcessId()));

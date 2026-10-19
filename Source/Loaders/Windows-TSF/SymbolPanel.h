@@ -16,11 +16,13 @@ public:
     ~SymbolPanel();
     static bool releaseWindowClasses(); // Only when the module has no service objects.
     static HWND visibleWindow();
+    static HWND restoreVisibleWindow();
+    static bool windowCloaked(HWND window);
     SymbolPanel(const SymbolPanel&) = delete;
     SymbolPanel& operator=(const SymbolPanel&) = delete;
     bool show(HWND owner, const RECT& anchor, Selection selection, Availability availability = {});
     void hide();
-    bool visible() const { return window_ && IsWindowVisible(window_); }
+    bool visible() const;
 private:
     friend struct SymbolPanelTestAccess;
     static LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
