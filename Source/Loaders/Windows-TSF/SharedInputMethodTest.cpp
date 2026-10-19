@@ -3,6 +3,7 @@
 #include "ModuleState.h"
 #include "FrontendSettings.h"
 #include "Mandarin.h"
+#include "OpenVanilla.h"
 #include <atomic>
 #include <fstream>
 #include <filesystem>
@@ -27,6 +28,25 @@ static void Check(bool result, const char* message) {
 static void Success(HRESULT result, const char* message) {
     if (FAILED(result)) std::cerr << message << " hr=" << std::hex << result << '\n';
     Check(SUCCEEDED(result), message);
+}
+
+static std::wstring LegacyRuntimeSnapshot(const std::wstring& snapshot) {
+    auto bytes = OpenVanilla::OVUTF8::FromUTF16(snapshot);
+    Check(bytes.compare(0,3,"v2;")==0,"Expected v2 runtime snapshot");
+    std::vector<std::pair<size_t,size_t>> fields;
+    for (size_t offset=3; offset<bytes.size();) {
+        const auto colon=bytes.find(':',offset);
+        Check(colon!=std::string::npos,"Snapshot field length missing");
+        const auto size=std::stoul(bytes.substr(offset,colon-offset));
+        Check(size<=bytes.size()-colon-1,"Snapshot field truncated");
+        const auto next=colon+1+size;
+        fields.emplace_back(offset,next-offset); offset=next;
+    }
+    Check(fields.size()>4,"Snapshot missing visibility fields");
+    // v2 appends the Caps Lock preference before the four visibility fields.
+    const auto field=fields[fields.size()-5];
+    bytes.erase(field.first,field.second); bytes.replace(0,3,"v1;");
+    return OpenVanilla::OVUTF16::FromUTF8(bytes);
 }
 
 struct Container {
@@ -203,6 +223,7 @@ int wmain(int argc, wchar_t** argv) {
             const auto frontend = LoadFrontendSettings();
             Check(frontend.candidateLayout == CandidateLayout::Horizontal && frontend.candidateScalePercent == 150 &&
                 frontend.highlightColor == L"Green" && !frontend.symbolPanelShortcutEnabled &&
+                !frontend.ignoreCapsLockInChinese &&
                 !frontend.toggleWithControlBackslash && !frontend.playSoundOnTypingError,
                 "Restricted frontend retained stale appearance/shortcut/sound preferences");
             Check(!IsInputMethodVisible("TraditionalMandarin") && IsInputMethodVisible("Generic-cj-cin"),
@@ -210,6 +231,12 @@ int wmain(int argc, wchar_t** argv) {
             const auto afterSnapshot = RuntimePreferencesSnapshot();
             Check(afterSnapshot == *sourceSnapshot && SyncRuntimePreferences(preferences, client, true) &&
                 RuntimePreferencesSnapshot() == afterSnapshot, "Preference groups diverged or unchanged sync rewrote values");
+            Success(preferences.write(client, LegacyRuntimeSnapshot(*sourceSnapshot)), "Publish legacy preferences");
+            Check(SyncRuntimePreferences(preferences, client, true) && LoadFrontendSettings().ignoreCapsLockInChinese,
+                "Legacy snapshot did not adopt Windows Caps Lock default");
+            Success(preferences.write(client, *sourceSnapshot), "Restore v2 preferences");
+            Check(SyncRuntimePreferences(preferences, client, true) && !LoadFrontendSettings().ignoreCapsLockInChinese,
+                "Restored snapshot lost explicit Caps Lock opt-out");
             if (index < 2) {
                 const auto* layout = Formosa::Mandarin::BopomofoKeyboardLayout::LayoutForName("Hsu");
                 const auto syllable = Formosa::Mandarin::BopomofoSyllable::FromComposedString("ㄋㄧˇ");
@@ -250,6 +277,7 @@ int wmain(int argc, wchar_t** argv) {
             seed(L"", "<key>OneDimensionalCandidatePanelStyle</key><string>horizontal</string>"
                 "<key>CandidateWindowScalePercent</key><string>150</string><key>HighlightColor</key><string>Green</string>"
                 "<key>SymbolPanelShortcutEnabled</key><string>false</string>"
+                "<key>IgnoreCapsLockInChinese</key><string>false</string>"
                 "<key>ToggleInputMethodWithControlBackslash</key><string>false</string>"
                 "<key>ShouldPlaySoundOnTypingError</key><string>false</string>"
                 "<key>ModulesSuppressedFromUI</key><array><string>TraditionalMandarin</string></array>"

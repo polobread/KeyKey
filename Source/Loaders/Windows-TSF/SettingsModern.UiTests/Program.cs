@@ -8,6 +8,23 @@ using System.Text;
 
 internal static class Program
 {
+    private static void VerifyCapsLock(MainWindow window, string directory)
+    {
+        var option = Control<CheckBox>(window, "IgnoreCapsLockInChinese");
+        Check(option.IsChecked == true, "Windows Chinese Caps Lock option must default to enabled");
+        foreach (var enabled in new[] { false, true })
+        {
+            option.IsChecked = enabled;
+            Control<Button>(window, "ApplyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(Control<TextBlock>(window, "Status").Text == "設定已套用", "Caps Lock Apply failed");
+            var loader = XDocument.Load(Path.Combine(directory, "com.polobread.chichi77-keykey.windows.plist"));
+            Check(Value(loader, "IgnoreCapsLockInChinese") == (enabled ? "true" : "false"), "Caps Lock choice not saved");
+            var reopened = new MainWindow();
+            Check(Control<CheckBox>(reopened, "IgnoreCapsLockInChinese").IsChecked == enabled, "Caps Lock choice not restored");
+            reopened.Close();
+        }
+        Console.WriteLine("Chinese Caps Lock default, disable/enable, Apply and reopen passed");
+    }
     private static void VerifySymbolShortcut(MainWindow window, string directory)
     {
         var option = Control<CheckBox>(window, "SymbolPanelShortcut");
@@ -184,6 +201,12 @@ internal static class Program
             app.InitializeComponent();
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var window = new MainWindow();
+            if (args.Contains("--caps-lock"))
+            {
+                VerifyCapsLock(window, directory);
+                window.Close();
+                return 0;
+            }
             if (args.Contains("--symbol-shortcut"))
             {
                 VerifySymbolShortcut(window, directory);

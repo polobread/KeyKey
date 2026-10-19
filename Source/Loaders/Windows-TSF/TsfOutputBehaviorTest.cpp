@@ -436,6 +436,56 @@ void Fresh(Fixture& f,const std::string& method="SmartMandarin",bool chinese=tru
     TextServiceTestAccess::start(*f.service.Get(),method,chinese,full);
     Success(TextServiceTestAccess::track(*f.service.Get(),f.context.Get()),"Track ordered context");
 }
+void TestCapsLock() {
+    const auto savePreference=[](bool enabled) {
+        std::ofstream output(LoaderPreferencesPath(),std::ios::binary);
+        output << "<plist><dict><key>IgnoreCapsLockInChinese</key><string>"
+               << (enabled ? "true" : "false") << "</string></dict></plist>";
+    };
+    auto caps=Character(L'S'); caps.capsLock=true;
+    for (const auto& method : kInputMethods) {
+        const std::wstring reading=IsTableInputMethod(method.identifier) ? L"尸" : L"ㄋ";
+        { Fixture f(L"",false,false); Fresh(f,method.identifier);
+          Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),caps),"Default Caps Lock key rejected");
+          Check(f.document->text==reading,"Default Chinese Caps Lock did not compose");
+          auto back=Special(VK_BACK); back.capsLock=true;
+          Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),back),"Caps Lock Backspace rejected");
+          Check(f.document->text.empty(),"Caps Lock Backspace did not edit Chinese reading"); }
+    }
+    for (bool enabled : {false,true}) {
+        savePreference(enabled);
+        for (const auto& method : kInputMethods) {
+            const std::wstring reading=IsTableInputMethod(method.identifier) ? L"尸" : L"ㄋ";
+            { Fixture f(L"",false,false); Fresh(f,method.identifier);
+              Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),caps),"Configured Caps Lock key rejected");
+              Check(f.document->text==(enabled ? reading : L"s"),"Caps Lock preference did not change Chinese input"); }
+            // Keep the existing Shift literal behavior, including its case.
+            { Fixture f(L"",false,false); Fresh(f,method.identifier);
+              auto shift=Character(L'S'); shift.shift=true;
+              Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),shift),"Shift literal rejected");
+              Check(f.document->text==L"s","Caps Lock preference changed existing Shift literal behavior"); }
+            for (bool locked : {false,true}) for (bool shifted : {false,true}) {
+                auto english=Character(locked!=shifted ? L'S' : L's');
+                english.capsLock=locked; english.shift=shifted;
+                { Fixture f(L"",false,false); Fresh(f,method.identifier,false,false);
+                  Check(!TextServiceTestAccess::wants(*f.service.Get(),english),"Halfwidth English must remain with host"); }
+                { Fixture f(L"",false,false); Fresh(f,method.identifier,false,true);
+                  Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),english),"Fullwidth English rejected");
+                  Check(f.document->text==(locked!=shifted ? L"Ｓ" : L"ｓ"),"English Caps Lock/Shift case changed"); }
+            }
+        }
+    }
+    { Fixture f(L"",false,false); Fresh(f);
+      for (wchar_t c : std::wstring(L"su3cl3")) {
+          auto event=Character(c>=L'a' && c<=L'z' ? c-L'a'+L'A' : c); event.capsLock=true;
+          Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),event),"Caps Lock sentence key rejected");
+      }
+      Check(f.document->text==L"你好","Caps Lock sentence lost Chinese readings");
+      auto enter=Special(VK_RETURN); enter.capsLock=true;
+      Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),enter),"Caps Lock commit rejected");
+      Check(f.document->text==L"你好" && !TextServiceTestAccess::engineComposition(*f.service.Get()),"Caps Lock sentence commit failed"); }
+    std::cout << "Caps Lock defaults, four Chinese methods, opt-out, Shift preservation and English case passed\n";
+}
 class SelectionEdit final : public ITfEditRecord {
 public:
     STDMETHODIMP QueryInterface(REFIID iid,void** result) override {
@@ -1446,6 +1496,13 @@ void TestSymbolPaletteRouting() {
 int main(int argc,char** argv) {
     try {
         g_module = GetModuleHandleW(nullptr);
+        if (argc==2 && std::string(argv[1])=="--caps-lock") {
+            const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
+                ("caps-lock-"+std::to_string(GetCurrentProcessId()));
+            std::filesystem::create_directories(profile);
+            SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+            TestCapsLock(); return 0;
+        }
         if (argc==3 && std::string(argv[1])=="--symbol-receiver") return SymbolReceiver(argv[2]);
         if (argc==2 && std::string(argv[1])=="--symbol-routing") {
             const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/

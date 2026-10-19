@@ -50,6 +50,8 @@
                 <RadioButton x:Name="DefaultEnglishMode" Content="英文" GroupName="DefaultInputMode" />
               </StackPanel>
               <TextBlock Text="下次啟用琦琦輸入法時生效；中文沿用目前選擇的好打注音、傳統注音、倉頡或簡易。仍可按 Shift 切換中英文。" TextWrapping="Wrap" Opacity="0.7" />
+              <CheckBox x:Name="IgnoreCapsLockInChinese" Content="中文模式忽略 Caps Lock（微軟新舊注音）" Margin="0,12,0,8" />
+              <TextBlock Text="Caps Lock 開啟時仍可輸入中文；英文模式保留 Caps Lock 的大小寫功能。" TextWrapping="Wrap" Opacity="0.7" />
               <TextBlock Text="在工作列輸入法選單顯示" FontWeight="SemiBold" Margin="0,10,0,8" />
               <CheckBox x:Name="ShowSmartMandarin" Content="好打注音" Margin="0,0,0,8" />
               <CheckBox x:Name="ShowTraditionalMandarin" Content="傳統注音" Margin="0,0,0,8" />

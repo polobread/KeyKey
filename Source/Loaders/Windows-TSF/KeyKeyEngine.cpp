@@ -518,7 +518,11 @@ char PrintableAsciiFromVirtualKey(const KeyEvent& event) {
     }
 }
 
-PVKeyImpl MakeKey(const KeyEvent& event) {
+PVKeyImpl MakeKey(KeyEvent event) {
+    // This adapter handles Chinese input; TextService routes English text
+    // separately. Normalize both the legacy modifier and key-position case,
+    // leaving the actual Windows Caps Lock state and Shift behavior intact.
+    if (LoadFrontendSettings().ignoreCapsLockInChinese) event.capsLock = false;
     const unsigned int modifiers = Modifiers(event);
     unsigned int keyCode = SpecialKeyCode(event.virtualKey);
     // Windows translates Backspace/Enter/Tab/Esc into control characters.
