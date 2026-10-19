@@ -10,6 +10,10 @@
 
 ## Windows 日常開發型態與測試
 
+Windows 產品版號只在 `CMakeLists.txt` 宣告；兩個封裝入口與發布 workflow 共用
+`Packaging/Get-ProductVersion.ps1`，設定／部署組件透過 `WindowsProductVersion.props`
+讀取同一來源，設定頁尾與關於頁再顯示組件版號。升版不需另改封裝預設值或 XAML。
+
 每次先依實際變更選類型，再建置與測試。以下是驗證入口，不是每次都執行的清單；
 同一類仍只選本次受影響功能。跨類型取所需項目的聯集，已通過的項目不重複跑。
 
@@ -40,6 +44,8 @@ ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=e
 其他常見 TSF 範圍：候選選鍵選 `KeyKeyCandidateKeyStateMachine`、符號表選
 `KeyKeySymbolPanelResourcesAndFocus`、popup 生命週期選 `KeyKeyPopupLifecycle`、
 DLL 卸載選 `KeyKeyModuleLifetime`、工作列模式選 `KeyKeyTsfSystemTrayModes`。
+符號表跨 App 浮動與送字另選 `KeyKeySymbolPaletteRouting`，需要可取得前景焦點的互動桌面；
+跨架構與實機驗收界線見[符號表浮動與送字](../../../docs/WINDOWS_SYMBOL_PALETTE.md)。
 只在變更真的影響另一功能時才一起選它，不因修改 `TextService.cpp` 就全部執行。
 
 設定儲存與設定 UI 是分開的入口，依修改內容選其一或兩者：
@@ -80,7 +86,7 @@ Windows 產品版號為 1.3.3，尚未發布；iOS、Android 1.3.2 已在各自�
 2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、
 禁用／唯讀 context 與 light dismiss 事件。宿主通知採用非同步處理，不寫回通知來源；
 OPENCLOSE 與 NATIVE 的另一個欄位於通知結束後才協調。暫時失去 UI 執行緒焦點只隱藏
-候選、關閉符號表並撤銷舊定位回呼，保留原組字；重新取得焦點須符合當前 context 才還原。
+候選並撤銷舊定位／符號送字回呼，保留原組字及浮動符號表；重新取得焦點須符合當前 context 才還原候選。
 修正只在 Windows TSF adapter，沒有修改 macOS、共用引擎或正式模型。
 後續補上輸入法發布失敗回滾：原引擎與有效方法在 TSF／共用狀態寫入成功後才更換。
 模式通知因換欄位或 session 取消時，於通知外重新讀取宿主最新模式；第一個按鍵前也會同步，
@@ -159,6 +165,9 @@ TSF 取消未執行的 session 會撤銷其待處理狀態，過期或重複回�
 關閉或切換英文模式時解除 TSF 保留鍵註冊並放行此按鍵；設定套用後回到輸入欄位即採用，
 重新開啟或回到中文模式時恢復註冊。右 Alt／AltGr 不觸發；一般按鍵路徑使用同一入口，
 重複觸發只保留已開啟的面板。關閉快捷鍵仍可從工作列開啟符號表；`Ctrl+,` 的既有標點輸入保持不變。
+選取符號後保持置頂與開啟，可連續點選；按 × 或前景琦琦收到 Esc 才關閉。
+未選中可輸入文字的區域時停用符號按鈕並提示「請先點選可輸入文字的區域」，
+點回可寫欄位後自動恢復，分類、捲動和關閉仍可操作。
 「符號表…」提供原有 17 個分類、807 個符號與完整顏文字，保留手機版 90 個 emoji 的
 順序並加入 110 個 Windows 專用補充，共 18 個分類、1,007 項。Emoji 共 200 個，
 同一分類全部列出，以右側捲軸或滑鼠滾輪瀏覽，不再分頁。
@@ -553,6 +562,11 @@ Rebuilding changed binaries gets a new directory, so an existing text host
 can continue using its previously loaded DLL. Signed production packages use
 the same version-and-fingerprint naming scheme.
 
+Signed installers also support reinstalling the same product version. Identical
+packages verify and maintain the existing installation; changed payloads install
+into a new directory while preserving the old payload for running applications.
+Signature/checksum checks, rollback, and downgrade prevention still apply.
+
 The finish page explains how users add KeyKey in Windows Settings. Installation
 does not launch the settings app, enable a keyboard, or change a default.
 
@@ -618,7 +632,7 @@ Do not replace an asset after submitting its URL. In Partner Center select
 installer and deployment tool report `0` on success, `3010` when file removal
 needs a restart, `1602` on UAC cancellation, `1618` when another deployment is
 running, `1633` for unsupported architecture, and `1638` for a downgrade or
-stale owner. Other failures remain nonzero. Quiet removal needs an elevated
+stale uninstall owner. Same-version reinstall is allowed. Other failures remain nonzero. Quiet removal needs an elevated
 caller and uses `uninstall --quiet` (the installed ARP QuietUninstallString also
 includes an owner ID). Publish a new versioned URL for every update.
 

@@ -6,17 +6,19 @@
 #include <vector>
 
 namespace KeyKey::WindowsTsf {
-// The owner validates its captured TSF context in the selection callback.
+// The owner validates the current TSF context in the selection callback.
 // hide() invalidates callbacks before any subsequent mouse message can select.
 class SymbolPanel final {
 public:
     using Selection = std::function<void(const std::wstring&)>;
+    using Availability = std::function<bool()>;
     SymbolPanel();
     ~SymbolPanel();
     static bool releaseWindowClasses(); // Only when the module has no service objects.
+    static HWND visibleWindow();
     SymbolPanel(const SymbolPanel&) = delete;
     SymbolPanel& operator=(const SymbolPanel&) = delete;
-    bool show(HWND owner, const RECT& anchor, Selection selection);
+    bool show(HWND owner, const RECT& anchor, Selection selection, Availability availability = {});
     void hide();
     bool visible() const { return window_ && IsWindowVisible(window_); }
 private:
@@ -25,6 +27,8 @@ private:
     static LRESULT CALLBACK ContentProc(HWND, UINT, WPARAM, LPARAM);
     LRESULT message(UINT, WPARAM, LPARAM);
     void rebuild();
+    void refreshAvailability();
+    void updateAvailability();
     void scrollTo(int offset);
     void scrollWheel(int delta);
     void chooseCategory();
@@ -48,6 +52,8 @@ private:
     bool highContrast_ = false;
     std::vector<HWND> controls_;
     Selection selection_;
+    Availability availability_;
+    bool selectionEnabled_ = true;
     std::shared_ptr<bool> alive_ = std::make_shared<bool>(true);
     size_t category_ = 0;
     UINT dpi_ = 96;

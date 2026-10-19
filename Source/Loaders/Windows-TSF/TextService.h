@@ -143,6 +143,13 @@ private:
     void refreshLangBar();
     void syncOutputSettings();
     void closeSymbols();
+    void invalidateSymbolTarget();
+    bool ensureSymbolDispatch();
+    bool routeSymbol(const std::wstring& text);
+    bool symbolTargetAvailable();
+    Microsoft::WRL::ComPtr<ITfContext> focusedSymbolContext();
+    bool receiveSymbol(const std::wstring& text);
+    static LRESULT CALLBACK SymbolDispatchProc(HWND window,UINT message,WPARAM wp,LPARAM lp);
     void setChineseMode(bool enabled);
     void applyStartupInputMode();
     HRESULT setFullWidthMode(bool enabled);
@@ -202,6 +209,8 @@ private:
     bool lastLocalSimplifiedOutput_ = false;
     bool outputSettingsInitialized_ = false;
     SymbolPanel symbolPanel_;
+    HWND symbolDispatchWindow_ = nullptr;
+    WNDPROC symbolDispatchOriginalProc_ = nullptr;
     Microsoft::WRL::ComPtr<ITfContext> symbolContext_;
     unsigned long symbolGeneration_ = 0;
     bool symbolShortcutPreserved_ = false;

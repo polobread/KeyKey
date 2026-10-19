@@ -127,7 +127,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 | 平台 | 版號來源 |
 |---|---|
 | macOS | 四份產品 plist 的 `CFBundleVersion`、`CFBundleShortVersionString` |
-| Windows | TSF `CMakeLists.txt`、`Package-Windows.ps1`、設定專案與可見 footer |
+| Windows | TSF `CMakeLists.txt` 為唯一來源；封裝、設定組件與可見 footer 自動取用，升版時核對產物 |
 | iOS | Xcode project 的 App／extension `MARKETING_VERSION` |
 | Android | `build.gradle.kts` 的 `keyKeyVersionName`、`keyKeyVersionCode` |
 | Linux | `Linux-IME/CMakeLists.txt`、支援矩陣及版本化套件／測試腳本 |

@@ -27,7 +27,7 @@ struct SymbolPanelTestAccess {
     static void dragBy(SymbolPanel& panel,int x,int y) {
         panel.dragStart_.x-=x; panel.dragStart_.y-=y;
     }
-    static void small(SymbolPanel& panel) {
+    static void shrinkPanel(SymbolPanel& panel) {
         RECT rect{}; GetWindowRect(panel.window_,&rect);
         rect.right=rect.left+240; rect.bottom=rect.top+220;
         panel.position(rect); panel.rebuild();
@@ -396,9 +396,15 @@ int wmain(int argc,wchar_t** argv) {
         Popup(panel,host,1);
         Check(SymbolPanelTestAccess::offset(panel)==0,"Category selection must reset scroll position");
         Click(hwnd,100);
-        Check(calls==1 && chosen==emojis.items[0].text && !panel.visible() && GetFocus()==host,"Emoji click must insert once and close");
+        Check(calls==1 && chosen==emojis.items[0].text && panel.visible() && GetFocus()==host,"Emoji click must insert once and retain palette/focus");
+        Click(hwnd,101);
+        Check(calls==2 && chosen==emojis.items[1].text && panel.visible() &&
+            SymbolPanelTestAccess::window(panel)==hwnd && SymbolPanelTestAccess::category(panel)==17 &&
+            SymbolPanelTestAccess::offset(panel)==0 && (GetWindowLongPtrW(hwnd,GWL_EXSTYLE)&WS_EX_TOPMOST) &&
+            GetFocus()==host,"Consecutive selection lost palette, category, position, topmost or host focus");
+        panel.hide();
         Check(!IsWindow(hwnd) && !SymbolPanelTestAccess::window(panel) &&
-            !PostMessageW(hwnd,WM_COMMAND,MAKEWPARAM(100,BN_CLICKED),0) && calls==1,
+            !PostMessageW(hwnd,WM_COMMAND,MAKEWPARAM(100,BN_CLICKED),0) && calls==2,
             "Closed symbols retained an HWND that accepts stale commands");
         {
             SymbolPanel lastPanel; std::wstring lastText;
@@ -407,7 +413,8 @@ int wmain(int argc,wchar_t** argv) {
             const HWND lastWindow=SymbolPanelTestAccess::window(lastPanel);
             Scroll(lastWindow,SB_BOTTOM);
             Click(lastWindow,299);
-            Check(lastText==emojis.items.back().text && !lastPanel.visible() && GetFocus()==host,
+            Check(lastText==emojis.items.back().text && lastPanel.visible() && GetFocus()==host &&
+                SymbolPanelTestAccess::offset(lastPanel)>0,
                 "Scroll-bottom selection lost the last emoji or host focus");
         }
         {
@@ -416,14 +423,14 @@ int wmain(int argc,wchar_t** argv) {
             SymbolPanelTestAccess::category(fallback,17); SymbolPanelTestAccess::contrast(fallback,true);
             HWND fallbackWindow=SymbolPanelTestAccess::window(fallback);
             CheckDrawState(fallbackWindow,136); Click(fallbackWindow,136);
-            Check(fallbackText==emojis.items[36].text && !fallback.visible() && GetFocus()==host,
+            Check(fallbackText==emojis.items[36].text && fallback.visible() && GetFocus()==host,
                   "Monochrome fallback must preserve full variation-selector string and host focus");
         }
         show(); SymbolPanelTestAccess::category(panel,listIndex);
         CheckBounds(hwnd);
         if (argc>1) Render(hwnd,std::filesystem::path(argv[1])/L"kaomoji-light.bmp");
         Click(hwnd,100);
-        Check(calls==2 && chosen==categories[listIndex].items[0].text,"Kaomoji insertion must use full text");
+        Check(calls==3 && chosen==categories[listIndex].items[0].text,"Kaomoji insertion must use full text");
         show(); SymbolPanelTestAccess::category(panel,0);
         SendMessageW(hwnd,WM_LBUTTONDOWN,MK_LBUTTON,MAKELPARAM(12,12));
         Check(GetCapture()==hwnd && GetFocus()==host,"Dragging must keep host focus");
@@ -440,7 +447,7 @@ int wmain(int argc,wchar_t** argv) {
         GetMonitorInfoW(MonitorFromWindow(hwnd,MONITOR_DEFAULTTONEAREST),&monitor);
         Check(clamped.left>=monitor.rcWork.left && clamped.top>=monitor.rcWork.top &&
               clamped.right<=monitor.rcWork.right && clamped.bottom<=monitor.rcWork.bottom,"Dragged position escapes work area");
-        SymbolPanelTestAccess::small(panel); CheckBounds(hwnd);
+        SymbolPanelTestAccess::shrinkPanel(panel); CheckBounds(hwnd);
         RECT dpiRect{100,100,730,565};
         SendMessageW(hwnd,WM_DPICHANGED,MAKEWPARAM(144,144),reinterpret_cast<LPARAM>(&dpiRect)); CheckBounds(hwnd);
         if (argc>1) Render(hwnd,std::filesystem::path(argv[1])/L"symbols-150dpi.bmp");
@@ -455,13 +462,13 @@ int wmain(int argc,wchar_t** argv) {
             Render(hwnd,std::filesystem::path(argv[1])/L"symbols-contrast-palette.bmp");
         }
         Popup(panel,host,2);
-        Check(!panel.visible() && calls==2,"Hide during category popup applied stale selection");
+        Check(!panel.visible() && calls==3,"Hide during category popup applied stale selection");
         show(); SendMessageW(hwnd,WM_KEYDOWN,VK_ESCAPE,0);
-        Check(calls==2 && !panel.visible(),"Escape cancels");
+        Check(calls==3 && !panel.visible(),"Escape cancels");
         show(); SendMessageW(hwnd,WM_CLOSE,0,0);
-        Check(calls==2 && !panel.visible(),"Close cancels");
+        Check(calls==3 && !panel.visible(),"Close cancels");
         show(); Popup(panel,host,3);
-        Check(!panel.visible() && calls==2,"Owner destruction during popup left stale panel");
+        Check(!panel.visible() && calls==3,"Owner destruction during popup left stale panel");
         Check(!panel.show(nullptr,anchor,[&](const std::wstring&) { ++calls; }) && !panel.visible(),
               "Owner destruction must not allow an unowned symbol popup");
         host=CreateWindowExW(0,L"EDIT",L"",WS_POPUP | WS_VISIBLE,0,0,100,100,nullptr,nullptr,g_module,nullptr);
@@ -471,7 +478,40 @@ int wmain(int argc,wchar_t** argv) {
         auto* disposable=new SymbolPanel;
         Check(disposable->show(host,anchor,[&](const std::wstring&) { ++calls; }),"Disposable panel show");
         Popup(*disposable,host,4);
-        Check(!popupPanel && calls==2 && GetFocus()==host,"Panel destruction during nested popup was unsafe");
+        Check(!popupPanel && calls==3 && GetFocus()==host,"Panel destruction during nested popup was unsafe");
+        {
+            SymbolPanel availablePanel; bool writable=false; int accepted=0;
+            Check(availablePanel.show(host,anchor,[&](const std::wstring&) { ++accepted; },
+                [&] { return writable; }),"Availability panel show");
+            const HWND availableWindow=SymbolPanelTestAccess::window(availablePanel);
+            const auto refresh=[&] { SendMessageW(availableWindow,WM_TIMER,1,0); };
+            const auto disabled=[&] {
+                Check(availablePanel.visible() && !IsWindowEnabled(PanelControl(availableWindow,100)) &&
+                    IsWindowEnabled(PanelControl(availableWindow,1)) && IsWindowEnabled(PanelControl(availableWindow,3)) &&
+                    Label(PanelControl(availableWindow,2))==L"\u8acb\u5148\u9ede\u9078\u53ef\u8f38\u5165\u6587\u5b57\u7684\u5340\u57df",
+                    "Unavailable input must disable only symbols and explain how to resume");
+            };
+            disabled();
+            SendMessageW(availableWindow,WM_COMMAND,MAKEWPARAM(100,BN_CLICKED),
+                reinterpret_cast<LPARAM>(PanelControl(availableWindow,100)));
+            Check(accepted==0,"Disabled symbols accepted a stale command");
+            SymbolPanelTestAccess::category(availablePanel,17); disabled();
+            if (argc>1) Render(availableWindow,std::filesystem::path(argv[1])/L"symbols-input-required.bmp",false,true);
+            writable=true; refresh();
+            Check(IsWindowEnabled(PanelControl(availableWindow,100)) &&
+                Label(PanelControl(availableWindow,2))==L"\u53ef\u9023\u7e8c\u9078\u53d6\u7b26\u865f\uff1b\u9ede \xd7 \u6216\u6309 Esc \u95dc\u9589",
+                "Writable input did not restore buttons and continuous-selection guidance");
+            Click(availableWindow,100); Click(availableWindow,101);
+            Check(accepted==2 && availablePanel.visible() && GetFocus()==host,"Enabled selection did not remain open");
+            // Recheck at click time even if focus changed before the next timer tick.
+            writable=false;
+            SendMessageW(availableWindow,WM_COMMAND,MAKEWPARAM(100,BN_CLICKED),
+                reinterpret_cast<LPARAM>(PanelControl(availableWindow,100)));
+            disabled(); Check(accepted==2,"Focus change before timer accepted a symbol");
+            Click(availableWindow,3);
+            writable=true; refresh();
+            Check(!availablePanel.visible() && accepted==2,"Closed palette revived on a stale timer");
+        }
         DestroyWindow(host);
         std::cout<<"Symbol resources, scroll inventory, emoji cache, focus, drag, DPI and cancellation tests passed\n";
         return 0;

@@ -52,7 +52,7 @@
 - Windows beta 安裝包原生驗證整合進 `Sync Update Feeds to CDN`：驗證已發布檔案的 SHA-256、build/tag 來源、簽章狀態與產品版號，未執行安裝器。工作分支／PR 不取得發布權限；feed 由維護者要求建立 PR、親自 review／merge 後才同步 CDN。保留 SHA-256 副本方案；FreeBSD 公告 PR 固定延後 48 小時，不檢查套件是否已上架。
 - 同一 workflow 增加 master-only 手動副本準備入口，Mac 實際驗證公證、Windows 使用同次原生驗證報告，GitHub 禁止覆蓋、S3 條件式新增並回讀比對。feed 同步增加 signed metadata／安裝包簽章及可下載性門檻，拒絕尚未上線的副本。Terraform 限定新增 metadata／signature 物件權限與短快取，需維護者 review／apply；本次不發布新 release 或直接上傳 feed。
 - CDN 發布摘要的下載網址會編碼檔名中的特殊字元，修正 Linux 套件檔名含 `+` 時連結回傳 403 的問題；S3 物件名稱與 CloudFront invalidation 路徑保留原名，避免把網址編碼套用到儲存鍵。
-- macOS／Windows 封裝支援獨立測試頻道，要求 GitHub Pre-release 與固定 tag commit，不改 Latest。更新 metadata 增加 beta channel；測試頻道使用獨立 feed，未設定不回退 stable。新增 `update/beta/` RSS、stable 防混入驗證、雙 channel CDN 同步及對應 Terraform 權限／短快取。Windows signed beta 的同產品版號安裝保護仍須另行處理。
+- macOS／Windows 封裝支援獨立測試頻道，要求 GitHub Pre-release 與固定 tag commit，不改 Latest。更新 metadata 增加 beta channel；測試頻道使用獨立 feed，未設定不回退 stable。新增 `update/beta/` RSS、stable 防混入驗證、雙 channel CDN 同步及對應 Terraform 權限／短快取。
 - 新增 stable XML CDN 同步 workflow：master feed 變更後經既有 release environment 發布，PR 只驗證。沿用 OIDC、比對 S3／CDN bytes、精確清除快取，不發布 installer／JSON 或刪除遠端檔案；Terraform 增加限定 XML 權限及短快取，仍須維護者 review／apply。
 - macOS 加入 Sparkle 更新入口與預設開啟的每週檢查；由 IMK 主程式管理更新，沿用目前更新設定，保留使用者既有關閉選擇，不讀取舊 Yahoo 更新旗標。安裝包保留更新元件的 XPC/helper 權限並由內而外簽章，所有 pkg 元件固定安裝位置。
 - Windows 現代設定加入 WinSparkle 更新分頁；只在設定程式開啟時檢查，不在 TSF 宿主內連網。x64／x86 元件依執行行程位元數打包，沿用版本化安裝與保留舊 DLL 的升級流程。
@@ -105,6 +105,12 @@
 - App 主畫面、系統鍵盤入口、安裝引導與授權致謝統一改名為「琦琦輸入法」。
 
 ## Windows 1.3.3（未發布）
+
+- Windows 產品版號統一由 CMake 提供，封裝、設定組件、設定頁尾與發布流程自動取用，避免升版時顯示或安裝資訊不一致。
+
+- 已簽署安裝包支援同版本重新安裝：內容不同時使用新目錄安裝並保留舊程式使用中的檔案，內容相同時檢查並維護既有安裝；保留降版阻擋、套件完整性與簽章驗證。
+
+- 符號表在點選 App 非輸入區、切換 App 或最小化原視窗後保持置頂；選取後保持開啟，方便連續輸入不同符號。未選中可輸入文字的區域時停用符號按鈕並顯示提醒，點回輸入區後自動恢復；符號送到目前使用琦琦的輸入欄位。
 
 - Windows 新增獨立的待簽產物 workflow 與半自動 Certum 本機簽包流程，原 unsigned 編譯／封裝／發布 workflow 保留並預設停用，可由維護者切回。thumbprint 僅遮罩輸入，不寫入設定或日誌；人工驗收並核准最終 SHA-256 後才上傳 GitHub、驗簽及同步不可覆寫的 CDN 鏡像。
 

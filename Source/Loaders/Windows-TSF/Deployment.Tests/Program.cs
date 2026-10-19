@@ -2,6 +2,8 @@ using KeyKey.Deployment;
 using System.Runtime.InteropServices;
 
 int passed = 0;
+const string ReinstallVersion = "9.8.7";
+const string OlderReinstallVersion = "9.8.6";
 void Test(string name, Action<Fixture> test)
 {
     using var fixture = new Fixture();
@@ -51,7 +53,7 @@ Test("deployment diagnostic logging follows the default-off three-day setting", 
 });
 Test("updater sidecar is validated and retained with its versioned payload", f =>
 {
-    var package = f.Package("1.3.2");
+    var package = f.Package("0.1.0");
     var updater = Path.Combine(package, "Payload", "WinSparkle.dll");
     File.WriteAllText(updater, "isolated updater test fixture");
     var manifestPath = Path.Combine(package, "PackageManifest.json");
@@ -61,7 +63,7 @@ Test("updater sidecar is validated and retained with its versioned payload", f =
     f.Engine.Install(package);
     var old = f.Engine.Inspect().Current!;
     Check(File.Exists(Path.Combine(old.Directory, "WinSparkle.dll")));
-    f.Engine.Install(f.Package("1.3.3"));
+    f.Engine.Install(f.Package("0.2.0"));
     Check(f.Engine.Inspect().Retired.Any(p => p.Id == old.Id));
     Check(SafeFiles.Matches(old.Directory, old.Files));
     Reject(() => SafeFiles.ValidatePayload([new PackageFile("UnexpectedUpdater.dll", new string('a', 64))]));
@@ -155,6 +157,56 @@ Test("same package rerun does not replace payload", f =>
     var directory = f.Engine.Inspect().Current!.Directory;
     f.Engine.Install(package);
     Check(f.Engine.Inspect().Current!.Directory == directory && f.System.Registers == 1);
+});
+Test("same signed package rerun is idempotent", f =>
+{
+    var package = f.Package(ReinstallVersion, signed: true);
+    f.Engine.Install(package);
+    var original = f.Engine.Inspect().Current!;
+    Check(f.Engine.Install(package) == 0);
+    Check(f.Engine.Inspect().Current!.Id == original.Id && f.System.Registers == 1);
+});
+Test("same version signed replacement preserves the previous loaded payload", f =>
+{
+    f.Engine.Install(f.Package(ReinstallVersion, signed: true));
+    var original = f.Engine.Inspect().Current!;
+    var verifications = f.System.SignedVerifications;
+    f.System.Occupied = true;
+    Check(f.Engine.Install(f.Package(ReinstallVersion, signed: true, revision: "replacement")) == 0);
+    var state = f.Engine.Inspect();
+    Check(state.Current!.Directory != original.Directory && state.Current.Version == original.Version);
+    Check(state.Retired.Any(p => p.Id == original.Id) && SafeFiles.Matches(original.Directory, original.Files));
+    Check(f.System.Registers == 2 && f.System.SignedVerifications > verifications);
+});
+Test("same version signed replacement still rejects signature and checksum failures", f =>
+{
+    f.Engine.Install(f.Package(ReinstallVersion, signed: true));
+    var original = f.Engine.Inspect().Current!;
+    var package = f.Package(ReinstallVersion, signed: true, revision: "replacement");
+    f.System.FailSignedFile = true;
+    Reject(() => f.Engine.Install(package));
+    f.System.FailSignedFile = false;
+    File.AppendAllText(Path.Combine(package, "Payload", "KeyKeyTsf_x64.dll"), "tampered");
+    Reject(() => f.Engine.Install(package));
+    Check(f.Engine.Inspect().Current!.Id == original.Id && f.System.Current == original.Directory);
+    Check(f.System.Registers == 1 && SafeFiles.Matches(original.Directory, original.Files));
+});
+Test("failed same version signed replacement rolls back to the previous payload", f =>
+{
+    f.Engine.Install(f.Package(ReinstallVersion, signed: true));
+    var original = f.Engine.Inspect().Current!;
+    f.System.FailPublish = true;
+    Reject(() => f.Engine.Install(f.Package(ReinstallVersion, signed: true, revision: "replacement")));
+    Check(f.Engine.Inspect().Current!.Id == original.Id && f.System.Current == original.Directory);
+    Check(f.System.Restores == 1 && SafeFiles.Matches(original.Directory, original.Files));
+});
+Test("signed package downgrade remains blocked", f =>
+{
+    f.Engine.Install(f.Package(ReinstallVersion, signed: true));
+    var original = f.Engine.Inspect().Current!;
+    try { f.Engine.Install(f.Package(OlderReinstallVersion, signed: true)); throw new Exception("Downgrade accepted."); }
+    catch (DeploymentException error) { Check(error.Code == 1638); }
+    Check(f.Engine.Inspect().Current!.Id == original.Id && f.System.Registers == 1);
 });
 Test("new payload names use version and fingerprint without test or repair labels", f =>
 {
@@ -430,10 +482,17 @@ sealed class FakeSystem : IDeploymentSystem
     public bool FailRegister, FailPublish, FailRestore, FailEntrypoints, FailRetire, FailSchedule, Occupied, EntryRemoved;
     public InstallationState Legacy = new();
     public int Registers, Restores, Unregisters, EntrypointCalls, CleanupEntries;
+    public int SignedVerifications;
+    public bool FailSignedFile;
     public readonly HashSet<string> Pending = new(StringComparer.OrdinalIgnoreCase);
     public readonly List<string> PendingOrder = [];
     public void ValidateRoot(string path) => SafeFiles.NoLinks(path);
-    public void VerifyFile(string path, bool signed) { }
+    public void VerifyFile(string path, bool signed)
+    {
+        if (!signed) return;
+        ++SignedVerifications;
+        if (FailSignedFile) throw new DeploymentException("Injected signature failure.");
+    }
     public void VerifyDatabase(string path) { }
     public void PrepareDirectory(string path) => Directory.CreateDirectory(path);
     public InstallationState DiscoverLegacy(string root) => Legacy;
@@ -477,7 +536,7 @@ sealed class Fixture : IDisposable
     public FakeSystem System { get; } = new();
     public DeploymentEngine Engine { get; }
     public Fixture() { Root = Path.Combine(temporary, "chichi77 KeyKey"); Engine = new(Root, System, _ => { }); }
-    public string Package(string version)
+    public string Package(string version, bool signed = false, string revision = "")
     {
         var package = Path.Combine(temporary, "packages", version);
         var files = new[] { "KeyKeyTsf_x64.dll", "KeyKeyTsf_x86.dll", "KeyKeySettings.exe",
@@ -486,11 +545,11 @@ sealed class Fixture : IDisposable
         {
             var path = SafeFiles.Child(Path.Combine(package, "Payload"), file);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, version + file);
+            File.WriteAllText(path, version + file + revision);
         }
         SafeFiles.Write(Path.Combine(package, "PackageManifest.json"), new PackageManifest
         {
-            Version = version, Architecture = "x64", Files = files.Select(f =>
+            Version = version, Architecture = "x64", Signed = signed, Files = files.Select(f =>
                 new PackageFile(f, SafeFiles.Hash(SafeFiles.Child(Path.Combine(package, "Payload"), f)))).ToList()
         });
         return package;
