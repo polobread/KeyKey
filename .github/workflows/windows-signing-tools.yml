@@ -1,0 +1,36 @@
+name: Windows Signing Tools
+
+on:
+  pull_request:
+    paths:
+      - '.github/scripts/*windows_signing*'
+      - '.github/scripts/windows-signing.py'
+      - '.github/workflows/package-windows.yml'
+      - '.github/workflows/prepare-windows-signing.yml'
+      - '.github/workflows/mirror-windows-signed.yml'
+      - '.github/workflows/windows-signing-tools.yml'
+      - 'Source/Loaders/Windows-TSF/Release-Windows.ps1'
+      - 'Source/Loaders/Windows-TSF/Package-Store-Windows.ps1'
+      - 'Source/Loaders/Windows-TSF/Packaging/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated:
+    runs-on: windows-2025
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test provenance, transport, immutable publication and mirror gates
+        shell: pwsh
+        run: |
+          python -m unittest discover -s .github/scripts -p test_windows_signing.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Windows release transport regression failed.' }
+      - name: Test packaging without certificates or external services (Windows PowerShell)
+        shell: powershell
+        run: ./Source/Loaders/Windows-TSF/Packaging/Test-Signing.ps1
+      - name: Test packaging without certificates or external services (PowerShell 7)
+        shell: pwsh
+        run: ./Source/Loaders/Windows-TSF/Packaging/Test-Signing.ps1

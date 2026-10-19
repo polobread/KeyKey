@@ -1,8 +1,9 @@
 # Windows Certum 簽章研究與案例筆記
 
 查詢日期：2026-10-13。本文整理維護者評估 Certum 的網路查證、商品頁觀察及公開專案經驗。
-KeyKey 尚未以實際 Certum 帳號完成購買、身分驗證、簽章或 CI 驗收；本文不是成功操作紀錄，
-也不代表已採用 Certum。正式發布政策仍見 [CODE_SIGNING_POLICY.md](../CODE_SIGNING_POLICY.md)。
+2026-10-19 維護者回報憑證已核發；本筆記保留先前研究內容，購買／驗證步驟不再是待辦。
+目前新增獨立待簽 workflow 與本機 SimplySign 半自動簽包；原 unsigned workflow 保留並預設停用，見 [實際發布流程](WINDOWS_CERTUM_RELEASE.md)。
+真實簽章與 CI／VM 發布驗收尚待完成；正式政策見 [CODE_SIGNING_POLICY.md](../CODE_SIGNING_POLICY.md)。
 
 ## 方案選擇
 
@@ -133,12 +134,12 @@ Certum 自 1998 年營運，屬 Asseco 集團；可查
 
 現有 [Package-Store-Windows.ps1](../Source/Loaders/Windows-TSF/Package-Store-Windows.ps1)
 使用 Windows 憑證存放區 thumbprint，先簽內部 PE、再建安裝器、最後簽外層 EXE；
-簽章參數已有 `/fd SHA256 /tr <TimestampUrl> /td SHA256`，並以 `signtool verify /pa /all /v` 驗證。
+簽章參數已有 `/fd SHA256 /tr <TimestampUrl> /td SHA256`，並驗證全部簽章、指定憑證與時間戳記；原始工具輸出不進入日誌。
 它與 SimplySign 提供 Windows 憑證的方式有整合基礎，但腳本存在不代表 Certum 實測通過。
 
 真正導入時仍需：
 
-- 確認台灣文件、非商業開源資格、費用與核發結果，保存適當的憑證／信任鏈資訊。
+- 憑證已核發；實際簽章前仍核對有效期與信任鏈，不記錄 thumbprint 實值。
 - 先在 Windows 用實際憑證簽測試 EXE／DLL，確認 Authenticode 及時間戳記，再驗完整安裝包。
 - 若採 CI，另驗登入、內部檔案與外層簽章、憑據不外洩、驗簽失敗即停止發布及人工核准流程。
 - 正式變更簽章供應商時同步審查發布政策／workflow，不能因新增研究筆記就宣告已完成整合。

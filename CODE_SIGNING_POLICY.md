@@ -1,15 +1,19 @@
 # Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io/), certificate
-by [SignPath Foundation](https://signpath.org/).
+Windows publisher signing uses a maintainer-held Certum code-signing certificate
+through SimplySign. The certificate has been issued; the first real signed-package
+and deployment acceptance is tracked separately from isolated tooling tests.
 
 ## Scope and release process
 
 This policy covers official Windows release artifacts for chichi77 KeyKey. Only
 artifacts built from the source and build workflows in this repository may be
 submitted for signing. Release builds originate from version tags, are built by
-GitHub Actions, and require manual approval before a SignPath signing request is
-completed.
+GitHub Actions, and are downloaded and verified against the exact tag/source commit,
+CI run and artifact digest before local signing. The maintainer connects SimplySign
+with a phone token (and PIN if required), then a local script signs and packages.
+Publication requires a separate explicit tag/SHA-256 approval after VM acceptance.
+See [Windows Certum release procedure](docs/WINDOWS_CERTUM_RELEASE.md).
 
 The intended signing coverage is:
 
@@ -25,11 +29,21 @@ Signatures must use SHA-256 and an RFC 3161 timestamp. The release workflow must
 verify every returned Authenticode signature before calculating checksums and
 publishing an artifact. Files must not be modified after signing.
 
-The Windows assets in release `v1.2.9` predate the SignPath integration and
-remain unsigned. This policy applies after the SignPath Foundation application
-is accepted and the verified signing workflow is enabled.
+Previously published unsigned Windows assets remain unchanged. The original
+`Package Windows` unsigned build/package/publish/mirror workflow remains intact,
+but its jobs are disabled unless `WINDOWS_RELEASE_MODE` is explicitly `unsigned`.
+The separate `Prepare Windows Signing Inputs` workflow runs when the variable is
+unset or `certum`, and only produces signing inputs. Other values disable both.
+The maintainer may switch back to unsigned if the certificate is not renewed;
+expiry or signing failure never triggers an automatic downgrade.
+Signed GitHub assets are uploaded without replacement, read back, then verified
+again on Windows before the protected OIDC mirror adds immutable S3 objects.
+Neither signing nor publication stores a thumbprint, OTP, PIN or TOTP seed in Git
+or tool logs. Embedded public certificates remain part of Authenticode signatures.
 
-Until Windows publisher signing is available, the maintainer permits unsigned
+When Windows publisher signing is unavailable, including a decision not to renew
+the Certum certificate, the maintainer may explicitly select the unsigned fallback.
+The maintainer permits unsigned
 EXE installers on the stable update channel only when each release manifest
 explicitly declares `windows_signing: "unsigned-transition"`. These releases
 still require reviewed tag builds, version verification, immutable HTTPS assets,
@@ -40,8 +54,8 @@ signature. Update notes disclose the missing Windows publisher signature.
 Once publisher signing is available, publish a higher product version using
 `windows_signing: "authenticode"` (the default), complete signing and timestamping
 before Ed25519 signing, and keep the same stable feed and update key. Do not
-replace an already published unsigned artifact in place. SignPath signing
-requests continue to require manual approval.
+replace an already published unsigned artifact in place. Signing authorization
+and release publication remain separate manual decisions.
 
 ## Source review and merge
 
@@ -50,11 +64,9 @@ changes, are committed and pushed to a working branch. They reach `master` only
 through a pull request reviewed and merged by [polobread](https://github.com/polobread).
 Agents must not commit or push directly to `master`, merge PRs, or enable auto-merge.
 
-This repository's maintainer-controlled PR process supports the
-[SignPath Foundation conditions](https://signpath.org/terms.html): contributions
-from non-committers require team review, and each release requires manual signing
-approval. Build scripts and CI configuration are part of that review. PR approval
-and signing approval are separate decisions made by the maintainer.
+Contributions from non-committers require maintainer review. Build scripts and CI
+configuration are part of that review. PR approval, SimplySign authorization and
+publication approval are separate decisions made by the maintainer.
 
 ## Team roles
 
