@@ -15,7 +15,6 @@
 	
 }
 - (void)loadSymbolTable:(NSNotification *)notification;
-- (void)temporaryHide;
 - (void)restoreWindowStatus;
 - (BOOL)isVisible;
 - (void)toggleActiveView:(NSView *)view;

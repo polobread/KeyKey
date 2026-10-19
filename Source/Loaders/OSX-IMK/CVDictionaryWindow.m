@@ -2,21 +2,43 @@
 
 #import "CVDictionaryWindow.h"
 
+@interface CVDictionaryWindow ()
+- (void)configureSymbolPanel;
+@end
+
 @implementation CVDictionaryWindow
-- (instancetype)initWithContentRect:(NSRect)contentRect styleMask:(NSWindowStyleMask)aStyle backing:(NSBackingStoreType)bufferingType defer:(BOOL)flag
-{	
-    if (self = [super initWithContentRect:contentRect styleMask:aStyle backing:NSBackingStoreBuffered defer:NO]) {
-		[self setLevel:NSStatusWindowLevel];
-		[self setCollectionBehavior:NSWindowCollectionBehaviorCanJoinAllSpaces |
-			NSWindowCollectionBehaviorFullScreenAuxiliary];
-        [self setHasShadow:YES];
-    }
-	
+- (instancetype)initWithContentRect:(NSRect)contentRect styleMask:(NSWindowStyleMask)style backing:(NSBackingStoreType)bufferingType defer:(BOOL)flag
+{
+    self = [super initWithContentRect:contentRect
+                           styleMask:style | NSWindowStyleMaskNonactivatingPanel
+                             backing:bufferingType defer:flag];
+    if (self)
+        [self configureSymbolPanel];
     return self;
+}
+
+- (void)awakeFromNib
+{
+    [super awakeFromNib];
+    // NIB decoding can restore NSPanel defaults after initialization.
+    [self configureSymbolPanel];
+}
+
+- (void)configureSymbolPanel
+{
+    [self setFloatingPanel:YES];
+    [self setWorksWhenModal:YES];
+    [self setBecomesKeyOnlyIfNeeded:YES];
+    [self setHidesOnDeactivate:NO];
+    [self setLevel:NSStatusWindowLevel];
+    [self setCollectionBehavior:NSWindowCollectionBehaviorCanJoinAllSpaces |
+         NSWindowCollectionBehaviorFullScreenAuxiliary];
+    [self setHasShadow:YES];
 }
 - (BOOL)canBecomeKeyWindow
 {
-    return YES;
+    // Palette clicks must keep the editor's text input client as the target.
+    return NO;
 }
 - (BOOL)canBecomeMainWindow
 {

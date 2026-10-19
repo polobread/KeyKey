@@ -10,6 +10,7 @@ NSString *CVLoaderUpdateCannedMessagesNotification = @"CVLoaderUpdateCannedMessa
 static NSArray *currentCategories;
 static NSString *sentText;
 static BOOL legacyController;
+static NSUInteger frontRequests;
 
 @implementation OpenVanillaLoader
 + (OpenVanillaLoader *)sharedInstance {
@@ -33,6 +34,7 @@ static void Check(BOOL value, NSString *message) {
     if (!value) { fprintf(stderr, "FAIL: %s\n", message.UTF8String); exit(1); }
 }
 static void SuppressWindowOrdering(id self, SEL selector, id sender) {}
+static void RecordFrontRequest(id self, SEL selector) { ++frontRequests; }
 
 static NSArray *ReadCategories(NSString *path) {
     sqlite3 *db = NULL;
@@ -96,7 +98,7 @@ static void CheckPopulated(CVSymbolController *controller, NSArray *categories) 
 }
 int main(int argc, char **argv) {
     @autoreleasepool {
-        Check(argc == 3 || argc == 4, @"usage: SymbolTests DATABASE before|after|retry|refresh|empty|emoji|scale [legacy]");
+        Check(argc == 3 || argc == 4, @"usage: SymbolTests DATABASE before|after|retry|refresh|empty|emoji|scale|panel|ordering [legacy]");
         legacyController = argc == 4 && strcmp(argv[3], "legacy") == 0;
         [NSApplication sharedApplication];
         // Keep actual CVSymbolController.showWindow: logic, but prevent AppKit
@@ -104,12 +106,16 @@ int main(int argc, char **argv) {
         Method method = class_getInstanceMethod([NSWindowController class], @selector(showWindow:));
         class_replaceMethod([NSWindowController class], @selector(showWindow:),
                             (IMP)SuppressWindowOrdering, method_getTypeEncoding(method));
+        Method front = class_getInstanceMethod([NSWindow class], @selector(orderFrontRegardless));
+        IMP originalFront = method_getImplementation(front);
+        class_replaceMethod([NSWindow class], @selector(orderFrontRegardless),
+                            (IMP)RecordFrontRequest, method_getTypeEncoding(front));
         NSArray *categories = ReadCategories([NSString stringWithUTF8String:argv[1]]);
         NSString *scenario = [NSString stringWithUTF8String:argv[2]];
         currentCategories = @[];
         if ([scenario isEqual:@"before"]) { currentCategories = categories; PostData(); }
         CVSymbolController *controller = [[CVSymbolController alloc] init];
-        if ([scenario isEqual:@"after"] || [scenario isEqual:@"refresh"] || [scenario isEqual:@"empty"] || [scenario isEqual:@"emoji"] || [scenario isEqual:@"scale"]) {
+        if ([scenario isEqual:@"after"] || [scenario isEqual:@"refresh"] || [scenario isEqual:@"empty"] || [scenario isEqual:@"emoji"] || [scenario isEqual:@"scale"] || [scenario isEqual:@"panel"] || [scenario isEqual:@"ordering"]) {
             currentCategories = categories; PostData();
         }
         if ([scenario isEqual:@"retry"]) {
@@ -198,6 +204,88 @@ int main(int argc, char **argv) {
             CheckLayout(controller);
             Snapshot(controller, @"symbols-scale150");
             [controller setCandidateWindowScale:1.0];
+        }
+        if ([scenario isEqual:@"panel"]) {
+            NSWindow *window = controller.window;
+            Class panelClass = NSClassFromString(@"CVDictionaryWindow");
+            Check(panelClass && [window isKindOfClass:panelClass] && [window isKindOfClass:[NSPanel class]],
+                  @"the real NIB creates the shipped custom panel, without falling back to NSWindow");
+            NSPanel *panel = (NSPanel *)window;
+            Check((panel.styleMask & NSWindowStyleMaskNonactivatingPanel) != 0, @"the NIB panel is nonactivating from creation");
+            Check(panel.isFloatingPanel && panel.worksWhenModal && panel.becomesKeyOnlyIfNeeded && !panel.hidesOnDeactivate,
+                  @"the palette works while other apps and settings are active");
+            Check(!panel.canBecomeKeyWindow && !panel.canBecomeMainWindow, @"palette clicks cannot take the editor's keyboard focus");
+            Check((panel.collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces) &&
+                  (panel.collectionBehavior & NSWindowCollectionBehaviorFullScreenAuxiliary), @"palette supports Spaces and full-screen hosts");
+            NSPanel *preferences = [[[NSPanel alloc] initWithContentRect:NSMakeRect(0, 0, 100, 100)
+                styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:YES] autorelease];
+            preferences.level = NSFloatingWindowLevel; // TakaoPreference.m uses this level.
+            Check(panel.level > preferences.level && panel.level > NSNormalWindowLevel && panel.level > NSModalPanelWindowLevel,
+                  @"symbol panel is above preferences, normal editor windows and modal panels");
+            NSArray *views = [controller valueForKey:@"_viewArray"];
+            NSButton *button = [[views[0] view] subviews][0];
+            Check([button acceptsFirstMouse:nil] && [[controller valueForKey:@"_popUpButton"] acceptsFirstMouse:nil],
+                  @"symbol buttons and the category popup accept the initial click without activating the app");
+            BOOL wasActive = NSApp.isActive;
+            NSUInteger initialFront = frontRequests;
+            [controller show:nil];
+            Check(controller.isVisible && frontRequests == initialFront + 1, @"show raises the background panel without activating the app");
+            [controller restoreWindowStatus];
+            Check(frontRequests == initialFront + 2, @"host reactivation raises the open palette");
+            [controller hide:nil];
+            [controller restoreWindowStatus];
+            Check(!controller.isVisible && frontRequests == initialFront + 2, @"explicit hide prevents automatic reopening");
+            [controller show:nil];
+            Check(![controller windowShouldClose:window] && !controller.isVisible, @"the close button clears visible intent");
+            [controller restoreWindowStatus];
+            Check(frontRequests == initialFront + 3 && NSApp.isActive == wasActive && !panel.isKeyWindow,
+                  @"close stays closed and showing never activates the test app or takes key focus");
+        }
+        if ([scenario isEqual:@"ordering"]) {
+            // Exercise real native ordering with this fixture's own invisible,
+            // click-through windows. Never activate the app or inspect/control
+            // any browser, Office window, or the user's foreground application.
+            class_replaceMethod([NSWindow class], @selector(orderFrontRegardless),
+                                originalFront, method_getTypeEncoding(front));
+            NSWindow *panel = controller.window;
+            panel.alphaValue = 0; panel.ignoresMouseEvents = YES;
+            NSWindow *editor = [[[NSWindow alloc] initWithContentRect:NSMakeRect(20, 20, 100, 100)
+                styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO] autorelease];
+            NSWindow *preferences = [[[NSWindow alloc] initWithContentRect:NSMakeRect(30, 30, 100, 100)
+                styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO] autorelease];
+            NSPanel *dialog = [[[NSPanel alloc] initWithContentRect:NSMakeRect(40, 40, 100, 100)
+                styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO] autorelease];
+            editor.alphaValue = preferences.alphaValue = dialog.alphaValue = 0;
+            editor.ignoresMouseEvents = preferences.ignoresMouseEvents = dialog.ignoresMouseEvents = YES;
+            preferences.level = NSFloatingWindowLevel; dialog.level = NSModalPanelWindowLevel;
+            // Model an active host's modal dialog while this test app stays inactive.
+            dialog.hidesOnDeactivate = NO;
+            BOOL wasActive = NSApp.isActive;
+            [editor orderFrontRegardless]; [controller show:nil];
+            // Bring settings and a modal-level window forward AFTER the palette.
+            [preferences orderFrontRegardless]; [dialog orderFrontRegardless];
+            [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+            // NSApplication.orderedWindows excludes NSPanel. Option 0 asks
+            // for this process's window numbers only, including its panels.
+            NSArray *ordered = [NSWindow windowNumbersWithOptions:0];
+            NSNumber *paletteNumber = @(panel.windowNumber), *editorNumber = @(editor.windowNumber);
+            NSNumber *settingsNumber = @(preferences.windowNumber), *dialogNumber = @(dialog.windowNumber);
+            NSUInteger paletteIndex = [ordered indexOfObject:paletteNumber];
+            printf("ordering own_windows=%lu palette_index=%lu editor_index=%lu settings_index=%lu modal_index=%lu\n",
+                (unsigned long)ordered.count, (unsigned long)paletteIndex,
+                (unsigned long)[ordered indexOfObject:editorNumber], (unsigned long)[ordered indexOfObject:settingsNumber],
+                (unsigned long)[ordered indexOfObject:dialogNumber]);
+            Check(paletteIndex != NSNotFound && [ordered containsObject:editorNumber] &&
+                  [ordered containsObject:settingsNumber] && [ordered containsObject:dialogNumber],
+                  @"all controlled native windows participate in the ordering test");
+            Check(paletteIndex < [ordered indexOfObject:settingsNumber] &&
+                  paletteIndex < [ordered indexOfObject:dialogNumber] && paletteIndex < [ordered indexOfObject:editorNumber],
+                  @"later-raised settings and editor windows remain below the symbol palette");
+            Check(NSApp.isActive == wasActive && !panel.isKeyWindow && !panel.isMainWindow,
+                  @"real ordering does not activate the input-method app or take keyboard focus");
+            [controller hide:nil];
+            Check(!panel.isVisible && !controller.isVisible, @"explicit hide removes the native palette");
+            [editor orderOut:nil]; [preferences orderOut:nil]; [dialog orderOut:nil];
         }
         [controller release];
         printf("PASS: %s\n", scenario.UTF8String);

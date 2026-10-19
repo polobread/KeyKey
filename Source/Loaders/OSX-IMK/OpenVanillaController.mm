@@ -428,7 +428,8 @@ static void OVCLaunchApplication(const string& value)
 
 	// NSLog(@"deactivateServer (client %08x)", sender);
 	
-	[[[NSApp delegate] symbolController] temporaryHide];
+	// The symbol palette stays open across host and input-method changes;
+	// only an explicit close or menu toggle hides it.
 	[[[NSApp delegate] tooltipController] hide];
 	[[[NSApp delegate] searchController] hide];
 	PVLoaderService* loaderService = [OpenVanillaLoader sharedLoaderService];

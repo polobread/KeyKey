@@ -22,6 +22,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		C5A740A32022467F812DAEC4 /* CVDictionaryWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 69F1EA2EB1394E0490A5270D /* CVDictionaryWindow.m */; };
 		77AA13200000000000000002 /* KeyKeyMacUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = 77AA13200000000000000003 /* KeyKeyMacUpdater.m */; };
 		6A0138F50ED1D47900715577 /* YKAFWordCount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0138F20ED1D47900715577 /* YKAFWordCount.cpp */; };
 		6A0139040ED1D4A000715577 /* PackageMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0139030ED1D4A000715577 /* PackageMain.cpp */; };
@@ -1234,6 +1235,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		69F1EA2EB1394E0490A5270D /* CVDictionaryWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = CVDictionaryWindow.m; path = "Loaders/OSX-IMK/CVDictionaryWindow.m"; sourceTree = "<group>"; };
+		8DC566455D9940EAB18ACA91 /* CVDictionaryWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CVDictionaryWindow.h; path = "Loaders/OSX-IMK/CVDictionaryWindow.h"; sourceTree = "<group>"; };
 		77AA13200000000000000003 /* KeyKeyMacUpdater.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "Loaders/OSX-IMK/KeyKeyMacUpdater.m"; sourceTree = "<group>"; };
 		77AA13200000000000000004 /* KeyKeyMacUpdater.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Loaders/OSX-IMK/KeyKeyMacUpdater.h"; sourceTree = "<group>"; };
 		6A0138EB0ED1D44200715577 /* YKAFWordCount.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YKAFWordCount.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -3245,6 +3248,8 @@
 			children = (
 				D45A17890DDE0EC300DCEE21 /* CVSymbolController.h */,
 				D45A178A0DDE0EC300DCEE21 /* CVSymbolController.mm */,
+				8DC566455D9940EAB18ACA91 /* CVDictionaryWindow.h */,
+				69F1EA2EB1394E0490A5270D /* CVDictionaryWindow.m */,
 				D41C8F5B0EF3DF6D00BA9742 /* CVButtonViewController.h */,
 				D41C8F5C0EF3DF6D00BA9742 /* CVButtonViewController.mm */,
 				D41C8F640EF3DFCF00BA9742 /* CVSmileyViewController.h */,
@@ -4858,6 +4863,7 @@
 				D479FDB40D60506200B33AA2 /* CVToolTipController.m in Sources */,
 				D4F7A56D0D82E699004AFC38 /* CVSearchController.m in Sources */,
 				D45A178D0DDE0EC300DCEE21 /* CVSymbolController.mm in Sources */,
+				C5A740A32022467F812DAEC4 /* CVDictionaryWindow.m in Sources */,
 				D4F7DB080D9B8E8000AA67B9 /* CVSendKey.m in Sources */,
 				D4987D200E17FB37001D4197 /* CVKeyboardHelper.m in Sources */,
 				D4FC914F0EC896210087648C /* CVHorizontalCandidateController.mm in Sources */,
