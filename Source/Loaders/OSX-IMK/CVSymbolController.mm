@@ -92,10 +92,6 @@
 	
 }
 
-- (void)temporaryHide
-{
-	[[self window] orderOut:self];	
-}
 - (void)restoreWindowStatus
 {
 	if (_isVisible)
@@ -212,7 +208,13 @@
 	if (NSMinY(windowRect) < NSMinY(frame))
 		windowRect.origin.y = NSMinY(frame) + 20;
 	[[self window] setFrameOrigin:windowRect.origin];
-	[super showWindow:sender];
+	// IMK is usually a background application. Raise the nonactivating panel
+	// without making the input method (or this palette) the keyboard target.
+	NSWindow *window = [self window];
+	[window orderFrontRegardless];
+	os_log(OS_LOG_DEFAULT, "KeyKey symbols event=show panel=%{public}d level=%{public}ld nonactivating=%{public}d",
+	       [window isKindOfClass:[NSPanel class]], (long)[window level],
+	       ([window styleMask] & NSWindowStyleMaskNonactivatingPanel) != 0);
 }
 - (IBAction)hide:(id)sender
 {

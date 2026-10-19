@@ -32,7 +32,7 @@
   本機保留的 1.3.1／1.3.2 安裝包與目前 1.3.3 的 `SymbolWindow.nib` SHA-256 相同。
 - 現有安裝詞庫和使用者快取的 `canned_messages` 都有 17 類、807 筆，內容相同，
   各類沒有 `NotBefore`／`NotAfter` 限制，可排除資料空白或到期。
-- 既有 `CVDictionaryWindow` 未編入會使 NIB 回退成一般 `NSWindow`，
+- 修正前 `CVDictionaryWindow` 未編入會使 NIB 回退成一般 `NSWindow`，
   但同樣回退的隔離案例仍可完整載入分類，不能把它當成空白內容的成因。
 - 舊程式未記錄資料通知與視窗訂閱，無法還原使用者本週每一次成功／失敗的實際順序，
   也沒有證據可指定本週某次 commit 是首次觸發點。8 月的缺口引入時間不能冒充故障發生日。
@@ -139,3 +139,72 @@ Emoji、捲動條及 12 點邏輯間距；系統標題列維持原生尺寸。
 確認一般比例正確、兩軸與間距同比縮放、展開選單字體同步、視窗留在可用範圍、
 分類選擇保留且不累積縮放。紀錄 `event=layout` 的 requested／applied scale 可辨識螢幕限制。
 已安裝 IMK 的設定頁往返與選單互動仍需實機確認。
+
+## 符號表被其他視窗蓋住
+
+匿名使用者回報 macOS 27.0.1、Apple Silicon M1、1.3.2：符號表被瀏覽器或 Office 壓到後方；
+維護者也觀察到輸入法設定視窗會高於符號表。本項與分類空白分開處理。
+安裝器部分依維護者指示不納入本次修改。
+
+### 直接原因
+
+- `SymbolWindow.xib` 指定 `CVDictionaryWindow`，但 IMK 產品 target 沒有編入該類別的 `.m`。
+  AppKit 實際退回一般 `NSWindow`，原有自訂類別的 `NSStatusWindowLevel` 完全沒有執行。
+- 輸入法設定 `TakaoPreference.m` 明確使用 `NSFloatingWindowLevel`，因此高於普通視窗。
+  原本符號表使用 `NSWindowController.showWindow:`，背景輸入法還會遇到條件式排序限制。
+- `OpenVanillaController.deactivateServer:` 另外主動呼叫 `temporaryHide`，
+  即使只提高視窗層級，切換宿主或設定視窗仍可能將符號表收起。
+- `v1.3.2` tag（`d9e7f911`）的符號表仍只有通知載入，沒有初始化快照補載；
+  該版的分類空白與此文件前述已重現的缺口相符，不能從回報認定 1.3.3 修正又退步。
+
+### 修正行為
+
+1. 將 `CVDictionaryWindow.m` 正式編入 IMK 產品；NIB 從建立時就帶
+   `NSWindowStyleMaskNonactivatingPanel`，移除一個沒有接線的重複視窗。
+2. 初始化與 `awakeFromNib` 都配置浮動面板，確保 NIB 還原後仍為
+   `NSStatusWindowLevel`、`hidesOnDeactivate = NO`、`worksWhenModal = YES`，
+   並支援各個 Space 與全螢幕輔助視窗。
+3. 以 `orderFrontRegardless` 顯示背景輸入法的面板，不啟用輸入法 App。
+   面板不成為 key／main window，符號按鈕與分類下拉支援首次滑鼠點擊，保留宿主輸入目標。
+4. 移除輸入法停用時對符號表的自動隱藏。開啟意圖維持到使用者按關閉鈕或再次切換選單；
+   宿主切換仍清理原有組字與 active context，沒有輸入目標時不送字。
+5. 新增 `event=show` 紀錄實際是否為 panel、視窗層級與 nonactivating style；
+   不記錄客戶文字或其他 App 名稱。
+
+這裡的「置頂」是高於一般編輯器、浮動設定與模態面板；不提高到高於系統選單或安全介面。
+
+Apple 行為依據：
+[nonactivatingPanel](https://developer.apple.com/documentation/appkit/nswindow/stylemask-swift.struct/nonactivatingpanel)、
+[becomesKeyOnlyIfNeeded](https://developer.apple.com/documentation/appkit/nspanel/becomeskeyonlyifneeded)、
+[NSWindow 視窗排序](https://developer.apple.com/documentation/appkit/nswindow)。
+實際層級常數與初始化介面另核對當前 macOS SDK 的 `NSWindow.h`／`NSPanel.h`。
+
+### 防止再發生與驗證界線
+
+原生隔離測試除了編譯測試用面板，也直接解析 Xcode project，檢查真正 IMK target 的
+Sources 包含 `CVDictionaryWindow.m`，避免「測試有連結，產品漏連結」再次發生。
+PR 路徑監控納入 project 設定。
+
+第八個 `panel` 案例讀取真正 NIB，確認實際類別、層級、非啟用旗標、key／main 限制、
+首次點擊、Space／全螢幕旗標、明確關閉與跨宿主恢復意圖。
+第九個 `ordering` 案例以測試程式自有的透明、不收滑鼠視窗，在實際 AppKit／WindowServer
+先顯示符號表，再把浮動設定與模態層級視窗帶到前方，檢查面板排序仍在其上且沒有啟用 App。
+此案例不連接已安裝 IMK，不操作、讀取或列舉使用者其他 App 的視窗。
+
+`NSApplication.orderedWindows` 是 scripting 介面，會排除 `NSPanel`，不能用來驗證面板排序。
+排序案例使用 `NSWindow.windowNumbersWithOptions:0`，只取測試程式自身視窗號碼，包含面板；
+[Apple orderedWindows 說明](https://developer.apple.com/documentation/appkit/nsapplication/orderedwindows)。
+可以只執行受影響案例：
+
+```sh
+python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py --scenario panel --scenario ordering
+```
+
+瀏覽器／Office 的已安裝 IMK、實際輸入欄位送字、全螢幕與多螢幕仍是獨立驗收層級，
+透明測試視窗與層級確認不能代替上述實機驗收。正式 DB、安裝器及其他平台均不修改。
+
+原生排序案例實測包含 4 個測試程式自有視窗，前後索引為符號表 0、模態 1、設定 2、編輯器 3；
+設定與模態視窗是在符號表顯示後才被要求帶到前方。視窗 alpha 為 0、不接收滑鼠，
+因此不會覆蓋或改變使用者正在操作的 App。
+模態測試窗明確關閉 `hidesOnDeactivate`，模擬宿主處於前景時的可見對話框；
+否則測試程式保持非啟用狀態時，標準 NSPanel 的自動隱藏會讓排序測試缺少比較對象。

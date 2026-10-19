@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'Source/Loaders/OSX-IMK/**'
+      - 'Source/Takao.xcodeproj/project.pbxproj'
       - 'Source/Loaders/Windows-TSF/SymbolEmojiSupplement.json'
       - 'Source/Loaders/Windows-TSF/Generate-SymbolResources.ps1'
       - 'Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift'
