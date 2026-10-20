@@ -125,6 +125,53 @@ file for terms.
 	}
 }
 
+- (void)setShiftToggleUI
+{
+    NSView *container = [_useCtrlBackSlashToggleInputMethod superview];
+    NSRect row = [_useCtrlBackSlashToggleInputMethod frame];
+    // Insert two rows above the sound controls. Freeze autoresizing while
+    // extending the pane, then move its upper rows exactly once.
+    BOOL autoresizes = [container autoresizesSubviews];
+    [container setAutoresizesSubviews:NO];
+    NSRect frame = [container frame];
+    frame.size.height += 52.0;
+    [container setFrame:frame];
+    for (NSView *view in [container subviews]) {
+        NSRect child = [view frame];
+        if (child.origin.y >= row.origin.y) {
+            child.origin.y += 52.0;
+            [view setFrame:child];
+        }
+    }
+    [container setAutoresizesSubviews:autoresizes];
+    row.size.width = NSWidth([container bounds]) - row.origin.x - 16.0;
+    NSRect shiftRow = row;
+    shiftRow.origin.y += 26.0;
+    _useShiftToggleInputMode = [[[NSButton alloc] initWithFrame:shiftRow] autorelease];
+    [_useShiftToggleInputMode setButtonType:NSSwitchButton];
+    [_useShiftToggleInputMode setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
+    [_useShiftToggleInputMode setTitle:LFLSTR(@"Tap Shift to switch Chinese/English")];
+    [_useShiftToggleInputMode setToolTip:LFLSTR(@"A short press of either Shift switches input mode. Hold Shift or combine it with another key to keep normal keyboard behavior.")];
+    [_useShiftToggleInputMode setTarget:self];
+    [_useShiftToggleInputMode setAction:@selector(writePreference:)];
+    [container addSubview:_useShiftToggleInputMode];
+    NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(17, row.origin.y, 205, 18)] autorelease];
+    [label setBezeled:NO]; [label setDrawsBackground:NO];
+    [label setEditable:NO]; [label setSelectable:NO];
+    [label setAlignment:NSRightTextAlignment];
+    [label setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
+    [label setStringValue:LFLSTR(@"Startup input mode:")];
+    [container addSubview:label];
+    _defaultInputModePopUpButton = [[[NSPopUpButton alloc] initWithFrame:
+        NSMakeRect(230, row.origin.y - 4, 145, 26) pullsDown:NO] autorelease];
+    [_defaultInputModePopUpButton addItemsWithTitles:@[LFLSTR(@"Chinese"), LFLSTR(@"English")]];
+    [[_defaultInputModePopUpButton itemAtIndex:0] setRepresentedObject:@"Chinese"];
+    [[_defaultInputModePopUpButton itemAtIndex:1] setRepresentedObject:@"English"];
+    [_defaultInputModePopUpButton setTarget:self];
+    [_defaultInputModePopUpButton setAction:@selector(writePreference:)];
+    [container addSubview:_defaultInputModePopUpButton];
+}
+
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -280,6 +327,8 @@ file for terms.
 	[_candidateWindowScalePopUpButton selectItem:scaleItem ? scaleItem :
 		[[_candidateWindowScalePopUpButton menu] itemAtIndex:0]];
 	
+    [_useShiftToggleInputMode setIntValue:![[_takaoDictionary valueForKey:@"ToggleInputModeWithShift"] isEqualToString:@"false"]];
+    [_defaultInputModePopUpButton selectItemAtIndex:[[_takaoDictionary valueForKey:@"DefaultInputMode"] isEqualToString:@"English"] ? 1 : 0];
 	[self setSoundUI];
 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)	
 	[self setKeyboardLayoutUI];	
@@ -350,8 +399,11 @@ file for terms.
 	[_takaoDictionary setValue:@"vertical" forKey:@"OneDimensionalCandidatePanelStyle"];
 	[_takaoDictionary setValue:@"system" forKey:@"CandidateWindowScalePercent"];
 	[_takaoDictionary setValue:@"true" forKey:@"ToggleInputMethodWithControlBackslash"];
+    [_takaoDictionary setValue:@"true" forKey:@"ToggleInputModeWithShift"];
+    [_takaoDictionary setValue:@"Chinese" forKey:@"DefaultInputMode"];
 
 	[self setCandidateWindowScaleUI];
+    [self setShiftToggleUI];
 
 	LFRetainAssign(_preferenceFilePath, [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME]);
 
@@ -376,6 +428,10 @@ file for terms.
 
 - (void)updateDictionary
 {
+    [_takaoDictionary setValue:[[_defaultInputModePopUpButton selectedItem] representedObject]
+        forKey:@"DefaultInputMode"];
+    [_takaoDictionary setValue:[_useShiftToggleInputMode intValue] ? @"true" : @"false"
+        forKey:@"ToggleInputModeWithShift"];
 	if ([_soundCheckBox intValue])
 		[_takaoDictionary setValue:@"true" forKey:@"ShouldPlaySoundOnTypingError"];
 	else

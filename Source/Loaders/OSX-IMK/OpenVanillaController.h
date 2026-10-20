@@ -9,14 +9,14 @@
 
 #import "OpenVanillaConfig.h"
 #import "OpenVanillaLoader.h"
-#import "IMKShiftTapProbe.h"
+#import "IMKShiftTap.h"
 
 using namespace OpenVanilla;
 
 @interface OpenVanillaController : IMKInputController {
-    // Enabled only in a marked local experiment bundle; no model/engine state.
-    IMKShiftTapProbe _shiftProbe;
-    BOOL _shiftProbeEnabled;
+    IMKShiftTap _shiftTap;
+    BOOL _shiftTapEnabled;
+    BOOL _modeSwitchInProgress;
     PVLoaderContext* _context;
     NSMutableString *_composingBuffer;
     BOOL _commitFromOurselves;

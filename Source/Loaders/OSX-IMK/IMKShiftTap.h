@@ -1,7 +1,7 @@
-// Standalone state machine for the opt-in IMK event-delivery experiment.
+// Shift-only gesture tracking shared by the macOS IMK frontend and tests.
 #pragma once
 
-struct IMKShiftTapProbe {
+struct IMKShiftTap {
     enum Result { None, Pressed, Cancelled, Tap, LongPress };
     bool shiftDown = false;
     bool pending = false;
@@ -9,7 +9,7 @@ struct IMKShiftTapProbe {
     double startedAt = 0;
     double elapsed = 0;
 
-    void reset() { *this = IMKShiftTapProbe(); }
+    void reset() { *this = IMKShiftTap(); }
 
     Result flagsChanged(unsigned short code, bool shift, bool otherModifiers, double time) {
         const bool wasDown = shiftDown;

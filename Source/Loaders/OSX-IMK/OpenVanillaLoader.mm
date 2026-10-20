@@ -479,6 +479,16 @@ using namespace OpenVanilla;
         writeConfig = true;                
     }
     
+    if (!kvm.hasKey("DefaultInputMode")) {
+        kvm.setKeyStringValue("DefaultInputMode", "Chinese");
+        writeConfig = true;
+    }
+
+    if (!kvm.hasKey("ToggleInputModeWithShift")) {
+        kvm.setKeyStringValue("ToggleInputModeWithShift", "true");
+        writeConfig = true;
+    }
+
     if (!kvm.hasKey("UUID")) {
         kvm.setKeyStringValue("UUID", UUIDHelper::CreateUUID());
         writeConfig = true;
