@@ -74,7 +74,9 @@ dotnet run --project Deployment.Tests/Deployment.Tests.csproj --configuration Re
 dotnet run --project DesktopUpdater.Tests/DesktopUpdater.Tests.csproj --configuration Release
 # updater：只在修改發布簽章／manifest 工具時，需要 OpenSSL 3；金鑰是暫存測試金鑰
 $env:KEYKEY_TEST_OPENSSL = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
-python -m unittest discover -s ../../../update -v
+Push-Location ../../../update
+try { python -m unittest -v test_channels test_metadata }
+finally { Pop-Location }
 ```
 
 只修改更新頁與草稿保護時，可在上述 WPF 命令最後加 `-- --updater`，只執行更新頁

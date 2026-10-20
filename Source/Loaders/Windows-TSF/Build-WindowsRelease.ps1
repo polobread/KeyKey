@@ -46,7 +46,10 @@ try {
     $previousOpenSsl = $env:KEYKEY_TEST_OPENSSL
     try {
         $env:KEYKEY_TEST_OPENSSL = $OpenSslPath
-        Invoke-Checked 'update-metadata' $Python @('-m', 'unittest', 'discover', '-s', '../../../update', '-v')
+        Push-Location (Join-Path $repository 'update')
+        try {
+            Invoke-Checked 'update-metadata' $Python @('-m', 'unittest', '-v', 'test_channels', 'test_metadata')
+        } finally { Pop-Location }
         foreach ($architecture in @('x64', 'x86')) {
             Invoke-Checked "updater-$architecture" 'dotnet' @('run', '--project', 'DesktopUpdater.Tests/DesktopUpdater.Tests.csproj', '--configuration', 'Release', '-r', "win-$architecture", '--self-contained', '--', '--native', '--openssl', $OpenSslPath)
         }
