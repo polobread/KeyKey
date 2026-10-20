@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'Source/Loaders/OSX-IMK/**'
+      - 'Source/PreferenceApplications/OSX/**'
       - 'Source/Takao.xcodeproj/project.pbxproj'
       - 'Source/Loaders/Windows-TSF/SymbolEmojiSupplement.json'
       - 'Source/Loaders/Windows-TSF/Generate-SymbolResources.ps1'
@@ -26,3 +27,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test symbol startup ordering and native views without installation
         run: python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py
+
+  input-mode:
+    runs-on: macos-15
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test Shift and independent input modes without installation
+        run: python3 Source/Loaders/OSX-IMK/Tests/run-input-mode-tests.py
+      - name: Test general settings defaults, persistence and localized layout
+        run: python3 Source/Loaders/OSX-IMK/Tests/run-general-input-mode-tests.py

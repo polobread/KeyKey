@@ -1,9 +1,9 @@
-#include "../IMKShiftTapProbe.h"
+#include "../IMKShiftTap.h"
 #include <cassert>
 #include <iostream>
 
 int main() {
-    using Probe = IMKShiftTapProbe;
+    using Probe = IMKShiftTap;
     Probe probe;
     for (unsigned short code : {56, 60}) {
         probe.reset();

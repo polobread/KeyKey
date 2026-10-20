@@ -85,3 +85,12 @@
 "chichi77 KeyKey does not connect to the Internet." = "琦琦輸入法不會連線到網際網路。";
 "Candidate window scale:" = "候選窗比例：";
 "Follow display (Default)" = "跟隨顯示器（預設）";
+
+"Tap Shift to switch Chinese/English" = "單按 Shift 切換中英文";
+"A short press of either Shift switches input mode. Hold Shift or combine it with another key to keep normal keyboard behavior." = "輕按左或右 Shift 可切換中英文；長按或搭配其他按鍵時，保留原本的鍵盤操作。";
+
+"Startup input mode:" = "啟動時預設輸入模式：";
+
+"Chinese" = "中文";
+
+"English" = "英文";
