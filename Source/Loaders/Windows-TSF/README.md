@@ -86,8 +86,8 @@ finally { Pop-Location }
 選字鍵下拉選單與組字長度滑桿可加 `-- --phonetic-controls`，只驗證三組選字鍵、10–20
 音節整數長度、未儲存保護，以及舊自訂值回復數字選字鍵的套用／重開流程。
 
-Windows Checks 只負責檢查；正式版本由本機 Release-Windows.ps1 完整建置、測試、
-簽署及封裝 EXE 與兩個 ZIP，再人工驗收與核准發布，不使用 CI 待簽 artifact。
+Actions 與本機共用 Build-WindowsRelease.ps1 建置、測試與驗證 unsigned 封裝；
+正式待簽 artifact 由成功的官方 CI run 產生。本機 Release-Windows.ps1 只驗證來源、簽署及重包 EXE／ZIP，再人工驗收與核准發布。
 封裝／簽章工具的局部回歸見 Packaging/Test-Signing.ps1。
 
 完整 TSF／NSIS、UAC、舊版升級、資料保留與 signed 憑證驗收屬發布工作，不能把
@@ -553,20 +553,22 @@ testing; Windows may warn after a download.
 
 ## Local signed Windows release
 
-Windows Checks builds and tests x64/x86 for PRs, master pushes and manual checks.
-It does not sign, upload release artifacts, publish GitHub assets or consume WINDOWS_RELEASE_MODE.
-There is no signing-input artifact download or CI run ID in the local release path.
+Windows Build and Unsigned Inputs calls Build-WindowsRelease.ps1 for PRs, master
+pushes and manual checks. The same PowerShell runs build/test/unsigned packaging
+commands locally. Official non-PR runs upload allowlisted
+signing inputs, never public release assets; there is no WINDOWS_RELEASE_MODE.
 
 From a clean checkout of a reviewed tag that has reached origin/master:
 
 ~~~powershell
-.\Release-Windows.ps1 -ReleaseTag vX.Y.Z
+.\Release-Windows.ps1 -RunId 123456789 -ReleaseTag vX.Y.Z
 # After EXE and both ZIPs pass clean-VM acceptance:
-.\Release-Windows.ps1 -Action Publish -ReleaseTag vX.Y.Z
+.\Release-Windows.ps1 -Action Publish -RunId 123456789 -ReleaseTag vX.Y.Z
 ~~~
 
 Build-WindowsRelease.ps1 runs the same full build/check matrix locally and in CI.
-Release-Windows.ps1 snapshots those build inputs, signs all x64/x86 EXE/DLL copies,
+Release-Windows.ps1 verifies the successful CI run, artifact digest and input hashes,
+signs all x64/x86 EXE/DLL copies without compiling or rerunning tests,
 then creates a signed x64 NSIS EXE and x64/x86 installation ZIPs. Every executable
 inside either ZIP is signed and timestamped. Manifests and checksums describe the
 final signed bytes; actual ZIP contents, bitness, versions and signatures are
@@ -574,9 +576,9 @@ verified again before publication. The installed uninstaller is the signed deplo
 
 The output contains exactly seven public files: the EXE and checksum, two ZIPs
 and their checksums, and chichi77-KeyKey-VERSION-windows-build-info.json.
-The build-info records source/tag, local check results, input hashes and every asset hash.
-Outputs stay under ignored out/local-release/TAG/. Official releases require Authenticode;
-the low-level UnsignedTest switch exists solely for isolated installer/updater fixtures.
+The build-info records source/tag, CI artifact provenance, test/skip results and input/asset hashes.
+Outputs stay under ignored update/out/local-release/RUN_ID-TAG/. Official releases require Authenticode;
+the low-level UnsignedTest switch is restricted to packaging validation.
 
 Publish displays all hashes and requires explicit approval of the build-info SHA-256,
 which binds the EXE, both ZIPs and their checksums. It verifies the remote tag and local

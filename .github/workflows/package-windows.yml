@@ -1,4 +1,4 @@
-name: Windows Checks
+name: Windows Build and Unsigned Inputs
 
 on:
   push:
@@ -8,6 +8,11 @@ on:
     branches: [master]
     paths: ['Source/**', 'DataSource/**', 'update/**', '.github/scripts/**', '.github/workflows/package-windows.yml']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Optional vX.Y.Z-betaN build label; blank uses the CMake stable version. No Release is required.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -25,12 +30,30 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.4'
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Build and validate x64 and x86 (no signing, release artifacts or publication)
+      - name: Install NSIS packaging dependency
+        run: choco install nsis --version=3.12.0 --yes --no-progress --limit-output
+      - name: Shared PowerShell build, tests and unsigned packaging
+        env:
+          REQUESTED_RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
-          ./Source/Loaders/Windows-TSF/Build-WindowsRelease.ps1 -OutputDirectory "$env:RUNNER_TEMP/keykey-windows-checks" -Python python
+          ./Source/Loaders/Windows-TSF/Build-WindowsRelease.ps1 `
+            -OutputDirectory "$env:RUNNER_TEMP/keykey-windows-checks" -Python python `
+            -ReleaseTag "$env:REQUESTED_RELEASE_TAG" `
+            -MakensisPath "${env:ProgramFiles(x86)}/NSIS/makensis.exe"
+      - name: Save unsigned inputs for local signing (no public release assets)
+        if: github.repository == 'polobread/KeyKey' && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: keykey-windows-unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/keykey-windows-checks/artifact/
+          if-no-files-found: error
+          retention-days: 30

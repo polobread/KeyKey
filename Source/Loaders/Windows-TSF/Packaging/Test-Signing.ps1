@@ -1,4 +1,5 @@
 # Isolated tests: no certificate store access, real signing, installation or network.
+param([string] $Python = 'python')
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Get-ProductVersion.ps1')
 $scriptPath = Join-Path $PSScriptRoot '..\Package-Store-Windows.ps1'
@@ -208,7 +209,7 @@ $global:LASTEXITCODE = 0
     foreach ($architecture in @('x64', 'x86')) {
         Copy-Item -LiteralPath (Join-Path $fixture $architecture) -Destination (Join-Path $releaseFixture 'inputs') -Recurse
     }
-    @{ version = $testVersion; release_tag = "v$testVersion"; source_sha = ('a' * 40) } |
+    @{ version = $testVersion; release_tag = "v$testVersion"; source_sha = ('a' * 40); run_id = 101 } |
         ConvertTo-Json | Set-Content -LiteralPath (Join-Path $releaseFixture 'context.json') -Encoding UTF8
     $global:keykeyReleaseHelperCalls = [Collections.Generic.List[string]]::new()
     function git { 'ignored-output'; $global:LASTEXITCODE = 0 }
@@ -216,7 +217,9 @@ $global:LASTEXITCODE = 0
     function Fake-ReleasePython {
         $command = $args[1]
         $global:keykeyReleaseHelperCalls.Add($command)
-        if ($command -eq 'record') {
+        if ($command -eq 'download') {
+            Get-Content -LiteralPath (Join-Path $releaseFixture 'context.json') -Raw
+        } elseif ($command -eq 'record') {
             $directory = $args[[Array]::IndexOf($args, '--directory') + 1]
             '{}' | Set-Content -LiteralPath (Join-Path $directory "signed\chichi77-KeyKey-$testVersion-windows-build-info.json")
         } elseif ($command -ne 'verify-built') { throw 'Unexpected release-helper command.' }
@@ -224,14 +227,14 @@ $global:LASTEXITCODE = 0
     }
     try {
         $releaseArguments = @{
-            Action = 'Sign'; ReleaseTag = "v$testVersion"; Python = 'Fake-ReleasePython'; OutputDirectory = $releaseFixture
+            Action = 'Sign'; RunId = '101'; ReleaseTag = "v$testVersion"; Python = 'Fake-ReleasePython'; OutputDirectory = $releaseFixture
             MakensisPath = $fakeNsis; SignToolPath = $fakeTool; TimestampUrl = [uri]'https://timestamp.invalid'
         }
         $releaseOutput = & (Join-Path $PSScriptRoot '..\Release-Windows.ps1') @releaseArguments *>&1 | Out-String
         if ($releaseOutput.Contains($syntheticIdentifier)) { throw 'Local release exposed a signing identifier.' }
         $publicFiles = @(Get-ChildItem -LiteralPath (Join-Path $releaseFixture 'signed') -File)
         if ($publicFiles.Count -ne 7 -or @($publicFiles | Where-Object Name -Like '*unsigned*').Count -or
-            ($global:keykeyReleaseHelperCalls -join ',') -ne 'verify-built,record') {
+            ($global:keykeyReleaseHelperCalls -join ',') -ne 'download,verify-built,record') {
             throw "Local release asset count=$($publicFiles.Count); files=$($publicFiles.Name -join ','); helper calls=$($global:keykeyReleaseHelperCalls -join ',')"
         }
     } finally {
@@ -266,3 +269,4 @@ $global:LASTEXITCODE = 0
 }
 Write-Output 'Passed isolated signing privacy, identity, timestamp and complete packaging gates.'
 & (Join-Path $PSScriptRoot 'Test-WindowsUpdatePreparation.ps1')
+& (Join-Path $PSScriptRoot 'Test-BuildWindowsRelease.ps1') -Python $Python
