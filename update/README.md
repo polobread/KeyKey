@@ -288,7 +288,8 @@ updater 測試，不建置 TSF、不安裝、不發布、不取得 release secre
 
 3. 設定 `macos_feed_url`、`windows_x64_feed_url` 為 HTTPS 的固定平台 feed。
    各平台共用 CDN 的 `keykey/update/stable/` 目錄，以獨立檔案提供 feed，不另外
-   增加平台子目錄，也不將不同平台合併成同一份 XML。配置如下；XML 已可存取，signed metadata 待副本驗證後以 PR 加入：
+   增加平台子目錄，也不將不同平台合併成同一份 XML。Windows x64 feed 與 signed metadata
+   一起經 PR 審查，合併後再同步至 CDN：
 
    ```text
    https://download.aws.polobread.com/keykey/update/stable/
@@ -299,7 +300,7 @@ updater 測試，不建置 TSF、不安裝、不發布、不取得 release secre
      metadata.json.sig
    ```
 
-   `windows-x86.xml` 目前提供無更新項目的初始 RSS；建立並驗證正式 x86 installer 後，
+   `windows-x86.xml` 目前提供無自動更新項目的 RSS；建立並驗證正式 x86 installer 後，
    才加入自動安裝項目；目前已設定 x86 feed URL，仍只提供手動 ZIP 下載資訊。
    各 feed URL 必須先實際建立、驗證，再寫入 `config.json`。
    安裝包仍放在 `keykey/releases/download/TAG/FILE`，不放進 feed 目錄。
@@ -315,15 +316,15 @@ updater 測試，不建置 TSF、不安裝、不發布、不取得 release secre
 | CDN x86 | `https://download.aws.polobread.com/keykey/update/stable/windows-x86.xml` |
 | GitHub Raw x86 | `https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/windows-x86.xml` |
 
-`update/stable/windows-x64.xml` 與 `windows-x86.xml` 是 GitHub 來源的初始 RSS，
-目前記錄已發布的 Windows 1.3.1 手動下載資訊：x64 指向 unsigned EXE，x86 指向 ZIP。
-每份 feed 的 channel `link` 使用 CDN 主來源，`description` 以 HTML 列出 CDN 與
-GitHub 兩個手動下載連結。維持一個標準 RSS `link`，不放重複的 channel `link`。
-兩個來源的連結都由使用者自行選用，客戶端尚未實作自動切換。
-資訊放在 RSS channel 的 `link` 與 `description`，沒有自動更新 `item`／`enclosure`，
-WinSparkle 讀取後仍回報無可用更新，不會自動下載或執行這些檔案。
-待使用者 review 並將 PR 合併至 `master` 後，才會出現在上述 Raw 網址；CDN 副本仍需
-先部署 XML 同步所需的 IAM／cache 設定，再由上述 workflow 上傳。手動下載資訊不表示已完成自動更新發布。
+`update/stable/windows-x64.xml` 提供 Windows 1.3.7 的自動更新項目，指向已通過
+Certum Authenticode 與 Ed25519 驗證的內容位址 EXE。`metadata.json` 與
+`metadata.json.sig` 保留本機簽包時的原始 bytes；版本、tag 與建置來源一致。
+`windows-x86.xml` 提供 1.3.7 已簽署 ZIP 的 CDN／GitHub 手動下載連結，
+仍無 `item`／`enclosure`，不會自動下載或安裝 x86 ZIP。
+客戶端目前使用單一 feed URL，尚未實作來源自動切換。
+使用者 review 並將 feed PR 合併至 `master` 後，Raw 網址才會更新；CDN 由
+`Sync Update Feeds to CDN` 驗證遠端安裝包後同步。若以 `[skip ci]` 避免重跑
+建置，合併後須在 `master` 手動執行該 workflow 的 `sync-feeds` 操作。
 正式公鑰與兩個 channel 的 CDN feed 設定已加入原始碼；既有安裝版本須另行核對是否包含這些設定。
 
 v1.3.1 的 GitHub Release 尚無 x86 EXE 或安裝包 Ed25519 更新簽章；其 Windows
@@ -331,12 +332,12 @@ build-info 的 `source_sha` 與 `tag_sha` 不同，屬既有同版 recovery 下�
 這批檔案可供手動下載，但不直接通過現有 stable 自動更新的來源驗證。
 後續自動更新需另有符合 review／tag／版本規則、已完成 Ed25519 簽章的安裝器。
 
-每次正式發布使用同一組 Ed25519 金鑰與同一個已通過所宣告簽章模式驗證的安裝包，
-兩個來源的版本、檔案內容／SHA-256 及安裝包簽章必須一致。各來源的 feed 使用自己的
-安裝包下載網址：GitHub 指向 `https://github.com/polobread/KeyKey/releases/download/TAG/FILE`，
-CDN 指向 `https://download.aws.polobread.com/keykey/releases/download/TAG/FILE`。
-必須先分別上傳並驗證安裝包，再發布該來源的 feed；只備份 XML、卻共用唯一下載來源，
-不能提供完整的下載備援。
+Windows 1.3.7 的 GitHub Raw 與 CDN 提供同一份 feed，安裝包網址固定指向 CDN。
+現有 metadata 簽章包含下載網址，沿用簽包時須保留原始 bytes；Raw 目前只提供 feed
+備份，安裝包下載仍依賴 CDN。日後若提供獨立的 GitHub 安裝包來源 feed，須為該網址
+另行產生並簽署 metadata，先驗證遠端安裝包，再發布該來源的 feed。
+各來源必須使用同一組 Ed25519 金鑰與已通過所宣告簽章模式驗證的安裝包，
+版本、檔案內容／SHA-256 及安裝包簽章均須一致。
 
 GitHub feed 變更在工作分支提交，再由使用者 review／merge 至 `master`，不得由
 workflow 直接回存 `master`。CDN feed 使用短快取及精確 invalidation。現有 metadata
@@ -491,20 +492,18 @@ ports／pkg 更新、套件可能較晚上架，不查套件庫，也不增加�
 
 ## GitHub Release／CDN 發布順序（安裝包先發布，再同步 feed）
 
-1. 通過原始碼 review 與發布核准。Windows 預設由獨立 workflow 產生待簽輸入，
-   再依 [Certum 本機半自動流程](../docs/WINDOWS_CERTUM_RELEASE.md)完成 Authenticode、
-   時間戳記、驗收與人工發布核准。原 unsigned workflow 保留並預設停用；明確切回後，
-   只有從相應 release tag 建置、驗證版本並宣告 `unsigned-transition` 的 EXE，
-   才能以正式 Ed25519 私鑰建立過渡 stable feed。無 tag 的手動 artifact 仍是測試包。
-   目前未達 SignPath Foundation 的申請門檻；專案條件或方案要求改變後的待辦另見 [TODO](../docs/WINDOWS_SIGNPATH_TODO.md)。
+1. 通過原始碼 review。Windows 的共用 PowerShell 由 Actions 測試並產生 unsigned
+   artifact，再依 [Certum 本機簽包流程](../docs/WINDOWS_CERTUM_RELEASE.md)完成
+   Authenticode、時間戳記、重新封裝與 Ed25519。核對 CI、release tag 與簽包來源，
+   完成安裝驗收並取得人工發布核准後，沿用這批產物發布。
 2. 上傳 `packages/` 的内容位址檔案到指定 Release；不使用 `--clobber`。
    base URL 使用 GitHub 時填 `https://github.com/OWNER/REPO/releases/download`。
 3. CDN 模式先將相同 bytes 鏡像到 `keykey/releases/download/TAG/FILE`；校驗遠端可取得、
    size 與 SHA-256 正確後，最後才更新固定 feed。GitHub Releases 可放不可變資產，
    固定 feed 另外放在 CDN／靜態網站，不能把 GitHub Release API 當 appcast。
 4. packages 使用長快取；feeds／metadata 使用短 TTL 與精確 invalidation。
-   Terraform 為 `keykey/update/stable/*.xml` 新增限定寫入權限與獨立短快取；需 review
-   並 apply 後才可使用 XML 同步 workflow。這次沒有 apply 或修改線上資源。
+   feed、metadata 與其簽章經 PR 合併至 `master` 後，由既有同步 workflow 上傳。
+   `[skip ci]` 的 PR 合併後須手動執行 `sync-feeds`，不重新建置或簽署安裝包。
 5. 分平台 promotion，避免尚未完成的 Windows 發布拖累 macOS。最終的共用 metadata
    可以集合獨立版本，但 feed、簽章與安裝程序仍是平台各自的。
 
