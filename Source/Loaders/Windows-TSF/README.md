@@ -91,7 +91,7 @@ Release 或手動 dispatch 時執行，日常 push 不會觸發。CTest 中的 m
 上述局部開發驗證當成已發布或已安裝的證據。
 
 Windows `1.3.7` 開發版持續修正進階設定、讀音輔助、符號表與簡體輸出；
-Windows 產品版號為 1.3.7，尚未發布；iOS、Android 1.3.2 已在各自商店正式上線，macOS、Linux 開發版同為 1.3.7；共用模型維持 1.3.1。實作與驗證記錄見
+Windows 產品版號為 1.3.7，尚未發布；iOS 1.3.2、Android 1.3.6 已在各自商店正式上線，macOS、Linux 開發版同為 1.3.7；共用模型維持 1.3.1。實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
 
 2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、

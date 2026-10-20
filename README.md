@@ -1,6 +1,6 @@
 # 琦琦輸入法 / chichi77 KeyKey — Android 開發版 1.3.7；iOS 開發版 1.3.7；macOS／Windows／Linux 開發版 1.3.7
 
-Android 原始碼開發版號為 `1.3.7`，iOS 為 `1.3.7`；商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線。Android 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。macOS／Windows／Linux 開發版為 `1.3.7`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。
+Android 原始碼開發版號為 `1.3.7`，iOS 為 `1.3.7`；Google Play 最新正式版為 `1.3.6`，App Store 正式版為 `1.3.2`。Android 1.3.2 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。macOS／Windows／Linux 開發版為 `1.3.7`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。
 macOS、Windows 與 Ubuntu 24.04 安裝包依各自版本提供於
 [GitHub Release](https://github.com/polobread/KeyKey/releases)；
 Android 與 iOS 依各自的商店管道安裝。
@@ -171,8 +171,8 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 
 ## English
 
-Android's source development version is `1.3.7`, and iOS's is `1.3.7`; version `1.3.2` is available on Google Play and the App Store.
-Android entered production on **2026-10-08**; installation no longer requires
+Android's source development version is `1.3.7`, and iOS's is `1.3.7`; the latest production version on Google Play is `1.3.6`, while the App Store version is `1.3.2`.
+Android 1.3.2 entered production on **2026-10-08**; installation no longer requires
 a Google Group or closed-test enrollment. macOS, Windows, and Linux development
 versions are `1.3.7`, not yet stable releases; published macOS and Linux stable
 versions remain `1.3.1`. Desktop installers are provided by platform version on

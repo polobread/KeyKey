@@ -4,7 +4,7 @@
 
 Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 原始碼開發版號為 `1.3.7`，iOS 為 `1.3.7`，商店正式版 `1.3.2` 已分別在 Google Play 與 App Store 上線（iOS build 41）；Android 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。macOS／Windows／Linux 開發版為 `1.3.7`，尚未正式發布；macOS 與 Linux 已發布正式版及共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
+依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 原始碼開發版號為 `1.3.7`，iOS 為 `1.3.7`，Google Play 最新正式版為 `1.3.6`，App Store 正式版為 `1.3.2`（build 41）；Android 1.3.2 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。macOS／Windows／Linux 開發版為 `1.3.7`，尚未正式發布；macOS 與 Linux 已發布正式版及共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -379,7 +379,7 @@ Android 的 debug 封裝、iOS Simulator 與 `Android Play Release` workflow 都
 GitHub Actions 頁面按 **Run workflow** 手動執行。Android Play workflow 使用所選分支
 或 tag 的 commit 建置、簽署並上傳 AAB 到 Google Play 內部測試；PR 合併與直接 push
 都不觸發，也不設定 `changesNotSentForReview`。正式版推廣由 Play Console 操作。
-Android 1.3.2 已於 2026-10-08 正式上線；後續正式發布不需再以封閉測試作為前置步驟。
+Android 1.3.2 已於 2026-10-08 正式上線，後續 1.3.3、1.3.5、1.3.6 亦已正式發布，目前 Google Play 最新正式版為 1.3.6；後續正式發布不需再以封閉測試作為前置步驟。
 CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不同流程。
 
 所有修改先在工作分支提交，再由維護者親自 review 和 merge PR 回 `master`；agent 不自行合併。
@@ -818,7 +818,8 @@ the selected branch or tag and uploads it to Google Play internal testing. PR me
 and direct pushes do not trigger it, and the workflow does not set
 `changesNotSentForReview`. Production promotion is performed in Play Console.
 Android 1.3.2 entered production on
-2026-10-08; closed testing is no longer a prerequisite for subsequent production
+2026-10-08; versions 1.3.3, 1.3.5, and 1.3.6 have also been released to production.
+The latest Google Play production version is 1.3.6. Closed testing is no longer a prerequisite for subsequent production
 releases or public installation. CI uploads to internal testing; users install
 the production release from Google Play. iOS 1.3.2 (build 41) is available on the App Store.
 
