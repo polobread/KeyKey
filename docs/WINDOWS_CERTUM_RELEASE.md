@@ -60,7 +60,7 @@ artifact 僅包含：
 3. artifact ID、run attempt、未過期狀態與 GitHub 提供的 SHA-256 相符；解壓只接受明確白名單，拒絕多餘、重複或不安全路徑。
 4. 每個檔案、測試來源、更新頻道與 manifest 相符。下載快取再次使用時重新核對，不重新建置。
 
-維護者在 SimplySign 介面輸入手機 token／PIN，腳本以遮罩提示讀取憑證識別，僅留於記憶體。簽章診斷不回顯，也不記錄簽署憑證識別。
+維護者在 SimplySign 介面輸入手機 token／PIN。指定存放區只有一張有效且具私鑰存取權的 Certum code signing 憑證時，腳本直接在記憶體選取；沒有候選或候選不唯一時才以遮罩提示讀取憑證識別。簽章診斷不回顯，也不記錄簽署憑證識別。
 
 腳本簽署 x64／x86 全部 payload EXE／DLL 副本，逐檔核對 SHA-256 Authenticode 與 RFC 3161 時間戳。接著從同一份已簽 payload 重包 x64／x86 ZIP 與 x64 NSIS EXE，再簽外層 EXE，最後核對版本、架構、詞庫、實際內容及簽章。CI 的 unsigned setup 是封裝測試產物，不作正式更新安裝器。
 
@@ -72,6 +72,8 @@ artifact 僅包含：
 - `chichi77-KeyKey-VERSION-windows-build-info.json`
 
 build-info 保存 CI 來源與 artifact 證據、完整步驟／逐項測試狀態、輸入及六份產物的雜湊，不記錄主機個人資訊或簽章私密資料。可用 `-OutputDirectory` 指定其他 Git 忽略目錄。簽包後不修改、重壓縮、重簽或覆蓋完成產物。
+
+ZIP 驗證保留全部檔案的同發行者簽章、時間戳、雜湊、架構及固定清單檢查。`KeyKeySettingsBackend.dll` 與 `KeyKeyRegistration_x86.exe` 依目前 CMake 未嵌入版本資源，缺少 ProductVersion 時以封裝版號與來源核對；若日後嵌入版號仍須相符。其他產品程式必須具備正確版號。Python 啟動 Windows PowerShell 驗證時只使用其原生系統模組，避免繼承 PowerShell 7 模組路徑。
 
 ## 3. 本機 Ed25519 與人工驗收
 

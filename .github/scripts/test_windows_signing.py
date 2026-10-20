@@ -125,6 +125,17 @@ class WindowsSigningTests(unittest.TestCase):
                 patch('sys.stdout', new=io.StringIO()), self.assertRaisesRegex(ValueError, 'untrusted extracted'):
             signing.verify_zip(package, self.version, 'x64')
 
+    def test_windows_powershell_does_not_inherit_pwsh_modules(self):
+        completed = subprocess.CompletedProcess([], 0, stdout=b'', stderr=b'')
+        with patch.dict(os.environ, {'PSModulePath': 'foreign-pwsh-modules', 'SystemRoot': str(self.root)}), \
+                patch.object(signing.subprocess, 'run', return_value=completed) as child:
+            signing.run('powershell.exe', '-NoProfile')
+            environment = child.call_args.kwargs['env']
+            self.assertEqual(environment['PSModulePath'], str(self.root / 'System32/WindowsPowerShell/v1.0/Modules'))
+            self.assertEqual(os.environ['PSModulePath'], 'foreign-pwsh-modules')
+            signing.run('git', 'status')
+            self.assertIsNone(child.call_args.kwargs['env'])
+
     def test_workflow_shares_build_script_and_only_uploads_unsigned_inputs(self):
         workflows = signing.ROOT / ".github/workflows"
         text = (workflows / "package-windows.yml").read_text()

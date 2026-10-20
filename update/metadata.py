@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import hashlib
 import html
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -116,10 +117,12 @@ def verify_platform_package(entry):
     if entry["target"].startswith("windows-"):
         if sys.platform != "win32":
             raise ValueError("verify Windows installer signing state and version on Windows")
+        environment = os.environ.copy()
+        environment["PSModulePath"] = str(Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32/WindowsPowerShell/v1.0/Modules")
         subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
             str(Path(__file__).with_name("verify-windows.ps1")), "-Installer", str(path),
             "-ExpectedVersion", channels.parse_version(entry["version"])[0],
-            "-SigningMode", entry.get("windows_signing", "authenticode")], check=True)
+            "-SigningMode", entry.get("windows_signing", "authenticode")], check=True, env=environment)
     else:
         if sys.platform != "darwin":
             raise ValueError("verify macOS package notarization on macOS")

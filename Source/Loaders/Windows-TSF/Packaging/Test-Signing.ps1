@@ -2,6 +2,127 @@
 param([string] $Python = 'python')
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Get-ProductVersion.ps1')
+function Test-SignedPayloadVerification {
+    param([Parameter(Mandatory = $true)][string] $PackagingDirectory)
+    . (Join-Path $PackagingDirectory 'Get-ProductVersion.ps1')
+    $testVersion = Get-KeyKeyProductVersion
+    $source = [IO.File]::ReadAllText((Join-Path $PackagingDirectory 'Verify-SignedPayload.ps1'))
+    $versionCall = '[Diagnostics.FileVersionInfo]::GetVersionInfo($file.FullName)'
+    if (-not $source.Contains($versionCall)) { throw 'Signed payload version fixture no longer matches its public dependency.' }
+    # Substitute only OS/tool dependencies; run the actual complete ZIP verification policy.
+    $source = $source.Replace(". (Join-Path `$PSScriptRoot 'Authenticode.ps1')", '')
+    $verification = [scriptblock]::Create($source.Replace($versionCall, '(Get-SyntheticPayloadVersion -Path $file.FullName)'))
+    $tokens = $null; $parseErrors = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PackagingDirectory 'Authenticode.ps1'), [ref]$tokens, [ref]$parseErrors)
+    if ($parseErrors.Count) { throw 'Authenticode helper has syntax errors.' }
+    $definition = $ast.Find({ param($node)
+        $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-VerifySignature'
+    }, $true)
+    . ([scriptblock]::Create($definition.Extent.Text))
+    $syntheticSigner = '01' * 20
+    function Resolve-SignTool { param($RequestedPath); 'Synthetic-PayloadVerificationTool' }
+    function Synthetic-PayloadVerificationTool {
+        Write-Output "synthetic provider diagnostic $syntheticSigner"
+        $global:LASTEXITCODE = $nativeExitCode
+    }
+    function Get-ChildItem { param($LiteralPath, [switch]$File, [switch]$Recurse); $payloadFiles }
+    function Get-SyntheticPayloadVersion {
+        param($Path)
+        [pscustomobject]@{ ProductVersion = $versions[[IO.Path]::GetFileName($Path)] }
+    }
+    function Get-AuthenticodeSignature {
+        param($LiteralPath, $ErrorAction)
+        $name = [IO.Path]::GetFileName($LiteralPath)
+        $invalid = $name -eq $signatureFailureFile
+        [pscustomobject]@{
+            Status = if ($invalid) { $signatureStatus } else { 'Valid' }
+            SignerCertificate = [pscustomobject]@{ Thumbprint = if ($invalid -and $wrongSigner) { '02' * 20 } else { $syntheticSigner } }
+            TimeStamperCertificate = if ($invalid -and $missingTimestamp) { $null } else { [pscustomobject]@{ Present = $true } }
+        }
+    }
+    function Invoke-SyntheticPayloadCase {
+        param([string] $Architecture = 'x64', [hashtable] $VersionChanges = @{}, [string] $ExpectedError,
+              [string] $SignatureFailureFile, [string] $SignatureStatus = 'Valid', [switch] $WrongSigner,
+              [switch] $MissingTimestamp, [int] $NativeExitCode = 0, [string] $RemoveFile, [switch] $ExtraFile)
+        $names = @('KeyKeyTsf_x86.dll', 'KeyKeySettings.exe', 'KeyKeySettingsBackend.dll', 'KeyKeyDeployment.exe', 'KeyKeyRegistration_x86.exe', 'WinSparkle.dll')
+        if ($Architecture -eq 'x64') { $names += 'KeyKeyTsf_x64.dll' }
+        if ($RemoveFile) { $names = @($names | Where-Object { $_ -ne $RemoveFile }) }
+        if ($ExtraFile) { $names += 'unexpected.exe' }
+        $payloadFiles = @($names | ForEach-Object { [pscustomobject]@{ Name = $_; FullName = $_; Extension = [IO.Path]::GetExtension($_) } })
+        $versions = @{}
+        foreach ($name in $names) { $versions[$name] = $testVersion }
+        $versions['KeyKeySettingsBackend.dll'] = $null
+        $versions['KeyKeyRegistration_x86.exe'] = ''
+        $versions['WinSparkle.dll'] = 'third-party-version'
+        foreach ($name in $VersionChanges.Keys) { $versions[$name] = $VersionChanges[$name] }
+        $failure = $null
+        try { & $verification -Directory 'synthetic-payload' -ExpectedVersion $testVersion -Architecture $Architecture -ReferenceInstaller 'synthetic-setup.exe' }
+        catch { $failure = $_.Exception.Message }
+        if ($ExpectedError) {
+            if ($failure -cne $ExpectedError) { throw "Signed payload fixture expected '$ExpectedError'; received '$failure'." }
+        } elseif ($failure) { throw $failure }
+    }
+    foreach ($architecture in @('x64', 'x86')) { Invoke-SyntheticPayloadCase -Architecture $architecture }
+    Invoke-SyntheticPayloadCase -VersionChanges @{ 'KeyKeySettingsBackend.dll' = $testVersion; 'KeyKeyRegistration_x86.exe' = "$testVersion.0" }
+    foreach ($name in @('KeyKeySettingsBackend.dll', 'KeyKeyRegistration_x86.exe')) {
+        Invoke-SyntheticPayloadCase -VersionChanges @{ $name = 'wrong-version' } -ExpectedError "ZIP payload product version mismatch: $name"
+        Invoke-SyntheticPayloadCase -SignatureFailureFile $name -WrongSigner -ExpectedError "Signature verification failed: $name"
+        Invoke-SyntheticPayloadCase -SignatureFailureFile $name -MissingTimestamp -ExpectedError "Signature verification failed: $name"
+        Invoke-SyntheticPayloadCase -SignatureFailureFile $name -SignatureStatus 'NotTrusted' -ExpectedError "Signature verification failed: $name"
+    }
+    foreach ($name in @('KeyKeyTsf_x64.dll', 'KeyKeyTsf_x86.dll', 'KeyKeySettings.exe', 'KeyKeyDeployment.exe')) {
+        Invoke-SyntheticPayloadCase -VersionChanges @{ $name = $null } -ExpectedError "ZIP payload product version mismatch: $name"
+        Invoke-SyntheticPayloadCase -VersionChanges @{ $name = 'wrong-version' } -ExpectedError "ZIP payload product version mismatch: $name"
+    }
+    Invoke-SyntheticPayloadCase -RemoveFile 'KeyKeySettingsBackend.dll' -ExpectedError 'Unexpected executable set in signed ZIP.'
+    Invoke-SyntheticPayloadCase -ExtraFile -ExpectedError 'Unexpected executable set in signed ZIP.'
+    Invoke-SyntheticPayloadCase -SignatureFailureFile 'synthetic-setup.exe' -MissingTimestamp -ExpectedError 'Reference publisher signature is invalid.'
+    Invoke-SyntheticPayloadCase -NativeExitCode 1 -ExpectedError 'Signature verification failed: KeyKeyTsf_x86.dll'
+    Write-Output 'Passed isolated signed ZIP versions, native helpers, identity, timestamp and executable-set gates.'
+}
+Test-SignedPayloadVerification -PackagingDirectory $PSScriptRoot
+function Test-SigningCertificateSelection {
+    param([Parameter(Mandatory = $true)][string] $PackagingDirectory)
+    $tokens = $null; $parseErrors = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PackagingDirectory 'Authenticode.ps1'), [ref]$tokens, [ref]$parseErrors)
+    if ($parseErrors.Count) { throw 'Authenticode helper has syntax errors.' }
+    $definition = $ast.Find({ param($node)
+        $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Read-SigningCertificateIdentifier'
+    }, $true)
+    . ([scriptblock]::Create($definition.Extent.Text))
+    $syntheticIdentifier = '01' * 20
+    $fallbackIdentifier = '02' * 20
+    function Get-ChildItem { param($LiteralPath, $ErrorAction); $selectionCandidates }
+    function Read-Host {
+        param($Prompt, [switch] $AsSecureString)
+        if (-not $allowFallback -or -not $AsSecureString) { throw 'Unexpected certificate identifier prompt.' }
+        ConvertTo-SecureString $fallbackIdentifier -AsPlainText -Force
+    }
+    $valid = [pscustomobject]@{ Issuer='Synthetic Certum issuer'; HasPrivateKey=$true;
+        NotBefore=(Get-Date).AddDays(-1); NotAfter=(Get-Date).AddDays(1); Thumbprint=$syntheticIdentifier;
+        EnhancedKeyUsageList=@([pscustomobject]@{ ObjectId='1.3.6.1.5.5.7.3.3' }) }
+    foreach ($case in @('unique','none','multiple','expired','wrong-usage','different-issuer')) {
+        $candidate = $valid.PSObject.Copy()
+        $selectionCandidates = @($candidate)
+        $allowFallback = $case -ne 'unique'
+        switch ($case) {
+            'none' { $selectionCandidates = @() }
+            'multiple' { $selectionCandidates = @($valid, $candidate) }
+            'expired' { $candidate.NotAfter=(Get-Date).AddDays(-1) }
+            'wrong-usage' { $candidate.EnhancedKeyUsageList=@([pscustomobject]@{ ObjectId='1.3.6.1.5.5.7.3.1' }) }
+            'different-issuer' { $candidate.Issuer='Other synthetic issuer' }
+        }
+        $secure = Read-SigningCertificateIdentifier -StoreLocation CurrentUser
+        if ($secure -isnot [Security.SecureString]) { throw 'Certificate selection exposed a plain identifier.' }
+        $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+        try {
+            $expected = if ($allowFallback) { $fallbackIdentifier } else { $syntheticIdentifier }
+            if ([Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) -cne $expected) { throw 'Certificate selection chose the wrong candidate.' }
+        } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer); $secure.Dispose() }
+    }
+    Write-Output 'Passed isolated unique Certum selection and masked fallback gates.'
+}
+Test-SigningCertificateSelection -PackagingDirectory $PSScriptRoot
 $scriptPath = Join-Path $PSScriptRoot '..\Package-Store-Windows.ps1'
 $tokens = $null
 $parseErrors = $null
@@ -214,6 +335,12 @@ $global:LASTEXITCODE = 0
     $global:keykeyReleaseHelperCalls = [Collections.Generic.List[string]]::new()
     function git { 'ignored-output'; $global:LASTEXITCODE = 0 }
     function Read-Host { param($Prompt, [switch]$AsSecureString); ConvertTo-SecureString ('01' * 20) -AsPlainText -Force }
+    function Get-ChildItem {
+        [CmdletBinding()]
+        param([Parameter(Position=0)]$LiteralPath, [switch]$File, [switch]$Recurse, [switch]$Directory)
+        if ($LiteralPath -like 'Cert:*') { return }
+        Microsoft.PowerShell.Management\Get-ChildItem @PSBoundParameters
+    }
     function Fake-ReleasePython {
         $command = $args[1]
         $global:keykeyReleaseHelperCalls.Add($command)
@@ -238,7 +365,7 @@ $global:LASTEXITCODE = 0
             throw "Local release asset count=$($publicFiles.Count); files=$($publicFiles.Name -join ','); helper calls=$($global:keykeyReleaseHelperCalls -join ',')"
         }
     } finally {
-        Remove-Item Function:\git, Function:\Read-Host, Function:\Fake-ReleasePython
+        Remove-Item Function:\git, Function:\Read-Host, Function:\Get-ChildItem, Function:\Fake-ReleasePython
         Remove-Variable -Name keykeyReleaseHelperCalls -Scope Global
     }
     $global:keykeySigningTestSignature.Status = 'NotSigned'
