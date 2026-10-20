@@ -25,6 +25,7 @@ public partial class MainWindow : Window
         ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
     private static readonly string[] Layouts = ["Standard", "ETen", "ETen26", "Hsu", "Hanyu Pinyin"];
+    private static readonly string[] SelectionKeys = ["12345678", "asdfghjk", "asdfzxcv"];
     private static readonly string[] PunctuationTables =
         ["", "Punctuations-cj-mixedwidth-cin", "Punctuations-cj-halfwidth-cin"];
 
@@ -57,6 +58,8 @@ public partial class MainWindow : Window
         AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
         AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(UpdateSettingsChanged));
         AddHandler(Selector.SelectionChangedEvent, new SelectionChangedEventHandler(UpdateSettingsChanged));
+        AddHandler(RangeBase.ValueChangedEvent, new RoutedPropertyChangedEventHandler<double>(UpdateSettingsChanged));
+        CandidateSelectionKeys.ItemsSource = SelectionKeys;
         CandidateScale.ItemsSource = new[] { "跟隨 Windows（預設）" }
             .Concat(Scales.Skip(1).Select(s => s + "%")).ToArray();
         HighlightColor.ItemsSource = new[] { "紫色", "綠色", "黃色", "紅色" };
@@ -111,6 +114,7 @@ public partial class MainWindow : Window
             SettingsStore.Read(loader, "HighlightColor", "Default"));
         ControlBackslash.IsChecked = ReadBool(loader, "ToggleInputMethodWithControlBackslash", true);
         SymbolPanelShortcut.IsChecked = ReadBool(loader, "SymbolPanelShortcutEnabled", true);
+        IgnoreCapsLockInChinese.IsChecked = ReadBool(loader, "IgnoreCapsLockInChinese", true);
         TypingBeep.IsChecked = ReadBool(loader, "ShouldPlaySoundOnTypingError", true);
         DefaultChineseMode.IsChecked = SettingsStore.Read(loader, "DefaultInputMode", "Chinese") != "English";
         DefaultEnglishMode.IsChecked = !DefaultChineseMode.IsChecked;
@@ -119,8 +123,10 @@ public partial class MainWindow : Window
         if (sharedOutput >= 0) SimplifiedChineseOutput.IsChecked = sharedOutput != 0;
         ShowCandidateListWithSpace.IsChecked = ReadBool(SettingsStore.SmartPath, "ShowCandidateListWithSpace", false);
         CandidateCursorAtEndOfTargetBlock.IsChecked = ReadBool(SettingsStore.SmartPath, "CandidateCursorAtEndOfTargetBlock", false);
-        CandidateSelectionKeys.Text = SettingsStore.Read(SettingsStore.SmartPath, "CandidateSelectionKeys", "");
-        ComposingTextBufferSize.Text = SettingsStore.Read(SettingsStore.SmartPath, "ComposingTextBufferSize", "10");
+        SelectValue(CandidateSelectionKeys, SelectionKeys,
+            SettingsStore.Read(SettingsStore.SmartPath, "CandidateSelectionKeys", "12345678"));
+        ComposingTextBufferSize.Value = int.TryParse(SettingsStore.Read(SettingsStore.SmartPath,
+            "ComposingTextBufferSize", "10"), out var bufferSize) ? Math.Clamp(bufferSize, 10, 20) : 10;
         var suppressed = SettingsStore.ReadArray(loader, "ModulesSuppressedFromUI")
             .ToHashSet(StringComparer.Ordinal);
         ShowSmartMandarin.IsChecked = !suppressed.Contains("SmartMandarin");
@@ -273,7 +279,9 @@ public partial class MainWindow : Window
     {
         try
         {
-            var bufferSize = SmartMandarinSettings.Validate(CandidateSelectionKeys.Text, ComposingTextBufferSize.Text);
+            var selectionKeys = SelectionKeys[Math.Max(0, CandidateSelectionKeys.SelectedIndex)];
+            var bufferSize = SmartMandarinSettings.Validate(selectionKeys,
+                ComposingTextBufferSize.Value.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
             var visible = new[] {
                 ("SmartMandarin", ShowSmartMandarin.IsChecked == true),
                 ("TraditionalMandarin", ShowTraditionalMandarin.IsChecked == true),
@@ -289,6 +297,7 @@ public partial class MainWindow : Window
                 ["CandidateWindowScalePercent"] = Scales[Math.Max(0, CandidateScale.SelectedIndex)],
                 ["ToggleInputMethodWithControlBackslash"] = ControlBackslash.IsChecked == true ? "true" : "false",
                 ["SymbolPanelShortcutEnabled"] = BoolValue(SymbolPanelShortcut),
+                ["IgnoreCapsLockInChinese"] = BoolValue(IgnoreCapsLockInChinese),
                 ["ShouldPlaySoundOnTypingError"] = TypingBeep.IsChecked == true ? "true" : "false",
                 ["SimplifiedChineseOutput"] = BoolValue(SimplifiedChineseOutput),
                 ["DefaultInputMode"] = DefaultEnglishMode.IsChecked == true ? "English" : "Chinese",
@@ -309,7 +318,7 @@ public partial class MainWindow : Window
             var smartValues = new Dictionary<string, string>(phoneticValues) {
                 ["ShowCandidateListWithSpace"] = BoolValue(ShowCandidateListWithSpace),
                 ["CandidateCursorAtEndOfTargetBlock"] = BoolValue(CandidateCursorAtEndOfTargetBlock),
-                ["CandidateSelectionKeys"] = CandidateSelectionKeys.Text,
+                ["CandidateSelectionKeys"] = selectionKeys,
                 ["ComposingTextBufferSize"] = bufferSize.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ["ClearComposingTextWithEscUserChoice"] = "true",
                 ["ClearComposingTextWithEsc"] =
@@ -367,7 +376,6 @@ public partial class MainWindow : Window
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
-    private void UseNumericSelectionKeys_Click(object sender, RoutedEventArgs e) => CandidateSelectionKeys.Text = "12345678";
 
     private static string BoolValue(CheckBox box) => box.IsChecked == true ? "true" : "false";
 

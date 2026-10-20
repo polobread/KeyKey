@@ -13,12 +13,19 @@
 #include <dwrite.h>
 #include <wrl/client.h>
 #include <uxtheme.h>
+#include <dwmapi.h>
 
 namespace KeyKey::WindowsTsf {
 namespace {
+#ifdef KEYKEY_SYMBOL_TEST_WINDOWS
+constexpr wchar_t kClass[] = L"chichi77.KeyKey.TSF.Test.SymbolPanel";
+constexpr wchar_t kContentClass[] = L"chichi77.KeyKey.TSF.Test.SymbolContent";
+#else
 constexpr wchar_t kClass[] = L"chichi77.KeyKey.TSF.SymbolPanel";
 constexpr wchar_t kContentClass[] = L"chichi77.KeyKey.TSF.SymbolContent";
+#endif
 constexpr UINT kCategory = 1, kClose = 3, kFirstItem = 100;
+constexpr UINT kRestorePanel = WM_APP + 75;
 constexpr int kTitleHeight = 30, kGap = 6, kToolbarHeight = 34, kCellSize = 34;
 WindowClass panelClass, contentClass;
 struct ScopedDC {
@@ -175,6 +182,32 @@ struct SymbolPanel::ColorEmojiRenderer {
 };
 
 SymbolPanel::SymbolPanel() = default;
+bool SymbolPanel::windowCloaked(HWND window) {
+    DWORD cloaked=0;
+    return window && SUCCEEDED(DwmGetWindowAttribute(window,DWMWA_CLOAKED,&cloaked,sizeof(cloaked))) && cloaked;
+}
+bool SymbolPanel::visible() const {
+    return window_ && IsWindowVisible(window_) && !IsIconic(window_) && !windowCloaked(window_);
+}
+HWND SymbolPanel::visibleWindow() {
+    HWND window=nullptr;
+    while ((window=FindWindowExW(nullptr,window,kClass,nullptr)))
+        if (IsWindowVisible(window) && !IsIconic(window) && !windowCloaked(window)) return window;
+    return nullptr;
+}
+HWND SymbolPanel::restoreVisibleWindow() {
+    HWND window=nullptr;
+    const auto deadline=GetTickCount64()+100;
+    while ((window=FindWindowExW(nullptr,window,kClass,nullptr))) {
+        if (!IsWindowVisible(window) || IsIconic(window) || windowCloaked(window)) continue;
+        const auto now=GetTickCount64();
+        if (now>=deadline) break;
+        DWORD_PTR restored=FALSE;
+        if (SendMessageTimeoutW(window,kRestorePanel,0,0,SMTO_ABORTIFHUNG|SMTO_BLOCK,
+            static_cast<UINT>(deadline-now),&restored) && restored) return window;
+    }
+    return nullptr;
+}
 bool SymbolPanel::releaseWindowClasses() {
     const bool contentReleased = contentClass.retire();
     const bool panelReleased = panelClass.retire();
@@ -225,7 +258,7 @@ void SymbolPanel::position(const RECT& desired) {
                              static_cast<int>(monitor.rcWork.bottom)-height);
     SetWindowPos(window_, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE);
 }
-bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
+bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection, Availability availability) {
     hide();
     if (!IsPopupOwner(owner) || !selection || BuiltinSymbolCategories().empty()) return false;
     WNDCLASSEXW wc{sizeof(wc)};
@@ -234,7 +267,7 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
     if (!panelClass.ensure(wc)) return false;
     wc.lpfnWndProc = ContentProc; wc.lpszClassName = kContentClass;
     if (!contentClass.ensure(wc)) return false;
-    if (!window_) window_ = CreateWindowExW(WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
+    if (!window_) window_ = CreateWindowExW(WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
         kClass, L"\x7B26\x865F\x8868", WS_POPUP | WS_BORDER | WS_CLIPCHILDREN,
         0, 0, 1, 1, owner, nullptr, g_module, this);
     if (!window_) return false;
@@ -263,8 +296,15 @@ bool SymbolPanel::show(HWND owner, const RECT& anchor, Selection selection) {
     const int y = hasPosition_ ? position_.y : monitor.rcWork.bottom-height-scaled(200);
     position({x,y,x+width,y+height});
     scrollOffset_ = 0; wheelRemainder_ = 0; selection_ = std::move(selection);
+    availability_ = std::move(availability); selectionEnabled_ = !availability_;
     rebuild(); ShowWindow(window_, SW_SHOWNOACTIVATE); notifyVisibility(true);
-    traceState("show"); return true;
+    if (availability_) {
+        if (!SetTimer(window_,1,250,nullptr)) { hide(); return false; }
+        refreshAvailability();
+    }
+    traceState("show");
+    if (!visible()) { hide(); return false; }
+    return true;
 }
 void SymbolPanel::notifyVisibility(bool visible) {
     if (shown_==visible) return;
@@ -274,7 +314,8 @@ void SymbolPanel::notifyVisibility(bool visible) {
 }
 void SymbolPanel::hide() {
     if (window_) traceState("hide-begin");
-    ++generation_; selection_ = {};
+    ++generation_; selection_ = {}; availability_ = {};
+    if (window_) KillTimer(window_,1);
     if (menuOpen_) { menuOpen_=false; EndMenu(); }
     dragging_ = false;
     if (window_ && GetCapture() == window_) ReleaseCapture();
@@ -364,7 +405,15 @@ void SymbolPanel::rebuild() {
     const auto& category=BuiltinSymbolCategories()[category_];
     button(window_,kClose,L"\x00D7",rect.right-title-gap,gap/2,title,title-gap);
     button(window_,kCategory,category.name+L"  \x25BE",gap,title+gap,rect.right-2*gap,toolbar);
-    const int top=title+toolbar+2*gap;
+    const int hintTop=title+toolbar+2*gap, hintHeight=scaled(24);
+    HWND hint=GetDlgItem(window_,2);
+    if (!hint) hint=CreateWindowExW(WS_EX_NOACTIVATE,L"STATIC",L"",
+        WS_CHILD|WS_VISIBLE|SS_LEFT|SS_CENTERIMAGE,gap,hintTop,rect.right-2*gap,hintHeight,
+        window_,reinterpret_cast<HMENU>(2),g_module,nullptr);
+    SetWindowPos(hint,nullptr,gap,hintTop,std::max(1,static_cast<int>(rect.right)-2*gap),hintHeight,
+        SWP_NOACTIVATE|SWP_NOZORDER);
+    SendMessageW(hint,WM_SETFONT,reinterpret_cast<WPARAM>(font_),FALSE);
+    const int top=hintTop+hintHeight+gap;
     viewportHeight_=std::max(1,static_cast<int>(rect.bottom)-top-gap);
     if (!viewport_) viewport_=CreateWindowExW(WS_EX_NOACTIVATE,kContentClass,L"",
         WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,gap,top,std::max(1,static_cast<int>(rect.right)-2*gap),
@@ -416,7 +465,26 @@ void SymbolPanel::rebuild() {
     info.nMax=std::max(0,contentHeight_-1); info.nPage=viewportHeight_;
     SetScrollInfo(scrollbar_,SB_CTL,&info,TRUE);
     scrollTo(scrollOffset_);
+    updateAvailability();
     InvalidateRect(window_,nullptr,TRUE);
+}
+void SymbolPanel::refreshAvailability() {
+    if (!visible() || !availability_) return;
+    const auto callback=availability_;
+    const auto alive=alive_;
+    const auto generation=generation_;
+    const bool enabled=callback();
+    // A cross-process query can dispatch messages and destroy this surface.
+    if (!*alive || generation!=generation_ || !visible()) return;
+    if (selectionEnabled_==enabled) return;
+    selectionEnabled_=enabled;
+    updateAvailability();
+}
+void SymbolPanel::updateAvailability() {
+    for (HWND control : controls_) if (GetParent(control)==content_)
+        EnableWindow(control,selectionEnabled_);
+    SetWindowTextW(GetDlgItem(window_,2),selectionEnabled_ ?
+        L"\u53ef\u9023\u7e8c\u9078\u53d6\u7b26\u865f\uff1b\u9ede \xd7 \u6216\u6309 Esc \u95dc\u9589" : L"\u8acb\u5148\u9ede\u9078\u53ef\u8f38\u5165\u6587\u5b57\u7684\u5340\u57df");
 }
 LRESULT CALLBACK SymbolPanel::ContentProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
     auto self=reinterpret_cast<SymbolPanel*>(GetWindowLongPtrW(hwnd,GWLP_USERDATA));
@@ -470,11 +538,20 @@ LRESULT CALLBACK SymbolPanel::WindowProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp)
 }
 LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
     switch (msg) {
+    case kRestorePanel: {
+        if (!selection_ || !visible()) return FALSE;
+        RECT bounds{}; if (!GetWindowRect(window_,&bounds)) return FALSE;
+        position(bounds); ShowWindow(window_,SW_SHOWNOACTIVATE);
+        InvalidateRect(window_,nullptr,FALSE);
+        // Do not query availability inside synchronous cross-thread IPC.
+        // The timer will refresh it after the caller can process messages.
+        return visible();
+    }
     case WM_NCDESTROY: {
         traceState("destroy");
         HWND destroyed=window_;
         notifyVisibility(false);
-        ++generation_; selection_ = {}; dragging_=false; controls_.clear();
+        ++generation_; selection_ = {}; availability_ = {}; dragging_=false; controls_.clear();
         viewport_=content_=scrollbar_=nullptr; renderedCategory_=static_cast<size_t>(-1);
         if (menuOpen_) { menuOpen_=false; EndMenu(); }
         window_=nullptr;
@@ -482,6 +559,13 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
         return DefWindowProcW(destroyed,msg,wp,lp);
     }
     case WM_MOUSEACTIVATE: return MA_NOACTIVATE;
+    case WM_WINDOWPOSCHANGING: {
+        // An owner's z-order update can demote its owned palette as well.
+        auto* pos=reinterpret_cast<WINDOWPOS*>(lp);
+        if (selection_ && !(pos->flags & (SWP_NOZORDER|SWP_HIDEWINDOW)))
+            pos->hwndInsertAfter=HWND_TOPMOST;
+        return DefWindowProcW(window_,msg,wp,lp);
+    }
     case WM_SHOWWINDOW:
         traceState("visibility");
         notifyVisibility(wp!=0 && static_cast<bool>(selection_));
@@ -552,10 +636,24 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
         if (font_) rebuild();
         return 0;
     case WM_KEYDOWN: if (wp==VK_ESCAPE) { hide(); return 0; } break;
+    case WM_TIMER: if (wp==1) {
+        if (windowCloaked(window_)) hide();
+        else refreshAvailability();
+        return 0;
+    } break;
+    case WM_CTLCOLORSTATIC:
+        SetTextColor(reinterpret_cast<HDC>(wp),foreground_);
+        SetBkColor(reinterpret_cast<HDC>(wp),backgroundColor_);
+        return reinterpret_cast<LRESULT>(background_);
     case WM_MOUSEWHEEL: if (visible() && selection_) scrollWheel(GET_WHEEL_DELTA_WPARAM(wp)); return 0;
     case WM_COMMAND: {
         if (!visible() || !selection_ || HIWORD(wp)!=BN_CLICKED) return 0;
         const UINT id=LOWORD(wp); HWND control=reinterpret_cast<HWND>(lp);
+        if (id>=kFirstItem) {
+            const auto alive=alive_; const auto generation=generation_;
+            refreshAvailability();
+            if (!*alive || generation!=generation_) return 0;
+        }
         const HWND parent=id>=kFirstItem ? content_ : window_;
         if (!control || control!=GetDlgItem(parent,id) || !IsWindowEnabled(control)) return 0;
         if (id==kClose) hide();
@@ -564,8 +662,8 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
             const size_t index=id-kFirstItem;
             const auto& items=BuiltinSymbolCategories()[category_].items;
             if (index<items.size()) {
-                std::wstring text=items[index].text; auto callback=std::move(selection_);
-                hide(); callback(text);
+                std::wstring text=items[index].text; auto callback=selection_;
+                callback(text);
             }
         }
         return 0;
@@ -613,7 +711,8 @@ LRESULT SymbolPanel::message(UINT msg,WPARAM wp,LPARAM lp) {
         GetWindowTextW(draw->hwndItem,label.data(),length+1);
         label.resize(static_cast<size_t>(length));
         RECT text=draw->rcItem; InflateRect(&text,-scaled(4),-scaled(2));
-        if (item && category.emoji && drawColorEmoji(draw->hDC,text,label,background,foreground)) return TRUE;
+        if (item && category.emoji && !(draw->itemState & ODS_DISABLED) &&
+            drawColorEmoji(draw->hDC,text,label,background,foreground)) return TRUE;
         // A failed D2D draw may have cleared its interior before EndDraw failed.
         brush=CreateSolidBrush(background); FillRect(draw->hDC,&text,brush); DeleteObject(brush);
         DrawTextW(draw->hDC,label.c_str(),length,&text,DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX |

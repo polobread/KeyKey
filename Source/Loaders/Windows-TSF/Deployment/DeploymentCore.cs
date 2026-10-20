@@ -349,9 +349,6 @@ public sealed class DeploymentEngine(string root, IDeploymentSystem system, Acti
                 }
                 catch (DeploymentException) { repair = true; }
             }
-            if (oldVersion == version && manifest.Signed && previous.Current.Fingerprint != fingerprint &&
-                !previous.Current.Legacy && !repair)
-                throw new DeploymentException("A different official build has the same version.", 1638);
         }
         var next = Stage(packageDirectory, manifest);
         var tx = new Transaction { Previous = previous, Next = next, Snapshot = system.Capture(next.Directory) };

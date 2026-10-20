@@ -233,7 +233,8 @@ void SymbolLifecycle() {
     Check(firstItem && IsWindowEnabled(firstItem), "Recreated symbol item missing");
     SendMessageW(window, WM_COMMAND, MAKEWPARAM(100, BN_CLICKED),
         reinterpret_cast<LPARAM>(firstItem));
-    Check(selections == 1 && !popup.visible(), "Recreated symbol callback did not select and close");
+    Check(selections == 1 && popup.visible(), "Recreated symbol callback must preserve the palette");
+    CheckNoActivation(active, focused, window);
     Check(popup.show(host.window, kAnchor, select), "Symbol panel did not reopen before owner destruction");
     host.destroy();
     Check(!SymbolPanelTestAccess::window(popup), "Destroyed owner retained symbol HWND");
@@ -253,6 +254,20 @@ void SymbolLifecycle() {
     window=SymbolPanelTestAccess::window(popup);
     Check(UpdateWindow(window)!=FALSE && IsWindowVisible(window),"Recreated symbols did not paint");
     popup.hide();
+}
+
+void SymbolZOrder() {
+    Host host;
+    SymbolPanel popup;
+    Check(popup.show(host.edit,kAnchor,[](const std::wstring&){}),"Symbol z-order panel show");
+    const HWND window=SymbolPanelTestAccess::window(popup);
+    const auto topmost=[&] { return (GetWindowLongPtrW(window,GWL_EXSTYLE)&WS_EX_TOPMOST)!=0; };
+    Check(topmost(),"New symbol panel must be topmost");
+    constexpr UINT flags=SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOSIZE;
+    Check(SetWindowPos(host.window,HWND_NOTOPMOST,0,0,0,0,flags)!=FALSE,"Owner z-order update failed");
+    Check(topmost(),"Owner z-order update demoted the live symbol panel");
+    Check(!(GetWindowLongPtrW(host.window,GWL_EXSTYLE)&WS_EX_TOPMOST),"Palette promoted the editor itself to topmost");
+    CheckNoActivation(host.window,host.edit,window);
 }
 
 void LightDismissEvents() {
@@ -306,6 +321,7 @@ int main() {
             "Cannot isolate popup test preferences");
         CandidateLifecycle();
         SymbolLifecycle();
+        SymbolZOrder();
         LightDismissEvents();
         std::cout << "Candidate and symbol popup native lifecycle checks passed\n";
         return 0;

@@ -8,7 +8,7 @@ param(
     [string] $Architecture = 'x64',
 
     [ValidatePattern('^[0-9]+(?:\.[0-9]+){1,3}$')]
-    [string] $Version = '1.3.3'
+    [string] $Version
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,6 +16,8 @@ $ErrorActionPreference = 'Stop'
 if (-not $BuildDirectory) { $BuildDirectory = Join-Path $PSScriptRoot 'out\build\x64-ninja' }
 if (-not $X86BuildDirectory) { $X86BuildDirectory = Join-Path $PSScriptRoot 'out\build\x86' }
 . (Join-Path $PSScriptRoot 'Packaging\New-PackageManifest.ps1')
+. (Join-Path $PSScriptRoot 'Packaging\Get-ProductVersion.ps1')
+if (-not $Version) { $Version = Get-KeyKeyProductVersion }
 
 $resolvedBuildDirectory = (Resolve-Path -LiteralPath $BuildDirectory).Path
 function Resolve-BuildArtifact {

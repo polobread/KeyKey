@@ -1,5 +1,6 @@
 # Isolated tests: no certificate store access, real signing, installation or network.
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'Get-ProductVersion.ps1')
 $scriptPath = Join-Path $PSScriptRoot '..\Package-Store-Windows.ps1'
 $tokens = $null
 $parseErrors = $null
@@ -70,16 +71,30 @@ catch {
     if ($_ | Out-String | Select-String -SimpleMatch $syntheticIdentifier) { throw 'Certificate error exposed an identifier.' }
 }
 Remove-Item Function:\Get-Item
+$global:keykeySigningTestUsageOid = '1.3.6.1.5.5.7.3.3'
 function Get-Item {
     param($LiteralPath, $ErrorAction)
     if ($LiteralPath -like 'Cert:*') {
         return [pscustomobject]@{
             HasPrivateKey = $true; NotBefore = (Get-Date).AddDays(-1); NotAfter = (Get-Date).AddDays(1)
-            EnhancedKeyUsageList = @([pscustomobject]@{ ObjectId = [pscustomobject]@{ Value = '1.3.6.1.5.5.7.3.3' } })
+            EnhancedKeyUsageList = @([pscustomobject]@{ ObjectId = $global:keykeySigningTestUsageOid })
         }
     }
     return Microsoft.PowerShell.Management\Get-Item -LiteralPath $LiteralPath
 }
+# The Windows certificate provider exposes ObjectId as a string; Oid objects
+# from other callers expose Value. Both must pass without weakening the EKU check.
+foreach ($usage in @('1.3.6.1.5.5.7.3.3', [Security.Cryptography.Oid]::new('1.3.6.1.5.5.7.3.3'))) {
+    $global:keykeySigningTestUsageOid = $usage
+    Assert-SigningCertificate -Thumbprint $syntheticIdentifier -StoreLocation 'CurrentUser'
+}
+$global:keykeySigningTestUsageOid = '1.3.6.1.5.5.7.3.1'
+try { Assert-SigningCertificate -Thumbprint $syntheticIdentifier -StoreLocation 'CurrentUser'; throw 'Wrong certificate usage accepted.' }
+catch {
+    if ($_.Exception.Message -eq 'Wrong certificate usage accepted.') { throw }
+    if ($_ | Out-String | Select-String -SimpleMatch $syntheticIdentifier) { throw 'Usage validation exposed an identifier.' }
+}
+$global:keykeySigningTestUsageOid = '1.3.6.1.5.5.7.3.3'
 $fakeExitCode = 0; $fakeStatus = 'Valid'; $fakeSigner = $syntheticIdentifier
 $fakeTimestamp = [pscustomobject]@{ Present = $true }
 $global:keykeySigningTestSignature.Status = 'Valid'
@@ -127,6 +142,7 @@ foreach ($argument in $args) {
 }
 $manifest = Get-Content -LiteralPath $defines.MANIFEST_PATH -Raw | ConvertFrom-Json
 if ($manifest.Signed -ne $global:keykeySigningExpectedSigned) { throw 'Unexpected manifest signing state.' }
+if ($manifest.Version -ne $global:keykeySigningExpectedVersion) { throw 'Unexpected package product version.' }
 foreach ($entry in $manifest.Files) {
     $path = Join-Path $defines.PAYLOAD_DIR $entry.Path
     if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.Sha256) {
@@ -136,14 +152,19 @@ foreach ($entry in $manifest.Files) {
 [IO.File]::WriteAllText($defines.OUTPUT_FILE, 'test-only NSIS output')
 $global:LASTEXITCODE = 0
 '@ | Set-Content -LiteralPath $fakeNsis
+    $testVersion = '9.8.7'
+    $versionFixture = Join-Path $fixture 'product-version.cmake'
+    "project(KeyKeyWindowsTsf VERSION $testVersion LANGUAGES C CXX)" | Set-Content -LiteralPath $versionFixture
+    if ((Get-KeyKeyProductVersion -CMakePath $versionFixture) -ne $testVersion) { throw 'Product version was not read from CMake.' }
+    $global:keykeySigningExpectedVersion = $testVersion
     $packageArguments = @{
         BuildDirectory = Join-Path $fixture 'x64'; X86BuildDirectory = Join-Path $fixture 'x86'
         MakensisPath = $fakeNsis; SignToolPath = $fakeTool; OutputDirectory = Join-Path $fixture 'signed'
-        Version = '1.3.3'; CertificateThumbprint = $syntheticIdentifier; TimestampUrl = [uri]'https://timestamp.invalid'
+        Version = $testVersion; CertificateThumbprint = $syntheticIdentifier; TimestampUrl = [uri]'https://timestamp.invalid'
     }
     $allOutput = & $scriptPath @packageArguments *>&1 | Out-String
     if ($allOutput.Contains($syntheticIdentifier)) { throw 'Packaging output exposed an identifier.' }
-    $package = Join-Path $fixture 'signed\chichi77-KeyKey-1.3.3-windows-x64-setup.exe'
+    $package = Join-Path $fixture "signed\chichi77-KeyKey-$testVersion-windows-x64-setup.exe"
     if (-not (Test-Path -LiteralPath $package)) { throw 'Packaging did not produce an installer.' }
     $expectedHash = (Get-FileHash -LiteralPath $package -Algorithm SHA256).Hash.ToLowerInvariant()
     if (-not (Get-Content -LiteralPath "$package.sha256" -Raw).StartsWith($expectedHash)) {
@@ -155,11 +176,12 @@ $global:LASTEXITCODE = 0
     # The retained unsigned workflow still calls this same packaging entry point.
     $global:keykeySigningExpectedSigned = $false
     $unsignedArguments = $packageArguments.Clone()
-    foreach ($key in @('CertificateThumbprint', 'TimestampUrl', 'SignToolPath')) { $unsignedArguments.Remove($key) }
+    foreach ($key in @('CertificateThumbprint', 'TimestampUrl', 'SignToolPath', 'Version')) { $unsignedArguments.Remove($key) }
+    $global:keykeySigningExpectedVersion = Get-KeyKeyProductVersion
     $unsignedArguments.OutputDirectory = Join-Path $fixture 'unsigned'
     $unsignedArguments.UnsignedTest = $true
     $null = & $scriptPath @unsignedArguments *>&1
-    $unsignedPackage = Join-Path $fixture 'unsigned\chichi77-KeyKey-1.3.3-windows-x64-setup.unsigned.exe'
+    $unsignedPackage = Join-Path $fixture "unsigned\chichi77-KeyKey-$($global:keykeySigningExpectedVersion)-windows-x64-setup.unsigned.exe"
     if (-not (Test-Path -LiteralPath $unsignedPackage)) { throw 'Unsigned fallback packaging no longer works.' }
 } finally {
     $resolvedFixture = [IO.Path]::GetFullPath($fixture)
@@ -171,5 +193,7 @@ $global:LASTEXITCODE = 0
     Remove-Item Function:\Get-Item
     Remove-Variable -Name keykeySigningTestSignature -Scope Global
     Remove-Variable -Name keykeySigningExpectedSigned -Scope Global
+    Remove-Variable -Name keykeySigningTestUsageOid -Scope Global
+    Remove-Variable -Name keykeySigningExpectedVersion -Scope Global
 }
 Write-Output 'Passed isolated signing privacy, identity, timestamp and complete packaging gates.'

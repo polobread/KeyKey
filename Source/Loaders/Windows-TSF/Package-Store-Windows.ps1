@@ -39,17 +39,10 @@ $ErrorActionPreference = 'Stop'
 if (-not $BuildDirectory) { $BuildDirectory = Join-Path $PSScriptRoot 'out\build\x64-ninja' }
 if (-not $X86BuildDirectory) { $X86BuildDirectory = Join-Path $PSScriptRoot 'out\build\x86' }
 . (Join-Path $PSScriptRoot 'Packaging\New-PackageManifest.ps1')
+. (Join-Path $PSScriptRoot 'Packaging\Get-ProductVersion.ps1')
 $requiredNsisVersion = [version]'3.12'
 
-if (-not $Version) {
-    $cmakeContents = Get-Content -LiteralPath `
-        (Join-Path $PSScriptRoot 'CMakeLists.txt') -Raw -Encoding UTF8
-    if ($cmakeContents -notmatch
-        'project\(KeyKeyWindowsTsf VERSION ([0-9]+(?:\.[0-9]+){1,3}) LANGUAGES C CXX\)') {
-        throw 'Could not read the Windows product version from CMakeLists.txt.'
-    }
-    $Version = $Matches[1]
-}
+if (-not $Version) { $Version = Get-KeyKeyProductVersion }
 
 function Resolve-BuildArtifact {
     param(
@@ -201,7 +194,7 @@ function Assert-SigningCertificate {
 
     $codeSigningOid = '1.3.6.1.5.5.7.3.3'
     $hasCodeSigningUsage = $certificate.EnhancedKeyUsageList |
-        Where-Object { $_.ObjectId.Value -eq $codeSigningOid }
+        Where-Object { $_.ObjectId -eq $codeSigningOid -or $_.ObjectId.Value -eq $codeSigningOid }
     if (-not $hasCodeSigningUsage) {
         throw 'The selected certificate is not valid for code signing.'
     }

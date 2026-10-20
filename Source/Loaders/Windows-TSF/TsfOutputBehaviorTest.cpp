@@ -1,5 +1,6 @@
 // Isolated COM behavioral tests; these do not activate/install the input method.
 #include "TextService.h"
+#include <SymbolResources.generated.h>
 #include "ModuleState.h"
 #include <textstor.h>
 #include <algorithm>
@@ -10,6 +11,8 @@
 #include <stdexcept>
 #include <vector>
 #include <deque>
+#include <thread>
+#include <dwmapi.h>
 #include "InputMethods.h"
 #include "FrontendSettings.h"
 #include "Mandarin.h"
@@ -27,6 +30,8 @@ struct TextServiceTestAccess {
     static bool symbolsVisible(TextService& s) { return s.symbolPanel_.visible(); }
     static unsigned long symbolGeneration(TextService& s) { return s.symbolGeneration_; }
     static void closeSymbols(TextService& s) { s.closeSymbols(); }
+    static bool routeSymbol(TextService& s,const std::wstring& text) { return s.routeSymbol(text); }
+    static HWND symbolDispatch(TextService& s) { return s.symbolDispatchWindow_; }
     static void fresh(TextService& s) { s.composition_.Reset(); s.compositionContext_.Reset(); }
     static size_t queued(TextService& s) { return s.inputQueue_.size(); }
     static void manager(TextService& s,ITfThreadMgr* manager) {
@@ -433,6 +438,56 @@ void Fresh(Fixture& f,const std::string& method="SmartMandarin",bool chinese=tru
     TextServiceTestAccess::start(*f.service.Get(),method,chinese,full);
     Success(TextServiceTestAccess::track(*f.service.Get(),f.context.Get()),"Track ordered context");
 }
+void TestCapsLock() {
+    const auto savePreference=[](bool enabled) {
+        std::ofstream output(LoaderPreferencesPath(),std::ios::binary);
+        output << "<plist><dict><key>IgnoreCapsLockInChinese</key><string>"
+               << (enabled ? "true" : "false") << "</string></dict></plist>";
+    };
+    auto caps=Character(L'S'); caps.capsLock=true;
+    for (const auto& method : kInputMethods) {
+        const std::wstring reading=IsTableInputMethod(method.identifier) ? L"尸" : L"ㄋ";
+        { Fixture f(L"",false,false); Fresh(f,method.identifier);
+          Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),caps),"Default Caps Lock key rejected");
+          Check(f.document->text==reading,"Default Chinese Caps Lock did not compose");
+          auto back=Special(VK_BACK); back.capsLock=true;
+          Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),back),"Caps Lock Backspace rejected");
+          Check(f.document->text.empty(),"Caps Lock Backspace did not edit Chinese reading"); }
+    }
+    for (bool enabled : {false,true}) {
+        savePreference(enabled);
+        for (const auto& method : kInputMethods) {
+            const std::wstring reading=IsTableInputMethod(method.identifier) ? L"尸" : L"ㄋ";
+            { Fixture f(L"",false,false); Fresh(f,method.identifier);
+              Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),caps),"Configured Caps Lock key rejected");
+              Check(f.document->text==(enabled ? reading : L"s"),"Caps Lock preference did not change Chinese input"); }
+            // Keep the existing Shift literal behavior, including its case.
+            { Fixture f(L"",false,false); Fresh(f,method.identifier);
+              auto shift=Character(L'S'); shift.shift=true;
+              Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),shift),"Shift literal rejected");
+              Check(f.document->text==L"s","Caps Lock preference changed existing Shift literal behavior"); }
+            for (bool locked : {false,true}) for (bool shifted : {false,true}) {
+                auto english=Character(locked!=shifted ? L'S' : L's');
+                english.capsLock=locked; english.shift=shifted;
+                { Fixture f(L"",false,false); Fresh(f,method.identifier,false,false);
+                  Check(!TextServiceTestAccess::wants(*f.service.Get(),english),"Halfwidth English must remain with host"); }
+                { Fixture f(L"",false,false); Fresh(f,method.identifier,false,true);
+                  Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),english),"Fullwidth English rejected");
+                  Check(f.document->text==(locked!=shifted ? L"Ｓ" : L"ｓ"),"English Caps Lock/Shift case changed"); }
+            }
+        }
+    }
+    { Fixture f(L"",false,false); Fresh(f);
+      for (wchar_t c : std::wstring(L"su3cl3")) {
+          auto event=Character(c>=L'a' && c<=L'z' ? c-L'a'+L'A' : c); event.capsLock=true;
+          Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),event),"Caps Lock sentence key rejected");
+      }
+      Check(f.document->text==L"你好","Caps Lock sentence lost Chinese readings");
+      auto enter=Special(VK_RETURN); enter.capsLock=true;
+      Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),enter),"Caps Lock commit rejected");
+      Check(f.document->text==L"你好" && !TextServiceTestAccess::engineComposition(*f.service.Get()),"Caps Lock sentence commit failed"); }
+    std::cout << "Caps Lock defaults, four Chinese methods, opt-out, Shift preservation and English case passed\n";
+}
 class SelectionEdit final : public ITfEditRecord {
 public:
     STDMETHODIMP QueryInterface(REFIID iid,void** result) override {
@@ -563,6 +618,7 @@ void TestSymbolShortcut() {
         Check(f.document->text==L"\x3105" && f.composition->ends==0 && f.document->writes.empty(),
               "Opening symbols changed unfinished composition");
         Success(f.service->OnKeyDown(f.context.Get(),VK_ESCAPE,0,&eaten),"Escape symbols");
+        MSG message{}; while (PeekMessageW(&message,nullptr,0,0,PM_REMOVE)) DispatchMessageW(&message);
         Check(eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()) && f.composition->ends==0,
               "Escape did not dismiss only symbols");
         Success(f.service->OnPreservedKey(f.context.Get(),GUID_NULL,&eaten),"Unknown preserved command");
@@ -593,7 +649,7 @@ void TestSymbolShortcut() {
       Check(eaten && TextServiceTestAccess::symbolsVisible(*f.service.Get()) && f.document->writes.empty(),
             "Normal key path fell through to punctuation engine");
       f.service->OnKillThreadFocus();
-      Check(!TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Focus loss retained symbol panel"); }
+      Check(TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Thread focus loss dismissed the symbol palette"); }
     { Fixture f(L"",false,false); Fresh(f);
       f.context->view.Attach(new LayoutView);
       auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
@@ -628,10 +684,77 @@ void TestSymbolShortcut() {
       f.service->OnSetFocus(FALSE);
       Check(manager->unpreserves==3,"Inactive input method retained preserved chord");
       f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten);
-      Check(!eaten && !TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Inactive input method reopened symbols");
+      Check(!eaten && TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Inactive input method dismissed the palette or intercepted its shortcut");
       f.service->OnSetFocus(TRUE);
       Check(manager->preserves==4,"Active input method did not restore preserved chord");
     }
+}
+void TestSymbolReopen() {
+    BYTE previous[256]{}; Check(GetKeyboardState(previous)!=0,"Read reopen keyboard state");
+    struct RestoreKeyboard { BYTE* state; ~RestoreKeyboard() { SetKeyboardState(state); } } restore{previous};
+    BYTE keys[256]{}; Check(SetKeyboardState(keys)!=0,"Clear reopen modifiers");
+    const HWND previousFocus=GetFocus(); SetFocus(nullptr);
+    struct RestoreFocus { HWND window; ~RestoreFocus() { if (IsWindow(window)) SetFocus(window); } } focus{previousFocus};
+    for (int ownerMode=0; ownerMode<4; ++ownerMode) {
+        Fixture f(L"",false,false); Fresh(f);
+        f.context->view.Attach(new LayoutView);
+        // Establish the same successful first opening as the reported flow.
+        Success(f.service->showSymbols(),"Initial symbol opening");
+        Check(TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Initial palette not visible");
+        if (ownerMode==1) f.context->view->returnNullOwner=true;
+        if (ownerMode==2) f.context->view->ownerResult=E_FAIL;
+        if (ownerMode==3) f.context->view.Reset();
+        for (int cycle=0; cycle<3; ++cycle) {
+            BOOL eaten=FALSE;
+            Success(f.service->OnTestKeyDown(f.context.Get(),VK_ESCAPE,0,&eaten),"Test palette Escape");
+            Check(eaten,"Palette Escape was not reserved");
+            Success(f.service->OnKeyDown(f.context.Get(),VK_ESCAPE,0,&eaten),"Close palette with Escape");
+            MSG message{}; while (PeekMessageW(&message,nullptr,0,0,PM_REMOVE)) DispatchMessageW(&message);
+            Check(eaten && !SymbolPanel::visibleWindow(),"Escape retained a visible palette");
+            if (cycle%2==0) Success(f.service->showSymbols(),"Menu reopen without editor HWND");
+            else {
+                Success(f.service->OnPreservedKey(f.context.Get(),kSymbolShortcutGuid,&eaten),"Shortcut reopen without editor HWND");
+                Check(eaten,"Shortcut refused focused windowless context");
+            }
+            Check(TextServiceTestAccess::symbolsVisible(*f.service.Get()),"Reopened palette not visible");
+            Check(GetWindow(SymbolPanel::visibleWindow(),GW_OWNER)==TextServiceTestAccess::symbolDispatch(*f.service.Get()),
+                "Reopened palette lost its independent owner");
+        }
+        TextServiceTestAccess::closeSymbols(*f.service.Get());
+        f.context->readOnly=true;
+        Check(FAILED(f.service->showSymbols()),"Read-only windowless context opened palette");
+        f.context->readOnly=false;
+        auto* manager=static_cast<FocusManager*>(f.serviceManager.Get()); manager->threadFocused=false;
+        Check(FAILED(f.service->showSymbols()),"Unfocused windowless context opened palette");
+    }
+    { Fixture stale(L"",false,false); Fresh(stale);
+      Success(stale.service->showSymbols(),"Show palette before DWM cloak");
+      const HWND old=SymbolPanel::visibleWindow();
+      BOOL cloak=TRUE;
+      Success(DwmSetWindowAttribute(old,DWMWA_CLOAK,&cloak,sizeof(cloak)),"Cloak stale palette");
+      DwmFlush();
+      Check(IsWindowVisible(old),"Cloak fixture must retain WS_VISIBLE");
+      Fixture active(L"",false,false); Fresh(active);
+      Success(active.service->showSymbols(),"Open past cloaked palette");
+      Check(TextServiceTestAccess::symbolsVisible(*active.service.Get()),"Cloaked palette blocked a new opening"); }
+    { Fixture f(L"",false,false); Fresh(f); f.context->view.Attach(new LayoutView);
+      Success(f.service->OnSetThreadFocus(),"Create independent dispatch owner");
+      BOOL cloak=TRUE;
+      const HWND dispatch=TextServiceTestAccess::symbolDispatch(*f.service.Get());
+      Success(DwmSetWindowAttribute(dispatch,DWMWA_CLOAK,&cloak,sizeof(cloak)),"Cloak independent owner");
+      DwmFlush();
+      Success(f.service->showSymbols(),"Use document owner in a cloaked host");
+      Check(TextServiceTestAccess::symbolsVisible(*f.service.Get()) &&
+          GetWindow(SymbolPanel::visibleWindow(),GW_OWNER)==f.context->view->owner,
+          "Cloaked independent owner hid its palette");
+      const HWND palette=SymbolPanel::visibleWindow();
+      SetWindowPos(palette,nullptr,-30000,-30000,0,0,SWP_NOZORDER|SWP_NOSIZE|SWP_NOACTIVATE);
+      Success(f.service->showSymbols(),"Restore misplaced existing palette");
+      RECT bounds{}; GetWindowRect(palette,&bounds); MONITORINFO monitor{sizeof(monitor)};
+      GetMonitorInfoW(MonitorFromWindow(palette,MONITOR_DEFAULTTONEAREST),&monitor);
+      Check(bounds.left>=monitor.rcWork.left && bounds.top>=monitor.rcWork.top,
+          "Existing palette remained outside the work area"); }
+    std::cout << "Symbol Escape reopen, windowless contexts and cloaked palette replacement passed\n";
 }
 void TestHostContracts() {
     const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/std::to_string(GetCurrentProcessId());
@@ -1279,9 +1402,256 @@ void TestOrderedInput() {
     TestHiddenSharedMethod();
 }
 
-int main() {
+void PumpSymbolMessages() {
+    MSG message{};
+    while (PeekMessageW(&message,nullptr,0,0,PM_REMOVE)) { TranslateMessage(&message); DispatchMessageW(&message); }
+}
+
+void FocusSymbolWindow(HWND window) {
+    const DWORD foregroundThread=GetWindowThreadProcessId(GetForegroundWindow(),nullptr);
+    const bool attached=foregroundThread!=GetCurrentThreadId() &&
+        AttachThreadInput(GetCurrentThreadId(),foregroundThread,TRUE);
+    SetForegroundWindow(window);
+    SetActiveWindow(window);
+    SetFocus(window);
+    if (attached) AttachThreadInput(GetCurrentThreadId(),foregroundThread,FALSE);
+    PumpSymbolMessages();
+    if (GetForegroundWindow()!=window)
+        throw std::runtime_error("Symbol test requires an interactive foreground desktop");
+}
+
+void ForegroundSymbolHost(Fixture& f) {
+    f.context->view.Attach(new LayoutView);
+    ShowWindow(f.context->view->owner,SW_SHOWNORMAL);
+    FocusSymbolWindow(f.context->view->owner);
+    f.service->OnSetThreadFocus();
+}
+
+int SymbolReceiver(const char* readyName) {
+    Fixture f(L"",false,false); Fresh(f); ForegroundSymbolHost(f);
+    const HANDLE ready=OpenEventA(EVENT_MODIFY_STATE,FALSE,readyName);
+    Check(ready!=nullptr,"Open cross-process symbol ready event");
+    // Opening from a second host must reuse the visible palette.
+    Success(f.service->showSymbols(),"Reuse palette in receiver");
+    SetEvent(ready); CloseHandle(ready);
+    const auto until=GetTickCount64()+8000;
+    while (f.document->insertions.size()<3 && GetTickCount64()<until) {
+        MsgWaitForMultipleObjects(0,nullptr,FALSE,50,QS_ALLINPUT);
+        PumpSymbolMessages();
+        f.context->drainAll();
+    }
+    const auto& items=BuiltinSymbolCategories().front().items;
+    Check(f.document->text==items[0].text+items[1].text+items[0].text && f.document->insertions.size()==3 &&
+        SymbolPanel::visibleWindow(),"Cross-process symbols must insert in order and retain the palette");
+    return 0;
+}
+
+void TestSymbolWorkerThread() {
+    Fixture root(L"",false,false); Fresh(root); ForegroundSymbolHost(root);
+    const HWND owner=root.context->view->owner;
+    const DWORD ownerThread=GetCurrentThreadId();
+    root.service->OnSetFocus(FALSE);
+    const auto symbol=BuiltinSymbolCategories().front().items.front().text;
+    HANDLE ready=CreateEventW(nullptr,TRUE,FALSE,nullptr), done=CreateEventW(nullptr,TRUE,FALSE,nullptr);
+    Check(ready && done,"Worker routing events");
+    std::atomic<bool> stop{false},received{false},failed{false};
+    std::string error;
+    std::thread worker([&] {
+        try {
+            Fixture editor(L"",false,false); Fresh(editor);
+            editor.context->view.Attach(new LayoutView);
+            Check(AttachThreadInput(GetCurrentThreadId(),ownerThread,TRUE)!=FALSE,"Attach editor input queue");
+            HWND edit=CreateWindowExW(0,L"EDIT",L"",WS_CHILD|WS_VISIBLE,0,0,100,40,owner,nullptr,g_module,nullptr);
+            Check(edit!=nullptr,"Worker editor window");
+            SetFocus(edit);
+            Check(GetFocus()==edit,"Focus worker editor");
+            editor.service->OnSetThreadFocus();
+            SetEvent(ready);
+            while (!stop) {
+                PumpSymbolMessages(); editor.context->drainAll();
+                if (editor.document->text==symbol) received=true;
+                Sleep(1);
+            }
+            DestroyWindow(edit);
+            AttachThreadInput(GetCurrentThreadId(),ownerThread,FALSE);
+        } catch (const std::exception& exception) { error=exception.what(); failed=true; SetEvent(ready); }
+        SetEvent(done);
+    });
+    struct Cleanup {
+        std::atomic<bool>& stop; std::thread& worker; HANDLE ready,done;
+        ~Cleanup() {
+            stop=true;
+            while (WaitForSingleObject(done,0)!=WAIT_OBJECT_0) { PumpSymbolMessages(); Sleep(1); }
+            worker.join(); CloseHandle(ready); CloseHandle(done);
+        }
+    } cleanup{stop,worker,ready,done};
+    const auto until=GetTickCount64()+5000;
+    while (WaitForSingleObject(ready,0)!=WAIT_OBJECT_0 && GetTickCount64()<until) { PumpSymbolMessages(); Sleep(1); }
+    Check(!failed,error.c_str());
+    Check(WaitForSingleObject(ready,0)==WAIT_OBJECT_0,"Worker editor ready timeout");
+    GUITHREADINFO info{sizeof(info)};
+    Check(GetGUIThreadInfo(ownerThread,&info)!=FALSE && info.hwndFocus &&
+        GetWindowThreadProcessId(info.hwndFocus,nullptr)!=ownerThread,"Fixture must focus a different UI thread");
+    Check(TextServiceTestAccess::routeSymbol(*root.service.Get(),symbol),"Foreground root thread hid worker TSF target");
+    const auto insertedUntil=GetTickCount64()+2000;
+    while (!received && GetTickCount64()<insertedUntil) { PumpSymbolMessages(); Sleep(1); }
+    Check(received,"Symbol did not reach focused worker editor");
+    std::cout << "Foreground top-level and focused editor on separate UI threads routed once\n";
+}
+void TestSymbolPaletteRouting() {
+    Fixture f(L"",false,false); Fresh(f); ForegroundSymbolHost(f);
+    auto* manager=static_cast<FocusManager*>(f.serviceManager.Get());
+    const auto& symbol=BuiltinSymbolCategories().front().items.front().text;
+    const auto show=[&] { Success(f.service->showSymbols(),"Show persistent symbol palette");
+        Check(SymbolPanel::visibleWindow()!=nullptr,"Persistent palette missing"); };
+    show(); const HWND palette=SymbolPanel::visibleWindow();
+    const auto refresh=[&] { SendMessageW(palette,WM_TIMER,1,0); };
+    const auto buttonsEnabled=[&] { return IsWindowEnabled(GetDlgItem(GetDlgItem(GetDlgItem(palette,10),11),100))!=FALSE; };
+    refresh(); Check(buttonsEnabled(),"Focused writable TSF context must enable symbols");
+    Check(GetWindow(palette,GW_OWNER)==TextServiceTestAccess::symbolDispatch(*f.service.Get()),
+        "Palette must have an independent owner");
+    const HWND active=GetActiveWindow(), focus=GetFocus();
+    manager->context(nullptr);
+    f.service->OnSetFocus(static_cast<ITfDocumentMgr*>(nullptr),static_cast<ITfDocumentMgr*>(manager));
+    f.service->OnSetFocus(FALSE);
+    refresh(); Check(!buttonsEnabled(),"Non-input UI must disable symbol buttons");
+    Check(IsWindowVisible(palette) && !TextServiceTestAccess::routeSymbol(*f.service.Get(),symbol) && f.document->text.empty(),
+        "Non-input UI dismissed the palette or accepted stale insertion");
+    ShowWindow(f.context->view->owner,SW_MINIMIZE);
+    Check(IsWindowVisible(palette),"Minimizing the editor hid its independent palette");
+    ShowWindow(f.context->view->owner,SW_RESTORE);
+    FocusSymbolWindow(f.context->view->owner);
+    manager->context(f.context.Get()); f.service->OnSetFocus(TRUE);
+    f.service->OnSetThreadFocus();
+    f.service->OnSetFocus(static_cast<ITfDocumentMgr*>(manager),nullptr);
+    refresh(); Check(buttonsEnabled(),"Returning to the editor must re-enable symbol buttons");
+    Check(IsWindowVisible(palette) && GetActiveWindow()==active && GetFocus()==focus,"Returning to editor dismissed palette or stole focus");
+    f.context->readOnly=true;
+    refresh(); Check(!buttonsEnabled(),"Read-only context must disable symbol buttons");
+    Check(!TextServiceTestAccess::routeSymbol(*f.service.Get(),symbol),"Read-only context accepted a routed symbol");
+    f.context->readOnly=false;
+    refresh(); Check(buttonsEnabled(),"Writable context must restore symbol buttons");
+    // Malformed and non-inventory payloads cannot become arbitrary text edits.
+    const auto payload=[&](ULONG_PTR tag,DWORD bytes,const void* text) {
+        COPYDATASTRUCT data{tag,bytes,const_cast<void*>(text)};
+        return SendMessageW(TextServiceTestAccess::symbolDispatch(*f.service.Get()),WM_COPYDATA,0,reinterpret_cast<LPARAM>(&data));
+    };
+    const wchar_t unknown[]=L"arbitrary command";
+    Check(!payload(0x4B535931,sizeof(unknown),unknown) && !payload(0,4,L"a") &&
+        !payload(0x4B535931,3,L"a") && !payload(0x4B535931,8192,L"a") &&
+        !payload(0x4B535931,4,L"ab"),"Malformed symbol payload was accepted");
+    // Queue against a new field, then lose focus before the asynchronous edit.
+    const auto oldDocument=f.document;
+    auto newDocument=std::make_shared<Document>(); ComPtr<Context> newContext;
+    newContext.Attach(new Context(newDocument)); manager->context(newContext.Get());
+    f.service->OnSetFocus(static_cast<ITfDocumentMgr*>(manager),nullptr);
+    Check(TextServiceTestAccess::routeSymbol(*f.service.Get(),symbol) && newContext->pending,
+        "Symbol must resolve the current field and queue an asynchronous edit");
+    f.service->OnKillThreadFocus(); manager->threadFocused=false;
+    newContext->drainAll();
+    Check(newDocument->text.empty() && oldDocument->text.empty() && IsWindowVisible(palette),
+        "Stale routed symbol edited a field or dismissed the palette");
+    manager->threadFocused=true; f.service->OnSetThreadFocus();
+    {
+        Fixture inactive(L"",false,false); Fresh(inactive);
+        inactive.service->OnSetThreadFocus(); inactive.service->OnSetFocus(FALSE);
+        Check(TextServiceTestAccess::routeSymbol(*f.service.Get(),symbol),"Route symbol past an inactive service to replacement field");
+        Check(!inactive.context->pending && inactive.document->text.empty(),"Inactive service accepted the symbol");
+    }
+    newContext->drainAll();
+    Check(newDocument->text==symbol && oldDocument->text.empty(),"Routed symbol went to the old field");
+    const auto& secondSymbol=BuiltinSymbolCategories().front().items[1].text;
+    Check(TextServiceTestAccess::routeSymbol(*f.service.Get(),symbol) &&
+        TextServiceTestAccess::routeSymbol(*f.service.Get(),secondSymbol) &&
+        TextServiceTestAccess::routeSymbol(*f.service.Get(),symbol),"Queue consecutive symbol selections");
+    newContext->drainAll();
+    Check(newDocument->text==symbol+symbol+secondSymbol+symbol && newDocument->insertions.size()==4 &&
+        IsWindowVisible(palette),"Rapid selections invalidated each other or closed the palette");
+    manager->context(f.context.Get());
+    show();
+    // A real child process becomes foreground; selecting the old process's
+    // palette must reach the child, without touching the original field.
+    const std::string readyName="Local\\KeyKeySymbolRouting-"+std::to_string(GetCurrentProcessId());
+    const HANDLE ready=CreateEventA(nullptr,TRUE,FALSE,readyName.c_str());
+    Check(ready!=nullptr,"Create cross-process symbol ready event");
+    wchar_t executable[32768]{}; GetModuleFileNameW(nullptr,executable,static_cast<DWORD>(std::size(executable)));
+    wchar_t peer[32768]{};
+    if (GetEnvironmentVariableW(L"KEYKEY_SYMBOL_TEST_PEER",peer,static_cast<DWORD>(std::size(peer))))
+        wcscpy_s(executable,peer);
+    const std::wstring command=L"\""+std::wstring(executable)+L"\" --symbol-receiver "+
+        std::wstring(readyName.begin(),readyName.end());
+    std::vector<wchar_t> mutableCommand(command.begin(),command.end()); mutableCommand.push_back(0);
+    STARTUPINFOW startup{sizeof(startup)}; PROCESS_INFORMATION child{};
+    f.service->OnKillThreadFocus(); manager->threadFocused=false;
+    Check(CreateProcessW(executable,mutableCommand.data(),nullptr,nullptr,FALSE,0,nullptr,nullptr,&startup,&child)!=FALSE,
+        "Start cross-process symbol receiver");
+    CloseHandle(child.hThread);
+    struct ChildCleanup { HANDLE process,ready; ~ChildCleanup() {
+        if (WaitForSingleObject(process,0)==WAIT_TIMEOUT) { TerminateProcess(process,2); WaitForSingleObject(process,2000); }
+        CloseHandle(process); CloseHandle(ready);
+    } } cleanup{child.hProcess,ready};
+    const auto readyUntil=GetTickCount64()+8000;
+    // The receiver explicitly asks the existing palette's UI thread to
+    // restore itself. Keep that thread responsive during child startup.
+    while (WaitForSingleObject(ready,0)!=WAIT_OBJECT_0 && GetTickCount64()<readyUntil) {
+        PumpSymbolMessages(); Sleep(1);
+    }
+    Check(WaitForSingleObject(ready,0)==WAIT_OBJECT_0,"Cross-process receiver did not become ready");
+    const HWND sharedPalette=SymbolPanel::visibleWindow();
+    DWORD paletteProcess=0; GetWindowThreadProcessId(sharedPalette,&paletteProcess);
+    Check(sharedPalette && paletteProcess==GetCurrentProcessId() && IsWindowVisible(sharedPalette),
+        "App switch dismissed or duplicated the original palette");
+    refresh(); Check(buttonsEnabled(),"Foreground receiver must enable symbols across processes");
+    for (const int id : {100,101,100}) {
+        const HWND item=GetDlgItem(GetDlgItem(GetDlgItem(sharedPalette,10),11),id);
+        Check(item!=nullptr,"Cross-process selection item missing");
+        SendMessageW(item,WM_LBUTTONDOWN,MK_LBUTTON,MAKELPARAM(5,5));
+        SendMessageW(item,WM_LBUTTONUP,0,MAKELPARAM(5,5));
+        Check(IsWindowVisible(sharedPalette),"Selection dismissed the shared palette");
+    }
+    Check(WaitForSingleObject(child.hProcess,8000)==WAIT_OBJECT_0,"Cross-process symbol receiver timed out");
+    DWORD exitCode=1; GetExitCodeProcess(child.hProcess,&exitCode);
+    Check(exitCode==0 && oldDocument->text.empty(),"Cross-process symbol routing failed or edited the original App");
+    refresh(); Check(!buttonsEnabled() && IsWindowVisible(palette),"Receiver exit must disable symbols and retain the palette");
+    const HWND dispatch=TextServiceTestAccess::symbolDispatch(*f.service.Get());
+    Success(f.service->Deactivate(),"Deactivate symbol dispatch");
+    Check(!IsWindow(dispatch) && !TextServiceTestAccess::symbolDispatch(*f.service.Get()),
+        "Deactivated service retained its native symbol dispatch");
+    std::cout<<"Symbol palette: non-input UI, minimize, focus, malformed payload, replacement field, stale edits and cross-process selection passed\n";
+}
+
+int main(int argc,char** argv) {
     try {
         g_module = GetModuleHandleW(nullptr);
+        if (argc==2 && std::string(argv[1])=="--symbol-worker-thread") {
+            const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
+                ("symbol-worker-"+std::to_string(GetCurrentProcessId()));
+            std::filesystem::create_directories(profile);
+            SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+            TestSymbolWorkerThread(); return 0;
+        }
+        if (argc==2 && std::string(argv[1])=="--symbol-reopen") {
+            const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
+                ("symbol-reopen-"+std::to_string(GetCurrentProcessId()));
+            std::filesystem::create_directories(profile);
+            SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+            TestSymbolReopen(); return 0;
+        }
+        if (argc==2 && std::string(argv[1])=="--caps-lock") {
+            const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
+                ("caps-lock-"+std::to_string(GetCurrentProcessId()));
+            std::filesystem::create_directories(profile);
+            SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+            TestCapsLock(); return 0;
+        }
+        if (argc==3 && std::string(argv[1])=="--symbol-receiver") return SymbolReceiver(argv[2]);
+        if (argc==2 && std::string(argv[1])=="--symbol-routing") {
+            const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
+                ("symbols-"+std::to_string(GetCurrentProcessId()));
+            std::filesystem::create_directories(profile);
+            SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+            TestSymbolPaletteRouting(); return 0;
+        }
         TestCandidateLayout();
         TestHostContracts();
         TestSymbolShortcut();
@@ -1412,5 +1782,9 @@ int main() {
         SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",nullptr);
         std::cout << "TSF candidate layout recovery, output snapshots, commit/preedit, focus, symbols, and stale callbacks passed\n";
         return 0;
-    } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
+    } catch (const std::exception& error) {
+        std::cerr << error.what() << '\n';
+        if (std::string(error.what())=="Symbol test requires an interactive foreground desktop") return 77;
+        return 1;
+    }
 }

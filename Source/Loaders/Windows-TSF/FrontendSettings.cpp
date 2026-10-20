@@ -191,6 +191,7 @@ FrontendSettings LoadFrontendSettings() {
     settings.toggleWithControlBackslash = PlistBool(
         xml, "ToggleInputMethodWithControlBackslash", true);
     settings.symbolPanelShortcutEnabled = PlistBool(xml, "SymbolPanelShortcutEnabled", true);
+    settings.ignoreCapsLockInChinese = PlistBool(xml, "IgnoreCapsLockInChinese", true);
     settings.playSoundOnTypingError =
         PlistBool(xml, "ShouldPlaySoundOnTypingError", true);
     settings.simplifiedChineseOutput = PlistBool(xml, "SimplifiedChineseOutput", false);
@@ -365,6 +366,7 @@ struct SharedPreference {
     const char* key;
     const char* fallback;
     bool boolean = false;
+    unsigned version = 1;
     std::string id() const { return std::string(module) + "." + key; }
 };
 // Only settings exposed by the Windows input UI. Live method/output/startup
@@ -393,6 +395,7 @@ const SharedPreference sharedPreferences[] = {
     {"Generic-simplex-cin", "ShouldCommitAtMaximumRadicalLength", "false", true},
     {"Generic-simplex-cin", "UseCharactersSupportedByEncoding", ""},
     {"AssociatedPhrase", "EnabledCollections", "McBopomofo"},
+    {"Loader", "IgnoreCapsLockInChinese", "true", true, 2},
 };
 
 std::wstring PreferenceFile(const std::string& module) {
@@ -426,7 +429,9 @@ std::unique_ptr<Plist> ParseRuntimeSnapshot(const std::wstring& source) {
     if (source.empty() || source.size() > SharedRuntimePreferences::maximumLength ||
         source.find(L'\0') != std::wstring::npos) return {};
     const auto utf8 = OpenVanilla::OVUTF8::FromUTF16(source);
-    if (utf8.compare(0, 3, "v1;") != 0) return {};
+    const unsigned version = utf8.compare(0, 3, "v2;") == 0 ? 2
+        : utf8.compare(0, 3, "v1;") == 0 ? 1 : 0;
+    if (!version) return {};
     size_t offset = 3;
     auto snapshot = std::make_unique<Plist>(Plist::Dictionary);
     const auto readValue = [&](const std::string& key) {
@@ -441,6 +446,12 @@ std::unique_ptr<Plist> ParseRuntimeSnapshot(const std::wstring& source) {
         return true;
     };
     for (const auto& setting : sharedPreferences) {
+        // Older publishers have no Caps Lock preference; adopt the Windows
+        // default without shifting the positional fields in their v1 snapshot.
+        if (setting.version > version) {
+            snapshot->setKeyValue(setting.id(), setting.fallback);
+            continue;
+        }
         if (!readValue(setting.id())) return {};
         auto* value = snapshot->valueForKey(setting.id());
         if (!value || value->type() != Plist::String || value->stringValue().size() > 4096) return {};
@@ -460,7 +471,7 @@ std::unique_ptr<Plist> ParseRuntimeSnapshot(const std::wstring& source) {
 }
 
 std::wstring EncodeRuntimeSnapshot(Plist& snapshot) {
-    std::string result = "v1;";
+    std::string result = "v2;";
     const auto append = [&](const std::string& key) {
         const auto value = snapshot.stringValueForKey(key);
         result += std::to_string(value.size()) + ":" + value;

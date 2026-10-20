@@ -20,6 +20,7 @@ struct FrontendSettings {
     std::wstring highlightColor = L"Default";
     bool toggleWithControlBackslash = true;
     bool symbolPanelShortcutEnabled = true;
+    bool ignoreCapsLockInChinese = true;
     bool playSoundOnTypingError = true;
     bool simplifiedChineseOutput = false;
     bool defaultChineseMode = true;

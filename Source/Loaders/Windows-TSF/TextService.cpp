@@ -2,6 +2,8 @@
 #include "InputModeState.h"
 #include "StartupInputMode.h"
 #include "TsfHost.h"
+#include "SymbolTarget.h"
+#include <SymbolResources.generated.h>
 
 #include <algorithm>
 #include <array>
@@ -25,7 +27,21 @@ using Microsoft::WRL::ComPtr;
 
 constexpr DWORD kShiftTapTimeoutMilliseconds = 300;
 constexpr UINT kPumpModeMessage = WM_APP + 71;
+constexpr UINT kQuerySymbolTargetMessage = WM_APP + 72;
+#ifdef KEYKEY_SYMBOL_TEST_WINDOWS
+constexpr wchar_t kSymbolDispatchTitle[] = L"KeyKey test symbol dispatch v1";
+#else
+constexpr wchar_t kSymbolDispatchTitle[] = L"KeyKey symbol dispatch v1";
+#endif
+constexpr ULONG_PTR kSymbolCopyData = 0x4B535931;
+constexpr DWORD kMaxSymbolBytes = 4096;
 constexpr TF_PRESERVEDKEY kSymbolShortcut = {VK_OEM_COMMA, TF_MOD_CONTROL | TF_MOD_ALT};
+
+bool IsBuiltinSymbol(const std::wstring& text) {
+    for (const auto& category : BuiltinSymbolCategories())
+        for (const auto& item : category.items) if (item.text==text) return true;
+    return false;
+}
 
 HRESULT RangeText(ITfRange* range, TfEditCookie cookie, std::wstring& text) {
     ComPtr<ITfRange> reader;
@@ -461,7 +477,7 @@ void TextService::pumpInput() {
         auto* session=new (std::nothrow) InputEditSession(this,op);
         if (!session) { completeInput(op,E_OUTOFMEMORY,false); continue; }
         HRESULT edited=E_FAIL;
-        const bool defer = inModeNotification_ ||
+        const bool defer = inModeNotification_ || op->kind==InputOperation::Kind::Symbol ||
             (op->kind==InputOperation::Kind::Mode && op->change==ModeChange::Host);
         auto requested=op->context->RequestEditSession(clientId_,session,
             (defer ? TF_ES_ASYNC : TF_ES_SYNC)|TF_ES_READWRITE,&edited);
@@ -561,7 +577,7 @@ HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOpe
         return committed;
     }
     if (op->kind==InputOperation::Kind::Commit) return S_OK;
-    closeSymbols();
+    invalidateSymbolTarget();
     switch (op->change) {
         case ModeChange::Chinese: return publishChineseMode(op->enabled);
         case ModeChange::Width: return setFullWidthMode(op->enabled);
@@ -610,7 +626,115 @@ HRESULT TextService::runInput(TfEditCookie cookie,const std::shared_ptr<InputOpe
 }
 
 TextService::TextService() = default;
-TextService::~TextService() { if (modeWindow_) DestroyWindow(modeWindow_); }
+TextService::~TextService() {
+    closeSymbols();
+    if (symbolDispatchWindow_) DestroyWindow(symbolDispatchWindow_);
+    if (modeWindow_) DestroyWindow(modeWindow_);
+}
+
+bool TextService::ensureSymbolDispatch() {
+    if (symbolDispatchWindow_) return true;
+    // A hidden, independent owner keeps the palette visible when an editor
+    // loses focus or is minimized. Subclass STATIC to allow clean DLL unload.
+    symbolDispatchWindow_=CreateWindowExW(WS_EX_NOACTIVATE|WS_EX_TOOLWINDOW,
+        L"STATIC",kSymbolDispatchTitle,WS_POPUP,0,0,0,0,nullptr,nullptr,g_module,nullptr);
+    if (!symbolDispatchWindow_) return false;
+    SetWindowLongPtrW(symbolDispatchWindow_,GWLP_USERDATA,reinterpret_cast<LONG_PTR>(this));
+    symbolDispatchOriginalProc_=reinterpret_cast<WNDPROC>(SetWindowLongPtrW(
+        symbolDispatchWindow_,GWLP_WNDPROC,reinterpret_cast<LONG_PTR>(SymbolDispatchProc)));
+    if (!symbolDispatchOriginalProc_) { DestroyWindow(symbolDispatchWindow_); return false; }
+    return true;
+}
+
+LRESULT CALLBACK TextService::SymbolDispatchProc(HWND window,UINT message,WPARAM wp,LPARAM lp) {
+    auto* service=reinterpret_cast<TextService*>(GetWindowLongPtrW(window,GWLP_USERDATA));
+    const auto original=service ? service->symbolDispatchOriginalProc_ : nullptr;
+    if (service && message==kQuerySymbolTargetMessage) {
+        service->AddRef();
+        const bool available=static_cast<bool>(service->focusedSymbolContext());
+        service->Release();
+        return available;
+    }
+    if (service && message==WM_COPYDATA) {
+        const auto* data=reinterpret_cast<const COPYDATASTRUCT*>(lp);
+        // WM_COPYDATA marshals bytes across x86/x64. Accept only our bounded
+        // built-in symbol inventory; never accept an arbitrary text command.
+        if (!data || data->dwData!=kSymbolCopyData || !data->lpData ||
+            data->cbData<sizeof(wchar_t)*2 || data->cbData>kMaxSymbolBytes ||
+            data->cbData%sizeof(wchar_t)) return FALSE;
+        const auto* text=static_cast<const wchar_t*>(data->lpData);
+        const size_t count=data->cbData/sizeof(wchar_t);
+        if (text[count-1]!=L'\0' || wcsnlen(text,count)!=count-1) return FALSE;
+        const std::wstring value(text,count-1);
+        if (!IsBuiltinSymbol(value)) return FALSE;
+        service->AddRef();
+        const bool accepted=service->receiveSymbol(value);
+        service->Release();
+        return accepted;
+    }
+    if (service && message==WM_NCDESTROY) {
+        service->symbolDispatchWindow_=nullptr;
+        service->symbolDispatchOriginalProc_=nullptr;
+        SetWindowLongPtrW(window,GWLP_USERDATA,0);
+    }
+    return original ? CallWindowProcW(original,window,message,wp,lp) : DefWindowProcW(window,message,wp,lp);
+}
+
+bool TextService::routeSymbol(const std::wstring& text) {
+    const HWND foreground=GetForegroundWindow();
+    if (!IsBuiltinSymbol(text) || (text.size()+1)*sizeof(wchar_t)>kMaxSymbolBytes) return false;
+    COPYDATASTRUCT data{kSymbolCopyData,static_cast<DWORD>((text.size()+1)*sizeof(wchar_t)),
+        const_cast<wchar_t*>(text.c_str())};
+    for (const HWND target : SymbolTargets(foreground,kSymbolDispatchTitle)) {
+        if (GetForegroundWindow()!=foreground) return false;
+        DWORD_PTR accepted=FALSE;
+        // Only try another service after an explicit rejection. Never retry
+        // an ambiguous timeout: the target may already have queued the edit.
+        if (!SendMessageTimeoutW(target,WM_COPYDATA,reinterpret_cast<WPARAM>(symbolDispatchWindow_),
+            reinterpret_cast<LPARAM>(&data),SMTO_ABORTIFHUNG|SMTO_BLOCK,500,&accepted)) return false;
+        if (accepted) return true;
+    }
+    return false;
+}
+
+bool TextService::symbolTargetAvailable() {
+    const HWND foreground=GetForegroundWindow();
+    const ULONGLONG deadline=GetTickCount64()+80;
+    for (const HWND target : SymbolTargets(foreground,kSymbolDispatchTitle)) {
+        const auto now=GetTickCount64();
+        if (GetForegroundWindow()!=foreground || now>=deadline) return false;
+        DWORD_PTR available=FALSE;
+        if (!SendMessageTimeoutW(target,kQuerySymbolTargetMessage,0,0,SMTO_ABORTIFHUNG|SMTO_BLOCK,
+            static_cast<UINT>(deadline-now),&available)) return false;
+        if (available) return GetForegroundWindow()==foreground;
+    }
+    return false;
+}
+
+ComPtr<ITfContext> TextService::focusedSymbolContext() {
+    DWORD process=0;
+    const HWND foreground=GetForegroundWindow();
+    GetWindowThreadProcessId(foreground,&process);
+    const DWORD thread=SymbolInputThread(foreground);
+    if (process!=GetCurrentProcessId() || thread!=GetCurrentThreadId() ||
+        !threadManager_ || !keyEventSinkForeground_ || !uiThreadFocused_) return {};
+    ComPtr<ITfDocumentMgr> document;
+    ComPtr<ITfContext> context;
+    if (FAILED(threadManager_->GetFocus(&document)) || !document ||
+        FAILED(document->GetTop(&context)) || !isFocusedContext(context.Get()) ||
+        !IsInputContextEnabled(context.Get())) return {};
+    return context;
+}
+
+bool TextService::receiveSymbol(const std::wstring& text) {
+    const auto context=focusedSymbolContext();
+    if (!context) return false;
+    if (symbolContext_.Get()!=context.Get()) {
+        invalidateSymbolTarget();
+        symbolContext_=context;
+    }
+    return requestSymbol(context.Get(),text,symbolGeneration_);
+}
 
 LRESULT CALLBACK TextService::ModeWindowProc(HWND window,UINT message,WPARAM wp,LPARAM lp) {
     auto* service=reinterpret_cast<TextService*>(GetWindowLongPtrW(window,GWLP_USERDATA));
@@ -733,6 +857,7 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
         immersiveMode_=(activeFlags & TF_TMF_IMMERSIVEMODE)!=0;
     uiThreadFocused_=true;
     keyEventSinkForeground_=true;
+    ensureSymbolDispatch();
     const HRESULT sharedResult = sharedInputMethod_.connect(threadManager_.Get());
     sharedOutputState_.connect(threadManager_.Get());
     sharedCangjieSettings_.connect(threadManager_.Get());
@@ -767,6 +892,7 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
     }
     if (FAILED(result)) {
         closeSymbols(); cancelInput(false); clearCandidateWindow();
+        if (symbolDispatchWindow_) DestroyWindow(symbolDispatchWindow_);
         if (modeWindow_) DestroyWindow(modeWindow_);
         unadviseFunctionProvider();
         unadviseSinks();
@@ -787,6 +913,7 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* threadManager, TfClientId cli
 STDMETHODIMP TextService::Deactivate() {
     Trace("Deactivate");
     closeSymbols();
+    if (symbolDispatchWindow_) DestroyWindow(symbolDispatchWindow_);
     cancelInput(false); abandonComposition();
     if (modeWindow_) DestroyWindow(modeWindow_);
     unadviseFunctionProvider();
@@ -1229,6 +1356,10 @@ void TextService::toggleSimplifiedOutput() {
 
 void TextService::closeSymbols() {
     symbolPanel_.hide();
+    invalidateSymbolTarget();
+}
+
+void TextService::invalidateSymbolTarget() {
     symbolContext_.Reset();
     ++symbolGeneration_;
 }
@@ -1270,42 +1401,72 @@ bool TextService::handleSymbolShortcut(ITfContext* context) {
     shiftTogglePending_ = false;
     shiftPressedAt_ = 0;
     // Autorepeat or duplicate delivery must not rebuild an already visible panel.
-    if (symbolPanel_.visible() && symbolContext_.Get() == context) return true;
     const HRESULT result = showSymbols();
     Trace("SymbolShortcut show hr=0x%08lX", static_cast<unsigned long>(result));
     return result == S_OK;
 }
 
 HRESULT TextService::showSymbols() {
-    closeSymbols();
-    if (!threadManager_ || clientId_ == TF_CLIENTID_NULL) return E_UNEXPECTED;
+    if (!threadManager_ || clientId_ == TF_CLIENTID_NULL) {
+        Trace("ShowSymbols rejected: inactive service"); return E_UNEXPECTED;
+    }
     ComPtr<ITfDocumentMgr> document;
-    if (FAILED(threadManager_->GetFocus(&document)) || !document) return E_UNEXPECTED;
+    if (FAILED(threadManager_->GetFocus(&document)) || !document) {
+        Trace("ShowSymbols rejected: no focused document"); return E_UNEXPECTED;
+    }
     ComPtr<ITfContext> context;
-    if (FAILED(document->GetTop(&context)) || !context) return E_UNEXPECTED;
-    if (!isFocusedContext(context.Get()) || !IsInputContextEnabled(context.Get())) return E_UNEXPECTED;
-    const HWND owner = ResolvePopupOwner(context.Get());
-    if (!owner) return E_UNEXPECTED;
+    if (FAILED(document->GetTop(&context)) || !context) {
+        Trace("ShowSymbols rejected: no top context"); return E_UNEXPECTED;
+    }
+    if (!isFocusedContext(context.Get()) || !IsInputContextEnabled(context.Get())) {
+        Trace("ShowSymbols rejected: unfocused or disabled context"); return E_UNEXPECTED;
+    }
+    // The palette uses our independent dispatch window as owner. A valid TSF
+    // document can be windowless (GetWnd succeeds with NULL); requiring an
+    // editor HWND here wrongly rejects both the menu and preserved shortcut.
+    if (!ensureSymbolDispatch()) {
+        Trace("ShowSymbols rejected: dispatch creation error=%lu",GetLastError()); return E_UNEXPECTED;
+    }
+    if (const HWND existing=SymbolPanel::restoreVisibleWindow()) {
+        Trace("ShowSymbols reusing hwnd=%p",existing); return S_OK;
+    }
+    closeSymbols();
     POINT point; GetCursorPos(&point);
     RECT anchor{point.x, point.y, point.x, point.y};
-    symbolContext_ = context;
-    const auto generation = symbolGeneration_;
-    if (!symbolPanel_.show(owner, anchor, [this, context, generation](const std::wstring& text) {
-        if (!threadManager_ || generation != symbolGeneration_ || symbolContext_.Get() != context.Get()) return;
-        requestSymbol(context.Get(),text,generation);
-    })) { closeSymbols(); return E_FAIL; }
+    const auto open=[&](HWND owner) {
+        return symbolPanel_.show(owner,anchor,[this](const std::wstring& text) { routeSymbol(text); },
+            [this] { return symbolTargetAvailable(); });
+    };
+    // Shell-managed/AppContainer hosts can cloak independent hidden owners.
+    // Prefer the document owner only in that case; desktop palettes retain
+    // the independent owner that survives minimizing the original editor.
+    HWND owner=symbolDispatchWindow_;
+    if (SymbolPanel::windowCloaked(owner)) {
+        const HWND documentOwner=ResolvePopupOwner(context.Get());
+        if (documentOwner && !SymbolPanel::windowCloaked(documentOwner)) owner=documentOwner;
+    }
+    bool opened=open(owner);
+    if (!opened && owner==symbolDispatchWindow_) {
+        const HWND documentOwner=ResolvePopupOwner(context.Get());
+        if (documentOwner && !SymbolPanel::windowCloaked(documentOwner)) opened=open(documentOwner);
+    }
+    if (!opened) {
+        Trace("ShowSymbols failed: panel creation error=%lu",GetLastError()); closeSymbols(); return E_FAIL;
+    }
+    Trace("ShowSymbols opened");
     return S_OK;
 }
 
 HRESULT TextService::insertSymbol(TfEditCookie cookie, ITfContext* context,
                                   const std::wstring& text, unsigned long generation) {
     if (!threadManager_ || generation != symbolGeneration_ || symbolContext_.Get() != context) return S_FALSE;
-    if (!isFocusedContext(context) || !IsInputContextEnabled(context)) { closeSymbols(); return S_FALSE; }
+    if (!keyEventSinkForeground_ || !isFocusedContext(context) || !IsInputContextEnabled(context)) {
+        invalidateSymbolTarget(); return S_FALSE;
+    }
     ComPtr<ITfDocumentMgr> document;
     ComPtr<ITfContext> focused;
     if (FAILED(threadManager_->GetFocus(&document)) || !document ||
-        FAILED(document->GetTop(&focused)) || focused.Get() != context) { closeSymbols(); return S_FALSE; }
-    closeSymbols(); // Invalidate before a queued second selection can run.
+        FAILED(document->GetTop(&focused)) || focused.Get() != context) { invalidateSymbolTarget(); return S_FALSE; }
     auto result = commitCompositionForModeSwitch(cookie, context);
     if (FAILED(result)) return result;
     // Symbols bypass width conversion and learning; commitText applies only Han conversion.
@@ -1370,7 +1531,7 @@ STDMETHODIMP TextService::OnSetFocus(BOOL foreground) {
     if (foreground) syncInputMethod();
     if (!foreground) {
         unpreserveSymbolShortcut();
-        closeSymbols();
+        invalidateSymbolTarget();
         clearCandidateWindow();
         shiftTogglePending_ = false;
         cancelInput(); abandonComposition();
@@ -1390,7 +1551,7 @@ bool TextService::isFocusedContext(ITfContext* context) const {
 
 STDMETHODIMP TextService::OnKillThreadFocus() {
     uiThreadFocused_=false;
-    closeSymbols(); hideCandidateUi();
+    invalidateSymbolTarget(); hideCandidateUi();
     shiftTogglePending_=false; shiftPressedAt_=0;
     // UI focus loss is not destruction of the host's composition. Keep text
     // and engine state; document/context/TIP changes already cancel input.
@@ -1399,6 +1560,7 @@ STDMETHODIMP TextService::OnKillThreadFocus() {
 
 STDMETHODIMP TextService::OnSetThreadFocus() {
     uiThreadFocused_=true;
+    ensureSymbolDispatch();
     if (resyncHostMode_ || modeRecoveryPending_ || restoreHostMode_) pumpInput();
     preserveSymbolShortcut();
     if (candidateActive_ && isFocusedContext(candidateContext_.Get()))
@@ -1418,7 +1580,7 @@ STDMETHODIMP TextService::OnTestKeyDown(ITfContext* context, WPARAM wparam, LPAR
             LoadFrontendSettings().symbolPanelShortcutEnabled && isFocusedContext(context);
         return S_OK;
     }
-    if (symbolPanel_.visible() && event.virtualKey == VK_ESCAPE) { *eaten = TRUE; return S_OK; }
+    if (event.virtualKey == VK_ESCAPE && SymbolPanel::visibleWindow()) { *eaten = TRUE; return S_OK; }
     if (!IsShiftKey(event.virtualKey)) {
         shiftTogglePending_ = false;
         shiftPressedAt_ = 0;
@@ -1456,7 +1618,7 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
                                     BOOL* eaten) {
     if (!context || !eaten) return E_INVALIDARG;
     *eaten=FALSE;
-    if (!IsInputContextEnabled(context)) { closeSymbols(); hideCandidateUi(); shiftTogglePending_=false; return S_OK; }
+    if (!IsInputContextEnabled(context)) { invalidateSymbolTarget(); hideCandidateUi(); shiftTogglePending_=false; return S_OK; }
     syncInputMethod();
     *eaten = FALSE;
     KeyEvent event = translateKey(wparam, lparam);
@@ -1464,8 +1626,9 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* context, WPARAM wparam, LPARAM l
         *eaten = handleSymbolShortcut(context);
         return S_OK;
     }
-    if (symbolPanel_.visible() && event.virtualKey == VK_ESCAPE) { closeSymbols(); *eaten = TRUE; return S_OK; }
-    if (symbolPanel_.visible()) closeSymbols();
+    if (event.virtualKey == VK_ESCAPE) if (const HWND panel=SymbolPanel::visibleWindow()) {
+        PostMessageW(panel,WM_CLOSE,0,0); invalidateSymbolTarget(); *eaten=TRUE; return S_OK;
+    }
     if (IsShiftKey(event.virtualKey) && !event.control && !event.alt) {
         if (!shiftTogglePending_) shiftPressedAt_ = GetTickCount();
         shiftTogglePending_ = true;
@@ -2087,7 +2250,7 @@ STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie editCookie,
 
 STDMETHODIMP TextService::OnInitDocumentMgr(ITfDocumentMgr*) { return S_OK; }
 STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
-    closeSymbols();
+    invalidateSymbolTarget();
     auto context=inputContext(); ComPtr<ITfDocumentMgr> owner;
     if (context && SUCCEEDED(context->GetDocumentMgr(&owner)) && owner.Get()==documentManager) {
         cancelInput(); abandonComposition(); unadviseTextEditSink();
@@ -2095,7 +2258,7 @@ STDMETHODIMP TextService::OnUninitDocumentMgr(ITfDocumentMgr* documentManager) {
     return S_OK;
 }
 STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused,ITfDocumentMgr*) {
-    closeSymbols(); ComPtr<ITfContext> context;
+    invalidateSymbolTarget(); ComPtr<ITfContext> context;
     if (focused) focused->GetTop(&context);
     auto previous=inputContext();
     if (previous && previous.Get()!=context.Get()) { cancelInput(); abandonComposition(); }
@@ -2104,12 +2267,12 @@ STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr* focused,ITfDocumentMgr*) {
     return S_OK;
 }
 STDMETHODIMP TextService::OnPushContext(ITfContext* context) {
-    closeSymbols(); auto previous=inputContext();
+    invalidateSymbolTarget(); auto previous=inputContext();
     if (previous && previous.Get()!=context) { cancelInput(); abandonComposition(); }
     adviseTextEditSink(context); return S_OK;
 }
 STDMETHODIMP TextService::OnPopContext(ITfContext* context) {
-    closeSymbols();
+    invalidateSymbolTarget();
     if (inputContext().Get()==context) { cancelInput(); abandonComposition(); }
     if (textEditContext_.Get()==context) {
         unadviseTextEditSink(); ComPtr<ITfDocumentMgr> focused; ComPtr<ITfContext> top;

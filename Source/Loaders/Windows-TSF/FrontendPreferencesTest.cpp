@@ -25,6 +25,13 @@ int main() {
         const auto smart = SmartMandarinPreferencesPath();
         Check(LoadFrontendSettings().defaultChineseMode, "Missing startup preference must default to Chinese");
         Check(LoadFrontendSettings().symbolPanelShortcutEnabled, "Symbol shortcut must default to enabled");
+        Check(LoadFrontendSettings().ignoreCapsLockInChinese, "Windows must ignore Caps Lock in Chinese by default");
+        for (const auto* value : {"false", "true"}) {
+            { std::ofstream out(loader); out << "<plist><dict><key>IgnoreCapsLockInChinese</key><string>"
+                << value << "</string></dict></plist>"; }
+            Check(LoadFrontendSettings().ignoreCapsLockInChinese == (std::string(value) == "true"),
+                  "Chinese Caps Lock preference not read");
+        }
         for (const auto* value : {"false", "true"}) {
             { std::ofstream out(loader); out << "<plist><dict><key>SymbolPanelShortcutEnabled</key><string>"
                 << value << "</string></dict></plist>"; }
