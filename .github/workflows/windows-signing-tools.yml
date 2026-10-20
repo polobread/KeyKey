@@ -6,10 +6,12 @@ on:
       - '.github/scripts/*windows_signing*'
       - '.github/scripts/windows-signing.py'
       - '.github/workflows/package-windows.yml'
-      - '.github/workflows/prepare-windows-signing.yml'
       - '.github/workflows/mirror-windows-signed.yml'
       - '.github/workflows/windows-signing-tools.yml'
       - 'Source/Loaders/Windows-TSF/Release-Windows.ps1'
+      - 'Source/Loaders/Windows-TSF/Build-WindowsRelease.ps1'
+      - 'Source/Loaders/Windows-TSF/Prepare-WindowsUpdate.ps1'
+      - 'Source/Loaders/Windows-TSF/Package-Windows.ps1'
       - 'Source/Loaders/Windows-TSF/Package-Store-Windows.ps1'
       - 'Source/Loaders/Windows-TSF/Packaging/**'
   workflow_dispatch:

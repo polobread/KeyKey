@@ -1,11 +1,11 @@
-琦琦輸入法 Windows 1.3.2 安裝與設定
+琦琦輸入法 Windows @KEYKEY_VERSION@ 安裝與設定
 ================================
 
 首次安裝：
 1. 使用符合 Windows 系統類型的 ZIP（x64 或 x86），完整解壓縮到本機資料夾，
    例如 C:\KeyKeyInstaller。不要在 ZIP 預覽、網路磁碟或 NAS 內執行。
 2. 連按兩下 Install.cmd，核對來源並允許 Windows 的系統管理員權限提示。
-   安裝在 Program Files\chichi77 KeyKey\1.3.2-內容指紋，位置由程式管理。
+   安裝在 Program Files\chichi77 KeyKey\@KEYKEY_VERSION@-內容指紋，位置由程式管理。
 3. 自行新增鍵盤：
    Windows 11：設定 > 時間與語言 > 語言與地區 > 繁體中文右側 … > 語言選項
                > 鍵盤 > 新增鍵盤 > 琦琦輸入法。
@@ -41,19 +41,19 @@
   設定內開啟診斷後固定記錄 3 天，到期自動停止，有效期限內才寫
   Program Files\chichi77 KeyKey\Deployment.log。
 
-未簽署 ZIP 僅供可信來源的測試，不要關閉安全防護。x64 包支援 x64／x86 程式，
+新版正式 ZIP 內的 EXE／DLL 均須有有效發行者簽章；自行建置的未簽包僅供測試。不要關閉安全防護。x64 包支援 x64／x86 程式，
 x86 包供 32 位元 Windows。目前不支援 ARM64。歷代發布包的實際升級、移除與重裝
 仍須逐一驗收，自訂或損壞的舊安裝可能需個別處理。
-完整指南：https://github.com/polobread/KeyKey/blob/v1.3.2/WINDOWS_INSTALL.md
+完整指南：https://github.com/polobread/KeyKey/blob/v@KEYKEY_VERSION@/WINDOWS_INSTALL.md
 
 -------------------------------------------------------------------------------
-chichi77 KeyKey 1.3.2 for Windows 10/11
+chichi77 KeyKey @KEYKEY_VERSION@ for Windows 10/11
 =====================================
 
 1. Extract the entire ZIP matching your Windows architecture to a local folder,
    for example C:\KeyKeyInstaller. Run Install.cmd and approve the administrator
    prompt after checking its source. Installation uses Program Files\chichi77
-   KeyKey\1.3.2-<fingerprint>; do not move or delete managed folders.
+   KeyKey\@KEYKEY_VERSION@-<fingerprint>; do not move or delete managed folders.
 2. Add the keyboard yourself:
    Windows 11: Settings > Time & language > Language & region > Traditional
                Chinese (...) > Language options > Keyboards > Add a keyboard.
@@ -93,8 +93,8 @@ logs/state records are retained.
 On errors, record the exit code and retain the package. Diagnostics default to off,
 including GitHub Actions builds. Only an active three-day diagnostic session enabled in Settings
 write Program Files\chichi77 KeyKey\Deployment.log. Do not disable security protection.
-This unsigned ZIP is for trusted-source testing. The x64 package supports x64
+Official ZIP payload executables require valid publisher signatures; unsigned local builds are test-only. The x64 package supports x64
 and x86 applications; x86 is for 32-bit Windows. ARM64 is not supported. Each
 historical release still needs device migration verification; damaged or custom
 legacy installations may require assistance.
-Full guide: https://github.com/polobread/KeyKey/blob/v1.3.2/WINDOWS_INSTALL.md
+Full guide: https://github.com/polobread/KeyKey/blob/v@KEYKEY_VERSION@/WINDOWS_INSTALL.md

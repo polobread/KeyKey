@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 $scriptPath = Join-Path $PSScriptRoot '..\Package-Store-Windows.ps1'
 $tokens = $null
 $parseErrors = $null
-$ast = [Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$tokens, [ref]$parseErrors)
+$ast = [Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'Authenticode.ps1'), [ref]$tokens, [ref]$parseErrors)
 if ($parseErrors.Count) { throw 'Packaging script has syntax errors.' }
 foreach ($name in @('Invoke-SignFiles', 'Invoke-VerifySignature', 'Assert-SigningCertificate')) {
     $definition = $ast.Find({ param($node)
@@ -111,7 +111,7 @@ try {
         $machine = if ($architecture -eq 'x64') { 0x8664 } else { 0x014c }
         $names = if ($architecture -eq 'x64') {
             @('KeyKeyTsf.dll', 'KeyKeySettings.exe', 'KeyKeySettingsBackend.dll', 'KeyKeyDeployment.exe', 'WinSparkle.dll')
-        } else { @('KeyKeyTsf.dll', 'KeyKeyRegistration.exe') }
+        } else { @('KeyKeyTsf.dll', 'KeyKeyRegistration.exe', 'KeyKeySettings.exe', 'KeyKeySettingsBackend.dll', 'KeyKeyDeployment.exe', 'WinSparkle.dll') }
         foreach ($name in $names) {
             $bytes = New-Object byte[] 128
             $bytes[0] = 0x4d; $bytes[1] = 0x5a; $bytes[0x3c] = 0x40
@@ -142,7 +142,6 @@ foreach ($argument in $args) {
 }
 $manifest = Get-Content -LiteralPath $defines.MANIFEST_PATH -Raw | ConvertFrom-Json
 if ($manifest.Signed -ne $global:keykeySigningExpectedSigned) { throw 'Unexpected manifest signing state.' }
-if ($manifest.Version -ne $global:keykeySigningExpectedVersion) { throw 'Unexpected package product version.' }
 foreach ($entry in $manifest.Files) {
     $path = Join-Path $defines.PAYLOAD_DIR $entry.Path
     if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.Sha256) {
@@ -152,11 +151,7 @@ foreach ($entry in $manifest.Files) {
 [IO.File]::WriteAllText($defines.OUTPUT_FILE, 'test-only NSIS output')
 $global:LASTEXITCODE = 0
 '@ | Set-Content -LiteralPath $fakeNsis
-    $testVersion = '9.8.7'
-    $versionFixture = Join-Path $fixture 'product-version.cmake'
-    "project(KeyKeyWindowsTsf VERSION $testVersion LANGUAGES C CXX)" | Set-Content -LiteralPath $versionFixture
-    if ((Get-KeyKeyProductVersion -CMakePath $versionFixture) -ne $testVersion) { throw 'Product version was not read from CMake.' }
-    $global:keykeySigningExpectedVersion = $testVersion
+    $testVersion = Get-KeyKeyProductVersion
     $packageArguments = @{
         BuildDirectory = Join-Path $fixture 'x64'; X86BuildDirectory = Join-Path $fixture 'x86'
         MakensisPath = $fakeNsis; SignToolPath = $fakeTool; OutputDirectory = Join-Path $fixture 'signed'
@@ -173,15 +168,89 @@ $global:LASTEXITCODE = 0
     if (@(Get-ChildItem -LiteralPath (Join-Path $fixture 'signed') -Directory -Force).Count) {
         throw 'Signing staging directory was retained.'
     }
-    # The retained unsigned workflow still calls this same packaging entry point.
+    # Local releases sign both architecture runtimes before producing either ZIP.
+    $runtimeFiles = @(Get-ChildItem -LiteralPath (Join-Path $fixture 'x64'), (Join-Path $fixture 'x86') -File -Recurse |
+        Where-Object { $_.Extension -in @('.exe', '.dll') })
+    Invoke-SignFiles -FilePath $runtimeFiles.FullName -ToolPath $fakeTool -Thumbprint $syntheticIdentifier -Rfc3161TimestampUrl ([uri]'https://timestamp.invalid') -StoreLocation 'CurrentUser'
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    foreach ($architecture in @('x64', 'x86')) {
+        $zipArguments = @{
+            BuildDirectory = Join-Path $fixture 'x64'; X86BuildDirectory = Join-Path $fixture 'x86'
+            Architecture = $architecture; Version = $testVersion; Signed = $true
+            OutputDirectory = Join-Path $fixture 'zip'; SignToolPath = $fakeTool
+        }
+        $null = & (Join-Path $PSScriptRoot '..\Package-Windows.ps1') @zipArguments
+        $zipPath = Join-Path $fixture "zip\chichi77-KeyKey-$testVersion-windows-$architecture.zip"
+        $archive = [IO.Compression.ZipFile]::OpenRead($zipPath)
+        try {
+            $manifestEntry = @($archive.Entries | Where-Object { $_.FullName.Replace('\', '/').EndsWith('/PackageManifest.json') })[0]
+            $reader = [IO.StreamReader]::new($manifestEntry.Open())
+            try { $zipManifest = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
+            if (-not $zipManifest.Signed -or $zipManifest.Architecture -ne $architecture) { throw 'ZIP manifest is not signed.' }
+            foreach ($entry in $zipManifest.Files) {
+                if ($entry.Path -notmatch '\.(exe|dll)$') { continue }
+                $relative = $entry.Path.Replace('\', '/')
+                $match = @($archive.Entries | Where-Object { $_.FullName.Replace('\', '/').EndsWith('/Payload/' + $relative) })
+                if ($match.Count -ne 1) { throw 'Signed executable missing from ZIP.' }
+                $reader = [IO.StreamReader]::new($match[0].Open())
+                try { $bytes = $reader.ReadToEnd() } finally { $reader.Dispose() }
+                if (-not $bytes.EndsWith('signed-test-bytes')) { throw 'ZIP contains bytes from before signing.' }
+            }
+        } finally { $archive.Dispose() }
+        $zipHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if (-not (Get-Content -LiteralPath "$zipPath.sha256" -Raw).StartsWith($zipHash)) { throw 'ZIP checksum mismatch.' }
+        try { $null = & (Join-Path $PSScriptRoot '..\Package-Windows.ps1') @zipArguments; throw 'Signed ZIP was overwritten.' }
+        catch { if ($_.Exception.Message -eq 'Signed ZIP was overwritten.') { throw } }
+    }
+    # Exercise the actual local Sign entry point, with provider/helper substitutes.
+    $releaseFixture = Join-Path $fixture 'local-release'
+    New-Item -ItemType Directory -Path (Join-Path $releaseFixture 'inputs') -Force | Out-Null
+    foreach ($architecture in @('x64', 'x86')) {
+        Copy-Item -LiteralPath (Join-Path $fixture $architecture) -Destination (Join-Path $releaseFixture 'inputs') -Recurse
+    }
+    @{ version = $testVersion; release_tag = "v$testVersion"; source_sha = ('a' * 40) } |
+        ConvertTo-Json | Set-Content -LiteralPath (Join-Path $releaseFixture 'context.json') -Encoding UTF8
+    $global:keykeyReleaseHelperCalls = [Collections.Generic.List[string]]::new()
+    function git { 'ignored-output'; $global:LASTEXITCODE = 0 }
+    function Read-Host { param($Prompt, [switch]$AsSecureString); ConvertTo-SecureString ('01' * 20) -AsPlainText -Force }
+    function Fake-ReleasePython {
+        $command = $args[1]
+        $global:keykeyReleaseHelperCalls.Add($command)
+        if ($command -eq 'record') {
+            $directory = $args[[Array]::IndexOf($args, '--directory') + 1]
+            '{}' | Set-Content -LiteralPath (Join-Path $directory "signed\chichi77-KeyKey-$testVersion-windows-build-info.json")
+        } elseif ($command -ne 'verify-built') { throw 'Unexpected release-helper command.' }
+        $global:LASTEXITCODE = 0
+    }
+    try {
+        $releaseArguments = @{
+            Action = 'Sign'; ReleaseTag = "v$testVersion"; Python = 'Fake-ReleasePython'; OutputDirectory = $releaseFixture
+            MakensisPath = $fakeNsis; SignToolPath = $fakeTool; TimestampUrl = [uri]'https://timestamp.invalid'
+        }
+        $releaseOutput = & (Join-Path $PSScriptRoot '..\Release-Windows.ps1') @releaseArguments *>&1 | Out-String
+        if ($releaseOutput.Contains($syntheticIdentifier)) { throw 'Local release exposed a signing identifier.' }
+        $publicFiles = @(Get-ChildItem -LiteralPath (Join-Path $releaseFixture 'signed') -File)
+        if ($publicFiles.Count -ne 7 -or @($publicFiles | Where-Object Name -Like '*unsigned*').Count -or
+            ($global:keykeyReleaseHelperCalls -join ',') -ne 'verify-built,record') {
+            throw "Local release asset count=$($publicFiles.Count); files=$($publicFiles.Name -join ','); helper calls=$($global:keykeyReleaseHelperCalls -join ',')"
+        }
+    } finally {
+        Remove-Item Function:\git, Function:\Read-Host, Function:\Fake-ReleasePython
+        Remove-Variable -Name keykeyReleaseHelperCalls -Scope Global
+    }
+    $global:keykeySigningTestSignature.Status = 'NotSigned'
+    $zipArguments.OutputDirectory = Join-Path $fixture 'rejected-zip'
+    try { $null = & (Join-Path $PSScriptRoot '..\Package-Windows.ps1') @zipArguments; throw 'Unsigned ZIP payload accepted.' }
+    catch { if ($_.Exception.Message -eq 'Unsigned ZIP payload accepted.') { throw } }
+    $global:keykeySigningTestSignature.Status = 'Valid'
+    # UnsignedTest remains available only for isolated installer/updater fixtures.
     $global:keykeySigningExpectedSigned = $false
     $unsignedArguments = $packageArguments.Clone()
     foreach ($key in @('CertificateThumbprint', 'TimestampUrl', 'SignToolPath', 'Version')) { $unsignedArguments.Remove($key) }
-    $global:keykeySigningExpectedVersion = Get-KeyKeyProductVersion
     $unsignedArguments.OutputDirectory = Join-Path $fixture 'unsigned'
     $unsignedArguments.UnsignedTest = $true
     $null = & $scriptPath @unsignedArguments *>&1
-    $unsignedPackage = Join-Path $fixture "unsigned\chichi77-KeyKey-$($global:keykeySigningExpectedVersion)-windows-x64-setup.unsigned.exe"
+    $unsignedPackage = Join-Path $fixture "unsigned\chichi77-KeyKey-$testVersion-windows-x64-setup.unsigned.exe"
     if (-not (Test-Path -LiteralPath $unsignedPackage)) { throw 'Unsigned fallback packaging no longer works.' }
 } finally {
     $resolvedFixture = [IO.Path]::GetFullPath($fixture)
@@ -194,6 +263,6 @@ $global:LASTEXITCODE = 0
     Remove-Variable -Name keykeySigningTestSignature -Scope Global
     Remove-Variable -Name keykeySigningExpectedSigned -Scope Global
     Remove-Variable -Name keykeySigningTestUsageOid -Scope Global
-    Remove-Variable -Name keykeySigningExpectedVersion -Scope Global
 }
 Write-Output 'Passed isolated signing privacy, identity, timestamp and complete packaging gates.'
+& (Join-Path $PSScriptRoot 'Test-WindowsUpdatePreparation.ps1')

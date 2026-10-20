@@ -297,21 +297,21 @@ Windows frontend 的部署及驗證細節見
 
 ### Certum 本機簽章與發布
 
-新增的 `Prepare Windows Signing Inputs` 只編譯、測試與整理待簽 artifact。
-原 `Package Windows` unsigned workflow 完整保留、預設停用；repository variable
-`WINDOWS_RELEASE_MODE=unsigned` 可切回，未設定或 `certum` 則使用新流程，其他值停用兩者。
-在成功 CI source 的乾淨 checkout 執行本機腳本，thumbprint 由遮罩提示讀取，不填在命令或檔案中：
+Windows 正式產物全部在本機建置、測試、簽章及封裝。Windows Checks 僅作檢查，
+不提供待簽 artifact、不發布產物，也不再使用 WINDOWS_RELEASE_MODE 或 RunId。
+準備 Visual Studio 2026 C++、CMake、Ruby、.NET 10、Python、OpenSSL 3、NSIS 3.12、
+GitHub CLI 與 SimplySign，從已合併、乾淨的 tag checkout 執行：
 
-```powershell
-& .\Source\Loaders\Windows-TSF\Release-Windows.ps1 -RunId 123456789 -ReleaseTag vX.Y.Z
-# 乾淨 VM 驗收後，另行核准上傳與鏡像：
-& .\Source\Loaders\Windows-TSF\Release-Windows.ps1 -Action Publish -RunId 123456789 -ReleaseTag vX.Y.Z
-```
+~~~powershell
+& .\Source\Loaders\Windows-TSF\Release-Windows.ps1 -ReleaseTag vX.Y.Z
+# EXE 與兩個 ZIP 通過乾淨 VM 驗收後，另行核准全部產物的 build-info SHA-256：
+& .\Source\Loaders\Windows-TSF\Release-Windows.ps1 -Action Publish -ReleaseTag vX.Y.Z
+~~~
 
-請替換 run ID／tag。完整前置設定、NSIS 3.12、SimplySign 登入、逐檔驗簽、來源與雜湊核對、
-人工驗收、GitHub 上傳及受保護 S3／CDN 同步見 [Windows Certum 發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
-本機採半自動流程，SimplySign 登入、VM 驗收與發布核准需人工操作；不重新編譯，無須儲存 AWS 或簽章長期憑據。產物保存在忽略提交的 `out/local-release/`；
-發布需確認版本與完整 SHA-256，不覆蓋已發布資產，也不自動改 feed。
+本機產生已簽 x64 EXE、內含已簽 EXE/DLL 的 x64／x86 ZIP、三份校驗檔與 build-info。
+輸出在 Git 忽略的 out/local-release/TAG；不覆蓋已發布資產，不自動改 feed。
+Windows Ed25519 也在本機使用 keykey-update-private.pem；禁止提交、上傳或顯示內容。
+完整步驟、工具選項、金鑰保護與 feed PR 見 [Windows 本機發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
 
 ## Android
 
@@ -384,9 +384,8 @@ CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不�
 
 所有修改先在工作分支提交，再由維護者親自 review 和 merge PR 回 `master`；agent 不自行合併。
 原始碼、建置腳本與 CI 都依 [Code signing policy](CODE_SIGNING_POLICY.md) 納入審查。
-macOS、Windows 與 Linux 則在 GitHub
-**Publish release** 後自動建置，macOS／Linux 驗證成功後上傳到同一個 Release；Windows 預設使用獨立待簽 workflow，
-本機半自動簽包與人工核准後才上傳。原 unsigned workflow 保留但預設停用。Release 的 tag
+macOS 與 Linux 在 GitHub **Publish release** 後自動建置並驗證上傳；
+Windows 改由本機完整建置、測試、簽章、封裝及人工核准上傳，CI 僅作檢查。Release 的 tag
 必須符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows／Linux 原始碼皆為 `1.3.7`，
 對應正式版 tag 為 `v1.3.7`；同一 Release 的三平台產物只在各平台同版時成立。
 測試頻道使用通用 `vX.Y.Z-betaN` 格式，X.Y.Z 對應平台產品版號，N 為不含前導零的正整數；
@@ -399,38 +398,36 @@ macOS 從四份產品 plist 讀取並核對版號，與 README 尾端的 Linux �
 
 正式版單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
 **Run workflow**，macOS／Linux 將 **Use workflow from** 選為 `master`，
-並填入 `release_tag=v1.3.7`；對應 Release 必須已發布。Windows Certum
-流程要求 workflow ref 與 tag 相同，不接受不同來源的同版本補發；舊 Windows recovery
-流程僅於維護者切到 unsigned 模式後使用。建置使用所選分支，
+並填入 `release_tag=v1.3.7`；對應 Release 必須已發布。Windows 依本機發布指南從原 tag
+重試；來源修改需新版本／tag，不接受不同來源的同版本補發。macOS／Linux 建置使用所選分支，
 平台版號仍須與 Release 相同；成功後自動補上或
-覆寫該平台的資產，其他平台不變。三個 workflow 都接受此欄位，留空則只保留 artifact。
+覆寫該平台的資產，其他平台不變。macOS／Linux workflow 接受此欄位，留空則只保留 artifact。
 同平台、同 Release 的發布會依序執行。這些 workflow 修改須先合併到預設分支才可使用。
 
 也可以個別使用 CLI（只執行需要補發的平台）：
 
 ```sh
 gh workflow run package-macos.yml --ref master -f release_tag=v1.3.7
-gh workflow run prepare-windows-signing.yml --ref vX.Y.Z -f release_tag=vX.Y.Z
+gh workflow run package-windows.yml --ref master # Windows checks only; release locally
 gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.7
 ```
 
 **Re-run jobs** 使用原本的 commit，適合暫時性失敗；有程式修正時應使用上述
 **Run workflow**，才會建置新的 commit。
-建置完成後，以下檔案會以 Actions artifact 保留 7 天；新 Windows 待簽 artifact 保留 30 天：
+其他平台建置完成後，以下檔案以 Actions artifact 保留 7 天；Windows 不產生發布 artifact：
 
 | Workflow | 產物 | 限制 |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 發布到 Release 前以 Developer ID 簽章並 notarize；僅 artifact 的 run 未簽章 |
-| Prepare Windows Signing Inputs | `keykey-windows-signing-VERSION-RUN_ID-ATTEMPT` artifact | 只含待簽輸入，保留 30 天；本機半自動簽包、驗收、核准後發布，見 [發布指南](docs/WINDOWS_CERTUM_RELEASE.md) |
-| Package Windows（unsigned 備援） | 原 x64／x86 ZIP、unsigned NSIS EXE 與 checksum | 完整保留，僅 `WINDOWS_RELEASE_MODE=unsigned` 啟用 |
+| Windows Checks | 僅檢查，不上傳發布 artifact | EXE、已簽 x64／x86 ZIP、checksum 與 build-info 均由本機產生，見 [發布指南](docs/WINDOWS_CERTUM_RELEASE.md) |
 | Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
 | Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 只在手動 Run workflow 時建置、簽署並上傳到 Google Play internal testing；PR 合併與直接 push 都不觸發，由 Play Console 推廣至正式版；一般使用者不需加入封閉測試 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 | Linux CI | Ubuntu 22.04／24.04 `.deb`；Ubuntu 24.04 另有面板原始碼與 `SHA256SUMS` | 完整測試通過後，發布 run 只上傳 Ubuntu 24.04 的五個檔案；Ubuntu 22.04 套件僅保留 artifact |
 
-Windows Certum 路徑的 artifact 內含逐檔雜湊 manifest；signed 安裝包在本機完成後產生 `.sha256`。
+Windows 在本機保存來源、完整測試紀錄、輸入及產物雜湊，EXE 與兩個 ZIP 各有 `.sha256`。
 其他桌面版 artifact 另附同名 `.sha256`；Linux 使用涵蓋四個檔案的 `SHA256SUMS`。
-Windows Certum 發布不覆寫資產；以下同版補發／覆寫說明只適用其他平台及明確啟用的 unsigned 備援。
+Windows 發布不覆寫資產；以下同版補發／覆寫說明只適用其他平台。
 發布前會驗證全部 checksum，再上傳到既有、已發布的 Release，覆寫該平台的同名資產。
 每平台另上傳 `chichi77-KeyKey-版本-平台-build-info.json`，記錄實際建置 commit、
 tag commit、workflow 連結與檔案雜湊；修正後的補發可能與原 tag commit 不同。
@@ -745,13 +742,13 @@ deployment and verification information.
 
 #### Manually sign a Microsoft Store NSIS EXE
 
-A separate `Prepare Windows Signing Inputs` workflow provides CI build/test inputs
-for semi-automated local Certum signing. The original `Package Windows` unsigned
-workflow is preserved and disabled by default; `WINDOWS_RELEASE_MODE=unsigned`
-switches back, while unset or `certum` selects the new path. Other values disable both.
-No certificate identifier is committed or put in example commands. Use the
-hidden-input `Release-Windows.ps1` Sign command, perform clean-VM acceptance,
-then run its separate Publish command and confirm the exact tag/SHA-256.
+Windows Checks builds/tests only. Windows release artifacts are built, tested,
+signed and packaged locally by Release-Windows.ps1 from a clean reviewed tag.
+No CI run/artifact is consumed and no unsigned release mode remains.
+Both x64/x86 ZIPs contain signed executables. After clean-VM acceptance,
+the separate Publish action requires approval of the build-info SHA-256 covering
+the EXE, both ZIPs and their checksums. Windows Ed25519 preparation is local,
+using keykey-update-private.pem; never commit, upload or display that key.
 Publication uploads immutable GitHub assets and dispatches the protected OIDC
 mirror workflow. See the [complete release guide](docs/WINDOWS_CERTUM_RELEASE.md).
 
@@ -825,11 +822,10 @@ the production release from Google Play. iOS 1.3.2 (build 41) is available on th
 
 Commit all changes on a working branch; the maintainer reviews and merges the PR.
 Agents must not merge PRs. Source, build scripts, and CI are covered by the
-[Code signing policy](CODE_SIGNING_POLICY.md). The macOS, Windows, and Linux
-workflows start when a GitHub Release is published,
-macOS/Linux upload their verified packages independently. Windows defaults to the
-separate signing-input workflow and local semi-automated signing/publication;
-the retained unsigned workflow is disabled by default. The tag must match the
+[Code signing policy](CODE_SIGNING_POLICY.md). The macOS and Linux workflows
+start when a GitHub Release is published and upload verified packages independently.
+Windows runs its full release build, signing, EXE/ZIP packaging and approved publication
+locally; its CI workflow only checks. The tag must match the
 platform's source version and can be created on the Release page. macOS, Windows,
 and Linux development sources are now `1.3.7`, with `v1.3.7` as the stable release tag.
 The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product
@@ -846,9 +842,8 @@ requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
 To recover one failed stable platform, merge the fix into `master`, select its workflow
 in Actions, choose **Run workflow**, set **Use workflow from** to `master`, and
 enter `v1.3.7` for macOS/Linux in `release_tag`; the corresponding Release must already be published.
-Windows Certum builds require the same tag as their workflow ref and exact source;
-the old Windows recovery procedure is available only after switching to unsigned mode.
-All three workflows accept this input. They build
+Windows retries use the local release guide and the exact reviewed tag; source
+fixes require a new version/tag. Only the macOS/Linux workflows accept this input. They build
 the selected revision and replace only that platform's assets; its source
 version must still match the Release. Leaving the input blank keeps artifacts
 only. Publishing runs for the same platform and Release are serialized.
@@ -858,28 +853,26 @@ For example, run just the command for the platform needing recovery:
 
 ```sh
 gh workflow run package-macos.yml --ref master -f release_tag=v1.3.7
-gh workflow run prepare-windows-signing.yml --ref vX.Y.Z -f release_tag=vX.Y.Z
+gh workflow run package-windows.yml --ref master # Windows checks only; release locally
 gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.7
 ```
 
 **Re-run jobs** uses the original commit and suits transient failures; use
 **Run workflow** to include a new fix. Successful runs retain these Actions
-artifacts for seven days (new Windows signing inputs: 30 days):
+artifacts for seven days; Windows publishes no release artifacts from CI:
 
 | Workflow | Output | Limitation |
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Signed with a Developer ID and notarized before Release upload; artifact-only runs remain unsigned |
-| Prepare Windows Signing Inputs | `keykey-windows-signing-VERSION-RUN_ID-ATTEMPT` artifact | Inputs only, kept 30 days; local signing, acceptance and approval precede publication. See [release guide](docs/WINDOWS_CERTUM_RELEASE.md). |
-| Package Windows (unsigned fallback) | Original x64/x86 ZIPs, unsigned NSIS EXE and checksums | Preserved; enabled only with `WINDOWS_RELEASE_MODE=unsigned`. |
+| Windows Checks | Check results only | Build, sign and package the EXE, both signed ZIPs, checksums and build-info locally; see [release guide](docs/WINDOWS_CERTUM_RELEASE.md). |
 | Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
 | Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads only after a manual Run workflow; PR merges and direct pushes do not trigger it. Promote the build to production in Play Console; public installation does not require closed testing |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 | Linux CI | Ubuntu 22.04 and 24.04 `.deb` packages; Ubuntu 24.04 panel source and `SHA256SUMS` | Publishing runs upload five verified Ubuntu 24.04 assets after both gates pass; Ubuntu 22.04 packages remain Actions artifacts |
 
-Windows Certum inputs carry a per-file hash manifest; the signed installer gets
-its `.sha256` after local packaging and is never overwritten on publication.
-The recovery/overwrite notes below apply to other platforms and the explicitly
-enabled unsigned fallback. Other desktop outputs have `.sha256` files; Linux uses `SHA256SUMS` for its
+Windows local builds retain source, checks and file hashes. Signed EXE and both ZIPs
+have checksums and are never overwritten on publication.
+The recovery/overwrite notes below apply only to other platforms. Other desktop outputs have `.sha256` files; Linux uses `SHA256SUMS` for its
 four downloadable files. A publishing run verifies all checksums before
 replacing that platform's assets in an existing, published Release. Each
 platform also uploads `chichi77-KeyKey-VERSION-PLATFORM-build-info.json` with the

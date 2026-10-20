@@ -84,9 +84,10 @@ python -m unittest discover -s ../../../update -v
 選字鍵下拉選單與組字長度滑桿可加 `-- --phonetic-controls`，只驗證三組選字鍵、10–20
 音節整數長度、未儲存保護，以及舊自訂值回復數字選字鍵的套用／重開流程。
 
-`Prepare Windows Signing Inputs` 是 Certum 模式的正式待簽入口，保留完整發布驗證；它只在已發布
-Release 或手動 dispatch 時執行，日常 push 不會觸發。CTest 中的 managed 設定／部署
-案例在 workflow 另一步各跑一次，原生矩陣會排除這兩項，避免重複執行。
+Windows Checks 只負責檢查；正式版本由本機 Release-Windows.ps1 完整建置、測試、
+簽署及封裝 EXE 與兩個 ZIP，再人工驗收與核准發布，不使用 CI 待簽 artifact。
+封裝／簽章工具的局部回歸見 Packaging/Test-Signing.ps1。
+
 完整 TSF／NSIS、UAC、舊版升級、資料保留與 signed 憑證驗收屬發布工作，不能把
 上述局部開發驗證當成已發布或已安裝的證據。
 
@@ -548,105 +549,58 @@ Chinese (Taiwan, Hong Kong or Macao). On upgrade, sign out and back in to load
 the new DLLs; existing keyboard choices are kept. The ZIP is unsigned for trusted home
 testing; Windows may warn after a download.
 
-## Build and sign a Microsoft Store NSIS EXE
+## Local signed Windows release
 
-The new `Prepare Windows Signing Inputs` workflow builds and tests x64/x86,
-then uploads a hash-verified signing-input artifact. The original `Package Windows`
-unsigned build/package/publish/mirror workflow remains intact but is disabled by
-default. Set the repository variable `WINDOWS_RELEASE_MODE=unsigned` to switch
-back; unset or `certum` selects the new signing workflow. Other values disable both. See [Certum local signing and publication](../../../docs/WINDOWS_CERTUM_RELEASE.md)
-for prerequisites, exact-source checks, hidden certificate input, signing,
-VM acceptance, explicit publication approval and the protected CDN mirror.
+Windows Checks builds and tests x64/x86 for PRs, master pushes and manual checks.
+It does not sign, upload release artifacts, publish GitHub assets or consume WINDOWS_RELEASE_MODE.
+There is no signing-input artifact download or CI run ID in the local release path.
 
-To build the same unsigned installer locally after building x64 and x86, run:
+From a clean checkout of a reviewed tag that has reached origin/master:
 
-```powershell
-.\Package-Store-Windows.ps1 -BuildDirectory .\out\build\x64-ninja `
-  -X86BuildDirectory .\out\build\x86 -UnsignedTest
-```
+~~~powershell
+.\Release-Windows.ps1 -ReleaseTag vX.Y.Z
+# After EXE and both ZIPs pass clean-VM acceptance:
+.\Release-Windows.ps1 -Action Publish -ReleaseTag vX.Y.Z
+~~~
 
-The `.unsigned.exe` artifact supports `/S` silent installation but is not
-eligible for Store submission. It contains unsigned TSF DLLs and an unsigned
-settings executable, and the outer installer is unsigned as well.
-Its product version is `1.3.7` and installs into a fingerprinted directory
-such as `C:\Program Files\chichi77 KeyKey\1.3.7-xxxxxxxxxxxx`.
-Rebuilding changed binaries gets a new directory, so an existing text host
-can continue using its previously loaded DLL. Signed production packages use
-the same version-and-fingerprint naming scheme.
+Build-WindowsRelease.ps1 runs the same full build/check matrix locally and in CI.
+Release-Windows.ps1 snapshots those build inputs, signs all x64/x86 EXE/DLL copies,
+then creates a signed x64 NSIS EXE and x64/x86 installation ZIPs. Every executable
+inside either ZIP is signed and timestamped. Manifests and checksums describe the
+final signed bytes; actual ZIP contents, bitness, versions and signatures are
+verified again before publication. The installed uninstaller is the signed deployment executable.
 
-Signed installers also support reinstalling the same product version. Identical
-packages verify and maintain the existing installation; changed payloads install
-into a new directory while preserving the old payload for running applications.
-Signature/checksum checks, rollback, and downgrade prevention still apply.
+The output contains exactly seven public files: the EXE and checksum, two ZIPs
+and their checksums, and chichi77-KeyKey-VERSION-windows-build-info.json.
+The build-info records source/tag, local check results, input hashes and every asset hash.
+Outputs stay under ignored out/local-release/TAG/. Official releases require Authenticode;
+the low-level UnsignedTest switch exists solely for isolated installer/updater fixtures.
 
-The finish page explains how users add KeyKey in Windows Settings. Installation
-does not launch the settings app, enable a keyboard, or change a default.
+Publish displays all hashes and requires explicit approval of the build-info SHA-256,
+which binds the EXE, both ZIPs and their checksums. It verifies the remote tag and local
+source again, rejects different same-name bytes, uploads/readbacks all seven files,
+then requests Mirror Signed Windows Release. The protected mirror rechecks signatures
+on Windows before conditionally adding and reading back S3/CDN objects. No feeds change.
 
-In Certum mode a published Release starts a signing-input tag build. Manual builds must select the same tag
-as their workflow ref and `release_tag`; source/tag mismatches cannot be signed.
-Runs without a tag produce test inputs only. Signing artifacts are kept for 30
-days. The signed release path is an x64 installer containing both x64 and x86 TSF.
-Local ZIP/unsigned test packaging remains available for development.
+Windows Ed25519 preparation is also local, through Prepare-WindowsUpdate.ps1 and
+the designated keykey-update-private.pem. The key is ignored by Git, must never
+be tracked/staged or uploaded, and its contents and signer diagnostics are not displayed.
+Only the local crypto tool reads it. This Windows change does not alter other platform release flows.
+The separate metadata/feed outputs reach CDN only after the maintainer reviews and merges a feed PR.
 
-The NSIS installer displays the licensing pages in this order: the mixed-license
-scope map (`LICENSING.md`), the MIT terms for the original Windows TSF frontend,
-then the Yahoo BSD 3-Clause terms. The scope map must stay first so the MIT page
-does not imply that the bundled database or Yahoo-derived material is MIT-only.
-The installed `LICENSES` directory also retains the collection and third-party
-notices.
+Signed packages support same-version reinstall. Identical packages verify and maintain
+the installation; changed payloads use a new fingerprinted directory while preserving
+files still loaded by text hosts. Signature/hash verification, rollback and downgrade
+prevention remain. Installation does not enable a keyboard or change a default.
 
-The Certum release path is semi-automated, with manual SimplySign login, VM
-acceptance and publication approval; no private signing
-credentials are stored in GitHub Actions. From a clean repository checkout at
-the successful CI source commit, run (replace the example run and tag):
+For Partner Center EXE submission, use the immutable versioned HTTPS installer URL,
+architecture x64 and the case-sensitive /S silent parameter after clean-VM validation.
+Do not replace a submitted asset. The installer reports 0 on success, 3010 when a
+restart is needed, 1602 on UAC cancellation, 1618 for concurrent deployment,
+1633 for unsupported architecture and 1638 for downgrade/stale uninstall ownership.
 
-```powershell
-.\Release-Windows.ps1 -RunId 123456789 -ReleaseTag vX.Y.Z
-# After clean-VM acceptance; prompts for explicit tag and SHA-256 approval:
-.\Release-Windows.ps1 -Action Publish -RunId 123456789 -ReleaseTag vX.Y.Z
-```
-
-The first command verifies GitHub run/artifact provenance and file hashes,
-prompts for the certificate thumbprint with hidden input, signs seven internal
-PE files with SHA-256/RFC 3161 timestamps, writes the payload manifest, builds
-NSIS 3.12, then signs/verifies the outer EXE and calculates its final hash.
-SignTool/provider diagnostics are suppressed to keep certificate identifiers
-out of logs. The installed uninstaller is the signed deployment executable.
-Outputs and the provenance receipt stay under ignored `out/local-release/`.
-
-Publish revalidates the approved bytes and signatures, uploads without clobber,
-reads GitHub bytes back, then requests `Mirror Signed Windows Release`.
-The mirror rechecks native signatures on Windows and uses the existing protected
-release environment/OIDC role to add and read back immutable S3/CDN objects.
-No update feeds are modified. Complete commands and retry rules are in the
-[release guide](../../../docs/WINDOWS_CERTUM_RELEASE.md).
-
-Test the signed installer's silent installation and uninstallation on a
-disposable clean Windows 11 VM before submission. NSIS treats `/S` as
-case-sensitive:
-
-```powershell
-.\chichi77-KeyKey-1.3.7-windows-x64-setup.exe /S
-& "$env:ProgramFiles\chichi77 KeyKey\Uninstall.exe" uninstall --quiet
-```
-
-For an EXE Store submission, Partner Center takes a versioned HTTPS package URL
-rather than a direct file upload. After the local Publish command and mirror
-workflow succeed, use the signed EXE asset's versioned URL. The following is a Windows
-1.3.7 URL template; it does not mean that this version or signed file has been published:
-
-```text
-https://github.com/polobread/KeyKey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-windows-x64-setup.exe
-```
-
-Do not replace an asset after submitting its URL. In Partner Center select
-`EXE`, architecture `x64`, and enter `/S` as the silent install parameter. The
-installer and deployment tool report `0` on success, `3010` when file removal
-needs a restart, `1602` on UAC cancellation, `1618` when another deployment is
-running, `1633` for unsupported architecture, and `1638` for a downgrade or
-stale uninstall owner. Same-version reinstall is allowed. Other failures remain nonzero. Quiet removal needs an elevated
-caller and uses `uninstall --quiet` (the installed ARP QuietUninstallString also
-includes an owner ID). Publish a new versioned URL for every update.
+See [Windows local Certum release](../../../docs/WINDOWS_CERTUM_RELEASE.md) for
+prerequisites, commands, private-key protection, retry behavior and Ed25519/feed steps.
 
 ## Deployment layout
 
