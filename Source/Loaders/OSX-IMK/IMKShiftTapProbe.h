@@ -30,7 +30,11 @@ struct IMKShiftTapProbe {
             if (!valid || elapsed < 0) return Cancelled;
             return elapsed <= 0.300 ? Tap : LongPress;
         }
-        // A second Shift or duplicate transition cannot establish a single-key tap.
+        // Some hosts deliver each flagsChanged transition twice. Preserve the
+        // original press time and cancelled state; a duplicate must not re-arm
+        // a gesture or turn a long press into a tap. The other Shift still cancels.
+        if (shift && wasDown && code == keyCode && !otherModifiers)
+            return None;
         return cancel();
     }
 

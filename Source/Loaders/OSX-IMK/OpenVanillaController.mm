@@ -349,7 +349,7 @@ static void OVCLaunchApplication(const string& value)
     _shiftProbeEnabled = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"KeyKeyIMKShiftProbeEnabled"] boolValue]
         && (!override || [override boolValue]);
     if (_shiftProbeEnabled) {
-        NSLog(@"[KeyKey Shift Probe] activate context=%p", self);
+        NSLog(@"[KeyKey Shift Probe] activate context=%p host=%@", self, [sender bundleIdentifier]);
         static BOOL showedProbeBanner = NO;
         if (!showedProbeBanner) {
             showedProbeBanner = YES;

@@ -70,13 +70,19 @@ int main() { @autoreleasepool {
         send(controller, NSFlagsChanged, code, 0, 2.1);
     }
     assert(notices == 2);
+    // Duplicate transitions observed in the installed IMK logs.
+    send(controller, NSFlagsChanged, 56, NSShiftKeyMask, 2.2);
+    send(controller, NSFlagsChanged, 56, NSShiftKeyMask, 2.205);
+    send(controller, NSFlagsChanged, 56, 0, 2.3);
+    send(controller, NSFlagsChanged, 56, 0, 2.302);
+    assert(notices == 3);
     send(controller, NSFlagsChanged, 56, NSShiftKeyMask, 3);
     send(controller, NSKeyDown, 0, NSShiftKeyMask, 3.01);
     send(controller, NSFlagsChanged, 56, 0, 3.1);
     send(controller, NSFlagsChanged, 56, NSShiftKeyMask, 4);
     send(controller, NSFlagsChanged, 56, 0, 4.5);
-    assert(notices == 2); // Chord and long press do not notify.
-    puts("PASS: actual IMK observer, disabled gate, left/right tap, chord, long press");
+    assert(notices == 3); // Chord and long press do not notify.
+    puts("PASS: actual IMK observer, disabled gate, left/right tap, duplicate events, chord, long press");
 } }
 '''.replace("OBSERVER", observer)
 with tempfile.TemporaryDirectory(prefix="keykey-imk-shift-tests-") as scratch:

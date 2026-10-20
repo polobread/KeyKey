@@ -10,6 +10,21 @@ int main() {
         assert(probe.flagsChanged(code, true, false, 1.0) == Probe::Pressed);
         assert(probe.flagsChanged(code, false, false, 1.2) == Probe::Tap);
     }
+    // Replay the observed host pattern: down/down/up/up. Exactly one tap.
+    for (unsigned short code : {56, 60}) {
+        probe.reset();
+        assert(probe.flagsChanged(code, true, false, 1.0) == Probe::Pressed);
+        assert(probe.flagsChanged(code, true, false, 1.005) == Probe::None);
+        assert(probe.flagsChanged(code, false, false, 1.1) == Probe::Tap);
+        assert(probe.flagsChanged(code, false, false, 1.102) == Probe::None);
+        probe.flagsChanged(code, true, false, 2.0);
+        probe.flagsChanged(code, true, false, 2.4);
+        assert(probe.flagsChanged(code, false, false, 2.5) == Probe::LongPress);
+        probe.flagsChanged(code, true, false, 3.0);
+        probe.cancel();
+        probe.flagsChanged(code, true, false, 3.02);
+        assert(probe.flagsChanged(code, false, false, 3.1) == Probe::Cancelled);
+    }
     probe.reset();
     probe.flagsChanged(56, true, false, 0);
     assert(probe.flagsChanged(56, false, false, .300) == Probe::Tap);
@@ -36,5 +51,5 @@ int main() {
     probe.flagsChanged(56, true, false, 8);
     assert(probe.flagsChanged(56, false, false, 7.9) == Probe::Cancelled);
     assert(probe.flagsChanged(56, false, false, 8.1) != Probe::Tap);
-    std::cout << "PASS: IMK Shift tap state, timing, chords, dual Shift, lifecycle, unmatched release\n";
+    std::cout << "PASS: IMK Shift tap state, timing, duplicate host events, chords, dual Shift, lifecycle, unmatched release\n";
 }

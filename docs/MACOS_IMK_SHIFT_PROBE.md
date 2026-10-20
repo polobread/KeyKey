@@ -21,7 +21,7 @@
 可用終端機觀察啟用、停用、修飾鍵旗標與單按判定：
 
 ```sh
-log stream --style compact --predicate 'eventMessage CONTAINS "[KeyKey Shift Probe]"'
+/usr/bin/log stream --style compact --predicate 'eventMessage CONTAINS "[KeyKey Shift Probe]"'
 ```
 
 記錄不含輸入字元或普通按鍵鍵碼，且僅在實驗開啟時產生。
@@ -56,3 +56,11 @@ python3 Source/Loaders/OSX-IMK/Tests/run-shift-probe-tests.py
 
 隔離測試涵蓋狀態機與從實際 controller 擷取的 observer，不連接已安裝 IMK。
 建置和隔離測試成功不等於安裝後實體鍵盤驗收。
+
+## 重複事件處理
+
+實機記錄顯示部分 context 以「按下、重複按下、放開、重複放開」送達 IMK。
+初版在第二筆按下取消判定，會出現有事件卻沒有提示的情形。
+同側、同狀態的重複通知現在不改變原始按下時間，也不重新啟用已取消的手勢；
+每次完整短按只通知一次。另一側 Shift、其他按鍵與長按仍不算單按。
+啟用記錄另附宿主 bundle ID，以區分測試程式與一般 App，避免僅憑 context 位址推論宿主。
