@@ -2,7 +2,7 @@
 
 盤點日期：2026-10-20。原始碼基準：`2f098a3`；各平台目前開發版為 **1.3.7**，共用好打注音模型為 **1.3.1**。
 
-本表以目前可進入的輸入法設定、設定讀寫與 frontend 實作為依據，供後續功能規劃使用。功能已存在於原始碼，不等於已建置、已安裝、通過實機驗收或正式推出。版本追溯另列於本文後段，避免把目前開發版號當成每項功能的首次推出版本。
+本表以目前可進入的輸入法設定、設定讀寫與 frontend 實作為依據，供後續功能規劃使用。功能已存在於原始碼，不等於已建置、已安裝、通過實機驗收或正式推出。本文後段以對外推出或預計推出的產品版號整理功能，commit 保留作來源追溯。
 
 ## 閱讀方式與平台範圍
 
@@ -179,55 +179,53 @@ macOS 舊 XIB 內的一點通、通用表格與外掛等歷史／條件式頁面
 
 ## 功能版本與 Commit 追溯
 
-此節由功能引入 commit、平台版號檔與固定 Git tag 交叉核對。Git tag 包含功能只能證明版本來源包含該修改，不能代替商店正式上線或平台套件發布證據。`latest` 是移動標籤，不作首次推出版本依據。
+本節的版號以**對外推出或預計推出的產品版本**為準。macOS、Windows、Linux 這批尚未正式推出的新功能統一列為 **1.3.7**，不列開發期間的暫用版號或 beta tag。已推出的功能列可確認已包含它的正式產品版；若無法確認最早推出版本，備註標示「已有」，不把來源 commit 的版號當成首發版號。
 
-已依使用者指定，由 GPT-6 Luna 查對各功能 commit 當時的版號檔及 `git tag --contains`，再核對原始碼與文件。下列「當時版號」是 **commit tree 內的值**；不是首次正式推出版本。表中「無」表示本機沒有包含該功能的固定 tag，不能解讀成一定沒在手機商店推出。
+功能來源已由 GPT-6 Luna 核對 commit 與版本紀錄；下表保留 commit 連結供追溯。產品版號與「已推出／預計推出」狀態分欄，1.3.7 仍須完成各平台發布驗收。FreeBSD 共用 Linux frontend，原生桌面驗收與 ports／pkg 上架狀態另行確認。
 
-| 功能／受影響平台 | 引入或關鍵調整 commit | 當時原始碼版號 | 首個包含它的固定 tag | 推出狀態／規劃解讀 |
-|---|---|---|---|---|
-| macOS 獨立英文、Shift 開關與啟動模式 | [68edbfa](https://github.com/polobread/KeyKey/commit/68edbfa) | macOS 1.3.3 | 無 | 已整合至目前 1.3.7 開發線；尚無正式推出證據 |
-| Windows 三組選字鍵、組字長度滑桿 | [5859846](https://github.com/polobread/KeyKey/commit/5859846) | Windows 1.3.3 | 無 | 既有進階設定的控制介面調整；目前 1.3.7 開發線 |
-| Windows 中文忽略 Caps Lock | [dc3bf6d](https://github.com/polobread/KeyKey/commit/dc3bf6d) | Windows 1.3.3 | 無 | 目前 1.3.7 開發線 |
-| Windows 進階注音、讀音輔助、符號表、簡體輸出 | [4a74b74](https://github.com/polobread/KeyKey/commit/4a74b74) | Windows 1.3.1 | v1.3.2-beta2 | 尚無 Windows 正式發布；不能標成「正式 1.3.1 已推出」 |
-| Windows 診斷記錄 | [e079018](https://github.com/polobread/KeyKey/commit/e079018) | Windows 1.3.2 | v1.3.2-beta2 | 有 beta 來源，正式發布仍待驗收 |
-| Windows 可關閉的符號表快捷鍵 | [d0cd701](https://github.com/polobread/KeyKey/commit/d0cd701) | Windows 1.3.3 | 無 | 目前 1.3.7 開發線 |
-| macOS Emoji 與符號表比例 | [e325210](https://github.com/polobread/KeyKey/commit/e325210) | macOS 1.3.3 | 無 | 目前 1.3.7 開發線 |
-| 桌面倉頡即時／前綴候選 | [c261c1d](https://github.com/polobread/KeyKey/commit/c261c1d) | macOS／Windows／Linux 1.3.3 | 無 | 目前 1.3.7 開發線；FreeBSD 共用實作，另需原生驗收 |
-| 手機虛擬倉頡前綴候選 | [f67852b](https://github.com/polobread/KeyKey/commit/f67852b) | Android 1.3.6；iOS 1.3.5 | 無 | 目前歸入 1.3.7；不能只看當時 Android 版號就宣稱商店 1.3.6 已含 |
-| 手機實體倉頡前綴候選 | [84836e0](https://github.com/polobread/KeyKey/commit/84836e0) | Android 1.3.6；iOS 1.3.5 | 無 | 目前歸入 1.3.7；虛擬／實體設定分開保存 |
-| 手機倉頡前綴依賴即時候選、恢復錯碼互斥 | [6423d98](https://github.com/polobread/KeyKey/commit/6423d98) | Android 1.3.6；iOS 1.3.5 | 無 | 前述功能後續約束修正；不能只取最早 commit 當完整交付 |
-| Linux／FreeBSD 空白開候選、游標目標、Esc 整句 | [9bb2fe1](https://github.com/polobread/KeyKey/commit/9bb2fe1) | Linux 1.3.2 | 無 | 目前歸入 1.3.7；FreeBSD 是共用來源，不宣稱同版已推出 |
-| Linux／FreeBSD 更新通知 | [dc1389c](https://github.com/polobread/KeyKey/commit/dc1389c) | Linux 1.3.2 | v1.3.2-beta2 | 仍須設定 feed 與平台發布驗收 |
-| macOS／Windows 更新基礎 | [817e287](https://github.com/polobread/KeyKey/commit/817e287) | macOS 1.3.1；Windows 1.3.2 | v1.3.2-beta2 | 沒有包含該 commit 的正式 tag；不可由 macOS 當時 1.3.1 推定正式版已有 |
-| 桌面 beta 通知開關 | [696b3db](https://github.com/polobread/KeyKey/commit/696b3db) | macOS／Windows／Linux 1.3.2 | v1.3.2-beta3 | beta 通知預設關閉；服務啟用另驗收 |
-| 桌面改每週檢查 | [8289000](https://github.com/polobread/KeyKey/commit/8289000) | macOS／Windows／Linux 1.3.2 | 無 | 後續排程保存修正見 [afdbc00](https://github.com/polobread/KeyKey/commit/afdbc00)；目前歸入 1.3.7 |
-| Windows 同版本重新安裝下載頁 | [1170c9b](https://github.com/polobread/KeyKey/commit/1170c9b) | Windows 1.3.2 | v1.3.2-beta2 | 只開下載頁；不是自動重新安裝 |
-| Android 實體好打雙排選字 | [9916dec](https://github.com/polobread/KeyKey/commit/9916dec)、[cc9bd76](https://github.com/polobread/KeyKey/commit/cc9bd76) 固定數字列 | 引入時 Android 1.3.5 | 無 | **文件確認 Android 1.3.6 正式推出**；後續版號提交為 [b792c68](https://github.com/polobread/KeyKey/commit/b792c68) |
-| Android 實體候選面板收起 | [e9052d4](https://github.com/polobread/KeyKey/commit/e9052d4) | Android 1.3.5 | 無 | **文件確認 Android 1.3.5 正式推出** |
-| 手機空白鍵選字開關 | [6beb443](https://github.com/polobread/KeyKey/commit/6beb443) | Android／iOS 1.3.3 | 無 | Android 文件確認 1.3.5 正式版已有；iOS 正式 1.3.2 不能據此算已推出 |
-| 手機缺字候選過濾／重設快取 | [8bc529c](https://github.com/polobread/KeyKey/commit/8bc529c) | Android／iOS 1.3.3 | 無 | Android 文件確認 1.3.5 正式版已有；iOS 目前列 1.3.7 開發變更；此為固定行為 |
-| 手機倉頡／簡易及選項 | [dafed1e](https://github.com/polobread/KeyKey/commit/dafed1e) | Android／iOS 1.3.1 | v1.3.1 | 已包含於較新的手機正式產品線；商店發布版號與 Git tag 分別記錄 |
-| Android 上下文選字開關 | [54e638b](https://github.com/polobread/KeyKey/commit/54e638b) | Android 1.3.1 | v1.3.1 | 已有設定；其他 frontend 是否補齊列為 R10 |
-| Android 實體虛擬數字／符號列 | [1437a18](https://github.com/polobread/KeyKey/commit/1437a18) | Android 1.3.1 | v1.3.1 | 已有設定；與浮動候選互斥 |
-| macOS／手機許氏配置 | [de4c762](https://github.com/polobread/KeyKey/commit/de4c762) | macOS／Android／iOS 1.3.1 | v1.3.1 | 此 commit 不代表 Windows／Linux 也是此版才首次支援許氏 |
-| Linux 好打注音、自訂詞與學習 | [a36c63e](https://github.com/polobread/KeyKey/commit/a36c63e) | Linux 1.2.10 | v1.3.0 | 自訂詞介面仍為 CLI；正式 1.3.1 已有此功能線 |
-| Windows TSF 好打注音與自訂詞設定 | [4fc06e9](https://github.com/polobread/KeyKey/commit/4fc06e9) | Windows 1.3.0 | v1.3.0 | 產品 tag 存在，不代表 Windows 安裝包已正式發布 |
-| 手機虛擬好打、自訂詞、匯入／匯出與學習 | [fb0593a](https://github.com/polobread/KeyKey/commit/fb0593a) | Android／iOS 1.2.10 | v1.3.0 | CHANGELOG 以 1.3.0 功能分類，保留引入時 1.2.10 的來源證據 |
-| 手機實體好打編輯 | [86dffb6](https://github.com/polobread/KeyKey/commit/86dffb6) | Android／iOS 1.2.10 | v1.3.0 | 與虛擬好打分開追蹤；iOS 僅 App 編輯器 |
-| Android 分段震動時間、鍵盤高度 | [c30466d](https://github.com/polobread/KeyKey/commit/c30466d) | Android 1.2.8 | v1.2.9 | 不能沿用 CHANGELOG 大類而一律寫 1.2.7 |
-| Android 按鍵預覽等鍵盤控制 | [67982f2](https://github.com/polobread/KeyKey/commit/67982f2) | Android 1.2.8 | v1.2.8 | 為既有鍵盤控制的擴充；非所有相關能力的首次加入 |
-| iOS App 實體鍵盤編輯器 | [03fb72c](https://github.com/polobread/KeyKey/commit/03fb72c) | iOS 1.2.7 | v1.2.8 | CHANGELOG 列 1.2.7，但固定 v1.2.7 tag 不包含此 commit |
-| 手機候選配色 | [78d358d](https://github.com/polobread/KeyKey/commit/78d358d) | Android／iOS 1.2.7 | v1.2.7 | 不代表 iOS App 實體編輯器會套用此配色 |
-| Android 浮動候選窗 | [4df843c](https://github.com/polobread/KeyKey/commit/4df843c) | Android 初始工程 0.1.0 | v1.2.3 | 當時工程版號未對齊產品版號；勿把 0.1.0 當正式產品版本 |
-| Android 早期鍵盤版面與設定 | [fccbe81](https://github.com/polobread/KeyKey/commit/fccbe81) | Android 初始工程 0.1.0 | v1.2.3 | 只作早期來源定位；個別設定仍需各自追溯 |
-| iOS 初始虛擬注音鍵盤 | [1272224](https://github.com/polobread/KeyKey/commit/1272224) | iOS 1.2.2 | v1.2.3 | 不代表所有後來的 iOS 設定均於此版加入 |
-| macOS 候選窗比例 | [799292d](https://github.com/polobread/KeyKey/commit/799292d) | macOS 1.2.5 | v1.2.5 | 後續修正見 [3e643c2](https://github.com/polobread/KeyKey/commit/3e643c2)；既有能力 |
+| 功能／受影響平台 | 引入或關鍵調整 commit | 推出／預計推出產品版號 | 狀態與備註 |
+|---|---|---|---|
+| macOS 獨立英文、Shift 開關與啟動模式 | [68edbfa](https://github.com/polobread/KeyKey/commit/68edbfa) | macOS 1.3.7 | 預計推出 |
+| Windows 三組選字鍵、組字長度滑桿 | [5859846](https://github.com/polobread/KeyKey/commit/5859846) | Windows 1.3.7 | 預計推出；進階設定的控制介面調整 |
+| Windows 中文忽略 Caps Lock | [dc3bf6d](https://github.com/polobread/KeyKey/commit/dc3bf6d) | Windows 1.3.7 | 預計推出 |
+| Windows 進階注音、讀音輔助、符號表、簡體輸出 | [4a74b74](https://github.com/polobread/KeyKey/commit/4a74b74) | Windows 1.3.7 | 預計推出 |
+| Windows 診斷記錄 | [e079018](https://github.com/polobread/KeyKey/commit/e079018) | Windows 1.3.7 | 預計推出 |
+| Windows 可關閉的符號表快捷鍵 | [d0cd701](https://github.com/polobread/KeyKey/commit/d0cd701) | Windows 1.3.7 | 預計推出 |
+| macOS Emoji 與符號表比例 | [e325210](https://github.com/polobread/KeyKey/commit/e325210) | macOS 1.3.7 | 預計推出 |
+| 桌面倉頡即時／前綴候選 | [c261c1d](https://github.com/polobread/KeyKey/commit/c261c1d) | macOS／Windows／Linux 1.3.7 | 預計推出；FreeBSD 共用實作，另需原生驗收 |
+| 手機虛擬倉頡前綴候選 | [f67852b](https://github.com/polobread/KeyKey/commit/f67852b) | Android／iOS 1.3.7 | 預計推出 |
+| 手機實體倉頡前綴候選 | [84836e0](https://github.com/polobread/KeyKey/commit/84836e0) | Android／iOS 1.3.7 | 預計推出；虛擬／實體設定分開保存 |
+| 手機倉頡前綴依賴即時候選、恢復錯碼互斥 | [6423d98](https://github.com/polobread/KeyKey/commit/6423d98) | Android／iOS 1.3.7 | 隨前綴候選一同推出 |
+| Linux／FreeBSD 空白開候選、游標目標、Esc 整句 | [9bb2fe1](https://github.com/polobread/KeyKey/commit/9bb2fe1) | Linux／FreeBSD 1.3.7 | 預計推出；FreeBSD 套件上架另行確認 |
+| Linux／FreeBSD 更新通知 | [dc1389c](https://github.com/polobread/KeyKey/commit/dc1389c) | Linux／FreeBSD 1.3.7 | 預計推出；feed 與平台發布驗收另確認 |
+| macOS／Windows 更新基礎 | [817e287](https://github.com/polobread/KeyKey/commit/817e287) | macOS／Windows 1.3.7 | 預計推出；服務啟用另驗收 |
+| 桌面 beta 通知開關 | [696b3db](https://github.com/polobread/KeyKey/commit/696b3db) | macOS／Windows／Linux 1.3.7 | 預計推出；通知預設關閉 |
+| 桌面改每週檢查 | [8289000](https://github.com/polobread/KeyKey/commit/8289000) | macOS／Windows／Linux 1.3.7 | 預計推出；排程保存修正見 [afdbc00](https://github.com/polobread/KeyKey/commit/afdbc00) |
+| Windows 同版本重新安裝下載頁 | [1170c9b](https://github.com/polobread/KeyKey/commit/1170c9b) | Windows 1.3.7 | 預計推出；只開下載頁 |
+| Android 實體好打雙排選字 | [9916dec](https://github.com/polobread/KeyKey/commit/9916dec)、[cc9bd76](https://github.com/polobread/KeyKey/commit/cc9bd76) 固定數字列 | Android 1.3.6 | 已推出；產品升版提交為 [b792c68](https://github.com/polobread/KeyKey/commit/b792c68) |
+| Android 實體候選面板收起 | [e9052d4](https://github.com/polobread/KeyKey/commit/e9052d4) | Android 1.3.5 | 已推出 |
+| 手機空白鍵選字開關 | [6beb443](https://github.com/polobread/KeyKey/commit/6beb443) | Android 1.3.5；iOS 1.3.7 | Android 已推出；iOS 預計推出 |
+| 手機缺字候選過濾／重設快取 | [8bc529c](https://github.com/polobread/KeyKey/commit/8bc529c) | Android 1.3.5；iOS 1.3.7 | Android 已推出；iOS 預計推出；此為固定行為 |
+| 手機倉頡／簡易及選項 | [dafed1e](https://github.com/polobread/KeyKey/commit/dafed1e) | Android／iOS 1.3.2 已有 | 已推出；新前綴候選另列 1.3.7 |
+| Android 上下文選字開關 | [54e638b](https://github.com/polobread/KeyKey/commit/54e638b) | Android 1.3.2 已有 | 已推出；其他 frontend 是否補齊列為 R10 |
+| Android 實體虛擬數字／符號列 | [1437a18](https://github.com/polobread/KeyKey/commit/1437a18) | Android 1.3.2 已有 | 已推出；與浮動候選互斥 |
+| macOS／手機許氏配置 | [de4c762](https://github.com/polobread/KeyKey/commit/de4c762) | macOS 1.3.1；Android／iOS 1.3.2 已有 | 已推出；不代表 Windows／Linux 也是此版才支援許氏 |
+| Linux 好打注音、自訂詞與學習 | [a36c63e](https://github.com/polobread/KeyKey/commit/a36c63e) | Linux 1.3.1 已有 | 已推出；自訂詞介面仍為 CLI |
+| Windows TSF 好打注音與自訂詞設定 | [4fc06e9](https://github.com/polobread/KeyKey/commit/4fc06e9) | Windows 1.3.7 | 預計推出 |
+| 手機虛擬好打、自訂詞、匯入／匯出與學習 | [fb0593a](https://github.com/polobread/KeyKey/commit/fb0593a) | Android／iOS 1.3.2 已有 | 已推出 |
+| 手機實體好打編輯 | [86dffb6](https://github.com/polobread/KeyKey/commit/86dffb6) | Android／iOS 1.3.2 已有 | 已推出；iOS 僅 App 編輯器 |
+| Android 分段震動時間、鍵盤高度 | [c30466d](https://github.com/polobread/KeyKey/commit/c30466d) | Android 1.3.2 已有 | 已推出 |
+| Android 按鍵預覽等鍵盤控制 | [67982f2](https://github.com/polobread/KeyKey/commit/67982f2) | Android 1.3.2 已有 | 已推出；此 commit 為既有鍵盤控制的擴充 |
+| iOS App 實體鍵盤編輯器 | [03fb72c](https://github.com/polobread/KeyKey/commit/03fb72c) | iOS 1.3.2 已有 | 已推出；僅限琦琦 App 前景 |
+| 手機候選配色 | [78d358d](https://github.com/polobread/KeyKey/commit/78d358d) | Android／iOS 1.3.2 已有 | 已推出；iOS App 實體編輯器仍固定紫色 |
+| Android 浮動候選窗 | [4df843c](https://github.com/polobread/KeyKey/commit/4df843c) | Android 1.3.2 已有 | 已推出 |
+| Android 早期鍵盤版面與設定 | [fccbe81](https://github.com/polobread/KeyKey/commit/fccbe81) | Android 1.3.2 已有 | 已推出；個別新增選項另列 |
+| iOS 初始虛擬注音鍵盤 | [1272224](https://github.com/polobread/KeyKey/commit/1272224) | iOS 1.3.2 已有 | 已推出；後續新增設定另列 |
+| macOS 候選窗比例 | [799292d](https://github.com/polobread/KeyKey/commit/799292d) | macOS 1.3.1 已有 | 已推出；既有功能，後續修正見 [3e643c2](https://github.com/polobread/KeyKey/commit/3e643c2) |
 
-各平台開發版統一為 1.3.7 的提交是 [d14b196](https://github.com/polobread/KeyKey/commit/d14b196)。因此，前綴候選等功能雖在較舊的開發版號下加入，對外功能分類仍依目前 [CHANGELOG 1.3.7](../CHANGELOG.md#137)；不新增 beta 輪次式產品版本清單。
+目前各平台產品版號統一為 1.3.7 的提交是 [d14b196](https://github.com/polobread/KeyKey/commit/d14b196)，本次新功能依 [CHANGELOG 1.3.7](../CHANGELOG.md#137) 歸類。歷史開發版號與 beta tag 僅用於 Git 查核，不作本表的推出版本。
 
-版號查核入口：macOS 為 `Source/Loaders/OSX-IMK/Takao-Info.plist` 及其餘三份產品 plist；Windows 為 `Source/Loaders/Windows-TSF/CMakeLists.txt`；Linux 為 `Source/Loaders/Linux-IME/CMakeLists.txt`；Android 為 `Source/Loaders/Android-IME/app/build.gradle.kts`；iOS 為 `Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj/project.pbxproj`。FreeBSD 沿用共用 frontend，套件發行版本須另外查證。
-
-舊 macOS 一般／傳統注音／倉頡／簡易設定，以及未在上表逐項列出功能的首次版本，尚未逐項追到原始 commit，維持「既有、首次版號待考證」，不以此處較晚的修正 commit 冒充首次加入。
+舊 macOS 一般／傳統注音／倉頡／簡易設定，以及未在上表逐項列出的既有功能，首次推出版本仍待考證；可確認已包含的正式版與未來補齊功能的目標版號分開維護。
 
 ## 維護方式
 
