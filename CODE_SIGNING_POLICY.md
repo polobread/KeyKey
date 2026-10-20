@@ -9,8 +9,8 @@ and deployment acceptance is tracked separately from isolated tooling tests.
 This policy covers official Windows release artifacts for chichi77 KeyKey. Release
 inputs come from a successful official Actions run of the exact reviewed source
 commit already merged into master. Build-WindowsRelease.ps1 is shared by Actions
-and local Windows: it runs the x64/x86 tests and unsigned packaging from the
-v1.3.2 workflow. Actions stores an allowlisted unsigned artifact with source,
+and local Windows: it runs the x64/x86 tests and validates unsigned packaging.
+Actions stores an allowlisted unsigned artifact with source,
 run attempt, test statuses and file hashes; it never publishes official assets.
 Release-Windows.ps1 verifies that artifact against GitHub's digest and the exact
 reviewed tag/local checkout, signs copies, and repackages the EXE and both ZIPs

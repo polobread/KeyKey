@@ -101,7 +101,7 @@ Windows 發行者簽章採 Certum／SimplySign 本機半自動流程，首次真
 `Package macOS` 與完整 `Linux CI`；macOS／Linux 通過建置及驗證後，自動上傳自己的 assets。
 Windows 由 Actions 呼叫與本機共用的 PowerShell 完成建置、測試及 unsigned 封裝驗證，保存待簽 artifact；
 本機只驗證來源、Certum 簽章及重包 EXE／ZIP，驗收後另行核准發布。Ed25519 私鑰僅供本機使用，不提交、上傳或顯示。
-完整分工與 1.3.2 workflow 對表見 [Windows 發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
+完整分工與流程對表見 [Windows 發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
 各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
 均為 `1.3.7`，對應的正式版 tag 為 `v1.3.7`。macOS／Linux 正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。

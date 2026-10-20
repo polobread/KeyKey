@@ -39,7 +39,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Install the v1.3.2 workflow's NSIS packaging dependency
+      - name: Install NSIS packaging dependency
         run: choco install nsis --version=3.12.0 --yes --no-progress --limit-output
       - name: Shared PowerShell build, tests and unsigned packaging
         env:

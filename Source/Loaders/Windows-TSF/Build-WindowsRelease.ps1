@@ -1,4 +1,4 @@
-# Shared Windows build/test/unsigned packaging commands, based on the v1.3.2 workflow.
+# Shared Windows build/test/unsigned packaging commands.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string] $OutputDirectory,
@@ -88,8 +88,8 @@ try {
     } finally { $env:KEYKEY_TEST_OPENSSL = $previousOpenSsl }
     Invoke-Checked 'release-transport' $Python @('-m', 'unittest', 'discover', '-s', '../../../.github/scripts', '-p', 'test_windows_signing.py', '-v')
     Invoke-Checked 'signing-policy' 'powershell.exe' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'Packaging/Test-Signing.ps1', '-Python', $Python)
-    # Same packagers and verification as the v1.3.2 workflow. These are test inputs,
-    # never public release assets; final packages are rebuilt after local signing.
+    # Validate unsigned packages with the existing packagers. Final packages are
+    # rebuilt after local signing.
     $unsigned = Join-Path $output 'unsigned'
     foreach ($architecture in @('x64', 'x86')) {
         Invoke-Checked "unsigned-$architecture-zip" 'powershell.exe' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'Package-Windows.ps1',

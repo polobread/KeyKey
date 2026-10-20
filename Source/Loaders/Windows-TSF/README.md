@@ -554,8 +554,8 @@ testing; Windows may warn after a download.
 ## Local signed Windows release
 
 Windows Build and Unsigned Inputs calls Build-WindowsRelease.ps1 for PRs, master
-pushes and manual checks. The same PowerShell runs locally and retains the v1.3.2
-build/test/unsigned packaging commands. Official non-PR runs upload allowlisted
+pushes and manual checks. The same PowerShell runs build/test/unsigned packaging
+commands locally. Official non-PR runs upload allowlisted
 signing inputs, never public release assets; there is no WINDOWS_RELEASE_MODE.
 
 From a clean checkout of a reviewed tag that has reached origin/master:
