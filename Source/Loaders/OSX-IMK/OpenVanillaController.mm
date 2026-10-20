@@ -3,6 +3,7 @@
 #import "OpenVanillaController.h"
 #import "CVApplicationController.h"
 #import "CVNotifyController.h"
+#import "IMKInputMode.h"
 #import <AudioToolbox/AudioToolbox.h>
 #import "NSStringExtension.h"
 
@@ -15,6 +16,9 @@
 
 static OpenVanillaController* OVCActiveContext = nil;
 static id OVCActiveContextSender = nil;
+// Internal English mode is transient and follows this input-method process.
+// The selected Chinese module and the startup preference are never rewritten.
+static IMKInputMode OVCInputMode;
 
 // The Ctrl combinations that belong to the input method, all defined in
 // Source/DataTables/bpmf-punctuations.cin: _ctrl_opt_* for symbols, _ctrl_* for
@@ -342,6 +346,7 @@ static void OVCLaunchApplication(const string& value)
 
 - (void)activateServer:(id)sender
 {
+    _shiftTap.reset();
 
 	#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
     if ([[sender bundleIdentifier] isEqualToString:@"com.apple.Terminal"]) {
@@ -366,6 +371,9 @@ static void OVCLaunchApplication(const string& value)
 	[OpenVanillaLoader sharedLoader]->syncSandwichConfig();
 
 	OVKeyValueMap kvm = [OpenVanillaLoader sharedLoader]->configKeyValueMap();
+    _shiftTapEnabled = kvm.stringValueForKey("ToggleInputModeWithShift") != "false";
+    OVCInputMode.initialize(kvm.stringValueForKey("DefaultInputMode") == "English");
+
 	string style = kvm.stringValueForKey("OneDimensionalCandidatePanelStyle");
 	if (OVWildcard::Match(style, "horizontal")) {
         _context->candidateService()->setOneDimensionalPanelVertical(false);
@@ -407,6 +415,8 @@ static void OVCLaunchApplication(const string& value)
 }
 - (void)deactivateServer:(id)sender
 {
+    _shiftTap.reset();
+    _shiftTapEnabled = NO;
 	// NSLog(@"deactivateServer (client %08x), identifier: %@", sender, [sender bundleIdentifier]);
 	
     [OpenVanillaController setActiveContext:nil sender:nil];
@@ -438,7 +448,10 @@ static void OVCLaunchApplication(const string& value)
 	loaderService->setLog("");
 }
 - (void)commitComposition:(id)sender 
-{    
+{
+    if (_modeSwitchInProgress)
+        return;
+
     // NSLog(@"commitComposition (client %08x), identifier: %@", sender, [sender bundleIdentifier]);
 
 	bool readingBufferEmpty = _context->readingText()->isEmpty();
@@ -488,10 +501,86 @@ static void OVCLaunchApplication(const string& value)
     }
     // NSLog(@"commitComposition end");
 }
+// Preserve visible composition, including an unfinished reading at the caret,
+// through the existing output filters before changing the frontend mode.
+- (BOOL)_finishCompositionForModeSwitch:(id)sender
+{
+    if (_modeSwitchInProgress || !sender)
+        return NO;
+
+    _modeSwitchInProgress = YES;
+    @try {
+        PVCombinedUTF16TextBuffer combined(*_context->composingText(), *_context->readingText());
+        if (!combined.composedText().empty()) {
+            PVTextBuffer savedComposing = *_context->composingText();
+            _context->composingText()->setText(combined.composedText());
+            string text = _context->residueComposingTextBeforeDeactivation();
+            *_context->composingText() = savedComposing;
+            [sender insertText:[NSString stringWithUTF8String:text.c_str()]
+                replacementRange:NSMakeRange(NSNotFound, NSNotFound)];
+        }
+        [_composingBuffer setString:@""];
+        _context->clear();
+        _context->deactivate();
+        _context->activate();
+        [self _resetUI];
+        return YES;
+    }
+    @catch (NSException *exception) {
+        // Retain the original composition and mode if the host rejects insertion.
+        return NO;
+    }
+    @finally {
+        _modeSwitchInProgress = NO;
+    }
+}
+
+- (BOOL)_setEnglishMode:(BOOL)english client:(id)sender
+{
+    if (OVCInputMode.english == english)
+        return YES;
+    if (![self _finishCompositionForModeSwitch:sender])
+        return NO;
+    OVCInputMode.english = english;
+    [CVNotifyController notify:english ? LFLSTR(@"English input") : LFLSTR(@"Chinese input")];
+    return YES;
+}
+
+- (void)englishInputModeAction:(id)sender
+{
+    id client = [sender objectForKey:(NSString*)kIMKCommandClientName];
+    [self _setEnglishMode:YES client:client ? client : OVCActiveContextSender];
+}
+
+// Always forward both modifier transitions. In particular, consuming just the
+// release would leave web-based hosts believing that Shift is still held.
+- (void)_handleShiftTap:(NSEvent*)event client:(id)sender
+{
+    if (!_shiftTapEnabled)
+        return;
+    IMKShiftTap::Result result = IMKShiftTap::None;
+    if ([event type] == NSFlagsChanged) {
+        NSUInteger flags = [event modifierFlags];
+        const bool otherModifiers = flags & (NSControlKeyMask | NSAlternateKeyMask |
+            NSCommandKeyMask | NSFunctionKeyMask);
+        result = _shiftTap.flagsChanged([event keyCode], flags & NSShiftKeyMask,
+            otherModifiers, [event timestamp]);
+    }
+    else if ([event type] == NSKeyDown) {
+        _shiftTap.cancel();
+    }
+    if (result == IMKShiftTap::Tap)
+        [self _setEnglishMode:!OVCInputMode.english client:sender];
+}
+
 - (BOOL)handleEvent:(NSEvent*)event client:(id)sender
 {
+    if (_modeSwitchInProgress)
+        return NO;
 	// update loader service
 	PVLoaderService* loaderService = [OpenVanillaLoader sharedLoaderService];
+
+    [self _handleShiftTap:event client:sender];
 
     // NSLog(@"handleEvent (client %08x), type = %08x, modifier = %08x, event: %@", sender, [event type], [event modifierFlags], event);
 	
@@ -638,7 +727,8 @@ static void OVCLaunchApplication(const string& value)
 				NSPoint cursorPosition = lineHeightRect.origin;
 				
 				[[appDelegate inputMethodToggleWindowController] useScreenOfPoint:cursorPosition];
-				[[appDelegate inputMethodToggleWindowController] moveToNextInputMethod];
+				OVCInputMode.english = NO;
+					[[appDelegate inputMethodToggleWindowController] moveToNextInputMethod];
 				[_handledKeyCodes addIndex:[event keyCode]];
 				return YES;
 			}
@@ -647,6 +737,9 @@ static void OVCLaunchApplication(const string& value)
 
         // NSLog(@"hanlding event, code = %d (%d or %x), modifiers = %x, vkeycode = %x", unicharCode, (char)unicharCode, (char)unicharCode, vanillaModifiers, virtualKeyCode);
         
+        if (OVCInputMode.english)
+            return NO;
+
         if (!OVCShouldEnterEngine(key))
             return NO;
 
@@ -846,6 +939,10 @@ static void OVCLaunchApplication(const string& value)
 }
 - (void)switchInputMethodAction:(id)sender
 {
+    id client = [sender objectForKey:(NSString*)kIMKCommandClientName];
+    if (![self _finishCompositionForModeSwitch:client ? client : OVCActiveContextSender])
+        return;
+    OVCInputMode.english = NO;
     NSMenuItem *menuItem = [sender objectForKey:@"IMKCommandMenuItem"];
     [OpenVanillaLoader sharedLoader]->setPrimaryInputMethod([[menuItem representedObject] UTF8String]);
     [OpenVanillaLoader sharedLoader]->syncSandwichConfig();
@@ -965,7 +1062,7 @@ static void OVCLaunchApplication(const string& value)
 		[menuItem setEnabled:NO];
 	}
 	else {        
-		if ([OpenVanillaLoader sharedLoader]->primaryInputMethod() == identifier)
+		if (!OVCInputMode.english && [OpenVanillaLoader sharedLoader]->primaryInputMethod() == identifier)
 			[menuItem setState:NSOnState];
 		
 		[menuItem setTarget:self];
@@ -983,6 +1080,12 @@ static void OVCLaunchApplication(const string& value)
 - (NSMenu *)menu
 {
 	NSMenu *menu = [[[NSMenu alloc] init] autorelease];
+    NSMenuItem *english = [[[NSMenuItem alloc] initWithTitle:LFLSTR(@"English input")
+        action:@selector(englishInputModeAction:) keyEquivalent:@""] autorelease];
+    [english setTarget:self];
+    [english setState:OVCInputMode.english ? NSOnState : NSOffState];
+    [menu addItem:english];
+    [menu addItem:[NSMenuItem separatorItem]];
 	NSArray *a = [[NSApp delegate] inputMethodsArray];
 	NSEnumerator *e = [a objectEnumerator];
 	NSDictionary *d = nil;

@@ -33,3 +33,6 @@
 
 "BOM-LINE" = "=== Add your own pre-defined texts after this line ===";
 "EXAMPLE-LINE" = "Hello!";
+
+"English input" = "English input";
+"Chinese input" = "Chinese input";

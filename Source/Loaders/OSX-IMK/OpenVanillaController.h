@@ -9,10 +9,14 @@
 
 #import "OpenVanillaConfig.h"
 #import "OpenVanillaLoader.h"
+#import "IMKShiftTap.h"
 
 using namespace OpenVanilla;
 
 @interface OpenVanillaController : IMKInputController {
+    IMKShiftTap _shiftTap;
+    BOOL _shiftTapEnabled;
+    BOOL _modeSwitchInProgress;
     PVLoaderContext* _context;
     NSMutableString *_composingBuffer;
     BOOL _commitFromOurselves;

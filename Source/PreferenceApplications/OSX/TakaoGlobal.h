@@ -33,6 +33,8 @@ file for terms.
 	NSPopUpButton *_candidateWindowScalePopUpButton;
 	IBOutlet id _useUpdateCheckBox;
 	IBOutlet id _useCtrlBackSlashToggleInputMethod;
+    NSButton *_useShiftToggleInputMode;
+    NSPopUpButton *_defaultInputModePopUpButton;
 	
 	NSMutableDictionary *_takaoDictionary;
 	NSString *_preferenceFilePath;
