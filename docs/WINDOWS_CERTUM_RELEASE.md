@@ -101,6 +101,12 @@ Release 若已有 Ed25519 內容位址 EXE，既有 CDN 鏡像流程會先下載
 
 Ed25519 不可變副本須先經核准上線與驗證，feed 再以獨立 PR 由維護者 review／merge。沿用既有 metadata、signature 與 appcast 原始 bytes；metadata 或 URL 有變動就不能沿用原簽章。平台其他發布流程維持各自規則。
 
+feed PR 合併後，由 `master` 上的 `Sync Update Feeds to CDN` 同步；若自動執行
+被 `[skip ci]` 略過，才手動執行 `sync-feeds`，不重複發送已在執行的同步。
+beta 原生驗證依實際 beta 檔案或其驗證工具變更決定；單純 workflow 或 stable feed
+修改，不因舊 beta 設定仍存在而重驗舊安裝器。`stage-beta-assets` 每次都要求原生
+驗證，缺少 beta 設定時仍須失敗，不可略過。同步沿用現有簽包及簽章，不重新建置或簽署。
+
 ## 必要工具驗證與失敗處理
 
 ~~~powershell
