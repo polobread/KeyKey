@@ -342,6 +342,21 @@ static void OVCLaunchApplication(const string& value)
 
 - (void)activateServer:(id)sender
 {
+    _shiftProbe.reset();
+    // Normal builds have no bundle marker. A user override can disable the
+    // marked experiment at the next activation without reinstalling anything.
+    id override = [[NSUserDefaults standardUserDefaults] objectForKey:@"KeyKeyIMKShiftProbeEnabled"];
+    _shiftProbeEnabled = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"KeyKeyIMKShiftProbeEnabled"] boolValue]
+        && (!override || [override boolValue]);
+    if (_shiftProbeEnabled) {
+        NSLog(@"[KeyKey Shift Probe] activate context=%p", self);
+        static BOOL showedProbeBanner = NO;
+        if (!showedProbeBanner) {
+            showedProbeBanner = YES;
+            [CVNotifyController notify:@"IMK Shift 訊號測試已啟用（不切換中英）"];
+        }
+    }
+
 
 	#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
     if ([[sender bundleIdentifier] isEqualToString:@"com.apple.Terminal"]) {
@@ -407,6 +422,10 @@ static void OVCLaunchApplication(const string& value)
 }
 - (void)deactivateServer:(id)sender
 {
+    if (_shiftProbeEnabled)
+        NSLog(@"[KeyKey Shift Probe] deactivate context=%p", self);
+    _shiftProbe.reset();
+    _shiftProbeEnabled = NO;
 	// NSLog(@"deactivateServer (client %08x), identifier: %@", sender, [sender bundleIdentifier]);
 	
     [OpenVanillaController setActiveContext:nil sender:nil];
@@ -488,10 +507,45 @@ static void OVCLaunchApplication(const string& value)
     }
     // NSLog(@"commitComposition end");
 }
+// Observe the original IMK callback only. Do not install a global monitor and
+// do not consume just one half of a modifier pair: hosts must see Shift release.
+- (void)_observeShiftProbeEvent:(NSEvent*)event
+{
+    if (!_shiftProbeEnabled)
+        return;
+
+    IMKShiftTapProbe::Result result = IMKShiftTapProbe::None;
+    if ([event type] == NSFlagsChanged) {
+        NSUInteger flags = [event modifierFlags];
+        const bool otherModifiers = flags & (NSControlKeyMask | NSAlternateKeyMask |
+            NSCommandKeyMask | NSFunctionKeyMask);
+        result = _shiftProbe.flagsChanged([event keyCode], flags & NSShiftKeyMask,
+            otherModifiers, [event timestamp]);
+        NSLog(@"[KeyKey Shift Probe] flagsChanged context=%p code=%u flags=0x%lx result=%d",
+            self, (unsigned int)[event keyCode], (unsigned long)flags, (int)result);
+    }
+    else if ([event type] == NSKeyDown) {
+        // Deliberately do not log characters or ordinary key codes.
+        result = _shiftProbe.cancel();
+        if (result == IMKShiftTapProbe::Cancelled)
+            NSLog(@"[KeyKey Shift Probe] cancelled by another key context=%p", self);
+    }
+
+    if (result == IMKShiftTapProbe::Tap) {
+        NSString *side = _shiftProbe.keyCode == 56 ? @"左" : @"右";
+        NSLog(@"[KeyKey Shift Probe] TAP context=%p side=%@ duration=%.0fms",
+            self, side, _shiftProbe.elapsed * 1000);
+        [CVNotifyController notify:[NSString stringWithFormat:
+            @"IMK 已收到%@ Shift 單按（%.0f ms）", side, _shiftProbe.elapsed * 1000]];
+    }
+}
+
 - (BOOL)handleEvent:(NSEvent*)event client:(id)sender
 {
 	// update loader service
 	PVLoaderService* loaderService = [OpenVanillaLoader sharedLoaderService];
+
+    [self _observeShiftProbeEvent:event];
 
     // NSLog(@"handleEvent (client %08x), type = %08x, modifier = %08x, event: %@", sender, [event type], [event modifierFlags], event);
 	
