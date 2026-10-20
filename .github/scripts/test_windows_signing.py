@@ -151,6 +151,18 @@ class WindowsSigningTests(unittest.TestCase):
         self.assertNotIn("build_run_id", mirror)
         self.assertIn("receipt_sha256", mirror)
 
+    def test_mirror_verifies_tag_bytes_with_reviewed_master_mirror_tools(self):
+        workflow = (signing.ROOT / ".github/workflows/mirror-windows-signed.yml").read_text()
+        verify, mirror = workflow.split("\n  mirror:\n", 1)
+        self.assertIn("github.ref == 'refs/heads/master'", verify)
+        self.assertIn("ref: ${{ inputs.release_tag }}", verify)
+        self.assertNotIn("ref: ${{ github.sha }}", verify)
+        self.assertIn("ref: ${{ github.sha }}", mirror)
+        self.assertNotIn("ref: ${{ inputs.release_tag }}", mirror)
+        self.assertIn("needs: verify", mirror)
+        self.assertIn("environment: release", mirror)
+        self.assertIn("id-token: write", mirror)
+
     def test_shared_staging_needs_no_release_tag_or_api_access(self):
         with patch.object(signing, "api") as api:
             destination = self.inputs(self.root / "release")
@@ -344,23 +356,79 @@ class WindowsSigningTests(unittest.TestCase):
         self.assertIn("receipt_sha256=" + signing.sha256(info), calls[-1])
         self.assertNotIn("build_run_id", str(calls[-1]))
 
-    def test_mirror_adds_all_seven_with_conditional_writes_and_readbacks(self):
+    def test_mirror_adds_seven_assets_and_optional_verified_update_copy(self):
         directory = self.signed(self.root / "release")
         info = directory / signing.asset_names(self.version)[-1]
+        installer = directory / signing.asset_names(self.version)[0]
+        checksum = signing.sha256(installer)
+        copy_name = f"KeyKey-{self.version}-windows-x64-{checksum}.exe"
         def aws(*args):
             if args[:3] == ("aws", "s3api", "get-object"):
-                Path(args[-1]).write_bytes((directory / Path(args[-1]).name).read_bytes())
+                name = Path(args[-1]).name
+                source = installer if name == copy_name else directory / name
+                Path(args[-1]).write_bytes(source.read_bytes())
             return json.dumps(dict(Invalidation=dict(Id="EXAMPLE")))
+        def download(tag, name, output):
+            self.assertEqual((tag, name), (self.tag, copy_name))
+            (Path(output) / name).write_bytes(installer.read_bytes())
         env = dict(RELEASE_MIRROR_BUCKET="example-bucket", RELEASE_MIRROR_DISTRIBUTION_ID="EXAMPLE", RELEASE_MIRROR_BASE_URL="https://cdn.example.invalid")
-        with patch.dict(os.environ, env), patch.object(signing, "context", return_value=self.identity), \
-                patch.object(signing, "verify_zip"), patch.object(signing, "run", side_effect=aws), patch.object(signing, "verify_url") as cdn, \
-                patch.object(signing.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as put, patch("sys.stdout", new=io.StringIO()):
-            signing.mirror(self.tag, directory, signing.sha256(info))
-        self.assertEqual(put.call_count, 7)
-        self.assertEqual(cdn.call_count, 7)
-        for call in put.call_args_list:
-            self.assertIn("--if-none-match", call.args[0])
-            self.assertEqual(call.args[0][call.args[0].index("--if-none-match") + 1], "*")
+        for include_copy in (False, True):
+            assets = {"unrelated-macos-asset.pkg.zip": {}}
+            if include_copy:
+                assets[copy_name] = dict(size=installer.stat().st_size, digest="sha256:" + checksum)
+            with self.subTest(copy=include_copy), patch.dict(os.environ, env), patch.object(signing, "context", return_value=self.identity), \
+                    patch.object(signing, "verify_zip"), patch.object(signing, "release_assets", return_value=assets), \
+                    patch.object(signing, "download_asset", side_effect=download) as fetched, \
+                    patch.object(signing, "run", side_effect=aws) as requests, patch.object(signing, "verify_url") as cdn, \
+                    patch.object(signing.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as put, \
+                    patch("sys.stdout", new=io.StringIO()):
+                signing.mirror(self.tag, directory, signing.sha256(info))
+            self.assertEqual(put.call_count, 7 + include_copy)
+            self.assertEqual(cdn.call_count, 7 + include_copy)
+            self.assertEqual(fetched.call_count, int(include_copy))
+            expected = set(signing.asset_names(self.version)) | ({copy_name} if include_copy else set())
+            self.assertEqual({call.args[0].rsplit('/', 1)[-1] for call in cdn.call_args_list}, expected)
+            invalidation = next(call.args for call in requests.call_args_list if call.args[:3] == ("aws", "cloudfront", "create-invalidation"))
+            start = invalidation.index("--paths") + 1
+            self.assertEqual(set(invalidation[start:invalidation.index("--no-cli-pager")]),
+                             {f"/keykey/releases/download/{self.tag}/{name}" for name in expected})
+            for call in put.call_args_list:
+                command = call.args[0]
+                self.assertIn("--if-none-match", command)
+                self.assertEqual(command[command.index("--if-none-match") + 1], "*")
+                if command[command.index("--key") + 1].endswith("/" + copy_name):
+                    self.assertEqual(command[command.index("--body") + 1], str(installer))
+            self.assertFalse((directory / copy_name).exists())
+
+    def test_mirror_rejects_wrong_update_copies_before_any_aws_write(self):
+        directory = self.signed(self.root / "release")
+        info = directory / signing.asset_names(self.version)[-1]
+        installer = directory / signing.asset_names(self.version)[0]
+        payload = installer.read_bytes()
+        checksum = signing.sha256(installer)
+        prefix = f"KeyKey-{self.version}-windows-x64-"
+        name = f"{prefix}{checksum}.exe"
+        valid = dict(size=len(payload), digest="sha256:" + checksum)
+        cases = (
+            ("extra copy", {name: valid, prefix + "0" * 64 + ".exe": valid}, payload),
+            ("wrong name", {prefix + "0" * 64 + ".exe": valid}, payload),
+            ("wrong declared hash", {name: dict(valid, digest="sha256:" + "0" * 64)}, payload),
+            ("wrong declared size", {name: dict(valid, size=len(payload) + 1)}, payload),
+            ("wrong downloaded hash", {name: valid}, bytes(byte ^ 1 for byte in payload)),
+            ("wrong downloaded size", {name: valid}, payload + b"extra"),
+        )
+        for label, assets, downloaded in cases:
+            def download(tag, filename, output):
+                (Path(output) / filename).write_bytes(downloaded)
+            with self.subTest(case=label), patch.object(signing, "context", return_value=self.identity), \
+                    patch.object(signing, "verify_zip"), patch.object(signing, "release_assets", return_value=assets), \
+                    patch.object(signing, "download_asset", side_effect=download), patch.object(signing, "run") as requests, \
+                    patch.object(signing.subprocess, "run") as put, patch.object(signing, "verify_url") as cdn:
+                with self.assertRaisesRegex(ValueError, "update copy"):
+                    signing.mirror(self.tag, directory, signing.sha256(info))
+                put.assert_not_called()
+                requests.assert_not_called()
+                cdn.assert_not_called()
 
 
 if __name__ == "__main__":
