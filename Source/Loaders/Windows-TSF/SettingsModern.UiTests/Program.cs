@@ -8,6 +8,69 @@ using System.Text;
 
 internal static class Program
 {
+    private static void VerifyPhoneticControls(MainWindow window, string directory)
+    {
+        var keys = Control<ComboBox>(window, "CandidateSelectionKeys");
+        var size = Control<Slider>(window, "ComposingTextBufferSize");
+        var apply = Control<Button>(window, "ApplyButton");
+        var path = Path.Combine(directory, "com.polobread.chichi77-keykey.windows.SmartMandarin.plist");
+        string[] presets = ["12345678", "asdfghjk", "asdfzxcv"];
+        Check(!keys.IsEditable && keys.Items.Cast<string>().SequenceEqual(presets) && keys.SelectedIndex == 0,
+            "Selection keys must offer exactly the three macOS presets and default to digits");
+        Check(size.Minimum == 10 && size.Maximum == 20 && size.Value == 10 &&
+              size.IsSnapToTickEnabled && size.TickFrequency == 1 && size.SmallChange == 1,
+            "Composition slider must default to 10 and use integer steps from 10 to 20");
+        Check(App.Updater.CanShutdown, "Loading phonetic controls marked settings as edited");
+        foreach (var index in new[] { 1, 2, 0 })
+        {
+            keys.SelectedIndex = index;
+            Check(!App.Updater.CanShutdown, "Changing selection-key preset did not protect unsaved settings");
+            apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(Control<TextBlock>(window, "Status").Text == "設定已套用" && App.Updater.CanShutdown,
+                "Applying selection-key preset failed: " + Control<TextBlock>(window, "Status").Text);
+            Check(Value(XDocument.Load(path), "CandidateSelectionKeys") == presets[index], "Preset not saved");
+            var reopened = new MainWindow();
+            Check((string)Control<ComboBox>(reopened, "CandidateSelectionKeys").SelectedItem == presets[index],
+                "Selection-key preset not restored");
+            reopened.Close();
+        }
+        foreach (var length in Enumerable.Range(11, 10).Append(10))
+        {
+            size.Value = length;
+            Check(!App.Updater.CanShutdown, "Moving composition slider did not protect unsaved settings");
+            var label = Control<TextBlock>(window, "ComposingTextBufferSizeLabel");
+            label.GetBindingExpression(TextBlock.TextProperty)!.UpdateTarget();
+            Check(label.Text == $"{length} 音節", "Composition length label did not follow slider");
+            apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(Control<TextBlock>(window, "Status").Text == "設定已套用" && App.Updater.CanShutdown &&
+                  Value(XDocument.Load(path), "ComposingTextBufferSize") == length.ToString(),
+                "Composition length not saved as an integer");
+            var reopened = new MainWindow();
+            Check(Control<Slider>(reopened, "ComposingTextBufferSize").Value == length,
+                "Composition length not restored");
+            reopened.Close();
+        }
+        // Old custom/automatic keys must be shown as numeric, then normalized on Apply.
+        foreach (var legacy in new[] { "", "asdfjkl;", "12345677", "123456789" })
+        {
+            new XDocument(new XElement("plist", new XElement("dict",
+                new XElement("key", "CandidateSelectionKeys"), new XElement("string", legacy),
+                new XElement("key", "ComposingTextBufferSize"), new XElement("string", "15")))).Save(path);
+            var snapshot = File.ReadAllText(path);
+            var reopened = new MainWindow();
+            Check((string)Control<ComboBox>(reopened, "CandidateSelectionKeys").SelectedItem == presets[0] &&
+                  Control<Slider>(reopened, "ComposingTextBufferSize").Value == 15 &&
+                  File.ReadAllText(path) == snapshot && App.Updater.CanShutdown,
+                "Legacy keys did not fall back to digits without saving on open");
+            Control<Button>(reopened, "ApplyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(Control<TextBlock>(reopened, "Status").Text == "設定已套用" &&
+                  Value(XDocument.Load(path), "CandidateSelectionKeys") == presets[0],
+                "Legacy selection keys were not normalized on Apply");
+            reopened.Close();
+        }
+        Console.WriteLine("Phonetic presets, integer slider, unsaved protection and legacy Apply/reopen passed");
+    }
+
     private static void VerifyCapsLock(MainWindow window, string directory)
     {
         var option = Control<CheckBox>(window, "IgnoreCapsLockInChinese");
@@ -201,6 +264,28 @@ internal static class Program
             app.InitializeComponent();
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var window = new MainWindow();
+            if (args.Contains("--phonetic-controls"))
+            {
+                VerifyPhoneticControls(window, directory);
+                if (Environment.GetEnvironmentVariable("KEYKEY_TEST_SETTINGS_PREVIEW") is { Length: > 0 } previewPath)
+                {
+                    var content = (FrameworkElement)window.Content;
+                    LogicalTreeHelper.GetChildren(content).OfType<TabControl>().Single().SelectedIndex = 1;
+                    ((Panel)content).Background = SystemColors.WindowBrush;
+                    content.Measure(new Size(900, 900));
+                    content.Arrange(new Rect(0, 0, 900, 900));
+                    content.UpdateLayout();
+                    var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                        (int)content.ActualWidth, (int)content.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                    bitmap.Render(content);
+                    var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                    encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+                    using var output = File.Create(previewPath);
+                    encoder.Save(output);
+                }
+                window.Close();
+                return 0;
+            }
             if (args.Contains("--caps-lock"))
             {
                 VerifyCapsLock(window, directory);
@@ -255,20 +340,14 @@ internal static class Program
             foreach (var name in new[] { "ShowSmartMandarin", "ShowTraditionalMandarin", "ShowCangjie", "ShowSimplex" })
                 Control<CheckBox>(window, name).IsChecked = false;
             var apply = Control<Button>(window, "ApplyButton");
-            var keys = Control<TextBox>(window, "CandidateSelectionKeys");
-            var size = Control<TextBox>(window, "ComposingTextBufferSize");
-            Check(keys.Text == "" && size.Text == "10" &&
+            var keys = Control<ComboBox>(window, "CandidateSelectionKeys");
+            var size = Control<Slider>(window, "ComposingTextBufferSize");
+            Check((string)keys.SelectedItem == "12345678" && size.Value == 10 &&
                 Control<CheckBox>(window, "ShowCandidateListWithSpace").IsChecked == false &&
                 Control<CheckBox>(window, "SimplifiedChineseOutput").IsChecked == false,
                 "Smart defaults changed");
-            keys.Text = "12345677";
-            var preferenceSnapshot = Directory.GetFiles(directory, "*.plist").ToDictionary(p => p, File.ReadAllText);
-            apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Check(status.Text.Contains("8 個不重複") && Directory.GetFiles(directory, "*.plist").Length == preferenceSnapshot.Count &&
-                preferenceSnapshot.All(p => File.ReadAllText(p.Key) == p.Value),
-                "Invalid advanced setting partly saved preferences");
-            keys.Text = "asdfjkl;";
-            size.Text = "15";
+            keys.SelectedIndex = 1;
+            size.Value = 15;
             apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(status.Text.Contains("至少顯示一種"), "Empty mode selection was not rejected");
             Control<CheckBox>(window, "ShowSimplex").IsChecked = true;
@@ -290,7 +369,7 @@ internal static class Program
                   Value(cangjieSaved, "ComposeWhileTyping") == "true",
                   "Cangjie prefix choices did not persist");
             var smart = XDocument.Load(Path.Combine(directory, "com.polobread.chichi77-keykey.windows.SmartMandarin.plist"));
-            Check(Value(smart, "CandidateSelectionKeys") == "asdfjkl;" && Value(smart, "ComposingTextBufferSize") == "15",
+            Check(Value(smart, "CandidateSelectionKeys") == "asdfghjk" && Value(smart, "ComposingTextBufferSize") == "15",
                 "Advanced settings did not persist");
             var phraseText = Control<TextBox>(window, "PhraseText");
             var phraseReading = Control<TextBox>(window, "PhraseReading");
@@ -340,8 +419,8 @@ internal static class Program
                   Control<CheckBox>(reopened, "SimplexComposeWhileTyping").IsChecked == true &&
                   Control<CheckBox>(reopened, "SimplexClearOnError").IsChecked == false,
                 "Settings did not survive reopening");
-            Check(Control<TextBox>(reopened, "CandidateSelectionKeys").Text == "asdfjkl;" &&
-                Control<TextBox>(reopened, "ComposingTextBufferSize").Text == "15", "Advanced settings did not reopen");
+            Check((string)Control<ComboBox>(reopened, "CandidateSelectionKeys").SelectedItem == "asdfghjk" &&
+                Control<Slider>(reopened, "ComposingTextBufferSize").Value == 15, "Advanced settings did not reopen");
             Control<DataGrid>(reopened, "UserPhrases").SelectedItem =
                 NativeBackend.LoadPhrases().Single(p => p.RowId == savedPhrase.RowId);
             Check(Control<TextBox>(reopened, "PhraseReading").Text == "ㄧㄣˊ,ㄏㄤˊ",

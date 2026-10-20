@@ -108,11 +108,19 @@
             <CheckBox x:Name="ShowCandidateListWithSpace" Content="空白鍵開啟候選" Margin="0,0,0,12" />
             <CheckBox x:Name="CandidateCursorAtEndOfTargetBlock" Content="選字目標在游標前方" Margin="0,0,0,8" />
             <TextBlock Text="例如「今天｜天氣」：勾選時選前方的「今天」，取消時選後方的「天氣」。這是候選目標，不是選字後游標位置。" Opacity="0.7" Margin="0,0,0,12" />
-            <TextBlock Text="選字按鍵（留空依鍵盤配置自動；或 8 個不重複 ASCII 按鍵）" />
-            <TextBox x:Name="CandidateSelectionKeys" MaxLength="8" Margin="0,5,0,12" />
-            <Button Content="使用數字 12345678" Click="UseNumericSelectionKeys_Click" HorizontalAlignment="Left" Margin="0,0,0,12" />
+            <TextBlock Text="選字按鍵" />
+            <ComboBox x:Name="CandidateSelectionKeys"
+                      AutomationProperties.Name="選字按鍵" />
             <TextBlock Text="組字區長度（10–20 音節）" />
-            <TextBox x:Name="ComposingTextBufferSize" MaxLength="3" Margin="0,5,0,8" />
+            <Grid Margin="0,8,0,8" MaxWidth="360" HorizontalAlignment="Left">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="280"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <Slider x:Name="ComposingTextBufferSize" Minimum="10" Maximum="20" Value="10"
+                      TickFrequency="1" IsSnapToTickEnabled="True" TickPlacement="BottomRight"
+                      SmallChange="1" LargeChange="1" AutoToolTipPlacement="TopLeft" AutoToolTipPrecision="0"
+                      AutomationProperties.Name="組字區長度（音節）" />
+              <TextBlock x:Name="ComposingTextBufferSizeLabel" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
+                         Text="{Binding Value, ElementName=ComposingTextBufferSize, StringFormat={}{0:0} 音節}" />
+            </Grid>
             <CheckBox x:Name="ClearSmartCompositionWithEsc" Content="按 Esc 清除好打注音已完成的整句" Margin="0,18,0,8" />
             <TextBlock Text="預設保留整句；候選窗開啟時 Esc 只關閉候選，未完成讀音則只清除讀音。" Opacity="0.7" />
             <TextBlock Text="套用後，下一次輸入先送出原組字，再啟用新設定。" Opacity="0.7" Margin="0,12,0,0" />
