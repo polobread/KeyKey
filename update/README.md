@@ -346,7 +346,7 @@ Windows 客戶端也仍只接受單一 feed URL，來源設定與失敗切換功
 
 ## 產生與驗證更新資料
 
-Windows 正式發布的建置、Authenticode 與 Ed25519 都在本機完成；其他平台流程不變。
+Windows 的共用 PowerShell 在 Actions 建置、測試並產生待簽 artifact；Authenticode、重新封裝與 Ed25519 在本機完成，其他平台流程不變。
 先依 [Windows 本機發布指南](../docs/WINDOWS_CERTUM_RELEASE.md) 完成 EXE 與已簽 x64／x86 ZIP，
 再使用 `Source/Loaders/Windows-TSF/Prepare-WindowsUpdate.ps1` 準備 Windows 單平台更新資料。
 指定私鑰為 `keykey-update-private.pem`，僅交給本機密碼工具使用；禁止 commit／stage、上傳、顯示內容或放進 artifact。

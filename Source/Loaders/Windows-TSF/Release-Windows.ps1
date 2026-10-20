@@ -1,23 +1,23 @@
-# Local release entry point. Requires Windows, VS 2026 C++, CMake, Ruby and .NET 10.
+# Local signing/repackaging only. Build and test with the shared PowerShell in Actions.
 [CmdletBinding()]
 param(
-    [ValidateSet('Build', 'Sign', 'Publish')][string] $Action = 'Build',
+    [ValidateSet('Sign', 'Publish')][string] $Action = 'Sign',
+    [Parameter(Mandatory = $true)][ValidatePattern('^[1-9][0-9]*$')][string] $RunId,
     [Parameter(Mandatory = $true)][ValidatePattern('^v[0-9]+\.[0-9]+\.[0-9]+(?:-beta[1-9][0-9]*)?$')][string] $ReleaseTag,
     [string] $Python = 'python',
     [string] $OutputDirectory,
     [string] $MakensisPath,
     [string] $SignToolPath,
-    [string] $OpenSslPath,
     [ValidateSet('CurrentUser', 'LocalMachine')][string] $CertificateStoreLocation = 'CurrentUser',
     [uri] $TimestampUrl = 'http://time.certum.pl'
 )
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $helper = Join-Path $repositoryRoot '.github\scripts\windows-signing.py'
-if (-not $OutputDirectory) { $OutputDirectory = Join-Path $PSScriptRoot "out\local-release\$ReleaseTag" }
+if (-not $OutputDirectory) { $OutputDirectory = Join-Path $repositoryRoot "update\out\local-release\$RunId-$ReleaseTag" }
 $releaseDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 $ignored = & git -C $repositoryRoot check-ignore -- $releaseDirectory
-if ($LASTEXITCODE -ne 0) { throw 'Release output directory must be ignored by Git (use out/local-release).' }
+if ($LASTEXITCODE -ne 0) { throw 'Release output directory must be ignored by Git (use update/out/local-release).' }
 function Invoke-ReleaseHelper {
     param([string[]] $Arguments)
     $helperOutput = & $Python $helper @Arguments
@@ -26,7 +26,7 @@ function Invoke-ReleaseHelper {
 }
 if ($Action -eq 'Publish') {
     $context = Get-Content -LiteralPath (Join-Path $releaseDirectory 'context.json') -Raw | ConvertFrom-Json
-    if ($context.release_tag -ne $ReleaseTag) { throw 'Release directory belongs to another tag.' }
+    if ($context.release_tag -ne $ReleaseTag -or [string]$context.run_id -ne $RunId) { throw 'Release directory belongs to another run/tag.' }
     $infoPath = Join-Path $releaseDirectory "signed\chichi77-KeyKey-$($context.version)-windows-build-info.json"
     $info = Get-Content -LiteralPath $infoPath -Raw | ConvertFrom-Json
     Write-Host "Release: $ReleaseTag; local source: $($context.source_sha)"
@@ -39,23 +39,11 @@ if ($Action -eq 'Publish') {
     Invoke-ReleaseHelper -Arguments @('publish', '--tag', $ReleaseTag, '--directory', $releaseDirectory, '--approved-sha256', $digest)
     return
 }
-if ($Action -eq 'Build') {
-    $context = (Invoke-ReleaseHelper -Arguments @('prepare', '--tag', $ReleaseTag, '--directory', $releaseDirectory)) | ConvertFrom-Json
-    $config = Join-Path $releaseDirectory 'update-config.json'
-    & $Python (Join-Path $repositoryRoot 'update\prepare.py') select-release --tag $ReleaseTag --version $context.version --out $config
-    if ($LASTEXITCODE -ne 0) { throw 'Update configuration failed.' }
-    $previousConfig = $env:KEYKEY_UPDATE_CONFIG
-    try {
-        $env:KEYKEY_UPDATE_CONFIG = $config
-        $buildArguments = @{ OutputDirectory = Join-Path $releaseDirectory 'build'; Python = $Python }
-        if ($OpenSslPath) { $buildArguments.OpenSslPath = $OpenSslPath }
-        & (Join-Path $PSScriptRoot 'Build-WindowsRelease.ps1') @buildArguments
-    } finally { $env:KEYKEY_UPDATE_CONFIG = $previousConfig }
-    Invoke-ReleaseHelper -Arguments @('stage', '--directory', $releaseDirectory)
-}
+$context = (Invoke-ReleaseHelper -Arguments @('download', '--run-id', $RunId, '--tag', $ReleaseTag, '--directory', $releaseDirectory)) | ConvertFrom-Json
+Write-Host "Verified unsigned CI inputs: run $RunId; source $($context.source_sha)"
 Invoke-ReleaseHelper -Arguments @('verify-built', '--directory', $releaseDirectory)
 $context = Get-Content -LiteralPath (Join-Path $releaseDirectory 'context.json') -Raw | ConvertFrom-Json
-if ($context.release_tag -ne $ReleaseTag) { throw 'Release directory belongs to another tag.' }
+if ($context.release_tag -ne $ReleaseTag -or [string]$context.run_id -ne $RunId) { throw 'Release directory belongs to another run/tag.' }
 $signedDirectory = Join-Path $releaseDirectory 'signed'
 if (Test-Path -LiteralPath $signedDirectory) { throw 'Signing output already exists. Preserve it; use a fresh release directory for a new attempt.' }
 . (Join-Path $PSScriptRoot 'Packaging\Authenticode.ps1')
@@ -103,4 +91,4 @@ try {
 }
 Invoke-ReleaseHelper -Arguments @('record', '--directory', $releaseDirectory)
 Write-Host "Seven signed release files are ready at $signedDirectory"
-Write-Host 'Complete VM acceptance, then use -Action Publish with the same tag and output directory.'
+Write-Host 'Complete VM acceptance, then use -Action Publish with the same run, tag and output directory.'

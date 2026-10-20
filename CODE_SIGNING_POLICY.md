@@ -7,12 +7,14 @@ and deployment acceptance is tracked separately from isolated tooling tests.
 ## Scope and release process
 
 This policy covers official Windows release artifacts for chichi77 KeyKey. Release
-builds use a clean local checkout of the exact reviewed tag commit already merged
-into master. Build-WindowsRelease.ps1 performs the full x64/x86 build and release
-check matrix locally; the check-only Windows workflow uses the same script.
-Release-Windows.ps1 records the source, test results and input hashes, signs
-copies, and creates the EXE, both installation ZIPs, checksums and build-info.
-There is no CI artifact download or CI-run requirement. The maintainer connects
+inputs come from a successful official Actions run of the exact reviewed source
+commit already merged into master. Build-WindowsRelease.ps1 is shared by Actions
+and local Windows: it runs the x64/x86 tests and unsigned packaging from the
+v1.3.2 workflow. Actions stores an allowlisted unsigned artifact with source,
+run attempt, test statuses and file hashes; it never publishes official assets.
+Release-Windows.ps1 verifies that artifact against GitHub's digest and the exact
+reviewed tag/local checkout, signs copies, and repackages the EXE and both ZIPs
+without compiling or rerunning the matrix. The maintainer connects
 SimplySign with a phone token (and PIN if required), then signs locally.
 Publication requires separate approval of the complete build-info SHA-256 after VM acceptance.
 See [Windows local release procedure](docs/WINDOWS_CERTUM_RELEASE.md).
@@ -34,9 +36,13 @@ publishing an artifact. Files must not be modified after signing.
 All new Windows release assets require valid Authenticode and RFC 3161 timestamps.
 This includes every EXE/DLL inside x64 and x86 ZIPs, as well as the outer NSIS EXE.
 Manifests, ZIPs and checksum files are generated only after payload signing.
-Windows Checks is a build/test gate, with no release artifact upload or publication.
-The old signing-input workflow and unsigned release-mode selector are removed.
-UnsignedTest is restricted to isolated development fixtures and never the official local release entry point.
+The shared Windows workflow only uploads unsigned inputs from official non-PR
+runs; local signing accepts successful master pushes or master/tag manual runs,
+never forks or PR artifacts. No GitHub Release is required to build or sign.
+The separate signing-input workflow and unsigned release-mode selector remain removed.
+UnsignedTest is limited to packaging validation; unsigned EXEs/ZIPs are never
+published as new official release assets. CTest skipped cases remain explicitly
+recorded and do not substitute for required GUI/clean-VM acceptance.
 
 Signed assets are uploaded without replacement and read back, then independently
 verified on Windows before the protected OIDC mirror conditionally adds S3 objects.

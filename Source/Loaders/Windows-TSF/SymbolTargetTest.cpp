@@ -16,6 +16,7 @@ constexpr ULONG_PTR kTag = 0x4B535931;
 constexpr wchar_t kSymbol[] = L"\x203B";
 HWND rootWindow=nullptr;
 unsigned received=0;
+ULONGLONG readyAt=0;
 
 void Check(bool value,const char* message) { if (!value) throw std::runtime_error(message); }
 void Pump() {
@@ -80,7 +81,7 @@ struct Container {
 };
 
 LRESULT CALLBACK Receiver(HWND window,UINT message,WPARAM wp,LPARAM lp) {
-    if (message==kQuery) return GetFocus()==rootWindow;
+    if (message==kQuery) return GetFocus()==rootWindow && GetTickCount64()>=readyAt;
     if (message==WM_COPYDATA) {
         const auto* data=reinterpret_cast<COPYDATASTRUCT*>(lp);
         if (GetFocus()!=rootWindow || !data || data->dwData!=kTag || data->cbData!=sizeof(kSymbol) ||
@@ -93,7 +94,7 @@ LRESULT CALLBACK Receiver(HWND window,UINT message,WPARAM wp,LPARAM lp) {
     return DefWindowProcW(window,message,wp,lp);
 }
 
-int Child(const wchar_t* title) {
+int Child(const wchar_t* title,bool delayedReady) {
     HANDLE token=nullptr; DWORD restricted=0,bytes=0;
     Check(OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&token)!=FALSE,"Child token");
     const bool queried=GetTokenInformation(token,TokenIsAppContainer,&restricted,sizeof(restricted),&bytes)!=FALSE;
@@ -107,6 +108,8 @@ int Child(const wchar_t* title) {
     Check(dispatch!=nullptr,"Create AppContainer symbol endpoint");
     SetWindowLongPtrW(dispatch,GWLP_WNDPROC,reinterpret_cast<LONG_PTR>(Receiver));
     ShowWindow(rootWindow,SW_SHOWNOACTIVATE);
+    // A real text host can activate before its editor/TSF endpoint is ready.
+    readyAt=GetTickCount64()+(delayedReady ? 200 : 0);
     const auto deadline=GetTickCount64()+15000;
     while (IsWindow(rootWindow) && GetTickCount64()<deadline) {
         Pump(); Sleep(1);
@@ -117,13 +120,14 @@ int Child(const wchar_t* title) {
     return 0;
 }
 
-int Parent() {
+int Parent(bool delayedReady) {
     wchar_t executable[32768]{};
     Check(GetModuleFileNameW(nullptr,executable,32768)!=0,"Executable path");
     Container container;
     const auto childExecutable=container.prepare(executable);
     const auto title=L"KeyKey isolated symbol input "+std::to_wstring(GetCurrentProcessId());
     auto command=L"\""+childExecutable+L"\" --child \""+title+L"\"";
+    if (delayedReady) command+=L" --delayed-ready";
     STARTUPINFOEXW startup{};
     startup.StartupInfo.cb=sizeof(startup); startup.lpAttributeList=container.attributes;
     PROCESS_INFORMATION child{};
@@ -143,23 +147,47 @@ int Parent() {
     while (!(host=FindWindowExW(nullptr,nullptr,L"STATIC",title.c_str())) && GetTickCount64()<readyDeadline &&
         WaitForSingleObject(child.hProcess,0)==WAIT_TIMEOUT) { Pump(); Sleep(10); }
     Check(host!=nullptr,"AppContainer host did not start");
-    const auto focusDeadline=GetTickCount64()+2000;
-    while (GetForegroundWindow()!=host && GetTickCount64()<focusDeadline) {
-        SetForegroundWindow(host); Pump(); Sleep(10);
+    const auto focusDeadline=GetTickCount64()+3000;
+    bool acquiredForeground=false,available=false;
+    DWORD queryError=ERROR_SUCCESS;
+    HWND target=nullptr;
+    // Foreground ownership, editor focus and IPC readiness are separate events.
+    // Wait for all three, rather than treating one 80ms startup query as a verdict.
+    while (GetTickCount64()<focusDeadline && WaitForSingleObject(child.hProcess,0)==WAIT_TIMEOUT) {
+        if (GetForegroundWindow()!=host) SetForegroundWindow(host);
+        Pump();
+        if (GetForegroundWindow()==host) {
+            acquiredForeground=true;
+            const auto candidates=SymbolTargets(host,kDispatch);
+            if (candidates.size()==1) {
+                DWORD_PTR answer=0;
+                SetLastError(ERROR_SUCCESS);
+                const auto sent=SendMessageTimeoutW(candidates.front(),kQuery,0,0,
+                    SMTO_ABORTIFHUNG|SMTO_BLOCK,80,&answer);
+                queryError=GetLastError();
+                if (sent && answer && GetForegroundWindow()==host) {
+                    target=candidates.front(); available=true; break;
+                }
+            }
+        }
+        Sleep(10);
     }
-    if (GetForegroundWindow()!=host) {
+    if (!acquiredForeground) {
         std::cout<<"Interactive foreground desktop unavailable\n"; return 77;
     }
+    if (!available) {
+        std::cerr<<"AppContainer readiness timed out: query_error="<<queryError
+                 <<" foreground="<<(GetForegroundWindow()==host)
+                 <<" input_thread="<<(SymbolInputThread(host)!=0)<<'\n';
+    }
+    Check(available,"Focused AppContainer must enable symbols after startup");
     auto targets=SymbolTargets(host,kDispatch);
-    Check(targets.size()==1,"Discover the focused AppContainer symbol endpoint");
+    Check(targets.size()==1 && targets.front()==target,"Discover the focused AppContainer symbol endpoint");
     DWORD process=0;
     Check(GetWindowThreadProcessId(targets.front(),&process)==SymbolInputThread(host) && process==child.dwProcessId,
         "Endpoint must belong to the focused AppContainer process/thread");
     Check(SymbolTargets(host,L"Unknown isolated endpoint").empty(),"Unknown endpoint must not match");
     Check(SymbolTargets(nullptr,kDispatch).empty(),"Missing foreground must not match");
-    DWORD_PTR available=0;
-    Check(SendMessageTimeoutW(targets.front(),kQuery,0,0,SMTO_ABORTIFHUNG|SMTO_BLOCK,80,&available)!=0 && available,
-        "Focused AppContainer must enable symbols");
     COPYDATASTRUCT data{kTag,sizeof(kSymbol),const_cast<wchar_t*>(kSymbol)};
     for (unsigned i=0;i<3;++i) {
         DWORD_PTR accepted=0;
@@ -175,6 +203,9 @@ int Parent() {
 }
 
 int wmain(int argc,wchar_t** argv) {
-    try { return argc==3 && std::wstring(argv[1])==L"--child" ? Child(argv[2]) : Parent(); }
+    try {
+        if (argc>=3 && std::wstring(argv[1])==L"--child") return Child(argv[2],argc==4);
+        return Parent(argc==2 && std::wstring(argv[1])==L"--delayed-ready");
+    }
     catch (const std::exception& error) { std::cerr<<error.what()<<'\n'; return 1; }
 }

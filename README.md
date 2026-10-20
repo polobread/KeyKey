@@ -99,8 +99,9 @@ Windows 發行者簽章採 Certum／SimplySign 本機半自動流程，首次真
 
 發布 GitHub Release（可同時建立 tag）會啟動
 `Package macOS` 與完整 `Linux CI`；macOS／Linux 通過建置及驗證後，自動上傳自己的 assets。
-Windows Checks 僅作檢查；Windows 正式建置、測試、簽章、EXE／ZIP 封裝與核准發布都在本機，
-不下載待簽 artifact，也不再提供 unsigned 發布模式。Windows Ed25519 私鑰僅供本機使用，不提交、上傳或顯示。
+Windows 由 Actions 呼叫與本機共用的 PowerShell 完成建置、測試及 unsigned 封裝驗證，保存待簽 artifact；
+本機只驗證來源、Certum 簽章及重包 EXE／ZIP，驗收後另行核准發布。Ed25519 私鑰僅供本機使用，不提交、上傳或顯示。
+完整分工與 1.3.2 workflow 對表見 [Windows 發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
 各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
 均為 `1.3.7`，對應的正式版 tag 為 `v1.3.7`。macOS／Linux 正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
@@ -271,10 +272,11 @@ KeyKey does not currently meet the SignPath Foundation application requirements.
 
 Publishing a GitHub Release starts `Package macOS` and the full `Linux CI`.
 macOS/Linux upload verified packages when their version matches that Release.
-Windows Checks is check-only. Windows builds, tests, signs and packages the EXE and
-both signed ZIPs locally, then publishes after manual acceptance and approval.
-There is no signing-input artifact download or unsigned release mode. Windows Ed25519
-keys remain local and are never committed, uploaded or displayed. macOS,
+Windows Actions calls the same PowerShell used locally for builds, tests and
+unsigned packaging, then retains verified signing inputs. Local Windows verifies
+the CI artifact, signs and repackages the EXE and both ZIPs; publication follows
+manual acceptance and approval. Ed25519 keys remain local and are never committed,
+uploaded or displayed. See the [Windows release guide](docs/WINDOWS_CERTUM_RELEASE.md). macOS,
 Windows, and Linux development versions are `1.3.7`, with `v1.3.7` as the
 corresponding stable release tag. After fixing a failed stable macOS/Linux
 platform through a PR into `master`, manually run that workflow from `master` with
