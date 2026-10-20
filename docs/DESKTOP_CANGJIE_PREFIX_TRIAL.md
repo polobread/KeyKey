@@ -1,6 +1,6 @@
 # 桌面倉頡前綴候選試用
 
-macOS、Windows TSF 與 Linux／FreeBSD Fcitx 5 已接入程式碼，產品版號維持各平台 1.3.3（未發布）。完整規則見 [跨平台計畫](CANGJIE_PREFIX_CANDIDATES_PLAN.md)。
+macOS、Windows TSF 與 Linux／FreeBSD Fcitx 5 已接入程式碼，產品版號維持各平台 1.3.7（未發布）。完整規則見 [跨平台計畫](CANGJIE_PREFIX_CANDIDATES_PLAN.md)。
 
 ## 開啟方式
 

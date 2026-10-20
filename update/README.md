@@ -99,7 +99,7 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
 
 ### macOS 1.3.2 開發與啟用
 
-macOS 原始碼版號為 1.3.3（未發布）；四份產品 plist 必須一致，封裝不再讀取
+macOS 原始碼版號為 1.3.7（未發布）；四份產品 plist 必須一致，封裝不再讀取
 README 的 Linux 版號。更新設定頁每秒讀取 IMK 的本機狀態；Sparkle 自己呈現下載
 進度與簽章／安裝錯誤。每週檢查預設開啟，保留使用者既有關閉設定，不讀取舊 Yahoo 旗標；只在 IMK
 主程式執行時按上述十分鐘／每週排程檢查，不新增 launch agent。系統 profile 與背景下載均強制關閉。
