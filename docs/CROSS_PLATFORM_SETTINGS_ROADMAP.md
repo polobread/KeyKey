@@ -1,8 +1,8 @@
 # 跨平台輸入法設定支援表與 Roadmap
 
-盤點日期：2026-10-20。原始碼基準：`2f098a3`；各平台目前開發版為 **1.3.7**，共用好打注音模型為 **1.3.1**。
+盤點日期：2026-10-20。各平台目前開發版為 **1.3.7**，共用好打注音模型為 **1.3.1**。
 
-本表以目前可進入的輸入法設定、設定讀寫與 frontend 實作為依據，供後續功能規劃使用。功能已存在於原始碼，不等於已建置、已安裝、通過實機驗收或正式推出。本文後段以對外推出或預計推出的產品版號整理功能，commit 保留作來源追溯。
+本表以目前可進入的輸入法設定、設定讀寫與 frontend 實作為依據，供後續功能規劃使用。功能已存在於原始碼，不等於已建置、已安裝、通過實機驗收或正式推出。本文後段依功能引入或關鍵調整的提交日期整理開發時間表。
 
 ## 閱讀方式與平台範圍
 
@@ -155,9 +155,9 @@ macOS／Windows 的 key、feed 與正式啟用尚須依發布流程完成；存�
 
 ## 待規劃的功能缺口
 
-以下是依目前設定差異提出的規劃候選，**尚未承諾採用或指定推出版號**。優先順序供討論；先保留各平台合適的預設，不為追求表格一致而改變輸入行為。
+以下是依目前設定差異提出的規劃候選，**尚未承諾採用或指定開發日期**。優先順序供討論；先保留各平台合適的預設，不為追求表格一致而改變輸入行為。
 
-| 候選 | 建議順序 | 平台與缺口 | 完成條件 | 目標版號 |
+| 候選 | 建議順序 | 平台與缺口 | 完成條件 | 預計日期 |
 |---|---|---|---|---|
 | R01 手機實體鍵盤進階設定 | 優先 | Android 實體、iOS App 實體缺少游標前後目標、Esc 整句清除及選字鍵設定 | 各自有設定入口，保留目前組字後套用；Android 一般／雙排／浮動模式分別驗證 | 待定 |
 | R02 Linux／FreeBSD 詞彙管理介面 | 優先 | 目前新增／刪除／重設需 CLI，無匯入／匯出介面 | GUI 編輯、自訂詞匯入／匯出、重設保留自訂詞；Linux／FreeBSD 分別驗收 | 待定 |
@@ -177,58 +177,54 @@ iOS 在其他 App 接管 USB／藍牙鍵盤受系統 extension API 限制，不�
 
 macOS 舊 XIB 內的一點通、通用表格與外掛等歷史／條件式頁面，不因檔案仍存在就列為標準安裝已支援功能；若要納入 roadmap，須先確認目前安裝內容及可進入入口。
 
-## 功能版本與 Commit 追溯
+## 功能開發時間表
 
-本節的版號以**對外推出或預計推出的產品版本**為準。macOS、Windows、Linux 這批尚未正式推出的新功能統一列為 **1.3.7**，不列開發期間的暫用版號或 beta tag。已推出的功能列可確認已包含它的正式產品版；若無法確認最早推出版本，備註標示「已有」，不把來源 commit 的版號當成首發版號。
+日期取自功能引入或關鍵調整的 Git commit 提交時間，統一換算為台灣時區，以 `YYYY-MM-DD` 顯示並由新到舊排列。日期表示開發紀錄中的加入或調整時間，正式推出狀態請看前面的平台摘要；同一功能的後續修正另記於備註。
 
-功能來源已由 GPT-6 Luna 核對 commit 與版本紀錄；下表保留 commit 連結供追溯。產品版號與「已推出／預計推出」狀態分欄，1.3.7 仍須完成各平台發布驗收。FreeBSD 共用 Linux frontend，原生桌面驗收與 ports／pkg 上架狀態另行確認。
+| 日期 | 功能／受影響平台 | 備註 |
+|---|---|---|
+| 2026-10-20 | macOS 獨立英文、Shift 開關與啟動模式 | 可設定啟動時中文／英文 |
+| 2026-10-20 | Windows 三組選字鍵、組字長度滑桿 | 進階設定的控制介面調整 |
+| 2026-10-19 | Windows 中文忽略 Caps Lock | 中文模式預設開啟 |
+| 2026-10-18 | macOS Emoji 與符號表比例 | 符號表加入 Emoji 並跟隨候選窗比例 |
+| 2026-10-18 | 桌面倉頡即時／前綴候選 | macOS、Windows、Linux；FreeBSD 共用實作，另需原生驗收 |
+| 2026-10-18 | 手機虛擬倉頡前綴候選 | Android／iOS 虛擬鍵盤 |
+| 2026-10-18 | 手機實體倉頡前綴候選 | 虛擬／實體設定分開保存；iOS 僅 App 編輯器 |
+| 2026-10-18 | 手機倉頡前綴依賴即時候選、恢復錯碼互斥 | 前綴候選的配套約束 |
+| 2026-10-17 | Linux／FreeBSD 空白開候選、游標目標、Esc 整句 | 好打注音進階設定 |
+| 2026-10-17 | 桌面改每週檢查 | 2026-10-18 修正排程保存；只通知，不預先下載 |
+| 2026-10-17 | Windows 可關閉的符號表快捷鍵 | 中文模式限定 |
+| 2026-10-17 | Android 實體好打雙排選字 | 同日調整為固定數字列，不隨候選開關改變高度 |
+| 2026-10-17 | Android 實體候選面板收起 | 保留組字後收起面板 |
+| 2026-10-15 | 桌面 beta 通知開關 | macOS、Windows、Linux；通知預設關閉 |
+| 2026-10-15 | 手機空白鍵選字開關 | Android／iOS；虛擬與實體共用設定 |
+| 2026-10-15 | 手機缺字候選過濾／重設快取 | Android／iOS 的固定行為 |
+| 2026-10-14 | Linux／FreeBSD 更新通知 | feed 與平台發布驗收另確認 |
+| 2026-10-11 | Windows 同版本重新安裝下載頁 | 只開官方下載頁 |
+| 2026-10-10 | Windows 診斷記錄 | 使用者開啟後記錄三天，自動到期 |
+| 2026-10-10 | macOS／Windows 更新基礎 | 服務啟用與發布驗收另確認 |
+| 2026-10-04 | Windows 進階注音、讀音輔助、符號表、簡體輸出 | 四種輸入法與對應設定 |
+| 2026-10-02 | 手機倉頡／簡易及選項 | Android／iOS；前綴候選於後續加入 |
+| 2026-09-29 | Android 上下文選字開關 | 其他 frontend 是否補齊列為 R10 |
+| 2026-09-28 | Android 實體虛擬數字／符號列 | 與浮動候選互斥 |
+| 2026-09-28 | macOS／手機許氏配置 | 此為這些平台加入配置的紀錄 |
+| 2026-09-25 | Windows TSF 好打注音與自訂詞設定 | 設定、模式切換與自訂詞介面整合 |
+| 2026-09-25 | 手機實體好打編輯 | Android 實體鍵盤與 iOS App 編輯器 |
+| 2026-09-24 | Linux 好打注音、自訂詞與學習 | 自訂詞介面仍為 CLI |
+| 2026-09-24 | 手機虛擬好打、自訂詞、匯入／匯出與學習 | Android／iOS |
+| 2026-09-19 | Android 分段震動時間、鍵盤高度 | 直式／橫式高度分開設定 |
+| 2026-09-17 | Android 按鍵預覽等鍵盤控制 | 此為既有鍵盤控制的擴充紀錄 |
+| 2026-09-06 | iOS App 實體鍵盤編輯器 | 僅限琦琦 App 前景 |
+| 2026-09-03 | 手機候選配色 | Android／iOS；iOS App 實體編輯器仍固定紫色 |
+| 2026-08-27 | macOS 候選窗比例 | 同日有比例設定修正 |
+| 2026-08-23 | Android 浮動候選窗 | 實體鍵盤使用 |
+| 2026-08-23 | iOS 初始虛擬注音鍵盤 | 後續新增設定另列 |
+| 2026-08-22 | Android 早期鍵盤版面與設定 | 個別新增選項另列 |
 
-| 功能／受影響平台 | 引入或關鍵調整 commit | 推出／預計推出產品版號 | 狀態與備註 |
-|---|---|---|---|
-| macOS 獨立英文、Shift 開關與啟動模式 | [68edbfa](https://github.com/polobread/KeyKey/commit/68edbfa) | macOS 1.3.7 | 預計推出 |
-| Windows 三組選字鍵、組字長度滑桿 | [5859846](https://github.com/polobread/KeyKey/commit/5859846) | Windows 1.3.7 | 預計推出；進階設定的控制介面調整 |
-| Windows 中文忽略 Caps Lock | [dc3bf6d](https://github.com/polobread/KeyKey/commit/dc3bf6d) | Windows 1.3.7 | 預計推出 |
-| Windows 進階注音、讀音輔助、符號表、簡體輸出 | [4a74b74](https://github.com/polobread/KeyKey/commit/4a74b74) | Windows 1.3.7 | 預計推出 |
-| Windows 診斷記錄 | [e079018](https://github.com/polobread/KeyKey/commit/e079018) | Windows 1.3.7 | 預計推出 |
-| Windows 可關閉的符號表快捷鍵 | [d0cd701](https://github.com/polobread/KeyKey/commit/d0cd701) | Windows 1.3.7 | 預計推出 |
-| macOS Emoji 與符號表比例 | [e325210](https://github.com/polobread/KeyKey/commit/e325210) | macOS 1.3.7 | 預計推出 |
-| 桌面倉頡即時／前綴候選 | [c261c1d](https://github.com/polobread/KeyKey/commit/c261c1d) | macOS／Windows／Linux 1.3.7 | 預計推出；FreeBSD 共用實作，另需原生驗收 |
-| 手機虛擬倉頡前綴候選 | [f67852b](https://github.com/polobread/KeyKey/commit/f67852b) | Android／iOS 1.3.7 | 預計推出 |
-| 手機實體倉頡前綴候選 | [84836e0](https://github.com/polobread/KeyKey/commit/84836e0) | Android／iOS 1.3.7 | 預計推出；虛擬／實體設定分開保存 |
-| 手機倉頡前綴依賴即時候選、恢復錯碼互斥 | [6423d98](https://github.com/polobread/KeyKey/commit/6423d98) | Android／iOS 1.3.7 | 隨前綴候選一同推出 |
-| Linux／FreeBSD 空白開候選、游標目標、Esc 整句 | [9bb2fe1](https://github.com/polobread/KeyKey/commit/9bb2fe1) | Linux／FreeBSD 1.3.7 | 預計推出；FreeBSD 套件上架另行確認 |
-| Linux／FreeBSD 更新通知 | [dc1389c](https://github.com/polobread/KeyKey/commit/dc1389c) | Linux／FreeBSD 1.3.7 | 預計推出；feed 與平台發布驗收另確認 |
-| macOS／Windows 更新基礎 | [817e287](https://github.com/polobread/KeyKey/commit/817e287) | macOS／Windows 1.3.7 | 預計推出；服務啟用另驗收 |
-| 桌面 beta 通知開關 | [696b3db](https://github.com/polobread/KeyKey/commit/696b3db) | macOS／Windows／Linux 1.3.7 | 預計推出；通知預設關閉 |
-| 桌面改每週檢查 | [8289000](https://github.com/polobread/KeyKey/commit/8289000) | macOS／Windows／Linux 1.3.7 | 預計推出；排程保存修正見 [afdbc00](https://github.com/polobread/KeyKey/commit/afdbc00) |
-| Windows 同版本重新安裝下載頁 | [1170c9b](https://github.com/polobread/KeyKey/commit/1170c9b) | Windows 1.3.7 | 預計推出；只開下載頁 |
-| Android 實體好打雙排選字 | [9916dec](https://github.com/polobread/KeyKey/commit/9916dec)、[cc9bd76](https://github.com/polobread/KeyKey/commit/cc9bd76) 固定數字列 | Android 1.3.6 | 已推出；產品升版提交為 [b792c68](https://github.com/polobread/KeyKey/commit/b792c68) |
-| Android 實體候選面板收起 | [e9052d4](https://github.com/polobread/KeyKey/commit/e9052d4) | Android 1.3.5 | 已推出 |
-| 手機空白鍵選字開關 | [6beb443](https://github.com/polobread/KeyKey/commit/6beb443) | Android 1.3.5；iOS 1.3.7 | Android 已推出；iOS 預計推出 |
-| 手機缺字候選過濾／重設快取 | [8bc529c](https://github.com/polobread/KeyKey/commit/8bc529c) | Android 1.3.5；iOS 1.3.7 | Android 已推出；iOS 預計推出；此為固定行為 |
-| 手機倉頡／簡易及選項 | [dafed1e](https://github.com/polobread/KeyKey/commit/dafed1e) | Android／iOS 1.3.2 已有 | 已推出；新前綴候選另列 1.3.7 |
-| Android 上下文選字開關 | [54e638b](https://github.com/polobread/KeyKey/commit/54e638b) | Android 1.3.2 已有 | 已推出；其他 frontend 是否補齊列為 R10 |
-| Android 實體虛擬數字／符號列 | [1437a18](https://github.com/polobread/KeyKey/commit/1437a18) | Android 1.3.2 已有 | 已推出；與浮動候選互斥 |
-| macOS／手機許氏配置 | [de4c762](https://github.com/polobread/KeyKey/commit/de4c762) | macOS 1.3.1；Android／iOS 1.3.2 已有 | 已推出；不代表 Windows／Linux 也是此版才支援許氏 |
-| Linux 好打注音、自訂詞與學習 | [a36c63e](https://github.com/polobread/KeyKey/commit/a36c63e) | Linux 1.3.1 已有 | 已推出；自訂詞介面仍為 CLI |
-| Windows TSF 好打注音與自訂詞設定 | [4fc06e9](https://github.com/polobread/KeyKey/commit/4fc06e9) | Windows 1.3.7 | 預計推出 |
-| 手機虛擬好打、自訂詞、匯入／匯出與學習 | [fb0593a](https://github.com/polobread/KeyKey/commit/fb0593a) | Android／iOS 1.3.2 已有 | 已推出 |
-| 手機實體好打編輯 | [86dffb6](https://github.com/polobread/KeyKey/commit/86dffb6) | Android／iOS 1.3.2 已有 | 已推出；iOS 僅 App 編輯器 |
-| Android 分段震動時間、鍵盤高度 | [c30466d](https://github.com/polobread/KeyKey/commit/c30466d) | Android 1.3.2 已有 | 已推出 |
-| Android 按鍵預覽等鍵盤控制 | [67982f2](https://github.com/polobread/KeyKey/commit/67982f2) | Android 1.3.2 已有 | 已推出；此 commit 為既有鍵盤控制的擴充 |
-| iOS App 實體鍵盤編輯器 | [03fb72c](https://github.com/polobread/KeyKey/commit/03fb72c) | iOS 1.3.2 已有 | 已推出；僅限琦琦 App 前景 |
-| 手機候選配色 | [78d358d](https://github.com/polobread/KeyKey/commit/78d358d) | Android／iOS 1.3.2 已有 | 已推出；iOS App 實體編輯器仍固定紫色 |
-| Android 浮動候選窗 | [4df843c](https://github.com/polobread/KeyKey/commit/4df843c) | Android 1.3.2 已有 | 已推出 |
-| Android 早期鍵盤版面與設定 | [fccbe81](https://github.com/polobread/KeyKey/commit/fccbe81) | Android 1.3.2 已有 | 已推出；個別新增選項另列 |
-| iOS 初始虛擬注音鍵盤 | [1272224](https://github.com/polobread/KeyKey/commit/1272224) | iOS 1.3.2 已有 | 已推出；後續新增設定另列 |
-| macOS 候選窗比例 | [799292d](https://github.com/polobread/KeyKey/commit/799292d) | macOS 1.3.1 已有 | 已推出；既有功能，後續修正見 [3e643c2](https://github.com/polobread/KeyKey/commit/3e643c2) |
-
-目前各平台產品版號統一為 1.3.7 的提交是 [d14b196](https://github.com/polobread/KeyKey/commit/d14b196)，本次新功能依 [CHANGELOG 1.3.7](../CHANGELOG.md#137) 歸類。歷史開發版號與 beta tag 僅用於 Git 查核，不作本表的推出版本。
-
-舊 macOS 一般／傳統注音／倉頡／簡易設定，以及未在上表逐項列出的既有功能，首次推出版本仍待考證；可確認已包含的正式版與未來補齊功能的目標版號分開維護。
+舊 macOS 一般／傳統注音／倉頡／簡易設定，以及未在上表逐項列出的既有功能，加入日期仍待考證；不以較晚的修正日期冒充首次加入日期。
 
 ## 維護方式
 
-新增設定時同步更新對應欄位、共用／獨立儲存範圍與功能 commit；實作完成後先更新支援狀態，正式發布後再更新已發布版本。Roadmap 目標版號只在確認排程後填入，避免將「原始碼已有」當成「使用者已取得」。
+新增設定時同步更新對應欄位、共用／獨立儲存範圍與提交日期；實作完成後更新支援狀態，正式發布後再更新平台摘要。Roadmap 預計日期只在確認排程後填入，避免將「原始碼已有」當成「使用者已取得」。
 
-本次是文件與原始碼盤點，未執行各平台建置、安裝或實機功能驗收。版本來源為 [CHANGELOG](../CHANGELOG.md)、[README](../README.md)、各 frontend 文件與本機 Git；歷史交接測試數字不作現況驗收依據。
+本次是文件與原始碼盤點，未執行各平台建置、安裝或實機功能驗收。盤點來源為 [CHANGELOG](../CHANGELOG.md)、[README](../README.md)、各 frontend 文件與本機 Git；歷史交接測試數字不作現況驗收依據。
