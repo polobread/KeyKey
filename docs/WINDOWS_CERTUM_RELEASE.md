@@ -1,166 +1,117 @@
-# Windows Certum 本機簽章與發布
+# Windows 本機建置、Certum 簽章與發布
 
-本流程是半自動流程：新的 `Prepare Windows Signing Inputs` workflow 負責編譯、測試與整理待簽產物，
-本機腳本負責下載驗證、簽章與 NSIS 封裝。SimplySign 登入／PIN、VM 驗收與發布核准保留人工操作。
-簽包與發布是兩次命令。原本 unsigned workflow 完整保留、預設停用，切換方式見下節。
-憑證已由維護者取得；真實 Certum 簽章、乾淨 VM 與雲端發布仍須首次驗收，
-隔離測試不代表這些項目已完成。Windows 產品版本從 CMake 讀取，不連動其他平台與模型。
+Windows 正式發布完全由本機產生安裝包、兩個架構的 ZIP、校驗檔及 build-info。
+Windows Checks 只在 PR、master push 或手動執行時建置與測試，不產生發布 artifact、不簽章、不上傳 Release。
+發布 GitHub Release 不會啟動 Windows 建置；不再使用待簽 artifact、RunId 或 WINDOWS_RELEASE_MODE。
+所有新版發布都要求 Authenticode，沒有 unsigned 發布分支。低階封裝的 UnsignedTest 僅供隔離測試。
 
-## 一次性準備
+## 前置準備與來源
 
-- 先由維護者 review／merge 導入 PR；release tag 必須包含新版 workflow 與腳本。
-- Windows 安裝 Python **3.11 以上**、Git、GitHub CLI、Windows SDK SignTool、NSIS **3.12**、SimplySign Desktop。
-- 執行 `gh auth login`，登入有本儲存庫 Actions 讀取、Release 上傳及 workflow dispatch 權限的維護者帳號。
-  不將 GitHub token 寫入腳本；CLI 使用自己的登入儲存區。
-- 手機 SimplySign 已啟用。本機不保存 OTP、PIN、QR code 或 TOTP seed。
-- GitHub `release` environment 沿用既有 AWS OIDC 角色及變數：
-  `AWS_RELEASE_MIRROR_ROLE_ARN`、`AWS_RELEASE_MIRROR_REGION`、`AWS_ACCOUNT_ID`、
-  `AWS_RELEASE_MIRROR_BUCKET`、`AWS_RELEASE_MIRROR_DISTRIBUTION_ID`、`AWS_RELEASE_MIRROR_BASE_URL`。
-  IAM 須允許既有 release 目錄的條件式 PutObject／GetObject 與 CloudFront invalidation。
-  若環境限制只允許 master，須由維護者明確允許本流程使用的 release tag；
-  workflow dispatch 本身限定從 master 啟動，mirror job checkout 已核對的 tag。
-  本流程不修改 IAM、environment 核准規則或存放任何 AWS 長期金鑰。
+- 維護者先 review／merge 工作分支，再為該 commit 建立 vX.Y.Z 或 vX.Y.Z-betaN tag。beta 使用 Pre-release。
+- 發布 checkout 必須乾淨，HEAD 等於本機 tag，且該 commit 已在 origin/master 中。不要在其他 chat 正在修改的 checkout 發布。
+- 本機安裝 Visual Studio 2026 C++／Windows SDK、CMake 3.25+、Ruby 3.4、Python 3.11+、.NET SDK 10、OpenSSL 3、NSIS 3.12、Git、GitHub CLI 與 SimplySign Desktop。
+- 先更新來源及 tags，確認 origin 是官方 polobread/KeyKey。Publish 時會再次核對 GitHub 上的 tag，拒絕來源不同的同版補發。
+- GitHub CLI 使用自己的登入儲存區；不將 token、thumbprint、OTP、PIN、TOTP seed 或私鑰寫入 Git、日誌或命令範例。
+- SimplySign 手機 token／PIN 由維護者在供應商介面輸入；thumbprint 由腳本的遮罩提示讀取。
+- 建置輸出只放 Git 忽略的 out/local-release。可用額外的乾淨 checkout 發布，保留開發工作區與本機產物。
 
-不需要在本機安裝 Visual Studio、.NET SDK、Ruby 或 AWS CLI；本機不重新編譯，也不登入 AWS。
-若 `python` 不在 PATH，兩次命令均可加 `-Python '實際 python.exe 路徑'`。
+## 1. 本機完整建置、測試、簽章及封裝
 
-## unsigned 備援與模式切換
+從乾淨的 tag checkout，在儲存庫根目錄執行：
 
-原本的 `.github/workflows/package-windows.yml`（`Package Windows`）保留完整編譯、測試、
-unsigned ZIP／NSIS 封裝、Release 發布與鏡像工作，沒有改成待簽流程。
-其 package／publish jobs 只有 repository Actions variable `WINDOWS_RELEASE_MODE=unsigned` 才執行；
-未設定此變數時全部跳過，因此合併後預設停用。這是受版本控制的 job gate，與 GitHub UI 的
-`Disable workflow` 狀態不同；不會由本機腳本改寫任何 repository variable。
+~~~powershell
+& .\Source\Loaders\Windows-TSF\Release-Windows.ps1 -ReleaseTag vX.Y.Z
+~~~
 
-| `WINDOWS_RELEASE_MODE` | 原 unsigned workflow | 新待簽 workflow |
-| --- | --- | --- |
-| 未設定或 `certum` | 停用 | 啟用 |
-| `unsigned` | 啟用 | 停用 |
-| 其他值 | 停用 | 停用 |
+X.Y.Z 是產品版號占位；beta 使用 vX.Y.Z-betaN，必須與 CMake 產品版號及原 tag commit 對應。
+檔名及 PE 產品版號使用 X.Y.Z；頻道／beta 輪次由 release_tag、release_version 與獨立 CDN／feed 路徑識別。
+腳本不建立 Release、不建立或移動 tag。建置簽包時不下載 GitHub artifact。
 
-未來若不續購 Certum，由維護者手動切回 unsigned，無須還原程式碼：
+預設 Build 動作會：
 
-```powershell
-gh variable set WINDOWS_RELEASE_MODE --repo polobread/KeyKey --body unsigned
-# 切回 Certum：
-gh variable set WINDOWS_RELEASE_MODE --repo polobread/KeyKey --body certum
-```
+1. 核對乾淨來源、官方 origin、本機 tag 與已合併來源；建立來源 context。
+2. 選擇 stable／beta 更新設定，下載／核對固定的 WinSparkle SDK。
+3. 在獨立輸出目錄建置 x64 與 x86，執行完整發布矩陣。CI 的 Windows Checks 使用同一份 Build-WindowsRelease.ps1。
+4. 執行各架構 CTest、設定／部署、跨架構及原生／managed 資料保護、更新器／簽章回歸，記錄全部通過的 build-checks。
+5. 保存兩個架構的原始建置檔案與逐檔 SHA-256；副本中的全部 EXE／DLL 以 SHA-256 與 RFC 3161 時間戳簽章並逐檔驗證。
+6. 用同一份已簽 payload 產生 x64 NSIS 安裝檔、x64 ZIP 與 x86 ZIP。ZIP 內的設定、部署、TSF、bridge、WinSparkle 均為已簽檔案；簽章後才建立 manifest 與壓縮。
+7. 簽署外層 EXE，再檢查 EXE、ZIP 真正內容、PE 架構、產品版號、詞庫雜湊、簽章及可信任時間戳，產生三份校驗檔與涵蓋全部產物的 build-info。
 
-切換前先等待該平台已在執行的發布結束；模式變數不會取消已開始的工作。
-不要以切換模式取代版本／來源 review。憑證到期或登入失敗不會自動降級為 unsigned。
-unsigned 模式仍須逐版明確使用 `windows_signing: "unsigned-transition"`、Ed25519 與人工 feed PR；
-無效簽章不能當 unsigned，已發布資產不能用此模式原地替換。
+x64 安裝檔與 x64 ZIP 同時包含 x86 TSF／bridge，以支援 32 位元文字宿主；x86 ZIP 供 32 位元 Windows。
+解除安裝沿用已簽的部署程式。原始碼、隔離測試與本機簽章成功不能代替實際安裝驗收。
 
-## 1. 產生待簽包
+預設輸出在 Source/Loaders/Windows-TSF/out/local-release/TAG/signed/，正好七份發布資產：
 
-完成原始碼 review 後，以產品版本建立 tag 並發布對應的 GitHub Release；beta 使用
-`vX.Y.Z-betaN` 與 Pre-release。Certum 模式會啟動新的 `Prepare Windows Signing Inputs`，
-執行既有 x64／x86 發布測試並整理待簽產物。此 workflow 不上傳 unsigned EXE／ZIP 至 Release，
-也不進行鏡像同步。
+- chichi77-KeyKey-VERSION-windows-build-info.json
+- chichi77-KeyKey-VERSION-windows-x64-setup.exe
+- chichi77-KeyKey-VERSION-windows-x64-setup.exe.sha256
+- chichi77-KeyKey-VERSION-windows-x64.zip
+- chichi77-KeyKey-VERSION-windows-x64.zip.sha256
+- chichi77-KeyKey-VERSION-windows-x86.zip
+- chichi77-KeyKey-VERSION-windows-x86.zip.sha256
 
-若需手動啟動，以相同 tag 作為 workflow ref，並填入 `release_tag`：
+build-info 記錄本機建置來源、tag、完整測試紀錄、建置輸入雜湊，以及六份檔案的大小與 SHA-256。
+不記錄憑證識別或主機個人資訊。簽章後不修改、重壓縮或覆蓋產物。
 
-```powershell
-gh workflow run prepare-windows-signing.yml --repo polobread/KeyKey --ref vX.Y.Z -f release_tag=vX.Y.Z
-```
+可用 -Python、-OpenSslPath、-MakensisPath、-SignToolPath 指定工具；
+必要時使用 -CertificateStoreLocation LocalMachine，預設為 CurrentUser。
+時間戳預設 http://time.certum.pl。輸出可用 -OutputDirectory 改至另一個 Git 忽略目錄。
 
-`X.Y.Z` 是格式占位，請換成實際 Windows 版本；beta 的兩個 tag 參數也要相同。
-CI source 必須等於 tag commit；不接受同版本但 source 不同的 recovery build。
-修正原始碼後要走新版本／新 tag，不能移動已發布 tag。
+## 2. 人工驗收
 
-CI 產生 `keykey-windows-signing-VERSION-RUN_ID-ATTEMPT` artifact，保存 30 天，包含固定的
-9 個建置輸入及 `signing-inputs.json`。內容為兩個架構的 TSF、x86 registration bridge、
-x64 設定／部署／更新元件、DB 與 WinSparkle 授權。manifest 記錄來源、run、attempt 與逐檔 SHA-256。
-未填 `release_tag` 的手動 run 僅供測試，不可事後宣告為正式待簽包。
+在乾淨 Windows VM 驗證 EXE 與兩個 ZIP 的有效發行者／時間戳、UAC、一般／靜默安裝、舊版升級、
+同版重裝、降版拒絕、x64／32 位元文字宿主輸入、設定與使用者詞庫保留，以及移除。
+簽包後保留原始產物，驗收不重新修改或簽署它們。
 
-## 2. 本機下載、驗證、簽包
+## 3. 核准 GitHub 上傳與 CDN 鏡像
 
-在本機使用官方 repository 的**乾淨 checkout**，checkout 到該 CI 的確切 commit。
-不要在有個人未提交修改的工作目錄直接切換；可另備一份發布 checkout。
-以下命令從儲存庫根目錄執行，`123456789` 改成成功的 Prepare Windows Signing Inputs run ID：
+建立對應的正式 Release 或 Pre-release 後，從相同來源 checkout 與輸出目錄執行：
 
-```powershell
-& .\Source\Loaders\Windows-TSF\Release-Windows.ps1 `
-  -RunId 123456789 -ReleaseTag vX.Y.Z
-```
+~~~powershell
+& .\Source\Loaders\Windows-TSF\Release-Windows.ps1 -Action Publish -ReleaseTag vX.Y.Z
+~~~
 
-腳本先驗證官方 repository、workflow、成功狀態、事件、run attempt、tag／source commit，
-下載 artifact archive，核對 GitHub API 的 SHA-256 digest，再嚴格檢查固定檔名與逐檔雜湊。
-不執行 artifact 內任何腳本，封裝程式與授權檔取自同一個已核對的 source checkout。
+腳本列出六份檔案的 SHA-256，並要求完整輸入 PUBLISH TAG BUILD_INFO_SHA256。
+核准的是 build-info 雜湊，連同其內記錄的三個包及三份校驗檔一起固定，避免只核准 EXE 而漏掉 ZIP。
+發布前重新核對 GitHub tag、乾淨本機來源、原始建置輸入、測試紀錄、所有雜湊與實際 Authenticode。
+任何 ZIP 的簽章、內容或來源不符，皆在上傳前停止。
 
-看到登入提示後，在 SimplySign Desktop 連線，輸入手機 token；thumbprint 在 PowerShell
-遮罩提示內輸入。若需要 PIN，只在 SimplySign 的對話框輸入。
-預設憑證位於 `CurrentUser\My`；必要時加 `-CertificateStoreLocation LocalMachine`。
-工具不在預設位置時加 `-MakensisPath` 或 `-SignToolPath`。
-預設 Certum RFC 3161 URL 為 `http://time.certum.pl`，可用 `-TimestampUrl` 明確更換。
+七份檔案上傳至既有 Release，逐份下載回讀比對，然後觸發 Mirror Signed Windows Release。
+不編輯 Release／Latest、不移動 tag、不使用 clobber。同名相同 bytes 可重試，同名不同 bytes 拒絕覆寫。
+鏡像 workflow 從 master 啟動，在 Windows checkout tag 並重新下載／驗證七份產物，包含 ZIP 中的簽章。
+受保護的 release environment 以 OIDC 寫入既有 S3／CloudFront，條件式新增後回讀 S3／CDN。
+若 environment 設有 reviewer，需完成該核准。已請求鏡像不代表鏡像成功，應查看最終結果。
 
-腳本在暫存副本以 SHA-256 簽內部 7 個 PE，逐檔驗證完整簽章、指定憑證與可信任時間戳記，
-再產生 signed payload manifest、建立 NSIS x64 安裝包、簽外層並驗證，最後計算 SHA-256。
-x64 安裝包包含 x86 TSF／bridge，供 32 位元文字宿主使用；本流程不新增 32 位元 Windows 安裝器。
-解除安裝器沿用已簽的部署 EXE，不產生未簽的 NSIS uninstaller。
+## 4. 本機 Ed25519 與更新 feed PR
 
-輸出在忽略提交的 `Source/Loaders/Windows-TSF/out/local-release/RUN_ID-TAG/signed/`：
+Authenticode／時間戳完成後，Windows 的 Ed25519 也在本機使用 keykey-update-private.pem 處理。
+此檔名已加入 Git 忽略規則；禁止 commit／stage、上傳、顯示內容或放進產物，建議存放在儲存庫外。
+Windows 發布前會拒絕已追蹤／暫存的同名私鑰；本機包裝器抑制簽章工具診斷，不回顯私鑰。
+依 [更新發布說明](../update/README.md#產生與驗證更新資料) 準備 Windows manifest，宣告 authenticode、
+實際 tag／source commit、最終已簽 x64 EXE、最低 Windows 版本及發布說明，再執行：
 
-- `chichi77-KeyKey-VERSION-windows-x64-setup.exe`
-- 相同檔名加 `.sha256`
-- `chichi77-KeyKey-VERSION-windows-signed-build-info.json`：來源／CI artifact 身分與最終安裝包雜湊。
+~~~powershell
+& .\Source\Loaders\Windows-TSF\Prepare-WindowsUpdate.ps1 -Manifest /path/windows-manifest.json -PrivateKeyPath /protected/keykey-update-private.pem -BaseUrl https://YOUR-CDN/keykey/releases/download -OutputDirectory update/out/signed-release
+~~~
 
-不將 thumbprint、token、PIN、seed 寫入設定、JSON、命令範例或日誌。SignTool/provider 的原始
-stdout／stderr 丟棄，只回報成功或通用錯誤。正式 Authenticode 檔案仍會內含公開憑證。
-不要對此互動流程啟用 PowerShell tracing、transcription 或外部命令列錄製。
+此 Windows 專用入口只接受已簽 x64 EXE 的單平台 manifest，其他平台維持各自既有流程。
+它使用本機 metadata.py／OpenSSL，核對私鑰與既有正式公鑰一致，驗證安裝檔簽章與產品版號，產生安裝包 Ed25519 簽章、metadata.json／.sig、
+SHA-256 內容位址副本及 appcast。私鑰不進 Git、Actions 或 artifact。
+x86 ZIP 是手動安裝入口，不把 ZIP 當自動更新 EXE，也不另產生 x86 NSIS 安裝器。
+先上線並驗證不可變副本，才準備相應 stable／beta 的 feed PR；由維護者 review、merge master 後同步 CDN。
+Release-Windows 不自動修改、提升或上傳 feed。
 
-## 3. 人工驗收
+## 重試與驗證
 
-在乾淨 Windows VM 驗證有效發行者／時間戳記、UAC、一般與 `/S` 安裝、既有版升級、
-x64／32 位元文字宿主中文輸入、設定與使用者詞庫保留，以及移除。
-原始碼、mock、CI 成功不能取代已簽安裝包的實機行為。簽完不再修改安裝包。
+建置測試完成但尚未開始簽章時，可用相同 tag／輸出目錄執行 -Action Sign，會重新核對保存的建置輸入。
+若有不完整的簽包輸出，先保留診斷，人工移走失敗輸出或改用全新的 Git 忽略輸出目錄重新 Build。
+工具不自動刪除失敗產物。完整 signed 輸出存在後不重新簽包，直接在驗收後 Publish。
+GitHub／CDN 中斷可重新 Publish，但每次都需核准完整 build-info 雜湊。
 
-同版本可再次安裝：相同套件會重新核對並維護既有安裝；不同內容或重新簽署的套件
-會先驗證完整性與簽章，再裝入新目錄並切換註冊，保留仍被 App 使用的舊檔。
-降版仍拒絕，失敗仍透過交易回復原安裝。實機驗收須包含 signed 同版重裝與降版拒絕。
-
-## 4. 核准上傳與鏡像
-
-使用相同 checkout、run 與 tag：
-
-```powershell
-& .\Source\Loaders\Windows-TSF\Release-Windows.ps1 `
-  -Action Publish -RunId 123456789 -ReleaseTag vX.Y.Z
-```
-
-腳本顯示版本、檔名與最終 SHA-256，要求完整輸入 `PUBLISH TAG SHA256`。
-確認後會重新驗證 CI／tag、原 archive、最終雜湊、Windows Authenticode、時間戳記與版本，
-上傳這 3 份檔案至既有 Release，逐份下載回讀比對，再觸發 `Mirror Signed Windows Release`。
-不建立／編輯 Release、不移動 tag、不變更 Latest，不使用 `--clobber`。
-
-鏡像 workflow 從 master 啟動，在 Windows checkout tag、重新下載 Release 產物及驗簽，
-再由受保護的 `release` environment 以 OIDC 寫入原有 S3／CloudFront 路徑。
-若 environment 設有 reviewer，需完成該核准。
-S3 使用 `If-None-Match: *`，已存在時只接受完全相同 bytes；同步後回讀 S3、等待指定路徑
-invalidation 完成並核對 CDN bytes。Actions 摘要提供下載連結。
-本機顯示「已請求鏡像」不等於鏡像成功，須確認該 workflow 最終結果。
-
-## 重試與界線
-
-- 簽章中斷且尚未產生最終 EXE：可用同一個 Sign 命令，重新驗證快取後重試。
-- 下載未完成：保留錯誤供診斷，人工移走該 run 的失敗輸出目錄後重試；不自動刪除使用者檔案。
-- 最終 signed EXE 已存在時不重簽覆蓋；首次執行產生 receipt 後，直接 Publish。
-- GitHub 上傳或鏡像中斷：重新 Publish，必須再次核准。相同 bytes 可重試；任何同名不同內容
-  都中止，不能改 receipt 掩蓋不同的簽包。
-- 不要重跑已簽 run 的 CI attempt 或刪除 artifact；來源證明核對仍需 GitHub 上的 artifact metadata。
-  artifact 過期後無法重新下載，已有本機 archive 仍可依保留的 API metadata 核對；metadata 被刪除則停止。
-- feed、Ed25519、商店提交仍遵循各自流程；本命令不改 feed 或提交 Partner Center。
-  自動更新採 `windows_signing: "authenticode"`，先完成 Authenticode 才建立 Ed25519 更新簽章。
-  已公布 unsigned 版本不原地替換，使用更高產品版本。
-
-## 隔離驗證
-
-```powershell
+~~~powershell
 python -m unittest discover -s .github/scripts -p test_windows_signing.py -v
-powershell.exe -NoProfile -File Source/Loaders/Windows-TSF/Packaging/Test-Signing.ps1
-```
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Source/Loaders/Windows-TSF/Packaging/Test-Signing.ps1
+~~~
 
-這些測試使用合成資料與工具替身，不連 Certum／GitHub／AWS、不執行安裝器，也不讀本機憑證。
-服務操作依據：[GitHub artifact REST API](https://docs.github.com/en/rest/actions/artifacts)、
-[Certum 官方手冊](https://files.certum.eu/documents/manual_en/CS-Code_Signing_in_the_Cloud_Signtool_jarsigner_signing.pdf)、
-[Microsoft SignTool](https://learn.microsoft.com/en-us/windows/win32/seccrypto/signtool)。
+以上隔離驗證使用合成資料與工具替身，不連 Certum／GitHub／AWS，不讀本機憑證、不執行安裝器。
+正式發布矩陣由 Build-WindowsRelease.ps1 執行；不把日常工具修改的局部測試當成發布驗收。

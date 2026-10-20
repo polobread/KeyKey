@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Stage CI inputs and transport locally signed Windows releases; never handles signing secrets."""
+"""Validate local Windows release inputs and transport signed EXE/ZIP assets. No signing secrets."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import mimetypes
 import os
@@ -20,13 +21,13 @@ sys.path.insert(0, str(ROOT / "update"))
 import channels
 
 REPOSITORY = "polobread/KeyKey"
-WORKFLOW = ".github/workflows/prepare-windows-signing.yml"
 FRONTEND = ROOT / "Source/Loaders/Windows-TSF"
-FILES = (
-    "x64/KeyKeyTsf.dll", "x64/KeyKeySettings.exe", "x64/KeyKeySettingsBackend.dll",
-    "x64/KeyKeyDeployment.exe", "x64/WinSparkle.dll", "x64/WinSparkle-LICENSE.txt",
-    "x64/Databases/KeyKey.db", "x86/KeyKeyTsf.dll", "x86/KeyKeyRegistration.exe",
-)
+RUNTIME_FILES = ("KeyKeyTsf.dll", "KeyKeySettings.exe", "KeyKeySettingsBackend.dll",
+                 "KeyKeyDeployment.exe", "WinSparkle.dll", "WinSparkle-LICENSE.txt", "Databases/KeyKey.db")
+FILES = tuple(f"{arch}/{name}" for arch in ("x64", "x86") for name in RUNTIME_FILES) + ("x86/KeyKeyRegistration.exe",)
+CHECKS = {"updater-sdk", "settings", "deployment", "shared-x64-x86", "shared-x86-x64",
+          "shared-managed-x64", "shared-managed-x86", "update-metadata", "release-transport", "signing-policy",
+          *(f"{step}-{arch}" for arch in ("x64", "x86") for step in ("configure", "build", "ctest", "updater"))}
 
 
 def require(condition, message):
@@ -40,7 +41,6 @@ def sha256(path):
 
 
 def run(*args):
-    # Do not echo external commands or their diagnostics into release logs.
     result = subprocess.run(list(map(str, args)), cwd=ROOT, capture_output=True)
     require(result.returncode == 0, f"{Path(args[0]).name} operation failed; check authentication and prerequisites")
     return result.stdout.decode("utf-8-sig").strip()
@@ -54,8 +54,8 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def artifact_name(version, run_id, attempt):
-    return f"keykey-windows-signing-{version}-{run_id}-{attempt}"
+def read_json(path):
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def product_version():
@@ -66,16 +66,22 @@ def product_version():
 
 
 def local_source(sha):
-    require(run("git", "rev-parse", "HEAD") == sha, "Use a checkout of the exact CI source commit")
+    require(not run("git", "ls-files", "--", "keykey-update-private.pem*", "**/keykey-update-private.pem*"),
+            "Windows update private key must never be tracked or staged")
+    require(run("git", "rev-parse", "HEAD") == sha, "Use a checkout of the exact release tag commit")
     require(not run("git", "status", "--porcelain", "--untracked-files=normal"),
-            "Release checkout must be clean (keep local outputs in the ignored out directory)")
-    origin = run("git", "remote", "get-url", "origin")
-    require(origin in (f"https://github.com/{REPOSITORY}.git", f"https://github.com/{REPOSITORY}",
-                       f"git@github.com:{REPOSITORY}.git"), "Origin must be the official KeyKey repository")
+            "Release checkout must be clean (keep outputs in the ignored out directory)")
+    require(run("git", "remote", "get-url", "origin") in
+            (f"https://github.com/{REPOSITORY}.git", f"https://github.com/{REPOSITORY}",
+             f"git@github.com:{REPOSITORY}.git"), "Origin must be the official KeyKey repository")
+
+
+def validate_tag(tag):
+    require(re.fullmatch(r"v\d+\.\d+\.\d+(?:-beta[1-9]\d*)?", tag), "Invalid release tag")
 
 
 def remote_tag(tag):
-    require(re.fullmatch(r"v\d+\.\d+\.\d+(?:-beta[1-9]\d*)?", tag), "Invalid release tag")
+    validate_tag(tag)
     obj = api(f"git/ref/tags/{tag}")["object"]
     for _ in range(5):
         if obj["type"] == "commit":
@@ -85,153 +91,160 @@ def remote_tag(tag):
     raise ValueError("Too many annotated tag indirections")
 
 
-def provenance(run_id, tag, check_local=True):
-    require(str(run_id).isdigit() and int(run_id) > 0, "Invalid run ID")
-    record = api(f"actions/runs/{run_id}")
-    require(record["status"] == "completed" and record["conclusion"] == "success", "CI run must have succeeded")
-    require(record["event"] in ("release", "workflow_dispatch"), "Untrusted CI event")
-    require(record["repository"]["full_name"].lower() == REPOSITORY.lower()
-            and record["head_repository"]["full_name"].lower() == REPOSITORY.lower(), "Fork CI runs are not accepted")
-    require(api(f"actions/workflows/{record['workflow_id']}")["path"] == WORKFLOW, "Unexpected build workflow")
-    source = record["head_sha"]
-    require(re.fullmatch(r"[0-9a-f]{40}", source), "Invalid source commit")
-    require(source == remote_tag(tag), "CI source must equal the current release tag commit")
+def context(tag, remote=False, check_local=True):
+    validate_tag(tag)
     version = product_version()
-    channels.release_version(tag, version)
+    release_version = channels.release_version(tag, version)
+    source = remote_tag(tag) if remote else run("git", "rev-parse", f"refs/tags/{tag}^{{commit}}")
+    require(re.fullmatch(r"[0-9a-f]{40}", source), "Invalid source commit")
     if check_local:
         local_source(source)
-    attempt = record["run_attempt"]
-    name = artifact_name(version, run_id, attempt)
-    artifacts = api(f"actions/runs/{run_id}/artifacts?per_page=100")
-    require(artifacts["total_count"] <= 100, "Unexpected artifact count")
-    matches = [a for a in artifacts["artifacts"] if a["name"] == name]
-    require(len(matches) == 1, "Expected one signing artifact for this run attempt")
-    artifact = matches[0]
-    require(artifact["workflow_run"]["head_sha"] == source, "Artifact source mismatch")
-    require(re.fullmatch(r"sha256:[0-9a-f]{64}", artifact.get("digest") or ""), "Artifact SHA-256 is unavailable")
-    return dict(schema=1, repository=REPOSITORY, workflow=WORKFLOW, version=version,
-                release_tag=tag, source_sha=source, tag_sha=source, run_id=int(run_id),
-                run_attempt=attempt, artifact_id=artifact["id"], artifact_digest=artifact["digest"])
+        # A release source must have reached reviewed master before it is built.
+        run("git", "merge-base", "--is-ancestor", source, "origin/master")
+    return dict(schema=2, platform="windows", repository=REPOSITORY, build_source="local",
+                version=version, release_version=release_version, release_tag=tag, source_sha=source, tag_sha=source)
 
 
-def stage(destination, x64, x86, tag):
-    require(not destination.exists(), "Signing artifact output already exists")
-    version = product_version()
-    channels.release_version(tag, version)
-    source = run("git", "rev-parse", "HEAD")
-    if tag:
-        require(source == os.environ["RELEASE_TAG_SHA"], "CI tag/source mismatch")
-    require(os.environ["GITHUB_REPOSITORY"] == REPOSITORY, "Only the official repository may stage release inputs")
+def prepare(tag, destination):
+    identity = context(tag)
+    require(not destination.exists(), "Release output already exists; use Sign for completed build inputs")
     destination.mkdir(parents=True)
+    write_json(destination / "context.json", identity)
+    print(json.dumps(identity))
+
+
+def verify_checks(report, identity):
+    require(report.get("schema") == 1 and report.get("source_sha") == identity["source_sha"],
+            "Build check source mismatch")
+    checks = report.get("checks", [])
+    require(len(checks) == len(CHECKS) and {c["name"] for c in checks} == CHECKS and
+            all(c.get("passed") is True for c in checks), "All local release checks must pass")
+
+
+def stage(destination):
+    identity = read_json(destination / "context.json")
+    require(identity == context(identity["release_tag"]), "Local source/tag changed since preparing the build")
+    verify_checks(read_json(destination / "build/build-checks.json"), identity)
+    inputs = destination / "inputs"
+    require(not inputs.exists(), "Build input snapshot already exists")
+    inputs.mkdir()
     for name in FILES:
-        architecture, relative = name.split("/", 1)
-        base = x64 if architecture == "x64" else x86
-        cache = base / "CMakeCache.txt"
-        if cache.is_file() and re.search(r"(?m)^CMAKE_CONFIGURATION_TYPES:", cache.read_text(encoding="utf-8")):
-            base = base / "Release"
-        path = base / relative
-        require(path.is_file() and not path.is_symlink(), f"Missing build input: {name}")
-        target = destination / name
+        arch, relative = name.split("/", 1)
+        path = destination / "build" / arch / "Release" / relative
+        require(path.is_file() and not path.is_symlink(), f"Missing local build input: {name}")
+        target = inputs / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(path, target)
-    manifest = dict(schema=1, repository=REPOSITORY, workflow=WORKFLOW, version=version,
-                    source_sha=source, release_tag=tag,
-                    run_id=int(os.environ["GITHUB_RUN_ID"]), run_attempt=int(os.environ["GITHUB_RUN_ATTEMPT"]),
-                    files={name: sha256(destination / name) for name in FILES})
-    write_json(destination / "signing-inputs.json", manifest)
+    write_json(destination / "built-inputs.json", dict(identity, files={name: sha256(inputs / name) for name in FILES}))
 
 
-def verify_bundle(directory, context):
-    manifest = json.loads((directory / "signing-inputs.json").read_text(encoding="utf-8"))
-    for key in ("schema", "repository", "workflow", "version", "source_sha", "release_tag", "run_id", "run_attempt"):
-        require(manifest.get(key) == context[key], f"Signing input provenance mismatch: {key}")
-    require(set(manifest["files"]) == set(FILES), "Signing input file set mismatch")
+def verify_built(destination):
+    identity = read_json(destination / "context.json")
+    require(identity == context(identity["release_tag"]), "Local source/tag changed since building")
+    manifest = read_json(destination / "built-inputs.json")
+    require({k: manifest.get(k) for k in identity} == identity and set(manifest["files"]) == set(FILES),
+            "Local build input identity/file set mismatch")
+    verify_checks(read_json(destination / "build/build-checks.json"), identity)
     for name in FILES:
-        path = directory / name
+        path = destination / "inputs" / name
         require(path.is_file() and not path.is_symlink() and sha256(path) == manifest["files"][name],
-                f"Signing input hash mismatch: {name}")
-    return manifest
-
-
-def extract(archive, directory):
-    # No paths supplied by an archive are ever used as extraction destinations.
-    with zipfile.ZipFile(archive) as bundle:
-        names = [i.filename for i in bundle.infolist() if not i.is_dir()]
-        expected = {*FILES, "signing-inputs.json"}
-        require(len(names) == len(expected) and set(names) == expected, "Unexpected/duplicate archive entries")
-        require(sum(i.file_size for i in bundle.infolist()) < 1024**3, "Signing archive is too large")
-        for name in sorted(expected):
-            target = directory / name
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with bundle.open(name) as source, target.open("xb") as output:
-                shutil.copyfileobj(source, output)
-
-
-def download(run_id, tag, destination):
-    context = provenance(run_id, tag)
-    if destination.exists():
-        saved = json.loads((destination / "context.json").read_text(encoding="utf-8"))
-        require(saved == context, "Cached CI identity changed; use a new run")
-        require("sha256:" + sha256(destination / "inputs.zip") == context["artifact_digest"], "Cached artifact digest mismatch")
-        with tempfile.TemporaryDirectory() as temp:
-            extract(destination / "inputs.zip", Path(temp))
-            manifest = verify_bundle(Path(temp), context)
-        require(verify_bundle(destination / "inputs", context) == manifest, "Cached input manifest mismatch")
-        print(json.dumps(context))
-        return
-    destination.mkdir(parents=True)
-    archive = destination / "inputs.zip"
-    with archive.open("xb") as output:
-        result = subprocess.run(["gh", "api", f"repos/{REPOSITORY}/actions/artifacts/{context['artifact_id']}/zip"],
-                                cwd=ROOT, stdout=output, stderr=subprocess.PIPE)
-    require(result.returncode == 0, "Artifact download failed")
-    require("sha256:" + sha256(archive) == context["artifact_digest"], "Downloaded artifact digest mismatch")
-    extract(archive, destination / "inputs")
-    verify_bundle(destination / "inputs", context)
-    write_json(destination / "context.json", context)
-    print(json.dumps(context))
+                f"Local build input hash mismatch: {name}")
+    return identity
 
 
 def asset_names(version):
-    installer = f"chichi77-KeyKey-{version}-windows-x64-setup.exe"
-    return installer, installer + ".sha256", f"chichi77-KeyKey-{version}-windows-signed-build-info.json"
+    prefix = f"chichi77-KeyKey-{version}-windows"
+    payloads = [f"{prefix}-x64-setup.exe", f"{prefix}-x64.zip", f"{prefix}-x86.zip"]
+    return tuple(name for payload in payloads for name in (payload, payload + ".sha256")) + (f"{prefix}-build-info.json",)
 
 
 def native_verify(installer, version):
     require(sys.platform == "win32", "Authenticode verification must run on Windows")
-    run("powershell.exe", "-NoProfile", "-File", ROOT / "update/verify-windows.ps1",
-        "-Installer", installer, "-ExpectedVersion", version, "-SigningMode", "authenticode")
+    run("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ROOT / "update/verify-windows.ps1",
+        "-Installer", installer, "-ExpectedVersion", channels.parse_version(version)[0], "-SigningMode", "authenticode")
+
+
+def load_package_verifier():
+    spec = importlib.util.spec_from_file_location("keykey_verify_package", FRONTEND / "Packaging/verify-package.py")
+    verifier = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(verifier)
+    return verifier
+
+
+def verify_zip(package, version, architecture, native=True, reference_installer=None):
+    verifier = load_package_verifier()
+    manifest = verifier.verify(package, require_signed=True)
+    product_version = channels.parse_version(version)[0]
+    require(manifest["Version"] == product_version and manifest["Architecture"] == architecture, "ZIP version/architecture mismatch")
+    if native:
+        require(sys.platform == "win32", "ZIP signatures must be verified on Windows")
+        with zipfile.ZipFile(package) as archive, tempfile.TemporaryDirectory() as temp:
+            names = {name.replace("\\", "/"): name for name in archive.namelist()}
+            prefix = next(name.removesuffix("PackageManifest.json") for name in names if name.endswith("/PackageManifest.json"))
+            for entry in manifest["Files"]:
+                relative = entry["Path"].replace("\\", "/")
+                if relative.lower().endswith((".exe", ".dll")):
+                    target = Path(temp) / relative
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with archive.open(names[prefix + "Payload/" + relative]) as source, target.open("xb") as output:
+                        shutil.copyfileobj(source, output)
+            arguments = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", FRONTEND / "Packaging/Verify-SignedPayload.ps1",
+                         "-Directory", temp, "-ExpectedVersion", product_version, "-Architecture", architecture]
+            if reference_installer is not None:
+                arguments.extend(("-ReferenceInstaller", reference_installer))
+            run(*arguments)
 
 
 def record(destination):
-    context = json.loads((destination / "context.json").read_text(encoding="utf-8"))
-    verify_bundle(destination / "inputs", context)
-    installer, checksum, info = asset_names(context["version"])
-    package = destination / "signed" / installer
-    native_verify(package, context["version"])
-    report = dict(context, windows_signing="authenticode", installer=installer, sha256=sha256(package))
-    write_json(destination / "signed" / info, report)
+    identity = verify_built(destination)
+    directory = destination / "signed"
+    names = asset_names(identity["version"])
+    require(not (directory / names[-1]).exists(), "Build info already exists; signed releases are immutable")
+    # Verify actual archive bytes, not a claim in the package manifest.
+    native_verify(directory / names[0], identity["version"])
+    for arch in ("x64", "x86"):
+        verify_zip(directory / f"chichi77-KeyKey-{identity['version']}-windows-{arch}.zip", identity["version"], arch,
+                   reference_installer=directory / names[0])
+    assets = [dict(name=name, size=(directory / name).stat().st_size, sha256=sha256(directory / name)) for name in names[:-1]]
+    report = dict(identity, windows_signing="authenticode", assets=assets,
+                  checks=read_json(destination / "build/build-checks.json"),
+                  input_sha256=read_json(destination / "built-inputs.json")["files"])
+    write_json(directory / names[-1], report)
+    verify_signed(directory, identity)
 
 
-def verify_signed(directory, context):
-    installer, checksum, info = asset_names(context["version"])
-    report = json.loads((directory / info).read_text(encoding="utf-8"))
-    for key, value in context.items():
+def verify_signed(directory, identity):
+    names = asset_names(identity["version"])
+    report = read_json(directory / names[-1])
+    for key, value in identity.items():
         require(report.get(key) == value, f"Signed release provenance mismatch: {key}")
-    require(report.get("windows_signing") == "authenticode" and report.get("installer") == installer,
-            "Signed release identity mismatch")
-    digest = sha256(directory / installer)
-    require(report["sha256"] == digest, "Signed installer hash mismatch")
-    require((directory / checksum).read_text(encoding="ascii").strip() == f"{digest}  {installer}",
-            "Signed checksum mismatch")
-    return [directory / name for name in (installer, checksum, info)]
+    require(report.get("windows_signing") == "authenticode", "Only signed Windows releases are accepted")
+    verify_checks(report.get("checks", {}), identity)
+    require(set(report.get("input_sha256", {})) == set(FILES) and
+            all(re.fullmatch(r"[0-9a-f]{64}", h) for h in report["input_sha256"].values()), "Build input record mismatch")
+    assets = report.get("assets", [])
+    require(len(assets) == len(names) - 1 and {a["name"] for a in assets} == set(names[:-1]), "Release asset set mismatch")
+    for entry in assets:
+        path = directory / entry["name"]
+        require(path.is_file() and not path.is_symlink() and path.stat().st_size == entry["size"] and
+                sha256(path) == entry["sha256"], f"Signed asset hash mismatch: {entry['name']}")
+    for name in names[:-1:2]:
+        require((directory / (name + ".sha256")).read_text(encoding="ascii").strip() ==
+                f"{sha256(directory / name)}  {name}", f"Signed checksum mismatch: {name}")
+    return [directory / name for name in names]
+
+
+def verify_native_assets(directory, version):
+    names = asset_names(version)
+    native_verify(directory / names[0], version)
+    for arch in ("x64", "x86"):
+        verify_zip(directory / f"chichi77-KeyKey-{version}-windows-{arch}.zip", version, arch, reference_installer=directory / names[0])
 
 
 def release_assets(tag):
     release = api(f"releases/tags/{tag}")
     require(not release["draft"] and release["prerelease"] == (channels.parse_version(tag[1:])[1] == "beta"),
             "Publish a matching Release/Pre-release first")
-    # Follow pagination explicitly; never mistake an omitted asset for an absent one.
     assets = []
     for page in range(1, 101):
         batch = api(f"releases/{release['id']}/assets?per_page=100&page={page}")
@@ -245,20 +258,18 @@ def download_asset(tag, name, directory):
     run("gh", "release", "download", tag, "--repo", REPOSITORY, "--pattern", name, "--dir", directory)
 
 
-def publish(run_id, tag, destination, approved_sha256):
-    context = provenance(run_id, tag)
-    saved = json.loads((destination / "context.json").read_text(encoding="utf-8"))
-    require(saved == context, "CI artifact/run changed since signing")
-    require("sha256:" + sha256(destination / "inputs.zip") == context["artifact_digest"], "Cached artifact digest mismatch")
-    # Re-extract authenticated bytes, rather than trusting mutable local input metadata.
-    with tempfile.TemporaryDirectory() as temp:
-        extract(destination / "inputs.zip", Path(temp))
-        verify_bundle(Path(temp), context)
-    paths = verify_signed(destination / "signed", context)
-    require(sha256(paths[0]) == approved_sha256, "Installer bytes differ from the approved SHA-256")
-    native_verify(paths[0], context["version"])
+def publish(tag, destination, approved_sha256):
+    identity = context(tag, remote=True)
+    require(identity == verify_built(destination), "Remote tag differs from the local build source")
+    directory = destination / "signed"
+    info = directory / asset_names(identity["version"])[-1]
+    require(sha256(info) == approved_sha256, "Release files differ from the approved build-info SHA-256")
+    paths = verify_signed(directory, identity)
+    require(read_json(info)["checks"] == read_json(destination / "build/build-checks.json") and
+            read_json(info)["input_sha256"] == read_json(destination / "built-inputs.json")["files"],
+            "Build records changed after signing")
+    verify_native_assets(directory, identity["version"])
     existing = release_assets(tag)
-    # Preflight every collision before uploading anything. Identical retries are safe.
     with tempfile.TemporaryDirectory() as temp:
         for path in paths:
             if path.name in existing:
@@ -272,41 +283,40 @@ def publish(run_id, tag, destination, approved_sha256):
             download_asset(tag, path.name, temp)
             require(sha256(Path(temp) / path.name) == sha256(path), "Published asset readback mismatch")
     run("gh", "workflow", "run", "mirror-windows-signed.yml", "--repo", REPOSITORY, "--ref", "master",
-        "-f", f"release_tag={tag}", "-f", f"build_run_id={run_id}", "-f", f"receipt_sha256={sha256(paths[2])}")
-    print("Signed assets uploaded and read back. Mirror workflow requested; check its release environment approval and result.")
+        "-f", f"release_tag={tag}", "-f", f"receipt_sha256={sha256(info)}")
+    print("Seven signed release assets uploaded and read back. Check the CDN mirror workflow approval and result.")
 
 
-def fetch_published(run_id, tag, receipt_digest, directory):
+def fetch_published(tag, receipt_digest, directory):
     require(re.fullmatch(r"[0-9a-f]{64}", receipt_digest), "Invalid receipt digest")
-    context = provenance(run_id, tag)
+    identity = context(tag, remote=True, check_local=False)
+    require(run("git", "rev-parse", "HEAD") == identity["source_sha"], "Mirror checkout must equal the release tag")
     require(not directory.exists(), "Mirror staging directory already exists")
     directory.mkdir(parents=True)
     assets = release_assets(tag)
-    for name in asset_names(context["version"]):
-        require(name in assets, "Signed release asset is missing")
+    for name in asset_names(identity["version"]):
+        require(name in assets, f"Signed release asset is missing: {name}")
         download_asset(tag, name, directory)
-    require(sha256(directory / asset_names(context["version"])[2]) == receipt_digest, "Receipt digest mismatch")
-    paths = verify_signed(directory, context)
-    native_verify(paths[0], context["version"])
+    require(sha256(directory / asset_names(identity["version"])[-1]) == receipt_digest, "Receipt digest mismatch")
+    verify_signed(directory, identity)
+    verify_native_assets(directory, identity["version"])
 
 
 def mirror(tag, directory, receipt_digest):
-    version = product_version()
-    channels.release_version(tag, version)
-    receipt = directory / asset_names(version)[2]
+    identity = context(tag, remote=True, check_local=False)
+    receipt = directory / asset_names(identity["version"])[-1]
     require(sha256(receipt) == receipt_digest, "Mirror receipt digest mismatch")
-    context = json.loads(receipt.read_text(encoding="utf-8"))
-    require(context == dict(provenance(context["run_id"], tag), windows_signing="authenticode",
-                            installer=asset_names(version)[0], sha256=context["sha256"]), "Mirror provenance mismatch")
-    paths = verify_signed(directory, {k: v for k, v in context.items() if k not in ("windows_signing", "installer", "sha256")})
+    paths = verify_signed(directory, identity)
+    # Windows already validated signatures; validate archive contents again on the mirror runner.
+    for arch in ("x64", "x86"):
+        verify_zip(directory / f"chichi77-KeyKey-{identity['version']}-windows-{arch}.zip", identity["version"], arch, native=False)
     bucket = os.environ["RELEASE_MIRROR_BUCKET"]
     distribution = os.environ["RELEASE_MIRROR_DISTRIBUTION_ID"]
     base_url = os.environ["RELEASE_MIRROR_BASE_URL"].rstrip("/")
     parsed = urlsplit(base_url)
-    require(re.fullmatch(r"[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]", bucket)
-            and re.fullmatch(r"[A-Z0-9]+", distribution) and parsed.scheme == "https" and parsed.hostname
-            and not (parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment),
-            "Invalid mirror configuration")
+    require(re.fullmatch(r"[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]", bucket) and
+            re.fullmatch(r"[A-Z0-9]+", distribution) and parsed.scheme == "https" and parsed.hostname and
+            not (parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment), "Invalid mirror configuration")
     prefix = f"keykey/releases/download/{tag}"
     for path in paths:
         key = f"{prefix}/{path.name}"
@@ -314,8 +324,6 @@ def mirror(tag, directory, receipt_digest):
                                  "--body", str(path), "--if-none-match", "*", "--checksum-algorithm", "SHA256",
                                  "--content-type", mimetypes.guess_type(path.name)[0] or "application/octet-stream",
                                  "--cache-control", "public,max-age=31536000,immutable"], capture_output=True)
-        # A collision may be an identical retry. Read back even after a failed put;
-        # no replacement write is ever attempted.
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp) / path.name
             run("aws", "s3api", "get-object", "--bucket", bucket, "--key", key, target)
@@ -328,17 +336,15 @@ def mirror(tag, directory, receipt_digest):
         "--id", invalidation["Invalidation"]["Id"], "--no-cli-pager")
     for path in paths:
         verify_url(f"{base_url}/{prefix}/{quote(path.name, safe='')}", path)
-    message = "Signed Windows assets verified on S3 and CDN. No update feeds were changed."
+    message = "Signed Windows EXE and x64/x86 ZIP assets verified on S3 and CDN. No update feeds were changed."
     print(message)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as stream:
-            stream.write(message + "\n\n" + "\n".join(
-                f"- [{p.name}]({base_url}/{prefix}/{quote(p.name, safe='')})" for p in paths) + "\n")
+            stream.write(message + "\n\n" + "\n".join(f"- [{p.name}]({base_url}/{prefix}/{quote(p.name, safe='')})" for p in paths) + "\n")
 
 
 def verify_url(url, path):
-    digest = hashlib.sha256()
-    size = 0
+    digest, size = hashlib.sha256(), 0
     with urlopen(url, timeout=30) as response:
         require(response.geturl().startswith("https://"), "CDN redirected to insecure transport")
         while chunk := response.read(1024 * 1024):
@@ -350,25 +356,24 @@ def verify_url(url, path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("stage", "download", "record", "publish", "fetch-published", "mirror"))
+    parser.add_argument("command", choices=("prepare", "stage", "verify-built", "record", "publish", "fetch-published", "mirror"))
     parser.add_argument("--directory", type=Path, required=True)
-    parser.add_argument("--x64", type=Path)
-    parser.add_argument("--x86", type=Path)
-    parser.add_argument("--run-id")
     parser.add_argument("--tag", default="")
     parser.add_argument("--receipt-sha256")
     parser.add_argument("--approved-sha256")
     args = parser.parse_args()
-    if args.command == "stage":
-        stage(args.directory, args.x64, args.x86, args.tag)
-    elif args.command == "download":
-        download(args.run_id, args.tag, args.directory)
+    if args.command == "prepare":
+        prepare(args.tag, args.directory)
+    elif args.command == "stage":
+        stage(args.directory)
+    elif args.command == "verify-built":
+        verify_built(args.directory)
     elif args.command == "record":
         record(args.directory)
     elif args.command == "publish":
-        publish(args.run_id, args.tag, args.directory, args.approved_sha256)
+        publish(args.tag, args.directory, args.approved_sha256)
     elif args.command == "fetch-published":
-        fetch_published(args.run_id, args.tag, args.receipt_sha256, args.directory)
+        fetch_published(args.tag, args.receipt_sha256, args.directory)
     else:
         mirror(args.tag, args.directory, args.receipt_sha256)
 
@@ -376,6 +381,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (ValueError, KeyError, OSError, zipfile.BadZipFile) as error:
+    except (ValueError, KeyError, OSError, AssertionError, zipfile.BadZipFile) as error:
         print(f"Windows release stopped: {error}", file=sys.stderr)
         sys.exit(1)

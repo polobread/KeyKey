@@ -1,10 +1,10 @@
-from contextlib import nullcontext
 import importlib.util
 import io
 import json
 import os
 from pathlib import Path
 import subprocess
+import struct
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -20,248 +20,249 @@ class WindowsSigningTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.context = dict(schema=1, repository=signing.REPOSITORY, workflow=signing.WORKFLOW,
-                            version="1.3.3", release_tag="v1.3.3", source_sha="a" * 40,
-                            tag_sha="a" * 40, run_id=123, run_attempt=1, artifact_id=9,
-                            artifact_digest="sha256:" + "b" * 64)
+        self.version = signing.product_version()
+        self.tag = "v" + self.version
+        self.identity = dict(schema=2, platform="windows", repository=signing.REPOSITORY, build_source="local",
+                             version=self.version, release_version=self.version, release_tag=self.tag, source_sha="a" * 40, tag_sha="a" * 40)
+        self.checks = dict(schema=1, source_sha="a" * 40,
+                           checks=[dict(name=n, passed=True) for n in sorted(signing.CHECKS)])
 
-    def bundle(self, directory):
-        directory.mkdir(parents=True, exist_ok=True)
-        hashes = {}
+    def inputs(self, destination):
+        destination.mkdir(parents=True, exist_ok=True)
+        signing.write_json(destination / "context.json", self.identity)
+        build = destination / "build"
+        build.mkdir(exist_ok=True)
+        signing.write_json(build / "build-checks.json", self.checks)
         for name in signing.FILES:
-            path = directory / name
+            arch, relative = name.split("/", 1)
+            path = build / arch / "Release" / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(name.encode())
-            hashes[name] = signing.sha256(path)
-        manifest = {k: self.context[k] for k in ("schema", "repository", "workflow", "version", "source_sha",
-                                               "release_tag", "run_id", "run_attempt")}
-        manifest["files"] = hashes
-        signing.write_json(directory / "signing-inputs.json", manifest)
-        return manifest
+        with patch.object(signing, "context", return_value=self.identity):
+            signing.stage(destination)
+        return destination
 
-    def archive(self, directory, target):
-        with zipfile.ZipFile(target, "w") as archive:
-            for path in directory.rglob("*"):
-                if path.is_file():
-                    archive.write(path, path.relative_to(directory).as_posix())
+    def signed(self, destination):
+        self.inputs(destination)
+        directory = destination / "signed"
+        directory.mkdir()
+        names = signing.asset_names(self.version)
+        for name in names[:-1:2]:
+            (directory / name).write_bytes(("signed bytes: " + name).encode())
+            (directory / (name + ".sha256")).write_text(f"{signing.sha256(directory / name)}  {name}\n", encoding="ascii")
+        with patch.object(signing, "context", return_value=self.identity), patch.object(signing, "native_verify"), patch.object(signing, "verify_zip"):
+            signing.record(destination)
+        return directory
 
-    def signed(self, directory):
-        directory.mkdir(parents=True, exist_ok=True)
-        installer, checksum, info = signing.asset_names("1.3.3")
-        (directory / installer).write_bytes(b"simulated-signed-installer")
-        digest = signing.sha256(directory / installer)
-        (directory / checksum).write_text(f"{digest}  {installer}\n", encoding="ascii")
-        signing.write_json(directory / info, dict(self.context, windows_signing="authenticode",
-                                                 installer=installer, sha256=digest))
-        return directory / installer
+    def zip_fixture(self, architecture="x64", signed=True, backslashes=False, wrong_machine=False):
+        verifier = signing.load_package_verifier()
+        model = self.root / 'model.json'
+        model.write_text(json.dumps(dict(canonical_database_sha256=signing.hashlib.sha256(b'database').hexdigest())))
+        verifier.MODEL = model
+        names = ['KeyKeyTsf_x86.dll', 'KeyKeySettings.exe', 'KeyKeySettingsBackend.dll', 'KeyKeyDeployment.exe',
+                 'KeyKeyRegistration_x86.exe', 'WinSparkle.dll']
+        if architecture == 'x64':
+            names.append('KeyKeyTsf_x64.dll')
+        payload = {'Databases/KeyKey.db': b'database', 'LICENSES/OpenVanilla-HanConvert.txt': b'notice',
+                   'LICENSES/WinSparkle-LICENSE.txt': b'notice'}
+        for name in names:
+            data = bytearray(128)
+            data[:2] = b'MZ'
+            struct.pack_into('<I', data, 0x3c, 0x40)
+            data[0x40:0x44] = b'PE\0\0'
+            machine = 0x14c if architecture == 'x86' or '_x86' in name else 0x8664
+            if wrong_machine and name == 'KeyKeySettings.exe':
+                machine = 0x8664 if machine == 0x14c else 0x14c
+            struct.pack_into('<H', data, 0x44, machine)
+            payload[name] = bytes(data)
+        manifest = dict(SchemaVersion=1, Version=self.version, Architecture=architecture, Signed=signed,
+                        Files=[dict(Path=n, Sha256=signing.hashlib.sha256(b).hexdigest()) for n, b in payload.items()])
+        package = self.root / f'{architecture}-{signed}-{backslashes}-{wrong_machine}.zip'
+        with zipfile.ZipFile(package, 'w') as archive:
+            entries = {'package/PackageManifest.json': json.dumps(manifest).encode(),
+                       'package/README.txt': '新增鍵盤 Windows 10 Windows 11'.encode(),
+                       **{'package/Payload/' + name: data for name, data in payload.items()}}
+            for name, data in entries.items():
+                archive.writestr(name.replace('/', '\\') if backslashes else name, data)
+        return package, verifier
 
-    def test_unsigned_fallback_is_preserved_and_modes_are_mutually_exclusive(self):
-        workflows = signing.ROOT / '.github/workflows'
-        legacy = (workflows / 'package-windows.yml').read_text(encoding='utf-8')
-        prepared = (workflows / 'prepare-windows-signing.yml').read_text(encoding='utf-8')
-        def modes(workflow):
-            job = workflow.split('  package:\n', 1)[1].split('    runs-on:', 1)[0]
-            condition = next(line.strip()[4:] for line in job.splitlines() if line.strip().startswith('if: '))
-            clauses = condition.split(' || ')
-            values = []
-            for clause in clauses:
-                match = signing.re.fullmatch(r"vars\.WINDOWS_RELEASE_MODE == '([^']*)'", clause)
-                self.assertIsNotNone(match, 'Release mode gate must remain an explicit allowlist')
-                values.append(match[1])
-            return values
-        unsigned_modes, certum_modes = modes(legacy), modes(prepared)
-        for mode, expected in (('', (False, True)), ('certum', (False, True)),
-                               ('unsigned', (True, False)), ('typo', (False, False))):
-            self.assertEqual((mode in unsigned_modes, mode in certum_modes), expected)
-        for step in ('Build unsigned installer archive', 'Build unsigned NSIS installer',
-                     'Verify actual ZIP contents', 'Publish unsigned Windows assets to the GitHub Release',
-                     'Mirror the verified Windows assets to S3'):
-            self.assertIn(f'- name: {step}', legacy)
-        self.assertNotIn('windows-signing.py stage', legacy)
-        self.assertIn('windows-signing.py stage', prepared)
-        self.assertNotIn('release-assets.py publish', prepared)
-        self.assertEqual(signing.WORKFLOW, '.github/workflows/prepare-windows-signing.yml')
+    def test_actual_zip_inventory_hash_pe_database_and_windows_separator_checks(self):
+        for arch in ('x64', 'x86'):
+            for backslashes in (False, True):
+                package, verifier = self.zip_fixture(arch, backslashes=backslashes)
+                with patch('sys.stdout', new=io.StringIO()):
+                    self.assertEqual(verifier.verify(package, require_signed=True)['Architecture'], arch)
+            package, verifier = self.zip_fixture(arch, signed=False)
+            with self.assertRaisesRegex(AssertionError, 'unsigned ZIP'):
+                verifier.verify(package, require_signed=True)
+            package, verifier = self.zip_fixture(arch, wrong_machine=True)
+            with self.assertRaises(AssertionError):
+                verifier.verify(package, require_signed=True)
 
-    def test_bundle_hashes_context_and_exact_file_set(self):
-        bundle = self.root / "inputs"
-        manifest = self.bundle(bundle)
-        signing.verify_bundle(bundle, self.context)
-        (bundle / signing.FILES[0]).write_bytes(b"tampered")
-        with self.assertRaisesRegex(ValueError, "hash mismatch"):
-            signing.verify_bundle(bundle, self.context)
-        self.bundle(bundle)
-        wrong = dict(self.context, run_attempt=2)
-        with self.assertRaisesRegex(ValueError, "provenance"):
-            signing.verify_bundle(bundle, wrong)
-        manifest["files"]["extra.exe"] = "c" * 64
-        signing.write_json(bundle / "signing-inputs.json", manifest)
-        with self.assertRaisesRegex(ValueError, "file set"):
-            signing.verify_bundle(bundle, self.context)
+    def test_zip_native_signatures_are_checked_after_safe_extraction(self):
+        package, verifier = self.zip_fixture(backslashes=True)
+        def verify(*args):
+            folder = Path(args[args.index('-Directory') + 1])
+            self.assertEqual(len(list(folder.glob('*.exe'))) + len(list(folder.glob('*.dll'))), 7)
+            self.assertEqual(args[args.index('-Architecture') + 1], 'x64')
+            raise ValueError('untrusted extracted payload')
+        with patch.object(signing.sys, 'platform', 'win32'), \
+                patch.object(signing, 'load_package_verifier', return_value=verifier), patch.object(signing, 'run', side_effect=verify), \
+                patch('sys.stdout', new=io.StringIO()), self.assertRaisesRegex(ValueError, 'untrusted extracted'):
+            signing.verify_zip(package, self.version, 'x64')
 
-    def test_stage_uses_release_outputs_and_copies_only_allowlisted_inputs(self):
-        x64, x86 = self.root / "x64", self.root / "x86"
-        for base in (x64, x86):
-            base.mkdir()
-            (base / "CMakeCache.txt").write_text("CMAKE_CONFIGURATION_TYPES:STRING=Debug;Release\n")
-        for name in signing.FILES:
-            architecture, relative = name.split("/", 1)
-            base = x64 if architecture == "x64" else x86
-            path = base / "Release" / relative
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(name.encode())
-        (x64 / "KeyKeyTsf.dll").write_bytes(b"stale wrong-config file")
-        env = dict(GITHUB_REPOSITORY=signing.REPOSITORY, GITHUB_RUN_ID="123", GITHUB_RUN_ATTEMPT="1",
-                   RELEASE_TAG_SHA=self.context["source_sha"])
-        destination = self.root / "staged"
-        with patch.dict(os.environ, env), patch.object(signing, "run", return_value=self.context["source_sha"]), \
-                patch.object(signing, "product_version", return_value="1.3.3"):
-            signing.stage(destination, x64, x86, "v1.3.3")
-        signing.verify_bundle(destination, self.context)
-        self.assertEqual((destination / "x64/KeyKeyTsf.dll").read_bytes(), b"x64/KeyKeyTsf.dll")
+    def test_workflow_is_check_only_and_artifact_release_pipeline_is_removed(self):
+        workflows = signing.ROOT / ".github/workflows"
+        text = (workflows / "package-windows.yml").read_text()
+        self.assertIn("pull_request:", text)
+        self.assertIn("Build-WindowsRelease.ps1", text)
+        for forbidden in ("release:\n", "upload-artifact", "contents: write", "WINDOWS_RELEASE_MODE", "release-assets.py"):
+            self.assertNotIn(forbidden, text)
+        self.assertFalse((workflows / "prepare-windows-signing.yml").exists())
+        mirror = (workflows / "mirror-windows-signed.yml").read_text()
+        self.assertNotIn("build_run_id", mirror)
+        self.assertIn("receipt_sha256", mirror)
 
-    def test_download_success_and_cache_tampering(self):
-        source = self.root / "source"
-        self.bundle(source)
-        archive = self.root / "source.zip"
-        self.archive(source, archive)
-        self.context["artifact_digest"] = "sha256:" + signing.sha256(archive)
-        def fake_download(args, **kwargs):
-            kwargs["stdout"].write(archive.read_bytes())
-            return subprocess.CompletedProcess(args, 0)
-        destination = self.root / "release"
-        with patch.object(signing, "provenance", return_value=self.context), \
-                patch.object(signing.subprocess, "run", side_effect=fake_download), patch("sys.stdout", new=io.StringIO()):
-            signing.download(123, "v1.3.3", destination)
-            signing.download(123, "v1.3.3", destination)
-            (destination / "inputs" / signing.FILES[0]).write_bytes(b"changed")
+    def test_local_prepare_needs_no_ci_or_artifact_access(self):
+        with patch.object(signing, "context", return_value=self.identity), patch.object(signing, "api") as api, patch("sys.stdout", new=io.StringIO()):
+            signing.prepare(self.tag, self.root / "release")
+            api.assert_not_called()
+            with self.assertRaisesRegex(ValueError, "already exists"):
+                signing.prepare(self.tag, self.root / "release")
+
+    def test_source_must_be_clean_exact_official_tag_and_reviewed_master(self):
+        def commands(*args):
+            if args[:3] == ("git", "rev-parse", f"refs/tags/{self.tag}^{{commit}}"):
+                return "a" * 40
+            if args == ("git", "rev-parse", "HEAD"):
+                return "a" * 40
+            if args[:3] == ("git", "remote", "get-url"):
+                return "https://github.com/polobread/KeyKey.git"
+            return ""
+        with patch.object(signing, "run", side_effect=commands):
+            self.assertEqual(signing.context(self.tag), self.identity)
+        for bad_command, response in ((("git", "rev-parse", "HEAD"), "b" * 40),
+                                      (("git", "ls-files", "--", "keykey-update-private.pem*", "**/keykey-update-private.pem*"), "keykey-update-private.pem.txt"),
+                                      (("git", "status", "--porcelain", "--untracked-files=normal"), " M source.cpp"),
+                                      (("git", "remote", "get-url", "origin"), "https://github.com/other/fork.git")):
+            with self.subTest(command=bad_command), \
+                    patch.object(signing, "run", side_effect=lambda *args: response if args == bad_command else commands(*args)):
+                with self.assertRaises(ValueError):
+                    signing.context(self.tag)
+        def unreviewed(*args):
+            if args[:3] == ("git", "merge-base", "--is-ancestor"):
+                raise ValueError("unreviewed source")
+            return commands(*args)
+        with patch.object(signing, "run", side_effect=unreviewed), self.assertRaisesRegex(ValueError, "unreviewed"):
+            signing.context(self.tag)
+
+    def test_all_local_checks_and_their_source_must_match(self):
+        signing.verify_checks(self.checks, self.identity)
+        for broken in (dict(self.checks, source_sha="b" * 40),
+                       dict(self.checks, checks=self.checks["checks"][:-1]),
+                       dict(self.checks, checks=[dict(c, passed=False) for c in self.checks["checks"]])):
+            with self.assertRaises(ValueError):
+                signing.verify_checks(broken, self.identity)
+
+    def test_stage_snapshots_both_architecture_runtimes_and_rejects_changes(self):
+        destination = self.inputs(self.root / "release")
+        with patch.object(signing, "context", return_value=self.identity):
+            self.assertEqual(signing.verify_built(destination), self.identity)
+            (destination / "inputs/x86/KeyKeySettings.exe").write_bytes(b"tampered x86 settings")
             with self.assertRaisesRegex(ValueError, "hash mismatch"):
-                signing.download(123, "v1.3.3", destination)
+                signing.verify_built(destination)
 
-    def test_extract_rejects_traversal_missing_and_duplicate_entries(self):
-        source = self.root / "source"
-        self.bundle(source)
-        archive = self.root / "inputs.zip"
-        self.archive(source, archive)
-        signing.extract(archive, self.root / "good")
-        signing.verify_bundle(self.root / "good", self.context)
-        for name in ("../escape.exe", "x64/KeyKeyTsf.dll", "C:/escape.exe"):
-            self.archive(source, archive)
-            with zipfile.ZipFile(archive, "a") as output:
-                with self.assertWarns(UserWarning) if name == "x64/KeyKeyTsf.dll" else nullcontext():
-                    output.writestr(name, b"bad")
-            with self.assertRaisesRegex(ValueError, "archive entries"):
-                signing.extract(archive, self.root / "bad")
+    def test_seven_assets_and_checksums_bind_exe_and_both_zips(self):
+        directory = self.signed(self.root / "release")
+        paths = signing.verify_signed(directory, self.identity)
+        self.assertEqual(len(paths), 7)
+        self.assertTrue(all(".unsigned" not in p.name for p in paths))
+        self.assertEqual(paths[-1].name, f"chichi77-KeyKey-{self.version}-windows-build-info.json")
+        for index in (0, 2, 4):
+            original = paths[index].read_bytes()
+            paths[index].write_bytes(b"changed after signing")
+            with self.subTest(asset=paths[index].name), self.assertRaisesRegex(ValueError, "hash mismatch"):
+                signing.verify_signed(directory, self.identity)
+            paths[index].write_bytes(original)
 
-    def test_download_fails_before_extract_on_archive_digest_mismatch(self):
-        def fake_download(args, **kwargs):
-            kwargs["stdout"].write(b"corrupt")
-            return subprocess.CompletedProcess(args, 0)
-        with patch.object(signing, "provenance", return_value=self.context), \
-                patch.object(signing.subprocess, "run", side_effect=fake_download), patch.object(signing, "extract") as extract:
-            with self.assertRaisesRegex(ValueError, "digest mismatch"):
-                signing.download(123, "v1.3.3", self.root / "release")
-            extract.assert_not_called()
+    def test_record_requires_native_exe_and_actual_zip_signature_verification(self):
+        directory = self.signed(self.root / "release")
+        info = directory / signing.asset_names(self.version)[-1]
+        info.unlink()
+        with patch.object(signing, "context", return_value=self.identity), patch.object(signing, "native_verify") as native, \
+                patch.object(signing, "verify_zip", side_effect=ValueError("unsigned ZIP payload")):
+            with self.assertRaisesRegex(ValueError, "unsigned ZIP"):
+                signing.record(directory.parent)
+            native.assert_called_once()
+            self.assertFalse(info.exists())
 
-    def test_provenance_rejects_failed_fork_wrong_workflow_source_and_artifact(self):
-        record = dict(status="completed", conclusion="success", event="release", head_sha="a" * 40,
-                      repository=dict(full_name=signing.REPOSITORY), head_repository=dict(full_name=signing.REPOSITORY),
-                      workflow_id=1, run_attempt=1)
-        artifact = dict(name=signing.artifact_name("1.3.3", 123, 1), id=9, expired=False,
-                        workflow_run=dict(head_sha="a" * 40), digest=self.context["artifact_digest"])
-        responses = {"actions/runs/123": record, "actions/workflows/1": dict(path=signing.WORKFLOW),
-                     "actions/runs/123/artifacts?per_page=100": dict(total_count=1, artifacts=[artifact])}
-        with patch.object(signing, "api", side_effect=lambda endpoint: responses[endpoint]), \
-                patch.object(signing, "remote_tag", return_value="a" * 40), \
-                patch.object(signing, "product_version", return_value="1.3.3"), patch.object(signing, "local_source"):
-            self.assertEqual(signing.provenance(123, "v1.3.3"), self.context)
-            changes = ((record, "conclusion", "failure"), (record, "event", "pull_request"),
-                       (record, "head_repository", dict(full_name="fork/KeyKey")),
-                       (responses["actions/workflows/1"], "path", "other.yml"),
-                       (responses["actions/workflows/1"], "path", ".github/workflows/package-windows.yml"),
-                       (record, "head_sha", "c" * 40), (artifact, "digest", None),
-                       (artifact, "workflow_run", dict(head_sha="c" * 40)))
-            for obj, key, value in changes:
-                previous = obj[key]
-                obj[key] = value
-                with self.subTest(key=key), self.assertRaises(ValueError):
-                    signing.provenance(123, "v1.3.3")
-                obj[key] = previous
-
-    def test_signed_receipt_and_checksum_cannot_describe_other_bytes(self):
-        package = self.signed(self.root)
-        signing.verify_signed(self.root, self.context)
-        package.write_bytes(b"modified after signature")
+    def test_checksum_cannot_be_rewritten_to_describe_wrong_payload(self):
+        directory = self.signed(self.root / "release")
+        name = signing.asset_names(self.version)[1]
+        (directory / name).write_text("0" * 64 + "  other.exe\n")
         with self.assertRaisesRegex(ValueError, "hash mismatch"):
-            signing.verify_signed(self.root, self.context)
+            signing.verify_signed(directory, self.identity)
 
-    def prepare_publish(self):
+    def test_publish_binds_entire_build_info_and_verifies_all_signatures_before_upload(self):
         destination = self.root / "release"
-        self.bundle(destination / "inputs")
-        self.archive(destination / "inputs", destination / "inputs.zip")
-        self.context["artifact_digest"] = "sha256:" + signing.sha256(destination / "inputs.zip")
-        signing.write_json(destination / "context.json", self.context)
-        installer = self.signed(destination / "signed")
-        return destination, signing.sha256(installer)
-
-    def test_publish_requires_native_verification_and_exact_approved_hash(self):
-        destination, digest = self.prepare_publish()
-        with patch.object(signing, "provenance", return_value=self.context), patch.object(signing, "native_verify") as native, \
-                patch.object(signing, "release_assets") as assets, patch.object(signing, "run") as run:
-            with self.assertRaisesRegex(ValueError, "approved SHA"):
-                signing.publish(123, "v1.3.3", destination, "0" * 64)
+        directory = self.signed(destination)
+        info = directory / signing.asset_names(self.version)[-1]
+        with patch.object(signing, "context", return_value=self.identity), patch.object(signing, "verify_native_assets") as native, \
+                patch.object(signing, "release_assets") as assets:
+            with self.assertRaisesRegex(ValueError, "approved build-info"):
+                signing.publish(self.tag, destination, "0" * 64)
+            native.assert_not_called()
+            native.side_effect = ValueError("untrusted ZIP signature")
+            with self.assertRaisesRegex(ValueError, "untrusted ZIP"):
+                signing.publish(self.tag, destination, signing.sha256(info))
             assets.assert_not_called()
-            native.side_effect = ValueError("untrusted signature")
-            with self.assertRaisesRegex(ValueError, "untrusted"):
-                signing.publish(123, "v1.3.3", destination, digest)
-            run.assert_not_called()
 
-    def test_publication_collision_preflight_does_not_upload_or_dispatch(self):
-        destination, digest = self.prepare_publish()
-        def download(tag, name, directory):
-            (Path(directory) / name).write_bytes(b"existing other release bytes")
-        with patch.object(signing, "provenance", return_value=self.context), patch.object(signing, "native_verify"), \
-                patch.object(signing, "release_assets", return_value={signing.asset_names("1.3.3")[0]: {}}), \
+    def test_collision_in_any_zip_prevents_all_uploads_and_mirror_dispatch(self):
+        destination = self.root / "release"
+        directory = self.signed(destination)
+        info = directory / signing.asset_names(self.version)[-1]
+        def download(tag, name, output):
+            (Path(output) / name).write_bytes(b"existing other ZIP")
+        with patch.object(signing, "context", return_value=self.identity), patch.object(signing, "verify_native_assets"), \
+                patch.object(signing, "release_assets", return_value={signing.asset_names(self.version)[4]: {}}), \
                 patch.object(signing, "download_asset", side_effect=download), patch.object(signing, "run") as run:
             with self.assertRaisesRegex(ValueError, "refusing overwrite"):
-                signing.publish(123, "v1.3.3", destination, digest)
+                signing.publish(self.tag, destination, signing.sha256(info))
             run.assert_not_called()
 
-    def test_publish_uploads_without_clobber_reads_back_and_dispatches_mirror(self):
-        destination, digest = self.prepare_publish()
-        def download(tag, name, directory):
-            (Path(directory) / name).write_bytes((destination / "signed" / name).read_bytes())
-        with patch.object(signing, "provenance", return_value=self.context), patch.object(signing, "native_verify"), \
-                patch.object(signing, "release_assets", return_value={}), \
-                patch.object(signing, "download_asset", side_effect=download), patch.object(signing, "run") as run, \
-                patch("sys.stdout", new=io.StringIO()):
-            signing.publish(123, "v1.3.3", destination, digest)
+    def test_publish_uploads_all_seven_reads_back_and_requests_mirror_without_ci_run(self):
+        destination = self.root / "release"
+        directory = self.signed(destination)
+        info = directory / signing.asset_names(self.version)[-1]
+        def download(tag, name, output):
+            (Path(output) / name).write_bytes((directory / name).read_bytes())
+        with patch.object(signing, "context", return_value=self.identity), patch.object(signing, "verify_native_assets"), \
+                patch.object(signing, "release_assets", return_value={}), patch.object(signing, "download_asset", side_effect=download), \
+                patch.object(signing, "run") as run, patch("sys.stdout", new=io.StringIO()):
+            signing.publish(self.tag, destination, signing.sha256(info))
         calls = [c.args for c in run.call_args_list]
-        self.assertEqual(sum(c[:3] == ("gh", "release", "upload") for c in calls), 3)
+        self.assertEqual(sum(c[:3] == ("gh", "release", "upload") for c in calls), 7)
         self.assertTrue(all("--clobber" not in c for c in calls))
-        self.assertEqual(calls[-1][:4], ("gh", "workflow", "run", "mirror-windows-signed.yml"))
+        self.assertIn("receipt_sha256=" + signing.sha256(info), calls[-1])
+        self.assertNotIn("build_run_id", str(calls[-1]))
 
-    def test_mirror_conditionally_adds_and_reads_back_no_overwrite(self):
-        self.signed(self.root)
-        receipt = self.root / signing.asset_names("1.3.3")[2]
-        env = dict(RELEASE_MIRROR_BUCKET="example-bucket", RELEASE_MIRROR_DISTRIBUTION_ID="EXAMPLE",
-                   RELEASE_MIRROR_BASE_URL="https://cdn.example.invalid")
+    def test_mirror_adds_all_seven_with_conditional_writes_and_readbacks(self):
+        directory = self.signed(self.root / "release")
+        info = directory / signing.asset_names(self.version)[-1]
         def aws(*args):
             if args[:3] == ("aws", "s3api", "get-object"):
-                Path(args[-1]).write_bytes((self.root / Path(args[-1]).name).read_bytes())
+                Path(args[-1]).write_bytes((directory / Path(args[-1]).name).read_bytes())
             return json.dumps(dict(Invalidation=dict(Id="EXAMPLE")))
-        with patch.dict(os.environ, env), patch.object(signing, "provenance", return_value=self.context), \
-                patch.object(signing, "product_version", return_value="1.3.3"), \
-                patch.object(signing, "run", side_effect=aws) as run, \
-                patch.object(signing, "verify_url") as cdn, \
-                patch.object(signing.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as put, \
-                patch("sys.stdout", new=io.StringIO()):
-            signing.mirror("v1.3.3", self.root, signing.sha256(receipt))
-        self.assertEqual(put.call_count, 3)
+        env = dict(RELEASE_MIRROR_BUCKET="example-bucket", RELEASE_MIRROR_DISTRIBUTION_ID="EXAMPLE", RELEASE_MIRROR_BASE_URL="https://cdn.example.invalid")
+        with patch.dict(os.environ, env), patch.object(signing, "context", return_value=self.identity), \
+                patch.object(signing, "verify_zip"), patch.object(signing, "run", side_effect=aws), patch.object(signing, "verify_url") as cdn, \
+                patch.object(signing.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as put, patch("sys.stdout", new=io.StringIO()):
+            signing.mirror(self.tag, directory, signing.sha256(info))
+        self.assertEqual(put.call_count, 7)
+        self.assertEqual(cdn.call_count, 7)
         for call in put.call_args_list:
-            args = call.args[0]
-            self.assertEqual(args[args.index("--if-none-match") + 1], "*")
-        self.assertEqual(run.call_args_list[-1].args[:3], ("aws", "cloudfront", "wait"))
-        self.assertEqual(cdn.call_count, 3)
+            self.assertIn("--if-none-match", call.args[0])
+            self.assertEqual(call.args[0][call.args[0].index("--if-none-match") + 1], "*")
 
 
 if __name__ == "__main__":

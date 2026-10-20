@@ -7,12 +7,8 @@ on:
         description: 'Published tag already approved by the local release script'
         required: true
         type: string
-      build_run_id:
-        description: 'Successful Prepare Windows Signing Inputs run used for signing'
-        required: true
-        type: string
       receipt_sha256:
-        description: 'SHA-256 of the approved signed-build-info JSON'
+        description: 'SHA-256 of the approved local windows-build-info JSON covering EXE and both ZIPs'
         required: true
         type: string
 
@@ -32,7 +28,6 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ inputs.release_tag }}
-      BUILD_RUN_ID: ${{ inputs.build_run_id }}
       RECEIPT_SHA256: ${{ inputs.receipt_sha256 }}
     steps:
       - name: Check out the reviewed release source
@@ -43,7 +38,7 @@ jobs:
         shell: pwsh
         run: |
           python .github/scripts/windows-signing.py fetch-published --tag "$env:RELEASE_TAG" `
-            --run-id "$env:BUILD_RUN_ID" --receipt-sha256 "$env:RECEIPT_SHA256" --directory Source/Loaders/Windows-TSF/out/mirror-assets
+            --receipt-sha256 "$env:RECEIPT_SHA256" --directory Source/Loaders/Windows-TSF/out/mirror-assets
           if ($LASTEXITCODE -ne 0) { throw 'Signed Windows release verification failed.' }
       - name: Hand verified bytes to the protected mirror job
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -70,7 +70,8 @@ internal static class NativeTests
                     Program.Check(backend.Automatic, "Fresh updater did not default to weekly checks");
                     backend.Initialize();
                     win_sparkle_check_update_with_ui_and_install();
-                    Program.Check(done.Wait(TimeSpan.FromSeconds(30)), "Native updater timed out: " + mode);
+                    Program.Check(WaitWithDispatcher(() => done.IsSet, TimeSpan.FromSeconds(30)),
+                        "Native updater timed out: " + mode);
                     if (mode is "valid" or "beta-next" or "beta-to-final")
                         Program.Check(found == 1 && installs == 1 && shutdowns == 1 && errors == 0 && matchingPayload,
                             "Valid signed payload did not reach the interception callback intact");
@@ -138,24 +139,32 @@ internal static class NativeTests
     private static void NotificationOnlyTest(string key, bool background)
     {
         using var server = new LoopbackServer("valid", Array.Empty<byte>(), "");
-        using var found = new ManualResetEventSlim();
+        using var completed = new ManualResetEventSlim();
         var registryPath = @"Software\chichi77\KeyKey\UpdaterTests\" + Guid.NewGuid().ToString("N");
         var backend = new WinSparkleBackend(registryPath);
-        int installs = 0, shutdowns = 0, errors = 0;
+        int installs = 0, shutdowns = 0, errors = 0, found = 0, notFound = 0;
         try
         {
             backend.Configure(key, server.Feed, "1.0.0", new UpdateCallbacks(() => 1,
-                () => Interlocked.Increment(ref shutdowns), () => Interlocked.Increment(ref errors),
-                () => found.Set(), () => { }, () => { }, () => { }, _ =>
+                () => Interlocked.Increment(ref shutdowns),
+                () => { Interlocked.Increment(ref errors); completed.Set(); },
+                () => { Interlocked.Increment(ref found); completed.Set(); },
+                () => { Interlocked.Increment(ref notFound); completed.Set(); },
+                () => { }, () => { }, _ =>
                 {
                     Interlocked.Increment(ref installs);
                     return 1; // Never execute an installer, even if this regression fails.
                 }));
             backend.Initialize();
             backend.Check(background);
-            Program.Check(found.Wait(TimeSpan.FromSeconds(10)), "Native update notification was not shown");
+            var notified = WaitWithDispatcher(() => completed.IsSet, TimeSpan.FromSeconds(30));
+            Program.Check(notified && found == 1 && errors == 0 && notFound == 0,
+                $"Native {(background ? "weekly" : "manual")} update notification failed " +
+                $"({RuntimeInformation.ProcessArchitecture}): completed={notified}, found={found}, " +
+                $"errors={errors}, notFound={notFound}, feedRequests={server.FeedRequests}, " +
+                $"payloadRequests={server.PayloadRequests}");
             // Give an unintended prefetch time to reach the loopback server.
-            Thread.Sleep(300);
+            WaitWithDispatcher(() => false, TimeSpan.FromMilliseconds(300));
             Program.Check(server.PayloadRequests == 0 && installs == 0 && shutdowns == 0 && errors == 0,
                 "Checking for updates downloaded a package or started installation without user confirmation");
             Console.WriteLine($"Native WinSparkle {(background ? "weekly" : "manual")} notification did not prefetch or install");
@@ -165,6 +174,22 @@ internal static class NativeTests
             backend.Cleanup();
             Registry.CurrentUser.DeleteSubKeyTree(registryPath, throwOnMissingSubKey: false);
         }
+    }
+
+    private static bool WaitWithDispatcher(Func<bool> completed, TimeSpan timeout)
+    {
+        // These tests run on an STA, like Settings. Keep its message loop alive
+        // while native UI/network workers and loopback continuations run.
+        var elapsed = Stopwatch.StartNew();
+        while (!completed() && elapsed.Elapsed < timeout)
+        {
+            var frame = new DispatcherFrame();
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle,
+                () => frame.Continue = false);
+            Dispatcher.PushFrame(frame);
+            Thread.Sleep(1);
+        }
+        return completed();
     }
 
     internal static void StalledQueryTest(string key)
@@ -227,16 +252,17 @@ internal static class NativeTests
         private readonly string mode;
         private readonly byte[] payload;
         private readonly string signature;
-        private int payloadRequests;
+        private int payloadRequests, feedRequests;
         internal int PayloadRequests => Volatile.Read(ref payloadRequests);
+        internal int FeedRequests => Volatile.Read(ref feedRequests);
         public string Feed { get; }
         public LoopbackServer(string mode, byte[] payload, string signature)
         {
             this.mode = mode; this.payload = payload; this.signature = signature;
             listener.Start();
             Feed = $"{(mode == "stalled" ? "https" : "http")}://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}/appcast.xml";
-            // Native cases synchronously wait on the STA thread. Keep server
-            // continuations off its WPF context, including cancellation on dispose.
+            // Keep server continuations off the WPF context, including
+            // cancellation on dispose.
             serving = Task.Run(Serve);
         }
         private async Task Serve()
@@ -265,6 +291,7 @@ internal static class NativeTests
                     }
                     else
                     {
+                        Interlocked.Increment(ref feedRequests);
                         var version = mode switch
                         {
                             "no-update" => "1.0.0", "beta-next" => "1.3.2b10", "beta-same" => "1.3.2b2",

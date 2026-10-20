@@ -123,6 +123,8 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 
 ## 改版號清單
 
+程式、封裝與測試不得另行寫死產品版號，一律讀取各平台既有版號來源；測試需要版號時也沿用該來源，不新增專門驗證版號解析、字串或同步傳遞的案例，不因升版重跑這類測試。
+
 `README.md` 內文明列各平台版本；標題尾版號僅保留給 Linux 的既有封裝流程。macOS 封裝從 IMK plist 讀取版本並核對四份產品 plist；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
 
 | 平台 | 版號來源 |

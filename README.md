@@ -79,7 +79,7 @@ macOS／Windows 的簽章更新功能目前仍在開發，預設不連網；正�
 - Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；可直接從[Google Play 商店](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)安裝正式版，無須加入測試。
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS、Windows 與
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
-  ZIP 與安裝程式目前未簽章，下載或執行時可能出現安全警告。
+  既有未簽章 ZIP 與安裝程式維持原狀；新版正式發布要求安裝檔及兩個 ZIP 內的程式均完成簽章。
 - Linux 的三個 `.deb`、面板原始碼及 `SHA256SUMS` 與桌面版同放在對應版本的 [GitHub Release](https://github.com/polobread/KeyKey/releases)。
 - 桌面版發行檔也可由私有 S3 origin 加 CloudFront 提供下載 mirror；部署與 GitHub
   OIDC 設定見 [`terraform/infra`](terraform/infra/README.md)。mirror 使用固定的
@@ -98,9 +98,9 @@ Windows 發行者簽章採 Certum／SimplySign 本機半自動流程，首次真
 目前未達 SignPath Foundation 的申請門檻；整合待辦與致謝文字收至 [Windows SignPath TODO](docs/WINDOWS_SIGNPATH_TODO.md)。
 
 發布 GitHub Release（可同時建立 tag）會啟動
-`Package macOS`、`Prepare Windows Signing Inputs` 與完整 `Linux CI`；macOS／Linux 通過建置及驗證後，
-自動上傳自己的 assets。Windows 待簽產物交由本機簽包、人工驗收與核准後發布；
-原 `Package Windows` unsigned workflow 保留並預設停用，模式切換見上述發布指南。
+`Package macOS` 與完整 `Linux CI`；macOS／Linux 通過建置及驗證後，自動上傳自己的 assets。
+Windows Checks 僅作檢查；Windows 正式建置、測試、簽章、EXE／ZIP 封裝與核准發布都在本機，
+不下載待簽 artifact，也不再提供 unsigned 發布模式。Windows Ed25519 私鑰僅供本機使用，不提交、上傳或顯示。
 各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
 均為 `1.3.7`，對應的正式版 tag 為 `v1.3.7`。macOS／Linux 正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
@@ -248,7 +248,8 @@ iOS.
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) provides the
   macOS, Windows, and Ubuntu 24.04 builds. The macOS package is Developer ID signed,
   notarized by Apple, and accompanied by a SHA-256 checksum. The Windows ZIP
-  and installer are currently unsigned and may trigger a security warning.
+  and installer from legacy unsigned releases remain unchanged. New Windows releases
+  require a signed EXE and signed executables inside both architecture ZIPs.
 - The three Linux `.deb` files, panel source archive, and `SHA256SUMS` share the
   corresponding [GitHub Release](https://github.com/polobread/KeyKey/releases) with the desktop builds.
 - `Android Play Release` builds, signs, and uploads the Android AAB to Google Play
@@ -268,12 +269,12 @@ and [Windows Certum release guide](docs/WINDOWS_CERTUM_RELEASE.md).
 KeyKey does not currently meet the SignPath Foundation application requirements. Deferred integration and attribution are kept in the
 [Windows SignPath TODO](docs/WINDOWS_SIGNPATH_TODO.md).
 
-Publishing a GitHub Release starts
-`Package macOS`, `Prepare Windows Signing Inputs`, and the full `Linux CI`.
-macOS/Linux upload their verified packages when their version matches that Release.
-Windows signing inputs go through local signing, manual acceptance and publication
-approval; the original unsigned `Package Windows` workflow is retained and disabled
-by default. See the release guide for mode selection. macOS,
+Publishing a GitHub Release starts `Package macOS` and the full `Linux CI`.
+macOS/Linux upload verified packages when their version matches that Release.
+Windows Checks is check-only. Windows builds, tests, signs and packages the EXE and
+both signed ZIPs locally, then publishes after manual acceptance and approval.
+There is no signing-input artifact download or unsigned release mode. Windows Ed25519
+keys remain local and are never committed, uploaded or displayed. macOS,
 Windows, and Linux development versions are `1.3.7`, with `v1.3.7` as the
 corresponding stable release tag. After fixing a failed stable macOS/Linux
 platform through a PR into `master`, manually run that workflow from `master` with

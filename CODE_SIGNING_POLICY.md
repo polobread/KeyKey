@@ -6,14 +6,16 @@ and deployment acceptance is tracked separately from isolated tooling tests.
 
 ## Scope and release process
 
-This policy covers official Windows release artifacts for chichi77 KeyKey. Only
-artifacts built from the source and build workflows in this repository may be
-submitted for signing. Release builds originate from version tags, are built by
-GitHub Actions, and are downloaded and verified against the exact tag/source commit,
-CI run and artifact digest before local signing. The maintainer connects SimplySign
-with a phone token (and PIN if required), then a local script signs and packages.
-Publication requires a separate explicit tag/SHA-256 approval after VM acceptance.
-See [Windows Certum release procedure](docs/WINDOWS_CERTUM_RELEASE.md).
+This policy covers official Windows release artifacts for chichi77 KeyKey. Release
+builds use a clean local checkout of the exact reviewed tag commit already merged
+into master. Build-WindowsRelease.ps1 performs the full x64/x86 build and release
+check matrix locally; the check-only Windows workflow uses the same script.
+Release-Windows.ps1 records the source, test results and input hashes, signs
+copies, and creates the EXE, both installation ZIPs, checksums and build-info.
+There is no CI artifact download or CI-run requirement. The maintainer connects
+SimplySign with a phone token (and PIN if required), then signs locally.
+Publication requires separate approval of the complete build-info SHA-256 after VM acceptance.
+See [Windows local release procedure](docs/WINDOWS_CERTUM_RELEASE.md).
 
 The intended signing coverage is:
 
@@ -29,33 +31,24 @@ Signatures must use SHA-256 and an RFC 3161 timestamp. The release workflow must
 verify every returned Authenticode signature before calculating checksums and
 publishing an artifact. Files must not be modified after signing.
 
-Previously published unsigned Windows assets remain unchanged. The original
-`Package Windows` unsigned build/package/publish/mirror workflow remains intact,
-but its jobs are disabled unless `WINDOWS_RELEASE_MODE` is explicitly `unsigned`.
-The separate `Prepare Windows Signing Inputs` workflow runs when the variable is
-unset or `certum`, and only produces signing inputs. Other values disable both.
-The maintainer may switch back to unsigned if the certificate is not renewed;
-expiry or signing failure never triggers an automatic downgrade.
-Signed GitHub assets are uploaded without replacement, read back, then verified
-again on Windows before the protected OIDC mirror adds immutable S3 objects.
-Neither signing nor publication stores a thumbprint, OTP, PIN or TOTP seed in Git
-or tool logs. Embedded public certificates remain part of Authenticode signatures.
+All new Windows release assets require valid Authenticode and RFC 3161 timestamps.
+This includes every EXE/DLL inside x64 and x86 ZIPs, as well as the outer NSIS EXE.
+Manifests, ZIPs and checksum files are generated only after payload signing.
+Windows Checks is a build/test gate, with no release artifact upload or publication.
+The old signing-input workflow and unsigned release-mode selector are removed.
+UnsignedTest is restricted to isolated development fixtures and never the official local release entry point.
 
-When Windows publisher signing is unavailable, including a decision not to renew
-the Certum certificate, the maintainer may explicitly select the unsigned fallback.
-The maintainer permits unsigned
-EXE installers on the stable update channel only when each release manifest
-explicitly declares `windows_signing: "unsigned-transition"`. These releases
-still require reviewed tag builds, version verification, immutable HTTPS assets,
-and an Ed25519 signature made with the reviewed update key. The verifier accepts
-only an actually unsigned installer, never an invalid or untrusted Authenticode
-signature. Update notes disclose the missing Windows publisher signature.
+Signed assets are uploaded without replacement and read back, then independently
+verified on Windows before the protected OIDC mirror conditionally adds S3 objects.
+Published legacy unsigned assets remain unchanged; compatibility verification for
+those versions does not authorize producing a new unsigned release.
 
-Once publisher signing is available, publish a higher product version using
-`windows_signing: "authenticode"` (the default), complete signing and timestamping
-before Ed25519 signing, and keep the same stable feed and update key. Do not
-replace an already published unsigned artifact in place. Signing authorization
-and release publication remain separate manual decisions.
+Windows update Ed25519 signing is local and uses keykey-update-private.pem.
+The key must never be committed, staged, uploaded, printed or copied into a build
+artifact. Git ignores the filename and Windows release preflight rejects a tracked
+or staged copy. Only the local crypto tool reads its contents; signing diagnostics
+are suppressed. Authenticode completes before Ed25519. Metadata/feed promotion
+remains a separate maintainer-reviewed PR; other platform release flows are unchanged.
 
 ## Source review and merge
 

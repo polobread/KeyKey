@@ -346,6 +346,13 @@ Windows 客戶端也仍只接受單一 feed URL，來源設定與失敗切換功
 
 ## 產生與驗證更新資料
 
+Windows 正式發布的建置、Authenticode 與 Ed25519 都在本機完成；其他平台流程不變。
+先依 [Windows 本機發布指南](../docs/WINDOWS_CERTUM_RELEASE.md) 完成 EXE 與已簽 x64／x86 ZIP，
+再使用 `Source/Loaders/Windows-TSF/Prepare-WindowsUpdate.ps1` 準備 Windows 單平台更新資料。
+指定私鑰為 `keykey-update-private.pem`，僅交給本機密碼工具使用；禁止 commit／stage、上傳、顯示內容或放進 artifact。
+Windows 包裝器拒絕已追蹤私鑰並抑制簽章工具診斷；正式公鑰比對仍由 `metadata.py` 執行。
+feed 維持獨立 PR，由維護者 review／merge 後才同步 CDN。
+
 Manifest 是 JSON，`schema_version: 1`、`channel: "stable"`、`releases` 陣列。
 每個 release 必須提供：
 
@@ -369,7 +376,7 @@ Windows target 為 `windows-x64` 或 `windows-x86`，檔案需是安裝器 `.exe
 各平台可以有不同版本。穩定自動更新必須 `source_sha == tag_sha`，不可用同版 recovery
 覆蓋已公布的更新；既有 `release-assets.py --clobber` 流程僅供原下載資產，不用於 updater。
 
-在各平台的受保護簽章 job 上，先執行 `metadata.py attest --manifest ... --key ... --out ...`。
+多平台彙整時，macOS 沿用受保護簽章 job；Windows 在本機執行 `metadata.py attest --manifest ... --key ... --out ...`。
 macOS 會實際檢查 Gatekeeper installer assessment 與 stapled notarization；Windows
 會實際檢查所宣告的 Windows 簽章狀態與 installer product version。各平台產生
 `TARGET.attestation.json` 與 `.sig`，用來將 OS 驗證結果綁定到檔案 SHA-256／版本／commit。
@@ -392,9 +399,10 @@ python3 update/metadata.py verify --file /path/metadata.json \
   --signature /path/metadata.json.sig
 ```
 
-### Windows stable 的 unsigned 過渡模式
+### 既有 Windows unsigned 過渡版本的相容驗證
 
-維護者決定在 Windows 正式發行者簽章尚未就緒時，stable 可以使用 unsigned EXE。
+新的 Windows 本機正式發布只產生已簽版本。以下規格保留給既有 unsigned 過渡資產的驗證，
+不再提供新的 unsigned 發布流程；歷史 stable 過渡版本使用 unsigned EXE。
 這只免除 Authenticode，不免除安裝包的 Ed25519 更新簽章、正式公鑰、HTTPS、來源 review、
 tag／版本一致性及不可變資產要求。每一版的 manifest 必須明確宣告：
 

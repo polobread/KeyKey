@@ -14,11 +14,11 @@ Windows 1.3.7 目前尚未發布；本指南對應其原始碼與本機建置。
 
 開啟 **開始 → 設定 → 系統 → 關於**，查看「系統類型」。1.3.7 以 Windows 10 起為目標；目前已在 Windows 11 x64 建置與測試，Windows 10 x64／x86 尚待實機驗證。
 
-- **64 位元 x64 Windows**：使用 x64 安裝精靈，或 `chichi77-KeyKey-1.3.7-windows-x64.zip`。未簽署精靈檔名為 `chichi77-KeyKey-1.3.7-windows-x64-setup.unsigned.exe`，簽章版以 `setup.exe` 結尾。x64 套件同時支援 64 位元及 32 位元應用程式。
+- **64 位元 x64 Windows**：使用 x64 安裝精靈，或 `chichi77-KeyKey-1.3.7-windows-x64.zip`。新版正式安裝精靈以 `setup.exe` 結尾；x64／x86 ZIP 內的 EXE／DLL 也都須有有效簽章。x64 套件同時支援 64 位元及 32 位元應用程式。
 - **32 位元 x86 Windows**：使用 `chichi77-KeyKey-1.3.7-windows-x86.zip` 內的 `Install.cmd`；本頁的安裝精靈截圖只適用於 x64 EXE。
 - **ARM64 Windows**：目前沒有本指南涵蓋的安裝包，請勿以 x64 或 x86 包代替。
 
-未簽署安裝檔可能引發 Windows 安全提示。先確認檔案來源與版本；不要為了安裝而關閉整台電腦的安全防護。自行建置與打包方式見 [BUILDING.md](BUILDING.md#windows-10-與-11)。
+既有未簽版本維持原狀；新版正式發布使用已簽檔案。請先確認檔案來源、版本及有效發行者簽章；不要為了安裝而關閉整台電腦的安全防護。自行建置與打包方式見 [BUILDING.md](BUILDING.md#windows-10-與-11)。
 
 ## 2. 執行 x64 安裝精靈
 

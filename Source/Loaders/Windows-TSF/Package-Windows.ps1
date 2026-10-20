@@ -8,7 +8,13 @@ param(
     [string] $Architecture = 'x64',
 
     [ValidatePattern('^[0-9]+(?:\.[0-9]+){1,3}$')]
-    [string] $Version
+    [string] $Version,
+
+    [string] $OutputDirectory,
+
+    [switch] $Signed,
+
+    [string] $SignToolPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,6 +23,7 @@ if (-not $BuildDirectory) { $BuildDirectory = Join-Path $PSScriptRoot 'out\build
 if (-not $X86BuildDirectory) { $X86BuildDirectory = Join-Path $PSScriptRoot 'out\build\x86' }
 . (Join-Path $PSScriptRoot 'Packaging\New-PackageManifest.ps1')
 . (Join-Path $PSScriptRoot 'Packaging\Get-ProductVersion.ps1')
+. (Join-Path $PSScriptRoot 'Packaging\Authenticode.ps1')
 if (-not $Version) { $Version = Get-KeyKeyProductVersion }
 
 $resolvedBuildDirectory = (Resolve-Path -LiteralPath $BuildDirectory).Path
@@ -64,9 +71,13 @@ if ($Architecture -eq 'x64') {
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
 $templateDirectory = Join-Path $PSScriptRoot 'Packaging'
-$outputDirectory = Join-Path $PSScriptRoot 'out\package'
+if (-not $OutputDirectory) { $OutputDirectory = Join-Path $PSScriptRoot 'out\package' }
+$outputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 $packageName = "chichi77-KeyKey-$Version-windows-$Architecture"
 $zipPath = Join-Path $outputDirectory "$packageName.zip"
+if ($Signed -and ((Test-Path -LiteralPath $zipPath) -or (Test-Path -LiteralPath "$zipPath.sha256"))) {
+    throw 'Signed ZIP output already exists. Use a fresh output directory.'
+}
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) (
     'chichi77-keykey-package-' + [Guid]::NewGuid().ToString('N'))
 $packageRoot = Join-Path $temporaryRoot $packageName
@@ -100,6 +111,9 @@ try {
         Copy-Item -LiteralPath (Join-Path $templateDirectory $template) `
             -Destination $packageRoot
     }
+    $guidePath = Join-Path $packageRoot 'README.txt'
+    $guide = [IO.File]::ReadAllText($guidePath).Replace('@KEYKEY_VERSION@', $Version)
+    [IO.File]::WriteAllText($guidePath, $guide, [Text.UTF8Encoding]::new($false))
 
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'README.md') `
         -Destination (Join-Path $licenseDirectory 'KeyKey-README.md')
@@ -122,8 +136,18 @@ try {
     Copy-Item -LiteralPath (Join-Path $repositoryRoot 'Source\Shared\Unicode-LICENSE.txt') `
         -Destination $licenseDirectory
     Copy-Item -LiteralPath $licenseDirectory -Destination $payloadDirectory -Recurse
+    if ($Signed) {
+        $tool = Resolve-SignTool -RequestedPath $SignToolPath
+        $peFiles = @(Get-ChildItem -LiteralPath $payloadDirectory -File -Recurse |
+            Where-Object { $_.Extension -in @('.exe', '.dll') })
+        $signer = (Get-AuthenticodeSignature -LiteralPath $peFiles[0].FullName).SignerCertificate.Thumbprint
+        if (-not $signer) { throw 'ZIP payload is not signed.' }
+        foreach ($file in $peFiles) {
+            Invoke-VerifySignature -FilePath $file.FullName -ToolPath $tool -ExpectedThumbprint $signer
+        }
+    }
     New-KeyKeyPackageManifest -PackageDirectory $packageRoot -Version $Version `
-        -Architecture $Architecture
+        -Architecture $Architecture -Signed ([bool]$Signed)
 
     [ordered]@{
         name = 'chichi77 KeyKey'
@@ -137,6 +161,8 @@ try {
     }
     Compress-Archive -LiteralPath $packageRoot -DestinationPath $zipPath `
         -CompressionLevel Optimal
+    $hash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    "$hash  $(Split-Path -Leaf $zipPath)" | Set-Content -LiteralPath "$zipPath.sha256" -Encoding ascii
 }
 finally {
     if (Test-Path -LiteralPath $temporaryRoot -PathType Container) {

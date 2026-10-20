@@ -1,253 +1,36 @@
-name: Package Windows
+name: Windows Checks
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [master]
+    paths: ['Source/**', 'DataSource/**', 'update/**', '.github/scripts/**', '.github/workflows/package-windows.yml']
+  pull_request:
+    branches: [master]
+    paths: ['Source/**', 'DataSource/**', 'update/**', '.github/scripts/**', '.github/workflows/package-windows.yml']
   workflow_dispatch:
-    inputs:
-      release_tag:
-        description: 'Published Windows tag: vX.Y.Z or vX.Y.Z-betaN; blank = artifact only. Build uses the selected ref.'
-        required: false
-        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: package-windows-${{ inputs.release_tag || github.event.release.tag_name || github.ref }}
-  cancel-in-progress: false
+  group: windows-checks-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  package:
-    # Retained unsigned release path. Disabled unless the maintainer explicitly switches modes.
-    if: vars.WINDOWS_RELEASE_MODE == 'unsigned'
+  check:
     runs-on: windows-2025
     timeout-minutes: 60
-    outputs:
-      version: ${{ steps.metadata.outputs.version }}
-      artifact_name: ${{ steps.metadata.outputs.artifact_name }}
-      publish_release: ${{ steps.metadata.outputs.publish_release }}
-      release_tag: ${{ steps.metadata.outputs.release_tag }}
-      source_sha: ${{ steps.metadata.outputs.source_sha }}
-      tag_sha: ${{ steps.metadata.outputs.tag_sha }}
     defaults:
       run:
         shell: pwsh
-
     steps:
-      - name: Check out selected revision
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Resolve and verify version
-        id: metadata
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REQUESTED_RELEASE_TAG: ${{ inputs.release_tag }}
-          EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          . ./Source/Loaders/Windows-TSF/Packaging/Get-ProductVersion.ps1
-          $version = Get-KeyKeyProductVersion
-
-          python .github/scripts/release-assets.py resolve --version $version
-          if ($LASTEXITCODE -ne 0) { throw 'Release validation failed.' }
-          $tag = if ($env:REQUESTED_RELEASE_TAG) { $env:REQUESTED_RELEASE_TAG } else { $env:EVENT_RELEASE_TAG }
-          $config = Join-Path $env:RUNNER_TEMP 'keykey-update-config.json'
-          python update/prepare.py select-release --tag "$tag" --version $version --out $config
-          if ($LASTEXITCODE -ne 0) { throw 'Release update configuration failed.' }
-          "KEYKEY_UPDATE_CONFIG=$config" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          $shortSha = (git rev-parse --short=12 HEAD).Trim()
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          "artifact_name=keykey-windows-$version-$shortSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Set up Ruby for Smart Mandarin database
-        uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.4'
-
-      - name: Set up .NET for settings
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-
-      - name: Configure and build x64
-        working-directory: Source/Loaders/Windows-TSF
+      - name: Build and validate x64 and x86 (no signing, release artifacts or publication)
         run: |
-          python ../../../update/prepare.py fetch windows
-          cmake --preset windows-x64-vs2026
-          cmake --build --preset windows-x64-vs2026-release
-
-      - name: Test x64
-        working-directory: Source/Loaders/Windows-TSF
-        # Managed settings/deployment cases run once in the dedicated step below.
-        run: ctest --test-dir .\out\build\x64-vs2026 -C Release --output-on-failure -E '^(KeyKeyDeploymentTransactions|KeyKeySettingsPreferences)$'
-
-      - name: Configure and build x86
-        working-directory: Source/Loaders/Windows-TSF
-        run: |
-          cmake --preset windows-x86
-          cmake --build --preset windows-x86-release
-
-      - name: Test x86
-        working-directory: Source/Loaders/Windows-TSF
-        run: ctest --test-dir .\out\build\x86 -C Release --output-on-failure -E '^(KeyKeyDeploymentTransactions|KeyKeySettingsPreferences)$'
-
-      - name: Test default-off diagnostic settings and deployment
-        working-directory: Source/Loaders/Windows-TSF
-        run: |
-          dotnet run --project SettingsModern.Tests/SettingsModern.Tests.csproj --configuration Release
-          if ($LASTEXITCODE -ne 0) { throw 'Diagnostic settings regression failed.' }
-          dotnet run --project Deployment.Tests/Deployment.Tests.csproj --configuration Release
-          if ($LASTEXITCODE -ne 0) { throw 'Deployment regression failed.' }
-
-      - name: Test shared data across x64, x86 and settings processes
-        working-directory: Source/Loaders/Windows-TSF
-        run: |
-          $x64 = (Resolve-Path './out/build/x64-vs2026/Release/KeyKeySharedDataProtectionTest.exe').Path
-          $x86 = (Resolve-Path './out/build/x86/Release/KeyKeySharedDataProtectionTest.exe').Path
-          & $x64 $x86
-          if ($LASTEXITCODE -ne 0) { throw 'x64 to x86 data protection regression failed.' }
-          & $x86 $x64
-          if ($LASTEXITCODE -ne 0) { throw 'x86 to x64 data protection regression failed.' }
-          $managed = (Resolve-Path './SettingsModern.Tests/bin/Release/net10.0/SettingsModern.Tests.dll').Path
-          $dotnet = (Get-Command dotnet).Source
-          foreach ($native in @($x64, $x86)) {
-            & $native --managed $dotnet $managed
-            if ($LASTEXITCODE -ne 0) { throw 'Native and managed settings writer regression failed.' }
-          }
-
-      - name: Test Windows updater lifecycle and native signatures
-        working-directory: Source/Loaders/Windows-TSF
-        run: |
-          $openssl = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
-          if (-not (Test-Path -LiteralPath $openssl -PathType Leaf)) {
-            throw 'OpenSSL is required for the native updater signature regressions.'
-          }
-          $env:KEYKEY_TEST_OPENSSL = $openssl
-          python -m unittest discover -s ../../../update -v
-          if ($LASTEXITCODE -ne 0) { throw 'Update metadata and Windows signing policy regression failed.' }
-          foreach ($architecture in @('x64', 'x86')) {
-            dotnet run --project DesktopUpdater.Tests/DesktopUpdater.Tests.csproj `
-              --configuration Release -r "win-$architecture" --self-contained `
-              -- --native --openssl $openssl
-            if ($LASTEXITCODE -ne 0) { throw "Windows updater regression failed: $architecture" }
-          }
-
-      - name: Install NSIS 3.12
-        run: |
-          choco install nsis --version=3.12.0 --yes --no-progress --limit-output
-          $makensis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
-          if (-not (Test-Path -LiteralPath $makensis -PathType Leaf)) {
-              throw "makensis.exe was not installed at $makensis"
-          }
-          $reportedVersion = (& $makensis /VERSION 2>&1 | Out-String).Trim()
-          if ($LASTEXITCODE -ne 0 -or $reportedVersion -notmatch '^v?3\.12(?:\D|$)') {
-              throw "Expected NSIS 3.12, found: $reportedVersion"
-          }
-          "MAKENSIS_PATH=$makensis" |
-            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Build unsigned installer archive
-        working-directory: Source/Loaders/Windows-TSF
-        run: |
-          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./Package-Windows.ps1 `
-            -BuildDirectory ./out/build/x64-vs2026 `
-            -X86BuildDirectory ./out/build/x86 `
-            -Version $env:VERSION
-          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./Package-Windows.ps1 `
-            -BuildDirectory ./out/build/x64-vs2026 `
-            -X86BuildDirectory ./out/build/x86 `
-            -Architecture x86 `
-            -Version $env:VERSION
-
-      - name: Build unsigned NSIS installer
-        working-directory: Source/Loaders/Windows-TSF
-        run: |
-          powershell.exe -NoProfile -ExecutionPolicy Bypass `
-            -File ./Package-Store-Windows.ps1 `
-            -BuildDirectory ./out/build/x64-vs2026 `
-            -X86BuildDirectory ./out/build/x86 `
-            -Version $env:VERSION `
-            -MakensisPath $env:MAKENSIS_PATH `
-            -UnsignedTest
-
-      - name: Verify actual ZIP contents
-        working-directory: Source/Loaders/Windows-TSF
-        run: |
-          python Packaging/verify-package.py `
-            "out/package/chichi77-KeyKey-$env:VERSION-windows-x64.zip" `
-            "out/package/chichi77-KeyKey-$env:VERSION-windows-x86.zip"
-
-      - name: Stage artifact and checksum
-        run: |
-          $artifactDirectory = New-Item -ItemType Directory -Path artifacts -Force
-          $sources = @(
-            "Source/Loaders/Windows-TSF/out/package/chichi77-KeyKey-$env:VERSION-windows-x64.zip",
-            "Source/Loaders/Windows-TSF/out/package/chichi77-KeyKey-$env:VERSION-windows-x86.zip",
-            "Source/Loaders/Windows-TSF/out/store-package/chichi77-KeyKey-$env:VERSION-windows-x64-setup.unsigned.exe"
-          )
-          foreach ($source in $sources) {
-              $destination = Join-Path $artifactDirectory.FullName (Split-Path -Leaf $source)
-              Copy-Item -LiteralPath $source -Destination $destination
-              $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
-              "$hash  $(Split-Path -Leaf $destination)" |
-                Set-Content -LiteralPath "$destination.sha256" -Encoding ascii
-          }
-
-      - name: Upload packaged artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ${{ steps.metadata.outputs.artifact_name }}
-          path: artifacts/
-          if-no-files-found: error
-          retention-days: 7
-
-  publish:
-    needs: package
-    if: vars.WINDOWS_RELEASE_MODE == 'unsigned' && needs.package.outputs.publish_release == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    environment: release
-    permissions:
-      contents: write
-      id-token: write
-    env:
-      VERSION: ${{ needs.package.outputs.version }}
-      RELEASE_TAG: ${{ needs.package.outputs.release_tag }}
-      BUILD_SOURCE_SHA: ${{ needs.package.outputs.source_sha }}
-      RELEASE_TAG_SHA: ${{ needs.package.outputs.tag_sha }}
-    steps:
-      - name: Check out the built revision
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.package.outputs.source_sha }}
-
-      - name: Download verified Windows packages
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: ${{ needs.package.outputs.artifact_name }}
-          path: artifacts
-
-      - name: Publish unsigned Windows assets to the GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          python3 .github/scripts/release-assets.py publish
-          --platform windows --version "$VERSION" --directory artifacts
-
-      - name: Configure AWS credentials for the release mirror
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
-        with:
-          role-to-assume: ${{ vars.AWS_RELEASE_MIRROR_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_RELEASE_MIRROR_REGION }}
-          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
-
-      - name: Mirror the verified Windows assets to S3
-        env:
-          RELEASE_MIRROR_BUCKET: ${{ vars.AWS_RELEASE_MIRROR_BUCKET }}
-          RELEASE_MIRROR_DISTRIBUTION_ID: ${{ vars.AWS_RELEASE_MIRROR_DISTRIBUTION_ID }}
-          RELEASE_MIRROR_BASE_URL: ${{ vars.AWS_RELEASE_MIRROR_BASE_URL }}
-        run: >-
-          python3 .github/scripts/release-assets.py mirror
-          --platform windows --version "$VERSION" --directory artifacts
+          ./Source/Loaders/Windows-TSF/Build-WindowsRelease.ps1 -OutputDirectory "$env:RUNNER_TEMP/keykey-windows-checks" -Python python
