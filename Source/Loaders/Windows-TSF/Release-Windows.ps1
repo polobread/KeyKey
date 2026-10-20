@@ -49,7 +49,7 @@ if (Test-Path -LiteralPath $signedDirectory) { throw 'Signing output already exi
 . (Join-Path $PSScriptRoot 'Packaging\Authenticode.ps1')
 $tool = Resolve-SignTool -RequestedPath $SignToolPath
 Write-Host 'Connect SimplySign Desktop using your phone token. Enter any PIN only in the provider dialog.'
-$secureThumbprint = Read-Host 'Certificate thumbprint (hidden; memory only)' -AsSecureString
+$secureThumbprint = Read-SigningCertificateIdentifier -StoreLocation $CertificateStoreLocation
 $thumbprintPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureThumbprint)
 $thumbprint = $null
 try {

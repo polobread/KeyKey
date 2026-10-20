@@ -43,7 +43,11 @@ def sha256(path):
 
 
 def run(*args):
-    result = subprocess.run(list(map(str, args)), cwd=ROOT, capture_output=True)
+    environment = None
+    if Path(args[0]).name.lower() == "powershell.exe":
+        environment = os.environ.copy()
+        environment["PSModulePath"] = str(Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32/WindowsPowerShell/v1.0/Modules")
+    result = subprocess.run(list(map(str, args)), cwd=ROOT, capture_output=True, env=environment)
     require(result.returncode == 0, f"{Path(args[0]).name} operation failed; check authentication and prerequisites")
     return result.stdout.decode("utf-8-sig").strip()
 

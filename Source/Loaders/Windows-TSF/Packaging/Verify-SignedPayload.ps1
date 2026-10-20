@@ -25,7 +25,11 @@ foreach ($file in $files) {
     Invoke-VerifySignature -FilePath $file.FullName -ToolPath $tool -ExpectedThumbprint $signer
     if ($file.Name -ne 'WinSparkle.dll') {
         $version = [Diagnostics.FileVersionInfo]::GetVersionInfo($file.FullName)
-        if ($version.ProductVersion -notmatch ('^' + [regex]::Escape($ExpectedVersion) + '(?:[.+-]|$)')) {
+        # These native helper targets currently have no version resource in CMake.
+        # If a later build adds one, it must still match the release version.
+        $unversionedHelper = $file.Name -in @('KeyKeySettingsBackend.dll', 'KeyKeyRegistration_x86.exe') -and
+            [string]::IsNullOrEmpty($version.ProductVersion)
+        if (-not $unversionedHelper -and $version.ProductVersion -notmatch ('^' + [regex]::Escape($ExpectedVersion) + '(?:[.+-]|$)')) {
             throw "ZIP payload product version mismatch: $($file.Name)"
         }
     }

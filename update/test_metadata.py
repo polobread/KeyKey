@@ -200,5 +200,19 @@ class MetadataTests(unittest.TestCase):
             metadata.verify(self.package, signature, base64.b64encode(bytes(32)).decode(), OPENSSL)
 
 
+class WindowsVerifierEnvironmentTests(unittest.TestCase):
+    def test_windows_verifier_uses_native_modules_without_changing_parent(self):
+        entry = dict(target='windows-x64', file=__file__, version='fixture-version')
+        with patch.object(metadata.sys, 'platform', 'win32'), \
+                patch.object(metadata.channels, 'parse_version', return_value=('fixture-native-version', 'stable', None)), \
+                patch.dict(os.environ, {'PSModulePath': 'foreign-pwsh-modules', 'SystemRoot': 'C:/Windows'}), \
+                patch.object(metadata.subprocess, 'run') as child:
+            metadata.verify_platform_package(entry)
+            self.assertEqual(child.call_args.kwargs['env']['PSModulePath'],
+                             str(Path('C:/Windows') / 'System32/WindowsPowerShell/v1.0/Modules'))
+            self.assertTrue(child.call_args.kwargs['check'])
+            self.assertEqual(os.environ['PSModulePath'], 'foreign-pwsh-modules')
+
+
 if __name__ == "__main__":
     unittest.main()

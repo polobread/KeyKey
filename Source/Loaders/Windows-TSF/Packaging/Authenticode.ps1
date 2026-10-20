@@ -30,6 +30,22 @@ function Resolve-SignTool {
     throw 'SignTool.exe was not found. Install the Windows SDK or pass -SignToolPath.'
 }
 
+function Read-SigningCertificateIdentifier {
+    param([Parameter(Mandatory = $true)][string] $StoreLocation)
+
+    $now = Get-Date
+    $candidates = @(Get-ChildItem -LiteralPath "Cert:\$StoreLocation\My" -ErrorAction SilentlyContinue | Where-Object {
+        $_.HasPrivateKey -and $_.NotBefore -le $now -and $_.NotAfter -ge $now -and $_.Issuer -match 'Certum' -and
+        @($_.EnhancedKeyUsageList | Where-Object { $_.ObjectId -eq '1.3.6.1.5.5.7.3.3' -or $_.ObjectId.Value -eq '1.3.6.1.5.5.7.3.3' }).Count -gt 0
+    })
+    try {
+        if ($candidates.Count -eq 1) {
+            return ConvertTo-SecureString -String $candidates[0].Thumbprint -AsPlainText -Force
+        }
+        return Read-Host 'Certificate thumbprint (hidden; memory only)' -AsSecureString
+    } finally { $candidates = $null }
+}
+
 function Assert-SigningCertificate {
     param(
         [Parameter(Mandatory = $true)][string] $Thumbprint,
