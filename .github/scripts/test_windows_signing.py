@@ -106,7 +106,8 @@ class WindowsSigningTests(unittest.TestCase):
             self.assertEqual(len(list(folder.glob('*.exe'))) + len(list(folder.glob('*.dll'))), 7)
             self.assertEqual(args[args.index('-Architecture') + 1], 'x64')
             raise ValueError('untrusted extracted payload')
-        with patch.object(signing, 'load_package_verifier', return_value=verifier), patch.object(signing, 'run', side_effect=verify), \
+        with patch.object(signing.sys, 'platform', 'win32'), \
+                patch.object(signing, 'load_package_verifier', return_value=verifier), patch.object(signing, 'run', side_effect=verify), \
                 patch('sys.stdout', new=io.StringIO()), self.assertRaisesRegex(ValueError, 'untrusted extracted'):
             signing.verify_zip(package, self.version, 'x64')
 
