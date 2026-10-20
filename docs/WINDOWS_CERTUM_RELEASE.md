@@ -37,6 +37,11 @@ X.Y.Z 是產品版號占位；beta 使用 vX.Y.Z-betaN，必須與 CMake 產品�
 6. 用同一份已簽 payload 產生 x64 NSIS 安裝檔、x64 ZIP 與 x86 ZIP。ZIP 內的設定、部署、TSF、bridge、WinSparkle 均為已簽檔案；簽章後才建立 manifest 與壓縮。
 7. 簽署外層 EXE，再檢查 EXE、ZIP 真正內容、PE 架構、產品版號、詞庫雜湊、簽章及可信任時間戳，產生三份校驗檔與涵蓋全部產物的 build-info。
 
+Windows 完整建置矩陣的 `update-metadata` 檢查會從 `update/` 執行共用的
+`test_channels` 與 `test_metadata` 測試，涵蓋更新頻道、metadata、Ed25519 與 Windows
+簽章驗證案例。macOS 專屬的簽章與公證測試由 macOS 流程執行；它們不屬於 Windows
+發布矩陣。Build-WindowsRelease 仍須完成所有 Windows 架構、部署、更新器、傳輸與簽章政策檢查。
+
 x64 安裝檔與 x64 ZIP 同時包含 x86 TSF／bridge，以支援 32 位元文字宿主；x86 ZIP 供 32 位元 Windows。
 解除安裝沿用已簽的部署程式。原始碼、隔離測試與本機簽章成功不能代替實際安裝驗收。
 
