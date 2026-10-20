@@ -640,3 +640,33 @@ Guest image 來源、checksum、安裝套件版本與安裝腳本全部可審計
 
 若 hosted desktop gate 失敗，保留已完成的 L1–L3，記錄 blocker 並回報；
 不得把 L4 名稱改成 smoke、隱藏 failed job，再把同一版本標為全平台正式支援。
+
+## CI 逾時後的既有套件補驗
+
+Ubuntu 24.04 的完整 job 保留 45 分鐘，涵蓋建置、封裝及安裝／升級／重裝後的
+X11 驗證。上傳證據前以 `always()` 將固定的
+`Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-package-ci` 目錄還原為 runner
+擁有並加上擁有者讀取／目錄搜尋權限，避免逾時中斷 root 測試的 EXIT cleanup 後
+無法上傳；不調整其他目錄、runtime 或憑證權限。
+
+若套件 artifact 已完成而測試逾時，先核對官方 run、artifact 的來源 commit、
+artifact ZIP digest 與內含 `SHA256SUMS`，並確認 release tag 仍指向該來源。
+在一次性 Ubuntu 24.04 容器還原同一 commit 的追蹤原始碼及原套件，保留原 `.deb`
+bytes。只缺重裝後證據時，補驗範圍如下：
+
+從 Windows 匯出來源時使用 `git -c core.autocrlf=false archive SOURCE_SHA` 保留
+腳本 LF；開始前一次核對 GTK／Qt runtime、Qt XCB plugin 與 GTK3 Python typelib。
+
+1. 使用既有 package-build image，只編譯 `keykey_linux_gtk3_e2e_host`、
+   `keykey_linux_gtk4_e2e_host`、`keykey_linux_qt6_e2e_host` 測試宿主。三者可直接以
+   `g++ -std=c++17` 編譯對應的 `tests/*_e2e_host.cpp`，由 `pkg-config` 取得
+   `gtk+-3.0`、`gtk4`、`Qt6Widgets` 參數；Qt6 加上 `-fPIC -no-pie`。
+   不進入產品 CMake 建置、跑 CTest 或重新封裝。
+2. 使用乾淨的 package-test 容器，以 `KEYKEY_RUN_X11_E2E=OFF` 執行
+   `ci/test-debian-package-lifecycle.sh`，只傳原 release-candidate 套件目錄，
+   完成同批套件的安裝／移除／重裝，不重跑已通過的 upgrade fixture。
+3. 設定 `KEYKEY_E2E_INSTALL_SOURCE=system` 與 `KEYKEY_E2E_CONFIG_UI=ON`，
+   用 `ci/run-x11-e2e.sh` 補做一輪重裝後 X11，再執行
+   `dbus-run-session -- xvfb-run -a python3 tests/test_update_notify_install.py`。
+4. 將原 artifact 來源、校驗結果與補驗報告附於修正 PR；保留原 run 的 cancelled
+   狀態，不把補驗當成重新建置或完整矩陣通過。不得為此移動 tag 或直接發布套件。

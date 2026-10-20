@@ -81,7 +81,7 @@ jobs:
     if: github.event_name != 'pull_request'
     name: Full Ubuntu 24.04 build, packages, and GTK3/GTK4/Qt6 X11 E2E
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     outputs:
       version: ${{ steps.metadata.outputs.version }}
       publish_release: ${{ steps.metadata.outputs.publish_release }}
@@ -167,6 +167,16 @@ jobs:
             ci/test-debian-package-lifecycle.sh \
               out/packages/ubuntu-24.04-amd64/release-candidate \
               out/packages/ubuntu-24.04-amd64/upgrade-fixture
+
+      - name: Restore runner read access to X11 evidence
+        if: always()
+        working-directory: Source/Loaders/Linux-IME
+        run: |
+          evidence=out/e2e/ubuntu-24.04-package-ci
+          if [[ -d "$evidence" ]]; then
+            sudo chown -R -- "$(id -u):$(id -g)" "$evidence"
+            sudo chmod -R u+rX -- "$evidence"
+          fi
 
       - name: Upload X11 typing evidence
         if: always()
