@@ -1,11 +1,2 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
-  <channel>
-    <title>琦琦輸入法 Windows x64 更新</title>
-    <link>https://download.aws.polobread.com/keykey/releases/download/v1.3.1/chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe</link>
-    <description><![CDATA[
-      <p>目前正式版本為 1.3.1；提供 Windows x64 unsigned EXE 手動下載。安裝時可能顯示未知的發行者。本 feed 尚無可自動安裝的更新項目。</p>
-      <p>下載來源：<a href="https://download.aws.polobread.com/keykey/releases/download/v1.3.1/chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe">CDN（主要）</a>、<a href="https://github.com/polobread/KeyKey/releases/download/v1.3.1/chichi77-KeyKey-1.3.1-windows-x64-setup.unsigned.exe">GitHub（備用）</a></p>
-    ]]></description>
-  </channel>
-</rss>
+<?xml version='1.0' encoding='utf-8'?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0"><channel><title>琦琦輸入法更新</title><item><title>琦琦輸入法 1.3.7</title><sparkle:version>1.3.7</sparkle:version><sparkle:shortVersionString>1.3.7</sparkle:shortVersionString><sparkle:minimumSystemVersion>10.0.0</sparkle:minimumSystemVersion><description>&lt;p&gt;Windows 1.3.7 新增倉頡未打完也能選字，改善進階設定、符號表與輸入穩定性；支援簡體中文輸出及已簽安裝包同版本重新安裝。&lt;/p&gt;&lt;p&gt;安裝後請登出再登入。&lt;/p&gt;</description><enclosure url="https://download.aws.polobread.com/keykey/releases/download/v1.3.7/KeyKey-1.3.7-windows-x64-a14b88494ea07d6c9e343b66dedd1db24ec6472323e29b3af9a69bd7061cc56b.exe" length="93294064" type="application/octet-stream" sparkle:edSignature="IzcfdA+s8JwzmX88kQV0Iv7cKPQ4Q1T4FT2tH2jCbB+7Lmv5fENKb5WnV41xHIvjQPZ+cZnKUtqulyAe20Y3Cw==" sparkle:os="windows-x64" /></item></channel></rss>
