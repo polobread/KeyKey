@@ -122,6 +122,7 @@ Windows 發行者簽章採 Certum／SimplySign 本機半自動流程，首次真
 
 ## 文件
 
+- [跨平台輸入法設定支援表與 Roadmap](docs/CROSS_PLATFORM_SETTINGS_ROADMAP.md)：七種平台／鍵盤情境、功能缺口、版本與 commit 追溯
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
 - [macOS App Store Connect 上架可行性與發行計畫](docs/MACOS_APP_STORE_PLAN.md)：Apple
   現行政策阻礙、第三方輸入法經驗、商店外發行改善與未來上架 gate
