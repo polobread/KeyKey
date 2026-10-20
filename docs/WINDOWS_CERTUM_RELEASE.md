@@ -97,7 +97,9 @@ Authenticode 完成後，依 [更新資料說明](../update/README.md#產生與�
 
 腳本列出六份產物的 SHA-256，要求完整輸入 `PUBLISH TAG BUILD_INFO_SHA256`，核准範圍涵蓋 EXE、兩個 ZIP 與 checksum。發布前再次核對 CI／artifact、來源、全部雜湊及實際簽章。七份檔案上傳既有 Release 後逐份回讀，再請求受保護的 CDN 鏡像。不同 bytes 的同名資產拒絕覆寫；不建立／刪除 Release、不移動 tag、不使用 clobber，也不自動修改 feed。
 
-Ed25519 不可變副本須先經核准上線與驗證，feed 再以獨立 PR 由維護者 review／merge。平台其他發布流程維持各自規則。
+Release 若已有 Ed25519 內容位址 EXE，既有 CDN 鏡像流程會先下載並核對其大小與 SHA-256，確認和已驗證的 setup 完全相同，再條件新增該副本、回讀並驗證 CDN。原 tag 的 Windows 工作仍負責驗證產品；鏡像工作使用發送當次已審查的 master 工具，無須移動產品 tag、重建或重簽。副本不存在時仍只鏡像原七份檔案，內容不同則在任何 AWS 寫入前停止。
+
+Ed25519 不可變副本須先經核准上線與驗證，feed 再以獨立 PR 由維護者 review／merge。沿用既有 metadata、signature 與 appcast 原始 bytes；metadata 或 URL 有變動就不能沿用原簽章。平台其他發布流程維持各自規則。
 
 ## 必要工具驗證與失敗處理
 

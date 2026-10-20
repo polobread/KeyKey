@@ -415,6 +415,25 @@ def mirror(tag, directory, receipt_digest):
     # Windows already validated signatures; validate archive contents again on the mirror runner.
     for arch in ("x64", "x86"):
         verify_zip(directory / f"chichi77-KeyKey-{identity['version']}-windows-{arch}.zip", identity["version"], arch, native=False)
+    objects = [(path, path.name) for path in paths]
+    installer = directory / asset_names(identity["version"])[0]
+    checksum = sha256(installer)
+    copy_prefix = f"KeyKey-{identity['release_version']}-windows-x64-"
+    copy_name = f"{copy_prefix}{checksum}.exe"
+    assets = release_assets(tag)
+    copies = {name for name in assets if name.startswith(copy_prefix)}
+    require(copies <= {copy_name}, "Unexpected Windows update copy; refusing mirror writes")
+    if copies:
+        entry = assets[copy_name]
+        require(entry.get("size") == installer.stat().st_size and entry.get("digest") == "sha256:" + checksum,
+                "Published Windows update copy size/hash mismatch")
+        with tempfile.TemporaryDirectory() as temp:
+            download_asset(tag, copy_name, temp)
+            copy = Path(temp) / copy_name
+            require(copy.is_file() and not copy.is_symlink() and copy.stat().st_size == installer.stat().st_size and
+                    sha256(copy) == checksum, "Downloaded Windows update copy size/hash mismatch")
+        # Use the verified installer bytes under the copy's exact immutable name.
+        objects.append((installer, copy_name))
     bucket = os.environ["RELEASE_MIRROR_BUCKET"]
     distribution = os.environ["RELEASE_MIRROR_DISTRIBUTION_ID"]
     base_url = os.environ["RELEASE_MIRROR_BASE_URL"].rstrip("/")
@@ -423,29 +442,29 @@ def mirror(tag, directory, receipt_digest):
             re.fullmatch(r"[A-Z0-9]+", distribution) and parsed.scheme == "https" and parsed.hostname and
             not (parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment), "Invalid mirror configuration")
     prefix = f"keykey/releases/download/{tag}"
-    for path in paths:
-        key = f"{prefix}/{path.name}"
+    for path, name in objects:
+        key = f"{prefix}/{name}"
         result = subprocess.run(["aws", "s3api", "put-object", "--bucket", bucket, "--key", key,
                                  "--body", str(path), "--if-none-match", "*", "--checksum-algorithm", "SHA256",
-                                 "--content-type", mimetypes.guess_type(path.name)[0] or "application/octet-stream",
+                                 "--content-type", mimetypes.guess_type(name)[0] or "application/octet-stream",
                                  "--cache-control", "public,max-age=31536000,immutable"], capture_output=True)
         with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp) / path.name
+            target = Path(temp) / name
             run("aws", "s3api", "get-object", "--bucket", bucket, "--key", key, target)
             require(sha256(target) == sha256(path), "Mirror collision/readback mismatch; refusing overwrite")
         if result.returncode != 0:
             require(b"PreconditionFailed" in result.stderr or b"412" in result.stderr, "Mirror upload failed")
     invalidation = json.loads(run("aws", "cloudfront", "create-invalidation", "--distribution-id", distribution,
-        "--paths", *(f"/{prefix}/{p.name}" for p in paths), "--no-cli-pager", "--output", "json"))
+        "--paths", *(f"/{prefix}/{name}" for _, name in objects), "--no-cli-pager", "--output", "json"))
     run("aws", "cloudfront", "wait", "invalidation-completed", "--distribution-id", distribution,
         "--id", invalidation["Invalidation"]["Id"], "--no-cli-pager")
-    for path in paths:
-        verify_url(f"{base_url}/{prefix}/{quote(path.name, safe='')}", path)
+    for path, name in objects:
+        verify_url(f"{base_url}/{prefix}/{quote(name, safe='')}", path)
     message = "Signed Windows EXE and x64/x86 ZIP assets verified on S3 and CDN. No update feeds were changed."
     print(message)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as stream:
-            stream.write(message + "\n\n" + "\n".join(f"- [{p.name}]({base_url}/{prefix}/{quote(p.name, safe='')})" for p in paths) + "\n")
+            stream.write(message + "\n\n" + "\n".join(f"- [{name}]({base_url}/{prefix}/{quote(name, safe='')})" for _, name in objects) + "\n")
 
 
 def verify_url(url, path):
