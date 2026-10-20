@@ -58,6 +58,7 @@ jobs:
         id: targets
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          OPERATION: ${{ inputs.operation }}
         shell: bash
         run: |
           set -euo pipefail
@@ -66,8 +67,8 @@ jobs:
           else
             changed=$(git diff --name-only HEAD^ HEAD)
           fi
-          verify=$(printf '%s' "$changed" | python3 -c 'import re,sys; print(str(any(re.fullmatch(r"update/beta/(windows-x64\.xml|release\.json|metadata\.json(?:\.sig)?)|\.github/scripts/verify-beta-windows\.py|\.github/workflows/sync-update-feeds\.yml", p) for p in sys.stdin.read().splitlines())).lower())')
-          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -f update/beta/release.json ]]; then verify=true; fi
+          verify=$(printf '%s' "$changed" | python3 -c 'import re,sys; print(str(any(re.fullmatch(r"update/beta/(windows-x64\.xml|release\.json|metadata\.json(?:\.sig)?)|\.github/scripts/verify-beta-windows\.py", p) for p in sys.stdin.read().splitlines())).lower())')
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$OPERATION" == stage-beta-assets ]]; then verify=true; fi
           echo "verify_windows=$verify" >> "$GITHUB_OUTPUT"
       - name: Test and validate feeds without AWS access
         shell: bash
