@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Threading;
+using System.Xml.Linq;
 using Microsoft.Win32;
 using KeyKeySettings;
 
@@ -44,7 +45,7 @@ internal static class NativeTests
             AutomaticPreferenceTest(key);
             NotificationOnlyTest(key, background: false);
             NotificationOnlyTest(key, background: true);
-            foreach (var mode in new[] { "no-update", "empty-feed-x64", "empty-feed-x86", "valid", "beta-next", "beta-same", "beta-older", "beta-to-final", "tampered", "wrong-key", "missing-signature", "broken-feed" })
+            foreach (var mode in new[] { "no-update", "empty-feed", "published-feed-x64", "published-feed-x86", "valid", "beta-next", "beta-same", "beta-older", "beta-to-final", "tampered", "wrong-key", "missing-signature", "broken-feed" })
             {
                 using var done = new ManualResetEventSlim();
                 using var server = new LoopbackServer(mode, payload, signed);
@@ -55,6 +56,7 @@ internal static class NativeTests
                 try
                 {
                     backend.Configure(mode == "wrong-key" ? wrongKey : key, server.Feed,
+                        mode.StartsWith("published-feed-", StringComparison.Ordinal) ? PublishedFeedVersion(mode) :
                         mode.StartsWith("beta-", StringComparison.Ordinal) ? "1.3.2b2" : "1.0.0",
                         new UpdateCallbacks(() => 1,
                             () => { Interlocked.Increment(ref shutdowns); done.Set(); },
@@ -75,9 +77,9 @@ internal static class NativeTests
                     if (mode is "valid" or "beta-next" or "beta-to-final")
                         Program.Check(found == 1 && installs == 1 && shutdowns == 1 && errors == 0 && matchingPayload,
                             "Valid signed payload did not reach the interception callback intact");
-                    else if (mode is "no-update" or "beta-same" or "beta-older" || mode.StartsWith("empty-feed-", StringComparison.Ordinal))
+                    else if (mode is "no-update" or "empty-feed" or "beta-same" or "beta-older" || mode.StartsWith("published-feed-", StringComparison.Ordinal))
                         Program.Check(notFound == 1 && errors == 0 && installs == 0 && shutdowns == 0,
-                            "Native same-version or empty feed was not reported as no update");
+                            "Native same-version or empty feed was not reported as no update: " + mode);
                     else
                         Program.Check(errors == 1 && installs == 0 && shutdowns == 0,
                             "Invalid update reached installer handling: " + mode);
@@ -96,6 +98,18 @@ internal static class NativeTests
             // Exact randomly-created directory, no enumeration of outside paths.
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    private static string PublishedFeedPath(string mode) => Path.Combine(AppContext.BaseDirectory,
+        mode == "published-feed-x86" ? "windows-x86.xml" : "windows-x64.xml");
+
+    private static string PublishedFeedVersion(string mode)
+    {
+        // Published feeds may contain an update. Exercise their actual XML with
+        // an already-current client rather than treating production as empty.
+        XNamespace sparkle = "http://www.andymatuschak.org/xml-namespaces/sparkle";
+        return XDocument.Load(PublishedFeedPath(mode)).Descendants(sparkle + "version")
+            .Select(version => version.Value).FirstOrDefault() ?? "1.0.0";
     }
 
     private static void AutomaticPreferenceTest(string key)
@@ -299,9 +313,17 @@ internal static class NativeTests
                         };
                         var sig = mode == "missing-signature" ? "" : $"sparkle:edSignature=\"{signature}\"";
                         var xml = $"<rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\"><channel><title>Test</title><item><title>Test {version}</title><enclosure url=\"{Feed.Replace("appcast.xml", "payload.exe")}\" sparkle:version=\"{version}\" length=\"{payload.Length}\" type=\"application/octet-stream\" {sig}/></item></channel></rss>";
-                        if (mode.StartsWith("empty-feed-", StringComparison.Ordinal))
-                            xml = File.ReadAllText(Path.Combine(AppContext.BaseDirectory,
-                                mode == "empty-feed-x86" ? "windows-x86.xml" : "windows-x64.xml"));
+                        if (mode == "empty-feed")
+                            xml = "<rss version=\"2.0\"><channel><title>Empty test feed</title></channel></rss>";
+                        if (mode.StartsWith("published-feed-", StringComparison.Ordinal))
+                        {
+                            var feed = XDocument.Load(PublishedFeedPath(mode));
+                            // Keep any accidental package request on loopback, even
+                            // if the native no-update regression stops filtering it.
+                            foreach (var enclosure in feed.Descendants("enclosure"))
+                                enclosure.SetAttributeValue("url", Feed.Replace("appcast.xml", "payload.exe"));
+                            xml = feed.ToString();
+                        }
                         body = Encoding.UTF8.GetBytes(mode == "broken-feed" ? "<broken>" : xml);
                     }
                     var header = Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
