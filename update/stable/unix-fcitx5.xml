@@ -5,6 +5,14 @@
     <title>琦琦輸入法 Linux／FreeBSD stable 更新通知</title>
     <link>https://github.com/polobread/KeyKey/releases</link>
     <keykey:schemaVersion>1</keykey:schemaVersion>
-    <description>Linux／FreeBSD 共用每週更新通知。套件完成並驗證後，以人工 PR 加入版本。Linux 請下載套件後透過套件管理器安裝；FreeBSD 請透過 ports／pkg 更新，套件可能較晚上架。本 feed 不下載或自動安裝套件，目前尚無公告項目。</description>
+    <description>Linux／FreeBSD 共用每週更新通知。Linux 請下載套件後透過套件管理器安裝；FreeBSD 請透過 ports／pkg 更新，套件可能較晚上架。本 feed 只通知新版，不下載或自動安裝套件。</description>
+    <item>
+      <title>琦琦輸入法 1.3.7：倉頡未打完也能選字</title>
+      <sparkle:version>1.3.7</sparkle:version>
+      <sparkle:shortVersionString>1.3.7</sparkle:shortVersionString>
+      <link>https://github.com/polobread/KeyKey/releases/tag/v1.3.7</link>
+      <keykey:linuxArchitecture>amd64</keykey:linuxArchitecture>
+      <description>倉頡新增「未打完也能選字」，輸入一至四個字根即可提前選字；桌面版需在倉頡設定開啟「即時候選」與「未打完也能選字」。另改善中文設定介面、好打注音進階設定與 Shift 中英文切換。Linux 已提供 Ubuntu 24.04 amd64 套件及共用詞庫，請從官方發行頁下載並透過套件管理器安裝。FreeBSD 同步接收本公告，請透過 ports／pkg 更新，套件可能較晚上架。</description>
+    </item>
   </channel>
 </rss>

@@ -294,8 +294,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Prepare signed macOS updater candidate
-        if: vars.MACOS_UPDATE_METADATA_ENABLED == 'true' && needs.build.outputs.source_sha == needs.build.outputs.tag_sha
+      - name: Prepare signed macOS beta updater candidate
+        if: contains(needs.build.outputs.release_tag, '-beta') && vars.MACOS_UPDATE_METADATA_ENABLED == 'true' && needs.build.outputs.source_sha == needs.build.outputs.tag_sha
         env:
           UPDATE_KEY_PEM: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_PEM }}
           UPDATE_MIRROR_BASE: ${{ vars.AWS_RELEASE_MIRROR_BASE_URL }}
@@ -318,8 +318,8 @@ jobs:
             --source-sha "$BUILD_SOURCE_SHA" --tag-sha "$RELEASE_TAG_SHA" \
             --key "$update_key" --base-url "$asset_base" --out update/out/macos-release
 
-      - name: Upload verified updater candidate for review
-        if: vars.MACOS_UPDATE_METADATA_ENABLED == 'true' && needs.build.outputs.source_sha == needs.build.outputs.tag_sha
+      - name: Upload verified beta updater candidate for review
+        if: contains(needs.build.outputs.release_tag, '-beta') && vars.MACOS_UPDATE_METADATA_ENABLED == 'true' && needs.build.outputs.source_sha == needs.build.outputs.tag_sha
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: keykey-macos-updater-${{ env.VERSION }}

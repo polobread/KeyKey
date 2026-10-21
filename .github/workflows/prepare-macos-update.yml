@@ -1,0 +1,90 @@
+name: Prepare macOS Stable Update
+
+on:
+  workflow_run:
+    workflows: [Package macOS]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing published stable macOS tag, e.g. vX.Y.Z; reuse original bytes'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-macos-stable-update
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: >-
+      github.repository == 'polobread/KeyKey' && github.ref == 'refs/heads/master' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'release' &&
+        github.event.workflow_run.head_repository.full_name == 'polobread/KeyKey' &&
+        startsWith(github.event.workflow_run.head_branch, 'v') &&
+        !contains(github.event.workflow_run.head_branch, '-')))
+    runs-on: macos-15
+    timeout-minutes: 20
+    environment: release
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      # Only reviewed master tooling runs with secrets; never check out release/PR code.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: master
+          persist-credentials: false
+      - name: Install OpenSSL 3
+        run: |
+          brew install openssl@3
+          echo "CANDIDATE=$RUNNER_TEMP/macos-update" >> "$GITHUB_ENV"
+          echo "KEYKEY_TEST_OPENSSL=$(brew --prefix openssl@3)/bin/openssl" >> "$GITHUB_ENV"
+      - name: Verify published source and original assets
+        id: candidate
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.event.workflow_run.head_branch }}
+          TRIGGER_RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          python3 .github/scripts/prepare-macos-update.py prepare \
+            --tag "$RELEASE_TAG" --trigger-run "$TRIGGER_RUN" --directory "$CANDIDATE"
+      - name: Verify notarization and sign candidate using the release secret
+        if: steps.candidate.outputs.needed == 'true'
+        env:
+          UPDATE_KEY_PEM: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY_PEM }}
+        run: |
+          set -euo pipefail
+          : "${UPDATE_KEY_PEM:?Set UPDATE_ED25519_PRIVATE_KEY_PEM in the release environment}"
+          umask 077
+          update_key=$(mktemp "$RUNNER_TEMP/macos-update-key.XXXXXX")
+          trap 'rm -f "$update_key"' EXIT
+          printf '%s' "$UPDATE_KEY_PEM" > "$update_key"
+          unset UPDATE_KEY_PEM
+          python3 .github/scripts/prepare-macos-update.py sign \
+            --directory "$CANDIDATE" --key "$update_key"
+      - name: Publish and verify the immutable copy without changing feeds
+        if: steps.candidate.outputs.needed == 'true'
+        run: python3 .github/scripts/prepare-macos-update.py stage-asset --directory "$CANDIDATE"
+      - name: Keep public signed candidate for review or manual recovery
+        if: steps.candidate.outputs.needed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: macos-stable-update-${{ github.run_id }}
+          path: ${{ runner.temp }}/macos-update/proposal/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Authenticate git pushes with the workflow token
+        if: steps.candidate.outputs.needed == 'true'
+        run: gh auth setup-git
+      - name: Open feed PR for maintainer review
+        if: steps.candidate.outputs.needed == 'true'
+        run: python3 .github/scripts/prepare-macos-update.py open-pr --directory "$CANDIDATE"

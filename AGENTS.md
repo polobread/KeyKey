@@ -35,7 +35,7 @@
 
 - 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
 - PR 必須由使用者親自 review 和 merge；agent 不得自行合併 PR、啟用 auto-merge 或繞過使用者審查。
-- 更新 feed 由維護者請 AI 手動準備 PR；不隨 release 自動改寫 Git／CDN。merge master 後才由 Actions 同步 CDN。保留 SHA-256 內容位址副本，不覆蓋已發布的 beta 安裝包。Linux／FreeBSD 共用 `update/CHANNEL/unix-fcitx5.xml`，每週檢查並同步公告；不延後 FreeBSD 公告，不檢查 ports/pkg 可用性、不新增排程，須提示透過 ports/pkg 更新且套件可能較晚上架。
+- macOS 正式版發布成功後，自動驗證原包與簽章並建立更新 feed 工作分支／PR，也保留手動補救入口；其他平台由維護者請 AI 準備 feed PR。所有 feed PR 仍須由使用者親自 review／merge，不直接回存 master 或部署 CDN；merge master 後才由 Actions 同步 CDN。保留 SHA-256 內容位址副本，不覆蓋已發布的 beta 安裝包。Linux／FreeBSD 共用 `update/CHANNEL/unix-fcitx5.xml`，每週檢查並同步公告；不延後 FreeBSD 公告，不檢查 ports/pkg 可用性、不新增排程，須提示透過 ports/pkg 更新且套件可能較晚上架。
 - 使用者文件與更新紀錄按正式產品版號整理，不記錄 beta 輪次與逐次測試／除錯過程。`CHANGELOG.md` 以版號識別版本，不加「未發布」標示；實際發布狀態另於 README、安裝指南及平台文件維護。發布工具需要的測試頻道規格使用通用 `X.Y.Z-betaN` 格式，不綁定某次測試版或公告時間。
 - 開發計畫、測試規劃與開發評估文件集中於根目錄 `docs/`；集中後的檔名須包含可辨識的平台或功能前綴。根目錄保留 README、安裝／建置指南、更新紀錄、重要宣告與 AGENTS；搬移時同步修正連結、CI、封裝與文件產生器路徑。
 - 此流程配合 Certum 本機簽章、人工發布核准與變更審查要求；原始碼、建置腳本及 CI 設定都納入審查。角色與簽章流程見 [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)。
