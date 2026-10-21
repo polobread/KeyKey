@@ -429,9 +429,12 @@ ports／pkg 更新、套件可能較晚上架，不查套件庫，也不增加�
 發行頁及 RSS description 可以同時列出 CDN／GitHub 下載連結。
 舊版客戶端仍查 GitHub API，必須安裝含新 reader 的版本才會切換。
 
-初始 stable／beta XML 都沒有 item，避免尚未完成 Linux 發布驗證就通知升級。
-新 reader 出貨前須先合併並部署初始 feed，確認 CDN 可取得相同 bytes。
-此 feed 只通知並開啟下載頁，不提供 installer `enclosure` 或自動安裝。
+stable feed 已加入 1.3.7 公告，對應已驗證的 Ubuntu 24.04 amd64 套件與共用詞庫；
+GitHub／CDN 副本的大小、SHA-256、套件版本及架構均已核對。尚未驗證 arm64 套件，
+因此 Linux 只向 amd64 使用者公告；FreeBSD 使用相同 item，同步通知並提示 ports／pkg
+套件可能較晚上架。beta feed 目前沒有 item。
+公告須經 PR 合併並完成 CDN 同步後才生效。此 feed 只通知並開啟下載頁，
+不提供 installer `enclosure` 或自動安裝。
 同步工具使用與客戶端相同的 XML 驗證，不改變既有 macOS／Windows signed metadata 規則。
 既有 Terraform 的 `keykey/update/CHANNEL/*.xml` 權限與短快取已涵蓋新路徑。
 
