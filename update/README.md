@@ -97,40 +97,21 @@ Windows TSF CMake presets。Package macOS／Windows workflows 已加入準備步
 下載會校驗官方 SDK 的固定 SHA-256；cache 與產物不提交。macOS SDK 內全部授權通知及
 Windows WinSparkle 的 COPYING 都會隨安裝包保留。
 
-### macOS 1.3.2 開發與啟用
+### macOS 正式更新與啟用
 
-macOS 原始碼版號為 1.3.7（未發布）；四份產品 plist 必須一致，封裝不再讀取
-README 的 Linux 版號。更新設定頁每秒讀取 IMK 的本機狀態；Sparkle 自己呈現下載
-進度與簽章／安裝錯誤。每週檢查預設開啟，保留使用者既有關閉設定，不讀取舊 Yahoo 旗標；只在 IMK
-主程式執行時按上述十分鐘／每週排程檢查，不新增 launch agent。系統 profile 與背景下載均強制關閉。
+macOS 1.3.7 已發布。本次正式 appcast 提供 Apple Silicon 的 1.3.7 簽章更新項目，最低系統為 macOS 15。已包含相同正式 feed 與公鑰的 1.3.3 可在公告合併並同步 CDN 後找到更新；每週檢查保留使用者既有開關，也可按「立即檢查」。尚未包含更新設定的舊版仍需先手動安裝。
 
-固定來源可選擇以下之一，macOS 尚未實作來源失敗自動切換：
+正式 feed 為 `https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml`，GitHub 原始檔為 `https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/macos-arm64.xml`。客戶端目前不會在兩個來源間自動切換。
 
-- CDN：`https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml`
-- GitHub Raw：`https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/macos-arm64.xml`
+**後續版本自動準備公告：** `Package macOS` 成功發布穩定版後，`Prepare macOS Stable Update` 會在受保護的 `release` environment 執行。它只使用已 review 的 `master` 工具，重新下載原 Release 安裝包，核對成功的官方建置、tag commit、Release digest、checksum 與 build-info，再驗證 Apple 簽章、公證、四份產品版號及更新公鑰。全部通過後，用 `UPDATE_ED25519_PRIVATE_KEY_PEM` 產生 Ed25519 更新簽章，新增逐 byte 相同的 SHA-256 內容位址副本，回讀驗證後自動開 feed PR。既有 Windows 公告與 metadata 項目會保留；不重新建置、移動 tag、覆蓋已發布檔案或自動合併 PR。
 
-初始 `stable/macos-arm64.xml` 提供已發布 1.3.1 Apple Silicon `.pkg.zip` 的
-CDN（主要）與 GitHub（備用）手動下載連結，沒有更新 item。channel 保留一個標準
-`link` 指向 CDN；`description` 的 HTML 列出兩個下載來源，沿用 Windows 初始 RSS 格式。
-兩個安裝包網址已確認存在，沒有把既有安裝包當成 Ed25519 自動更新資產。
-分支內檔案不表示 Raw master 或 CDN 已部署。舊版沒有正式更新設定，因此第一次
-導入必須手動下載並安裝含公開金鑰與 feed 的 notarized 版本，再選取琦琦並試打、核對版本。
-後續更新必須使用更高版號；同版本重新打包不是自動升級。
+必須在 `release` environment 設定 `UPDATE_ED25519_PRIVATE_KEY_PEM`，並在 repository 的 Actions 權限允許 workflow 建立 PR。穩定版不再需要 `MACOS_UPDATE_METADATA_ENABLED`；既有 beta 候選流程仍使用該開關。私鑰只寫入 runner 的暫存檔供 OpenSSL 使用，步驟結束即刪除，不輸出、不放入 artifact。workflow 另保存公開簽章候選 artifact，供檢視或開 PR 失敗時手動取回。
 
-`package-macos.yml` 的受保護 `release` environment 簽章 job 支援選擇性候選產生：
+**已發布版本的手動補救：** 在 Actions 選 `Prepare macOS Stable Update`，使用 `master`，填入 `release_tag=v1.3.7`。此入口沿用已發布原包及來源驗證；同版已在正式 feed 且雜湊相同時不重複建立更新，不允許降版或替換同版內容。若該版已有 PR 分支，會停止並要求先檢查既有 PR，不覆寫他人修改。
 
-1. 先審查並設定 `config.json` 的正式公開金鑰及已可存取的 macOS feed。
-2. 在有人工核准的 environment 設定 secret `UPDATE_ED25519_PRIVATE_KEY_PEM`，內容為
-   對應公開金鑰的 PEM 私鑰；不要貼在聊天、提交 Git 或放進 artifact。
-3. 設定 variable `MACOS_UPDATE_METADATA_ENABLED=true`。可選的
-   `AWS_RELEASE_MIRROR_BASE_URL` 決定 enclosure 指向 CDN，未設定則指向 GitHub Release。
-4. 使用已審查的正式 tag 建置，且 `source_sha == tag_sha`；同版 recovery 不產生更新候選。
-   job 先驗證 Developer ID／notarization，再產生 `keykey-macos-updater-VERSION` artifact，
-   包含內容位址安裝包、`macos-arm64.xml` 與單平台 signed metadata。私鑰暫存檔離開步驟即移除。
-5. 維護者 review 候選，按下方發布順序上傳不可變 `packages/`，確認可下載且 SHA-256 相同，
-   才以 PR 提升 GitHub feed；合併後由下節的 XML 同步 workflow 部署 CDN feed。
-   macOS 封裝 workflow 不自動上傳更新候選或改寫 feed，
-   原有 Release 下載資產發布仍照既有流程執行。
+feed PR 仍須由維護者 review／merge；合併後才由 `Sync Update Feeds to CDN` 部署公告。workflow 只準備穩定 macOS 更新，不發布 beta feed、不直接部署 CDN。若準備期間 `master` 已更新，會停止並要求重跑，以免覆蓋其他平台剛更新的 metadata。
+
+本機補簽可使用 `.github/scripts/prepare-macos-update.py` 的 `prepare`、`sign`、`stage-asset` 指令，再將 `proposal/` 的 `macos-arm64.xml`、`metadata.json`、`metadata.json.sig` 逐檔放入工作分支。`sign --key` 只接受未被 Git 追蹤的本機私鑰，且必須對應 `config.json` 的正式公鑰。候選、下載檔及執行記錄保存在忽略的 `update/out/`。
 
 本機 `bash update/test-macos.sh` 使用 fake engine 與離屏設定頁，無網路、安裝或已安裝 loader 變動。
 `KEYKEY_TEST_OPENSSL=/opt/homebrew/bin/openssl python3 -m unittest discover -s update -p test_macos_release.py -v`
@@ -241,7 +222,7 @@ Windows 目前仍使用既有 unsigned EXE；真實 beta 升級須在 Windows �
 `release_tag` 為 `vX.Y.Z-betaN`；同樣要求 source/tag commit 相等、平台簽章與
 不可變資產。`metadata.py build` 回傳 beta metadata，appcast 的比較版號為 `X.Y.ZbN`。
 輸出平台 XML 經 review 後只放 `update/beta/`，包先上傳並驗證，才提升 feed。
-macOS CI 的 `MACOS_UPDATE_METADATA_ENABLED` 仍控制候選產生，候選不自動發布。
+macOS stable 在原包發布成功後自動準備公告 PR；beta 候選仍須另外驗證及審查，不會由穩定版流程發布。
 
 本機選擇發布設定與版本標記（以下以正式產品版號為例，只供建置，不安裝；測試頻道套用上表的 tag 規則）：
 
@@ -377,7 +358,7 @@ Windows target 為 `windows-x64` 或 `windows-x86`，檔案需是安裝器 `.exe
 各平台可以有不同版本。穩定自動更新必須 `source_sha == tag_sha`，不可用同版 recovery
 覆蓋已公布的更新；既有 `release-assets.py --clobber` 流程僅供原下載資產，不用於 updater。
 
-多平台彙整時，macOS 沿用受保護簽章 job；Windows 在本機執行 `metadata.py attest --manifest ... --key ... --out ...`。
+多平台彙整時，macOS 使用受保護的更新公告 workflow；Windows 在本機執行 `metadata.py attest --manifest ... --key ... --out ...`。
 macOS 會實際檢查 Gatekeeper installer assessment 與 stapled notarization；Windows
 會實際檢查所宣告的 Windows 簽章狀態與 installer product version。各平台產生
 `TARGET.attestation.json` 與 `.sig`，用來將 OS 驗證結果綁定到檔案 SHA-256／版本／commit。

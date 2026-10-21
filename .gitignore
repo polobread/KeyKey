@@ -1,5 +1,5 @@
 .DS_Store
-# Windows local update signing key: never stage, upload or include in release artifacts.
+# Local update signing key: never stage, upload or include in release artifacts.
 keykey-update-private.pem*
 /update/.cache/
 /update/out/

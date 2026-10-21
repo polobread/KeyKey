@@ -1,6 +1,6 @@
 {
   "channel": "stable",
-  "generated_at": "2026-10-20T18:25:24.529756+00:00",
+  "generated_at": "2026-10-21T01:18:28.658628+00:00",
   "package_managers": {
     "freebsd": "ports/pkg",
     "linux": "distribution repository"
@@ -20,6 +20,20 @@
       "url": "https://download.aws.polobread.com/keykey/releases/download/v1.3.7/KeyKey-1.3.7-windows-x64-a14b88494ea07d6c9e343b66dedd1db24ec6472323e29b3af9a69bd7061cc56b.exe",
       "version": "1.3.7",
       "windows_signing": "authenticode"
+    },
+    {
+      "ed25519_signature": "9p8rSJJKQrq7U8HQW1T78k23+nxiHipMyZ0fZ4YVdRDcY4uFu/k8hS9Q5JzXv9fY0nQ4Oxer3QOdc9HlazzIBg==",
+      "minimum_system_version": "15.0.0",
+      "name": "KeyKey-1.3.7-macos-arm64-b5bcaae5d49a8bbfc9c1efdbef30f3b5dec749c4cfa642ade033ba6fc8bf17cd.pkg.zip",
+      "notes": "macOS 琦琦輸入法 1.3.7 正式更新。安裝需要管理員確認；完成後請選取琦琦並試打。",
+      "release_tag": "v1.3.7",
+      "sha256": "b5bcaae5d49a8bbfc9c1efdbef30f3b5dec749c4cfa642ade033ba6fc8bf17cd",
+      "size": 41052039,
+      "source_sha": "a11f1eab381dda3b29d59f0ec8c201599fdadeaf",
+      "tag_sha": "a11f1eab381dda3b29d59f0ec8c201599fdadeaf",
+      "target": "macos-arm64",
+      "url": "https://github.com/polobread/KeyKey/releases/download/v1.3.7/KeyKey-1.3.7-macos-arm64-b5bcaae5d49a8bbfc9c1efdbef30f3b5dec749c4cfa642ade033ba6fc8bf17cd.pkg.zip",
+      "version": "1.3.7"
     }
   ],
   "schema_version": 1

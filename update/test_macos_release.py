@@ -103,20 +103,23 @@ class MacReleaseTests(unittest.TestCase):
                 self.candidate()
         self.assertFalse((self.root / "out").exists())
 
-    def test_initial_feed_cannot_offer_unsigned_automatic_install(self):
-        xml = ET.parse(Path(__file__).with_name("stable") / "macos-arm64.xml")
-        self.assertIsNone(xml.find("./channel/item"))
-        self.assertIsNone(xml.find(".//enclosure"))
-        asset = "v1.3.1/chichi77-KeyKey-1.3.1-macos-arm64.pkg.zip"
-        cdn = "https://download.aws.polobread.com/keykey/releases/download/" + asset
-        github = "https://github.com/polobread/KeyKey/releases/download/" + asset
-        self.assertEqual(len(xml.findall("./channel/link")), 1)
-        self.assertEqual(xml.findtext("./channel/link"), cdn)
-        description = xml.findtext("./channel/description")
-        self.assertIn(f'href="{cdn}"', description)
-        self.assertIn(f'href="{github}"', description)
-        self.assertIn("CDN（主要）", description)
-        self.assertIn("GitHub（備用）", description)
+    def test_published_feed_matches_signed_metadata_and_requires_verified_packages(self):
+        directory = Path(__file__).with_name("stable")
+        document = json.loads((directory / "metadata.json").read_text())
+        entries = [r for r in document["releases"] if r["target"] == "macos-arm64"]
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual((directory / "macos-arm64.xml").read_bytes(), metadata.appcast(entry))
+        self.assertEqual(entry["source_sha"], entry["tag_sha"])
+        self.assertIn(entry["sha256"], entry["name"])
+        self.assertTrue(entry["name"].endswith(".pkg.zip"))
+        self.assertEqual(len(base64.b64decode(entry["ed25519_signature"], validate=True)), 64)
+        public = json.loads(Path(__file__).with_name("config.json").read_text())["public_ed25519_key"]
+        metadata.verify(directory / "metadata.json", (directory / "metadata.json.sig").read_text().strip(),
+                        public, OPENSSL)
+        item = ET.fromstring(metadata.appcast(entry)).find("./channel/item")
+        self.assertEqual(item.findtext(f"{{{metadata.SPARKLE}}}hardwareRequirements"), "arm64")
+        self.assertEqual(item.find("enclosure").get(f"{{{metadata.SPARKLE}}}installationType"), "package")
 
     def test_embedded_settings_enforce_offline_opt_in_and_safe_package_defaults(self):
         sdk = self.root / ".cache/macos-2.10.0"
