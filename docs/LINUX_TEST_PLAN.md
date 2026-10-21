@@ -669,4 +669,27 @@ bytes。只缺重裝後證據時，補驗範圍如下：
    用 `ci/run-x11-e2e.sh` 補做一輪重裝後 X11，再執行
    `dbus-run-session -- xvfb-run -a python3 tests/test_update_notify_install.py`。
 4. 將原 artifact 來源、校驗結果與補驗報告附於修正 PR；保留原 run 的 cancelled
-   狀態，不把補驗當成重新建置或完整矩陣通過。不得為此移動 tag 或直接發布套件。
+   狀態，不把補驗當成重新建置或完整矩陣通過。不得為此移動 tag；發布另需維護者明確核准。
+
+## 核准後發布既有套件與鏡像
+
+維護者確認原 artifact 與補驗報告並明確核准發布後，沿用原四個發行檔與
+`SHA256SUMS`，將它們、Linux build-info 與公開補驗 JSON 加入現有 Release。
+GitHub 上傳不用 `--clobber`；既有同名檔須先確認 bytes 完全相同，不替換其他平台資產。
+build-info 記錄原 run／artifact ID、ZIP digest、相同的 source／tag commit、原檔雜湊及
+補驗報告雜湊，保留原 run 的 cancelled 狀態。補驗 JSON 只包含固定測試資料與公開驗證結果。
+
+先將相關工具 PR review／merge，再使用既有 Linux CI 的手動入口：
+
+```sh
+gh workflow run linux-ci.yml --ref master \
+  -f release_tag=vX.Y.Z \
+  -f existing_artifact_run=ORIGINAL_RUN_ID \
+  -f verification_sha256=APPROVED_REPORT_SHA256
+```
+
+填入任一補驗欄位時，兩個完整建置 job 都跳過；只有 master 手動執行可進入既有
+release environment 的鏡像工作。工具重新核對官方 artifact、Release、補驗報告及
+tag 來源後，才以條件寫入新增 S3 物件；已存在的物件只接受相同 bytes。
+S3／CDN 完整讀回與精確路徑 invalidation 通過後，才補上該批 Release CDN 下載連結。
+此入口不重建產品、不移動 tag，也不改更新 feed。

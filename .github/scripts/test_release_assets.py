@@ -1,4 +1,7 @@
 import importlib.util
+import base64
+import copy
+import io
 import json
 import os
 from pathlib import Path
@@ -8,6 +11,7 @@ import sys
 import tempfile
 import textwrap
 import unittest
+import zipfile
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("release_assets", Path(__file__).with_name("release-assets.py"))
@@ -249,6 +253,217 @@ class ReleaseAssetsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "does not match"):
                 release.mirror("macos", "1.3.1", self.root)
             run.assert_not_called()
+
+
+class ExistingLinuxMirrorTests(unittest.TestCase):
+    setUp = ReleaseAssetsTests.setUp
+    packages = ReleaseAssetsTests.packages
+
+    def fixture(self):
+        cmake = Path(__file__).resolve().parents[2] / "Source/Loaders/Linux-IME/CMakeLists.txt"
+        self.version = release.re.search(r"project\(KeyKeyLinux VERSION (\d+\.\d+\.\d+)",
+                                         cmake.read_text(encoding="utf-8")).group(1)
+        self.source, self.run_id = "a" * 40, 123
+        self.tag = "v" + self.version
+        self.packages("linux", self.version)
+        self.raw = self.root / "raw"
+        self.raw.mkdir()
+        for path in list(self.root.iterdir()):
+            if path.is_file():
+                path.replace(self.raw / path.name)
+        (self.raw / "package.buildinfo").write_bytes(b"original build metadata")
+        (self.raw / "package.changes").write_bytes(b"original package changes")
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as bundle:
+            for path in self.raw.iterdir():
+                bundle.writestr(path.name, path.read_bytes())
+        self.archive = buffer.getvalue()
+        self.identity = dict(run_id=self.run_id, id=456,
+            name=f"linux-ubuntu-24.04-debian-packages-{self.source}",
+            sha256=release.hashlib.sha256(self.archive).hexdigest(), size=len(self.archive))
+        self.run = dict(id=self.run_id, repository=dict(full_name="polobread/KeyKey"),
+            head_repository=dict(full_name="polobread/KeyKey"), path=".github/workflows/linux-ci.yml",
+            event="release", head_sha=self.source, status="completed", conclusion="cancelled")
+        self.artifact = dict(id=456, name=self.identity["name"], expired=False, size_in_bytes=len(self.archive),
+            digest="sha256:" + self.identity["sha256"], workflow_run=dict(id=self.run_id, head_sha=self.source))
+        self.report = dict(original=dict(repository="polobread/KeyKey", run_id=self.run_id, artifact_id=456,
+            artifact_name=self.identity["name"], source_sha=self.source, archive_sha256=self.identity["sha256"],
+            package_files={path.name: release.digest(path) for path in self.raw.iterdir()},
+            product_rebuilt=False, tag_moved=False),
+            lifecycle=dict(status="passed", version=f"{self.version}-1+ubuntu24.04", architecture="amd64"),
+            x11=dict(status="passed", tests=["T01"]), case_results=dict(T01=dict(test="T01", status="passed")),
+            notification_integration="passed", product_rebuilt=False, tag_moved=False)
+        self.asset_paths = release.verified_assets(self.raw, "linux", self.version)
+        self.payloads = {path.name: path.read_bytes() for path in self.asset_paths}
+        self.info = dict(platform="linux", version=self.version, release_tag=self.tag, release_version=self.version,
+            update_channel="stable", source_sha=self.source, tag_sha=self.source,
+            run_url=f"https://github.com/polobread/KeyKey/actions/runs/{self.run_id}",
+            original_run_conclusion="cancelled", product_rebuilt=False, original_artifact=self.identity,
+            assets=[dict(name=path.name, size=path.stat().st_size, sha256=release.digest(path)) for path in self.asset_paths])
+        self.refresh_publication()
+        self.env = dict(GITHUB_REPOSITORY="polobread/KeyKey", GITHUB_REF="refs/heads/master",
+            GITHUB_EVENT_NAME="workflow_dispatch", RELEASE_TAG=self.tag, RELEASE_MIRROR_BUCKET="downloads-example",
+            RELEASE_MIRROR_DISTRIBUTION_ID="EDISTRIBUTION", RELEASE_MIRROR_BASE_URL="https://downloads.example.com",
+            GITHUB_STEP_SUMMARY=str(self.root / "summary"))
+        self.aws, self.downloads, self.objects = [], [], {}
+        self.precondition, self.corrupt_readback, self.upload_error = False, False, False
+
+    def refresh_publication(self):
+        report_name = f"chichi77-KeyKey-{self.version}-linux-verification.json"
+        self.payloads[report_name] = json.dumps(self.report).encode()
+        self.approved = release.hashlib.sha256(self.payloads[report_name]).hexdigest()
+        self.info["verification_report"] = dict(name=report_name, sha256=self.approved)
+        self.payloads[f"chichi77-KeyKey-{self.version}-linux-build-info.json"] = json.dumps(self.info).encode()
+        self.published = dict(tag_name=self.tag, draft=False, prerelease=False, assets=[
+            dict(name=name, size=len(value), digest="sha256:" + release.hashlib.sha256(value).hexdigest())
+            for name, value in self.payloads.items()])
+        self.published["assets"].append(dict(name="untouched-windows.exe", size=1, digest="sha256:" + "f" * 64))
+
+    def api(self, endpoint):
+        if endpoint == f"actions/runs/{self.run_id}":
+            return copy.deepcopy(self.run)
+        if endpoint == f"actions/runs/{self.run_id}/artifacts?per_page=100":
+            return dict(total_count=1, artifacts=[copy.deepcopy(self.artifact)])
+        if endpoint == f"releases/tags/{self.tag}":
+            return copy.deepcopy(self.published)
+        raise AssertionError(endpoint)
+
+    def process(self, args, **kwargs):
+        if args[:2] == ["gh", "api"]:
+            self.assertIn("actions/artifacts/456/zip", args[2])
+            kwargs["stdout"].write(self.archive)
+        elif args[:3] == ["gh", "release", "download"]:
+            name = args[args.index("--pattern") + 1]
+            self.downloads.append(name)
+            (Path(args[args.index("--dir") + 1]) / name).write_bytes(self.payloads[name])
+        elif args[0] == "aws":
+            self.aws.append(args)
+            if args[1:3] == ["s3api", "put-object"]:
+                if self.upload_error:
+                    return subprocess.CompletedProcess(args, 1, "", "(AccessDenied)")
+                path = Path(args[args.index("--body") + 1])
+                key = args[args.index("--key") + 1]
+                self.objects[key] = path.read_bytes()
+                if self.precondition:
+                    return subprocess.CompletedProcess(args, 1, "", "(PreconditionFailed)")
+                checksum = base64.b64encode(bytes.fromhex(release.digest(path))).decode()
+                return subprocess.CompletedProcess(args, 0, json.dumps(dict(ChecksumSHA256=checksum)), "")
+            if args[1:3] == ["s3api", "get-object"]:
+                key = args[args.index("--key") + 1]
+                Path(args[-2]).write_bytes(b"collision" if self.corrupt_readback else self.objects[key])
+        else:
+            raise AssertionError(args)
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    def execute(self, destination="recovery", approved=None):
+        with patch.dict(os.environ, self.env), patch.object(release, "verify_release"), \
+             patch.object(release, "tag_commit", return_value=self.source), \
+             patch.object(release, "recovery_api", side_effect=self.api), \
+             patch.object(release.subprocess, "run", side_effect=self.process), \
+             patch.object(release, "output", return_value=json.dumps(dict(Invalidation=dict(Id="INV123")))), \
+             patch.object(release, "verify_cdn_bytes") as cdn:
+            release.mirror_existing_linux(self.version, self.root / destination, self.run_id,
+                                          approved if approved is not None else self.approved)
+            return cdn.call_args_list
+
+    def test_existing_original_artifact_mirrors_only_seven_verified_assets(self):
+        self.fixture()
+        cdn = self.execute()
+        puts = [args for args in self.aws if args[1:3] == ["s3api", "put-object"]]
+        reads = [args for args in self.aws if args[1:3] == ["s3api", "get-object"]]
+        self.assertEqual((len(puts), len(reads), len(cdn)), (7, 7, 7))
+        self.assertEqual(set(self.downloads), set(self.payloads))
+        for args in puts:
+            self.assertEqual(args[args.index("--if-none-match") + 1], "*")
+            self.assertIn("public,max-age=0,s-maxage=31536000,must-revalidate", args)
+            self.assertIn(f"keykey/releases/download/{self.tag}/", args[args.index("--key") + 1])
+        self.assertTrue(any("%2Bubuntu24.04" in call.args[0] for call in cdn))
+        self.assertNotIn("untouched-windows", json.dumps(self.aws))
+        self.assertIn("cancelled", json.dumps(self.info))
+
+    def test_provenance_failures_have_no_aws_writes(self):
+        self.fixture()
+        cases = [lambda: self.env.update(GITHUB_REF="refs/heads/unreviewed"),
+                 lambda: self.env.update(GITHUB_EVENT_NAME="pull_request"),
+                 lambda: self.env.update(GITHUB_REPOSITORY="fork/KeyKey"),
+                 lambda: self.run.update(head_sha="b" * 40),
+                 lambda: self.run.update(event="pull_request"),
+                 lambda: self.run.update(conclusion="failure"),
+                 lambda: self.artifact.update(expired=True),
+                 lambda: self.artifact.update(digest="sha256:" + "f" * 64),
+                 lambda: self.artifact.update(size_in_bytes=1)]
+        baseline = copy.deepcopy((self.env, self.run, self.artifact))
+        for number, change in enumerate(cases):
+            with self.subTest(case=number):
+                self.env, self.run, self.artifact = copy.deepcopy(baseline)
+                change()
+                with self.assertRaises(ValueError):
+                    self.execute(str(number))
+                self.assertEqual(self.aws, [])
+
+    def test_report_and_release_failures_have_no_aws_writes(self):
+        self.fixture()
+        baseline = copy.deepcopy((self.report, self.info, self.payloads))
+        cases = [lambda: self.report["original"].update(source_sha="b" * 40),
+                 lambda: self.report["original"]["package_files"].update({"unexpected": "a" * 64}),
+                 lambda: self.report["lifecycle"].update(status="failed"),
+                 lambda: self.report["case_results"]["T01"].update(status="failed"),
+                 lambda: self.report["x11"].update(tests=["other"]),
+                 lambda: self.report.update(notification_integration="failed"),
+                 lambda: self.report.update(product_rebuilt=True),
+                 lambda: self.info.update(tag_sha="b" * 40),
+                 lambda: self.info.update(original_run_conclusion="success")]
+        for number, change in enumerate(cases):
+            with self.subTest(case=number):
+                self.report, self.info, self.payloads = copy.deepcopy(baseline)
+                change()
+                self.refresh_publication()
+                with self.assertRaises(ValueError):
+                    self.execute(str(number))
+                self.assertEqual(self.aws, [])
+        self.report, self.info, self.payloads = copy.deepcopy(baseline)
+        self.refresh_publication()
+        with self.assertRaisesRegex(ValueError, "not approved"):
+            self.execute("unapproved", approved="f" * 64)
+        self.published["assets"][0]["digest"] = "sha256:" + "f" * 64
+        with self.assertRaisesRegex(ValueError, "bytes differ"):
+            self.execute("release-corrupt")
+        self.assertEqual(self.aws, [])
+
+    def test_existing_identical_s3_objects_pass_without_overwrite(self):
+        self.fixture()
+        self.precondition = True
+        self.execute()
+        self.assertEqual(len(self.objects), 7)
+        self.assertFalse(any(args[1:3] == ["s3", "cp"] for args in self.aws))
+
+    def test_s3_collision_or_access_denied_stops_before_invalidation(self):
+        self.fixture()
+        self.precondition, self.corrupt_readback = True, True
+        with self.assertRaisesRegex(ValueError, "never overwrite"):
+            self.execute("collision")
+        self.assertEqual(len(self.aws), 2)
+        self.aws.clear()
+        self.upload_error = True
+        with self.assertRaisesRegex(ValueError, "upload failed"):
+            self.execute("access-denied")
+        self.assertEqual(len(self.aws), 1)
+
+    def test_cdn_stream_requires_complete_identical_https_bytes(self):
+        path = self.root / "package"
+        path.write_bytes(b"verified bytes")
+        for payload, url, accepted in [(b"verified bytes", "https://cdn.example/p", True),
+                (b"truncated", "https://cdn.example/p", False),
+                (b"verified bytes", "http://cdn.example/p", False)]:
+            with self.subTest(url=url, payload=payload):
+                response = io.BytesIO(payload)
+                response.geturl = lambda: url
+                with patch.object(release, "urlopen", return_value=response):
+                    if accepted:
+                        release.verify_cdn_bytes("https://cdn.example/p", path)
+                    else:
+                        with self.assertRaises(ValueError):
+                            release.verify_cdn_bytes("https://cdn.example/p", path)
 
 
 if __name__ == "__main__":
