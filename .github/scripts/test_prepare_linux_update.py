@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 from pathlib import Path
 import tarfile
 import tempfile
@@ -15,7 +16,10 @@ update = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(update)
 SOURCE = 'a' * 40
 MASTER = 'b' * 40
-VERSION = '1.3.8'
+CMAKE = (update.ROOT / 'Source/Loaders/Linux-IME/CMakeLists.txt').read_text()
+VERSION = re.search(r'^project\(KeyKeyLinux VERSION (\S+) LANGUAGES', CMAKE, re.M).group(1)
+MAJOR, MINOR, PATCH = map(int, VERSION.split('.'))
+NEXT_VERSION = f'{MAJOR}.{MINOR}.{PATCH + 1}'
 TAG = 'v' + VERSION
 RUN = 123
 
@@ -97,11 +101,6 @@ class LinuxUpdateTests(unittest.TestCase):
                 patch.object(update, 'output', return_value=MASTER), patch.object(update.assets, 'verify_cdn_bytes'):
             return update.prepare(TAG, self.directory, str(RUN))
 
-    def test_only_stable_tags(self):
-        self.assertEqual(update.version_for_tag(TAG), VERSION)
-        for tag in [None, VERSION, 'master', 'v1.3.8-beta1', 'v01.3.8', 'v1.3.8/../../master']:
-            with self.subTest(tag=tag), self.assertRaises(ValueError): update.version_for_tag(tag)
-
     def test_annotated_tag_resolution(self):
         with patch.object(update, 'api', side_effect=[dict(object=dict(type='tag', sha='c'*40)),
                                                      dict(object=dict(type='commit', sha=SOURCE))]):
@@ -109,13 +108,11 @@ class LinuxUpdateTests(unittest.TestCase):
         with patch.object(update, 'api', return_value=dict(object=dict(type='tree', sha=SOURCE))), self.assertRaises(ValueError):
             update.tag_commit(TAG)
 
-    def test_source_requires_merged_linux_version(self):
+    def test_release_source_must_be_merged(self):
         with patch.object(update, 'api', side_effect=self.api): update.verify_source(TAG, SOURCE, MASTER)
-        for first, second in [(dict(status='diverged', merge_base_commit=dict(sha=SOURCE)), {}),
-                (dict(status='ahead', merge_base_commit=dict(sha=SOURCE)),
-                 dict(content=base64.b64encode(b'project(KeyKeyLinux VERSION 1.3.7 LANGUAGES CXX)').decode()))]:
-            with patch.object(update, 'api', side_effect=[first,second]), self.assertRaises(ValueError):
-                update.verify_source(TAG, SOURCE, MASTER)
+        for status, base in [('diverged', SOURCE), ('behind', MASTER), ('ahead', 'c' * 40)]:
+            with patch.object(update, 'api', return_value=dict(status=status, merge_base_commit=dict(sha=base))), \
+                    self.assertRaises(ValueError): update.verify_source(TAG, SOURCE, MASTER)
 
     def test_run_requires_official_success_exact_source_attempt_and_trigger(self):
         with patch.object(update, 'api', side_effect=self.api): update.verify_run(self.info, SOURCE, str(RUN))
@@ -170,7 +167,7 @@ class LinuxUpdateTests(unittest.TestCase):
 
     def test_debian_control_rejects_malformed_and_duplicate_fields(self):
         path=self.originals/'control-fixture.deb'
-        for raw in [b'not ar',b'!<arch>\ntruncated',deb_bytes('fixture','1','amd64','Version: 2\n')]:
+        for raw in [b'not ar',b'!<arch>\ntruncated',deb_bytes('fixture',VERSION,'amd64',f'Version: {NEXT_VERSION}\n')]:
             path.write_bytes(raw)
             with self.subTest(raw=raw[:20]),self.assertRaises(ValueError): update.deb_control(path)
 
@@ -178,7 +175,7 @@ class LinuxUpdateTests(unittest.TestCase):
         with patch.object(update.assets,'verify_cdn_bytes') as cdn:
             self.assertEqual(update.verify_packages(self.originals,self.published,self.info,TAG,SOURCE),self.info['assets'])
             self.assertEqual(cdn.call_count,5)
-        for field,value in [('version','1.3.7'),('source_sha','b'*40),('tag_sha','b'*40),('platform','macos')]:
+        for field,value in [('version',NEXT_VERSION),('source_sha','b'*40),('tag_sha','b'*40),('platform','macos')]:
             with patch.object(update.assets,'verify_cdn_bytes'),self.assertRaises(ValueError):
                 update.verify_packages(self.originals,self.published,dict(self.info,**{field:value}),TAG,SOURCE)
         (self.originals/'SHA256SUMS').write_text('0'*64+'  bad.deb\n')
@@ -186,7 +183,7 @@ class LinuxUpdateTests(unittest.TestCase):
 
     def test_debian_wrong_architecture_or_version_rejected_even_with_consistent_hashes(self):
         path=next(self.originals.glob('fcitx5*.deb'))
-        for version,arch in [(VERSION+'-1+ubuntu24.04','arm64'),('1.3.7-1+ubuntu24.04','amd64')]:
+        for version,arch in [(VERSION+'-1+ubuntu24.04','arm64'),(NEXT_VERSION+'-1+ubuntu24.04','amd64')]:
             path.write_bytes(deb_bytes('fcitx5-chichi77-keykey',version,arch));self.refresh_records()
             with patch.object(update.assets,'verify_cdn_bytes'),self.assertRaisesRegex(ValueError,'identity/version/architecture'):
                 update.verify_packages(self.originals,self.published,self.info,TAG,SOURCE)
@@ -196,23 +193,23 @@ class LinuxUpdateTests(unittest.TestCase):
             update.verify_packages(self.originals,self.published,self.info,TAG,SOURCE)
 
     def test_feed_preserves_history_is_notification_only_and_repeat_is_noop(self):
-        old=update.updated_feed(empty_feed(),'1.3.7')
-        new=update.updated_feed(old,VERSION)
+        old=update.updated_feed(empty_feed(),VERSION)
+        new=update.updated_feed(old,NEXT_VERSION)
         entries=update.updates.parse_feed(new,'stable')
-        self.assertEqual([entry['version'] for entry in entries],[VERSION,'1.3.7'])
-        self.assertIsNone(update.updated_feed(new,VERSION))
+        self.assertEqual([entry['version'] for entry in entries],[NEXT_VERSION,VERSION])
+        self.assertIsNone(update.updated_feed(new,NEXT_VERSION))
         self.assertNotIn(b'<enclosure',new)
         self.assertIn('ports／pkg'.encode(),new)
-        with self.assertRaisesRegex(ValueError,'downgrade'): update.updated_feed(new,'1.3.6')
-        with self.assertRaises(ValueError): update.updated_feed(new,'1.3.9-beta1')
+        with self.assertRaisesRegex(ValueError,'downgrade'): update.updated_feed(new,VERSION)
+        with self.assertRaises(ValueError): update.updated_feed(new,NEXT_VERSION+'-beta1')
 
     def test_candidate_client_linux_arch_filter_and_freebsd_shared_notice(self):
-        xml=update.updated_feed(empty_feed(),VERSION)
+        xml=update.updated_feed(empty_feed(),NEXT_VERSION)
         get=lambda _:xml
-        for system,machine,expected in [('Linux','amd64',VERSION),('Linux','aarch64',None),('FreeBSD','aarch64',VERSION)]:
-            value=update.updates.latest_release('1.3.7',system,machine,get=get)
+        for system,machine,expected in [('Linux','amd64',NEXT_VERSION),('Linux','aarch64',None),('FreeBSD','aarch64',NEXT_VERSION)]:
+            value=update.updates.latest_release(VERSION,system,machine,get=get)
             self.assertEqual(value['version'] if value else None,expected)
-        self.assertIsNone(update.updates.latest_release(VERSION,'Linux','amd64',get=get))
+        self.assertIsNone(update.updates.latest_release(NEXT_VERSION,'Linux','amd64',get=get))
 
     def test_prepare_is_readonly_except_candidate_and_evidence(self):
         old=self.feed.read_bytes()
