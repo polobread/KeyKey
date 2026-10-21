@@ -443,11 +443,32 @@ GitHub／CDN 副本的大小、SHA-256、套件版本及架構均已核對。尚
 1. Linux Release 的建置、套件生命週期及發布 jobs 完成後，取得正式套件、`SHA256SUMS`
    與 build-info，校驗套件大小／SHA-256、版本、架構與 CDN／GitHub 副本。
    同時核對該 tag 的 Unix CMake 產品版號，排除只更新行動平台的 tag。
-2. 請 AI 手動準備對應頻道的 feed PR，只宣告已驗證的 Linux 架構；同一 item 也公告 FreeBSD。
+2. 正式 Release 驗證成功後自動準備 stable feed PR；beta 與特殊補救請 AI 手動準備。
+   只宣告已驗證的 Linux 架構，同一 item 也公告 FreeBSD。
    每個版本只能有一個 item，stable 不接受 beta；beta 顯示 `X.Y.Z-betaN`，比較版號為 `X.Y.ZbN`。
-3. PR 需附套件驗證證據並由維護者 review／merge；Release workflow 不自動改寫 feed 或 Git。
+3. PR 需附套件驗證證據並由維護者 review／merge；準備流程只寫工作分支，不直接回存 master。
 4. 合併 master 後沿用 `Sync Update Feeds to CDN`，上傳、回讀比對、精確 invalidation 及 CDN bytes
    驗證。客戶端下次每週／手動檢查便讀取公告。Linux 下載後透過套件管理器安裝；FreeBSD 走 ports/pkg。
+
+**Linux stable 自動準備：** `Prepare Linux Stable Update` 在正式 Release 的 `Linux CI`
+全部成功後執行。只使用已 review 的 `master` 工具，核對官方工作與 run attempt、
+成功的 Ubuntu 24.04 套件生命週期／X11、Ubuntu 22.04 最低 API 與發布 jobs；
+再驗證 tag/source、tag 內的 Linux CMake 版號、Release digest、`SHA256SUMS`、
+build-info、DEB control 版本／架構，以及 GitHub／CDN 的相同 bytes。目前只宣告
+Ubuntu 24.04 amd64；FreeBSD 同一公告始終提示 ports／pkg 更新與套件可能較晚上架。
+這是通知與下載頁入口，不產生安裝包簽章，也不需要更新私鑰。
+
+驗證通過後保存公開候選檔與驗證清單 artifact（7 天），建立
+`codex/linux-update-vX.Y.Z` 分支，只提交 `update/stable/unix-fcitx5.xml` 並開 PR。
+不修改 macOS／Windows metadata、不合併 PR 或直接部署 CDN。已公告同版則不重複建立，
+不允許降版；既有同版分支不覆寫。若準備期間 master 前進，會停止並要求重跑。
+Actions 的建立 PR 權限需開啟；review／merge 仍由維護者完成。
+
+手動重跑時，在 Actions 選 `Prepare Linux Stable Update`、使用 `master`，填入已發布的
+`release_tag=vX.Y.Z`。此入口仍要求原官方發布工作與必要 gates 全部成功，且 source 等於 tag；
+不接受 beta、artifact-only、失敗／取消的發布工作或 tag 後的同版重建。這類特殊補救需另附
+驗收證據，請 AI 手動準備 PR，不由此自動流程放行。新 workflow 合併後的下一次正式發布
+才會自動觸發，不會因合併本工具而重新發布現有安裝包或公告。
 
 以下僅為格式範例，不表示該版本已驗證或可發布：
 
