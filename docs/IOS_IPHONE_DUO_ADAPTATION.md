@@ -122,8 +122,11 @@ xcodebuild test -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
 - `testWideSplitPunctuationCompositionCellsAndDismissal`：四個標點、左六右五的組字格、
   好打注音／英文／傳統注音收鍵盤與繼續輸入。
 - `testWideSplitInputModeSwitchControls`：地球鍵長按選單與點按切換、組字交接及切回。
+- `testWideSplitInputModeSingleTapFromEmptyField` 與
+  `testWideSplitInputModeSingleTapWithComposition`：不先開清單，分別從空欄位與「你好」組字
+  直接單點地球，檢查宿主存活、組字保留與切回，避免混合兩種觸發條件。
 
-這三項要求可用的寬版分離鍵盤；在窄版執行會失敗，不會跳過。
+上述寬版案例要求可用的分離鍵盤；在窄版執行會失敗，不會跳過。
 分開執行可以保留收鍵盤結果，避免系統輸入法切換失敗中斷前一項驗證。
 
 ### 診斷工具
@@ -138,6 +141,39 @@ safe area、size class、實際 interface orientation、reserved regions 與 hin
 App 探針直接掛在 UIWindow 時也讀取該視窗的 scene，並記錄所屬螢幕 bounds 與 scale。
 這些診斷不記錄鍵值、讀音或輸入文字。
 原始紀錄、截圖與 `.xcresult` 放在 `Installer/local-builds/ios-duo/`，不提交。
+
+Debug 輸入欄位頁另支援 `-KeyKeyFocusDefaultField`，在頁面出現後讓「一般文字」欄位
+成為 first responder，保留人工測試工作階段，不依賴 XCUITest 等待倒數。此參數不會
+模擬觸控，也不保證 Duo 將鍵盤連到正確顯示器；必要時仍須在 Device Hub 再點一次欄位。
+
+```sh
+xcrun simctl launch --terminate-running-process "$keykey_duo_id" \
+  io.github.polobread.inputmethod.chichi77.ios \
+  -KeyKeyInputFieldTest -KeyKeyGeometryProbe -KeyKeyFocusDefaultField
+```
+
+Debug simulator 另支援 `-KeyKeyNativeKeyboardOnly`：透過公開
+`application(_:shouldAllowExtensionPointIdentifier:)` 拒絕 `.keyboard` extension point，
+讓同一宿主僅使用系統鍵盤，畫面會明確顯示「系統鍵盤對照」。一般啟動與 Release 不受影響。
+`testNativeKeyboardSwitchAtCurrentPoseWithoutExtension` 確認此標記、處理系統首次使用提示，
+從清單選「繁體注音」並檢查「ㄅ」鍵，且保存每個 `XCUIScreen.screens` 的畫面；只出現
+鍵盤教學提示不算完成切換。對照後須再次確認系統設定的啟用鍵盤清單，換版後若琦琦項目
+遺失，先跑 `test00KeyboardOptInIsConfigured` 由設定 UI 恢復，不直接寫入系統偏好。
+半開內螢幕的根視窗中央正好是折線區；Settings 導航改在右側列表內滑動，尋找「一般」
+時則使用左側列表，避免把無效滑動誤認為找不到鍵盤設定。這項 opt-in 已在同一半開
+測試機通過（25.039 秒，`partial-open-optin-pane-scrolling.xcresult`），且再次讀取確認
+琦琦在啟用清單中。鍵盤清單優先直接點選，失敗才使用舊模擬器所需的拖曳回退；
+不點擊被 sheet 擋住的宿主背景標題。寬版固定姿態案例聚焦或取消清單時，點輸入框
+右側四分之一位置，避免置中 sheet 的輸入框中心也落在折線；取消後另要求系統鍵盤清單
+真正消失，不能僅以另一個按鍵仍可點判定已關閉。
+
+跨開闔的地球鍵需保留同一宿主與組字，不能每次重啟 App 後才測。Xcode 27.2 的
+`UseDestinationArtifacts` 在本機實測拒絕 iOS Simulator（要求 iOS device），因此本機
+一次性 `testGlobeAfterManualDuoPostureHandoff` 在同一 UI 測試內等候姿態操作，最多
+30 分鐘；確認 App hinge 事件增加、回到半開後，才聚焦原欄位並自動點地球。交接後不先
+切換原生鍵盤，以免重設要調查的狀態。一次性來源 `ui-tests-manual-pose-globe.swift`、
+初始畫面 `manual-globe-handoff-ready.png` 與結果 `partial-open-manual-pose-globe-handoff.xcresult`
+保留於本機產物目錄，未納入正常測試來源；尚待姿態操作與結果，不能列為通過。
 
 ## 驗證範圍
 
@@ -178,14 +214,45 @@ App 探針直接掛在 UIWindow 時也讀取該視窗的 scene，並記錄所屬
   同姿態冷啟動後，單項啟用仍 fail。結果為本機 `partial-open-duo-core.xcresult`、
   `partial-open-duo-keyboard-service-recovery.xcresult` 與 `partial-open-duo-cold-layout.xcresult`；
   聚焦內螢幕截圖為 `partial-open-focused-field.png`。一次性人工恢復探針等待 120 秒，
-  仍未讀到軟體鍵盤（`partial-open-duo-manual-keyboard-recovery.xcresult`）；尚未收到
-  Device Hub 軟體鍵盤開關已操作的確認，不能把它當作操作無效的證據。
+  仍未讀到軟體鍵盤（`partial-open-duo-manual-keyboard-recovery.xcresult`）。之後使用者
+  確認操作 Device Hub 軟體鍵盤開關，App 仍有游標而沒有鍵盤；在 Device Hub 重新點擊
+  同一個「一般文字」欄位後，鍵盤才出現。extension 隨即回報內螢幕 951 × 669 pt、
+  view／window 801 × 330 pt、下安全區 18 pt、regular／regular，仍無 hinge 回呼，
+  `needsInputModeSwitchKey` 仍為 false。畫面為 `partial-open-after-user-retap.png`。
+  這只證明人工重新點擊恢復當次連線，不能視為已修復自動測試的顯示器歸屬問題。
   螢幕歸屬結果為 `partial-open-duo-screen-routing.xcresult`，原始資料已複製至本機
   `partial-open-app-geometry.jsonl` 與 `partial-open-extension-geometry.jsonl`，避免重新安裝
-  測試產物時更換 container 而遺失。這次沒有新增宿主 App 的當機報告。
-- 舊測試機手動切換地球鍵時，宿主 App 曾出現 SIGABRT；例外堆疊為
-  `__NSArrayM getObjects:range:` → `UIKeyboardLayoutStar activationIndicatorView`，
-  其後亦出現鍵盤未顯示。宿主視窗錯配與地球鍵 SIGABRT 都仍須追查，尚未宣告修復。
+  測試產物時更換 container 而遺失。
+- 新測試機在上述半開、已顯示鍵盤的狀態，使用者點按地球鍵後，宿主 App 再次 SIGABRT，
+  extension 行程仍在。報告為 `chichi77 KeyKey-2026-10-23-015232.ips`，例外原因為
+  `NSRangeException`、索引 58 超過陣列範圍 0–57。堆疊經過
+  `UIKeyboardLayoutStar activationIndicatorView`、`UIKeyboardImpl updateLayout` 與
+  `setInputModeToNextInPreferredListWithExecutionContext:`，與舊測試機兩份地球鍵報告的
+  系統鍵盤路徑相同。畫面與報告已保留於本機產物目錄。這證明可在新測試機重現，
+  尚不足以判定成因；Apple DTS 確認的是上述 false 屬性回報，未確認這個當機。
+  宿主視窗錯配與地球鍵 SIGABRT 都仍須追查，尚未宣告修復。
+- 同一半開測試機的地球鍵對照：延後到下一個 main loop 呼叫公開
+  `advanceToNextInputMode()` 仍讓宿主當機，兩份報告為
+  `chichi77 KeyKey-2026-10-23-022226.000.ips`／`022226.ips`，與標準 API 的堆疊相同；
+  限定寬版修正 `needsInputModeSwitchKey` getter 的實驗也無效。兩種修改均已撤回，
+  不能列為正式修補。標準完整鍵盤亦由自動測試重現長按清單取消後單點的當機，結果為
+  `partial-open-standard-globe-direct-picker.xcresult`，報告 `023135.ips`；屬性對照結果為
+  `partial-open-property-globe-probe.xcresult`，報告 `023248.ips`。
+- 純系統鍵盤對照確實切到繁體注音、找到「ㄅ」鍵且宿主保持前景，通過 15.515 秒，
+  結果為 `partial-open-native-only-zhuyin-switch.xcresult`。不載入 KeyKeyEngine、沒有組字
+  交接或完整鍵盤版面的最小 extension，從空欄位單點地球後亦可點原生注音鍵，通過
+  25.000 秒（`partial-open-minimal-globe-verified.xcresult`）。最小版加入「你好」與
+  長按清單取消後，測試停在最小按鈕已不可點，未執行下一次單點；不能將它列為已重現
+  同一當機。這些對照縮小調查範圍，未證明完整鍵盤正常，也未證明是所有第三方鍵盤的
+  系統缺陷。一次性最小來源與測試保留於本機產物目錄，不納入正式 extension。
+- 恢復有效 opt-in 後，完整原版鍵盤的純單點測試兩項均通過：空欄位 50.932 秒、
+  「你好」組字 39.969 秒（`partial-open-single-tap-valid-optin.xcresult`）。輸入框的
+  點擊另改至右側四分之一位置，避開半開折線後，再次通過 37.159／40.131 秒
+  （`partial-open-single-tap-away-from-fold.xcresult`）。兩輪都包含切回琦琦與宿主存活，
+  有組字時檢查文字保留。這是同一約 128° 固定姿態的結果，尚未驗證跨開闔後不再發生；
+  先前人工與自動當機報告仍有效，不能把測試手勢修正當成產品修補。加上清單真正
+  關閉斷言後的標準案例，本輪在啟用前失敗，未執行清單流程
+  （`partial-open-picker-dismissal-away-from-fold.xcresult`），仍不能列為已驗收。
 - 本輪一般 iPhone 回歸尚未完成；不能沿用前版結果宣稱通過。
 
 前版 `d498b2f0`／`771c31cb` 已驗證六種 Duo 姿態、同欄位跨姿態連續輸入、
