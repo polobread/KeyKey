@@ -1207,6 +1207,119 @@ final class KeyKeyUITests: XCTestCase {
         add(screenshot)
     }
 
+    func testManualSplitKeyboardPreservesCompositionAndPersists() throws {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCUIDevice.shared.orientation = .portrait
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        field("default").tap()
+        let activated = selectKeyKeyKeyboard()
+        if !activated {
+            let evidence = XCTAttachment(screenshot: app.screenshot())
+            evidence.name = "manual-keyboard-activation-failure"
+            evidence.lifetime = .keepAlways
+            add(evidence)
+        }
+        XCTAssertTrue(activated, keyboardActivationFailureMessage)
+        try selectCompositionMode("好打注音")
+        app.buttons["SETTINGS"].tap()
+        app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
+        app.buttons["完成"].tap()
+        selectPresentation("完整")
+        let fullHeight = app.buttons["ENTER"].frame.maxY - app.buttons["1"].frame.minY
+        XCTAssertFalse(app.buttons["keyboard.space.right"].exists)
+
+        // An unfinished reading must still accept the remaining keys after switching.
+        app.buttons["s"].tap()
+        selectPresentation("左右分離")
+        assertSplitKeyboardGeometry()
+        for key in "u3" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你" })
+        XCTAssertEqual(app.buttons["ENTER"].frame.maxY - app.buttons["1"].frame.minY,
+                       fullHeight, accuracy: 1)
+
+        // Opening settings and changing appearance must retain the current candidate target.
+        app.buttons["keyboard.smart-cell.1"].tap()
+        let candidate = app.buttons["第 1 個候選，你"]
+        XCTAssertTrue(candidate.waitForExistence(timeout: 3))
+        let fourth = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 4 個候選，")).firstMatch
+        let fifth = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 5 個候選，")).firstMatch
+        XCTAssertTrue(fourth.exists)
+        XCTAssertTrue(fifth.exists)
+        XCTAssertEqual(fourth.frame.maxX, app.buttons["5"].frame.maxX, accuracy: 1)
+        XCTAssertEqual(fifth.frame.minX, app.buttons["6"].frame.minX, accuracy: 1)
+        selectPresentation("完整")
+        XCTAssertTrue(candidate.waitForExistence(timeout: 3))
+        candidate.tap()
+        XCTAssertEqual(field("default").value as? String, "你")
+        selectPresentation("左右分離")
+        app.buttons["keyboard.space.right"].tap()
+        XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你 " })
+        app.buttons["BACKSPACE"].tap()
+        XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你" })
+        app.buttons["SPACE"].tap()
+        XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你 " })
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "manual-split-keyboard"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+
+        app.buttons["MODE"].tap()
+        app.buttons["a"].tap()
+        app.buttons["b"].tap()
+        app.buttons["MODE"].tap()
+        app.buttons["1"].tap()
+        XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你 ab1" })
+        app.buttons["MODE"].tap()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(app.buttons["keyboard.space.right"].waitForExistence(timeout: 3))
+        assertSplitKeyboardGeometry()
+        XCUIDevice.shared.orientation = .portrait
+        assertSplitKeyboardGeometry()
+        XCTAssertEqual(field("default").value as? String, "你 ab1")
+
+        // Another host session reads the saved extension preference.
+        app.terminate()
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        field("default").tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        assertSplitKeyboardGeometry()
+        app.buttons["SETTINGS"].tap()
+        XCTAssertTrue(app.segmentedControls["keyboard-presentation"].buttons["左右分離"].isSelected)
+        app.buttons["完成"].tap()
+        selectPresentation("完整")
+        XCTAssertFalse(app.buttons["keyboard.space.right"].exists)
+    }
+
+    private func selectPresentation(_ title: String) {
+        app.buttons["SETTINGS"].tap()
+        let option = app.segmentedControls["keyboard-presentation"].buttons[title]
+        XCTAssertTrue(option.waitForExistence(timeout: 3))
+        if !option.isSelected { option.tap() }
+        app.buttons["完成"].tap()
+        XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 3))
+    }
+
+    private func assertSplitKeyboardGeometry() {
+        assertCoreKeys()
+        let left = app.buttons["5"].frame
+        let right = app.buttons["6"].frame
+        XCTAssertGreaterThan(right.minX - left.maxX, 25)
+        let lastLeft = app.buttons["SPACE"]
+        let firstRight = app.buttons["keyboard.space.right"]
+        XCTAssertTrue(firstRight.isHittable)
+        XCTAssertEqual(lastLeft.frame.maxX, left.maxX, accuracy: 1)
+        XCTAssertEqual(firstRight.frame.minX, right.minX, accuracy: 1)
+        for identifier in ["1", "-", "q", "@", "a", "SHIFT", "MODE", "SPACE", "BACKSPACE", "ENTER"] {
+            let key = app.buttons[identifier]
+            XCTAssertTrue(key.isHittable, identifier)
+            XCTAssertTrue(key.frame.maxX <= left.maxX + 1 || key.frame.minX >= right.minX - 1,
+                          "按鍵跨越中央空隙：\(identifier)")
+        }
+    }
+
     func testPortraitAndLandscapeKeepCoreKeysReachable() throws {
         launchHostApp()
         XCTAssertTrue(revealField("default"))
