@@ -170,10 +170,12 @@ Debug simulator 另支援 `-KeyKeyNativeKeyboardOnly`：透過公開
 跨開闔的地球鍵需保留同一宿主與組字，不能每次重啟 App 後才測。Xcode 27.2 的
 `UseDestinationArtifacts` 在本機實測拒絕 iOS Simulator（要求 iOS device），因此本機
 一次性 `testGlobeAfterManualDuoPostureHandoff` 在同一 UI 測試內等候姿態操作，最多
-30 分鐘；確認 App hinge 事件增加、回到半開後，才聚焦原欄位並自動點地球。交接後不先
-切換原生鍵盤，以免重設要調查的狀態。一次性來源 `ui-tests-manual-pose-globe.swift`、
+30 分鐘。該輪條件只要求 hinge 事件增加且當下為半開，結果在闔上途中過早觸發，
+尚未等到使用者完成「闔上再半開」便嘗試點擊外螢幕不存在的按鍵，因此失敗，沒有
+新增當機報告，也沒有完成地球鍵驗證。下次必須先觀察 closed，再等待穩定的內螢幕
+partiallyOpen，不能只用事件數。一次性來源 `ui-tests-manual-pose-globe.swift`、
 初始畫面 `manual-globe-handoff-ready.png` 與結果 `partial-open-manual-pose-globe-handoff.xcresult`
-保留於本機產物目錄，未納入正常測試來源；尚待姿態操作與結果，不能列為通過。
+保留於本機產物目錄，未納入正常測試來源。
 
 ## 驗證範圍
 
@@ -253,6 +255,21 @@ Debug simulator 另支援 `-KeyKeyNativeKeyboardOnly`：透過公開
   先前人工與自動當機報告仍有效，不能把測試手勢修正當成產品修補。加上清單真正
   關閉斷言後的標準案例，本輪在啟用前失敗，未執行清單流程
   （`partial-open-picker-dismissal-away-from-fold.xcresult`），仍不能列為已驗收。
+- 使用者另回報各種姿態的地球鍵均會當機，不能限定為半開問題。後續在同一測試機
+  重現完整鍵盤移除 touch-down 組字提交後仍當機（`globe-without-touchdown-commit.xcresult`，
+  `030438.ips`／`030504.ips`）；最小 extension 的空欄位與「你好」也都當機
+  （`globe-minimal-current-state.xcresult`，`030652.ips`／`030703.ips`），仍是同一 UIKit
+  陣列越界路徑。把測試頁改成全螢幕仍失敗，使用 Xcode 27.1（27A9275）及其 SDK
+  對應 iOS 27.1 runtime 建置後亦失敗，不能歸因於 sheet 或 27.2 beta 編譯工具。
+  相關對照為 `globe-minimal-fullscreen-host.xcresult` 與 stable SDK 產物目錄中的
+  `minimal-globe-matched-sdk.xcresult`。以上實驗修改均撤回。
+- 最小 extension 先收鍵盤、在消失後切換的實驗，空欄位曾成功，但「你好」案例重新
+  聚焦後仍是同一最小鍵盤，未完成切換，因此不採用
+  （`ios-duo-sdk271/minimal-globe-hide-before-switch.xcresult`）。另一對照 override 公開
+  `advanceToNextInputMode()` 為空動作，確實攔住短按；保留 `handleInputModeList` 後，
+  長按清單明確選英文、選繁體注音的兩項均成功且保留「你好」，宿主仍存活。
+  三項結果為 `ios-duo-sdk271/minimal-globe-picker-routes.xcresult`。這只證明最小版中
+  短按與清單選取路徑不同，尚未採用為產品修補；完整鍵盤已恢復原本的系統處理。
 - 本輪一般 iPhone 回歸尚未完成；不能沿用前版結果宣稱通過。
 
 前版 `d498b2f0`／`771c31cb` 已驗證六種 Duo 姿態、同欄位跨姿態連續輸入、
@@ -263,6 +280,53 @@ iOS 17.0 iPhone 12 與 iOS 26.5 iPad，以及完整／十一欄分離切換。
 
 仍須依 [iOS Simulator 測試計畫](IOS_SIMULATOR_TEST_PLAN.md) 完成既有五機 A–K、
 真實宿主、分割畫面、VoiceOver、字型與淺深色，以及 Duo 實機驗收。
+
+## 不同宿主的地球鍵對照
+
+2026-10-23 依使用者建議，改用另一個 App 對照。此 Duo runtime 沒有安裝備忘錄，
+使用系統 Safari 開啟本機 `127.0.0.1` 靜態頁面的一般 `textarea`；不使用網址列、
+密碼欄位或外部網站。先恢復完整產品鍵盤與原本 `.allTouchEvents` 系統處理，
+沒有保留最小 extension 或攔截短按的修改。兩個宿主使用同一份 27.2 beta 3 建置，
+期間未操作 Device Hub 開闔或旋轉。App 探針確認內螢幕 951 × 669 pt、半開約 106°。
+
+| 宿主與操作 | 實際結果 |
+|---|---|
+| Safari，一般空欄位單點地球 | 通過，19.569 秒，切到原生注音，Safari 保持前景 |
+| Safari，先輸入「你好」再單點地球 | 通過，34.417 秒，原生注音可見，文字保留 |
+| Safari，同一欄位連續六輪輸入並切出、切回 | 通過，132.085 秒，每輪原生「ㄅ」可點，最終十二字完整保留 |
+| 原測試 App，一般空欄位單點地球並切回 | 通過，52.505 秒 |
+| 原測試 App，「你好」組字後單點地球 | 失敗，25.753 秒，宿主 SIGABRT |
+| 原測試 App，關閉診斷，空欄位單點並切回 | 通過，36.974 秒 |
+| 原測試 App，關閉診斷，「你好」後單點 | 失敗，24.647 秒，宿主 SIGABRT |
+
+結果分別在 `safari-host-globe-scoped-controls.xcresult`、
+`safari-host-globe-six-switches-fresh-page.xcresult` 與 `original-host-after-safari.xcresult`。
+連續測試先前一輪停在鍵盤未出現，沒有執行地球鍵；改用全新頁面並在未出現鍵盤時
+重新點擊欄位後，六輪才確實完成。新報告 `chichi77 KeyKey-2026-10-23-032848.ips`
+仍經過 `UIKeyboardLayoutStar activationIndicatorView` 與
+`setInputModeToNextInPreferredListWithExecutionContext:`。Safari 截圖與 accessibility
+hierarchy 確認有「ㄅ」等原生按鍵，且欄位保留「你好」。本輪沒有 Safari 當機報告。
+這支持繼續調查宿主或欄位差異；本輪成功仍不足以證明所有 Safari 操作正常，也不足以
+判定只有自製宿主有問題或宣告地球鍵已修復。
+
+原 App 不帶 `-KeyKeyGeometryProbe` 重跑，仍在帶組字時當機，結果為
+`original-host-without-geometry-probe.xcresult`，報告 `chichi77 KeyKey-2026-10-23-033450.ips`；
+App 與 extension 的探針紀錄也沒有新增。這排除診斷探針是必要觸發條件，尚不能排除
+宿主欄位或 UIKit 轉場的其他差異。
+
+再將原測試頁的同一欄位暫時由 `UITextField` 改成 `UITextView`，其餘宿主、
+鍵盤與診斷關閉條件不變。空欄位與「你好」兩項都在實際點到地球後 SIGABRT
+（20.383／20.933 秒，`original-host-uitextview-without-probe.xcresult`）；報告
+`chichi77 KeyKey-2026-10-23-033626.ips`／`033647.ips` 仍為同一 UIKit 路徑。
+因此單行／多行本身不足以解釋 Safari 的差異。對照修改已還原，沒有改動正式欄位行為。
+
+Safari 另有自己的「完成」工具列，因此鍵盤設定測試須在包含
+`keyboard-settings.scroll` 的視窗內選「完成」，不能用整個 App 的同名按鈕查詢。
+初次對照的兩項失敗均停在同名控制項歧義，沒有執行地球鍵；修正測試選取範圍後才取得
+上表的成功結果。一次性 Safari 測試與靜態頁面保留於本機產物目錄，不加入預設功能測試，
+避免一般測試依賴預先開啟的 Safari 頁面或本機 HTTP server。來源為本機
+`ui-tests-safari-host-probe.swift`、`safari-host/index.html` 與 `setup-textview-host-probe.swift`；
+正常測試來源只保留兩個設定 helper 的「完成」查詢範圍修正。
 
 ## Apple 依據
 
