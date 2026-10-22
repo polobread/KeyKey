@@ -58,9 +58,9 @@ final class KeyboardView: UIView {
     private var candidateButtons: [UIButton] = []
     private let previousPageButton = UIButton(type: .system)
     private let nextPageButton = UIButton(type: .system)
-    private let candidateStrip = UIStackView()
+    private let candidateStrip = KeyboardRow(spacing: 2)
     private let candidateContainer = UIView()
-    private let smartCellStrip = UIStackView()
+    private let smartCellStrip = KeyboardRow(spacing: 2)
     private var smartCellButtons: [UIButton] = []
     private var smartCellStripHeight: NSLayoutConstraint?
     private var candidateStripHeight: NSLayoutConstraint?
@@ -70,6 +70,8 @@ final class KeyboardView: UIView {
     private var candidateIsOverlay = false
     private var contentWidthConstraint: NSLayoutConstraint?
     private var keyViews: [[KeyView]] = []
+    private var rows: [KeyboardRow] = []
+    private var presentation = KeyboardPresentation.full
     private var functionButtons: [(key: String, button: UIButton)] = []
     private let backspaceRepeater = BackspaceRepeater()
     private var backspaceTouchActive = false
@@ -176,12 +178,8 @@ final class KeyboardView: UIView {
             return button
         }
 
-        candidateStrip.axis = .horizontal
-        candidateStrip.distribution = .fillEqually
-        candidateStrip.spacing = 2
-        candidateStrip.addArrangedSubview(previousPageButton)
-        candidateButtons.forEach(candidateStrip.addArrangedSubview)
-        candidateStrip.addArrangedSubview(nextPageButton)
+        candidateStrip.configure([previousPageButton] + candidateButtons + [nextPageButton])
+        rows.append(candidateStrip)
 
         statusLabel.textColor = Palette.hintText
         statusLabel.accessibilityIdentifier = "keyboard.status"
@@ -216,9 +214,6 @@ final class KeyboardView: UIView {
     }
 
     private func buildSmartCellStrip() -> UIView {
-        smartCellStrip.axis = .horizontal
-        smartCellStrip.distribution = .fillEqually
-        smartCellStrip.spacing = 2
         smartCellButtons = (0..<11).map { index in
             let button = UIButton(type: .system)
             button.tag = index
@@ -228,9 +223,10 @@ final class KeyboardView: UIView {
             button.titleLabel?.adjustsFontSizeToFitWidth = true
             button.titleLabel?.minimumScaleFactor = 0.5
             button.addTarget(self, action: #selector(smartCellTapped(_:)), for: .touchUpInside)
-            smartCellStrip.addArrangedSubview(button)
             return button
         }
+        smartCellStrip.configure(smartCellButtons)
+        rows.append(smartCellStrip)
         let height = smartCellStrip.heightAnchor.constraint(
             equalToConstant: metrics.candidateStripHeight
         )
@@ -241,10 +237,7 @@ final class KeyboardView: UIView {
 
     private func buildKeyRows() -> [UIView] {
         (0..<4).map { rowIndex in
-            let stack = UIStackView()
-            stack.axis = .horizontal
-            stack.distribution = .fillEqually
-            stack.spacing = 3
+            let stack = KeyboardRow()
             var keys: [KeyView] = []
             for columnIndex in 0..<11 {
                 let button = UIButton(type: .system)
@@ -252,10 +245,11 @@ final class KeyboardView: UIView {
                 button.tag = rowIndex * 100 + columnIndex
                 button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
                 installPreviewHandlers(on: button)
-                stack.addArrangedSubview(button)
                 keys.append(makeKeyView(button))
             }
             keyViews.append(keys)
+            stack.configure(keys.map(\.button))
+            rows.append(stack)
             return stack
         }
     }
@@ -293,14 +287,14 @@ final class KeyboardView: UIView {
         return label
     }
 
-    /// The function row is the only non-uniform row, so its widths come from
-    /// explicit multipliers rather than `fillEqually`.
+    /// Each half gets a space key in split mode; both send the same engine action.
     private func buildFunctionRow() -> UIView {
-        let row = UIView()
-        let keys = KeyboardLayout.functionRow(withInputModeSwitch: needsInputModeSwitch)
-        let total = keys.reduce(0.0) { $0 + KeyboardLayout.weight(for: $1) }
-        var previous: UIButton?
-        for key in keys {
+        let row = KeyboardRow()
+        var keys = KeyboardLayout.functionRow(withInputModeSwitch: needsInputModeSwitch)
+        let splitIndex = keys.firstIndex(of: "SPACE")! + 1
+        keys.insert("SPACE", at: splitIndex)
+        var rightSpace: UIButton?
+        for (index, key) in keys.enumerated() {
             let button = UIButton(type: .system)
             button.backgroundColor = Palette.specialKey
             button.tintColor = Palette.primaryText
@@ -308,7 +302,8 @@ final class KeyboardView: UIView {
             button.setTitleColor(Palette.primaryText, for: .normal)
             button.titleLabel?.adjustsFontSizeToFitWidth = true
             button.titleLabel?.minimumScaleFactor = 0.6
-            button.accessibilityIdentifier = key
+            button.accessibilityIdentifier = index == splitIndex ? "keyboard.space.right" : key
+            if index == splitIndex { rightSpace = button }
             if key == KeyboardLayout.inputModeSwitchKey {
                 inputModeSwitchButton = button
             } else if key == "BACKSPACE" {
@@ -324,25 +319,12 @@ final class KeyboardView: UIView {
                 button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
                 installPreviewHandlers(on: button)
             }
-            button.translatesAutoresizingMaskIntoConstraints = false
-            row.addSubview(button)
             functionButtons.append((key, button))
-
-            NSLayoutConstraint.activate([
-                button.topAnchor.constraint(equalTo: row.topAnchor),
-                button.bottomAnchor.constraint(equalTo: row.bottomAnchor),
-                button.widthAnchor.constraint(
-                    equalTo: row.widthAnchor,
-                    multiplier: KeyboardLayout.weight(for: key) / total,
-                    constant: -3
-                ),
-                button.leadingAnchor.constraint(
-                    equalTo: previous?.trailingAnchor ?? row.leadingAnchor,
-                    constant: previous == nil ? 0 : 3
-                )
-            ])
-            previous = button
         }
+        row.configure(functionButtons.map(\.button),
+                      weights: keys.map { KeyboardLayout.weight(for: $0) },
+                      splitIndex: splitIndex, splitOnlyView: rightSpace)
+        rows.append(row)
         return row
     }
 
@@ -385,6 +367,13 @@ final class KeyboardView: UIView {
             rootStack.insertArrangedSubview(candidateContainer, at: 1)
             candidateStripHeight?.isActive = true
         }
+    }
+
+    func setPresentation(_ presentation: KeyboardPresentation) {
+        guard presentation != self.presentation else { return }
+        self.presentation = presentation
+        cancelBackspaceRepeat()
+        rows.forEach { $0.setPresentation(presentation) }
     }
 
     func setMetrics(_ metrics: KeyboardMetrics) {
@@ -658,8 +647,12 @@ final class KeyboardView: UIView {
 
     // MARK: - Actions
 
+    private func actionKey(for button: UIButton) -> String? {
+        functionButtons.first { $0.button === button }?.key ?? button.accessibilityIdentifier
+    }
+
     @objc private func keyTapped(_ sender: UIButton) {
-        guard let key = sender.accessibilityIdentifier else { return }
+        guard let key = actionKey(for: sender) else { return }
         hideKeyPreview()
         playInputClick()
         delegate?.keyboardView(self, didPress: key)
@@ -732,7 +725,7 @@ final class KeyboardView: UIView {
     }
 
     @objc private func previewTouchDown(_ sender: UIButton) {
-        guard sender.isEnabled, let key = sender.accessibilityIdentifier else { return }
+        guard sender.isEnabled, let key = actionKey(for: sender) else { return }
         showKeyPreview(previewText(for: key), from: sender)
     }
 
@@ -790,4 +783,55 @@ final class KeyboardView: UIView {
 // A keyboard extension may play the standard click without Full Access.
 extension KeyboardView: UIInputViewAudioFeedback {
     var enableInputClicksWhenVisible: Bool { state.inputClicksEnabled }
+}
+
+/// Frames only change the placement of existing controls, preserving targets,
+/// accessibility, backspace repeat and the active composition during a switch.
+@MainActor
+private final class KeyboardRow: UIView {
+    private let spacing: Double
+    private var items: [UIView] = []
+    private var weights: [Double] = []
+    private var splitIndex = 5
+    private weak var splitOnlyView: UIView?
+    private var presentation = KeyboardPresentation.full
+
+    init(spacing: Double = 3) {
+        self.spacing = spacing
+        super.init(frame: .zero)
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    func configure(_ items: [UIView], weights: [Double]? = nil,
+                   splitIndex: Int = 5, splitOnlyView: UIView? = nil) {
+        self.items = items
+        self.weights = weights ?? Array(repeating: 1, count: items.count)
+        self.splitIndex = splitIndex
+        self.splitOnlyView = splitOnlyView
+        items.forEach(addSubview)
+        setPresentation(presentation)
+    }
+
+    func setPresentation(_ presentation: KeyboardPresentation) {
+        self.presentation = presentation
+        splitOnlyView?.isHidden = presentation == .full
+        setNeedsLayout()
+    }
+
+    // Preserve a fitting height for the keyboard host even though the children
+    // use frames. Compact-height constraints may compress this preferred size.
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: UIView.noIntrinsicMetric, height: 44)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let indices = items.indices.filter { presentation == .split || items[$0] !== splitOnlyView }
+        let frames = KeyboardRowGeometry.frames(
+            width: bounds.width, height: bounds.height, weights: indices.map { weights[$0] },
+            splitIndex: presentation == .split ? splitIndex : nil, spacing: spacing
+        )
+        for (index, frame) in zip(indices, frames) { items[index].frame = frame }
+    }
 }
