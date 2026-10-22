@@ -48,3 +48,19 @@ public enum KeyboardRowGeometry {
         return group(0..<weights.count, x: 0, width: width)
     }
 }
+
+/// A twelve-column layout for split keyboards with enough usable width.
+/// The underlying eleven-key input planes and engine indices stay unchanged.
+public enum ExpandedSplitKeyboardLayout {
+    public static let minimumWidth: Double = 600
+    public static let punctuation = ["，", "。", "、", "？"]
+
+    public static func functionWeight(for key: String) -> Double {
+        switch key {
+        case "MODE": return 1.5
+        case "SYMBOL", "SETTINGS": return 1.25
+        case "SPACE", "BACKSPACE", "ENTER": return 2
+        default: return 1
+        }
+    }
+}

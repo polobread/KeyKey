@@ -10,7 +10,7 @@ protocol KeyboardViewDelegate: AnyObject {
 }
 
 /// The Bopomofo keyboard: a candidate strip over five equal bands -- four rows
-/// of eleven keys and a weighted function row. Built from real views rather
+/// of reading keys and a weighted function row. Built from real views rather
 /// than a drawn canvas like the Android port, which gets VoiceOver for free and
 /// keeps hit testing independent of paint order.
 final class KeyboardView: UIView {
@@ -70,7 +70,19 @@ final class KeyboardView: UIView {
     private var candidateIsOverlay = false
     private var contentWidthConstraint: NSLayoutConstraint?
     private var keyViews: [[KeyView]] = []
-    private var rows: [KeyboardRow] = []
+    private var keyRows: [KeyboardRow] = []
+    private let functionRow = KeyboardRow()
+    private var punctuationButtons: [(key: String, button: UIButton)] = []
+    private let dismissButton = UIButton(type: .system)
+    private let candidateSpacer = UIView()
+    private let smartDismissSpacer = UIView()
+    private var bottomContentConstraint: NSLayoutConstraint?
+    private struct RowLayout: Equatable {
+        let presentation: KeyboardPresentation
+        let expanded: Bool
+        let needsInputModeSwitch: Bool
+    }
+    private var appliedRowLayout: RowLayout?
     private var presentation = KeyboardPresentation.full
     private var functionButtons: [(key: String, button: UIButton)] = []
     private let backspaceRepeater = BackspaceRepeater()
@@ -85,10 +97,10 @@ final class KeyboardView: UIView {
     private var state = State()
     private var metrics = KeyboardMetrics.portrait
     private var enterIconSide: Double = 0
-    private let needsInputModeSwitch: Bool
+    private var needsInputModeSwitch: Bool
     /// Left for the controller to wire to `handleInputModeList`, which gives
     /// the key the system behaviour: tap advances, long press opens the
-    /// keyboard picker. Nil where the host already draws a globe of its own.
+    /// keyboard picker. Kept alive when hidden so host changes can reveal it.
     private(set) var inputModeSwitchButton: UIButton?
 
     init(needsInputModeSwitch: Bool) {
@@ -96,6 +108,7 @@ final class KeyboardView: UIView {
         super.init(frame: .zero)
         backgroundColor = Palette.background
         buildInterface()
+        updateRowLayout()
         apply(State(), force: true)
     }
 
@@ -130,11 +143,11 @@ final class KeyboardView: UIView {
             root.leadingAnchor.constraint(greaterThanOrEqualTo: guide.leadingAnchor, constant: 3),
             root.trailingAnchor.constraint(lessThanOrEqualTo: guide.trailingAnchor, constant: -3),
             root.centerXAnchor.constraint(equalTo: guide.centerXAnchor),
-            root.topAnchor.constraint(equalTo: guide.topAnchor, constant: 3),
-            root.bottomAnchor.constraint(
-                equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -3
-            )
+            root.topAnchor.constraint(equalTo: guide.topAnchor, constant: 3)
         ])
+        let bottom = root.bottomAnchor.constraint(equalTo: guide.bottomAnchor, constant: -3)
+        bottom.isActive = true
+        bottomContentConstraint = bottom
         // Candidate titles have different intrinsic widths (for example the
         // anime collection offers 「的名字」 after 「你」). Without an explicit
         // fill width, those titles resize all eleven key columns when the
@@ -179,7 +192,6 @@ final class KeyboardView: UIView {
         }
 
         candidateStrip.configure([previousPageButton] + candidateButtons + [nextPageButton])
-        rows.append(candidateStrip)
 
         statusLabel.textColor = Palette.hintText
         statusLabel.accessibilityIdentifier = "keyboard.status"
@@ -189,7 +201,9 @@ final class KeyboardView: UIView {
 
         let container = candidateContainer
         container.backgroundColor = Palette.background
-        for child in [candidateStrip, statusLabel] as [UIView] {
+        // Keep status text below the strip: in expanded split mode its last
+        // slot remains an interactive hide control even with no candidates.
+        for child in [statusLabel, candidateStrip] as [UIView] {
             child.translatesAutoresizingMaskIntoConstraints = false
             container.addSubview(child)
             NSLayoutConstraint.activate([
@@ -226,7 +240,14 @@ final class KeyboardView: UIView {
             return button
         }
         smartCellStrip.configure(smartCellButtons)
-        rows.append(smartCellStrip)
+        dismissButton.backgroundColor = Palette.specialKey
+        dismissButton.layer.cornerRadius = 6
+        dismissButton.setTitle("▼", for: .normal)
+        dismissButton.setTitleColor(Palette.primaryText, for: .normal)
+        dismissButton.accessibilityIdentifier = "keyboard.dismiss"
+        dismissButton.accessibilityLabel = "收起鍵盤"
+        dismissButton.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
+        dismissButton.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         let height = smartCellStrip.heightAnchor.constraint(
             equalToConstant: metrics.candidateStripHeight
         )
@@ -249,7 +270,16 @@ final class KeyboardView: UIView {
             }
             keyViews.append(keys)
             stack.configure(keys.map(\.button))
-            rows.append(stack)
+            keyRows.append(stack)
+            let punctuation = ExpandedSplitKeyboardLayout.punctuation[rowIndex]
+            let button = UIButton(type: .system)
+            button.layer.cornerRadius = 6
+            button.backgroundColor = Palette.specialKey
+            button.setTitleColor(Palette.primaryText, for: .normal)
+            button.accessibilityIdentifier = "keyboard.split.punctuation.\(rowIndex)"
+            button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
+            installPreviewHandlers(on: button)
+            punctuationButtons.append((punctuation, button))
             return stack
         }
     }
@@ -289,11 +319,9 @@ final class KeyboardView: UIView {
 
     /// Each half gets a space key in split mode; both send the same engine action.
     private func buildFunctionRow() -> UIView {
-        let row = KeyboardRow()
-        var keys = KeyboardLayout.functionRow(withInputModeSwitch: needsInputModeSwitch)
+        var keys = KeyboardLayout.functionRow(withInputModeSwitch: true)
         let splitIndex = keys.firstIndex(of: "SPACE")! + 1
         keys.insert("SPACE", at: splitIndex)
-        var rightSpace: UIButton?
         for (index, key) in keys.enumerated() {
             let button = UIButton(type: .system)
             button.backgroundColor = Palette.specialKey
@@ -303,7 +331,6 @@ final class KeyboardView: UIView {
             button.titleLabel?.adjustsFontSizeToFitWidth = true
             button.titleLabel?.minimumScaleFactor = 0.6
             button.accessibilityIdentifier = index == splitIndex ? "keyboard.space.right" : key
-            if index == splitIndex { rightSpace = button }
             if key == KeyboardLayout.inputModeSwitchKey {
                 inputModeSwitchButton = button
             } else if key == "BACKSPACE" {
@@ -321,11 +348,7 @@ final class KeyboardView: UIView {
             }
             functionButtons.append((key, button))
         }
-        row.configure(functionButtons.map(\.button),
-                      weights: keys.map { KeyboardLayout.weight(for: $0) },
-                      splitIndex: splitIndex, splitOnlyView: rightSpace)
-        rows.append(row)
-        return row
+        return functionRow
     }
 
     private func configurePageButton(
@@ -373,7 +396,70 @@ final class KeyboardView: UIView {
         guard presentation != self.presentation else { return }
         self.presentation = presentation
         cancelBackspaceRepeat()
-        rows.forEach { $0.setPresentation(presentation) }
+        updateRowLayout()
+    }
+
+    func setNeedsInputModeSwitch(_ needed: Bool) {
+        guard needed != needsInputModeSwitch else { return }
+        needsInputModeSwitch = needed
+        updateRowLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateRowLayout()
+    }
+
+    private func updateCandidateVisibility() {
+        let hasCandidates = !state.candidates.isEmpty
+        let expanded = appliedRowLayout?.expanded == true
+        candidateStrip.isHidden = !hasCandidates && !expanded
+        (candidateButtons + [previousPageButton, nextPageButton]).forEach { $0.isHidden = !hasCandidates }
+        let slot = state.smartMode ? smartDismissSpacer : candidateSpacer
+        if dismissButton.superview !== slot {
+            dismissButton.removeFromSuperview()
+            dismissButton.frame = slot.bounds
+            slot.addSubview(dismissButton)
+        }
+        dismissButton.isHidden = !expanded
+    }
+
+    private func updateRowLayout() {
+        let split = presentation == .split
+        let expanded = split && !metrics.isCompactHeight
+            && safeAreaLayoutGuide.layoutFrame.width >= ExpandedSplitKeyboardLayout.minimumWidth
+        let next = RowLayout(presentation: presentation, expanded: expanded,
+                             needsInputModeSwitch: needsInputModeSwitch)
+        guard next != appliedRowLayout else { return }
+        appliedRowLayout = next
+        cancelBackspaceRepeat()
+        for (index, row) in keyRows.enumerated() {
+            var buttons = keyViews[index].map(\.button)
+            if expanded { buttons.insert(punctuationButtons[index].button, at: 5) }
+            row.configure(buttons, splitIndex: split ? (expanded ? 6 : 5) : nil)
+        }
+        // Eleven composition cells, six on the left and five on the right.
+        // The twelfth slot is an independent dismissal control, not another cell.
+        smartCellStrip.configure(smartCellButtons + (expanded ? [smartDismissSpacer] : []),
+                                 splitIndex: split ? 6 : nil)
+        let candidates: [UIView] = [previousPageButton] + candidateButtons + [nextPageButton]
+        candidateStrip.configure(candidates + (expanded ? [candidateSpacer] : []),
+                                 splitIndex: split ? (expanded ? 6 : 5) : nil)
+        let visible = functionButtons.filter { key, button in
+            if key == KeyboardLayout.inputModeSwitchKey { return needsInputModeSwitch }
+            if button.accessibilityIdentifier == "keyboard.space.right" { return split }
+            return !expanded || (key != "，" && key != "。")
+        }
+        let weights = visible.map { item in
+            expanded ? ExpandedSplitKeyboardLayout.functionWeight(for: item.key)
+                : KeyboardLayout.weight(for: item.key)
+        }
+        let functionSplit = split ? visible.firstIndex { $0.key == "SPACE" }.map { $0 + 1 } : nil
+        functionRow.configure(visible.map(\.button), weights: weights, splitIndex: functionSplit)
+        // Align to the usable bottom edge, retaining the system's safe area.
+        bottomContentConstraint?.constant = expanded ? 0 : -3
+        updateCandidateVisibility()
+        setNeedsLayout()
     }
 
     func setMetrics(_ metrics: KeyboardMetrics) {
@@ -389,6 +475,8 @@ final class KeyboardView: UIView {
         let previousState = state
         state = nextState
         setCandidateOverlay(state.smartMode)
+        if state.smartMode != previousState.smartMode { setNeedsLayout() }
+        updateCandidateVisibility()
 
         let hasCandidates = !state.candidates.isEmpty
         let hadCandidates = !previousState.candidates.isEmpty
@@ -401,7 +489,6 @@ final class KeyboardView: UIView {
             || state.temporaryEnglish != previousState.temporaryEnglish
             || state.statusOverride != previousState.statusOverride
             || state.supportPromptVisible != previousState.supportPromptVisible {
-            candidateStrip.isHidden = !hasCandidates
             statusLabel.isHidden = hasCandidates
             statusLabel.font = .systemFont(ofSize: metrics.statusFont)
             let normalStatus = state.chineseInputMethod.isTable && state.mode == .bopomofo && state.reading.isEmpty
@@ -496,7 +583,8 @@ final class KeyboardView: UIView {
         }
 
         if keyPlaneChanged || state.returnKeyPolicy != previousState.returnKeyPolicy {
-            for (key, button) in functionButtons {
+            dismissButton.titleLabel?.font = .systemFont(ofSize: metrics.pageFont)
+            for (key, button) in functionButtons + punctuationButtons {
                 button.accessibilityLabel = accessibilityLabel(for: key)
                 let enabled = state.fieldPolicy.isKeyEnabled(
                     key, mode: state.mode, shifted: state.shifted
@@ -648,7 +736,9 @@ final class KeyboardView: UIView {
     // MARK: - Actions
 
     private func actionKey(for button: UIButton) -> String? {
-        functionButtons.first { $0.button === button }?.key ?? button.accessibilityIdentifier
+        if button === dismissButton { return "HIDE_KEYBOARD" }
+        return (functionButtons + punctuationButtons).first { $0.button === button }?.key
+            ?? button.accessibilityIdentifier
     }
 
     @objc private func keyTapped(_ sender: UIButton) {
@@ -792,9 +882,7 @@ private final class KeyboardRow: UIView {
     private let spacing: Double
     private var items: [UIView] = []
     private var weights: [Double] = []
-    private var splitIndex = 5
-    private weak var splitOnlyView: UIView?
-    private var presentation = KeyboardPresentation.full
+    private var splitIndex: Int?
 
     init(spacing: Double = 3) {
         self.spacing = spacing
@@ -803,19 +891,12 @@ private final class KeyboardRow: UIView {
 
     required init?(coder: NSCoder) { fatalError("not used") }
 
-    func configure(_ items: [UIView], weights: [Double]? = nil,
-                   splitIndex: Int = 5, splitOnlyView: UIView? = nil) {
+    func configure(_ items: [UIView], weights: [Double]? = nil, splitIndex: Int? = nil) {
+        self.items.forEach { $0.removeFromSuperview() }
         self.items = items
         self.weights = weights ?? Array(repeating: 1, count: items.count)
         self.splitIndex = splitIndex
-        self.splitOnlyView = splitOnlyView
         items.forEach(addSubview)
-        setPresentation(presentation)
-    }
-
-    func setPresentation(_ presentation: KeyboardPresentation) {
-        self.presentation = presentation
-        splitOnlyView?.isHidden = presentation == .full
         setNeedsLayout()
     }
 
@@ -827,11 +908,10 @@ private final class KeyboardRow: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        let indices = items.indices.filter { presentation == .split || items[$0] !== splitOnlyView }
         let frames = KeyboardRowGeometry.frames(
-            width: bounds.width, height: bounds.height, weights: indices.map { weights[$0] },
-            splitIndex: presentation == .split ? splitIndex : nil, spacing: spacing
+            width: bounds.width, height: bounds.height, weights: weights,
+            splitIndex: splitIndex, spacing: spacing
         )
-        for (index, frame) in zip(indices, frames) { items[index].frame = frame }
+        for (item, frame) in zip(items, frames) { item.frame = frame }
     }
 }
