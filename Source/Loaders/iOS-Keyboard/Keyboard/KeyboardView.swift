@@ -121,13 +121,14 @@ final class KeyboardView: UIView {
         root.translatesAutoresizingMaskIntoConstraints = false
         addSubview(root)
 
-        // Content sits at the top; the bottom safe area belongs to the system
-        // globe key and the home indicator.
+        // The keyboard has its own safe area, which can differ from the host
+        // app's. Respect each edge independently as the host resizes or moves it.
+        let guide = safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            root.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 3),
-            root.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -3),
-            root.centerXAnchor.constraint(equalTo: centerXAnchor),
-            root.topAnchor.constraint(equalTo: topAnchor, constant: 3),
+            root.leadingAnchor.constraint(greaterThanOrEqualTo: guide.leadingAnchor, constant: 3),
+            root.trailingAnchor.constraint(lessThanOrEqualTo: guide.trailingAnchor, constant: -3),
+            root.centerXAnchor.constraint(equalTo: guide.centerXAnchor),
+            root.topAnchor.constraint(equalTo: guide.topAnchor, constant: 3),
             root.bottomAnchor.constraint(
                 equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -3
             )
@@ -137,8 +138,8 @@ final class KeyboardView: UIView {
         // fill width, those titles resize all eleven key columns when the
         // candidate strip appears and the keyboard shrinks again when it is
         // dismissed. Priority 999 fills a phone while still allowing the
-        // required iPad maximum below to cap wide layouts.
-        let fillWidth = root.widthAnchor.constraint(equalTo: widthAnchor, constant: -6)
+        // required maximum below to cap regular-width layouts.
+        let fillWidth = root.widthAnchor.constraint(equalTo: guide.widthAnchor, constant: -6)
         fillWidth.priority = UILayoutPriority(999)
         fillWidth.isActive = true
         let contentWidth = root.widthAnchor.constraint(

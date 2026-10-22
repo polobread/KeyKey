@@ -12,6 +12,16 @@ struct KeyboardMetricsTests {
         #expect(KeyboardMetrics.forCompactHeight(true, isPad: true) == .pad)
     }
 
+    @Test("regular-width phones cap wide keys without using the short landscape scale")
+    func regularWidthPhone() {
+        let inner = KeyboardMetrics.forCompactHeight(false, regularWidth: true)
+        #expect(inner.maximumContentWidth == KeyboardMetrics.pad.maximumContentWidth)
+        #expect(inner.contentHeight == KeyboardMetrics.portrait.contentHeight)
+        #expect(inner.stacksKeyLabels)
+        #expect(KeyboardMetrics.forCompactHeight(true, regularWidth: true) == .compact)
+        #expect(KeyboardMetrics.forCompactHeight(false, regularWidth: false) == .portrait)
+    }
+
     @Test("landscape is shorter and smaller throughout")
     func compactIsSmaller() {
         let portrait = KeyboardMetrics.portrait
