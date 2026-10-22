@@ -74,6 +74,7 @@ final class KeyboardView: UIView {
     private let functionRow = KeyboardRow()
     private var punctuationButtons: [(key: String, button: UIButton)] = []
     private let dismissButton = UIButton(type: .system)
+    private let closeCandidatesButton = UIButton(type: .system)
     private let candidateSpacer = UIView()
     private let smartDismissSpacer = UIView()
     private var bottomContentConstraint: NSLayoutConstraint?
@@ -177,6 +178,15 @@ final class KeyboardView: UIView {
     private func buildCandidateStrip() -> UIView {
         configurePageButton(previousPageButton, title: "▲", label: "上一頁", delta: -1)
         configurePageButton(nextPageButton, title: "▼", label: "下一頁", delta: 1)
+        closeCandidatesButton.backgroundColor = Palette.specialKey
+        closeCandidatesButton.layer.cornerRadius = 6
+        closeCandidatesButton.setTitle("×", for: .normal)
+        closeCandidatesButton.setTitleColor(Palette.primaryText, for: .normal)
+        closeCandidatesButton.accessibilityIdentifier = "keyboard.candidates.close"
+        closeCandidatesButton.accessibilityLabel = "關閉候選"
+        closeCandidatesButton.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
+        closeCandidatesButton.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        candidateSpacer.addSubview(closeCandidatesButton)
 
         candidateButtons = (0..<BopomofoEngine.candidatesPerPage).map { index in
             let button = UIButton(type: .system)
@@ -422,6 +432,7 @@ final class KeyboardView: UIView {
             slot.addSubview(dismissButton)
         }
         dismissButton.isHidden = !expanded
+        closeCandidatesButton.isHidden = !expanded || !state.smartMode || !hasCandidates
     }
 
     private func updateRowLayout() {
@@ -583,7 +594,9 @@ final class KeyboardView: UIView {
         }
 
         if keyPlaneChanged || state.returnKeyPolicy != previousState.returnKeyPolicy {
-            dismissButton.titleLabel?.font = .systemFont(ofSize: metrics.pageFont)
+            for button in [dismissButton, closeCandidatesButton] {
+                button.titleLabel?.font = .systemFont(ofSize: metrics.pageFont)
+            }
             for (key, button) in functionButtons + punctuationButtons {
                 button.accessibilityLabel = accessibilityLabel(for: key)
                 let enabled = state.fieldPolicy.isKeyEnabled(
@@ -737,6 +750,7 @@ final class KeyboardView: UIView {
 
     private func actionKey(for button: UIButton) -> String? {
         if button === dismissButton { return "HIDE_KEYBOARD" }
+        if button === closeCandidatesButton { return "CLOSE_CANDIDATES" }
         return (functionButtons + punctuationButtons).first { $0.button === button }?.key
             ?? button.accessibilityIdentifier
     }

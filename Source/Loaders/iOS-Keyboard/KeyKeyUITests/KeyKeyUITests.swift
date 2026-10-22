@@ -1378,6 +1378,69 @@ final class KeyKeyUITests: XCTestCase {
         selectPresentation("完整")
     }
 
+    func testWideSplitSmartCandidateRowHasTwelveControls() throws {
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        output.tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        try selectCompositionMode("好打注音")
+        app.buttons["SETTINGS"].tap()
+        app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
+        app.buttons["完成"].tap()
+        selectPresentation("左右分離")
+        XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
+                      "此測試要求寬版分離鍵盤")
+        let numberLeft = app.buttons["1"].frame
+        let numberRight = app.buttons["-"].frame
+        let leftBoundary = app.buttons["keyboard.split.punctuation.0"].frame.maxX
+        let rightBoundary = app.buttons["6"].frame.minX
+        let enter = app.buttons["ENTER"].frame
+        let close = app.buttons["keyboard.candidates.close"]
+        XCTAssertFalse(close.isHittable)
+        for key in "su3cl3" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout { output.value as? String == "你好" })
+        app.buttons["keyboard.smart-cell.1"].tap()
+        let first = app.buttons["第 1 個候選，你"]
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        let candidates = (1...9).map { index in
+            self.app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 \(index) 個候選，")).firstMatch
+        }
+        let controls = [app.buttons["上一頁"]] + candidates + [app.buttons["下一頁"], close]
+        XCTAssertEqual(controls.count, 12)
+        for control in controls {
+            XCTAssertTrue(control.exists)
+            XCTAssertEqual(control.frame.width, controls[0].frame.width, accuracy: 1)
+            XCTAssertEqual(control.frame.minY, controls[0].frame.minY, accuracy: 1)
+        }
+        XCTAssertTrue(close.isHittable)
+        XCTAssertEqual(controls[0].frame.minX, numberLeft.minX, accuracy: 1)
+        XCTAssertEqual(controls[5].frame.maxX, leftBoundary, accuracy: 1)
+        XCTAssertEqual(controls[6].frame.minX, rightBoundary, accuracy: 1)
+        XCTAssertEqual(close.frame.maxX, numberRight.maxX, accuracy: 1)
+        assertFrame(app.buttons["ENTER"].frame, equals: enter, message: "顯示十二格候選列")
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "wide-twelve-slot-smart-candidates"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        close.tap()
+        XCTAssertTrue(waitForLayout { !close.isHittable && self.app.buttons["1"].isHittable })
+        XCTAssertEqual(output.value as? String, "你好")
+        assertFrame(app.buttons["ENTER"].frame, equals: enter, message: "關閉候選恢復數字列")
+        for key in "su3" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout { output.value as? String == "你好你" })
+        app.buttons["keyboard.smart-cell.1"].tap()
+        XCTAssertTrue(close.isHittable)
+        selectPresentation("完整")
+        XCTAssertFalse(close.isHittable)
+        XCTAssertTrue(first.isHittable)
+        selectPresentation("左右分離")
+        XCTAssertTrue(close.isHittable)
+        close.tap()
+        XCTAssertEqual(output.value as? String, "你好你")
+        selectPresentation("完整")
+    }
+
     func testWideSplitInputModeSwitchControls() throws {
         launchHostApp()
         XCTAssertTrue(revealField("default"))
