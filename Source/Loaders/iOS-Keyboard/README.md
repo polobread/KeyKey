@@ -176,7 +176,9 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   所以 `BopomofoSyllable` 必須實作該編碼才查得到東西。
 - **完整／左右分離鍵盤**：在鍵盤「設 → 鍵盤外觀」手動切換，預設完整。分離模式的
   組字、候選與按鍵列一起留出中央空隙，左右各有空白鍵；切換保留組字與候選，選擇
-  保存在 extension 沙箱。Duo 的 extension 尚無可用折疊回呼，因此不自動切換。
+  保存在 extension 沙箱。寬版分離採左右各六格，新增「，」「。」「、」「？」標點；組字區仍為
+  十一格（左六、右五），最後一格提供「▼」收鍵盤，英文與傳統注音亦可使用。
+  Duo 的 extension 尚無可用折疊回呼，因此不自動切換。
 - **`RequestsOpenAccess = false`**：不連網，鍵盤可唯讀 App Group 的設定，
   鍵盤內修改的設定與學習資料則存在 extension 自己的沙箱。代價是
   iOS 把 `UIFeedbackGenerator` 綁在這個權限後面，因此沒有按鍵震動。

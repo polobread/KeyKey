@@ -56,9 +56,9 @@ final class KeyboardViewController: UIInputViewController {
         inputClicksEnabled = clickSettings.enabled
         _ = learningResetRequest.applyIfNeeded(to: smartUserData)
 
-        // Let the host decide whether the extension must provide a globe key;
-        // neither device idiom nor the presence of a home indicator determines it.
-        let keyboard = KeyboardView(needsInputModeSwitch: needsInputModeSwitchKey)
+        // Query the host after connection; keep the same globe control alive
+        // through visibility changes so its system picker targets stay attached.
+        let keyboard = KeyboardView(needsInputModeSwitch: false)
         keyboard.setPresentation(presentationSettings.presentation)
         keyboard.delegate = self
         keyboard.inputModeSwitchButton?.addTarget(
@@ -111,6 +111,26 @@ final class KeyboardViewController: UIInputViewController {
         }
         refreshAppSettings()
         updateFieldPolicy()
+        refreshSystemKeyboardControls()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        refreshSystemKeyboardControls()
+    }
+
+    private func refreshSystemKeyboardControls() {
+        guard view.window != nil else { return }
+        // Apple DTS confirmed false on iPhone Duo in iOS 27.1 is a runtime bug
+        // (FB25073949). Limit the fallback to that version and wide phone hosts;
+        // other runtimes and form factors continue to use the system property.
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        let affectedWidePhone = version.majorVersion == 27 && version.minorVersion == 1
+            && traitCollection.userInterfaceIdiom == .phone
+            && traitCollection.horizontalSizeClass == .regular
+            && traitCollection.verticalSizeClass == .regular
+            && view.safeAreaLayoutGuide.layoutFrame.width >= ExpandedSplitKeyboardLayout.minimumWidth
+        keyboardView?.setNeedsInputModeSwitch(needsInputModeSwitchKey || affectedWidePhone)
     }
 
     private func refreshAppSettings() {
@@ -528,6 +548,17 @@ final class KeyboardViewController: UIInputViewController {
 extension KeyboardViewController: KeyboardViewDelegate {
     func keyboardView(_ view: KeyboardView, didPress key: String) {
         statusOverride = nil
+        if key == "HIDE_KEYBOARD" {
+            if let engine {
+                let result = engine.finishCompositionForInputHandoff()
+                apply(result)
+            }
+            keyboardView?.cancelBackspaceRepeat()
+            // Give a pending marked-text replacement a main-loop turn before
+            // requesting dismissal of the remote input view.
+            DispatchQueue.main.async { [weak self] in self?.dismissKeyboard() }
+            return
+        }
         guard let engine else { return }
         if key == "SETTINGS" {
             showSettingsPanel()
