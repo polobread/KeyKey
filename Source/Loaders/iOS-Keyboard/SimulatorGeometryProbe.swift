@@ -46,7 +46,8 @@ final class SimulatorGeometryProbe {
 
     private func sample() {
         guard let view else { timer?.invalidate(); timer = nil; return }
-        if let window = view.window, observedWindow !== window, window !== view {
+        let window = (view as? UIWindow) ?? view.window
+        if let window, observedWindow !== window, window !== view {
             observedWindow = window
             window.addInteraction(UIHingeInteraction { [weak self] _, update in
                 self?.recordHinge(update, source: "window")
@@ -67,10 +68,15 @@ final class SimulatorGeometryProbe {
             "division": regions(view, .division), "occlusion": regions(view, .occlusion),
             "hingeEvents": hingeEvents, "hinge": hingeState
         ]
-        if let window = view.window {
+        if let window {
             snapshot["windowBounds"] = rect(window.bounds)
             snapshot["windowSafeArea"] = insets(window.safeAreaInsets)
             snapshot["windowDivision"] = regions(window, .division)
+            if let scene = window.windowScene {
+                snapshot["interfaceOrientation"] = scene.effectiveGeometry.interfaceOrientation.rawValue
+                snapshot["screenBounds"] = rect(scene.screen.bounds)
+                snapshot["screenScale"] = scene.screen.scale
+            }
         }
         if let controller = view.next as? UIInputViewController {
             snapshot["needsInputModeSwitchKey"] = controller.needsInputModeSwitchKey
