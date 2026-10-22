@@ -1170,7 +1170,7 @@ final class KeyKeyUITests: XCTestCase {
         app.launchArguments = ["-KeyKeyInputFieldTest", "-KeyKeyGeometryProbe"]
         app.launch()
         XCTAssertTrue(revealField("default"))
-        field("default").tap()
+        tapInputField(field("default"))
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
         app.buttons["SETTINGS"].tap()
@@ -1212,7 +1212,7 @@ final class KeyKeyUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         launchHostApp()
         XCTAssertTrue(revealField("default"))
-        field("default").tap()
+        tapInputField(field("default"))
         let activated = selectKeyKeyKeyboard()
         if !activated {
             let evidence = XCTAttachment(screenshot: app.screenshot())
@@ -1286,7 +1286,7 @@ final class KeyKeyUITests: XCTestCase {
         app.terminate()
         launchHostApp()
         XCTAssertTrue(revealField("default"))
-        field("default").tap()
+        tapInputField(field("default"))
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         assertSplitKeyboardGeometry()
         app.buttons["SETTINGS"].tap()
@@ -1310,7 +1310,7 @@ final class KeyKeyUITests: XCTestCase {
         launchHostApp(geometryProbe: true)
         XCTAssertTrue(revealField("default"))
         let output = field("default")
-        output.tap()
+        tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
         app.buttons["SETTINGS"].tap()
@@ -1399,7 +1399,7 @@ final class KeyKeyUITests: XCTestCase {
         launchHostApp(geometryProbe: true)
         XCTAssertTrue(revealField("default"))
         let output = field("default")
-        output.tap()
+        tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
         app.buttons["SETTINGS"].tap()
@@ -1454,7 +1454,7 @@ final class KeyKeyUITests: XCTestCase {
         launchHostApp()
         XCTAssertTrue(revealField("default"))
         let output = field("default")
-        output.tap()
+        tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
         app.buttons["SETTINGS"].tap()
@@ -1487,7 +1487,7 @@ final class KeyKeyUITests: XCTestCase {
         hide.tap()
         XCTAssertTrue(waitForLayout { !self.app.buttons["SETTINGS"].exists })
         XCTAssertEqual(output.value as? String, expected)
-        output.tap()
+        tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         XCTAssertEqual(output.value as? String, expected)
         // Verify a new reading does not replay the composition committed on hide.
@@ -1503,7 +1503,7 @@ final class KeyKeyUITests: XCTestCase {
         hide.tap()
         XCTAssertTrue(waitForLayout { !self.app.buttons["SETTINGS"].exists })
         XCTAssertEqual(output.value as? String, expected)
-        output.tap()
+        tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("傳統注音")
         // The extension may be re-created after dismissal and start in Chinese.
@@ -1519,7 +1519,7 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(waitForLayout { !self.app.buttons["SETTINGS"].exists })
         XCTAssertTrue(waitForLayout { output.value as? String == expected + "你" },
                       "收鍵盤後應提交候選字，實際為 \(output.value ?? "nil")")
-        output.tap()
+        tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         for key in "cl3" { app.buttons[String(key)].tap() }
         let nextCandidate = app.buttons["第 1 個候選，好"]
@@ -1534,7 +1534,7 @@ final class KeyKeyUITests: XCTestCase {
         launchHostApp()
         XCTAssertTrue(revealField("default"))
         let output = field("default")
-        output.tap()
+        tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
         app.buttons["SETTINGS"].tap()
@@ -1593,33 +1593,99 @@ final class KeyKeyUITests: XCTestCase {
         selectPresentation("完整")
     }
 
+    /// A control experiment for native UIKit input-mode crashes. The Debug
+    /// host rejects the keyboard extension point, including our own keyboard.
+    func testNativeKeyboardSwitchAtCurrentPoseWithoutExtension() {
+        app = XCUIApplication()
+        app.launchArguments = ["-KeyKeyInputFieldTest", "-KeyKeyGeometryProbe",
+                               "-KeyKeyNativeKeyboardOnly", "-KeyKeyFocusDefaultField"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["test-host.native-keyboard-only"].waitForExistence(timeout: 8),
+                      "原生對照必須確認宿主已停用第三方鍵盤")
+        let output = field("default")
+        XCTAssertTrue(output.exists)
+        tapInputField(output)
+        attachSimulatorGeometry(name: "native-only-before-switch")
+        XCTAssertFalse(app.buttons["SETTINGS"].exists)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5),
+                      "未顯示系統鍵盤，不能判定原生切換成功或失敗")
+        guard let globe = nextKeyboardButton() else {
+            XCTFail("原生鍵盤缺少可操作的地球鍵")
+            return
+        }
+        globe.tap()
+        dismissSystemKeyboardTip()
+        guard let pickerGlobe = nextKeyboardButton() else {
+            XCTFail("關閉首次使用提示後應仍可開啟鍵盤清單")
+            return
+        }
+        pickerGlobe.press(forDuration: 1)
+        let zhuyin = app.cells.matching(NSPredicate(format: "label CONTAINS '注音'")).firstMatch
+        XCTAssertTrue(zhuyin.waitForExistence(timeout: 3), "必須在清單選到系統注音，不能只顯示教學提示")
+        zhuyin.tap()
+        XCTAssertEqual(app.state, .runningForeground, "系統鍵盤切換不應讓宿主當機")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.keys["ㄅ"].waitForExistence(timeout: 3), "應已切到系統注音鍵盤")
+        XCTAssertFalse(app.buttons["SETTINGS"].exists)
+        attachSimulatorGeometry(name: "native-only-after-switch")
+        for (index, screen) in XCUIScreen.screens.enumerated() {
+            let attachment = XCTAttachment(screenshot: screen.screenshot())
+            attachment.name = "native-only-screen-\(index)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+    }
+
     func testWideSplitInputModeSwitchControls() throws {
-        launchHostApp()
+        try checkWideSplitInputModeSwitch(checkPicker: true, typeComposition: true)
+    }
+
+    func testWideSplitInputModeSingleTapWithComposition() throws {
+        try checkWideSplitInputModeSwitch(checkPicker: false, typeComposition: true)
+    }
+
+    func testWideSplitInputModeSingleTapFromEmptyField() throws {
+        try checkWideSplitInputModeSwitch(checkPicker: false, typeComposition: false)
+    }
+
+    private func checkWideSplitInputModeSwitch(checkPicker: Bool, typeComposition: Bool) throws {
+        launchHostApp(geometryProbe: true)
         XCTAssertTrue(revealField("default"))
         let output = field("default")
-        output.tap()
+        tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
         selectPresentation("左右分離")
         XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
                       "此測試必須在展開的 Duo 內螢幕或寬版 iPad 執行")
-        for key in "su3cl3" { app.buttons[String(key)].tap() }
-        let expected = "你好"
-        XCTAssertTrue(waitForLayout { output.value as? String == expected })
+        if typeComposition {
+            for key in "su3cl3" { app.buttons[String(key)].tap() }
+        }
+        let expected = typeComposition ? "你好" : ""
+        let emptyPlaceholder = "一般文字／換行"
+        XCTAssertTrue(waitForLayout {
+            let text = output.value as? String ?? ""
+            return typeComposition ? text == expected : (text.isEmpty || text == emptyPlaceholder)
+        })
         XCTAssertTrue(app.buttons[KeyboardLayout.inputModeSwitchKey].isHittable,
                       "Duo 的地球鍵必須能使用，即使 iOS 27.1 錯誤回報 false")
-        app.buttons[KeyboardLayout.inputModeSwitchKey].press(forDuration: 1)
-        XCTAssertTrue(app.cells.matching(NSPredicate(format: "label CONTAINS 'Keyboard Settings' OR label CONTAINS '鍵盤設定'")).firstMatch.waitForExistence(timeout: 3))
-        // Tap the visible text field outside the system picker. The containing
-        // sheet can have its own PopoverDismissRegion, so do not pick that one.
-        output.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        XCTAssertTrue(app.buttons["keyboard.dismiss"].isHittable)
+        if checkPicker {
+            app.buttons[KeyboardLayout.inputModeSwitchKey].press(forDuration: 1)
+            XCTAssertTrue(app.cells.matching(NSPredicate(format: "label CONTAINS 'Keyboard Settings' OR label CONTAINS '鍵盤設定'")).firstMatch.waitForExistence(timeout: 3))
+            // The containing sheet can have its own PopoverDismissRegion.
+            tapInputField(output)
+            XCTAssertTrue(waitForLayout {
+                !self.app.cells.matching(NSPredicate(format: "label CONTAINS 'Keyboard Settings' OR label CONTAINS '鍵盤設定'")).firstMatch.exists
+            }, "必須先確認系統鍵盤清單已關閉")
+            XCTAssertTrue(app.buttons["keyboard.dismiss"].isHittable)
+        }
         app.buttons[KeyboardLayout.inputModeSwitchKey].tap()
         XCTAssertTrue(waitForLayout { !self.app.buttons["SETTINGS"].exists })
-        XCTAssertEqual(output.value as? String, expected)
-        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
-        XCTAssertEqual(output.value as? String, expected)
         XCTAssertEqual(app.state, .runningForeground, "切換輸入法不應讓宿主 App 當機")
+        if typeComposition { XCTAssertEqual(output.value as? String, expected) }
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        if typeComposition { XCTAssertEqual(output.value as? String, expected) }
+        XCTAssertEqual(app.state, .runningForeground, "切回輸入法後宿主應維持前景")
         selectPresentation("完整")
     }
 
@@ -1770,6 +1836,12 @@ final class KeyKeyUITests: XCTestCase {
         return condition()
     }
 
+    private func tapInputField(_ input: XCUIElement) {
+        // A centered sheet puts the text field's midpoint on Duo's reserved
+        // fold. Its right quarter remains in the active display region.
+        input.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.5)).tap()
+    }
+
     private func field(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any)["field.\(identifier)"]
     }
@@ -1782,14 +1854,6 @@ final class KeyKeyUITests: XCTestCase {
     /// does not expose a supported API for silently granting a third-party keyboard,
     /// so the one-time Settings opt-in remains an explicit test precondition.
     private func selectKeyKeyKeyboard() -> Bool {
-        func dismissSystemKeyboardTip() {
-            // iOS can present its first-use keyboard-switching tutorial after
-            // cycling keyboards. It covers the globe until Continue is tapped.
-            for title in ["Continue", "繼續"] {
-                let button = app.buttons[title]
-                if button.exists && button.isHittable { button.tap() }
-            }
-        }
         dismissSystemKeyboardTip()
         // Smart mode hides the empty candidate/status row. The settings key
         // identifies the extension in either composition mode and layout.
@@ -1808,17 +1872,28 @@ final class KeyKeyUITests: XCTestCase {
                 keyKeyButton.tap()
                 if status.waitForExistence(timeout: 8) { return true }
             } else if keyKeyCell.waitForExistence(timeout: 1), keyKeyCell.isHittable {
-                let cellFrame = keyKeyCell.frame
-                let appFrame = app.frame
-                let destination = app.coordinate(withNormalizedOffset: CGVector(
-                    dx: cellFrame.midX / appFrame.width,
-                    dy: cellFrame.midY / appFrame.height
-                ))
-                app.otherElements.matching(identifier: "PopoverDismissRegion").firstMatch.tap()
-                nextKeyboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-                    .press(forDuration: 1, thenDragTo: destination)
+                // Try a direct tap before converting screen coordinates
+                // across displays for older simulator picker behavior.
+                keyKeyCell.tap()
                 if status.waitForExistence(timeout: 8) { return true }
-            } else if keyKeyText.waitForExistence(timeout: 1) {
+                // Older simulators can require dragging from the globe into
+                // the picker. Reopen it only if direct selection did not work.
+                if let fallbackGlobe = nextKeyboardButton() {
+                    fallbackGlobe.press(forDuration: 1)
+                    if keyKeyCell.waitForExistence(timeout: 1), keyKeyCell.isHittable {
+                        let cellFrame = keyKeyCell.frame
+                        let appFrame = app.frame
+                        let destination = app.coordinate(withNormalizedOffset: CGVector(
+                            dx: cellFrame.midX / appFrame.width,
+                            dy: cellFrame.midY / appFrame.height
+                        ))
+                        app.otherElements.matching(identifier: "PopoverDismissRegion").firstMatch.tap()
+                        fallbackGlobe.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                            .press(forDuration: 1, thenDragTo: destination)
+                        if status.waitForExistence(timeout: 8) { return true }
+                    }
+                }
+            } else if keyKeyText.waitForExistence(timeout: 1), keyKeyText.isHittable {
                 keyKeyText.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
                 if status.waitForExistence(timeout: 8) { return true }
             } else {
@@ -1833,6 +1908,15 @@ final class KeyKeyUITests: XCTestCase {
             if status.waitForExistence(timeout: 1) { return true }
         }
         return false
+    }
+
+    private func dismissSystemKeyboardTip() {
+        // iOS can present its first-use keyboard-switching tutorial after
+        // cycling keyboards. It covers the globe until Continue is tapped.
+        for title in ["Continue", "繼續"] {
+            let button = app.buttons[title]
+            if button.exists && button.isHittable { button.tap() }
+        }
     }
 
     private func nextKeyboardButton() -> XCUIElement? {
@@ -1883,10 +1967,23 @@ final class KeyKeyUITests: XCTestCase {
                 row.tap()
                 return true
             }
+            // A root-app swipe starts in the fold region on a half-open
+            // Duo. Scroll the relevant Settings pane instead.
+            let scrolls = settings.scrollViews.allElementsBoundByIndex
+                + settings.tables.allElementsBoundByIndex
+                + settings.collectionViews.allElementsBoundByIndex
+            let visible = scrolls.filter {
+                $0.isHittable && $0.frame.width > 100 && $0.frame.height > 100
+            }
+            let sidebar = names.contains("一般") || names.contains("General")
+            let pane = sidebar
+                ? visible.min { $0.frame.midX < $1.frame.midX }
+                : visible.max { $0.frame.midX < $1.frame.midX }
+            let scrollTarget = pane ?? settings
             if row.exists && row.frame.minY < 180 {
-                settings.swipeDown()
+                scrollTarget.swipeDown()
             } else {
-                settings.swipeUp()
+                scrollTarget.swipeUp()
             }
         }
         return false

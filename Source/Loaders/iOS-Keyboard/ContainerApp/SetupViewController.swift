@@ -890,6 +890,8 @@ private final class AcknowledgementsViewController: UIViewController {
 /// Each control exposes a stable accessibility identifier for a future XCUITest
 /// target, while manual Simulator testing can select any field directly.
 private final class InputFieldTestViewController: UIViewController, UITextFieldDelegate {
+    private weak var defaultInput: UIView?
+
     private struct Field {
         let id: String
         let title: String
@@ -940,7 +942,15 @@ private final class InputFieldTestViewController: UIViewController, UITextFieldD
         )
 
         let note = UILabel()
-        note.text = "選欄位後長按地球鍵選「琦琦輸入法」。每個欄位會把 keyboardType 與 returnKeyType 傳給鍵盤。"
+        #if targetEnvironment(simulator)
+        let nativeOnly = ProcessInfo.processInfo.arguments.contains("-KeyKeyNativeKeyboardOnly")
+        #else
+        let nativeOnly = false
+        #endif
+        note.text = nativeOnly
+            ? "系統鍵盤對照：此工作階段已停用第三方鍵盤。"
+            : "選欄位後長按地球鍵選「琦琦輸入法」。每個欄位會把 keyboardType 與 returnKeyType 傳給鍵盤。"
+        note.accessibilityIdentifier = nativeOnly ? "test-host.native-keyboard-only" : "test-host.instructions"
         note.font = .preferredFont(forTextStyle: .footnote)
         note.textColor = .secondaryLabel
         note.numberOfLines = 0
@@ -966,6 +976,15 @@ private final class InputFieldTestViewController: UIViewController, UITextFieldD
             rows.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -20),
             rows.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor)
         ])
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Keep a manual simulator session alive without relying on XCTest
+        // tapping the active display or keeping its test runner connected.
+        if ProcessInfo.processInfo.arguments.contains("-KeyKeyFocusDefaultField") {
+            defaultInput?.becomeFirstResponder()
+        }
     }
 
     private func makeRow(_ field: Field) -> UIView {
@@ -1001,6 +1020,7 @@ private final class InputFieldTestViewController: UIViewController, UITextFieldD
             input = textField
         }
 
+        if field.id == "default" { defaultInput = input }
         let row = UIStackView(arrangedSubviews: [title, input])
         row.axis = .vertical
         row.spacing = 5

@@ -2,7 +2,19 @@ import UIKit
 import KeyKeyEngine
 
 @main
-final class AppDelegate: UIResponder, UIApplicationDelegate {}
+final class AppDelegate: UIResponder, UIApplicationDelegate {
+    #if DEBUG && targetEnvironment(simulator)
+    func application(
+        _ application: UIApplication,
+        shouldAllowExtensionPointIdentifier extensionPointIdentifier: UIApplication.ExtensionPointIdentifier
+    ) -> Bool {
+        // Isolate UIKit's native keyboard from third-party extensions when
+        // diagnosing a simulator input-mode transition crash.
+        extensionPointIdentifier != .keyboard
+            || !ProcessInfo.processInfo.arguments.contains("-KeyKeyNativeKeyboardOnly")
+    }
+    #endif
+}
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
