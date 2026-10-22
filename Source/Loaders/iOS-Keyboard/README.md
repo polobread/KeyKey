@@ -70,6 +70,12 @@ Keyboard/         UIInputViewController extension
 KeyKeyiOS.xcodeproj
 ```
 
+## iPhone Duo
+
+鍵盤依水平／垂直 size class 調整，regular-width iPhone 採用寬版內容上限；鍵盤與設定頁
+分別遵守自己的安全區。尺寸、半折回呼的實測結果、診斷開關與驗證限制見
+[iPhone Duo 適配與驗證](../../../docs/IOS_IPHONE_DUO_ADAPTATION.md)。
+
 ## 注音鍵盤配置
 
 「輸入法設定」、鍵盤「設」及 App 內實體鍵盤編輯器提供「標準／許氏鍵盤」配置，

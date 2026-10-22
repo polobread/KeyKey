@@ -1163,6 +1163,50 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertEqual(field("message").value as? String, "你\n")
     }
 
+    /// Run at each pose using Device Hub; failure to activate the extension is
+    /// a failure, never a skipped geometry/composition check.
+    func testKeyboardLayoutAtCurrentPose() throws {
+        app = XCUIApplication()
+        app.launchArguments = ["-KeyKeyInputFieldTest", "-KeyKeyGeometryProbe"]
+        app.launch()
+        XCTAssertTrue(revealField("default"))
+        field("default").tap()
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        try selectCompositionMode("好打注音")
+        app.buttons["SETTINGS"].tap()
+        app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
+        app.buttons["完成"].tap()
+        assertCoreKeys()
+        let modeFrame = app.buttons["MODE"].frame
+        let rightEdge = app.buttons["ENTER"].frame.maxX
+        let keyArea = app.buttons["1"].frame.union(app.buttons["-"].frame)
+        XCTAssertLessThanOrEqual(rightEdge - modeFrame.minX, 821)
+        for identifier in ["1", "-", "q", "@", "a", "SHIFT", "MODE", "SPACE", "BACKSPACE", "ENTER"] {
+            let key = app.buttons[identifier]
+            XCTAssertTrue(key.isHittable, identifier)
+            XCTAssertGreaterThan(key.frame.width, 15, identifier)
+            XCTAssertGreaterThanOrEqual(key.frame.minX, 0, identifier)
+            XCTAssertGreaterThanOrEqual(key.frame.minX, keyArea.minX - 1, identifier)
+            XCTAssertLessThanOrEqual(key.frame.maxX, keyArea.maxX + 1, identifier)
+        }
+        for key in "su3cl3" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你好" })
+        XCTAssertTrue(waitForLayout { abs(self.app.buttons["MODE"].frame.minY - modeFrame.minY) < 1 })
+        for scope in ["app", "extension"] {
+            let probe = app.staticTexts["\(scope).geometry"]
+            if probe.exists, let value = probe.value as? String {
+                let attachment = XCTAttachment(string: value)
+                attachment.name = "\(scope)-geometry.json"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+            }
+        }
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "keyboard-current-pose"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
     func testPortraitAndLandscapeKeepCoreKeysReachable() throws {
         launchHostApp()
         XCTAssertTrue(revealField("default"))
@@ -1191,10 +1235,19 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["全部關閉"].tap()
 
         let toggle = app.switches[identifier]
-        for _ in 0..<8 where !toggle.isHittable {
-            app.swipeUp()
-        }
         XCTAssertTrue(toggle.exists, "找不到關聯詞庫：\(identifier)")
+        let scroll = app.scrollViews["keyboard-settings.scroll"]
+        for _ in 0..<12 {
+            if toggle.isHittable { break }
+            // Avoid inertial swipes skipping a row in the short keyboard view.
+            let velocity = XCUIGestureVelocity(rawValue: 100)
+            if toggle.frame.midY < scroll.frame.midY {
+                scroll.swipeDown(velocity: velocity)
+            } else {
+                scroll.swipeUp(velocity: velocity)
+            }
+            Thread.sleep(forTimeInterval: 0.3)
+        }
         XCTAssertTrue(toggle.isHittable, "關聯詞庫不可操作：\(identifier)")
         toggle.tap()
         app.buttons["完成"].tap()
@@ -1254,7 +1307,7 @@ final class KeyKeyUITests: XCTestCase {
         // Smart mode hides the empty candidate/status row. The settings key
         // identifies the extension in either composition mode and layout.
         let status = app.buttons["SETTINGS"]
-        if status.waitForExistence(timeout: 2) { return true }
+        if status.waitForExistence(timeout: 8) { return true }
 
         if let nextKeyboard = nextKeyboardButton() {
             nextKeyboard.press(forDuration: 1)
@@ -1266,7 +1319,7 @@ final class KeyKeyUITests: XCTestCase {
             let keyKeyText = app.staticTexts.matching(keyKeyPredicate).firstMatch
             if keyKeyButton.waitForExistence(timeout: 1), keyKeyButton.isHittable {
                 keyKeyButton.tap()
-                if status.waitForExistence(timeout: 2) { return true }
+                if status.waitForExistence(timeout: 8) { return true }
             } else if keyKeyCell.waitForExistence(timeout: 1), keyKeyCell.isHittable {
                 let cellFrame = keyKeyCell.frame
                 let appFrame = app.frame
@@ -1274,13 +1327,13 @@ final class KeyKeyUITests: XCTestCase {
                     dx: cellFrame.midX / appFrame.width,
                     dy: cellFrame.midY / appFrame.height
                 ))
-                app.otherElements["PopoverDismissRegion"].tap()
+                app.otherElements.matching(identifier: "PopoverDismissRegion").firstMatch.tap()
                 nextKeyboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
                     .press(forDuration: 1, thenDragTo: destination)
-                if status.waitForExistence(timeout: 2) { return true }
+                if status.waitForExistence(timeout: 8) { return true }
             } else if keyKeyText.waitForExistence(timeout: 1) {
                 keyKeyText.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-                if status.waitForExistence(timeout: 2) { return true }
+                if status.waitForExistence(timeout: 8) { return true }
             } else {
                 app.tap()
             }
