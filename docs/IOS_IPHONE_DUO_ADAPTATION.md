@@ -9,17 +9,27 @@
   採用既有 820 pt 內容上限；較窄的視窗由 Auto Layout 自然縮小。compact height 保留短版。
 - 鍵盤與「設」面板逐邊遵守自己的 safe area；不把宿主 App 的右側 84 pt 套進 extension。
 - 不因幾何、safe area 或 trait 變更重建引擎、重設組字或重複送字。
-- 切換輸入法按鍵仍依 `needsInputModeSwitchKey` 決定，不按硬體型號猜測。
+- 宿主連線後更新 `needsInputModeSwitchKey`；同一地球按鈕保留系統點按／長按處理。
+  iOS 27.1 的 regular-width、regular-height 寬版 iPhone 有已確認的 false 回報問題，
+  此範圍額外提供地球鍵；其他版本與尺寸仍遵循系統屬性，不依硬體名稱判斷。
 - 未收到折疊資訊時，不把寬版視窗當成半折，也不自行推算折線。預設使用完整鍵盤，
   使用者可在鍵盤「設 → 鍵盤外觀」手動選擇「完整／左右分離」。選擇保存在 extension
   自己的偏好設定，不需完整取用，也不依折疊狀態自動更換。
 
 ## 手動分離鍵盤
 
-- 四列按鍵、組字列及候選列都分成左五格、右六格；兩半等寬，中央空隙為可用內容寬度的
-  10%，最多 80 pt。這是手動外觀選擇，不表示空隙對準系統折線。
-- 功能列依按鍵權重分配，每半各有一個空白鍵，兩者送出相同動作；完整模式只顯示原空白鍵。
-- 在外螢幕、窄視窗與橫向短版也保留使用者選擇，中央空隙隨寬度縮小。鍵盤高度不因外觀改變。
+- 可用寬度至少 600 pt、非 compact height 的分離模式採左右各六個等寬按鍵；左半每列
+  新增一格，依序為「，」「。」「、」「？」。較窄或橫向短版仍用原十一鍵位。
+  中央空隙為可用內容寬度的 10%，最多 80 pt；不表示空隙對準系統折線。
+- 組字區維持十一格，左六、右五；第十二個位置是「▼」收鍵盤控制鍵，不是第十二個組字格。
+  候選仍為每頁九個，不增加引擎音節上限。英文與傳統注音也在該位置提供收鍵盤鍵。
+- 寬版底列移除原逗號／句號：左側英／數、符、設、空白採 1.5 : 1.25 : 1.25 : 2，
+  右側空白、刪除、確認採 2 : 2 : 2。若需要地球鍵，左側另保留權重 1 的獨立按鍵；
+  其餘按鍵維持上述相對比例。兩個空白鍵送出相同動作，完整模式只顯示原空白鍵。
+- 寬版分離移除底端額外 3 pt 邊距，按鍵貼齊 extension 自己的 safe-area 底緣。
+  量測到的下安全區 18 pt 仍保留；不能因系統未顯示工具列就把它當成可用按鍵區。
+- 「▼」先固定組字再呼叫 `dismissKeyboard()`；地球鍵先完成輸入交接，再交由
+  `handleInputModeList(from:with:)` 處理點按切換與長按選單。
 - 只重新配置既有按鍵的 frame，不重建引擎；開啟設定、切換外觀與關閉設定不結束組字。
   更換輸入法或注音鍵位仍由原本引擎的切換流程處理。
 - `testManualSplitKeyboardPreservesCompositionAndPersists` 要求真正啟用 extension，檢查中央空隙、
@@ -49,8 +59,9 @@
 真正的 extension 在 view 與 window 均未收到 hinge 回呼，division（包括 inactive）
 及 occlusion 都是空陣列。此結果來自同一裝置、同一姿態、App 可收到回呼的對照量測，
 不是只在 App 測試後推定。沒有資料表示「未知」，不能當成 fullyOpen。
-本 runtime 回報 extension 的 `needsInputModeSwitchKey = false`；不據此改寫其他
-runtime 或實機應有的行為，仍需另驗系統切換入口。
+本 runtime 回報 extension 的 `needsInputModeSwitchKey = false`。Apple DTS 已確認
+這是 Duo 的錯誤回報（FB25073949），因此在上述有限範圍補上地球鍵；不擴大套用到
+其他系統版本或一般窄版 iPhone。依據見下方 DTS 回覆，仍需實機驗收。
 
 啟動與轉場中的零尺寸、暫時 safe area、settings 面板高度不列為穩定鍵盤尺寸。
 本表是量測證據，不是程式內的裝置判斷表。
@@ -83,6 +94,15 @@ xcodebuild test -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
 使用本機模擬器簽署以保留 App Group entitlement；`CODE_SIGNING_ALLOWED=NO` 的
 產物能執行，但不適合用來驗證 App Group 的診斷開關傳遞。
 
+展開內螢幕後，另外依序執行：
+
+- `testWideSplitPunctuationCompositionCellsAndDismissal`：四個標點、左六右五的組字格、
+  好打注音／英文／傳統注音收鍵盤與繼續輸入。
+- `testWideSplitInputModeSwitchControls`：地球鍵長按選單與點按切換、組字交接及切回。
+
+這兩項要求可用的寬版分離鍵盤；在窄版執行會失敗，不會跳過。
+分開執行可以保留收鍵盤結果，避免系統輸入法切換失敗中斷前一項驗證。
+
 ### 診斷工具
 
 `SimulatorGeometryProbe.swift` 僅編譯於 Debug simulator，且需要 Swift 6.4 以上與
@@ -96,24 +116,35 @@ safe area、size class、reserved regions 與 hinge 回呼次數；不記錄鍵�
 
 ## 驗證範圍
 
-- Swift engine：177 tests 通過，包含 regular-width phone 的尺寸選擇、分離列幾何與設定保存。
-  幾何案例涵蓋 314–820 pt、有／無地球鍵與加權功能列。
-- Duo extension：全開橫／直向、書本／桌面半折、外螢幕橫／直向共六種姿態的
-  `testKeyboardLayoutAtCurrentPose` 全數通過，無 skip；實際按鍵可點且「你好」輸入正確。
-- 同一欄位的六段跨姿態連續輸入實驗通過，最終累積六次「你好」，無漏字或重複。
-- Duo 多字關聯候選「的名字」出現及選取後，按鍵 frame 保持不變的既有回歸通過。
-  測試改為針對鍵盤設定列表慢速捲動，避免短視窗的慣性捲動跳過目標開關。
-- iOS 17.0 iPhone 12、iOS 26.5 iPad：各兩項測試通過（鍵盤設定 opt-in、
-  實際 extension 的按鍵／寬度／輸入），無 skip。這是共用版面變更的針對性回歸。
-- 手動完整／分離切換：iOS 27.1 Duo 外螢幕及展開的內螢幕、iOS 26.5 iPad 的真正 extension
-  通過未完成讀音、候選目標與空隙、雙空白鍵、Backspace、英文／數字輸入、旋轉及跨宿主
-  工作階段的偏好保存。Duo 內螢幕驗證時的 extension 為 801 × 330 pt、下安全區 18 pt；
-  本輪使用 `KeyKey iOS 27.1 Manual Split Duo`，分離鍵盤內螢幕截圖保留於本機
-  `Installer/local-builds/ios-duo/manual-split-duo-inner.png`。
-- iOS 17.0 iPhone 12 亦通過手動切換的組字／候選保留、雙空白鍵及偏好保存。
-  以上是本功能的針對性測試，未重新宣稱完整五機 A–K 或真實 App 的驗收。
-- 仍須依 [iOS Simulator 測試計畫](IOS_SIMULATOR_TEST_PLAN.md) 完成既有五機 A–K、
-  真實宿主、分割畫面、VoiceOver、字型與淺深色，以及 Duo 實機驗收。
+目前十二欄寬版分離配置的驗證：
+
+- `KeyboardPresentationTests` 三項通過，涵蓋 314–820 pt 的列幾何、設定保存，
+  以及 600–820 pt 十二欄等寬、左六右五加收鍵盤位置、有／無地球鍵的底列比例。
+- Duo 展開內螢幕的 `testManualSplitKeyboardPreservesCompositionAndPersists` 通過，
+  包含新十二欄配置、底列比例、收鍵盤鍵可點、未完成讀音、候選、左右空白鍵、
+  Backspace、英文／數字輸入、旋轉與跨宿主工作階段保存。
+- iOS 26.5 iPad 的 `testWideSplitPunctuationCompositionCellsAndDismissal` 通過；
+  四個標點、組字格、好打注音／英文／傳統注音收鍵盤及保留文字均已實際操作。
+  英文狀態標籤置於控制鍵後方，傳統注音在請求收鍵盤前先讓 marked-text 提交送到宿主。
+- iOS 26.5 iPad 的 `testWideSplitInputModeSwitchControls` 通過：長按列出系統鍵盤清單，
+  點按切換、切回琦琦後文字仍為「你好」，宿主維持前景執行。
+  `testMultiCharacterAssociationsDoNotResizeKeyboard` 亦通過，候選「的名字」不改變按鍵 frame。
+- Duo 仍須重跑完整收鍵盤與地球鍵流程；iPad 結果不能代替 Duo 驗收。
+- 全新 `KeyKey iOS 27.1 Six Column Duo` 已通過鍵盤設定 opt-in 與外螢幕
+  `testManualSplitKeyboardPreservesCompositionAndPersists`，兩項零失敗、無 skip。
+  舊測試機手動切換地球鍵時，宿主 App 出現 SIGABRT；例外堆疊為
+  `__NSArrayM getObjects:range:` → `UIKeyboardLayoutStar activationIndicatorView`，
+  其後亦出現鍵盤未顯示。這項當機尚未宣告修復，仍需乾淨 Duo 內螢幕驗證。
+- 本輪一般 iPhone 回歸尚未完成；不能沿用前版結果宣稱通過。
+
+前版 `d498b2f0`／`771c31cb` 已驗證六種 Duo 姿態、同欄位跨姿態連續輸入、
+iOS 17.0 iPhone 12 與 iOS 26.5 iPad，以及完整／十一欄分離切換。
+前版完整 Swift engine 為 177 tests 通過。這些只作適配基線，不能代替本版新增配置驗證。
+十二欄初次版面檢查使用 `KeyKey iOS 27.1 Manual Split Duo`；截圖保留於本機
+`Installer/local-builds/ios-duo/six-column-duo-initial.png`。
+
+仍須依 [iOS Simulator 測試計畫](IOS_SIMULATOR_TEST_PLAN.md) 完成既有五機 A–K、
+真實宿主、分割畫面、VoiceOver、字型與淺深色，以及 Duo 實機驗收。
 
 ## Apple 依據
 
