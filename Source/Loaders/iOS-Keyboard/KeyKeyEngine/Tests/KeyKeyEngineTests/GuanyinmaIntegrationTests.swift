@@ -79,6 +79,74 @@ struct GuanyinmaIntegrationTests {
         #expect(engine.backspace().deletesBackward)
     }
 
+    @Test func closeTouchCandidatesPreservesCompositionAndSentenceEnd() throws {
+        let f = try Fixture(), facade = try f.facade()
+        let engine: any InputEngine = facade
+        type("su3cl3", in: engine)
+        #expect(engine.selectTouchSmartCell(0))
+        let correction = try #require(engine.displayedCandidates.firstIndex(of: "妳"))
+        #expect(engine.selectDisplayedCandidate(correction) == .update)
+        #expect(engine.composingText == "妳好")
+        #expect(engine.selectTouchSmartCell(0))
+        let firstPage = engine.displayedCandidates
+        try #require(engine.pageCount > 1)
+        engine.changePage(by: 1)
+        #expect(engine.page == 1)
+        var host = TouchSmartHostTextState()
+        _ = host.update(to: engine.completedSmartText)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.composingText == "妳好" && engine.smartCompositionReadingCount == 2)
+        #expect(engine.displayedCandidates.isEmpty && !engine.isShowingSmartCandidates)
+        #expect(engine.page == 0 && engine.pageCount == 0)
+        #expect(host.update(to: engine.completedSmartText).isEmpty)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.selectTouchSmartCell(0))
+        #expect(engine.displayedCandidates == firstPage)
+        _ = engine.closeTouchSmartCandidates()
+        type("su3", in: engine)
+        // Selection learning can change the new syllable's candidate. The FE
+        // contract is insertion at the sentence end and an unchanged prefix.
+        let completed = engine.composingText
+        #expect(completed.hasPrefix("妳好") && engine.smartCompositionReadingCount == 3)
+        #expect(engine.finishCompositionForInputHandoff() == .commit(completed))
+        #expect(facade.coreError == nil)
+    }
+
+    @Test func closeTouchCandidatesPreservesUnfinishedReadingAndConvertedPrefix() throws {
+        let f = try Fixture(), facade = try f.facade()
+        let engine: any InputEngine = facade
+        // Guanyinma has one model source; retain the old fallback regression's
+        // unfinished-reading intent without recreating the removed Swift engine.
+        type("su3cl", in: engine)
+        #expect(engine.composingText == "你ㄏㄠ" && engine.readingText == "ㄏㄠ")
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.composingText == "你ㄏㄠ" && engine.readingText == "ㄏㄠ")
+        #expect(engine.backspace() == .update)
+        #expect(engine.composingText == "你ㄏ")
+        type("l3", in: engine)
+        #expect(engine.composingText == "你好")
+        #expect(engine.finishCompositionForInputHandoff() == .commit("你好"))
+        #expect(facade.coreError == nil)
+    }
+
+    @Test func closeTouchCandidatesDoesNotAlterTraditionalOrHardwareModes() throws {
+        for (method, hardware) in [(ChineseInputMethod.traditional, false), (.smart, true)] {
+            let f = try Fixture()
+            let facade = try KeyboardInputEngine(modelURL: f.model, userDatabaseURL: f.user,
+                method: method, hardwareSmartEditing: hardware)
+            let engine: any InputEngine = facade
+            type("su3", in: engine, hardware: hardware)
+            if hardware { _ = engine.openSmartCandidates() }
+            let text = engine.composingText, candidates = engine.displayedCandidates
+            try #require(!candidates.isEmpty)
+            #expect(!engine.isTouchSmartComposition)
+            #expect(engine.closeTouchSmartCandidates() == .update)
+            #expect(engine.composingText == text && engine.displayedCandidates == candidates)
+            #expect(facade.coreError == nil)
+        }
+    }
+
     @Test func associatedQueryUsesModelWhileOverlayAndKeysStayInFrontend() throws {
         let f = try Fixture()
         let decoy = f.directory.appendingPathComponent("legacy-associated.db")

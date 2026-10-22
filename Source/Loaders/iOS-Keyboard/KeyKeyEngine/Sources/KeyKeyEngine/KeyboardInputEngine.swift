@@ -106,6 +106,7 @@ public final class KeyboardInputEngine: InputEngine {
     @discardableResult public func commitHardwarePunctuation(_ punctuation: String) -> KeyboardInput.Result { perform { $0.commitHardwarePunctuation(punctuation) } }
     @discardableResult public func space(fullWidth: Bool = false) -> KeyboardInput.Result { perform { $0.space(fullWidth: fullWidth) } }
     @discardableResult public func openSmartCandidates() -> KeyboardInput.Result { perform { $0.openSmartCandidates() } }
+    @discardableResult public func closeTouchSmartCandidates() -> KeyboardInput.Result { perform { $0.closeTouchSmartCandidates() } }
     @discardableResult public func enter() -> KeyboardInput.Result { perform { $0.enter() } }
     @discardableResult public func backspace() -> KeyboardInput.Result { perform { $0.backspace() } }
     @discardableResult public func escape() -> KeyboardInput.Result { perform { $0.escape() } }

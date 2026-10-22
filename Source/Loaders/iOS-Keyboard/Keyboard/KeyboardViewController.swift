@@ -587,6 +587,10 @@ extension KeyboardViewController: KeyboardViewDelegate {
             return
         }
         guard let engine else { return }
+        if key == "CLOSE_CANDIDATES" {
+            apply(engine.closeTouchSmartCandidates())
+            return
+        }
         if key == "SETTINGS" {
             showSettingsPanel()
             return

@@ -304,9 +304,16 @@ public final class GuanyinmaInputEngine: InputEngine {
     }
     @discardableResult public func selectTouchSmartCell(_ index: Int) -> Bool {
         guard isTouchSmartComposition, snapshot.readings.indices.contains(index) else { return false }
-        if snapshot.candidateSpans.first?.start == index, !snapshot.candidates.isEmpty { _ = operate(["type": "close_candidates"]) }
+        if snapshot.candidateSpans.first?.start == index, !snapshot.candidates.isEmpty { _ = closeTouchSmartCandidates() }
         else { _ = operate(["type": "open_candidates", "index": index]) }
         return lastError == nil
+    }
+    /// Dismiss touch candidates without confirming or clearing composition.
+    /// Escape resets touch composition and is not the candidate-close action.
+    @discardableResult public func closeTouchSmartCandidates() -> KeyboardInput.Result {
+        guard isTouchSmartComposition, !displayedCandidates.isEmpty else { return .update }
+        clearOverlay()
+        return operate(["type": "close_candidates"])
     }
     private func setMode(_ value: KeyboardInput.InputMode) -> KeyboardInput.Result {
         clearOverlay(); mode = value
