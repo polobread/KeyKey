@@ -81,7 +81,8 @@
 4. 開闔／旋轉的連續輸入另測。這次以一次性 XCUITest 搭配 Device Hub 操作，
    在同一欄位依序切換全開、書本、直向、桌面、闔上、再次展開，每段輸入「你好」，
    逐段核對完整累積文字；已通過且沒有重複或遺失。實驗原始碼與 `handoff.xcresult`
-   保留在本機產物目錄。未完成讀音、句中候選與第九／十音節邊界仍需另測。
+   保留在本機產物目錄。跨開闔時的未完成讀音、句中候選與第九／十音節邊界仍需另測；
+   單一顯示器內的旋轉測試不能代替內外螢幕交接。
 
 ```sh
 keykey_duo_id="YOUR_DUO_SIMULATOR_UDID"
@@ -90,12 +91,29 @@ xcodebuild test -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
   -destination "platform=iOS Simulator,id=$keykey_duo_id" \
   -derivedDataPath Installer/local-builds/ios-duo \
   -only-testing:KeyKeyUITests/KeyKeyUITests/testKeyboardLayoutAtCurrentPose \
-  -only-testing:KeyKeyUITests/KeyKeyUITests/testManualSplitKeyboardPreservesCompositionAndPersists \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES
+  -only-testing:KeyKeyUITests/KeyKeyUITests/testSplitSmartPagingAtCurrentPoseKeepsUnfinishedReading \
+  -only-testing:KeyKeyUITests/KeyKeyUITests/testSplitSmartNineTenSyllableBoundaryAtCurrentPose \
+  -only-testing:KeyKeyUITests/KeyKeyUITests/testWideSplitSmartCandidateRowHasTwelveControls \
+  -parallel-testing-enabled NO -collect-test-diagnostics never CODE_SIGNING_ALLOWED=YES
 ```
 
 使用本機模擬器簽署以保留 App Group entitlement；`CODE_SIGNING_ALLOWED=NO` 的
 產物能執行，但不適合用來驗證 App Group 的診斷開關傳遞。
+
+上例為寬版內螢幕的固定姿態組合；外螢幕移除最後的十二格案例。所有案例都要求
+真正啟用 extension，沒有把啟用失敗標成 skip：
+
+- `testSplitSmartPagingAtCurrentPoseKeepsUnfinishedReading`：帶著未完成讀音開啟候選
+  第二頁，核對候選目標、中央空隙與左右鍵寬；寬版使用六／六格、窄版使用五／六格。
+  關閉後完成原讀音、接續句尾、刪字，重開候選回到第一頁。
+- `testSplitSmartNineTenSyllableBoundaryAtCurrentPose`：九個完成音節後輸入第十個的
+  聲母，切換完整／分離，再完成第十音節。檢查宿主保有十字、組字區仍只有九個
+  可選音節；連續 Backspace 清除九字後，已擠出的第一字保留，仍可繼續輸入與送出。
+- `testSplitSmartPagingRotationKeepsUnfinishedReading` 與
+  `testSplitSmartNineTenSyllableBoundaryAndDeletion` 另外要求自動反覆切換四方向，
+  包含倒置；iOS 27.1 Simulator 每次必須從 App 探針讀到符合要求的實際介面方向。
+  指令有回報成功但畫面未旋轉時會 fail，不能用核心按鍵仍可點來替代旋轉驗收。
+  本輪 Duo 的這兩項未通過，應由 Device Hub 實際旋轉後逐姿態跑固定姿態組合。
 
 展開內螢幕後，另外依序執行：
 
@@ -116,7 +134,9 @@ xcodebuild test -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
 `testKeyboardLayoutAtCurrentPose` 會自動設定啟動參數。
 
 App 與 extension 各自在自己的 `Documents/geometry-probe.jsonl` 記錄 bounds、
-safe area、size class、reserved regions 與 hinge 回呼次數；不記錄鍵值、讀音或輸入文字。
+safe area、size class、實際 interface orientation、reserved regions 與 hinge 回呼次數；
+App 探針直接掛在 UIWindow 時也讀取該視窗的 scene，並記錄所屬螢幕 bounds 與 scale。
+這些診斷不記錄鍵值、讀音或輸入文字。
 原始紀錄、截圖與 `.xcresult` 放在 `Installer/local-builds/ios-duo/`，不提交。
 
 ## 驗證範圍
@@ -133,7 +153,8 @@ safe area、size class、reserved regions 與 hinge 回呼次數；不記錄鍵�
   以及 600–820 pt 十二欄等寬、左六右五加收鍵盤位置、有／無地球鍵的底列比例。
 - Duo 展開內螢幕的 `testManualSplitKeyboardPreservesCompositionAndPersists` 通過，
   包含新十二欄配置、底列比例、收鍵盤鍵可點、未完成讀音、候選、左右空白鍵、
-  Backspace、英文／數字輸入、旋轉與跨宿主工作階段保存。
+  Backspace、英文／數字輸入與跨宿主工作階段保存。舊測試只在旋轉指令後核對按鍵，
+  未確認介面方向，不能把這部分列為已完成的旋轉驗收。
 - iOS 26.5 iPad 的 `testWideSplitPunctuationCompositionCellsAndDismissal` 通過；
   四個標點、組字格、好打注音／英文／傳統注音收鍵盤及保留文字均已實際操作。
   英文狀態標籤置於控制鍵後方，傳統注音在請求收鍵盤前先讓 marked-text 提交送到宿主。
@@ -141,11 +162,30 @@ safe area、size class、reserved regions 與 hinge 回呼次數；不記錄鍵�
   點按切換、切回琦琦後文字仍為「你好」，宿主維持前景執行。
   `testMultiCharacterAssociationsDoNotResizeKeyboard` 亦通過，候選「的名字」不改變按鍵 frame。
 - Duo 仍須執行新版十二格候選列、完整收鍵盤與地球鍵流程；iPad 結果不能代替 Duo 驗收。
-- 全新 `KeyKey iOS 27.1 Six Column Duo` 已通過鍵盤設定 opt-in 與外螢幕
-  `testManualSplitKeyboardPreservesCompositionAndPersists`，兩項零失敗、無 skip。
-  舊測試機手動切換地球鍵時，宿主 App 出現 SIGABRT；例外堆疊為
+- 全新 `KeyKey iOS 27.1 Six Column Duo` 已通過鍵盤設定 opt-in、外螢幕的基本尺寸
+  與「你好」輸入（extension 452 × 330 pt、下安全區 2 pt），以及手動完整／分離與設定保存。
+  新增候選翻頁、未完成讀音、句尾接續與九／十音節／刪除流程，亦曾在外螢幕通過。
+  加上實際方向斷言後，兩個嚴格旋轉案例皆 fail：XCUITest 回報方向已變，但 App 的
+  `interfaceOrientation` 仍為 portrait，視窗仍為 466 × 678。因此前述流程通過只算固定
+  姿態的輸入證據，不算左右橫向或倒置驗收。嚴格失敗結果為本機
+  `four-direction-duo-outer-verified.xcresult`。
+- 同一新 Duo 半開約 128° 時，App 為 951 × 669 pt、regular／regular、有效折線
+  `(455.5, 0, 40, 669)`；extension 行程已啟動，卻仍取得 466 × 678 pt、compact／regular。
+  單側輸入頁可能本來就較窄，因此另讀 scene 的 `screenBounds` 核對：App 所屬螢幕
+  為 951 × 669，extension 所屬螢幕為 466 × 678，實際位於不同顯示器。聚焦畫面有
+  游標、沒有軟體鍵盤，固定姿態四項全部停在啟用前，不能算十二格候選、長組字或
+  地球鍵測試通過。重啟該模擬器的 extension 與輸入服務後，單項啟用仍 fail。
+  同姿態冷啟動後，單項啟用仍 fail。結果為本機 `partial-open-duo-core.xcresult`、
+  `partial-open-duo-keyboard-service-recovery.xcresult` 與 `partial-open-duo-cold-layout.xcresult`；
+  聚焦內螢幕截圖為 `partial-open-focused-field.png`。一次性人工恢復探針等待 120 秒，
+  仍未讀到軟體鍵盤（`partial-open-duo-manual-keyboard-recovery.xcresult`）；尚未收到
+  Device Hub 軟體鍵盤開關已操作的確認，不能把它當作操作無效的證據。
+  螢幕歸屬結果為 `partial-open-duo-screen-routing.xcresult`，原始資料已複製至本機
+  `partial-open-app-geometry.jsonl` 與 `partial-open-extension-geometry.jsonl`，避免重新安裝
+  測試產物時更換 container 而遺失。這次沒有新增宿主 App 的當機報告。
+- 舊測試機手動切換地球鍵時，宿主 App 曾出現 SIGABRT；例外堆疊為
   `__NSArrayM getObjects:range:` → `UIKeyboardLayoutStar activationIndicatorView`，
-  其後亦出現鍵盤未顯示。這項當機尚未宣告修復，仍需乾淨 Duo 內螢幕驗證。
+  其後亦出現鍵盤未顯示。宿主視窗錯配與地球鍵 SIGABRT 都仍須追查，尚未宣告修復。
 - 本輪一般 iPhone 回歸尚未完成；不能沿用前版結果宣稱通過。
 
 前版 `d498b2f0`／`771c31cb` 已驗證六種 Duo 姿態、同欄位跨姿態連續輸入、
