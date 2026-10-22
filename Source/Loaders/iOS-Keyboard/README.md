@@ -174,6 +174,9 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   log；SQLite 只映射查詢用到的頁，資料層常駐足跡不到 1 MB。
 - `Mandarin-bpmf-cin` 的 key 是 Formosa 的 absolute-order 編碼，不是鍵盤按鍵，
   所以 `BopomofoSyllable` 必須實作該編碼才查得到東西。
+- **完整／左右分離鍵盤**：在鍵盤「設 → 鍵盤外觀」手動切換，預設完整。分離模式的
+  組字、候選與按鍵列一起留出中央空隙，左右各有空白鍵；切換保留組字與候選，選擇
+  保存在 extension 沙箱。Duo 的 extension 尚無可用折疊回呼，因此不自動切換。
 - **`RequestsOpenAccess = false`**：不連網，鍵盤可唯讀 App Group 的設定，
   鍵盤內修改的設定與學習資料則存在 extension 自己的沙箱。代價是
   iOS 把 `UIFeedbackGenerator` 綁在這個權限後面，因此沒有按鍵震動。

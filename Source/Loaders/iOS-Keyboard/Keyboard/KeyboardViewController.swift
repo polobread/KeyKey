@@ -34,6 +34,7 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
+    private let presentationSettings = KeyboardPresentationSettings()
     private let supporterState = SupporterState()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
@@ -58,6 +59,7 @@ final class KeyboardViewController: UIInputViewController {
         // Let the host decide whether the extension must provide a globe key;
         // neither device idiom nor the presence of a home indicator determines it.
         let keyboard = KeyboardView(needsInputModeSwitch: needsInputModeSwitchKey)
+        keyboard.setPresentation(presentationSettings.presentation)
         keyboard.delegate = self
         keyboard.inputModeSwitchButton?.addTarget(
             self, action: #selector(commitBeforeInputModeSwitch), for: .touchDown
@@ -112,6 +114,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func refreshAppSettings() {
+        keyboardView?.setPresentation(presentationSettings.presentation)
         candidateColor = candidateColorSettings.color
         inputClicksEnabled = clickSettings.enabled
         if let engine {
@@ -283,14 +286,15 @@ final class KeyboardViewController: UIInputViewController {
 
     private func showSettingsPanel() {
         guard settingsPanel == nil, !collections.isEmpty else { return }
-        if let engine { apply(engine.finishCompositionForInputHandoff()) }
+        keyboardView?.cancelBackspaceRepeat()
         let panel = SettingsPanel(
             collections: collections, enabled: phraseSettings.enabledCollections,
             inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
             compositionMode: engine?.bopomofoCompositionMode ?? .smart,
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
-            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout
+            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
+            presentation: presentationSettings.presentation
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -563,6 +567,11 @@ extension KeyboardViewController: KeyboardViewDelegate {
 }
 
 extension KeyboardViewController: SettingsPanelDelegate {
+    func settingsPanel(_ panel: SettingsPanel, didChangePresentation presentation: KeyboardPresentation) {
+        presentationSettings.setPresentation(presentation)
+        keyboardView?.setPresentation(presentation)
+    }
+
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod) {
         if let engine {
             apply(engine.setChineseInputMethod(method))
