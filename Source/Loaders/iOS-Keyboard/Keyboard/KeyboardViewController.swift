@@ -8,6 +8,9 @@ import UIKit
 /// the document keeps them if iOS dismisses the keyboard without a callback.
 /// Other Bopomofo modes use marked text in the host field.
 final class KeyboardViewController: UIInputViewController {
+    #if DEBUG && targetEnvironment(simulator) && compiler(>=6.4)
+    private var geometryProbe: AnyObject?
+    #endif
     private var engine: BopomofoEngine?
     private var loadFailure: String?
     private var keyboardView: KeyboardView?
@@ -52,8 +55,8 @@ final class KeyboardViewController: UIInputViewController {
         inputClicksEnabled = clickSettings.enabled
         _ = learningResetRequest.applyIfNeeded(to: smartUserData)
 
-        // iPad draws no globe row of its own, so the keyboard has to carry the
-        // key or there is no way to leave it.
+        // Let the host decide whether the extension must provide a globe key;
+        // neither device idiom nor the presence of a home indicator determines it.
         let keyboard = KeyboardView(needsInputModeSwitch: needsInputModeSwitchKey)
         keyboard.delegate = self
         keyboard.inputModeSwitchButton?.addTarget(
@@ -81,12 +84,17 @@ final class KeyboardViewController: UIInputViewController {
         height.isActive = true
         heightConstraint = height
 
-        // iPhone landscape reports compact height and uses the short scale.
-        // iPad remains full-height but receives a centred maximum content width.
-        registerForTraitChanges([UITraitVerticalSizeClass.self]) {
+        // The inner display of a folding iPhone is regular in both dimensions.
+        registerForTraitChanges([UITraitVerticalSizeClass.self, UITraitHorizontalSizeClass.self]) {
             (self: Self, _) in self.applyMetrics()
         }
         applyMetrics()
+        #if DEBUG && targetEnvironment(simulator) && compiler(>=6.4)
+        if #available(iOS 27.1, *),
+           sharedDefaults?.bool(forKey: SimulatorGeometryProbe.preferenceKey) == true {
+            geometryProbe = SimulatorGeometryProbe(view: view, scope: "extension")
+        }
+        #endif
         activeDocumentIdentifier = currentDocumentIdentifier()
         updateFieldPolicy()
         refresh()
@@ -126,10 +134,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func applyMetrics() {
-        let metrics = KeyboardMetrics.forCompactHeight(
-            traitCollection.verticalSizeClass == .compact,
-            isPad: traitCollection.userInterfaceIdiom == .pad
-        )
+        let metrics = currentMetrics
         keyboardView?.setMetrics(metrics)
         applyHeight(metrics)
     }
@@ -145,7 +150,8 @@ final class KeyboardViewController: UIInputViewController {
     private var currentMetrics: KeyboardMetrics {
         KeyboardMetrics.forCompactHeight(
             traitCollection.verticalSizeClass == .compact,
-            isPad: traitCollection.userInterfaceIdiom == .pad
+            isPad: traitCollection.userInterfaceIdiom == .pad,
+            regularWidth: traitCollection.horizontalSizeClass == .regular
         )
     }
 

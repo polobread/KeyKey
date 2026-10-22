@@ -101,6 +101,7 @@ final class SettingsPanel: UIView {
         rows.spacing = 0
 
         let scroll = UIScrollView()
+        scroll.accessibilityIdentifier = "keyboard-settings.scroll"
         scroll.alwaysBounceVertical = true
         let root = UIStackView(arrangedSubviews: [
             compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
@@ -119,9 +120,9 @@ final class SettingsPanel: UIView {
         addSubview(scroll)
         scroll.addSubview(root)
         NSLayoutConstraint.activate([
-            header.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            header.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            header.topAnchor.constraint(equalTo: topAnchor, constant: 10),
+            header.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            header.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            header.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
             scroll.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
             scroll.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: header.trailingAnchor),
