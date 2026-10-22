@@ -1694,7 +1694,8 @@ final class KeyKeyUITests: XCTestCase {
         let option = app.segmentedControls["keyboard-presentation"].buttons[title]
         XCTAssertTrue(option.waitForExistence(timeout: 3))
         if !option.isSelected { option.tap() }
-        app.buttons["完成"].tap()
+        app.windows.containing(.scrollView, identifier: "keyboard-settings.scroll")
+            .firstMatch.buttons["完成"].tap()
         XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 3))
     }
 
@@ -1778,7 +1779,8 @@ final class KeyKeyUITests: XCTestCase {
         let option = control.buttons[label]
         XCTAssertTrue(option.exists, "找不到注音模式：\(label)")
         if option.value as? String != "1" { option.tap() }
-        app.buttons["完成"].tap()
+        app.windows.containing(.scrollView, identifier: "keyboard-settings.scroll")
+            .firstMatch.buttons["完成"].tap()
         XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 2))
     }
 
