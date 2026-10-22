@@ -563,6 +563,74 @@ struct BopomofoEngineTests {
         #expect(engine.composingText == "妳好")
     }
 
+    @Test("closing touch candidates preserves corrections, paging and the sentence end")
+    func closeTouchCandidatesPreservesComposition() {
+        let options = ["你", "妳"] + (1...11).map { "候選\($0)" }
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource([:]),
+            smartSource: TableSmartSource(table: [
+                TableCandidateSource.queryKey(for: "su3"): options,
+                TableCandidateSource.queryKey(for: "cl3"): ["好"]
+            ]), compositionMode: .smart
+        )
+        _ = type(engine, "su3cl3")
+        #expect(engine.selectTouchSmartCell(0))
+        #expect(engine.selectDisplayedCandidate(1) == .update)
+        #expect(engine.composingText == "妳好")
+        #expect(engine.selectTouchSmartCell(0))
+        engine.changePage(by: 1)
+        #expect(engine.page == 1)
+        var host = TouchSmartHostTextState()
+        _ = host.update(to: engine.completedSmartText)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.composingText == "妳好" && engine.smartCompositionReadingCount == 2)
+        #expect(engine.displayedCandidates.isEmpty && !engine.isShowingSmartCandidates)
+        #expect(engine.page == 0 && engine.pageCount == 0)
+        #expect(host.update(to: engine.completedSmartText).isEmpty)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.selectTouchSmartCell(0))
+        #expect(engine.displayedCandidates == Array(options.prefix(9)))
+        _ = engine.closeTouchSmartCandidates()
+        _ = type(engine, "su3")
+        #expect(engine.composingText == "妳好你")
+        #expect(engine.finishCompositionForInputHandoff() == .commit("妳好你"))
+    }
+
+    @Test("closing fallback candidates retains the unfinished reading and converted prefix")
+    func closeTouchCandidatesPreservesFallbackReading() {
+        let engine = BopomofoEngine(
+            dictionary: TableCandidateSource(["cl3": ["好", "郝"]]),
+            smartSource: TableSmartSource(table: [TableCandidateSource.queryKey(for: "su3"): ["你"]]),
+            compositionMode: .smart
+        )
+        _ = type(engine, "su3cl3")
+        #expect(engine.displayedCandidates == ["好", "郝"])
+        #expect(!engine.isShowingSmartCandidates)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.composingText == "你ㄏㄠˇ" && engine.readingText == "ㄏㄠˇ")
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.backspace() == .update)
+        #expect(engine.composingText == "你ㄏㄠ")
+        _ = engine.handleSoftKey("3")
+        #expect(engine.displayedCandidates == ["好", "郝"])
+        #expect(engine.selectDisplayedCandidate(0) == .commit("你好"))
+    }
+
+    @Test("touch candidate close leaves traditional and hardware candidates alone")
+    func closeTouchCandidatesDoesNotAlterOtherModes() {
+        let traditional = engine()
+        let hardware = smartEngine(hardwareEditing: true)
+        for engine in [traditional, hardware] {
+            _ = type(engine, "su3")
+            if engine === hardware { _ = engine.openSmartCandidates() }
+            let text = engine.composingText
+            let candidates = engine.displayedCandidates
+            #expect(!candidates.isEmpty)
+            #expect(engine.closeTouchSmartCandidates() == .update)
+            #expect(engine.composingText == text && engine.displayedCandidates == candidates)
+        }
+    }
+
     @Test("touch smart correction keeps the next syllable at the sentence end")
     func touchSmartCorrectionPreservesInsertionPoint() {
         let engine = smartEngine()
