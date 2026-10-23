@@ -2,6 +2,8 @@
 
 透過官方套件庫可直接安裝琦琦輸入法；**2026-10-23 在本次使用的 quarterly 套件庫實際裝到的是 1.3.0**。若要安裝本指南實測的 **1.3.7**，可使用官方 ports 下載原始碼、編譯並安裝。套件庫版本會依 FreeBSD 版本、架構與分支而變動，請以查詢結果為準。
 
+套件資訊頁：[FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)，可查看 port 版本、相依套件及更新紀錄。
+
 本指南的桌面步驟已在 **FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3** 驗證。需先有可登入的圖形桌面、網路及管理員權限；安裝後使用一般帳號設定與輸入中文。
 
 ## 1. 從套件庫直接安裝
