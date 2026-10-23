@@ -8,7 +8,7 @@
 
 | 編號 | 官方來源 | 核對範圍與使用界線 |
 |---|---|---|
-| A01 | [Creating a custom keyboard](https://developer.apple.com/documentation/uikit/creating-a-custom-keyboard) | 獨立程序、宿主可以是 containing app、寬度可在顯示中變化、浮動鍵盤、隱藏不一定結束程序、記憶體限制依裝置不同 |
+| A01 | [Creating a custom keyboard](https://developer.apple.com/documentation/uikit/creating-a-custom-keyboard) | 獨立程序、使用鍵盤的 App 也可以是本體 App（containing app）、寬度可在顯示中變化、浮動鍵盤、隱藏不一定結束程序、記憶體限制依裝置不同 |
 | A02 | [Configuring a custom keyboard interface](https://developer.apple.com/documentation/uikit/configuring-a-custom-keyboard-interface) | 系統決定寬度、高度可用 constraint；欄位類型與系統接管；收鍵盤與含容器 App 的分工 |
 | A03 | [Configuring open access for a custom keyboard](https://developer.apple.com/documentation/uikit/configuring-open-access-for-a-custom-keyboard) | 未開 Full Access 仍可讀 App Group；寫入 shared container 與網路能力需另外授權 |
 | A04 | [Handling text interactions in custom keyboards](https://developer.apple.com/documentation/uikit/handling-text-interactions-in-custom-keyboards) | proxy 插入、刪除、context、selection 與 nil delegate 參數；marked text 及 unmark 語意 |
@@ -19,11 +19,11 @@
 | A09 | [documentContextBeforeInput](https://developer.apple.com/documentation/uikit/uitextdocumentproxy/documentcontextbeforeinput) | 可得的是目前插入點前的 optional context，不能據此宣稱擁有完整文件 |
 | A10 | [needsInputModeSwitchKey](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/needsinputmodeswitchkey) | 系統要求 custom keyboard 提供切換鍵的屬性 |
 | A11 | [handleInputModeList](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/handleinputmodelist(from:with:)) | 長按／上滑清單與短按切換；A01 的範例用 `.allTouchEvents` |
-| A12 | [dismissKeyboard](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/dismisskeyboard()) | extension 不直接呼叫宿主欄位的 resignFirstResponder |
+| A12 | [dismissKeyboard](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/dismisskeyboard()) | extension 不直接對使用鍵盤的 App 內的輸入欄位呼叫 resignFirstResponder |
 | A13 | [becomeFirstResponder](https://developer.apple.com/documentation/uikit/uiresponder/becomefirstresponder()) | 請求可能失敗；active hierarchy、key window 與硬體／軟體鍵盤條件 |
 | A14 | [Handling key presses made on a physical keyboard](https://developer.apple.com/documentation/uikit/handling-key-presses-made-on-a-physical-keyboard) | active App 的 responder chain；處理與轉送 presses 的責任 |
 | A15 | [playInputClick](https://developer.apple.com/documentation/uikit/uidevice/playinputclick())、[UIInputViewAudioFeedback](https://developer.apple.com/documentation/uikit/uiinputviewaudiofeedback) | 系統標準 click 的可見性、設定與 protocol 條件；不混同任意 speaker 能力 |
-| B01 | [App Extension Programming Guide 的架構章](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionOverview.html) | extension、host、containing app 的歷史概念；通用 request 生命週期不能直接當鍵盤每次隱藏的規格 |
+| B01 | [App Extension Programming Guide 的架構章](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionOverview.html) | extension、host app（使用鍵盤的 App）、containing app（本體 App）的歷史概念；通用 request 生命週期不能直接當鍵盤每次隱藏的規格 |
 | B02 | [舊 Custom Keyboard 章](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/CustomKeyboard.html) | 歷史基礎與畫面界線；共享存取敘述依 A03 校正，避免把舊「不能共享」解讀成現行不能唯讀 |
 | B03 | [Transitioning to the UIKit scene-based life cycle](https://developer.apple.com/documentation/uikit/transitioning-to-the-uikit-scene-based-life-cycle) | App 程序與 Scene 分工；靜態／動態設定；多 Scene 選用；新 SDK 要求 |
 | B04 | [Managing your app’s life cycle](https://developer.apple.com/documentation/uikit/managing-your-app-s-life-cycle) | Scene 與 App 狀態處理的相關段落；不套成 extension 的 AppDelegate 生命週期 |
@@ -31,7 +31,7 @@
 | B06 | [viewIsAppearing](https://developer.apple.com/documentation/uikit/uiviewcontroller/viewisappearing(_:))、[viewWillDisappear](https://developer.apple.com/documentation/uikit/uiviewcontroller/viewwilldisappear(_:)) | appearance 的幾何有效時點與消失前可提交編輯的責任；與文件身分及反覆 layout 分開 |
 | B07 | [Adapting your app when traits change](https://developer.apple.com/documentation/uikit/adapting-your-app-when-traits-change) | 指定 traits 註冊、初始更新與自動追蹤的使用方式 |
 | B08 | [Automatic trait tracking](https://developer.apple.com/documentation/uikit/automatic-trait-tracking)、[layoutSubviews](https://developer.apple.com/documentation/uikit/uiview/layoutsubviews()) | 支援的更新方法；iOS 18 起自動追蹤不能直接當成 iOS 17 行為 |
-| B09 | [UIKeyboardLayoutGuide](https://developer.apple.com/documentation/uikit/uikeyboardlayoutguide)、[官方配置範例](https://developer.apple.com/documentation/uikit/adjusting-your-layout-with-keyboard-layout-guide) | 宿主避讓固定／浮動／未固定鍵盤、tracking constraints 與本視窗相交區域 |
+| B09 | [UIKeyboardLayoutGuide](https://developer.apple.com/documentation/uikit/uikeyboardlayoutguide)、[官方配置範例](https://developer.apple.com/documentation/uikit/adjusting-your-layout-with-keyboard-layout-guide) | 使用鍵盤的 App 避讓固定／浮動／未固定鍵盤、tracking constraints 與本視窗相交區域 |
 | B10 | [safeAreaInsets](https://developer.apple.com/documentation/uikit/uiview/safeareainsets) | 本地 insets、未進入可見階層的零值；不能當全域裝置常數 |
 | B11 | [UserDefaults.didChangeNotification](https://developer.apple.com/documentation/foundation/userdefaults/didchangenotification) | 目前程序的變更通知；不能宣稱它保證跨程序設定即時同步 |
 | C01 | [WWDC23 Keep up with the keyboard](https://developer.apple.com/videos/play/wwdc2023/10281/) | 1:29 起的 iPhone iOS 17 鍵盤程序重構與非同步時序，及 3:47 起的多視窗／避讓 |
@@ -63,7 +63,7 @@
 | iOS／iPadOS 26 | 可調視窗與新控制區域擴大情境；`updateProperties`、新 geometry 回呼等 API 可用 | `.pad` 不代表固定大視窗。舊 scene orientation／coordinateSpace 存取開始被新 effectiveGeometry 介面取代，但不等於舊 OS 路徑可以直接刪除 |
 | iOS／iPadOS 26.4 | UIKit notes 列出 keyboard notification 可能未送出的修正 `165479264` | 是特定問題紀錄，不證明本案缺鍵盤的原因或保證所有通知順序 |
 | iOS／iPadOS 27 | 用最新 SDK 建置的 App 要採 Scene lifecycle；有 launch screen 要求；presented controller 的 trait 傳遞與可調視窗規則有 linked-on 變更 | 現有 App 有靜態 scene manifest 與 `UILaunchScreen`。Scene lifecycle 與支援多 Scene 是兩件事 |
-| iOS 27.1 與 Xcode 27.1 | Duo 支援；hinge／reserved-region／arrangement API；iOS 27.1 SDK，其他 OS 的 SDK 並非一律 27.1 | 新能力必須有 SDK 宣告與 runtime 支援。大部分新 API 沒有文件保證 extension 取得與宿主一樣的資料 |
+| iOS 27.1 與 Xcode 27.1 | Duo 支援；hinge／reserved-region／arrangement API；iOS 27.1 SDK，其他 OS 的 SDK 並非一律 27.1 | 新能力必須有 SDK 宣告與 runtime 支援。大部分新 API 沒有文件保證 extension 取得與使用鍵盤的 App 一樣的資料 |
 | 本機 Xcode 27.2 beta 3 所附 SDK | canonical name 為 `iphonesimulator27.2`，並非目前 Duo 的 27.1 runtime | 能使用哪些公開宣告可從本機 SDK 凍結；不能由此宣稱已測 iOS 27.2 beta runtime |
 | 官方目前回傳的 27.2 RC 文件 | 已晚於本次要研究的 Beta 3 節點 | 只列作後續版本資料；不能把其 Device Hub 修復、已知問題狀態倒填成 Beta 3 結論 |
 
@@ -80,7 +80,7 @@
 | `needsInputModeSwitchKey`、`documentIdentifier` | iOS 11 | 主動切換入口與文件識別；不是游標識別 |
 | proxy 的 `setMarkedText`／`unmarkText` | iOS 13 | 操作目前文件與 selection；要保護跨欄位交接 |
 | `viewIsAppearing` | iOS 13 | 已接到 hierarchy、traits／geometry 更新的 appearance 時點 |
-| `UIKeyboardLayoutGuide` | iOS 15 | 宿主避讓；`usesBottomSafeArea`、`keyboardDismissPadding` 為 iOS 17 |
+| `UIKeyboardLayoutGuide` | iOS 15 | 使用鍵盤的 App 避讓；`usesBottomSafeArea`、`keyboardDismissPadding` 為 iOS 17 |
 | `UIWindowScene.effectiveGeometry` | iOS 16 | 讀目前 resolved geometry；其 `coordinateSpace` 為 iOS 26 |
 | `registerForTraitChanges` | iOS 17 | 只監聽指定 traits；初始配置仍須安排 |
 | 更新方法內的 automatic trait tracking | iOS 18 | 只在官方支援的方法；見 C02 與 B08 |
@@ -90,7 +90,7 @@
 
 ## 公開 release notes 的核對清單
 
-由 D04 索引取得下列 23 份文件。檢索及閱讀的重點為 UIKit、Keyboard／Keyboards、Simulator，以及 SwiftUI 的文字、焦點、safe-area、Scene 與 window 相關段落；沒有相關條目不表示沒有 bug。SwiftUI 變更用來辨認外部宿主環境，不能直接套成目前 UIKit 實作已受影響。
+由 D04 索引取得下列 23 份文件。檢索及閱讀的重點為 UIKit、Keyboard／Keyboards、Simulator，以及 SwiftUI 的文字、焦點、safe-area、Scene 與 window 相關段落；沒有相關條目不表示沒有 bug。SwiftUI 變更用來辨認其他 App 使用鍵盤時的環境，不能直接套成目前 UIKit 實作已受影響。
 
 | 文件 | 與本案相關的閱讀結果 |
 |---|---|
@@ -148,7 +148,7 @@
 
 另外檢視了 `UIView.h`、`UIViewController.h`、`UITraitCollection.h`、`UIWindowScene.h`、`UIScene.h`、`UIScreen.h` 與 XCUIAutomation 的 `XCUIScreen.h`。UIView／UIViewController headers 有其他文字差異；沒有將文字 diff 直接當作某 API 已刪除或 runtime 行為改變的證明。
 
-header 相同只證明這些公開宣告相同，不代表 UIKit 二進位、Simulator 服務、宿主連線或 ABI 行為相同。這也是「換 SDK 後是否還崩」與「API 定義是否不同」必須分開的原因。
+header 相同只證明這些公開宣告相同，不代表 UIKit 二進位、Simulator 服務、使用鍵盤的 App 與鍵盤的連線或 ABI 行為相同。這也是「換 SDK 後是否還崩」與「API 定義是否不同」必須分開的原因。
 
 ## 文件內容差異的處理
 
@@ -163,7 +163,7 @@ header 相同只證明這些公開宣告相同，不代表 UIKit 二進位、Sim
 
 1. **27.2 beta 3 當版 release notes。** 官方 Xcode 27.2 與 OS 27.2 的同網址回傳 RC 題名，沒有可驗證的當版凍結內容。URL 上的 `changes` 參數與搜尋快取不是版本封存證據。Beta 3 的公開 API 宣告已用本機 SDK 核對；當版修復／已知問題清單仍缺，不用 RC 內容補成已知事實。
 2. **27.1 的 extension 已知限制範圍。** `187708767` 明列「多數 extension」，未逐一列出 custom keyboard。不能宣稱鍵盤完全不支援，也不能忽略這項限制後以此模擬器作唯一發布驗收。
-3. **keyboard extension 的 hinge／regions 資料保證。** 查閱的公開宣告沒有 extension-unavailable 標記，但未找到保證與宿主同資料的文字。既有 Simulator 缺回呼只屬該環境證據；真機與官方釐清尚待後續。
+3. **keyboard extension 的 hinge／regions 資料保證。** 查閱的公開宣告沒有 extension-unavailable 標記，但未找到保證 extension 可取得與使用鍵盤的 App 相同資料的說明。既有 Simulator 缺回呼只屬該環境證據；真機與官方釐清尚待後續。
 4. **本案 SIGABRT 的官方狀態。** DTS 的 false 回報確認不包含 `activationIndicatorView` 的根因或修補承諾；目前不宣稱已有 Apple acknowledgment。
 
 本輪回傳的兩份 rolling notes 題名與 SHA-256 可用來辨認此次讀到的正文，不能作為 Beta 3 發布檔：

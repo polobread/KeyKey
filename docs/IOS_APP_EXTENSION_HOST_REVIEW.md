@@ -1,4 +1,4 @@
-# iOS 本體 App 與鍵盤 Extension 及測試宿主架構審查
+# iOS 本體 App 與鍵盤 Extension 及輸入測試頁面架構審查
 
 審查日期：2026-10-23。程式基準：`codex/ios-iphone-duo-adaptation`，commit `c5e04e5c3b2586e9fdf099b9e2bd7c20b43b17f8`。本輪只進行官方文件閱讀、原始碼與既有紀錄對照，沒有修改程式、建置或新增執行測試。
 
@@ -26,24 +26,26 @@
 
 ## 三種角色與資料所有權
 
+「使用鍵盤的 App」（Apple 原文 host app）指提供文字輸入欄位的 App，例如備忘錄或 Safari；「輸入測試頁面」指目前放在琦琦本體內的 Debug 測試功能。
+
 | 角色 | 現況入口 | 擁有什麼 | 不應推定擁有什麼 |
 |---|---|---|---|
-| 琦琦本體 App | `AppDelegate`、`SceneDelegate`、`SetupViewController` | 自己的 Scene、Window、設定、購買流程與 App 內編輯器 | 其他宿主的欄位、extension 視窗或 extension 的生命週期 |
-| 琦琦 keyboard extension | `KeyboardViewController: UIInputViewController` | 鍵盤介面、引擎暫態、私有設定與學習資料；經 proxy 操作目前文件 | 宿主的 `UITextField`／`UITextView` 物件、宿主的 first responder、任意宿主 UI |
-| 輸入法測試宿主 | 容器 App 的 Debug `InputFieldTestViewController` | 實際輸入欄位、焦點、選取、Return 行為及宿主版面 | 直接把 extension 的內部引擎狀態當作宿主狀態 |
+| 琦琦本體 App | `AppDelegate`、`SceneDelegate`、`SetupViewController` | 自己的 Scene、Window、設定、購買流程與 App 內編輯器 | 其他使用鍵盤的 App 的欄位、extension 視窗或 extension 的生命週期 |
+| 琦琦 keyboard extension | `KeyboardViewController: UIInputViewController` | 鍵盤介面、引擎暫態、私有設定與學習資料；經 proxy 操作目前文件 | 使用鍵盤的 App 內的 `UITextField`／`UITextView`、first responder 與其他介面 |
+| 輸入測試頁面 | 容器 App 的 Debug `InputFieldTestViewController` | 實際輸入欄位、焦點、選取、Return 行為及輸入測試頁面的版面 | 直接把 extension 的內部引擎狀態當作輸入測試頁面的狀態 |
 
-目前沒有第三個獨立的測試宿主產品 target。測試宿主是本體 App 內的一個角色；`KeyKeyUITests-Runner` 是操作與觀測者，並不是持有測試文字的 App。Apple 明確允許以 containing app 當鍵盤的除錯宿主，因此現有安排本身不是 API 誤用；不足之處是對照環境尚不獨立。[Creating a custom keyboard](https://developer.apple.com/documentation/uikit/creating-a-custom-keyboard)
+目前沒有第三個獨立的輸入測試 App target。輸入測試頁面位於琦琦本體內；`KeyKeyUITests-Runner` 是操作與觀測者，並不是持有測試文字的 App。Apple 明確允許由本體 App（containing app）提供輸入欄位，測試自己的鍵盤，因此現有安排本身不是 API 誤用；不足之處是對照環境尚不獨立。[Creating a custom keyboard](https://developer.apple.com/documentation/uikit/creating-a-custom-keyboard)
 
 ```mermaid
 flowchart LR
     A["琦琦本體 App"] -->|"寫入設定與自訂詞"| G["App Group"]
     G -->|"未開 Full Access 時唯讀"| K["keyboard extension"]
-    H["文字宿主與其欄位"] <-->|"經系統的 UITextDocumentProxy"| K
+    H["使用鍵盤的 App 與其欄位"] <-->|"經系統的 UITextDocumentProxy"| K
     T["XCUITest runner"] -->|"操作與觀測"| H
     A --> E["App 內實體鍵盤編輯器與自己的引擎"]
 ```
 
-這是角色關係圖，不是固定程序數量圖。當容器 App 自己擔任宿主時，A 與 H 是同一個 App；extension 仍在獨立程序。系統鍵盤服務的內部程序安排由 OS 決定。[Keyboard text interactions](https://developer.apple.com/documentation/uikit/handling-text-interactions-in-custom-keyboards)
+這是角色關係圖，不是固定程序數量圖。當琦琦本體自己提供輸入欄位、使用自己的鍵盤時，A 與 H 是同一個 App；extension 仍在獨立程序。系統鍵盤服務的內部程序安排由 OS 決定。[Keyboard text interactions](https://developer.apple.com/documentation/uikit/handling-text-interactions-in-custom-keyboards)
 
 ### 本體內實體鍵盤編輯器的界線
 
@@ -62,7 +64,7 @@ Apple 的實體鍵盤事件文件描述的是 active app 的 responder chain。�
 | hinge 與 reserved regions | hinge 描述狀態與角度；配置避讓使用本地有效區域。無資料不等於全開 |
 | 系統鍵盤切換 | 地球鍵切換使用者啟用的輸入法，與琦琦內部的「英／數」不同 |
 | 琦琦分離外觀 | 是 extension 自己排列按鍵；不是 iPadOS 浮動、未固定或系統分離鍵盤的控制 API |
-| 文字保留 | 已在宿主文件中看到文字，不表示引擎還保留可回頭選字的組字 |
+| 文字保留 | 已在使用鍵盤的 App 內的文件中看到文字，不表示引擎還保留可回頭選字的組字 |
 | 文件身分 | `documentIdentifier` 區分文件，不是游標位置、選取範圍或一次文字操作的交易編號 |
 | 顯示、焦點、程序 | view 消失、first responder 改變、Scene 失去活動、extension 程序結束是不同事件 |
 
@@ -76,22 +78,22 @@ Apple 的實體鍵盤事件文件描述的是 active app 的 responder chain。�
 | extension 入口 | custom keyboard 使用 `UIInputViewController` 與其主要 view | 現有 class、`com.apple.keyboard-service`、principal class 符合；沒有在 extension 建立 App 的 root window。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/Info.plist)、[Apple](https://developer.apple.com/documentation/uikit/uiinputviewcontroller) |
 | 寬度與高度 | 寬度由系統提供；高度可用 primary view 的 Auto Layout constraint 調整 | 自訂高度 constraint 不是誤用。330／155／360 pt 與 820 pt 內容上限是產品選擇，不是 Apple 的尺寸規定。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L77)、[Apple](https://developer.apple.com/documentation/uikit/configuring-a-custom-keyboard-interface) |
 | 幾何更新 | 初次 appearance 與後續 layout、traits 變化是不同更新時機 | 已有 size-class registration 與每次 layout 更新；初始 `viewDidLoad` 的幾何只能作起始值。需檢視 `viewIsAppearing` 所保證的更新時點。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L90)、[Apple](https://developer.apple.com/documentation/uikit/uiviewcontroller/viewisappearing(_:)) |
-| 安全區 | insets 屬於本地 view，可能為零或不對稱 | 鍵盤、設定面板分別採自己的 guide，這部分方向正確；沒有把宿主的右側 84 pt 直接塞給鍵盤。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardView.swift#L140)、[Apple](https://developer.apple.com/documentation/uikit/uiview/safeareainsets) |
+| 安全區 | insets 屬於本地 view，可能為零或不對稱 | 鍵盤、設定面板分別採自己的 guide，這部分方向正確；沒有把使用鍵盤的 App 的右側 84 pt 直接塞給鍵盤。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardView.swift#L140)、[Apple](https://developer.apple.com/documentation/uikit/uiview/safeareainsets) |
 | 地球鍵 API | `handleInputModeList` 接收全部 touch events，處理短按與清單 | `.allTouchEvents` 接線符合官方模式；額外 `.touchDown` 提交是琦琦政策，不是系統要求。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L64)、[Apple](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/handleinputmodelist(from:with:)) |
 | 地球鍵顯示 | 以 `needsInputModeSwitchKey` 決定；Duo false 回報另有 DTS 確認 | 27.1 寬版 phone 的 fallback 是有限 workaround，沒有文件證明涵蓋所有 Duo 視窗／姿態。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L123)、[DTS](https://developer.apple.com/forums/thread/849736) |
-| 收鍵盤 | extension 使用 `dismissKeyboard()`，無權直接 resign 宿主欄位 | 現有 API 選擇正確；延後一個 main-loop turn 並不是跨程序文字操作完成的確認。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L551)、[Apple](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/dismisskeyboard()) |
+| 收鍵盤 | extension 使用 `dismissKeyboard()`，無權直接 resign 使用鍵盤的 App 的欄位 | 現有 API 選擇正確；延後一個 main-loop turn 並不是跨程序文字操作完成的確認。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L551)、[Apple](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/dismisskeyboard()) |
 | 文字與選取通知 | proxy 提供目前文字上下文；delegate 的 `textInput` 參數在 extension 為 nil | 現況沒有將 nil 參數視為錯誤，這部分正確。通知的來源分類仍有時序假設。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L188)、[Apple](https://developer.apple.com/documentation/uikit/handling-text-interactions-in-custom-keyboards) |
-| 組字語意 | `setMarkedText` 取代目前 marked text，沒有 marked text 時使用目前選取；`unmarkText` 保留文字 | 傳統路徑採 marked text；好打觸控另用普通宿主文字作可修改尾段。後者是自訂編輯模型，須自行確保尾段仍位於目前游標前。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L450)、[Apple](https://developer.apple.com/documentation/uikit/uitextdocumentproxy/setmarkedtext(_:selectedrange:)) |
+| 組字語意 | `setMarkedText` 取代目前 marked text，沒有 marked text 時使用目前選取；`unmarkText` 保留文字 | 傳統路徑採 marked text；好打觸控另用 App 輸入框中的普通文字作可修改尾段。後者是自訂編輯模型，須自行確保尾段仍位於目前游標前。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L450)、[Apple](https://developer.apple.com/documentation/uikit/uitextdocumentproxy/setmarkedtext(_:selectedrange:)) |
 | Full Access | 未開時可讀 App Group，不能寫入；可寫自己的 sandbox | `KeyboardPreferenceStore` 的一般設定及私有學習符合方向；`SupporterState` 有例外寫入路徑，見 R03。[程式](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoCompositionMode.swift#L7)、[Apple](https://developer.apple.com/documentation/uikit/configuring-open-access-for-a-custom-keyboard) |
-| 宿主欄位類型 | secure、phonePad、namePhonePad 由系統鍵盤處理；其他類型按支援能力回應 | 不應要求這三種欄位仍出現 extension。`keyboardType` 是介面提示，不等於宿主資料驗證。[程式](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/InputFieldPolicy.swift)、[Apple](https://developer.apple.com/documentation/uikit/configuring-a-custom-keyboard-interface) |
-| Return | 鍵盤提供文字輸入；宿主決定是否搜尋、傳送或移動焦點 | 現況送 `\n` 並改鍵帽；Debug host 的 `textFieldShouldReturn` 一律 endEditing，不能據此宣稱各種動作已驗證。[程式](../Source/Loaders/iOS-Keyboard/ContainerApp/SetupViewController.swift#L1030)、[Apple](https://developer.apple.com/documentation/uikit/uiinputviewcontroller) |
+| 使用鍵盤的 App 的欄位類型 | secure、phonePad、namePhonePad 由系統鍵盤處理；其他類型按支援能力回應 | 不應要求這三種欄位仍出現 extension。`keyboardType` 是介面提示，不等於使用鍵盤的 App 的資料驗證。[程式](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/InputFieldPolicy.swift)、[Apple](https://developer.apple.com/documentation/uikit/configuring-a-custom-keyboard-interface) |
+| Return | 鍵盤提供文字輸入；使用鍵盤的 App 決定是否搜尋、傳送或移動焦點 | 現況送 `\n` 並改鍵帽；輸入測試頁面的 `textFieldShouldReturn` 一律 endEditing，不能據此宣稱各種動作已驗證。[程式](../Source/Loaders/iOS-Keyboard/ContainerApp/SetupViewController.swift#L1030)、[Apple](https://developer.apple.com/documentation/uikit/uiinputviewcontroller) |
 | 系統按鍵音 | 可見、啟用的 input view 透過 `UIInputViewAudioFeedback` 播放系統 click | 現況有 protocol 與 `playInputClick`。不能因未開 Full Access 的 speaker 限制，就推定標準按鍵音也不允許。[程式](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardView.swift#L881)、[Apple](https://developer.apple.com/documentation/uikit/uidevice/playinputclick()) |
 
 ## 優先疑點
 
 ### R01 固定 250 毫秒不能識別回呼的來源
 
-**優先度高；實作確認與待驗證推論。** `mutateDocument` 在每次 proxy 操作後保留 250 毫秒 guard。期間同一文件的 text／selection 回呼會被當作自己的操作忽略。`documentIdentifier` 能抓到部分換文件情況，卻不能區分同一欄位中的使用者移動游標、選取或其他宿主修改。[呼叫處](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L533)、[忽略條件](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L220)
+**優先度高；實作確認與待驗證推論。** `mutateDocument` 在每次 proxy 操作後保留 250 毫秒 guard。期間同一文件的 text／selection 回呼會被當作自己的操作忽略。`documentIdentifier` 能抓到部分換文件情況，卻不能區分同一欄位中的使用者移動游標、選取或使用鍵盤的 App 本身所做的修改。[呼叫處](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L533)、[忽略條件](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L220)
 
 Apple 自 iOS 17 的鍵盤架構說明即提醒：文字與選取操作包含非同步時序；公開 proxy 沒有提供「250 毫秒內的通知必定屬於自己的變更」這項保證。[Keep up with the keyboard，1:29 起](https://developer.apple.com/videos/play/wwdc2023/10281/)
 
@@ -103,7 +105,7 @@ Apple 自 iOS 17 的鍵盤架構說明即提醒：文字與選取操作包含非
 
 **優先度高；實作確認與產品行為待決。** 地球鍵的 `.touchDown` 無條件呼叫 `finishCompositionForInputHandoff`。引擎會清除 composition，因此後續即使只打開清單再取消，原先可修改的組字也已結束。[接線](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L64)、[引擎](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift#L835)
 
-Apple 的清單 API 區分短按切換與長按清單，沒有要求在 touch-down 就先確認文字。目前測試主要核對宿主還有「你好」，不足以證明取消清單後還能繼續修改原組字。[系統行為](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/handleinputmodelist(from:with:))
+Apple 的清單 API 區分短按切換與長按清單，沒有要求在 touch-down 就先確認文字。目前測試主要核對使用鍵盤的 App 還有「你好」，不足以證明取消清單後還能繼續修改原組字。[系統行為](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/handleinputmodelist(from:with:))
 
 待審決策：取消清單是否應保留完整組字、候選目標及未完成讀音。若採此語意，文字交接的時點就須與「使用者開始碰地球鍵」分開；本輪不選定替代實作。
 
@@ -123,15 +125,15 @@ Apple 的清單 API 區分短按切換與長按清單，沒有要求在 touch-do
 
 目前以 KVC 取值容許 `documentIdentifier` 為 nil，是既有的容錯策略；官方仍宣告為非 optional UUID。nil 到 UUID 不重設的做法需要配合「目前尾段是否仍可安全修改」判定，不能只憑 UUID 規避所有早期連線問題。[實作](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L230)、[官方語意](https://developer.apple.com/documentation/uikit/uitextdocumentproxy/documentidentifier)
 
-### R05 測試宿主尚不足以代表一般文字 App
+### R05 輸入測試頁面尚不足以代表一般文字 App
 
-**優先度高；測試設計缺口。** Debug host 以 sheet 呈現 14 種欄位；一般欄位標成「一般文字／換行」，實際是單行 `UITextField`。所有文字欄位的 Return delegate 都結束編輯。這可以測鍵盤外觀和部分輸入流程，但不是 Notes 類文件宿主的完整行為。[呈現](../Source/Loaders/iOS-Keyboard/ContainerApp/SetupViewController.swift#L329)、[欄位](../Source/Loaders/iOS-Keyboard/ContainerApp/SetupViewController.swift#L905)
+**優先度高；測試設計缺口。** 輸入測試頁面以 sheet 呈現 14 種欄位；一般欄位標成「一般文字／換行」，實際是單行 `UITextField`。所有文字欄位的 Return delegate 都結束編輯。這可以測鍵盤外觀和部分輸入流程，但不能涵蓋備忘錄這類文件 App 的完整行為。[呈現](../Source/Loaders/iOS-Keyboard/ContainerApp/SetupViewController.swift#L329)、[欄位](../Source/Loaders/iOS-Keyboard/ContainerApp/SetupViewController.swift#L905)
 
-scroll view 目前貼住 safe area，沒有明確的 keyboard layout guide 或鍵盤交集計算。這不直接證明 UIKit 的自動捲動一定失效；它表示浮動鍵盤、小視窗和下方欄位的可見性仍需要專門證據。Apple 建議以 keyboard layout guide 處理宿主與鍵盤的相對區域，而不是把螢幕鍵盤高度直接當成要避開的距離。[官方範例](https://developer.apple.com/documentation/uikit/adjusting-your-layout-with-keyboard-layout-guide)
+scroll view 目前貼住 safe area，沒有明確的 keyboard layout guide 或鍵盤交集計算。這不直接證明 UIKit 的自動捲動一定失效；它表示浮動鍵盤、小視窗和下方欄位的可見性仍需要專門證據。Apple 建議以 keyboard layout guide 處理使用鍵盤的 App 與鍵盤的相對區域，而不是把螢幕鍵盤高度直接當成要避開的距離。[官方範例](https://developer.apple.com/documentation/uikit/adjusting-your-layout-with-keyboard-layout-guide)
 
 `becomeFirstResponder` 是請求，也不保證軟體鍵盤立即出現；有效 key window、目前 responder 與硬體鍵盤狀態要分別確認。現有手動聚焦參數忽略其回傳值，因此「有執行該行」不能當作聚焦及顯示驗收。[Apple](https://developer.apple.com/documentation/uikit/uiresponder/becomefirstresponder())
 
-待審方案：保留原 Debug 頁作整合測試，再建立最小原生宿主及 WebKit 對照；是否增加獨立 App target 要等確認。單純把容器頁改成全螢幕或多行，先前都沒有消除當機。
+待審方案：保留原 Debug 頁作整合測試，再建立只有基本原生輸入框的測試 App 及 WebKit 對照；是否增加獨立 App target 要等確認。單純把容器頁改成全螢幕或多行，先前都沒有消除當機。
 
 ### R06 高度與裝置分類仍有產品假設
 
@@ -147,13 +149,13 @@ App 內實體編輯器部分配置還用螢幕 points／native pixels 判斷小�
 
 `reservedRegions` 回傳與該 view 重疊的區域，frame 屬於該 view 座標；預設只回傳 active 區域，且 frame 已包含 interactive margins。不能直接搬用 App 的折線 frame，也不能對 frame 再重複加一次 margins。沒有回呼或空陣列，只能表示當前未取得相關資料，不能反推 fullyOpen。[Apple API](https://developer.apple.com/documentation/uikit/uiview/reservedregions(kind:options:))、[UIHingeInteraction](https://developer.apple.com/documentation/uikit/uihingeinteraction)
 
-目前公開宣告沒有把 UIHingeInteraction 標成 extension-unavailable，但也未找到保證 keyboard extension 與宿主得到相同區域／回呼的說明。現有「App 有、extension 無」是特定 runtime 的實測，不是永久平台禁令。27.1 新增的 `UIArrangementViewController` 是配置容器，不是鍵盤自動分離開關；是否適用須另審。[容器 API](https://developer.apple.com/documentation/uikit/uiarrangementviewcontroller)
+目前公開宣告沒有把 UIHingeInteraction 標成 extension-unavailable，但也未找到保證 keyboard extension 與使用鍵盤的 App 得到相同區域／回呼的說明。現有「App 有、extension 無」是特定 runtime 的實測，不是永久平台禁令。27.1 新增的 `UIArrangementViewController` 是配置容器，不是鍵盤自動分離開關；是否適用須另審。[容器 API](https://developer.apple.com/documentation/uikit/uiarrangementviewcontroller)
 
 ### R08 地球鍵根因與模擬器限制尚未分離
 
 **優先度高；根因未定。** DTS 確認的是 `needsInputModeSwitchKey` 在 Duo 回傳 false 的錯誤；沒有確認本案 `activationIndicatorView` 的 SIGABRT，也沒有發布針對本案的修正版本。[DTS](https://developer.apple.com/forums/thread/849736)
 
-既有紀錄顯示：同一完整鍵盤在 Safari 六輪切出／切回通過，原宿主則可在帶組字時當機；原宿主關閉 probe、改多行仍可當機；最小 extension、不同 SDK 與取消 touch-down commit 也曾失敗。這排除了一些單一解釋，但尚不足以判定只有自製宿主有問題，或所有第三方鍵盤都有錯。[既有證據](IOS_IPHONE_DUO_ADAPTATION.md#不同宿主的地球鍵對照)
+既有紀錄顯示：同一完整鍵盤在 Safari 六輪切出／切回通過，原輸入測試頁面則可在帶組字時當機；原輸入測試頁面關閉 probe、改多行仍可當機；最小 extension、不同 SDK 與取消 touch-down commit 也曾失敗。這排除了一些單一解釋，但尚不足以判定只有自製輸入測試頁面有問題，或所有第三方鍵盤都有錯。[既有證據](IOS_IPHONE_DUO_ADAPTATION.md#%E4%B8%8D%E5%90%8C%E5%AE%BF%E4%B8%BB%E7%9A%84%E5%9C%B0%E7%90%83%E9%8D%B5%E5%B0%8D%E7%85%A7)
 
 Xcode 27.1 的 extension 已知限制需要加入上述證據的環境註記。27.2 官方同網址目前回傳 RC 說明，不能把其中修復項目倒推成 Beta 3 已修復；本輪沒有找到可完整凍結 Beta 3 已知問題的官方當版說明。下一階段需以真機與清楚標記的工具／runtime 組合補足，不能靠修改更多延遲或移除切換入口宣告修復。[27.1 notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27_1-release-notes)、[版本資料缺口](IOS_APP_EXTENSION_HOST_APPLE_SOURCES.md#版本資料缺口)
 
@@ -189,7 +191,7 @@ Xcode 27.1 的 extension 已知限制需要加入上述證據的環境註記。2
 | 文字交接 | 定義文件、選取與可修改尾段的有效條件；取消選單與真正切換分開 | 未完成讀音、選字中與被動隱藏分別何時提交 |
 | 模式與版面 | 幾何改變只調整呈現；引擎語意變更另有交接政策 | 是否維持現有所有模式切換的提交行為 |
 | 權限 | 保留 `RequestsOpenAccess=false`；修正 first-use 資料責任 | 日期由 App 計算、私有 extension 計算或如何整合 |
-| 測試宿主 | 最小原生宿主、WebKit 對照與現有容器整合頁各有用途 | 是否另建獨立測試 App；需要哪些欄位 traits 對照 |
+| 輸入測試頁面 | 只有基本原生輸入框的測試 App、WebKit 對照與現有容器整合頁各有用途 | 是否另建獨立測試 App；需要哪些欄位 traits 對照 |
 | Duo 避讓 | 以本地有效區域處理；資料未知時保留明確的手動選擇 | keyboard extension 的區域供應是否有官方保證或真機證據 |
 | 工具與驗收 | 明定 SDK 下限；分離 Simulator 診斷與真機驗收 | Beta 3 當版 release notes、Duo 真機可取得性及實測組合 |
 
