@@ -90,6 +90,13 @@ Actions 與本機共用 Build-WindowsRelease.ps1 建置、測試與驗證 unsign
 正式待簽 artifact 由成功的官方 CI run 產生。本機 Release-Windows.ps1 只驗證來源、簽署及重包 EXE／ZIP，再人工驗收與核准發布。
 封裝／簽章工具的局部回歸見 Packaging/Test-Signing.ps1。
 
+`Windows Build and Unsigned Inputs` 的 PR／master 自動建置只追蹤 Windows 程式、
+建置設定、實際使用的共用引擎／執行資源與詞庫；路徑清單見
+[workflow](../../../.github/workflows/package-windows.yml)，以平台與共用模組目錄分組。
+`update/`、平台目錄外的發布／公告工具、
+文件與授權說明不觸發這項完整建置；更新與發布工具使用各自的局部檢查。
+Windows frontend 內的更新客戶端仍屬程式變更。可透過 `workflow_dispatch` 手動建置。
+
 完整 TSF／NSIS、UAC、舊版升級、資料保留與 signed 憑證驗收屬發布工作，不能把
 上述局部開發驗證當成已發布或已安裝的證據。
 
