@@ -2,7 +2,7 @@
 
 查閱日期：2026-10-23。對應[架構審查](IOS_APP_EXTENSION_HOST_REVIEW.md)與[狀態矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)。範圍為三種角色用到的 API、相關 OS／SDK 行為、螢幕與工具限制；不是把所有無關 Apple frameworks 都列為已審查。
 
-現行 API 文章以 Apple 提供的 `.md` 正文閱讀；表中保留一般文件網址供瀏覽器開啟。影片使用相關章節的官方逐字稿；範例閱讀說明與 API 使用方式，本輪沒有下載建置或執行範例。舊 Extension Programming Guide 作歷史架構參考，遇到現行鍵盤文件不同時不直接套用舊限制。
+現行 API 文章以 Apple 提供的 `.md` 正文閱讀；表中保留一般文件網址供瀏覽器開啟。影片使用相關章節的官方逐字稿；範例閱讀說明與 API 使用方式，本輪沒有下載建置或執行範例。舊 Extension Programming Guide 作歷史架構參考，遇到現行鍵盤文件不同時不直接套用舊限制。地球清單結果、模式通知與姿態訊號的後續核對見[公開 API 可行性審查](IOS_KEYBOARD_TRANSITION_API_REVIEW.md)。
 
 ## 官方來源索引
 
@@ -23,6 +23,12 @@
 | A13 | [becomeFirstResponder](https://developer.apple.com/documentation/uikit/uiresponder/becomefirstresponder()) | 請求可能失敗；active hierarchy、key window 與硬體／軟體鍵盤條件 |
 | A14 | [Handling key presses made on a physical keyboard](https://developer.apple.com/documentation/uikit/handling-key-presses-made-on-a-physical-keyboard) | active App 的 responder chain；處理與轉送 presses 的責任 |
 | A15 | [playInputClick](https://developer.apple.com/documentation/uikit/uidevice/playinputclick())、[UIInputViewAudioFeedback](https://developer.apple.com/documentation/uikit/uiinputviewaudiofeedback) | 系統標準 click 的可見性、設定與 protocol 條件；不混同任意 speaker 能力 |
+| A16 | [advanceToNextInputMode](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/advancetonextinputmode()) | 系統決定下一鍵盤；沒有清單選擇結果或文字交接 completion |
+| A17 | [UITextInputMode](https://developer.apple.com/documentation/uikit/uitextinputmode)、[primaryLanguage](https://developer.apple.com/documentation/uikit/uitextinputmode/primarylanguage)、[activeInputModes](https://developer.apple.com/documentation/uikit/uitextinputmode/activeinputmodes) | 模式、語言與陣列的資訊範圍；同語言不等於同鍵盤，不能代替選單結果 |
+| A18 | [currentInputModeDidChangeNotification](https://developer.apple.com/documentation/uikit/uitextinputmode/currentinputmodedidchangenotification) | 模式改變通知與 posting object；未提供事前交接、原因或來源 extension 投遞次序保證 |
+| A19 | [CurrentInputModeDidChangeMessage](https://developer.apple.com/documentation/uikit/uitextinputmode/currentinputmodedidchangemessage) | iOS 26 型別化介面，公開 struct 與 Subject 以本機 swiftinterface 補核；沒有新增清單結果欄位 |
+| A20 | [UIResponder.textInputMode](https://developer.apple.com/documentation/uikit/uiresponder/textinputmode) | responder 啟用時的模式；App 可查自己欄位，不能推定 extension 可取得另一程序的 responder |
+| A21 | [documentInputMode](https://developer.apple.com/documentation/uikit/uitextdocumentproxy/documentinputmode) | 區域與語言配置；SDK 的文件 context 註解不能解讀成全域切換結果 API |
 | B01 | [App Extension Programming Guide 的架構章](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionOverview.html) | extension、host app（使用鍵盤的 App）、containing app（本體 App）的歷史概念；通用 request 生命週期不能直接當鍵盤每次隱藏的規格 |
 | B02 | [舊 Custom Keyboard 章](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/CustomKeyboard.html) | 歷史基礎與畫面界線；共享存取敘述依 A03 校正，避免把舊「不能共享」解讀成現行不能唯讀 |
 | B03 | [Transitioning to the UIKit scene-based life cycle](https://developer.apple.com/documentation/uikit/transitioning-to-the-uikit-scene-based-life-cycle) | App 程序與 Scene 分工；靜態／動態設定；多 Scene 選用；新 SDK 要求 |
@@ -34,6 +40,12 @@
 | B09 | [UIKeyboardLayoutGuide](https://developer.apple.com/documentation/uikit/uikeyboardlayoutguide)、[官方配置範例](https://developer.apple.com/documentation/uikit/adjusting-your-layout-with-keyboard-layout-guide) | 使用鍵盤的 App 避讓固定／浮動／未固定鍵盤、tracking constraints 與本視窗相交區域 |
 | B10 | [safeAreaInsets](https://developer.apple.com/documentation/uikit/uiview/safeareainsets) | 本地 insets、未進入可見階層的零值；不能當全域裝置常數 |
 | B11 | [UserDefaults.didChangeNotification](https://developer.apple.com/documentation/foundation/userdefaults/didchangenotification) | 目前程序的變更通知；不能宣稱它保證跨程序設定即時同步 |
+| B12 | [extension 活動通知](https://developer.apple.com/documentation/foundation/nsnotification/name-swift.struct/nsextensionhostwillresignactive)、[WillResignActiveMessage](https://developer.apple.com/documentation/foundation/nsextensioncontext/willresignactivemessage) | 使用該 extension 的 App 活動變化；context object 與無 userInfo，不能當作地球清單或開闔原因 |
+| B13 | [NotificationCenter](https://developer.apple.com/documentation/foundation/notificationcenter) | 傳遞範圍為單一 program；系統是否另外向 extension 發布要有個別證據 |
+| B14 | [isBeingDismissed](https://developer.apple.com/documentation/uikit/uiviewcontroller/isbeingdismissed) | 祖先 dismiss 的狀態，不是鍵盤移除原因 |
+| B15 | [keyboardWillChangeFrameNotification](https://developer.apple.com/documentation/uikit/uiresponder/keyboardwillchangeframenotification) | 幾何變動、screen object 與座標轉換；不含鍵盤清單結果 |
+| B16 | [UIControl.Event.touchCancel](https://developer.apple.com/documentation/uikit/uicontrol/event/touchcancel)、[UIGestureRecognizer.State.cancelled](https://developer.apple.com/documentation/uikit/uigesturerecognizer/state-swift.enum/cancelled) | 控制項觸控或自己的連續手勢取消；不能對應成系統清單取消 |
+| B17 | [completeRequest](https://developer.apple.com/documentation/foundation/nsextensioncontext/completerequest(returningitems:completionhandler:)) | 主動完成 extension request 的 completion 與 expired 參數，不是地球鍵清單結果 |
 | C01 | [WWDC23 Keep up with the keyboard](https://developer.apple.com/videos/play/wwdc2023/10281/) | 1:29 起的 iPhone iOS 17 鍵盤程序重構與非同步時序，及 3:47 起的多視窗／避讓 |
 | C02 | [WWDC24 What’s new in UIKit](https://developer.apple.com/videos/play/wwdc2024/10118/) | automatic trait tracking 與文字互動相關章節；確認 iOS 18 的功能界線 |
 | C03 | [WWDC25 Elevate the design of your iPad app](https://developer.apple.com/videos/play/wwdc2025/208/) | 版面縮放、window controls 與保持狀態的相關章節；不是要求本產品變成多文件 App |
@@ -75,7 +87,10 @@
 
 | API | 宣告版本 | 使用條件與責任 |
 |---|---|---|
+| `UITextInputMode`／模式變更通知 | iOS 4.2 | 語言與模式觀測；不提供事前切換原因 |
+| `UIResponder.textInputMode` | iOS 7 | 查所屬 responder；舊全域 currentInputMode 已 deprecated |
 | `UIInputViewController` | iOS 8 | systemwide keyboard extension 入口 |
+| `NSExtensionHost…` 活動通知 | iOS 8.2 | 通用 extension 活動狀態，非鍵盤清單結果 |
 | `handleInputModeList` | iOS 10 | `.allTouchEvents` 接線；不是自行模擬 UIEvent |
 | `needsInputModeSwitchKey`、`documentIdentifier` | iOS 11 | 主動切換入口與文件識別；不是游標識別 |
 | proxy 的 `setMarkedText`／`unmarkText` | iOS 13 | 操作目前文件與 selection；要保護跨欄位交接 |
@@ -84,6 +99,7 @@
 | `UIWindowScene.effectiveGeometry` | iOS 16 | 讀目前 resolved geometry；其 `coordinateSpace` 為 iOS 26 |
 | `registerForTraitChanges` | iOS 17 | 只監聽指定 traits；初始配置仍須安排 |
 | 更新方法內的 automatic trait tracking | iOS 18 | 只在官方支援的方法；見 C02 與 B08 |
+| 模式變更與 extension 活動的型別化 Message | iOS 26 | 改善 Swift 通知介面，沒有擴大成切換原因或遠端完成回報 |
 | `updateProperties`、`didUpdateEffectiveGeometry` | iOS 26 | 不可未隔離就代替所有 iOS 17 路徑 |
 | `UIHingeInteraction`、`UIHinge`、`UIView.ReservedRegion` | iOS 27.1 | 資料屬 view hierarchy；可用性宣告不等於 extension 保證有回呼 |
 | `UIArrangementViewController`、split／overlay arrangement | iOS 27.1 | UI 容器的選項，不是採用 Duo 的必要開關，也不是系統鍵盤分離控制 |
@@ -147,6 +163,8 @@
 - `UIOverlayArrangement.h`：`33bd541514824cb63e88d80799384b28aeb5cf9b9718a07fd6041055af3bb8ae`
 
 另外檢視了 `UIView.h`、`UIViewController.h`、`UITraitCollection.h`、`UIWindowScene.h`、`UIScene.h`、`UIScreen.h` 與 XCUIAutomation 的 `XCUIScreen.h`。UIView／UIViewController headers 有其他文字差異；沒有將文字 diff 直接當作某 API 已刪除或 runtime 行為改變的證明。
+
+後續另比對了 `UITextInputMode` 宣告片段、`NSExtensionContext` 的四個活動通知宣告行，以及 UIKit swiftinterface 的型別化模式通知區塊，兩個本機 SDK 的對應片段相同；片段雜湊與範圍見[可行性審查](IOS_KEYBOARD_TRANSITION_API_REVIEW.md#版本與本機宣告核對)。
 
 header 相同只證明這些公開宣告相同，不代表 UIKit 二進位、Simulator 服務、使用鍵盤的 App 與鍵盤的連線或 ABI 行為相同。這也是「換 SDK 後是否還崩」與「API 定義是否不同」必須分開的原因。
 
