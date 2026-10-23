@@ -6,7 +6,7 @@
 
 另有重要的環境限制：Xcode 27.1 官方 release notes 將 Duo Simulator 的「多數 App extension 無法執行與除錯」列為已知問題，編號 `187708767`。這不等於 Apple 已確認本案的鍵盤當機，也沒有逐項指明 custom keyboard 是否包含其中；但足以要求我們將模擬器限制與產品問題分開判讀。[Apple Xcode 27.1 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27_1-release-notes)
 
-閱讀順序：本文件說明責任與疑點；[狀態與驗證矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)列出螢幕、模式和切換處理；[Apple 來源與版本清單](IOS_APP_EXTENSION_HOST_APPLE_SOURCES.md)記錄官方依據、SDK 比對與資料缺口。R01、R02、R04 的具體待審行為另見[組字保留與確認建議](IOS_COMPOSITION_HANDOFF_POLICY.md)。
+閱讀順序：本文件說明責任與疑點；[狀態與驗證矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)列出螢幕、模式和切換處理；[Apple 來源與版本清單](IOS_APP_EXTENSION_HOST_APPLE_SOURCES.md)記錄官方依據、SDK 比對與資料缺口。R01、R02、R04 已確認的產品行為與待驗證的實作限制另見[組字保留與確認規則](IOS_COMPOSITION_HANDOFF_POLICY.md)。
 
 ## 審查範圍與判定方式
 
@@ -103,11 +103,11 @@ Apple 自 iOS 17 的鍵盤架構說明即提醒：文字與選取操作包含非
 
 ### R02 觸下地球鍵即結束組字
 
-**優先度高；實作確認與產品行為待決。** 地球鍵的 `.touchDown` 無條件呼叫 `finishCompositionForInputHandoff`。引擎會清除 composition，因此後續即使只打開清單再取消，原先可修改的組字也已結束。[接線](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L64)、[引擎](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift#L835)
+**優先度高；現況已確認，產品規則已確認但尚未實作。** 地球鍵的 `.touchDown` 無條件呼叫 `finishCompositionForInputHandoff`。引擎會清除 composition，因此後續即使只打開清單再取消，原先可修改的組字也已結束。[接線](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L64)、[引擎](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift#L835)
 
 Apple 的清單 API 區分短按切換與長按清單，沒有要求在 touch-down 就先確認文字。目前測試主要核對使用鍵盤的 App 還有「你好」，不足以證明取消清單後還能繼續修改原組字。[系統行為](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/handleinputmodelist(from:with:))
 
-待審建議：取消清單保留完整組字、候選目標及未完成讀音，真正切換時才結束原輸入。公開 handler 沒有清單結果的專用 completion，這個產品結果尚無已驗證的通用接法；不以 touch-down 或 view 消失代替真正切換的判定。詳見[地球清單的行為與公開 API 限制](IOS_COMPOSITION_HANDOFF_POLICY.md#r02-地球清單的行為與公開-api-限制)。
+已確認規則：取消清單保留完整組字、候選目標及未完成讀音／字根；真正切換鍵盤、收鍵盤或換欄位時，只確認已完成文字，取消未完成注音與字根。公開 handler 沒有清單結果的專用 completion，這個產品結果尚無已驗證的通用接法；不以 touch-down 或 view 消失代替真正切換的判定。詳見[地球清單的行為與公開 API 限制](IOS_COMPOSITION_HANDOFF_POLICY.md#r02-地球清單的行為與公開-api-限制)。
 
 ### R03 首次使用時間繞過 App Group 唯讀設計
 
@@ -188,13 +188,13 @@ Xcode 27.1 的 extension 已知限制需要加入上述證據的環境註記。2
 
 ## 待確認的設計決策
 
-| 決策 | 研究後建議的方向 | 確認前保留的問題 |
+| 決策 | 已確認規則或研究建議 | 尚待確認或驗證的問題 |
 |---|---|---|
-| 文字交接 | 定義文件、選取與可修改尾段的有效條件；取消選單與真正切換分開 | 未完成讀音、選字中與被動隱藏分別何時提交 |
+| 文字交接 | 已確認明確離開時只確認完成文字、取消未完成碼；取消清單與單純開闔保留完整組字 | 公開 API 如何辨認切換結果、原位置仍有效時的交接時點，以及被動隱藏原因 |
 | 模式與版面 | 幾何改變只調整呈現；引擎語意變更另有交接政策 | 是否維持現有所有模式切換的提交行為 |
 | 權限 | 保留 `RequestsOpenAccess=false`；修正 first-use 資料責任 | 日期由 App 計算、私有 extension 計算或如何整合 |
 | 輸入測試頁面 | 只有基本原生輸入框的測試 App、WebKit 對照與現有容器整合頁各有用途 | 是否另建獨立測試 App；需要哪些欄位 traits 對照 |
 | Duo 避讓 | 以本地有效區域處理；資料未知時保留明確的手動選擇 | keyboard extension 的區域供應是否有官方保證或真機證據 |
 | 工具與驗收 | 明定 SDK 下限；分離 Simulator 診斷與真機驗收 | Beta 3 當版 release notes、Duo 真機可取得性及實測組合 |
 
-確認上述責任、[組字交接建議](IOS_COMPOSITION_HANDOFF_POLICY.md)與[驗證矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)後，才決定開發範圍。這份研究沒有採用新的地球鍵 workaround，也沒有把既有模擬器成功列為發布驗收。
+後續以[已確認的組字交接規則](IOS_COMPOSITION_HANDOFF_POLICY.md)為依據，繼續釐清其他架構決策與[驗證矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)，再決定開發範圍。這份研究沒有採用新的地球鍵 workaround，也沒有把既有模擬器成功列為發布驗收。
