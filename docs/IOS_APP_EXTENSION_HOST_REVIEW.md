@@ -6,7 +6,7 @@
 
 另有重要的環境限制：Xcode 27.1 官方 release notes 將 Duo Simulator 的「多數 App extension 無法執行與除錯」列為已知問題，編號 `187708767`。這不等於 Apple 已確認本案的鍵盤當機，也沒有逐項指明 custom keyboard 是否包含其中；但足以要求我們將模擬器限制與產品問題分開判讀。[Apple Xcode 27.1 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-27_1-release-notes)
 
-閱讀順序：本文件說明責任與疑點；[狀態與驗證矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)列出螢幕、模式和切換處理；[Apple 來源與版本清單](IOS_APP_EXTENSION_HOST_APPLE_SOURCES.md)記錄官方依據、SDK 比對與資料缺口。
+閱讀順序：本文件說明責任與疑點；[狀態與驗證矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)列出螢幕、模式和切換處理；[Apple 來源與版本清單](IOS_APP_EXTENSION_HOST_APPLE_SOURCES.md)記錄官方依據、SDK 比對與資料缺口。R01、R02、R04 的具體待審行為另見[組字保留與確認建議](IOS_COMPOSITION_HANDOFF_POLICY.md)。
 
 ## 審查範圍與判定方式
 
@@ -99,7 +99,7 @@ Apple 自 iOS 17 的鍵盤架構說明即提醒：文字與選取操作包含非
 
 好打觸控會依本地尾段長度連續 `deleteBackward` 再插入新尾段；若同欄位游標變更被忽略，下一次改字可能作用於新的位置。這是由程式路徑導出的資料一致性風險，本輪沒有重現誤刪，也沒有證據將它連到地球鍵 SIGABRT。
 
-待審原則：將文件身分、編輯範圍是否仍有效、自己的待完成操作分開表達；文字安全條件失效時停止沿用舊尾段。驗證重點是同文件內的快速游標／選取修改，而不只是換欄位。
+待審原則：將文件身分、編輯範圍是否仍有效、自己的待完成操作分開表達；文字安全條件失效時停止沿用舊尾段。驗證重點是同文件內的快速游標／選取修改，而不只是換欄位。暫停、恢復與停止舊位置寫入的建議條件見[原輸入位置仍有效的判斷界線](IOS_COMPOSITION_HANDOFF_POLICY.md#原輸入位置仍有效的判斷界線)。
 
 ### R02 觸下地球鍵即結束組字
 
@@ -107,7 +107,7 @@ Apple 自 iOS 17 的鍵盤架構說明即提醒：文字與選取操作包含非
 
 Apple 的清單 API 區分短按切換與長按清單，沒有要求在 touch-down 就先確認文字。目前測試主要核對使用鍵盤的 App 還有「你好」，不足以證明取消清單後還能繼續修改原組字。[系統行為](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/handleinputmodelist(from:with:))
 
-待審決策：取消清單是否應保留完整組字、候選目標及未完成讀音。若採此語意，文字交接的時點就須與「使用者開始碰地球鍵」分開；本輪不選定替代實作。
+待審建議：取消清單保留完整組字、候選目標及未完成讀音，真正切換時才結束原輸入。公開 handler 沒有清單結果的專用 completion，這個產品結果尚無已驗證的通用接法；不以 touch-down 或 view 消失代替真正切換的判定。詳見[地球清單的行為與公開 API 限制](IOS_COMPOSITION_HANDOFF_POLICY.md#r02-地球清單的行為與公開-api-限制)。
 
 ### R03 首次使用時間繞過 App Group 唯讀設計
 
@@ -124,6 +124,8 @@ Apple 的清單 API 區分短按切換與長按清單，沒有要求在 touch-do
 需要逐情境決定：同文件版面改變、暫時隱藏、換文件與程序重建，各自保留什麼。`DispatchQueue.main.async` 只排程本程序工作，不能作為 remote text proxy 已完成提交的 acknowledgment。本輪不認定所有 disappearance 都不該提交，也不將版面回呼當作重啟引擎的理由。
 
 目前以 KVC 取值容許 `documentIdentifier` 為 nil，是既有的容錯策略；官方仍宣告為非 optional UUID。nil 到 UUID 不重設的做法需要配合「目前尾段是否仍可安全修改」判定，不能只憑 UUID 規避所有早期連線問題。[實作](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L230)、[官方語意](https://developer.apple.com/documentation/uikit/uitextdocumentproxy/documentidentifier)
+
+主動收起、單純開闔及原因未知的消失各自如何處理，見[消失與開闔的建議](IOS_COMPOSITION_HANDOFF_POLICY.md#r04-消失與開闔的處理)。
 
 ### R05 輸入測試頁面尚不足以代表一般文字 App
 
@@ -195,4 +197,4 @@ Xcode 27.1 的 extension 已知限制需要加入上述證據的環境註記。2
 | Duo 避讓 | 以本地有效區域處理；資料未知時保留明確的手動選擇 | keyboard extension 的區域供應是否有官方保證或真機證據 |
 | 工具與驗收 | 明定 SDK 下限；分離 Simulator 診斷與真機驗收 | Beta 3 當版 release notes、Duo 真機可取得性及實測組合 |
 
-確認上述責任與[驗證矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)後，才決定開發範圍。這份研究沒有採用新的地球鍵 workaround，也沒有把既有模擬器成功列為發布驗收。
+確認上述責任、[組字交接建議](IOS_COMPOSITION_HANDOFF_POLICY.md)與[驗證矩陣](IOS_APP_EXTENSION_HOST_STATE_MATRIX.md)後，才決定開發範圍。這份研究沒有採用新的地球鍵 workaround，也沒有把既有模擬器成功列為發布驗收。
