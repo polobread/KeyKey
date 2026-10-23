@@ -375,6 +375,10 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 ## GitHub Actions 封裝
 
+PR／push 的平台建置排除純文件、README、授權說明與更新公告；程式、設定及詞庫沿用
+各平台與共用模組目錄，最多三層目錄分組，不逐檔列清單。`update/stable/` 與 `update/beta/` 公告保留 feed 驗證與同步，
+不觸發原生建置。手動及正式 Release 的入口維持原有流程。
+
 Android 的 debug 封裝、iOS Simulator 與 `Android Play Release` workflow 都從
 GitHub Actions 頁面按 **Run workflow** 手動執行。Android Play workflow 使用所選分支
 或 tag 的 commit 建置、簽署並上傳 AAB 到 Google Play 內部測試；PR 合併與直接 push

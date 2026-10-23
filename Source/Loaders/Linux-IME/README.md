@@ -2,6 +2,8 @@
 
 倉頡新增可選的「即時候選」與「未打完也能選字」，兩項預設關閉；設定與分層驗證見 [桌面倉頡試用說明](../../../docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
 
+FreeBSD 的套件／ports 原始碼安裝、桌面設定與操作截圖見 [FreeBSD 安裝與使用指南](../../../FREEBSD_INSTALL.md)。
+
 Development version 1.3.7 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
 LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
 as 傳統注音, Cangjie, and Simplex. See the

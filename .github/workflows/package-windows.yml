@@ -3,10 +3,38 @@ name: Windows Build and Unsigned Inputs
 on:
   push:
     branches: [master]
-    paths: ['Source/**', 'DataSource/**', 'update/**', '.github/scripts/**', '.github/workflows/package-windows.yml']
+    paths:
+      - 'Source/Loaders/Windows-TSF/**'
+      - 'Source/Frameworks/**'
+      - 'Source/ModulePackages/**'
+      - 'Source/ExternalLibraries/**'
+      - 'Source/Shared/**'
+      - 'Source/Branding/**'
+      - 'Source/Distributions/**'
+      - 'Source/Loaders/iOS-Keyboard/**'
+      - 'DataSource/AISyntheticBigram/**'
+      - '.github/workflows/**'
+      - '!**/*.md'
+      - '!**/README*'
+      - '!**/LICENSE*'
+      - '!**/docs/**'
   pull_request:
     branches: [master]
-    paths: ['Source/**', 'DataSource/**', 'update/**', '.github/scripts/**', '.github/workflows/package-windows.yml']
+    paths:
+      - 'Source/Loaders/Windows-TSF/**'
+      - 'Source/Frameworks/**'
+      - 'Source/ModulePackages/**'
+      - 'Source/ExternalLibraries/**'
+      - 'Source/Shared/**'
+      - 'Source/Branding/**'
+      - 'Source/Distributions/**'
+      - 'Source/Loaders/iOS-Keyboard/**'
+      - 'DataSource/AISyntheticBigram/**'
+      - '.github/workflows/**'
+      - '!**/*.md'
+      - '!**/README*'
+      - '!**/LICENSE*'
+      - '!**/docs/**'
   workflow_dispatch:
     inputs:
       release_tag:

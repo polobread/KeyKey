@@ -5,15 +5,16 @@ on:
     paths:
       - 'Source/Loaders/OSX-IMK/**'
       - 'Source/PreferenceApplications/OSX/**'
-      - 'Source/Takao.xcodeproj/project.pbxproj'
-      - 'Source/Loaders/Windows-TSF/SymbolEmojiSupplement.json'
-      - 'Source/Loaders/Windows-TSF/Generate-SymbolResources.ps1'
-      - 'Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift'
-      - 'Source/Frameworks/OpenVanilla/Headers/**'
-      - 'Source/Frameworks/PlainVanilla/Headers/**'
-      - 'Source/Frameworks/LFExtensions/LFUtilities.h'
-      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
-      - '.github/workflows/macos-symbols.yml'
+      - 'Source/Takao.xcodeproj/**'
+      - 'Source/Loaders/Windows-TSF/**'
+      - 'Source/Loaders/iOS-Keyboard/**'
+      - 'Source/Frameworks/**'
+      - 'Source/Distributions/**'
+      - '.github/workflows/**'
+      - '!**/*.md'
+      - '!**/README*'
+      - '!**/LICENSE*'
+      - '!**/docs/**'
   workflow_dispatch:
 
 permissions:
