@@ -14,7 +14,7 @@
 
 打開 App 後，先看首頁的三個按鈕：**1. 啟用輸入法 → 2. 選擇琦琦輸入法 → 3. 調整設定**。前兩步完成後即可開始打字，設定可以稍後再調整。
 
-<img src="docs/images/keykey-android-v137-and02-home-pixel8pro-simulator.png" alt="琦琦輸入法 1.3.7 首頁，依序提供啟用輸入法、選擇琦琦輸入法及調整設定" width="300">
+![琦琦輸入法 1.3.7 首頁，依序提供啟用輸入法、選擇琦琦輸入法及調整設定](docs/images/keykey-android-v137-and02-home-pixel8pro-simulator.png)
 
 *首頁顯示版本 1.3.7；先點「1. 啟用輸入法」進入系統鍵盤管理。*
 
@@ -24,13 +24,13 @@
 
 點首頁的 **1. 啟用輸入法**，在系統的螢幕鍵盤管理頁找到 **琦琦輸入法**，打開它的開關。Android 若顯示第三方輸入法的安全提示，請確認名稱後再決定是否啟用。琦琦的字典、組字與選字在裝置上執行，App 未宣告網路權限。
 
-<img src="docs/images/keykey-android-v137-and03-enabled-pixel8pro-simulator.png" alt="Android 15 的 On-screen keyboard 頁面，琦琦輸入法開關已開啟" width="300">
+![Android 15 的 On-screen keyboard 頁面，琦琦輸入法開關已開啟](docs/images/keykey-android-v137-and03-enabled-pixel8pro-simulator.png)
 
 *圖中「On-screen keyboard」即螢幕鍵盤管理；琦琦右側開關開啟後，返回 App。*
 
 接著點 **2. 選擇琦琦輸入法**，在清單選 **繁體中文（標準注音）／琦琦輸入法**。啟用開關只讓鍵盤可用，這一步才會將它選為目前鍵盤。
 
-<img src="docs/images/keykey-android-v137-and04-selected-pixel8pro-simulator.png" alt="Android 的 Choose input method 清單，繁體中文標準注音的琦琦輸入法已選中" width="300">
+![Android 的 Choose input method 清單，繁體中文標準注音的琦琦輸入法已選中](docs/images/keykey-android-v137-and04-selected-pixel8pro-simulator.png)
 
 *「Choose input method」清單中，琦琦旁的圓點已選中。回到文字 App，點一般文字欄位即可叫出鍵盤。*
 
@@ -40,7 +40,7 @@
 
 先輸入「**琦琦輸入法**」，需要時從同音候選選「琦」，再按 **↵** 確認並換行。第二行輸入「**請假要去哪裡玩呢去海邊**」，暫時保留組字，點鍵盤上方組字列的 **玩**，就能展開同音候選。
 
-<img src="docs/images/keykey-android-v137-and06a-middle-candidate-pixel8pro-simulator-detail.png" alt="兩行指定文字已輸入，第二行保留組字；點玩後第 1 項玩反白，旁邊可見完等同音候選" width="480">
+![兩行指定文字已輸入，第二行保留組字；點玩後第 1 項玩反白，旁邊可見完等同音候選](docs/images/keykey-android-v137-and06a-middle-candidate-pixel8pro-simulator-detail.png)
 
 *第一行已確認，第二行仍可選字；「玩」候選在本次畫面為第 1 項。此為文字欄位與完整鍵盤的局部圖，[查看完整裝置原圖](docs/images/keykey-android-v137-and06a-middle-candidate-pixel8pro-simulator.png)。*
 
@@ -50,13 +50,13 @@
 
 點候選 **玩**，接著輸入「**散步**」。即使剛才修改的是句中用字，後續文字仍會接在句尾。
 
-<img src="docs/images/keykey-android-v137-and06b-continue-at-end-pixel8pro-simulator-detail.png" alt="選玩後續打散步，備註第二行成為請假要去哪裡玩呢去海邊散步，組字列保留最近九字" width="480">
+![選玩後續打散步，備註第二行成為請假要去哪裡玩呢去海邊散步，組字列保留最近九字](docs/images/keykey-android-v137-and06b-continue-at-end-pixel8pro-simulator-detail.png)
 
 *選字後續打「散步」，前面的兩行保留，新增文字接在「海邊」之後。[完整原圖](docs/images/keykey-android-v137-and06b-continue-at-end-pixel8pro-simulator.png)。*
 
 完成後按一次 **↵** 即可確認並換行，組字列會清空。
 
-<img src="docs/images/keykey-android-v137-and05-confirmed-pixel8pro-simulator-detail.png" alt="按一次換行後，兩行文字保留在備註欄，游標移到下一行且組字列已清空" width="480">
+![按一次換行後，兩行文字保留在備註欄，游標移到下一行且組字列已清空](docs/images/keykey-android-v137-and05-confirmed-pixel8pro-simulator-detail.png)
 
 *一次換行完成確認，游標位於下一行；文字沒有重複輸入。[完整原圖](docs/images/keykey-android-v137-and05-confirmed-pixel8pro-simulator.png)。*
 
@@ -82,19 +82,19 @@
 
 點鍵盤上的 **設**，或回 App 首頁點 **3. 調整設定**。最上方的 **輸入法**選單可選好打注音、傳統注音、倉頡及簡易；偏好逐字選字時可選 **傳統注音**。
 
-<img src="docs/images/keykey-android-v137-and07b-input-methods-pixel8pro-simulator.png" alt="Android 設定的輸入法下拉選單，列出好打注音、傳統注音、倉頡及簡易" width="300">
+![Android 設定的輸入法下拉選單，列出好打注音、傳統注音、倉頡及簡易](docs/images/keykey-android-v137-and07b-input-methods-pixel8pro-simulator.png)
 
 *四種輸入法從同一個選單切換；接 USB／藍牙實體鍵盤時也沿用所選模式。*
 
 選 **倉頡**後，展開 **倉頡與簡易**，找到 **倉頡設定（虛擬鍵盤）**。確認 **即時候選**及 **未打完也能選字**都已勾選，就能在字碼尚未打完時查看候選。
 
-<img src="docs/images/keykey-android-v137-and08a-cangjie-settings-pixel8pro-simulator-detail.png" alt="倉頡設定虛擬鍵盤區塊，即時候選及未打完也能選字均已勾選" width="480">
+![倉頡設定虛擬鍵盤區塊，即時候選及未打完也能選字均已勾選](docs/images/keykey-android-v137-and08a-cangjie-settings-pixel8pro-simulator-detail.png)
 
 *這兩個選項屬於螢幕鍵盤；實體鍵盤另有自己的設定。局部圖保留實際勾選狀態，[查看完整設定原圖](docs/images/keykey-android-v137-and08a-cangjie-settings-pixel8pro-simulator.png)。*
 
 回到文字欄位，只點 **竹、大**兩個字根，就能看到 **喬**。此時不必先完成「竹大口月口」；想輸入「喬」時，直接點它的候選。
 
-<img src="docs/images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator-detail.png" alt="倉頡只輸入竹大，字根仍有組字底線，候選列第 2 項為喬，完整字根鍵盤仍顯示" width="480">
+![倉頡只輸入竹大，字根仍有組字底線，候選列第 2 項為喬，完整字根鍵盤仍顯示](docs/images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator-detail.png)
 
 *「竹大」仍在組字，尚未選字確認；本次「喬」位於第 2 項。[完整裝置原圖](docs/images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator.png)。候選順位以你的實際畫面為準。*
 
@@ -104,7 +104,7 @@
 
 設定頁分成 **注音與選字、倉頡與簡易、外觀與操作、實體鍵盤、關聯詞詞庫**五個區塊。點區塊名稱即可展開；先保留預設值也能正常打字。
 
-<img src="docs/images/keykey-android-v137-and07a-settings-pixel8pro-simulator.png" alt="琦琦輸入法新版設定首頁，顯示輸入法選單與五個可展開設定區塊" width="300">
+![琦琦輸入法新版設定首頁，顯示輸入法選單與五個可展開設定區塊](docs/images/keykey-android-v137-and07a-settings-pixel8pro-simulator.png)
 
 *從要調整的功能展開對應區塊，例如到「外觀與操作」調整鍵盤高度、候選字顏色與按鍵回饋。*
 
