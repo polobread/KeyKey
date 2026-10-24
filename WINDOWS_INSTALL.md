@@ -20,6 +20,18 @@ Windows **1.3.7** 已正式發布，本指南對應正式安裝包。Windows、m
 
 既有未簽版本維持原狀；新版正式發布使用已簽檔案。請先確認檔案來源、版本及有效發行者簽章；不要為了安裝而關閉整台電腦的安全防護。自行建置與打包方式見 [BUILDING.md](BUILDING.md#windows-10-與-11)。
 
+### 下載來源：GitHub 或台灣 AWS CDN
+
+可在 [1.3.7 正式發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) 的 **Assets** 或 **台灣 AWS 下載點**下載。兩者提供相同檔案，不需要登入 GitHub；選擇符合上述架構的安裝包。
+
+| 安裝方式 | AWS CDN 下載 | 校驗檔 |
+| --- | --- | --- |
+| x64 安裝精靈 | [chichi77-KeyKey-1.3.7-windows-x64-setup.exe](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-windows-x64-setup.exe) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-windows-x64-setup.exe.sha256) |
+| x64 ZIP | [chichi77-KeyKey-1.3.7-windows-x64.zip](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-windows-x64.zip) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-windows-x64.zip.sha256) |
+| x86 ZIP（32 位元 Windows） | [chichi77-KeyKey-1.3.7-windows-x86.zip](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-windows-x86.zip) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-windows-x86.zip.sha256) |
+
+核對安裝包的 SHA-256 與同名 `.sha256` 內的值一致，再依前述方式確認發行者簽章及安裝。CDN 下載不改變簽章與安裝流程。
+
 ## 2. 執行 x64 安裝精靈
 
 1. 連按兩下 1.3.7 的 x64 安裝檔。Windows 詢問是否允許程式變更裝置時，確認檔案後按 **是**。安裝精靈會顯示歡迎畫面，按 **下一步**。

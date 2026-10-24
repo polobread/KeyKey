@@ -10,13 +10,15 @@
 
 開啟 [琦琦輸入法 v1.3.7 發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.7`。檔案尚未全部出現時，等 Assets 備齊再安裝。
 
-| 檔案 | 用途 |
+| 檔案（台灣 AWS CDN 下載） | 用途 |
 | --- | --- |
-| `chichi77-keykey-data_1.3.7-1+ubuntu24.04_all.deb` | 注音、詞庫與語言模型資料 |
-| `fcitx5-chichi77-keykey_1.3.7-1+ubuntu24.04_amd64.deb` | Fcitx 5 輸入法與好打注音 |
-| `gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb` | GNOME 候選字面板 |
-| `gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_source.tar.gz` | 面板對應原始碼；只需校驗，不須安裝 |
-| `SHA256SUMS` | 上述四個檔案的校驗值 |
+| [chichi77-keykey-data_1.3.7-1+ubuntu24.04_all.deb](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-keykey-data_1.3.7-1%2Bubuntu24.04_all.deb) | 注音、詞庫與語言模型資料 |
+| [fcitx5-chichi77-keykey_1.3.7-1+ubuntu24.04_amd64.deb](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/fcitx5-chichi77-keykey_1.3.7-1%2Bubuntu24.04_amd64.deb) | Fcitx 5 輸入法與好打注音 |
+| [gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/gnome-shell-extension-keykey-kimpanel_83%2Bkeykey1-1%2Bubuntu24.04_all.deb) | GNOME 候選字面板 |
+| [gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_source.tar.gz](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/gnome-shell-extension-keykey-kimpanel_83%2Bkeykey1-1%2Bubuntu24.04_source.tar.gz) | 面板對應原始碼；只需校驗，不須安裝 |
+| [SHA256SUMS](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/SHA256SUMS) | 上述四個檔案的校驗值 |
+
+也可從發布頁的 **台灣 AWS 下載點**或上表連結下載，不需要登入 GitHub。AWS CDN 與 GitHub Assets 的同名檔案內容相同，任選一個來源下載完整五檔；接著仍須依下一節核對 `SHA256SUMS`。
 
 面板套件沿用獨立的 `83+keykey1` 版號。請下載此頁的 Linux Assets；GitHub 自動產生的 **Source code** 壓縮檔不是 `.deb` 安裝包。
 
