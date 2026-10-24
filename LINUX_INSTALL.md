@@ -12,9 +12,9 @@
 
 開啟 [琦琦輸入法最新正式版下載頁](https://github.com/polobread/KeyKey/releases/latest)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.7`。下方檔名、CDN 連結及安裝指令以 **1.3.7** 示範；下載其他正式版本時，請以頁面當次檔名為準，並調整指令中的目錄與檔名。五檔必須來自同一發布版本，才能一起校驗。
 
-> **待補圖｜LNX-01a**
->
-> 未登入 GitHub 的 v1.3.7 Assets，顯示三個 .deb、面板原始碼及 SHA256SUMS。
+![GitHub v1.3.7 Assets 中的 Linux 三個 deb、面板原始碼與 SHA256SUMS](docs/images/keykey-linux-v137-lnx01a-release-assets.png)
+
+上圖是未登入 GitHub 的正式版 Assets 局部；下載三個 `.deb`、面板 `source.tar.gz` 與 `SHA256SUMS`，略過其他平台的檔案。
 
 
 | 檔案（台灣 AWS CDN 下載） | 用途 |
@@ -27,9 +27,9 @@
 
 也可從發布頁的 **台灣 AWS 下載點**或上表連結下載，不需要登入 GitHub。AWS CDN 與 GitHub Assets 的同名檔案內容相同，任選一個來源下載完整五檔；接著仍須依下一節核對 `SHA256SUMS`。
 
-> **待補圖｜LNX-01b**
->
-> 台灣 AWS 下載表中的 Linux 五檔，檔名與 GitHub 對應。
+![正式發布頁的台灣 AWS 下載表，包含 Ubuntu 詞庫、輸入法、面板及校驗檔](docs/images/keykey-linux-v137-lnx01b-aws-cdn.png)
+
+Ubuntu 的四個下載項目共用同一份 `SHA256SUMS`，合計仍是五個檔案。
 
 面板套件沿用獨立的 `83+keykey1` 版號。請下載此頁的 Linux Assets；GitHub 自動產生的 **Source code** 壓縮檔不是 `.deb` 安裝包。
 
@@ -44,9 +44,9 @@ sha256sum -c SHA256SUMS
 
 四個檔案都顯示 `OK` 後再安裝。若資料夾不同，將 `cd` 改成實際路徑；若顯示 `FAILED`，重新下載對應檔案。
 
-> **待補圖｜LNX-02a**
->
-> 終端機保留 sha256sum 命令，四個檔案均顯示 OK。
+![Ubuntu 終端執行 sha256sum，四個正式檔案皆顯示 OK](docs/images/keykey-linux-v137-lnx02a-checksums-ubuntu2404-wayland.png)
+
+四個檔名後方都顯示 `OK`，再接續安裝。
 
 接著安裝三個 .deb 與需要的輸入橋接套件：
 
@@ -59,9 +59,9 @@ sudo apt install \
   fcitx5-config-qt im-config
 ```
 
-> **待補圖｜LNX-02b**
->
-> apt 安裝結束摘要；可辨認輸入法、詞庫與 GNOME 面板已安裝。
+![apt 將既有琦琦詞庫與輸入法從 1.3.3 升級為 1.3.7 的完成摘要](docs/images/keykey-linux-v137-lnx02b-upgraded-ubuntu2404-wayland.png)
+
+本機是從 1.3.3 升級至 1.3.7，GNOME 面板套件原先已安裝；新安裝仍使用上方三個 `.deb` 的完整指令。畫面末尾的 `N:` 是讀取使用者目錄內本機套件時的 `_apt` 提示；兩個套件已完成 `Setting up` 並返回提示符，面板狀態則在下一節確認。
 
 **不必另外安裝 SQLite。** 輸入法套件依賴執行期的 `libsqlite3-0`，上面的 `apt install` 會一併處理。`libsqlite3-dev` 只供[從原始碼編譯](LINUX_CONFIGURE_INSTALL.md)使用；一般安裝 `.deb` 不需要它，也不需要 `sqlite3` 命令列程式。
 
@@ -69,9 +69,9 @@ sudo apt install \
 
 執行 `im-config`，在圖形精靈選 **fcitx5**，依提示儲存。
 
-> **待補圖｜LNX-03**
->
-> im-config 實際選到 fcitx5 的精靈頁面。
+![im-config 精靈的 fcitx5 圓鈕已選取](docs/images/keykey-linux-v137-lnx03-im-config-ubuntu2404-wayland.png)
+
+以 **fcitx5 左側的實心圓鈕**判斷選取狀態；上圖已選 fcitx5，橘色列背景不是框架啟用指示。
 
 儲存手邊文件後**重新啟動 Ubuntu**，再登入同一個帳號。重新啟動可讓新開啟的 App 取得 Fcitx 的登入環境；只關閉終端機不會套用設定。Fcitx 的 [Ubuntu 設定說明](https://fcitx-im.org/wiki/Setup_Fcitx_5)也使用 `im-config`。
 
@@ -84,30 +84,30 @@ keykey-gnome-panel status
 
 `status` 顯示 `State: ACTIVE` 表示面板已啟用。若啟用後仍看不到候選窗，再登出並登入一次。
 
-> **待補圖｜LNX-04**
->
-> 重新登入後 keykey-gnome-panel status 顯示 State: ACTIVE。
+![重新啟動並登入後，GNOME 候選面板顯示 State ACTIVE](docs/images/keykey-linux-v137-lnx04-panel-active-ubuntu2404-wayland.png)
+
+上圖為 Ubuntu 24.04.5／GNOME 46 的 Wayland 工作階段，重啟並登入後面板仍為 `ACTIVE`。
 
 
 ## 4. 加入琦琦注音並設定模式
 
 從「顯示應用程式」開啟 **Fcitx 5 Configuration**，或執行 `fcitx5-config-qt`。在「輸入法」頁取消 **Only Show Current Language／只顯示目前語言**，搜尋 **KeyKey**，將 **chichi77 KeyKey Bopomofo** 加入目前使用清單。
 
-> **待補圖｜LNX-05a**
->
-> Fcitx 新增輸入法清單，取消語言篩選並搜尋到 KeyKey。
+![Fcitx 搜尋 KeyKey，右側顯示 Bopomofo、Cangjie 與 Simplex 三個可加入項目](docs/images/keykey-linux-v137-lnx05a-search-ubuntu2404-wayland.png)
+
+選取右側的 Bopomofo，再按中間的 **←** 加入。搜尋時這版工具會隱藏語言篩選列；先清空搜尋欄即可找到該選項。
 
 加入後，確認左側清單出現 Bopomofo。若也要用倉頡或簡易，再分別加入 **chichi77 KeyKey Cangjie**、**chichi77 KeyKey Simplex**；保留英文鍵盤供切換。
 
-> **待補圖｜LNX-05b**
->
-> 加入後的目前清單，注音、倉頡、簡易與英文鍵盤可辨認。
+![Fcitx 目前清單包含英文鍵盤及琦琦注音、倉頡、簡易](docs/images/keykey-linux-v137-lnx05b-current-list-ubuntu2404-wayland.png)
+
+左側出現項目表示已加入；已加入的項目不會重複出現在右側可用清單。完成後按 **Apply／套用**儲存。
 
 選取清單中的 Bopomofo，開啟設定。**「注音模式」預設為「好打注音」**，可在此改成「傳統注音」。第一次使用可先保留 **標準（Standard）** 鍵盤配置和 **直式（Vertical）** 候選；習慣倚天、倚天 26 鍵、許氏或漢語拼音時，再切換鍵盤布局。此頁也可調整繁轉簡、Big-5 範圍外候選、打字錯誤提示音、中英文快捷鍵和關聯詞庫。
 
-> **待補圖｜LNX-08**
->
-> 1.3.7 中文設定頁，注音模式、鍵盤配置與候選方向可讀。
+![琦琦 1.3.7 中文設定頁，使用標準鍵盤、好打注音及直式候選](docs/images/keykey-linux-v137-lnx08-bopomofo-settings-ubuntu2404-wayland.png)
+
+本機使用 **標準、好打注音、直式**；下方另有好打注音進階設定。這是升級後保留的設定畫面。
 
 ## 5. 試打與基本操作
 
@@ -115,35 +115,37 @@ keykey-gnome-panel status
 
 從桌面右上角的 Fcitx 選單選 **chichi77 KeyKey Bopomofo**。按 **Ctrl + Space** 可以在 Fcitx 的英文鍵盤和琦琦注音間切換；快捷鍵若已自行更改，以 Fcitx 5 Configuration 的「全域選項」為準。
 
-> **待補圖｜LNX-06a**
->
-> GNOME 的 Fcitx 選單已選琦琦；標註實際 X11 或 Wayland session。
+![GNOME Fcitx 選單顯示目前使用 chichi77 KeyKey Bopomofo](docs/images/keykey-linux-v137-lnx06a-selected-ubuntu2404-wayland.png)
+
+![點選目前名稱後展開英文鍵盤及琦琦三種輸入法](docs/images/keykey-linux-v137-lnx06a-input-list-ubuntu2404-wayland.png)
+
+第一張顯示目前使用 Bopomofo；點選名稱可展開第二張的切換清單。第二張的英文列只是滑鼠停留位置。兩張均為 GNOME Wayland 實拍。
 
 ### 輸入兩行文字，保留組字
 
 先輸入「**琦琦輸入法**」，按 Enter 確認，再按 Enter 換行。第二行輸入「**請假要去哪裡玩呢去海邊**」，先不按 Enter。一聲讀音以空白完成，其他聲調用聲調鍵；有底線的部分仍可回頭改字。
 
-> **待補圖｜LNX-06b**
->
-> 文字編輯器中指定兩行；第一行已確認、第二行保留組字。
+![文字編輯器的兩行指定文字，第一行已確認，第二行仍保留部分組字](docs/images/keykey-linux-v137-lnx06b-composition-ubuntu2404-wayland.png)
 
-### 在「玩」開候選，選字後續打
+第一行已確認；第二行的「請假」已先固定，其餘仍有黑色組字底線，尚未確認整句。
+
+### 在「玩」開候選，選字後回句尾
 
 用方向鍵移動組字游標，按 **↓** 開候選，再確認反白目標為「玩」。選字目標預設在游標後方；若已開啟「選字目標在游標前方」，請依實際反白位置操作。支援組字點擊的 App 也可點字開候選。
 
-> **待補圖｜LNX-07a**
->
-> 第二行尚未確認，在玩開啟完整候選窗；玩可選，保留實際編號。
+![第二行保留組字，在玩開啟候選，第 1 項玩反白](docs/images/keykey-linux-v137-lnx07a-middle-candidate-ubuntu2404-wayland.png)
 
-按候選編號或點選 **玩**，接著輸入「**散步**」，新文字會接在句尾。候選窗開著時 Enter 是選字；關閉後再按 Enter，才會確認整段。
+本機的「玩」為第 **1** 項，順位會隨詞庫、上下文與學習紀錄改變。
 
-> **待補圖｜LNX-07b**
->
-> 選玩後續打散步，前後文字與組字範圍可辨認。
+按候選編號或點選 **玩**，再按 **End** 回到組字末端。本例只保留「請假要去哪裡玩呢去海邊」，不追加文字。候選窗開著時 Enter 是選字；關閉後再按 Enter，才會確認整段。
 
-> **待補圖｜LNX-06c**
->
-> Enter 確認後文字保留，組字及候選窗已結束。
+![選玩後候選窗已關閉，按 End 回句尾，組字仍保留](docs/images/keykey-linux-v137-lnx07b-after-selection-ubuntu2404-wayland.png)
+
+本機選字後游標停在「玩」後方；上圖已按 End 回句尾，尚未送出整段。
+
+![Enter 確認後保留兩行文字，黑色組字底線與候選窗已結束](docs/images/keykey-linux-v137-lnx06c-confirmed-ubuntu2404-wayland.png)
+
+按 Enter 後，兩行文字保留，黑色組字底線消失；紅色虛線是文字編輯器的拼字檢查。
 
 **Backspace／Delete** 可修正目前組字位置的讀音或文字；**Esc** 可先關閉候選或取消未完成讀音。
 
@@ -157,15 +159,15 @@ keykey-gnome-panel status
 
 從琦琦設定開啟 **倉頡設定…**，勾選 **即時候選**及 **未打完也能選字**，依視窗提示儲存。桌面版這兩項預設關閉，即時候選與錯碼清除互斥。
 
-> **待補圖｜LNX-09a**
->
-> 倉頡設定中的兩個提前選字選項均已開啟。
+![Linux 倉頡設定的即時候選及未打完也能選字均已勾選](docs/images/keykey-linux-v137-lnx09a-cangjie-settings-ubuntu2404-wayland.png)
+
+上圖兩項均已開啟，錯碼清除關閉；這是本機原有設定，不代表全新安裝預設值。
 
 回文字編輯器，從 Fcitx 清單選 **Cangjie**，只輸入 H、K，也就是 **竹、大**，從候選找 **喬**。不必先輸入完整「竹大口月口」，按實際候選編號即可選字。
 
-> **待補圖｜LNX-09b**
->
-> 只輸入竹大、尚未送出，候選中有喬；不可用其他平台畫面代替。
+![只輸入竹大，喬在第 5 項反白，尚未送出](docs/images/keykey-linux-v137-lnx09b-cangjie-candidates-ubuntu2404-wayland.png)
+
+本機只打 H、K，「喬」為第 **5** 項，選取後已核對輸出確為「喬」。第 2～4 項罕字在這台 VM 顯示為方框，圖片保留實際呈現。
 
 ### 常用按鍵
 
@@ -188,15 +190,15 @@ keykey-gnome-panel status
 
 「好打注音進階設定」可調整 **空白鍵開啟候選**、選字目標在游標前／後，以及 **Esc 清除整句**。空白開候選與 Esc 清除整句預設關閉；未啟用空白選字時仍可按 ↓ 開候選。
 
-> **待補圖｜LNX-10**
->
-> 1.3.7 好打注音進階設定，三個選項及實際值可辨認。
+![好打注音進階設定：空白鍵開候選、選字目標及 Esc 清除整句](docs/images/keykey-linux-v137-lnx10-smart-options-ubuntu2404-wayland.png)
+
+本機三項均未勾選，選字目標為游標後方；此圖為前述注音設定頁的局部。
 
 在不同 App 或桌面 session 的鍵盤操作相同，但輸入橋接與候選窗位置可能不同。請先用上述文字編輯器主線試打，再比較其他 App。
 
-> **待補圖｜LNX-11**
->
-> 其他文字宿主的代表畫面，註明 X11／Wayland、App 及實際輸入路徑。
+![GNOME Terminal 中實際注音組字並開啟法的候選](docs/images/keykey-linux-v137-lnx11-terminal-candidate-ubuntu2404-wayland.png)
+
+另一宿主為 **GNOME Terminal 3.52.0／GTK 3／Wayland**，使用登入環境的 `GTK_IM_MODULE=fcitx`。圖中「琦琦輸入法」仍在組字，「法」候選第 1 項反白；`#` 是終端機註解前綴。此畫面不代替其他 App 或 X11 的驗證。
 
 
 - 在 Fcitx 5 Configuration 的 Bopomofo 設定頁可切換好打／傳統注音、五種鍵盤布局、直／橫式候選、繁轉簡與關聯詞庫。候選窗字體和外觀也受 Fcitx／GNOME 主題影響。
@@ -231,4 +233,10 @@ sudo apt remove fcitx5-chichi77-keykey chichi77-keykey-data \
 
 ## 圖片與適用範圍
 
-本頁以正式 1.3.7 的 Ubuntu 24.04／GNOME 46／amd64 套件流程編寫；原本 1.3.0 圖片已從主線撤下，待拍處保留「待補圖」。本輪只改寫文件，沒有新增桌面驗收；X11、Wayland 及不同 App 的結果須分別記錄。
+本輪於 **2026-10-24** 在 VirtualBox 的 **Ubuntu 24.04.5 LTS／GNOME Shell 46.0／Wayland／amd64** 實拍，使用 AWS CDN 的正式 1.3.7 套件；四個檔案均通過 `SHA256SUMS`。既有 1.3.3 已升級至 1.3.7，重新啟動並登入後核對套件版號、關於頁及 GNOME 面板 `ACTIVE`。
+
+![Ubuntu 本機關於頁顯示琦琦輸入法版本 1.3.7](docs/images/keykey-linux-v137-about-ubuntu2404-wayland.png)
+
+主線宿主為 **GNOME Text Editor 46.3／GTK 4.14.5**，經 `keykey-fcitx-app` 使用直接 Fcitx 輸入路徑；另拍 GNOME Terminal 的 GTK 3 路徑。兩行文字與倉頡「喬」均以實際按鍵輸入，並從儲存檔核對內容，沒有貼上文字模擬組字。18 個補圖位置已補齊，共引用 20 張圖片，含設定局部與版本核對圖。
+
+本輪沒有拍攝全新安裝或 X11，也沒有重跑完整發布矩陣；圖片只記錄上述 VM 與宿主的操作。原本 1.3.0 圖片未作為新版證據，完整來源見[跨平台截圖計畫](docs/CROSS_PLATFORM_SCREENSHOT_PLAN.md)。
