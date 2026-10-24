@@ -38,6 +38,8 @@
 | Linux | [安裝指南](../LINUX_INSTALL.md)、[1.3.0 Fcitx 清單](images/keykey-linux-v130-fcitx-methods.png)、[1.3.0 候選](images/keykey-linux-v130-smart-candidates.png) | 補下載、校驗、安裝完成、Fcitx 啟用與 GNOME 面板狀態；更新實際設定。 |
 | FreeBSD | [安裝指南](../FREEBSD_INSTALL.md)、[1.3.7 輸入法清單](images/keykey-freebsd-v137-fcitx-methods.png)、[1.3.7 候選](images/keykey-freebsd-v137-smart-candidates.png) | 既有桌面圖先複核；補安裝版本、環境設定及桌面選用輸入法的主線。 |
 
+後續各平台指南採相同的圖文編排方式：先以短段落說明用途與適用環境，再沿下載、安裝／啟用、試打逐步展開。每段先說要按哪裡，緊接對應截圖，再用圖說指出完成狀態與下一步；避免先列一長串步驟，最後才集中放圖。日常功能與問題排查放在首次使用之後，圖片來源、驗證範圍及進階指令移到後段。參考外部文章的說明技巧，文字依本專案實際操作重新撰寫，不沿用其舊版號、平台狀態或句子。
+
 既有示意 SVG 可保留作路徑說明；圖說需標示「示意圖」。舊版實拍保留真實版本，未完成替換前不能將圖說直接改成 1.3.7。商店素材的來源紀錄見 [StoreAssets README](../StoreAssets/README.md)，其舊版素材也須依本清單複核。
 
 ## 3. 共通拍攝情境
@@ -219,7 +221,7 @@ P0 先完成一台 iPhone 實機；iPad 補自己的系統啟用及鍵盤版面�
 | MAC-09a | [原圖](images/keykey-macos-v137-mac09-cangjie-settings-apple-silicon.png) | 本機已安裝 1.3.7／偏好設定實拍 | macOS 27.0.1／琦琦輸入法偏好設定 | Apple Silicon arm64 實機 | 2026-10-24 | 即時候選與未打完也能選字均開啟。／倉頡 |
 | MAC-09b／MAC-06b | [原圖](images/keykey-macos-v137-mac09-cangjie-candidates-apple-silicon.png) | 本機已安裝 1.3.7／維護者提供原圖 | macOS 27.0.1／文字編輯 | Apple Silicon arm64 實機 | 2026-10-24 | 上方兩行已確認；竹大仍在組字，候選第 2 項為喬。／倉頡 |
 | MAC-10a | [原圖](images/keykey-macos-v137-mac10-general-settings-apple-silicon.png) | 本機已安裝 1.3.7／偏好設定實拍 | macOS 27.0.1／琦琦輸入法偏好設定 | Apple Silicon arm64 實機 | 2026-10-24 | 本機 125%、垂直選字、Shift 關閉、啟動中文，並非全新安裝預設值。／偏好設定 |
-| 版本核對（補充） | [原圖](images/keykey-macos-v137-about-apple-silicon.png) | 本機已安裝 1.3.7／偏好設定實拍 | macOS 27.0.1／琦琦輸入法偏好設定 | Apple Silicon arm64 實機 | 2026-10-24 | 關於頁顯示已安裝版本 1.3.7。／偏好設定 |
+| 版本核對（補充） | [原圖](images/keykey-macos-v137-about-apple-silicon.png) | 本機已安裝 1.3.7／偏好設定實拍 | macOS 27.0.1／琦琦輸入法偏好設定 | Apple Silicon arm64 實機 | 2026-10-24 | 關於頁顯示已安裝版本 1.3.7。／進階檢查 |
 
 每完成一個平台，依序勾選：
 
