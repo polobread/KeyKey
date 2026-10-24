@@ -4,11 +4,11 @@
 
 ## 1. 安裝 App，先開啟一次
 
-在 iPhone 或 iPad 開啟[台灣 App Store 的「琦琦輸入法」頁面](https://apps.apple.com/tw/app/id6807832939)，點 **取得**並完成安裝，再打開一次 App。首頁下方列有加入鍵盤的步驟，之後也能從這裡開啟輸入法設定、自訂詞管理及實體鍵盤編輯器。
+在 iPhone 或 iPad 開啟[台灣 App Store 的「琦琦輸入法」頁面](https://apps.apple.com/tw/app/id6807832939)，點 **取得**並完成安裝，再按 **打開**啟動 App；已安裝時可直接按 **打開**。首頁下方列有加入鍵盤的步驟，之後也能從這裡開啟輸入法設定、自訂詞管理及實體鍵盤編輯器。
 
-> **待補圖｜IOS-01**
->
-> 台灣 App Store 商品頁與取得／安裝後開啟入口，分圖；不拍入 Apple 帳號資料。
+<img src="docs/images/keykey-ios-v137-ios01-app-store-user-iphone.png" alt="iPhone App Store 的琦琦輸入法商品頁，顯示打開按鈕與版本1.3.7的新功能" width="360">
+
+*確認名稱與「琦」字圖示；這台 iPhone 已安裝，因此按鈕顯示「打開」。下方「新功能」列出 1.3.7 的更新內容。*
 
 <img src="docs/images/keykey-ios-v137-ios02-home-user-iphone.png" alt="琦琦輸入法 1.3.7 的 iPhone 首頁，顯示台灣一次付費支持 90 元及加入鍵盤步驟" width="360">
 
