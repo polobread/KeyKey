@@ -130,7 +130,49 @@ iOS 的第三方螢幕鍵盤無法接收其他 App 裡的一般 USB／藍牙鍵�
 
 *按複製後，紫色組字已確認，左側候選清空並顯示複製確認。*
 
-編輯器只能在琦琦 App 前景使用，不能當作其他 App 的系統實體輸入法。上圖使用模擬器的 Generic Keyboard；USB／藍牙實機連線與 iPad 版面須分別驗證。
+iPad 橫向時，編輯器把輸入區、候選、操作鍵及複製／分享按鈕分成四欄。下圖同樣輸入兩行示範文字，停在「玩」的候選，尚未確認第二行。
+
+<img src="docs/images/keykey-ios-v137-ios11c-hardware-editor-landscape-ipadpro13m5-simulator.png" alt="iPad 橫向實體鍵盤編輯器的四欄版面，第一行琦琦輸入法已確認，第二行保持組字並顯示玩候選" width="820">
+
+*iPad Pro 13 吋模擬器：左側輸入、中央候選，右側為操作及複製／分享入口。*
+
+編輯器只能在琦琦 App 前景使用，不能當作其他 App 的系統實體輸入法。iPhone 與 iPad 圖片使用模擬器的 Generic Keyboard；實際 USB／藍牙連線仍須實機驗證。
+
+## 8. 在 iPad 啟用與使用
+
+### 先確認鍵盤已開啟
+
+iPad 也可依第 2 節新增鍵盤。若從琦琦 App 的 **開啟「設定」** 進入 App 設定頁，可到 **設定 → App → 琦琦輸入法 → 鍵盤**，開啟 **琦琦輸入法**。此頁不需要另外開啟完整取用。
+
+<img src="docs/images/keykey-ios-v137-ios10a-enable-keyboard-detail-ipadpro13m5-simulator.png" alt="iPad 系統設定的琦琦輸入法鍵盤開關已開啟，沒有完整取用開關，畫面為設定頁局部" width="620">
+
+*琦琦的鍵盤開關為綠色即已啟用。此圖裁出設定頁的相關區域；[完整 iPad 設定原圖](docs/images/keykey-ios-v137-ios10a-enable-keyboard-ipadpro13m5-simulator.png)保留供核對。*
+
+### 直向與橫向的組字、選字
+
+開啟可輸入多行文字的 App，長按鍵盤左下角的地球鍵，選 **琦琦輸入法**（[iPad 切換清單原圖](docs/images/keykey-ios-v137-ios10h-keyboard-switcher-landscape-ipadpro13m5-simulator.png)）。本輪使用系統「提醒事項」示範：新增一筆提醒事項，點 **加入附註** 再打字，才能在同一欄位保留多行文字。
+
+先輸入「琦琦輸入法」並確認換行，第二行輸入「請假要去哪裡玩呢去海邊」，先不按 ↵。與 iPhone 相同，點組字格中的 **玩** 就能開候選。
+
+<img src="docs/images/keykey-ios-v137-ios10b-middle-candidate-portrait-ipadpro13m5-simulator.png" alt="iPad 直向提醒事項附註含兩行示範文字，第二行保留組字，琦琦鍵盤在玩展開候選" width="620">
+
+*iPad 直向：文字在提醒事項的附註欄，組字與候選位於下方琦琦鍵盤；「玩」候選仍開啟，第二行未先確認。*
+
+轉成橫向也可使用相同操作（[橫向「玩」候選原圖](docs/images/keykey-ios-v137-ios10c-middle-candidate-landscape-ipadpro13m5-simulator.png)）。選好「玩」，再輸入 **散步**，新字會接在句尾，前面的文字與選字結果保留。
+
+<img src="docs/images/keykey-ios-v137-ios10d-continue-landscape-ipadpro13m5-simulator.png" alt="iPad 橫向提醒事項附註顯示琦琦輸入法及請假要去哪裡玩呢去海邊散步，鍵盤保留最後九個音節" width="820">
+
+*iPad 橫向：續打後為「請假要去哪裡玩呢去海邊散步」，最後九個音節仍在組字格中。*
+
+按一次 **↵** 確認並換行，組字格會清空，兩行中文仍留在附註欄（[確認換行後原圖](docs/images/keykey-ios-v137-ios10e-confirmed-landscape-ipadpro13m5-simulator.png)）。
+
+### 倉頡也能從部分字根選字
+
+在鍵盤的 **設 → 倉頡設定（虛擬鍵盤）** 確認 **即時候選** 與 **未打完也能選字** 都已勾選（[iPad 設定原圖](docs/images/keykey-ios-v137-ios10f-cangjie-options-landscape-ipadpro13m5-simulator.png)），再切換倉頡。只輸入 **竹、大**，就能從候選選 **喬**。
+
+<img src="docs/images/keykey-ios-v137-ios10g-cangjie-candidates-landscape-ipadpro13m5-simulator.png" alt="iPad 橫向倉頡只輸入竹大，附註中的字根仍保持組字，候選列第 2 項可見喬" width="820">
+
+*iPad 倉頡：「竹大」尚未送出，此次第 2 項候選為「喬」。未先輸入完整字碼，順位仍以自己的候選清單為準。*
 
 ## 遇到問題時
 
@@ -148,8 +190,8 @@ iOS 的第三方螢幕鍵盤無法接收其他 App 裡的一般 USB／藍牙鍵�
 
 ## 圖片來源與驗證範圍
 
-首頁採維護者提供的 **1.3.7 台灣價格 iPhone 實機原圖**。其他圖片於 2026-10-24 使用 **iPhone 17 Pro／iOS 26.5 模擬器**補拍，App 與鍵盤 extension 均為 **1.3.7（build 1）**，來源是正式 `v1.3.7` tag；沿用 Xcode 原本的 **Debug** 組態，屬模擬器自建版本。輸入示範宿主為「記事本」測試 App，沒有使用 App 內的除錯測試頁。
+首頁採維護者提供的 **1.3.7 台灣價格 iPhone 實機原圖**。其他圖片於 2026-10-24 使用 **iPhone 17 Pro／iOS 26.5** 與 **iPad Pro 13 吋（M5）／iPadOS 26.5 模擬器**補拍，App 與鍵盤 extension 均為 **1.3.7（build 1）**，來源是正式 `v1.3.7` tag；沿用 Xcode 原本的 **Debug** 組態，屬模擬器自建版本。iPhone 輸入示範宿主為「記事本」測試 App，iPad 為系統「提醒事項」的附註欄；沒有使用 App 內的除錯測試頁。iPad 補拍只沿用既有 Xcode 設定執行，沒有更改 Scheme、建置組態或目的地。
 
-本輪已操作觸控組句、句中選字後續打、倉頡部分字根選字、空白鍵開候選，以及 App 前景編輯器與複製確認。模擬器結果不代替 App Store 安裝、USB／藍牙實機連線、跨 App 貼上、分享或 iPad 版面驗證；這些項目仍待補齊。圖片只擷取 iPhone 畫面，不包含其他 macOS 視窗。
+本輪已操作觸控組句、句中選字後續打、倉頡部分字根選字、空白鍵開候選，以及 App 前景編輯器與複製確認。模擬器結果不代替 App Store 安裝、USB／藍牙實機連線、跨 App 貼上、分享或 iPhone／iPad 實機輸入驗證；這些項目仍待補齊。圖片只擷取 iPhone／iPad 畫面，不包含其他 macOS 視窗；iPad 啟用頁的局部圖僅裁切，完整原圖另附。
 
 系統操作參考：[Apple：在 iPhone 上新增或更改鍵盤](https://support.apple.com/zh-tw/guide/iphone/iph73b71eb/ios)、[Apple：在 iPad 上新增或更改鍵盤](https://support.apple.com/zh-hk/guide/ipad/ipad1aa5a19a/ipados)。技術資訊另見 [iOS 鍵盤文件](Source/Loaders/iOS-Keyboard/README.md)。

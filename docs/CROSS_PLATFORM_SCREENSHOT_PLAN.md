@@ -2,7 +2,7 @@
 
 本清單供 Windows、macOS、iOS／iPadOS、Android、Linux 與 FreeBSD 逐平台補齊安裝指南、README 及媒體素材。拍攝主線為「取得正式版 → 安裝／啟用 → 選用輸入法 → 第一次打字 → 選字與改字」。
 
-規劃基準：2026-10-24 的 `master` 文件與目前正式版 **1.3.7**。本輪已先補拍 macOS，iOS 已加入台灣價格實機首頁與 14 張 iPhone 模擬器操作圖；其餘畫面仍待逐一補齊。未完成的子畫面保留待拍，不因同一項已有一張圖而視為全項完成。
+規劃基準：2026-10-24 的 `master` 文件與目前正式版 **1.3.7**。本輪已先補拍 macOS，iOS 已加入台灣價格實機首頁、14 張 iPhone 模擬器操作圖及 9 張 iPad 模擬器原圖；其餘畫面仍待逐一補齊。未完成的子畫面保留待拍，不因同一項已有一張圖而視為全項完成。
 
 ## 1. 使用方式與優先順序
 
@@ -18,7 +18,7 @@
 | --- | --- | --- | --- | --- |
 | Windows | ☐ | ☐ | ☐ | 待開始 |
 | Android | ☐ | ☐ | ☐ | 待開始 |
-| iOS／iPadOS | 部分入文 | iPhone 模擬器已入文；iPad 待補 | 部分入文 | 2026-10-24 共 15 張入文：台灣價格實機首頁與 14 張正式 1.3.7 來源的模擬器操作圖；商店頁、實機及 iPad 待補 |
+| iOS／iPadOS | 部分入文 | iPhone／iPad 模擬器已入文 | 部分入文 | 2026-10-24 共 24 張原圖及 1 張局部裁切圖已引用；正式 1.3.7 來源，商店頁與實機仍待補 |
 | macOS | 部分入文 | 部分入文 | 部分入文 | 2026-10-24 已入文 12 張；安裝完成頁、選字後續打、中英切換狀態及 Emoji 待補 |
 | Linux | ☐ | ☐ | ☐ | 待開始 |
 | FreeBSD | ☐ | ☐ | ☐ | 待複核既有 1.3.7 素材 |
@@ -33,7 +33,7 @@
 | --- | --- | --- |
 | Windows | [安裝指南](../WINDOWS_INSTALL.md)、[1.3.0 一般設定圖](../Source/Loaders/Windows-TSF/IMAGES/v1.3.0-settings-general.png) | 新增鍵盤步驟缺實拍；安裝、模式選單及設定圖需更新至正式 1.3.7。 |
 | macOS | [安裝指南](../MACOS_INSTALL.md)、本輪正式版 1.3.7 實拍（第 11 節） | 已替換指南的 1.3.0 候選／設定與新增來源示意；安裝完成頁及部分前後操作仍待補。 |
-| iOS／iPadOS | [安裝指南](../IOS_INSTALL.md)、本輪 1.3.7 實機首頁及 iPhone 模擬器圖（第 11 節） | 已串起新增鍵盤、切換、指定句中選字與倉頡；商店頁、iPhone 實機輸入、iPad 及外接鍵盤實機待補。 |
+| iOS／iPadOS | [安裝指南](../IOS_INSTALL.md)、本輪 1.3.7 實機首頁及 iPhone／iPad 模擬器圖（第 11 節） | 已串起新增鍵盤、切換、指定句中選字與倉頡；已補 iPad 啟用、直橫向版面與指定情境；商店頁、iPhone／iPad 實機輸入及外接鍵盤實機待補。 |
 | Android | [安裝指南](../ANDROID_INSTALL.md)、[App 首頁](images/keykey-android-pixel9a-home.png)、[句中候選](images/keykey-android-middle-candidate.png) | 更新舊名稱與設定畫面；補正式商店入口、雙排選字及面板收合。 |
 | Linux | [安裝指南](../LINUX_INSTALL.md)、[1.3.0 Fcitx 清單](images/keykey-linux-v130-fcitx-methods.png)、[1.3.0 候選](images/keykey-linux-v130-smart-candidates.png) | 補下載、校驗、安裝完成、Fcitx 啟用與 GNOME 面板狀態；更新實際設定。 |
 | FreeBSD | [安裝指南](../FREEBSD_INSTALL.md)、[1.3.7 輸入法清單](images/keykey-freebsd-v137-fcitx-methods.png)、[1.3.7 候選](images/keykey-freebsd-v137-smart-candidates.png) | 既有桌面圖先複核；補安裝版本、環境設定及桌面選用輸入法的主線。 |
@@ -69,7 +69,7 @@
 | --- | --- | --- | --- |
 | Windows | 待實測／待拍 | 待實測／待拍 | WIN-06／07／09；記事本，記錄 Windows 版本與架構。 |
 | macOS | 已實拍入文 | 已實拍入文（含兩個開關） | MAC-06／07a／09；1.3.7、macOS 27.0.1、文字編輯；維護者提供候選圖。選字後續打另待補。 |
-| iOS／iPadOS | iPhone 模擬器已實拍入文 | iPhone 模擬器已實拍入文（含兩個開關） | IOS-06／07／09；正式 v1.3.7 來源、原本 Debug 組態，觸控輸入；實機與 iPad 另驗。App 前景編輯器另記 IOS-11。 |
+| iOS／iPadOS | iPhone／iPad 模擬器均已實拍入文 | iPhone／iPad 模擬器均已實拍入文（含兩個開關） | IOS-06／07／09／10；正式 v1.3.7 來源、原本 Debug 組態，觸控輸入；iPhone／iPad 實機另驗。App 前景編輯器另記 IOS-11。 |
 | Android | 待實測／待拍 | 待實測／待拍 | AND-05／06／08；觸控先拍，實體鍵盤一般／雙排／浮動另記錄。 |
 | Linux | 待實測／待拍 | 待實測／待拍 | LNX-06／07／09；記錄宿主與 X11／Wayland，舊圖不算本輪通過。 |
 | FreeBSD | 待實測／待拍 | 待實測／待拍 | BSD-06／07／09；Mousepad／GTK 3、Xfce／X11；舊「中」字圖不算指定情境通過。 |
@@ -120,7 +120,7 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 
 ## 6. iOS／iPadOS
 
-本輪依維護者指定，首頁使用其提供的 1.3.7 台灣價格 iPhone 實機截圖，其餘操作已以正式 `v1.3.7` 來源的 iPhone 模擬器自建版本補拍，依維護者要求保留 Xcode 原本 Debug 組態。App Store 版、模擬器自建版本與開發中功能分開記錄；不能只憑畫面上的版號判斷來源。iPhone 實機輸入與 iPad 版面仍各自驗證。實體鍵盤功能僅能以琦琦 App 前景編輯器呈現。
+本輪依維護者指定，首頁使用其提供的 1.3.7 台灣價格 iPhone 實機截圖，其餘操作已以正式 `v1.3.7` 來源的 iPhone／iPad 模擬器自建版本補拍，依維護者要求保留 Xcode 原本 Debug 組態。App Store 版、模擬器自建版本與開發中功能分開記錄；不能只憑畫面上的版號判斷來源。iPad 模擬器已補自己的啟用與直橫向版面；iPhone／iPad 實機輸入仍各自驗證。實體鍵盤功能僅能以琦琦 App 前景編輯器呈現。
 
 | ID | 優先 | 狀態 | 要拍的畫面與完成條件 | 建議圖說 |
 | --- | --- | --- | --- | --- |
@@ -133,8 +133,8 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 | IOS-07 | P1 | 已入文：候選與續打兩張 | 第一行「琦琦輸入法」已確認、第二行保留組字並在「玩」開候選；另拍選字後續打「散步」。 | 點要修改的字開候選，選字後繼續輸入，前面已確認的文字會保留。 |
 | IOS-08 | P1 | 已入文：鍵盤及 App 兩張 | 鍵盤「設」及 App 設定的實際入口，分圖說明。 | 從鍵盤設定或 App 的輸入法設定選擇要使用的輸入方式。 |
 | IOS-09 | P1 | 已入文：觸控設定及候選 | 觸控倉頡「即時候選」「未打完也能選字」均勾選，只輸入「竹大」，候選第 2 項可見「喬」。 | 倉頡可在字碼尚未輸入完成時，從候選中提前選字。 |
-| IOS-10 | P1 | 待重拍 | iPad 的正常鍵盤與宿主文字欄位，標明方向；若系統啟用路徑不同另補圖。 | iPad 上使用琦琦輸入法組句與選字；畫面為實際平板版面。 |
-| IOS-11 | P2 | 已入文：模擬器編輯器與複製確認；實機待驗 | 琦琦 App 前景編輯器接收模擬器 Generic Keyboard 按鍵，含組字、候選與複製／分享入口；另有複製確認。USB／藍牙、分享與跨 App 貼上仍待實機驗證。 | 外接鍵盤請使用琦琦 App 內的實體鍵盤編輯器，完成後複製或分享文字。 |
+| IOS-10 | P1 | 已入文：iPad 模擬器 8 張原圖及 1 張局部圖；實機待驗 | 啟用開關、地球鍵清單、直／橫向玩候選、橫向續打與確認、觸控倉頡兩個選項及竹大／喬候選；原圖或連結均附實際方向。 | iPad 在提醒事項附註欄組句與選字，直橫向使用相同入口；只輸入竹大即可看到喬。 |
+| IOS-11 | P2 | 已入文：iPhone／iPad 模擬器編輯器，iPhone 複製確認；實機待驗 | 琦琦 App 前景編輯器接收模擬器 Generic Keyboard 按鍵；iPad 另拍橫向四欄與玩候選，複製確認仍為 iPhone。USB／藍牙、分享與跨 App 貼上待實機驗證。 | 外接鍵盤請使用琦琦 App 內的實體鍵盤編輯器，完成後複製或分享文字。 |
 | IOS-12 | P2 | 已入文：App 開關與觸控候選 | App 內空白鍵選字關閉見 IOS-08b；暫時開啟並實測輸入「玩」後按空白開候選，兩張入文。完成後恢復關閉；多頁翻頁另驗。 | 可在 App 設定是否以空白鍵開候選與翻頁，設定與 App 內實體鍵盤編輯器共用。 |
 
 ## 7. macOS
@@ -226,6 +226,16 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 | IOS-11b | [原圖](images/keykey-ios-v137-ios11b-copy-confirmation-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／琦琦 App 前景編輯器／Generic Keyboard | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 按複製後文字確認、候選清空，顯示已複製提示；不作跨 App 貼上驗證。／實體鍵盤 |
 | IOS-12a | [原圖](images/keykey-ios-v137-ios12a-space-select-on-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／琦琦 App 設定 | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 使用空白鍵選字暫時開啟；拍攝完成已恢復關閉。／空白鍵選字 |
 | IOS-12b | [原圖](images/keykey-ios-v137-ios12b-space-candidates-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／記事本測試 App／觸控鍵盤 | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 完成玩讀音後按空白開候選，未點組字格。／空白鍵選字 |
+| IOS-10a／IOS-04 補充 | [原圖](images/keykey-ios-v137-ios10a-enable-keyboard-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／系統設定／直向 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 從 App 設定的鍵盤開關啟用琦琦，沒有完整取用開關。／iPad 啟用 |
+| IOS-10b／IOS-07 補充 | [原圖](images/keykey-ios-v137-ios10b-middle-candidate-portrait-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／直向觸控鍵盤 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 兩行指定文字，第二行未先確認，玩候選展開。／iPad 直向 |
+| IOS-10c／IOS-07 補充 | [原圖](images/keykey-ios-v137-ios10c-middle-candidate-landscape-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／橫向觸控鍵盤 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 橫向重新實際輸入兩行，玩候選展開；原圖連結入文。／iPad 橫向 |
+| IOS-10d／IOS-07 續打 | [原圖](images/keykey-ios-v137-ios10d-continue-landscape-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／橫向觸控鍵盤 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 選玩後續打散步，接在句尾且最後九格仍保留組字。／iPad 橫向 |
+| IOS-10e／IOS-06 確認 | [原圖](images/keykey-ios-v137-ios10e-confirmed-landscape-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／橫向觸控鍵盤 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 按一次 ↵ 確認換行，組字格清空；原圖連結入文。／iPad 確認 |
+| IOS-10f／IOS-09 設定 | [原圖](images/keykey-ios-v137-ios10f-cangjie-options-landscape-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／橫向鍵盤設定 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 虛擬倉頡即時候選、未打完也能選字均勾選；原圖連結入文。／iPad 倉頡 |
+| IOS-10g／IOS-09 候選 | [原圖](images/keykey-ios-v137-ios10g-cangjie-candidates-landscape-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／橫向觸控鍵盤 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 竹大保持組字，候選第 2 項喬可選，沒有完成全碼或送出。／iPad 倉頡 |
+| IOS-10h／IOS-05 切換 | [原圖](images/keykey-ios-v137-ios10h-keyboard-switcher-landscape-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／橫向觸控鍵盤 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 長按鍵盤左下角地球鍵，琦琦輸入法中文已選取；原圖連結入文。／iPad 切換 |
+| IOS-11c | [原圖](images/keykey-ios-v137-ios11c-hardware-editor-landscape-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／琦琦 App 前景編輯器／橫向 Generic Keyboard | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 四欄版面，第一行已確認、第二行保留紫色組字並在玩開候選。／實體鍵盤編輯器 |
+| IOS-10a 局部圖 | [裁切圖](images/keykey-ios-v137-ios10a-enable-keyboard-detail-ipadpro13m5-simulator.png) | 由 IOS-10a 原圖裁切，不改 UI 內容 | 系統設定／直向 | 原圖 2064 × 2752，裁切範圍 (680, 55)–(2064, 465)，輸出 1384 × 410 | 2026-10-24 | 保留鍵盤標題、琦琦綠色開關及第三方鍵盤說明，完整原圖在圖說另附。／iPad 啟用 |
 | MAC-01a | [原圖](images/keykey-macos-v137-mac01-release-assets-apple-silicon.png) | GitHub v1.3.7 Release／未登入畫面，維護者提供原圖 | macOS 27.0.1／ChatGPT 瀏覽器 | Apple Silicon arm64 實機 | 2026-10-24 | 正式發布頁 Assets，沒有下載次數；選 .pkg.zip，下一列 .sha256 為校驗檔。／下載 |
 | MAC-01b | [原圖](images/keykey-macos-v137-mac01-aws-cdn-apple-silicon.png) | GitHub v1.3.7 Release／未登入畫面，維護者提供原圖 | macOS 27.0.1／ChatGPT 瀏覽器 | Apple Silicon arm64 實機 | 2026-10-24 | 台灣 AWS 下載點的 macOS PKG ZIP 與 .sha256；同版檔案與 GitHub Assets 相同。／下載 |
 | MAC-02a | [原圖](images/keykey-macos-v137-mac02-installer-welcome-apple-silicon.png) | 1.3.7 指南／維護者提供安裝畫面；此頁未顯示版號 | macOS／安裝程式 | Apple Silicon 實機；同輪拍攝環境 | 2026-10-24 | 「chichi77 KeyKey」安裝歡迎頁，按「繼續」開始；只裁取安裝視窗。這不是安裝成功或版本驗收證明。／執行安裝程式 |
@@ -264,7 +274,7 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 
 工具限制：本輪原生操作無法用模擬按鍵產生注音組字，也無法擷取輸入法獨立候選窗；候選示範改由維護者操作並提供圖片。單一 App 截圖不包含選單列；MAC-05b／08 已由維護者提供選單原圖補齊，其餘未取得的狀態保留待拍。
 
-### iOS 本輪紀錄（2026-10-24）
+### iPhone 本輪紀錄（2026-10-24）
 
 - [x] 共 15 張圖片已入文：台灣價格實機首頁 1 張，系統新增／清單 2 張，地球鍵 1 張，好打注音候選／續打／確認 3 張，兩處設定 2 張，倉頡 2 張，App 實體編輯器／複製確認 2 張，空白鍵設定／候選 2 張。
 - [x] 首頁採維護者提供的 1.3.7 台灣價格原圖，原始 1290 × 2796，保留 $90.00；未使用模擬器的美元價格首頁。
@@ -275,5 +285,17 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 - [x] App 設定暫時開啟空白鍵選字，實測空白開候選後恢復關閉。鍵盤模式恢復好打注音，記事本原有示範內容已還原；未重設學習資料或詞庫。
 - [x] App 前景編輯器使用模擬器 Generic Keyboard 的實際按鍵組句、開候選及按複製；已拍複製確認。未完成跨 App 貼上，未宣稱分享或 USB／藍牙實機驗證。
 - [x] 透過 Device Hub 的 Screenshot 按鈕保存 1206 × 2622 iPhone 原圖；不包含外側控制列、截圖通知、游標提示或其他 macOS 視窗。先前來源不符的鍵盤圖未採用，舊版圖片引用已替換。
-- [ ] IOS-01 App Store 商品頁與實機安裝、iPhone 實機輸入、IOS-10 iPad、實際 USB／藍牙連線、跨 App 貼上與分享，以及 IOS-12 多頁翻頁仍待補；不能以本輪模擬器圖代替。
-- [ ] 全平台 P0／P1／P2 完成仍維持未勾選；本次只完成 iPhone 模擬器可取得的畫面與台灣實機首頁。README 與商店素材未修改。
+- [ ] IOS-01 App Store 商品頁與實機安裝、iPhone／iPad 實機輸入、實際 USB／藍牙連線、跨 App 貼上與分享，以及 IOS-12 多頁翻頁仍待補；iPad 模擬器補拍見下方紀錄。
+- [ ] 全平台 P0／P1／P2 完成仍維持未勾選；iPhone 本輪完成模擬器可取得的畫面與台灣實機首頁；iPad 另見下方紀錄。README 與商店素材未修改。
+
+### iPad 本輪紀錄（2026-10-24）
+
+- [x] 已引用 9 張 iPad 原圖：系統啟用 1 張，直向玩候選 1 張，橫向玩候選／續打／確認 3 張，倉頡設定／候選 2 張，地球鍵清單 1 張，App 橫向編輯器 1 張。啟用頁另提供 1 張局部裁切圖；其餘原圖保持完整裝置畫面，部分以圖說連結呈現以減少重複。
+- [x] 使用 Xcode 已開啟的正式 v1.3.7 來源與原先選好的 iPad Pro 13 吋（M5）目的地直接執行；沒有更改 Scheme、建置組態、Debugger 或目的地。執行前後 LaunchAction 與原 tag 一致，主工作區 Xcode 專案沒有 diff。
+- [x] iPadOS 26.5、arm64 模擬器，App／extension 均為 1.3.7（build 1）、Xcode build 27A9275；`RequestsOpenAccess=false`。已安裝 DB 的 SHA-256 為 `8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb`，與正式共用 DB 相同。
+- [x] 系統設定從「App → 琦琦輸入法 → 鍵盤」啟用；正常觸控輸入宿主為系統「提醒事項」的附註欄，已收起側欄，只使用新建測試項目。
+- [x] 直向與橫向指定兩行、玩候選、橫向選字後續打散步及一次 ↵ 確認換行均已實際操作。句中候選沒有先確認第二行；未貼上文字模擬組字。
+- [x] 倉頡觸控的即時候選與未打完也能選字均勾選，只打竹大即出現第 2 項喬，保持未送出的字根；沒有先完成全碼。
+- [x] App 橫向前景編輯器另以 Generic Keyboard 實際按鍵輸入同樣兩行，在玩開候選，保留四欄版面；不將此圖當作 USB／藍牙實機證明。
+- [x] 原圖由 Device Hub Screenshot 保存：直向 2064 × 2752、橫向 2752 × 2064；沒有其他 macOS 視窗、外側工具列、游標提示或截圖通知。拍攝後恢復直向、好打注音，移除本次新建提醒事項並清空本次 App 編輯器內容，沒有重設學習資料。
+- [ ] 商店安裝、iPhone／iPad 實機觸控、USB／藍牙連線、跨 App 貼上、分享及多頁翻頁仍待獨立驗證。本輪完成 iPad 模擬器的正常直橫向版面與指定情境，未將全部 iOS 優先級標為完成。
