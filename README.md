@@ -4,7 +4,7 @@
 目前正式版為 **1.3.7**，桌面版已於 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 發布，iOS App Store 與 Android Google Play 亦已上架。
 macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
-套件庫版本可能較晚上架。Android 與 iOS 可直接從商店安裝，不需加入測試。
+套件庫版本可能較晚上架。Android 與 iOS 可分別從 Google Play 與 App Store 下載安裝。
 
 [下載目前最新的 GitHub Release](https://github.com/polobread/KeyKey/releases/latest)
 
@@ -186,7 +186,7 @@ Version **1.3.7** is officially released for **Windows, macOS, iOS, Android,
 Linux, and FreeBSD**. It is available on the App Store and Google Play.
 Desktop installers are available from [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7).
 FreeBSD uses ports/pkg; binary package repositories may receive the update later.
-Mobile installation does not require test enrollment.
+Download and install the Android and iOS apps from Google Play and the App Store, respectively.
 
 The 1.3.7 releases on all six platforms implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
