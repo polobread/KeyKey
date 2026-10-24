@@ -6,9 +6,9 @@
 
 套件資訊可先看 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)，查看 port 版本、相依套件及更新紀錄；本機已安裝版本要以 `pkg info` 核對。
 
-> **待補圖｜BSD-11**
->
-> FreshPorts 的 chinese/fcitx5-keykey 資訊頁，保留擷取日期；不可當作本機已安裝證據。
+![FreshPorts 的 chinese/fcitx5-keykey 套件資訊頁顯示 port 版本 1.3.7](docs/images/keykey-freebsd-v137-bsd11-freshports.png)
+
+2026-10-24 擷取的 FreshPorts 頁面，port 版本為 1.3.7；這是來源資訊，本機版號仍須用 `pkg info` 確認。
 
 
 本指南的桌面步驟已在 **FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3** 驗證。需先有可登入的圖形桌面、網路及管理員權限；安裝後使用一般帳號設定與輸入中文。
@@ -23,9 +23,9 @@ pkg update
 pkg search -x '^zh-fcitx5-keykey'
 ```
 
-> **待補圖｜BSD-01a**
->
-> pkg 查詢結果與實際套件庫版本；如仍為舊版，保留真實版號。
+![pkg 目錄刷新完成後，FreeBSD 15 amd64 quarterly 查詢顯示 1.3.0](docs/images/keykey-freebsd-v137-bsd01a-pkg-search.png)
+
+2026-10-24 已刷新全部套件庫目錄；這台機器的 FreeBSD 15／amd64 **quarterly** 套件庫提供 `zh-fcitx5-keykey-1.3.0`。需要 1.3.7 時可走下一節 ports 流程；其他套件庫分支或架構以各自查詢為準。
 
 若清單已提供你要的版本，繼續安裝，完成後查看本機版本：
 
@@ -34,9 +34,9 @@ pkg install zh-fcitx5-keykey
 pkg info -x keykey
 ```
 
-> **待補圖｜BSD-01b**
->
-> pkg 安裝完成後的本機版本；不要只拍搜尋結果。
+![pkg info 確認本機已安裝 zh-fcitx5-keykey-1.3.7](docs/images/keykey-freebsd-v137-bsd01b-installed.png)
+
+本次補拍時已安裝 1.3.7，來源為先前的 ports 建置；上圖是重新查詢本機狀態，並非本次執行 `pkg install` 的結果。
 
 **確認版本符合需求後，可直接前往第 3 節設定桌面。** 若套件庫仍較舊，而你需要 1.3.7，略過舊版安裝，改走下一節 ports 流程。套件庫版本依 FreeBSD 版本、架構與分支不同，以當次結果為準。
 
@@ -46,10 +46,7 @@ pkg info -x keykey
 
 ports tree 是 FreeBSD 軟體的建置配方集合。`chinese/fcitx5-keykey` 會下載對應版本的琦琦原始碼、校驗、編譯並產生可由 pkg 管理的套件。
 
-已從套件庫安裝所需版本的人可跳過本節。需要編譯時，展開下方步驟；先確認 port 版號，再建置與安裝。
-
-<details>
-<summary>展開 ports 下載、編譯與安裝步驟</summary>
+已從套件庫安裝所需版本的人可跳過本節。需要編譯時，依下方步驟先確認 port 版號，再建置與安裝。
 
 ### 2.1 首次建立 /usr/ports
 
@@ -96,9 +93,9 @@ git -C /usr/ports rev-parse HEAD
 zh-fcitx5-keykey-1.3.7
 ```
 
-> **待補圖｜BSD-02a**
->
-> make -V DISTVERSION 與 make -V PKGNAME 顯示所選 port 的來源版號。
+![ports 查詢顯示來源版本 1.3.7、套件名稱及本機 main 修訂](docs/images/keykey-freebsd-v137-bsd02a-ports.png)
+
+圖中另外讀取本機 `.git/refs/heads/main` 核對修訂；一般帳號執行 Git 若遇到擁有者檢查，請回到擁有該 checkout 的管理員帳號查詢，不必修改全域信任設定。
 
 `PORTREVISION` 若有套件修訂，套件名稱可能另有 `_1` 等尾碼。本次通過安裝及桌面試打的官方 ports 修訂是 `c69a4d85da0e2cfe08250d120d6aacaffac6b5182`。
 
@@ -151,15 +148,13 @@ pkg info -x keykey
 
 `-f` 用於替換已安裝的舊套件；確認結果是 `zh-fcitx5-keykey-1.3.7`。若有套件修訂尾碼，請使用 `ls` 顯示的實際檔名。安裝後由 pkg 記錄與管理，不需要手動複製程式至 `/usr/local`。
 
-> **待補圖｜BSD-02b**
->
-> pkg add 安裝結束後，pkg info 顯示本機 1.3.7；來源版號與安裝版號分圖。
+![ports 工作目錄保留 1.3.7 套件，pkg info 顯示本機已安裝 1.3.7](docs/images/keykey-freebsd-v137-bsd02b-package-installed.png)
+
+這次補拍重新核對既有 `.pkg` 與安裝版號，沒有重新建置或安裝；來源版號見上一張圖。
 
 這是既有 1.3.7 驗證採用的流程：**從 ports 編譯原始碼，再用 `pkg add` 安裝本機產物**。若是尚未安裝琦琦的系統，也可在同一個 port 目錄使用 `make BATCH=yes MAKE_JOBS_NUMBER=4 install clean` 直接編譯安裝；前面已完成 `pkg add` 時不需重做。
 
 若要保留套件供重裝，先將 `.pkg` 複製到其他目錄；不需保留工作目錄時再執行 `make clean`。下一步補齊桌面整合後，登出並重新登入，以載入新版輸入法。
-
-</details>
 
 ## 3. 補上 GTK 3 輸入橋接
 
@@ -170,9 +165,7 @@ pkg install -y fcitx5 fcitx5-configtool fcitx5-gtk3
 pkg info -x fcitx5-gtk
 ```
 
-> **待補圖｜BSD-03a**
->
-> GTK 3 bridge 安裝與 pkg info 結果，保留實際套件版本。
+![已安裝的 Fcitx GTK common、GTK 3 與 GTK 4 bridge 版本](docs/images/keykey-freebsd-v137-bsd03a-gtk.png)
 
 既有驗證使用 `fcitx5-gtk3-5.1.7_1`；你的套件修訂可能不同。若安裝出現 `GLib version too old (micro mismatch)`，先看文末的 GLib 排除方式，完成後再重新開啟 App。
 
@@ -199,9 +192,9 @@ fetch -o ~/.local/share/fonts/NotoSansCJKtc-Regular.otf \
 fc-cache -f ~/.local/share/fonts
 ```
 
-> **待補圖｜BSD-03b**
->
-> 中文字型查詢及載入結果；注音與中文字不再顯示缺字方框。
+![字型查詢包含 Noto Sans CJK TC](docs/images/keykey-freebsd-v137-bsd03b-fonts.png)
+
+本機已有 Noto Sans CJK TC，不需重複下載；下方 Mousepad 圖可見指定中文正常顯示。倉頡清單的少數罕字仍缺字，見第 8 節。
 
 完成字型與下一步環境設定後，儲存文件並登出／登入，使 Fcitx、設定視窗與編輯器都載入新字型。
 
@@ -235,9 +228,9 @@ pgrep -laf fcitx5
 
 三個值應分別為 `fcitx`、`fcitx`、`@im=fcitx`，並能看到 Fcitx 行程。
 
-> **待補圖｜BSD-03c**
->
-> 登入環境三個值與 Fcitx 行程，以及 Xfce 自動啟動設定；必要時分圖。
+![重新登入後三個輸入環境值正確，X11 工作階段中已有 Fcitx 行程](docs/images/keykey-freebsd-v137-bsd03c-login.png)
+
+![Xfce 應用程式自動啟動已勾選 Fcitx 5](docs/images/keykey-freebsd-v137-bsd03c-autostart.png)
 
 之後直接從桌面開啟 App 試打；只用單次環境變數啟動 App，不能代替登入環境驗證。
 
@@ -259,18 +252,18 @@ fcitx5-config-qt
 
 保留 Keyboard – English (US) 作為英文鍵盤。
 
-> **待補圖｜BSD-04a**
->
-> Fcitx 新增清單，取消語言篩選後搜尋到 KeyKey；下方既有圖只呈現加入後結果。
+![搜尋 keykey 後可加入注音、倉頡與簡易三個項目](docs/images/keykey-freebsd-v137-bsd04a-search.png)
+
+先取消語言篩選，再搜尋；搜尋時介面會收起語言篩選列。這張圖呈現加入前的清單。
 
 
-![重新登入後保留的琦琦注音、倉頡與簡易](docs/images/keykey-freebsd-v137-fcitx-methods.png)
+![重新登入後保留的琦琦注音、倉頡與簡易](docs/images/keykey-freebsd-v137-bsd04-current-list.png)
 
 *左側是目前可切換的輸入法；本次重新登入後三個琦琦項目仍保留。*
 
 單擊左側 **Bopomofo**，再按齒輪開啟設定。先保留「標準」注音鍵盤配置與「好打注音」模式；需要逐字選字時，再改成傳統注音。
 
-![琦琦 1.3.7 中文注音設定](docs/images/keykey-freebsd-v137-settings.png)
+![琦琦 1.3.7 中文注音設定](docs/images/keykey-freebsd-v137-bsd08-settings.png)
 
 *注音模式為好打注音；下方提供空白開候選、選字目標與 Esc 清除整句等選項。*
 
@@ -278,33 +271,23 @@ fcitx5-config-qt
 
 直接從桌面開啟 Mousepad，新增空白文件並點選文字區。按 **Ctrl+Space** 切到琦琦注音；新文件若仍輸出英文鍵碼，先確認該文件的輸入法啟用狀態。
 
-> **待補圖｜BSD-05**
->
-> Xfce 面板／Fcitx 清單已選用琦琦，並保留可辨認的桌面環境。
+在 Xfce 上方面板的 Fcitx 圖示按右鍵，可看到目前輸入法；圓點應在 **chichi77 KeyKey Bopomofo**。
 
-標準注音配置下，輸入 `5j/` 再按空白，應在組字區看到「中」。按 **↓** 開候選，使用編號選字；選字後文字仍在組字區，按 **Enter** 才送入文件。
-
-![好打注音實際組字與候選字窗](docs/images/keykey-freebsd-v137-smart-candidates.png)
-
-*既有 1.3.7 實拍：在 FreeBSD Mousepad 開啟「中」的候選，第 3 項為「鐘」。*
+![Xfce 面板的 Fcitx 選單已選用 KeyKey Bopomofo](docs/images/keykey-freebsd-v137-bsd05-selected.png)
 
 ### 用兩行文字練習句中選字
 
 先輸入「**琦琦輸入法**」，按 Enter 確認，再按 Enter 換行；第二行輸入「**請假要去哪裡玩呢去海邊**」，先不要確認。用方向鍵移動組字游標，按 **↓** 開候選，依反白目標確認正在修改「玩」。
 
-> **待補圖｜BSD-07a**
->
-> 指定兩行仍保留第二行組字，在玩開候選；既有「中」候選圖不能代替。
+![第一行已確認，第二行仍在好打注音組字區](docs/images/keykey-freebsd-v137-bsd06b-composition.png)
 
-選 **玩**後再輸入「**散步**」，確認新字接在句尾。最後按 Enter 確認組字，文字會保留在 Mousepad。候選開著時 Enter 是選字，關閉後才確認整段。
+![在句中的玩開啟候選，第 1 項為玩](docs/images/keykey-freebsd-v137-bsd07a-middle-candidate.png)
 
-> **待補圖｜BSD-07b**
->
-> 選玩後續打散步的狀態，保留組字與宿主文字。
+選 **玩**後，組字游標會停在「玩」後方，第二行仍有底線。按 **End** 回到句尾，再按 **Enter** 確認，保留原句。候選開著時 Enter 是選字，關閉後才確認整段。
 
-> **待補圖｜BSD-06c**
->
-> 兩行練習完成後，Enter 確認的文字結果。
+![選玩後候選關閉，組字游標停在玩後方](docs/images/keykey-freebsd-v137-bsd07b-after-selection.png)
+
+![Enter 確認後，兩行文字保留在 Mousepad，組字底線消失](docs/images/keykey-freebsd-v137-bsd06c-confirmed.png)
 
 ### 常用操作與既有長句示範
 
@@ -334,7 +317,7 @@ fcitx5-config-qt
 keykey-about
 ```
 
-![FreeBSD 關於視窗顯示 1.3.7](docs/images/keykey-freebsd-v137-about.png)
+![FreeBSD 關於視窗顯示 1.3.7](docs/images/keykey-freebsd-v137-bsd10-about.png)
 
 *版本為 1.3.7，圖示、中文開發初衷與專案連結均可見。*
 
@@ -342,22 +325,17 @@ keykey-about
 
 從注音設定內點 **開啟倉頡設定…**，開啟 **即時候選**與 **未打完也能選字**。桌面版預設關閉，即時候選與錯碼清除互斥；改好依提示儲存。
 
-> **待補圖｜BSD-09a**
->
-> FreeBSD 倉頡設定，兩個提前選字開關已開啟。
+![即時候選及未打完也能選字已勾選，錯碼清除關閉](docs/images/keykey-freebsd-v137-bsd09a-cangjie-settings.png)
 
 回 Mousepad，從 Fcitx 選 **Cangjie**，只輸入 H、K，也就是 **竹、大**，查看包含 **喬**的候選。想選喬時按實際編號或點選，不必先打完「竹大口月口」。
 
-> **待補圖｜BSD-09b**
->
-> FreeBSD 桌面中竹大仍在組字，喬候選可見；尚未完成全碼或確認。
+![只輸入竹大後顯示候選，第 5 項喬已反白，尚未確認](docs/images/keykey-freebsd-v137-bsd09b-cangjie-candidates.png)
 
-既有驗證已確認倉頡設定能開啟、中文選項可見；上述兩個開關與竹大／喬的指定情境仍待補拍驗證。更新通知只提醒有新版，FreeBSD 仍透過 ports／pkg 更新，套件可能較晚上架。
+本次第 5 項是「喬」，第 2～4 項的罕字顯示缺字框，截圖保留真實狀態。選取喬後已確認並儲存；實際檔案的兩行注音示範與第三行「喬」均核對一致。拍攝後已還原原有倉頡設定。
+
+更新通知只提醒有新版，FreeBSD 仍透過 ports／pkg 更新，套件可能較晚上架。
 
 ## 常見環境問題
-
-<details>
-<summary>GTK 3 相依版本與 su 權限排查</summary>
 
 ### GTK 3 bridge 回報 GLib 太舊
 
@@ -383,8 +361,6 @@ id YOUR_USER
 將 `YOUR_USER` 替換成要授權的帳號；確認群組包含 `0(wheel)`，再重新登入該帳號。密碼由帳號持有人自行輸入。
 
 
-</details>
-
 ### 移除或更新輸入法
 
 移除系統套件時執行：
@@ -399,9 +375,9 @@ exit
 
 ## 圖片來源與驗證範圍
 
-既有圖片來自 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 的 1.3.7 實際操作。缺少畫面的步驟以「待補圖」標示，本輪改寫不代表新執行 ports 建置、安裝或指定句中選字。
+2026-10-24 新增 20 張實拍，環境為 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11（xfce4-session 4.20.4）、LightDM、Fcitx 5 與 Mousepad 0.7.0／GTK 3，已安裝琦琦 1.3.7。涵蓋套件庫刷新與查詢、ports 來源、既有安裝版號、橋接、字型、重新登入、自動啟動、Fcitx 清單、設定、面板選用、指定兩行與玩候選、倉頡竹大／喬及關於視窗。只裁切真實畫面，未修改產品畫面內容。
 
-既有套件查詢曾於 2026-10-23 的 quarterly 環境取得 1.3.0，因此改用 ports 安裝 1.3.7；這是歷史查詢結果，不能代替現在套件庫的版本。
+19 字長句結果圖保留先前的 1.3.7 驗證；本輪未重跑該長句、ports 建置或套件安裝。套件庫刷新及版本查詢由管理員手動驗證後執行，完成便退出 root；本輪沒有變更套件庫分支、升級或降級套件。
 
 ## 參考
 
