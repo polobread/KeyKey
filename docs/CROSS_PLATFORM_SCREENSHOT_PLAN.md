@@ -2,7 +2,7 @@
 
 本清單供 Windows、macOS、iOS／iPadOS、Android、Linux 與 FreeBSD 逐平台補齊安裝指南、README 及媒體素材。拍攝主線為「取得正式版 → 安裝／啟用 → 選用輸入法 → 第一次打字 → 選字與改字」。
 
-規劃基準：2026-10-24 的 `master` 文件與目前正式版 **1.3.7**。本輪已先補拍 macOS，iOS 已加入台灣價格實機首頁、14 張 iPhone 模擬器操作圖及 9 張 iPad 模擬器原圖；其餘畫面仍待逐一補齊。未完成的子畫面保留待拍，不因同一項已有一張圖而視為全項完成。
+規劃基準：2026-10-24 的 `master` 文件與目前正式版 **1.3.7**。本輪已先補拍 macOS，iOS 已加入台灣價格實機首頁、14 張 iPhone 模擬器操作圖及 9 張 iPad 模擬器原圖；Android 已補 10 張手機模擬器原圖及 5 張局部圖。其餘畫面仍待逐一補齊。未完成的子畫面保留待拍，不因同一項已有一張圖而視為全項完成。
 
 ## 1. 使用方式與優先順序
 
@@ -17,7 +17,7 @@
 | 平台 | P0 已入文 | P1 已入文 | P2 已入文 | 本輪狀態 |
 | --- | --- | --- | --- | --- |
 | Windows | ☐ | ☐ | ☐ | 待開始 |
-| Android | ☐ | ☐ | ☐ | 待開始 |
+| Android | 部分入文 | 部分入文 | ☐ | 2026-10-24 正式 v1.3.7 來源，10 張手機模擬器原圖及 5 張局部圖已引用；商店頁、實機、實體鍵盤與平板另待補 |
 | iOS／iPadOS | 部分入文 | iPhone／iPad 模擬器已入文 | 部分入文 | 2026-10-24 共 24 張原圖及 1 張局部裁切圖已引用；正式 1.3.7 來源，商店頁與實機仍待補 |
 | macOS | 部分入文 | 部分入文 | 部分入文 | 2026-10-24 已入文 12 張；安裝完成頁、選字後續打、中英切換狀態及 Emoji 待補 |
 | Linux | ☐ | ☐ | ☐ | 待開始 |
@@ -34,7 +34,7 @@
 | Windows | [安裝指南](../WINDOWS_INSTALL.md)、[1.3.0 一般設定圖](../Source/Loaders/Windows-TSF/IMAGES/v1.3.0-settings-general.png) | 新增鍵盤步驟缺實拍；安裝、模式選單及設定圖需更新至正式 1.3.7。 |
 | macOS | [安裝指南](../MACOS_INSTALL.md)、本輪正式版 1.3.7 實拍（第 11 節） | 已替換指南的 1.3.0 候選／設定與新增來源示意；安裝完成頁及部分前後操作仍待補。 |
 | iOS／iPadOS | [安裝指南](../IOS_INSTALL.md)、本輪 1.3.7 實機首頁及 iPhone／iPad 模擬器圖（第 11 節） | 已串起新增鍵盤、切換、指定句中選字與倉頡；已補 iPad 啟用、直橫向版面與指定情境；商店頁、iPhone／iPad 實機輸入及外接鍵盤實機待補。 |
-| Android | [安裝指南](../ANDROID_INSTALL.md)、[App 首頁](images/keykey-android-pixel9a-home.png)、[句中候選](images/keykey-android-middle-candidate.png) | 更新舊名稱與設定畫面；補正式商店入口、雙排選字及面板收合。 |
+| Android | [安裝指南](../ANDROID_INSTALL.md)、本輪 1.3.7 Pixel 8 Pro 模擬器圖（第 11 節） | 已替換首頁、啟用、選用、句中候選與新版設定；商店頁、實機、雙排選字、浮動窗、面板收合及平板／橫向待補。 |
 | Linux | [安裝指南](../LINUX_INSTALL.md)、[1.3.0 Fcitx 清單](images/keykey-linux-v130-fcitx-methods.png)、[1.3.0 候選](images/keykey-linux-v130-smart-candidates.png) | 補下載、校驗、安裝完成、Fcitx 啟用與 GNOME 面板狀態；更新實際設定。 |
 | FreeBSD | [安裝指南](../FREEBSD_INSTALL.md)、[1.3.7 輸入法清單](images/keykey-freebsd-v137-fcitx-methods.png)、[1.3.7 候選](images/keykey-freebsd-v137-smart-candidates.png) | 既有桌面圖先複核；補安裝版本、環境設定及桌面選用輸入法的主線。 |
 
@@ -70,7 +70,7 @@
 | Windows | 待實測／待拍 | 待實測／待拍 | WIN-06／07／09；記事本，記錄 Windows 版本與架構。 |
 | macOS | 已實拍入文 | 已實拍入文（含兩個開關） | MAC-06／07a／09；1.3.7、macOS 27.0.1、文字編輯；維護者提供候選圖。選字後續打另待補。 |
 | iOS／iPadOS | iPhone／iPad 模擬器均已實拍入文 | iPhone／iPad 模擬器均已實拍入文（含兩個開關） | IOS-06／07／09／10；正式 v1.3.7 來源、原本 Debug 組態，觸控輸入；iPhone／iPad 實機另驗。App 前景編輯器另記 IOS-11。 |
-| Android | 待實測／待拍 | 待實測／待拍 | AND-05／06／08；觸控先拍，實體鍵盤一般／雙排／浮動另記錄。 |
+| Android | 手機模擬器已實拍入文 | 手機模擬器已實拍入文（含兩個虛擬鍵盤開關） | AND-05／06／08；正式 v1.3.7 來源、Debug 自建，Android 15／Pixel 8 Pro／聯絡人未儲存備註欄／觸控；實機及實體鍵盤另驗。 |
 | Linux | 待實測／待拍 | 待實測／待拍 | LNX-06／07／09；記錄宿主與 X11／Wayland，舊圖不算本輪通過。 |
 | FreeBSD | 待實測／待拍 | 待實測／待拍 | BSD-06／07／09；Mousepad／GTK 3、Xfce／X11；舊「中」字圖不算指定情境通過。 |
 
@@ -101,18 +101,18 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 
 ## 5. Android
 
-先以一台實機拍完整主線，記錄 Android 版本與品牌；不同品牌的系統設定名稱只在圖說說明差異。平板與橫向畫面另補，不能直接拉寬手機截圖。
+本輪先以 Pixel 8 Pro 手機模擬器補拍 1.3.7 啟用、選用及觸控輸入主線，記錄 Android 15／API 35、英文系統介面與繁體中文琦琦介面。實機仍待獨立補齊；不同品牌的系統設定名稱在圖說說明差異。平板與橫向畫面另補，不能直接拉寬手機截圖。
 
 | ID | 優先 | 狀態 | 要拍的畫面與完成條件 | 建議圖說 |
 | --- | --- | --- | --- | --- |
 | AND-01 | P0 | 待拍 | Google Play 官方商品頁，名稱、圖示與安裝／開啟入口可辨認。 | 在 Google Play 找到「琦琦輸入法」，下載安裝後開啟 App。 |
-| AND-02 | P0 | 待重拍 | 1.3.7 App 首頁，啟用輸入法、選擇輸入法及調整設定按鈕可見。 | 從 App 首頁依序啟用琦琦，再選擇它作為目前鍵盤。 |
-| AND-03 | P0 | 待重拍 | 系統鍵盤管理頁中琦琦的啟用開關。 | 在系統鍵盤清單中開啟琦琦輸入法。 |
-| AND-04 | P0 | 待重拍 | 目前鍵盤選擇清單，琦琦已被選中。 | 將目前的輸入法切換為琦琦，回到文字 App 開始輸入。 |
-| AND-05 | P0 | 待重拍 | 一般文字 App 的完整螢幕鍵盤、組字列及宿主文字；另拍確認結果。 | 連續輸入注音即可組句，上方組字列保留可回頭選字的內容。 |
-| AND-06 | P1 | 待重拍 | 點句中組字格後的候選列，以及選字後繼續輸入，至少兩張。 | 點要修改的組字格開候選，選字後可繼續在句尾輸入。 |
-| AND-07 | P1 | 待重拍 | 「調整設定」中的輸入法選單及好打／傳統注音入口。 | 在輸入法設定中選擇好打注音、傳統注音、倉頡或簡易。 |
-| AND-08 | P1 | 待拍 | 螢幕鍵盤的倉頡設定與「竹大」候選；開關值可辨認。 | 倉頡開啟提前選字後，輸入部分字根就能查看並點選候選字。 |
+| AND-02 | P0 | 已入文：1.3.7 模擬器首頁 | 1.3.7 App 首頁，啟用輸入法、選擇輸入法及調整設定按鈕可見。 | 從 App 首頁依序啟用琦琦，再選擇它作為目前鍵盤。 |
+| AND-03 | P0 | 已入文：模擬器啟用開關 | 系統鍵盤管理頁中琦琦的啟用開關。 | 在系統鍵盤清單中開啟琦琦輸入法。 |
+| AND-04 | P0 | 已入文：模擬器已選中清單 | 目前鍵盤選擇清單，琦琦已被選中。 | 將目前的輸入法切換為琦琦，回到文字 App 開始輸入。 |
+| AND-05 | P0 | 已入文：觸控組字與確認 | 一般文字 App 的完整螢幕鍵盤、組字列及宿主文字；另拍確認結果。 | 連續輸入注音即可組句，上方組字列保留可回頭選字的內容。 |
+| AND-06 | P1 | 已入文：玩候選與續打兩張 | 第一行已確認、第二行保留組字；點玩開候選，另拍選玩後續打散步。 | 點玩開候選，本次玩為第 1 項；選字後續打散步仍接在句尾。 |
+| AND-07 | P1 | 已入文：新版設定及四模式選單 | 「調整設定」中的輸入法選單及好打／傳統注音入口。 | 在輸入法設定中選擇好打注音、傳統注音、倉頡或簡易。 |
+| AND-08 | P1 | 已入文：觸控設定與竹大／喬候選 | 虛擬鍵盤即時候選與未打完也能選字均勾選；只輸入竹大，喬為第 2 項，尚未確認。 | 倉頡開啟提前選字後，輸入竹大即可查看喬；順位以實際清單為準。 |
 | AND-09 | P1 | 待拍 | 已連接實體鍵盤，設定雙排選字，並拍組字、候選及恢復數字列三種狀態。 | 關閉浮動候選窗並啟用雙排選字，上排組字、下排在數字與候選之間切換。 |
 | AND-10 | P2 | 待拍 | 實體鍵盤浮動候選窗與宿主游標同時可見。 | 外接鍵盤可使用跟隨游標的浮動候選窗，依候選編號選字。 |
 | AND-11 | P2 | 待拍 | 非浮動實體模式收合前、按 ▼ 後及恢復後的畫面。 | 不需面板時按 ▼ 收起；再次點選輸入欄位可恢復。 |
@@ -211,6 +211,16 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 
 | ID | 最終圖片路徑 | App 版本與 build／來源 | OS、桌面／session、宿主 App | 裝置／架構及實機／VM／模擬器 | 拍攝或複核日期 | 最終圖說與放置段落 |
 | --- | --- | --- | --- | --- | --- | --- |
+| AND-02 | [原圖](images/keykey-android-v137-and02-home-pixel8pro-simulator.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／琦琦 App | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 首頁顯示 1.3.7 與啟用、選用及設定按鈕。／從 Google Play 安裝 |
+| AND-03 | [原圖](images/keykey-android-v137-and03-enabled-pixel8pro-simulator.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／系統 On-screen keyboard | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 琦琦開關已開啟；英文系統設定。／啟用鍵盤 |
+| AND-04 | [原圖](images/keykey-android-v137-and04-selected-pixel8pro-simulator.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／系統 Choose input method | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 繁體中文標準注音的琦琦已選中。／選用鍵盤 |
+| AND-05a／AND-06a | [原圖](images/keykey-android-v137-and06a-middle-candidate-pixel8pro-simulator.png)／[局部圖](images/keykey-android-v137-and06a-middle-candidate-pixel8pro-simulator-detail.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／聯絡人未儲存備註欄／觸控 | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 指定兩行，第一行已確認、第二行保留九字組字；玩第 1 項反白，未先確認第二行。／第一次組句 |
+| AND-06b | [原圖](images/keykey-android-v137-and06b-continue-at-end-pixel8pro-simulator.png)／[局部圖](images/keykey-android-v137-and06b-continue-at-end-pixel8pro-simulator-detail.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／聯絡人未儲存備註欄／觸控 | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 選玩後續打散步，文字接在句尾。／句中選字後續打 |
+| AND-05b | [原圖](images/keykey-android-v137-and05-confirmed-pixel8pro-simulator.png)／[局部圖](images/keykey-android-v137-and05-confirmed-pixel8pro-simulator-detail.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／聯絡人未儲存備註欄／觸控 | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 一次換行後原文字保留，游標下一行，組字列清空。／確認換行 |
+| AND-07a | [原圖](images/keykey-android-v137-and07a-settings-pixel8pro-simulator.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／琦琦設定 | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 設定頁的五個區塊與共用輸入法選單。／調整設定 |
+| AND-07b | [原圖](images/keykey-android-v137-and07b-input-methods-pixel8pro-simulator.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／琦琦設定 | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 選單列出好打、傳統注音、倉頡與簡易。／切換輸入法 |
+| AND-08a | [原圖](images/keykey-android-v137-and08a-cangjie-settings-pixel8pro-simulator.png)／[局部圖](images/keykey-android-v137-and08a-cangjie-settings-pixel8pro-simulator-detail.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／琦琦設定／虛擬鍵盤 | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 即時候選及未打完也能選字均已勾選；未更動這兩個開關。／倉頡 |
+| AND-08b | [原圖](images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator.png)／[局部圖](images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator-detail.png) | v1.3.7 tag a11f1eab／Android Studio 既有 Debug 組態自建；1.3.7（1003007） | Android 15／API 35／聯絡人未儲存備註欄／觸控 | Pixel 8 Pro arm64 手機模擬器；直向 1344 × 2992 | 2026-10-24 | 竹大仍有組字底線，候選第 2 項喬可選，未打全碼或確認。／倉頡 |
 | IOS-02 | [原圖](images/keykey-ios-v137-ios02-home-user-iphone.png) | 維護者提供的 iPhone 1.3.7 實機首頁；畫面顯示台灣價格 $90.00 | iOS／琦琦輸入法 App；OS 版號未提供 | iPhone 實機，型號未提供；原圖 1290 × 2796 | 2026-10-24 收圖／複核 | 台灣一次付費支持 $90.00，未付費也能完整使用；首頁提供輸入法設定與加入鍵盤步驟。／iOS 指南「從 App Store 安裝」 |
 | IOS-03 | [原圖](images/keykey-ios-v137-ios03-add-keyboard-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／系統設定 | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 在新增鍵盤的「第三方鍵盤」選琦琦。／加入鍵盤 |
 | IOS-04 | [原圖](images/keykey-ios-v137-ios04-keyboard-list-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／系統設定 | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 已加入琦琦輸入法／中文，沒有完整取用開關。／加入鍵盤 |
@@ -299,3 +309,15 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 - [x] App 橫向前景編輯器另以 Generic Keyboard 實際按鍵輸入同樣兩行，在玩開候選，保留四欄版面；不將此圖當作 USB／藍牙實機證明。
 - [x] 原圖由 Device Hub Screenshot 保存：直向 2064 × 2752、橫向 2752 × 2064；沒有其他 macOS 視窗、外側工具列、游標提示或截圖通知。拍攝後恢復直向、好打注音，移除本次新建提醒事項並清空本次 App 編輯器內容，沒有重設學習資料。
 - [ ] 商店安裝、iPhone／iPad 實機觸控、USB／藍牙連線、跨 App 貼上、分享及多頁翻頁仍待獨立驗證。本輪完成 iPad 模擬器的正常直橫向版面與指定情境，未將全部 iOS 優先級標為完成。
+
+### Android 手機本輪紀錄（2026-10-24）
+
+- [x] 已引用 10 張裝置原圖：1.3.7 首頁、系統啟用、目前鍵盤清單、新版設定、四模式選單、玩候選、續打散步、一次換行、倉頡觸控設定與竹大／喬候選；另有 5 張局部圖。舊名稱與舊設定圖片引用已替換，README 未變更。
+- [x] 使用正式 tag `v1.3.7`（`a11f1eab381dda3b29d59f0ec8c201599fdadeaf`）獨立來源副本，透過 Android Studio 既有 Debug 組態建置安裝；未改產品原始碼或 Xcode 設定，不將自建模擬器 APK 稱為 Google Play 安裝。
+- [x] 首頁及 APK metadata 均核對 1.3.7、versionCode 1003007；APK 內 `assets/KeyKey.db` SHA-256 為 `8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb`，與正式共用 DB 相同。版本／詞庫核對與實際觸控行為分開記錄。
+- [x] Pixel 8 Pro、Android 15（API 35）、arm64 模擬器；系統設定為英文，琦琦為繁體中文。宿主為系統聯絡人的未儲存 Notes 多行欄，未登入帳號、未儲存聯絡人。
+- [x] 指定兩行透過實際螢幕注音鍵輸入，第一行確認換行，第二行未先確認；點組字列玩，候選第 1 項玩反白。另拍選玩後續打散步接在句尾及一次換行清空組字列，沒有貼上文字模擬組字。
+- [x] 倉頡虛擬鍵盤的即時候選與未打完也能選字原已勾選；只打竹大即拍到第 2 項喬，沒有先完成全碼或選字送出。實體鍵盤選項未變更。
+- [x] 透過 Running Devices 的 Take Screenshot／Save 保存 1344 × 2992 原圖，只含 Android 裝置畫面。局部圖裁切範圍：玩候選／續打 `(0,1600)–(1344,2992)`；確認／倉頡候選 `(0,1540)–(1344,2992)`；倉頡設定 `(60,1740)–(1280,2860)`。原圖保留，局部圖未修改內容。
+- [x] 拍攝時以 macOS 文字編輯暫將該 AVD 的 `hw.keyboard` 從 yes 改為 no，重啟後實測觸控鍵盤；結束後停止模擬器並恢復 yes。好打注音已恢復，本次聯絡人草稿已捨棄，沒有重設學習或自訂詞。
+- [ ] AND-01 Google Play 商品頁與商店安裝、Android 實機觸控、AND-09 雙排、AND-10 浮動窗、AND-11 面板收合及 AND-12 平板／橫向仍待補；不能以本輪手機觸控模擬器畫面代表上述驗證。平台 P0／P1／P2 不全項勾選。
