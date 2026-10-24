@@ -4,7 +4,7 @@
 目前正式版為 **1.3.7**，桌面版已於 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 發布，iOS App Store 與 Android Google Play 亦已上架。
 macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
-套件庫版本可能較晚上架。Android 與 iOS 可分別從 Google Play 與 App Store 下載安裝。
+套件庫版本可能較晚上架。Android 與 iOS 可分別從 [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) 與 [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939) 下載安裝。
 
 [下載目前最新的 GitHub Release](https://github.com/polobread/KeyKey/releases/latest)
 
@@ -85,7 +85,7 @@ Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub 
 - Ubuntu 24.04 使用者請看[Linux 1.3.7 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
 - FreeBSD 使用者請看[安裝與使用指南](FREEBSD_INSTALL.md)：套件庫安裝、ports 原始碼編譯 1.3.7、Fcitx 5 設定與操作截圖。套件資訊見 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
-- iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/id6807832939)安裝。
+- iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939)安裝。
 - Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；可直接從[Google Play 商店](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)安裝正式版，無須加入測試。
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS、Windows 與
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
@@ -186,7 +186,7 @@ Version **1.3.7** is officially released for **Windows, macOS, iOS, Android,
 Linux, and FreeBSD**. It is available on the App Store and Google Play.
 Desktop installers are available from [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7).
 FreeBSD uses ports/pkg; binary package repositories may receive the update later.
-Download and install the Android and iOS apps from Google Play and the App Store, respectively.
+Download and install the Android and iOS apps from [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) and the [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939), respectively.
 
 The 1.3.7 releases on all six platforms implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
@@ -253,7 +253,7 @@ iOS.
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
 - FreeBSD packages, ports builds, desktop setup, and screenshots: [FreeBSD installation guide (Traditional Chinese)](FREEBSD_INSTALL.md). Port information: [FreshPorts: chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/).
 - Build and install the Ubuntu 24.04 version from source with `./configure`: [Linux source installation and usage guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md).
-- iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/id6807832939).
+- iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939).
 - Android setup and daily use: [Android installation guide (Traditional Chinese)](ANDROID_INSTALL.md). Install the production version directly from [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android); test enrollment is not required.
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) provides the
   macOS, Windows, and Ubuntu 24.04 builds. The macOS package is Developer ID signed,
