@@ -6,6 +6,12 @@
 
 本指南的桌面步驟已在 **FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3** 驗證。需先有可登入的圖形桌面、網路及管理員權限；安裝後使用一般帳號設定與輸入中文。
 
+## 下載來源與台灣 AWS CDN
+
+[1.3.7 正式發布頁的台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點)提供 macOS、Windows 與 Ubuntu 24.04 的同版安裝檔及校驗資料，不需要登入 GitHub。這些桌面檔案在 CDN 與 GitHub Assets 的內容相同。
+
+**FreeBSD 使用下面的 ports／pkg 流程。** 目前這個 Release 的 AWS 下載清單沒有 FreeBSD 預編譯 `.pkg`；Ubuntu 的 `.deb` 不能用來安裝 FreeBSD。`pkg` 從所選 FreeBSD 套件庫下載，ports 依官方 port 配方取得及校驗原始碼；本指南不另指定未發布的 CDN 套件或替換 port 來源。套件庫版本可能較晚上架。
+
 ## 1. 從套件庫直接安裝
 
 開啟桌面終端機，切換 root 後查詢及安裝：

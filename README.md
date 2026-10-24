@@ -80,13 +80,14 @@ Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub 
 流程見[桌面更新說明](update/README.md)。
 
 - [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
+- [台灣 AWS CDN 下載點](https://github.com/polobread/KeyKey/releases/latest#台灣-aws-下載點)：提供 macOS、Windows、Ubuntu 安裝檔及校驗檔，與 GitHub Assets 內容相同，無須登入。FreeBSD 依下方指南透過 ports／pkg 安裝。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
 - [Windows 1.3.7 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
 - Ubuntu 24.04 使用者請看[Linux 1.3.7 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
 - FreeBSD 使用者請看[安裝與使用指南](FREEBSD_INSTALL.md)：套件庫安裝、ports 原始碼編譯 1.3.7、Fcitx 5 設定與操作截圖。套件資訊見 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939)安裝。
-- Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；可直接從[Google Play 商店](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)安裝正式版，無須加入測試。
+- Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；可直接從[Google Play 商店](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)安裝正式版。
 - [GitHub Releases](https://github.com/polobread/KeyKey/releases) 提供 macOS、Windows 與
   Ubuntu 24.04 版本。macOS 套件以 Developer ID 簽章、經 Apple notarization 並附 SHA-256；Windows
   既有未簽章 ZIP 與安裝程式維持原狀；新版正式發布要求安裝檔及兩個 ZIP 內的程式均完成簽章。
@@ -95,7 +96,7 @@ Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub 
   OIDC 設定見 [`terraform/infra`](terraform/infra/README.md)。mirror 使用固定的
   `keykey/releases/download/VERSION/FILE` 路徑，不取代 GitHub Release 作為發行來源。
 - Android 正式 AAB 只在 Actions 頁面手動執行 `Android Play Release` 時建置、簽署並上傳到 Google Play 內部測試；PR 合併與直接 push 都不觸發。
-  從 Play Console 推廣至正式版。正式版已開放一般使用者安裝，不需再經封閉測試。
+  從 Play Console 推廣至正式版。正式版已可從 Google Play 下載安裝。
   `Package Android` 只產生供開發測試的 debug APK。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
   Simulator 測試包，不能安裝到 iPhone 或 iPad。
