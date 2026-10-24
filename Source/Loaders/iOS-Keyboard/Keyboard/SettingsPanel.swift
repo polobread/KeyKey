@@ -12,6 +12,7 @@ protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
     func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout)
+    func settingsPanel(_ panel: SettingsPanel, didChangePresentation presentation: KeyboardPresentation)
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
@@ -32,6 +33,7 @@ final class SettingsPanel: UIView {
     private var compositionMode: BopomofoCompositionMode
     private var chineseInputMethod: ChineseInputMethod
     private let methodSettings: ChineseInputMethodSettings
+    private var presentation: KeyboardPresentation
     private var keyboardLayout: BopomofoKeyboardLayout
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
@@ -50,7 +52,8 @@ final class SettingsPanel: UIView {
         compositionMode: BopomofoCompositionMode,
         chineseInputMethod: ChineseInputMethod = .smart,
         methodSettings: ChineseInputMethodSettings = ChineseInputMethodSettings(),
-        keyboardLayout: BopomofoKeyboardLayout = .standard
+        keyboardLayout: BopomofoKeyboardLayout = .standard,
+        presentation: KeyboardPresentation = .full
     ) {
         self.collections = collections
         self.enabled = enabled
@@ -60,6 +63,7 @@ final class SettingsPanel: UIView {
         self.chineseInputMethod = chineseInputMethod
         self.methodSettings = methodSettings
         self.keyboardLayout = keyboardLayout
+        self.presentation = presentation
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
@@ -101,9 +105,10 @@ final class SettingsPanel: UIView {
         rows.spacing = 0
 
         let scroll = UIScrollView()
+        scroll.accessibilityIdentifier = "keyboard-settings.scroll"
         scroll.alwaysBounceVertical = true
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
+            presentationRow(), compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
             candidateColorRow(), feedbackRow(),
             statusLabel, bulk, rows
@@ -119,9 +124,9 @@ final class SettingsPanel: UIView {
         addSubview(scroll)
         scroll.addSubview(root)
         NSLayoutConstraint.activate([
-            header.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            header.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            header.topAnchor.constraint(equalTo: topAnchor, constant: 10),
+            header.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            header.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            header.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
             scroll.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
             scroll.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: header.trailingAnchor),
@@ -176,6 +181,27 @@ final class SettingsPanel: UIView {
         row.directionalLayoutMargins = .init(top: 6, leading: 0, bottom: 6, trailing: 0)
         row.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
         return row
+    }
+
+    private func presentationRow() -> UIView {
+        let label = UILabel()
+        label.text = "鍵盤外觀"
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = Palette.primaryText
+        let control = UISegmentedControl(items: KeyboardPresentation.allCases.map(\.displayName))
+        control.selectedSegmentIndex = KeyboardPresentation.allCases.firstIndex(of: presentation) ?? 0
+        control.accessibilityIdentifier = "keyboard-presentation"
+        control.accessibilityLabel = "鍵盤外觀"
+        control.addTarget(self, action: #selector(presentationChanged(_:)), for: .valueChanged)
+        let row = UIStackView(arrangedSubviews: [label, control])
+        row.alignment = .center
+        row.spacing = 12
+        return row
+    }
+
+    @objc private func presentationChanged(_ sender: UISegmentedControl) {
+        presentation = KeyboardPresentation.allCases[sender.selectedSegmentIndex]
+        delegate?.settingsPanel(self, didChangePresentation: presentation)
     }
 
     private func feedbackRow() -> UIView {

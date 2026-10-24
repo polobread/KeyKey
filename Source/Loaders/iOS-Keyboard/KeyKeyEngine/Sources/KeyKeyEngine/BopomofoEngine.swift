@@ -226,14 +226,27 @@ public final class BopomofoEngine {
         guard compositionMode == .smart, mode == .bopomofo, !hardwareSmartEditing,
               smartReadings.indices.contains(index) else { return false }
         if showingSmartCandidates, smartCandidateStart == index {
-            candidates = []
-            smartCandidateOptions = []
-            showingSmartCandidates = false
+            closeTouchSmartCandidates()
             return true
         }
         showSmartCandidates(at: index)
         return true
     }
+
+    /// Dismiss the touch candidate overlay without confirming or clearing text.
+    /// Escape has different semantics, and must not be used for this control.
+    @discardableResult
+    public func closeTouchSmartCandidates() -> Result {
+        guard isTouchSmartComposition, !candidates.isEmpty else { return .update }
+        candidates = []
+        smartCandidateOptions = []
+        showingSmartCandidates = false
+        showingAssociatedPhrases = false
+        pageIndex = 0
+        highlight = 0
+        return .update
+    }
+
     public var composingCaretUTF16Offset: Int {
         guard let composition = smartComposition, let cursor = smartCompositionCursor,
               reading.isEmpty else { return composingText.utf16.count }
