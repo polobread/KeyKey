@@ -144,7 +144,7 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 | IOS-09 | P1 | 已入文：觸控設定及候選 | 觸控倉頡「即時候選」「未打完也能選字」均勾選，只輸入「竹大」，候選第 2 項可見「喬」。 | 倉頡可在字碼尚未輸入完成時，從候選中提前選字。 |
 | IOS-10 | P1 | 已入文：iPad 模擬器 8 張原圖及 1 張局部圖；實機待驗 | 啟用開關、地球鍵清單、直／橫向玩候選、橫向續打與確認、觸控倉頡兩個選項及竹大／喬候選；原圖或連結均附實際方向。 | iPad 在提醒事項附註欄組句與選字，直橫向使用相同入口；只輸入竹大即可看到喬。 |
 | IOS-11 | P2 | 部分入文：模擬器編輯器及 iPhone 複製確認；11d 實機／11e 貼上／11f 分享已占位 | 琦琦 App 前景編輯器接收模擬器 Generic Keyboard 按鍵；iPad 另拍橫向四欄與玩候選，複製確認仍為 iPhone。USB／藍牙、分享與跨 App 貼上待實機驗證。 | 外接鍵盤請使用琦琦 App 內的實體鍵盤編輯器，完成後複製或分享文字。 |
-| IOS-12 | P2 | 部分入文：App 開關與觸控候選；12c 翻頁已占位 | App 內空白鍵選字關閉見 IOS-08b；暫時開啟並實測輸入「玩」後按空白開候選，兩張入文。完成後恢復關閉；多頁翻頁另驗。 | 可在 App 設定是否以空白鍵開候選與翻頁，設定與 App 內實體鍵盤編輯器共用。 |
+| IOS-12 | P2 | 部分入文：App 開關與觸控候選；12c 翻頁已占位 | App 內空白鍵選字關閉見 IOS-08b；暫時開啟並實測完整原句「請假要去哪裡玩呢去海邊」，完成句尾「邊」的一聲後再按空白開候選，兩張入文。完成後恢復關閉；多頁翻頁另驗。 | 可在 App 設定是否以空白鍵開候選與翻頁，設定與 App 內實體鍵盤編輯器共用。 |
 
 ## 7. macOS
 
@@ -244,7 +244,7 @@ FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports
 | IOS-11a | [原圖](images/keykey-ios-v137-ios11a-hardware-editor-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／琦琦 App 前景編輯器／Generic Keyboard | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 請假已固定，後段仍為紫色組字，左側為呢候選，保留複製與分享入口。／實體鍵盤 |
 | IOS-11b | [原圖](images/keykey-ios-v137-ios11b-copy-confirmation-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／琦琦 App 前景編輯器／Generic Keyboard | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 按複製後文字確認、候選清空，顯示已複製提示；不作跨 App 貼上驗證。／實體鍵盤 |
 | IOS-12a | [原圖](images/keykey-ios-v137-ios12a-space-select-on-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／琦琦 App 設定 | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 使用空白鍵選字暫時開啟；拍攝完成已恢復關閉。／空白鍵選字 |
-| IOS-12b | [原圖](images/keykey-ios-v137-ios12b-space-candidates-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／記事本測試 App／觸控鍵盤 | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 完成玩讀音後按空白開候選，未點組字格。／空白鍵選字 |
+| IOS-12b | [原圖](images/keykey-ios-v137-ios12b-space-candidates-iphone17pro-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）原本 Debug 組態自建；App／extension 1.3.7（build 1） | iOS 26.5／記事本測試 App／觸控鍵盤 | iPhone 17 Pro arm64 模擬器 | 2026-10-24 | 首行「琦琦輸入法」已確認並換行；次行保留完整原句「請假要去哪裡玩呢去海邊」，後段仍在組字。以空白完成「邊」的一聲，再按空白開候選，未點組字格。／空白鍵選字 |
 | IOS-10a／IOS-04 補充 | [原圖](images/keykey-ios-v137-ios10a-enable-keyboard-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／系統設定／直向 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 從 App 設定的鍵盤開關啟用琦琦，沒有完整取用開關。／iPad 啟用 |
 | IOS-10b／IOS-07 補充 | [原圖](images/keykey-ios-v137-ios10b-middle-candidate-portrait-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／直向觸控鍵盤 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 兩行指定文字，第二行未先確認，玩候選展開。／iPad 直向 |
 | IOS-10c／IOS-07 補充 | [原圖](images/keykey-ios-v137-ios10c-middle-candidate-landscape-ipadpro13m5-simulator.png) | v1.3.7 tag a11f1eab／Xcode 27.1（27A9275）既有 Debug 組態；App／extension 1.3.7（build 1） | iPadOS 26.5／提醒事項附註／橫向觸控鍵盤 | iPad Pro 13 吋（M5）arm64 模擬器 | 2026-10-24 | 橫向重新實際輸入兩行，玩候選展開；原圖連結入文。／iPad 橫向 |
