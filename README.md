@@ -1,11 +1,19 @@
-# 琦琦輸入法 / chichi77 KeyKey — Android 開發版 1.3.7；iOS 開發版 1.3.7；macOS／Windows／Linux 開發版 1.3.7
+# 琦琦輸入法 / chichi77 KeyKey
 
-Android 原始碼開發版號為 `1.3.7`，iOS 為 `1.3.7`；Google Play 最新正式版為 `1.3.6`，App Store 正式版為 `1.3.2`。Android 1.3.2 於 **2026-10-08** 正式發布，可直接從商店安裝，不需加入群組或封閉測試。macOS／Windows／Linux 開發版為 `1.3.7`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。
-macOS、Windows 與 Ubuntu 24.04 安裝包依各自版本提供於
-[GitHub Release](https://github.com/polobread/KeyKey/releases)；
-Android 與 iOS 依各自的商店管道安裝。
+正式支援 **Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台**。
+目前正式版為 **1.3.7**，桌面版已於 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
+發布，iOS App Store 與 Android Google Play 亦已上架。
+macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
+套件庫版本可能較晚上架。Android 與 iOS 可直接從商店安裝，不需加入測試。
 
 [下載目前最新的 GitHub Release](https://github.com/polobread/KeyKey/releases/latest)
+
+## 感謝媒體報導及推薦
+
+感謝媒體與創作者介紹、推薦琦琦輸入法：
+
+- [媒體報導](https://free.com.tw/chichi-keykey/)
+- [KOL 推薦](https://www.facebook.com/ahui3c/posts/pfbid0KXPpXcS8fT6wxGveuJU6zCGbjKsbPw7GfiCaHdqQaRVrDt61uHAwDLjp9Xrn99Bbl)
 
 ## 開發初衷
 
@@ -25,7 +33,7 @@ Android 與 iOS 版透過 Google Play 與 App Store 的官方流程發行，並�
 安裝。macOS、Windows 與 Ubuntu 24.04 安裝包則由 GitHub Release 提供。
 
 琦琦輸入法是 Yahoo! KeyKey 開放原始碼的現代化分支，支援 macOS、Windows、
-Android、iOS 與 Ubuntu Desktop 24.04 LTS 的 Linux 原生版。
+Android、iOS、Ubuntu Desktop 24.04 LTS 的 Linux 原生版與 FreeBSD。
 
 Linux 原生版針對 Ubuntu Desktop 24.04、GNOME Shell 46、Fcitx 5、amd64，包含預設的
 好打注音整句組字、可切換的傳統注音、五種注音布局、候選與符號、30 套關聯詞、
@@ -52,8 +60,9 @@ Windows、Android 與 iOS 建立現代化 frontend。
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
 | Linux | Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；注音、倉頡、簡易 |
+| FreeBSD | 已驗證 FreeBSD 15.1-RELEASE-p3、amd64、Xfce／X11、LightDM、Fcitx 5、Mousepad／GTK 3；透過 ports／pkg 安裝 |
 
-五個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
+六個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
 
 1.3.7 的 Windows 版包含好打注音與傳統注音的工作列快速切換、跟隨系統明暗模式的
@@ -66,15 +75,15 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 
 ## 下載與發行
 
-macOS／Windows 的簽章更新功能目前仍在開發，預設不連網；正式公開金鑰、feed 與
-發布流程尚未啟用。共用 metadata、GitHub Release／CDN 設定及 FreeBSD ports/pkg
-的界線見[桌面更新說明](update/README.md)。
+桌面版提供每週新版通知，macOS／Windows 在使用者選擇更新後才下載與安裝；
+Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub Release／CDN 設定與 ports／pkg
+流程見[桌面更新說明](update/README.md)。
 
 - [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
 - [Windows 1.3.7 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
-- Ubuntu 24.04 使用者請看[Linux 1.3.1 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
-- FreeBSD 使用者請看[安裝與使用指南](FREEBSD_INSTALL.md)：套件庫安裝、ports 原始碼編譯 1.3.7、Fcitx 5 設定與操作截圖。
+- Ubuntu 24.04 使用者請看[Linux 1.3.7 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
+- FreeBSD 使用者請看[安裝與使用指南](FREEBSD_INSTALL.md)：套件庫安裝、ports 原始碼編譯 1.3.7、Fcitx 5 設定與操作截圖。套件資訊見 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/id6807832939)安裝。
 - Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；可直接從[Google Play 商店](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)安裝正式版，無須加入測試。
@@ -93,8 +102,8 @@ macOS／Windows 的簽章更新功能目前仍在開發，預設不連網；正�
 
 ### Code signing policy
 
-Windows 發行者簽章採 Certum／SimplySign 本機半自動流程，首次真實簽章與發布驗收仍待完成；
-既有未簽章發行檔維持原狀。詳見 [Code signing policy](CODE_SIGNING_POLICY.md) 與
+Windows 1.3.7 安裝程式及兩種架構 ZIP 內的程式已完成 Certum 簽章；
+後續發布沿用 Certum／SimplySign 本機半自動流程，既有未簽章發行檔維持原狀。詳見 [Code signing policy](CODE_SIGNING_POLICY.md) 與
 [Windows Certum 發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
 目前未達 SignPath Foundation 的申請門檻；整合待辦與致謝文字收至 [Windows SignPath TODO](docs/WINDOWS_SIGNPATH_TODO.md)。
 
@@ -103,8 +112,7 @@ Windows 發行者簽章採 Certum／SimplySign 本機半自動流程，首次真
 Windows 由 Actions 呼叫與本機共用的 PowerShell 完成建置、測試及 unsigned 封裝驗證，保存待簽 artifact；
 本機只驗證來源、Certum 簽章及重包 EXE／ZIP，驗收後另行核准發布。Ed25519 私鑰僅供本機使用，不提交、上傳或顯示。
 完整分工與流程對表見 [Windows 發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
-各平台版號須符合該 Release；目前 macOS／Windows／Linux 開發版
-均為 `1.3.7`，對應的正式版 tag 為 `v1.3.7`。macOS／Linux 正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
+各平台建置版號須符合所選 Release tag，並以該 tag 的原始碼建置。macOS／Linux 正式版若某平台失敗，修正合併回 `master` 後，手動執行該平台 workflow，
 選擇 `master` 並填入既有 `release_tag`，即可補建、上傳並替換該平台的同名檔案。
 設定 release environment 的 AWS mirror variables 後，同一批已驗證檔案也會同步到 S3；
 留空 `release_tag` 則只保留 Actions artifact。Linux 的桌面環境與應用程式相容性範圍見[安裝與使用指南](LINUX_INSTALL.md)。
@@ -164,7 +172,7 @@ bigram 資料、計數及權重，包括匯出檔及併入資料庫的相應部�
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-macOS／Windows／Linux 1.3.7、Android 1.3.7 與 iOS 1.3.7 原始碼均提供「好打注音」整句組字模式，
+六大平台的 1.3.7 正式版均提供「好打注音」整句組字模式，
 並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。語言模型由
 McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yahoo 未釋出的中研院語料；
 另加入可替換的 11,180 句 AI 合成 bootstrap corpora 產生初版 bigram 上下文資料。這份
@@ -174,15 +182,13 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 
 ## English
 
-Android's source development version is `1.3.7`, and iOS's is `1.3.7`; the latest production version on Google Play is `1.3.6`, while the App Store version is `1.3.2`.
-Android 1.3.2 entered production on **2026-10-08**; installation no longer requires
-a Google Group or closed-test enrollment. macOS, Windows, and Linux development
-versions are `1.3.7`, not yet stable releases; published macOS and Linux stable
-versions remain `1.3.1`. Desktop installers are provided by platform version on
-[GitHub Release](https://github.com/polobread/KeyKey/releases).
-Android and iOS use their respective store distribution channels.
+Version **1.3.7** is officially released for **Windows, macOS, iOS, Android,
+Linux, and FreeBSD**. It is available on the App Store and Google Play.
+Desktop installers are available from [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7).
+FreeBSD uses ports/pkg; binary package repositories may receive the update later.
+Mobile installation does not require test enrollment.
 
-macOS, Windows, and Linux 1.3.7, Android 1.3.7, and iOS 1.3.7 implement Smart Phonetic
+The 1.3.7 releases on all six platforms implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
 option. For published builds, consult the installation guide for that version.
 Its redistributable unigram model is generated from the MIT-licensed
@@ -193,7 +199,7 @@ proprietary corpus from the historical Yahoo build is not included.
 [Download the latest GitHub Release](https://github.com/polobread/KeyKey/releases/latest).
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
-method. It supports macOS, Windows, Android, iOS, and Ubuntu Desktop 24.04 LTS.
+method. It supports Windows, macOS, iOS, Android, Linux (Ubuntu Desktop 24.04 LTS), and FreeBSD.
 
 The native Linux build targets Ubuntu Desktop 24.04, GNOME Shell 46, Fcitx 5,
 and amd64. It includes Smart Phonetic sentence composition by default,
@@ -221,8 +227,9 @@ by, or sponsored by Yahoo.**
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
 | iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
 | Linux | Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, amd64; Bopomofo, Cangjie, Simplex |
+| FreeBSD | Tested on FreeBSD 15.1-RELEASE-p3, amd64, Xfce/X11, LightDM, Fcitx 5, Mousepad/GTK 3; installed through ports/pkg |
 
-All five platforms provide Traditional Bopomofo composition, candidates, and
+All six platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
 
 The 1.3.7 Windows version includes direct Smart/Traditional Phonetic selection from
@@ -244,6 +251,7 @@ iOS.
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
 - The [Windows 1.3.7 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the installer, typing modes, and settings; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
+- FreeBSD packages, ports builds, desktop setup, and screenshots: [FreeBSD installation guide (Traditional Chinese)](FREEBSD_INSTALL.md). Port information: [FreshPorts: chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/).
 - Build and install the Ubuntu 24.04 version from source with `./configure`: [Linux source installation and usage guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md).
 - iPhone and iPad setup and use: [iOS installation guide (Traditional Chinese)](IOS_INSTALL.md), with the [App Store listing](https://apps.apple.com/tw/app/id6807832939).
 - Android setup and daily use: [Android installation guide (Traditional Chinese)](ANDROID_INSTALL.md). Install the production version directly from [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android); test enrollment is not required.
@@ -264,9 +272,9 @@ iOS.
 
 #### Code signing policy
 
-Windows publisher signing uses the semi-automated local Certum/SimplySign flow;
-first real signing and release acceptance remain pending. Existing unsigned
-releases remain unchanged. See the [Code signing policy](CODE_SIGNING_POLICY.md)
+The Windows 1.3.7 installer and programs inside both architecture ZIPs are Certum signed.
+Subsequent releases use the semi-automated local Certum/SimplySign flow;
+existing unsigned releases remain unchanged. See the [Code signing policy](CODE_SIGNING_POLICY.md)
 and [Windows Certum release guide](docs/WINDOWS_CERTUM_RELEASE.md).
 KeyKey does not currently meet the SignPath Foundation application requirements. Deferred integration and attribution are kept in the
 [Windows SignPath TODO](docs/WINDOWS_SIGNPATH_TODO.md).
@@ -277,9 +285,8 @@ Windows Actions calls the same PowerShell used locally for builds, tests and
 unsigned packaging, then retains verified signing inputs. Local Windows verifies
 the CI artifact, signs and repackages the EXE and both ZIPs; publication follows
 manual acceptance and approval. Ed25519 keys remain local and are never committed,
-uploaded or displayed. See the [Windows release guide](docs/WINDOWS_CERTUM_RELEASE.md). macOS,
-Windows, and Linux development versions are `1.3.7`, with `v1.3.7` as the
-corresponding stable release tag. After fixing a failed stable macOS/Linux
+uploaded or displayed. See the [Windows release guide](docs/WINDOWS_CERTUM_RELEASE.md).
+Build each platform from the selected Release tag with its matching product version. After fixing a failed stable macOS/Linux
 platform through a PR into `master`, manually run that workflow from `master` with
 the matching platform's `release_tag` to replace its assets; other platforms are untouched.
 Leaving `release_tag` blank retains Actions artifacts only.

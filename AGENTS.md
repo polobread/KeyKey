@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-工作分支以 `git status --short --branch` 的實際結果為準。Android 開發版號為 `1.3.7`，iOS 為 `1.3.7`；Android 最新商店正式版為 `1.3.6`，先前 `1.3.2`、`1.3.3`、`1.3.5` 亦已正式發布；iOS 商店正式版仍為 `1.3.2`（build 41）。Android 1.3.2 於 2026-10-08 正式發布。macOS、Windows 與 Linux 產品版號為 `1.3.7`，尚未正式發布；macOS 與 Linux 已發布正式版仍為 `1.3.1`。共用好打注音模型維持 v1.3.1。各平台必須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台，1.3.7 已全面正式發布，iOS App Store 與 Android Google Play 皆已上架 1.3.7。FreeBSD 1.3.7 已在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，透過 ports／pkg 安裝，套件庫版本可能較晚上架。各平台目前原始碼開發版號為 `1.3.8`；FreeBSD 沿用 Linux-IME 的版本來源，共用好打注音模型維持 v1.3.1。README 只記錄正式 Release／商店版本與支援範圍，不列開發版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -52,7 +52,7 @@
 | Windows | `Windows-TSF`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
 | iOS | `iOS-Keyboard/KeyKeyEngine` Swift walker | 鍵盤 extension 內的共用 `KeyKey.db` |
 | Android | `Android-IME` Java walker | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
-| Linux | `Linux-IME` 的 Fcitx 5 C++ walker 與 adapter | 共用 DB 安裝時改名為 `smart-mandarin.db` |
+| Linux／FreeBSD | `Linux-IME` 的 Fcitx 5 C++ walker 與 adapter | 共用 DB 安裝時改名為 `smart-mandarin.db` |
 
 macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 各有組句 frontend。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
 
@@ -125,7 +125,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 
 程式、封裝與測試不得另行寫死產品版號，一律讀取各平台既有版號來源；測試需要版號時也沿用該來源，不新增專門驗證版號解析、字串或同步傳遞的案例，不因升版重跑這類測試。
 
-`README.md` 內文明列各平台版本；標題尾版號僅保留給 Linux 的既有封裝流程。macOS 封裝從 IMK plist 讀取版本並核對四份產品 plist；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
+`README.md` 只列正式 Release／商店版本，不在標題或內文列開發版號；封裝與測試讀取各平台版號來源，不解析 README。macOS 封裝從 IMK plist 讀取版本並核對四份產品 plist；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
 
 | 平台 | 版號來源 |
 |---|---|

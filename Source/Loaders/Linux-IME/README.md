@@ -4,15 +4,16 @@
 
 FreeBSD 的套件／ports 原始碼安裝、桌面設定與操作截圖見 [FreeBSD 安裝與使用指南](../../../FREEBSD_INSTALL.md)。
 
-Development version 1.3.7 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
+Released version 1.3.7 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
 LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
 as 傳統注音, Cangjie, and Simplex. See the
 [Linux installation and usage guide](../../../LINUX_INSTALL.md) for the package
 set and setup steps.
-Version 1.3.7 is not release-qualified yet. It fixes Shift tap mode switching
-swallowing the key release after forwarding the press, which could leave
-applications treating Shift as held. The published 1.3.1 installation guide
-remains separate from development packages.
+Version 1.3.7 fixes Shift tap mode switching swallowing the key release after
+forwarding the press, which could leave applications treating Shift as held.
+FreeBSD 1.3.7 has also been tested on FreeBSD 15.1-RELEASE-p3 amd64 with
+Xfce/X11, LightDM, Fcitx 5, and Mousepad/GTK 3. It shares this frontend and
+product version; install through ports/pkg, whose binary packages may arrive later.
 With Fcitx enabled, CTest runs `keykey_linux_fcitx5_mode_keys` against the real
 adapter and checks that Shift releases are filtered but not accepted (the
 frontend must still deliver them to the application), alongside tap/hold mode
@@ -262,7 +263,7 @@ password purpose is stricter: Fcitx switches that input context to
 `keyboard-us` and rejects forcing the custom method back on.
 Further compatibility work includes IBus, physical monitor hotplug, more Apps
 and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. The supported
-1.3.1 Ubuntu package set and setup steps are in the
+1.3.7 Ubuntu package set and setup steps are in the
 [Linux installation guide](../../../LINUX_INSTALL.md); the 1.2.8 release record
 preserves that version's verified boundaries.
 

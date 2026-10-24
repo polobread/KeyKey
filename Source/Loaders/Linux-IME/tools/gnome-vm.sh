@@ -82,9 +82,12 @@ provision() {
   local package_dir=$linux_root/out/package-build/ubuntu-24.04-amd64-release-candidate
   local panel_dir=$linux_root/out/packages/ubuntu-24.04-amd64/release-candidate
   local host_dir=$linux_root/out/build/ubuntu-24.04-package-amd64
+  local product_version
+  product_version=$(sed -n 's/^project(KeyKeyLinux VERSION \([^ ]*\) LANGUAGES.*$/\1/p' \
+    "$linux_root/CMakeLists.txt")
   local files=(
-    "$package_dir/chichi77-keykey-data_1.3.7-1+ubuntu24.04_all.deb"
-    "$package_dir/fcitx5-chichi77-keykey_1.3.7-1+ubuntu24.04_amd64.deb"
+    "$package_dir/chichi77-keykey-data_${product_version}-1+ubuntu24.04_all.deb"
+    "$package_dir/fcitx5-chichi77-keykey_${product_version}-1+ubuntu24.04_amd64.deb"
     "$panel_dir/gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb"
     "$host_dir/keykey_linux_gtk3_e2e_host"
     "$host_dir/keykey_linux_gtk4_e2e_host"
@@ -100,7 +103,7 @@ provision() {
     -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
     "${files[@]}" keykey@127.0.0.1:/tmp/
   guest_ssh mv /tmp/fcitx5-profile /tmp/keykey-fcitx5-profile
-  guest_ssh bash -s < "$tool_dir/gnome-vm-setup-guest.sh"
+  guest_ssh bash -s -- "$product_version" < "$tool_dir/gnome-vm-setup-guest.sh"
 }
 
 case ${1:-} in
