@@ -132,6 +132,7 @@ Windows 由 Actions 呼叫與本機共用的 PowerShell 完成建置、測試及
 
 ## 文件
 
+- [六大平台截圖補拍計畫](docs/CROSS_PLATFORM_SCREENSHOT_PLAN.md)：安裝與使用畫面、優先順序、圖說及逐平台完成清單
 - [跨平台輸入法設定支援表與 Roadmap](docs/CROSS_PLATFORM_SETTINGS_ROADMAP.md)：七種平台／鍵盤情境、功能缺口與開發日期
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
 - [macOS App Store Connect 上架可行性與發行計畫](docs/MACOS_APP_STORE_PLAN.md)：Apple
