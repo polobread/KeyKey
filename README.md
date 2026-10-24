@@ -80,7 +80,7 @@ Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub 
 流程見[桌面更新說明](update/README.md)。
 
 - [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
-- [台灣 AWS CDN 下載點](https://github.com/polobread/KeyKey/releases/latest#台灣-aws-下載點)：提供 macOS、Windows、Ubuntu 安裝檔及校驗檔，與 GitHub Assets 內容相同，無須登入。FreeBSD 依下方指南透過 ports／pkg 安裝。
+- [台灣 AWS CDN 下載點](https://github.com/polobread/KeyKey/releases/latest#台灣-aws-下載點)：提供 macOS、Windows、Ubuntu 安裝檔及校驗檔，與 GitHub Assets 內容相同，無須登入。
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
 - [Windows 1.3.7 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
 - Ubuntu 24.04 使用者請看[Linux 1.3.7 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
