@@ -8,9 +8,9 @@
 
 本版的 Linux 安裝步驟適用於 **Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64**。在「設定 → 關於」確認 Ubuntu 版本，並執行 `dpkg --print-architecture`，結果應為 `amd64`。安裝需要管理員密碼，設定完成後需要重新啟動 Ubuntu。其他 Ubuntu 版本、ARM64、IBus 與其他桌面環境尚未列入這份指南的驗證範圍。
 
-## 1. 下載 v1.3.7 套件
+## 1. 下載最新正式版套件
 
-開啟 [琦琦輸入法 v1.3.7 發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.7`。同一發布頁的檔案要完整下載，才能一起校驗。
+開啟 [琦琦輸入法最新正式版下載頁](https://github.com/polobread/KeyKey/releases/latest)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.7`。下方檔名、CDN 連結及安裝指令以 **1.3.7** 示範；下載其他正式版本時，請以頁面當次檔名為準，並調整指令中的目錄與檔名。五檔必須來自同一發布版本，才能一起校驗。
 
 > **待補圖｜LNX-01a**
 >
@@ -208,7 +208,7 @@ keykey-gnome-panel status
 
 | 情況 | 先檢查 |
 | --- | --- |
-| `sha256sum` 顯示 `FAILED` | 停止安裝，確認五個檔案都來自同一個 `v1.3.7` 發布頁，重新下載失敗的檔案。 |
+| `sha256sum` 顯示 `FAILED` | 停止安裝，確認五個檔案都來自同一版正式發布頁，重新下載失敗的檔案。 |
 | Fcitx 清單找不到琦琦注音 | 確認三個 `.deb` 已安裝、取消語言篩選，重新登入後再開設定工具。 |
 | 找得到輸入法，但打字只有英文 | 確認選到 Bopomofo，按 `Ctrl + \` 切回中文；第一聲讀音後按 **Space** 完成音節。 |
 | 只有「文字編輯器（琦琦注音）」可用，Firefox 或終端機只輸出英文 | 重新啟動 Ubuntu 後再開啟這些 App。執行 `printenv GTK_IM_MODULE QT_IM_MODULE XMODIFIERS`，三行應依序為 `fcitx`、`fcitx`、`@im=fcitx`；若仍是 `ibus`，重新執行 `im-config` 選 **fcitx5** 並重啟。 |

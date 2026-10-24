@@ -12,7 +12,7 @@
 
 ## 1. 下載 macOS 安裝包
 
-打開[正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，找到版本 **v1.3.7**，往下捲到 **Assets**。點選 **`chichi77-KeyKey-1.3.7-macos-arm64.pkg.zip`**，就能下載 Apple Silicon 的安裝包。
+打開[最新正式版下載頁](https://github.com/polobread/KeyKey/releases/latest)，往下捲到 **Assets**，選 macOS Apple Silicon 的 **`.pkg.zip`** 安裝包。下圖及本文檔名以 **1.3.7** 示範，例如 `chichi77-KeyKey-1.3.7-macos-arm64.pkg.zip`；實際下載版本以頁面當次發布為準。
 
 ![GitHub Release的Assets，列出1.3.7 macOS安裝包及同名SHA-256校驗檔](docs/images/keykey-macos-v137-mac01-release-assets-apple-silicon.png)
 

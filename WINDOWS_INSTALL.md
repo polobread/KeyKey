@@ -14,11 +14,13 @@
 | **32 位元 x86 Windows** | 下載 x86 ZIP，完整解壓縮後執行 `Install.cmd`。 |
 | **ARM64 Windows** | 目前沒有本指南涵蓋的安裝包。 |
 
-打開 [1.3.7 正式發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，往下找到 **Assets**，選擇名稱包含自己架構的檔案。檔名多了 `.sha256` 的是校驗檔，請與安裝包一起下載。
+打開 [最新正式版下載頁](https://github.com/polobread/KeyKey/releases/latest)，往下找到 **Assets**，選擇名稱包含自己架構的檔案。檔名多了 `.sha256` 的是校驗檔，請與安裝包一起下載。
 
 > **待補圖｜WIN-01**
 >
 > 未登入 GitHub 的 v1.3.7 Assets；清楚顯示 x64 Setup EXE、x64／x86 ZIP 與對應校驗檔。
+
+下方檔名與 CDN 連結以 **1.3.7** 示範；要取得最新版，請依正式下載頁當次列出的安裝包及同版校驗檔下載。
 
 ### 也能使用台灣 AWS CDN
 

@@ -82,6 +82,8 @@
 
 ### 桌面下載入口與 AWS CDN
 
+正式版下載頁統一使用 [releases/latest](https://github.com/polobread/KeyKey/releases/latest)，不把使用者下載入口固定到 tag。指南中的版本化檔名、CDN 與指令是 1.3.7 範例；取得最新版時，以該頁當次發布的同版檔案及校驗值為準。tag 僅保留在截圖來源與可重現建置紀錄中。
+
 Windows、macOS、Linux 的指南同時列出 GitHub Release 與**台灣 AWS CDN**下載路徑；選相同正式版本、架構及檔名，核對 SHA-256 後安裝。Linux 保留三個 .deb、面板原始碼與 SHA256SUMS 完整五檔的流程。下載頁截圖採未登入 GitHub 的視角。
 
 FreeBSD 透過官方 ports／pkg 取得及更新；拍攝套件庫查詢、ports 建置與安裝結果。AWS CDN 下載與相關截圖僅適用 macOS、Windows、Linux。
@@ -410,8 +412,8 @@ macOS 的圖文主線已具備，尚缺下表 **6 個位置、4 類內容**：�
 
 | 占位 ID | 優先 | 指南放置段落 | 待補畫面／完成條件 | 判定依據 |
 | --- | --- | --- | --- | --- |
-| LNX-01a | P0 | 1. 下載 v1.3.7 套件 | 未登入 GitHub 的 v1.3.7 Assets，顯示三個 .deb、面板原始碼及 SHA256SUMS。 | 已有正式檔名與兩種下載連結，沒有相應下載頁圖。 |
-| LNX-01b | P0 | 1. 下載 v1.3.7 套件 | 台灣 AWS 下載表中的 Linux 五檔，檔名與 GitHub 對應。 | 已有正式檔名與兩種下載連結，沒有相應下載頁圖。 |
+| LNX-01a | P0 | 1. 下載最新正式版套件 | 未登入 GitHub 的 v1.3.7 Assets，顯示三個 .deb、面板原始碼及 SHA256SUMS。 | 已有正式檔名與兩種下載連結，沒有相應下載頁圖。 |
+| LNX-01b | P0 | 1. 下載最新正式版套件 | 台灣 AWS 下載表中的 Linux 五檔，檔名與 GitHub 對應。 | 已有正式檔名與兩種下載連結，沒有相應下載頁圖。 |
 | LNX-02a | P0 | 2. 校驗並安裝 | 終端機保留 sha256sum 命令，四個檔案均顯示 OK。 | 只有命令與預期結果，沒有校驗及安裝完成摘要圖。 |
 | LNX-02b | P0 | 2. 校驗並安裝 | apt 安裝結束摘要；可辨認輸入法、詞庫與 GNOME 面板已安裝。 | 只有命令與預期結果，沒有校驗及安裝完成摘要圖。 |
 | LNX-03 | P0 | 3. 啟用 Fcitx 5 與 GNOME 候選面板 | im-config 實際選到 fcitx5 的精靈頁面。 | 只有 im-config 操作文字，沒有實際選到 fcitx5 的頁面。 |
