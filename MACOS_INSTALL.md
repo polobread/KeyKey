@@ -30,7 +30,11 @@
 
 ## 2. 執行安裝程式
 
-下載完成後，到 Finder 的「下載項目」連按兩下 ZIP，解壓縮後會得到 **`.pkg` 安裝檔**。再連按兩下 `.pkg`，依安裝程式的提示按 **繼續 → 安裝**。
+下載完成後，到 Finder 的「下載項目」連按兩下 ZIP，解壓縮後會得到 **`.pkg` 安裝檔**。再連按兩下 `.pkg`，開啟安裝程式。
+
+![macOS安裝程式的簡介頁，顯示歡迎使用chichi77 KeyKey，右下角為繼續按鈕](docs/images/keykey-macos-v137-mac02-installer-welcome-apple-silicon.png)
+
+*安裝程式顯示的名稱是「chichi77 KeyKey」。看到歡迎畫面後，按右下角「繼續」，依序閱讀授權內容，再依提示進行安裝。*
 
 如果 Mac 要求密碼或 Touch ID，使用平常登入這台 Mac 的帳號完成授權。等畫面顯示**安裝成功**，就可以關閉安裝程式。
 
@@ -182,6 +186,6 @@ codesign -dv '/Library/Input Methods/chichi77 KeyKey.app' 2>&1 | grep -E 'Signat
 
 ## 畫面資訊與參考
 
-本文圖片取自 **macOS 27.0.1、Apple Silicon、已安裝的 1.3.7**，下載頁擷取於 2026-10-24。候選、輸入法選單與下載頁原圖由維護者提供；不同 macOS 版本的外觀可能略有差異。
+本文的輸入與設定圖片取自 **macOS 27.0.1、Apple Silicon、已安裝的 1.3.7**，下載頁擷取於 2026-10-24。安裝歡迎頁、候選、輸入法選單與下載頁原圖由維護者提供；不同 macOS 版本的外觀可能略有差異。
 
 Mac 系統操作可參考 [Apple：在 Mac 上登出帳號](https://support.apple.com/zh-tw/guide/mac-help/mchlcc122483/mac)與[Apple：設定中文輸入方式](https://support.apple.com/zh-hk/guide/chinese-input-method/cim6023ab944/mac)。
