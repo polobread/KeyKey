@@ -2,7 +2,7 @@
 
 ## 1.3.7
 
-本版以倉頡「未打完也能選字」為主要功能，macOS、Windows、Linux、iOS 與 Android 統一使用 **1.3.7** 版號，方便辨識支援此功能的版本。各平台仍依各自流程發布；共用好打注音模型維持 1.3.1。
+本版以倉頡「未打完也能選字」為主要功能，Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台統一使用 **1.3.7** 版號，方便辨識支援此功能的版本。六大平台皆已正式發布，iOS App Store 與 Android Google Play 亦已上架；共用好打注音模型維持 1.3.1。
 
 ### 主要功能：倉頡未打完也能選字
 
@@ -15,7 +15,7 @@
 
 | 使用方式 | 新設定的預設值 |
 |---|---|
-| macOS、Windows、Linux 桌面鍵盤 | 兩項皆關閉，需自行開啟 |
+| macOS、Windows、Linux／FreeBSD 桌面鍵盤 | 兩項皆關閉，需自行開啟 |
 | iOS、Android 螢幕鍵盤 | 兩項皆開啟，保留既有即時候選設定 |
 | iOS、Android 外接實體鍵盤 | 兩項皆關閉，與螢幕鍵盤分開保存 |
 
@@ -45,6 +45,7 @@ Windows 搜尋列也會套用相同的倉頡候選設定。iOS 外接鍵盤功�
 
 ### Linux／FreeBSD 其他改進
 
+- FreeBSD 納入正式支援，1.3.7 已在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，提供 ports／pkg 安裝與操作指南。
 - 設定介面統一使用台灣繁體中文，新增「關於琦琦輸入法」入口，顯示版本、開發初衷、授權及專案連結。
 - 新增好打注音進階設定：空白鍵開候選、選字目標在游標前後，以及 Esc 清除整句。空白鍵開候選與 Esc 清除整句預設關閉，選字目標預設在游標後方。
 - 修正輕按 Shift 切換中英文後，App 仍認為 Shift 按住的問題。
@@ -65,7 +66,7 @@ Windows 搜尋列也會套用相同的倉頡候選設定。iOS 外接鍵盤功�
 - 更新查詢在背景執行，逾時或失敗會顯示原因並恢復手動檢查；Windows 另會保護尚未儲存的設定與自訂詞。
 - 改善安裝包簽章、公證及下載驗證，正式與測試更新頻道分開管理；公告由維護者審查後發布。
 
-各平台建置、實機驗收及更新服務啟用狀態須分別核對。Windows 偶發白框及分類文字消失、Linux GNOME Wayland 與 FreeBSD 原生桌面仍有待驗收項目。操作與驗證細節見各平台安裝指南、[建置說明](BUILDING.md)及[桌面更新說明](update/README.md)。
+各平台建置、實機驗收及更新服務啟用狀態須分別核對。Windows 偶發白框及分類文字消失、Linux GNOME Wayland 的部分輸入路徑仍有待驗收項目；FreeBSD 已驗證範圍見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。操作與驗證細節見各平台安裝指南、[建置說明](BUILDING.md)及[桌面更新說明](update/README.md)。
 
 ## Android 1.3.6（已正式發布）
 

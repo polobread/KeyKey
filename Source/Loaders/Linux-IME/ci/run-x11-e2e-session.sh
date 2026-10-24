@@ -722,7 +722,10 @@ verify_bopomofo_config_schema() {
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   grep -Fq AssociatedPhrases \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
-  grep -Fq '琦琦輸入法 — 版本 1.3.7' \
+  local product_version
+  product_version=$(sed -n 's/^project(KeyKeyLinux VERSION \([^ ]*\) LANGUAGES.*$/\1/p' \
+    "$(dirname -- "${BASH_SOURCE[0]}")/../CMakeLists.txt")
+  grep -Fq "琦琦輸入法 — 版本 $product_version" \
     "$KEYKEY_E2E_ARTIFACT_DIR/fcitx-config-schema.txt"
   for source in "${associated_phrase_sources[@]}"; do
     grep -Fq "$source" \

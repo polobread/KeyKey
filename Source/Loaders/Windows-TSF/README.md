@@ -100,8 +100,8 @@ Windows frontend 內的更新客戶端仍屬程式變更。可透過 `workflow_d
 完整 TSF／NSIS、UAC、舊版升級、資料保留與 signed 憑證驗收屬發布工作，不能把
 上述局部開發驗證當成已發布或已安裝的證據。
 
-Windows `1.3.7` 開發版持續修正進階設定、讀音輔助、符號表與簡體輸出；
-Windows 產品版號為 1.3.7，尚未發布；iOS 1.3.2、Android 1.3.6 已在各自商店正式上線，macOS、Linux 開發版同為 1.3.7；共用模型維持 1.3.1。實作與驗證記錄見
+Windows **1.3.7** 已正式發布，提供進階設定、讀音輔助、符號表與簡體輸出。
+Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台的正式版皆為 1.3.7；共用模型維持 1.3.1。實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
 
 2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、
@@ -285,10 +285,10 @@ The old IMM32 loader and Windows preference panels supply behavioral references
 for Cangjie and Simplex. The old IMM32 loader is retained as historical
 reference and is not linked into this DLL.
 
-### Cangjie and Simplex development build
+### Cangjie and Simplex
 
-This source includes these modes in Windows 1.3.7 local builds; published installers and
-already installed DLLs are separate artifacts and may still contain only Mandarin.
+Windows 1.3.7 includes Cangjie and Simplex. Older installed DLLs must be upgraded
+to use the features in the current release.
 Cangjie retains up to five radicals and queries with Space/Enter; Simplex queries
 at two radicals. Number keys select candidates, Page Up/Down page, Backspace
 edits radicals and Esc cancels. Cangjie supports `?` and `*` wildcard lookup.
@@ -485,8 +485,8 @@ The same tab can import a `SmartMandarinUserData.db` backup: user phrases are
 merged by reading and text, while the imported candidate and contextual
 learning replace the current learning tables. Export uses SQLite's online
 backup API, so a database can be saved while the input method is active.
-The settings window footer shows `1.3.7`; the frontend validation script checks
-that this visible version matches the CMake project and packaging version.
+The settings window footer reads the product version from the CMake project,
+which is also used for packaging.
 Language-model source changes do not alter a platform build automatically.
 Generate and validate a new canonical `KeyKey.db` first, then commit the file
 and its manifest before rebuilding the package.
@@ -549,7 +549,7 @@ writes `%ProgramFiles%\chichi77 KeyKey\Deployment.log`.
 The elevated installer:
 
 - copies the x64 and x86 DLLs, settings app, database, and notices to
-  `C:\Program Files\chichi77 KeyKey\1.3.7-<fingerprint>`;
+  `C:\Program Files\chichi77 KeyKey\X.Y.Z-<fingerprint>`;
 - registers the TSF from that permanent location; and
 - adds **琦琦輸入法** to Windows Installed apps for uninstallation.
 
@@ -628,8 +628,8 @@ LICENSES/
 ```
 
 ZIP and NSIS invoke the same deployment executable and use the same layout in
-`C:\Program Files\chichi77 KeyKey\1.3.7-<fingerprint>`. Repair or reinstall before
-a pending reboot uses a fresh `1.3.7-<instance-id>` path. New directory names do
+`C:\Program Files\chichi77 KeyKey\X.Y.Z-<fingerprint>`. Repair or reinstall before
+a pending reboot uses a fresh `X.Y.Z-<instance-id>` path. New directory names do
 not contain `test` or `repair`; old directories with those labels remain
 recognizable for migration. The product root holds protected state, a durable
 transaction journal while installing, diagnostics and compatibility uninstall

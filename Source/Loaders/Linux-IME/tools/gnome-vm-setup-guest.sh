@@ -2,6 +2,8 @@
 # Runs inside the Ubuntu 24.04 VM after gnome-vm.sh copies package and host files.
 set -euo pipefail
 
+product_version=${1:?Expected the CMake product version from gnome-vm.sh}
+
 # shellcheck disable=SC1091
 if [[ $(. /etc/os-release; echo "$VERSION_ID") != 24.04 ||
       $(dpkg --print-architecture) != amd64 ]]; then
@@ -18,8 +20,8 @@ sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommen
   fcitx5 fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 \
   fcitx5-frontend-qt6 fcitx5-config-qt qt6-wayland \
   fonts-wqy-zenhei libcanberra-pulse x11-utils xdotool qemu-guest-agent \
-  /tmp/chichi77-keykey-data_1.3.7-1+ubuntu24.04_all.deb \
-  /tmp/fcitx5-chichi77-keykey_1.3.7-1+ubuntu24.04_amd64.deb \
+  "/tmp/chichi77-keykey-data_${product_version}-1+ubuntu24.04_all.deb" \
+  "/tmp/fcitx5-chichi77-keykey_${product_version}-1+ubuntu24.04_amd64.deb" \
   /tmp/gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb
 
 # The cloud image uses networkd. The minimal desktop's Netplan defaults can

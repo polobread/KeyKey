@@ -2,9 +2,13 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
-Linux 1.3.1 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
-[Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Ubuntu 24.04 套件與 macOS、Windows
-依各自版本提供於 [GitHub Release](https://github.com/polobread/KeyKey/releases)；Android 原始碼開發版號為 `1.3.7`，iOS 為 `1.3.7`，Google Play 最新正式版為 `1.3.6`，App Store 正式版為 `1.3.2`（build 41）；Android 1.3.2 於 2026-10-08 正式發布，不再要求一般使用者加入封閉測試。macOS／Windows／Linux 開發版為 `1.3.7`，尚未正式發布；macOS 與 Linux 已發布正式版及共用模型仍為 `1.3.1`。先前 Linux 版本的發布紀錄保留在
+Linux 1.3.7 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
+[Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。Windows、macOS、iOS、Android、Linux 與 FreeBSD
+六大平台皆已正式發布 1.3.7；桌面安裝包由 [GitHub Release](https://github.com/polobread/KeyKey/releases)
+提供，iOS 與 Android 已分別在 App Store、Google Play 上架，不需加入測試。
+FreeBSD 已完成桌面驗證，透過 ports／pkg 安裝，詳見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。
+原始碼開發版號為 `1.3.8`，共用好打注音模型仍為 `1.3.1`。
+先前 Linux 版本的發布紀錄保留在
 [1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
 目前已有可建置的 Linux-only 引擎與 Fcitx 5
@@ -126,7 +130,7 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
-Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.3.1 安裝與使用指南](LINUX_INSTALL.md)；
+Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.3.7 安裝與使用指南](LINUX_INSTALL.md)；
 本節指令產生的本機套件仍需通過發布流程的驗證，才可作為 GitHub Release 安裝檔。
 
 Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
@@ -264,7 +268,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Register-Tip.ps1 `
 或 11 電腦完整解壓縮後，請把整個資料夾複製到本機 `C:\`（例如
 `C:\KeyKeyInstaller`），再執行 `Install.cmd` 並允許 UAC。安裝程式會：
 
-- 將整套檔案複製到 `C:\Program Files\chichi77 KeyKey\1.3.7-內容指紋`
+- 將整套檔案複製到 `C:\Program Files\chichi77 KeyKey\X.Y.Z-內容指紋`
 - 驗證後才切換 TSF 註冊，保留仍供舊行程使用的 payload
 - 在 Windows「已安裝的應用程式」加入解除安裝項目
 
@@ -288,9 +292,9 @@ DLL 架構必須和載入它的應用程式架構相同。
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-產物是 `out\store-package\chichi77-KeyKey-1.3.7-windows-x64-setup.unsigned.exe`。
-Windows 產品版號為 `1.3.7`；ZIP、未簽 EXE 與正式簽章包一律使用 `1.3.7-<內容指紋>`。
-修復使用 `1.3.7-<新實例 ID>`，新目錄不含 `test`；舊 `test` 目錄仍可辨識供遷移。
+產物是 `out\store-package\chichi77-KeyKey-X.Y.Z-windows-x64-setup.unsigned.exe`。
+Windows 產品版號 `X.Y.Z` 讀取自 TSF `CMakeLists.txt`；ZIP、未簽 EXE 與正式簽章包一律使用 `X.Y.Z-<內容指紋>`。
+修復使用 `X.Y.Z-<新實例 ID>`，新目錄不含 `test`；舊 `test` 目錄仍可辨識供遷移。
 
 Windows frontend 的部署及驗證細節見
 [Source/Loaders/Windows-TSF/README.md](Source/Loaders/Windows-TSF/README.md)。
@@ -383,20 +387,19 @@ Android 的 debug 封裝、iOS Simulator 與 `Android Play Release` workflow 都
 GitHub Actions 頁面按 **Run workflow** 手動執行。Android Play workflow 使用所選分支
 或 tag 的 commit 建置、簽署並上傳 AAB 到 Google Play 內部測試；PR 合併與直接 push
 都不觸發，也不設定 `changesNotSentForReview`。正式版推廣由 Play Console 操作。
-Android 1.3.2 已於 2026-10-08 正式上線，後續 1.3.3、1.3.5、1.3.6 亦已正式發布，目前 Google Play 最新正式版為 1.3.6；後續正式發布不需再以封閉測試作為前置步驟。
+Android 1.3.7 已在 Google Play 正式上架；後續正式發布不需再以封閉測試作為前置步驟。
 CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不同流程。
 
 所有修改先在工作分支提交，再由維護者親自 review 和 merge PR 回 `master`；agent 不自行合併。
 原始碼、建置腳本與 CI 都依 [Code signing policy](CODE_SIGNING_POLICY.md) 納入審查。
 macOS 與 Linux 在 GitHub **Publish release** 後自動建置並驗證上傳；
 Windows 由 CI 呼叫共用 PowerShell 建置、測試及產生 unsigned artifact，本機只簽章、重包及人工核准上傳。Release 的 tag
-必須符合該平台原始碼版號，可在發布頁面同時建立。目前 macOS／Windows／Linux 原始碼皆為 `1.3.7`，
-對應正式版 tag 為 `v1.3.7`；同一 Release 的三平台產物只在各平台同版時成立。
+必須符合該 tag 的平台原始碼版號，可在發布頁面同時建立；同一 Release 的三平台產物只在各平台同版時成立。
 測試頻道使用通用 `vX.Y.Z-betaN` 格式，X.Y.Z 對應平台產品版號，N 為不含前導零的正整數；
 必須標記 Pre-release 且只從原 tag commit 建置，不改 Latest。產品來源修正後應建立新的測試 tag，不移動既有 tag。
 Linux 手動 beta 重跑可選 `master` 上的 workflow 並填 `release_tag`；兩個 Ubuntu job
 都固定 checkout 該 beta tag，發布仍核對原 tag commit、產品版號及套件校驗，避免混入後續來源修改。
-macOS 從四份產品 plist 讀取並核對版號，與 README 尾端的 Linux 版號獨立。只推 tag 或儲存草稿
+macOS 從四份產品 plist 讀取並核對版號，不從 README 讀取版號。只推 tag 或儲存草稿
 不會觸發桌面封裝；一般 commit 與尚未合併的 pull request 不會發布桌面資產。`Linux CI` 另保留 PR smoke，
 發布前須通過 Ubuntu 24.04 完整測試與 Ubuntu 22.04 相容性驗證。
 
@@ -460,7 +463,7 @@ branches and tags** 設定：保留 `v*` tag，新增 `master` branch；只修�
 Android Play workflow 需要 `google-play-release` environment 的上傳金鑰與 Play service
 account secret；正式 AAB 由 Google Play 管理及簽署。iOS 實機、TestFlight 與 App Store
 上傳由 Xcode Cloud／App Store Connect 處理，不使用 Simulator workflow。其餘測試封裝只用
-repository 內的公開詞庫。Windows 正式簽章仍留待後續處理。這是公開 repository，因此
+repository 內的公開詞庫。Windows 正式發布沿用 Certum 本機簽章流程。這是公開 repository，因此
 artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 <a id="english"></a>
@@ -718,7 +721,7 @@ session. Diagnostics default to off, including GitHub Actions builds. Enable the
 single checkbox in Settings to record for three days; it then stops automatically.
 TSF logs retain at most 20 MiB including the backup; deployment logs at most 1 MiB.
 It stages the runtime in
-`C:\Program Files\chichi77 KeyKey\1.3.7-<fingerprint>`, then registers
+`C:\Program Files\chichi77 KeyKey\X.Y.Z-<fingerprint>`, then registers
 both x64 and x86 TSF DLLs on x64 Windows (for all 32-bit applications), or the
 x86 DLL on 32-bit Windows, and creates an
 entry in Windows Installed apps. First-time users add KeyKey in Windows
@@ -736,9 +739,9 @@ To build an unsigned local NSIS test installer, run:
   -X86BuildDirectory .\out\build\x86 -UnsignedTest
 ```
 
-The output is `out\store-package\chichi77-KeyKey-1.3.7-windows-x64-setup.unsigned.exe`.
-Its Windows product version is `1.3.7`; ZIP and EXE, signed and unsigned, use
-`1.3.7-<content fingerprint>`. Repair uses a fresh `1.3.7-<instance-id>` path.
+The output is `out\store-package\chichi77-KeyKey-X.Y.Z-windows-x64-setup.unsigned.exe`.
+Its Windows product version `X.Y.Z` comes from the TSF `CMakeLists.txt`; ZIP and EXE, signed and unsigned, use
+`X.Y.Z-<content fingerprint>`. Repair uses a fresh `X.Y.Z-<instance-id>` path.
 New names do not contain `test`; old labelled directories remain recognizable.
 
 See the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for detailed
@@ -819,11 +822,9 @@ after **Run workflow** is selected in GitHub Actions. The Android Play workflow 
 the selected branch or tag and uploads it to Google Play internal testing. PR merges
 and direct pushes do not trigger it, and the workflow does not set
 `changesNotSentForReview`. Production promotion is performed in Play Console.
-Android 1.3.2 entered production on
-2026-10-08; versions 1.3.3, 1.3.5, and 1.3.6 have also been released to production.
-The latest Google Play production version is 1.3.6. Closed testing is no longer a prerequisite for subsequent production
+Android 1.3.7 is available on Google Play. Closed testing is no longer a prerequisite for subsequent production
 releases or public installation. CI uploads to internal testing; users install
-the production release from Google Play. iOS 1.3.2 (build 41) is available on the App Store.
+the production release from Google Play. iOS 1.3.7 is available on the App Store.
 
 Commit all changes on a working branch; the maintainer reviews and merges the PR.
 Agents must not merge PRs. Source, build scripts, and CI are covered by the
@@ -831,8 +832,8 @@ Agents must not merge PRs. Source, build scripts, and CI are covered by the
 start when a GitHub Release is published and upload verified packages independently.
 Windows runs its full release build, signing, EXE/ZIP packaging and approved publication
 locally; its CI workflow only checks. The tag must match the
-platform's source version and can be created on the Release page. macOS, Windows,
-and Linux development sources are now `1.3.7`, with `v1.3.7` as the stable release tag.
+platform's source version at that tag and can be created on the Release page.
+The current development sources use `1.3.8`; the released version is `1.3.7`.
 The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product
 version and N is a positive integer without leading zeros.
 Betas require Pre-release and the exact tag commit; Latest is unchanged. Fixes

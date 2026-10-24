@@ -3,10 +3,10 @@
 候選清單會在分頁前檢查系統與後備字型，隱藏確定無法顯示的字詞；觸控、數字選字、翻頁及浮動候選使用同一份結果。檢查依字素進行，保留系統可顯示的補充平面漢字、Emoji 與變體基字，不會把整個多字詞當成單一連字檢查。結果只快取在程序記憶體，不寫入偏好或詞庫；OS 升級／程序重啟會重新判斷，按「重設好打注音學習紀錄」也會清除。iOS App 的重設會在鍵盤下次開啟時套用。此功能只過濾候選，不修改模型、詞頻或使用者自訂詞。
 
 
-一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。**1.3.2（build 41）** 已在 App Store 正式上線，一般使用者不需加入 TestFlight。以下是開發與測試資訊。
+一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。**1.3.7** 已在 App Store 正式上線，一般使用者不需加入 TestFlight。以下是開發與測試資訊。
 
 琦琦輸入法的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
-容器 App。目前 App 與鍵盤 extension 的開發版號皆為 `1.3.7`，由 Xcode project 的
+容器 App。App 與鍵盤 extension 的原始碼版本由 Xcode project 的
 `MARKETING_VERSION` 統一設定，Simulator 封裝流程也從此讀取版號。
 首頁會從 container app bundle 的 `CFBundleShortVersionString` 顯示目前版本，避免畫面
 版號和 Xcode 的 `MARKETING_VERSION` 失同步。
@@ -128,7 +128,7 @@ xcrun devicectl device process launch --device "$keykey_device_id" \
   io.github.polobread.inputmethod.chichi77.ios
 ```
 
-安裝後核對裝置上的名稱與版號。開發版 App 和鍵盤 extension 皆為「琦琦輸入法」`1.3.7`；
+安裝後核對裝置上的名稱與版號。App 和鍵盤 extension 皆為「琦琦輸入法」，版號須與所建置的來源一致；
 本機 build number 使用專案預設值，Xcode Cloud 則使用 `CI_BUILD_NUMBER`。
 USB 開發簽章安裝與 App Store／TestFlight 發行是不同流程。
 
