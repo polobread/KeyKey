@@ -132,5 +132,18 @@
       205
     ],
     "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  },
+  {
+    "key": "platform_icons",
+    "original_path": "StoreAssets/Threads-v1.3.7/assets/platform_icons.png",
+    "local_copy": "assets/platform_icons.png",
+    "sha256": "b56af0ff9b2c9c9ad7034501f9c0090872c8e77b17650c66fd90ecc3a66605d8",
+    "size": [
+      494,
+      85
+    ],
+    "credit": "使用者提供的六平台識別圖；僅用於平台圖示，不是軟體操作畫面",
+    "crop": null,
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
   }
 ]

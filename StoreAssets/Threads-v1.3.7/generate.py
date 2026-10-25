@@ -19,7 +19,9 @@ W,H = CFG['canvas']
 S = 2
 C = CFG['colors']; COPY = CFG['copy']
 ASSETS = OUT/'assets'; ASSETS.mkdir(exist_ok=True)
-ICC = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
+# Reuse the established sRGB profile so unchanged pages retain identical bytes.
+previous_cover=OUT/'01-six-platforms.png'
+ICC = (Image.open(previous_cover).info.get('icc_profile') if previous_cover.exists() else None) or ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
 FONT = os.environ.get('KEYKEY_FONT')
 if not FONT:
     mac = list(Path('/System/Library/AssetsV2').glob('com_apple_MobileAsset_Font*/*/AssetData/PingFang.ttc'))
@@ -50,7 +52,8 @@ def source_image(key):
 manifest=[]
 for key,item in CFG['sources'].items():
     src=ROOT/item['path']; dest=ASSETS/(key+'.png')
-    if src.exists(): shutil.copyfile(src,dest)
+    if src.exists():
+        if src.resolve()!=dest.resolve(): shutil.copyfile(src,dest)
     elif not dest.exists(): raise FileNotFoundError(src)
     im=Image.open(dest)
     manifest.append({'key':key,'original_path':item['path'],'local_copy':str(dest.relative_to(OUT)),
@@ -142,15 +145,19 @@ class Canvas:
 # Page 01 — lively six-platform collage, made entirely from documented screenshots.
 # Linux and FreeBSD share one row; neither platform borrows the other's screen.
 c=Canvas('01-six-platforms')
-c.ellipse(770,-170,480,480,'#E0ECFF');c.ellipse(-110,1000,290,290,'#E4F2FF')
+c.gradient(0,0,W,335,0,'#124BB8','#2478F4')
+c.ellipse(870,-195,440,440,'#3785F5');c.ellipse(997,182,96,96,'#73A8FF')
+c.ellipse(-110,1000,290,290,'#E4F2FF')
+# Small graphic sparkles and a warm underline add energy without inventing UI.
+c.line([(785,45),(785,71)],'#BFD8FF',3);c.line([(772,58),(798,58)],'#BFD8FF',3)
+c.line([(943,278),(976,278)],'#FFD09D',5)
 c.rr(64,35,252,36,18,'#E5EEFF');c.text('正式版・六平台支援',83,42,21,C['blue'],weight='medium')
 c.shadow(64,100,88,88,22);c.rr(64,100,88,88,22,'#FFFFFF',C['line'])
 c.image('icon',69,105,78,r=18,crop=[0,0,512,512])
-c.text(COPY['cover_title'],174,112,61,weight='bold')
-c.text(CFG['version'],1016,96,83,C['blue'],weight='bold',align='right')
-c.text('熟悉的中文輸入，走到六大平台',64,226,49,weight='bold',max_width=952)
-c.text('好打注音・傳統注音・倉頡・簡易',64,300,26,C['muted'])
-c.rr(889,293,127,38,19,'#FFF0DF');c.text('正式 1.3.7',952,301,18,'#9D5420',weight='medium',align='center')
+c.text(COPY['cover_title'],174,112,61,'#FFFFFF',weight='bold')
+c.text(CFG['version'],1016,89,92,'#FFFFFF',weight='bold',align='right')
+c.text('熟悉的中文輸入，走到六大平台',64,226,49,'#FFFFFF',weight='bold',max_width=952)
+c.text('好打注音・傳統注音・倉頡・簡易',64,302,23,'#D3E5FF')
 collage=[
  ('macOS','mac_smart','#276BF4','#243FAD'),
  ('Windows','windows_emoji','#177BC3','#15529F'),
@@ -163,14 +170,16 @@ for i,(title,key,start,end) in enumerate(collage):
     title=CFG['platforms'][i]['name']
     x=64+(i%2)*488;y=363+(i//2)*280
     c.shadow(x,y,464,264,26);c.gradient(x,y,464,264,26,start,end)
-    c.text(title,x+22,y+17,30,'#FFFFFF',weight='bold',max_width=420)
+    c.rr(x+18,y+14,78,70,16,'#FFFFFF')
+    c.image('platform_icons',x+28,y+24,58,crop=CFG['platform_icon_crops'][i])
+    c.text(title,x+116,y+31,34,'#FFFFFF',weight='bold',max_width=330)
     if i<4:
-        c.image(key,x+16,y+65,432,r=8)
+        c.image(key,x+42,y+97,380,r=8)
     else:
-        c.image(key,x+20,y+59,180,r=10)
-        c.text('整句順著打',x+221,y+89,29,'#FFFFFF',weight='bold')
-        c.text('點字就能改',x+221,y+137,26,'#FFFFFF')
-        c.text('官方模擬器',x+221,y+213,18,'#FFFFFF')
+        c.image(key,x+20,y+89,150,r=10)
+        c.text('整句順著打',x+197,y+113,29,'#FFFFFF',weight='bold')
+        c.text('點字就能改',x+197,y+161,26,'#FFFFFF')
+        c.text('官方模擬器',x+197,y+220,18,'#FFFFFF')
 c.text('真實軟體畫面局部；手機為官方模擬器，Linux 為 VM',64,1202,19,C['muted'])
 c.rr(64,1243,8,54,4,C['warm'])
 c.text(COPY['cover_footer'],92,1253,29,weight='medium',max_width=924)

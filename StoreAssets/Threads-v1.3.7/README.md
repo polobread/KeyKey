@@ -16,6 +16,7 @@
 
 | 成品 | 儲存庫原始檔 | 採用方式 |
 |---|---|---|
+| 01 平台識別 | [assets/platform_icons.png](assets/platform_icons.png) | 使用者提供的六平台圖示原圖，494 × 85。只裁取各平台 Logo 區域，不用作產品畫面；個別裁切座標見 design.json。 |
 | 三張共用 | [StoreAssets/GooglePlay/app-icon-512.png](../GooglePlay/app-icon-512.png) | 原始白底黑字「琦」App Icon，未重新設計；藍色用於宣傳版面。 |
 | 01／02 上半部 | [docs/images/keykey-macos-v137-mac07-middle-candidate-apple-silicon.png](../../docs/images/keykey-macos-v137-mac07-middle-candidate-apple-silicon.png) | macOS 1.3.7 實機；保留兩行文字與「玩」反白候選。原圖 597 × 499，裁切 (0, 96)–(450, 280)。 |
 | 02 下半部 | [docs/images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator-detail.png](../../docs/images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator-detail.png) | Pixel 8 Pro 官方模擬器；保留竹大組字與完整候選列，喬為第 2 項、未確認。原圖 1344 × 1452，裁切 (0, 220)–(1344, 490)。 |
@@ -29,7 +30,7 @@
 
 手機模擬器素材來自正式 `v1.3.7` tag `a11f1eab`，使用既有 Debug 組態執行；來源、裝置與操作記錄見 [截圖登記](../../docs/CROSS_PLATFORM_SCREENSHOT_PLAN.md)。未將模擬器自建包說成 App Store／Google Play 下載包。
 
-01 使用六平台真實軟體畫面拼貼與不同色彩分區。依維護者指定，Linux 與 FreeBSD 並排於第二列，各自使用自己的截圖；手機並排於第三列。不借用其他平台的畫面，不加入生成的桌布、裝置外殼或替代 Logo。
+01 使用鮮明藍色主視覺、使用者提供的平台識別圖示、六平台真實軟體畫面拼貼與不同色彩分區。依維護者指定，Linux 與 FreeBSD 並排於第二列，各自使用自己的截圖；手機並排於第三列。不借用其他平台的畫面，不加入生成的桌布、裝置外殼或替代 Logo。
 
 ## 下載 QR Code
 
