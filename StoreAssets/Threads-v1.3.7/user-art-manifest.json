@@ -1,0 +1,43 @@
+[
+  {
+    "file": "user-character-illustration.png",
+    "kind": "維護者提供的宣傳設計素材，非產品操作截圖",
+    "source_name": "codex-clipboard-238518ce-5498-4896-89ac-d2b61b876e58.png",
+    "source_size": [
+      1278,
+      1230
+    ],
+    "source_sha256": "ed877f1d02f73b7f3389346dd10b4b1484a6f3704ea232da2ba471fc4a7ba67e",
+    "crop": null,
+    "size": [
+      1278,
+      1230
+    ],
+    "mode": "RGBA",
+    "sha256": "ed877f1d02f73b7f3389346dd10b4b1484a6f3704ea232da2ba471fc4a7ba67e",
+    "processing": "原圖保留透明背景與內容"
+  },
+  {
+    "file": "user-title-six-platforms.png",
+    "kind": "維護者提供的宣傳設計素材，非產品操作截圖",
+    "source_name": "codex-clipboard-ff1f9240-59eb-4368-ac64-d75b5f328d9f.png",
+    "source_size": [
+      1122,
+      1402
+    ],
+    "source_sha256": "3949118af41f3dddc0d0ef8586d68dc0e4ff144205b3811a35df6706ff95148d",
+    "crop": [
+      0,
+      0,
+      1122,
+      454
+    ],
+    "size": [
+      1122,
+      454
+    ],
+    "mode": "RGB",
+    "sha256": "4220a85f546a3202a7d3fdad1ef54eaed6e6e6c5eb0dbb41b33c5687e3395f80",
+    "processing": "僅保留上方標題、人物與六平台圖示；原比例裁切，不改寫內容"
+  }
+]
