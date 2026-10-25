@@ -89,8 +89,7 @@ zh-fcitx5-keykey-1.3.7
 
 `PORTREVISION` 若有套件修訂，套件名稱可能另有 `_1` 等尾碼。本次通過安裝及桌面試打的官方 ports 修訂是 `c69a4d85da0e2cfe08250d120d6aacaffac6b5182`。
 
-<details>
-<summary>進階：用 Git 重現當次驗證的 1.3.7 ports 修訂</summary>
+#### 進階：用 Git 重現當次驗證的 1.3.7 ports 修訂
 
 若日後預設分支已改版，而仍需重現 1.3.7，可另外取得當次修訂。以 root 安裝 Git，並在尚不存在的 `/usr/ports-keykey-137` 建立獨立 checkout：
 
@@ -105,8 +104,6 @@ make -V PKGNAME
 ```
 
 歷史修訂用於重現既有版本；相依套件仍須與目前系統相容。
-
-</details>
 
 接續命令都在所選 ports tree 的 `chinese/fcitx5-keykey` 目錄執行。
 
