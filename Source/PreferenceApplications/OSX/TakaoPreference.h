@@ -12,7 +12,6 @@ file for terms.
 #import <Cocoa/Cocoa.h>
 #import "TakaoSettings.h"
 @class TakaoAbout;
-#define WINDOW_TITLE_HEIGHT 78
 
 static NSString *GeneralToolbarItemIdentifier				= @"General";
 static NSString *PhoneticToolbarItemIdentifier				= @"Phonetic";

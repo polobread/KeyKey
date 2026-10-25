@@ -1,0 +1,5 @@
+// Build one macOS frontend with both the legacy and Guanyinma cores.
+// Runtime selection belongs to the frontend and defaults to the legacy core.
+#include "Takao-macOS.xcconfig"
+
+KEYKEY_ENABLE_GUANYINMA = 1

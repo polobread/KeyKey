@@ -14,6 +14,11 @@
 #import "YKSignedModuleLoadingSystem.h"
 
 #import "BPMFUserPhraseHelper.h"
+#import "GuanyinmaMacAdapter.h"
+#import "OpenVanillaController.h"
+#if KEYKEY_ENABLE_GUANYINMA
+#import "GuanyinmaMacUserData.h"
+#endif
 #import "LFCrossDevelopmentTools.h"
 
 
@@ -23,6 +28,7 @@
 #include <sstream>
 #include <set>
 #include <memory>
+#include <climits>
 
 #import "LFUtilities.h"
 
@@ -74,6 +80,14 @@ OpenVanillaLoader *OVLSharedInstance = nil;
 NSLock *OVLSharedLock = nil;
 
 using namespace OpenVanilla;
+
+@interface OpenVanillaLoader (GuanyinmaAdministration)
+#if KEYKEY_ENABLE_GUANYINMA
+- (BOOL)_usesGuanyinmaSmartUserData;
+- (string)_guanyinmaUserDatabasePath;
+#endif
+- (string)_qstringFromReading:(NSString*)reading;
+@end
 
 @implementation OpenVanillaLoader
 
@@ -315,12 +329,29 @@ using namespace OpenVanilla;
     OVModulePackage* pkg;
     OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
     
+    _guanyinmaRequested = NO;
+#if KEYKEY_ENABLE_GUANYINMA
+    _guanyinmaRequested = [[NSUserDefaults standardUserDefaults] boolForKey:@"UseGuanyinmaCore"];
+    if (!_guanyinmaCoreSelection)
+        _guanyinmaCoreSelection = GuanyinmaCreateCoreSelection(_guanyinmaRequested);
+    else
+        GuanyinmaRequestCore(_guanyinmaCoreSelection, _guanyinmaRequested);
+    const string modelPath = _SQLiteDatabaseService->filename();
+    const string userPath = OVPathHelper::PathCat(pathInfo.writablePath, "GuanyinmaUserData.db");
+#endif
+
     pkg = new OVIMMandarinPackage;
     pkg->initialize(&pathInfo, _loaderService);
+#if KEYKEY_ENABLE_GUANYINMA
+    pkg = GuanyinmaWrapModulePackage(pkg, modelPath, userPath, _guanyinmaCoreSelection);
+#endif
     _staticModuleLoadingSystem->addInitializedPackage("OVIMMandarinPackage", pkg);
     
     pkg = new OVIMGenericPackage;
     pkg->initialize(&pathInfo, _loaderService);
+#if KEYKEY_ENABLE_GUANYINMA
+    pkg = GuanyinmaWrapModulePackage(pkg, modelPath, userPath, _guanyinmaCoreSelection);
+#endif
     _staticModuleLoadingSystem->addInitializedPackage("OVIMGenericPackage", pkg);    
     
     pkg = new OVOFFullWidthCharacterPackage;
@@ -375,6 +406,73 @@ using namespace OpenVanilla;
 
     [[OpenVanillaLoader sharedLock] unlock];
 }
+- (void)preserveInputCoreForCandidateEvent:(OVCandidateService*)service
+{
+#if KEYKEY_ENABLE_GUANYINMA
+    GuanyinmaPreserveCoreForCandidateEvent(_guanyinmaCoreSelection, service);
+#endif
+}
+
+- (NSDictionary *)inputCoreStatus
+{
+    if (![NSThread isMainThread]) {
+        __block NSDictionary* reply = nil;
+        dispatch_sync(dispatch_get_main_queue(), ^{ reply = [[self inputCoreStatus] retain]; });
+        return [reply autorelease];
+    }
+#if KEYKEY_ENABLE_GUANYINMA
+    const string identifier = _loader ? _loader->primaryInputMethod() : string();
+    GuanyinmaCoreStatus state = GuanyinmaCoreSelectionStatus(_guanyinmaCoreSelection,
+        identifier, [OpenVanillaController activeInputCoreCandidateService]);
+    NSMutableDictionary* result = [NSMutableDictionary dictionaryWithDictionary:
+        @{@"supported": @YES, @"requested": @(state.requested),
+          @"active": state.active ? @"guanyinma" : @"manjusri", @"pending": @(state.pending)}];
+    if (!state.error.empty()) {
+        NSString* error = [[[NSString alloc] initWithBytes:state.error.data() length:state.error.size()
+            encoding:NSUTF8StringEncoding] autorelease];
+        if (error) result[@"error"] = error;
+    }
+    return result;
+#else
+    return @{@"supported": @NO, @"requested": @NO, @"active": @"manjusri", @"pending": @NO};
+#endif
+}
+
+- (NSDictionary *)setUseGuanyinmaCore:(BOOL)enabled
+{
+    if (![NSThread isMainThread]) {
+        __block NSDictionary* reply = nil;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            reply = [[self setUseGuanyinmaCore:enabled] retain];
+        });
+        return [reply autorelease];
+    }
+#if KEYKEY_ENABLE_GUANYINMA
+    if (_guanyinmaCoreSelection && _loader) {
+        NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+        id previous = [[defaults objectForKey:@"UseGuanyinmaCore"] retain];
+        [defaults setBool:enabled forKey:@"UseGuanyinmaCore"];
+        if (![defaults synchronize]) {
+            if (previous) [defaults setObject:previous forKey:@"UseGuanyinmaCore"];
+            else [defaults removeObjectForKey:@"UseGuanyinmaCore"];
+            [previous release];
+            NSMutableDictionary* result = [[[self inputCoreStatus] mutableCopy] autorelease];
+            result[@"error"] = @"Could not save the input core selection.";
+            return result;
+        }
+        [previous release];
+        _guanyinmaRequested = enabled;
+        // Existing contexts finish with their current delegate. This does not
+        // reload packages, invalidate the sandwich, commit text or replay keys.
+        GuanyinmaRequestCore(_guanyinmaCoreSelection, enabled);
+        return [self inputCoreStatus];
+    }
+#endif
+    NSMutableDictionary* result = [[[self inputCoreStatus] mutableCopy] autorelease];
+    result[@"error"] = @"The running app cannot switch to this input core.";
+    return result;
+}
+
 - (bool)start:(NSArray*)loadPaths
 {
     NSAutoreleasePool *pool = [NSAutoreleasePool new];
@@ -603,6 +701,15 @@ using namespace OpenVanilla;
 }
 - (bool)exportUserPhraseDBToFile:(NSString*)path
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        NSError* error = nil;
+        const bool success = store.exportArchive(path, &error);
+        if (!success) NSLog(@"Guanyinma archive transfer failed: %@", [error localizedDescription]);
+        return success;
+    }
+#endif
     string ufn = [path UTF8String];
     OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
     OVSQLiteConnection* db = BPMFUserPhraseHelper::OpenUserPhraseDB(&pathInfo, _loaderService);
@@ -615,6 +722,15 @@ using namespace OpenVanilla;
 }
 - (bool)importUserPhraseDBFromFile:(NSString*)path
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        NSError* error = nil;
+        const bool success = store.importArchive(path, &error);
+        if (!success) NSLog(@"Guanyinma archive transfer failed: %@", [error localizedDescription]);
+        return success;
+    }
+#endif
     string ufn = [path UTF8String];
     OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
     OVSQLiteConnection* db = BPMFUserPhraseHelper::OpenUserPhraseDB(&pathInfo, _loaderService);
@@ -639,6 +755,41 @@ using namespace OpenVanilla;
 	return _databaseVersion;
 }
 
+#if KEYKEY_ENABLE_GUANYINMA
+- (BOOL)_usesGuanyinmaSmartUserData
+{
+    if (!_loader || !_guanyinmaCoreSelection)
+        return NO;
+    OVCandidateService* activeService = [OpenVanillaController activeInputCoreCandidateService];
+    if (activeService) {
+        GuanyinmaCoreStatus active = GuanyinmaCoreSelectionStatus(_guanyinmaCoreSelection,
+            "SmartMandarin", activeService);
+        if (active.contextCount) return active.active;
+    }
+    // Preferences can be foreground after IMK deactivation. Follow the last
+    // Smart delegate, including a deferred switch, rather than the new request
+    // or a config that this live delegate has not yet adopted.
+    GuanyinmaCoreStatus last = GuanyinmaCoreSelectionStatus(_guanyinmaCoreSelection, "SmartMandarin");
+    if (last.contextCount) return last.active;
+    if (!_guanyinmaRequested) return NO;
+    // Load the decorator's config, without creating an input session or opening
+    // the native profile. Unsupported settings choose the native store as well.
+    if (!_loader->moduleWithName("SmartMandarin"))
+        return NO;
+    PVPlistValue* config = _loader->configDictionaryForModule("SmartMandarin");
+    if (!config)
+        return NO;
+    OVKeyValueMap map = config->readOnlyKeyValueMap();
+    return GuanyinmaCanUseInputMethod("SmartMandarin", &map);
+}
+
+- (string)_guanyinmaUserDatabasePath
+{
+    OVPathInfo pathInfo = _loaderPolicy->modulePackagePathInfoFromPath("");
+    return OVPathHelper::PathCat(pathInfo.writablePath, "GuanyinmaUserData.db");
+}
+#endif
+
 - (OVSQLiteConnection *)_userPhraseDBConnection
 {
     if (!_userPhraseDB) {
@@ -654,12 +805,119 @@ using namespace OpenVanilla;
     
     return _userPhraseDB;
 }
+- (NSDictionary *)userPhraseDBSnapshot
+{
+    if (![NSThread isMainThread]) {
+        __block NSDictionary* reply = nil;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            reply = [[self userPhraseDBSnapshot] retain];
+        });
+        return [reply autorelease];
+    }
+    NSString* backend = [self userPhraseDBBackendIdentifier];
+    NSMutableArray* rows = [NSMutableArray array];
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([backend isEqualToString:@"guanyinma"]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        NSArray* phrases = store.phrases();
+        if (!phrases) return nil;
+        for (NSDictionary* phrase in phrases) {
+            NSString* query = phrase[@"qstring"];
+            NSString* reading = [NSString stringWithUTF8String:
+                BPMFUserPhraseHelper::BPMFString([query UTF8String]).c_str()];
+            [rows addObject:@{@"Text": phrase[@"current"], @"BPMF": reading}];
+        }
+        return @{@"backend": backend, @"rows": rows};
+    }
+#endif
+    if (![self _userPhraseDBConnection]) return nil;
+    std::unique_ptr<OVSQLiteStatement> query(
+        _userPhraseDB->prepare("SELECT qstring,current FROM user_unigrams ORDER BY rowid"));
+    if (!query) return nil;
+    int status;
+    while ((status = query->step()) == SQLITE_ROW) {
+        const char* code = query->textOfColumn(0);
+        const char* text = query->textOfColumn(1);
+        NSString* current = text ? [NSString stringWithUTF8String:text] : nil;
+        NSString* reading = code ? [NSString stringWithUTF8String:
+            BPMFUserPhraseHelper::BPMFString(code).c_str()] : nil;
+        // Keep physical row positions even if a legacy row has invalid text.
+        [rows addObject:@{@"Text": current ?: @"", @"BPMF": reading ?: @""}];
+    }
+    return status == SQLITE_DONE ? @{@"backend": backend, @"rows": rows} : nil;
+}
+
+- (NSString *)userPhraseDBBackendIdentifier
+{
+    if (![NSThread isMainThread]) {
+        __block NSString* reply = nil;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            reply = [[self userPhraseDBBackendIdentifier] retain];
+        });
+        return [reply autorelease];
+    }
+#if KEYKEY_ENABLE_GUANYINMA
+    return [self _usesGuanyinmaSmartUserData] ? @"guanyinma" : @"manjusri";
+#else
+    return @"manjusri";
+#endif
+}
+
+- (BOOL)applyUserPhraseEdit:(NSDictionary*)edit expectedBackend:(NSString*)backend
+{
+    if (![NSThread isMainThread]) {
+        __block BOOL accepted = NO;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            accepted = [self applyUserPhraseEdit:edit expectedBackend:backend];
+        });
+        return accepted;
+    }
+    if (![backend isKindOfClass:[NSString class]] ||
+        ![backend isEqualToString:[self userPhraseDBBackendIdentifier]] ||
+        ![edit isKindOfClass:[NSDictionary class]])
+        return NO;
+    NSString* type = edit[@"type"];
+    NSNumber* row = edit[@"row"];
+    if (![type isKindOfClass:[NSString class]] || ![row isKindOfClass:[NSNumber class]] ||
+        !([row doubleValue] >= 0 && [row doubleValue] <= INT_MAX &&
+          [row doubleValue] == [row intValue]))
+        return NO;
+    if ([type isEqualToString:@"remove"] && [edit count] == 2) {
+        [self userPhraseDBDeleteRow:[row intValue]];
+        return YES;
+    }
+    NSString* value = edit[@"value"];
+    if ([edit count] != 3 || ![value isKindOfClass:[NSString class]] || ![value length])
+        return NO;
+    if ([type isEqualToString:@"reading"]) {
+        [self userPhraseDBSetNewReading:value forPhraseAtRow:[row intValue]];
+        return YES;
+    }
+    if ([type isEqualToString:@"phrase"]) {
+        [self userPhraseDBSetPhrase:value atRow:[row intValue]];
+        return YES;
+    }
+    return NO;
+}
+
 - (BOOL)userPhraseDBCanProvideService
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        return store.valid() && store.phrases() != nil;
+    }
+#endif
     return !![self _userPhraseDBConnection];
 }
 - (int)userPhraseDBNumberOfRow
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        return static_cast<int>([store.phrases() count]);
+    }
+#endif
 	int count = 0;
 	
     if (![self _userPhraseDBConnection]) {
@@ -678,6 +936,18 @@ using namespace OpenVanilla;
 }
 - (NSDictionary *)userPhraseDBDictionaryAtRow:(int)row
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        NSArray* rows = store.phrases();
+        if (row < 0 || static_cast<NSUInteger>(row) >= [rows count])
+            return [NSDictionary dictionary];
+        NSDictionary* entry = [rows objectAtIndex:row];
+        const string qstring = [[entry objectForKey:@"qstring"] UTF8String];
+        NSString* reading = [NSString stringWithUTF8String:BPMFUserPhraseHelper::BPMFString(qstring).c_str()];
+        return @{@"Text": [entry objectForKey:@"current"], @"BPMF": reading};
+    }
+#endif
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     if (row < 0 || ![self _userPhraseDBConnection]) {
         return result;
@@ -795,6 +1065,14 @@ using namespace OpenVanilla;
 }
 - (void)userPhraseDBSave
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        if (!store.apply(@{@"type": @"save_learning"}))
+            NSLog(@"Guanyinma user-data checkpoint failed");
+        return;
+    }
+#endif
     if ([self _userPhraseDBConnection]) {
 		_userPhraseDB->execute("VACUUM");		
         delete _userPhraseDB;
@@ -818,6 +1096,21 @@ using namespace OpenVanilla;
 }
 - (void)userPhraseDBSetNewReading:(NSString *)reading forPhraseAtRow:(int)row
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        NSArray* rows = store.phrases();
+        if (row < 0 || ![reading length] || static_cast<NSUInteger>(row) >= [rows count])
+            return;
+        NSDictionary* entry = [rows objectAtIndex:row];
+        NSString* qstring = [NSString stringWithUTF8String:[self _qstringFromReading:reading].c_str()];
+        if (!store.apply(@{@"type": @"update_user_phrase",
+            @"qstring": [entry objectForKey:@"qstring"], @"text": [entry objectForKey:@"current"],
+            @"new_qstring": qstring, @"new_text": [entry objectForKey:@"current"]}))
+            NSLog(@"Guanyinma user phrase reading update failed");
+        return;
+    }
+#endif
     if (row < 0 || ![reading length] || ![self _userPhraseDBConnection]) {
         return;
     }
@@ -835,6 +1128,19 @@ using namespace OpenVanilla;
 
 - (void)userPhraseDBDeleteRow:(int)row
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        NSArray* rows = store.phrases();
+        if (row < 0 || static_cast<NSUInteger>(row) >= [rows count])
+            return;
+        NSDictionary* entry = [rows objectAtIndex:row];
+        if (!store.apply(@{@"type": @"remove_user_phrase",
+            @"qstring": [entry objectForKey:@"qstring"], @"text": [entry objectForKey:@"current"]}))
+            NSLog(@"Guanyinma user phrase removal failed");
+        return;
+    }
+#endif
     if (row < 0 || ![self _userPhraseDBConnection]) {
         return;
     }
@@ -846,6 +1152,19 @@ using namespace OpenVanilla;
 }
 - (void)userPhraseDBAddNewRow:(NSString *)phrase
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        NSArray* readings = [self userPhraseDBReadingsForPhrase:phrase];
+        if (![readings count])
+            return;
+        NSString* qstring = [NSString stringWithUTF8String:
+            [self _qstringFromReading:[readings objectAtIndex:0]].c_str()];
+        if (!store.apply(@{@"type": @"add_user_phrase", @"qstring": qstring, @"text": phrase}))
+            NSLog(@"Guanyinma user phrase insertion failed");
+        return;
+    }
+#endif
     if (![self _userPhraseDBConnection]) {
         return;
     }
@@ -861,6 +1180,13 @@ using namespace OpenVanilla;
 }
 - (void)userPhraseDBAddNewRows:(NSArray *)array
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        for (NSString* phrase in array)
+            [self userPhraseDBAddNewRow:phrase];
+        return;
+    }
+#endif
 	if (![self _userPhraseDBConnection]) {
         return;
     }
@@ -888,6 +1214,25 @@ using namespace OpenVanilla;
 
 - (void)userPhraseDBSetPhrase:(NSString *)phrase atRow:(int)row
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        NSArray* rows = store.phrases();
+        if (row < 0 || ![phrase length] || static_cast<NSUInteger>(row) >= [rows count])
+            return;
+        NSArray* readings = [self userPhraseDBReadingsForPhrase:phrase];
+        if (![readings count])
+            return;
+        NSDictionary* entry = [rows objectAtIndex:row];
+        NSString* qstring = [NSString stringWithUTF8String:
+            [self _qstringFromReading:[readings objectAtIndex:0]].c_str()];
+        if (!store.apply(@{@"type": @"update_user_phrase",
+            @"qstring": [entry objectForKey:@"qstring"], @"text": [entry objectForKey:@"current"],
+            @"new_qstring": qstring, @"new_text": phrase}))
+            NSLog(@"Guanyinma user phrase update failed");
+        return;
+    }
+#endif
     if (row < 0 || ![phrase length] || ![self _userPhraseDBConnection]) {
         return;
     }
@@ -906,6 +1251,12 @@ using namespace OpenVanilla;
 
 - (BOOL)resetSmartMandarinLearning
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        GuanyinmaMacUserData store(_SQLiteDatabaseService->filename(), [self _guanyinmaUserDatabasePath]);
+        return store.apply(@{@"type": @"reset_method_learning", @"method": @"smart"});
+    }
+#endif
     if (![self _userPhraseDBConnection]) {
         return NO;
     }

@@ -4,6 +4,7 @@
 #import "CVApplicationController.h"
 #import "CVNotifyController.h"
 #import "IMKInputMode.h"
+#import "GuanyinmaMacAdapter.h"
 #import <AudioToolbox/AudioToolbox.h>
 #import "NSStringExtension.h"
 
@@ -186,6 +187,12 @@ static void OVCLaunchApplication(const string& value)
 	id tmp = OVCActiveContextSender;	
     OVCActiveContextSender = [sender retain];
 	[tmp release];
+}
+
++ (OVCandidateService *)activeInputCoreCandidateService
+{
+    return OVCActiveContext && OVCActiveContext->_context ?
+        OVCActiveContext->_context->candidateService() : NULL;
 }
 
 + (BOOL)hasPendingComposition
@@ -409,6 +416,9 @@ static void OVCLaunchApplication(const string& value)
     [_composingBuffer setString:@""];
     
     _context->activate();
+    // English is shared by the FE, while each Rust session owns its mode.
+    // Reconcile an older context when focus returns from another text host.
+    [self _syncEnglishModeToCore:OVCInputMode.english];
 	
 	[[[NSApp delegate] symbolController] restoreWindowStatus];	
     [OpenVanillaController setActiveContext:self sender:sender];
@@ -535,11 +545,25 @@ static void OVCLaunchApplication(const string& value)
     }
 }
 
+- (BOOL)_syncEnglishModeToCore:(BOOL)english
+{
+    std::string error;
+    if (!GuanyinmaSetEnglishModeForService(_context->candidateService(), english, &error)) {
+        NSLog(@"Guanyinma input-mode synchronization failed: %s", error.c_str());
+        return NO;
+    }
+    return YES;
+}
+
 - (BOOL)_setEnglishMode:(BOOL)english client:(id)sender
 {
     if (OVCInputMode.english == english)
         return YES;
     if (![self _finishCompositionForModeSwitch:sender])
+        return NO;
+    // The FE has already preserved text through the host transaction. Apply
+    // only an explicit, idempotent mode operation to the now-empty core.
+    if (![self _syncEnglishModeToCore:english])
         return NO;
     OVCInputMode.english = english;
     [CVNotifyController notify:english ? LFLSTR(@"English input") : LFLSTR(@"Chinese input")];
@@ -743,6 +767,18 @@ static void OVCLaunchApplication(const string& value)
         if (!OVCShouldEnterEngine(key))
             return NO;
 
+#if KEYKEY_ENABLE_GUANYINMA
+        // The native panel compares selection keys without keypad identity.
+        // Let the selected Rust behavior receive actual printable keypad input.
+        if (GuanyinmaPrepareCandidatePanelForKey(&key, _context->candidateService()))
+            [[OpenVanillaLoader sharedInstance] preserveInputCoreForCandidateEvent:_context->candidateService()];
+#endif
+        // A session from another host may still carry its earlier mode.
+        // The semantic setter is a fast no-op for an already Chinese session.
+        if (![self _syncEnglishModeToCore:NO]) {
+            loaderService->beep();
+            return YES;
+        }
         isHandled = _context->handleKeyEvent(&key);
         
         if (_context->composingText()->isCommitted()) {
@@ -941,6 +977,8 @@ static void OVCLaunchApplication(const string& value)
 {
     id client = [sender objectForKey:(NSString*)kIMKCommandClientName];
     if (![self _finishCompositionForModeSwitch:client ? client : OVCActiveContextSender])
+        return;
+    if (![self _syncEnglishModeToCore:NO])
         return;
     OVCInputMode.english = NO;
     NSMenuItem *menuItem = [sender objectForKey:@"IMKCommandMenuItem"];

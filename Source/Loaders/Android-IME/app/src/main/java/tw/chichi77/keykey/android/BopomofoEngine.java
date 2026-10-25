@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-final class BopomofoEngine {
+final class BopomofoEngine implements InputEngine {
     static final int CANDIDATES_PER_PAGE = 9;
     static final int TOUCH_SMART_EDITABLE_LIMIT = 9;
     static final int HARDWARE_SMART_EDITABLE_LIMIT = 10;
@@ -69,7 +69,7 @@ final class BopomofoEngine {
     private List<String> candidates = List.of();
     private java.util.function.Predicate<String> candidateFilter = text -> true;
 
-    void setCandidateFilter(java.util.function.Predicate<String> filter) { candidateFilter = filter; }
+    public void setCandidateFilter(java.util.function.Predicate<String> filter) { candidateFilter = filter; }
 
     private List<String> visibleCandidates(List<String> values) {
         ArrayList<String> visible = new ArrayList<>();
@@ -106,7 +106,25 @@ final class BopomofoEngine {
     private boolean showingSmartCandidates;
     private boolean spaceSelectsCandidates;
 
-    void setSpaceSelectsCandidates(boolean enabled) { spaceSelectsCandidates = enabled; }
+    public void setSpaceSelectsCandidates(boolean enabled) { spaceSelectsCandidates = enabled; }
+
+    public TableInputOptions tableOptions() { return InputEngine.copyOptions(tableOptions); }
+    public void setTableOptions(TableInputOptions options) { tableOptions = InputEngine.copyOptions(options); }
+    public boolean spaceSelectsCandidates() { return spaceSelectsCandidates; }
+    // The existing Java SmartMandarinSource is configured by its FE owner.
+    public void setUseBigrams(boolean enabled) {}
+    public void close() {}
+    public Result refreshUserData() { return Result.update(); }
+    static List<String> symbolCandidates() { return SYMBOLS; }
+    static List<String> emojiCandidates() { return EMOJIS; }
+    public boolean restoreInputModeState(InputEngineModeState state) {
+        if (hasComposition() || !candidates.isEmpty()) return false;
+        inputMode = allowedInputModes.contains(state.mode) ? state.mode : allowedInputModes.iterator().next();
+        temporaryEnglish = state.temporaryEnglish && inputMode == InputMode.ENGLISH && allowedInputModes.contains(InputMode.BOPOMOFO);
+        shifted = state.shifted && !temporaryEnglish;
+        hardwareFullWidth = state.hardwareFullWidth;
+        return true;
+    }
 
     BopomofoEngine(CinDictionary dictionary) {
         this(dictionary, null, BopomofoCompositionMode.TRADITIONAL);
@@ -122,9 +140,9 @@ final class BopomofoEngine {
                 ? ChineseInputMethod.SMART : ChineseInputMethod.TRADITIONAL;
     }
 
-    ChineseInputMethod chineseInputMethod() { return chineseInputMethod; }
-    void setTableCandidateSource(TableCandidateSource source) { tableSource = source; }
-    Result setChineseInputMethod(ChineseInputMethod method) {
+    public ChineseInputMethod chineseInputMethod() { return chineseInputMethod; }
+    public void setTableCandidateSource(TableCandidateSource source) { tableSource = source; }
+    public Result setChineseInputMethod(ChineseInputMethod method) {
         if (method == chineseInputMethod) return Result.update();
         Result result = finishCompositionForModeSwitch();
         chineseInputMethod = method == ChineseInputMethod.SMART && smartSource == null
@@ -144,7 +162,7 @@ final class BopomofoEngine {
         return text.toString();
     }
 
-    Result setCompositionMode(BopomofoCompositionMode mode) {
+    public Result setCompositionMode(BopomofoCompositionMode mode) {
         if (mode == compositionMode && !chineseInputMethod.isTable()) return Result.update();
         Result result = finishCompositionForModeSwitch();
         compositionMode = mode == BopomofoCompositionMode.SMART && smartSource == null
@@ -154,25 +172,25 @@ final class BopomofoEngine {
         return result;
     }
 
-    BopomofoKeyboardLayout keyboardLayout() { return reading.layout(); }
+    public BopomofoKeyboardLayout keyboardLayout() { return reading.layout(); }
 
-    Result setKeyboardLayout(BopomofoKeyboardLayout layout) {
+    public Result setKeyboardLayout(BopomofoKeyboardLayout layout) {
         if (layout == reading.layout()) return Result.update();
         Result result = finishCompositionForModeSwitch();
         reading.setLayout(layout);
         return result;
     }
 
-    void setAssociatedPhraseDictionary(AssociatedPhraseDictionary dictionary) {
+    public void setAssociatedPhraseDictionary(AssociatedPhraseDictionary dictionary) {
         associatedPhrases = dictionary == null ? AssociatedPhraseDictionary.empty() : dictionary;
         if (showingAssociatedPhrases) clearComposition();
     }
 
-    void setAllowedInputModes(Set<InputMode> allowed, InputMode preferred) {
+    public void setAllowedInputModes(Set<InputMode> allowed, InputMode preferred) {
         setAllowedInputModes(allowed, preferred, false);
     }
 
-    void setAllowedInputModes(Set<InputMode> allowed, InputMode preferred,
+    public void setAllowedInputModes(Set<InputMode> allowed, InputMode preferred,
                               boolean selectPreferred) {
         EnumSet<InputMode> next = allowed == null || allowed.isEmpty()
                 ? EnumSet.allOf(InputMode.class) : EnumSet.copyOf(allowed);
@@ -188,7 +206,7 @@ final class BopomofoEngine {
         }
     }
 
-    Result handleSoftKey(String key) {
+    public Result handleSoftKey(String key) {
         boolean restoreBopomofo = temporaryEnglish
                 && !key.equals("SHIFT") && !key.equals("MODE");
         Result result = switch (key) {
@@ -206,12 +224,12 @@ final class BopomofoEngine {
         return result;
     }
 
-    Result handleHardwareCharacter(char key) {
+    public Result handleHardwareCharacter(char key) {
         prepareForHardwareInput();
         return applyHardwareWidth(character(key, false));
     }
 
-    Result commitHardwareLiteral(char key) {
+    public Result commitHardwareLiteral(char key) {
         prepareForHardwareInput();
         String prefix;
         if (compositionMode == BopomofoCompositionMode.TRADITIONAL && !reading.isEmpty()) {
@@ -224,12 +242,12 @@ final class BopomofoEngine {
         return applyHardwareWidth(Result.commit(prefix + key));
     }
 
-    Result handleHardwareSpace() {
+    public Result handleHardwareSpace() {
         prepareForHardwareInput();
         return space(hardwareFullWidth);
     }
 
-    Result toggleHardwareLanguage() {
+    public Result toggleHardwareLanguage() {
         prepareForHardwareInput();
         Result result = finishCompositionForModeSwitch();
         inputMode = inputMode == InputMode.BOPOMOFO
@@ -238,34 +256,34 @@ final class BopomofoEngine {
         return result;
     }
 
-    Result toggleHardwareWidth() {
+    public Result toggleHardwareWidth() {
         prepareForHardwareInput();
         hardwareFullWidth = !hardwareFullWidth;
         return Result.update();
     }
 
-    Result commitHardwarePunctuation(String punctuation) {
+    public Result commitHardwarePunctuation(String punctuation) {
         prepareForHardwareInput();
         if (!reading.isEmpty() && compositionMode != BopomofoCompositionMode.SMART) return Result.update();
         return Result.commit(finishCompositionForModeSwitch().committedText() + punctuation);
     }
 
-    Result showHardwareSymbols() {
+    public Result showHardwareSymbols() {
         prepareForHardwareInput();
         if (!reading.isEmpty() && compositionMode != BopomofoCompositionMode.SMART) return Result.update();
         return symbols();
     }
 
-    void prepareForHardwareInput() {
+    public void prepareForHardwareInput() {
         if (temporaryEnglish) endTemporaryEnglish();
         setHardwareSmartEditing(!hardwareTouchSmartEditing);
     }
 
-    void setHardwareTouchSmartEditing(boolean enabled) {
+    public void setHardwareTouchSmartEditing(boolean enabled) {
         hardwareTouchSmartEditing = enabled;
     }
 
-    void setHardwareSmartEditing(boolean enabled) {
+    public void setHardwareSmartEditing(boolean enabled) {
         if (compositionMode != BopomofoCompositionMode.SMART || enabled == hardwareSmartEditing) {
             return;
         }
@@ -275,7 +293,7 @@ final class BopomofoEngine {
         }
     }
 
-    Result space() { return space(false); }
+    public Result space() { return space(false); }
 
     private Result space(boolean fullWidth) {
         String literalSpace = fullWidth ? "　" : " ";
@@ -307,7 +325,7 @@ final class BopomofoEngine {
     }
 
     // Down-arrow and Hsu q select candidates independently of the Space preference.
-    Result openSmartCandidates() {
+    public Result openSmartCandidates() {
         if (compositionMode != BopomofoCompositionMode.SMART
                 || inputMode != InputMode.BOPOMOFO) return Result.update();
         if (!reading.isEmpty()) return finishSmartReading();
@@ -316,7 +334,7 @@ final class BopomofoEngine {
         return Result.update();
     }
 
-    Result enter() {
+    public Result enter() {
         if (showingAssociatedPhrases) {
             clearComposition();
             return Result.enter();
@@ -340,7 +358,7 @@ final class BopomofoEngine {
         return Result.enter();
     }
 
-    Result backspace() {
+    public Result backspace() {
         if (chineseInputMethod.isTable() && inputMode == InputMode.BOPOMOFO) {
             candidates = List.of(); showingAssociatedPhrases = false;
             page = 0; highlightedIndex = 0; tableCandidatesFinal = false;
@@ -382,7 +400,7 @@ final class BopomofoEngine {
         return Result.delete();
     }
 
-    Result escape() {
+    public Result escape() {
         if (hardwareSmartEditing && compositionMode == BopomofoCompositionMode.SMART) {
             if (showingSmartCandidates) {
                 candidates = List.of();
@@ -398,7 +416,7 @@ final class BopomofoEngine {
         return clearComposition() ? Result.discardComposition() : Result.update();
     }
 
-    Result selectDisplayedCandidate(int displayedIndex) {
+    public Result selectDisplayedCandidate(int displayedIndex) {
         int absoluteIndex = page * CANDIDATES_PER_PAGE + displayedIndex;
         if (absoluteIndex < 0 || absoluteIndex >= candidates.size()) return Result.update();
         String selected = candidates.get(absoluteIndex);
@@ -424,11 +442,11 @@ final class BopomofoEngine {
         return commitPrimaryCandidate(selected, true);
     }
 
-    Result selectHighlightedCandidate() {
+    public Result selectHighlightedCandidate() {
         return selectDisplayedCandidate(highlightedIndex);
     }
 
-    void moveHighlight(int delta) {
+    public void moveHighlight(int delta) {
         if (candidates.isEmpty() || delta == 0) return;
         int absoluteIndex = page * CANDIDATES_PER_PAGE + highlightedIndex;
         int nextIndex = Math.floorMod(absoluteIndex + delta, candidates.size());
@@ -453,7 +471,7 @@ final class BopomofoEngine {
         return Result.commit(text);
     }
 
-    void changePage(int delta) {
+    public void changePage(int delta) {
         int pages = pageCount();
         if (pages == 0) {
             page = 0;
@@ -464,7 +482,7 @@ final class BopomofoEngine {
         highlightedIndex = 0;
     }
 
-    boolean moveSmartCompositionCursor(int delta) {
+    public boolean moveSmartCompositionCursor(int delta) {
         if (smartCompositionCursor() < 0 || !reading.isEmpty()) return false;
         smartCursor = Math.max(0, Math.min(smartReadings.size(), smartCursor + delta));
         candidates = List.of();
@@ -475,16 +493,16 @@ final class BopomofoEngine {
         return true;
     }
 
-    int smartCompositionCursor() {
+    public int smartCompositionCursor() {
         return hardwareSmartEditing && compositionMode == BopomofoCompositionMode.SMART
                 && !smartReadings.isEmpty() ? smartCursor : -1;
     }
 
-    List<String> touchSmartCells() {
+    public List<String> touchSmartCells() {
         return touchSmartCells(11);
     }
 
-    List<String> touchSmartCells(int cellCount) {
+    public List<String> touchSmartCells(int cellCount) {
         if (compositionMode != BopomofoCompositionMode.SMART
                 || inputMode != InputMode.BOPOMOFO || hardwareSmartEditing) return List.of();
         ArrayList<String> cells = new ArrayList<>();
@@ -506,11 +524,11 @@ final class BopomofoEngine {
         return List.copyOf(cells);
     }
 
-    int touchSmartEditableCount() {
+    public int touchSmartEditableCount() {
         return smartReadings.size();
     }
 
-    boolean selectTouchSmartCell(int index) {
+    public boolean selectTouchSmartCell(int index) {
         if (compositionMode != BopomofoCompositionMode.SMART
                 || inputMode != InputMode.BOPOMOFO || hardwareSmartEditing
                 || index < 0 || index >= smartReadings.size()) return false;
@@ -524,7 +542,7 @@ final class BopomofoEngine {
         return true;
     }
 
-    int composingCaretUtf16Offset() {
+    public int composingCaretUtf16Offset() {
         if (smartComposition == null || smartCompositionCursor() < 0 || !reading.isEmpty()) {
             return composingText().length();
         }
@@ -544,85 +562,85 @@ final class BopomofoEngine {
         return offset;
     }
 
-    void reset() {
+    public void reset() {
         clearComposition();
         if (temporaryEnglish) inputMode = InputMode.BOPOMOFO;
         temporaryEnglish = false;
         shifted = false;
     }
 
-    String readingText() {
+    public String readingText() {
         return chineseInputMethod.isTable() ? tableReadingText() : reading.displayText();
     }
 
-    String composingText() {
+    public String composingText() {
         if (chineseInputMethod.isTable()) return tableReadingText();
         if (compositionMode != BopomofoCompositionMode.SMART) return reading.displayText();
         return (smartComposition == null ? "" : smartComposition.text())
                 + reading.displayText();
     }
 
-    String completedSmartText() {
+    public String completedSmartText() {
         return smartComposition == null ? "" : smartComposition.text();
     }
 
-    boolean hasComposition() {
+    public boolean hasComposition() {
         return !composingText().isEmpty();
     }
 
-    boolean isTouchSmartComposition() {
+    public boolean isTouchSmartComposition() {
         return compositionMode == BopomofoCompositionMode.SMART
                 && inputMode == InputMode.BOPOMOFO && !hardwareSmartEditing;
     }
 
-    BopomofoCompositionMode compositionMode() {
+    public BopomofoCompositionMode compositionMode() {
         return compositionMode;
     }
 
-    List<String> displayedCandidates() {
+    public List<String> displayedCandidates() {
         int start = page * CANDIDATES_PER_PAGE;
         if (start >= candidates.size()) return List.of();
         return candidates.subList(start, Math.min(candidates.size(), start + CANDIDATES_PER_PAGE));
     }
 
-    int page() {
+    public int page() {
         return page;
     }
 
-    int pageCount() {
+    public int pageCount() {
         return (candidates.size() + CANDIDATES_PER_PAGE - 1) / CANDIDATES_PER_PAGE;
     }
 
-    int highlightedIndex() {
+    public int highlightedIndex() {
         int displayedCount = displayedCandidates().size();
         return displayedCount == 0 ? -1 : Math.min(highlightedIndex, displayedCount - 1);
     }
 
-    boolean isEnglishMode() {
+    public boolean isEnglishMode() {
         return inputMode == InputMode.ENGLISH;
     }
 
-    InputMode inputMode() {
+    public InputMode inputMode() {
         return inputMode;
     }
 
-    boolean isShifted() {
+    public boolean isShifted() {
         return shifted;
     }
 
-    boolean isTemporaryEnglish() {
+    public boolean isTemporaryEnglish() {
         return temporaryEnglish;
     }
 
-    boolean isHardwareFullWidth() {
+    public boolean isHardwareFullWidth() {
         return hardwareFullWidth;
     }
 
-    boolean isShowingAssociatedPhrases() {
+    public boolean isShowingAssociatedPhrases() {
         return showingAssociatedPhrases;
     }
 
-    boolean isShowingSmartCandidates() {
+    public boolean isShowingSmartCandidates() {
         return showingSmartCandidates;
     }
 
@@ -925,7 +943,7 @@ final class BopomofoEngine {
         return text.isEmpty() ? Result.update() : Result.commit(text);
     }
 
-    Result finishCompositionForModeSwitch() {
+    public Result finishCompositionForModeSwitch() {
         if (compositionMode == BopomofoCompositionMode.TRADITIONAL && inputMode == InputMode.BOPOMOFO) {
             if (showingAssociatedPhrases || !hasComposition()) { clearComposition(); return Result.update(); }
             if (!candidates.isEmpty()) {
@@ -953,7 +971,7 @@ final class BopomofoEngine {
         return clearComposition() ? Result.discardComposition() : Result.update();
     }
 
-    Result finishCompositionForInputHandoff() {
+    public Result finishCompositionForInputHandoff() {
         if (!hasComposition()) return Result.update();
         return finishCompositionForModeSwitch();
     }

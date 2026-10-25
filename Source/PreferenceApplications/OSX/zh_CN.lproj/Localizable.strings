@@ -89,8 +89,20 @@
 "Tap Shift to switch Chinese/English" = "单按 Shift 切换中英文";
 "A short press of either Shift switches input mode. Hold Shift or combine it with another key to keep normal keyboard behavior." = "轻按左或右 Shift 可切换中英文；长按或搭配其他按键时，保留原本的键盘操作。";
 
-"Startup input mode:" = "启动时默认输入模式：";
+"Startup input mode:" = "启动输入模式：";
 
 "Chinese" = "中文";
 
 "English" = "英文";
+
+/* Input core selection is owned by the running IMK service. */
+"Input core:" = "输入核心：";
+"Manjusri (Original core)" = "Manjusri（原核心）";
+"Guanyinma (Rust)" = "Guanyinma（Rust）";
+"Connecting to the input core service…" = "正在连接输入核心服务…";
+"Input core service is unavailable." = "目前无法连接输入核心服务。";
+"Current core: %@." = "当前核心：%@。";
+"This app does not include the Rust core." = "此 App 未包含 Rust 核心。";
+"Will switch to %@ after the current composition finishes." = "当前组字完成后，将切换至 %@。";
+"Applying input core choice…" = "正在应用核心选择…";
+"Choose the input core used by the running KeyKey app." = "选择运行中的 KeyKey App 使用的输入核心。";

@@ -3,6 +3,7 @@ import UIKit
 
 @MainActor
 protocol SettingsPanelDelegate: AnyObject {
+    func settingsPanel(_ panel: SettingsPanel, didChangeCore core: InputCore)
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod)
     func settingsPanelDidChangeTableOptions(_ panel: SettingsPanel)
     func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>)
@@ -31,9 +32,11 @@ final class SettingsPanel: UIView {
     private var candidateColor: CandidateColor
     private var compositionMode: BopomofoCompositionMode
     private var chineseInputMethod: ChineseInputMethod
+    private var inputCore: InputCore
     private let methodSettings: ChineseInputMethodSettings
     private var keyboardLayout: BopomofoKeyboardLayout
     private let statusLabel = UILabel()
+    private let coreStatusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
         items: ["紫", "綠", "黃", "紅"]
     )
@@ -50,7 +53,8 @@ final class SettingsPanel: UIView {
         compositionMode: BopomofoCompositionMode,
         chineseInputMethod: ChineseInputMethod = .smart,
         methodSettings: ChineseInputMethodSettings = ChineseInputMethodSettings(),
-        keyboardLayout: BopomofoKeyboardLayout = .standard
+        keyboardLayout: BopomofoKeyboardLayout = .standard,
+        inputCore: InputCore = .swift
     ) {
         self.collections = collections
         self.enabled = enabled
@@ -60,6 +64,7 @@ final class SettingsPanel: UIView {
         self.chineseInputMethod = chineseInputMethod
         self.methodSettings = methodSettings
         self.keyboardLayout = keyboardLayout
+        self.inputCore = inputCore
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
@@ -103,7 +108,7 @@ final class SettingsPanel: UIView {
         let scroll = UIScrollView()
         scroll.alwaysBounceVertical = true
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
+            coreRow(), compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
             candidateColorRow(), feedbackRow(),
             statusLabel, bulk, rows
@@ -205,6 +210,43 @@ final class SettingsPanel: UIView {
         row.isLayoutMarginsRelativeArrangement = true
         row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
         return row
+    }
+
+    private func coreRow() -> UIView {
+        let label = UILabel()
+        label.text = "輸入核心"
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = Palette.primaryText
+        let control = UISegmentedControl(items: InputCore.allCases.map(\.displayName))
+        control.selectedSegmentIndex = InputCore.allCases.firstIndex(of: inputCore) ?? 0
+        control.accessibilityIdentifier = "keyboard-settings.input-core"
+        control.accessibilityLabel = "輸入核心"
+        control.addTarget(self, action: #selector(coreChanged(_:)), for: .valueChanged)
+        coreStatusLabel.font = .systemFont(ofSize: 12)
+        coreStatusLabel.textColor = Palette.hintText
+        coreStatusLabel.numberOfLines = 0
+        let row = UIStackView(arrangedSubviews: [label, control, coreStatusLabel])
+        row.axis = .vertical
+        row.spacing = 8
+        return row
+    }
+
+    func updateCoreStatus(active: InputCore, requested: InputCore, error: String?) {
+        if let error {
+            coreStatusLabel.text = "目前：\(active.displayName)。\(error)"
+        } else if active != requested {
+            coreStatusLabel.text = "目前：\(active.displayName)，完成組字後切換。"
+        } else {
+            coreStatusLabel.text = "目前：\(active.displayName)"
+        }
+    }
+
+    @objc private func coreChanged(_ sender: UISegmentedControl) {
+        guard InputCore.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        inputCore = InputCore.allCases[sender.selectedSegmentIndex]
+        resetConfirmation = false
+        resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
+        delegate?.settingsPanel(self, didChangeCore: inputCore)
     }
 
     private func compositionModeRow() -> UIView {

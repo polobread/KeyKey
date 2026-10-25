@@ -32,6 +32,7 @@ struct FakeContext {
     bool simplify = false;
     bool candidateVisible = true;
     int clears = 0;
+    OVCandidateService *candidateService() { return reinterpret_cast<OVCandidateService*>(this); }
     PVTextBuffer *composingText() { return &composing; }
     PVTextBuffer *readingText() { return &reading; }
     std::string residueComposingTextBeforeDeactivation() {
@@ -47,6 +48,17 @@ struct FakeContext {
     void deactivate() {}
     void activate() {}
 };
+static bool coreEnglish = false, rejectCoreMode = false;
+static NSUInteger coreModeRequests;
+static bool GuanyinmaSetEnglishModeForService(OVCandidateService* service, bool enabled,
+    std::string* error) {
+    ++coreModeRequests;
+    auto* context = reinterpret_cast<FakeContext*>(service);
+    assert(context && context->composing.isEmpty() && context->reading.isEmpty());
+    if (rejectCoreMode) { if (error) *error = "isolated mode failure"; return false; }
+    coreEnglish = enabled;
+    return true;
+}
 @interface ModeController : NSObject {
 @public
     IMKShiftTap _shiftTap;
@@ -56,6 +68,7 @@ struct FakeContext {
     NSMutableString *_composingBuffer;
 }
 - (BOOL)_finishCompositionForModeSwitch:(id)sender;
+- (BOOL)_syncEnglishModeToCore:(BOOL)english;
 - (BOOL)_setEnglishMode:(BOOL)english client:(id)sender;
 - (void)_handleShiftTap:(NSEvent*)event client:(id)sender;
 - (void)_resetUI;
@@ -130,6 +143,7 @@ int main() { @autoreleasepool {
     host.reject = YES;
     assert(![controller _setEnglishMode:YES client:host]);
     assert(!OVCInputMode.english && notices == 2 && !controller->_modeSwitchInProgress);
+    assert(coreModeRequests == 2 && !coreEnglish); // Rejected host text never mutates core mode.
     assert(controller->_context->composing.composedText() == "臺灣");
     assert(!controller->_context->composing.isCommitted());
     assert(controller->_context->reading.composedText() == "ㄅ");
@@ -138,6 +152,12 @@ int main() { @autoreleasepool {
     assert(OVCInputMode.english && [host.inserted isEqualToString:@"甲ㄅ乙台ㄅ灣"]);
     assert([controller _setEnglishMode:YES client:host] && notices == 3); // Same mode is inert.
     assert(![controller _setEnglishMode:NO client:nil] && OVCInputMode.english);
+    assert(coreEnglish && coreModeRequests == 3); // Repeating a choice does not call the core.
+    rejectCoreMode = true;
+    NSString *preserved = [host.inserted copy];
+    assert(![controller _setEnglishMode:NO client:host] && OVCInputMode.english && coreEnglish);
+    assert([host.inserted isEqualToString:preserved] && notices == 3); // No replay on core failure.
+    rejectCoreMode = false;
     NSUInteger sequence = 0;
     for (NSString *method in @[@"SmartMandarin", @"TraditionalMandarin", @"Generic-cj-cin", @"Generic-simplex-cin"]) {
         NSMenuItem *item = [NSMenuItem new]; item.title = method; item.representedObject = method;
@@ -149,7 +169,7 @@ int main() { @autoreleasepool {
         controller->_shiftTapEnabled = YES;
         Send(controller, host, NSFlagsChanged, 56, NSShiftKeyMask, 10 + sequence);
         Send(controller, host, NSFlagsChanged, 56, 0, 10.1 + sequence);
-        assert(!OVCInputMode.english && loader.primary == [method UTF8String]);
+        assert(!OVCInputMode.english && !coreEnglish && loader.primary == [method UTF8String]);
         ++sequence;
     }
     puts("PASS: four Chinese method menu selections retain their identities across independent English mode");

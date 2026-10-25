@@ -58,11 +58,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Read the pinned Rust toolchain
+        id: rust
+        shell: bash
+        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform android
+
+      - name: Prepare Rust Android archives and host JNI toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+
       - name: Ensure Android SDK packages are installed
         shell: bash
         run: >-
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           "platforms;android-36.1" "build-tools;36.0.0"
+          "ndk;27.2.12479018" "cmake;3.22.1"
 
       - name: Cook the Smart Mandarin database
         shell: bash
@@ -101,9 +113,18 @@ jobs:
         run: |
           set -euo pipefail
           ./gradlew --no-daemon --no-configuration-cache \
-            lintRelease testDebugUnitTest bundleRelease \
+            lintRelease testDebugUnitTest \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaNativeTest' \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaIntegrationTest' \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaUserDataTest' \
+            --tests 'tw.chichi77.keykey.android.UserPhraseArchiveTest' \
+            bundleRelease \
             -PkeykeyVersionName="$VERSION" \
             -PkeykeyVersionCode="$VERSION_CODE"
+
+      - name: Verify headless JNI smoke executed
+        shell: bash
+        run: python3 Source/Loaders/Android-IME/tools/verify-guanyinma-smoke.py Source/Loaders/Android-IME/app/build/test-results/testDebugUnitTest
 
       - name: Verify signed AAB
         shell: bash

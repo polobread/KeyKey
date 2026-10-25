@@ -143,6 +143,52 @@ public final class SmartMandarinUserData {
             }
     }
 
+    /// A fresh readonly publication snapshot. Missing publications are distinct
+    /// from an intentionally empty table, and read failures never erase a copy.
+    func guanyinmaPhraseRows() throws -> [[String: Any]]? {
+        guard FileManager.default.fileExists(atPath: phrasesURL.path) else { return nil }
+        var handle: OpaquePointer?
+        guard sqlite3_open_v2(phrasesURL.path, &handle, SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
+              let opened = handle else {
+            let message = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "無法開啟共用自訂詞"
+            sqlite3_close_v2(handle)
+            throw SmartMandarinUserDataError.database(message)
+        }
+        defer { sqlite3_close_v2(opened) }
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(opened,
+            "SELECT qstring, current, probability, backoff FROM user_unigrams ORDER BY rowid", -1, &statement, nil) == SQLITE_OK,
+              let prepared = statement else {
+            sqlite3_finalize(statement)
+            throw SmartMandarinUserDataError.database(String(cString: sqlite3_errmsg(opened)))
+        }
+        defer { sqlite3_finalize(prepared) }
+        var result: [[String: Any]] = []
+        var status = sqlite3_step(prepared)
+        while status == SQLITE_ROW {
+            guard sqlite3_column_type(prepared, 0) == SQLITE_TEXT,
+                  sqlite3_column_type(prepared, 1) == SQLITE_TEXT,
+                  [SQLITE_FLOAT, SQLITE_INTEGER].contains(sqlite3_column_type(prepared, 2)),
+                  [SQLITE_FLOAT, SQLITE_INTEGER].contains(sqlite3_column_type(prepared, 3)),
+                  let queryBytes = sqlite3_column_text(prepared, 0), let textBytes = sqlite3_column_text(prepared, 1),
+                  let query = String(bytes: UnsafeBufferPointer(start: queryBytes, count: Int(sqlite3_column_bytes(prepared, 0))), encoding: .utf8),
+                  let text = String(bytes: UnsafeBufferPointer(start: textBytes, count: Int(sqlite3_column_bytes(prepared, 1))), encoding: .utf8) else {
+                throw SmartMandarinUserDataError.database("無效的共用自訂詞資料列")
+            }
+            let probability = sqlite3_column_double(prepared, 2), backoff = sqlite3_column_double(prepared, 3)
+            guard probability.isFinite, backoff.isFinite else {
+                throw SmartMandarinUserDataError.database("無效的共用自訂詞分數")
+            }
+            result.append(["qstring": query, "current": text,
+                           "probability": probability, "backoff": backoff])
+            status = sqlite3_step(prepared)
+        }
+        guard status == SQLITE_DONE else {
+            throw SmartMandarinUserDataError.database(String(cString: sqlite3_errmsg(opened)))
+        }
+        return result
+    }
+
     public func savePhrase(id: Int64? = nil, text: String, reading: String) throws {
         guard writablePhrases, let phrases else {
             throw SmartMandarinUserDataError.database("自訂詞資料庫為唯讀")

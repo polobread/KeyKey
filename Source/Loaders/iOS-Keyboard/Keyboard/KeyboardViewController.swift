@@ -8,13 +8,14 @@ import UIKit
 /// the document keeps them if iOS dismisses the keyboard without a callback.
 /// Other Bopomofo modes use marked text in the host field.
 final class KeyboardViewController: UIInputViewController {
-    private var engine: BopomofoEngine?
+    private var engine: DualCoreInputEngine?
     private var loadFailure: String?
     private var keyboardView: KeyboardView?
     private var statusOverride: String?
     private var heightConstraint: NSLayoutConstraint?
     private var phraseStore: AssociatedPhraseStore?
     private var smartUserData: SmartMandarinUserData?
+    private var guanyinmaPhraseData: SmartMandarinUserData?
     private var collections: [AssociatedPhraseStore.Collection] = []
     private let sharedDefaults = UserDefaults(
         suiteName: KeyboardPreferenceStore.appGroupIdentifier
@@ -22,6 +23,7 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var phraseSettings = PhraseSettings(sharedDefaults: sharedDefaults)
     private lazy var candidateColorSettings = CandidateColorSettings(sharedDefaults: sharedDefaults)
     private lazy var methodSettings = ChineseInputMethodSettings(sharedDefaults: sharedDefaults)
+    private lazy var coreSettings = InputCoreSettings(sharedDefaults: sharedDefaults)
     private lazy var compositionModeSettings = BopomofoCompositionModeSettings(
         sharedDefaults: sharedDefaults
     )
@@ -50,7 +52,7 @@ final class KeyboardViewController: UIInputViewController {
         loadEngine()
         candidateColor = candidateColorSettings.color
         inputClicksEnabled = clickSettings.enabled
-        _ = learningResetRequest.applyIfNeeded(to: smartUserData)
+        applyLearningResetRequests()
 
         // iPad draws no globe row of its own, so the keyboard has to carry the
         // key or there is no way to leave it.
@@ -117,12 +119,40 @@ final class KeyboardViewController: UIInputViewController {
             apply(engine.setKeyboardLayout(layoutSettings.layout))
             engine.spaceSelectsCandidates = spaceSettings.enabled
         }
-        if learningResetRequest.applyIfNeeded(to: smartUserData) {
+        applyLearningResetRequests()
+        if let engine {
+            do { try engine.refreshUserPhrases(from: guanyinmaPhraseData) }
+            catch { statusOverride = "Guanyinma 自訂詞同步失敗：\(error.localizedDescription)" }
+            engine.requestCore(coreSettings.core)
+        }
+        refresh()
+    }
+
+    private func applyLearningResetRequests() {
+        let swiftReset = learningResetRequest.applyIfNeeded(to: smartUserData)
+        let rustReset = KeyboardLearningResetRequest(
+            core: .guanyinma, sharedDefaults: sharedDefaults
+        ).applyIfNeeded {
+            if let engine, engine.activeCore == .guanyinma {
+                try engine.resetActiveCoreLearning()
+            } else {
+                guard let model = Bundle.main.url(forResource: "KeyKey", withExtension: "db") else {
+                    throw NSError(domain: "KeyKey.Core", code: 1)
+                }
+                let local = FileManager.default.urls(
+                    for: .applicationSupportDirectory, in: .userDomainMask
+                )[0]
+                try GuanyinmaInputEngine.resetLearning(
+                    modelURL: model, userDatabaseURL: local.appendingPathComponent("GuanyinmaUser.db")
+                )
+            }
+        }
+        if (swiftReset && engine?.activeCore == .swift)
+            || (rustReset && engine?.activeCore == .guanyinma) {
             discardMarkedText()
             engine?.reset()
             touchHostText.reset()
         }
-        refresh()
     }
 
     private func applyMetrics() {
@@ -245,11 +275,16 @@ final class KeyboardViewController: UIInputViewController {
                 learningURL: localDirectory.appendingPathComponent("SmartMandarinLearning.db"),
                 writablePhrases: false
             )
+            guanyinmaPhraseData = try? SmartMandarinUserData(
+                phrasesURL: (groupDirectory ?? localDirectory).appendingPathComponent("GuanyinmaUserPhrase.db"),
+                learningURL: localDirectory.appendingPathComponent("GuanyinmaPhraseBridge.db"),
+                writablePhrases: false
+            )
             let phrases = AssociatedPhraseStore(database: database)
             collections = (try? phrases.collections()) ?? []
             phraseStore = phrases
             applyPhraseSelection(phraseSettings.enabledCollections)
-            engine = BopomofoEngine(
+            let legacy = BopomofoEngine(
                 dictionary: try CandidateStore(database: database),
                 associatedPhrases: phrases,
                 smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
@@ -258,9 +293,18 @@ final class KeyboardViewController: UIInputViewController {
                 spaceSelectsCandidates: spaceSettings.enabled,
                 candidateFilter: CandidateGlyphSupport.shared.canDisplay
             )
+            engine = DualCoreInputEngine(
+                legacy: legacy, modelURL: url,
+                userDatabaseURL: localDirectory.appendingPathComponent("GuanyinmaUser.db"),
+                preferredCore: .swift, associatedPhrases: phrases,
+                candidateFilter: CandidateGlyphSupport.shared.canDisplay
+            )
+            do { try engine?.refreshUserPhrases(from: guanyinmaPhraseData) }
+            catch { statusOverride = "Guanyinma 自訂詞同步失敗：\(error.localizedDescription)" }
             engine?.setTableCandidateSource(TableCandidateStore(database: database))
             engine?.setChineseInputMethod(methodSettings.method)
             engine?.tableOptions = methodSettings.options(for: methodSettings.method, virtualKeyboard: true)
+            engine?.requestCore(coreSettings.core)
         } catch {
             loadFailure = String(describing: error)
         }
@@ -284,9 +328,12 @@ final class KeyboardViewController: UIInputViewController {
             compositionMode: engine?.bopomofoCompositionMode ?? .smart,
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
-            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout
+            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
+            inputCore: coreSettings.core
         )
         panel.delegate = self
+        panel.updateCoreStatus(active: engine?.activeCore ?? .swift,
+                               requested: coreSettings.core, error: engine?.coreError)
         panel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(panel)
         NSLayoutConstraint.activate([
@@ -322,7 +369,7 @@ final class KeyboardViewController: UIInputViewController {
         state.keyboardLayout = engine.keyboardLayout
         state.shifted = engine.isShifted
         state.temporaryEnglish = engine.isTemporaryEnglish
-        state.statusOverride = statusOverride
+        state.statusOverride = statusOverride ?? engine.coreError
         state.fieldPolicy = fieldPolicy
         state.returnKeyPolicy = returnKeyPolicy
         state.inputClicksEnabled = inputClicksEnabled
@@ -388,6 +435,17 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func apply(_ result: BopomofoEngine.Result) {
+        let previousCore = engine?.activeCore
+        defer {
+            engine?.acknowledgeHostEffects()
+            if engine?.activeCore != previousCore {
+                cancelScheduledMarkedReadingUpdate()
+                // The preceding commit still belongs to this document. Keep
+                // its callback guard while retiring only the old marked work.
+                touchHostText.reset()
+                refresh()
+            }
+        }
         if engine?.isTouchSmartComposition == true || !touchHostText.editableText.isEmpty {
             applyTouchSmart(result)
             return
@@ -557,6 +615,16 @@ extension KeyboardViewController: KeyboardViewDelegate {
 }
 
 extension KeyboardViewController: SettingsPanelDelegate {
+    func settingsPanel(_ panel: SettingsPanel, didChangeCore core: InputCore) {
+        if let engine { apply(engine.finishCompositionForInputHandoff()) }
+        coreSettings.setCore(core)
+        engine?.requestCore(core)
+        panel.updateCoreStatus(active: engine?.activeCore ?? .swift,
+                               requested: core, error: engine?.coreError)
+        cancelScheduledMarkedReadingUpdate()
+        refresh()
+    }
+
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod) {
         if let engine {
             apply(engine.setChineseInputMethod(method))
@@ -575,11 +643,16 @@ extension KeyboardViewController: SettingsPanelDelegate {
 
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool {
         CandidateGlyphSupport.shared.reset()
-        guard let smartUserData else { return false }
+        guard let engine else { return false }
         do {
-            try smartUserData.resetLearning()
+            if engine.activeCore == .guanyinma {
+                try engine.resetActiveCoreLearning()
+            } else {
+                guard let smartUserData else { return false }
+                try smartUserData.resetLearning()
+            }
             discardMarkedText()
-            engine?.reset()
+            engine.reset()
             touchHostText.reset()
             refresh()
             return true

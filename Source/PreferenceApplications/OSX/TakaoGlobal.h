@@ -35,6 +35,15 @@ file for terms.
 	IBOutlet id _useCtrlBackSlashToggleInputMethod;
     NSButton *_useShiftToggleInputMode;
     NSPopUpButton *_defaultInputModePopUpButton;
+    NSPopUpButton *_inputCorePopUpButton;
+    NSTextField *_inputCoreStatusTextField;
+    NSOperationQueue *_inputCoreServiceQueue;
+    NSTimer *_inputCoreStatusTimer;
+    NSUInteger _inputCoreServiceGeneration;
+    NSUInteger _inputCoreStatusPollCount;
+    BOOL _inputCoreRequestPending;
+    BOOL _inputCoreServiceStopped;
+    BOOL _inputCoreRequested;
 	
 	NSMutableDictionary *_takaoDictionary;
 	NSString *_preferenceFilePath;
@@ -59,6 +68,7 @@ file for terms.
 	@param sender The sender object.
 */
 - (IBAction)writePreference:(id)sender;
+- (IBAction)setInputCore:(id)sender;
 /*!
 	@method changeSound:
 	@abstract Changes the specified alert sound.

@@ -182,6 +182,18 @@ public final class BopomofoEngine {
         }
     }
 
+    /// Transfers frontend plane state at an empty backend boundary. This does
+    /// not interpret a key or produce any host text effects.
+    @discardableResult
+    public func restoreInputModeState(_ state: InputEngineModeState) -> Bool {
+        guard !hasComposition, candidates.isEmpty else { return false }
+        mode = allowedInputModes.contains(state.mode)
+            ? state.mode : allowedInputModes.sorted(by: modeOrder).first!
+        temporaryEnglish = state.temporaryEnglish && mode == .english && allowedInputModes.contains(.bopomofo)
+        shifted = state.shifted && !temporaryEnglish
+        return true
+    }
+
     // MARK: - Display state
 
     public var readingText: String { chineseInputMethod.isTable ? tableReadingText : reading.displayText }

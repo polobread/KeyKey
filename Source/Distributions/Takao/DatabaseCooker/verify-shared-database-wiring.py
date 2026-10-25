@@ -58,12 +58,15 @@ def main() -> int:
                 raise ValueError(f"{platform}: {path} is missing {missing}")
 
         android_store = (ROOT / "Source/Loaders/Android-IME/app/src/main/java/"
-                         "tw/chichi77/keykey/android/SmartMandarinStore.java").read_text(
+                         "tw/chichi77/keykey/android/SharedModelDatabase.java").read_text(
                              encoding="utf-8")
         installed_name = re.search(r'INSTALLED_NAME\s*=\s*"([^"]+)"', android_store)
         expected_name = f"KeyKey-smart-{model['database_sha256'][:16]}.db"
         if installed_name is None or installed_name.group(1) != expected_name:
             raise ValueError(f"Android model cache must be named {expected_name}")
+        installed_hash = re.search(r'EXPECTED_SHA256\s*=\s*"([0-9a-f]{64})"', android_store)
+        if installed_hash is None or installed_hash.group(1) != model["database_sha256"]:
+            raise ValueError("Android shared-model installer must verify the manifest SHA-256")
 
         cloud_script = (
             ROOT / "Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh"

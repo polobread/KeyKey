@@ -247,6 +247,14 @@ extern size_t VendorMotcleSize;
     [[OpenVanillaLoader sharedInstance] reload];
     NSLog(@"Finished reloading OpenVanilla");
 }
+- (bycopy NSDictionary *)inputCoreStatus
+{
+    return [[OpenVanillaLoader sharedInstance] inputCoreStatus];
+}
+- (bycopy NSDictionary *)setUseGuanyinmaCore:(BOOL)enabled
+{
+    return [[OpenVanillaLoader sharedInstance] setUseGuanyinmaCore:enabled];
+}
 - (NSString *)primaryInputMethod
 {
 	NSString *primaryInputMethod = [NSString stringWithUTF8String:[OpenVanillaLoader sharedLoader]->primaryInputMethod().c_str()];
@@ -446,6 +454,18 @@ extern size_t VendorMotcleSize;
 	[[CVSendKey sharedSendKey] typeString:key];
 }
 
+- (bycopy NSDictionary *)userPhraseDBSnapshot
+{
+    return [[OpenVanillaLoader sharedInstance] userPhraseDBSnapshot];
+}
+- (NSString *)userPhraseDBBackendIdentifier
+{
+    return [[OpenVanillaLoader sharedInstance] userPhraseDBBackendIdentifier];
+}
+- (BOOL)applyUserPhraseEdit:(bycopy NSDictionary *)edit expectedBackend:(NSString *)backend
+{
+    return [[OpenVanillaLoader sharedInstance] applyUserPhraseEdit:edit expectedBackend:backend];
+}
 - (BOOL)userPhraseDBCanProvideService
 {
     return [_loader userPhraseDBCanProvideService];    

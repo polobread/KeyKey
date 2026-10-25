@@ -1,5 +1,12 @@
 OPENSSL_PREFIX = /opt/homebrew/opt/openssl@3
 
+// Use Takao-Guanyinma.xcconfig to compile both cores into the existing App.
+// This base preserves the target default of 0 and does not require Rust.
+// An explicit xcodebuild KEYKEY_ENABLE_GUANYINMA=1 also enables both cores.
+KEYKEY_GUANYINMA_LDFLAGS_0 =
+KEYKEY_GUANYINMA_LDFLAGS_1 = "$(DERIVED_FILE_DIR)/Guanyinma/libguanyinma.a" -liconv
+// Pass KEYKEY_GUANYINMA_OFFLINE=1 when the pinned toolchain and dependencies are cached.
+
 SDKROOT = macosx
 MACOSX_DEPLOYMENT_TARGET = 15.0
 ARCHS = arm64

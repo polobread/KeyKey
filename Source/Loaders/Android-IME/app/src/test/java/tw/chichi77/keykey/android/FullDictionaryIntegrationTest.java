@@ -23,10 +23,10 @@ public final class FullDictionaryIntegrationTest {
             while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
         }
         String fingerprint = java.util.HexFormat.of().formatHex(digest.digest()).substring(0, 16);
-        var installed = SmartMandarinStore.class.getDeclaredField("INSTALLED_NAME");
+        var installed = SharedModelDatabase.class.getDeclaredField("INSTALLED_NAME");
         installed.setAccessible(true);
         assertEquals("KeyKey-smart-" + fingerprint + ".db", installed.get(null));
-        var previous = SmartMandarinStore.class.getDeclaredField("PREVIOUS_INSTALLED_NAMES");
+        var previous = SharedModelDatabase.class.getDeclaredField("PREVIOUS_INSTALLED_NAMES");
         previous.setAccessible(true);
         assertTrue(List.of((String[]) previous.get(null)).contains("KeyKey-smart-reading-v3.db"));
     }

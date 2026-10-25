@@ -15,12 +15,13 @@ existing `Source/Loaders/OSX-IMK/` implementation.
 Later changes to an existing Yahoo! file do not remove the Yahoo! notice or
 its BSD conditions.
 
-## Original platform frontends — MIT
+## Original platform frontends and Guanyinma — MIT
 
 Copyright (c) 2026 Chui-Ping Cheng
 
 Except where a file or the exceptions below state otherwise, original source,
 tests, project configuration, and documentation authored for these frontends
+and the original Guanyinma shared Rust core
 are licensed under the MIT License:
 
 - `Source/Loaders/Android-IME/`
@@ -28,13 +29,14 @@ are licensed under the MIT License:
 - `Source/Loaders/Linux-IME/`
 - `Source/Loaders/Windows-TSF/`
 - `Source/Shared/` (except Unicode-derived data; see below)
+- `Source/Guanyinma/` (original Rust core, C ABI, and tests; source/data exceptions below)
 
-The MIT License text for these frontends is in
-[`LICENSES/MIT.txt`](LICENSES/MIT.txt). Each frontend also has a directory-level
+The MIT License text for this original material is in
+[`LICENSES/MIT.txt`](LICENSES/MIT.txt). Each frontend and Guanyinma also has a directory-level
 `LICENSE.txt`, so individual source files do not need repetitive license
 headers.
 
-The MIT License applies only to the original frontend material in those
+The MIT License applies only to the original frontend/core material in those
 directories. It does not change the license of libraries, modules, data,
 generated assets, or other material that a frontend reads, links, copies, or
 packages.
@@ -60,6 +62,27 @@ uses requiring no permission under law, or relicense tools, third-party
 data, or separately licensed collections such as `DataSource/chichi77Collection`.
 
 ## Exceptions
+
+- `Source/Guanyinma/src/bopomofo.rs` retains the Formosa phonetic source's
+  MIT notice (Copyright (c) 2007-2010 Lukhnos D. Liu) and the BSD 3-Clause
+  notice for the Yahoo-derived Hsu transcription (Copyright (c) 2007-2012
+  Yahoo! Inc.). The source keeps both complete notices; copies for binary
+  distribution and source provenance are in
+  [Source/Guanyinma/LICENSES/Formosa-OpenVanilla-NOTICES.txt](Source/Guanyinma/LICENSES/Formosa-OpenVanilla-NOTICES.txt).
+- `Source/Guanyinma/src/walker.rs` and `smart.rs` port the Yahoo Manjusri
+  graph, scoring and Smart Mandarin composition rules under BSD 3-Clause.
+  They retain the original notices; the Guanyinma notices file records the
+  source paths. Original additions remain MIT.
+- The traditional/table state-machine port in `Source/Guanyinma/src/engine.rs`
+  follows the MIT-licensed `OVIMTraditionalMandarin` and `OVIMGeneric` modules
+  (Copyright (c) 2004-2010 The OpenVanilla Project). Their notice is retained in
+  the same Guanyinma notices file. Original Guanyinma additions remain MIT.
+- `Source/Guanyinma/build.rs` generates Rust constants from the shared Cangjie
+  headers. The Unicode 16.0.0-derived canonical mappings and exclusion ranges
+  retain Unicode License v3 (`Unicode-3.0`), reproduced unchanged in
+  [Source/Guanyinma/LICENSES/Unicode-LICENSE.txt](Source/Guanyinma/LICENSES/Unicode-LICENSE.txt).
+  The Cargo package declares the mixed MIT, BSD-3-Clause and Unicode-3.0
+  contents together; this does not apply all three licenses to every file.
 
 - `Source/Shared/CangjieUnicodeData.h` derives canonical CJK mappings and category ranges
   from Unicode 16.0.0. Its data retains Unicode License V3 in

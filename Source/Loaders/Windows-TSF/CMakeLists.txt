@@ -19,6 +19,9 @@ set(KEYKEY_VERSION_DEFINITIONS
 
 include(CTest)
 
+option(KEYKEY_BUILD_MIGRATION_BASELINE
+    "Build the explicit Rust migration baseline recorder" OFF)
+
 if(NOT WIN32)
     message(FATAL_ERROR "The Windows TSF frontend can only be built on Windows.")
 endif()
@@ -469,6 +472,19 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyEngineNumpad COMMAND KeyKeyEngineSmokeTest numpad)
     add_test(NAME KeyKeyEngineEscapeKeep COMMAND KeyKeyEngineSmokeTest keep)
     add_test(NAME KeyKeyEngineEscapeClear COMMAND KeyKeyEngineSmokeTest clear)
+
+    # Migration recorder only: opt-in target, excluded from daily builds/tests.
+    if(KEYKEY_BUILD_MIGRATION_BASELINE)
+        add_executable(KeyKeyCoreMigrationBaseline EXCLUDE_FROM_ALL
+            "${KEYKEY_ROOT}/tests/desktop_smart_functional.cpp")
+        target_compile_features(KeyKeyCoreMigrationBaseline PRIVATE cxx_std_17)
+        if(MSVC)
+            target_compile_options(KeyKeyCoreMigrationBaseline PRIVATE /W4 /permissive- /utf-8)
+        endif()
+        target_link_libraries(KeyKeyCoreMigrationBaseline PRIVATE
+            keykey_core advapi32 gdi32 ole32 shell32 user32 uuid)
+        add_dependencies(KeyKeyCoreMigrationBaseline keykey_database)
+    endif()
 
     add_executable(KeyKeyTableInputTest TableInputTest.cpp)
     target_compile_features(KeyKeyTableInputTest PRIVATE cxx_std_17)
