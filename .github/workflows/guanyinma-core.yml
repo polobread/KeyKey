@@ -1,0 +1,102 @@
+name: Guanyinma Core
+# Owns the full Guanyinma core suite; platform workflows build/link the core
+# and run only small frontend integration smoke tests.
+
+on:
+  pull_request:
+    paths: &core-paths
+      - 'Source/Guanyinma/**'
+      - 'Source/Shared/CangjieRankingData.h'
+      - 'Source/Shared/CangjieUnicodeData.h'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.github/workflows/guanyinma-core.yml'
+  push:
+    paths: *core-paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guanyinma-core-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: ${{ matrix.platform }} / ${{ matrix.sqlite }} SQLite / Rust + C ABI
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {platform: linux, os: ubuntu-24.04, sqlite: system, python: python3}
+          - {platform: macos, os: macos-15, sqlite: system, python: python3}
+          - {platform: windows, os: windows-2025, sqlite: bundled, python: python}
+          - {platform: freebsd, os: ubuntu-24.04, sqlite: system, python: python3}
+          - {platform: ios, os: macos-15, sqlite: system, python: python3}
+          - {platform: android, os: ubuntu-24.04, sqlite: bundled, python: python3}
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHON: ${{ matrix.python }}
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.guanyinma-ci-target/${{ matrix.platform }}
+      CARGO_TERM_COLOR: never
+      GUANYINMA_TEST_RUNNER_REPORT_DIR: ${{ github.workspace }}/artifacts/guanyinma-core/${{ matrix.platform }}/transport
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read the committed Rust toolchain and target
+        id: toolchain
+        run: '"$PYTHON" Source/Guanyinma/tools/ci/configure.py toolchain --platform "${{ matrix.platform }}"'
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        if: matrix.platform != 'freebsd'
+        with:
+          toolchain: ${{ steps.toolchain.outputs.version }}
+          targets: ${{ steps.toolchain.outputs.target }}
+          components: ${{ steps.toolchain.outputs.components }}
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        if: matrix.platform == 'windows'
+        with:
+          arch: x64
+      - name: Prepare native dependencies or headless emulator permissions
+        if: matrix.platform == 'linux' || matrix.platform == 'android'
+        run: '"$PYTHON" Source/Guanyinma/tools/ci/prepare-host.py "${{ matrix.platform }}"'
+      - name: Execute native or iOS target Rust tests and C consumer
+        if: matrix.platform != 'freebsd' && matrix.platform != 'android'
+        run: '"$PYTHON" Source/Guanyinma/tools/ci/run-ci.py --platform "${{ matrix.platform }}" --sqlite-provider "${{ matrix.sqlite }}"'
+      - name: Execute inside native FreeBSD 15.1
+        if: matrix.platform == 'freebsd'
+        uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1.5.9
+        with:
+          release: '15.1'
+          arch: x86_64
+          mem: 6144
+          sync: rsync
+          prepare: pkg install -y ca_root_nss curl python3 pkgconf sqlite3
+          run: sh Source/Guanyinma/tools/ci/freebsd-ci.sh
+      - name: Execute inside a headless Android API 35 target
+        if: matrix.platform == 'android'
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2, pinned
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          ndk: 27.2.12479018
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: python3 Source/Guanyinma/tools/ci/run-ci.py --platform android --sqlite-provider bundled --ndk 27.2.12479018 --api 26 --serial emulator-5554 --remote-root /data/local/tmp/guanyinma-core-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Check transport contracts, Rust formatting and warnings once
+        if: matrix.platform == 'linux'
+        run: python3 Source/Guanyinma/tools/ci/run-ci.py --checks-only
+      - name: Remove only this job's owned simulator
+        if: always() && matrix.platform == 'ios'
+        run: python3 Source/Guanyinma/tools/ci/configure.py cleanup-ios --metadata artifacts/guanyinma-core/ios/simulator.json
+      - name: Upload target execution evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: guanyinma-${{ matrix.platform }}-${{ matrix.sqlite }}-${{ github.sha }}
+          path: artifacts/guanyinma-core/${{ matrix.platform }}/
+          if-no-files-found: warn
+          retention-days: 7

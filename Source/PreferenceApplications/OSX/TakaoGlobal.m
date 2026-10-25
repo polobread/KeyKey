@@ -8,10 +8,22 @@ file for terms.
 #import "TakaoGlobal.h"
 #import "TakaoHelper.h"
 
+static const NSUInteger InputCoreStatusPollLimit = 30;
+
 @interface TakaoGlobal(Private)
 - (NSString *)_shortenedFilename:(NSString *)filename maxLength:(int)maxLength;
 - (NSArray *)_enumeratePath:(NSString *)path withExtension:(NSString *)ext;
 - (NSImage *)_smallIconForKeyboardLayout:(NSImage *)sourceImage;
+@end
+
+@interface TakaoGlobal ()
+- (void)setInputCoreUI;
+- (void)requestInputCoreStatus:(NSNumber *)enabled;
+- (NSDictionary *)inputCoreServiceStatusForChoice:(NSNumber *)enabled;
+- (void)renderInputCoreStatus:(NSDictionary *)status;
+- (void)refreshInputCoreStatus:(id)sender;
+- (void)stopInputCoreService:(NSNotification *)notification;
+- (void)stopInputCoreStatusTimer;
 @end
 
 #pragma mark -
@@ -155,7 +167,11 @@ file for terms.
     [_useShiftToggleInputMode setTarget:self];
     [_useShiftToggleInputMode setAction:@selector(writePreference:)];
     [container addSubview:_useShiftToggleInputMode];
-    NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(17, row.origin.y, 205, 18)] autorelease];
+    // Reuse the localized NIB's control column instead of introducing a
+    // separate label width that pushes only the new controls to the right.
+    NSRect controlColumn = [_soundListPopUpButton frame];
+    NSTextField *label = [[[NSTextField alloc] initWithFrame:
+        NSMakeRect(17.0, row.origin.y, controlColumn.origin.x - 27.0, 18.0)] autorelease];
     [label setBezeled:NO]; [label setDrawsBackground:NO];
     [label setEditable:NO]; [label setSelectable:NO];
     [label setAlignment:NSRightTextAlignment];
@@ -163,7 +179,8 @@ file for terms.
     [label setStringValue:LFLSTR(@"Startup input mode:")];
     [container addSubview:label];
     _defaultInputModePopUpButton = [[[NSPopUpButton alloc] initWithFrame:
-        NSMakeRect(230, row.origin.y - 4, 145, 26) pullsDown:NO] autorelease];
+        NSMakeRect(controlColumn.origin.x, row.origin.y - 4.0,
+            controlColumn.size.width, 26.0) pullsDown:NO] autorelease];
     [_defaultInputModePopUpButton addItemsWithTitles:@[LFLSTR(@"Chinese"), LFLSTR(@"English")]];
     [[_defaultInputModePopUpButton itemAtIndex:0] setRepresentedObject:@"Chinese"];
     [[_defaultInputModePopUpButton itemAtIndex:1] setRepresentedObject:@"English"];
@@ -172,9 +189,226 @@ file for terms.
     [container addSubview:_defaultInputModePopUpButton];
 }
 
+- (void)setInputCoreUI
+{
+    if (_inputCorePopUpButton) return;
+    NSView *container = [_defaultInputModePopUpButton superview];
+    NSRect anchor = [_defaultInputModePopUpButton frame];
+    BOOL autoresizes = [container autoresizesSubviews];
+    [container setAutoresizesSubviews:NO];
+    NSRect frame = [container frame];
+    frame.size.height += 64.0;
+    [container setFrame:frame];
+    for (NSView *view in [container subviews]) {
+        NSRect child = [view frame];
+        if (child.origin.y >= anchor.origin.y) {
+            child.origin.y += 64.0;
+            [view setFrame:child];
+        }
+    }
+    [container setAutoresizesSubviews:autoresizes];
+
+    NSRect controlColumn = [_soundListPopUpButton frame];
+    NSRect popupFrame = NSMakeRect(controlColumn.origin.x, anchor.origin.y + 30.0,
+        controlColumn.size.width, 26.0);
+    NSTextField *label = [[[NSTextField alloc] initWithFrame:
+        NSMakeRect(17.0, popupFrame.origin.y + 5.0,
+            controlColumn.origin.x - 27.0, 18.0)] autorelease];
+    [label setBezeled:NO]; [label setDrawsBackground:NO];
+    [label setEditable:NO]; [label setSelectable:NO];
+    [label setAlignment:NSRightTextAlignment];
+    [label setFont:[NSFont systemFontOfSize:[NSFont systemFontSize]]];
+    [label setStringValue:LFLSTR(@"Input core:")];
+    [label setIdentifier:@"InputCoreLabel"];
+    [container addSubview:label];
+
+    _inputCorePopUpButton = [[[NSPopUpButton alloc] initWithFrame:popupFrame pullsDown:NO] autorelease];
+    [_inputCorePopUpButton addItemsWithTitles:@[
+        LFLSTR(@"Manjusri (Original core)"), LFLSTR(@"Guanyinma (Rust)")]];
+    [[_inputCorePopUpButton itemAtIndex:0] setRepresentedObject:@NO];
+    [[_inputCorePopUpButton itemAtIndex:1] setRepresentedObject:@YES];
+    [_inputCorePopUpButton setToolTip:LFLSTR(@"Choose the input core used by the running KeyKey app.")];
+    [_inputCorePopUpButton setTarget:self];
+    [_inputCorePopUpButton setAction:@selector(setInputCore:)];
+    [_inputCorePopUpButton setEnabled:NO];
+    [container addSubview:_inputCorePopUpButton];
+
+    _inputCoreStatusTextField = [[[NSTextField alloc] initWithFrame:
+        NSMakeRect(controlColumn.origin.x, anchor.origin.y,
+            NSWidth([container bounds]) - controlColumn.origin.x - 20.0, 28.0)] autorelease];
+    [_inputCoreStatusTextField setBezeled:NO];
+    [_inputCoreStatusTextField setDrawsBackground:NO];
+    [_inputCoreStatusTextField setEditable:NO];
+    [_inputCoreStatusTextField setSelectable:NO];
+    [_inputCoreStatusTextField setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
+    [_inputCoreStatusTextField setTextColor:[NSColor secondaryLabelColor]];
+    [_inputCoreStatusTextField setMaximumNumberOfLines:2];
+    [[_inputCoreStatusTextField cell] setWraps:YES];
+    [[_inputCoreStatusTextField cell] setScrollable:NO];
+    [[_inputCoreStatusTextField cell] setLineBreakMode:NSLineBreakByTruncatingTail];
+    [_inputCoreStatusTextField setStringValue:LFLSTR(@"Connecting to the input core service…")];
+    [container addSubview:_inputCoreStatusTextField];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshInputCoreStatus:)
+        name:NSWindowDidBecomeKeyNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(stopInputCoreService:)
+        name:NSWindowWillCloseNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(stopInputCoreService:)
+        name:NSApplicationWillTerminateNotification object:nil];
+}
+
+- (NSDictionary *)inputCoreServiceStatusForChoice:(NSNumber *)enabled
+{
+    NSConnection *connection = nil;
+    NSDictionary *status = nil;
+    @try {
+        connection = [NSConnection connectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
+        [connection setRequestTimeout:2]; [connection setReplyTimeout:2];
+        id service = [connection rootProxy];
+        [service setProtocolForProxy:@protocol(OpenVanillaService)];
+        NSDictionary *remote = enabled ? [service setUseGuanyinmaCore:[enabled boolValue]] :
+            [service inputCoreStatus];
+        if ([remote isKindOfClass:[NSDictionary class]])
+            status = [[[NSDictionary alloc] initWithDictionary:remote copyItems:YES] autorelease];
+    } @catch (NSException *exception) {
+        // Old, stopped or unresponsive IMK services leave the control disabled.
+    } @finally {
+        [connection invalidate];
+    }
+    return status;
+}
+
+- (void)requestInputCoreStatus:(NSNumber *)enabled
+{
+    if (_inputCoreServiceStopped || _inputCoreRequestPending) return;
+    if (!_inputCoreServiceQueue) {
+        _inputCoreServiceQueue = [[NSOperationQueue alloc] init];
+        [_inputCoreServiceQueue setMaxConcurrentOperationCount:1];
+    }
+    _inputCoreRequestPending = YES;
+    if (enabled) _inputCoreStatusPollCount = 0;
+    NSUInteger generation = ++_inputCoreServiceGeneration;
+    [_inputCorePopUpButton setEnabled:NO];
+    if (enabled)
+        [_inputCoreStatusTextField setStringValue:LFLSTR(@"Applying input core choice…")];
+    [_inputCoreServiceQueue addOperationWithBlock:^{
+        @autoreleasepool {
+            NSDictionary *status = [[self inputCoreServiceStatusForChoice:enabled] retain];
+            [[NSOperationQueue mainQueue] addOperationWithBlock:^{
+                if (!_inputCoreServiceStopped && generation == _inputCoreServiceGeneration) {
+                    _inputCoreRequestPending = NO;
+                    [self renderInputCoreStatus:status];
+                }
+            }];
+            [status release];
+        }
+    }];
+}
+
+- (void)renderInputCoreStatus:(NSDictionary *)status
+{
+    NSString *active = [status isKindOfClass:[NSDictionary class]] ? status[@"active"] : nil;
+    BOOL valid = [status isKindOfClass:[NSDictionary class]] &&
+        [status[@"supported"] isKindOfClass:[NSNumber class]] &&
+        [status[@"requested"] isKindOfClass:[NSNumber class]] &&
+        [status[@"pending"] isKindOfClass:[NSNumber class]] &&
+        [active isKindOfClass:[NSString class]] &&
+        ([active isEqualToString:@"manjusri"] || [active isEqualToString:@"guanyinma"]);
+    BOOL pending = valid && [status[@"supported"] boolValue] && [status[@"pending"] boolValue];
+    if (valid) _inputCoreRequested = [status[@"requested"] boolValue];
+    [_inputCorePopUpButton selectItemAtIndex:_inputCoreRequested ? 1 : 0];
+    [_inputCorePopUpButton setEnabled:valid && [status[@"supported"] boolValue] &&
+        !_inputCoreRequestPending && !_inputCoreServiceStopped];
+
+    NSString *message;
+    if (!valid) {
+        message = LFLSTR(@"Input core service is unavailable.");
+    }
+    else {
+        NSString *currentName = [active isEqualToString:@"guanyinma"] ?
+            LFLSTR(@"Guanyinma (Rust)") : LFLSTR(@"Manjusri (Original core)");
+        NSString *current = [NSString stringWithFormat:LFLSTR(@"Current core: %@."), currentName];
+        if (![status[@"supported"] boolValue]) {
+            message = [NSString stringWithFormat:@"%@ %@", current,
+                LFLSTR(@"This app does not include the Rust core.")];
+        }
+        else if (pending) {
+            NSString *requestedName = _inputCoreRequested ?
+                LFLSTR(@"Guanyinma (Rust)") : LFLSTR(@"Manjusri (Original core)");
+            NSString *next = [NSString stringWithFormat:LFLSTR(
+                @"Will switch to %@ after the current composition finishes."), requestedName];
+            message = [NSString stringWithFormat:@"%@\n%@", current, next];
+        }
+        else {
+            NSString *detail = [status[@"error"] isKindOfClass:[NSString class]] ? status[@"error"] : nil;
+            if (![detail length] && [status[@"message"] isKindOfClass:[NSString class]])
+                detail = status[@"message"];
+            message = [detail length] ? [NSString stringWithFormat:@"%@ %@", current, detail] : current;
+        }
+    }
+    [_inputCoreStatusTextField setStringValue:message];
+    [_inputCoreStatusTextField setToolTip:message];
+    if (pending && !_inputCoreServiceStopped && _inputCoreStatusPollCount < InputCoreStatusPollLimit) {
+        if (!_inputCoreStatusTimer)
+            _inputCoreStatusTimer = [[NSTimer scheduledTimerWithTimeInterval:1.0 target:self
+                selector:@selector(refreshInputCoreStatus:) userInfo:nil repeats:YES] retain];
+    }
+    else {
+        [self stopInputCoreStatusTimer];
+    }
+}
+
+- (void)stopInputCoreStatusTimer
+{
+    [_inputCoreStatusTimer invalidate];
+    [_inputCoreStatusTimer release]; _inputCoreStatusTimer = nil;
+}
+
+- (void)refreshInputCoreStatus:(id)sender
+{
+    if ([sender isKindOfClass:[NSNotification class]]) {
+        if ([sender object] != [_inputCorePopUpButton window]) return;
+        // Returning to the preferences window obtains a fresh status even when
+        // an earlier deferred switch exhausted its short polling budget.
+        _inputCoreStatusPollCount = 0;
+    }
+    else if ([sender isKindOfClass:[NSTimer class]]) {
+        NSWindow *window = [_inputCorePopUpButton window];
+        if (!window || ![window isVisible] || [_inputCorePopUpButton isHiddenOrHasHiddenAncestor] ||
+            _inputCoreStatusPollCount >= InputCoreStatusPollLimit) {
+            [self stopInputCoreStatusTimer];
+            return;
+        }
+        ++_inputCoreStatusPollCount;
+    }
+    [self requestInputCoreStatus:nil];
+}
+
+- (void)stopInputCoreService:(NSNotification *)notification
+{
+    if ([[notification name] isEqualToString:NSWindowWillCloseNotification] &&
+        [notification object] != [_inputCorePopUpButton window]) return;
+    _inputCoreServiceStopped = YES;
+    ++_inputCoreServiceGeneration;
+    [self stopInputCoreStatusTimer];
+    [_inputCoreServiceQueue cancelAllOperations];
+}
+
+- (IBAction)setInputCore:(id)sender
+{
+    if (![_inputCorePopUpButton isEnabled]) return;
+    NSNumber *choice = [[_inputCorePopUpButton selectedItem] representedObject];
+    _inputCoreStatusPollCount = 0;
+    // The running IMK owns this choice. Never add it to the general plist or
+    // to this separate preferences application's NSUserDefaults domain.
+    [self requestInputCoreStatus:choice];
+}
+
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [_inputCoreStatusTimer invalidate]; [_inputCoreStatusTimer release];
+    [_inputCoreServiceQueue cancelAllOperations]; [_inputCoreServiceQueue release];
     [_updateServiceQueue cancelAllOperations]; [_updateServiceQueue release];
     if (_sound) {
         if ([_sound isPlaying]) 
@@ -404,6 +638,7 @@ file for terms.
 
 	[self setCandidateWindowScaleUI];
     [self setShiftToggleUI];
+    [self setInputCoreUI];
 
 	LFRetainAssign(_preferenceFilePath, [TakaoHelper plistFilePath:PLIST_GLOBAL_FILENAME]);
 
@@ -420,7 +655,8 @@ file for terms.
 	} 
 	
 	[self setUI];
-	[self writePreference:self];	
+	[self writePreference:self];
+    [self requestInputCoreStatus:nil];
 }
 
 

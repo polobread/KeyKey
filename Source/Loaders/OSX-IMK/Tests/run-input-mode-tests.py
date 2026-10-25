@@ -22,7 +22,7 @@ def method(signature):
 
 methods = "\n".join(method(signature) for signature in [
     "- (BOOL)_finishCompositionForModeSwitch:",
-    "- (BOOL)_setEnglishMode:", "- (void)_handleShiftTap:",
+    "- (BOOL)_syncEnglishModeToCore:", "- (BOOL)_setEnglishMode:", "- (void)_handleShiftTap:",
     "- (void)switchInputMethodAction:", "- (void)englishInputModeAction:"])
 assert "[self _handleShiftTap:event client:sender];" in method("- (BOOL)handleEvent:")
 assert "_shiftTap.reset();" in method("- (void)activateServer:")
@@ -31,6 +31,8 @@ assert "_shiftTapEnabled = NO;" in method("- (void)deactivateServer:")
 assert "if (_modeSwitchInProgress)" in method("- (void)commitComposition:")
 handling = method("- (BOOL)handleEvent:")
 assert handling.index("if (OVCInputMode.english)") < handling.index("_context->handleKeyEvent(&key)")
+assert handling.index("[self _syncEnglishModeToCore:NO]") < handling.index("_context->handleKeyEvent(&key)")
+assert "[self _syncEnglishModeToCore:OVCInputMode.english]" in method("- (void)activateServer:")
 assert "NSFlagsChangedMask" in method("- (NSUInteger)recognizedEvents:")
 assert "KeyKeyIMKShiftProbeEnabled" not in source
 fixture = (loader / "Tests/MacInputModeTests.mm").read_text().replace("// ACTUAL_METHODS", methods)

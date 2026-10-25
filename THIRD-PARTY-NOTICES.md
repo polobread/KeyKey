@@ -5,6 +5,43 @@ This file records third-party notices and does not define the license of
 original chichi77 KeyKey frontend code. See `LICENSING.md` for the complete
 repository scope map.
 
+## Guanyinma Rust dependencies
+
+`Source/Guanyinma/Cargo.lock` records the exact Rust dependency graph.
+The model layer uses rusqlite (MIT), Serde and serde_json (MIT or Apache-2.0),
+and their transitive dependencies under their respective crate licenses.
+The optional `bundled-sqlite` feature compiles upstream SQLite, which is in the
+public domain; it does not generate or relicense `KeyKey.db`.
+
+Upstream: https://github.com/rusqlite/rusqlite,
+https://github.com/serde-rs/serde, https://github.com/serde-rs/json,
+https://www.sqlite.org/copyright.html.
+
+The Manjusri graph and Smart Mandarin composition ports in
+`Source/Guanyinma/src/walker.rs` and `smart.rs` retain Yahoo BSD 3-Clause
+notices; no license is changed by translating the source into Rust.
+
+The phonetic port retains Lukhnos D. Liu's Formosa MIT notice and
+the Yahoo-derived Hsu transcription's BSD 3-Clause notice. The traditional and
+table state-machine reference modules retain the OpenVanilla Project's MIT
+notice. Their complete notices and exact source paths are collected in
+`Source/Guanyinma/LICENSES/Formosa-OpenVanilla-NOTICES.txt`; the phonetic source
+also keeps its notices in place.
+
+Cangjie ranking/selection uses the existing shared project material. Canonical
+CJK mappings and punctuation/symbol/space exclusion data are generated from the
+shared Unicode 16.0.0 header and retain Unicode License v3 (`Unicode-3.0`).
+The full notice is copied byte-for-byte to
+`Source/Guanyinma/LICENSES/Unicode-LICENSE.txt`. These generated constants are
+not relicensed by the MIT grant for original Guanyinma code.
+
+Development dual-core frontend builds now include Guanyinma. These binary
+packages must carry the applicable crate notices/licenses, the retained
+Formosa/OpenVanilla/Yahoo and Unicode notices, SQLite provenance, and the
+existing database notices. The MIT grant for original Guanyinma code
+only covers that original code; existing Yahoo/OpenVanilla-derived code and
+data retain their own terms.
+
 ## Desktop update components
 
 The macOS desktop application embeds Sparkle 2.10.0 (MIT/BSD notices, including

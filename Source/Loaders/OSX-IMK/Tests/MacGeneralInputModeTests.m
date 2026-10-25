@@ -2,6 +2,16 @@
 #import "../../../PreferenceApplications/OSX/TakaoHelper.h"
 #include <assert.h>
 static NSString *testPath;
+static NSDictionary *coreReply;
+static NSNumber *lastCoreRequest;
+static NSUInteger coreQueries, coreWrites;
+@interface TakaoGlobal (CoreTestContract)
+- (void)requestInputCoreStatus:(NSNumber*)enabled;
+- (void)renderInputCoreStatus:(NSDictionary*)status;
+- (IBAction)setInputCore:(id)sender;
+- (void)refreshInputCoreStatus:(id)sender;
+- (void)stopInputCoreService:(NSNotification *)notification;
+@end
 @implementation TakaoHelper
 + (NSString *)plistFilePath:(NSString *)filename { return testPath; }
 @end
@@ -17,6 +27,18 @@ static NSString *testPath;
 - (void)setKeyboardLayoutUI {}
 - (void)setSoundUI {}
 - (void)requestUpdateConsent:(NSNumber*)enabled {}
+- (void)requestInputCoreStatus:(NSNumber*)enabled {
+    if (enabled) {
+        ++coreWrites;
+        [lastCoreRequest release]; lastCoreRequest = [enabled retain];
+    } else ++coreQueries;
+    [self renderInputCoreStatus:coreReply];
+}
+@end
+@interface TestWindow : NSWindow { @public BOOL testVisible; }
+@end
+@implementation TestWindow
+- (BOOL)isVisible { return testVisible; }
 @end
 @interface TestPane : NSView
 @end
@@ -72,6 +94,7 @@ int main(int argc, char **argv) {
         assert(argc >= 4); [NSApplication sharedApplication];
         NSDictionary *layout = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:[NSString stringWithUTF8String:argv[1]]] options:0 error:nil];
         testPath = [NSString stringWithUTF8String:argv[2]];
+        coreReply = @{@"supported": @YES, @"active": @"manjusri", @"requested": @NO, @"pending": @NO};
         NSView *pane;
         TestGlobal *controller = Make(layout, &pane);
         NSButton *shift = [controller valueForKey:@"_useShiftToggleInputMode"];
@@ -80,7 +103,17 @@ int main(int argc, char **argv) {
         assert(shift.intValue == 1 && startup.indexOfSelectedItem == 0);
         assert(shift.target == controller && shift.action == @selector(writePreference:));
         assert(startup.target == controller && startup.action == @selector(writePreference:));
-        assert(pane.frame.size.height == Frame(layout).size.height + 52);
+        assert(pane.frame.size.height == Frame(layout).size.height + 116);
+        NSPopUpButton *core = [controller valueForKey:@"_inputCorePopUpButton"];
+        NSTextField *coreStatus = [controller valueForKey:@"_inputCoreStatusTextField"];
+        assert(core && coreStatus && coreQueries == 1 && coreWrites == 0);
+        assert(core.enabled && core.indexOfSelectedItem == 0);
+        assert(core.target == controller && core.action == @selector(setInputCore:));
+        assert([coreStatus.stringValue containsString:@"Manjusri"]);
+        for (NSView *view in pane.subviews) {
+            if (view != core) assert(!NSIntersectsRect(view.frame, core.frame));
+            if (view != coreStatus) assert(!NSIntersectsRect(view.frame, coreStatus.frame));
+        }
         assert(NSMaxY(shift.frame) <= NSMinY(ctrl.frame));
         assert(NSMaxY(startup.frame) <= NSMinY(shift.frame));
         for (NSView *view in pane.subviews) {
@@ -97,14 +130,83 @@ int main(int argc, char **argv) {
         saved = [NSDictionary dictionaryWithContentsOfFile:testPath];
         assert([saved[@"ToggleInputModeWithShift"] isEqual:@"true"] && [saved[@"DefaultInputMode"] isEqual:@"English"]);
         assert([[shift cell] cellSize].width <= NSWidth(shift.frame));
+        core = [controller valueForKey:@"_inputCorePopUpButton"];
+        coreStatus = [controller valueForKey:@"_inputCoreStatusTextField"];
+        [controller renderInputCoreStatus:nil];
+        assert(!core.enabled && coreStatus.stringValue.length > 0);
+        [controller renderInputCoreStatus:@{@"supported": @NO, @"active": @"manjusri", @"requested": @NO, @"pending": @NO}];
+        assert(!core.enabled && core.indexOfSelectedItem == 0);
+        [controller renderInputCoreStatus:@{@"supported": @YES, @"active": @"manjusri", @"requested": @YES, @"pending": @YES}];
+        assert(core.enabled && core.indexOfSelectedItem == 1);
+        assert([coreStatus.stringValue containsString:@"Manjusri"] && [coreStatus.stringValue containsString:@"Guanyinma"]);
+        NSString *pendingStatus = [[coreStatus.stringValue copy] autorelease];
+        [controller renderInputCoreStatus:@{@"supported": @YES, @"active": @"guanyinma", @"requested": @YES, @"pending": @NO}];
+        assert(core.enabled && core.indexOfSelectedItem == 1 && [coreStatus.stringValue containsString:@"Guanyinma"]);
+        assert(![coreStatus.stringValue isEqualToString:pendingStatus]);
+        coreReply = @{@"supported": @YES, @"active": @"manjusri", @"requested": @YES, @"pending": @YES};
+        NSData *beforeCoreAction = [NSData dataWithContentsOfFile:testPath];
+        NSUInteger writesBefore = coreWrites;
+        [core selectItemAtIndex:1]; [controller setInputCore:core];
+        assert(coreWrites == writesBefore + 1 && [lastCoreRequest boolValue]);
+        assert([[NSData dataWithContentsOfFile:testPath] isEqualToData:beforeCoreAction]);
+        saved = [NSDictionary dictionaryWithContentsOfFile:testPath];
+        assert(!saved[@"UseGuanyinmaCore"]);
+        coreReply = @{@"supported": @YES, @"active": @"manjusri", @"requested": @NO, @"pending": @NO};
+        [core selectItemAtIndex:0]; [controller setInputCore:core];
+        assert(coreWrites == writesBefore + 2 && ![lastCoreRequest boolValue]);
+        assert([[NSData dataWithContentsOfFile:testPath] isEqualToData:beforeCoreAction]);
+
         [startup selectItemAtIndex:0];
-        NSWindow *window = [[[NSWindow alloc] initWithContentRect:pane.bounds styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO] autorelease];
+        TestWindow *window = [[[TestWindow alloc] initWithContentRect:pane.bounds styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO] autorelease];
+        window->testVisible = YES;
         [window setReleasedWhenClosed:NO];
         [window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameAqua]];
         [window setContentView:pane]; [window display];
         NSBitmapImageRep *bitmap = [pane bitmapImageRepForCachingDisplayInRect:pane.bounds];
         [pane cacheDisplayInRect:pane.bounds toBitmapImageRep:bitmap];
         [[bitmap representationUsingType:NSPNGFileType properties:@{}] writeToFile:[NSString stringWithUTF8String:argv[3]] atomically:YES];
-        puts("PASS: general preferences default Chinese/Shift on, persistence, independent startup choice, action wiring, nonoverlapping layout");
+        [controller renderInputCoreStatus:@{@"supported": @YES, @"active": @"manjusri", @"requested": @YES, @"pending": @YES}];
+        [window display];
+        bitmap = [pane bitmapImageRepForCachingDisplayInRect:pane.bounds];
+        [pane cacheDisplayInRect:pane.bounds toBitmapImageRep:bitmap];
+        NSString *pendingPath = [[[NSString stringWithUTF8String:argv[3]] stringByDeletingPathExtension] stringByAppendingString:@"-pending.png"];
+        [[bitmap representationUsingType:NSPNGFileType properties:@{}] writeToFile:pendingPath atomically:YES];
+        // Exercise the real timer entry point with a synchronous service mock.
+        // No visible app or actual DO endpoint is needed for this lifecycle.
+        coreReply = @{@"supported": @YES, @"active": @"manjusri", @"requested": @YES, @"pending": @YES};
+        NSTimer *probe = [NSTimer timerWithTimeInterval:1 target:controller
+            selector:@selector(refreshInputCoreStatus:) userInfo:nil repeats:NO];
+        NSUInteger beforePoll = coreQueries;
+        for (NSUInteger i=0; i<100; ++i) [controller refreshInputCoreStatus:probe];
+        assert(coreQueries > beforePoll && coreQueries - beforePoll <= 30);
+        assert(![controller valueForKey:@"_inputCoreStatusTimer"]);
+        NSUInteger beforeFocus = coreQueries;
+        [controller refreshInputCoreStatus:[NSNotification notificationWithName:NSWindowDidBecomeKeyNotification object:window]];
+        assert(coreQueries == beforeFocus + 1 && [controller valueForKey:@"_inputCoreStatusTimer"]);
+        beforeFocus = coreQueries;
+        [controller refreshInputCoreStatus:[NSNotification notificationWithName:NSWindowDidBecomeKeyNotification object:nil]];
+        assert(coreQueries == beforeFocus);
+        [pane setHidden:YES];
+        [controller refreshInputCoreStatus:probe];
+        assert(coreQueries == beforeFocus && ![controller valueForKey:@"_inputCoreStatusTimer"]);
+        [pane setHidden:NO];
+        [controller refreshInputCoreStatus:[NSNotification notificationWithName:NSWindowDidBecomeKeyNotification object:window]];
+        assert([controller valueForKey:@"_inputCoreStatusTimer"]);
+        window->testVisible = NO;
+        beforePoll = coreQueries;
+        [controller refreshInputCoreStatus:probe];
+        assert(coreQueries == beforePoll && ![controller valueForKey:@"_inputCoreStatusTimer"]);
+        window->testVisible = YES;
+        [controller renderInputCoreStatus:@{@"supported": @NO, @"active": @"manjusri", @"requested": @YES, @"pending": @YES}];
+        assert(!core.enabled && ![controller valueForKey:@"_inputCoreStatusTimer"]);
+        coreReply = @{@"supported": @YES, @"active": @"manjusri", @"requested": @YES, @"pending": @YES};
+        [controller refreshInputCoreStatus:[NSNotification notificationWithName:NSWindowDidBecomeKeyNotification object:window]];
+        [controller setValue:@30 forKey:@"_inputCoreStatusPollCount"];
+        [core selectItemAtIndex:0]; [controller setInputCore:core];
+        assert([[controller valueForKey:@"_inputCoreStatusPollCount"] unsignedIntegerValue] == 0);
+        assert([controller valueForKey:@"_inputCoreStatusTimer"]);
+        [controller stopInputCoreService:[NSNotification notificationWithName:NSWindowWillCloseNotification object:window]];
+        assert(![controller valueForKey:@"_inputCoreStatusTimer"]);
+        puts("PASS: general preferences persistence, runtime core UI, isolated actions, bounded/hidden polling, focus refresh, localized layout");
     }
 }

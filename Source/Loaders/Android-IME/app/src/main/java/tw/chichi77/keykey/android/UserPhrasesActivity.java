@@ -23,17 +23,22 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-/** A local phrase editor backed by the same user table as macOS Manjusri. */
+/** A phrase editor permanently bound to the core selected when it was opened. */
 public final class UserPhrasesActivity extends Activity {
     private static final int IMPORT_PHRASES = 1;
     private static final int EXPORT_PHRASES = 2;
-    private SmartMandarinUserData userData;
+    static final String EXTRA_CORE = "input_core";
+    private static final String SAVED_CORE = "user_phrases.core";
+    private InputCore core;
+    private UserPhraseRepository userData;
     private LinearLayout phraseList;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        setTitle("好打注音自訂詞");
+        String captured = state == null ? getIntent().getStringExtra(EXTRA_CORE) : state.getString(SAVED_CORE);
+        core = captured == null ? InputCoreSettings.core(this) : InputCore.fromRaw(captured);
+        setTitle(core.displayName + " 自訂詞");
 
         ScrollView scroll = new ScrollView(this);
         scroll.setBackgroundColor(getColor(R.color.keykey_surface));
@@ -45,7 +50,7 @@ public final class UserPhrasesActivity extends Activity {
         setContentView(scroll);
 
         TextView heading = new TextView(this);
-        heading.setText("好打注音自訂詞");
+        heading.setText(core.displayName + " 自訂詞");
         heading.setTextSize(24);
         heading.setTextColor(getColor(R.color.keykey_blue_dark));
         content.addView(heading);
@@ -83,7 +88,8 @@ public final class UserPhrasesActivity extends Activity {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TITLE, "KeyKey-UserPhrases.mjsr");
+            intent.putExtra(Intent.EXTRA_TITLE, core == InputCore.JAVA
+                    ? "KeyKey-UserPhrases.mjsr" : "KeyKey-Guanyinma-UserPhrases.mjsr");
             startActivityForResult(intent, EXPORT_PHRASES);
         });
         fileActions.addView(exportButton, new LinearLayout.LayoutParams(0,
@@ -95,7 +101,7 @@ public final class UserPhrasesActivity extends Activity {
         content.addView(phraseList);
 
         try {
-            userData = SmartMandarinUserData.open(this);
+            userData = UserPhraseRepository.open(this, core);
             reload();
         } catch (RuntimeException error) {
             add.setEnabled(false);
@@ -110,7 +116,7 @@ public final class UserPhrasesActivity extends Activity {
     private void reload() {
         phraseList.removeAllViews();
         if (userData == null) return;
-        for (SmartMandarinUserData.Phrase phrase : userData.phrases()) {
+        for (UserPhraseRepository.Phrase phrase : userData.phrases()) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
@@ -130,7 +136,7 @@ public final class UserPhrasesActivity extends Activity {
         }
     }
 
-    private void edit(SmartMandarinUserData.Phrase phrase) {
+    private void edit(UserPhraseRepository.Phrase phrase) {
         if (userData == null) return;
         LinearLayout fields = new LinearLayout(this);
         fields.setOrientation(LinearLayout.VERTICAL);
@@ -167,7 +173,7 @@ public final class UserPhrasesActivity extends Activity {
         dialog.show();
     }
 
-    private void confirmDelete(SmartMandarinUserData.Phrase phrase) {
+    private void confirmDelete(UserPhraseRepository.Phrase phrase) {
         new AlertDialog.Builder(this)
                 .setTitle("刪除「" + phrase.text() + "」？")
                 .setNegativeButton("取消", null)
@@ -199,7 +205,7 @@ public final class UserPhrasesActivity extends Activity {
                     byte[] buffer = new byte[8192];
                     int count;
                     while ((count = input.read(buffer)) >= 0) bytes.write(buffer, 0, count);
-                    SmartMandarinUserData.ImportResult result = userData.importPhrases(
+                    UserPhraseRepository.ImportResult result = userData.importPhrases(
                             new String(bytes.toByteArray(), StandardCharsets.UTF_8));
                     reload();
                     Toast.makeText(this, "已匯入 " + result.imported() + " 筆，略過 "
@@ -217,6 +223,12 @@ public final class UserPhrasesActivity extends Activity {
             Toast.makeText(this, "詞庫匯入／匯出失敗：" + error.getMessage(),
                     Toast.LENGTH_LONG).show();
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        state.putString(SAVED_CORE, core.rawName);
+        super.onSaveInstanceState(state);
     }
 
     @Override

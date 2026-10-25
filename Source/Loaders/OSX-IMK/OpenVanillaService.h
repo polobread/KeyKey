@@ -6,6 +6,9 @@
 
 @protocol OpenVanillaService
 - (oneway void)reloadOpenVanilla;
+// One frontend and bundle; the server owns capability and the saved choice.
+- (bycopy NSDictionary *)inputCoreStatus;
+- (bycopy NSDictionary *)setUseGuanyinmaCore:(BOOL)enabled;
 - (oneway void)sendString:(NSString *)text;
 - (oneway void)sendKey:(NSString *)key;
 
@@ -43,6 +46,9 @@
 
 #pragma mark User phrase and phrase editor related
 
+- (bycopy NSDictionary *)userPhraseDBSnapshot;
+- (NSString *)userPhraseDBBackendIdentifier;
+- (BOOL)applyUserPhraseEdit:(bycopy NSDictionary *)edit expectedBackend:(NSString *)backend;
 - (BOOL)userPhraseDBCanProvideService;
 - (int)userPhraseDBNumberOfRow;
 - (NSDictionary *)userPhraseDBDictionaryAtRow:(int)row;

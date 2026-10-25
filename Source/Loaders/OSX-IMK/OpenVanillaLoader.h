@@ -3,6 +3,8 @@
 #import <Cocoa/Cocoa.h>
 #import <OpenVanilla/OpenVanilla.h>
 #import <PlainVanilla/PlainVanilla.h>
+#include <memory>
+class GuanyinmaCoreSelection;
 
 // temporarily so, will make into CareService.framework
 #include "Version.h"
@@ -35,6 +37,8 @@ class CVLoaderHookedServiceDelegate;
 	NSString *_databaseVersion;	
     
     OVSQLiteConnection* _userPhraseDB;
+    BOOL _guanyinmaRequested;
+    std::shared_ptr<GuanyinmaCoreSelection> _guanyinmaCoreSelection;
 	
 	OVLoaderUserPersistence* _userPersistence;
 	NSMutableArray *_mergedCannedMessagesArray;
@@ -64,6 +68,12 @@ class CVLoaderHookedServiceDelegate;
 - (bool)start:(NSArray*)loadPaths;
 - (void)shutDown;
 - (void)reload;
+- (NSDictionary *)inputCoreStatus;
+- (NSDictionary *)setUseGuanyinmaCore:(BOOL)enabled;
+- (void)preserveInputCoreForCandidateEvent:(OVCandidateService*)service;
+- (NSDictionary *)userPhraseDBSnapshot;
+- (NSString *)userPhraseDBBackendIdentifier;
+- (BOOL)applyUserPhraseEdit:(NSDictionary*)edit expectedBackend:(NSString*)backend;
 - (PVLoader*)loader;
 - (PVLoaderService*)loaderService;
 - (NSArray *)identifiersAndLocalizedNamesWithPattern:(NSString *)pattern;

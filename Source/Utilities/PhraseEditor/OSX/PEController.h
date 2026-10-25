@@ -28,6 +28,10 @@ static NSString *reloadToolbarItemIdentifier = @"Reload";
 - (NSDictionary *)userPhraseDBDictionaryAtRow:(int)row;
 - (NSArray *)userPhraseDBReadingsForPhrase:(NSString *)phrase;
 - (void)userPhraseDBSave;
+// New services guard every positional edit against the displayed backend.
+- (NSString *)userPhraseDBBackendIdentifier;
+- (bycopy NSDictionary *)userPhraseDBSnapshot;
+- (BOOL)applyUserPhraseEdit:(bycopy NSDictionary *)edit expectedBackend:(NSString *)backend;
 - (void)userPhraseDBSetNewReading:(NSString *)reading forPhraseAtRow:(int)row;
 - (void)userPhraseDBDeleteRow:(int)row;
 - (void)userPhraseDBAddNewRow:(NSString *)phrase;
@@ -61,6 +65,10 @@ static NSString *reloadToolbarItemIdentifier = @"Reload";
 	IBOutlet NSTextField *_progressTextField;
 
 	int _editingRow;
+    NSString *_displayedBackend;
+    NSArray *_displayedRows;
+    NSString *_editingBackend;
+    BOOL _reloadingData;
 }
 
 - (void)updateStatus;

@@ -6,7 +6,13 @@
 一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。**1.3.7** 已在 App Store 正式上線，一般使用者不需加入 TestFlight。以下是開發與測試資訊。
 
 琦琦輸入法的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
-容器 App。App 與鍵盤 extension 的原始碼版本由 Xcode project 的
+容器 App。兩個入口共用相同輸入介面，可在「輸入核心」選擇 **Swift（原核心）** 或
+**Guanyinma（Rust）**，預設維持 Swift；切換等組字、候選與舊宿主效果完成後生效。
+兩核心的自訂詞及學習分開，Guanyinma 不自動匯入 Swift 資料；App 設定與鍵盤自己的
+偏好沿用既有 App Group revision 規則。架構、資料路徑與建置責任見
+[Guanyinma iOS 接合](../../../docs/GUANYINMA_IOS_ADAPTER.md)。
+
+App 與鍵盤 extension 的原始碼版本由 Xcode project 的
 `MARKETING_VERSION` 統一設定，Simulator 封裝流程也從此讀取版號。
 首頁會從 container app bundle 的 `CFBundleShortVersionString` 顯示目前版本，避免畫面
 版號和 Xcode 的 `MARKETING_VERSION` 失同步。
@@ -64,7 +70,7 @@ App「輸入法設定」的「使用空白鍵選字」預設關閉，好打注�
 已寫入欄位的中文字不會因組字列消失而遺失。
 
 ```
-KeyKeyEngine/     Swift Package，純邏輯，可用 swift test 在 Mac 上驗
+KeyKeyEngine/     共用 Swift 介面、Swift 原核心與 Guanyinma C ABI adapter
 ContainerApp/     容器 App（安裝引導、實體鍵盤編輯器）
 Keyboard/         UIInputViewController extension
 KeyKeyiOS.xcodeproj
@@ -87,26 +93,37 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
+建置需要已安裝 `Source/Guanyinma/rust-toolchain.toml` 指定的 Rust toolchain 與對應 iOS
+target。Xcode 先建置共用 Rust 靜態庫再連結 App 與 extension；不執行完整核心測試。
+
 `KeyKey.db` 是版控內的共用建置輸入。Xcode Cloud 會自動執行
 `ci_scripts/ci_post_clone.sh` 驗證資料庫，並以 `CI_BUILD_NUMBER` 同步容器 App 與
 Keyboard extension 的 build number；本機建置維持專案內的預設 build number。
+Cloud 建置環境須事先提供 `rustup`；post-clone hook 只以既有工具準備指定 toolchain 與 iOS
+target，不下載或執行遠端 shell 安裝器。未預備該工具時會明確失敗；完整前置要求見
+[Guanyinma iOS 接合](../../../docs/GUANYINMA_IOS_ADAPTER.md)。
 
-引擎的測試不需要模擬器：
+少量 Swift 串接／設定測試不需要模擬器；從本目錄以 host wrapper 準備 Rust 靜態庫：
 
 ```sh
-cd KeyKeyEngine && swift test
+bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter InputCoreSettingsTests
+bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter GuanyinmaIntegrationTests
 ```
+
+完整 Rust／C ABI CI 驗證只在 `guanyinma-core.yml`；iOS workflow 直接編譯核心，保留少量
+FE 串接冒煙。Mac 上的 Swift 測試不代表真正 keyboard extension 宿主已驗收。
 
 容器 App 的購買流程測試也可在 Mac 執行；在本目錄執行：
 
 ```sh
-swift test --scratch-path /tmp/keykey-supporter-flow-tests
+KEYKEY_SWIFT_PACKAGE_PATH="$PWD" \
+  bash ../../Guanyinma/tools/test-ios-swift-package.sh --scratch-path /tmp/keykey-supporter-flow-tests
 ```
 
 測試直接編譯 `ContainerApp/SupporterStore.swift`，以替代的商店介面驗證商品載入失敗與
 重試、購買／恢復／載入互斥、取消與錯誤後解除忙碌，以及授權快取更新。
-此測試套件不加入 keyboard extension 或 `KeyKeyEngine`；仍須另用 Sandbox Apple ID
-驗證真實交易與 App Store Connect 商品設定。
+這些測試只驗證購買流程的 FE 契約，不啟動 keyboard extension，也不取代核心測試；仍須另用
+Sandbox Apple ID 驗證真實交易與 App Store Connect 商品設定。
 
 ### USB 真機安裝
 

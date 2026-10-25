@@ -5,9 +5,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -17,22 +15,6 @@ import java.util.Set;
 
 /** Lazy, read-only Viterbi walker over the same language model used by macOS and iOS. */
 final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
-    private static final String ASSET_NAME = "KeyKey.db";
-    // The shared-model verifier checks this fingerprint so an app upgrade
-    // cannot reuse a different model merely because its row count matches.
-    private static final String INSTALLED_NAME = "KeyKey-smart-8fc3aead36cefd16.db";
-    private static final String[] PREVIOUS_INSTALLED_NAMES = {
-            "KeyKey-smart-1ffa53b37c8293b7.db",
-            "KeyKey-smart-ce6c2b1248351223.db",
-            "KeyKey-smart-573f733b2affa857.db",
-            "KeyKey-smart-939baee5d956363f.db",
-            "KeyKey-smart-e8f034598d2e153e.db",
-            "KeyKey-smart-8f1cb45f51fb2c27.db",
-            "KeyKey-smart-28b18de318ac13ee.db",
-            "KeyKey-smart-885614.db", "KeyKey-smart-1.2.10.db",
-            "KeyKey-smart-reading-v2.db", "KeyKey-smart-reading-v3.db"
-    };
-    private static final long EXPECTED_BIGRAM_ROWS = 883_372;
     private static final int MAXIMUM_SPAN = 8;
 
     private record Unigram(String text, double probability, double backoff) {}
@@ -50,37 +32,9 @@ final class SmartMandarinStore implements SmartMandarinSource, AutoCloseable {
 
     static SmartMandarinStore open(Context context, SmartMandarinUserData userData)
             throws IOException {
-        File databaseFile = new File(context.getNoBackupFilesDir(), INSTALLED_NAME);
-        if (!databaseFile.isFile() || databaseFile.length() == 0) {
-            File temporary = new File(databaseFile.getParentFile(), INSTALLED_NAME + ".tmp");
-            try (InputStream input = context.getAssets().open(ASSET_NAME);
-                 FileOutputStream output = new FileOutputStream(temporary)) {
-                byte[] buffer = new byte[64 * 1024];
-                int count;
-                while ((count = input.read(buffer)) >= 0) output.write(buffer, 0, count);
-                output.getFD().sync();
-            } catch (IOException error) {
-                temporary.delete();
-                throw error;
-            }
-            if (!temporary.renameTo(databaseFile)) {
-                temporary.delete();
-                throw new IOException("Unable to install " + ASSET_NAME);
-            }
-        }
+        File databaseFile = SharedModelDatabase.install(context);
         SQLiteDatabase database = SQLiteDatabase.openDatabase(
                 databaseFile.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
-        try (Cursor cursor = database.rawQuery("SELECT COUNT(*) FROM bigrams", null)) {
-            if (!cursor.moveToFirst() || cursor.getLong(0) != EXPECTED_BIGRAM_ROWS) {
-                throw new IOException("The bundled Smart Mandarin database must have " + EXPECTED_BIGRAM_ROWS + " bigrams");
-            }
-        } catch (IOException | RuntimeException error) {
-            database.close();
-            throw error;
-        }
-        for (String previousName : PREVIOUS_INSTALLED_NAMES) {
-            new File(databaseFile.getParentFile(), previousName).delete();
-        }
         return new SmartMandarinStore(database, userData);
     }
 

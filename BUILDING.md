@@ -2,6 +2,10 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
+Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、C ABI 與四種輸入法的共用 session，包括好打注音組句與 FE 可設定的 10～20 音節邊界。
+其獨立建置／單元及 C consumer 驗證見 [Guanyinma README](Source/Guanyinma/README.md)，
+移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。iOS 預設建置同時包含 Swift 與 Guanyinma，使用者預設選 Swift；macOS 可用 `Takao-Guanyinma.xcconfig` 建置同一 FE 的雙核心 App，並在一般設定切換，見 [Guanyinma 開發接合](docs/GUANYINMA_MACOS_ADAPTER.md)。
+
 Linux 1.3.7 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。macOS 正式版為
 [1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7。
@@ -167,29 +171,30 @@ xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
   -configuration Release -xcconfig Takao-macOS.xcconfig build
 ```
 
-DatabaseCooker 會產生
-`Source/Distributions/Takao/CookedDatabase/KeyKey.db`，Xcode 再將它包進
-`chichi77 KeyKey.app`。建置時也會以 `DataSource/McBopomofo/phrase.occ`、
-`BPMFMappings.txt` 及注音字表產生好打注音的 unigram 語言模型；不需要 Yahoo 未釋出的
-中研院語料或舊的 `PhraseTool`／CEROD 工具。另以
-`DataSource/AISyntheticBigram/corpus-v1.txt`、`corpus-v2.txt`、`corpus-v3.txt`、
-試打回饋與去重後的 2,300 篇文章建立合成 bigram 與 backoff；語料每行
-一句，可使用空白標示詞界，也可交由 cooker 依現有 unigram 詞頻切詞。
-`DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv` 另以資料列補入中文數字與
-常用單位組合；阿拉伯數字開頭的詞組目前不走這條詞庫路徑。
+此處 `make` 只驗證儲存庫已提供的正式共用
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`；Xcode 驗證後複製同一份
+DB 到 `chichi77 KeyKey.app`。平台建置不得自行 cooker、重新建模或累加補償。
+模型來源、正式資料更新及固定驗證流程見
+[共用詞庫維護流程](docs/KEYKEY_DATABASE_WORKFLOW.md)。
 
 目前 macOS build 僅支援 arm64。若要製作 universal binary，需要另行準備
 x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 
 ### 分類關聯詞詞庫
 
-`DataSource/chichi77Collection` 已納入公開 repository，macOS DatabaseCooker 會固定
-把其中 29 份 TSV 寫入 `KeyKey.db`，不需私人 checkout、symlink 或 secret。這些資料
-由自動化方式生成、推論與整理，沒有逐筆人工校正，也不保證正確性或完整性。
+分類來源放在 `DataSource/chichi77Collection`，由共用詞庫維護流程統一建置及
+驗證後納入正式 DB；macOS 建置直接使用該成品，不在平台封裝時重新匯入來源。
+這些資料包含自動化生成、推論與整理內容，沒有逐筆人工校正，也不保證正確性或完整性。
 
 ### 安裝包
 
-安裝包的建置、本機安裝、簽署及 notarization 說明見
+安裝包使用 `Installer/build.sh APP_PATH`，由 `pkgbuild`／`productbuild` 產生
+`chichi77KeyKey.pkg` 及其 `.pkg.zip`，不是單純壓縮 App。雙核心版本將上面
+建置命令的 xcconfig 換成 `Takao-Guanyinma.xcconfig`，再把該 App 明確傳給同一
+封裝入口；兩個核心維持在同一個 FE／App 中。
+
+本機建置會對 staged App／helper 做 ad hoc 簽章；Developer ID 簽章與
+notarization 屬正式發布步驟。完整建置、本機安裝及簽署流程見
 [Installer/README.md](Installer/README.md)。
 
 ## Windows 10 與 11
@@ -320,6 +325,8 @@ Windows Ed25519 也在本機使用 keykey-update-private.pem；禁止提交、�
 
 ## Android
 
+Android 同一 FE 內建 Java 與 Guanyinma 雙核心，預設使用 Java。建置需要固定 Rust 工具鏈、完整 JDK（含 JNI headers）、NDK 及 CMake；版本與四個 ABI 對照見 [Android 接合文件](docs/GUANYINMA_ANDROID_ADAPTER.md)。Gradle 只編譯 Rust，平台 workflow 只執行少量 JNI／FE 串接；完整核心測試留在 `guanyinma-core.yml`。
+
 ### 需求與建置
 
 - Android Studio
@@ -346,8 +353,9 @@ Debug APK 位於
 ### 需求、建置與測試
 
 - macOS 與 Xcode
-- 可用的 iOS Simulator runtime
-- GNU Make、Ruby 與 `sqlite3`，用於既有 DatabaseCooker
+- iOS SDK；執行選用宿主／UI 測試時另備 Simulator runtime
+- 固定 Rust 工具鏈與 iOS targets，見 [iOS 雙核心接合](docs/GUANYINMA_IOS_ADAPTER.md)
+- GNU Make、Ruby 與 `sqlite3`，用於既有共用資料庫驗證入口
 
 從 repository 根目錄執行：
 
@@ -355,18 +363,17 @@ Debug APK 位於
 make -C Source/Distributions/Takao/DatabaseCooker
 xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
   -scheme "chichi77 KeyKey" -configuration Debug \
-  -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
+  -destination 'generic/platform=iOS Simulator' \
   CODE_SIGNING_ALLOWED=NO build
 
-cd Source/Loaders/iOS-Keyboard/KeyKeyEngine
-swift test
+bash Source/Guanyinma/tools/test-ios-swift-package.sh
 ```
 
-`KeyKey.db` 是建置輸入但不進版控；Xcode Cloud 會由
-`Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` 自動 cook。五台受控 Simulator
-與完整 A–K 驗證方式見
-[iOS Simulator 測試計畫](docs/IOS_SIMULATOR_TEST_PLAN.md)；可先從
-repository 根目錄執行可無人值守的宿主基線：
+`KeyKey.db` 是版控內共用建置輸入；Xcode Cloud 的
+`Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` 驗證及複製前置條件，不 cooker。
+Cloud 主機需預裝 `rustup`；hook 準備固定工具鏈及 iOS targets，不執行核心全套測試。
+下列宿主自動化及 [iOS Simulator 測試計畫](docs/IOS_SIMULATOR_TEST_PLAN.md) 屬 FE 的選用驗證，
+按接合修改挑選，與核心 CI 分開：
 
 ```sh
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
@@ -784,24 +791,25 @@ details.
 
 ### iOS
 
-Requirements are macOS, Xcode, an installed iOS Simulator runtime, and the
-existing DatabaseCooker dependencies (GNU Make, Ruby, and `sqlite3`). From the
-repository root, run:
+Requirements are macOS, Xcode with the iOS SDK, the pinned Rust toolchain and
+iOS targets described in the [iOS adapter guide](docs/GUANYINMA_IOS_ADAPTER.md),
+and the existing shared-database verification tools. A simulator runtime is
+needed only for optional host/UI execution. From the repository root, run:
 
 ```sh
 make -C Source/Distributions/Takao/DatabaseCooker
 xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
   -scheme "chichi77 KeyKey" -configuration Debug \
-  -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
+  -destination 'generic/platform=iOS Simulator' \
   CODE_SIGNING_ALLOWED=NO build
 
-cd Source/Loaders/iOS-Keyboard/KeyKeyEngine
-swift test
+bash Source/Guanyinma/tools/test-ios-swift-package.sh
 ```
 
-`KeyKey.db` is a generated build input and is not committed. Xcode Cloud cooks
-it through `Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh`. Run the
-unattended host baseline from the repository root with:
+`KeyKey.db` is the committed shared build input. Xcode Cloud verifies it through
+`Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` without cooking it.
+Cloud hosts must already provide `rustup`; the hook prepares the pinned toolchain
+and targets. Optional frontend host automation remains separate from core CI:
 
 ```sh
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only

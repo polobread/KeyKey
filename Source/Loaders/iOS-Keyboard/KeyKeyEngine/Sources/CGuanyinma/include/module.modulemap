@@ -1,0 +1,4 @@
+module CGuanyinma {
+    header "CGuanyinma.h"
+    export *
+}

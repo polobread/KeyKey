@@ -85,7 +85,7 @@ bash update/test-macos.sh
 python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py
 
 # iOS 引擎
-(cd Source/Loaders/iOS-Keyboard/KeyKeyEngine && swift test)
+bash Source/Guanyinma/tools/test-ios-swift-package.sh
 
 # Android
 (cd Source/Loaders/Android-IME && ./gradlew lintDebug testDebugUnitTest assembleDebug)
@@ -129,6 +129,23 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 - 只有明確進入發布驗收才跑 Windows 完整矩陣；不為了結束一次開發修改就打包／安裝。
   共用引擎或模型變更仍按前述跨平台／模型規則驗證。各類命令與必要擴充條件見
   [Windows 開發型態與測試](Source/Loaders/Windows-TSF/README.md#windows-日常開發型態與測試)。
+
+## Guanyinma 核心與 Rust 遷移行為基準
+
+- **核心測試範圍**：Guanyinma 核心專注無 UI 的公開介面與行為契約測試，以 Rust unit／整合、真實 C consumer 與無 UI 的原生對照，涵蓋四法、候選排序、選字學習、組字邊界、設定／語意操作、快照／effects、字型接受回呼及資料生命週期。核心在各支援平台編譯時都要有足夠的無 UI 測試可執行；交叉編譯成功只算編譯，必須在相應原生 runner／無視窗模擬器執行才算測試通過。
+- **六平台 FE 分工**：各平台另測設定與事件映射、座標／宿主交易、原生字型／儲存接合；不要在每個 FE 重跑整套核心演算法矩陣。UI 僅保留少量（數十個）的自動化冒煙案例，於該 FE 接合或修改時執行。核心工作不以大量 FE／實機端到端驗收作完成門檻，不操作使用者桌面或反覆切換其系統輸入法，也不要求使用者逐項代打測試；完整 FE／安裝驗收另行處理。
+
+- 產品全名為 **chichi77 KeyKey／琦琦輸入法**，英文簡稱 **KeyKey**。**Guanyinma** 是新的 Rust 共用核心代號，目標取代 macOS／Windows 的 Manjusri，以及 iOS、Android、Linux／FreeBSD 的既有核心；各平台原生 frontend 接上新核心。Guanyinma 屬於 KeyKey 的核心模組，目錄固定為 `Source/Guanyinma`；局部 Rust／C ABI 驗證見該目錄 README，分階段範圍見 `docs/GUANYINMA_IMPLEMENTATION_PLAN.md`。
+
+- 核心演算法疑義以 macOS Manjusri／Formosa／OpenVanilla 為主要來源；其他平台既有核心與六平台 frontend 作接合及差異參考。核心按互動行為與狀態分類，不新增 OS 專屬演算法分支。平台預設值、實體事件辨識與宿主操作留在 frontend。
+- Guanyinma 已提供四種輸入法的共用 session；好打注音組句、候選排序、選詞及整詞擠字以 macOS Manjusri 為準。組字音節上限由 FE 設定 **10～20**，到達或超過上限才擠字由 `shift_at_limit` 行為設定；使用者詞庫及學習使用獨立 Guanyinma DB，按 FE 行為設定啟用；reset 保留自訂詞，舊資料只明確唯讀異檔匯入，不覆寫唯一副本。macOS 已有同一 FE 的雙核心開發建置與一般設定開關，預設選 Manjusri；context proxy 在組字、候選與待送 commit 完成後才切換，不重播事件。使用者資料按實際核心分開，過期 backend token 的詞庫列編輯必須拒絕。建置與原生隔離測試見 `docs/GUANYINMA_MACOS_ADAPTER.md`；IMK 宿主與其他 frontend 接合仍待完成。macOS 可匯入舊 MJSR 並輸出完整 Guanyinma JSON 備份；容器解碼留在 FE，共用 `UserArchive`／`import_user_data` 先驗證再原子提交，備份不匯入 generation／revision，不覆蓋唯一舊副本。`behaviors` 可開關忽略 Caps Lock 與數字鍵盤直接送字；主鍵盤不能因全域 NumLock 被誤判。單按 Shift 沿用 frontend 判定，再送共用中英切換操作。普通 Rust unit／整合／C ABI 測試驗證實作契約，不讀取遷移基準。
+- 快捷鍵辨識及綁定留在 FE；核心提供 `set_full_width(enabled: true/false)`／`toggle_full_width` 與 `set_english(enabled: true/false)`／`toggle_english` 等語意操作。同值 setter 冪等，核心不綁 Shift+Space 或角括號翻頁。macOS 設定／事件覆蓋見 `docs/GUANYINMA_MACOS_BEHAVIOR_COVERAGE.md`；真正 TIS／IMK 宿主與隔離還原流程見 `docs/GUANYINMA_MACOS_IMK_HOST_TEST.md`，不能用 unit 或 mock client 代替。
+- 六平台候選可顯示性由 FE 經 `CandidateFilter`／`guanyinma_session_open_with_candidate_filter` 提供；四種輸入法在候選、前綴上限、分頁與好打 graph 之前過濾，不在 UI 另刪候選。macOS 沿用既有字型／編碼服務，iOS 接上原生 CoreText 判斷，Android 接上原生 Paint 字型判斷；其餘原生 Guanyinma 接合仍待完成。政策固定於 session，變更時在安全邊界重新建立；不寫入使用者備份。
+- **iOS 雙核心**：鍵盤 extension 與 App 實體鍵盤編輯器共用 `DualCoreInputEngine`，預設 Swift，可選 Guanyinma；組字／候選及前次 host effects 完成後才切換。兩核心自訂詞與學習分開；App Group 的 Guanyinma 詞庫只由 App 發布、extension 唯讀同步至私有 Rust DB，維持不要求完整取用。接合與建置入口見 `docs/GUANYINMA_IOS_ADAPTER.md`；host smoke、iOS 編譯與真正宿主驗證分開記錄。
+- **Android 雙核心**：同一個 IME service／FE 可選 Java 原核心或 Guanyinma，預設 Java；觸控與實體雙排用 touch 行為，一般實體鍵盤用 desktop 行為。只有原 `InputConnection` 接受本次宿主效果後才 acknowledge，無宿主／拒絕操作不重播，於真正新宿主邊界明確 abandon。兩核心資料分別為 `UserPhrase.db` 與 `GuanyinmaUser.db`，App／IME 在同沙箱共用該核心資料；詞庫頁固定開啟時的核心。JNI 使用標準 UTF-8、明確所有權及原生字型 callback，Android 使用私有 bundled SQLite，不連結平台私有 SQLite。建置及少量 host JNI smoke 見 `docs/GUANYINMA_ANDROID_ADAPTER.md`；不得把 host JNI 或交叉編譯稱為 Android runtime／實機驗收。
+- **核心 CI 權責與增量方式**：完整 Guanyinma Rust unit／整合、C ABI 與跨平台核心矩陣，在 CI 中統一由 `.github/workflows/guanyinma-core.yml` 負責。其他平台 workflow 直接依鎖定工具鏈與 `Cargo.lock` 編譯、連結並使用核心，只跑少量 FE 串接冒煙（載入／建立 session、設定或事件映射、一次送字及釋放），不重跑完整核心測試，也不轉呼叫完整核心 workflow。新增接合採小幅增量，保留既有平台建置、封裝與發布 workflow 的結構；本機核心開發仍可使用獨立測試入口。
+- `tests/run_core_functional.py` 與 `tests/fixtures/core-functional/` 僅供 Rust 重寫／升級時手動擷取和比較現有行為；不得加入日常驗證、預設 CTest、CI gate 或發布驗收。一般測試維持既有入口。
+- 基準分別保存各核心的四種輸入法、完整候選順序與選字學習；既有平台差異及已觀察到的不穩定排序也保留，不將其自動統一成新產品規則。重新擷取不得自動覆寫，須明確指定並審查差異。使用方式及邊界見 `docs/CROSS_PLATFORM_CORE_FUNCTIONAL_TESTS.md`。
 
 ## 改版號清單
 

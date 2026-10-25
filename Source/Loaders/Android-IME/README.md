@@ -7,6 +7,11 @@ Google Play 最新正式版為 **1.3.7**，一般使用者可直接安裝，不�
 
 一般使用者請先看[Android 手機、平板安裝與使用指南](../../../ANDROID_INSTALL.md)；本頁包含開發、建置與實作細節。
 
+原始碼提供同一套 FE 的「Java（原核心）／Guanyinma（Rust）」雙核心選單，預設維持
+Java。切換等組字、候選與原宿主效果完成後生效；兩核心的自訂詞與學習分開，不自動
+匯入 Java 資料。架構、三種互動 profile、JNI、資料路徑與驗證責任見
+[Guanyinma Android 接合](../../../docs/GUANYINMA_ANDROID_ADAPTER.md)。
+
 Android 原生繁體中文注音輸入法，使用 KeyKey 共用的
 `Source/DataTables/bpmf-ext.cin` 字表。建置時會自動把字表與關聯詞詞庫加入 APK，
 不需要手動複製。
@@ -256,7 +261,8 @@ Workflow 依序執行 release lint、單元測試、AAB 建置、簽章與共用
 
 ## 建置
 
-需求：Android Studio、JDK 17 以上、Android SDK 36.1／Build Tools 36.0.0、Python 3，以及版控內預先產生的
+需求：Android Studio、JDK 17 以上、Android SDK 36.1／Build Tools 36.0.0、Python 3.11 以上、
+NDK 27.2.12479018、CMake 3.22.1，以及版控指定的 Rust toolchain／四個 Android targets，另需版控內預先產生的
 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`。從 repo 根目錄可先驗證共用檔：
 
 ```sh
@@ -268,6 +274,16 @@ python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
 cd Source\Loaders\Android-IME
 .\gradlew.bat test assembleDebug
 ```
+
+Gradle 直接建置 Rust 靜態庫與 JNI SO，不執行完整核心測試。少量真 host JNI／資料串接檢查可用：
+
+```sh
+./gradlew testDebugUnitTest --tests '*GuanyinmaIntegrationTest' \
+  --tests '*GuanyinmaUserDataTest' --tests '*UserPhraseArchiveTest'
+```
+
+JVM tests 自動準備主機架構的真 JNI library；Windows 另需 MSVC C++ 開發環境。完整 Rust／C ABI
+矩陣只在 `guanyinma-core.yml`。host JNI tests 與 APK 編譯不代表 Android runtime 或 IME 宿主已驗收。
 
 基本小麥注音詞庫取自 `DataSource/McBopomofo/phrase.occ`，另會固定加入
 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會把共用 CIN 與這些文字詞庫

@@ -6,6 +6,20 @@
 	objectVersion = 60;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		C77000000000000000000070 /* Guanyinma Core */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = C77000000000000000000071 /* Build configuration list for PBXAggregateTarget "Guanyinma Core" */;
+			buildPhases = (
+				C77000000000000000000074 /* Build Guanyinma static library */,
+			);
+			dependencies = (
+			);
+			name = "Guanyinma Core";
+			productName = "Guanyinma Core";
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		C77000000000000000000061 /* KeyKeyEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C77000000000000000000062 /* KeyKeyEngine */; };
 		C77000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000002 /* AppDelegate.swift */; };
@@ -43,6 +57,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = C7700000000000000000001A;
 			remoteInfo = "chichi77 KeyKey";
+		};
+		C77000000000000000000075 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C77000000000000000000022 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C77000000000000000000070;
+			remoteInfo = "Guanyinma Core";
+		};
+		C77000000000000000000077 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C77000000000000000000022 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C77000000000000000000070;
+			remoteInfo = "Guanyinma Core";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -198,6 +226,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C77000000000000000000076 /* PBXTargetDependency */,
 				C7700000000000000000001D /* PBXTargetDependency */,
 			);
 			name = "chichi77 KeyKey";
@@ -219,6 +248,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C77000000000000000000078 /* PBXTargetDependency */,
 			);
 			name = Keyboard;
 			packageProductDependencies = (
@@ -297,6 +327,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				C77000000000000000000070 /* Guanyinma Core */,
 				C7700000000000000000001A /* chichi77 KeyKey */,
 				C7700000000000000000001E /* Keyboard */,
 				C77000000000000000000048 /* KeyKeyUITests */,
@@ -332,6 +363,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C77000000000000000000074 /* Build Guanyinma static library */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build Guanyinma static library";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/libguanyinma.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "bash \"$SRCROOT/../../Guanyinma/tools/build-ios-core.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		C7700000000000000000001C /* Sources */ = {
@@ -379,6 +429,16 @@
 			target = C7700000000000000000001A /* chichi77 KeyKey */;
 			targetProxy = C7700000000000000000004C /* PBXContainerItemProxy */;
 		};
+		C77000000000000000000076 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C77000000000000000000070 /* Guanyinma Core */;
+			targetProxy = C77000000000000000000075 /* PBXContainerItemProxy */;
+		};
+		C77000000000000000000078 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C77000000000000000000070 /* Guanyinma Core */;
+			targetProxy = C77000000000000000000077 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -391,6 +451,8 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LIBRARY_SEARCH_PATHS = ("$(inherited)", "$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)", );
+				OTHER_LDFLAGS = ("$(inherited)", "-lguanyinma", );
 				MARKETING_VERSION = 1.3.8;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -442,6 +504,8 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LIBRARY_SEARCH_PATHS = ("$(inherited)", "$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)", );
+				OTHER_LDFLAGS = ("$(inherited)", "-lguanyinma", );
 				MARKETING_VERSION = 1.3.8;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
@@ -507,6 +571,22 @@
 			};
 			name = Release;
 		};
+		C77000000000000000000072 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		C77000000000000000000073 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -542,6 +622,15 @@
 			buildConfigurations = (
 				C7700000000000000000004A /* Debug */,
 				C7700000000000000000004B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C77000000000000000000071 /* Build configuration list for PBXAggregateTarget "Guanyinma Core" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C77000000000000000000072 /* Debug */,
+				C77000000000000000000073 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -131,6 +131,23 @@ if(KEYKEY_ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     )
 endif()
 
+# Explicitly enabled only when capturing/comparing a Rust migration baseline.
+# It is excluded from normal builds and intentionally not registered with CTest.
+option(KEYKEY_BUILD_MIGRATION_BASELINE
+    "Build the manual Rust core migration baseline recorder" OFF)
+if(KEYKEY_BUILD_MIGRATION_BASELINE)
+    add_executable(keykey_unix_migration_baseline EXCLUDE_FROM_ALL
+        tests/shared_core_functional.cpp)
+    target_compile_features(keykey_unix_migration_baseline PRIVATE cxx_std_17)
+    target_link_libraries(keykey_unix_migration_baseline PRIVATE keykey_linux_engine)
+    add_dependencies(keykey_unix_migration_baseline keykey_linux_smart_db)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(keykey_unix_migration_baseline PRIVATE
+            -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion
+        )
+    endif()
+endif()
+
 if(BUILD_TESTING)
     add_executable(keykey_linux_engine_tests tests/engine_tests.cpp)
     target_compile_features(keykey_linux_engine_tests PRIVATE cxx_std_17)

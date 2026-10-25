@@ -22,6 +22,9 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		77AA13800000000000000009 /* GuanyinmaMacCoreSelection.mm in Sources */ = {isa = PBXBuildFile; fileRef = 77AA1380000000000000000A /* GuanyinmaMacCoreSelection.mm */; };
+		77AA13800000000000000005 /* GuanyinmaMacArchive.mm in Sources */ = {isa = PBXBuildFile; fileRef = 77AA13800000000000000006 /* GuanyinmaMacArchive.mm */; };
+		77AA13800000000000000001 /* GuanyinmaMacAdapter.mm in Sources */ = {isa = PBXBuildFile; fileRef = 77AA13800000000000000002 /* GuanyinmaMacAdapter.mm */; };
 		C5A740A32022467F812DAEC4 /* CVDictionaryWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 69F1EA2EB1394E0490A5270D /* CVDictionaryWindow.m */; };
 		77AA13200000000000000002 /* KeyKeyMacUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = 77AA13200000000000000003 /* KeyKeyMacUpdater.m */; };
 		6A0138F50ED1D47900715577 /* YKAFWordCount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A0138F20ED1D47900715577 /* YKAFWordCount.cpp */; };
@@ -1235,6 +1238,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		77AA1380000000000000000A /* GuanyinmaMacCoreSelection.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = GuanyinmaMacCoreSelection.mm; path = "Loaders/OSX-IMK/GuanyinmaMacCoreSelection.mm"; sourceTree = "<group>"; };
+		77AA1380000000000000000B /* GuanyinmaMacCoreSelection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = GuanyinmaMacCoreSelection.h; path = "Loaders/OSX-IMK/GuanyinmaMacCoreSelection.h"; sourceTree = "<group>"; };
+		77AA13800000000000000006 /* GuanyinmaMacArchive.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = GuanyinmaMacArchive.mm; path = "Loaders/OSX-IMK/GuanyinmaMacArchive.mm"; sourceTree = "<group>"; };
+		77AA13800000000000000007 /* GuanyinmaMacArchive.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = GuanyinmaMacArchive.h; path = "Loaders/OSX-IMK/GuanyinmaMacArchive.h"; sourceTree = "<group>"; };
+		77AA13800000000000000008 /* GuanyinmaMacUserData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = GuanyinmaMacUserData.h; path = "Loaders/OSX-IMK/GuanyinmaMacUserData.h"; sourceTree = "<group>"; };
+		77AA13800000000000000002 /* GuanyinmaMacAdapter.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = GuanyinmaMacAdapter.mm; path = "Loaders/OSX-IMK/GuanyinmaMacAdapter.mm"; sourceTree = "<group>"; };
+		77AA13800000000000000003 /* GuanyinmaMacAdapter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = GuanyinmaMacAdapter.h; path = "Loaders/OSX-IMK/GuanyinmaMacAdapter.h"; sourceTree = "<group>"; };
 		69F1EA2EB1394E0490A5270D /* CVDictionaryWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = CVDictionaryWindow.m; path = "Loaders/OSX-IMK/CVDictionaryWindow.m"; sourceTree = "<group>"; };
 		8DC566455D9940EAB18ACA91 /* CVDictionaryWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CVDictionaryWindow.h; path = "Loaders/OSX-IMK/CVDictionaryWindow.h"; sourceTree = "<group>"; };
 		77AA13200000000000000003 /* KeyKeyMacUpdater.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "Loaders/OSX-IMK/KeyKeyMacUpdater.m"; sourceTree = "<group>"; };
@@ -2962,6 +2972,13 @@
 				6A4772DD0D5C607200C6C744 /* CVApplicationController.mm */,
 				77AA13200000000000000003 /* KeyKeyMacUpdater.m */,
 				77AA13200000000000000004 /* KeyKeyMacUpdater.h */,
+				77AA13800000000000000002 /* GuanyinmaMacAdapter.mm */,
+				77AA13800000000000000003 /* GuanyinmaMacAdapter.h */,
+				77AA13800000000000000006 /* GuanyinmaMacArchive.mm */,
+				77AA13800000000000000007 /* GuanyinmaMacArchive.h */,
+				77AA13800000000000000008 /* GuanyinmaMacUserData.h */,
+				77AA1380000000000000000A /* GuanyinmaMacCoreSelection.mm */,
+				77AA1380000000000000000B /* GuanyinmaMacCoreSelection.h */,
 				6A4772E60D5C607200C6C744 /* CVEncodingService.h */,
 				6A4772E70D5C607200C6C744 /* CVEncodingService.mm */,
 				6A4772FF0D5C607200C6C744 /* OpenVanillaConfig.h */,
@@ -3907,6 +3924,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6A47729A0D5C5FCF00C6C744 /* Build configuration list for PBXNativeTarget "Takao (Loader OSX-IMK)" */;
 			buildPhases = (
+				77AA13800000000000000004 /* Build Guanyinma core (opt-in) */,
 				6A47735F0D5C60F100C6C744 /* CopyFiles */,
 				6AEBD04E0D5D811700ABF19D /* Headers */,
 				6A47728F0D5C5FCE00C6C744 /* Resources */,
@@ -4673,6 +4691,28 @@
 /* End PBXRezBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		77AA13800000000000000004 /* Build Guanyinma core (opt-in) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = (
+				"$(SRCROOT)/Guanyinma/tools/build-macos-core.sh",
+				"$(SRCROOT)/Guanyinma/Cargo.toml",
+				"$(SRCROOT)/Guanyinma/Cargo.lock",
+				"$(SRCROOT)/Guanyinma/rust-toolchain.toml",
+				"$(SRCROOT)/Guanyinma/build.rs",
+				"$(SRCROOT)/Guanyinma/src",
+				"$(SRCROOT)/Shared/CangjieRankingData.h",
+				"$(SRCROOT)/Shared/CangjieUnicodeData.h",
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Guanyinma/libguanyinma.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\"$SRCROOT/Guanyinma/tools/build-macos-core.sh\"";
+		};
 		77AA13200000000000000001 /* Embed desktop updater */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -4843,6 +4883,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				77AA13800000000000000001 /* GuanyinmaMacAdapter.mm in Sources */,
+				77AA13800000000000000005 /* GuanyinmaMacArchive.mm in Sources */,
+				77AA13800000000000000009 /* GuanyinmaMacCoreSelection.mm in Sources */,
 				D4AC5AC00E195E8D00B6AB22 /* NSStringExtension.mm in Sources */,
 				6A4773060D5C607200C6C744 /* CVApplicationController.mm in Sources */,
 				77AA13200000000000000002 /* KeyKeyMacUpdater.m in Sources */,
@@ -6289,6 +6332,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					"KEYKEY_ENABLE_GUANYINMA=$(KEYKEY_ENABLE_GUANYINMA)",
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
 					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"chichi77Service\\\"",
 					"OPENVANILLA_CONNECTION_NAME=@\\\"chichi77_1_Connection\\\"",
@@ -6297,6 +6341,7 @@
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
 				);
+				KEYKEY_ENABLE_GUANYINMA = 0;
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -6304,6 +6349,7 @@
 				);
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				OTHER_LDFLAGS = (
+					"$(KEYKEY_GUANYINMA_LDFLAGS_$(KEYKEY_ENABLE_GUANYINMA))",
 					"-framework",
 					Foundation,
 					"-framework",
@@ -6333,6 +6379,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					"KEYKEY_ENABLE_GUANYINMA=$(KEYKEY_ENABLE_GUANYINMA)",
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
 					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"chichi77Service\\\"",
 					"OPENVANILLA_CONNECTION_NAME=@\\\"chichi77_1_Connection\\\"",
@@ -6341,6 +6388,7 @@
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
 				);
+				KEYKEY_ENABLE_GUANYINMA = 0;
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -6348,6 +6396,7 @@
 				);
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				OTHER_LDFLAGS = (
+					"$(KEYKEY_GUANYINMA_LDFLAGS_$(KEYKEY_ENABLE_GUANYINMA))",
 					"-framework",
 					Foundation,
 					"-framework",
@@ -6571,6 +6620,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					"KEYKEY_ENABLE_GUANYINMA=$(KEYKEY_ENABLE_GUANYINMA)",
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
 					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"chichi77Service\\\"",
 					"OPENVANILLA_CONNECTION_NAME=@\\\"chichi77_1_Connection\\\"",
@@ -6579,6 +6629,7 @@
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
 				);
+				KEYKEY_ENABLE_GUANYINMA = 0;
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -6586,6 +6637,7 @@
 				);
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				OTHER_LDFLAGS = (
+					"$(KEYKEY_GUANYINMA_LDFLAGS_$(KEYKEY_ENABLE_GUANYINMA))",
 					"-framework",
 					Foundation,
 					"-framework",
@@ -8060,6 +8112,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					"KEYKEY_ENABLE_GUANYINMA=$(KEYKEY_ENABLE_GUANYINMA)",
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
 					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"chichi77Service\\\"",
 					"OPENVANILLA_CONNECTION_NAME=@\\\"chichi77_1_Connection\\\"",
@@ -8068,6 +8121,7 @@
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
 				);
+				KEYKEY_ENABLE_GUANYINMA = 0;
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -8075,6 +8129,7 @@
 				);
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				OTHER_LDFLAGS = (
+					"$(KEYKEY_GUANYINMA_LDFLAGS_$(KEYKEY_ENABLE_GUANYINMA))",
 					"-framework",
 					Foundation,
 					"-framework",
@@ -8909,6 +8964,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/AppKit.framework/Headers/AppKit.h";
 				GCC_PREPROCESSOR_DEFINITIONS = (
+					"KEYKEY_ENABLE_GUANYINMA=$(KEYKEY_ENABLE_GUANYINMA)",
 					"OPENVANILLA_LOADER_COMPONENT_NAME=\\\"Takao-OSX-Leopard\\\"",
 					"OPENVANILLA_DO_CONNECTION_NAME=@\\\"chichi77Service\\\"",
 					"OPENVANILLA_CONNECTION_NAME=@\\\"chichi77_1_Connection\\\"",
@@ -8917,6 +8973,7 @@
 					OV_USE_SQLITE,
 					"OPENVANILLA_DATABASE_COMPONENT_NAME=\\\"Takao-OSX-Database\\\"",
 				);
+				KEYKEY_ENABLE_GUANYINMA = 0;
 				INFOPLIST_FILE = "Loaders/OSX-IMK/Takao-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -8924,6 +8981,7 @@
 				);
 				OTHER_CFLAGS = "-fvisibility=hidden";
 				OTHER_LDFLAGS = (
+					"$(KEYKEY_GUANYINMA_LDFLAGS_$(KEYKEY_ENABLE_GUANYINMA))",
 					"-framework",
 					Foundation,
 					"-framework",
