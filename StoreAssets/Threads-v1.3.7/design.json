@@ -1,0 +1,204 @@
+{
+  "version": "1.3.7",
+  "canvas": [
+    1080,
+    1350
+  ],
+  "colors": {
+    "ink": "#132B50",
+    "blue": "#1764F5",
+    "muted": "#576C8B",
+    "line": "#DCE7F5",
+    "warm": "#FFB66D",
+    "pale": "#EAF2FF"
+  },
+  "copy": {
+    "cover_title": "琦琦輸入法",
+    "cover_subtitle": [
+      "熟悉的中文輸入，",
+      "走到六大平台"
+    ],
+    "cover_footer": "延續 ㄅ半注音／奇摩輸入法的熟悉手感",
+    "feature_title": "整句順著打，想改字再選",
+    "smart_title": "好打注音（智慧注音）",
+    "smart_description": "連續組句、上下文選字、句中改字",
+    "cangjie_title": "倉頡輸入法",
+    "cangjie_description": "字根還沒打完，也能提前選字",
+    "cangjie_example": "竹大 → 喬",
+    "cangjie_note": "倉頡提前選字依平台設定啟用",
+    "mobile_title": [
+      "從電腦到手機，",
+      "熟悉的手感繼續用"
+    ],
+    "freebsd_note": "FreeBSD 可透過 ports / pkg 安裝"
+  },
+  "platforms": [
+    {
+      "name": "macOS",
+      "icon": "mac"
+    },
+    {
+      "name": "Windows",
+      "icon": "windows"
+    },
+    {
+      "name": "Linux",
+      "icon": "ubuntu"
+    },
+    {
+      "name": "FreeBSD",
+      "icon": "terminal"
+    },
+    {
+      "name": "iPhone / iPad",
+      "icon": "mobile"
+    },
+    {
+      "name": "Android",
+      "icon": "android"
+    }
+  ],
+  "sources": {
+    "icon": {
+      "path": "StoreAssets/GooglePlay/app-icon-512.png",
+      "credit": "專案原始 App Icon；白底黑字琦"
+    },
+    "mac_smart": {
+      "path": "docs/images/keykey-macos-v137-mac07-middle-candidate-apple-silicon.png",
+      "credit": "macOS 實機・1.3.7・局部",
+      "crop": [
+        0,
+        96,
+        450,
+        280
+      ]
+    },
+    "android_cangjie": {
+      "path": "docs/images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator-detail.png",
+      "credit": "Android 官方模擬器・1.3.7・局部",
+      "crop": [
+        0,
+        220,
+        1344,
+        490
+      ]
+    },
+    "ios_smart": {
+      "path": "docs/images/keykey-ios-v137-ios07a-middle-candidate-iphone17pro-simulator.png",
+      "credit": "iPhone 17 Pro 官方模擬器",
+      "crop": [
+        0,
+        1350,
+        1206,
+        2622
+      ]
+    },
+    "android_smart": {
+      "path": "docs/images/keykey-android-v137-and06a-middle-candidate-pixel8pro-simulator-detail.png",
+      "credit": "Pixel 8 Pro 官方模擬器",
+      "crop": null
+    },
+    "windows_emoji": {
+      "path": "docs/images/keykey-windows-v137-win11b-emoji-inserted-win11.png",
+      "credit": "Windows 11 實機・1.3.7・局部",
+      "crop": [
+        118,
+        185,
+        558,
+        373
+      ]
+    },
+    "linux_smart": {
+      "path": "docs/images/keykey-linux-v137-lnx07a-middle-candidate-ubuntu2404-wayland.png",
+      "credit": "Linux・GNOME Wayland VM・局部",
+      "crop": [
+        8,
+        72,
+        360,
+        216
+      ]
+    },
+    "freebsd_smart": {
+      "path": "docs/images/keykey-freebsd-v137-bsd07a-middle-candidate.png",
+      "credit": "FreeBSD 15.1・Xfce / X11・局部",
+      "crop": [
+        0,
+        53,
+        355,
+        205
+      ]
+    },
+    "platform_icons": {
+      "path": "StoreAssets/Threads-v1.3.7/assets/platform_icons.png",
+      "credit": "使用者提供的六平台識別圖；僅用於平台圖示，不是軟體操作畫面",
+      "crop": null
+    },
+    "cover_title": {
+      "path": "StoreAssets/Threads-v1.3.7/user-title-six-platforms.png",
+      "credit": "維護者提供的標題、人物與六平台圖示橫幅；宣傳插畫，非操作截圖",
+      "crop": null
+    }
+  },
+  "downloads": [
+    {
+      "name": "iPhone / iPad",
+      "lines": [
+        "App Store 正式上架"
+      ],
+      "url": "https://apps.apple.com/tw/app/id6807832939"
+    },
+    {
+      "name": "Android",
+      "lines": [
+        "Google Play 正式上架"
+      ],
+      "url": "https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android"
+    },
+    {
+      "name": "macOS / Windows / Linux",
+      "lines": [
+        "GitHub Releases",
+        "與台灣 AWS CDN"
+      ],
+      "url": "https://github.com/polobread/KeyKey/releases/latest"
+    }
+  ],
+  "platform_icon_crops": [
+    [
+      10,
+      8,
+      68,
+      58
+    ],
+    [
+      91,
+      8,
+      149,
+      58
+    ],
+    [
+      170,
+      8,
+      228,
+      58
+    ],
+    [
+      251,
+      8,
+      309,
+      58
+    ],
+    [
+      335,
+      8,
+      393,
+      58
+    ],
+    [
+      420,
+      8,
+      478,
+      58
+    ]
+  ]
+}
