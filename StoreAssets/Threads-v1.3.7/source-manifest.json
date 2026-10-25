@@ -1,0 +1,136 @@
+[
+  {
+    "key": "icon",
+    "original_path": "StoreAssets/GooglePlay/app-icon-512.png",
+    "local_copy": "assets/icon.png",
+    "sha256": "2f1686fa0ce933864fe2212ed341fb18e8fcd029a01a4bbe7d2e79617f1e8bec",
+    "size": [
+      512,
+      512
+    ],
+    "credit": "專案原始 App Icon；白底黑字琦",
+    "crop": null,
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  },
+  {
+    "key": "mac_smart",
+    "original_path": "docs/images/keykey-macos-v137-mac07-middle-candidate-apple-silicon.png",
+    "local_copy": "assets/mac_smart.png",
+    "sha256": "6b00b56ba4c3276600273ccce5db97af3594752c4a46119c76d3df9e80dae31e",
+    "size": [
+      597,
+      499
+    ],
+    "credit": "macOS 實機・1.3.7・局部",
+    "crop": [
+      0,
+      96,
+      450,
+      280
+    ],
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  },
+  {
+    "key": "android_cangjie",
+    "original_path": "docs/images/keykey-android-v137-and08b-cangjie-candidates-pixel8pro-simulator-detail.png",
+    "local_copy": "assets/android_cangjie.png",
+    "sha256": "bb40590dec14afbe60f2314ba17ffbf218de6f7b331ae1e993345e065b5ac7d2",
+    "size": [
+      1344,
+      1452
+    ],
+    "credit": "Android 官方模擬器・1.3.7・局部",
+    "crop": [
+      0,
+      220,
+      1344,
+      490
+    ],
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  },
+  {
+    "key": "ios_smart",
+    "original_path": "docs/images/keykey-ios-v137-ios07a-middle-candidate-iphone17pro-simulator.png",
+    "local_copy": "assets/ios_smart.png",
+    "sha256": "89ee6277a7a19ca123fe9daa33af67e7309a68286cf2b162ba17ec1b5136a8c0",
+    "size": [
+      1206,
+      2622
+    ],
+    "credit": "iPhone 17 Pro 官方模擬器",
+    "crop": [
+      0,
+      1350,
+      1206,
+      2622
+    ],
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  },
+  {
+    "key": "android_smart",
+    "original_path": "docs/images/keykey-android-v137-and06a-middle-candidate-pixel8pro-simulator-detail.png",
+    "local_copy": "assets/android_smart.png",
+    "sha256": "b7e11b2c36f78c932f69457bba8d334acae767ceb0c2304b898f95717727233e",
+    "size": [
+      1344,
+      1392
+    ],
+    "credit": "Pixel 8 Pro 官方模擬器",
+    "crop": null,
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  },
+  {
+    "key": "windows_emoji",
+    "original_path": "docs/images/keykey-windows-v137-win11b-emoji-inserted-win11.png",
+    "local_copy": "assets/windows_emoji.png",
+    "sha256": "7bdb845b9f6967e58fd0db44cc3b5f9bc68080b3a08add3e42dd8733f80d8bda",
+    "size": [
+      800,
+      520
+    ],
+    "credit": "Windows 11 實機・1.3.7・局部",
+    "crop": [
+      118,
+      185,
+      558,
+      373
+    ],
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  },
+  {
+    "key": "linux_smart",
+    "original_path": "docs/images/keykey-linux-v137-lnx07a-middle-candidate-ubuntu2404-wayland.png",
+    "local_copy": "assets/linux_smart.png",
+    "sha256": "e18d2cbc3ea9e9d946a4f4087d23d854460b6c682e8d30bea532515801307a61",
+    "size": [
+      703,
+      523
+    ],
+    "credit": "Linux・GNOME Wayland VM・局部",
+    "crop": [
+      8,
+      72,
+      360,
+      216
+    ],
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  },
+  {
+    "key": "freebsd_smart",
+    "original_path": "docs/images/keykey-freebsd-v137-bsd07a-middle-candidate.png",
+    "local_copy": "assets/freebsd_smart.png",
+    "sha256": "e0c453fbcd75968aab39d4eb164fba0a4a4d1464cd9833d36cd18de14ed4c989",
+    "size": [
+      740,
+      340
+    ],
+    "credit": "FreeBSD 15.1・Xfce / X11・局部",
+    "crop": [
+      0,
+      53,
+      355,
+      205
+    ],
+    "processing": "僅裁切與等比例縮放；依來源色彩描述轉成 sRGB；不改寫介面內容"
+  }
+]
