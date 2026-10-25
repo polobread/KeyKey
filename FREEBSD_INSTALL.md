@@ -48,34 +48,25 @@ ports tree 是 FreeBSD 軟體的建置配方集合。`chinese/fcitx5-keykey` 會
 
 已從套件庫安裝所需版本的人可跳過本節。需要編譯時，依下方步驟先確認 port 版號，再建置與安裝。
 
-### 2.1 首次建立 /usr/ports
+### 2.1 用 net/gitup 取得或更新 /usr/ports
 
-先安裝 Git：
-
-```sh
-pkg install git-lite
-```
-
-**只有 `/usr/ports` 不存在或為空目錄時**，執行：
+以 root 安裝輕量的 [net/gitup](https://github.com/johnmehr/gitup)：
 
 ```sh
-git clone --depth 1 https://git.FreeBSD.org/ports.git /usr/ports
+pkg install net/gitup
 ```
 
-這會取得官方預設分支的 ports tree。若目錄已有內容，不要覆蓋；已有 Git checkout 時，先查看狀態與分支：
+首次使用前，確認 `/usr/local/etc/gitup.conf` 的 `ports` 區段指向官方 `git.freebsd.org` 的 `/ports.git`、`main` 分支及本機 `/usr/ports`；這是[上游預設設定](https://github.com/johnmehr/gitup/blob/main/gitup.conf)。若設定檔不存在，可從同目錄的 `gitup.conf.sample` 複製建立。
+
+**`/usr/ports` 不存在、為空目錄，或已由 net/gitup 管理時**，執行：
 
 ```sh
-git -C /usr/ports status --short --branch
-git -C /usr/ports branch --show-current
+gitup ports
 ```
 
-沒有本地修改、且已在預期分支時，更新：
+這個指令會依設定取得或更新 ports tree，日後更新也使用同一指令。更新後仍須依下方步驟確認 port 版號、編譯並安裝，才會更新琦琦。
 
-```sh
-git -C /usr/ports pull --ff-only
-```
-
-若既有目錄不是 Git checkout，先保留它，另外 clone 至尚未使用的目錄（例如 `/usr/ports-keykey`），後續將 `/usr/ports` 路徑改成該目錄。quarterly 分支的 port 可能仍是舊版，更新後仍須確認版號。
+若 `/usr/ports` 已有 `.git`，請沿用原本的 Git 更新方式；net/gitup 不會接管 Git checkout。其他已有內容的目錄也先保留，可將 `ports` 的 `target_directory` 改成尚未使用的目錄（例如 `/usr/ports-keykey`），並將後續路徑一併改成該目錄。若選用 quarterly 分支，port 可能仍是舊版，更新後仍須確認版號。
 
 ### 2.2 確認 port 版號與來源
 
@@ -83,10 +74,9 @@ git -C /usr/ports pull --ff-only
 cd /usr/ports/chinese/fcitx5-keykey
 make -V DISTVERSION
 make -V PKGNAME
-git -C /usr/ports rev-parse HEAD
 ```
 
-安裝本指南版本時，前兩行應顯示：
+安裝本指南版本時，兩個版本查詢應顯示：
 
 ```text
 1.3.7
@@ -95,13 +85,16 @@ zh-fcitx5-keykey-1.3.7
 
 ![ports 查詢顯示來源版本 1.3.7、套件名稱及本機 main 修訂](docs/images/keykey-freebsd-v137-bsd02a-ports.png)
 
-圖中另外讀取本機 `.git/refs/heads/main` 核對修訂；一般帳號執行 Git 若遇到擁有者檢查，請回到擁有該 checkout 的管理員帳號查詢，不必修改全域信任設定。
+圖中為既有 Git checkout 的版本與修訂驗證紀錄；net/gitup 不建立 `.git`，使用上述 `make` 指令確認 port 版號即可。
 
 `PORTREVISION` 若有套件修訂，套件名稱可能另有 `_1` 等尾碼。本次通過安裝及桌面試打的官方 ports 修訂是 `c69a4d85da0e2cfe08250d120d6aacaffac6b5182`。
 
-若日後預設分支已改版，而仍需重現 1.3.7，可另外取得當次修訂。在尚不存在的 `/usr/ports-keykey-137` 建立獨立 checkout：
+#### 進階：用 Git 重現當次驗證的 1.3.7 ports 修訂
+
+若日後預設分支已改版，而仍需重現 1.3.7，可另外取得當次修訂。以 root 安裝 Git，並在尚不存在的 `/usr/ports-keykey-137` 建立獨立 checkout：
 
 ```sh
+pkg install git-lite
 git clone --depth 1 https://git.FreeBSD.org/ports.git /usr/ports-keykey-137
 git -C /usr/ports-keykey-137 fetch --depth 1 origin c69a4d85da0e2cfe08250d120d6aacaffac6b5182
 git -C /usr/ports-keykey-137 switch --detach FETCH_HEAD
@@ -110,7 +103,9 @@ make -V DISTVERSION
 make -V PKGNAME
 ```
 
-歷史修訂用於重現既有版本；相依套件仍須與目前系統相容。接續命令都在所選 ports tree 的 `chinese/fcitx5-keykey` 目錄執行。
+歷史修訂用於重現既有版本；相依套件仍須與目前系統相容。
+
+接續命令都在所選 ports tree 的 `chinese/fcitx5-keykey` 目錄執行。
 
 ### 2.3 設定編譯選項與相依套件
 
