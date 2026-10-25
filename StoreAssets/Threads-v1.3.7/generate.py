@@ -142,22 +142,12 @@ class Canvas:
         (OUT/(self.name+'.svg')).write_text(svg)
         return out,{'page':self.name,'texts':self.texts,'images':self.images}
 
-# Page 01 — lively six-platform collage, made entirely from documented screenshots.
+# Page 01 — supplied header artwork above a collage of documented screenshots.
 # Linux and FreeBSD share one row; neither platform borrows the other's screen.
 c=Canvas('01-six-platforms')
-c.gradient(0,0,W,335,0,'#124BB8','#2478F4')
-c.ellipse(870,-195,440,440,'#3785F5');c.ellipse(997,182,96,96,'#73A8FF')
 c.ellipse(-110,1000,290,290,'#E4F2FF')
-# Small graphic sparkles and a warm underline add energy without inventing UI.
-c.line([(785,45),(785,71)],'#BFD8FF',3);c.line([(772,58),(798,58)],'#BFD8FF',3)
-c.line([(943,278),(976,278)],'#FFD09D',5)
-c.rr(64,35,252,36,18,'#E5EEFF');c.text('正式版・六平台支援',83,42,21,C['blue'],weight='medium')
-c.shadow(64,100,88,88,22);c.rr(64,100,88,88,22,'#FFFFFF',C['line'])
-c.image('icon',69,105,78,r=18,crop=[0,0,512,512])
-c.text(COPY['cover_title'],174,112,61,'#FFFFFF',weight='bold')
-c.text(CFG['version'],1016,89,92,'#FFFFFF',weight='bold',align='right')
-c.text('熟悉的中文輸入，走到六大平台',64,226,49,'#FFFFFF',weight='bold',max_width=952)
-c.text('好打注音・傳統注音・倉頡・簡易',64,302,23,'#D3E5FF')
+# Use the complete supplied header at its original aspect ratio.
+c.image('cover_title',0,0,W)
 collage=[
  ('macOS','mac_smart','#276BF4','#243FAD'),
  ('Windows','windows_emoji','#177BC3','#15529F'),
@@ -168,18 +158,18 @@ collage=[
 ]
 for i,(title,key,start,end) in enumerate(collage):
     title=CFG['platforms'][i]['name']
-    x=64+(i%2)*488;y=363+(i//2)*280
-    c.shadow(x,y,464,264,26);c.gradient(x,y,464,264,26,start,end)
-    c.rr(x+18,y+14,78,70,16,'#FFFFFF')
-    c.image('platform_icons',x+28,y+24,58,crop=CFG['platform_icon_crops'][i])
-    c.text(title,x+116,y+31,34,'#FFFFFF',weight='bold',max_width=330)
+    x=64+(i%2)*488;y=462+(i//2)*246
+    c.shadow(x,y,464,232,26);c.gradient(x,y,464,232,26,start,end)
+    c.rr(x+18,y+8,60,50,12,'#FFFFFF')
+    c.image('platform_icons',x+25,y+13,46,crop=CFG['platform_icon_crops'][i])
+    c.text(title,x+96,y+18,32,'#FFFFFF',weight='bold',max_width=330)
     if i<4:
-        c.image(key,x+42,y+97,380,r=8)
+        c.image(key,x+42,y+65,380,r=8)
     else:
-        c.image(key,x+20,y+89,150,r=10)
-        c.text('整句順著打',x+197,y+113,29,'#FFFFFF',weight='bold')
-        c.text('點字就能改',x+197,y+161,26,'#FFFFFF')
-        c.text('官方模擬器',x+197,y+220,18,'#FFFFFF')
+        c.image(key,x+20,y+65,150,r=10)
+        c.text('整句順著打',x+197,y+81,29,'#FFFFFF',weight='bold')
+        c.text('點字就能改',x+197,y+129,26,'#FFFFFF')
+        c.text('官方模擬器',x+197,y+189,18,'#FFFFFF')
 c.text('真實軟體畫面局部；手機為官方模擬器，Linux 為 VM',64,1202,19,C['muted'])
 c.rr(64,1243,8,54,4,C['warm'])
 c.text(COPY['cover_footer'],92,1253,29,weight='medium',max_width=924)

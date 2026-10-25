@@ -132,6 +132,11 @@
       "path": "StoreAssets/Threads-v1.3.7/assets/platform_icons.png",
       "credit": "使用者提供的六平台識別圖；僅用於平台圖示，不是軟體操作畫面",
       "crop": null
+    },
+    "cover_title": {
+      "path": "StoreAssets/Threads-v1.3.7/user-title-six-platforms.png",
+      "credit": "維護者提供的標題、人物與六平台圖示橫幅；宣傳插畫，非操作截圖",
+      "crop": null
     }
   },
   "downloads": [
