@@ -4,7 +4,7 @@
 
 ### Linux／FreeBSD 共用前端
 
-- Linux Fcitx 5 開發建置可在同一前端選擇 C++ 原核心或 Guanyinma Rust 核心，預設維持 C++；組字、候選及待送文字完成後才切換。
+- Linux Fcitx 5 雙核心開發建置預設使用 Guanyinma（Rust），仍可選 C++ 原核心；保留已保存的核心偏好，不含 Rust 的建置仍使用 C++。組字、候選及待送文字完成後才切換。
 - Guanyinma 沿用四種輸入法設定、原生候選與關聯詞，經系統字型／字集能力過濾；兩核心的使用者詞庫與學習分開保存。
 - 詞庫命令可明確選核心，Guanyinma 支援完整 JSON 備份與唯讀匯入舊 Linux 詞庫；共用程式的 FreeBSD 原生雙核心驗證另行記錄。
 

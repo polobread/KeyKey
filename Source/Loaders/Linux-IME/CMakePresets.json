@@ -40,7 +40,7 @@
     },
     {
       "name": "linux-guanyinma",
-      "displayName": "Linux dual core (C++ default)",
+      "displayName": "Linux dual core (Guanyinma default)",
       "inherits": "linux-release",
       "binaryDir": "${sourceDir}/out/build/guanyinma",
       "cacheVariables": {

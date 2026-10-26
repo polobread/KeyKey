@@ -70,7 +70,7 @@ Android 已加入同一 IME service 的 Java／Guanyinma 雙核心、UTF-8 JNI�
 
 Windows 已加入同一 TSF FE 的 Manjusri／Guanyinma 雙核心、一般設定選擇、DirectWrite 候選 callback 與獨立使用者資料管理。核心偏好在原組字與候選完成後由新事件採用，宿主 retained effects 仍由既有有序交易佇列完成後才接受下一事件。x64／x86 靜態 Rust 與原核心共用鎖定的 bundled SQLite；完整核心 CI 不在 Windows workflow 重跑。責任與分層驗證見 [Windows 接合文件](GUANYINMA_WINDOWS_ADAPTER.md)。
 
-Linux Fcitx 5 已加入同一 FE 的 C++／Guanyinma 雙核心，預設 C++ 原核心；包含安全切換、原生字型過濾、獨立資料、CLI 管理及可選 Rust 建置／來源封裝。新增共用 `finish_composition` 操作表達 FE 結束組字政策，原 `finish` 契約不變。接合與聚焦驗證見 [Linux adapter 說明](GUANYINMA_LINUX_ADAPTER.md)；原評估與階段順序見 [Linux 開發計畫](GUANYINMA_LINUX_FCITX5_PLAN.md)。GNOME Wayland／XWayland、FreeBSD 原生雙核心與正式安裝驗收仍須分層記錄。
+Linux Fcitx 5 已加入同一 FE 的 C++／Guanyinma 雙核心，含 Rust 的建置預設 Guanyinma，仍可選 C++ 原核心；包含安全切換、原生字型過濾、獨立資料、CLI 管理及可選 Rust 建置／來源封裝。新增共用 `finish_composition` 操作表達 FE 結束組字政策，原 `finish` 契約不變。接合與聚焦驗證見 [Linux adapter 說明](GUANYINMA_LINUX_ADAPTER.md)；原評估與階段順序見 [Linux 開發計畫](GUANYINMA_LINUX_FCITX5_PLAN.md)。GNOME Wayland／XWayland、FreeBSD 原生雙核心與正式安裝驗收仍須分層記錄。
 
 四法逐項設定與 native 事件對照集中於 [macOS 行為覆蓋表](GUANYINMA_MACOS_BEHAVIOR_COVERAGE.md)。核心的全半形、中英文提供明確設定及切換操作，FE 決定快捷鍵綁定；圈選加詞、直接文字與進階字表設定沿用同一個共用 session／C ABI。實際 IMK 宿主以 [隔離測試流程](GUANYINMA_MACOS_IMK_HOST_TEST.md) 驗證，不把 core 或 adapter 通過等同於宿主完成。
 

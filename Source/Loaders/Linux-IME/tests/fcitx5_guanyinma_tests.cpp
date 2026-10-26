@@ -136,7 +136,7 @@ public:
 
 void checkDefaultAndDeferredLegacySwitch() {
     KeyKeyConfig defaults;
-    require(*defaults.inputCore == "Legacy", "C++ is not the saved default core");
+    require(*defaults.inputCore == "Guanyinma", "Rust is not the default core in a dual-core build");
     Fixture f;
     f.config.smartMode = false;
     f.rebuildEngine();

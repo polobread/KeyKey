@@ -94,15 +94,23 @@ public:
     }
 };
 
+#if KEYKEY_ENABLE_GUANYINMA
+constexpr const char *kDefaultInputCore = "Guanyinma";
+#else
+constexpr const char *kDefaultInputCore = "Legacy";
+#endif
+
 class InputCoreAnnotation : public fcitx::EnumAnnotation {
 public:
     void dumpDescription(fcitx::RawConfig &config) const {
         fcitx::EnumAnnotation::dumpDescription(config);
         config.setValueByPath("Enum/0", "Legacy");
-        config.setValueByPath("EnumI18n/0", "C++ 原核心（預設）");
 #if KEYKEY_ENABLE_GUANYINMA
+        config.setValueByPath("EnumI18n/0", "C++ 原核心");
         config.setValueByPath("Enum/1", "Guanyinma");
-        config.setValueByPath("EnumI18n/1", "Guanyinma（Rust）");
+        config.setValueByPath("EnumI18n/1", "Guanyinma（Rust，預設）");
+#else
+        config.setValueByPath("EnumI18n/0", "C++ 原核心（預設）");
 #endif
     }
 };
@@ -182,7 +190,7 @@ FCITX_CONFIGURATION(
 FCITX_CONFIGURATION(
     KeyKeyConfig,
     fcitx::OptionWithAnnotation<std::string, InputCoreAnnotation>
-        inputCore{this, "InputCore", "輸入核心", "Legacy"};
+        inputCore{this, "InputCore", "輸入核心", kDefaultInputCore};
     fcitx::ExternalOption about{
         this, "About", "關於琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING "…",
         "keykey-about"};

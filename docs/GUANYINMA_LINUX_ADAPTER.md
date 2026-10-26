@@ -1,6 +1,6 @@
 # Guanyinma Linux Fcitx 5 接合
 
-Linux 的同一套 Fcitx 5 frontend 可選 C++ 原核心或 Guanyinma Rust 核心。執行時預設固定為 **C++ 原核心**；原有輸入法識別字、產品名稱、平台版號與共用模型維持既有來源。Guanyinma 的候選與組句行為使用共用核心，平台事件、視窗、宿主效果、關聯詞及繁簡輸出由 Fcitx frontend 處理。
+Linux 的同一套 Fcitx 5 frontend 可選 C++ 原核心或 Guanyinma Rust 核心。含 Rust 的雙核心建置執行時預設為 **Guanyinma（Rust）**，仍可選 C++ 原核心；不含 Rust 的建置預設 C++。原有輸入法識別字、產品名稱、平台版號與共用模型維持既有來源。Guanyinma 的候選與組句行為使用共用核心，平台事件、視窗、宿主效果、關聯詞及繁簡輸出由 Fcitx frontend 處理。
 
 ## 建置與選擇
 
@@ -16,7 +16,7 @@ cmake --build --preset linux-guanyinma
 
 `CARGO` 可指定 Cargo 路徑；已預備依賴時使用 `-DKEYKEY_GUANYINMA_OFFLINE=ON`。一般 CMake、`configure --enable-guanyinma` 與 Debian 的 `KEYKEY_ENABLE_GUANYINMA=ON` 可啟用雙核心建置。來源封裝的 vendor 選項與離線來源準備見 `ci/create-source-archive.sh`、`Source/Guanyinma/tools/prepare-unix-vendor.py`；鎖定工具鏈本身仍須事先安裝。建置腳本不重建模型、不執行完整 Rust 測試。
 
-在 Fcitx 的琦琦輸入法設定中選「輸入核心」。設定檔 `conf/chichi77-keykey.conf` 的 `InputCore=Legacy/Guanyinma` 保存偏好；缺值、未知值皆使用 Legacy。不含 Rust 的建置無法啟用 Guanyinma，會顯示原因，不假裝切換成功。
+在 Fcitx 的琦琦輸入法設定中選「輸入核心」。設定檔 `conf/chichi77-keykey.conf` 的 `InputCore=Legacy/Guanyinma` 保存偏好；缺值使用該建置的預設核心，已明確保存的 Legacy 或 Guanyinma 偏好維持原值，未知值使用 Legacy。不含 Rust 的建置無法啟用 Guanyinma，會顯示原因，不假裝切換成功。
 
 ## 狀態與生命週期
 
