@@ -1,74 +1,73 @@
-# Guanyinma Linux Fcitx 5 接合
+# Guanyinma Linux／FreeBSD Fcitx 5 接合
 
-Linux 的同一套 Fcitx 5 frontend 可選 C++ 原核心或 Guanyinma Rust 核心。含 Rust 的雙核心建置執行時預設為 **Guanyinma（Rust）**，仍可選 C++ 原核心；不含 Rust 的建置預設 C++。原有輸入法識別字、產品名稱、平台版號與共用模型維持既有來源。Guanyinma 的候選與組句行為使用共用核心，平台事件、視窗、宿主效果、關聯詞及繁簡輸出由 Fcitx frontend 處理。
+Linux／FreeBSD 共用的 Fcitx 5 frontend 現在只使用 **Guanyinma（Rust）**。原 Legacy C++ 組句、排序、可寫學習實作及核心切換已移除；原有輸入法識別字、產品版號與正式共用模型維持不變。C++ 僅保留 Fcitx、原生字型、關聯詞、繁簡輸出及必要資料轉換接合。
 
-## 建置與選擇
-
-建置開關 `KEYKEY_ENABLE_GUANYINMA` 預設 OFF，`engine-only` 仍可在沒有 Rust、JSON、字型開發套件時建置。雙核心可使用：
+## 建置
 
 ```sh
 cd Source/Loaders/Linux-IME
-cmake --preset linux-guanyinma
-cmake --build --preset linux-guanyinma
+# Bash：準備 rust-toolchain.toml 鎖定的工具鏈與 Cargo.lock 來源
+source ci/prepare-guanyinma.sh
+cmake --preset linux-release
+cmake --build --preset linux-release
+ctest --preset linux-release
 ```
 
-除原有 Fcitx／SQLite／canberra 依賴外，雙核心需要 `Source/Guanyinma/rust-toolchain.toml` 鎖定的 Rustup 工具鏈、`Cargo.lock` 依賴、json-c 與 PangoFT2 開發套件。Linux／FreeBSD 使用 CMake 選定的系統 SQLite；不啟用 bundled SQLite。Rust staticlib 使用 PIC，連入既有 addon，完整 notices 安裝於 `share/doc/chichi77-keykey/Guanyinma-NOTICES.txt`。
+必要依賴為 C++17、CMake、Python 3、鎖定 Rustup 工具鏈、系統 SQLite、json-c、PangoFT2／Fontconfig；Fcitx addon 另需 Fcitx 5 Core 與 libcanberra。圖形工具使用 Python GI／GTK 3。`engine-only` 是無 Fcitx／無視窗的同一 Rust adapter 測試，仍需要 Rust、JSON 和字型依賴。
 
-`CARGO` 可指定 Cargo 路徑；已預備依賴時使用 `-DKEYKEY_GUANYINMA_OFFLINE=ON`。一般 CMake、`configure --enable-guanyinma` 與 Debian 的 `KEYKEY_ENABLE_GUANYINMA=ON` 可啟用雙核心建置。來源封裝的 vendor 選項與離線來源準備見 `ci/create-source-archive.sh`、`Source/Guanyinma/tools/prepare-unix-vendor.py`；鎖定工具鏈本身仍須事先安裝。建置腳本不重建模型、不執行完整 Rust 測試。
+`CARGO` 可指定已準備工具鏈的 Cargo；`-DKEYKEY_GUANYINMA_OFFLINE=ON` 使用已快取或 vendored 的鎖定來源。建置入口不提供核心選擇參數。來源包預設帶 checksummed Cargo vendor，工具鏈本身須另行準備。建置只驗證、複製正式模型，不自行 cooker，也不重跑完整核心矩陣。
 
-在 Fcitx 的琦琦輸入法設定中選「輸入核心」。設定檔 `conf/chichi77-keykey.conf` 的 `InputCore=Legacy/Guanyinma` 保存偏好；缺值使用該建置的預設核心，已明確保存的 Legacy 或 Guanyinma 偏好維持原值，未知值使用 Legacy。不含 Rust 的建置無法啟用 Guanyinma，會顯示原因，不假裝切換成功。
+FreeBSD 沿用 `/usr/local` prefix 與系統 SQLite、pkg-config、PangoFT2；ports 配方需同步 Rust／Cargo 來源、相依、notices 與 plist。本次沒有 FreeBSD 原生 runner，不能把 Ubuntu 的編譯或 X11 結果當作 FreeBSD 驗收。
 
-## 狀態與生命週期
+## 偏好設定
 
-`FcitxState` 是穩定的每 context 代理，持有原 `Engine`／`InputContextState` 或 `GuanyinmaSession`。設定保存只改 requested core；組字、未完成讀音、核心候選、FE 關聯詞或待處理宿主效果尚未完成時，沿用原 backend，下一個安全的新事件才切換。候選回呼帶視圖 generation 與 context 生命週期檢查，舊頁或舊核心的 index 不會誤選新候選。
+設定參考 macOS／Windows 的共通輸入行為，保留既有 Linux 設定鍵。Fcitx 原生設定頁按一般、好打、倉頡、簡易及關聯詞分組；候選字窗的字型、縮放與色彩仍由 Fcitx UI／GNOME panel 管理。
 
-模式狀態仍由 FE 管理，切核心保留中英與全半形；英文半形維持原生按鍵 pass-through。Shift tap 仍沿用 300ms 的原生辨識；Shift release filter 不等於 accept，避免宿主卡住 Shift。Shift+Space 轉成語意寬度操作；Rust 路徑保留 raw Shift、CapsLock、NumLock 與真正 keypad 來源。
+| 類別 | 可設定項目 |
+|---|---|
+| 一般 | 注音布局／好打或傳統、傳統注音選字鍵、中英切換快捷鍵、單按 Shift 開關、啟動中／英文、中文忽略 Caps Lock、數字鍵盤直接送字、自訂詞、Big5-HKSCS 字集、錯誤音效、繁簡輸出 |
+| 好打 | 空白開候選、游標前／後選字、Esc 清句、10～20 音節組字長度、選字鍵、選字後回句尾、Shift 字母強制大寫、Bigram、候選與相鄰詞學習 |
+| 倉頡／簡易 | 即時候選、倉頡前綴候選、錯碼清除、滿碼處理、動態詞頻、選字鍵、標點樣式、最大字碼長度、空白首選／單頁送出、單字／多字通配符 |
+| 關聯詞 | `[AssociatedPhrases]` 分組中，小麥與 29 組分類詞庫的個別 Boolean 開關 |
+| 自訂詞 | 圖形新增／修改／刪除、模型讀音建議、學習重設、完整 Guanyinma JSON 備份／匯入 |
 
-`GuanyinmaSession` 只透過正式 C ABI 操作 Rust，不實作替代 walker／排序。四法設定明確映射為 desktop profile；好打保留十／十一音節、九個數字候選鍵、Linux 原有進階設定及學習選擇。字表持久學習維持關閉。
+好打保留 Linux 既有九個數字選字鍵為初始值，也可選桌面八鍵組合；設定、核心分頁、Fcitx 鍵標使用同一組鍵。組字長度預設十個完成音節，第十一個擠出完整詞；長度可改為 10～20。中文忽略 Caps Lock 預設關閉，英文模式保留大小寫功能。中英、全半形與快捷鍵的物理事件辨識仍由 frontend 處理。
 
-新增的通用 `finish_composition` 語意操作可完成 Smart 未完成讀音、保留傳統注音反白候選，或清除未確認表格字碼；這些選擇由 FE 明確傳入，核心沒有 Linux 名稱分支。原 `finish` 契約維持不變。
+`InputCore` 不再是可選設定；舊設定檔保存的 `Legacy`／`Guanyinma` 不會選回已移除的引擎。關聯詞設定只使用現行分組，不讀取或同步舊逗號格式。設定變更在組字、候選及當次宿主效果完成後才建立新 session，不為了套用偏好而丟棄或重播組字。
 
-一次 operation 的 commit／delete／return／discard 效果只交給原 Fcitx context 一次；重畫 snapshot 不會重送。Fcitx API 無應用接受結果，呼叫返回不代表應用已接受文字。focus-out 的 `ClientUnfocusCommit` 由客戶端提交過 preedit 時，只清理舊 session；reset 失敗則退役 session，不能讓舊文字在下一宿主重現。首次建立 Rust 失敗可在接受事件前保留原核心並顯示原因；已運作 session 的錯誤保留最後視圖、消耗事件及回報，不將該事件重播給另一核心。
+## 狀態、送字與字型
 
-## 候選、輸出及字型
+每個 Fcitx context 保存自己的 Rust session、模式與候選世代。舊候選回呼帶 context 生命週期與世代檢查，不會選到新頁面的同一 index。Unicode scalar 游標轉成 Fcitx UTF-8 byte cursor；組字點字依快照的文字／讀音跨度定位。
 
-快照的 Unicode scalar 游標轉成 Fcitx UTF-8 byte cursor；Smart preedit 點字再依 Rust segment 的文字／讀音跨度映射。核心完整候選與當頁候選分開，Fcitx 只呈現當頁九個，點擊使用 page-local index。
+一次 operation 的 commit／delete／return／discard 效果只交給原 Fcitx context 一次，重畫 snapshot 不重送。Fcitx API 沒有應用接受回傳；宿主已自行提交 preedit 時只清理 session，失敗時不讓舊文字在下一宿主重現。Rust 初始化失敗明確顯示原因，不回退另一套演算法。
 
-原生 PangoFT2／Fontconfig provider 不依賴視窗，於 session 建立時固定字型能力與快取；注音另合併既有 Big5-HKSCS 設定。透過 `guanyinma_session_open_with_candidate_filter`，在排序、分頁、前綴上限及 Smart graph 前過濾，不在 UI 再刪核心候選。FE 自有關聯詞沿用同一能力政策。系統字型判斷不能代替所有應用／panel 的實際顯示驗收。
+候選可顯示性由原生 PangoFT2／Fontconfig callback 在核心排序、分頁、前綴與 Smart graph 前過濾，注音可再限制 Big5-HKSCS；不在畫面顯示後刪候選。字型政策固定於 session，改設定時在安全邊界重建。Rust 產生的 commit 已完成全半形；FE 原生關聯詞／符號及最終繁簡輸出各轉一次。Password／Sensitive 欄位不提供關聯詞。
 
-Rust commit 已轉全半形，FE 不重做；FE raw 關聯詞／符號按同步寬度轉換一次。最終繁簡輸出各做一次，關聯詞查詢／學習仍用原始繁體文字。Password／Sensitive 欄位不提供關聯詞。
+## 使用者資料與工具
 
-## 資料與命令
-
-| 核心 | 私有資料庫 | override |
-|---|---|---|
-| C++ | `$XDG_DATA_HOME/chichi77-keykey/smart-mandarin-user.db` | `CHICHI77_KEYKEY_USER_DB` |
-| Guanyinma | `$XDG_DATA_HOME/chichi77-keykey/guanyinma-user.db` | `CHICHI77_KEYKEY_GUANYINMA_USER_DB` |
-
-XDG 未設定時使用 `~/.local/share`。共用安裝模型仍為唯讀 `smart-mandarin.db`，兩核心不混寫使用者資料，也不自動匯入舊檔。Rust 的詞庫命令使用相同 C ABI admin session，不直接改 Rust schema。
+Rust 私有資料庫固定為 `$XDG_DATA_HOME/chichi77-keykey/guanyinma-user.db`；未設定 XDG 時位於 `~/.local/share`。可用 `CHICHI77_KEYKEY_GUANYINMA_USER_DB` 覆寫。正式模型 `smart-mandarin.db` 維持唯讀。不再讀寫或匯入舊 Linux C++ 的 `smart-mandarin-user.db`；既有舊檔不自動刪除。
 
 ```sh
-# 原命令固定操作 C++ 詞庫，不跟隨 GUI 偏好
+keykey-user-phrases
 keykey-smart-phrases list
-keykey-smart-phrases --core guanyinma list
-keykey-smart-phrases --core guanyinma add 琦琦星 'ㄑㄧˊ ㄑㄧˊ ㄒㄧㄥ'
-keykey-smart-phrases --core guanyinma update 琦琦星 'ㄑㄧˊ ㄑㄧˊ ㄒㄧㄥ' 琦琦光 'ㄑㄧˊ ㄑㄧˊ ㄍㄨㄤ'
-keykey-smart-phrases --core guanyinma reset-learning
-keykey-smart-phrases --core guanyinma export backup.json
-keykey-smart-phrases --core guanyinma import backup.json
-keykey-smart-phrases --core guanyinma import-legacy /path/to/smart-mandarin-user.db
+keykey-smart-phrases list --json
+keykey-smart-phrases readings 琦琦
+keykey-smart-phrases add 琦琦星 'ㄑㄧˊ ㄑㄧˊ ㄒㄧㄥ'
+keykey-smart-phrases reset-learning
+keykey-smart-phrases export backup.json
+keykey-smart-phrases import backup.json
 ```
 
-Smart reset 保留自訂詞與其他方法學習。完整 JSON 備份保留自訂詞、Smart 與字表學習，排除 generation／revision；驗證整份內容後原子匯入。匯出使用私有暫存檔及原子替換，不允許覆蓋模型、兩核心 DB／sidecar 或別名。顯式舊 DB 匯入唯讀來源，合併詞條、替換來源提供的 Smart 學習、保留其他方法；只保留最新 200 筆 override／Bigram query，不是全部舊學習的無損搬運。
+CLI 直接操作 Guanyinma，不提供核心選擇參數或舊 Linux C++ 資料相容命令。完整 JSON 備份保留自訂詞、Smart 與字表學習，排除 generation／revision；匯入先驗證整份再原子套用。匯出以私有暫存檔原子替換，不允許覆蓋模型、使用者 DB／sidecar 或別名。舊 Linux C++ 資料格式不在此工具的支援範圍；其他平台的匯入契約不受此 Linux 前端決定影響。
 
 ## 聚焦驗證
 
 ```sh
-ctest --test-dir out/build/guanyinma -R 'guanyinma|fcitx5_mode_keys' --output-on-failure
-# 以下以實際 build／stage 目錄代入；只使用隔離 D-Bus／Xvfb，不安裝至 /usr
-bash ci/run-dual-core-smoke.sh BUILD_DIR STAGE_DIR
+ctest --test-dir out/build/release -R 'guanyinma|fcitx5|user_phrases' --output-on-failure
+# 隔離 D-Bus／Xvfb、GTK3／GTK4／Qt6；不修改個人設定或 /usr
+bash ci/run-guanyinma-smoke.sh BUILD_DIR STAGE_DIR
 ```
 
-新測試涵蓋真正 C ABI 的 adapter、FcitxState 的核心切換／效果／焦點，以及 CLI 的兩資料庫隔離、CRUD、JSON 與舊資料匯入、備份路徑保護。完整核心矩陣由 `guanyinma-core.yml` 負責；Linux workflow 只增加編譯連結與少量 FE smoke。遷移 functional baseline 不在日常 CTest／CI gate 內。
+Linux 測試聚焦正式 C ABI、設定映射、動態選字鍵與分頁、字型、生命週期／效果、CLI 與圖形詞庫工具。完整 Rust／C consumer／跨平台核心矩陣由 `guanyinma-core.yml` 負責；不把遷移 functional baseline 加入日常 CTest 或 CI gate。
 
-staged install、來源離線重建、Debian 生命週期、X11、GNOME Wayland／XWayland 及 FreeBSD 原生接合各自記錄；任何一項未執行都不能以另一項通過替代。正式平台支援與發布狀態仍以 README／安裝文件為準。
+原始碼、無視窗測試、staged addon、套件安裝、X11、GNOME Wayland／XWayland 與 FreeBSD 原生驗證各自記錄。任一層通過不能取代其餘層的宿主證據；正式發布與支援狀態仍以安裝指南與 Release 為準。

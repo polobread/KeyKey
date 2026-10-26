@@ -20,9 +20,7 @@ Installation directories:
 
 Build options:
   --enable-fcitx5            build the Fcitx 5 addon [default]
-  --disable-fcitx5           build the engine without the Fcitx 5 addon
-  --enable-guanyinma         include the optional Rust core [disabled]
-  --disable-guanyinma        build only the C++ core [default]
+  --disable-fcitx5           build the Rust adapter without the Fcitx 5 addon
   --enable-guanyinma-offline use already prepared locked Cargo sources
   --enable-tests             build tests and provide make check [default]
   --disable-tests            do not build the test suite
@@ -74,8 +72,10 @@ build_fcitx5=ON
 build_testing=ON
 build_x11_e2e_host=OFF
 enable_sanitizers=OFF
-enable_guanyinma=OFF
 guanyinma_offline=OFF
+case "${KEYKEY_GUANYINMA_OFFLINE:-OFF}" in
+    ON|1|TRUE|YES) guanyinma_offline=ON ;;
+esac
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -111,8 +111,6 @@ while [ "$#" -gt 0 ]; do
             ;;
         --enable-fcitx5) build_fcitx5=ON ;;
         --disable-fcitx5) build_fcitx5=OFF ;;
-        --enable-guanyinma) enable_guanyinma=ON ;;
-        --disable-guanyinma) enable_guanyinma=OFF ;;
         --enable-guanyinma-offline) guanyinma_offline=ON ;;
         --enable-tests) build_testing=ON ;;
         --disable-tests) build_testing=OFF ;;
@@ -185,7 +183,6 @@ set -- cmake -S "$script_dir" -B "$build_dir" -G 'Unix Makefiles' \
     "-DKEYKEY_BUILD_FCITX5=$build_fcitx5" \
     "-DKEYKEY_BUILD_X11_E2E_HOST=$build_x11_e2e_host" \
     "-DKEYKEY_ENABLE_SANITIZERS=$enable_sanitizers" \
-    "-DKEYKEY_ENABLE_GUANYINMA=$enable_guanyinma" \
     "-DKEYKEY_GUANYINMA_OFFLINE=$guanyinma_offline"
 
 if [ -n "$libdir" ]; then
@@ -276,7 +273,7 @@ Configuration complete:
   library directory:   $full_libdir
   data directory:      $full_datadir
   Fcitx 5 addon:        $build_fcitx5
-  Guanyinma included:   $enable_guanyinma (runtime default: C++ original)
+  Input core:           Guanyinma (Rust; required)
   tests:                $build_testing
   GTK 3/GTK 4/Qt 6 X11 test hosts: $build_x11_e2e_host
 

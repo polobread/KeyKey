@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests/fixtures/core-functional/migration-scenarios.tsv"
 BASELINES = ROOT / "tests/fixtures/core-functional/pre-rust"
 MODEL = ROOT / "Source/Distributions/Takao/CookedDatabase/KeyKey.db"
-BACKENDS = ("desktop", "unix", "swift", "android", "windows")
+BACKENDS = ("desktop", "swift", "android", "windows")
 METHODS = {"smart", "traditional", "cangjie", "simplex"}
 
 
@@ -78,20 +78,6 @@ def compile_desktop(build: Path) -> Path:
     return executable
 
 
-def compile_unix(build: Path) -> Path:
-    engine = ROOT / "Source/Loaders/Linux-IME/engine"
-    executable = build / "unix-migration-baseline"
-    command = compiler() + [
-        "-I", str(engine / "include"),
-        str(ROOT / "Source/Loaders/Linux-IME/tests/shared_core_functional.cpp"),
-        *map(str, sorted((engine / "src").glob("*.cpp"))), "-lsqlite3",
-    ]
-    if sys.platform == "darwin":
-        command += ["-liconv"]
-    call(command + ["-o", str(executable)], quiet=True)
-    return executable
-
-
 def mappings(values: list[str]) -> dict[str, list[Path]]:
     result: dict[str, list[Path]] = defaultdict(list)
     for value in values:
@@ -116,7 +102,7 @@ def fixture_rows(fixture: Path, backend: str) -> list[tuple]:
         if name != active:
             active, step = name, 0
         step += 1
-        if profile == "touch" and backend in ("desktop", "unix", "windows"):
+        if profile == "touch" and backend in ("desktop", "windows"):
             continue
         rows.append((name, step, profile, operation, argument))
     return rows
@@ -165,9 +151,6 @@ def source_fingerprint(backend: str) -> dict[str, str]:
         if backend == "windows":
             explicit += ["Source/Loaders/Windows-TSF/WindowsTableInputMethod.cpp",
                          "Source/Loaders/Windows-TSF/WindowsTableInputMethod.h"]
-    elif backend == "unix":
-        directories = common + ["Source/Loaders/Linux-IME/engine"]
-        explicit = ["Source/Loaders/Linux-IME/tests/shared_core_functional.cpp"]
     elif backend == "swift":
         directories = common + ["Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources"]
         explicit = ["Source/Loaders/iOS-Keyboard/KeyKeyEngine/Tests/KeyKeyEngineTests/CoreFunctionalTests.swift"]
@@ -255,8 +238,6 @@ def record(backend: str, fixture: Path, build: Path, count: int) -> list[Path]:
     executable = None
     if backend == "desktop":
         executable = compile_desktop(build)
-    elif backend == "unix":
-        executable = compile_unix(build)
     paths = []
     for sample in range(count):
         scratch = build / f"sample-{sample}"
@@ -264,9 +245,6 @@ def record(backend: str, fixture: Path, build: Path, count: int) -> list[Path]:
         trace = build / f"trace-{sample}.jsonl"
         if backend == "desktop":
             call([str(executable), str(MODEL), str(fixture), str(scratch), str(trace)])
-        elif backend == "unix":
-            call([str(executable), str(fixture), str(MODEL),
-                  str(ROOT / "Source/DataTables/bpmf-ext.cin"), str(scratch), str(trace)])
         else:
             env = dict(os.environ, KEYKEY_MIGRATION_BASELINE="1",
                        KEYKEY_CORE_FUNCTIONAL_FIXTURE=str(fixture),
@@ -297,8 +275,8 @@ def main() -> int:
     args = parser.parse_args()
     imported = mappings(args.trace)
     backends = list(dict.fromkeys(args.backend or imported.keys() or
-                                 (["desktop", "unix", "swift"] if sys.platform == "darwin"
-                                  else ["desktop", "unix"])))
+                                 (["desktop", "swift"] if sys.platform == "darwin"
+                                  else ["desktop"])))
     environments = {}
     for value in args.environment:
         name, separator, description = value.partition("=")

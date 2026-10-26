@@ -13,21 +13,9 @@ Windows 與 Ubuntu 安裝包由 [1.3.7 Release](https://github.com/polobread/Key
 提供，iOS 與 Android 1.3.7 已分別在 App Store、Google Play 上架，不需加入測試。
 FreeBSD 已完成桌面驗證，透過 ports／pkg 安裝，詳見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。
 目前原始碼版號為 `1.3.8`；macOS 已正式發布，其他平台仍為開發來源。共用好打注音模型維持 `1.3.1`。
-先前 Linux 版本的發布紀錄保留在
-[1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
-其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
-目前已有可建置的 Linux-only 引擎與 Fcitx 5
-外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
-並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
-另在完整 Ubuntu 24.04 GNOME Wayland KVM guest 通過涵蓋 native Wayland／XWayland
-的舊版 160/160 組逐鍵／滑鼠矩陣；加入符號表真滑鼠後，系統安裝的候選
-面板下完整 168/168 組通過。真實 gedit 四條輸入路徑與 GNOME Text Editor 的直接 Fcitx
-Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有缺口。
-雙欄焦點正負控制 16/16 通過並量到失焦語意依輸入路徑而異。
-更廣的視窗／App 相容性與實體雙螢幕仍待驗收。GNOME Shell 46 的獨立候選
-面板套件已在 Ubuntu 24.04 VM 測過安裝、升級、停用與再啟用。開發／套件規格見
-[LINUX_DEVELOPMENT_PLAN.md](docs/LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
-驗收見 [LINUX_TEST_PLAN.md](docs/LINUX_TEST_PLAN.md)。
+Linux／FreeBSD 開發來源只使用 Guanyinma Rust 核心；接合、設定與聚焦驗證見
+[Linux Guanyinma 說明](docs/GUANYINMA_LINUX_ADAPTER.md)。X11、GNOME Wayland／XWayland、
+FreeBSD 原生與套件安裝各自驗證，不以舊版本的桌面結果代替新核心驗收。
 
 [English](#english)
 
@@ -37,11 +25,12 @@ Ubuntu 24.04 使用者若要從下載、編譯一路完成 Fcitx 啟用與試打
 [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)。
 
 傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler、`pkg-config`、
-Fcitx 5 Core、libcanberra 與 SQLite 3 開發檔，以及 Python 3；
+Fcitx 5 Core、libcanberra、SQLite 3、json-c、PangoFT2 開發檔、Python 3，
+以及 `Source/Guanyinma/rust-toolchain.toml` 鎖定的 Rustup 工具鏈；
 不需要 Ninja、Docker、Autoconf 或 Automake。Ubuntu 可先安裝：
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
+sudo apt-get install build-essential cmake curl libcanberra-dev libfcitx5core-dev libsqlite3-dev libjson-c-dev libpango1.0-dev pkg-config python3 python3-gi gir1.2-gtk-3.0
 ```
 
 接著使用預設 `/usr/local` prefix：
@@ -70,10 +59,10 @@ make DESTDIR="$PWD/out/source-stage" install
 
 開發者若已安裝 Ninja，也可繼續使用既有 CMake preset：
 
-Guanyinma 雙核心建置另外需要鎖定的 Rustup 工具鏈、`libjson-c-dev` 及
-`libpango1.0-dev`，使用 `linux-guanyinma` preset 或 `./configure --enable-guanyinma`。
-建置開關預設關閉，啟用後執行時預設 Guanyinma（Rust），仍可選 C++ 原核心。接合、獨立詞庫與聚焦測試見
-[Linux 雙核心說明](docs/GUANYINMA_LINUX_ADAPTER.md)。
+Linux／FreeBSD frontend 現在只使用 Guanyinma；Rust 不是可選後端。可先在 Bash
+中 `source ci/prepare-guanyinma.sh` 準備鎖定工具鏈，或自行配置 `CARGO`、`CARGO_HOME`
+與 `RUSTUP_HOME`。建置入口不提供核心選擇參數。接合、設定與 Guanyinma 詞庫管理見
+[Linux Guanyinma 說明](docs/GUANYINMA_LINUX_ADAPTER.md)。
 
 ```sh
 cd Source/Loaders/Linux-IME
@@ -484,38 +473,22 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 ## English
 
-Native Linux support began with version 1.2.8. Version 1.3.1 includes a
-Linux-only engine and Fcitx 5 addon. The GTK 3, GTK 4, and Qt 6 X11 matrix is
-implemented, and 76 cases that do not restart the desktop Fcitx process pass
-in an isolated Ubuntu 24.04 GNOME X11 session. A GNOME Wayland KVM guest also
-passes 160/160 native Wayland/XWayland key and pointer combinations. Real gedit
-passes four input paths; GNOME Text Editor passes the direct Fcitx Wayland and
-XWayland paths, with two GTK Wayland IM paths still failing. These earlier
-checks do not replace the versioned release workflow. The guest also passes 16/16
-two-field focus phases, with a recorded raw-preedit blur difference between
-direct Fcitx and default GTK Wayland paths. Separate editing-field evidence
-passed 21 cases before a GNOME Shell crash and the remaining three after
-session recovery; symbol-list pointer selection passed all eight modes.
-Two live applications preserve independent modes in six direct Fcitx paths
-(12/12), while the two default GTK Wayland bridge paths share one IBus input
-context and fail mode isolation. All eight modes passed candidate-client
-closure and immediate new-client recovery; all eight also passed after a
-fresh Fcitx process was started. An explicit GDM logout/login followed by
-T01 and pointer T06 also passed 16/16. Firefox Snap and Epiphany passed 15
-real browser field/mode cases across native Wayland and XWayland, covering
-`<textarea>`, `<input>` and `contenteditable` with DOM input checks and
-literal controls. See the
-[development plan](docs/LINUX_DEVELOPMENT_PLAN.md) and [test plan](docs/LINUX_TEST_PLAN.md).
+Linux and FreeBSD development sources use Guanyinma as the only input core.
+See the [Linux adapter guide](docs/GUANYINMA_LINUX_ADAPTER.md) for settings,
+user data, and focused integration checks. Source, staged addon, installed
+packages, X11, GNOME Wayland/XWayland, and native FreeBSD acceptance are separate
+layers; results from an earlier core do not establish current acceptance.
 
 ### Linux source build
 
 A traditional source build requires CMake 3.22, GNU Make, a C++17 compiler,
-`pkg-config`, Python 3, and the Fcitx 5 Core, libcanberra, and SQLite 3 development files. It does not require Ninja, Docker,
+`pkg-config`, Python 3, the pinned Rustup toolchain, and Fcitx 5 Core, libcanberra,
+SQLite 3, json-c and PangoFT2 development files. It does not require Ninja, Docker,
 Autoconf, or Automake. On Ubuntu, install the dependencies and build with the
 default `/usr/local` prefix as follows:
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
+sudo apt-get install build-essential cmake curl libcanberra-dev libfcitx5core-dev libsqlite3-dev libjson-c-dev libpango1.0-dev pkg-config python3 python3-gi gir1.2-gtk-3.0
 cd Source/Loaders/Linux-IME
 ./configure
 make -j2
@@ -542,11 +515,11 @@ for nonstandard Fcitx prefix activation.
 
 Developers with Ninja installed may continue to use the existing CMake preset:
 
-An optional Guanyinma dual-core build additionally needs the pinned Rustup
-toolchain, `libjson-c-dev`, and `libpango1.0-dev`. Use the `linux-guanyinma`
-preset or `./configure --enable-guanyinma`. This build feature defaults off;
-enabled builds still select the original C++ core at runtime. See the
-[Linux adapter guide](docs/GUANYINMA_LINUX_ADAPTER.md) for data separation and tests.
+Linux/FreeBSD now uses Guanyinma as its only input core. Every build requires
+the pinned Rustup toolchain, `libjson-c-dev`, and `libpango1.0-dev`. In Bash,
+`source ci/prepare-guanyinma.sh` prepares the pinned toolchain; prepared builds may
+set `CARGO`, `CARGO_HOME`, and `RUSTUP_HOME` explicitly. Build entry points do not
+provide core-selection options. See the [Linux adapter guide](docs/GUANYINMA_LINUX_ADAPTER.md).
 
 ```sh
 cd Source/Loaders/Linux-IME

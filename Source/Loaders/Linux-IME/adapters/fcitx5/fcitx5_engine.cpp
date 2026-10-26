@@ -1,12 +1,6 @@
 #include "keykey/linux_ime/associated_phrase_dictionary.h"
 #include "keykey/linux_ime/cin_dictionary.h"
-#include "keykey/linux_ime/engine.h"
-#ifndef KEYKEY_ENABLE_GUANYINMA
-#define KEYKEY_ENABLE_GUANYINMA 0
-#endif
-#if KEYKEY_ENABLE_GUANYINMA
 #include "keykey/linux_ime/guanyinma_session.h"
-#endif
 
 #include "error_sound.h"
 
@@ -51,21 +45,6 @@ constexpr std::uint32_t ShiftTapTimeoutMilliseconds = 300;
 constexpr auto ShiftTapTimeout =
     std::chrono::milliseconds(ShiftTapTimeoutMilliseconds);
 
-bool legacyInputKey(const fcitx::KeyEvent &event) {
-    const auto symbol = event.key().sym();
-    if (symbol >= FcitxKey_space && symbol <= FcitxKey_asciitilde) return true;
-    switch (symbol) {
-    case FcitxKey_Return: case FcitxKey_KP_Enter:
-    case FcitxKey_BackSpace: case FcitxKey_Delete: case FcitxKey_KP_Delete:
-    case FcitxKey_Tab: case FcitxKey_KP_Tab: case FcitxKey_ISO_Left_Tab:
-    case FcitxKey_Escape: case FcitxKey_Left: case FcitxKey_Right:
-    case FcitxKey_Up: case FcitxKey_Down: case FcitxKey_Home: case FcitxKey_KP_Home:
-    case FcitxKey_End: case FcitxKey_KP_End: case FcitxKey_Page_Up: case FcitxKey_Page_Down:
-        return true;
-    default: return false;
-    }
-}
-
 class BopomofoLayoutAnnotation : public fcitx::EnumAnnotation {
 public:
     void dumpDescription(fcitx::RawConfig &config) const {
@@ -94,24 +73,43 @@ public:
     }
 };
 
-#if KEYKEY_ENABLE_GUANYINMA
-constexpr const char *kDefaultInputCore = "Guanyinma";
-#else
-constexpr const char *kDefaultInputCore = "Legacy";
-#endif
+class SelectionKeysConstrain {
+public:
+    bool check(const std::string &value) const {
+        if (value.empty() || value.size() > 32) return false;
+        std::unordered_set<unsigned char> used;
+        for (const unsigned char ch : value) if (ch < 0x21 || ch > 0x7e || !used.insert(ch).second) return false;
+        return true;
+    }
+    void dumpDescription(fcitx::RawConfig &) const {}
+};
+class WildcardConstrain {
+public:
+    bool check(const std::string &value) const {
+        return value.empty() || (value.size() == 1 && static_cast<unsigned char>(value[0]) >= 0x21 && static_cast<unsigned char>(value[0]) <= 0x7e);
+    }
+    void dumpDescription(fcitx::RawConfig &) const {}
+};
 
-class InputCoreAnnotation : public fcitx::EnumAnnotation {
+class SelectionKeysAnnotation : public fcitx::EnumAnnotation {
 public:
     void dumpDescription(fcitx::RawConfig &config) const {
         fcitx::EnumAnnotation::dumpDescription(config);
-        config.setValueByPath("Enum/0", "Legacy");
-#if KEYKEY_ENABLE_GUANYINMA
-        config.setValueByPath("EnumI18n/0", "C++ 原核心");
-        config.setValueByPath("Enum/1", "Guanyinma");
-        config.setValueByPath("EnumI18n/1", "Guanyinma（Rust，預設）");
-#else
-        config.setValueByPath("EnumI18n/0", "C++ 原核心（預設）");
-#endif
+        const std::vector<std::string> keys{"123456789", "12345678", "asdfghjk", "asdfzxcv", "asdfjkl;"};
+        for (std::size_t i = 0; i < keys.size(); ++i) {
+            config.setValueByPath("Enum/" + std::to_string(i), keys[i]);
+            config.setValueByPath("EnumI18n/" + std::to_string(i), keys[i]);
+        }
+    }
+};
+
+class PunctuationAnnotation : public fcitx::EnumAnnotation {
+public:
+    void dumpDescription(fcitx::RawConfig &config) const {
+        fcitx::EnumAnnotation::dumpDescription(config);
+        config.setValueByPath("Enum/0", "original"); config.setValueByPath("EnumI18n/0", "原始標點");
+        config.setValueByPath("Enum/1", "mixed"); config.setValueByPath("EnumI18n/1", "中英混合標點");
+        config.setValueByPath("Enum/2", "half"); config.setValueByPath("EnumI18n/2", "半形標點");
     }
 };
 
@@ -171,59 +169,60 @@ FCITX_CONFIGURATION(
 
 FCITX_CONFIGURATION(
     SmartMandarinConfig,
-    fcitx::Option<bool> showCandidateListWithSpace{
-        this, "ShowCandidateListWithSpace", "空白鍵開啟候選", false};
-    fcitx::Option<bool> candidateCursorAtEndOfTargetBlock{
-        this, "CandidateCursorAtEndOfTargetBlock",
-        "選字目標在游標前方（取消為後方）", false};
-    fcitx::Option<bool> clearComposingTextWithEsc{
-        this, "ClearComposingTextWithEsc",
-        "Esc 清除整句（候選窗／未完成讀音優先取消）", false};)
+    fcitx::Option<bool> showCandidateListWithSpace{this, "ShowCandidateListWithSpace", "空白鍵開啟候選", false};
+    fcitx::Option<bool> candidateCursorAtEndOfTargetBlock{this, "CandidateCursorAtEndOfTargetBlock", "選字目標在游標前方（取消為後方）", false};
+    fcitx::Option<bool> clearComposingTextWithEsc{this, "ClearComposingTextWithEsc", "Esc 清除整句（候選窗／未完成讀音優先取消）", false};
+    fcitx::Option<int, fcitx::IntConstrain> maxCompletedSyllables{this, "ComposingTextBufferSize", "組字長度（音節）", 10, fcitx::IntConstrain(10, 20)};
+    fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> candidateSelectionKeys{this, "CandidateSelectionKeys", "選字鍵", "123456789"};
+    fcitx::Option<bool> selectionReturnsToEnd{this, "SelectionReturnsToEnd", "選字後游標回到句尾", false};
+    fcitx::Option<bool> shiftAlwaysUppercase{this, "ShiftKeyAlwaysCommitUppercaseCharacters", "按住 Shift 輸入字母一律大寫", false};
+    fcitx::Option<bool> useBigrams{this, "UseBigrams", "使用上下文組句", true};
+    fcitx::Option<bool> learnCandidateOverrides{this, "LearnCandidateOverrides", "記憶選字偏好", true};
+    fcitx::Option<bool> learnBigrams{this, "LearnBigrams", "學習相鄰詞", true};)
 
-FCITX_CONFIGURATION(
-    CangjieConfig,
+#define KEYKEY_TABLE_OPTIONS(prefixOption, realtime, prefix, clear, query, maximum, first, one, many) \
+    fcitx::Option<bool> composeWhileTyping{this, "ComposeWhileTyping", "即時候選", realtime}; \
+    fcitx::prefixOption<bool> prefixCandidates{this, "PrefixCandidates", "未打完也能選字", prefix}; \
+    fcitx::Option<bool> clearOnError{this, "ClearOnError", "錯碼清除", clear}; \
+    fcitx::Option<bool> queryAtMaximum{this, "ShouldCommitAtMaximumRadicalLength", "滿碼時查詢候選", query}; \
+    fcitx::Option<bool> learnSelection{this, "UseDynamicFrequency", "動態詞頻（記憶選字）", false}; \
+    fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> candidateSelectionKeys{this, "CandidateSelectionKeys", "選字鍵", "123456789"}; \
+    fcitx::OptionWithAnnotation<std::string, PunctuationAnnotation> punctuation{this, "PunctuationStyle", "標點符號", "original"}; \
+    fcitx::Option<int, fcitx::IntConstrain> maximumRadicalLength{this, "MaximumRadicalLength", "最長字根數", maximum, fcitx::IntConstrain(1, maximum)}; \
+    fcitx::Option<bool> spaceAsFirstSelectionKey{this, "UseSpaceAsFirstCandidateSelectionKey", "以空白鍵作為第一個選字鍵", false}; \
+    fcitx::Option<bool> spaceCommitsFirstOnSinglePage{this, "SendFirstCandidateWithSpaceWithOnePageList", "只有一頁候選時以空白鍵送出首字", first}; \
+    fcitx::Option<std::string, WildcardConstrain> wildcardOne{this, "MatchOneChar", "單一字根通配字（空白為停用）", one}; \
+    fcitx::Option<std::string, WildcardConstrain> wildcardMany{this, "MatchZeroOrMoreChar", "多個字根通配字（空白為停用）", many};
+
+FCITX_CONFIGURATION(CangjieConfig,
     fcitx::ExternalOption settings{this, "Settings", "開啟倉頡設定…", "keykey-cangjie-settings"};
-    fcitx::HiddenOption<bool> composeWhileTyping{this, "ComposeWhileTyping", "即時候選", false};
-    fcitx::HiddenOption<bool> prefixCandidates{this, "PrefixCandidates", "未打完也能選字", false};
-    fcitx::HiddenOption<bool> clearOnError{this, "ClearOnError", "錯碼清除", true};)
+    KEYKEY_TABLE_OPTIONS(Option, false, false, true, false, 5, true, "?", "*"))
+FCITX_CONFIGURATION(SimplexConfig,
+    KEYKEY_TABLE_OPTIONS(HiddenOption, false, false, false, true, 2, false, "", ""))
+#undef KEYKEY_TABLE_OPTIONS
 
 FCITX_CONFIGURATION(
     KeyKeyConfig,
-    fcitx::OptionWithAnnotation<std::string, InputCoreAnnotation>
-        inputCore{this, "InputCore", "輸入核心", kDefaultInputCore};
-    fcitx::ExternalOption about{
-        this, "About", "關於琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING "…",
-        "keykey-about"};
-    fcitx::ExternalOption updates{
-        this, "UpdateNotification", "更新通知與下載…",
-        "keykey-update-notify"};
-    fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation>
-        bopomofoLayout{this, "BopomofoLayout", "注音鍵盤配置",
-                       "Standard"};
-    fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation>
-        bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"};
+    fcitx::ExternalOption userPhrases{this, "UserPhrases", "管理自訂詞與學習資料…", "keykey-user-phrases"};
+    fcitx::ExternalOption about{this, "About", "關於琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING "…", "keykey-about"};
+    fcitx::ExternalOption updates{this, "UpdateNotification", "更新通知與下載…", "keykey-update-notify"};
+    fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation> bopomofoLayout{this, "BopomofoLayout", "注音鍵盤配置", "Standard"};
+    fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation> bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"};
+    fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> traditionalSelectionKeys{this, "TraditionalSelectionKeys", "傳統注音選字鍵", "123456789"};
     fcitx::Option<CangjieConfig> cangjie{this, "Cangjie", "倉頡設定"};
-    fcitx::Option<SmartMandarinConfig> smartMandarin{
-        this, "SmartMandarin", "好打注音進階設定"};
-    fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation>
-        candidateWindowStyle{this, "CandidateWindowStyle",
-                             "候選字窗方向", "Vertical"};
-    fcitx::Option<bool> traditionalToSimplified{
-        this, "TraditionalToSimplified",
-        "繁體轉簡體輸出", false};
-    fcitx::Option<bool> useAllUnicodeCharacters{
-        this, "UseAllUnicodeCharacters",
-        "顯示 Big5 以外的候選字", true};
-    fcitx::Option<bool> playSoundOnTypingError{
-        this, "PlaySoundOnTypingError", "輸入錯誤時播放提示音", true};
-    fcitx::Option<bool> toggleWithControlBackslash{
-        this, "ToggleInputMethodWithControlBackslash",
-        "使用 Ctrl+\\ 切換中英文", true};
-    fcitx::Option<AssociatedPhraseConfig> associatedPhrases{
-        this, "AssociatedPhrases", "關聯詞庫"};
-    fcitx::HiddenOption<std::string> associatedPhraseCollections{
-        this, "AssociatedPhraseCollections",
-        "舊版關聯詞庫設定", "McBopomofo"};)
+    fcitx::Option<SimplexConfig> simplex{this, "Simplex", "簡易設定"};
+    fcitx::Option<SmartMandarinConfig> smartMandarin{this, "SmartMandarin", "好打注音進階設定"};
+    fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation> candidateWindowStyle{this, "CandidateWindowStyle", "候選字窗方向", "Vertical"};
+    fcitx::Option<bool> traditionalToSimplified{this, "TraditionalToSimplified", "繁體轉簡體輸出", false};
+    fcitx::Option<bool> useAllUnicodeCharacters{this, "UseAllUnicodeCharacters", "顯示 Big5 以外的候選字", true};
+    fcitx::Option<bool> playSoundOnTypingError{this, "PlaySoundOnTypingError", "輸入錯誤時播放提示音", true};
+    fcitx::Option<bool> toggleWithControlBackslash{this, "ToggleInputMethodWithControlBackslash", "使用 Ctrl+\\ 切換中英文", true};
+    fcitx::Option<bool> toggleWithShift{this, "ToggleInputModeWithShift", "單按 Shift 切換中英文", true};
+    fcitx::Option<bool> defaultChineseMode{this, "DefaultChineseMode", "啟動時使用中文模式", true};
+    fcitx::Option<bool> ignoreCapsLockInChinese{this, "IgnoreCapsLockInChinese", "中文模式忽略 Caps Lock", false};
+    fcitx::Option<bool> literalKeypad{this, "LiteralKeypad", "數字鍵盤直接輸入數字符號", true};
+    fcitx::Option<bool> useUserPhrases{this, "UseUserPhrases", "使用自訂詞庫", true};
+    fcitx::Option<AssociatedPhraseConfig> associatedPhrases{this, "AssociatedPhrases", "關聯詞庫"};)
 
 std::vector<std::string>
 enabledAssociatedPhraseCollections(const AssociatedPhraseConfig &config) {
@@ -237,126 +236,109 @@ enabledAssociatedPhraseCollections(const AssociatedPhraseConfig &config) {
     return result;
 }
 
-void setEnabledAssociatedPhraseCollections(
-    AssociatedPhraseConfig &config,
-    const std::vector<std::string> &enabledCollections) {
-    const std::unordered_set<std::string> enabled(enabledCollections.begin(),
-                                                   enabledCollections.end());
-#define KEYKEY_SET_ENABLED_COLLECTION(member, source, label, defaultValue)    \
-    config.member.setValue(enabled.find(source) != enabled.end());
-    KEYKEY_ASSOCIATED_PHRASE_OPTIONS(KEYKEY_SET_ENABLED_COLLECTION)
-#undef KEYKEY_SET_ENABLED_COLLECTION
+template<typename Config> linux_ime::TablePreferences tablePreferences(const Config &source) {
+    linux_ime::TablePreferences value;
+    value.composeWhileTyping = *source.composeWhileTyping;
+    value.prefixCandidates = *source.prefixCandidates;
+    value.clearOnError = *source.clearOnError && !value.composeWhileTyping;
+    value.queryAtMaximum = *source.queryAtMaximum;
+    value.learnSelection = *source.learnSelection;
+    value.candidateSelectionKeys = *source.candidateSelectionKeys;
+    value.punctuation = *source.punctuation;
+    value.maximumRadicalLength = static_cast<std::size_t>(*source.maximumRadicalLength);
+    value.spaceAsFirstSelectionKey = *source.spaceAsFirstSelectionKey;
+    value.spaceCommitsFirstOnSinglePage = *source.spaceCommitsFirstOnSinglePage;
+    value.wildcardOne = *source.wildcardOne;
+    value.wildcardMany = *source.wildcardMany;
+    return value;
+}
+linux_ime::GuanyinmaConfig sessionSettings(const KeyKeyConfig &config, const std::string &method) {
+    linux_ime::GuanyinmaConfig settings;
+    settings.inputMethod = method == "chichi77-keykey-cangjie" ? linux_ime::InputMethod::Cangjie
+        : method == "chichi77-keykey-simplex" ? linux_ime::InputMethod::Simplex : linux_ime::InputMethod::Bopomofo;
+    settings.smartMode = settings.inputMethod == linux_ime::InputMethod::Bopomofo && *config.bopomofoMode != "Traditional";
+    const std::string &layout = *config.bopomofoLayout;
+    settings.layout = layout == "ETen" ? linux_ime::BopomofoLayout::ETen
+        : layout == "ETen26" ? linux_ime::BopomofoLayout::ETen26
+        : layout == "Hsu" ? linux_ime::BopomofoLayout::Hsu
+        : layout == "HanyuPinyin" ? linux_ime::BopomofoLayout::HanyuPinyin : linux_ime::BopomofoLayout::Standard;
+    const auto &smart = *config.smartMandarin;
+    settings.smart.showCandidateListWithSpace = *smart.showCandidateListWithSpace;
+    settings.smart.candidateCursorAtEndOfTargetBlock = *smart.candidateCursorAtEndOfTargetBlock;
+    settings.smart.clearComposingTextWithEsc = *smart.clearComposingTextWithEsc;
+    settings.smart.maxCompletedSyllables = static_cast<std::size_t>(*smart.maxCompletedSyllables);
+    settings.smart.candidateSelectionKeys = *smart.candidateSelectionKeys;
+    settings.smart.selectionReturnsToEnd = *smart.selectionReturnsToEnd;
+    settings.smart.shiftAlwaysUppercase = *smart.shiftAlwaysUppercase;
+    settings.smart.useBigrams = *smart.useBigrams;
+    settings.smart.learnCandidateOverrides = *smart.learnCandidateOverrides;
+    settings.smart.learnBigrams = *smart.learnBigrams;
+    settings.table = tablePreferences(*config.cangjie);
+    settings.simplex = tablePreferences(*config.simplex);
+    settings.traditionalSelectionKeys = *config.traditionalSelectionKeys;
+    settings.ignoreCapsLockInChinese = *config.ignoreCapsLockInChinese;
+    settings.literalKeypad = *config.literalKeypad;
+    settings.userPhrases = *config.useUserPhrases;
+    settings.restrictBopomofoToBig5 = !*config.useAllUnicodeCharacters;
+    return settings;
 }
 
-std::string joinCollectionList(const std::vector<std::string> &collections) {
-    std::string result;
-    for (const std::string &collection : collections) {
-        if (!result.empty()) {
-            result.push_back(',');
-        }
-        result += collection;
-    }
-    return result;
-}
 
 class FcitxState : public fcitx::InputContextProperty {
 public:
-    explicit FcitxState(fcitx::InputContext *inputContext)
-        : inputContext_(inputContext) {}
-
-    void process(const linux_ime::Engine &engine,
-                 bool smartMode,
-                 bool traditionalToSimplified,
-                 bool playSoundOnTypingError,
+    explicit FcitxState(fcitx::InputContext *inputContext) : inputContext_(inputContext) {}
+    void process(bool traditionalToSimplified, bool playSoundOnTypingError,
                  fcitx::CandidateLayoutHint candidateLayout,
                  const fcitx5_adapter::ErrorSound &errorSound,
                  const linux_ime::KeyEvent &event, fcitx::KeyEvent &fcitxEvent);
-    bool processModeKey(bool toggleWithControlBackslash,
-                        fcitx::KeyEvent &event);
+    bool processModeKey(bool toggleWithControlBackslash, fcitx::KeyEvent &event,
+                        bool toggleWithShift = true);
+    void initializeMode(bool chinese) { if (!modeInitialized_) { chineseMode_ = chinese; modeInitialized_ = true; } }
     void select(std::size_t displayedIndex, std::uint64_t view = 0);
     bool selectSmartCharacter(std::size_t preeditCharacterIndex);
     void reset();
     bool commitAndReset(bool retireOnFailure = false);
-    void commitIfEngine(const linux_ime::Engine *engine) {
-        if (sourceEngine_ == engine) commitAndReset(true);
-    }
     bool chineseMode() const noexcept { return chineseMode_; }
-    bool usesGuanyinma() const noexcept {
-#if KEYKEY_ENABLE_GUANYINMA
-        return rust_ != nullptr;
-#else
-        return false;
-#endif
-    }
+    bool usesGuanyinma() const noexcept { return rust_ != nullptr; }
     std::string coreStatus() const;
-    bool corePending() const noexcept { return requestedRust_ != usesGuanyinma(); }
-#if KEYKEY_ENABLE_GUANYINMA
-    void requestCore(bool useRust, linux_ime::GuanyinmaConfig config,
+    bool settingsPending() const noexcept { return requestRevision_ != activeRevision_; }
+    void requestSession(linux_ime::GuanyinmaConfig config,
                      std::string modelPath, std::string userPath,
                      std::shared_ptr<const linux_ime::AssociatedPhraseDictionary> associated,
                      std::shared_ptr<const linux_ime::CinDictionary> simplified,
                      std::vector<std::string> collections,
                      linux_ime::GuanyinmaSession::CandidateFilter filter = {});
-#else
-    void requestCore(bool useRust) {
-        requestedRust_ = false;
-        if (useRust) coreError_ = "此建置未包含 Guanyinma";
-    }
-#endif
-
 private:
-    struct ShiftPress {
-        std::uint32_t eventTime = 0;
-        std::chrono::steady_clock::time_point monotonicTime;
-    };
-
+    struct ShiftPress { std::uint32_t eventTime = 0; std::chrono::steady_clock::time_point monotonicTime; };
     void toggleChineseMode();
     void apply(const linux_ime::EngineResult &result);
     void updateUi(const linux_ime::EngineResult &result);
     linux_ime::EngineResult currentView() const;
     bool quiet() const;
-    void prepareCore();
-#if KEYKEY_ENABLE_GUANYINMA
+    void prepareSession();
     void processRust(const linux_ime::KeyEvent &event, fcitx::KeyEvent &fcitxEvent,
                      bool playSound, const fcitx5_adapter::ErrorSound &errorSound);
     void applyRust(linux_ime::EngineResult result, bool offerAssociated = true);
     linux_ime::EngineResult associatedView() const;
-    bool processAssociated(const linux_ime::KeyEvent &event,
-                           linux_ime::EngineResult &result);
+    bool processAssociated(const linux_ime::KeyEvent &event, linux_ime::EngineResult &result);
     linux_ime::EngineResult selectAssociated(std::size_t displayedIndex);
     void clearAssociated();
-
     std::unique_ptr<linux_ime::GuanyinmaSession> rust_;
     linux_ime::GuanyinmaConfig requestedConfig_;
-    std::string modelPath_;
-    std::string userPath_;
-    std::uint64_t requestRevision_ = 0;
-    std::uint64_t attemptedRevision_ = 0;
+    std::string modelPath_, userPath_;
+    std::uint64_t requestRevision_ = 0, attemptedRevision_ = 0, activeRevision_ = 0;
     std::shared_ptr<const linux_ime::AssociatedPhraseDictionary> associated_;
     std::shared_ptr<const linux_ime::CinDictionary> simplified_;
     std::vector<std::string> collections_;
     linux_ime::GuanyinmaSession::CandidateFilter candidateFilter_;
     std::vector<std::string> associatedCandidates_;
-    std::size_t associatedPage_ = 0;
-    std::size_t associatedHighlight_ = 0;
-#endif
-
+    std::size_t associatedPage_ = 0, associatedHighlight_ = 0;
     fcitx::InputContext *inputContext_;
-    linux_ime::InputContextState context_;
-    const linux_ime::Engine *sourceEngine_ = nullptr;
-    // Keep the configuration that owns this composition. applyConfig mutates
-    // shared engines before the next key or deactivation reaches this state.
-    std::unique_ptr<linux_ime::Engine> activeEngine_;
-    bool chineseMode_ = true;
-    bool smartMode_ = false;
-    bool requestedRust_ = false;
-    bool fullWidth_ = false;
-    bool simplifiedOutput_ = false;
-    bool effectsInProgress_ = false;
+    bool chineseMode_ = true, modeInitialized_ = false, fullWidth_ = false;
+    bool simplifiedOutput_ = false, effectsInProgress_ = false;
     std::uint64_t viewGeneration_ = 1;
     std::string coreError_;
-    fcitx::CandidateLayoutHint candidateLayout_ =
-        fcitx::CandidateLayoutHint::Vertical;
+    fcitx::CandidateLayoutHint candidateLayout_ = fcitx::CandidateLayoutHint::Vertical;
     std::optional<ShiftPress> shiftPressedAt_;
     bool controlBackslashPressed_ = false;
 };
@@ -385,45 +367,8 @@ class FcitxEngine : public fcitx::InputMethodEngineV3 {
 public:
     explicit FcitxEngine(fcitx::Instance *instance)
         : instance_(instance),
-          bopomofoDictionary_(loadDictionary("bpmf-ext.cin")),
-          cangjieDictionary_(loadDictionary("cj-ext.cin")),
-          simplexDictionary_(loadDictionary("simplex-ext.cin")),
-          punctuationDictionary_(loadDictionary("bpmf-punctuations.cin")),
           traditionalToSimplifiedDictionary_(loadDictionary("tc2sc.cin")),
           associatedPhraseDictionary_(loadAssociatedPhraseDictionary()),
-          smartMandarinStore_(loadSmartMandarinStore()),
-          standardEngine_(bopomofoDictionary_, linux_ime::InputMethod::Bopomofo,
-                          linux_ime::BopomofoLayout::Standard,
-                          punctuationDictionary_,
-                          traditionalToSimplifiedDictionary_,
-                          associatedPhraseDictionary_),
-          etenEngine_(bopomofoDictionary_, linux_ime::InputMethod::Bopomofo,
-                      linux_ime::BopomofoLayout::ETen, punctuationDictionary_,
-                      traditionalToSimplifiedDictionary_,
-                      associatedPhraseDictionary_),
-          eten26Engine_(bopomofoDictionary_, linux_ime::InputMethod::Bopomofo,
-                        linux_ime::BopomofoLayout::ETen26,
-                        punctuationDictionary_,
-                        traditionalToSimplifiedDictionary_,
-                        associatedPhraseDictionary_),
-          hsuEngine_(bopomofoDictionary_, linux_ime::InputMethod::Bopomofo,
-                     linux_ime::BopomofoLayout::Hsu, punctuationDictionary_,
-                     traditionalToSimplifiedDictionary_,
-                     associatedPhraseDictionary_),
-          hanyuPinyinEngine_(bopomofoDictionary_,
-                            linux_ime::InputMethod::Bopomofo,
-                            linux_ime::BopomofoLayout::HanyuPinyin,
-                            punctuationDictionary_,
-                            traditionalToSimplifiedDictionary_,
-                            associatedPhraseDictionary_),
-          cangjieEngine_(cangjieDictionary_, linux_ime::InputMethod::Cangjie,
-                         linux_ime::BopomofoLayout::Standard, nullptr,
-                         traditionalToSimplifiedDictionary_,
-                         associatedPhraseDictionary_),
-          simplexEngine_(simplexDictionary_, linux_ime::InputMethod::Simplex,
-                         linux_ime::BopomofoLayout::Standard, nullptr,
-                         traditionalToSimplifiedDictionary_,
-                         associatedPhraseDictionary_),
           factory_([](fcitx::InputContext &context) {
               return new FcitxState(&context);
           }) {
@@ -439,10 +384,11 @@ public:
                 if (!isKeyKeyInputMethod(inputMethod)) {
                     return;
                 }
+                keyEvent.inputContext()->propertyFor(&factory_)->initializeMode(*config_.defaultChineseMode);
                 keyEvent.inputContext()
                     ->propertyFor(&factory_)
                     ->processModeKey(*config_.toggleWithControlBackslash,
-                                     keyEvent);
+                                     keyEvent, *config_.toggleWithShift);
             });
         switchEventWatcher_ = instance->watchEvent(
             fcitx::EventType::InputContextSwitchInputMethod,
@@ -463,13 +409,7 @@ public:
     const fcitx::Configuration *getConfig() const override { return &config_; }
 
     void setConfig(const fcitx::RawConfig &config) override {
-        const bool hasCheckboxConfig =
-            config.get("AssociatedPhrases") != nullptr;
         config_.load(config, true);
-        if (!hasCheckboxConfig) {
-            migrateLegacyAssociatedPhraseConfig();
-        }
-        synchronizeLegacyAssociatedPhraseConfig();
         applyConfig();
         fcitx::safeSaveAsIni(config_, configFile());
     }
@@ -479,10 +419,6 @@ public:
         fcitx::RawConfig rawConfig;
         fcitx::readAsIni(rawConfig, configFile());
         config_.load(rawConfig);
-        if (rawConfig.get("AssociatedPhrases") == nullptr) {
-            migrateLegacyAssociatedPhraseConfig();
-        }
-        synchronizeLegacyAssociatedPhraseConfig();
         applyConfig();
     }
 
@@ -490,21 +426,14 @@ public:
                   fcitx::KeyEvent &event) override {
         FcitxState *state = event.inputContext()->propertyFor(&factory_);
         const auto original = event.inputContext()->watch();
-        requestCore(*state, entry.uniqueName());
+        state->initializeMode(*config_.defaultChineseMode);
+        requestSession(*state, entry.uniqueName());
         if (!original.isValid()) return;
         linux_ime::KeyEvent translated;
         if (!translate(event, translated)) {
             return;
         }
-        if (!state->usesGuanyinma() && *config_.inputCore != "Guanyinma" &&
-            !legacyInputKey(event)) {
-            // Preserve the old C++ path's accepted key surface. Its key type
-            // remains ASCII; Rust receives native Unicode/keypad separately.
-            return;
-        }
         state->process(
-            engineFor(entry), entry.uniqueName() == "chichi77-keykey-bopomofo" &&
-                                  *config_.bopomofoMode != "Traditional",
             *config_.traditionalToSimplified,
             *config_.playSoundOnTypingError, candidateLayoutHint(), errorSound_,
             translated, event);
@@ -530,6 +459,13 @@ public:
         event.inputContext()->propertyFor(&factory_)->reset();
     }
 
+    void activate(const fcitx::InputMethodEntry &entry,
+                  fcitx::InputContextEvent &event) override {
+        auto *state = event.inputContext()->propertyFor(&factory_);
+        state->initializeMode(*config_.defaultChineseMode);
+        requestSession(*state, entry.uniqueName());
+    }
+
     void deactivate(const fcitx::InputMethodEntry &entry,
                     fcitx::InputContextEvent &event) override {
         FCITX_UNUSED(entry);
@@ -548,42 +484,11 @@ public:
     }
 
 private:
-    void requestCore(FcitxState &state, const std::string &method) const {
-#if KEYKEY_ENABLE_GUANYINMA
-        linux_ime::GuanyinmaConfig settings;
-        settings.inputMethod = method == "chichi77-keykey-cangjie"
-            ? linux_ime::InputMethod::Cangjie
-            : method == "chichi77-keykey-simplex"
-                ? linux_ime::InputMethod::Simplex
-                : linux_ime::InputMethod::Bopomofo;
-        settings.smartMode = settings.inputMethod == linux_ime::InputMethod::Bopomofo &&
-                             *config_.bopomofoMode != "Traditional";
-        const std::string &layout = *config_.bopomofoLayout;
-        settings.layout = layout == "ETen" ? linux_ime::BopomofoLayout::ETen
-            : layout == "ETen26" ? linux_ime::BopomofoLayout::ETen26
-            : layout == "Hsu" ? linux_ime::BopomofoLayout::Hsu
-            : layout == "HanyuPinyin" ? linux_ime::BopomofoLayout::HanyuPinyin
-            : linux_ime::BopomofoLayout::Standard;
-        const auto &smart = *config_.smartMandarin;
-        settings.smart = {*smart.showCandidateListWithSpace,
-                          *smart.candidateCursorAtEndOfTargetBlock,
-                          *smart.clearComposingTextWithEsc};
-        const auto &table = *config_.cangjie;
-        settings.table = {*table.composeWhileTyping, *table.prefixCandidates,
-                          *table.clearOnError};
-        settings.restrictBopomofoToBig5 = !*config_.useAllUnicodeCharacters;
+    void requestSession(FcitxState &state, const std::string &method) const {
         const char *overrideDirectory = std::getenv("CHICHI77_KEYKEY_DATA_DIR");
-        const std::string directory = overrideDirectory == nullptr
-            ? KEYKEY_LINUX_DATA_DIR : overrideDirectory;
-        state.requestCore(*config_.inputCore == "Guanyinma", settings,
-            directory + "/smart-mandarin.db",
-            linux_ime::GuanyinmaSession::defaultUserDatabasePath(),
-            associatedPhraseDictionary_, traditionalToSimplifiedDictionary_,
-            enabledAssociatedPhraseCollections(*config_.associatedPhrases));
-#else
-        FCITX_UNUSED(method);
-        state.requestCore(*config_.inputCore == "Guanyinma");
-#endif
+        const std::string directory = overrideDirectory == nullptr ? KEYKEY_LINUX_DATA_DIR : overrideDirectory;
+        state.requestSession(sessionSettings(config_, method), directory + "/smart-mandarin.db", linux_ime::GuanyinmaSession::defaultUserDatabasePath(),
+            associatedPhraseDictionary_, traditionalToSimplifiedDictionary_, enabledAssociatedPhraseCollections(*config_.associatedPhrases));
     }
 
     static bool isKeyKeyInputMethod(const std::string &name) noexcept {
@@ -613,135 +518,19 @@ private:
                 directory + "/associated-phrases"));
     }
 
-    static std::shared_ptr<const linux_ime::SmartMandarinStore>
-    loadSmartMandarinStore() {
-        const char *overrideDirectory = std::getenv("CHICHI77_KEYKEY_DATA_DIR");
-        const std::string directory =
-            overrideDirectory == nullptr ? KEYKEY_LINUX_DATA_DIR
-                                         : overrideDirectory;
-        auto userData = linux_ime::SmartMandarinUserData::open(
-            linux_ime::SmartMandarinUserData::defaultPath());
-        return linux_ime::SmartMandarinStore::open(
-            directory + "/smart-mandarin.db", std::move(userData));
-    }
-
-    static std::vector<std::string>
-    parseCollectionList(const std::string &value) {
-        std::vector<std::string> result;
-        std::unordered_set<std::string> seen;
-        std::size_t start = 0;
-        while (start <= value.size()) {
-            const std::size_t end = value.find(',', start);
-            std::string source = value.substr(
-                start, end == std::string::npos ? std::string::npos
-                                                 : end - start);
-            const std::size_t first = source.find_first_not_of(" \t\r\n");
-            if (first != std::string::npos) {
-                const std::size_t last = source.find_last_not_of(" \t\r\n");
-                source = source.substr(first, last - first + 1);
-                if (seen.insert(source).second) {
-                    result.push_back(std::move(source));
-                }
-            }
-            if (end == std::string::npos) {
-                break;
-            }
-            start = end + 1;
-        }
-        return result;
-    }
-
-    void migrateLegacyAssociatedPhraseConfig() {
-        setEnabledAssociatedPhraseCollections(
-            *config_.associatedPhrases.mutableValue(),
-            parseCollectionList(*config_.associatedPhraseCollections));
-    }
-
-    void synchronizeLegacyAssociatedPhraseConfig() {
-        config_.associatedPhraseCollections.setValue(joinCollectionList(
-            enabledAssociatedPhraseCollections(*config_.associatedPhrases)));
-    }
-
     void applyConfig() {
         auto &cangjie = *config_.cangjie.mutableValue();
         if (*cangjie.composeWhileTyping) cangjie.clearOnError.setValue(false);
-        const linux_ime::TablePreferences nextCangjie{
-            *cangjie.composeWhileTyping, *cangjie.prefixCandidates, *cangjie.clearOnError};
-        if (cangjieOptionsLoaded_ &&
-            (nextCangjie.composeWhileTyping != cangjieOptions_.composeWhileTyping ||
-             nextCangjie.prefixCandidates != cangjieOptions_.prefixCandidates ||
-             nextCangjie.clearOnError != cangjieOptions_.clearOnError)) {
-            instance_->inputContextManager().foreach([this](fcitx::InputContext *context) {
-                context->propertyFor(&factory_)->commitIfEngine(&cangjieEngine_);
-                return true;
-            });
+        auto &simplex = *config_.simplex.mutableValue();
+        if (*simplex.composeWhileTyping) simplex.clearOnError.setValue(false);
+        for (auto *punctuation : {&cangjie.punctuation, &simplex.punctuation}) {
+            if (**punctuation != "original" && **punctuation != "mixed" && **punctuation != "half") punctuation->setValue("original");
         }
-        cangjieOptions_ = nextCangjie;
-        cangjieOptionsLoaded_ = true;
-        cangjieEngine_.setTablePreferences(nextCangjie);
-        const bool smart = *config_.bopomofoMode != "Traditional";
-        const auto &preferences = *config_.smartMandarin;
-        for (linux_ime::Engine *engine : {&standardEngine_, &etenEngine_,
-                                          &eten26Engine_, &hsuEngine_,
-                                          &hanyuPinyinEngine_}) {
-            engine->setSmartMandarinStore(smartMandarinStore_);
-            engine->setSmartMandarinMode(smart);
-            engine->setSmartMandarinPreferences({
-                *preferences.showCandidateListWithSpace,
-                *preferences.candidateCursorAtEndOfTargetBlock,
-                *preferences.clearComposingTextWithEsc});
-        }
-        const std::vector<std::string> enabled =
-            enabledAssociatedPhraseCollections(*config_.associatedPhrases);
-        standardEngine_.setAssociatedPhraseCollections(enabled);
-        etenEngine_.setAssociatedPhraseCollections(enabled);
-        eten26Engine_.setAssociatedPhraseCollections(enabled);
-        hsuEngine_.setAssociatedPhraseCollections(enabled);
-        hanyuPinyinEngine_.setAssociatedPhraseCollections(enabled);
-        cangjieEngine_.setAssociatedPhraseCollections(enabled);
-        simplexEngine_.setAssociatedPhraseCollections(enabled);
-        const bool restrictBopomofoToBig5 = !*config_.useAllUnicodeCharacters;
-        standardEngine_.setRestrictBopomofoCandidatesToBig5(
-            restrictBopomofoToBig5);
-        etenEngine_.setRestrictBopomofoCandidatesToBig5(
-            restrictBopomofoToBig5);
-        eten26Engine_.setRestrictBopomofoCandidatesToBig5(
-            restrictBopomofoToBig5);
-        hsuEngine_.setRestrictBopomofoCandidatesToBig5(
-            restrictBopomofoToBig5);
-        hanyuPinyinEngine_.setRestrictBopomofoCandidatesToBig5(
-            restrictBopomofoToBig5);
         instance_->inputContextManager().foreach([this](fcitx::InputContext *context) {
             const auto method = instance_->inputMethod(context);
-            if (isKeyKeyInputMethod(method)) {
-                requestCore(*context->propertyFor(&factory_), method);
-            }
+            if (isKeyKeyInputMethod(method)) requestSession(*context->propertyFor(&factory_), method);
             return true;
         });
-    }
-
-    const linux_ime::Engine &
-    engineFor(const fcitx::InputMethodEntry &entry) const noexcept {
-        if (entry.uniqueName() == "chichi77-keykey-cangjie") {
-            return cangjieEngine_;
-        }
-        if (entry.uniqueName() == "chichi77-keykey-simplex") {
-            return simplexEngine_;
-        }
-        const std::string &layout = *config_.bopomofoLayout;
-        if (layout == "ETen") {
-            return etenEngine_;
-        }
-        if (layout == "ETen26") {
-            return eten26Engine_;
-        }
-        if (layout == "Hsu") {
-            return hsuEngine_;
-        }
-        if (layout == "HanyuPinyin") {
-            return hanyuPinyinEngine_;
-        }
-        return standardEngine_;
     }
 
     fcitx::CandidateLayoutHint candidateLayoutHint() const noexcept {
@@ -861,27 +650,11 @@ private:
     }
 
     fcitx::Instance *instance_;
-    std::shared_ptr<const linux_ime::CinDictionary> bopomofoDictionary_;
-    std::shared_ptr<const linux_ime::CinDictionary> cangjieDictionary_;
-    std::shared_ptr<const linux_ime::CinDictionary> simplexDictionary_;
-    std::shared_ptr<const linux_ime::CinDictionary> punctuationDictionary_;
-    std::shared_ptr<const linux_ime::CinDictionary>
-        traditionalToSimplifiedDictionary_;
-    std::shared_ptr<const linux_ime::AssociatedPhraseDictionary>
-        associatedPhraseDictionary_;
-    std::shared_ptr<const linux_ime::SmartMandarinStore> smartMandarinStore_;
-    linux_ime::Engine standardEngine_;
-    linux_ime::Engine etenEngine_;
-    linux_ime::Engine eten26Engine_;
-    linux_ime::Engine hsuEngine_;
-    linux_ime::Engine hanyuPinyinEngine_;
-    linux_ime::Engine cangjieEngine_;
-    linux_ime::Engine simplexEngine_;
+    std::shared_ptr<const linux_ime::CinDictionary> traditionalToSimplifiedDictionary_;
+    std::shared_ptr<const linux_ime::AssociatedPhraseDictionary> associatedPhraseDictionary_;
     fcitx5_adapter::ErrorSound errorSound_;
     fcitx::FactoryFor<FcitxState> factory_;
     KeyKeyConfig config_;
-    linux_ime::TablePreferences cangjieOptions_;
-    bool cangjieOptionsLoaded_ = false;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
         keyEventWatcher_;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
@@ -891,47 +664,35 @@ private:
 #undef KEYKEY_ASSOCIATED_PHRASE_OPTIONS
 
 std::string FcitxState::coreStatus() const {
-    std::string result = usesGuanyinma() ? "Guanyinma（Rust）" : "C++ 原核心";
-    if (corePending()) {
-        result += requestedRust_ ? " → Guanyinma（組字完成後切換）"
-                                 : " → C++ 原核心（組字完成後切換）";
-    }
+    std::string result = "Guanyinma（Rust）";
+    if (rust_ && settingsPending()) result += "；組字完成後套用設定";
     if (!coreError_.empty()) result += "；" + coreError_;
     return result;
 }
 
 linux_ime::EngineResult FcitxState::currentView() const {
-#if KEYKEY_ENABLE_GUANYINMA
-    if (rust_) {
-        return associatedCandidates_.empty() ? rust_->snapshot() : associatedView();
-    }
-#endif
-    return activeEngine_ ? activeEngine_->snapshot(context_) : linux_ime::EngineResult{};
+    if (rust_) return associatedCandidates_.empty() ? rust_->snapshot() : associatedView();
+    linux_ime::EngineResult result;
+    result.fullWidthMode = fullWidth_;
+    return result;
 }
 
 bool FcitxState::quiet() const {
     const auto view = currentView();
-    return !effectsInProgress_ && view.preedit.empty() && view.candidates.empty()
-#if KEYKEY_ENABLE_GUANYINMA
-           && (!rust_ || rust_->quiet())
-#endif
-        ;
+    return !effectsInProgress_ && view.preedit.empty() && view.candidates.empty() && (!rust_ || rust_->quiet());
 }
 
-#if KEYKEY_ENABLE_GUANYINMA
-void FcitxState::requestCore(bool useRust, linux_ime::GuanyinmaConfig config,
+void FcitxState::requestSession(linux_ime::GuanyinmaConfig config,
     std::string modelPath, std::string userPath,
     std::shared_ptr<const linux_ime::AssociatedPhraseDictionary> associated,
     std::shared_ptr<const linux_ime::CinDictionary> simplified,
     std::vector<std::string> collections,
     linux_ime::GuanyinmaSession::CandidateFilter filter) {
-    if (useRust != requestedRust_ || config != requestedConfig_ ||
-        modelPath != modelPath_ || userPath != userPath_ || collections != collections_ ||
-        requestRevision_ == 0) {
+    if (config != requestedConfig_ || modelPath != modelPath_ || userPath != userPath_ ||
+        collections != collections_ || requestRevision_ == 0) {
         ++requestRevision_;
         coreError_.clear();
     }
-    requestedRust_ = useRust;
     requestedConfig_ = std::move(config);
     modelPath_ = std::move(modelPath);
     userPath_ = std::move(userPath);
@@ -939,53 +700,30 @@ void FcitxState::requestCore(bool useRust, linux_ime::GuanyinmaConfig config,
     simplified_ = std::move(simplified);
     collections_ = std::move(collections);
     candidateFilter_ = std::move(filter);
-    // Saving a preference never finishes composition or switches the backend.
-    if (corePending() || !coreError_.empty()) updateUi(currentView());
+    // Retain the active session and its candidate ownership until a safe boundary.
+    if (rust_ && (settingsPending() || !coreError_.empty())) updateUi(currentView());
 }
-#endif
 
-void FcitxState::prepareCore() {
-    if (!quiet()) return;
-#if KEYKEY_ENABLE_GUANYINMA
-    if (requestedRust_) {
-        if (rust_ && rust_->valid() && rust_->config() == requestedConfig_) return;
-        if (attemptedRevision_ == requestRevision_) return;
-        attemptedRevision_ = requestRevision_;
-        try {
-            auto replacement = std::make_unique<linux_ime::GuanyinmaSession>(
-                modelPath_, userPath_, requestedConfig_, candidateFilter_);
-            replacement->setFullWidth(fullWidth_);
-            if (!replacement->lastError().empty()) {
-                throw std::runtime_error(replacement->lastError());
-            }
-            rust_ = std::move(replacement);
-            context_.reset();
-            clearAssociated();
-            coreError_.clear();
-            ++viewGeneration_;
-            FCITX_INFO() << "KeyKey active core: Guanyinma";
-        } catch (const std::exception &error) {
-            coreError_ = std::string("Guanyinma 無法啟用：") + error.what();
-            FCITX_WARN() << coreError_;
-        }
-    } else if (rust_) {
-        fullWidth_ = rust_->snapshot().fullWidthMode;
-        rust_.reset();
+void FcitxState::prepareSession() {
+    if (!quiet() || requestRevision_ == 0 || activeRevision_ == requestRevision_ ||
+        attemptedRevision_ == requestRevision_) return;
+    attemptedRevision_ = requestRevision_;
+    try {
+        auto replacement = std::make_unique<linux_ime::GuanyinmaSession>(modelPath_, userPath_, requestedConfig_, candidateFilter_);
+        replacement->setFullWidth(fullWidth_);
+        if (!replacement->lastError().empty()) throw std::runtime_error(replacement->lastError());
+        rust_ = std::move(replacement);
+        activeRevision_ = requestRevision_;
         clearAssociated();
+        coreError_.clear();
         ++viewGeneration_;
-        FCITX_INFO() << "KeyKey active core: Legacy";
-    }
-#endif
-    if (!usesGuanyinma() && activeEngine_ &&
-        activeEngine_->snapshot(context_).fullWidthMode != fullWidth_) {
-        linux_ime::KeyEvent toggle;
-        toggle.code = linux_ime::KeyCode::Space;
-        toggle.modifiers = linux_ime::KeyModifier::Shift;
-        activeEngine_->processKey(context_, toggle);
+        FCITX_INFO() << "KeyKey active core: Guanyinma";
+    } catch (const std::exception &error) {
+        coreError_ = std::string("Guanyinma 無法啟用：") + error.what();
+        FCITX_WARN() << coreError_;
     }
 }
 
-#if KEYKEY_ENABLE_GUANYINMA
 void FcitxState::clearAssociated() {
     associatedCandidates_.clear();
     associatedPage_ = 0;
@@ -995,6 +733,8 @@ void FcitxState::clearAssociated() {
 linux_ime::EngineResult FcitxState::associatedView() const {
     linux_ime::EngineResult result;
     result.fullWidthMode = fullWidth_;
+    result.candidateSelectionKeys = "123456789";
+    result.candidatePageSize = 9;
     result.associatedPhrases = !associatedCandidates_.empty();
     result.candidatePage = associatedPage_;
     result.candidatePageCount = (associatedCandidates_.size() + 8U) / 9U;
@@ -1100,11 +840,12 @@ bool FcitxState::processAssociated(const linux_ime::KeyEvent &event,
 
 void FcitxState::applyRust(linux_ime::EngineResult result, bool offerAssociated) {
     fullWidth_ = result.fullWidthMode;
-    coreError_ = rust_->lastError();
+    if (!rust_->lastError().empty()) coreError_ = rust_->lastError();
+    else if (!settingsPending()) coreError_.clear();
     const auto capabilities = inputContext_->capabilityFlags();
     const bool sensitive = capabilities.test(fcitx::CapabilityFlag::Password) ||
                            capabilities.test(fcitx::CapabilityFlag::Sensitive);
-    if (offerAssociated && !sensitive && !smartMode_ && associated_ &&
+    if (offerAssociated && !sensitive && !rust_->config().smartMode && associated_ &&
         !result.commit.empty() && rust_->quiet()) {
         associatedCandidates_ = associated_->candidates(result.commit, collections_);
         associatedCandidates_.erase(std::remove_if(associatedCandidates_.begin(), associatedCandidates_.end(),
@@ -1200,135 +941,34 @@ void FcitxState::processRust(const linux_ime::KeyEvent &event,
     if (handled || result.updateUi) applyRust(std::move(result), !overlay);
     if (handled) fcitxEvent.filterAndAccept();
 }
-#endif
 
-void FcitxState::process(const linux_ime::Engine &sourceEngine,
-                         bool smartMode,
-                         bool traditionalToSimplified,
-                         bool playSoundOnTypingError,
+void FcitxState::process(bool traditionalToSimplified, bool playSoundOnTypingError,
                          fcitx::CandidateLayoutHint candidateLayout,
                          const fcitx5_adapter::ErrorSound &errorSound,
-                         const linux_ime::KeyEvent &event,
-                         fcitx::KeyEvent &fcitxEvent) {
+                         const linux_ime::KeyEvent &event, fcitx::KeyEvent &fcitxEvent) {
     candidateLayout_ = candidateLayout;
     simplifiedOutput_ = traditionalToSimplified;
-    const bool smartPreferencesChanged = smartMode && activeEngine_ &&
-        !(activeEngine_->smartMandarinPreferences() ==
-          sourceEngine.smartMandarinPreferences());
-    if (sourceEngine_ != &sourceEngine || smartMode_ != smartMode ||
-        smartPreferencesChanged) {
-        if (!commitAndReset()) {
-            fcitxEvent.filterAndAccept();
-            return;
-        }
-        activeEngine_.reset();
-#if KEYKEY_ENABLE_GUANYINMA
-        rust_.reset();
-        attemptedRevision_ = 0;
-#endif
-        sourceEngine_ = &sourceEngine;
-        smartMode_ = smartMode;
+    const auto original = inputContext_->watch();
+    if (rust_ && (rust_->config().inputMethod != requestedConfig_.inputMethod ||
+                  rust_->config().smartMode != requestedConfig_.smartMode ||
+                  rust_->config().layout != requestedConfig_.layout)) {
+        if (!commitAndReset()) { fcitxEvent.filterAndAccept(); return; }
+        if (!original.isValid()) return;
     }
-    const auto current = currentView();
-    if (!activeEngine_ || (current.preedit.empty() && current.candidates.empty())) {
-        activeEngine_ = std::make_unique<linux_ime::Engine>(sourceEngine);
-    }
-    if (!event.release) prepareCore();
-#if KEYKEY_ENABLE_GUANYINMA
-    if (rust_) {
-        processRust(event, fcitxEvent, playSoundOnTypingError, errorSound);
+    if (!event.release) prepareSession();
+    const bool incompatible = rust_ && (rust_->config().inputMethod != requestedConfig_.inputMethod ||
+        rust_->config().smartMode != requestedConfig_.smartMode || rust_->config().layout != requestedConfig_.layout);
+    if (!rust_ || incompatible) {
+        if (playSoundOnTypingError && !event.release) errorSound.play();
+        fcitxEvent.filterAndAccept();
+        updateUi(currentView());
         return;
     }
-#endif
-    if (!legacyInputKey(fcitxEvent)) return;
-    const linux_ime::Engine &engine = *activeEngine_;
-    engine.setTraditionalToSimplifiedMode(context_,
-                                          traditionalToSimplified);
-    if (!chineseMode_) {
-        if (event.release) {
-            return;
-        }
-        const linux_ime::EngineResult current = engine.snapshot(context_);
-        const auto modifiers = static_cast<unsigned int>(event.modifiers);
-        const auto controlAltSuper =
-            static_cast<unsigned int>(linux_ime::KeyModifier::Control) |
-            static_cast<unsigned int>(linux_ime::KeyModifier::Alt) |
-            static_cast<unsigned int>(linux_ime::KeyModifier::Super);
-        const bool widthToggle =
-            event.code == linux_ime::KeyCode::Space &&
-            event.modifiers == linux_ime::KeyModifier::Shift;
-        const bool fullWidthCharacter =
-            current.fullWidthMode && (modifiers & controlAltSuper) == 0U &&
-            (event.code == linux_ime::KeyCode::Space ||
-             (event.code == linux_ime::KeyCode::Character &&
-              event.character >= 0x20 && event.character <= 0x7E));
-        if (!widthToggle && !fullWidthCharacter) {
-            return;
-        }
-        if (fullWidthCharacter && !widthToggle) {
-            linux_ime::EngineResult result = current;
-            result.handled = true;
-            result.commit = linux_ime::toFullWidth(
-                event.code == linux_ime::KeyCode::Space
-                    ? std::string(" ")
-                    : std::string(1, event.character));
-            apply(result);
-            fcitxEvent.filterAndAccept();
-            return;
-        }
-    }
-    const fcitx::CapabilityFlags capabilities =
-        inputContext_->capabilityFlags();
-    const bool sensitive =
-        capabilities.test(fcitx::CapabilityFlag::Password) ||
-        capabilities.test(fcitx::CapabilityFlag::Sensitive);
-    if (sensitive && engine.snapshot(context_).associatedPhrases) {
-        context_.reset();
-    }
-    auto editingEvent = event;
-    if (candidateLayout_ == fcitx::CandidateLayoutHint::Horizontal &&
-        event.modifiers == linux_ime::KeyModifier::None &&
-        !engine.snapshot(context_).candidates.empty()) {
-        // Match the desktop panel: arrows along its axis select a candidate;
-        // arrows across its axis change pages.
-        switch (event.code) {
-        case linux_ime::KeyCode::Left:
-            editingEvent.code = linux_ime::KeyCode::Up;
-            break;
-        case linux_ime::KeyCode::Right:
-            editingEvent.code = linux_ime::KeyCode::Down;
-            break;
-        case linux_ime::KeyCode::Up:
-            editingEvent.code = linux_ime::KeyCode::Left;
-            break;
-        case linux_ime::KeyCode::Down:
-            editingEvent.code = linux_ime::KeyCode::Right;
-            break;
-        default:
-            break;
-        }
-    }
-    linux_ime::EngineResult result = engine.processKey(context_, editingEvent);
-    if (sensitive && result.associatedPhrases) {
-        const std::string commit = std::move(result.commit);
-        context_.reset();
-        result = engine.snapshot(context_);
-        result.handled = true;
-        result.commit = commit;
-    }
-    if (result.beep && playSoundOnTypingError) {
-        errorSound.play();
-    }
-    if (result.handled) {
-        apply(result);
-        fcitxEvent.filterAndAccept();
-    } else if (result.updateUi) {
-        updateUi(result);
-    }
+    processRust(event, fcitxEvent, playSoundOnTypingError, errorSound);
 }
 
 bool FcitxState::processModeKey(bool toggleWithControlBackslash,
-                                fcitx::KeyEvent &event) {
+                                fcitx::KeyEvent &event, bool toggleWithShift) {
     const fcitx::Key key = event.key();
     const fcitx::KeyStates states = key.states();
     const bool shiftKey =
@@ -1342,6 +982,7 @@ bool FcitxState::processModeKey(bool toggleWithControlBackslash,
                        states.test(fcitx::KeyState::Hyper);
 
     if (shiftKey) {
+        if (!toggleWithShift) { shiftPressedAt_.reset(); return false; }
         if (!event.isRelease()) {
             if (!control && !alt && !super &&
                 !states.test(fcitx::KeyState::Repeat)) {
@@ -1432,59 +1073,27 @@ void FcitxState::toggleChineseMode() {
 }
 
 void FcitxState::select(std::size_t displayedIndex, std::uint64_t view) {
-    if (effectsInProgress_ || (view != 0 && view != viewGeneration_)) return;
-#if KEYKEY_ENABLE_GUANYINMA
-    if (rust_) {
-        const bool overlay = !associatedCandidates_.empty();
-        applyRust(overlay ? selectAssociated(displayedIndex)
-                          : rust_->selectDisplayedCandidate(displayedIndex), !overlay);
-        return;
-    }
-#endif
-    if (activeEngine_ != nullptr) {
-        apply(activeEngine_->selectDisplayedCandidate(context_, displayedIndex));
-    }
+    if (effectsInProgress_ || !rust_ || (view != 0 && view != viewGeneration_)) return;
+    const bool overlay = !associatedCandidates_.empty();
+    applyRust(overlay ? selectAssociated(displayedIndex) : rust_->selectDisplayedCandidate(displayedIndex), !overlay);
 }
 
 bool FcitxState::selectSmartCharacter(std::size_t preeditCharacterIndex) {
-    if (effectsInProgress_) return false;
-#if KEYKEY_ENABLE_GUANYINMA
-    if (rust_) {
-        if (!smartMode_ || !associatedCandidates_.empty()) return false;
-        auto result = rust_->selectSmartCharacter(preeditCharacterIndex);
-        const bool handled = result.handled;
-        if (handled) applyRust(std::move(result), false);
-        return handled;
-    }
-#endif
-    if (activeEngine_ == nullptr || !smartMode_) {
-        return false;
-    }
-    const linux_ime::EngineResult result =
-        activeEngine_->selectSmartCharacter(context_, preeditCharacterIndex);
-    if (!result.handled) {
-        return false;
-    }
-    apply(result);
-    return true;
+    if (effectsInProgress_ || !rust_ || !rust_->config().smartMode || !associatedCandidates_.empty()) return false;
+    auto result = rust_->selectSmartCharacter(preeditCharacterIndex);
+    const bool handled = result.handled;
+    if (handled) applyRust(std::move(result), false);
+    return handled;
 }
 
 bool FcitxState::commitAndReset(bool retireOnFailure) {
-#if !KEYKEY_ENABLE_GUANYINMA
-    FCITX_UNUSED(retireOnFailure);
-#endif
     if (effectsInProgress_) return false;
     const auto original = inputContext_->watch();
-    if (!inputContext_->hasFocus() &&
-        inputContext_->capabilityFlags().test(
-            fcitx::CapabilityFlag::ClientUnfocusCommit)) {
-        // GTK/Qt frontends with this capability commit the visible client
-        // preedit before reporting focus-out. Committing the engine buffer
-        // again here would duplicate the composition in the document.
+    if (!inputContext_->hasFocus() && inputContext_->capabilityFlags().test(fcitx::CapabilityFlag::ClientUnfocusCommit)) {
+        // The frontend already committed its client preedit on focus-out.
         reset();
         return original.isValid();
     }
-#if KEYKEY_ENABLE_GUANYINMA
     if (rust_) {
         clearAssociated();
         auto result = rust_->finishComposition();
@@ -1496,17 +1105,6 @@ bool FcitxState::commitAndReset(bool retireOnFailure) {
         }
         applyRust(std::move(result), false);
         if (!original.isValid()) return false;
-        reset();
-        return original.isValid();
-    }
-#endif
-    if (activeEngine_ != nullptr) {
-        const linux_ime::EngineResult result =
-            activeEngine_->finishComposition(context_);
-        if (!result.commit.empty()) {
-            inputContext_->commitString(result.commit);
-            if (!original.isValid()) return false;
-        }
     }
     reset();
     return original.isValid();
@@ -1515,8 +1113,6 @@ bool FcitxState::commitAndReset(bool retireOnFailure) {
 void FcitxState::reset() {
     shiftPressedAt_.reset();
     controlBackslashPressed_ = false;
-    context_.reset();
-#if KEYKEY_ENABLE_GUANYINMA
     clearAssociated();
     if (rust_) {
         fullWidth_ = rust_->snapshot().fullWidthMode;
@@ -1525,14 +1121,12 @@ void FcitxState::reset() {
             coreError_ = rust_->lastError();
             rust_.reset();
             attemptedRevision_ = 0;
+            activeRevision_ = 0;
         }
         updateUi(result);
         return;
     }
-#endif
-    if (activeEngine_ != nullptr) {
-        updateUi(activeEngine_->snapshot(context_));
-    }
+    updateUi(currentView());
 }
 
 void FcitxState::apply(const linux_ime::EngineResult &result) {
@@ -1599,14 +1193,11 @@ void FcitxState::updateUi(const linux_ime::EngineResult &result) {
             candidateList->append<CandidateWord>(this, index,
                                                  result.candidates[index], viewGeneration_, inputContext_);
         }
-        const fcitx::KeyList selectionKeys{
-            fcitx::Key{FcitxKey_1}, fcitx::Key{FcitxKey_2},
-            fcitx::Key{FcitxKey_3}, fcitx::Key{FcitxKey_4},
-            fcitx::Key{FcitxKey_5}, fcitx::Key{FcitxKey_6},
-            fcitx::Key{FcitxKey_7}, fcitx::Key{FcitxKey_8},
-            fcitx::Key{FcitxKey_9},
-        };
-        candidateList->setPageSize(9);
+        fcitx::KeyList selectionKeys;
+        const auto &keys = result.candidateSelectionKeys;
+        for (const unsigned char key : keys) selectionKeys.emplace_back(static_cast<fcitx::KeySym>(key));
+        const auto pageSize = result.candidatePageSize ? result.candidatePageSize : std::max<std::size_t>(keys.size(), 1);
+        candidateList->setPageSize(static_cast<int>(pageSize));
         candidateList->setSelectionKey(selectionKeys);
         candidateList->setLayoutHint(candidateLayout_);
         candidateList->setGlobalCursorIndex(
@@ -1616,7 +1207,7 @@ void FcitxState::updateUi(const linux_ime::EngineResult &result) {
             panel.setAuxUp(fcitx::Text("Shift + 1-9"));
         }
     }
-    if (corePending() || !coreError_.empty()) panel.setAuxDown(fcitx::Text(coreStatus()));
+    if ((rust_ && settingsPending()) || !coreError_.empty()) panel.setAuxDown(fcitx::Text(coreStatus()));
     if (!result.phraseFeedback.empty()) {
         panel.setAuxUp(fcitx::Text(result.phraseAdded ? "已加入詞庫：" + result.phraseFeedback
                                                      : "詞庫已有：" + result.phraseFeedback));

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=KeyKey User Phrases
+Name[zh_TW]=琦琦輸入法自訂詞
+Comment=Manage custom phrases and learning backups
+Exec=keykey-user-phrases
+Icon=accessories-character-map
+Terminal=false
+Categories=Settings;Utility;
+StartupNotify=true

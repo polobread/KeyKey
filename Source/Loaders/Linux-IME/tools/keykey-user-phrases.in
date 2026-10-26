@@ -1,0 +1,7 @@
+#!@Python3_EXECUTABLE@
+import os
+import sys
+os.environ["GTK_IM_MODULE"] = "fcitx"
+sys.path.insert(0, "@CMAKE_INSTALL_FULL_DATADIR@/chichi77-keykey")
+from user_phrases import main
+main()

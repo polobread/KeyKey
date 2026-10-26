@@ -41,7 +41,7 @@ Copyright: 2026 Chui-Ping Cheng
 License: MIT and BSD-3-Clause
  Source derivations retain their original notices in
  Source/Guanyinma/LICENSES/Formosa-OpenVanilla-NOTICES.txt.
- Dual-core binary packages install the complete locked Rust crate, standard
+ Binary packages install the complete locked Rust crate, standard
  library and source notices at
  /usr/share/doc/chichi77-keykey/Guanyinma-NOTICES.txt.
  Vendored Cargo sources retain each crate's original LICENSE files and

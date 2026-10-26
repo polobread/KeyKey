@@ -33,9 +33,6 @@ on:
         required: false
         type: string
 
-env:
-  KEYKEY_ENABLE_GUANYINMA: "ON"
-
 permissions:
   contents: read
 
@@ -46,7 +43,7 @@ concurrency:
 jobs:
   pull-request-smoke:
     if: github.event_name == 'pull_request'
-    name: Ubuntu 24.04 build, unit tests, and GTK3 typing smoke
+    name: Ubuntu 24.04 build, unit tests, and GTK/Qt typing smoke
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
@@ -59,7 +56,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
             binutils build-essential cmake dbus-x11 fcitx5 \
-            fcitx5-frontend-gtk3 fonts-wqy-zenhei g++ libcanberra-dev \
+            fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt6 fonts-wqy-zenhei g++ libcanberra-dev \
             libfcitx5core-dev libjson-c-dev libpango1.0-dev curl libgtk-3-dev libgtk-4-dev libsqlite3-dev ninja-build \
             pkg-config python3 python3-gi gir1.2-gtk-3.0 qt6-base-dev x11-utils xdotool xvfb
 
@@ -71,9 +68,9 @@ jobs:
           KEYKEY_BUILD_X11_E2E_HOST: ON
         run: ci/build-and-test.sh
 
-      - name: Type through both cores in isolated GTK/Qt X11 sessions
+      - name: Type through Guanyinma in isolated GTK/Qt X11 sessions
         working-directory: Source/Loaders/Linux-IME
-        run: bash ci/run-dual-core-smoke.sh out/build/ubuntu-24.04-pr-smoke out/stage/ubuntu-24.04-pr-smoke
+        run: bash ci/run-guanyinma-smoke.sh out/build/ubuntu-24.04-pr-smoke out/stage/ubuntu-24.04-pr-smoke
 
       - name: Upload PR smoke evidence
         if: always()
@@ -82,7 +79,7 @@ jobs:
           name: linux-ubuntu-24.04-pr-smoke-${{ github.sha }}
           path: |
             Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-pr-smoke
-            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/dual-core-smoke
+            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/guanyinma-smoke
           if-no-files-found: warn
           retention-days: 7
 
@@ -154,6 +151,7 @@ jobs:
       - name: Run engine tests with ASan and UBSan
         working-directory: Source/Loaders/Linux-IME
         run: |
+          source ci/prepare-guanyinma.sh
           cmake --preset engine-sanitized
           cmake --build --preset engine-sanitized
           ctest --preset engine-sanitized

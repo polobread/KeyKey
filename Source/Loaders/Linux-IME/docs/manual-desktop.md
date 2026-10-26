@@ -1,21 +1,8 @@
 # Ubuntu／Fcitx 5 手動試打交接
 
-2026-09-14 使用者已在本機瀏覽器的 GNOME／TigerVNC 桌面確認：中文輸入、
-「快」選關聯字「樂」、連打「ㄎ」皆正常，原先一秒延遲及多個殘窗已不再出現。
-後續在 Windows／WSL 主機要求使用者實際試打時，優先沿用本流程。
-交付可開啟的畫面並預先選好琦琦注音，不只交付編譯或自動測試結果。
-
-## 為什麼採用這個環境
-
-原 WSLg 單獨顯示的 gedit 視窗可以打中文，但 Fcitx 候選窗關閉後殘留約
-1–1.5 秒；連打 `ㄎ、Space、ㄎ、Space` 會同時留下四個以上候選殘影。
-「快」的一般候選換成關聯候選很快，選 `Shift+1` 提交「樂」後才明顯延遲。
-這個組合符合 [WSLg #1495](https://github.com/microsoft/wslg/issues/1495) 的報告。
-
-解法是保持同一個已安裝的 KeyKey addon，改由獨立 GNOME Shell／Mutter／TigerVNC
-X11 桌面繪製，再以本機 noVNC 顯示整張桌面。候選窗不再各自交給 WSLg 顯示。
-這次修正的是試打環境；沒有在產品引擎留下清窗規避，也沒有修補 WSLg 或 Fcitx。
-曾嘗試在 addon commit 前清空 panel，使用者確認無效，已撤回。
+此流程在專用 WSL2／Ubuntu GNOME X11 桌面試打目前安裝的 Fcitx addon。
+使用待驗證版本建置並安裝套件，記錄實際 addon 路徑、版號與雜湊；不沿用舊核心
+測試結果。它與 Xvfb、GNOME Wayland 及日常桌面各自隔離。
 
 ## 啟動
 
@@ -100,11 +87,10 @@ GNOME 的 Mutter 外框與 client 可能同名；runner 同時核對 host PID，
 非阻塞 `windowactivate` 有界輪詢；不可改成會等待下一次焦點變更的 `--sync`。
 每案都透過實際 client 逐鍵輸入，並切到 `keyboard-us` 重送負控制。
 
-預設 `desktop-safe` 批次有 76 案，涵蓋 GTK 3、GTK 4、Qt 6 的五種注音布局、候選
+`desktop-safe` 批次涵蓋 GTK 3、GTK 4、Qt 6 的五種注音布局、候選
 鍵盤／滑鼠操作、關聯詞、模式、兩 App、編輯／密碼／唯讀欄與符號表。它刻意排除
-三個 Fcitx process-restart persistence 案、設定視窗 persistence 案，以及三個內含
-Fcitx restart 的 input-context recovery 案；承載桌面的 Fcitx 一旦被停止，launcher
-就會結束整個 session。runner 也會拒絕在 existing desktop 直接指定這七案。這些案例
+Fcitx process-restart persistence、設定視窗 persistence 與 input-context recovery 案；承載桌面的 Fcitx 一旦被停止，launcher
+就會結束整個 session。runner 也會拒絕在 existing desktop 直接指定會重啟 Fcitx 的案例。這些案例
 仍由 managed Xvfb／package gate 執行，日後完整登入桌面需以能重建 session 的外層
 orchestrator 驗證。
 
@@ -140,32 +126,6 @@ GNOME／Fcitx 版本、addon／panel 路徑、套件版本、addon SHA-256 與�
 不要因這個 WSLg 問題加入 sleep、重複 commit、虛構候選、定時強制關窗或全面
 更換 Fcitx；若產品修改沒有改善實際案例，撤回該修改並更新診斷。
 
-## 已確認的結果與界線
-
-環境為 WSL2 Ubuntu 24.04.4、Fcitx 5.1.7、GNOME Shell 46、TigerVNC 1.13.1、
-noVNC 1.3.0。三次 `dj941` → `Shift+1` 得到「快樂」；十次「ㄎ」連打精確得到
-十個「ㄎ」。GTK commit 0.72–1.88 ms，觀察到 X11 隱藏為 4.27–6.30 ms，每次
-剩餘 mapped 候選窗為零。兩個抽樣候選區域在約 59 ms 已清除，500 ms 後像素
-一致；英文負控制得到 `dj941!`。這些數值包含觀測成本，不是效能 SLA。
-
-原本機證據為 `out/manual-vnc/popup-timing-20260914-011529.json` 及 before／after
-PNG；`out/` 不進版控，換機不可假設這些證據還存在。摘要與使用者確認已記入
-[測試計畫](../../../../docs/LINUX_TEST_PLAN.md)。2026-09-14 使用者在瀏覽器端確認問題
-解決、試打成功；不再列成「待使用者確認」。
-
-2026-09-16 另以同一類獨立 GNOME Shell 46／Mutter／TigerVNC X11 session，對系統
-安裝的 `fcitx5-chichi77-keykey` 1.2.8 套件執行上述 desktop-safe 批次，GTK 3、GTK 4、
-Qt 6 合計 76/76 通過。這次涵蓋五布局、直／橫候選、真實滑鼠選字、關聯詞、模式、
-兩個同時存活 App、selection／密碼／唯讀及符號列表，每案皆有 exact App text 與
-`keyboard-us` 負控制；執行中的 Fcitx 5.1.7 maps 同時確認 KeyKey addon 與 Classic UI。
-Qt 6 runtime／Fcitx frontend 使用 Ubuntu 24.04 官方套件 payload；因本機自動行程無法
-輸入 sudo 密碼，此次解壓於忽略版控的 `out/` 使用，正式 release gate 仍須依上方指令
-正常安裝套件。七個會重啟承載行程的案例、完整登入／登出、畫面截圖 sweep、音訊、
-XWayland 與 native Wayland 仍未由這次結果取代。
-
-這是已通過人工試打的獨立 GNOME X11 桌面；完整 Ubuntu 登入、native Wayland、
-XWayland、不同 App、音訊與套件發布 gate 仍依原測試計畫驗收。
-
 ## 生命週期與隔離
 
 預設使用 display `:21`；VNC 僅開 0600 Unix socket，noVNC 只綁
@@ -178,14 +138,7 @@ systemctl --user stop keykey-manual-desktop.service
 ```
 
 只停止指定 service，不用 `pkill fcitx5`、不殺原 WSLg 的 gedit、不刪設定或測試文字。
-目前正在使用的 2026-09-14 桌面由舊的本機暫存 launcher 啟動；可繼續使用，下一次
-啟動才換成上述版控腳本，不為交接而打斷使用者。
-
 要另開隔離驗證，給不同的 service 名，並用 `systemd-run --setenv=...` 指定
 `KEYKEY_MANUAL_DISPLAY=:22`、`KEYKEY_MANUAL_PORT=6081` 與絕對路徑的
 `KEYKEY_MANUAL_DESKTOP_DIR`。`session-command.sh` 使用相同 state-directory 變數，
 會讀取該 session 的 display。不可讓兩個 session 共用 runtime／D-Bus／設定目錄。
-
-2026-09-14 的專案 launcher 已以獨立 `:22`／6081 實跑：GNOME、gedit、addon、
-琦琦注音預選與 HTTP 200 均通過，Bash 語法與 ShellCheck 通過；停止此驗證 service
-後 6081 關閉，而使用者的 6080 桌面及琦琦注音維持可用。

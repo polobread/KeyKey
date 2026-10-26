@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <limits>
 #include <stdexcept>
+#include <tuple>
 #include <sys/stat.h>
 #include <utility>
 #include <vector>
@@ -137,8 +138,8 @@ bool samePath(const std::filesystem::path &a, const std::filesystem::path &b) {
 }
 void prepareUserPath(const std::string &path, const std::string &model) {
     if (path.empty()) throw std::runtime_error("Guanyinma requires a private user database path");
-    if (samePath(path, model) || samePath(path, SmartMandarinUserData::defaultPath()))
-        throw std::runtime_error("Guanyinma user database must differ from the model and legacy profile");
+    if (samePath(path, model))
+        throw std::runtime_error("Guanyinma user database must differ from the model");
     const auto parent = std::filesystem::path(path).parent_path();
     if (!parent.empty()) {
         std::error_code error;
@@ -184,10 +185,13 @@ Json operation(const char *type) { auto result = object(); put(result.get(), "ty
 } // namespace
 
 bool GuanyinmaConfig::operator==(const GuanyinmaConfig &other) const noexcept {
-    return inputMethod == other.inputMethod && smartMode == other.smartMode && layout == other.layout &&
-           smart == other.smart && table.composeWhileTyping == other.table.composeWhileTyping &&
-           table.prefixCandidates == other.table.prefixCandidates && table.clearOnError == other.table.clearOnError &&
-           restrictBopomofoToBig5 == other.restrictBopomofoToBig5;
+    return std::tie(inputMethod, smartMode, layout, traditionalSelectionKeys,
+                    ignoreCapsLockInChinese, literalKeypad,
+                    userPhrases, restrictBopomofoToBig5) ==
+           std::tie(other.inputMethod, other.smartMode, other.layout, other.traditionalSelectionKeys,
+                    other.ignoreCapsLockInChinese, other.literalKeypad,
+                    other.userPhrases, other.restrictBopomofoToBig5) &&
+           smart == other.smart && table == other.table && simplex == other.simplex;
 }
 
 class GuanyinmaSession::Impl {
@@ -207,40 +211,54 @@ public:
         put(root.get(), "profile", "desktop");
         put(root.get(), "layout", layoutName(config.layout));
         put(root.get(), "user_database", user);
-        put(root.get(), "traditional_selection_keys", "123456789");
-        put(root.get(), "table_selection_keys", "123456789");
+        put(root.get(), "traditional_selection_keys", config.traditionalSelectionKeys);
+        put(root.get(), "table_selection_keys",
+            (config.inputMethod == InputMethod::Simplex ? config.simplex : config.table).candidateSelectionKeys);
         auto behaviors = object();
-        put(behaviors.get(), "ignore_caps_lock_in_chinese", false);
-        put(behaviors.get(), "literal_keypad", true);
+        put(behaviors.get(), "ignore_caps_lock_in_chinese", config.ignoreCapsLockInChinese);
+        put(behaviors.get(), "literal_keypad", config.literalKeypad);
         json_object_object_add(root.get(), "behaviors", behaviors.release());
         auto learning = object();
-        put(learning.get(), "user_phrases", true);
-        put(learning.get(), "candidate_overrides", smart);
-        put(learning.get(), "bigrams", smart);
-        put(learning.get(), "table_learning", false);
+        put(learning.get(), "user_phrases", config.userPhrases);
+        put(learning.get(), "candidate_overrides", smart && config.smart.learnCandidateOverrides);
+        put(learning.get(), "bigrams", smart && config.smart.learnBigrams);
+        put(learning.get(), "table_learning",
+            config.inputMethod == InputMethod::Cangjie ? config.table.learnSelection :
+            config.inputMethod == InputMethod::Simplex && config.simplex.learnSelection);
         json_object_object_add(root.get(), "learning", learning.release());
         auto options = object();
-        put(options.get(), "use_bigrams", true);
+        put(options.get(), "use_bigrams", config.smart.useBigrams);
         put(options.get(), "space_opens_candidates", config.smart.showCandidateListWithSpace);
         put(options.get(), "candidate_cursor_at_end", config.smart.candidateCursorAtEndOfTargetBlock);
         put(options.get(), "clear_composing_with_escape", config.smart.clearComposingTextWithEsc);
-        put(options.get(), "max_completed_syllables", std::size_t{10});
+        put(options.get(), "max_completed_syllables", config.smart.maxCompletedSyllables);
         put(options.get(), "shift_at_limit", false);
-        put(options.get(), "selection_returns_to_end", false);
-        put(options.get(), "candidate_selection_keys", "123456789");
+        put(options.get(), "selection_returns_to_end", config.smart.selectionReturnsToEnd);
+        put(options.get(), "shift_always_uppercase", config.smart.shiftAlwaysUppercase);
+        put(options.get(), "candidate_selection_keys", config.smart.candidateSelectionKeys);
         json_object_object_add(root.get(), "smart", options.release());
-        auto cangjie = object();
-        put(cangjie.get(), "realtime", config.table.composeWhileTyping);
-        put(cangjie.get(), "prefix", config.table.prefixCandidates);
-        put(cangjie.get(), "clear_on_error", config.table.clearOnError && !config.table.composeWhileTyping);
-        put(cangjie.get(), "query_at_maximum", false);
-        put(cangjie.get(), "learn_selection", false);
-        json_object_object_add(root.get(), "cangjie", cangjie.release());
-        auto simplex = object();
-        put(simplex.get(), "query_at_maximum", true);
-        put(simplex.get(), "clear_on_error", false);
-        put(simplex.get(), "learn_selection", false);
-        json_object_object_add(root.get(), "simplex", simplex.release());
+        const auto tableOptions = [](const TablePreferences &settings, bool cangjie) {
+            auto result = object();
+            put(result.get(), "realtime", settings.composeWhileTyping);
+            put(result.get(), "prefix", cangjie && settings.prefixCandidates);
+            put(result.get(), "clear_on_error", settings.clearOnError && !settings.composeWhileTyping);
+            put(result.get(), "query_at_maximum", settings.queryAtMaximum);
+            put(result.get(), "learn_selection", settings.learnSelection);
+            put(result.get(), "punctuation", settings.punctuation);
+            put(result.get(), "maximum_radical_length", settings.maximumRadicalLength);
+            put(result.get(), "space_as_first_selection_key", settings.spaceAsFirstSelectionKey);
+            put(result.get(), "space_commits_first_on_single_page", settings.spaceCommitsFirstOnSinglePage);
+            auto wildcards = object();
+            for (const auto &entry : {std::make_pair("one", settings.wildcardOne),
+                                      std::make_pair("many", settings.wildcardMany)}) {
+                if (entry.second.empty()) json_object_object_add(wildcards.get(), entry.first, nullptr);
+                else put(wildcards.get(), entry.first, entry.second);
+            }
+            json_object_object_add(result.get(), "wildcards", wildcards.release());
+            return result;
+        };
+        json_object_object_add(root.get(), "cangjie", tableOptions(config.table, true).release());
+        json_object_object_add(root.get(), "simplex", tableOptions(config.simplex, false).release());
         const auto json = dump(root.get());
         check(guanyinma_session_open_with_candidate_filter(
             reinterpret_cast<const std::uint8_t *>(model.data()), model.size(),
@@ -278,7 +296,15 @@ public:
         auto *highlight = field(root.get(), "highlight");
         value.highlightedIndex = highlight ? integerValue(highlight) : 0;
         const auto pageSize = integerField(root.get(), "page_size");
-        if (!pageSize || pageSize > 32 || value.candidates.size() > pageSize ||
+        value.candidatePageSize = pageSize;
+        value.candidateSelectionKeys = config.inputMethod == InputMethod::Bopomofo
+            ? (config.smartMode ? config.smart.candidateSelectionKeys : config.traditionalSelectionKeys)
+            : (config.inputMethod == InputMethod::Simplex ? config.simplex : config.table).candidateSelectionKeys;
+        if (config.inputMethod != InputMethod::Bopomofo &&
+            (config.inputMethod == InputMethod::Cangjie ? config.table : config.simplex).spaceAsFirstSelectionKey)
+            value.candidateSelectionKeys.insert(value.candidateSelectionKeys.begin(), ' ');
+        if (pageSize < value.candidateSelectionKeys.size()) value.candidateSelectionKeys.resize(pageSize);
+        if (!pageSize || pageSize > 33 || pageSize > value.candidateSelectionKeys.size() || value.candidates.size() > pageSize ||
             (!value.candidates.empty() && (value.highlightedIndex >= value.candidates.size() || value.candidatePage >= value.candidatePageCount)))
             throw std::runtime_error("Invalid Guanyinma candidate page");
         value.fullWidthMode = booleanField(root.get(), "full_width");

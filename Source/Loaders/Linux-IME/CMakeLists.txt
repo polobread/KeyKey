@@ -31,7 +31,6 @@ else()
 endif()
 option(KEYKEY_BUILD_FCITX5 "Build the Fcitx 5 addon" ${KEYKEY_FCITX5_DEFAULT})
 option(KEYKEY_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
-option(KEYKEY_ENABLE_GUANYINMA "Include the optional Guanyinma Rust backend" OFF)
 option(KEYKEY_INSTALL_STANDALONE_LICENSE_FILES
     "Install standalone license copies" ON)
 
@@ -95,88 +94,42 @@ foreach(KEYKEY_ASSOCIATED_PHRASE_CATEGORY_FILE
     )
 endforeach()
 
-add_library(keykey_linux_engine STATIC
+add_library(keykey_linux_support STATIC
     engine/src/associated_phrase_dictionary.cpp
-    engine/src/bopomofo_reading.cpp
     engine/src/candidate_encoding.cpp
     engine/src/cin_dictionary.cpp
-    engine/src/engine.cpp
-    engine/src/smart_mandarin_store.cpp
-    engine/src/smart_mandarin_user_data.cpp
+    engine/src/output_conversion.cpp
+    engine/src/phrase_reading.cpp
 )
-target_compile_features(keykey_linux_engine PUBLIC cxx_std_17)
-target_include_directories(keykey_linux_engine PUBLIC engine/include)
-target_link_libraries(keykey_linux_engine PUBLIC Iconv::Iconv SQLite::SQLite3)
-add_executable(keykey-smart-phrases tools/smart-mandarin-phrases.cpp)
-target_compile_features(keykey-smart-phrases PRIVATE cxx_std_17)
-target_link_libraries(keykey-smart-phrases PRIVATE keykey_linux_engine)
-install(TARGETS keykey-smart-phrases RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-install(FILES docs/keykey-smart-phrases.1
-    DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
-set_target_properties(keykey_linux_engine PROPERTIES
+target_compile_features(keykey_linux_support PUBLIC cxx_std_17)
+target_include_directories(keykey_linux_support PUBLIC engine/include)
+target_link_libraries(keykey_linux_support PUBLIC Iconv::Iconv SQLite::SQLite3)
+set_target_properties(keykey_linux_support PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN YES
 )
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(keykey_linux_engine PRIVATE
-        -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion
-    )
+    target_compile_options(keykey_linux_support PRIVATE
+        -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion)
 endif()
 if(KEYKEY_ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(keykey_linux_engine PRIVATE
-        -fsanitize=address,undefined -fno-omit-frame-pointer
-    )
-    target_link_options(keykey_linux_engine PUBLIC
-        -fsanitize=address,undefined -fno-omit-frame-pointer
-    )
+    target_compile_options(keykey_linux_support PUBLIC
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(keykey_linux_support PUBLIC
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
 endif()
 
-# Keep the portable legacy engine independently buildable without Rust, JSON or fonts.
-if(KEYKEY_ENABLE_GUANYINMA)
-    include(cmake/Guanyinma.cmake)
-    target_link_libraries(keykey-smart-phrases PRIVATE keykey_linux_guanyinma)
-    target_sources(keykey-smart-phrases PRIVATE tools/guanyinma-phrases.cpp)
-    target_compile_definitions(keykey-smart-phrases PRIVATE
-        KEYKEY_LINUX_DATA_DIR="${CMAKE_INSTALL_FULL_DATADIR}/chichi77-keykey/data")
-else()
-    target_compile_definitions(keykey-smart-phrases PRIVATE KEYKEY_ENABLE_GUANYINMA=0)
-endif()
-
-# Explicitly enabled only when capturing/comparing a Rust migration baseline.
-# It is excluded from normal builds and intentionally not registered with CTest.
-option(KEYKEY_BUILD_MIGRATION_BASELINE
-    "Build the manual Rust core migration baseline recorder" OFF)
-if(KEYKEY_BUILD_MIGRATION_BASELINE)
-    add_executable(keykey_unix_migration_baseline EXCLUDE_FROM_ALL
-        tests/shared_core_functional.cpp)
-    target_compile_features(keykey_unix_migration_baseline PRIVATE cxx_std_17)
-    target_link_libraries(keykey_unix_migration_baseline PRIVATE keykey_linux_engine)
-    add_dependencies(keykey_unix_migration_baseline keykey_linux_smart_db)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-        target_compile_options(keykey_unix_migration_baseline PRIVATE
-            -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion
-        )
-    endif()
-endif()
+include(cmake/Guanyinma.cmake)
+add_executable(keykey-smart-phrases tools/smart-mandarin-phrases.cpp tools/guanyinma-phrases.cpp)
+target_compile_features(keykey-smart-phrases PRIVATE cxx_std_17)
+target_link_libraries(keykey-smart-phrases PRIVATE keykey_linux_guanyinma)
+target_compile_definitions(keykey-smart-phrases PRIVATE
+    KEYKEY_LINUX_DATA_DIR="${CMAKE_INSTALL_FULL_DATADIR}/chichi77-keykey/data")
+install(TARGETS keykey-smart-phrases RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(FILES docs/keykey-smart-phrases.1 DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 
 if(BUILD_TESTING)
-    add_executable(keykey_linux_engine_tests tests/engine_tests.cpp)
-    target_compile_features(keykey_linux_engine_tests PRIVATE cxx_std_17)
-    target_link_libraries(keykey_linux_engine_tests PRIVATE keykey_linux_engine)
-    target_compile_definitions(keykey_linux_engine_tests PRIVATE
-        KEYKEY_TEST_DATA_DIR="${KEYKEY_DATA_SOURCE_DIR}"
-        KEYKEY_TEST_LINUX_DATA_DIR="${KEYKEY_LINUX_DATA_SOURCE_DIR}"
-        KEYKEY_TEST_ASSOCIATED_PHRASE_DATA_DIR="${KEYKEY_ASSOCIATED_PHRASE_BUILD_DIR}"
-        KEYKEY_TEST_SMART_DB="${KEYKEY_SMART_DB}"
-    )
-    add_dependencies(keykey_linux_engine_tests keykey_linux_smart_db)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-        target_compile_options(keykey_linux_engine_tests PRIVATE
-            -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion
-        )
-    endif()
-    add_test(NAME keykey_linux_engine COMMAND keykey_linux_engine_tests)
     add_test(NAME keykey_linux_support_matrix
         COMMAND "${CMAKE_COMMAND}" -P
                 "${CMAKE_CURRENT_SOURCE_DIR}/ci/validate-support-matrix.cmake")
@@ -185,21 +138,18 @@ if(BUILD_TESTING)
                 "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_debian_package_removal.py")
     add_custom_target(check
         COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure
-        DEPENDS keykey_linux_engine_tests
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         USES_TERMINAL)
-    if(KEYKEY_ENABLE_GUANYINMA)
-        add_executable(keykey_linux_guanyinma_session_tests tests/guanyinma_session_tests.cpp)
-        target_link_libraries(keykey_linux_guanyinma_session_tests PRIVATE keykey_linux_guanyinma)
-        add_dependencies(keykey_linux_guanyinma_session_tests keykey_linux_smart_db)
-        add_test(NAME keykey_linux_guanyinma_session
-            COMMAND keykey_linux_guanyinma_session_tests "${KEYKEY_SMART_DB}")
-        add_test(NAME keykey_linux_guanyinma_phrase_cli
-            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/guanyinma_phrase_cli_tests.py"
-                "$<TARGET_FILE:keykey-smart-phrases>" "${KEYKEY_SMART_DB}")
-        add_dependencies(check keykey_linux_guanyinma_session_tests)
-        add_dependencies(check keykey-smart-phrases)
-    endif()
+    add_executable(keykey_linux_guanyinma_session_tests tests/guanyinma_session_tests.cpp)
+    target_link_libraries(keykey_linux_guanyinma_session_tests PRIVATE keykey_linux_guanyinma)
+    add_dependencies(keykey_linux_guanyinma_session_tests keykey_linux_smart_db)
+    add_test(NAME keykey_linux_guanyinma_session
+        COMMAND keykey_linux_guanyinma_session_tests "${KEYKEY_SMART_DB}")
+    add_test(NAME keykey_linux_guanyinma_phrase_cli
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/guanyinma_phrase_cli_tests.py"
+            "$<TARGET_FILE:keykey-smart-phrases>" "${KEYKEY_SMART_DB}")
+    add_dependencies(check keykey_linux_guanyinma_session_tests)
+    add_dependencies(check keykey-smart-phrases)
     if(KEYKEY_BUILD_X11_E2E_HOST)
         find_package(PkgConfig REQUIRED)
         pkg_check_modules(GTK3 REQUIRED IMPORTED_TARGET gtk+-3.0)
@@ -246,6 +196,9 @@ if(KEYKEY_BUILD_FCITX5)
     configure_file(tools/keykey-update-notify.in keykey-update-notify @ONLY)
     configure_file(tools/keykey-about.in keykey-about @ONLY)
     configure_file(tools/keykey-cangjie-settings.in keykey-cangjie-settings @ONLY)
+    configure_file(tools/keykey-user-phrases.in keykey-user-phrases @ONLY)
+    configure_file(data/org.chichi77.KeyKey.UserPhrases.desktop.in
+        org.chichi77.KeyKey.UserPhrases.desktop @ONLY)
     configure_file(data/org.chichi77.KeyKey.About.desktop.in
         org.chichi77.KeyKey.About.desktop @ONLY)
     configure_file(data/org.chichi77.KeyKey.UpdateNotification.desktop.in
@@ -258,13 +211,15 @@ if(KEYKEY_BUILD_FCITX5)
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/keykey-update-notify"
         "${CMAKE_CURRENT_BINARY_DIR}/keykey-about"
         "${CMAKE_CURRENT_BINARY_DIR}/keykey-cangjie-settings"
+        "${CMAKE_CURRENT_BINARY_DIR}/keykey-user-phrases"
         DESTINATION "${CMAKE_INSTALL_BINDIR}")
-    install(FILES tools/update_notify.py tools/update_notify_gui.py tools/about_gui.py tools/cangjie_settings.py
+    install(FILES tools/update_notify.py tools/update_notify_gui.py tools/about_gui.py tools/cangjie_settings.py tools/user_phrases.py
         "${KEYKEY_REPOSITORY_ROOT}/Source/Branding/ProjectMotivation.txt"
         "${KEYKEY_REPOSITORY_ROOT}/Source/Branding/chichi77.png"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/chichi77-keykey")
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.chichi77.KeyKey.UpdateNotification.desktop"
         "${CMAKE_CURRENT_BINARY_DIR}/org.chichi77.KeyKey.About.desktop"
+        "${CMAKE_CURRENT_BINARY_DIR}/org.chichi77.KeyKey.UserPhrases.desktop"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
     install(PROGRAMS tools/keykey-fcitx-app
         DESTINATION "${CMAKE_INSTALL_BINDIR}")
@@ -275,6 +230,9 @@ if(KEYKEY_BUILD_FCITX5)
 endif()
 
 if(BUILD_TESTING)
+    add_test(NAME keykey_user_phrases
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_user_phrases.py"
+            "$<TARGET_FILE:keykey-smart-phrases>" "${KEYKEY_SMART_DB}")
     add_test(NAME keykey_unix_update_notifications
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_update_notify.py")
     add_test(NAME keykey_unix_update_notification_lifecycle

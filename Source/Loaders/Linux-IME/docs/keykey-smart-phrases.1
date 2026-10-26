@@ -1,4 +1,4 @@
-.TH KEYKEY-SMART-PHRASES 1 "September 2026" "KeyKey" "User Commands"
+.TH KEYKEY-SMART-PHRASES 1 "October 2026" "KeyKey" "User Commands"
 .SH NAME
 keykey-smart-phrases \- manage Smart Mandarin custom phrases and learning
 .SH SYNOPSIS
@@ -11,18 +11,21 @@ keykey-smart-phrases \- manage Smart Mandarin custom phrases and learning
 .I phrase "reading"
 .br
 .B keykey-smart-phrases reset-learning
-.br
-.B keykey-smart-phrases --core legacy|guanyinma
-.I command
+
 .SH DESCRIPTION
 Readings use one space-separated Bopomofo syllable per character. Quote the
 reading so the shell passes it as one argument. Candidate choices are learned
 automatically while typing with Smart Mandarin. The reset-learning command
 clears candidate and adjacent-word learning while preserving custom phrases.
 .PP
-Commands without --core always use the original C++ database, regardless of
-the desktop's selected input core. A dual-core build additionally accepts
---core guanyinma with list, add, remove and reset-learning. Guanyinma also supports:
+All commands use the Guanyinma database.
+.TP
+.B list --json
+Print custom phrases as a JSON array of objects with text, reading and qstring.
+.TP
+.B readings PHRASE
+Read the installed model and custom phrases to print a JSON array of possible
+Bopomofo readings. Results and per-character combinations are bounded to 64.
 .TP
 .B update OLD_PHRASE "OLD_READING" NEW_PHRASE "NEW_READING"
 Atomically edit an existing Guanyinma custom phrase. Packaged dictionary entries
@@ -30,25 +33,17 @@ are read-only and cannot be edited.
 .TP
 .B export FILE.json
 Write a complete Guanyinma JSON backup using a private temporary file and atomic
-replacement. The model, both user databases, their sidecars and aliases cannot
+replacement. The model, Guanyinma database, their sidecars and aliases cannot
 be backup destinations.
 .TP
 .B import FILE.json
 Validate the entire archive before atomically importing it. Custom phrases merge;
 provided Smart or table learning sections replace that domain. Missing learning
 sections preserve existing data.
-.TP
-.B import-legacy FILE.db
-Explicitly read an old Linux Smart Mandarin database without changing the source.
-Custom phrases merge; source Smart cache tables replace Smart learning, retaining
-the latest 200 override and bigram queries. Other methods are preserved.
 .SH ENVIRONMENT
 .TP
 .B XDG_DATA_HOME
 Base directory for the private user database. Defaults to ~/.local/share.
-.TP
-.B CHICHI77_KEYKEY_USER_DB
-Override the original C++ user database path.
 .TP
 .B CHICHI77_KEYKEY_GUANYINMA_USER_DB
 Override the separate Guanyinma database path; defaults to

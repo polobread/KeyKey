@@ -13,6 +13,11 @@
 
 本指南的桌面步驟已在 **FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3** 驗證。需先有可登入的圖形桌面、網路及管理員權限；安裝後使用一般帳號設定與輸入中文。
 
+目前開發分支已改為 Guanyinma（Rust）單核心，與本指南記錄的正式 1.3.7 不同。
+新版原始碼建置須準備鎖定 Rust 工具鏈、json-c、PangoFT2／Fontconfig、SQLite 與 Fcitx
+開發套件；現有 ports 配方需要同步 Cargo 來源、相依及安裝清單。這些開發版變更
+尚未在 FreeBSD 原生 runner 驗證，不以 Ubuntu 測試推定 FreeBSD 新版可用。
+
 ## 1. 從套件庫直接安裝
 
 開啟桌面終端機，切換 root 後先更新目錄並查詢：

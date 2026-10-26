@@ -1,317 +1,59 @@
-# chichi77 KeyKey for Linux
+# chichi77 KeyKey for Linux and FreeBSD
 
-Optional development builds can select the original C++ core or Guanyinma in
-the same Fcitx 5 frontend. The default remains the C++ core. Build dependencies,
-safe switching, separate user data, and focused verification are described in
-the [Linux Guanyinma adapter guide](../../../docs/GUANYINMA_LINUX_ADAPTER.md).
+The Fcitx 5 frontend uses **Guanyinma (Rust) as its only input core** for
+好打注音, 傳統注音, Cangjie, and Simplex. C++ handles Fcitx events, input contexts,
+native font checks, associated phrases, output conversion, and administrative
+data conversion. Input algorithms, candidate ranking, and learning run in Rust.
+The current integration, desktop preferences, and data contracts are described
+in the [Guanyinma adapter guide](../../../docs/GUANYINMA_LINUX_ADAPTER.md).
 
-倉頡新增可選的「即時候選」與「未打完也能選字」，兩項預設關閉；設定與分層驗證見 [桌面倉頡試用說明](../../../docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
+Released packages and their desktop setup are documented separately in the
+[Linux installation guide](../../../LINUX_INSTALL.md) and
+[FreeBSD installation guide](../../../FREEBSD_INSTALL.md). A source build or
+isolated test does not establish acceptance of an installed package, GNOME
+Wayland, or FreeBSD.
 
-FreeBSD 的套件／ports 原始碼安裝、桌面設定與操作截圖見 [FreeBSD 安裝與使用指南](../../../FREEBSD_INSTALL.md)。
+## Input and preferences
 
-Released version 1.3.7 provides native Fcitx 5 input methods for Ubuntu Desktop 24.04
-LTS, GNOME Shell 46, and amd64. It includes 好打注音 sentence composition as well
-as 傳統注音, Cangjie, and Simplex. See the
-[Linux installation and usage guide](../../../LINUX_INSTALL.md) for the package
-set and setup steps.
-Version 1.3.7 fixes Shift tap mode switching swallowing the key release after
-forwarding the press, which could leave applications treating Shift as held.
-FreeBSD 1.3.7 has also been tested on FreeBSD 15.1-RELEASE-p3 amd64 with
-Xfce/X11, LightDM, Fcitx 5, and Mousepad/GTK 3. It shares this frontend and
-product version; install through ports/pkg, whose binary packages may arrive later.
-With Fcitx enabled, CTest runs `keykey_linux_fcitx5_mode_keys` against the real
-adapter and checks that Shift releases are filtered but not accepted (the
-frontend must still deliver them to the application), alongside tap/hold mode
-selection, reset, Shift combinations, and shortcut pass-through. This isolated
-test does not replace GTK/Qt X11 or GNOME Wayland desktop acceptance.
-The Fcitx configuration page shows the CMake project version in the About entry's
-label, so the addon metadata and visible settings use one source without an empty
-information group.
+Fcitx configuration groups expose general behavior, Smart Mandarin, Cangjie,
+Simplex, and associated-phrase settings. Bopomofo supports Standard, ETen,
+ETen26, Hsu, and Hanyu Pinyin layouts. 好打注音 is the initial Bopomofo mode.
 
-The **更新通知與下載…** setting opens a separate notification tool with manual
-checks, weekly checks (on by default, with a saved opt-out), and an official release-page
-button. It also supports the `chinese/fcitx5-keykey` FreeBSD port through the
-same prefix-aware installation. Linux and FreeBSD read the shared CDN
-`keykey/update/stable/unix-fcitx5.xml`; beta opt-in additionally reads the
-matching `beta/` feed. Clients do not query the GitHub API or tag source files.
-Reviewed feed PRs announce verified Linux releases to both platforms at once;
-FreeBSD still uses ports/pkg and its packages may arrive later.
-See [update notifications and ports integration](docs/update-notifications.md).
+The frontend preserves desktop Manjusri/OpenVanilla behavior through Guanyinma:
+sentence composition, cursor-based word selection, configurable candidate keys,
+10–20 completed-syllable buffers, candidate and Bigram learning, and table-input
+preferences. The default buffer holds ten completed syllables; completing the
+eleventh commits the first whole word. The native frontend also provides
+Chinese/English switching, full/half-width output, Traditional-to-Simplified
+conversion, typing-error sound, and per-context state.
 
-The **關於琦琦輸入法 — 版本 …** setting opens a scrollable About window with the installed
-version, project motivation, source credits, GitHub homepage, and latest stable
-release link. It is also available as **關於琦琦輸入法** in the applications menu
-or through `keykey-about`. Linux and FreeBSD share this GTK interface and the
-same motivation text bundled with the macOS and Windows About pages. Opening
-About reads local resources; the browser opens only when a link is clicked.
+Associated phrases use the McBopomofo base plus 29 category collections. Each
+collection has a Boolean option in the `[AssociatedPhrases]` section. The base is
+enabled initially, and disabling every collection disables associated phrases.
+`Shift+1–9` selects a suggested suffix. Candidate size, font, scale, and colors
+belong to the active Fcitx UI or GNOME candidate panel; the addon provides a
+vertical/horizontal layout hint.
 
-The About icon and introduction come from `Source/Branding/chichi77.png` and
-`Source/Branding/ProjectMotivation.txt`. The Debian source staging and standalone
-source archive share `ci/about-source-paths.sh` to include both canonical files.
-CMake stops during configuration if either file is missing; installation does
-not rely on manually copying resources into a temporary build directory.
-
-The KeyKey configuration labels and dropdown names use Taiwan Traditional Chinese,
-including **注音鍵盤配置**, **候選字窗方向**, **直式／橫式**, and **關聯詞庫**.
-Stored configuration keys and values such as `Standard` and `Vertical` remain
-unchanged. Fcitx/Qt supplies shared buttons such as Restore Defaults, Cancel, and
-OK; their language follows the desktop locale and installed Fcitx/Qt translations.
-
-This directory contains the C++ engine, Fcitx 5 addon, runtime tables, tools,
-desktop integration, packaging, and platform tests. CMake verifies and installs
-the repository's pre-generated shared model. Runtime addon and data names remain
-`chichi77-keykey`, and the C++ namespace is `keykey::linux_ime`. The engine and
-addon do not link or modify the legacy KeyKeyEngine or OpenVanilla frameworks.
-
-The earlier 1.2.8 release boundaries remain in the
-[1.2.8 release record](docs/linux-1.2.8-release.md).
-
-## Features and verification
-
-The 1.2.8 phase established Traditional Bopomofo behavior across Standard,
-ETen, ETen 26-key, Hsu, and Hanyu Pinyin layouts, along with Cangjie, Simplex,
-and Traditional-to-Simplified output. Version 1.3.1 includes 好打注音 sentence
-composition and persistent candidate learning.
-
-The Linux implementation provides:
-
-- a display-server-independent C++17 engine contract;
-- a persistent Bopomofo mode setting with 好打注音 as the first-run default
-  and 傳統注音 as the alternate. Smart mode composes multiple readings with
-  the same unigram/bigram model used by macOS, commits with Enter, and lets
-  Down open candidates at the cursor; Space can optionally do so through the
-  Smart Mandarin preferences described below. Clicking a composed character
-  opens its candidates in clients that send Fcitx preedit click events.
-  While candidates are open, Down moves the highlight and Enter replaces the
-  selected word without committing the sentence; another Enter commits it.
-  Left/Right/Home/End move within the composition, and Backspace/Delete edit
-  readings there. Completing the eleventh syllable commits the first full word
-  segment while the remaining sentence stays in preedit. A learned single
-  character does not split a visible dictionary word at the eviction boundary,
-  and the following word stays fixed while the buffer shifts. Switching input
-  methods or Chinese/English mode finishes valid readings and commits the
-  visible composition; an unmatched partial reading remains literal. Package builds
-  verify and install the repository's pre-generated shared model as
-  `smart-mandarin.db`; they do not recook it. The current model contains 119,159
-  unigrams and 883,372 bigrams and is byte-for-byte the same input used by the
-  other platforms. Existing
-  configurations without a mode choice also use 好打注音;
-- 好打注音 candidate panels own editing keys until selection or Escape.
-  Home/End address the full candidate list; horizontal arrows follow the panel
-  layout. With an unfinished reading, Escape cancels only that reading and
-  Delete preserves the following text. Completed sentences survive Escape.
-  Preedit click positions use Unicode character indexes; opening candidates
-  for another character resets the page. Changing the composition mode or
-  keyboard layout finishes the old composition before using the new setting.
-  See [the cross-platform review](docs/smart-mandarin-platform-review.md) for
-  tested behavior and remaining platform differences;
-- 好打注音 stores custom phrases and learned candidate choices in
-  `$XDG_DATA_HOME/chichi77-keykey/smart-mandarin-user.db` (or
-  `~/.local/share/chichi77-keykey/smart-mandarin-user.db`). Candidate choices
-  and adjacent-word preferences survive Fcitx restarts. Manage custom phrases
-  with `keykey-smart-phrases list`,
-  `keykey-smart-phrases add 詞語 'ㄘˊ ㄩˇ'`, and
-  `keykey-smart-phrases remove 詞語 'ㄘˊ ㄩˇ'`.
-  `keykey-smart-phrases reset-learning` clears learned choices while preserving
-  custom phrases. Each Chinese character needs one space-separated reading;
-- the persistent user database is private to the current Linux user and is
-  separate from the packaged, read-only language model;
-- a strict CIN reader using the repository's read-only input tables;
-- isolated state for each input context;
-- Standard, ETen, ETen 26-key, Hsu, and Hanyu Pinyin Bopomofo layouts, plus
-  Cangjie and Simplex table composition using CIN key names and `%endkey`
-  metadata. Table punctuation, single-candidate commit, Cangjie error clearing
-  and `?`/`*` wildcard queries, and Simplex two-code auto-query/continuous
-  typing are implemented;
-- candidate lookup, cyclic arrow/PageUp/PageDown navigation, numeric selection,
-  Backspace, Escape, Enter, and Space; Backspace edits one reading component,
-  including after closing candidates, while Escape cancels the complete reading;
-  empty-state edit keys pass through to the application. An explicit Bopomofo
-  tone immediately opens candidates, matching the Windows runtime;
-- an optional Bopomofo Big5-HKSCS candidate filter for readings and symbols
-  that preserves source order;
-- a native associated-phrase parser for the McBopomofo base and all 29 bundled
-  category collections, with source-order merge, deduplication, filtering,
-  Shift+1–9 suffix selection, first-run base default, an all-disabled state,
-  and a nested Fcitx-native Boolean setting for every collection;
-- a persistent vertical/horizontal candidate-window preference, applied to
-  every Fcitx candidate list through its native layout hint;
-- a per-input-context full/half-width mode toggled by `Shift+Space`, including
-  direct ASCII punctuation/letter/space conversion while preserving an active
-  reading or candidate list;
-- a per-input-context Chinese/English mode with compact Fcitx status labels,
-  toggled by `Ctrl+\` by default or by a bare Shift tap within 300 ms. Entering
-  English confirms the highlighted Traditional candidate or preserves its raw
-  unfinished reading; Smart mode finishes the current composition. Half-width
-  printable keys pass to the application, while full-width ASCII remains available;
-- one loadable Fcitx 5 addon with Bopomofo, Cangjie, and Simplex registrations;
-- default-enabled typing-error feedback using the XDG `bell-window-system`
-  event sound, with a Fcitx-native option to disable it;
-- unit and real-data tests for all five packaged tables, including pinned
-  round-trip coverage for more than 1,490 real Bopomofo readings per symbolic
-  layout, representative Hanyu Pinyin initials/finals/tones, and punctuation
-  shortcut/list behavior;
-- an X11 GTK 3 case for Smart Mandarin `你好` composition and Enter commit;
-- an installed-package X11 E2E test that sends physical key events into real
-  GTK 3, GTK 4, and Qt 6 editors; all three verify the Standard Bopomofo T01
-  preedit/commit path to `中` and all five layouts with all
-  four explicit tones → `麻馬罵嘛`, with every layout preserving its reading
-  across an invalid bare `\` and a passed-through `Ctrl+C`, candidate-to-next-reading continuous input
-  → `中文`, invalid `=` plus `Ctrl+C` recovery → `中`, incomplete Pinyin backspace recovery,
-  and all three verify the macOS-first, Windows-cross-checked
-  empty/reading/candidate Backspace and Escape boundaries → `中文麻`,
-  Cangjie `a` → `日`, direct punctuation/error recovery → `，用`, wildcard
-  queries → `昌日`, Simplex
-  `a` → second candidate `曰`, full-code/continuous/direct-punctuation input →
-  `明銖䍤、`, GTK 3/GTK 4/Qt 6 vertical Bopomofo Home/End plus second-page keyboard
-  navigation → `妐`, and a real pointer click on the expanded vertical Fcitx
-  candidate window's second row → `鐘`; GTK 4 and Qt 6 additionally verify the
-  Windows-parity horizontal-key flow through Home/End, PageUp/PageDown,
-  Left/Right highlight, Space paging, and Enter → `妐`;
-  all three toolkits verify `Shift+Space` full-width input → `Ａ！～　`, while GTK 3
-  additionally covers Big-5 filtering of `ㄝˋ` candidates → `𤦩`, plus
-  all three toolkits verify Chinese/English switching by `Ctrl+\` and a short Shift tap, including
-  composition preservation, Caps Lock, English full-width input, long-Shift
-  rejection, disabled-shortcut pass-through, and Traditional-to-Simplified
-  output `臺灣` → `台湾`; a disabled shortcut lets the client commit active
-  preedit, producing GTK 3 `ㄓ翁` versus GTK 4 `翁ㄓ` because of their insertion
-  rules, while KeyKey remains in Chinese mode in both, plus
-  both toolkits run a modifier-boundary flow that holds `Ctrl+\` for one second without repeated
-  toggles and preserves active readings/candidates across `Ctrl+C` and `Alt+F`,
-  clears any X11 key-repeat residue with the same application edit sequence in
-  both controls, and commits exact `x中文`, plus
-  all three toolkits run a two-entry input-context lifecycle flow that clears the first entry's
-  candidate preedit after a geometry-derived pointer click focuses the second,
-  independently commits `文` there,
-  returns to commit `中` in the first without reviving the old candidate,
-  closes a client while candidates are active, verifies Fcitx and the staged
-  addon remain alive, restarts Fcitx, and types `中` from a fresh client, plus
-  all three toolkits run a two-process flow that keeps both apps alive while App A retains its
-  English/full-width state and App B retains Chinese/half-width state, producing
-  exact `ａｂ中|文`, plus
-  an editing-field flow that uses a geometry-derived pointer drag to select
-  `乙` in `甲乙丙`, replaces it with a Bopomofo candidate to produce `甲中丙`,
-  then preserves an active reading and insertion point across navigation,
-  Delete, Tab, and Shift-selection attempts before producing `甲中中丙`,
-  verifies password fields produce only literal input without associated
-  phrases, and confirms a read-only editor stays unchanged after a complete key
-  sequence, plus `Ctrl+0` symbol-list
-  keyboard selection → `，` and a real first-row pointer selection followed by
-  `!` → `，！`, plus GTK 3/GTK 4/Qt 6 associated-phrase default `今` → `今天`,
-  `history`-only `臺` → `臺灣史`, and all-disabled `臺` → `臺！`; all three
-  also verify migration from the earlier comma-separated setting and a Fcitx
-  D-Bus settings write followed by process restart, readback, and typing with
-  the persisted selection. A sixth GTK 3 flow
-  opens the installed `fcitx5-config-qt` window, finds controls through AT-SPI,
-  clicks the Bopomofo configuration, collection, typing-error sound, and
-  `Ctrl+\` checkboxes, changes the candidate style from vertical to horizontal,
-  saves, restarts Fcitx, and types `作物育種` with the selected
-  `agriculture-food` collection and persisted horizontal layout hint;
-  every flow has a `keyboard-us` negative control;
-- Debian packages named `chichi77-keykey-data` and
-  `fcitx5-chichi77-keykey`, built with debhelper and checked by lintian;
-- a separate GPL-2.0 GNOME Shell 46 panel package for Ubuntu 24.04, built
-  from pinned Input Method Panel v83 sources and the cross-monitor placement
-  patch. Install or upgrade its `.deb`, log out and in, then run
-  `keykey-gnome-panel enable`; `disable` and `status` manage the current user's
-  panel without changing the Fcitx addon. See `gnome-panel/README.md`;
-- `keykey-fcitx-app COMMAND [ARGUMENT ...]` for launching one GTK application
-  through the direct Fcitx input context. The optional
-  "Text Editor (琦琦注音)" application launcher starts a separate GNOME Text
-  Editor window this way. The direct `GTK_IM_MODULE=fcitx` route has passed
-  the real editor input test through the installed helper; the desktop file
-  also passes metadata validation;
-  GNOME's default GTK Wayland bridge still exposes one shared IBus context
-  to two applications, so it cannot provide per-application mode isolation;
-- a package lifecycle test covering install, controlled preview-to-1.2.8
-  upgrade, removal, reinstall, dependency/file/hash checks, the eighty-two
-  non-settings-window X11 cases after each installed state, and all eighty-three cases,
-  including the settings window, once after reinstall;
-- a persistent Fcitx-native settings schema with the five Windows-supported
-  Bopomofo layouts and vertical/horizontal candidate styles,
-  Traditional-to-Simplified, all-Unicode, typing-error sound, and `Ctrl+\`
-  mode-toggle Boolean options, and a nested pane containing 30
-  associated-phrase collection checkboxes, exposed directly from the
-  `chichi77 KeyKey Bopomofo` input method. The earlier comma-separated field is
-  hidden and migrated when an earlier configuration is loaded.
-
-### Smart Mandarin preferences in 1.3.7
-
-Linux and FreeBSD expose **好打注音進階設定** in the Fcitx configuration page.
-These options apply to 好打注音 only:
-
-| Setting | Default | Behavior |
-| --- | --- | --- |
-| 空白鍵開啟候選 | Off | Space completes an unfinished first-tone reading. With no unfinished reading, it inserts an editable space into the composition. Enabling this option instead opens candidates; an already open candidate panel still uses Space to change pages. |
-| 選字目標在游標前方（取消為後方） | Off (after cursor) | At `今天｜天氣`, the default queries words starting after the cursor, such as `天氣`; enabling it queries words ending before the cursor, such as `今天`. At either end, selection falls back to the available side. |
-| Esc 清除整句（候選窗／未完成讀音優先取消） | Off | Esc first closes candidates or clears an unfinished reading. With neither present, enabling this option clears the remaining editable composition; the default preserves it. Text already committed to the application is never removed. |
-
-Down and clicking a composed character open candidates independently of the Space
-option. A click always targets the clicked character, independently of the keyboard
-candidate direction. Normal and full-width spaces remain editable until committed
-or evicted by the existing composition limit. Saving changed Smart Mandarin options
-finishes the original composition on the next key before applying the new options.
-Existing configurations without these keys use the defaults above.
-
-The engine now opens candidates as soon as an explicit tone is entered, and
-commits the highlighted candidate before starting a new reading when the next
-valid Bopomofo key is pressed, across all five layouts. Invalid
-printable keys and no-candidate queries preserve an active reading and report
-an error-feedback request; application shortcuts still pass through. The Fcitx
-adapter plays the desktop's XDG window-system bell for that request unless the
-setting is disabled. Installed Fcitx-to-GTK3 cases cover the error flow and the
-settings UI persists the disabled state; actual audible output still requires
-GNOME-session acceptance because the Xvfb container has no audio session.
-The Fcitx adapter also clears associated-phrase state defensively for clients
-that report Password or Sensitive capabilities. In the current GTK 3 X11 path,
-password purpose is stricter: Fcitx switches that input context to
-`keyboard-us` and rejects forcing the custom method back on.
-Further compatibility work includes IBus, physical monitor hotplug, more Apps
-and themes, ARM64, other Ubuntu versions, and RPM/Arch packaging. The supported
-1.3.7 Ubuntu package set and setup steps are in the
-[Linux installation guide](../../../LINUX_INSTALL.md); the 1.2.8 release record
-preserves that version's verified boundaries.
-
-An Ubuntu 24.04.5 GNOME Wayland KVM guest now passes 20 typing and pointer
-cases across eight GTK 3/GTK 4/Qt 6 native Wayland and XWayland paths (160/160), each
-with a keyboard-us literal negative control. A separate real-application runner
-passes gedit in four paths and GNOME Text Editor with direct Fcitx Wayland and
-XWayland; the latter's two GTK Wayland IM paths currently report Fcitx
-`status=0` and an empty active engine while the document is focused. In this
-GNOME 46 guest, launch that editor with
-`GTK_IM_MODULE=fcitx` to use the verified native Wayland path. See
-[the VM guide](docs/gnome-wayland-vm.md). Later packaged-panel testing expanded
-the matrix to 168/168 and tested Firefox Snap and Epiphany DOM fields 15/15.
-The [GNOME candidate panel decision](docs/gnome-candidate-panel.md) records
-the unmodified 10/16 Kimpanel and 6/16 Classic UI dual-display placement
-results. A pinned GPL-2.0 Kimpanel v83 patch now passes 16/16 dual-display
-pointer cases and 32/32 single-display four-corner cases in the GNOME 46 VM.
-Physical-monitor verification remains open.
-The VM also passes 16/16 two-field focus phases; direct Fcitx paths commit raw
-preedit on blur, while the two GTK native Wayland paths with the module variable
-unset clear it. Both outcomes are recorded as a platform integration difference.
-The real-editor focus runner also reproduces this distinction: direct Fcitx
-gedit commits raw preedit on blur to GNOME Text Editor, while two real gedit
-windows using the default Wayland bridge clear it.
-
-Current feature evidence is tracked in [`docs/parity.md`](docs/parity.md). The
-compatibility inventory is machine-readable in
-[`ci/support-matrix.json`](ci/support-matrix.json): Ubuntu 24.04 is the only
-qualified release target; all other distro/version targets are future TODOs.
-Entries marked `build-only` have not passed installed desktop typing acceptance.
+The **自訂詞…** entry opens the GTK phrase editor, which supports add, edit,
+delete, model reading suggestions, learning reset, and Guanyinma JSON backup and
+import. The **關於琦琦輸入法 — 版本 …** and **更新通知與下載…** entries open the
+shared GTK About and update tools. See [update notifications](docs/update-notifications.md)
+for the Linux/FreeBSD feed and ports integration.
 
 ## Configure and GNU Make source build
 
-For the complete Ubuntu 24.04 download, installation, Fcitx setup, typing,
-and removal steps in Traditional Chinese, see the
-[Linux `./configure` guide](../../../LINUX_CONFIGURE_INSTALL.md).
+Install CMake 3.22+, GNU Make, a C++17 compiler, `pkg-config`, Python 3,
+SQLite, json-c, PangoFT2/Fontconfig, Fcitx 5 Core, and libcanberra development
+files. GUI tools require Python GI and GTK 3. Rust is required for every build;
+prepare the exact toolchain in `Source/Guanyinma/rust-toolchain.toml` and the
+locked Cargo dependencies. In Bash, `source ci/prepare-guanyinma.sh` prepares
+that toolchain. Prepared environments may set `CARGO`, `CARGO_HOME`, and
+`RUSTUP_HOME` explicitly.
 
-The traditional source-build entry point is a thin wrapper around the same
-CMake targets and install rules used by the development and package builds. On
-Ubuntu, install the required compiler, build system, and Fcitx headers first:
+On Ubuntu:
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
+sudo apt-get install build-essential cmake curl libcanberra-dev libfcitx5core-dev libsqlite3-dev libjson-c-dev libpango1.0-dev pkg-config python3 python3-gi gir1.2-gtk-3.0
 cd Source/Loaders/Linux-IME
 ./configure
 make -j2
@@ -319,354 +61,80 @@ make check
 make DESTDIR="$PWD/out/source-stage" install
 ```
 
-The Debian frontend package links to the distribution's libcanberra runtime
-and recommends `libcanberra-pulse` for the PulseAudio-compatible service used
-by Ubuntu GNOME. The sound setting remains optional and the input method keeps
-working when an audio service is unavailable.
+The last command stages files without changing the system. For an actual source
+installation use `sudo make install`; use `sudo make uninstall` from the same
+build to remove its recorded files. Do not overwrite package-managed files.
+Use `--prefix=/usr` for a distribution layout. `./configure --help` lists path,
+adapter, test, and offline-build options. Out-of-source invocation and `CXX`,
+`CPPFLAGS`, `CXXFLAGS`, and `LDFLAGS` are supported. `make clean` preserves the
+configuration; `make distclean` removes the generated wrapper and private build.
 
-The default prefix is `/usr/local`. A real install therefore uses
-`sudo make install`; `sudo make uninstall` removes only files recorded in that
-build's CMake install manifest. It does not remove Fcitx user configuration,
-other user data, or unrelated files, and it never selects an input method for
-the user. Some Fcitx builds do not include `/usr/local` in every compiled-in
-search path, so set the addon and data roots in the desktop session before
-restarting Fcitx:
+A nonstandard prefix must be discoverable by the Fcitx process. Point
+`FCITX_ADDON_DIRS` to its addon directory and `XDG_DATA_DIRS` to its share directory,
+then start an isolated Fcitx process with those variables. A shell environment
+change does not change an already-running desktop process.
 
-```sh
-fcitx_system_libdir=$(pkg-config --variable=libdir Fcitx5Core)
-export FCITX_ADDON_DIRS="/usr/local/lib/fcitx5:$fcitx_system_libdir/fcitx5${FCITX_ADDON_DIRS:+:$FCITX_ADDON_DIRS}"
-export XDG_DATA_DIRS="/usr/local/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
-fcitx5 -r -d
-```
+## CMake development and focused checks
 
-Then add `chichi77 KeyKey Bopomofo` with the normal Fcitx configuration tool.
-The Cangjie and Simplex registrations remain available and regression-tested.
-Put the variables in the desktop session environment when
-Fcitx is started through D-Bus or the desktop; an unrelated terminal does not
-change an already-running Fcitx process.
-
-Use `./configure --prefix=/usr` for a distribution-style system install.
-Do not overlay files owned by the `fcitx5-chichi77-keykey` or
-`chichi77-keykey-data` Debian packages: remove the packages before a source
-install, or run `make uninstall` before returning to package-managed files.
-
-`./configure --help` lists the supported switches, including `--libdir`,
-`--datadir`, adapter, test-host, and sanitizer controls. `CXX`, `CPPFLAGS`,
-`CXXFLAGS`, and `LDFLAGS` are passed through. `make clean` keeps the
-configuration; `make distclean` removes only the wrapper Makefile and private
-build directory generated by that configure invocation. An out-of-source
-build is also supported:
-
-```sh
-mkdir build-keykey
-cd build-keykey
-../KeyKey/Source/Loaders/Linux-IME/configure --prefix=/usr
-make -j2
-make check
-```
-
-For another nonstandard prefix, use the directories printed by `configure` in
-the same session environment. For example, with
-`--prefix=/opt/keykey --libdir=lib --datadir=share`:
-
-```sh
-fcitx_system_libdir=$(pkg-config --variable=libdir Fcitx5Core)
-export FCITX_ADDON_DIRS="/opt/keykey/lib/fcitx5:$fcitx_system_libdir/fcitx5${FCITX_ADDON_DIRS:+:$FCITX_ADDON_DIRS}"
-export XDG_DATA_DIRS="/opt/keykey/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
-fcitx5 -r -d
-```
-
-The Ubuntu 24.04 gate performs a temporary default `/usr/local` install, applies
-those explicit session search paths, loads the addon in Fcitx 5, types through
-GTK 3 on X11, and uninstalls it through the manifest.
-For a broader local source-install gate, `ci/dev.sh source-e2e` builds separate
-`/usr/local`, `/usr`, and custom prefix variants in a clean one-shot container
-using the development image. It runs the 82-case GTK 3/GTK 4/Qt 6 X11 suite for each installed
-variant, then removes it through its manifest. The custom prefix contains
-spaces and uses custom lib/data directories; that variant also checks that an
-unrelated file survives removal and that a reinstall can type in all three
-toolkits. Every install refuses an existing project-owned system path.
-
-Release maintainers can create the Linux source archive and checksum from a
-committed revision, then rebuild the archive without a Git directory or prior
-cache:
-
-```sh
-Source/Loaders/Linux-IME/ci/create-source-archive.sh
-Source/Loaders/Linux-IME/ci/test-source-archive.sh
-```
-
-`--enable-x11-e2e-host` additionally requires `pkg-config`, the GTK 3/GTK 4
-development files, and Qt 6 Widgets development files; these are test-only and are not required for the normal
-engine and Fcitx addon build.
-
-## Persistent Ubuntu 24.04 development container
-
-On macOS or Windows 11 with WSL2, the fastest edit/build/test loop uses one
-persistent Ubuntu 24.04 container instead of creating a fresh container for
-every command:
-
-```sh
-Source/Loaders/Linux-IME/ci/dev.sh up
-Source/Loaders/Linux-IME/ci/dev.sh build
-Source/Loaders/Linux-IME/ci/dev.sh test
-Source/Loaders/Linux-IME/ci/dev.sh source
-Source/Loaders/Linux-IME/ci/dev.sh source-e2e
-Source/Loaders/Linux-IME/ci/dev.sh e2e T01-X11-GTK3-BOPOMOFO-STANDARD
-Source/Loaders/Linux-IME/ci/dev.sh verify
-Source/Loaders/Linux-IME/ci/dev.sh package
-```
-
-`up` builds the dependency image only when the Ubuntu 24.04 Dockerfile changes,
-then keeps the container running. Subsequent commands use `docker exec`, an
-incremental Ninja build directory, and a persistent staging directory. The
-build and stage directories live in Docker named volumes so C++ object-file
-traffic does not cross the macOS bind mount. E2E evidence and development
-packages remain visible in the checkout under `out/e2e/` and `out/packages/`.
-
-The development entry point automatically selects the host architecture. An
-Apple Silicon Mac therefore uses `linux/arm64` without emulation. Export
-`KEYKEY_DOCKER_PLATFORM=linux/amd64` before every command only when an emulated
-amd64 development result is explicitly needed. ARM64 output is a preview and
-cannot replace the release-gate amd64 packages.
-
-`e2e` accepts `all`, one case ID, or a comma-separated list of case IDs. Set
-`KEYKEY_E2E_KEY_DELAY_MS` to adjust the physical-key delay for local diagnosis;
-the persistent development path defaults to 25 ms, while the independent
-one-shot and package gates retain the conservative 80 ms default. `verify` runs
-CTest, staged-install checks, and E2E in the same persistent container. `package` builds one native-
-architecture Ubuntu 24.04 release-candidate package set; it intentionally does
-not replace the clean install/upgrade/removal lifecycle below. When a prior
-one-shot package run left container-root-owned generated files on a rootless
-engine, `package` removes only the matching architecture's work and
-release-candidate directories as container root, then performs the new build
-as the development UID. No manual `sudo rm` or checkout-wide permission change
-is needed.
-
-`source` runs both source-directory and out-of-source configure/GNU Make
-builds, including CTest, custom install directories, DESTDIR staging,
-uninstall, clean, and distclean. It is separate from the incremental Ninja
-cache used by `build` and `test`. `source-e2e` is a longer isolated system-install
-gate; the hosted pull request continues to run only the `/usr/local` source
-typing smoke.
-
-Use `ci/dev.sh status` to inspect the session, `ci/dev.sh shell` for an
-interactive shell, and `ci/dev.sh down` to remove the container. `down` retains
-the named build volumes, so a later `up` can continue incrementally.
-
-### Windows 11 and WSL2 checklist
-
-- Use an Ubuntu WSL2 shell and keep the checkout on its Linux filesystem, for
-  example `/home/user/KeyKey`. Do not run these scripts from `/mnt/c` or a
-  Windows Git checkout that may change LF line endings or executable bits.
-- Run `uname -m`, `findmnt -T .`, and `docker info` before the first `up`.
-  A normal x64 Windows host should report `x86_64`, the checkout should use a
-  Linux filesystem such as `ext4`, and the Docker server must report Linux.
-- A rootless Docker context is valid. If `docker info` succeeds in the normal
-  WSL shell but a restricted automation process receives `permission denied`
-  for `/run/user/UID/docker.sock`, grant that process access to the local
-  Docker socket and retry. Do not use `sudo docker`, change the socket to mode
-  `666`, or add unrelated groups merely to bypass a process sandbox.
-- The one-shot build, X11, and package scripts detect a rootless engine and
-  use container-side UID/GID 0 for the bind-mounted checkout. Rootful engines
-  continue to use the host UID/GID. Do not simplify those paths to an
-  unconditional `--user "$(id -u):$(id -g)"`: after a clean build-directory
-  removal, CMake may no longer be able to recreate `CMakeFiles` on WSL.
-- Run `ci/dev.sh status`, `ci/dev.sh test`, and then `ci/dev.sh verify` after
-  `up`. Container presence alone does not prove that the build and X11 paths
-  can use the persistent volumes.
-- For a full GNOME Wayland guest, install `qemu-system-x86`, `qemu-utils`, and
-  `ovmf` plus `cloud-image-utils`, ensure the user belongs to `kvm`, then run
-  `tools/check-wsl-vm-host.sh` from a new, normal WSL shell. It checks the KVM
-  API, OVMF files, and a short QEMU startup with KVM acceleration. A restricted
-  process may hide `/dev/kvm`; retry the check in a normal WSL shell before
-  changing the host configuration. The reproducible GNOME VM, typing matrix
-  and real-application checks are documented in
-  [gnome-wayland-vm.md](docs/gnome-wayland-vm.md). WSLg GUI apps do not
-  constitute a full GNOME desktop session.
-
-The stage named volume is mounted at `out/stage`, while each architecture uses
-a removable child such as `out/stage/dev-container-amd64`. The staging action
-deletes and recreates that child on every verification run. Therefore
-`initialize_writable_paths` must assign the host UID/GID ownership to the
-mounted `out/stage` parent (`${stage_dir%/*}`), not only to the child directory.
-Otherwise a fresh root-owned volume can fail with `Permission denied` when the
-non-root development user tries to recreate the staging directory. Keep this
-ownership invariant when changing the volume layout.
-
-## One-shot Ubuntu container checks
-
-Rancher Desktop or another Docker-compatible engine can run the same build in
-an Ubuntu 24.04 userspace:
-
-```sh
-Source/Loaders/Linux-IME/ci/run-ubuntu-24.04.sh
-```
-
-The one-shot script defaults to the primary `linux/amd64` architecture, builds the
-development image, configures with CMake and Ninja, compiles the engine and
-Fcitx addon, runs CTest, and installs into an architecture-specific staging
-directory under `out/stage`. To exercise the ARM64 preview build, run
-`KEYKEY_DOCKER_PLATFORM=linux/arm64` with the same script. These are L1/build
-checks. A container does not provide the GNOME Wayland session needed for
-desktop E2E acceptance.
-
-Likewise, individual Linux windows shown through WSLg are useful for a manual
-package/typing smoke test, but they are not an Ubuntu Desktop session. WSLg has
-a [known X11/XWayland issue](https://github.com/microsoft/wslg/issues/1495) in
-which an Fcitx Classic UI candidate window remains visually present for about
-one second after it has already been unmapped. Do not compensate for that
-compositor artifact in the KeyKey engine; candidate show/hide timing must be
-accepted in real GNOME X11, XWayland, and native Wayland sessions.
-
-For interactive testing on a Windows/WSL host, use the
-[manual GNOME desktop runbook](docs/manual-desktop.md) and the tracked launcher
-under `tools/manual-desktop/`. It starts a separate GNOME/TigerVNC X11 desktop,
-opens gedit with Fcitx already set to Bopomofo, and serves noVNC on localhost.
-On 2026-09-14 the user confirmed this environment resolved both the one-second
-candidate ghost and the accumulated popups during rapid typing. This is a
-validated manual X11 test environment, not a change to the product engine or
-evidence for native Wayland acceptance.
-
-The same runbook now includes a GNOME X11 automated entry point. With the
-isolated desktop running and the current package candidate installed, run:
-
-```sh
-Source/Loaders/Linux-IME/tools/manual-desktop/run-gnome-x11-e2e.sh
-```
-
-It verifies the actual GNOME Shell window manager, installed addon and Classic
-UI panel, then runs 76 desktop-safe GTK 3, GTK 4, and Qt 6 cases with physical
-XTest key/pointer input and `keyboard-us` negative controls. It preserves the
-desktop Fcitx process and restores the original KeyKey settings. Seven cases
-that intentionally restart Fcitx remain in the managed Xvfb/package gates;
-XWayland, native Wayland, full login lifecycle, visual sweeps, and real Apps
-are still separate release requirements.
-
-The Ubuntu 24.04 image can also run the current L3 installed X11/GTK 3, GTK 4, and Qt 6
-typing tests under Xvfb:
-
-```sh
-Source/Loaders/Linux-IME/ci/run-ubuntu-24.04-x11-e2e.sh
-```
-
-This builds a separate test image, stages the addon and real CIN data into an
-ephemeral container, starts a private D-Bus session, Xvfb, and Fcitx 5, then
-uses XTest through `xdotool` to type the five Windows-supported Bopomofo layouts and
-the Cangjie, Simplex, table-end-key, candidate-navigation, `Shift+Space` full-width,
-Chinese/English mode, Traditional-to-Simplified, and `Ctrl+0` symbol-list
-sequences. The mode cases verify `Ctrl+\`, a 300 ms Shift tap, a rejected long
-Shift hold, Caps Lock, English full-width input, and disabled-shortcut
-pass-through. Separate GTK 3 and GTK 4 modifier cases hold `Ctrl+\` for one second, switch
-back to Chinese, and sends `Ctrl+C` and `Alt+F` through active reading and
-candidate states before committing exact `x中文`; its literal negative control
-is `x5j/ 1jp61`. Both controls first clear any literal backslash that X11 may
-deliver between releasing Ctrl and releasing the physical backslash, so the
-assertion does not depend on autorepeat timing. Super-key behavior remains an
-engine-level check here because Xvfb has no GNOME window manager to own desktop
-shortcuts. The full-width case
-verifies the exact GTK text `Ａ！～　`, while the English-keyboard control
-receives ` A!~ `. The conversion case selects `臺` and `灣`, verifies committed
-`台湾`, and uses literal `w962j0 1` as its negative control.
-A GTK3, GTK4, and Qt 6 context-lifecycle case uses a geometry-derived pointer click and Shift+Tab
-between two real toolkit entries, verifies ordered per-entry preedit events and exact
-`中`／`文` text without reviving the first entry's old candidates, then closes a
-client with candidates open. It checks that Fcitx and the staged addon survive, restarts Fcitx, and
-types `中` in a fresh client. Because Fcitx may track active input methods per
-input context when shared input state is disabled, the test explicitly selects
-and polls Bopomofo after moving to a newly focused entry; the matching
-`keyboard-us` phase keeps every key literal.
-A second context-lifecycle case in all three toolkits keeps two independent processes alive. App A
-switches to English/full-width and types `ａ`, App B independently stays in
-Chinese/half-width and types `文`, and App A retains its state after focus returns
-before finishing as `ａｂ中`; the literal control is `ab5j/ 1|jp61`. This case
-switches focus only while composition is empty: macOS commits its composing
-buffer on deactivation, Windows TSF abandons composition, and local GTK clients
-handle active preedit during focus changes—including a transient GTK4 text event
-that is cleared after focus returns—so active-preedit behavior still
-requires per-toolkit GNOME evidence rather than one forced cross-platform rule.
-The Qt 6 host additionally covers the same editing and candidate matrix through
-`QInputMethodEvent`. Its password field keeps the current Fcitx engine name but
-receives only literal text and no preedit. Its read-only `QPlainTextEdit`
-publishes `Qt::ImEnabled=false` through the standard input-method query so
-Fcitx forwards the whole key sequence and the document stays unchanged; this
-does not require a KeyKey-addon special case. Qt also inserts the text `f` for
-a passed-through `Alt+F`, so modifier assertions use toolkit-specific exact
-buffers rather than forcing GTK insertion behavior.
-The six associated-phrase cases verify the built-in default with `今天`, the
-`history` category in isolation with `臺灣史`, the all-disabled state, and
-migration of the earlier comma-separated setting through real `Shift+1` key
-events. The fifth case writes the native
-configuration through `SetConfig`, verifies the saved INI, restarts Fcitx,
-reads the selection back, and then verifies its typing effect. The sixth opens
-the installed Fcitx configuration window, locates its controls through AT-SPI,
-uses real X11 clicks and accessibility actions to disable `McBopomofo`, the
-typing-error sound and `Ctrl+\` mode toggle, enable `agriculture-food`, capture
-before/after PNGs, change the candidate style from vertical to horizontal,
-press OK, verify the saved INI and D-Bus value after restart, and physically
-type `作物育種` while the horizontal hint is active. It also checks that Fcitx
-exposes both candidate styles, the Bopomofo layout, conversion, mode toggle,
-and all 30 Boolean collection
-settings through the input method's native configuration schema. It does
-not inject Chinese text, call GTK setters, or use the clipboard. Each case is
-switched back to `keyboard-us` and receives the same keys as a negative
-control. Evidence is written under
-`out/e2e/ubuntu-24.04-x11-ARCH/`. Passing this test proves these minimal
-installed Fcitx 5 to GTK 3, GTK 4, and Qt 6 X11 paths, not GNOME or native Wayland.
-
-Candidate size and highlight colors remain owned by the active Fcitx UI and
-theme. The input-method addon API available in Ubuntu 22.04 and 24.04 provides
-a per-list vertical/horizontal hint, but no per-input-method scale or highlight
-color controls. Matching the Windows-only 75%–350% and purple/green/yellow/red
-choices would therefore require a separate custom Fcitx UI addon or an explicit
-platform-level difference; those controls are not exposed as no-op settings.
-
-To build the two native `.deb` files and test their complete current package
-lifecycle in separate build and runtime containers:
-
-```sh
-Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-24.04
-Source/Loaders/Linux-IME/ci/run-debian-package.sh ubuntu-22.04
-```
-
-The 24.04 path installs a controlled `1.2.8~preview1` fixture, runs the eighty-two
-non-settings-window X11 cases, upgrades to `1.2.8`, runs them again, removes and
-reinstalls the packages, then runs all eighty-three cases. Running the UI-heavy
-case once keeps the installed-package proof while avoiding three identical Qt
-startup cycles. The latest completed package evidence passes 82/82 cases after
-both preview install and release upgrade, then 83/83 after reinstall. The 22.04
-path performs build, lintian,
-dependency, file/data checksum, install/remove/reinstall, and ELF checks but
-does not claim desktop typing acceptance. Packages and evidence are written
-under `out/packages/` and `out/e2e/`; both directories are ignored by Git.
-
-The minimum Ubuntu dependency boundary has a separate repeatable check:
-
-```sh
-Source/Loaders/Linux-IME/ci/run-ubuntu-22.04.sh
-```
-
-On an Ubuntu 24.04 development system with the dependencies already installed:
+With Ninja and the dependencies installed, enable GTK 3/4 and Qt 6 test hosts
+for the isolated smoke run. Their development packages are `libgtk-3-dev`,
+`libgtk-4-dev`, and `qt6-base-dev`; runtime Fcitx GTK 3/4 and Qt 6 frontend
+plugins must also be available:
 
 ```sh
 cd Source/Loaders/Linux-IME
-cmake --preset linux-release
+cmake --preset linux-release -DKEYKEY_BUILD_X11_E2E_HOST=ON
 cmake --build --preset linux-release
 ctest --preset linux-release
-DESTDIR="$PWD/out/stage" cmake --install out/build/release
+DESTDIR="$PWD/out/stage/current" cmake --install out/build/release
+bash ci/run-guanyinma-smoke.sh out/build/release out/stage/current
 ```
 
-For engine-only development on another host, use the `engine-only` presets.
-The `engine-sanitized` configure, build, and test presets run the same engine
-suite with AddressSanitizer and UndefinedBehaviorSanitizer.
+The smoke runner uses private D-Bus and Xvfb sessions with GTK 3, GTK 4, and Qt 6
+test clients. It sends physical keys through the staged Fcitx addon and verifies
+application text. It does not operate the user's desktop input method.
+`engine-only` builds the same Rust adapter without Fcitx or a display server;
+Rust, JSON, and native font dependencies remain required. `engine-sanitized`
+instruments native C++ adapter/helper code with ASan/UBSan; Rust remains a normal
+pinned-toolchain build.
 
-## Data override for addon development
+Tests cover settings and event mapping, font filtering, context lifetime,
+candidate generations, one-shot host effects, CLI administration, and the GTK
+phrase tool. The complete Rust algorithm matrix belongs to `guanyinma-core.yml`.
+Linux frontend workflows run the relevant integration checks rather than
+repeating that matrix. Test only the layers affected by a change; record source,
+build, staged, package, X11, GNOME Wayland, and FreeBSD results separately.
 
-An installed addon loads `bpmf-ext.cin`, `cj-ext.cin`, `simplex-ext.cin`,
-`bpmf-punctuations.cin`, `tc2sc.cin`, and the 30 flattened collection files
-plus their display-name map under `associated-phrases/` from
-`/usr/share/chichi77-keykey/data` by default. A test session may set
-`CHICHI77_KEYKEY_DATA_DIR` to a directory containing all five CIN files and
-the `associated-phrases/` directory.
-Production packages must install the pinned data and must not depend on a
-source checkout.
+For source, container, and package workflows see [BUILDING.md](../../../BUILDING.md).
+Optional dedicated-desktop procedures are in the
+[GNOME X11 runbook](docs/manual-desktop.md) and
+[GNOME Wayland VM runbook](docs/gnome-wayland-vm.md).
+The [GNOME panel integration guide](docs/gnome-candidate-panel.md) describes
+renderer ownership and its separate acceptance scope.
+
+## Runtime data
+
+CMake verifies and installs the repository's pre-generated shared `KeyKey.db`
+as `smart-mandarin.db`; it never recooks the model. Runtime addon/data names
+remain `chichi77-keykey`, and the C++ namespace is `keykey::linux_ime`.
+
+The Guanyinma user database is
+`$XDG_DATA_HOME/chichi77-keykey/guanyinma-user.db`, or under
+`~/.local/share` when XDG is unset. `CHICHI77_KEYKEY_GUANYINMA_USER_DB` overrides
+this private user-data path. The packaged model remains read-only.
+
+```sh
+keykey-smart-phrases list
+keykey-smart-phrases readings 琦琦
+keykey-smart-phrases add 詞語 'ㄘˊ ㄩˇ'
+keykey-smart-phrases remove 詞語 'ㄘˊ ㄩˇ'
+keykey-smart-phrases reset-learning
+keykey-smart-phrases export backup.json
+keykey-smart-phrases import backup.json
+```
+
+A development session may set `CHICHI77_KEYKEY_DATA_DIR` to a directory containing
+`bpmf-ext.cin`, `cj-ext.cin`, `simplex-ext.cin`, `bpmf-punctuations.cin`,
+`tc2sc.cin`, `smart-mandarin.db`, and the `associated-phrases/` directory. Normal
+packages install pinned data and notices under the configured prefix and do not
+require a source checkout.

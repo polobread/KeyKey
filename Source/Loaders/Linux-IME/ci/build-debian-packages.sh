@@ -105,11 +105,9 @@ for core_path in "${guanyinma_source_paths[@]}"; do
   mkdir -p "$source_root/$(dirname -- "$core_path")"
   cp -a "$repository_root/$core_path" "$source_root/$core_path"
 done
-if [[ "${KEYKEY_ENABLE_GUANYINMA:-OFF}" == ON ]]; then
-  python3 "$source_root/Source/Guanyinma/tools/prepare-unix-vendor.py" \
-    --core-dir "$source_root/Source/Guanyinma"
-  export KEYKEY_GUANYINMA_OFFLINE=ON
-fi
+python3 "$source_root/Source/Guanyinma/tools/prepare-unix-vendor.py" \
+  --core-dir "$source_root/Source/Guanyinma"
+export KEYKEY_GUANYINMA_OFFLINE=ON
 
 mkdir -p "$source_root/Source/Loaders/Linux-IME"
 cp -a \

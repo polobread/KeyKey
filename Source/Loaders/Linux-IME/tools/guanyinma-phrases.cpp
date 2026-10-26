@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
 #include "keykey/linux_ime/guanyinma_session.h"
-#include "keykey/linux_ime/smart_mandarin_user_data.h"
+#include "keykey/linux_ime/phrase_reading.h"
+#include <sqlite3.h>
 #include <json-c/json.h>
 #include <unistd.h>
 #include <cerrno>
@@ -11,10 +12,13 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <algorithm>
+#include <set>
 
 namespace {
 using keykey::linux_ime::GuanyinmaSession;
-using keykey::linux_ime::SmartMandarinUserData;
+using keykey::linux_ime::readingToQuery;
+using keykey::linux_ime::queryToReading;
 namespace fs = std::filesystem;
 using Json = std::unique_ptr<json_object, decltype(&json_object_put)>;
 constexpr std::size_t ArchiveLimit = 64U * 1024U * 1024U;
@@ -44,7 +48,7 @@ void put(json_object *object, const char *key, const std::string &text) {
         json_object_new_string_len(text.data(), static_cast<int>(text.size())));
 }
 std::string query(const std::string &reading) {
-    const auto encoded = SmartMandarinUserData::readingToQuery(reading);
+    const auto encoded = readingToQuery(reading);
     if (encoded.empty()) throw std::runtime_error("無效注音讀音");
     return encoded;
 }
@@ -64,7 +68,7 @@ bool sameFile(const fs::path &first, const fs::path &second) {
 void protectBackup(const fs::path &destination, const std::string &model) {
     if (destination.empty() || fs::is_symlink(destination))
         throw std::runtime_error("備份目的地不可為空或符號連結");
-    std::vector<std::string> protectedPaths{model, SmartMandarinUserData::defaultPath(),
+    std::vector<std::string> protectedPaths{model,
         GuanyinmaSession::defaultUserDatabasePath(),
         std::string(KEYKEY_LINUX_DATA_DIR) + "/smart-mandarin.db"};
     // Overrides select this invocation's store; they do not make the normal
@@ -74,7 +78,7 @@ void protectBackup(const fs::path &destination, const std::string &model) {
         if (!base || !*base) continue;
         const auto directory = fs::path(base) /
             (std::string(variable) == "HOME" ? ".local/share/chichi77-keykey" : "chichi77-keykey");
-        for (const char *name : {"smart-mandarin-user.db", "guanyinma-user.db"})
+        for (const char *name : {"guanyinma-user.db"})
             protectedPaths.push_back((directory / name).string());
     }
     for (const auto &path : protectedPaths) {
@@ -124,26 +128,124 @@ std::string readArchive(const fs::path &path) {
         throw std::runtime_error("備份讀取失敗或讀取期間有變更");
     return content;
 }
+std::vector<std::string> scalars(const std::string &text) {
+    std::vector<std::string> result;
+    for (std::size_t offset = 0; offset < text.size();) {
+        const auto lead = static_cast<unsigned char>(text[offset]);
+        const std::size_t width = lead < 0x80 ? 1 : lead >= 0xc2 && lead <= 0xdf ? 2 :
+            lead >= 0xe0 && lead <= 0xef ? 3 : lead >= 0xf0 && lead <= 0xf4 ? 4 : 0;
+        if (!width || offset + width > text.size()) throw std::runtime_error("詞語不是有效 UTF-8");
+        for (std::size_t i = 1; i < width; ++i)
+            if ((static_cast<unsigned char>(text[offset + i]) & 0xc0) != 0x80)
+                throw std::runtime_error("詞語不是有效 UTF-8");
+        if (width >= 3) {
+            const auto second = static_cast<unsigned char>(text[offset + 1]);
+            if ((lead == 0xe0 && second < 0xa0) || (lead == 0xed && second >= 0xa0) ||
+                (lead == 0xf0 && second < 0x90) || (lead == 0xf4 && second >= 0x90))
+                throw std::runtime_error("詞語不是有效 UTF-8");
+        }
+        result.push_back(text.substr(offset, width));
+        offset += width;
+    }
+    return result;
+}
+Json phraseReadings(const std::string &text, const std::string &model, json_object *userRows) {
+    Json result(json_object_new_array(), &json_object_put);
+    const auto characters = scalars(text);
+    if (characters.empty() || characters.size() > 8) return result;
+    std::unique_ptr<sqlite3, decltype(&sqlite3_close)> database(nullptr, sqlite3_close);
+    sqlite3 *opened = nullptr;
+    const int openedStatus = sqlite3_open_v2(model.c_str(), &opened, SQLITE_OPEN_READONLY, nullptr);
+    database.reset(opened);
+    if (openedStatus != SQLITE_OK) throw std::runtime_error("無法唯讀查詢共用詞庫");
+    const auto modelQueries = [&](const std::string &word) {
+        sqlite3_stmt *raw = nullptr;
+        if (sqlite3_prepare_v2(database.get(),
+            "SELECT DISTINCT qstring FROM unigrams WHERE current=? ORDER BY probability DESC,rowid LIMIT 64",
+            -1, &raw, nullptr) != SQLITE_OK) throw std::runtime_error("無法查詢詞語讀音");
+        std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)> statement(raw, sqlite3_finalize);
+        sqlite3_bind_text(raw, 1, word.c_str(), -1, SQLITE_TRANSIENT);
+        std::vector<std::string> queries;
+        int status = SQLITE_ROW;
+        while ((status = sqlite3_step(raw)) == SQLITE_ROW) {
+            const auto *value = sqlite3_column_text(raw, 0);
+            if (value) queries.emplace_back(reinterpret_cast<const char *>(value));
+        }
+        if (status != SQLITE_DONE) throw std::runtime_error("詞語讀音查詢失敗");
+        return queries;
+    };
+    std::set<std::string> seen;
+    const auto append = [&](const std::string &q) {
+        if (q.size() != characters.size() * 2 || seen.size() >= 64) return;
+        const auto reading = queryToReading(q);
+        if (!reading.empty() && seen.insert(reading).second)
+            json_object_array_add(result.get(), json_object_new_string_len(reading.data(), static_cast<int>(reading.size())));
+    };
+    for (std::size_t i = 0; i < json_object_array_length(userRows); ++i) {
+        auto *row = json_object_array_get_idx(userRows, i);
+        if (text == json_object_get_string(field(row, "current", json_type_string)))
+            append(json_object_get_string(field(row, "qstring", json_type_string)));
+    }
+    for (const auto &q : modelQueries(text)) append(q);
+    if (seen.empty()) {
+        std::vector<std::string> combinations{std::string{}};
+        for (const auto &character : characters) {
+            auto alternatives = modelQueries(character);
+            std::vector<std::string> next;
+            for (const auto &prefix : combinations) {
+                for (const auto &q : alternatives) {
+                    if (q.size() != 2 || queryToReading(q).empty()) continue;
+                    if (next.size() < 64) next.push_back(prefix + q);
+                }
+                if (next.size() == 64) break;
+            }
+            combinations = std::move(next);
+            if (combinations.empty()) break;
+        }
+        for (const auto &q : combinations) append(q);
+    }
+    return result;
+}
 } // namespace
 
 int guanyinmaPhrases(int argc, char **argv) {
     try {
-        if (argc < 2) throw std::runtime_error("缺少指令：list/add/remove/update/reset-learning/export/import/import-legacy");
+        if (argc < 2) throw std::runtime_error("缺少指令：list/readings/add/remove/update/reset-learning/export/import");
         const std::string command = argv[1];
+        // Reject removed/unknown commands before opening any user database.
+        if (command != "list" && command != "readings" && command != "add" &&
+            command != "remove" && command != "update" && command != "reset-learning" &&
+            command != "export" && command != "import")
+            throw std::runtime_error("無效指令；可用 list/readings/add/remove/update/reset-learning/export/import");
         const auto model = modelPath();
         keykey::linux_ime::GuanyinmaConfig config;
         GuanyinmaSession session(model, GuanyinmaSession::defaultUserDatabasePath(),
                                 config, [](const std::string &) { return true; });
         Json operation(json_object_new_object(), &json_object_put);
-        if (argc == 2 && command == "list") {
+        if ((argc == 2 && command == "list") ||
+            (argc == 3 && command == "list" && std::string(argv[2]) == "--json") ||
+            (argc == 3 && command == "readings")) {
             auto result = parse(session.userDataJson());
             auto *rows = field(field(result.get(), "data", json_type_object), "phrases", json_type_array);
+            if (command == "readings") {
+                auto readings = phraseReadings(argv[2], model, rows);
+                std::cout << json_object_to_json_string_ext(readings.get(), JSON_C_TO_STRING_PLAIN) << '\n';
+                return 0;
+            }
+            Json jsonRows(json_object_new_array(), &json_object_put);
             for (std::size_t i = 0; i < json_object_array_length(rows); ++i) {
                 auto *row = json_object_array_get_idx(rows, i);
-                std::cout << json_object_get_string(field(row, "current", json_type_string)) << '\t'
-                          << SmartMandarinUserData::queryToReading(
-                                 json_object_get_string(field(row, "qstring", json_type_string))) << '\n';
+                const std::string text = json_object_get_string(field(row, "current", json_type_string));
+                const std::string qstring = json_object_get_string(field(row, "qstring", json_type_string));
+                const auto reading = queryToReading(qstring);
+                if (argc == 2) std::cout << text << '\t' << reading << '\n';
+                else {
+                    auto *entry = json_object_new_object();
+                    put(entry, "text", text); put(entry, "reading", reading); put(entry, "qstring", qstring);
+                    json_object_array_add(jsonRows.get(), entry);
+                }
             }
+            if (argc == 3) std::cout << json_object_to_json_string_ext(jsonRows.get(), JSON_C_TO_STRING_PLAIN) << '\n';
             return 0;
         }
         if (argc == 2 && command == "reset-learning") {
@@ -159,9 +261,6 @@ int guanyinmaPhrases(int argc, char **argv) {
             put(operation.get(), "qstring", query(argv[3]));
             put(operation.get(), "new_text", argv[4]);
             put(operation.get(), "new_qstring", query(argv[5]));
-        } else if (argc == 3 && command == "import-legacy") {
-            put(operation.get(), "type", "import_legacy_user_data");
-            put(operation.get(), "path", fs::absolute(argv[2]).string());
         } else if (argc == 3 && command == "import") {
             const auto content = readArchive(argv[2]);
             GuanyinmaSession::validateArchive(content);
@@ -185,9 +284,24 @@ int guanyinmaPhrases(int argc, char **argv) {
             atomicWrite(argv[2], content + "\n", model);
             std::cout << "已匯出完整 Guanyinma 備份。\n";
             return 0;
-        } else throw std::runtime_error("無效指令或參數；可用 list/add/remove/update/reset-learning/export/import/import-legacy");
+        } else throw std::runtime_error("無效指令或參數；可用 list/readings/add/remove/update/reset-learning/export/import");
+        const bool phraseEdit = command == "add" || command == "remove" || command == "update";
+        std::string previousPhrases;
+        if (phraseEdit) {
+            auto data = parse(session.userDataJson());
+            previousPhrases = json_object_to_json_string_ext(
+                field(field(data.get(), "data", json_type_object), "phrases", json_type_array), JSON_C_TO_STRING_PLAIN);
+        }
         session.applyJson(json_object_to_json_string_ext(operation.get(), JSON_C_TO_STRING_PLAIN));
-        std::cout << "已更新 Guanyinma 使用者資料；C++ 原核心資料未變。\n";
+        if (phraseEdit) {
+            auto data = parse(session.userDataJson());
+            const std::string currentPhrases = json_object_to_json_string_ext(
+                field(field(data.get(), "data", json_type_object), "phrases", json_type_array), JSON_C_TO_STRING_PLAIN);
+            if (previousPhrases == currentPhrases)
+                throw std::runtime_error(command == "add" ? "相同詞語與讀音已存在於內建或自訂詞庫。" :
+                    command == "remove" ? "找不到指定的自訂詞。" : "詞語與讀音沒有變更。");
+        }
+        std::cout << "已更新 Guanyinma 使用者資料。\n";
         return 0;
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';

@@ -2,7 +2,6 @@
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_CXXFLAGS_MAINT_APPEND = -Wformat -Werror=format-security
-KEYKEY_ENABLE_GUANYINMA ?= OFF
 KEYKEY_GUANYINMA_OFFLINE ?= OFF
 
 %:
@@ -15,7 +14,6 @@ override_dh_auto_configure:
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DPython3_EXECUTABLE=/usr/bin/python3 \
 		-DKEYKEY_BUILD_FCITX5=ON \
-		-DKEYKEY_ENABLE_GUANYINMA=$(KEYKEY_ENABLE_GUANYINMA) \
 		-DKEYKEY_GUANYINMA_OFFLINE=$(KEYKEY_GUANYINMA_OFFLINE) \
 		$(if $(CARGO),-DCARGO=$(CARGO)) \
 		-DKEYKEY_BUILD_X11_E2E_HOST=OFF \
@@ -31,8 +29,6 @@ override_dh_strip:
 
 override_dh_install:
 	dh_install
-ifeq ($(KEYKEY_ENABLE_GUANYINMA),ON)
 	dh_install --autodest -pfcitx5-chichi77-keykey usr/share/doc/chichi77-keykey/Guanyinma-NOTICES.txt
-endif
 
 override_dh_dwz:

@@ -8,7 +8,7 @@ Guanyinma 的演算法疑義以 macOS Manjusri／Formosa／OpenVanilla 為主要
 
 ## 覆蓋範圍
 
-共用語料 [migration-scenarios.tsv](../tests/fixtures/core-functional/migration-scenarios.tsv) 包含 **111 個情境、650 個操作**，涵蓋四種中文輸入法。桌面與 Unix 執行其中 59 個 hardware 情境、340 個操作，明確跳過 52 個 touch 情境、310 個操作；Swift／Android 執行兩種 profile 全部情境。
+共用語料 [migration-scenarios.tsv](../tests/fixtures/core-functional/migration-scenarios.tsv) 包含 **111 個情境、650 個操作**，涵蓋四種中文輸入法。桌面執行其中 59 個 hardware 情境、340 個操作，明確跳過 52 個 touch 情境、310 個操作；Swift／Android 執行兩種 profile 全部情境。
 
 | 輸入法 | 行為 | 候選與學習 |
 |---|---|---|
@@ -17,7 +17,7 @@ Guanyinma 的演算法疑義以 macOS Manjusri／Formosa／OpenVanilla 為主要
 | 倉頡 | 一至五碼、續打、即時候選、前綴依賴、根碼刪除、錯碼清除／保留、單／多碼萬用字元、三種標點設定、擴展字、切換 | 完整字碼／前綴與萬用字元的實際順序；動態頻率啟閉、改選、重開保存及重設 |
 | 簡易 | 單碼／雙碼、滿碼續打、退格、錯碼、即時候選、標點、切換 | 完整候選順序與翻頁；選字後、重開及重設後的現有學習政策 |
 
-這裡記錄的是現有行為，包括已知差異，不預先認定所有平台應該一樣。例如 Unix 的傳統注音／倉頡／簡易目前不會由該核心寫入選字學習；不為了共用測試補出新功能。Unix 不支援的 dynamic／punctuation 設定以 capability／unsupported 標記記錄。
+這裡記錄的是現有行為，包括已知差異，不預先認定所有平台應該一樣。
 
 每個 case 建立隔離的學習 DB／偏好設定。選字學習使用正式引擎與真正可寫資料庫；`REOPEN` 保留該 case 的學習，`RESET_LEARNING` 清除該 case 的學習後再觀察。跨 case 不共享記憶。
 
@@ -29,7 +29,6 @@ Guanyinma 的演算法疑義以 macOS Manjusri／Formosa／OpenVanilla 為主要
 | Windows | `KeyKeyEngineSession.handleKey()` → `EngineResult`，下層使用桌面模組 | 手動 target 使用桌面模組與 Windows table subclass；原生 Windows 快照須在 Windows 另錄 |
 | iOS | Swift `BopomofoEngine` 與 Store／資料來源介面 | 真實 SQLite／字表／隔離 UserDefaults，Swift Package 在 Mac 錄製 |
 | Android | Java `BopomofoEngine` 與 Store | 真實 APK 字表／模型 asset、SQLite 及隔離 SharedPreferences，專用模擬器 instrumentation |
-| Linux／FreeBSD | `Engine.processKey()` → `EngineResult` | 真實 Unix engine／CIN／模型；不載入 Fcitx |
 
 模型主資料唯讀。Android 從當次 APK asset 複製測試專用模型，避免安裝快取影響；桌面可寫資料只附加於隔離 profile。
 
@@ -47,20 +46,19 @@ Guanyinma 的演算法疑義以 macOS Manjusri／Formosa／OpenVanilla 為主要
 - **全部頁面的候選陣列，保留原次序**，不是只驗證第一名、第一頁或成員集合。
 - 實際學習的 override、Bigram、自訂 Unigram 與 table frequency 邏輯列；不含隨機路徑、時間或不穩定 rowid。
 
-游標／可取得狀態各平台不同，快照明列單位；Unix 的私有讀音狀態無公開介面，記為 null 並標註 capability。讀取完整候選時使用狀態副本或暫時翻頁再恢復，不用選字來探測清單。
+游標／可取得狀態各平台不同，快照明列單位。讀取完整候選時使用狀態副本或暫時翻頁再恢復，不用選字來探測清單。
 
 目前已凍結以下觀測：
 
 | backend | 觀測環境 | 每次情境／快照 | 兩次觀測 |
 |---|---|---|---|
 | [desktop](../tests/fixtures/core-functional/pre-rust/desktop.json) | macOS 27.0.1 arm64，Apple Clang，桌面模組 | 59／340 | 相同 |
-| [unix](../tests/fixtures/core-functional/pre-rust/unix.json) | 同一 Mac 上執行 Unix engine | 59／340 | 相同 |
 | [swift](../tests/fixtures/core-functional/pre-rust/swift.json) | macOS 27.0.1，Apple Swift 6.4.2 | 111／650 | 23 個快照只有候選順序不同 |
 | [android](../tests/fixtures/core-functional/pre-rust/android.json) | Android 11／API 30／arm64-v8a，隔離 AVD | 111／650 | 相同 |
 
 Swift 的兩次原始順序都保留，`observed_variation` 明列變動位置；沒有設定固定 hash seed、替候選排序或修改核心。比較時，各檢查點可比對已觀察到的版本。**兩次觀測不是同分排序所有可能結果的完整集合**；新差異仍應人工判斷，不能據此聲稱舊核心在該處有固定順序。
 
-原生 Windows 尚未擷取專屬基準，不能以 Mac 桌面快照代替 Windows table subclass。Unix 快照也不代表 Linux／FreeBSD 作業系統、套件或 Fcitx 宿主驗收。
+原生 Windows 尚未擷取專屬基準，不能以 Mac 桌面快照代替 Windows table subclass。Linux／FreeBSD 直接使用 Guanyinma，前端接合見 [Linux adapter 說明](GUANYINMA_LINUX_ADAPTER.md)。
 
 ## 僅在 Rust 遷移時手動使用
 
@@ -79,7 +77,7 @@ exit 0 表示在已觀測版本內無差異，exit 1 表示有差異待檢視，
 需要重播現有核心時，Mac 可明確指定 backend；C++ binary 與隔離使用者資料使用暫存目錄：
 
 ```sh
-python3 tests/run_core_functional.py --compare --backend desktop --backend unix
+python3 tests/run_core_functional.py --compare --backend desktop
 python3 tests/run_core_functional.py --compare --backend swift
 ```
 
@@ -98,11 +96,11 @@ python3 tests/run_core_functional.py --capture --backend android \
 
 原地重錄需要額外明確指定 `--replace-baseline`，並審查差異。不能為了讓 Rust 比較通過而直接更新舊基準。
 
-Live capture 預設使用兩個全新隔離環境，live compare 預設一次，可用 `--samples` 調整。相同觀測會去重，仍保留 `capture_runs`。工具需 Python 3.10+、C++17、SQLite；Mac Unix engine 另連 iconv，Swift 使用 Apple SQLite module。C++ compiler 可由 `CXX` 指定。
+Live capture 預設使用兩個全新隔離環境，live compare 預設一次，可用 `--samples` 調整。相同觀測會去重，仍保留 `capture_runs`。工具需 Python 3.10+、C++17、SQLite；Swift 使用 Apple SQLite module。C++ compiler 可由 `CXX` 指定。
 
 ## 原生 recorder 的明確啟用方式
 
-Windows 與 Unix 的 `KEYKEY_BUILD_MIGRATION_BASELINE` 預設 OFF，target 標示 `EXCLUDE_FROM_ALL`；**沒有 CTest 註冊，也不是日常 check 的依賴**。
+Windows 的 `KEYKEY_BUILD_MIGRATION_BASELINE` 預設 OFF，target 標示 `EXCLUDE_FROM_ALL`；**沒有 CTest 註冊，也不是日常 check 的依賴**。
 
 Windows 在既有 CMake configure 上明確啟用，手動建置 `KeyKeyCoreMigrationBaseline`，再以以下參數執行；目前此 target 在 `BUILD_TESTING=ON` 區段：
 
@@ -110,13 +108,7 @@ Windows 在既有 CMake configure 上明確啟用，手動建置 `KeyKeyCoreMigr
 KeyKeyCoreMigrationBaseline.exe DATABASE FIXTURE OWNED_SCRATCH TRACE.jsonl
 ```
 
-Unix 明確啟用後手動建置 `keykey_unix_migration_baseline`：
-
-```text
-keykey_unix_migration_baseline FIXTURE DATABASE BPMF_CIN OWNED_SCRATCH TRACE.jsonl
-```
-
-scratch 必須為空或不存在，由工具建立自己的 case 子目錄；不得指向真實使用者輸入法資料。錄製完成後輸出的 JSONL 可用 `--trace windows=...`／`--trace unix=...` 匯入。原生作業系統未錄製就不建立其假基準。
+scratch 必須為空或不存在，由工具建立自己的 case 子目錄；不得指向真實使用者輸入法資料。錄製完成後輸出的 JSONL 可用 `--trace windows=...` 匯入。原生作業系統未錄製就不建立其假基準。
 
 Swift 的 `CoreFunctionalTests` 預設 skipped；只有設定 `KEYKEY_MIGRATION_BASELINE=1` 才進行 DB／fixture 存取。手動 runner 會設定 `KEYKEY_CORE_FUNCTIONAL_FIXTURE`、`KEYKEY_MIGRATION_TRACE`、`KEYKEY_MIGRATION_SCRATCH`，指定該 suite。
 
@@ -145,4 +137,4 @@ REOPEN／RESET_LEARNING 要求組字已結束，保留累計送字與各輸入�
 
 本基準不涵蓋 IMK／TSF edit session、document proxy／InputConnection、Fcitx X11／Wayland 宿主回呼、UI 字型、關聯詞建議、使用者資料升級遷移或 131 篇打字成本。這些原有驗證不可被本基準取代，也不因這份 Rust 參考資料而自動擴大日常測試範圍。
 
-實作：[desktop recorder](../tests/desktop_smart_functional.cpp)、[Unix recorder](../Source/Loaders/Linux-IME/tests/shared_core_functional.cpp)、[Swift recorder](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Tests/KeyKeyEngineTests/CoreFunctionalTests.swift)、[Android recorder](../Source/Loaders/Android-IME/app/src/androidTest/java/tw/chichi77/keykey/android/CoreFunctionalInstrumentedTest.java)。架構方向見 [Rust 共用核心評估](CROSS_PLATFORM_RUST_CORE_ASSESSMENT.md)。
+實作：[desktop recorder](../tests/desktop_smart_functional.cpp)、[Swift recorder](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Tests/KeyKeyEngineTests/CoreFunctionalTests.swift)、[Android recorder](../Source/Loaders/Android-IME/app/src/androidTest/java/tw/chichi77/keykey/android/CoreFunctionalInstrumentedTest.java)。架構方向見 [Rust 共用核心評估](CROSS_PLATFORM_RUST_CORE_ASSESSMENT.md)。

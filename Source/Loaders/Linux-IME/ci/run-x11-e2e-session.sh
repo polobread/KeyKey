@@ -8,11 +8,6 @@ test -n "${KEYKEY_E2E_ARTIFACT_DIR:-}"
 test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
 
 session_mode=${KEYKEY_E2E_SESSION_MODE:-managed}
-input_core=${KEYKEY_E2E_INPUT_CORE:-Legacy}
-case "$input_core" in
-  Legacy|Guanyinma) ;;
-  *) echo "KEYKEY_E2E_INPUT_CORE must be Legacy or Guanyinma." >&2; exit 2 ;;
-esac
 case "$session_mode" in
   managed|existing-gnome) ;;
   *)
@@ -94,17 +89,14 @@ known_cases=(
   T07-X11-GTK3-ASSOCIATED-PHRASE
   T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY
   T07-X11-GTK3-ASSOCIATED-PHRASE-DISABLED
-  T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG
   T07-X11-GTK3-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
   T07-X11-GTK4-ASSOCIATED-PHRASE
   T07-X11-GTK4-ASSOCIATED-PHRASE-CATEGORY
   T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED
-  T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG
   T07-X11-GTK4-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
   T07-X11-QT6-ASSOCIATED-PHRASE
   T07-X11-QT6-ASSOCIATED-PHRASE-CATEGORY
   T07-X11-QT6-ASSOCIATED-PHRASE-DISABLED
-  T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG
   T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
   T07-X11-FCITX5-CONFIG-UI-PERSISTENCE
   T08-X11-GTK3-CHINESE-ENGLISH-MODE
@@ -602,7 +594,6 @@ associated_phrase_source_enabled() {
 
 write_keykey_config() {
   {
-    printf 'InputCore=%s\n' "$input_core"
     printf 'BopomofoLayout=%s\nBopomofoMode=%s\nTraditionalToSimplified=%s\n' \
       "$bopomofo_layout" "$bopomofo_mode" "$traditional_to_simplified"
     printf 'CandidateWindowStyle=%s\n' "$candidate_window_style"
@@ -612,8 +603,6 @@ write_keykey_config() {
       "$play_sound_on_typing_error"
     printf 'ToggleInputMethodWithControlBackslash=%s\n' \
       "$toggle_with_control_backslash"
-    printf 'AssociatedPhraseCollections=%s\n\n' \
-      "$associated_phrase_collections"
     # Existing candidate-key cases explicitly exercise the enabled option.
     printf '[SmartMandarin]\nShowCandidateListWithSpace=True\n\n'
     printf '[AssociatedPhrases]\n'
@@ -625,14 +614,6 @@ write_keykey_config() {
       printf '%s=%s\n' "$source" "$enabled"
     done
   } >"$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf"
-}
-
-write_legacy_keykey_config() {
-  printf 'InputCore=%s\n' "$input_core" >"$keykey_config_path"
-  printf 'BopomofoLayout=%s\nBopomofoMode=%s\nTraditionalToSimplified=%s\nAssociatedPhraseCollections=%s\n' \
-    "$bopomofo_layout" "$bopomofo_mode" "$traditional_to_simplified" \
-    "$associated_phrase_collections" \
-    >>"$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf"
 }
 
 reload_keykey_config() {
@@ -1002,17 +983,8 @@ run_case() {
   # Each baseline case starts with the same model. A previous correction must
   # not change the expected text of an unrelated case. Explicit learning DB
   # fixtures and existing desktop sessions keep their data untouched.
-  if [[ "$session_mode" == managed && -z ${CHICHI77_KEYKEY_USER_DB:-} ]]; then
-    python3 - "$XDG_DATA_HOME/chichi77-keykey/smart-mandarin-user.db" <<'PY'
-import pathlib
-import sqlite3
-import sys
-path = pathlib.Path(sys.argv[1])
-if path.exists():
-    with sqlite3.connect(path.as_uri() + '?mode=rw', uri=True) as db:
-        db.execute('DELETE FROM user_candidate_override_cache')
-        db.execute('DELETE FROM user_bigram_cache')
-PY
+  if [[ "$session_mode" == managed && -z ${CHICHI77_KEYKEY_GUANYINMA_USER_DB:-} ]]; then
+    "${KEYKEY_E2E_PHRASE_CLI:-keykey-smart-phrases}" reset-learning >/dev/null
   fi
 
   case_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id"
@@ -1803,7 +1775,7 @@ if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
     "$ui_case_dir/saved-config.ini"
   chmod 0644 "$ui_case_dir/saved-config.ini"
-  grep -Fxq 'AssociatedPhraseCollections=agriculture-food' \
+  grep -Fxq '[AssociatedPhrases]' \
     "$ui_case_dir/saved-config.ini"
   grep -Fxq 'McBopomofo=False' "$ui_case_dir/saved-config.ini"
   grep -Fxq 'agriculture-food=True' "$ui_case_dir/saved-config.ini"
@@ -2339,26 +2311,6 @@ if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED; then
     '臺！' 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
   set_associated_phrase_collections ''
 fi
-if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
-  set_bopomofo_layout Standard
-  associated_phrase_collections=government
-  write_legacy_keykey_config
-  reload_keykey_config
-  run_case T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG \
-    chichi77-keykey-bopomofo \
-    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
-  set_associated_phrase_collections ''
-fi
-if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
-  set_bopomofo_layout Standard
-  associated_phrase_collections=government
-  write_legacy_keykey_config
-  reload_keykey_config
-  run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG \
-    chichi77-keykey-bopomofo \
-    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
-  set_associated_phrase_collections ''
-fi
 if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
   set_bopomofo_layout Standard
   associated_phrase_collections=government
@@ -2368,7 +2320,7 @@ if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
   set_keykey_config_via_dbus "$persistence_case_dir/set-config-result.txt"
   cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
     "$persistence_case_dir/saved-config.ini"
-  grep -Fxq 'AssociatedPhraseCollections=government' \
+  grep -Fxq '[AssociatedPhrases]' \
     "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'McBopomofo=False' "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'government=True' "$persistence_case_dir/saved-config.ini"
@@ -2392,7 +2344,7 @@ if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
   set_keykey_config_via_dbus "$persistence_case_dir/set-config-result.txt"
   cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
     "$persistence_case_dir/saved-config.ini"
-  grep -Fxq 'AssociatedPhraseCollections=government' \
+  grep -Fxq '[AssociatedPhrases]' \
     "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'McBopomofo=False' "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'government=True' "$persistence_case_dir/saved-config.ini"
@@ -2611,16 +2563,6 @@ if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-DISABLED; then
     '臺！' 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
   set_associated_phrase_collections ''
 fi
-if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
-  set_bopomofo_layout Standard
-  associated_phrase_collections=government
-  write_legacy_keykey_config
-  reload_keykey_config
-  run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG \
-    chichi77-keykey-bopomofo \
-    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
-  set_associated_phrase_collections ''
-fi
 if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
   set_bopomofo_layout Standard
   associated_phrase_collections=government
@@ -2630,7 +2572,7 @@ if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
   set_keykey_config_via_dbus "$persistence_case_dir/set-config-result.txt"
   cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
     "$persistence_case_dir/saved-config.ini"
-  grep -Fxq 'AssociatedPhraseCollections=government' \
+  grep -Fxq '[AssociatedPhrases]' \
     "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'McBopomofo=False' "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'government=True' "$persistence_case_dir/saved-config.ini"

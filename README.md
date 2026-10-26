@@ -153,8 +153,7 @@ Windows 由 Actions 呼叫與本機共用的 PowerShell 完成建置、測試及
 - [Android 安裝與使用指南](ANDROID_INSTALL.md)：Google Play 正式版安裝、啟用鍵盤、觸控與實體鍵盤操作
 - [BUILDING.md](BUILDING.md)：各平台建置、測試、安裝與打包
 - [五平台心經長文 functional test](tests/HEART_SUTRA_FUNCTIONAL.md)：關閉關聯詞庫後逐字輸入，核對全文及每字候選順位
-- [Linux 開發計畫](docs/LINUX_DEVELOPMENT_PLAN.md)與[自動化測試計畫](docs/LINUX_TEST_PLAN.md)：
-  1.2.8 起的原生 Linux 支援目標、目前進度、功能範圍與驗收門檻
+- [Linux／FreeBSD Guanyinma 接合](docs/GUANYINMA_LINUX_ADAPTER.md)：現行核心、桌面偏好、詞庫管理與分層驗證
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md)：Windows frontend
   的實作、部署及驗證細節
 - [Android IME README](Source/Loaders/Android-IME/README.md)：Android 鍵盤配置、
@@ -338,9 +337,7 @@ approval. See [AGENTS.md](AGENTS.md) and the
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
 - [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play production installation, keyboard setup, touch and hardware keyboard use
 - [BUILDING.md](BUILDING.md): build, test, installation, and packaging instructions
-- [Linux development plan](docs/LINUX_DEVELOPMENT_PLAN.md) and
-  [automated test plan](docs/LINUX_TEST_PLAN.md): scope and acceptance criteria for
-  native Linux support targeted for 1.2.8 onward, including current progress
+- [Linux/FreeBSD Guanyinma integration](docs/GUANYINMA_LINUX_ADAPTER.md): current core, desktop preferences, user data, and focused validation
 - [Windows TSF README](Source/Loaders/Windows-TSF/README.md): frontend
   implementation, deployment, and verification details
 - [Android IME README](Source/Loaders/Android-IME/README.md): layouts, build,

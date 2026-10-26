@@ -18,7 +18,6 @@ cmake -S . -B "$build_dir" -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DKEYKEY_BUILD_FCITX5=ON \
-  -DKEYKEY_ENABLE_GUANYINMA="${KEYKEY_ENABLE_GUANYINMA:-OFF}" \
   -DKEYKEY_GUANYINMA_OFFLINE="${KEYKEY_GUANYINMA_OFFLINE:-OFF}" \
   -DKEYKEY_BUILD_X11_E2E_HOST="${KEYKEY_BUILD_X11_E2E_HOST:-OFF}"
 cmake --build "$build_dir"
@@ -66,7 +65,5 @@ test -f "$stage_dir/usr/share/doc/chichi77-keykey/LICENSE-yahoo-bsd.txt"
 test -f "$stage_dir/usr/share/doc/chichi77-keykey/LICENSE-McBopomofo.txt"
 test -f "$stage_dir/usr/share/doc/chichi77-keykey/LICENSE-associated-phrase-collections.txt"
 
-if [[ "${KEYKEY_ENABLE_GUANYINMA:-OFF}" == ON ]]; then
-  test -s "$stage_dir/usr/share/doc/chichi77-keykey/Guanyinma-NOTICES.txt"
-  cmp "../../Distributions/Takao/CookedDatabase/KeyKey.db" "$stage_dir/usr/share/chichi77-keykey/data/smart-mandarin.db"
-fi
+test -s "$stage_dir/usr/share/doc/chichi77-keykey/Guanyinma-NOTICES.txt"
+cmp "../../Distributions/Takao/CookedDatabase/KeyKey.db" "$stage_dir/usr/share/chichi77-keykey/data/smart-mandarin.db"

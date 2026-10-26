@@ -1,7 +1,7 @@
 # Guanyinma：KeyKey 六平台 Rust 共用核心評估
 
 評估日期：2026-10-25。原始碼基準：`master`／`origin/master` 的 `892c4746`。
-本文件是讀碼與官方工具鏈文件查核後的工程評估，效能與成本數字仍屬待原型校準的估算。目前已在 `Source/Guanyinma` 完成 Rust 骨架、C ABI、唯讀資料層、注音解析與四種輸入法 session（含好打注音組句、候選與邊界）；後續範圍見 [實作計畫](GUANYINMA_IMPLEMENTATION_PLAN.md)。這不代表完整輸入引擎、六平台封裝或實機驗收已完成。
+本文件保留跨平台共用核心的工程評估；Linux／FreeBSD 的現行單核心接合以 [adapter 說明](GUANYINMA_LINUX_ADAPTER.md) 為準。效能與成本數字仍屬待原型校準的估算。目前已在 `Source/Guanyinma` 完成 Rust 骨架、C ABI、唯讀資料層、注音解析與四種輸入法 session（含好打注音組句、候選與邊界）；後續範圍見 [實作計畫](GUANYINMA_IMPLEMENTATION_PLAN.md)。這不代表完整輸入引擎、六平台封裝或實機驗收已完成。
 
 產品名稱維持 **chichi77 KeyKey／琦琦輸入法**（英文簡稱 **KeyKey**）。新核心代號為 **Guanyinma**，使用 Rust 實作，作為 KeyKey 內的共用核心模組；目標取代 macOS／Windows 的 Manjusri、iOS Swift 核心、Android Java 核心及 Linux／FreeBSD C++ 核心。各平台原生 frontend 改接 Guanyinma。核心工作目錄使用 Guanyinma 名稱。
 
@@ -15,9 +15,9 @@
 
 最主要收益是讓組句、候選、選字學習及邊界修正只維護一次，並用同一組案例驗證。Rust 可降低安全 Rust 範圍內的記憶體錯誤風險，但不會自動修好 TSF、IMK、InputConnection、document proxy 或 Fcitx 的生命週期問題，也不能先宣稱效能或記憶體一定改善。
 
-目前產品已支援六平台並正式發布，全面切換的主要成本是行為相容與平台驗收。建議保留現有引擎作為差異比較及回退入口，分平台逐步替換。
+目前產品已支援六平台並正式發布，全面切換的主要成本是行為相容與平台驗收。其他平台仍以各自接合文件管理雙核心；Linux／FreeBSD 已直接使用 Guanyinma，不保留舊核心或回退入口。
 
-## 現況：四套組句實作、五個 frontend
+## 原生 frontend 與共用核心接合
 
 | 平台 | 現有核心及接合點 | 遷移時保留 |
 |---|---|---|
@@ -25,30 +25,28 @@
 | Windows | `KeyKeyEngine.cpp` 包裝同一套桌面模組，`TextService.cpp` 接 TSF | COM／TSF、edit session、原生候選窗、WPF 設定及簽章 |
 | iOS | Swift `BopomofoEngine`、`SmartMandarinStore`；引擎 Swift Package 不依賴 UIKit | Swift App／extension、document proxy、App Group 與介面 |
 | Android | Java `BopomofoEngine`、`SmartMandarinStore` | Java IME service、InputConnection、鍵盤及設定 UI |
-| Linux | 獨立 C++ `engine` 與 walker，Fcitx 5 adapter | C++ Fcitx addon、GTK／GNOME 整合、套件流程 |
-| FreeBSD | 沿用 Linux-IME 核心及 Fcitx adapter | ports／pkg、prefix 路徑、FreeBSD 實機驗收 |
-
-上述九個代表性檔案（桌面模組、Graph、LanguageModel，及三個獨立 frontend 的 Engine／Store）合計約 **7,622 行**。這只是重複邏輯的規模線索，未含讀音、字表、學習、平台 adapter 與測試，不能當成完整重寫行數或排程依據。
+| Linux | Guanyinma Rust session，C++ Fcitx 5 adapter | C++ Fcitx addon、GTK／GNOME 整合、套件流程 |
+| FreeBSD | 同一 Guanyinma Rust session 及 Fcitx adapter | ports／pkg、prefix 路徑、FreeBSD 實機驗收 |
 
 現有可重用資產：
 
 - 五個 frontend 已使用同一份預製 `KeyKey.db`，不需要因 Rust 改模型或 cooker。
 - iOS／Android 已有 `SmartMandarinSource` 抽象，可先替換 Store，保留上層操作流程。
-- Linux 已將 engine 與 Fcitx adapter 分開，適合先驗證原生連結與桌面組字。
+- Linux／FreeBSD 已接上共用 Rust session；C++ 僅負責 Fcitx 與原生服務。
 - 倉頡已有 `Source/Shared/CangjiePrefix.h`、排名／Unicode 資料及跨平台 fixture，可作為後續共用規則的基礎。
 - 現有離線動作數工具使用桌面 Manjusri；它是可比較的參考實作，尚不是六平台共同測試介面。
 
 ## 最大風險是既有語意差異
 
-以下以本次程式碼為準；舊平台比較文件只提供背景，不能直接當成現況或驗收結果。
+以下保留桌面與行動原核心的行為分析；Linux／FreeBSD 使用 Guanyinma 的共用語意，無獨立 walker。
 
 | 差異 | 本次觀察 | Rust 遷移要求 |
 |---|---|---|
-| BOS／EOS 與 backoff | 桌面使用 Manjusri graph；Swift／Java／Linux walker 首詞 fallback 直接採 unigram，單音節另有 EOS 不重排處理 | 先實作明確的桌面與行動／Unix 相容評分策略；不可默認某套能直接取代其餘三套 |
+| BOS／EOS 與 backoff | 桌面使用 Manjusri graph；Swift／Java walker 首詞 fallback 直接採 unigram，單音節另有 EOS 不重排處理 | 先實作明確的桌面與行動的行為設定；不可默認某套能直接取代其餘實作 |
 | 學習 Bigram | 桌面 `findBigrams` 命中讀音組的使用者 cache 時直接回傳該列；其餘 Store 依前後文字比對學習值 | 將匹配範圍、覆蓋規則、容量與失效時機納入規格 |
-| Unigram 取樣 | Swift／Java SQL 有 `ORDER BY probability DESC LIMIT 64`；Linux 沒有此 LIMIT | 不能在移植時順便統一截斷數；須先列出對候選及路徑的實際影響 |
+| Unigram 取樣 | Swift／Java SQL 有 `ORDER BY probability DESC LIMIT 64` | 不能在移植時順便統一截斷數；須先列出對候選及路徑的實際影響 |
 | 同分排序 | 桌面保留 rowid 來源次序並使用 stable sort；Swift 有 Dictionary 走訪，其他實作也使用不同容器 | 指定可重現次序並建立同分案例；新 tie-break 造成的差異要單獨列報 |
-| 自訂詞合併 | Swift／Java 依文字合併；Linux 把使用者列加到基礎列後再處理 | 定義同詞、同讀音、不同分數的覆蓋及去重規則 |
+| 自訂詞合併 | Swift／Java 依文字合併 | 定義同詞、同讀音、不同分數的覆蓋及去重規則 |
 | 組字視窗 | 桌面／一般實體鍵盤預設十／十一音節；觸控九／十；Windows 另有既有組字長度設定 | 以能力／操作模式帶入規則；保留設定值與各平台預設 |
 | 宿主文字 | 手機觸控已把中文字寫入宿主，維護可替換尾段；桌面通常維護 preedit／marked composition | 核心輸出文字意圖，原生層掌握真正的宿主範圍及回呼 |
 | 候選與符號 | 頁容量、方向鍵、選字鍵、符號是否留在同一組字圖已有差異 | 候選內容與跨度共用，頁容量及互動規則明確配置；功能缺口逐項追蹤 |
@@ -165,7 +163,7 @@ Rust 遷移沿用現有 schema 與驗證入口，不在平台 build cooker。And
 
 ### 1. 行為正確性
 
-建立同一格式的逐操作 trace，由四套舊核心及 Rust 各自產生：
+建立同一格式的逐操作 trace，由仍在使用的原核心及 Rust 各自產生：
 
 - 記錄讀音、未完成音節、文字、詞段／跨度、游標、完整候選次序、送字、已固定前綴及學習副作用。相容策略相同時要求可重現；已知平台差異單獨列入預期。
 - 覆蓋標準／許氏、無聲調完成、無候選、詞跨度 override、句中選字後繼續句尾輸入、退格／Delete／Esc、空白與符號、切模式／切宿主、重複生命週期回呼。
@@ -212,10 +210,10 @@ FFI 增加 malformed input、Unicode、重複 destroy／過期結果等必要防
 - [Windows Engine](../Source/Loaders/Windows-TSF/KeyKeyEngine.cpp)、[Windows 開發與測試](../Source/Loaders/Windows-TSF/README.md)。
 - [Swift Store](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/SmartMandarinStore.swift)、[觸控尾段狀態](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/TouchSmartHostTextState.swift)、[mutation guard](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/DocumentMutationGuard.swift)。
 - [Java Store](../Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/SmartMandarinStore.java)、[Android 建置](../Source/Loaders/Android-IME/app/build.gradle.kts)。
-- [Unix Store](../Source/Loaders/Linux-IME/engine/src/smart_mandarin_store.cpp)、[Unix Engine 契約](../Source/Loaders/Linux-IME/engine/include/keykey/linux_ime/engine.h)、[Unix CMake](../Source/Loaders/Linux-IME/CMakeLists.txt)。
-- [跨平台行為背景](../Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md)、[實體鍵盤邊界案例](SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)；兩者含歷史紀錄，現況須核對程式碼。
+- [Linux／FreeBSD Guanyinma 接合](GUANYINMA_LINUX_ADAPTER.md)、[Fcitx CMake](../Source/Loaders/Linux-IME/CMakeLists.txt)。
+- [實體鍵盤邊界案例](SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)，現況須核對程式碼。
 - [正式模型 manifest](../DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json)、[動作數定義](../DataSource/AISyntheticBigram/TYPING_COST.md)、[AGENTS](../AGENTS.md)、[BUILDING](../BUILDING.md)。
 
 ## Rust 遷移專用行為基準
 
-現有四套核心的四種輸入法、完整候選排序與選字學習已建立[手動遷移基準](CROSS_PLATFORM_CORE_FUNCTIONAL_TESTS.md)。這份資料僅供 Rust 重寫／升級時參考與人工比較，不接入平時驗證、CI gate 或發布驗收；既有平台差異及已觀察到的不穩定排序均保留。
+仍在使用的原核心四種輸入法、完整候選排序與選字學習已建立[手動遷移基準](CROSS_PLATFORM_CORE_FUNCTIONAL_TESTS.md)。這份資料僅供 Rust 重寫／升級時參考與人工比較，不接入平時驗證、CI gate 或發布驗收；既有平台差異及已觀察到的不穩定排序均保留。

@@ -2,18 +2,6 @@
 
 ## 1.3.9
 
-### Linux／FreeBSD 共用前端
-
-- Linux Fcitx 5 雙核心開發建置預設使用 Guanyinma（Rust），仍可選 C++ 原核心；保留已保存的核心偏好，不含 Rust 的建置仍使用 C++。組字、候選及待送文字完成後才切換。
-- Guanyinma 沿用四種輸入法設定、原生候選與關聯詞，經系統字型／字集能力過濾；兩核心的使用者詞庫與學習分開保存。
-- 詞庫命令可明確選核心，Guanyinma 支援完整 JSON 備份與唯讀匯入舊 Linux 詞庫；共用程式的 FreeBSD 原生雙核心驗證另行記錄。
-
-### Windows
-
-- 同一套 TSF 輸入介面可選 Manjusri 原核心或 Guanyinma（Rust），預設維持 Manjusri；核心切換等待組字、候選及待送文字完成。
-- Guanyinma 沿用四種輸入法設定、原生候選窗與關聯詞，候選先經 Windows 系統字型與字集過濾。
-- 兩核心的自訂詞與學習分開保存；Rust 詞庫支援完整 JSON 備份及明確唯讀匯入既有 Windows 詞庫，開啟中的詞庫視窗固定使用原本的資料核心。
-
 ### macOS
 
 - 修正 Finder 清單等小尺寸圖示顯示彩色雜訊；以 macOS 原生工具產生相容的圖示尺寸與 Retina 圖層。
@@ -26,6 +14,19 @@
 ## 1.3.8
 
 本版僅發布 macOS；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7，共用好打注音模型維持 1.3.1。
+
+### Linux／FreeBSD 共用前端
+
+- Fcitx 5 前端改用 Guanyinma（Rust）單核心，移除 Legacy C++ 引擎與核心切換；保留原有輸入法識別字、共用模型及平台接合。
+- 補齊桌面輸入偏好，包含中英切換、啟動語言、Caps Lock、好打組字長度與選字鍵、倉頡／簡易進階設定及學習選項。
+- 自訂詞工具預設操作 Guanyinma，提供圖形詞庫管理與完整 JSON 備份／匯入；移除舊 Linux C++ 使用者資料相容功能，既有舊檔不自動刪除。
+- Linux 與 FreeBSD 建置均需要 Rust、JSON 與原生字型依賴；移除核心選擇相容參數及舊關聯詞設定遷移，關聯詞功能與分類開關保留。FreeBSD 原生單核心與各桌面宿主驗證分別記錄。
+
+### Windows
+
+- 同一套 TSF 輸入介面可選 Manjusri 原核心或 Guanyinma（Rust），預設維持 Manjusri；核心切換等待組字、候選及待送文字完成。
+- Guanyinma 沿用四種輸入法設定、原生候選窗與關聯詞，候選先經 Windows 系統字型與字集過濾。
+- 兩核心的自訂詞與學習分開保存；Rust 詞庫支援完整 JSON 備份及明確唯讀匯入既有 Windows 詞庫，開啟中的詞庫視窗固定使用原本的資料核心。
 
 ### macOS
 
@@ -318,9 +319,6 @@ Windows 搜尋列也會套用相同的倉頡候選設定。iOS 外接鍵盤功�
   獨立 `linux-v1.2.8` 發布三個 Debian 套件與 SHA-256。
 - 五種注音布局、候選／符號、關聯詞、模式與設定可用，另提供倉頡、簡易；
   GNOME 候選面板獨立安裝、更新、停用。
-- 已安裝套件在 GNOME Wayland／XWayland 通過 168/168 真實輸入案例、
-  四角 32/32、雙虛擬顯示 16/16；已知 GTK App 路徑差異與未測範圍
-  詳見 [發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
 
 ## 1.2.8 開發紀錄
 

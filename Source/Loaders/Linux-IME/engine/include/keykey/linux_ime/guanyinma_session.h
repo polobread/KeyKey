@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
 #pragma once
 
-#include "keykey/linux_ime/engine.h"
+#include "keykey/linux_ime/input_types.h"
 
 #include <functional>
 #include <memory>
@@ -15,6 +15,11 @@ struct GuanyinmaConfig {
     BopomofoLayout layout = BopomofoLayout::Standard;
     SmartMandarinPreferences smart;
     TablePreferences table;
+    TablePreferences simplex = TablePreferences::simplex();
+    std::string traditionalSelectionKeys = "123456789";
+    bool ignoreCapsLockInChinese = false;
+    bool literalKeypad = true;
+    bool userPhrases = true;
     bool restrictBopomofoToBig5 = false;
 
     bool operator==(const GuanyinmaConfig &other) const noexcept;

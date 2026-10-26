@@ -2,7 +2,7 @@
 // Linux FE/C ABI integration, using isolated stores and the real model.
 #include "keykey/linux_ime/guanyinma_session.h"
 #include "keykey/linux_ime/candidate_font_support.h"
-#include "keykey/linux_ime/smart_mandarin_user_data.h"
+#include "keykey/linux_ime/phrase_reading.h"
 
 #include <json-c/json.h>
 #include <sqlite3.h>
@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <sys/stat.h>
@@ -124,7 +125,7 @@ void filtering(const std::string &model, Scratch &scratch) {
 }
 void learningStores(const std::string &model, Scratch &scratch) {
     const auto store = scratch.path();
-    const auto query = SmartMandarinUserData::readingToQuery("ㄓㄨㄥ ㄓㄨㄥ");
+    const auto query = readingToQuery("ㄓㄨㄥ ㄓㄨㄥ");
     GuanyinmaSession first(model, store, {}, acceptAll);
     first.applyJson("{\"type\":\"add_user_phrase\",\"qstring\":" + encoded(query) + ",\"text\":\"中中\"}");
     GuanyinmaSession second(model, store, {}, acceptAll);
@@ -136,19 +137,14 @@ void learningStores(const std::string &model, Scratch &scratch) {
     require(count(get(get(parse(isolated.userDataJson()).get(), "data"), "phrases")) == 0, "Different backend store was contaminated");
     struct stat status{}; require(stat(store.c_str(), &status) == 0 && (status.st_mode & 0777) == 0600, "Private user DB permissions");
 }
-void legacyImport(const std::string &model, Scratch &scratch) {
-    const auto source = scratch.path("legacy");
-    auto legacy = SmartMandarinUserData::open(source);
-    require(bool(legacy) && legacy->addPhrase("中中", "ㄓㄨㄥ ㄓㄨㄥ"), "Cannot create real Linux writer fixture");
-    const auto query = SmartMandarinUserData::readingToQuery("ㄓㄨㄥ");
-    require(legacy->learn(query, "鐘", query, "中"), "Cannot write real Linux learning fixture");
-    const auto size = std::filesystem::file_size(source);
-    GuanyinmaSession target(model, scratch.path(), {}, acceptAll);
-    target.applyJson("{\"type\":\"import_legacy_user_data\",\"path\":" + encoded(source) + "}");
-    const auto data = parse(target.userDataJson()); auto *state = get(data.get(), "data");
-    require(count(get(state, "phrases")) == 1 && count(get(state, "overrides")) == 1 && count(get(state, "bigrams")) == 1, "Legacy import lost phrases or learning");
-    require(std::filesystem::file_size(source) == size && legacy->phrases().size() == 1 && legacy->learnedCandidate(query) == "鐘", "Legacy import mutated source");
-    require(type(target, "5j/ ").preedit == "鐘", "Imported Linux candidate preference did not affect actual input");
+void externalPhraseReload(const std::string &model, Scratch &scratch) {
+    const auto store = scratch.path();
+    GuanyinmaSession typing(model, store, {}, acceptAll);
+    GuanyinmaSession editor(model, store, {}, acceptAll);
+    editor.applyJson("{\"type\":\"add_user_phrase\",\"text\":\"琦琦星\",\"qstring\":" +
+                     encoded(readingToQuery("ㄑㄧˊ ㄑㄧˊ ㄒㄧㄥ")) + "}");
+    require(type(typing, "fu6fu6vu/ ").preedit == "琦琦星",
+            "Running input session did not reload externally edited user phrases");
 }
 void failureAndReset(const std::string &model, Scratch &scratch) {
     const auto path = scratch.path();
@@ -164,6 +160,52 @@ void failureAndReset(const std::string &model, Scratch &scratch) {
     require(!input.valid() && input.quiet() && input.snapshot().preedit.empty(), "Reset failure revived old composition");
     sqlite3_exec(lock, "ROLLBACK", nullptr, nullptr, nullptr);
     sqlite3_close(lock);
+}
+void desktopPreferences(const std::string &model, Scratch &scratch) {
+    auto config = traditional();
+    config.traditionalSelectionKeys = "asdfghjk";
+    config.ignoreCapsLockInChinese = true;
+    GuanyinmaSession traditionalInput(model, scratch.path(), config, acceptAll);
+    auto caps = character('S'); caps.capsLock = true;
+    require(traditionalInput.processKey(caps).preedit == "ㄋ", "Caps Lock preference was not mapped");
+    traditionalInput.reset();
+    type(traditionalInput, "5j/");
+    auto candidates = key(traditionalInput, KeyCode::Space);
+    require(candidates.candidates.size() == 8 && candidates.candidatePageSize == 8 &&
+            candidates.candidateSelectionKeys == "asdfghjk", "Custom keys/page size disagree with Rust");
+    const auto chosen = candidates.candidates[1];
+    require(traditionalInput.processKey(character('s')).commit == chosen, "Custom selection key did not select matching candidate");
+
+    config = {};
+    config.smart.maxCompletedSyllables = 12;
+    config.smart.candidateSelectionKeys = "asdfzxcv";
+    config.smart.selectionReturnsToEnd = true;
+    config.smart.shiftAlwaysUppercase = true;
+    config.smart.useBigrams = false;
+    config.smart.learnBigrams = false;
+    config.smart.learnCandidateOverrides = false;
+    GuanyinmaSession longer(model, scratch.path(), config, acceptAll);
+    for (int i = 0; i < 12; ++i)
+        require(type(longer, "5j/ ").commit.empty(), "Configured twelve-syllable buffer shifted early");
+    require(!type(longer, "5j/ ").commit.empty(), "Configured buffer did not shift at thirteen");
+
+    config = table(InputMethod::Cangjie);
+    config.table.candidateSelectionKeys = "asdfghjk";
+    config.table.spaceAsFirstSelectionKey = true;
+    config.table.learnSelection = true;
+    config.table.punctuation = "half";
+    config.table.wildcardOne.clear();
+    config.table.wildcardMany.clear();
+    GuanyinmaSession tableInput(model, scratch.path(), config, acceptAll);
+    auto view = type(tableInput, "a");
+    require(tableInput.lastError().empty(), "Full table preferences were rejected");
+    view = key(tableInput, KeyCode::Space);
+    if (!view.candidates.empty()) require(view.candidateSelectionKeys.front() == ' ', "Space selection label was not included");
+    config.smart.candidateSelectionKeys = "aabb";
+    bool rejected = false;
+    try { GuanyinmaSession invalid(model, scratch.path(), config, acceptAll); }
+    catch (const std::exception &) { rejected = true; }
+    require(rejected, "Duplicate selection keys were accepted");
 }
 void configurationAndPaths(const std::string &model, Scratch &scratch) {
     GuanyinmaConfig config;
@@ -197,10 +239,11 @@ int main(int argc, char **argv) {
         unicodeCoordinates(model, scratch);
         filtering(model, scratch);
         learningStores(model, scratch);
-        legacyImport(model, scratch);
+        externalPhraseReload(model, scratch);
         failureAndReset(model, scratch);
         configurationAndPaths(model, scratch);
-        std::cout << "9 Linux/C ABI integration groups passed; stores isolated; snapshots never replay effects\n";
+        desktopPreferences(model, scratch);
+        std::cout << "10 Linux/C ABI integration groups passed; stores isolated; snapshots never replay effects\n";
         return 0;
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';

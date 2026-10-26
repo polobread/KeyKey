@@ -4,6 +4,7 @@ set -euo pipefail
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 linux_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 repository_root=$(CDPATH='' cd -- "$linux_dir/../../.." && pwd)
+source "$script_dir/prepare-guanyinma.sh"
 revision=${2:-HEAD}
 git_command=(git -c "safe.directory=$repository_root" -C "$repository_root")
 
@@ -36,10 +37,9 @@ source_paths=(
   LICENSING.md
   LICENSE.txt
   LICENSES/MIT.txt
+  docs/GUANYINMA_LINUX_ADAPTER.md
   docs/CANGJIE_PREFIX_CANDIDATES_PLAN.md
   docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md
-  docs/LINUX_DEVELOPMENT_PLAN.md
-  docs/LINUX_TEST_PLAN.md
   README.md
   DataSource/AssociatedPhraseCollectionNames.tsv
   DataSource/McBopomofo/LICENSE.txt
@@ -80,9 +80,9 @@ else
     "$revision" -- "${source_paths[@]}"
 fi
 
-# Official dual-core source assets can carry checksummed registry sources, so
+# Source assets carry checksummed registry sources, so
 # consumers need no network or pre-existing Cargo cache during compilation.
-if [[ "${KEYKEY_SOURCE_VENDOR_GUANYINMA:-${KEYKEY_ENABLE_GUANYINMA:-OFF}}" == ON ]]; then
+if [[ "${KEYKEY_SOURCE_VENDOR_GUANYINMA:-ON}" == ON ]]; then
   vendor_root=$(mktemp -d "$archive_parent/.keykey-vendor.XXXXXX")
   trap 'rm -rf "$vendor_root"' EXIT
   tar -xzf "$archive" -C "$vendor_root"

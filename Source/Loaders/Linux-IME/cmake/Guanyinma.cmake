@@ -1,6 +1,6 @@
-# Optional shared Rust core. Runtime core selection remains Legacy by default.
+# Required shared Rust core; C++ code only adapts native platform services.
 if(CMAKE_CROSSCOMPILING)
-    message(FATAL_ERROR "Guanyinma Unix frontend requires a native Rust/C++ build; use Legacy for cross builds")
+    message(FATAL_ERROR "Guanyinma Unix frontend currently requires a native Rust/C++ build")
 endif()
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONC REQUIRED IMPORTED_TARGET json-c)
@@ -73,8 +73,7 @@ add_library(keykey_linux_guanyinma STATIC
     engine/src/guanyinma_session.cpp engine/src/candidate_font_support.cpp)
 target_compile_features(keykey_linux_guanyinma PUBLIC cxx_std_17)
 target_include_directories(keykey_linux_guanyinma PUBLIC engine/include)
-target_compile_definitions(keykey_linux_guanyinma PUBLIC KEYKEY_ENABLE_GUANYINMA=1)
-target_link_libraries(keykey_linux_guanyinma PUBLIC keykey_linux_engine
+target_link_libraries(keykey_linux_guanyinma PUBLIC keykey_linux_support
     guanyinma_core PkgConfig::JSONC PkgConfig::PANGOFT2 SQLite::SQLite3
     "-Wl,@${KEYKEY_GUANYINMA_OUTPUT_DIR}/native-static-libs.rsp")
 set_target_properties(keykey_linux_guanyinma PROPERTIES POSITION_INDEPENDENT_CODE ON
