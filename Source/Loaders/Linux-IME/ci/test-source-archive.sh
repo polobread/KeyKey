@@ -4,6 +4,8 @@ set -euo pipefail
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 linux_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 repository_root=$(CDPATH='' cd -- "$linux_dir/../../.." && pwd)
+# Do this before vendoring or entering the independently extracted source tree.
+source "$script_dir/prepare-guanyinma.sh"
 test_root=${KEYKEY_SOURCE_ARCHIVE_TEST_ROOT:-$linux_dir/out/source-archive-test}
 
 case "$test_root" in
@@ -47,6 +49,12 @@ tar -xzf "$archive" -C "$test_root/extracted"
 archive_root="$test_root/extracted/chichi77-keykey-linux-$version"
 test -x "$archive_root/Source/Loaders/Linux-IME/configure"
 test ! -e "$archive_root/.git"
+if [[ "${KEYKEY_ENABLE_GUANYINMA:-OFF}" == ON ]]; then
+  test -f "$archive_root/Source/Guanyinma/vendor/.gitignore" || test -d "$archive_root/Source/Guanyinma/vendor"
+  test -f "$archive_root/Source/Guanyinma/.cargo/config.toml"
+  test -f "$archive_root/THIRD-PARTY-NOTICES.md"
+  export KEYKEY_GUANYINMA_OFFLINE=ON
+fi
 # Validate from the extracted tree before compiling, so missing Python modules
 # or model evidence cannot be hidden by the checkout beside the archive.
 python3 "$archive_root/Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-model.py" \

@@ -5,7 +5,7 @@
 
 using keykey::linux_ime::SmartMandarinUserData;
 
-int main(int argc, char **argv) {
+int legacyMain(int argc, char **argv) {
     const auto data = SmartMandarinUserData::open(
         SmartMandarinUserData::defaultPath());
     if (!data) {
@@ -48,4 +48,27 @@ int main(int argc, char **argv) {
                  "  keykey-smart-phrases remove 詞語 'ㄘˊ ㄩˇ'\n"
                  "  keykey-smart-phrases reset-learning\n";
     return 2;
+}
+
+#if KEYKEY_ENABLE_GUANYINMA
+int guanyinmaPhrases(int argc, char **argv);
+#endif
+
+int main(int argc, char **argv) {
+    if (argc >= 3 && std::string(argv[1]) == "--core") {
+        const std::string core = argv[2];
+        if (core == "legacy") return legacyMain(argc - 2, argv + 2);
+        if (core == "guanyinma") {
+#if KEYKEY_ENABLE_GUANYINMA
+            return guanyinmaPhrases(argc - 2, argv + 2);
+#else
+            std::cerr << "此建置未包含 Guanyinma 核心\n";
+            return 1;
+#endif
+        }
+        std::cerr << "--core 必須是 legacy 或 guanyinma\n";
+        return 2;
+    }
+    // Keep old scripts bound to the old data store regardless of GUI choice.
+    return legacyMain(argc, argv);
 }

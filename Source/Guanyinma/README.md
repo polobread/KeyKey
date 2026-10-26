@@ -118,7 +118,7 @@ python3 tools/test-core.py --sqlite-provider bundled --report target/core-bundle
 
 FE 以 `guanyinma_session_open_with_candidate_filter` 注入自己的字型／編碼能力；Rust 介面為 `InputSession::open_with_candidate_filter` 與 `CandidateFilter::new`。C callback 型別為 `int32_t (GUANYINMA_CALL *)(void *context, const uint8_t *text, size_t text_length)`：同步收到有效 UTF-8 span，回傳 0 拒絕、任何非 0 值接受。核心在四種輸入法查詢後、單候選自動提交、前綴最多 36 字、分頁與選字學習之前過濾；好打注音在 Unigram、自訂詞與 Bigram 的 current 節點建立 graph 前套用，BOS／EOS 邊界除外。低階 database query 與直接輸入的文字不受此過濾影響。關閉回呼（NULL）與原 `guanyinma_session_open` 接受全部的行為相同，context 會被忽略。
 
-callback 的文字只在該次呼叫有效，不含尾端 NUL；不可保存指標、拋出例外／unwind 或重入同一 session。函式與 context 由呼叫端持有到 session close，能力判斷在此期間須保持一致；每次 open／session operation 在呼叫執行緒同步執行回呼。session 互斥不保證其他 session 共用 context 的安全，FE 必須自行同步。callback／context 不進入 JSON、使用者資料或備份。六大平台各自接上原生字型／編碼服務，核心不建立 OS 分支；目前只有 macOS 已接合，其他平台仍待原生接合與宿主驗證。
+callback 的文字只在該次呼叫有效，不含尾端 NUL；不可保存指標、拋出例外／unwind 或重入同一 session。函式與 context 由呼叫端持有到 session close，能力判斷在此期間須保持一致；每次 open／session operation 在呼叫執行緒同步執行回呼。session 互斥不保證其他 session 共用 context 的安全，FE 必須自行同步。callback／context 不進入 JSON、使用者資料或備份。六大平台各自接上原生字型／編碼服務，核心不建立 OS 分支；macOS、Windows、iOS、Android 與 Linux Fcitx 5 已有各自的原生 adapter；實際桌面／裝置與 FreeBSD 原生雙核心驗證仍各自記錄，Linux 接合入口見 [adapter 說明](../../docs/GUANYINMA_LINUX_ADAPTER.md)。
 
 ## 好打注音的行為與座標
 

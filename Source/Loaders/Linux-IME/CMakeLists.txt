@@ -31,6 +31,7 @@ else()
 endif()
 option(KEYKEY_BUILD_FCITX5 "Build the Fcitx 5 addon" ${KEYKEY_FCITX5_DEFAULT})
 option(KEYKEY_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
+option(KEYKEY_ENABLE_GUANYINMA "Include the optional Guanyinma Rust backend" OFF)
 option(KEYKEY_INSTALL_STANDALONE_LICENSE_FILES
     "Install standalone license copies" ON)
 
@@ -131,6 +132,17 @@ if(KEYKEY_ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     )
 endif()
 
+# Keep the portable legacy engine independently buildable without Rust, JSON or fonts.
+if(KEYKEY_ENABLE_GUANYINMA)
+    include(cmake/Guanyinma.cmake)
+    target_link_libraries(keykey-smart-phrases PRIVATE keykey_linux_guanyinma)
+    target_sources(keykey-smart-phrases PRIVATE tools/guanyinma-phrases.cpp)
+    target_compile_definitions(keykey-smart-phrases PRIVATE
+        KEYKEY_LINUX_DATA_DIR="${CMAKE_INSTALL_FULL_DATADIR}/chichi77-keykey/data")
+else()
+    target_compile_definitions(keykey-smart-phrases PRIVATE KEYKEY_ENABLE_GUANYINMA=0)
+endif()
+
 # Explicitly enabled only when capturing/comparing a Rust migration baseline.
 # It is excluded from normal builds and intentionally not registered with CTest.
 option(KEYKEY_BUILD_MIGRATION_BASELINE
@@ -176,6 +188,18 @@ if(BUILD_TESTING)
         DEPENDS keykey_linux_engine_tests
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         USES_TERMINAL)
+    if(KEYKEY_ENABLE_GUANYINMA)
+        add_executable(keykey_linux_guanyinma_session_tests tests/guanyinma_session_tests.cpp)
+        target_link_libraries(keykey_linux_guanyinma_session_tests PRIVATE keykey_linux_guanyinma)
+        add_dependencies(keykey_linux_guanyinma_session_tests keykey_linux_smart_db)
+        add_test(NAME keykey_linux_guanyinma_session
+            COMMAND keykey_linux_guanyinma_session_tests "${KEYKEY_SMART_DB}")
+        add_test(NAME keykey_linux_guanyinma_phrase_cli
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/guanyinma_phrase_cli_tests.py"
+                "$<TARGET_FILE:keykey-smart-phrases>" "${KEYKEY_SMART_DB}")
+        add_dependencies(check keykey_linux_guanyinma_session_tests)
+        add_dependencies(check keykey-smart-phrases)
+    endif()
     if(KEYKEY_BUILD_X11_E2E_HOST)
         find_package(PkgConfig REQUIRED)
         pkg_check_modules(GTK3 REQUIRED IMPORTED_TARGET gtk+-3.0)

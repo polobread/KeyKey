@@ -37,6 +37,7 @@ esac
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 linux_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 repository_root=$(CDPATH='' cd -- "$linux_dir/../../.." && pwd)
+source "$script_dir/prepare-guanyinma.sh"
 architecture=$(dpkg --print-architecture)
 product_version=$(sed -n \
   's/^project(KeyKeyLinux VERSION \([^ ]*\) LANGUAGES.*$/\1/p' \
@@ -99,6 +100,16 @@ mkdir -p \
   "$output_dir"
 
 cp -a "$repository_root/Source/Shared" "$source_root/Source/"
+source "$script_dir/guanyinma-source-paths.sh"
+for core_path in "${guanyinma_source_paths[@]}"; do
+  mkdir -p "$source_root/$(dirname -- "$core_path")"
+  cp -a "$repository_root/$core_path" "$source_root/$core_path"
+done
+if [[ "${KEYKEY_ENABLE_GUANYINMA:-OFF}" == ON ]]; then
+  python3 "$source_root/Source/Guanyinma/tools/prepare-unix-vendor.py" \
+    --core-dir "$source_root/Source/Guanyinma"
+  export KEYKEY_GUANYINMA_OFFLINE=ON
+fi
 
 mkdir -p "$source_root/Source/Loaders/Linux-IME"
 cp -a \

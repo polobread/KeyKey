@@ -55,6 +55,8 @@ docker build \
 docker run --rm \
   --platform "$platform" \
   --user "$bind_mount_uid:$bind_mount_gid" \
+  --env KEYKEY_ENABLE_GUANYINMA="${KEYKEY_ENABLE_GUANYINMA:-OFF}" \
+  --env KEYKEY_GUANYINMA_OFFLINE="${KEYKEY_GUANYINMA_OFFLINE:-OFF}" \
   --env KEYKEY_BUILD_DIR="$build_dir" \
   --env KEYKEY_STAGE_DIR="$stage_dir" \
   --volume "$repository_root:/workspace/KeyKey" \

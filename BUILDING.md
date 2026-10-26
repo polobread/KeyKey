@@ -70,6 +70,11 @@ make DESTDIR="$PWD/out/source-stage" install
 
 開發者若已安裝 Ninja，也可繼續使用既有 CMake preset：
 
+Guanyinma 雙核心建置另外需要鎖定的 Rustup 工具鏈、`libjson-c-dev` 及
+`libpango1.0-dev`，使用 `linux-guanyinma` preset 或 `./configure --enable-guanyinma`。
+建置開關預設關閉，啟用後執行時仍預設 C++ 原核心。接合、獨立詞庫與聚焦測試見
+[Linux 雙核心說明](docs/GUANYINMA_LINUX_ADAPTER.md)。
+
 ```sh
 cd Source/Loaders/Linux-IME
 cmake --preset linux-release
@@ -536,6 +541,12 @@ build directory. See the
 for nonstandard Fcitx prefix activation.
 
 Developers with Ninja installed may continue to use the existing CMake preset:
+
+An optional Guanyinma dual-core build additionally needs the pinned Rustup
+toolchain, `libjson-c-dev`, and `libpango1.0-dev`. Use the `linux-guanyinma`
+preset or `./configure --enable-guanyinma`. This build feature defaults off;
+enabled builds still select the original C++ core at runtime. See the
+[Linux adapter guide](docs/GUANYINMA_LINUX_ADAPTER.md) for data separation and tests.
 
 ```sh
 cd Source/Loaders/Linux-IME

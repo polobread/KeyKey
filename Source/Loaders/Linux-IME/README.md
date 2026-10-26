@@ -1,5 +1,10 @@
 # chichi77 KeyKey for Linux
 
+Optional development builds can select the original C++ core or Guanyinma in
+the same Fcitx 5 frontend. The default remains the C++ core. Build dependencies,
+safe switching, separate user data, and focused verification are described in
+the [Linux Guanyinma adapter guide](../../../docs/GUANYINMA_LINUX_ADAPTER.md).
+
 倉頡新增可選的「即時候選」與「未打完也能選字」，兩項預設關閉；設定與分層驗證見 [桌面倉頡試用說明](../../../docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
 
 FreeBSD 的套件／ports 原始碼安裝、桌面設定與操作截圖見 [FreeBSD 安裝與使用指南](../../../FREEBSD_INSTALL.md)。

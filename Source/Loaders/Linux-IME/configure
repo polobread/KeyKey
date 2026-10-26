@@ -21,6 +21,9 @@ Installation directories:
 Build options:
   --enable-fcitx5            build the Fcitx 5 addon [default]
   --disable-fcitx5           build the engine without the Fcitx 5 addon
+  --enable-guanyinma         include the optional Rust core [disabled]
+  --disable-guanyinma        build only the C++ core [default]
+  --enable-guanyinma-offline use already prepared locked Cargo sources
   --enable-tests             build tests and provide make check [default]
   --disable-tests            do not build the test suite
   --enable-x11-e2e-host      build the GTK 3, GTK 4, and Qt 6 X11 test hosts [disabled]
@@ -30,6 +33,9 @@ Build options:
   -h, --help                 display this help and exit
 
 Environment variables:
+  CARGO                      cargo executable for the pinned Rust toolchain
+  CARGO_HOME, RUSTUP_HOME     prepared Cargo sources and Rust toolchains
+  KEYKEY_GUANYINMA_OFFLINE    set to 1 to disable Cargo network access
   CXX                        C++ compiler
   CPPFLAGS                   C/C++ preprocessor flags
   CXXFLAGS                   C++ compiler flags
@@ -68,6 +74,8 @@ build_fcitx5=ON
 build_testing=ON
 build_x11_e2e_host=OFF
 enable_sanitizers=OFF
+enable_guanyinma=OFF
+guanyinma_offline=OFF
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -103,6 +111,9 @@ while [ "$#" -gt 0 ]; do
             ;;
         --enable-fcitx5) build_fcitx5=ON ;;
         --disable-fcitx5) build_fcitx5=OFF ;;
+        --enable-guanyinma) enable_guanyinma=ON ;;
+        --disable-guanyinma) enable_guanyinma=OFF ;;
+        --enable-guanyinma-offline) guanyinma_offline=ON ;;
         --enable-tests) build_testing=ON ;;
         --disable-tests) build_testing=OFF ;;
         --enable-x11-e2e-host) build_x11_e2e_host=ON ;;
@@ -173,13 +184,18 @@ set -- cmake -S "$script_dir" -B "$build_dir" -G 'Unix Makefiles' \
     "-DBUILD_TESTING=$build_testing" \
     "-DKEYKEY_BUILD_FCITX5=$build_fcitx5" \
     "-DKEYKEY_BUILD_X11_E2E_HOST=$build_x11_e2e_host" \
-    "-DKEYKEY_ENABLE_SANITIZERS=$enable_sanitizers"
+    "-DKEYKEY_ENABLE_SANITIZERS=$enable_sanitizers" \
+    "-DKEYKEY_ENABLE_GUANYINMA=$enable_guanyinma" \
+    "-DKEYKEY_GUANYINMA_OFFLINE=$guanyinma_offline"
 
 if [ -n "$libdir" ]; then
     set -- "$@" "-DCMAKE_INSTALL_LIBDIR=$libdir"
 fi
 if [ -n "$datadir" ]; then
     set -- "$@" "-DCMAKE_INSTALL_DATADIR=$datadir"
+fi
+if [ -n "${CARGO-}" ]; then
+    set -- "$@" "-DCARGO=$CARGO"
 fi
 if [ -n "${CXX-}" ]; then
     set -- "$@" "-DCMAKE_CXX_COMPILER=$CXX"
@@ -260,6 +276,7 @@ Configuration complete:
   library directory:   $full_libdir
   data directory:      $full_datadir
   Fcitx 5 addon:        $build_fcitx5
+  Guanyinma included:   $enable_guanyinma (runtime default: C++ original)
   tests:                $build_testing
   GTK 3/GTK 4/Qt 6 X11 test hosts: $build_x11_e2e_host
 

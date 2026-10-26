@@ -2,6 +2,12 @@
 
 ## 1.3.9
 
+### Linux／FreeBSD 共用前端
+
+- Linux Fcitx 5 開發建置可在同一前端選擇 C++ 原核心或 Guanyinma Rust 核心，預設維持 C++；組字、候選及待送文字完成後才切換。
+- Guanyinma 沿用四種輸入法設定、原生候選與關聯詞，經系統字型／字集能力過濾；兩核心的使用者詞庫與學習分開保存。
+- 詞庫命令可明確選核心，Guanyinma 支援完整 JSON 備份與唯讀匯入舊 Linux 詞庫；共用程式的 FreeBSD 原生雙核心驗證另行記錄。
+
 ### Windows
 
 - 同一套 TSF 輸入介面可選 Manjusri 原核心或 Guanyinma（Rust），預設維持 Manjusri；核心切換等待組字、候選及待送文字完成。

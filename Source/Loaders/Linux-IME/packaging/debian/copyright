@@ -10,7 +10,7 @@ License: GPL-2
  the KeyKey engine under GPL version 2. The complete license is in
  /usr/share/common-licenses/GPL-2 on Debian systems.
 
-Files: Source/Loaders/Linux-IME/* Source/Shared/*
+Files: Source/Loaders/Linux-IME/* Source/Shared/* Source/Guanyinma/*
 Copyright: 2026 Chui-Ping Cheng
 License: MIT
  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,6 +30,31 @@ License: MIT
  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
+
+Files: Source/Guanyinma/src/engine.rs Source/Guanyinma/src/bopomofo.rs
+ Source/Guanyinma/src/smart.rs Source/Guanyinma/src/walker.rs
+ Source/Guanyinma/LICENSES/*
+Copyright: 2026 Chui-Ping Cheng
+ 2004-2010 OpenVanilla contributors
+ 2007-2010 Lukhnos D. Liu
+ 2012 Yahoo! Inc. and contributors
+License: MIT and BSD-3-Clause
+ Source derivations retain their original notices in
+ Source/Guanyinma/LICENSES/Formosa-OpenVanilla-NOTICES.txt.
+ Dual-core binary packages install the complete locked Rust crate, standard
+ library and source notices at
+ /usr/share/doc/chichi77-keykey/Guanyinma-NOTICES.txt.
+ Vendored Cargo sources retain each crate's original LICENSE files and
+ .cargo-checksum.json. System SQLite is linked dynamically, not bundled.
+
+Files: Source/Guanyinma/vendor/*
+Copyright: The respective upstream authors identified by each crate
+License: Cargo-source-licenses
+ Vendored crates retain the complete upstream LICENSE, COPYING and NOTICE
+ files and their Cargo license expressions. This stanza does not relicense
+ them under the frontend's MIT license. The binary's complete applicable
+ locked dependency texts are preserved in
+ /usr/share/doc/chichi77-keykey/Guanyinma-NOTICES.txt.
 
 Files: Source/Loaders/Linux-IME/data/tc2sc.cin
 Copyright: 2004-2007 The OpenVanilla Project

@@ -2,6 +2,8 @@
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_CXXFLAGS_MAINT_APPEND = -Wformat -Werror=format-security
+KEYKEY_ENABLE_GUANYINMA ?= OFF
+KEYKEY_GUANYINMA_OFFLINE ?= OFF
 
 %:
 	dh $@ --buildsystem=cmake+ninja --sourcedirectory=Source/Loaders/Linux-IME
@@ -13,11 +15,24 @@ override_dh_auto_configure:
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DPython3_EXECUTABLE=/usr/bin/python3 \
 		-DKEYKEY_BUILD_FCITX5=ON \
+		-DKEYKEY_ENABLE_GUANYINMA=$(KEYKEY_ENABLE_GUANYINMA) \
+		-DKEYKEY_GUANYINMA_OFFLINE=$(KEYKEY_GUANYINMA_OFFLINE) \
+		$(if $(CARGO),-DCARGO=$(CARGO)) \
 		-DKEYKEY_BUILD_X11_E2E_HOST=OFF \
 		$(if $(KEYKEY_UPDATE_VERSION),-DKEYKEY_UPDATE_VERSION=$(KEYKEY_UPDATE_VERSION)) \
 		-DKEYKEY_INSTALL_STANDALONE_LICENSE_FILES=OFF
 
+override_dh_clean:
+	# Cargo.toml.orig and checksum-listed files are immutable vendored inputs.
+	dh_clean -XSource/Guanyinma/vendor
+
 override_dh_strip:
 	dh_strip --no-automatic-dbgsym
+
+override_dh_install:
+	dh_install
+ifeq ($(KEYKEY_ENABLE_GUANYINMA),ON)
+	dh_install --autodest -pfcitx5-chichi77-keykey usr/share/doc/chichi77-keykey/Guanyinma-NOTICES.txt
+endif
 
 override_dh_dwz:

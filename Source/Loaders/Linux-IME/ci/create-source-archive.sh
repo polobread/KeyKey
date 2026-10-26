@@ -29,6 +29,7 @@ archive="$archive_parent/$archive_name"
 
 source "$script_dir/model-source-paths.sh"
 source "$script_dir/about-source-paths.sh"
+source "$script_dir/guanyinma-source-paths.sh"
 
 source_paths=(
   BUILDING.md
@@ -60,14 +61,40 @@ source_paths=(
   Source/DataTables/simplex-ext.cin
   "${about_source_paths[@]}"
   "${model_paths[@]}"
+  "${guanyinma_source_paths[@]}"
   Source/Loaders/Linux-IME
 )
 
-"${git_command[@]}" archive \
-  --format=tar.gz \
-  --prefix="chichi77-keykey-linux-$version/" \
-  --output="$archive" \
-  "$revision" -- "${source_paths[@]}"
+if [[ "${KEYKEY_SOURCE_WORKTREE:-0}" == 1 ]]; then
+  # Explicit local review mode includes pending source changes without making
+  # a Git commit. Official release assets continue to use the revision above.
+  tar --exclude='*/out' --exclude='*/target' --exclude='*/__pycache__' \
+    --exclude='*.pyc' --exclude='*/.git' \
+    --transform="s,^,chichi77-keykey-linux-$version/," \
+    -C "$repository_root" -czf "$archive" "${source_paths[@]}"
+else
+  "${git_command[@]}" archive \
+    --format=tar.gz \
+    --prefix="chichi77-keykey-linux-$version/" \
+    --output="$archive" \
+    "$revision" -- "${source_paths[@]}"
+fi
+
+# Official dual-core source assets can carry checksummed registry sources, so
+# consumers need no network or pre-existing Cargo cache during compilation.
+if [[ "${KEYKEY_SOURCE_VENDOR_GUANYINMA:-${KEYKEY_ENABLE_GUANYINMA:-OFF}}" == ON ]]; then
+  vendor_root=$(mktemp -d "$archive_parent/.keykey-vendor.XXXXXX")
+  trap 'rm -rf "$vendor_root"' EXIT
+  tar -xzf "$archive" -C "$vendor_root"
+  python3 "$vendor_root/chichi77-keykey-linux-$version/Source/Guanyinma/tools/prepare-unix-vendor.py" \
+    --core-dir "$vendor_root/chichi77-keykey-linux-$version/Source/Guanyinma"
+  archive_epoch=$("${git_command[@]}" show -s --format=%ct "$revision")
+  tar --sort=name --mtime="@$archive_epoch" --owner=0 --group=0 --numeric-owner \
+    -C "$vendor_root" -cf - "chichi77-keykey-linux-$version" | gzip -n >"$archive.tmp"
+  mv "$archive.tmp" "$archive"
+  rm -rf "$vendor_root"
+  trap - EXIT
+fi
 
 (
   cd "$archive_parent"

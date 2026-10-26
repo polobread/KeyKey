@@ -55,6 +55,12 @@ struct KeyEvent {
     bool release = false;
     bool repeat = false;
     bool capsLock = false;
+    // Optional native text and physical flags, used by the Rust adapter. The
+    // legacy ASCII event contract above remains unchanged.
+    std::string text{};
+    bool rawShift = false;
+    bool keypad = false;
+    bool numLock = false;
 };
 
 struct EngineResult {
@@ -71,6 +77,14 @@ struct EngineResult {
     bool traditionalToSimplifiedMode = false;
     bool associatedPhrases = false;
     std::string commit;
+    bool deleteBackward = false;
+    bool sendReturn = false;
+    bool discardComposition = false;
+    std::string phraseFeedback;
+    bool phraseAdded = false;
+    bool hasMarkedPhrase = false;
+    std::size_t markedPreeditStartBytes = 0;
+    std::size_t markedPreeditLengthBytes = 0;
 };
 
 enum class InputMethod { Bopomofo, Cangjie, Simplex };

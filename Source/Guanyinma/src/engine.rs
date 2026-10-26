@@ -375,6 +375,16 @@ pub enum InputOperation {
     ToggleFullWidth,
     /// A native Shift-tap recognizer or mode control sends this once per gesture.
     ToggleEnglish,
+    /// Explicit frontend handoff policy, independent of native platform names.
+    /// Unlike a candidate selection this never records a user preference.
+    FinishComposition {
+        #[serde(default)]
+        complete_reading: bool,
+        #[serde(default)]
+        select_highlighted_candidate: bool,
+        #[serde(default)]
+        discard_table_code: bool,
+    },
     Finish,
     Reset,
 }
@@ -1351,6 +1361,32 @@ impl InputSession {
             InputOperation::ToggleEnglish => {
                 self.finish(effects);
                 self.state.english = !self.state.english;
+            }
+            InputOperation::FinishComposition {
+                complete_reading,
+                select_highlighted_candidate,
+                discard_table_code,
+            } => {
+                if self.config.method == InputMethod::Smart {
+                    if complete_reading {
+                        self.state.smart.complete_reading_for_handoff(
+                            &self.database,
+                            &self.config.smart,
+                            effects,
+                        )?;
+                    }
+                    self.finish(effects);
+                } else if matches!(
+                    self.config.method,
+                    InputMethod::Cangjie | InputMethod::Simplex
+                ) && discard_table_code
+                {
+                    self.clear_composition();
+                } else if select_highlighted_candidate && !self.state.candidates.is_empty() {
+                    self.commit_highlighted_without_learning(effects)?;
+                } else {
+                    self.finish(effects);
+                }
             }
             InputOperation::Finish => self.finish(effects),
             InputOperation::Reset => self.clear_composition(),

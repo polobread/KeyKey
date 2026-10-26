@@ -137,6 +137,8 @@ int32_t GUANYINMA_CALL guanyinma_database_query(
  * {"type":"set_method","method":"cangjie"}
  * {"type":"set_profile","profile":"touch"}
  * {"type":"reset"}
+ * {"type":"finish_composition","complete_reading":true,
+ *  "select_highlighted_candidate":true,"discard_table_code":true}
  * {"type":"toggle_english"}
  * {"type":"set_english","enabled":true}
  * {"type":"set_english","enabled":false}
@@ -167,6 +169,12 @@ int32_t GUANYINMA_CALL guanyinma_database_query(
  * unrelated methods. Same-query dictionary inserts are idempotent.
  * update_user_phrase supplies qstring/text and new_qstring/new_text together.
  * Session close has no implicit write. Save failures return no input effects.
+ * finish_composition is an atomic frontend handoff policy. complete_reading
+ * completes a valid unfinished Smart reading before finishing (an unmatched
+ * reading remains literal); select_highlighted_candidate preserves the selected
+ * non-Smart candidate without recording selection learning; discard_table_code
+ * clears unconfirmed Cangjie/Simplex input instead of committing its roots.
+ * All flags default false. The original finish operation remains unchanged.
  * If another writer changes an open candidate view, an obsolete selection
  * event is consumed with beep and a closed panel, never reassigned by index.
  * Identical candidate text/spans retain the current page and highlight.

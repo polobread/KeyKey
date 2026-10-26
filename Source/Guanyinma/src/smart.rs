@@ -368,6 +368,18 @@ impl SmartState {
         self.clear();
     }
 
+    pub(crate) fn complete_reading_for_handoff(
+        &mut self,
+        database: &ModelDatabase,
+        options: &SmartOptions,
+        effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        if !self.reading.is_empty() {
+            self.complete_reading(database, options, effects)?;
+        }
+        Ok(())
+    }
+
     pub fn open_candidates(
         &mut self,
         index: Option<usize>,

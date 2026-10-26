@@ -14,7 +14,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_INSTALL_PREFIX": "/usr",
-        "KEYKEY_BUILD_FCITX5": "ON"
+        "KEYKEY_BUILD_FCITX5": "ON",
+        "KEYKEY_ENABLE_GUANYINMA": "OFF"
       }
     },
     {
@@ -24,7 +25,8 @@
       "binaryDir": "${sourceDir}/out/build/engine-only",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "KEYKEY_BUILD_FCITX5": "OFF"
+        "KEYKEY_BUILD_FCITX5": "OFF",
+        "KEYKEY_ENABLE_GUANYINMA": "OFF"
       }
     },
     {
@@ -34,6 +36,15 @@
       "binaryDir": "${sourceDir}/out/build/engine-sanitized",
       "cacheVariables": {
         "KEYKEY_ENABLE_SANITIZERS": "ON"
+      }
+    },
+    {
+      "name": "linux-guanyinma",
+      "displayName": "Linux dual core (C++ default)",
+      "inherits": "linux-release",
+      "binaryDir": "${sourceDir}/out/build/guanyinma",
+      "cacheVariables": {
+        "KEYKEY_ENABLE_GUANYINMA": "ON"
       }
     }
   ],
@@ -49,6 +60,10 @@
     {
       "name": "engine-sanitized",
       "configurePreset": "engine-sanitized"
+    },
+    {
+      "name": "linux-guanyinma",
+      "configurePreset": "linux-guanyinma"
     }
   ],
   "testPresets": [
@@ -69,6 +84,13 @@
     {
       "name": "engine-sanitized",
       "configurePreset": "engine-sanitized",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "linux-guanyinma",
+      "configurePreset": "linux-guanyinma",
       "output": {
         "outputOnFailure": true
       }

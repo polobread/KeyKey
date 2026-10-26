@@ -8,6 +8,11 @@ test -n "${KEYKEY_E2E_ARTIFACT_DIR:-}"
 test -n "${KEYKEY_E2E_RUNTIME_ROOT:-}"
 
 session_mode=${KEYKEY_E2E_SESSION_MODE:-managed}
+input_core=${KEYKEY_E2E_INPUT_CORE:-Legacy}
+case "$input_core" in
+  Legacy|Guanyinma) ;;
+  *) echo "KEYKEY_E2E_INPUT_CORE must be Legacy or Guanyinma." >&2; exit 2 ;;
+esac
 case "$session_mode" in
   managed|existing-gnome) ;;
   *)
@@ -259,7 +264,8 @@ case_selected() {
 
 runtime_root=$KEYKEY_E2E_RUNTIME_ROOT
 if [[ "$session_mode" == managed ]]; then
-  export DISPLAY=:99
+  # The managed runner chooses its own server below, never an existing display.
+  unset DISPLAY
 else
   test -n "${DISPLAY:-}"
   test -n "${DBUS_SESSION_BUS_ADDRESS:-}"
@@ -362,12 +368,23 @@ cleanup() {
 trap cleanup EXIT
 
 if [[ "$session_mode" == managed ]]; then
-  Xvfb "$DISPLAY" -screen 0 1024x768x24 -nolisten tcp \
+  display_file="$runtime_root/xvfb-display"
+  Xvfb -displayfd 3 -screen 0 1024x768x24 -nolisten tcp 3>"$display_file" \
     >"$KEYKEY_E2E_ARTIFACT_DIR/xvfb.log" 2>&1 &
   xvfb_pid=$!
   display_ready=false
   for _ in {1..100}; do
-    if xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+    if ! kill -0 "$xvfb_pid" 2>/dev/null; then
+      echo "The private Xvfb exited before becoming ready." >&2
+      exit 1
+    fi
+    if [[ -s "$display_file" ]]; then
+      display_number=$(cat "$display_file")
+      if [[ "$display_number" =~ ^[0-9]+$ ]]; then
+        export DISPLAY=":$display_number"
+      fi
+    fi
+    if [[ -n "${DISPLAY:-}" ]] && xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
       display_ready=true
       break
     fi
@@ -377,6 +394,7 @@ if [[ "$session_mode" == managed ]]; then
     echo "Xvfb did not become ready." >&2
     exit 1
   fi
+  dbus-update-activation-environment DISPLAY
 else
   if [[ "${XDG_SESSION_TYPE:-}" != x11 || "${XDG_CURRENT_DESKTOP:-}" != *GNOME* ]]; then
     echo "The existing-session runner requires a GNOME X11 session." >&2
@@ -584,6 +602,7 @@ associated_phrase_source_enabled() {
 
 write_keykey_config() {
   {
+    printf 'InputCore=%s\n' "$input_core"
     printf 'BopomofoLayout=%s\nBopomofoMode=%s\nTraditionalToSimplified=%s\n' \
       "$bopomofo_layout" "$bopomofo_mode" "$traditional_to_simplified"
     printf 'CandidateWindowStyle=%s\n' "$candidate_window_style"
@@ -609,10 +628,11 @@ write_keykey_config() {
 }
 
 write_legacy_keykey_config() {
+  printf 'InputCore=%s\n' "$input_core" >"$keykey_config_path"
   printf 'BopomofoLayout=%s\nBopomofoMode=%s\nTraditionalToSimplified=%s\nAssociatedPhraseCollections=%s\n' \
     "$bopomofo_layout" "$bopomofo_mode" "$traditional_to_simplified" \
     "$associated_phrase_collections" \
-    >"$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf"
+    >>"$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf"
 }
 
 reload_keykey_config() {

@@ -58,6 +58,8 @@ fi
 docker run --rm \
   --platform "$platform" \
   --user "$bind_mount_uid:$bind_mount_gid" \
+  --env KEYKEY_ENABLE_GUANYINMA="${KEYKEY_ENABLE_GUANYINMA:-OFF}" \
+  --env KEYKEY_GUANYINMA_OFFLINE="${KEYKEY_GUANYINMA_OFFLINE:-OFF}" \
   --env KEYKEY_BUILD_DIR="$build_dir" \
   --env KEYKEY_STAGE_DIR="out/stage/$target-package-$architecture" \
   --env KEYKEY_BUILD_X11_E2E_HOST="$build_x11_host" \
@@ -70,6 +72,8 @@ if [[ "$target" == ubuntu-24.04 ]]; then
   docker run --rm \
     --platform "$platform" \
     --user "$bind_mount_uid:$bind_mount_gid" \
+  --env KEYKEY_ENABLE_GUANYINMA="${KEYKEY_ENABLE_GUANYINMA:-OFF}" \
+  --env KEYKEY_GUANYINMA_OFFLINE="${KEYKEY_GUANYINMA_OFFLINE:-OFF}" \
     --volume "$repository_root:/workspace/KeyKey" \
     --workdir /workspace/KeyKey/Source/Loaders/Linux-IME \
     "$build_image" \
@@ -78,6 +82,8 @@ fi
 docker run --rm \
   --platform "$platform" \
   --user "$bind_mount_uid:$bind_mount_gid" \
+  --env KEYKEY_ENABLE_GUANYINMA="${KEYKEY_ENABLE_GUANYINMA:-OFF}" \
+  --env KEYKEY_GUANYINMA_OFFLINE="${KEYKEY_GUANYINMA_OFFLINE:-OFF}" \
   --volume "$repository_root:/workspace/KeyKey" \
   --workdir /workspace/KeyKey/Source/Loaders/Linux-IME \
   "$build_image" \

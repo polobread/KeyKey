@@ -13,7 +13,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tomllib
 
 CORE = Path(__file__).resolve().parents[1]
 ROOT = CORE.parent.parent
@@ -58,31 +57,50 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cargo", default=os.environ.get("CARGO", "cargo"))
-    parser.add_argument("--platform", choices=["android", "windows"], default="android")
+    parser.add_argument("--platform", choices=["android", "windows", "linux", "freebsd"], default="android")
     parser.add_argument("--ndk", type=Path, help="the same configured NDK used by the JNI link (required for Android)")
     parser.add_argument("--offline", action="store_true")
     args = parser.parse_args()
     if args.platform == "android" and args.ndk is None:
         parser.error("--ndk is required for Android")
-    targets = TARGETS if args.platform == "android" else ("x86_64-pc-windows-msvc", "i686-pc-windows-msvc")
     environment = os.environ.copy()
-    channel = tomllib.loads((CORE / "rust-toolchain.toml").read_text())["toolchain"]["channel"]
+    pin = re.search(r'^channel\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"\s*$',
+                    (CORE / "rust-toolchain.toml").read_text(), re.MULTILINE)
+    if pin is None:
+        raise RuntimeError("rust-toolchain.toml must pin a complete stable version")
+    channel = pin.group(1)
     environment["RUSTUP_TOOLCHAIN"] = channel
-    offline = args.offline or os.environ.get("KEYKEY_GUANYINMA_OFFLINE") == "1"
+    offline = args.offline or os.environ.get("KEYKEY_GUANYINMA_OFFLINE") in ("1", "ON")
+    cargo = Path(shutil.which(args.cargo) or args.cargo)
+    rustc_name = "rustc.exe" if sys.platform == "win32" else "rustc"
+    sibling = cargo.with_name(rustc_name)
+    rustc = os.environ.get("RUSTC") or (str(sibling) if sibling.is_file() else shutil.which(rustc_name))
+    if not rustc:
+        raise RuntimeError("The pinned Rust compiler must be available to locate standard-library notices")
+    system_sqlite = args.platform in ("linux", "freebsd")
+    if system_sqlite:
+        details = subprocess.check_output([rustc, "-vV"], cwd=CORE, env=environment, text=True)
+        host = re.search(r"^host: (.+)$", details, re.MULTILINE)
+        if host is None or (args.platform == "freebsd") != ("freebsd" in host.group(1)):
+            raise RuntimeError("Unix notices require the corresponding native Rust host")
+        targets = (host.group(1),)
+    else:
+        targets = TARGETS if args.platform == "android" else ("x86_64-pc-windows-msvc", "i686-pc-windows-msvc")
+    features = [] if system_sqlite else ["--features", "bundled-sqlite"]
     packages = {}
     for target in targets:
         command = [args.cargo, "metadata", "--locked", "--format-version", "1",
-                   "--no-default-features", "--features", "bundled-sqlite", "--filter-platform", target]
+                   "--no-default-features", *features, "--filter-platform", target]
         if offline:
             command.append("--offline")
         metadata = json.loads(subprocess.check_output(command, cwd=CORE, env=environment, text=True, encoding="utf-8"))
         target_packages = resolved_packages(metadata)
         sqlite_ids = {package["id"] for package in target_packages.values() if package["name"] == "libsqlite3-sys"}
         sqlite_nodes = [node for node in metadata["resolve"]["nodes"] if node["id"] in sqlite_ids]
-        if not sqlite_nodes or any("bundled" not in node["features"] or
+        if not sqlite_nodes or any(("bundled" in node["features"]) == system_sqlite or
                                    any("sqlcipher" in feature for feature in node["features"])
                                    for node in sqlite_nodes):
-            raise RuntimeError("Notice collection requires the actual bundled SQLite (not SQLCipher) provider")
+            raise RuntimeError("SQLite metadata does not match the selected system/bundled provider")
         packages.update(target_packages)
     chunks = [(
         "Guanyinma / KeyKey " + args.platform + " runtime notices\n"
@@ -94,7 +112,7 @@ def main():
         "describe multiple platforms; inclusion does not mean every listed component\n"
         "is linked into this frontend. Applicability follows the included licensing map\n"
         "and the per-component copyright notices.\n"
-        "Cargo features: no-default-features + bundled-sqlite\n"
+        "Cargo features: no-default-features" + (" (system SQLite)" if system_sqlite else " + bundled-sqlite") + "\n"
         "Cargo targets: " + ", ".join(targets) + "\n"
     ).encode("utf-8")]
     sections = 0
@@ -111,7 +129,8 @@ def main():
         sections += 1
 
     files = {ROOT / name for name in REPOSITORY_TEXTS if name != "Source/Loaders/Android-IME/LICENSE.txt"}
-    files.add(ROOT / ("Source/Loaders/Android-IME/LICENSE.txt" if args.platform == "android" else "Source/Loaders/Windows-TSF/LICENSE.txt"))
+    frontend = "Android-IME" if args.platform == "android" else "Linux-IME" if system_sqlite else "Windows-TSF"
+    files.add(ROOT / ("Source/Loaders/" + frontend + "/LICENSE.txt"))
     files.update(path for directory in (ROOT / "LICENSES", CORE / "LICENSES")
                  for path in directory.rglob("*") if path.is_file())
     for path in sorted(files):
@@ -137,20 +156,26 @@ def main():
         dependencies.append(label)
         if package["name"] == "libsqlite3-sys":
             sqlite = directory / "sqlite3/sqlite3.c"
-    if sqlite is None:
-        raise RuntimeError("The bundled SQLite provider is missing from Cargo metadata")
-    source = sqlite.read_bytes()
-    version = re.search(rb'^#define SQLITE_VERSION\s+"([^"]+)"', source, re.MULTILINE)
-    blessing = next((comment for comment in re.findall(rb"/\*.*?\*/", source, re.DOTALL)
-                     if b"The author disclaims copyright to this source code." in comment), None)
-    if not version or blessing is None:
-        raise RuntimeError("Cannot preserve the actual bundled SQLite provenance/disclaimer")
-    chunks.append(("\n\nSQLite " + version.group(1).decode("ascii") + " is the bundled public-domain provider.\n"
-                   "Upstream provenance: https://www.sqlite.org/copyright.html\n"
-                   "The following complete disclaimer/blessing is copied from the\n"
-                   "libsqlite3-sys bundled sqlite3/sqlite3.c actually selected above.\n").encode("utf-8"))
-    add("SQLite bundled-source copyright disclaimer", blessing)
-
+    if system_sqlite:
+        chunks.append(b"\n\nSQLite provider: the frontend-selected dynamic system SQLite.\n"
+                      b"No SQLite amalgamation is bundled by this Unix build.\n"
+                      b"SQLite upstream provenance: https://www.sqlite.org/copyright.html\n"
+                      b"json-c, Pango/Fontconfig/FreeType and other native shared libraries\n"
+                      b"are supplied by the operating system and retain their package notices.\n")
+    else:
+        if sqlite is None:
+            raise RuntimeError("The bundled SQLite provider is missing from Cargo metadata")
+        source = sqlite.read_bytes()
+        version = re.search(rb'^#define SQLITE_VERSION\s+"([^"]+)"', source, re.MULTILINE)
+        blessing = next((comment for comment in re.findall(rb"/\*.*?\*/", source, re.DOTALL)
+                         if b"The author disclaims copyright to this source code." in comment), None)
+        if not version or blessing is None:
+            raise RuntimeError("Cannot preserve the actual bundled SQLite provenance/disclaimer")
+        chunks.append(("\n\nSQLite " + version.group(1).decode("ascii") + " is the bundled public-domain provider.\n"
+                       "Upstream provenance: https://www.sqlite.org/copyright.html\n"
+                       "The following complete disclaimer/blessing is copied from the\n"
+                       "libsqlite3-sys bundled sqlite3/sqlite3.c actually selected above.\n").encode("utf-8"))
+        add("SQLite bundled-source copyright disclaimer", blessing)
     if args.platform == "android":
         ndk = args.ndk.resolve()
         properties = (ndk / "source.properties").read_text()
@@ -163,12 +188,6 @@ def main():
             raise RuntimeError("The configured NDK notice does not cover the linked static C++ runtime")
         add("Android NDK " + revision.group(1).strip() + "/LLVM-libc++-libc++abi-NOTICE", content)
 
-    cargo = Path(shutil.which(args.cargo) or args.cargo)
-    rustc_name = "rustc.exe" if sys.platform == "win32" else "rustc"
-    sibling = cargo.with_name(rustc_name)
-    rustc = os.environ.get("RUSTC") or (str(sibling) if sibling.is_file() else shutil.which(rustc_name))
-    if not rustc:
-        raise RuntimeError("The pinned Rust compiler must be available to locate standard-library notices")
     sysroot = Path(subprocess.check_output([rustc, "--print", "sysroot"], cwd=CORE, env=environment, text=True, encoding="utf-8").strip())
     rust_docs = sysroot / "share/doc/rust"
     add("Rust " + channel + "/COPYRIGHT-library.html", (rust_docs / "COPYRIGHT-library.html").read_bytes())
