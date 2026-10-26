@@ -2,6 +2,12 @@
 
 ## 1.3.9
 
+### Windows
+
+- 同一套 TSF 輸入介面可選 Manjusri 原核心或 Guanyinma（Rust），預設維持 Manjusri；核心切換等待組字、候選及待送文字完成。
+- Guanyinma 沿用四種輸入法設定、原生候選窗與關聯詞，候選先經 Windows 系統字型與字集過濾。
+- 兩核心的自訂詞與學習分開保存；Rust 詞庫支援完整 JSON 備份及明確唯讀匯入既有 Windows 詞庫，開啟中的詞庫視窗固定使用原本的資料核心。
+
 ### macOS
 
 - 修正 Finder 清單等小尺寸圖示顯示彩色雜訊；以 macOS 原生工具產生相容的圖示尺寸與 Retina 圖層。

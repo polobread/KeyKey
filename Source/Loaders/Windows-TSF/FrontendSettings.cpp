@@ -192,6 +192,7 @@ FrontendSettings LoadFrontendSettings() {
         xml, "ToggleInputMethodWithControlBackslash", true);
     settings.symbolPanelShortcutEnabled = PlistBool(xml, "SymbolPanelShortcutEnabled", true);
     settings.ignoreCapsLockInChinese = PlistBool(xml, "IgnoreCapsLockInChinese", true);
+    settings.guanyinmaCore = PlistString(xml, "InputCore", "Manjusri") == "Guanyinma";
     settings.playSoundOnTypingError =
         PlistBool(xml, "ShouldPlaySoundOnTypingError", true);
     settings.simplifiedChineseOutput = PlistBool(xml, "SimplifiedChineseOutput", false);
@@ -396,6 +397,7 @@ const SharedPreference sharedPreferences[] = {
     {"Generic-simplex-cin", "UseCharactersSupportedByEncoding", ""},
     {"AssociatedPhrase", "EnabledCollections", "McBopomofo"},
     {"Loader", "IgnoreCapsLockInChinese", "true", true, 2},
+    {"Loader", "InputCore", "Manjusri", false, 3},
 };
 
 std::wstring PreferenceFile(const std::string& module) {
@@ -429,7 +431,7 @@ std::unique_ptr<Plist> ParseRuntimeSnapshot(const std::wstring& source) {
     if (source.empty() || source.size() > SharedRuntimePreferences::maximumLength ||
         source.find(L'\0') != std::wstring::npos) return {};
     const auto utf8 = OpenVanilla::OVUTF8::FromUTF16(source);
-    const unsigned version = utf8.compare(0, 3, "v2;") == 0 ? 2
+    const unsigned version = utf8.compare(0, 3, "v3;") == 0 ? 3 : utf8.compare(0, 3, "v2;") == 0 ? 2
         : utf8.compare(0, 3, "v1;") == 0 ? 1 : 0;
     if (!version) return {};
     size_t offset = 3;
@@ -471,7 +473,7 @@ std::unique_ptr<Plist> ParseRuntimeSnapshot(const std::wstring& source) {
 }
 
 std::wstring EncodeRuntimeSnapshot(Plist& snapshot) {
-    std::string result = "v2;";
+    std::string result = "v3;";
     const auto append = [&](const std::string& key) {
         const auto value = snapshot.stringValueForKey(key);
         result += std::to_string(value.size()) + ":" + value;

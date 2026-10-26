@@ -65,6 +65,7 @@ public:
 
     bool ready() const noexcept;
     const std::string& inputMethod() const noexcept { return inputMethod_; }
+    bool usesGuanyinma() const noexcept { return guanyinma_; }
     bool hasComposition() const;
     bool wantsKey(const KeyEvent& event) const;
     EngineResult handleKey(const KeyEvent& event);
@@ -76,6 +77,8 @@ private:
     std::string inputMethod_;
     std::string smartSettingsSignature_;
     bool controlled_ = false;
+    bool guanyinma_ = false;
+    bool requestedGuanyinma_ = false;
 };
 
 }  // namespace KeyKey::WindowsTsf

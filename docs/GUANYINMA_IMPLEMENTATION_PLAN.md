@@ -56,7 +56,7 @@ Windows 檔案身分檢查後端仍需 Windows 原生驗證；本機檔案測試
 
 `CandidateFilter`／`guanyinma_session_open_with_candidate_filter` 讓六平台 FE 提供可接受文字的判斷，四種輸入法沿用同一契約。字表完整碼、wildcard 與前綴先過濾再計算候選、36 字補充上限、分頁及學習；好打注音在 Unigram、自訂詞及 Bigram current 進入 graph 前過濾。原始 DB 查詢保留來源列，未提供 callback 時維持全部接受。固定政策由 session 擁有，變更時由 FE 在保留組字後建立新 session，不在可見候選中途改寫索引。
 
-macOS 已接回既有 `OVEncodingService` 的系統字型／編碼服務。iOS 已將 CoreText 字型服務接到相同接口；Windows、Android、Linux／FreeBSD 接 Guanyinma 時須各自將原生字型服務接到相同接口，並驗證平台實際字型及宿主；共用接口與本機測試不代表其餘 frontend 已接好。普通 unit、C consumer 與原生隔離對照測試驗證此契約，不讀取遷移 baseline。
+macOS 已接回既有 `OVEncodingService` 的系統字型／編碼服務。iOS 已接 CoreText、Android 已接 Paint、Windows 已接 DirectWrite fallback／字集服務；Linux／FreeBSD 接 Guanyinma 時仍須接上原生能力判斷，並各自驗證平台實際字型及宿主；共用接口與本機測試不代表其餘 frontend 已接好。普通 unit、C consumer 與原生隔離對照測試驗證此契約，不讀取遷移 baseline。
 
 ## 階段五：原生 frontend 接合（進行中）
 
@@ -67,6 +67,8 @@ macOS 已加入同一 FE 的雙核心建置、一般設定切換、package decor
 iOS 已加入同一 FE 的 Swift／Guanyinma 雙核心，涵蓋觸控 extension 與 App 實體鍵盤編輯器、設定 revision、安全切換、原生字型 callback、私有學習與 App Group 唯讀詞庫發布。Xcode 直接編譯／連結 Rust 靜態庫；完整核心 CI 集中驗證，iOS 僅做少量串接冒煙。建置、資料權責及驗證層級見 [iOS 接合文件](GUANYINMA_IOS_ADAPTER.md)。
 
 Android 已加入同一 IME service 的 Java／Guanyinma 雙核心、UTF-8 JNI、設定與獨立使用者資料管理。四個 ABI 直接編譯 Rust 靜態庫並連入薄 JNI；App 與 IME 讀同一份經內容雜湊驗證的模型。觸控／普通實體／實體雙排的行為與宿主交易由 FE 分派，核心互動分類可用 `set_profile` 更新。責任與分層驗證見 [Android 接合文件](GUANYINMA_ANDROID_ADAPTER.md)。
+
+Windows 已加入同一 TSF FE 的 Manjusri／Guanyinma 雙核心、一般設定選擇、DirectWrite 候選 callback 與獨立使用者資料管理。核心偏好在原組字與候選完成後由新事件採用，宿主 retained effects 仍由既有有序交易佇列完成後才接受下一事件。x64／x86 靜態 Rust 與原核心共用鎖定的 bundled SQLite；完整核心 CI 不在 Windows workflow 重跑。責任與分層驗證見 [Windows 接合文件](GUANYINMA_WINDOWS_ADAPTER.md)。
 
 四法逐項設定與 native 事件對照集中於 [macOS 行為覆蓋表](GUANYINMA_MACOS_BEHAVIOR_COVERAGE.md)。核心的全半形、中英文提供明確設定及切換操作，FE 決定快捷鍵綁定；圈選加詞、直接文字與進階字表設定沿用同一個共用 session／C ABI。實際 IMK 宿主以 [隔離測試流程](GUANYINMA_MACOS_IMK_HOST_TEST.md) 驗證，不把 core 或 adapter 通過等同於宿主完成。
 

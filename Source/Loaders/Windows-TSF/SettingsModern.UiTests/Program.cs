@@ -8,6 +8,29 @@ using System.Text;
 
 internal static class Program
 {
+    private static void VerifyInputCore(MainWindow window)
+    {
+        var option = Control<ComboBox>(window, "InputCore");
+        Check(option.IsEnabled && option.SelectedIndex == 0, "Core must default to Manjusri");
+        option.SelectedIndex = 1;
+        Check(!App.Updater.CanShutdown, "Core choice must protect an unsaved draft");
+        Control<Button>(window, "ApplyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(Control<TextBlock>(window, "Status").Text == "設定已套用", "Core preference Apply failed");
+        Check(Control<TextBlock>(window, "UserDataOwner").Text.StartsWith("Manjusri"), "Old window changed its data owner");
+        var reopened = new MainWindow();
+        Check(Control<ComboBox>(reopened, "InputCore").SelectedIndex == 1 &&
+            Control<TextBlock>(reopened, "UserDataOwner").Text.StartsWith("Guanyinma"), "Saved Rust core not restored");
+        using var rust = NativeUserData.Open(true);
+        using var legacy = NativeUserData.Open(false);
+        Check(rust.Save(0, "妮好", "ㄋㄧˇ,ㄏㄠˇ") && rust.Load().Count == 1 && legacy.Load().Count == 0,
+            "Managed user-data handle did not isolate cores");
+        var row = rust.Load().Single();
+        Check(rust.Save(row.RowId, "妮豪", "ㄋㄧˇ,ㄏㄠˊ") && rust.Load().Single().Text == "妮豪", "Managed Rust update failed");
+        Check(rust.Reset() && rust.Load().Count == 1, "Managed reset removed custom phrases");
+        Check(rust.Delete(rust.Load().Single().RowId) && rust.Load().Count == 0, "Managed Rust delete failed");
+        reopened.Close();
+        Console.WriteLine("Core selection, Apply/reopen, fixed window owner and managed Rust data smoke passed");
+    }
     private static void VerifyPhoneticControls(MainWindow window, string directory)
     {
         var keys = Control<ComboBox>(window, "CandidateSelectionKeys");
@@ -264,6 +287,10 @@ internal static class Program
             app.InitializeComponent();
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var window = new MainWindow();
+            if (args.Contains("--input-core"))
+            {
+                VerifyInputCore(window); window.Close(); return 0;
+            }
             if (args.Contains("--phonetic-controls"))
             {
                 VerifyPhoneticControls(window, directory);

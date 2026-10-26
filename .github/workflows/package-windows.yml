@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - 'Source/Loaders/Windows-TSF/**'
+      - 'Source/Guanyinma/**'
       - 'Source/Frameworks/**'
       - 'Source/ModulePackages/**'
       - 'Source/ExternalLibraries/**'
@@ -22,6 +23,7 @@ on:
     branches: [master]
     paths:
       - 'Source/Loaders/Windows-TSF/**'
+      - 'Source/Guanyinma/**'
       - 'Source/Frameworks/**'
       - 'Source/ModulePackages/**'
       - 'Source/ExternalLibraries/**'
@@ -67,6 +69,16 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Read the committed Rust toolchain
+        id: rust
+        run: |
+          $version = python -c "import tomllib; print(tomllib.load(open('Source/Guanyinma/rust-toolchain.toml', 'rb'))['toolchain']['channel'])"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot read Rust toolchain.' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+          targets: x86_64-pc-windows-msvc,i686-pc-windows-msvc
       - name: Install NSIS packaging dependency
         run: choco install nsis --version=3.12.0 --yes --no-progress --limit-output
       - name: Shared PowerShell build, tests and unsigned packaging

@@ -36,11 +36,11 @@ jobs:
         run: |
           python ../../../update/prepare.py fetch windows
           if ($LASTEXITCODE -ne 0) { throw 'Updater SDK preparation failed.' }
-          cmake --preset windows-x64-vs2026
+          cmake --preset windows-x64-vs2026 -DKEYKEY_ENABLE_GUANYINMA=OFF
           if ($LASTEXITCODE -ne 0) { throw 'x64 configure failed.' }
           cmake --build --preset windows-x64-vs2026-release --target KeyKeySharedDataProtectionTest
           if ($LASTEXITCODE -ne 0) { throw 'x64 test build failed.' }
-          cmake --preset windows-x86
+          cmake --preset windows-x86 -DKEYKEY_ENABLE_GUANYINMA=OFF
           if ($LASTEXITCODE -ne 0) { throw 'x86 configure failed.' }
           cmake --build --preset windows-x86-release --target KeyKeySharedDataProtectionTest
           if ($LASTEXITCODE -ne 0) { throw 'x86 test build failed.' }

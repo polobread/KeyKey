@@ -14,6 +14,9 @@
 #include "InputMethods.h"
 #include "WindowsTableInputMethod.h"
 #include "SharedFileAccess.h"
+#if KEYKEY_ENABLE_GUANYINMA
+#include "GuanyinmaWindowsAdapter.h"
+#endif
 
 #include "OpenVanilla.h"
 #include "PlainVanilla.h"
@@ -229,10 +232,10 @@ std::string FindDatabase() {
 // shouldEnter replace its sandwich because another service changed the loader.
 class OrderedLoaderContext final : public PVLoaderContext {
 public:
-    OrderedLoaderContext(PVLoader* loader, OVModule* method, OVModule* associated)
+    OrderedLoaderContext(PVLoader* loader, OVEventHandlingContext* context, OVModule* associated)
         : PVLoaderContext(loader) {
         m_sandwich = new PVContextSandwich;
-        m_sandwich->inputMethods.push_back(method->createContext());
+        m_sandwich->inputMethods.push_back(context);
         if (associated) m_sandwich->aroundFilters.push_back(associated->createContext());
         m_sandwich->prepareShortcutContexts();
     }
@@ -353,10 +356,17 @@ public:
             moduleRevisions_[method]=moduleRevision(method);
         }
     }
-    PVLoaderContext* createOrderedContext(const std::string& method) {
+    PVLoaderContext* createOrderedContext(const std::string& method, bool requested = false, bool* actual = nullptr) {
         const auto found=modules_.find(method);
-        return ready_ && found!=modules_.end()
-            ? new OrderedLoaderContext(loader_.get(),found->second,associated_) : nullptr;
+        if (actual) *actual = false;
+        if (!ready_ || found == modules_.end()) return nullptr;
+        OVEventHandlingContext* context = nullptr;
+#if KEYKEY_ENABLE_GUANYINMA
+        if (requested) context = CreateGuanyinmaWindowsContext(method, FindDatabase(), service_.get());
+#endif
+        if (actual) *actual = context != nullptr;
+        if (!context) context = found->second->createContext();
+        return context ? new OrderedLoaderContext(loader_.get(), context, associated_) : nullptr;
     }
     void beginOrdered() { ++orderedInputs_; }
     void endOrdered() { if (orderedInputs_) --orderedInputs_; }
@@ -690,17 +700,25 @@ bool IsInputMethodControlKey(const KeyEvent& event, const std::string& method) {
 
 std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::Create() {
     std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
-    return std::unique_ptr<KeyKeyEngineSession>(
-        new KeyKeyEngineSession(Runtime().createContext()));
+    Runtime().syncSettings();
+    bool actual = false;
+    const bool requested = LoadFrontendSettings().guanyinmaCore;
+    auto result = std::unique_ptr<KeyKeyEngineSession>(new KeyKeyEngineSession(
+        Runtime().createOrderedContext(Runtime().primaryInputMethod(), requested, &actual)));
+    result->guanyinma_ = actual; result->requestedGuanyinma_ = requested;
+    return result;
 }
 std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::CreateControlled(const std::string& method) {
     std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     Runtime().syncSettings(true);
     Runtime().syncNamedModule(method);
-    auto* context=Runtime().createOrderedContext(method);
+    bool actual = false;
+    const bool requested = LoadFrontendSettings().guanyinmaCore;
+    auto* context=Runtime().createOrderedContext(method, requested, &actual);
     if (!context) return nullptr;
     auto result=std::unique_ptr<KeyKeyEngineSession>(new KeyKeyEngineSession(context));
     result->inputMethod_=method; result->controlled_=true;
+    result->guanyinma_=actual; result->requestedGuanyinma_=requested;
     return result;
 }
 
@@ -766,12 +784,27 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
         // Preserve its visible text before the loader replaces its old context.
         PVCombinedUTF16TextBuffer combined(*context_->composingText(), *context_->readingText());
         previousComposition = combined.wideComposedText();
-        auto* replacement=Runtime().createContext();
+        bool actual = false;
+        const bool requested = LoadFrontendSettings().guanyinmaCore;
+        auto* replacement=Runtime().createOrderedContext(selectedMethod, requested, &actual);
         if (!replacement) return result;
         replacement->activate();
         context_->deactivate(); delete context_; context_=replacement;
         inputMethod_ = selectedMethod;
         smartSettingsSignature_ = SmartMandarinSettingsSignature();
+        guanyinma_ = actual; requestedGuanyinma_ = requested;
+    }
+    // TSF retries retained host effects before entering this method. Candidates,
+    // unfinished readings and composing text continue on their original core.
+    const bool requested = LoadFrontendSettings().guanyinmaCore;
+    if (requested != requestedGuanyinma_ && !hasComposition()) {
+        bool actual = false;
+        auto* replacement = Runtime().createOrderedContext(inputMethod_, requested, &actual);
+        if (replacement) {
+            replacement->activate(); context_->deactivate(); delete context_; context_ = replacement;
+            guanyinma_ = actual;
+        }
+        requestedGuanyinma_ = requested; // Do not repeatedly retry a failed open per key.
     }
     // Numpad text must not enter Bopomofo or candidate-selection handling.
     // Commit exactly the visible composition (including unfinished readings)

@@ -26,6 +26,12 @@ int main() {
         Check(LoadFrontendSettings().defaultChineseMode, "Missing startup preference must default to Chinese");
         Check(LoadFrontendSettings().symbolPanelShortcutEnabled, "Symbol shortcut must default to enabled");
         Check(LoadFrontendSettings().ignoreCapsLockInChinese, "Windows must ignore Caps Lock in Chinese by default");
+        Check(!LoadFrontendSettings().guanyinmaCore, "Core must default to Manjusri");
+        for (const auto* value : {"Guanyinma", "Manjusri", "invalid", ""}) {
+            { std::ofstream out(loader); out << "<plist><dict><key>InputCore</key><string>"
+                << value << "</string></dict></plist>"; }
+            Check(LoadFrontendSettings().guanyinmaCore == (std::string(value) == "Guanyinma"), "Core preference/fallback");
+        }
         for (const auto* value : {"false", "true"}) {
             { std::ofstream out(loader); out << "<plist><dict><key>IgnoreCapsLockInChinese</key><string>"
                 << value << "</string></dict></plist>"; }

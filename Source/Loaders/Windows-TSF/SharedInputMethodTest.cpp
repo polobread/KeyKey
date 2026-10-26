@@ -32,7 +32,7 @@ static void Success(HRESULT result, const char* message) {
 
 static std::wstring LegacyRuntimeSnapshot(const std::wstring& snapshot) {
     auto bytes = OpenVanilla::OVUTF8::FromUTF16(snapshot);
-    Check(bytes.compare(0,3,"v2;")==0,"Expected v2 runtime snapshot");
+    Check(bytes.compare(0,3,"v3;")==0,"Expected v3 runtime snapshot");
     std::vector<std::pair<size_t,size_t>> fields;
     for (size_t offset=3; offset<bytes.size();) {
         const auto colon=bytes.find(':',offset);
@@ -43,9 +43,9 @@ static std::wstring LegacyRuntimeSnapshot(const std::wstring& snapshot) {
         fields.emplace_back(offset,next-offset); offset=next;
     }
     Check(fields.size()>4,"Snapshot missing visibility fields");
-    // v2 appends the Caps Lock preference before the four visibility fields.
-    const auto field=fields[fields.size()-5];
-    bytes.erase(field.first,field.second); bytes.replace(0,3,"v1;");
+    // v3 appends InputCore after v2's Caps Lock field, before visibility.
+    const auto first=fields[fields.size()-6], last=fields[fields.size()-5];
+    bytes.erase(first.first,last.first+last.second-first.first); bytes.replace(0,3,"v1;");
     return OpenVanilla::OVUTF16::FromUTF8(bytes);
 }
 

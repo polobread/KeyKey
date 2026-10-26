@@ -1,5 +1,7 @@
 # 琦琦輸入法 Windows TSF frontend
 
+開發建置已加入同一 TSF 介面的 Manjusri／Guanyinma 雙核心，一般設定可選，預設維持 Manjusri。Rust 接合、獨立資料、建置依賴及少量冒煙入口見 [Windows Guanyinma 接合](../../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。正式版本及發布狀態另依下文與安裝指南。
+
 倉頡新增可選的「即時候選」與「未打完也能選字」，兩項預設關閉；設定與分層驗證見 [桌面倉頡試用說明](../../../docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
 
 倉頡與簡易的即時候選、錯碼清除及倉頡前綴候選，透過各自獨立的 TSF 全域 compartment 同步至 Windows 搜尋列等受限宿主。設定程式套用及桌面宿主讀取時發布開關；受限宿主只接收並合併至自己的設定檔，再由既有組字送出邊界套用。尚無已發布設定時保留本地值，不回寫隔離預設值；自訂詞與學習不透過此機制共享。

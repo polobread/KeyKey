@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect complete local license texts for Android's Guanyinma binary assets.
+"""Collect complete local license texts for Guanyinma frontend binary assets.
 
 Cargo metadata may fetch locked sources unless explicitly offline. No source is
 compiled, no build scripts or tests run, and no model/user database is opened.
@@ -58,20 +58,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cargo", default=os.environ.get("CARGO", "cargo"))
-    parser.add_argument("--ndk", type=Path, required=True, help="the same configured NDK used by the JNI link")
+    parser.add_argument("--platform", choices=["android", "windows"], default="android")
+    parser.add_argument("--ndk", type=Path, help="the same configured NDK used by the JNI link (required for Android)")
     parser.add_argument("--offline", action="store_true")
     args = parser.parse_args()
+    if args.platform == "android" and args.ndk is None:
+        parser.error("--ndk is required for Android")
+    targets = TARGETS if args.platform == "android" else ("x86_64-pc-windows-msvc", "i686-pc-windows-msvc")
     environment = os.environ.copy()
     channel = tomllib.loads((CORE / "rust-toolchain.toml").read_text())["toolchain"]["channel"]
     environment["RUSTUP_TOOLCHAIN"] = channel
     offline = args.offline or os.environ.get("KEYKEY_GUANYINMA_OFFLINE") == "1"
     packages = {}
-    for target in TARGETS:
+    for target in targets:
         command = [args.cargo, "metadata", "--locked", "--format-version", "1",
                    "--no-default-features", "--features", "bundled-sqlite", "--filter-platform", target]
         if offline:
             command.append("--offline")
-        metadata = json.loads(subprocess.check_output(command, cwd=CORE, env=environment, text=True))
+        metadata = json.loads(subprocess.check_output(command, cwd=CORE, env=environment, text=True, encoding="utf-8"))
         target_packages = resolved_packages(metadata)
         sqlite_ids = {package["id"] for package in target_packages.values() if package["name"] == "libsqlite3-sys"}
         sqlite_nodes = [node for node in metadata["resolve"]["nodes"] if node["id"] in sqlite_ids]
@@ -81,17 +85,17 @@ def main():
             raise RuntimeError("Notice collection requires the actual bundled SQLite (not SQLCipher) provider")
         packages.update(target_packages)
     chunks = [(
-        "Guanyinma / KeyKey Android runtime notices\n"
+        "Guanyinma / KeyKey " + args.platform + " runtime notices\n"
         "=========================================\n"
         "This file preserves complete source license/notice texts for the shared core,\n"
         "retained source/data, locked Cargo dependencies, Rust standard library, and\n"
-        "the statically linked Android NDK C++ runtime.\n"
+        "any applicable platform runtime recorded below.\n"
         "Build-time crate notices are also included for provenance. Repository notices\n"
         "describe multiple platforms; inclusion does not mean every listed component\n"
-        "is linked into Android. Applicability follows the included licensing map\n"
+        "is linked into this frontend. Applicability follows the included licensing map\n"
         "and the per-component copyright notices.\n"
         "Cargo features: no-default-features + bundled-sqlite\n"
-        "Cargo targets: " + ", ".join(TARGETS) + "\n"
+        "Cargo targets: " + ", ".join(targets) + "\n"
     ).encode("utf-8")]
     sections = 0
 
@@ -106,7 +110,8 @@ def main():
         chunks.append(("\n----- END " + label + " -----\n").encode("utf-8"))
         sections += 1
 
-    files = {ROOT / name for name in REPOSITORY_TEXTS}
+    files = {ROOT / name for name in REPOSITORY_TEXTS if name != "Source/Loaders/Android-IME/LICENSE.txt"}
+    files.add(ROOT / ("Source/Loaders/Android-IME/LICENSE.txt" if args.platform == "android" else "Source/Loaders/Windows-TSF/LICENSE.txt"))
     files.update(path for directory in (ROOT / "LICENSES", CORE / "LICENSES")
                  for path in directory.rglob("*") if path.is_file())
     for path in sorted(files):
@@ -146,16 +151,17 @@ def main():
                    "libsqlite3-sys bundled sqlite3/sqlite3.c actually selected above.\n").encode("utf-8"))
     add("SQLite bundled-source copyright disclaimer", blessing)
 
-    ndk = args.ndk.resolve()
-    properties = (ndk / "source.properties").read_text()
-    revision = re.search(r"^Pkg.Revision\s*=\s*(.+)$", properties, re.MULTILINE)
-    ndk_notices = sorted((ndk / "toolchains/llvm/prebuilt").glob("*/NOTICE"))
-    if revision is None or len(ndk_notices) != 1:
-        raise RuntimeError("Cannot identify the configured NDK's complete libc++/libc++abi notice")
-    content = ndk_notices[0].read_bytes()
-    if b"libc++ library" not in content or b"libc++abi library" not in content:
-        raise RuntimeError("The configured NDK notice does not cover the linked static C++ runtime")
-    add("Android NDK " + revision.group(1).strip() + "/LLVM-libc++-libc++abi-NOTICE", content)
+    if args.platform == "android":
+        ndk = args.ndk.resolve()
+        properties = (ndk / "source.properties").read_text()
+        revision = re.search(r"^Pkg.Revision\s*=\s*(.+)$", properties, re.MULTILINE)
+        ndk_notices = sorted((ndk / "toolchains/llvm/prebuilt").glob("*/NOTICE"))
+        if revision is None or len(ndk_notices) != 1:
+            raise RuntimeError("Cannot identify the configured NDK's complete libc++/libc++abi notice")
+        content = ndk_notices[0].read_bytes()
+        if b"libc++ library" not in content or b"libc++abi library" not in content:
+            raise RuntimeError("The configured NDK notice does not cover the linked static C++ runtime")
+        add("Android NDK " + revision.group(1).strip() + "/LLVM-libc++-libc++abi-NOTICE", content)
 
     cargo = Path(shutil.which(args.cargo) or args.cargo)
     rustc_name = "rustc.exe" if sys.platform == "win32" else "rustc"
@@ -163,7 +169,7 @@ def main():
     rustc = os.environ.get("RUSTC") or (str(sibling) if sibling.is_file() else shutil.which(rustc_name))
     if not rustc:
         raise RuntimeError("The pinned Rust compiler must be available to locate standard-library notices")
-    sysroot = Path(subprocess.check_output([rustc, "--print", "sysroot"], cwd=CORE, env=environment, text=True).strip())
+    sysroot = Path(subprocess.check_output([rustc, "--print", "sysroot"], cwd=CORE, env=environment, text=True, encoding="utf-8").strip())
     rust_docs = sysroot / "share/doc/rust"
     add("Rust " + channel + "/COPYRIGHT-library.html", (rust_docs / "COPYRIGHT-library.html").read_bytes())
     catalog = rust_docs / "licenses"

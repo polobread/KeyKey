@@ -21,6 +21,7 @@ include(CTest)
 
 option(KEYKEY_BUILD_MIGRATION_BASELINE
     "Build the explicit Rust migration baseline recorder" OFF)
+option(KEYKEY_ENABLE_GUANYINMA "Include the optional Guanyinma Rust core" ON)
 
 if(NOT WIN32)
     message(FATAL_ERROR "The Windows TSF frontend can only be built on Windows.")
@@ -29,7 +30,13 @@ endif()
 if(MSVC)
     # A TSF DLL is injected into many client processes. Statically link the
     # runtime so deployment does not depend on a particular VC redist version.
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if(KEYKEY_ENABLE_GUANYINMA)
+        # The pinned Rust library and its SQLite are built with +crt-static
+        # (/MT). Keep that ABI even when debugging native frontend code.
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+    else()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
     if(CMAKE_GENERATOR MATCHES "^Ninja")
         # Capture cl's localized pipe output without transcoding. The compiler
         # launcher below normalizes its prefix for Ninja's byte-based parser.
@@ -87,7 +94,9 @@ target_compile_definitions(keykey_third_party PRIVATE
     XML_STATIC
     _CRT_SECURE_NO_WARNINGS
 )
-target_link_libraries(keykey_third_party PUBLIC winsqlite3)
+if(NOT KEYKEY_ENABLE_GUANYINMA)
+    target_link_libraries(keykey_third_party PUBLIC winsqlite3)
+endif()
 set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(keykey_core STATIC
@@ -136,6 +145,36 @@ target_include_directories(keykey_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 target_link_libraries(keykey_core PUBLIC keykey_third_party shcore)
+if(KEYKEY_ENABLE_GUANYINMA)
+    find_program(KEYKEY_CARGO_EXECUTABLE cargo REQUIRED)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(KEYKEY_RUST_TARGET x86_64-pc-windows-msvc)
+    else()
+        set(KEYKEY_RUST_TARGET i686-pc-windows-msvc)
+    endif()
+    set(KEYKEY_RUST_BUILD "${CMAKE_CURRENT_BINARY_DIR}/guanyinma")
+    set(KEYKEY_RUST_LIBRARY "${KEYKEY_RUST_BUILD}/${KEYKEY_RUST_TARGET}/release/guanyinma.lib")
+    add_custom_target(keykey_guanyinma_build
+        COMMAND "${Python3_EXECUTABLE}" "${KEYKEY_SOURCE}/Guanyinma/tools/build-windows-core.py"
+            --cargo "${KEYKEY_CARGO_EXECUTABLE}" --target "${KEYKEY_RUST_TARGET}"
+            --target-dir "${KEYKEY_RUST_BUILD}"
+        BYPRODUCTS "${KEYKEY_RUST_LIBRARY}" "${KEYKEY_RUST_BUILD}/include/guanyinma_sqlite3.h"
+            "${KEYKEY_RUST_BUILD}/Guanyinma-NOTICES.txt"
+        VERBATIM)
+    add_library(keykey_guanyinma STATIC IMPORTED GLOBAL)
+    set_target_properties(keykey_guanyinma PROPERTIES IMPORTED_LOCATION "${KEYKEY_RUST_LIBRARY}")
+    add_dependencies(keykey_guanyinma keykey_guanyinma_build)
+    add_dependencies(keykey_third_party keykey_guanyinma_build)
+    target_compile_definitions(keykey_third_party PUBLIC KEYKEY_ENABLE_GUANYINMA=1)
+    target_include_directories(keykey_third_party PUBLIC "${KEYKEY_RUST_BUILD}/include")
+    target_link_libraries(keykey_third_party PUBLIC keykey_guanyinma)
+    target_sources(keykey_core PRIVATE GuanyinmaWindowsAdapter.cpp)
+    set_source_files_properties(GuanyinmaWindowsAdapter.cpp GuanyinmaWindowsUserData.cpp
+        PROPERTIES COMPILE_OPTIONS "/std:c++20")
+    target_compile_definitions(keykey_core PUBLIC KEYKEY_ENABLE_GUANYINMA=1)
+    target_link_libraries(keykey_core PUBLIC keykey_guanyinma windowsapp dwrite
+        ws2_32 userenv bcrypt ntdll advapi32)
+endif()
 set_target_properties(keykey_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(MSVC)
     target_compile_options(keykey_core PRIVATE /utf-8)
@@ -209,6 +248,9 @@ add_library(KeyKeySettingsBackend SHARED
     UserDataStore.cpp
     SettingsModern/SettingsBackend.cpp
 )
+if(KEYKEY_ENABLE_GUANYINMA)
+    target_sources(KeyKeySettingsBackend PRIVATE GuanyinmaWindowsUserData.cpp)
+endif()
 target_compile_features(KeyKeySettingsBackend PRIVATE cxx_std_17)
 target_compile_definitions(KeyKeySettingsBackend PRIVATE
     UNICODE
@@ -349,6 +391,10 @@ if(BUILD_TESTING)
     target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme dwmapi)
     add_dependencies(KeyKeyTsfOutputBehaviorTest keykey_symbol_resources keykey_database_deploy)
     add_test(NAME KeyKeyTsfOutputCommitBehavior COMMAND KeyKeyTsfOutputBehaviorTest)
+    if(KEYKEY_ENABLE_GUANYINMA)
+        add_test(NAME KeyKeyGuanyinmaTsfHostEffects COMMAND KeyKeyTsfOutputBehaviorTest --guanyinma)
+        set_tests_properties(KeyKeyGuanyinmaTsfHostEffects PROPERTIES RUN_SERIAL TRUE)
+    endif()
     add_test(NAME KeyKeyCapsLockModes COMMAND KeyKeyTsfOutputBehaviorTest --caps-lock)
     add_test(NAME KeyKeySymbolPaletteRouting COMMAND KeyKeyTsfOutputBehaviorTest --symbol-routing)
     add_test(NAME KeyKeySymbolPaletteReopen COMMAND KeyKeyTsfOutputBehaviorTest --symbol-reopen)
@@ -472,6 +518,15 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyEngineNumpad COMMAND KeyKeyEngineSmokeTest numpad)
     add_test(NAME KeyKeyEngineEscapeKeep COMMAND KeyKeyEngineSmokeTest keep)
     add_test(NAME KeyKeyEngineEscapeClear COMMAND KeyKeyEngineSmokeTest clear)
+    if(KEYKEY_ENABLE_GUANYINMA)
+        add_executable(KeyKeyGuanyinmaIntegrationTest GuanyinmaWindowsIntegrationTest.cpp
+            GuanyinmaWindowsUserData.cpp UserDataStore.cpp)
+        target_compile_options(KeyKeyGuanyinmaIntegrationTest PRIVATE /utf-8)
+        target_link_libraries(KeyKeyGuanyinmaIntegrationTest PRIVATE keykey_core shell32 user32)
+        add_dependencies(KeyKeyGuanyinmaIntegrationTest keykey_database_deploy)
+        add_test(NAME KeyKeyGuanyinmaAdapter COMMAND KeyKeyGuanyinmaIntegrationTest input)
+        add_test(NAME KeyKeyGuanyinmaUserData COMMAND KeyKeyGuanyinmaIntegrationTest data)
+    endif()
 
     # Migration recorder only: opt-in target, excluded from daily builds/tests.
     if(KEYKEY_BUILD_MIGRATION_BASELINE)
@@ -509,6 +564,13 @@ if(BUILD_TESTING)
             COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
                 --project "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern.UiTests/SettingsModern.UiTests.csproj"
                 --configuration Release "--property:KeyKeyRuntimeDirectory=$<TARGET_FILE_DIR:KeyKeyTsf>")
+        if(KEYKEY_ENABLE_GUANYINMA)
+            add_test(NAME KeyKeyGuanyinmaSettingsControls
+                COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
+                    --project "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern.UiTests/SettingsModern.UiTests.csproj"
+                    --configuration Release "--property:KeyKeyRuntimeDirectory=$<TARGET_FILE_DIR:KeyKeyTsf>"
+                    -- --input-core)
+        endif()
     endif()
 
     add_executable(KeyKeyCandidateStateTest CandidateStateTest.cpp)
