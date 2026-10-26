@@ -12,6 +12,7 @@ on:
       - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
       - '.github/workflows/guanyinma-core.yml'
   push:
+    branches: [master]
     paths: *core-paths
   workflow_dispatch:
 
