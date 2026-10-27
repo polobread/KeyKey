@@ -47,11 +47,14 @@ The `ls` matters. `installer` reports success even when it has written the
 payload somewhere else, so confirm the bundle actually landed before going any
 further.
 
-The package includes a standalone, signed `KeyKeyInputSourceTool`. Both scripts
-run it in the current console user's GUI session and credentials:
+The package includes a standalone, signed `KeyKeyInputSourceTool`. Setup runs in
+the current console user's GUI session and credentials:
 
-1. Before replacing files, `preinstall` reads KeyKey's enabled state and the
-   selected input source. If KeyKey is selected, it switches to an already
+1. If `/Library/Input Methods/chichi77 KeyKey.app` is absent, `preinstall` records
+   a fresh install without starting the helper or reading any input-source state.
+   An existing path, including an incomplete bundle or dangling symlink, keeps
+   the upgrade protections below. For upgrades, `preinstall` reads KeyKey's
+   enabled state and the selected input source. If KeyKey is selected, it switches to an already
    enabled ASCII keyboard layout and verifies that selection. It then requests
    normal termination of captured KeyKey processes at the installed path.
    Unreadable state, a failed fallback or an unconfirmed exit aborts installation
@@ -59,15 +62,18 @@ run it in the current console user's GUI session and credentials:
 2. The package replaces the bundle. `postinstall` registers the installed path
    and confirms the source can be found by ID. It restores enabled state only
    when this same account had KeyKey enabled before replacement. A separate
-   helper process must confirm that restoration too. It does not terminate
-   newly launched processes or select KeyKey automatically.
+   helper process must confirm that restoration too. Only fixed-path processes
+   still holding a replaced database are retired; processes using the installed
+   database are preserved. It does not select KeyKey automatically.
 
 The preparation helper is copied from the package's signed payload to a unique,
 root-owned temporary directory so the GUI user can execute it even when the
 PackageKit Scripts directory is private. The directory is removed on exit.
 Saved state stays in that installation's private Scripts directory; no global
-state or HIToolbox preferences are read or written. First installs and previously
-disabled sources are not automatically enabled. No source is ever disabled.
+state or HIToolbox preferences are read or written. A fresh-install marker is
+also private to that installation and console UID; it is not an unknown upgrade
+snapshot. First installs and previously disabled sources are not automatically
+enabled. No source is ever disabled.
 
 Each helper operation has a 20-second deadline; normal old-process exit is
 limited to 3 seconds per process. A failed post-install setup opens a separate
@@ -92,8 +98,14 @@ Run isolated regressions without installing or changing input sources:
 bash Installer/test-input-sources.sh
 ```
 
-The app payload and standalone helper are arm64 only. Packaging rejects other
-app architectures; the isolated tests also compile explicitly for arm64.
+The app payload and standalone helper are arm64 only. The distribution's
+installation check blocks Intel Macs with an Apple Silicon requirement in
+English or Traditional Chinese before payload installation. `preinstall` repeats
+the hardware check before launching any arm64 helper, including when installing
+the component package directly. Both checks use `hw.optional.arm64` rather than
+the current process architecture, so Rosetta does not misidentify Apple Silicon.
+Packaging rejects other app architectures; the isolated tests also compile
+explicitly for arm64 and evaluate the distribution script with fake hardware.
 
 ## Signing and notarising
 

@@ -29,7 +29,7 @@ mode=--refresh
 if [[ "$saved_uid" != "$console_uid" ]]; then state=unknown; fi
 case "$state" in
     enabled) mode=--refresh-enabled ;;
-    disabled) ;;
+    disabled|fresh) ;;
     *) state=unknown ;;
 esac
 # launchctl supplies the GUI bootstrap namespace; sudo supplies the user

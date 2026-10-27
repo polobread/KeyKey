@@ -1,14 +1,33 @@
 #!/bin/bash
 set -euo pipefail
 
+# Test the hardware capability, not uname (which may report x86_64 under Rosetta).
+# Distribution's installation-check gives GUI users the same explanation; keep
+# this guard for direct component-package installs too, before any arm64 helper.
+if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" != 1 ]]; then
+    echo "琦琦輸入法需要 Apple Silicon（Apple M 系列晶片），不支援 Intel Mac。" >&2
+    echo "KeyKey requires Apple Silicon (Apple M-series); Intel Macs are not supported." >&2
+    exit 1
+fi
+
 [[ "${3:-/}" == "/" ]] || exit 0
 if ! console_uid=$(/usr/bin/stat -f %u /dev/console); then exit 0; fi
 if [[ ! "$console_uid" =~ ^[0-9]+$ ]] || (( console_uid < 500 )); then exit 0; fi
 
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+installed_app="/Library/Input Methods/chichi77 KeyKey.app"
+# Only a genuinely absent path is a fresh install. An incomplete bundle or a
+# dangling symlink must still use the guarded upgrade path.
+if [[ ! -e "$installed_app" && ! -L "$installed_app" ]]; then
+    umask 077
+    printf '%s %s\n' "$console_uid" fresh > "$script_dir/keykey-input-source-state"
+    echo "KeyKey: fresh install; no old bundle needs input-source preparation."
+    exit 0
+fi
+
 # Use this package's signed helper even when the installed version has no
 # snapshot command. Its temporary directory is root-owned and read/execute-only
 # for the GUI user; PackageKit's Scripts parents need not be user-readable.
-script_dir="$(cd "$(dirname "$0")" && pwd)"
 helper_dir=$(/usr/bin/mktemp -d /private/var/tmp/keykey-preinstall.XXXXXXXX)
 trap 'rm -rf "$helper_dir"' EXIT
 cp "$script_dir/KeyKeyInputSourceTool" "$helper_dir/KeyKeyInputSourceTool"

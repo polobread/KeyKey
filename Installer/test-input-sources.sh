@@ -33,4 +33,8 @@ xcrun clang -fno-objc-arc -mmacosx-version-min=15.0 -arch arm64 -framework Cocoa
     "$task_root/Source/Loaders/OSX-IMK/Tests/KeyboardHelperTests.m" \
     -o "$task_build/keyboard-helper-tests"
 "$task_build/keyboard-helper-tests"
+xcrun clang -fno-objc-arc -mmacosx-version-min=15.0 -arch arm64 -Wall -Wextra \
+    -framework Foundation -framework JavaScriptCore \
+    "$task_root/Installer/Tests/DistributionTests.m" -o "$task_build/distribution-tests"
+"$task_build/distribution-tests" "$task_root/Installer"
 python3 "$task_root/Installer/Tests/test_postinstall.py"
