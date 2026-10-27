@@ -49,6 +49,15 @@ arm64 helper 前重複硬體檢查，涵蓋直接安裝 component package 的路
 `postinstall` 接受同一帳號的 `fresh` 標記，執行註冊但不自動啟用；註冊失敗仍提供設定提示，
 不將已完成的檔案安裝改判失敗。標記缺少、無效或帳號已改變時，保留既有不猜測狀態的處理。
 
+## 安裝器原生架構宣告
+
+乾淨的 macOS 15.6.1 VM 顯示，正式 1.3.1 包內六個 Mach-O 均為 arm64，
+但 Distribution 未宣告 arm64，安裝器仍要求 Rosetta。正式 1.3.8 沿用同一項缺漏。
+後續封裝於 `options` 宣告 `hostArchitectures="arm64,x86_64"`：arm64 讓 Apple Silicon
+原生執行安裝評估與腳本；x86_64 讓 Intel 使用者能進入既有繁中／英文硬體阻擋提示。
+此屬安裝器的執行架構，payload 與 helper 仍只有 arm64，Intel 仍不得安裝。
+已發布套件不覆寫，修正需隨新版本發布；仍須在沒有 Rosetta 的乾淨 VM 驗收。
+
 ## 正常退出的確認
 
 本節描述後續封裝使用的修正；已發布的 1.3.8 安裝包維持原內容，需經新版本發布才會包含此確認。

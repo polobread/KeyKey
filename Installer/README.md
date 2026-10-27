@@ -104,6 +104,10 @@ English or Traditional Chinese before payload installation. `preinstall` repeats
 the hardware check before launching any arm64 helper, including when installing
 the component package directly. Both checks use `hw.optional.arm64` rather than
 the current process architecture, so Rosetta does not misidentify Apple Silicon.
+The distribution declares `hostArchitectures="arm64,x86_64"` for Installer's
+execution environment. `arm64` prevents an unnecessary Rosetta requirement on a
+clean Apple Silicon Mac; `x86_64` lets Intel users reach the localized rejection.
+This does not add an Intel payload or permit installation on Intel.
 Packaging rejects other app architectures; the isolated tests also compile
 explicitly for arm64 and evaluate the distribution script with fake hardware.
 

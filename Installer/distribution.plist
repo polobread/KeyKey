@@ -3,7 +3,10 @@
     <title>chichi77 KeyKey</title>
     <organization>io.github.polobread</organization>
     <domains enable_localSystem="true"/>
-    <options customize="never" rootVolumeOnly="true" />
+    <!-- These are Installer evaluation architectures, not payload architectures.
+         arm64 avoids an unnecessary Rosetta dependency; x86_64 lets Intel users
+         reach the localized hardware rejection below. -->
+    <options customize="never" rootVolumeOnly="true" hostArchitectures="arm64,x86_64" />
     <!-- Use a scripted check so Intel users see the specific hardware requirement. -->
     <installation-check script="checkHostArchitecture()" />
     <script><![CDATA[

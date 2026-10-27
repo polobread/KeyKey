@@ -20,6 +20,12 @@ int main(int argc, const char *argv[])
             [NSURL fileURLWithPath:[root stringByAppendingPathComponent:@"distribution.plist"]]
             options:0 error:&error] autorelease];
         Check(document != nil, [NSString stringWithFormat:@"distribution parses: %@", error]);
+        NSArray *options = [document nodesForXPath:@"/installer-gui-script/options" error:&error];
+        Check(options.count == 1, @"one Installer execution policy is declared");
+        NSSet *hosts = [NSSet setWithArray:[[(NSXMLElement *)options[0]
+            attributeForName:@"hostArchitectures"].stringValue componentsSeparatedByString:@","]];
+        Check([hosts containsObject:@"arm64"], @"Apple Silicon evaluates the installer without Rosetta");
+        Check([hosts containsObject:@"x86_64"], @"Intel can reach the localized hardware rejection");
         NSArray *scripts = [document nodesForXPath:@"/installer-gui-script/script" error:&error];
         NSArray *checks = [document nodesForXPath:@"/installer-gui-script/installation-check" error:&error];
         Check(scripts.count == 1 && checks.count == 1, @"one host preflight is wired");
