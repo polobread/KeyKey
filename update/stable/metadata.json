@@ -1,6 +1,6 @@
 {
   "channel": "stable",
-  "generated_at": "2026-10-21T01:18:28.658628+00:00",
+  "generated_at": "2026-10-27T11:51:16.868281+00:00",
   "package_managers": {
     "freebsd": "ports/pkg",
     "linux": "distribution repository"
@@ -22,18 +22,18 @@
       "windows_signing": "authenticode"
     },
     {
-      "ed25519_signature": "9p8rSJJKQrq7U8HQW1T78k23+nxiHipMyZ0fZ4YVdRDcY4uFu/k8hS9Q5JzXv9fY0nQ4Oxer3QOdc9HlazzIBg==",
+      "ed25519_signature": "xctcb8BoDypyk2NyKadZr0oyW6H5LikQxjqeI4UrYzngqFES9UcjcINLyrmJXi6HVVQf/ObYktqYeoUZrovgDA==",
       "minimum_system_version": "15.0.0",
-      "name": "KeyKey-1.3.7-macos-arm64-b5bcaae5d49a8bbfc9c1efdbef30f3b5dec749c4cfa642ade033ba6fc8bf17cd.pkg.zip",
-      "notes": "macOS 琦琦輸入法 1.3.7 正式更新。安裝需要管理員確認；完成後請選取琦琦並試打。",
-      "release_tag": "v1.3.7",
-      "sha256": "b5bcaae5d49a8bbfc9c1efdbef30f3b5dec749c4cfa642ade033ba6fc8bf17cd",
-      "size": 41052039,
-      "source_sha": "a11f1eab381dda3b29d59f0ec8c201599fdadeaf",
-      "tag_sha": "a11f1eab381dda3b29d59f0ec8c201599fdadeaf",
+      "name": "KeyKey-1.3.8-macos-arm64-51252cf67919bd25077673c22c4fc7ec8f99ff7df395e622f9d3a9129abc7caf.pkg.zip",
+      "notes": "macOS 琦琦輸入法 1.3.8 正式更新。安裝需要管理員確認；完成後請選取琦琦並試打。",
+      "release_tag": "v1.3.8",
+      "sha256": "51252cf67919bd25077673c22c4fc7ec8f99ff7df395e622f9d3a9129abc7caf",
+      "size": 41054856,
+      "source_sha": "75d40663df24fdace579c2e1af70d3723b5ad654",
+      "tag_sha": "75d40663df24fdace579c2e1af70d3723b5ad654",
       "target": "macos-arm64",
-      "url": "https://github.com/polobread/KeyKey/releases/download/v1.3.7/KeyKey-1.3.7-macos-arm64-b5bcaae5d49a8bbfc9c1efdbef30f3b5dec749c4cfa642ade033ba6fc8bf17cd.pkg.zip",
-      "version": "1.3.7"
+      "url": "https://github.com/polobread/KeyKey/releases/download/v1.3.8/KeyKey-1.3.8-macos-arm64-51252cf67919bd25077673c22c4fc7ec8f99ff7df395e622f9d3a9129abc7caf.pkg.zip",
+      "version": "1.3.8"
     }
   ],
   "schema_version": 1
