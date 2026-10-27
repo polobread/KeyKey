@@ -55,6 +55,9 @@ public final class AssociatedPhraseStore {
     private var byHeadCharacter: [String: Statement] = [:]
     private var sources: [String] = []
 
+    /// Selection order is frontend configuration, shared with the Rust adapter.
+    public var enabledSources: [String] { sources }
+
     public init(database: Database) {
         self.database = database
     }

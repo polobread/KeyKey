@@ -4,7 +4,7 @@ KeyKey 的 iOS 鍵盤 extension 與容器 App 實體鍵盤編輯器共用同一�
 
 ## 共用介面與核心選擇
 
-`KeyKeyEngine` 的 `InputEngine` 定義按鍵、候選、組字與宿主效果介面。`BopomofoEngine` 保留 Swift 實作，`GuanyinmaInputEngine` 經正式 C ABI 呼叫 Rust，`DualCoreInputEngine` 代理目前使用的核心。UIKit 控制項、輸入欄位政策、硬體快捷鍵辨識、關聯詞與符號介面留在 iOS frontend；adapter 不另寫注音解析、walker 或候選排序。
+`KeyKeyEngine` 的 `InputEngine` 定義按鍵、候選、組字與宿主效果介面。`BopomofoEngine` 保留 Swift 實作，`GuanyinmaInputEngine` 經正式 C ABI 呼叫 Rust，`DualCoreInputEngine` 代理目前使用的核心。UIKit 控制項、輸入欄位政策、硬體快捷鍵辨識、關聯詞與符號介面留在 iOS frontend；Guanyinma 的關聯詞資料查詢、分類順序與去重由獨立唯讀 C ABI 處理，分類設定即時沿用 FE，並保留省略空候選的原行為；adapter 不另寫注音解析、walker 或候選排序。
 
 核心偏好使用 `InputCoreSettings`：
 

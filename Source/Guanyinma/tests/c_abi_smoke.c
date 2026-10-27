@@ -1164,17 +1164,118 @@ static void check_user_archives(const char *path) {
     STATUS(guanyinma_session_close(&session), GUANYINMA_OK);
 }
 
+/* No model/session handle is involved in the portable codec contract. */
+static void check_reading_codec(void) {
+    const char *encode = "{\"operation\":\"encode\",\"reading\":\"ㄋㄧˇ,ㄏㄠˇ\"}";
+    GuanyinmaResult *result = NULL;
+    STATUS(guanyinma_reading_codec((const uint8_t *)encode, strlen(encode), &result), GUANYINMA_OK);
+    REQUIRE(result != NULL);
+    REQUIRE(row_count(result) == 2);
+    char *json = result_json(result);
+    REQUIRE(strstr(json, "\"kind\":\"reading_codec\"") != NULL);
+    REQUIRE(strstr(json, "\"reading\":\"ㄋㄧˇ,ㄏㄠˇ\"") != NULL);
+    REQUIRE(strstr(json, "\"syllable_count\":2") != NULL);
+    free(json);
+    check_complete_json_copy(result);
+    close_result(&result);
+
+    const char *decode = "{\"operation\":\"decode\",\"qstring\":\"\\\\O:W\","
+        "\"options\":{\"separator\":\"space\",\"query\":\"canonical\"}}";
+    STATUS(guanyinma_reading_codec((const uint8_t *)decode, strlen(decode), &result), GUANYINMA_OK);
+    json = result_json(result);
+    REQUIRE(strstr(json, "\"reading\":\"ㄋㄧˇ ㄏㄠˇ\"") != NULL);
+    free(json);
+    close_result(&result);
+
+    const char *bad[] = {
+        "{\"operation\":\"encode\",\"reading\":\"ㄅㄆ\",\"options\":{\"components\":\"unique_known\"}}",
+        "{\"operation\":\"decode\",\"qstring\":\"x\"}",
+        "{\"operation\":\"decode\",\"qstring\":\"~~\",\"options\":{\"query\":\"canonical\"}}",
+        "{\"operation\":\"encode\",\"reading\":\"ㄋ\",\"options\":{\"unknown\":true}}"
+    };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        result = (GuanyinmaResult *)(uintptr_t)1;
+        STATUS(guanyinma_reading_codec((const uint8_t *)bad[i], strlen(bad[i]), &result), GUANYINMA_INVALID_ARGUMENT);
+        REQUIRE(result == NULL);
+    }
+    STATUS(guanyinma_reading_codec(NULL, 1, &result), GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(result == NULL);
+    const uint8_t invalid[] = {0xff};
+    STATUS(guanyinma_reading_codec(invalid, 1, &result), GUANYINMA_INVALID_UTF8);
+    REQUIRE(result == NULL);
+    STATUS(guanyinma_reading_codec(NULL, 0, NULL), GUANYINMA_INVALID_ARGUMENT);
+}
+
+static void check_associated_phrases(GuanyinmaDatabase *database) {
+    const char *request = "{\"head\":\"你\",\"collections\":[\"anime\",\"McBopomofo\"]}";
+    GuanyinmaResult *result = NULL;
+    STATUS(guanyinma_database_associated_phrases(database, (const uint8_t *)request,
+                                               strlen(request), &result), GUANYINMA_OK);
+    REQUIRE(row_count(result) > 9); /* UI pages must not truncate the core result. */
+    char *json = result_json(result);
+    REQUIRE(strstr(json, "\"kind\":\"associated_phrases\"") != NULL);
+    REQUIRE(strstr(json, "\"key\":\"你\"") != NULL);
+    REQUIRE(strstr(json, "\"rows\":[\"的名字\",\"的名字是\",\"的謊言\",\"已經死了\",\"想\",\"們\",\"的\",") != NULL);
+    /* 想 appears in both collections, at the first collection's position. */
+    const char *first = strstr(json, "\"想\"");
+    REQUIRE(first != NULL && strstr(first + strlen("\"想\""), "\"想\"") == NULL);
+    free(json);
+    close_result(&result);
+
+    request = "{\"head\":\"你\",\"collections\":[]}";
+    STATUS(guanyinma_database_associated_phrases(database, (const uint8_t *)request,
+                                               strlen(request), &result), GUANYINMA_OK);
+    REQUIRE(row_count(result) == 0);
+    close_result(&result);
+    request = "{\"order\":\"display\"}";
+    STATUS(guanyinma_database_associated_collections(database, (const uint8_t *)request,
+                                                   strlen(request), &result), GUANYINMA_OK);
+    REQUIRE(row_count(result) > 1);
+    json = result_json(result);
+    REQUIRE(strstr(json, "\"kind\":\"associated_collections\"") != NULL);
+    REQUIRE(strstr(json, "\"rows\":[{\"source\":\"McBopomofo\",\"display\":\"小麥注音\",\"sort_order\":0},") != NULL);
+    free(json);
+    close_result(&result);
+
+    const char *bad[] = {"{}", "{\"head\":\"你\",\"collections\":[],\"limit\":1}",
+        "{\"head\":\"你\",\"collections\":[\"bad\\u0000source\"]}",
+        "{\"head\":\"你\\u0000\",\"collections\":[]}"};
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        result = (GuanyinmaResult *)(uintptr_t)1;
+        STATUS(guanyinma_database_associated_phrases(database, (const uint8_t *)bad[i],
+                                                   strlen(bad[i]), &result), GUANYINMA_INVALID_ARGUMENT);
+        REQUIRE(result == NULL);
+    }
+    request = "{\"order\":\"locale\"}";
+    STATUS(guanyinma_database_associated_collections(database, (const uint8_t *)request,
+                                                   strlen(request), &result), GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(result == NULL);
+    STATUS(guanyinma_database_associated_phrases(NULL, NULL, 0, &result), GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(result == NULL);
+    STATUS(guanyinma_database_associated_collections(NULL, NULL, 0, &result), GUANYINMA_INVALID_ARGUMENT);
+    REQUIRE(result == NULL);
+    STATUS(guanyinma_database_associated_phrases(database, NULL, 0, NULL), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_database_associated_collections(database, NULL, 0, NULL), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_database_associated_phrases(database, NULL, 1, &result), GUANYINMA_INVALID_ARGUMENT);
+    STATUS(guanyinma_database_associated_collections(database, NULL, 1, &result), GUANYINMA_INVALID_ARGUMENT);
+    const uint8_t invalid[] = {0xff};
+    STATUS(guanyinma_database_associated_phrases(database, invalid, 1, &result), GUANYINMA_INVALID_UTF8);
+    STATUS(guanyinma_database_associated_collections(database, invalid, 1, &result), GUANYINMA_INVALID_UTF8);
+}
+
 static int smoke_main(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, "Usage: %s /absolute/path/to/KeyKey.db /scratch/user-data.db\n", argv[0]);
         return EXIT_FAILURE;
     }
     REQUIRE(guanyinma_abi_version() == 1);
+    check_reading_codec();
     GuanyinmaDatabase *database = NULL;
     STATUS(guanyinma_database_open((const uint8_t *)argv[1], strlen(argv[1]),
                                   &database),
            GUANYINMA_OK);
     REQUIRE(database != NULL);
+    check_associated_phrases(database);
 
     GuanyinmaResult *result = query(database, GUANYINMA_QUERY_CANGJIE, "a");
     REQUIRE(row_count(result) == 2);

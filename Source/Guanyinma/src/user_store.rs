@@ -1819,4 +1819,126 @@ mod tests {
             assert_eq!(store.snapshot().unwrap(), before);
         }
     }
+
+    #[test]
+    fn preview_updates_existing_rows_and_empty_deltas_are_read_only() {
+        let mut store = UserStore::memory().unwrap();
+        let before = applied(
+            store
+                .apply(
+                    0,
+                    &[
+                        UserChange::UpsertPhrase(phrase("a", "甲")),
+                        UserChange::SetTable(TableLearning {
+                            method: "cangjie".into(),
+                            code: "a".into(),
+                            current: "日".into(),
+                            count: 2,
+                        }),
+                    ],
+                )
+                .unwrap(),
+        );
+        let mut replacement = phrase("a", "甲");
+        replacement.probability = -2.;
+        let changes = [
+            UserChange::UpsertPhrase(replacement.clone()),
+            UserChange::SetTable(TableLearning {
+                count: 7,
+                ..before.table[0].clone()
+            }),
+        ];
+        let preview = before.preview(&changes).unwrap();
+        assert_eq!(preview.phrases, [replacement]);
+        assert_eq!(preview.table.len(), 1);
+        assert_eq!(preview.table[0].count, 7);
+        assert_eq!(store.snapshot().unwrap(), before);
+        assert_eq!(applied(store.apply(0, &changes).unwrap()), preview);
+        assert_eq!(preview.preview(&[]).unwrap(), preview);
+        assert_eq!(applied(store.apply(0, &[]).unwrap()), preview);
+        assert!(store.apply(-1, &changes).is_err());
+        assert_eq!(store.snapshot().unwrap(), preview);
+    }
+
+    #[test]
+    fn owned_import_replaces_all_learning_but_preserves_existing_custom_words() {
+        let source = Profile::new();
+        let mut source_store = source.store();
+        let imported = applied(
+            source_store
+                .apply(
+                    0,
+                    &[
+                        UserChange::UpsertPhrase(phrase("a", "甲")),
+                        override_change("a", "甲"),
+                        bigram("a b"),
+                        increment("日"),
+                    ],
+                )
+                .unwrap(),
+        );
+        drop(source_store);
+        let source_bytes = fs::read(&source.user).unwrap();
+        let destination = Profile::new();
+        let mut store = destination.store();
+        let before = applied(
+            store
+                .apply(
+                    0,
+                    &[
+                        UserChange::UpsertPhrase(phrase("keep", "留")),
+                        override_change("old", "舊"),
+                        increment("曰"),
+                    ],
+                )
+                .unwrap(),
+        );
+        let changes = store.read_legacy(&source.user, None).unwrap();
+        assert_eq!(store.snapshot().unwrap(), before);
+        let expected = before.preview(&changes).unwrap();
+        let after = store.import_legacy(&source.user, None).unwrap();
+        assert_eq!(after, expected);
+        assert_eq!(after.generation, before.generation + 1);
+        assert_eq!(after.phrases, [phrase("keep", "留"), phrase("a", "甲")]);
+        assert_eq!(after.overrides, imported.overrides);
+        assert_eq!(after.bigrams, imported.bigrams);
+        assert_eq!(after.table, imported.table);
+        assert_eq!(fs::read(&source.user).unwrap(), source_bytes);
+    }
+
+    #[test]
+    fn later_invalid_import_domain_cannot_partially_add_valid_phrases() {
+        let profile = Profile::new();
+        let mut store = profile.store();
+        let before = applied(
+            store
+                .apply(
+                    0,
+                    &[
+                        UserChange::UpsertPhrase(phrase("keep", "留")),
+                        override_change("keep", "留"),
+                        increment("曰"),
+                    ],
+                )
+                .unwrap(),
+        );
+        let legacy = profile.directory.join("mixed-domains.db");
+        let source = Connection::open(&legacy).unwrap();
+        source
+            .execute_batch(
+                "CREATE TABLE user_unigrams(qstring,current,probability,backoff);
+            CREATE TABLE user_bigram_cache(qstring,previous,current,probability);
+            INSERT INTO user_unigrams VALUES('new','新',-1,0);
+            INSERT INTO user_bigram_cache VALUES('new next','新','後',1e999);",
+            )
+            .unwrap();
+        drop(source);
+        let bytes = fs::read(&legacy).unwrap();
+        assert!(matches!(
+            store.import_legacy(&legacy, None),
+            Err(DatabaseError::InvalidData(_))
+        ));
+        assert_eq!(store.snapshot().unwrap(), before);
+        assert_eq!(fs::read(&legacy).unwrap(), bytes);
+    }
 }

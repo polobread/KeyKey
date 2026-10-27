@@ -55,7 +55,7 @@ Manjusri 與 Guanyinma 各自保留使用者資料與學習，切換不自動複
 
 ## 原生流程與資料
 
-`GuanyinmaMacAdapter` 包裝已初始化的 Mandarin／Generic package，保留正式模組識別字、名稱與原有 PV sandwich。選用 Guanyinma 時，四種輸入法的狀態及學習透過 C ABI 執行；原核心沿用既有 Manjusri／Generic 路徑。候選視窗、快捷鍵辨識、組字送出、關聯詞及 around／output filters 沿用 FE。macOS 的單按 Shift 中英切換仍由 controller 保留組字後切換模式。
+`GuanyinmaMacAdapter` 包裝已初始化的 Mandarin／Generic package，保留正式模組識別字、名稱與原有 PV sandwich。選用 Guanyinma 時，四種輸入法的狀態及學習透過 C ABI 執行；原核心沿用既有 Manjusri／Generic 路徑。候選視窗、快捷鍵辨識、組字送出、關聯詞互動及 around／output filters 沿用 FE。Guanyinma 的關聯詞查詢、分類順序與去重透過獨立唯讀 C ABI；原核心仍使用舊查詢，依實際運作中的 context 路由。macOS 的單按 Shift 中英切換仍由 controller 保留組字後切換模式。
 
 讀取既有共用 `KeyKey.db`，使用者詞庫與學習另存於 loader writable 目錄下的 `GuanyinmaUserData.db`。不自動匯入或修改 Manjusri／Generic 的既有資料。好打注音詞庫編輯、保存與重設依選用核心路由；重設只清好打學習，保留自訂詞與其他方法學習。Rust store 開啟／寫入失敗會回報失敗，不將管理操作改寫到舊 profile。
 
@@ -124,3 +124,12 @@ python3 Source/Loaders/OSX-IMK/Tests/run-general-preferences-window-tests.py
 [functional baseline](CROSS_PLATFORM_CORE_FUNCTIONAL_TESTS.md) 仍只供遷移／升級時明確手動參考，沒有加入上述測試、日常 CI 或發布驗收。
 
 真正 TIS／IMKServer／Cocoa 文字宿主的隔離測試入口與還原規則見 [IMK 宿主測試](GUANYINMA_MACOS_IMK_HOST_TEST.md)。它與 unit／mock client、正式安裝包驗證是不同層級。
+
+
+## 共用讀音轉換
+
+Rust 詞庫的讀音顯示／編輯、單字讀音反查，以及 MJSR 讀音驗證，透過
+`GuanyinmaMacReadingCodec.h` 呼叫共用無狀態 `guanyinma_reading_codec`。
+原核心分支仍沿用原實作；MJSR 的 canonical 往返、Unicode scalar 字數及數值驗證規則保留。
+容器、特殊 SQLite 解碼與檔案保護繼續由 frontend 負責。
+普通 codec 原生對照入口見 [核心 README](../Source/Guanyinma/README.md#共用讀音-codec)。

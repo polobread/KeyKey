@@ -18,6 +18,7 @@
 #import "OpenVanillaController.h"
 #if KEYKEY_ENABLE_GUANYINMA
 #import "GuanyinmaMacUserData.h"
+#import "GuanyinmaMacReadingCodec.h"
 #endif
 #import "LFCrossDevelopmentTools.h"
 
@@ -824,7 +825,7 @@ using namespace OpenVanilla;
         for (NSDictionary* phrase in phrases) {
             NSString* query = phrase[@"qstring"];
             NSString* reading = [NSString stringWithUTF8String:
-                BPMFUserPhraseHelper::BPMFString([query UTF8String]).c_str()];
+                GuanyinmaMacDecodeReading([query UTF8String]).c_str()];
             [rows addObject:@{@"Text": phrase[@"current"], @"BPMF": reading}];
         }
         return @{@"backend": backend, @"rows": rows};
@@ -944,7 +945,7 @@ using namespace OpenVanilla;
             return [NSDictionary dictionary];
         NSDictionary* entry = [rows objectAtIndex:row];
         const string qstring = [[entry objectForKey:@"qstring"] UTF8String];
-        NSString* reading = [NSString stringWithUTF8String:BPMFUserPhraseHelper::BPMFString(qstring).c_str()];
+        NSString* reading = [NSString stringWithUTF8String:GuanyinmaMacDecodeReading(qstring).c_str()];
         return @{@"Text": [entry objectForKey:@"current"], @"BPMF": reading};
     }
 #endif
@@ -1038,7 +1039,12 @@ using namespace OpenVanilla;
         for (vector<vector<string> >::const_iterator pbi = phraseBPMFs.begin() ; pbi != phraseBPMFs.end() ; ++pbi) {
             for (vector<string>::const_iterator bi = bpmfs.begin() ; bi != bpmfs.end() ; ++bi) {
                 vector<string> newEntry = *pbi;
-                newEntry.push_back(BPMF::FromAbsoluteOrderString(*bi).composedString());
+#if KEYKEY_ENABLE_GUANYINMA
+                if ([self _usesGuanyinmaSmartUserData])
+                    newEntry.push_back(bi->size() == 2 ? GuanyinmaMacDecodeReading(*bi) : string());
+                else
+#endif
+                    newEntry.push_back(BPMF::FromAbsoluteOrderString(*bi).composedString());
                 npb.push_back(newEntry);
                 // A long polyphonic phrase can otherwise create millions of
                 // combinations and freeze the editor. The highest-frequency
@@ -1082,6 +1088,13 @@ using namespace OpenVanilla;
 }
 - (string)_qstringFromReading:(NSString *)reading
 {
+#if KEYKEY_ENABLE_GUANYINMA
+    if ([self _usesGuanyinmaSmartUserData]) {
+        string query;
+        size_t count = 0;
+        return GuanyinmaMacEncodeReading([reading UTF8String] ?: "", query, count) ? query : string();
+    }
+#endif
     vector<string> readings = OVStringHelper::Split([reading UTF8String], ',');
     string newReading;
     

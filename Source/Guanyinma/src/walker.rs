@@ -1780,4 +1780,129 @@ mod tests {
         assert_eq!(graph.text(), "假");
         assert!(graph.drain_user_changes().is_empty());
     }
+
+    #[test]
+    fn user_refresh_failure_restores_manual_selection_pending_learning_and_caches() {
+        let fixture = TestModel::new(&[("a", "甲", -1., 0.), ("a", "假", -3., 0.)], &[], &[]);
+        let broken = TestModel::new(&[("a", "甲", f64::INFINITY, 0.)], &[], &[]);
+        let db = fixture.open();
+        let bad_db = broken.open();
+        let mut graph = SmartGraph::default();
+        graph
+            .set_user_data(&db, &UserSnapshot::default(), learned_options())
+            .unwrap();
+        insert(&mut graph, &db, "a");
+        let choice = graph.candidates_at(0, false)[1].clone();
+        assert!(graph.select(&choice));
+        let before = graph.clone();
+        let changed = UserSnapshot {
+            phrases: vec![Unigram {
+                qstring: "b".into(),
+                current: "乙".into(),
+                probability: -1.,
+                backoff: 0.,
+            }],
+            ..graph.user.clone()
+        };
+        assert!(matches!(
+            graph.set_user_data(&bad_db, &changed, learned_options()),
+            Err(DatabaseError::InvalidData(_))
+        ));
+        assert_eq!(graph.text(), before.text());
+        assert_eq!(graph.readings(), before.readings());
+        assert_eq!(graph.segments(), before.segments());
+        assert_eq!(
+            graph.candidates_at(0, false),
+            before.candidates_at(0, false)
+        );
+        assert_eq!(graph.user, before.user);
+        assert_eq!(graph.pending, before.pending);
+        assert_eq!(graph.unigrams.order, before.unigrams.order);
+        assert_eq!(graph.bigrams.order, before.bigrams.order);
+        assert!(graph
+            .set_user_data(&db, &changed, learned_options())
+            .unwrap());
+        assert_eq!(graph.text(), "假");
+    }
+
+    #[test]
+    fn explicit_learning_evicts_only_the_oldest_full_cache_entries() {
+        let fixture = TestModel::new(
+            &[
+                ("a", "甲", -1., 0.),
+                ("b", "乙", -1., 0.),
+                ("b", "異", -3., 0.),
+            ],
+            &[],
+            &[],
+        );
+        let db = fixture.open();
+        let mut graph = SmartGraph::default();
+        let data = UserSnapshot {
+            overrides: (0..CACHE_CAPACITY)
+                .map(|i| CandidateOverride {
+                    qstring: format!("old{i}"),
+                    current: "舊".into(),
+                })
+                .collect(),
+            bigrams: (0..CACHE_CAPACITY)
+                .map(|i| Bigram {
+                    qstring: format!("old{i} next"),
+                    previous: "前".into(),
+                    current: "後".into(),
+                    probability: -1.,
+                })
+                .collect(),
+            ..UserSnapshot::default()
+        };
+        graph.set_user_data(&db, &data, learned_options()).unwrap();
+        insert(&mut graph, &db, "a");
+        insert(&mut graph, &db, "b");
+        let choice = graph
+            .candidates_at(1, false)
+            .into_iter()
+            .find(|c| c.text == "異")
+            .unwrap();
+        assert!(graph.select(&choice));
+        assert_eq!(graph.text(), "甲異");
+        assert_eq!(graph.user.overrides.len(), CACHE_CAPACITY);
+        assert_eq!(graph.user.bigrams.len(), CACHE_CAPACITY);
+        assert_eq!(graph.user.overrides.first().unwrap().qstring, "old1");
+        assert_eq!(graph.user.overrides.last().unwrap().qstring, "b");
+        assert_eq!(graph.user.bigrams.first().unwrap().qstring, "old1 next");
+        assert_eq!(graph.user.bigrams.last().unwrap().qstring, "a b");
+        assert_eq!(graph.drain_user_changes().len(), 2);
+    }
+
+    #[test]
+    fn deleting_before_and_at_selected_punctuation_preserves_only_remaining_text() {
+        let fixture = TestModel::new(
+            &[
+                ("a", "甲", -1., 0.),
+                ("b", "乙", -1., 0.),
+                ("_punctuation_,", "，", -1., 0.),
+                ("_punctuation_,", "、", -2., 0.),
+            ],
+            &[],
+            &[],
+        );
+        let db = fixture.open();
+        let mut graph = SmartGraph::default();
+        for q in ["a", "_punctuation_,", "b"] {
+            insert(&mut graph, &db, q);
+        }
+        let chosen = graph
+            .candidates_at(1, false)
+            .into_iter()
+            .find(|c| c.text == "、")
+            .unwrap();
+        assert!(graph.select(&chosen));
+        assert_eq!(graph.text(), "甲、乙");
+        assert!(graph.remove(&db, 0).unwrap());
+        assert_eq!(graph.text(), "、乙");
+        assert!(graph.remove(&db, 0).unwrap());
+        assert_eq!(graph.text(), "乙");
+        assert_eq!(graph.readings(), ["b"]);
+        assert!(graph.drain_user_changes().is_empty());
+    }
 }

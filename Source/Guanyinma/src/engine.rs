@@ -545,6 +545,29 @@ struct State {
     english: bool,
     full_width: bool,
 }
+/// The candidate and phrase-mark target currently presented to a frontend.
+#[derive(Debug, PartialEq)]
+struct CandidateView {
+    candidates: Vec<String>,
+    smart_candidates: Vec<SmartCandidate>,
+    page: usize,
+    highlight: usize,
+    page_size: usize,
+    marked_phrase: Option<MarkedPhrase>,
+}
+impl CandidateView {
+    fn capture(state: &State) -> Self {
+        Self {
+            candidates: state.candidates.clone(),
+            smart_candidates: state.smart.candidates().to_vec(),
+            page: state.page,
+            highlight: state.highlight,
+            page_size: state.page_size,
+            marked_phrase: state.smart.marked_phrase(),
+        }
+    }
+}
+
 /// One isolated input context. The C ABI serializes access with its own mutex.
 pub struct InputSession {
     database: ModelDatabase,
@@ -657,14 +680,7 @@ impl InputSession {
     }
     fn sync_user_data(&mut self) -> Result<bool, EngineError> {
         let version = self.users.version()?;
-        let old_view = (
-            self.state.candidates.clone(),
-            self.state.smart.candidates().to_vec(),
-            self.state.page,
-            self.state.highlight,
-            self.state.page_size,
-            self.state.smart.marked_phrase(),
-        );
+        let old_view = CandidateView::capture(&self.state);
         if self.state.reload_user_data
             || version
                 != (
@@ -684,13 +700,13 @@ impl InputSession {
             ) && !self.state.candidates.is_empty()
             {
                 self.table_query(false, &mut Effects::default())?;
-                if self.state.candidates == old_view.0 {
-                    self.state.page = old_view.2;
-                    self.state.highlight = old_view.3;
+                if self.state.candidates == old_view.candidates {
+                    self.state.page = old_view.page;
+                    self.state.highlight = old_view.highlight;
                 }
             }
             if self.config.method == InputMethod::Smart
-                && !old_view.0.is_empty()
+                && !old_view.candidates.is_empty()
                 && self.state.smart.candidates().is_empty()
             {
                 self.state.smart.open_candidates(
@@ -700,19 +716,17 @@ impl InputSession {
                 )?;
             }
             self.refresh_display()?;
-            if self.state.candidates == old_view.0 && self.state.smart.candidates() == old_view.1 {
-                self.state.page = old_view.2;
-                self.state.highlight = old_view.3;
+            if self.state.candidates == old_view.candidates
+                && self.state.smart.candidates() == old_view.smart_candidates
+            {
+                self.state.page = old_view.page;
+                self.state.highlight = old_view.highlight;
             }
-            let new_view = (
-                self.state.candidates.clone(),
-                self.state.smart.candidates().to_vec(),
-                self.state.page,
-                self.state.highlight,
-                self.state.page_size,
-                self.state.smart.marked_phrase(),
+            let new_view = CandidateView::capture(&self.state);
+            return Ok(
+                (!old_view.candidates.is_empty() || old_view.marked_phrase.is_some())
+                    && old_view != new_view,
             );
-            return Ok((!old_view.0.is_empty() || old_view.5.is_some()) && old_view != new_view);
         }
         Ok(false)
     }
@@ -2002,5 +2016,236 @@ fn validate_user_phrase(qstring: &str, text: &str) -> Result<(), EngineError> {
         Err(EngineError::InvalidInput(
             "user phrase needs 1..8 characters and matching canonical phonetic query keys".into(),
         ))
+    }
+}
+
+#[cfg(test)]
+mod edge_contracts {
+    use super::*;
+
+    fn input(method: InputMethod) -> InputSession {
+        InputSession::open(
+            crate::test_support::model_path(),
+            SessionConfig {
+                method,
+                ..SessionConfig::default()
+            },
+        )
+        .unwrap()
+    }
+
+    fn type_keys(input: &mut InputSession, keys: &str) -> SessionSnapshot {
+        let mut snapshot = input.snapshot();
+        for key in keys.chars() {
+            snapshot = input.apply(InputOperation::character(key)).unwrap();
+        }
+        snapshot
+    }
+
+    fn state(input: &InputSession) -> serde_json::Value {
+        serde_json::to_value(input.snapshot()).unwrap()
+    }
+
+    #[test]
+    fn rejected_direct_text_and_smart_only_operations_preserve_table_input() {
+        let mut input = input(InputMethod::Traditional);
+        type_keys(&mut input, "su");
+        let before = state(&input);
+        for operation in [
+            InputOperation::DirectText {
+                text: String::new(),
+            },
+            InputOperation::DirectText {
+                text: "甲\0乙".into(),
+            },
+            InputOperation::OpenCandidates { index: 0 },
+            InputOperation::CloseCandidates,
+            InputOperation::Select { index: 0 },
+        ] {
+            let error = input.apply(operation).unwrap_err();
+            assert!(matches!(error, EngineError::InvalidInput(_)));
+            assert!(!error.to_string().is_empty());
+            assert_eq!(state(&input), before);
+        }
+    }
+
+    #[test]
+    fn unused_last_page_keys_never_select_a_different_candidate() {
+        for method in [InputMethod::Traditional, InputMethod::Smart] {
+            let mut input = InputSession::open(
+                crate::test_support::model_path(),
+                SessionConfig {
+                    method,
+                    smart: SmartOptions {
+                        candidate_selection_keys: Some("123".into()),
+                        ..SmartOptions::default()
+                    },
+                    ..SessionConfig::default()
+                },
+            )
+            .unwrap();
+            type_keys(&mut input, "su3");
+            if method == InputMethod::Smart {
+                input
+                    .apply(InputOperation::OpenCandidates { index: 0 })
+                    .unwrap();
+            }
+            let panel = input.snapshot();
+            input
+                .apply(InputOperation::Page {
+                    delta: panel.page_count as i32 - 1,
+                })
+                .unwrap();
+            let panel = input.snapshot();
+            assert!(panel.displayed_candidates.len() < panel.page_size);
+            let before = state(&input);
+            let unused_key = if method == InputMethod::Smart {
+                '3'
+            } else {
+                '9'
+            };
+            let after = input.apply(InputOperation::character(unused_key)).unwrap();
+            assert!(after.effects.handled);
+            assert!(after.effects.beep);
+            assert!(after.effects.commit.is_empty());
+            assert_eq!(state(&input), before);
+        }
+    }
+
+    #[test]
+    fn home_and_end_move_to_full_candidate_list_edges_without_committing() {
+        let mut input = input(InputMethod::Traditional);
+        let panel = type_keys(&mut input, "su3");
+        assert!(panel.page_count > 1);
+        let end = input.apply(InputOperation::key(Key::End)).unwrap();
+        assert_eq!(end.page, end.page_count - 1);
+        assert_eq!(
+            end.highlight,
+            Some((end.candidates.len() - 1) % end.page_size)
+        );
+        assert!(end.effects.commit.is_empty());
+        assert_eq!(end.candidates, panel.candidates);
+        let home = input.apply(InputOperation::key(Key::Home)).unwrap();
+        assert_eq!(home.page, 0);
+        assert_eq!(home.highlight, Some(0));
+        assert!(home.effects.commit.is_empty());
+        assert_eq!(home.candidates, panel.candidates);
+    }
+
+    #[test]
+    fn traditional_control_punctuation_uses_the_existing_dictionary_commands() {
+        let mut input = input(InputMethod::Traditional);
+        let panel = input
+            .apply(InputOperation::Character {
+                text: "[".into(),
+                modifiers: Modifiers {
+                    control: true,
+                    ..Modifiers::default()
+                },
+            })
+            .unwrap();
+        assert_eq!(panel.candidates, ["「", "『", "《", "〈", "【", "〔", "｛"]);
+        assert!(panel.phonetic.is_empty());
+        input.apply(InputOperation::Reset).unwrap();
+        let direct = input
+            .apply(InputOperation::Character {
+                text: ",".into(),
+                modifiers: Modifiers {
+                    control: true,
+                    alt: true,
+                    ..Modifiers::default()
+                },
+            })
+            .unwrap();
+        assert_eq!(direct.effects.commit, "，");
+        assert!(direct.effects.handled);
+        let list = input
+            .apply(InputOperation::Character {
+                text: "0".into(),
+                modifiers: Modifiers {
+                    control: true,
+                    ..Modifiers::default()
+                },
+            })
+            .unwrap();
+        assert!(!list.candidates.is_empty());
+        assert!(list.phonetic.is_empty());
+        assert!(list.effects.commit.is_empty());
+    }
+
+    #[test]
+    fn punctuation_preserves_incomplete_readings_and_accepts_only_the_visible_highlight() {
+        let mut input = input(InputMethod::Traditional);
+        type_keys(&mut input, "su");
+        let before = state(&input);
+        let blocked = input.apply(InputOperation::character('!')).unwrap();
+        assert!(blocked.effects.beep);
+        assert!(blocked.effects.commit.is_empty());
+        assert_eq!(state(&input), before);
+        input.apply(InputOperation::character('3')).unwrap();
+        input
+            .apply(InputOperation::MoveHighlight { delta: 1 })
+            .unwrap();
+        let punctuation = input.apply(InputOperation::character('+')).unwrap();
+        assert_eq!(punctuation.effects.commit, "妳");
+        assert_eq!(punctuation.candidates, ["＋", "＝"]);
+        assert!(punctuation.phonetic.is_empty());
+        assert_eq!(punctuation.page, 0);
+        assert_eq!(punctuation.highlight, Some(0));
+    }
+
+    #[test]
+    fn table_edit_keys_leave_empty_hosts_alone_and_escape_cancels_pending_roots() {
+        let mut input = input(InputMethod::Cangjie);
+        for key in [
+            Key::Left,
+            Key::Right,
+            Key::Up,
+            Key::Down,
+            Key::Home,
+            Key::End,
+            Key::PageUp,
+            Key::PageDown,
+            Key::Escape,
+            Key::Return,
+        ] {
+            let empty = input.apply(InputOperation::key(key)).unwrap();
+            assert!(!empty.effects.handled, "{key:?}");
+            assert!(!empty.effects.beep);
+            assert!(empty.effects.commit.is_empty());
+        }
+        let pending = type_keys(&mut input, "hk");
+        for key in [
+            Key::Left,
+            Key::Right,
+            Key::Up,
+            Key::Down,
+            Key::Home,
+            Key::End,
+            Key::PageUp,
+            Key::PageDown,
+        ] {
+            let blocked = input.apply(InputOperation::key(key)).unwrap();
+            assert!(blocked.effects.handled, "{key:?}");
+            assert!(blocked.effects.beep);
+            assert_eq!(blocked.code, pending.code);
+            assert_eq!(blocked.composition, pending.composition);
+        }
+        let released = input
+            .apply(InputOperation::Key {
+                key: Key::Escape,
+                modifiers: Modifiers {
+                    release: true,
+                    ..Modifiers::default()
+                },
+            })
+            .unwrap();
+        assert!(!released.effects.handled);
+        assert_eq!(released.code, pending.code);
+        let escaped = input.apply(InputOperation::key(Key::Escape)).unwrap();
+        assert!(escaped.effects.handled);
+        assert!(escaped.code.is_empty());
+        assert!(escaped.composition.is_empty());
+        assert!(escaped.effects.commit.is_empty());
     }
 }

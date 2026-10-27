@@ -3,12 +3,14 @@
 //! Handles own Rust allocations. Callers own all copied output buffers; no
 //! SQLite pointers or Rust collection layouts cross the boundary.
 
+use crate::associated::CollectionOrder;
 use crate::database::{DatabaseError, ModelDatabase, Table};
 use crate::engine::{EngineError, InputOperation, InputSession, SessionConfig, SessionSnapshot};
+use crate::reading_codec::{decode_reading, encode_reading, DecodeOptions, EncodeOptions};
 use crate::user_archive::UserArchive;
 use crate::user_store::UserSnapshot;
 use crate::CandidateFilter;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::ffi::c_void;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -256,6 +258,84 @@ fn session_result(snapshot: &SessionSnapshot) -> Result<GuanyinmaResult, FfiErro
     Ok(GuanyinmaResult {
         json,
         row_count: snapshot.candidates.len(),
+    })
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
+enum ReadingCodecOperation {
+    Encode {
+        reading: String,
+        #[serde(default)]
+        options: EncodeOptions,
+    },
+    Decode {
+        qstring: String,
+        #[serde(default)]
+        options: DecodeOptions,
+    },
+}
+
+/// Convert composed phonetics and query keys without opening a database/session.
+///
+/// Options describe syntax and validation behaviors rather than platforms. The
+/// owned JSON result uses the same copy-out/close contract as every other result.
+///
+/// # Safety
+/// A nonempty request span must be readable for request_length bytes. output
+/// must be a writable, aligned unused result slot separate from the input.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_reading_codec(
+    request: *const u8,
+    request_length: usize,
+    output: *mut *mut GuanyinmaResult,
+) -> i32 {
+    boundary(|| {
+        if output.is_null() {
+            return Err(FfiError::invalid("result output pointer is null"));
+        }
+        // SAFETY: The caller supplies a writable unused output slot.
+        unsafe { output.write(ptr::null_mut()) };
+        // SAFETY: The caller retains the request bytes throughout this call.
+        let request = unsafe { input(request, request_length, "reading codec request") }?;
+        let request = serde_json::from_str::<ReadingCodecOperation>(request).map_err(|error| {
+            FfiError::invalid(format!("invalid reading codec request: {error}"))
+        })?;
+        let converted = match request {
+            ReadingCodecOperation::Encode { reading, options } => {
+                encode_reading(&reading, &options)
+            }
+            ReadingCodecOperation::Decode { qstring, options } => {
+                decode_reading(&qstring, &options)
+            }
+        }
+        .map_err(|error| FfiError::invalid(error.to_string()))?;
+        #[derive(Serialize)]
+        struct Snapshot<'a> {
+            schema_version: u32,
+            kind: &'static str,
+            qstring: &'a str,
+            reading: &'a str,
+            syllable_count: usize,
+        }
+        let json = serde_json::to_vec(&Snapshot {
+            schema_version: ABI_VERSION,
+            kind: "reading_codec",
+            qstring: &converted.qstring,
+            reading: &converted.reading,
+            syllable_count: converted.syllable_count,
+        })
+        .map_err(|error| FfiError {
+            code: GUANYINMA_DATABASE_ERROR,
+            message: format!("could not serialize reading codec result: {error}"),
+        })?;
+        let result = GuanyinmaResult {
+            json,
+            row_count: converted.syllable_count,
+        };
+        // SAFETY: Transfer unique ownership of the complete result to the caller.
+        unsafe { output.write(Box::into_raw(Box::new(result))) };
+        Ok(())
     })
 }
 
@@ -642,6 +722,116 @@ pub unsafe extern "C" fn guanyinma_database_query(
     })
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AssociatedPhraseRequest {
+    head: String,
+    collections: Vec<String>,
+    #[serde(default)]
+    omit_empty_suffixes: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AssociatedCollectionsRequest {
+    #[serde(default)]
+    order: CollectionOrder,
+}
+
+/// Query associated suffixes in frontend-selected collection order.
+/// No commit gating, candidate window or keyboard state is changed.
+///
+/// # Safety
+/// database must remain live and cannot close during this call. A nonempty
+/// request span must be readable. output must be a writable unused result slot
+/// separate from the input. Results own their bytes independently of database.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_database_associated_phrases(
+    database: *const GuanyinmaDatabase,
+    request: *const u8,
+    request_length: usize,
+    output: *mut *mut GuanyinmaResult,
+) -> i32 {
+    boundary(|| {
+        if output.is_null() {
+            return Err(FfiError::invalid("result output pointer is null"));
+        }
+        // SAFETY: The caller provides a writable unused output slot.
+        unsafe { output.write(ptr::null_mut()) };
+        if database.is_null() {
+            return Err(FfiError::invalid("database handle is null"));
+        }
+        // SAFETY: Request bytes remain readable during the call.
+        let request = unsafe { input(request, request_length, "associated phrase request") }?;
+        let request: AssociatedPhraseRequest = serde_json::from_str(request).map_err(|error| {
+            FfiError::invalid(format!("invalid associated phrase request: {error}"))
+        })?;
+        // SAFETY: The caller keeps the handle live; the mutex serializes queries.
+        let model = unsafe { &*database }
+            .database
+            .lock()
+            .map_err(|_| FfiError {
+                code: GUANYINMA_PANIC,
+                message: "database handle was invalidated by an internal panic".into(),
+            })?;
+        let rows = model.associated_phrases(
+            &request.head,
+            &request.collections,
+            request.omit_empty_suffixes,
+        )?;
+        let result = snapshot("associated_phrases", &request.head, &rows)?;
+        // SAFETY: Transfer the newly allocated result to the unused output slot.
+        unsafe { output.write(Box::into_raw(Box::new(result))) };
+        Ok(())
+    })
+}
+
+/// List dictionary collections using an explicit portable ordering behavior.
+///
+/// # Safety
+/// The live database, readable request and unused output-slot contract is the
+/// same as guanyinma_database_associated_phrases.
+#[no_mangle]
+pub unsafe extern "C" fn guanyinma_database_associated_collections(
+    database: *const GuanyinmaDatabase,
+    request: *const u8,
+    request_length: usize,
+    output: *mut *mut GuanyinmaResult,
+) -> i32 {
+    boundary(|| {
+        if output.is_null() {
+            return Err(FfiError::invalid("result output pointer is null"));
+        }
+        // SAFETY: The caller provides a writable unused output slot.
+        unsafe { output.write(ptr::null_mut()) };
+        if database.is_null() {
+            return Err(FfiError::invalid("database handle is null"));
+        }
+        // SAFETY: Request bytes remain readable during the call.
+        let request = unsafe { input(request, request_length, "associated collection request") }?;
+        let request: AssociatedCollectionsRequest =
+            serde_json::from_str(request).map_err(|error| {
+                FfiError::invalid(format!("invalid associated collection request: {error}"))
+            })?;
+        // SAFETY: The caller keeps the handle live; the mutex serializes queries.
+        let model = unsafe { &*database }
+            .database
+            .lock()
+            .map_err(|_| FfiError {
+                code: GUANYINMA_PANIC,
+                message: "database handle was invalidated by an internal panic".into(),
+            })?;
+        let result = snapshot(
+            "associated_collections",
+            "",
+            &model.associated_collections(request.order)?,
+        )?;
+        // SAFETY: Transfer the newly allocated result to the unused output slot.
+        unsafe { output.write(Box::into_raw(Box::new(result))) };
+        Ok(())
+    })
+}
+
 /// Returns raw query rows, or full candidate count in an input snapshot.
 ///
 /// # Safety
@@ -909,6 +1099,308 @@ mod tests {
             assert_eq!(guanyinma_database_close(&mut database), GUANYINMA_OK);
             assert_eq!(guanyinma_result_close(&mut result), GUANYINMA_OK);
             assert_eq!(guanyinma_result_close(&mut result), GUANYINMA_OK);
+        }
+    }
+
+    #[test]
+    fn database_failure_classes_keep_their_public_status_and_diagnostic() {
+        for (error, status, prefix) in [
+            (
+                DatabaseError::InvalidInput("bad key".into()),
+                GUANYINMA_INVALID_ARGUMENT,
+                "invalid input:",
+            ),
+            (
+                DatabaseError::Open("missing file".into()),
+                GUANYINMA_DATABASE_ERROR,
+                "could not open model:",
+            ),
+            (
+                DatabaseError::Query("missing table".into()),
+                GUANYINMA_DATABASE_ERROR,
+                "model query failed:",
+            ),
+            (
+                DatabaseError::Schema("missing column".into()),
+                GUANYINMA_SCHEMA_ERROR,
+                "invalid model schema:",
+            ),
+            (
+                DatabaseError::InvalidData("nonfinite score".into()),
+                GUANYINMA_SCHEMA_ERROR,
+                "invalid model data:",
+            ),
+        ] {
+            let detail = error.to_string();
+            let converted = FfiError::from(EngineError::Database(error));
+            assert_eq!(converted.code, status);
+            assert_eq!(converted.message, detail);
+            assert!(converted.message.starts_with(prefix));
+        }
+    }
+
+    #[test]
+    fn oversized_output_capacity_is_rejected_before_any_buffer_access() {
+        let mut required = usize::MAX;
+        // SAFETY: Rejected capacity is checked before the null destination is used.
+        let error = unsafe { copy_output(b"value", ptr::null_mut(), usize::MAX, &mut required) }
+            .unwrap_err();
+        assert_eq!(error.code, GUANYINMA_INVALID_ARGUMENT);
+        assert!(error.message.contains("capacity is too large"));
+        assert_eq!(required, 0);
+    }
+
+    #[test]
+    fn null_result_slots_are_rejected_before_reading_handles_or_operations() {
+        // SAFETY: All null handles/spans are rejected before any dereference.
+        unsafe {
+            assert_eq!(
+                guanyinma_session_apply(ptr::null(), ptr::null(), 0, ptr::null_mut()),
+                GUANYINMA_INVALID_ARGUMENT
+            );
+            assert_eq!(
+                guanyinma_session_snapshot(ptr::null(), ptr::null_mut()),
+                GUANYINMA_INVALID_ARGUMENT
+            );
+            assert_eq!(
+                guanyinma_session_user_data(ptr::null(), ptr::null_mut()),
+                GUANYINMA_INVALID_ARGUMENT
+            );
+            assert_eq!(
+                guanyinma_result_row_count(ptr::null(), ptr::null_mut()),
+                GUANYINMA_INVALID_ARGUMENT
+            );
+        }
+    }
+
+    #[test]
+    fn a_poisoned_session_rejects_every_read_and_apply_without_partial_results() {
+        let handle = GuanyinmaSession {
+            session: Mutex::new(
+                InputSession::open(crate::test_support::model_path(), SessionConfig::default())
+                    .unwrap(),
+            ),
+        };
+        assert!(catch_unwind(AssertUnwindSafe(|| {
+            let _held = handle.session.lock().unwrap();
+            panic!("simulated internal failure while operating on the session");
+        }))
+        .is_err());
+        let mut result = ptr::dangling_mut::<GuanyinmaResult>();
+        let operation = br#"{"type":"reset"}"#;
+        // SAFETY: The handle is live; slots/spans refer to local allocations.
+        unsafe {
+            assert_eq!(
+                guanyinma_session_apply(&handle, operation.as_ptr(), operation.len(), &mut result),
+                GUANYINMA_PANIC
+            );
+            assert!(result.is_null());
+            result = ptr::dangling_mut::<GuanyinmaResult>();
+            assert_eq!(
+                guanyinma_session_snapshot(&handle, &mut result),
+                GUANYINMA_PANIC
+            );
+            assert!(result.is_null());
+            result = ptr::dangling_mut::<GuanyinmaResult>();
+            assert_eq!(
+                guanyinma_session_user_data(&handle, &mut result),
+                GUANYINMA_PANIC
+            );
+            assert!(result.is_null());
+        }
+        LAST_ERROR.with(|last| assert!(last.borrow().contains("session was invalidated")));
+    }
+
+    #[test]
+    fn a_poisoned_database_cannot_return_results_from_an_invalidated_connection() {
+        let handle = GuanyinmaDatabase {
+            database: Mutex::new(ModelDatabase::open(crate::test_support::model_path()).unwrap()),
+        };
+        assert!(catch_unwind(AssertUnwindSafe(|| {
+            let _held = handle.database.lock().unwrap();
+            panic!("simulated internal failure during a model query");
+        }))
+        .is_err());
+        let mut result = ptr::dangling_mut::<GuanyinmaResult>();
+        // SAFETY: The handle is live and the result output is a valid local slot.
+        unsafe {
+            assert_eq!(
+                guanyinma_database_query(
+                    &handle,
+                    GUANYINMA_QUERY_CANGJIE,
+                    b"a".as_ptr(),
+                    1,
+                    &mut result
+                ),
+                GUANYINMA_PANIC
+            );
+        }
+        assert!(result.is_null());
+        LAST_ERROR.with(|last| assert!(last.borrow().contains("database handle was invalidated")));
+    }
+
+    #[test]
+    fn associated_queries_return_owned_ordered_results_and_metadata() {
+        let model = ModelDatabase::open(crate::test_support::model_path()).unwrap();
+        let database = GuanyinmaDatabase {
+            database: Mutex::new(model),
+        };
+        let mut result = ptr::null_mut();
+        let request =
+            r#"{"head":"你","collections":["anime","McBopomofo"],"omit_empty_suffixes":true}"#;
+        // SAFETY: The live stack database, readable requests and output slot
+        // remain valid for each synchronous call; every returned result is closed.
+        unsafe {
+            assert_eq!(
+                guanyinma_database_associated_phrases(
+                    &database,
+                    request.as_ptr(),
+                    request.len(),
+                    &mut result
+                ),
+                GUANYINMA_OK
+            );
+            let json: serde_json::Value = serde_json::from_slice(&(*result).json).unwrap();
+            assert_eq!(json["rows"][0], "的名字");
+            let rows = json["rows"].as_array().unwrap();
+            assert_eq!(rows.iter().filter(|s| s.as_str() == Some("想")).count(), 1);
+            assert_eq!((*result).row_count, rows.len());
+            assert_eq!(guanyinma_result_close(&mut result), GUANYINMA_OK);
+            let request = r#"{"order":"source"}"#;
+            assert_eq!(
+                guanyinma_database_associated_collections(
+                    &database,
+                    request.as_ptr(),
+                    request.len(),
+                    &mut result
+                ),
+                GUANYINMA_OK
+            );
+            let bytes = (*result).json.clone();
+            drop(database); // The copied result must outlive its database.
+            let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+            assert_eq!(json["rows"][0]["source"], "McBopomofo");
+            assert_eq!((*result).json, bytes);
+            assert_eq!(guanyinma_result_close(&mut result), GUANYINMA_OK);
+        }
+    }
+
+    #[test]
+    fn associated_json_errors_clear_outputs_before_querying() {
+        let model = ModelDatabase::open(crate::test_support::model_path()).unwrap();
+        let database = GuanyinmaDatabase {
+            database: Mutex::new(model),
+        };
+        // SAFETY: Invalid JSON is readable; the dangling sentinel is only an
+        // unused output value overwritten by the API, never dereferenced.
+        unsafe {
+            for request in [
+                "{}",
+                r#"{"head":"你","collections":[],"unknown":1}"#,
+                r#"{"head":"你","collections":["bad\u0000name"]}"#,
+            ] {
+                let mut result = ptr::dangling_mut::<GuanyinmaResult>();
+                assert_eq!(
+                    guanyinma_database_associated_phrases(
+                        &database,
+                        request.as_ptr(),
+                        request.len(),
+                        &mut result
+                    ),
+                    GUANYINMA_INVALID_ARGUMENT
+                );
+                assert!(result.is_null());
+            }
+            for request in [r#"{"order":"locale"}"#, r#"{"order":"source","unknown":1}"#] {
+                let mut result = ptr::dangling_mut::<GuanyinmaResult>();
+                assert_eq!(
+                    guanyinma_database_associated_collections(
+                        &database,
+                        request.as_ptr(),
+                        request.len(),
+                        &mut result
+                    ),
+                    GUANYINMA_INVALID_ARGUMENT
+                );
+                assert!(result.is_null());
+            }
+        }
+    }
+
+    #[test]
+    fn reading_codec_round_trip_is_an_owned_database_free_result() {
+        let request =
+            br#"{"operation":"encode","reading":"\u310b\u3127\u02c7,\u310f\u3120\u02c7"}"#;
+        let mut result = ptr::null_mut();
+        // SAFETY: Request and output storage are live for the call; close consumes the result.
+        unsafe {
+            assert_eq!(
+                guanyinma_reading_codec(request.as_ptr(), request.len(), &mut result),
+                GUANYINMA_OK
+            );
+            assert!(!result.is_null());
+            let json: serde_json::Value = serde_json::from_slice(&(*result).json).unwrap();
+            assert_eq!(json["kind"], "reading_codec");
+            assert_eq!(json["schema_version"], ABI_VERSION);
+            assert_eq!(json["reading"], "ㄋㄧˇ,ㄏㄠˇ");
+            assert_eq!(json["syllable_count"], 2);
+            assert_eq!((*result).row_count, 2);
+            let decode = serde_json::to_vec(&serde_json::json!({
+                "operation":"decode", "qstring":json["qstring"]
+            }))
+            .unwrap();
+            assert_eq!(guanyinma_result_close(&mut result), GUANYINMA_OK);
+            assert_eq!(
+                guanyinma_reading_codec(decode.as_ptr(), decode.len(), &mut result),
+                GUANYINMA_OK
+            );
+            let json: serde_json::Value = serde_json::from_slice(&(*result).json).unwrap();
+            assert_eq!(json["reading"], "ㄋㄧˇ,ㄏㄠˇ");
+            assert_eq!(guanyinma_result_close(&mut result), GUANYINMA_OK);
+        }
+    }
+
+    #[test]
+    fn invalid_codec_requests_clear_outputs_without_opening_a_session() {
+        let requests = [
+            r#"{"operation":"encode","reading":"ㄋ","unexpected":1}"#,
+            r#"{"operation":"encode","reading":"ㄋ","options":{"unknown":true}}"#,
+            r#"{"operation":"encode","reading":"ㄋ","options":{"components":"unknown"}}"#,
+            r#"{"operation":"encode","reading":"ㄋ\u0000"}"#,
+            r#"{"operation":"encode","reading":"ㄋㄋ","options":{"components":"unique_known"}}"#,
+            r#"{"operation":"decode","qstring":"x"}"#,
+            r#"{"operation":"decode","qstring":"~~","options":{"query":"canonical"}}"#,
+            r#"{"operation":"unknown"}"#,
+        ];
+        for request in requests {
+            let mut result = ptr::dangling_mut();
+            // SAFETY: Request is a valid borrowed span; the stale value is never dereferenced.
+            unsafe {
+                assert_eq!(
+                    guanyinma_reading_codec(request.as_ptr(), request.len(), &mut result),
+                    GUANYINMA_INVALID_ARGUMENT,
+                    "{request}"
+                );
+            }
+            assert!(result.is_null());
+        }
+        let mut result = ptr::dangling_mut();
+        // SAFETY: Rejected null spans/output do not produce or read any invalid allocation.
+        unsafe {
+            assert_eq!(
+                guanyinma_reading_codec(ptr::null(), 1, &mut result),
+                GUANYINMA_INVALID_ARGUMENT
+            );
+            assert!(result.is_null());
+            assert_eq!(
+                guanyinma_reading_codec(ptr::null(), 0, ptr::null_mut()),
+                GUANYINMA_INVALID_ARGUMENT
+            );
+            assert_eq!(
+                guanyinma_reading_codec([0xff].as_ptr(), 1, &mut result),
+                GUANYINMA_INVALID_UTF8
+            );
+            assert!(result.is_null());
         }
     }
 }

@@ -64,6 +64,7 @@ def main():
             str(SOURCE / "Frameworks/Minotaur/Source/Minotaur.cpp"),
             str(prefix / "lib/libcrypto.dylib"),
             str(LOADER / "GuanyinmaMacAdapter.mm"),
+            str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
             str(LOADER / "GuanyinmaMacCoreSelection.mm"),
             str(SOURCE / "Frameworks/PlainVanilla/Source/Cocoa/PVPropertyList.mm"),
             str(library),"-o",str(tmp / "native-oracle"),

@@ -40,8 +40,10 @@ const string RemoveHeadChar(const string& s)
     return OVUTF8Helper::CombineCodePoints(v);
 }
 
-OVAFAssociatedPhraseContext::OVAFAssociatedPhraseContext(OVAFAssociatedPhrase* module)
+OVAFAssociatedPhraseContext::OVAFAssociatedPhraseContext(OVAFAssociatedPhrase* module,
+    std::shared_ptr<OVAFAssociatedPhraseQuery> query)
     : m_module(module)
+    , m_query(query)
     , m_selectStatement(0)
     , m_keyHandled(false)
     , m_statementGeneration(0)
@@ -190,7 +192,9 @@ bool OVAFAssociatedPhraseContext::handleDirectText(const string& text, OVTextBuf
     
     // loaderService->logger("OVAFAssociatedPhrase") << "handleDirectText: " << text << " (" << chrs.size() << ")" << endl;
     
-    if (m_selectStatement && chrs.size() == 1 && composingText->isEmpty() && readingText->isEmpty()) {
+    const bool sharedQuery = m_query && m_query->isActive(candidateService);
+    const bool canQuery = sharedQuery ? !m_module->m_cfgCollections.empty() : m_selectStatement != 0;
+    if (canQuery && chrs.size() == 1 && composingText->isEmpty() && readingText->isEmpty()) {
         unsigned int codepoint = OVUTF8Helper::CodePointFromSingleUTF8String(chrs[0]);
         
         if (codepoint < 0x3000 || codepoint > 0xff00)
@@ -200,28 +204,37 @@ bool OVAFAssociatedPhraseContext::handleDirectText(const string& text, OVTextBuf
         composingText->commit();
         
         m_candidates.clear();
-        m_selectStatement->reset();
-        m_selectStatement->bindTextToColumn(chrs[0], 1);
-        
-        // One row per collection now, so gather them and lay them out in the
-        // order the collections were ticked. Duplicates across collections are
-        // dropped, keeping the first occurrence.
-        map<string, vector<string> > bySource;
-        while (m_selectStatement->step() == SQLITE_ROW)
-            bySource[m_selectStatement->textOfColumn(1)] = OVStringHelper::Split(m_selectStatement->textOfColumn(0), ',');
-
-        set<string> seen;
-        for (vector<string>::const_iterator citer = m_module->m_cfgCollections.begin() ; citer != m_module->m_cfgCollections.end() ; ++citer) {
-            map<string, vector<string> >::const_iterator found = bySource.find(*citer);
-            if (found == bySource.end())
-                continue;
-
-            for (vector<string>::const_iterator piter = (*found).second.begin() ; piter != (*found).second.end() ; ++piter) {
-                if (seen.insert(*piter).second)
-                    m_candidates.push_back(*piter);
+        if (sharedQuery) {
+            string error;
+            if (!m_query->lookup(chrs[0], m_module->m_cfgCollections, m_candidates, error)) {
+                m_candidates.clear();
+                loaderService->logger("OVAFAssociatedPhrase") << "Shared lookup failed: " << error << endl;
             }
         }
-        
+        else {
+            m_selectStatement->reset();
+            m_selectStatement->bindTextToColumn(chrs[0], 1);
+
+            // One row per collection now, so gather them and lay them out in the
+            // order the collections were ticked. Duplicates across collections are
+            // dropped, keeping the first occurrence.
+            map<string, vector<string> > bySource;
+            while (m_selectStatement->step() == SQLITE_ROW)
+                bySource[m_selectStatement->textOfColumn(1)] = OVStringHelper::Split(m_selectStatement->textOfColumn(0), ',');
+
+            set<string> seen;
+            for (vector<string>::const_iterator citer = m_module->m_cfgCollections.begin() ; citer != m_module->m_cfgCollections.end() ; ++citer) {
+                map<string, vector<string> >::const_iterator found = bySource.find(*citer);
+                if (found == bySource.end())
+                    continue;
+
+                for (vector<string>::const_iterator piter = (*found).second.begin() ; piter != (*found).second.end() ; ++piter) {
+                    if (seen.insert(*piter).second)
+                        m_candidates.push_back(*piter);
+                }
+            }
+        }
+
         if (m_candidates.size()) {
 //            OVOneDimensionalCandidatePanel* panel = candidateService->useVerticalCandidatePanel();
             OVOneDimensionalCandidatePanel* panel = candidateService->useOneDimensionalCandidatePanel();
@@ -269,7 +282,7 @@ OVAFAssociatedPhrase::~OVAFAssociatedPhrase()
 
 OVEventHandlingContext* OVAFAssociatedPhrase::createContext()
 {
-    return new OVAFAssociatedPhraseContext(this);
+    return new OVAFAssociatedPhraseContext(this, m_query);
 }
 
 const string OVAFAssociatedPhrase::identifier() const

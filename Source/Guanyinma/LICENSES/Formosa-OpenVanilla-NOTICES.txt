@@ -86,9 +86,12 @@ Source/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.h
 Source/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp
 Source/ModulePackages/OVIMGeneric/OVIMGeneric.h
 Source/ModulePackages/OVIMGeneric/OVIMGeneric.cpp
+Source/ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.h
+Source/ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp
 
 These are the macOS source references for the state-machine port in
-Source/Guanyinma/src/engine.rs. Their original MIT notice is reproduced below.
+Source/Guanyinma/src/engine.rs and the associated-phrase merge in
+Source/Guanyinma/src/associated.rs. Their original MIT notice is reproduced below.
 
 OVIMGeneric.cpp
 

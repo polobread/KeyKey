@@ -67,15 +67,15 @@ add_custom_target(keykey_guanyinma_build DEPENDS
 add_library(guanyinma_core STATIC IMPORTED GLOBAL)
 set_target_properties(guanyinma_core PROPERTIES
     IMPORTED_LOCATION "${KEYKEY_GUANYINMA_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${KEYKEY_GUANYINMA_SOURCE_DIR}/include")
+    INTERFACE_INCLUDE_DIRECTORIES "${KEYKEY_GUANYINMA_SOURCE_DIR}/include"
+    INTERFACE_LINK_LIBRARIES "SQLite::SQLite3;-Wl,@${KEYKEY_GUANYINMA_OUTPUT_DIR}/native-static-libs.rsp")
 add_dependencies(guanyinma_core keykey_guanyinma_build)
 add_library(keykey_linux_guanyinma STATIC
     engine/src/guanyinma_session.cpp engine/src/candidate_font_support.cpp)
 target_compile_features(keykey_linux_guanyinma PUBLIC cxx_std_17)
 target_include_directories(keykey_linux_guanyinma PUBLIC engine/include)
 target_link_libraries(keykey_linux_guanyinma PUBLIC keykey_linux_support
-    guanyinma_core PkgConfig::JSONC PkgConfig::PANGOFT2 SQLite::SQLite3
-    "-Wl,@${KEYKEY_GUANYINMA_OUTPUT_DIR}/native-static-libs.rsp")
+    guanyinma_core PkgConfig::JSONC PkgConfig::PANGOFT2 SQLite::SQLite3)
 set_target_properties(keykey_linux_guanyinma PROPERTIES POSITION_INDEPENDENT_CODE ON
     CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN YES)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")

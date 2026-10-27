@@ -8,6 +8,7 @@ macOS FE 已提供同一 App 的雙核心建置與一般設定切換，預設選
 
 - Rust `ModelDatabase`：傳統注音、倉頡與簡易的完整 exact-match 字表查詢；好打注音 Unigram／Bigram 原始列。
 - 低階資料查詢的五種來源均保留 `rowid` 原始順序與合法空字串，不套用候選排序、去重、詞跨度或 mobile 的 64 筆上限。
+- 關聯詞查詢、分類排序與去重使用獨立唯讀 API；候選窗與按鍵仍由 FE 負責。
 - 注音解析支援標準、許氏、倚天、倚天 26 鍵與漢語拼音；以 macOS Formosa／OpenVanilla 為行為來源。
 - `InputSession` 提供四種輸入法的編輯、完整候選、分頁、選字、標點、模式切換及全半形；倉頡另支援 wildcard／前綴與即時候選。每次操作回傳獨立快照與該次 host effects。
 - 好打注音 walker 保留 Manjusri 的 BOS／EOS、Bigram／backoff、八音節詞跨度、別名、嚴格分數與原順序的平手處理；手動選詞只固定選中詞段，不提交整句。
@@ -85,6 +86,113 @@ python3 tools/test-core.py --sqlite-provider bundled --report target/core-bundle
 | Android | CI 無視窗 emulator，由 `adb` 執行 | bundled |
 
 每項都執行 Rust 測試及 C consumer，附上 JSON 證據；只有成功執行的目標才算驗證。iOS job 只清理自己建立的 Simulator。這些工具不建置 FE、不連接使用者已安裝的輸入法，也不執行 functional baseline。
+
+## 無 UI code coverage
+
+核心正式 Rust 程式碼的行涵蓋率維持 **92% 以上**。參考門檻使用原生 macOS／system SQLite 的 debug instrumentation（本機基準為 arm64），執行既有 Rust unit／整合與真實 C consumer。
+只計算 `src/` 的可執行行，動態排除 inline `#[cfg(test)]` item、測試與第三方依賴；
+不以物理總行數為分母，也不將 region coverage 當作 branch coverage。
+
+先在本機準備鎖定工具鏈的 `llvm-tools-preview` 元件，再從 repository root 執行：
+
+```sh
+python3 Source/Guanyinma/tools/test-coverage.py --offline \
+  --report-dir Source/Guanyinma/target/coverage
+```
+
+工具支援 `--cargo /path/to/cargo`、`--sqlite-provider system|bundled` 與
+`--minimum-line-coverage 92`；不自行下載工具。每次使用獨立 target 和新 profiles，
+輸出 `coverage-summary.json`、各檔未覆蓋行、原始 LCOV、排除測試後 LCOV、來源雜湊及 Git 差異。
+未達門檻或無法確認測試排除範圍時回傳失敗。CI 只在 `guanyinma-core.yml` 的 macOS
+項目量測這個門檻；其他平台仍執行各自的原生核心測試，不能由這個百分比推定六平台覆蓋率。
+
+補測試以實際行為、錯誤處理與資料原子性為準，不為追求 100% 製造不可能狀態；
+functional baseline 仍只供手動遷移參考，不參與 coverage 或 gate。
+
+## 關聯詞查詢
+
+`ModelDatabase::associated_phrases`／`guanyinma_database_associated_phrases` 查詢共用
+`KeyKey.db` 的 `associated_phrases`。查詢與 session 無關，不建立可寫詞庫；C ABI
+接受嚴格 JSON，回傳既有 `GuanyinmaResult`：
+
+```json
+{"head":"你","collections":["anime","McBopomofo"],"omit_empty_suffixes":false}
+```
+
+結果為 `kind: "associated_phrases"`、`key: "你"`、`rows: ["的名字", ...]`，
+`row_count` 是完整候選數。依指定分類順序合併，同來源多筆資料採 `rowid` 最後一筆；
+分類內沿用資料列順序，完全相同的字串只保留首次出現。不調整詞頻、不裁切頁數，
+也不做空白修整、正規化或字型過濾。空分類陣列表示停用，不能回復成預設分類。
+
+預設逗號拆分保留前導／中間空項並省略最後空項，與 macOS 舊實作一致；
+`omit_empty_suffixes: true` 保留 iOS 原本省略所有空項的行為。
+`ModelDatabase::associated_collections`／`guanyinma_database_associated_collections`
+接受 `{"order":"display"}` 或 `{"order":"source"}`；依 `sortorder`、指定欄位、
+`rowid` 排列，回傳 `source`、`display`、`sort_order`。這是排序行為選項，沒有 OS 分支。
+兩張關聯詞表按查詢需要驗證，不擴張原有五張必要模型表的 open 契約。
+
+macOS／Windows 的 Rust 路徑將查詢委派到此 API，原核心仍使用舊查詢；路由依實際
+運作中的核心。iOS Rust 路徑以同一份 DB 查詢，設定來源的分類選擇每次即時讀取。
+候選窗、顯示時機、單字輸入限制、送字、按鍵、翻頁與選字操作留在 frontend。
+設定頁的分類清單與詞數載入仍維持既有流程；新的 metadata API 可供後續接合。
+Android 的 `.kki` 索引及 Linux／FreeBSD 的分類文字檔仍沿用原解析／查詢路徑；
+本項沒有把它們改成共用 DB，避免變更既有字頻門檻、補充漢字與排除規則。
+公開 Rust `merge_associated_rows` 可供後續既有資料來源接合時共用相同合併規則。
+
+普通 unit／C ABI 測試涵蓋分類換序、重複詞、同來源覆蓋、空分類、空項政策、
+綁定參數、無效資料與結果生命週期。這些測試不讀取 functional baseline。
+
+macOS 的聚焦接線測試使用實際 adapter／OpenVanilla filter 與記憶體候選面板，
+不建立視窗、不連已安裝 IMK：
+
+```sh
+python3 Source/Loaders/OSX-IMK/Tests/run-associated-phrase-tests.py \
+  --library /absolute/path/to/libguanyinma.a
+```
+
+iOS 使用既有 `tools/test-ios-swift-package.sh`，可用 `--filter` 選出
+`GuanyinmaAssociatedPhraseStoreTests` 及 `associatedQueryUsesModelWhileOverlayAndKeysStayInFrontend`。
+這是 macOS host 的 Swift／C ABI 證據，不代替 iOS 實機或 Windows 原生驗證。
+
+## 共用讀音 codec
+
+`reading_codec` 提供不開 DB／session 的 `encode_reading`、`decode_reading`，
+由共用 `BopomofoSyllable` 轉換注音文字與兩 byte query key。C ABI 的
+`guanyinma_reading_codec` 接受嚴格 JSON，沿用 `GuanyinmaResult` 的 copy-out／close 契約：
+
+```json
+{"operation":"encode","reading":"ㄋㄧˇ,ㄏㄠˇ"}
+```
+
+結果包含 `kind: "reading_codec"`、`qstring`、`reading` 與 `syllable_count`，
+`row_count` 為音節數。Encode 結果的 `reading` 是正規化後的文字；Decode 的
+`qstring` 保留輸入原文，`odd_tail: "ignore"` 只影響顯示與音節數。
+
+| 選項 | 行為 |
+|---|---|
+| Encode `separator` | `comma` 或六種 ASCII 空白的 `whitespace` |
+| Encode `components` | `replace_known` 忽略未知字元、同類元件後者覆蓋；`unique_known` 拒絕未知與同類重複 |
+| Encode `empty`／`require_phonetic` | `skip`／`reject` 決定空音節；另可要求必須有聲母、介音或韻母 |
+| Decode `separator` | `comma` 或 `space` |
+| Decode `query` | `canonical` 要求合法範圍；`printable_modulo` 保留舊可列印 overflow key 的元件折回行為 |
+| Decode `odd_tail`／`omit_leading_empty` | `reject`／`ignore` 決定奇數尾 byte；另可依累積文字省略前導空音節分隔符 |
+
+預設保留既有 comma composed-text 契約，包括 tone-only、未知字元與同類覆蓋；
+MJSR 入口仍另驗證「encode／decode 必須與原文完全相同」及文字 scalar 數。
+不重現舊 C++ 對負數 order 的未定義行為，無效 bytes 安全回報錯誤。
+
+目前 macOS 的 Rust 詞庫／MJSR 讀音、Windows Rust 詞庫與 Linux／FreeBSD 詞庫工具
+已呼叫此 ABI；舊核心路徑仍保留。iOS／Android 的鍵盤字母、聲調自動切音節等
+彈性詞庫輸入語法尚未改接，不能將本項視為六平台的 codec 接線全部完成。
+原生檔案與舊加密容器解碼維持 frontend 權責。
+
+下列普通無 UI 對照直接使用目前 Formosa／Manjusri 原始碼，沒有讀取 functional baseline；
+在 repository root 執行，`--library` 指向本次相同 SQLite provider 的 staticlib：
+
+```sh
+python3 Source/Loaders/OSX-IMK/Tests/run-reading-codec-tests.py \
+  --library /absolute/path/to/libguanyinma.a
+```
 
 ## 行為、狀態與 frontend
 

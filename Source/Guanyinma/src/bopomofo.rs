@@ -195,6 +195,24 @@ impl BopomofoSyllable {
         .concat()
     }
 
+    /// Replace a composed glyph's component, returning whether that class was
+    /// already occupied. Unknown glyphs leave the syllable unchanged.
+    pub(crate) fn replace_composed_character(&mut self, character: char) -> Option<bool> {
+        let component = match character {
+            '\u{3105}'..='\u{3119}' => (character as u32 - 0x3104) as u16,
+            '\u{3127}'..='\u{3129}' => ((character as u32 - 0x3126) as u16) << 5,
+            '\u{311a}'..='\u{3126}' => ((character as u32 - 0x3119) as u16) << 7,
+            'ˊ' => TONE2,
+            'ˇ' => TONE3,
+            'ˋ' => TONE4,
+            '˙' => TONE5,
+            _ => return None,
+        };
+        let replaced = self.component(component_mask(component)) != 0;
+        self.add(component);
+        Some(replaced)
+    }
+
     fn add(&mut self, component: u16) {
         for mask in MASKS {
             if component & mask != 0 {
@@ -981,5 +999,102 @@ mod tests {
         assert!(!input.combine('3'));
         assert!(!input.combine('1'));
         assert!(input.is_empty());
+    }
+
+    #[test]
+    fn reading_key_and_tone_classification_preserves_layout_boundaries() {
+        for layout in [
+            BopomofoLayout::Standard,
+            BopomofoLayout::Hsu,
+            BopomofoLayout::ETen,
+            BopomofoLayout::ETen26,
+            BopomofoLayout::HanyuPinyin,
+        ] {
+            assert!(!layout.is_reading_key('ㄋ'));
+            assert!(!layout.is_tone_key('😀'));
+            assert!(!layout.is_tone_key('#'));
+        }
+        for (layout, tone, initial) in [
+            (BopomofoLayout::Standard, '3', 's'),
+            (BopomofoLayout::Hsu, 'F', 'b'),
+            (BopomofoLayout::ETen, '2', 'n'),
+            (BopomofoLayout::ETen26, 'J', 'b'),
+        ] {
+            assert!(layout.is_tone_key(tone), "{layout:?}");
+            assert!(layout.is_reading_key(tone));
+            assert!(!layout.is_tone_key(initial));
+        }
+        for tone in ['2', '3', '4', '5'] {
+            assert!(BopomofoLayout::HanyuPinyin.is_tone_key(tone));
+        }
+        for key in ['1', '6', 'a', 'A'] {
+            assert!(!BopomofoLayout::HanyuPinyin.is_tone_key(key));
+        }
+    }
+
+    #[test]
+    fn hsu_punctuation_is_complete_and_other_layouts_do_not_claim_it() {
+        for (key, text) in [
+            (',', "，"),
+            ('.', "。"),
+            ('<', "〈"),
+            ('>', "〉"),
+            (':', "："),
+            (';', "；"),
+            ('\'', "、"),
+            ('"', "”"),
+            ('-', "─"),
+            ('_', "＿"),
+        ] {
+            assert_eq!(BopomofoLayout::Hsu.punctuation(key), Some(text));
+            for layout in [
+                BopomofoLayout::Standard,
+                BopomofoLayout::ETen,
+                BopomofoLayout::ETen26,
+                BopomofoLayout::HanyuPinyin,
+            ] {
+                assert_eq!(layout.punctuation(key), None);
+            }
+        }
+        assert_eq!(BopomofoLayout::Hsu.punctuation('a'), None);
+    }
+
+    #[test]
+    fn public_reading_accessors_expose_canonical_components_after_edits() {
+        let mut input = BopomofoReading::default();
+        assert_eq!(input.layout(), BopomofoLayout::Standard);
+        assert_eq!(input.syllable().bits(), 0);
+        assert!(input.input_key_sequence().is_empty());
+        for key in "su3".chars() {
+            assert!(input.combine(key));
+        }
+        assert_eq!(input.syllable().bits(), N | I | TONE3);
+        assert_eq!(input.syllable().display_text(), "ㄋㄧˇ");
+        assert_eq!(input.input_key_sequence(), "su3");
+        assert!(input.backspace());
+        assert_eq!(input.syllable().bits(), N | I);
+        assert_eq!(input.input_key_sequence(), "su");
+        input.clear();
+        assert_eq!(input.syllable().bits(), 0);
+        let mut pinyin = BopomofoReading::new(BopomofoLayout::HanyuPinyin);
+        assert!(!pinyin.backspace());
+        assert!(pinyin.is_empty());
+        assert!(pinyin.input_key_sequence().is_empty());
+    }
+
+    #[test]
+    fn ambiguous_layout_medials_disambiguate_e_without_losing_reencoded_input() {
+        for (layout, keys, text) in [
+            (BopomofoLayout::Hsu, "e", "ㄧ"),
+            (BopomofoLayout::Hsu, "s", "ㄙ"),
+            (BopomofoLayout::Hsu, "ue", "ㄩㄝ"),
+            (BopomofoLayout::ETen26, "w", "ㄘ"),
+            (BopomofoLayout::ETen26, "ew", "ㄧㄝ"),
+        ] {
+            let input = reading(layout, keys);
+            assert_eq!(input.display_text(), text, "{layout:?}: {keys}");
+            let canonical = input.input_key_sequence();
+            assert_eq!(reading(layout, &canonical).query_key(), input.query_key());
+        }
     }
 }

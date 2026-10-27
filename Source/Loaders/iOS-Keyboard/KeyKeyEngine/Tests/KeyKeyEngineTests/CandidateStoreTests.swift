@@ -449,3 +449,33 @@ struct AssociatedPhraseStoreTests {
         #expect(baseFirst.count == Set(general + base).count)
     }
 }
+
+@Suite("Guanyinma associated-phrase transport")
+struct GuanyinmaAssociatedPhraseStoreTests {
+    @Test("C ABI preserves source priority and follows live collection settings")
+    func queriesUseRustAndLiveSelection() throws {
+        let model = try cookedDatabaseURL()
+        let legacy = AssociatedPhraseStore(database: try Database(url: model))
+        let rust = try GuanyinmaAssociatedPhraseStore(modelURL: model, enabledSources: { legacy.enabledSources })
+        for sources in [["general", "McBopomofo"], ["McBopomofo", "general"], [], ["unknown", "general", "general"]] {
+            legacy.setEnabledSources(sources)
+            let expected = legacy.phrases(forHeadCharacter: "一")
+            #expect(rust.phrases(forHeadCharacter: "一") == expected)
+            #expect(rust.lastError == nil)
+        }
+        let names = try rust.collections()
+        #expect(names.map(\.source) == names.map(\.source).sorted())
+        #expect(names.first?.source == "McBopomofo")
+        #expect(names.first?.display == "小麥注音")
+        #expect(names.first?.sortOrder == 0)
+    }
+
+    @Test("read-only Rust connection rejects missing models without legacy fallback")
+    func missingModelFails() {
+        let missing = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".db")
+        #expect(throws: GuanyinmaInputError.self) {
+            _ = try GuanyinmaAssociatedPhraseStore(modelURL: missing, enabledSources: { ["McBopomofo"] })
+        }
+        #expect(!FileManager.default.fileExists(atPath: missing.path))
+    }
+}

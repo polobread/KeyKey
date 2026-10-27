@@ -83,6 +83,56 @@ struct GuanyinmaIntegrationTests {
         #expect(engine.backspace().deletesBackward)
     }
 
+    @Test func associatedQueryUsesModelWhileOverlayAndKeysStayInFrontend() throws {
+        let f = try Fixture()
+        let decoy = f.directory.appendingPathComponent("legacy-associated.db")
+        var handle: OpaquePointer?
+        #expect(sqlite3_open(decoy.path, &handle) == SQLITE_OK)
+        defer { sqlite3_close(handle) }
+        let schema = """
+            CREATE TABLE unigrams(qstring, current, probability, backoff);
+            CREATE TABLE bigrams(qstring, previous, current, probability);
+            CREATE TABLE "Mandarin-bpmf-cin"(key, value);
+            CREATE TABLE "Generic-cj-cin"(key, value);
+            CREATE TABLE "Generic-simplex-cin"(key, value);
+            CREATE TABLE associated_phrases(headchar, data, source);
+            INSERT INTO associated_phrases VALUES('你', '假的', 'McBopomofo');
+            INSERT INTO associated_phrases VALUES('', '空鍵不應出現', 'McBopomofo');
+            """
+        #expect(sqlite3_exec(handle, schema, nil, nil, nil) == SQLITE_OK)
+        let emptyHeadSource = try GuanyinmaAssociatedPhraseStore(modelURL: decoy, enabledSources: { ["McBopomofo"] })
+        #expect(emptyHeadSource.phrases(forHeadCharacter: "你") == ["假的"])
+        #expect(emptyHeadSource.phrases(forHeadCharacter: "").isEmpty)
+        #expect(emptyHeadSource.lastError == nil)
+        let legacy = AssociatedPhraseStore(database: try Database(url: decoy))
+        legacy.setEnabledSources(["McBopomofo"])
+        #expect(legacy.phrases(forHeadCharacter: "你") == ["假的"])
+        let source = try GuanyinmaAssociatedPhraseStore(modelURL: f.model, enabledSources: { legacy.enabledSources })
+        let expected = source.phrases(forHeadCharacter: "你")
+        #expect(!expected.isEmpty)
+        let engine = try GuanyinmaInputEngine(modelURL: f.model, userDatabaseURL: f.user,
+            method: .traditional, hardwareSmartEditing: true, associatedPhrases: legacy)
+        type("su3", in: engine, hardware: true)
+        #expect(engine.selectDisplayedCandidate(0).text == "你")
+        #expect(engine.lastError == nil)
+        #expect(engine.isShowingAssociatedPhrases)
+        #expect(engine.displayedCandidates == Array(expected.prefix(9)))
+        #expect(engine.selectDisplayedCandidate(0).text == expected[0])
+        #expect(!engine.isShowingAssociatedPhrases)
+        legacy.setEnabledSources([])
+        type("su3", in: engine, hardware: true)
+        #expect(engine.selectDisplayedCandidate(0).text == "你")
+        #expect(!engine.isShowingAssociatedPhrases)
+        engine.setAssociatedPhraseSource(legacy)
+        legacy.setEnabledSources(["McBopomofo"])
+        type("su3", in: engine, hardware: true)
+        #expect(engine.selectDisplayedCandidate(0).text == "你")
+        #expect(engine.displayedCandidates == Array(expected.prefix(9)))
+        engine.setAssociatedPhraseSource(nil)
+        #expect(!engine.isShowingAssociatedPhrases)
+        #expect(engine.displayedCandidates.isEmpty)
+    }
+
     @Test func fourMethodsUseOneNativeAdapter() throws {
         let f = try Fixture()
         for method in ChineseInputMethod.allCases {

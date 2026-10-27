@@ -1,16 +1,18 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
-// The native PV sandwich still owns associated phrases and output filters.
+// The native PV sandwich owns associated-phrase UI, keys and output filters.
 #include "GuanyinmaWindowsAdapter.h"
 #include "GuanyinmaJson.h"
 #include "FrontendSettings.h"
 #include "SharedFileAccess.h"
 #include "PlainVanilla.h"
+#include "OVAFAssociatedPhrase.h"
 #include <dwrite_2.h>
 #include <wrl.h>
 #include <algorithm>
 #include <map>
 #include <set>
 #include <memory>
+#include <utility>
 
 namespace KeyKey::WindowsTsf {
 namespace {
@@ -191,6 +193,47 @@ Json Configuration(const std::string& method, const Preferences& prefs, std::str
     }
     return config;
 }
+
+class AssociatedPhraseQuery final : public OVAFAssociatedPhraseQuery {
+public:
+    explicit AssociatedPhraseQuery(std::string path) : path_(std::move(path)) {}
+    ~AssociatedPhraseQuery() override { guanyinma_database_close(&database_); }
+    bool isActive(OVCandidateService*) const override { return true; }
+    bool lookup(const std::string& head, const std::vector<std::string>& collections,
+        std::vector<std::string>& candidates, std::string& error) override {
+        candidates.clear();
+        try {
+            Apartment apartment;
+            if (!database_ && guanyinma_database_open(
+                reinterpret_cast<const uint8_t*>(path_.data()), path_.size(), &database_) != GUANYINMA_OK)
+                throw std::runtime_error(LastError());
+            Json request;
+            Set(request, L"head", head);
+            Array names;
+            for (const auto& name : collections) names.Append(Value::CreateStringValue(winrt::to_hstring(name)));
+            request.SetNamedValue(L"collections", names);
+            const auto text = winrt::to_string(request.Stringify());
+            GuanyinmaResult* result = nullptr;
+            if (guanyinma_database_associated_phrases(database_,
+                reinterpret_cast<const uint8_t*>(text.data()), text.size(), &result) != GUANYINMA_OK)
+                throw std::runtime_error(LastError());
+            const auto value = ReadResult(result);
+            if (value.GetNamedNumber(L"schema_version") != 1 ||
+                String(value, L"kind") != "associated_phrases" || String(value, L"key") != head)
+                throw std::runtime_error("invalid associated phrase result");
+            std::vector<std::string> next;
+            for (const auto& row : value.GetNamedArray(L"rows")) next.push_back(winrt::to_string(row.GetString()));
+            candidates.swap(next);
+            return true;
+        } catch (const std::exception& exception) { error = exception.what(); }
+        catch (const winrt::hresult_error& exception) { error = winrt::to_string(exception.message()); }
+        catch (...) { error = "associated phrase query failed"; }
+        return false;
+    }
+private:
+    const std::string path_;
+    GuanyinmaDatabase* database_ = nullptr;
+};
 
 class Context final : public OVEventHandlingContext {
 public:
@@ -397,5 +440,13 @@ OVEventHandlingContext* CreateGuanyinmaWindowsContext(const std::string& method,
     const std::string& modelPath, OVLoaderService* service) {
     try { return new Context(method, modelPath, service); }
     catch (...) { if (service) service->beep(); return nullptr; }
+}
+
+OVEventHandlingContext* CreateGuanyinmaWindowsAssociatedPhraseContext(
+    OVModule* module, const std::string& modelPath) {
+    auto* associated = dynamic_cast<OVAFAssociatedPhrase*>(module);
+    if (!associated) return nullptr;
+    return new OVAFAssociatedPhraseContext(associated,
+        std::make_shared<AssociatedPhraseQuery>(modelPath));
 }
 } // namespace KeyKey::WindowsTsf

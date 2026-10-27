@@ -3,7 +3,7 @@
  * Copyright (c) 2026 Chui-Ping Cheng. MIT License.
  *
  * Native buffer/candidate integration follows the OpenVanilla module API.
- * The existing PV sandwich retains associated-phrase and output-filter handling.
+ * The existing PV sandwich retains associated-phrase UI, keys and output filters.
  */
 #include "GuanyinmaMacAdapter.h"
 
@@ -19,6 +19,7 @@ bool GuanyinmaSupportsInputMethod(const std::string& identifier)
 #if KEYKEY_ENABLE_GUANYINMA
 #import <Foundation/Foundation.h>
 #include <PlainVanilla/PVCandidate.h>
+#include "../../ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.h"
 #include "../../Guanyinma/include/guanyinma.h"
 #include <algorithm>
 #include <climits>
@@ -983,6 +984,67 @@ static OVEventHandlingContext* CreateContext(const std::string& identifier,
     return context;
 }
 
+// Resolve the actual active input context, rather than a saved preference:
+// an existing native context may still be finishing input after a core change.
+class GuanyinmaAssociatedPhraseQuery : public OVAFAssociatedPhraseQuery {
+public:
+    explicit GuanyinmaAssociatedPhraseQuery(const std::string& path)
+        : m_path(path), m_database(NULL) {}
+    virtual ~GuanyinmaAssociatedPhraseQuery() { guanyinma_database_close(&m_database); }
+    virtual bool isActive(OVCandidateService* service) const
+    {
+        for (size_t i = s_contexts.size(); i > 0; --i)
+            if (s_contexts[i - 1]->ownsActiveService(service)) return true;
+        return false;
+    }
+    virtual bool lookup(const std::string& head, const std::vector<std::string>& collections,
+        std::vector<std::string>& candidates, std::string& error)
+    {
+        candidates.clear();
+        @try {
+            if (!m_database && guanyinma_database_open(
+                reinterpret_cast<const uint8_t*>(m_path.data()), m_path.size(), &m_database) != GUANYINMA_OK)
+                return Reject(&error, LastError());
+            NSMutableArray* names = [NSMutableArray arrayWithCapacity:collections.size()];
+            for (size_t i = 0; i < collections.size(); ++i) {
+                NSString* name = NativeString(collections[i]);
+                if (!name) return Reject(&error, "invalid UTF-8 collection name");
+                [names addObject:name];
+            }
+            NSString* key = NativeString(head);
+            if (!key) return Reject(&error, "invalid UTF-8 associated phrase head");
+            NSDictionary* request = [NSDictionary dictionaryWithObjectsAndKeys:
+                key, @"head", names, @"collections", nil];
+            NSError* jsonError = nil;
+            NSData* bytes = [NSJSONSerialization dataWithJSONObject:request options:0 error:&jsonError];
+            if (!bytes) return Reject(&error, UTF8String([jsonError localizedDescription]));
+            GuanyinmaResult* result = NULL;
+            if (guanyinma_database_associated_phrases(m_database,
+                static_cast<const uint8_t*>([bytes bytes]), [bytes length], &result) != GUANYINMA_OK)
+                return Reject(&error, LastError());
+            NSDictionary* value = ReadResult(result, &error);
+            if (!value) return false;
+            id rows = [value objectForKey:@"rows"];
+            if (![[value objectForKey:@"schema_version"] isEqual:@1] ||
+                ![[value objectForKey:@"kind"] isEqual:@"associated_phrases"] ||
+                ![[value objectForKey:@"key"] isEqual:key] || ![rows isKindOfClass:[NSArray class]])
+                return Reject(&error, "invalid associated phrase result");
+            std::vector<std::string> next;
+            for (id row in rows) {
+                if (![row isKindOfClass:[NSString class]])
+                    return Reject(&error, "invalid associated phrase row");
+                next.push_back(UTF8String(row));
+            }
+            candidates.swap(next);
+            return true;
+        }
+        @catch (NSException* exception) { return Reject(&error, UTF8String([exception reason])); }
+    }
+private:
+    const std::string m_path;
+    GuanyinmaDatabase* m_database;
+};
+
 class GuanyinmaModule : public OVModule {
 public:
     GuanyinmaModule(OVModule* legacy, const std::string& modelPath, const std::string& userPath,
@@ -1103,6 +1165,12 @@ public:
     {
         if (!m_legacy) return NULL;
         OVModule* module = m_legacy->moduleAtIndex(index, service);
+        OVAFAssociatedPhrase* associated = dynamic_cast<OVAFAssociatedPhrase*>(module);
+        if (associated) {
+            associated->setQueryProvider(std::shared_ptr<OVAFAssociatedPhraseQuery>(
+                new GuanyinmaAssociatedPhraseQuery(m_modelPath)));
+            return module;
+        }
         if (!module || !GuanyinmaSupportsInputMethod(module->identifier())) return module;
         return new GuanyinmaModule(module, m_modelPath, m_userPath, m_selection);
     }

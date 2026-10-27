@@ -50,7 +50,8 @@ bool GuanyinmaSetEnglishModeForService(OpenVanilla::OVCandidateService* candidat
 // Decorates an already initialized package and assumes its ownership.
 // Disabled builds/runtime settings return the original package unchanged.
 // Supported modules keep their identifiers, names and the existing PV pipeline;
-// associated-phrase/other modules are returned directly from the legacy package.
+// Associated phrases keep the native FE and select query logic by active core.
+// Other modules are returned directly from the legacy package.
 OpenVanilla::OVModulePackage* GuanyinmaWrapModulePackage(
     OpenVanilla::OVModulePackage* initializedPackage,
     const std::string& modelPath,

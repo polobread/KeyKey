@@ -3,7 +3,6 @@
 #include "GuanyinmaJson.h"
 #include "FrontendSettings.h"
 #include "SharedFileAccess.h"
-#include "Mandarin.h"
 #include "OVUTF8Helper.h"
 #include <map>
 #include <filesystem>
@@ -11,32 +10,39 @@
 namespace KeyKey::WindowsTsf {
 using namespace Guanyinma;
 using namespace OpenVanilla;
-using Formosa::Mandarin::BPMF;
 namespace {
-std::string Encode(const std::wstring& reading) {
-    const auto utf8 = OVUTF8::FromUTF16(reading);
-    std::string result;
-    for (size_t pos = 0; pos <= utf8.size();) {
-        const auto end = utf8.find(',', pos);
-        auto part = utf8.substr(pos, end - pos);
-        const auto first = part.find_first_not_of(" \t\r\n");
-        const auto last = part.find_last_not_of(" \t\r\n");
-        if (first == std::string::npos) return {};
-        const auto syllable = BPMF::FromComposedString(part.substr(first, last - first + 1));
-        if (syllable.isEmpty()) return {};
-        result += syllable.absoluteOrderString();
-        if (end == std::string::npos) break;
-        pos = end + 1;
+std::string Codec(const char* operation, const wchar_t* inputName,
+    const std::string& input, Json const& options, const wchar_t* outputName) {
+    try {
+        Json request;
+        Set(request, L"operation", operation);
+        Set(request, inputName, input);
+        request.SetNamedValue(L"options", options);
+        const auto text = winrt::to_string(request.Stringify());
+        GuanyinmaResult* result = nullptr;
+        if (guanyinma_reading_codec(reinterpret_cast<const uint8_t*>(text.data()),
+            text.size(), &result) != GUANYINMA_OK) return {};
+        return String(ReadResult(result), outputName);
+    } catch (const winrt::hresult_error&) {
+        // Invalid text remains an empty codec result, as the editor expects.
+        return {};
     }
-    return result;
+}
+std::string Encode(const std::wstring& reading) {
+    Json options;
+    Set(options, L"separator", "comma");
+    Set(options, L"components", "replace_known");
+    Set(options, L"empty", "reject");
+    Set(options, L"require_phonetic", false);
+    return Codec("encode", L"reading", OVUTF8::FromUTF16(reading), options, L"qstring");
 }
 std::wstring Decode(const std::string& qstring) {
-    std::string text;
-    for (size_t i = 0; i + 1 < qstring.size(); i += 2) {
-        if (i) text += ',';
-        text += BPMF::FromAbsoluteOrderString(qstring.substr(i, 2)).composedString();
-    }
-    return OVUTF16::FromUTF8(text);
+    Json options;
+    Set(options, L"separator", "comma");
+    Set(options, L"query", "printable_modulo");
+    Set(options, L"odd_tail", "ignore");
+    Set(options, L"omit_leading_empty", false);
+    return OVUTF16::FromUTF8(Codec("decode", L"qstring", qstring, options, L"reading"));
 }
 bool SameFile(const std::wstring& first, const std::wstring& second) {
     if (_wcsicmp(SettingsLockPath(first).c_str(), SettingsLockPath(second).c_str()) == 0) return true;

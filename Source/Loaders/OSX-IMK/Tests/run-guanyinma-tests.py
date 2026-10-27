@@ -110,6 +110,7 @@ def main():
                 "-framework", "Foundation", "-framework", "Security", "-lsqlite3", "-liconv",
                 str(TESTS / "GuanyinmaMacAdapterTests.mm"),
                 str(LOADER / "GuanyinmaMacAdapter.mm"),
+                str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
                 str(LOADER / "GuanyinmaMacCoreSelection.mm"),
                 str(SOURCE / "Frameworks/PlainVanilla/Source/Cocoa/PVPropertyList.mm"),
                 str(SOURCE / "ModulePackages/OVOFHanConvert/OVOFHanConvert.cpp"),
@@ -146,6 +147,7 @@ def main():
                 str(prefix / "lib/libcrypto.dylib"),
                 str(LOADER / "GuanyinmaMacCoreSelection.mm"),
                 str(LOADER / "GuanyinmaMacAdapter.mm"),
+                str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
                 str(SOURCE / "Frameworks/PlainVanilla/Source/Cocoa/PVPropertyList.mm"),
                 str(library), "-o", str(executable),
             ])

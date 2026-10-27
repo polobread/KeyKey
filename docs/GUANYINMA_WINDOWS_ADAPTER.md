@@ -4,7 +4,7 @@ Windows 同一個 TSF frontend 可選 Manjusri 原核心或 Guanyinma Rust 核�
 
 ## 輸入與宿主權責
 
-`KeyKeyEngineSession` 保留既有 PV sandwich，Rust context 只透過正式 C ABI 處理四種輸入法；候選窗、關聯詞、繁簡輸出、Shift 單按、中英文及全半形切換仍由 Windows FE 處理。按鍵沿用固定美式虛擬鍵轉換，不在 adapter 重寫注音解析或排序。好打注音沿用 10～20 音節設定與十／十一音節桌面邊界。
+`KeyKeyEngineSession` 保留既有 PV sandwich，Rust context 只透過正式 C ABI 處理四種輸入法；候選窗、關聯詞互動、繁簡輸出、Shift 單按、中英文及全半形切換仍由 Windows FE 處理。Rust context 的關聯詞查詢、分類順序與去重經獨立唯讀 C ABI 執行；原核心的查詢仍保留。按鍵沿用固定美式虛擬鍵轉換，不在 adapter 重寫注音解析或排序。好打注音沿用 10～20 音節設定與十／十一音節桌面邊界。
 
 核心偏好與輸入法選擇分開。舊 context 有未完成讀音、組句或候選時繼續使用原核心；完成後，由下一個新輸入事件採用偏好，不重播事件。候選分頁／游標先由既有 PV panel 處理，回呼以文字、索引及跨度核對後轉成 Rust page-local 操作。選字與取消仍交給產生該候選的核心。
 
@@ -32,6 +32,8 @@ Rust 游標使用 Unicode scalar；adapter 轉成 PV 組字／未完成讀音，
 
 Rust 的「重設好打注音學習紀錄」只清 Smart 學習，保留自訂詞及表格學習。匯出為完整版本化 JSON，包含自訂詞及各種學習，不含 generation／revision；匯入先驗證再原子套用。既有 Windows SQLite 詞庫只在明確匯入時唯讀開啟，不自動遷移。匯出透過同目錄暫存檔原子替換，拒絕模型、現用／舊詞庫、sidecar 及其檔案身分別名，失敗保留原備份。
 
+Guanyinma 詞庫的讀音編解碼經無資料庫／session 的 `guanyinma_reading_codec` C ABI，Windows 不再複製 Formosa 的 codec。編碼使用逗號分隔、同類後項覆蓋前項、拒絕空項，並保留既有非注音成分忽略規則；解碼保留 printable modulo 與忽略奇數尾 byte 的相容行為。格式錯誤回傳失敗，不套用詞庫修改。
+
 ## 建置
 
 CMake 預設 `KEYKEY_ENABLE_GUANYINMA=ON`，需要 Python 3.11 以上與 `Source/Guanyinma/rust-toolchain.toml` 鎖定的 Rustup 工具鏈。x64 使用 `x86_64-pc-windows-msvc`，x86 使用 `i686-pc-windows-msvc`；建置兩者前需安裝相應 Rust target。原有 CMake presets 與產品版號來源維持不變。
@@ -52,5 +54,7 @@ ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=e
 ```
 
 這些是少量 FE 冒煙：四法建立／基本候選與送字、安全換核、UTF-16、獨立資料／封存、TSF 宿主拒絕後重試，以及真正 WPF 控制項／PInvoke 套用重開。使用隔離 profile，不註冊 TIP、不切換使用者系統輸入法，也不讀遷移 functional baseline。
+
+讀音 codec 的行為與 C ABI 由核心無 UI 測試驗證；Windows 接線目前完成原始碼檢查，尚未執行 Windows 原生建置或 consumer 測試，不能由 macOS host 的其他 adapter 測試推定通過。
 
 完整 Rust／C consumer／跨平台核心矩陣仍只由 `guanyinma-core.yml` 負責。Windows workflow 直接建置並連結核心，保留既有平台建置與發布結構。x64／x86 原生可執行檔通過不代表 Windows Search AppContainer、真實文字宿主、安裝升級或簽章／發布完成；這些層級仍須分別驗收。

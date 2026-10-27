@@ -67,6 +67,11 @@ jobs:
       - name: Execute native or iOS target Rust tests and C consumer
         if: matrix.platform != 'freebsd' && matrix.platform != 'android'
         run: '"$PYTHON" Source/Guanyinma/tools/ci/run-ci.py --platform "${{ matrix.platform }}" --sqlite-provider "${{ matrix.sqlite }}"'
+      - name: Maintain production Rust line coverage at 92 percent
+        if: matrix.platform == 'macos'
+        run: |
+          rustup component add llvm-tools-preview --toolchain "${{ steps.toolchain.outputs.version }}"
+          python3 Source/Guanyinma/tools/test-coverage.py --sqlite-provider system --offline --report-dir artifacts/guanyinma-core/macos/coverage
       - name: Execute inside native FreeBSD 15.1
         if: matrix.platform == 'freebsd'
         uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1.5.9

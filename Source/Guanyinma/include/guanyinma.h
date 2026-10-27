@@ -75,6 +75,30 @@ enum {
 
 uint32_t GUANYINMA_CALL guanyinma_abi_version(void);
 
+/* Stateless composed-reading codec: no model, user store or session required.
+ * Strict UTF-8 JSON request:
+ * {"operation":"encode","reading":"ㄋㄧˇ,ㄏㄠˇ","options":{...}}
+ * {"operation":"decode","qstring":"...","options":{...}}
+ * Encode options (defaults shown): separator="comma" (or "whitespace"),
+ * components="replace_known" (or "unique_known"), empty="skip" (or "reject"),
+ * require_phonetic=false. replace_known ignores unknown glyphs and lets the last
+ * component in each category win, preserving the original composed-text codec.
+ * unique_known rejects unknown/duplicate components. require_phonetic rejects
+ * tone-only syllables. Whitespace syntax uses ASCII whitespace delimiters.
+ * Decode options: separator="comma" (or "space"), query="printable_modulo"
+ * (or "canonical"), odd_tail="reject" (or "ignore"), omit_leading_empty=false.
+ * printable_modulo preserves legacy printable-byte wrapping for orders >=6160;
+ * canonical requires each pair in 48..126 and order<6160. Unsafe legacy negative
+ * orders are rejected. Defaults preserve the legacy comma-separated display.
+ * Invalid JSON/behavior/query/reading returns INVALID_ARGUMENT with NULL output.
+ * Result: {"schema_version":1,"kind":"reading_codec","qstring":"...",
+ *          "reading":"...","syllable_count":N}; row_count=N.
+ * Existing result_json/result_close functions manage the independent result.
+ * ABI version remains 1; this entry is additive.
+ */
+int32_t GUANYINMA_CALL guanyinma_reading_codec(
+    const uint8_t *request, size_t request_length, GuanyinmaResult **output);
+
 /* Existing KeyKey.db only: read-only open, schema validation, no DB creation. */
 int32_t GUANYINMA_CALL guanyinma_database_open(
     const uint8_t *path, size_t path_length, GuanyinmaDatabase **output);
@@ -97,6 +121,34 @@ int32_t GUANYINMA_CALL guanyinma_database_close(GuanyinmaDatabase **handle);
 int32_t GUANYINMA_CALL guanyinma_database_query(
     const GuanyinmaDatabase *database, uint32_t kind,
     const uint8_t *key, size_t key_length, GuanyinmaResult **output);
+
+/* Associated phrases over the same read-only model handle, independent of
+ * input sessions. FE owns commit eligibility, keys, paging and candidate UI.
+ * Phrase request: {"head":"你","collections":["McBopomofo","anime"],
+ *                  "omit_empty_suffixes":false}
+ * collections is required; [] disables lookup. Matching source rows are read
+ * in rowid order, the last row per source wins, then requested collection order
+ * is applied. Exact suffix duplicates keep their first occurrence. Default CSV
+ * semantics retain leading/interior empty suffixes and omit the final empty
+ * field; omit_empty_suffixes=true drops all empty fields. No trimming, Unicode
+ * normalization, frequency sorting, glyph filtering or result cap is applied.
+ * Head and collection names are bound data, with no prefix or scalar restriction.
+ * Collection request: {"order":"display"} (default) or {"order":"source"}.
+ * Metadata order is sortorder, then display/source using SQLite BINARY, then
+ * rowid. These behaviors describe ordering, not operating systems.
+ * Results use schema_version=1, kind="associated_phrases", key=head and rows
+ * of strings; or kind="associated_collections", key="", and rows containing
+ * source, display, sort_order. row_count counts the final rows.
+ * Associated tables are optional at model open; query errors are reported when
+ * a required table is absent. Existing result copy/close ownership applies.
+ */
+int32_t GUANYINMA_CALL guanyinma_database_associated_phrases(
+    const GuanyinmaDatabase *database, const uint8_t *request,
+    size_t request_length, GuanyinmaResult **output);
+
+int32_t GUANYINMA_CALL guanyinma_database_associated_collections(
+    const GuanyinmaDatabase *database, const uint8_t *request,
+    size_t request_length, GuanyinmaResult **output);
 
 /*
  * Additive input-session API. The database/query ABI above remains version 1.

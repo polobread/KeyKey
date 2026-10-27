@@ -63,14 +63,18 @@ keykey-smart-phrases import backup.json
 
 CLI 直接操作 Guanyinma，不提供核心選擇參數或舊 Linux C++ 資料相容命令。完整 JSON 備份保留自訂詞、Smart 與字表學習，排除 generation／revision；匯入先驗證整份再原子套用。匯出以私有暫存檔原子替換，不允許覆蓋模型、使用者 DB／sidecar 或別名。舊 Linux C++ 資料格式不在此工具的支援範圍；其他平台的匯入契約不受此 Linux 前端決定影響。
 
+CLI 與詞庫工具的 `phrase_reading.cpp` 只負責 JSON／C ABI 接合，讀音編解碼共用 `guanyinma_reading_codec`。編碼接受六種 ASCII 空白分隔、拒絕重複類別並要求實際注音；解碼要求 canonical qstring、拒絕奇數長度，沿用略去前置空音節與保留中間／尾端空音節的行為。格式錯誤回傳空結果，由既有工具拒絕無效操作。
+
 ## 聚焦驗證
 
 ```sh
-ctest --test-dir out/build/release -R 'guanyinma|fcitx5|user_phrases' --output-on-failure
+ctest --test-dir out/build/release -R 'guanyinma|reading_codec|fcitx5|user_phrases' --output-on-failure
 # 隔離 D-Bus／Xvfb、GTK3／GTK4／Qt6；不修改個人設定或 /usr
 bash ci/run-guanyinma-smoke.sh BUILD_DIR STAGE_DIR
 ```
 
 Linux 測試聚焦正式 C ABI、設定映射、動態選字鍵與分頁、字型、生命週期／效果、CLI 與圖形詞庫工具。完整 Rust／C consumer／跨平台核心矩陣由 `guanyinma-core.yml` 負責；不把遷移 functional baseline 加入日常 CTest 或 CI gate。
+
+`keykey_linux_reading_codec` 是無 DB、無 UI 的薄接合測試，隨既有 CMake／CTest 執行；不重跑完整核心矩陣。相同案例已在 macOS host 分別連結原 C++ 實作及 Rust C ABI 比較通過，僅代表 host 上的 wrapper 行為，Linux／FreeBSD 原生執行仍須各自驗證。
 
 原始碼、無視窗測試、staged addon、套件安裝、X11、GNOME Wayland／XWayland 與 FreeBSD 原生驗證各自記錄。任一層通過不能取代其餘層的宿主證據；正式發布與支援狀態仍以安裝指南與 Release 為準。

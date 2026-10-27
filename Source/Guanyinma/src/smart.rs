@@ -1443,4 +1443,276 @@ mod tests {
         assert_eq!(state.composition(), "妳好");
         assert_eq!(state.reading_cursor(), 0);
     }
+
+    #[test]
+    fn empty_editor_keys_remain_available_to_the_host() {
+        let db = database();
+        let options = SmartOptions::default();
+        for key in [
+            Key::Delete,
+            Key::Escape,
+            Key::Up,
+            Key::PageUp,
+            Key::PageDown,
+            Key::Tab,
+        ] {
+            let mut state = SmartState::new(BopomofoLayout::Standard);
+            let result = press(&mut state, &db, key, &options);
+            assert!(!result.handled, "{key:?}");
+            assert!(!result.beep && result.commit.is_empty(), "{key:?}");
+            assert!(state.is_empty());
+        }
+        let mut state = SmartState::new(BopomofoLayout::Standard);
+        let mut result = effects();
+        state.open_candidates(None, &options, &mut result).unwrap();
+        assert!(!result.handled && !result.beep && result.commit.is_empty());
+        assert!(state.candidates().is_empty());
+    }
+
+    #[test]
+    fn pending_reading_rejects_navigation_candidates_and_literals_without_losing_text() {
+        let db = database();
+        let options = SmartOptions::default();
+        let mut pending = SmartState::new(BopomofoLayout::Standard);
+        type_keys(&mut pending, &db, "su3su", &options);
+        assert_eq!(pending.visible_text(), "你ㄋㄧ");
+        for key in [
+            Key::Delete,
+            Key::Left,
+            Key::Right,
+            Key::Home,
+            Key::End,
+            Key::Up,
+            Key::PageUp,
+            Key::PageDown,
+            Key::Tab,
+        ] {
+            let mut state = pending.clone();
+            let result = press(&mut state, &db, key, &options);
+            assert!(result.handled && result.beep, "{key:?}");
+            assert!(result.commit.is_empty());
+            assert_eq!(state.visible_text(), pending.visible_text());
+            assert_eq!(state.reading_cursor(), pending.reading_cursor());
+        }
+        let mut state = pending.clone();
+        let mut result = effects();
+        state
+            .open_candidates(Some(0), &options, &mut result)
+            .unwrap();
+        assert!(result.beep && result.commit.is_empty());
+        assert!(state.candidates().is_empty());
+        assert_eq!(state.visible_text(), pending.visible_text());
+        let mut result = effects();
+        state.literal(&db, "x", &options, &mut result).unwrap();
+        assert!(result.beep && result.commit.is_empty());
+        assert_eq!(state.visible_text(), pending.visible_text());
+        let mut result = effects();
+        state
+            .character(&db, '@', Modifiers::default(), &options, &mut result)
+            .unwrap();
+        assert!(result.beep && result.commit.is_empty());
+        assert_eq!(state.visible_text(), pending.visible_text());
+    }
+
+    #[test]
+    fn forward_delete_and_backspace_preserve_the_opposite_side_of_the_cursor() {
+        let db = database();
+        let options = SmartOptions::default();
+        let mut state = SmartState::new(BopomofoLayout::Standard);
+        type_keys(&mut state, &db, "su3cl3", &options);
+        let result = press(&mut state, &db, Key::Delete, &options);
+        assert!(result.beep && result.commit.is_empty());
+        assert_eq!(state.composition(), "你好");
+        assert!(state.set_cursor(0));
+        assert!(press(&mut state, &db, Key::Backspace, &options).beep);
+        assert_eq!(state.composition(), "你好");
+        let result = press(&mut state, &db, Key::Delete, &options);
+        assert!(result.handled && !result.beep && result.commit.is_empty());
+        assert_eq!(state.composition(), "好");
+        assert_eq!(state.completed_readings().len(), 1);
+        assert_eq!(state.reading_cursor(), 0);
+        let result = press(&mut state, &db, Key::Delete, &options);
+        assert!(!result.beep && result.commit.is_empty());
+        assert!(state.is_empty());
+        assert_eq!(state.reading_cursor(), 0);
+    }
+
+    #[test]
+    fn smart_key_shortcuts_and_release_do_not_edit_or_commit() {
+        let db = database();
+        let options = SmartOptions::default();
+        for composing in [false, true] {
+            let mut base = SmartState::new(BopomofoLayout::Standard);
+            if composing {
+                type_keys(&mut base, &db, "su3", &options);
+            }
+            for modifiers in [
+                Modifiers {
+                    control: true,
+                    ..Modifiers::default()
+                },
+                Modifiers {
+                    alt: true,
+                    ..Modifiers::default()
+                },
+                Modifiers {
+                    command: true,
+                    ..Modifiers::default()
+                },
+            ] {
+                let mut state = base.clone();
+                let mut result = effects();
+                state
+                    .key(&db, Key::Delete, modifiers, &options, &mut result)
+                    .unwrap();
+                assert_eq!(result.handled, composing);
+                assert_eq!(result.beep, composing);
+                assert!(result.commit.is_empty());
+                assert_eq!(state.visible_text(), base.visible_text());
+            }
+            let release = Modifiers {
+                release: true,
+                ..Modifiers::default()
+            };
+            let mut result = effects();
+            let mut state = base.clone();
+            state
+                .key(&db, Key::Delete, release, &options, &mut result)
+                .unwrap();
+            assert!(!result.handled && !result.beep && result.commit.is_empty());
+            assert_eq!(state.visible_text(), base.visible_text());
+            let mut result = effects();
+            state
+                .character(&db, 's', release, &options, &mut result)
+                .unwrap();
+            assert!(!result.handled && !result.beep && result.commit.is_empty());
+            assert_eq!(state.visible_text(), base.visible_text());
+        }
+    }
+
+    #[test]
+    fn unavailable_control_symbols_preserve_input_and_pass_through_only_when_empty() {
+        let db = database();
+        let options = SmartOptions::default();
+        for keys in ["", "su3", "su"] {
+            let mut base = SmartState::new(BopomofoLayout::Standard);
+            type_keys(&mut base, &db, keys, &options);
+            for modifiers in [
+                Modifiers {
+                    control: true,
+                    ..Modifiers::default()
+                },
+                Modifiers {
+                    control: true,
+                    alt: true,
+                    ..Modifiers::default()
+                },
+                Modifiers {
+                    control: true,
+                    caps_lock: true,
+                    ..Modifiers::default()
+                },
+            ] {
+                let mut state = base.clone();
+                let mut result = effects();
+                state
+                    .character(&db, '2', modifiers, &options, &mut result)
+                    .unwrap();
+                assert_eq!(result.handled, !base.is_empty());
+                assert_eq!(result.beep, !base.is_empty());
+                assert!(result.commit.is_empty());
+                assert_eq!(state.visible_text(), base.visible_text());
+                assert_eq!(state.reading_cursor(), base.reading_cursor());
+                assert!(state.drain_user_changes().is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn nonphonetic_unicode_is_literal_for_every_layout_and_replaces_partial_reading() {
+        let db = database();
+        let options = SmartOptions::default();
+        for layout in [
+            BopomofoLayout::Standard,
+            BopomofoLayout::Hsu,
+            BopomofoLayout::ETen,
+            BopomofoLayout::ETen26,
+            BopomofoLayout::HanyuPinyin,
+        ] {
+            let mut state = SmartState::new(layout);
+            let mut result = effects();
+            state
+                .character(&db, '🐱', Modifiers::default(), &options, &mut result)
+                .unwrap();
+            assert_eq!(result.commit, "🐱", "{layout:?}");
+            assert!(!result.beep && state.is_empty(), "{layout:?}");
+        }
+        let mut state = SmartState::new(BopomofoLayout::Standard);
+        type_keys(&mut state, &db, "su3su", &options);
+        let mut result = effects();
+        state
+            .character(&db, '🐱', Modifiers::default(), &options, &mut result)
+            .unwrap();
+        assert!(!result.beep && result.commit.is_empty());
+        assert_eq!(state.composition(), "你🐱");
+        assert!(state.reading().is_empty());
+        assert_eq!(state.completed_readings().len(), 2);
+        assert_eq!(state.reading_cursor(), 2);
+    }
+
+    #[test]
+    fn hsu_q_opens_existing_completed_reading_candidates() {
+        let db = database();
+        let options = SmartOptions::default();
+        let mut state = SmartState::new(BopomofoLayout::Hsu);
+        type_keys(&mut state, &db, "jxl ", &options);
+        assert_eq!(state.composition(), "中");
+        let mut result = effects();
+        state
+            .character(&db, 'q', Modifiers::default(), &options, &mut result)
+            .unwrap();
+        assert!(result.handled && !result.beep && result.commit.is_empty());
+        assert_eq!(state.composition(), "中");
+        assert!(state.reading().is_empty());
+        assert!(state.candidates().len() > 1);
+        assert_eq!(state.candidates()[0].text, "中");
+    }
+
+    #[test]
+    fn return_to_end_applies_to_literal_insertion_after_a_middle_edit() {
+        let db = database();
+        let options = SmartOptions {
+            selection_returns_to_end: true,
+            ..SmartOptions::default()
+        };
+        let mut state = SmartState::new(BopomofoLayout::Standard);
+        type_keys(&mut state, &db, "su3cl3", &options);
+        assert!(state.set_cursor(0));
+        let mut result = effects();
+        state.literal(&db, "🐱", &options, &mut result).unwrap();
+        assert!(!result.beep && result.commit.is_empty());
+        assert_eq!(state.composition(), "你好🐱");
+        assert_eq!(state.reading_cursor(), 3);
+        assert_eq!(state.completed_readings().len(), 3);
+    }
+
+    #[test]
+    fn out_of_range_candidate_target_does_not_move_the_reading_cursor() {
+        let db = database();
+        let options = SmartOptions::default();
+        let mut state = SmartState::new(BopomofoLayout::Standard);
+        type_keys(&mut state, &db, "su3cl3", &options);
+        assert!(state.set_cursor(0));
+        for index in [2, usize::MAX] {
+            let mut result = effects();
+            assert!(matches!(
+                state.open_candidates(Some(index), &options, &mut result),
+                Err(EngineError::InvalidInput(_))
+            ));
+            assert_eq!(state.composition(), "你好");
+            assert_eq!(state.reading_cursor(), 0);
+            assert!(state.candidates().is_empty());
+            assert!(result.commit.is_empty());
+        }
+    }
 }

@@ -13,7 +13,7 @@
 
 #if KEYKEY_ENABLE_GUANYINMA
 #include "../../Guanyinma/include/guanyinma.h"
-#include "BPMFUserPhraseHelper.h"
+#include "GuanyinmaMacReadingCodec.h"
 #include <sqlite3.h>
 #include <algorithm>
 #include <cerrno>
@@ -412,11 +412,11 @@ static NSDictionary* ReadMJSR(NSData* bytes, NSError** error)
         NSArray* fields = Fields(line);
         if ([fields count] != 4) { Fail(error, @"Invalid MJSR custom-word row"); return nil; }
         std::string reading = UTF8([fields objectAtIndex:1]);
-        std::pair<std::string, size_t> query = Manjusri::BPMFUserPhraseHelper::QString(reading);
-        std::string current = UTF8([fields objectAtIndex:0]);
-        if (!query.second ||
-            Manjusri::BPMFUserPhraseHelper::BPMFString(query.first) != reading ||
-            query.second != OpenVanilla::OVUTF8Helper::SplitStringByCodePoint(current).size()) {
+        std::pair<std::string, size_t> query;
+        const NSUInteger textLength = [[fields objectAtIndex:0]
+            lengthOfBytesUsingEncoding:NSUTF32LittleEndianStringEncoding] / 4;
+        if (!GuanyinmaMacEncodeReading(reading, query.first, query.second) || !query.second ||
+            GuanyinmaMacDecodeReading(query.first) != reading || query.second != textLength) {
             Fail(error, @"Invalid MJSR custom-word reading"); return nil;
         }
         double probability, backoff;

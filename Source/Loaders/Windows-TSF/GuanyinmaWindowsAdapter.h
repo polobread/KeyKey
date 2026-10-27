@@ -1,9 +1,11 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
 #pragma once
 #include <string>
-namespace OpenVanilla { class OVEventHandlingContext; class OVLoaderService; }
+namespace OpenVanilla { class OVEventHandlingContext; class OVLoaderService; class OVModule; }
 namespace KeyKey::WindowsTsf {
 OpenVanilla::OVEventHandlingContext* CreateGuanyinmaWindowsContext(
     const std::string& method, const std::string& modelPath,
     OpenVanilla::OVLoaderService* service);
+OpenVanilla::OVEventHandlingContext* CreateGuanyinmaWindowsAssociatedPhraseContext(
+    OpenVanilla::OVModule* module, const std::string& modelPath);
 }

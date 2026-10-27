@@ -45,6 +45,7 @@ public final class GuanyinmaInputEngine: InputEngine {
     }
     private enum Overlay { case none, symbols, associated }
     private var session: OpaquePointer?
+    private let modelURL: URL
     private let glyphContext: GuanyinmaGlyphContext
     private let hardwareSmartEditing: Bool
     private var snapshot: Snapshot!
@@ -90,11 +91,12 @@ public final class GuanyinmaInputEngine: InputEngine {
                 tableOptions: TableInputOptions = TableInputOptions(method: .cangjie),
                 spaceSelectsCandidates: Bool = false, associatedPhrases: AssociatedPhraseSource? = nil,
                 candidateFilter: @escaping (String) -> Bool = { _ in true }) throws {
+        self.modelURL = modelURL
         self.hardwareSmartEditing = hardwareSmartEditing
         self.keyboardLayout = keyboardLayout
         self.options = tableOptions
         self.spaceSelectsCandidates = spaceSelectsCandidates
-        self.associatedSource = associatedPhrases
+        self.associatedSource = try Self.associatedPhraseSource(associatedPhrases, modelURL: modelURL)
         glyphContext = GuanyinmaGlyphContext(candidateFilter)
         try FileManager.default.createDirectory(at: userDatabaseURL.deletingLastPathComponent(),
                                                 withIntermediateDirectories: true)
@@ -139,6 +141,13 @@ public final class GuanyinmaInputEngine: InputEngine {
     }
 
     deinit { guanyinma_session_close(&session) }
+
+    private static func associatedPhraseSource(_ source: AssociatedPhraseSource?, modelURL: URL) throws -> AssociatedPhraseSource? {
+        guard let source = source as? AssociatedPhraseStore else { return source }
+        // The legacy object supplies only the live frontend selection. Queries,
+        // collection priority and deduplication are handled by the Rust store.
+        return try GuanyinmaAssociatedPhraseStore(modelURL: modelURL, enabledSources: { source.enabledSources })
+    }
 
     private static func layoutName(_ layout: BopomofoKeyboardLayout) -> String { layout == .hsu ? "hsu" : "standard" }
     private static func smartConfiguration(hardware: Bool, space: Bool) -> [String: Any] {
@@ -204,6 +213,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         guard result.text.count == 1, !hasComposition,
               let source = associatedSource else { return result }
         let values = source.phrases(forHeadCharacter: result.text).filter(glyphContext.accepts)
+        if let error = (source as? GuanyinmaAssociatedPhraseStore)?.lastError { lastError = error }
         if !values.isEmpty { overlay = .associated; overlayCandidates = values; overlayPage = 0; overlayHighlight = 0 }
         return result
     }
@@ -254,7 +264,11 @@ public final class GuanyinmaInputEngine: InputEngine {
     }
     public var highlightedIndex: Int { displayedCandidates.isEmpty ? -1 : overlay == .none ? (snapshot.highlight ?? 0) : overlayHighlight }
     public func setTableCandidateSource(_ source: TableCandidateSource) {}
-    public func setAssociatedPhraseSource(_ source: AssociatedPhraseSource?) { associatedSource = source; if overlay == .associated { clearOverlay() } }
+    public func setAssociatedPhraseSource(_ source: AssociatedPhraseSource?) {
+        do { associatedSource = try Self.associatedPhraseSource(source, modelURL: modelURL) }
+        catch { associatedSource = nil; lastError = error }
+        if overlay == .associated { clearOverlay() }
+    }
     @discardableResult public func setChineseInputMethod(_ method: ChineseInputMethod) -> BopomofoEngine.Result {
         guard method != chineseInputMethod else { return .update }
         clearOverlay()

@@ -2,12 +2,16 @@
 //!
 //! These APIs expose source rows in SQLite rowid order. They do not apply
 //! input-method scoring, candidate learning, prefix matching, or truncation.
+//! Associated phrase APIs separately preserve collection ordering and deduplication.
 
 use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::path::Path;
 
+use crate::associated::{
+    merge_associated_rows, AssociatedCollection, AssociatedRow, CollectionOrder,
+};
 use rusqlite::types::ValueRef;
 use rusqlite::{Connection, OpenFlags, OptionalExtension, Row, MAIN_DB};
 use serde::{Deserialize, Serialize};
@@ -136,6 +140,103 @@ impl ModelDatabase {
             .map_err(|error| DatabaseError::Open(error.to_string()))?;
         validate_schema(&connection)?;
         Ok(Self { connection })
+    }
+
+    /// Return associated suffixes in the selected collection order, keeping the
+    /// first occurrence of each suffix. The last database row of each source
+    /// replaces previous rows, preserving the original macOS merge contract.
+    /// No prefix eligibility, candidate window or keyboard policy is applied.
+    /// `omit_empty_suffixes` explicitly preserves consumers that previously
+    /// removed empty comma fields; false keeps the original macOS split policy.
+    pub fn associated_phrases(
+        &self,
+        head: &str,
+        collections: &[String],
+        omit_empty_suffixes: bool,
+    ) -> Result<Vec<String>, DatabaseError> {
+        if head.contains('\0') || collections.iter().any(|source| source.contains('\0')) {
+            return Err(DatabaseError::InvalidInput(
+                "associated phrase inputs must not contain NUL".into(),
+            ));
+        }
+        // Deselection is meaningful even for a minimal model with no optional
+        // associated-phrase tables. It must not become an implicit default.
+        if collections.is_empty() {
+            return Ok(Vec::new());
+        }
+        validate_table_schema(
+            &self.connection,
+            "associated_phrases",
+            "SELECT rowid, headchar, data, source FROM associated_phrases WHERE 0",
+        )?;
+        // Bind every source as data rather than quoting configuration into SQL.
+        // Query sources individually to avoid SQLite's variable-count limit.
+        let mut statement = self
+            .connection
+            .prepare(
+                "SELECT source, data FROM associated_phrases \
+             WHERE headchar = ?1 AND source = ?2 ORDER BY rowid",
+            )
+            .map_err(query_error)?;
+        let mut source_rows = Vec::new();
+        let mut queried = std::collections::HashSet::new();
+        for source in collections {
+            if !queried.insert(source) {
+                continue;
+            }
+            let mut rows = statement
+                .query([head, source.as_str()])
+                .map_err(query_error)?;
+            while let Some(row) = rows.next().map_err(query_error)? {
+                source_rows.push(AssociatedRow {
+                    source: read_text(row, 0, "associated source")?,
+                    data: read_text(row, 1, "associated data")?,
+                });
+            }
+        }
+        Ok(merge_associated_rows(
+            &source_rows,
+            collections,
+            omit_empty_suffixes,
+        ))
+    }
+
+    /// Return collection metadata in the requested stable sort order.
+    /// This optional table is validated only when the API is used.
+    pub fn associated_collections(
+        &self,
+        order: CollectionOrder,
+    ) -> Result<Vec<AssociatedCollection>, DatabaseError> {
+        validate_table_schema(
+            &self.connection,
+            "collection_names",
+            "SELECT rowid, source, display, sortorder FROM collection_names WHERE 0",
+        )?;
+        let sql = match order {
+            CollectionOrder::Display =>
+                "SELECT source, display, sortorder FROM collection_names ORDER BY sortorder, display, rowid",
+            CollectionOrder::Source =>
+                "SELECT source, display, sortorder FROM collection_names ORDER BY sortorder, source, rowid",
+        };
+        let mut statement = self.connection.prepare(sql).map_err(query_error)?;
+        let mut rows = statement.query([]).map_err(query_error)?;
+        let mut collections = Vec::new();
+        while let Some(row) = rows.next().map_err(query_error)? {
+            let sort_order = match row.get_ref(2).map_err(query_error)? {
+                ValueRef::Integer(value) => value,
+                _ => {
+                    return Err(DatabaseError::InvalidData(
+                        "associated sortorder must contain a SQLite integer".into(),
+                    ))
+                }
+            };
+            collections.push(AssociatedCollection {
+                source: read_text(row, 0, "associated source")?,
+                display: read_text(row, 1, "associated display")?,
+                sort_order,
+            });
+        }
+        Ok(collections)
     }
 
     /// Return exact-match table values in their original rowid order.
@@ -322,41 +423,50 @@ fn validate_schema(connection: &Connection) -> Result<(), DatabaseError> {
         ),
     ];
     for &(table, probe) in REQUIRED {
-        let kind: Option<String> = connection
-            .query_row(
-                "SELECT type FROM sqlite_master WHERE name = ?1",
-                [table],
-                |row| row.get(0),
-            )
-            .optional()
-            .map_err(|error| DatabaseError::Schema(error.to_string()))?;
-        if kind.as_deref() != Some("table") {
-            return Err(DatabaseError::Schema(format!(
-                "required table {table} is missing or is not a table"
-            )));
-        }
-        connection
-            .prepare(probe)
-            .map_err(|error| DatabaseError::Schema(format!("{table}: {error}")))?;
+        validate_table_schema(connection, table, probe)?;
+    }
+    Ok(())
+}
 
-        // Reject user-defined columns that hide SQLite's implicit source-row
-        // identity. WITHOUT ROWID tables already fail the SELECT probe above.
-        let mut statement = connection
-            .prepare("SELECT name FROM pragma_table_info(?1)")
-            .map_err(|error| DatabaseError::Schema(error.to_string()))?;
-        let names = statement
-            .query_map([table], |row| row.get::<_, String>(0))
-            .map_err(|error| DatabaseError::Schema(error.to_string()))?;
-        for name in names {
-            let name = name.map_err(|error| DatabaseError::Schema(error.to_string()))?;
-            if matches!(
-                name.to_ascii_lowercase().as_str(),
-                "rowid" | "_rowid_" | "oid"
-            ) {
-                return Err(DatabaseError::Schema(format!(
-                    "{table} must not shadow SQLite rowid"
-                )));
-            }
+fn validate_table_schema(
+    connection: &Connection,
+    table: &str,
+    probe: &str,
+) -> Result<(), DatabaseError> {
+    let kind: Option<String> = connection
+        .query_row(
+            "SELECT type FROM sqlite_master WHERE name = ?1",
+            [table],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|error| DatabaseError::Schema(error.to_string()))?;
+    if kind.as_deref() != Some("table") {
+        return Err(DatabaseError::Schema(format!(
+            "required table {table} is missing or is not a table"
+        )));
+    }
+    connection
+        .prepare(probe)
+        .map_err(|error| DatabaseError::Schema(format!("{table}: {error}")))?;
+
+    // Reject user-defined columns that hide SQLite's implicit source-row
+    // identity. WITHOUT ROWID tables already fail the SELECT probe above.
+    let mut statement = connection
+        .prepare("SELECT name FROM pragma_table_info(?1)")
+        .map_err(|error| DatabaseError::Schema(error.to_string()))?;
+    let names = statement
+        .query_map([table], |row| row.get::<_, String>(0))
+        .map_err(|error| DatabaseError::Schema(error.to_string()))?;
+    for name in names {
+        let name = name.map_err(|error| DatabaseError::Schema(error.to_string()))?;
+        if matches!(
+            name.to_ascii_lowercase().as_str(),
+            "rowid" | "_rowid_" | "oid"
+        ) {
+            return Err(DatabaseError::Schema(format!(
+                "{table} must not shadow SQLite rowid"
+            )));
         }
     }
     Ok(())
@@ -661,5 +771,294 @@ mod tests {
             model.bigrams("query $"),
             Err(DatabaseError::InvalidData(_))
         ));
+    }
+
+    #[test]
+    fn pattern_queries_keep_source_order_for_traditional_and_simplex_tables() {
+        let fixture = TempModel::new();
+        fixture.seed(
+            r#"
+            INSERT INTO "Mandarin-bpmf-cin" VALUES
+                ('ab', '乙'), ('aa', '甲'), ('ab', '乙'), ('z', '外');
+            INSERT INTO "Generic-simplex-cin" VALUES
+                ('ab', '明'), ('aa', '日'), ('az', '晶'), ('b', '月');
+        "#,
+        );
+        let database = ModelDatabase::open(&fixture.path).unwrap();
+        assert_eq!(
+            database
+                .lookup_table_pattern(Table::Traditional, "a?")
+                .unwrap(),
+            ["乙", "甲", "乙"]
+        );
+        assert_eq!(
+            database.lookup_table_pattern(Table::Simplex, "a?").unwrap(),
+            ["明", "日", "晶"]
+        );
+        assert!(database
+            .lookup_table_pattern(Table::Simplex, "a' OR 1=1 --")
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn prefix_api_only_returns_longer_lowercase_codes_within_the_five_root_limit() {
+        let fixture = TempModel::new();
+        fixture.seed(
+            r#"
+            INSERT INTO "Generic-cj-cin" VALUES
+                ('az', '末'), ('ab', '次'), ('acdef', '五'), ('aaaaaa', '過長'),
+                ('aZ', '大寫'), ('a*', '符號'), ('a', '完整');
+        "#,
+        );
+        let database = ModelDatabase::open(&fixture.path).unwrap();
+        assert_eq!(
+            database.cangjie_prefix_values("a").unwrap(),
+            ["末", "次", "五"]
+        );
+        let mut streamed = Vec::new();
+        database
+            .for_each_cangjie_prefix_value("a", |value| streamed.push(value))
+            .unwrap();
+        assert_eq!(streamed, database.cangjie_prefix_values("a").unwrap());
+        for invalid in ["", "abcde", "A", "a*", "竹"] {
+            assert!(database.cangjie_prefix_values(invalid).unwrap().is_empty());
+        }
+        assert!(matches!(
+            database.cangjie_prefix_values("a\0"),
+            Err(DatabaseError::InvalidInput(_))
+        ));
+    }
+
+    #[test]
+    fn empty_and_zero_probability_models_use_the_manjusri_user_word_floor() {
+        let fixture = TempModel::new();
+        let database = ModelDatabase::open(&fixture.path).unwrap();
+        assert_eq!(database.max_unigram_probability().unwrap(), -0.0000001);
+        fixture.seed("INSERT INTO unigrams VALUES ('a', '甲', -0.25, 0);");
+        assert_eq!(database.max_unigram_probability().unwrap(), -0.25);
+        fixture.seed("INSERT INTO unigrams VALUES ('!', '', 0, 0);");
+        assert_eq!(database.max_unigram_probability().unwrap(), -0.0000001);
+    }
+
+    #[test]
+    fn schema_loss_during_a_live_query_is_reported_without_returning_partial_rows() {
+        let fixture = TempModel::new();
+        let database = ModelDatabase::open(&fixture.path).unwrap();
+        fixture.seed("DROP TABLE \"Generic-simplex-cin\";");
+        let error = database.lookup_table(Table::Simplex, "ab").unwrap_err();
+        assert!(matches!(error, DatabaseError::Query(_)));
+        assert!(error.to_string().contains("model query failed: "));
+        assert!(error.to_string().contains("Generic-simplex-cin"));
+    }
+
+    fn selected(names: &[&str]) -> Vec<String> {
+        names.iter().map(|name| (*name).to_owned()).collect()
+    }
+
+    #[test]
+    fn associated_query_preserves_selected_order_and_last_source_row() {
+        let fixture = TempModel::new();
+        fixture.seed(
+            "CREATE TABLE associated_phrases (headchar, data, source); \
+             INSERT INTO associated_phrases VALUES \
+             ('一', '舊,共同', 'a'), ('一', '乙,共同,乙', 'b'), \
+             ('二', '別字', 'a'), ('一', '新,共同,甲,', 'a');",
+        );
+        let database = ModelDatabase::open(&fixture.path).unwrap();
+        assert_eq!(
+            database
+                .associated_phrases("一", &selected(&["b", "missing", "a", "b"]), false)
+                .unwrap(),
+            ["乙", "共同", "新", "甲"]
+        );
+        assert_eq!(
+            database
+                .associated_phrases("一", &selected(&["a", "b"]), false)
+                .unwrap(),
+            ["新", "共同", "甲", "乙"]
+        );
+        assert_eq!(
+            database
+                .associated_phrases("二", &selected(&["a"]), false)
+                .unwrap(),
+            ["別字"]
+        );
+        assert!(database
+            .associated_phrases("三", &selected(&["a"]), false)
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn associated_query_is_exact_bound_owned_and_has_no_candidate_limit() {
+        let fixture = TempModel::new();
+        fixture.seed("CREATE TABLE associated_phrases (headchar, data, source);");
+        let values = (0..70)
+            .map(|index| format!("候選{index}"))
+            .collect::<Vec<_>>();
+        let source = "quoted' OR 1=1 --";
+        let connection = Connection::open(&fixture.path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO associated_phrases VALUES (?1, ?2, ?3)",
+                ["任意多字𠮷", &values.join(","), source],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO associated_phrases VALUES ('', '空鍵', 'a')",
+                [],
+            )
+            .unwrap();
+        drop(connection);
+        let result = {
+            let database = ModelDatabase::open(&fixture.path).unwrap();
+            assert!(database
+                .associated_phrases("任意多字𠮷' OR 1=1 --", &selected(&[source]), false)
+                .unwrap()
+                .is_empty());
+            assert!(database
+                .associated_phrases("任意多字𠮷", &selected(&["a' OR 1=1 --"]), false)
+                .unwrap()
+                .is_empty());
+            assert_eq!(
+                database
+                    .associated_phrases("", &selected(&["a"]), false)
+                    .unwrap(),
+                ["空鍵"]
+            );
+            database
+                .associated_phrases("任意多字𠮷", &selected(&[source]), false)
+                .unwrap()
+        };
+        assert_eq!(result, values);
+    }
+
+    #[test]
+    fn associated_empty_field_policy_is_explicit_and_disabled_collections_stay_empty() {
+        let fixture = TempModel::new();
+        let database = ModelDatabase::open(&fixture.path).unwrap();
+        assert!(database
+            .associated_phrases("一", &[], false)
+            .unwrap()
+            .is_empty());
+        assert!(matches!(
+            database.associated_phrases("一", &selected(&["a"]), false),
+            Err(DatabaseError::Schema(_))
+        ));
+        assert!(matches!(
+            database.associated_collections(CollectionOrder::Display),
+            Err(DatabaseError::Schema(_))
+        ));
+        fixture.seed(
+            "CREATE TABLE associated_phrases (headchar, data, source); \
+                      INSERT INTO associated_phrases VALUES ('一', ',空,,白,', 'a');",
+        );
+        assert_eq!(
+            database
+                .associated_phrases("一", &selected(&["a"]), false)
+                .unwrap(),
+            ["", "空", "白"]
+        );
+        assert_eq!(
+            database
+                .associated_phrases("一", &selected(&["a"]), true)
+                .unwrap(),
+            ["空", "白"]
+        );
+        for (head, sources) in [("一\0", vec![]), ("一", selected(&["a\0"]))] {
+            assert!(matches!(
+                database.associated_phrases(head, &sources, false),
+                Err(DatabaseError::InvalidInput(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn collection_metadata_sort_ties_follow_the_requested_behavior() {
+        let fixture = TempModel::new();
+        fixture.seed(
+            "CREATE TABLE collection_names (source, display, sortorder); \
+             INSERT INTO collection_names VALUES ('z', 'A', 1), ('a', 'Z', 1), \
+             ('first', '先', 0), ('same', 'X', 2), ('same', 'A', 2);",
+        );
+        let database = ModelDatabase::open(&fixture.path).unwrap();
+        let display = database
+            .associated_collections(CollectionOrder::Display)
+            .unwrap();
+        assert_eq!(
+            display
+                .iter()
+                .map(|row| row.source.as_str())
+                .collect::<Vec<_>>(),
+            ["first", "z", "a", "same", "same"]
+        );
+        assert_eq!(display[0].display, "先");
+        assert_eq!(display[0].sort_order, 0);
+        assert_eq!(
+            (display[3].display.as_str(), display[4].display.as_str()),
+            ("A", "X")
+        );
+        let source = database
+            .associated_collections(CollectionOrder::Source)
+            .unwrap();
+        assert_eq!(
+            source
+                .iter()
+                .map(|row| row.source.as_str())
+                .collect::<Vec<_>>(),
+            ["first", "a", "z", "same", "same"]
+        );
+        assert_eq!(
+            (source[3].display.as_str(), source[4].display.as_str()),
+            ("X", "A")
+        );
+    }
+
+    #[test]
+    fn optional_associated_schema_rejects_views_missing_columns_and_shadowed_rowids() {
+        for schema in [
+            "CREATE TABLE backing (headchar, data, source); CREATE VIEW associated_phrases AS SELECT * FROM backing;",
+            "CREATE TABLE associated_phrases (headchar, unrelated, source);",
+            "CREATE TABLE associated_phrases (rowid, headchar, data, source);",
+            "CREATE TABLE associated_phrases (headchar PRIMARY KEY, data, source) WITHOUT ROWID;",
+        ] {
+            let fixture = TempModel::new();
+            fixture.seed(schema);
+            let database = ModelDatabase::open(&fixture.path).unwrap();
+            assert!(matches!(database.associated_phrases("一", &selected(&["a"]), false), Err(DatabaseError::Schema(_))));
+        }
+    }
+
+    #[test]
+    fn invalid_associated_rows_fail_instead_of_returning_partial_candidates() {
+        for value in ["NULL", "42", "X'E697A5'", "CAST(X'FF' AS TEXT)"] {
+            let fixture = TempModel::new();
+            fixture.seed(&format!(
+                "CREATE TABLE associated_phrases (headchar, data, source); \
+                 INSERT INTO associated_phrases VALUES ('一', '有效', 'a'), ('一', {value}, 'a');"
+            ));
+            let database = ModelDatabase::open(&fixture.path).unwrap();
+            assert!(matches!(
+                database.associated_phrases("一", &selected(&["a"]), false),
+                Err(DatabaseError::InvalidData(_))
+            ));
+        }
+        for values in [
+            "(NULL, '文字', 0)",
+            "('a', X'FF', 0)",
+            "('a', CAST(X'FF' AS TEXT), 0)",
+            "('a', '文字', 0.5)",
+            "('a', '文字', '0')",
+        ] {
+            let fixture = TempModel::new();
+            fixture.seed(&format!("CREATE TABLE collection_names (source, display, sortorder); INSERT INTO collection_names VALUES {values};"));
+            let database = ModelDatabase::open(&fixture.path).unwrap();
+            assert!(matches!(
+                database.associated_collections(CollectionOrder::Display),
+                Err(DatabaseError::InvalidData(_))
+            ));
+        }
     }
 }

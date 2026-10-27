@@ -232,11 +232,23 @@ std::string FindDatabase() {
 // shouldEnter replace its sandwich because another service changed the loader.
 class OrderedLoaderContext final : public PVLoaderContext {
 public:
-    OrderedLoaderContext(PVLoader* loader, OVEventHandlingContext* context, OVModule* associated)
+    OrderedLoaderContext(PVLoader* loader, OVEventHandlingContext* context, OVModule* associated,
+        bool guanyinma, const std::string& modelPath)
         : PVLoaderContext(loader) {
         m_sandwich = new PVContextSandwich;
         m_sandwich->inputMethods.push_back(context);
-        if (associated) m_sandwich->aroundFilters.push_back(associated->createContext());
+        if (associated) {
+            OVEventHandlingContext* phrases = nullptr;
+#if KEYKEY_ENABLE_GUANYINMA
+            if (guanyinma) phrases = CreateGuanyinmaWindowsAssociatedPhraseContext(associated, modelPath);
+#else
+            (void)guanyinma; (void)modelPath;
+#endif
+            // A Rust input context always uses its Rust query provider. Native
+            // input contexts retain the original associated-phrase query.
+            if (!guanyinma) phrases = associated->createContext();
+            if (phrases) m_sandwich->aroundFilters.push_back(phrases);
+        }
         m_sandwich->prepareShortcutContexts();
     }
     void invalidate() override {} // This sandwich lives until its service's barrier.
@@ -364,9 +376,10 @@ public:
 #if KEYKEY_ENABLE_GUANYINMA
         if (requested) context = CreateGuanyinmaWindowsContext(method, FindDatabase(), service_.get());
 #endif
-        if (actual) *actual = context != nullptr;
+        const bool usesGuanyinma = context != nullptr;
+        if (actual) *actual = usesGuanyinma;
         if (!context) context = found->second->createContext();
-        return context ? new OrderedLoaderContext(loader_.get(), context, associated_) : nullptr;
+        return context ? new OrderedLoaderContext(loader_.get(), context, associated_, usesGuanyinma, FindDatabase()) : nullptr;
     }
     void beginOrdered() { ++orderedInputs_; }
     void endOrdered() { if (orderedInputs_) --orderedInputs_; }

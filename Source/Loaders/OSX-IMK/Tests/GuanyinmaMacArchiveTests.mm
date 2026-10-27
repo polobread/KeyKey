@@ -190,6 +190,33 @@ static void testNativeLegacyImport(const fs::path& model, const fs::path& root) 
             "text-only import preserves all learning domains and epoch");
 }
 
+// The MJSR container keeps its canonical round-trip rule even though the
+// shared composed-reading codec also supports permissive editor input.
+static void testCodecBackedMJSRReadings(const fs::path& root) {
+    const auto path = root / "codec-reading.mjsr";
+    for (NSString* reading in @[@"ㄋㄧˇ", @"ˇ"]) {
+        NSString* text = @"𠮷"; // One Unicode scalar, two UTF-16 code units.
+        write(path, [[NSString stringWithFormat:@"MJSR version 1.0.0\n%@\t%@\t-1\t0\n", text, reading]
+            dataUsingEncoding:NSUTF8StringEncoding]);
+        NSError* error = nil;
+        NSDictionary* archive = GuanyinmaReadArchive(native(path), &error);
+        require(archive != nil && !error, "codec preserves valid and tone-only legacy MJSR readings");
+        NSArray* phrases = archive[@"phrases"];
+        require([phrases count] == 1 && [phrases[0][@"current"] isEqualToString:text],
+            "MJSR codec counts supplementary text as one scalar");
+        const auto expected = Manjusri::BPMFUserPhraseHelper::QString([reading UTF8String]);
+        require([phrases[0][@"qstring"] isEqualToString:[NSString stringWithUTF8String:expected.first.c_str()]],
+            "Rust codec uses the original MJSR query encoding");
+    }
+    for (NSString* reading in @[@"ㄅㄆ", @"ㄋx", @",ㄋ", @"ㄧㄋˇ"]) {
+        write(path, [[NSString stringWithFormat:@"MJSR version 1.0.0\n甲\t%@\t-1\t0\n", reading]
+            dataUsingEncoding:NSUTF8StringEncoding]);
+        NSError* error = nil;
+        require(!GuanyinmaReadArchive(native(path), &error) && error,
+            "permissive codec cannot bypass canonical MJSR reading validation");
+    }
+}
+
 static void testJSONRoundTrip(const fs::path& model, const fs::path& root) {
     const auto user = root / "roundtrip-source.db";
     GuanyinmaMacUserData source(model.u8string(), user.u8string());
@@ -456,6 +483,7 @@ int main(int argc, char** argv) {
             fs::path model(argv[1]), root(argv[2]);
             require(fs::is_directory(root), "isolated archive test root exists");
             testNativeLegacyImport(model, root);
+            testCodecBackedMJSRReadings(root);
             testJSONRoundTrip(model, root);
             testMalformedImports(model, root);
             testFailuresAndAliases(model, root);

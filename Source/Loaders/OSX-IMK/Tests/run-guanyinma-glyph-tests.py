@@ -69,6 +69,7 @@ def main():
             "-framework", "Cocoa", "-framework", "Security", "-lsqlite3", "-liconv",
             str(TESTS / "GuanyinmaMacGlyphTests.mm"),
             str(LOADER / "GuanyinmaMacAdapter.mm"),
+            str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
             str(LOADER / "GuanyinmaMacCoreSelection.mm"),
             str(LOADER / "CVEncodingService.mm"),
             str(SOURCE / "ModulePackages/OVIMGeneric/OVIMGeneric.cpp"),
