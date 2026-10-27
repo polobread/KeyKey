@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。macOS 正式版為 1.3.8，安裝包與 stable 更新公告皆已發布並同步 CDN；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7，iOS App Store 與 Android Google Play 皆已上架 1.3.7。FreeBSD 1.3.7 已在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，透過 ports／pkg 安裝，套件庫版本可能較晚上架。各平台目前原始碼版號為 `1.3.8`，其他平台的正式發布版號仍依前述狀態；FreeBSD 沿用 Linux-IME 的版本來源，共用好打注音模型維持 v1.3.1。README 只記錄正式 Release／商店版本與支援範圍，不列開發版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。macOS 正式版為 1.3.8，安裝包與 stable 更新公告皆已發布並同步 CDN；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7，iOS App Store 與 Android Google Play 皆已上架 1.3.7。FreeBSD 1.3.7 已在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，透過 ports／pkg 安裝，套件庫版本可能較晚上架。macOS 目前原始碼版號為 `1.3.9`，其他平台原始碼版號維持 `1.3.8`；正式發布版號仍依前述狀態；FreeBSD 沿用 Linux-IME 的版本來源，共用好打注音模型維持 v1.3.1。README 只記錄正式 Release／商店版本與支援範圍，不列開發版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 

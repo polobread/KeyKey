@@ -53,14 +53,14 @@ arm64 helper 前重複硬體檢查，涵蓋直接安裝 component package 的路
 
 乾淨的 macOS 15.6.1 VM 顯示，正式 1.3.1 包內六個 Mach-O 均為 arm64，
 但 Distribution 未宣告 arm64，安裝器仍要求 Rosetta。正式 1.3.8 沿用同一項缺漏。
-後續封裝於 `options` 宣告 `hostArchitectures="arm64,x86_64"`：arm64 讓 Apple Silicon
+1.3.9 封裝於 `options` 宣告 `hostArchitectures="arm64,x86_64"`：arm64 讓 Apple Silicon
 原生執行安裝評估與腳本；x86_64 讓 Intel 使用者能進入既有繁中／英文硬體阻擋提示。
 此屬安裝器的執行架構，payload 與 helper 仍只有 arm64，Intel 仍不得安裝。
-已發布套件不覆寫，修正需隨新版本發布；仍須在沒有 Rosetta 的乾淨 VM 驗收。
+已發布套件不覆寫；1.3.9 仍須在沒有 Rosetta 的乾淨 VM 驗收。
 
 ## 正常退出的確認
 
-本節描述後續封裝使用的修正；已發布的 1.3.8 安裝包維持原內容，需經新版本發布才會包含此確認。
+本節描述 1.3.9 封裝使用的修正；已發布的 1.3.8 安裝包維持原內容。
 
 `NSRunningApplication.terminated` 會隨 AppKit 主 run loop 非同步更新；獨立命令列 helper 可能在行程已退出後仍讀到 false。退出等待同時讀取核心的 `PROC_PIDTBSDINFO`，保存 PID 與啟動時間，只有核心確認行程已不存在、已結束等待回收，或該 PID 已屬於另一個啟動時間的行程，才視為原本的行程已退出。不同啟動時間只證明原行程已結束，不對新行程追加退出要求。
 
