@@ -2,7 +2,7 @@
 
 想在 Mac 上沿用熟悉的注音選字方式，可以試試琦琦輸入法。它提供**好打注音、傳統注音、倉頡與簡易**：好打注音適合連續輸入後再選字；習慣逐字選字的人，也能切換成傳統注音。
 
-這份指南以 **1.3.7** 示範，從下載、加入輸入法到第一次選字依序說明。安裝完成後，請從畫面右上角的輸入法選單使用琦琦；它不會像一般 App 一樣開啟主視窗。
+目前 macOS 正式版為 **[1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)**。這份指南依序說明下載、加入輸入法到第一次選字；操作截圖保留實拍的 1.3.7，步驟同樣適用於 1.3.8。安裝完成後，請從畫面右上角的輸入法選單使用琦琦；它不會像一般 App 一樣開啟主視窗。
 
 ## 安裝前，確認你的 Mac
 
@@ -12,7 +12,7 @@
 
 ## 1. 下載 macOS 安裝包
 
-打開[最新正式版下載頁](https://github.com/polobread/KeyKey/releases/latest)，往下捲到 **Assets**，選 macOS Apple Silicon 的 **`.pkg.zip`** 安裝包。下圖及本文檔名以 **1.3.7** 示範，例如 `chichi77-KeyKey-1.3.7-macos-arm64.pkg.zip`；實際下載版本以頁面當次發布為準。
+打開[macOS 1.3.8 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)，往下捲到 **Assets**，下載 **`chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip`** 與同名 `.sha256` 校驗檔。下圖為 1.3.7 發布頁，下載 1.3.8 時請核對檔名中的版本。
 
 ![GitHub Release的Assets，列出1.3.7 macOS安裝包及同名SHA-256校驗檔](docs/images/keykey-macos-v137-mac01-release-assets-apple-silicon.png)
 
@@ -26,7 +26,7 @@
 
 *macOS 使用第一列的 PKG ZIP；右側的 .sha256 用來核對下載內容。*
 
-也可以直接點選 [1.3.7 macOS 安裝包（AWS CDN）](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-macos-arm64.pkg.zip)，以及[同名 SHA-256 校驗檔](https://download.aws.polobread.com/keykey/releases/download/v1.3.7/chichi77-KeyKey-1.3.7-macos-arm64.pkg.zip.sha256)。校驗時，請確認 ZIP 的 SHA-256 與校驗檔內的值一致。
+也可以直接點選 [1.3.8 macOS 安裝包（AWS CDN）](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip)，以及[同名 SHA-256 校驗檔](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip.sha256)。[建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-build-info.json)記錄版本、來源提交與安裝包雜湊。校驗時，請確認 ZIP 的 SHA-256 與校驗檔內的值一致。
 
 ## 2. 執行安裝程式
 
@@ -172,7 +172,7 @@
 
 ![macOS更新頁顯示目前版本1.3.7，每週檢查已勾選，並有立刻檢查按鈕及未勾選的beta選項](docs/images/keykey-macos-v137-mac12-update-settings.png)
 
-*這台 Mac 已開啟每週通知、關閉 beta；目前版本為 1.3.7。「上次檢查時的最新版」顯示「－」，尚未呈現新版查詢結果。*
+*此截圖的 Mac 已安裝 1.3.7、開啟每週通知並關閉 beta。「上次檢查時的最新版」顯示「－」，尚未呈現新版查詢結果。*
 
 ### 收到新版通知後
 
@@ -213,7 +213,7 @@
 
 ![琦琦偏好設定的關於頁顯示版本1.3.7](docs/images/keykey-macos-v137-about-apple-silicon.png)
 
-*本指南使用的 Mac 已安裝 1.3.7，可在「關於」頁核對。*
+*此截圖顯示實拍時的 1.3.7；安裝目前正式版後，請在「關於」頁核對為 1.3.8。*
 
 需要進一步核對安裝位置、版本與簽章時，可使用下列指令；一般安裝不需要執行：
 

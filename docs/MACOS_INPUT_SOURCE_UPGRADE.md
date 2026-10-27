@@ -34,6 +34,8 @@ macOS 可能在覆蓋完成前再次啟動輸入法，因此覆蓋後另查固�
 
 ## 1.3.8 全新安裝與硬體檢查
 
+macOS 1.3.8 已正式發布，修正包含於 [1.3.8 安裝包](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)；首次安裝後仍須登出再登入，並由使用者加入輸入法。
+
 安裝程式在複製檔案前，以 `installation-check` 查詢 `hw.optional.arm64`，
 只允許 Apple Silicon；Intel 或無法取得硬體能力時，以繁中／英文提示所需晶片、
 不支援 Intel Mac，以及「關於這台 Mac」的確認入口。`preinstall` 在執行

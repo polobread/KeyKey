@@ -10,7 +10,7 @@
 
 ## 1. 下載最新正式版套件
 
-開啟 [琦琦輸入法最新正式版下載頁](https://github.com/polobread/KeyKey/releases/latest)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.7`。下方檔名、CDN 連結及安裝指令以 **1.3.7** 示範；下載其他正式版本時，請以頁面當次檔名為準，並調整指令中的目錄與檔名。五檔必須來自同一發布版本，才能一起校驗。
+Linux 目前正式版維持 **1.3.7**。開啟 [Linux 1.3.7 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.7`。本頁檔名、CDN 連結及安裝指令均對應 1.3.7；macOS 1.3.8 的發布頁只提供 macOS 檔案。五檔必須來自同一發布版本，才能一起校驗。
 
 ![GitHub v1.3.7 Assets 中的 Linux 三個 deb、面板原始碼與 SHA256SUMS](docs/images/keykey-linux-v137-lnx01a-release-assets.png)
 

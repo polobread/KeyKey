@@ -82,7 +82,7 @@
 
 ### 桌面下載入口與 AWS CDN
 
-正式版下載頁統一使用 [releases/latest](https://github.com/polobread/KeyKey/releases/latest)，不把使用者下載入口固定到 tag。指南中的版本化檔名、CDN 與指令是 1.3.7 範例；取得最新版時，以該頁當次發布的同版檔案及校驗值為準。tag 僅保留在截圖來源與可重現建置紀錄中。
+下載入口依各平台目前正式版本分開：macOS 使用 [1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)，Windows 與 Linux 使用 [1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)。GitHub 的 Latest 目前只含 macOS 1.3.8，Windows／Linux 指南須連到仍提供對應檔案的 1.3.7 發布頁。macOS 下載檔名與 CDN 已更新為 1.3.8；既有圖片及來源登記保留實拍的 1.3.7，不改寫圖片中的版號。
 
 Windows、macOS、Linux 的指南同時列出 GitHub Release 與**台灣 AWS CDN**下載路徑；選相同正式版本、架構及檔名，核對 SHA-256 後安裝。Linux 保留三個 .deb、面板原始碼與 SHA256SUMS 完整五檔的流程。下載頁截圖採未登入 GitHub 的視角。
 
