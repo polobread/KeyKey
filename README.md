@@ -1,12 +1,13 @@
 # 琦琦輸入法 / chichi77 KeyKey
 
 正式支援 **Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台**。
-目前正式版為 **1.3.7**，桌面版已於 [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
-發布，iOS App Store 與 Android Google Play 亦已上架。
+macOS 正式版為 **[1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)**；Windows、Linux／FreeBSD、iOS 與 Android
+正式版維持 **1.3.7**。Windows 與 Ubuntu 安裝包見 [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，
+iOS App Store 與 Android Google Play 皆已上架 1.3.7。
 macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
 套件庫版本可能較晚上架。Android 與 iOS 可分別從 [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) 與 [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939) 下載安裝。
 
-[下載目前最新的 GitHub Release](https://github.com/polobread/KeyKey/releases/latest)
+[下載 macOS 1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8) · [下載 Windows／Ubuntu 1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 
 ## 感謝媒體報導及推薦
 
@@ -79,8 +80,16 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub Release／CDN 設定與 ports／pkg
 流程見[桌面更新說明](update/README.md)。
 
-- [下載最新版本](https://github.com/polobread/KeyKey/releases/latest)：此連結會自動前往目前標為 Latest 的 GitHub Release。
-- [台灣 AWS CDN 下載點](https://github.com/polobread/KeyKey/releases/latest#台灣-aws-下載點)：提供 macOS、Windows、Ubuntu 安裝檔及校驗檔，與 GitHub Assets 內容相同，無須登入。
+各平台依下表下載目前正式版；台灣 AWS CDN 與對應 GitHub Assets 內容相同，無須登入。
+
+| 平台 | 正式版 | GitHub Release | 台灣 AWS 下載點 |
+| --- | --- | --- | --- |
+| macOS Apple Silicon | 1.3.8 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.8) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip.sha256) |
+| Windows x64／x86 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [安裝包與校驗檔](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
+| Ubuntu 24.04 amd64 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [DEB、面板與校驗檔](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
+
+macOS [建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-build-info.json)可核對版本、來源提交與安裝包 SHA-256。
+
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
 - [Windows 1.3.7 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
 - Ubuntu 24.04 使用者請看[Linux 1.3.7 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
@@ -183,9 +192,10 @@ McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yah
 
 ## English
 
-Version **1.3.7** is officially released for **Windows, macOS, iOS, Android,
-Linux, and FreeBSD**. It is available on the App Store and Google Play.
-Desktop installers are available from [GitHub Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7).
+The official macOS release is **[1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)**.
+**Windows, Linux, FreeBSD, iOS, and Android remain at 1.3.7**.
+Windows and Ubuntu installers are available from the [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7);
+iOS and Android 1.3.7 are available on the App Store and Google Play.
 FreeBSD uses ports/pkg; binary package repositories may receive the update later.
 Download and install the Android and iOS apps from [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) and the [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939), respectively.
 
@@ -197,7 +207,7 @@ McBopomofo readings and occurrence counts. Replaceable AI-generated bootstrap
 corpora with 11,180 sentences supply an initial bigram layer for engineering and A/B testing; the
 proprietary corpus from the historical Yahoo build is not included.
 
-[Download the latest GitHub Release](https://github.com/polobread/KeyKey/releases/latest).
+[Download macOS 1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8) · [Download Windows/Ubuntu 1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7).
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports Windows, macOS, iOS, Android, Linux (Ubuntu Desktop 24.04 LTS), and FreeBSD.
@@ -248,7 +258,14 @@ iOS.
 
 ### Downloads and releases
 
-- [Latest release](https://github.com/polobread/KeyKey/releases/latest) always opens the release currently marked Latest on GitHub.
+Download the current release for your platform. Taiwan AWS downloads contain the same bytes as GitHub Assets.
+
+| Platform | Release | GitHub Release | Taiwan AWS downloads |
+| --- | --- | --- | --- |
+| macOS Apple Silicon | 1.3.8 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.8) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip.sha256) |
+| Windows x64/x86 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [Installers and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
+| Ubuntu 24.04 amd64 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [DEBs, panel, and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
+
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
 - The [Windows 1.3.7 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the installer, typing modes, and settings; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).

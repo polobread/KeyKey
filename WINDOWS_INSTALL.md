@@ -14,13 +14,13 @@
 | **32 位元 x86 Windows** | 下載 x86 ZIP，完整解壓縮後執行 `Install.cmd`。 |
 | **ARM64 Windows** | 目前沒有本指南涵蓋的安裝包。 |
 
-打開 [最新正式版下載頁](https://github.com/polobread/KeyKey/releases/latest)，往下找到 **Assets**，選擇名稱包含自己架構的檔案。檔名多了 `.sha256` 的是校驗檔，請與安裝包一起下載。
+打開 [Windows 1.3.7 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，往下找到 **Assets**，選擇名稱包含自己架構的檔案。檔名多了 `.sha256` 的是校驗檔，請與安裝包一起下載。
 
 ![正式 1.3.7 的 Assets，列出 Windows x64 安裝程式、x64／x86 ZIP 與各自的 SHA-256 檔](docs/images/keykey-windows-v137-win01-release-assets-win11.png)
 
 *選擇 x64 Setup EXE，或符合架構的 ZIP；同名 `.sha256` 是校驗檔。此圖為未登入 GitHub 的發布頁。*
 
-下方檔名與 CDN 連結以 **1.3.7** 示範；要取得最新版，請依正式下載頁當次列出的安裝包及同版校驗檔下載。
+Windows 目前正式版維持 **1.3.7**。請依本頁列出的安裝包與同版校驗檔下載；macOS 1.3.8 的發布頁只提供 macOS 檔案。
 
 ### 也能使用台灣 AWS CDN
 

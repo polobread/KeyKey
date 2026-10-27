@@ -99,7 +99,9 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
 
 ### macOS 正式更新與啟用
 
-macOS 1.3.7 已發布。本次正式 appcast 提供 Apple Silicon 的 1.3.7 簽章更新項目，最低系統為 macOS 15。已包含相同正式 feed 與公鑰的 1.3.3 可在公告合併並同步 CDN 後找到更新；每週檢查保留使用者既有開關，也可按「立即檢查」。尚未包含更新設定的舊版仍需先手動安裝。
+macOS **1.3.8** 已正式發布，stable appcast 與 signed metadata 已合併並同步 CDN，提供 Apple Silicon 的 1.3.8 簽章更新項目，最低系統為 macOS 15。Windows x64／x86 與 Linux／FreeBSD 公告維持 **1.3.7**；iOS、Android 正式版也維持 1.3.7。已包含相同正式 feed 與公鑰的舊版可找到這次 macOS 更新；每週檢查保留使用者既有開關，也可按「立即檢查」。尚未包含更新設定的舊版仍需先手動安裝。
+
+正式安裝包、SHA-256 校驗檔與建置資訊見 [1.3.8 Release 的台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/tag/v1.3.8#台灣-aws-下載點)。該頁僅提供 macOS；Windows 與 Ubuntu 下載維持 [1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點)。
 
 正式 feed 為 `https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml`，GitHub 原始檔為 `https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/macos-arm64.xml`。客戶端目前不會在兩個來源間自動切換。
 
@@ -107,7 +109,7 @@ macOS 1.3.7 已發布。本次正式 appcast 提供 Apple Silicon 的 1.3.7 簽�
 
 必須在 `release` environment 設定 `UPDATE_ED25519_PRIVATE_KEY_PEM`，並在 repository 的 Actions 權限允許 workflow 建立 PR。穩定版不再需要 `MACOS_UPDATE_METADATA_ENABLED`；既有 beta 候選流程仍使用該開關。私鑰只寫入 runner 的暫存檔供 OpenSSL 使用，步驟結束即刪除，不輸出、不放入 artifact。workflow 另保存公開簽章候選 artifact，供檢視或開 PR 失敗時手動取回。
 
-**已發布版本的手動補救：** 在 Actions 選 `Prepare macOS Stable Update`，使用 `master`，填入 `release_tag=v1.3.7`。此入口沿用已發布原包及來源驗證；同版已在正式 feed 且雜湊相同時不重複建立更新，不允許降版或替換同版內容。若該版已有 PR 分支，會停止並要求先檢查既有 PR，不覆寫他人修改。
+**已發布版本的手動補救：** 在 Actions 選 `Prepare macOS Stable Update`，使用 `master`，填入 `release_tag=v1.3.8`。此入口沿用已發布原包及來源驗證；同版已在正式 feed 且雜湊相同時不重複建立更新，不允許降版或替換同版內容。若該版已有 PR 分支，會停止並要求先檢查既有 PR，不覆寫他人修改。
 
 feed PR 仍須由維護者 review／merge；合併後才由 `Sync Update Feeds to CDN` 部署公告。workflow 只準備穩定 macOS 更新，不發布 beta feed、不直接部署 CDN。若準備期間 `master` 已更新，會停止並要求重跑，以免覆蓋其他平台剛更新的 metadata。
 

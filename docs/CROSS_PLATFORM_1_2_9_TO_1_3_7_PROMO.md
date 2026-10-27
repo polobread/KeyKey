@@ -2,7 +2,9 @@
 
 本份將 1.2.9～1.3.7 的變化按平台一次彙整，供社群貼文、媒體介紹與圖片文案使用，不逐版發文。下方「總宣傳文案」「六平台文案」「短文與圖片文字」可依使用場景直接取用；末尾保留編輯核對依據。
 
-整理日期：2026-10-25。依據 `master` 修訂 `892c47468328d83986c0bae8538975ab04209eaa`、正式 Release、六平台安裝指南、設定支援表與相關程式碼。產品現況以正式版 **1.3.7** 為準。
+整理日期：2026-10-25。依據 `master` 修訂 `892c47468328d83986c0bae8538975ab04209eaa`、正式 Release、六平台安裝指南、設定支援表與相關程式碼。文案功能以當時正式版 **1.3.7** 為基準。
+
+目前 macOS 正式版為 **1.3.8**，其他平台維持 **1.3.7**；本文下載入口已依平台分開，功能與圖片仍保留原本的 1.3.7 基準。
 
 ## 總宣傳文案
 
@@ -26,7 +28,7 @@
 
 目前正式支援 **Windows／macOS／iOS／Android／Linux／FreeBSD**。iOS、Android 可直接從 App Store、Google Play 安裝，未付費也能完整使用輸入功能；Mac、Windows、Ubuntu 可從 GitHub Release 或台灣 AWS CDN 下載，FreeBSD 透過 ports／pkg 安裝。
 
-[下載最新正式版](https://github.com/polobread/KeyKey/releases/latest) · [App Store](https://apps.apple.com/tw/app/id6807832939) · [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)
+[依平台下載正式版](../README.md#下載與發行) · [App Store](https://apps.apple.com/tw/app/id6807832939) · [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)
 
 ## 六平台文案
 
@@ -41,7 +43,7 @@
 - 圖片主標：**熟悉的注音習慣，更完整的選字設定**
 - 圖片短句：**整句組字／自訂詞讀音輔助／200 個 Emoji**
 - 操作重點：中文模式忽略 Caps Lock 預設開啟；倉頡的即時候選與未打完選字須自行開啟。
-- 下載：[最新正式版與台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/latest)
+- 下載：[1.3.7 正式版與台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 - 教學：[Windows 安裝與使用指南](../WINDOWS_INSTALL.md)
 - 配圖：[句中「玩」候選](images/keykey-windows-v137-win07a-middle-candidate-win11.png)、[一般設定](images/keykey-windows-v137-win12a-general-win11.png)、[Emoji 插入結果](images/keykey-windows-v137-win11b-emoji-inserted-win11.png)。圖片環境為 Windows 11。
 
@@ -56,7 +58,7 @@
 - 圖片主標：**整句順著打，中英輕鬆切換**
 - 圖片短句：**好打注音／Shift 切換／倉頡提前選字／200 個 Emoji**
 - 操作重點：Shift 快捷鍵可關閉；桌面倉頡的兩個候選選項須自行開啟。
-- 下載：[最新正式版與台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/latest)
+- 下載：[1.3.8 正式版與台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)
 - 教學：[macOS 安裝與使用指南](../MACOS_INSTALL.md)
 - 配圖：[好打注音「玩」候選](images/keykey-macos-v137-mac07-middle-candidate-apple-silicon.png)、[英文模式提示](images/keykey-macos-v137-mac10b-english-mode.png)、[Emoji 插入結果](images/keykey-macos-v137-mac11b-emoji-inserted.png)。均為 Mac 實機素材。
 
@@ -101,7 +103,7 @@
 - 圖片主標：**在 Ubuntu，也能整句順著打**
 - 圖片短句：**Fcitx 5 整合／繁體中文設定／自訂詞學習／倉頡提前選字**
 - 操作重點：自訂詞管理目前透過命令列；其他發行版、ARM64、IBus 與桌面環境不由本份宣傳擴大支援。
-- 下載：[最新正式版與台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/latest)
+- 下載：[1.3.7 正式版與台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 - 教學：[Linux／Ubuntu 安裝與使用指南](../LINUX_INSTALL.md)
 - 配圖：[「玩」候選](images/keykey-linux-v137-lnx07a-middle-candidate-ubuntu2404-wayland.png)、[好打注音進階設定](images/keykey-linux-v137-lnx10-smart-options-ubuntu2404-wayland.png)。環境為 Ubuntu 24.04.5／GNOME 46／Wayland VM，文字編輯器採指南記錄的直接 Fcitx 路徑。
 
@@ -139,7 +141,7 @@
 
 ### 通用下載尾段
 
-- **Windows／macOS／Ubuntu：**[最新正式版](https://github.com/polobread/KeyKey/releases/latest)，頁面也提供[台灣 AWS CDN 下載點](https://github.com/polobread/KeyKey/releases/latest#台灣-aws-下載點)。
+- **Windows／macOS／Ubuntu：**依 [README 的平台下載表](../README.md#下載與發行)選擇 macOS 1.3.8 或 Windows／Ubuntu 1.3.7，各版本發布頁均提供台灣 AWS CDN 下載點。
 - **iPhone／iPad：**[台灣 App Store](https://apps.apple.com/tw/app/id6807832939)。
 - **Android：**[Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)。
 - **FreeBSD：**[官方 port 套件資訊](https://www.freshports.org/chinese/fcitx5-keykey/)，依指南使用 ports／pkg；套件庫版本可能較晚上架。
@@ -158,7 +160,7 @@
 | FreeBSD 1.3.7 | 以正式支援及該平台驗證範圍介紹；不套用 Linux 的測試結果，也不承諾所有 pkg 分支均已有 1.3.7。 |
 | 發布狀態 | 採最新 README、安裝指南、維護者已確認的商店狀態與 1.3.7 Release 的補充資訊。設定 Roadmap 的 2026-10-20 發布表已落後，不以其中的舊商店版號或「待發布」狀態覆蓋新紀錄。 |
 
-本份只整理正式 1.3.7 以前的產品變化。開發中的 **Guanyinma** 核心、1.3.8 工作、Roadmap 待規劃項目均不列為已發布賣點。
+本份只整理正式 1.3.7 以前的產品變化；macOS 1.3.8 的安裝修正另見 [CHANGELOG](../CHANGELOG.md)。開發中的 **Guanyinma** 核心、其他平台的 1.3.8 工作與 Roadmap 待規劃項目均不列為已發布賣點。
 
 ### 原始碼與文件對照
 
@@ -173,7 +175,7 @@
 | Linux 設定、整合與支援範圍 | [Linux 指南](../LINUX_INSTALL.md)、[CHANGELOG](../CHANGELOG.md) | [Fcitx 5 frontend](../Source/Loaders/Linux-IME/adapters/fcitx5/fcitx5_engine.cpp) |
 | FreeBSD 支援、安裝與實拍 | [FreeBSD 指南](../FREEBSD_INSTALL.md)、[1.3.7 Release 的 FreeBSD 建置與安裝補充](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [Linux／FreeBSD 共用 frontend](../Source/Loaders/Linux-IME)、[設定支援表](CROSS_PLATFORM_SETTINGS_ROADMAP.md) |
 
-歷史基準另見 [1.2.9 Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)。正式版下載入口保留 `releases/latest`；上表的版本 tag 只作歷史查證。
+歷史基準另見 [1.2.9 Release](https://github.com/polobread/KeyKey/releases/tag/v1.2.9)。正式版下載入口依 [README 的平台下載表](../README.md#下載與發行)維護；每個平台連到提供對應安裝包的 Release。
 
 ### 使用文案與圖片時保留的差異
 
