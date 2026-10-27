@@ -7,6 +7,7 @@
 #define TISSelectInputSource KKFakeSelect
 #define TISCopyCurrentKeyboardInputSource KKFakeCurrent
 #define TISRegisterInputSource KKFakeRegister
+#define proc_pidinfo KKFakeProcPidInfo
 #define main KKUnusedToolMain
 #import "../InputSourceTool.m"
 #undef main
@@ -18,6 +19,22 @@ static NSDictionary *currentSource;
 static int passed, sourceQueries, unexpectedCalls, enableCalls, selectCalls, currentCalls;
 static OSStatus registerStatus, enableStatus, selectStatus;
 static BOOL databaseReplaced, processUnreadable;
+static int processInfoError, processInfoBytes = sizeof(struct proc_bsdinfo);
+static BOOL terminationRequested, kernelExitAfterRequest, kernelReuseAfterRequest, kernelUnknownAfterRequest;
+int KKFakeProcPidInfo(int pid, int flavor, uint64_t arg, void *buffer, int size) {
+    (void)arg;
+    if (flavor != PROC_PIDTBSDINFO || size != sizeof(struct proc_bsdinfo)) { errno = EINVAL; return 0; }
+    if (processInfoError || (terminationRequested && kernelUnknownAfterRequest)) {
+        errno = processInfoError ?: EPERM; return 0;
+    }
+    if (terminationRequested && kernelExitAfterRequest) { errno = ESRCH; return 0; }
+    struct proc_bsdinfo info = {0};
+    info.pbi_pid = pid; info.pbi_uid = geteuid(); info.pbi_start_tvsec = 100;
+    info.pbi_start_tvusec = terminationRequested && kernelReuseAfterRequest ? 2 : 1;
+    memcpy(buffer, &info, sizeof(info));
+    return processInfoBytes;
+}
+
 static void Check(BOOL value, NSString *message) {
     if (!value) { NSLog(@"FAIL: %@", message); exit(1); } passed++;
 }
@@ -75,7 +92,7 @@ OSStatus KKFakeRegister(CFURLRef url) {
 - (BOOL)terminate;
 @end
 @implementation FakeApplication
-- (BOOL)terminate { self.terminateCalls++; if (self.exitsImmediately) self.terminated = YES; return self.acceptsTermination; }
+- (BOOL)terminate { terminationRequested = YES; self.terminateCalls++; if (self.exitsImmediately) self.terminated = YES; return self.acceptsTermination; }
 - (void)dealloc { [_executableURL release]; [super dealloc]; }
 @end
 
@@ -173,6 +190,32 @@ int main(void) {
         app.acceptsTermination = YES; app.exitsImmediately = YES;
         Check([system stopReplacedInputMethod] && app.terminateCalls == 6,
               @"process relaunched during replacement is normally retired after payload installation");
+        app = [[[FakeApplication alloc] init] autorelease];
+        app.processIdentifier = 12345;
+        processInfoError = EPERM;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"unreadable kernel identity blocks replacement without termination");
+        processInfoError = ESRCH;
+        Check(KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"already absent process succeeds despite stale AppKit state");
+        processInfoError = 0; processInfoBytes = 0;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"empty kernel response without ESRCH cannot confirm exit");
+        processInfoBytes = sizeof(struct proc_bsdinfo) - 1;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"partial kernel response cannot establish process identity");
+        processInfoBytes = sizeof(struct proc_bsdinfo);
+        terminationRequested = NO; kernelReuseAfterRequest = YES; app.acceptsTermination = YES;
+        Check(KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 1,
+              @"PID reuse confirms captured lifetime ended without terminating its replacement");
+        terminationRequested = NO; kernelReuseAfterRequest = NO; kernelExitAfterRequest = YES;
+        app.acceptsTermination = NO;
+        Check(KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 2,
+              @"exit racing with a rejected normal request is independently confirmed");
+        terminationRequested = NO; kernelExitAfterRequest = NO; kernelUnknownAfterRequest = YES;
+        app.acceptsTermination = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 3,
+              @"lost kernel visibility after request cannot fabricate an exit");
         NSLog(@"PASS: %d system-adapter checks (fake TIS and process termination)", passed);
     }
 }
