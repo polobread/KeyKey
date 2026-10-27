@@ -4,6 +4,21 @@
     <organization>io.github.polobread</organization>
     <domains enable_localSystem="true"/>
     <options customize="never" rootVolumeOnly="true" />
+    <!-- Use a scripted check so Intel users see the specific hardware requirement. -->
+    <installation-check script="checkHostArchitecture()" />
+    <script><![CDATA[
+        function checkHostArchitecture() {
+            try {
+                if (system.sysctl('hw.optional.arm64') == 1) return true;
+            } catch (error) {
+                // A missing capability is unsupported, never permission to run arm64 code.
+            }
+            my.result.type = 'Fatal';
+            my.result.title = system.localizedString('AppleSiliconRequiredTitle');
+            my.result.message = system.localizedString('AppleSiliconRequiredMessage');
+            return false;
+        }
+    ]]></script>
     <volume-check>
         <allowed-os-versions>
             <os-version min="15.0"/>

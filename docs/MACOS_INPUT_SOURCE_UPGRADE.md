@@ -30,20 +30,35 @@ macOS 可能在覆蓋完成前再次啟動輸入法，因此覆蓋後另查固�
 
 保留固定安裝路徑、簽章／公證，以及 `CVKeyboardHelper` 的借用物件與空清單修正。
 任何階段都不呼叫 disable，不讀寫私有 HIToolbox 偏好、不重建其他來源或其排序。
-1.3.7 尚未正式發布，以下流程仍須完成發布前的實機驗收。
+1.3.7 已正式發布；隔離測試與原始碼檢查仍不能代替下列各情境的實機驗收。
+
+## 1.3.8 全新安裝與硬體檢查
+
+安裝程式在複製檔案前，以 `installation-check` 查詢 `hw.optional.arm64`，
+只允許 Apple Silicon；Intel 或無法取得硬體能力時，以繁中／英文提示所需晶片、
+不支援 Intel Mac，以及「關於這台 Mac」的確認入口。`preinstall` 在執行
+arm64 helper 前重複硬體檢查，涵蓋直接安裝 component package 的路徑。
+查詢硬體能力而非目前行程架構，避免 Rosetta 將 Apple Silicon 誤判成 Intel。
+
+固定安裝位置 `/Library/Input Methods/chichi77 KeyKey.app` 完全不存在時，
+`preinstall` 只記錄目前 console UID 與 `fresh`，不啟動 helper、不讀取 TIS 狀態、
+不切換輸入來源或退出行程。既有路徑即使是不完整的 bundle、普通檔案或失效符號連結，
+仍走原本升級保護，不因驗證不到舊版 Info.plist 而略過。
+`postinstall` 接受同一帳號的 `fresh` 標記，執行註冊但不自動啟用；註冊失敗仍提供設定提示，
+不將已完成的檔案安裝改判失敗。標記缺少、無效或帳號已改變時，保留既有不猜測狀態的處理。
 
 ## 覆蓋前與覆蓋後的操作
 
-兩個 script 只在開機磁碟且有有效 console 使用者時，透過
+硬體檢查通過後，兩個 script 只在開機磁碟且有有效 console 使用者時，透過
 `launchctl asuser` 與該帳號憑證執行獨立 helper。
 
-### preinstall：舊 bundle 仍完整時
+### preinstall：既有安裝的覆蓋前保護
 
 1. 使用套件附帶、已簽章的 helper，避免依賴舊版不存在的指令。
    複製到唯一、root 擁有的暫存目錄供 GUI 帳號執行，退出時刪除；
    不要求 GUI 帳號能讀取 PackageKit 的私有 Scripts 上層目錄。
 2. 以精確 ID 的 inclusive 清單讀取原本的 enabled，並查目前來源。
-   首次安裝沒有 KeyKey 視為未啟用；清單或屬性不可讀時中止，不猜測原設定。
+   舊 bundle 存在但尚未註冊來源時視為未啟用；清單或屬性不可讀時中止，不猜測原設定。
 3. 若目前選取 KeyKey，將它視為原本已啟用，選取現有已啟用且可選的 ASCII
    鍵盤配置並再次確認目前 ID。沒有可用配置或切換失敗時中止。
    其他來源正在使用時不更換選取。
@@ -93,7 +108,9 @@ bash update/test-macos.sh
 python3 -m unittest discover -s update -p test_macos_release.py -v
 ```
 
-隔離驗證覆蓋覆蓋前保存狀態／暫切既有 ASCII／退出順序、不可讀狀態或退出失敗中止、
+隔離驗證覆蓋全新安裝不啟動升級前 helper、全新安裝標記與非致命註冊失敗、
+既有或不完整安裝維持升級保護、Intel／未知硬體拒絕與繁中／英文訊息、
+覆蓋前保存狀態／暫切既有 ASCII／退出順序、不可讀狀態或退出失敗中止、
 註冊 noErr 但來源缺少、enable 結果與新行程再次確認、不呼叫 disable、
 安裝後不改選取或退出使用目前詞庫的行程、持有舊詞庫的行程正常退出或失敗回報、
 真實暫存檔原子替換後的 descriptor 身分比較、行程身分／路徑檢查、無登入帳號／其他磁碟、
@@ -105,7 +122,8 @@ python3 -m unittest discover -s update -p test_macos_release.py -v
 
 | 情境 | 驗收內容 |
 | --- | --- |
-| 首次安裝 | 可從鍵盤設定加入，從選單選取，在 TextEdit 輸入「台北」並確認版本 |
+| 首次安裝 | 不執行升級前 helper；可從鍵盤設定加入，從選單選取，在 TextEdit 輸入「台北」並確認版本 |
+| Intel Mac | 複製 payload 前顯示 Apple Silicon 需求，不執行 arm64 helper；繁中／英文各自確認 |
 | 從正式版 1.3.1 升級，KeyKey 作用中 | 覆蓋前暫切 ASCII 且舊行程退出，來源仍可選；選回後啟動新版且可輸入 |
 | 升級時選用 ABC／其他來源 | 安裝器不主動更換使用中的來源；可自行切到新版 KeyKey |
 | 覆蓋期間系統重新啟動 KeyKey | postinstall 退出持有舊詞庫的行程；選回後可輸入中文且使用目前詞庫 |
