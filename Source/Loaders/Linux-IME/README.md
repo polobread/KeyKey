@@ -15,9 +15,16 @@ Wayland, or FreeBSD.
 
 ## Input and preferences
 
-Fcitx configuration groups expose general behavior, Smart Mandarin, Cangjie,
-Simplex, and associated-phrase settings. Bopomofo supports Standard, ETen,
-ETen26, Hsu, and Hanyu Pinyin layouts. 好打注音 is the initial Bopomofo mode.
+The About and update actions remain at the top of Fcitx preferences, followed
+by General, Phonetic, Cangjie, Simplex, User Phrases, and Collections. Options
+inside each group follow the corresponding Windows preferences where available;
+this display arrangement preserves the existing INI key paths. Bopomofo supports
+Standard, ETen, ETen26, Hsu, and Hanyu Pinyin layouts. 好打注音 is the initial
+Bopomofo mode.
+
+Input preferences use Fcitx's original scrolling page. About and Check for Updates
+share a separate GTK window with two tabs. Either entry selects its corresponding
+tab in the existing window; opening it does not require Fcitx's settings schema.
 
 The frontend preserves desktop Manjusri/OpenVanilla behavior through Guanyinma:
 sentence composition, cursor-based word selection, configurable candidate keys,
@@ -36,8 +43,8 @@ vertical/horizontal layout hint.
 
 The **自訂詞…** entry opens the GTK phrase editor, which supports add, edit,
 delete, model reading suggestions, learning reset, and Guanyinma JSON backup and
-import. The **關於琦琦輸入法 — 版本 …** and **更新通知與下載…** entries open the
-shared GTK About and update tools. See [update notifications](docs/update-notifications.md)
+import. The **關於琦琦輸入法 — 版本 …** and **檢查更新** entries open the
+shared About/Updates window. See [update notifications](docs/update-notifications.md)
 for the Linux/FreeBSD feed and ports integration.
 
 ## Configure and GNU Make source build

@@ -1,8 +1,12 @@
 # Linux and FreeBSD update notifications
 
-Open **更新通知與下載…** in the KeyKey Fcitx configuration, or launch
-`keykey-update-notify` from the applications menu/terminal. Opening this window
-does not check the network. **檢查新版** reads the reviewed shared notification RSS:
+Open **檢查更新** in the KeyKey Fcitx configuration, or launch
+`keykey-update-notify` from the applications menu/terminal. About and Check for
+Updates share one window with two tabs; either launcher selects its corresponding
+tab in the existing window. Input preferences remain in Fcitx's original scrolling
+page. Opening the information window does not read Fcitx's settings schema or
+check the network. Notification options save immediately. **檢查新版** reads the
+reviewed shared notification RSS:
 
 - Stable: `https://download.aws.polobread.com/keykey/update/stable/unix-fcitx5.xml`
 - Beta opt-in additionally reads: `https://download.aws.polobread.com/keykey/update/beta/unix-fcitx5.xml`
@@ -135,6 +139,7 @@ official links are available.
 python3 tests/test_update_notify.py
 python3 tests/test_update_notify_lifecycle.py
 dbus-run-session -- xvfb-run -a python3 tests/test_update_notify_gui.py
+dbus-run-session -- xvfb-run -a python3 tests/test_info_panels.py
 # After installing only in an isolated test container/session:
 dbus-run-session -- xvfb-run -a python3 tests/test_update_notify_install.py
 ctest --test-dir out/build/notify -R 'update_notification|mode_keys' --output-on-failure

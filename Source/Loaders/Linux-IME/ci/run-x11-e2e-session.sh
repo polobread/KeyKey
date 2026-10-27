@@ -257,7 +257,10 @@ case_selected() {
 runtime_root=$KEYKEY_E2E_RUNTIME_ROOT
 if [[ "$session_mode" == managed ]]; then
   # The managed runner chooses its own server below, never an existing display.
-  unset DISPLAY
+  unset DISPLAY WAYLAND_DISPLAY
+  export QT_QPA_PLATFORM=xcb
+  export GDK_BACKEND=x11
+  export XDG_SESSION_TYPE=x11
 else
   test -n "${DISPLAY:-}"
   test -n "${DBUS_SESSION_BUS_ADDRESS:-}"
@@ -1799,7 +1802,7 @@ if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
     "$ui_case_dir/config-after-restart.txt"
   run_case T07-X11-FCITX5-CONFIG-UI-PERSISTENCE \
     chichi77-keykey-bopomofo \
-    作物育種 'yji42!' 'ㄗ,ㄗㄨ,ㄗㄨㄛ,ㄗㄨㄛˋ' \
+    作物育種 'yji42!' 'ㄗ,ㄗㄨ,ㄗㄨㄛ,做' \
     y j i 4 2 shift+1
   set_associated_phrase_collections ''
   set_candidate_window_style Vertical

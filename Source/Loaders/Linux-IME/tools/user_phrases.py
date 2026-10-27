@@ -193,8 +193,8 @@ def create_window(backend=None, notify=reload_fcitx):
                 setattr(self, name, button)
             archive = Gtk.Box(spacing=8)
             box.pack_start(archive, False, False, 0)
-            for label, callback in (("匯出完整備份…", lambda: self.choose_file("export")),
-                                    ("匯入備份…", lambda: self.choose_file("import")),
+            for label, callback in (("匯入備份…", lambda: self.choose_file("import")),
+                                    ("匯出完整備份…", lambda: self.choose_file("export")),
                                     ("重設好打學習…", self.reset_learning)):
                 self.button(archive, label, callback)
             self.status = Gtk.Label(xalign=0, wrap=True, selectable=True)

@@ -244,6 +244,9 @@ if(BUILD_TESTING)
         add_test(NAME keykey_unix_update_notification_gui
             COMMAND dbus-run-session -- xvfb-run -a "${Python3_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_update_notify_gui.py")
+        add_test(NAME keykey_info_panels
+            COMMAND dbus-run-session -- xvfb-run -a "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_info_panels.py")
     endif()
 endif()
 

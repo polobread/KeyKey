@@ -3,4 +3,5 @@ import sys
 sys.path.insert(0, "@CMAKE_INSTALL_FULL_DATADIR@/chichi77-keykey")
 from about_gui import main
 
-main("@KEYKEY_UPDATE_VERSION@")
+main("@KEYKEY_UPDATE_VERSION@", "@CMAKE_SYSTEM_NAME@",
+     "@CMAKE_INSTALL_FULL_BINDIR@/keykey-update-notify", section="about")

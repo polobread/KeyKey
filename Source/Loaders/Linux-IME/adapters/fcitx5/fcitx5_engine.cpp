@@ -124,37 +124,37 @@ public:
     }
 };
 
-#define KEYKEY_ASSOCIATED_PHRASE_OPTIONS(X)                                   \
-    X(mcBopomofo, "McBopomofo", "小麥注音", true)                           \
-    X(agricultureFood, "agriculture-food", "農業食品", false)               \
-    X(aiDataScience, "ai-data-science", "AI 資料科學", false)               \
-    X(anime, "anime", "動漫", false)                                        \
-    X(biotechPharma, "biotech-pharma", "生技藥學", false)                   \
-    X(business, "business", "商業", false)                                  \
-    X(chinese, "chinese", "中文文學", false)                                \
-    X(civilEngineering, "civil-engineering", "建築土木", false)             \
-    X(education, "education", "教育", false)                                \
-    X(electronics, "electronics", "電子電機", false)                        \
-    X(energyEnvironment, "energy-environment", "環境能源", false)           \
-    X(finance, "finance", "財會金融", false)                                \
-    X(general, "general", "一般生活", false)                                \
-    X(government, "government", "公務員公文", false)                        \
-    X(history, "history", "歷史", false)                                    \
-    X(industrialEngineering, "industrial-engineering", "工業工程", false)   \
-    X(law, "law", "法律", false)                                            \
-    X(manufacturing, "manufacturing", "製造機械", false)                    \
-    X(materialsChemistry, "materials-chemistry", "材料化工", false)         \
-    X(mediaDesign, "media-design", "媒體設計", false)                       \
-    X(medicine, "medicine", "醫學", false)                                  \
-    X(networkSecurity, "network-security", "網路資安", false)               \
-    X(peopleContemporary, "people-contemporary", "人名－當代", false)       \
-    X(peopleHistory, "people-history", "人名－歷史", false)                 \
-    X(peopleOldnews, "people-oldnews", "人名－舊聞", false)                 \
-    X(psychologySociety, "psychology-society", "心理社會", false)           \
-    X(science, "science", "科學", false)                                    \
-    X(semiconductor, "semiconductor", "晶片半導體", false)                  \
-    X(software, "software", "軟體科學", false)                              \
-    X(transportLogistics, "transport-logistics", "交通物流", false)
+#define KEYKEY_ASSOCIATED_PHRASE_OPTIONS(X) \
+    X(mcBopomofo, "McBopomofo", "小麥注音", true) \
+    X(aiDataScience, "ai-data-science", "AI 資料科學", false) \
+    X(general, "general", "一般生活", false) \
+    X(chinese, "chinese", "中文文學", false) \
+    X(transportLogistics, "transport-logistics", "交通物流", false) \
+    X(peopleHistory, "people-history", "人名－歷史", false) \
+    X(peopleContemporary, "people-contemporary", "人名－當代", false) \
+    X(peopleOldnews, "people-oldnews", "人名－舊聞", false) \
+    X(government, "government", "公務員公文", false) \
+    X(anime, "anime", "動漫", false) \
+    X(business, "business", "商業", false) \
+    X(mediaDesign, "media-design", "媒體設計", false) \
+    X(industrialEngineering, "industrial-engineering", "工業工程", false) \
+    X(civilEngineering, "civil-engineering", "建築土木", false) \
+    X(psychologySociety, "psychology-society", "心理社會", false) \
+    X(education, "education", "教育", false) \
+    X(semiconductor, "semiconductor", "晶片半導體", false) \
+    X(materialsChemistry, "materials-chemistry", "材料化工", false) \
+    X(history, "history", "歷史", false) \
+    X(law, "law", "法律", false) \
+    X(energyEnvironment, "energy-environment", "環境能源", false) \
+    X(biotechPharma, "biotech-pharma", "生技藥學", false) \
+    X(science, "science", "科學", false) \
+    X(networkSecurity, "network-security", "網路資安", false) \
+    X(manufacturing, "manufacturing", "製造機械", false) \
+    X(finance, "finance", "財會金融", false) \
+    X(software, "software", "軟體科學", false) \
+    X(agricultureFood, "agriculture-food", "農業食品", false) \
+    X(medicine, "medicine", "醫學", false) \
+    X(electronics, "electronics", "電子電機", false)
 
 #define KEYKEY_DECLARE_ASSOCIATED_PHRASE_OPTION(member, source, label,        \
                                                  defaultValue)                 \
@@ -171,58 +171,158 @@ FCITX_CONFIGURATION(
     SmartMandarinConfig,
     fcitx::Option<bool> showCandidateListWithSpace{this, "ShowCandidateListWithSpace", "空白鍵開啟候選", false};
     fcitx::Option<bool> candidateCursorAtEndOfTargetBlock{this, "CandidateCursorAtEndOfTargetBlock", "選字目標在游標前方（取消為後方）", false};
-    fcitx::Option<bool> clearComposingTextWithEsc{this, "ClearComposingTextWithEsc", "Esc 清除整句（候選窗／未完成讀音優先取消）", false};
-    fcitx::Option<int, fcitx::IntConstrain> maxCompletedSyllables{this, "ComposingTextBufferSize", "組字長度（音節）", 10, fcitx::IntConstrain(10, 20)};
     fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> candidateSelectionKeys{this, "CandidateSelectionKeys", "選字鍵", "123456789"};
+    fcitx::Option<int, fcitx::IntConstrain> maxCompletedSyllables{this, "ComposingTextBufferSize", "組字長度（音節）", 10, fcitx::IntConstrain(10, 20)};
+    fcitx::Option<bool> clearComposingTextWithEsc{this, "ClearComposingTextWithEsc", "Esc 清除整句（候選窗／未完成讀音優先取消）", false};
     fcitx::Option<bool> selectionReturnsToEnd{this, "SelectionReturnsToEnd", "選字後游標回到句尾", false};
     fcitx::Option<bool> shiftAlwaysUppercase{this, "ShiftKeyAlwaysCommitUppercaseCharacters", "按住 Shift 輸入字母一律大寫", false};
     fcitx::Option<bool> useBigrams{this, "UseBigrams", "使用上下文組句", true};
     fcitx::Option<bool> learnCandidateOverrides{this, "LearnCandidateOverrides", "記憶選字偏好", true};
     fcitx::Option<bool> learnBigrams{this, "LearnBigrams", "學習相鄰詞", true};)
 
-#define KEYKEY_TABLE_OPTIONS(prefixOption, realtime, prefix, clear, query, maximum, first, one, many) \
-    fcitx::Option<bool> composeWhileTyping{this, "ComposeWhileTyping", "即時候選", realtime}; \
-    fcitx::prefixOption<bool> prefixCandidates{this, "PrefixCandidates", "未打完也能選字", prefix}; \
-    fcitx::Option<bool> clearOnError{this, "ClearOnError", "錯碼清除", clear}; \
-    fcitx::Option<bool> queryAtMaximum{this, "ShouldCommitAtMaximumRadicalLength", "滿碼時查詢候選", query}; \
-    fcitx::Option<bool> learnSelection{this, "UseDynamicFrequency", "動態詞頻（記憶選字）", false}; \
-    fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> candidateSelectionKeys{this, "CandidateSelectionKeys", "選字鍵", "123456789"}; \
-    fcitx::OptionWithAnnotation<std::string, PunctuationAnnotation> punctuation{this, "PunctuationStyle", "標點符號", "original"}; \
-    fcitx::Option<int, fcitx::IntConstrain> maximumRadicalLength{this, "MaximumRadicalLength", "最長字根數", maximum, fcitx::IntConstrain(1, maximum)}; \
-    fcitx::Option<bool> spaceAsFirstSelectionKey{this, "UseSpaceAsFirstCandidateSelectionKey", "以空白鍵作為第一個選字鍵", false}; \
-    fcitx::Option<bool> spaceCommitsFirstOnSinglePage{this, "SendFirstCandidateWithSpaceWithOnePageList", "只有一頁候選時以空白鍵送出首字", first}; \
-    fcitx::Option<std::string, WildcardConstrain> wildcardOne{this, "MatchOneChar", "單一字根通配字（空白為停用）", one}; \
-    fcitx::Option<std::string, WildcardConstrain> wildcardMany{this, "MatchZeroOrMoreChar", "多個字根通配字（空白為停用）", many};
-
-FCITX_CONFIGURATION(CangjieConfig,
-    fcitx::ExternalOption settings{this, "Settings", "開啟倉頡設定…", "keykey-cangjie-settings"};
-    KEYKEY_TABLE_OPTIONS(Option, false, false, true, false, 5, true, "?", "*"))
-FCITX_CONFIGURATION(SimplexConfig,
-    KEYKEY_TABLE_OPTIONS(HiddenOption, false, false, false, true, 2, false, "", ""))
-#undef KEYKEY_TABLE_OPTIONS
+FCITX_CONFIGURATION(
+    CangjieConfig,
+    fcitx::Option<bool> queryAtMaximum{this, "ShouldCommitAtMaximumRadicalLength", "滿碼時查詢候選", false};
+    fcitx::Option<bool> learnSelection{this, "UseDynamicFrequency", "動態詞頻（記憶選字）", false};
+    fcitx::Option<bool> composeWhileTyping{this, "ComposeWhileTyping", "即時候選", false};
+    fcitx::Option<bool> prefixCandidates{this, "PrefixCandidates", "未打完也能選字", false};
+    fcitx::Option<bool> clearOnError{this, "ClearOnError", "錯碼清除", true};
+    fcitx::OptionWithAnnotation<std::string, PunctuationAnnotation> punctuation{this, "PunctuationStyle", "標點符號", "original"};
+    fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> candidateSelectionKeys{this, "CandidateSelectionKeys", "選字鍵", "123456789"};
+    fcitx::Option<int, fcitx::IntConstrain> maximumRadicalLength{this, "MaximumRadicalLength", "最長字根數", 5, fcitx::IntConstrain(1, 5)};
+    fcitx::Option<bool> spaceAsFirstSelectionKey{this, "UseSpaceAsFirstCandidateSelectionKey", "以空白鍵作為第一個選字鍵", false};
+    fcitx::Option<bool> spaceCommitsFirstOnSinglePage{this, "SendFirstCandidateWithSpaceWithOnePageList", "只有一頁候選時以空白鍵送出首字", true};
+    fcitx::Option<std::string, WildcardConstrain> wildcardOne{this, "MatchOneChar", "單一字根通配字（空白為停用）", "?"};
+    fcitx::Option<std::string, WildcardConstrain> wildcardMany{this, "MatchZeroOrMoreChar", "多個字根通配字（空白為停用）", "*"};
+    fcitx::ExternalOption settings{this, "Settings", "開啟倉頡設定…", "keykey-cangjie-settings"};)
 
 FCITX_CONFIGURATION(
-    KeyKeyConfig,
-    fcitx::ExternalOption userPhrases{this, "UserPhrases", "管理自訂詞與學習資料…", "keykey-user-phrases"};
-    fcitx::ExternalOption about{this, "About", "關於琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING "…", "keykey-about"};
-    fcitx::ExternalOption updates{this, "UpdateNotification", "更新通知與下載…", "keykey-update-notify"};
-    fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation> bopomofoLayout{this, "BopomofoLayout", "注音鍵盤配置", "Standard"};
-    fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation> bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"};
-    fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> traditionalSelectionKeys{this, "TraditionalSelectionKeys", "傳統注音選字鍵", "123456789"};
-    fcitx::Option<CangjieConfig> cangjie{this, "Cangjie", "倉頡設定"};
-    fcitx::Option<SimplexConfig> simplex{this, "Simplex", "簡易設定"};
-    fcitx::Option<SmartMandarinConfig> smartMandarin{this, "SmartMandarin", "好打注音進階設定"};
-    fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation> candidateWindowStyle{this, "CandidateWindowStyle", "候選字窗方向", "Vertical"};
+    SimplexConfig,
+    fcitx::Option<bool> composeWhileTyping{this, "ComposeWhileTyping", "即時候選", false};
+    fcitx::Option<bool> clearOnError{this, "ClearOnError", "錯碼清除", false};
+    fcitx::Option<bool> queryAtMaximum{this, "ShouldCommitAtMaximumRadicalLength", "滿碼時查詢候選", true};
+    fcitx::Option<bool> learnSelection{this, "UseDynamicFrequency", "動態詞頻（記憶選字）", false};
+    fcitx::OptionWithAnnotation<std::string, PunctuationAnnotation> punctuation{this, "PunctuationStyle", "標點符號", "original"};
+    fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> candidateSelectionKeys{this, "CandidateSelectionKeys", "選字鍵", "123456789"};
+    fcitx::Option<int, fcitx::IntConstrain> maximumRadicalLength{this, "MaximumRadicalLength", "最長字根數", 2, fcitx::IntConstrain(1, 2)};
+    fcitx::Option<bool> spaceAsFirstSelectionKey{this, "UseSpaceAsFirstCandidateSelectionKey", "以空白鍵作為第一個選字鍵", false};
+    fcitx::Option<bool> spaceCommitsFirstOnSinglePage{this, "SendFirstCandidateWithSpaceWithOnePageList", "只有一頁候選時以空白鍵送出首字", false};
+    fcitx::Option<std::string, WildcardConstrain> wildcardOne{this, "MatchOneChar", "單一字根通配字（空白為停用）", ""};
+    fcitx::Option<std::string, WildcardConstrain> wildcardMany{this, "MatchZeroOrMoreChar", "多個字根通配字（空白為停用）", ""};
+    fcitx::HiddenOption<bool> prefixCandidates{this, "PrefixCandidates", "未打完也能選字", false};)
+
+#define KEYKEY_ABOUT_OPTIONS \
+    fcitx::ExternalOption about{this, "About", "關於琦琦輸入法 — 版本 " KEYKEY_VERSION_STRING, "keykey-about"}; \
+    fcitx::ExternalOption updates{this, "UpdateNotification", "檢查更新", "keykey-update-notify"};
+
+#define KEYKEY_GENERAL_OPTIONS \
+    fcitx::Option<bool> defaultChineseMode{this, "DefaultChineseMode", "啟動時使用中文模式", true}; \
+    fcitx::Option<bool> ignoreCapsLockInChinese{this, "IgnoreCapsLockInChinese", "中文模式忽略 Caps Lock", false}; \
+    fcitx::Option<bool> literalKeypad{this, "LiteralKeypad", "數字鍵盤直接輸入數字符號", true}; \
+    fcitx::OptionWithAnnotation<std::string, CandidateWindowStyleAnnotation> candidateWindowStyle{this, "CandidateWindowStyle", "候選字窗方向", "Vertical"}; \
+    fcitx::Option<bool> toggleWithControlBackslash{this, "ToggleInputMethodWithControlBackslash", "使用 Ctrl+\\ 切換中英文", true}; \
+    fcitx::Option<bool> toggleWithShift{this, "ToggleInputModeWithShift", "單按 Shift 切換中英文", true}; \
+    fcitx::Option<bool> playSoundOnTypingError{this, "PlaySoundOnTypingError", "輸入錯誤時播放提示音", true}; \
     fcitx::Option<bool> traditionalToSimplified{this, "TraditionalToSimplified", "繁體轉簡體輸出", false};
-    fcitx::Option<bool> useAllUnicodeCharacters{this, "UseAllUnicodeCharacters", "顯示 Big5 以外的候選字", true};
-    fcitx::Option<bool> playSoundOnTypingError{this, "PlaySoundOnTypingError", "輸入錯誤時播放提示音", true};
-    fcitx::Option<bool> toggleWithControlBackslash{this, "ToggleInputMethodWithControlBackslash", "使用 Ctrl+\\ 切換中英文", true};
-    fcitx::Option<bool> toggleWithShift{this, "ToggleInputModeWithShift", "單按 Shift 切換中英文", true};
-    fcitx::Option<bool> defaultChineseMode{this, "DefaultChineseMode", "啟動時使用中文模式", true};
-    fcitx::Option<bool> ignoreCapsLockInChinese{this, "IgnoreCapsLockInChinese", "中文模式忽略 Caps Lock", false};
-    fcitx::Option<bool> literalKeypad{this, "LiteralKeypad", "數字鍵盤直接輸入數字符號", true};
-    fcitx::Option<bool> useUserPhrases{this, "UseUserPhrases", "使用自訂詞庫", true};
-    fcitx::Option<AssociatedPhraseConfig> associatedPhrases{this, "AssociatedPhrases", "關聯詞庫"};)
+
+#define KEYKEY_PHONETIC_OPTIONS \
+    fcitx::OptionWithAnnotation<std::string, BopomofoModeAnnotation> bopomofoMode{this, "BopomofoMode", "注音模式", "Smart"}; \
+    fcitx::OptionWithAnnotation<std::string, BopomofoLayoutAnnotation> bopomofoLayout{this, "BopomofoLayout", "注音鍵盤配置", "Standard"}; \
+    fcitx::Option<bool> useAllUnicodeCharacters{this, "UseAllUnicodeCharacters", "顯示 Big5 以外的候選字", true}; \
+    fcitx::Option<std::string, SelectionKeysConstrain, fcitx::DefaultMarshaller<std::string>, SelectionKeysAnnotation> traditionalSelectionKeys{this, "TraditionalSelectionKeys", "傳統注音選字鍵", "123456789"}; \
+    fcitx::Option<SmartMandarinConfig> smartMandarin{this, "SmartMandarin", "好打注音進階設定"};
+
+#define KEYKEY_USER_PHRASE_OPTIONS \
+    fcitx::Option<bool> useUserPhrases{this, "UseUserPhrases", "使用自訂詞庫", true}; \
+    fcitx::ExternalOption userPhrases{this, "UserPhrases", "管理自訂詞與學習資料…", "keykey-user-phrases"};
+
+FCITX_CONFIGURATION(
+    GeneralConfig,
+    KEYKEY_GENERAL_OPTIONS)
+
+FCITX_CONFIGURATION(
+    PhoneticConfig,
+    KEYKEY_PHONETIC_OPTIONS)
+
+FCITX_CONFIGURATION(
+    UserPhrasesConfig,
+    KEYKEY_USER_PHRASE_OPTIONS)
+
+// Keep the on-disk paths stable while the native settings window uses groups.
+FCITX_CONFIGURATION(
+    KeyKeyConfig,
+    KEYKEY_ABOUT_OPTIONS
+    KEYKEY_GENERAL_OPTIONS
+    KEYKEY_PHONETIC_OPTIONS
+    fcitx::Option<CangjieConfig> cangjie{this, "Cangjie", "倉頡"};
+    fcitx::Option<SimplexConfig> simplex{this, "Simplex", "簡易"};
+    KEYKEY_USER_PHRASE_OPTIONS
+    fcitx::Option<AssociatedPhraseConfig> associatedPhrases{this, "AssociatedPhrases", "詞庫"};)
+
+FCITX_CONFIGURATION(
+    SettingsConfig,
+    KEYKEY_ABOUT_OPTIONS
+    fcitx::Option<GeneralConfig> general{this, "General", "一般"};
+    fcitx::Option<PhoneticConfig> phonetic{this, "Phonetic", "注音"};
+    fcitx::Option<CangjieConfig> cangjie{this, "Cangjie", "倉頡"};
+    fcitx::Option<SimplexConfig> simplex{this, "Simplex", "簡易"};
+    fcitx::Option<UserPhrasesConfig> userPhrases{this, "UserPhrases", "自訂詞"};
+    fcitx::Option<AssociatedPhraseConfig> associatedPhrases{this, "AssociatedPhrases", "詞庫"};)
+
+#undef KEYKEY_ABOUT_OPTIONS
+#undef KEYKEY_GENERAL_OPTIONS
+#undef KEYKEY_PHONETIC_OPTIONS
+#undef KEYKEY_USER_PHRASE_OPTIONS
+
+template <typename Group>
+void groupSettings(fcitx::RawConfig &view, const fcitx::RawConfig &stored,
+                   const std::string &name) {
+    fcitx::RawConfig fields;
+    Group().save(fields);
+    for (const auto &key : fields.subItems()) {
+        if (const auto value = stored.get(key)) view[name + "/" + key] = *value;
+        view.remove(key);
+    }
+}
+
+fcitx::RawConfig settingsView(const fcitx::RawConfig &stored) {
+    fcitx::RawConfig view(stored);
+    groupSettings<GeneralConfig>(view, stored, "General");
+    groupSettings<PhoneticConfig>(view, stored, "Phonetic");
+    groupSettings<UserPhrasesConfig>(view, stored, "UserPhrases");
+    return view;
+}
+
+void mergeSettingValue(fcitx::RawConfig &target, const fcitx::RawConfig &source) {
+    if (!source.hasSubItems()) {
+        target = source;
+        return;
+    }
+    for (const auto &key : source.subItems()) {
+        mergeSettingValue(target[key], *source.get(key));
+    }
+}
+
+template <typename Group>
+void ungroupSettings(fcitx::RawConfig &stored, const fcitx::RawConfig &view,
+                     const std::string &name) {
+    if (const auto group = view.get(name)) {
+        fcitx::RawConfig fields;
+        Group().save(fields);
+        for (const auto &key : fields.subItems()) {
+            if (const auto value = group->get(key)) mergeSettingValue(stored[key], *value);
+        }
+        stored.remove(name);
+    }
+}
+
+fcitx::RawConfig storedSettings(const fcitx::RawConfig &view) {
+    fcitx::RawConfig stored(view);
+    ungroupSettings<GeneralConfig>(stored, view, "General");
+    ungroupSettings<PhoneticConfig>(stored, view, "Phonetic");
+    ungroupSettings<UserPhrasesConfig>(stored, view, "UserPhrases");
+    return stored;
+}
 
 std::vector<std::string>
 enabledAssociatedPhraseCollections(const AssociatedPhraseConfig &config) {
@@ -233,6 +333,8 @@ enabledAssociatedPhraseCollections(const AssociatedPhraseConfig &config) {
     }
     KEYKEY_ASSOCIATED_PHRASE_OPTIONS(KEYKEY_APPEND_ENABLED_COLLECTION)
 #undef KEYKEY_APPEND_ENABLED_COLLECTION
+    // Display order must not change the existing collection lookup priority.
+    std::sort(result.begin(), result.end());
     return result;
 }
 
@@ -300,7 +402,7 @@ public:
     bool commitAndReset(bool retireOnFailure = false);
     bool chineseMode() const noexcept { return chineseMode_; }
     bool usesGuanyinma() const noexcept { return rust_ != nullptr; }
-    std::string coreStatus() const;
+    std::string errorMessage() const;
     bool settingsPending() const noexcept { return requestRevision_ != activeRevision_; }
     void requestSession(linux_ime::GuanyinmaConfig config,
                      std::string modelPath, std::string userPath,
@@ -406,10 +508,16 @@ public:
         reloadConfig();
     }
 
-    const fcitx::Configuration *getConfig() const override { return &config_; }
+    const fcitx::Configuration *getConfig() const override {
+        fcitx::RawConfig stored;
+        config_.save(stored);
+        settingsConfig_ = SettingsConfig();
+        settingsConfig_.load(settingsView(stored));
+        return &settingsConfig_;
+    }
 
     void setConfig(const fcitx::RawConfig &config) override {
-        config_.load(config, true);
+        config_.load(storedSettings(config), true);
         applyConfig();
         fcitx::safeSaveAsIni(config_, configFile());
     }
@@ -449,8 +557,7 @@ public:
                         fcitx::InputContext &inputContext) override {
         FCITX_UNUSED(entry);
         auto *state = inputContext.propertyFor(&factory_);
-        return std::string(state->chineseMode() ? "中文 · " : "英文 · ") +
-               state->coreStatus();
+        return state->chineseMode() ? "中文" : "英文";
     }
 
     void reset(const fcitx::InputMethodEntry &entry,
@@ -655,6 +762,7 @@ private:
     fcitx5_adapter::ErrorSound errorSound_;
     fcitx::FactoryFor<FcitxState> factory_;
     KeyKeyConfig config_;
+    mutable SettingsConfig settingsConfig_;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
         keyEventWatcher_;
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>
@@ -663,11 +771,8 @@ private:
 
 #undef KEYKEY_ASSOCIATED_PHRASE_OPTIONS
 
-std::string FcitxState::coreStatus() const {
-    std::string result = "Guanyinma（Rust）";
-    if (rust_ && settingsPending()) result += "；組字完成後套用設定";
-    if (!coreError_.empty()) result += "；" + coreError_;
-    return result;
+std::string FcitxState::errorMessage() const {
+    return coreError_;
 }
 
 linux_ime::EngineResult FcitxState::currentView() const {
@@ -1207,7 +1312,7 @@ void FcitxState::updateUi(const linux_ime::EngineResult &result) {
             panel.setAuxUp(fcitx::Text("Shift + 1-9"));
         }
     }
-    if ((rust_ && settingsPending()) || !coreError_.empty()) panel.setAuxDown(fcitx::Text(coreStatus()));
+    if (!coreError_.empty()) panel.setAuxDown(fcitx::Text(errorMessage()));
     if (!result.phraseFeedback.empty()) {
         panel.setAuxUp(fcitx::Text(result.phraseAdded ? "已加入詞庫：" + result.phraseFeedback
                                                      : "詞庫已有：" + result.phraseFeedback));

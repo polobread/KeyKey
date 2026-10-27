@@ -226,7 +226,7 @@ void checkInitializationFailureAndRetryBoundary() {
     Fixture f;
     f.request((f.scratch / "missing-model.db").string());
     f.character('s');
-    require(!f.state.usesGuanyinma() && f.state.coreStatus().find("無法啟用") != std::string::npos,
+    require(!f.state.usesGuanyinma() && f.state.errorMessage().find("無法啟用") != std::string::npos,
             "Rust initialization failure was hidden or selected a failed backend");
     require(f.preedit().empty() && f.context.commits.empty(), "Failed initialization executed a fallback or replayed the first key");
     f.state.reset();
@@ -237,15 +237,15 @@ void checkInitializationFailureAndRetryBoundary() {
     f.config.traditionalSelectionKeys = "asdfghjk";
     f.request((f.scratch / "missing-replacement.db").string());
     f.character('s');
-    require(f.state.settingsPending() && f.state.coreStatus().find("無法啟用") != std::string::npos,
+    require(f.state.settingsPending() && f.state.errorMessage().find("無法啟用") != std::string::npos,
             "Replacement failure lost the pending configuration error");
     f.character('u');
-    require(f.state.coreStatus().find("無法啟用") != std::string::npos,
+    require(f.state.errorMessage().find("無法啟用") != std::string::npos,
             "A successful old-session event erased the replacement failure");
     f.state.commitAndReset();
     f.request();
     f.character('s');
-    require(!f.state.settingsPending() && f.state.coreStatus().find("無法啟用") == std::string::npos,
+    require(!f.state.settingsPending() && f.state.errorMessage().find("無法啟用") == std::string::npos,
             "Explicit corrected configuration could not retry replacement");
 }
 
@@ -412,6 +412,146 @@ void checkSavedPreferenceMapping() {
             "Saved preference keys were not used by the actual Rust/Fcitx candidate view");
 }
 
+void checkSettingsPresentationAndStorage() {
+    fcitx::RawConfig initial;
+    initial.setValueByPath("DefaultChineseMode", "False");
+    initial.setValueByPath("IgnoreCapsLockInChinese", "True");
+    initial.setValueByPath("LiteralKeypad", "False");
+    initial.setValueByPath("CandidateWindowStyle", "Horizontal");
+    initial.setValueByPath("ToggleInputMethodWithControlBackslash", "False");
+    initial.setValueByPath("ToggleInputModeWithShift", "False");
+    initial.setValueByPath("PlaySoundOnTypingError", "False");
+    initial.setValueByPath("TraditionalToSimplified", "True");
+    initial.setValueByPath("BopomofoMode", "Traditional");
+    initial.setValueByPath("BopomofoLayout", "Hsu");
+    initial.setValueByPath("UseAllUnicodeCharacters", "False");
+    initial.setValueByPath("TraditionalSelectionKeys", "asdfghjk");
+    initial.setValueByPath("UseUserPhrases", "False");
+    initial.setValueByPath("SmartMandarin/ComposingTextBufferSize", "20");
+    initial.setValueByPath("SmartMandarin/CandidateSelectionKeys", "asdfzxcv");
+    initial.setValueByPath("SmartMandarin/ClearComposingTextWithEsc", "True");
+    initial.setValueByPath("SmartMandarin/UseBigrams", "False");
+    initial.setValueByPath("Cangjie/MaximumRadicalLength", "4");
+    initial.setValueByPath("Cangjie/UseDynamicFrequency", "True");
+    initial.setValueByPath("Cangjie/MatchOneChar", "#");
+    initial.setValueByPath("Simplex/MaximumRadicalLength", "1");
+    initial.setValueByPath("Simplex/PunctuationStyle", "half");
+    initial.setValueByPath("AssociatedPhrases/agriculture-food", "True");
+    initial.setValueByPath("AssociatedPhrases/ai-data-science", "True");
+    initial.setValueByPath("AssociatedPhrases/electronics", "True");
+    initial.setValueByPath("AssociatedPhrases/general", "True");
+
+    KeyKeyConfig stored;
+    stored.load(initial);
+    fcitx::RawConfig before;
+    stored.save(before);
+    SettingsConfig settings;
+    settings.load(settingsView(before));
+    fcitx::RawConfig displayed;
+    settings.save(displayed);
+    require(displayed.valueByPath("General/CandidateWindowStyle") &&
+                *displayed.valueByPath("General/CandidateWindowStyle") == "Horizontal" &&
+                displayed.valueByPath("Phonetic/SmartMandarin/ComposingTextBufferSize") &&
+                *displayed.valueByPath("Phonetic/SmartMandarin/ComposingTextBufferSize") == "20" &&
+                displayed.valueByPath("UserPhrases/UseUserPhrases") &&
+                *displayed.valueByPath("UserPhrases/UseUserPhrases") == "False",
+            "Current saved preferences were not projected into their settings groups");
+
+    KeyKeyConfig restored;
+    restored.load(storedSettings(displayed));
+    fcitx::RawConfig after;
+    restored.save(after);
+    require(after == before, "Grouped settings round-trip changed existing stored preferences");
+    require(!after.get("General") && !after.get("Phonetic") && !after.get("UserPhrases") &&
+                after.get("SmartMandarin") && after.get("UseUserPhrases"),
+            "Presentation-only groups leaked into the existing on-disk paths");
+
+    fcitx::RawConfig partial;
+    partial.setValueByPath("General/DefaultChineseMode", "True");
+    partial.setValueByPath("Phonetic/SmartMandarin/ComposingTextBufferSize", "12");
+    partial.setValueByPath("UserPhrases/UseUserPhrases", "True");
+    restored.load(storedSettings(partial), true);
+    restored.save(after);
+    auto expected = before;
+    expected.setValueByPath("DefaultChineseMode", "True");
+    expected.setValueByPath("SmartMandarin/ComposingTextBufferSize", "12");
+    expected.setValueByPath("UseUserPhrases", "True");
+    require(after == expected,
+            "Partial grouped settings save reset an unrelated preference or nested value");
+
+    fcitx::RawConfig mixed;
+    mixed.setValueByPath("SmartMandarin/UseBigrams", "True");
+    mixed.setValueByPath("SmartMandarin/ComposingTextBufferSize", "11");
+    mixed.setValueByPath("Phonetic/SmartMandarin/ComposingTextBufferSize", "16");
+    mixed.setValueByPath("Phonetic/SmartMandarin/LearnBigrams", "False");
+    restored.load(storedSettings(mixed), true);
+    restored.save(after);
+    expected.setValueByPath("SmartMandarin/UseBigrams", "True");
+    expected.setValueByPath("SmartMandarin/ComposingTextBufferSize", "16");
+    expected.setValueByPath("SmartMandarin/LearnBigrams", "False");
+    require(after == expected,
+            "Mixed settings lost a flat sibling update or failed to prefer the grouped conflicting leaf");
+
+    require(enabledAssociatedPhraseCollections(*restored.associatedPhrases) ==
+                std::vector<std::string>{"McBopomofo", "agriculture-food", "ai-data-science", "electronics", "general"},
+            "Displaying collections in Windows order changed their runtime lookup priority");
+
+    fcitx::RawConfig description;
+    settings.dumpDescription(description);
+    auto descriptionValue = [&](const std::string &path) {
+        const auto value = description.valueByPath(path);
+        require(value != nullptr, "Missing settings description: " + path);
+        return *value;
+    };
+    auto requireOrder = [&](const std::string &type, std::vector<std::string> order) {
+        const auto group = description.get(type);
+        std::string actual;
+        if (group) for (const auto &key : group->subItems()) actual += key + ",";
+        require(group && group->subItems() == order,
+                "Unexpected settings order for " + type + ": " + actual);
+    };
+    const auto generalType = descriptionValue("SettingsConfig/General/Type");
+    const auto phoneticType = descriptionValue("SettingsConfig/Phonetic/Type");
+    const auto smartType = descriptionValue(phoneticType + "/SmartMandarin/Type");
+    const auto cangjieType = descriptionValue("SettingsConfig/Cangjie/Type");
+    const auto simplexType = descriptionValue("SettingsConfig/Simplex/Type");
+    const auto userPhrasesType = descriptionValue("SettingsConfig/UserPhrases/Type");
+    const auto associatedType = descriptionValue("SettingsConfig/AssociatedPhrases/Type");
+    requireOrder("SettingsConfig", {"About", "UpdateNotification", "General", "Phonetic", "Cangjie",
+                                     "Simplex", "UserPhrases", "AssociatedPhrases"});
+    requireOrder(generalType, {"DefaultChineseMode", "IgnoreCapsLockInChinese", "LiteralKeypad",
+                                    "CandidateWindowStyle", "ToggleInputMethodWithControlBackslash",
+                                    "ToggleInputModeWithShift", "PlaySoundOnTypingError", "TraditionalToSimplified"});
+    requireOrder(phoneticType, {"BopomofoMode", "BopomofoLayout", "UseAllUnicodeCharacters",
+                                     "TraditionalSelectionKeys", "SmartMandarin"});
+    requireOrder(smartType, {"ShowCandidateListWithSpace", "CandidateCursorAtEndOfTargetBlock",
+                                          "CandidateSelectionKeys", "ComposingTextBufferSize", "ClearComposingTextWithEsc",
+                                          "SelectionReturnsToEnd", "ShiftKeyAlwaysCommitUppercaseCharacters",
+                                          "UseBigrams", "LearnCandidateOverrides", "LearnBigrams"});
+    requireOrder(cangjieType, {"ShouldCommitAtMaximumRadicalLength", "UseDynamicFrequency", "ComposeWhileTyping",
+                                    "PrefixCandidates", "ClearOnError", "PunctuationStyle", "CandidateSelectionKeys",
+                                    "MaximumRadicalLength", "UseSpaceAsFirstCandidateSelectionKey",
+                                    "SendFirstCandidateWithSpaceWithOnePageList", "MatchOneChar", "MatchZeroOrMoreChar", "Settings"});
+    requireOrder(simplexType, {"ComposeWhileTyping", "ClearOnError", "ShouldCommitAtMaximumRadicalLength",
+                                    "UseDynamicFrequency", "PunctuationStyle", "CandidateSelectionKeys", "MaximumRadicalLength",
+                                    "UseSpaceAsFirstCandidateSelectionKey", "SendFirstCandidateWithSpaceWithOnePageList",
+                                    "MatchOneChar", "MatchZeroOrMoreChar"});
+    requireOrder(userPhrasesType, {"UseUserPhrases", "UserPhrases"});
+    const auto associated = description.get(associatedType);
+    require(associated && associated->subItems().size() == 30 &&
+                associated->subItems().front() == "McBopomofo" &&
+                associated->subItems().back() == "electronics",
+            "Collection settings lost their Windows presentation order");
+    require(descriptionValue(smartType + "/ComposingTextBufferSize/DefaultValue") == "10" &&
+                descriptionValue(smartType + "/ComposingTextBufferSize/IntMin") == "10" &&
+                descriptionValue(smartType + "/ComposingTextBufferSize/IntMax") == "20" &&
+                descriptionValue(smartType + "/CandidateSelectionKeys/DefaultValue") == "123456789" &&
+                descriptionValue(associatedType + "/McBopomofo/DefaultValue") == "True" &&
+                descriptionValue(associatedType + "/general/DefaultValue") == "False" &&
+                descriptionValue(userPhrasesType + "/UserPhrases/External") == "keykey-user-phrases",
+            "Grouping changed defaults, constraints or the user-phrase editor launch target");
+}
+
 void checkSelectionKeysAndConfiguredModes() {
     Fixture f;
     f.config.smartMode = false;
@@ -518,6 +658,7 @@ int main() {
         checkSimplifiedOutputAndKeypad();
         checkAssociatedShortcutDoesNotSelect();
         checkSavedPreferenceMapping();
+        checkSettingsPresentationAndStorage();
         checkSelectionKeysAndConfiguredModes();
         checkReentrantContextDestruction();
         std::cout << "Fcitx Guanyinma settings and lifecycle, candidates, modes, cursor and one-shot host effects passed\n";
