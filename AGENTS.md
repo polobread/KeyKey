@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。macOS 正式版為 1.3.8，安裝包與 stable 更新公告皆已發布並同步 CDN；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7，iOS App Store 與 Android Google Play 皆已上架 1.3.7。FreeBSD 1.3.7 已在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，透過 ports／pkg 安裝，套件庫版本可能較晚上架。各平台目前原始碼版號為 `1.3.8`，其他平台的正式發布版號仍依前述狀態；FreeBSD 沿用 Linux-IME 的版本來源，共用好打注音模型維持 v1.3.1。README 只記錄正式 Release／商店版本與支援範圍，不列開發版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。macOS 正式版為 1.3.8，安裝包與 stable 更新公告皆已發布並同步 CDN；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7，iOS App Store 與 Android Google Play 皆已上架 1.3.7。FreeBSD 1.3.7 已在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，透過 ports／pkg 安裝，套件庫版本可能較晚上架。macOS 目前原始碼版號為 `1.3.9`，其他平台原始碼版號維持 `1.3.8`；正式發布版號仍依前述狀態；FreeBSD 沿用 Linux-IME 的版本來源，共用好打注音模型維持 v1.3.1。README 只記錄正式 Release／商店版本與支援範圍，不列開發版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -104,6 +104,15 @@ macOS preinstall 退出舊行程後，系統仍可能在 payload 覆蓋完成前
 Windows stable 在 Authenticode 尚未就緒時可逐版明確宣告 `unsigned-transition`，仍須
 Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產；無效或不受信任簽章不得
 降級成 unsigned。日後 signed EXE 使用更高版號，沿用原 stable feed 與 Ed25519 金鑰。
+
+### macOS 安裝程式的 VM 實測
+
+- 修改 macOS 安裝 helper、`preinstall`／`postinstall`、Distribution 或封裝腳本時，必須用可恢復的 VM 快照完成實際安裝與中文輸入驗證，不能只以單元測試、建置成功、安裝前置評估或 receipt 版號判定通過。
+- 快照 a 是已備妥中文字型、尚未安裝 KeyKey 的乾淨系統；快照 b 須先安裝可全新安裝的正式 1.3.1，再升級至正式 1.3.7，確認原有輸入法已啟用且可輸入中文。保留兩份基準快照，每個情境各自建立工作副本。
+- 三條必測路徑：快照 a 全新安裝最新版；快照 b 以最新版 PKG 手動安裝升級；快照 b 從 1.3.7 輸入法內下載更新並按「安裝並重新啟動」。程式內更新須實際走下載、驗章、管理員授權及安裝，不能以 CLI 安裝代替。
+- 三條路徑使用與最終提交來源相同的安裝包，記錄來源 commit、SHA-256、已安裝 App／receipt 版本、安裝日誌、啟用狀態及實際中文組字、候選、選字與提交結果；另記錄是否需登出再登入或重新開機。含未提交修正的測試包，不能當成 PR 相同來源已驗收。
+- **僅修改 GitHub Actions workflow 時，不要求為該次 workflow 變更額外跑 VM**；按 workflow 的實際變更做相應檢查。若同時修改安裝程式，安裝程式部分仍須完成上述 VM 實測。
+- 建置環境、字型補齊、關機快照與還原、三條驗收路徑及注意事項見 [macOS 安裝器 VM 操作指南](docs/MACOS_INSTALLER_VM_TESTING.md)。
 
 ### Windows 日常開發測試範圍
 

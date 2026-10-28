@@ -1,5 +1,13 @@
 # 更新紀錄
 
+## 1.3.9
+
+### macOS
+
+- 修正 Finder 清單等小尺寸圖示顯示彩色雜訊；以 macOS 原生工具產生相容的圖示尺寸與 Retina 圖層。
+- 安裝程式明確宣告 Apple Silicon 原生執行，避免在沒有 Rosetta 的 Mac 上要求安裝 Rosetta；Intel Mac 仍顯示不支援的明確提示。
+- 修正升級時舊行程已退出卻被誤判逾時；以實際行程狀態確認退出，行程仍存活或身分無法確認時維持中止安裝。
+
 ## 1.3.8
 
 本版僅發布 macOS；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7，共用好打注音模型維持 1.3.1。

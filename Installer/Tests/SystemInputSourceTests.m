@@ -7,6 +7,7 @@
 #define TISSelectInputSource KKFakeSelect
 #define TISCopyCurrentKeyboardInputSource KKFakeCurrent
 #define TISRegisterInputSource KKFakeRegister
+#define proc_pidinfo KKFakeProcPidInfo
 #define main KKUnusedToolMain
 #import "../InputSourceTool.m"
 #undef main
@@ -18,6 +19,33 @@ static NSDictionary *currentSource;
 static int passed, sourceQueries, unexpectedCalls, enableCalls, selectCalls, currentCalls;
 static OSStatus registerStatus, enableStatus, selectStatus;
 static BOOL databaseReplaced, processUnreadable;
+static int processInfoError, processInfoBytes = sizeof(struct proc_bsdinfo);
+static BOOL terminationRequested, kernelExitAfterRequest, kernelReuseAfterRequest;
+static BOOL kernelUnknownAfterRequest, kernelZombieAfterRequest, kernelWrongUIDAfterRequest;
+static BOOL wrongPID, wrongUID, invalidStart;
+static void ResetProcess(void) {
+    processInfoError = 0; processInfoBytes = sizeof(struct proc_bsdinfo);
+    terminationRequested = kernelExitAfterRequest = kernelReuseAfterRequest = NO;
+    kernelUnknownAfterRequest = kernelZombieAfterRequest = kernelWrongUIDAfterRequest = NO;
+    wrongPID = wrongUID = invalidStart = NO;
+}
+int KKFakeProcPidInfo(int pid, int flavor, uint64_t arg, void *buffer, int size) {
+    (void)arg;
+    if (flavor != PROC_PIDTBSDINFO || size != sizeof(struct proc_bsdinfo)) { errno = EINVAL; return 0; }
+    if (processInfoError || (terminationRequested && kernelUnknownAfterRequest)) {
+        errno = processInfoError ?: EPERM; return 0;
+    }
+    if (terminationRequested && kernelExitAfterRequest) { errno = ESRCH; return 0; }
+    struct proc_bsdinfo info = {0};
+    info.pbi_pid = wrongPID ? pid + 1 : pid;
+    info.pbi_uid = wrongUID || (terminationRequested && kernelWrongUIDAfterRequest) ? geteuid() + 1 : geteuid();
+    info.pbi_start_tvsec = invalidStart ? 0 : 100;
+    info.pbi_start_tvusec = terminationRequested && kernelReuseAfterRequest ? 2 : 1;
+    info.pbi_status = terminationRequested && kernelZombieAfterRequest ? SZOMB : SRUN;
+    memcpy(buffer, &info, sizeof(info));
+    return processInfoBytes;
+}
+
 static void Check(BOOL value, NSString *message) {
     if (!value) { NSLog(@"FAIL: %@", message); exit(1); } passed++;
 }
@@ -75,7 +103,7 @@ OSStatus KKFakeRegister(CFURLRef url) {
 - (BOOL)terminate;
 @end
 @implementation FakeApplication
-- (BOOL)terminate { self.terminateCalls++; if (self.exitsImmediately) self.terminated = YES; return self.acceptsTermination; }
+- (BOOL)terminate { terminationRequested = YES; self.terminateCalls++; if (self.exitsImmediately) self.terminated = YES; return self.acceptsTermination; }
 - (void)dealloc { [_executableURL release]; [super dealloc]; }
 @end
 
@@ -132,47 +160,94 @@ int main(void) {
         Check([system readSelected:&selected] && !selected, @"another selected source remains distinct from KeyKey");
 
         FakeApplication *app = [[[FakeApplication alloc] init] autorelease];
-        app.processIdentifier = -1;
-        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls, @"missing PID never terminates");
-        app.processIdentifier = 0;
-        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls, @"zero PID never terminates");
-        app.processIdentifier = getpid();
-        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls, @"self never terminates");
+        for (NSNumber *pid in @[@(-1), @0, @1, @(getpid())]) {
+            app.processIdentifier = pid.intValue;
+            Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+                  @"invalid, system and self PIDs never terminate");
+        }
         app.terminated = YES;
-        Check(KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls, @"already exited process needs no termination");
+        Check(KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"already exited application needs no termination");
         app.terminated = NO; app.processIdentifier = 12345;
-        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 1, @"normal termination rejection is failure");
-        app.acceptsTermination = YES;
-        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 2, @"termination acceptance without exit times out");
-        app.exitsImmediately = YES;
-        Check(KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 3, @"confirmed normal exit succeeds");
-        app.terminated = NO;
+        processInfoError = EPERM;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"unreadable identity blocks replacement without termination");
+        processInfoError = ESRCH;
+        Check(KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"absent process succeeds despite stale AppKit state");
+        ResetProcess(); processInfoBytes = 0;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"empty response without ESRCH cannot confirm exit");
+        processInfoBytes = sizeof(struct proc_bsdinfo) - 1;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"partial response cannot establish identity");
+        ResetProcess(); wrongPID = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"wrong PID cannot authorize termination");
+        ResetProcess(); wrongUID = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"another user's process cannot authorize termination");
+        ResetProcess(); invalidStart = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && !app.terminateCalls,
+              @"missing start time cannot authorize termination");
+
+        ResetProcess();
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 1,
+              @"live process refusing normal termination blocks replacement");
+        ResetProcess(); app.acceptsTermination = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 2,
+              @"accepted request without a real exit still times out");
+        ResetProcess(); app.exitsImmediately = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 3,
+              @"AppKit termination flag alone cannot override a still-live captured process");
+        ResetProcess(); app.terminated = NO; app.exitsImmediately = NO; kernelExitAfterRequest = YES;
+        Check(KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 4 && !app.terminated,
+              @"kernel-confirmed exit succeeds despite stale AppKit running state");
+        ResetProcess(); kernelZombieAfterRequest = YES;
+        Check(KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 5,
+              @"captured zombie has exited and cannot hold the database");
+        ResetProcess(); kernelReuseAfterRequest = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 6,
+              @"PID reuse blocks replacement without sending another termination request");
+        ResetProcess(); kernelWrongUIDAfterRequest = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 7,
+              @"changed UID after request cannot fabricate a confirmed exit");
+        ResetProcess(); kernelUnknownAfterRequest = YES;
+        Check(!KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 8,
+              @"lost kernel visibility after request fails closed");
+        ResetProcess(); app.acceptsTermination = NO; kernelExitAfterRequest = YES;
+        Check(KKStopApplication((NSRunningApplication *)app, 0) && app.terminateCalls == 9,
+              @"exit racing with a rejected request is independently confirmed");
+
+        ResetProcess(); app.acceptsTermination = YES; kernelExitAfterRequest = YES;
+        int calls = app.terminateCalls;
         app.executableURL = [NSURL fileURLWithPath:@"/tmp/chichi77 KeyKey.app/Contents/MacOS/chichi77 KeyKey"];
         [system setValue:@[app] forKey:@"_previousApplications"];
-        Check([system stopInstalledInputMethod] && app.terminateCalls == 3, @"same bundle in another path is untouched");
+        Check([system stopInstalledInputMethod] && app.terminateCalls == calls,
+              @"same bundle in another path is untouched");
         app.executableURL = [NSURL fileURLWithPath:[KKInstalledPath stringByAppendingPathComponent:@"Contents/MacOS/chichi77 KeyKey"]];
-        Check([system stopInstalledInputMethod] && app.terminateCalls == 4,
+        Check([system stopInstalledInputMethod] && app.terminateCalls == ++calls,
               @"only captured installed process identity is retired");
         [system setValue:@[] forKey:@"_previousApplications"];
-        app.terminated = NO;
-        Check([system stopInstalledInputMethod] && app.terminateCalls == 4, @"no captured old process needs no termination");
+        Check([system stopInstalledInputMethod] && app.terminateCalls == calls,
+              @"no captured process needs no termination");
         [system setValue:@[app] forKey:@"_previousApplications"];
-        Check([system stopReplacedInputMethod] && app.terminateCalls == 4,
+        Check([system stopReplacedInputMethod] && app.terminateCalls == calls,
               @"postinstall preserves a process holding the current database");
         processUnreadable = YES;
-        Check(![system stopReplacedInputMethod] && app.terminateCalls == 4,
-              @"unreadable process state is reported without termination"); processUnreadable = NO;
+        Check(![system stopReplacedInputMethod] && app.terminateCalls == calls,
+              @"unreadable database state is reported without termination"); processUnreadable = NO;
         databaseReplaced = YES;
         app.executableURL = [NSURL fileURLWithPath:@"/tmp/chichi77 KeyKey.app/Contents/MacOS/chichi77 KeyKey"];
-        Check([system stopReplacedInputMethod] && app.terminateCalls == 4,
+        Check([system stopReplacedInputMethod] && app.terminateCalls == calls,
               @"postinstall leaves other executable paths untouched");
         app.executableURL = [NSURL fileURLWithPath:[KKInstalledPath stringByAppendingPathComponent:@"Contents/MacOS/chichi77 KeyKey"]];
-        app.acceptsTermination = NO; app.exitsImmediately = NO;
-        Check(![system stopReplacedInputMethod] && app.terminateCalls == 5,
+        ResetProcess(); app.acceptsTermination = NO;
+        Check(![system stopReplacedInputMethod] && app.terminateCalls == ++calls,
               @"stale process refusing normal exit is a setup failure");
-        app.acceptsTermination = YES; app.exitsImmediately = YES;
-        Check([system stopReplacedInputMethod] && app.terminateCalls == 6,
-              @"process relaunched during replacement is normally retired after payload installation");
+        ResetProcess(); app.acceptsTermination = YES; kernelExitAfterRequest = YES;
+        Check([system stopReplacedInputMethod] && app.terminateCalls == ++calls,
+              @"postinstall normally retires a replaced-database process with confirmed exit");
         NSLog(@"PASS: %d system-adapter checks (fake TIS and process termination)", passed);
     }
 }

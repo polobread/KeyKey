@@ -5,18 +5,21 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$WindowsIcon,
 
-    [Parameter(Mandatory = $true)]
     [string]$MacIcon,
 
-    [Parameter(Mandatory = $true)]
     [string]$MacMenu16Icon,
 
-    [Parameter(Mandatory = $true)]
     [string]$MacMenu32Icon
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# macOS icons need Apple's iconutil for compatible small/Retina representations.
+# Keep legacy arguments only to give callers an actionable migration error.
+if ($MacIcon -or $MacMenu16Icon -or $MacMenu32Icon) {
+    throw 'Generate macOS ICNS with bash Source/Utilities/generate-macos-icons.sh on macOS; this tool generates Windows ICO only.'
+}
 
 Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
 using System;
@@ -25,7 +28,6 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Text;
 
 public static class Chichi77BrandIconGenerator
 {
@@ -67,16 +69,6 @@ public static class Chichi77BrandIconGenerator
         }
     }
 
-    private static void WriteUInt32BigEndian(BinaryWriter writer, uint value)
-    {
-        writer.Write(new byte[] {
-            (byte)(value >> 24),
-            (byte)(value >> 16),
-            (byte)(value >> 8),
-            (byte)value
-        });
-    }
-
     private static void WriteIco(Image source, string outputPath)
     {
         int[] sizes = { 16, 20, 24, 32, 40, 48, 64, 128, 256 };
@@ -116,61 +108,17 @@ public static class Chichi77BrandIconGenerator
         }
     }
 
-    private static void WriteIcns(Image source, string outputPath, KeyValuePair<string, int>[] entries)
-    {
-        var images = new List<byte[]>();
-        uint totalSize = 8;
-        foreach (var entry in entries)
-        {
-            byte[] png = RenderPng(source, entry.Value);
-            images.Add(png);
-            totalSize += (uint)(8 + png.Length);
-        }
-
-        using (var stream = File.Create(outputPath))
-        using (var writer = new BinaryWriter(stream))
-        {
-            writer.Write(Encoding.ASCII.GetBytes("icns"));
-            WriteUInt32BigEndian(writer, totalSize);
-
-            for (int index = 0; index < entries.Length; ++index)
-            {
-                writer.Write(Encoding.ASCII.GetBytes(entries[index].Key));
-                WriteUInt32BigEndian(writer, (uint)(8 + images[index].Length));
-                writer.Write(images[index]);
-            }
-        }
-    }
-
-    public static void Generate(string sourcePath, string icoPath, string icnsPath,
-                                string icns16Path, string icns32Path)
+    public static void Generate(string sourcePath, string icoPath)
     {
         using (Image source = Image.FromFile(sourcePath))
         {
             WriteIco(source, icoPath);
-            WriteIcns(source, icnsPath, new[] {
-                new KeyValuePair<string, int>("icp4", 16),
-                new KeyValuePair<string, int>("icp5", 32),
-                new KeyValuePair<string, int>("icp6", 64),
-                new KeyValuePair<string, int>("ic07", 128),
-                new KeyValuePair<string, int>("ic08", 256),
-                new KeyValuePair<string, int>("ic09", 512),
-                new KeyValuePair<string, int>("ic10", 1024)
-            });
-            WriteIcns(source, icns16Path, new[] {
-                new KeyValuePair<string, int>("icp4", 16),
-                new KeyValuePair<string, int>("icp5", 32)
-            });
-            WriteIcns(source, icns32Path, new[] {
-                new KeyValuePair<string, int>("icp5", 32),
-                new KeyValuePair<string, int>("icp6", 64)
-            });
         }
     }
 }
 '@
 
-foreach ($outputPath in @($WindowsIcon, $MacIcon, $MacMenu16Icon, $MacMenu32Icon)) {
+foreach ($outputPath in @($WindowsIcon)) {
     $parent = Split-Path -Parent $outputPath
     if ($parent) {
         [System.IO.Directory]::CreateDirectory($parent) | Out-Null
@@ -179,7 +127,4 @@ foreach ($outputPath in @($WindowsIcon, $MacIcon, $MacMenu16Icon, $MacMenu32Icon
 
 [Chichi77BrandIconGenerator]::Generate(
     (Resolve-Path -LiteralPath $SourcePng).Path,
-    [System.IO.Path]::GetFullPath($WindowsIcon),
-    [System.IO.Path]::GetFullPath($MacIcon),
-    [System.IO.Path]::GetFullPath($MacMenu16Icon),
-    [System.IO.Path]::GetFullPath($MacMenu32Icon))
+    [System.IO.Path]::GetFullPath($WindowsIcon))
