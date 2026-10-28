@@ -61,8 +61,10 @@ the current console user's GUI session and credentials:
    while the old bundle is still intact.
 2. The package replaces the bundle. `postinstall` registers the installed path
    and confirms the source can be found by ID. It restores enabled state only
-   when this same account had KeyKey enabled before replacement. A separate
-   helper process must confirm that restoration too. Only fixed-path processes
+   when this same account had KeyKey enabled before replacement. Restoration
+   runs in a new helper process because registration can temporarily expose an
+   initial disabled state in its own process. Already enabled sources are left
+   unchanged. A further helper process must confirm that restoration too. Only fixed-path processes
    still holding a replaced database are retired; processes using the installed
    database are preserved. It does not select KeyKey automatically.
 

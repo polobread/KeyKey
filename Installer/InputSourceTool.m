@@ -225,6 +225,19 @@ static KKDatabaseState KKDatabaseStateForProcess(pid_t pid, NSString *path)
         fprintf(stderr, "KeyKey input source: previously enabled source is unavailable.\n");
         return NO;
     }
+    // Re-enabling an already enabled input method can request macOS consent
+    // again. Registration may already have preserved the saved enabled intent.
+    CFTypeRef value = TISGetInputSourceProperty(source, kTISPropertyInputSourceIsEnabled);
+    if (!value || CFGetTypeID(value) != CFBooleanGetTypeID()) {
+        CFRelease(source);
+        fprintf(stderr, "KeyKey input source: enabled property unavailable; restoration unconfirmed.\n");
+        return NO;
+    }
+    if (CFBooleanGetValue(value)) {
+        CFRelease(source);
+        fprintf(stderr, "KeyKey input source: pre-install enabled state retained; no enable request needed.\n");
+        return YES;
+    }
     BOOL success = KKStatus(TISEnableInputSource(source), "restore enabled");
     CFRelease(source);
     if (!success) return NO;
@@ -318,8 +331,8 @@ static void KKShowSetupWarning(void)
     alert.alertStyle = NSAlertStyleWarning;
     alert.messageText = chinese ? @"琦琦輸入法需要確認" : @"Check KeyKey input-source setup";
     alert.informativeText = chinese
-        ? @"檔案已安裝，但目前帳號的輸入法準備未完成。\n\n請從輸入法選單先選 ABC，再選「琦琦輸入法」或「chichi77 KeyKey」，到「文字編輯」試打。\n\n若找不到項目，開啟「系統設定 → 鍵盤 → 文字輸入 → 編輯… → ＋」，從「繁體中文」加入琦琦。仍無法使用時，請回報安裝檔名與 macOS 版本。"
-        : @"The files were installed, but setup for this account did not finish.\n\nSelect ABC, then chichi77 KeyKey from the Input menu, and try typing in TextEdit.\n\nIf KeyKey is missing, open System Settings → Keyboard → Text Input → Edit → + and add it under Traditional Chinese. If it still does not work, report the package name and macOS version.";
+        ? @"檔案已安裝，但目前帳號的輸入法準備未完成。\n\n請從輸入法選單先選 ABC，再選「琦琦輸入法」或「chichi77 KeyKey」，到「文字編輯」試打。\n\n若升級後找不到項目或無法輸入，請先儲存工作，登出 macOS 再登入；不必先移除原有的琦琦。\n\n首次安裝請從「系統設定 → 鍵盤 → 文字輸入 → 編輯… → ＋」的「繁體中文」加入琦琦。重新登入後仍無法使用時，請回報安裝檔名與 macOS 版本。"
+        : @"The files were installed, but setup for this account did not finish.\n\nSelect ABC, then chichi77 KeyKey from the Input menu, and try typing in TextEdit.\n\nIf KeyKey is missing or cannot type after an upgrade, save your work, log out of macOS and log back in. Keep your existing KeyKey entry.\n\nFor a first installation, add KeyKey under Traditional Chinese in System Settings → Keyboard → Text Input → Edit → +. If it still does not work after signing back in, report the package name and macOS version.";
     [alert addButtonWithTitle:chinese ? @"開啟鍵盤設定" : @"Open Keyboard Settings"];
     [alert addButtonWithTitle:chinese ? @"稍後" : @"Later"];
     [NSApp activateIgnoringOtherApps:YES];
@@ -332,11 +345,12 @@ int main(int argc, const char *argv[])
 {
     @autoreleasepool {
         BOOL restoreEnabled = argc == 2 && strcmp(argv[1], "--refresh-enabled") == 0;
+        BOOL restoreOnly = argc == 2 && strcmp(argv[1], "--restore-enabled") == 0;
         BOOL refresh = restoreEnabled || (argc == 2 && strcmp(argv[1], "--refresh") == 0);
         BOOL snapshot = argc == 2 && strcmp(argv[1], "--snapshot") == 0;
         BOOL prepare = argc == 2 && strcmp(argv[1], "--prepare-upgrade") == 0;
         BOOL warning = argc == 2 && strcmp(argv[1], "--show-setup-warning") == 0;
-        if ((!refresh && !warning && !snapshot && !prepare) || geteuid() == 0) {
+        if ((!refresh && !restoreOnly && !warning && !snapshot && !prepare) || geteuid() == 0) {
             fprintf(stderr, "Run KeyKeyInputSourceTool with a supported setup command in the logged-in user's GUI session, not as root.\n");
             return 64;
         }
@@ -364,7 +378,11 @@ int main(int argc, const char *argv[])
         if (warning) { KKShowSetupWarning(); return 0; }
         signal(SIGALRM, KKDeadline);
         alarm(20);
-        BOOL success = KKRefreshInputSource([[[KKSystemInputSources alloc] init] autorelease], restoreEnabled);
+        KKSystemInputSources *system = [[[KKSystemInputSources alloc] init] autorelease];
+        // postinstall restores in a new process: the registering process can
+        // still observe the new source's initial disabled state.
+        BOOL success = restoreOnly ? [system enableInstalledInputMethod]
+            : KKRefreshInputSource(system, restoreEnabled);
         alarm(0);
         fprintf(stderr, "KeyKey input source: setup %s; choose KeyKey from the Input menu and verify typing.\n",
                 success ? "completed" : "incomplete");

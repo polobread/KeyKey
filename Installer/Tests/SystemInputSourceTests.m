@@ -128,6 +128,12 @@ int main(void) {
         Check(![system readEnabled:&snapshot], @"unreadable state is unknown, not disabled"); nullList = NO;
         missingEnabled = YES;
         Check(![system readEnabled:&snapshot], @"missing enabled property cannot fabricate intent"); missingEnabled = NO;
+        enabled = YES; int previousEnables = enableCalls;
+        Check([system enableInstalledInputMethod] && enableCalls == previousEnables,
+              @"preserved enabled intent never requests macOS enable consent again");
+        missingEnabled = YES;
+        Check(![system enableInstalledInputMethod] && enableCalls == previousEnables,
+              @"unknown post-registration state cannot trigger an enable request"); missingEnabled = NO;
         enabled = NO;
         Check([system enableInstalledInputMethod] && enabled, @"upgrade restores a source lost during replacement");
         enabled = NO; enableChangesState = NO;

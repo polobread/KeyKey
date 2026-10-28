@@ -25,11 +25,9 @@ state=unknown
 if [[ -f "$state_file" && ! -L "$state_file" ]]; then
     read -r saved_uid state < "$state_file" || state=unknown
 fi
-mode=--refresh
 if [[ "$saved_uid" != "$console_uid" ]]; then state=unknown; fi
 case "$state" in
-    enabled) mode=--refresh-enabled ;;
-    disabled|fresh) ;;
+    enabled|disabled|fresh) ;;
     *) state=unknown ;;
 esac
 # launchctl supplies the GUI bootstrap namespace; sudo supplies the user
@@ -40,8 +38,16 @@ esac
 # The helper also retires an IMK process relaunched during replacement if its
 # database descriptor no longer matches the installed file.
 setup_failed=false
-if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- /usr/bin/env -u __CF_USER_TEXT_ENCODING "$helper" "$mode"; then
+if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- /usr/bin/env -u __CF_USER_TEXT_ENCODING "$helper" --refresh; then
     setup_failed=true
+fi
+# Registration can expose an initial disabled state in its own process.
+# Restore the saved intent in a separate process before independent verification.
+if [[ "$state" == enabled && "$setup_failed" == false ]]; then
+    if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- /usr/bin/env -u __CF_USER_TEXT_ENCODING \
+        "$helper" --restore-enabled; then
+        setup_failed=true
+    fi
 fi
 # A fresh process must see restoration too; the mutating helper's cached
 # snapshot alone is insufficient evidence that the user can select KeyKey.
