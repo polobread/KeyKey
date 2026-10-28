@@ -75,28 +75,24 @@ typedef NS_ENUM(NSInteger, KKProcessState) {
     KKProcessUnreadable, KKProcessRunning, KKProcessExited
 };
 
-// AppKit's terminated property is updated asynchronously and can remain false
-// in this command-line helper after launchd has already reaped the process.
-// Read kernel state instead, retaining the start time to distinguish PID reuse.
-static KKProcessState KKReadProcess(pid_t pid, struct proc_bsdinfo *info)
-{
-    errno = 0;
-    int bytes = proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, info, sizeof(*info));
-    if (bytes <= 0 && errno == ESRCH) return KKProcessExited;
-    if (bytes != sizeof(*info) || info->pbi_pid != (uint32_t)pid ||
-        info->pbi_uid != geteuid()) return KKProcessUnreadable;
-    if (info->pbi_status == SZOMB) return KKProcessExited;
-    if (!info->pbi_start_tvsec || info->pbi_start_tvusec >= 1000000) return KKProcessUnreadable;
-    return KKProcessRunning;
-}
-
-static BOOL KKCapturedProcessExited(pid_t pid, const struct proc_bsdinfo *captured)
+// AppKit can retain a running snapshot after launchd reports a normal exit.
+// Confirm the captured lifetime with the kernel instead of relying on its
+// asynchronous terminated property. Unknown or changed identities fail closed.
+static KKProcessState KKReadProcess(pid_t pid, const struct proc_bsdinfo *captured,
+                                   struct proc_bsdinfo *snapshot)
 {
     struct proc_bsdinfo current = {0};
-    KKProcessState state = KKReadProcess(pid, &current);
-    return state == KKProcessExited || (state == KKProcessRunning &&
-        (current.pbi_start_tvsec != captured->pbi_start_tvsec ||
-         current.pbi_start_tvusec != captured->pbi_start_tvusec));
+    errno = 0;
+    int bytes = proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &current, sizeof(current));
+    if (bytes <= 0 && errno == ESRCH) return KKProcessExited;
+    if (bytes != sizeof(current) || current.pbi_pid != (uint32_t)pid ||
+        current.pbi_uid != geteuid() || !current.pbi_start_tvsec ||
+        current.pbi_start_tvusec >= 1000000) return KKProcessUnreadable;
+    if (captured && (current.pbi_start_tvsec != captured->pbi_start_tvsec ||
+                     current.pbi_start_tvusec != captured->pbi_start_tvusec))
+        return KKProcessUnreadable;
+    if (snapshot) *snapshot = current;
+    return current.pbi_status == SZOMB ? KKProcessExited : KKProcessRunning;
 }
 
 static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
@@ -108,28 +104,32 @@ static BOOL KKStopApplication(NSRunningApplication *app, NSTimeInterval timeout)
         return NO;
     }
     struct proc_bsdinfo captured = {0};
-    KKProcessState state = KKReadProcess(pid, &captured);
+    KKProcessState state = KKReadProcess(pid, NULL, &captured);
     if (state == KKProcessExited) return YES;
     if (state != KKProcessRunning) {
         fprintf(stderr, "KeyKey input source: could not verify old process %d; termination skipped.\n", pid);
         return NO;
     }
-    // Keep the identity-bound normal AppKit request; never signal a raw PID.
-    // Kernel observation confirms only this captured lifetime's exit. A reused
-    // PID belongs to a different process and must not receive another request.
-    if (![app terminate]) {
-        if (app.terminated || KKCapturedProcessExited(pid, &captured)) return YES;
-        fprintf(stderr, "KeyKey input source: old process %d rejected normal termination.\n", pid);
-        return NO;
-    }
+    // NSRunningApplication binds this request to the captured app identity.
+    // Never signal a raw PID or retry termination against a reused PID.
+    BOOL accepted = [app terminate];
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
-    while (!app.terminated && !KKCapturedProcessExited(pid, &captured) &&
-           [deadline timeIntervalSinceNow] > 0) {
+    do {
+        state = KKReadProcess(pid, &captured, NULL);
+        if (state == KKProcessExited) return YES;
+        if (state == KKProcessUnreadable) {
+            fprintf(stderr, "KeyKey input source: old process %d identity or exit could not be verified.\n", pid);
+            return NO;
+        }
+        if (!accepted) {
+            fprintf(stderr, "KeyKey input source: old process %d rejected normal termination.\n", pid);
+            return NO;
+        }
+        if ([deadline timeIntervalSinceNow] <= 0) break;
         [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
-    }
-    BOOL exited = app.terminated || KKCapturedProcessExited(pid, &captured);
-    if (!exited) fprintf(stderr, "KeyKey input source: old process %d did not exit within deadline.\n", pid);
-    return exited;
+    } while (YES);
+    fprintf(stderr, "KeyKey input source: old process %d did not exit within deadline.\n", pid);
+    return NO;
 }
 
 // Inspect only the installed input method's database descriptor. Comparing the

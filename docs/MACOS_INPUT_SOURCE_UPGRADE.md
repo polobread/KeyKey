@@ -60,11 +60,14 @@ arm64 helper 前重複硬體檢查，涵蓋直接安裝 component package 的路
 
 ## 正常退出的確認
 
-本節描述 1.3.9 封裝使用的修正；已發布的 1.3.8 安裝包維持原內容。
+1.3.9 的安裝 helper 保留 `NSRunningApplication.terminate` 的正常退出要求，
+同時捕捉 PID、UID 與啟動時間，以核心 `PROC_PIDTBSDINFO` 確認同一個行程已結束。
+`NSRunningApplication.terminated` 可能尚未更新；發出退出要求後，不以該旗標單獨判定成功。
+只有核心回報已不存在或同一身分已結束等待回收，才允許繼續；PID 重用、UID 改變、
+讀取拒絕或不完整回傳都中止，且不對替代行程追加退出要求。
 
-`NSRunningApplication.terminated` 會隨 AppKit 主 run loop 非同步更新；獨立命令列 helper 可能在行程已退出後仍讀到 false。退出等待同時讀取核心的 `PROC_PIDTBSDINFO`，保存 PID 與啟動時間，只有核心確認行程已不存在、已結束等待回收，或該 PID 已屬於另一個啟動時間的行程，才視為原本的行程已退出。不同啟動時間只證明原行程已結束，不對新行程追加退出要求。
-
-退出要求仍透過保留行程身分的 `NSRunningApplication.terminate`，不對裸 PID 發送 signal。核心狀態不可讀、回傳不完整、正常退出被拒絕，或期限內仍在執行時，維持覆蓋前中止的保護。此確認同時適用於覆蓋前退出舊版，以及覆蓋後退出仍持有舊詞庫的行程。
+每個行程仍最多等 3 秒，不強制 kill。此確認同時適用於覆蓋前退出舊版，
+以及覆蓋後退出持有已替換詞庫的行程。已發布 1.3.8 原包不變。
 
 ## 覆蓋前與覆蓋後的操作
 

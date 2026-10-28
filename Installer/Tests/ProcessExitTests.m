@@ -14,12 +14,12 @@ static void Check(BOOL value, NSString *message) {
 @interface OwnedApplication : NSObject
 @property pid_t processIdentifier;
 @property int commandFD, terminateCalls;
-@property BOOL acceptsTermination, exitsOnRequest;
+@property BOOL acceptsTermination, exitsOnRequest, reportsTerminationOnRequest;
 - (BOOL)isTerminated;
 - (BOOL)terminate;
 @end
 @implementation OwnedApplication
-- (BOOL)isTerminated { return NO; } // Model a CLI helper's stale AppKit cache.
+- (BOOL)isTerminated { return self.terminateCalls && self.reportsTerminationOnRequest; }
 - (BOOL)terminate {
     self.terminateCalls++;
     if (self.acceptsTermination && self.exitsOnRequest && self.commandFD >= 0) {
@@ -86,6 +86,13 @@ int main(void) {
         Reap(app);
         Check(!stopped && running && app.terminateCalls == 1,
               @"accepted request without a real exit still blocks replacement");
+        app = Child(YES, NO);
+        app.reportsTerminationOnRequest = YES;
+        stopped = KKStopApplication((NSRunningApplication *)app, 0.1);
+        running = waitpid(app.processIdentifier, &status, WNOHANG) == 0;
+        Reap(app);
+        Check(!stopped && running && app.isTerminated && app.terminateCalls == 1,
+              @"an early AppKit flag cannot approve replacement while the captured child is alive");
         NSLog(@"PASS: %d native process-exit checks (own children; no TIS or installed IMK)", passed);
     }
 }
