@@ -409,7 +409,7 @@ static NSURL *ReviewedFeed(id value)
 {
     if (_stopped) return;
     _installationRequested = YES;
-    [self setPhase:@"installing" message:@"安裝將要求管理員授權；完成後選回琦琦並試打。若選單缺少琦琦或無法輸入，請儲存工作、登出 macOS 再登入，不必移除原有項目。"];
+    [self setPhase:@"installing" message:@"安裝將要求管理員授權；完成後請儲存工作、登出 macOS 再登入，再選回琦琦試打。升級請保留原有輸入法項目，不必移除重加。"];
 }
 
 - (BOOL)updater:(SPUUpdater *)updater shouldPostponeRelaunchForUpdate:(SUAppcastItem *)item

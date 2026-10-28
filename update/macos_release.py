@@ -37,7 +37,7 @@ def prepare_candidate(package, version, tag, source_sha, tag_sha, key, base_url,
         raise ValueError("configure and review the macOS feed before preparing a production updater candidate")
     manifest = dict(schema_version=1, channel=channel, releases=[dict(target="macos-arm64", version=update_version,
         release_tag=tag, source_sha=source_sha, tag_sha=tag_sha, file=str(package), minimum_system_version="15.0.0",
-        notes="macOS 琦琦輸入法更新。安裝需要管理員確認；完成後從輸入法選單選取琦琦，並在「文字編輯」試打。")])
+        notes="macOS 琦琦輸入法更新。安裝需要管理員確認；完成後請儲存工作、登出 macOS 再登入，再選回琦琦試打。升級請保留原有輸入法項目。")])
     return metadata.build(manifest, key, base_url, destination, config["public_ed25519_key"], openssl)
 
 

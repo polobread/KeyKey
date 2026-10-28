@@ -26,6 +26,9 @@ int main(int argc, const char *argv[])
             attributeForName:@"hostArchitectures"].stringValue componentsSeparatedByString:@","]];
         Check([hosts containsObject:@"arm64"], @"Apple Silicon evaluates the installer without Rosetta");
         Check([hosts containsObject:@"x86_64"], @"Intel can reach the localized hardware rejection");
+        NSArray *logout = [document nodesForXPath:
+            @"/installer-gui-script/choice/pkg-ref[@onConclusion='RequireLogout']" error:&error];
+        Check(logout.count == 1, @"every completed install requires logout/login");
         NSArray *scripts = [document nodesForXPath:@"/installer-gui-script/script" error:&error];
         NSArray *checks = [document nodesForXPath:@"/installer-gui-script/installation-check" error:&error];
         Check(scripts.count == 1 && checks.count == 1, @"one host preflight is wired");

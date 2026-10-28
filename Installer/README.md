@@ -47,56 +47,31 @@ The `ls` matters. `installer` reports success even when it has written the
 payload somewhere else, so confirm the bundle actually landed before going any
 further.
 
-The package includes a standalone, signed `KeyKeyInputSourceTool`. Setup runs in
-the current console user's GUI session and credentials:
+The package includes a signed `KeyKeyInputSourceTool` for replacement safety only.
+All installations require logout/login through Distribution's `RequireLogout`.
+First installations add KeyKey after signing back in; upgrades keep the existing
+entry and select it again. The installer never registers, enables, disables or
+restores an input source.
 
-1. If `/Library/Input Methods/chichi77 KeyKey.app` is absent, `preinstall` records
-   a fresh install without starting the helper or reading any input-source state.
-   An existing path, including an incomplete bundle or dangling symlink, keeps
-   the upgrade protections below. For upgrades, `preinstall` reads KeyKey's
-   enabled state and the selected input source. If KeyKey is selected, it switches to an already
-   enabled ASCII keyboard layout and verifies that selection. It then requests
-   normal termination of captured KeyKey processes at the installed path.
-   Unreadable state, a failed fallback or an unconfirmed exit aborts installation
-   while the old bundle is still intact.
-2. The package replaces the bundle. `postinstall` registers the installed path
-   and confirms the source can be found by ID. It restores enabled state only
-   when this same account had KeyKey enabled before replacement. Restoration
-   runs in a new helper process because registration can temporarily expose an
-   initial disabled state in its own process. Already enabled sources are left
-   unchanged. A further helper process must confirm that restoration too. Only fixed-path processes
-   still holding a replaced database are retired; processes using the installed
-   database are preserved. It does not select KeyKey automatically.
+For an existing bundle, `preinstall` runs the package's helper in the console
+user's GUI session. If KeyKey is selected, it selects an existing enabled ASCII
+layout, then normally exits captured fixed-path KeyKey processes. Unreadable
+selection, failed fallback or unconfirmed exit aborts before replacement. A
+missing bundle skips this preparation; incomplete bundles and dangling symlinks
+retain the protection. No enabled-state snapshot or state file is needed.
 
-All GUI helper invocations clear the inherited `__CF_USER_TEXT_ENCODING` after
-sudo switches credentials. Otherwise a root CoreFoundation user marker can
-cause incorrect TIS state even with the correct UID and Aqua session.
+`postinstall` only normally exits fixed-path processes still holding a replaced
+dictionary, comparing descriptor device/inode against the installed database.
+This preserves the protection against macOS relaunching IMK during replacement.
+Failure is logged without undoing the completed file installation; logout/login
+is required in every case. No GUI repair dialog or automatic source setup runs.
 
-The preparation helper is copied from the package's signed payload to a unique,
-root-owned temporary directory so the GUI user can execute it even when the
-PackageKit Scripts directory is private. The directory is removed on exit.
-Saved state stays in that installation's private Scripts directory; no global
-state or HIToolbox preferences are read or written. A fresh-install marker is
-also private to that installation and console UID; it is not an unknown upgrade
-snapshot. First installs and previously disabled sources are not automatically
-enabled. No source is ever disabled.
-
-Each helper operation has a 20-second deadline; normal old-process exit is
-limited to 3 seconds per process. A failed post-install setup opens a separate
-GUI warning with an Open Keyboard Settings button, without keeping Installer
-waiting for a response. The completed payload does not become a package failure.
-No console user or a non-startup target volume defers setup to Keyboard settings.
-Other login sessions are not refreshed.
-See [investigation, Apple references, and validation limits](../docs/MACOS_INPUT_SOURCE_UPGRADE.md).
-
-After installation, select KeyKey from the Input menu and verify typing in
-TextEdit and the version in Preferences. An upgrade can leave ABC selected while
-the old process exits; select KeyKey to start a new session. Add a missing entry
-through Keyboard settings; an existing entry does not need to be removed first. If typing works,
-no logout is required. A first installation may still need a new login before
-macOS lists the source. Do not use repeated logout/forced shutdown as a recovery
-loop for the reported hang. State restoration and confirmed old-process exit do not
-prove that a new IMK session can type; real installation acceptance is separate.
+Helper invocations use `launchctl asuser`, `sudo -H -u`, then
+`env -u __CF_USER_TEXT_ENCODING` to avoid inherited root CoreFoundation state.
+No console user or another target volume defers GUI work until login. Other
+login sessions remain untouched. Normal exit is limited to 3 seconds per process,
+with a 20-second helper deadline. The preflight helper uses a unique temporary
+directory removed on exit. See [replacement safety](../docs/MACOS_INPUT_SOURCE_UPGRADE.md).
 
 Run isolated regressions without installing or changing input sources:
 

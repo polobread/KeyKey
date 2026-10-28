@@ -3,76 +3,45 @@
 #import "../InputSourceTool.m"
 
 @interface FakeSources : NSObject <KKInputSourceOperations>
-@property BOOL registrationSucceeds, stopSucceeds, enableSucceeds, enabled, selected, fallbackSucceeds;
-@property BOOL enabledReadable, selectedReadable;
-@property BOOL replacedStopSucceeds;
+@property BOOL selected, selectedReadable, fallbackSucceeds, stopSucceeds;
 @property(nonatomic, retain) NSMutableArray *calls;
 @end
 @implementation FakeSources
 - (id)init {
     if ((self = [super init])) {
         _calls = [NSMutableArray new];
-        _registrationSucceeds = YES; _stopSucceeds = YES; _enableSucceeds = YES; _fallbackSucceeds = YES;
-        _enabledReadable = YES; _selectedReadable = YES;
-        _replacedStopSucceeds = YES;
+        _selectedReadable = _fallbackSucceeds = _stopSucceeds = YES;
     }
     return self;
 }
 - (void)dealloc { [_calls release]; [super dealloc]; }
-- (BOOL)registerInstalledInputMethod { [self.calls addObject:@"register"]; return self.registrationSucceeds; }
 - (BOOL)stopInstalledInputMethod { [self.calls addObject:@"stop"]; return self.stopSucceeds; }
-- (BOOL)stopReplacedInputMethod { [self.calls addObject:@"stop-replaced"]; return self.replacedStopSucceeds; }
-- (BOOL)readEnabled:(BOOL *)enabled { [self.calls addObject:@"read"]; *enabled = self.enabled; return self.enabledReadable; }
+- (BOOL)stopReplacedInputMethod { return YES; }
 - (BOOL)readSelected:(BOOL *)selected { [self.calls addObject:@"selected"]; *selected = self.selected; return self.selectedReadable; }
 - (BOOL)selectFallback { [self.calls addObject:@"fallback"]; return self.fallbackSucceeds; }
-- (BOOL)enableInstalledInputMethod { [self.calls addObject:@"enable"]; return self.enableSucceeds; }
 @end
 
 static int passed;
-static void Check(BOOL value, NSString *message)
-{
+static void Check(BOOL value, NSString *message) {
     if (!value) { NSLog(@"FAIL: %@", message); exit(1); } passed++;
 }
-
-int main(void)
-{
+int main(void) {
     @autoreleasepool {
         FakeSources *source = [[[FakeSources alloc] init] autorelease];
-        Check(KKRefreshInputSource(source, NO), @"first install or previously disabled source stays unchanged");
-        Check([source.calls isEqual:@[@"stop-replaced", @"register"]],
-              @"postinstall checks for replaced databases before registration");
-        [source.calls removeAllObjects]; source.registrationSucceeds = NO;
-        Check(!KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"stop-replaced", @"register"]],
-              @"registration failure prevents attempted restoration");
-        [source.calls removeAllObjects]; source.registrationSucceeds = YES;
-        Check(KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"stop-replaced", @"register", @"enable"]],
-              @"upgrade registers and restores only the saved enabled intent");
-        [source.calls removeAllObjects]; source.replacedStopSucceeds = NO;
-        Check(!KKRefreshInputSource(source, YES) && [source.calls isEqual:@[@"stop-replaced"]],
-              @"unverified or unretired stale process is a visible setup failure");
-        source.replacedStopSucceeds = YES;
-        [source.calls removeAllObjects]; source.enableSucceeds = NO;
-        Check(!KKRefreshInputSource(source, YES), @"failed enabled restoration is reported, never silently accepted");
-        [source.calls removeAllObjects]; source.enabled = YES; source.selected = YES;
-        BOOL enabled = NO;
-        Check(KKPrepareInputSource(source, &enabled) && enabled &&
-              [source.calls isEqual:@[@"read", @"selected", @"fallback", @"stop"]],
-              @"active source is captured and safely retired before payload replacement");
+        source.selected = YES;
+        Check(KKPrepareInputSource(source) && [source.calls isEqual:@[@"selected", @"fallback", @"stop"]],
+              @"active KeyKey switches to ASCII before normal exit");
         [source.calls removeAllObjects]; source.fallbackSucceeds = NO;
-        Check(!KKPrepareInputSource(source, &enabled) && ![source.calls containsObject:@"stop"],
-              @"failed fallback prevents both termination and payload replacement");
-        [source.calls removeAllObjects]; source.selected = NO; source.enabled = NO;
-        Check(KKPrepareInputSource(source, &enabled) && !enabled &&
-              [source.calls isEqual:@[@"read", @"selected", @"stop"]],
-              @"inactive or first install does not change the user's selection");
+        Check(!KKPrepareInputSource(source) && ![source.calls containsObject:@"stop"],
+              @"failed fallback blocks termination and replacement");
+        [source.calls removeAllObjects]; source.selected = NO;
+        Check(KKPrepareInputSource(source) && [source.calls isEqual:@[@"selected", @"stop"]],
+              @"another selected input method is preserved");
         [source.calls removeAllObjects]; source.stopSucceeds = NO;
-        Check(!KKPrepareInputSource(source, &enabled), @"old process remaining alive prevents replacement");
-        [source.calls removeAllObjects]; source.enabledReadable = NO;
-        Check(!KKPrepareInputSource(source, &enabled) && [source.calls isEqual:@[@"read"]],
-              @"unknown enabled intent prevents replacement before changing selection");
-        [source.calls removeAllObjects]; source.enabledReadable = YES; source.selectedReadable = NO;
-        Check(!KKPrepareInputSource(source, &enabled) && [source.calls isEqual:@[@"read", @"selected"]],
-              @"unknown selected input source prevents replacement before termination");
-        NSLog(@"PASS: %d input-source lifecycle checks (fake system; no user settings touched)", passed);
+        Check(!KKPrepareInputSource(source), @"old process remaining alive blocks replacement");
+        [source.calls removeAllObjects]; source.selectedReadable = NO;
+        Check(!KKPrepareInputSource(source) && [source.calls isEqual:@[@"selected"]],
+              @"unreadable selection blocks replacement without guessing");
+        NSLog(@"PASS: %d input-source preparation checks (fake system)", passed);
     }
 }

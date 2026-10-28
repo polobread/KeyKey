@@ -1,176 +1,55 @@
 # macOS 安裝與升級流程
 
-## 設計與 Apple 依據
+安裝流程統一為：**硬體檢查 → 升級安全準備 → 寫入新版 → 檢查舊詞庫行程 → 登出再登入**。
+全新安裝、手動 PKG 升級與程式內更新皆要求重新登入，不要求重新開機。
+首次安裝於重新登入後加入琦琦；升級保留原有項目，重新登入後選回，不移除重加。
 
-安裝器負責將簽章後的 App 放在 `/Library/Input Methods/chichi77 KeyKey.app`，
-並通知目前登入帳號的 Text Input Sources 重新註冊。升級保存原本的啟用意圖，
-只在覆蓋前需要退出正在使用的舊版時暫切到已啟用的 ASCII 鍵盤；不自動選回琦琦。
-檔案已安裝、來源可查詢、舊行程已退出、新 IMK session 可輸入，是不同的驗證層級。
+## 安裝器與封裝
 
-- Apple SDK 的 Carbon/HIToolbox `TextInputSources.h` 定義：
-  `TISRegisterInputSource` 供安裝器註冊指定位置的來源、更新必要快取，再以清單查詢取得來源參照；
-  `TISEnableInputSource` 讓來源可選，`TISSelectInputSource` 才更換目前來源，
-  `TISDisableInputSource` 會將來源從可選介面移除。Apple 沒有要求升級前先停用來源。
-- [QA1810](https://developer.apple.com/library/archive/qa/qa1810/_index.html)
-  說明鍵盤輸入法由鍵盤設定管理；palette 範例不能作為整套升級順序的保證。
-- [Core Foundation Ownership Policy](https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html)
-  與 SDK 都要求遵循 Get rule：不可釋放 `TISGetInputSourceProperty` 借出的物件。
-- [Apple Installer Distribution XML](https://developer.apple.com/library/archive/documentation/DeveloperTools/Reference/DistributionDefinitionRef/Chapters/Distribution_XML_Ref.html)
-  提供 `RequireLogout`／`RequireRestart`；是否要求這些動作是套件的選擇。
-- [App 正常結束流程](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/AppArchitecture/Tasks/GracefulAppTermination.html)
-  也涵蓋登出與關機。更新器的組字延後應限定於 Sparkle 的重啟回呼。
+- Distribution 宣告 `hostArchitectures="arm64,x86_64"`，Apple Silicon 不需 Rosetta；Intel 能看到明確阻擋提示。payload／helper 仍只有 arm64。
+- `preinstall` 在執行 helper 前重複硬體檢查，涵蓋 component package 直接安裝。
+- 保留固定安裝位置 `/Library/Input Methods/chichi77 KeyKey.app`、簽章與公證流程。
+- Distribution 的 `onConclusion="RequireLogout"` 明確要求重新登入；完成頁及更新器訊息採相同指引。
 
-## 1.3.7 相對於正式版 1.3.1 的變更
+## 覆蓋前：只保留安全準備
 
-正式版 1.3.1 的 postinstall 以全域 `pkill` 結束舊行程。
-1.3.7 將狀態保存和有範圍的正常退出移到覆蓋前，避免舊行程繼續使用被替換的詞庫；
-覆蓋後註冊新版，並只恢復同一帳號原本已啟用的來源。安裝後準備失敗提供可見提示與設定入口。
-macOS 可能在覆蓋完成前再次啟動輸入法，因此覆蓋後另查固定位置行程開啟的詞庫檔案身分；
-若仍持有已被替換的詞庫，正常退出該行程，避免只剩注音、無法查字。
+固定安裝位置不存在時，直接略過舊版準備；不完整 bundle、普通檔案或失效符號連結仍走升級保護。
+有 console 帳號且目標是開機磁碟時，用套件附帶的已簽章 helper 執行 `--prepare-upgrade`：
 
-保留固定安裝路徑、簽章／公證，以及 `CVKeyboardHelper` 的借用物件與空清單修正。
-任何階段都不呼叫 disable，不讀寫私有 HIToolbox 偏好、不重建其他來源或其排序。
-1.3.7 已正式發布；隔離測試與原始碼檢查仍不能代替下列各情境的實機驗收。
+1. 查目前選取的來源；若是琦琦，切至現有已啟用的 ASCII 鍵盤並核對選取成功。
+2. 對捕捉到且 executable path 符合固定安裝位置的琦琦行程，要求正常退出。
+3. 以核心 PID、UID、啟動時間確認同一個行程已退出；每個行程最多 3 秒。不使用全域 kill 或強制退出。
 
-## 1.3.8 全新安裝與硬體檢查
+無法讀取目前選取、切換失敗、不能確認舊行程退出時，在覆蓋前中止並保留舊 App。
+不再讀取 enabled 狀態、不寫入跨階段狀態檔。原本的啟用設定由系統保留。
+helper 複製到唯一的 root 擁有暫存目錄供 GUI 帳號執行，結束即清除。
 
-macOS 1.3.8 已正式發布，修正包含於 [1.3.8 安裝包](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)；首次安裝後仍須登出再登入，並由使用者加入輸入法。
+## 覆蓋後：只處理仍持舊詞庫的行程
 
-安裝程式在複製檔案前，以 `installation-check` 查詢 `hw.optional.arm64`，
-只允許 Apple Silicon；Intel 或無法取得硬體能力時，以繁中／英文提示所需晶片、
-不支援 Intel Mac，以及「關於這台 Mac」的確認入口。`preinstall` 在執行
-arm64 helper 前重複硬體檢查，涵蓋直接安裝 component package 的路徑。
-查詢硬體能力而非目前行程架構，避免 Rosetta 將 Apple Silicon 誤判成 Intel。
+`postinstall` 以 `--finish-upgrade` 比較固定位置行程開啟詞庫的 device／inode 與安裝位置。
+只有仍持有已替換詞庫的行程才正常退出；使用目前詞庫的行程保留。
+這保留 macOS 在 preinstall 與覆蓋完成間重啟 IMK 時的保護。
+無法判定或退出失敗只記錄日誌；檔案已完成安裝，使用者仍依統一流程重新登入。
 
-固定安裝位置 `/Library/Input Methods/chichi77 KeyKey.app` 完全不存在時，
-`preinstall` 只記錄目前 console UID 與 `fresh`，不啟動 helper、不讀取 TIS 狀態、
-不切換輸入來源或退出行程。既有路徑即使是不完整的 bundle、普通檔案或失效符號連結，
-仍走原本升級保護，不因驗證不到舊版 Info.plist 而略過。
-`postinstall` 接受同一帳號的 `fresh` 標記，執行註冊但不自動啟用；註冊失敗仍提供設定提示，
-不將已完成的檔案安裝改判失敗。標記缺少、無效或帳號已改變時，保留既有不猜測狀態的處理。
+不再執行 TIS 註冊、啟用恢復、獨立 snapshot 驗證或額外 GUI 修復提示。
+不呼叫 disable、不改私有 HIToolbox 偏好，不自行選回琦琦。
+兩個階段的 helper 都以 `launchctl asuser`、`sudo -H -u` 取得 console 帳號的 GUI session 與憑證，
+再以 `env -u __CF_USER_TEXT_ENCODING` 清除繼承的管理員標記。helper 核對帳號未切換，整次限時 20 秒。
+無 console 帳號或非開機磁碟時不操作目前登入者的輸入法，於登入目標系統後完成使用。
 
-## 安裝器原生架構宣告
+## 更新器
 
-乾淨的 macOS 15.6.1 VM 顯示，正式 1.3.1 包內六個 Mach-O 均為 arm64，
-但 Distribution 未宣告 arm64，安裝器仍要求 Rosetta。正式 1.3.8 沿用同一項缺漏。
-1.3.9 封裝於 `options` 宣告 `hostArchitectures="arm64,x86_64"`：arm64 讓 Apple Silicon
-原生執行安裝評估與腳本；x86_64 讓 Intel 使用者能進入既有繁中／英文硬體阻擋提示。
-此屬安裝器的執行架構，payload 與 helper 仍只有 arm64，Intel 仍不得安裝。
-已發布套件不覆寫；1.3.9 仍須在沒有 Rosetta 的乾淨 VM 驗收。
+Sparkle 保留下載、驗章、管理員授權及安裝流程，安裝完成後也要求儲存工作、登出再登入。
+原有組字延後更新、背景檢查排程與更新視窗置前行為不變。
+一般 App 結束、登出與關機不交給更新器否決。
 
-## 正常退出的確認
+## 驗證
 
-1.3.9 的安裝 helper 保留 `NSRunningApplication.terminate` 的正常退出要求，
-同時捕捉 PID、UID 與啟動時間，以核心 `PROC_PIDTBSDINFO` 確認同一個行程已結束。
-`NSRunningApplication.terminated` 可能尚未更新；發出退出要求後，不以該旗標單獨判定成功。
-只有核心回報已不存在或同一身分已結束等待回收，才允許繼續；PID 重用、UID 改變、
-讀取拒絕或不完整回傳都中止，且不對替代行程追加退出要求。
+`bash Installer/test-input-sources.sh` 以假 TIS、測試自己的子行程及暫存詞庫檔，驗證硬體阻擋、
+全新安裝略過準備、ASCII 切換、正常退出與 PID 身分、舊詞庫 descriptor，以及腳本失敗邊界。
+不操作已安裝的 IMK 或使用者輸入法設定。
 
-每個行程仍最多等 3 秒，不強制 kill。此確認同時適用於覆蓋前退出舊版，
-以及覆蓋後退出持有已替換詞庫的行程。已發布 1.3.8 原包不變。
-
-## 覆蓋前與覆蓋後的操作
-
-硬體檢查通過後，兩個 script 只在開機磁碟且有有效 console 使用者時，透過
-`launchctl asuser` 與該帳號憑證執行獨立 helper。切換憑證後以
-`env -u __CF_USER_TEXT_ENCODING` 清除 root 繼承的 CoreFoundation 使用者標記；
-只切換 UID／GUI bootstrap 仍可能讀到錯誤的輸入法狀態。覆蓋前、覆蓋後、獨立驗證及提示均使用同一個清理方式。
-
-### preinstall：既有安裝的覆蓋前保護
-
-1. 使用套件附帶、已簽章的 helper，避免依賴舊版不存在的指令。
-   複製到唯一、root 擁有的暫存目錄供 GUI 帳號執行，退出時刪除；
-   不要求 GUI 帳號能讀取 PackageKit 的私有 Scripts 上層目錄。
-2. 以精確 ID 的 inclusive 清單讀取原本的 enabled，並查目前來源。
-   舊 bundle 存在但尚未註冊來源時視為未啟用；清單或屬性不可讀時中止，不猜測原設定。
-3. 若目前選取 KeyKey，將它視為原本已啟用，選取現有已啟用且可選的 ASCII
-   鍵盤配置並再次確認目前 ID。沒有可用配置或切換失敗時中止。
-   其他來源正在使用時不更換選取。
-4. 正常結束開始準備時捕捉到、executable path 符合固定安裝位置的 KeyKey 行程。
-   使用保留身分的 `NSRunningApplication`，拒絕無效 PID 與自身，不使用全域 kill。
-   每個行程最多等 3 秒；不能確認退出時在覆蓋前中止。
-5. 將 console UID 與 enabled／disabled 存在這次安裝的私有 Scripts 目錄，權限 600。
-   不使用跨安裝的全域狀態檔。
-
-preinstall 失敗時 Installer 顯示失敗，舊 bundle 尚未被覆蓋。若已切至 ASCII，
-使用者可重新選取原本的 KeyKey；不會留下被 helper 停用的來源。
-
-### postinstall：新版 bundle 已安裝時
-
-1. 檢查目前帳號、固定 executable path 的輸入法行程，透過公開 libproc API 比較
-   詞庫 descriptor 的 device／inode 與安裝位置。只有持有已替換詞庫的行程才正常退出，
-   每個行程最多等 3 秒；已使用目前詞庫的行程保留。無法確認或不能退出時回報準備失敗。
-   這處理 preinstall 結束後、payload 覆蓋前被系統重新啟動的行程，不使用全域 kill。
-2. 對固定安裝位置呼叫 `TISRegisterInputSource`，檢查 OSStatus 與精確 ID 可查詢。
-3. 只有保存的 UID 仍為目前 console 使用者、且原本 enabled 時，才以另一個 helper 程序
-   恢復啟用狀態。註冊程序可能仍觀察到來源的初始 disabled，不在該程序內呼叫 enable。
-   新程序看到已啟用時直接保留；確實未啟用時才呼叫 enable，屬性不可讀仍回報失敗。
-   首次安裝、原本 disabled 或狀態不明時不自動啟用。
-4. enable 後重新查詢，再用另一個 helper 行程確認 enabled，避免只靠呼叫端快取。
-   不會自動選回 KeyKey，也不結束持有目前詞庫的行程。
-
-每次 helper 操作最多 20 秒，每個失敗階段記錄可識別原因。
-獨立行程驗證只代表當下 TIS 狀態，不能保證後續 PackageKit／系統通知或選單行為。
-
-失敗時 payload 仍已完成安裝；postinstall 成功結束，另以相同帳號的 GUI process
-顯示「琦琦輸入法需要確認」，提供「開啟鍵盤設定」與「稍後」。
-提示不讓 Installer 等待回應，也不自行操作設定介面。無 GUI session 時不顯示提示，
-由完成頁與安裝日誌提供加入方式。
-
-使用者完成流程：從輸入法選單選取琦琦，在「文字編輯」試打並核對偏好設定版本。
-升級期間可能暫切到 ASCII，完成後選回琦琦；缺少項目才從鍵盤設定加入，已有項目不必先刪除。
-能正常輸入即可繼續使用。首次安裝，或升級後選單缺少琦琦、無法輸入時，
-請儲存工作後登出 macOS 再登入，保留原有來源。TIS 可查詢或已啟用不代表選單及 IMK session 已同步。
-完成頁、更新器訊息與新產生的發行說明使用相同指引，不宣稱 helper 已驗證實際輸入。
-已發布的套件及 feed 不因來源訊息變更而改變。
-
-一般 App 結束、登出與關機不再交給更新器否決；未完成組字的更新延後及再次檢查，
-保留於 Sparkle 的更新重啟回呼。手動 pkg 安裝及其他登入帳號不經過此組字保護。
-
-## 手動更新視窗
-
-手動更新的新版本、下載與準備安裝視窗使用 Sparkle 公開的聚焦介面，並只把標準 driver
-framework 控制的可見視窗顯示在浮動偏好設定前方、系統模態面板下方；每週檢查不改變
-視窗層級或前後順序。既有輸入法及其他視窗不調整。
-
-## 驗證與限制
-
-```sh
-bash Installer/test-input-sources.sh
-bash update/test-macos.sh
-python3 -m unittest discover -s update -p test_macos_release.py -v
-```
-
-隔離驗證覆蓋全新安裝不啟動升級前 helper、全新安裝標記與非致命註冊失敗、
-既有或不完整安裝維持升級保護、Intel／未知硬體拒絕與繁中／英文訊息、
-覆蓋前保存狀態／暫切既有 ASCII／退出順序、不可讀狀態或退出失敗中止、
-註冊 noErr 但來源缺少、enable 結果與新行程再次確認、不呼叫 disable、
-安裝後不改選取或退出使用目前詞庫的行程、持有舊詞庫的行程正常退出或失敗回報、
-真實暫存檔原子替換後的 descriptor 身分比較、行程身分／路徑檢查、AppKit 狀態過期時的真實子行程退出、PID 重用與核心狀態不可讀、無登入帳號／其他磁碟、
-帳號切換不沿用狀態，以及失敗時獨立啟動提示。
-測試不安裝、不切換真實輸入來源、不終止使用者行程、不登出。
-提示的顯示及鍵盤設定按鈕仍需實機 GUI 驗收。
-
-發布前須分別驗收三條安裝路徑：全新安裝、從舊版開啟 PKG 手動升級，以及由舊版 Sparkle 視窗按「安裝和重新啟動」升級。每條路徑均記錄套件來源、實際已安裝版本、安裝紀錄、來源啟用狀態與中文輸入結果。隔離測試通過與檔案落地不能代替三條實際路徑的成功。
-
-在可恢復的 macOS 虛擬機／測試 Mac 完成下列情境：
-
-| 情境 | 驗收內容 |
-| --- | --- |
-| 首次安裝 | 不執行升級前 helper；可從鍵盤設定加入，從選單選取，在 TextEdit 輸入「台北」並確認版本 |
-| Intel Mac | 複製 payload 前顯示 Apple Silicon 需求，不執行 arm64 helper；繁中／英文各自確認 |
-| 從正式舊版開啟 PKG 手動升級，KeyKey 作用中 | 覆蓋前暫切 ASCII 且舊行程退出，來源仍可選；選回後啟動新版且可輸入 |
-| 從舊版 Sparkle「安裝和重新啟動」升級 | 下載、簽章驗證、管理員授權、PKG、舊行程退出與更新重啟全部成功；版本確實更新且可輸入中文 |
-| 升級時選用 ABC／其他來源 | 安裝器不主動更換使用中的來源；可自行切到新版 KeyKey |
-| 覆蓋期間系統重新啟動 KeyKey | postinstall 退出持有舊詞庫的行程；選回後可輸入中文且使用目前詞庫 |
-| 原本停用 KeyKey | 不自動啟用；可自行從鍵盤設定加入 |
-| 覆蓋前準備失敗／舊行程不退出 | Installer 中止、舊 bundle 保留；可重新選取原版本 |
-| 安裝後恢復失敗 | 檔案安裝成功；使用者看得到確認提示與鍵盤設定入口 |
-| 登出／多帳號／不同文字宿主 | 確認登入畫面可操作、內建／USB 鍵盤可輸入，各帳號獨立驗收 |
-
-登出與登入畫面的鍵盤操作仍須實機驗收。若驗收遇到停滯，應取得系統診斷後分析。
-
-其他已登入帳號的行程未納入目前 console 帳號的準備；無 console 使用者時也不執行準備。
-手動安裝前應完成組字並儲存工作；ASCII 暫切不能當成各宿主送出組字的驗證。
-編譯、隔離回歸、簽章與來源可查詢，
-都不能取代上述實機驗收，也不能保證所有安裝都不需要重新登入。
+按 [VM 操作指南](MACOS_INSTALLER_VM_TESTING.md) 從快照 a／b 建立三個獨立工作副本，
+以相同提交來源的同一份安裝包完成全新、手動升級、舊版程式內更新。
+三條路徑皆正常登出再登入，記錄登入畫面、既有來源保留與實際中文組字／候選／選字／提交；
+已安裝版本或 receipt 不能代替實打。升級不得藉移除重加通過驗收。
