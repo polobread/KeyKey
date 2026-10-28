@@ -4,6 +4,10 @@
 // Keep Sparkle's download/install UI and signature validation. Query progress,
 // no-update results and query errors belong in Preferences instead of modal
 // dialogs owned by the background input method.
+@interface KeyKeyMacUpdater (UpdateFocus)
+- (BOOL)shouldFocusUpdateUI;
+@end
+
 @interface KeyKeyMacUserDriver : NSObject <SPUUserDriver>
 @property(nonatomic, assign) KeyKeyMacUpdater *owner;
 @property(nonatomic, retain) id<SPUUserDriver> standard;
@@ -11,12 +15,32 @@
 
 @implementation KeyKeyMacUserDriver
 - (void)dealloc { [_standard release]; [super dealloc]; }
+- (void)focusManualUpdate
+{
+    if ([_owner shouldFocusUpdateUI]) {
+        [NSApp activateIgnoringOtherApps:YES];
+        [self showUpdateInFocus];
+        // IMK is LSBackgroundOnly, and Preferences uses a floating window.
+        // Public focus alone cannot expose a normal update window. Raise only
+        // windows controlled by the standard driver's framework, below system
+        // modal panels; input-method panels and other windows stay untouched.
+        NSBundle *driverBundle = [NSBundle bundleForClass:[_standard class]];
+        for (NSWindow *window in [NSApp windows]) {
+            NSWindowController *controller = [window windowController];
+            if (window.visible && controller &&
+                [[NSBundle bundleForClass:[controller class]] isEqual:driverBundle]) {
+                [window setLevel:MAX(window.level, NSFloatingWindowLevel + 1)];
+                [window orderFrontRegardless];
+            }
+        }
+    }
+}
 - (void)showUpdatePermissionRequest:(SPUUpdatePermissionRequest *)request reply:(void (^)(SUUpdatePermissionResponse *))reply
 { [_standard showUpdatePermissionRequest:request reply:reply]; }
 - (void)showUserInitiatedUpdateCheckWithCancellation:(void (^)(void))cancellation
 { [_owner beginCheckWithCancellation:cancellation]; }
 - (void)showUpdateFoundWithAppcastItem:(SUAppcastItem *)item state:(SPUUserUpdateState *)state reply:(void (^)(SPUUserUpdateChoice))reply
-{ [_standard showUpdateFoundWithAppcastItem:item state:state reply:reply]; }
+{ [_standard showUpdateFoundWithAppcastItem:item state:state reply:reply]; [self focusManualUpdate]; }
 - (void)showUpdateReleaseNotesWithDownloadData:(SPUDownloadData *)data
 { [_standard showUpdateReleaseNotesWithDownloadData:data]; }
 - (void)showUpdateReleaseNotesFailedToDownloadWithError:(NSError *)error
@@ -31,7 +55,7 @@
     else [_standard showUpdaterError:error acknowledgement:acknowledgement];
 }
 - (void)showDownloadInitiatedWithCancellation:(void (^)(void))cancellation
-{ [_standard showDownloadInitiatedWithCancellation:cancellation]; }
+{ [_standard showDownloadInitiatedWithCancellation:cancellation]; [self focusManualUpdate]; }
 - (void)showDownloadDidReceiveExpectedContentLength:(uint64_t)length
 { [_standard showDownloadDidReceiveExpectedContentLength:length]; }
 - (void)showDownloadDidReceiveDataOfLength:(uint64_t)length
@@ -39,7 +63,7 @@
 - (void)showDownloadDidStartExtractingUpdate { [_standard showDownloadDidStartExtractingUpdate]; }
 - (void)showExtractionReceivedProgress:(double)progress { [_standard showExtractionReceivedProgress:progress]; }
 - (void)showReadyToInstallAndRelaunch:(void (^)(SPUUserUpdateChoice))reply
-{ [_standard showReadyToInstallAndRelaunch:reply]; }
+{ [_standard showReadyToInstallAndRelaunch:reply]; [self focusManualUpdate]; }
 - (void)showInstallingUpdateWithApplicationTerminated:(BOOL)terminated retryTerminatingApplication:(void (^)(void))retry
 { [_standard showInstallingUpdateWithApplicationTerminated:terminated retryTerminatingApplication:retry]; }
 - (void)showUpdateInstalledAndRelaunched:(BOOL)relaunched acknowledgement:(void (^)(void))acknowledgement
@@ -342,11 +366,16 @@ static NSURL *ReviewedFeed(id value)
     [self setPhase:@"no-update" message:@"目前沒有適用的更新。"];
 }
 
+- (BOOL)shouldFocusUpdateUI
+{
+    return !_stopped && _manualCheck;
+}
+
 - (void)standardUserDriverWillShowModalAlert
 {
     // The updater belongs to the background IMK app, not Preferences. Bring a
     // manual check's result forward so it cannot wait unseen behind Settings.
-    if (!_stopped && _manualCheck) [NSApp activateIgnoringOtherApps:YES];
+    if ([self shouldFocusUpdateUI]) [NSApp activateIgnoringOtherApps:YES];
 }
 
 - (void)updater:(SPUUpdater *)updater willDownloadUpdate:(SUAppcastItem *)item withRequest:(NSMutableURLRequest *)request
@@ -380,7 +409,7 @@ static NSURL *ReviewedFeed(id value)
 {
     if (_stopped) return;
     _installationRequested = YES;
-    [self setPhase:@"installing" message:@"安裝將要求管理員授權；完成後從輸入法選單選取琦琦，並在「文字編輯」試打。"];
+    [self setPhase:@"installing" message:@"安裝將要求管理員授權；完成後選回琦琦並試打。若選單缺少琦琦或無法輸入，請儲存工作、登出 macOS 再登入，不必移除原有項目。"];
 }
 
 - (BOOL)updater:(SPUUpdater *)updater shouldPostponeRelaunchForUpdate:(SUAppcastItem *)item
