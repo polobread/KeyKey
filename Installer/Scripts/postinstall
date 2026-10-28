@@ -33,20 +33,21 @@ case "$state" in
     *) state=unknown ;;
 esac
 # launchctl supplies the GUI bootstrap namespace; sudo supplies the user
-# credentials. Running TIS as the Installer's root user updates the wrong state.
+# credentials. Clear root's inherited CoreFoundation user marker after sudo
+# so TIS reads this GUI account's state. The UID alone is insufficient.
 # Restore only this same user's pre-install enabled intent; never disable or
 # change selection, and never guess intent from a post-replacement snapshot.
 # The helper also retires an IMK process relaunched during replacement if its
 # database descriptor no longer matches the installed file.
 setup_failed=false
-if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- "$helper" "$mode"; then
+if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- /usr/bin/env -u __CF_USER_TEXT_ENCODING "$helper" "$mode"; then
     setup_failed=true
 fi
 # A fresh process must see restoration too; the mutating helper's cached
 # snapshot alone is insufficient evidence that the user can select KeyKey.
 if [[ "$state" == enabled && "$setup_failed" == false ]]; then
     current_state=unknown
-    if ! current_state=$(/bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- \
+    if ! current_state=$(/bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- /usr/bin/env -u __CF_USER_TEXT_ENCODING \
         "$helper" --snapshot) || [[ "$current_state" != enabled ]]; then
         echo "KeyKey: independent post-install enabled verification failed ($current_state)." >&2
         setup_failed=true
@@ -57,7 +58,7 @@ if [[ "$setup_failed" == true ]]; then
     echo "KeyKey: files were installed, but input-source setup needs attention. Open System Settings > Keyboard > Text Input." >&2
     # A separate GUI process makes the failure visible without keeping the
     # Installer waiting for a modal alert. Close inherited Installer log pipes.
-    /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- \
+    /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- /usr/bin/env -u __CF_USER_TEXT_ENCODING \
         "$helper" --show-setup-warning </dev/null >/dev/null 2>&1 &
 fi
 exit 0

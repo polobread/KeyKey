@@ -66,6 +66,10 @@ the current console user's GUI session and credentials:
    still holding a replaced database are retired; processes using the installed
    database are preserved. It does not select KeyKey automatically.
 
+All GUI helper invocations clear the inherited `__CF_USER_TEXT_ENCODING` after
+sudo switches credentials. Otherwise a root CoreFoundation user marker can
+cause incorrect TIS state even with the correct UID and Aqua session.
+
 The preparation helper is copied from the package's signed payload to a unique,
 root-owned temporary directory so the GUI user can execute it even when the
 PackageKit Scripts directory is private. The directory is removed on exit.

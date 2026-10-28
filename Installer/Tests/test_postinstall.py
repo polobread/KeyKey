@@ -22,10 +22,35 @@ class InstallerScriptsTests(unittest.TestCase):
         stat = self.root / "stat"
         stat.write_text('#!/bin/bash\nprintf "%s\\n" "$TEST_CONSOLE_UID"\nexit "$TEST_STAT_RESULT"\n')
         launch = self.root / "launchctl"
-        launch.write_text('#!/bin/bash\nprintf "%s\\n" "$*" >> "$TEST_CALLS"\n'
-                          'if [[ "${!#}" == --snapshot || "${!#}" == --prepare-upgrade ]]; then\n'
-                          ' printf "%s\\n" "$TEST_SNAPSHOT"\n exit "$TEST_SNAPSHOT_RESULT"\nfi\n'
-                          'exit "$TEST_RESULT"\n')
+        # Simulate Installer/sudo carrying root's CoreFoundation user marker.
+        # Execute the real env wrapper, replacing only the native helper with a
+        # harmless probe; no actual launchctl, sudo, TIS or input method runs.
+        probe = self.root / "helper-probe"
+        probe.write_text('''#!/bin/bash
+if [[ ${__CF_USER_TEXT_ENCODING+present} ]]; then
+    echo "Root CoreFoundation user marker reached the GUI helper" >&2
+    exit 91
+fi
+if [[ "${!#}" == --snapshot || "${!#}" == --prepare-upgrade ]]; then
+    printf '%s\\n' "$TEST_SNAPSHOT"
+    exit "$TEST_SNAPSHOT_RESULT"
+fi
+exit "$TEST_RESULT"
+''')
+        probe.chmod(0o755)
+        launch.write_text('''#!/bin/bash
+printf '%s\\n' "$*" >> "$TEST_CALLS"
+while (( $# )) && [[ "$1" != -- ]]; do shift; done
+(( $# )) || exit 92
+shift
+command=("$@")
+for index in "${!command[@]}"; do
+    if [[ "${command[$index]}" == */KeyKeyInputSourceTool ]]; then
+        command[$index]="$TEST_ENV_PROBE"
+    fi
+done
+exec "${command[@]}"
+''')
         stat.chmod(0o755)
         launch.chmod(0o755)
         scripts = Path(__file__).resolve().parents[1] / "Scripts"
@@ -43,7 +68,9 @@ class InstallerScriptsTests(unittest.TestCase):
             env={**os.environ, "TEST_CONSOLE_UID": uid, "TEST_CALLS": str(self.calls),
                  "TEST_RESULT": result, "TEST_STAT_RESULT": stat_result,
                  "TEST_SNAPSHOT": snapshot, "TEST_SNAPSHOT_RESULT": snapshot_result,
-                 "TEST_ARM64": arm64, "TEST_SYSCTL_RESULT": sysctl_result},
+                 "TEST_ARM64": arm64, "TEST_SYSCTL_RESULT": sysctl_result,
+                 "TEST_ENV_PROBE": str(self.root / "helper-probe"),
+                 "__CF_USER_TEXT_ENCODING": "0x0:2:53"},
             capture_output=True, text=True, timeout=5)
 
     def wait_calls(self, count):
@@ -64,7 +91,7 @@ class InstallerScriptsTests(unittest.TestCase):
         calls = self.wait_calls(3)
         self.assertIn("asuser 501 /usr/bin/sudo -H -u #501 -- ", calls[0])
         self.assertTrue(calls[0].endswith("/KeyKeyInputSourceTool --prepare-upgrade"))
-        helper_path = calls[0].split(" -- ", 1)[1].removesuffix(" --prepare-upgrade")
+        helper_path = calls[0].split(" -- /usr/bin/env -u __CF_USER_TEXT_ENCODING ", 1)[1].removesuffix(" --prepare-upgrade")
         self.assertFalse(Path(helper_path).exists(), "preflight helper is removed after snapshot")
         self.assertTrue(calls[1].endswith(" --refresh-enabled"))
         self.assertTrue(calls[2].endswith(" --snapshot"))

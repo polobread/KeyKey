@@ -72,7 +72,9 @@ arm64 helper 前重複硬體檢查，涵蓋直接安裝 component package 的路
 ## 覆蓋前與覆蓋後的操作
 
 硬體檢查通過後，兩個 script 只在開機磁碟且有有效 console 使用者時，透過
-`launchctl asuser` 與該帳號憑證執行獨立 helper。
+`launchctl asuser` 與該帳號憑證執行獨立 helper。切換憑證後以
+`env -u __CF_USER_TEXT_ENCODING` 清除 root 繼承的 CoreFoundation 使用者標記；
+只切換 UID／GUI bootstrap 仍可能讀到錯誤的輸入法狀態。覆蓋前、覆蓋後、獨立驗證及提示均使用同一個清理方式。
 
 ### preinstall：既有安裝的覆蓋前保護
 
