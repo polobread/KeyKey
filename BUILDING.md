@@ -12,7 +12,7 @@ Linux 1.3.7 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安�
 Windows 與 Ubuntu 安裝包由 [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 提供，iOS 與 Android 1.3.7 已分別在 App Store、Google Play 上架，不需加入測試。
 FreeBSD 已完成桌面驗證，透過 ports／pkg 安裝，詳見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。
-目前原始碼版號為 `1.3.8`；macOS 已正式發布，其他平台仍為開發來源。共用好打注音模型維持 `1.3.1`。
+Guanyinma 工作分支的六平台原始碼開發版號統一為 `1.5.0`，正式發布狀態依上列平台資訊；共用好打注音模型維持 `1.3.1`。
 Linux／FreeBSD 開發來源只使用 Guanyinma Rust 核心；接合、設定與聚焦驗證見
 [Linux Guanyinma 說明](docs/GUANYINMA_LINUX_ADAPTER.md)。X11、GNOME Wayland／XWayland、
 FreeBSD 原生與套件安裝各自驗證，不以舊版本的桌面結果代替新核心驗收。
@@ -828,7 +828,7 @@ Windows runs its full release build, signing, EXE/ZIP packaging and approved pub
 locally; its CI workflow only checks. The tag must match the
 platform's source version at that tag and can be created on the Release page.
 The official macOS release is `1.3.8`; Windows, Linux/FreeBSD, iOS, and Android
-remain at `1.3.7`. Current sources use `1.3.8`, including development sources for the other platforms.
+remain at `1.3.7`. Current development sources on the Guanyinma branch use `1.5.0` across all six platforms.
 The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product
 version and N is a positive integer without leading zeros.
 Betas require Pre-release and the exact tag commit; Latest is unchanged. Fixes

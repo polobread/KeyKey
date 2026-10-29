@@ -18,10 +18,10 @@ class GuanyinmaNdkArguments(
     override fun asArguments(): Iterable<String> = listOf("--ndk", directory.get().asFile.absolutePath)
 }
 
-val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.3.8")
+val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.5.0")
 val keyKeyVersionCode = providers.gradleProperty("keykeyVersionCode")
     .map(String::toInt)
-    .getOrElse(1_003_008)
+    .getOrElse(1_005_000)
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH")
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD")
 val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS")

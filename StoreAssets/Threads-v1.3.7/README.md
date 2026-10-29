@@ -81,7 +81,7 @@ python3 StoreAssets/Threads-v1.3.7/verify.py
 swift StoreAssets/Threads-v1.3.7/verify-qr.swift
 ```
 
-修改版號時須先換用相應正式版素材，並重新核對平台指南與發布狀態，不能只改文字。重製依據為 [1.2.9～1.3.7 宣傳文案](../../docs/CROSS_PLATFORM_1_2_9_TO_1_3_7_PROMO.md)、[六平台截圖清單](../../docs/CROSS_PLATFORM_SCREENSHOT_PLAN.md)、各平台安裝指南與 [CHANGELOG 1.3.7](../../CHANGELOG.md#137)。不納入 Guanyinma 或 1.3.8 開發功能。
+修改版號時須先換用相應正式版素材，並重新核對平台指南與發布狀態，不能只改文字。重製依據為 [1.2.9～1.3.7 宣傳文案](../../docs/CROSS_PLATFORM_1_2_9_TO_1_3_7_PROMO.md)、[六平台截圖清單](../../docs/CROSS_PLATFORM_SCREENSHOT_PLAN.md)、各平台安裝指南與 [CHANGELOG 1.3.7](../../CHANGELOG.md#137)。不納入 Guanyinma 或其他開發中功能。
 
 ## 交付檢查
 
