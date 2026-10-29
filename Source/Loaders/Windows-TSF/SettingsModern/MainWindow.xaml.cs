@@ -22,7 +22,6 @@ public partial class MainWindow : Window
     private string savedPhraseText = "";
     private string savedPhraseReading = "";
     private NativeUserData? userData;
-    private bool phraseCore;
     private static readonly string[] Scales =
         ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
@@ -62,7 +61,6 @@ public partial class MainWindow : Window
         AddHandler(Selector.SelectionChangedEvent, new SelectionChangedEventHandler(UpdateSettingsChanged));
         AddHandler(RangeBase.ValueChangedEvent, new RoutedPropertyChangedEventHandler<double>(UpdateSettingsChanged));
         CandidateSelectionKeys.ItemsSource = SelectionKeys;
-        InputCore.ItemsSource = new[] { "Manjusri（原核心）", "Guanyinma（Rust）" };
         CandidateScale.ItemsSource = new[] { "跟隨 Windows（預設）" }
             .Concat(Scales.Skip(1).Select(s => s + "%")).ToArray();
         HighlightColor.ItemsSource = new[] { "紫色", "綠色", "黃色", "紅色" };
@@ -72,9 +70,7 @@ public partial class MainWindow : Window
         try
         {
             LoadSettings();
-            phraseCore = InputCore.SelectedIndex == 1;
-            userData = NativeUserData.Open(phraseCore);
-            UserDataOwner.Text = $"{(phraseCore ? "Guanyinma（Rust）" : "Manjusri（原核心）")} 自訂詞與學習。切換核心後重新開啟設定以管理另一份資料；讀音以半形逗號分隔。";
+            userData = NativeUserData.Open();
             LoadCollections();
             RefreshPhrases();
         }
@@ -109,8 +105,6 @@ public partial class MainWindow : Window
     private void LoadSettings()
     {
         var loader = SettingsStore.LoaderPath;
-        InputCore.IsEnabled = NativeUserData.KeyKeyGuanyinmaAvailable() != 0;
-        InputCore.SelectedIndex = InputCore.IsEnabled && SettingsStore.Read(loader, "InputCore", "Manjusri") == "Guanyinma" ? 1 : 0;
         diagnosticSession = DiagnosticSettings.Read();
         DiagnosticLogging.IsChecked = diagnosticSession.Active;
         UpdateDiagnosticStatus();
@@ -219,7 +213,7 @@ public partial class MainWindow : Window
         // Phrase text/readings are saved by their own buttons. Selection, reading
         // lookup and tab navigation must not mark the general settings as edited.
         var source = e.OriginalSource;
-        if (source == InputCore || source == CandidateSelectionKeys || source == ComposingTextBufferSize ||
+        if (source == CandidateSelectionKeys || source == ComposingTextBufferSize ||
             source == CandidateScale || source == HighlightColor ||
             source == PhoneticLayout || source == CangjiePunctuation ||
             source is ToggleButton toggle && (toggle is CheckBox or RadioButton) && toggle != AutomaticUpdates && toggle != BetaUpdates &&
@@ -301,7 +295,6 @@ public partial class MainWindow : Window
                 SettingsStore.LoaderPath, "PrimaryInputMethod", "SmartMandarin"), visible);
             SettingsStore.Write(SettingsStore.LoaderPath, new Dictionary<string, string> {
                 ["PrimaryInputMethod"] = primary,
-                ["InputCore"] = InputCore.SelectedIndex == 1 ? "Guanyinma" : "Manjusri",
                 ["OneDimensionalCandidatePanelStyle"] = HorizontalCandidate.IsChecked == true ? "horizontal" : "vertical",
                 ["HighlightColor"] = Colors[Math.Max(0, HighlightColor.SelectedIndex)],
                 ["CandidateWindowScalePercent"] = Scales[Math.Max(0, CandidateScale.SelectedIndex)],
@@ -539,7 +532,7 @@ public partial class MainWindow : Window
 
     private void Import_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Filter = phraseCore ? "Guanyinma 備份或舊詞庫 (*.json;*.db)|*.json;*.db|所有檔案 (*.*)|*.*" : "SQLite 資料庫 (*.db)|*.db|所有檔案 (*.*)|*.*" };
+        var dialog = new OpenFileDialog { Filter = "Guanyinma 備份或舊詞庫 (*.json;*.db)|*.json;*.db|所有檔案 (*.*)|*.*" };
         if (dialog.ShowDialog(this) != true) return;
         try
         {
@@ -552,8 +545,8 @@ public partial class MainWindow : Window
 
     private void Export_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new SaveFileDialog { Filter = phraseCore ? "Guanyinma JSON 備份 (*.json)|*.json" : "SQLite 資料庫 (*.db)|*.db|所有檔案 (*.*)|*.*",
-            DefaultExt = phraseCore ? ".json" : ".db", AddExtension = true };
+        var dialog = new SaveFileDialog { Filter = "Guanyinma JSON 備份 (*.json)|*.json",
+            DefaultExt = ".json", AddExtension = true };
         if (dialog.ShowDialog(this) != true) return;
         try { Status.Text = userData?.Export(dialog.FileName) == true
             ? "使用者資料已匯出" : "匯出使用者資料失敗"; }

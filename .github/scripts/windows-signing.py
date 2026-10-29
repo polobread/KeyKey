@@ -25,7 +25,7 @@ REPOSITORY = "polobread/KeyKey"
 WORKFLOW = ".github/workflows/package-windows.yml"
 FRONTEND = ROOT / "Source/Loaders/Windows-TSF"
 RUNTIME_FILES = ("KeyKeyTsf.dll", "KeyKeySettings.exe", "KeyKeySettingsBackend.dll",
-                 "KeyKeyDeployment.exe", "WinSparkle.dll", "WinSparkle-LICENSE.txt", "Databases/KeyKey.db")
+                 "KeyKeyDeployment.exe", "WinSparkle.dll", "WinSparkle-LICENSE.txt", "Databases/KeyKey.db", "guanyinma/Guanyinma-NOTICES.txt")
 FILES = tuple(f"{arch}/{name}" for arch in ("x64", "x86") for name in RUNTIME_FILES) + ("x86/KeyKeyRegistration.exe",)
 CHECKS = {"update-config", "unsigned-x64-zip", "unsigned-x86-zip", "unsigned-setup", "unsigned-packages", "updater-sdk", "settings", "deployment", "shared-x64-x86", "shared-x86-x64",
           "shared-managed-x64", "shared-managed-x86", "update-metadata", "release-transport", "signing-policy",
@@ -156,7 +156,7 @@ def stage(destination, build, tag):
     config = read_json(build / "update-config.json")
     require(config.get("release_version") == release_version and
             config.get("update_channel") == channels.parse_version(release_version)[1], "Build update channel mismatch")
-    sources = {f"inputs/{name}": build / arch / "Release" / relative
+    sources = {f"inputs/{name}": build / arch / ("" if relative.startswith("guanyinma/") else "Release") / relative
                for name in FILES for arch, relative in [name.split("/", 1)]}
     sources.update({f"unsigned/{name}": build / "unsigned" / name for name in unsigned_names(version)})
     sources.update({name: build / name for name in ("build-checks.json", "update-config.json")})

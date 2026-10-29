@@ -32,7 +32,7 @@ static void Success(HRESULT result, const char* message) {
 
 static std::wstring LegacyRuntimeSnapshot(const std::wstring& snapshot) {
     auto bytes = OpenVanilla::OVUTF8::FromUTF16(snapshot);
-    Check(bytes.compare(0,3,"v3;")==0,"Expected v3 runtime snapshot");
+    Check(bytes.compare(0,3,"v2;")==0,"Expected v2 runtime snapshot");
     std::vector<std::pair<size_t,size_t>> fields;
     for (size_t offset=3; offset<bytes.size();) {
         const auto colon=bytes.find(':',offset);
@@ -43,9 +43,9 @@ static std::wstring LegacyRuntimeSnapshot(const std::wstring& snapshot) {
         fields.emplace_back(offset,next-offset); offset=next;
     }
     Check(fields.size()>4,"Snapshot missing visibility fields");
-    // v3 appends InputCore after v2's Caps Lock field, before visibility.
-    const auto first=fields[fields.size()-6], last=fields[fields.size()-5];
-    bytes.erase(first.first,last.first+last.second-first.first); bytes.replace(0,3,"v1;");
+    // v2 appends Caps Lock before the four visibility fields.
+    const auto first=fields[fields.size()-5];
+    bytes.erase(first.first,first.second); bytes.replace(0,3,"v1;");
     return OpenVanilla::OVUTF16::FromUTF8(bytes);
 }
 
@@ -231,6 +231,23 @@ int wmain(int argc, wchar_t** argv) {
             const auto afterSnapshot = RuntimePreferencesSnapshot();
             Check(afterSnapshot == *sourceSnapshot && SyncRuntimePreferences(preferences, client, true) &&
                 RuntimePreferencesSnapshot() == afterSnapshot, "Preference groups diverged or unchanged sync rewrote values");
+            // A v3 publisher still sends its obsolete selector. Applying that
+            // snapshot must retain all settings while keeping the Rust core.
+            auto v3 = OpenVanilla::OVUTF8::FromUTF16(*sourceSnapshot);
+            size_t offset = 3;
+            std::vector<size_t> starts;
+            while (offset < v3.size()) {
+                starts.push_back(offset);
+                const auto colon = v3.find(':', offset);
+                offset = colon + 1 + std::stoul(v3.substr(offset, colon - offset));
+            }
+            v3.insert(starts[starts.size() - 4], "8:Manjusri");
+            v3.replace(0, 3, "v3;");
+            Success(preferences.write(client, OpenVanilla::OVUTF16::FromUTF8(v3)), "Publish retired core selector");
+            Check(SyncRuntimePreferences(preferences, client, true) && RuntimePreferencesSnapshot() == *sourceSnapshot,
+                "Retired selector shifted or changed active runtime preferences");
+            auto required = KeyKeyEngineSession::CreateControlled(selected->identifier);
+            Check(required && required->usesGuanyinma(), "Retired shared selector selected an old core");
             Success(preferences.write(client, LegacyRuntimeSnapshot(*sourceSnapshot)), "Publish legacy preferences");
             Check(SyncRuntimePreferences(preferences, client, true) && LoadFrontendSettings().ignoreCapsLockInChinese,
                 "Legacy snapshot did not adopt Windows Caps Lock default");

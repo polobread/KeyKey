@@ -24,7 +24,6 @@ struct FrontendSettings {
     bool playSoundOnTypingError = true;
     bool simplifiedChineseOutput = false;
     bool defaultChineseMode = true;
-    bool guanyinmaCore = false;
 };
 
 struct DiagnosticSession {

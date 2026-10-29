@@ -59,7 +59,7 @@ cargo test --locked --features bundled-sqlite
 python3 tests/run_c_abi_test.py --release --bundled-sqlite
 ```
 
-`bundled-sqlite` 編譯 SQLite 程式庫，不生成或 cooker `KeyKey.db`。Android 使用 bundled provider；Windows 雙核心的 Rust 與 C++ 也共用這份 provider 和靜態 CRT，避免 WinSQLite x86 stdcall 與標準 SQLite cdecl 混用，見 [Windows 接合](../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。接進既有 frontend 時要核對 SQLite／CRT 連結及符號，避免重複 provider。六平台原生產物與宿主整合需各自建置及驗收，Mac 上的測試不能代替其他平台。
+`bundled-sqlite` 編譯 SQLite 程式庫，不生成或 cooker `KeyKey.db`。Android 使用 bundled provider；Windows 單核心的 Rust 與原生 FE 也共用這份 provider 和靜態 CRT，避免 WinSQLite x86 stdcall 與標準 SQLite cdecl 混用，見 [Windows 接合](../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。接進既有 frontend 時要核對 SQLite／CRT 連結及符號，避免重複 provider。六平台原生產物與宿主整合需各自建置及驗收，Mac 上的測試不能代替其他平台。
 
 ## 跨平台無 UI 測試入口
 

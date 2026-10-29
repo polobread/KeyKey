@@ -157,10 +157,8 @@ $deploymentPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyDeploymen
 $updaterPath = Resolve-BuildArtifact $resolvedBuildDirectory 'WinSparkle.dll'
 $updaterLicense = Resolve-BuildArtifact $resolvedBuildDirectory 'WinSparkle-LICENSE.txt'
 $guanyinmaNotices = Join-Path $resolvedBuildDirectory 'guanyinma/Guanyinma-NOTICES.txt'
-if ((Test-Path (Join-Path $resolvedBuildDirectory 'CMakeCache.txt')) -and
-    (Select-String -Path (Join-Path $resolvedBuildDirectory 'CMakeCache.txt') -Pattern '^KEYKEY_ENABLE_GUANYINMA:BOOL=ON$' -Quiet) -and
-    -not (Test-Path -LiteralPath $guanyinmaNotices -PathType Leaf)) {
-    throw 'The dual-core build is missing Guanyinma runtime notices. Rebuild before packaging.'
+if (-not (Test-Path -LiteralPath $guanyinmaNotices -PathType Leaf)) {
+    throw 'The Windows build is missing required Guanyinma runtime notices. Rebuild before packaging.'
 }
 $databasePath = Resolve-BuildArtifact $resolvedBuildDirectory 'Databases\KeyKey.db'
 Assert-PeMachine -FilePath $updaterPath -ExpectedMachine 0x8664 `

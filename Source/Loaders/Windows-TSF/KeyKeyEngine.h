@@ -65,7 +65,7 @@ public:
 
     bool ready() const noexcept;
     const std::string& inputMethod() const noexcept { return inputMethod_; }
-    bool usesGuanyinma() const noexcept { return guanyinma_; }
+    bool usesGuanyinma() const noexcept { return ready(); }
     bool hasComposition() const;
     bool wantsKey(const KeyEvent& event) const;
     EngineResult handleKey(const KeyEvent& event);
@@ -75,10 +75,8 @@ private:
     explicit KeyKeyEngineSession(OpenVanilla::PVLoaderContext* context);
     OpenVanilla::PVLoaderContext* context_ = nullptr;
     std::string inputMethod_;
-    std::string smartSettingsSignature_;
+    std::string settingsSignature_;
     bool controlled_ = false;
-    bool guanyinma_ = false;
-    bool requestedGuanyinma_ = false;
 };
 
 }  // namespace KeyKey::WindowsTsf

@@ -68,7 +68,7 @@ iOS 已加入同一 FE 的 Swift／Guanyinma 雙核心，涵蓋觸控 extension 
 
 Android 已加入同一 IME service 的 Java／Guanyinma 雙核心、UTF-8 JNI、設定與獨立使用者資料管理。四個 ABI 直接編譯 Rust 靜態庫並連入薄 JNI；App 與 IME 讀同一份經內容雜湊驗證的模型。觸控／普通實體／實體雙排的行為與宿主交易由 FE 分派，核心互動分類可用 `set_profile` 更新。責任與分層驗證見 [Android 接合文件](GUANYINMA_ANDROID_ADAPTER.md)。
 
-Windows 已加入同一 TSF FE 的 Manjusri／Guanyinma 雙核心、一般設定選擇、DirectWrite 候選 callback 與獨立使用者資料管理。核心偏好在原組字與候選完成後由新事件採用，宿主 retained effects 仍由既有有序交易佇列完成後才接受下一事件。x64／x86 靜態 Rust 與原核心共用鎖定的 bundled SQLite；完整核心 CI 不在 Windows workflow 重跑。責任與分層驗證見 [Windows 接合文件](GUANYINMA_WINDOWS_ADAPTER.md)。
+Windows 同一 TSF FE 的四種輸入法固定使用 Guanyinma，移除 Manjusri／Generic 產品核心、一般設定的核心選單及失敗回退。DirectWrite 候選 callback、獨立 Guanyinma 詞庫與明確唯讀匯入仍由 FE 接合；宿主 retained effects 沿用既有有序交易佇列。x64／x86 靜態 Rust 與原生 FE 共用鎖定 bundled SQLite；完整核心 CI 不在 Windows workflow 重跑。責任與分層驗證見 [Windows 接合文件](GUANYINMA_WINDOWS_ADAPTER.md)。
 
 Linux／FreeBSD Fcitx 5 已轉為 Guanyinma 單核心開發；Legacy C++ walker、排序、可寫學習庫及核心切換路徑已移除。前端保留原生字型、事件、宿主效果、關聯詞及輸出轉換，並補齊桌面偏好與圖形詞庫工具。Linux 使用者資料只使用 Guanyinma 格式，不再支援舊 Linux C++ 資料讀寫或匯入；既有舊檔不自動刪除。接合與聚焦驗證見 [Linux adapter 說明](GUANYINMA_LINUX_ADAPTER.md)。GNOME Wayland／XWayland、FreeBSD 原生及正式安裝驗收各自記錄。
 

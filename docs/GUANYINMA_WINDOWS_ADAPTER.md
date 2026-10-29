@@ -1,16 +1,16 @@
 # Guanyinma Windows TSF 接合
 
-Windows 同一個 TSF frontend 可選 Manjusri 原核心或 Guanyinma Rust 核心，預設為 Manjusri。一般設定的「輸入核心」保存 `InputCore=Manjusri/Guanyinma`；缺少或未知值沿用原核心。這是開發接合，正式發布狀態仍以 README 與安裝文件為準。
+Windows 1.5.0 同一個 TSF frontend 的四種輸入法固定使用 Guanyinma Rust 核心。一般設定沒有核心選項，舊 `InputCore` 偏好不影響輸入；產品不建置或回退到 Manjusri／Generic 原核心。正式發布狀態仍以 README 與安裝文件為準。
 
 ## 輸入與宿主權責
 
-`KeyKeyEngineSession` 保留既有 PV sandwich，Rust context 只透過正式 C ABI 處理四種輸入法；候選窗、關聯詞互動、繁簡輸出、Shift 單按、中英文及全半形切換仍由 Windows FE 處理。Rust context 的關聯詞查詢、分類順序與去重經獨立唯讀 C ABI 執行；原核心的查詢仍保留。按鍵沿用固定美式虛擬鍵轉換，不在 adapter 重寫注音解析或排序。好打注音沿用 10～20 音節設定與十／十一音節桌面邊界。
+`KeyKeyEngineSession` 保留既有 PV sandwich，Rust context 只透過正式 C ABI 處理四種輸入法；候選窗、關聯詞互動、繁簡輸出、Shift 單按、中英文及全半形切換仍由 Windows FE 處理。關聯詞查詢、分類順序與去重經獨立唯讀 C ABI 執行。原生 module 只提供識別與設定接合，不建立 C++ 輸入核心或舊可寫學習庫。按鍵沿用固定美式虛擬鍵轉換，好打注音沿用 10～20 音節設定與十／十一音節桌面邊界。
 
-核心偏好與輸入法選擇分開。舊 context 有未完成讀音、組句或候選時繼續使用原核心；完成後，由下一個新輸入事件採用偏好，不重播事件。候選分頁／游標先由既有 PV panel 處理，回呼以文字、索引及跨度核對後轉成 Rust page-local 操作。選字與取消仍交給產生該候選的核心。
+輸入法及設定變更仍由 TSF 在既有有序交易邊界處理，保留組字、候選與待送效果，不重播事件。獨立非 controlled session 依目前輸入法的設定內容重新建立 Rust context。候選分頁／游標先由既有 PV panel 處理，回呼以文字、索引及跨度核對後轉成 Rust page-local 操作。
 
-TSF 的有序 edit-session 佇列與 retained result 保留原有權責：先重試前次宿主效果，成功後才進入下一個引擎事件。因此 Rust 已產生 commit，但宿主尚未接受選取／寫入時，不會先換核或重複學習。沒有宿主／失焦／取消仍走既有 TSF 邊界，不把引擎快照當成宿主送字成功。
+TSF 的有序 edit-session 佇列與 retained result 保留原有權責：先重試前次宿主效果，成功後才進入下一個引擎事件。因此 Rust 已產生 commit，但宿主尚未接受選取／寫入時，不會重複送字或學習。沒有宿主／失焦／取消仍走既有 TSF 邊界，不把引擎快照當成宿主送字成功。
 
-Windows 預設忽略中文 Caps Lock。數字鍵盤先保留目前顯示文字再直接輸入；主鍵盤不因全域 Num Lock 被視為 keypad。Rust session 建立失敗或原生設定不受支援時，建立前可回退原核心；已接受的事件失敗不轉交另一核心重播。同一偏好不逐鍵重試初次換核失敗，重新選擇核心或重建 context 可再嘗試。
+Windows 預設忽略中文 Caps Lock。數字鍵盤先保留目前顯示文字再直接輸入；主鍵盤不因全域 Num Lock 被視為 keypad。Rust session 建立失敗或設定不受支援時回報失敗，不建立另一核心、不轉交已接受事件重播。
 
 ## 字型與座標
 
@@ -23,12 +23,12 @@ Rust 游標使用 Unicode scalar；adapter 轉成 PV 組字／未完成讀音，
 | 資料 | 擁有者 |
 |---|---|
 | 共用 `Databases/KeyKey.db` | 唯讀正式模型，建置不 cooker |
-| `SmartMandarinUserData.db` 與既有表格排序檔 | Manjusri／Generic 原核心 |
+| `SmartMandarinUserData.db` 與既有表格排序檔 | 保留舊檔；只供明確唯讀匯入 |
 | `GuanyinmaUserData.db` | Rust 自訂詞、好打與表格學習，全部透過 C ABI |
 
-使用者資料沿用 `SettingsDirectory()`。桌面通常在 Roaming AppData；受限宿主沿用其可寫的私有位置。`InputCore` 納入 v3 runtime preferences 允許清單；v1／v2 快照回到 Manjusri。這個設定通道不傳送自訂詞或學習，不放寬 profile ACL。
+使用者資料沿用 `SettingsDirectory()`。桌面通常在 Roaming AppData；受限宿主沿用其可寫的私有位置。runtime preferences 發布 v2 格式，接受 v1／v2 及舊 v3；v3 的核心欄位只消耗、不套用或回存。這個通道不傳送自訂詞或學習，不放寬 profile ACL。
 
-每個設定視窗以 SafeHandle 固定開啟時的資料核心。套用另一核心後，原視窗的詞庫 CRUD、匯入／匯出及重設仍使用原資料；重新開啟設定才管理另一核心。Rust 列 token 只對應該 handle 的詞語／讀音快照，重載後拒絕舊 token，不拿它當另一個 DB 的 rowid。
+每個設定視窗以 SafeHandle 開啟 Guanyinma 詞庫。Rust 列 token 只對應該 handle 的詞語／讀音快照，重載後拒絕舊 token，不拿它當 SQLite rowid；舊詞庫只在明確匯入時唯讀開啟。產品沒有原核心詞庫的 CRUD 或備份輸出入口。
 
 Rust 的「重設好打注音學習紀錄」只清 Smart 學習，保留自訂詞及表格學習。匯出為完整版本化 JSON，包含自訂詞及各種學習，不含 generation／revision；匯入先驗證再原子套用。既有 Windows SQLite 詞庫只在明確匯入時唯讀開啟，不自動遷移。匯出透過同目錄暫存檔原子替換，拒絕模型、現用／舊詞庫、sidecar 及其檔案身分別名，失敗保留原備份。
 
@@ -36,11 +36,11 @@ Guanyinma 詞庫的讀音編解碼經無資料庫／session 的 `guanyinma_readi
 
 ## 建置
 
-CMake 預設 `KEYKEY_ENABLE_GUANYINMA=ON`，需要 Python 3.11 以上與 `Source/Guanyinma/rust-toolchain.toml` 鎖定的 Rustup 工具鏈。x64 使用 `x86_64-pc-windows-msvc`，x86 使用 `i686-pc-windows-msvc`；建置兩者前需安裝相應 Rust target。原有 CMake presets 與產品版號來源維持不變。
+Guanyinma 為必要建置依賴，需要 Python 3.11 以上與 `Source/Guanyinma/rust-toolchain.toml` 鎖定的 Rustup 工具鏈。x64 使用 `x86_64-pc-windows-msvc`，x86 使用 `i686-pc-windows-msvc`；建置兩者前需安裝相應 Rust target。原有 CMake presets 與產品版號來源維持不變。
 
-`tools/build-windows-core.py` 只執行鎖定依賴的 Release build，使用 `+crt-static` 與 bundled SQLite。雙核心建置的 C++ 原核心和 Rust 共用這份 SQLite，C++ header 直接取自 Cargo.lock 解析到的 `libsqlite3-sys`，不使用舊版 bundled header，也不混用 WinSQLite 的 x86 stdcall ABI。原生 Debug 設定也使用 `/MT`，保持與 Rust／SQLite 的 CRT 一致；仍可產生原生偵錯資訊。Rust 分配的物件仍只經 C ABI 對應 close 釋放。靜態連結不另部署 Rust DLL。
+`tools/build-windows-core.py` 只執行鎖定依賴的 Release build，Rust 與原生 FE 共用 `+crt-static`／`/MT` 及 bundled SQLite。C++ header 直接取自 Cargo.lock 解析到的 `libsqlite3-sys`，不使用舊版 bundled header，也不混用 WinSQLite 的 x86 stdcall ABI。原生 Debug 仍使用 `/MT`，保持 CRT 一致，並可產生原生偵錯資訊。Rust 分配的物件只經 C ABI 對應 close 釋放；靜態連結不另部署 Rust DLL。
 
-`-DKEYKEY_ENABLE_GUANYINMA=OFF` 可建置原核心及 WinSQLite，設定頁的核心選擇停用。雙核心 build 另外產生 `guanyinma/Guanyinma-NOTICES.txt`，含完整 Rust、crate、來源／資料與 SQLite notices，兩個封裝入口會放入既有 Licenses 目錄。
+建置固定產生 `guanyinma/Guanyinma-NOTICES.txt`，含完整 Rust、crate、來源／資料與 SQLite notices。兩個封裝入口及待簽 artifact 必須包含此檔，缺少時中止封裝。舊 store 寫入工具只留在測試 fixture，歷史 migration recorder 只可明確手動建置，不連入產品、不加入一般 CTest 或 CI gate。
 
 ## 局部驗證
 
@@ -53,7 +53,7 @@ ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=e
   -R '^KeyKeyGuanyinma(Adapter|UserData|TsfHostEffects|SettingsControls)$'
 ```
 
-這些是少量 FE 冒煙：四法建立／基本候選與送字、安全換核、UTF-16、獨立資料／封存、TSF 宿主拒絕後重試，以及真正 WPF 控制項／PInvoke 套用重開。使用隔離 profile，不註冊 TIP、不切換使用者系統輸入法，也不讀遷移 functional baseline。
+這些是少量 FE 冒煙：無偏好時四法直接建立 Rust session、忽略舊核心偏好與快照、無失敗回退、基本候選與送字、UTF-16、獨立資料／封存、TSF 宿主拒絕後重試，以及真正 WPF 控制項／PInvoke CRUD。使用隔離 profile，不註冊 TIP、不切換使用者系統輸入法，也不讀遷移 functional baseline。
 
 讀音 codec 的行為與 C ABI 由核心無 UI 測試驗證；Windows x64／x86 已執行原生 Rust 測試與真實 C consumer，使用 bundled SQLite 並核對正式模型前後雜湊。MSVC consumer 的匯入程式庫須放在 `/link` 之後，避免被 `/TC` 當成 C 原始碼編譯。這些結果不代替實際文字宿主或安裝驗收。
 

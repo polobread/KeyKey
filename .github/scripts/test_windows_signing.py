@@ -36,7 +36,7 @@ class WindowsSigningTests(unittest.TestCase):
         signing.write_json(build / "update-config.json", dict(release_version=self.version, update_channel="stable"))
         for name in signing.FILES:
             arch, relative = name.split("/", 1)
-            path = build / arch / "Release" / relative
+            path = build / arch / ("" if relative.startswith("guanyinma/") else "Release") / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(name.encode())
         unsigned = build / "unsigned"

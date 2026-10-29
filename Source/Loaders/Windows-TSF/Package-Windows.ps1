@@ -66,10 +66,8 @@ $deploymentPath = Resolve-BuildArtifact $settingsBuildDirectory 'KeyKeyDeploymen
 $updaterPath = Resolve-BuildArtifact $settingsBuildDirectory 'WinSparkle.dll'
 $updaterLicense = Resolve-BuildArtifact $settingsBuildDirectory 'WinSparkle-LICENSE.txt'
 $guanyinmaNotices = Join-Path $settingsBuildDirectory 'guanyinma/Guanyinma-NOTICES.txt'
-if ((Test-Path (Join-Path $settingsBuildDirectory 'CMakeCache.txt')) -and
-    (Select-String -Path (Join-Path $settingsBuildDirectory 'CMakeCache.txt') -Pattern '^KEYKEY_ENABLE_GUANYINMA:BOOL=ON$' -Quiet) -and
-    -not (Test-Path -LiteralPath $guanyinmaNotices -PathType Leaf)) {
-    throw 'The dual-core build is missing Guanyinma runtime notices. Rebuild before packaging.'
+if (-not (Test-Path -LiteralPath $guanyinmaNotices -PathType Leaf)) {
+    throw 'The Windows build is missing required Guanyinma runtime notices. Rebuild before packaging.'
 }
 if ($Architecture -eq 'x64') {
     $nativeDllPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyTsf.dll'

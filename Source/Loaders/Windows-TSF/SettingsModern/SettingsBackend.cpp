@@ -11,20 +11,14 @@
 #include "StartupInputMode.h"
 #include "SharedTableSettings.h"
 #include "FrontendSettings.h"
-#if KEYKEY_ENABLE_GUANYINMA
 #include "GuanyinmaWindowsUserData.h"
-#endif
 
 namespace {
 struct Collection { std::wstring source; std::wstring display; };
-std::vector<KeyKey::WindowsTsf::UserPhrase> phrases;
 std::vector<Collection> collections;
 struct UserDataHandle {
-    bool guanyinma = false;
     std::vector<KeyKey::WindowsTsf::UserPhrase> rows;
-#if KEYKEY_ENABLE_GUANYINMA
     std::unique_ptr<KeyKey::WindowsTsf::GuanyinmaWindowsUserData> rust;
-#endif
 };
 
 void CopyTo(const std::wstring& source, wchar_t* target, int capacity) {
@@ -36,25 +30,11 @@ void CopyTo(const std::wstring& source, wchar_t* target, int capacity) {
 }
 
 extern "C" {
-__declspec(dllexport) int __cdecl KeyKeyGuanyinmaAvailable() {
-#if KEYKEY_ENABLE_GUANYINMA
-    return 1;
-#else
-    return 0;
-#endif
-}
-__declspec(dllexport) void* __cdecl KeyKeyOpenUserData(int core, const wchar_t* model) {
+__declspec(dllexport) void* __cdecl KeyKeyOpenUserData(const wchar_t* model) {
     try {
+        if (!model) return nullptr;
         auto handle = std::make_unique<UserDataHandle>();
-        handle->guanyinma = core != 0;
-        if (handle->guanyinma) {
-#if KEYKEY_ENABLE_GUANYINMA
-            if (!model) return nullptr;
-            handle->rust = std::make_unique<KeyKey::WindowsTsf::GuanyinmaWindowsUserData>(model);
-#else
-            return nullptr;
-#endif
-        }
+        handle->rust = std::make_unique<KeyKey::WindowsTsf::GuanyinmaWindowsUserData>(model);
         return handle.release();
     } catch (...) { return nullptr; }
 }
@@ -63,10 +43,7 @@ __declspec(dllexport) int __cdecl KeyKeyUserDataLoad(void* opaque) {
     auto* handle = static_cast<UserDataHandle*>(opaque);
     if (!handle) return -1;
     try {
-#if KEYKEY_ENABLE_GUANYINMA
-        if (handle->guanyinma) handle->rows = handle->rust->load(); else
-#endif
-        handle->rows = KeyKey::WindowsTsf::LoadUserPhrases();
+        handle->rows = handle->rust->load();
         return static_cast<int>(handle->rows.size());
     } catch (...) { handle->rows.clear(); return -1; }
 }
@@ -77,43 +54,30 @@ __declspec(dllexport) int __cdecl KeyKeyUserDataPhraseAt(void* opaque, int index
     const auto& phrase = handle->rows[index]; *row = phrase.rowid;
     CopyTo(phrase.text, text, textCapacity); CopyTo(phrase.reading, reading, readingCapacity); return 1;
 }
-// The window's handle fixes its data owner even when another window changes
-// the input-core preference. Rust row IDs resolve only in that handle's view.
+// Rust row IDs resolve only in the window handle's current snapshot.
 __declspec(dllexport) int __cdecl KeyKeyUserDataSave(void* opaque, std::int64_t row, const wchar_t* text, const wchar_t* reading) {
     auto* handle = static_cast<UserDataHandle*>(opaque);
     if (!handle || !text || !reading) return 0;
     try {
-#if KEYKEY_ENABLE_GUANYINMA
-        if (handle->guanyinma) return handle->rust->save({row, text, reading});
-#endif
-        return KeyKey::WindowsTsf::SaveUserPhrase({row, text, reading});
+        return handle->rust->save({row, text, reading});
     } catch (...) { return 0; }
 }
 __declspec(dllexport) int __cdecl KeyKeyUserDataDelete(void* opaque, std::int64_t row) {
     auto* handle = static_cast<UserDataHandle*>(opaque); if (!handle) return 0;
     try {
-#if KEYKEY_ENABLE_GUANYINMA
-        if (handle->guanyinma) return handle->rust->remove(row);
-#endif
-        return KeyKey::WindowsTsf::DeleteUserPhrase(row);
+        return handle->rust->remove(row);
     } catch (...) { return 0; }
 }
 __declspec(dllexport) int __cdecl KeyKeyUserDataReset(void* opaque) {
     auto* handle = static_cast<UserDataHandle*>(opaque); if (!handle) return 0;
     try {
-#if KEYKEY_ENABLE_GUANYINMA
-        if (handle->guanyinma) return handle->rust->resetLearning();
-#endif
-        return KeyKey::WindowsTsf::ResetUserLearning();
+        return handle->rust->resetLearning();
     } catch (...) { return 0; }
 }
 __declspec(dllexport) int __cdecl KeyKeyUserDataArchive(void* opaque, const wchar_t* path, int exportData) {
     auto* handle = static_cast<UserDataHandle*>(opaque); if (!handle || !path) return 0;
     try {
-#if KEYKEY_ENABLE_GUANYINMA
-        if (handle->guanyinma) return exportData ? handle->rust->exportData(path) : handle->rust->importData(path);
-#endif
-        return exportData ? KeyKey::WindowsTsf::ExportUserData(path) : KeyKey::WindowsTsf::ImportUserData(path);
+        return exportData ? handle->rust->exportData(path) : handle->rust->importData(path);
     } catch (...) { return 0; }
 }
 __declspec(dllexport) int __cdecl KeyKeyReadSimplifiedOutput() {
@@ -218,45 +182,6 @@ __declspec(dllexport) int __cdecl KeyKeyReadingAt(void* handle, int character, i
     if (target && capacity >= required) CopyTo(*value, target, capacity);
     return required;
 }
-__declspec(dllexport) int __cdecl KeyKeyLoadPhrases() {
-    phrases = KeyKey::WindowsTsf::LoadUserPhrases();
-    return static_cast<int>(phrases.size());
-}
-
-__declspec(dllexport) int __cdecl KeyKeyPhraseAt(int index, std::int64_t* rowid,
-                                                wchar_t* text, int textCapacity,
-                                                wchar_t* reading, int readingCapacity) {
-    if (index < 0 || static_cast<size_t>(index) >= phrases.size() || !rowid) return 0;
-    const auto& phrase = phrases[index];
-    *rowid = phrase.rowid;
-    CopyTo(phrase.text, text, textCapacity);
-    CopyTo(phrase.reading, reading, readingCapacity);
-    return 1;
-}
-
-__declspec(dllexport) int __cdecl KeyKeySavePhrase(std::int64_t rowid,
-                                                   const wchar_t* text,
-                                                   const wchar_t* reading) {
-    if (!text || !reading) return 0;
-    return KeyKey::WindowsTsf::SaveUserPhrase({rowid, text, reading}) ? 1 : 0;
-}
-
-__declspec(dllexport) int __cdecl KeyKeyDeletePhrase(std::int64_t rowid) {
-    return KeyKey::WindowsTsf::DeleteUserPhrase(rowid) ? 1 : 0;
-}
-
-__declspec(dllexport) int __cdecl KeyKeyResetLearning() {
-    return KeyKey::WindowsTsf::ResetUserLearning() ? 1 : 0;
-}
-
-__declspec(dllexport) int __cdecl KeyKeyImportUserData(const wchar_t* path) {
-    return path && KeyKey::WindowsTsf::ImportUserData(path) ? 1 : 0;
-}
-
-__declspec(dllexport) int __cdecl KeyKeyExportUserData(const wchar_t* path) {
-    return path && KeyKey::WindowsTsf::ExportUserData(path) ? 1 : 0;
-}
-
 __declspec(dllexport) int __cdecl KeyKeyLoadCollections(const wchar_t* path) {
     collections.clear();
     sqlite3* database = nullptr;

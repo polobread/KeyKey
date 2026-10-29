@@ -5,16 +5,13 @@ using Microsoft.Win32.SafeHandles;
 
 namespace KeyKeySettings;
 
-// One immutable core binding per settings window; native row snapshots cannot
-// accidentally redirect an edit to another core after a preference change.
+// Each settings window owns its Guanyinma data handle and row snapshot.
 internal sealed class NativeUserData : SafeHandleZeroOrMinusOneIsInvalid
 {
     private const string Library = "KeyKeySettingsBackend.dll";
     private NativeUserData() : base(true) { }
-    [DllImport(Library, CallingConvention = CallingConvention.Cdecl)]
-    internal static extern int KeyKeyGuanyinmaAvailable();
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
-    private static extern NativeUserData KeyKeyOpenUserData(int core, string model);
+    private static extern NativeUserData KeyKeyOpenUserData(string model);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)]
     private static extern void KeyKeyCloseUserData(IntPtr handle);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)]
@@ -31,12 +28,12 @@ internal sealed class NativeUserData : SafeHandleZeroOrMinusOneIsInvalid
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
     private static extern int KeyKeyUserDataArchive(NativeUserData handle, string path, int exportData);
     protected override bool ReleaseHandle() { KeyKeyCloseUserData(handle); return true; }
-    internal static NativeUserData Open(bool guanyinma)
+    internal static NativeUserData Open()
     {
-        var result = KeyKeyOpenUserData(guanyinma ? 1 : 0, Path.Combine(AppContext.BaseDirectory, "Databases", "KeyKey.db"));
+        var result = KeyKeyOpenUserData(Path.Combine(AppContext.BaseDirectory, "Databases", "KeyKey.db"));
         if (!result.IsInvalid) return result;
         result.Dispose();
-        throw new IOException("無法開啟所選核心的使用者詞庫。");
+        throw new IOException("無法開啟使用者詞庫。");
     }
     internal IReadOnlyList<PhraseRow> Load()
     {

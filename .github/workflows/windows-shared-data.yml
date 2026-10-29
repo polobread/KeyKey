@@ -32,15 +32,25 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Read the committed Rust toolchain
+        id: rust
+        run: |
+          $version = python -c "import tomllib; print(tomllib.load(open('../../Guanyinma/rust-toolchain.toml', 'rb'))['toolchain']['channel'])"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot read Rust toolchain.' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+          targets: x86_64-pc-windows-msvc,i686-pc-windows-msvc
       - name: Build shared data test targets
         run: |
           python ../../../update/prepare.py fetch windows
           if ($LASTEXITCODE -ne 0) { throw 'Updater SDK preparation failed.' }
-          cmake --preset windows-x64-vs2026 -DKEYKEY_ENABLE_GUANYINMA=OFF
+          cmake --preset windows-x64-vs2026
           if ($LASTEXITCODE -ne 0) { throw 'x64 configure failed.' }
           cmake --build --preset windows-x64-vs2026-release --target KeyKeySharedDataProtectionTest
           if ($LASTEXITCODE -ne 0) { throw 'x64 test build failed.' }
-          cmake --preset windows-x86 -DKEYKEY_ENABLE_GUANYINMA=OFF
+          cmake --preset windows-x86
           if ($LASTEXITCODE -ne 0) { throw 'x86 configure failed.' }
           cmake --build --preset windows-x86-release --target KeyKeySharedDataProtectionTest
           if ($LASTEXITCODE -ne 0) { throw 'x86 test build failed.' }

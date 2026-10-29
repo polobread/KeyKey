@@ -8,28 +8,27 @@ using System.Text;
 
 internal static class Program
 {
-    private static void VerifyInputCore(MainWindow window)
+    private static IReadOnlyList<PhraseRow> LoadRustPhrases()
     {
-        var option = Control<ComboBox>(window, "InputCore");
-        Check(option.IsEnabled && option.SelectedIndex == 0, "Core must default to Manjusri");
-        option.SelectedIndex = 1;
-        Check(!App.Updater.CanShutdown, "Core choice must protect an unsaved draft");
-        Control<Button>(window, "ApplyButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Check(Control<TextBlock>(window, "Status").Text == "設定已套用", "Core preference Apply failed");
-        Check(Control<TextBlock>(window, "UserDataOwner").Text.StartsWith("Manjusri"), "Old window changed its data owner");
+        using var data = NativeUserData.Open();
+        return data.Load();
+    }
+    private static void VerifyGuanyinmaData(MainWindow window)
+    {
+        Check(window.FindName("InputCore") is null, "The retired core selector is still present");
+        Check(File.Exists(Path.Combine(Path.GetDirectoryName(SettingsStore.LoaderPath)!, "GuanyinmaUserData.db")), "Settings must open Rust data by default");
+        Check(!File.Exists(Path.Combine(Path.GetDirectoryName(SettingsStore.LoaderPath)!, "SmartMandarinUserData.db")), "Settings opened the old writable store");
+        using var rust = NativeUserData.Open();
+        Check(rust.Save(0, "妮好", "ㄋㄧˇ,ㄏㄠˇ") && rust.Load().Count == 1, "Managed Rust insert failed");
         var reopened = new MainWindow();
-        Check(Control<ComboBox>(reopened, "InputCore").SelectedIndex == 1 &&
-            Control<TextBlock>(reopened, "UserDataOwner").Text.StartsWith("Guanyinma"), "Saved Rust core not restored");
-        using var rust = NativeUserData.Open(true);
-        using var legacy = NativeUserData.Open(false);
-        Check(rust.Save(0, "妮好", "ㄋㄧˇ,ㄏㄠˇ") && rust.Load().Count == 1 && legacy.Load().Count == 0,
-            "Managed user-data handle did not isolate cores");
+        Check(reopened.FindName("InputCore") is null &&
+            Control<DataGrid>(reopened, "UserPhrases").Items.Cast<PhraseRow>().Single().Text == "妮好", "Reopened settings changed its data owner");
         var row = rust.Load().Single();
         Check(rust.Save(row.RowId, "妮豪", "ㄋㄧˇ,ㄏㄠˊ") && rust.Load().Single().Text == "妮豪", "Managed Rust update failed");
         Check(rust.Reset() && rust.Load().Count == 1, "Managed reset removed custom phrases");
         Check(rust.Delete(rust.Load().Single().RowId) && rust.Load().Count == 0, "Managed Rust delete failed");
         reopened.Close();
-        Console.WriteLine("Core selection, Apply/reopen, fixed window owner and managed Rust data smoke passed");
+        Console.WriteLine("Required Guanyinma data, obsolete preference isolation and managed CRUD/reset smoke passed");
     }
     private static void VerifyPhoneticControls(MainWindow window, string directory)
     {
@@ -167,32 +166,32 @@ internal static class Program
         Check(reinstall.IsEnabled && !Control<Button>(window, "CheckUpdate").IsEnabled,
             "Manual reinstall should remain available without a signed update configuration");
 
-        text.Text = "更新";
-        reading.Text = "ㄍㄥ,ㄒㄧㄣ";
+        text.Text = "更新龘";
+        reading.Text = "ㄍㄥ,ㄒㄧㄣ,ㄉㄚˊ";
         Check(!App.Updater.CanShutdown, "Phrase draft does not block update shutdown");
         Check(!reinstall.IsEnabled, "Phrase draft does not disable manual reinstall");
         apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(status.Text == "設定已套用" && !App.Updater.CanShutdown &&
-              NativeBackend.LoadPhrases().All(p => p.Text != "更新"),
+              LoadRustPhrases().All(p => p.Text != "更新龘"),
               "Applying general settings discarded protection for an unsaved phrase");
         reading.Text = "ㄍㄥ";
         add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(status.Text.StartsWith("儲存失敗") && !App.Updater.CanShutdown,
               "Failed phrase save removed update shutdown protection");
-        reading.Text = "ㄍㄥ,ㄒㄧㄣ";
+        reading.Text = "ㄍㄥ,ㄒㄧㄣ,ㄉㄚˊ";
         add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(status.Text == "自訂詞已儲存" && App.Updater.CanShutdown,
               "Successfully saved phrase still blocks an update");
         Check(reinstall.IsEnabled, "Saved phrase did not enable manual reinstall");
 
         var phrases = Control<DataGrid>(window, "UserPhrases");
-        phrases.SelectedItem = phrases.Items.OfType<PhraseRow>().Single(p => p.Text == "更新");
+        phrases.SelectedItem = phrases.Items.OfType<PhraseRow>().Single(p => p.Text == "更新龘");
         Check(App.Updater.CanShutdown, "Selecting a saved phrase incorrectly marks settings as edited");
         var beep = Control<CheckBox>(window, "TypingBeep");
         beep.IsChecked = !beep.IsChecked;
         Check(!App.Updater.CanShutdown, "Unsaved general setting does not block an update");
         Check(!reinstall.IsEnabled, "Unsaved settings do not disable manual reinstall");
-        reading.Text = "ㄍㄥˋ,ㄒㄧㄣ";
+        reading.Text = "ㄍㄥˋ,ㄒㄧㄣ,ㄉㄚˊ";
         Control<Button>(window, "UpdatePhraseButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(status.Text == "自訂詞已儲存" && !App.Updater.CanShutdown,
               "Saving a phrase incorrectly cleared unsaved general settings");
@@ -201,9 +200,9 @@ internal static class Program
         Check(reinstall.IsEnabled, "Applying saved settings did not enable manual reinstall");
 
         // A second phrase edit must be tracked against the successfully saved value.
-        phrases.SelectedItem = phrases.Items.OfType<PhraseRow>().Single(p => p.Text == "更新");
+        phrases.SelectedItem = phrases.Items.OfType<PhraseRow>().Single(p => p.Text == "更新龘");
         Check(App.Updater.CanShutdown, "Selecting the modified saved phrase blocks an update");
-        reading.Text = "ㄍㄥ,ㄒㄧㄣ";
+        reading.Text = "ㄍㄥ,ㄒㄧㄣ,ㄉㄚˊ";
         apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(!App.Updater.CanShutdown, "Apply cleared a modified existing phrase draft");
         Control<Button>(window, "UpdatePhraseButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -286,10 +285,12 @@ internal static class Program
             var app = new App();
             app.InitializeComponent();
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            if (args.Contains("--guanyinma-data"))
+                SettingsStore.Write(SettingsStore.LoaderPath, new Dictionary<string, string> { ["InputCore"] = "Manjusri" });
             var window = new MainWindow();
-            if (args.Contains("--input-core"))
+            if (args.Contains("--guanyinma-data"))
             {
-                VerifyInputCore(window); window.Close(); return 0;
+                VerifyGuanyinmaData(window); window.Close(); return 0;
             }
             if (args.Contains("--phonetic-controls"))
             {
@@ -431,12 +432,14 @@ internal static class Program
             var supplementary = NativeBackend.LookupReadings("𠀀字");
             Check(supplementary.Characters.Count == 2 && supplementary.Characters[0].Text == "𠀀",
                 "Supplementary ideograph split into surrogates");
-            Check(NativeBackend.KeyKeySavePhrase(0, "銀行", "ㄧㄣˊ,ㄏㄤˊ") == 1, "Saving isolated custom phrase failed");
-            var savedPhrase = NativeBackend.LoadPhrases().Single(p => p.Text == "銀行");
-            Check(NativeBackend.KeyKeySavePhrase(0, "銀行", "ㄧㄣˊ,ㄏㄤˊ") == 0, "Duplicate phrase accepted");
-            Check(NativeBackend.KeyKeySavePhrase(savedPhrase.RowId + 100, "銀行", "ㄧㄣˊ,ㄒㄧㄥˊ") == 0,
+            using var words = NativeUserData.Open();
+            Check(words.Save(0, "銀航", "ㄧㄣˊ,ㄏㄤˊ"), "Saving isolated custom phrase failed");
+            var savedPhrase = words.Load().Single(p => p.Text == "銀航");
+            Check(words.Save(0, "銀航", "ㄧㄣˊ,ㄏㄤˊ") && words.Load().Count(p => p.Text == "銀航") == 1, "Idempotent add duplicated a phrase");
+            savedPhrase = words.Load().Single(p => p.Text == "銀航");
+            Check(!words.Save(savedPhrase.RowId + 100, "銀航", "ㄧㄣˊ,ㄒㄧㄥˊ"),
                 "Missing rowid update inserted phrase");
-            Check(NativeBackend.KeyKeySavePhrase(0, "😀", "") == 0, "Incomplete missing reading saved");
+            Check(!words.Save(0, "😀", ""), "Incomplete missing reading saved");
             window.Close();
             var reopened = new MainWindow();
             Check(Control<RadioButton>(reopened, "DefaultEnglishMode").IsChecked == true,
@@ -449,7 +452,7 @@ internal static class Program
             Check((string)Control<ComboBox>(reopened, "CandidateSelectionKeys").SelectedItem == "asdfghjk" &&
                 Control<Slider>(reopened, "ComposingTextBufferSize").Value == 15, "Advanced settings did not reopen");
             Control<DataGrid>(reopened, "UserPhrases").SelectedItem =
-                NativeBackend.LoadPhrases().Single(p => p.RowId == savedPhrase.RowId);
+                Control<DataGrid>(reopened, "UserPhrases").Items.Cast<PhraseRow>().Single(p => p.Text == "銀航");
             Check(Control<TextBox>(reopened, "PhraseReading").Text == "ㄧㄣˊ,ㄏㄤˊ",
                 "Saved reading lost on reopen selection");
             Control<RadioButton>(reopened, "DefaultChineseMode").IsChecked = true;

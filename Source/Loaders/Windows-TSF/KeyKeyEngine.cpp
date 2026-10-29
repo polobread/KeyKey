@@ -12,17 +12,12 @@
 #include "Diagnostics.h"
 #include "FrontendSettings.h"
 #include "InputMethods.h"
-#include "WindowsTableInputMethod.h"
 #include "SharedFileAccess.h"
-#if KEYKEY_ENABLE_GUANYINMA
 #include "GuanyinmaWindowsAdapter.h"
-#endif
 
 #include "OpenVanilla.h"
 #include "PlainVanilla.h"
 #include "OVAFAssociatedPhrase.h"
-#include "OVIMSmartMandarin.h"
-#include "OVIMTraditionalMandarin.h"
 
 namespace KeyKey::WindowsTsf {
 namespace {
@@ -123,71 +118,23 @@ std::string TestProfileDirectory() {
     return OVUTF8::FromUTF16(path);
 }
 
-class WindowsSmartMandarin final : public OVIMSmartMandarin {
+// PlainVanilla retains native buffers, panels and module preferences. These
+// entries are metadata only; every input context is created by Guanyinma.
+class WindowsGuanyinmaInputMethod final : public OVModule {
 public:
-    void loadConfig(OVKeyValueMap* config, OVLoaderService* service) override {
-        const auto keys = config->stringValueForKey("CandidateSelectionKeys");
-        bool valid = keys.empty() || keys.size() == 8;
-        std::string seen;
-        for (unsigned char key : keys) {
-            if (key < 0x21 || key > 0x7e || seen.find(key) != std::string::npos) valid = false;
-            seen += static_cast<char>(key);
-        }
-        const auto buffer = config->stringValueForKey("ComposingTextBufferSize");
-        char* end = nullptr;
-        const auto length = std::strtol(buffer.c_str(), &end, 10);
-        const bool validLength = !buffer.empty() && end && *end == 0 && length >= 10 && length <= 20;
-        OVIMSmartMandarin::loadConfig(config, service);
-        // PlainVanilla supplies a read-only map. Normalize the Windows module
-        // fields after loading instead of trying to mutate that map.
-        m_cfgCandidateSelectionKeys = valid ? keys : "";
-        m_cfgComposingTextBufferSize = validLength ? static_cast<size_t>(length) : 10;
-    }
-    void saveConfig(OVKeyValueMap* config, OVLoaderService* service) override {
-        OVIMSmartMandarin::saveConfig(config, service);
-        config->setKeyStringValue("CandidateSelectionKeys", m_cfgCandidateSelectionKeys);
-        config->setKeyIntValue("ComposingTextBufferSize", static_cast<int>(m_cfgComposingTextBufferSize));
-    }
-};
-
-class WindowsMandarinPackage final : public OVModulePackage {
-public:
-    explicit WindowsMandarinPackage(bool includeSmart) : includeSmart_(includeSmart) {}
-
-    bool initialize(OVPathInfo*, OVLoaderService*) override {
-        m_moduleVector.push_back(new OVModuleClassWrapper<OVIMTraditionalMandarin>);
-        if (includeSmart_) {
-            m_moduleVector.push_back(new OVModuleClassWrapper<WindowsSmartMandarin>);
-        }
-        m_moduleVector.push_back(new OVModuleClassWrapper<OVAFAssociatedPhrase>);
-        return true;
-    }
+    explicit WindowsGuanyinmaInputMethod(std::string identifier) : identifier_(std::move(identifier)) {}
+    bool isInputMethod() const override { return true; }
+    const std::string identifier() const override { return identifier_; }
 private:
-    bool includeSmart_;
+    const std::string identifier_;
 };
-
-class WindowsTablePackage final : public OVModulePackage {
+class WindowsGuanyinmaPackage final : public OVModulePackage {
 public:
-    bool initialize(OVPathInfo*, OVLoaderService* service) override {
-        auto* database = service->SQLiteDatabaseService();
-        if (!database) return false;
-        const auto tables = database->tables(std::string("Generic-*"));
-        for (const auto& method : kInputMethods) {
-            if (IsTableInputMethod(method.identifier) &&
-                std::find(tables.begin(), tables.end(), method.identifier) != tables.end()) {
-                identifiers_.push_back(method.identifier);
-            }
-        }
-        return true;
+    size_t numberOfModules(OVLoaderService*) override { return std::size(kInputMethods) + 1; }
+    OVModule* moduleAtIndex(size_t index, OVLoaderService*) override {
+        if (index < std::size(kInputMethods)) return new WindowsGuanyinmaInputMethod(kInputMethods[index].identifier);
+        return index == std::size(kInputMethods) ? new OVAFAssociatedPhrase : nullptr;
     }
-    size_t numberOfModules(OVLoaderService*) override { return identifiers_.size(); }
-    OVModule* moduleAtIndex(size_t index, OVLoaderService* service) override {
-        return index < identifiers_.size()
-            ? new WindowsTableInputMethod(identifiers_[index], service->SQLiteDatabaseService())
-            : nullptr;
-    }
-private:
-    std::vector<std::string> identifiers_;
 };
 
 bool HasSmartMandarinData(OVSQLiteConnection* connection) {
@@ -233,20 +180,12 @@ std::string FindDatabase() {
 class OrderedLoaderContext final : public PVLoaderContext {
 public:
     OrderedLoaderContext(PVLoader* loader, OVEventHandlingContext* context, OVModule* associated,
-        bool guanyinma, const std::string& modelPath)
+        const std::string& modelPath)
         : PVLoaderContext(loader) {
         m_sandwich = new PVContextSandwich;
         m_sandwich->inputMethods.push_back(context);
         if (associated) {
-            OVEventHandlingContext* phrases = nullptr;
-#if KEYKEY_ENABLE_GUANYINMA
-            if (guanyinma) phrases = CreateGuanyinmaWindowsAssociatedPhraseContext(associated, modelPath);
-#else
-            (void)guanyinma; (void)modelPath;
-#endif
-            // A Rust input context always uses its Rust query provider. Native
-            // input contexts retain the original associated-phrase query.
-            if (!guanyinma) phrases = associated->createContext();
+            auto* phrases = CreateGuanyinmaWindowsAssociatedPhraseContext(associated, modelPath);
             if (phrases) m_sandwich->aroundFilters.push_back(phrases);
         }
         m_sandwich->prepareShortcutContexts();
@@ -281,9 +220,9 @@ public:
             if (DiagnosticsEnabled()) OutputDebugStringW(L"chichi77 KeyKey TSF: unable to open KeyKey.db.\n");
             return;
         }
-        const bool smartAvailable = HasSmartMandarinData(database_->connection());
-        if (!smartAvailable) {
-            if (DiagnosticsEnabled()) OutputDebugStringW(L"chichi77 KeyKey TSF: Smart Mandarin language model is missing; using Traditional Mandarin.\n");
+        if (!HasSmartMandarinData(database_->connection())) {
+            if (DiagnosticsEnabled()) OutputDebugStringW(L"chichi77 KeyKey TSF: Smart Mandarin language model is missing.\n");
+            return;
         }
 
         const std::string resourcePath = OVUTF8::FromUTF16(ModuleDirectory());
@@ -308,20 +247,10 @@ public:
             "zh_TW", nullptr, database_.get(), &logEmitter_, &encodingService_);
         packages_ = std::make_unique<PVStaticModulePackageLoadingSystem>(pathInfo, true);
 
-        auto* mandarin = new WindowsMandarinPackage(smartAvailable);
-        if (!mandarin->initialize(&pathInfo, service_.get()) ||
-            !packages_->addInitializedPackage("OVIMMandarin", mandarin)) {
-            mandarin->finalize();
-            delete mandarin;
-            return;
-        }
-
-        auto* table = new WindowsTablePackage;
-        if (!table->initialize(&pathInfo, service_.get()) ||
-            !packages_->addInitializedPackage("OVIMGeneric", table)) {
-            table->finalize();
-            delete table;
-            return;
+        auto* package = new WindowsGuanyinmaPackage;
+        if (!package->initialize(&pathInfo, service_.get()) ||
+            !packages_->addInitializedPackage("Guanyinma", package)) {
+            package->finalize(); delete package; return;
         }
 
         std::vector<PVModulePackageLoadingSystem*> systems{packages_.get()};
@@ -329,7 +258,7 @@ public:
         // Keep the choice of existing users. A new profile starts with the
         // sentence composer when the cooked language model is available.
         if (!existingProfile) {
-            loader_->setPrimaryInputMethod(smartAvailable ? kSmartInputMethod : kTraditionalInputMethod);
+            loader_->setPrimaryInputMethod(kSmartInputMethod);
         }
         if (!loader_->isAroundFilterActivated(kAssociatedPhraseFilter)) {
             loader_->toggleAroundFilter(kAssociatedPhraseFilter);
@@ -345,10 +274,6 @@ public:
         for (const auto& method : availableMethods_) moduleRevisions_[method]=moduleRevision(method);
         moduleRevisions_[kAssociatedPhraseFilter]=moduleRevision(kAssociatedPhraseFilter);
         ready_ = !availableMethods_.empty();
-    }
-
-    PVLoaderContext* createContext() {
-        return ready_ ? loader_->createContext() : nullptr;
     }
 
     PVLoaderService* service() const { return service_.get(); }
@@ -368,18 +293,10 @@ public:
             moduleRevisions_[method]=moduleRevision(method);
         }
     }
-    PVLoaderContext* createOrderedContext(const std::string& method, bool requested = false, bool* actual = nullptr) {
-        const auto found=modules_.find(method);
-        if (actual) *actual = false;
-        if (!ready_ || found == modules_.end()) return nullptr;
-        OVEventHandlingContext* context = nullptr;
-#if KEYKEY_ENABLE_GUANYINMA
-        if (requested) context = CreateGuanyinmaWindowsContext(method, FindDatabase(), service_.get());
-#endif
-        const bool usesGuanyinma = context != nullptr;
-        if (actual) *actual = usesGuanyinma;
-        if (!context) context = found->second->createContext();
-        return context ? new OrderedLoaderContext(loader_.get(), context, associated_, usesGuanyinma, FindDatabase()) : nullptr;
+    PVLoaderContext* createOrderedContext(const std::string& method) {
+        if (!ready_ || modules_.find(method) == modules_.end()) return nullptr;
+        auto* context = CreateGuanyinmaWindowsContext(method, FindDatabase(), service_.get());
+        return context ? new OrderedLoaderContext(loader_.get(), context, associated_, FindDatabase()) : nullptr;
     }
     void beginOrdered() { ++orderedInputs_; }
     void endOrdered() { if (orderedInputs_) --orderedInputs_; }
@@ -388,20 +305,6 @@ public:
         if (orderedInputs_ && !barrier) return;
         if (loader_) {
             loader_->syncLoaderConfig();
-            // The settings app writes the attached user database from another
-            // connection. Reload both phrase and learning caches before a
-            // stale in-process cache can replace the edited rows.
-            if (database_) {
-                std::unique_ptr<OVSQLiteStatement> version(
-                    database_->connection()->prepare("PRAGMA userdb.data_version"));
-                if (version && version->step() == SQLITE_ROW) {
-                    const int current = version->intOfColumn(0);
-                    if (lastUserDataVersion_ && current != lastUserDataVersion_) {
-                        loader_->forceSyncModuleConfig(kSmartInputMethod);
-                    }
-                    lastUserDataVersion_ = current;
-                }
-            }
             // A changed file may retain its timestamp (copy/restore). Only
             // acknowledge its content after an actual named-module load.
             syncNamedModule(primaryInputMethod());
@@ -432,7 +335,6 @@ private:
     std::unique_ptr<PVLoaderService> service_;
     std::unique_ptr<PVStaticModulePackageLoadingSystem> packages_;
     std::unique_ptr<PVLoader> loader_;
-    int lastUserDataVersion_ = 0;
     bool ready_ = false;
     std::vector<std::string> availableMethods_;
     std::map<std::string,OVModule*> modules_;
@@ -548,6 +450,9 @@ PVKeyImpl MakeKey(KeyEvent event) {
     if (LoadFrontendSettings().ignoreCapsLockInChinese) event.capsLock = false;
     const unsigned int modifiers = Modifiers(event);
     unsigned int keyCode = SpecialKeyCode(event.virtualKey);
+    // Chinese physical key positions follow Shift; Caps Lock remains a modifier
+    // for the core's literal path. English text is routed separately by TSF.
+    KeyEvent position = event; position.capsLock = false;
     // Windows translates Backspace/Enter/Tab/Esc into control characters.
     // OVIMGeneric checks receivedString before its editing-key branches, so
     // attaching that text turns an editing key into an invalid radical.
@@ -558,12 +463,13 @@ PVKeyImpl MakeKey(KeyEvent event) {
     if (event.control && event.virtualKey >= 'A' && event.virtualKey <= 'Z') {
         keyCode = static_cast<unsigned int>('a' + event.virtualKey - 'A');
         received.assign(1, static_cast<char>(keyCode));
-    } else if (const char character = PrintableAsciiFromVirtualKey(event)) {
+    } else if (const char character = PrintableAsciiFromVirtualKey(position)) {
         // Bopomofo is a key-position based layout. Prefer the Windows virtual
         // key over ToUnicodeEx, which can report an uppercase or localized
         // character while a Chinese TIP is active.
-        keyCode = static_cast<unsigned char>(character);
-        received.assign(1, character);
+        keyCode = event.virtualKey >= 'A' && event.virtualKey <= 'Z'
+            ? 'a' + event.virtualKey - 'A' : static_cast<unsigned char>(character);
+        received.assign(1, static_cast<char>(keyCode));
     } else if (!event.text.empty() && event.text.size() == 1 &&
                event.text.front() >= 32 && event.text.front() < 127) {
         keyCode = static_cast<unsigned char>(event.text.front());
@@ -714,24 +620,19 @@ bool IsInputMethodControlKey(const KeyEvent& event, const std::string& method) {
 std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::Create() {
     std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     Runtime().syncSettings();
-    bool actual = false;
-    const bool requested = LoadFrontendSettings().guanyinmaCore;
     auto result = std::unique_ptr<KeyKeyEngineSession>(new KeyKeyEngineSession(
-        Runtime().createOrderedContext(Runtime().primaryInputMethod(), requested, &actual)));
-    result->guanyinma_ = actual; result->requestedGuanyinma_ = requested;
+        Runtime().createOrderedContext(Runtime().primaryInputMethod())));
     return result;
 }
 std::unique_ptr<KeyKeyEngineSession> KeyKeyEngineSession::CreateControlled(const std::string& method) {
     std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     Runtime().syncSettings(true);
     Runtime().syncNamedModule(method);
-    bool actual = false;
-    const bool requested = LoadFrontendSettings().guanyinmaCore;
-    auto* context=Runtime().createOrderedContext(method, requested, &actual);
+    auto* context=Runtime().createOrderedContext(method);
     if (!context) return nullptr;
     auto result=std::unique_ptr<KeyKeyEngineSession>(new KeyKeyEngineSession(context));
     result->inputMethod_=method; result->controlled_=true;
-    result->guanyinma_=actual; result->requestedGuanyinma_=requested;
+    result->settingsSignature_=EngineSettingsSignature(method);
     return result;
 }
 
@@ -740,7 +641,7 @@ KeyKeyEngineSession::KeyKeyEngineSession(PVLoaderContext* context) : context_(co
         std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
         inputMethod_ = Runtime().primaryInputMethod();
         context_->activate();
-        smartSettingsSignature_ = SmartMandarinSettingsSignature();
+        settingsSignature_ = EngineSettingsSignature(inputMethod_);
     }
     ++g_runtimeSessions;
 }
@@ -790,34 +691,19 @@ EngineResult KeyKeyEngineSession::handleKey(const KeyEvent& event) {
     std::lock_guard<std::recursive_mutex> lock(g_runtimeMutex);
     if (!controlled_) Runtime().syncSettings();
     const std::string selectedMethod = Runtime().primaryInputMethod();
-    const auto signature = SmartMandarinSettingsSignature();
+    const auto signature = EngineSettingsSignature(selectedMethod);
     std::wstring previousComposition;
-    if (!controlled_ && (selectedMethod != inputMethod_ || signature != smartSettingsSignature_)) {
+    if (!controlled_ && (selectedMethod != inputMethod_ || signature != settingsSignature_)) {
         // Settings can change the selection while another host is composing.
         // Preserve its visible text before the loader replaces its old context.
         PVCombinedUTF16TextBuffer combined(*context_->composingText(), *context_->readingText());
         previousComposition = combined.wideComposedText();
-        bool actual = false;
-        const bool requested = LoadFrontendSettings().guanyinmaCore;
-        auto* replacement=Runtime().createOrderedContext(selectedMethod, requested, &actual);
+        auto* replacement=Runtime().createOrderedContext(selectedMethod);
         if (!replacement) return result;
         replacement->activate();
         context_->deactivate(); delete context_; context_=replacement;
         inputMethod_ = selectedMethod;
-        smartSettingsSignature_ = SmartMandarinSettingsSignature();
-        guanyinma_ = actual; requestedGuanyinma_ = requested;
-    }
-    // TSF retries retained host effects before entering this method. Candidates,
-    // unfinished readings and composing text continue on their original core.
-    const bool requested = LoadFrontendSettings().guanyinmaCore;
-    if (requested != requestedGuanyinma_ && !hasComposition()) {
-        bool actual = false;
-        auto* replacement = Runtime().createOrderedContext(inputMethod_, requested, &actual);
-        if (replacement) {
-            replacement->activate(); context_->deactivate(); delete context_; context_ = replacement;
-            guanyinma_ = actual;
-        }
-        requestedGuanyinma_ = requested; // Do not repeatedly retry a failed open per key.
+        settingsSignature_ = EngineSettingsSignature(inputMethod_);
     }
     // Numpad text must not enter Bopomofo or candidate-selection handling.
     // Commit exactly the visible composition (including unfinished readings)

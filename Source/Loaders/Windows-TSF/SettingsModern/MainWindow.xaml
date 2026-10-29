@@ -44,9 +44,6 @@
             <StackPanel>
               <TextBlock Text="實體鍵盤配置" FontWeight="SemiBold" />
               <TextBlock Text="美式鍵盤（固定）" Margin="0,6,0,8" />
-              <TextBlock Text="輸入核心" FontWeight="SemiBold" />
-              <ComboBox x:Name="InputCore" />
-              <TextBlock Text="預設使用 Manjusri。核心切換會等待目前組字、候選及送字完成；兩核心的自訂詞與學習分開保存。" Opacity="0.7" />
               <TextBlock Text="啟動時預設輸入模式" FontWeight="SemiBold" Margin="0,10,0,8" />
               <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                 <RadioButton x:Name="DefaultChineseMode" Content="中文" GroupName="DefaultInputMode" Margin="0,0,22,0" />
@@ -189,7 +186,7 @@
       <TabItem Header="自訂詞">
         <Grid Margin="16,20,20,8">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-          <TextBlock x:Name="UserDataOwner" Margin="0,0,0,12" />
+          <TextBlock Text="讀音以半形逗號分隔；匯出為 JSON 備份，亦可匯入既有 Windows 詞庫。" Margin="0,0,0,12" />
           <DataGrid x:Name="UserPhrases" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
                     CanUserAddRows="False" SelectionMode="Single" SelectionChanged="UserPhrases_SelectionChanged">
             <DataGrid.Columns>

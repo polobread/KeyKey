@@ -201,11 +201,11 @@ notarization 屬正式發布步驟。完整建置、本機安裝及簽署流程�
 - CMake 3.25 以上；Visual Studio 內附版本即可
 - .NET 10 SDK（設定頁與部署工具皆 self-contained；使用者不需另裝 runtime）
 - Python 3（驗證預先產生的共用資料庫）
-- 雙核心預設建置需要 Python 3.11 以上及 `Source/Guanyinma/rust-toolchain.toml` 指定的 Rustup 工具鏈；安裝 x64／x86 相應的 `x86_64-pc-windows-msvc`／`i686-pc-windows-msvc` target
+- Windows 固定使用 Guanyinma，建置需要 Python 3.11 以上及 `Source/Guanyinma/rust-toolchain.toml` 指定的 Rustup 工具鏈；安裝 x64／x86 相應的 `x86_64-pc-windows-msvc`／`i686-pc-windows-msvc` target
 - NSIS 3.12（只有建立 Store EXE 時需要）
 
 Windows 建置只驗證並複製正式共用 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`，
-不得自行 cooker；雙核心建置的兩核心共用 Cargo.lock 鎖定的 bundled SQLite 與靜態 CRT，避免 x86 WinSQLite 呼叫慣例不同。`KEYKEY_ENABLE_GUANYINMA=OFF` 時沿用 Windows 內建 WinSQLite3。接合與局部驗證見 [Windows Guanyinma](docs/GUANYINMA_WINDOWS_ADAPTER.md)。不需要 GNU Make、
+不得自行 cooker；Rust 與原生 FE 共用 Cargo.lock 鎖定的 bundled SQLite 與靜態 CRT，避免 x86 WinSQLite 呼叫慣例不同。Windows 不提供原核心建置或選擇參數。接合與局部驗證見 [Windows Guanyinma](docs/GUANYINMA_WINDOWS_ADAPTER.md)。不需要 GNU Make、
 `awk`、`sed` 或外部 `sqlite3` 程式。
 
 ### 建置及測試 x64

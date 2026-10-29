@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
 #include "KeyKeyEngine.h"
 #include "GuanyinmaWindowsUserData.h"
+#include "LegacyUserDataTestFixture.h"
 #include "FrontendSettings.h"
 #include "SharedFileAccess.h"
 #include "ModuleState.h"
@@ -30,8 +31,7 @@ EngineResult Type(KeyKeyEngineSession& session, const std::string& text) {
     return result;
 }
 void Input(const std::filesystem::path& model) {
-    Check(!LoadFrontendSettings().guanyinmaCore, "default core must remain Manjusri");
-    Core(true);
+    // A fresh profile must open Rust without an opt-in preference.
     for (const auto* method : {"SmartMandarin", "TraditionalMandarin", "Generic-cj-cin", "Generic-simplex-cin"}) {
         auto session = KeyKeyEngineSession::CreateControlled(method);
         Check(session && session->ready() && session->usesGuanyinma(), "native Rust session open");
@@ -57,20 +57,31 @@ void Input(const std::filesystem::path& model) {
             Check(result.committedText == expected, "Rust candidate selection through native key");
         }
     }
+    for (const auto* value : {"Manjusri", "Guanyinma", "unknown", ""}) {
+        Check(WriteSharedSettingsFile(LoaderPreferencesPath(),
+            std::string("<plist><dict><key>InputCore</key><string>") + value + "</string></dict></plist>"), "obsolete core fixture");
+        auto fixed = KeyKeyEngineSession::CreateControlled("SmartMandarin");
+        Check(fixed && fixed->ready() && fixed->usesGuanyinma(), "obsolete preference changed the required core");
+    }
+    // Unsupported configuration must fail closed, never fall back to C++.
+    const auto tableSettings = SettingsDirectory() + L"\\com.polobread.chichi77-keykey.windows.Generic-cj-cin.plist";
+    Check(WriteSharedSettingsFile(tableSettings, "<plist><dict><key>UseOverrideTable</key><string>unsupported</string></dict></plist>"), "unsupported configuration fixture");
+    Check(!KeyKeyEngineSession::CreateControlled("Generic-cj-cin"), "failed Rust open fell back to a native core");
+    Check(WriteSharedSettingsFile(tableSettings, "<plist><dict/></plist>"), "restore table settings");
     auto session = KeyKeyEngineSession::CreateControlled("SmartMandarin");
     Type(*session, "s"); Core(false);
     auto result = Key(*session, 'U');
-    Check(session->usesGuanyinma() && result.compositionText == L"ㄋㄧ", "core switch must defer unfinished reading");
+    Check(session->usesGuanyinma() && result.compositionText == L"ㄋㄧ", "obsolete preference must not interrupt unfinished reading");
     Key(*session, VK_ESCAPE); Check(session->usesGuanyinma(), "old core owns clearing event");
     result = Key(*session, 'S');
-    Check(!session->usesGuanyinma() && result.compositionText == L"ㄋ", "next input adopts core once empty");
+    Check(session->usesGuanyinma() && result.compositionText == L"ㄋ", "obsolete preference cannot select the old core");
     Key(*session, VK_ESCAPE); Core(true);
     result = Key(*session, 'S'); Check(session->usesGuanyinma(), "switch back to Rust");
     Key(*session, VK_ESCAPE); Type(*session, "su3"); Key(*session, VK_DOWN); Core(false);
     result = Key(*session, '1'); Check(session->usesGuanyinma(), "old candidate callback must remain on Rust");
     result = Key(*session, VK_NUMPAD7);
     Check(result.committedText.back() == L'7' && !session->hasComposition(), "numpad flushes original core composition");
-    result = Key(*session, 'S'); Check(!session->usesGuanyinma(), "switch after candidate and commit effects");
+    result = Key(*session, 'S'); Check(session->usesGuanyinma(), "obsolete preference cannot switch after candidate and commit effects");
     session.reset(); Core(true);
     {
         GuanyinmaWindowsUserData words(model.wstring());
@@ -94,7 +105,7 @@ void Input(const std::filesystem::path& model) {
     session->reset();
     sqlite3_exec(locked, "ROLLBACK", nullptr, nullptr, nullptr); sqlite3_close(locked);
     result = Key(*session, 'S'); Check(result.compositionText == L"ㄋ", "failed clear must not resurrect old graph");
-    std::cout << "Windows four-method adapter, candidates, UTF-16, keypad and safe dual-core switching passed\n";
+    std::cout << "Windows single-core default, four methods, candidates, UTF-16, keypad and obsolete preferences passed\n";
 }
 void Data(const std::filesystem::path& model, const std::filesystem::path& directory) {
     Core(true);
@@ -104,7 +115,7 @@ void Data(const std::filesystem::path& model, const std::filesystem::path& direc
     const auto old = rows[0].rowid;
     Core(false); // Open settings owner is fixed despite a new input preference.
     Check(data.save({old, L"妮豪", L"ㄋㄧˇ,ㄏㄠˊ"}), "bound Rust phrase update");
-    Check(LoadUserPhrases().empty(), "Rust edit touched Manjusri words");
+    Check(!std::filesystem::exists(directory / L"SmartMandarinUserData.db"), "Rust edit created the old writable store");
     const auto backup = directory / L"備份.json";
     Check(data.exportData(backup.wstring()), "complete JSON export");
     Check(!data.exportData(model.wstring()) && !data.exportData((directory / L"GuanyinmaUserData.db").wstring()) &&

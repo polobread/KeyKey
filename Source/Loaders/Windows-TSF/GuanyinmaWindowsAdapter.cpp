@@ -140,7 +140,8 @@ Json Configuration(const std::string& method, const Preferences& prefs, std::str
     const auto directory = SettingsDirectory();
     if (directory.empty()) throw std::runtime_error("no writable Guanyinma profile");
     Set(config, L"user_database", OVUTF8::FromUTF16(directory + L"\\GuanyinmaUserData.db"));
-    Json behaviors; Set(behaviors, L"ignore_caps_lock_in_chinese", LoadFrontendSettings().ignoreCapsLockInChinese);
+    // MakeKey normalizes the live Windows Caps Lock preference before this ABI.
+    Json behaviors; Set(behaviors, L"ignore_caps_lock_in_chinese", false);
     Set(behaviors, L"literal_keypad", true); config.SetNamedValue(L"behaviors", behaviors);
     Json learning; Set(learning, L"user_phrases", true); Set(learning, L"candidate_overrides", smart);
     Set(learning, L"bigrams", smart); Set(learning, L"table_learning", table && prefs.boolean("UseDynamicFrequency", false));
@@ -168,7 +169,7 @@ Json Configuration(const std::string& method, const Preferences& prefs, std::str
         auto preview = LoadTablePreviewSettings(!cangjie);
         Set(options, L"realtime", preview.composeWhileTyping); Set(options, L"prefix", cangjie && preview.prefixCandidates);
         Set(options, L"clear_on_error", preview.clearOnError);
-        Set(options, L"query_at_maximum", prefs.boolean("ShouldCommitAtMaximumRadicalLength", false));
+        Set(options, L"query_at_maximum", prefs.boolean("ShouldCommitAtMaximumRadicalLength", !cangjie));
         Set(options, L"learn_selection", prefs.boolean("UseDynamicFrequency", false));
         Set(options, L"space_as_first_selection_key", prefs.boolean("UseSpaceAsFirstCandidateSelectionKey", false));
         Set(options, L"space_commits_first_on_single_page", prefs.boolean("SendFirstCandidateWithSpaceWithOnePageList", cangjie));

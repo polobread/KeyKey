@@ -1,6 +1,6 @@
 # 琦琦輸入法 Windows TSF frontend
 
-開發建置已加入同一 TSF 介面的 Manjusri／Guanyinma 雙核心，一般設定可選，預設維持 Manjusri。Rust 接合、獨立資料、建置依賴及少量冒煙入口見 [Windows Guanyinma 接合](../../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。正式版本及發布狀態另依下文與安裝指南。
+Windows 1.5.0 開發來源固定使用 Guanyinma Rust 單核心，四種輸入法直接啟用，不提供核心選擇、舊引擎或失敗回退。Rust 接合、使用者資料、建置依賴及少量冒煙入口見 [Windows Guanyinma 接合](../../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。正式版本及發布狀態另依下文與安裝指南。
 
 倉頡新增可選的「即時候選」與「未打完也能選字」，兩項預設關閉；設定與分層驗證見 [桌面倉頡試用說明](../../../docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
 

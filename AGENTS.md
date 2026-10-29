@@ -49,12 +49,12 @@
 | 平台 | 好打注音執行路徑 | 語言模型來源 |
 |---|---|---|
 | macOS | `OSX-IMK`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
-| Windows | `Windows-TSF`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
+| Windows | `Windows-TSF` 與 Guanyinma Rust core | 共用 `KeyKey.db` |
 | iOS | `iOS-Keyboard/KeyKeyEngine` Swift walker | 鍵盤 extension 內的共用 `KeyKey.db` |
 | Android | `Android-IME` Java walker | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
 | Linux／FreeBSD | `Linux-IME` 的 Fcitx 5 adapter 與 Guanyinma Rust core | 共用 DB 安裝時改名為 `smart-mandarin.db` |
 
-macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 各有組句 frontend。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
+macOS 保留原有注音核心；Windows 與 Linux／FreeBSD 使用 Guanyinma，iOS 與 Android 保留各自的雙核心 frontend。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
 
 ## 輸入行為界線
 
@@ -147,7 +147,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 - **Android 雙核心**：同一個 IME service／FE 可選 Java 原核心或 Guanyinma，預設 Java；觸控與實體雙排用 touch 行為，一般實體鍵盤用 desktop 行為。只有原 `InputConnection` 接受本次宿主效果後才 acknowledge，無宿主／拒絕操作不重播，於真正新宿主邊界明確 abandon。兩核心資料分別為 `UserPhrase.db` 與 `GuanyinmaUser.db`，App／IME 在同沙箱共用該核心資料；詞庫頁固定開啟時的核心。JNI 使用標準 UTF-8、明確所有權及原生字型 callback，Android 使用私有 bundled SQLite，不連結平台私有 SQLite。建置及少量 host JNI smoke 見 `docs/GUANYINMA_ANDROID_ADAPTER.md`；不得把 host JNI 或交叉編譯稱為 Android runtime／實機驗收。
 - **核心 CI 權責與增量方式**：完整 Guanyinma Rust unit／整合、C ABI 與跨平台核心矩陣，在 CI 中統一由 `.github/workflows/guanyinma-core.yml` 負責。其他平台 workflow 直接依鎖定工具鏈與 `Cargo.lock` 編譯、連結並使用核心，只跑少量 FE 串接冒煙（載入／建立 session、設定或事件映射、一次送字及釋放），不重跑完整核心測試，也不轉呼叫完整核心 workflow。新增接合採小幅增量，保留既有平台建置、封裝與發布 workflow 的結構；本機核心開發仍可使用獨立測試入口。
 - **Linux／FreeBSD Guanyinma**：Fcitx 5 frontend 只使用 Guanyinma Rust 核心，不再建置 Legacy C++ walker、排序或可寫學習庫，也不提供核心切換或失敗回退。C++ 僅保留 Fcitx／原生字型、關聯詞、繁簡輸出及資料轉換接合。Rust 是必要建置依賴；`linux-release` 與無視窗 `engine-only` 均使用同一核心。設定參考 macOS／Windows 桌面偏好；關聯詞只使用 `[AssociatedPhrases]` Boolean 分組，建置與 CLI 不提供核心選擇相容參數。使用者資料固定 `guanyinma-user.db`，CLI 預設操作 Guanyinma；不再支援舊 Linux C++ 使用者資料庫的讀寫、匯入或相容命令，既有舊檔不自動刪除。FE 設定變更仍等待組字、候選及待送效果完成；不重播宿主效果。完整核心矩陣不在 Linux FE workflow 重跑。FreeBSD 與 GNOME Wayland 原生驗收各自記錄，不能由 Linux X11 推定通過。建置與設定見 `docs/GUANYINMA_LINUX_ADAPTER.md`。
-- **Windows 雙核心**：同一 TSF FE 可選 Manjusri／Guanyinma，預設 Manjusri；原組字、候選與宿主 retained effects 完成後才由新事件採用核心偏好，不重播。Rust 使用 `GuanyinmaUserData.db`，詞庫 SafeHandle 固定視窗開啟時的核心；完整 JSON 備份及舊 Windows 詞庫唯讀匯入均經 C ABI。DirectWrite fallback／字集 callback 在核心排序前過濾。x64／x86 雙核心建置的 C++ 與 Rust 共用鎖定 bundled SQLite／靜態 CRT，不能將 WinSQLite x86 stdcall import library 直接交給 Rust cdecl bindings；不含 Rust 的建置仍用 WinSQLite。入口與驗證界線見 `docs/GUANYINMA_WINDOWS_ADAPTER.md`。
+- **Windows Guanyinma 單核心**：同一 TSF FE 的四種輸入法固定使用 Guanyinma，不提供核心切換、舊核心建置或失敗回退；舊 `InputCore` 偏好與 v3 快照欄位不影響核心選擇。Rust 使用 `GuanyinmaUserData.db`；完整 JSON 備份及明確唯讀匯入舊 Windows 詞庫均經 C ABI，舊檔不自動修改。DirectWrite fallback／字集 callback 在核心排序前過濾。x64／x86 的 Rust 與原生 FE 共用鎖定 bundled SQLite／靜態 CRT，不混用 WinSQLite 的 x86 stdcall ABI。設定及宿主 retained effects 仍沿用既有有序交易邊界，不重播。入口與驗證界線見 `docs/GUANYINMA_WINDOWS_ADAPTER.md`。
 - `tests/run_core_functional.py` 與 `tests/fixtures/core-functional/` 僅供 Rust 重寫／升級時手動擷取和比較現有行為；不得加入日常驗證、預設 CTest、CI gate 或發布驗收。一般測試維持既有入口。
 - 基準分別保存各核心的四種輸入法、完整候選順序與選字學習；既有平台差異及已觀察到的不穩定排序也保留，不將其自動統一成新產品規則。重新擷取不得自動覆寫，須明確指定並審查差異。使用方式及邊界見 `docs/CROSS_PLATFORM_CORE_FUNCTIONAL_TESTS.md`。
 

@@ -1621,7 +1621,6 @@ void TestSymbolPaletteRouting() {
     std::cout<<"Symbol palette: non-input UI, minimize, focus, malformed payload, replacement field, stale edits and cross-process selection passed\n";
 }
 
-#if KEYKEY_ENABLE_GUANYINMA
 void TestGuanyinmaHostEffects() {
     const auto profile=std::filesystem::temp_directory_path()/("KeyKey-Rust-TSF-"+std::to_string(GetCurrentProcessId()));
     std::filesystem::create_directories(profile);
@@ -1640,20 +1639,17 @@ void TestGuanyinmaHostEffects() {
       core("Manjusri");
       Check(TextServiceTestAccess::guanyinma(*f.service.Get()),"Preference changed core before host acknowledgement");
       f.document->failSelection=false; Type(f,L"s");
-      Check(!TextServiceTestAccess::guanyinma(*f.service.Get()) && f.document->text==L"你好ㄋ" &&
-            !TextServiceTestAccess::retained(*f.service.Get()),"Retry duplicated Rust commit or lost next-core input"); }
+      Check(TextServiceTestAccess::guanyinma(*f.service.Get()) && f.document->text==L"你好ㄋ" &&
+            !TextServiceTestAccess::retained(*f.service.Get()),"Retry duplicated Rust commit or lost single-core input"); }
     Check(ShutdownEngineRuntime(),"Rust TSF runtime cleanup");
     SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",nullptr);
     std::filesystem::remove_all(profile);
-    std::cout << "Rust TSF preedit, retained host effects and safe next-core adoption passed\n";
+    std::cout << "Rust TSF preedit, retained host effects and obsolete preference isolation passed\n";
 }
-#endif
 int main(int argc,char** argv) {
     try {
         g_module = GetModuleHandleW(nullptr);
-#if KEYKEY_ENABLE_GUANYINMA
         if (argc==2 && std::string(argv[1])=="--guanyinma") { TestGuanyinmaHostEffects(); return 0; }
-#endif
         if (argc==2 && std::string(argv[1])=="--symbol-worker-thread") {
             const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
                 ("symbol-worker-"+std::to_string(GetCurrentProcessId()));
