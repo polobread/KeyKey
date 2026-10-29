@@ -12,7 +12,7 @@ import java.util.function.Predicate;
 
 /** JNI ownership and native FE adaptation; all core algorithms stay in Rust. */
 final class GuanyinmaInputEngine implements InputEngine {
-    private static final int PAGE_SIZE = BopomofoEngine.CANDIDATES_PER_PAGE;
+    private static final int PAGE_SIZE = InputEngine.CANDIDATES_PER_PAGE;
     private final String modelPath;
     private final String userDatabasePath;
     private GuanyinmaNative nativeSession;
@@ -21,8 +21,8 @@ final class GuanyinmaInputEngine implements InputEngine {
     private AssociatedPhraseDictionary associated = AssociatedPhraseDictionary.empty();
     private TableInputOptions options;
     private BopomofoKeyboardLayout layout;
-    private BopomofoEngine.InputMode mode = BopomofoEngine.InputMode.BOPOMOFO;
-    private EnumSet<BopomofoEngine.InputMode> allowedModes = EnumSet.allOf(BopomofoEngine.InputMode.class);
+    private InputEngine.InputMode mode = InputEngine.InputMode.BOPOMOFO;
+    private EnumSet<InputEngine.InputMode> allowedModes = EnumSet.allOf(InputEngine.InputMode.class);
     private boolean shifted, temporaryEnglish, hardwareFullWidth, hardwareSmartEditing, hardwareTouchSmartEditing;
     private boolean useBigrams = true, spaceSelects;
     private enum Overlay { NONE, SYMBOLS, ASSOCIATED }
@@ -110,48 +110,48 @@ final class GuanyinmaInputEngine implements InputEngine {
             return List.copyOf(result);
         } catch (JSONException error) { throw new IllegalStateException("Invalid Guanyinma strings", error); }
     }
-    private BopomofoEngine.Result apply(JSONObject operation) {
+    private InputEngine.Result apply(JSONObject operation) {
         JSONObject next = parseSnapshot(nativeSession.apply(operation.toString()));
         try {
             JSONObject effects = next.getJSONObject("effects");
-            BopomofoEngine.Result result = new BopomofoEngine.Result(effects.getString("commit"),
+            InputEngine.Result result = new InputEngine.Result(effects.getString("commit"),
                     effects.getBoolean("delete_backward"), effects.getBoolean("send_return"), effects.getBoolean("discard_composition"));
             snapshot = next; lastError = null; return result;
         } catch (JSONException error) { throw new IllegalStateException("Invalid Guanyinma effects", error); }
     }
-    private BopomofoEngine.Result operate(JSONObject operation) {
+    private InputEngine.Result operate(JSONObject operation) {
         try { return apply(operation); }
-        catch (RuntimeException error) { failureEpoch++; lastError = diagnostic(error); return BopomofoEngine.Result.update(); }
+        catch (RuntimeException error) { failureEpoch++; lastError = diagnostic(error); return InputEngine.Result.update(); }
     }
     private static String diagnostic(Throwable error) {
         String message = error.getMessage(); return message == null || message.isEmpty() ? error.getClass().getSimpleName() : message;
     }
     String lastError() { return lastError; }
     String snapshotJSON() { return snapshot.toString(); }
-    private BopomofoEngine.Result key(String value) { return operate(object("type", "key", "key", value)); }
+    private InputEngine.Result key(String value) { return operate(object("type", "key", "key", value)); }
     private void clearOverlay() { overlay = Overlay.NONE; overlayCandidates = List.of(); overlayPage = overlayHighlight = 0; }
     private List<String> visible(List<String> values) {
         List<String> result = new ArrayList<>();
         for (String value : values) if (candidateFilter.test(value)) result.add(value);
         return List.copyOf(result);
     }
-    private BopomofoEngine.Result offerAssociated(BopomofoEngine.Result result) {
+    private InputEngine.Result offerAssociated(InputEngine.Result result) {
         if (!hasComposition() && result.committedText().codePointCount(0, result.committedText().length()) == 1) {
             List<String> values = visible(associated.candidates(result.committedText()));
             if (!values.isEmpty()) { overlay = Overlay.ASSOCIATED; overlayCandidates = values; overlayPage = overlayHighlight = 0; }
         }
         return result;
     }
-    private BopomofoEngine.Result direct(String value) {
-        BopomofoEngine.Result finished = finishCompositionForInputHandoff();
+    private InputEngine.Result direct(String value) {
+        InputEngine.Result finished = finishCompositionForInputHandoff();
         if (lastError != null) return finished;
-        BopomofoEngine.Result literal = operate(object("type", "direct_text", "text", value));
-        return new BopomofoEngine.Result(finished.committedText() + literal.committedText(),
+        InputEngine.Result literal = operate(object("type", "direct_text", "text", value));
+        return new InputEngine.Result(finished.committedText() + literal.committedText(),
                 literal.deleteBeforeCursor(), literal.sendEnter(), literal.discardComposingText());
     }
-    private BopomofoEngine.Result width(BopomofoEngine.Result result) {
-        return !hardwareFullWidth || result.committedText().isEmpty() ? result : new BopomofoEngine.Result(
-                BopomofoEngine.toFullWidth(result.committedText()), result.deleteBeforeCursor(), result.sendEnter(), result.discardComposingText());
+    private InputEngine.Result width(InputEngine.Result result) {
+        return !hardwareFullWidth || result.committedText().isEmpty() ? result : new InputEngine.Result(
+                InputEngine.toFullWidth(result.committedText()), result.deleteBeforeCursor(), result.sendEnter(), result.discardComposingText());
     }
     @Override public void setCandidateFilter(Predicate<String> filter) {
         if (filter == null || filter == candidateFilter) return;
@@ -161,7 +161,7 @@ final class GuanyinmaInputEngine implements InputEngine {
             JSONObject state;
             try {
                 state = parseSnapshot(replacement.snapshot());
-                if (mode != BopomofoEngine.InputMode.BOPOMOFO) state = parseSnapshot(replacement.apply(object("type", "set_english", "enabled", true).toString()));
+                if (mode != InputEngine.InputMode.BOPOMOFO) state = parseSnapshot(replacement.apply(object("type", "set_english", "enabled", true).toString()));
             } catch (RuntimeException | LinkageError error) { replacement.close(); throw error; }
             nativeSession.close(); nativeSession = replacement; snapshot = state; candidateFilter = filter; lastError = null;
         } catch (RuntimeException error) { lastError = diagnostic(error); }
@@ -182,7 +182,6 @@ final class GuanyinmaInputEngine implements InputEngine {
         } catch (RuntimeException error) { useBigrams = old; lastError = diagnostic(error); }
     }
     @Override public ChineseInputMethod chineseInputMethod() { return ChineseInputMethod.valueOf(text("method").toUpperCase(Locale.ROOT)); }
-    @Override public void setTableCandidateSource(TableCandidateSource source) {}
     @Override public TableInputOptions tableOptions() { return InputEngine.copyOptions(options); }
     @Override public void setTableOptions(TableInputOptions next) {
         if (hasComposition()) { lastError = "請先完成組字後再變更字表設定。"; return; }
@@ -192,19 +191,19 @@ final class GuanyinmaInputEngine implements InputEngine {
         }
         options = InputEngine.copyOptions(next);
     }
-    @Override public BopomofoEngine.Result setChineseInputMethod(ChineseInputMethod method) {
-        if (method == chineseInputMethod()) return BopomofoEngine.Result.update();
-        BopomofoEngine.Result result = operate(object("type", "set_method", "method", methodName(method)));
+    @Override public InputEngine.Result setChineseInputMethod(ChineseInputMethod method) {
+        if (method == chineseInputMethod()) return InputEngine.Result.update();
+        InputEngine.Result result = operate(object("type", "set_method", "method", methodName(method)));
         if (lastError == null) { clearOverlay(); options = new TableInputOptions(method); }
         return result;
     }
-    @Override public BopomofoEngine.Result setCompositionMode(BopomofoCompositionMode value) {
+    @Override public InputEngine.Result setCompositionMode(BopomofoCompositionMode value) {
         return setChineseInputMethod(value == BopomofoCompositionMode.SMART ? ChineseInputMethod.SMART : ChineseInputMethod.TRADITIONAL);
     }
     @Override public BopomofoKeyboardLayout keyboardLayout() { return layout; }
-    @Override public BopomofoEngine.Result setKeyboardLayout(BopomofoKeyboardLayout value) {
-        if (layout == value) return BopomofoEngine.Result.update();
-        BopomofoEngine.Result result = operate(object("type", "set_layout", "layout", layoutName(value)));
+    @Override public InputEngine.Result setKeyboardLayout(BopomofoKeyboardLayout value) {
+        if (layout == value) return InputEngine.Result.update();
+        InputEngine.Result result = operate(object("type", "set_layout", "layout", layoutName(value)));
         if (lastError == null) { layout = value; clearOverlay(); }
         return result;
     }
@@ -212,17 +211,17 @@ final class GuanyinmaInputEngine implements InputEngine {
         associated = value == null ? AssociatedPhraseDictionary.empty() : value;
         if (overlay == Overlay.ASSOCIATED) clearOverlay();
     }
-    @Override public void setAllowedInputModes(Set<BopomofoEngine.InputMode> allowed, BopomofoEngine.InputMode preferred) { setAllowedInputModes(allowed, preferred, false); }
-    @Override public void setAllowedInputModes(Set<BopomofoEngine.InputMode> allowed, BopomofoEngine.InputMode preferred, boolean selectPreferred) {
-        allowedModes = allowed == null || allowed.isEmpty() ? EnumSet.allOf(BopomofoEngine.InputMode.class) : EnumSet.copyOf(allowed);
-        if (temporaryEnglish && !allowedModes.contains(BopomofoEngine.InputMode.BOPOMOFO)) temporaryEnglish = false;
+    @Override public void setAllowedInputModes(Set<InputEngine.InputMode> allowed, InputEngine.InputMode preferred) { setAllowedInputModes(allowed, preferred, false); }
+    @Override public void setAllowedInputModes(Set<InputEngine.InputMode> allowed, InputEngine.InputMode preferred, boolean selectPreferred) {
+        allowedModes = allowed == null || allowed.isEmpty() ? EnumSet.allOf(InputEngine.InputMode.class) : EnumSet.copyOf(allowed);
+        if (temporaryEnglish && !allowedModes.contains(InputEngine.InputMode.BOPOMOFO)) temporaryEnglish = false;
         if (selectPreferred || !allowedModes.contains(mode)) {
             reset(); if (lastError != null) return;
             setMode(allowedModes.contains(preferred) ? preferred : allowedModes.iterator().next()); shifted = temporaryEnglish = false;
         }
     }
-    private BopomofoEngine.Result setMode(BopomofoEngine.InputMode value) {
-        BopomofoEngine.Result result = operate(object("type", "set_english", "enabled", value != BopomofoEngine.InputMode.BOPOMOFO));
+    private InputEngine.Result setMode(InputEngine.InputMode value) {
+        InputEngine.Result result = operate(object("type", "set_english", "enabled", value != InputEngine.InputMode.BOPOMOFO));
         if (lastError == null) { clearOverlay(); mode = value; }
         return result;
     }
@@ -230,74 +229,74 @@ final class GuanyinmaInputEngine implements InputEngine {
         if (hasComposition() || !displayedCandidates().isEmpty()) return false;
         setMode(allowedModes.contains(state.mode) ? state.mode : allowedModes.iterator().next());
         if (lastError != null) return false;
-        temporaryEnglish = state.temporaryEnglish && mode == BopomofoEngine.InputMode.ENGLISH && allowedModes.contains(BopomofoEngine.InputMode.BOPOMOFO);
+        temporaryEnglish = state.temporaryEnglish && mode == InputEngine.InputMode.ENGLISH && allowedModes.contains(InputEngine.InputMode.BOPOMOFO);
         shifted = state.shifted && !temporaryEnglish; hardwareFullWidth = state.hardwareFullWidth; return true;
     }
     private void endTemporaryEnglish() {
-        setMode(allowedModes.contains(BopomofoEngine.InputMode.BOPOMOFO) ? BopomofoEngine.InputMode.BOPOMOFO : allowedModes.iterator().next());
+        setMode(allowedModes.contains(InputEngine.InputMode.BOPOMOFO) ? InputEngine.InputMode.BOPOMOFO : allowedModes.iterator().next());
         if (lastError == null) temporaryEnglish = shifted = false;
     }
-    @Override public BopomofoEngine.Result handleSoftKey(String value) {
+    @Override public InputEngine.Result handleSoftKey(String value) {
         boolean restore = temporaryEnglish && !value.equals("SHIFT") && !value.equals("MODE");
-        BopomofoEngine.Result result;
+        InputEngine.Result result;
         switch (value) {
             case "MODE" -> {
-                if (temporaryEnglish) { temporaryEnglish = shifted = false; result = BopomofoEngine.Result.update(); }
+                if (temporaryEnglish) { temporaryEnglish = shifted = false; result = InputEngine.Result.update(); }
                 else {
-                    BopomofoEngine.InputMode next = mode;
-                    do { next = BopomofoEngine.InputMode.values()[(next.ordinal() + 1) % BopomofoEngine.InputMode.values().length]; } while (!allowedModes.contains(next));
+                    InputEngine.InputMode next = mode;
+                    do { next = InputEngine.InputMode.values()[(next.ordinal() + 1) % InputEngine.InputMode.values().length]; } while (!allowedModes.contains(next));
                     result = setMode(next); if (lastError == null) shifted = false;
                 }
             }
             case "SHIFT" -> {
-                if (temporaryEnglish) { endTemporaryEnglish(); result = BopomofoEngine.Result.update(); }
-                else if (mode == BopomofoEngine.InputMode.BOPOMOFO && allowedModes.contains(BopomofoEngine.InputMode.ENGLISH)) {
-                    result = setMode(BopomofoEngine.InputMode.ENGLISH); if (lastError == null) { temporaryEnglish = true; shifted = false; }
-                } else { shifted = !shifted; result = BopomofoEngine.Result.update(); }
+                if (temporaryEnglish) { endTemporaryEnglish(); result = InputEngine.Result.update(); }
+                else if (mode == InputEngine.InputMode.BOPOMOFO && allowedModes.contains(InputEngine.InputMode.ENGLISH)) {
+                    result = setMode(InputEngine.InputMode.ENGLISH); if (lastError == null) { temporaryEnglish = true; shifted = false; }
+                } else { shifted = !shifted; result = InputEngine.Result.update(); }
             }
             case "BACKSPACE" -> result = backspace();
             case "SPACE" -> result = space();
             case "ENTER" -> result = enter();
             case "ESCAPE" -> result = escape();
-            case "SYMBOL" -> result = showOverlay(BopomofoEngine.symbolCandidates());
-            case "EMOJI" -> result = showOverlay(BopomofoEngine.emojiCandidates());
-            default -> result = value.codePointCount(0, value.length()) == 1 ? character(value, true) : BopomofoEngine.Result.update();
+            case "SYMBOL" -> result = showOverlay(InputEngine.symbolCandidates());
+            case "EMOJI" -> result = showOverlay(InputEngine.emojiCandidates());
+            default -> result = value.codePointCount(0, value.length()) == 1 ? character(value, true) : InputEngine.Result.update();
         }
         if (restore && lastError == null) endTemporaryEnglish();
         return result;
     }
-    private BopomofoEngine.Result character(String value, boolean touch) {
-        if (mode != BopomofoEngine.InputMode.BOPOMOFO) return direct(touch && shifted ? value.toUpperCase(Locale.ROOT) : value);
+    private InputEngine.Result character(String value, boolean touch) {
+        if (mode != InputEngine.InputMode.BOPOMOFO) return direct(touch && shifted ? value.toUpperCase(Locale.ROOT) : value);
         if (touch && (value.equals("，") || value.equals("。"))) return direct(value);
         if (!touch && (chineseInputMethod() == ChineseInputMethod.SMART || chineseInputMethod().isTable())
                 && value.length() == 1 && value.charAt(0) >= 'A' && value.charAt(0) <= 'Z') {
-            if (chineseInputMethod() == ChineseInputMethod.SMART && !text("reading").isEmpty()) return BopomofoEngine.Result.update();
+            if (chineseInputMethod() == ChineseInputMethod.SMART && !text("reading").isEmpty()) return InputEngine.Result.update();
             return direct(value);
         }
         clearOverlay();
         return offerAssociated(operate(object("type", "character", "text", value.toLowerCase(Locale.ROOT))));
     }
-    @Override public BopomofoEngine.Result handleHardwareCharacter(char value) {
-        if (!prepareHardware()) return BopomofoEngine.Result.update();
+    @Override public InputEngine.Result handleHardwareCharacter(char value) {
+        if (!prepareHardware()) return InputEngine.Result.update();
         if (overlay == Overlay.SYMBOLS && value >= '1' && value <= '9') return width(selectDisplayedCandidate(value - '1'));
-        if (chineseInputMethod().isTable() && !displayedCandidates().isEmpty() && (value == '<' || value == '>')) { changePage(value == '<' ? -1 : 1); return BopomofoEngine.Result.update(); }
+        if (chineseInputMethod().isTable() && !displayedCandidates().isEmpty() && (value == '<' || value == '>')) { changePage(value == '<' ? -1 : 1); return InputEngine.Result.update(); }
         return width(character(String.valueOf(value), false));
     }
-    @Override public BopomofoEngine.Result commitHardwareLiteral(char value) { return prepareHardware() ? width(direct(String.valueOf(value))) : BopomofoEngine.Result.update(); }
-    @Override public BopomofoEngine.Result handleHardwareSpace() { return prepareHardware() ? space(hardwareFullWidth) : BopomofoEngine.Result.update(); }
-    @Override public BopomofoEngine.Result toggleHardwareLanguage() {
-        if (!prepareHardware()) return BopomofoEngine.Result.update();
-        BopomofoEngine.Result result = setMode(mode == BopomofoEngine.InputMode.BOPOMOFO ? BopomofoEngine.InputMode.ENGLISH : BopomofoEngine.InputMode.BOPOMOFO);
+    @Override public InputEngine.Result commitHardwareLiteral(char value) { return prepareHardware() ? width(direct(String.valueOf(value))) : InputEngine.Result.update(); }
+    @Override public InputEngine.Result handleHardwareSpace() { return prepareHardware() ? space(hardwareFullWidth) : InputEngine.Result.update(); }
+    @Override public InputEngine.Result toggleHardwareLanguage() {
+        if (!prepareHardware()) return InputEngine.Result.update();
+        InputEngine.Result result = setMode(mode == InputEngine.InputMode.BOPOMOFO ? InputEngine.InputMode.ENGLISH : InputEngine.InputMode.BOPOMOFO);
         if (lastError == null) shifted = false; return result;
     }
-    @Override public BopomofoEngine.Result toggleHardwareWidth() { if (prepareHardware()) hardwareFullWidth = !hardwareFullWidth; return BopomofoEngine.Result.update(); }
-    @Override public BopomofoEngine.Result commitHardwarePunctuation(String value) {
-        if (!prepareHardware() || (!text("reading").isEmpty() && chineseInputMethod() != ChineseInputMethod.SMART)) return BopomofoEngine.Result.update();
+    @Override public InputEngine.Result toggleHardwareWidth() { if (prepareHardware()) hardwareFullWidth = !hardwareFullWidth; return InputEngine.Result.update(); }
+    @Override public InputEngine.Result commitHardwarePunctuation(String value) {
+        if (!prepareHardware() || (!text("reading").isEmpty() && chineseInputMethod() != ChineseInputMethod.SMART)) return InputEngine.Result.update();
         return direct(value);
     }
-    @Override public BopomofoEngine.Result showHardwareSymbols() {
-        if (!prepareHardware() || (!text("reading").isEmpty() && chineseInputMethod() != ChineseInputMethod.SMART)) return BopomofoEngine.Result.update();
-        return showOverlay(BopomofoEngine.symbolCandidates());
+    @Override public InputEngine.Result showHardwareSymbols() {
+        if (!prepareHardware() || (!text("reading").isEmpty() && chineseInputMethod() != ChineseInputMethod.SMART)) return InputEngine.Result.update();
+        return showOverlay(InputEngine.symbolCandidates());
     }
     private boolean prepareHardware() { long before = failureEpoch; prepareForHardwareInput(); return before == failureEpoch; }
     @Override public void prepareForHardwareInput() { if (temporaryEnglish) endTemporaryEnglish(); setHardwareSmartEditing(!hardwareTouchSmartEditing); }
@@ -310,48 +309,48 @@ final class GuanyinmaInputEngine implements InputEngine {
             apply(object("type", "set_smart_options", "options", smartOptions()));
         } catch (RuntimeException error) { hardwareSmartEditing = old; failureEpoch++; lastError = diagnostic(error); }
     }
-    private BopomofoEngine.Result showOverlay(List<String> values) {
-        BopomofoEngine.Result result = finishCompositionForInputHandoff();
+    private InputEngine.Result showOverlay(List<String> values) {
+        InputEngine.Result result = finishCompositionForInputHandoff();
         if (lastError == null) { overlay = Overlay.SYMBOLS; overlayCandidates = visible(values); overlayPage = overlayHighlight = 0; }
         return result;
     }
-    @Override public BopomofoEngine.Result space() { return space(false); }
-    private BopomofoEngine.Result space(boolean fullWidth) {
-        if (overlay != Overlay.NONE) { changePage(1); return BopomofoEngine.Result.update(); }
-        if (!hasComposition()) return BopomofoEngine.Result.commit(fullWidth ? "　" : " ");
+    @Override public InputEngine.Result space() { return space(false); }
+    private InputEngine.Result space(boolean fullWidth) {
+        if (overlay != Overlay.NONE) { changePage(1); return InputEngine.Result.update(); }
+        if (!hasComposition()) return InputEngine.Result.commit(fullWidth ? "　" : " ");
         if (fullWidth && chineseInputMethod() == ChineseInputMethod.SMART && text("reading").isEmpty() && !spaceSelects && array("candidates").length() == 0) return operate(object("type", "direct_text", "text", "　"));
         return offerAssociated(key("space"));
     }
-    @Override public BopomofoEngine.Result openSmartCandidates() {
-        if (chineseInputMethod() != ChineseInputMethod.SMART || mode != BopomofoEngine.InputMode.BOPOMOFO) return BopomofoEngine.Result.update();
+    @Override public InputEngine.Result openSmartCandidates() {
+        if (chineseInputMethod() != ChineseInputMethod.SMART || mode != InputEngine.InputMode.BOPOMOFO) return InputEngine.Result.update();
         if (!text("reading").isEmpty()) return key("space");
-        if (array("candidates").length() > 0) { changePage(1); return BopomofoEngine.Result.update(); }
-        if (array("readings").length() == 0) return BopomofoEngine.Result.update();
+        if (array("candidates").length() > 0) { changePage(1); return InputEngine.Result.update(); }
+        if (array("readings").length() == 0) return InputEngine.Result.update();
         int index = hardwareSmartEditing ? Math.max(0, number("reading_cursor") - 1) : array("readings").length() - 1;
         return operate(object("type", "open_candidates", "index", index));
     }
-    @Override public BopomofoEngine.Result enter() {
-        if (overlay == Overlay.ASSOCIATED) { clearOverlay(); return BopomofoEngine.Result.enter(); }
+    @Override public InputEngine.Result enter() {
+        if (overlay == Overlay.ASSOCIATED) { clearOverlay(); return InputEngine.Result.enter(); }
         if (overlay != Overlay.NONE) return selectHighlightedCandidate();
         if (isTouchSmartComposition() && hasComposition()) {
-            BopomofoEngine.Result result = finishCompositionForInputHandoff();
-            return new BopomofoEngine.Result(result.committedText(), result.deleteBeforeCursor(), lastError == null, result.discardComposingText());
+            InputEngine.Result result = finishCompositionForInputHandoff();
+            return new InputEngine.Result(result.committedText(), result.deleteBeforeCursor(), lastError == null, result.discardComposingText());
         }
-        if (!hasComposition() && displayedCandidates().isEmpty()) return BopomofoEngine.Result.enter();
+        if (!hasComposition() && displayedCandidates().isEmpty()) return InputEngine.Result.enter();
         return offerAssociated(key("return"));
     }
-    @Override public BopomofoEngine.Result backspace() { clearOverlay(); return !hasComposition() ? BopomofoEngine.Result.delete() : key("backspace"); }
-    @Override public BopomofoEngine.Result escape() {
-        if (overlay != Overlay.NONE) { clearOverlay(); return BopomofoEngine.Result.update(); }
-        if (!hardwareSmartEditing) { boolean had = hasComposition(); reset(); return had && lastError == null ? BopomofoEngine.Result.discardComposition() : BopomofoEngine.Result.update(); }
+    @Override public InputEngine.Result backspace() { clearOverlay(); return !hasComposition() ? InputEngine.Result.delete() : key("backspace"); }
+    @Override public InputEngine.Result escape() {
+        if (overlay != Overlay.NONE) { clearOverlay(); return InputEngine.Result.update(); }
+        if (!hardwareSmartEditing) { boolean had = hasComposition(); reset(); return had && lastError == null ? InputEngine.Result.discardComposition() : InputEngine.Result.update(); }
         return key("escape");
     }
-    @Override public BopomofoEngine.Result selectDisplayedCandidate(int index) {
+    @Override public InputEngine.Result selectDisplayedCandidate(int index) {
         List<String> values = displayedCandidates();
-        if (index < 0 || index >= values.size()) return BopomofoEngine.Result.update();
+        if (index < 0 || index >= values.size()) return InputEngine.Result.update();
         return overlay != Overlay.NONE ? direct(values.get(index)) : offerAssociated(operate(object("type", "select", "index", index)));
     }
-    @Override public BopomofoEngine.Result selectHighlightedCandidate() { return selectDisplayedCandidate(highlightedIndex()); }
+    @Override public InputEngine.Result selectHighlightedCandidate() { return selectDisplayedCandidate(highlightedIndex()); }
     @Override public void moveHighlight(int delta) {
         if (overlay != Overlay.NONE) {
             if (!overlayCandidates.isEmpty()) { int target = Math.floorMod(overlayPage * PAGE_SIZE + overlayHighlight + delta, overlayCandidates.size()); overlayPage = target / PAGE_SIZE; overlayHighlight = target % PAGE_SIZE; }
@@ -410,7 +409,7 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public String composingText() { return text("visible_text"); }
     @Override public String completedSmartText() { return chineseInputMethod() == ChineseInputMethod.SMART ? text("composition") : ""; }
     @Override public boolean hasComposition() { return !composingText().isEmpty(); }
-    @Override public boolean isTouchSmartComposition() { return chineseInputMethod() == ChineseInputMethod.SMART && mode == BopomofoEngine.InputMode.BOPOMOFO && !hardwareSmartEditing; }
+    @Override public boolean isTouchSmartComposition() { return chineseInputMethod() == ChineseInputMethod.SMART && mode == InputEngine.InputMode.BOPOMOFO && !hardwareSmartEditing; }
     @Override public BopomofoCompositionMode compositionMode() { return chineseInputMethod() == ChineseInputMethod.SMART ? BopomofoCompositionMode.SMART : BopomofoCompositionMode.TRADITIONAL; }
     @Override public List<String> displayedCandidates() {
         if (overlay == Overlay.NONE) return strings(array("displayed_candidates"));
@@ -419,24 +418,24 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public int page() { return overlay == Overlay.NONE ? number("page") : overlayPage; }
     @Override public int pageCount() { return overlay == Overlay.NONE ? number("page_count") : (overlayCandidates.size() + PAGE_SIZE - 1) / PAGE_SIZE; }
     @Override public int highlightedIndex() { return displayedCandidates().isEmpty() ? -1 : overlay == Overlay.NONE ? snapshot.optInt("highlight", 0) : overlayHighlight; }
-    @Override public boolean isEnglishMode() { return mode == BopomofoEngine.InputMode.ENGLISH; }
-    @Override public BopomofoEngine.InputMode inputMode() { return mode; }
+    @Override public boolean isEnglishMode() { return mode == InputEngine.InputMode.ENGLISH; }
+    @Override public InputEngine.InputMode inputMode() { return mode; }
     @Override public boolean isShifted() { return shifted; }
     @Override public boolean isTemporaryEnglish() { return temporaryEnglish; }
     @Override public boolean isHardwareFullWidth() { return hardwareFullWidth; }
     @Override public boolean isShowingAssociatedPhrases() { return overlay == Overlay.ASSOCIATED; }
     @Override public boolean isShowingSmartCandidates() { return chineseInputMethod() == ChineseInputMethod.SMART && overlay == Overlay.NONE && array("candidates").length() > 0; }
-    @Override public BopomofoEngine.Result finishCompositionForModeSwitch() { return finishCompositionForInputHandoff(); }
-    @Override public BopomofoEngine.Result finishCompositionForInputHandoff() {
-        if (!hasComposition()) { clearOverlay(); return BopomofoEngine.Result.update(); }
+    @Override public InputEngine.Result finishCompositionForModeSwitch() { return finishCompositionForInputHandoff(); }
+    @Override public InputEngine.Result finishCompositionForInputHandoff() {
+        if (!hasComposition()) { clearOverlay(); return InputEngine.Result.update(); }
         if (chineseInputMethod() != ChineseInputMethod.SMART && array("candidates").length() > 0) {
-            BopomofoEngine.Result result = operate(object("type", "select", "index", highlightedIndex()));
+            InputEngine.Result result = operate(object("type", "select", "index", highlightedIndex()));
             if (lastError != null) return result;
             operate(object("type", "reset")); if (lastError == null) clearOverlay(); return result;
         }
-        BopomofoEngine.Result result = operate(object("type", "finish")); if (lastError == null) clearOverlay(); return result;
+        InputEngine.Result result = operate(object("type", "finish")); if (lastError == null) clearOverlay(); return result;
     }
-    @Override public BopomofoEngine.Result refreshUserData() { return operate(object("type", "save_learning")); }
+    @Override public InputEngine.Result refreshUserData() { return operate(object("type", "save_learning")); }
     void resetLearning() { apply(object("type", "reset_method_learning", "method", "smart")); }
     static void resetLearning(String modelPath, String userDatabasePath) {
         try (GuanyinmaInputEngine engine = new GuanyinmaInputEngine(modelPath, userDatabasePath, text -> true)) { engine.resetLearning(); }

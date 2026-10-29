@@ -1,7 +1,7 @@
 # Guanyinma：KeyKey 六平台 Rust 共用核心評估
 
 評估日期：2026-10-25。原始碼基準：`master`／`origin/master` 的 `892c4746`。
-本文件保留跨平台共用核心的工程評估；Linux／FreeBSD 的現行單核心接合以 [adapter 說明](GUANYINMA_LINUX_ADAPTER.md) 為準。效能與成本數字仍屬待原型校準的估算。目前已在 `Source/Guanyinma` 完成 Rust 骨架、C ABI、唯讀資料層、注音解析與四種輸入法 session（含好打注音組句、候選與邊界）；後續範圍見 [實作計畫](GUANYINMA_IMPLEMENTATION_PLAN.md)。這不代表完整輸入引擎、六平台封裝或實機驗收已完成。
+本文件保留重寫前架構與跨平台共用核心的工程評估；現行單核心與雙核心接合以 [實作計畫](GUANYINMA_IMPLEMENTATION_PLAN.md) 及各平台 adapter 文件為準，下方舊核心盤點不代表目前產品依賴。效能與成本數字仍屬待原型校準的估算。`Source/Guanyinma` 已提供 Rust C ABI、唯讀資料層、注音解析與四種輸入法 session（含好打注音組句、候選、邊界與學習）；各平台封裝及宿主驗收分別記錄。
 
 產品名稱維持 **chichi77 KeyKey／琦琦輸入法**（英文簡稱 **KeyKey**）。新核心代號為 **Guanyinma**，使用 Rust 實作，作為 KeyKey 內的共用核心模組；目標取代 macOS／Windows 的 Manjusri、iOS Swift 核心、Android Java 核心及 Linux／FreeBSD C++ 核心。各平台原生 frontend 改接 Guanyinma。核心工作目錄使用 Guanyinma 名稱。
 
@@ -15,7 +15,7 @@
 
 最主要收益是讓組句、候選、選字學習及邊界修正只維護一次，並用同一組案例驗證。Rust 可降低安全 Rust 範圍內的記憶體錯誤風險，但不會自動修好 TSF、IMK、InputConnection、document proxy 或 Fcitx 的生命週期問題，也不能先宣稱效能或記憶體一定改善。
 
-目前產品已支援六平台並正式發布，全面切換的主要成本是行為相容與平台驗收。其他平台仍以各自接合文件管理雙核心；Linux／FreeBSD 已直接使用 Guanyinma，不保留舊核心或回退入口。
+目前產品已支援六平台並正式發布，全面切換的主要成本是行為相容與平台驗收。Guanyinma 分支的 Windows、iOS、Android、Linux／FreeBSD 已直接使用 Rust 單核心；macOS 仍保留雙核心。正式發布及宿主驗收狀態以各平台文件為準。
 
 ## 原生 frontend 與共用核心接合
 
@@ -208,8 +208,8 @@ FFI 增加 malformed input、Unicode、重複 destroy／過期結果等必要防
 
 - [桌面好打注音模組](../Source/ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp)、[Manjusri Graph](../Source/Frameworks/Manjusri/Headers/Graph.h)、[LanguageModel](../Source/Frameworks/Manjusri/Headers/LanguageModel.h)。
 - [Windows Engine](../Source/Loaders/Windows-TSF/KeyKeyEngine.cpp)、[Windows 開發與測試](../Source/Loaders/Windows-TSF/README.md)。
-- [Swift Store](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/SmartMandarinStore.swift)、[觸控尾段狀態](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/TouchSmartHostTextState.swift)、[mutation guard](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/DocumentMutationGuard.swift)。
-- [Java Store](../Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/SmartMandarinStore.java)、[Android 建置](../Source/Loaders/Android-IME/app/build.gradle.kts)。
+- [Swift Rust adapter](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/GuanyinmaInputEngine.swift)、[觸控尾段狀態](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/TouchSmartHostTextState.swift)、[mutation guard](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/DocumentMutationGuard.swift)。
+- [Java Rust adapter](../Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/GuanyinmaInputEngine.java)、[Android 建置](../Source/Loaders/Android-IME/app/build.gradle.kts)。
 - [Linux／FreeBSD Guanyinma 接合](GUANYINMA_LINUX_ADAPTER.md)、[Fcitx CMake](../Source/Loaders/Linux-IME/CMakeLists.txt)。
 - [實體鍵盤邊界案例](SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)，現況須核對程式碼。
 - [正式模型 manifest](../DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json)、[動作數定義](../DataSource/AISyntheticBigram/TYPING_COST.md)、[AGENTS](../AGENTS.md)、[BUILDING](../BUILDING.md)。

@@ -7,14 +7,13 @@ Google Play 最新正式版為 **1.3.7**，一般使用者可直接安裝，不�
 
 一般使用者請先看[Android 手機、平板安裝與使用指南](../../../ANDROID_INSTALL.md)；本頁包含開發、建置與實作細節。
 
-原始碼提供同一套 FE 的「Java（原核心）／Guanyinma（Rust）」雙核心選單，預設維持
-Java。切換等組字、候選與原宿主效果完成後生效；兩核心的自訂詞與學習分開，不自動
-匯入 Java 資料。架構、三種互動 profile、JNI、資料路徑與驗證責任見
+目前原始碼的四種輸入法只使用 Guanyinma（Rust）核心，移除 Java 原核心、核心選擇與失敗回退。
+保留既有鍵盤、候選窗與宿主文字管線；使用者資料固定為 `GuanyinmaUser.db`，不自動修改或匯入舊 Java 資料。
+架構、三種互動 profile、JNI、資料路徑與驗證責任見
 [Guanyinma Android 接合](../../../docs/GUANYINMA_ANDROID_ADAPTER.md)。
 
-Android 原生繁體中文注音輸入法，使用 KeyKey 共用的
-`Source/DataTables/bpmf-ext.cin` 字表。建置時會自動把字表與關聯詞詞庫加入 APK，
-不需要手動複製。
+四法共用 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`，建置只驗證及複製。
+關聯詞索引另依原有 FE 資料來源產生，不需要手動複製。
 
 設定頁可選「好打注音」、「傳統注音」、「倉頡」或「簡易」，新安裝預設好打注音。觸控好打注音將已完成的
 中文字即時寫入 App，並保留最近九個音節供句中選字及退格修正；更早的詞段留在 App。
@@ -56,7 +55,7 @@ A–Z 顯示倉頡字根，候選、翻頁、關聯詞與送字共用傳統注�
 `Generic-simplex-cin` 表，不複製或重建字表。預設依 macOS：倉頡錯碼清除、選字排序
 開啟，滿五碼查詢關閉；簡易保留錯碼、固定候選順序。這些選項位於設定頁獨立的
 「倉頡與簡易」區塊。簡易即時候選預設關閉，與錯碼清除互斥；倉頡另可調整標點寬度。
-排序紀錄保存在 App 私有偏好設定，不修改內建字表。
+排序紀錄保存在 Guanyinma 使用者資料庫，不修改內建字表。
 切換中英文、輸入法或結束輸入時，先保留選定文字或未完成字根。
 
 倉頡虛擬鍵盤的「即時候選」與「未打完也能選字」缺值時預設開啟，保留既有明確設定。
@@ -71,9 +70,7 @@ A–Z 顯示倉頡字根，候選、翻頁、關聯詞與送字共用傳統注�
 
 試打步驟與目前驗證範圍見[手機倉頡前綴試用](../../../docs/MOBILE_CANGJIE_PREFIX_TRIAL.md)。
 
-共用案例 `tests/fixtures/mobile-table-input/cases.tsv` 同時由 Swift、Android JVM 與
-Android 真實 SQLite instrumentation 測試執行，涵蓋兩種輸入法的碼長、候選、翻頁、
-萬用字元、退格、錯碼及切換。
+四法演算法矩陣集中於 Rust 的無 UI 測試；Android 只保留設定、字型與宿主交易的少量 FE 串接驗證。
 
 ## 畫面模式
 
@@ -286,7 +283,7 @@ JVM tests 自動準備主機架構的真 JNI library；Windows 另需 MSVC C++ �
 矩陣只在 `guanyinma-core.yml`。host JNI tests 與 APK 編譯不代表 Android runtime 或 IME 宿主已驗收。
 
 基本小麥注音詞庫取自 `DataSource/McBopomofo/phrase.occ`，另會固定加入
-`DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會把共用 CIN 與這些文字詞庫
+`DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會把這些關聯詞文字詞庫
 編譯成 `.kki` 索引；執行時直接讀索引，候選內容在查詢該鍵時才解碼。關聯詞索引在背景
 載入，不阻塞虛擬鍵盤顯示。原始文字檔仍是唯一資料來源，不能手動修改 generated 索引。
 分類詞庫由自動化方式生成、推論與整理，沒有逐筆人工校正，也不保證正確性或完整性。
@@ -296,25 +293,7 @@ JVM tests 自動準備主機架構的真 JNI library；Windows 另需 MSVC C++ �
 
 APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。
 
-Bigram 開關另有使用 Android 真實 SQLite 的 instrumentation 回歸，驗證無 Bigram 表
-仍可組句、候選與自訂詞、學習資料保留，以及兩種設定的觸控／實體長句邊界。
-在本目錄執行 `./gradlew assembleDebug assembleDebugAndroidTest` 後，指定測試模擬器：
-
-```sh
-adb -s emulator-XXXX install -r app/build/outputs/apk/debug/app-debug.apk
-adb -s emulator-XXXX install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb -s emulator-XXXX shell am instrument -w -r \
-  -e class tw.chichi77.keykey.android.SmartMandarinBigramInstrumentedTest \
-  tw.chichi77.keykey.android.test/androidx.test.runner.AndroidJUnitRunner
-```
-
-測試會暫時修改並還原 Bigram／注音模式偏好，請只對測試模擬器執行。
-
-
-任何 Android IME 行為、版面、設定、字典或建置變更，都必須依
-[`ANDROID_VIRTUAL_DEVICE_TEST_PLAN.md`](../../../docs/ANDROID_VIRTUAL_DEVICE_TEST_PLAN.md) 跑完 API 26、28、30、33、35、37
-六台 AVD 的完整功能矩陣；只完成單元測試、安裝或單一輸入情境不算測試完成。debug APK
-另含 `ImeTestActivity`，用來實測所有欄位型態與 Enter action，release APK 不包含該頁。
+完整 Rust／C ABI 行為矩陣在 `guanyinma-core.yml` 執行。Android 保留少量真 JNI 與原生字型／設定 smoke；編譯 APK／instrumentation 不等於 Android 宿主輸入已驗收。functional baseline 只作手動遷移參考，不接入日常驗證。
 
 ## 在手機啟用
 

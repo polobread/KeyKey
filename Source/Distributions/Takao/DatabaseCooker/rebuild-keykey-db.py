@@ -79,6 +79,38 @@ def publish_files(stage, root, model_files, audit_files, decision, apply=False):
     return files
 
 
+def android_model_metadata(source, db_hash):
+    """Keep Android's content-addressed cache name and verifier hash together."""
+    if re.fullmatch(r"[a-f0-9]{64}", db_hash) is None:
+        raise ValueError("invalid Android model SHA-256")
+    names = re.findall(r'INSTALLED_NAME\s*=\s*"([^"\n]+)"', source)
+    if len(names) != 1:
+        raise ValueError("cannot update Android model cache name")
+    old_name = names[0]
+    new_name = f"KeyKey-smart-{db_hash[:16]}.db"
+    updated = re.sub(r'(INSTALLED_NAME\s*=\s*")[^"\n]+(")',
+                     lambda match: match[1] + new_name + match[2], source)
+    updated, matches = re.subn(r'(EXPECTED_SHA256\s*=\s*")[a-f0-9]{64}(")',
+                               lambda match: match[1] + db_hash + match[2], updated)
+    if matches != 1:
+        raise ValueError("cannot update Android model verifier hash")
+    if old_name != new_name:
+        pattern = r'(PREVIOUS_INSTALLED_NAMES\s*=\s*\{)(.*?)(\})'
+        histories = re.findall(pattern, updated, flags=re.DOTALL)
+        if len(histories) != 1:
+            raise ValueError("cannot update Android model cache history")
+        history = histories[0][1]
+        if re.sub(r'"[^"\n]+"|[\s,]', "", history):
+            raise ValueError("invalid Android model cache history")
+        previous = list(dict.fromkeys([old_name, *re.findall(r'"([^"\n]+)"', history)]))
+        # A model rollback may select a name already in the cleanup list. Never
+        # let the installer delete the model it has just verified and opened.
+        previous = [name for name in previous if name != new_name]
+        body = "\n" + "".join(f'            "{name}",\n' for name in previous) + "    "
+        updated = re.sub(pattern, lambda match: match[1] + body + match[3], updated, flags=re.DOTALL)
+    return updated
+
+
 def rebuild_associations(db, paths, work):
     exclusions = work / "people-exclusions.txt"
     people = {row[0] for path in paths if path.name.startswith("phrase.people-")
@@ -337,24 +369,14 @@ def main():
     # generated metadata separate so staging can never write through that link.
     v5_output = output / "generated-v5-manifest.json"
     write_json(v5_output, v5)
-    android_path = Path("Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/SmartMandarinStore.java")
-    android = (ROOT / android_path).read_text()
-    old_name = re.search(r'INSTALLED_NAME\s*=\s*"([^"]+)"', android).group(1)
-    new_name = f"KeyKey-smart-{db_hash[:16]}.db"
-    if old_name != new_name:
-        android = android.replace(f'INSTALLED_NAME = "{old_name}"', f'INSTALLED_NAME = "{new_name}"')
-        android = android.replace('private static final String[] PREVIOUS_INSTALLED_NAMES = {',
-                                  'private static final String[] PREVIOUS_INSTALLED_NAMES = {\n            "' + old_name + '",')
-    android = re.sub(r"EXPECTED_BIGRAM_ROWS = [\d_]+", f"EXPECTED_BIGRAM_ROWS = {rows[1]:_}", android)
+    android_path = Path("Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/SharedModelDatabase.java")
+    android = android_model_metadata((ROOT / android_path).read_text(), db_hash)
     generated = [p for p in stage.rglob("*") if p.is_file() and not p.is_symlink()]
     android_output = stage / android_path
     android_output.parent.mkdir(parents=True, exist_ok=True)
     android_output.write_text(android)
     generated.append(android_output)
     generated_constants = [
-        ("Source/Loaders/Linux-IME/engine/src/smart_mandarin_store.cpp", r"ExpectedBigramRows = \d+", f"ExpectedBigramRows = {rows[1]}"),
-        ("Source/Loaders/iOS-Keyboard/KeyKeyEngine/Tests/KeyKeyEngineTests/CandidateStoreTests.swift",
-         r'(Int\(rows.first \?\? ""\) \?\? 0\) == )[\d_]+', rf"\g<1>{rows[1]:_}"),
         ("Source/Loaders/Linux-IME/README.md", r"contains [\d,]+\s+unigrams and [\d,]+ bigrams", f"contains {rows[0]:,}\n  unigrams and {rows[1]:,} bigrams"),
         ("Source/Loaders/Android-IME/README.md", r"Bigram 恰為 [\d,]+ 筆", f"Bigram 恰為 {rows[1]:,} 筆"),
     ]

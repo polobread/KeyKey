@@ -1,5 +1,6 @@
 import Foundation
 import SQLite3
+import CGuanyinma
 
 public struct SmartMandarinUserPhrase: Equatable {
     public let id: Int64
@@ -26,111 +27,42 @@ public enum SmartMandarinUserDataError: Error, LocalizedError {
     }
 }
 
-/// The app writes the shared phrase database. A keyboard without Full Access
-/// opens it read-only and writes learning only in its own extension container.
-public final class SmartMandarinUserData {
-    private var phrases: OpaquePointer? = nil
+/// App-owned custom-phrase publication. Extensions read snapshots without
+/// shared writes; candidate learning and ranking are exclusively in Rust.
+public final class SharedPhrasePublication {
+    private var phrases: OpaquePointer?
     private let phrasesURL: URL
-    private let learning: OpaquePointer
     private let writablePhrases: Bool
 
-    public init(phrasesURL: URL, learningURL: URL, writablePhrases: Bool) throws {
+    public init(phrasesURL: URL, writablePhrases: Bool) throws {
         self.phrasesURL = phrasesURL
         self.writablePhrases = writablePhrases
-        let fileManager = FileManager.default
-        try fileManager.createDirectory(
-            at: learningURL.deletingLastPathComponent(), withIntermediateDirectories: true
-        )
-        learning = try Self.open(learningURL, writable: true)
-        do {
-            try Self.execute(learning, "CREATE TABLE IF NOT EXISTS user_bigram_cache ("
-                + "qstring TEXT NOT NULL, previous TEXT NOT NULL, current TEXT NOT NULL, "
-                + "probability REAL NOT NULL);"
-                + "CREATE INDEX IF NOT EXISTS user_bigram_cache_index "
-                + "ON user_bigram_cache(qstring);"
-                + "CREATE TABLE IF NOT EXISTS user_candidate_override_cache ("
-                + "qstring TEXT NOT NULL, current TEXT NOT NULL);"
-                + "CREATE INDEX IF NOT EXISTS user_candidate_override_cache_index "
-                + "ON user_candidate_override_cache(qstring);")
-            if writablePhrases {
-                try fileManager.createDirectory(
-                    at: phrasesURL.deletingLastPathComponent(), withIntermediateDirectories: true
-                )
-                phrases = try Self.open(phrasesURL, writable: true)
-                try Self.execute(phrases!, "CREATE TABLE IF NOT EXISTS user_unigrams ("
+        if writablePhrases {
+            try FileManager.default.createDirectory(at: phrasesURL.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+            let handle = try Self.open(phrasesURL, writable: true)
+            do {
+                try Self.execute(handle, "CREATE TABLE IF NOT EXISTS user_unigrams ("
                     + "qstring TEXT NOT NULL, current TEXT NOT NULL, "
                     + "probability REAL NOT NULL, backoff REAL NOT NULL);"
-                    + "CREATE INDEX IF NOT EXISTS user_unigrams_index "
-                    + "ON user_unigrams(qstring);")
-            } else if fileManager.fileExists(atPath: phrasesURL.path) {
-                phrases = try Self.open(phrasesURL, writable: false)
-            } else {
-                phrases = nil
+                    + "CREATE INDEX IF NOT EXISTS user_unigrams_index ON user_unigrams(qstring);")
+                phrases = handle
+            } catch { sqlite3_close_v2(handle); throw error }
+        } else if FileManager.default.fileExists(atPath: phrasesURL.path) {
+            let handle = try Self.open(phrasesURL, writable: false)
+            var statement: OpaquePointer?
+            let status = sqlite3_prepare_v2(handle,
+                "SELECT qstring,current,probability,backoff FROM user_unigrams WHERE 0", -1, &statement, nil)
+            sqlite3_finalize(statement)
+            guard status == SQLITE_OK else {
+                let message = String(cString: sqlite3_errmsg(handle))
+                sqlite3_close_v2(handle)
+                throw SmartMandarinUserDataError.database(message)
             }
-        } catch {
-            sqlite3_close_v2(phrases)
-            sqlite3_close_v2(learning)
-            throw error
+            phrases = handle
         }
     }
-
-    deinit {
-        sqlite3_close_v2(phrases)
-        sqlite3_close_v2(learning)
-    }
-
-    public func unigrams(for query: String) -> [(text: String, probability: Double, backoff: Double)] {
-        guard let phrases = phraseHandle() else { return [] }
-        return rows(phrases, "SELECT current, probability, backoff FROM user_unigrams "
-            + "WHERE qstring = ? ORDER BY probability DESC, rowid", [query]).map {
-            ($0[0], Double($0[1]) ?? -1, Double($0[2]) ?? 0)
-        }
-    }
-
-    public func learnedCandidate(for query: String) -> String? {
-        rows(learning, "SELECT current FROM user_candidate_override_cache "
-            + "WHERE qstring = ? ORDER BY rowid DESC LIMIT 1", [query]).first?.first
-    }
-
-    public func learnedBigram(
-        previousQuery: String, query: String, previous: String, current: String
-    ) -> Double? {
-        rows(learning, "SELECT probability FROM user_bigram_cache WHERE "
-            + "qstring = ? AND previous = ? AND current = ? ORDER BY rowid DESC LIMIT 1",
-             [previousQuery + " " + query, previous, current]).first?.first.flatMap(Double.init)
-    }
-
-    public func learnCandidate(
-        query: String, current: String, previousQuery: String? = nil, previous: String? = nil
-    ) {
-        guard !query.isEmpty, !current.isEmpty else { return }
-        do {
-            try Self.execute(learning, "BEGIN IMMEDIATE")
-            try change(learning, "DELETE FROM user_candidate_override_cache WHERE qstring = ?", [query])
-            try change(learning, "INSERT INTO user_candidate_override_cache VALUES (?, ?)",
-                       [query, current])
-            if let previousQuery, let previous, !previousQuery.isEmpty {
-                try learnBigramInTransaction(
-                    previousQuery: previousQuery, query: query, previous: previous, current: current
-                )
-            }
-            try Self.execute(learning, "COMMIT")
-        } catch {
-            try? Self.execute(learning, "ROLLBACK")
-        }
-    }
-
-    public func resetLearning() throws {
-        try Self.execute(learning, "BEGIN IMMEDIATE")
-        do {
-            try Self.execute(learning, "DELETE FROM user_bigram_cache;"
-                + "DELETE FROM user_candidate_override_cache;")
-            try Self.execute(learning, "COMMIT")
-        } catch {
-            try? Self.execute(learning, "ROLLBACK")
-            throw error
-        }
-    }
+    deinit { sqlite3_close_v2(phrases) }
 
     public func userPhrases() -> [SmartMandarinUserPhrase] {
         guard let phrases = phraseHandle() else { return [] }
@@ -272,8 +204,9 @@ public final class SmartMandarinUserData {
         return SmartMandarinPhraseImportResult(imported: imported, skipped: skipped)
     }
 
+    /// Normalize the phrase editor's key/separator spelling; Rust validates
+    /// components and encodes the shared model query. This is not an input buffer.
     public static func query(for reading: String) -> String? {
-        let reverse = Dictionary(uniqueKeysWithValues: BopomofoSyllable.glyphs.map { ($0.value, $0.key) })
         let syllables = reading.split { $0.isWhitespace || $0 == "," || $0 == "，" }
             .flatMap { part -> [String] in
                 var pieces: [String] = []
@@ -289,54 +222,36 @@ public final class SmartMandarinUserData {
                 return pieces
             }
         guard (1...8).contains(syllables.count) else { return nil }
-        var result = ""
-        for text in syllables {
-            var syllable = BopomofoSyllable()
-            for glyph in text {
-                guard let component = reverse[glyph]
-                    ?? StandardBopomofoLayout.componentForKey[Character(glyph.lowercased())]
-                else { return nil }
-                let mask: UInt16
-                if component & BopomofoSyllable.consonantMask != 0 {
-                    mask = BopomofoSyllable.consonantMask
-                } else if component & BopomofoSyllable.medialMask != 0 {
-                    mask = BopomofoSyllable.medialMask
-                } else if component & BopomofoSyllable.vowelMask != 0 {
-                    mask = BopomofoSyllable.vowelMask
-                } else { mask = BopomofoSyllable.toneMask }
-                guard syllable.component(in: mask) == 0 else { return nil }
-                syllable.add(component)
-            }
-            guard syllable.component(in: BopomofoSyllable.consonantMask
-                | BopomofoSyllable.medialMask | BopomofoSyllable.vowelMask) != 0 else {
-                return nil
-            }
-            result += syllable.absoluteOrderKey
-        }
-        return result
+        let normalized = syllables.map { text in
+            String(text.map { StandardBopomofoLayout.glyph(for: Character($0.lowercased())) ?? $0 })
+        }.joined(separator: ",")
+        return codec(["operation": "encode", "reading": normalized,
+                      "options": ["components": "unique_known", "empty": "reject", "require_phonetic": true]])?["qstring"] as? String
     }
 
     public static func reading(for query: String) -> String? {
-        let bytes = Array(query.utf8)
-        guard !bytes.isEmpty, bytes.count.isMultiple(of: 2) else { return nil }
-        var readings: [String] = []
-        for offset in stride(from: 0, to: bytes.count, by: 2) {
-            let low = Int(bytes[offset]) - 48
-            let high = Int(bytes[offset + 1]) - 48
-            let order = low + high * 79
-            guard (0..<6160).contains(order) else { return nil }
-            readings.append(BopomofoSyllable(absoluteOrder: order).composedString)
-        }
-        return readings.joined(separator: " ")
+        guard !query.isEmpty else { return nil }
+        return codec(["operation": "decode", "qstring": query,
+                      "options": ["separator": "space", "query": "canonical"]])?["reading"] as? String
     }
 
-    private func learnBigramInTransaction(
-        previousQuery: String, query: String, previous: String, current: String
-    ) throws {
-        let combined = previousQuery + " " + query
-        try change(learning, "DELETE FROM user_bigram_cache WHERE qstring = ?", [combined])
-        try change(learning, "INSERT INTO user_bigram_cache VALUES (?, ?, ?, 0)",
-                   [combined, previous, current])
+    private static func codec(_ request: [String: Any]) -> [String: Any]? {
+        guard let data = try? JSONSerialization.data(withJSONObject: request) else { return nil }
+        var result: OpaquePointer?
+        defer { guanyinma_result_close(&result) }
+        let status = data.withUnsafeBytes { bytes in
+            guanyinma_reading_codec(bytes.bindMemory(to: UInt8.self).baseAddress, bytes.count, &result)
+        }
+        guard status == 0 else { return nil }
+        var count = 0
+        guard guanyinma_result_json(result, nil, 0, &count) == 5, count > 0, count <= 65536 else { return nil }
+        var bytes = [UInt8](repeating: 0, count: count)
+        let capacity = bytes.count
+        guard guanyinma_result_json(result, &bytes, capacity, &count) == 0,
+              count == capacity, bytes.last == 0,
+              let value = try? JSONSerialization.jsonObject(with: Data(bytes.dropLast())) as? [String: Any],
+              value["schema_version"] as? Int == 1, value["kind"] as? String == "reading_codec" else { return nil }
+        return value
     }
 
     private func phraseHandle() -> OpaquePointer? {

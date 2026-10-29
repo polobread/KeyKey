@@ -22,7 +22,7 @@ final class KeyboardView: UIView {
         var candidates: [String] = []
         var highlightedIndex = -1
         var pageCount = 0
-        var mode = BopomofoEngine.InputMode.bopomofo
+        var mode = KeyboardInput.InputMode.bopomofo
         var chineseInputMethod = ChineseInputMethod.smart
         var keyboardLayout = BopomofoKeyboardLayout.standard
         var shifted = false
@@ -162,7 +162,7 @@ final class KeyboardView: UIView {
         configurePageButton(previousPageButton, title: "▲", label: "上一頁", delta: -1)
         configurePageButton(nextPageButton, title: "▼", label: "下一頁", delta: 1)
 
-        candidateButtons = (0..<BopomofoEngine.candidatesPerPage).map { index in
+        candidateButtons = (0..<KeyboardInput.candidatesPerPage).map { index in
             let button = UIButton(type: .system)
             button.backgroundColor = Palette.candidateCell
             button.layer.cornerRadius = 6

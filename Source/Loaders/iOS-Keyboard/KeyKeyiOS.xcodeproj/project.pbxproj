@@ -221,6 +221,7 @@
 				C7700000000000000000001C /* Sources */,
 				C77000000000000000000013 /* Frameworks */,
 				C7700000000000000000003A /* Resources */,
+				C77000000000000000000080 /* Copy Guanyinma runtime notices */,
 				C7700000000000000000000F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -244,6 +245,7 @@
 				C77000000000000000000020 /* Sources */,
 				C77000000000000000000014 /* Frameworks */,
 				C77000000000000000000021 /* Resources */,
+				C77000000000000000000081 /* Copy Guanyinma runtime notices */,
 			);
 			buildRules = (
 			);
@@ -376,10 +378,33 @@
 			name = "Build Guanyinma static library";
 			outputPaths = (
 				"$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/libguanyinma.a",
+				"$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
 			shellScript = "bash \"$SRCROOT/../../Guanyinma/tools/build-ios-core.sh\"\n";
+		};
+		C77000000000000000000080 /* Copy Guanyinma runtime notices */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ("$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.txt",);
+			name = "Copy Guanyinma runtime notices";
+			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanyinmaNotices.txt",);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "set -euo pipefail\ninstall -m 644 \"$BUILT_PRODUCTS_DIR/Guanyinma/$PLATFORM_NAME/GuanyinmaNotices.txt\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GuanyinmaNotices.txt\"\n";
+		};
+		C77000000000000000000081 /* Copy Guanyinma runtime notices */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ("$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.txt",);
+			name = "Copy Guanyinma runtime notices";
+			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanyinmaNotices.txt",);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "set -euo pipefail\ninstall -m 644 \"$BUILT_PRODUCTS_DIR/Guanyinma/$PLATFORM_NAME/GuanyinmaNotices.txt\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GuanyinmaNotices.txt\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

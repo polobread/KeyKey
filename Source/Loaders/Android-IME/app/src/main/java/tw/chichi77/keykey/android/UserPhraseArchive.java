@@ -13,7 +13,7 @@ final class UserPhraseArchive {
     private UserPhraseArchive() {}
 
     static String checkedQuery(String text, String reading) {
-        String query = SmartMandarinUserData.queryForReading(reading);
+        String query = PhraseReadingCodec.queryForReading(reading);
         if (query == null || text.isEmpty() || text.indexOf('\0') >= 0
                 || text.codePointCount(0, text.length()) > 8
                 || text.codePoints().anyMatch(Character::isWhitespace)
@@ -49,7 +49,7 @@ final class UserPhraseArchive {
     static String export(List<Row> rows) {
         StringBuilder result = new StringBuilder("MJSR version 1.0.0\n");
         for (Row row : rows) {
-            String reading = SmartMandarinUserData.readingForQuery(row.query());
+            String reading = PhraseReadingCodec.readingForQuery(row.query());
             if (reading == null) continue;
             result.append(row.text()).append('\t').append(reading.replace(' ', ','))
                     .append('\t').append(row.probability()).append('\t').append(row.backoff()).append('\n');

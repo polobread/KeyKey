@@ -198,7 +198,7 @@ add_custom_command(OUTPUT "${KEYKEY_SYMBOL_HEADER}"
         "${CMAKE_CURRENT_SOURCE_DIR}/Generate-SymbolResources.ps1" -Output "${KEYKEY_SYMBOL_HEADER}"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Generate-SymbolResources.ps1"
         "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/CannedMessages.plist"
-        "${KEYKEY_SOURCE}/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift"
+        "${KEYKEY_SOURCE}/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/KeyboardInput.swift"
         "${CMAKE_CURRENT_SOURCE_DIR}/SymbolEmojiSupplement.json"
     VERBATIM)
 add_custom_target(keykey_symbol_resources DEPENDS

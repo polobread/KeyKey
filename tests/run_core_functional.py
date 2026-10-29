@@ -158,6 +158,13 @@ def source_fingerprint(backend: str) -> dict[str, str]:
         directories = common + ["Source/Loaders/Android-IME/app/src/main/java"]
         explicit = ["Source/Loaders/Android-IME/app/src/androidTest/java/tw/chichi77/keykey/android/CoreFunctionalInstrumentedTest.java"]
     suffixes = {".cpp", ".c", ".h", ".swift", ".java", ".cin"}
+    missing = [name for name in explicit if not (ROOT / name).is_file()]
+    if missing:
+        raise ValueError(
+            f"Legacy {backend} recorder sources are absent in this revision: {missing}. "
+            "Capture in an isolated checkout of the original core revision; "
+            "use --compare --trace to review a Rust trace against the frozen reference."
+        )
     files = {ROOT / name for name in explicit}
     for directory in directories:
         files.update(p for p in (ROOT / directory).rglob("*")
@@ -233,6 +240,13 @@ def record(backend: str, fixture: Path, build: Path, count: int) -> list[Path]:
                          "see native manual recorder instructions")
     if backend == "swift" and sys.platform != "darwin":
         raise ValueError("Swift recording requires the Apple SQLite module on macOS")
+    if backend == "swift" and not (
+        ROOT / "Source/Loaders/iOS-Keyboard/KeyKeyEngine/Tests/KeyKeyEngineTests/CoreFunctionalTests.swift"
+    ).is_file():
+        raise ValueError(
+            "The legacy Swift recorder was removed with the old core. "
+            "Replay it in an isolated checkout of that revision, or compare an explicit --trace."
+        )
     if sys.platform == "win32":
         raise ValueError("Use the native Windows opt-in recorder, then import its JSONL")
     executable = None

@@ -17,7 +17,8 @@ private func footprintMB() -> Double {
     return Double(info.phys_footprint) / (1024 * 1024)
 }
 
-@Suite("Memory probe", .serialized)
+@Suite("Memory probe", .serialized,
+       .enabled(if: ProcessInfo.processInfo.environment["KEYKEY_IOS_MEMORY_PROBE"] == "1"))
 struct MemoryProbe {
     @Test("footprint after ten thousand lookups")
     func footprint() throws {
@@ -29,20 +30,23 @@ struct MemoryProbe {
         try #require(FileManager.default.fileExists(atPath: url.path))
 
         let before = footprintMB()
-        let database = try Database(url: url)
-        let candidates = try CandidateStore(database: database)
-        let phrases = AssociatedPhraseStore(database: database)
-        phrases.setEnabledSources(["McBopomofo"])
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let candidates = try GuanyinmaInputEngine(modelURL: url,
+            userDatabaseURL: directory.appendingPathComponent("user.db"), method: .traditional)
+        let phrases = try GuanyinmaAssociatedPhraseStore(modelURL: url, enabledSources: { ["McBopomofo"] })
         let afterOpen = footprintMB()
 
         var total = 0
         for _ in 0..<10_000 {
-            var reading = BopomofoReading()
-            reading.combine("s")
-            reading.combine("u")
-            reading.combine("3")
-            total += candidates.candidates(for: reading).count
-            total += phrases.phrases(forHeadCharacter: "一").count
+            // UIKit drains temporary Foundation JSON objects between input
+            // events. Match that lifecycle rather than one test-long pool.
+            total += autoreleasepool {
+                candidates.reset()
+                for key in "su3" { _ = candidates.handleSoftKey(String(key)) }
+                return candidates.displayedCandidates.count
+                    + phrases.phrases(forHeadCharacter: "一").count
+            }
         }
         let afterQueries = footprintMB()
 

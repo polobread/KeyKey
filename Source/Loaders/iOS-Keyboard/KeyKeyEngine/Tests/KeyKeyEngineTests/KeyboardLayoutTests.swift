@@ -95,10 +95,10 @@ struct KeyboardLayoutTests {
 
     @Test("symbol and emoji panels are exactly ninety entries")
     func panelSizes() {
-        #expect(BopomofoEngine.symbols.count == 90)
-        #expect(BopomofoEngine.emojis.count == 90)
-        #expect(Set(BopomofoEngine.symbols).count == 90, "no duplicates")
-        #expect(Set(BopomofoEngine.emojis).count == 90, "no duplicates")
+        #expect(KeyboardInput.symbols.count == 90)
+        #expect(KeyboardInput.emojis.count == 90)
+        #expect(Set(KeyboardInput.symbols).count == 90, "no duplicates")
+        #expect(Set(KeyboardInput.emojis).count == 90, "no duplicates")
     }
 
     @Test func toneKeysAreDrawnLarger() {

@@ -73,6 +73,11 @@ data, or separately licensed collections such as `DataSource/chichi77Collection`
   graph, scoring and Smart Mandarin composition rules under BSD 3-Clause.
   They retain the original notices; the Guanyinma notices file records the
   source paths. Original additions remain MIT.
+- `Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/PhraseReadingCodec.java`
+  retains the Yahoo BSD 3-Clause notice from the former reading converter.
+  It is limited to explicit legacy phrase-format exchange, outside the input engine.
+  `Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoKeyboardLayout.swift`
+  retains its Yahoo BSD notice for frontend Hsu key classification; parsing is in Rust.
 - The traditional/table state-machine port in `Source/Guanyinma/src/engine.rs`
   follows the MIT-licensed `OVIMTraditionalMandarin` and `OVIMGeneric` modules
   (Copyright (c) 2004-2010 The OpenVanilla Project). Their notice is retained in

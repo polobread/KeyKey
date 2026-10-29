@@ -15,6 +15,14 @@ enum BopomofoKeyboardLayout {
         return HSU.value.equals(value) ? HSU : STANDARD;
     }
 
+    /** Standard labels printed on FE keys; input parsing belongs to Rust. */
+    static String symbolForKey(char key) {
+        String keys = "1qaz2wsxedcrfv5tgbYhnujm8ik,9ol.0p;/-6347".toLowerCase(java.util.Locale.ROOT);
+        String symbols = "ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦˊˇˋ˙";
+        int index = keys.indexOf(Character.toLowerCase(key));
+        return index < 0 ? null : symbols.substring(index, index + 1);
+    }
+
     String punctuation(char key) {
         if (this != HSU) return null;
         return switch (key) {

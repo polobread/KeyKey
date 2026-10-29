@@ -30,7 +30,7 @@ public final class SupportPromptInstrumentedTest {
                     BopomofoKeyboardView.Mode.PORTRAIT, BopomofoKeyboardView.Mode.LANDSCAPE)) {
                 Fixture fixture = new Fixture(mode);
                 fixture.state(List.of(), "", List.of(), true, true,
-                        BopomofoEngine.InputMode.BOPOMOFO, false);
+                        InputEngine.InputMode.BOPOMOFO, false);
                 RecordingCanvas canvas = fixture.draw();
                 for (int index = 0; index < SUPPORT_WORDS.size(); index++) {
                     DrawnText word = canvas.single(SUPPORT_WORDS.get(index));
@@ -50,33 +50,33 @@ public final class SupportPromptInstrumentedTest {
         onMain(() -> {
             Fixture fixture = new Fixture(BopomofoKeyboardView.Mode.PORTRAIT);
             fixture.state(List.of(), "ㄏ", List.of(), true, true,
-                    BopomofoEngine.InputMode.BOPOMOFO, false);
+                    InputEngine.InputMode.BOPOMOFO, false);
             fixture.assertNoSupportWords();
             fixture.state(List.of(), "", List.of("好"), true, true,
-                    BopomofoEngine.InputMode.BOPOMOFO, false);
+                    InputEngine.InputMode.BOPOMOFO, false);
             fixture.assertNoSupportWords();
             fixture.state(NINE_CANDIDATES, "", List.of(), true, true,
-                    BopomofoEngine.InputMode.BOPOMOFO, false);
+                    InputEngine.InputMode.BOPOMOFO, false);
             RecordingCanvas candidates = fixture.draw();
             assertFalse(candidates.has("歡迎"));
             DrawnText firstCandidate = candidates.single("好");
             fixture.tap(firstCandidate.x, firstCandidate.y);
             assertEquals(List.of("candidate:0"), fixture.events);
             fixture.state(List.of(), "", List.of(), true, true,
-                    BopomofoEngine.InputMode.BOPOMOFO, true);
+                    InputEngine.InputMode.BOPOMOFO, true);
             fixture.assertNoSupportWords();
-            for (BopomofoEngine.InputMode mode : List.of(
-                    BopomofoEngine.InputMode.ENGLISH, BopomofoEngine.InputMode.NUMBER)) {
+            for (InputEngine.InputMode mode : List.of(
+                    InputEngine.InputMode.ENGLISH, InputEngine.InputMode.NUMBER)) {
                 fixture.state(List.of(), "", List.of(), true, true, mode, false);
                 fixture.assertNoSupportWords();
             }
             fixture.view.setChineseInputMethod(ChineseInputMethod.CANGJIE);
             fixture.state(List.of(), "", List.of(), true, true,
-                    BopomofoEngine.InputMode.BOPOMOFO, false);
+                    InputEngine.InputMode.BOPOMOFO, false);
             fixture.assertNoSupportWords();
             fixture.view.setChineseInputMethod(ChineseInputMethod.TRADITIONAL);
             fixture.state(List.of(), "", List.of(), false, true,
-                    BopomofoEngine.InputMode.BOPOMOFO, false);
+                    InputEngine.InputMode.BOPOMOFO, false);
             RecordingCanvas traditional = fixture.draw();
             assertTrue(traditional.has("歡迎付費支持"));
             assertFalse(traditional.has("歡迎"));
@@ -88,7 +88,7 @@ public final class SupportPromptInstrumentedTest {
         onMain(() -> {
             Fixture fixture = new Fixture(BopomofoKeyboardView.Mode.HARDWARE);
             fixture.state(List.of(), "ㄏ", List.of(), true, true,
-                    BopomofoEngine.InputMode.BOPOMOFO, false);
+                    InputEngine.InputMode.BOPOMOFO, false);
             RecordingCanvas canvas = fixture.draw();
             for (int index = 0; index < SUPPORT_WORDS.size(); index++) {
                 DrawnText word = canvas.single(SUPPORT_WORDS.get(index));
@@ -100,14 +100,14 @@ public final class SupportPromptInstrumentedTest {
             assertTrue(canvas.has("ㄅ"));
             assertTrue(canvas.has("▼"));
             fixture.state(NINE_CANDIDATES, "ㄏㄠˇ", List.of(), true, true,
-                    BopomofoEngine.InputMode.BOPOMOFO, false);
+                    InputEngine.InputMode.BOPOMOFO, false);
             RecordingCanvas candidates = fixture.draw();
             assertFalse(candidates.has("歡迎"));
             DrawnText lastCandidate = candidates.single("壕");
             fixture.tap(lastCandidate.x, lastCandidate.y);
             assertEquals(List.of("candidate:8"), fixture.events);
             fixture.state(List.of(), "", List.of(), true, false,
-                    BopomofoEngine.InputMode.BOPOMOFO, false);
+                    InputEngine.InputMode.BOPOMOFO, false);
             fixture.assertNoSupportWords();
             fixture.view.setMode(BopomofoKeyboardView.Mode.PORTRAIT);
             fixture.assertNoSupportWords();
@@ -131,7 +131,7 @@ public final class SupportPromptInstrumentedTest {
         }
 
         void state(List<String> candidates, String reading, List<String> cells,
-                   boolean smartMode, boolean eligible, BopomofoEngine.InputMode inputMode,
+                   boolean smartMode, boolean eligible, InputEngine.InputMode inputMode,
                    boolean associated) {
             view.setAssociatedPhrasesVisible(associated);
             view.setState(candidates, reading, smartMode, cells, cells.size(), inputMode,

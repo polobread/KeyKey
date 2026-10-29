@@ -9,7 +9,7 @@ LOADER = Path(__file__).resolve().parent
 ROOT = LOADER.parents[2]
 
 def windows_emojis():
-    swift = (ROOT / "Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift").read_text()
+    swift = (ROOT / "Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/KeyboardInput.swift").read_text()
     match = re.search(r"public static let emojis: \[String\] = \[(.*?)\]", swift, re.S)
     if not match:
         raise ValueError("Mobile emoji declaration not found")

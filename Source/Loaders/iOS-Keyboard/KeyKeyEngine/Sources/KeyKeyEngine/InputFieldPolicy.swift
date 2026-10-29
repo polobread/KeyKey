@@ -11,15 +11,15 @@ public struct InputFieldPolicy: Sendable, Equatable {
 
     public static let `default` = InputFieldPolicy(hint: .default)
 
-    public private(set) var allowedModes: Set<BopomofoEngine.InputMode>
-    public let preferredMode: BopomofoEngine.InputMode
+    public private(set) var allowedModes: Set<KeyboardInput.InputMode>
+    public let preferredMode: KeyboardInput.InputMode
     private let kind: Kind
 
     public init(hint: KeyboardTypeHint) {
         switch hint {
         case .default, .webSearch:
             kind = .general
-            allowedModes = Set(BopomofoEngine.InputMode.allCases)
+            allowedModes = Set(KeyboardInput.InputMode.allCases)
             preferredMode = .bopomofo
         case .asciiCapable:
             kind = .ascii
@@ -31,7 +31,7 @@ public struct InputFieldPolicy: Sendable, Equatable {
             preferredMode = .number
         case .url:
             kind = .url
-            allowedModes = Set(BopomofoEngine.InputMode.allCases)
+            allowedModes = Set(KeyboardInput.InputMode.allCases)
             preferredMode = .bopomofo
         case .numberPad, .asciiCapableNumberPad:
             kind = .number
@@ -57,7 +57,7 @@ public struct InputFieldPolicy: Sendable, Equatable {
     }
 
     public var isRestricted: Bool {
-        allowedModes.count < BopomofoEngine.InputMode.allCases.count
+        allowedModes.count < KeyboardInput.InputMode.allCases.count
     }
 
     /// Keeps the field's preferred starting plane, but lets an explicit press
@@ -65,11 +65,11 @@ public struct InputFieldPolicy: Sendable, Equatable {
     public func unrestricted() -> InputFieldPolicy {
         guard isRestricted else { return self }
         var policy = self
-        policy.allowedModes = Set(BopomofoEngine.InputMode.allCases)
+        policy.allowedModes = Set(KeyboardInput.InputMode.allCases)
         return policy
     }
 
-    public func modeCaption(for mode: BopomofoEngine.InputMode) -> String {
+    public func modeCaption(for mode: KeyboardInput.InputMode) -> String {
         switch mode {
         case .bopomofo: return "英/數"
         case .english: return "數/ㄅ"
@@ -81,7 +81,7 @@ public struct InputFieldPolicy: Sendable, Equatable {
     /// one-shot layer: MODE only makes it persistent instead of advancing to
     /// the number plane.
     public func modePreviewCaption(
-        for mode: BopomofoEngine.InputMode, temporaryEnglish: Bool
+        for mode: KeyboardInput.InputMode, temporaryEnglish: Bool
     ) -> String {
         guard !temporaryEnglish else { return symbol(mode) }
         if isRestricted {
@@ -96,7 +96,7 @@ public struct InputFieldPolicy: Sendable, Equatable {
 
     /// A concise description of the state a press on SHIFT will enter.
     public func shiftPreviewCaption(
-        for mode: BopomofoEngine.InputMode, shifted: Bool, temporaryEnglish: Bool
+        for mode: KeyboardInput.InputMode, shifted: Bool, temporaryEnglish: Bool
     ) -> String {
         if temporaryEnglish { return symbol(.bopomofo) }
         switch mode {
@@ -110,7 +110,7 @@ public struct InputFieldPolicy: Sendable, Equatable {
     }
 
     public func isKeyEnabled(
-        _ key: String, mode: BopomofoEngine.InputMode, shifted: Bool
+        _ key: String, mode: KeyboardInput.InputMode, shifted: Bool
     ) -> Bool {
         switch key {
         case KeyboardLayout.inputModeSwitchKey, "SETTINGS", "BACKSPACE", "ENTER":
@@ -162,7 +162,7 @@ public struct InputFieldPolicy: Sendable, Equatable {
         }
     }
 
-    private func nextMode(after current: BopomofoEngine.InputMode) -> BopomofoEngine.InputMode {
+    private func nextMode(after current: KeyboardInput.InputMode) -> KeyboardInput.InputMode {
         var candidate = current
         repeat {
             switch candidate {
@@ -174,7 +174,7 @@ public struct InputFieldPolicy: Sendable, Equatable {
         return candidate
     }
 
-    private func symbol(_ mode: BopomofoEngine.InputMode) -> String {
+    private func symbol(_ mode: KeyboardInput.InputMode) -> String {
         switch mode {
         case .bopomofo: return "ㄅ"
         case .english: return "英"

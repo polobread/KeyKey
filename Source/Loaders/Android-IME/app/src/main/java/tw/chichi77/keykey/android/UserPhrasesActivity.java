@@ -23,22 +23,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-/** A phrase editor permanently bound to the core selected when it was opened. */
+/** Phrase management through the required Rust user-data repository. */
 public final class UserPhrasesActivity extends Activity {
     private static final int IMPORT_PHRASES = 1;
     private static final int EXPORT_PHRASES = 2;
-    static final String EXTRA_CORE = "input_core";
-    private static final String SAVED_CORE = "user_phrases.core";
-    private InputCore core;
     private UserPhraseRepository userData;
     private LinearLayout phraseList;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        String captured = state == null ? getIntent().getStringExtra(EXTRA_CORE) : state.getString(SAVED_CORE);
-        core = captured == null ? InputCoreSettings.core(this) : InputCore.fromRaw(captured);
-        setTitle(core.displayName + " 自訂詞");
+        setTitle("好打注音自訂詞");
 
         ScrollView scroll = new ScrollView(this);
         scroll.setBackgroundColor(getColor(R.color.keykey_surface));
@@ -50,7 +45,7 @@ public final class UserPhrasesActivity extends Activity {
         setContentView(scroll);
 
         TextView heading = new TextView(this);
-        heading.setText(core.displayName + " 自訂詞");
+        heading.setText("好打注音自訂詞");
         heading.setTextSize(24);
         heading.setTextColor(getColor(R.color.keykey_blue_dark));
         content.addView(heading);
@@ -88,8 +83,7 @@ public final class UserPhrasesActivity extends Activity {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TITLE, core == InputCore.JAVA
-                    ? "KeyKey-UserPhrases.mjsr" : "KeyKey-Guanyinma-UserPhrases.mjsr");
+            intent.putExtra(Intent.EXTRA_TITLE, "KeyKey-Guanyinma-UserPhrases.mjsr");
             startActivityForResult(intent, EXPORT_PHRASES);
         });
         fileActions.addView(exportButton, new LinearLayout.LayoutParams(0,
@@ -101,7 +95,7 @@ public final class UserPhrasesActivity extends Activity {
         content.addView(phraseList);
 
         try {
-            userData = UserPhraseRepository.open(this, core);
+            userData = UserPhraseRepository.open(this);
             reload();
         } catch (RuntimeException error) {
             add.setEnabled(false);
@@ -223,12 +217,6 @@ public final class UserPhrasesActivity extends Activity {
             Toast.makeText(this, "詞庫匯入／匯出失敗：" + error.getMessage(),
                     Toast.LENGTH_LONG).show();
         }
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle state) {
-        state.putString(SAVED_CORE, core.rawName);
-        super.onSaveInstanceState(state);
     }
 
     @Override

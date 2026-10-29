@@ -21,7 +21,9 @@ Guanyinma 的演算法疑義以 macOS Manjusri／Formosa／OpenVanilla 為主要
 
 每個 case 建立隔離的學習 DB／偏好設定。選字學習使用正式引擎與真正可寫資料庫；`REOPEN` 保留該 case 的學習，`RESET_LEARNING` 清除該 case 的學習後再觀察。跨 case 不共享記憶。
 
-## 現有核心介面與錄製層
+## 重寫前的核心介面與錄製層
+
+iOS 與 Android 改為 Guanyinma 單核心後，舊 Swift／Java 引擎及其 recorder 已從目前產品來源移除。下表與手機 recorder 指令描述凍結基準的歷史來源；需要重錄時，須在原始核心 revision 的隔離 checkout 執行。既有 `pre-rust` 資料保留不動，目前仍可用 `--compare --trace` 明確比較 Rust 輸出，不以 Rust 引擎冒充舊核心重新擷取。
 
 | 平台 | 現有介面 | 本基準使用 |
 |---|---|---|
@@ -78,6 +80,7 @@ exit 0 表示在已觀測版本內無差異，exit 1 表示有差異待檢視，
 
 ```sh
 python3 tests/run_core_functional.py --compare --backend desktop
+# Swift 舊核心須在仍保留其 recorder 的歷史 revision 執行。
 python3 tests/run_core_functional.py --compare --backend swift
 ```
 
@@ -110,9 +113,9 @@ KeyKeyCoreMigrationBaseline.exe DATABASE FIXTURE OWNED_SCRATCH TRACE.jsonl
 
 scratch 必須為空或不存在，由工具建立自己的 case 子目錄；不得指向真實使用者輸入法資料。錄製完成後輸出的 JSONL 可用 `--trace windows=...` 匯入。原生作業系統未錄製就不建立其假基準。
 
-Swift 的 `CoreFunctionalTests` 預設 skipped；只有設定 `KEYKEY_MIGRATION_BASELINE=1` 才進行 DB／fixture 存取。手動 runner 會設定 `KEYKEY_CORE_FUNCTIONAL_FIXTURE`、`KEYKEY_MIGRATION_TRACE`、`KEYKEY_MIGRATION_SCRATCH`，指定該 suite。
+歷史 Swift recorder 的 `CoreFunctionalTests` 預設 skipped；只有設定 `KEYKEY_MIGRATION_BASELINE=1` 才進行 DB／fixture 存取。原 revision 的手動 runner 會設定 `KEYKEY_CORE_FUNCTIONAL_FIXTURE`、`KEYKEY_MIGRATION_TRACE`、`KEYKEY_MIGRATION_SCRATCH`，指定該 suite。
 
-Android 的 recorder 預設以 Assume 跳過；僅在專用模擬器上明確傳入參數：
+歷史 Android recorder 預設以 Assume 跳過；僅在原 revision 的專用模擬器上明確傳入參數：
 
 ```sh
 adb -s emulator-SERIAL shell am instrument -w \

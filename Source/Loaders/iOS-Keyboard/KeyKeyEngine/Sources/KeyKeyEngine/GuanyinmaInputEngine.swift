@@ -54,8 +54,8 @@ public final class GuanyinmaInputEngine: InputEngine {
     private var overlayCandidates: [String] = []
     private var overlayPage = 0
     private var overlayHighlight = 0
-    private var allowedModes = Set(BopomofoEngine.InputMode.allCases)
-    private var mode = BopomofoEngine.InputMode.bopomofo
+    private var allowedModes = Set(KeyboardInput.InputMode.allCases)
+    private var mode = KeyboardInput.InputMode.bopomofo
     private var shifted = false
     private var temporaryEnglish = false
     private var options: TableInputOptions
@@ -190,7 +190,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         }
         return snapshot
     }
-    private func apply(_ operation: [String: Any]) throws -> BopomofoEngine.Result {
+    private func apply(_ operation: [String: Any]) throws -> KeyboardInput.Result {
         let data = try JSONSerialization.data(withJSONObject: operation)
         var result: OpaquePointer?
         let code = data.withUnsafeBytes { bytes in
@@ -199,17 +199,17 @@ public final class GuanyinmaInputEngine: InputEngine {
         guard code == 0 else { throw Self.failure(code) }
         snapshot = try Self.decode(&result)
         lastError = nil
-        return BopomofoEngine.Result(text: snapshot.effects.commit,
+        return KeyboardInput.Result(text: snapshot.effects.commit,
                                     deletesBackward: snapshot.effects.deleteBackward,
                                     sendsReturn: snapshot.effects.sendReturn)
     }
-    @discardableResult private func operate(_ operation: [String: Any]) -> BopomofoEngine.Result {
+    @discardableResult private func operate(_ operation: [String: Any]) -> KeyboardInput.Result {
         do { return try apply(operation) }
         catch { lastError = error; return .update }
     }
-    private func key(_ name: String) -> BopomofoEngine.Result { operate(["type": "key", "key": name]) }
+    private func key(_ name: String) -> KeyboardInput.Result { operate(["type": "key", "key": name]) }
     private func clearOverlay() { overlay = .none; overlayCandidates = []; overlayPage = 0; overlayHighlight = 0 }
-    private func offeringAssociated(_ result: BopomofoEngine.Result) -> BopomofoEngine.Result {
+    private func offeringAssociated(_ result: KeyboardInput.Result) -> KeyboardInput.Result {
         guard result.text.count == 1, !hasComposition,
               let source = associatedSource else { return result }
         let values = source.phrases(forHeadCharacter: result.text).filter(glyphContext.accepts)
@@ -217,11 +217,11 @@ public final class GuanyinmaInputEngine: InputEngine {
         if !values.isEmpty { overlay = .associated; overlayCandidates = values; overlayPage = 0; overlayHighlight = 0 }
         return result
     }
-    private func direct(_ text: String) -> BopomofoEngine.Result {
+    private func direct(_ text: String) -> KeyboardInput.Result {
         let finished = finishCompositionForInputHandoff()
         guard lastError == nil else { return finished }
         let literal = operate(["type": "direct_text", "text": text])
-        return BopomofoEngine.Result(text: finished.text + literal.text,
+        return KeyboardInput.Result(text: finished.text + literal.text,
                                     deletesBackward: literal.deletesBackward, sendsReturn: literal.sendsReturn)
     }
 
@@ -252,7 +252,7 @@ public final class GuanyinmaInputEngine: InputEngine {
     }
     public var bopomofoCompositionMode: BopomofoCompositionMode { chineseInputMethod == .smart ? .smart : .traditional }
     public var isShowingSmartCandidates: Bool { chineseInputMethod == .smart && overlay == .none && !snapshot.candidates.isEmpty }
-    public var inputMode: BopomofoEngine.InputMode { mode }
+    public var inputMode: KeyboardInput.InputMode { mode }
     public var isShifted: Bool { shifted }
     public var isTemporaryEnglish: Bool { temporaryEnglish }
     public var isShowingAssociatedPhrases: Bool { overlay == .associated }
@@ -263,39 +263,38 @@ public final class GuanyinmaInputEngine: InputEngine {
         return Array(overlayCandidates.dropFirst(overlayPage * 9).prefix(9))
     }
     public var highlightedIndex: Int { displayedCandidates.isEmpty ? -1 : overlay == .none ? (snapshot.highlight ?? 0) : overlayHighlight }
-    public func setTableCandidateSource(_ source: TableCandidateSource) {}
     public func setAssociatedPhraseSource(_ source: AssociatedPhraseSource?) {
         do { associatedSource = try Self.associatedPhraseSource(source, modelURL: modelURL) }
         catch { associatedSource = nil; lastError = error }
         if overlay == .associated { clearOverlay() }
     }
-    @discardableResult public func setChineseInputMethod(_ method: ChineseInputMethod) -> BopomofoEngine.Result {
+    @discardableResult public func setChineseInputMethod(_ method: ChineseInputMethod) -> KeyboardInput.Result {
         guard method != chineseInputMethod else { return .update }
         clearOverlay()
         let result = operate(["type": "set_method", "method": method.rawValue])
         options = TableInputOptions(method: method)
         return result
     }
-    @discardableResult public func setKeyboardLayout(_ layout: BopomofoKeyboardLayout) -> BopomofoEngine.Result {
+    @discardableResult public func setKeyboardLayout(_ layout: BopomofoKeyboardLayout) -> KeyboardInput.Result {
         guard layout != keyboardLayout else { return .update }
         clearOverlay()
         let result = operate(["type": "set_layout", "layout": Self.layoutName(layout)])
         if lastError == nil { keyboardLayout = layout }
         return result
     }
-    @discardableResult public func setCompositionMode(_ mode: BopomofoCompositionMode) -> BopomofoEngine.Result { setChineseInputMethod(mode == .smart ? .smart : .traditional) }
-    public func setAllowedInputModes(_ allowed: Set<BopomofoEngine.InputMode>, preferred: BopomofoEngine.InputMode, selectPreferred: Bool = false) {
-        allowedModes = allowed.isEmpty ? Set(BopomofoEngine.InputMode.allCases) : allowed
+    @discardableResult public func setCompositionMode(_ mode: BopomofoCompositionMode) -> KeyboardInput.Result { setChineseInputMethod(mode == .smart ? .smart : .traditional) }
+    public func setAllowedInputModes(_ allowed: Set<KeyboardInput.InputMode>, preferred: KeyboardInput.InputMode, selectPreferred: Bool = false) {
+        allowedModes = allowed.isEmpty ? Set(KeyboardInput.InputMode.allCases) : allowed
         if selectPreferred || !allowedModes.contains(mode) {
             reset()
-            mode = allowedModes.contains(preferred) ? preferred : BopomofoEngine.InputMode.allCases.first(where: allowedModes.contains)!
+            mode = allowedModes.contains(preferred) ? preferred : KeyboardInput.InputMode.allCases.first(where: allowedModes.contains)!
             _ = operate(["type": "set_english", "enabled": mode != .bopomofo])
         }
     }
     @discardableResult public func restoreInputModeState(_ state: InputEngineModeState) -> Bool {
         guard !hasComposition, displayedCandidates.isEmpty else { return false }
         let target = allowedModes.contains(state.mode)
-            ? state.mode : BopomofoEngine.InputMode.allCases.first(where: allowedModes.contains)!
+            ? state.mode : KeyboardInput.InputMode.allCases.first(where: allowedModes.contains)!
         _ = operate(["type": "set_english", "enabled": target != .bopomofo])
         guard lastError == nil else { return false }
         mode = target
@@ -309,23 +308,23 @@ public final class GuanyinmaInputEngine: InputEngine {
         else { _ = operate(["type": "open_candidates", "index": index]) }
         return lastError == nil
     }
-    private func setMode(_ value: BopomofoEngine.InputMode) -> BopomofoEngine.Result {
+    private func setMode(_ value: KeyboardInput.InputMode) -> KeyboardInput.Result {
         clearOverlay(); mode = value
         return operate(["type": "set_english", "enabled": value != .bopomofo])
     }
     private func endTemporaryEnglish() {
         temporaryEnglish = false; shifted = false
-        _ = setMode(allowedModes.contains(.bopomofo) ? .bopomofo : BopomofoEngine.InputMode.allCases.first(where: allowedModes.contains)!)
+        _ = setMode(allowedModes.contains(.bopomofo) ? .bopomofo : KeyboardInput.InputMode.allCases.first(where: allowedModes.contains)!)
     }
-    @discardableResult public func handleSoftKey(_ value: String) -> BopomofoEngine.Result {
+    @discardableResult public func handleSoftKey(_ value: String) -> KeyboardInput.Result {
         let restore = temporaryEnglish && value != "SHIFT" && value != "MODE"
-        let result: BopomofoEngine.Result
+        let result: KeyboardInput.Result
         switch value {
         case "MODE":
             if temporaryEnglish {
                 temporaryEnglish = false; shifted = false; result = .update
             } else {
-                let all = BopomofoEngine.InputMode.allCases
+                let all = KeyboardInput.InputMode.allCases
                 let start = all.firstIndex(of: mode) ?? 0
                 let next = (1...all.count).map { all[(start + $0) % all.count] }.first(where: allowedModes.contains)!
                 result = setMode(next); shifted = false
@@ -339,15 +338,15 @@ public final class GuanyinmaInputEngine: InputEngine {
         case "SPACE": result = space()
         case "ENTER": result = enter()
         case "ESCAPE": result = escape()
-        case "SYMBOL": result = showOverlay(BopomofoEngine.symbols)
-        case "EMOJI": result = showOverlay(BopomofoEngine.emojis)
+        case "SYMBOL": result = showOverlay(KeyboardInput.symbols)
+        case "EMOJI": result = showOverlay(KeyboardInput.emojis)
         default:
             if value.count == 1 { result = character(value, touch: true) } else { result = .update }
         }
         if restore { endTemporaryEnglish() }
         return result
     }
-    private func character(_ raw: String, touch: Bool) -> BopomofoEngine.Result {
+    private func character(_ raw: String, touch: Bool) -> KeyboardInput.Result {
         clearOverlay()
         if mode != .bopomofo { return direct(touch && shifted ? raw.uppercased() : raw) }
         if touch, raw == "，" || raw == "。" { return direct(raw) }
@@ -355,7 +354,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         guard raw.unicodeScalars.count == 1 else { return direct(raw) }
         return offeringAssociated(operate(["type": "character", "text": raw.lowercased()]))
     }
-    @discardableResult public func handleHardwareCharacter(_ key: Character) -> BopomofoEngine.Result {
+    @discardableResult public func handleHardwareCharacter(_ key: Character) -> KeyboardInput.Result {
         if temporaryEnglish { endTemporaryEnglish() }
         if overlay == .symbols, let number = key.wholeNumberValue, (1...9).contains(number) {
             return selectDisplayedCandidate(number - 1)
@@ -365,26 +364,26 @@ public final class GuanyinmaInputEngine: InputEngine {
         }
         return character(String(key), touch: false)
     }
-    @discardableResult public func toggleHardwareLanguage() -> BopomofoEngine.Result {
+    @discardableResult public func toggleHardwareLanguage() -> KeyboardInput.Result {
         temporaryEnglish = false; shifted = false
         return setMode(mode == .bopomofo ? .english : .bopomofo)
     }
-    private func showOverlay(_ values: [String]) -> BopomofoEngine.Result {
+    private func showOverlay(_ values: [String]) -> KeyboardInput.Result {
         let result = finishCompositionForInputHandoff()
         guard lastError == nil else { return result }
         overlay = .symbols; overlayCandidates = values.filter(glyphContext.accepts); overlayPage = 0; overlayHighlight = 0
         return result
     }
-    @discardableResult public func showHardwareSymbols() -> BopomofoEngine.Result {
+    @discardableResult public func showHardwareSymbols() -> KeyboardInput.Result {
         if temporaryEnglish { endTemporaryEnglish() }
         guard readingText.isEmpty || chineseInputMethod == .smart else { return .update }
-        return showOverlay(BopomofoEngine.symbols)
+        return showOverlay(KeyboardInput.symbols)
     }
-    @discardableResult public func commitHardwarePunctuation(_ punctuation: String) -> BopomofoEngine.Result {
+    @discardableResult public func commitHardwarePunctuation(_ punctuation: String) -> KeyboardInput.Result {
         guard readingText.isEmpty || chineseInputMethod == .smart else { return .update }
         return direct(punctuation)
     }
-    @discardableResult public func space(fullWidth: Bool = false) -> BopomofoEngine.Result {
+    @discardableResult public func space(fullWidth: Bool = false) -> KeyboardInput.Result {
         if overlay != .none { changePage(by: 1); return .update }
         if !hasComposition { return .commit(fullWidth ? "　" : " ") }
         if fullWidth, chineseInputMethod == .smart, snapshot.reading.isEmpty,
@@ -393,7 +392,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         }
         return offeringAssociated(key("space"))
     }
-    @discardableResult public func openSmartCandidates() -> BopomofoEngine.Result {
+    @discardableResult public func openSmartCandidates() -> KeyboardInput.Result {
         guard chineseInputMethod == .smart, mode == .bopomofo else { return .update }
         if !snapshot.reading.isEmpty { return key("space") }
         if !snapshot.candidates.isEmpty { changePage(by: 1); return .update }
@@ -401,27 +400,27 @@ public final class GuanyinmaInputEngine: InputEngine {
         let index = hardwareSmartEditing ? max(0, snapshot.readingCursor - 1) : snapshot.readings.count - 1
         return operate(["type": "open_candidates", "index": index])
     }
-    @discardableResult public func enter() -> BopomofoEngine.Result {
+    @discardableResult public func enter() -> KeyboardInput.Result {
         if overlay == .associated { clearOverlay(); return .returnKey }
         if overlay != .none { return selectHighlightedCandidate() }
         if isTouchSmartComposition, hasComposition {
             let result = finishCompositionForInputHandoff()
-            return BopomofoEngine.Result(text: result.text, deletesBackward: result.deletesBackward, sendsReturn: lastError == nil)
+            return KeyboardInput.Result(text: result.text, deletesBackward: result.deletesBackward, sendsReturn: lastError == nil)
         }
         if !hasComposition && displayedCandidates.isEmpty { return .returnKey }
         return offeringAssociated(key("return"))
     }
-    @discardableResult public func backspace() -> BopomofoEngine.Result {
+    @discardableResult public func backspace() -> KeyboardInput.Result {
         if overlay != .none { clearOverlay() }
         if !hasComposition { return .delete }
         return key("backspace")
     }
-    @discardableResult public func escape() -> BopomofoEngine.Result {
+    @discardableResult public func escape() -> KeyboardInput.Result {
         if overlay != .none { clearOverlay(); return .update }
         if !hardwareSmartEditing { reset(); return .update }
         return key("escape")
     }
-    @discardableResult public func selectDisplayedCandidate(_ index: Int) -> BopomofoEngine.Result {
+    @discardableResult public func selectDisplayedCandidate(_ index: Int) -> KeyboardInput.Result {
         guard displayedCandidates.indices.contains(index) else { return .update }
         if overlay != .none {
             let value = displayedCandidates[index]
@@ -429,7 +428,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         }
         return offeringAssociated(operate(["type": "select", "index": index]))
     }
-    @discardableResult public func selectHighlightedCandidate() -> BopomofoEngine.Result { selectDisplayedCandidate(highlightedIndex) }
+    @discardableResult public func selectHighlightedCandidate() -> KeyboardInput.Result { selectDisplayedCandidate(highlightedIndex) }
     public func moveHighlight(by delta: Int) {
         if overlay == .none {
             guard !snapshot.candidates.isEmpty else { return }
@@ -457,7 +456,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         if temporaryEnglish { endTemporaryEnglish() }
         shifted = false
     }
-    @discardableResult public func finishCompositionForInputHandoff() -> BopomofoEngine.Result {
+    @discardableResult public func finishCompositionForInputHandoff() -> KeyboardInput.Result {
         clearOverlay()
         guard hasComposition else { return .update }
         if chineseInputMethod != .smart, !snapshot.candidates.isEmpty {
@@ -472,7 +471,7 @@ public final class GuanyinmaInputEngine: InputEngine {
 
     /// Replace the FE-published phrase snapshot atomically without importing
     /// another core's learning or giving an extension shared-container writes.
-    public func refreshUserPhrases(from source: SmartMandarinUserData?) throws {
+    public func refreshUserPhrases(from source: SharedPhrasePublication?) throws {
         guard let source else { return }
         guard let rows = try source.guanyinmaPhraseRows() else { return }
         _ = try apply(["type": "replace_user_phrases", "phrases": rows])

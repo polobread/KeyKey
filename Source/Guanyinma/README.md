@@ -17,7 +17,7 @@ macOS FE 已提供同一 App 的雙核心建置與一般設定切換，預設選
 
 資料路徑由呼叫端傳入，不內嵌個人路徑、不複製或重建模型。儲存庫正式來源為 [KeyKey.db](../Distributions/Takao/CookedDatabase/KeyKey.db)。內容雜湊與正式資料完整性仍由既有 [DatabaseCooker 驗證工具](../Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py)負責；Guanyinma 的 open 是執行期 schema／唯讀檢查。
 
-低階查詢仍使用既有字表 code／模型 qstring，例如倉頡 `a`、傳統注音 `\O`。輸入操作則使用下述 session API。macOS、iOS 與 Android 已提供同一 FE 的雙核心建置；iOS 預設選 Swift、Android 預設選 Java 原核心，見 [iOS 接合文件](../../docs/GUANYINMA_IOS_ADAPTER.md)與 [Android 接合文件](../../docs/GUANYINMA_ANDROID_ADAPTER.md)。其他 frontend 的 Guanyinma 接合仍另列階段五。
+低階查詢仍使用既有字表 code／模型 qstring，例如倉頡 `a`、傳統注音 `\O`。輸入操作則使用下述 session API。Windows、iOS、Android、Linux／FreeBSD 固定使用 Guanyinma 單核心；iOS 的 Swift 與 Android 的 Java 僅保留原生 FE 接合，不建置舊輸入引擎或提供失敗回退，見 [iOS 接合文件](../../docs/GUANYINMA_IOS_ADAPTER.md)與 [Android 接合文件](../../docs/GUANYINMA_ANDROID_ADAPTER.md)。macOS 仍提供同一 FE 的雙核心建置。各平台原生產物與宿主驗證分別記錄。
 
 ## 測試範圍與分工
 

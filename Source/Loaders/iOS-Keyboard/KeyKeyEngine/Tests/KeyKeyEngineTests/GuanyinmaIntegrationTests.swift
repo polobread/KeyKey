@@ -7,9 +7,6 @@ import SQLite3
 /// A small native-adapter suite. Core algorithms and their complete matrix live
 /// in guanyinma-core.yml; these tests exercise the actual Swift/C linkage.
 struct GuanyinmaIntegrationTests {
-    private struct Dictionary: CandidateSource {
-        func candidates(for reading: BopomofoReading) -> [String] { ["你", "妳"] }
-    }
     private final class Fixture {
         let directory: URL
         let model: URL
@@ -32,13 +29,12 @@ struct GuanyinmaIntegrationTests {
             try GuanyinmaInputEngine(modelURL: model, userDatabaseURL: user, method: method,
                                     hardwareSmartEditing: hardware, candidateFilter: filter)
         }
-        func facade(modelURL: URL? = nil) -> DualCoreInputEngine {
-            DualCoreInputEngine(legacy: BopomofoEngine(dictionary: Dictionary()),
-                                modelURL: modelURL ?? model, userDatabaseURL: user)
+        func facade(modelURL: URL? = nil) throws -> KeyboardInputEngine {
+            try KeyboardInputEngine(modelURL: modelURL ?? model, userDatabaseURL: user)
         }
-        func phrases() throws -> SmartMandarinUserData {
-            try SmartMandarinUserData(phrasesURL: directory.appendingPathComponent("GuanyinmaUserPhrase.db"),
-                                     learningURL: directory.appendingPathComponent("GuanyinmaPhraseBridge.db"), writablePhrases: true)
+        func phrases() throws -> SharedPhrasePublication {
+            try SharedPhrasePublication(phrasesURL: directory.appendingPathComponent("GuanyinmaUserPhrase.db"),
+                                        writablePhrases: true)
         }
         func exportedUserData() throws -> [String: Any] {
             var session: OpaquePointer?
@@ -106,7 +102,7 @@ struct GuanyinmaIntegrationTests {
         #expect(emptyHeadSource.lastError == nil)
         let legacy = AssociatedPhraseStore(database: try Database(url: decoy))
         legacy.setEnabledSources(["McBopomofo"])
-        #expect(legacy.phrases(forHeadCharacter: "你") == ["假的"])
+        #expect(legacy.enabledSources == ["McBopomofo"])
         let source = try GuanyinmaAssociatedPhraseStore(modelURL: f.model, enabledSources: { legacy.enabledSources })
         let expected = source.phrases(forHeadCharacter: "你")
         #expect(!expected.isEmpty)
@@ -146,31 +142,26 @@ struct GuanyinmaIntegrationTests {
         }
     }
 
-    @Test func switchWaitsForCandidateAndAppliedHostTransaction() throws {
-        let f = try Fixture(), engine = f.facade()
-        type("su3", in: engine)
-        engine.requestCore(.guanyinma)
-        #expect(engine.activeCore == .swift)
-        #expect(engine.displayedCandidates == ["你", "妳"])
-        let result = engine.selectDisplayedCandidate(1)
-        #expect(result.text == "妳")
-        #expect(engine.activeCore == .swift)
-        engine.acknowledgeHostEffects()
-        #expect(engine.activeCore == .guanyinma)
-        #expect(engine.coreError == nil)
-        #expect(!engine.hasComposition)
-        #expect(engine.finishCompositionForInputHandoff().text.isEmpty)
+    @Test func requiredRustConstructionFailsWithoutCreatingAnAlternateStore() throws {
+        let f = try Fixture()
+        #expect(throws: GuanyinmaInputError.self) {
+            _ = try f.facade(modelURL: f.directory.appendingPathComponent("missing.db"))
+        }
+        #expect(!FileManager.default.fileExists(atPath: f.user.path))
     }
 
-    @Test func missingRustModelFallsBackBeforeFirstInput() throws {
-        let f = try Fixture(), engine = f.facade(modelURL: f.directory.appendingPathComponent("missing.db"))
-        engine.requestCore(.guanyinma)
-        #expect(engine.activeCore == .swift)
-        #expect(engine.coreError != nil)
-        type("su3", in: engine)
-        #expect(engine.selectDisplayedCandidate(0).text == "你")
-        engine.requestCore(.swift)
+    @Test func publicationWaitsForCompositionAndAcceptedHostEffects() throws {
+        let f = try Fixture(), engine = try f.facade(), source = try f.phrases()
+        type("su3cl3", in: engine)
+        try source.savePhrase(text: "測測", reading: "ㄕˋ ㄕˋ")
+        try engine.refreshUserPhrases(from: source)
+        #expect((try f.exportedUserData()["phrases"] as? [[String: Any]])?.isEmpty == true)
+        #expect(engine.enter().text == "你好")
+        #expect((try f.exportedUserData()["phrases"] as? [[String: Any]])?.isEmpty == true)
+        engine.acknowledgeHostEffects()
+        #expect((try f.exportedUserData()["phrases"] as? [[String: Any]])?.first?["current"] as? String == "測測")
         #expect(engine.coreError == nil)
+        #expect(engine.finishCompositionForInputHandoff().text.isEmpty)
     }
 
     @Test func nativeGlyphCallbackFiltersBeforeDisplayedNumbering() throws {
@@ -209,8 +200,7 @@ struct GuanyinmaIntegrationTests {
         try engine.refreshUserPhrases(from: source)
         let bad = f.directory.appendingPathComponent("bad-publication.db")
         try Data("not SQLite".utf8).write(to: bad)
-        let reader = try SmartMandarinUserData(phrasesURL: f.directory.appendingPathComponent("absent.db"),
-            learningURL: f.directory.appendingPathComponent("readonly-tool.db"), writablePhrases: false)
+        let reader = try SharedPhrasePublication(phrasesURL: f.directory.appendingPathComponent("absent.db"), writablePhrases: false)
         try engine.refreshUserPhrases(from: reader)
         #expect((try f.exportedUserData()["phrases"] as? [[String: Any]])?.count == 1)
         // A file can become invalid after the FE utility was opened. The bridge
@@ -229,39 +219,18 @@ struct GuanyinmaIntegrationTests {
         #expect((try f.exportedUserData()["phrases"] as? [[String: Any]])?.count == 1)
     }
 
-    @Test func temporaryEnglishModeKeyLocksEnglishWithoutCyclingToNumbers() throws {
-        let f = try Fixture(), rust = try f.engine()
-        let legacy = BopomofoEngine(dictionary: Dictionary())
-        for engine in [legacy as any InputEngine, rust as any InputEngine] {
-            _ = engine.handleSoftKey("SHIFT")
-            #expect(engine.inputMode == .english)
-            #expect(engine.isTemporaryEnglish)
-            _ = engine.handleSoftKey("MODE")
-            #expect(engine.inputMode == .english)
-            #expect(!engine.isTemporaryEnglish)
-            #expect(engine.handleSoftKey("a").text == "a")
-            #expect(engine.inputMode == .english)
-        }
-    }
-
-    @Test func idleCoreSwitchTransfersOneShotEnglishAsStateInBothDirections() throws {
-        let f = try Fixture()
-        for original in InputCore.allCases {
-            let engine = f.facade()
-            engine.requestCore(original)
-            #expect(engine.activeCore == original)
-            _ = engine.handleSoftKey("SHIFT")
-            #expect(engine.inputMode == .english && engine.isTemporaryEnglish)
-            let destination: InputCore = original == .swift ? .guanyinma : .swift
-            engine.requestCore(destination)
-            #expect(engine.activeCore == destination)
-            #expect(engine.inputMode == .english && engine.isTemporaryEnglish)
-            #expect(engine.handleSoftKey("a").text == "a")
-            #expect(engine.inputMode == .bopomofo && !engine.isTemporaryEnglish)
-            engine.acknowledgeHostEffects()
-            #expect(engine.handleSoftKey("s").text.isEmpty)
-            #expect(engine.readingText == "ㄋ")
-        }
+    @Test func frontendTemporaryEnglishModeRemainsIndependentOfRustComposition() throws {
+        let f = try Fixture(), engine = try f.facade()
+        _ = engine.handleSoftKey("SHIFT")
+        #expect(engine.inputMode == .english && engine.isTemporaryEnglish)
+        _ = engine.handleSoftKey("MODE")
+        #expect(engine.inputMode == .english && !engine.isTemporaryEnglish)
+        #expect(engine.handleSoftKey("a").text == "a")
+        engine.acknowledgeHostEffects()
+        #expect(engine.inputMode == .english)
+        _ = engine.toggleHardwareLanguage()
+        #expect(engine.handleSoftKey("s").text.isEmpty)
+        #expect(engine.readingText == "ㄋ")
     }
 
     @Test func lockedSelectionKeepsCompositionAndSymbolsCannotReplaceFailedHandoff() throws {

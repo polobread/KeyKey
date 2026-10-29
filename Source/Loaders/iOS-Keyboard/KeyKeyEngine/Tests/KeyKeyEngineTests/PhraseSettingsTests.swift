@@ -98,26 +98,20 @@ struct BopomofoCompositionModeSettingsTests {
         #expect(keyboardMode.mode == .smart)
     }
 
-    @Test("an app reset request clears private keyboard learning once")
+    @Test("Rust reset requests are once-only, retried on failure, and ignore legacy requests")
     func sharedLearningReset() throws {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let local = UserDefaults(suiteName: "keykey.reset-local.\(UUID().uuidString)")!
-        let shared = UserDefaults(suiteName: "keykey.reset-shared.\(UUID().uuidString)")!
-        let keyboard = try SmartMandarinUserData(
-            phrasesURL: directory.appendingPathComponent("group/UserPhrase.db"),
-            learningURL: directory.appendingPathComponent("keyboard/learning.db"),
-            writablePhrases: false
-        )
-        keyboard.learnCandidate(query: "AB", current: "妳")
-        #expect(keyboard.learnedCandidate(for: "AB") == "妳")
-
+        let localName = "keykey.reset-local.\(UUID())", sharedName = "keykey.reset-shared.\(UUID())"
+        let local = try #require(UserDefaults(suiteName: localName))
+        let shared = try #require(UserDefaults(suiteName: sharedName))
+        defer { local.removePersistentDomain(forName: localName); shared.removePersistentDomain(forName: sharedName) }
         let request = KeyboardLearningResetRequest(localDefaults: local, sharedDefaults: shared)
+        var calls = 0
+        shared.set(UUID().uuidString, forKey: "smartMandarinLearningResetRequest")
+        #expect(!request.applyIfNeeded { calls += 1 })
         request.request()
-        #expect(request.applyIfNeeded(to: keyboard))
-        #expect(keyboard.learnedCandidate(for: "AB") == nil)
-        keyboard.learnCandidate(query: "AB", current: "你")
-        #expect(!request.applyIfNeeded(to: keyboard))
-        #expect(keyboard.learnedCandidate(for: "AB") == "你")
+        #expect(!request.applyIfNeeded { throw CocoaError(.fileWriteNoPermission) })
+        #expect(request.applyIfNeeded { calls += 1 })
+        #expect(!request.applyIfNeeded { calls += 1 })
+        #expect(calls == 1)
     }
 }

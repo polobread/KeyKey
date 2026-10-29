@@ -34,13 +34,13 @@ public final class InputFieldPolicyTest {
             } else {
                 assertEquals(InputFieldPolicy.Kind.GENERAL, policy.kind());
             }
-            assertEquals(BopomofoEngine.InputMode.BOPOMOFO, policy.preferredMode());
+            assertEquals(InputEngine.InputMode.BOPOMOFO, policy.preferredMode());
             assertEquals(3, policy.allowedModes().size());
             assertFalse(policy.isRestricted());
-            assertEquals("英/數", policy.modeCaption(BopomofoEngine.InputMode.BOPOMOFO));
-            assertTrue(policy.isKeyEnabled("SPACE", BopomofoEngine.InputMode.ENGLISH, false));
-            assertTrue(policy.isKeyEnabled("EMOJI", BopomofoEngine.InputMode.BOPOMOFO, false));
-            assertTrue(policy.isKeyEnabled("@", BopomofoEngine.InputMode.ENGLISH, false));
+            assertEquals("英/數", policy.modeCaption(InputEngine.InputMode.BOPOMOFO));
+            assertTrue(policy.isKeyEnabled("SPACE", InputEngine.InputMode.ENGLISH, false));
+            assertTrue(policy.isKeyEnabled("EMOJI", InputEngine.InputMode.BOPOMOFO, false));
+            assertTrue(policy.isKeyEnabled("@", InputEngine.InputMode.ENGLISH, false));
         }
 
         InputFieldPolicy urlWithAsciiHint = InputFieldPolicy.fromValues(
@@ -62,26 +62,26 @@ public final class InputFieldPolicyTest {
 
         for (int inputType : inputTypes) {
             InputFieldPolicy policy = InputFieldPolicy.fromValues(inputType, 0);
-            assertEquals(BopomofoEngine.InputMode.ENGLISH, policy.preferredMode());
+            assertEquals(InputEngine.InputMode.ENGLISH, policy.preferredMode());
             assertEquals(2, policy.allowedModes().size());
             assertTrue(policy.isRestricted());
-            assertTrue(policy.isKeyEnabled("MODE", BopomofoEngine.InputMode.ENGLISH, false));
+            assertTrue(policy.isKeyEnabled("MODE", InputEngine.InputMode.ENGLISH, false));
             if (policy.kind() == InputFieldPolicy.Kind.EMAIL) {
                 assertFalse(policy.isKeyEnabled("SPACE",
-                        BopomofoEngine.InputMode.ENGLISH, false));
+                        InputEngine.InputMode.ENGLISH, false));
             } else {
                 assertTrue(policy.isKeyEnabled("SPACE",
-                        BopomofoEngine.InputMode.ENGLISH, false));
+                        InputEngine.InputMode.ENGLISH, false));
             }
-            assertFalse(policy.isKeyEnabled("EMOJI", BopomofoEngine.InputMode.ENGLISH, false));
-            assertTrue(policy.isKeyEnabled("@", BopomofoEngine.InputMode.ENGLISH, false));
+            assertFalse(policy.isKeyEnabled("EMOJI", InputEngine.InputMode.ENGLISH, false));
+            assertTrue(policy.isKeyEnabled("@", InputEngine.InputMode.ENGLISH, false));
 
             InputFieldPolicy unlocked = policy.unrestricted();
             assertFalse(unlocked.isRestricted());
             assertEquals(3, unlocked.allowedModes().size());
-            assertTrue(unlocked.isKeyEnabled("SPACE", BopomofoEngine.InputMode.ENGLISH, false));
-            assertTrue(unlocked.isKeyEnabled("EMOJI", BopomofoEngine.InputMode.BOPOMOFO, false));
-            assertTrue(unlocked.isKeyEnabled("EMOJI", BopomofoEngine.InputMode.NUMBER, false));
+            assertTrue(unlocked.isKeyEnabled("SPACE", InputEngine.InputMode.ENGLISH, false));
+            assertTrue(unlocked.isKeyEnabled("EMOJI", InputEngine.InputMode.BOPOMOFO, false));
+            assertTrue(unlocked.isKeyEnabled("EMOJI", InputEngine.InputMode.NUMBER, false));
         }
 
         InputFieldPolicy forceAscii = InputFieldPolicy.fromValues(InputType.TYPE_CLASS_TEXT,
@@ -106,54 +106,35 @@ public final class InputFieldPolicyTest {
 
         for (int inputType : inputTypes) {
             InputFieldPolicy policy = InputFieldPolicy.fromValues(inputType, 0);
-            assertEquals(BopomofoEngine.InputMode.NUMBER, policy.preferredMode());
+            assertEquals(InputEngine.InputMode.NUMBER, policy.preferredMode());
             assertEquals(1, policy.allowedModes().size());
             assertTrue(policy.isRestricted());
-            assertEquals("ㄅ/英", policy.modeCaption(BopomofoEngine.InputMode.NUMBER));
-            assertTrue(policy.isKeyEnabled("MODE", BopomofoEngine.InputMode.NUMBER, false));
-            assertFalse(policy.isKeyEnabled("ㄅ", BopomofoEngine.InputMode.BOPOMOFO, false));
-            assertFalse(policy.isKeyEnabled("EMOJI", BopomofoEngine.InputMode.NUMBER, false));
+            assertEquals("ㄅ/英", policy.modeCaption(InputEngine.InputMode.NUMBER));
+            assertTrue(policy.isKeyEnabled("MODE", InputEngine.InputMode.NUMBER, false));
+            assertFalse(policy.isKeyEnabled("ㄅ", InputEngine.InputMode.BOPOMOFO, false));
+            assertFalse(policy.isKeyEnabled("EMOJI", InputEngine.InputMode.NUMBER, false));
 
             InputFieldPolicy unlocked = policy.unrestricted();
             assertFalse(unlocked.isRestricted());
-            assertTrue(unlocked.isKeyEnabled("ㄅ", BopomofoEngine.InputMode.BOPOMOFO, false));
-            assertTrue(unlocked.isKeyEnabled("EMOJI", BopomofoEngine.InputMode.BOPOMOFO, false));
-            assertTrue(unlocked.isKeyEnabled("SPACE", BopomofoEngine.InputMode.ENGLISH, false));
+            assertTrue(unlocked.isKeyEnabled("ㄅ", InputEngine.InputMode.BOPOMOFO, false));
+            assertTrue(unlocked.isKeyEnabled("EMOJI", InputEngine.InputMode.BOPOMOFO, false));
+            assertTrue(unlocked.isKeyEnabled("SPACE", InputEngine.InputMode.ENGLISH, false));
         }
 
         InputFieldPolicy unsignedDecimal = InputFieldPolicy.fromValues(
                 InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL, 0);
         assertTrue(unsignedDecimal.isKeyEnabled(".",
-                BopomofoEngine.InputMode.NUMBER, false));
+                InputEngine.InputMode.NUMBER, false));
         assertFalse(unsignedDecimal.isKeyEnabled("-",
-                BopomofoEngine.InputMode.NUMBER, false));
+                InputEngine.InputMode.NUMBER, false));
         assertFalse(unsignedDecimal.isKeyEnabled("SHIFT",
-                BopomofoEngine.InputMode.NUMBER, false));
+                InputEngine.InputMode.NUMBER, false));
 
         InputFieldPolicy signedDecimal = InputFieldPolicy.fromValues(
                 InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL
                         | InputType.TYPE_NUMBER_FLAG_SIGNED, 0);
         assertTrue(signedDecimal.isKeyEnabled("-",
-                BopomofoEngine.InputMode.NUMBER, false));
-    }
-
-    @Test
-    public void unlockedPolicyCyclesThroughAllModesWithoutRelocking() {
-        BopomofoEngine engine = new BopomofoEngine(CinDictionary.empty());
-        InputFieldPolicy email = InputFieldPolicy.fromValues(
-                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, 0);
-        engine.setAllowedInputModes(email.allowedModes(), email.preferredMode(), true);
-        assertEquals(BopomofoEngine.InputMode.ENGLISH, engine.inputMode());
-
-        InputFieldPolicy unlocked = email.unrestricted();
-        engine.setAllowedInputModes(unlocked.allowedModes(), unlocked.preferredMode(), false);
-        engine.handleSoftKey("MODE");
-        assertEquals(BopomofoEngine.InputMode.NUMBER, engine.inputMode());
-        engine.handleSoftKey("MODE");
-        assertEquals(BopomofoEngine.InputMode.BOPOMOFO, engine.inputMode());
-        engine.handleSoftKey("MODE");
-        assertEquals(BopomofoEngine.InputMode.ENGLISH, engine.inputMode());
-        assertFalse(unlocked.isRestricted());
+                InputEngine.InputMode.NUMBER, false));
     }
 
     @Test

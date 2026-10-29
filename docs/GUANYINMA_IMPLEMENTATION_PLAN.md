@@ -64,9 +64,9 @@ macOS 已加入同一 FE 的雙核心建置、一般設定切換、package decor
 
 已接上完整 Guanyinma JSON 備份與舊 MJSR 封存匯入；FE 解碼舊容器，核心只接收版本化資料，以原子交易合併自訂詞並替換來源提供的學習範圍。備份排除本機世代資料，匯出失敗保留原檔。建置、隔離測試與回退見 [macOS 接合文件](GUANYINMA_MACOS_ADAPTER.md)。真正 IMK 文字宿主與安裝驗收、其餘 frontend 的接合仍待完成；不將此里程碑視為六平台遷移完成。
 
-iOS 已加入同一 FE 的 Swift／Guanyinma 雙核心，涵蓋觸控 extension 與 App 實體鍵盤編輯器、設定 revision、安全切換、原生字型 callback、私有學習與 App Group 唯讀詞庫發布。Xcode 直接編譯／連結 Rust 靜態庫；完整核心 CI 集中驗證，iOS 僅做少量串接冒煙。建置、資料權責及驗證層級見 [iOS 接合文件](GUANYINMA_IOS_ADAPTER.md)。
+iOS 同一 FE 的觸控 extension 與 App 實體鍵盤編輯器固定使用 Guanyinma 單核心，移除舊 Swift 解析、walker、排序與學習引擎，以及核心設定／切換／失敗回退。Swift 保留 FE 型別、原生字型 callback、宿主交易與 App Group 自訂詞發布；extension 唯讀同步發布詞條，學習保存在私有 Rust DB。Xcode 必須編譯／連結 Rust 靜態庫；完整核心 CI 集中驗證，iOS 僅做少量串接冒煙。建置、資料權責及驗證層級見 [iOS 接合文件](GUANYINMA_IOS_ADAPTER.md)。
 
-Android 已加入同一 IME service 的 Java／Guanyinma 雙核心、UTF-8 JNI、設定與獨立使用者資料管理。四個 ABI 直接編譯 Rust 靜態庫並連入薄 JNI；App 與 IME 讀同一份經內容雜湊驗證的模型。觸控／普通實體／實體雙排的行為與宿主交易由 FE 分派，核心互動分類可用 `set_profile` 更新。責任與分層驗證見 [Android 接合文件](GUANYINMA_ANDROID_ADAPTER.md)。
+Android 同一 IME service 固定使用 Guanyinma 單核心，移除舊 Java 解析、walker、排序、學習引擎與核心設定／切換／失敗回退。Java 保留 FE 型別、宿主交易、關聯詞及明確詞條交換的薄轉換。四個 ABI 必須編譯 Rust 靜態庫並連入 UTF-8 JNI；App 與 IME 讀同一份經內容雜湊驗證的模型，使用者資料固定在 Guanyinma DB，舊檔不自動改刪。觸控／普通實體／實體雙排的行為與宿主交易由 FE 分派，核心互動分類可用 `set_profile` 更新。責任與分層驗證見 [Android 接合文件](GUANYINMA_ANDROID_ADAPTER.md)。
 
 Windows 同一 TSF FE 的四種輸入法固定使用 Guanyinma，移除 Manjusri／Generic 產品核心、一般設定的核心選單及失敗回退。DirectWrite 候選 callback、獨立 Guanyinma 詞庫與明確唯讀匯入仍由 FE 接合；宿主 retained effects 沿用既有有序交易佇列。x64／x86 靜態 Rust 與原生 FE 共用鎖定 bundled SQLite；完整核心 CI 不在 Windows workflow 重跑。責任與分層驗證見 [Windows 接合文件](GUANYINMA_WINDOWS_ADAPTER.md)。
 
@@ -78,7 +78,7 @@ Linux／FreeBSD Fcitx 5 已轉為 Guanyinma 單核心開發；Legacy C++ walker�
 
 | 階段 | 交付範圍 | 完成判定 |
 |---|---|---|
-| 五 | 五個 frontend 接合，服務六平台 | 原生 build、產物 DB／版本／簽章及真正文字宿主各自驗收；保留舊核心比較與回退入口 |
+| 五 | 五個 frontend 接合，服務六平台 | 原生 build、產物 DB／版本／簽章及真正文字宿主各自驗收；macOS 保留雙核心，其他平台以 Guanyinma 單核心交付 |
 
 接合工作依實際受影響範圍建置／測試。Windows 的 TSF、macOS IMK、iOS document proxy、Android InputConnection、Fcitx X11／Wayland 維持原生邊界；C ABI 不代替宿主文字交易或生命週期。
 

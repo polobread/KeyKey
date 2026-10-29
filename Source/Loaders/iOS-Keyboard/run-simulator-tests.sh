@@ -60,7 +60,7 @@ find_udid() {
 echo "Output: $OUTPUT_DIR"
 if [[ "$MODE" != "smoke" ]]; then
   echo "Running KeyKeyEngine unit tests"
-  if ! (cd "$SCRIPT_DIR/KeyKeyEngine" && swift test); then
+  if ! bash "$SCRIPT_DIR/../../Guanyinma/tools/test-ios-swift-package.sh"; then
     echo "KeyKeyEngine unit tests failed" >&2
     exit 1
   fi

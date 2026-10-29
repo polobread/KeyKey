@@ -250,9 +250,7 @@ final class SetupViewController: UIViewController {
     }
 
     @objc private func openUserPhrases() {
-        let shared = UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier)
-        let core = InputCoreSettings(sharedDefaults: shared, writesShared: true).core
-        present(UINavigationController(rootViewController: UserPhrasesViewController(core: core)), animated: true)
+        present(UINavigationController(rootViewController: UserPhrasesViewController()), animated: true)
     }
 
     @objc private func openInputMethodSettings() {
@@ -348,9 +346,6 @@ private final class InputMethodSettingsViewController: UIViewController {
     private lazy var modeSettings = ChineseInputMethodSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
-    private lazy var coreSettings = InputCoreSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
-    )
     private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(
         sharedDefaults: sharedDefaults, writesShared: true
@@ -394,16 +389,6 @@ private final class InputMethodSettingsViewController: UIViewController {
             stack.addArrangedSubview(label("無法開啟共用設定，請檢查 App Group 設定。", size: 16))
             return
         }
-
-        stack.addArrangedSubview(label("輸入核心", size: 18))
-        let cores = InputCore.allCases
-        let coreControl = UISegmentedControl(items: cores.map(\.displayName))
-        coreControl.selectedSegmentIndex = cores.firstIndex(of: coreSettings.core) ?? 0
-        coreControl.accessibilityIdentifier = "app-settings.input-core"
-        coreControl.accessibilityLabel = "輸入核心"
-        coreControl.addTarget(self, action: #selector(coreChanged(_:)), for: .valueChanged)
-        stack.addArrangedSubview(coreControl)
-        stack.addArrangedSubview(label("兩個核心共用相同鍵盤介面；偏好會在下次開啟鍵盤或編輯器時套用。", size: 14))
 
         stack.addArrangedSubview(label("輸入法", size: 18))
         let modes = ChineseInputMethod.allCases
@@ -580,12 +565,6 @@ private final class InputMethodSettingsViewController: UIViewController {
         button.menu = UIMenu(title: method.displayName + "設定", children: children)
     }
 
-    @objc private func coreChanged(_ sender: UISegmentedControl) {
-        let cores = InputCore.allCases
-        guard cores.indices.contains(sender.selectedSegmentIndex) else { return }
-        coreSettings.setCore(cores[sender.selectedSegmentIndex])
-    }
-
     @objc private func modeChanged(_ sender: UISegmentedControl) {
         modeSettings.setMethod(ChineseInputMethod.allCases[sender.selectedSegmentIndex])
     }
@@ -627,50 +606,36 @@ private final class InputMethodSettingsViewController: UIViewController {
     }
 
     @objc private func openPhrases() {
-        navigationController?.pushViewController(UserPhrasesViewController(core: coreSettings.core), animated: true)
+        navigationController?.pushViewController(UserPhrasesViewController(), animated: true)
     }
 
     @objc private func confirmLearningReset() {
-        let core = coreSettings.core
         let alert = UIAlertController(
-            title: "重設 \(core.displayName) 學習紀錄？",
-            message: "這個核心的自訂詞會保留；鍵盤學習紀錄會在下次開啟鍵盤時清除。",
+            title: "重設好打注音學習紀錄？",
+            message: "自訂詞會保留；鍵盤學習紀錄會在下次開啟鍵盤時清除。",
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "取消", style: .cancel))
         alert.addAction(UIAlertAction(title: "重設", style: .destructive) { [weak self] _ in
-            self?.resetLearning(core: core)
+            self?.resetLearning()
         })
         present(alert, animated: true)
     }
 
-    private func resetLearning(core: InputCore) {
-        KeyboardLearningResetRequest(core: core, sharedDefaults: sharedDefaults).request()
+    private func resetLearning() {
+        KeyboardLearningResetRequest(sharedDefaults: sharedDefaults).request()
         let local = FileManager.default.urls(for: .applicationSupportDirectory,
                                             in: .userDomainMask)[0]
         var editorReset = false
         do {
-            switch core {
-            case .swift:
-                guard let group = FileManager.default.containerURL(
-                    forSecurityApplicationGroupIdentifier: KeyboardPreferenceStore.appGroupIdentifier
-                ) else { throw CocoaError(.fileNoSuchFile) }
-                let data = try SmartMandarinUserData(
-                    phrasesURL: group.appendingPathComponent("UserPhrase.db"),
-                    learningURL: local.appendingPathComponent("SmartMandarinLearning.db"),
-                    writablePhrases: true
-                )
-                try data.resetLearning()
-            case .guanyinma:
-                guard let modelURL = embeddedDatabaseURL() else { throw CocoaError(.fileNoSuchFile) }
-                try GuanyinmaInputEngine.resetLearning(
-                    modelURL: modelURL, userDatabaseURL: local.appendingPathComponent("GuanyinmaUser.db")
-                )
-            }
+            guard let modelURL = embeddedDatabaseURL() else { throw CocoaError(.fileNoSuchFile) }
+            try GuanyinmaInputEngine.resetLearning(
+                modelURL: modelURL, userDatabaseURL: local.appendingPathComponent("GuanyinmaUser.db")
+            )
             editorReset = true
-        } catch { /* This core's keyboard request remains pending for its next activation. */ }
+        } catch { /* The keyboard request remains pending for its next activation. */ }
         let alert = UIAlertController(
-            title: "\(core.displayName) 學習紀錄",
+            title: "好打注音學習紀錄",
             message: editorReset
                 ? "App 內編輯器已重設；鍵盤下次開啟時會重設。"
                 : "鍵盤下次開啟時會重設；App 內編輯器的紀錄暫時無法清除。",
@@ -682,15 +647,13 @@ private final class InputMethodSettingsViewController: UIViewController {
 
 }
 
-/// Edits the captured core's App Group phrase database. The keyboard reads it
+/// Edits the App Group phrase publication. The keyboard reads it
 /// without Full Access; engine learning stays private to each input surface.
 private final class UserPhrasesViewController: UITableViewController, UIDocumentPickerDelegate {
-    private let core: InputCore
-    private var userData: SmartMandarinUserData?
+    private var userData: SharedPhrasePublication?
     private var phrases: [SmartMandarinUserPhrase] = []
 
-    init(core: InputCore) {
-        self.core = core
+    init() {
         super.init(style: .insetGrouped)
     }
 
@@ -700,7 +663,7 @@ private final class UserPhrasesViewController: UITableViewController, UIDocument
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "\(core.displayName) 自訂詞"
+        title = "好打注音自訂詞"
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .done, target: self, action: #selector(close)
         )
@@ -729,17 +692,9 @@ private final class UserPhrasesViewController: UITableViewController, UIDocument
             navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = false }
             return
         }
-        let local = FileManager.default.urls(
-            for: .applicationSupportDirectory, in: .userDomainMask
-        )[0]
         do {
-            userData = try SmartMandarinUserData(
-                phrasesURL: group.appendingPathComponent(
-                    core == .swift ? "UserPhrase.db" : "GuanyinmaUserPhrase.db"
-                ),
-                learningURL: local.appendingPathComponent(
-                    core == .swift ? "SmartMandarinLearning.db" : "GuanyinmaPhraseBridge.db"
-                ),
+            userData = try SharedPhrasePublication(
+                phrasesURL: group.appendingPathComponent("GuanyinmaUserPhrase.db"),
                 writablePhrases: true
             )
             reloadPhrases()
@@ -861,7 +816,7 @@ private final class UserPhrasesViewController: UITableViewController, UIDocument
         guard let userData else { return }
         do {
             let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent(core == .swift ? "KeyKey-UserPhrases.mjsr" : "KeyKey-Guanyinma-UserPhrases.mjsr")
+                .appendingPathComponent("KeyKey-Guanyinma-UserPhrases.mjsr")
             try userData.exportPhrases().write(to: url, atomically: true, encoding: .utf8)
             let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
             activity.popoverPresentationController?.barButtonItem = navigationItem.rightBarButtonItems?.last
@@ -910,11 +865,15 @@ private final class AcknowledgementsViewController: UIViewController {
     }
 
     private static func loadText() -> String {
-        guard let url = Bundle.main.url(forResource: "Acknowledgements", withExtension: "txt"),
-              let text = try? String(contentsOf: url, encoding: .utf8) else {
-            return "無法載入授權資訊。"
+        var sections: [String] = []
+        for name in ["Acknowledgements", "GuanyinmaNotices"] {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "txt"),
+                  let text = try? String(contentsOf: url, encoding: .utf8) else {
+                return "無法完整載入授權資訊。"
+            }
+            sections.append(text)
         }
-        return text
+        return sections.joined(separator: "\n\n")
     }
 
     @objc private func close() {

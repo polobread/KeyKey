@@ -100,8 +100,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    sourceSets["main"].assets.directories.add("build/generated/bopomofoAssets")
-    sourceSets["main"].assets.directories.add("build/generated/indexedDictionaryAssets")
+    sourceSets["main"].assets.directories.add("build/generated/associatedPhraseAssets")
+    sourceSets["main"].assets.directories.add("build/generated/associatedPhraseIndexAssets")
     sourceSets["main"].assets.directories.add("build/generated/smartMandarinAssets")
     sourceSets["main"].assets.directories.add("build/generated/guanyinmaLicenseAssets")
 }
@@ -170,16 +170,10 @@ tasks.configureEach {
     }
 }
 
-val generateBopomofoAssets by tasks.registering(Copy::class) {
-    from(layout.projectDirectory.file("../../../DataTables/bpmf-ext.cin"))
-    from(layout.projectDirectory.file("../../../DataTables/bpmf-punctuations.cin"))
-    into(layout.buildDirectory.dir("generated/bopomofoAssets"))
-}
-
 val categorizedCollectionDirectory =
     layout.projectDirectory.dir("../../../../DataSource/chichi77Collection")
 val generatedCollectionDirectory =
-    layout.buildDirectory.dir("generated/bopomofoAssets/collections")
+    layout.buildDirectory.dir("generated/associatedPhraseAssets/collections")
 
 val generateAssociatedPhraseAssets by tasks.registering(Sync::class) {
     from(layout.projectDirectory.file("../../../../DataSource/AssociatedPhraseCollectionNames.tsv")) {
@@ -202,7 +196,7 @@ val compileDictionaryCompiler by tasks.registering(JavaCompile::class) {
 }
 
 val generatedIndexedDictionaryDirectory =
-    layout.buildDirectory.dir("generated/indexedDictionaryAssets")
+    layout.buildDirectory.dir("generated/associatedPhraseIndexAssets")
 
 val smartMandarinDatabase =
     layout.projectDirectory.file("../../../Distributions/Takao/CookedDatabase/KeyKey.db")
@@ -248,14 +242,10 @@ val generateIndexedDictionaryAssets by tasks.registering(JavaExec::class) {
     mainClass.set("DictionaryCompiler")
     args(
         generatedIndexedDictionaryDirectory.get().asFile.absolutePath,
-        layout.projectDirectory.file("../../../DataTables/bpmf-ext.cin").asFile.absolutePath,
-        layout.projectDirectory.file("../../../DataTables/bpmf-punctuations.cin").asFile.absolutePath,
         layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ").asFile.absolutePath,
         categorizedCollectionDirectory.asFile.absolutePath
     )
     inputs.files(
-        layout.projectDirectory.file("../../../DataTables/bpmf-ext.cin"),
-        layout.projectDirectory.file("../../../DataTables/bpmf-punctuations.cin"),
         layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ"),
         categorizedCollectionDirectory.asFileTree.matching { include("phrase.*.tsv") }
     )
@@ -264,7 +254,6 @@ val generateIndexedDictionaryAssets by tasks.registering(JavaExec::class) {
 
 tasks.named("preBuild").configure {
     dependsOn(generateGuanyinmaNotices)
-    dependsOn(generateBopomofoAssets)
     dependsOn(generateAssociatedPhraseAssets)
     dependsOn(generateIndexedDictionaryAssets)
     dependsOn(generateSmartMandarinAssets)
@@ -277,27 +266,13 @@ tasks.withType<Test>().configureEach {
     systemProperty("keykey.guanyinma.library", guanyinmaHostLibrary.get().asFile.absolutePath)
     systemProperty("keykey.guanyinma.python", guanyinmaPython.first())
     systemProperty("keykey.guanyinma.integration", "true")
-    dependsOn(generateBopomofoAssets)
     dependsOn(generateAssociatedPhraseAssets)
     dependsOn(generateIndexedDictionaryAssets)
     dependsOn(generateSmartMandarinAssets)
     systemProperty("keykey.smart.database", smartMandarinDatabase.asFile.absolutePath)
     systemProperty(
-        "keykey.bopomofo.cin",
-        layout.buildDirectory.file("generated/bopomofoAssets/bpmf-ext.cin").get().asFile.absolutePath
-    )
-    systemProperty(
-        "keykey.bopomofo.punctuation",
-        layout.buildDirectory.file("generated/bopomofoAssets/bpmf-punctuations.cin")
-            .get().asFile.absolutePath
-    )
-    systemProperty(
         "keykey.associated.collections",
         generatedCollectionDirectory.get().asFile.absolutePath
-    )
-    systemProperty(
-        "keykey.bopomofo.index",
-        generatedIndexedDictionaryDirectory.get().file("bpmf-index.kki").asFile.absolutePath
     )
     systemProperty(
         "keykey.associated.indexes",
@@ -318,9 +293,3 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
 }
-
-// Shared macOS-baseline cases are also exercised against Android SQLite on device.
-android.sourceSets.getByName("androidTest").assets.srcDir("../../../../tests/fixtures/mobile-table-input")
-
-// Manual Rust migration references only; instrumentation is gated by migrationBaseline=true.
-android.sourceSets.getByName("androidTest").assets.directories.add("../../../../tests/fixtures/core-functional")

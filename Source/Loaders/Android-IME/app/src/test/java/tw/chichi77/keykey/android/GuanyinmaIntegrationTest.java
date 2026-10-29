@@ -6,7 +6,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.json.JSONObject;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,10 +31,10 @@ public final class GuanyinmaIntegrationTest {
             return new GuanyinmaInputEngine(model, user.toString(), method, BopomofoKeyboardLayout.STANDARD,
                     new TableInputOptions(method), false, true, false, filter);
         }
-        DualCoreInputEngine facade() throws Exception {
-            String cin = "%chardef begin\nsu3 你\nsu3 妳\n%chardef end\n";
-            BopomofoEngine legacy = new BopomofoEngine(CinDictionary.load(new ByteArrayInputStream(cin.getBytes(StandardCharsets.UTF_8))));
-            return new DualCoreInputEngine(legacy, model, user.toString(), InputCore.JAVA, text -> true);
+        HostInputEngine facade() {
+            return new HostInputEngine(model, user.toString(), ChineseInputMethod.TRADITIONAL,
+                    BopomofoKeyboardLayout.STANDARD, new TableInputOptions(ChineseInputMethod.TRADITIONAL),
+                    false, true, text -> true);
         }
         @Override public void close() throws Exception {
             try (var paths = Files.walk(directory)) {
@@ -53,7 +52,7 @@ public final class GuanyinmaIntegrationTest {
             type(engine, "su3cl3", false);
             assertNull(engine.lastError()); assertEquals("你好", engine.completedSmartText());
             assertEquals(List.of("你", "好"), engine.touchSmartCells());
-            BopomofoEngine.Result entered = engine.enter();
+            InputEngine.Result entered = engine.enter();
             assertEquals("你好", entered.committedText()); assertTrue(entered.sendEnter());
             assertFalse(engine.hasComposition()); assertEquals("", engine.finishCompositionForInputHandoff().committedText());
             assertTrue(engine.backspace().deleteBeforeCursor()); assertTrue(Files.isRegularFile(fixture.user));
@@ -72,45 +71,46 @@ public final class GuanyinmaIntegrationTest {
             }
         }
     }
-    @Test public void switchWaitsForCandidatesAndOriginalHostAcknowledgement() throws Exception {
-        try (Fixture fixture = new Fixture(); DualCoreInputEngine engine = fixture.facade()) {
-            type(engine, "su3", false); engine.requestCore(InputCore.GUANYINMA);
-            assertEquals(InputCore.JAVA, engine.activeCore()); assertEquals(List.of("你", "妳"), engine.displayedCandidates());
-            assertEquals("妳", engine.selectDisplayedCandidate(1).committedText());
-            assertEquals(InputCore.JAVA, engine.activeCore()); engine.acknowledgeHostEffects();
-            assertEquals(InputCore.GUANYINMA, engine.activeCore()); assertNull(engine.coreError());
-            assertEquals("", engine.finishCompositionForInputHandoff().committedText());
+    @Test public void hostEffectsBlockNewEventsUntilOriginalConnectionAcknowledges() throws Exception {
+        try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
+            type(engine, "su3", false);
+            assertFalse(engine.displayedCandidates().isEmpty());
+            String expected = engine.displayedCandidates().get(0);
+            assertEquals(expected, engine.selectDisplayedCandidate(0).committedText());
+            assertEquals("", engine.handleSoftKey("s").committedText());
+            assertNotNull(engine.coreError()); assertFalse(engine.hasComposition());
+            engine.acknowledgeHostEffects();
+            assertEquals("", engine.handleSoftKey("s").committedText());
+            assertEquals("ㄋ", engine.readingText()); assertNull(engine.coreError());
         }
     }
-    @Test public void newHostExplicitlyAbandonsUnacknowledgedEffectsWithoutReplay() throws Exception {
-        try (Fixture fixture = new Fixture(); DualCoreInputEngine engine = fixture.facade()) {
+    @Test public void newHostAbandonsUnacknowledgedEffectsWithoutReplay() throws Exception {
+        try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
             engine.handleSoftKey("SHIFT"); assertEquals("a", engine.handleSoftKey("a").committedText());
-            engine.requestCore(InputCore.GUANYINMA); assertEquals(InputCore.JAVA, engine.activeCore());
-            engine.abandonHostEffects(); assertEquals(InputCore.GUANYINMA, engine.activeCore());
-            assertFalse(engine.hasComposition()); assertEquals("", engine.finishCompositionForInputHandoff().committedText());
+            engine.abandonHostEffects();
+            assertFalse(engine.hasComposition());
+            assertEquals("", engine.finishCompositionForInputHandoff().committedText());
             assertEquals("", engine.handleSoftKey("s").committedText()); assertEquals("ㄋ", engine.readingText());
+            engine.close(); engine.close();
+            assertThrows(IllegalStateException.class, () -> engine.handleSoftKey("a"));
         }
     }
-    @Test public void coreSwitchMovesTemporaryEnglishShiftAndWidthAsData() throws Exception {
-        try (Fixture fixture = new Fixture()) {
-            for (InputCore original : InputCore.values()) {
-                try (DualCoreInputEngine engine = fixture.facade()) {
-                    engine.requestCore(original); engine.toggleHardwareWidth();
-                    engine.handleSoftKey("SHIFT"); assertTrue(engine.isTemporaryEnglish()); assertTrue(engine.isHardwareFullWidth());
-                    engine.requestCore(original == InputCore.JAVA ? InputCore.GUANYINMA : InputCore.JAVA);
-                    assertTrue(engine.isTemporaryEnglish()); assertTrue(engine.isHardwareFullWidth());
-                    assertEquals("a", engine.handleSoftKey("a").committedText());
-                    assertEquals(BopomofoEngine.InputMode.BOPOMOFO, engine.inputMode()); assertFalse(engine.isTemporaryEnglish());
-                    engine.acknowledgeHostEffects(); assertEquals("１", engine.commitHardwareLiteral('1').committedText());
-                }
-            }
+    @Test public void modeAndWidthRemainFrontendStateAcrossHostChanges() throws Exception {
+        try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
+            engine.toggleHardwareWidth(); engine.handleSoftKey("SHIFT");
+            assertTrue(engine.isTemporaryEnglish()); assertTrue(engine.isHardwareFullWidth());
+            engine.abandonHostEffects();
+            assertTrue(engine.isTemporaryEnglish()); assertTrue(engine.isHardwareFullWidth());
+            assertEquals("a", engine.handleSoftKey("a").committedText());
+            assertEquals(InputEngine.InputMode.BOPOMOFO, engine.inputMode());
+            engine.acknowledgeHostEffects(); assertEquals("１", engine.commitHardwareLiteral('1').committedText());
         }
     }
     @Test public void temporaryEnglishModeKeyLocksEnglishAndProfilesMapExplicitly() throws Exception {
         try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
             engine.handleSoftKey("SHIFT"); engine.handleSoftKey("MODE");
-            assertEquals(BopomofoEngine.InputMode.ENGLISH, engine.inputMode()); assertFalse(engine.isTemporaryEnglish());
-            assertEquals("a", engine.handleSoftKey("a").committedText()); assertEquals(BopomofoEngine.InputMode.ENGLISH, engine.inputMode());
+            assertEquals(InputEngine.InputMode.ENGLISH, engine.inputMode()); assertFalse(engine.isTemporaryEnglish());
+            assertEquals("a", engine.handleSoftKey("a").committedText()); assertEquals(InputEngine.InputMode.ENGLISH, engine.inputMode());
             engine.toggleHardwareLanguage(); engine.setHardwareSmartEditing(false); type(engine, "su3cl3", false);
             assertTrue(engine.isTouchSmartComposition()); assertEquals(-1, engine.smartCompositionCursor());
             engine.setHardwareTouchSmartEditing(false); engine.prepareForHardwareInput();
@@ -147,35 +147,32 @@ public final class GuanyinmaIntegrationTest {
             assertArrayEquals(original, Files.readAllBytes(legacy));
         }
     }
-    @Test public void rustSmartRequestSurvivesUnavailableJavaSmartSourceAndRepeatedCoreSwitches() throws Exception {
-        try (Fixture fixture = new Fixture(); DualCoreInputEngine engine = new DualCoreInputEngine(
-                new BopomofoEngine(CinDictionary.empty()), fixture.model, fixture.user.toString(), InputCore.JAVA, text -> true)) {
-            engine.setChineseInputMethod(ChineseInputMethod.SMART);
-            assertEquals(ChineseInputMethod.TRADITIONAL, engine.chineseInputMethod());
-            engine.requestCore(InputCore.GUANYINMA);
-            assertEquals(InputCore.GUANYINMA, engine.activeCore());
-            assertEquals(ChineseInputMethod.SMART, engine.chineseInputMethod());
-            type(engine, "su3cl3", false); assertEquals("你好", engine.completedSmartText());
-            assertEquals("你好", engine.finishCompositionForInputHandoff().committedText());
-            engine.acknowledgeHostEffects();
-            engine.requestCore(InputCore.JAVA);
-            assertEquals(InputCore.JAVA, engine.activeCore());
-            assertEquals(ChineseInputMethod.TRADITIONAL, engine.chineseInputMethod());
-            engine.setCompositionMode(BopomofoCompositionMode.TRADITIONAL);
-            engine.setCompositionMode(BopomofoCompositionMode.SMART);
-            assertEquals(ChineseInputMethod.TRADITIONAL, engine.chineseInputMethod());
-            engine.requestCore(InputCore.GUANYINMA);
-            assertEquals(InputCore.GUANYINMA, engine.activeCore());
-            assertEquals(ChineseInputMethod.SMART, engine.chineseInputMethod());
-            type(engine, "su3cl3", false); assertEquals("你好", engine.completedSmartText());
-            assertNull(engine.coreError());
+    @Test public void missingRustModelFailsWithoutCreatingAnotherEngineOrUserData() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            assertThrows(RuntimeException.class, () -> new HostInputEngine(
+                    fixture.directory.resolve("missing.db").toString(), fixture.user.toString(),
+                    ChineseInputMethod.SMART, BopomofoKeyboardLayout.STANDARD,
+                    new TableInputOptions(ChineseInputMethod.SMART), false, true, text -> true));
+            assertFalse(Files.exists(fixture.user));
         }
     }
-    @Test public void missingRustModelFallsBackBeforeAnyInput() throws Exception {
-        try (Fixture fixture = new Fixture(); DualCoreInputEngine engine = new DualCoreInputEngine(
-                new BopomofoEngine(CinDictionary.empty()), fixture.directory.resolve("missing.db").toString(), fixture.user.toString(), InputCore.GUANYINMA, text -> true)) {
-            assertEquals(InputCore.JAVA, engine.activeCore()); assertNotNull(engine.coreError());
-            assertEquals("", engine.handleSoftKey("s").committedText()); assertEquals("ㄋ", engine.readingText());
+    @Test public void fatalNativeFailureCannotReplayStateAtNewHostBoundary() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            boolean[] fail = {false};
+            try (HostInputEngine engine = new HostInputEngine(fixture.model, fixture.user.toString(),
+                    ChineseInputMethod.SMART, BopomofoKeyboardLayout.STANDARD,
+                    new TableInputOptions(ChineseInputMethod.SMART), false, true, text -> {
+                        if (fail[0]) throw new IllegalStateException("font service failed");
+                        return true;
+                    })) {
+                type(engine, "su", false); assertEquals("ㄋㄧ", engine.readingText());
+                fail[0] = true;
+                assertEquals("", engine.handleSoftKey("3").committedText());
+                assertNotNull(engine.coreError());
+                // The service closes a session when this boundary cannot reset;
+                // it must never receive a successful result carrying old text.
+                assertThrows(IllegalStateException.class, engine::abandonHostEffects);
+            }
         }
     }
     @Test public void sqliteWriterFailurePreservesReadingCandidatesAndErrorUntilSuccessfulRetry() throws Exception {

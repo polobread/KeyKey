@@ -132,7 +132,6 @@ public struct KeyboardClickSettings {
 }
 
 public struct KeyboardLearningResetRequest {
-    private let core: InputCore
     private let sharedKey: String
     private let appliedKey: String
     private let localDefaults: UserDefaults
@@ -140,16 +139,11 @@ public struct KeyboardLearningResetRequest {
     private let glyphSupport: CandidateGlyphSupport
 
     public init(
-        core: InputCore = .swift,
         localDefaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
         glyphSupport: CandidateGlyphSupport = .shared
     ) {
-        self.core = core
-        // Preserve the existing Swift request keys during the dual-core upgrade.
-        sharedKey = core == .swift
-            ? "smartMandarinLearningResetRequest" : "guanyinmaLearningResetRequest"
-        appliedKey = core == .swift
-            ? "smartMandarinLearningResetApplied" : "guanyinmaLearningResetApplied"
+        sharedKey = "guanyinmaLearningResetRequest"
+        appliedKey = "guanyinmaLearningResetApplied"
         self.localDefaults = localDefaults
         self.sharedDefaults = sharedDefaults
         self.glyphSupport = glyphSupport
@@ -174,8 +168,4 @@ public struct KeyboardLearningResetRequest {
         }
     }
 
-    public func applyIfNeeded(to userData: SmartMandarinUserData?) -> Bool {
-        guard core == .swift, let userData else { return false }
-        return applyIfNeeded { try userData.resetLearning() }
-    }
 }

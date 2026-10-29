@@ -43,7 +43,7 @@ struct CandidateGlyphSupportTests {
         #expect(glyphs.canDisplay("字"))
         supported = false
         #expect(glyphs.canDisplay("字"))
-        #expect(!app.applyIfNeeded(to: nil))
+        #expect(!app.applyIfNeeded { throw CocoaError(.fileReadNoSuchFile) })
         #expect(!glyphs.canDisplay("字"))
     }
 

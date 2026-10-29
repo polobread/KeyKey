@@ -1,6 +1,6 @@
 param(
     [string]$Source = (Join-Path $PSScriptRoot '../../Distributions/Takao/OnlineData/CannedMessages.plist'),
-    [string]$EmojiSource = (Join-Path $PSScriptRoot '../iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift'),
+    [string]$EmojiSource = (Join-Path $PSScriptRoot '../iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/KeyboardInput.swift'),
     [string]$SupplementaryEmojiSource = (Join-Path $PSScriptRoot 'SymbolEmojiSupplement.json'),
     [string]$Output = (Join-Path $PSScriptRoot 'SymbolResources.generated.h')
 )
@@ -47,7 +47,7 @@ foreach ($emoji in $emojis) { $null = $emojiUnique.Add($emoji) }
 if ($remainder -ne '' -or $emojis.Count -ne 90 -or $emojiUnique.Count -ne 90) {
     throw 'Mobile emoji declaration must contain exactly 90 unique unescaped strings'
 }
-$lines.Add('// Emoji: Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift')
+$lines.Add('// Emoji: Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/KeyboardInput.swift')
 $hasher = [Security.Cryptography.SHA256]::Create()
 try { $emojiHash = [BitConverter]::ToString($hasher.ComputeHash([IO.File]::ReadAllBytes((Resolve-Path $EmojiSource).Path))).Replace('-', '').ToLowerInvariant() }
 finally { $hasher.Dispose() }

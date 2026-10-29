@@ -70,6 +70,12 @@ DATABASE_PATH="$EXTENSION_PATH/KeyKey.db"
 [[ -s "$DATABASE_PATH" ]] || fail "Keyboard.appex/KeyKey.db is missing or empty"
 pass "container app, keyboard extension, and database are present"
 
+[[ -s "$APP_PATH/GuanyinmaNotices.txt" && -s "$EXTENSION_PATH/GuanyinmaNotices.txt" ]] \
+  || fail "Guanyinma runtime notices are missing from the app or keyboard extension"
+cmp -s "$APP_PATH/GuanyinmaNotices.txt" "$EXTENSION_PATH/GuanyinmaNotices.txt" \
+  || fail "App and keyboard extension have different Guanyinma notices"
+pass "app and keyboard extension contain matching Guanyinma runtime notices"
+
 database_count="$(find "$APP_PATH" -type f -name KeyKey.db | wc -l | tr -d '[:space:]')"
 [[ "$database_count" == "1" ]] || fail "Expected one KeyKey.db, found $database_count"
 pass "KeyKey.db is packaged exactly once"

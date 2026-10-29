@@ -93,3 +93,8 @@ if ! cmp -s "$staged_archive" "$output_dir/libguanyinma.a"; then
     mv -f "$staged_archive" "$output_dir/libguanyinma.a"
 fi
 printf 'Guanyinma archive: %s\n' "$output_dir/libguanyinma.a"
+notice_args=(--platform ios --cargo "$cargo_bin" --output "$output_dir/GuanyinmaNotices.txt")
+if [[ "${KEYKEY_GUANYINMA_OFFLINE:-0}" == 1 ]]; then
+    notice_args+=(--offline)
+fi
+"${PYTHON3:-python3}" "$core_dir/tools/package-runtime-notices.py" "${notice_args[@]}"

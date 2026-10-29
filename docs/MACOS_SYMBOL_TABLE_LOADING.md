@@ -102,7 +102,7 @@ PR 的 `macos-symbols.yml` 及 macOS 封裝流程會執行此回歸。
 分類切換直接套用完整幾何，避免視窗尺寸動畫與內容尺寸更新不同步。
 
 Emoji 加在既有分類後方，來源與 Windows `Generate-SymbolResources.ps1` 相同：
-手機 `BopomofoEngine.emojis` 的 90 個加 `SymbolEmojiSupplement.json` 的 110 個，
+手機 `KeyboardInput.emojis` 的 90 個加 `SymbolEmojiSupplement.json` 的 110 個，
 共 200 個且順序相同。生成器輸出 `CVEmojiData.generated.h`，不更動正式 DB。
 
 ```sh

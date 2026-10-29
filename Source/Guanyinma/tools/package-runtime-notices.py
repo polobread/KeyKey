@@ -47,7 +47,7 @@ def resolved_packages(metadata):
         visited.add(package)
         for dep in nodes[package]["deps"]:
             # Include build/proc-macro dependencies for full provenance; tests
-            # are not part of Android's runtime or this metadata traversal.
+            # are not part of the frontend runtime or this metadata traversal.
             if any(kind["kind"] != "dev" for kind in dep["dep_kinds"]):
                 queue.append(dep["pkg"])
     return {package["id"]: package for package in metadata["packages"] if package["id"] in visited}
@@ -57,7 +57,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cargo", default=os.environ.get("CARGO", "cargo"))
-    parser.add_argument("--platform", choices=["android", "windows", "linux", "freebsd"], default="android")
+    parser.add_argument("--platform", choices=["android", "ios", "windows", "linux", "freebsd"], default="android")
     parser.add_argument("--ndk", type=Path, help="the same configured NDK used by the JNI link (required for Android)")
     parser.add_argument("--offline", action="store_true")
     args = parser.parse_args()
@@ -77,13 +77,16 @@ def main():
     rustc = os.environ.get("RUSTC") or (str(sibling) if sibling.is_file() else shutil.which(rustc_name))
     if not rustc:
         raise RuntimeError("The pinned Rust compiler must be available to locate standard-library notices")
-    system_sqlite = args.platform in ("linux", "freebsd")
-    if system_sqlite:
+    native_unix = args.platform in ("linux", "freebsd")
+    system_sqlite = native_unix or args.platform == "ios"
+    if native_unix:
         details = subprocess.check_output([rustc, "-vV"], cwd=CORE, env=environment, text=True)
         host = re.search(r"^host: (.+)$", details, re.MULTILINE)
         if host is None or (args.platform == "freebsd") != ("freebsd" in host.group(1)):
             raise RuntimeError("Unix notices require the corresponding native Rust host")
         targets = (host.group(1),)
+    elif args.platform == "ios":
+        targets = ("aarch64-apple-ios", "aarch64-apple-ios-sim", "x86_64-apple-ios")
     else:
         targets = TARGETS if args.platform == "android" else ("x86_64-pc-windows-msvc", "i686-pc-windows-msvc")
     features = [] if system_sqlite else ["--features", "bundled-sqlite"]
@@ -129,7 +132,8 @@ def main():
         sections += 1
 
     files = {ROOT / name for name in REPOSITORY_TEXTS if name != "Source/Loaders/Android-IME/LICENSE.txt"}
-    frontend = "Android-IME" if args.platform == "android" else "Linux-IME" if system_sqlite else "Windows-TSF"
+    frontend = {"android": "Android-IME", "ios": "iOS-Keyboard", "windows": "Windows-TSF",
+                "linux": "Linux-IME", "freebsd": "Linux-IME"}[args.platform]
     files.add(ROOT / ("Source/Loaders/" + frontend + "/LICENSE.txt"))
     files.update(path for directory in (ROOT / "LICENSES", CORE / "LICENSES")
                  for path in directory.rglob("*") if path.is_file())
@@ -156,7 +160,12 @@ def main():
         dependencies.append(label)
         if package["name"] == "libsqlite3-sys":
             sqlite = directory / "sqlite3/sqlite3.c"
-    if system_sqlite:
+    if args.platform == "ios":
+        chunks.append(b"\n\nSQLite provider: Apple SDK/system SQLite.\n"
+                      b"No SQLite amalgamation or Android NDK runtime is bundled by this iOS build.\n"
+                      b"SQLite upstream provenance: https://www.sqlite.org/copyright.html\n"
+                      b"SQLite, iconv and other platform libraries are supplied by iOS.\n")
+    elif system_sqlite:
         chunks.append(b"\n\nSQLite provider: the frontend-selected dynamic system SQLite.\n"
                       b"No SQLite amalgamation is bundled by this Unix build.\n"
                       b"SQLite upstream provenance: https://www.sqlite.org/copyright.html\n"

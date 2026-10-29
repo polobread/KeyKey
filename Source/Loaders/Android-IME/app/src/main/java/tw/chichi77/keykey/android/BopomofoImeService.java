@@ -20,7 +20,6 @@ import android.view.inputmethod.InputConnection;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -29,11 +28,9 @@ import java.util.concurrent.Executors;
 public final class BopomofoImeService extends InputMethodService
         implements BopomofoKeyboardView.Listener, FloatingCandidateWindow.Listener,
         SharedPreferences.OnSharedPreferenceChangeListener {
-    private DualCoreInputEngine engine;
+    private HostInputEngine engine;
     private String lastReportedCoreError;
     private boolean hostTransactionFailed;
-    private SmartMandarinStore smartMandarinStore;
-    private SmartMandarinUserData smartUserData;
     private BopomofoKeyboardView keyboardView;
     private FloatingCandidateWindow floatingCandidateWindow;
     private Vibrator vibrator;
@@ -81,54 +78,37 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onCreate() {
         super.onCreate();
-        CinDictionary dictionary;
-        try (InputStream index = getAssets().open("bpmf-index.kki")) {
-            dictionary = CinDictionary.loadIndexed(index);
-        } catch (IOException error) {
-            try (InputStream bopomofo = getAssets().open("bpmf-ext.cin");
-                 InputStream punctuation = getAssets().open("bpmf-punctuations.cin")) {
-                dictionary = CinDictionary.load(bopomofo, punctuation);
-            } catch (IOException fallbackError) {
-                dictionary = CinDictionary.empty();
-            }
-        }
-        try {
-            SharedModelDatabase.install(this);
-        } catch (IOException error) {
-            android.util.Log.w("KeyKey", "Unable to prepare the shared model", error);
-        }
-        try {
-            smartUserData = SmartMandarinUserData.open(this);
-            smartMandarinStore = SmartMandarinStore.open(this, smartUserData);
-            smartMandarinStore.setBigramEnabled(
-                    BopomofoCompositionModeSettings.bigramEnabled(this));
-        } catch (IOException | RuntimeException error) {
-            smartMandarinStore = null;
-        }
-        BopomofoEngine legacy = new BopomofoEngine(dictionary, smartMandarinStore,
-                BopomofoCompositionModeSettings.mode(this));
-        legacy.setCandidateFilter(CandidateGlyphSupport.shared()::canDisplay);
-        legacy.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this));
-        legacy.setSpaceSelectsCandidates(BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
-        if (smartMandarinStore != null) legacy.setTableCandidateSource(new TableCandidateStore(
-                smartMandarinStore.tableDatabase(), getSharedPreferences("table_learning", MODE_PRIVATE)));
-        legacy.setChineseInputMethod(ChineseInputMethodSettings.method(this));
-        legacy.tableOptions = ChineseInputMethodSettings.options(this, legacy.chineseInputMethod(), tableVirtualKeyboard);
-        engine = new DualCoreInputEngine(legacy,
-                SharedModelDatabase.location(this).getAbsolutePath(),
-                new File(getFilesDir(), GuanyinmaUserData.FILE_NAME).getAbsolutePath(),
-                InputCore.JAVA, CandidateGlyphSupport.shared()::canDisplay);
-        // Preserve the FE preference even if the old Java store had to fall
-        // back to Traditional; Rust opens its own independent user store.
-        engine.setChineseInputMethod(ChineseInputMethodSettings.method(this));
-        engine.setUseBigrams(BopomofoCompositionModeSettings.bigramEnabled(this));
-        engine.requestCore(InputCoreSettings.core(this));
+        openEngine();
         schedulePhraseDictionaryReload();
         vibrator = getSystemService(Vibrator.class);
         CandidateWindowSettings.preferences(this)
                 .registerOnSharedPreferenceChangeListener(this);
         SupporterState.preferences(this)
                 .registerOnSharedPreferenceChangeListener(this);
+    }
+
+    private void openEngine() {
+        try {
+            File model = SharedModelDatabase.install(this);
+            ChineseInputMethod method = ChineseInputMethodSettings.method(this);
+            engine = new HostInputEngine(model.getAbsolutePath(),
+                    new File(getFilesDir(), GuanyinmaUserData.FILE_NAME).getAbsolutePath(), method,
+                    BopomofoKeyboardLayoutSettings.layout(this),
+                    ChineseInputMethodSettings.options(this, method, tableVirtualKeyboard),
+                    BopomofoCompositionModeSettings.spaceSelectsCandidates(this),
+                    BopomofoCompositionModeSettings.bigramEnabled(this),
+                    CandidateGlyphSupport.shared()::canDisplay);
+            // A recreated session has no FE association dictionary yet. Invalidate
+            // old async callbacks and reload even when the selected sources match.
+            phraseLoadGeneration++;
+            loadedPhraseCollections = null;
+            pendingPhraseCollections = null;
+        } catch (IOException | RuntimeException | LinkageError error) {
+            engine = null;
+            android.util.Log.e("KeyKey", "Guanyinma core unavailable", error);
+            android.widget.Toast.makeText(this, "無法啟用輸入核心，請重新啟用琦琦輸入法。",
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -176,6 +156,7 @@ public final class BopomofoImeService extends InputMethodService
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting) {
         super.onStartInput(attribute, restarting);
+        if (engine == null) openEngine();
         stopHardwareBackspace();
         if (!restarting) fieldPolicyUnlocked = false;
         resetCursorAnchor();
@@ -189,14 +170,15 @@ public final class BopomofoImeService extends InputMethodService
         fieldPolicy = nextPolicy;
         if (engine != null) {
             if (!restarting || hostTransactionFailed) {
-                engine.abandonHostEffects();
+                abandonHostEffects();
                 hostTransactionFailed = false;
                 appliedComposingText = "";
                 touchHostText.reset();
                 composingRegionStart = -1;
                 expectedSmartSelection = -1;
+                if (engine != null) synchronizeInputPreferences();
             }
-            engine.setAllowedInputModes(fieldPolicy.allowedModes(), fieldPolicy.preferredMode(),
+            if (engine != null) engine.setAllowedInputModes(fieldPolicy.allowedModes(), fieldPolicy.preferredMode(),
                     layoutChanged);
         }
         updateKeyboardMode();
@@ -214,7 +196,7 @@ public final class BopomofoImeService extends InputMethodService
         boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
         fieldPolicy = nextPolicy;
         if (engine != null) {
-            engine.setAllowedInputModes(fieldPolicy.allowedModes(), fieldPolicy.preferredMode(),
+            if (engine != null) engine.setAllowedInputModes(fieldPolicy.allowedModes(), fieldPolicy.preferredMode(),
                     layoutChanged);
         }
         updateKeyboardMode();
@@ -226,7 +208,7 @@ public final class BopomofoImeService extends InputMethodService
     public void onFinishInput() {
         stopHardwareBackspace();
         commitPendingComposition();
-        if (engine != null) engine.abandonHostEffects();
+        if (engine != null) abandonHostEffects();
         hostTransactionFailed = false;
         pressedHardwareShortcutKeys.clear();
         pressedCandidateKeys.clear();
@@ -258,6 +240,29 @@ public final class BopomofoImeService extends InputMethodService
         super.onWindowHidden();
     }
 
+    private void synchronizeInputPreferences() {
+        // Preferences changed while a former host rejected effects are applied
+        // only after that host's state was explicitly discarded.
+        apply(engine.setChineseInputMethod(ChineseInputMethodSettings.method(this)));
+        apply(engine.setKeyboardLayout(BopomofoKeyboardLayoutSettings.layout(this)));
+        engine.setTableOptions(ChineseInputMethodSettings.options(this, engine.chineseInputMethod(), tableVirtualKeyboard));
+        engine.setSpaceSelectsCandidates(BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
+        engine.setUseBigrams(BopomofoCompositionModeSettings.bigramEnabled(this));
+    }
+
+    private void abandonHostEffects() {
+        if (engine == null) return;
+        try {
+            engine.abandonHostEffects();
+        } catch (RuntimeException error) {
+            android.util.Log.e("KeyKey", "Unable to discard previous host state", error);
+            engine.close();
+            engine = null;
+            android.widget.Toast.makeText(this, "輸入核心無法重設，請重新點選文字欄位。",
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void commitPendingComposition() {
         if (engine == null || !engine.hasComposition()
                 || getCurrentInputConnection() == null) return;
@@ -272,14 +277,6 @@ public final class BopomofoImeService extends InputMethodService
         SupporterState.preferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
         if (engine != null) { engine.close(); engine = null; }
-        if (smartMandarinStore != null) {
-            smartMandarinStore.close();
-            smartMandarinStore = null;
-        }
-        if (smartUserData != null) {
-            smartUserData.close();
-            smartUserData = null;
-        }
         phraseLoadGeneration++;
         dictionaryLoader.shutdownNow();
         mainHandler.removeCallbacksAndMessages(null);
@@ -355,16 +352,8 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
-        if (key == null && engine != null) engine.requestCore(InputCoreSettings.core(this));
-        if (InputCoreSettings.KEY_CORE.equals(key)) {
-            if (engine != null) engine.requestCore(InputCoreSettings.core(this));
-            refreshKeyboard();
-            return;
-        }
-        if (key != null && key.startsWith(InputCoreSettings.KEY_USER_DATA_PREFIX)) {
-            if (engine != null && key.equals(InputCoreSettings.KEY_USER_DATA_PREFIX + engine.activeCore().rawName)) {
-                apply(engine.refreshUserData());
-            }
+        if (UserDataNotifications.KEY_CHANGED.equals(key)) {
+            if (engine != null) apply(engine.refreshUserData());
             return;
         }
         if (key == null || ChineseInputMethodSettings.KEY_METHOD.equals(key) || key.startsWith("table_options.")) {
@@ -398,11 +387,10 @@ public final class BopomofoImeService extends InputMethodService
         }
         if (BopomofoCompositionModeSettings.KEY_BIGRAM_ENABLED.equals(key)) {
             if (engine != null && engine.compositionMode() == BopomofoCompositionMode.SMART
-                    && engine.inputMode() == BopomofoEngine.InputMode.BOPOMOFO) {
+                    && engine.inputMode() == InputEngine.InputMode.BOPOMOFO) {
                 apply(engine.finishCompositionForModeSwitch());
             }
             boolean enabled = BopomofoCompositionModeSettings.bigramEnabled(this);
-            if (smartMandarinStore != null) smartMandarinStore.setBigramEnabled(enabled);
             if (engine != null) engine.setUseBigrams(enabled);
             refreshKeyboard();
             return;
@@ -443,6 +431,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onKey(String key) {
+        if (engine == null || hostTransactionFailed) return;
         if (key.equals("HARDWARE_COLLAPSE")) {
             collapseHardwareCandidates();
             return;
@@ -488,11 +477,13 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onCandidate(int displayedIndex) {
+        if (engine == null || hostTransactionFailed) return;
         apply(engine.selectDisplayedCandidate(displayedIndex));
     }
 
     @Override
     public void onSmartCell(int index) {
+        if (engine == null || hostTransactionFailed) return;
         if (engine.selectTouchSmartCell(index)) refreshKeyboard();
     }
 
@@ -507,12 +498,15 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onPage(int delta) {
+        if (engine == null || hostTransactionFailed) return;
         engine.changePage(delta);
         refreshKeyboard();
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (engine == null) return super.onKeyDown(keyCode, event);
+        if (hostTransactionFailed) return true;
         // A key can arrive before the hardware configuration callback. Finish
         // the already-inserted touch tail before adopting marked host text.
         if (!hardwareSmartTwoRows && !touchHostText.editableText().isEmpty()
@@ -566,13 +560,13 @@ public final class BopomofoImeService extends InputMethodService
                 case KeyEvent.KEYCODE_DPAD_LEFT -> {
                     pressedNavigationKeys.add(keyCode);
                     engine.moveSmartCompositionCursor(-1);
-                    apply(BopomofoEngine.Result.update());
+                    apply(InputEngine.Result.update());
                     return true;
                 }
                 case KeyEvent.KEYCODE_DPAD_RIGHT -> {
                     pressedNavigationKeys.add(keyCode);
                     engine.moveSmartCompositionCursor(1);
-                    apply(BopomofoEngine.Result.update());
+                    apply(InputEngine.Result.update());
                     return true;
                 }
                 case KeyEvent.KEYCODE_DPAD_UP -> {
@@ -582,7 +576,7 @@ public final class BopomofoImeService extends InputMethodService
                         refreshKeyboard();
                     } else {
                         engine.moveSmartCompositionCursor(-1);
-                        apply(BopomofoEngine.Result.update());
+                        apply(InputEngine.Result.update());
                     }
                     return true;
                 }
@@ -604,7 +598,7 @@ public final class BopomofoImeService extends InputMethodService
                 apply(engine.backspace());
                 hardwareBackspaceHeld = true;
                 hardwareBackspaceRepeater.start(() -> {
-                    if (engine == null || getCurrentInputConnection() == null) {
+                    if (engine == null || hostTransactionFailed || getCurrentInputConnection() == null) {
                         stopHardwareBackspace();
                         return;
                     }
@@ -688,11 +682,11 @@ public final class BopomofoImeService extends InputMethodService
         return keyCode - KeyEvent.KEYCODE_1;
     }
 
-    private void apply(BopomofoEngine.Result result) {
+    private void apply(InputEngine.Result result) {
         apply(result, false);
     }
 
-    private void apply(BopomofoEngine.Result result, boolean softEnter) {
+    private void apply(InputEngine.Result result, boolean softEnter) {
         InputConnection connection = getCurrentInputConnection();
         if (connection == null || hostTransactionFailed) {
             if (!result.committedText().isEmpty() || result.deleteBeforeCursor()
@@ -701,7 +695,6 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
 
-        InputCore previousCore = engine.activeCore();
         boolean applied = false;
         try {
             applied = applyToConnection(connection, result, softEnter);
@@ -714,19 +707,12 @@ public final class BopomofoImeService extends InputMethodService
             // An absent/replaced host cannot acknowledge the old transaction.
             if (applied && connection == getCurrentInputConnection() && engine != null) {
                 engine.acknowledgeHostEffects();
-                if (engine.activeCore() != previousCore) {
-                    appliedComposingText = "";
-                    touchHostText.reset();
-                    composingRegionStart = -1;
-                    expectedSmartSelection = -1;
-                    // Preserve the same-document guard for delayed own callbacks.
-                }
             }
             refreshKeyboard();
         }
     }
 
-    private boolean applyToConnection(InputConnection connection, BopomofoEngine.Result result,
+    private boolean applyToConnection(InputConnection connection, InputEngine.Result result,
                                       boolean softEnter) {
         if (engine.isTouchSmartComposition() || !touchHostText.editableText().isEmpty()) {
             return applyTouchSmart(connection, result, softEnter);
@@ -804,7 +790,7 @@ public final class BopomofoImeService extends InputMethodService
         return accepted;
     }
 
-    private boolean applyTouchSmart(InputConnection connection, BopomofoEngine.Result result,
+    private boolean applyTouchSmart(InputConnection connection, InputEngine.Result result,
                                     boolean softEnter) {
         boolean accepted = true;
         TouchSmartHostTextState.Edit edit;
@@ -874,9 +860,7 @@ public final class BopomofoImeService extends InputMethodService
         String coreError = engine.coreError();
         if (coreError != null && !coreError.equals(lastReportedCoreError)) {
             android.util.Log.w("KeyKey", coreError);
-            String message = engine.activeCore() == InputCore.JAVA
-                    ? "Guanyinma 暫時無法啟用，目前使用 Java 核心。"
-                    : "Guanyinma 暫時無法完成操作。";
+            String message = "Guanyinma 暫時無法完成操作。";
             android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show();
         }
         lastReportedCoreError = coreError;
@@ -891,11 +875,11 @@ public final class BopomofoImeService extends InputMethodService
         boolean supportPromptVisible = SupporterState.shouldShowSupportPrompt(this);
         boolean smartBopomofo = engine.chineseInputMethod() == ChineseInputMethod.SMART
                 && engine.compositionMode() == BopomofoCompositionMode.SMART
-                && engine.inputMode() == BopomofoEngine.InputMode.BOPOMOFO;
+                && engine.inputMode() == InputEngine.InputMode.BOPOMOFO;
         keyboardView.setAssociatedPhrasesVisible(engine.isShowingAssociatedPhrases());
         keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
                 engine.compositionMode() == BopomofoCompositionMode.SMART
-                        && engine.inputMode() == BopomofoEngine.InputMode.BOPOMOFO,
+                        && engine.inputMode() == InputEngine.InputMode.BOPOMOFO,
                 engine.touchSmartCells(hardwareSmartTwoRows ? 9 : 11), engine.touchSmartEditableCount(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
                 engine.isHardwareFullWidth(), supportPromptVisible,

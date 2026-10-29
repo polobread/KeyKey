@@ -11,26 +11,26 @@ final class InputFieldPolicy {
     enum Kind { GENERAL, ASCII, EMAIL, URL, PHONE, INTEGER, DECIMAL, DATE_TIME }
 
     static final InputFieldPolicy DEFAULT = new InputFieldPolicy(
-            Kind.GENERAL, EnumSet.allOf(BopomofoEngine.InputMode.class),
-            BopomofoEngine.InputMode.BOPOMOFO, EditorInfo.IME_ACTION_NONE, "", false);
+            Kind.GENERAL, EnumSet.allOf(InputEngine.InputMode.class),
+            InputEngine.InputMode.BOPOMOFO, EditorInfo.IME_ACTION_NONE, "", false);
 
     private final Kind kind;
-    private final EnumSet<BopomofoEngine.InputMode> allowedModes;
-    private final BopomofoEngine.InputMode preferredMode;
+    private final EnumSet<InputEngine.InputMode> allowedModes;
+    private final InputEngine.InputMode preferredMode;
     private final int editorAction;
     private final String enterLabel;
     private final boolean hasEditorAction;
     private final boolean signedNumber;
 
-    private InputFieldPolicy(Kind kind, EnumSet<BopomofoEngine.InputMode> allowedModes,
-                             BopomofoEngine.InputMode preferredMode, int editorAction,
+    private InputFieldPolicy(Kind kind, EnumSet<InputEngine.InputMode> allowedModes,
+                             InputEngine.InputMode preferredMode, int editorAction,
                              String enterLabel, boolean hasEditorAction) {
         this(kind, allowedModes, preferredMode, editorAction, enterLabel,
                 hasEditorAction, false);
     }
 
-    private InputFieldPolicy(Kind kind, EnumSet<BopomofoEngine.InputMode> allowedModes,
-                             BopomofoEngine.InputMode preferredMode, int editorAction,
+    private InputFieldPolicy(Kind kind, EnumSet<InputEngine.InputMode> allowedModes,
+                             InputEngine.InputMode preferredMode, int editorAction,
                              String enterLabel, boolean hasEditorAction,
                              boolean signedNumber) {
         this.kind = kind;
@@ -79,19 +79,19 @@ final class InputFieldPolicy {
             kind = Kind.GENERAL;
         }
 
-        EnumSet<BopomofoEngine.InputMode> modes;
-        BopomofoEngine.InputMode preferred;
+        EnumSet<InputEngine.InputMode> modes;
+        InputEngine.InputMode preferred;
         if (kind == Kind.PHONE || kind == Kind.INTEGER || kind == Kind.DECIMAL
                 || kind == Kind.DATE_TIME) {
-            modes = EnumSet.of(BopomofoEngine.InputMode.NUMBER);
-            preferred = BopomofoEngine.InputMode.NUMBER;
+            modes = EnumSet.of(InputEngine.InputMode.NUMBER);
+            preferred = InputEngine.InputMode.NUMBER;
         } else if (kind == Kind.ASCII || kind == Kind.EMAIL) {
-            modes = EnumSet.of(BopomofoEngine.InputMode.ENGLISH,
-                    BopomofoEngine.InputMode.NUMBER);
-            preferred = BopomofoEngine.InputMode.ENGLISH;
+            modes = EnumSet.of(InputEngine.InputMode.ENGLISH,
+                    InputEngine.InputMode.NUMBER);
+            preferred = InputEngine.InputMode.ENGLISH;
         } else {
-            modes = EnumSet.allOf(BopomofoEngine.InputMode.class);
-            preferred = BopomofoEngine.InputMode.BOPOMOFO;
+            modes = EnumSet.allOf(InputEngine.InputMode.class);
+            preferred = InputEngine.InputMode.BOPOMOFO;
         }
 
         int action = resolveAction(imeOptions);
@@ -133,19 +133,19 @@ final class InputFieldPolicy {
         };
     }
 
-    Set<BopomofoEngine.InputMode> allowedModes() { return EnumSet.copyOf(allowedModes); }
-    BopomofoEngine.InputMode preferredMode() { return preferredMode; }
+    Set<InputEngine.InputMode> allowedModes() { return EnumSet.copyOf(allowedModes); }
+    InputEngine.InputMode preferredMode() { return preferredMode; }
     int editorAction() { return editorAction; }
     String enterLabel() { return enterLabel; }
     boolean hasEditorAction() { return hasEditorAction; }
     Kind kind() { return kind; }
     boolean isRestricted() {
-        return allowedModes.size() < BopomofoEngine.InputMode.values().length;
+        return allowedModes.size() < InputEngine.InputMode.values().length;
     }
 
     InputFieldPolicy unrestricted() {
         if (!isRestricted()) return this;
-        return new InputFieldPolicy(kind, EnumSet.allOf(BopomofoEngine.InputMode.class),
+        return new InputFieldPolicy(kind, EnumSet.allOf(InputEngine.InputMode.class),
                 preferredMode, editorAction, enterLabel, hasEditorAction, signedNumber);
     }
 
@@ -155,7 +155,7 @@ final class InputFieldPolicy {
                 && signedNumber == other.signedNumber;
     }
 
-    String modeCaption(BopomofoEngine.InputMode mode) {
+    String modeCaption(InputEngine.InputMode mode) {
         return switch (mode) {
             case BOPOMOFO -> "英/數";
             case ENGLISH -> "數/ㄅ";
@@ -163,7 +163,7 @@ final class InputFieldPolicy {
         };
     }
 
-    boolean isKeyEnabled(String key, BopomofoEngine.InputMode mode, boolean shifted) {
+    boolean isKeyEnabled(String key, InputEngine.InputMode mode, boolean shifted) {
         if (key.equals("SETTINGS") || key.equals("BACKSPACE") || key.equals("ENTER")
                 || key.equals("MODE")) {
             return true;
@@ -175,10 +175,10 @@ final class InputFieldPolicy {
         }
         if (key.equals("SPACE")) return allowsCharacter(" ");
         if (key.equals("SHIFT")) {
-            if (mode == BopomofoEngine.InputMode.BOPOMOFO) {
-                return allowedModes.contains(BopomofoEngine.InputMode.ENGLISH);
+            if (mode == InputEngine.InputMode.BOPOMOFO) {
+                return allowedModes.contains(InputEngine.InputMode.ENGLISH);
             }
-            String[][] shiftedRows = mode == BopomofoEngine.InputMode.ENGLISH
+            String[][] shiftedRows = mode == InputEngine.InputMode.ENGLISH
                     ? BopomofoKeyboardView.shiftedEnglishRows()
                     : BopomofoKeyboardView.shiftedNumberRows();
             for (String[] row : shiftedRows) {
@@ -189,7 +189,7 @@ final class InputFieldPolicy {
             return false;
         }
         if (!allowedModes.contains(mode)) return false;
-        if (mode == BopomofoEngine.InputMode.BOPOMOFO) return true;
+        if (mode == InputEngine.InputMode.BOPOMOFO) return true;
         return key.length() == 1 && allowsCharacter(key);
     }
 

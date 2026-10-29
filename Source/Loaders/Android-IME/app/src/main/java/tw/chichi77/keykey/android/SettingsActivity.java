@@ -77,38 +77,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         methodContent.setPadding(dp(16), dp(12), dp(16), dp(8));
         methodContent.setBackground(sectionBackground());
         content.addView(methodContent, matchWrap(dp(0), dp(16)));
-        TextView coreLabel = new TextView(this);
-        coreLabel.setText("輸入核心");
-        coreLabel.setTextSize(18);
-        coreLabel.setTextColor(Color.DKGRAY);
-        methodContent.addView(coreLabel, matchWrap(dp(0), dp(4)));
-        Spinner coreControl = new Spinner(this);
-        coreControl.setId(R.id.input_core);
-        coreControl.setContentDescription("輸入核心");
-        ArrayAdapter<String> coreAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item,
-                java.util.Arrays.stream(InputCore.values()).map(core -> core.displayName).toArray(String[]::new));
-        coreAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        coreControl.setAdapter(coreAdapter);
-        coreControl.setSelection(InputCoreSettings.core(this).ordinal());
-        coreControl.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(android.widget.AdapterView<?> parent,
-                                                View view, int position, long id) {
-                if (position < 0 || position >= InputCore.values().length) return;
-                InputCore next = InputCore.values()[position];
-                if (next != InputCoreSettings.core(SettingsActivity.this)) {
-                    InputCoreSettings.setCore(SettingsActivity.this, next);
-                }
-            }
-            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-        });
-        methodContent.addView(coreControl, matchWrap(dp(0), dp(8)));
-        TextView coreDescription = new TextView(this);
-        coreDescription.setText("兩個核心共用相同鍵盤介面；自訂詞與學習紀錄各自保存。");
-        coreDescription.setTextSize(14);
-        coreDescription.setTextColor(Color.GRAY);
-        methodContent.addView(coreDescription, matchWrap(dp(0), dp(16)));
-
         TextView compositionModeLabel = new TextView(this);
         compositionModeLabel.setText(R.string.composition_mode_title);
         compositionModeLabel.setTextSize(18);
@@ -212,23 +180,21 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         Button userPhrases = new Button(this);
         userPhrases.setText("管理好打注音自訂詞");
         userPhrases.setContentDescription("管理好打注音自訂詞");
-        userPhrases.setOnClickListener(view -> startActivity(new Intent(this, UserPhrasesActivity.class)
-                .putExtra(UserPhrasesActivity.EXTRA_CORE, InputCoreSettings.core(this).rawName)));
+        userPhrases.setOnClickListener(view -> startActivity(new Intent(this, UserPhrasesActivity.class)));
         compositionContent.addView(userPhrases, matchWrap(dp(0), dp(8)));
 
         Button resetLearning = new Button(this);
         resetLearning.setText("重設好打注音學習紀錄");
         resetLearning.setOnClickListener(view -> {
-            InputCore core = InputCoreSettings.core(this);
             new AlertDialog.Builder(this)
-                    .setTitle("重設 " + core.displayName + " 學習紀錄？")
-                    .setMessage("這會清除這個核心已學習的選字和相鄰詞關係，自訂詞會保留。")
+                    .setTitle("重設好打注音學習紀錄？")
+                    .setMessage("這會清除已學習的選字和相鄰詞關係，自訂詞會保留。")
                     .setNegativeButton("取消", null)
                     .setPositiveButton("重設", (dialog, which) -> {
                         CandidateGlyphSupport.shared().reset();
-                        try (UserPhraseRepository data = UserPhraseRepository.open(this, core)) {
+                        try (UserPhraseRepository data = UserPhraseRepository.open(this)) {
                             data.resetSmartLearning();
-                            Toast.makeText(this, core.displayName + " 學習紀錄已重設", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "好打注音學習紀錄已重設", Toast.LENGTH_SHORT).show();
                         } catch (RuntimeException error) {
                             Toast.makeText(this, "無法重設學習紀錄：" + error.getMessage(), Toast.LENGTH_LONG).show();
                         }

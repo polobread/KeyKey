@@ -51,10 +51,10 @@ jobs:
         shell: bash
         run: make -C Source/Distributions/Takao/DatabaseCooker
 
-      - name: Test iOS dual-core integration
+      - name: Test iOS Guanyinma integration
         working-directory: Source/Loaders/iOS-Keyboard/KeyKeyEngine
         shell: bash
-        run: bash ../../../Guanyinma/tools/test-ios-swift-package.sh --filter 'GuanyinmaIntegrationTests|InputCoreSettingsTests'
+        run: bash ../../../Guanyinma/tools/test-ios-swift-package.sh --filter 'GuanyinmaIntegrationTests'
 
       - name: Build unsigned Simulator app
         working-directory: Source/Loaders/iOS-Keyboard

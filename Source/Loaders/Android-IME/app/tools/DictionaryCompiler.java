@@ -34,48 +34,17 @@ public final class DictionaryCompiler {
     private DictionaryCompiler() {}
 
     public static void main(String[] arguments) throws Exception {
-        if (arguments.length != 5) {
+        if (arguments.length != 3) {
             throw new IllegalArgumentException(
-                    "Expected: output-directory bpmf.cin punctuations.cin phrase.occ "
-                            + "categorized-directory");
+                    "Expected: output-directory phrase.occ categorized-directory");
         }
         Path outputDirectory = Path.of(arguments[0]);
-        Path bpmf = Path.of(arguments[1]);
-        Path punctuations = Path.of(arguments[2]);
-        Path basePhrases = Path.of(arguments[3]);
-        Path categorizedDirectory = Path.of(arguments[4]);
+        Path basePhrases = Path.of(arguments[1]);
+        Path categorizedDirectory = Path.of(arguments[2]);
 
         Files.createDirectories(outputDirectory);
-        compileCin(outputDirectory.resolve("bpmf-index.kki"), List.of(bpmf, punctuations));
         compilePhraseCollections(outputDirectory.resolve("collections"), basePhrases,
                 categorizedDirectory);
-    }
-
-    private static void compileCin(Path output, List<Path> sources) throws IOException {
-        LinkedHashMap<String, List<String>> entries = new LinkedHashMap<>();
-        for (Path source : sources) {
-            try (BufferedReader reader = Files.newBufferedReader(source, StandardCharsets.UTF_8)) {
-                boolean inDefinitions = false;
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String trimmed = line.trim();
-                    if (trimmed.regionMatches(true, 0, "%chardef", 0, 8)) {
-                        inDefinitions = trimmed.toLowerCase(Locale.ROOT).contains("begin");
-                        continue;
-                    }
-                    if (!inDefinitions || trimmed.isEmpty() || trimmed.startsWith("#")) continue;
-                    int separator = firstWhitespace(trimmed);
-                    if (separator <= 0) continue;
-                    int valueStart = separator;
-                    while (valueStart < trimmed.length()
-                            && Character.isWhitespace(trimmed.charAt(valueStart))) valueStart++;
-                    if (valueStart >= trimmed.length()) continue;
-                    entries.computeIfAbsent(trimmed.substring(0, separator), ignored ->
-                            new ArrayList<>()).add(trimmed.substring(valueStart));
-                }
-            }
-        }
-        writeDictionary(output, entries);
     }
 
     private static void compilePhraseCollections(Path outputDirectory, Path basePhrases,

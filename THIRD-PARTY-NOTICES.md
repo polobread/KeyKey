@@ -35,7 +35,7 @@ The full notice is copied byte-for-byte to
 `Source/Guanyinma/LICENSES/Unicode-LICENSE.txt`. These generated constants are
 not relicensed by the MIT grant for original Guanyinma code.
 
-Development dual-core frontend builds now include Guanyinma. These binary
+Frontend builds containing Guanyinma include single-core and dual-core products. These binary
 packages must carry the applicable crate notices/licenses, the retained
 Formosa/OpenVanilla/Yahoo and Unicode notices, SQLite provenance, and the
 existing database notices. The MIT grant for original Guanyinma code

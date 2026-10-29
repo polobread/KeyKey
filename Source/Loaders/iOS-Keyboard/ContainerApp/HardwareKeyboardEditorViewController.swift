@@ -218,10 +218,9 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private var optionalNavigationControls: [UIView] = []
     private var usesLandscapeLayout: Bool?
     private var usesCompactPortraitLayout: Bool?
-    private var engine: DualCoreInputEngine?
+    private var engine: KeyboardInputEngine?
     private var phraseStore: AssociatedPhraseStore?
-    private var smartUserData: SmartMandarinUserData?
-    private var guanyinmaPhraseData: SmartMandarinUserData?
+    private var guanyinmaPhraseData: SharedPhrasePublication?
     private var collections: [AssociatedPhraseStore.Collection] = []
     private let sharedDefaults = UserDefaults(
         suiteName: KeyboardPreferenceStore.appGroupIdentifier
@@ -233,7 +232,6 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     )
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
     private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
-    private lazy var coreSettings = InputCoreSettings(sharedDefaults: sharedDefaults)
     private var committedText = ""
     private var insertionCharacterIndex = 0
     private var displayedCaretUTF16Offset = 0
@@ -282,7 +280,6 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             engine.spaceSelectsCandidates = spaceSettings.enabled
             do { try engine.refreshUserPhrases(from: guanyinmaPhraseData) }
             catch { transientStatus = "Guanyinma 自訂詞同步失敗：\(error.localizedDescription)" }
-            engine.requestCore(coreSettings.core)
         }
         captureView.becomeFirstResponder()
     }
@@ -620,7 +617,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         candidateList.layer.cornerRadius = 8
         candidateList.clipsToBounds = true
 
-        for index in 0..<BopomofoEngine.candidatesPerPage {
+        for index in 0..<KeyboardInput.candidatesPerPage {
             let button = UIButton(configuration: .plain())
             button.tag = index
             button.contentHorizontalAlignment = .leading
@@ -806,11 +803,6 @@ final class HardwareKeyboardEditorViewController: UIViewController {
                 self?.selectInputMethod(method)
             }
         }
-        children.append(UIMenu(title: "輸入核心", options: .singleSelection, children: InputCore.allCases.map { core in
-            UIAction(title: core.displayName, state: coreSettings.core == core ? .on : .off) { [weak self] _ in
-                self?.selectCore(core)
-            }
-        }))
         for method in [ChineseInputMethod.cangjie, .simplex] {
             let options = methodSettings.options(for: method)
             var actions: [UIMenuElement] = options.switches(for: method).map { item in
@@ -916,43 +908,32 @@ final class HardwareKeyboardEditorViewController: UIViewController {
             if let groupDirectory = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: "group.io.github.polobread.inputmethod.chichi77.ios"
             ) {
-                smartUserData = try? SmartMandarinUserData(
-                    phrasesURL: groupDirectory.appendingPathComponent("UserPhrase.db"),
-                    learningURL: localDirectory.appendingPathComponent("SmartMandarinLearning.db"),
-                    writablePhrases: true
-                )
-                guanyinmaPhraseData = try? SmartMandarinUserData(
-                    phrasesURL: groupDirectory.appendingPathComponent("GuanyinmaUserPhrase.db"),
-                    learningURL: localDirectory.appendingPathComponent("GuanyinmaPhraseBridge.db"),
-                    writablePhrases: false
-                )
+                do {
+                    guanyinmaPhraseData = try SharedPhrasePublication(
+                        phrasesURL: groupDirectory.appendingPathComponent("GuanyinmaUserPhrase.db"),
+                        writablePhrases: false
+                    )
+                } catch {
+                    transientStatus = "自訂詞同步失敗：\(error.localizedDescription)"
+                }
             }
             let phrases = AssociatedPhraseStore(database: database)
             collections = try phrases.collections()
             phraseStore = phrases
             applyPhraseSelection(phraseSettings.enabledCollections, persist: false)
-            let legacy = BopomofoEngine(
-                dictionary: try CandidateStore(database: database),
-                associatedPhrases: phrases,
-                smartSource: try SmartMandarinStore(database: database, userData: smartUserData),
-                compositionMode: compositionModeSettings.mode,
+            engine = try KeyboardInputEngine(
+                modelURL: url,
+                userDatabaseURL: localDirectory.appendingPathComponent("GuanyinmaUser.db"),
+                method: methodSettings.method,
                 hardwareSmartEditing: true,
                 keyboardLayout: layoutSettings.layout,
+                tableOptions: methodSettings.options(for: methodSettings.method),
                 spaceSelectsCandidates: spaceSettings.enabled,
+                associatedPhrases: phrases,
                 candidateFilter: CandidateGlyphSupport.shared.canDisplay
-            )
-            engine = DualCoreInputEngine(
-                legacy: legacy, modelURL: url,
-                userDatabaseURL: localDirectory.appendingPathComponent("GuanyinmaUser.db"),
-                preferredCore: .swift, hardwareSmartEditing: true,
-                associatedPhrases: phrases, candidateFilter: CandidateGlyphSupport.shared.canDisplay
             )
             do { try engine?.refreshUserPhrases(from: guanyinmaPhraseData) }
             catch { transientStatus = "Guanyinma 自訂詞同步失敗：\(error.localizedDescription)" }
-            engine?.setTableCandidateSource(TableCandidateStore(database: database))
-            engine?.setChineseInputMethod(methodSettings.method)
-            engine?.tableOptions = methodSettings.options(for: methodSettings.method)
-            engine?.requestCore(coreSettings.core)
         } catch {
             transientStatus = "字庫載入失敗：\(error)"
         }
@@ -1240,7 +1221,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         preferredCursorX = nil
     }
 
-    private func apply(_ result: BopomofoEngine.Result, widenASCII: Bool = false) {
+    private func apply(_ result: KeyboardInput.Result, widenASCII: Bool = false) {
         defer {
             engine?.acknowledgeHostEffects()
             refresh()
@@ -1302,14 +1283,6 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     @objc private func changeMode() {
         guard let engine else { return }
         apply(engine.toggleHardwareLanguage())
-        restoreCaptureFocusAfterControlAction()
-    }
-
-    private func selectCore(_ core: InputCore) {
-        if let engine { apply(engine.finishCompositionForInputHandoff()) }
-        coreSettings.setCore(core)
-        engine?.requestCore(core)
-        refresh()
         restoreCaptureFocusAfterControlAction()
     }
 

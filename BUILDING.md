@@ -4,7 +4,7 @@
 
 Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、C ABI 與四種輸入法的共用 session，包括好打注音組句與 FE 可設定的 10～20 音節邊界。
 其獨立建置／單元及 C consumer 驗證見 [Guanyinma README](Source/Guanyinma/README.md)，
-移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。iOS 預設建置同時包含 Swift 與 Guanyinma，使用者預設選 Swift；macOS 可用 `Takao-Guanyinma.xcconfig` 建置同一 FE 的雙核心 App，並在一般設定切換，見 [Guanyinma 開發接合](docs/GUANYINMA_MACOS_ADAPTER.md)。
+移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。Windows、iOS、Android、Linux／FreeBSD 固定使用 Guanyinma 單核心；macOS 可用 `Takao-Guanyinma.xcconfig` 建置同一 FE 的雙核心 App，並在一般設定切換，見 [Guanyinma 開發接合](docs/GUANYINMA_MACOS_ADAPTER.md)。
 
 Linux 1.3.7 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。macOS 正式版為
@@ -320,7 +320,7 @@ Windows Ed25519 也在本機使用 keykey-update-private.pem；禁止提交、�
 
 ## Android
 
-Android 同一 FE 內建 Java 與 Guanyinma 雙核心，預設使用 Java。建置需要固定 Rust 工具鏈、完整 JDK（含 JNI headers）、NDK 及 CMake；版本與四個 ABI 對照見 [Android 接合文件](docs/GUANYINMA_ANDROID_ADAPTER.md)。Gradle 只編譯 Rust，平台 workflow 只執行少量 JNI／FE 串接；完整核心測試留在 `guanyinma-core.yml`。
+Android FE 固定使用 Guanyinma Rust 單核心，不提供舊 Java 引擎或核心切換。建置需要固定 Rust 工具鏈、完整 JDK（含 JNI headers）、NDK 及 CMake；版本與四個 ABI 對照見 [Android 接合文件](docs/GUANYINMA_ANDROID_ADAPTER.md)。Gradle 只編譯 Rust，平台 workflow 只執行少量 JNI／FE 串接；完整核心測試留在 `guanyinma-core.yml`。
 
 ### 需求與建置
 
@@ -333,11 +333,9 @@ cd Source\Loaders\Android-IME
 .\gradlew.bat lintDebug testDebugUnitTest assembleDebug
 ```
 
-建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
-`bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫，另固定
-加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會從 CIN、基本詞庫與
-29 個 TSV 產生 `.kki` 索引，並把 cook 好的 `KeyKey.db` 加入 APK，供預設的好打注音
-整句組字使用；Android 執行時讀取索引，關聯詞索引在背景載入。
+建置從 `DataSource/McBopomofo` 與 `DataSource/chichi77Collection` 的 29 個公開分類詞庫
+產生關聯詞 `.kki` 索引，並把預先產生的共用 `KeyKey.db` 加入 APK，供 Rust 四種輸入法
+唯讀使用；關聯詞索引在背景載入。平台建置不重建模型。
 Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦輸入法」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
@@ -349,7 +347,7 @@ Debug APK 位於
 
 - macOS 與 Xcode
 - iOS SDK；執行選用宿主／UI 測試時另備 Simulator runtime
-- 固定 Rust 工具鏈與 iOS targets，見 [iOS 雙核心接合](docs/GUANYINMA_IOS_ADAPTER.md)
+- 固定 Rust 工具鏈與 iOS targets，見 [iOS Guanyinma 接合](docs/GUANYINMA_IOS_ADAPTER.md)
 - GNU Make、Ruby 與 `sqlite3`，用於既有共用資料庫驗證入口
 
 從 repository 根目錄執行：
@@ -756,20 +754,20 @@ mirror workflow. See the [complete release guide](docs/WINDOWS_CERTUM_RELEASE.md
 ## Android
 
 Requirements: Android Studio, JDK 17 or later, Android SDK 36.1, and Build
-Tools 36.0.0.
+Tools 36.0.0, plus the pinned Rust toolchain, NDK and CMake described in the
+[Android adapter guide](docs/GUANYINMA_ANDROID_ADAPTER.md). The frontend uses
+Guanyinma exclusively; the Java input engine and core selector are removed.
 
 ```powershell
 cd Source\Loaders\Android-IME
 .\gradlew.bat lintDebug testDebugUnitTest assembleDebug
 ```
 
-The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
-`Source/DataTables` directory and adds the base associated-phrase collection
-from `DataSource/McBopomofo` plus all 29 public categorized collections from
-`DataSource/chichi77Collection`. The build compiles the CIN and phrase sources into
-`.kki` indexes and packages the cooked `KeyKey.db` for the default Smart Phonetic
-composition mode. Android reads the indexes at runtime and loads associated-phrase indexes
-in the background. The debug APK is written to
+The build compiles the base associated-phrase collection from
+`DataSource/McBopomofo` and all 29 public categorized collections from
+`DataSource/chichi77Collection` into `.kki` indexes. It packages the shared,
+pre-generated `KeyKey.db` for all four Rust input methods without cooking the
+model. Associated-phrase indexes load in the background. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.
@@ -779,7 +777,9 @@ details.
 Requirements are macOS, Xcode with the iOS SDK, the pinned Rust toolchain and
 iOS targets described in the [iOS adapter guide](docs/GUANYINMA_IOS_ADAPTER.md),
 and the existing shared-database verification tools. A simulator runtime is
-needed only for optional host/UI execution. From the repository root, run:
+needed only for optional host/UI execution. The App editor and keyboard extension
+use Guanyinma exclusively; Swift retains frontend and App Group publication code,
+with no legacy input engine, core selector or fallback. From the repository root, run:
 
 ```sh
 make -C Source/Distributions/Takao/DatabaseCooker

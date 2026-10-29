@@ -24,7 +24,7 @@ final class GuanyinmaUserData implements UserPhraseRepository {
 
     GuanyinmaUserData(Context context) {
         this(installModel(context), new File(context.getFilesDir(), FILE_NAME),
-                () -> InputCoreSettings.notifyUserDataChanged(context, InputCore.GUANYINMA));
+                () -> UserDataNotifications.changed(context));
     }
     // The same repository is usable by a headless JNI smoke with temporary files.
     GuanyinmaUserData(File model, File user, Runnable changeListener) {
@@ -40,14 +40,13 @@ final class GuanyinmaUserData implements UserPhraseRepository {
         try { return SharedModelDatabase.install(context); }
         catch (IOException error) { throw new IllegalStateException("無法準備共用字庫", error); }
     }
-    @Override public InputCore core() { return InputCore.GUANYINMA; }
 
     @Override public List<Phrase> phrases() {
         List<UserPhraseArchive.Row> rows = rows();
         tokens.clear();
         ArrayList<Phrase> result = new ArrayList<>();
         for (UserPhraseArchive.Row row : rows) {
-            String reading = SmartMandarinUserData.readingForQuery(row.query());
+            String reading = PhraseReadingCodec.readingForQuery(row.query());
             if (reading == null) continue;
             long token = nextToken++;
             tokens.put(token, row);
