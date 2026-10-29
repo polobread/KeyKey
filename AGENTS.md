@@ -48,7 +48,7 @@
 
 | 平台 | 好打注音執行路徑 | 語言模型來源 |
 |---|---|---|
-| macOS | `OSX-IMK`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
+| macOS | `OSX-IMK`、Guanyinma Rust（預設）或 `OVIMSmartMandarin`／Manjusri C++ | 共用 `KeyKey.db` |
 | Windows | `Windows-TSF` 與 Guanyinma Rust core | 共用 `KeyKey.db` |
 | iOS | `iOS-Keyboard/KeyKeyEngine` Swift adapter 與 Guanyinma Rust core | 鍵盤 extension 內的共用 `KeyKey.db` |
 | Android | `Android-IME` Java／JNI adapter 與 Guanyinma Rust core | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
@@ -132,7 +132,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 
 ## Guanyinma 核心與 Rust 遷移行為基準
 
-- Guanyinma 正式 Rust 程式碼的無 UI 行涵蓋率維持 **92% 以上**，以 `tools/test-coverage.py` 在原生 macOS／system SQLite 的參考量測為準（本機基準為 arm64），排除測試與依賴，僅補有價值的行為測試、不強追 100%，門檻只接在 `guanyinma-core.yml`。
+- Guanyinma 正式 Rust 程式碼的無 UI 行涵蓋率維持 **92% 以上**，以 `tools/test-coverage.py` 在原生 macOS／system SQLite 的參考量測為準（本機基準為 arm64），排除測試與依賴，僅補有價值的行為測試、不強追 100%，門檻只接在 `guanyinma-core.yml`。六平台 Rust workflow 接線與不編譯核心的發布／同步流程界線見 `Source/Guanyinma/README.md` 的測試分工表；macOS 正式打包固定連入 Rust、只跑少量 selector FE 接合測試。
 
 - **核心測試範圍**：Guanyinma 核心專注無 UI 的公開介面與行為契約測試，以 Rust unit／整合、真實 C consumer 與無 UI 的原生對照，涵蓋四法、候選排序、選字學習、組字邊界、設定／語意操作、快照／effects、字型接受回呼及資料生命週期。核心在各支援平台編譯時都要有足夠的無 UI 測試可執行；交叉編譯成功只算編譯，必須在相應原生 runner／無視窗模擬器執行才算測試通過。
 - **六平台 FE 分工**：各平台另測設定與事件映射、座標／宿主交易、原生字型／儲存接合；不要在每個 FE 重跑整套核心演算法矩陣。UI 僅保留少量（數十個）的自動化冒煙案例，於該 FE 接合或修改時執行。核心工作不以大量 FE／實機端到端驗收作完成門檻，不操作使用者桌面或反覆切換其系統輸入法，也不要求使用者逐項代打測試；完整 FE／安裝驗收另行處理。
@@ -140,7 +140,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 - 產品全名為 **chichi77 KeyKey／琦琦輸入法**，英文簡稱 **KeyKey**。**Guanyinma** 是新的 Rust 共用核心代號，目標取代 macOS／Windows 的 Manjusri，以及 iOS、Android、Linux／FreeBSD 的既有核心；各平台原生 frontend 接上新核心。Guanyinma 屬於 KeyKey 的核心模組，目錄固定為 `Source/Guanyinma`；局部 Rust／C ABI 驗證見該目錄 README，分階段範圍見 `docs/GUANYINMA_IMPLEMENTATION_PLAN.md`。
 
 - 核心演算法疑義以 macOS Manjusri／Formosa／OpenVanilla 為主要來源；其他平台既有核心與六平台 frontend 作接合及差異參考。核心按互動行為與狀態分類，不新增 OS 專屬演算法分支。平台預設值、實體事件辨識與宿主操作留在 frontend。
-- Guanyinma 已提供四種輸入法的共用 session；好打注音組句、候選排序、選詞及整詞擠字以 macOS Manjusri 為準。組字音節上限由 FE 設定 **10～20**，到達或超過上限才擠字由 `shift_at_limit` 行為設定；使用者詞庫及學習使用獨立 Guanyinma DB，按 FE 行為設定啟用；reset 保留自訂詞，舊資料只明確唯讀異檔匯入，不覆寫唯一副本。macOS 已有同一 FE 的雙核心開發建置與一般設定開關，預設選 Manjusri；context proxy 在組字、候選與待送 commit 完成後才切換，不重播事件。使用者資料按實際核心分開，過期 backend token 的詞庫列編輯必須拒絕。建置與原生隔離測試見 `docs/GUANYINMA_MACOS_ADAPTER.md`；IMK 宿主與其他 frontend 接合仍待完成。macOS 可匯入舊 MJSR 並輸出完整 Guanyinma JSON 備份；容器解碼留在 FE，共用 `UserArchive`／`import_user_data` 先驗證再原子提交，備份不匯入 generation／revision，不覆蓋唯一舊副本。`behaviors` 可開關忽略 Caps Lock 與數字鍵盤直接送字；主鍵盤不能因全域 NumLock 被誤判。單按 Shift 沿用 frontend 判定，再送共用中英切換操作。普通 Rust unit／整合／C ABI 測試驗證實作契約，不讀取遷移基準。
+- Guanyinma 已提供四種輸入法的共用 session；好打注音組句、候選排序、選詞及整詞擠字以 macOS Manjusri 為準。組字音節上限由 FE 設定 **10～20**，到達或超過上限才擠字由 `shift_at_limit` 行為設定；使用者詞庫及學習使用獨立 Guanyinma DB，按 FE 行為設定啟用；reset 保留自訂詞，舊資料只明確唯讀異檔匯入，不覆寫唯一副本。macOS 標準建置包含雙核心與一般設定開關，未設定偏好時預設 Rust，保留既有明確選擇；context proxy 在組字、候選與待送 commit 完成後才切換，不重播事件。使用者資料按實際核心分開，過期 backend token 的詞庫列編輯必須拒絕。建置與原生隔離測試見 `docs/GUANYINMA_MACOS_ADAPTER.md`；IMK 宿主與其他 frontend 接合仍待完成。macOS 可匯入舊 MJSR 並輸出完整 Guanyinma JSON 備份；容器解碼留在 FE，共用 `UserArchive`／`import_user_data` 先驗證再原子提交，備份不匯入 generation／revision，不覆蓋唯一舊副本。`behaviors` 可開關忽略 Caps Lock 與數字鍵盤直接送字；主鍵盤不能因全域 NumLock 被誤判。單按 Shift 沿用 frontend 判定，再送共用中英切換操作。普通 Rust unit／整合／C ABI 測試驗證實作契約，不讀取遷移基準。
 - 快捷鍵辨識及綁定留在 FE；核心提供 `set_full_width(enabled: true/false)`／`toggle_full_width` 與 `set_english(enabled: true/false)`／`toggle_english` 等語意操作。同值 setter 冪等，核心不綁 Shift+Space 或角括號翻頁。macOS 設定／事件覆蓋見 `docs/GUANYINMA_MACOS_BEHAVIOR_COVERAGE.md`；真正 TIS／IMK 宿主與隔離還原流程見 `docs/GUANYINMA_MACOS_IMK_HOST_TEST.md`，不能用 unit 或 mock client 代替。
 - 六平台候選可顯示性由 FE 經 `CandidateFilter`／`guanyinma_session_open_with_candidate_filter` 提供；四種輸入法在候選、前綴上限、分頁與好打 graph 之前過濾，不在 UI 另刪候選。macOS 沿用既有字型／編碼服務，iOS 接上原生 CoreText 判斷，Android 接上原生 Paint 字型判斷，Windows 接上 DirectWrite fallback／字集判斷；Linux 共用 Fcitx 5 frontend 已加入 PangoFT2／Fontconfig 與既有注音字集 callback；FreeBSD 原生接合與各桌面宿主驗證仍各自記錄。政策固定於 session，變更時在安全邊界重新建立；不寫入使用者備份。
 - **iOS Guanyinma 單核心**：鍵盤 extension 與 App 實體鍵盤編輯器共用 `KeyboardInputEngine`，固定使用 Rust，不建置舊 Swift 解析／walker／排序／學習引擎，不提供核心切換或失敗回退。Swift 僅保留 FE 型別、事件與宿主效果接合。App Group 的 `SharedPhrasePublication` 只由 App 寫入，extension 唯讀同步至私有 `GuanyinmaUser.db`，維持不要求完整取用；詞庫發布沒有學習演算法。舊詞庫與學習檔不自動改刪，保留明確 MJSR 自訂詞交換。接合與建置入口見 `docs/GUANYINMA_IOS_ADAPTER.md`；host smoke、iOS 編譯與真正宿主驗證分開記錄。

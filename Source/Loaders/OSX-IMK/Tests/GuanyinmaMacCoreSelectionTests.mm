@@ -16,6 +16,24 @@
 #include <memory>
 #include <stdexcept>
 
+// A memory-only preference fixture. No real preference domain is read/written.
+@interface CorePreferenceDefaults : NSUserDefaults {
+    id _coreValue;
+    NSUInteger _writeCount;
+}
+- (void)useFixtureValue:(id)value;
+- (NSUInteger)writeCount;
+@end
+@implementation CorePreferenceDefaults
+- (void)useFixtureValue:(id)value { [_coreValue release]; _coreValue = [value retain]; }
+- (id)objectForKey:(NSString*)key { return [key isEqualToString:@"UseGuanyinmaCore"] ? _coreValue : nil; }
+- (BOOL)boolForKey:(NSString*)key { return [[self objectForKey:key] boolValue]; }
+- (void)setObject:(id)value forKey:(NSString*)key { ++_writeCount; }
+- (void)removeObjectForKey:(NSString*)key { ++_writeCount; }
+- (NSUInteger)writeCount { return _writeCount; }
+- (void)dealloc { [_coreValue release]; [super dealloc]; }
+@end
+
 using namespace OpenVanilla;
 namespace fs = std::filesystem;
 static size_t checks;
@@ -117,9 +135,33 @@ static GuanyinmaCoreContextFactory factory(Counts& counts) {
         return GuanyinmaCoreDelegate{new Delegate(counts, requested), requested, ""};
     };
 }
+static void testDefaultPreferenceAndExplicitLegacyChoice() {
+    CorePreferenceDefaults* defaults = [[CorePreferenceDefaults alloc] init];
+    require(GuanyinmaRequestedCoreFromDefaults(defaults), "missing frontend preference defaults to Rust");
+    auto implicit = GuanyinmaCreateCoreSelection();
+    require(GuanyinmaCoreSelectionStatus(implicit).requested, "new selector defaults to Rust");
+    [defaults useFixtureValue:@NO];
+    require(!GuanyinmaRequestedCoreFromDefaults(defaults), "explicit existing legacy preference remains native");
+    Counts counts;
+    auto selection = GuanyinmaCreateCoreSelection(GuanyinmaRequestedCoreFromDefaults(defaults));
+    Harness h;
+    h.install(GuanyinmaCreateSwitchingContext("SmartMandarin", selection, factory(counts)));
+    require(!h.status().active && counts.made[0] == 1, "stored legacy choice creates the native delegate");
+    h.press('x');
+    [defaults useFixtureValue:@YES];
+    GuanyinmaRequestCore(selection, GuanyinmaRequestedCoreFromDefaults(defaults));
+    h.press('z');
+    require(!h.status().active && h.status().pending && h.visible() == "舊",
+            "explicit preference change preserves active native composition");
+    h.press(OVKeyCode::Return); h.press('x');
+    require(h.status().active && h.visible() == "新" && h.committed == "舊",
+            "Rust preference applies after the existing host commit is consumed");
+    require([defaults writeCount] == 0, "default selection never persists or overwrites user choices");
+    [defaults release];
+}
 static void testStableBoundaries() {
     Counts counts;
-    auto selection = GuanyinmaCreateCoreSelection();
+    auto selection = GuanyinmaCreateCoreSelection(false);
     Harness h;
     h.install(GuanyinmaCreateSwitchingContext("SmartMandarin", selection, factory(counts)));
     require(!h.status().active && counts.made[0] == 1, "initial native context");
@@ -152,7 +194,7 @@ static void testStableBoundaries() {
 }
 static void testCandidateCallbacksAndNativeGuards() {
     Counts counts;
-    auto selection = GuanyinmaCreateCoreSelection();
+    auto selection = GuanyinmaCreateCoreSelection(false);
     Harness h;
     h.install(GuanyinmaCreateSwitchingContext("SmartMandarin", selection, factory(counts)));
     h.press('x'); h.press('o');
@@ -195,7 +237,7 @@ static void testCandidateCallbacksAndNativeGuards() {
 }
 static void testSharedContextsAndFailure() {
     Counts counts;
-    auto selection = GuanyinmaCreateCoreSelection();
+    auto selection = GuanyinmaCreateCoreSelection(false);
     Harness first, second;
     first.install(GuanyinmaCreateSwitchingContext("SmartMandarin", selection, factory(counts)));
     second.install(GuanyinmaCreateSwitchingContext("Generic-cj-cin", selection, factory(counts)));
@@ -214,7 +256,7 @@ static void testSharedContextsAndFailure() {
     std::uint64_t config = 1;
     size_t attempts = 0;
     Harness failing;
-    auto failures = GuanyinmaCreateCoreSelection();
+    auto failures = GuanyinmaCreateCoreSelection(false);
     failing.install(GuanyinmaCreateSwitchingContext("SmartMandarin", failures,
         [&](bool requested) {
             if (requested) { ++attempts; return GuanyinmaCoreDelegate{NULL, false, "unavailable core"}; }
@@ -306,7 +348,7 @@ protected:
 };
 static void testActualPVDispatch(const fs::path& root) {
     Counts counts;
-    auto selection = GuanyinmaCreateCoreSelection();
+    auto selection = GuanyinmaCreateCoreSelection(false);
     TemporaryPolicy policy(root);
     PVLoaderService service("zh_TW");
     PVLoader loader(&policy, &service, {});
@@ -344,7 +386,7 @@ static void testActualPVDispatch(const fs::path& root) {
             "actual PV clear preserves stable proxy and permits requested native core");
 }
 static void testUnavailableInitialCoreAndBorrowedLifetime() {
-    auto selection = GuanyinmaCreateCoreSelection();
+    auto selection = GuanyinmaCreateCoreSelection(false);
     Harness unavailable;
     unavailable.install(GuanyinmaCreateSwitchingContext("SmartMandarin", selection,
         [](bool) { return GuanyinmaCoreDelegate{NULL, false, "native unavailable"}; }));
@@ -514,6 +556,7 @@ int main(int argc, char** argv) {
     @autoreleasepool {
         try {
             require(argc == 3, "usage: GuanyinmaMacCoreSelectionTests MODEL TEMP_PROFILE_DIRECTORY");
+            testDefaultPreferenceAndExplicitLegacyChoice();
             testStableBoundaries();
             testCandidateCallbacksAndNativeGuards();
             testSharedContextsAndFailure();

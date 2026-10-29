@@ -1,41 +1,41 @@
 # Guanyinma macOS 接合
 
-這是第五階段的 macOS frontend 接合入口。同一個 App 可同時包含 Guanyinma 與原 Manjusri／Generic，四種中文輸入法共用既有 FE，透過一般設定切換。預設選擇原核心；其他平台接合及真正 IMK 宿主驗收仍未完成。
+這是 macOS frontend 的 Guanyinma 接合入口。標準 App 同時包含 Guanyinma 與原 Manjusri／Generic，四種中文輸入法共用既有 FE，透過一般設定切換。未設定核心偏好時預設使用 Rust；既有明確選擇 Manjusri 的偏好保留。各平台宿主及正式安裝驗收分別記錄。
 
 ## 啟用與建置
 
 雙核心 App 的建置與選擇分開：
 
-- `Takao-Guanyinma.xcconfig` 包含既有 macOS 設定並啟用 `KEYKEY_ENABLE_GUANYINMA=1`。同一個 OSX-IMK target 連入兩種核心，不建立第二個 FE／App。
-- 原 `Takao-macOS.xcconfig` 沿用 target 預設 `0`，仍可建置不需要 Cargo 的原核心版本。
-- 雙核心版本在「一般設定 → 輸入核心」選擇 Manjusri（原核心）或 Guanyinma（Rust），預設 Manjusri。未包含 Rust 或服務無法連線時，這個選擇會停用。
+- 標準 `Takao-macOS.xcconfig` 與 OSX-IMK target 預設啟用 `KEYKEY_ENABLE_GUANYINMA=1`，必須準備鎖定的 Rust 工具鏈。同一 target 連入兩種核心，不建立第二個 FE／App。
+- `Takao-Guanyinma.xcconfig` 保留為包含標準設定的入口；需要原核心開發對照時，可明確傳入 `KEYKEY_ENABLE_GUANYINMA=0`，正式打包 workflow 固定啟用 Rust。
+- 「一般設定 → 輸入核心」仍可選 Manjusri（原核心）或 Guanyinma（Rust）。缺省為 Rust，明確保存的 `NO` 繼續選 Manjusri；未包含 Rust 的開發建置或服務無法連線時，選單會停用。
 
-既有 macOS 建置依賴仍見 [BUILDING.md](../BUILDING.md)。測試開啟版可在儲存庫根目錄執行：
+macOS 建置依賴見 [BUILDING.md](../BUILDING.md)。標準建置可在儲存庫根目錄執行：
 
 ```sh
 # CARGO 可指定已安裝的 cargo executable；Rust 版本由 crate 工具鏈檔固定。
 # 依賴已快取時加 KEYKEY_GUANYINMA_OFFLINE=1。
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target 'Takao (Loader OSX-IMK)' -configuration Release \
-  -xcconfig Takao-Guanyinma.xcconfig \
+  -xcconfig Takao-macOS.xcconfig \
   CODE_SIGNING_ALLOWED=NO build)
 ```
 
-建置腳本在 Xcode 的 derived 目錄產生 Rust staticlib，使用 SDK 的系統 SQLite；不 cooker、不改正式 DB、不將 archive 存入原始碼。現有架構設定為 arm64；腳本也能對應 x86_64，但 Intel 工具鏈、依賴與產物仍須另驗證。
+建置腳本在 Xcode 的 derived 目錄產生 Rust staticlib 與完整 runtime notices，使用 SDK 的系統 SQLite；不 cooker、不改正式 DB、不將 archive 存入原始碼。App 的 `Contents/Resources/GuanyinmaNotices.txt` 隨包保留核心、依賴及來源授權。現有架構設定為 arm64；腳本也能對應 x86_64，但 Intel 工具鏈、依賴與產物仍須另驗證。
 
-選擇由執行中 IMK App 保存於自己的 `NSUserDefaults` `UseGuanyinmaCore`，偏好設定 App 不自行寫另一個 domain 或 loader plist。一般設定經同一個服務取得可用性、實際核心、所選核心及待切換狀態；開發時也可在啟動前設定：
+選擇由執行中 IMK App 保存於自己的 `NSUserDefaults` `UseGuanyinmaCore`，缺省 Rust 不另寫使用者偏好。偏好設定 App 不自行寫另一個 domain 或 loader plist。一般設定經同一服務取得可用性、實際核心、所選核心及待切換狀態；開發時也可在啟動前明確設定：
 
 ```sh
 defaults write io.github.polobread.inputmethod.chichi77 UseGuanyinmaCore -bool YES
 # 啟動前選原核心：改為 NO。執行中切換請用一般設定。
 ```
 
-這是雙核心開發建置入口；不改正式安裝包的既有預設。建置與 ZIP 不代替簽章、安裝或實際文字宿主驗收。
+這是 Guanyinma 工作分支的標準建置預設，不代表已發布版本已變更。建置與 ZIP 不代替簽章、安裝或實際文字宿主驗收。
 
 ## 安裝程式
 
 雙核心版本沿用 [macOS Installer 流程](../Installer/README.md#local-dual-core-installer)：
-以雙核心 xcconfig 建置同一個 App，再執行 `Installer/build.sh APP_PATH`。產物為
+以標準 macOS xcconfig 建置同一個 App，再執行 `Installer/build.sh APP_PATH`。產物為
 真正的 `chichi77KeyKey.pkg` 及 `.pkg.zip`，包含標準安裝腳本與
 `KeyKeyInputSourceTool`，安裝位置固定為
 `/Library/Input Methods/chichi77 KeyKey.app`。
@@ -94,7 +94,7 @@ macOS 中英模式由 FE 保留交易後同步到相符的 active Rust session�
 
 ## 驗證入口與證據界線
 
-CI 的完整 Guanyinma 核心測試統一在 `guanyinma-core.yml`。macOS workflow 在啟用 Guanyinma 的建置中，依既有 Xcode build phase 直接編譯／連結核心，只選少量 FE 串接冒煙；以下較完整的原生 adapter／舊核心對照工具供接合開發時依改動選用，不將整套加入平台 workflow。
+CI 的完整 Guanyinma 核心測試統一在 `guanyinma-core.yml`。`package-macos.yml` 準備鎖定工具鏈、固定啟用 Rust，依既有 Xcode build phase 編譯／連結核心並核對隨包 notices；平台 PR 與打包只選 `--suite selector` 的 FE 接合測試。以下較完整的 adapter／舊核心對照工具供接合開發依改動選用，不將整套加入平台 workflow。
 
 Rust 核心日常驗證使用 [跨平台無 UI 入口](../Source/Guanyinma/README.md#跨平台無-ui-測試入口)。以下是 macOS FE adapter 的獨立驗證，依接合改動選擇受影響項目；使用真正的 adapter、PV buffer、候選 panel 與隔離使用者 DB，不啟動已安裝 IMK、不讀實際偏好或 profile：
 

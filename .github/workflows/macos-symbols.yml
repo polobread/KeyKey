@@ -6,6 +6,8 @@ on:
       - 'Source/Loaders/OSX-IMK/**'
       - 'Source/PreferenceApplications/OSX/**'
       - 'Source/Takao.xcodeproj/**'
+      - 'Source/Takao*.xcconfig'
+      - 'Source/Guanyinma/**'
       - 'Source/Loaders/Windows-TSF/**'
       - 'Source/Loaders/iOS-Keyboard/**'
       - 'Source/Frameworks/**'
@@ -38,3 +40,23 @@ jobs:
         run: python3 Source/Loaders/OSX-IMK/Tests/run-input-mode-tests.py
       - name: Test general settings defaults, persistence and localized layout
         run: python3 Source/Loaders/OSX-IMK/Tests/run-general-input-mode-tests.py
+
+  guanyinma-integration:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read the pinned Rust toolchain
+        id: rust
+        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform macos
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+      - name: Prepare the native frontend test dependency
+        run: brew install openssl@3
+      - name: Test Rust frontend selection without installation
+        run: |
+          sdk="$(xcrun --sdk macosx --show-sdk-path)"
+          SQLITE3_LIB_DIR="$sdk/usr/lib" SQLITE3_INCLUDE_DIR="$sdk/usr/include" \
+            SQLITE3_STATIC=0 SQLITE3_NO_PKG_CONFIG=1 \
+            python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py --suite selector

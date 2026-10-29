@@ -11,6 +11,7 @@ from pathlib import Path
 import platform
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -61,7 +62,20 @@ def ios_target():
 
 def native(args):
     if sys.platform == "win32":
-        compiler = ["cl"]
+        resolved = shutil.which("cl.exe") or shutil.which("cl")
+        if not resolved:
+            raise RuntimeError("MSVC cl.exe is required; initialize the Visual Studio developer environment")
+        cl = Path(resolved).resolve(strict=True)
+        linker = cl.with_name("link.exe")
+        if not linker.is_file():
+            raise RuntimeError("The MSVC linker must be adjacent to cl.exe: " + str(linker))
+        # Git Bash places Git's unrelated link.exe ahead of the MSVC tools.
+        # Resolve through the selected compiler instead of another PATH lookup.
+        environment("CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER", linker)
+        environment("CC", cl)
+        # cl.exe also launches a linker for the real C consumer in this process.
+        os.environ["PATH"] = str(cl.parent) + os.pathsep + os.environ.get("PATH", "")
+        compiler = [str(cl)]
         if args.sqlite_provider == "system":
             prefix = Path(os.environ["VCPKG_INSTALLATION_ROOT"]) / "installed/x64-windows"
             for file in (prefix / "include/sqlite3.h", prefix / "lib/sqlite3.lib", prefix / "bin/sqlite3.dll"):

@@ -332,7 +332,7 @@ using namespace OpenVanilla;
     
     _guanyinmaRequested = NO;
 #if KEYKEY_ENABLE_GUANYINMA
-    _guanyinmaRequested = [[NSUserDefaults standardUserDefaults] boolForKey:@"UseGuanyinmaCore"];
+    _guanyinmaRequested = GuanyinmaRequestedCoreFromDefaults([NSUserDefaults standardUserDefaults]);
     if (!_guanyinmaCoreSelection)
         _guanyinmaCoreSelection = GuanyinmaCreateCoreSelection(_guanyinmaRequested);
     else

@@ -60,7 +60,7 @@ macOS 已接回既有 `OVEncodingService` 的系統字型／編碼服務。iOS �
 
 ## 階段五：原生 frontend 接合（進行中）
 
-macOS 已加入同一 FE 的雙核心建置、一般設定切換、package decorator 與原生 adapter，涵蓋四種輸入法、既有 PV 候選／文字／輸出管線及獨立使用者資料管理。原建置可維持不含 Rust；雙核心建置預設選 Manjusri。runtime proxy 保留原 context，在組字／候選／待送 commit 完成後由新事件切換，不重播事件；不支援的設定在 session 建立前回退。原生設定快照自行擁有資料，避免 plist reload 的借用生命週期問題。
+macOS 標準建置包含 Guanyinma 與 Manjusri 雙核心、一般設定切換、package decorator 與原生 adapter，涵蓋四種輸入法、既有 PV 候選／文字／輸出管線及獨立使用者資料管理。未設定核心偏好時預設 Rust，保留明確保存的 Manjusri 選擇；原核心開發對照須明確停用 Rust 建置。runtime proxy 保留原 context，在組字／候選／待送 commit 完成後由新事件切換，不重播事件；不支援的設定在 session 建立前回退。原生設定快照自行擁有資料，避免 plist reload 的借用生命週期問題。正式打包準備鎖定 Rust 工具鏈、少量 FE smoke 與隨包 runtime notices。
 
 已接上完整 Guanyinma JSON 備份與舊 MJSR 封存匯入；FE 解碼舊容器，核心只接收版本化資料，以原子交易合併自訂詞並替換來源提供的學習範圍。備份排除本機世代資料，匯出失敗保留原檔。建置、隔離測試與回退見 [macOS 接合文件](GUANYINMA_MACOS_ADAPTER.md)。真正 IMK 文字宿主與安裝驗收、其餘 frontend 的接合仍待完成；不將此里程碑視為六平台遷移完成。
 

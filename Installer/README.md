@@ -37,11 +37,10 @@ to attach to a release.
 
 ## Local dual-core installer
 
-For the macOS development build containing both Manjusri/Generic and Guanyinma,
-use the same target and installer script with the dual-core configuration.
-Guanyinma additionally requires the crate's pinned Rust toolchain. The default
-runtime choice remains the original core; General settings switches cores in
-the same frontend.
+The standard macOS build contains both Manjusri/Generic and Guanyinma, using
+the same target and installer script. It requires the crate's pinned Rust
+toolchain and defaults to Guanyinma when no core preference is stored. Explicit
+Manjusri choices are preserved; General settings switches cores in the same frontend.
 
 From the repository root:
 
@@ -50,7 +49,7 @@ python3 update/prepare.py fetch macos
 make -C Source/Distributions/Takao/DatabaseCooker
 (cd Source && xcodebuild -project Takao.xcodeproj \
   -target "Takao (Loader OSX-IMK)" -configuration Release \
-  -xcconfig Takao-Guanyinma.xcconfig CODE_SIGNING_ALLOWED=NO build)
+  -xcconfig Takao-macOS.xcconfig CODE_SIGNING_ALLOWED=NO build)
 (cd Installer && ./build.sh "../Source/build/Release/chichi77 KeyKey.app")
 ```
 

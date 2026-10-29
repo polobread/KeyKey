@@ -4,7 +4,7 @@
 
 Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、C ABI 與四種輸入法的共用 session，包括好打注音組句與 FE 可設定的 10～20 音節邊界。
 其獨立建置／單元及 C consumer 驗證見 [Guanyinma README](Source/Guanyinma/README.md)，
-移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。Windows、iOS、Android、Linux／FreeBSD 固定使用 Guanyinma 單核心；macOS 可用 `Takao-Guanyinma.xcconfig` 建置同一 FE 的雙核心 App，並在一般設定切換，見 [Guanyinma 開發接合](docs/GUANYINMA_MACOS_ADAPTER.md)。
+移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。Windows、iOS、Android、Linux／FreeBSD 固定使用 Guanyinma 單核心；macOS 標準建置包含雙核心，缺省選擇 Rust，保留既有明確選擇及一般設定切換，見 [Guanyinma 接合](docs/GUANYINMA_MACOS_ADAPTER.md)。六平台 workflow 接線與分工表見 [核心 README](Source/Guanyinma/README.md#測試範圍與分工)。
 
 Linux 1.3.7 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。macOS 正式版為
@@ -153,6 +153,7 @@ Windows 日常開發依 [開發型態與測試範圍](Source/Loaders/Windows-TSF
 - macOS 15 以上
 - Xcode
 - Homebrew 的 `openssl@3`
+- `Source/Guanyinma/rust-toolchain.toml` 指定的 Rust 工具鏈與 `aarch64-apple-darwin` target；標準建置直接編譯／連結 Rust
 - Ruby、GNU Make 與 `sqlite3` 命令列工具，用於既有 DatabaseCooker
 
 ### 建置
@@ -173,6 +174,10 @@ DB 到 `chichi77 KeyKey.app`。平台建置不得自行 cooker、重新建模或
 
 目前 macOS build 僅支援 arm64。若要製作 universal binary，需要另行準備
 x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
+
+標準 App 缺省使用 Guanyinma；明確保存的 Manjusri 偏好保留。`Takao-Guanyinma.xcconfig`
+仍是相同設定的入口，僅供原核心開發對照時可明確傳入 `KEYKEY_ENABLE_GUANYINMA=0`。
+正式打包 workflow 固定啟用 Rust，並隨包保留 `GuanyinmaNotices.txt`。
 
 ### 分類關聯詞詞庫
 
@@ -595,6 +600,7 @@ Requirements:
 - macOS 15 or later
 - Xcode
 - Homebrew's `openssl@3`
+- The pinned Rust toolchain and `aarch64-apple-darwin` target from `Source/Guanyinma/rust-toolchain.toml`
 - Ruby, GNU Make, and the `sqlite3` command-line tool for the legacy cooker
 
 ```sh
@@ -605,17 +611,17 @@ xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
   -configuration Release -xcconfig Takao-macOS.xcconfig build
 ```
 
-The cooker creates `Source/Distributions/Takao/CookedDatabase/KeyKey.db`, which
-is bundled into `chichi77 KeyKey.app`. The current configuration is arm64-only;
-a universal build requires a separate x86_64 OpenSSL build and an xcconfig
-change. The cooker also generates the Smart Phonetic unigram model from
-`DataSource/McBopomofo/phrase.occ`, `BPMFMappings.txt`, and the Bopomofo CIN;
-the unpublished Yahoo corpus and the historical PhraseTool/CEROD tools are not
-required. `DataSource/AISyntheticBigram/corpus-v1.txt`, `corpus-v2.txt`,
-`corpus-v3.txt`, typing feedback, and the deduplicated 2,300-article corpus
-add a synthetic bigram and backoff layer. Each line is one sentence; whitespace may
-mark word boundaries, or the cooker can segment unspaced Chinese text with the
-existing unigram scores.
+The default Make target verifies the pre-generated
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`; Xcode copies it into the
+App without cooking the model. Model maintenance uses the separate
+[database workflow](docs/KEYKEY_DATABASE_WORKFLOW.md). The current configuration
+is arm64-only; a universal build requires a separate x86_64 OpenSSL build and an
+xcconfig change.
+
+Standard builds link Guanyinma and default to Rust when no preference is stored,
+while preserving explicit Manjusri choices. Runtime notices accompany the App.
+Only an explicit `KEYKEY_ENABLE_GUANYINMA=0` opts out for legacy development;
+the packaging workflow always enables Rust.
 
 The public `DataSource/chichi77Collection` directory is included in the
 repository. The macOS DatabaseCooker always writes its 29 TSV collections into

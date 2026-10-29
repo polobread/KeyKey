@@ -3,6 +3,7 @@
  * Copyright (c) 2026 Chui-Ping Cheng. MIT License.
  */
 #include "GuanyinmaMacCoreSelection.h"
+#import <Foundation/Foundation.h>
 #include "PVCandidate.h"
 #include "PVTextBuffer.h"
 #include <exception>
@@ -11,6 +12,12 @@
 #include <vector>
 
 using namespace OpenVanilla;
+
+bool GuanyinmaRequestedCoreFromDefaults(NSUserDefaults* defaults)
+{
+    return [defaults objectForKey:@"UseGuanyinmaCore"] == nil ||
+        [defaults boolForKey:@"UseGuanyinmaCore"];
+}
 
 namespace {
 struct ContextState {

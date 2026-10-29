@@ -80,9 +80,28 @@ jobs:
         shell: bash
         run: brew install openssl@3
 
+      - name: Read the pinned Rust toolchain
+        id: rust
+        shell: bash
+        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform macos
+
+      - name: Prepare Rust for the input method
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+          targets: aarch64-apple-darwin
+
       - name: Cook database
         shell: bash
         run: make -C Source/Distributions/Takao/DatabaseCooker
+
+      - name: Test native Guanyinma frontend selection without installation
+        shell: bash
+        run: |
+          sdk="$(xcrun --sdk macosx --show-sdk-path)"
+          SQLITE3_LIB_DIR="$sdk/usr/lib" SQLITE3_INCLUDE_DIR="$sdk/usr/include" \
+            SQLITE3_STATIC=0 SQLITE3_NO_PKG_CONFIG=1 \
+            python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py --suite selector
 
       - name: Build input method
         shell: bash
@@ -101,6 +120,7 @@ jobs:
             -target "Takao (Loader OSX-IMK)" \
             -configuration Release \
             -xcconfig Takao-macOS.xcconfig \
+            KEYKEY_ENABLE_GUANYINMA=1 \
             build
           cd ..
           python3 update/prepare.py stamp-macos "Source/build/Release/chichi77 KeyKey.app"
@@ -110,6 +130,10 @@ jobs:
         run: >-
           python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py
           "Source/build/Release/chichi77 KeyKey.app/Contents/Resources/Databases/KeyKey.db"
+
+      - name: Verify Guanyinma runtime notices are packaged
+        shell: bash
+        run: test -s "Source/build/Release/chichi77 KeyKey.app/Contents/Resources/GuanyinmaNotices.txt"
 
       - name: Build unsigned installer package
         shell: bash

@@ -2,7 +2,7 @@
 
 Guanyinma 是 **chichi77 KeyKey／琦琦輸入法**（英文簡稱 **KeyKey**） 的新共用 Rust 核心，工作目錄為 `Source/Guanyinma`。目前完成唯讀資料層、C ABI、注音解析與四種輸入法的共用 session；好打注音組句、候選排序、手動選詞與組字邊界以 macOS Manjusri 為準。使用者詞庫、候選偏好、Bigram 與字表學習已接入獨立資料層；原生接合依[實作計畫](../../docs/GUANYINMA_IMPLEMENTATION_PLAN.md)進行。
 
-macOS FE 已提供同一 App 的雙核心建置與一般設定切換，預設選原 Manjusri／Generic，沿用既有 PV 候選與文字管線。組字與候選完成後才由新輸入切換 delegate，並保留建立 session 前回退。建置、原生隔離測試、使用者資料及限制見 [macOS 接合文件](../../docs/GUANYINMA_MACOS_ADAPTER.md)；真正 IMK 宿主與其他平台接合仍待驗證。
+macOS 標準 App 同時包含 Guanyinma 與 Manjusri／Generic，未設定偏好時預設 Rust，既有明確選擇仍保留；一般設定可切換核心，沿用既有 PV 候選與文字管線。組字與候選完成後才由新輸入切換 delegate，並保留建立 session 前回退。建置、原生隔離測試、使用者資料及限制見 [macOS 接合文件](../../docs/GUANYINMA_MACOS_ADAPTER.md)；真正 IMK 宿主及各平台發布驗收分別記錄。
 
 ## 目前提供
 
@@ -33,6 +33,19 @@ CI 的權責固定如下；本機核心開發仍可直接執行後面的獨立�
 |---|---|
 | `guanyinma-core.yml` | 完整 Rust unit／整合、C ABI consumer、六平台核心行為與生命週期測試，以及核心格式／警告檢查 |
 | 各平台 FE／建置／發布 workflow | 直接依鎖定工具鏈及 `Cargo.lock` 編譯、連結核心；只跑少量載入／session、設定或事件映射、一次送字及釋放的串接冒煙，再完成該平台原有工作 |
+
+各平台的 Rust 接線入口如下；表列設定已接通，不代表本機已重跑所有雲端 runner：
+
+| 平台 | 平台建置與 FE 接合 | Rust 準備／使用 |
+|---|---|---|
+| macOS | `package-macos.yml`、`macos-symbols.yml` | 鎖定工具鏈；標準 Xcode build phase 連入 Rust，少量 selector 測試，產物保留 runtime notices |
+| Windows | `package-windows.yml`、`windows-shared-data.yml` | x64／x86 targets；共用 PowerShell／CMake 建置必須連入 Rust，聚焦 TSF 接合測試 |
+| iOS | `package-ios.yml`、Xcode Cloud `ci_post_clone.sh` | 三個 Apple targets；App／extension 必須連結 Rust，少量 Swift FE smoke 與既有封裝檢查；Cloud 需預裝 rustup |
+| Android | `package-android.yml`、`android-play-release.yml` | 四個 Android targets／固定 NDK；Rust 靜態庫連入 JNI，少量真 JNI smoke |
+| Linux | `linux-ci.yml` | `prepare-guanyinma.sh` 準備鎖定工具鏈；Fcitx／engine-only 產品建置與套件必須連入 Rust |
+| FreeBSD | `guanyinma-core.yml` 的 FreeBSD 15.1 VM | 原生 VM 執行完整核心測試；FE／ports 沿平台建置流程，儲存庫沒有獨立 FreeBSD FE 封裝 workflow |
+
+只簽署／發布既有產物、同步 feed／CDN、鏡像或測試更新工具的 workflow 不編譯輸入核心，不額外安裝 Rust。
 
 平台 workflow 不執行 Guanyinma 的整套 `cargo test`、`tools/test-core.py` 或完整 C ABI driver，也不轉呼叫完整核心 workflow。核心的排序、學習及組字邊界矩陣集中在核心 workflow；FE 的少量測試只驗證原生接合。後續新增平台接合依此分工小幅加入。
 

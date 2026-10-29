@@ -57,7 +57,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cargo", default=os.environ.get("CARGO", "cargo"))
-    parser.add_argument("--platform", choices=["android", "ios", "windows", "linux", "freebsd"], default="android")
+    parser.add_argument("--platform", choices=["android", "ios", "macos", "windows", "linux", "freebsd"], default="android")
     parser.add_argument("--ndk", type=Path, help="the same configured NDK used by the JNI link (required for Android)")
     parser.add_argument("--offline", action="store_true")
     args = parser.parse_args()
@@ -78,7 +78,7 @@ def main():
     if not rustc:
         raise RuntimeError("The pinned Rust compiler must be available to locate standard-library notices")
     native_unix = args.platform in ("linux", "freebsd")
-    system_sqlite = native_unix or args.platform == "ios"
+    system_sqlite = native_unix or args.platform in ("ios", "macos")
     if native_unix:
         details = subprocess.check_output([rustc, "-vV"], cwd=CORE, env=environment, text=True)
         host = re.search(r"^host: (.+)$", details, re.MULTILINE)
@@ -87,6 +87,8 @@ def main():
         targets = (host.group(1),)
     elif args.platform == "ios":
         targets = ("aarch64-apple-ios", "aarch64-apple-ios-sim", "x86_64-apple-ios")
+    elif args.platform == "macos":
+        targets = ("aarch64-apple-darwin", "x86_64-apple-darwin")
     else:
         targets = TARGETS if args.platform == "android" else ("x86_64-pc-windows-msvc", "i686-pc-windows-msvc")
     features = [] if system_sqlite else ["--features", "bundled-sqlite"]
@@ -132,9 +134,12 @@ def main():
         sections += 1
 
     files = {ROOT / name for name in REPOSITORY_TEXTS if name != "Source/Loaders/Android-IME/LICENSE.txt"}
-    frontend = {"android": "Android-IME", "ios": "iOS-Keyboard", "windows": "Windows-TSF",
+    frontend = {"android": "Android-IME", "ios": "iOS-Keyboard", "macos": None, "windows": "Windows-TSF",
                 "linux": "Linux-IME", "freebsd": "Linux-IME"}[args.platform]
-    files.add(ROOT / ("Source/Loaders/" + frontend + "/LICENSE.txt"))
+    # The existing macOS loader retains the root Yahoo BSD notice; original
+    # additions follow LICENSING.md and the complete LICENSES/MIT.txt text.
+    if frontend is not None:
+        files.add(ROOT / ("Source/Loaders/" + frontend + "/LICENSE.txt"))
     files.update(path for directory in (ROOT / "LICENSES", CORE / "LICENSES")
                  for path in directory.rglob("*") if path.is_file())
     for path in sorted(files):
@@ -160,7 +165,12 @@ def main():
         dependencies.append(label)
         if package["name"] == "libsqlite3-sys":
             sqlite = directory / "sqlite3/sqlite3.c"
-    if args.platform == "ios":
+    if args.platform == "macos":
+        chunks.append(b"\n\nSQLite provider: Apple SDK/system SQLite.\n"
+                      b"No SQLite amalgamation is bundled by this macOS build.\n"
+                      b"SQLite upstream provenance: https://www.sqlite.org/copyright.html\n"
+                      b"SQLite, iconv and other platform libraries are supplied by macOS.\n")
+    elif args.platform == "ios":
         chunks.append(b"\n\nSQLite provider: Apple SDK/system SQLite.\n"
                       b"No SQLite amalgamation or Android NDK runtime is bundled by this iOS build.\n"
                       b"SQLite upstream provenance: https://www.sqlite.org/copyright.html\n"

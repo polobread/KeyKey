@@ -1,8 +1,8 @@
 #!/bin/bash
-# Build the optional Rust backend for the native macOS target. No database cooking.
+# Build the default Rust backend for the native macOS target. No database cooking.
 set -euo pipefail
 
-case "${KEYKEY_ENABLE_GUANYINMA:-0}" in
+case "${KEYKEY_ENABLE_GUANYINMA:-1}" in
     0) exit 0 ;;
     1) ;;
     *) echo "error: KEYKEY_ENABLE_GUANYINMA must be 0 or 1" >&2; exit 1 ;;
@@ -79,3 +79,8 @@ fi
 if ! cmp -s "$staged_archive" "$output_dir/libguanyinma.a"; then
     mv -f "$staged_archive" "$output_dir/libguanyinma.a"
 fi
+notice_args=(--platform macos --cargo "$cargo_bin" --output "$output_dir/GuanyinmaNotices.txt")
+if [[ "${KEYKEY_GUANYINMA_OFFLINE:-0}" == 1 ]]; then
+    notice_args+=(--offline)
+fi
+"${PYTHON3:-python3}" "$core_dir/tools/package-runtime-notices.py" "${notice_args[@]}"

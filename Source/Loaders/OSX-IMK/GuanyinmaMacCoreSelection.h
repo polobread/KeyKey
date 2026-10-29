@@ -13,6 +13,13 @@
 
 class GuanyinmaCoreSelection;
 
+#ifdef __OBJC__
+@class NSUserDefaults;
+// An absent preference selects Rust; an explicit existing NO remains native.
+// Reading the preference does not write or register a value in any domain.
+bool GuanyinmaRequestedCoreFromDefaults(NSUserDefaults* defaults);
+#endif
+
 struct GuanyinmaCoreStatus {
     bool requested = false;
     bool active = false;
@@ -35,7 +42,7 @@ struct GuanyinmaCoreDelegate {
 using GuanyinmaCoreContextFactory = std::function<GuanyinmaCoreDelegate(bool requested)>;
 using GuanyinmaCoreConfigurationGeneration = std::function<std::uint64_t()>;
 
-std::shared_ptr<GuanyinmaCoreSelection> GuanyinmaCreateCoreSelection(bool requested = false);
+std::shared_ptr<GuanyinmaCoreSelection> GuanyinmaCreateCoreSelection(bool requested = true);
 // Every explicit request advances its policy generation, including a request
 // for the same value, so a previous fallback can be retried once at a safe event.
 void GuanyinmaRequestCore(const std::shared_ptr<GuanyinmaCoreSelection>& selection, bool requested);
