@@ -29,6 +29,6 @@ with tempfile.TemporaryDirectory(prefix="keykey-core-administration-") as scratc
     test.write_text(fixture.replace("// ACTUAL_LOADER_METHODS", methods))
     executable = tmp / "administration"
     subprocess.run(["xcrun", "clang", "-fno-objc-arc", "-fblocks",
-                    "-DKEYKEY_ENABLE_GUANYINMA=1", "-framework", "Foundation",
+                    "-framework", "Foundation",
                     str(test), "-o", str(executable)], check=True)
     subprocess.run([str(executable)], check=True)

@@ -40,11 +40,6 @@ static void fixture(const fs::path& path, const char* rows) {
     sql(database, rows);
     sqlite3_close(database);
 }
-class AssociatedPackage : public OVModulePackage {
-public:
-    size_t numberOfModules(OVLoaderService*) override { return 1; }
-    OVModule* moduleAtIndex(size_t, OVLoaderService*) override { return new OVAFAssociatedPhrase; }
-};
 class Harness {
 public:
     std::unique_ptr<OVSQLiteDatabaseService> database;
@@ -72,6 +67,14 @@ public:
         return context->handleDirectText(text, &reading, &composing, &candidates, &loader);
     }
 };
+class InactiveQuery : public OVAFAssociatedPhraseQuery {
+public:
+    bool isActive(OVCandidateService*) const override { return false; }
+    bool lookup(const std::string&, const std::vector<std::string>&,
+        std::vector<std::string>&, std::string&) override {
+        throw std::runtime_error("inactive query provider must not be invoked");
+    }
+};
 static void run(const fs::path& model, const fs::path& root) {
     const auto native = root / "native.db", rust = root / "rust.db", missing = root / "missing.db";
     fixture(native,
@@ -81,9 +84,8 @@ static void run(const fs::path& model, const fs::path& root) {
         "('中','rust-a,shared,,','A'),('中','rust-b,shared','B');");
     fixture(missing, "DROP TABLE associated_phrases;");
     Harness h(native), other(native);
-    std::unique_ptr<OVModulePackage> package(GuanyinmaWrapModulePackage(
-        new AssociatedPackage, rust.u8string(), "", true));
-    std::unique_ptr<OVModule> module(package->moduleAtIndex(0, &h.loader));
+    std::unique_ptr<OVModulePackage> package(GuanyinmaCreateModulePackage(rust.u8string(), ""));
+    std::unique_ptr<OVModule> module(package->moduleAtIndex(4, &h.loader));
     OVPathInfo paths;
     require(module->moduleInitialize(&paths, &h.loader), "initialize native filter");
     PVBasicKeyValueMapImpl values;
@@ -91,8 +93,8 @@ static void run(const fs::path& model, const fs::path& root) {
     config.setKeyStringValue("EnabledCollections", "B,A");
     module->loadConfig(&config, &h.loader);
     std::unique_ptr<OVEventHandlingContext> context(module->createContext());
-    require(h.direct(context.get()), "native path handles a single committed character");
-    require(h.values() == std::vector<std::string>({"native-b", "shared", "native-a"}), "inactive Rust retains original query");
+    require(h.direct(context.get()), "standalone Rust query handles a single committed character");
+    require(h.values() == std::vector<std::string>({"rust-b", "shared", "rust-a", ""}), "associated lookup always uses Rust without an active input context");
     require(h.composing.isCommitted() && h.composing.composedCommittedText() == "中", "FE commits original head");
     h.reset();
 
@@ -110,7 +112,7 @@ static void run(const fs::path& model, const fs::path& root) {
     require(h.values() == std::vector<std::string>({"rust-b", "shared", "rust-a", ""}), "Rust ordering, last source row and dedup reach native panel");
     require(h.panel()->isVisible() && h.panel()->candidatesPerPage() == 9, "FE retains native panel and page size");
     require(other.direct(context.get()), "other candidate service remains usable");
-    require(other.values() == std::vector<std::string>({"native-b", "shared", "native-a"}), "Rust context never captures another service");
+    require(other.values() == std::vector<std::string>({"rust-b", "shared", "rust-a", ""}), "another native candidate service uses the same Rust query contract");
     other.reset(); h.reset();
 
     OVKey choose = h.loader.makeOVKey('@', false, false, false, true);
@@ -129,16 +131,26 @@ static void run(const fs::path& model, const fs::path& root) {
     require(!h.direct(context.get()) && !h.composing.isCommitted(), "empty collection selection disables interception");
     config.setKeyStringValue("EnabledCollections", "B,A"); module->loadConfig(&config, &h.loader);
 
-    std::unique_ptr<OVModulePackage> badPackage(GuanyinmaWrapModulePackage(new AssociatedPackage, missing.u8string(), "", true));
-    std::unique_ptr<OVModule> badModule(badPackage->moduleAtIndex(0, &h.loader));
+    std::unique_ptr<OVModulePackage> badPackage(GuanyinmaCreateModulePackage(missing.u8string(), ""));
+    std::unique_ptr<OVModule> badModule(badPackage->moduleAtIndex(4, &h.loader));
     require(badModule->moduleInitialize(&paths, &h.loader), "initialize error-path native filter");
     badModule->loadConfig(&config, &h.loader);
     std::unique_ptr<OVEventHandlingContext> bad(badModule->createContext());
     require(h.direct(bad.get()) && h.values().empty(), "Rust query failure never falls back to native candidates");
     h.reset();
     input->stopSession(&h.loader);
-    require(h.direct(context.get()), "native path resumes after real Rust deactivation");
-    require(h.values() == std::vector<std::string>({"native-b", "shared", "native-a"}), "deactivated Rust no longer owns routing");
+    require(h.direct(context.get()), "associated frontend remains available after input context deactivation");
+    require(h.values() == std::vector<std::string>({"rust-b", "shared", "rust-a", ""}), "deactivation never redirects associated lookup to the native database");
+    h.reset();
+    PVLoaderService noDatabase("zh_TW");
+    OVAFAssociatedPhrase inactive;
+    inactive.setQueryProvider(std::make_shared<InactiveQuery>());
+    require(inactive.moduleInitialize(&paths, &noDatabase),
+            "provider frontend initializes without a native SQL database service");
+    inactive.loadConfig(&config, &noDatabase);
+    std::unique_ptr<OVEventHandlingContext> inactiveContext(inactive.createContext());
+    require(!h.direct(inactiveContext.get()) && h.values().empty() && !h.composing.isCommitted(),
+            "inactive provider neither prepares native SQL nor falls back to native candidates");
 }
 int main(int argc, char** argv) {
     @autoreleasepool {

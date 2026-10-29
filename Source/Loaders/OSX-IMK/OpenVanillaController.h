@@ -32,7 +32,6 @@ using namespace OpenVanilla;
 }
 + (void)setActiveContext:(OpenVanillaController*)context sender:(id)sender;
 + (BOOL)hasPendingComposition;
-+ (OVCandidateService *)activeInputCoreCandidateService;
 #pragma mark Send string to client.
 + (void)sendComposedStringToCurrentlyActiveContext:(NSString*)text;
 - (void)sendComposedStringToClient:(NSString*)text sender:(id)sender;

@@ -189,11 +189,6 @@ static void OVCLaunchApplication(const string& value)
 	[tmp release];
 }
 
-+ (OVCandidateService *)activeInputCoreCandidateService
-{
-    return OVCActiveContext && OVCActiveContext->_context ?
-        OVCActiveContext->_context->candidateService() : NULL;
-}
 
 + (BOOL)hasPendingComposition
 {
@@ -767,12 +762,9 @@ static void OVCLaunchApplication(const string& value)
         if (!OVCShouldEnterEngine(key))
             return NO;
 
-#if KEYKEY_ENABLE_GUANYINMA
         // The native panel compares selection keys without keypad identity.
-        // Let the selected Rust behavior receive actual printable keypad input.
-        if (GuanyinmaPrepareCandidatePanelForKey(&key, _context->candidateService()))
-            [[OpenVanillaLoader sharedInstance] preserveInputCoreForCandidateEvent:_context->candidateService()];
-#endif
+        // Let the Rust behavior receive actual printable keypad input.
+        GuanyinmaPrepareCandidatePanelForKey(&key, _context->candidateService());
         // A session from another host may still carry its earlier mode.
         // The semantic setter is a fast no-op for an already Chinese session.
         if (![self _syncEnglishModeToCore:NO]) {

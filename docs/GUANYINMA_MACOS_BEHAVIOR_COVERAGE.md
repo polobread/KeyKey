@@ -1,6 +1,6 @@
 # Guanyinma macOS 四種輸入法行為覆蓋
 
-本表對照 macOS 的 Manjusri／Formosa／OpenVanilla 與同一 FE 的 Guanyinma。普通 unit、整合與原生對照測試驗證目前實作；`tests/fixtures/core-functional/` 仍只作手動遷移參考，不用作日常或發布 gate。來源 DB 維持唯讀，測試使用獨立使用者資料。
+本表以 macOS 的 Manjusri／Formosa／OpenVanilla 為行為來源，記錄固定使用 Guanyinma Rust 核心的 FE 接合。普通 unit、整合與原生 adapter 測試驗證目前公開介面契約；舊核心來源對照須明確指定 `--migration-reference`，`tests/fixtures/core-functional/` 也只作手動遷移參考，兩者均不作日常或發布 gate。來源 DB 維持唯讀，測試使用獨立使用者資料。
 
 ## 驗證分工
 
@@ -36,7 +36,7 @@ macOS 既有全半形及繁簡選單仍經共同的原生 output-filter 管線�
 | `ComposingTextBufferSize` | 10～20 | 不適用 | 完整詞段擠出，macOS 超過上限才擠字 |
 | `ShiftKeyAlwaysCommitUppercaseCharacters` | 對應 `shift_always_uppercase` | 不適用 | FE 先完成 macOS 字元轉譯，核心處理明確大寫政策 |
 
-`ClearComposingTextWithEscUserChoice` 是 Windows 舊設定遷移標記，不改 macOS 的 Esc 設定規則。無效選字鍵、壞資料路徑等仍需回報或在新 session 前回退，不能靜默改成另一個有效設定。
+`ClearComposingTextWithEscUserChoice` 是 Windows 舊設定遷移標記，不改 macOS 的 Esc 設定規則。無效選字鍵、壞資料路徑等須拒絕並回報；現有 session 遇到無效設定更新時保留最後有效設定，不切換另一個核心或靜默改成另一個有效設定。
 
 ## 倉頡與簡易設定
 
@@ -44,7 +44,7 @@ macOS 既有全半形及繁簡選單仍經共同的原生 output-filter 管線�
 |---|---|
 | `ComposeWhileTyping` | `realtime`；即時候選與錯碼清除互斥 |
 | `PrefixCandidates` | 倉頡 `prefix`；完整碼在前，過濾後補最多 36 字 |
-| `ClearReadingBufferAtCompositionError` | `clear_on_error`；倉頡缺省開、簡易缺省關 |
+| `ClearReadingBufferAtCompositionError` | `clear_on_error`；未存值時兩法沿用舊引擎的開啟預設；簡易設定頁初始為關，已存 FE 值優先；即時候選時不清碼 |
 | `ShouldCommitAtMaximumRadicalLength` | `query_at_maximum`；完整五碼前綴預覽不誤送字 |
 | `MaximumRadicalLength` | `maximum_radical_length`；省略使用 5／2 |
 | `UseDynamicFrequency` | `learning.table_learning` 及 `learn_selection`；明確選字才記錄 |
@@ -67,8 +67,8 @@ macOS 既有全半形及繁簡選單仍經共同的原生 output-filter 管線�
 | 選字學習 | 明確候選記錄、前綴不記、繼續字根的隱式送字不記、跨 session 同步與 stale view 拒絕 |
 | 修飾鍵 | macOS 真實 Shift／Caps Lock 文字、已由 FE 放行的 Ctrl 標點、候選 non-panel 拒絕、直接文字 |
 | 數字鍵盤 | 使用者指定的 `literal_keypad` 行為；主鍵盤不因全域 NumLock 被誤判 |
-| 宿主與切換 | 保留交易、重入／失敗、未完成讀音、候選擁有權、組字完才換核心、焦點返回、重複生命週期回呼 |
-| 使用者資料 | 自訂詞 CRUD、獨立 DB、reset 保留詞、MJSR／JSON 匯入匯出與過期 backend token 拒絕 |
+| 宿主與設定 | 保留交易、重入／失敗、未完成讀音、候選擁有權、安全邊界更新設定、焦點返回、重複生命週期回呼 |
+| 使用者資料 | 自訂詞 CRUD、Guanyinma DB、reset 保留詞、明確 MJSR／JSON 匯入匯出，固定 Rust backend token 並拒絕舊核心 token |
 | 共同 FE | 一般設定三語完整視窗、候選窗樣式／比例／配色、原生 output／around filters、符號與中英模式 |
 
 macOS Shift 字母事件由 `NSEvent.characters` 提供實際大寫字元；原核心到語意文字的反轉規則留在 macOS FE。人造的「小寫 keyCode 搭 Shift」不是這條實體事件路徑，不據此改變共用核心的明確文字契約。
@@ -80,14 +80,24 @@ macOS Shift 字母事件由 `NSEvent.characters` 提供實際大寫字元；原�
 (cd Source/Guanyinma && cargo test --locked)
 (cd Source/Guanyinma && python3 tests/run_c_abi_test.py --release)
 
-# 原生四法逐事件對照：只讀正式 DB、隔離學習資料
-python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-native-behavior-tests.py \
-  --library /absolute/path/to/libguanyinma.a
-
-# adapter／核心切換與使用者資料
-python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py --library /absolute/path/to/libguanyinma.a
+# FE 單核心 package／設定／使用者資料接合；依改動選擇 suite
+python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py \
+  --suite integration --library /absolute/path/to/libguanyinma.a
+python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py \
+  --suite archive --library /absolute/path/to/libguanyinma.a
 python3 Source/Loaders/OSX-IMK/Tests/run-input-mode-tests.py
 python3 Source/Loaders/OSX-IMK/Tests/run-general-preferences-window-tests.py
 ```
 
-原生對照測試直接執行目前 macOS 原核心與 Rust adapter，不讀取或更新 functional baseline。unit、原生隔離管線、實際 IMK 文字宿主、建置產物、安裝包及正式簽章是不同證據層級；未完成的層級不能由另一層替代。正式建置及封裝入口見 [macOS 接合文件](GUANYINMA_MACOS_ADAPTER.md)。
+平台 workflow 只跑少量 `integration` FE 接合；完整 Rust／C ABI 核心矩陣仍由 `guanyinma-core.yml` 負責。上面的 archive 測試使用固定格式資料，不建置舊核心。
+
+需要遷移分析時，手動加上 `--migration-reference` 才編譯歷史來源 oracle：
+
+```sh
+python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-native-behavior-tests.py \
+  --migration-reference --library /absolute/path/to/libguanyinma.a
+python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py \
+  --suite archive --migration-reference --library /absolute/path/to/libguanyinma.a
+```
+
+來源 oracle 不讀取或更新 functional baseline，也不加入日常、CI 或發布驗收。unit、原生隔離管線、實際 IMK 文字宿主、建置產物、安裝包及正式簽章是不同證據層級；未完成的層級不能由另一層替代。正式建置及封裝入口見 [macOS 接合文件](GUANYINMA_MACOS_ADAPTER.md)。

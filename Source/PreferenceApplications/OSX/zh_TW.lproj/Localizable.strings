@@ -94,15 +94,3 @@
 "Chinese" = "中文";
 
 "English" = "英文";
-
-/* Input core selection is owned by the running IMK service. */
-"Input core:" = "輸入核心：";
-"Manjusri (Original core)" = "Manjusri（原核心）";
-"Guanyinma (Rust)" = "Guanyinma（Rust）";
-"Connecting to the input core service…" = "正在連接輸入核心服務…";
-"Input core service is unavailable." = "目前無法連接輸入核心服務。";
-"Current core: %@." = "目前核心：%@。";
-"This app does not include the Rust core." = "此 App 未包含 Rust 核心。";
-"Will switch to %@ after the current composition finishes." = "目前組字完成後，將切換至 %@。";
-"Applying input core choice…" = "正在套用核心選擇…";
-"Choose the input core used by the running KeyKey app." = "選擇執行中的 KeyKey App 使用的輸入核心。";

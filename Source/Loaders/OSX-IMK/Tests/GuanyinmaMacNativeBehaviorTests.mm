@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
-// Targeted ordinary native oracle, independent of migration baseline files.
+// Manual migration source oracle, independent of frozen baseline files.
 #import <Foundation/Foundation.h>
 #include "GuanyinmaMacAdapter.h"
 #include "GuanyinmaMacUserData.h"

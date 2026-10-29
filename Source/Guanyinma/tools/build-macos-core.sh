@@ -1,12 +1,6 @@
 #!/bin/bash
-# Build the default Rust backend for the native macOS target. No database cooking.
+# Build the required Rust core for the native macOS target. No database cooking.
 set -euo pipefail
-
-case "${KEYKEY_ENABLE_GUANYINMA:-1}" in
-    0) exit 0 ;;
-    1) ;;
-    *) echo "error: KEYKEY_ENABLE_GUANYINMA must be 0 or 1" >&2; exit 1 ;;
-esac
 
 core_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 : "${DERIVED_FILE_DIR:?Build through Xcode or provide DERIVED_FILE_DIR}"

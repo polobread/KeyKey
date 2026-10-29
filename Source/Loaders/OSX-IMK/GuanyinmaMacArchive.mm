@@ -7,11 +7,6 @@
  */
 #include "GuanyinmaMacArchive.h"
 
-#ifndef KEYKEY_ENABLE_GUANYINMA
-#define KEYKEY_ENABLE_GUANYINMA 0
-#endif
-
-#if KEYKEY_ENABLE_GUANYINMA
 #include "../../Guanyinma/include/guanyinma.h"
 #include "GuanyinmaMacReadingCodec.h"
 #include <sqlite3.h>
@@ -581,21 +576,3 @@ bool GuanyinmaWriteArchive(NSString* path, NSDictionary* archive,
     }
     return true;
 }
-
-#else
-
-NSDictionary* GuanyinmaReadArchive(NSString*, NSError** error)
-{
-    if (error) *error = [NSError errorWithDomain:@"GuanyinmaArchiveError" code:1
-        userInfo:[NSDictionary dictionaryWithObject:@"Guanyinma is not enabled in this build"
-            forKey:NSLocalizedDescriptionKey]];
-    return nil;
-}
-
-bool GuanyinmaWriteArchive(NSString*, NSDictionary*, NSArray*, NSError** error)
-{
-    GuanyinmaReadArchive(nil, error);
-    return false;
-}
-
-#endif

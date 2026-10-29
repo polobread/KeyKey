@@ -5,9 +5,7 @@
 #include <limits.h>
 static void check(BOOL value) { assert(value); }
 @interface OpenVanillaLoader : NSObject
-@property BOOL guanyinma;
 @property(retain) NSMutableArray* edits;
-- (BOOL)_usesGuanyinmaSmartUserData;
 - (NSString*)userPhraseDBBackendIdentifier;
 - (BOOL)applyUserPhraseEdit:(NSDictionary*)edit expectedBackend:(NSString*)backend;
 - (void)userPhraseDBDeleteRow:(int)row;
@@ -15,7 +13,6 @@ static void check(BOOL value) { assert(value); }
 - (void)userPhraseDBSetPhrase:(NSString*)value atRow:(int)row;
 @end
 @implementation OpenVanillaLoader
-- (BOOL)_usesGuanyinmaSmartUserData { return self.guanyinma; }
 - (void)record:(NSString*)type row:(int)row value:(NSString*)value {
     [self.edits addObject:@{@"backend": [self userPhraseDBBackendIdentifier],
         @"type": type, @"row": @(row), @"value": value ?: @""}];
@@ -29,21 +26,14 @@ int main(void) {
     @autoreleasepool {
         OpenVanillaLoader* server = [[[OpenVanillaLoader alloc] init] autorelease];
         server.edits = [NSMutableArray array];
-        NSString* nativeToken = [[server userPhraseDBBackendIdentifier] copy];
-        check([nativeToken isEqualToString:@"manjusri"]);
-        check([server applyUserPhraseEdit:@{@"type": @"remove", @"row": @2} expectedBackend:nativeToken]);
-        check(server.edits.count == 1 && [server.edits.lastObject[@"backend"] isEqualToString:@"manjusri"]);
-        server.guanyinma = YES;
-        check(![server applyUserPhraseEdit:@{@"type": @"remove", @"row": @2} expectedBackend:nativeToken]);
-        check(![server applyUserPhraseEdit:@{@"type": @"reading", @"row": @0, @"value": @"ㄕˋ"} expectedBackend:nativeToken]);
-        check(server.edits.count == 1);
         NSString* rustToken = [[server userPhraseDBBackendIdentifier] copy];
         check([rustToken isEqualToString:@"guanyinma"]);
+        check([server applyUserPhraseEdit:@{@"type": @"remove", @"row": @2} expectedBackend:rustToken]);
         check([server applyUserPhraseEdit:@{@"type": @"phrase", @"row": @0, @"value": @"士事"} expectedBackend:rustToken]);
         check([server applyUserPhraseEdit:@{@"type": @"reading", @"row": @0, @"value": @"ㄕˋ,ㄕˋ"} expectedBackend:rustToken]);
         check(server.edits.count == 3 && [server.edits.lastObject[@"backend"] isEqualToString:@"guanyinma"]);
         NSUInteger before = server.edits.count;
-        for (id token in @[[NSNull null], @0, @"unknown"]) {
+        for (id token in @[[NSNull null], @0, @"unknown", @"manjusri"]) {
             check(![server applyUserPhraseEdit:@{@"type": @"remove", @"row": @0} expectedBackend:token]);
         }
         check(![server applyUserPhraseEdit:@{@"type": @"remove", @"row": @0} expectedBackend:nil]);
@@ -58,12 +48,9 @@ int main(void) {
             @{@"type": @"phrase", @"row": @0, @"value": @"字", @"extra": @1}
         ]) check(![server applyUserPhraseEdit:edit expectedBackend:rustToken]);
         check(server.edits.count == before);
-        server.guanyinma = NO;
-        check(![server applyUserPhraseEdit:@{@"type": @"phrase", @"row": @0, @"value": @"新"} expectedBackend:rustToken]);
-        check(server.edits.count == before);
-        check([server applyUserPhraseEdit:@{@"type": @"phrase", @"row": @0, @"value": @"原"} expectedBackend:nativeToken]);
-        check([server.edits.lastObject[@"backend"] isEqualToString:@"manjusri"]);
-        [nativeToken release]; [rustToken release];
-        puts("PASS: actual loader rejects stale backend row edits and invalid payloads before native/Rust mutation");
+        check([server applyUserPhraseEdit:@{@"type": @"phrase", @"row": @0, @"value": @"新"} expectedBackend:rustToken]);
+        check([server.edits.lastObject[@"backend"] isEqualToString:@"guanyinma"]);
+        [rustToken release];
+        puts("PASS: actual loader accepts only the Rust store token and rejects invalid edits before mutation");
     }
 }

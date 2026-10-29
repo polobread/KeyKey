@@ -1,10 +1,6 @@
 OPENSSL_PREFIX = /opt/homebrew/opt/openssl@3
 
-// Ordinary macOS targets include Guanyinma and select Rust when no core
-// preference exists. Explicit KEYKEY_ENABLE_GUANYINMA=0 is a legacy-only
-// developer build; existing user choices are preserved in dual-core builds.
-KEYKEY_GUANYINMA_LDFLAGS_0 =
-KEYKEY_GUANYINMA_LDFLAGS_1 = "$(DERIVED_FILE_DIR)/Guanyinma/libguanyinma.a" -liconv
+// Guanyinma is the required input core; the IMK target always builds and links it.
 // Pass KEYKEY_GUANYINMA_OFFLINE=1 when the pinned toolchain and dependencies are cached.
 
 SDKROOT = macosx

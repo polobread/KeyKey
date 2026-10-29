@@ -16,9 +16,9 @@ bool GuanyinmaSupportsInputMethod(const std::string& identifier)
         identifier == "Generic-simplex-cin";
 }
 
-#if KEYKEY_ENABLE_GUANYINMA
 #import <Foundation/Foundation.h>
 #include <PlainVanilla/PVCandidate.h>
+#include <PlainVanilla/PVTextBuffer.h>
 #include "../../ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.h"
 #include "../../Guanyinma/include/guanyinma.h"
 #include <algorithm>
@@ -142,7 +142,7 @@ static bool ValidateConfiguration(const std::string& identifier, OVKeyValueMap* 
         if (!punctuation.empty() && punctuation != "Punctuations-punctuations-cin" &&
             punctuation != "Punctuations-cj-mixedwidth-cin" &&
             punctuation != "Punctuations-cj-halfwidth-cin")
-            return Reject(error, "the selected punctuation override requires the legacy core");
+            return Reject(error, "the selected punctuation override is not supported by Guanyinma");
     }
     return true;
 }
@@ -407,6 +407,26 @@ struct ModuleConfiguration {
     void capture(OVKeyValueMap* value) { config = OVKeyValueMap(new ConfigurationMap(value)); }
 };
 
+// A configuration replacement also changes the native font policy. Do not
+// replace it while PV still owns visible input, a candidate panel or a commit
+// awaiting consumption by the host. Unknown buffer implementations cannot
+// establish that transaction boundary.
+static bool NativeBoundaryQuiet(OVTextBuffer* reading, OVTextBuffer* composing,
+    OVCandidateService* candidates)
+{
+    PVTextBuffer* nativeReading = dynamic_cast<PVTextBuffer*>(reading);
+    PVTextBuffer* nativeComposing = dynamic_cast<PVTextBuffer*>(composing);
+    PVCandidateService* nativeCandidates = dynamic_cast<PVCandidateService*>(candidates);
+    if (!nativeReading || !nativeComposing || !nativeCandidates ||
+        !reading->isEmpty() || !composing->isEmpty() ||
+        nativeReading->isCommitted() || nativeComposing->isCommitted()) return false;
+    auto* vertical = nativeCandidates->accessVerticalCandidatePanel();
+    auto* horizontal = nativeCandidates->accessHorizontalCandidatePanel();
+    auto* plain = nativeCandidates->accessPlainTextCandidatePanel();
+    return !vertical->isVisible() && !vertical->isInControl() &&
+        !horizontal->isVisible() && !horizontal->isInControl() && !plain->isVisible();
+}
+
 class GuanyinmaContext;
 // macOS factories, event handling and lifecycle calls use the existing
 // serialized FE event thread/loader lock. This registry is not a cross-thread
@@ -453,7 +473,6 @@ public:
         // Bind before any input operation; opening/snapshotting has no queries
         // that need candidate acceptance. Repeated activation preserves input.
         bindCandidateService(service);
-        refreshConfiguration(service);
     }
 
     virtual void stopSession(OVLoaderService* service)
@@ -485,7 +504,6 @@ public:
                 reportError(service);
             }
         }
-        refreshConfiguration(service);
     }
 
     virtual bool handleKey(OVKey* key, OVTextBuffer* reading, OVTextBuffer* composing,
@@ -493,7 +511,7 @@ public:
     {
         if (!key) return false;
         bindCandidateService(service);
-        refreshConfiguration(service);
+        refreshConfiguration(service, reading, composing, candidates);
         // Manjusri's macOS Caps Lock policy excludes Ctrl punctuation chords.
         // This is native event classification; the shared core receives only
         // shortcuts that the FE has classified as input-method operations.
@@ -545,6 +563,8 @@ public:
         OVTextBuffer* composing, OVCandidateService* candidates, OVLoaderService* service)
     {
         if (text.empty()) return false;
+        bindCandidateService(service);
+        refreshConfiguration(service, reading, composing, candidates);
         NSString* value = NativeString(text);
         if (!value) { service->beep(); return true; }
         if (!apply([NSDictionary dictionaryWithObjectsAndKeys:
@@ -721,19 +741,21 @@ private:
         service->logger("Guanyinma") << m_error << std::endl;
     }
 
-    void refreshConfiguration(OVLoaderService* service)
+    void refreshConfiguration(OVLoaderService* service, OVTextBuffer* reading,
+        OVTextBuffer* composing, OVCandidateService* candidates)
     {
         if (m_generation == m_sharedConfig->generation) return;
         // Defer changed preferences while a visible session still belongs to
         // the old configuration. The controller preserves it before clear().
         if ([[m_snapshot objectForKey:@"visible_text"] length] ||
-            [[m_snapshot objectForKey:@"candidates"] count]) return;
+            [[m_snapshot objectForKey:@"candidates"] count] ||
+            !NativeBoundaryQuiet(reading, composing, candidates)) return;
         NSDictionary* configuration = Configuration(m_identifier, m_userDatabasePath,
             &m_sharedConfig->config, &m_error);
         if (!configuration) {
-            // Existing sessions retain their last supported configuration. A
-            // newly created context may select legacy before accepting input.
-            // A saved unsupported preference is not a per-keystroke error.
+            // Existing sessions retain their last supported configuration.
+            // Report a rejected generation once, without losing input or
+            // opening a different core.
             m_generation = m_sharedConfig->generation;
             reportError(service);
             return;
@@ -984,19 +1006,14 @@ static OVEventHandlingContext* CreateContext(const std::string& identifier,
     return context;
 }
 
-// Resolve the actual active input context, rather than a saved preference:
-// an existing native context may still be finishing input after a core change.
+// Associated phrase lookup always uses Rust. The surrounding native filter
+// still owns panel display, collection choices, and Shift-number selection.
 class GuanyinmaAssociatedPhraseQuery : public OVAFAssociatedPhraseQuery {
 public:
     explicit GuanyinmaAssociatedPhraseQuery(const std::string& path)
         : m_path(path), m_database(NULL) {}
     virtual ~GuanyinmaAssociatedPhraseQuery() { guanyinma_database_close(&m_database); }
-    virtual bool isActive(OVCandidateService* service) const
-    {
-        for (size_t i = s_contexts.size(); i > 0; --i)
-            if (s_contexts[i - 1]->ownsActiveService(service)) return true;
-        return false;
-    }
+    virtual bool isActive(OVCandidateService*) const { return true; }
     virtual bool lookup(const std::string& head, const std::vector<std::string>& collections,
         std::vector<std::string>& candidates, std::string& error)
     {
@@ -1045,147 +1062,129 @@ private:
     GuanyinmaDatabase* m_database;
 };
 
-class GuanyinmaModule : public OVModule {
+// Initialization errors remain visible through the same FE service. The failed
+// context never starts another engine or sends literal input as a substitute.
+class UnavailableGuanyinmaContext : public OVEventHandlingContext {
 public:
-    GuanyinmaModule(OVModule* legacy, const std::string& modelPath, const std::string& userPath,
-        std::shared_ptr<GuanyinmaCoreSelection> selection = {})
-        : m_legacy(legacy), m_modelPath(modelPath), m_userPath(userPath),
-          m_config(new ModuleConfiguration(NULL)), m_service(NULL), m_usesCore(false),
-          m_selection(std::move(selection)), m_legacyConfigGeneration(0) {}
-    virtual ~GuanyinmaModule() { delete m_legacy; }
-    virtual const std::string identifier() const { return m_legacy->identifier(); }
-    virtual const std::string localizedName(const std::string& locale) { return m_legacy->localizedName(locale); }
-    virtual bool isPreprocessor() const { return m_legacy->isPreprocessor(); }
-    virtual bool isInputMethod() const { return m_legacy->isInputMethod(); }
-    virtual bool isOutputFilter() const { return m_legacy->isOutputFilter(); }
-    virtual bool isAroundFilter() const { return m_legacy->isAroundFilter(); }
-    virtual int suggestedOrder() const { return m_legacy->suggestedOrder(); }
-    virtual AroundFilterDisplayOption aroundFilterPreferredDisplayOption()
-        { return m_legacy->aroundFilterPreferredDisplayOption(); }
-    virtual bool initialize(OVPathInfo* path, OVLoaderService* service)
+    explicit UnavailableGuanyinmaContext(std::string error) : m_error(std::move(error)) {}
+    void startSession(OVLoaderService* service) override { report(service, true); }
+    void clear(OVLoaderService*) override {}
+    bool handleKey(OVKey* key, OVTextBuffer*, OVTextBuffer*, OVCandidateService*,
+        OVLoaderService* service) override
     {
-        m_path = *path;
-        m_service = service;
-        // Do not initialize the legacy Smart module here: it opens native user
-        // databases. Its initialized package already supplied readonly metadata.
+        if (!key || key->isCombinedFunctionKey()) return false;
+        report(service, false);
         return true;
     }
-    virtual void finalize()
+    bool handleDirectText(const std::string& text, OVTextBuffer*, OVTextBuffer*,
+        OVCandidateService*, OVLoaderService* service) override
     {
-        if (m_legacy->isInitialized()) m_legacy->finalize();
+        if (text.empty()) return false;
+        report(service, false);
+        return true;
     }
-    virtual void loadConfig(OVKeyValueMap* config, OVLoaderService* service)
+private:
+    void report(OVLoaderService* service, bool notify)
+    {
+        if (!service) return;
+        service->beep();
+        service->logger("Guanyinma") << m_error << std::endl;
+        if (notify) service->notify("Guanyinma: " + m_error);
+    }
+    const std::string m_error;
+};
+
+static std::string TableProperty(const std::string& identifier, const std::string& modelPath,
+    const std::string& property)
+{
+    GuanyinmaDatabase* database = NULL;
+    if (guanyinma_database_open(reinterpret_cast<const uint8_t*>(modelPath.data()),
+        modelPath.size(), &database) != GUANYINMA_OK) return {};
+    const std::string key = "__property_" + property;
+    GuanyinmaResult* result = NULL;
+    const int32_t status = guanyinma_database_query(database,
+        identifier == "Generic-cj-cin" ? GUANYINMA_QUERY_CANGJIE : GUANYINMA_QUERY_SIMPLEX,
+        reinterpret_cast<const uint8_t*>(key.data()), key.size(), &result);
+    NSDictionary* value = status == GUANYINMA_OK ? ReadResult(result, NULL) : nil;
+    guanyinma_database_close(&database);
+    NSArray* rows = [value objectForKey:@"rows"];
+    return [rows count] ? UTF8String([rows objectAtIndex:0]) : std::string();
+}
+
+class GuanyinmaModule : public OVInputMethod {
+public:
+    GuanyinmaModule(const std::string& identifier, const std::string& modelPath,
+        const std::string& userPath)
+        : m_identifier(identifier), m_modelPath(modelPath), m_userPath(userPath),
+          m_config(new ModuleConfiguration(NULL)), m_service(NULL) {}
+    const std::string identifier() const override { return m_identifier; }
+    const std::string localizedName(const std::string& locale) override
+    {
+        if (IsTable(m_identifier)) {
+            const bool traditional = locale == "zh_TW" || locale == "zh-Hant";
+            const bool simplified = locale == "zh_CN" || locale == "zh-Hans";
+            std::string name = TableProperty(m_identifier, m_modelPath,
+                traditional ? "tcname" : simplified ? "scname" : "ename");
+            if (name.empty() && (traditional || simplified))
+                name = TableProperty(m_identifier, m_modelPath, "cname");
+            return name.empty() ? m_identifier : name;
+        }
+        if (IsSmart(m_identifier))
+            return locale == "zh_TW" || locale == "zh-Hant" ||
+                locale == "zh_CN" || locale == "zh-Hans" ? "智慧注音" : "Smart Mandarin";
+        if (locale == "zh_TW" || locale == "zh-Hant") return "傳統注音";
+        if (locale == "zh_CN" || locale == "zh-Hans") return "传统繁体注音";
+        return "Traditional Mandarin (Bopomofo)";
+    }
+    bool initialize(OVPathInfo*, OVLoaderService* service) override
+    {
+        m_service = service;
+        return true;
+    }
+    void loadConfig(OVKeyValueMap* config, OVLoaderService*) override
     {
         m_config->capture(config);
         ++m_config->generation;
-        bool needsLegacy = m_selection ?
-            GuanyinmaCoreSelectionStatus(m_selection, identifier()).nativeCount > 0 :
-            (!m_usesCore && !ValidateConfiguration(identifier(), config, NULL));
-        if (needsLegacy && m_legacy->isInitialized() && m_legacy->isUsable()) {
-            m_legacy->loadConfig(config, service);
-            m_legacyConfigGeneration = m_config->generation;
-        }
     }
-    virtual void saveConfig(OVKeyValueMap* config, OVLoaderService* service)
-    {
-        // Guanyinma reads the native preferences without rewriting them or
-        // opening any legacy learning store. Legacy fallback keeps its API.
-        bool needsLegacy = m_selection ?
-            GuanyinmaCoreSelectionStatus(m_selection, identifier()).nativeCount > 0 : !m_usesCore;
-        if (needsLegacy && m_legacy->isInitialized() && m_legacy->isUsable())
-            m_legacy->saveConfig(config, service);
-    }
-    virtual OVEventHandlingContext* createContext()
-    {
-        if (m_selection) {
-            return GuanyinmaCreateSwitchingContext(identifier(), m_selection,
-                [this](bool requested) { return createDelegate(requested); },
-                [this]() { return static_cast<std::uint64_t>(m_config->generation); });
-        }
-        GuanyinmaCoreDelegate result = createDelegate(true);
-        return result.context ? result.context : new OVEventHandlingContext;
-    }
-
-    GuanyinmaCoreDelegate createDelegate(bool requested)
+    // Settings are owned and saved by the FE. Reading them does not rewrite
+    // absent defaults, unknown keys, or the old core's profile files.
+    void saveConfig(OVKeyValueMap*, OVLoaderService*) override {}
+    OVEventHandlingContext* createContext() override
     {
         std::string error;
-        if (requested) {
-            OVEventHandlingContext* context = CreateContext(identifier(), m_modelPath,
-                m_userPath, m_config, &error);
-            if (context) {
-                m_usesCore = true;
-                return {context, true, {}};
-            }
-            if (m_service)
-                m_service->logger("Guanyinma") << identifier() << ": " << error
-                    << "; using legacy core before session creation" << std::endl;
-        }
-        if (!m_legacy->isInitialized()) {
-            if (!m_service || !m_legacy->moduleInitialize(&m_path, m_service))
-                return {NULL, false, error.empty() ? "The legacy core could not be initialized" : error};
-        }
-        if (!m_legacy->isUsable())
-            return {NULL, false, error.empty() ? "The legacy core is unavailable" : error};
-        // This delegate has selected the original core. Its own configuration
-        // and user store retain the existing native initialization behavior.
-        // Reusing the original core after a failed Rust request must not flush
-        // its in-memory learned choices before the current session saves them.
-        if (m_legacyConfigGeneration != m_config->generation) {
-            m_legacy->loadConfig(&m_config->config, m_service);
-            m_legacyConfigGeneration = m_config->generation;
-        }
-        OVEventHandlingContext* context = m_legacy->createContext();
-        if (context) m_usesCore = false;
-        return {context, false, context ? error : "The legacy input context is unavailable"};
+        OVEventHandlingContext* context = CreateContext(m_identifier, m_modelPath,
+            m_userPath, m_config, &error);
+        if (context) return context;
+        if (error.empty()) error = "input context could not be created";
+        if (m_service) m_service->logger("Guanyinma") << m_identifier << ": " << error << std::endl;
+        return new UnavailableGuanyinmaContext(error);
     }
-    bool usesCore() const { return m_usesCore; }
-
 private:
-    OVModule* m_legacy;
-    std::string m_modelPath;
-    std::string m_userPath;
+    const std::string m_identifier, m_modelPath, m_userPath;
     std::shared_ptr<ModuleConfiguration> m_config;
-    OVPathInfo m_path;
     OVLoaderService* m_service;
-    bool m_usesCore;
-    std::shared_ptr<GuanyinmaCoreSelection> m_selection;
-    std::size_t m_legacyConfigGeneration;
 };
 
 class GuanyinmaPackage : public OVModulePackage {
 public:
-    GuanyinmaPackage(OVModulePackage* legacy, const std::string& modelPath,
-        const std::string& userPath, std::shared_ptr<GuanyinmaCoreSelection> selection = {})
-        : m_legacy(legacy), m_modelPath(modelPath), m_userPath(userPath),
-          m_selection(std::move(selection)) {}
-    virtual ~GuanyinmaPackage() { delete m_legacy; }
-    virtual size_t numberOfModules(OVLoaderService* service)
-        { return m_legacy ? m_legacy->numberOfModules(service) : 0; }
-    virtual OVModule* moduleAtIndex(size_t index, OVLoaderService* service)
+    GuanyinmaPackage(const std::string& modelPath, const std::string& userPath)
+        : m_modelPath(modelPath), m_userPath(userPath), m_finalized(false) {}
+    size_t numberOfModules(OVLoaderService*) override { return m_finalized ? 0 : 5; }
+    OVModule* moduleAtIndex(size_t index, OVLoaderService*) override
     {
-        if (!m_legacy) return NULL;
-        OVModule* module = m_legacy->moduleAtIndex(index, service);
-        OVAFAssociatedPhrase* associated = dynamic_cast<OVAFAssociatedPhrase*>(module);
-        if (associated) {
-            associated->setQueryProvider(std::shared_ptr<OVAFAssociatedPhraseQuery>(
-                new GuanyinmaAssociatedPhraseQuery(m_modelPath)));
-            return module;
-        }
-        if (!module || !GuanyinmaSupportsInputMethod(module->identifier())) return module;
-        return new GuanyinmaModule(module, m_modelPath, m_userPath, m_selection);
+        if (m_finalized || index >= 5) return NULL;
+        static const char* const identifiers[] = {"TraditionalMandarin", "SmartMandarin",
+            "Generic-cj-cin", "Generic-simplex-cin"};
+        if (index < 4) return new GuanyinmaModule(identifiers[index], m_modelPath, m_userPath);
+        OVAFAssociatedPhrase* associated = new OVAFAssociatedPhrase;
+        associated->setQueryProvider(std::shared_ptr<OVAFAssociatedPhraseQuery>(
+            new GuanyinmaAssociatedPhraseQuery(m_modelPath)));
+        return associated;
     }
-    virtual void finalize()
-    {
-        if (!m_legacy) return;
-        m_legacy->finalize();
-        delete m_legacy;
-        m_legacy = NULL;
-    }
+    void finalize() override { m_finalized = true; }
 private:
-    OVModulePackage* m_legacy;
-    std::string m_modelPath;
-    std::string m_userPath;
-    std::shared_ptr<GuanyinmaCoreSelection> m_selection;
+    const std::string m_modelPath, m_userPath;
+    bool m_finalized;
 };
 
 } // namespace
@@ -1196,11 +1195,6 @@ bool GuanyinmaCanUseInputMethod(const std::string& identifier, OVKeyValueMap* co
     return ValidateConfiguration(identifier, config, error);
 }
 
-bool GuanyinmaModuleUsesCore(const OVModule* module)
-{
-    const GuanyinmaModule* wrapped = dynamic_cast<const GuanyinmaModule*>(module);
-    return wrapped && wrapped->usesCore();
-}
 
 OVEventHandlingContext* GuanyinmaCreateInputContext(const std::string& identifier,
     const std::string& modelPath, const std::string& userDatabasePath,
@@ -1227,64 +1221,8 @@ bool GuanyinmaSetEnglishModeForService(OVCandidateService* candidateService,
     return true;
 }
 
-OVModulePackage* GuanyinmaWrapModulePackage(OVModulePackage* initializedPackage,
-    const std::string& modelPath, const std::string& userDatabasePath, bool enabled)
+OVModulePackage* GuanyinmaCreateModulePackage(const std::string& modelPath,
+    const std::string& userDatabasePath)
 {
-    return enabled && initializedPackage ?
-        new GuanyinmaPackage(initializedPackage, modelPath, userDatabasePath) : initializedPackage;
+    return new GuanyinmaPackage(modelPath, userDatabasePath);
 }
-
-OVModulePackage* GuanyinmaWrapModulePackage(OVModulePackage* initializedPackage,
-    const std::string& modelPath, const std::string& userDatabasePath,
-    const std::shared_ptr<GuanyinmaCoreSelection>& selection)
-{
-    return initializedPackage && selection ?
-        new GuanyinmaPackage(initializedPackage, modelPath, userDatabasePath, selection) : initializedPackage;
-}
-
-#else
-
-bool GuanyinmaCanUseInputMethod(const std::string&, OpenVanilla::OVKeyValueMap*,
-    std::string* error)
-{
-    if (error) *error = "Guanyinma is not enabled in this build";
-    return false;
-}
-
-bool GuanyinmaModuleUsesCore(const OpenVanilla::OVModule*) { return false; }
-
-OpenVanilla::OVEventHandlingContext* GuanyinmaCreateInputContext(const std::string&,
-    const std::string&, const std::string&, OpenVanilla::OVKeyValueMap*, std::string* error)
-{
-    if (error) *error = "Guanyinma is not enabled in this build";
-    return NULL;
-}
-
-bool GuanyinmaPrepareCandidatePanelForKey(const OpenVanilla::OVKey*,
-    OpenVanilla::OVCandidateService*)
-{
-    return false;
-}
-
-bool GuanyinmaSetEnglishModeForService(OpenVanilla::OVCandidateService*,
-    bool, std::string* error)
-{
-    if (error) error->clear();
-    return true;
-}
-
-OpenVanilla::OVModulePackage* GuanyinmaWrapModulePackage(
-    OpenVanilla::OVModulePackage* initializedPackage, const std::string&,
-    const std::string&, bool)
-{
-    return initializedPackage;
-}
-
-OpenVanilla::OVModulePackage* GuanyinmaWrapModulePackage(
-    OpenVanilla::OVModulePackage* initializedPackage, const std::string&,
-    const std::string&, const std::shared_ptr<GuanyinmaCoreSelection>&)
-{
-    return initializedPackage;
-}
-
-#endif

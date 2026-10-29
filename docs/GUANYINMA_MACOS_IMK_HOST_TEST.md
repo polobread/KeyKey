@@ -1,6 +1,6 @@
 # Guanyinma macOS 真 IMK 宿主測試
 
-本流程讓同一 macOS frontend 的 Manjusri／Guanyinma 經過系統 TIS、IMKServer、OpenVanillaController，實際送入 Cocoa `NSTextView`。它補足 core unit、C ABI、adapter 與 mock client 無法證明的宿主路徑。`tests/run_core_functional.py` 與遷移 fixture 不參與本流程。
+本流程讓固定使用 Guanyinma Rust 核心的 macOS frontend 經過系統 TIS、IMKServer、OpenVanillaController，實際送入 Cocoa `NSTextView`。它補足 core unit、C ABI、adapter 與 mock client 無法證明的宿主路徑。`tests/run_core_functional.py` 與遷移 fixture 不參與本流程。
 
 ## 使用範圍
 
@@ -8,7 +8,7 @@
 
 ## 隔離範圍
 
-`Source/Loaders/OSX-IMK/Tests/prepare-guanyinma-host-test.py` 先在 `Installer/local-builds/` 建立原始碼私有副本，再依現有 `Takao (Loader OSX-IMK)` Release target 與 `Takao-Guanyinma.xcconfig` 建置雙核心。正式原始碼及 `KeyKey.db` 不修改；模型以複製檔納入 App，建置前後比對 SHA-256。版號沿用來源 plist，不另寫產品版號。
+`Source/Loaders/OSX-IMK/Tests/prepare-guanyinma-host-test.py` 先在 `Installer/local-builds/` 建立原始碼私有副本，再依現有 `Takao (Loader OSX-IMK)` Release target 與 `Takao-macOS.xcconfig` 建置 Rust 單核心。正式原始碼及 `KeyKey.db` 不修改；模型以複製檔納入 App，建置前後比對 SHA-256。版號沿用來源 plist，不另寫產品版號。
 
 每次使用新的 tag，建立獨立的命名。主 App／source ID 採含 `.inputmethod.` 的完整片段，並在末端保留 `KeyKey`；不使用只以 `.inputmethod` 結尾的測試 ID：
 
@@ -23,7 +23,7 @@
 
 IMK connection 採完整 bundle ID 加 `_Connection`，編入的宏、`InputMethodConnectionName`、manifest 及 Host 驗證必須完全相同。系統 launch agent 可能拒絕任意格式的連線名稱，即使來源可註冊／選取、IME 行程已啟動，仍不能據此認定 IMK client 已連上。
 
-macOS 的 `UserPreferencesDirectory(applicationName)` 忽略 applicationName，直接使用 `~/Library/Preferences`，因此只換 loader name 並不足夠。工具同時更換 loader identifier；原核心的使用者資料及 Guanyinma 使用者 DB 都落在上述新 Application Support 目錄。
+macOS 的 `UserPreferencesDirectory(applicationName)` 忽略 applicationName，直接使用 `~/Library/Preferences`，因此只換 loader name 並不足夠。工具同時更換 loader identifier；Guanyinma 使用者 DB 落在上述新 Application Support 目錄，既有 Manjusri profile 不自動讀寫或改刪。
 
 四個命名宏透過 `OTHER_CFLAGS`／`OTHER_CPLUSPLUSFLAGS` 尾端的 `-U`／`-D` 覆寫，保留 target 的 `GCC_PREPROCESSOR_DEFINITIONS` 與四法 module IDs。私有副本只允許改指定的 identity／metadata 檔案，包括子 Preferences／PhraseEditor 的 bundle ID、硬編 plist／cache 名稱及 fallback launch ID。演算法及 Rust source 保持原始位元組，manifest 記錄雜湊及 allowlist。測試不要開正式偏好設定、詞庫編輯器或讀取／匯入正式 profile。
 
@@ -76,7 +76,7 @@ macOS SDK 明定註冊的 IMK App 必須在 `/Library/Input Methods/` 或 `~/Lib
 
 測試切換會暫時改變目前輸入來源。測完按 **「還原來源」**，正常關閉視窗／退出亦先還原。若目前仍選測試來源，工具選回保存的來源；若使用者已自行改選其他來源，工具不覆蓋後來的選擇。只停用由工具啟用的測試來源，不停用正式來源。還原每一步記錄 fresh source 查詢、選回結果、disable 結果及再次查詢確認。還原失敗時保留視窗及 recovery 檔，要求操作者在系統選單還原後重試。異常崩潰／強制結束無法保證自動還原，依 recovery 檔中的 source ID 手動處理。
 
-宿主的「套用核心」只連獨立 DO 名稱，使用正式 FE 的 `setUseGuanyinmaCore:`。「套用輸入法」只寫獨立 loader plist 的 `PrimaryInputMethod` 並透過獨立 DO reload；輸入法變更有 marked text 時拒絕，核心請求則允許交由正式 proxy 在安全邊界延後切換。`coreSelectionRequest`／`coreSelection` 記下請求前後 marked 狀態及可見宿主文字，須確認 `pending=true` 且沒有先發生送字，才算測到組字中延後切換。這兩個控制項用來重現同一 FE 的四法／雙核心。也可使用隔離來源自己的輸入選單。不要開正式來源的 Preferences。
+宿主固定使用 Rust，不提供核心切換。「套用輸入法」只寫獨立 loader plist 的 `PrimaryInputMethod` 並透過獨立 DO reload；有 marked text 時拒絕，須先完成或取消組字。這個控制項用來選擇同一 FE 的四種輸入法，也可使用隔離來源自己的輸入選單。不要開正式來源的 Preferences。
 
 若來源已選取但實際文字宿主仍只有 raw 字母、且查不到該測試 IME 行程，可由操作者明確按 **「啟動隔離服務」** 分開驗證背景 App 啟動。按鈕先核對已安裝 App 的 namespace／雜湊及 exact LaunchServices preferred URL，再用 `NSWorkspace.openApplicationAtURL` 開啟該精確 URL；不啟用 App 前景、不強制新 instance、不替換成其他 URL 的執行中副本，也不操作 TIS／中英模式／按鍵。`serviceLaunchResult` 記錄錯誤、PID、Bundle ID、執行檔 URL 與核對結果。這只能證明操作者明確啟動的服務，**不能宣稱正常選取後的自動啟動已通過**。
 
@@ -94,14 +94,14 @@ macOS SDK 明定註冊的 IMK App 必須在 `/Library/Input Methods/` 或 `~/Lib
 
 ## 實際宿主驗收
 
-每項均記錄核心、輸入法、隔離 FE 設定、鍵盤操作、marked text、候選畫面及最終宿主字串。逐項以 Manjusri 作來源，再驗證 Guanyinma；不以註冊成功、mock client 或 unit 通過代替實際輸入。
+依受影響的 FE 接合挑選少量案例，記錄 Rust 核心、輸入法、隔離 FE 設定、鍵盤操作、marked text、候選畫面及最終宿主字串。候選排序、學習與組句矩陣以無 UI 測試驗證，不逐項在桌面重跑；不以註冊成功、mock client 或 unit 通過代替已選宿主案例的實際輸入。舊核心的來源對照另由明確的 `--migration-reference` 手動入口處理，不要求在此工具切換核心。
 
 - 四法：好打注音、傳統注音、倉頡、簡易；測讀音／字根、完成、候選翻頁、Esc／Backspace、Return、方向鍵、錯碼及全半形。
 - 倉頡「竹大」：分別測即時候選／未打完也能選字組合；檢查系統字型過濾後的候選順序，實際選「喬」。
 - 好打注音：句中選詞、前後選字目標、空白開候選、三組選字鍵、10／20 音節及 10／11／19 邊界；實際確認無重複／漏字。
 - 設定與 FE：五種注音鍵盤配置、標點、Esc 清組字、Shift 字母大小寫、Caps Lock、數字鍵盤、單按 Shift 切中英、Shift+Space 依普通 Space 處理及原生全半形選單；共用語意 set／toggle 介面另由 unit test 驗證。對無法由 Cua 可靠發出的實體事件，須明列尚未驗證，不偽稱通過。
-- 使用者資料：只在隔離 profile 測選字學習、標記新增詞、重複新增、切核心後資料分離、隔離 JSON 備份；不匯入正式唯一副本。
-- 生命週期：組字中切焦點、切 App／輸入來源、候選中切核心的延後切換、確認後切回、重複回呼；逐次檢查宿主送字次數。宿主工具只有單一文字欄，跨 App 行為須另以實際文字宿主測試。
+- 使用者資料：只在隔離 profile 做少量新增詞、詞庫管理與 JSON 備份接合；學習演算法另由無 UI 測試驗證。需要 MJSR 交換時使用明確指定的副本，不讀寫正式唯一副本，也不自動改刪舊 Manjusri 檔。
+- 生命週期：組字中切焦點、切 App／輸入來源、候選顯示中失焦與返回、完成組字後切換輸入法、重複回呼；逐次檢查宿主送字次數。宿主工具只有單一文字欄，跨 App 行為須另以實際文字宿主測試。
 
 `host-events.jsonl` 只記錄此工具自身 NSTextView 收到的 `keyDown`、`setMarkedText`、`insertText`、`unmarkText`、來源及 UI 控制結果；包括實際 characters／keyCode／modifiers／repeat，以及該文字欄的輸入情境來源、current context、焦點與視窗狀態，沒有全域鍵盤攔截或合成事件。範圍使用 AppKit 的 UTF-16 NSRange；不能直接當作 Rust scalar offset。候選視窗／設定版面需由實際 UI 截圖補證。
 

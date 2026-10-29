@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare Guanyinma's stateless codec with the actual Formosa/Manjusri sources.
 
-Ordinary headless native contract test: no model, database/session, preferences,
+Manual migration reference only: no model, database/session, preferences,
 installed input method, keyboard events or functional migration baseline.
 Compiles in a fresh temporary directory and uses an explicitly supplied library.
 """
@@ -62,7 +62,11 @@ def main():
                         help="Absolute path to an already built native Guanyinma static library")
     parser.add_argument("--openssl-prefix", type=Path, default=os.environ.get("OPENSSL_PREFIX"))
     parser.add_argument("--report", type=Path, help="Write a JSON execution report, including failures")
+    parser.add_argument("--migration-reference", action="store_true",
+                        help="Explicit manual legacy source comparison; excluded from ordinary CI")
     args = parser.parse_args()
+    if not args.migration_reference:
+        parser.error("Legacy source oracles require --migration-reference; ordinary tests use the Rust interfaces")
     if sys.platform != "darwin":
         parser.error("This native source oracle requires macOS Foundation and clang")
     if not args.library.is_absolute():
@@ -87,7 +91,7 @@ def main():
                 headers += ["-I", str(SOURCE / "Frameworks" / framework / "Headers")]
             command = compiler + [
                 "-std=c++17", "-fno-objc-arc", "-mmacosx-version-min=15.0", "-DOV_USE_SQLITE",
-                "-DKEYKEY_ENABLE_GUANYINMA=1", "-Wno-deprecated-declarations", "-Wno-parentheses",
+                "-Wno-deprecated-declarations", "-Wno-parentheses",
                 "-Wno-dangling-else", "-F", str(tmp), "-I", str(LOADER), "-I", str(CORE / "include"),
                 *headers, "-I", str(prefix / "include"),
                 "-framework", "Foundation", "-lsqlite3", "-liconv",

@@ -1,9 +1,12 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
-// Archive compatibility uses the actual legacy exporter and isolated files.
+// Archive format contracts use independent isolated fixtures. The historical
+// exporter is compiled only by the explicit manual migration-reference entry.
 #import <Foundation/Foundation.h>
 #include "GuanyinmaMacArchive.h"
 #include "GuanyinmaMacUserData.h"
+#if GUANYINMA_MANUAL_LEGACY_ORACLE
 #include "BPMFUserPhraseHelper.h"
+#endif
 #include "guanyinma.h"
 #include <sqlite3.h>
 #include <spawn.h>
@@ -20,7 +23,9 @@
 #include <memory>
 #include <stdexcept>
 
+#if GUANYINMA_MANUAL_LEGACY_ORACLE
 using namespace OpenVanilla;
+#endif
 namespace fs = std::filesystem;
 extern char** environ;
 static size_t checks;
@@ -105,9 +110,10 @@ public:
     }
 };
 
-// Always generate compatibility input with the production legacy exporter.
-// Its embedded cache may be encrypted by the macOS SQLite provider.
-static fs::path legacyExport(const fs::path& root, bool invalidCache = false) {
+// The optional oracle keeps actual historical exporter behavior, including
+// SQLite-provider encryption, out of ordinary unit and FE integration tests.
+static fs::path mjsrFixture(const fs::path& root, bool invalidCache = false) {
+#if GUANYINMA_MANUAL_LEGACY_ORACLE
     const auto source = root / (invalidCache ? "bad-cache-source.db" : "legacy-source.db");
     const auto archive = root / (invalidCache ? "bad-cache.mjsr" : "native.mjsr");
     std::unique_ptr<OVSQLiteConnection> db(OVSQLiteConnection::Open(source.u8string()));
@@ -129,14 +135,40 @@ static fs::path legacyExport(const fs::path& root, bool invalidCache = false) {
     require([bytes(source) isEqualToData:before], "actual exporter preserves legacy source bytes");
     require([bytes(archive) length] > 0, "actual exporter produced archive");
     return archive;
+#else
+    // Construct the documented MJSR container independently of the reader.
+    // Only the learning cache is SQLite; no former input engine is linked.
+    const auto cache = root / (invalidCache ? "bad-cache-fixture.db" : "cache-fixture.db");
+    const auto archive = root / (invalidCache ? "bad-cache.mjsr" : "native.mjsr");
+    sqlite3* database = nullptr;
+    require(sqlite3_open(cache.u8string().c_str(), &database) == SQLITE_OK, "open isolated MJSR cache fixture");
+    sql(database, "CREATE TABLE user_bigram_cache(qstring,previous,current,probability);");
+    sql(database, "CREATE TABLE user_candidate_override_cache(qstring,current);");
+    sql(database, "INSERT INTO user_bigram_cache VALUES('0_ \\O','是','妳','0.0');");
+    sql(database, invalidCache ?
+        "INSERT INTO user_candidate_override_cache VALUES('0_',x'FF');" :
+        "INSERT INTO user_candidate_override_cache VALUES('0_','事');");
+    require(sqlite3_close(database) == SQLITE_OK, "close isolated MJSR cache fixture");
+    NSData* contents = bytes(cache);
+    require(contents != nil, "read isolated MJSR cache fixture");
+    NSMutableString* text = [NSMutableString stringWithString:
+        @"MJSR version 1.0.0\n士事\tㄕˋ,ㄕˋ\t-0.0000001\t-3\n"
+         "琦琦\tㄑㄧˊ,ㄑㄧˊ\t-0.123456789012345\t1e-12\n\n<database>\n"];
+    const auto* buffer = static_cast<const uint8_t*>(contents.bytes);
+    for (NSUInteger index = 0; index < contents.length; ++index)
+        [text appendFormat:@"%02x", buffer[index]];
+    [text appendString:@"\n</database>\n"];
+    write(archive, [text dataUsingEncoding:NSUTF8StringEncoding]);
+    return archive;
+#endif
 }
 
 static void testNativeLegacyImport(const fs::path& model, const fs::path& root) {
-    const auto path = legacyExport(root);
+    const auto path = mjsrFixture(root);
     const auto original = bytes(path);
     NSError* error = nil;
     NSDictionary* portable = GuanyinmaReadArchive(native(path), &error);
-    require(portable != nil && !error, "new reader accepts real native MJSR export");
+    require(portable != nil && !error, "reader accepts MJSR phrase and learning archive");
     require([[portable objectForKey:@"phrases"] count] == 2, "native phrase count preserved");
     NSDictionary* precise = [[portable objectForKey:@"phrases"] objectAtIndex:1];
     require([[precise objectForKey:@"probability"] doubleValue] == -0.123456789012345 &&
@@ -155,7 +187,7 @@ static void testNativeLegacyImport(const fs::path& model, const fs::path& root) 
     require(importData(store, seed), "seed independent phrases and method scopes");
     [seed release];
     auto before = store.data();
-    require(store.importArchive(native(path), &error), "actual administration imports MJSR atomically");
+    require(store.importArchive(native(path), &error), "administration imports MJSR atomically");
     auto after = store.data();
     require([[after objectForKey:@"phrases"] count] == 2, "MJSR merges phrases");
     require([[[[after objectForKey:@"phrases"] objectAtIndex:0] objectForKey:@"probability"] doubleValue] == -9.0,
@@ -204,9 +236,14 @@ static void testCodecBackedMJSRReadings(const fs::path& root) {
         NSArray* phrases = archive[@"phrases"];
         require([phrases count] == 1 && [phrases[0][@"current"] isEqualToString:text],
             "MJSR codec counts supplementary text as one scalar");
-        const auto expected = Manjusri::BPMFUserPhraseHelper::QString([reading UTF8String]);
-        require([phrases[0][@"qstring"] isEqualToString:[NSString stringWithUTF8String:expected.first.c_str()]],
-            "Rust codec uses the original MJSR query encoding");
+        NSString* expected = [reading isEqualToString:@"ㄋㄧˇ"] ? @"\\O" : @"?O";
+        require([phrases[0][@"qstring"] isEqualToString:expected],
+            "Rust codec uses the MJSR query encoding");
+#if GUANYINMA_MANUAL_LEGACY_ORACLE
+        const auto original = Manjusri::BPMFUserPhraseHelper::QString([reading UTF8String]);
+        require([expected isEqualToString:[NSString stringWithUTF8String:original.first.c_str()]],
+            "manual exporter oracle agrees with reading fixture");
+#endif
     }
     for (NSString* reading in @[@"ㄅㄆ", @"ㄋx", @",ㄋ", @"ㄧㄋˇ"]) {
         write(path, [[NSString stringWithFormat:@"MJSR version 1.0.0\n甲\t%@\t-1\t0\n", reading]
@@ -283,8 +320,8 @@ static void testMalformedImports(const fs::path& model, const fs::path& root) {
            "unterminated cache block");
     reject([@"MJSR version 1.0.0\n士事\tㄕˋ,ㄕˋ\t0x1p-2\t-3\n" dataUsingEncoding:NSUTF8StringEncoding],
            "legacy hexadecimal float outside archive number grammar");
-    auto malformedCache = legacyExport(root, true);
-    reject(bytes(malformedCache), "valid phrases followed by invalid encrypted cache");
+    auto malformedCache = mjsrFixture(root, true);
+    reject(bytes(malformedCache), "valid phrases followed by invalid cache");
     const auto nativePath = root / "native.mjsr";
     auto data = bytes(nativePath);
     require(data != nil, "native malformed-test oracle exists");

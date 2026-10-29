@@ -144,80 +144,6 @@ static void addEmojiPhrase(const fs::path& model, const fs::path& user) {
     require(status == GUANYINMA_OK, "prepare supplementary Unicode user phrase");
 }
 
-struct LegacyStats {
-    size_t initializes = 0, loads = 0, contexts = 0, finalizes = 0;
-};
-class LegacyContext : public OVEventHandlingContext {};
-class LegacyModule : public OVModule {
-    std::string id;
-    LegacyStats* stats;
-public:
-    LegacyModule(const std::string& value, LegacyStats* counts) : id(value), stats(counts) {}
-    const std::string identifier() const override { return id; }
-    bool isInputMethod() const override { return true; }
-    bool initialize(OVPathInfo*, OVLoaderService*) override { ++stats->initializes; return true; }
-    void loadConfig(OVKeyValueMap*, OVLoaderService*) override { ++stats->loads; }
-    OVEventHandlingContext* createContext() override { ++stats->contexts; return new LegacyContext; }
-    void finalize() override { ++stats->finalizes; }
-};
-class LegacyPackage : public OVModulePackage {
-    LegacyStats* stats;
-public:
-    explicit LegacyPackage(LegacyStats* counts) : stats(counts) {}
-    size_t numberOfModules(OVLoaderService*) override { return 2; }
-    OVModule* moduleAtIndex(size_t index, OVLoaderService*) override {
-        return index < 2 ? new LegacyModule(index ? "OVIMUnrelated" : Smart, stats) : nullptr;
-    }
-};
-static void testPackageFallback(const fs::path& model, const fs::path& root) {
-    Harness h;
-    OVPathInfo paths;
-    paths.writablePath = root.u8string();
-    LegacyStats native;
-    auto* original = new LegacyPackage(&native);
-    auto* disabled = GuanyinmaWrapModulePackage(original, model.u8string(),
-                                               (root / "disabled.db").u8string(), false);
-    require(disabled == original, "runtime opt-out keeps original package");
-    delete disabled;
-    LegacyStats active;
-    std::unique_ptr<OVModulePackage> package(GuanyinmaWrapModulePackage(
-        new LegacyPackage(&active), model.u8string(), (root / "wrapper.db").u8string(), true));
-    require(package->numberOfModules(&h.loader) == 2, "wrapper preserves package module count");
-    std::unique_ptr<OVModule> module(package->moduleAtIndex(0, &h.loader));
-    require(module->identifier() == Smart && module->isInputMethod(), "wrapper preserves native identity");
-    require(module->moduleInitialize(&paths, &h.loader), "wrapper initialization succeeds");
-    module->loadConfig(&h.config, &h.loader);
-    std::unique_ptr<OVEventHandlingContext> context(module->createContext());
-    require(context && dynamic_cast<LegacyContext*>(context.get()) == nullptr, "valid configuration uses Rust context");
-    require(active.initializes == 0 && active.loads == 0 && active.contexts == 0,
-            "successful Rust context never initializes or opens a legacy core/profile");
-    context.reset();
-    module->finalize();
-    require(active.finalizes == 0, "uninitialized legacy module is not finalized as initialized");
-    module.reset();
-    std::unique_ptr<OVModule> unrelated(package->moduleAtIndex(1, &h.loader));
-    require(dynamic_cast<LegacyModule*>(unrelated.get()) != nullptr, "unrelated module bypasses decorator");
-    LegacyStats fallback;
-    std::unique_ptr<OVModulePackage> broken(GuanyinmaWrapModulePackage(
-        new LegacyPackage(&fallback), (root / "missing-wrapper-model.db").u8string(),
-        (root / "fallback.db").u8string(), true));
-    std::unique_ptr<OVModule> wrapped(broken->moduleAtIndex(0, &h.loader));
-    require(wrapped->moduleInitialize(&paths, &h.loader), "fallback wrapper defers core selection");
-    require(fallback.initializes == 0, "legacy initialization remains lazy");
-    wrapped->loadConfig(&h.config, &h.loader);
-    std::unique_ptr<OVEventHandlingContext> old(wrapped->createContext());
-    require(dynamic_cast<LegacyContext*>(old.get()) != nullptr, "failed Rust open falls back to legacy context");
-    require(fallback.initializes == 1 && fallback.loads == 1 && fallback.contexts == 1,
-            "legacy fallback initializes and loads configuration once");
-    old.reset();
-    wrapped->finalize();
-    require(fallback.finalizes == 1, "initialized legacy fallback is finalized once");
-    wrapped.reset();
-    unrelated.reset();
-    package->finalize();
-    broken->finalize();
-}
-
 static void testFactory(const fs::path& model, const fs::path& root) {
     for (auto method : {Smart, Traditional, Cangjie, Simplex})
         require(GuanyinmaSupportsInputMethod(method), std::string("supported ID ") + method);
@@ -538,10 +464,9 @@ protected:
 };
 static void testOwnedNativePreferences(const fs::path& model, const fs::path& root) {
     Harness h;
-    LegacyStats stats;
-    std::unique_ptr<OVModulePackage> package(GuanyinmaWrapModulePackage(
-        new LegacyPackage(&stats), model.u8string(), (root / "owned-settings.db").u8string(), true));
-    std::unique_ptr<OVModule> module(package->moduleAtIndex(0, &h.loader));
+    std::unique_ptr<OVModulePackage> package(GuanyinmaCreateModulePackage(
+        model.u8string(), (root / "owned-settings.db").u8string()));
+    std::unique_ptr<OVModule> module(package->moduleAtIndex(1, &h.loader));
     OVPathInfo paths; paths.writablePath = root.u8string();
     require(module->moduleInitialize(&paths, &h.loader), "owned preference module initializes");
     auto loadDetached = [&](int limit, const std::string& encoding) {
@@ -556,7 +481,7 @@ static void testOwnedNativePreferences(const fs::path& model, const fs::path& ro
     };
     loadDetached(20, "");
     h.context.reset(module->createContext());
-    require(h.context && GuanyinmaModuleUsesCore(module.get()), "copied native settings create Rust context");
+    require(h.context != nullptr, "copied native settings create Rust context");
     h.context->startSession(&h.loader);
     for (size_t i = 0; i < 12; ++i) h.type("g4");
     require(h.committed.empty() && h.composing.codePointCount() == 12,
@@ -573,22 +498,25 @@ static void testOwnedNativePreferences(const fs::path& model, const fs::path& ro
     require(!h.loader.shouldBeep(), "unsupported pending setting is not a repeated keystroke error");
     h.clear();
     h.context.reset();
-    std::unique_ptr<OVEventHandlingContext> legacy(module->createContext());
-    require(dynamic_cast<LegacyContext*>(legacy.get()) && !GuanyinmaModuleUsesCore(module.get()),
-            "new context selects legacy for unsupported native setting");
-    require(stats.loads == 1, "unsupported fallback loads native preferences once");
-    legacy.reset();
+    std::unique_ptr<OVEventHandlingContext> rejected(module->createContext());
+    h.loader.resetState();
+    rejected->startSession(&h.loader);
+    require(h.loader.shouldBeep() && !h.loader.notifyMessage().empty(),
+            "unsupported setting explicitly reports Rust context initialization failure");
+    auto key = h.loader.makeOVKey('s');
+    require(rejected->handleKey(&key, &h.reading, &h.composing, &h.candidates, &h.loader) &&
+            h.visible().empty() && !h.composing.isCommitted(),
+            "failed context never substitutes literal text or another input core");
+    rejected.reset();
     loadDetached(10, "");
-    require(stats.loads == 1, "loading supported Rust settings avoids touching legacy core");
     h.context.reset(module->createContext());
-    require(h.context && GuanyinmaModuleUsesCore(module.get()) && stats.loads == 1,
-            "supported reload returns to Rust without reloading old profile");
+    require(h.context != nullptr, "supported configuration creates a fresh Rust context");
     h.context.reset();
     module->finalize();
     module.reset();
     package->finalize();
     package->finalize();
-    require(package->numberOfModules(&h.loader) == 0, "repeated package finalize is safe and retires legacy package");
+    require(package->numberOfModules(&h.loader) == 0, "repeated package finalize is safe and retires the standalone package");
 }
 
 // Changing a native font/encoding choice installs a fresh policy only after
@@ -610,15 +538,14 @@ public:
 static void testNativeFilterPreferenceRefresh(const fs::path& model, const fs::path& root) {
     PreferenceEncodingService encoding;
     Harness h(&encoding);
-    LegacyStats stats;
-    std::unique_ptr<OVModulePackage> package(GuanyinmaWrapModulePackage(
-        new LegacyPackage(&stats), model.u8string(), (root / "filter-preferences.db").u8string(), true));
-    std::unique_ptr<OVModule> module(package->moduleAtIndex(0, &h.loader));
+    std::unique_ptr<OVModulePackage> package(GuanyinmaCreateModulePackage(
+        model.u8string(), (root / "filter-preferences.db").u8string()));
+    std::unique_ptr<OVModule> module(package->moduleAtIndex(1, &h.loader));
     OVPathInfo paths; paths.writablePath = root.u8string();
     require(module->moduleInitialize(&paths, &h.loader), "filter preference module initializes");
     module->loadConfig(&h.config, &h.loader);
     h.context.reset(module->createContext());
-    require(h.context && GuanyinmaModuleUsesCore(module.get()), "filter preference begins in Rust");
+    require(h.context != nullptr, "filter preference begins in Rust");
     h.context->startSession(&h.loader);
     auto contains = [&](const std::string& text) {
         auto* list = h.panel()->candidateList();
@@ -651,8 +578,6 @@ static void testNativeFilterPreferenceRefresh(const fs::path& model, const fs::p
     h.type("g4"); h.openSmart();
     require(!contains("事") && contains("士"),
             "returning to system policy releases old encoding policy and cache");
-    require(stats.initializes == 0 && stats.loads == 0 && stats.contexts == 0,
-            "supported font and encoding preferences never open a legacy profile");
     h.clear();
     h.context.reset();
     module->finalize();
@@ -785,7 +710,7 @@ static void testNativeCangjiePreferenceDefault(const fs::path& model, const fs::
     h.config.setKeyStringValue("UseOverrideTable", "Punctuations-punctuations-cin");
     std::string error;
     require(GuanyinmaCanUseInputMethod(Cangjie, &h.config, &error) && error.empty(),
-            "the actual Cangjie UI default does not force legacy fallback");
+            "the actual Cangjie UI default is accepted by Rust");
     h.open(Cangjie, model, root / "native-cangjie-ui-default.db");
     h.type("a"); h.key(OVKeyCode::Space); h.choose("日");
     expectText(h.committed, "日", "known missing legacy override uses the original Cangjie table");
@@ -990,7 +915,6 @@ int main(int argc, char** argv) {
             require(fs::is_directory(root), "test profile directory must exist");
             testFactory(model, root);
             testNativePhoneticLayoutNames(model, root);
-            testPackageFallback(model, root);
             testSmart(model, root);
             testSmartLearningAndLimit(model, root);
             testMethodsAndLearning(model, root);

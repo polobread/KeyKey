@@ -35,12 +35,11 @@ framework headers are removed. `pkgbuild` assigns root:wheel itself.
 It writes two files: `chichi77KeyKey.pkg` to install, and `chichi77KeyKey.pkg.zip`
 to attach to a release.
 
-## Local dual-core installer
+## Local Guanyinma installer
 
-The standard macOS build contains both Manjusri/Generic and Guanyinma, using
-the same target and installer script. It requires the crate's pinned Rust
-toolchain and defaults to Guanyinma when no core preference is stored. Explicit
-Manjusri choices are preserved; General settings switches cores in the same frontend.
+The standard macOS build uses Guanyinma for all four input methods, with the
+existing native frontend, target and installer script. The crate's pinned Rust
+toolchain is required. The App has no core selector or legacy engine fallback.
 
 From the repository root:
 
@@ -55,9 +54,9 @@ make -C Source/Distributions/Takao/DatabaseCooker
 
 When using isolated Xcode output directories, pass that exact verified App path
 to `build.sh`. It packages the supplied App; it does not choose or rebuild the
-cores. Use a separate staging copy of the installer directory if existing local
+core. Use a separate staging copy of the installer directory if existing local
 package outputs must be preserved, and retain the adjacent `update/` signing
-helper layout. Do not change package scripts for the dual-core variant.
+helper layout.
 
 The resulting files are a real `.pkg` and `.pkg.zip`, with the standard
 installation scripts, arm64 input-source helper, fixed installation path, and

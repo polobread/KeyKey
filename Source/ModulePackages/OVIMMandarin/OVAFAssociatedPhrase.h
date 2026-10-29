@@ -50,8 +50,9 @@ namespace OpenVanilla {
 
     class OVAFAssociatedPhrase;
 
-    // Frontend-owned routing only. Implementations may delegate pure lookup to
-    // a shared core; this filter retains all candidate-panel and key handling.
+    // Frontend-owned routing only. A supplied provider exclusively owns pure
+    // lookup; failure/inactivity never opens a native SQL query. This filter
+    // retains all candidate-panel and key handling.
     class OVAFAssociatedPhraseQuery {
     public:
         virtual ~OVAFAssociatedPhraseQuery() {}

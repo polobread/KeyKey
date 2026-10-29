@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare a namespaced dual-core IMK app and a real NSTextView manual host.
+"""Prepare a namespaced Rust-only IMK app and a real NSTextView manual host.
 
 prepare/build/verify never install, launch, or call TIS register/enable/select.
 Xcode can register raw build apps with LaunchServices; the manual host validates
@@ -275,10 +275,10 @@ def build(args):
     flags = "$(inherited) " + shlex.join(macro_flags(identity))
     command = ["xcodebuild", "-project", str(source / "Takao.xcodeproj"),
                "-target", "Takao (Loader OSX-IMK)", "-configuration", "Release",
-               "-xcconfig", str(source / "Takao-Guanyinma.xcconfig"),
+               "-xcconfig", str(source / "Takao-macOS.xcconfig"),
                "SYMROOT=" + str(output / "products"), "OBJROOT=" + str(output / "objects"),
                "CODE_SIGN_IDENTITY=-", "CODE_SIGNING_REQUIRED=NO", "CODE_SIGNING_ALLOWED=NO",
-               "KEYKEY_ENABLE_GUANYINMA=1", "OTHER_CFLAGS=" + flags,
+               "OTHER_CFLAGS=" + flags,
                "OTHER_CPLUSPLUSFLAGS=" + flags, "build"]
     print("Building isolated snapshot; log:", output / "build.log", flush=True)
     run(command, cwd=source, env=env, log=output / "build.log")

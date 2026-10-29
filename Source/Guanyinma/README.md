@@ -2,7 +2,7 @@
 
 Guanyinma 是 **chichi77 KeyKey／琦琦輸入法**（英文簡稱 **KeyKey**） 的新共用 Rust 核心，工作目錄為 `Source/Guanyinma`。目前完成唯讀資料層、C ABI、注音解析與四種輸入法的共用 session；好打注音組句、候選排序、手動選詞與組字邊界以 macOS Manjusri 為準。使用者詞庫、候選偏好、Bigram 與字表學習已接入獨立資料層；原生接合依[實作計畫](../../docs/GUANYINMA_IMPLEMENTATION_PLAN.md)進行。
 
-macOS 標準 App 同時包含 Guanyinma 與 Manjusri／Generic，未設定偏好時預設 Rust，既有明確選擇仍保留；一般設定可切換核心，沿用既有 PV 候選與文字管線。組字與候選完成後才由新輸入切換 delegate，並保留建立 session 前回退。建置、原生隔離測試、使用者資料及限制見 [macOS 接合文件](../../docs/GUANYINMA_MACOS_ADAPTER.md)；真正 IMK 宿主及各平台發布驗收分別記錄。
+macOS 四種輸入法固定使用 Guanyinma，沿用既有 PV 候選與文字管線；不編譯舊 Manjusri／Generic 輸入引擎，不提供核心選單或失敗回退。設定更新等待組字、候選與待送宿主效果完成。建置、原生隔離測試、使用者資料及限制見 [macOS 接合文件](../../docs/GUANYINMA_MACOS_ADAPTER.md)；真正 IMK 宿主及各平台發布驗收分別記錄。
 
 ## 目前提供
 
@@ -17,7 +17,7 @@ macOS 標準 App 同時包含 Guanyinma 與 Manjusri／Generic，未設定偏好
 
 資料路徑由呼叫端傳入，不內嵌個人路徑、不複製或重建模型。儲存庫正式來源為 [KeyKey.db](../Distributions/Takao/CookedDatabase/KeyKey.db)。內容雜湊與正式資料完整性仍由既有 [DatabaseCooker 驗證工具](../Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py)負責；Guanyinma 的 open 是執行期 schema／唯讀檢查。
 
-低階查詢仍使用既有字表 code／模型 qstring，例如倉頡 `a`、傳統注音 `\O`。輸入操作則使用下述 session API。Windows、iOS、Android、Linux／FreeBSD 固定使用 Guanyinma 單核心；iOS 的 Swift 與 Android 的 Java 僅保留原生 FE 接合，不建置舊輸入引擎或提供失敗回退，見 [iOS 接合文件](../../docs/GUANYINMA_IOS_ADAPTER.md)與 [Android 接合文件](../../docs/GUANYINMA_ANDROID_ADAPTER.md)。macOS 仍提供同一 FE 的雙核心建置。各平台原生產物與宿主驗證分別記錄。
+低階查詢仍使用既有字表 code／模型 qstring，例如倉頡 `a`、傳統注音 `\O`。輸入操作則使用下述 session API。六平台固定使用 Guanyinma 單核心；iOS 的 Swift 與 Android 的 Java 僅保留原生 FE 接合，不建置舊輸入引擎或提供失敗回退，見 [iOS 接合文件](../../docs/GUANYINMA_IOS_ADAPTER.md)與 [Android 接合文件](../../docs/GUANYINMA_ANDROID_ADAPTER.md)。macOS 也只保留原生 FE 與 Rust 接合。各平台原生產物與宿主驗證分別記錄。
 
 ## 測試範圍與分工
 
@@ -38,7 +38,7 @@ CI 的權責固定如下；本機核心開發仍可直接執行後面的獨立�
 
 | 平台 | 平台建置與 FE 接合 | Rust 準備／使用 |
 |---|---|---|
-| macOS | `package-macos.yml`、`macos-symbols.yml` | 鎖定工具鏈；標準 Xcode build phase 連入 Rust，少量 selector 測試，產物保留 runtime notices |
+| macOS | `package-macos.yml`、`macos-symbols.yml` | 鎖定工具鏈；標準 Xcode build phase 連入 Rust，少量 integration 測試，產物保留 runtime notices |
 | Windows | `package-windows.yml`、`windows-shared-data.yml` | x64／x86 targets；共用 PowerShell／CMake 建置必須連入 Rust，聚焦 TSF 接合測試 |
 | iOS | `package-ios.yml`、Xcode Cloud `ci_post_clone.sh` | 三個 Apple targets；App／extension 必須連結 Rust，少量 Swift FE smoke 與既有封裝檢查；Cloud 需預裝 rustup |
 | Android | `package-android.yml`、`android-play-release.yml` | 四個 Android targets／固定 NDK；Rust 靜態庫連入 JNI，少量真 JNI smoke |
@@ -197,16 +197,16 @@ MJSR 入口仍另驗證「encode／decode 必須與原文完全相同」及文�
 不重現舊 C++ 對負數 order 的未定義行為，無效 bytes 安全回報錯誤。
 
 目前 macOS 的 Rust 詞庫／MJSR 讀音、Windows Rust 詞庫與 Linux／FreeBSD 詞庫工具
-已呼叫此 ABI；舊核心路徑仍保留。iOS／Android 的鍵盤字母、聲調自動切音節等
+已呼叫此 ABI。iOS／Android 的鍵盤字母、聲調自動切音節等
 彈性詞庫輸入語法尚未改接，不能將本項視為六平台的 codec 接線全部完成。
 原生檔案與舊加密容器解碼維持 frontend 權責。
 
-下列普通無 UI 對照直接使用目前 Formosa／Manjusri 原始碼，沒有讀取 functional baseline；
+下列來源對照只供遷移時明確手動執行，使用歷史 Formosa／Manjusri 原始碼；不列入普通驗證或 CI，沒有讀取 functional baseline。
 在 repository root 執行，`--library` 指向本次相同 SQLite provider 的 staticlib：
 
 ```sh
 python3 Source/Loaders/OSX-IMK/Tests/run-reading-codec-tests.py \
-  --library /absolute/path/to/libguanyinma.a
+  --migration-reference --library /absolute/path/to/libguanyinma.a
 ```
 
 ## 行為、狀態與 frontend
@@ -241,7 +241,7 @@ python3 Source/Loaders/OSX-IMK/Tests/run-reading-codec-tests.py \
 
 FE 以 `guanyinma_session_open_with_candidate_filter` 注入自己的字型／編碼能力；Rust 介面為 `InputSession::open_with_candidate_filter` 與 `CandidateFilter::new`。C callback 型別為 `int32_t (GUANYINMA_CALL *)(void *context, const uint8_t *text, size_t text_length)`：同步收到有效 UTF-8 span，回傳 0 拒絕、任何非 0 值接受。核心在四種輸入法查詢後、單候選自動提交、前綴最多 36 字、分頁與選字學習之前過濾；好打注音在 Unigram、自訂詞與 Bigram 的 current 節點建立 graph 前套用，BOS／EOS 邊界除外。低階 database query 與直接輸入的文字不受此過濾影響。關閉回呼（NULL）與原 `guanyinma_session_open` 接受全部的行為相同，context 會被忽略。
 
-callback 的文字只在該次呼叫有效，不含尾端 NUL；不可保存指標、拋出例外／unwind 或重入同一 session。函式與 context 由呼叫端持有到 session close，能力判斷在此期間須保持一致；每次 open／session operation 在呼叫執行緒同步執行回呼。session 互斥不保證其他 session 共用 context 的安全，FE 必須自行同步。callback／context 不進入 JSON、使用者資料或備份。六大平台各自接上原生字型／編碼服務，核心不建立 OS 分支；macOS、Windows、iOS、Android 與 Linux Fcitx 5 已有各自的原生 adapter；實際桌面／裝置與 FreeBSD 原生雙核心驗證仍各自記錄，Linux 接合入口見 [adapter 說明](../../docs/GUANYINMA_LINUX_ADAPTER.md)。
+callback 的文字只在該次呼叫有效，不含尾端 NUL；不可保存指標、拋出例外／unwind 或重入同一 session。函式與 context 由呼叫端持有到 session close，能力判斷在此期間須保持一致；每次 open／session operation 在呼叫執行緒同步執行回呼。session 互斥不保證其他 session 共用 context 的安全，FE 必須自行同步。callback／context 不進入 JSON、使用者資料或備份。六大平台各自接上原生字型／編碼服務，核心不建立 OS 分支；macOS、Windows、iOS、Android 與 Linux Fcitx 5 已有各自的原生 adapter；實際桌面／裝置與 FreeBSD 原生接合驗證仍各自記錄，Linux 接合入口見 [adapter 說明](../../docs/GUANYINMA_LINUX_ADAPTER.md)。
 
 ## 好打注音的行為與座標
 

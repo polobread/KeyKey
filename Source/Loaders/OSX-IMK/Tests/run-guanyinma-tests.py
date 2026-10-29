@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the real macOS Guanyinma adapter, without starting installed IMK.
 
-Ordinary native adapter tests: no frozen migration trace, user defaults, or
+Ordinary integration tests: no legacy engine, migration trace, user defaults, or
 installed profile. Model bytes are checked before/after; user databases and the
 executable live in a fresh temporary directory.
 """
@@ -52,22 +52,24 @@ def openssl_prefix(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=("all", "adapter", "selector", "archive"), default="all")
+    parser.add_argument("--suite", choices=("integration", "all", "adapter", "archive"), default="integration")
     parser.add_argument("--cargo", default=os.environ.get("CARGO", "cargo"))
     parser.add_argument("--library", type=Path, help="Use an already built Guanyinma static library")
     parser.add_argument("--bundled-sqlite", action="store_true")
     parser.add_argument("--offline", action="store_true", help="Use only cached Cargo dependencies")
     parser.add_argument("--openssl-prefix", type=Path, default=os.environ.get("OPENSSL_PREFIX"),
                         help="OpenSSL used to compile the real legacy archive exporter oracle")
+    parser.add_argument("--migration-reference", action="store_true",
+                        help="Explicitly compile the legacy archive exporter for a manual migration comparison")
     args = parser.parse_args()
+    if args.migration_reference and args.suite not in ("archive", "all"):
+        parser.error("--migration-reference applies only to archive/all")
     if sys.platform != "darwin":
         parser.error("These native adapter tests require macOS Foundation and clang")
     controller = (LOADER / "OpenVanillaController.mm").read_text()
     hook = "GuanyinmaPrepareCandidatePanelForKey(&key, _context->candidateService())"
     dispatch = "isHandled = _context->handleKeyEvent(&key);"
-    preserve = "preserveInputCoreForCandidateEvent:_context->candidateService()"
-    if (controller.count(hook) != 1 or controller.index(hook) > controller.index(dispatch) or
-            controller.count(preserve) != 1 or not controller.index(hook) < controller.index(preserve) < controller.index(dispatch)):
+    if controller.count(hook) != 1 or controller.index(hook) > controller.index(dispatch):
         raise RuntimeError("Native controller must prepare Rust keypad candidates before PV key dispatch")
     before = digest(MODEL)
     if args.library:
@@ -85,7 +87,10 @@ def main():
         library = Path(metadata["target_directory"]) / "release/libguanyinma.a"
     with tempfile.TemporaryDirectory(prefix="keykey-guanyinma-mac-tests-") as scratch:
         tmp = Path(scratch)
-        for framework in ("OpenVanilla", "PlainVanilla", "Formosa", "Manjusri", "Minotaur"):
+        frameworks = ["OpenVanilla", "PlainVanilla"]
+        if args.migration_reference:
+            frameworks += ["Formosa", "Manjusri", "Minotaur"]
+        for framework in frameworks:
             path = tmp / (framework + ".framework")
             path.mkdir()
             (path / "Headers").symlink_to(SOURCE / "Frameworks" / framework / "Headers",
@@ -101,7 +106,7 @@ def main():
             executable = tmp / "GuanyinmaMacAdapterTests"
             run(compiler + [
                 "-std=c++17", "-fno-objc-arc", "-fblocks", "-mmacosx-version-min=15.0",
-                "-DKEYKEY_ENABLE_GUANYINMA=1", "-DOV_USE_SQLITE",
+                "-DOV_USE_SQLITE",
                 "-Wno-deprecated-declarations", "-Wno-parentheses", "-Wno-dangling-else",
                 "-F", str(tmp), "-I", str(LOADER), "-I", str(CORE / "include"),
                 "-I", str(SOURCE / "Frameworks/PlainVanilla/Headers"),
@@ -111,7 +116,6 @@ def main():
                 str(TESTS / "GuanyinmaMacAdapterTests.mm"),
                 str(LOADER / "GuanyinmaMacAdapter.mm"),
                 str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
-                str(LOADER / "GuanyinmaMacCoreSelection.mm"),
                 str(SOURCE / "Frameworks/PlainVanilla/Source/Cocoa/PVPropertyList.mm"),
                 str(SOURCE / "ModulePackages/OVOFHanConvert/OVOFHanConvert.cpp"),
                 *tables,
@@ -121,58 +125,48 @@ def main():
             profiles = tmp / "profiles"
             profiles.mkdir()
             run([str(executable), str(MODEL), str(profiles)])
-        if args.suite in ("all", "selector"):
-            prefix = openssl_prefix(args)
-            executable = tmp / "GuanyinmaMacCoreSelectionTests"
+        if args.suite in ("all", "integration"):
+            executable = tmp / "GuanyinmaMacPackageTests"
             run(compiler + [
                 "-std=c++17", "-fno-objc-arc", "-fblocks", "-mmacosx-version-min=15.0",
-                "-DKEYKEY_ENABLE_GUANYINMA=1", "-DOV_USE_SQLITE",
-                "-Wno-deprecated-declarations", "-Wno-parentheses", "-Wno-dangling-else",
+                "-DOV_USE_SQLITE", "-Wno-deprecated-declarations", "-Wno-parentheses", "-Wno-dangling-else",
                 "-F", str(tmp), "-I", str(LOADER), "-I", str(CORE / "include"),
                 "-I", str(SOURCE / "Frameworks/PlainVanilla/Headers"),
                 "-framework", "Foundation", "-lsqlite3", "-liconv",
-                "-I", str(SOURCE / "Frameworks/Manjusri/Headers"),
-                "-I", str(SOURCE / "Frameworks/Formosa/Headers"),
-                "-I", str(SOURCE / "Frameworks/Minotaur/Headers"),
-                "-I", str(SOURCE / "ModulePackages/OVIMMandarin"), "-I", str(prefix / "include"),
-                '-DOVIMSMARTMANDARIN_IDENTIFIER="SmartMandarin"',
-                '-DOVIMMANDARIN_IDENTIFIER="Mandarin"',
-                '-DOVIMMANDARIN_PUNCTUATIONS_TABLE_PREFIX="Punctuations"',
-                str(TESTS / "GuanyinmaMacCoreSelectionTests.mm"),
-                str(SOURCE / "ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp"),
-                str(SOURCE / "Frameworks/Manjusri/Source/Node.cpp"),
-                str(SOURCE / "Frameworks/Manjusri/Source/BPMFUserPhraseHelper.cpp"),
-                str(SOURCE / "Frameworks/Formosa/Source/Mandarin.cpp"),
-                str(SOURCE / "Frameworks/Minotaur/Source/Minotaur.cpp"),
-                str(prefix / "lib/libcrypto.dylib"),
-                str(LOADER / "GuanyinmaMacCoreSelection.mm"),
+                str(TESTS / "GuanyinmaMacPackageTests.mm"),
                 str(LOADER / "GuanyinmaMacAdapter.mm"),
                 str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
                 str(SOURCE / "Frameworks/PlainVanilla/Source/Cocoa/PVPropertyList.mm"),
                 str(library), "-o", str(executable),
             ])
-            profiles = tmp / "selector-profiles"
+            profiles = tmp / "package-profiles"
             profiles.mkdir()
             run([str(executable), str(MODEL), str(profiles)])
             run([sys.executable, str(TESTS / "run-guanyinma-administration-tests.py")])
         if args.suite in ("all", "archive"):
-            prefix = openssl_prefix(args)
             archive_executable = tmp / "GuanyinmaMacArchiveTests"
             headers = []
-            for framework in ("Manjusri", "Formosa", "Minotaur"):
-                headers += ["-I", str(SOURCE / "Frameworks" / framework / "Headers")]
+            oracle = []
+            if args.migration_reference:
+                prefix = openssl_prefix(args)
+                for framework in ("Manjusri", "Formosa", "Minotaur"):
+                    headers += ["-I", str(SOURCE / "Frameworks" / framework / "Headers")]
+                oracle = [
+                    "-DGUANYINMA_MANUAL_LEGACY_ORACLE=1", "-I", str(prefix / "include"),
+                    str(SOURCE / "Frameworks/Manjusri/Source/BPMFUserPhraseHelper.cpp"),
+                    str(SOURCE / "Frameworks/Formosa/Source/Mandarin.cpp"),
+                    str(SOURCE / "Frameworks/Minotaur/Source/Minotaur.cpp"),
+                    str(prefix / "lib/libcrypto.dylib"),
+                ]
             run(compiler + [
                 "-std=c++17", "-fno-objc-arc", "-mmacosx-version-min=15.0", "-DOV_USE_SQLITE",
-                "-DKEYKEY_ENABLE_GUANYINMA=1", "-Wno-deprecated-declarations", "-Wno-parentheses",
+                "-Wno-deprecated-declarations", "-Wno-parentheses",
                 "-Wno-dangling-else", "-F", str(tmp), "-I", str(LOADER), "-I", str(CORE / "include"),
-                *headers, "-I", str(prefix / "include"),
+                *headers,
                 "-framework", "Foundation", "-lsqlite3", "-liconv",
                 str(TESTS / "GuanyinmaMacArchiveTests.mm"),
                 str(LOADER / "GuanyinmaMacArchive.mm"),
-                str(SOURCE / "Frameworks/Manjusri/Source/BPMFUserPhraseHelper.cpp"),
-                str(SOURCE / "Frameworks/Formosa/Source/Mandarin.cpp"),
-                str(SOURCE / "Frameworks/Minotaur/Source/Minotaur.cpp"),
-                str(prefix / "lib/libcrypto.dylib"), str(library), "-o", str(archive_executable),
+                *oracle, str(library), "-o", str(archive_executable),
             ])
             archives = tmp / "archives"
             archives.mkdir()

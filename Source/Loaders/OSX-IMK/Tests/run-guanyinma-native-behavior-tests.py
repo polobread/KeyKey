@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare actual macOS modules with the Rust adapter, without migration fixtures."""
+"""Manual migration reference: compare historical macOS modules with Rust."""
 import argparse
 import hashlib
 import importlib.util
@@ -24,7 +24,11 @@ def main():
     parser.add_argument("--library", type=Path, required=True)
     parser.add_argument("--group", choices=("case","layouts","edits","controls","tables","caps","all"), default="all")
     parser.add_argument("--openssl-prefix", type=Path, default=os.environ.get("OPENSSL_PREFIX"))
+    parser.add_argument("--migration-reference", action="store_true",
+                        help="Explicit manual legacy source comparison; excluded from ordinary CI")
     args = parser.parse_args()
+    if not args.migration_reference:
+        parser.error("Legacy source oracles require --migration-reference; ordinary tests use the Rust interfaces")
     if sys.platform != "darwin":
         parser.error("Native macOS modules require Foundation and Apple clang")
     library = args.library.resolve(strict=True)
@@ -38,7 +42,7 @@ def main():
             (path / "Headers").symlink_to(SOURCE / "Frameworks" / framework / "Headers", target_is_directory=True)
         cmd = shlex.split(os.environ.get("CXX", "xcrun clang++")) + [
             "-std=c++17","-fno-objc-arc","-fblocks","-mmacosx-version-min=15.0",
-            "-DKEYKEY_ENABLE_GUANYINMA=1","-DOV_USE_SQLITE",
+            "-DOV_USE_SQLITE",
             "-DOVIMTRADITIONALMANDARIN_USE_ABSOLUTE_ORDER_QUERY_STRING=1",
             '-DOVIMSMARTMANDARIN_IDENTIFIER="SmartMandarin"',
             '-DOVIMTRADITIONALMANDARIN_IDENTIFIER="TraditionalMandarin"',
@@ -65,7 +69,6 @@ def main():
             str(prefix / "lib/libcrypto.dylib"),
             str(LOADER / "GuanyinmaMacAdapter.mm"),
             str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
-            str(LOADER / "GuanyinmaMacCoreSelection.mm"),
             str(SOURCE / "Frameworks/PlainVanilla/Source/Cocoa/PVPropertyList.mm"),
             str(library),"-o",str(tmp / "native-oracle"),
         ]

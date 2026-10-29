@@ -95,13 +95,13 @@ jobs:
         shell: bash
         run: make -C Source/Distributions/Takao/DatabaseCooker
 
-      - name: Test native Guanyinma frontend selection without installation
+      - name: Test native Guanyinma frontend integration without installation
         shell: bash
         run: |
           sdk="$(xcrun --sdk macosx --show-sdk-path)"
           SQLITE3_LIB_DIR="$sdk/usr/lib" SQLITE3_INCLUDE_DIR="$sdk/usr/include" \
             SQLITE3_STATIC=0 SQLITE3_NO_PKG_CONFIG=1 \
-            python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py --suite selector
+            python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py --suite integration
 
       - name: Build input method
         shell: bash
@@ -120,7 +120,6 @@ jobs:
             -target "Takao (Loader OSX-IMK)" \
             -configuration Release \
             -xcconfig Takao-macOS.xcconfig \
-            KEYKEY_ENABLE_GUANYINMA=1 \
             build
           cd ..
           python3 update/prepare.py stamp-macos "Source/build/Release/chichi77 KeyKey.app"

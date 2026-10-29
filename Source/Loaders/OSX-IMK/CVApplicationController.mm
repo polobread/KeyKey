@@ -247,14 +247,6 @@ extern size_t VendorMotcleSize;
     [[OpenVanillaLoader sharedInstance] reload];
     NSLog(@"Finished reloading OpenVanilla");
 }
-- (bycopy NSDictionary *)inputCoreStatus
-{
-    return [[OpenVanillaLoader sharedInstance] inputCoreStatus];
-}
-- (bycopy NSDictionary *)setUseGuanyinmaCore:(BOOL)enabled
-{
-    return [[OpenVanillaLoader sharedInstance] setUseGuanyinmaCore:enabled];
-}
 - (NSString *)primaryInputMethod
 {
 	NSString *primaryInputMethod = [NSString stringWithUTF8String:[OpenVanillaLoader sharedLoader]->primaryInputMethod().c_str()];

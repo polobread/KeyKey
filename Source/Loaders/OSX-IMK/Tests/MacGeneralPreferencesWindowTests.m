@@ -16,10 +16,6 @@ static void Require(BOOL pass, NSString *message) {
     ++checks;
     if (!pass) [failures addObject:message];
 }
-@interface TakaoGlobal (WindowTestContract)
-- (void)renderInputCoreStatus:(NSDictionary *)status;
-- (void)stopInputCoreService:(NSNotification *)notification;
-@end
 @implementation TakaoHelper
 + (NSString *)plistFilePath:(NSString *)filename { return profilePath; }
 + (NSString *)cacheFolder { return [profilePath stringByDeletingLastPathComponent]; }
@@ -46,10 +42,6 @@ static void Require(BOOL pass, NSString *message) {
     [popup removeAllItems]; [popup addItemWithTitle:@"Default"];
 }
 - (void)requestUpdateConsent:(NSNumber *)enabled {}
-- (void)requestInputCoreStatus:(NSNumber *)enabled {
-    [self renderInputCoreStatus:@{@"supported": @YES, @"active": @"guanyinma",
-        @"requested": @YES, @"pending": @NO}];
-}
 @end
 
 @interface QuietController : NSObject @end
@@ -127,9 +119,8 @@ int main(int argc, char **argv) {
         NSView *pane = [preference valueForKey:@"_generalView"];
         NSPopUpButton *reference = [global valueForKey:@"_highlightColorPopUpButton"];
         NSPopUpButton *startup = [global valueForKey:@"_defaultInputModePopUpButton"];
-        NSPopUpButton *core = [global valueForKey:@"_inputCorePopUpButton"];
-        NSTextField *status = [global valueForKey:@"_inputCoreStatusTextField"];
-        Require(startup && core && status, @"all dynamic controls instantiated");
+        Require(startup != nil, @"startup input mode control instantiated");
+        Require(![global respondsToSelector:NSSelectorFromString(@"setInputCore:")], @"single-core preferences expose no core switch action");
         Snapshot(window, output, [caseName stringByAppendingString:@"-initial"]);
         Require(window.toolbar != nil && window.toolbar.items.count >= 7, @"real toolbar attached");
         Require([pane superview] == window.contentView, @"active general pane in real content view");
@@ -139,10 +130,6 @@ int main(int argc, char **argv) {
                 NSStringFromRect(window.contentLayoutRect), NSStringFromRect(pane.frame)]);
         Require(fabs(NSMinX(startup.frame) - NSMinX(reference.frame)) <= 0.5,
             @"startup popup aligned with existing control column");
-        Require(fabs(NSMinX(core.frame) - NSMinX(reference.frame)) <= 0.5,
-            @"core popup aligned with existing control column");
-        Require(fabs(NSMinX(status.frame) - NSMinX(reference.frame)) <= 3.0,
-            @"core status aligned with control column");
         for (NSView *child in pane.subviews) {
             if (child.hidden) continue;
             Require(NSContainsRect(pane.bounds, child.frame), [NSString stringWithFormat:
@@ -156,42 +143,24 @@ int main(int argc, char **argv) {
             NSTextField *label = (NSTextField *)child;
             BOOL isStartupLabel = NSMaxX(label.frame) <= NSMinX(startup.frame) &&
                 fabs(NSMidY(label.frame) - NSMidY(startup.frame)) < 8.0;
-            BOOL isCoreLabel = [label.identifier isEqualToString:@"InputCoreLabel"];
             BOOL isScaleLabel = [label.stringValue isEqualToString:scaleTitle];
-            if (isStartupLabel || isCoreLabel || isScaleLabel) {
+            if (isStartupLabel || isScaleLabel) {
                 Require([[label cell] cellSize].width <= NSWidth(label.frame) + 0.5,
                     [NSString stringWithFormat:@"localized label fits: %@", label.stringValue]);
-                Require(!NSIntersectsRect(label.frame, startup.frame) &&
-                        !NSIntersectsRect(label.frame, core.frame),
+                Require(!NSIntersectsRect(label.frame, startup.frame),
                     @"localized dynamic label does not overlap popup column");
             }
         }
         NSButton *shift = [global valueForKey:@"_useShiftToggleInputMode"];
         Require([[shift cell] cellSize].width <= NSWidth(shift.frame) + 0.5,
             @"localized Shift checkbox fits");
-        for (NSPopUpButton *popup in @[startup, core])
+        for (NSPopUpButton *popup in @[startup])
             for (NSMenuItem *item in popup.itemArray)
                 Require([item.title sizeWithAttributes:@{NSFontAttributeName: popup.font}].width
                         <= NSWidth(popup.frame) - 25.0,
                     @"localized popup item title fits");
-        Require(!NSIntersectsRect(startup.frame, core.frame), @"startup/core rows do not intersect");
-        Require(!NSIntersectsRect(status.frame, core.frame), @"core popup/status do not intersect");
         NSView *sound = [global valueForKey:@"_soundListPopUpButton"];
-        Require(!NSIntersectsRect(status.frame, sound.frame), @"core status/sound do not intersect");
-        NSDictionary *pending = @{@"supported": @YES, @"active": @"manjusri",
-            @"requested": @YES, @"pending": @YES,
-            @"error": @"The previous input context is still finishing composition; please complete the current candidate selection."};
-        [global renderInputCoreStatus:pending];
-        Snapshot(window, output, [caseName stringByAppendingString:@"-pending"]);
-        CheckVisible(status, window, @"long pending status");
-        Require(NSHeight(status.frame) >= 27, @"two-line status reserves height");
-        Require(status.maximumNumberOfLines == 2 && [status.toolTip isEqualToString:status.stringValue],
-            @"long status keeps two lines and full tooltip");
-        for (NSView *child in pane.subviews)
-            if (child != status && !child.hidden)
-                Require(!NSIntersectsRect(child.frame, status.frame), @"long status has separate row");
-        [global renderInputCoreStatus:nil];
-        Snapshot(window, output, [caseName stringByAppendingString:@"-offline"]);
+        Require(!NSIntersectsRect(startup.frame, sound.frame), @"startup input mode and sound rows do not intersect");
         NSRect originalPane = pane.frame;
         NSRect originalWindow = window.frame;
         NSView *other = [preference valueForKey:@"_phoneticView"];
@@ -201,7 +170,7 @@ int main(int argc, char **argv) {
             Require(NSEqualSizes(pane.frame.size, originalPane.size), @"tab switch keeps pane size");
             Require(NSEqualSizes(window.frame.size, originalWindow.size), @"tab switch keeps native window size");
             CheckVisible(sound, window, @"sound popup after tab switch");
-            CheckVisible(core, window, @"core popup after tab switch");
+            CheckVisible(startup, window, @"startup input mode after tab switch");
         }
         // Exercise the actual toolbar action, which requests animated resizing.
         NSToolbarItem *phoneticItem = nil, *generalItem = nil;
@@ -220,7 +189,6 @@ int main(int argc, char **argv) {
         for (NSView *child in pane.subviews)
             if (!child.hidden) CheckVisible(child, window, @"control after animated toolbar return");
         Snapshot(window, output, [caseName stringByAppendingString:@"-return"]);
-        [global stopInputCoreService:nil];
         [window orderOut:nil];
         for (NSString *failure in failures) fprintf(stderr, "FAIL: %s\n", failure.UTF8String);
         printf("General preferences real NIB/window (%s): %lu checks, %lu failures.\n",

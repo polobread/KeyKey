@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
-// Ordinary codec contract tests use the actual Formosa and Manjusri sources.
+// Manual migration source oracle uses the actual Formosa and Manjusri sources.
 // No input-method host, preferences, model, user store or migration trace is used.
 #import <Foundation/Foundation.h>
 #include "GuanyinmaMacReadingCodec.h"

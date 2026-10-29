@@ -143,7 +143,6 @@ static id PlainText(id value)
     HostTextView *_text;
     NSTextField *_status;
     NSPopUpButton *_method;
-    NSPopUpButton *_core;
     NSFileHandle *_log;
     TISInputSourceRef _previous;
     TISInputSourceRef _testSource;
@@ -526,27 +525,6 @@ static id PlainText(id value)
     return YES;
 }
 
-- (void)applyCore:(id)sender
-{
-    if (![self readyForControlAllowMarked:YES]) return;
-    @try {
-        id<OpenVanillaService> service = [self service];
-        if (!service) { [self status:@"隔離 DO 尚未就緒；先在文字欄按一下，再重試。"]; return; }
-        BOOL hadMarkedText = _text.hasMarkedText;
-        NSString *textBefore = [_text.string copy] ?: @"";
-        NSString *markedRangeBefore = NSStringFromRange(_text.markedRange);
-        [self record:@{@"event": @"coreSelectionRequest", @"requestedGuanyinma": @(_core.indexOfSelectedItem == 1),
-            @"hasMarkedText": @(hadMarkedText), @"hostText": textBefore, @"markedRange": markedRangeBefore}];
-        NSDictionary *reply = [service setUseGuanyinmaCore:_core.indexOfSelectedItem == 1];
-        [self record:@{@"event": @"coreSelection", @"reply": reply ?: @{},
-            @"hasMarkedTextBefore": @(hadMarkedText), @"hostTextBefore": textBefore,
-            @"markedRangeBefore": markedRangeBefore, @"hasMarkedTextAfter": @(_text.hasMarkedText),
-            @"hostTextAfter": _text.string ?: @""}];
-        [self status:[NSString stringWithFormat:@"隔離核心：%@", reply ?: @{}]];
-        [_window makeFirstResponder:_text];
-    } @catch (NSException *error) { [self status:[@"隔離 DO：" stringByAppendingString:error.reason ?: @"失敗"]]; }
-}
-
 - (void)applyMethod:(id)sender
 {
     if (![self readyForControlAllowMarked:NO]) return;
@@ -603,16 +581,12 @@ static id PlainText(id value)
     [self button:@"還原來源" frame:NSMakeRect(234, 582, 120, 32) action:@selector(restore:)];
     [self button:@"清空文字" frame:NSMakeRect(360, 582, 110, 32) action:@selector(clearText:)];
     [self button:@"啟動隔離服務" frame:NSMakeRect(480, 582, 190, 32) action:@selector(launchIsolatedService:)];
-    _core = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(16, 540, 180, 28) pullsDown:NO];
-    [_core addItemsWithTitles:@[@"Manjusri", @"Guanyinma (Rust)"]];
-    [_window.contentView addSubview:_core];
-    [self button:@"套用核心" frame:NSMakeRect(202, 539, 110, 30) action:@selector(applyCore:)];
-    _method = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(330, 540, 180, 28) pullsDown:NO];
+    _method = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(16, 540, 180, 28) pullsDown:NO];
     NSArray *methods = @[@[@"好打注音", @"SmartMandarin"], @[@"傳統注音", @"TraditionalMandarin"],
         @[@"倉頡", @"Generic-cj-cin"], @[@"簡易", @"Generic-simplex-cin"]];
     for (NSArray *method in methods) { [_method addItemWithTitle:method[0]]; _method.lastItem.representedObject = method[1]; }
     [_window.contentView addSubview:_method];
-    [self button:@"套用輸入法" frame:NSMakeRect(518, 539, 130, 30) action:@selector(applyMethod:)];
+    [self button:@"套用輸入法" frame:NSMakeRect(204, 539, 130, 30) action:@selector(applyMethod:)];
     _status = [NSTextField wrappingLabelWithString:@"尚未呼叫 TIS。啟用按鈕才會註冊、啟用並暫時選取隔離來源。"];
     _status.frame = NSMakeRect(16, 476, 885, 52);
     [_window.contentView addSubview:_status];

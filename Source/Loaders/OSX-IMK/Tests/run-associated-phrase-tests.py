@@ -42,7 +42,7 @@ def main():
             executable = tmp / "associated-phrases"
             command = shlex.split(os.environ.get("CXX", "xcrun clang++")) + [
                 "-std=c++17", "-fno-objc-arc", "-fblocks", "-mmacosx-version-min=15.0",
-                "-DKEYKEY_ENABLE_GUANYINMA=1", "-DOV_USE_SQLITE",
+                "-DOV_USE_SQLITE",
                 "-Wno-deprecated-declarations", "-Wno-parentheses", "-Wno-dangling-else",
                 "-F", str(tmp), "-I", str(LOADER), "-I", str(CORE / "include"),
                 "-I", str(SOURCE / "Frameworks/PlainVanilla/Headers"),
@@ -50,7 +50,6 @@ def main():
                 "-framework", "Foundation", "-lsqlite3", "-liconv",
                 str(TESTS / "GuanyinmaAssociatedPhraseTests.mm"),
                 str(LOADER / "GuanyinmaMacAdapter.mm"),
-                str(LOADER / "GuanyinmaMacCoreSelection.mm"),
                 str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
                 str(SOURCE / "Frameworks/PlainVanilla/Source/Cocoa/PVPropertyList.mm"),
                 str(library), "-o", str(executable),

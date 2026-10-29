@@ -7,25 +7,15 @@
 
 #include <OpenVanilla/OpenVanilla.h>
 #include <string>
-#include "GuanyinmaMacCoreSelection.h"
-
-#ifndef KEYKEY_ENABLE_GUANYINMA
-#define KEYKEY_ENABLE_GUANYINMA 0
-#endif
 
 // These entry points have no loader singleton or installed-profile dependency.
-// The caller owns a returned context; NULL means safe legacy fallback before
-// any Guanyinma input session has started.
+// The caller owns a returned context. NULL reports a Rust initialization error;
+// callers must report the error rather than opening another input core.
 bool GuanyinmaSupportsInputMethod(const std::string& identifier);
 
 // Checks only the native preference mapping; it never opens a database.
 bool GuanyinmaCanUseInputMethod(const std::string& identifier,
     OpenVanilla::OVKeyValueMap* moduleConfig, std::string* error = NULL);
-
-// True after this decorated module successfully created a Rust context.
-// False for undecorated modules, before creation, or after safe legacy fallback.
-// This is a diagnostic for the last factory call, not a user-data routing policy.
-bool GuanyinmaModuleUsesCore(const OpenVanilla::OVModule* module);
 
 OpenVanilla::OVEventHandlingContext* GuanyinmaCreateInputContext(
     const std::string& identifier,
@@ -43,28 +33,15 @@ bool GuanyinmaPrepareCandidatePanelForKey(const OpenVanilla::OVKey* key,
 
 // Synchronize an FE-decided mode after the FE has finished/cleared visible
 // text. This never commits or replays host text. A nonempty Rust session rejects
-// the change. Non-Rust/disabled/unowned services are successful no-ops.
+// the change. Unowned services are successful no-ops.
 bool GuanyinmaSetEnglishModeForService(OpenVanilla::OVCandidateService* candidateService,
     bool enabled, std::string* error = NULL);
 
-// Decorates an already initialized package and assumes its ownership.
-// Disabled builds/runtime settings return the original package unchanged.
-// Supported modules keep their identifiers, names and the existing PV pipeline;
-// Associated phrases keep the native FE and select query logic by active core.
-// Other modules are returned directly from the legacy package.
-OpenVanilla::OVModulePackage* GuanyinmaWrapModulePackage(
-    OpenVanilla::OVModulePackage* initializedPackage,
+// Standalone package with the four existing input method identifiers and the
+// associated-phrase frontend. It never creates Manjusri or Generic engines.
+// The loader initializes/owns the package and owns every returned module.
+OpenVanilla::OVModulePackage* GuanyinmaCreateModulePackage(
     const std::string& modelPath,
-    const std::string& userDatabasePath,
-    bool enabled);
-
-// Dual-core package: always decorate supported methods, including when the
-// saved selection is Manjusri. Each live input context switches independently
-// at a safe native input boundary and retains the same PV sandwich.
-OpenVanilla::OVModulePackage* GuanyinmaWrapModulePackage(
-    OpenVanilla::OVModulePackage* initializedPackage,
-    const std::string& modelPath,
-    const std::string& userDatabasePath,
-    const std::shared_ptr<GuanyinmaCoreSelection>& selection);
+    const std::string& userDatabasePath);
 
 #endif

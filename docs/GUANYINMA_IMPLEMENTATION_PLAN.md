@@ -60,9 +60,9 @@ macOS 已接回既有 `OVEncodingService` 的系統字型／編碼服務。iOS �
 
 ## 階段五：原生 frontend 接合（進行中）
 
-macOS 標準建置包含 Guanyinma 與 Manjusri 雙核心、一般設定切換、package decorator 與原生 adapter，涵蓋四種輸入法、既有 PV 候選／文字／輸出管線及獨立使用者資料管理。未設定核心偏好時預設 Rust，保留明確保存的 Manjusri 選擇；原核心開發對照須明確停用 Rust 建置。runtime proxy 保留原 context，在組字／候選／待送 commit 完成後由新事件切換，不重播事件；不支援的設定在 session 建立前回退。原生設定快照自行擁有資料，避免 plist reload 的借用生命週期問題。正式打包準備鎖定 Rust 工具鏈、少量 FE smoke 與隨包 runtime notices。
+macOS 四種輸入法直接透過 Guanyinma package 建立 Rust session，保留既有 PV 候選／文字／輸出管線及獨立使用者資料管理。產品不編譯 Manjusri／Generic 輸入引擎，不提供核心選單、建置開關或失敗回退。設定更新等待組字、候選及待送 commit 完成；失敗保留目前可見狀態並回報，不重播事件。原生設定快照自行擁有資料，避免 plist reload 的借用生命週期問題。正式打包使用鎖定 Rust 工具鏈、少量 FE integration smoke 與隨包 runtime notices。
 
-已接上完整 Guanyinma JSON 備份與舊 MJSR 封存匯入；FE 解碼舊容器，核心只接收版本化資料，以原子交易合併自訂詞並替換來源提供的學習範圍。備份排除本機世代資料，匯出失敗保留原檔。建置、隔離測試與回退見 [macOS 接合文件](GUANYINMA_MACOS_ADAPTER.md)。真正 IMK 文字宿主與安裝驗收、其餘 frontend 的接合仍待完成；不將此里程碑視為六平台遷移完成。
+已接上完整 Guanyinma JSON 備份與舊 MJSR 封存匯入；FE 解碼舊容器，核心只接收版本化資料，以原子交易合併自訂詞並替換來源提供的學習範圍。備份排除本機世代資料，匯出失敗保留原檔。建置、隔離測試與錯誤處理見 [macOS 接合文件](GUANYINMA_MACOS_ADAPTER.md)。真正 IMK 文字宿主與安裝驗收、其餘 frontend 的接合仍待完成；不將此里程碑視為六平台遷移完成。
 
 iOS 同一 FE 的觸控 extension 與 App 實體鍵盤編輯器固定使用 Guanyinma 單核心，移除舊 Swift 解析、walker、排序與學習引擎，以及核心設定／切換／失敗回退。Swift 保留 FE 型別、原生字型 callback、宿主交易與 App Group 自訂詞發布；extension 唯讀同步發布詞條，學習保存在私有 Rust DB。Xcode 必須編譯／連結 Rust 靜態庫；完整核心 CI 集中驗證，iOS 僅做少量串接冒煙。建置、資料權責及驗證層級見 [iOS 接合文件](GUANYINMA_IOS_ADAPTER.md)。
 
@@ -78,7 +78,7 @@ Linux／FreeBSD Fcitx 5 已轉為 Guanyinma 單核心開發；Legacy C++ walker�
 
 | 階段 | 交付範圍 | 完成判定 |
 |---|---|---|
-| 五 | 五個 frontend 接合，服務六平台 | 原生 build、產物 DB／版本／簽章及真正文字宿主各自驗收；macOS 保留雙核心，其他平台以 Guanyinma 單核心交付 |
+| 五 | 五個 frontend 接合，服務六平台 | 原生 build、產物 DB／版本／簽章及真正文字宿主各自驗收；六平台以 Guanyinma 單核心交付 |
 
 接合工作依實際受影響範圍建置／測試。Windows 的 TSF、macOS IMK、iOS document proxy、Android InputConnection、Fcitx X11／Wayland 維持原生邊界；C ABI 不代替宿主文字交易或生命週期。
 

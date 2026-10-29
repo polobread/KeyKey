@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare native Generic and Guanyinma font policies without installed IMK.
+"""Verify Guanyinma frontend font policies without installed IMK or legacy engines.
 
 Uses the read-only shared DB and temporary user stores; no migration baseline,
 TIS changes, defaults or real input-method profile. --system-fonts additionally
@@ -52,7 +52,7 @@ def main():
         library = Path(metadata["target_directory"]) / "release/libguanyinma.a"
     with tempfile.TemporaryDirectory(prefix="keykey-guanyinma-glyph-tests-") as scratch:
         tmp = Path(scratch)
-        for name in ("OpenVanilla", "PlainVanilla", "Formosa", "Manjusri", "Minotaur"):
+        for name in ("OpenVanilla", "PlainVanilla"):
             framework = tmp / (name + ".framework")
             framework.mkdir()
             (framework / "Headers").symlink_to(SOURCE / "Frameworks" / name / "Headers",
@@ -61,18 +61,15 @@ def main():
         compiler = shlex.split(os.environ.get("CXX", "xcrun clang++"))
         run(compiler + [
             "-std=c++17", "-fno-objc-arc", "-fblocks", "-mmacosx-version-min=15.0",
-            "-DKEYKEY_ENABLE_GUANYINMA=1", "-DOV_USE_SQLITE",
+            "-DOV_USE_SQLITE",
             "-Wno-deprecated-declarations", "-Wno-parentheses", "-Wno-dangling-else",
             "-F", str(tmp), "-I", str(LOADER), "-I", str(CORE / "include"),
             "-I", str(SOURCE / "Frameworks/PlainVanilla/Headers"),
-            "-I", str(SOURCE / "ModulePackages/OVIMGeneric"),
             "-framework", "Cocoa", "-framework", "Security", "-lsqlite3", "-liconv",
             str(TESTS / "GuanyinmaMacGlyphTests.mm"),
             str(LOADER / "GuanyinmaMacAdapter.mm"),
             str(SOURCE / "ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"),
-            str(LOADER / "GuanyinmaMacCoreSelection.mm"),
             str(LOADER / "CVEncodingService.mm"),
-            str(SOURCE / "ModulePackages/OVIMGeneric/OVIMGeneric.cpp"),
             str(SOURCE / "Frameworks/PlainVanilla/Source/Cocoa/PVPropertyList.mm"),
             str(library), "-o", str(executable),
         ])
@@ -81,8 +78,8 @@ def main():
         run([str(executable), str(MODEL), str(profiles)] +
             (["--system-fonts"] if args.system_fonts else []))
     if digest(MODEL) != before:
-        raise RuntimeError("Canonical model changed during glyph oracle tests")
-    print("Glyph oracle passed; canonical DB bytes unchanged.")
+        raise RuntimeError("Canonical model changed during glyph FE tests")
+    print("Glyph FE contract passed; canonical DB bytes unchanged.")
     return 0
 
 

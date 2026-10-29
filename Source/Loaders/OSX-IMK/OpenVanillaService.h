@@ -6,9 +6,6 @@
 
 @protocol OpenVanillaService
 - (oneway void)reloadOpenVanilla;
-// One frontend and bundle; the server owns capability and the saved choice.
-- (bycopy NSDictionary *)inputCoreStatus;
-- (bycopy NSDictionary *)setUseGuanyinmaCore:(BOOL)enabled;
 - (oneway void)sendString:(NSString *)text;
 - (oneway void)sendKey:(NSString *)key;
 

@@ -53,6 +53,11 @@ OVAFAssociatedPhraseContext::OVAFAssociatedPhraseContext(OVAFAssociatedPhrase* m
 
 void OVAFAssociatedPhraseContext::rebuildStatementIfNeeded()
 {
+    // A supplied core query owns all lookup, ordering and deduplication. Keep
+    // the direct SQLite path only for callers without a provider (the manual
+    // migration oracle), never as a fallback for provider errors/inactivity.
+    if (m_query)
+        return;
     if (m_selectStatement && m_statementGeneration == m_module->m_cfgGeneration)
         return;
 
@@ -193,7 +198,8 @@ bool OVAFAssociatedPhraseContext::handleDirectText(const string& text, OVTextBuf
     // loaderService->logger("OVAFAssociatedPhrase") << "handleDirectText: " << text << " (" << chrs.size() << ")" << endl;
     
     const bool sharedQuery = m_query && m_query->isActive(candidateService);
-    const bool canQuery = sharedQuery ? !m_module->m_cfgCollections.empty() : m_selectStatement != 0;
+    const bool canQuery = m_query ? sharedQuery && !m_module->m_cfgCollections.empty() :
+        m_selectStatement != 0;
     if (canQuery && chrs.size() == 1 && composingText->isEmpty() && readingText->isEmpty()) {
         unsigned int codepoint = OVUTF8Helper::CodePointFromSingleUTF8String(chrs[0]);
         
@@ -309,6 +315,8 @@ const string OVAFAssociatedPhrase::localizedName(const string& locale)
 
 bool OVAFAssociatedPhrase::initialize(OVPathInfo* pathInfo, OVLoaderService* loaderService)
 {
+	if (m_query)
+		return true;
 	OVSQLiteDatabaseService* dbService = dynamic_cast<OVSQLiteDatabaseService*>(loaderService->SQLiteDatabaseService());
 	if (!dbService) {
         // loaderService->logger("OVAFAssociatedPhrase") << "cannot obtain SQLite-backed DB service" << endl;

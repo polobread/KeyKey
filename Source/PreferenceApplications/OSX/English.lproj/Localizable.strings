@@ -92,15 +92,3 @@
 "Chinese" = "Chinese";
 
 "English" = "English";
-
-/* Input core selection is owned by the running IMK service. */
-"Input core:" = "Input core:";
-"Manjusri (Original core)" = "Manjusri (Original core)";
-"Guanyinma (Rust)" = "Guanyinma (Rust)";
-"Connecting to the input core service…" = "Connecting to the input core service…";
-"Input core service is unavailable." = "Input core service is unavailable.";
-"Current core: %@." = "Current core: %@.";
-"This app does not include the Rust core." = "This app does not include the Rust core.";
-"Will switch to %@ after the current composition finishes." = "Switch to %@ when composition finishes.";
-"Applying input core choice…" = "Applying input core choice…";
-"Choose the input core used by the running KeyKey app." = "Choose the input core used by the running KeyKey app.";

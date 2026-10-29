@@ -4,7 +4,7 @@
 
 Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、C ABI 與四種輸入法的共用 session，包括好打注音組句與 FE 可設定的 10～20 音節邊界。
 其獨立建置／單元及 C consumer 驗證見 [Guanyinma README](Source/Guanyinma/README.md)，
-移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。Windows、iOS、Android、Linux／FreeBSD 固定使用 Guanyinma 單核心；macOS 標準建置包含雙核心，缺省選擇 Rust，保留既有明確選擇及一般設定切換，見 [Guanyinma 接合](docs/GUANYINMA_MACOS_ADAPTER.md)。六平台 workflow 接線與分工表見 [核心 README](Source/Guanyinma/README.md#測試範圍與分工)。
+移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。六平台固定使用 Guanyinma 單核心；macOS 保留原生 FE，見 [Guanyinma 接合](docs/GUANYINMA_MACOS_ADAPTER.md)。六平台 workflow 接線與分工表見 [核心 README](Source/Guanyinma/README.md#測試範圍與分工)。
 
 Linux 1.3.7 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。macOS 正式版為
@@ -175,9 +175,8 @@ DB 到 `chichi77 KeyKey.app`。平台建置不得自行 cooker、重新建模或
 目前 macOS build 僅支援 arm64。若要製作 universal binary，需要另行準備
 x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 
-標準 App 缺省使用 Guanyinma；明確保存的 Manjusri 偏好保留。`Takao-Guanyinma.xcconfig`
-仍是相同設定的入口，僅供原核心開發對照時可明確傳入 `KEYKEY_ENABLE_GUANYINMA=0`。
-正式打包 workflow 固定啟用 Rust，並隨包保留 `GuanyinmaNotices.txt`。
+macOS App 固定使用 Guanyinma，Rust 是必要建置依賴，不提供原核心建置開關、
+核心選單或失敗回退。標準建置與打包隨 App 保留 `GuanyinmaNotices.txt`。
 
 ### 分類關聯詞詞庫
 
@@ -188,9 +187,8 @@ x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 ### 安裝包
 
 安裝包使用 `Installer/build.sh APP_PATH`，由 `pkgbuild`／`productbuild` 產生
-`chichi77KeyKey.pkg` 及其 `.pkg.zip`，不是單純壓縮 App。雙核心版本將上面
-建置命令的 xcconfig 換成 `Takao-Guanyinma.xcconfig`，再把該 App 明確傳給同一
-封裝入口；兩個核心維持在同一個 FE／App 中。
+`chichi77KeyKey.pkg` 及其 `.pkg.zip`，不是單純壓縮 App。將上面標準建置的
+App 明確傳給此封裝入口，沿用原生 FE 與安裝流程。
 
 本機建置會對 staged App／helper 做 ad hoc 簽章；Developer ID 簽章與
 notarization 屬正式發布步驟。完整建置、本機安裝及簽署流程見
@@ -618,10 +616,9 @@ App without cooking the model. Model maintenance uses the separate
 is arm64-only; a universal build requires a separate x86_64 OpenSSL build and an
 xcconfig change.
 
-Standard builds link Guanyinma and default to Rust when no preference is stored,
-while preserving explicit Manjusri choices. Runtime notices accompany the App.
-Only an explicit `KEYKEY_ENABLE_GUANYINMA=0` opts out for legacy development;
-the packaging workflow always enables Rust.
+All four macOS input methods use Guanyinma exclusively. Rust is required;
+there is no legacy engine build option, core selector or fallback. Runtime
+notices accompany the App and its existing packaging flow.
 
 The public `DataSource/chichi77Collection` directory is included in the
 repository. The macOS DatabaseCooker always writes its 29 TSV collections into
