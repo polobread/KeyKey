@@ -8,6 +8,9 @@ import UIKit
 /// the document keeps them if iOS dismisses the keyboard without a callback.
 /// Other Bopomofo modes use marked text in the host field.
 final class KeyboardViewController: UIInputViewController {
+    #if DEBUG && targetEnvironment(simulator) && compiler(>=6.4)
+    private var geometryProbe: AnyObject?
+    #endif
     private var engine: BopomofoEngine?
     private var loadFailure: String?
     private var keyboardView: KeyboardView?
@@ -31,6 +34,7 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
+    private let presentationSettings = KeyboardPresentationSettings()
     private let supporterState = SupporterState()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
@@ -52,9 +56,10 @@ final class KeyboardViewController: UIInputViewController {
         inputClicksEnabled = clickSettings.enabled
         _ = learningResetRequest.applyIfNeeded(to: smartUserData)
 
-        // iPad draws no globe row of its own, so the keyboard has to carry the
-        // key or there is no way to leave it.
-        let keyboard = KeyboardView(needsInputModeSwitch: needsInputModeSwitchKey)
+        // Query the host after connection; keep the same globe control alive
+        // through visibility changes so its system picker targets stay attached.
+        let keyboard = KeyboardView(needsInputModeSwitch: false)
+        keyboard.setPresentation(presentationSettings.presentation)
         keyboard.delegate = self
         keyboard.inputModeSwitchButton?.addTarget(
             self, action: #selector(commitBeforeInputModeSwitch), for: .touchDown
@@ -81,12 +86,17 @@ final class KeyboardViewController: UIInputViewController {
         height.isActive = true
         heightConstraint = height
 
-        // iPhone landscape reports compact height and uses the short scale.
-        // iPad remains full-height but receives a centred maximum content width.
-        registerForTraitChanges([UITraitVerticalSizeClass.self]) {
+        // The inner display of a folding iPhone is regular in both dimensions.
+        registerForTraitChanges([UITraitVerticalSizeClass.self, UITraitHorizontalSizeClass.self]) {
             (self: Self, _) in self.applyMetrics()
         }
         applyMetrics()
+        #if DEBUG && targetEnvironment(simulator) && compiler(>=6.4)
+        if #available(iOS 27.1, *),
+           sharedDefaults?.bool(forKey: SimulatorGeometryProbe.preferenceKey) == true {
+            geometryProbe = SimulatorGeometryProbe(view: view, scope: "extension")
+        }
+        #endif
         activeDocumentIdentifier = currentDocumentIdentifier()
         updateFieldPolicy()
         refresh()
@@ -101,9 +111,30 @@ final class KeyboardViewController: UIInputViewController {
         }
         refreshAppSettings()
         updateFieldPolicy()
+        refreshSystemKeyboardControls()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        refreshSystemKeyboardControls()
+    }
+
+    private func refreshSystemKeyboardControls() {
+        guard view.window != nil else { return }
+        // Apple DTS confirmed false on iPhone Duo in iOS 27.1 is a runtime bug
+        // (FB25073949). Limit the fallback to that version and wide phone hosts;
+        // other runtimes and form factors continue to use the system property.
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        let affectedWidePhone = version.majorVersion == 27 && version.minorVersion == 1
+            && traitCollection.userInterfaceIdiom == .phone
+            && traitCollection.horizontalSizeClass == .regular
+            && traitCollection.verticalSizeClass == .regular
+            && view.safeAreaLayoutGuide.layoutFrame.width >= ExpandedSplitKeyboardLayout.minimumWidth
+        keyboardView?.setNeedsInputModeSwitch(needsInputModeSwitchKey || affectedWidePhone)
     }
 
     private func refreshAppSettings() {
+        keyboardView?.setPresentation(presentationSettings.presentation)
         candidateColor = candidateColorSettings.color
         inputClicksEnabled = clickSettings.enabled
         if let engine {
@@ -126,10 +157,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func applyMetrics() {
-        let metrics = KeyboardMetrics.forCompactHeight(
-            traitCollection.verticalSizeClass == .compact,
-            isPad: traitCollection.userInterfaceIdiom == .pad
-        )
+        let metrics = currentMetrics
         keyboardView?.setMetrics(metrics)
         applyHeight(metrics)
     }
@@ -145,7 +173,8 @@ final class KeyboardViewController: UIInputViewController {
     private var currentMetrics: KeyboardMetrics {
         KeyboardMetrics.forCompactHeight(
             traitCollection.verticalSizeClass == .compact,
-            isPad: traitCollection.userInterfaceIdiom == .pad
+            isPad: traitCollection.userInterfaceIdiom == .pad,
+            regularWidth: traitCollection.horizontalSizeClass == .regular
         )
     }
 
@@ -277,14 +306,15 @@ final class KeyboardViewController: UIInputViewController {
 
     private func showSettingsPanel() {
         guard settingsPanel == nil, !collections.isEmpty else { return }
-        if let engine { apply(engine.finishCompositionForInputHandoff()) }
+        keyboardView?.cancelBackspaceRepeat()
         let panel = SettingsPanel(
             collections: collections, enabled: phraseSettings.enabledCollections,
             inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
             compositionMode: engine?.bopomofoCompositionMode ?? .smart,
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
-            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout
+            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
+            presentation: presentationSettings.presentation
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -518,7 +548,22 @@ final class KeyboardViewController: UIInputViewController {
 extension KeyboardViewController: KeyboardViewDelegate {
     func keyboardView(_ view: KeyboardView, didPress key: String) {
         statusOverride = nil
+        if key == "HIDE_KEYBOARD" {
+            if let engine {
+                let result = engine.finishCompositionForInputHandoff()
+                apply(result)
+            }
+            keyboardView?.cancelBackspaceRepeat()
+            // Give a pending marked-text replacement a main-loop turn before
+            // requesting dismissal of the remote input view.
+            DispatchQueue.main.async { [weak self] in self?.dismissKeyboard() }
+            return
+        }
         guard let engine else { return }
+        if key == "CLOSE_CANDIDATES" {
+            apply(engine.closeTouchSmartCandidates())
+            return
+        }
         if key == "SETTINGS" {
             showSettingsPanel()
             return
@@ -557,6 +602,11 @@ extension KeyboardViewController: KeyboardViewDelegate {
 }
 
 extension KeyboardViewController: SettingsPanelDelegate {
+    func settingsPanel(_ panel: SettingsPanel, didChangePresentation presentation: KeyboardPresentation) {
+        presentationSettings.setPresentation(presentation)
+        keyboardView?.setPresentation(presentation)
+    }
+
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod) {
         if let engine {
             apply(engine.setChineseInputMethod(method))

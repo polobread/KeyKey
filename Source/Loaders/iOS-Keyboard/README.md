@@ -70,6 +70,12 @@ Keyboard/         UIInputViewController extension
 KeyKeyiOS.xcodeproj
 ```
 
+## iPhone Duo
+
+鍵盤依水平／垂直 size class 調整，regular-width iPhone 採用寬版內容上限；鍵盤與設定頁
+分別遵守自己的安全區。尺寸、半折回呼的實測結果、診斷開關與驗證限制見
+[iPhone Duo 適配與驗證](../../../docs/IOS_IPHONE_DUO_ADAPTATION.md)。
+
 ## 注音鍵盤配置
 
 「輸入法設定」、鍵盤「設」及 App 內實體鍵盤編輯器提供「標準／許氏鍵盤」配置，
@@ -168,6 +174,13 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   log；SQLite 只映射查詢用到的頁，資料層常駐足跡不到 1 MB。
 - `Mandarin-bpmf-cin` 的 key 是 Formosa 的 absolute-order 編碼，不是鍵盤按鍵，
   所以 `BopomofoSyllable` 必須實作該編碼才查得到東西。
+- **完整／左右分離鍵盤**：在鍵盤「設 → 鍵盤外觀」手動切換，預設完整。分離模式的
+  組字、候選與按鍵列一起留出中央空隙，左右各有空白鍵；切換保留組字與候選，選擇
+  保存在 extension 沙箱。寬版分離採左右各六格，新增「，」「。」「、」「？」標點；組字區仍為
+  十一格（左六、右五），最後一格提供「▼」收鍵盤，英文與傳統注音亦可使用。
+  好打注音的隱藏候選列也有十二格：上一頁、九個候選、下一頁與「×」關閉候選；
+  關閉後恢復數字列並保留組字，每頁仍維持九個候選。
+  Duo 的 extension 尚無可用折疊回呼，因此不自動切換。
 - **`RequestsOpenAccess = false`**：不連網，鍵盤可唯讀 App Group 的設定，
   鍵盤內修改的設定與學習資料則存在 extension 自己的沙箱。代價是
   iOS 把 `UIFeedbackGenerator` 綁在這個權限後面，因此沒有按鍵震動。
