@@ -43,6 +43,39 @@ static void Check(BOOL condition, NSString *message)
 - (void)dealloc { [_fileURL release]; [_installationType release]; [_displayVersionString release]; [super dealloc]; }
 @end
 
+// Exercise the production user-driver wrapper without opening host windows.
+@interface FocusRecordingDriver : NSObject
+@property(nonatomic, retain) NSMutableArray *events;
+@end
+@implementation FocusRecordingDriver
+- (id)init { if ((self = [super init])) _events = [NSMutableArray new]; return self; }
+- (void)dealloc { [_events release]; [super dealloc]; }
+- (void)showUpdateFoundWithAppcastItem:(SUAppcastItem *)item state:(SPUUserUpdateState *)state reply:(void (^)(SPUUserUpdateChoice))reply
+{ [self.events addObject:@"found"]; }
+- (void)showDownloadInitiatedWithCancellation:(void (^)(void))cancel { [self.events addObject:@"download"]; }
+- (void)showReadyToInstallAndRelaunch:(void (^)(SPUUserUpdateChoice))reply { [self.events addObject:@"ready"]; }
+- (void)showUpdateInFocus { [self.events addObject:@"focus"]; }
+@end
+
+@interface FocusRecordingWindow : NSObject
+@property(getter=isVisible) BOOL visible;
+@property NSInteger level;
+@property int orderedFront;
+@property(nonatomic, retain) id windowController;
+@end
+@implementation FocusRecordingWindow
+- (void)orderFrontRegardless { self.orderedFront++; }
+- (void)dealloc { [_windowController release]; [super dealloc]; }
+@end
+@interface FocusRecordingApplication : NSObject
+@property(nonatomic, retain) NSArray *windows;
+@property int activations;
+@end
+@implementation FocusRecordingApplication
+- (void)activateIgnoringOtherApps:(BOOL)ignore { self.activations++; }
+- (void)dealloc { [_windows release]; [super dealloc]; }
+@end
+
 static NSBundle *Bundle(NSString *root, id feed, id key)
 {
     NSString *app = [root stringByAppendingPathComponent:[[NSUUID UUID].UUIDString stringByAppendingString:@".app"]];
@@ -169,6 +202,39 @@ int main(int argc, const char *argv[])
         Check([[client feedParametersForUpdater:nil sendingSystemProfile:YES] count] == 0, @"no custom profiling parameters");
         [client checkForUpdates]; [client checkForUpdates];
         Check(engine.checks == 1 && [[client snapshot][@"checking"] boolValue], @"duplicate checks are blocked");
+        id<SPUUserDriver> focusDriver = [[[NSClassFromString(@"KeyKeyMacUserDriver") alloc] init] autorelease];
+        FocusRecordingDriver *recording = [[[FocusRecordingDriver alloc] init] autorelease];
+        [(id)focusDriver setValue:client forKey:@"owner"];
+        [(id)focusDriver setValue:recording forKey:@"standard"];
+        NSApplication *originalApplication = NSApp;
+        FocusRecordingApplication *focusApplication = [[[FocusRecordingApplication alloc] init] autorelease];
+        FocusRecordingWindow *updateWindow = [[[FocusRecordingWindow alloc] init] autorelease];
+        updateWindow.visible = YES; updateWindow.level = NSNormalWindowLevel; updateWindow.windowController = recording;
+        FocusRecordingWindow *otherWindow = [[[FocusRecordingWindow alloc] init] autorelease];
+        otherWindow.visible = YES; otherWindow.level = NSNormalWindowLevel; otherWindow.windowController = [NSNull null];
+        focusApplication.windows = @[updateWindow, otherWindow];
+        NSApp = (NSApplication *)focusApplication;
+        [focusDriver showUpdateFoundWithAppcastItem:nil state:nil reply:^(SPUUserUpdateChoice choice) {}];
+        [focusDriver showDownloadInitiatedWithCancellation:^{}];
+        [focusDriver showReadyToInstallAndRelaunch:^(SPUUserUpdateChoice choice) {}];
+        Check([recording.events isEqual:@[@"found", @"focus", @"download", @"focus", @"ready", @"focus"]],
+              @"manual update windows receive focus after creation, including ready to install");
+        Check(updateWindow.level > NSFloatingWindowLevel && updateWindow.level < NSModalPanelWindowLevel &&
+              updateWindow.orderedFront == 3, @"manual Sparkle windows stay above Preferences and below system modal panels");
+        Check(otherWindow.level == NSNormalWindowLevel && otherWindow.orderedFront == 0,
+              @"input-method and unrelated windows are never raised");
+        updateWindow.level = NSNormalWindowLevel; updateWindow.orderedFront = 0;
+
+        [recording.events removeAllObjects];
+        [client setValue:@NO forKey:@"_manualCheck"];
+        [focusDriver showUpdateFoundWithAppcastItem:nil state:nil reply:^(SPUUserUpdateChoice choice) {}];
+        Check([recording.events isEqual:@[@"found"]], @"weekly checks never request foreground focus");
+        Check(updateWindow.level == NSNormalWindowLevel && updateWindow.orderedFront == 0,
+              @"weekly checks never change update window level or ordering");
+        NSApp = originalApplication;
+
+        [client setValue:@YES forKey:@"_manualCheck"];
+
         FakeItem *item = [[[FakeItem alloc] init] autorelease];
         item.displayVersionString = @"1.3.3"; item.installationType = @"package";
         item.fileURL = [NSURL URLWithString:@"https://example.invalid/KeyKey.pkg.zip"];

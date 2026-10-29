@@ -19,8 +19,6 @@ installed_app="/Library/Input Methods/chichi77 KeyKey.app"
 # Only a genuinely absent path is a fresh install. An incomplete bundle or a
 # dangling symlink must still use the guarded upgrade path.
 if [[ ! -e "$installed_app" && ! -L "$installed_app" ]]; then
-    umask 077
-    printf '%s %s\n' "$console_uid" fresh > "$script_dir/keykey-input-source-state"
     echo "KeyKey: fresh install; no old bundle needs input-source preparation."
     exit 0
 fi
@@ -32,18 +30,10 @@ helper_dir=$(/usr/bin/mktemp -d /private/var/tmp/keykey-preinstall.XXXXXXXX)
 trap 'rm -rf "$helper_dir"' EXIT
 cp "$script_dir/KeyKeyInputSourceTool" "$helper_dir/KeyKeyInputSourceTool"
 chmod 755 "$helper_dir" "$helper_dir/KeyKeyInputSourceTool"
-state=unknown
-if snapshot=$(/bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- \
-    "$helper_dir/KeyKeyInputSourceTool" --prepare-upgrade); then
-    case "$snapshot" in enabled|disabled) state="$snapshot" ;; esac
-else
+# sudo can preserve a CoreFoundation user marker initialized as root. Clear
+# it after switching credentials so TIS resolves the GUI account, not root.
+if ! /bin/launchctl asuser "$console_uid" /usr/bin/sudo -H -u "#$console_uid" -- /usr/bin/env -u __CF_USER_TEXT_ENCODING \
+    "$helper_dir/KeyKeyInputSourceTool" --prepare-upgrade; then
     echo "KeyKey: could not safely stop the old input method; the installed bundle has not been replaced." >&2
     exit 1
 fi
-if [[ "$state" == unknown ]]; then
-    echo "KeyKey: invalid pre-install state; the installed bundle has not been replaced." >&2
-    exit 1
-fi
-umask 077
-printf '%s %s\n' "$console_uid" "$state" > "$script_dir/keykey-input-source-state"
-echo "KeyKey: pre-install source state for console uid $console_uid: $state."

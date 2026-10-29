@@ -1,23 +1,20 @@
 // Copyright (c) 2026 Chui-Ping Cheng. BSD-3-Clause; see ../../LICENSE.txt.
 // Compile the production adapter against fake TIS functions.
 #define TISCreateInputSourceList KKFakeCreateList
-#define TISEnableInputSource KKFakeEnable
 #define TISGetInputSourceProperty KKFakeProperty
 #define TISDisableInputSource KKUnexpectedDisable
 #define TISSelectInputSource KKFakeSelect
 #define TISCopyCurrentKeyboardInputSource KKFakeCurrent
-#define TISRegisterInputSource KKFakeRegister
 #define proc_pidinfo KKFakeProcPidInfo
 #define main KKUnusedToolMain
 #import "../InputSourceTool.m"
 #undef main
 
-static BOOL nullList, absent, enabled, missingEnabled, enableChangesState = YES;
 static BOOL selectionChangesState = YES;
 static NSArray *fallbackSources;
 static NSDictionary *currentSource;
-static int passed, sourceQueries, unexpectedCalls, enableCalls, selectCalls, currentCalls;
-static OSStatus registerStatus, enableStatus, selectStatus;
+static int passed, unexpectedCalls, selectCalls;
+static OSStatus selectStatus;
 static BOOL databaseReplaced, processUnreadable;
 static int processInfoError, processInfoBytes = sizeof(struct proc_bsdinfo);
 static BOOL terminationRequested, kernelExitAfterRequest, kernelReuseAfterRequest;
@@ -58,32 +55,19 @@ CFArrayRef KKFakeCreateList(CFDictionaryRef filter, Boolean all) {
               properties.count == 3, @"fallback query uses only enabled selectable ASCII layouts");
         return fallbackSources ? (CFArrayRef)[fallbackSources retain] : NULL;
     }
-    sourceQueries++;
-    Check(all && [properties[(id)kTISPropertyInputSourceID] isEqual:KKSourceID] &&
-          properties.count == 1, @"inclusive ID query accepts disabled sources too");
-    if (nullList) return NULL;
-    return (CFArrayRef)[(absent ? @[] : @[@{}]) retain];
+    unexpectedCalls++;
+    return NULL;
 }
-TISInputSourceRef KKFakeCurrent(void) { currentCalls++; return (TISInputSourceRef)[currentSource retain]; }
+TISInputSourceRef KKFakeCurrent(void) { return (TISInputSourceRef)[currentSource retain]; }
 void *KKFakeProperty(TISInputSourceRef source, CFStringRef key) {
     if (CFEqual(key, kTISPropertyInputSourceID)) return [(NSDictionary *)source objectForKey:(id)key];
-    if (missingEnabled || !CFEqual(key, kTISPropertyInputSourceIsEnabled)) return NULL;
-    return (void *)(enabled ? kCFBooleanTrue : kCFBooleanFalse);
-}
-OSStatus KKFakeEnable(TISInputSourceRef source) {
-    (void)source; enableCalls++;
-    if (enableChangesState && enableStatus == noErr) enabled = YES;
-    return enableStatus;
+    return NULL;
 }
 OSStatus KKUnexpectedDisable(TISInputSourceRef source) { (void)source; unexpectedCalls++; return -50; }
 OSStatus KKFakeSelect(TISInputSourceRef source) {
     selectCalls++;
     if (selectStatus == noErr && selectionChangesState) currentSource = (NSDictionary *)source;
     return selectStatus;
-}
-OSStatus KKFakeRegister(CFURLRef url) {
-    Check([[(NSURL *)url path] isEqual:KKInstalledPath], @"registration uses fixed installed path");
-    return registerStatus;
 }
 @interface FakeSystemInputSources : KKSystemInputSources
 @end
@@ -110,32 +94,6 @@ OSStatus KKFakeRegister(CFURLRef url) {
 int main(void) {
     @autoreleasepool {
         KKSystemInputSources *system = [[[FakeSystemInputSources alloc] init] autorelease];
-        Check([system registerInstalledInputMethod], @"registration works without readable current source or enabled property");
-        nullList = YES;
-        Check(![system registerInstalledInputMethod], @"noErr with unavailable snapshot is a reported failure"); nullList = NO;
-        absent = YES;
-        Check(![system registerInstalledInputMethod], @"noErr without the installed source is a reported failure"); absent = NO;
-        registerStatus = -50; int previousQueries = sourceQueries;
-        Check(![system registerInstalledInputMethod] && sourceQueries == previousQueries,
-              @"registration OSStatus failure cannot be mistaken for success"); registerStatus = noErr;
-        BOOL snapshot = YES;
-        Check([system readEnabled:&snapshot] && !snapshot, @"pre-install disabled state is captured explicitly");
-        enabled = YES;
-        Check([system readEnabled:&snapshot] && snapshot, @"pre-install enabled state is captured explicitly");
-        absent = YES;
-        Check([system readEnabled:&snapshot] && !snapshot, @"first install has no enabled source"); absent = NO;
-        nullList = YES;
-        Check(![system readEnabled:&snapshot], @"unreadable state is unknown, not disabled"); nullList = NO;
-        missingEnabled = YES;
-        Check(![system readEnabled:&snapshot], @"missing enabled property cannot fabricate intent"); missingEnabled = NO;
-        enabled = NO;
-        Check([system enableInstalledInputMethod] && enabled, @"upgrade restores a source lost during replacement");
-        enabled = NO; enableChangesState = NO;
-        Check(![system enableInstalledInputMethod], @"enable noErr without state change is a failure");
-        enableStatus = -50;
-        Check(![system enableInstalledInputMethod], @"failed enable status is a failure");
-        Check(unexpectedCalls == 0 && enableCalls == 3 && selectCalls == 0 && currentCalls == 0,
-              @"postinstall restoration never disables or changes selection");
         BOOL selected = NO;
         Check(![system readSelected:&selected], @"unreadable pre-install selection prevents unsafe replacement");
         currentSource = @{};

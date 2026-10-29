@@ -146,11 +146,11 @@ receipt 查詢應沒有匹配（grep 在沒有匹配時回傳 1）；另確認�
 
 | 情境 | 操作 | 必須核對 |
 | --- | --- | --- |
-| 全新安裝 | 從 a 啟動，安裝最新版完整 PKG；需要時正常重新登入、首次加入琦琦。 | 沒有不必要的升級前檢查與 Rosetta 提示；固定路徑落地；版本正確；可實際輸入。 |
+| 全新安裝 | 從 a 啟動，安裝最新版完整 PKG；正常登出再登入、首次加入琦琦。 | 沒有不必要的升級前檢查與 Rosetta 提示；固定路徑落地；版本正確；可實際輸入。 |
 | 手動升級 | 從 b 啟動，先確認 1.3.7 可輸入，從 GitHub 取得最新版或明確標示本地候選包，開啟完整 PKG 安裝。 | 舊作用中行程正常退出；保留原輸入法項目；新版實際啟動且可輸入。 |
 | 程式內更新 | 從另一份 b 啟動，在 1.3.7 偏好設定檢查更新，依序下載、驗章、管理員授權、安裝並重新啟動。 | 記錄 Sparkle 與真正 installer 日誌、已安裝 App／receipt 版本；選回後可輸入；不能用 CLI 安裝代替。 |
 
-兩個升級情境保留舊來源，不以先移除再重加來讓測試通過。安裝後先選 ABC，再選琦琦試打；若需要登出登入才正常，記錄登入畫面是否完整顯示與實際結果。記錄 `sysctl kern.boottime`，區分「只有登出登入」與「重新開機」；不要直接重開機而漏掉原本的失敗情境。
+兩個升級情境保留舊來源，不以先移除再重加來讓測試通過。安裝後先選 ABC，再選琦琦試打；安裝完成後統一正常登出再登入，記錄登入畫面是否完整顯示與實際結果。記錄 `sysctl kern.boottime`，區分「只有登出登入」與「重新開機」；不要直接重開機而漏掉原本的失敗情境。
 
 實際輸入驗收涵蓋組字底線、開候選、數字選字、Return 提交及下一段輸入。至少測「你好」、「哈囉」、「台北」、「請假要去哪裡玩呢去海邊」。截圖保留按鍵與候選狀態；首次立即輸入與穩定後重測分開記錄，異常不得因後續重測通過而刪除。
 
@@ -182,10 +182,9 @@ pkgutil --pkg-info io.github.polobread.chichi77.installerpackage
 /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
   "/Library/Input Methods/chichi77 KeyKey.app/Contents/Info.plist"
 codesign --verify --deep --strict "/Library/Input Methods/chichi77 KeyKey.app"
-"/Library/Input Methods/chichi77 KeyKey.app/Contents/MacOS/KeyKeyInputSourceTool" --snapshot
 ```
 
-helper 的 snapshot 以目前 GUI 帳號執行，不能加 sudo；若該舊版沒有此介面，記錄選單／設定畫面，不自行換新版 helper 來掩蓋差異。保留 `/var/log/install.log`、Sparkle 相關 unified log、出錯時間、畫面與是否需重新登入；receipt 與 TIS 註冊成功均不能代替中文實打。
+目前 helper 僅提供升級安全準備／收尾，不提供啟用狀態 snapshot；啟用狀態以重新登入後的輸入法選單／設定畫面記錄。保留 `/var/log/install.log`、Sparkle 相關 unified log、出錯時間、畫面與是否需重新登入；receipt 與 TIS 註冊成功均不能代替中文實打。
 
 失敗時先保留工作 VM 與證據，再從 a／b 開新副本比較。不強制結束整批 IMK、不刪 HIToolbox 偏好、不改主機輸入法、DNS、鎖定或信任設定來讓測試通過。若診斷 guest-agent 還在終端機執行，正常登出前先結束該診斷程序，避免終端機自己的執行中工作阻擋登出，誤判成輸入法造成的登入畫面故障。
 
