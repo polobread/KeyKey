@@ -55,6 +55,6 @@ ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=e
 
 這些是少量 FE 冒煙：四法建立／基本候選與送字、安全換核、UTF-16、獨立資料／封存、TSF 宿主拒絕後重試，以及真正 WPF 控制項／PInvoke 套用重開。使用隔離 profile，不註冊 TIP、不切換使用者系統輸入法，也不讀遷移 functional baseline。
 
-讀音 codec 的行為與 C ABI 由核心無 UI 測試驗證；Windows 接線目前完成原始碼檢查，尚未執行 Windows 原生建置或 consumer 測試，不能由 macOS host 的其他 adapter 測試推定通過。
+讀音 codec 的行為與 C ABI 由核心無 UI 測試驗證；Windows x64／x86 已執行原生 Rust 測試與真實 C consumer，使用 bundled SQLite 並核對正式模型前後雜湊。MSVC consumer 的匯入程式庫須放在 `/link` 之後，避免被 `/TC` 當成 C 原始碼編譯。這些結果不代替實際文字宿主或安裝驗收。
 
 完整 Rust／C consumer／跨平台核心矩陣仍只由 `guanyinma-core.yml` 負責。Windows workflow 直接建置並連結核心，保留既有平台建置與發布結構。x64／x86 原生可執行檔通過不代表 Windows Search AppContainer、真實文字宿主、安裝升級或簽章／發布完成；這些層級仍須分別驗收。

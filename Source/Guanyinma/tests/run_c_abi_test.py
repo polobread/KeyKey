@@ -82,7 +82,7 @@ def compile_command(compiler, library, executable, windows_target):
             "/nologo", "/std:c11", "/utf-8", "/W4", "/WX", "/TC", "/MD",
             "/I" + str(CORE / "include"), source,
             "/Fo" + str(executable.with_suffix(".obj")), "/Fe" + str(executable),
-            str(import_library), "/link", "/SUBSYSTEM:CONSOLE", "/INCREMENTAL:NO",
+            "/link", str(import_library), "/SUBSYSTEM:CONSOLE", "/INCREMENTAL:NO",
             "/PDB:" + str(executable.with_suffix(".pdb")),
         ]
         return command, import_library
