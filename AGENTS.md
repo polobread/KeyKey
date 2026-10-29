@@ -33,6 +33,8 @@
 
 ## 工作區與提交
 
+- 調查或測試中新發現疑似問題時，先向使用者提出重現步驟、預期／實際結果、證據與不確定性，確認問題並討論是否修改；取得使用者明確同意後，才修改產品碼或新增／調整相關測試。討論前可做唯讀調查、執行既有測試及保存證據，不得僅憑自動化異常直接修正。使用者已明確授權的實作，仍依原授權範圍進行，不重複詢問。
+- 獲准進行 UI 操作時，開始與結束（含暫停）都要通知使用者。自動送鍵與實體鍵盤結果不同時，先確認輸入來源、模式及修飾鍵按放等工具因素，不直接判定為產品缺陷。
 - 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
 - PR 必須由使用者親自 review 和 merge；agent 不得自行合併 PR、啟用 auto-merge 或繞過使用者審查。
 - macOS 正式版發布成功後，自動驗證原包與簽章並建立更新 feed 工作分支／PR；Linux 正式 Release 的 CI／套件發布成功後，自動核對來源、套件生命週期、版本／架構與 GitHub／CDN 校驗資料，再建立 Linux／FreeBSD stable 公告 PR。兩者都保留手動補救入口；其他平台由維護者請 AI 準備 feed PR。所有 feed PR 仍須由使用者親自 review／merge，不直接回存 master 或部署 CDN；merge master 後才由 Actions 同步 CDN。保留 SHA-256 內容位址副本，不覆蓋已發布的 beta 安裝包。Linux／FreeBSD 共用 `update/CHANNEL/unix-fcitx5.xml`，每週檢查並同步公告；不延後 FreeBSD 公告，不檢查 ports/pkg 可用性、不新增排程，須提示透過 ports/pkg 更新且套件可能較晚上架。
