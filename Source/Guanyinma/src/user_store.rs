@@ -1521,8 +1521,28 @@ mod tests {
         let original = fs::read(&profile.model).unwrap();
         assert!(UserStore::open(&profile.model, &profile.model).is_err());
         let alias = profile.directory.join("hardlink.db");
-        fs::hard_link(&profile.model, &alias).unwrap();
-        assert!(UserStore::open(&alias, &profile.model).is_err());
+        match fs::hard_link(&profile.model, &alias) {
+            Ok(()) => assert!(UserStore::open(&alias, &profile.model).is_err()),
+            Err(error)
+                if cfg!(target_os = "android")
+                    && error.kind() == std::io::ErrorKind::PermissionDenied =>
+            {
+                // Android SELinux forbids the adb shell domain from creating
+                // hard links. Only this known fixture restriction is accepted;
+                // other domains and failures must still fail the test.
+                let context = fs::read_to_string("/proc/self/attr/current").unwrap();
+                assert!(context.starts_with("u:r:shell:"), "{context:?}: {error}");
+                assert_eq!(
+                    fs::symlink_metadata(&alias).unwrap_err().kind(),
+                    std::io::ErrorKind::NotFound
+                );
+                eprintln!(
+                    "hardlink fixture unavailable: Android shell SELinux denied creation; \
+                     hardlink rejection was not exercised in this environment"
+                );
+            }
+            Err(error) => panic!("cannot create hardlink fixture: {error}"),
+        }
         #[cfg(unix)]
         {
             let alias = profile.directory.join("symlink.db");
@@ -1530,6 +1550,12 @@ mod tests {
             assert!(UserStore::open(&alias, &profile.model).is_err());
         }
         assert_eq!(fs::read(&profile.model).unwrap(), original);
+        // A copied model has a different file identity, so the read-only
+        // schema probe must also reject it before requesting write access.
+        let model_copy = profile.directory.join("model-copy.db");
+        fs::copy(&profile.model, &model_copy).unwrap();
+        assert!(UserStore::open(&model_copy, &profile.model).is_err());
+        assert_eq!(fs::read(&model_copy).unwrap(), original);
         let legacy = profile.directory.join("legacy.db");
         Connection::open(&legacy)
             .unwrap()

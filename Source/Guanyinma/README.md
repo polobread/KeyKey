@@ -87,6 +87,8 @@ python3 tools/test-core.py --sqlite-provider bundled --report target/core-bundle
 
 每項都執行 Rust 測試及 C consumer，附上 JSON 證據；只有成功執行的目標才算驗證。iOS job 只清理自己建立的 Simulator。這些工具不建置 FE、不連接使用者已安裝的輸入法，也不執行 functional baseline。
 
+Android 的 `adb shell` domain 受 [AOSP SELinux 規則](https://android.googlesource.com/platform/system/sepolicy/+/refs/heads/android16-qpr2-release/private/shell.te) 限制，不能建立 hard link。使用者資料保護測試只有在 Android 實際回傳 `PermissionDenied`、程序確認為 `u:r:shell:*` 且別名檔未生成時，才記錄 hardlink fixture 無法執行；其他建立錯誤仍使測試失敗。其餘模型原路徑、symlink、模型複本、非 Guanyinma 資料庫拒絕與原檔不變檢查繼續執行。能建立 hard link 的環境一律實測別名拒絕；Android shell 的通過結果不代表已實測 hardlink。需要檢視 fixture 診斷時，對該測試使用 `--nocapture` 或 `--show-output`。
+
 ## 無 UI code coverage
 
 核心正式 Rust 程式碼的行涵蓋率維持 **92% 以上**。參考門檻使用原生 macOS／system SQLite 的 debug instrumentation（本機基準為 arm64），執行既有 Rust unit／整合與真實 C consumer。
