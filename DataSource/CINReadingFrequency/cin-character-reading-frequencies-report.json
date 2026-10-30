@@ -1,0 +1,218 @@
+{
+  "role": "proposed source-derived character/reading replacement counts; not cooked or adopted",
+  "policy": "only positive-frequency multi-reading characters are outputs; single-reading peers are unchanged anchors; target=min(source_count,ratio*minimum_preceding_positive_count); first positive non-phonetic candidate retains full count; no redistribution",
+  "ratio": "0.9",
+  "sources": [
+    {
+      "file": "Source/DataTables/bpmf-ext.cin",
+      "sha256": "f7c05229355ad39a0ef7806db85723709380099c24d3cb787f3eb01d49e29589"
+    },
+    {
+      "file": "DataSource/McBopomofo/phrase.occ",
+      "sha256": "0fc51c5245a8820e1003e3fa3fb2759b0d1b502a71da81bbfa265e9ac6c9fb5a"
+    },
+    {
+      "file": "DataSource/CINReadingFrequency/build-cin-character-reading-frequencies.py",
+      "sha256": "d5519a420dcdcb1340931251366c2fd37283f264c62082cbcf28b0dbe659bdf2"
+    }
+  ],
+  "statistics": {
+    "repeated_single_characters": 12898,
+    "positive_multi_reading_characters": 1720,
+    "output_character_reading_rows": 3863,
+    "reading_groups": 1132,
+    "capped_rows": 2203,
+    "source_count_retained_rows": 1660,
+    "cin_first_rows": 555,
+    "first_positive_after_missing_or_zero_rows": 17,
+    "canonical_duplicate_rows_skipped": 1
+  },
+  "phonetic_symbols_excluded_as_anchors": [
+    {
+      "character": "ˇ",
+      "source_count": 48
+    },
+    {
+      "character": "ˊ",
+      "source_count": 25
+    },
+    {
+      "character": "ˋ",
+      "source_count": 45
+    },
+    {
+      "character": "˙",
+      "source_count": 158
+    },
+    {
+      "character": "ㄅ",
+      "source_count": 41
+    },
+    {
+      "character": "ㄆ",
+      "source_count": 26
+    },
+    {
+      "character": "ㄇ",
+      "source_count": 24
+    },
+    {
+      "character": "ㄈ",
+      "source_count": 8
+    },
+    {
+      "character": "ㄉ",
+      "source_count": 16
+    },
+    {
+      "character": "ㄊ",
+      "source_count": 5
+    },
+    {
+      "character": "ㄋ",
+      "source_count": 8
+    },
+    {
+      "character": "ㄌ",
+      "source_count": 20
+    },
+    {
+      "character": "ㄍ",
+      "source_count": 25
+    },
+    {
+      "character": "ㄎ",
+      "source_count": 15
+    },
+    {
+      "character": "ㄏ",
+      "source_count": 10
+    },
+    {
+      "character": "ㄐ",
+      "source_count": 10
+    },
+    {
+      "character": "ㄑ",
+      "source_count": 12
+    },
+    {
+      "character": "ㄒ",
+      "source_count": 10
+    },
+    {
+      "character": "ㄓ",
+      "source_count": 10
+    },
+    {
+      "character": "ㄔ",
+      "source_count": 11
+    },
+    {
+      "character": "ㄕ",
+      "source_count": 13
+    },
+    {
+      "character": "ㄖ",
+      "source_count": 2
+    },
+    {
+      "character": "ㄗ",
+      "source_count": 13
+    },
+    {
+      "character": "ㄘ",
+      "source_count": 9
+    },
+    {
+      "character": "ㄙ",
+      "source_count": 17
+    },
+    {
+      "character": "ㄚ",
+      "source_count": 177
+    },
+    {
+      "character": "ㄛ",
+      "source_count": 7
+    },
+    {
+      "character": "ㄜ",
+      "source_count": 8
+    },
+    {
+      "character": "ㄝ",
+      "source_count": 8
+    },
+    {
+      "character": "ㄞ",
+      "source_count": 11
+    },
+    {
+      "character": "ㄟ",
+      "source_count": 51
+    },
+    {
+      "character": "ㄠ",
+      "source_count": 13
+    },
+    {
+      "character": "ㄡ",
+      "source_count": 8
+    },
+    {
+      "character": "ㄢ",
+      "source_count": 6
+    },
+    {
+      "character": "ㄣ",
+      "source_count": 10
+    },
+    {
+      "character": "ㄤ",
+      "source_count": 14
+    },
+    {
+      "character": "ㄥ",
+      "source_count": 10
+    },
+    {
+      "character": "ㄦ",
+      "source_count": 7
+    },
+    {
+      "character": "ㄧ",
+      "source_count": 145
+    },
+    {
+      "character": "ㄨ",
+      "source_count": 55
+    },
+    {
+      "character": "ㄩ",
+      "source_count": 5
+    }
+  ],
+  "canonical_duplicates": [
+    {
+      "character": "賊",
+      "qstring": ">C",
+      "reading": "ㄗㄜˊ",
+      "first_line": 94356,
+      "first_code": "yk6",
+      "duplicate_line": 97517,
+      "duplicate_code": "yk6y"
+    }
+  ],
+  "output": {
+    "file": "DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv",
+    "sha256": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb"
+  },
+  "limitations": [
+    "CIN rank is a prior, not measured pronunciation frequency.",
+    "Counts are replacement weights; do not add them to source counts.",
+    "Only multi-reading targets are calibrated; the order among unchanged single-reading peers is not enforced.",
+    "Missing/zero-frequency and phonetic-symbol predecessors do not cap positive candidates.",
+    "No Unigram/Bigram, source count, model manifest or cooker behavior is changed."
+  ]
+}
