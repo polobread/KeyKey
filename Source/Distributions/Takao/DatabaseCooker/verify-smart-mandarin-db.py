@@ -5,7 +5,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from smart_mandarin_model import verify_manifest
+from smart_mandarin_model import verify_manifest, load_manifest
 
 
 MODEL_MANIFEST = (
@@ -41,6 +41,14 @@ def main() -> int:
     try:
         model = verify_manifest(path, MODEL_MANIFEST)
         expected_bigram_rows = model["rows"]["bigrams"]
+        # Fixed names below describe the old estimator. Explicit CIN source
+        # counts are verified by verify_manifest; all first choices still
+        # undergo the full CIN membership/count audit below.
+        frequency_queries = set()
+        frequencies = load_manifest(MODEL_MANIFEST)["sources"].get("cin_reading_frequencies")
+        if frequencies:
+            from cin_reading_frequencies import load
+            frequency_queries = {row["qstring"] for row in load(MODEL_MANIFEST.parent / frequencies["file"])}
         with sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True) as database:
             bigram_rows = database.execute("SELECT COUNT(*) FROM bigrams").fetchone()[0]
             integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
@@ -86,6 +94,8 @@ def main() -> int:
         return 1
 
     for query, (reading, expected) in EXPECTED_SINGLE_SYLLABLES.items():
+        if query in frequency_queries:
+            continue
         row = first_candidates[query]
         actual = row[0] if row else None
         if actual != expected:

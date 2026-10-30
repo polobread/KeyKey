@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from contextlib import closing
 import csv
 import json
 import math
@@ -14,6 +15,7 @@ import shutil
 import sqlite3
 
 from smart_mandarin_model import file_sha256, load_manifest, semantic_sha256, validate_schema
+from cin_reading_frequencies import load as load_cin_frequencies, verify_unigrams as verify_cin_unigrams
 from phrase_unigram_supplement import apply as apply_phrase_supplement
 from collection_unigram_supplement import apply as apply_collections, verify_sources as verify_collections, load_overrides
 
@@ -270,7 +272,7 @@ def verify_sources(manifest: dict[str, object], paths: tuple[Path, ...], protect
 
 def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_path: Path,
              supplement_path: Path, search_trend_path: Path, counts_path: Path,
-             manifest_path: Path) -> dict[str, object]:
+             manifest_path: Path, cin_reading_frequencies: Path | None = None) -> dict[str, object]:
     if not database_path.is_file():
         raise ValueError(f"database does not exist: {database_path}")
     manifest = load_manifest(manifest_path)
@@ -298,16 +300,19 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
     supplement = load_supplement(supplement_path, counts_path)
     search_trend = load_search_trend(search_trend_path)
     unigram_total_count = manifest["unigram_total_count"]
+    cin_entries = load_cin_frequencies(cin_reading_frequencies) if cin_reading_frequencies is not None else None
     temporary = database_path.with_name(f".{database_path.name}.finalize-{os.getpid()}")
     if temporary.exists():
         temporary.unlink()
     shutil.copy2(database_path, temporary)
     try:
-        with sqlite3.connect(temporary) as database:
+        with closing(sqlite3.connect(temporary)) as database, database:
             validate_schema(database)
             base_unigrams = list(database.execute(
                 "SELECT qstring,current,probability,backoff FROM unigrams ORDER BY rowid"
             ))
+            if cin_entries is not None:
+                verify_cin_unigrams(database, cin_entries, unigram_total_count)
             base_bigram_count = database.execute("SELECT count(*) FROM bigrams").fetchone()[0]
             probabilities = word_probabilities(database)
             frequencies = article_document_frequency(articles, probabilities)
@@ -426,6 +431,8 @@ def finalize(database_path: Path, training_paths: tuple[Path, ...], protected_pa
                                                  collection_overrides, collection_source["frequency_policy"]) if collection_source else None
             if collection_result and collection_result["totals"]["rejected"]:
                 raise ValueError("unresolved collection readings")
+            if cin_entries is not None:
+                verify_cin_unigrams(database, cin_entries, unigram_total_count)
             database.commit()
             database.execute("DETACH DATABASE base")
 
@@ -489,6 +496,7 @@ def main() -> None:
     parser.add_argument("--counts", type=Path, default=DEFAULT_COUNTS)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--cin-reading-frequencies", type=Path, help="verify counts already applied by the Ruby cooker")
     args = parser.parse_args()
     try:
         report = finalize(
@@ -499,6 +507,7 @@ def main() -> None:
             args.search_trend,
             args.counts,
             args.manifest,
+            cin_reading_frequencies=args.cin_reading_frequencies,
         )
         value = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
         if args.report:

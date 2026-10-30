@@ -7,6 +7,7 @@ import sqlite3
 import subprocess
 
 from phrase_unigram_supplement import query_for_reading
+from cin_reading_frequencies import DEFAULT_SOURCE
 
 ROOT = Path(__file__).resolve().parents[4]
 COOKER = Path(__file__).resolve().parent
@@ -53,7 +54,7 @@ def make_cin(path):
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def cook(database, cin, work, custom=None, corpus=None):
+def cook(database, cin, work, custom=None, corpus=None, cin_reading_frequencies=DEFAULT_SOURCE):
     sql, report = work.with_suffix(".sql"), work.with_suffix(".json")
     command = ["ruby", "-E", "UTF-8", str(COOKER / "SmartMandarinCooker.rb"),
                str(ROOT / "DataSource/McBopomofo/phrase.occ"),
@@ -61,6 +62,10 @@ def cook(database, cin, work, custom=None, corpus=None):
     for name in ("supplemental-lexicon.tsv", "numeric-unit-lexicon.tsv"):
         command.extend(("--lexicon", str(DATA / name)))
     if custom: command.extend(("--lexicon-preserve-counts", str(custom)))
+    if cin_reading_frequencies is None:
+        command.append("--no-cin-reading-frequencies")
+    else:
+        command.extend(("--cin-reading-frequencies", str(cin_reading_frequencies)))
     # Only the 2,300 training articles supply Bigram observations. Evaluation
     # articles and old feedback/template corpora cannot leak into training.
     if corpus: command.append(str(corpus))

@@ -9,6 +9,8 @@ on:
       - 'DataSource/chichi77Collection/phrase.*.tsv'
       - 'DataSource/AssociatedPhraseCollectionNames.tsv'
       - 'DataSource/AISyntheticBigram/common-unigram-supplement.tsv'
+      - 'DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv'
+      - 'DataSource/CINReadingFrequency/build-cin-character-reading-frequencies.py'
       - 'DataSource/AISyntheticBigram/common-phrase-unigram.tsv'
       - 'DataSource/AISyntheticBigram/search-trend-unigram-source.txt'
       - 'DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv'
@@ -50,6 +52,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: write
+      pull-requests: write
     steps:
       # Only merged, trusted master code runs with the write token. Never
       # check out the PR head or execute unmerged fork code in this workflow.
@@ -84,7 +87,7 @@ jobs:
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
           git diff --check
 
-      - name: Commit accepted model or rejection report back to master
+      - name: Commit generated files and open a review PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -93,7 +96,7 @@ jobs:
           gh auth setup-git
           git fetch origin master
           if [[ "$(git rev-parse origin/master)" != "$built_revision" ]]; then
-            echo "master changed during the rebuild; rerun this workflow on current master." >&2
+            echo "master changed during the rebuild; rerun on current master." >&2
             exit 1
           fi
           python3 - <<'PY'
@@ -106,12 +109,31 @@ jobs:
             echo "No generated changes."
             exit 0
           fi
+          branch="codex/keykey-db-rebuild-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$branch"
           decision=$(python3 -c 'import json,os,pathlib; print(json.loads((pathlib.Path(os.environ["RUNNER_TEMP"])/"keykey-rebuild/build-report.json").read_text())["decision"])')
           git -c user.name='github-actions[bot]' \
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
               commit -m "KeyKey dictionary rebuild: $decision (30-action threshold)"
-          # A concurrent update is also rejected by this non-force push.
-          git push origin HEAD:master
+          git push origin "HEAD:refs/heads/$branch"
+          export KEYKEY_REBUILD_REVISION="$built_revision"
+          python3 - <<'PY'
+          import json, os, pathlib
+          work = pathlib.Path(os.environ['RUNNER_TEMP']) / 'keykey-rebuild'
+          report = json.loads((work / 'build-report.json').read_text())
+          delta = report['regression']
+          body = (
+              f"Source: {os.environ['KEYKEY_REBUILD_REVISION']}\n\n"
+              f"{report['validation_articles']} fixed regression articles: "
+              f"{delta['before']} → {delta['after']} actions ({delta['delta']:+d}).\n\n"
+              f"{report['reason']}\n\n"
+              "Generated files only. Manual review and merge are required; no auto-merge or CDN deployment.\n"
+          )
+          (work / 'pull-request.md').write_text(body, encoding='utf-8')
+          PY
+          gh pr create --base master --head "$branch" \
+            --title "KeyKey dictionary rebuild: $decision" \
+            --body-file "$RUNNER_TEMP/keykey-rebuild/pull-request.md"
 
       - name: Write build result to workflow summary
         if: always()
@@ -126,5 +148,5 @@ jobs:
                   summary.write(f"DB SHA-256: `{report['database_sha256']}`\n\n")
                   summary.write(f"{report['validation_articles']} articles: {delta['before']} → {delta['after']} actions ({delta['delta']:+d}).\n\n")
                   summary.write(report['reason'] + '\n\n')
-                  summary.write('See the commit step for publication status. No database artifact is uploaded.\n')
+                  summary.write('See the generated review PR for publication status. No database artifact is uploaded.\n')
           PY

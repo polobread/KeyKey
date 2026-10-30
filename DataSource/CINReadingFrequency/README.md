@@ -1,7 +1,7 @@
 # CIN 多讀音單字詞頻對應
 
 依傳統注音 CIN 的同音候選順位，為有正詞頻的多讀音單字產生「字＋讀音」替代詞頻表，
-供模型調整前檢查。這是順位校正提案，尚未接入 cooker，也不是已採用的正式模型。
+供模型調整前檢查。已作為 cooker 預設啟用、可明確關閉的額外來源；尚未重建或採用正式模型。
 
 程式不開啟資料庫、不執行 cooker、不改原始詞庫、正式 DB、模型 manifest 或使用者學習資料。
 
@@ -99,8 +99,44 @@ CIN 順位不是實際讀音使用比例。本規則沒有在同一字的多個�
 「和／ㄏㄢˋ」也因第一位而保留 38,150，會高於「漢」的 3,065。
 不能據此宣稱已改善正式模型的候選、預設組字或動作數。
 
-之後若接入 cooker，須明確決定這些權重如何參與 Unigram、Bigram 與後續 finalize，
-並另外驗證模型行為；僅產生本表不會改變輸入法。
+## 接入 cooker
+
+專案重建入口與 Ruby cooker 預設啟用本表。這是額外、可關閉的來源，不修改 `phrase.occ`；
+未列出的字音仍使用原本的讀音權重估算。
+
+```sh
+# 標準重建：預設讀取本表（此命令會重建並執行完整回歸）
+python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
+  --output Installer/local-builds/keykey-rebuild
+
+# 不使用本表，沿用原讀音權重估算
+python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
+  --output Installer/local-builds/keykey-rebuild-original \
+  --no-cin-reading-frequencies
+```
+
+`--cin-reading-frequencies PATH` 可改用 checkout 內另一張同格式表。Ruby cooker 支援同名參數，
+直接執行時須把選項放在語料路徑之前。Make 的 `rebuild-custom` 可設
+`CIN_READING_FREQUENCIES=` 關閉，未設定則沿用本表。沒有 repo 身分判斷或本機 Git 設定。
+
+套用順序：
+
+1. 讀取正常來源與 CIN，計算原本的讀音權重。
+2. 驗證本表的字、注音、qstring、CIN 順位、原始詞頻；資料過期、重複、非正或非有限值會中止。
+3. 指定字音改用 `target_count / source_count` 作讀音計分權重；不重新分配到其他讀音。
+4. Unigram 使用 `log10(target_count / unigram_total_count)`；總分母保持來源整字總量。
+5. Bigram 的背景機率及讀音觀測分配使用同一個新權重；不只改候選清單或單一句首邊。
+6. finalize 以這份 Unigram 重算 Bigram，並在處理前後檢查表內詞頻沒有被覆寫。
+7. 模型 manifest 記錄啟用來源、筆數及 SHA-256；關閉時不引用本表。
+
+舊算法的固定首選字檢查只適用於未受本表影響的讀音；全部讀音仍須通過
+CIN 首選存在性、讀音數量、來源詞頻、內容雜湊與完整性驗證。
+
+原有基本字保護流程仍保留，但還原使用的是「已套用本表」的初次 cooker Bigram。
+Actions 同樣預設啟用，產物只提交到工作分支並建立 PR，由維護者 review／merge。
+
+目前只完成接線與隔離小型測試；正式 DB 尚未以本表重建，也未完成本表的 131 篇回歸。
+
 
 ## 授權
 

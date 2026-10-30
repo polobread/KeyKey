@@ -4,9 +4,9 @@
 `master`。PR 由使用者親自 review 和 merge，agent 不自行合併；不得直接 commit
 或 push `master`，詳見 [AGENTS.md](../AGENTS.md)。
 
-目前 `.github/workflows/rebuild-keykey-db.yml` 仍包含直接回存 `master` 的舊步驟，
-須先改為產物 PR 流程再使用。本次文件更新沒有修改該 workflow；以下說明其現有
-觸發條件與重建邏輯，舊回存記錄不再作為直接寫入 `master` 的授權。
+`.github/workflows/rebuild-keykey-db.yml` 將產物提交到 `codex/keykey-db-rebuild-…`
+工作分支並建立 PR；維護者親自 review／merge。不直接推送 master、不啟用 auto-merge，
+也不在產物 PR 建立時部署 CDN。Actions 需允許使用 GITHUB_TOKEN 建立 PR。
 
 Workflow：`.github/workflows/rebuild-keykey-db.yml`。
 只接受 `pull_request_target.closed` 且 `merged == true`、目標分支為 `master`，並且 PR
@@ -15,6 +15,7 @@ Workflow：`.github/workflows/rebuild-keykey-db.yml`。
 | 可編輯來源 | 用途 |
 | --- | --- |
 | `DataSource/chichi77Collection/phrase.*.tsv` | 分類詞庫原詞、讀音、分類與來源詞頻 |
+| `DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv` | 預設啟用的 CIN 逐字讀音替代詞頻，可明確關閉 |
 | `DataSource/AssociatedPhraseCollectionNames.tsv` | 關聯詞分類顯示名稱 |
 | `DataSource/AISyntheticBigram/common-unigram-supplement.tsv` | 經審閱的常用詞補償 |
 | `DataSource/AISyntheticBigram/common-phrase-unigram.tsv` | 完整詞補充，例如舊的 |
@@ -92,9 +93,23 @@ Android 快取檔名及各平台模型列數一起提交到工作分支，再開
 Android cache 及平台列數不動。驗證器以拒用報告中的原 DB 雜湊與當前來源雜湊綁定
 「來源已改、模型未採用」狀態，因此舊 DB 仍可建置；再改來源而未重建則驗證失敗。
 
-現有 workflow 只有已合併事件的 job 取得 `contents: write`，checkout 合併後的
-master，並在推送前檢查 master 沒有前進。其最後的 `git push origin HEAD:master`
-與現行 PR 規則不符，待改為推送產物分支並建立 PR；不要放寬 master 權限來沿用舊回存。
+只有已合併事件的 job 取得 `contents: write` 與 `pull-requests: write`，
+checkout 合併後的 master，並在提交前檢查 master 沒有前進。產物只推送到新的
+`codex/` 分支，再建立以 master 為目標的 PR；不直接回存 master。
+
+## CIN 逐讀音詞頻來源
+
+Ruby cooker、來源重建入口及 Actions 預設啟用
+`DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv`。
+它以「字＋讀音」取代估算詞頻，讓 Unigram 與 Bigram 共用同一計分權重；
+不修改整字來源詞頻或總分母。finalize 前後會驗證指定詞頻沒有被覆寫。
+模型 manifest、來源報告與拒用報告會綁定本次啟用的 TSV 雜湊。
+
+使用 `--no-cin-reading-frequencies` 可沿用原算法；
+`--cin-reading-frequencies PATH` 可指定 checkout 內的另一張表。
+停用時不讀取或驗證該表。資料格式與限制見
+[CINReadingFrequency README](../DataSource/CINReadingFrequency/README.md)。
+僅完成接線不代表新模型已通過回歸或已發布。
 
 ## 本機執行
 

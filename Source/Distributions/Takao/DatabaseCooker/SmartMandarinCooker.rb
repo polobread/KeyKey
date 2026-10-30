@@ -8,6 +8,8 @@
 Encoding.default_external = Encoding::UTF_8
 Encoding.default_internal = Encoding::UTF_8
 require "json"
+require "csv"
+require "digest"
 
 MAX_PHRASE_LENGTH = 7
 # The bootstrap corpus is synthetic. A strong unigram prior prevents a pair
@@ -118,21 +120,34 @@ end
 
 if ARGV.length < 3
   warn "usage: SmartMandarinCooker.rb phrase.occ BPMFMappings.txt bpmf-absolute-order.cin " \
-       "[--lexicon supplemental.tsv ...] [--lexicon-preserve-counts supplemental.tsv ...] [bigram-corpus ...]"
+       "[--lexicon supplemental.tsv ...] [--lexicon-preserve-counts supplemental.tsv ...] " \
+       "[--cin-reading-frequencies table.tsv | --no-cin-reading-frequencies] [bigram-corpus ...]"
   exit 1
 end
 
 counts_path, mappings_path, bpmf_cin_path = ARGV.shift(3)
 report_path = nil
-if ARGV.first == "--report"
-  ARGV.shift
-  report_path = ARGV.shift || abort("--report requires a path")
-end
+cin_frequency_path = File.expand_path("../../../../DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv", __dir__)
 supplemental_lexicons = []
-while ["--lexicon", "--lexicon-preserve-counts"].include?(ARGV.first)
+while ARGV.first&.start_with?("--")
   option = ARGV.shift
-  path = ARGV.shift || abort("#{option} requires a path")
-  supplemental_lexicons << [path, option == "--lexicon"]
+  if option == "--no-cin-reading-frequencies"
+    cin_frequency_path = nil
+    next
+  end
+  unless ["--report", "--lexicon", "--lexicon-preserve-counts", "--cin-reading-frequencies"].include?(option)
+    abort "unknown option: #{option}"
+  end
+  path = ARGV.shift
+  abort "#{option} requires a path" unless path && !path.start_with?("--")
+  case option
+  when "--report"
+    report_path = path
+  when "--cin-reading-frequencies"
+    cin_frequency_path = path
+  else
+    supplemental_lexicons << [path, option == "--lexicon"]
+  end
 end
 bigram_corpus_paths = ARGV
 counts = {}
@@ -262,8 +277,51 @@ readings.each do |word, qstrings|
   end
 end
 
+# Explicit per-character/per-reading counts replace only the matching estimated
+# mass. Keep the original whole-word total as denominator; do not redistribute.
+cin_frequency_counts = {}
+if cin_frequency_path
+  ranks = {}
+  next_rank = Hash.new(0)
+  phonetic_characters.each_key do |word, query|
+    next_rank[query] += 1
+    ranks[[word, query]] = next_rank[query]
+  end
+  table = CSV.read(cin_frequency_path, headers: true, col_sep: "\t", encoding: "UTF-8")
+  required = %w[character reading qstring cin_rank source_count target_count]
+  abort "invalid CIN frequency columns" unless (required - table.headers).empty? && table.headers.uniq == table.headers
+  table.each_with_index do |row, index|
+    word, query = row["character"].to_s, row["qstring"].to_s
+    key = [word, query]
+    fail_row = lambda { |detail| abort "#{cin_frequency_path}:#{index + 2}: #{detail}" }
+    fail_row.call("duplicate character/reading") if cin_frequency_counts.key?(key)
+    fail_row.call("unknown character/reading") unless word.length == 1 && readings[word].key?(query) && phonetic_characters[key]
+    begin
+      encoded = absolute_order_string(row["reading"].to_s)
+      target = Float(row["target_count"])
+    rescue ArgumentError, TypeError
+      fail_row.call("invalid reading or target_count")
+    end
+    components = row["reading"].each_char.map { |glyph| COMPONENTS.fetch(glyph) }
+    valid_components = [0x001f, 0x0060, 0x0780, 0x3800].all? do |mask|
+      components.count { |component| (component & mask) != 0 } <= 1
+    end
+    fail_row.call("invalid reading components") unless valid_components && components.any? { |component| (component & 0x07ff) != 0 }
+    fail_row.call("qstring mismatch") unless encoded == query
+    source = row["source_count"].to_s
+    fail_row.call("source count changed") unless source.match?(/\A[0-9]+\z/) && source.to_i.positive? && source.to_i == counts[word]
+    rank = row["cin_rank"].to_s
+    fail_row.call("CIN rank changed") unless rank.match?(/\A[0-9]+\z/) && rank.to_i == ranks[key]
+    fail_row.call("target_count must be finite, positive and <= source_count") unless target.finite? && target.positive? && target <= counts[word]
+    cin_frequency_counts[key] = target
+  end
+  abort "empty CIN frequency table" if cin_frequency_counts.empty?
+end
+
 reading_weight_for = lambda do |word, qstring|
-  reading_weights[word]&.fetch(qstring) || 1.0 / readings.fetch(word).length
+  explicit = cin_frequency_counts[[word, qstring]]
+  explicit ? explicit / counts.fetch(word).to_f :
+    (reading_weights[word]&.fetch(qstring) || 1.0 / readings.fetch(word).length)
 end
 
 word_probabilities = {}
@@ -359,9 +417,14 @@ end
 
 puts "COMMIT;"
 if report_path
-  File.write(report_path, JSON.pretty_generate({unigram_total_count: total_count,
+  report = {unigram_total_count: total_count,
     unigram_rows: row_count + 3, bigram_rows: bigram_row_count,
-    sentences: sentence_count, tokens: token_count}) + "\n")
+    sentences: sentence_count, tokens: token_count}
+  if cin_frequency_path
+    report[:cin_reading_frequencies] = {file: File.expand_path(cin_frequency_path),
+      sha256: Digest::SHA256.file(cin_frequency_path).hexdigest, entries: cin_frequency_counts.length}
+  end
+  File.write(report_path, JSON.pretty_generate(report) + "\n")
 end
 warn "SmartMandarinCooker: #{row_count} unigrams from #{readings.length} words; " \
      "#{bigram_row_count} bigrams from #{sentence_count} sentences and #{token_count} tokens; " \
