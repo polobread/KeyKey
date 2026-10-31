@@ -78,6 +78,16 @@ Bigram 只能在有限組字窗內改善上下文，因此驗收先看基本字�
 
 純文字會由 `--reference-db` 指定的固定 unigram 詞庫斷詞及選讀音，預設使用 current。比較不同模型時要共用同一份 reference DB，避免把讀音變化誤算成模型差異。
 
+讀音優先序是文章明確指定、人工覆寫／詞組讀音，最後才是單字回退。單字回退會從
+[字音詞頻表](../CINReadingFrequency/cin-character-reading-frequencies.tsv) 選可輸入讀音中
+計算詞頻最高者；同分時沿用固定 reference DB 的機率順位。未列在表內的單字維持原規則，
+不因單字詞頻改掉「重要」等詞組的讀音，也不改斷詞分數。
+
+固定 131 篇的 before／after 先共用一次斷詞與選音，將結果保存為
+`benchmark/frozen-inputs.json`；報告記錄該輸入、字音詞頻表、人工覆寫、reference DB、
+測試引擎及 evaluator 的 SHA-256。讀音規則改變後，總數應與同規則重測的 before 比較，
+不能直接扣除歷史測試數字。
+
 需要明確指定破音字時可用 JSONL；`readings` 數量必須等於 `text` 中的漢字數，非漢字不用附讀音：
 
 ```json
@@ -85,6 +95,32 @@ Bigram 只能在有限組字窗內改善上下文，因此驗收先看基本字�
 ```
 
 一般讀音以本機 KeyKey 資料與臺灣使用者慣用注音為主。`reading-overrides.tsv` 保存人工確認的輸入慣例，`reading-review.tsv` 保存疑義與查核結果。先依常見臺灣語境判斷，仍有疑問或本機資料衝突時才逐詞查教育部辭典，不批次抓取網站。
+
+## 排除零詞頻字的成本
+
+固定 131 篇工具可加上 `--exclude-zero-frequency-characters`。此選項產生排除後的評分，
+保留完整原文、讀音、引擎狀態及實際選字，不改模型；未指定時仍計算完整動作。
+
+- 依 `DataSource/McBopomofo/phrase.occ` 單字原始詞頻等於 0 判定；重複詞沿用最後一筆。
+- 未列出的字、正小數及正整數都不當成零詞頻。可用 `--character-counts PATH` 換來源。
+- 不計該字的注音鍵；一次修正若所有修正目標都是零詞頻字，才移除整次修正成本。
+- 同次選字若也修正其他字，保留整次成本，只從逐字摘要移除零詞頻字；不比例拆分共用動作。
+- 符號、英數及確認鍵仍計算。原始 `syllables` 保留實際輸入數，`counted_syllables` 為排除後字次。
+- 每篇保存排除位置、鍵數、免費修正事件及原始總數；報告綁定詞頻來源與計算程式雜湊。
+
+例如：
+
+```sh
+python3 -B DataSource/AISyntheticBigram/benchmark-bigram-structure.py \
+  before=/path/before.db after=/path/after.db \
+  --reference-db /path/reference.db \
+  --exclude-zero-frequency-characters \
+  --output Installer/local-builds/zero-count-comparison
+```
+
+若同一批完整 traces 已存在，可加 `--rescore-from /path/unfiltered-benchmark`，直接重新計分。
+它會核對每個模型、引擎、讀音、evaluator、文章與凍結輸入的雜湊；不符合時中止。
+輸出須使用另一個目錄，不覆寫原紀錄。因引擎操作完全相同，此模式不用重新播放引擎。
 
 ## 批次診斷
 
@@ -116,7 +152,9 @@ python3 -B Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiri
 python3 -B DataSource/AISyntheticArticles/verify-typing-articles-v5.py
 ```
 
-第一次執行測試會自動編譯小型 C++ adapter；輸出位於忽略的 `.typing-cache/`。
+預設編譯小型 C++ adapter，輸出位於忽略的 `.typing-cache/`。Guanyinma 分支可先編譯
+`Source/Guanyinma/examples/typing-cost.rs`，再以 `GUANYINMA_TYPING_ENGINE` 指定執行檔；
+協定與動作定義相同，但引擎結果不能互相代替。每篇仍啟動全新程序，停用所有學習。
 # 分類詞庫逐筆清單
 
 本次 29 分類詞庫新增 4,765 詞、跳過重複與特殊詞中文化對照，見

@@ -1,6 +1,6 @@
 {
-  "database_sha256": "8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb",
-  "semantic_sha256": "15b91545bb1ef7869ed7b4514c791c599ebe99918b5f59e3ba66049189383bda",
+  "database_sha256": "b212cb38bd3281a758c5957fe8a14738eaa74ce466141e77659f01181a9eaa43",
+  "semantic_sha256": "44e467c511582b31d68afe096700a30e9fde5de7e443182438a79210b2e9307b",
   "base_commit": "63a5a33beb5a24a23c91cd74d5ff021c65affde2",
   "sources": [
     {
@@ -120,7 +120,7 @@
       "sha256": "3b35634cc638940ebef1db5a09b6e5bbc838fd70336a612c59ec3cee2092cae6"
     }
   ],
-  "unigram_total_count": 22609266.0,
+  "unigram_total_count": 22609580.0,
   "policy": "Chinese aliases; text deduplication; homophones retained below existing candidates; long partial overlaps diagnostic only; anime and colliding words added after training at count <=0.01; other personal names added after training at count <=1",
   "frequency_policy": "minimum",
   "totals": {

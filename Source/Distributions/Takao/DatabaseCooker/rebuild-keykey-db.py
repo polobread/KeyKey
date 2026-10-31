@@ -402,7 +402,6 @@ def main():
     android_output.write_text(android)
     generated.append(android_output)
     generated_constants = [
-        ("Source/Loaders/Linux-IME/README.md", r"contains [\d,]+\s+unigrams and [\d,]+ bigrams", f"contains {rows[0]:,}\n  unigrams and {rows[1]:,} bigrams"),
         ("Source/Loaders/Android-IME/README.md", r"Bigram 恰為 [\d,]+ 筆", f"Bigram 恰為 {rows[1]:,} 筆"),
     ]
     for relative, pattern, replacement in generated_constants:
