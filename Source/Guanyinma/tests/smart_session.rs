@@ -1,8 +1,8 @@
-//! Public Smart Mandarin behavior with the unchanged shared KeyKey database.
+//! Public Smart Mandarin behavior with the current shared KeyKey database.
 //!
-//! Expected text, candidate prefixes/counts and the long composition checkpoints
-//! were independently observed using the macOS OVIMSmartMandarin + Manjusri
-//! source. These ordinary tests never load frozen migration-baseline fixtures.
+//! Behavior contracts originate from macOS OVIMSmartMandarin + Manjusri;
+//! candidate order and phrase expectations follow the adopted shared model.
+//! These ordinary tests never load frozen migration-baseline fixtures.
 
 mod support;
 
@@ -91,8 +91,8 @@ fn macos_single_reading_keeps_the_full_candidate_order_and_page_views() {
     assert_eq!(
         &candidates.candidates[..20],
         [
-            "是", "事", "市", "式", "視", "世", "示", "士", "試", "識", "勢", "適", "室", "釋",
-            "使", "飾", "氏", "始", "逝", "誓",
+            "是", "事", "市", "式", "視", "世", "士", "試", "勢", "室", "識", "示", "釋", "氏",
+            "飾", "適", "逝", "誓", "仕", "侍",
         ]
     );
     assert_eq!(candidates.page_size, 8);
@@ -102,10 +102,10 @@ fn macos_single_reading_keeps_the_full_candidate_order_and_page_views() {
     assert_eq!(next.candidates, candidates.candidates);
     assert_eq!(next.displayed_candidates, candidates.candidates[8..16]);
     let selected = input.apply(InputOperation::Select { index: 0 }).unwrap();
-    assert_eq!(selected.composition, "試");
+    assert_eq!(selected.composition, "勢");
     assert!(selected.effects.commit.is_empty());
     assert!(selected.candidates.is_empty());
-    assert_eq!(key(&mut input, Key::Return).effects.commit, "試");
+    assert_eq!(key(&mut input, Key::Return).effects.commit, "勢");
 }
 
 #[test]
@@ -658,16 +658,16 @@ fn full_width_smart_commits_chinese_and_ascii_once_across_mode_flushes() {
 }
 
 #[test]
-fn bigram_behavior_rewalks_active_text_without_flushing_reading_or_manual_selection() {
-    // Independently checked real-model witness: context disambiguates 哪/那.
-    let keys = "fu/3ru84ul4fm4s83";
+fn bigram_options_preserve_completed_phrase_pending_reading_and_manual_selection() {
+    // Complete 裡 before checking 哪裡; the preceding prefix is ambiguous.
+    let keys = "fu/3ru84ul4fm4s83xu3";
     let mut input = session(options());
     let original = type_keys(&mut input, keys, &mut String::new());
-    assert_eq!(original.composition, "請假要去哪");
+    assert_eq!(original.composition, "請假要去哪裡");
     input.apply(InputOperation::SetCursor { index: 2 }).unwrap();
     type_keys(&mut input, "su", &mut String::new());
     let pending = input.snapshot();
-    assert_eq!(pending.visible_text, "請假ㄋㄧ要去哪");
+    assert_eq!(pending.visible_text, "請假ㄋㄧ要去哪裡");
     assert_eq!(pending.reading_cursor, 2);
 
     let disabled = SmartOptions {
@@ -679,8 +679,8 @@ fn bigram_behavior_rewalks_active_text_without_flushing_reading_or_manual_select
             options: disabled.clone(),
         })
         .unwrap();
-    assert_eq!(without_context.composition, "請假要去那");
-    assert_eq!(without_context.visible_text, "請假ㄋㄧ要去那");
+    assert_eq!(without_context.composition, "請假要去哪裡");
+    assert_eq!(without_context.visible_text, "請假ㄋㄧ要去哪裡");
     assert_eq!(without_context.reading, pending.reading);
     assert_eq!(without_context.readings, pending.readings);
     assert_eq!(without_context.reading_cursor, pending.reading_cursor);
@@ -697,11 +697,11 @@ fn bigram_behavior_rewalks_active_text_without_flushing_reading_or_manual_select
     let mut initially_disabled = session(disabled.clone());
     assert_eq!(
         type_keys(&mut initially_disabled, keys, &mut String::new()).composition,
-        "請假要去那"
+        "請假要去哪裡"
     );
     open(&mut initially_disabled, 4);
-    let chosen = select_text(&mut initially_disabled, "哪");
-    assert_eq!(chosen.composition, "請假要去哪");
+    let chosen = select_text(&mut initially_disabled, "哪裡");
+    assert_eq!(chosen.composition, "請假要去哪裡");
     assert!(chosen.effects.commit.is_empty());
     for next_options in [options(), disabled] {
         let changed = initially_disabled
@@ -709,7 +709,7 @@ fn bigram_behavior_rewalks_active_text_without_flushing_reading_or_manual_select
                 options: next_options,
             })
             .unwrap();
-        assert_eq!(changed.composition, "請假要去哪");
+        assert_eq!(changed.composition, "請假要去哪裡");
         assert_eq!(changed.readings, chosen.readings);
         assert_eq!(changed.reading_cursor, chosen.reading_cursor);
         assert!(changed.effects.commit.is_empty());

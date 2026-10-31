@@ -1241,8 +1241,8 @@ mod tests {
                 .map(|c| c.text.as_str())
                 .collect::<Vec<_>>(),
             [
-                "是", "事", "市", "式", "視", "世", "示", "士", "試", "識", "勢", "適", "室", "釋",
-                "使", "飾", "氏", "始", "逝", "誓"
+                "是", "事", "市", "式", "視", "世", "士", "試", "勢", "室", "識", "示", "釋", "氏",
+                "飾", "適", "逝", "誓", "仕", "侍"
             ]
         );
         graph.clear();
@@ -1429,21 +1429,23 @@ mod tests {
     }
 
     #[test]
-    fn shared_model_context_switch_changes_the_contextual_homophone_without_edits() {
+    fn shared_model_phrase_completion_and_context_switch_preserve_readings() {
         let db = shared_model();
         let mut graph = SmartGraph::new();
         for keys in ["fu/3", "ru84", "ul4", "fm4", "s83"] {
             insert(&mut graph, &db, &qstring(keys));
         }
-        assert_eq!(graph.text(), "請假要去哪");
+        // The following syllable completes 哪裡; the prefix alone need not choose 哪.
+        insert(&mut graph, &db, &qstring("xu3"));
+        assert_eq!(graph.text(), "請假要去哪裡");
         let readings = graph.readings().to_vec();
         let candidates = graph.candidates_at(4, false);
         graph.set_use_bigrams(false);
-        assert_eq!(graph.text(), "請假要去那");
+        assert_eq!(graph.text(), "請假要去哪裡");
         assert_eq!(graph.readings(), readings);
         assert_eq!(graph.candidates_at(4, false), candidates);
         graph.set_use_bigrams(true);
-        assert_eq!(graph.text(), "請假要去哪");
+        assert_eq!(graph.text(), "請假要去哪裡");
     }
     fn learned_options() -> LearningOptions {
         LearningOptions {

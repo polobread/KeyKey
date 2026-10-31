@@ -15,6 +15,7 @@
 #include <dwmapi.h>
 #include "InputMethods.h"
 #include "FrontendSettings.h"
+#include "GuanyinmaWindowsUserData.h"
 #include "Mandarin.h"
 #include "sqlite3.h"
 #include "TsfCompartmentTestSupport.h"
@@ -1230,27 +1231,54 @@ void TestControlledBoundaries() {
     controlled.reset();
     { std::ofstream restore(settings,std::ios::binary); restore<<original; }
 
-    sqlite3* database=nullptr;
-    Check(sqlite3_open16((SettingsDirectory()+L"\\SmartMandarinUserData.db").c_str(),&database)==SQLITE_OK,"Open isolated learning DB");
-    auto sql=[&](const char* command) { Check(sqlite3_exec(database,command,nullptr,nullptr,nullptr)==SQLITE_OK,"External learning SQL"); };
-    auto count=[&] {
-        sqlite3_stmt* statement=nullptr;
-        Check(sqlite3_prepare_v2(database,"SELECT count(*) FROM user_candidate_override_cache WHERE qstring='ordered-reset-sentinel'",-1,&statement,nullptr)==SQLITE_OK,"Learning count prepare");
-        Check(sqlite3_step(statement)==SQLITE_ROW,"Learning count row");
-        const int value=sqlite3_column_int(statement,0); sqlite3_finalize(statement); return value;
+    // Exercise the settings C ABI and observable learning, not the retired SQL schema.
+    wchar_t executable[32768]{};
+    Check(GetModuleFileNameW(nullptr,executable,32768)!=0,"Learning fixture executable path");
+    const auto model=std::filesystem::path(executable).parent_path()/L"Databases/KeyKey.db";
+    GuanyinmaWindowsUserData data(model.wstring());
+    Check(data.resetLearning(),"Clear isolated Guanyinma learning baseline");
+    Check(data.save({0,L"快樂樂曲",L"ㄎㄨㄞˋ,ㄌㄜˋ,ㄩㄝˋ,ㄑㄩˇ"}),"Guanyinma custom phrase fixture");
+    { std::ofstream file(settings,std::ios::binary);
+      file<<"<plist><dict><key>KeyboardLayout</key><string>Standard</string>"
+            "<key>ShowCandidateListWithSpace</key><string>true</string></dict></plist>"; }
+    const auto typeReading=[](KeyKeyEngineSession& session) {
+        EngineResult result;
+        for (wchar_t key : std::wstring(L"su3")) result=session.handleKey(Character(key));
+        return result;
     };
-    sql("INSERT INTO user_candidate_override_cache VALUES('ordered-reset-sentinel','復活');");
     controlled=KeyKeyEngineSession::CreateControlled("SmartMandarin");
     Check(controlled && controlled->ready(),"Learning baseline controlled create");
+    Check(typeReading(*controlled).compositionText==L"你","Unlearned Guanyinma first candidate");
+    const auto candidates=controlled->handleKey(Special(VK_DOWN));
+    const auto learned=std::find_if(candidates.candidates.begin(),candidates.candidates.end(),
+        [](const auto& candidate) { return candidate.text==L"妳"; });
+    Check(candidates.candidatesVisible && learned!=candidates.candidates.end() &&
+          learned->selectionKey.size()==1,"Guanyinma learning candidate available");
+    Check(controlled->handleKey(Character(learned->selectionKey[0])).compositionText==L"妳",
+          "Guanyinma explicit candidate selection");
+    Check(controlled->handleKey(Special(VK_RETURN)).committedText==L"妳","Commit learned Guanyinma candidate");
     controlled.reset();
-    Check(count()==1,"Positive control did not load/save the learning sentinel");
     controlled=KeyKeyEngineSession::CreateControlled("SmartMandarin");
+    Check(controlled && controlled->ready() && typeReading(*controlled).compositionText==L"妳",
+          "Positive control did not persist Guanyinma learning");
     Check(SelectInputMethod("Generic-cj-cin"),"Retire Smart while non-primary");
     BeginOrderedEngineInput();
-    sql("DELETE FROM user_candidate_override_cache; DELETE FROM user_bigram_cache;");
+    Check(data.resetLearning(),"Reset learning through Guanyinma settings API");
     controlled.reset(); EndOrderedEngineInput();
-    Check(count()==0,"Controlled non-primary retirement resurrected externally reset learning");
-    sqlite3_close(database);
+    for (int reopen=0;reopen<2;++reopen) {
+        controlled=KeyKeyEngineSession::CreateControlled("SmartMandarin");
+        Check(controlled && controlled->ready() && typeReading(*controlled).compositionText==L"你",
+              "Controlled non-primary retirement resurrected reset Guanyinma learning");
+        controlled.reset();
+    }
+    GuanyinmaWindowsUserData reopened(model.wstring());
+    const auto phrases=reopened.load();
+    Check(std::any_of(phrases.begin(),phrases.end(),[](const auto& phrase) {
+        return phrase.text==L"快樂樂曲" && phrase.reading==L"ㄎㄨㄞˋ,ㄌㄜˋ,ㄩㄝˋ,ㄑㄩˇ";
+    }),"Guanyinma learning reset removed the custom phrase");
+    Check(!std::filesystem::exists(std::filesystem::path(SettingsDirectory())/L"SmartMandarinUserData.db"),
+          "Guanyinma learning test opened the retired writable store");
+    { std::ofstream restore(settings,std::ios::binary); restore<<original; }
     std::cout<<"Controlled named config before activation, same-timestamp content reload and non-primary learning-reset retirement passed\n";
 }
 void TestOrderedInput() {

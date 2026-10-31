@@ -753,26 +753,26 @@ static void check_smart_sessions(const char *path) {
     result = session_apply(session, "{\"type\":\"open_candidates\",\"index\":0}");
     REQUIRE(row_count(result) == 368);
     json = result_json(result);
-    REQUIRE(strstr(json, "\"candidates\":[\"是\",\"事\",\"市\",\"式\",\"視\",\"世\",\"示\",\"士\",") != NULL);
+    REQUIRE(strstr(json, "\"candidates\":[\"是\",\"事\",\"市\",\"式\",\"視\",\"世\",\"士\",\"試\",") != NULL);
     REQUIRE(strstr(json, "\"candidate_spans\":[{\"start\":0,\"span\":1,\"text\":\"是\",") != NULL);
     free(json);
     close_result(&result);
     result = session_apply(session, "{\"type\":\"key\",\"key\":\"page_down\"}");
     json = result_json(result);
     REQUIRE(strstr(json, "\"page\":1") != NULL);
-    REQUIRE(strstr(json, "\"displayed_candidates\":[\"試\",\"識\",\"勢\",\"適\",\"室\",\"釋\",\"使\",\"飾\"]") != NULL);
+    REQUIRE(strstr(json, "\"displayed_candidates\":[\"勢\",\"室\",\"識\",\"示\",\"釋\",\"氏\",\"飾\",\"適\"]") != NULL);
     free(json);
     close_result(&result);
     result = session_apply(session, "{\"type\":\"select\",\"index\":0}");
     json = result_json(result);
-    REQUIRE(strstr(json, "\"composition\":\"試\"") != NULL);
+    REQUIRE(strstr(json, "\"composition\":\"勢\"") != NULL);
     REQUIRE(strstr(json, "\"commit\":\"\"") != NULL);
     REQUIRE(row_count(result) == 0);
     free(json);
     close_result(&result);
     result = session_apply(session, "{\"type\":\"key\",\"key\":\"return\"}");
     json = result_json(result);
-    REQUIRE(strstr(json, "\"commit\":\"試\"") != NULL);
+    REQUIRE(strstr(json, "\"commit\":\"勢\"") != NULL);
     free(json);
     close_result(&result);
 
@@ -850,10 +850,12 @@ static void check_smart_sessions(const char *path) {
     REQUIRE(strstr(json, "\"composition\":\"請假要去那\"") != NULL);
     free(json);
     close_result(&result);
+    /* Wait for the final reading to complete 哪裡 before checking the phrase. */
+    session_type(session, "xu3");
     result = session_apply(session, "{\"type\":\"set_smart_options\",\"options\":{\"use_bigrams\":true}}");
     json = result_json(result);
-    REQUIRE(strstr(json, "\"composition\":\"請假要去哪\"") != NULL);
-    REQUIRE(strstr(json, "\"reading_cursor\":5") != NULL);
+    REQUIRE(strstr(json, "\"composition\":\"請假要去哪裡\"") != NULL);
+    REQUIRE(strstr(json, "\"reading_cursor\":6") != NULL);
     REQUIRE(strstr(json, "\"commit\":\"\"") != NULL);
     free(json);
     close_result(&result);

@@ -367,7 +367,8 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyPopupLifecycle COMMAND KeyKeyPopupLifecycleTest)
     set_tests_properties(KeyKeyPopupLifecycle PROPERTIES RUN_SERIAL TRUE)
     add_executable(KeyKeyTsfOutputBehaviorTest TsfOutputBehaviorTest.cpp
-        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp)
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp
+        GuanyinmaWindowsUserData.cpp)
     target_compile_features(KeyKeyTsfOutputBehaviorTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfOutputBehaviorTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX KEYKEY_SYMBOL_TEST_WINDOWS)
     target_compile_options(KeyKeyTsfOutputBehaviorTest PRIVATE /utf-8)
