@@ -1,5 +1,7 @@
 #include "SharedInputMethod.h"
 #include "KeyKeyEngine.h"
+#include "../../Guanyinma/include/guanyinma.h"
+#include <dwrite_2.h>
 #include "ModuleState.h"
 #include "FrontendSettings.h"
 #include "Mandarin.h"
@@ -160,6 +162,27 @@ int wmain(int argc, wchar_t** argv) {
                     << "</string><key>RetainedText</key><string>private</string></dict></plist>";
             }
             auto engine = KeyKeyEngineSession::Create();
+            if (!engine || !engine->ready()) {
+                const auto win32Error = GetLastError();
+                size_t errorSize = 0;
+                guanyinma_last_error(nullptr, 0, &errorSize);
+                std::string rustError(errorSize ? errorSize : 1, '\0');
+                guanyinma_last_error(reinterpret_cast<uint8_t*>(rustError.data()),
+                    rustError.size(), &errorSize);
+                if (errorSize) rustError.resize(errorSize - 1);
+                std::cerr << "Child engine diagnostic: win32=" << win32Error
+                          << " Rust=" << rustError << '\n';
+                ComPtr<IDWriteFactory2> fonts;
+                const auto factoryStatus = DWriteCreateFactory(DWRITE_FACTORY_TYPE_ISOLATED,
+                    __uuidof(IDWriteFactory2), reinterpret_cast<IUnknown**>(fonts.GetAddressOf()));
+                std::cerr << "DirectWrite factory hr=" << std::hex << factoryStatus << '\n';
+                if (SUCCEEDED(factoryStatus)) {
+                    ComPtr<IDWriteFontFallback> fallback;
+                    ComPtr<IDWriteFontCollection> collection;
+                    std::cerr << "DirectWrite fallback hr=" << fonts->GetSystemFontFallback(&fallback)
+                              << " collection hr=" << fonts->GetSystemFontCollection(&collection) << '\n';
+                }
+            }
             Check(engine && engine->ready(), "Child engine creation");
             Check(SelectInputMethod("TraditionalMandarin"), "Stale local selection");
             const auto* selected = shared.read();

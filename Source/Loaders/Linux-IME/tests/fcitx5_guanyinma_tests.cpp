@@ -100,7 +100,7 @@ public:
         return send(event);
     }
     void type(const std::string &text) { for (const auto c : text) character(c); }
-    std::string preedit() const { return context.inputPanel().clientPreedit().toString(); }
+    std::string preedit() { return context.inputPanel().clientPreedit().toString(); }
     std::string allCommitted() const {
         std::string result;
         for (const auto &text : context.commits) result += text;

@@ -32,12 +32,30 @@ on:
       - '!**/docs/**'
       - '!update/stable/**'
       - '!update/beta/**'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: desktop-release-tools-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  workflow-syntax:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate all workflow expressions, job dependencies and reusable calls
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$(go env GOPATH)/bin/actionlint"
+
   tools:
     runs-on: ubuntu-24.04
     timeout-minutes: 5

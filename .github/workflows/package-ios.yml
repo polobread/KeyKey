@@ -1,10 +1,23 @@
 name: Package iOS Simulator
 
 on:
+  pull_request:
+    paths:
+      - 'Source/Loaders/iOS-Keyboard/**'
+      - 'Source/DataTables/**'
+      - '.github/workflows/package-ios.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/**'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: package-ios-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   package:
@@ -52,7 +65,7 @@ jobs:
         shell: bash
         run: python3 Source/Guanyinma/tools/test_ios_runtime_notices.py
 
-      - name: Cook database
+      - name: Verify shared database
         shell: bash
         run: make -C Source/Distributions/Takao/DatabaseCooker
 

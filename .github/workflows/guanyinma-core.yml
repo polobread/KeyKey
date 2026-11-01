@@ -11,6 +11,7 @@ on:
       - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
       - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
       - '.github/workflows/guanyinma-core.yml'
+      - '.gitattributes'
   push:
     branches: [master]
     paths: *core-paths

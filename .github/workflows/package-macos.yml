@@ -1,6 +1,25 @@
 name: Package macOS
 
 on:
+  pull_request:
+    paths:
+      - 'Source/Loaders/OSX-IMK/**'
+      - 'Source/PreferenceApplications/OSX/**'
+      - 'Source/Utilities/PhraseEditor/**'
+      - 'Source/Frameworks/**'
+      - 'Source/ModulePackages/**'
+      - 'Source/Shared/**'
+      - 'Source/DataTables/**'
+      - 'Source/Takao.xcodeproj/**'
+      - 'Source/Takao*.xcconfig'
+      - 'Installer/**'
+      - 'update/**'
+      - '.github/scripts/**'
+      - '.github/workflows/package-macos.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/**'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   release:
     types: [published]
   workflow_dispatch:
@@ -15,7 +34,7 @@ permissions:
 
 concurrency:
   group: package-macos-${{ inputs.release_tag || github.event.release.tag_name || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -76,6 +95,9 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "VERSION=$version" >> "$GITHUB_ENV"
 
+      - name: Prepare native Apple CJK font without interactive download
+        run: bash .github/scripts/prepare-macos-test-fonts.sh STHeiti LiHeiPro
+
       - name: Install build dependency
         shell: bash
         run: brew install openssl@3
@@ -91,7 +113,7 @@ jobs:
           toolchain: ${{ steps.rust.outputs.version }}
           targets: aarch64-apple-darwin
 
-      - name: Cook database
+      - name: Verify shared database
         shell: bash
         run: make -C Source/Distributions/Takao/DatabaseCooker
 
@@ -175,7 +197,7 @@ jobs:
 
   publish:
     needs: build
-    if: needs.build.outputs.publish_release == 'true'
+    if: github.event_name != 'pull_request' && needs.build.outputs.publish_release == 'true'
     runs-on: macos-15
     timeout-minutes: 60
     environment: release

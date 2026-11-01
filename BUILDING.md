@@ -931,3 +931,5 @@ an artifact during its seven-day retention period.
 Windows 安裝包反覆測試時，若前一次 EXE 仍開啟，可在 `Package-Store-Windows.ps1`
 加上 `-BuildLabel fix-20261001-143000` 產生不同檔名，避免覆寫執行中的檔案。
 此參數只改安裝檔名，不改產品版號或 Program Files 下的版本目錄。
+
+PR 的平台建置、封裝及發布工具驗證範圍見 [PR 建置與發布驗證](docs/CI_PULL_REQUEST_VALIDATION.md)。

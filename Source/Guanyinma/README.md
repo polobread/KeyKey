@@ -47,6 +47,8 @@ CI 的權責固定如下；本機核心開發仍可直接執行後面的獨立�
 
 只簽署／發布既有產物、同步 feed／CDN、鏡像或測試更新工具的 workflow 不編譯輸入核心，不額外安裝 Rust。
 
+共用核心或模型變更也會觸發平台建置與發布工具的 PR 驗證；各 workflow 的範圍及發布界線見 [PR 建置與發布驗證](../../docs/CI_PULL_REQUEST_VALIDATION.md)。
+
 平台 workflow 不執行 Guanyinma 的整套 `cargo test`、`tools/test-core.py` 或完整 C ABI driver，也不轉呼叫完整核心 workflow。核心的排序、學習及組字邊界矩陣集中在核心 workflow；FE 的少量測試只驗證原生接合。後續新增平台接合依此分工小幅加入。
 
 
@@ -87,7 +89,7 @@ python3 tools/test-core.py --sqlite-provider bundled --report target/core-bundle
 
 `--build-only` 只編譯，報告為 `built_not_executed`、`executed: false`，不能當作 runtime 通過。未提供 runner 的非本機目標會拒絕 runtime 測試。`--skip-c-abi` 明確縮小本次範圍；六平台 CI 不使用這個選項。runner 必須執行原測試 binary、保留失敗 exit code，並為 C consumer 帶回實際使用的使用者 DB，不能以傳輸成功代替測試成功。
 
-新增的 [Guanyinma Core workflow](../../.github/workflows/guanyinma-core.yml) 僅處理核心相關路徑，不修改既有平台建置或發布 workflow。六個 matrix 項目共用同一入口，CI helpers 需要 Python 3.11 以上：
+[Guanyinma Core workflow](../../.github/workflows/guanyinma-core.yml) 負責完整核心矩陣，平台建置及發布工具依前述分工各自驗證。六個 matrix 項目共用同一入口，CI helpers 需要 Python 3.11 以上：
 
 | 目標 | 執行環境 | SQLite |
 |---|---|---|

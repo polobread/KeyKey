@@ -14,6 +14,8 @@ esac
 
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 linux_dir=$(CDPATH='' cd -- "$script_dir/.." && pwd)
+# sudo resets the caller's Rust environment; use the same pinned build entry.
+source "$script_dir/prepare-guanyinma.sh"
 system_fcitx_libdir=$(pkg-config --variable=libdir Fcitx5Core)
 if [[ -z "$system_fcitx_libdir" ]]; then
   echo "Fcitx5Core did not report its system library directory." >&2

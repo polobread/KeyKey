@@ -39,6 +39,7 @@ on:
       - '!**/README*'
       - '!**/LICENSE*'
       - '!**/docs/**'
+      - '.gitattributes'
   workflow_dispatch:
     inputs:
       release_tag:

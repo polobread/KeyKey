@@ -253,7 +253,7 @@ impl UserStore {
         model_path: impl AsRef<Path>,
     ) -> Result<Self, DatabaseError> {
         let path = checked_path(path.as_ref())?;
-        let model_path = fs::canonicalize(checked_path(model_path.as_ref())?)
+        let model_path = crate::storage_path::canonicalize(checked_path(model_path.as_ref())?)
             .map_err(|error| DatabaseError::Open(error.to_string()))?;
         reject_same_file(
             &path,
@@ -285,7 +285,7 @@ impl UserStore {
                 .open(&path)
                 .map_err(open_error)?;
         }
-        let path = fs::canonicalize(path).map_err(open_error)?;
+        let path = crate::storage_path::canonicalize(path).map_err(open_error)?;
         reject_same_file(
             &path,
             &model_path,
@@ -490,7 +490,10 @@ fn checked_path(path: &Path) -> Result<PathBuf, DatabaseError> {
     Ok(path.to_path_buf())
 }
 fn reject_same_file(first: &Path, second: &Path, message: &str) -> Result<(), DatabaseError> {
-    if let (Ok(a), Ok(b)) = (fs::canonicalize(first), fs::canonicalize(second)) {
+    if let (Ok(a), Ok(b)) = (
+        crate::storage_path::canonicalize(first),
+        crate::storage_path::canonicalize(second),
+    ) {
         if a == b {
             return Err(invalid(message));
         }
@@ -542,7 +545,7 @@ fn open_read_only(path: &Path) -> Result<Connection, DatabaseError> {
     if !fs::metadata(path).map_err(open_error)?.is_file() {
         return Err(invalid("source must be a regular file"));
     }
-    let path = fs::canonicalize(path).map_err(open_error)?;
+    let path = crate::storage_path::canonicalize(path).map_err(open_error)?;
     let connection = Connection::open_with_flags(
         path,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,

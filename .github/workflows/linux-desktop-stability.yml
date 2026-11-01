@@ -1,6 +1,15 @@
 name: Linux desktop input stability
 
 on:
+  pull_request:
+    paths:
+      - 'Source/Loaders/Linux-IME/**'
+      - 'tests/desktop_input/**'
+      - '.github/workflows/linux-desktop-stability.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
     inputs:
       profile:
@@ -15,10 +24,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: linux-desktop-stability-${{ github.ref }}-${{ inputs.profile }}
-  cancel-in-progress: false
+  group: linux-desktop-stability-${{ github.ref }}-${{ inputs.profile || 'shared-eight-key' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+
   desktop-stability:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -40,7 +50,7 @@ jobs:
       - name: Build the staged-addon test targets
         working-directory: Source/Loaders/Linux-IME
         env:
-          DESKTOP_PROFILE: ${{ inputs.profile }}
+          DESKTOP_PROFILE: ${{ inputs.profile || 'shared-eight-key' }}
         run: |
           source ci/prepare-guanyinma.sh
           cmake -S . -B out/build/desktop-stability -G Ninja \
@@ -50,18 +60,20 @@ jobs:
             -DKEYKEY_DESKTOP_STABILITY_PROFILE="$DESKTOP_PROFILE"
           cmake --build out/build/desktop-stability --parallel 2
 
-      - name: Run shared cases and 100 rounds per scenario in each host
+      - name: Run shared cases and requested stability rounds in each host
         working-directory: Source/Loaders/Linux-IME
         run: |
+          label='desktop-(core|input|stability)'
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then label='desktop-(core|input)'; fi
           ctest --test-dir out/build/desktop-stability \
-            -L 'desktop-(core|input|stability)' --parallel 3 --output-on-failure \
+            -L "$label" --parallel 3 --output-on-failure \
             --output-junit "$PWD/out/build/desktop-stability/desktop-results.xml"
 
       - name: Upload settings, input events, and CTest results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: linux-desktop-stability-${{ inputs.profile }}-${{ github.sha }}
+          name: linux-desktop-stability-${{ inputs.profile || 'shared-eight-key' }}-${{ github.sha }}
           path: |
             Source/Loaders/Linux-IME/out/build/desktop-stability/desktop-input
             Source/Loaders/Linux-IME/out/build/desktop-stability/desktop-results.xml

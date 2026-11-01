@@ -17,6 +17,7 @@ on:
       - '!**/README*'
       - '!**/LICENSE*'
       - '!**/docs/**'
+      - '.gitattributes'
   release:
     types: [published]
   workflow_dispatch:
@@ -88,7 +89,7 @@ jobs:
           retention-days: 7
 
   ubuntu-24-04-fcitx5-build:
-    if: github.event_name != 'pull_request' && !inputs.existing_artifact_run && !inputs.verification_sha256
+    if: ${{ !inputs.existing_artifact_run && !inputs.verification_sha256 }}
     name: Full Ubuntu 24.04 build, packages, and GTK3/GTK4/Qt6 X11 E2E
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -213,7 +214,7 @@ jobs:
   publish-linux:
     needs: [ubuntu-24-04-fcitx5-build, ubuntu-22-04-minimum-api]
     if: >-
-      always() && !cancelled() && (
+      always() && !cancelled() && github.event_name != 'pull_request' && (
         (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
          && (inputs.existing_artifact_run || inputs.verification_sha256))
         || (!inputs.existing_artifact_run && !inputs.verification_sha256
@@ -332,7 +333,7 @@ jobs:
             --artifact-run "$ARTIFACT_RUN" --verification-sha256 "$VERIFICATION_SHA256"
 
   ubuntu-22-04-minimum-api:
-    if: github.event_name != 'pull_request' && !inputs.existing_artifact_run && !inputs.verification_sha256
+    if: ${{ !inputs.existing_artifact_run && !inputs.verification_sha256 }}
     name: Full Ubuntu 22.04 minimum API build and package lifecycle
     runs-on: ubuntu-24.04
     timeout-minutes: 25

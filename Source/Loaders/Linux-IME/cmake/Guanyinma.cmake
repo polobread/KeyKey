@@ -71,7 +71,9 @@ add_library(guanyinma_core STATIC IMPORTED GLOBAL)
 set_target_properties(guanyinma_core PROPERTIES
     IMPORTED_LOCATION "${KEYKEY_GUANYINMA_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${KEYKEY_GUANYINMA_SOURCE_DIR}/include"
-    INTERFACE_LINK_LIBRARIES "SQLite::SQLite3;-Wl,@${KEYKEY_GUANYINMA_OUTPUT_DIR}/native-static-libs.rsp")
+    # Library fragments are emitted verbatim; quote the response-file path so
+    # GNU Make source builds in directories with spaces keep it as one argument.
+    INTERFACE_LINK_LIBRARIES "SQLite::SQLite3;-Wl,@\"${KEYKEY_GUANYINMA_OUTPUT_DIR}/native-static-libs.rsp\"")
 add_dependencies(guanyinma_core keykey_guanyinma_build)
 add_library(keykey_linux_guanyinma STATIC
     engine/src/guanyinma_session.cpp engine/src/candidate_font_support.cpp)

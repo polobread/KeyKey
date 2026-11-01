@@ -122,8 +122,8 @@ impl ModelDatabase {
         }
         // An absolute native path also avoids accidentally interpreting a
         // relative filename beginning with "file:" as a SQLite URI.
-        let path =
-            fs::canonicalize(path).map_err(|error| DatabaseError::Open(error.to_string()))?;
+        let path = crate::storage_path::canonicalize(path)
+            .map_err(|error| DatabaseError::Open(error.to_string()))?;
         let flags = OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX;
         let connection = Connection::open_with_flags(path, flags)
             .map_err(|error| DatabaseError::Open(error.to_string()))?;

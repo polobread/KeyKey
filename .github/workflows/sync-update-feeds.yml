@@ -31,6 +31,10 @@ on:
       - '.github/scripts/stage-beta-assets.py'
       - '.github/scripts/test_stage_beta_assets.py'
       - '.github/workflows/sync-update-feeds.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
     inputs:
       operation:
@@ -41,6 +45,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: sync-update-feeds-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   validate:

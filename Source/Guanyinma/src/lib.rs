@@ -13,6 +13,7 @@ pub mod ffi;
 pub mod learning;
 pub mod reading_codec;
 pub mod smart;
+mod storage_path;
 pub mod table;
 pub mod user_archive;
 pub mod user_store;

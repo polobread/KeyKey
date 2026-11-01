@@ -1,6 +1,14 @@
 name: Terraform Release Mirror
 
 on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-release-mirror.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
     inputs:
       operation:
@@ -14,19 +22,38 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
-  group: terraform-release-mirror
-  cancel-in-progress: false
+  group: terraform-release-mirror-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.10.5
+          terraform_wrapper: false
+      - name: Check Terraform formatting and schema without state or credentials
+        working-directory: terraform/infra
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false -input=false
+          terraform validate -no-color
+
   deploy:
-    if: github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
     name: ${{ inputs.operation }} release mirror infrastructure
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: terraform
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         working-directory: terraform/infra

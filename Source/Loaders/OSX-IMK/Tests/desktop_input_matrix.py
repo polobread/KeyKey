@@ -96,7 +96,17 @@ def build(args, directory):
     generated = directory / "DesktopInputHost.mm"
     generated.write_text((TESTS / "DesktopInputHost.mm").read_text().replace(
         "// CONTROLLER_FUNCTIONS", functions).replace("// CONTROLLER_METHODS", methods))
-    host = directory / "DesktopInputHost"
+    # Give AppKit an explicit background application identity, as in the
+    # isolated symbol tests, rather than registering each worker as a
+    # foreground application on the hosted runner.
+    contents = directory / "DesktopInputHost.app/Contents"
+    (contents / "MacOS").mkdir(parents=True)
+    (contents / "Info.plist").write_bytes(plistlib.dumps({
+        "CFBundleIdentifier": "io.github.polobread.KeyKeyDesktopInputIsolatedTests",
+        "CFBundleExecutable": "DesktopInputHost", "CFBundlePackageType": "APPL",
+        "LSUIElement": True,
+    }))
+    host = contents / "MacOS/DesktopInputHost"
     command = shlex.split(os.environ.get("CXX", "xcrun clang++")) + [
         "-std=c++17", "-fno-objc-arc", "-fblocks", "-mmacosx-version-min=15.0", "-DOV_USE_SQLITE",
         "-Wno-deprecated-declarations", "-Wno-parentheses", "-Wno-dangling-else",
@@ -114,6 +124,35 @@ def build(args, directory):
                "generated_sha256": digest(generated)})
     subprocess.run(command, check=True, env=environment)
     return host
+
+
+def run_worker(command, directory, timeout=45):
+    child = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        stdout, stderr = child.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # Capture the still-running native stack before terminating this owned
+        # worker. A missing GUI/font service must not erase the useful evidence.
+        try:
+            sample = subprocess.run(["sample", str(child.pid), "2", "-file",
+                                     str(directory / "host.sample.stderr")],
+                                    capture_output=True, timeout=10)
+            (directory / "host.sample.stdout").write_bytes(sample.stdout + sample.stderr)
+        except (OSError, subprocess.SubprocessError) as error:
+            (directory / "host.sample.stdout").write_text(str(error))
+        finally:
+            child.kill()
+            stdout, stderr = child.communicate()
+            (directory / "host.stdout").write_bytes(stdout)
+            (directory / "host.stderr").write_bytes(stderr)
+            print(stderr.decode("utf-8", errors="replace")[-6000:], file=sys.stderr)
+            stack = directory / "host.sample.stderr"
+            if stack.exists():
+                print(stack.read_text(errors="replace")[:16000], file=sys.stderr)
+        raise
+    (directory / "host.stdout").write_bytes(stdout)
+    (directory / "host.stderr").write_bytes(stderr)
+    return child.returncode
 
 
 def configure(profile, prefs):
@@ -193,6 +232,7 @@ def main():
     control = {"id": "CONTROL-KEYBOARD-US", "category": "control", "preferences": {}, "control": True,
                "steps": [{"keys": list("su3cl3"), "expect": {"text": "su3cl3", "preedit": ""}}]}
     results = []
+    aborted = False
     for case in [control, *fixture["cases"]]:
         if case["category"] != "control" and case["category"] not in categories:
             continue
@@ -215,13 +255,11 @@ def main():
                     write_json(directory / "reset-learning.json", {"strategy": "fresh process and fresh per-case profile",
                                "database_existed_before": (profile / "GuanyinmaUserData.db").exists()})
                     write_json(directory / "request.json", {**case, "method": METHODS[prefs["method"]]})
-                    child = subprocess.run([str(host), str(directory / "request.json"), str(directory / "host.json"),
-                                            str(MODEL), str(profile)], capture_output=True, timeout=45)
-                    (directory / "host.stdout").write_bytes(child.stdout)
-                    (directory / "host.stderr").write_bytes(child.stderr)
+                    returncode = run_worker([str(host), str(directory / "request.json"), str(directory / "host.json"),
+                                             str(MODEL), str(profile)], directory)
                     evidence = json.loads((directory / "host.json").read_text())
-                    if child.returncode:
-                        raise AssertionError(evidence.get("error", f"Host exited {child.returncode}"))
+                    if returncode:
+                        raise AssertionError(evidence.get("error", f"Host exited {returncode}"))
                     readback = {path.stem: plistlib.loads(path.read_bytes()) for path in profile.glob("*.plist")}
                     write_json(directory / "native-plist-readback.json", readback)
                     # PV may add its own defaults, but cannot lose requested module values.
@@ -251,11 +289,17 @@ def main():
             results.append(result)
             write_json(out / "results.json", results)
             print(f"{case['id']} round {number}: {result['status']}" + (": " + result["error"] if "error" in result else ""), flush=True)
+            if case.get("control") and result["status"] == "failed":
+                aborted = True
+                break
+        if aborted:
+            break
     after = digest(MODEL)
     write_json(out / "model-integrity.json", {"before": before, "after": after, "unchanged": before == after})
     if after != before:
         raise RuntimeError("Canonical model changed during desktop tests")
     summary = {state: sum(item["status"] == state for item in results) for state in ("passed", "failed", "unsupported")}
+    summary["aborted_after_control_failure"] = aborted
     write_json(out / "summary.json", summary)
     print(json.dumps({"output": str(out), **summary}, ensure_ascii=False))
     return int(summary["failed"] != 0)

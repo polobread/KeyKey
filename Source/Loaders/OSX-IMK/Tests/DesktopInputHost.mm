@@ -271,13 +271,17 @@ int main(int argc, char** argv) { @autoreleasepool {
     int result = 0;
     @try { try {
         Require(argc == 5, "usage: DesktopInputHost REQUEST OUTPUT MODEL PROFILE");
+        fprintf(stderr, "Worker stage: AppKit initialization\n");
         [NSApplication sharedApplication];
+        fprintf(stderr, "Worker stage: AppKit ready\n");
         Require(NSApp.delegate == nil, "Isolated host must not have application UI services");
         NSError* error = nil;
         NSDictionary* request = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:@(argv[1])] options:0 error:&error];
         Require(request != nil, "Invalid request JSON");
         IsolatedPolicy policy(argv[4]);
+        fprintf(stderr, "Worker stage: native font service initialization\n");
         CVEncodingService fonts;
+        fprintf(stderr, "Worker stage: native font service ready\n");
         PVLoaderService service("zh_TW", nullptr, nullptr, nullptr, &fonts); testService = &service;
         OVPathInfo info; info.writablePath = argv[4]; info.resourcePath = argv[4]; info.loadedPath = argv[4];
         PVStaticModulePackageLoadingSystem packages(info, true);
@@ -286,11 +290,14 @@ int main(int argc, char** argv) { @autoreleasepool {
         packages.addInitializedPackage("Guanyinma", package);
         auto* width = new WidthPackage; Require(width->initialize(&info, &service), "Width filter initialization failed");
         packages.addInitializedPackage("Width", width);
+        fprintf(stderr, "Worker stage: native loader initialization\n");
         PVLoader loader(&policy, &service, {&packages}); testLoader = &loader;
         Require(loader.primaryInputMethod() == [request[@"method"] UTF8String], "Native primary method readback differs");
         [report setObject:Native(loader.primaryInputMethod()) forKey:@"method_readback"];
         OVCInputMode.initialize(loader.configKeyValueMap().stringValueForKey("DefaultInputMode") == "English");
+        fprintf(stderr, "Worker stage: controller initialization\n");
         DesktopController* controller = [[DesktopController alloc] init];
+        fprintf(stderr, "Worker stage: controller ready\n");
         DesktopClient* client = [[DesktopClient alloc] init];
         NSMutableArray* trace = [NSMutableArray array]; report[@"events"] = trace;
         NSMutableArray* checkpoints = [NSMutableArray array]; report[@"checkpoints"] = checkpoints;

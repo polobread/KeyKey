@@ -10,6 +10,7 @@ DataSource/AISyntheticBigram/search-trend-unigram-review.tsv text eol=lf
 DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv text eol=lf
 DataSource/AISyntheticBigram/** text eol=lf
 DataSource/chichi77Collection/** text eol=lf
+DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv text eol=lf
 DataSource/McBopomofo/phrase.occ text eol=lf
 DataSource/McBopomofo/BPMFMappings.txt text eol=lf
 DataSource/AISyntheticArticles/typing-articles-v5-seed/*.md text eol=lf

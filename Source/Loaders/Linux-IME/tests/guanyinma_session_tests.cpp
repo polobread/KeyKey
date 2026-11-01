@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Chui-Ping Cheng. MIT License.
 // Linux FE/C ABI integration, using isolated stores and the real model.
+#include <fontconfig/fontconfig.h>
 #include "keykey/linux_ime/guanyinma_session.h"
 #include "keykey/linux_ime/candidate_font_support.h"
 #include "keykey/linux_ime/phrase_reading.h"
@@ -231,6 +232,13 @@ void configurationAndPaths(const std::string &model, Scratch &scratch) {
 int main(int argc, char **argv) {
     try {
         require(argc == 2, "Usage: keykey_linux_guanyinma_tests MODEL");
+        // This standalone test owns Fontconfig's process lifetime. Initialize
+        // before Pango's worker thread and finalize after every font map dies,
+        // so LeakSanitizer can distinguish global caches from owned resources.
+        require(FcInit() != FcFalse, "Cannot initialize native font configuration");
+        struct FontconfigLifetime {
+            ~FontconfigLifetime() { FcFini(); }
+        } fontconfigLifetime;
         const auto model = std::filesystem::canonical(argv[1]).string();
         Scratch scratch;
         traditionalFlow(model, scratch);
