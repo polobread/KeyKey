@@ -3,6 +3,8 @@ import org.gradle.api.tasks.Exec
 import org.gradle.process.CommandLineArgumentProvider
 import org.gradle.api.provider.Provider
 import org.gradle.api.file.Directory
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -16,6 +18,14 @@ class GuanyinmaNdkArguments(
     val directory: Provider<Directory>
 ) : CommandLineArgumentProvider {
     override fun asArguments(): Iterable<String> = listOf("--ndk", directory.get().asFile.absolutePath)
+}
+
+class AndroidRuntimeNoticeArguments(
+    @get:InputFiles @get:PathSensitive(PathSensitivity.NONE)
+    val artifacts: FileCollection
+) : CommandLineArgumentProvider {
+    override fun asArguments(): Iterable<String> = artifacts.files.sortedBy { it.absolutePath }
+        .flatMap { listOf("--android-runtime-artifact", it.absolutePath) }
 }
 
 val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.5.0")
@@ -114,20 +124,31 @@ val guanyinmaPython = providers.environmentVariable("PYTHON3").orNull?.let { lis
 val guanyinmaHostLibrary = guanyinmaHostDirectory.map { it.file(System.mapLibraryName("keykey_guanyinma")) }
 
 val generateGuanyinmaNotices by tasks.registering(Exec::class) {
+    dependsOn("buildGuanyinmaAndroid")
     argumentProviders.add(GuanyinmaNdkArguments(androidComponents.sdkComponents.ndkDirectory))
+    argumentProviders.add(AndroidRuntimeNoticeArguments(configurations.getByName("releaseRuntimeClasspath") + configurations.getByName("debugRuntimeClasspath")))
+    val archives = listOf("arm64-v8a" to "aarch64-linux-android", "armeabi-v7a" to "armv7-linux-androideabi",
+        "x86_64" to "x86_64-linux-android", "x86" to "i686-linux-android")
+    val archiveArguments = archives.flatMap { (abi, target) -> listOf("--runtime-archive",
+        guanyinmaRustDirectory.get().file("$abi/libguanyinma.a").asFile.absolutePath, "--rust-target", target) }
+    inputs.files(archives.map { (abi, _) -> guanyinmaRustDirectory.get().file("$abi/libguanyinma.a") })
     commandLine(guanyinmaPython + listOf(
         guanyinmaCoreDirectory.file("tools/package-runtime-notices.py").asFile.absolutePath,
-        "--output", layout.buildDirectory.file("generated/guanyinmaLicenseAssets/licenses/Guanyinma-Notices.txt").get().asFile.absolutePath
-    ))
+        "--platform", "android",
+        "--output", layout.buildDirectory.file("generated/guanyinmaLicenseAssets/licenses/Guanyinma-Notices.txt").get().asFile.absolutePath,
+        "--audit-output", layout.buildDirectory.file("reports/licenses/Guanyinma-Notices.audit.json").get().asFile.absolutePath
+    ) + archiveArguments)
     inputs.files(guanyinmaCoreDirectory.asFileTree.matching {
-        include("Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "LICENSE.txt", "LICENSES/**", "tools/package-runtime-notices.py")
+        include("Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "LICENSE.txt", "LICENSES/**", "tools/package-runtime-notices.py", "tools/mobile_runtime_notices.py", "tools/android_runtime_notices.py", "tools/android-runtime-license-review.json")
     })
     inputs.files(layout.projectDirectory.dir("../../../..").asFileTree.matching {
         include("LICENSE.txt", "LICENSING.md", "THIRD-PARTY-NOTICES.md", "LICENSES/**",
                 "DataSource/McBopomofo/LICENSE.txt", "DataSource/AISyntheticBigram/LICENSE.txt",
                 "DataSource/chichi77Collection/LICENSE.txt", "Source/Loaders/Android-IME/LICENSE.txt")
     })
-    outputs.file(layout.buildDirectory.file("generated/guanyinmaLicenseAssets/licenses/Guanyinma-Notices.txt"))
+    outputs.files(layout.buildDirectory.file("generated/guanyinmaLicenseAssets/licenses/Guanyinma-Notices.txt"),
+        layout.buildDirectory.file("generated/guanyinmaLicenseAssets/licenses/Guanyinma-Notices.json"),
+        layout.buildDirectory.file("reports/licenses/Guanyinma-Notices.audit.json"))
 }
 
 val buildGuanyinmaAndroid by tasks.registering(Exec::class) {

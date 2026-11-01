@@ -67,7 +67,14 @@ jobs:
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
         with:
           toolchain: ${{ steps.rust.outputs.version }}
+          components: rust-src
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+
+      - name: Test mobile notice selection and attribution
+        shell: bash
+        run: |
+          python3 Source/Guanyinma/tools/test_ios_runtime_notices.py
+          python3 Source/Guanyinma/tools/test_android_runtime_notices.py
 
       - name: Ensure Android SDK packages are installed
         shell: bash
@@ -118,9 +125,14 @@ jobs:
             --tests 'tw.chichi77.keykey.android.GuanyinmaIntegrationTest' \
             --tests 'tw.chichi77.keykey.android.GuanyinmaUserDataTest' \
             --tests 'tw.chichi77.keykey.android.UserPhraseArchiveTest' \
+            --tests 'tw.chichi77.keykey.android.LicenseNoticesTest' \
             bundleRelease \
             -PkeykeyVersionName="$VERSION" \
             -PkeykeyVersionCode="$VERSION_CODE"
+
+      - name: Verify packaged runtime notices
+        shell: bash
+        run: python3 Source/Guanyinma/tools/verify-android-runtime-notices.py Source/Loaders/Android-IME/app/build/outputs/bundle/release/app-release.aab
 
       - name: Verify headless JNI smoke executed
         shell: bash

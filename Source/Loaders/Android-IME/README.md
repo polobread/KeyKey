@@ -259,7 +259,7 @@ Workflow 依序執行 release lint、單元測試、AAB 建置、簽章與共用
 ## 建置
 
 需求：Android Studio、JDK 17 以上、Android SDK 36.1／Build Tools 36.0.0、Python 3.11 以上、
-NDK 27.2.12479018、CMake 3.22.1，以及版控指定的 Rust toolchain／四個 Android targets，另需版控內預先產生的
+NDK 27.2.12479018、CMake 3.22.1，以及版控指定的 Rust toolchain、同版本 `rust-src`／四個 Android targets，另需版控內預先產生的
 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`。從 repo 根目錄可先驗證共用檔：
 
 ```sh
@@ -306,6 +306,8 @@ APK 位於 `app/build/outputs/apk/debug/app-debug.apk`。
 輸入法沒有宣告網路權限；查字與選字都在裝置本機進行。
 
 ## 授權
+
+主畫面安裝步驟下方提供不編號的「授權與致謝」入口，先顯示與 iOS 相同格式的元件目錄，再逐份離線閱讀完整條款與署名；相同條款及長篇原廠聲明共用一份。閱讀頁不執行 JavaScript，也不載入網路內容。
 
 本目錄的原創 Android frontend 程式碼以 MIT License 釋出，著作權為
 Copyright (c) 2026 Chui-Ping Cheng。Gradle wrapper、建置時複製的共用字表、

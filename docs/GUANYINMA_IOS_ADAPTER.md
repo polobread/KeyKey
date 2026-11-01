@@ -40,7 +40,27 @@ extension 以唯讀 connection 取得完整 publication 快照，再透過 Rust 
 
 Xcode App 與 extension 都依賴 `Guanyinma Core` aggregate target。`build-ios-core.sh` 依鎖定 toolchain／Cargo.lock 建立對應 Apple 架構的靜態庫；Rust 是必要建置依賴，沒有停用核心的 build flag。Rust／C ABI declarations 經 `CGuanyinma` module 連結，native targets 保留 Apple SQLite／iconv 系統連結。
 
-腳本同時依 Cargo metadata 產生 `GuanyinmaNotices.txt`，App 與 extension 各自複製至 bundle。容器 App 的致謝頁附加該內容，包含核心、第三方 runtime dependencies、Unicode 與 Rust runtime 授權；不打包只供開發使用的 NDK／測試工具。
+腳本同時產生 `GuanyinmaNotices.txt` 與 `GuanyinmaNotices.json`，App 與 extension 各自複製相同檔案至 bundle。容器 App 使用 JSON 元件目錄，點入閱讀各元件署名與完整條款；相同條款只儲存一次，各元件保留獨立署名及原始文件 SHA-256。文字檔同樣以元件索引與共用條款組成，供離線查核。
+
+### iOS 授權範圍與重現
+
+建置前須備妥同一鎖定 Rust 工具鏈的 `rust-src`（Xcode Cloud 與 iOS packaging workflow 會準備）：
+
+```sh
+rustup component add rust-src --toolchain "$(sed -nE 's/^channel = "([^"]+)"/\1/p' Source/Guanyinma/rust-toolchain.toml)"
+python3 Source/Guanyinma/tools/test_ios_runtime_notices.py
+```
+
+- 專案來源保留 Yahoo BSD、原創 frontend／Guanyinma MIT、Formosa／OpenVanilla 衍生聲明、Unicode，以及 McBopomofo、AI 原創資料與 chichi77Collection 詞庫來源。不同來源的著作權、適用範圍及完整條款均保留；不重訂授權。
+- Cargo 使用 `--locked --no-default-features --filter-platform` 的 normal 執行期相依；排除 dev、build、proc-macro 及其專用相依。建置期程式產生的本專案原創資料與來源授權仍按前一項保留。
+- Rust 標準庫使用本次 iOS `libguanyinma.a` archive 成員的 crate 名稱與 hash，對照相同 target 的 sysroot rlib；再依同版本 `rust-src/library/Cargo.lock` 與 vendored 原始授權取完整聲明。這是靜態庫的元件範圍，未嘗試依連結器函式層級 dead stripping 刪除聲明。
+- `compiler-builtins` 的 MIT／Apache＋LLVM exception 及其直接納入的 libm 原始授權另外保留；`std_detect` 與 Rust in-tree 的 backtrace、Crossbeam、Unicode 署名亦保留。僅排除官方清單中明確的 Fuchsia 專屬來源例外；未知標準庫元件、缺少原始授權、版本／archive 不吻合會中止建置。
+- iOS 使用系統 SQLite、iconv／libunwind，不隨 App 散布這些系統實作；記錄 SQLite 來源，不打包 Android NDK、桌面 Sparkle／WinSparkle／OpenSSL、Windows HanConvert 或整套 Rust 授權目錄。
+- 去重只忽略空白差異；MIT／BSD 完整本文可共用，周圍署名、適用說明與特例原文分開保留。不能用 SPDX 名稱或網頁連結取代所需全文。其他平台仍沿用原本的授權產物流程。
+
+每次建置旁邊的 `GuanyinmaNotices.audit.json` 保存 target 成員、標準庫元件、Cargo 執行期清單與 Rust source lock 雜湊，屬建置產物、不提交。`verify-testflight-archive.sh` 核對 App／extension 目錄一致、條款引用與內容雜湊、必要來源及建置工具排除；更新 Rust／Cargo 相依時須重看這份範圍和產物。
+
+依據：[Rust COPYRIGHT](https://github.com/rust-lang/rust/blob/main/COPYRIGHT)、[Rust MIT](https://github.com/rust-lang/rust/blob/main/LICENSE-MIT)、[Apache 2.0 第 4 條](https://www.apache.org/licenses/LICENSE-2.0)。實際文件以本次鎖定工具鏈與 Cargo source 為準。
 
 ```sh
 # 聚焦 FE 串接：真 Rust／C ABI，無 UIKit 或 Simulator.app

@@ -75,6 +75,30 @@ pass "container app, keyboard extension, and database are present"
 cmp -s "$APP_PATH/GuanyinmaNotices.txt" "$EXTENSION_PATH/GuanyinmaNotices.txt" \
   || fail "App and keyboard extension have different Guanyinma notices"
 pass "app and keyboard extension contain matching Guanyinma runtime notices"
+[[ -s "$APP_PATH/GuanyinmaNotices.json" && -s "$EXTENSION_PATH/GuanyinmaNotices.json" ]] \
+  || fail "iOS component notice catalogs are missing"
+cmp -s "$APP_PATH/GuanyinmaNotices.json" "$EXTENSION_PATH/GuanyinmaNotices.json" \
+  || fail "App and keyboard extension have different component catalogs"
+python3 - "$APP_PATH/GuanyinmaNotices.json" <<'PY_CATALOG'
+import hashlib, json, sys
+with open(sys.argv[1], encoding="utf-8") as stream:
+    catalog = json.load(stream)
+terms = {item["id"]: item["text"] for item in catalog["licenses"]}
+assert len(terms) == len(catalog["licenses"]), "Duplicate license IDs"
+for identity, text in terms.items():
+    assert identity == hashlib.sha256(" ".join(text.split()).encode("utf-8")).hexdigest()
+components = {item["id"]: item for item in catalog["components"]}
+assert len(components) == len(catalog["components"]), "Duplicate component IDs"
+assert {"keykey", "yahoo", "formosa", "unicode", "mcbopomofo", "ai-data", "collection", "rust", "rust-compiler_builtins"} <= components.keys()
+for component in components.values():
+    assert component["licenseIDs"] and set(component["licenseIDs"]) <= terms.keys()
+    assert component["sources"] and all(s["sha256"] for s in component["sources"])
+assert not any(c.startswith("cargo-") and c.removeprefix("cargo-") in
+               {"cc", "pkg-config", "vcpkg", "serde_derive", "syn", "quote", "proc-macro2"}
+               for c in components), "Build tool in runtime catalog"
+PY_CATALOG
+pass "component catalog has complete attribution, valid shared terms, and no build tools"
+
 
 database_count="$(find "$APP_PATH" -type f -name KeyKey.db | wc -l | tr -d '[:space:]')"
 [[ "$database_count" == "1" ]] || fail "Expected one KeyKey.db, found $database_count"

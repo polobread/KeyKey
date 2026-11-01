@@ -63,6 +63,7 @@ case "${KEYKEY_GUANYINMA_OFFLINE:-0}" in
 esac
 cd "$core_dir"
 archives=()
+rust_targets=()
 for architecture in $ARCHS; do
     case "$platform/$architecture" in
         iphoneos/arm64) rust_target=aarch64-apple-ios ;;
@@ -76,6 +77,7 @@ for architecture in $ARCHS; do
     export "CARGO_TARGET_${target_key}_LINKER=$clang_path"
     "$cargo_bin" "${cargo_args[@]}" --target "$rust_target"
     archives+=("$output_dir/target/$rust_target/release/libguanyinma.a")
+    rust_targets+=("$rust_target")
 done
 if [[ ${#archives[@]} -eq 0 ]]; then
     echo "error: ARCHS must include at least one supported architecture" >&2; exit 1
@@ -93,7 +95,14 @@ if ! cmp -s "$staged_archive" "$output_dir/libguanyinma.a"; then
     mv -f "$staged_archive" "$output_dir/libguanyinma.a"
 fi
 printf 'Guanyinma archive: %s\n' "$output_dir/libguanyinma.a"
-notice_args=(--platform ios --cargo "$cargo_bin" --output "$output_dir/GuanyinmaNotices.txt")
+notice_platform=ios
+if [[ "$platform" == macosx ]]; then notice_platform=macos; fi
+notice_args=(--platform "$notice_platform" --cargo "$cargo_bin" --output "$output_dir/GuanyinmaNotices.txt")
+if [[ "$notice_platform" == ios ]]; then
+    for ((i=0; i<${#archives[@]}; i++)); do
+        notice_args+=(--ios-runtime-archive "${archives[$i]}" --ios-rust-target "${rust_targets[$i]}")
+    done
+fi
 if [[ "${KEYKEY_GUANYINMA_OFFLINE:-0}" == 1 ]]; then
     notice_args+=(--offline)
 fi

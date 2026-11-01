@@ -80,3 +80,25 @@ JVM tests 的 `buildGuanyinmaHostJNI` 建立目前主機架構的真 JNI library
 完整 Rust／C consumer 矩陣只由 [Guanyinma Core workflow](../.github/workflows/guanyinma-core.yml) 負責，平台 workflow 直接編譯核心，只跑少量 FE 串接。舊 Java 核心專屬矩陣不再編譯；凍結的 functional baseline 仍保留作手動遷移參考，重新擷取舊核心需使用保留該實作的 Git revision，不在日常／CI／發布 gate 執行。
 
 host JVM JNI、APK 四 ABI 編譯、Android runtime 與真正 IME 宿主輸入是不同證據層級；此文件不宣稱裝置／UI、Play 發布或其他平台已完成驗收。
+
+## 授權元件目錄
+
+Android 與 iOS 共用 `Source/Guanyinma/tools/mobile_runtime_notices.py` 的 schema 與全文去重方式。`generateGuanyinmaNotices` 在四個 ABI 的 Rust archive 完成後才執行；建置環境須有鎖定工具鏈同版本的 `rust-src`。`Guanyinma-Notices.json` 與文字索引放進 APK／AAB，`Guanyinma-Notices.audit.json` 只留在 build reports，不打包、不提交。
+
+- Rust normal 執行期相依與各 ABI archive／sysroot rlib 的 crate 名稱及 hash 必須吻合，排除建置／測試／proc-macro 工具。標準庫與 compiler-builtins／libm 的完整來源聲明依同版 rust-src 取得；保留 Rust、Crossbeam、Unicode 署名，不打包整份 `COPYRIGHT-library.html` 或整套 Rust 授權目錄。
+- Android 使用 bundled SQLite，核對每個 archive 的 sqlite3 object 並保留實際 amalgamation 版本及 public-domain disclaimer。JNI 沿用靜態 libc++／libc++abi／libunwind 與 compiler-rt；聲明從實際 NDK NOTICE 中識別 runtime 區段，排除 OpenMP、編譯器工具等無關項目。libunwind 聲明取自 NDK 記錄的 LLVM base revision，原文與 SHA-256 固定；NDK 來源變更需重新核對。
+- Java 相依取 Gradle 已解析的 Debug／Release runtime artifact 聯集（本次兩者相同），不含 androidTest／host unit 依賴。`android-runtime-license-review.json` 保存實際版本的官方 POM URL、雜湊、授權與必要的父 POM 繼承。優先保留 artifact 內附 LICENSE／NOTICE；已核對為 Apache-2.0 且無內附聲明的包共用完整標準條款。未知版本或授權來源中止建置，不以套件名稱猜測。
+- Google Billing／Play Services 的混淆／內含程式無法僅靠 class 名稱證明沒有某個第三方來源，保留原廠該 artifact 隨附的完整第三方聲明。其相同條款及長篇聲明以文字雜湊共用，各 runtime 元件保留自己的引用和來源雜湊。這些屬 Android Java／Google 元件，不混入 Rust 標準庫條目。
+- 專案、Yahoo、Formosa／OpenVanilla、Unicode 與詞庫來源沿用既有原始署名。去重只忽略空白差異，不重寫條件、例外或著作權；依元件範圍保留，不推測連結器函式層級 dead stripping 的授權結果。
+
+核對入口：
+
+```sh
+python3 Source/Guanyinma/tools/test_ios_runtime_notices.py
+python3 Source/Guanyinma/tools/test_android_runtime_notices.py
+python3 Source/Guanyinma/tools/verify-android-runtime-notices.py PATH_TO_APK_OR_AAB
+```
+
+Python 測試檢查原廠 byte-offset 聲明、Unicode 署名及共用條款／例外不遺失；APK／AAB 驗證檢查實際元件、完整引用、內容雜湊與 Rust 無關清單排除。Android UI 測試另從主畫面進入，實際閱讀 Yahoo 與 Rust 條目、搜尋必要署名並返回。iOS 共用程式重構後須核對既有目錄及文字輸出一致，不以 Android 檢查替代 iOS 宿主驗證。
+
+依據：[Android NDK C++ runtime](https://developer.android.com/ndk/guides/cpp-support)、[Apache 2.0 第 4 條](https://www.apache.org/licenses/LICENSE-2.0)、各 artifact 原廠 POM 及完整內附聲明。LLVM libunwind 原文來源為 `https://raw.githubusercontent.com/llvm/llvm-project/3c92011b600bdf70424e2547594dd461fe411a41/libunwind/LICENSE.TXT`。

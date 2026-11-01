@@ -15,6 +15,12 @@
     <string name="enable_ime">1. 啟用輸入法</string>
     <string name="choose_ime">2. 選擇琦琦輸入法</string>
     <string name="open_settings">3. 調整設定</string>
+    <string name="open_acknowledgements">授權與致謝</string>
+    <string name="acknowledgements_title">授權與致謝</string>
+    <string name="acknowledgements_description">本產品以 Yahoo! KeyKey 為基礎，但不是 Yahoo 官方產品。點選元件可離線閱讀完整授權與署名。</string>
+    <string name="acknowledgements_loading">正在載入授權文件…</string>
+    <string name="acknowledgements_error">無法完整載入授權資訊。</string>
+    <string name="acknowledgements_back">返回</string>
     <string name="settings_title">琦琦輸入法設定</string>
     <string name="settings_group_composition">注音與選字</string>
     <string name="settings_group_composition_summary">注音鍵盤：%1$s · 上下文：%2$s</string>

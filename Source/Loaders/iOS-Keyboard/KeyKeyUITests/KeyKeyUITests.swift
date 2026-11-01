@@ -313,23 +313,40 @@ final class KeyKeyUITests: XCTestCase {
         button.tap()
 
         XCTAssertTrue(app.navigationBars["授權與致謝"].waitForExistence(timeout: 3))
+        let directory = app.tables["acknowledgements.components"]
+        XCTAssertTrue(directory.waitForExistence(timeout: 3))
+        let yahoo = directory.cells["acknowledgements.component.yahoo"]
+        XCTAssertTrue(yahoo.exists)
+        yahoo.tap()
         let notices = app.textViews["acknowledgements-text"]
-        XCTAssertTrue(notices.exists)
-        XCTAssertTrue((notices.value as? String)?.contains("Yahoo! KeyKey") == true)
-        XCTAssertTrue((notices.value as? String)?.contains("McBopomofo") == true)
+        XCTAssertTrue(notices.waitForExistence(timeout: 3))
+        XCTAssertTrue((notices.value as? String)?.contains("Yahoo! Inc.") == true)
+        XCTAssertTrue((notices.value as? String)?.contains("Redistribution and use") == true)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
 
-        let documents = app.segmentedControls["acknowledgements.document"]
-        documents.buttons["核心與第三方"].tap()
-        XCTAssertTrue(waitForLayout { (notices.value as? String)?.contains("Guanyinma") == true })
-        let firstPage = notices.value as? String
-        let next = app.buttons["acknowledgements.next"]
-        XCTAssertTrue(next.isEnabled)
-        next.tap()
-        XCTAssertTrue(waitForLayout { (notices.value as? String) != firstPage })
-        app.buttons["acknowledgements.previous"].tap()
-        XCTAssertEqual(notices.value as? String, firstPage)
-        documents.buttons["專案與資料"].tap()
-        XCTAssertTrue((notices.value as? String)?.contains("Yahoo! KeyKey") == true)
+        let rust = directory.cells["acknowledgements.component.rust"]
+        XCTAssertTrue(revealControl(rust))
+        rust.tap()
+        XCTAssertTrue(notices.waitForExistence(timeout: 3))
+        let rustText = notices.value as? String ?? ""
+        XCTAssertTrue(rustText.contains("The Rust Project Developers"))
+        XCTAssertTrue(rustText.contains("The Crossbeam Project Developers"))
+        XCTAssertTrue(rustText.contains("Unicode"))
+        XCTAssertTrue(rustText.contains("Permission is hereby granted"))
+        let detail = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        detail.name = "iOS Rust component acknowledgements"
+        detail.lifetime = .keepAlways
+        add(detail)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let keykey = directory.cells["acknowledgements.component.keykey"]
+        XCTAssertTrue(revealControl(keykey))
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "iOS acknowledgements component directory"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        keykey.tap()
+        XCTAssertTrue((notices.value as? String)?.contains("Chui-Ping Cheng") == true)
+
     }
 
     func testSupporterPurchaseControlsAreReachable() {
@@ -1407,7 +1424,8 @@ final class KeyKeyUITests: XCTestCase {
     }
 
     private func revealControl(_ element: XCUIElement) -> Bool {
-        let scroll = app.scrollViews.firstMatch
+        let scroll = app.tables["acknowledgements.components"].exists
+            ? app.tables["acknowledgements.components"] : app.scrollViews.firstMatch
         guard scroll.exists else { return element.isHittable }
         for _ in 0..<20 {
             if element.isHittable { return true }

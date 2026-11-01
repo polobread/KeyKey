@@ -353,7 +353,6 @@
 			files = (
 				C7700000000000000000003C /* Assets.xcassets in Resources */,
 				C7700000000000000000003E /* PrivacyInfo.xcprivacy in Resources */,
-				C77000000000000000000050 /* Acknowledgements.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -379,6 +378,7 @@
 			outputPaths = (
 				"$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/libguanyinma.a",
 				"$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.txt",
+				"$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.json",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
@@ -388,23 +388,23 @@
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = ();
-			inputPaths = ("$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.txt",);
+			inputPaths = ("$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.txt", "$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.json",);
 			name = "Copy Guanyinma runtime notices";
-			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanyinmaNotices.txt",);
+			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanyinmaNotices.txt", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanyinmaNotices.json",);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "set -euo pipefail\ninstall -m 644 \"$BUILT_PRODUCTS_DIR/Guanyinma/$PLATFORM_NAME/GuanyinmaNotices.txt\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GuanyinmaNotices.txt\"\n";
+			shellScript = "set -euo pipefail\ninstall -m 644 \"$BUILT_PRODUCTS_DIR/Guanyinma/$PLATFORM_NAME/GuanyinmaNotices.txt\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GuanyinmaNotices.txt\"\ninstall -m 644 \"$BUILT_PRODUCTS_DIR/Guanyinma/$PLATFORM_NAME/GuanyinmaNotices.json\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GuanyinmaNotices.json\"\n";
 		};
 		C77000000000000000000081 /* Copy Guanyinma runtime notices */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = ();
-			inputPaths = ("$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.txt",);
+			inputPaths = ("$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.txt", "$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)/GuanyinmaNotices.json",);
 			name = "Copy Guanyinma runtime notices";
-			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanyinmaNotices.txt",);
+			outputPaths = ("$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanyinmaNotices.txt", "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GuanyinmaNotices.json",);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "set -euo pipefail\ninstall -m 644 \"$BUILT_PRODUCTS_DIR/Guanyinma/$PLATFORM_NAME/GuanyinmaNotices.txt\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GuanyinmaNotices.txt\"\n";
+			shellScript = "set -euo pipefail\ninstall -m 644 \"$BUILT_PRODUCTS_DIR/Guanyinma/$PLATFORM_NAME/GuanyinmaNotices.txt\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GuanyinmaNotices.txt\"\ninstall -m 644 \"$BUILT_PRODUCTS_DIR/Guanyinma/$PLATFORM_NAME/GuanyinmaNotices.json\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GuanyinmaNotices.json\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

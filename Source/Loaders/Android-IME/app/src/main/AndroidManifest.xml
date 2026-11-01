@@ -29,6 +29,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".AcknowledgementsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".UserPhrasesActivity"
             android:exported="false" />
 

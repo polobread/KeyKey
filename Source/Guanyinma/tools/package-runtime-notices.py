@@ -60,6 +60,10 @@ def main():
     parser.add_argument("--platform", choices=["android", "ios", "macos", "windows", "linux", "freebsd"], default="android")
     parser.add_argument("--ndk", type=Path, help="the same configured NDK used by the JNI link (required for Android)")
     parser.add_argument("--offline", action="store_true")
+    parser.add_argument("--runtime-archive", "--ios-runtime-archive", dest="ios_runtime_archive", type=Path, action="append", default=[])
+    parser.add_argument("--rust-target", "--ios-rust-target", dest="ios_rust_target", action="append", default=[])
+    parser.add_argument("--android-runtime-artifact", type=Path, action="append", default=[])
+    parser.add_argument("--audit-output", type=Path)
     args = parser.parse_args()
     if args.platform == "android" and args.ndk is None:
         parser.error("--ndk is required for Android")
@@ -86,19 +90,27 @@ def main():
             raise RuntimeError("Unix notices require the corresponding native Rust host")
         targets = (host.group(1),)
     elif args.platform == "ios":
-        targets = ("aarch64-apple-ios", "aarch64-apple-ios-sim", "x86_64-apple-ios")
+        targets = tuple(args.ios_rust_target)
+        if not targets or any(target not in ("aarch64-apple-ios", "aarch64-apple-ios-sim", "x86_64-apple-ios") for target in targets):
+            raise RuntimeError("iOS notices require the actual --ios-rust-target for each archive")
     elif args.platform == "macos":
         targets = ("aarch64-apple-darwin", "x86_64-apple-darwin")
+    elif args.platform == "android":
+        targets = tuple(args.ios_rust_target)
+        if not targets or any(target not in TARGETS for target in targets):
+            raise RuntimeError("Android notices require the actual --rust-target for each archive")
     else:
-        targets = TARGETS if args.platform == "android" else ("x86_64-pc-windows-msvc", "i686-pc-windows-msvc")
+        targets = ("x86_64-pc-windows-msvc", "i686-pc-windows-msvc")
     features = [] if system_sqlite else ["--features", "bundled-sqlite"]
     packages = {}
+    metadatas = []
     for target in targets:
         command = [args.cargo, "metadata", "--locked", "--format-version", "1",
                    "--no-default-features", *features, "--filter-platform", target]
         if offline:
             command.append("--offline")
         metadata = json.loads(subprocess.check_output(command, cwd=CORE, env=environment, text=True, encoding="utf-8"))
+        metadatas.append(metadata)
         target_packages = resolved_packages(metadata)
         sqlite_ids = {package["id"] for package in target_packages.values() if package["name"] == "libsqlite3-sys"}
         sqlite_nodes = [node for node in metadata["resolve"]["nodes"] if node["id"] in sqlite_ids]
@@ -107,6 +119,14 @@ def main():
                                    for node in sqlite_nodes):
             raise RuntimeError("SQLite metadata does not match the selected system/bundled provider")
         packages.update(target_packages)
+    if args.platform in ("ios", "android"):
+        from mobile_runtime_notices import package_mobile
+        sysroot = Path(subprocess.check_output([rustc, "--print", "sysroot"], cwd=CORE,
+                       env=environment, text=True, encoding="utf-8").strip())
+        package_mobile(ROOT, CORE, channel, sysroot, metadatas, args.ios_runtime_archive,
+                       args.ios_rust_target, args.output, license_files, platform=args.platform,
+                       ndk=args.ndk, artifacts=args.android_runtime_artifact, audit_output=args.audit_output)
+        return
     chunks = [(
         "Guanyinma / KeyKey " + args.platform + " runtime notices\n"
         "=========================================\n"
@@ -141,7 +161,7 @@ def main():
     if frontend is not None:
         files.add(ROOT / ("Source/Loaders/" + frontend + "/LICENSE.txt"))
     files.update(path for directory in (ROOT / "LICENSES", CORE / "LICENSES")
-                 for path in directory.rglob("*") if path.is_file())
+                 for path in directory.rglob("*") if path.is_file() and "android-ndk" not in path.parts)
     for path in sorted(files):
         add("repository/" + path.relative_to(ROOT).as_posix(), path.read_bytes())
 

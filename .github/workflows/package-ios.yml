@@ -45,7 +45,12 @@ jobs:
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
         with:
           toolchain: ${{ steps.rust.outputs.version }}
+          components: rust-src
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+
+      - name: Test iOS notice selection and attribution
+        shell: bash
+        run: python3 Source/Guanyinma/tools/test_ios_runtime_notices.py
 
       - name: Cook database
         shell: bash

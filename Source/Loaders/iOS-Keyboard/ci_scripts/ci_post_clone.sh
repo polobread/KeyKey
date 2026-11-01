@@ -26,7 +26,7 @@ else
     echo "Prepare rustup in the CI environment before this post-clone hook." >&2
     exit 1
 fi
-"$rustup_bin" toolchain install "$rust_channel" --profile minimal
+"$rustup_bin" toolchain install "$rust_channel" --profile minimal --component rust-src
 "$rustup_bin" target add --toolchain "$rust_channel" \
     aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 

@@ -833,115 +833,119 @@ private final class UserPhrasesViewController: UITableViewController, UIDocument
     }
 }
 
-private final class AcknowledgementsViewController: UIViewController {
-    private let documents = UISegmentedControl(items: ["專案與資料", "核心與第三方"])
-    private let textView = UITextView()
-    private let previousPage = UIButton(configuration: .plain())
-    private let nextPage = UIButton(configuration: .plain())
-    private let pageLabel = UILabel()
-    private var pagesByDocument: [Int: [String]] = [:]
-    private var pages: [String] = []
-    private var pageIndex = 0
+private struct AcknowledgementsCatalog: Decodable {
+    struct Component: Decodable {
+        let id: String
+        let name: String
+        let license: String
+        let attribution: String
+        let licenseIDs: [String]
+        let source: String
+    }
+    struct Terms: Decodable {
+        let id: String
+        let text: String
+    }
+    let components: [Component]
+    let licenses: [Terms]
+}
+
+private final class AcknowledgementsViewController: UITableViewController {
+    private var catalog: AcknowledgementsCatalog?
+
+    init() { super.init(style: .insetGrouped) }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "授權與致謝"
-        view.backgroundColor = .systemBackground
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .close, target: self, action: #selector(close)
         )
+        tableView.accessibilityIdentifier = "acknowledgements.components"
+        if let url = Bundle.main.url(forResource: "GuanyinmaNotices", withExtension: "json"),
+           let data = try? Data(contentsOf: url),
+           let decoded = try? JSONDecoder().decode(AcknowledgementsCatalog.self, from: data) {
+            let available = Set(decoded.licenses.map(\.id))
+            if !decoded.components.isEmpty && decoded.components.allSatisfy({
+                !$0.licenseIDs.isEmpty && $0.licenseIDs.allSatisfy(available.contains)
+            }) {
+                catalog = decoded
+            }
+        }
+    }
 
-        documents.selectedSegmentIndex = 0
-        documents.accessibilityIdentifier = "acknowledgements.document"
-        documents.addTarget(self, action: #selector(documentChanged), for: .valueChanged)
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        catalog?.components.count ?? 0
+    }
+
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        catalog == nil ? "無法完整載入授權資訊。" : "本產品以 Yahoo! KeyKey 為基礎，但不是 Yahoo 官方產品。"
+    }
+
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        catalog == nil ? nil : "點選元件可閱讀著作權聲明與完整授權條款。"
+    }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+        guard let component = catalog?.components[indexPath.row] else { return cell }
+        cell.textLabel?.text = component.name
+        cell.textLabel?.numberOfLines = 0
+        cell.detailTextLabel?.text = component.license
+        cell.detailTextLabel?.numberOfLines = 0
+        cell.accessoryType = .disclosureIndicator
+        cell.accessibilityIdentifier = "acknowledgements.component.\(component.id)"
+        return cell
+    }
+
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        guard let catalog else { return }
+        let component = catalog.components[indexPath.row]
+        let terms = Dictionary(uniqueKeysWithValues: catalog.licenses.map { ($0.id, $0.text) })
+        let text = ([component.name, component.license, component.attribution, component.source]
+                    + component.licenseIDs.compactMap { terms[$0] })
+            .filter { !$0.isEmpty }.joined(separator: "\n\n")
+        navigationController?.pushViewController(
+            AcknowledgementDetailViewController(name: component.name, text: text), animated: true
+        )
+    }
+
+    @objc private func close() { dismiss(animated: true) }
+}
+
+private final class AcknowledgementDetailViewController: UIViewController {
+    private let text: String
+
+    init(name: String, text: String) {
+        self.text = text
+        super.init(nibName: nil, bundle: nil)
+        title = name
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+        let textView = UITextView()
         textView.isEditable = false
         textView.isSelectable = true
         textView.alwaysBounceVertical = true
         textView.font = .preferredFont(forTextStyle: .footnote)
         textView.adjustsFontForContentSizeCategory = true
         textView.accessibilityIdentifier = "acknowledgements-text"
-        previousPage.setTitle("上一頁", for: .normal)
-        previousPage.accessibilityIdentifier = "acknowledgements.previous"
-        previousPage.addTarget(self, action: #selector(showPreviousPage), for: .touchUpInside)
-        nextPage.setTitle("下一頁", for: .normal)
-        nextPage.accessibilityIdentifier = "acknowledgements.next"
-        nextPage.addTarget(self, action: #selector(showNextPage), for: .touchUpInside)
-        pageLabel.font = .preferredFont(forTextStyle: .footnote)
-        pageLabel.textAlignment = .center
-        pageLabel.accessibilityIdentifier = "acknowledgements.page"
-        let paging = UIStackView(arrangedSubviews: [previousPage, pageLabel, nextPage])
-        paging.alignment = .center
-        paging.spacing = 12
-        pageLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-
-        for child in [documents, textView, paging] {
-            child.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(child)
-        }
+        textView.text = text
+        textView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(textView)
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            documents.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
-            documents.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -16),
-            documents.topAnchor.constraint(equalTo: guide.topAnchor, constant: 8),
             textView.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
             textView.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -16),
-            textView.topAnchor.constraint(equalTo: documents.bottomAnchor, constant: 8),
-            textView.bottomAnchor.constraint(equalTo: paging.topAnchor, constant: -8),
-            paging.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
-            paging.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -16),
-            paging.bottomAnchor.constraint(equalTo: guide.bottomAnchor, constant: -8)
+            textView.topAnchor.constraint(equalTo: guide.topAnchor),
+            textView.bottomAnchor.constraint(equalTo: guide.bottomAnchor)
         ])
-        documentChanged()
     }
-
-    @objc private func documentChanged() {
-        let selected = documents.selectedSegmentIndex
-        if let cached = pagesByDocument[selected] {
-            pages = cached
-        } else {
-            let resource = selected == 0 ? "Acknowledgements" : "GuanyinmaNotices"
-            let contents = Bundle.main.url(forResource: resource, withExtension: "txt")
-                .flatMap { try? String(contentsOf: $0, encoding: .utf8) }
-                ?? "無法完整載入授權資訊。"
-            // Keep every character while bounding UIKit's accessibility work.
-            // A single text view containing all runtime notices makes snapshot
-            // requests enumerate tens of thousands of paragraph elements.
-            var chunks: [String] = []
-            var start = contents.startIndex
-            while start < contents.endIndex {
-                let end = contents.index(start, offsetBy: 8_192, limitedBy: contents.endIndex)
-                    ?? contents.endIndex
-                chunks.append(String(contents[start..<end]))
-                start = end
-            }
-            pages = chunks.isEmpty ? [""] : chunks
-            pagesByDocument[selected] = pages
-        }
-        pageIndex = 0
-        updatePage()
-    }
-
-    private func updatePage() {
-        textView.text = pages[pageIndex]
-        textView.setContentOffset(.zero, animated: false)
-        pageLabel.text = "第 \(pageIndex + 1) 頁／共 \(pages.count) 頁"
-        previousPage.isEnabled = pageIndex > 0
-        nextPage.isEnabled = pageIndex + 1 < pages.count
-    }
-
-    @objc private func showPreviousPage() {
-        guard pageIndex > 0 else { return }
-        pageIndex -= 1
-        updatePage()
-    }
-
-    @objc private func showNextPage() {
-        guard pageIndex + 1 < pages.count else { return }
-        pageIndex += 1
-        updatePage()
-    }
-
-    @objc private func close() { dismiss(animated: true) }
 }
 
 #if DEBUG

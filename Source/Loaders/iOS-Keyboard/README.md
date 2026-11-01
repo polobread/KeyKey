@@ -92,7 +92,7 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-建置需要已安裝 `Source/Guanyinma/rust-toolchain.toml` 指定的 Rust toolchain 與對應 iOS
+建置需要已安裝 `Source/Guanyinma/rust-toolchain.toml` 指定的 Rust toolchain、同版本 `rust-src` 與對應 iOS
 target。Xcode 先建置共用 Rust 靜態庫再連結 App 與 extension；不執行完整核心測試。
 
 `KeyKey.db` 是版控內的共用建置輸入。Xcode Cloud 會自動執行
