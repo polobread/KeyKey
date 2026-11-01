@@ -222,6 +222,69 @@ void checkModeWidthAndEnglishPassThrough() {
     require(f.state.usesGuanyinma() && f.allCommitted() == before + "ａｂ", "Settings replacement lost English/full-width mode");
 }
 
+void checkBopomofoWindowsLetterCase() {
+    const auto letter = [](char value, bool shift, bool caps) {
+        linux_ime::KeyEvent event;
+        event.character = value;
+        event.text.assign(1, value);
+        event.rawShift = shift;
+        if (shift) event.modifiers = linux_ime::KeyModifier::Shift;
+        event.capsLock = caps;
+        return event;
+    };
+    Fixture f;
+    f.config.smartMode = false;
+    f.request();
+    f.send(letter('A', true, false));
+    f.send(letter('B', false, true));
+    f.send(letter('c', true, true));
+    require(f.allCommitted() == "abc", "Traditional Shift/Caps letters differ from Windows");
+    f.character('5');
+    require(f.preedit() == "ㄓ", "Missing unfinished Traditional reading");
+    f.send(letter('A', true, false));
+    require(f.allCommitted() == "abca" && f.preedit().empty(),
+            "Shift letter did not replace the pending reading with lowercase text");
+    f.type("5j/");
+    f.key(linux_ime::KeyCode::Space);
+    f.key(linux_ime::KeyCode::Down);
+    require(f.context.inputPanel().candidateList() != nullptr, "Missing Traditional candidate panel");
+    f.send(letter('D', true, false));
+    require(f.allCommitted() == "abcad" && f.preedit().empty() &&
+            f.context.commits.size() == 5 && !f.context.inputPanel().candidateList(),
+            "Shift letter committed a pending candidate or duplicated lowercase text");
+
+    Fixture english;
+    english.config.smartMode = false;
+    english.request();
+    english.state.initializeMode(false);
+    require(!english.send(letter('A', true, false)) && english.context.commits.empty(),
+            "English half-width Shift letter stopped passing through");
+    linux_ime::KeyEvent width;
+    width.code = linux_ime::KeyCode::Space;
+    width.rawShift = true;
+    width.modifiers = linux_ime::KeyModifier::Shift;
+    english.send(width);
+    english.send(letter('A', true, false));
+    require(english.allCommitted() == "Ａ", "English full-width Shift letter lost its delivered case");
+
+    Fixture smart;
+    smart.type("su3cl3");
+    smart.send(letter('A', true, false));
+    require(smart.preedit() == "你好a" && smart.context.commits.empty(),
+            "Smart Shift letter did not stay lowercase inside composition");
+    smart.key(linux_ime::KeyCode::Enter);
+    require(smart.allCommitted() == "你好a" && smart.context.commits.size() == 1,
+            "Smart lowercase composition was not committed exactly once");
+    smart.config.smart.shiftAlwaysUppercase = true;
+    smart.request();
+    smart.type("su3cl3");
+    smart.send(letter('A', true, false));
+    require(smart.preedit() == "你好A", "Explicit Smart uppercase preference was ignored");
+    smart.key(linux_ime::KeyCode::Enter);
+    require(smart.allCommitted() == "你好a你好A" && smart.context.commits.size() == 2,
+            "Explicit Smart uppercase composition was not committed exactly once");
+}
+
 void checkInitializationFailureAndRetryBoundary() {
     Fixture f;
     f.request((f.scratch / "missing-model.db").string());
@@ -651,6 +714,7 @@ int main() {
         checkStaleViewAndPageClick();
         checkClientUnfocusCommitAndRepeatedReset();
         checkModeWidthAndEnglishPassThrough();
+        checkBopomofoWindowsLetterCase();
         checkInitializationFailureAndRetryBoundary();
         checkTableHandoffAndIndependentContexts();
         checkSmartClickAndUtf8Cursor();

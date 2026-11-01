@@ -1014,6 +1014,18 @@ void FcitxState::processRust(const linux_ime::KeyEvent &event,
         capabilities.test(fcitx::CapabilityFlag::Sensitive)) clearAssociated();
 
     auto editing = event;
+    if (rust_->config().inputMethod == linux_ime::InputMethod::Bopomofo &&
+        editing.code == linux_ime::KeyCode::Character &&
+        !editing.keypad && editing.text.size() <= 1) {
+        // Match Windows Chinese key-position translation: ASCII letters are
+        // lowercase while Shift/Caps Lock remain modifiers for the core.
+        // English mode returned above and keeps the host's delivered case.
+        const char letter = editing.text.empty() ? editing.character : editing.text.front();
+        if (letter >= 'A' && letter <= 'Z') {
+            editing.character = static_cast<char>(letter + ('a' - 'A'));
+            if (!editing.text.empty()) editing.text.assign(1, editing.character);
+        }
+    }
     if (associatedCandidates_.empty() &&
         rust_->config().inputMethod == linux_ime::InputMethod::Bopomofo &&
         !rust_->snapshot().candidates.empty() &&

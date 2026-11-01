@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Drive the installed Fcitx 5 configuration UI through AT-SPI."""
+"""Drive the installed Fcitx settings through AT-SPI or isolated X11 input."""
 
 import argparse
+import configparser
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -138,13 +140,15 @@ def select_last_combo_value(node):
     subprocess.run(["xdotool", "key", "End", "Return"], check=True)
 
 
-def capture_window(title, stem):
-    window_ids = subprocess.check_output(
-        ["xdotool", "search", "--onlyvisible", "--name", f"^{title}$"],
-        text=True,
-    ).splitlines()
-    if not window_ids:
-        raise RuntimeError(f"No visible X11 window named {title!r}")
+def capture_window(title, stem, window_id=None):
+    if window_id is None:
+        window_ids = subprocess.check_output(
+            ["xdotool", "search", "--onlyvisible", "--name", f"^{title}$"],
+            text=True,
+        ).splitlines()
+        if not window_ids:
+            raise RuntimeError(f"No visible X11 window named {title!r}")
+        window_id = window_ids[0]
 
     png_path = stem.with_suffix(".png")
     with tempfile.NamedTemporaryFile(suffix=".xwd") as xwd_file:
@@ -153,7 +157,7 @@ def capture_window(title, stem):
                 "xwd",
                 "-silent",
                 "-id",
-                window_ids[0],
+                window_id,
                 "-out",
                 xwd_file.name,
             ],
@@ -182,11 +186,117 @@ def capture_window(title, stem):
         raise RuntimeError(png_result.stderr.decode("utf-8", errors="replace"))
 
 
+def drive_isolated_x11(artifact_dir):
+    # This pointer fixture is deliberately restricted to the private display,
+    # fixed profile, scale and canvas established by the managed CI runner.
+    runtime = Path(os.environ["KEYKEY_E2E_RUNTIME_ROOT"]).resolve()
+    config_home = Path(os.environ["XDG_CONFIG_HOME"]).resolve()
+    display = ":" + (runtime / "xvfb-display").read_text().strip()
+    if (os.environ.get("KEYKEY_E2E_SESSION_MODE") != "managed"
+            or os.environ.get("DISPLAY") != display
+            or not config_home.is_relative_to(runtime)
+            or os.environ.get("QT_SCALE_FACTOR") != "1"
+            or os.environ.get("QT_FONT_DPI") != "100"):
+        raise RuntimeError("X11 settings automation requires the managed private display")
+
+    def xdo(*args):
+        return subprocess.check_output(["xdotool", *map(str, args)], text=True).strip()
+
+    def geometry(window):
+        values = dict(line.split("=", 1) for line in xdo("getwindowgeometry", "--shell", window).splitlines())
+        return {key: int(values[key]) for key in ("X", "Y", "WIDTH", "HEIGHT")}
+
+    def find_window(pattern, present=True):
+        deadline = time.monotonic() + TIMEOUT_SECONDS
+        while time.monotonic() < deadline:
+            result = subprocess.run(["xdotool", "search", "--onlyvisible", "--name", pattern],
+                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            windows = result.stdout.splitlines()
+            if not present and not windows:
+                return None
+            for window in windows:
+                size = geometry(window)
+                if size["WIDTH"] > 400 and size["HEIGHT"] > 400 and present:
+                    return window
+            time.sleep(POLL_SECONDS)
+        raise RuntimeError(f"Timed out waiting for X11 window {pattern!r}, present={present}")
+
+    def click(window, x, y):
+        xdo("mousemove", "--window", window, x, y, "click", 1)
+
+    def settings():
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.optionxform = str
+        parser.read_string("[Root]\n" + (config_home / "fcitx5/conf/chichi77-keykey.conf").read_text())
+        return {
+            "McBopomofo": parser["AssociatedPhrases"]["McBopomofo"],
+            "agriculture-food": parser["AssociatedPhrases"]["agriculture-food"],
+            **{name: parser["Root"][name] for name in (
+                "PlaySoundOnTypingError", "ToggleInputMethodWithControlBackslash", "CandidateWindowStyle")},
+        }
+
+    profile = configparser.ConfigParser(interpolation=None)
+    profile.read(config_home / "fcitx5/profile")
+    if (profile["Groups/0/Items/0"]["Name"] != "keyboard-us"
+            or profile["Groups/0/Items/1"]["Name"] != "chichi77-keykey-bopomofo"):
+        raise RuntimeError("Unexpected input-method order for the X11 pointer fixture")
+    before = {"McBopomofo": "True", "agriculture-food": "False", "PlaySoundOnTypingError": "True",
+              "ToggleInputMethodWithControlBackslash": "True", "CandidateWindowStyle": "Vertical"}
+    if settings() != before:
+        raise RuntimeError("Unexpected initial native settings")
+    main_window = find_window("^Fcitx Configuration$")
+    xdo("windowsize", main_window, 800, 600)
+    xdo("windowfocus", "--sync", main_window)
+    click(main_window, 110, 140)  # Second item in the verified fixed profile.
+    click(main_window, 400, 314)  # Native Configure button between the lists.
+    dialog = find_window("^chichi77 KeyKey Bopomofo")
+    if xdo("getwindowpid", dialog) != xdo("getwindowpid", main_window):
+        raise RuntimeError("Settings dialog is not owned by the configuration application")
+    xdo("windowsize", dialog, 900, 3400)
+    xdo("windowmove", dialog, 20, 20)
+    xdo("windowfocus", "--sync", dialog)
+    if geometry(dialog) != {"X": 20, "Y": 20, "WIDTH": 900, "HEIGHT": 3400}:
+        raise RuntimeError("Unexpected settings geometry for the X11 pointer fixture")
+    time.sleep(0.5)
+    title = xdo("getwindowname", dialog)
+    capture_window(title, artifact_dir / "settings-before", dialog)
+    actions = [("McBopomofo", 63, 2160), ("agriculture-food", 63, 3078),
+               ("PlaySoundOnTypingError", 150, 349),
+               ("ToggleInputMethodWithControlBackslash", 150, 281)]
+    for _, x, y in actions:
+        click(dialog, x, y)
+    click(dialog, 338, 247)
+    xdo("key", "--delay", 80, "End", "Return")
+    time.sleep(0.2)
+    capture_window(title, artifact_dir / "settings-after", dialog)
+    click(dialog, 849, 3375)  # Native OK button; this is the only save action.
+    find_window("^chichi77 KeyKey Bopomofo", present=False)
+    after = {"McBopomofo": "False", "agriculture-food": "True", "PlaySoundOnTypingError": "False",
+             "ToggleInputMethodWithControlBackslash": "False", "CandidateWindowStyle": "Horizontal"}
+    deadline = time.monotonic() + TIMEOUT_SECONDS
+    while settings() != after:
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"Native GUI did not save the expected settings: {settings()}")
+        time.sleep(POLL_SECONDS)
+    xdo("windowclose", main_window)
+    find_window("^Fcitx Configuration$", present=False)
+    (artifact_dir / "ui-actions.json").write_text(json.dumps({
+        "test": "T07-X11-FCITX5-CONFIG-UI-PERSISTENCE", "application": "fcitx5-config-qt",
+        "automation": "isolated-x11-pointer-keyboard", "atspi_used": False,
+        "before": before, "changed": after, "pointer_actions": actions,
+        "dialog_geometry": {"width": 900, "height": 3400}, "status": "passed",
+    }, ensure_ascii=False, indent=2) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("artifact_dir", type=Path)
+    parser.add_argument("--backend", choices=("atspi", "x11"), default="atspi")
     args = parser.parse_args()
     args.artifact_dir.mkdir(parents=True, exist_ok=True)
+    if args.backend == "x11":
+        drive_isolated_x11(args.artifact_dir)
+        return
 
     desktop = pyatspi.Registry.getDesktop(0)
     application = wait_for_application(desktop, "fcitx5-config-qt")
