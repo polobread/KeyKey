@@ -1,0 +1,76 @@
+# Windows／macOS／Linux 共用桌面輸入測試
+
+案例來源為 [`tests/desktop_input/cases.json`](../tests/desktop_input/cases.json)。固定相同模型、案例 ID、設定意圖、按鍵、分段檢查點與預期文字，各平台分別接合原生輸入法與文字宿主。不得以核心通過代替 TSF／IMK／Fcitx 實測，也不得將 GTK3／GTK4／Qt6 三個 Linux 宿主寫成三個桌面平台。
+
+## 設定與隔離
+
+執行前明確套用設定並讀回確認。Linux 使用完整 77 項 fixture，再套用共用案例列出的覆寫；Windows／macOS 後續執行器須完成各自的偏好設定與讀回接合。共同條件為標準注音、中文啟動、半形初始狀態、繁轉簡關閉、關聯詞關閉、好打 8 個選字鍵、空白開候選開啟、組字 10 音節、游標後方選字、選字後不回句尾、Shift 強制大寫關閉、中文忽略 Caps Lock 關閉。每案使用隔離資料，先清除學習，避免先前選字改變結果。
+
+`shared-eight-key` 是共用基準；`linux-nine-key` 明確覆寫好打為 9 鍵，保留 Linux 擴充驗證。B02 的 8／9 鍵與字母鍵案例會再覆寫指定選字鍵，不能把 Windows 的 9→8 鍵回退當成 9 鍵案例通過。
+
+平台原生預設值須另外驗證；不能直接採用各平台預設值作為行為對照條件。文字範圍與游標統一以 Unicode 字元／讀音座標表達，執行器再轉成宿主 API 的 byte／UTF-16 range。原生鍵碼與快捷鍵由平台接合，但不能更改預期文字來使結果通過。
+
+目前由原始碼確認的接合差異如下，仍須原生執行才能判定實際結果：
+
+| 功能 | Windows | macOS | Linux |
+|---|---|---|---|
+| 中文忽略 Caps Lock | Loader 偏好，預設 True；共同比較時明確設 False | adapter 固定 False；True 案例無對等設定 | 可切換，預設 False |
+| 選字後回句尾 | adapter 未映射此選項，核心預設 False | adapter 固定 False | 可切換 |
+| 好打 9 鍵選字 | adapter 會將非 8 鍵設定退回 8 鍵 | adapter 可傳入設定，待原生驗證 | 可設定 8／9 鍵及字母鍵 |
+| Esc 清除整句 | 同時設定 `ClearComposingTextWithEsc` 與 `ClearComposingTextWithEscUserChoice` | `ClearComposingTextWithEsc` | `SmartMandarin/ClearComposingTextWithEsc` |
+
+參照 `Windows-TSF/GuanyinmaWindowsAdapter.cpp`、`Windows-TSF/FrontendSettings.cpp`、`OSX-IMK/GuanyinmaMacAdapter.mm` 與 `Linux-IME/adapters/fcitx5/fcitx5_engine.cpp`。不支援的組合須列為「無對等設定／待討論」，不能標示通過或直接判定詞庫錯誤。本次不調整上述產品行為。
+
+## 案例內容
+
+- S01～S10：24 個設定案例，驗證 Shift 大小寫、Caps Lock 在中文／英文的行為、Esc 的候選／讀音優先順序、空白開候選、選字後位置及前／後方選字。以「你好／妳好」等有意義文字檢查後續插入位置。
+- B01～B07：17 個邊界案例，驗證 10／11、20／21 音節、數字 8／9 鍵與字母選字鍵、分頁和 Home／End、倉頡滿碼、錯碼、即時／前綴候選及自訂通配字。
+- R01～R04：傳統全形、好打全形、中英切換、跨 App 焦點隔離，各執行 100 輪。好打全形案例明確關閉空白開候選，並用 Return 送出仍在組字區的標點；傳統案例保留原本全形鍵序。
+
+每個檢查點同時保存已送出文字與組字文字。音節上限案例要求到上限仍未送字；下一音節完成後有文字送出、可編輯尾段未超過上限，兩者合併完全等於輸入內容。倉頡滿碼的預期是查詢候選；有多個候選時仍須明確選字。即時候選與錯碼清除互斥，測試設定不得同時要求兩者開啟。
+
+S09 明確保留學習開啟。選擇單字「妳」後，同一次操作就會產生選字偏好；回到句尾再輸入相同讀音，預期為「妳好妳」，不是未學習時的「妳好你」。不回句尾的對照則為「妳你好」。測試開始前清除學習，不代表當次測試內不會學習；不能因這項互動而放寬游標檢查或把字面結果當成詞庫問題。
+
+## 執行入口與證據
+
+Linux 在已準備好 E2E 環境變數的隔離 D-Bus 內執行：
+
+```sh
+bash Source/Loaders/Linux-IME/ci/run-desktop-input-session.sh
+```
+
+此入口使用既有 managed Xvfb／Fcitx session 的建立與清理流程。可用 `KEYKEY_E2E_DESKTOP_TOOLKITS=GTK3,GTK4,QT6` 選宿主、`KEYKEY_E2E_DESKTOP_CATEGORIES=settings,boundary,stability` 選類別，`KEYKEY_E2E_DESKTOP_ROUNDS=100` 設定每個穩定性案例的輪數；`KEYKEY_E2E_DESKTOP_PROFILE=linux-nine-key` 可選 Linux 9 鍵擴充，預設為 `shared-eight-key`。僅允許 managed session，不能對個人桌面套用。
+
+使用 CTest 時不需手動準備 session 環境。啟用 `BUILD_TESTING`、`KEYKEY_BUILD_FCITX5` 與 `KEYKEY_BUILD_X11_E2E_HOST` 後，一般 CTest 自動包含三個 `keykey_linux_desktop_GTK3/GTK4/QT6` 測試；每個宿主執行 45 個共用案例與一個 keyboard-us 負向對照。`keykey_linux_desktop_stage` fixture 先安裝到 build 目錄內的私有 DESTDIR，各測試驗證實際載入該 stage 的 addon；不使用系統已安裝的 KeyKey。一般 CTest 另有 `keykey_linux_desktop_core_boundaries`，執行 12 項可攜核心邊界檢查。
+
+```sh
+# 建置時啟用 X11 hosts 後，執行日常共用案例；fixture 由 CTest 自動加入。
+ctest --test-dir BUILD_DIR -L 'desktop-(core|input)' --parallel 3 --output-on-failure
+
+# 100 輪測試另行啟用；預設不加入日常 CTest。
+cmake -S Source/Loaders/Linux-IME -B BUILD_DIR \
+  -DKEYKEY_BUILD_FCITX5=ON -DKEYKEY_BUILD_X11_E2E_HOST=ON \
+  -DKEYKEY_ENABLE_DESKTOP_STABILITY_TESTS=ON \
+  -DKEYKEY_DESKTOP_STABILITY_PROFILE=linux-nine-key
+cmake --build BUILD_DIR
+ctest --test-dir BUILD_DIR -L desktop-stability --parallel 3 --output-on-failure
+```
+
+`desktop-input`、`desktop-core`、`desktop-stability` 是三組 CTest label。新增的 GUI 測試各自使用新的證據目錄，避免重跑時沿用上次結果；位置在 `BUILD_DIR/desktop-input/`。不要同時在同一 build 目錄啟動兩個獨立 CTest 程序，以免重新準備同一 stage；同一個 CTest 的 `--parallel 3` 會依 fixture 正確排序。
+
+正式執行器在每案保存 `reset-learning.json`，讀回確認兩個 Smart 學習表已清空且自訂詞／字表學習未被刪除；拒絕外部使用者 DB 覆寫，模型雜湊也須符合共用 fixture。session 輸出寫入 `session.log`，避免 D-Bus 自動啟動的 portal 持有 CTest pipe 而阻止測試結束。Linux 桌面組以 `setsid` 建立私有程序群組，結束或失敗時清理該組的服務，不操作個人桌面程序；此入口需要 `util-linux`。
+
+既有 `Linux CI` 的 Ubuntu 24.04 PR 與完整建置會透過一般 CTest 執行共用案例，並上傳設定讀回、宿主事件與 CTest 紀錄。`.github/workflows/linux-desktop-stability.yml` 提供獨立的手動 Actions 工作流程，可選 8 鍵或 Linux 9 鍵 profile；執行三個宿主的四種情境各 100 輪，另跑一般共用案例與核心邊界。證據上傳排除私有 stage，不額外上傳模型副本。GitHub 雲端的觸發與結果須另行確認，不能以本地 CTest 通過宣稱 GitHub 已執行通過。
+
+`cases/*/automation.jsonl` 保存送鍵時間、焦點視窗、X11 按鍵按放狀態、Caps Lock／Num Lock 狀態、預期及實際檢查點；`config-*.json` 保存完整設定讀回。另保留原始宿主事件、程序紀錄、每案及總結果。失敗後先保存狀態才清理測試按鍵，不能重試成功就覆蓋第一次失敗。
+
+可攜的 12 項核心邊界補充檢查使用相同模型，接受各平台自行建置的原生 C ABI library：
+
+```sh
+python3 tests/desktop_input/core_boundaries.py \
+  --library /absolute/path/to/libguanyinma.so \
+  --model /absolute/path/to/KeyKey.db \
+  --output /absolute/path/to/results
+```
+
+library 參數依平台換成原生 `.dll`／`.dylib`／`.so`。這層可精確檢查候選總數、每頁列數、首末頁循環及候選是否已開啟；結果仍屬核心證據。Windows／macOS 的原生宿主執行器與實測狀態目前為待完成。

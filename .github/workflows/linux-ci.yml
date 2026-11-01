@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'Source/Loaders/Linux-IME/**'
+      - 'tests/desktop_input/**'
       - 'Source/Guanyinma/**'
       - 'Source/Shared/**'
       - 'Source/Branding/**'
@@ -58,7 +59,7 @@ jobs:
             binutils build-essential cmake dbus-x11 fcitx5 \
             fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt6 fonts-wqy-zenhei g++ libcanberra-dev \
             libfcitx5core-dev libjson-c-dev libpango1.0-dev curl libgtk-3-dev libgtk-4-dev libsqlite3-dev ninja-build \
-            pkg-config python3 python3-gi gir1.2-gtk-3.0 qt6-base-dev x11-utils xdotool xvfb
+            pkg-config python3 python3-gi gir1.2-gtk-3.0 qt6-base-dev libglib2.0-bin util-linux x11-utils x11-xserver-utils xdotool xvfb
 
       - name: Build, run unit tests, and verify staged installation
         working-directory: Source/Loaders/Linux-IME
@@ -80,6 +81,9 @@ jobs:
           path: |
             Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-pr-smoke
             Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/guanyinma-smoke
+            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/desktop-input
+            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/Testing/Temporary
+            !Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/desktop-input/stage/**
           if-no-files-found: warn
           retention-days: 7
 
@@ -126,7 +130,7 @@ jobs:
             libcanberra-dev libfcitx5core-dev libjson-c-dev libpango1.0-dev curl cargo libglib2.0-bin libgtk-3-dev libgtk-4-dev libsqlite3-dev \
             lintian netpbm ninja-build pkg-config python3-pyatspi qt6-base-dev \
             x11-apps \
-            x11-utils xdotool xvfb
+            python3-gi gir1.2-gtk-3.0 util-linux x11-utils x11-xserver-utils xdotool xvfb
 
       - name: Build, test, and verify staged installation
         working-directory: Source/Loaders/Linux-IME
@@ -189,7 +193,11 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: linux-ubuntu-24.04-fcitx5-x11-e2e-${{ github.sha }}
-          path: Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-package-ci
+          path: |
+            Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-package-ci
+            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-ci/desktop-input
+            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-ci/Testing/Temporary
+            !Source/Loaders/Linux-IME/out/build/ubuntu-24.04-ci/desktop-input/stage/**
           if-no-files-found: warn
           retention-days: 7
 
