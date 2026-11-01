@@ -46,8 +46,8 @@ Windows 產品版號只在 `CMakeLists.txt` 宣告；兩個封裝入口與發布
 跨 App 或實體鍵盤驗收。案例、證據與無對等設定的界線見
 [共用桌面輸入測試](../../../docs/DESKTOP_INPUT_SHARED_TEST_MATRIX.md#windows-原生-tsf-交易測試)。
 
-已安裝的 Windows x64 好打注音另通過記事本／Word 局部真實宿主冒煙與使用者手打
-19 字全文核對。輸入來源、設定、10／11 音節手打中途證據的限制及未涵蓋項目見
+已安裝的 Windows x64 四法另通過記事本／Word 局部真實宿主冒煙，好打注音亦完成使用者手打
+19 字全文核對。其餘三法以自動送鍵驗證；輸入來源、設定、手打中途證據的限制及未涵蓋項目見
 [Windows 桌面宿主驗收](../../../docs/WINDOWS_DESKTOP_HOST_ACCEPTANCE.md)。
 
 下面命令從此目錄執行；建置目錄以本機實際 preset 為準，範例使用既有 x64 Ninja。

@@ -80,7 +80,7 @@ library 參數依平台換成原生 `.dll`／`.dylib`／`.so`。這層可精確�
 
 Windows 的 `KeyKeyDesktopInputHost` 使用 Windows 建立的 `ITfThreadMgr`、`ITfDocumentMgr`、`ITfContext`、range、composition 與 edit session，連入正式 `TextService` 及 Windows Guanyinma adapter。測試專用 `ITextStoreACP` 保存 UTF-16 文件；每鍵透過正式 `OnTestKeyDown`／`OnKeyDown`／key-up 回呼輸入。`SetKeyboardState` 與美式鍵盤 layout 僅套用測試執行緒，結束還原，不使用 `SendInput`，不註冊／啟用已安裝 TIP、不操作個人桌面。service 透過既有 test friend 接上測試 context，不經完整的 TIP `ActivateEx`、語言列與系統偏好發布接線。
 
-這層能驗證 TSF 寫入、組字範圍、UTF-16 游標及 FE 設定／事件映射；沒有可見視窗與文字座標，所以不驗證候選窗繪製／定位。R03 僅驗證同一 worker 內兩份原生 TSF 文件的焦點回呼與內容隔離，不能宣稱跨 App 前景焦點已通過。Windows 好打注音另已完成記事本／Word 的局部真實宿主冒煙及使用者手打全文驗收，結果與未涵蓋範圍見 [Windows 桌面宿主驗收](WINDOWS_DESKTOP_HOST_ACCEPTANCE.md)；其證據與這個隔離執行器分開記錄。macOS IMK 宿主驗證仍須另行完成。
+這層能驗證 TSF 寫入、組字範圍、UTF-16 游標及 FE 設定／事件映射；沒有可見視窗與文字座標，所以不驗證候選窗繪製／定位。R03 僅驗證同一 worker 內兩份原生 TSF 文件的焦點回呼與內容隔離，不能宣稱跨 App 前景焦點已通過。Windows 四法另已完成記事本／Word 的局部真實宿主冒煙，好打注音亦完成使用者手打全文驗收，結果與未涵蓋範圍見 [Windows 桌面宿主驗收](WINDOWS_DESKTOP_HOST_ACCEPTANCE.md)；其證據與這個隔離執行器分開記錄。macOS IMK 宿主驗證仍須另行完成。
 
 在已載入 MSVC 的 Developer PowerShell，從 `Source/Loaders/Windows-TSF` 執行：
 
