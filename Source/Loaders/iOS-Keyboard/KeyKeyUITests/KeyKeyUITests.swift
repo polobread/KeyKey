@@ -282,13 +282,13 @@ final class KeyKeyUITests: XCTestCase {
 
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(openEditor.waitForExistence(timeout: 3))
-        for _ in 0..<8 where !openEditor.isHittable { app.swipeUp() }
+        XCTAssertTrue(revealControl(openEditor), "旋轉或重開後找不到可操作的編輯器入口")
         XCTAssertTrue(openEditor.isHittable)
 
         app.terminate()
         app.launch()
         XCTAssertTrue(app.staticTexts["琦琦輸入法"].waitForExistence(timeout: 8))
-        for _ in 0..<8 where !openEditor.isHittable { app.swipeUp() }
+        XCTAssertTrue(revealControl(openEditor), "旋轉或重開後找不到可操作的編輯器入口")
         XCTAssertTrue(openEditor.isHittable)
     }
 
@@ -317,6 +317,19 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(notices.exists)
         XCTAssertTrue((notices.value as? String)?.contains("Yahoo! KeyKey") == true)
         XCTAssertTrue((notices.value as? String)?.contains("McBopomofo") == true)
+
+        let documents = app.segmentedControls["acknowledgements.document"]
+        documents.buttons["核心與第三方"].tap()
+        XCTAssertTrue(waitForLayout { (notices.value as? String)?.contains("Guanyinma") == true })
+        let firstPage = notices.value as? String
+        let next = app.buttons["acknowledgements.next"]
+        XCTAssertTrue(next.isEnabled)
+        next.tap()
+        XCTAssertTrue(waitForLayout { (notices.value as? String) != firstPage })
+        app.buttons["acknowledgements.previous"].tap()
+        XCTAssertEqual(notices.value as? String, firstPage)
+        documents.buttons["專案與資料"].tap()
+        XCTAssertTrue((notices.value as? String)?.contains("Yahoo! KeyKey") == true)
     }
 
     func testSupporterPurchaseControlsAreReachable() {
@@ -1028,20 +1041,21 @@ final class KeyKeyUITests: XCTestCase {
         field("default").tap()
 
         guard selectKeyKeyKeyboard() else {
-            throw XCTSkip(keyboardActivationFailureMessage)
+            XCTFail(keyboardActivationFailureMessage)
+            return
         }
         try selectCompositionMode("好打注音")
-        let status = app.staticTexts["keyboard.status"]
-        XCTAssertEqual(status.label, "標準注音")
-
+        // Smart mode deliberately hides its empty candidate/status strip.
+        // Check the accessible key plane instead of requiring a hidden label.
+        XCTAssertEqual(app.buttons["s"].label, "ㄋ")
         let mode = app.buttons["MODE"]
         XCTAssertTrue(mode.exists)
         mode.tap()
-        XCTAssertEqual(status.label, "英文小寫")
+        XCTAssertEqual(app.buttons["s"].label, "s")
         mode.tap()
-        XCTAssertEqual(status.label, "數字與符號（一）")
+        XCTAssertTrue(app.buttons["!"].exists)
         mode.tap()
-        XCTAssertEqual(status.label, "標準注音")
+        XCTAssertEqual(app.buttons["s"].label, "ㄋ")
 
         let stableModeFrame = mode.frame
         app.buttons["ㄋ"].tap()
@@ -1052,12 +1066,14 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["ㄠ"].tap()
         app.buttons["ˇ"].tap()
         XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你好" })
-        app.buttons["ENTER"].tap()
-        XCTAssertEqual(field("default").value as? String, "你好")
         XCTAssertEqual(mode.frame.minX, stableModeFrame.minX, accuracy: 1)
         XCTAssertEqual(mode.frame.minY, stableModeFrame.minY, accuracy: 1)
         XCTAssertEqual(mode.frame.width, stableModeFrame.width, accuracy: 1)
         XCTAssertEqual(mode.frame.height, stableModeFrame.height, accuracy: 1)
+        keepKeyboardEvidence("Extension composing 你好", output: field("default"))
+        app.buttons["ENTER"].tap()
+        XCTAssertEqual(field("default").value as? String, "你好")
+        keepKeyboardEvidence("Extension committed 你好", output: field("default"))
     }
 
     func testTouchSmartHandoffCommitsTextWhenChangingKeyboard() throws {
@@ -1066,22 +1082,34 @@ final class KeyKeyUITests: XCTestCase {
         let output = field("default")
         output.tap()
         guard selectKeyKeyKeyboard() else {
-            throw XCTSkip(keyboardActivationFailureMessage)
+            XCTFail(keyboardActivationFailureMessage)
+            return
         }
         try selectCompositionMode("好打注音")
 
-        for syllable in ["fu/3", "ru84", "ul4", "fm4", "s83",
-                         "xu3", "j06", "sk7", "fm4", "c93"] {
+        let syllables = ["fu/3", "ru84", "ul4", "fm4", "s83",
+                         "xu3", "j06", "sk7", "fm4", "c93"]
+        for (index, syllable) in syllables.enumerated() {
             for key in syllable {
                 let button = app.buttons[String(key)]
                 XCTAssertTrue(button.exists, "找不到注音鍵 \(key)")
                 button.tap()
             }
+            if index == 6 {
+                // This checks host handoff, not the model's 完／玩 ranking.
+                // Select the intended word through the real candidate UI.
+                app.buttons["keyboard.smart-cell.7"].tap()
+                let playing = app.buttons.matching(NSPredicate(
+                    format: "label ENDSWITH %@", "候選，玩"
+                )).firstMatch
+                XCTAssertTrue(playing.waitForExistence(timeout: 3))
+                playing.tap()
+            }
         }
         XCTAssertTrue(waitForLayout {
             (output.value as? String) == "請假要去哪裡玩呢去海"
-        })
-        XCTAssertTrue(app.staticTexts["keyboard.status"].exists)
+        }, "實際宿主文字：\(output.value as? String ?? "<nil>")")
+        XCTAssertTrue(app.buttons["keyboard.smart-cell.1"].exists)
 
         app.buttons["BACKSPACE"].tap()
         XCTAssertTrue(waitForLayout {
@@ -1094,9 +1122,11 @@ final class KeyKeyUITests: XCTestCase {
 
         let nextKeyboard = try XCTUnwrap(nextKeyboardButton())
         nextKeyboard.tap()
+        XCTAssertTrue(waitForLayout(timeout: 5) { !self.app.buttons["SETTINGS"].exists })
         XCTAssertTrue(waitForLayout(timeout: 5) {
             (output.value as? String) == "請假要去哪裡玩呢去海"
         })
+        keepKeyboardEvidence("Extension handoff preserved 請假要去哪裡玩呢去海", output: output)
     }
 
     func testMultiCharacterAssociationsDoNotResizeKeyboard() throws {
@@ -1104,7 +1134,8 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(revealField("default"))
         field("default").tap()
         guard selectKeyKeyKeyboard() else {
-            throw XCTSkip(keyboardActivationFailureMessage)
+            XCTFail(keyboardActivationFailureMessage)
+            return
         }
 
         try selectCompositionMode("傳統注音")
@@ -1140,7 +1171,8 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(revealField("message"))
         field("message").tap()
         guard selectKeyKeyKeyboard() else {
-            throw XCTSkip(keyboardActivationFailureMessage)
+            XCTFail(keyboardActivationFailureMessage)
+            return
         }
 
         try selectCompositionMode("傳統注音")
@@ -1168,7 +1200,8 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(revealField("default"))
         field("default").tap()
         guard selectKeyKeyKeyboard() else {
-            throw XCTSkip(keyboardActivationFailureMessage)
+            XCTFail(keyboardActivationFailureMessage)
+            return
         }
 
         assertCoreKeys()
@@ -1176,6 +1209,17 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["MODE"].waitForExistence(timeout: 3))
         assertCoreKeys()
         XCUIDevice.shared.orientation = .portrait
+    }
+
+    private func keepKeyboardEvidence(_ name: String, output: XCUIElement) {
+        let text = XCTAttachment(string: output.value as? String ?? "")
+        text.name = name
+        text.lifetime = .keepAlways
+        add(text)
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = name
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
     }
 
     private func assertCoreKeys() {
@@ -1256,42 +1300,38 @@ final class KeyKeyUITests: XCTestCase {
         let status = app.buttons["SETTINGS"]
         if status.waitForExistence(timeout: 2) { return true }
 
-        if let nextKeyboard = nextKeyboardButton() {
-            nextKeyboard.press(forDuration: 1)
-            let keyKeyPredicate = NSPredicate(
+        if let globe = nextKeyboardButton() {
+            globe.press(forDuration: 1)
+            let predicate = NSPredicate(
                 format: "label BEGINSWITH '琦琦輸入法' OR label CONTAINS 'KeyKey'"
             )
-            let keyKeyButton = app.buttons.matching(keyKeyPredicate).firstMatch
-            let keyKeyCell = app.cells.matching(keyKeyPredicate).firstMatch
-            let keyKeyText = app.staticTexts.matching(keyKeyPredicate).firstMatch
-            if keyKeyButton.waitForExistence(timeout: 1), keyKeyButton.isHittable {
-                keyKeyButton.tap()
-                if status.waitForExistence(timeout: 2) { return true }
-            } else if keyKeyCell.waitForExistence(timeout: 1), keyKeyCell.isHittable {
-                let cellFrame = keyKeyCell.frame
-                let appFrame = app.frame
-                let destination = app.coordinate(withNormalizedOffset: CGVector(
-                    dx: cellFrame.midX / appFrame.width,
-                    dy: cellFrame.midY / appFrame.height
-                ))
-                app.otherElements["PopoverDismissRegion"].tap()
-                nextKeyboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-                    .press(forDuration: 1, thenDragTo: destination)
-                if status.waitForExistence(timeout: 2) { return true }
-            } else if keyKeyText.waitForExistence(timeout: 1) {
-                keyKeyText.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-                if status.waitForExistence(timeout: 2) { return true }
+            let matches = app.descendants(matching: .any).matching(predicate)
+            let row = matches.allElementsBoundByIndex.last {
+                $0.isHittable && !$0.frame.isEmpty
+            }
+            if let row {
+                // Filter out the covered setup screen's same-name title, then
+                // tap the actual system menu row. Tapping the application to
+                // dismiss this menu can activate its Keyboard Settings item.
+                row.tap()
+                dismissSystemKeyboardTip()
+                if status.waitForExistence(timeout: 5) { return true }
             } else {
+                let menu = XCTAttachment(string: app.debugDescription)
+                menu.name = "Keyboard menu has no hittable KeyKey row"
+                menu.lifetime = .keepAlways
+                add(menu)
                 app.tap()
             }
         }
-
-        for _ in 0..<8 {
-            dismissSystemKeyboardTip()
-            guard let nextKeyboard = nextKeyboardButton() else { return false }
-            nextKeyboard.tap()
-            if status.waitForExistence(timeout: 1) { return true }
-        }
+        let capture = XCTAttachment(string: app.debugDescription)
+        capture.name = "Keyboard activation failure hierarchy"
+        capture.lifetime = .keepAlways
+        add(capture)
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "Keyboard activation failure"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
         return false
     }
 
@@ -1364,6 +1404,19 @@ final class KeyKeyUITests: XCTestCase {
             if text.exists { return text }
         }
         return exactCell
+    }
+
+    private func revealControl(_ element: XCUIElement) -> Bool {
+        let scroll = app.scrollViews.firstMatch
+        guard scroll.exists else { return element.isHittable }
+        for _ in 0..<20 {
+            if element.isHittable { return true }
+            let above = element.frame.midY < scroll.frame.midY
+            let from = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: above ? 0.4 : 0.6))
+            let to = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: above ? 0.6 : 0.4))
+            from.press(forDuration: 0.05, thenDragTo: to)
+        }
+        return element.isHittable
     }
 
     @discardableResult

@@ -834,51 +834,114 @@ private final class UserPhrasesViewController: UITableViewController, UIDocument
 }
 
 private final class AcknowledgementsViewController: UIViewController {
+    private let documents = UISegmentedControl(items: ["專案與資料", "核心與第三方"])
+    private let textView = UITextView()
+    private let previousPage = UIButton(configuration: .plain())
+    private let nextPage = UIButton(configuration: .plain())
+    private let pageLabel = UILabel()
+    private var pagesByDocument: [Int: [String]] = [:]
+    private var pages: [String] = []
+    private var pageIndex = 0
+
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "授權與致謝"
         view.backgroundColor = .systemBackground
         navigationItem.leftBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .close,
-            target: self,
-            action: #selector(close)
+            barButtonSystemItem: .close, target: self, action: #selector(close)
         )
 
-        let textView = UITextView()
+        documents.selectedSegmentIndex = 0
+        documents.accessibilityIdentifier = "acknowledgements.document"
+        documents.addTarget(self, action: #selector(documentChanged), for: .valueChanged)
         textView.isEditable = false
         textView.isSelectable = true
         textView.alwaysBounceVertical = true
         textView.font = .preferredFont(forTextStyle: .footnote)
         textView.adjustsFontForContentSizeCategory = true
         textView.accessibilityIdentifier = "acknowledgements-text"
-        textView.text = Self.loadText()
-        textView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(textView)
+        previousPage.setTitle("上一頁", for: .normal)
+        previousPage.accessibilityIdentifier = "acknowledgements.previous"
+        previousPage.addTarget(self, action: #selector(showPreviousPage), for: .touchUpInside)
+        nextPage.setTitle("下一頁", for: .normal)
+        nextPage.accessibilityIdentifier = "acknowledgements.next"
+        nextPage.addTarget(self, action: #selector(showNextPage), for: .touchUpInside)
+        pageLabel.font = .preferredFont(forTextStyle: .footnote)
+        pageLabel.textAlignment = .center
+        pageLabel.accessibilityIdentifier = "acknowledgements.page"
+        let paging = UIStackView(arrangedSubviews: [previousPage, pageLabel, nextPage])
+        paging.alignment = .center
+        paging.spacing = 12
+        pageLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
+        for child in [documents, textView, paging] {
+            child.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(child)
+        }
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
+            documents.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
+            documents.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -16),
+            documents.topAnchor.constraint(equalTo: guide.topAnchor, constant: 8),
             textView.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
             textView.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -16),
-            textView.topAnchor.constraint(equalTo: guide.topAnchor),
-            textView.bottomAnchor.constraint(equalTo: guide.bottomAnchor)
+            textView.topAnchor.constraint(equalTo: documents.bottomAnchor, constant: 8),
+            textView.bottomAnchor.constraint(equalTo: paging.topAnchor, constant: -8),
+            paging.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
+            paging.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -16),
+            paging.bottomAnchor.constraint(equalTo: guide.bottomAnchor, constant: -8)
         ])
+        documentChanged()
     }
 
-    private static func loadText() -> String {
-        var sections: [String] = []
-        for name in ["Acknowledgements", "GuanyinmaNotices"] {
-            guard let url = Bundle.main.url(forResource: name, withExtension: "txt"),
-                  let text = try? String(contentsOf: url, encoding: .utf8) else {
-                return "無法完整載入授權資訊。"
+    @objc private func documentChanged() {
+        let selected = documents.selectedSegmentIndex
+        if let cached = pagesByDocument[selected] {
+            pages = cached
+        } else {
+            let resource = selected == 0 ? "Acknowledgements" : "GuanyinmaNotices"
+            let contents = Bundle.main.url(forResource: resource, withExtension: "txt")
+                .flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+                ?? "無法完整載入授權資訊。"
+            // Keep every character while bounding UIKit's accessibility work.
+            // A single text view containing all runtime notices makes snapshot
+            // requests enumerate tens of thousands of paragraph elements.
+            var chunks: [String] = []
+            var start = contents.startIndex
+            while start < contents.endIndex {
+                let end = contents.index(start, offsetBy: 8_192, limitedBy: contents.endIndex)
+                    ?? contents.endIndex
+                chunks.append(String(contents[start..<end]))
+                start = end
             }
-            sections.append(text)
+            pages = chunks.isEmpty ? [""] : chunks
+            pagesByDocument[selected] = pages
         }
-        return sections.joined(separator: "\n\n")
+        pageIndex = 0
+        updatePage()
     }
 
-    @objc private func close() {
-        dismiss(animated: true)
+    private func updatePage() {
+        textView.text = pages[pageIndex]
+        textView.setContentOffset(.zero, animated: false)
+        pageLabel.text = "第 \(pageIndex + 1) 頁／共 \(pages.count) 頁"
+        previousPage.isEnabled = pageIndex > 0
+        nextPage.isEnabled = pageIndex + 1 < pages.count
     }
+
+    @objc private func showPreviousPage() {
+        guard pageIndex > 0 else { return }
+        pageIndex -= 1
+        updatePage()
+    }
+
+    @objc private func showNextPage() {
+        guard pageIndex + 1 < pages.count else { return }
+        pageIndex += 1
+        updatePage()
+    }
+
+    @objc private func close() { dismiss(animated: true) }
 }
 
 #if DEBUG
