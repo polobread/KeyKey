@@ -127,17 +127,11 @@ jobs:
             at-spi2-core binutils build-essential cmake dbus-x11 debhelper \
             dpkg-dev fakeroot fcitx5 fcitx5-config-qt \
             fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt6 \
-            fontconfig fonts-hanazono fonts-wqy-zenhei g++ \
+            fonts-wqy-zenhei g++ \
             libcanberra-dev libfcitx5core-dev libjson-c-dev libpango1.0-dev curl cargo libglib2.0-bin libgtk-3-dev libgtk-4-dev libsqlite3-dev \
             lintian netpbm ninja-build pkg-config python3-pyatspi qt6-base-dev \
             x11-apps \
             python3-gi gir1.2-gtk-3.0 util-linux x11-utils x11-xserver-utils xdotool xvfb
-          # The Big5-HKSCS host case selects U+249A9; WenQuanYi lacks this glyph.
-          big5_test_fonts=$(fc-list ':charset=249a9' family)
-          if [[ -z "$big5_test_fonts" ]]; then
-            echo 'The Big5-HKSCS X11 test requires a font covering U+249A9.' >&2
-            exit 1
-          fi
 
       - name: Build, test, and verify staged installation
         working-directory: Source/Loaders/Linux-IME
@@ -172,6 +166,18 @@ jobs:
         run: |
           ci/build-debian-packages.sh ubuntu-24.04 upgrade-fixture
           ci/build-debian-packages.sh ubuntu-24.04 release-candidate
+
+      - name: Prepare extended glyphs for full package X11 tests
+        run: |
+          # Keep the shared desktop matrix on its basic-font fixture. The full
+          # package suite additionally exercises Big5-HKSCS supplementary glyphs.
+          sudo apt-get install --yes --no-install-recommends fontconfig fonts-hanazono
+          # The Big5-HKSCS host case selects U+249A9; WenQuanYi lacks this glyph.
+          big5_test_fonts=$(fc-list ':charset=249a9' family)
+          if [[ -z "$big5_test_fonts" ]]; then
+            echo 'The Big5-HKSCS X11 test requires a font covering U+249A9.' >&2
+            exit 1
+          fi
 
       - name: Test package install, upgrade, removal, reinstall, and X11 typing
         working-directory: Source/Loaders/Linux-IME
