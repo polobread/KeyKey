@@ -4,11 +4,11 @@
 
 ## 設定與隔離
 
-執行前明確套用設定並讀回確認。Linux 使用完整 77 項 fixture，再套用共用案例列出的覆寫；Windows 使用隔離 plist 與原生 FE 設定讀回；macOS 後續執行器須完成偏好設定與讀回接合。共同條件為標準注音、中文啟動、半形初始狀態、繁轉簡關閉、關聯詞關閉、好打 8 個選字鍵、空白開候選開啟、組字 10 音節、游標後方選字、選字後不回句尾、Shift 強制大寫關閉、中文忽略 Caps Lock 關閉。每案使用隔離資料，先清除學習，避免先前選字改變結果。
+執行前明確套用設定並讀回確認。Linux 使用完整 77 項 fixture，再套用共用案例列出的覆寫；Windows 與 macOS 使用隔離 plist 與原生 FE 設定讀回。共同條件為標準注音、中文啟動、半形初始狀態、繁轉簡關閉、關聯詞關閉、好打 8 個選字鍵、空白開候選開啟、組字 10 音節、游標後方選字、選字後不回句尾、Shift 強制大寫關閉、中文忽略 Caps Lock 關閉。每案使用隔離資料，先清除學習，避免先前選字改變結果。
 
 `shared-eight-key` 是共用基準；`linux-nine-key` 明確覆寫好打為 9 鍵，保留 Linux 擴充驗證。B02 的 8／9 鍵與字母鍵案例會再覆寫指定選字鍵，不能把 Windows 的 9→8 鍵回退當成 9 鍵案例通過。
 
-平台原生預設值須另外驗證；不能直接採用各平台預設值作為行為對照條件。文字範圍與游標統一以 Unicode 字元／讀音座標表達，執行器再轉成宿主 API 的 byte／UTF-16 range。原生鍵碼與快捷鍵由平台接合，但不能更改預期文字來使結果通過。`steps[].candidate_targets` 以零起算的按鍵索引指定必須選到的文字；原 `keys` 中的該鍵為參考位置。Windows 執行器已接上實際候選讀回與分頁搜尋；Linux 既有執行器仍使用原本參考鍵序，其字型環境若改變，須另補相同的候選解析，不能直接改預期文字。
+平台原生預設值須另外驗證；不能直接採用各平台預設值作為行為對照條件。文字範圍與游標統一以 Unicode 字元／讀音座標表達，執行器再轉成宿主 API 的 byte／UTF-16 range。原生鍵碼與快捷鍵由平台接合，但不能更改預期文字來使結果通過。`steps[].candidate_targets` 以零起算的按鍵索引指定必須選到的文字；原 `keys` 中的該鍵為參考位置。Windows 與 macOS 執行器已接上實際候選讀回與分頁搜尋；Linux 既有執行器仍使用原本參考鍵序，其字型環境若改變，須另補相同的候選解析，不能直接改預期文字。
 
 目前由原始碼確認的接合差異如下，仍須原生執行才能判定實際結果：
 
@@ -16,8 +16,8 @@
 |---|---|---|---|
 | 中文忽略 Caps Lock | Loader 偏好，預設 True；共同比較時明確設 False | adapter 固定 False；True 案例無對等設定 | 可切換，預設 False |
 | 選字後回句尾 | adapter 未映射此選項，核心預設 False | adapter 固定 False | 可切換 |
-| 好打 9 鍵選字 | adapter 會將非 8 鍵設定退回 8 鍵 | adapter 可傳入設定，待原生驗證 | 可設定 8／9 鍵及字母鍵 |
-| 倉頡自訂最大碼數 | adapter 固定 5 碼，無對等設定 | 待原生驗證 | 可設定 |
+| 好打 9 鍵選字 | adapter 會將非 8 鍵設定退回 8 鍵 | 可傳入設定，隔離 PV 矩陣驗證 | 可設定 8／9 鍵及字母鍵 |
+| 倉頡自訂最大碼數 | adapter 固定 5 碼，無對等設定 | `MaximumRadicalLength`，隔離 PV 矩陣驗證 | 可設定 |
 | Esc 清除整句 | 同時設定 `ClearComposingTextWithEsc` 與 `ClearComposingTextWithEscUserChoice` | `ClearComposingTextWithEsc` | `SmartMandarin/ClearComposingTextWithEsc` |
 
 參照 `Windows-TSF/GuanyinmaWindowsAdapter.cpp`、`Windows-TSF/FrontendSettings.cpp`、`OSX-IMK/GuanyinmaMacAdapter.mm` 與 `Linux-IME/adapters/fcitx5/fcitx5_engine.cpp`。不支援的組合須列為「無對等設定／待討論」，不能標示通過或直接判定詞庫錯誤。本次不調整上述產品行為。
@@ -98,3 +98,25 @@ ctest --test-dir out/build/x64-ninja -L '^desktop-stability$' --output-on-failur
 一般測試跑 45 個共用案例各一次，另加不經輸入法的美式鍵盤負向對照。每案／每輪各啟動新程序與全新隔離 profile，學習只在該案內保留。執行前核對部署模型的 SHA-256；共用案例及 host executable 的雜湊、原始設定意圖、plist 讀回、原生 Caps Lock／倉頡設定讀回、逐鍵修飾鍵狀態、候選頁、TSF text/preedit／UTF-16 範圍與檢查點均寫至 `BUILD_DIR/desktop-input/windows-tsf-*/`。每次建立新目錄，第一次失敗不會被後續執行覆蓋；產物不提交。
 
 不支援的四個案例明列 `unsupported`：S09 回句尾開啟、B02 好打九鍵、B03 倉頡最大兩碼的兩種設定；不執行回退設定並標為通過。B06 按指定候選文字「喬」解析實際選字鍵，保存參考鍵、實際鍵及各頁候選；找不到指定候選就失敗，最終仍須等於「喬喬」。未指定候選文字的分頁／數字鍵案例照固定鍵序驗證。其他不符預期一律保留為 `failed`，CTest 回傳失敗，不更改預期文字。完整核心矩陣仍由 `guanyinma-core.yml` 負責，此入口不重跑完整 Rust 測試。
+
+## macOS 隔離 controller／PV 接合測試
+
+```sh
+python3 Source/Loaders/OSX-IMK/Tests/desktop_input_matrix.py
+
+# 已建置同一來源核心時可略過 Cargo；每次仍重新編譯原生測試宿主。
+python3 Source/Loaders/OSX-IMK/Tests/desktop_input_matrix.py \
+  --library /absolute/path/to/libguanyinma.a --rounds 100
+```
+
+預設執行全部 45 個案例各一次，另有不經輸入法的英文鍵盤負向對照。`--categories settings,boundary` 可縮小範圍；`--rounds 100` 只增加四項 stability 情境的輪數。`--cargo` 指定工具鏈入口，`--offline` 使用已快取的 Cargo 依賴。SDK SQLite 由執行器明確指定。每案／每輪使用新程序、私有 plist 與全新 Guanyinma 使用者 DB，學習在該案內保留；不使用個人偏好、已安裝 IMK、系統 TIS 選取或全域按鍵。
+
+宿主從目前 `OpenVanillaController.mm` 原文擷取 `handleEvent:`、組字更新／送字、中英切換與全形選單方法編譯，連入真正的 `PVLoaderContext`、Guanyinma macOS package／adapter、PV 候選面板、全形 output filter 與 `CVEncodingService` 系統字型判斷。事件為程序內 ANSI US 鍵碼／修飾鍵的 `NSEvent`，key-down／key-up 直接呼叫 controller 方法；Caps Lock 只影響測試事件旗標。UI receiver 為 nil，文字 client 是測試自有的 UTF-16 記憶體實作，驗證 `insertText:replacementRange:` 與 `setMarkedText:selectionRange:replacementRange:` 的實際交易及範圍。
+
+macOS 的中英模式與全半形由原生選單操作接合：共用 `ctrl+backslash` 對應 controller 中英模式操作，`shift+space` 對應 `toggleOutputFilterAction:` 的全形選單。這是相同設定意圖的跨平台接合，不代表 macOS 支援這兩組參考快捷鍵；macOS Ctrl-backslash 是輸入法選擇器，全形選單快捷鍵為 Command+Shift+Space。R03 驗證同一 worker 內兩個 PV context／client 的停用、送字、重新啟用及文字隔離；不宣稱跨 App 焦點通過。
+
+五案明列 `unsupported`：S03／S04 的 smart／traditional 各一案要求「中文忽略 Caps Lock=True」，以及 S09 回句尾開啟。即使該選項不影響英文模式，仍不把無法套用的設定組合列為通過。好打九鍵與倉頡兩碼上限有原生對應設定，正常執行。B06 從實際過濾後的候選清單尋找「喬」，再透過 controller 翻頁及送入實際標籤；未指定候選文字的其他鍵序維持 fixture 原文。
+
+每次建立新的 `Installer/local-builds/desktop-input-macos/macos-pv-*/`，保存來源 controller／生成檔／host／library／模型與 fixture 雜湊、設定意圖、plist 寫入及原生讀回、學習隔離證據、逐鍵事件、候選頁、UTF-16 client 交易、檢查點差異、首個失敗與總結。可用 `--output` 指定產物根目錄；`--host` 供重用同一已建置宿主診斷，須自行確認來源一致。所有產物均不提交。
+
+`macos-symbols.yml` 的 `desktop-input` job 在相關 PR 執行一般矩陣並上傳 JSON／程序紀錄；手動勾選 `desktop_stability` 執行四項情境各 100 輪，不新增排程。不重跑完整 Rust 核心測試。本機結果不能當成 GitHub runner 通過。此層沒有啟動 `IMKServer` 或系統文字宿主，不驗證 TIS 註冊、IMK 連線、候選窗繪製／定位、實體鍵盤或安裝；真正 IMK 驗證仍依 [獨立宿主流程](GUANYINMA_MACOS_IMK_HOST_TEST.md) 進行。
