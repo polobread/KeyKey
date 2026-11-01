@@ -1301,6 +1301,9 @@
       },
       "steps": [
         {
+          "candidate_targets": {
+            "2": "喬"
+          },
           "keys": [
             "h",
             "k",

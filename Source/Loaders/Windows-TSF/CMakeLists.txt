@@ -378,6 +378,28 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyTsfOutputCommitBehavior COMMAND KeyKeyTsfOutputBehaviorTest)
     add_test(NAME KeyKeyGuanyinmaTsfHostEffects COMMAND KeyKeyTsfOutputBehaviorTest --guanyinma)
     set_tests_properties(KeyKeyGuanyinmaTsfHostEffects PROPERTIES RUN_SERIAL TRUE)
+    add_executable(KeyKeyDesktopInputHost tests/DesktopInputHost.cpp
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp)
+    target_compile_features(KeyKeyDesktopInputHost PRIVATE cxx_std_20)
+    target_compile_options(KeyKeyDesktopInputHost PRIVATE /utf-8)
+    target_include_directories(KeyKeyDesktopInputHost BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    target_link_libraries(KeyKeyDesktopInputHost PRIVATE keykey_core ole32 oleaut32 uuid
+        advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme dwmapi)
+    add_dependencies(KeyKeyDesktopInputHost keykey_symbol_resources keykey_database_deploy)
+    add_test(NAME KeyKeyWindowsDesktopInput
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/desktop_input_matrix.py"
+            --host "$<TARGET_FILE:KeyKeyDesktopInputHost>"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/desktop-input")
+    set_tests_properties(KeyKeyWindowsDesktopInput PROPERTIES LABELS "desktop-input" TIMEOUT 300 RUN_SERIAL TRUE)
+    option(KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS "Run 100 rounds of Windows desktop TSF scenarios" OFF)
+    if(KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS)
+        add_test(NAME KeyKeyWindowsDesktopStability
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/desktop_input_matrix.py"
+                --host "$<TARGET_FILE:KeyKeyDesktopInputHost>"
+                --categories stability --rounds 100
+                --output "${CMAKE_CURRENT_BINARY_DIR}/desktop-input")
+        set_tests_properties(KeyKeyWindowsDesktopStability PROPERTIES LABELS "desktop-stability" TIMEOUT 900 RUN_SERIAL TRUE)
+    endif()
     add_test(NAME KeyKeyCapsLockModes COMMAND KeyKeyTsfOutputBehaviorTest --caps-lock)
     add_test(NAME KeyKeySymbolPaletteRouting COMMAND KeyKeyTsfOutputBehaviorTest --symbol-routing)
     add_test(NAME KeyKeySymbolPaletteReopen COMMAND KeyKeyTsfOutputBehaviorTest --symbol-reopen)

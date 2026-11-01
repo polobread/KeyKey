@@ -40,6 +40,12 @@ Windows 產品版號只在 `CMakeLists.txt` 宣告；兩個封裝入口與發布
 未解疑慮時重跑。目錄搬移檢查引用與必要建置即可，不重跑原生功能及安裝流程。
 共用引擎與模型變更仍依根目錄 AGENTS 的跨平台／模型規則驗證。
 
+共用桌面案例可建置 `KeyKeyDesktopInputHost` 後，以 `ctest -L '^desktop-input$'` 執行；
+`KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS=ON` 另啟用四種情境各 100 輪的 `desktop-stability`。
+這是原生 TSF context／測試專用文字宿主及執行緒按鍵狀態驗證，不代替可見候選窗、
+跨 App 或實體鍵盤驗收。案例、證據與無對等設定的界線見
+[共用桌面輸入測試](../../../docs/DESKTOP_INPUT_SHARED_TEST_MATRIX.md#windows-原生-tsf-交易測試)。
+
 下面命令從此目錄執行；建置目錄以本機實際 preset 為準，範例使用既有 x64 Ninja。
 原生 CMake／CTest 命令使用已載入 MSVC、CMake 與 Ninja 的 Developer PowerShell。
 選定測試 executable target 與 CTest 名稱是兩件事。例如只修 TSF 送字：

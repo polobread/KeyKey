@@ -58,3 +58,5 @@ ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=e
 讀音 codec 的行為與 C ABI 由核心無 UI 測試驗證；Windows x64／x86 已執行原生 Rust 測試與真實 C consumer，使用 bundled SQLite 並核對正式模型前後雜湊。MSVC consumer 的匯入程式庫須放在 `/link` 之後，避免被 `/TC` 當成 C 原始碼編譯。這些結果不代替實際文字宿主或安裝驗收。
 
 完整 Rust／C consumer／跨平台核心矩陣仍只由 `guanyinma-core.yml` 負責。Windows workflow 直接建置並連結核心，保留既有平台建置與發布結構。x64／x86 原生可執行檔通過不代表 Windows Search AppContainer、真實文字宿主、安裝升級或簽章／發布完成；這些層級仍須分別驗收。
+
+共用桌面案例另由 `KeyKeyDesktopInputHost` 接到原生 TSF context 與測試專用 ACP 文字宿主，透過 `KeyKeyWindowsDesktopInput` 執行；100 輪模式切換與文件焦點測試由 `KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS` 額外啟用。逐鍵證據、四項無對等設定的案例與真實 App／實體鍵盤驗證界線見 [共用桌面輸入測試](DESKTOP_INPUT_SHARED_TEST_MATRIX.md#windows-原生-tsf-交易測試)。

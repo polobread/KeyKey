@@ -1,14 +1,14 @@
 # Windows／macOS／Linux 共用桌面輸入測試
 
-案例來源為 [`tests/desktop_input/cases.json`](../tests/desktop_input/cases.json)。固定相同模型、案例 ID、設定意圖、按鍵、分段檢查點與預期文字，各平台分別接合原生輸入法與文字宿主。不得以核心通過代替 TSF／IMK／Fcitx 實測，也不得將 GTK3／GTK4／Qt6 三個 Linux 宿主寫成三個桌面平台。
+案例來源為 [`tests/desktop_input/cases.json`](../tests/desktop_input/cases.json)。固定相同模型、案例 ID、設定意圖、參考按鍵、分段檢查點與預期文字，各平台分別接合原生輸入法與文字宿主。指定候選文字的步驟可依該平台實際候選標籤選字；候選位置會因系統字型過濾而不同。不得以核心通過代替 TSF／IMK／Fcitx 實測，也不得將 GTK3／GTK4／Qt6 三個 Linux 宿主寫成三個桌面平台。
 
 ## 設定與隔離
 
-執行前明確套用設定並讀回確認。Linux 使用完整 77 項 fixture，再套用共用案例列出的覆寫；Windows／macOS 後續執行器須完成各自的偏好設定與讀回接合。共同條件為標準注音、中文啟動、半形初始狀態、繁轉簡關閉、關聯詞關閉、好打 8 個選字鍵、空白開候選開啟、組字 10 音節、游標後方選字、選字後不回句尾、Shift 強制大寫關閉、中文忽略 Caps Lock 關閉。每案使用隔離資料，先清除學習，避免先前選字改變結果。
+執行前明確套用設定並讀回確認。Linux 使用完整 77 項 fixture，再套用共用案例列出的覆寫；Windows 使用隔離 plist 與原生 FE 設定讀回；macOS 後續執行器須完成偏好設定與讀回接合。共同條件為標準注音、中文啟動、半形初始狀態、繁轉簡關閉、關聯詞關閉、好打 8 個選字鍵、空白開候選開啟、組字 10 音節、游標後方選字、選字後不回句尾、Shift 強制大寫關閉、中文忽略 Caps Lock 關閉。每案使用隔離資料，先清除學習，避免先前選字改變結果。
 
 `shared-eight-key` 是共用基準；`linux-nine-key` 明確覆寫好打為 9 鍵，保留 Linux 擴充驗證。B02 的 8／9 鍵與字母鍵案例會再覆寫指定選字鍵，不能把 Windows 的 9→8 鍵回退當成 9 鍵案例通過。
 
-平台原生預設值須另外驗證；不能直接採用各平台預設值作為行為對照條件。文字範圍與游標統一以 Unicode 字元／讀音座標表達，執行器再轉成宿主 API 的 byte／UTF-16 range。原生鍵碼與快捷鍵由平台接合，但不能更改預期文字來使結果通過。
+平台原生預設值須另外驗證；不能直接採用各平台預設值作為行為對照條件。文字範圍與游標統一以 Unicode 字元／讀音座標表達，執行器再轉成宿主 API 的 byte／UTF-16 range。原生鍵碼與快捷鍵由平台接合，但不能更改預期文字來使結果通過。`steps[].candidate_targets` 以零起算的按鍵索引指定必須選到的文字；原 `keys` 中的該鍵為參考位置。Windows 執行器已接上實際候選讀回與分頁搜尋；Linux 既有執行器仍使用原本參考鍵序，其字型環境若改變，須另補相同的候選解析，不能直接改預期文字。
 
 目前由原始碼確認的接合差異如下，仍須原生執行才能判定實際結果：
 
@@ -17,6 +17,7 @@
 | 中文忽略 Caps Lock | Loader 偏好，預設 True；共同比較時明確設 False | adapter 固定 False；True 案例無對等設定 | 可切換，預設 False |
 | 選字後回句尾 | adapter 未映射此選項，核心預設 False | adapter 固定 False | 可切換 |
 | 好打 9 鍵選字 | adapter 會將非 8 鍵設定退回 8 鍵 | adapter 可傳入設定，待原生驗證 | 可設定 8／9 鍵及字母鍵 |
+| 倉頡自訂最大碼數 | adapter 固定 5 碼，無對等設定 | 待原生驗證 | 可設定 |
 | Esc 清除整句 | 同時設定 `ClearComposingTextWithEsc` 與 `ClearComposingTextWithEscUserChoice` | `ClearComposingTextWithEsc` | `SmartMandarin/ClearComposingTextWithEsc` |
 
 參照 `Windows-TSF/GuanyinmaWindowsAdapter.cpp`、`Windows-TSF/FrontendSettings.cpp`、`OSX-IMK/GuanyinmaMacAdapter.mm` 與 `Linux-IME/adapters/fcitx5/fcitx5_engine.cpp`。不支援的組合須列為「無對等設定／待討論」，不能標示通過或直接判定詞庫錯誤。本次不調整上述產品行為。
@@ -73,4 +74,27 @@ python3 tests/desktop_input/core_boundaries.py \
   --output /absolute/path/to/results
 ```
 
-library 參數依平台換成原生 `.dll`／`.dylib`／`.so`。這層可精確檢查候選總數、每頁列數、首末頁循環及候選是否已開啟；結果仍屬核心證據。Windows／macOS 的原生宿主執行器與實測狀態目前為待完成。
+library 參數依平台換成原生 `.dll`／`.dylib`／`.so`。這層可精確檢查候選總數、每頁列數、首末頁循環及候選是否已開啟；結果仍屬核心證據。
+
+## Windows 原生 TSF 交易測試
+
+Windows 的 `KeyKeyDesktopInputHost` 使用 Windows 建立的 `ITfThreadMgr`、`ITfDocumentMgr`、`ITfContext`、range、composition 與 edit session，連入正式 `TextService` 及 Windows Guanyinma adapter。測試專用 `ITextStoreACP` 保存 UTF-16 文件；每鍵透過正式 `OnTestKeyDown`／`OnKeyDown`／key-up 回呼輸入。`SetKeyboardState` 與美式鍵盤 layout 僅套用測試執行緒，結束還原，不使用 `SendInput`，不註冊／啟用已安裝 TIP、不操作個人桌面。service 透過既有 test friend 接上測試 context，不經完整的 TIP `ActivateEx`、語言列與系統偏好發布接線。
+
+這層能驗證 TSF 寫入、組字範圍、UTF-16 游標及 FE 設定／事件映射；沒有可見視窗與文字座標，所以不驗證候選窗繪製／定位。R03 僅驗證同一 worker 內兩份原生 TSF 文件的焦點回呼與內容隔離，不能宣稱跨 App 前景焦點已通過。Windows 記事本／其他真實 App、實體鍵盤與 macOS IMK 宿主測試仍待分別完成。
+
+在已載入 MSVC 的 Developer PowerShell，從 `Source/Loaders/Windows-TSF` 執行：
+
+```powershell
+python ../../../update/prepare.py fetch windows
+cmake --preset windows-x64
+cmake --build out/build/x64-ninja --target KeyKeyDesktopInputHost
+ctest --test-dir out/build/x64-ninja -L '^desktop-input$' --output-on-failure
+
+# 四項穩定性情境各 100 輪，另行啟用。
+cmake --preset windows-x64 -DKEYKEY_ENABLE_DESKTOP_STABILITY_TESTS=ON
+ctest --test-dir out/build/x64-ninja -L '^desktop-stability$' --output-on-failure
+```
+
+一般測試跑 45 個共用案例各一次，另加不經輸入法的美式鍵盤負向對照。每案／每輪各啟動新程序與全新隔離 profile，學習只在該案內保留。執行前核對部署模型的 SHA-256；共用案例及 host executable 的雜湊、原始設定意圖、plist 讀回、原生 Caps Lock／倉頡設定讀回、逐鍵修飾鍵狀態、候選頁、TSF text/preedit／UTF-16 範圍與檢查點均寫至 `BUILD_DIR/desktop-input/windows-tsf-*/`。每次建立新目錄，第一次失敗不會被後續執行覆蓋；產物不提交。
+
+不支援的四個案例明列 `unsupported`：S09 回句尾開啟、B02 好打九鍵、B03 倉頡最大兩碼的兩種設定；不執行回退設定並標為通過。B06 按指定候選文字「喬」解析實際選字鍵，保存參考鍵、實際鍵及各頁候選；找不到指定候選就失敗，最終仍須等於「喬喬」。未指定候選文字的分頁／數字鍵案例照固定鍵序驗證。其他不符預期一律保留為 `failed`，CTest 回傳失敗，不更改預期文字。完整核心矩陣仍由 `guanyinma-core.yml` 負責，此入口不重跑完整 Rust 測試。
