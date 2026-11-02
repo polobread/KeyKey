@@ -35,10 +35,10 @@ jobs:
       matrix:
         include:
           - {platform: linux, os: ubuntu-24.04, sqlite: system, python: python3}
-          - {platform: macos, os: macos-15, sqlite: system, python: python3}
+          - {platform: macos, os: macos-26, sqlite: system, python: python3}
           - {platform: windows, os: windows-2025, sqlite: bundled, python: python}
           - {platform: freebsd, os: ubuntu-24.04, sqlite: system, python: python3}
-          - {platform: ios, os: macos-15, sqlite: system, python: python3}
+          - {platform: ios, os: macos-26, sqlite: system, python: python3}
           - {platform: android, os: ubuntu-24.04, sqlite: bundled, python: python3}
     defaults:
       run:

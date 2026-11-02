@@ -101,7 +101,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 75
     outputs:
       version: ${{ steps.metadata.outputs.version }}
@@ -322,7 +322,7 @@ jobs:
   publish:
     needs: build
     if: github.event_name != 'pull_request' && github.event_name != 'push' && inputs.checks != 'tests' && needs.build.outputs.publish_release == 'true'
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
     environment: release
     permissions:

@@ -160,7 +160,7 @@ jobs:
       always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
       && inputs.operation == 'stage-beta-assets'
       && needs.validate.result == 'success' && needs.windows-native.result == 'success'
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 30
     environment: release
     permissions:

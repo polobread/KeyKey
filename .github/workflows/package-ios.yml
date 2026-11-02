@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   package:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
 
     steps:
@@ -52,9 +52,9 @@ jobs:
           echo "artifact_name=keykey-ios-simulator-$version-$short_sha" >> "$GITHUB_OUTPUT"
           echo "VERSION=$version" >> "$GITHUB_ENV"
 
-      - name: Select Xcode 16.4
+      - name: Select Xcode 26.6
         shell: bash
-        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
 
       - name: Read the pinned Rust toolchain
         id: rust

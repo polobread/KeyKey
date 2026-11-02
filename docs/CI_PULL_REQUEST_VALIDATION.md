@@ -22,6 +22,8 @@ PR 依實際建置輸入與工具依賴觸發，保留 Linux CI、Package macOS�
 | Terraform Release Mirror | Terraform／自身 workflow 變更時 fmt、無 backend 的 init、validate | master 上手動 plan／apply |
 | Rebuild KeyKey database | 來源工具、已提交模型、manifest 與共用 DB 接線驗證；使用鎖定 Guanyinma Rust typing-cost | 合併後可信來源重建、固定 131 篇／30 動作門檻，再開產物或拒用報告 PR |
 
+Apple jobs 統一使用固定的 `macos-26` arm64 runner；iOS Simulator 封裝選用映像內的 Xcode 26.6。核心 iOS job 依可用的 iOS runtime 建立獨立模擬器，macOS 核心仍使用原生 system SQLite 並執行 92% 涵蓋率門檻。runner 映像版本不決定產品最低系統版本；更換映像後須以該次 CI 實際執行結果確認相容性。
+
 ## 觸發與驗證範圍
 
 | 變更 | 必要流程 |
