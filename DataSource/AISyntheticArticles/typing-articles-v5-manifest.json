@@ -676,7 +676,7 @@
       "delta_actions": 0,
       "reason": "總動作增加 0 次，未超過 30 次門檻",
       "validation_articles": 131,
-      "before_sha256": "b212cb38bd3281a758c5957fe8a14738eaa74ce466141e77659f01181a9eaa43",
+      "before_sha256": "cbe2e1018842797610b71a4f4b479332aa4508b32df629dd0ad7fa8075ee6c7c",
       "candidate_sha256": "cbe2e1018842797610b71a4f4b479332aa4508b32df629dd0ad7fa8075ee6c7c",
       "comparison": {
         "before": 333899,
