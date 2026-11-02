@@ -167,18 +167,6 @@ jobs:
           ci/build-debian-packages.sh ubuntu-24.04 upgrade-fixture
           ci/build-debian-packages.sh ubuntu-24.04 release-candidate
 
-      - name: Prepare extended glyphs for full package X11 tests
-        run: |
-          # Keep the shared desktop matrix on its basic-font fixture. The full
-          # package suite additionally exercises Big5-HKSCS supplementary glyphs.
-          sudo apt-get install --yes --no-install-recommends fontconfig fonts-hanazono
-          # The Big5-HKSCS host case selects U+249A9; WenQuanYi lacks this glyph.
-          big5_test_fonts=$(fc-list ':charset=249a9' family)
-          if [[ -z "$big5_test_fonts" ]]; then
-            echo 'The Big5-HKSCS X11 test requires a font covering U+249A9.' >&2
-            exit 1
-          fi
-
       - name: Test package install, upgrade, removal, reinstall, and X11 typing
         working-directory: Source/Loaders/Linux-IME
         env:
