@@ -89,7 +89,7 @@ python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py --baseline-r
 修正後驗證：通知在先、視窗在先、補載、重複刷新／分類切換、清空後恢復五種案例；
 分類和內容須一致，實際按鈕送出的符號也須正確。
 
-PR 的 `macos-symbols.yml` 及 macOS 封裝流程會執行此回歸。
+`Package macOS` 的 PR 建置及手動 `checks=tests` 入口會執行此回歸。
 這些證據覆蓋資料與真實 AppKit 視窗的銜接；已安裝 IMK 的啟動、選單顯示及宿主送字
 仍是另一層驗證，不能用隔離測試宣稱實機驗收完成。
 

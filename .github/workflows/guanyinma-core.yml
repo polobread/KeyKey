@@ -9,9 +9,10 @@ on:
       - 'Source/Shared/CangjieRankingData.h'
       - 'Source/Shared/CangjieUnicodeData.h'
       - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
-      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
       - '.github/workflows/guanyinma-core.yml'
       - '.gitattributes'
+      - '!**/*.md'
+      - '!**/README*'
   push:
     branches: [master]
     paths: *core-paths

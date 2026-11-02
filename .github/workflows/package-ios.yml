@@ -7,9 +7,16 @@ on:
       - 'Source/DataTables/**'
       - '.github/workflows/package-ios.yml'
       - 'Source/Guanyinma/**'
-      - 'Source/Distributions/**'
-      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'Source/Distributions/Takao/DatabaseCooker/Makefile'
+      - 'Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/cin_reading_frequencies.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/phrase_unigram_supplement.py'
       - '.gitattributes'
+      - '!**/*.md'
+      - '!**/README*'
+      - '!**/docs/**'
   workflow_dispatch:
 
 permissions:

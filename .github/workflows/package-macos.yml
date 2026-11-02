@@ -1,6 +1,45 @@
 name: Package macOS
 
 on:
+  push:
+    branches: ['codex/beta*-update-feeds']
+    paths:
+      - 'Source/Loaders/OSX-IMK/**'
+      - 'Source/PreferenceApplications/OSX/**'
+      - 'Source/Utilities/PhraseEditor/**'
+      - 'Source/Frameworks/**'
+      - 'Source/ModulePackages/**'
+      - 'Source/Shared/**'
+      - 'Source/DataTables/**'
+      - 'Source/Takao.xcodeproj/**'
+      - 'Source/Takao*.xcconfig'
+      - 'Installer/**'
+      - 'update/*.py'
+      - 'update/config.json'
+      - 'update/dependencies.json'
+      - 'update/test-macos.sh'
+      - '.github/scripts/release-assets.py'
+      - '.github/scripts/prepare-macos-test-fonts.*'
+      - '.github/scripts/prepare-macos-update.py'
+      - '.github/scripts/test_prepare_macos_update.py'
+      - '.github/scripts/sync-update-feeds.py'
+      - '.github/workflows/package-macos.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'Source/Distributions/Takao/OnlineData/CannedMessages.plist'
+      - 'Source/Distributions/Takao/Installer-OSX-Help/**'
+      - 'Source/Distributions/Takao/DatabaseCooker/Makefile'
+      - 'Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/cin_reading_frequencies.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/phrase_unigram_supplement.py'
+      - 'Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/KeyboardInput.swift'
+      - 'Source/Loaders/Windows-TSF/SymbolEmojiSupplement.json'
+      - '!**/*.md'
+      - '!**/README*'
+      - '!**/LICENSE*'
+      - '!**/docs/**'
+      - '.gitattributes'
   pull_request:
     paths:
       - 'Source/Loaders/OSX-IMK/**'
@@ -13,17 +52,41 @@ on:
       - 'Source/Takao.xcodeproj/**'
       - 'Source/Takao*.xcconfig'
       - 'Installer/**'
-      - 'update/**'
-      - '.github/scripts/**'
+      - 'update/*.py'
+      - 'update/config.json'
+      - 'update/dependencies.json'
+      - 'update/test-macos.sh'
+      - '.github/scripts/release-assets.py'
+      - '.github/scripts/prepare-macos-test-fonts.*'
+      - '.github/scripts/prepare-macos-update.py'
+      - '.github/scripts/test_prepare_macos_update.py'
+      - '.github/scripts/sync-update-feeds.py'
       - '.github/workflows/package-macos.yml'
       - 'Source/Guanyinma/**'
-      - 'Source/Distributions/**'
-      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'Source/Distributions/Takao/OnlineData/CannedMessages.plist'
+      - 'Source/Distributions/Takao/Installer-OSX-Help/**'
+      - 'Source/Distributions/Takao/DatabaseCooker/Makefile'
+      - 'Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/smart_mandarin_model.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/cin_reading_frequencies.py'
+      - 'Source/Distributions/Takao/DatabaseCooker/phrase_unigram_supplement.py'
+      - 'Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/KeyboardInput.swift'
+      - 'Source/Loaders/Windows-TSF/SymbolEmojiSupplement.json'
+      - '!**/*.md'
+      - '!**/README*'
+      - '!**/LICENSE*'
+      - '!**/docs/**'
       - '.gitattributes'
   release:
     types: [published]
   workflow_dispatch:
     inputs:
+      checks:
+        description: 'package = all checks and unsigned package; tests = native checks only'
+        type: choice
+        options: [package, tests]
+        default: package
       release_tag:
         description: 'Published macOS tag: vX.Y.Z or vX.Y.Z-betaN; blank = artifact only. Build uses the selected ref.'
         required: false
@@ -39,7 +102,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 75
     outputs:
       version: ${{ steps.metadata.outputs.version }}
       app_artifact: ${{ steps.metadata.outputs.app_artifact }}
@@ -118,6 +181,7 @@ jobs:
         run: make -C Source/Distributions/Takao/DatabaseCooker
 
       - name: Test native Guanyinma frontend integration without installation
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           sdk="$(xcrun --sdk macosx --show-sdk-path)"
@@ -125,17 +189,70 @@ jobs:
             SQLITE3_STATIC=0 SQLITE3_NO_PKG_CONFIG=1 \
             python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py --suite integration
 
-      - name: Build input method
-        shell: bash
+      # Each isolated suite still runs after a different suite fails. A failed
+      # step keeps the job failed and prevents unsigned/signing handoff.
+      - name: Test symbol startup ordering and native views without installation
+        if: ${{ !cancelled() }}
+        run: python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py
+
+      - name: Test Shift and independent input modes without installation
+        if: ${{ !cancelled() }}
+        run: python3 Source/Loaders/OSX-IMK/Tests/run-input-mode-tests.py
+
+      - name: Test general settings defaults, persistence and localized layout
+        if: ${{ !cancelled() }}
+        run: python3 Source/Loaders/OSX-IMK/Tests/run-general-input-mode-tests.py
+
+      - name: Prepare native updater SDK
+        if: ${{ !cancelled() }}
+        run: python3 update/prepare.py fetch macos
+
+      - name: Test updater and native Sparkle beta version ordering without installation
+        if: ${{ !cancelled() }}
+        run: bash update/test-macos.sh
+
+      # Desktop Release Tools previously ran with repository defaults, before
+      # the package job selected its channel configuration. Keep both contexts.
+      - name: Test updater with the repository default channel environment
+        if: ${{ !cancelled() }}
+        run: env -u KEYKEY_UPDATE_CONFIG bash update/test-macos.sh
+
+      - name: Test native signing with the repository default channel environment
+        if: ${{ !cancelled() }}
+        run: env -u KEYKEY_UPDATE_CONFIG python3 -m unittest discover -s update -p 'test_macos_signing.py' -v
+
+      - name: Test native notarization with the repository default channel environment
+        if: ${{ !cancelled() }}
+        run: env -u KEYKEY_UPDATE_CONFIG python3 -m unittest discover -s update -p 'test_macos_notarization.py' -v
+
+      - name: Test installer input source handling without installation
+        if: ${{ !cancelled() }}
+        run: bash Installer/test-input-sources.sh
+
+      - name: Test macOS release metadata
+        if: ${{ !cancelled() }}
         run: |
-          python3 update/prepare.py fetch macos
-          bash update/test-macos.sh
-          bash Installer/test-input-sources.sh
-          python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py
           KEYKEY_TEST_OPENSSL="$(brew --prefix openssl@3)/bin/openssl" \
             python3 -m unittest discover -s update -p test_macos_release.py -v
-          python3 -m unittest discover -s update -p 'test_macos_signing.py' -v
-          python3 -m unittest discover -s update -p 'test_macos_notarization.py' -v
+
+      - name: Test native ad-hoc signing without Apple submission
+        if: ${{ !cancelled() }}
+        run: python3 -m unittest discover -s update -p 'test_macos_signing.py' -v
+
+      - name: Test native notarization status gates without Apple submission
+        if: ${{ !cancelled() }}
+        run: python3 -m unittest discover -s update -p 'test_macos_notarization.py' -v
+
+      - name: Test stable update preparation with native OpenSSL
+        if: ${{ !cancelled() }}
+        run: |
+          KEYKEY_TEST_OPENSSL="$(brew --prefix openssl@3)/bin/openssl" \
+            python3 -m unittest discover -s .github/scripts -p test_prepare_macos_update.py -v
+
+      - name: Build input method
+        if: ${{ success() && inputs.checks != 'tests' && github.event_name != 'push' }}
+        shell: bash
+        run: |
           cd Source
           xcodebuild \
             -project Takao.xcodeproj \
@@ -147,22 +264,26 @@ jobs:
           python3 update/prepare.py stamp-macos "Source/build/Release/chichi77 KeyKey.app"
 
       - name: Verify packaged language model
+        if: ${{ success() && inputs.checks != 'tests' && github.event_name != 'push' }}
         shell: bash
         run: >-
           python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py
           "Source/build/Release/chichi77 KeyKey.app/Contents/Resources/Databases/KeyKey.db"
 
       - name: Verify Guanyinma runtime notices are packaged
+        if: ${{ success() && inputs.checks != 'tests' && github.event_name != 'push' }}
         shell: bash
         run: test -s "Source/build/Release/chichi77 KeyKey.app/Contents/Resources/GuanyinmaNotices.txt"
 
       - name: Build unsigned installer package
+        if: ${{ success() && inputs.checks != 'tests' && github.event_name != 'push' }}
         shell: bash
         run: |
           cd Installer
           ./build.sh
 
       - name: Stage artifact and checksum
+        if: ${{ success() && inputs.checks != 'tests' && github.event_name != 'push' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -172,6 +293,7 @@ jobs:
           (cd artifacts && shasum -a 256 "$(basename "$output")" > "$(basename "$output").sha256")
 
       - name: Upload packaged artifact
+        if: ${{ success() && inputs.checks != 'tests' && github.event_name != 'push' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ steps.metadata.outputs.artifact_name }}
@@ -180,6 +302,7 @@ jobs:
           retention-days: 7
 
       - name: Archive the built app for the signing job
+        if: ${{ success() && inputs.checks != 'tests' && github.event_name != 'push' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -188,6 +311,7 @@ jobs:
             "Source/build/Release/chichi77 KeyKey.app" handoff/app.zip
 
       - name: Upload the built app
+        if: ${{ success() && inputs.checks != 'tests' && github.event_name != 'push' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ steps.metadata.outputs.app_artifact }}
@@ -197,7 +321,7 @@ jobs:
 
   publish:
     needs: build
-    if: github.event_name != 'pull_request' && needs.build.outputs.publish_release == 'true'
+    if: github.event_name != 'pull_request' && github.event_name != 'push' && inputs.checks != 'tests' && needs.build.outputs.publish_release == 'true'
     runs-on: macos-15
     timeout-minutes: 60
     environment: release

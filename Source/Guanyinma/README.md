@@ -38,16 +38,16 @@ CI 的權責固定如下；本機核心開發仍可直接執行後面的獨立�
 
 | 平台 | 平台建置與 FE 接合 | Rust 準備／使用 |
 |---|---|---|
-| macOS | `package-macos.yml`、`macos-symbols.yml` | 鎖定工具鏈；標準 Xcode build phase 連入 Rust，少量 integration 測試，產物保留 runtime notices |
-| Windows | `package-windows.yml`、`windows-shared-data.yml` | x64／x86 targets；共用 PowerShell／CMake 建置必須連入 Rust，聚焦 TSF 接合測試 |
+| macOS | `package-macos.yml` | 鎖定工具鏈；標準 Xcode build phase 連入 Rust，少量 integration 測試，產物保留 runtime notices |
+| Windows | `package-windows.yml` | x64／x86 targets；共用 PowerShell／CMake 建置必須連入 Rust，聚焦 TSF 接合測試 |
 | iOS | `package-ios.yml`、Xcode Cloud `ci_post_clone.sh` | 三個 Apple targets；App／extension 必須連結 Rust，少量 Swift FE smoke 與既有封裝檢查；Cloud 需預裝 rustup |
-| Android | `package-android.yml`、`android-play-release.yml` | 四個 Android targets／固定 NDK；Rust 靜態庫連入 JNI，少量真 JNI smoke |
+| Android | `android-play-release.yml` | 四個 Android targets／固定 NDK；Rust 靜態庫連入 JNI，少量真 JNI smoke |
 | Linux | `linux-ci.yml` | `prepare-guanyinma.sh` 準備鎖定工具鏈；Fcitx／engine-only 產品建置與套件必須連入 Rust |
 | FreeBSD | `guanyinma-core.yml` 的 FreeBSD 15.1 VM | 原生 VM 執行完整核心測試；FE／ports 沿平台建置流程，儲存庫沒有獨立 FreeBSD FE 封裝 workflow |
 
 只簽署／發布既有產物、同步 feed／CDN、鏡像或測試更新工具的 workflow 不編譯輸入核心，不額外安裝 Rust。
 
-共用核心或模型變更也會觸發平台建置與發布工具的 PR 驗證；各 workflow 的範圍及發布界線見 [PR 建置與發布驗證](../../docs/CI_PULL_REQUEST_VALIDATION.md)。
+共用核心或正式 DB 內容變更會觸發核心與受影響平台建置；報告／模型 manifest 更新由資料庫流程驗證，發布工具依自身來源與設定變更驗證。各 workflow 的範圍及發布界線見 [PR 建置與發布驗證](../../docs/CI_PULL_REQUEST_VALIDATION.md)。
 
 平台 workflow 不執行 Guanyinma 的整套 `cargo test`、`tools/test-core.py` 或完整 C ABI driver，也不轉呼叫完整核心 workflow。核心的排序、學習及組字邊界矩陣集中在核心 workflow；FE 的少量測試只驗證原生接合。後續新增平台接合依此分工小幅加入。
 

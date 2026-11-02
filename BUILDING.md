@@ -383,14 +383,10 @@ extension 無法接收 USB／藍牙鍵盤事件；容器 App 的「實體鍵盤�
 
 ## GitHub Actions 封裝
 
-PR／push 的平台建置排除純文件、README、授權說明與更新公告；程式、設定及詞庫沿用
-各平台與共用模組目錄，最多三層目錄分組，不逐檔列清單。`update/stable/` 與 `update/beta/` 公告保留 feed 驗證與同步，
+PR／push 的平台建置依前端、共用核心、正式 DB 與實際工具依賴觸發，排除純文件、README、授權說明與更新公告。`update/stable/` 與 `update/beta/` 公告保留 feed 驗證與同步，
 不觸發原生建置。手動及正式 Release 的入口維持原有流程。
 
-Android 的 debug 封裝、iOS Simulator 與 `Android Play Release` workflow 都從
-GitHub Actions 頁面按 **Run workflow** 手動執行。Android Play workflow 使用所選分支
-或 tag 的 commit 建置、簽署並上傳 AAB 到 Google Play 內部測試；PR 合併與直接 push
-都不觸發，也不設定 `changesNotSentForReview`。正式版推廣由 Play Console 操作。
+Android 與 iOS Simulator workflow 提供相關 PR 的驗證，也可從 Actions 頁面按 **Run workflow** 手動執行。Android PR 與手動 `operation=verify` 共用一次工具準備，產生 APK／未簽章 AAB。只有預設手動 `operation=publish` 使用所選分支或 tag 的 commit 建置、簽署並上傳 AAB 到 Google Play 內部測試；合併 PR 與直接 push 不會上傳，也不設定 `changesNotSentForReview`。正式版推廣由 Play Console 操作。
 Android 1.3.7 已在 Google Play 正式上架；後續正式發布不需再以封閉測試作為前置步驟。
 CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不同流程。
 
@@ -404,7 +400,7 @@ Windows 由 CI 呼叫共用 PowerShell 建置、測試及產生 unsigned artifac
 Linux 手動 beta 重跑可選 `master` 上的 workflow 並填 `release_tag`；兩個 Ubuntu job
 都固定 checkout 該 beta tag，發布仍核對原 tag commit、產品版號及套件校驗，避免混入後續來源修改。
 macOS 從四份產品 plist 讀取並核對版號，不從 README 讀取版號。只推 tag 或儲存草稿
-不會觸發桌面封裝；一般 commit 與尚未合併的 pull request 不會發布桌面資產。`Linux CI` 另保留 PR smoke，
+不會觸發桌面封裝；一般 commit 與尚未合併的 pull request 不會發布桌面資產。`Linux CI` 的 PR staged smoke 共用完整 24.04 job 的 build／stage，
 發布前須通過 Ubuntu 24.04 完整測試與 Ubuntu 22.04 相容性驗證。
 
 正式版單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
@@ -431,8 +427,7 @@ gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.7
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-版本-macos-arm64.pkg.zip` | 發布到 Release 前以 Developer ID 簽章並 notarize；僅 artifact 的 run 未簽章 |
 | Windows Build and Unsigned Inputs | 待簽 EXE／DLL、unsigned 測試包及來源／測試／雜湊紀錄 | 共用 PowerShell 建置測試；本機驗證 artifact 後簽章與重包，見 [發布指南](docs/WINDOWS_CERTUM_RELEASE.md) |
-| Package Android | `chichi77-KeyKey-版本-android-debug.apk` | debug key 簽署；不同次建置間可能無法直接升級 |
-| Android Play Release | 無公開 artifact；直接上傳簽署 AAB | 只在手動 Run workflow 時建置、簽署並上傳到 Google Play internal testing；PR 合併與直接 push 都不觸發，由 Play Console 推廣至正式版；一般使用者不需加入封閉測試 |
+| Android Play Release | PR／`operation=verify`：debug APK、unsigned AAB 與 SHA-256；預設手動 publish：上傳簽署 AAB | verify 不上傳商店；publish 才使用上傳金鑰並送 Google Play internal testing，再由 Play Console 推廣正式版 |
 | Package iOS Simulator | `chichi77-KeyKey-版本-ios-simulator.zip` | 僅 Apple Silicon iOS Simulator，不能安裝到實機 |
 | Linux CI | Ubuntu 22.04／24.04 `.deb`；Ubuntu 24.04 另有面板原始碼與 `SHA256SUMS` | 完整測試通過後，發布 run 只上傳 Ubuntu 24.04 的五個檔案；Ubuntu 22.04 套件僅保留 artifact |
 
@@ -444,11 +439,10 @@ Windows 發布不覆寫資產；以下同版補發／覆寫說明只適用其他
 tag commit、workflow 連結與檔案雜湊；修正後的補發可能與原 tag commit 不同。
 workflow 不建立 Release，也不建立或移動 tag。若上傳中斷，可重新執行補發。
 
-macOS workflow 拆成兩個 job。`build` 永遠會跑、拿不到任何 secret，產出未簽章 pkg；
-`publish` 在 Release 發布或手動填入 `release_tag` 時跑，掛 `release` environment，取得 Developer ID 憑證後簽章、
+macOS workflow 拆成兩個 job。`build` 不取得簽章 secret，一般 package 模式產出未簽章 pkg；
+手動 `checks=tests` 與 beta feed 分支 push 只驗證、不產包。`publish` 在 Release 發布或 package 模式手動填入 `release_tag` 時跑，掛 `release` environment，取得 Developer ID 憑證後簽章、
 notarize、staple，再發布到 Release。因此**從 Release 下載的 macOS pkg 不需要
-`xattr -d com.apple.quarantine`**，Gatekeeper 直接放行；未填 `release_tag` 的手動 run 仍是
-未簽章的測試包。
+`xattr -d com.apple.quarantine`**，Gatekeeper 直接放行；package 模式未填 `release_tag` 的手動 run 產出未簽章測試包。
 
 發布 run 會留下兩個 macOS artifact，裡面的檔名相同但內容不同：`build` 的
 `keykey-macos-版本-commit` 是未簽章的，`publish` 的 `keykey-macos-signed-版本` 才是已簽章
@@ -814,11 +808,13 @@ shares the completed text. See the
 
 ### GitHub Actions packaging
 
-Android debug packaging, iOS Simulator packaging, and `Android Play Release` run only
-after **Run workflow** is selected in GitHub Actions. The Android Play workflow builds
-the selected branch or tag and uploads it to Google Play internal testing. PR merges
-and direct pushes do not trigger it, and the workflow does not set
-`changesNotSentForReview`. Production promotion is performed in Play Console.
+Android verification and iOS Simulator packaging run for relevant PRs or manually
+through **Run workflow** in GitHub Actions. Android PR checks and manual
+`operation=verify` share setup and produce a Debug APK and unsigned Release AAB.
+Only the default manual `operation=publish` builds and signs the selected branch
+or tag for upload to Google Play internal testing. Merging a PR or pushing a commit
+does not upload to Play, and the workflow does not set `changesNotSentForReview`.
+Production promotion is performed in Play Console.
 Android 1.3.7 is available on Google Play. Closed testing is no longer a prerequisite for subsequent production
 releases or public installation. CI uploads to internal testing; users install
 the production release from Google Play. iOS 1.3.7 is available on the App Store.
@@ -870,8 +866,7 @@ artifacts for seven days; Windows unsigned inputs are retained for 30 days and s
 |---|---|---|
 | Package macOS | `chichi77-KeyKey-VERSION-macos-arm64.pkg.zip` | Signed with a Developer ID and notarized before Release upload; artifact-only runs remain unsigned |
 | Windows Build and Unsigned Inputs | Unsigned payload, test packages, source/test/hash records | Shared PowerShell builds/tests; local Windows verifies CI inputs, signs and repackages; see [release guide](docs/WINDOWS_CERTUM_RELEASE.md). |
-| Package Android | `chichi77-KeyKey-VERSION-android-debug.apk` | Debug signed; a build from another run may require uninstalling the old APK |
-| Android Play Release | No public artifact; uploads the signed AAB directly | Builds, signs, and uploads only after a manual Run workflow; PR merges and direct pushes do not trigger it. Promote the build to production in Play Console; public installation does not require closed testing |
+| Android Play Release | PR / `operation=verify`: debug APK, unsigned AAB and SHA-256; manual publish: signed AAB upload | Verify does not upload to Play. Default manual `operation=publish` uses the upload key and Play internal track; promote to production in Play Console |
 | Package iOS Simulator | `chichi77-KeyKey-VERSION-ios-simulator.zip` | Apple Silicon iOS Simulator only; not installable on a device |
 | Linux CI | Ubuntu 22.04 and 24.04 `.deb` packages; Ubuntu 24.04 panel source and `SHA256SUMS` | Publishing runs upload five verified Ubuntu 24.04 assets after both gates pass; Ubuntu 22.04 packages remain Actions artifacts |
 
@@ -894,13 +889,14 @@ changed so same-tag recovery builds take effect. Provisioning, least-privilege
 IAM, and environment-variable setup are documented in
 [`terraform/infra`](terraform/infra/README.md).
 
-The macOS workflow is split in two jobs. `build` always runs and is given no
-signing secrets, producing the unsigned package; `publish` runs for a published
-Release or a manual run with `release_tag`,
+The macOS workflow is split in two jobs. `build` receives no signing secrets
+and produces an unsigned package in package mode. Manual `checks=tests` and
+beta-feed branch pushes only run checks. `publish` runs for a published Release
+or a manual package run with `release_tag`,
 uses the `release` environment, and signs, notarizes, and staples before
 publishing to the Release. A macOS package downloaded from a Release therefore
 needs no `xattr -d com.apple.quarantine`: Gatekeeper accepts it as it is. The
-artifact from a manual run without `release_tag` is still an unsigned test build.
+artifact from a manual package run without `release_tag` is an unsigned test build.
 
 A publishing run leaves two macOS artifacts whose contents differ under the same file
 name: `keykey-macos-VERSION-COMMIT` from `build` is unsigned, and

@@ -1,15 +1,6 @@
 name: Prepare Linux Stable Update
 
 on:
-  pull_request:
-    paths:
-      - '.github/scripts/*linux*update*'
-      - 'update/**'
-      - '.github/workflows/prepare-linux-update.yml'
-      - 'Source/Guanyinma/**'
-      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
-      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
-      - '.gitattributes'
   workflow_run:
     workflows: [Linux CI]
     types: [completed]
@@ -28,15 +19,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  validate:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Test release tooling without publishing
-        run: python3 -m unittest discover -s .github/scripts -p 'test_prepare_linux_update.py' -v
-
   prepare:
     if: >-
       github.repository == 'polobread/KeyKey' && github.ref == 'refs/heads/master' &&
