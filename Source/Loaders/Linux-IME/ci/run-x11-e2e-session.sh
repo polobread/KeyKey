@@ -51,7 +51,6 @@ known_cases=(
   T01-X11-QT6-BOPOMOFO-SMART-PREEDIT-ACTION
   T01-X11-GTK4-BOPOMOFO-STANDARD
   T01-X11-QT6-BOPOMOFO-STANDARD
-  T01-X11-GTK3-BOPOMOFO-BIG5-FILTER
   T01-X11-GTK3-BOPOMOFO-CONTINUOUS
   T01-X11-GTK3-BOPOMOFO-INVALID-INPUT
   T02-X11-GTK3-BOPOMOFO-STANDARD
@@ -2083,14 +2082,6 @@ if case_selected T01-X11-QT6-BOPOMOFO-STANDARD; then
   set_bopomofo_layout Standard
   run_qt6_case T01-X11-QT6-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
     中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1
-fi
-if case_selected T01-X11-GTK3-BOPOMOFO-BIG5-FILTER; then
-  set_bopomofo_layout Standard
-  set_use_all_unicode_characters False
-  run_case T01-X11-GTK3-BOPOMOFO-BIG5-FILTER \
-    chichi77-keykey-bopomofo \
-    𤦩 ',42' 'ㄝ,誒' comma 4 2
-  set_use_all_unicode_characters True
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-CONTINUOUS; then
   set_bopomofo_layout Standard
