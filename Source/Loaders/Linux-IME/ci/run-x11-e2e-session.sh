@@ -2274,8 +2274,8 @@ PY
     --set Cangjie/ClearOnError=False
   reload_keykey_config
   run_case T04-X11-GTK3-CANGJIE-PREFIX chichi77-keykey-cangjie \
-    '喬喬' 'hk5hkrbr' '竹,竹大,竹大口,竹大口月,竹大口月口' \
-    h k 5 h k r b r Return
+    '喬喬' 'hk2hkrbr' '竹,竹大,竹大口,竹大口月,竹大口月口' \
+    h k 2 h k r b r Return
   write_keykey_config
   reload_keykey_config
 fi
