@@ -98,8 +98,9 @@ target。Xcode 先建置共用 Rust 靜態庫再連結 App 與 extension；不�
 `KeyKey.db` 是版控內的共用建置輸入。Xcode Cloud 會自動執行
 `ci_scripts/ci_post_clone.sh` 驗證資料庫，並以 `CI_BUILD_NUMBER` 同步容器 App 與
 Keyboard extension 的 build number；本機建置維持專案內的預設 build number。
-Cloud 建置環境須事先提供 `rustup`；post-clone hook 只以既有工具準備指定 toolchain 與 iOS
-target，不下載或執行遠端 shell 安裝器。未預備該工具時會明確失敗；完整前置要求見
+Cloud post-clone hook 優先沿用既有 `rustup`；缺少時下載官方固定版本的 `rustup-init`，
+通過版控內 SHA-256 校驗才執行，再準備鎖定 toolchain、`rust-src` 與 iOS targets。
+不修改 shell 啟動檔；後續 Xcode 建置沿既有 Cargo 路徑尋找規則使用工具。完整前置要求見
 [Guanyinma iOS 接合](../../../docs/GUANYINMA_IOS_ADAPTER.md)。
 
 少量 Swift 串接／設定測試不需要模擬器；從本目錄以 host wrapper 準備 Rust 靜態庫：
