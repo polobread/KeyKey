@@ -15,6 +15,7 @@
 #include <dwmapi.h>
 #include "InputMethods.h"
 #include "FrontendSettings.h"
+#include "GuanyinmaWindowsUserData.h"
 #include "Mandarin.h"
 #include "sqlite3.h"
 #include "TsfCompartmentTestSupport.h"
@@ -53,6 +54,7 @@ struct TextServiceTestAccess {
     static bool key(TextService& s,ITfContext* c,const KeyEvent& event) { return s.requestKey(c,event); }
     static bool wants(TextService& s,const KeyEvent& event) { return s.isPotentialKey(event); }
     static bool engineComposition(TextService& s) { return s.engine_ && s.engine_->hasComposition(); }
+    static bool guanyinma(TextService& s) { return s.engine_ && s.engine_->usesGuanyinma(); }
     static const void* engine(TextService& s) { return s.engine_.get(); }
     static bool recovery(TextService& s) { return s.modeRecoveryPending_; }
     static bool pending(TextService& s) { return s.pendingModeCommit_; }
@@ -1229,27 +1231,54 @@ void TestControlledBoundaries() {
     controlled.reset();
     { std::ofstream restore(settings,std::ios::binary); restore<<original; }
 
-    sqlite3* database=nullptr;
-    Check(sqlite3_open16((SettingsDirectory()+L"\\SmartMandarinUserData.db").c_str(),&database)==SQLITE_OK,"Open isolated learning DB");
-    auto sql=[&](const char* command) { Check(sqlite3_exec(database,command,nullptr,nullptr,nullptr)==SQLITE_OK,"External learning SQL"); };
-    auto count=[&] {
-        sqlite3_stmt* statement=nullptr;
-        Check(sqlite3_prepare_v2(database,"SELECT count(*) FROM user_candidate_override_cache WHERE qstring='ordered-reset-sentinel'",-1,&statement,nullptr)==SQLITE_OK,"Learning count prepare");
-        Check(sqlite3_step(statement)==SQLITE_ROW,"Learning count row");
-        const int value=sqlite3_column_int(statement,0); sqlite3_finalize(statement); return value;
+    // Exercise the settings C ABI and observable learning, not the retired SQL schema.
+    wchar_t executable[32768]{};
+    Check(GetModuleFileNameW(nullptr,executable,32768)!=0,"Learning fixture executable path");
+    const auto model=std::filesystem::path(executable).parent_path()/L"Databases/KeyKey.db";
+    GuanyinmaWindowsUserData data(model.wstring());
+    Check(data.resetLearning(),"Clear isolated Guanyinma learning baseline");
+    Check(data.save({0,L"快樂樂曲",L"ㄎㄨㄞˋ,ㄌㄜˋ,ㄩㄝˋ,ㄑㄩˇ"}),"Guanyinma custom phrase fixture");
+    { std::ofstream file(settings,std::ios::binary);
+      file<<"<plist><dict><key>KeyboardLayout</key><string>Standard</string>"
+            "<key>ShowCandidateListWithSpace</key><string>true</string></dict></plist>"; }
+    const auto typeReading=[](KeyKeyEngineSession& session) {
+        EngineResult result;
+        for (wchar_t key : std::wstring(L"su3")) result=session.handleKey(Character(key));
+        return result;
     };
-    sql("INSERT INTO user_candidate_override_cache VALUES('ordered-reset-sentinel','復活');");
     controlled=KeyKeyEngineSession::CreateControlled("SmartMandarin");
     Check(controlled && controlled->ready(),"Learning baseline controlled create");
+    Check(typeReading(*controlled).compositionText==L"你","Unlearned Guanyinma first candidate");
+    const auto candidates=controlled->handleKey(Special(VK_DOWN));
+    const auto learned=std::find_if(candidates.candidates.begin(),candidates.candidates.end(),
+        [](const auto& candidate) { return candidate.text==L"妳"; });
+    Check(candidates.candidatesVisible && learned!=candidates.candidates.end() &&
+          learned->selectionKey.size()==1,"Guanyinma learning candidate available");
+    Check(controlled->handleKey(Character(learned->selectionKey[0])).compositionText==L"妳",
+          "Guanyinma explicit candidate selection");
+    Check(controlled->handleKey(Special(VK_RETURN)).committedText==L"妳","Commit learned Guanyinma candidate");
     controlled.reset();
-    Check(count()==1,"Positive control did not load/save the learning sentinel");
     controlled=KeyKeyEngineSession::CreateControlled("SmartMandarin");
+    Check(controlled && controlled->ready() && typeReading(*controlled).compositionText==L"妳",
+          "Positive control did not persist Guanyinma learning");
     Check(SelectInputMethod("Generic-cj-cin"),"Retire Smart while non-primary");
     BeginOrderedEngineInput();
-    sql("DELETE FROM user_candidate_override_cache; DELETE FROM user_bigram_cache;");
+    Check(data.resetLearning(),"Reset learning through Guanyinma settings API");
     controlled.reset(); EndOrderedEngineInput();
-    Check(count()==0,"Controlled non-primary retirement resurrected externally reset learning");
-    sqlite3_close(database);
+    for (int reopen=0;reopen<2;++reopen) {
+        controlled=KeyKeyEngineSession::CreateControlled("SmartMandarin");
+        Check(controlled && controlled->ready() && typeReading(*controlled).compositionText==L"你",
+              "Controlled non-primary retirement resurrected reset Guanyinma learning");
+        controlled.reset();
+    }
+    GuanyinmaWindowsUserData reopened(model.wstring());
+    const auto phrases=reopened.load();
+    Check(std::any_of(phrases.begin(),phrases.end(),[](const auto& phrase) {
+        return phrase.text==L"快樂樂曲" && phrase.reading==L"ㄎㄨㄞˋ,ㄌㄜˋ,ㄩㄝˋ,ㄑㄩˇ";
+    }),"Guanyinma learning reset removed the custom phrase");
+    Check(!std::filesystem::exists(std::filesystem::path(SettingsDirectory())/L"SmartMandarinUserData.db"),
+          "Guanyinma learning test opened the retired writable store");
+    { std::ofstream restore(settings,std::ios::binary); restore<<original; }
     std::cout<<"Controlled named config before activation, same-timestamp content reload and non-primary learning-reset retirement passed\n";
 }
 void TestOrderedInput() {
@@ -1620,9 +1649,35 @@ void TestSymbolPaletteRouting() {
     std::cout<<"Symbol palette: non-input UI, minimize, focus, malformed payload, replacement field, stale edits and cross-process selection passed\n";
 }
 
+void TestGuanyinmaHostEffects() {
+    const auto profile=std::filesystem::temp_directory_path()/("KeyKey-Rust-TSF-"+std::to_string(GetCurrentProcessId()));
+    std::filesystem::create_directories(profile);
+    SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",profile.c_str());
+    const auto core=[](const char* name) {
+        std::ofstream file(LoaderPreferencesPath(),std::ios::binary);
+        file << "<plist><dict><key>InputCore</key><string>" << name << "</string></dict></plist>";
+    };
+    core("Guanyinma");
+    { Fixture f(L"",false,false); Fresh(f);
+      Check(TextServiceTestAccess::guanyinma(*f.service.Get()),"TSF did not select Rust");
+      Type(f,L"su3cl3"); Check(f.document->text==L"你好","Rust preedit not written by TSF");
+      f.document->failSelection=true;
+      Check(TextServiceTestAccess::key(*f.service.Get(),f.context.Get(),Special(VK_RETURN)),"Commit key must stay consumed");
+      Check(TextServiceTestAccess::retained(*f.service.Get()) && f.document->text==L"你好","Rejected caret must retain Rust effects");
+      core("Manjusri");
+      Check(TextServiceTestAccess::guanyinma(*f.service.Get()),"Preference changed core before host acknowledgement");
+      f.document->failSelection=false; Type(f,L"s");
+      Check(TextServiceTestAccess::guanyinma(*f.service.Get()) && f.document->text==L"你好ㄋ" &&
+            !TextServiceTestAccess::retained(*f.service.Get()),"Retry duplicated Rust commit or lost single-core input"); }
+    Check(ShutdownEngineRuntime(),"Rust TSF runtime cleanup");
+    SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR",nullptr);
+    std::filesystem::remove_all(profile);
+    std::cout << "Rust TSF preedit, retained host effects and obsolete preference isolation passed\n";
+}
 int main(int argc,char** argv) {
     try {
         g_module = GetModuleHandleW(nullptr);
+        if (argc==2 && std::string(argv[1])=="--guanyinma") { TestGuanyinmaHostEffects(); return 0; }
         if (argc==2 && std::string(argv[1])=="--symbol-worker-thread") {
             const auto profile=std::filesystem::current_path()/"LayoutTestProfiles"/
                 ("symbol-worker-"+std::to_string(GetCurrentProcessId()));

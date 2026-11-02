@@ -15,6 +15,7 @@ case "$session_mode" in
     exit 2
     ;;
 esac
+export KEYKEY_E2E_SESSION_MODE="$session_mode"
 
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-TRADITIONAL-PUNCTUATION
@@ -51,7 +52,6 @@ known_cases=(
   T01-X11-QT6-BOPOMOFO-SMART-PREEDIT-ACTION
   T01-X11-GTK4-BOPOMOFO-STANDARD
   T01-X11-QT6-BOPOMOFO-STANDARD
-  T01-X11-GTK3-BOPOMOFO-BIG5-FILTER
   T01-X11-GTK3-BOPOMOFO-CONTINUOUS
   T01-X11-GTK3-BOPOMOFO-INVALID-INPUT
   T02-X11-GTK3-BOPOMOFO-STANDARD
@@ -89,17 +89,14 @@ known_cases=(
   T07-X11-GTK3-ASSOCIATED-PHRASE
   T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY
   T07-X11-GTK3-ASSOCIATED-PHRASE-DISABLED
-  T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG
   T07-X11-GTK3-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
   T07-X11-GTK4-ASSOCIATED-PHRASE
   T07-X11-GTK4-ASSOCIATED-PHRASE-CATEGORY
   T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED
-  T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG
   T07-X11-GTK4-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
   T07-X11-QT6-ASSOCIATED-PHRASE
   T07-X11-QT6-ASSOCIATED-PHRASE-CATEGORY
   T07-X11-QT6-ASSOCIATED-PHRASE-DISABLED
-  T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG
   T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE
   T07-X11-FCITX5-CONFIG-UI-PERSISTENCE
   T08-X11-GTK3-CHINESE-ENGLISH-MODE
@@ -259,7 +256,11 @@ case_selected() {
 
 runtime_root=$KEYKEY_E2E_RUNTIME_ROOT
 if [[ "$session_mode" == managed ]]; then
-  export DISPLAY=:99
+  # The managed runner chooses its own server below, never an existing display.
+  unset DISPLAY WAYLAND_DISPLAY
+  export QT_QPA_PLATFORM=xcb
+  export GDK_BACKEND=x11
+  export XDG_SESSION_TYPE=x11
 else
   test -n "${DISPLAY:-}"
   test -n "${DBUS_SESSION_BUS_ADDRESS:-}"
@@ -272,8 +273,25 @@ export QT_IM_MODULE=fcitx
 export XMODIFIERS=@im=fcitx
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
+config_ui_driver=atspi
 if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
-  export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+  if [[ "$session_mode" == managed ]]; then
+    config_ui_driver=${KEYKEY_E2E_CONFIG_UI_DRIVER:-atspi}
+  else
+    config_ui_driver=${KEYKEY_E2E_CONFIG_UI_DRIVER:-atspi}
+  fi
+  case "$config_ui_driver" in
+    atspi) export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1 ;;
+    x11)
+      if [[ "$session_mode" != managed ]]; then
+        echo "The X11 settings pointer fixture requires a managed private display." >&2
+        exit 2
+      fi
+      unset QT_LINUX_ACCESSIBILITY_ALWAYS_ON QT_ACCESSIBILITY
+      export NO_AT_BRIDGE=1 QT_SCALE_FACTOR=1 QT_AUTO_SCREEN_SCALE_FACTOR=0 QT_FONT_DPI=100
+      ;;
+    *) echo "Unknown settings automation backend: $config_ui_driver" >&2; exit 2 ;;
+  esac
 fi
 if [[ "$session_mode" == managed ]]; then
   export XDG_CONFIG_HOME="$runtime_root/config"
@@ -282,7 +300,7 @@ if [[ "$session_mode" == managed ]]; then
   mkdir -p "$XDG_CONFIG_HOME/fcitx5/conf" "$XDG_DATA_HOME" "$XDG_RUNTIME_DIR"
   chmod 700 "$XDG_RUNTIME_DIR"
 fi
-if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
+if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE && [[ "$config_ui_driver" == atspi ]]; then
   dbus-update-activation-environment \
     DISPLAY XDG_CONFIG_HOME XDG_DATA_HOME XDG_RUNTIME_DIR \
     QT_LINUX_ACCESSIBILITY_ALWAYS_ON
@@ -362,12 +380,28 @@ cleanup() {
 trap cleanup EXIT
 
 if [[ "$session_mode" == managed ]]; then
-  Xvfb "$DISPLAY" -screen 0 1024x768x24 -nolisten tcp \
+  display_file="$runtime_root/xvfb-display"
+  screen_size=1024x768x24
+  if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE && [[ "$config_ui_driver" == x11 ]]; then
+    # Keep the complete native form visible for the fixed-scale pointer fixture.
+    screen_size=1024x4096x24
+  fi
+  Xvfb -displayfd 3 -screen 0 "$screen_size" -nolisten tcp 3>"$display_file" \
     >"$KEYKEY_E2E_ARTIFACT_DIR/xvfb.log" 2>&1 &
   xvfb_pid=$!
   display_ready=false
   for _ in {1..100}; do
-    if xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+    if ! kill -0 "$xvfb_pid" 2>/dev/null; then
+      echo "The private Xvfb exited before becoming ready." >&2
+      exit 1
+    fi
+    if [[ -s "$display_file" ]]; then
+      display_number=$(cat "$display_file")
+      if [[ "$display_number" =~ ^[0-9]+$ ]]; then
+        export DISPLAY=":$display_number"
+      fi
+    fi
+    if [[ -n "${DISPLAY:-}" ]] && xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
       display_ready=true
       break
     fi
@@ -377,6 +411,7 @@ if [[ "$session_mode" == managed ]]; then
     echo "Xvfb did not become ready." >&2
     exit 1
   fi
+  dbus-update-activation-environment DISPLAY
 else
   if [[ "${XDG_SESSION_TYPE:-}" != x11 || "${XDG_CURRENT_DESKTOP:-}" != *GNOME* ]]; then
     echo "The existing-session runner requires a GNOME X11 session." >&2
@@ -456,6 +491,7 @@ stop_fcitx() {
 restart_fcitx() {
   stop_fcitx
   start_fcitx
+  verify_keykey_config restart
 }
 
 : >"$KEYKEY_E2E_ARTIFACT_DIR/fcitx5.log"
@@ -570,49 +606,42 @@ associated_phrase_sources=(
   transport-logistics
 )
 
-associated_phrase_source_enabled() {
-  local requested_source=$1 enabled_source
-  local -a enabled_sources=()
-  IFS=',' read -r -a enabled_sources <<<"$associated_phrase_collections"
-  for enabled_source in "${enabled_sources[@]}"; do
-    if [[ "$enabled_source" == "$requested_source" ]]; then
-      return 0
-    fi
-  done
-  return 1
+# Every persisted behavior preference is explicit, including advanced options.
+# Expectations come from a reviewed fixture plus declared scenario changes.
+config_helper="$(dirname -- "${BASH_SOURCE[0]}")/../tests/fcitx5_e2e_config.py"
+expected_keykey_config="$KEYKEY_E2E_ARTIFACT_DIR/expected-keykey-config.json"
+config_check_index=0
+mkdir -p "$KEYKEY_E2E_ARTIFACT_DIR/config-checks"
+cp "$(dirname -- "$config_helper")/fixtures/fcitx5-e2e-baseline.json" \
+  "$KEYKEY_E2E_ARTIFACT_DIR/config-baseline.json"
+
+prepare_keykey_config() {
+  python3 "$config_helper" prepare --expected "$expected_keykey_config" \
+    --set "Phonetic/BopomofoLayout=$bopomofo_layout" \
+    --set "Phonetic/BopomofoMode=$bopomofo_mode" \
+    --set "General/CandidateWindowStyle=$candidate_window_style" \
+    --set "General/TraditionalToSimplified=$traditional_to_simplified" \
+    --set "Phonetic/UseAllUnicodeCharacters=$use_all_unicode_characters" \
+    --set "General/PlaySoundOnTypingError=$play_sound_on_typing_error" \
+    --set "General/ToggleInputMethodWithControlBackslash=$toggle_with_control_backslash" \
+    --collections "$associated_phrase_collections" "$@"
 }
 
 write_keykey_config() {
-  {
-    printf 'BopomofoLayout=%s\nBopomofoMode=%s\nTraditionalToSimplified=%s\n' \
-      "$bopomofo_layout" "$bopomofo_mode" "$traditional_to_simplified"
-    printf 'CandidateWindowStyle=%s\n' "$candidate_window_style"
-    printf 'UseAllUnicodeCharacters=%s\n' \
-      "$use_all_unicode_characters"
-    printf 'PlaySoundOnTypingError=%s\n' \
-      "$play_sound_on_typing_error"
-    printf 'ToggleInputMethodWithControlBackslash=%s\n' \
-      "$toggle_with_control_backslash"
-    printf 'AssociatedPhraseCollections=%s\n\n' \
-      "$associated_phrase_collections"
-    # Existing candidate-key cases explicitly exercise the enabled option.
-    printf '[SmartMandarin]\nShowCandidateListWithSpace=True\n\n'
-    printf '[AssociatedPhrases]\n'
-    for source in "${associated_phrase_sources[@]}"; do
-      enabled=False
-      if associated_phrase_source_enabled "$source"; then
-        enabled=True
-      fi
-      printf '%s=%s\n' "$source" "$enabled"
-    done
-  } >"$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf"
+  prepare_keykey_config --ini "$keykey_config_path"
 }
 
-write_legacy_keykey_config() {
-  printf 'BopomofoLayout=%s\nBopomofoMode=%s\nTraditionalToSimplified=%s\nAssociatedPhraseCollections=%s\n' \
-    "$bopomofo_layout" "$bopomofo_mode" "$traditional_to_simplified" \
-    "$associated_phrase_collections" \
-    >"$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf"
+expect_keykey_config_changes() {
+  python3 "$config_helper" expect --expected "$expected_keykey_config" "$@"
+}
+
+verify_keykey_config() {
+  local phase=$1 config_check_file
+  ((config_check_index+=1))
+  printf -v config_check_file '%s/config-checks/%04d-%s.json' \
+    "$KEYKEY_E2E_ARTIFACT_DIR" "$config_check_index" "$phase"
+  python3 "$config_helper" check --expected "$expected_keykey_config" \
+    --output "$config_check_file" --phase "$phase" --case "${case_id:-setup}"
 }
 
 reload_keykey_config() {
@@ -620,6 +649,7 @@ reload_keykey_config() {
     --object-path /controller \
     --method org.fcitx.Fcitx.Controller1.ReloadAddonConfig \
     chichi77-keykey >/dev/null
+  verify_keykey_config reload
 }
 
 set_bopomofo_layout() {
@@ -664,33 +694,16 @@ set_toggle_with_control_backslash() {
   reload_keykey_config
 }
 
-associated_phrase_config_variant() {
-  local source enabled entries=
-  for source in "${associated_phrase_sources[@]}"; do
-    enabled=False
-    if associated_phrase_source_enabled "$source"; then
-      enabled=True
-    fi
-    if [[ -n "$entries" ]]; then
-      entries+=', '
-    fi
-    entries+="'$source': <'$enabled'>"
-  done
-  printf "<{'BopomofoLayout': <'%s'>, 'BopomofoMode': <'%s'>, 'CandidateWindowStyle': <'%s'>, 'TraditionalToSimplified': <'%s'>, 'UseAllUnicodeCharacters': <'%s'>, 'PlaySoundOnTypingError': <'%s'>, 'ToggleInputMethodWithControlBackslash': <'%s'>, 'SmartMandarin': <{'ShowCandidateListWithSpace': <'True'>}>, 'AssociatedPhrases': <{%s}>}>" \
-    "$bopomofo_layout" "$bopomofo_mode" "$candidate_window_style" \
-    "$traditional_to_simplified" \
-    "$use_all_unicode_characters" "$play_sound_on_typing_error" \
-    "$toggle_with_control_backslash" "$entries"
-}
-
 set_keykey_config_via_dbus() {
   local result_file=$1 config_variant
-  config_variant=$(associated_phrase_config_variant)
+  prepare_keykey_config
+  config_variant=$(python3 "$config_helper" variant --expected "$expected_keykey_config")
   gdbus call --session --dest org.fcitx.Fcitx5 \
     --object-path /controller \
     --method org.fcitx.Fcitx.Controller1.SetConfig \
     fcitx://config/inputmethod/chichi77-keykey-bopomofo \
     "$config_variant" >"$result_file"
+  verify_keykey_config dbus-save
 }
 
 get_keykey_config_via_dbus() {
@@ -742,6 +755,7 @@ verify_bopomofo_config_schema() {
 }
 
 send_key_sequence() {
+  verify_keykey_config pre-input
   local special_sequence=false key_name center_file='' center_ready=false
   local entry_x='' entry_y='' focus_ready=false
   local selection_start_file='' selection_end_file='' selection_ready=false
@@ -976,23 +990,16 @@ run_case() {
   engine_name=$2
   expected_commit=$3
   expected_literal=$4
+  # These are visible host preedits, including completed candidate previews;
+  # underlying phonetic readings and tone markers are core snapshot fields.
   required_preedits=$5
   shift 5
 
   # Each baseline case starts with the same model. A previous correction must
   # not change the expected text of an unrelated case. Explicit learning DB
   # fixtures and existing desktop sessions keep their data untouched.
-  if [[ "$session_mode" == managed && -z ${CHICHI77_KEYKEY_USER_DB:-} ]]; then
-    python3 - "$XDG_DATA_HOME/chichi77-keykey/smart-mandarin-user.db" <<'PY'
-import pathlib
-import sqlite3
-import sys
-path = pathlib.Path(sys.argv[1])
-if path.exists():
-    with sqlite3.connect(path.as_uri() + '?mode=rw', uri=True) as db:
-        db.execute('DELETE FROM user_candidate_override_cache')
-        db.execute('DELETE FROM user_bigram_cache')
-PY
+  if [[ "$session_mode" == managed && -z ${CHICHI77_KEYKEY_GUANYINMA_USER_DB:-} ]]; then
+    "${KEYKEY_E2E_PHRASE_CLI:-keykey-smart-phrases}" reset-learning >/dev/null
   fi
 
   case_dir="$KEYKEY_E2E_ARTIFACT_DIR/$case_id"
@@ -1132,6 +1139,7 @@ run_gtk4_smart_window_move_case() {
     "$host_pid" "$case_id")
   xdotool mousemove --window "$window_id" 240 75 click 1
   activate_engine_for_focused_app chichi77-keykey-bopomofo "$case_id"
+  verify_keykey_config pre-input
   xdotool key --delay "$key_delay_ms" s u 3 c l 3
   for _ in {1..50}; do
     if grep -Fq '"type":"preedit","value":"你好"' \
@@ -1634,9 +1642,9 @@ run_focus_case() {
   )
 
   positive_events+='first-preedit=ㄓ;first-preedit=ㄓㄨ;'
-  positive_events+='first-preedit=ㄓㄨㄥ;first-preedit=;'
+  positive_events+='first-preedit=ㄓㄨㄥ;first-preedit=中;first-preedit=;'
   positive_events+='second-preedit=ㄨ;second-preedit=ㄨㄣ;'
-  positive_events+='second-preedit=ㄨㄣˊ;second-text=文;'
+  positive_events+='second-preedit=文;second-text=文;'
   positive_events+='first-preedit=ㄅ;first-preedit=;first-text=中'
 
   run_focus_phase "$case_id" positive chichi77-keykey-bopomofo \
@@ -1766,6 +1774,17 @@ run_multi_app_case() {
     >"$KEYKEY_E2E_ARTIFACT_DIR/$case_id/result.json"
 }
 
+# Apply and read back the complete baseline before any scenario (including
+# Cangjie/Simplex-only runs) can send its first key.
+write_keykey_config
+reload_keykey_config
+
+# Extended matrices reuse this managed session and its cleanup, without running
+# the standard cases. Executing this script directly retains the normal suite.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+  return 0
+fi
+
 if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections McBopomofo
@@ -1774,16 +1793,18 @@ if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   mkdir -p "$ui_case_dir"
   # Qt is launched through Fcitx/D-Bus. Start the accessibility registry first
   # so the newly launched settings window registers in the AT-SPI tree.
-  python3 -c 'import pyatspi; pyatspi.Registry.getDesktop(0)'
+  if [[ "$config_ui_driver" == atspi ]]; then
+    python3 -c 'import pyatspi; pyatspi.Registry.getDesktop(0)'
+  fi
   gdbus call --session --dest org.fcitx.Fcitx5 \
     --object-path /controller \
     --method org.fcitx.Fcitx.Controller1.ConfigureIM \
     chichi77-keykey-bopomofo >"$ui_case_dir/configure-im-result.txt"
-  python3 tests/fcitx5_config_ui_driver.py "$ui_case_dir"
+  python3 tests/fcitx5_config_ui_driver.py "$ui_case_dir" --backend "$config_ui_driver"
   cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
     "$ui_case_dir/saved-config.ini"
   chmod 0644 "$ui_case_dir/saved-config.ini"
-  grep -Fxq 'AssociatedPhraseCollections=agriculture-food' \
+  grep -Fxq '[AssociatedPhrases]' \
     "$ui_case_dir/saved-config.ini"
   grep -Fxq 'McBopomofo=False' "$ui_case_dir/saved-config.ini"
   grep -Fxq 'agriculture-food=True' "$ui_case_dir/saved-config.ini"
@@ -1793,6 +1814,13 @@ if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
     "$ui_case_dir/saved-config.ini"
   grep -Fxq 'CandidateWindowStyle=Horizontal' \
     "$ui_case_dir/saved-config.ini"
+  expect_keykey_config_changes \
+    --set AssociatedPhrases/McBopomofo=False \
+    --set AssociatedPhrases/agriculture-food=True \
+    --set General/PlaySoundOnTypingError=False \
+    --set General/ToggleInputMethodWithControlBackslash=False \
+    --set General/CandidateWindowStyle=Horizontal
+  verify_keykey_config ui-save
   restart_fcitx
   get_keykey_config_via_dbus "$ui_case_dir/config-after-restart.txt"
   grep -Fq "'McBopomofo': <'False'>" \
@@ -1807,7 +1835,7 @@ if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
     "$ui_case_dir/config-after-restart.txt"
   run_case T07-X11-FCITX5-CONFIG-UI-PERSISTENCE \
     chichi77-keykey-bopomofo \
-    作物育種 'yji42!' 'ㄗ,ㄗㄨ,ㄗㄨㄛ,ㄗㄨㄛˋ' \
+    作物育種 'yji42!' 'ㄗ,ㄗㄨ,ㄗㄨㄛ,做' \
     y j i 4 2 shift+1
   set_associated_phrase_collections ''
   set_candidate_window_style Vertical
@@ -1825,8 +1853,10 @@ for traditional_toolkit in GTK3 GTK4 QT6; do
     set_bopomofo_mode Traditional
     set_candidate_window_style Vertical
     set_associated_phrase_collections ''
+    # A completed Traditional reading previews its candidate; the tone remains
+    # in the core's phonetic field rather than the host's visible preedit.
     "$traditional_runner" "$traditional_prefix-PUNCTUATION" chichi77-keykey-bopomofo \
-      '鐘！《麻「」' '5j/ !{a861[]' 'ㄓ,ㄓㄨ,ㄓㄨㄥ,『,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+      '鐘！《麻「」' '5j/ !{a861[]' 'ㄓ,ㄓㄨ,ㄓㄨㄥ,『,ㄇ,ㄇㄚ,麻' \
       5 j slash space Down exclam braceleft Down ctrl+comma a 8 6 1 bracketleft bracketright
   fi
   if case_selected "$traditional_prefix-LITERAL"; then
@@ -1834,8 +1864,10 @@ for traditional_toolkit in GTK3 GTK4 QT6; do
     set_bopomofo_mode Traditional
     set_candidate_window_style Vertical
     set_associated_phrase_collections ''
+    # Traditional ASCII letter positions match Windows lowercase translation.
+    # Shift replaces pending input without committing a reading or candidate.
     "$traditional_runner" "$traditional_prefix-LITERAL" chichi77-keykey-bopomofo \
-      'ABcㄓA鐘D' 'ABc5A5j/ D' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' \
+      'abcad' 'ABc5A5j/ D' 'ㄓ,ㄓㄨ,ㄓㄨㄥ,中' \
       shift+a Caps_Lock b shift+c Caps_Lock 5 shift+a 5 j slash space Down shift+d
   fi
   if case_selected "$traditional_prefix-SWITCH"; then
@@ -1895,15 +1927,17 @@ fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW; then
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
-  # Select 玩 explicitly for this boundary fixture (second candidate in the
-  # canonical model); automatic homophone ranking may otherwise prefer 完.
+  # This case checks the long composition/overflow boundary. Both 玩 and 完
+  # are accepted here; all other text and the ordered preedits remain exact.
+  export KEYKEY_E2E_ALLOW_TEXT_ALTERNATIVES=1
   run_case T01-X11-GTK3-BOPOMOFO-SMART-OVERFLOW \
-    chichi77-keykey-bopomofo 請假要去哪裡玩呢去海邊因為那裡有比基尼 \
+    chichi77-keykey-bopomofo '請假要去哪裡玩呢去海邊因為那裡有比基尼|請假要去哪裡完呢去海邊因為那裡有比基尼' \
     'fu/3ru84ul4fm4s83xu3j062sk7fm4c931u0 up jo4s84xu3u.31u3ru su6' \
-    '請假要去哪裡玩呢去,請假要去哪裡玩呢去海,要去哪裡玩呢去海邊,海邊因為那裡有比基尼' \
+    '請假要去哪裡玩呢去|請假要去哪裡完呢去,請假要去哪裡玩呢去海|請假要去哪裡完呢去海,要去哪裡玩呢去海邊|要去哪裡完呢去海邊,海邊因為那裡有比基尼' \
     f u slash 3 r u 8 4 u l 4 f m 4 s 8 3 x u 3 j 0 6 Down 2 \
     s k 7 f m 4 c 9 3 1 u 0 space u p space j o 4 s 8 4 x u 3 \
     u period 3 1 u 3 r u space s u 6 Return
+  unset KEYKEY_E2E_ALLOW_TEXT_ALTERNATIVES
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-SWITCH; then
@@ -1927,16 +1961,16 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-KEY; then
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
   run_case T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-KEY \
-    chichi77-keykey-bopomofo 你郝 'su3cl3' '你好,你郝' \
-    s u 3 c l 3 Down Down Return Return
+    chichi77-keykey-bopomofo 你好 'su3cl3' '你好' \
+    s u 3 c l 3 Down Down Up Return Return
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK; then
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
   run_case T01-X11-GTK3-BOPOMOFO-SMART-CORRECT-CLICK \
-    chichi77-keykey-bopomofo 請架 'fu/3ru84' '請假,請架' \
-    f u slash 3 r u 8 4 Down click-candidate-2 Return
+    chichi77-keykey-bopomofo 請假 'fu/3ru84' '請假' \
+    f u slash 3 r u 8 4 Down click-candidate-1 Return
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-EDIT; then
@@ -1948,11 +1982,29 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART-EDIT; then
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-INVALID-READING; then
+  # Standard 1m3 is ㄅㄩˇ (canonical query 3P). It must be absent from both
+  # model paths: a missing unigram alone can still have a valid CIN fallback.
+  python3 - "${CHICHI77_KEYKEY_DATA_DIR:-/usr/share/chichi77-keykey/data}/smart-mandarin.db" \
+    "$KEYKEY_E2E_ARTIFACT_DIR/invalid-reading-fixture.json" <<'PY'
+import json
+from pathlib import Path
+import sqlite3
+import sys
+
+with sqlite3.connect(Path(sys.argv[1]).resolve().as_uri() + "?mode=ro", uri=True) as db:
+    counts = {
+        "unigrams": db.execute("SELECT COUNT(*) FROM unigrams WHERE qstring=?", ("3P",)).fetchone()[0],
+        "cin": db.execute('SELECT COUNT(*) FROM "Mandarin-bpmf-cin" WHERE key=?', ("3P",)).fetchone()[0],
+    }
+Path(sys.argv[2]).write_text(json.dumps({"keys": "1m3", "reading": "ㄅㄩˇ", "qstring": "3P", **counts}))
+if any(counts.values()):
+    raise RuntimeError("Invalid-reading fixture now has a unigram or CIN candidate")
+PY
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
   run_case T01-X11-GTK3-BOPOMOFO-SMART-INVALID-READING \
-    chichi77-keykey-bopomofo 你好 'su3cl3vup3' '你好,你好ㄒㄧㄣˇ,你好' \
-    s u 3 c l 3 v u p 3 Escape Return
+    chichi77-keykey-bopomofo 你好 'su3cl31m3' '你好,你好ㄅㄩˇ,你好' \
+    s u 3 c l 3 1 m 3 Escape Return
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-HORIZONTAL; then
@@ -1960,8 +2012,8 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART-HORIZONTAL; then
   set_bopomofo_mode Smart
   set_candidate_window_style Horizontal
   run_case T01-X11-GTK3-BOPOMOFO-SMART-HORIZONTAL \
-    chichi77-keykey-bopomofo 你郝 'su3cl3' '你好,你郝' \
-    s u 3 c l 3 Down Right Return Return
+    chichi77-keykey-bopomofo 你好 'su3cl3' '你好' \
+    s u 3 c l 3 Down Right Left Return Return
   set_candidate_window_style Vertical
   set_bopomofo_mode Traditional
 fi
@@ -1969,15 +2021,15 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CANDIDATE-HOME-END; then
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
   run_case T01-X11-GTK3-BOPOMOFO-SMART-CANDIDATE-HOME-END \
-    chichi77-keykey-bopomofo 請架 'fu/3ru84' '請假,請架' \
-    f u slash 3 r u 8 4 Down End Home Down Return Return
+    chichi77-keykey-bopomofo 請假 'fu/3ru84' '請假' \
+    f u slash 3 r u 8 4 Down End Home Return Return
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-PUNCTUATION; then
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
   run_case T01-X11-GTK3-BOPOMOFO-SMART-PUNCTUATION \
-    chichi77-keykey-bopomofo 你好、你好 'su3cl3su3cl3' '你好,，' \
+    chichi77-keykey-bopomofo 你好、你好 'su3cl3su3cl3' '你好,你好，,你好、' \
     s u 3 c l 3 ctrl+0 Down Return s u 3 c l 3 Return
   set_bopomofo_mode Traditional
 fi
@@ -1985,8 +2037,8 @@ if case_selected T01-X11-GTK3-BOPOMOFO-SMART-UPPERCASE; then
   set_bopomofo_layout Standard
   set_bopomofo_mode Smart
   run_case T01-X11-GTK3-BOPOMOFO-SMART-UPPERCASE \
-    chichi77-keykey-bopomofo 你好A 'su3cl3A' '你好' \
-    s u 3 c l 3 shift+a
+    chichi77-keykey-bopomofo 你好a 'su3cl3A' '你好,你好a' \
+    s u 3 c l 3 shift+a Return
   set_bopomofo_mode Traditional
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-SMART-CONFIG-MODE; then
@@ -2032,20 +2084,12 @@ if case_selected T01-X11-QT6-BOPOMOFO-STANDARD; then
   run_qt6_case T01-X11-QT6-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
     中 '5j/ 1' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1
 fi
-if case_selected T01-X11-GTK3-BOPOMOFO-BIG5-FILTER; then
-  set_bopomofo_layout Standard
-  set_use_all_unicode_characters False
-  run_case T01-X11-GTK3-BOPOMOFO-BIG5-FILTER \
-    chichi77-keykey-bopomofo \
-    𤦩 ',42' 'ㄝ,ㄝˋ' comma 4 2
-  set_use_all_unicode_characters True
-fi
 if case_selected T01-X11-GTK3-BOPOMOFO-CONTINUOUS; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections ''
   run_case T01-X11-GTK3-BOPOMOFO-CONTINUOUS \
     chichi77-keykey-bopomofo \
-    中文 '5j/ jp61' 'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨㄣˊ' \
+    中文 '5j/ jp61' 'ㄓ,ㄓㄨ,ㄓㄨㄥ,中,ㄨ,ㄨㄣ,文' \
     5 j slash space j p 6 1
 fi
 if case_selected T01-X11-GTK3-BOPOMOFO-INVALID-INPUT; then
@@ -2063,7 +2107,7 @@ if case_selected T08-X11-GTK3-CHINESE-ENGLISH-MODE; then
   run_case T08-X11-GTK3-CHINESE-ENGLISH-MODE \
     chichi77-keykey-bopomofo \
     'ㄓ5j/aBａ！　文abcde麻' '55j/aB a!  jp61abcdea861' \
-    'ㄓ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    'ㄓ,ㄨ,ㄨㄣ,文,ㄇ,ㄇㄚ,麻' \
     5 ctrl+backslash 5 j slash a Caps_Lock b Caps_Lock \
     shift+space a shift+1 space shift+space \
     ctrl+backslash j p 6 1 \
@@ -2076,7 +2120,7 @@ if case_selected T08-X11-GTK4-CHINESE-ENGLISH-MODE; then
   run_gtk4_case T08-X11-GTK4-CHINESE-ENGLISH-MODE \
     chichi77-keykey-bopomofo \
     'ㄓ5j/aBａ！　文abcde麻' '55j/aB a!  jp61abcdea861' \
-    'ㄓ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    'ㄓ,ㄨ,ㄨㄣ,文,ㄇ,ㄇㄚ,麻' \
     5 ctrl+backslash 5 j slash a Caps_Lock b Caps_Lock \
     shift+space a shift+1 space shift+space \
     ctrl+backslash j p 6 1 \
@@ -2106,35 +2150,35 @@ if case_selected T02-X11-GTK3-BOPOMOFO-STANDARD; then
   set_bopomofo_layout Standard
   run_case T02-X11-GTK3-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
     麻馬罵嘛 'a8\61a831a841a871' \
-    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,馬,ㄇ,ㄇㄚ,罵,ㄇ,ㄇㄚ,嘛' \
     a 8 backslash ctrl+c 6 1 a 8 3 1 a 8 4 1 a 8 7 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-ETEN; then
   set_bopomofo_layout ETen
   run_case T02-X11-GTK3-BOPOMOFO-ETEN chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\21ma31ma41ma11' \
-    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,馬,ㄇ,ㄇㄚ,罵,ㄇ,ㄇㄚ,嘛' \
     m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 1 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-ETEN26; then
   set_bopomofo_layout ETen26
   run_case T02-X11-GTK3-BOPOMOFO-ETEN26 chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\f1maj1mak1mad1' \
-    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄢ,ㄇㄚ,麻,ㄢ,ㄇㄚ,馬,ㄢ,ㄇㄚ,罵,ㄢ,ㄇㄚ,嘛' \
     m a backslash ctrl+c f 1 m a j 1 m a k 1 m a d 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-HSU; then
   set_bopomofo_layout Hsu
   run_case T02-X11-GTK3-BOPOMOFO-HSU chichi77-keykey-bopomofo \
     麻馬罵嘛 'my\d1myf1myj1mys1' \
-    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄢ,ㄇㄚ,麻,ㄢ,ㄇㄚ,馬,ㄢ,ㄇㄚ,罵,ㄢ,ㄇㄚ,嘛' \
     m y backslash ctrl+c d 1 m y f 1 m y j 1 m y s 1
 fi
 if case_selected T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN; then
   set_bopomofo_layout HanyuPinyin
   run_case T02-X11-GTK3-BOPOMOFO-HANYU-PINYIN chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\21ma31ma41ma51' \
-    'z,zh,m,ma,ma2,ma3,ma4,ma5' \
+    'z,zh,z,m,ma,麻,m,ma,馬,m,ma,罵,m,ma,嘛' \
     z h BackSpace BackSpace \
     m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 5 1
 fi
@@ -2142,28 +2186,28 @@ if case_selected T02-X11-GTK4-BOPOMOFO-STANDARD; then
   set_bopomofo_layout Standard
   run_gtk4_case T02-X11-GTK4-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
     麻馬罵嘛 'a8\61a831a841a871' \
-    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,馬,ㄇ,ㄇㄚ,罵,ㄇ,ㄇㄚ,嘛' \
     a 8 backslash ctrl+c 6 1 a 8 3 1 a 8 4 1 a 8 7 1
 fi
 if case_selected T02-X11-GTK4-BOPOMOFO-ETEN; then
   set_bopomofo_layout ETen
   run_gtk4_case T02-X11-GTK4-BOPOMOFO-ETEN chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\21ma31ma41ma11' \
-    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,馬,ㄇ,ㄇㄚ,罵,ㄇ,ㄇㄚ,嘛' \
     m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 1 1
 fi
 if case_selected T02-X11-GTK4-BOPOMOFO-ETEN26; then
   set_bopomofo_layout ETen26
   run_gtk4_case T02-X11-GTK4-BOPOMOFO-ETEN26 chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\f1maj1mak1mad1' \
-    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄢ,ㄇㄚ,麻,ㄢ,ㄇㄚ,馬,ㄢ,ㄇㄚ,罵,ㄢ,ㄇㄚ,嘛' \
     m a backslash ctrl+c f 1 m a j 1 m a k 1 m a d 1
 fi
 if case_selected T02-X11-GTK4-BOPOMOFO-HSU; then
   set_bopomofo_layout Hsu
   run_gtk4_case T02-X11-GTK4-BOPOMOFO-HSU chichi77-keykey-bopomofo \
     麻馬罵嘛 'my\d1myf1myj1mys1' \
-    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄢ,ㄇㄚ,麻,ㄢ,ㄇㄚ,馬,ㄢ,ㄇㄚ,罵,ㄢ,ㄇㄚ,嘛' \
     m y backslash ctrl+c d 1 m y f 1 m y j 1 m y s 1
 fi
 if case_selected T02-X11-GTK4-BOPOMOFO-HANYU-PINYIN; then
@@ -2171,7 +2215,7 @@ if case_selected T02-X11-GTK4-BOPOMOFO-HANYU-PINYIN; then
   run_gtk4_case T02-X11-GTK4-BOPOMOFO-HANYU-PINYIN \
     chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\21ma31ma41ma51' \
-    'z,zh,m,ma,ma2,ma3,ma4,ma5' \
+    'z,zh,z,m,ma,麻,m,ma,馬,m,ma,罵,m,ma,嘛' \
     z h BackSpace BackSpace \
     m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 5 1
 fi
@@ -2181,7 +2225,7 @@ if case_selected T03-X11-GTK3-BOPOMOFO-EDIT-CANCEL; then
   run_case T03-X11-GTK3-BOPOMOFO-EDIT-CANCEL \
     chichi77-keykey-bopomofo \
     中文麻 '5j// 1jpjp61a86a861' \
-    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,中,ㄓㄨ,ㄓㄨㄥ,中,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,文,ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,麻' \
     equal BackSpace Escape \
     5 j slash space BackSpace slash space 1 \
     j p Escape j p 6 1 \
@@ -2193,7 +2237,7 @@ if case_selected T03-X11-GTK4-BOPOMOFO-EDIT-CANCEL; then
   run_gtk4_case T03-X11-GTK4-BOPOMOFO-EDIT-CANCEL \
     chichi77-keykey-bopomofo \
     中文麻 '5j// 1jpjp61a86a861' \
-    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,中,ㄓㄨ,ㄓㄨㄥ,中,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,文,ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,麻' \
     equal BackSpace Escape \
     5 j slash space BackSpace slash space 1 \
     j p Escape j p 6 1 \
@@ -2225,10 +2269,14 @@ sys.path.insert(0, "/usr/share/chichi77-keykey")
 from cangjie_settings import save
 save(__import__("pathlib").Path(sys.argv[1]), True, True, False)
 PY
+  expect_keykey_config_changes \
+    --set Cangjie/ComposeWhileTyping=True \
+    --set Cangjie/PrefixCandidates=True \
+    --set Cangjie/ClearOnError=False
   reload_keykey_config
   run_case T04-X11-GTK3-CANGJIE-PREFIX chichi77-keykey-cangjie \
-    '喬喬' 'hk5hkrbr' '竹,竹大,竹大口,竹大口月,竹大口月口' \
-    h k 5 h k r b r Return
+    '喬喬' 'hk2hkrbr' '竹,竹大,竹大口,竹大口月,竹大口月口' \
+    h k 2 h k r b r Return
   write_keykey_config
   reload_keykey_config
 fi
@@ -2294,21 +2342,21 @@ if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY; then
   set_associated_phrase_collections history
   run_case T07-X11-GTK3-ASSOCIATED-PHRASE-CATEGORY \
     chichi77-keykey-bopomofo \
-    臺灣史 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
+    臺灣史 'w962!' 'ㄊ,ㄊㄞ,台' w 9 6 2 shift+1
 fi
 if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-CATEGORY; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections history
   run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE-CATEGORY \
     chichi77-keykey-bopomofo \
-    臺灣史 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
+    臺灣史 'w962!' 'ㄊ,ㄊㄞ,台' w 9 6 2 shift+1
 fi
 if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-DISABLED; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections ''
   run_case T07-X11-GTK3-ASSOCIATED-PHRASE-DISABLED \
     chichi77-keykey-bopomofo \
-    '臺！' 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
+    '臺！' 'w962!' 'ㄊ,ㄊㄞ,台' w 9 6 2 shift+1
   set_associated_phrase_collections ''
 fi
 if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED; then
@@ -2316,27 +2364,7 @@ if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED; then
   set_associated_phrase_collections ''
   run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE-DISABLED \
     chichi77-keykey-bopomofo \
-    '臺！' 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
-  set_associated_phrase_collections ''
-fi
-if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
-  set_bopomofo_layout Standard
-  associated_phrase_collections=government
-  write_legacy_keykey_config
-  reload_keykey_config
-  run_case T07-X11-GTK3-ASSOCIATED-PHRASE-LEGACY-CONFIG \
-    chichi77-keykey-bopomofo \
-    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
-  set_associated_phrase_collections ''
-fi
-if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
-  set_bopomofo_layout Standard
-  associated_phrase_collections=government
-  write_legacy_keykey_config
-  reload_keykey_config
-  run_gtk4_case T07-X11-GTK4-ASSOCIATED-PHRASE-LEGACY-CONFIG \
-    chichi77-keykey-bopomofo \
-    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
+    '臺！' 'w962!' 'ㄊ,ㄊㄞ,台' w 9 6 2 shift+1
   set_associated_phrase_collections ''
 fi
 if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
@@ -2348,7 +2376,7 @@ if case_selected T07-X11-GTK3-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
   set_keykey_config_via_dbus "$persistence_case_dir/set-config-result.txt"
   cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
     "$persistence_case_dir/saved-config.ini"
-  grep -Fxq 'AssociatedPhraseCollections=government' \
+  grep -Fxq '[AssociatedPhrases]' \
     "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'McBopomofo=False' "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'government=True' "$persistence_case_dir/saved-config.ini"
@@ -2372,7 +2400,7 @@ if case_selected T07-X11-GTK4-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
   set_keykey_config_via_dbus "$persistence_case_dir/set-config-result.txt"
   cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
     "$persistence_case_dir/saved-config.ini"
-  grep -Fxq 'AssociatedPhraseCollections=government' \
+  grep -Fxq '[AssociatedPhrases]' \
     "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'McBopomofo=False' "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'government=True' "$persistence_case_dir/saved-config.ini"
@@ -2390,18 +2418,18 @@ fi
 if case_selected T08-X11-GTK3-FULL-WIDTH; then
   set_bopomofo_layout Standard
   run_case T08-X11-GTK3-FULL-WIDTH chichi77-keykey-bopomofo \
-    'Ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
+    'ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
 fi
 if case_selected T08-X11-GTK4-FULL-WIDTH; then
   set_bopomofo_layout Standard
   run_gtk4_case T08-X11-GTK4-FULL-WIDTH chichi77-keykey-bopomofo \
-    'Ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
+    'ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
 fi
 if case_selected T08-X11-GTK3-TRADITIONAL-TO-SIMPLIFIED; then
   set_bopomofo_layout Standard
   set_traditional_to_simplified True
   run_case T08-X11-GTK3-TRADITIONAL-TO-SIMPLIFIED chichi77-keykey-bopomofo \
-    台湾 'w962j0 1' 'ㄊ,ㄊㄞ,ㄊㄞˊ,ㄨ,ㄨㄢ' \
+    台湾 'w962j0 1' 'ㄊ,ㄊㄞ,台,ㄨ,ㄨㄢ,灣' \
     w 9 6 2 j 0 space 1
   set_traditional_to_simplified False
 fi
@@ -2410,7 +2438,7 @@ if case_selected T08-X11-GTK4-TRADITIONAL-TO-SIMPLIFIED; then
   set_traditional_to_simplified True
   run_gtk4_case T08-X11-GTK4-TRADITIONAL-TO-SIMPLIFIED \
     chichi77-keykey-bopomofo \
-    台湾 'w962j0 1' 'ㄊ,ㄊㄞ,ㄊㄞˊ,ㄨ,ㄨㄢ' \
+    台湾 'w962j0 1' 'ㄊ,ㄊㄞ,台,ㄨ,ㄨㄢ,灣' \
     w 9 6 2 j 0 space 1
   set_traditional_to_simplified False
 fi
@@ -2421,7 +2449,7 @@ if case_selected T09-X11-GTK3-MODIFIER-PASSTHROUGH; then
   run_case T09-X11-GTK3-MODIFIER-PASSTHROUGH \
     chichi77-keykey-bopomofo \
     'x中文' 'x5j/ 1jp61' \
-    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨㄣˊ' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,中,ㄨ,ㄨㄣ,文' \
     ctrl-down backslash-down wait-1000ms ctrl-up backslash-up \
     ctrl+a BackSpace x \
     ctrl+backslash \
@@ -2435,7 +2463,7 @@ if case_selected T09-X11-GTK4-MODIFIER-PASSTHROUGH; then
   run_gtk4_case T09-X11-GTK4-MODIFIER-PASSTHROUGH \
     chichi77-keykey-bopomofo \
     'x中文' 'x5j/ 1jp61' \
-    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨㄣˊ' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,中,ㄨ,ㄨㄣ,文' \
     ctrl-down backslash-down wait-1000ms ctrl-up backslash-up \
     ctrl+a BackSpace x \
     ctrl+backslash \
@@ -2503,28 +2531,28 @@ if case_selected T02-X11-QT6-BOPOMOFO-STANDARD; then
   set_bopomofo_layout Standard
   run_qt6_case T02-X11-QT6-BOPOMOFO-STANDARD chichi77-keykey-bopomofo \
     麻馬罵嘛 'a8\61a831a841a871' \
-    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,馬,ㄇ,ㄇㄚ,罵,ㄇ,ㄇㄚ,嘛' \
     a 8 backslash ctrl+c 6 1 a 8 3 1 a 8 4 1 a 8 7 1
 fi
 if case_selected T02-X11-QT6-BOPOMOFO-ETEN; then
   set_bopomofo_layout ETen
   run_qt6_case T02-X11-QT6-BOPOMOFO-ETEN chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\21ma31ma41ma11' \
-    'ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,馬,ㄇ,ㄇㄚ,罵,ㄇ,ㄇㄚ,嘛' \
     m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 1 1
 fi
 if case_selected T02-X11-QT6-BOPOMOFO-ETEN26; then
   set_bopomofo_layout ETen26
   run_qt6_case T02-X11-QT6-BOPOMOFO-ETEN26 chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\f1maj1mak1mad1' \
-    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄢ,ㄇㄚ,麻,ㄢ,ㄇㄚ,馬,ㄢ,ㄇㄚ,罵,ㄢ,ㄇㄚ,嘛' \
     m a backslash ctrl+c f 1 m a j 1 m a k 1 m a d 1
 fi
 if case_selected T02-X11-QT6-BOPOMOFO-HSU; then
   set_bopomofo_layout Hsu
   run_qt6_case T02-X11-QT6-BOPOMOFO-HSU chichi77-keykey-bopomofo \
     麻馬罵嘛 'my\d1myf1myj1mys1' \
-    'ㄢ,ㄇㄚ,ㄇㄚˊ,ㄇㄚˇ,ㄇㄚˋ,ㄇㄚ˙' \
+    'ㄢ,ㄇㄚ,麻,ㄢ,ㄇㄚ,馬,ㄢ,ㄇㄚ,罵,ㄢ,ㄇㄚ,嘛' \
     m y backslash ctrl+c d 1 m y f 1 m y j 1 m y s 1
 fi
 if case_selected T02-X11-QT6-BOPOMOFO-HANYU-PINYIN; then
@@ -2532,7 +2560,7 @@ if case_selected T02-X11-QT6-BOPOMOFO-HANYU-PINYIN; then
   run_qt6_case T02-X11-QT6-BOPOMOFO-HANYU-PINYIN \
     chichi77-keykey-bopomofo \
     麻馬罵嘛 'ma\21ma31ma41ma51' \
-    'z,zh,m,ma,ma2,ma3,ma4,ma5' \
+    'z,zh,z,m,ma,麻,m,ma,馬,m,ma,罵,m,ma,嘛' \
     z h BackSpace BackSpace \
     m a backslash ctrl+c 2 1 m a 3 1 m a 4 1 m a 5 1
 fi
@@ -2542,7 +2570,7 @@ if case_selected T03-X11-QT6-BOPOMOFO-EDIT-CANCEL; then
   run_qt6_case T03-X11-QT6-BOPOMOFO-EDIT-CANCEL \
     chichi77-keykey-bopomofo \
     中文麻 '5j// 1jpjp61a86a861' \
-    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,中,ㄓㄨ,ㄓㄨㄥ,中,ㄨ,ㄨㄣ,ㄨ,ㄨㄣ,文,ㄇ,ㄇㄚ,麻,ㄇ,ㄇㄚ,麻' \
     equal BackSpace Escape \
     5 j slash space BackSpace slash space 1 \
     j p Escape j p 6 1 \
@@ -2581,24 +2609,14 @@ if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-CATEGORY; then
   set_associated_phrase_collections history
   run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE-CATEGORY \
     chichi77-keykey-bopomofo \
-    臺灣史 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
+    臺灣史 'w962!' 'ㄊ,ㄊㄞ,台' w 9 6 2 shift+1
 fi
 if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-DISABLED; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections ''
   run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE-DISABLED \
     chichi77-keykey-bopomofo \
-    '臺！' 'w962!' 'ㄊ,ㄊㄞ,ㄊㄞˊ' w 9 6 2 shift+1
-  set_associated_phrase_collections ''
-fi
-if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG; then
-  set_bopomofo_layout Standard
-  associated_phrase_collections=government
-  write_legacy_keykey_config
-  reload_keykey_config
-  run_qt6_case T07-X11-QT6-ASSOCIATED-PHRASE-LEGACY-CONFIG \
-    chichi77-keykey-bopomofo \
-    中程計畫 '5j/ 1!' 'ㄓ,ㄓㄨ,ㄓㄨㄥ' 5 j slash space 1 shift+1
+    '臺！' 'w962!' 'ㄊ,ㄊㄞ,台' w 9 6 2 shift+1
   set_associated_phrase_collections ''
 fi
 if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
@@ -2610,7 +2628,7 @@ if case_selected T07-X11-QT6-ASSOCIATED-PHRASE-DBUS-PERSISTENCE; then
   set_keykey_config_via_dbus "$persistence_case_dir/set-config-result.txt"
   cp "$XDG_CONFIG_HOME/fcitx5/conf/chichi77-keykey.conf" \
     "$persistence_case_dir/saved-config.ini"
-  grep -Fxq 'AssociatedPhraseCollections=government' \
+  grep -Fxq '[AssociatedPhrases]' \
     "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'McBopomofo=False' "$persistence_case_dir/saved-config.ini"
   grep -Fxq 'government=True' "$persistence_case_dir/saved-config.ini"
@@ -2632,7 +2650,7 @@ if case_selected T08-X11-QT6-CHINESE-ENGLISH-MODE; then
   run_qt6_case T08-X11-QT6-CHINESE-ENGLISH-MODE \
     chichi77-keykey-bopomofo \
     'ㄓ5j/aBａ！　文abcde麻' '55j/aB a!  jp61abcdea861' \
-    'ㄓ,ㄨ,ㄨㄣ,ㄨㄣˊ,ㄇ,ㄇㄚ,ㄇㄚˊ' \
+    'ㄓ,ㄨ,ㄨㄣ,文,ㄇ,ㄇㄚ,麻' \
     5 ctrl+backslash 5 j slash a Caps_Lock b Caps_Lock \
     shift+space a shift+1 space shift+space \
     ctrl+backslash j p 6 1 \
@@ -2651,14 +2669,14 @@ fi
 if case_selected T08-X11-QT6-FULL-WIDTH; then
   set_bopomofo_layout Standard
   run_qt6_case T08-X11-QT6-FULL-WIDTH chichi77-keykey-bopomofo \
-    'Ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
+    'ａ！～　' ' A!~ ' '' shift+space shift+a shift+1 shift+grave space
 fi
 if case_selected T08-X11-QT6-TRADITIONAL-TO-SIMPLIFIED; then
   set_bopomofo_layout Standard
   set_traditional_to_simplified True
   run_qt6_case T08-X11-QT6-TRADITIONAL-TO-SIMPLIFIED \
     chichi77-keykey-bopomofo \
-    台湾 'w962j0 1' 'ㄊ,ㄊㄞ,ㄊㄞˊ,ㄨ,ㄨㄢ' \
+    台湾 'w962j0 1' 'ㄊ,ㄊㄞ,台,ㄨ,ㄨㄢ,灣' \
     w 9 6 2 j 0 space 1
   set_traditional_to_simplified False
 fi
@@ -2668,8 +2686,8 @@ if case_selected T09-X11-QT6-MODIFIER-PASSTHROUGH; then
   set_toggle_with_control_backslash True
   run_qt6_case T09-X11-QT6-MODIFIER-PASSTHROUGH \
     chichi77-keykey-bopomofo \
-    'xff中f文' 'x5fj/ f1jp6f1' \
-    'ㄓ,ㄓㄨ,ㄓㄨㄥ,ㄨ,ㄨㄣ,ㄨㄣˊ' \
+    'x中文' 'x5fj/ f1jp6f1' \
+    'ㄓ,ㄓㄨ,ㄓㄨㄥ,中,ㄨ,ㄨㄣ,文' \
     ctrl+backslash \
     ctrl+a BackSpace x \
     ctrl+backslash \

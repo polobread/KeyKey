@@ -81,13 +81,13 @@
 "Do you really want to remove the plugin '%@'?" = "Do you really want to remove the plugin '%@'?";
 "This build does not check for updates." = "This build does not check for updates.";
 "chichi77 KeyKey does not connect to the Internet." = "chichi77 KeyKey does not connect to the Internet.";
-"Candidate window scale:" = "Candidate window scale:";
+"Candidate window scale:" = "Candidate scale:";
 "Follow display (Default)" = "Follow display (Default)";
 
 "Tap Shift to switch Chinese/English" = "Tap Shift to switch Chinese/English";
 "A short press of either Shift switches input mode. Hold Shift or combine it with another key to keep normal keyboard behavior." = "A short press of either Shift switches input mode. Hold Shift or combine it with another key to keep normal keyboard behavior.";
 
-"Startup input mode:" = "Startup input mode:";
+"Startup input mode:" = "Startup mode:";
 
 "Chinese" = "Chinese";
 

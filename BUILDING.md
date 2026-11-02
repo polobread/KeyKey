@@ -2,28 +2,20 @@
 
 本文件集中說明琦琦輸入法各平台的建置流程。
 
+Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、C ABI 與四種輸入法的共用 session，包括好打注音組句與 FE 可設定的 10～20 音節邊界。
+其獨立建置／單元及 C consumer 驗證見 [Guanyinma README](Source/Guanyinma/README.md)，
+移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。六平台固定使用 Guanyinma 單核心；macOS 保留原生 FE，見 [Guanyinma 接合](docs/GUANYINMA_MACOS_ADAPTER.md)。六平台 workflow 接線與分工表見 [核心 README](Source/Guanyinma/README.md#測試範圍與分工)。
+
 Linux 1.3.7 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。macOS 正式版為
 [1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7。
 Windows 與 Ubuntu 安裝包由 [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 提供，iOS 與 Android 1.3.7 已分別在 App Store、Google Play 上架，不需加入測試。
 FreeBSD 已完成桌面驗證，透過 ports／pkg 安裝，詳見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。
-目前原始碼版號為 `1.3.8`；macOS 已正式發布，其他平台仍為開發來源。共用好打注音模型維持 `1.3.1`。
-先前 Linux 版本的發布紀錄保留在
-[1.2.8 發布說明](Source/Loaders/Linux-IME/docs/linux-1.2.8-release.md)。
-其他 Ubuntu 版本、IBus、ARM64 與其他發行版另行驗收。以下保留開發與建置紀錄。
-目前已有可建置的 Linux-only 引擎與 Fcitx 5
-外掛，以及 local X11/GTK 3、GTK 4、Qt 6 各自適用的完整第一階段真實逐鍵矩陣，
-並已在隔離 Ubuntu 24.04 GNOME X11 session 通過 76 個不重啟桌面 Fcitx 的案例；
-另在完整 Ubuntu 24.04 GNOME Wayland KVM guest 通過涵蓋 native Wayland／XWayland
-的舊版 160/160 組逐鍵／滑鼠矩陣；加入符號表真滑鼠後，系統安裝的候選
-面板下完整 168/168 組通過。真實 gedit 四條輸入路徑與 GNOME Text Editor 的直接 Fcitx
-Wayland／XWayland 路徑已通過，後者的兩條 GTK Wayland IM 路徑仍有缺口。
-雙欄焦點正負控制 16/16 通過並量到失焦語意依輸入路徑而異。
-更廣的視窗／App 相容性與實體雙螢幕仍待驗收。GNOME Shell 46 的獨立候選
-面板套件已在 Ubuntu 24.04 VM 測過安裝、升級、停用與再啟用。開發／套件規格見
-[LINUX_DEVELOPMENT_PLAN.md](docs/LINUX_DEVELOPMENT_PLAN.md)，實際打字與 GitHub Actions
-驗收見 [LINUX_TEST_PLAN.md](docs/LINUX_TEST_PLAN.md)。
+Guanyinma 工作分支的六平台原始碼開發版號統一為 `1.5.0`，正式發布狀態依上列平台資訊；共用好打注音模型維持 `1.3.1`。
+Linux／FreeBSD 開發來源只使用 Guanyinma Rust 核心；接合、設定與聚焦驗證見
+[Linux Guanyinma 說明](docs/GUANYINMA_LINUX_ADAPTER.md)。X11、GNOME Wayland／XWayland、
+FreeBSD 原生與套件安裝各自驗證，不以舊版本的桌面結果代替新核心驗收。
 
 [English](#english)
 
@@ -33,11 +25,12 @@ Ubuntu 24.04 使用者若要從下載、編譯一路完成 Fcitx 啟用與試打
 [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)。
 
 傳統原始碼建置需要 CMake 3.22、GNU Make、C++17 compiler、`pkg-config`、
-Fcitx 5 Core、libcanberra 與 SQLite 3 開發檔，以及 Python 3；
+Fcitx 5 Core、libcanberra、SQLite 3、json-c、PangoFT2 開發檔、Python 3，
+以及 `Source/Guanyinma/rust-toolchain.toml` 鎖定的 Rustup 工具鏈；
 不需要 Ninja、Docker、Autoconf 或 Automake。Ubuntu 可先安裝：
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
+sudo apt-get install build-essential cmake curl libcanberra-dev libfcitx5core-dev libsqlite3-dev libjson-c-dev libpango1.0-dev pkg-config python3 python3-gi gir1.2-gtk-3.0
 ```
 
 接著使用預設 `/usr/local` prefix：
@@ -65,6 +58,11 @@ make DESTDIR="$PWD/out/source-stage" install
 [Linux frontend README](Source/Loaders/Linux-IME/README.md#configure-and-gnu-make-source-build)。
 
 開發者若已安裝 Ninja，也可繼續使用既有 CMake preset：
+
+Linux／FreeBSD frontend 現在只使用 Guanyinma；Rust 不是可選後端。可先在 Bash
+中 `source ci/prepare-guanyinma.sh` 準備鎖定工具鏈，或自行配置 `CARGO`、`CARGO_HOME`
+與 `RUSTUP_HOME`。建置入口不提供核心選擇參數。接合、設定與 Guanyinma 詞庫管理見
+[Linux Guanyinma 說明](docs/GUANYINMA_LINUX_ADAPTER.md)。
 
 ```sh
 cd Source/Loaders/Linux-IME
@@ -155,6 +153,7 @@ Windows 日常開發依 [開發型態與測試範圍](Source/Loaders/Windows-TSF
 - macOS 15 以上
 - Xcode
 - Homebrew 的 `openssl@3`
+- `Source/Guanyinma/rust-toolchain.toml` 指定的 Rust 工具鏈與 `aarch64-apple-darwin` target；標準建置直接編譯／連結 Rust
 - Ruby、GNU Make 與 `sqlite3` 命令列工具，用於既有 DatabaseCooker
 
 ### 建置
@@ -167,29 +166,32 @@ xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
   -configuration Release -xcconfig Takao-macOS.xcconfig build
 ```
 
-DatabaseCooker 會產生
-`Source/Distributions/Takao/CookedDatabase/KeyKey.db`，Xcode 再將它包進
-`chichi77 KeyKey.app`。建置時也會以 `DataSource/McBopomofo/phrase.occ`、
-`BPMFMappings.txt` 及注音字表產生好打注音的 unigram 語言模型；不需要 Yahoo 未釋出的
-中研院語料或舊的 `PhraseTool`／CEROD 工具。另以
-`DataSource/AISyntheticBigram/corpus-v1.txt`、`corpus-v2.txt`、`corpus-v3.txt`、
-試打回饋與去重後的 2,300 篇文章建立合成 bigram 與 backoff；語料每行
-一句，可使用空白標示詞界，也可交由 cooker 依現有 unigram 詞頻切詞。
-`DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv` 另以資料列補入中文數字與
-常用單位組合；阿拉伯數字開頭的詞組目前不走這條詞庫路徑。
+此處 `make` 只驗證儲存庫已提供的正式共用
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`；Xcode 驗證後複製同一份
+DB 到 `chichi77 KeyKey.app`。平台建置不得自行 cooker、重新建模或累加補償。
+模型來源、正式資料更新及固定驗證流程見
+[共用詞庫維護流程](docs/KEYKEY_DATABASE_WORKFLOW.md)。
 
 目前 macOS build 僅支援 arm64。若要製作 universal binary，需要另行準備
 x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 
+macOS App 固定使用 Guanyinma，Rust 是必要建置依賴，不提供原核心建置開關、
+核心選單或失敗回退。標準建置與打包隨 App 保留 `GuanyinmaNotices.txt`。
+
 ### 分類關聯詞詞庫
 
-`DataSource/chichi77Collection` 已納入公開 repository，macOS DatabaseCooker 會固定
-把其中 29 份 TSV 寫入 `KeyKey.db`，不需私人 checkout、symlink 或 secret。這些資料
-由自動化方式生成、推論與整理，沒有逐筆人工校正，也不保證正確性或完整性。
+分類來源放在 `DataSource/chichi77Collection`，由共用詞庫維護流程統一建置及
+驗證後納入正式 DB；macOS 建置直接使用該成品，不在平台封裝時重新匯入來源。
+這些資料包含自動化生成、推論與整理內容，沒有逐筆人工校正，也不保證正確性或完整性。
 
 ### 安裝包
 
-安裝包的建置、本機安裝、簽署及 notarization 說明見
+安裝包使用 `Installer/build.sh APP_PATH`，由 `pkgbuild`／`productbuild` 產生
+`chichi77KeyKey.pkg` 及其 `.pkg.zip`，不是單純壓縮 App。將上面標準建置的
+App 明確傳給此封裝入口，沿用原生 FE 與安裝流程。
+
+本機建置會對 staged App／helper 做 ad hoc 簽章；Developer ID 簽章與
+notarization 屬正式發布步驟。完整建置、本機安裝及簽署流程見
 [Installer/README.md](Installer/README.md)。
 
 ## Windows 10 與 11
@@ -202,10 +204,11 @@ x86_64 OpenSSL 並調整 `Source/Takao-macOS.xcconfig`。
 - CMake 3.25 以上；Visual Studio 內附版本即可
 - .NET 10 SDK（設定頁與部署工具皆 self-contained；使用者不需另裝 runtime）
 - Python 3（驗證預先產生的共用資料庫）
+- Windows 固定使用 Guanyinma，建置需要 Python 3.11 以上及 `Source/Guanyinma/rust-toolchain.toml` 指定的 Rustup 工具鏈；安裝 x64／x86 相應的 `x86_64-pc-windows-msvc`／`i686-pc-windows-msvc` target
 - NSIS 3.12（只有建立 Store EXE 時需要）
 
 Windows 建置只驗證並複製正式共用 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`，
-不得自行 cooker；SQLite 連結 Windows 內建的 WinSQLite3。不需要 GNU Make、
+不得自行 cooker；Rust 與原生 FE 共用 Cargo.lock 鎖定的 bundled SQLite 與靜態 CRT，避免 x86 WinSQLite 呼叫慣例不同。Windows 不提供原核心建置或選擇參數。接合與局部驗證見 [Windows Guanyinma](docs/GUANYINMA_WINDOWS_ADAPTER.md)。不需要 GNU Make、
 `awk`、`sed` 或外部 `sqlite3` 程式。
 
 ### 建置及測試 x64
@@ -320,6 +323,8 @@ Windows Ed25519 也在本機使用 keykey-update-private.pem；禁止提交、�
 
 ## Android
 
+Android FE 固定使用 Guanyinma Rust 單核心，不提供舊 Java 引擎或核心切換。建置需要固定 Rust 工具鏈、完整 JDK（含 JNI headers）、NDK 及 CMake；版本與四個 ABI 對照見 [Android 接合文件](docs/GUANYINMA_ANDROID_ADAPTER.md)。Gradle 只編譯 Rust，平台 workflow 只執行少量 JNI／FE 串接；完整核心測試留在 `guanyinma-core.yml`。
+
 ### 需求與建置
 
 - Android Studio
@@ -331,11 +336,9 @@ cd Source\Loaders\Android-IME
 .\gradlew.bat lintDebug testDebugUnitTest assembleDebug
 ```
 
-建置時會自動從 `Source/DataTables` 複製 `bpmf-ext.cin` 與
-`bpmf-punctuations.cin`，並從 `DataSource/McBopomofo` 加入基本關聯詞詞庫，另固定
-加入 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會從 CIN、基本詞庫與
-29 個 TSV 產生 `.kki` 索引，並把 cook 好的 `KeyKey.db` 加入 APK，供預設的好打注音
-整句組字使用；Android 執行時讀取索引，關聯詞索引在背景載入。
+建置從 `DataSource/McBopomofo` 與 `DataSource/chichi77Collection` 的 29 個公開分類詞庫
+產生關聯詞 `.kki` 索引，並把預先產生的共用 `KeyKey.db` 加入 APK，供 Rust 四種輸入法
+唯讀使用；關聯詞索引在背景載入。平台建置不重建模型。
 Debug APK 位於
 `app/build/outputs/apk/debug/app-debug.apk`。安裝後開啟「琦琦輸入法」，依畫面按鈕
 啟用並選擇輸入法。Android frontend 的配置與操作方式見
@@ -346,8 +349,9 @@ Debug APK 位於
 ### 需求、建置與測試
 
 - macOS 與 Xcode
-- 可用的 iOS Simulator runtime
-- GNU Make、Ruby 與 `sqlite3`，用於既有 DatabaseCooker
+- iOS SDK；執行選用宿主／UI 測試時另備 Simulator runtime
+- 固定 Rust 工具鏈與 iOS targets，見 [iOS Guanyinma 接合](docs/GUANYINMA_IOS_ADAPTER.md)
+- GNU Make、Ruby 與 `sqlite3`，用於既有共用資料庫驗證入口
 
 從 repository 根目錄執行：
 
@@ -355,18 +359,17 @@ Debug APK 位於
 make -C Source/Distributions/Takao/DatabaseCooker
 xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
   -scheme "chichi77 KeyKey" -configuration Debug \
-  -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
+  -destination 'generic/platform=iOS Simulator' \
   CODE_SIGNING_ALLOWED=NO build
 
-cd Source/Loaders/iOS-Keyboard/KeyKeyEngine
-swift test
+bash Source/Guanyinma/tools/test-ios-swift-package.sh
 ```
 
-`KeyKey.db` 是建置輸入但不進版控；Xcode Cloud 會由
-`Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` 自動 cook。五台受控 Simulator
-與完整 A–K 驗證方式見
-[iOS Simulator 測試計畫](docs/IOS_SIMULATOR_TEST_PLAN.md)；可先從
-repository 根目錄執行可無人值守的宿主基線：
+`KeyKey.db` 是版控內共用建置輸入；Xcode Cloud 的
+`Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` 驗證及複製前置條件，不 cooker。
+Cloud 主機需預裝 `rustup`；hook 準備固定工具鏈及 iOS targets，不執行核心全套測試。
+下列宿主自動化及 [iOS Simulator 測試計畫](docs/IOS_SIMULATOR_TEST_PLAN.md) 屬 FE 的選用驗證，
+按接合修改挑選，與核心 CI 分開：
 
 ```sh
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
@@ -471,38 +474,22 @@ artifact 在 7 天保留期間仍可能被 repository 讀者下載。
 
 ## English
 
-Native Linux support began with version 1.2.8. Version 1.3.1 includes a
-Linux-only engine and Fcitx 5 addon. The GTK 3, GTK 4, and Qt 6 X11 matrix is
-implemented, and 76 cases that do not restart the desktop Fcitx process pass
-in an isolated Ubuntu 24.04 GNOME X11 session. A GNOME Wayland KVM guest also
-passes 160/160 native Wayland/XWayland key and pointer combinations. Real gedit
-passes four input paths; GNOME Text Editor passes the direct Fcitx Wayland and
-XWayland paths, with two GTK Wayland IM paths still failing. These earlier
-checks do not replace the versioned release workflow. The guest also passes 16/16
-two-field focus phases, with a recorded raw-preedit blur difference between
-direct Fcitx and default GTK Wayland paths. Separate editing-field evidence
-passed 21 cases before a GNOME Shell crash and the remaining three after
-session recovery; symbol-list pointer selection passed all eight modes.
-Two live applications preserve independent modes in six direct Fcitx paths
-(12/12), while the two default GTK Wayland bridge paths share one IBus input
-context and fail mode isolation. All eight modes passed candidate-client
-closure and immediate new-client recovery; all eight also passed after a
-fresh Fcitx process was started. An explicit GDM logout/login followed by
-T01 and pointer T06 also passed 16/16. Firefox Snap and Epiphany passed 15
-real browser field/mode cases across native Wayland and XWayland, covering
-`<textarea>`, `<input>` and `contenteditable` with DOM input checks and
-literal controls. See the
-[development plan](docs/LINUX_DEVELOPMENT_PLAN.md) and [test plan](docs/LINUX_TEST_PLAN.md).
+Linux and FreeBSD development sources use Guanyinma as the only input core.
+See the [Linux adapter guide](docs/GUANYINMA_LINUX_ADAPTER.md) for settings,
+user data, and focused integration checks. Source, staged addon, installed
+packages, X11, GNOME Wayland/XWayland, and native FreeBSD acceptance are separate
+layers; results from an earlier core do not establish current acceptance.
 
 ### Linux source build
 
 A traditional source build requires CMake 3.22, GNU Make, a C++17 compiler,
-`pkg-config`, Python 3, and the Fcitx 5 Core, libcanberra, and SQLite 3 development files. It does not require Ninja, Docker,
+`pkg-config`, Python 3, the pinned Rustup toolchain, and Fcitx 5 Core, libcanberra,
+SQLite 3, json-c and PangoFT2 development files. It does not require Ninja, Docker,
 Autoconf, or Automake. On Ubuntu, install the dependencies and build with the
 default `/usr/local` prefix as follows:
 
 ```sh
-sudo apt-get install build-essential cmake libcanberra-dev libfcitx5core-dev libsqlite3-dev pkg-config python3
+sudo apt-get install build-essential cmake curl libcanberra-dev libfcitx5core-dev libsqlite3-dev libjson-c-dev libpango1.0-dev pkg-config python3 python3-gi gir1.2-gtk-3.0
 cd Source/Loaders/Linux-IME
 ./configure
 make -j2
@@ -528,6 +515,12 @@ build directory. See the
 for nonstandard Fcitx prefix activation.
 
 Developers with Ninja installed may continue to use the existing CMake preset:
+
+Linux/FreeBSD now uses Guanyinma as its only input core. Every build requires
+the pinned Rustup toolchain, `libjson-c-dev`, and `libpango1.0-dev`. In Bash,
+`source ci/prepare-guanyinma.sh` prepares the pinned toolchain; prepared builds may
+set `CARGO`, `CARGO_HOME`, and `RUSTUP_HOME` explicitly. Build entry points do not
+provide core-selection options. See the [Linux adapter guide](docs/GUANYINMA_LINUX_ADAPTER.md).
 
 ```sh
 cd Source/Loaders/Linux-IME
@@ -605,6 +598,7 @@ Requirements:
 - macOS 15 or later
 - Xcode
 - Homebrew's `openssl@3`
+- The pinned Rust toolchain and `aarch64-apple-darwin` target from `Source/Guanyinma/rust-toolchain.toml`
 - Ruby, GNU Make, and the `sqlite3` command-line tool for the legacy cooker
 
 ```sh
@@ -615,17 +609,16 @@ xcodebuild -project Takao.xcodeproj -target "Takao (Loader OSX-IMK)" \
   -configuration Release -xcconfig Takao-macOS.xcconfig build
 ```
 
-The cooker creates `Source/Distributions/Takao/CookedDatabase/KeyKey.db`, which
-is bundled into `chichi77 KeyKey.app`. The current configuration is arm64-only;
-a universal build requires a separate x86_64 OpenSSL build and an xcconfig
-change. The cooker also generates the Smart Phonetic unigram model from
-`DataSource/McBopomofo/phrase.occ`, `BPMFMappings.txt`, and the Bopomofo CIN;
-the unpublished Yahoo corpus and the historical PhraseTool/CEROD tools are not
-required. `DataSource/AISyntheticBigram/corpus-v1.txt`, `corpus-v2.txt`,
-`corpus-v3.txt`, typing feedback, and the deduplicated 2,300-article corpus
-add a synthetic bigram and backoff layer. Each line is one sentence; whitespace may
-mark word boundaries, or the cooker can segment unspaced Chinese text with the
-existing unigram scores.
+The default Make target verifies the pre-generated
+`Source/Distributions/Takao/CookedDatabase/KeyKey.db`; Xcode copies it into the
+App without cooking the model. Model maintenance uses the separate
+[database workflow](docs/KEYKEY_DATABASE_WORKFLOW.md). The current configuration
+is arm64-only; a universal build requires a separate x86_64 OpenSSL build and an
+xcconfig change.
+
+All four macOS input methods use Guanyinma exclusively. Rust is required;
+there is no legacy engine build option, core selector or fallback. Runtime
+notices accompany the App and its existing packaging flow.
 
 The public `DataSource/chichi77Collection` directory is included in the
 repository. The macOS DatabaseCooker always writes its 29 TSV collections into
@@ -764,44 +757,47 @@ mirror workflow. See the [complete release guide](docs/WINDOWS_CERTUM_RELEASE.md
 ## Android
 
 Requirements: Android Studio, JDK 17 or later, Android SDK 36.1, and Build
-Tools 36.0.0.
+Tools 36.0.0, plus the pinned Rust toolchain, NDK and CMake described in the
+[Android adapter guide](docs/GUANYINMA_ANDROID_ADAPTER.md). The frontend uses
+Guanyinma exclusively; the Java input engine and core selector are removed.
 
 ```powershell
 cd Source\Loaders\Android-IME
 .\gradlew.bat lintDebug testDebugUnitTest assembleDebug
 ```
 
-The build copies `bpmf-ext.cin` and `bpmf-punctuations.cin` from the shared
-`Source/DataTables` directory and adds the base associated-phrase collection
-from `DataSource/McBopomofo` plus all 29 public categorized collections from
-`DataSource/chichi77Collection`. The build compiles the CIN and phrase sources into
-`.kki` indexes and packages the cooked `KeyKey.db` for the default Smart Phonetic
-composition mode. Android reads the indexes at runtime and loads associated-phrase indexes
-in the background. The debug APK is written to
+The build compiles the base associated-phrase collection from
+`DataSource/McBopomofo` and all 29 public categorized collections from
+`DataSource/chichi77Collection` into `.kki` indexes. It packages the shared,
+pre-generated `KeyKey.db` for all four Rust input methods without cooking the
+model. Associated-phrase indexes load in the background. The debug APK is written to
 `app/build/outputs/apk/debug/app-debug.apk`. See the
 [Android IME README](Source/Loaders/Android-IME/README.md) for layout and setup
 details.
 
 ### iOS
 
-Requirements are macOS, Xcode, an installed iOS Simulator runtime, and the
-existing DatabaseCooker dependencies (GNU Make, Ruby, and `sqlite3`). From the
-repository root, run:
+Requirements are macOS, Xcode with the iOS SDK, the pinned Rust toolchain and
+iOS targets described in the [iOS adapter guide](docs/GUANYINMA_IOS_ADAPTER.md),
+and the existing shared-database verification tools. A simulator runtime is
+needed only for optional host/UI execution. The App editor and keyboard extension
+use Guanyinma exclusively; Swift retains frontend and App Group publication code,
+with no legacy input engine, core selector or fallback. From the repository root, run:
 
 ```sh
 make -C Source/Distributions/Takao/DatabaseCooker
 xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
   -scheme "chichi77 KeyKey" -configuration Debug \
-  -destination 'platform=iOS Simulator,name=KeyKey iOS 26 iPhone 17 Pro' \
+  -destination 'generic/platform=iOS Simulator' \
   CODE_SIGNING_ALLOWED=NO build
 
-cd Source/Loaders/iOS-Keyboard/KeyKeyEngine
-swift test
+bash Source/Guanyinma/tools/test-ios-swift-package.sh
 ```
 
-`KeyKey.db` is a generated build input and is not committed. Xcode Cloud cooks
-it through `Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh`. Run the
-unattended host baseline from the repository root with:
+`KeyKey.db` is the committed shared build input. Xcode Cloud verifies it through
+`Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` without cooking it.
+Cloud hosts must already provide `rustup`; the hook prepares the pinned toolchain
+and targets. Optional frontend host automation remains separate from core CI:
 
 ```sh
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
@@ -835,7 +831,7 @@ Windows runs its full release build, signing, EXE/ZIP packaging and approved pub
 locally; its CI workflow only checks. The tag must match the
 platform's source version at that tag and can be created on the Release page.
 The official macOS release is `1.3.8`; Windows, Linux/FreeBSD, iOS, and Android
-remain at `1.3.7`. Current sources use `1.3.8`, including development sources for the other platforms.
+remain at `1.3.7`. Current development sources on the Guanyinma branch use `1.5.0` across all six platforms.
 The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product
 version and N is a positive integer without leading zeros.
 Betas require Pre-release and the exact tag commit; Latest is unchanged. Fixes
@@ -935,3 +931,5 @@ an artifact during its seven-day retention period.
 Windows 安裝包反覆測試時，若前一次 EXE 仍開啟，可在 `Package-Store-Windows.ps1`
 加上 `-BuildLabel fix-20261001-143000` 產生不同檔名，避免覆寫執行中的檔案。
 此參數只改安裝檔名，不改產品版號或 Program Files 下的版本目錄。
+
+PR 的平台建置、封裝及發布工具驗證範圍見 [PR 建置與發布驗證](docs/CI_PULL_REQUEST_VALIDATION.md)。

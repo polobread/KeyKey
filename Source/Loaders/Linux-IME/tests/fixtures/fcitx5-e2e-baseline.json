@@ -1,0 +1,93 @@
+{
+  "General": {
+    "DefaultChineseMode": "True",
+    "IgnoreCapsLockInChinese": "False",
+    "LiteralKeypad": "True",
+    "CandidateWindowStyle": "Vertical",
+    "ToggleInputMethodWithControlBackslash": "True",
+    "ToggleInputModeWithShift": "True",
+    "PlaySoundOnTypingError": "True",
+    "TraditionalToSimplified": "False"
+  },
+  "Phonetic": {
+    "BopomofoMode": "Traditional",
+    "BopomofoLayout": "Standard",
+    "UseAllUnicodeCharacters": "True",
+    "TraditionalSelectionKeys": "123456789",
+    "SmartMandarin": {
+      "ShowCandidateListWithSpace": "True",
+      "CandidateCursorAtEndOfTargetBlock": "False",
+      "CandidateSelectionKeys": "123456789",
+      "ComposingTextBufferSize": "10",
+      "ClearComposingTextWithEsc": "False",
+      "SelectionReturnsToEnd": "False",
+      "ShiftKeyAlwaysCommitUppercaseCharacters": "False",
+      "UseBigrams": "True",
+      "LearnCandidateOverrides": "True",
+      "LearnBigrams": "True"
+    }
+  },
+  "Cangjie": {
+    "ShouldCommitAtMaximumRadicalLength": "False",
+    "UseDynamicFrequency": "False",
+    "ComposeWhileTyping": "False",
+    "PrefixCandidates": "False",
+    "ClearOnError": "True",
+    "PunctuationStyle": "original",
+    "CandidateSelectionKeys": "123456789",
+    "MaximumRadicalLength": "5",
+    "UseSpaceAsFirstCandidateSelectionKey": "False",
+    "SendFirstCandidateWithSpaceWithOnePageList": "True",
+    "MatchOneChar": "?",
+    "MatchZeroOrMoreChar": "*"
+  },
+  "Simplex": {
+    "ComposeWhileTyping": "False",
+    "ClearOnError": "False",
+    "ShouldCommitAtMaximumRadicalLength": "True",
+    "UseDynamicFrequency": "False",
+    "PunctuationStyle": "original",
+    "CandidateSelectionKeys": "123456789",
+    "MaximumRadicalLength": "2",
+    "UseSpaceAsFirstCandidateSelectionKey": "False",
+    "SendFirstCandidateWithSpaceWithOnePageList": "False",
+    "MatchOneChar": "",
+    "MatchZeroOrMoreChar": "",
+    "PrefixCandidates": "False"
+  },
+  "UserPhrases": {
+    "UseUserPhrases": "True"
+  },
+  "AssociatedPhrases": {
+    "McBopomofo": "False",
+    "ai-data-science": "False",
+    "general": "False",
+    "chinese": "False",
+    "transport-logistics": "False",
+    "people-history": "False",
+    "people-contemporary": "False",
+    "people-oldnews": "False",
+    "government": "False",
+    "anime": "False",
+    "business": "False",
+    "media-design": "False",
+    "industrial-engineering": "False",
+    "civil-engineering": "False",
+    "psychology-society": "False",
+    "education": "False",
+    "semiconductor": "False",
+    "materials-chemistry": "False",
+    "history": "False",
+    "law": "False",
+    "energy-environment": "False",
+    "biotech-pharma": "False",
+    "science": "False",
+    "network-security": "False",
+    "manufacturing": "False",
+    "finance": "False",
+    "software": "False",
+    "agriculture-food": "False",
+    "medicine": "False",
+    "electronics": "False"
+  }
+}

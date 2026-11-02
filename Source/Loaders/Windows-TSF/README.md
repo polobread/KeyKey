@@ -1,5 +1,7 @@
 # 琦琦輸入法 Windows TSF frontend
 
+Windows 1.5.0 開發來源固定使用 Guanyinma Rust 單核心，四種輸入法直接啟用，不提供核心選擇、舊引擎或失敗回退。Rust 接合、使用者資料、建置依賴及少量冒煙入口見 [Windows Guanyinma 接合](../../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。正式版本及發布狀態另依下文與安裝指南。
+
 倉頡新增可選的「即時候選」與「未打完也能選字」，兩項預設關閉；設定與分層驗證見 [桌面倉頡試用說明](../../../docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
 
 倉頡與簡易的即時候選、錯碼清除及倉頡前綴候選，透過各自獨立的 TSF 全域 compartment 同步至 Windows 搜尋列等受限宿主。設定程式套用及桌面宿主讀取時發布開關；受限宿主只接收並合併至自己的設定檔，再由既有組字送出邊界套用。尚無已發布設定時保留本地值，不回寫隔離預設值；自訂詞與學習不透過此機制共享。
@@ -37,6 +39,16 @@ Windows 產品版號只在 `CMakeLists.txt` 宣告；兩個封裝入口與發布
 架構封裝時，才擴充到 x86。同一功能經相關測試通過後，只在有新的相關修改、失敗或
 未解疑慮時重跑。目錄搬移檢查引用與必要建置即可，不重跑原生功能及安裝流程。
 共用引擎與模型變更仍依根目錄 AGENTS 的跨平台／模型規則驗證。
+
+共用桌面案例可建置 `KeyKeyDesktopInputHost` 後，以 `ctest -L '^desktop-input$'` 執行；
+`KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS=ON` 另啟用四種情境各 100 輪的 `desktop-stability`。
+這是原生 TSF context／測試專用文字宿主及執行緒按鍵狀態驗證，不代替可見候選窗、
+跨 App 或實體鍵盤驗收。案例、證據與無對等設定的界線見
+[共用桌面輸入測試](../../../docs/DESKTOP_INPUT_SHARED_TEST_MATRIX.md#windows-原生-tsf-交易測試)。
+
+已安裝的 Windows x64 四法另通過記事本／Word 局部真實宿主冒煙，好打注音亦完成使用者手打
+19 字全文核對。其餘三法以自動送鍵驗證；輸入來源、設定、手打中途證據的限制及未涵蓋項目見
+[Windows 桌面宿主驗收](../../../docs/WINDOWS_DESKTOP_HOST_ACCEPTANCE.md)。
 
 下面命令從此目錄執行；建置目錄以本機實際 preset 為準，範例使用既有 x64 Ninja。
 原生 CMake／CTest 命令使用已載入 MSVC、CMake 與 Ninja 的 Developer PowerShell。

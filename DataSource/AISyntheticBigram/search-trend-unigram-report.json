@@ -5,7 +5,7 @@
     "terms": 550,
     "sha256": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1"
   },
-  "database_sha256": "b3f8814a31444fd22c0841abed36f489e21bad5f16cd4350b684f066ccd7270f",
+  "database_sha256": "ff55a8488d85ec45a5a05b874443b402562bb8548b1c3ac4a62165ab2c178656",
   "training_sources": [
     {
       "file": "typing-articles-v2.jsonl",
@@ -34,6 +34,6 @@
   "positive_custom_terms": 157,
   "zero_count_review_terms": 0,
   "reading_overrides": 5,
-  "output_sha256": "10c759a7ac61a48668c88a76141335ab92ff8ee706e4b5176814df64c8079273",
-  "review_sha256": "d1bdc4090947db2450ea37642733eb06c12da918d7d76ce55f3c542f6f24b68c"
+  "output_sha256": "e276a35a760f849e449c2309ca3b41d6b27a71c5f74d1ab697bb8cbe7b8cd445",
+  "review_sha256": "0b7b0dc636c2000f072c013d1cafa366b1fdc62f8a6524c2c5e1f2cac9864433"
 }

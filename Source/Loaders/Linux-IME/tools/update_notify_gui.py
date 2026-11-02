@@ -1,7 +1,9 @@
 """Out-of-process GTK notification UI; never loaded into a typing host."""
 
+import fcntl
 import platform
 import math
+import subprocess
 import sys
 import threading
 import time
@@ -26,6 +28,40 @@ def notification_available():
         return bool(names & {"org.freedesktop.Notifications", "org.gtk.Notifications"})
     except GLib.Error:
         return False
+
+
+def build_panel(controller, parent):
+    """Build the updater controls for either its own window or a settings page."""
+    controller.window = parent
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin=20)
+    box.pack_start(Gtk.Label(label=f"目前版本：{controller.current}", xalign=0), False, False, 0)
+    policy = ("新版通知顯示上游版本。請透過 ports／pkg 更新；\n"
+              "套件庫可能較晚上架。" if controller.system == "FreeBSD" else
+              "只檢查並通知新版，不預先下載。按下「開啟官方下載頁」後，由您下載並透過套件管理器安裝。")
+    box.pack_start(Gtk.Label(label=policy, xalign=0, wrap=True), False, False, 0)
+    controller.status = Gtk.Label(label="按下「檢查新版」開始檢查。", xalign=0, wrap=True)
+    box.pack_start(controller.status, False, False, 0)
+    controller.enabled = Gtk.CheckButton(label="每週檢查新版並通知（登入桌面後）")
+    controller.enabled.set_tooltip_text("上次檢查已滿 7 天時，啟動 10 分鐘後檢查；持續執行時每 7 天一次。")
+    controller.enabled.set_active(controller.settings["enabled"])
+    controller.beta = Gtk.CheckButton(label="也通知 beta 測試版")
+    controller.beta.set_active(controller.settings["include_beta"])
+    for widget in (controller.enabled, controller.beta):
+        widget.connect("toggled", controller.preferences_changed)
+        box.pack_start(widget, False, False, 0)
+    box.pack_start(Gtk.Label(
+        label="通知選項變更後立即儲存。", xalign=0, wrap=True),
+        False, False, 0)
+    row = Gtk.Box(spacing=10)
+    controller.check_button = Gtk.Button(label="檢查新版")
+    controller.check_button.connect("clicked", lambda *_: controller.check(manual=True))
+    controller.download_button = Gtk.Button(label="開啟官方下載頁")
+    controller.download_button.connect("clicked", lambda *_: controller.open_download())
+    row.add(controller.check_button)
+    row.add(controller.download_button)
+    box.pack_start(row, False, False, 0)
+    controller.refresh_buttons()
+    return box
 
 
 class Application(Gtk.Application):
@@ -60,7 +96,10 @@ class Application(Gtk.Application):
         self.update_timer()
 
     def do_command_line(self, command_line):
-        if "--background" not in command_line.get_arguments():
+        arguments = command_line.get_arguments()
+        if "--reload-preferences" in arguments:
+            self.reload_preferences()
+        elif "--background" not in arguments:
             self.activate()
         elif self.settings["enabled"]:
             self.update_timer()
@@ -74,33 +113,8 @@ class Application(Gtk.Application):
         self.window.set_title("琦琦輸入法更新通知")
         self.window.set_default_size(480, 280)
         self.window.connect("destroy", self.window_closed)
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin=20)
-        self.window.add(box)
-        box.pack_start(Gtk.Label(label=f"目前版本：{self.current}", xalign=0), False, False, 0)
-        policy = ("新版通知顯示上游版本。請透過 ports／pkg 更新；\n"
-                  "套件庫可能較晚上架。" if self.system == "FreeBSD" else
-                  "只檢查並通知新版，不預先下載。按下「開啟官方下載頁」後，由您下載並透過套件管理器安裝。")
-        box.pack_start(Gtk.Label(label=policy, xalign=0, wrap=True), False, False, 0)
-        self.status = Gtk.Label(label="按下「檢查新版」開始檢查。", xalign=0, wrap=True)
-        box.pack_start(self.status, False, False, 0)
-        self.enabled = Gtk.CheckButton(label="每週檢查新版並通知（登入桌面後）")
-        self.enabled.set_tooltip_text("上次檢查已滿 7 天時，啟動 10 分鐘後檢查；持續執行時每 7 天一次。")
-        self.enabled.set_active(self.settings["enabled"])
-        self.beta = Gtk.CheckButton(label="也通知 beta 測試版")
-        self.beta.set_active(self.settings["include_beta"])
-        for widget in (self.enabled, self.beta):
-            widget.connect("toggled", self.preferences_changed)
-            box.pack_start(widget, False, False, 0)
-        row = Gtk.Box(spacing=10)
-        self.check_button = Gtk.Button(label="檢查新版")
-        self.check_button.connect("clicked", lambda *_: self.check(manual=True))
-        self.download_button = Gtk.Button(label="開啟官方下載頁")
-        self.download_button.connect("clicked", lambda *_: self.open_download())
-        row.add(self.check_button)
-        row.add(self.download_button)
-        box.pack_start(row, False, False, 0)
+        self.window.add(build_panel(self, self.window))
         self.window.show_all()
-        self.refresh_buttons()
 
     def window_closed(self, *_):
         self.window = None
@@ -132,6 +146,89 @@ class Application(Gtk.Application):
         self.result = None
         self.update_timer()
 
+    def refresh_preference_widgets(self):
+        if not self.window:
+            return
+        for widget, value in ((self.enabled, self.settings["enabled"]),
+                              (self.beta, self.settings["include_beta"])):
+            widget.handler_block_by_func(self.preferences_changed)
+            try:
+                widget.set_active(value)
+            finally:
+                widget.handler_unblock_by_func(self.preferences_changed)
+
+    def reload_preferences(self):
+        settings = updates.preferences()
+        if settings["enabled"] and not self.settings["enabled"]:
+            self.not_before = time.time() + 600
+        self.settings = settings
+        self.result = None
+        self.refresh_preference_widgets()
+        self.merge_persisted_state()
+        self.update_timer()
+
+    def merge_persisted_state(self):
+        # Settings and the background helper can both write this metadata. Keep
+        # newer attempts/notices from either process, including an in-memory
+        # notice whose previous save failed, instead of rewriting an old cache.
+        saved = updates.load_json(self.state_path)
+        merged = dict(self.state)
+        merged.update(saved)
+        now = time.time()
+        attempts = [state.get("last_attempt") for state in (self.state, saved)]
+        attempts = [value for value in attempts if isinstance(value, (int, float))
+                    and math.isfinite(value) and 0 <= value <= now]
+        if attempts:
+            merged["last_attempt"] = max(attempts)
+        notices = set()
+        for state in (self.state, saved):
+            notices.update(self.notification_history(state))
+        merged["notified_versions"] = sorted(notices, key=updates.version_key)
+        if notices:
+            # Retain the legacy marker for metadata compatibility, but exact
+            # version history governs deduplication across stable/beta channels.
+            merged["last_notified"] = max(notices, key=updates.version_key)
+        self.state = merged
+
+    def save_state(self):
+        # Serialize read/merge/replace across the embedded and background
+        # processes. Atomic JSON replacement alone does not prevent lost updates.
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        with (self.state_path.parent / ".update-notification.lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            self.merge_persisted_state()
+            updates.save_json(self.state_path, self.state)
+
+    @staticmethod
+    def notification_history(state):
+        values = state.get("notified_versions", [])
+        values = list(values) if isinstance(values, list) else []
+        values.append(state.get("last_notified"))
+        history = set()
+        for value in values:
+            try:
+                updates.version_key(value)
+                history.add(value)
+            except (TypeError, ValueError):
+                pass
+        return history
+
+    def already_notified(self, version):
+        return version in self.notification_history(self.state)
+
+    def saved_notification_consent(self, version):
+        # Info-window consent is written in another process; forwarding its
+        # reload command is asynchronous and is not authority to send a notice.
+        settings = updates.preferences()
+        if settings != self.settings:
+            if settings["enabled"] and not self.settings["enabled"]:
+                self.not_before = time.time() + 600
+            self.settings = settings
+            self.refresh_preference_widgets()
+            self.update_timer()
+        return bool(version and settings["enabled"] and
+                    (settings["include_beta"] or updates.version_key(version)[3]))
+
     def update_timer(self):
         if self.timer is not None:
             GLib.source_remove(self.timer)
@@ -151,6 +248,7 @@ class Application(Gtk.Application):
         if self.timer is not None:
             GLib.source_remove(self.timer)
             self.timer = None
+        self.merge_persisted_state()
         now = time.time()
         if self.settings["enabled"] and now >= self.not_before and updates.due(self.state, now):
             self.not_before = now + updates.INTERVAL
@@ -167,7 +265,7 @@ class Application(Gtk.Application):
         if self.timer_held:
             self.update_timer()
         try:
-            updates.save_json(self.state_path, self.state)
+            self.save_state()
         except OSError:
             if self.window:
                 self.status.set_text("無法儲存檢查時間，請檢查設定目錄權限。")
@@ -225,9 +323,14 @@ class Application(Gtk.Application):
                     f"發現上游新版：{result['version']}" if result else
                     "目前沒有較新的可用版本。")
             self.status.set_text(text)
-        if (result and not manual and self.settings["enabled"] and
-                self.state.get("last_notified") != result["version"] and
-                notification_available()):
+        consent = False
+        if not manual:
+            self.merge_persisted_state()
+            consent = self.saved_notification_consent(result["version"] if result else None)
+        if (result and not manual and consent and
+                not self.already_notified(result["version"]) and
+                notification_available() and
+                self.saved_notification_consent(result["version"])):
             notification = Gio.Notification.new("琦琦輸入法有新版")
             body = f"目前 {self.current}，上游新版 {result['version']}。"
             body += ("請透過 ports／pkg 更新，套件庫可能較晚上架。"
@@ -238,8 +341,11 @@ class Application(Gtk.Application):
             notification.add_button_with_target("開啟官方發行頁", "app.download", target)
             self.send_notification("update", notification)
             self.state["last_notified"] = result["version"]
+            history = self.notification_history(self.state)
+            history.add(result["version"])
+            self.state["notified_versions"] = sorted(history, key=updates.version_key)
             try:
-                updates.save_json(self.state_path, self.state)
+                self.save_state()
             except OSError:
                 pass  # In-memory deduplication still applies to this session.
         self.refresh_buttons()
@@ -264,8 +370,84 @@ class Application(Gtk.Application):
             self.status.set_text(f"無法開啟瀏覽器，請自行開啟：{url}")
 
 
+class EmbeddedController(Application):
+    """A foreground view of the shared checker, without application lifecycle."""
+    def __init__(self, current, system, executable, parent, get, timeout,
+                 sync_preferences=None):
+        super().__init__(current, system, executable, get, timeout)
+        self.window = parent
+        self.disposed = False
+        self.sync_preferences = sync_preferences or self.start_background_reload
+
+    @staticmethod
+    def start_background_reload(arguments):
+        return subprocess.Popen(arguments, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                close_fds=True, start_new_session=True)
+
+    def hold(self):
+        pass
+
+    def release(self):
+        pass
+
+    def activate(self):
+        if not self.disposed and self.window:
+            self.window.present()
+
+    def update_timer(self):
+        # Only preferences_changed calls this in an embedded view. The actual
+        # background Application retains the timer after Settings is closed.
+        if self.disposed:
+            return
+        try:
+            self.sync_preferences([self.executable, "--reload-preferences"])
+        except OSError:
+            self.status.set_text("設定已儲存，但無法同步背景通知；下次登入桌面時會套用。")
+
+    def periodic(self):
+        return GLib.SOURCE_REMOVE
+
+    def check(self, manual):
+        if not self.disposed and manual:
+            super().check(manual=True)
+
+    def preferences_changed(self, *_):
+        if not self.disposed:
+            super().preferences_changed()
+
+    def open_download(self, version=None):
+        if not self.disposed:
+            super().open_download(version)
+
+    def refresh(self):
+        """Refresh consent controls without writes, helper launches or HTTP."""
+        if not self.disposed:
+            self.settings = updates.preferences()
+            self.refresh_preference_widgets()
+
+    def dispose(self, *_):
+        if self.disposed:
+            return
+        self.disposed = True
+        self.window_closed()
+
+
+def create_embedded_panel(current, system, executable, parent, get=updates.fetch,
+                          timeout=updates.CHECK_TIMEOUT, sync_preferences=None):
+    controller = EmbeddedController(current, system, executable, parent, get,
+                                    timeout, sync_preferences)
+    panel = build_panel(controller, parent)
+    panel.controller = controller
+    panel.dispose = controller.dispose
+    panel.refresh = controller.refresh
+    panel.connect("destroy", controller.dispose)
+    return panel
+
+
 def main(current, system, executable):
     # A saved opt-out exits before starting GTK or contacting any service.
-    if "--background" in sys.argv and not updates.preferences()["enabled"]:
+    if ("--background" in sys.argv and "--reload-preferences" not in sys.argv and
+            not updates.preferences()["enabled"]):
         return
     Application(current, system, executable).run(sys.argv)

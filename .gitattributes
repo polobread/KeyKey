@@ -10,6 +10,7 @@ DataSource/AISyntheticBigram/search-trend-unigram-review.tsv text eol=lf
 DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv text eol=lf
 DataSource/AISyntheticBigram/** text eol=lf
 DataSource/chichi77Collection/** text eol=lf
+DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv text eol=lf
 DataSource/McBopomofo/phrase.occ text eol=lf
 DataSource/McBopomofo/BPMFMappings.txt text eol=lf
 DataSource/AISyntheticArticles/typing-articles-v5-seed/*.md text eol=lf
@@ -17,6 +18,7 @@ Source/DataTables/*.cin text eol=lf
 
 # Empty final TSV fields require a trailing tab; preserve their column count.
 DataSource/AISyntheticBigram/**/*.tsv text eol=lf whitespace=-blank-at-eol
+tests/fixtures/core-functional/*.tsv text eol=lf whitespace=-blank-at-eol
 
 # Signed update feed data must retain the original bytes on checkout.
 update/stable/macos-arm64.xml -text

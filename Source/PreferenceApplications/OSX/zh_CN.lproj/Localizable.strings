@@ -89,7 +89,7 @@
 "Tap Shift to switch Chinese/English" = "单按 Shift 切换中英文";
 "A short press of either Shift switches input mode. Hold Shift or combine it with another key to keep normal keyboard behavior." = "轻按左或右 Shift 可切换中英文；长按或搭配其他按键时，保留原本的键盘操作。";
 
-"Startup input mode:" = "启动时默认输入模式：";
+"Startup input mode:" = "启动输入模式：";
 
 "Chinese" = "中文";
 

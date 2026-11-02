@@ -10,6 +10,7 @@ import csv
 import importlib.util
 import json
 import math
+import os
 from pathlib import Path
 import re
 import shutil
@@ -22,6 +23,7 @@ from phrase_unigram_supplement import apply as apply_phrases, query_for_reading
 from smart_mandarin_model import file_sha256, semantic_sha256, verify_manifest
 from unigram_collisions import CollisionIndex, write_exclusions, POLICY
 from rebuild_model import make_cin, cook, write_lexicon, add_convenience_words
+from cin_reading_frequencies import DEFAULT_SOURCE as DEFAULT_CIN_FREQUENCIES, load as load_cin_frequencies
 
 ROOT = Path(__file__).resolve().parents[4]
 COOKER = Path(__file__).resolve().parent
@@ -79,6 +81,38 @@ def publish_files(stage, root, model_files, audit_files, decision, apply=False):
     return files
 
 
+def android_model_metadata(source, db_hash):
+    """Keep Android's content-addressed cache name and verifier hash together."""
+    if re.fullmatch(r"[a-f0-9]{64}", db_hash) is None:
+        raise ValueError("invalid Android model SHA-256")
+    names = re.findall(r'INSTALLED_NAME\s*=\s*"([^"\n]+)"', source)
+    if len(names) != 1:
+        raise ValueError("cannot update Android model cache name")
+    old_name = names[0]
+    new_name = f"KeyKey-smart-{db_hash[:16]}.db"
+    updated = re.sub(r'(INSTALLED_NAME\s*=\s*")[^"\n]+(")',
+                     lambda match: match[1] + new_name + match[2], source)
+    updated, matches = re.subn(r'(EXPECTED_SHA256\s*=\s*")[a-f0-9]{64}(")',
+                               lambda match: match[1] + db_hash + match[2], updated)
+    if matches != 1:
+        raise ValueError("cannot update Android model verifier hash")
+    if old_name != new_name:
+        pattern = r'(PREVIOUS_INSTALLED_NAMES\s*=\s*\{)(.*?)(\})'
+        histories = re.findall(pattern, updated, flags=re.DOTALL)
+        if len(histories) != 1:
+            raise ValueError("cannot update Android model cache history")
+        history = histories[0][1]
+        if re.sub(r'"[^"\n]+"|[\s,]', "", history):
+            raise ValueError("invalid Android model cache history")
+        previous = list(dict.fromkeys([old_name, *re.findall(r'"([^"\n]+)"', history)]))
+        # A model rollback may select a name already in the cleanup list. Never
+        # let the installer delete the model it has just verified and opened.
+        previous = [name for name in previous if name != new_name]
+        body = "\n" + "".join(f'            "{name}",\n' for name in previous) + "    "
+        updated = re.sub(pattern, lambda match: match[1] + body + match[3], updated, flags=re.DOTALL)
+    return updated
+
+
 def rebuild_associations(db, paths, work):
     exclusions = work / "people-exclusions.txt"
     people = {row[0] for path in paths if path.name.startswith("phrase.people-")
@@ -107,10 +141,20 @@ def main():
     parser.add_argument("--output", type=Path, required=True, help="new staging directory")
     parser.add_argument("--apply", action="store_true", help="copy verified generated files into this checkout")
     parser.add_argument("--jobs", type=int, default=8)
+    cin_options = parser.add_mutually_exclusive_group()
+    cin_options.add_argument("--cin-reading-frequencies", type=Path, default=DEFAULT_CIN_FREQUENCIES,
+                             help="optional character/reading counts (enabled by default)")
+    cin_options.add_argument("--no-cin-reading-frequencies", action="store_const",
+                             const=None, dest="cin_reading_frequencies", help="use the original reading-weight estimator")
     parser.add_argument("--max-regression-actions", type=int, default=30, help="adopt when total action increase is at most this value; otherwise publish audit files only")
     args = parser.parse_args()
     if args.max_regression_actions < 0:
         parser.error("--max-regression-actions must be nonnegative")
+    if args.cin_reading_frequencies is not None:
+        args.cin_reading_frequencies = args.cin_reading_frequencies.resolve()
+        if not args.cin_reading_frequencies.is_relative_to(ROOT):
+            parser.error("CIN frequency source must be inside the checkout for reproducible manifests")
+        load_cin_frequencies(args.cin_reading_frequencies)
     inspector = module("rebuild_validation_corpus", ROOT / "DataSource/AISyntheticArticles/verify-typing-articles-v5.py")
     validation_corpus = inspector.inspect(inspector.DEFAULT_ARTICLES)
     output = args.output.resolve()
@@ -134,7 +178,7 @@ def main():
     # reading reference only. Both language-model tables are rebuilt from source.
     cin = output / "bpmf-absolute.cin"
     make_cin(cin)
-    bootstrap = cook(database, cin, output / "bootstrap")
+    bootstrap = cook(database, cin, output / "bootstrap", cin_reading_frequencies=args.cin_reading_frequencies)
     total = int(bootstrap["unigram_total_count"])
     finalizer = module("rebuild_finalizer", COOKER / "finalize-smart-mandarin-model.py")
     collision_index = CollisionIndex()
@@ -178,7 +222,8 @@ def main():
     builder.OUTPUT = output / "training-2300.txt"
     builder.REPORT = output / "training-2300.json"
     builder.main()
-    cooked = cook(database, cin, output / "cooked", custom, builder.OUTPUT)
+    cooked = cook(database, cin, output / "cooked", custom, builder.OUTPUT,
+                  cin_reading_frequencies=args.cin_reading_frequencies)
     total = cooked["unigram_total_count"]
     staged_search = output / "training-search.tsv"
     write_lexicon(staged_search, [row for row in search_entries if row["word"] not in convenience_words])
@@ -186,7 +231,7 @@ def main():
     write_json(stage_manifest, {"format": 1, "unigram_total_count": total, "sources": {}})
     refinement = finalizer.finalize(database, finalizer.DEFAULT_TRAINING,
         finalizer.DEFAULT_PROTECTED, finalizer.DEFAULT_SUPPLEMENT, staged_search,
-        finalizer.DEFAULT_COUNTS, stage_manifest)
+        finalizer.DEFAULT_COUNTS, stage_manifest, cin_reading_frequencies=args.cin_reading_frequencies)
     refinement.pop("database", None)
     for source in refinement["training_sources"]:
         source["file"] = Path(source["file"]).name
@@ -211,6 +256,11 @@ def main():
     source_paths = [ROOT / "DataSource/McBopomofo/phrase.occ", ROOT / "DataSource/McBopomofo/BPMFMappings.txt",
                     ROOT / "Source/DataTables/bpmf-ext.cin",
                     *(ROOT / DATA / name for name in ("supplemental-lexicon.tsv", "numeric-unit-lexicon.tsv"))]
+    if args.cin_reading_frequencies is not None:
+        source_paths.append(args.cin_reading_frequencies)
+        expected = cooked["cin_reading_frequencies"]["sha256"]
+        if bootstrap["cin_reading_frequencies"]["sha256"] != expected or file_sha256(args.cin_reading_frequencies) != expected:
+            raise ValueError("CIN frequency source changed during rebuild")
     write_json(data / "custom-unigram-cooker-report.json", {
         "policy": POLICY, "partial_span_characters": 2, "cooker": cooked,
         "sources": [{"file": str(path.relative_to(ROOT)), "sha256": file_sha256(path)} for path in source_paths],
@@ -269,6 +319,13 @@ def main():
                       role="rebuild regression against checked-in DB; not a new blind holdout")
     write_json(data / "collection-unigram-validation.json", comparison)
     sources = manifest["sources"]
+    sources.pop("cin_reading_frequencies", None)
+    if args.cin_reading_frequencies is not None:
+        sources["cin_reading_frequencies"] = {
+            "file": os.path.relpath(args.cin_reading_frequencies, ROOT / DATA),
+            "sha256": cooked["cin_reading_frequencies"]["sha256"],
+            "entries": cooked["cin_reading_frequencies"]["entries"],
+        }
     sources["training_articles"] = refinement["training_sources"]
     sources["protected_characters"]["sha256"] = file_sha256(finalizer.DEFAULT_PROTECTED)
     for key, filename in (("unigram_supplement", "common-unigram-supplement.tsv"), ("phrase_unigram_supplement", "common-phrase-unigram.tsv")):
@@ -337,25 +394,14 @@ def main():
     # generated metadata separate so staging can never write through that link.
     v5_output = output / "generated-v5-manifest.json"
     write_json(v5_output, v5)
-    android_path = Path("Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/SmartMandarinStore.java")
-    android = (ROOT / android_path).read_text()
-    old_name = re.search(r'INSTALLED_NAME\s*=\s*"([^"]+)"', android).group(1)
-    new_name = f"KeyKey-smart-{db_hash[:16]}.db"
-    if old_name != new_name:
-        android = android.replace(f'INSTALLED_NAME = "{old_name}"', f'INSTALLED_NAME = "{new_name}"')
-        android = android.replace('private static final String[] PREVIOUS_INSTALLED_NAMES = {',
-                                  'private static final String[] PREVIOUS_INSTALLED_NAMES = {\n            "' + old_name + '",')
-    android = re.sub(r"EXPECTED_BIGRAM_ROWS = [\d_]+", f"EXPECTED_BIGRAM_ROWS = {rows[1]:_}", android)
+    android_path = Path("Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/SharedModelDatabase.java")
+    android = android_model_metadata((ROOT / android_path).read_text(), db_hash)
     generated = [p for p in stage.rglob("*") if p.is_file() and not p.is_symlink()]
     android_output = stage / android_path
     android_output.parent.mkdir(parents=True, exist_ok=True)
     android_output.write_text(android)
     generated.append(android_output)
     generated_constants = [
-        ("Source/Loaders/Linux-IME/engine/src/smart_mandarin_store.cpp", r"ExpectedBigramRows = \d+", f"ExpectedBigramRows = {rows[1]}"),
-        ("Source/Loaders/iOS-Keyboard/KeyKeyEngine/Tests/KeyKeyEngineTests/CandidateStoreTests.swift",
-         r'(Int\(rows.first \?\? ""\) \?\? 0\) == )[\d_]+', rf"\g<1>{rows[1]:_}"),
-        ("Source/Loaders/Linux-IME/README.md", r"contains [\d,]+\s+unigrams and [\d,]+ bigrams", f"contains {rows[0]:,}\n  unigrams and {rows[1]:,} bigrams"),
         ("Source/Loaders/Android-IME/README.md", r"Bigram 恰為 [\d,]+ 筆", f"Bigram 恰為 {rows[1]:,} 筆"),
     ]
     for relative, pattern, replacement in generated_constants:

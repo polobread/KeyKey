@@ -9,6 +9,8 @@ From the repository root:
 
 Checks final syllables and canonical dictionary keys after ambiguous sequences,
 tones, invalid keys, backspaces and retyping against the actual shared C++ buffer.
+This manual legacy-parser comparison requires a checkout retaining those mobile
+parsers. Rust-only revisions use the Guanyinma core and frontend tests instead.
 """
 import itertools
 import os
@@ -32,6 +34,14 @@ def java_tool(name):
 
 
 def main():
+    legacy_sources = [SWIFT / "BopomofoSyllable.swift", SWIFT / "BopomofoReading.swift",
+                      JAVA / "BopomofoReading.java"]
+    if any(not source.is_file() for source in legacy_sources):
+        raise SystemExit(
+            "The legacy Swift/Java parsers have been removed. Run this historical "
+            "comparison in an isolated checkout retaining them; current Hsu parsing "
+            "is verified by Source/Guanyinma tests and the native FE integration tests."
+        )
     with tempfile.TemporaryDirectory(prefix="keykey-hsu-") as directory:
         work = Path(directory)
         cpp = work / "oracle.cpp"

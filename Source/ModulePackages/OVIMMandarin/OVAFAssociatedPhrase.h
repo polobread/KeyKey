@@ -29,6 +29,8 @@
 #ifndef OVAFAssociatedPhrase_h
 #define OVAFAssociatedPhrase_h
 
+#include <memory>
+
 #ifndef OV_USE_SQLITE
 	#define OV_USE_SQLITE
 #endif
@@ -47,10 +49,22 @@ namespace OpenVanilla {
     using namespace std;
 
     class OVAFAssociatedPhrase;
+
+    // Frontend-owned routing only. A supplied provider exclusively owns pure
+    // lookup; failure/inactivity never opens a native SQL query. This filter
+    // retains all candidate-panel and key handling.
+    class OVAFAssociatedPhraseQuery {
+    public:
+        virtual ~OVAFAssociatedPhraseQuery() {}
+        virtual bool isActive(OVCandidateService* candidateService) const = 0;
+        virtual bool lookup(const string& head, const vector<string>& collections,
+            vector<string>& candidates, string& error) = 0;
+    };
     
     class OVAFAssociatedPhraseContext : public OVEventHandlingContext {
     public:
-        OVAFAssociatedPhraseContext(OVAFAssociatedPhrase* module);
+        OVAFAssociatedPhraseContext(OVAFAssociatedPhrase* module,
+            std::shared_ptr<OVAFAssociatedPhraseQuery> query = std::shared_ptr<OVAFAssociatedPhraseQuery>());
         ~OVAFAssociatedPhraseContext();
         
         virtual void startSession(OVLoaderService* loaderService);
@@ -59,6 +73,7 @@ namespace OpenVanilla {
         
     protected:
         OVAFAssociatedPhrase* m_module;
+        std::shared_ptr<OVAFAssociatedPhraseQuery> m_query;
         OVSQLiteStatement* m_selectStatement;
         vector<string> m_candidates;
         bool m_keyHandled;
@@ -73,6 +88,10 @@ namespace OpenVanilla {
         ~OVAFAssociatedPhrase();
         
         virtual OVEventHandlingContext* createContext();
+        void setQueryProvider(std::shared_ptr<OVAFAssociatedPhraseQuery> query)
+        {
+            m_query = query;
+        }
         virtual const string identifier() const;
         virtual const string localizedName(const string& locale);
         virtual bool initialize(OVPathInfo* pathInfo, OVLoaderService* loaderService);
@@ -88,6 +107,7 @@ namespace OpenVanilla {
         
     protected:
         OVSQLiteConnection* m_phraseDB;
+        std::shared_ptr<OVAFAssociatedPhraseQuery> m_query;
 
         // The collections the user ticked, in the order they should contribute
         // candidates. Empty is a valid state and means no associated phrases at

@@ -41,6 +41,46 @@ class RebuildTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             rebuild.publication_decision(delta, -1)
 
+    def test_android_model_upgrade_changes_cache_and_hash_and_preserves_previous_cache(self):
+        old_hash, new_hash = "1" * 64, "2" * 64
+        old_name = f"KeyKey-smart-{old_hash[:16]}.db"
+        source = (f'static final String INSTALLED_NAME = "{old_name}";\n'
+                  'private static final String[] PREVIOUS_INSTALLED_NAMES = {\n'
+                  '    "older.db"\n};\n'
+                  f'private static final String EXPECTED_SHA256 =\n    "{old_hash}";\n')
+        updated = rebuild.android_model_metadata(source, new_hash)
+        self.assertIn(f'INSTALLED_NAME = "KeyKey-smart-{new_hash[:16]}.db"', updated)
+        self.assertIn(f'EXPECTED_SHA256 =\n    "{new_hash}"', updated)
+        self.assertIn(f'PREVIOUS_INSTALLED_NAMES = {{\n            "{old_name}",', updated)
+        self.assertIn('"older.db"', updated)
+        self.assertNotIn(new_hash, source)
+        self.assertEqual(rebuild.android_model_metadata(updated, new_hash), updated)
+
+    def test_android_model_rollback_does_not_clean_up_the_selected_cache(self):
+        current_hash, previous_hash = "1" * 64, "2" * 64
+        current_name = f"KeyKey-smart-{current_hash[:16]}.db"
+        previous_name = f"KeyKey-smart-{previous_hash[:16]}.db"
+        source = (f'static final String INSTALLED_NAME = "{current_name}";\n'
+                  'private static final String[] PREVIOUS_INSTALLED_NAMES = {\n'
+                  f'    "{previous_name}", "old.db", "old.db"\n}};\n'
+                  f'private static final String EXPECTED_SHA256 = "{current_hash}";\n')
+        updated = rebuild.android_model_metadata(source, previous_hash)
+        self.assertEqual(updated.count(f'"{previous_name}"'), 1)
+        self.assertEqual(updated.count('"old.db"'), 1)
+        self.assertIn(f'PREVIOUS_INSTALLED_NAMES = {{\n            "{current_name}",', updated)
+
+    def test_android_model_metadata_rejects_incomplete_or_ambiguous_installer(self):
+        source = ('static final String INSTALLED_NAME = "old.db";\n'
+                  'private static final String[] PREVIOUS_INSTALLED_NAMES = {};\n'
+                  f'private static final String EXPECTED_SHA256 = "{"1" * 64}";\n')
+        for broken in (source.replace("EXPECTED_SHA256", "OLD_HASH"),
+                       source.replace("PREVIOUS_INSTALLED_NAMES", "OLD_NAMES"),
+                       source + 'static final String INSTALLED_NAME = "duplicate.db";'):
+            with self.subTest(source=broken), self.assertRaises(ValueError):
+                rebuild.android_model_metadata(broken, "2" * 64)
+        with self.assertRaisesRegex(ValueError, "SHA-256"):
+            rebuild.android_model_metadata(source, "not a hash")
+
     def test_search_deduplicates_by_word_and_never_overwrites_existing_reading(self):
         with sqlite3.connect(":memory:") as db:
             db.execute("CREATE TABLE unigrams(qstring,current,probability,backoff)")

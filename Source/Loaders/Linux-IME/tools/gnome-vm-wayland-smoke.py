@@ -492,8 +492,11 @@ def restore_desktop(settings):
 def apply_config(case):
     contents = f"BopomofoLayout={case.layout}\n" \
                f"CandidateWindowStyle={case.style}\n" \
-               f"AssociatedPhraseCollections={case.collections}\n" \
                f"TraditionalToSimplified={str(case.simplified)}\n"
+    collections = {name: True for name in case.collections.split(",") if name}
+    collections.setdefault("McBopomofo", False)
+    contents += "\n[AssociatedPhrases]\n" + "".join(
+        f"{name}={enabled}\n" for name, enabled in sorted(collections.items()))
     encoded = base64.b64encode(contents.encode()).decode()
     guest(f"mkdir -p {shlex.quote(str(Path(CONFIG).parent))}; "
           f"printf %s {encoded} | base64 -d > {CONFIG}")

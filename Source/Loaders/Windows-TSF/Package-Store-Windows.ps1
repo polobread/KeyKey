@@ -156,6 +156,10 @@ $settingsBackendPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeySett
 $deploymentPath = Resolve-BuildArtifact $resolvedBuildDirectory 'KeyKeyDeployment.exe'
 $updaterPath = Resolve-BuildArtifact $resolvedBuildDirectory 'WinSparkle.dll'
 $updaterLicense = Resolve-BuildArtifact $resolvedBuildDirectory 'WinSparkle-LICENSE.txt'
+$guanyinmaNotices = Join-Path $resolvedBuildDirectory 'guanyinma/Guanyinma-NOTICES.txt'
+if (-not (Test-Path -LiteralPath $guanyinmaNotices -PathType Leaf)) {
+    throw 'The Windows build is missing required Guanyinma runtime notices. Rebuild before packaging.'
+}
 $databasePath = Resolve-BuildArtifact $resolvedBuildDirectory 'Databases\KeyKey.db'
 Assert-PeMachine -FilePath $updaterPath -ExpectedMachine 0x8664 `
     -Description 'The x64 updater DLL'
@@ -250,6 +254,9 @@ try {
     Copy-Item -LiteralPath $deploymentPath -Destination $stagedDeployment
     Copy-Item -LiteralPath $updaterPath -Destination $stagedUpdater
     Copy-Item -LiteralPath $updaterLicense -Destination $licenseDirectory
+    if (Test-Path -LiteralPath $guanyinmaNotices -PathType Leaf) {
+        Copy-Item -LiteralPath $guanyinmaNotices -Destination $licenseDirectory
+    }
     Copy-Item -LiteralPath $x86RegistrationPath -Destination $stagedRegistration
     Copy-Item -LiteralPath $databasePath -Destination $databaseDirectory
 

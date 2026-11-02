@@ -33,6 +33,10 @@ def release_tag(event, event_tag, requested, version):
             raise ValueError("release event is missing its tag")
     elif event == "workflow_dispatch":
         tag = requested.strip()
+    elif event == "pull_request":
+        if event_tag or requested.strip():
+            raise ValueError("pull request builds cannot select a publishing tag")
+        tag = ""
     else:
         raise ValueError(f"unsupported publishing event: {event}")
     channels.release_version(tag, version)

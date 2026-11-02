@@ -20,6 +20,9 @@ SOURCE = REPO / "Source"
 DEFAULT_DB = SOURCE / "Distributions/Takao/CookedDatabase/KeyKey.db"
 CACHE = ROOT / ".typing-cache"
 READING_OVERRIDES = ROOT / "reading-overrides.tsv"
+CIN_READING_FREQUENCIES = REPO / "DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv"
+sys.path.insert(0, str(SOURCE / "Distributions/Takao/DatabaseCooker"))
+from cin_reading_frequencies import load as load_cin_frequencies
 CONSONANTS = " ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙ"
 MEDIALS = " ㄧㄨㄩ"
 VOWELS = " ㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ"
@@ -173,6 +176,13 @@ def cook_snapshot(name: str, corpora: list[Path]) -> Path:
 
 
 def build_engine() -> Path:
+    # A prebuilt Guanyinma adapter uses the same line protocol and action policy.
+    override = os.environ.get("GUANYINMA_TYPING_ENGINE")
+    if override:
+        engine = Path(override).resolve()
+        if not engine.is_file() or not os.access(engine, os.X_OK):
+            raise ValueError(f"Guanyinma typing engine is not executable: {engine}")
+        return engine
     framework = SOURCE / "Frameworks"
     headers = [framework / f"{name}/Headers" for name in ("OpenVanilla", "Formosa", "Manjusri")]
     module = SOURCE / "ModulePackages/OVIMMandarin"
@@ -263,7 +273,8 @@ def key_count(query: str) -> int:
 
 class Lexicon:
     """Freeze text→readings using a reference unigram model, never the tested bigrams."""
-    def __init__(self, path: Path, input_path: Path | None = None):
+    def __init__(self, path: Path, input_path: Path | None = None,
+                 reading_frequencies: Path | None = CIN_READING_FREQUENCIES):
         words = {}
         with connect(path) as db:
             for query, text, score in db.execute("SELECT qstring,current,probability FROM unigrams ORDER BY rowid"):
@@ -276,6 +287,7 @@ class Lexicon:
                         entries = words.setdefault(text, [])
                         if not any(existing == query for existing, _ in entries):
                             entries.append((query, unknown))
+        manual_words = set()
         if READING_OVERRIDES.exists():
             for line_number, raw in enumerate(READING_OVERRIDES.read_text(encoding="utf-8").splitlines(), 1):
                 if not raw.strip() or raw.startswith("詞\t"):
@@ -292,6 +304,7 @@ class Lexicon:
                 # segmentation, while the language model still retains every
                 # alternative pronunciation.
                 words.setdefault(word, []).insert(0, (query, 1.0))
+                manual_words.add(word)
         # The composer inserts one syllable at a time. Some dictionary phrases
         # contain a reading (usually a neutral tone) that has no standalone
         # syllable row, so that spelling cannot actually be entered. Exclude
@@ -316,6 +329,22 @@ class Lexicon:
         }
         self.words = {text: entries for text, entries in self.words.items() if entries}
         self.max_length = max(map(len, self.words), default=1)
+        self.reading_frequency_source = Path(reading_frequencies).resolve() if reading_frequencies is not None else None
+        self.character_fallback_readings = {}
+        if self.reading_frequency_source is not None:
+            frequencies = {}
+            for row in load_cin_frequencies(self.reading_frequency_source):
+                frequencies.setdefault(row["character"], {})[row["qstring"]] = row["target_count"]
+            for character, entries in self.words.items():
+                if len(character) != 1 or character in manual_words or character not in frequencies:
+                    continue
+                candidates = [(frequencies[character][query], score, query)
+                              for query, score in entries if query in frequencies[character]]
+                if candidates:
+                    # Table counts first; reference probability breaks ties.
+                    # Keep statistical segmentation and phrase readings intact.
+                    self.character_fallback_readings[character] = max(
+                        candidates, key=lambda item: item[:2])[2]
 
     def segment(self, text: str, queries: list[str] | None = None) -> list[dict]:
         best = [(float("-inf"), None)] * (len(text) + 1)
@@ -337,7 +366,12 @@ class Lexicon:
             token = best[end][1]
             result.append(token)
             end = token["start"]
-        return result[::-1]
+        result.reverse()
+        if queries is None:
+            for token in result:
+                if token["length"] == 1 and token["text"] in self.character_fallback_readings:
+                    token["query"] = self.character_fallback_readings[token["text"]]
+        return result
 
 
 def load_document(path: Path, lexicon: Lexicon) -> list[dict]:

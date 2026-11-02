@@ -14,10 +14,18 @@ on:
       - 'Source/Loaders/Windows-TSF/Package-Windows.ps1'
       - 'Source/Loaders/Windows-TSF/Package-Store-Windows.ps1'
       - 'Source/Loaders/Windows-TSF/Packaging/**'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: windows-signing-tools-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   isolated:

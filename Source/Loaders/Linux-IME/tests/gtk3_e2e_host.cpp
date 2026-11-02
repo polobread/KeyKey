@@ -24,6 +24,7 @@ struct TestState {
     std::string expectedThird;
     std::vector<std::string> requiredPreedits;
     std::vector<std::string> requiredEvents;
+    bool allowTextAlternatives = false;
     std::size_t nextRequiredPreedit = 0;
     std::size_t nextRequiredEvent = 0;
     std::string lastFirstSelectionState;
@@ -58,6 +59,13 @@ std::vector<std::string> split(const std::string &value, char separator) {
 
 bool sawAllRequiredPreedits(const TestState &state) {
     return state.nextRequiredPreedit == state.requiredPreedits.size();
+}
+
+bool matchesExpectedText(const TestState &state, const std::string &value,
+                         const std::string &expected) {
+    if (!state.allowTextAlternatives) return value == expected;
+    const auto alternatives = split(expected, '|');
+    return std::find(alternatives.begin(), alternatives.end(), value) != alternatives.end();
 }
 
 std::string jsonString(const std::string &value) {
@@ -248,7 +256,7 @@ void onPreeditChanged(GtkEntry *, gchar *preedit, gpointer userData) {
         return;
     }
     if (state.nextRequiredPreedit < state.requiredPreedits.size() &&
-        value == state.requiredPreedits[state.nextRequiredPreedit]) {
+        matchesExpectedText(state, value, state.requiredPreedits[state.nextRequiredPreedit])) {
         ++state.nextRequiredPreedit;
     }
     if (state.closeScenario && !state.readyToClose &&
@@ -275,7 +283,7 @@ void onTextChanged(GtkEditable *editable, gpointer userData) {
         return;
     }
 
-    if (!state.positiveComplete && value == state.expectedCommit &&
+    if (!state.positiveComplete && matchesExpectedText(state, value, state.expectedCommit) &&
         sawAllRequiredPreedits(state)) {
         state.positiveComplete = true;
         writeValue(state.artifactDirectory + "/positive-ready", value);
@@ -441,6 +449,8 @@ int main(int argc, char **argv) {
     }
 
     TestState state;
+    const char *alternatives = std::getenv("KEYKEY_E2E_ALLOW_TEXT_ALTERNATIVES");
+    state.allowTextAlternatives = alternatives != nullptr && std::string(alternatives) == "1";
     state.artifactDirectory = artifactDirectory;
     state.focusScenario = focusScenario;
     state.editingScenario = editingScenario;

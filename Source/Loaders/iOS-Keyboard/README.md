@@ -6,7 +6,12 @@
 一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。**1.3.7** 已在 App Store 正式上線，一般使用者不需加入 TestFlight。以下是開發與測試資訊。
 
 琦琦輸入法的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
-容器 App。App 與鍵盤 extension 的原始碼版本由 Xcode project 的
+容器 App。兩個入口固定使用 **Guanyinma（Rust）單核心**，不再建置舊 Swift 引擎，
+也不提供核心選擇或失敗回退。舊 Swift 資料不自動匯入、修改或刪除；App 設定與鍵盤自己的
+偏好沿用既有 App Group revision 規則。架構、資料路徑與建置責任見
+[Guanyinma iOS 接合](../../../docs/GUANYINMA_IOS_ADAPTER.md)。
+
+App 與鍵盤 extension 的原始碼版本由 Xcode project 的
 `MARKETING_VERSION` 統一設定，Simulator 封裝流程也從此讀取版號。
 首頁會從 container app bundle 的 `CFBundleShortVersionString` 顯示目前版本，避免畫面
 版號和 Xcode 的 `MARKETING_VERSION` 失同步。
@@ -26,7 +31,7 @@
 `Generic-simplex-cin` 表。倉頡最多五碼，支援 `?`／`*`；簡易最多兩碼、滿碼查詢。
 預設依 macOS：倉頡錯碼清除及選字排序開啟、滿五碼查詢關閉；簡易保留錯碼、
 固定候選順序。簡易即時候選預設關閉，啟用時與錯碼清除互斥。倉頡另可選原始、
-半形或混合標點。選字排序保存在各輸入入口的私有偏好設定，不修改內建字表。
+半形或混合標點。選字排序保存在各輸入入口的私有 Guanyinma 資料庫，不修改內建字表。
 倉頡虛擬鍵盤的「即時候選」與「未打完也能選字」新設定缺值時預設開啟，保留舊版已儲存的即時候選選擇。
 一至四碼先列完整碼候選（原排序），後接前綴候選；前綴使用既有 1,500 字排名，未收錄字沿原字表順序，
 過濾缺字與去重後最多 36 字，五碼僅列完整碼。只剩一字也不因預覽而自動送出。
@@ -39,8 +44,8 @@ App「輸入法設定」分列「倉頡設定（虛擬鍵盤）」與「倉頡�
 
 試打步驟與目前驗證範圍見[手機倉頡前綴試用](../../../docs/MOBILE_CANGJIE_PREFIX_TRIAL.md)。
 
-共用案例位於 `tests/fixtures/mobile-table-input/cases.tsv`；Swift 與 Android 同時驗證
-五碼／兩碼、候選、萬用字元、錯碼、切換保留與重複交接等行為。
+四法演算法、排序、學習與組字邊界由 Guanyinma 共用無 UI 測試驗證；iOS 只補 FE 設定、
+座標、一次性宿主效果及字型／儲存串接測試。
 
 App「輸入法設定」的「使用空白鍵選字」預設關閉，好打注音虛擬鍵盤與 App 實體鍵盤編輯器讀取同一個 App Group 值。關閉時，讀音完成後按空白會在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後可用空白完成讀音、開候選及翻頁。關閉時仍可點選組字或按實體鍵盤 `↓` 開候選。此選項只在 App 調整，鍵盤「設」頁顯示目前值，避免兩個入口各自儲存。
 
@@ -52,8 +57,8 @@ App「輸入法設定」的「使用空白鍵選字」預設關閉，好打注�
 
 容器 App 的「管理好打注音自訂詞」可新增、編輯、刪除詞句，也可匯入／匯出 macOS
 `MJSR version 1.0.0` 檔案的自訂詞段落。輸入每字一組注音，例如 `ㄋㄧˇ ㄏㄠˇ`，
-或用標準鍵位 `su3cl3`。自訂詞存在 App Group，鍵盤只讀取；好打注音在選字及確定
-整句後學習候選與相鄰詞關係。因為維持 `RequestsOpenAccess = false`，鍵盤的學習資料
+或用標準鍵位 `su3cl3`。自訂詞 publication 存在 App Group，鍵盤只讀取並同步到私人 Rust 詞庫；好打注音在明確
+選字後學習候選與相鄰詞關係。因為維持 `RequestsOpenAccess = false`，鍵盤的學習資料
 只存於鍵盤自己的沙箱，App 內實體鍵盤編輯器的學習資料也獨立儲存。鍵盤「設」頁可重設
 鍵盤學習紀錄；重設不刪自訂詞。macOS 匯出檔內加密的學習資料區塊不會匯入行動版。
 
@@ -64,7 +69,7 @@ App「輸入法設定」的「使用空白鍵選字」預設關閉，好打注�
 已寫入欄位的中文字不會因組字列消失而遺失。
 
 ```
-KeyKeyEngine/     Swift Package，純邏輯，可用 swift test 在 Mac 上驗
+KeyKeyEngine/     Swift FE 介面、publication 與 Guanyinma C ABI adapter
 ContainerApp/     容器 App（安裝引導、實體鍵盤編輯器）
 Keyboard/         UIInputViewController extension
 KeyKeyiOS.xcodeproj
@@ -87,26 +92,37 @@ xcodebuild -project KeyKeyiOS.xcodeproj -scheme "chichi77 KeyKey" \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
+建置需要已安裝 `Source/Guanyinma/rust-toolchain.toml` 指定的 Rust toolchain、同版本 `rust-src` 與對應 iOS
+target。Xcode 先建置共用 Rust 靜態庫再連結 App 與 extension；不執行完整核心測試。
+
 `KeyKey.db` 是版控內的共用建置輸入。Xcode Cloud 會自動執行
 `ci_scripts/ci_post_clone.sh` 驗證資料庫，並以 `CI_BUILD_NUMBER` 同步容器 App 與
 Keyboard extension 的 build number；本機建置維持專案內的預設 build number。
+Cloud 建置環境須事先提供 `rustup`；post-clone hook 只以既有工具準備指定 toolchain 與 iOS
+target，不下載或執行遠端 shell 安裝器。未預備該工具時會明確失敗；完整前置要求見
+[Guanyinma iOS 接合](../../../docs/GUANYINMA_IOS_ADAPTER.md)。
 
-引擎的測試不需要模擬器：
+少量 Swift 串接／設定測試不需要模擬器；從本目錄以 host wrapper 準備 Rust 靜態庫：
 
 ```sh
-cd KeyKeyEngine && swift test
+bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter InputMethodSettingsTests
+bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter GuanyinmaIntegrationTests
 ```
+
+完整 Rust／C ABI CI 驗證只在 `guanyinma-core.yml`；iOS workflow 直接編譯核心，保留少量
+FE 串接冒煙。Mac 上的 Swift 測試不代表真正 keyboard extension 宿主已驗收。
 
 容器 App 的購買流程測試也可在 Mac 執行；在本目錄執行：
 
 ```sh
-swift test --scratch-path /tmp/keykey-supporter-flow-tests
+KEYKEY_SWIFT_PACKAGE_PATH="$PWD" \
+  bash ../../Guanyinma/tools/test-ios-swift-package.sh --scratch-path /tmp/keykey-supporter-flow-tests
 ```
 
 測試直接編譯 `ContainerApp/SupporterStore.swift`，以替代的商店介面驗證商品載入失敗與
 重試、購買／恢復／載入互斥、取消與錯誤後解除忙碌，以及授權快取更新。
-此測試套件不加入 keyboard extension 或 `KeyKeyEngine`；仍須另用 Sandbox Apple ID
-驗證真實交易與 App Store Connect 商品設定。
+這些測試只驗證購買流程的 FE 契約，不啟動 keyboard extension，也不取代核心測試；仍須另用
+Sandbox Apple ID 驗證真實交易與 App Store Connect 商品設定。
 
 ### USB 真機安裝
 
@@ -162,12 +178,10 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
 
 ## 與其他平台的差異
 
-- **引擎是 Swift 重寫**，不載入 `Source/Frameworks` 的 C++ core。
-- **但資料層走預先產生的共用 `KeyKey.db`**，不像 Android 在執行時解析 `.cin`。
-  keyboard extension 的記憶體上限約 60 MB，超過會被系統直接終止且沒有 crash
-  log；SQLite 只映射查詢用到的頁，資料層常駐足跡不到 1 MB。
-- `Mandarin-bpmf-cin` 的 key 是 Formosa 的 absolute-order 編碼，不是鍵盤按鍵，
-  所以 `BopomofoSyllable` 必須實作該編碼才查得到東西。
+- **輸入演算法使用 Guanyinma Rust 單核心**，Swift 保留 iOS frontend 與 C ABI 接合。
+- **資料層使用預先產生的共用 `KeyKey.db`**；建置只驗證並複製，不 cooker。
+  keyboard extension 的記憶體限制與真實宿主驗證需獨立檢查，host 測試不能代替。
+- 讀音與資料庫 query 編碼由 Guanyinma 共用 codec 處理；Swift 只正規化詞庫欄位輸入。
 - **`RequestsOpenAccess = false`**：不連網，鍵盤可唯讀 App Group 的設定，
   鍵盤內修改的設定與學習資料則存在 extension 自己的沙箱。代價是
   iOS 把 `UIFeedbackGenerator` 綁在這個權限後面，因此沒有按鍵震動。

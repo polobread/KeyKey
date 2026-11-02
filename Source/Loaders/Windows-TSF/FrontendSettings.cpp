@@ -392,7 +392,7 @@ const SharedPreference sharedPreferences[] = {
     {"Generic-cj-cin", "UseDynamicFrequency", "false", true},
     {"Generic-cj-cin", "UseCharactersSupportedByEncoding", ""},
     {"Generic-cj-cin", "UseOverrideTable", ""},
-    {"Generic-simplex-cin", "ShouldCommitAtMaximumRadicalLength", "false", true},
+    {"Generic-simplex-cin", "ShouldCommitAtMaximumRadicalLength", "true", true},
     {"Generic-simplex-cin", "UseCharactersSupportedByEncoding", ""},
     {"AssociatedPhrase", "EnabledCollections", "McBopomofo"},
     {"Loader", "IgnoreCapsLockInChinese", "true", true, 2},
@@ -429,7 +429,7 @@ std::unique_ptr<Plist> ParseRuntimeSnapshot(const std::wstring& source) {
     if (source.empty() || source.size() > SharedRuntimePreferences::maximumLength ||
         source.find(L'\0') != std::wstring::npos) return {};
     const auto utf8 = OpenVanilla::OVUTF8::FromUTF16(source);
-    const unsigned version = utf8.compare(0, 3, "v2;") == 0 ? 2
+    const unsigned version = utf8.compare(0, 3, "v3;") == 0 ? 3 : utf8.compare(0, 3, "v2;") == 0 ? 2
         : utf8.compare(0, 3, "v1;") == 0 ? 1 : 0;
     if (!version) return {};
     size_t offset = 3;
@@ -457,6 +457,9 @@ std::unique_ptr<Plist> ParseRuntimeSnapshot(const std::wstring& source) {
         if (!value || value->type() != Plist::String || value->stringValue().size() > 4096) return {};
         if (setting.boolean && value->stringValue() != "true" && value->stringValue() != "false") return {};
     }
+    // v3 publishers inserted a core selector before visibility. Consume it for
+    // wire compatibility, but it cannot affect this Guanyinma-only frontend.
+    if (version == 3 && !readValue("Retired.InputCore")) return {};
     bool anyVisible = false;
     for (const auto& method : kInputMethods) {
         const auto key = std::string("Visible.") + method.identifier;

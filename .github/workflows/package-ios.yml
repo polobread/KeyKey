@@ -1,10 +1,23 @@
 name: Package iOS Simulator
 
 on:
+  pull_request:
+    paths:
+      - 'Source/Loaders/iOS-Keyboard/**'
+      - 'Source/DataTables/**'
+      - '.github/workflows/package-ios.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/**'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: package-ios-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   package:
@@ -36,14 +49,30 @@ jobs:
         shell: bash
         run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
 
-      - name: Cook database
+      - name: Read the pinned Rust toolchain
+        id: rust
+        shell: bash
+        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform ios
+
+      - name: Prepare Rust static-library targets
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+          components: rust-src
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+
+      - name: Test iOS notice selection and attribution
+        shell: bash
+        run: python3 Source/Guanyinma/tools/test_ios_runtime_notices.py
+
+      - name: Verify shared database
         shell: bash
         run: make -C Source/Distributions/Takao/DatabaseCooker
 
-      - name: Test iOS engine
+      - name: Test iOS Guanyinma integration
         working-directory: Source/Loaders/iOS-Keyboard/KeyKeyEngine
         shell: bash
-        run: swift test
+        run: bash ../../../Guanyinma/tools/test-ios-swift-package.sh --filter 'GuanyinmaIntegrationTests'
 
       - name: Build unsigned Simulator app
         working-directory: Source/Loaders/iOS-Keyboard
@@ -68,8 +97,8 @@ jobs:
           [[ -d "$app" ]]
           [[ -d "$extension" ]]
           [[ -f "$database" ]]
-          python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
-            "$database"
+          bash Source/Loaders/iOS-Keyboard/verify-testflight-archive.sh \
+            --allow-unsigned-simulator "$app"
 
           built_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Info.plist")
           extension_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$extension/Info.plist")

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(KeyKeyWindowsTsf VERSION 1.3.8 LANGUAGES C CXX)
+project(KeyKeyWindowsTsf VERSION 1.5.0 LANGUAGES C CXX)
 
 set(KEYKEY_VERSION_TWEAK 0)
 if(NOT "${PROJECT_VERSION_TWEAK}" STREQUAL "")
@@ -19,6 +19,12 @@ set(KEYKEY_VERSION_DEFINITIONS
 
 include(CTest)
 
+option(KEYKEY_BUILD_MIGRATION_BASELINE
+    "Build the explicit historical Rust migration baseline recorder" OFF)
+
+# Windows has one required core. Do not let an older cached option disable it.
+unset(KEYKEY_ENABLE_GUANYINMA CACHE)
+
 if(NOT WIN32)
     message(FATAL_ERROR "The Windows TSF frontend can only be built on Windows.")
 endif()
@@ -26,7 +32,9 @@ endif()
 if(MSVC)
     # A TSF DLL is injected into many client processes. Statically link the
     # runtime so deployment does not depend on a particular VC redist version.
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    # The pinned Rust library and its SQLite are built with +crt-static
+    # (/MT). Keep that ABI even when debugging native frontend code.
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
     if(CMAKE_GENERATOR MATCHES "^Ninja")
         # Capture cl's localized pipe output without transcoding. The compiler
         # launcher below normalizes its prefix for Ninja's byte-based parser.
@@ -51,7 +59,7 @@ if(MSVC)
     endif()
 endif()
 
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
 if(MSVC AND CMAKE_GENERATOR MATCHES "^Ninja")
     foreach(language C CXX)
         set(CMAKE_${language}_COMPILER_LAUNCHER "${Python3_EXECUTABLE}"
@@ -84,7 +92,6 @@ target_compile_definitions(keykey_third_party PRIVATE
     XML_STATIC
     _CRT_SECURE_NO_WARNINGS
 )
-target_link_libraries(keykey_third_party PUBLIC winsqlite3)
 set_target_properties(keykey_third_party PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(keykey_core STATIC
@@ -94,15 +101,10 @@ add_library(keykey_core STATIC
     "${KEYKEY_SOURCE}/ModulePackages/OVOFHanConvert/OVOFHanConvert.cpp"
     "${KEYKEY_SOURCE}/ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c"
     "${KEYKEY_SOURCE}/ModulePackages/OVOFHanConvert/VXHCSC2TCTable.c"
-    WindowsTableInputMethod.cpp
     "${KEYKEY_SOURCE}/Frameworks/OpenVanilla/Source/OVFrameworkInfo.cpp"
     "${KEYKEY_SOURCE}/Frameworks/PlainVanilla/Source/PVPropertyListExpat.cpp"
     "${KEYKEY_SOURCE}/Frameworks/Formosa/Source/Mandarin.cpp"
-    "${KEYKEY_SOURCE}/Frameworks/Manjusri/Source/Node.cpp"
-    "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp"
-    "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp"
     "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVAFAssociatedPhrase.cpp"
-    "${KEYKEY_SOURCE}/ModulePackages/OVIMGeneric/OVIMGeneric.cpp"
     KeyKeyEngine.cpp
 )
 target_compile_features(keykey_core PUBLIC cxx_std_17)
@@ -133,6 +135,32 @@ target_include_directories(keykey_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 target_link_libraries(keykey_core PUBLIC keykey_third_party shcore)
+find_program(KEYKEY_CARGO_EXECUTABLE cargo REQUIRED)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(KEYKEY_RUST_TARGET x86_64-pc-windows-msvc)
+else()
+    set(KEYKEY_RUST_TARGET i686-pc-windows-msvc)
+endif()
+set(KEYKEY_RUST_BUILD "${CMAKE_CURRENT_BINARY_DIR}/guanyinma")
+set(KEYKEY_RUST_LIBRARY "${KEYKEY_RUST_BUILD}/${KEYKEY_RUST_TARGET}/release/guanyinma.lib")
+add_custom_target(keykey_guanyinma_build
+    COMMAND "${Python3_EXECUTABLE}" "${KEYKEY_SOURCE}/Guanyinma/tools/build-windows-core.py"
+        --cargo "${KEYKEY_CARGO_EXECUTABLE}" --target "${KEYKEY_RUST_TARGET}"
+        --target-dir "${KEYKEY_RUST_BUILD}"
+    BYPRODUCTS "${KEYKEY_RUST_LIBRARY}" "${KEYKEY_RUST_BUILD}/include/guanyinma_sqlite3.h"
+        "${KEYKEY_RUST_BUILD}/Guanyinma-NOTICES.txt"
+    VERBATIM)
+add_library(keykey_guanyinma STATIC IMPORTED GLOBAL)
+set_target_properties(keykey_guanyinma PROPERTIES IMPORTED_LOCATION "${KEYKEY_RUST_LIBRARY}")
+add_dependencies(keykey_guanyinma keykey_guanyinma_build)
+add_dependencies(keykey_third_party keykey_guanyinma_build)
+target_include_directories(keykey_third_party PUBLIC "${KEYKEY_RUST_BUILD}/include")
+target_link_libraries(keykey_third_party PUBLIC keykey_guanyinma)
+target_sources(keykey_core PRIVATE GuanyinmaWindowsAdapter.cpp)
+set_source_files_properties(GuanyinmaWindowsAdapter.cpp GuanyinmaWindowsUserData.cpp
+    PROPERTIES COMPILE_OPTIONS "/std:c++20")
+target_link_libraries(keykey_core PUBLIC keykey_guanyinma windowsapp dwrite
+    ws2_32 userenv bcrypt ntdll advapi32)
 set_target_properties(keykey_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(MSVC)
     target_compile_options(keykey_core PRIVATE /utf-8)
@@ -170,7 +198,7 @@ add_custom_command(OUTPUT "${KEYKEY_SYMBOL_HEADER}"
         "${CMAKE_CURRENT_SOURCE_DIR}/Generate-SymbolResources.ps1" -Output "${KEYKEY_SYMBOL_HEADER}"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Generate-SymbolResources.ps1"
         "${KEYKEY_SOURCE}/Distributions/Takao/OnlineData/CannedMessages.plist"
-        "${KEYKEY_SOURCE}/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift"
+        "${KEYKEY_SOURCE}/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/KeyboardInput.swift"
         "${CMAKE_CURRENT_SOURCE_DIR}/SymbolEmojiSupplement.json"
     VERBATIM)
 add_custom_target(keykey_symbol_resources DEPENDS
@@ -206,6 +234,7 @@ add_library(KeyKeySettingsBackend SHARED
     UserDataStore.cpp
     SettingsModern/SettingsBackend.cpp
 )
+target_sources(KeyKeySettingsBackend PRIVATE GuanyinmaWindowsUserData.cpp)
 target_compile_features(KeyKeySettingsBackend PRIVATE cxx_std_17)
 target_compile_definitions(KeyKeySettingsBackend PRIVATE
     UNICODE
@@ -318,7 +347,7 @@ if(BUILD_TESTING)
     if(CMAKE_CXX_FLAGS MATCHES "fsanitize=address")
         set_tests_properties(KeyKeyModuleLifetime PROPERTIES DISABLED TRUE)
     endif()
-    add_executable(KeyKeySharedDataProtectionTest SharedDataProtectionTest.cpp UserDataStore.cpp)
+    add_executable(KeyKeySharedDataProtectionTest SharedDataProtectionTest.cpp LegacyUserDataTestFixture.cpp)
     target_link_libraries(KeyKeySharedDataProtectionTest PRIVATE keykey_core shell32 user32)
     target_compile_options(KeyKeySharedDataProtectionTest PRIVATE /utf-8)
     add_test(NAME KeyKeySharedDataProtection COMMAND KeyKeySharedDataProtectionTest)
@@ -338,7 +367,8 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyPopupLifecycle COMMAND KeyKeyPopupLifecycleTest)
     set_tests_properties(KeyKeyPopupLifecycle PROPERTIES RUN_SERIAL TRUE)
     add_executable(KeyKeyTsfOutputBehaviorTest TsfOutputBehaviorTest.cpp
-        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp)
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp
+        GuanyinmaWindowsUserData.cpp)
     target_compile_features(KeyKeyTsfOutputBehaviorTest PRIVATE cxx_std_17)
     target_compile_definitions(KeyKeyTsfOutputBehaviorTest PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX KEYKEY_SYMBOL_TEST_WINDOWS)
     target_compile_options(KeyKeyTsfOutputBehaviorTest PRIVATE /utf-8)
@@ -346,6 +376,30 @@ if(BUILD_TESTING)
     target_link_libraries(KeyKeyTsfOutputBehaviorTest PRIVATE keykey_core ole32 oleaut32 uuid advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme dwmapi)
     add_dependencies(KeyKeyTsfOutputBehaviorTest keykey_symbol_resources keykey_database_deploy)
     add_test(NAME KeyKeyTsfOutputCommitBehavior COMMAND KeyKeyTsfOutputBehaviorTest)
+    add_test(NAME KeyKeyGuanyinmaTsfHostEffects COMMAND KeyKeyTsfOutputBehaviorTest --guanyinma)
+    set_tests_properties(KeyKeyGuanyinmaTsfHostEffects PROPERTIES RUN_SERIAL TRUE)
+    add_executable(KeyKeyDesktopInputHost tests/DesktopInputHost.cpp
+        LangBarButton.cpp TextService.cpp CandidateWindow.cpp SymbolPanel.cpp)
+    target_compile_features(KeyKeyDesktopInputHost PRIVATE cxx_std_20)
+    target_compile_options(KeyKeyDesktopInputHost PRIVATE /utf-8)
+    target_include_directories(KeyKeyDesktopInputHost BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    target_link_libraries(KeyKeyDesktopInputHost PRIVATE keykey_core ole32 oleaut32 uuid
+        advapi32 gdi32 shell32 shcore user32 d2d1 dwrite uxtheme dwmapi)
+    add_dependencies(KeyKeyDesktopInputHost keykey_symbol_resources keykey_database_deploy)
+    add_test(NAME KeyKeyWindowsDesktopInput
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/desktop_input_matrix.py"
+            --host "$<TARGET_FILE:KeyKeyDesktopInputHost>"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/desktop-input")
+    set_tests_properties(KeyKeyWindowsDesktopInput PROPERTIES LABELS "desktop-input" TIMEOUT 300 RUN_SERIAL TRUE)
+    option(KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS "Run 100 rounds of Windows desktop TSF scenarios" OFF)
+    if(KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS)
+        add_test(NAME KeyKeyWindowsDesktopStability
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/desktop_input_matrix.py"
+                --host "$<TARGET_FILE:KeyKeyDesktopInputHost>"
+                --categories stability --rounds 100
+                --output "${CMAKE_CURRENT_BINARY_DIR}/desktop-input")
+        set_tests_properties(KeyKeyWindowsDesktopStability PROPERTIES LABELS "desktop-stability" TIMEOUT 900 RUN_SERIAL TRUE)
+    endif()
     add_test(NAME KeyKeyCapsLockModes COMMAND KeyKeyTsfOutputBehaviorTest --caps-lock)
     add_test(NAME KeyKeySymbolPaletteRouting COMMAND KeyKeyTsfOutputBehaviorTest --symbol-routing)
     add_test(NAME KeyKeySymbolPaletteReopen COMMAND KeyKeyTsfOutputBehaviorTest --symbol-reopen)
@@ -469,6 +523,32 @@ if(BUILD_TESTING)
     add_test(NAME KeyKeyEngineNumpad COMMAND KeyKeyEngineSmokeTest numpad)
     add_test(NAME KeyKeyEngineEscapeKeep COMMAND KeyKeyEngineSmokeTest keep)
     add_test(NAME KeyKeyEngineEscapeClear COMMAND KeyKeyEngineSmokeTest clear)
+    add_executable(KeyKeyGuanyinmaIntegrationTest GuanyinmaWindowsIntegrationTest.cpp
+        GuanyinmaWindowsUserData.cpp UserDataStore.cpp LegacyUserDataTestFixture.cpp)
+    target_compile_options(KeyKeyGuanyinmaIntegrationTest PRIVATE /utf-8)
+    target_link_libraries(KeyKeyGuanyinmaIntegrationTest PRIVATE keykey_core shell32 user32)
+    add_dependencies(KeyKeyGuanyinmaIntegrationTest keykey_database_deploy)
+    add_test(NAME KeyKeyGuanyinmaAdapter COMMAND KeyKeyGuanyinmaIntegrationTest input)
+    add_test(NAME KeyKeyGuanyinmaUserData COMMAND KeyKeyGuanyinmaIntegrationTest data)
+
+    # Historical recorder only: legacy sources never link into product targets.
+    # Explicit opt-in, excluded from daily builds/tests and installer payloads.
+    if(KEYKEY_BUILD_MIGRATION_BASELINE)
+        add_executable(KeyKeyCoreMigrationBaseline EXCLUDE_FROM_ALL
+            "${KEYKEY_ROOT}/tests/desktop_smart_functional.cpp"
+            WindowsTableInputMethod.cpp
+            "${KEYKEY_SOURCE}/Frameworks/Manjusri/Source/Node.cpp"
+            "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMTraditionalMandarin.cpp"
+            "${KEYKEY_SOURCE}/ModulePackages/OVIMMandarin/OVIMSmartMandarin.cpp"
+            "${KEYKEY_SOURCE}/ModulePackages/OVIMGeneric/OVIMGeneric.cpp")
+        target_compile_features(KeyKeyCoreMigrationBaseline PRIVATE cxx_std_17)
+        if(MSVC)
+            target_compile_options(KeyKeyCoreMigrationBaseline PRIVATE /W4 /permissive- /utf-8)
+        endif()
+        target_link_libraries(KeyKeyCoreMigrationBaseline PRIVATE
+            keykey_core advapi32 gdi32 ole32 shell32 user32 uuid)
+        add_dependencies(KeyKeyCoreMigrationBaseline keykey_database)
+    endif()
 
     add_executable(KeyKeyTableInputTest TableInputTest.cpp)
     target_compile_features(KeyKeyTableInputTest PRIVATE cxx_std_17)
@@ -493,6 +573,11 @@ if(BUILD_TESTING)
             COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
                 --project "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern.UiTests/SettingsModern.UiTests.csproj"
                 --configuration Release "--property:KeyKeyRuntimeDirectory=$<TARGET_FILE_DIR:KeyKeyTsf>")
+        add_test(NAME KeyKeyGuanyinmaSettingsControls
+            COMMAND "${KEYKEY_DOTNET_EXECUTABLE}" run
+                --project "${CMAKE_CURRENT_SOURCE_DIR}/SettingsModern.UiTests/SettingsModern.UiTests.csproj"
+                --configuration Release "--property:KeyKeyRuntimeDirectory=$<TARGET_FILE_DIR:KeyKeyTsf>"
+                -- --guanyinma-data)
     endif()
 
     add_executable(KeyKeyCandidateStateTest CandidateStateTest.cpp)

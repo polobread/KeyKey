@@ -1,17 +1,34 @@
 name: Android Play Release
 
 on:
+  pull_request:
+    paths:
+      - 'Source/Loaders/Android-IME/**'
+      - 'Source/DataTables/**'
+      - '.github/workflows/android-play-release.yml'
+      - '.github/workflows/package-android.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/**'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-play-release
-  cancel-in-progress: false
+  group: android-play-release-${{ github.event_name == 'pull_request' && github.ref || 'publish' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  verify-release-bundle:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/package-android.yml
+    with:
+      release_bundle: true
+
   release-google-play:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: google-play-release
@@ -58,11 +75,30 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Read the pinned Rust toolchain
+        id: rust
+        shell: bash
+        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform android
+
+      - name: Prepare Rust Android archives and host JNI toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+          components: rust-src
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+
+      - name: Test mobile notice selection and attribution
+        shell: bash
+        run: |
+          python3 Source/Guanyinma/tools/test_ios_runtime_notices.py
+          python3 Source/Guanyinma/tools/test_android_runtime_notices.py
+
       - name: Ensure Android SDK packages are installed
         shell: bash
         run: >-
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           "platforms;android-36.1" "build-tools;36.0.0"
+          "ndk;27.2.12479018" "cmake;3.22.1"
 
       - name: Cook the Smart Mandarin database
         shell: bash
@@ -101,9 +137,23 @@ jobs:
         run: |
           set -euo pipefail
           ./gradlew --no-daemon --no-configuration-cache \
-            lintRelease testDebugUnitTest bundleRelease \
+            lintRelease testDebugUnitTest \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaNativeTest' \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaIntegrationTest' \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaUserDataTest' \
+            --tests 'tw.chichi77.keykey.android.UserPhraseArchiveTest' \
+            --tests 'tw.chichi77.keykey.android.LicenseNoticesTest' \
+            bundleRelease \
             -PkeykeyVersionName="$VERSION" \
             -PkeykeyVersionCode="$VERSION_CODE"
+
+      - name: Verify packaged runtime notices
+        shell: bash
+        run: python3 Source/Guanyinma/tools/verify-android-runtime-notices.py Source/Loaders/Android-IME/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Verify headless JNI smoke executed
+        shell: bash
+        run: python3 Source/Loaders/Android-IME/tools/verify-guanyinma-smoke.py Source/Loaders/Android-IME/app/build/test-results/testDebugUnitTest
 
       - name: Verify signed AAB
         shell: bash

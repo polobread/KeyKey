@@ -243,6 +243,8 @@ try {
         }
         'test data' | Set-Content -LiteralPath (Join-Path $runtime 'Databases\KeyKey.db')
         'test license' | Set-Content -LiteralPath (Join-Path $runtime 'WinSparkle-LICENSE.txt')
+        New-Item -ItemType Directory -Path (Join-Path $runtime 'guanyinma') -Force | Out-Null
+        'test core notices' | Set-Content -LiteralPath (Join-Path $runtime 'guanyinma/Guanyinma-NOTICES.txt')
     }
     $fakeTool = Join-Path $fixture 'sign-tool.ps1'
     @'

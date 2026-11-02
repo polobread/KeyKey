@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "UserDataStore.h"
 #include "sqlite3.h"
@@ -10,11 +11,15 @@
 #include "StartupInputMode.h"
 #include "SharedTableSettings.h"
 #include "FrontendSettings.h"
+#include "GuanyinmaWindowsUserData.h"
 
 namespace {
 struct Collection { std::wstring source; std::wstring display; };
-std::vector<KeyKey::WindowsTsf::UserPhrase> phrases;
 std::vector<Collection> collections;
+struct UserDataHandle {
+    std::vector<KeyKey::WindowsTsf::UserPhrase> rows;
+    std::unique_ptr<KeyKey::WindowsTsf::GuanyinmaWindowsUserData> rust;
+};
 
 void CopyTo(const std::wstring& source, wchar_t* target, int capacity) {
     if (!target || capacity <= 0) return;
@@ -25,6 +30,56 @@ void CopyTo(const std::wstring& source, wchar_t* target, int capacity) {
 }
 
 extern "C" {
+__declspec(dllexport) void* __cdecl KeyKeyOpenUserData(const wchar_t* model) {
+    try {
+        if (!model) return nullptr;
+        auto handle = std::make_unique<UserDataHandle>();
+        handle->rust = std::make_unique<KeyKey::WindowsTsf::GuanyinmaWindowsUserData>(model);
+        return handle.release();
+    } catch (...) { return nullptr; }
+}
+__declspec(dllexport) void __cdecl KeyKeyCloseUserData(void* handle) { delete static_cast<UserDataHandle*>(handle); }
+__declspec(dllexport) int __cdecl KeyKeyUserDataLoad(void* opaque) {
+    auto* handle = static_cast<UserDataHandle*>(opaque);
+    if (!handle) return -1;
+    try {
+        handle->rows = handle->rust->load();
+        return static_cast<int>(handle->rows.size());
+    } catch (...) { handle->rows.clear(); return -1; }
+}
+__declspec(dllexport) int __cdecl KeyKeyUserDataPhraseAt(void* opaque, int index, std::int64_t* row,
+    wchar_t* text, int textCapacity, wchar_t* reading, int readingCapacity) {
+    const auto* handle = static_cast<UserDataHandle*>(opaque);
+    if (!handle || !row || index < 0 || static_cast<size_t>(index) >= handle->rows.size()) return 0;
+    const auto& phrase = handle->rows[index]; *row = phrase.rowid;
+    CopyTo(phrase.text, text, textCapacity); CopyTo(phrase.reading, reading, readingCapacity); return 1;
+}
+// Rust row IDs resolve only in the window handle's current snapshot.
+__declspec(dllexport) int __cdecl KeyKeyUserDataSave(void* opaque, std::int64_t row, const wchar_t* text, const wchar_t* reading) {
+    auto* handle = static_cast<UserDataHandle*>(opaque);
+    if (!handle || !text || !reading) return 0;
+    try {
+        return handle->rust->save({row, text, reading});
+    } catch (...) { return 0; }
+}
+__declspec(dllexport) int __cdecl KeyKeyUserDataDelete(void* opaque, std::int64_t row) {
+    auto* handle = static_cast<UserDataHandle*>(opaque); if (!handle) return 0;
+    try {
+        return handle->rust->remove(row);
+    } catch (...) { return 0; }
+}
+__declspec(dllexport) int __cdecl KeyKeyUserDataReset(void* opaque) {
+    auto* handle = static_cast<UserDataHandle*>(opaque); if (!handle) return 0;
+    try {
+        return handle->rust->resetLearning();
+    } catch (...) { return 0; }
+}
+__declspec(dllexport) int __cdecl KeyKeyUserDataArchive(void* opaque, const wchar_t* path, int exportData) {
+    auto* handle = static_cast<UserDataHandle*>(opaque); if (!handle || !path) return 0;
+    try {
+        return exportData ? handle->rust->exportData(path) : handle->rust->importData(path);
+    } catch (...) { return 0; }
+}
 __declspec(dllexport) int __cdecl KeyKeyReadSimplifiedOutput() {
     Microsoft::WRL::ComPtr<ITfThreadMgrEx> manager;
     if (FAILED(CoCreateInstance(CLSID_TF_ThreadMgr, nullptr, CLSCTX_INPROC_SERVER,
@@ -127,45 +182,6 @@ __declspec(dllexport) int __cdecl KeyKeyReadingAt(void* handle, int character, i
     if (target && capacity >= required) CopyTo(*value, target, capacity);
     return required;
 }
-__declspec(dllexport) int __cdecl KeyKeyLoadPhrases() {
-    phrases = KeyKey::WindowsTsf::LoadUserPhrases();
-    return static_cast<int>(phrases.size());
-}
-
-__declspec(dllexport) int __cdecl KeyKeyPhraseAt(int index, std::int64_t* rowid,
-                                                wchar_t* text, int textCapacity,
-                                                wchar_t* reading, int readingCapacity) {
-    if (index < 0 || static_cast<size_t>(index) >= phrases.size() || !rowid) return 0;
-    const auto& phrase = phrases[index];
-    *rowid = phrase.rowid;
-    CopyTo(phrase.text, text, textCapacity);
-    CopyTo(phrase.reading, reading, readingCapacity);
-    return 1;
-}
-
-__declspec(dllexport) int __cdecl KeyKeySavePhrase(std::int64_t rowid,
-                                                   const wchar_t* text,
-                                                   const wchar_t* reading) {
-    if (!text || !reading) return 0;
-    return KeyKey::WindowsTsf::SaveUserPhrase({rowid, text, reading}) ? 1 : 0;
-}
-
-__declspec(dllexport) int __cdecl KeyKeyDeletePhrase(std::int64_t rowid) {
-    return KeyKey::WindowsTsf::DeleteUserPhrase(rowid) ? 1 : 0;
-}
-
-__declspec(dllexport) int __cdecl KeyKeyResetLearning() {
-    return KeyKey::WindowsTsf::ResetUserLearning() ? 1 : 0;
-}
-
-__declspec(dllexport) int __cdecl KeyKeyImportUserData(const wchar_t* path) {
-    return path && KeyKey::WindowsTsf::ImportUserData(path) ? 1 : 0;
-}
-
-__declspec(dllexport) int __cdecl KeyKeyExportUserData(const wchar_t* path) {
-    return path && KeyKey::WindowsTsf::ExportUserData(path) ? 1 : 0;
-}
-
 __declspec(dllexport) int __cdecl KeyKeyLoadCollections(const wchar_t* path) {
     collections.clear();
     sqlite3* database = nullptr;

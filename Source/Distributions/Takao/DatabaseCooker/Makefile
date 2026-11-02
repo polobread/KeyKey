@@ -21,6 +21,9 @@ NATIVE_BOPOMOFO_MAKEFILE = $(NATIVE_BOPOMOFO_DIR)/Makefile
 ASSOC_COOKER = ./AssociatedPhraseCooker.rb
 OCC_TO_LM = ./phrase-occ-to-lm.rb
 SMART_COOKER = ./SmartMandarinCooker.rb
+# Empty explicitly disables this optional source.
+CIN_READING_FREQUENCIES ?= ../../../../DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv
+CIN_FREQUENCY_ARGS = $(if $(strip $(CIN_READING_FREQUENCIES)),--cin-reading-frequencies "$(CIN_READING_FREQUENCIES)",--no-cin-reading-frequencies)
 
 # One collection per file. Stable source identifiers come from the path;
 # product display-name overrides come from COLLECTION_DISPLAY_NAMES.
@@ -61,7 +64,7 @@ all: verify
 # A fresh OUTPUT directory is required. Add APPLY=1 to publish validated files.
 rebuild-custom:
 	test -n "$(OUTPUT)"
-	python3 -B ./rebuild-keykey-db.py --output "$(OUTPUT)" $(if $(filter 1,$(APPLY)),--apply,)
+	python3 -B ./rebuild-keykey-db.py --output "$(OUTPUT)" $(CIN_FREQUENCY_ARGS) $(if $(filter 1,$(APPLY)),--apply,)
 
 verify: verify-smart-mandarin-db.py smart_mandarin_model.py \
 	$(COLLECTION_DIR)/AISyntheticBigram/smart-mandarin-model-manifest.json
@@ -103,8 +106,8 @@ $(DB): $(SRC) $(COLLECTIONS) $(COLLECTION_DISPLAY_NAMES) $(OCC_TO_LM) $(ASSOC_CO
 	done
 	python3 ./verify-smart-mandarin-db.py $(DB)
 
-$(SMART_SQL): createdir $(SMART_COOKER) $(SMART_OCC) $(SMART_MAPPINGS) $(SMART_SUPPLEMENTAL_LEXICON) $(SMART_NUMERIC_LEXICON) $(SMART_BIGRAM_CORPORA) $(TMPDIR)/bpmf-ext-absorder.cin
-	ruby -E UTF-8 $(SMART_COOKER) $(SMART_OCC) $(SMART_MAPPINGS) $(TMPDIR)/bpmf-ext-absorder.cin --lexicon $(SMART_SUPPLEMENTAL_LEXICON) --lexicon $(SMART_NUMERIC_LEXICON) $(SMART_BIGRAM_CORPORA) > $@
+$(SMART_SQL): createdir $(SMART_COOKER) $(CIN_READING_FREQUENCIES) $(SMART_OCC) $(SMART_MAPPINGS) $(SMART_SUPPLEMENTAL_LEXICON) $(SMART_NUMERIC_LEXICON) $(SMART_BIGRAM_CORPORA) $(TMPDIR)/bpmf-ext-absorder.cin
+	ruby -E UTF-8 $(SMART_COOKER) $(SMART_OCC) $(SMART_MAPPINGS) $(TMPDIR)/bpmf-ext-absorder.cin --lexicon $(SMART_SUPPLEMENTAL_LEXICON) --lexicon $(SMART_NUMERIC_LEXICON) $(CIN_FREQUENCY_ARGS) $(SMART_BIGRAM_CORPORA) > $@
 
 $(SMART_ARTICLE_CORPUS): $(COLLECTION_DIR)/AISyntheticBigram/build-versioned-article-corpus.py \
 	$(COLLECTION_DIR)/AISyntheticArticles/typing-articles-v2.jsonl \

@@ -34,3 +34,4 @@
 
 "Your phrases are successfully imported." = "成功匯入資料庫";
 "Unable to import database." = "無法匯入資料庫";
+"Read-only: input core service unavailable." = "唯讀：輸入核心服務無法使用。";

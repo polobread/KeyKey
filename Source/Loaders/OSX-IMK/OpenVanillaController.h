@@ -37,5 +37,6 @@ using namespace OpenVanilla;
 - (void)sendComposedStringToClient:(NSString*)text sender:(id)sender;
 
 - (void)_resetUI;
+- (BOOL)_syncEnglishModeToCore:(BOOL)english;
 
 @end

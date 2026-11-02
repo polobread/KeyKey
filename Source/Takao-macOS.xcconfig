@@ -1,5 +1,8 @@
 OPENSSL_PREFIX = /opt/homebrew/opt/openssl@3
 
+// Guanyinma is the required input core; the IMK target always builds and links it.
+// Pass KEYKEY_GUANYINMA_OFFLINE=1 when the pinned toolchain and dependencies are cached.
+
 SDKROOT = macosx
 MACOSX_DEPLOYMENT_TARGET = 15.0
 ARCHS = arm64

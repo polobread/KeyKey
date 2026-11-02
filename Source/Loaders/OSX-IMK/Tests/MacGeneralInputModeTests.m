@@ -70,6 +70,7 @@ static TestGlobal *Make(NSDictionary *layout, NSView **pane) {
 int main(int argc, char **argv) {
     @autoreleasepool {
         assert(argc >= 4); [NSApplication sharedApplication];
+        [NSApp setActivationPolicy:NSApplicationActivationPolicyProhibited];
         NSDictionary *layout = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:[NSString stringWithUTF8String:argv[1]]] options:0 error:nil];
         testPath = [NSString stringWithUTF8String:argv[2]];
         NSView *pane;
@@ -81,6 +82,7 @@ int main(int argc, char **argv) {
         assert(shift.target == controller && shift.action == @selector(writePreference:));
         assert(startup.target == controller && startup.action == @selector(writePreference:));
         assert(pane.frame.size.height == Frame(layout).size.height + 52);
+        assert(![controller respondsToSelector:NSSelectorFromString(@"setInputCore:")]);
         assert(NSMaxY(shift.frame) <= NSMinY(ctrl.frame));
         assert(NSMaxY(startup.frame) <= NSMinY(shift.frame));
         for (NSView *view in pane.subviews) {
@@ -105,6 +107,6 @@ int main(int argc, char **argv) {
         NSBitmapImageRep *bitmap = [pane bitmapImageRepForCachingDisplayInRect:pane.bounds];
         [pane cacheDisplayInRect:pane.bounds toBitmapImageRep:bitmap];
         [[bitmap representationUsingType:NSPNGFileType properties:@{}] writeToFile:[NSString stringWithUTF8String:argv[3]] atomically:YES];
-        puts("PASS: general preferences default Chinese/Shift on, persistence, independent startup choice, action wiring, nonoverlapping layout");
+        puts("PASS: general preferences persistence, single-core controls, Shift/startup input modes, localized layout");
     }
 }

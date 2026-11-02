@@ -55,6 +55,12 @@ class ReleaseAssetsTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 release.release_tag(event, tag, requested, "1.3.1")
 
+    def test_pull_request_builds_cannot_select_a_publication(self):
+        self.assertEqual(release.release_tag("pull_request", "", "", "1.3.1"), "")
+        for event_tag, requested in (("v1.3.1", ""), ("", "v1.3.1")):
+            with self.assertRaisesRegex(ValueError, "cannot select a publishing tag"):
+                release.release_tag("pull_request", event_tag, requested, "1.3.1")
+
     def test_all_platform_checksums_and_unrelated_assets(self):
         for platform, count in (("macos", 2), ("windows", 6), ("linux", 5)):
             with self.subTest(platform=platform):

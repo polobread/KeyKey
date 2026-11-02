@@ -1,6 +1,15 @@
 name: Mirror Signed Windows Release
 
 on:
+  pull_request:
+    paths:
+      - '.github/scripts/*windows*sign*'
+      - 'Source/Loaders/Windows-TSF/Packaging/**'
+      - '.github/workflows/mirror-windows-signed.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
     inputs:
       release_tag:
@@ -17,12 +26,21 @@ permissions:
   actions: read
 
 concurrency:
-  group: mirror-windows-signed-${{ inputs.release_tag }}
-  cancel-in-progress: false
+  group: mirror-windows-signed-${{ inputs.release_tag || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test release tooling without publishing
+        run: python -m unittest discover -s .github/scripts -p 'test_windows_signing.py' -v
+
   verify:
-    if: github.ref == 'refs/heads/master'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
     runs-on: windows-2025
     timeout-minutes: 15
     env:
@@ -50,6 +68,7 @@ jobs:
 
   mirror:
     needs: verify
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: release

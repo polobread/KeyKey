@@ -13,12 +13,25 @@
 typedef unsigned int NSUInteger;
 #endif
 
+@interface PEController ()
+- (NSString *)currentBackendIdentifier;
+- (void)cancelPendingRowEdits;
+- (NSDictionary *)displayedRow:(NSInteger)row;
+- (BOOL)readyForRowEditing;
+- (BOOL)applyRowEdit:(NSString *)type row:(NSInteger)row value:(NSString *)value
+    expectedBackend:(NSString *)backend;
+@end
+
 @implementation PEController
 
 - (void)dealloc
 {
-	[[NSNotificationCenter defaultCenter] removeObserver:@"NSPopUpButtonCellWillPopUpNotification"];
-	[super dealloc];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [_displayedBackend release];
+    [_displayedRows release];
+    [_editingBackend release];
+    [_loader release];
+    [super dealloc];
 }
 - (void)awakeFromNib
 {
@@ -57,11 +70,18 @@ typedef unsigned int NSUInteger;
 	[_tableView setRowHeight:20.0];
 	
 	[_phraseWindow setDefaultButtonCell:[_okButton cell]];
-	[self updateStatus];
+    [self reloadData];
 }
 - (void)updateStatus
 {
-	int count = [_loader userPhraseDBNumberOfRow];
+    if (![_displayedBackend length]) {
+        NSString *message = LFLSTR(@"Read-only: input core service unavailable.");
+        [_statusTextField setStringValue:message];
+        [_statusTextField setToolTip:message];
+        return;
+    }
+    int count = (int)[_displayedRows count];
+    [_statusTextField setToolTip:nil];
 	if (count) {
 		NSString *message = [NSString stringWithFormat:LFLSTR(@"%d user phrase(s)"), count];
 		[_statusTextField setStringValue:message];		
@@ -91,17 +111,106 @@ typedef unsigned int NSUInteger;
 
 #pragma mark Interface Builder actions
 
+- (NSString *)currentBackendIdentifier
+{
+    @try {
+        id backend = [_loader userPhraseDBBackendIdentifier];
+        return [backend isKindOfClass:[NSString class]] && [backend length] ? backend : nil;
+    } @catch (NSException *exception) {
+        // An older service cannot prove which core owns a displayed row.
+        return nil;
+    }
+}
+
+- (void)cancelPendingRowEdits
+{
+    [_tableView abortEditing];
+    [_tableView deselectAll:self];
+    _editingRow = -1;
+    [_editingBackend release]; _editingBackend = nil;
+    if ([_phraseWindow sheetParent]) {
+        [NSApp endSheet:_phraseWindow];
+        [_phraseWindow orderOut:self];
+    }
+}
+
+- (NSDictionary *)displayedRow:(NSInteger)row
+{
+    return row >= 0 && (NSUInteger)row < [_displayedRows count] ?
+        [_displayedRows objectAtIndex:(NSUInteger)row] : nil;
+}
+
+- (BOOL)readyForRowEditing
+{
+    NSString *current = [self currentBackendIdentifier];
+    if (![_displayedBackend length] || ![current isEqualToString:_displayedBackend]) {
+        [self reloadData];
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)applyRowEdit:(NSString *)type row:(NSInteger)row value:(NSString *)value
+    expectedBackend:(NSString *)backend
+{
+    BOOL success = NO;
+    if ([backend length] && row >= 0) {
+        NSMutableDictionary *edit = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+            type, @"type", [NSNumber numberWithInteger:row], @"row", nil];
+        if (value) [edit setObject:value forKey:@"value"];
+        @try { success = [_loader applyUserPhraseEdit:edit expectedBackend:backend]; }
+        @catch (NSException *exception) { success = NO; }
+    }
+    if (!success) [self reloadData];
+    return success;
+}
+
 - (void)reloadData
 {
-	[_tableView reloadData];
-	[self updateStatus];
+    if (_reloadingData) return;
+    _reloadingData = YES;
+    [self cancelPendingRowEdits];
+    NSString *backend = nil;
+    NSMutableArray *rows = [NSMutableArray array];
+    @try {
+        // One service call binds the backend identity and all displayed rows.
+        // Reopening a Rust store once per row would turn loading into O(n^2).
+        id snapshot = [_loader userPhraseDBSnapshot];
+        if ([snapshot isKindOfClass:[NSDictionary class]] &&
+            [snapshot[@"backend"] isKindOfClass:[NSString class]] &&
+            [snapshot[@"backend"] length] && [snapshot[@"rows"] isKindOfClass:[NSArray class]]) {
+            backend = [snapshot[@"backend"] copy];
+            for (id row in snapshot[@"rows"]) {
+                if (![row isKindOfClass:[NSDictionary class]] ||
+                    ![row[@"Text"] isKindOfClass:[NSString class]] ||
+                    ![row[@"BPMF"] isKindOfClass:[NSString class]]) {
+                    [rows removeAllObjects];
+                    [backend release]; backend = nil;
+                    break;
+                }
+                [rows addObject:[[[NSDictionary alloc] initWithDictionary:row copyItems:YES] autorelease]];
+            }
+        }
+    } @catch (NSException *exception) {
+        // Unknown old services and failed snapshots are read-only/unavailable;
+        // never reconstruct a positional snapshot through legacy row getters.
+        [rows removeAllObjects];
+        [backend release]; backend = nil;
+    }
+    [_displayedBackend release]; _displayedBackend = backend;
+    [_displayedRows release]; _displayedRows = [rows copy];
+    [_okButton setEnabled:[_displayedBackend length] != 0];
+    [_tableView reloadData];
+    [self updateStatus];
+    _reloadingData = NO;
 }
 
 - (IBAction)add:(id)sender
 {
+    if (![self readyForRowEditing]) return;
 	int previousCount = [_loader userPhraseDBNumberOfRow];
 	[_loader userPhraseDBAddNewRow:[NSString stringWithUTF8String:"新詞"]];
-	[_tableView reloadData];
+    [self reloadData];
 	int count = [self numberOfRowsInTableView:_tableView];
 	if (count <= previousCount) {
 		[self updateStatus];
@@ -118,14 +227,15 @@ typedef unsigned int NSUInteger;
 		return;
 	}
 	
-	NSUInteger currentIndex = [rowIndexes lastIndex];
-	
+    NSIndexSet *selected = [[rowIndexes copy] autorelease];
+    NSString *backend = [[_displayedBackend copy] autorelease];
+    NSUInteger currentIndex = [selected lastIndex];
     while (currentIndex != NSNotFound) {
-		[_loader userPhraseDBDeleteRow:currentIndex];
-		currentIndex = [rowIndexes indexLessThanIndex:currentIndex];
+        if (![self applyRowEdit:@"remove" row:(NSInteger)currentIndex value:nil expectedBackend:backend])
+            return;
+        currentIndex = [selected indexLessThanIndex:currentIndex];
     }
-	[_tableView reloadData];
-	[self updateStatus];
+    [self reloadData];
 }
 - (NSString *)stringForCopying
 {
@@ -135,7 +245,7 @@ typedef unsigned int NSUInteger;
 	NSUInteger currentIndex = [rowIndexes firstIndex];
 	
     while (currentIndex != NSNotFound) {
-		NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:currentIndex];
+        NSDictionary *dataDict = [self displayedRow:(NSInteger)currentIndex];
 		
 		NSString *phrase = [dataDict objectForKey:@"Text"];
 		NSString *reading = [dataDict objectForKey:@"BPMF"];
@@ -170,6 +280,7 @@ typedef unsigned int NSUInteger;
 }
 - (IBAction)editPhrase:(id)sender
 {
+    if (![self readyForRowEditing]) return;
 	int selectedRow = [_tableView selectedRow];
 	if (selectedRow < 0)
 		return;
@@ -181,12 +292,14 @@ typedef unsigned int NSUInteger;
 }
 - (IBAction)editReading:(id)sender
 {
+    if (![self readyForRowEditing]) return;
 	int selectedRow = [_tableView selectedRow];	
 	if (selectedRow < 0)
 		return;
 	
-	_editingRow = selectedRow;
-	NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:selectedRow];
+    _editingRow = selectedRow;
+    [_editingBackend release]; _editingBackend = [_displayedBackend copy];
+    NSDictionary *dataDict = [self displayedRow:selectedRow];
 	NSString *phrase = [dataDict objectForKey:@"Text"];
 
 	if (![phrase length])
@@ -231,12 +344,14 @@ typedef unsigned int NSUInteger;
 				if (j < [a count] -1)
 					[string appendString:@","];
 			}
-			[_loader userPhraseDBSetNewReading:string forPhraseAtRow:i];
+            if (![self applyRowEdit:@"reading" row:i value:string expectedBackend:_displayedBackend])
+                return;
 		}
 	}
 }
 - (void)importAddressBook
-{	
+{
+    if (![self readyForRowEditing]) return;
 	[_progressIndicator setUsesThreadedAnimation:YES];
 	[_progressIndicator startAnimation:self];
 	[_progressTextField setStringValue:LFLSTR(@"Progressing...")];
@@ -308,8 +423,7 @@ typedef unsigned int NSUInteger;
 	[_progressIndicator stopAnimation:self];
 	[_progressWindow orderOut:self];
 	
-	[_tableView reloadData];
-	[self updateStatus];
+    [self reloadData];
 }
 - (IBAction)continueImportAction:(id)sender
 {
@@ -464,20 +578,15 @@ typedef unsigned int NSUInteger;
 }
 - (IBAction)okAction:(id)sender
 {
-	NSString *s = [_phraseTableView currentReading];
-	[_loader userPhraseDBSetNewReading:s forPhraseAtRow:_editingRow];
-	[_tableView reloadData];
-	[self updateStatus];
-	
-	[NSApp endSheet:_phraseWindow];
-	[_phraseWindow orderOut:self];
-	[NSApp abortModal];
+    NSString *reading = [_phraseTableView currentReading];
+    NSString *backend = [[_editingBackend copy] autorelease];
+    NSInteger row = _editingRow;
+    if ([self applyRowEdit:@"reading" row:row value:reading expectedBackend:backend])
+        [self reloadData];
 }
 - (IBAction)cancelAction:(id)sender
 {
-	[NSApp endSheet:_phraseWindow];
-	[_phraseWindow orderOut:self];	
-	[NSApp abortModal];	
+    [self cancelPendingRowEdits];
 }
 
 #pragma mark Validate menu item
@@ -486,6 +595,12 @@ typedef unsigned int NSUInteger;
 {
 	if ([[self window] attachedSheet])
 		return NO;
+    SEL action = [menuItem action];
+    if (action == @selector(delete:) || action == @selector(editPhrase:) ||
+        action == @selector(editReading:))
+        return [_displayedBackend length] && [_tableView selectedRow] >= 0;
+    if (action == @selector(add:) || action == @selector(importAddressBook:))
+        return [_displayedBackend length] != 0;
 	return YES;	
 }
 
@@ -495,9 +610,11 @@ typedef unsigned int NSUInteger;
 	if (selector == @selector(delete:) ||
 		selector == @selector(editPhrase:) ||
 		selector == @selector(editReading:)) {
-		if ([_tableView selectedRow] < 0)
-			return NO;
-	}
+        if (![_displayedBackend length] || [_tableView selectedRow] < 0)
+            return NO;
+    }
+    if ((selector == @selector(add:) || selector == @selector(importAddressBook:)) &&
+        ![_displayedBackend length]) return NO;
 	return YES;
 }
 
@@ -529,7 +646,7 @@ typedef unsigned int NSUInteger;
 }
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView
 {
-	return [_loader userPhraseDBNumberOfRow];
+    return (int)[_displayedRows count];
 }
 
 - (id)tableView:(NSTableView*)aTableView
@@ -537,8 +654,8 @@ objectValueForTableColumn:(NSTableColumn*)aTableColumn
             row:(int)rowIndex
 {
 	NSString *identifier = [aTableColumn identifier];
-	NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:rowIndex];
-	
+    NSDictionary *dataDict = [self displayedRow:rowIndex];
+
 	if ([identifier isEqualToString:@"phrase"]) {
 		return [dataDict objectForKey:@"Text"];
 	}
@@ -574,13 +691,24 @@ objectValueForTableColumn:(NSTableColumn*)aTableColumn
 		if ([string length] > 7)
 			string = [string substringToIndex:7];
 		
-		NSDictionary *dataDict = [_loader userPhraseDBDictionaryAtRow:rowIndex];
-		if (![[dataDict objectForKey:@"Text"] isEqualToString:string]) {
-			[_loader userPhraseDBSetPhrase:string atRow:rowIndex];
-			[aTableView reloadData];			
-			[self editReading:self];
-			[self updateStatus];
-		}
+        NSDictionary *dataDict = [self displayedRow:rowIndex];
+        if (!dataDict || [[dataDict objectForKey:@"Text"] isEqualToString:string]) return;
+        NSString *backend = [[_displayedBackend copy] autorelease];
+        NSString *reading = [[[dataDict objectForKey:@"BPMF"] copy] autorelease];
+        if (![self applyRowEdit:@"phrase" row:rowIndex value:string expectedBackend:backend]) return;
+        [self reloadData];
+        if (![backend isEqualToString:_displayedBackend]) return;
+        // Updating a Guanyinma phrase may move its row. Locate the edited
+        // identity before opening its reading sheet; never reuse the old row.
+        for (NSUInteger index = 0; index < [_displayedRows count]; ++index) {
+            NSDictionary *updated = [_displayedRows objectAtIndex:index];
+            if ([[updated objectForKey:@"Text"] isEqualToString:string] &&
+                [[updated objectForKey:@"BPMF"] isEqualToString:reading]) {
+                [_tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:index] byExtendingSelection:NO];
+                [self editReading:self];
+                break;
+            }
+        }
 	}
 }
 
@@ -596,7 +724,22 @@ objectValueForTableColumn:(NSTableColumn*)aTableColumn
 }
 
 
+- (BOOL)tableView:(NSTableView *)tableView shouldEditTableColumn:(NSTableColumn *)column row:(NSInteger)row
+{
+    return [_displayedBackend length] && [self displayedRow:row] != nil &&
+        [[self currentBackendIdentifier] isEqualToString:_displayedBackend];
+}
+
 #pragma mark NSWindow delegate methods
+
+- (void)windowDidBecomeKey:(NSNotification *)notification
+{
+    if ([notification object] != [self window]) return;
+    NSString *current = [self currentBackendIdentifier];
+    // Ordinary focus changes must retain an unfinished edit. Cancel it only
+    // when its backend identity changed or can no longer be verified.
+    if (!current || ![current isEqualToString:_displayedBackend]) [self reloadData];
+}
 
 - (void)windowWillClose:(NSNotification *)notification
 {

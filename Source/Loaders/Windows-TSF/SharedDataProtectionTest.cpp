@@ -1,6 +1,6 @@
 #include "FrontendSettings.h"
 #include "SharedFileAccess.h"
-#include "UserDataStore.h"
+#include "LegacyUserDataTestFixture.h"
 #include "PVPropertyList.h"
 #include "LanguageModel.h"
 #include "ModuleState.h"

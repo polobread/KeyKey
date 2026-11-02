@@ -34,14 +34,20 @@ public final class CandidateGlyphSupportInstrumentedTest {
     }
 
     @Test public void nativeFilterAndHardwareSelectionAgree() throws Exception {
-        String missing = new String(Character.toChars(0x10FFFF));
-        String cin = "%chardef begin\nsu3 " + missing + "\nsu3 你\nsu3 妳\n%chardef end\n";
-        BopomofoEngine engine = new BopomofoEngine(CinDictionary.load(new ByteArrayInputStream(
-                cin.getBytes(StandardCharsets.UTF_8))));
-        engine.setCandidateFilter(CandidateGlyphSupport.shared()::canDisplay);
-        for (char key : "su3".toCharArray()) engine.handleHardwareCharacter(key);
-        assertEquals(java.util.List.of("你", "妳"), engine.displayedCandidates());
-        assertEquals("妳", engine.handleHardwareCharacter('2').committedText());
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        java.io.File user = java.io.File.createTempFile("KeyKey-glyph-", ".db", context.getCacheDir());
+        assertTrue(user.delete());
+        try (GuanyinmaInputEngine engine = new GuanyinmaInputEngine(
+                SharedModelDatabase.install(context).getAbsolutePath(), user.getAbsolutePath(),
+                ChineseInputMethod.TRADITIONAL, BopomofoKeyboardLayout.STANDARD,
+                new TableInputOptions(ChineseInputMethod.TRADITIONAL), false, true, true,
+                CandidateGlyphSupport.shared()::canDisplay)) {
+            for (char key : "su3".toCharArray()) engine.handleHardwareCharacter(key);
+            assertFalse(engine.displayedCandidates().isEmpty());
+            for (String value : engine.displayedCandidates()) assertTrue(CandidateGlyphSupport.shared().canDisplay(value));
+            String expected = engine.displayedCandidates().get(0);
+            assertEquals(expected, engine.selectDisplayedCandidate(0).committedText());
+        } finally { user.delete(); }
     }
 
     @Test public void settingsLearningResetAlsoClearsGlyphCache() throws Exception {

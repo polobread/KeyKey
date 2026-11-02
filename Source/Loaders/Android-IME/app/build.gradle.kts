@@ -1,14 +1,37 @@
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.Exec
+import org.gradle.process.CommandLineArgumentProvider
+import org.gradle.api.provider.Provider
+import org.gradle.api.file.Directory
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.file.FileCollection
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 
 plugins {
     id("com.android.application")
 }
 
-val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.3.8")
+class GuanyinmaNdkArguments(
+    @get:InputDirectory @get:PathSensitive(PathSensitivity.NONE)
+    val directory: Provider<Directory>
+) : CommandLineArgumentProvider {
+    override fun asArguments(): Iterable<String> = listOf("--ndk", directory.get().asFile.absolutePath)
+}
+
+class AndroidRuntimeNoticeArguments(
+    @get:InputFiles @get:PathSensitive(PathSensitivity.NONE)
+    val artifacts: FileCollection
+) : CommandLineArgumentProvider {
+    override fun asArguments(): Iterable<String> = artifacts.files.sortedBy { it.absolutePath }
+        .flatMap { listOf("--android-runtime-artifact", it.absolutePath) }
+}
+
+val keyKeyVersionName = providers.gradleProperty("keykeyVersionName").getOrElse("1.5.0")
 val keyKeyVersionCode = providers.gradleProperty("keykeyVersionCode")
     .map(String::toInt)
-    .getOrElse(1_003_008)
+    .getOrElse(1_005_000)
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH")
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD")
 val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS")
@@ -28,6 +51,13 @@ val hasReleaseSigning = releaseSigningValueCount == releaseSigningValues.size
 
 android {
     namespace = "tw.chichi77.keykey.android"
+    ndkVersion = "27.2.12479018"
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -42,6 +72,16 @@ android {
         versionName = keyKeyVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86") }
+        externalNativeBuild {
+            cmake {
+                arguments += listOf(
+                    "-DGUANYINMA_RUST_ROOT=" + layout.buildDirectory.dir("generated/guanyinma-rust").get().asFile.absolutePath,
+                    "-DANDROID_STL=c++_static",
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                )
+            }
+        }
     }
 
     signingConfigs {
@@ -70,21 +110,91 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    sourceSets["main"].assets.directories.add("build/generated/bopomofoAssets")
-    sourceSets["main"].assets.directories.add("build/generated/indexedDictionaryAssets")
+    sourceSets["main"].assets.directories.add("build/generated/associatedPhraseAssets")
+    sourceSets["main"].assets.directories.add("build/generated/associatedPhraseIndexAssets")
     sourceSets["main"].assets.directories.add("build/generated/smartMandarinAssets")
+    sourceSets["main"].assets.directories.add("build/generated/guanyinmaLicenseAssets")
 }
 
-val generateBopomofoAssets by tasks.registering(Copy::class) {
-    from(layout.projectDirectory.file("../../../DataTables/bpmf-ext.cin"))
-    from(layout.projectDirectory.file("../../../DataTables/bpmf-punctuations.cin"))
-    into(layout.buildDirectory.dir("generated/bopomofoAssets"))
+val guanyinmaCoreDirectory = layout.projectDirectory.dir("../../../Guanyinma")
+val guanyinmaRustDirectory = layout.buildDirectory.dir("generated/guanyinma-rust")
+val guanyinmaHostDirectory = layout.buildDirectory.dir("guanyinma-host-jni")
+val guanyinmaPython = providers.environmentVariable("PYTHON3").orNull?.let { listOf(it) }
+    ?: if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) listOf("py", "-3") else listOf("python3")
+val guanyinmaHostLibrary = guanyinmaHostDirectory.map { it.file(System.mapLibraryName("keykey_guanyinma")) }
+
+val generateGuanyinmaNotices by tasks.registering(Exec::class) {
+    dependsOn("buildGuanyinmaAndroid")
+    argumentProviders.add(GuanyinmaNdkArguments(androidComponents.sdkComponents.ndkDirectory))
+    argumentProviders.add(AndroidRuntimeNoticeArguments(configurations.getByName("releaseRuntimeClasspath") + configurations.getByName("debugRuntimeClasspath")))
+    val archives = listOf("arm64-v8a" to "aarch64-linux-android", "armeabi-v7a" to "armv7-linux-androideabi",
+        "x86_64" to "x86_64-linux-android", "x86" to "i686-linux-android")
+    val archiveArguments = archives.flatMap { (abi, target) -> listOf("--runtime-archive",
+        guanyinmaRustDirectory.get().file("$abi/libguanyinma.a").asFile.absolutePath, "--rust-target", target) }
+    inputs.files(archives.map { (abi, _) -> guanyinmaRustDirectory.get().file("$abi/libguanyinma.a") })
+    commandLine(guanyinmaPython + listOf(
+        guanyinmaCoreDirectory.file("tools/package-runtime-notices.py").asFile.absolutePath,
+        "--platform", "android",
+        "--output", layout.buildDirectory.file("generated/guanyinmaLicenseAssets/licenses/Guanyinma-Notices.txt").get().asFile.absolutePath,
+        "--audit-output", layout.buildDirectory.file("reports/licenses/Guanyinma-Notices.audit.json").get().asFile.absolutePath
+    ) + archiveArguments)
+    inputs.files(guanyinmaCoreDirectory.asFileTree.matching {
+        include("Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "LICENSE.txt", "LICENSES/**", "tools/package-runtime-notices.py", "tools/mobile_runtime_notices.py", "tools/android_runtime_notices.py", "tools/android-runtime-license-review.json")
+    })
+    inputs.files(layout.projectDirectory.dir("../../../..").asFileTree.matching {
+        include("LICENSE.txt", "LICENSING.md", "THIRD-PARTY-NOTICES.md", "LICENSES/**",
+                "DataSource/McBopomofo/LICENSE.txt", "DataSource/AISyntheticBigram/LICENSE.txt",
+                "DataSource/chichi77Collection/LICENSE.txt", "Source/Loaders/Android-IME/LICENSE.txt")
+    })
+    outputs.files(layout.buildDirectory.file("generated/guanyinmaLicenseAssets/licenses/Guanyinma-Notices.txt"),
+        layout.buildDirectory.file("generated/guanyinmaLicenseAssets/licenses/Guanyinma-Notices.json"),
+        layout.buildDirectory.file("reports/licenses/Guanyinma-Notices.audit.json"))
+}
+
+val buildGuanyinmaAndroid by tasks.registering(Exec::class) {
+    commandLine(guanyinmaPython + listOf(
+        guanyinmaCoreDirectory.file("tools/build-android-core.py").asFile.absolutePath,
+        "--output", guanyinmaRustDirectory.get().asFile.absolutePath, "--api", "26"
+    ))
+    argumentProviders.add(GuanyinmaNdkArguments(androidComponents.sdkComponents.ndkDirectory))
+    inputs.files(guanyinmaCoreDirectory.asFileTree.matching {
+        include("Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "build.rs", "src/**", "include/**", "tools/build-android-core.py")
+    })
+    inputs.files(layout.projectDirectory.dir("../../../Shared").asFileTree.matching { include("Cangjie*Data.h") })
+    outputs.files(listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86").map {
+        guanyinmaRustDirectory.get().file("$it/libguanyinma.a")
+    })
+}
+
+val buildGuanyinmaHostJNI by tasks.registering(Exec::class) {
+    inputs.property("jniJavaHome", System.getProperty("java.home"))
+    inputs.property("jniHostOS", System.getProperty("os.name"))
+    inputs.property("jniHostArchitecture", System.getProperty("os.arch"))
+    commandLine(guanyinmaPython + listOf(
+        guanyinmaCoreDirectory.file("tools/build-android-host-jni.py").asFile.absolutePath,
+        "--output", guanyinmaHostDirectory.get().asFile.absolutePath,
+        "--java-home", System.getProperty("java.home")
+    ))
+    inputs.files(guanyinmaCoreDirectory.asFileTree.matching {
+        include("Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "build.rs", "src/**", "include/**", "tools/build-android-host-jni.py")
+    })
+    inputs.file(layout.projectDirectory.file("src/main/cpp/guanyinma_jni.cpp"))
+    inputs.files(layout.projectDirectory.dir("../../../Shared").asFileTree.matching { include("Cangjie*Data.h") })
+    outputs.file(guanyinmaHostLibrary)
+}
+
+// Unit tests prepare only the host JNI library. Device archives are required
+// solely by AGP's native configure/build tasks, keeping JVM checks independent.
+tasks.configureEach {
+    if (name.startsWith("configureCMake") || name.startsWith("buildCMake") || name.startsWith("externalNativeBuild")) {
+        dependsOn(buildGuanyinmaAndroid)
+    }
 }
 
 val categorizedCollectionDirectory =
     layout.projectDirectory.dir("../../../../DataSource/chichi77Collection")
 val generatedCollectionDirectory =
-    layout.buildDirectory.dir("generated/bopomofoAssets/collections")
+    layout.buildDirectory.dir("generated/associatedPhraseAssets/collections")
 
 val generateAssociatedPhraseAssets by tasks.registering(Sync::class) {
     from(layout.projectDirectory.file("../../../../DataSource/AssociatedPhraseCollectionNames.tsv")) {
@@ -107,7 +217,7 @@ val compileDictionaryCompiler by tasks.registering(JavaCompile::class) {
 }
 
 val generatedIndexedDictionaryDirectory =
-    layout.buildDirectory.dir("generated/indexedDictionaryAssets")
+    layout.buildDirectory.dir("generated/associatedPhraseIndexAssets")
 
 val smartMandarinDatabase =
     layout.projectDirectory.file("../../../Distributions/Takao/CookedDatabase/KeyKey.db")
@@ -153,14 +263,10 @@ val generateIndexedDictionaryAssets by tasks.registering(JavaExec::class) {
     mainClass.set("DictionaryCompiler")
     args(
         generatedIndexedDictionaryDirectory.get().asFile.absolutePath,
-        layout.projectDirectory.file("../../../DataTables/bpmf-ext.cin").asFile.absolutePath,
-        layout.projectDirectory.file("../../../DataTables/bpmf-punctuations.cin").asFile.absolutePath,
         layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ").asFile.absolutePath,
         categorizedCollectionDirectory.asFile.absolutePath
     )
     inputs.files(
-        layout.projectDirectory.file("../../../DataTables/bpmf-ext.cin"),
-        layout.projectDirectory.file("../../../DataTables/bpmf-punctuations.cin"),
         layout.projectDirectory.file("../../../../DataSource/McBopomofo/phrase.occ"),
         categorizedCollectionDirectory.asFileTree.matching { include("phrase.*.tsv") }
     )
@@ -168,34 +274,26 @@ val generateIndexedDictionaryAssets by tasks.registering(JavaExec::class) {
 }
 
 tasks.named("preBuild").configure {
-    dependsOn(generateBopomofoAssets)
+    dependsOn(generateGuanyinmaNotices)
     dependsOn(generateAssociatedPhraseAssets)
     dependsOn(generateIndexedDictionaryAssets)
     dependsOn(generateSmartMandarinAssets)
 }
 
 tasks.withType<Test>().configureEach {
-    dependsOn(generateBopomofoAssets)
+    dependsOn(buildGuanyinmaHostJNI)
+    inputs.file(guanyinmaHostLibrary).withPropertyName("guanyinmaHostLibrary").withPathSensitivity(PathSensitivity.NONE)
+    inputs.file(smartMandarinDatabase).withPropertyName("guanyinmaSharedModel").withPathSensitivity(PathSensitivity.NONE)
+    systemProperty("keykey.guanyinma.library", guanyinmaHostLibrary.get().asFile.absolutePath)
+    systemProperty("keykey.guanyinma.python", guanyinmaPython.first())
+    systemProperty("keykey.guanyinma.integration", "true")
     dependsOn(generateAssociatedPhraseAssets)
     dependsOn(generateIndexedDictionaryAssets)
     dependsOn(generateSmartMandarinAssets)
     systemProperty("keykey.smart.database", smartMandarinDatabase.asFile.absolutePath)
     systemProperty(
-        "keykey.bopomofo.cin",
-        layout.buildDirectory.file("generated/bopomofoAssets/bpmf-ext.cin").get().asFile.absolutePath
-    )
-    systemProperty(
-        "keykey.bopomofo.punctuation",
-        layout.buildDirectory.file("generated/bopomofoAssets/bpmf-punctuations.cin")
-            .get().asFile.absolutePath
-    )
-    systemProperty(
         "keykey.associated.collections",
         generatedCollectionDirectory.get().asFile.absolutePath
-    )
-    systemProperty(
-        "keykey.bopomofo.index",
-        generatedIndexedDictionaryDirectory.get().file("bpmf-index.kki").asFile.absolutePath
     )
     systemProperty(
         "keykey.associated.indexes",
@@ -211,9 +309,8 @@ dependencies {
         }
     }
     testImplementation("junit:junit:4.13.2")
+    // Android supplies org.json in production; host JVM tests need real parsing.
+    testImplementation("org.json:json:20260814")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
 }
-
-// Shared macOS-baseline cases are also exercised against Android SQLite on device.
-android.sourceSets.getByName("androidTest").assets.srcDir("../../../../tests/fixtures/mobile-table-input")

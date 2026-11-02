@@ -9,10 +9,18 @@ on:
       - 'Source/Loaders/Windows-TSF/SettingsModern/SettingsStore.cs'
       - 'Source/Loaders/Windows-TSF/SettingsModern.Tests/**'
       - '.github/workflows/windows-shared-data.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: windows-shared-data-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   shared-data:
@@ -32,6 +40,16 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Read the committed Rust toolchain
+        id: rust
+        run: |
+          $version = python -c "import tomllib; print(tomllib.load(open('../../Guanyinma/rust-toolchain.toml', 'rb'))['toolchain']['channel'])"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot read Rust toolchain.' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+          targets: x86_64-pc-windows-msvc,i686-pc-windows-msvc
       - name: Build shared data test targets
         run: |
           python ../../../update/prepare.py fetch windows

@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 public final class MainActivity extends Activity {
@@ -76,7 +77,18 @@ public final class MainActivity extends Activity {
         privacy.setGravity(Gravity.CENTER);
         content.addView(privacy, matchWrap(dp(0), dp(12)));
 
-        setContentView(content);
+        Button acknowledgements = new Button(this);
+        acknowledgements.setText(R.string.open_acknowledgements);
+        acknowledgements.setAllCaps(false);
+        acknowledgements.setOnClickListener(view ->
+                startActivity(new Intent(this, AcknowledgementsActivity.class)));
+        content.addView(acknowledgements, matchWrap(dp(12), dp(12)));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(getColor(R.color.keykey_surface));
+        scroll.addView(content);
+        setContentView(scroll);
     }
 
     private String versionName() {

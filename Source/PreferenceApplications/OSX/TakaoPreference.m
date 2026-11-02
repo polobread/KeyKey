@@ -52,10 +52,6 @@ file for terms.
 		if ([genericModules count]) {
 			_hasGenericInputMethods = YES;
 			[_takaoGenericController setModules:genericModules];
-			[_takaoGlobalController setInputMethods:genericModules];
-		}	
-		else {
-			[_takaoGlobalController setInputMethods:nil];
 		}
 		
 		if ([loadedModules count]) {
@@ -68,6 +64,10 @@ file for terms.
 		// return;
 	}
 	
+    // NIB awake order is unspecified. Build the complete general pane before
+    // measuring it, even when the optional IMK service is absent or throws.
+    [_takaoGlobalController setInputMethods:genericModules];
+
     _aboutController = [[TakaoAbout alloc] initWithModuleInfo:loadedModules];
 	id toolbar = [[[NSToolbar alloc] initWithIdentifier:@"preferences toolbar"] autorelease];
     [toolbar setAllowsUserCustomization:NO];
@@ -106,22 +106,28 @@ file for terms.
 		[window stopSlowMotion];
 	}
 	
-	NSRect windowFrame = [window frame];
-	windowFrame.size.height = [view frame].size.height + WINDOW_TITLE_HEIGHT;
-	windowFrame.size.width = [view frame].size.width;
-	windowFrame.origin.y = NSMaxY([window frame]) - ([view frame].size.height + WINDOW_TITLE_HEIGHT);
+    if (!view) return;
+    NSSize paneSize = [view frame].size;
+    NSRect oldWindowFrame = [window frame];
+    // AppKit includes this window's actual titlebar and toolbar metrics.
+    // A fixed chrome height clips the bottom rows on newer macOS versions.
+    NSRect windowFrame = [window frameRectForContentRect:
+        NSMakeRect(0.0, 0.0, paneSize.width, paneSize.height)];
+    windowFrame.origin.x = oldWindowFrame.origin.x;
+    windowFrame.origin.y = NSMaxY(oldWindowFrame) - NSHeight(windowFrame);
 
-	if ([[[window contentView] subviews] count] != 0) {
-		NSView *currentView = [[[window contentView] subviews] objectAtIndex:0];
-		if (currentView != view) {
-			[currentView removeFromSuperview];
-		}			  
-	}
-	[window setFrame:windowFrame display:YES animate:flag];	
-	NSRect viewFrame = [view frame];
-	[[window contentView] setFrame:NSMakeRect(0, 0, viewFrame.size.width, viewFrame.size.height)];
-	[view setFrame:NSMakeRect(0, 0, viewFrame.size.width, viewFrame.size.height)];
-	[[window contentView] addSubview:view];	
+    NSView *contentView = [window contentView];
+    for (NSView *currentView in [[[contentView subviews] copy] autorelease]) {
+        if (currentView != view) [currentView removeFromSuperview];
+    }
+    // Keep each pane's measured size while AppKit resizes its content view.
+    // In particular, never override the content view frame behind NSWindow.
+    BOOL autoresizes = [contentView autoresizesSubviews];
+    [contentView setAutoresizesSubviews:NO];
+    [window setFrame:windowFrame display:YES animate:flag];
+    [view setFrame:NSMakeRect(0.0, 0.0, paneSize.width, paneSize.height)];
+    if ([view superview] != contentView) [contentView addSubview:view];
+    [contentView setAutoresizesSubviews:autoresizes];
 }
 
 - (void)setAppIcon:(NSImage *)image

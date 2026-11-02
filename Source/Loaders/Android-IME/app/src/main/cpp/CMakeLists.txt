@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.22)
+project(keykey_guanyinma LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+get_filename_component(KEYKEY_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../.." ABSOLUTE)
+if(NOT DEFINED GUANYINMA_RUST_ROOT)
+    message(FATAL_ERROR "GUANYINMA_RUST_ROOT must name the Gradle-built per-ABI Rust archives")
+endif()
+add_library(guanyinma_core STATIC IMPORTED)
+set_target_properties(guanyinma_core PROPERTIES IMPORTED_LOCATION
+    "${GUANYINMA_RUST_ROOT}/${ANDROID_ABI}/libguanyinma.a")
+add_library(keykey_guanyinma SHARED guanyinma_jni.cpp)
+target_include_directories(keykey_guanyinma PRIVATE "${KEYKEY_SOURCE}/Guanyinma/include")
+set_target_properties(keykey_guanyinma PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN YES)
+target_compile_options(keykey_guanyinma PRIVATE -Wall -Wextra -Werror)
+target_link_libraries(keykey_guanyinma PRIVATE guanyinma_core log android dl m)
+# Hide bundled SQLite/Rust ABI symbols from the process; only JNIEXPORT methods
+# are public. Keep 16 KiB LOAD alignment for Android's flexible page-size devices.
+target_link_options(keykey_guanyinma PRIVATE "-Wl,--exclude-libs,ALL" "-Wl,-z,max-page-size=16384")

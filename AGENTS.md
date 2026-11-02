@@ -2,11 +2,11 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。macOS 正式版為 1.3.8，安裝包與 stable 更新公告皆已發布並同步 CDN；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7，iOS App Store 與 Android Google Play 皆已上架 1.3.7。FreeBSD 1.3.7 已在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，透過 ports／pkg 安裝，套件庫版本可能較晚上架。macOS 目前原始碼版號為 `1.3.9`，其他平台原始碼版號維持 `1.3.8`；正式發布版號仍依前述狀態；FreeBSD 沿用 Linux-IME 的版本來源，共用好打注音模型維持 v1.3.1。README 只記錄正式 Release／商店版本與支援範圍，不列開發版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。macOS 正式版為 1.3.8，安裝包與 stable 更新公告皆已發布並同步 CDN；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7，iOS App Store 與 Android Google Play 皆已上架 1.3.7。FreeBSD 1.3.7 已在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，透過 ports／pkg 安裝，套件庫版本可能較晚上架。Guanyinma 工作分支的六平台原始碼開發版號統一為 `1.5.0`；正式發布版號仍依前述狀態；FreeBSD 沿用 Linux-IME 的版本來源，共用好打注音模型維持 v1.3.1。README 只記錄正式 Release／商店版本與支援範圍，不列開發版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
-- 本儲存庫五個 frontend 共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **119,159 筆 Unigram、883,372 筆 Bigram**，SHA-256 為 `8fc3aead36cefd16a77c0a0d4319f7a305fb712b752db09396c8ac2bd4ebbfdb`。
+- 本儲存庫五個 frontend 共用預先產生的 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`；平台建置只驗證及複製，不得自行 cooker。正式資料庫有 **119,159 筆 Unigram、883,372 筆 Bigram**，SHA-256 為 `b212cb38bd3281a758c5957fe8a14738eaa74ce466141e77659f01181a9eaa43`。
 - Bigram 建模固定使用 `typing-articles-v2.jsonl`、`v3.jsonl`、`v4.jsonl` 共 **2,300 篇**。正式驗證固定使用 `typing-articles-v5-seed/tw-corpus-0001.md` 至 `0131.md` 共 **131 篇**，排除 `chat.md`；訓練與驗證沒有相同文章或 20 字以上相同段落。800／750／750 只屬已結束的 unigram 實驗分割，不再作為目前 Bigram 的建模或驗證依據。
 - 每篇文章、每個模型都啟動全新引擎程序，關閉 user table、Bigram learning 與 candidate override，測試間不得共享記憶。正式動作模型採 5 音節穩定、10 音節組字範圍、每頁 8 個候選；注音鍵、確認、點字開候選、選字及翻頁都計入。輸出須包含總動作、額外修正動作、修正字及各自成本；總動作越少越好。
 - Bigram 約只能影響仍在組字區內的 9～10 個字，不能期待後文完全救回前面的同音字。優先降低核心 83 字、前 100 名基本字與第 101～1,000 名一般字的修正；第 1,001～1,500 名、未排名罕字、專業詞及專有名詞只列診斷，不決定基礎模型是否採用，這些內容可由使用者學習改善。
@@ -24,7 +24,7 @@
 - 三份 `phrase.people-*.tsv` 及「人名…」分類的新詞在 Bigram 訓練完成後才加入 Unigram；普通人名詞頻至多 1，動漫／碰撞人名至多 0.01。即使人名也出現在搜尋來源，仍排除於訓練；已存在小麥的同文字詞保留原模型處理。
 
 - 自訂詞以小麥正詞頻詞為主體，僅同文字去重；完整同音詞保留低順位候選供選字學習。雙方連續兩字同音異字列診斷：新詞只有兩字時降權，三字以上詞不因部分碰撞刪除或額外降權。動漫新詞及需降權的碰撞詞不參與 Bigram 訓練，詞頻至多 0.01 且低於既有完整同音詞，不強制低於拆詞路徑。使用者指定固定 131 篇總動作增加 **至多 30 次可採用、超過 30 次不採用**，文章與基本字差異列診斷、不另設硬門檻。超標時保留原 DB、只 commit 候選清單與拒用原因；最新結果見 `DataSource/AISyntheticBigram/rebuild-review/latest.json`。
-- 自訂詞來源合併進 master 後由 `.github/workflows/rebuild-keykey-db.yml` 重建；來源界線、固定 Git 基底與本機入口見 `docs/KEYKEY_DATABASE_WORKFLOW.md`。重建產物與拒用報告須在工作分支提交，再以 PR 合併，不另存 DB artifact。既有 workflow 的直接回存 master 步驟尚待遷移；遷移前不得按舊流程執行；總動作增加超過 30 次時僅提交拒用報告，DB 維持原版。`collection-unigram.tsv` 是產物，修改原始分類詞庫及覆寫表；不可對同一 DB 反覆累加補償。
+- 自訂詞來源合併進 master 後由 `.github/workflows/rebuild-keykey-db.yml` 重建；來源界線、固定 Git 基底與本機入口見 `docs/KEYKEY_DATABASE_WORKFLOW.md`。重建產物與拒用報告須在工作分支提交，再以 PR 合併，不另存 DB artifact。workflow 產物只推送工作分支並建立 PR，不直接回存 master；總動作增加超過 30 次時僅提交拒用報告，DB 維持原版。`collection-unigram.tsv` 是產物，修改原始分類詞庫及覆寫表；不可對同一 DB 反覆累加補償。
 - 不直接改 `DataSource/McBopomofo/phrase.occ` 或 `BPMFMappings.txt`；專案補充詞、讀音覆寫及語料放在 `DataSource/AISyntheticBigram/`。
 - 變更模型時同步更新正式 DB、`smart-mandarin-model-manifest.json`、目前 131 篇驗證結果及內容雜湊。不能只看資料列數判斷新舊；所有字級／文章差異需明列，採用依使用者最新 30 次總動作門檻。
 - 量測工具入口與動作定義見 `DataSource/AISyntheticBigram/TYPING_COST.md`。`measure-typing-cost.py ARTICLE VERSION` 量單篇；批次工具先固定樣本、完整分析，再比較全域候選。模型調整程式不得覆寫來源 DB。
@@ -33,6 +33,8 @@
 
 ## 工作區與提交
 
+- 調查或測試中新發現疑似問題時，先向使用者提出重現步驟、預期／實際結果、證據與不確定性，確認問題並討論是否修改；取得使用者明確同意後，才修改產品碼或新增／調整相關測試。討論前可做唯讀調查、執行既有測試及保存證據，不得僅憑自動化異常直接修正。使用者已明確授權的實作，仍依原授權範圍進行，不重複詢問。
+- 獲准進行 UI 操作時，開始與結束（含暫停）都要通知使用者。自動送鍵與實體鍵盤結果不同時，先確認輸入來源、模式及修飾鍵按放等工具因素，不直接判定為產品缺陷。
 - 不得直接在 `master` commit，也不得直接 push 到 `master`。所有變更（包括修正、文件與 CI workflow）都在工作分支 commit 和 push，再透過 PR merge 合併到 `master`。同步 `master` 時在工作分支拉取 `origin/master`；拉取不代表可以直接在 `master` 提交。
 - PR 必須由使用者親自 review 和 merge；agent 不得自行合併 PR、啟用 auto-merge 或繞過使用者審查。
 - macOS 正式版發布成功後，自動驗證原包與簽章並建立更新 feed 工作分支／PR；Linux 正式 Release 的 CI／套件發布成功後，自動核對來源、套件生命週期、版本／架構與 GitHub／CDN 校驗資料，再建立 Linux／FreeBSD stable 公告 PR。兩者都保留手動補救入口；其他平台由維護者請 AI 準備 feed PR。所有 feed PR 仍須由使用者親自 review／merge，不直接回存 master 或部署 CDN；merge master 後才由 Actions 同步 CDN。保留 SHA-256 內容位址副本，不覆蓋已發布的 beta 安裝包。Linux／FreeBSD 共用 `update/CHANNEL/unix-fcitx5.xml`，每週檢查並同步公告；不延後 FreeBSD 公告，不檢查 ports/pkg 可用性、不新增排程，須提示透過 ports/pkg 更新且套件可能較晚上架。
@@ -48,13 +50,13 @@
 
 | 平台 | 好打注音執行路徑 | 語言模型來源 |
 |---|---|---|
-| macOS | `OSX-IMK`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
-| Windows | `Windows-TSF`、`OVIMSmartMandarin`、Manjusri C++ | 共用 `KeyKey.db` |
-| iOS | `iOS-Keyboard/KeyKeyEngine` Swift walker | 鍵盤 extension 內的共用 `KeyKey.db` |
-| Android | `Android-IME` Java walker | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
-| Linux／FreeBSD | `Linux-IME` 的 Fcitx 5 C++ walker 與 adapter | 共用 DB 安裝時改名為 `smart-mandarin.db` |
+| macOS | `OSX-IMK` 與 Guanyinma Rust core | 共用 `KeyKey.db` |
+| Windows | `Windows-TSF` 與 Guanyinma Rust core | 共用 `KeyKey.db` |
+| iOS | `iOS-Keyboard/KeyKeyEngine` Swift adapter 與 Guanyinma Rust core | 鍵盤 extension 內的共用 `KeyKey.db` |
+| Android | `Android-IME` Java／JNI adapter 與 Guanyinma Rust core | APK asset 內的共用 `KeyKey.db`，安裝時複製到私有目錄 |
+| Linux／FreeBSD | `Linux-IME` 的 Fcitx 5 adapter 與 Guanyinma Rust core | 共用 DB 安裝時改名為 `smart-mandarin.db` |
 
-macOS 與 Windows 共用框架和注音模組；iOS、Android、Linux 各有組句 frontend。修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，必須分別驗證，不能從單一平台推定其他平台。
+六平台固定使用 Guanyinma 單核心，不提供舊輸入引擎選擇或失敗回退。各 FE 的設定、事件與宿主交易仍有差異；修改詞頻、Bigram、backoff、候選排序或 9／10／11 音節邊界時，核心在各目標無 UI 驗證，受影響 FE 分別做接合檢查，不能從單一平台推定其他平台。
 
 ## 輸入行為界線
 
@@ -85,7 +87,7 @@ bash update/test-macos.sh
 python3 Source/Loaders/OSX-IMK/Tests/run-symbol-controller-tests.py
 
 # iOS 引擎
-(cd Source/Loaders/iOS-Keyboard/KeyKeyEngine && swift test)
+bash Source/Guanyinma/tools/test-ios-swift-package.sh
 
 # Android
 (cd Source/Loaders/Android-IME && ./gradlew lintDebug testDebugUnitTest assembleDebug)
@@ -130,6 +132,27 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
   共用引擎或模型變更仍按前述跨平台／模型規則驗證。各類命令與必要擴充條件見
   [Windows 開發型態與測試](Source/Loaders/Windows-TSF/README.md#windows-日常開發型態與測試)。
 
+## Guanyinma 核心與 Rust 遷移行為基準
+
+- Guanyinma 正式 Rust 程式碼的無 UI 行涵蓋率維持 **92% 以上**，以 `tools/test-coverage.py` 在原生 macOS／system SQLite 的參考量測為準（本機基準為 arm64），排除測試與依賴，僅補有價值的行為測試、不強追 100%，門檻只接在 `guanyinma-core.yml`。六平台 Rust workflow 接線與不編譯核心的發布／同步流程界線見 `Source/Guanyinma/README.md` 的測試分工表；macOS 正式打包固定連入 Rust、只跑少量 integration FE 接合測試。
+
+- **核心測試範圍**：Guanyinma 核心專注無 UI 的公開介面與行為契約測試，以 Rust unit／整合、真實 C consumer 與無 UI 的原生對照，涵蓋四法、候選排序、選字學習、組字邊界、設定／語意操作、快照／effects、字型接受回呼及資料生命週期。核心在各支援平台編譯時都要有足夠的無 UI 測試可執行；交叉編譯成功只算編譯，必須在相應原生 runner／無視窗模擬器執行才算測試通過。
+- **六平台 FE 分工**：各平台另測設定與事件映射、座標／宿主交易、原生字型／儲存接合；不要在每個 FE 重跑整套核心演算法矩陣。UI 僅保留少量（數十個）的自動化冒煙案例，於該 FE 接合或修改時執行。核心工作不以大量 FE／實機端到端驗收作完成門檻，不操作使用者桌面或反覆切換其系統輸入法，也不要求使用者逐項代打測試；完整 FE／安裝驗收另行處理。
+
+- 產品全名為 **chichi77 KeyKey／琦琦輸入法**，英文簡稱 **KeyKey**。**Guanyinma** 是新的 Rust 共用核心代號，目標取代 macOS／Windows 的 Manjusri，以及 iOS、Android、Linux／FreeBSD 的既有核心；各平台原生 frontend 接上新核心。Guanyinma 屬於 KeyKey 的核心模組，目錄固定為 `Source/Guanyinma`；局部 Rust／C ABI 驗證見該目錄 README，分階段範圍見 `docs/GUANYINMA_IMPLEMENTATION_PLAN.md`。
+
+- 核心演算法疑義以 macOS Manjusri／Formosa／OpenVanilla 為主要來源；其他平台既有核心與六平台 frontend 作接合及差異參考。核心按互動行為與狀態分類，不新增 OS 專屬演算法分支。平台預設值、實體事件辨識與宿主操作留在 frontend。
+- Guanyinma 已提供四種輸入法的共用 session；好打注音組句、候選排序、選詞及整詞擠字以 macOS Manjusri 為準。組字音節上限由 FE 設定 **10～20**，到達或超過上限才擠字由 `shift_at_limit` 行為設定；使用者詞庫及學習使用獨立 Guanyinma DB，按 FE 行為設定啟用；reset 保留自訂詞，舊資料只明確唯讀異檔匯入，不覆寫唯一副本。macOS 四法直接由 Guanyinma package 建立 session，不編譯 Manjusri／Generic 輸入核心，不提供核心選單、建置開關或失敗回退。FE 設定變更等待組字、候選及待送 commit 完成；不重播事件。詞庫管理固定使用 GuanyinmaUserData.db，舊 backend token 必須拒絕；既有舊檔不自動開啟、改寫或刪除。建置與原生隔離測試見 `docs/GUANYINMA_MACOS_ADAPTER.md`；IMK 宿主與其他 frontend 接合仍待完成。macOS 可匯入舊 MJSR 並輸出完整 Guanyinma JSON 備份；容器解碼留在 FE，共用 `UserArchive`／`import_user_data` 先驗證再原子提交，備份不匯入 generation／revision，不覆蓋唯一舊副本。`behaviors` 可開關忽略 Caps Lock 與數字鍵盤直接送字；主鍵盤不能因全域 NumLock 被誤判。單按 Shift 沿用 frontend 判定，再送共用中英切換操作。普通 Rust unit／整合／C ABI 測試驗證實作契約，不讀取遷移基準。
+- 快捷鍵辨識及綁定留在 FE；核心提供 `set_full_width(enabled: true/false)`／`toggle_full_width` 與 `set_english(enabled: true/false)`／`toggle_english` 等語意操作。同值 setter 冪等，核心不綁 Shift+Space 或角括號翻頁。macOS 設定／事件覆蓋見 `docs/GUANYINMA_MACOS_BEHAVIOR_COVERAGE.md`；真正 TIS／IMK 宿主與隔離還原流程見 `docs/GUANYINMA_MACOS_IMK_HOST_TEST.md`，不能用 unit 或 mock client 代替。
+- 六平台候選可顯示性由 FE 經 `CandidateFilter`／`guanyinma_session_open_with_candidate_filter` 提供；四種輸入法在候選、前綴上限、分頁與好打 graph 之前過濾，不在 UI 另刪候選。macOS 沿用既有字型／編碼服務，iOS 接上原生 CoreText 判斷，Android 接上原生 Paint 字型判斷，Windows 接上 DirectWrite fallback／字集判斷；Linux 共用 Fcitx 5 frontend 已加入 PangoFT2／Fontconfig 與既有注音字集 callback；FreeBSD 原生接合與各桌面宿主驗證仍各自記錄。政策固定於 session，變更時在安全邊界重新建立；不寫入使用者備份。
+- **iOS Guanyinma 單核心**：鍵盤 extension 與 App 實體鍵盤編輯器共用 `KeyboardInputEngine`，固定使用 Rust，不建置舊 Swift 解析／walker／排序／學習引擎，不提供核心切換或失敗回退。Swift 僅保留 FE 型別、事件與宿主效果接合。App Group 的 `SharedPhrasePublication` 只由 App 寫入，extension 唯讀同步至私有 `GuanyinmaUser.db`，維持不要求完整取用；詞庫發布沒有學習演算法。舊詞庫與學習檔不自動改刪，保留明確 MJSR 自訂詞交換。接合與建置入口見 `docs/GUANYINMA_IOS_ADAPTER.md`；host smoke、iOS 編譯與真正宿主驗證分開記錄。
+- **Android Guanyinma 單核心**：同一 IME service／FE 固定使用 Rust，不建置舊 Java 解析／walker／排序／學習引擎，不提供核心切換或失敗回退。觸控與實體雙排用 touch 行為，一般實體鍵盤用 desktop 行為。只有原 `InputConnection` 接受本次宿主效果後才 acknowledge，無宿主／拒絕操作不重播，於真正新宿主邊界明確 abandon。App／IME 在同沙箱共用 `GuanyinmaUser.db`；舊 Java 資料不自動改刪，保留明確 MJSR 自訂詞交換的薄轉換。JNI 使用標準 UTF-8、明確所有權及原生字型 callback，Android 使用私有 bundled SQLite，不連結平台私有 SQLite。建置及少量 host JNI smoke 見 `docs/GUANYINMA_ANDROID_ADAPTER.md`；不得把 host JNI 或交叉編譯稱為 Android runtime／實機驗收。
+- **核心 CI 權責與增量方式**：完整 Guanyinma Rust unit／整合、C ABI 與跨平台核心矩陣，在 CI 中統一由 `.github/workflows/guanyinma-core.yml` 負責。其他平台 workflow 直接依鎖定工具鏈與 `Cargo.lock` 編譯、連結並使用核心，只跑少量 FE 串接冒煙（載入／建立 session、設定或事件映射、一次送字及釋放），不重跑完整核心測試，也不轉呼叫完整核心 workflow。新增接合採小幅增量，保留既有平台建置、封裝與發布 workflow 的結構；本機核心開發仍可使用獨立測試入口。
+- **Linux／FreeBSD Guanyinma**：Fcitx 5 frontend 只使用 Guanyinma Rust 核心，不再建置 Legacy C++ walker、排序或可寫學習庫，也不提供核心切換或失敗回退。C++ 僅保留 Fcitx／原生字型、關聯詞、繁簡輸出及資料轉換接合。Rust 是必要建置依賴；`linux-release` 與無視窗 `engine-only` 均使用同一核心。設定參考 macOS／Windows 桌面偏好；關聯詞只使用 `[AssociatedPhrases]` Boolean 分組，建置與 CLI 不提供核心選擇相容參數。使用者資料固定 `guanyinma-user.db`，CLI 預設操作 Guanyinma；不再支援舊 Linux C++ 使用者資料庫的讀寫、匯入或相容命令，既有舊檔不自動刪除。FE 設定變更仍等待組字、候選及待送效果完成；不重播宿主效果。完整核心矩陣不在 Linux FE workflow 重跑。FreeBSD 與 GNOME Wayland 原生驗收各自記錄，不能由 Linux X11 推定通過。建置與設定見 `docs/GUANYINMA_LINUX_ADAPTER.md`。
+- **Windows Guanyinma 單核心**：同一 TSF FE 的四種輸入法固定使用 Guanyinma，不提供核心切換、舊核心建置或失敗回退；舊 `InputCore` 偏好與 v3 快照欄位不影響核心選擇。Rust 使用 `GuanyinmaUserData.db`；完整 JSON 備份及明確唯讀匯入舊 Windows 詞庫均經 C ABI，舊檔不自動修改。DirectWrite fallback／字集 callback 在核心排序前過濾。x64／x86 的 Rust 與原生 FE 共用鎖定 bundled SQLite／靜態 CRT，不混用 WinSQLite 的 x86 stdcall ABI。設定及宿主 retained effects 仍沿用既有有序交易邊界，不重播。入口與驗證界線見 `docs/GUANYINMA_WINDOWS_ADAPTER.md`。
+- `tests/run_core_functional.py` 與 `tests/fixtures/core-functional/` 僅供 Rust 重寫／升級時手動擷取和比較現有行為；不得加入日常驗證、預設 CTest、CI gate 或發布驗收。一般測試維持既有入口。
+- 基準分別保存各核心的四種輸入法、完整候選順序與選字學習；既有平台差異及已觀察到的不穩定排序也保留，不將其自動統一成新產品規則。重新擷取不得自動覆寫，須明確指定並審查差異。使用方式及邊界見 `docs/CROSS_PLATFORM_CORE_FUNCTIONAL_TESTS.md`。
+
 ## 改版號清單
 
 程式、封裝與測試不得另行寫死產品版號，一律讀取各平台既有版號來源；測試需要版號時也沿用該來源，不新增專門驗證版號解析、字串或同步傳遞的案例，不因升版重跑這類測試。
@@ -151,5 +174,5 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 - [CHANGELOG.md](CHANGELOG.md)：各平台版本變更。
 - `DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md`：正式模型來源與固定 130 篇結果。
 - `DataSource/AISyntheticBigram/TYPING_COST.md`：動作數工具與可重現評估方式。
-- `Source/Loaders/Linux-IME/docs/smart-mandarin-platform-review.md`：跨平台好打注音行為差異。
+- [Linux／FreeBSD Guanyinma 接合](docs/GUANYINMA_LINUX_ADAPTER.md)：現行桌面偏好、使用者資料及聚焦驗證。
 - [歷史交接紀錄](docs/AGENTS_HISTORY.md)：舊版逐日紀錄與已完成除錯細節。

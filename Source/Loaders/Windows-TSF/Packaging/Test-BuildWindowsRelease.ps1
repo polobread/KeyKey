@@ -46,6 +46,9 @@ function Invoke-Checked {
             New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
             [IO.File]::WriteAllText($path, "synthetic $arch/$runtimeName")
         }
+        $notices = Join-Path $output "$arch/guanyinma/Guanyinma-NOTICES.txt"
+        New-Item -ItemType Directory -Path (Split-Path -Parent $notices) -Force | Out-Null
+        'synthetic core notices' | Set-Content -LiteralPath $notices
         'not part of the upload allowlist' | Set-Content (Join-Path $output 'excluded-marker.txt')
     } elseif ($Name -like 'ctest-*') {
         $result = $Arguments[[Array]::IndexOf($Arguments, '--output-junit') + 1]
@@ -82,6 +85,13 @@ function Invoke-Checked {
         if (@($report.test_results.$arch | Where-Object status -EQ 'skipped').Count -ne 1) { throw 'Skipped CTest case became a pass.' }
     }
     $names = @($manifest.files.PSObject.Properties.Name)
+    foreach ($arch in @('x64', 'x86')) {
+        $notice = Join-Path $output "artifact/inputs/$arch/guanyinma/Guanyinma-NOTICES.txt"
+        if (-not (Test-Path -LiteralPath $notice) -or (Get-Content $notice -Raw).Trim() -ne 'synthetic core notices') {
+            throw 'Required core notices were not preserved in unsigned inputs.'
+        }
+    }
+
     if ($names -contains 'excluded-marker.txt' -or @($names | Where-Object { $_ -match 'private|\.pem$' }).Count) {
         throw 'Non-allowlisted data reached the unsigned artifact.'
     }

@@ -35,6 +35,35 @@ framework headers are removed. `pkgbuild` assigns root:wheel itself.
 It writes two files: `chichi77KeyKey.pkg` to install, and `chichi77KeyKey.pkg.zip`
 to attach to a release.
 
+## Local Guanyinma installer
+
+The standard macOS build uses Guanyinma for all four input methods, with the
+existing native frontend, target and installer script. The crate's pinned Rust
+toolchain is required. The App has no core selector or legacy engine fallback.
+
+From the repository root:
+
+```sh
+python3 update/prepare.py fetch macos
+make -C Source/Distributions/Takao/DatabaseCooker
+(cd Source && xcodebuild -project Takao.xcodeproj \
+  -target "Takao (Loader OSX-IMK)" -configuration Release \
+  -xcconfig Takao-macOS.xcconfig CODE_SIGNING_ALLOWED=NO build)
+(cd Installer && ./build.sh "../Source/build/Release/chichi77 KeyKey.app")
+```
+
+When using isolated Xcode output directories, pass that exact verified App path
+to `build.sh`. It packages the supplied App; it does not choose or rebuild the
+core. Use a separate staging copy of the installer directory if existing local
+package outputs must be preserved, and retain the adjacent `update/` signing
+helper layout.
+
+The resulting files are a real `.pkg` and `.pkg.zip`, with the standard
+installation scripts, arm64 input-source helper, fixed installation path, and
+ad hoc-signed payload. Without Developer ID identities and notarization, this
+is a local test installer, not an official signed/notarized Release. Building
+or expanding it does not install or activate the input method.
+
 ## Installing your own build
 
 A package you built locally has no quarantine attribute, so Gatekeeper does not

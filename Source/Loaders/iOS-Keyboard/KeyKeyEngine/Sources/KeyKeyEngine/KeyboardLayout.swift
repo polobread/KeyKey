@@ -50,7 +50,7 @@ public enum KeyboardLayout {
     }
 
     public static func rows(
-        mode: BopomofoEngine.InputMode, shifted: Bool
+        mode: KeyboardInput.InputMode, shifted: Bool
     ) -> [[String]] {
         switch mode {
         case .bopomofo: return bopomofoRows
@@ -82,7 +82,7 @@ public enum KeyboardLayout {
 
     /// The mode key advertises the *next two* modes, not the current one.
     public static func caption(
-        for key: String, mode: BopomofoEngine.InputMode
+        for key: String, mode: KeyboardInput.InputMode
     ) -> String {
         switch key {
         case "MODE":
@@ -126,7 +126,7 @@ public enum KeyboardLayout {
     /// also mirrors the reading into the host's marked-text range.
     public static func statusText(
         reading: String,
-        mode: BopomofoEngine.InputMode,
+        mode: KeyboardInput.InputMode,
         shifted: Bool,
         temporaryEnglish: Bool,
         layout: BopomofoKeyboardLayout = .standard

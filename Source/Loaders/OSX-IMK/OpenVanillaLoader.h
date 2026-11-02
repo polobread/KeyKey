@@ -34,7 +34,6 @@ class CVLoaderHookedServiceDelegate;
 	
 	NSString *_databaseVersion;	
     
-    OVSQLiteConnection* _userPhraseDB;
 	
 	OVLoaderUserPersistence* _userPersistence;
 	NSMutableArray *_mergedCannedMessagesArray;
@@ -64,6 +63,9 @@ class CVLoaderHookedServiceDelegate;
 - (bool)start:(NSArray*)loadPaths;
 - (void)shutDown;
 - (void)reload;
+- (NSDictionary *)userPhraseDBSnapshot;
+- (NSString *)userPhraseDBBackendIdentifier;
+- (BOOL)applyUserPhraseEdit:(NSDictionary*)edit expectedBackend:(NSString*)backend;
 - (PVLoader*)loader;
 - (PVLoaderService*)loaderService;
 - (NSArray *)identifiersAndLocalizedNamesWithPattern:(NSString *)pattern;

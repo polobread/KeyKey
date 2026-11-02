@@ -51,7 +51,7 @@ struct InputFieldPolicyTests {
     @Test("URL starts with all three modes because it may be used for search")
     func url() {
         let policy = InputFieldPolicy(hint: .url)
-        #expect(policy.allowedModes == Set(BopomofoEngine.InputMode.allCases))
+        #expect(policy.allowedModes == Set(KeyboardInput.InputMode.allCases))
         #expect(policy.preferredMode == .bopomofo)
         #expect(!policy.isRestricted)
         #expect(policy.isKeyEnabled("EMOJI", mode: .bopomofo, shifted: false))
@@ -66,7 +66,7 @@ struct InputFieldPolicyTests {
 
             let unlocked = policy.unrestricted()
             #expect(!unlocked.isRestricted)
-            #expect(unlocked.allowedModes == Set(BopomofoEngine.InputMode.allCases))
+            #expect(unlocked.allowedModes == Set(KeyboardInput.InputMode.allCases))
             #expect(unlocked.preferredMode == policy.preferredMode)
             #expect(unlocked.isKeyEnabled("EMOJI", mode: .bopomofo, shifted: false))
             #expect(unlocked.isKeyEnabled("SPACE", mode: .english, shifted: false))

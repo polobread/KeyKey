@@ -186,7 +186,7 @@
       <TabItem Header="自訂詞">
         <Grid Margin="16,20,20,8">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-          <TextBlock Text="自訂詞用於好打注音；每個字的讀音以半形逗號分隔。" Margin="0,0,0,12" />
+          <TextBlock Text="讀音以半形逗號分隔；匯出為 JSON 備份，亦可匯入既有 Windows 詞庫。" Margin="0,0,0,12" />
           <DataGrid x:Name="UserPhrases" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
                     CanUserAddRows="False" SelectionMode="Single" SelectionChanged="UserPhrases_SelectionChanged">
             <DataGrid.Columns>

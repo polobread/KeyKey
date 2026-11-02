@@ -155,7 +155,11 @@ file for terms.
     [_useShiftToggleInputMode setTarget:self];
     [_useShiftToggleInputMode setAction:@selector(writePreference:)];
     [container addSubview:_useShiftToggleInputMode];
-    NSTextField *label = [[[NSTextField alloc] initWithFrame:NSMakeRect(17, row.origin.y, 205, 18)] autorelease];
+    // Reuse the localized NIB's control column instead of introducing a
+    // separate label width that pushes only the new controls to the right.
+    NSRect controlColumn = [_soundListPopUpButton frame];
+    NSTextField *label = [[[NSTextField alloc] initWithFrame:
+        NSMakeRect(17.0, row.origin.y, controlColumn.origin.x - 27.0, 18.0)] autorelease];
     [label setBezeled:NO]; [label setDrawsBackground:NO];
     [label setEditable:NO]; [label setSelectable:NO];
     [label setAlignment:NSRightTextAlignment];
@@ -163,7 +167,8 @@ file for terms.
     [label setStringValue:LFLSTR(@"Startup input mode:")];
     [container addSubview:label];
     _defaultInputModePopUpButton = [[[NSPopUpButton alloc] initWithFrame:
-        NSMakeRect(230, row.origin.y - 4, 145, 26) pullsDown:NO] autorelease];
+        NSMakeRect(controlColumn.origin.x, row.origin.y - 4.0,
+            controlColumn.size.width, 26.0) pullsDown:NO] autorelease];
     [_defaultInputModePopUpButton addItemsWithTitles:@[LFLSTR(@"Chinese"), LFLSTR(@"English")]];
     [[_defaultInputModePopUpButton itemAtIndex:0] setRepresentedObject:@"Chinese"];
     [[_defaultInputModePopUpButton itemAtIndex:1] setRepresentedObject:@"English"];
@@ -420,7 +425,7 @@ file for terms.
 	} 
 	
 	[self setUI];
-	[self writePreference:self];	
+	[self writePreference:self];
 }
 
 

@@ -26,11 +26,4 @@ struct ReadingLookup {
 // 32 ranked alternatives per query; never expands a Cartesian product.
 ReadingLookup LookupPhraseReadings(const std::wstring& databasePath, const std::wstring& phrase);
 
-std::vector<UserPhrase> LoadUserPhrases();
-bool SaveUserPhrase(const UserPhrase& phrase);
-bool DeleteUserPhrase(std::int64_t rowid);
-bool ResetUserLearning();
-bool ImportUserData(const std::wstring& databasePath);
-bool ExportUserData(const std::wstring& databasePath);
-
 }  // namespace KeyKey::WindowsTsf

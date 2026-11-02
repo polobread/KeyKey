@@ -1,0 +1,52 @@
+{
+  "role": "Guanyinma model adoption; existing inspected 131-article regression, not blind holdout",
+  "database_sha256": "b212cb38bd3281a758c5957fe8a14738eaa74ce466141e77659f01181a9eaa43",
+  "manifest_sha256": "224d6cbda30925fddd9905a2707fad6805e082e11caa1179dc78606dc20957bd",
+  "semantic_sha256": "44e467c511582b31d68afe096700a30e9fde5de7e443182438a79210b2e9307b",
+  "rows": {
+    "unigrams": 119159,
+    "bigrams": 883372
+  },
+  "whole_phrase_jiude_count": 2029,
+  "build_input_hashes_checked": 176,
+  "validation_articles": 131,
+  "frozen_inputs_sha256": "64d0221d7d43f97fe8aead57631b7f2c78ecd52f8113af882f6cd73dc124f1a3",
+  "trace_sha256": {
+    "before": "2086ea2710ac4b42346dc2d9d7aee06e7b1a464b33c2031d0602f3cdc126f993",
+    "after": "958c0b3fdc4096fb9a2a3c19071d1ba84612c16d609064168e31ce51d31717a2"
+  },
+  "totals": {
+    "before": {
+      "total_actions": 333997,
+      "correction_actions": 10608
+    },
+    "after": {
+      "total_actions": 333899,
+      "correction_actions": 10510
+    }
+  },
+  "delta_total_actions": -98,
+  "delta_correction_actions": -98,
+  "checks": {
+    "full_database_verifier": "passed",
+    "shared_database_wiring": "passed",
+    "article_input_hashes": "passed",
+    "fixed_article_manifest_and_leakage": "passed",
+    "frozen_input_digest": "passed",
+    "trace_identity_and_each_article": "passed",
+    "trace_action_totals": "passed",
+    "evaluator_and_reading_sources": "passed"
+  },
+  "tests": {
+    "typing": 56,
+    "rebuild": 7,
+    "whole_phrase_compensation": 4
+  },
+  "validation_replayed_for_adoption": false,
+  "database_recooked_for_adoption": false,
+  "reports": {
+    "regression": "typing-regression-summary.json",
+    "zero_frequency_cost": "zero-frequency-exclusion-summary.json",
+    "details": "../../docs/SMART_MANDARIN_CIN_READING_REGRESSION.md"
+  }
+}

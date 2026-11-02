@@ -6,9 +6,12 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
         ca-certificates \
         cmake \
+        curl \
         g++ \
         libcanberra-dev \
         libfcitx5core-dev \
+        libjson-c-dev \
+        libpango1.0-dev \
         libsqlite3-dev \
         ninja-build \
         pkg-config \
@@ -20,6 +23,7 @@ FROM build AS package-build
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
         build-essential \
+        cargo \
         debhelper \
         dpkg-dev \
         fakeroot \

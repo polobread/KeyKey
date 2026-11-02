@@ -94,10 +94,10 @@ class CollisionTests(unittest.TestCase):
         with sqlite3.connect(path) as db:
             db.executescript("CREATE TABLE unigrams(qstring,current,probability,backoff); CREATE TABLE bigrams(qstring,previous,current,probability); INSERT INTO unigrams VALUES('stale','舊來源',-2,0);")
         with patch.object(rebuild_model, "ROOT", self.root), patch.object(rebuild_model, "DATA", self.root):
-            rebuild_model.cook(path, cin, self.root / "first", corpus=corpus)
+            rebuild_model.cook(path, cin, self.root / "first", corpus=corpus, cin_reading_frequencies=None)
             counts.write_text("甲 20\n丙 10\n")
             corpus.write_text("甲 丙\n")
-            rebuild_model.cook(path, cin, self.root / "second", corpus=corpus)
+            rebuild_model.cook(path, cin, self.root / "second", corpus=corpus, cin_reading_frequencies=None)
         with sqlite3.connect(path) as db:
             self.assertFalse(db.execute("SELECT 1 FROM unigrams WHERE current IN ('乙','舊來源')").fetchall())
             self.assertFalse(db.execute("SELECT 1 FROM bigrams WHERE current='乙' OR previous='乙'").fetchall())

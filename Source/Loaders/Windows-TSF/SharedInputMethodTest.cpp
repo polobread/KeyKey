@@ -1,5 +1,7 @@
 #include "SharedInputMethod.h"
 #include "KeyKeyEngine.h"
+#include "../../Guanyinma/include/guanyinma.h"
+#include <dwrite_2.h>
 #include "ModuleState.h"
 #include "FrontendSettings.h"
 #include "Mandarin.h"
@@ -43,9 +45,9 @@ static std::wstring LegacyRuntimeSnapshot(const std::wstring& snapshot) {
         fields.emplace_back(offset,next-offset); offset=next;
     }
     Check(fields.size()>4,"Snapshot missing visibility fields");
-    // v2 appends the Caps Lock preference before the four visibility fields.
-    const auto field=fields[fields.size()-5];
-    bytes.erase(field.first,field.second); bytes.replace(0,3,"v1;");
+    // v2 appends Caps Lock before the four visibility fields.
+    const auto first=fields[fields.size()-5];
+    bytes.erase(first.first,first.second); bytes.replace(0,3,"v1;");
     return OpenVanilla::OVUTF16::FromUTF8(bytes);
 }
 
@@ -160,6 +162,27 @@ int wmain(int argc, wchar_t** argv) {
                     << "</string><key>RetainedText</key><string>private</string></dict></plist>";
             }
             auto engine = KeyKeyEngineSession::Create();
+            if (!engine || !engine->ready()) {
+                const auto win32Error = GetLastError();
+                size_t errorSize = 0;
+                guanyinma_last_error(nullptr, 0, &errorSize);
+                std::string rustError(errorSize ? errorSize : 1, '\0');
+                guanyinma_last_error(reinterpret_cast<uint8_t*>(rustError.data()),
+                    rustError.size(), &errorSize);
+                if (errorSize) rustError.resize(errorSize - 1);
+                std::cerr << "Child engine diagnostic: win32=" << win32Error
+                          << " Rust=" << rustError << '\n';
+                ComPtr<IDWriteFactory2> fonts;
+                const auto factoryStatus = DWriteCreateFactory(DWRITE_FACTORY_TYPE_ISOLATED,
+                    __uuidof(IDWriteFactory2), reinterpret_cast<IUnknown**>(fonts.GetAddressOf()));
+                std::cerr << "DirectWrite factory hr=" << std::hex << factoryStatus << '\n';
+                if (SUCCEEDED(factoryStatus)) {
+                    ComPtr<IDWriteFontFallback> fallback;
+                    ComPtr<IDWriteFontCollection> collection;
+                    std::cerr << "DirectWrite fallback hr=" << fonts->GetSystemFontFallback(&fallback)
+                              << " collection hr=" << fonts->GetSystemFontCollection(&collection) << '\n';
+                }
+            }
             Check(engine && engine->ready(), "Child engine creation");
             Check(SelectInputMethod("TraditionalMandarin"), "Stale local selection");
             const auto* selected = shared.read();
@@ -231,6 +254,23 @@ int wmain(int argc, wchar_t** argv) {
             const auto afterSnapshot = RuntimePreferencesSnapshot();
             Check(afterSnapshot == *sourceSnapshot && SyncRuntimePreferences(preferences, client, true) &&
                 RuntimePreferencesSnapshot() == afterSnapshot, "Preference groups diverged or unchanged sync rewrote values");
+            // A v3 publisher still sends its obsolete selector. Applying that
+            // snapshot must retain all settings while keeping the Rust core.
+            auto v3 = OpenVanilla::OVUTF8::FromUTF16(*sourceSnapshot);
+            size_t offset = 3;
+            std::vector<size_t> starts;
+            while (offset < v3.size()) {
+                starts.push_back(offset);
+                const auto colon = v3.find(':', offset);
+                offset = colon + 1 + std::stoul(v3.substr(offset, colon - offset));
+            }
+            v3.insert(starts[starts.size() - 4], "8:Manjusri");
+            v3.replace(0, 3, "v3;");
+            Success(preferences.write(client, OpenVanilla::OVUTF16::FromUTF8(v3)), "Publish retired core selector");
+            Check(SyncRuntimePreferences(preferences, client, true) && RuntimePreferencesSnapshot() == *sourceSnapshot,
+                "Retired selector shifted or changed active runtime preferences");
+            auto required = KeyKeyEngineSession::CreateControlled(selected->identifier);
+            Check(required && required->usesGuanyinma(), "Retired shared selector selected an old core");
             Success(preferences.write(client, LegacyRuntimeSnapshot(*sourceSnapshot)), "Publish legacy preferences");
             Check(SyncRuntimePreferences(preferences, client, true) && LoadFrontendSettings().ignoreCapsLockInChinese,
                 "Legacy snapshot did not adopt Windows Caps Lock default");

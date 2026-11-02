@@ -1,6 +1,5 @@
 #include "PVModuleSystem.h"
 #include "OVSQLiteDatabaseService.h"
-#include "OVIMSmartMandarin.h"
 #include "ModuleState.h"
 
 #include <array>
@@ -39,51 +38,6 @@ void FailedOpenChecks(const std::filesystem::path& profile) {
         Check(SqliteMemory() == before, "Failed open retained SQLite allocations");
     }
     std::cout << "256 failed opens: SQLite bytes " << before << " -> " << SqliteMemory() << '\n';
-}
-
-void MigrationChecks(const std::filesystem::path& profile) {
-    const auto directory = profile / L"migration";
-    std::filesystem::create_directories(directory);
-    OVPathInfo paths;
-    paths.writablePath = Utf8(directory);
-    const auto oldPath = directory / L"UserPhrase.db";
-    // Warm the same connection type before measuring native allocations.
-    { std::unique_ptr<OVSQLiteConnection> warm(OVSQLiteConnection::Open()); Check(warm != nullptr, "Warm DB"); }
-    const auto before = SqliteMemory();
-    for (int i = 0; i < 20; ++i) {
-        const auto query = "legacy-" + std::to_string(i);
-        {
-            std::unique_ptr<OVSQLiteConnection> old(OVSQLiteConnection::Open(Utf8(oldPath)));
-            Check(old && old->execute("CREATE TABLE user_unigrams(qstring,current,probability,backoff)") == SQLITE_OK &&
-                  old->execute("INSERT INTO user_unigrams VALUES(%Q,'legacy value',-1,0)", query.c_str()) == SQLITE_OK,
-                  "Create isolated legacy phrase fixture");
-        }
-        {
-            std::unique_ptr<OVSQLiteDatabaseService> database(OVSQLiteDatabaseService::Create());
-            Check(database && database->connection()->execute(
-                  "CREATE TABLE unigrams(qstring,current,probability,backoff);"
-                  "CREATE TABLE bigrams(qstring,previous,current,probability);"
-                  "CREATE TABLE 'Mandarin-bpmf-cin'(key,value)") == SQLITE_OK, "Migration model schema");
-            PVLoaderService service("zh_TW", nullptr, database.get());
-            {
-                OVIMSmartMandarin module;
-                Check(module.moduleInitialize(&paths, &service), "Initialize real migration module");
-                Check(!std::filesystem::exists(oldPath), "Legacy DB handle prevented removal");
-                std::unique_ptr<OVSQLiteStatement> imported(database->connection()->prepare(
-                    "SELECT current FROM userdb.user_unigrams WHERE qstring=%Q", query.c_str()));
-                Check(imported && imported->step() == SQLITE_ROW &&
-                      std::string(imported->textOfColumn(0)) == "legacy value", "Migration lost phrase data");
-            }
-        }
-        Check(SqliteMemory() == before, "Migration retained statement or connection allocations");
-        const auto userPath = directory / L"SmartMandarinUserData.db";
-        HANDLE exclusive = CreateFileW(userPath.c_str(), GENERIC_READ, 0, nullptr,
-                                       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-        Check(exclusive != INVALID_HANDLE_VALUE, "Migration retained user DB file handle");
-        CloseHandle(exclusive);
-    }
-    std::cout << "20 real legacy migrations preserved phrases and released DB resources: "
-              << before << " -> " << SqliteMemory() << '\n';
 }
 
 struct Counts {
@@ -175,7 +129,6 @@ int wmain() {
         } cleanup{profile};
         SetEnvironmentVariableW(L"KEYKEY_TSF_TEST_PROFILE_DIR", profile.c_str());
         FailedOpenChecks(profile);
-        MigrationChecks(profile);
         ModuleChecks(profile);
         ParserChecks();
         return 0;

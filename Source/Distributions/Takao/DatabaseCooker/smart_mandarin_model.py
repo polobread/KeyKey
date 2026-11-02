@@ -98,6 +98,9 @@ def verify_source_hashes(manifest: dict[str, object], manifest_path: Path) -> di
     for key in ("protected_characters", "unigram_supplement"):
         row = sources[key]
         checks.append((bigram / row["file"], row["sha256"]))
+    frequencies = sources.get("cin_reading_frequencies")
+    if frequencies:
+        checks.append((bigram / frequencies["file"], frequencies["sha256"]))
     phrase = sources.get("phrase_unigram_supplement")
     if phrase:
         checks.append((bigram / phrase["file"], phrase["sha256"]))
@@ -146,6 +149,13 @@ def verify_manifest(path: Path, manifest_path: Path) -> dict[str, object]:
     pending_inputs = verify_source_hashes(manifest, manifest_path)
     with connect_readonly(path) as database:
         validate_schema(database)
+        frequencies = manifest["sources"].get("cin_reading_frequencies")
+        if frequencies:
+            from cin_reading_frequencies import load, verify_unigrams
+            entries = load(manifest_path.parent / frequencies["file"])
+            if len(entries) != frequencies["entries"]:
+                raise ValueError("CIN frequency source entry count changed")
+            verify_unigrams(database, entries, manifest["unigram_total_count"])
         missing_phonetic = database.execute('''
             SELECT qstring,current FROM (
                 SELECT qstring,current,ROW_NUMBER() OVER (

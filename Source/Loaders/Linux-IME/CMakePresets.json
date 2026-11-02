@@ -19,7 +19,7 @@
     },
     {
       "name": "engine-only",
-      "displayName": "Portable engine tests (Ninja)",
+      "displayName": "Guanyinma headless adapter tests (Ninja)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/out/build/engine-only",
       "cacheVariables": {

@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private readonly System.Windows.Threading.DispatcherTimer diagnosticTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private string savedPhraseText = "";
     private string savedPhraseReading = "";
+    private NativeUserData? userData;
     private static readonly string[] Scales =
         ["system", "75", "90", "100", "125", "150", "175", "200", "225", "250", "300", "350"];
     private static readonly string[] Colors = ["Default", "Green", "Yellow", "Red"];
@@ -69,6 +70,7 @@ public partial class MainWindow : Window
         try
         {
             LoadSettings();
+            userData = NativeUserData.Open();
             LoadCollections();
             RefreshPhrases();
         }
@@ -94,6 +96,7 @@ public partial class MainWindow : Window
         Closed += (_, _) =>
         {
             diagnosticTimer.Stop();
+            userData?.Dispose();
             App.Updater.StateChanged -= RefreshUpdateState;
         };
         UpdateShutdownProtection();
@@ -263,7 +266,7 @@ public partial class MainWindow : Window
 
     private void RefreshPhrases()
     {
-        UserPhrases.ItemsSource = NativeBackend.LoadPhrases();
+        UserPhrases.ItemsSource = userData?.Load() ?? [];
     }
 
     private static void SelectValue(ComboBox box, string[] values, string value)
@@ -488,8 +491,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var ok = NativeBackend.KeyKeySavePhrase(rowid,
-                PhraseText.Text.Trim(), PhraseReading.Text.Trim()) != 0;
+            var ok = userData?.Save(rowid, PhraseText.Text.Trim(), PhraseReading.Text.Trim()) == true;
             if (ok)
             {
                 RefreshPhrases();
@@ -513,7 +515,7 @@ public partial class MainWindow : Window
         if (UserPhrases.SelectedItem is not PhraseRow row) { Status.Text = "請先選取要刪除的詞"; return; }
         try
         {
-            var ok = NativeBackend.KeyKeyDeletePhrase(row.RowId) != 0;
+            var ok = userData?.Delete(row.RowId) == true;
             if (ok) RefreshPhrases();
             Status.Text = ok ? "自訂詞已刪除" : "刪除自訂詞失敗";
         }
@@ -524,17 +526,17 @@ public partial class MainWindow : Window
     {
         if (MessageBox.Show(this, "要清除好打注音的選字與前後文學習紀錄嗎？自訂詞與倉頡／簡易排序紀錄會保留。",
                 "重設好打注音學習紀錄", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
-        try { Status.Text = NativeBackend.KeyKeyResetLearning() != 0 ? "好打注音學習紀錄已重設" : "重設好打注音學習紀錄失敗"; }
+        try { Status.Text = userData?.Reset() == true ? "好打注音學習紀錄已重設" : "重設好打注音學習紀錄失敗"; }
         catch (Exception ex) { Status.Text = $"重設好打注音學習紀錄失敗：{ex.Message}"; }
     }
 
     private void Import_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Filter = "SQLite 資料庫 (*.db)|*.db|所有檔案 (*.*)|*.*" };
+        var dialog = new OpenFileDialog { Filter = "Guanyinma 備份或舊詞庫 (*.json;*.db)|*.json;*.db|所有檔案 (*.*)|*.*" };
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            var ok = NativeBackend.KeyKeyImportUserData(dialog.FileName) != 0;
+            var ok = userData?.Import(dialog.FileName) == true;
             if (ok) RefreshPhrases();
             Status.Text = ok ? "使用者資料已匯入" : "匯入失敗：請確認資料庫格式";
         }
@@ -543,10 +545,10 @@ public partial class MainWindow : Window
 
     private void Export_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new SaveFileDialog { Filter = "SQLite 資料庫 (*.db)|*.db|所有檔案 (*.*)|*.*",
-            DefaultExt = ".db", AddExtension = true };
+        var dialog = new SaveFileDialog { Filter = "Guanyinma JSON 備份 (*.json)|*.json",
+            DefaultExt = ".json", AddExtension = true };
         if (dialog.ShowDialog(this) != true) return;
-        try { Status.Text = NativeBackend.KeyKeyExportUserData(dialog.FileName) != 0
+        try { Status.Text = userData?.Export(dialog.FileName) == true
             ? "使用者資料已匯出" : "匯出使用者資料失敗"; }
         catch (Exception ex) { Status.Text = $"匯出失敗：{ex.Message}"; }
     }

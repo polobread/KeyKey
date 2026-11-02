@@ -1,0 +1,19 @@
+# Explicit portable crate inputs; never stage target/, caches or local profiles.
+guanyinma_source_paths=(
+  Source/Guanyinma/Cargo.toml
+  Source/Guanyinma/Cargo.lock
+  Source/Guanyinma/rust-toolchain.toml
+  Source/Guanyinma/README.md
+  Source/Guanyinma/build.rs
+  Source/Guanyinma/src
+  Source/Guanyinma/include
+  Source/Guanyinma/tests
+  Source/Guanyinma/LICENSE.txt
+  Source/Guanyinma/LICENSES
+  Source/Guanyinma/tools/build-unix-core.py
+  Source/Guanyinma/tools/package-runtime-notices.py
+  Source/Guanyinma/tools/prepare-unix-vendor.py
+  THIRD-PARTY-NOTICES.md
+  docs/GUANYINMA_LINUX_ADAPTER.md
+  LICENSES
+)

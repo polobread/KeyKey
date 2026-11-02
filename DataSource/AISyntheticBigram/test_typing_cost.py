@@ -28,6 +28,9 @@ class TypingCostTests(unittest.TestCase):
         with t.writable_db(self.db) as db:
             db.executescript("CREATE TABLE unigrams(qstring,current,probability,backoff);"
                              "CREATE TABLE bigrams(qstring,previous,current,probability);"
+                             'CREATE TABLE "Mandarin-bpmf-cin"(key,value);'
+                             'CREATE TABLE "Generic-cj-cin"(key,value);'
+                             'CREATE TABLE "Generic-simplex-cin"(key,value);'
                              "CREATE INDEX u ON unigrams(qstring); CREATE INDEX b ON bigrams(qstring);")
             db.executemany("INSERT INTO unigrams VALUES(?,?,?,?)",
                            [("!", "", 0, 0), ("$", "", 0, 0), ("*", "", -99, 0),
@@ -190,7 +193,7 @@ class TypingCostTests(unittest.TestCase):
     def test_bundled_cin_fallback_is_counted_without_changing_unigrams(self):
         tai = t.query_for_reading("ㄊㄞˊ")
         with t.writable_db(self.db) as db:
-            db.execute('CREATE TABLE "Mandarin-bpmf-cin"(key,value)')
+            db.execute('CREATE TABLE IF NOT EXISTS "Mandarin-bpmf-cin"(key,value)')
             db.executemany('INSERT INTO "Mandarin-bpmf-cin" VALUES(?,?)', [(tai, "台"), (tai, "臺")])
         before = t.sha256(self.db)
         report = self.score("臺")

@@ -34,3 +34,4 @@
 
 "Import customized phrases to your own database." = "导入您的自订词数据库";
 "Your phrases are successfully imported." = "成功导入数据库";
+"Read-only: input core service unavailable." = "只读：输入核心服务不可用。";

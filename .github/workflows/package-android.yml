@@ -1,15 +1,35 @@
 name: Package Android
 
 on:
+  pull_request:
+    paths:
+      - 'Source/Loaders/Android-IME/**'
+      - 'Source/DataTables/**'
+      - '.github/workflows/package-android.yml'
+      - 'Source/Guanyinma/**'
+      - 'Source/Distributions/**'
+      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
+      - '.gitattributes'
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_bundle:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+
+concurrency:
+  group: package-android-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}-${{ inputs.release_bundle || false }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   package:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      RELEASE_BUNDLE: ${{ inputs.release_bundle || false }}
 
     steps:
       - name: Check out selected revision
@@ -40,12 +60,18 @@ jobs:
             exit 1
           fi
           short_sha=$(git rev-parse --short=12 HEAD)
+          artifact_kind=debug
+          if [[ "$RELEASE_BUNDLE" == true ]]; then artifact_kind=release-bundle; fi
 
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=keykey-android-$version-$short_sha" >> "$GITHUB_OUTPUT"
-          echo "VERSION=$version" >> "$GITHUB_ENV"
-          echo "VERSION_CODE=$version_code" >> "$GITHUB_ENV"
+          {
+            echo "version=$version"
+            echo "version_code=$version_code"
+            echo "artifact_name=keykey-android-$version-$short_sha-$artifact_kind"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "VERSION=$version"
+            echo "VERSION_CODE=$version_code"
+          } >> "$GITHUB_ENV"
 
       - name: Set up JDK 17
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -53,13 +79,32 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Read the pinned Rust toolchain
+        id: rust
+        shell: bash
+        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform android
+
+      - name: Prepare Rust Android archives and host JNI toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        with:
+          toolchain: ${{ steps.rust.outputs.version }}
+          components: rust-src
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+
+      - name: Test mobile notice selection and attribution
+        shell: bash
+        run: |
+          python3 Source/Guanyinma/tools/test_ios_runtime_notices.py
+          python3 Source/Guanyinma/tools/test_android_runtime_notices.py
+
       - name: Ensure Android SDK packages are installed
         shell: bash
         run: >-
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           "platforms;android-36.1" "build-tools;36.0.0"
+          "ndk;27.2.12479018" "cmake;3.22.1"
 
-      - name: Cook the Smart Mandarin database
+      - name: Verify the shared Smart Mandarin database
         shell: bash
         run: |
           sudo apt-get update
@@ -67,30 +112,64 @@ jobs:
             build-essential python3 ruby ruby-dev ruby-sqlite3 sqlite3
           make -C Source/Distributions/Takao/DatabaseCooker
 
-      - name: Lint, test, and build debug APK
+      - name: Lint, test, and build the selected Android package
         working-directory: Source/Loaders/Android-IME
         shell: bash
         run: |
+          lint_task=lintDebug
+          package_task=assembleDebug
+          if [[ "$RELEASE_BUNDLE" == true ]]; then
+            lint_task=lintRelease
+            package_task=bundleRelease
+          fi
           ./gradlew --no-daemon \
-            lintDebug testDebugUnitTest assembleDebug \
+            "$lint_task" testDebugUnitTest \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaNativeTest' \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaIntegrationTest' \
+            --tests 'tw.chichi77.keykey.android.GuanyinmaUserDataTest' \
+            --tests 'tw.chichi77.keykey.android.UserPhraseArchiveTest' \
+            --tests 'tw.chichi77.keykey.android.LicenseNoticesTest' \
+            "$package_task" \
             -PkeykeyVersionName="$VERSION" \
             -PkeykeyVersionCode="$VERSION_CODE"
+
+      - name: Verify packaged runtime notices
+        shell: bash
+        run: |
+          package=Source/Loaders/Android-IME/app/build/outputs/apk/debug/app-debug.apk
+          if [[ "$RELEASE_BUNDLE" == true ]]; then
+            package=Source/Loaders/Android-IME/app/build/outputs/bundle/release/app-release.aab
+          fi
+          python3 Source/Guanyinma/tools/verify-android-runtime-notices.py "$package"
+
+      - name: Verify headless JNI smoke executed
+        shell: bash
+        run: python3 Source/Loaders/Android-IME/tools/verify-guanyinma-smoke.py Source/Loaders/Android-IME/app/build/test-results/testDebugUnitTest
 
       - name: Stage and verify artifact
         shell: bash
         run: |
           set -euo pipefail
-          source_apk=Source/Loaders/Android-IME/app/build/outputs/apk/debug/app-debug.apk
-          unzip -p "$source_apk" assets/KeyKey.db > "$RUNNER_TEMP/KeyKey-android.db"
+          source_package=Source/Loaders/Android-IME/app/build/outputs/apk/debug/app-debug.apk
+          asset=assets/KeyKey.db
+          suffix=android-debug.apk
+          if [[ "$RELEASE_BUNDLE" == true ]]; then
+            source_package=Source/Loaders/Android-IME/app/build/outputs/bundle/release/app-release.aab
+            asset=base/assets/KeyKey.db
+            suffix=android-unsigned.aab
+          fi
+          unzip -p "$source_package" "$asset" > "$RUNNER_TEMP/KeyKey-android.db"
           python3 Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \
             "$RUNNER_TEMP/KeyKey-android.db"
           mkdir -p artifacts
-          output="artifacts/chichi77-KeyKey-$VERSION-android-debug.apk"
-          cp "$source_apk" "$output"
+          output="artifacts/chichi77-KeyKey-$VERSION-$suffix"
+          cp "$source_package" "$output"
 
-          aapt_path="$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
-          "$aapt_path" dump badging "$output" |
-            grep -F "versionCode='$VERSION_CODE' versionName='$VERSION'" >/dev/null
+          if [[ "$RELEASE_BUNDLE" != true ]]; then
+            aapt_path="$ANDROID_SDK_ROOT/build-tools/36.0.0/aapt"
+            "$aapt_path" dump badging "$output" |
+              grep -F "versionCode='$VERSION_CODE' versionName='$VERSION'" >/dev/null
+          fi
           (cd artifacts && sha256sum "$(basename "$output")" > "$(basename "$output").sha256")
 
       - name: Upload packaged artifact

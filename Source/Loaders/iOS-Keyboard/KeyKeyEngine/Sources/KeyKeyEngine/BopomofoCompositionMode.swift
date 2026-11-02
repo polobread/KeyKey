@@ -132,8 +132,8 @@ public struct KeyboardClickSettings {
 }
 
 public struct KeyboardLearningResetRequest {
-    private static let sharedKey = "smartMandarinLearningResetRequest"
-    private static let appliedKey = "smartMandarinLearningResetApplied"
+    private let sharedKey: String
+    private let appliedKey: String
     private let localDefaults: UserDefaults
     private let sharedDefaults: UserDefaults?
     private let glyphSupport: CandidateGlyphSupport
@@ -142,6 +142,8 @@ public struct KeyboardLearningResetRequest {
         localDefaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
         glyphSupport: CandidateGlyphSupport = .shared
     ) {
+        sharedKey = "guanyinmaLearningResetRequest"
+        appliedKey = "guanyinmaLearningResetApplied"
         self.localDefaults = localDefaults
         self.sharedDefaults = sharedDefaults
         self.glyphSupport = glyphSupport
@@ -149,20 +151,21 @@ public struct KeyboardLearningResetRequest {
 
     public func request() {
         glyphSupport.reset()
-        sharedDefaults?.set(UUID().uuidString, forKey: Self.sharedKey)
+        sharedDefaults?.set(UUID().uuidString, forKey: sharedKey)
     }
 
-    public func applyIfNeeded(to userData: SmartMandarinUserData?) -> Bool {
-        guard let request = sharedDefaults?.string(forKey: Self.sharedKey),
-              request != localDefaults.string(forKey: Self.appliedKey) else { return false }
+    /// Consume only this core's request, and only after its storage reset succeeds.
+    public func applyIfNeeded(using reset: () throws -> Void) -> Bool {
+        guard let request = sharedDefaults?.string(forKey: sharedKey),
+              request != localDefaults.string(forKey: appliedKey) else { return false }
         glyphSupport.reset()
-        guard let userData else { return false }
         do {
-            try userData.resetLearning()
-            localDefaults.set(request, forKey: Self.appliedKey)
+            try reset()
+            localDefaults.set(request, forKey: appliedKey)
             return true
         } catch {
             return false
         }
     }
+
 }

@@ -3,6 +3,11 @@ import sys
 sys.path.insert(0, "@CMAKE_INSTALL_FULL_DATADIR@/chichi77-keykey")
 from update_notify import preferences
 
-if "--background" not in sys.argv or preferences()["enabled"]:
-    from update_notify_gui import main
-    main("@KEYKEY_UPDATE_VERSION@", "@CMAKE_SYSTEM_NAME@", "@CMAKE_INSTALL_FULL_BINDIR@/keykey-update-notify")
+if "--background" in sys.argv or "--reload-preferences" in sys.argv:
+    if "--reload-preferences" in sys.argv or preferences()["enabled"]:
+        from update_notify_gui import main
+        main("@KEYKEY_UPDATE_VERSION@", "@CMAKE_SYSTEM_NAME@", "@CMAKE_INSTALL_FULL_BINDIR@/keykey-update-notify")
+else:
+    from about_gui import main
+    main("@KEYKEY_UPDATE_VERSION@", "@CMAKE_SYSTEM_NAME@",
+         "@CMAKE_INSTALL_FULL_BINDIR@/keykey-update-notify", section="updates")

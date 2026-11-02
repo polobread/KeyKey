@@ -180,25 +180,26 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         Button userPhrases = new Button(this);
         userPhrases.setText("管理好打注音自訂詞");
         userPhrases.setContentDescription("管理好打注音自訂詞");
-        userPhrases.setOnClickListener(view ->
-                startActivity(new Intent(this, UserPhrasesActivity.class)));
+        userPhrases.setOnClickListener(view -> startActivity(new Intent(this, UserPhrasesActivity.class)));
         compositionContent.addView(userPhrases, matchWrap(dp(0), dp(8)));
 
         Button resetLearning = new Button(this);
         resetLearning.setText("重設好打注音學習紀錄");
-        resetLearning.setOnClickListener(view -> new AlertDialog.Builder(this)
-                .setTitle("重設學習紀錄？")
-                .setMessage("這會清除已學習的選字和相鄰詞關係，自訂詞會保留。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("重設", (dialog, which) -> {
-                    CandidateGlyphSupport.shared().reset();
-                    try (SmartMandarinUserData data = SmartMandarinUserData.open(this)) {
-                        data.resetLearning();
-                        Toast.makeText(this, "學習紀錄已重設", Toast.LENGTH_SHORT).show();
-                    } catch (RuntimeException error) {
-                        Toast.makeText(this, "無法重設學習紀錄", Toast.LENGTH_LONG).show();
-                    }
-                }).show());
+        resetLearning.setOnClickListener(view -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("重設好打注音學習紀錄？")
+                    .setMessage("這會清除已學習的選字和相鄰詞關係，自訂詞會保留。")
+                    .setNegativeButton("取消", null)
+                    .setPositiveButton("重設", (dialog, which) -> {
+                        CandidateGlyphSupport.shared().reset();
+                        try (UserPhraseRepository data = UserPhraseRepository.open(this)) {
+                            data.resetSmartLearning();
+                            Toast.makeText(this, "好打注音學習紀錄已重設", Toast.LENGTH_SHORT).show();
+                        } catch (RuntimeException error) {
+                            Toast.makeText(this, "無法重設學習紀錄：" + error.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    }).show();
+        });
         compositionContent.addView(resetLearning, matchWrap(dp(0), dp(24)));
 
         LinearLayout tableContent = addSettingsGroup(content, savedInstanceState,

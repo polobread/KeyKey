@@ -15,7 +15,8 @@ import pyatspi
 from gi.repository import Gio, GLib
 
 from fcitx5_config_ui_driver import (descendants, wait_for_application,
-                                    wait_for_node, click_node, wait_for_state)
+                                    wait_for_node, click_node, wait_for_state,
+                                    capture_window)
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import update_notify as updates
@@ -23,6 +24,8 @@ import update_notify as updates
 
 def main():
     processes = []
+    information_pid = None
+    title = "琦琦輸入法 — 關於與更新"
     with tempfile.TemporaryDirectory(prefix="keykey-update-install-") as directory:
         root = Path(directory)
         os.environ.update(XDG_CONFIG_HOME=str(root / "config"),
@@ -83,7 +86,7 @@ def main():
             # ExternalOptions share the same Configure button name. Select the
             # update row explicitly so the preceding About entry is not opened.
             # This still exercises the real generated option and installed helper.
-            update_row = wait_for_node(dialog, "filler", "更新通知與下載…:")
+            update_row = wait_for_node(dialog, "filler", "檢查更新:")
             button = wait_for_node(update_row, "push button", "Configure")
             click_node(button)
             deadline = time.monotonic() + 10
@@ -91,7 +94,7 @@ def main():
             while time.monotonic() < deadline:
                 for application in desktop:
                     for node in descendants(application):
-                        if node.name == "琦琦輸入法更新通知" and node.getRoleName() == "frame":
+                        if node.name == title and node.getRoleName() == "frame":
                             window = node
                             break
                 if window:
@@ -101,13 +104,22 @@ def main():
             checkbox = wait_for_node(window, "check box", "每週檢查新版並通知（登入桌面後）")
             assert not checkbox.getState().contains(pyatspi.STATE_CHECKED)
             assert not state_path.exists(), "Opening the opted-out UI performed a network check"
-            # Stop the manually opened helper before testing its background launch.
+            # Both foreground launchers select tabs in the same information
+            # window; the background notifier has its own independent lifecycle.
             bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
             reply = bus.call_sync("org.freedesktop.DBus", "/org/freedesktop/DBus",
                                   "org.freedesktop.DBus", "GetConnectionUnixProcessID",
-                                  GLib.Variant("(s)", ("org.chichi77.KeyKey.UpdateNotification",)),
+                                  GLib.Variant("(s)", ("org.chichi77.KeyKey.Information",)),
                                   None, Gio.DBusCallFlags.NONE, 2000, None)
-            os.kill(reply.unpack()[0], 15)
+            information_pid = reply.unpack()[0]
+            subprocess.run([shutil.which("keykey-about")], check=True, timeout=5)
+            wait_for_state(wait_for_node(window, "page tab", "關於"), pyatspi.STATE_SELECTED, True)
+            wait_for_node(window, "label", "琦琦輸入法")
+            artifacts = os.environ.get("KEYKEY_SETTINGS_ARTIFACT_DIR")
+            if artifacts:
+                Path(artifacts).mkdir(parents=True, exist_ok=True)
+                time.sleep(0.15)
+                capture_window(title, Path(artifacts) / "installed-about")
             updates.set_preferences(True, False, helper)
             updates.save_json(updates.state_home() / "chichi77-keykey/update-notification.json",
                               {"last_attempt": time.time()})  # Keep the test offline.
@@ -118,8 +130,24 @@ def main():
             secondary = subprocess.run([helper], capture_output=True, timeout=5)
             assert secondary.returncode == 0, secondary.stderr.decode()
             assert background.poll() is None, "Second launch replaced the background instance"
-            print("PASS: installed Fcitx entry, default-on, saved opt-out, background flag and single-instance activation")
+            reply = bus.call_sync("org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                  "org.freedesktop.DBus", "GetConnectionUnixProcessID",
+                                  GLib.Variant("(s)", ("org.chichi77.KeyKey.Information",)),
+                                  None, Gio.DBusCallFlags.NONE, 2000, None)
+            assert reply.unpack()[0] == information_pid, "Foreground launchers opened another information window"
+            wait_for_state(wait_for_node(window, "page tab", "檢查更新"), pyatspi.STATE_SELECTED, True)
+            checkbox = wait_for_node(window, "check box", "每週檢查新版並通知（登入桌面後）")
+            wait_for_state(checkbox, pyatspi.STATE_CHECKED, True)
+            if artifacts:
+                time.sleep(0.15)
+                capture_window(title, Path(artifacts) / "installed-updates")
+            print("PASS: native Fcitx entry, shared two-tab About/Updates window, saved opt-out and background lifecycle")
         finally:
+            if information_pid is not None:
+                try:
+                    os.kill(information_pid, 15)
+                except ProcessLookupError:
+                    pass
             for process in reversed(processes):
                 if process.poll() is None:
                     process.terminate()

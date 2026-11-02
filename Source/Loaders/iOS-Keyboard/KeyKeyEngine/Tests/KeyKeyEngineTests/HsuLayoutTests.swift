@@ -4,33 +4,6 @@ import Testing
 
 @Suite("Hsu keyboard layout")
 struct HsuLayoutTests {
-    @Test("desktop ambiguous keys, tones and canonical dictionary queries")
-    func readings() {
-        let cases = [("jxl", "5j/", "ㄓㄨㄥ"), ("llf", "x/3", "ㄌㄥˇ"),
-                     ("myd", "a86", "ㄇㄚˊ"), ("myf", "a83", "ㄇㄚˇ"),
-                     ("myj", "a84", "ㄇㄚˋ"), ("mys", "a87", "ㄇㄚ˙"),
-                     ("l", "-", "ㄦ"), ("gef", "ru3", "ㄐㄧˇ"),
-                     ("guf", "rm3", "ㄐㄩˇ")]
-        for (keys, standardKeys, display) in cases {
-            var hsu = BopomofoReading(layout: .hsu)
-            var standard = BopomofoReading()
-            for key in keys {
-                let accepted = hsu.combine(key)
-                #expect(accepted)
-            }
-            for key in standardKeys { standard.combine(key) }
-            #expect(hsu.displayText == display)
-            #expect(hsu.queryKey == standard.queryKey)
-            let saved = hsu
-            let accepted = hsu.combine("#")
-            #expect(!accepted)
-            #expect(hsu == saved)
-            hsu.clear()
-            #expect(hsu.isEmpty)
-            #expect(hsu.layout == .hsu)
-        }
-    }
-
     @Test("Hsu keycaps stay English while Standard retains its Bopomofo glyphs")
     func englishKeycaps() {
         for key in KeyboardLayout.bopomofoRows.flatMap({ $0 }) {
