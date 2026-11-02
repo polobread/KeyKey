@@ -8,7 +8,7 @@
     "sentences": 344810,
     "tokens": 1572304,
     "cin_reading_frequencies": {
-      "file": "/Users/paulcp/.codex/worktrees/guanyinma-android-core-fix/KeyKey/DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv",
+      "file": "/home/runner/work/KeyKey/KeyKey/DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv",
       "sha256": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb",
       "entries": 3863
     }
@@ -78,8 +78,8 @@
     "corpus_sha256": "b9a0bdaf3f85c0d4a70f0cd0d1d2040f8e0b0a0c4726c831601a1d5ba0175af0"
   },
   "refinement": {
-    "base_database_sha256": "d8658d70eb4169ab75951890433aaaf43d624d0b784148c1a6cd68e30f7c8489",
-    "database_sha256": "a4c154b1ae7711a1575b683c540b161995f81ba6fe1c019ce9f0d87ecf9a9b8d",
+    "base_database_sha256": "7353279b96032852c6995ed01e022e1e6886807a7d845a86a80120837b55477e",
+    "database_sha256": "a1861ff644caf5dadda4b70abc343bf6b3aec2a1af59f6be037b4c330cf3c0fd",
     "semantic_sha256": "4267ac3f55ea906850c59a354829963aac317c00d45af2da7f945f4c26cd6d0b",
     "training_articles": 2300,
     "training_sources": [
