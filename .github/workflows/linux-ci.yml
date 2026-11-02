@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - 'Source/Loaders/Linux-IME/**'
-      - 'tests/desktop_input/**'
       - 'Source/Guanyinma/**'
       - 'Source/Shared/**'
       - 'Source/Branding/**'
@@ -82,9 +81,6 @@ jobs:
           path: |
             Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-pr-smoke
             Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/guanyinma-smoke
-            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/desktop-input
-            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/Testing/Temporary
-            !Source/Loaders/Linux-IME/out/build/ubuntu-24.04-pr-smoke/desktop-input/stage/**
           if-no-files-found: warn
           retention-days: 7
 
@@ -194,11 +190,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: linux-ubuntu-24.04-fcitx5-x11-e2e-${{ github.sha }}
-          path: |
-            Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-package-ci
-            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-ci/desktop-input
-            Source/Loaders/Linux-IME/out/build/ubuntu-24.04-ci/Testing/Temporary
-            !Source/Loaders/Linux-IME/out/build/ubuntu-24.04-ci/desktop-input/stage/**
+          path: Source/Loaders/Linux-IME/out/e2e/ubuntu-24.04-package-ci
           if-no-files-found: warn
           retention-days: 7
 

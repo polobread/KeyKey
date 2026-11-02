@@ -40,12 +40,6 @@ Windows 產品版號只在 `CMakeLists.txt` 宣告；兩個封裝入口與發布
 未解疑慮時重跑。目錄搬移檢查引用與必要建置即可，不重跑原生功能及安裝流程。
 共用引擎與模型變更仍依根目錄 AGENTS 的跨平台／模型規則驗證。
 
-共用桌面案例可建置 `KeyKeyDesktopInputHost` 後，以 `ctest -L '^desktop-input$'` 執行；
-`KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS=ON` 另啟用四種情境各 100 輪的 `desktop-stability`。
-這是原生 TSF context／測試專用文字宿主及執行緒按鍵狀態驗證，不代替可見候選窗、
-跨 App 或實體鍵盤驗收。案例、證據與無對等設定的界線見
-[共用桌面輸入測試](../../../docs/DESKTOP_INPUT_SHARED_TEST_MATRIX.md#windows-原生-tsf-交易測試)。
-
 已安裝的 Windows x64 四法另通過記事本／Word 局部真實宿主冒煙，好打注音亦完成使用者手打
 19 字全文核對。其餘三法以自動送鍵驗證；輸入來源、設定、手打中途證據的限制及未涵蓋項目見
 [Windows 桌面宿主驗收](../../../docs/WINDOWS_DESKTOP_HOST_ACCEPTANCE.md)。

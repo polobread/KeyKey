@@ -38,7 +38,6 @@ source_paths=(
   LICENSE.txt
   LICENSES/MIT.txt
   docs/GUANYINMA_LINUX_ADAPTER.md
-  docs/DESKTOP_INPUT_SHARED_TEST_MATRIX.md
   docs/CANGJIE_PREFIX_CANDIDATES_PLAN.md
   docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md
   README.md
@@ -64,7 +63,6 @@ source_paths=(
   "${model_paths[@]}"
   "${guanyinma_source_paths[@]}"
   Source/Loaders/Linux-IME
-  tests/desktop_input
 )
 
 if [[ "${KEYKEY_SOURCE_WORKTREE:-0}" == 1 ]]; then

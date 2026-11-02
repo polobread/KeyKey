@@ -81,8 +81,6 @@ X11 E2E 的完整輸入偏好固定於 `Source/Loaders/Linux-IME/tests/fixtures/
 
 執行器在初次載入、重載、D-Bus 保存、設定 UI 保存、重啟及輸入序列前，透過 Fcitx `GetConfig` 讀回全部設定；不同、缺少或出現尚未審查的新欄位都立即停止。`config-baseline.json` 及 `config-checks/*.json` 保留每次的預期、實際值、基準差異、設定雜湊與檢查階段；此檢查使用 Python 3 的 PyGObject／Gio（Debian／Ubuntu 為 `python3-gi`）。全半形與當下中英文狀態屬於 context 執行狀態，由全新宿主與案例按鍵控制，不能由持久化設定讀回代替驗證。managed 測試使用隔離資料目錄，基準案例送鍵前清除好打學習；指定使用者 DB fixture 與既有桌面測試不清除資料。
 
-設定開關、10／11 與 20／21 音節、選字分頁、倉頡邊界及重複切換使用[三平台共用桌面案例](DESKTOP_INPUT_SHARED_TEST_MATRIX.md)。`ci/run-desktop-input-session.sh` 接合 Linux 原生宿主，逐次核對設定、焦點、按鍵按放與 Fcitx 啟用狀態；穩定性案例預設各 100 輪。共用規格、核心證據與 Windows／macOS／Linux 原生驗證分開記錄。
-
 `keykey_linux_reading_codec` 是無 DB、無 UI 的薄接合測試，隨既有 CMake／CTest 執行；不重跑完整核心矩陣。相同案例已在 macOS host 分別連結原 C++ 實作及 Rust C ABI 比較通過，僅代表 host 上的 wrapper 行為，Linux／FreeBSD 原生執行仍須各自驗證。
 
 原始碼、無視窗測試、staged addon、套件安裝、X11、GNOME Wayland／XWayland 與 FreeBSD 原生驗證各自記錄。任一層通過不能取代其餘層的宿主證據；正式發布與支援狀態仍以安裝指南與 Release 為準。

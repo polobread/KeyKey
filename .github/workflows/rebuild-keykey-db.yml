@@ -34,13 +34,12 @@ on:
       - 'DataSource/AISyntheticArticles/verify-typing-articles-v5.py'
       - 'DataSource/AISyntheticBigram/benchmark-bigram-structure.py'
       - 'DataSource/AISyntheticBigram/typing_cost.py'
-      - 'DataSource/AISyntheticBigram/typing-engine.cpp'
-      - 'Source/Frameworks/OpenVanilla/Headers/**'
-      - 'Source/Frameworks/Formosa/Headers/**'
-      - 'Source/Frameworks/Formosa/Source/Mandarin.cpp'
-      - 'Source/Frameworks/Manjusri/Headers/**'
-      - 'Source/Frameworks/Manjusri/Source/Node.cpp'
-      - 'Source/ModulePackages/OVIMMandarin/OVIMSmartMandarin.h'
+      - 'Source/Guanyinma/src/**'
+      - 'Source/Guanyinma/examples/typing-cost.rs'
+      - 'Source/Guanyinma/Cargo.toml'
+      - 'Source/Guanyinma/Cargo.lock'
+      - 'Source/Guanyinma/build.rs'
+      - 'Source/Guanyinma/rust-toolchain.toml'
       - 'Source/DataTables/bpmf-ext.cin'
       - 'Source/Distributions/Takao/DatabaseCooker/**'
       - 'DataSource/AISyntheticBigram/build-search-trend-unigram.py'
@@ -59,15 +58,33 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/DataSource/AISyntheticBigram/.typing-cache/guanyinma
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prepare database verification dependencies
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends g++ libsqlite3-dev python3 ruby
+      - name: Read the committed Rust toolchain
+        id: toolchain
+        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform linux
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        with:
+          toolchain: ${{ steps.toolchain.outputs.version }}
+      - name: Build Guanyinma regression typing engine
+        working-directory: Source/Guanyinma
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --example typing-cost
+          engine="$CARGO_TARGET_DIR/release/examples/typing-cost"
+          test -x "$engine"
+          echo "GUANYINMA_TYPING_ENGINE=$engine" >> "$GITHUB_ENV"
+
       - name: Test source tooling and verify the committed shared database
         run: |
           python3 -B -m unittest discover -s Source/Distributions/Takao/DatabaseCooker -p 'test_*.py' -v
+          python3 -B -m unittest discover -s DataSource/AISyntheticBigram -p 'test_typing_cost.py' -v
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py Source/Distributions/Takao/CookedDatabase/KeyKey.db
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
 
@@ -75,6 +92,8 @@ jobs:
     if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/DataSource/AISyntheticBigram/.typing-cache/guanyinma
     permissions:
       contents: write
       pull-requests: write
@@ -93,18 +112,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends g++ libsqlite3-dev python3 ruby
 
-      - name: Compile regression typing engine
+      - name: Read the committed Rust toolchain
+        id: toolchain
+        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform linux
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
+        with:
+          toolchain: ${{ steps.toolchain.outputs.version }}
+      - name: Build Guanyinma regression typing engine
+        working-directory: Source/Guanyinma
         run: |
-          python3 -B - <<'PY'
-          import sys
-          sys.path.insert(0, 'DataSource/AISyntheticBigram')
-          from typing_cost import build_engine
-          print(build_engine())
-          PY
+          set -euo pipefail
+          cargo build --locked --release --example typing-cost
+          engine="$CARGO_TARGET_DIR/release/examples/typing-cost"
+          test -x "$engine"
+          echo "GUANYINMA_TYPING_ENGINE=$engine" >> "$GITHUB_ENV"
 
       - name: Filter custom words and cook Unigram and Bigram
         run: |
           python3 -B -m unittest discover -s Source/Distributions/Takao/DatabaseCooker -p 'test_*.py' -v
+          python3 -B -m unittest discover -s DataSource/AISyntheticBigram -p 'test_typing_cost.py' -v
           python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
             --output "$RUNNER_TEMP/keykey-rebuild" --jobs 2 --max-regression-actions 30 --apply
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py \

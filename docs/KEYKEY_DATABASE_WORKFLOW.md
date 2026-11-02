@@ -72,12 +72,15 @@ Bigram 邊。其詞頻最多為 0.01，且分數至少比既有完整同音詞�
 仍按人名規則處理。已在小麥的同文字人名保留既有詞條，不重複加分。
 
 McBopomofo、CIN、補充詞表、v2/v3/v4、保護字、cooker 程式與本 workflow 的合併變更
-也會觸發重建。回歸用的 `typing_cost.py`、`typing-engine.cpp` 與其引擎來源／標頭
-變更也適用。公式或上游詞频改動仍須通過驗證；不是保證每次來源變更都會發布。
+也會觸發重建。回歸用的 `typing_cost.py`、Guanyinma Rust 核心、`examples/typing-cost.rs`、
+Cargo 設定／鎖定檔與 Rust 工具鏈變更也適用。公式或上游詞频改動仍須通過驗證；不是保證每次來源變更都會發布。
 
 ## 驗證與回存
 
-安裝依賴後先編譯回歸用輸入引擎，編譯成功才開始 cooker，後續回歸共用同一編譯快取。
+PR 驗證與合併後重建均先依鎖定 Rust 工具鏈及 `Cargo.lock` 編譯 Guanyinma
+`typing-cost` example，透過 `GUANYINMA_TYPING_ENGINE` 指定同一個執行檔；建置失敗即停止，
+不回退 C++ 回歸引擎。既有量測工具測試也使用此 Rust 執行檔；不重跑完整核心矩陣。
+編譯成功才開始 cooker，後續回歸共用同一執行檔。
 每次建立獨立候選，驗證 SQLite、採用清單、來源雜湊、低順位候選分數與無 Bigram 邊，
 再跑完整 131 篇固定回歸。文章間不共享學習，讀音參考固定。
 總動作增加至多 30 次可採用；超過 30 次不採用。個別文章、核心／基本字變化只列診斷。
@@ -113,10 +116,15 @@ Ruby cooker、來源重建入口及 Actions 預設啟用
 
 ## 本機執行
 
-需要完整 Git 歷史、Python 3.10+、Ruby、C++17 compiler 與 SQLite 開發套件。
+需要完整 Git 歷史、Python 3.10+、Ruby、C++17 compiler、SQLite 開發套件，
+以及 `Source/Guanyinma/rust-toolchain.toml` 鎖定的 Rust 工具鏈。
 必須指定尚不存在的輸出目錄：
 
 ```sh
+export CARGO_TARGET_DIR="$PWD/DataSource/AISyntheticBigram/.typing-cache/guanyinma"
+(cd Source/Guanyinma && cargo build --locked --release --example typing-cost)
+export GUANYINMA_TYPING_ENGINE="$CARGO_TARGET_DIR/release/examples/typing-cost"
+
 python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
   --output /tmp/keykey-rebuild --jobs 8
 
