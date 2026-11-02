@@ -106,7 +106,7 @@ macOS [建置資訊](https://download.aws.polobread.com/keykey/releases/download
   `keykey/releases/download/VERSION/FILE` 路徑，不取代 GitHub Release 作為發行來源。
 - Android 正式 AAB 只在 Actions 頁面手動執行 `Android Play Release` 時建置、簽署並上傳到 Google Play 內部測試；PR 合併與直接 push 都不觸發。
   從 Play Console 推廣至正式版。正式版已可從 Google Play 下載安裝。
-  `Package Android` 只產生供開發測試的 debug APK。
+  `Android Play Release` 的 PR 驗證與手動 `operation=verify` 提供開發測試 APK／未簽章 AAB，不上傳商店。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
   Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
@@ -282,7 +282,7 @@ Download the current release for your platform. Taiwan AWS downloads contain the
 - `Android Play Release` builds, signs, and uploads the Android AAB to Google Play
   internal testing only when **Run workflow** is selected. PR merges and direct pushes
   do not trigger it. Promote the uploaded build to production in Play Console. Closed testing is no longer required
-  for public installation. `Package Android` produces a development debug APK only.
+  for public installation. PR checks and manual `operation=verify` in `Android Play Release` produce a development APK and unsigned AAB without uploading to the store.
 - Device builds for iOS are distributed through the App Store.
   `Package iOS Simulator` produces an Apple Silicon Simulator build that cannot
   be installed on an iPhone or iPad.

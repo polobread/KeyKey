@@ -9,6 +9,8 @@ on:
       - 'Source/DataTables/**'
       - '.github/workflows/rebuild-keykey-db.yml'
       - 'Source/Guanyinma/**'
+      - '!Source/Guanyinma/**/*.md'
+      - '!Source/Guanyinma/**/README*'
       - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
       - '.gitattributes'
   pull_request_target:

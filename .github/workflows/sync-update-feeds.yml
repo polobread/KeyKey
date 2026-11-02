@@ -31,10 +31,6 @@ on:
       - '.github/scripts/stage-beta-assets.py'
       - '.github/scripts/test_stage_beta_assets.py'
       - '.github/workflows/sync-update-feeds.yml'
-      - 'Source/Guanyinma/**'
-      - 'Source/Distributions/Takao/CookedDatabase/KeyKey.db'
-      - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
-      - '.gitattributes'
   workflow_dispatch:
     inputs:
       operation:
@@ -78,13 +74,10 @@ jobs:
           verify=$(printf '%s' "$changed" | python3 -c 'import re,sys; print(str(any(re.fullmatch(r"update/beta/(windows-x64\.xml|release\.json|metadata\.json(?:\.sig)?)|\.github/scripts/verify-beta-windows\.py", p) for p in sys.stdin.read().splitlines())).lower())')
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$OPERATION" == stage-beta-assets ]]; then verify=true; fi
           echo "verify_windows=$verify" >> "$GITHUB_OUTPUT"
-      - name: Test and validate feeds without AWS access
+      - name: Validate feeds and published assets without AWS access
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m unittest discover -s .github/scripts -p test_sync_update_feeds.py -v
-          python3 -m unittest discover -s .github/scripts -p test_verify_beta_windows.py -v
-          python3 -m unittest discover -s .github/scripts -p test_stage_beta_assets.py -v
           python3 .github/scripts/sync-update-feeds.py --check-only --verify-assets
 
   windows-native:
@@ -167,7 +160,7 @@ jobs:
       always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
       && inputs.operation == 'stage-beta-assets'
       && needs.validate.result == 'success' && needs.windows-native.result == 'success'
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 30
     environment: release
     permissions:

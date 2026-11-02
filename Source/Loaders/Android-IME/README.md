@@ -245,13 +245,13 @@ App 設定頁的「支持開發」區塊未付費時放在最上方，付費後�
 
 ## Google Play 發布
 
-`Android Play Release` 只在 Actions 頁面按 **Run workflow** 時建置、簽署並上傳 AAB 到
+`Android Play Release` 只在 Actions 頁面按 **Run workflow** 並使用預設 `operation=publish` 時建置、簽署並上傳 AAB 到
 Google Play 內部測試；PR 合併與直接 push 都不觸發。手動建置使用所選分支或 tag。
 
 Workflow 依序執行 release lint、單元測試、AAB 建置、簽章與共用 DB 驗證，
 再提交到內部測試，且不設定 `changesNotSentForReview`。正式版推廣由 Play Console
-操作；Actions 上傳成功不代表已公開發布。`Package Android`
-則只提供 debug APK，與正式上傳流程分開。
+操作；Actions 上傳成功不代表已公開發布。相同入口的 PR 驗證與手動 `operation=verify`
+共用一次工具準備，執行 Debug／Release lint 及少量 JNI 接合測試，產出 debug APK 與未簽章 Release AAB；此路徑不使用上傳金鑰或提交商店。
 
 所有原始碼、文件與 CI 修改都在工作分支提交，再透過 PR 合併回 `master`。
 版號來源為本專案的 `app/build.gradle.kts`，上傳版號須符合 Play 的版本要求。
