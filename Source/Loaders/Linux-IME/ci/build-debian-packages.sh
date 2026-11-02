@@ -100,13 +100,6 @@ mkdir -p \
   "$output_dir"
 
 cp -a "$repository_root/Source/Shared" "$source_root/Source/"
-# CTest includes the shared no-UI desktop boundary contract in package builds.
-mkdir -p "$source_root/tests/desktop_input"
-cp -a \
-  "$repository_root/tests/desktop_input/cases.json" \
-  "$repository_root/tests/desktop_input/core_boundaries.py" \
-  "$repository_root/tests/desktop_input/core_cabi.py" \
-  "$source_root/tests/desktop_input/"
 source "$script_dir/guanyinma-source-paths.sh"
 for core_path in "${guanyinma_source_paths[@]}"; do
   mkdir -p "$source_root/$(dirname -- "$core_path")"

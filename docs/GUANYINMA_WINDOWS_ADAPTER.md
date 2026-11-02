@@ -59,6 +59,4 @@ ctest --test-dir out/build/x64-ninja -C Release --output-on-failure --no-tests=e
 
 完整 Rust／C consumer／跨平台核心矩陣仍只由 `guanyinma-core.yml` 負責。Windows workflow 直接建置並連結核心，保留既有平台建置與發布結構。x64／x86 原生可執行檔通過不代表 Windows Search AppContainer、真實文字宿主、安裝升級或簽章／發布完成；這些層級仍須分別驗收。
 
-共用桌面案例另由 `KeyKeyDesktopInputHost` 接到原生 TSF context 與測試專用 ACP 文字宿主，透過 `KeyKeyWindowsDesktopInput` 執行；100 輪模式切換與文件焦點測試由 `KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS` 額外啟用。逐鍵證據、四項無對等設定的案例與真實 App／實體鍵盤驗證界線見 [共用桌面輸入測試](DESKTOP_INPUT_SHARED_TEST_MATRIX.md#windows-原生-tsf-交易測試)。
-
 已安裝的 Windows x64 四法另完成記事本與 Word 的局部真實宿主冒煙：好打注音涵蓋組字／候選、長句 10／11／19 音節、模式切換、數字鍵盤及跨 App 焦點；傳統注音／倉頡／簡易涵蓋候選選字、讀音／字根及取消／錯碼處理。使用者以實體鍵盤輸入好打注音的最終 19 字全文亦已核對，手打第 10／11 音節沒有獨立中途畫面。版本／模型身分、實際設定、輸入來源及仍待驗證項目見 [Windows 桌面宿主驗收](WINDOWS_DESKTOP_HOST_ACCEPTANCE.md)。

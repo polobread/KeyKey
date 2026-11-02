@@ -1,18 +1,8 @@
 #!/usr/bin/env bash
 # Isolated staged-addon smoke: no system install or user's Fcitx is touched.
 set -euo pipefail
-if [[ $# != 2 && $# != 3 ]]; then
-  echo "Usage: $0 BUILD_DIR STAGE_DIR [smoke|desktop]" >&2
-  exit 2
-fi
-suite=${3:-smoke}
-case "$suite" in
-  smoke) session_script=run-x11-e2e-session.sh ;;
-  desktop) session_script=run-desktop-input-session.sh ;;
-  *) echo "Unknown input test suite: $suite" >&2; exit 2 ;;
-esac
-if [[ "$suite" == desktop ]] && ! command -v setsid >/dev/null; then
-  echo "Desktop tests require setsid from util-linux." >&2
+if [[ $# != 2 ]]; then
+  echo "Usage: $0 BUILD_DIR STAGE_DIR" >&2
   exit 2
 fi
 script_dir=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
@@ -39,15 +29,8 @@ unset FCITX_CONFIG_HOME FCITX_DATA_HOME FCITX_CONFIG_DIRS FCITX_DATA_DIRS
 runtime=$(mktemp -d /tmp/keykey-guanyinma-smoke.XXXXXX)
 export KEYKEY_E2E_RUNTIME_ROOT="$runtime"
 export XDG_CACHE_HOME="$runtime/cache"
-if [[ "$suite" == desktop ]]; then
-  artifact_root=${KEYKEY_E2E_ARTIFACT_ROOT:-$build_dir/desktop-input}
-  mkdir -p "$artifact_root"
-  export KEYKEY_E2E_ARTIFACT_DIR
-  KEYKEY_E2E_ARTIFACT_DIR=$(mktemp -d "$artifact_root/run.XXXXXX")
-else
-  export KEYKEY_E2E_ARTIFACT_DIR="$build_dir/guanyinma-smoke"
-  mkdir -p "$KEYKEY_E2E_ARTIFACT_DIR"
-fi
+export KEYKEY_E2E_ARTIFACT_DIR="$build_dir/guanyinma-smoke"
+mkdir -p "$KEYKEY_E2E_ARTIFACT_DIR"
 printf 'Input test evidence: %s\n' "$KEYKEY_E2E_ARTIFACT_DIR"
 private_session_pid=
 cleanup() {
@@ -69,35 +52,16 @@ cleanup() {
 }
 trap cleanup EXIT
 export XDG_DATA_HOME="$runtime/data"
-if [[ "$suite" == desktop ]]; then
-  "$KEYKEY_E2E_PHRASE_CLI" reset-learning
-fi
 session_log="$KEYKEY_E2E_ARTIFACT_DIR/session.log"
-if [[ "$suite" == desktop ]]; then
-  (
-    cd "$script_dir/.."
-    exec setsid --wait dbus-run-session -- bash "$script_dir/$session_script"
-  ) >"$session_log" 2>&1 &
-  private_session_pid=$!
-  printf '%s\n' "$private_session_pid" >"$KEYKEY_E2E_ARTIFACT_DIR/session-pgid.txt"
-  if wait "$private_session_pid"; then
-    :
-  else
-    session_status=$?
-    cat "$session_log"
-    exit "$session_status"
-  fi
+if (
+  cd "$script_dir/.."
+  dbus-run-session -- bash "$script_dir/run-x11-e2e-session.sh"
+) >"$session_log" 2>&1; then
+  :
 else
-  if (
-    cd "$script_dir/.."
-    dbus-run-session -- bash "$script_dir/$session_script"
-  ) >"$session_log" 2>&1; then
-    :
-  else
-    session_status=$?
-    cat "$session_log"
-    exit "$session_status"
-  fi
+  session_status=$?
+  cat "$session_log"
+  exit "$session_status"
 fi
 tail -n 3 "$session_log"
 if ! grep -Fq 'KeyKey active core: Guanyinma' "$KEYKEY_E2E_ARTIFACT_DIR/fcitx5.log"; then

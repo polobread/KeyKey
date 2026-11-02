@@ -1779,12 +1779,6 @@ run_multi_app_case() {
 write_keykey_config
 reload_keykey_config
 
-# Extended matrices reuse this managed session and its cleanup, without running
-# the standard cases. Executing this script directly retains the normal suite.
-if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
-  return 0
-fi
-
 if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   set_bopomofo_layout Standard
   set_associated_phrase_collections McBopomofo

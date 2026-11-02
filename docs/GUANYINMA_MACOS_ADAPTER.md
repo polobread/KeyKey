@@ -118,8 +118,6 @@ python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-native-behavior-tests.py \
 
 真正 TIS／IMKServer／Cocoa 文字宿主的隔離測試入口與還原規則見 [IMK 宿主測試](GUANYINMA_MACOS_IMK_HOST_TEST.md)。它與 unit／mock client、正式安裝包驗證是不同層級。
 
-Windows／macOS／Linux 使用同一份案例的設定、邊界與穩定性接合入口見 [共用桌面輸入測試](DESKTOP_INPUT_SHARED_TEST_MATRIX.md#macos-隔離-controllerpv-接合測試)。macOS 執行器使用目前 controller 方法、真正 PV loader／adapter 與測試自有 UTF-16 client，保存設定讀回與逐鍵交易；不連已安裝 IMK。一般矩陣接入 `macos-symbols.yml`，100 輪穩定性可手動選用，系統宿主驗收仍分開。
-
 ## 共用讀音轉換
 
 Rust 詞庫的讀音顯示／編輯、單字讀音反查結果的轉換，以及 MJSR 讀音驗證，透過

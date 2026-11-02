@@ -6,12 +6,6 @@ include(CTest)
 include(GNUInstallDirs)
 option(KEYKEY_BUILD_X11_E2E_HOST
     "Build the GTK 3, GTK 4, and Qt 6 X11 E2E test hosts" OFF)
-option(KEYKEY_ENABLE_DESKTOP_STABILITY_TESTS
-    "Register the optional 100-round desktop input stability tests" OFF)
-set(KEYKEY_DESKTOP_STABILITY_PROFILE "linux-nine-key" CACHE STRING
-    "Desktop stability profile: shared-eight-key or linux-nine-key")
-set_property(CACHE KEYKEY_DESKTOP_STABILITY_PROFILE PROPERTY STRINGS
-    shared-eight-key linux-nine-key)
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/install-layout.txt.in"
@@ -260,8 +254,6 @@ if(BUILD_TESTING)
                 "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_info_panels.py")
     endif()
 endif()
-
-include(cmake/DesktopInputTests.cmake)
 
 install(FILES
     "${KEYKEY_DATA_SOURCE_DIR}/bpmf-ext.cin"

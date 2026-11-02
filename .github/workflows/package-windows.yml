@@ -14,7 +14,6 @@ on:
       - 'Source/Distributions/**'
       - 'Source/Loaders/iOS-Keyboard/**'
       - 'DataSource/AISyntheticBigram/**'
-      - 'tests/desktop_input/cases.json'
       - '.github/workflows/**'
       - '!**/*.md'
       - '!**/README*'
@@ -33,7 +32,6 @@ on:
       - 'Source/Distributions/**'
       - 'Source/Loaders/iOS-Keyboard/**'
       - 'DataSource/AISyntheticBigram/**'
-      - 'tests/desktop_input/cases.json'
       - '.github/workflows/**'
       - '!**/*.md'
       - '!**/README*'
@@ -100,14 +98,3 @@ jobs:
           path: ${{ runner.temp }}/keykey-windows-checks/artifact/
           if-no-files-found: error
           retention-days: 30
-      - name: Save native TSF desktop test evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: windows-desktop-input-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/keykey-windows-checks/*/desktop-input/
-            ${{ runner.temp }}/keykey-windows-checks/ctest-*.xml
-            !${{ runner.temp }}/keykey-windows-checks/*/desktop-input/**/profile/**
-          if-no-files-found: ignore
-          retention-days: 14

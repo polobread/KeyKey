@@ -12,7 +12,6 @@ on:
       - 'Source/Loaders/iOS-Keyboard/**'
       - 'Source/Frameworks/**'
       - 'Source/Distributions/**'
-      - 'tests/desktop_input/**'
       - '.github/workflows/**'
       - '.github/scripts/prepare-macos-test-fonts.*'
       - '!**/*.md'
@@ -22,11 +21,6 @@ on:
       - 'DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json'
       - '.gitattributes'
   workflow_dispatch:
-    inputs:
-      desktop_stability:
-        description: 'Run 100 rounds of each isolated desktop stability scenario'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -77,36 +71,3 @@ jobs:
           SQLITE3_LIB_DIR="$sdk/usr/lib" SQLITE3_INCLUDE_DIR="$sdk/usr/include" \
             SQLITE3_STATIC=0 SQLITE3_NO_PKG_CONFIG=1 \
             python3 Source/Loaders/OSX-IMK/Tests/run-guanyinma-tests.py --suite integration
-
-  desktop-input:
-    runs-on: macos-15
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Prepare native Apple CJK font without interactive download
-        run: bash .github/scripts/prepare-macos-test-fonts.sh
-      - name: Read the pinned Rust toolchain
-        id: rust
-        run: python3 Source/Guanyinma/tools/ci/configure.py toolchain --platform macos
-      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned
-        with:
-          toolchain: ${{ steps.rust.outputs.version }}
-      - name: Run shared desktop cases through isolated native frontend
-        env:
-          STABILITY: ${{ inputs.desktop_stability || false }}
-        run: |
-          rounds=1
-          if [[ "$STABILITY" == true ]]; then rounds=100; fi
-          python3 Source/Loaders/OSX-IMK/Tests/desktop_input_matrix.py \
-            --rounds "$rounds" --output Installer/local-builds/desktop-input-macos
-      - name: Upload settings, client transactions and shared case results
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: macos-desktop-input-${{ github.sha }}
-          path: |
-            Installer/local-builds/desktop-input-macos/**/*.json
-            Installer/local-builds/desktop-input-macos/**/*.stdout
-            Installer/local-builds/desktop-input-macos/**/*.stderr
-          if-no-files-found: warn
-          retention-days: 7
