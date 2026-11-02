@@ -3,11 +3,11 @@
   "description": "McBopomofo with deduplicated custom Unigrams; source-cooked document-frequency Bigram; personal names, anime and homophone additions inserted after training",
   "training_articles": 2300,
   "validation_articles": 131,
-  "base_database_sha256": "d8658d70eb4169ab75951890433aaaf43d624d0b784148c1a6cd68e30f7c8489",
+  "base_database_sha256": "7353279b96032852c6995ed01e022e1e6886807a7d845a86a80120837b55477e",
   "unigram_rows": 119159,
   "bigram_rows": 883372,
   "semantic_sha256": "44e467c511582b31d68afe096700a30e9fde5de7e443182438a79210b2e9307b",
-  "canonical_database_sha256": "b212cb38bd3281a758c5957fe8a14738eaa74ce466141e77659f01181a9eaa43",
+  "canonical_database_sha256": "cbe2e1018842797610b71a4f4b479332aa4508b32df629dd0ad7fa8075ee6c7c",
   "unigram_total_count": 22609580.0,
   "sources": {
     "training_articles": [
@@ -196,8 +196,8 @@
       "list_sha256": "8dea501dd0249cbb59927ca0e20b3052848202baf9343a38c2820a463be8faa9",
       "skipped_sha256": "b1fe2a60e093281f954adaef314a92113bf25dd91640772568188c36fc6ed600",
       "search_presence_sha256": "0e398aa45a4bb4f1b5d5ce09d99c80e84f8337ed5a60e9ed4e21b4819ec5a88a",
-      "report_sha256": "b52b580ac1c040adb54df00702515baf2fc5227bcb914bb249f11128836f4de5",
-      "validation_sha256": "a15584579523c6700adef9b4b244ae22af85300771350a200c38b4a65a306656",
+      "report_sha256": "ade9dbfbde576b31009d5b25018397e4751fd7676b2c16176e83299381f115d9",
+      "validation_sha256": "f43b2054cc3342d72cd86362b0e16b1fc53cc9c556e57508a6e2c7305151d984",
       "collision_rows_excluded": 0,
       "collision_rows_downranked": 143,
       "cooked": true
@@ -220,6 +220,6 @@
     "partial_overlaps_file": "custom-unigram-partial-overlaps.tsv",
     "partial_overlaps_sha256": "3b615f2bec55e8e22fba32ae121562acecca28a4b4ff78215bf413c90c087bc2",
     "cooker_report_file": "custom-unigram-cooker-report.json",
-    "cooker_report_sha256": "613fa35d415dbfa50471c2866d37132c60998f00fa055c43dcde8dc009e16fee"
+    "cooker_report_sha256": "f0c11838bda89691c0e2c614e7235ced029ae58d165d03f0d70a1fd1e0722622"
   }
 }
