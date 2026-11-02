@@ -152,8 +152,11 @@ python3 -B Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiri
 python3 -B DataSource/AISyntheticArticles/verify-typing-articles-v5.py
 ```
 
-預設編譯小型 C++ adapter，輸出位於忽略的 `.typing-cache/`。Guanyinma 分支可先編譯
-`Source/Guanyinma/examples/typing-cost.rs`，再以 `GUANYINMA_TYPING_ENGINE` 指定執行檔；
+資料庫重建 workflow 的 PR 驗證與合併後重建固定使用
+`Source/Guanyinma/examples/typing-cost.rs`，以鎖定 Rust 工具鏈及 `Cargo.lock` 建置，
+並透過 `GUANYINMA_TYPING_ENGINE` 指定執行檔。本機重現相同量測時，也須先建置
+並設定此環境變數，命令見 [共用詞庫重建流程](../../docs/KEYKEY_DATABASE_WORKFLOW.md#本機執行)。
+未指定的舊量測入口仍會編譯 C++ adapter，不能將其結果視為 Rust 回歸結果。
 協定與動作定義相同，但引擎結果不能互相代替。每篇仍啟動全新程序，停用所有學習。
 # 分類詞庫逐筆清單
 
