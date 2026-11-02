@@ -40,7 +40,7 @@ CI 的權責固定如下；本機核心開發仍可直接執行後面的獨立�
 |---|---|---|
 | macOS | `package-macos.yml` | 鎖定工具鏈；標準 Xcode build phase 連入 Rust，少量 integration 測試，產物保留 runtime notices |
 | Windows | `package-windows.yml` | x64／x86 targets；共用 PowerShell／CMake 建置必須連入 Rust，聚焦 TSF 接合測試 |
-| iOS | `package-ios.yml`、Xcode Cloud `ci_post_clone.sh` | 三個 Apple targets；App／extension 必須連結 Rust，少量 Swift FE smoke 與既有封裝檢查；Cloud 需預裝 rustup |
+| iOS | `package-ios.yml`、Xcode Cloud `ci_post_clone.sh` | 三個 Apple targets；App／extension 必須連結 Rust，少量 Swift FE smoke 與既有封裝檢查；Cloud hook 缺少 rustup 時會下載並校驗官方固定版本 |
 | Android | `android-play-release.yml` | 四個 Android targets／固定 NDK；Rust 靜態庫連入 JNI，少量真 JNI smoke |
 | Linux | `linux-ci.yml` | `prepare-guanyinma.sh` 準備鎖定工具鏈；Fcitx／engine-only 產品建置與套件必須連入 Rust |
 | FreeBSD | `guanyinma-core.yml` 的 FreeBSD 15.1 VM | 原生 VM 執行完整核心測試；FE／ports 沿平台建置流程，儲存庫沒有獨立 FreeBSD FE 封裝 workflow |

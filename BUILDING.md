@@ -367,7 +367,8 @@ bash Source/Guanyinma/tools/test-ios-swift-package.sh
 
 `KeyKey.db` 是版控內共用建置輸入；Xcode Cloud 的
 `Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` 驗證及複製前置條件，不 cooker。
-Cloud 主機需預裝 `rustup`；hook 準備固定工具鏈及 iOS targets，不執行核心全套測試。
+Cloud hook 優先沿用 `rustup`，缺少時下載並以版控 SHA-256 校驗官方固定版本執行檔，
+再準備鎖定工具鏈、`rust-src` 及 iOS targets，不執行核心全套測試。
 下列宿主自動化及 [iOS Simulator 測試計畫](docs/IOS_SIMULATOR_TEST_PLAN.md) 屬 FE 的選用驗證，
 按接合修改挑選，與核心 CI 分開：
 
@@ -790,8 +791,9 @@ bash Source/Guanyinma/tools/test-ios-swift-package.sh
 
 `KeyKey.db` is the committed shared build input. Xcode Cloud verifies it through
 `Source/Loaders/iOS-Keyboard/ci_scripts/ci_post_clone.sh` without cooking it.
-Cloud hosts must already provide `rustup`; the hook prepares the pinned toolchain
-and targets. Optional frontend host automation remains separate from core CI:
+Cloud reuses an available `rustup`, or downloads a versioned official executable and
+verifies its committed SHA-256 before installation. The hook prepares the pinned
+toolchain, `rust-src`, and iOS targets. Optional frontend host automation remains separate from core CI:
 
 ```sh
 Source/Loaders/iOS-Keyboard/run-simulator-tests.sh --host-only
