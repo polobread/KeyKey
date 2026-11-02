@@ -75,7 +75,7 @@ bash ci/run-guanyinma-smoke.sh BUILD_DIR STAGE_DIR
 
 Linux 測試聚焦正式 C ABI、設定映射、動態選字鍵與分頁、字型、生命週期／效果、CLI 與圖形詞庫工具。完整 Rust／C consumer／跨平台核心矩陣由 `guanyinma-core.yml` 負責；不把遷移 functional baseline 加入日常 CTest 或 CI gate。
 
-原生設定保存案例在 managed Xvfb 預設使用 X11 鍵鼠流程，避開部分 Qt5 環境無法暴露 AT-SPI 元件樹的問題；仍實際開啟設定、點選控制項、按 OK 保存，並核對重啟後設定及輸入。此流程限定私有顯示器與固定測試 profile，使用 100 DPI、900×3400 設定視窗及較高的 Xvfb 畫布，保存操作前後畫面；控制項配置或字型改變時須更新 pointer fixture，不可移除保存斷言。`KEYKEY_E2E_CONFIG_UI_DRIVER=atspi` 可明確選原 AT-SPI 路徑；非 managed session 仍預設 AT-SPI，禁止套用固定座標流程。
+原生設定保存案例在 managed Xvfb 與既有 session 預設使用 AT-SPI，依控制項名稱、角色與狀態操作真正設定視窗，再按 OK 保存，核對重啟後設定及輸入。預設流程沿用正常顯示器尺寸與縮放，不固定點擊座標或擴大畫布。`KEYKEY_E2E_CONFIG_UI_DRIVER=x11` 僅保留既有私有顯示器診斷入口；非 managed session 禁止使用固定座標流程。
 
 X11 E2E 的完整輸入偏好固定於 `Source/Loaders/Linux-IME/tests/fixtures/fcitx5-e2e-baseline.json`，不依賴省略欄位後的產品預設值。基準含一般 8 項、注音 14 項（含好打進階設定）、倉頡 12 項、簡易 12 項、自訂詞 1 項及關聯詞庫 30 項，共 77 項；新增輸入偏好時須一併審查 fixture。傳統注音、標準鍵盤、直排、9 個選字鍵、10 音節、好打空白開候選開啟、Shift 強制大寫關閉、繁轉簡關閉及全部關聯詞庫關閉，是既有測試的明確基準，並非產品預設值規格。其他模式、鍵盤、橫排、字集、繁簡與關聯詞等情境由案例明確覆寫。倉頡設定工具及原生設定 UI 案例也各自宣告預期差異，不以實際讀回值反過來建立預期。
 

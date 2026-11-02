@@ -15,6 +15,7 @@ case "$session_mode" in
     exit 2
     ;;
 esac
+export KEYKEY_E2E_SESSION_MODE="$session_mode"
 
 known_cases=(
   T01-X11-GTK3-BOPOMOFO-TRADITIONAL-PUNCTUATION
@@ -275,7 +276,7 @@ export LC_ALL=C.UTF-8
 config_ui_driver=atspi
 if case_selected T07-X11-FCITX5-CONFIG-UI-PERSISTENCE; then
   if [[ "$session_mode" == managed ]]; then
-    config_ui_driver=${KEYKEY_E2E_CONFIG_UI_DRIVER:-x11}
+    config_ui_driver=${KEYKEY_E2E_CONFIG_UI_DRIVER:-atspi}
   else
     config_ui_driver=${KEYKEY_E2E_CONFIG_UI_DRIVER:-atspi}
   fi
