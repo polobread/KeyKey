@@ -217,6 +217,34 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         LinearLayout appearanceContent = addSettingsGroup(content, savedInstanceState,
                 "appearance", R.string.settings_group_appearance,
                 R.string.settings_group_appearance_summary, false).body;
+        TextView profileLabel = new TextView(this);
+        profileLabel.setText(R.string.keyboard_layout_profile);
+        profileLabel.setTextSize(18);
+        profileLabel.setTextColor(Color.DKGRAY);
+        appearanceContent.addView(profileLabel, matchWrap(dp(0), dp(4)));
+        Spinner profileSelector = new Spinner(this);
+        profileSelector.setContentDescription(getString(R.string.keyboard_layout_profile));
+        java.util.List<KeyboardLayoutProfile> profiles = KeyboardLayoutProfile.available();
+        ArrayAdapter<String> profileAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item,
+                profiles.stream().map(profile -> profile.displayName).toArray(String[]::new));
+        profileAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        profileSelector.setAdapter(profileAdapter);
+        profileSelector.setSelection(profiles.indexOf(KeyboardLayoutProfileSettings.profile(this)));
+        profileSelector.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent,
+                    android.view.View view, int position, long id) {
+                KeyboardLayoutProfileSettings.setProfile(SettingsActivity.this, profiles.get(position));
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        appearanceContent.addView(profileSelector, matchWrap(dp(0), dp(8)));
+        TextView profileDescription = new TextView(this);
+        profileDescription.setText(R.string.keyboard_layout_profile_description);
+        profileDescription.setTextSize(14);
+        profileDescription.setTextColor(Color.GRAY);
+        appearanceContent.addView(profileDescription, matchWrap(dp(0), dp(24)));
+
         TextView label = new TextView(this);
         label.setText(R.string.haptic_feedback_title);
         label.setTextSize(18);

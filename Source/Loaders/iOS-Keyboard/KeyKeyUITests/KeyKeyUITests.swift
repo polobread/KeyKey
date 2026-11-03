@@ -86,7 +86,9 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["app-settings.composition-mode"].buttons["好打注音"].tap()
         app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
         let toggle = app.switches["app-settings.space-selects-candidates"]
+        XCTAssertTrue(toggle.exists)
         if toggle.value as? String != "0" { toggle.tap() }
+        XCTAssertEqual(toggle.value as? String, "0")
         app.buttons["app-settings.reset-learning"].tap()
         app.alerts.buttons["重設"].tap()
         launchHostApp()
@@ -112,7 +114,13 @@ final class KeyKeyUITests: XCTestCase {
         app = XCUIApplication()
         app.launch()
         app.buttons["open-input-method-settings"].tap()
-        app.switches["app-settings.space-selects-candidates"].tap()
+        let enabled = app.switches["app-settings.space-selects-candidates"]
+        if enabled.value as? String != "1" { enabled.tap() }
+        XCTAssertEqual(enabled.value as? String, "1")
+        app.terminate()
+        app.launch()
+        app.buttons["open-input-method-settings"].tap()
+        XCTAssertEqual(app.switches["app-settings.space-selects-candidates"].value as? String, "1")
         launchHostApp()
         XCTAssertTrue(revealField("message"))
         let secondOutput = field("message")
@@ -126,7 +134,9 @@ final class KeyKeyUITests: XCTestCase {
         app = XCUIApplication()
         app.launch()
         app.buttons["open-input-method-settings"].tap()
-        app.switches["app-settings.space-selects-candidates"].tap()
+        let restored = app.switches["app-settings.space-selects-candidates"]
+        if restored.value as? String != "0" { restored.tap() }
+        XCTAssertEqual(restored.value as? String, "0")
     }
 
     func testSharedSpaceSelectionAndIndependentDownArrow() {
@@ -147,9 +157,20 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(output.waitForExistence(timeout: 3))
         for key in "su3" { app.typeKey(String(key), modifierFlags: []) }
         app.buttons["hardware-editor.down"].tap()
-        XCTAssertTrue(app.buttons["hardware-editor.candidate.1"].label.contains("你"))
+        let firstCandidate = app.buttons["hardware-editor.candidate.1"]
+        XCTAssertTrue(firstCandidate.label.contains("你"), firstCandidate.label)
+        let firstPage = firstCandidate.label
         app.typeKey(" ", modifierFlags: [])
-        XCTAssertEqual(output.value as? String, "") // Space remains in preedit.
+        XCTAssertNotEqual(firstCandidate.label, firstPage, "候選開啟後，空白仍負責翻頁")
+        let secondPage = firstCandidate.label
+        app.buttons["hardware-editor.backspace"].tap()
+        XCTAssertEqual(firstCandidate.label, secondPage, "候選開啟時退格不能修改組字")
+        app.buttons["hardware-editor.escape"].tap()
+        XCTAssertFalse(firstCandidate.isEnabled)
+        // With the list closed and Space selection disabled, Space inserts into
+        // preedit. Removing it must reveal the original syllable to Down again.
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertEqual(output.value as? String, "")
         app.buttons["hardware-editor.backspace"].tap()
         app.buttons["hardware-editor.down"].tap()
         XCTAssertTrue(app.buttons["hardware-editor.candidate.1"].label.contains("你"))
@@ -238,7 +259,10 @@ final class KeyKeyUITests: XCTestCase {
             app.buttons["刪除"].tap()
         }
 
-        app.buttons["user-phrases.add"].tap()
+        let add = app.buttons["user-phrases.add"]
+        XCTAssertTrue(add.isEnabled,
+            "自訂詞無法新增；請檢查測試包的 App Group 簽章。\(app.alerts.debugDescription)")
+        add.tap()
         let text = app.textFields["user-phrases.text"]
         let reading = app.textFields["user-phrases.reading"]
         XCTAssertTrue(text.waitForExistence(timeout: 3))
@@ -795,8 +819,12 @@ final class KeyKeyUITests: XCTestCase {
         first.tap()
         XCTAssertTrue(waitForLayout { output.value as? String == "一明" })
         try selectCompositionMode("好打注音")
+        app.buttons["MODE"].tap() // ASCII @ belongs to the English placement; Chinese uses ＠.
         app.buttons["@"].tap()
         XCTAssertTrue(waitForLayout { output.value as? String == "一明@" })
+        app.buttons["MODE"].tap() // Return through numbers to Chinese for the next field/session.
+        app.buttons["MODE"].tap()
+        XCTAssertEqual(output.value as? String, "一明@")
     }
 
     func testHardwareEditorModeWidthAndFunctionButtonsKeepSmartText() {
@@ -871,10 +899,22 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertLessThan(clear.frame.minY, copy.frame.minY)
         XCTAssertLessThan(copy.frame.minY, share.frame.minY)
 
-        for control in ["left", "up", "down", "right", "space"] {
+        for control in ["escape", "backspace", "enter"] {
             let button = app.buttons["hardware-editor.\(control)"]
             XCTAssertTrue(button.exists)
             XCTAssertTrue(button.isHittable)
+        }
+        // The App deliberately hides optional navigation in a short phone
+        // landscape. This editor contract is separate from touch layout profiles.
+        let shortPhone = UIDevice.current.userInterfaceIdiom == .phone && app.frame.height < 500
+        for control in ["left", "up", "down", "right", "space"] {
+            let button = app.buttons["hardware-editor.\(control)"]
+            if shortPhone {
+                XCTAssertFalse(button.exists, "短橫式不應擠入選用方向控制")
+            } else {
+                XCTAssertTrue(button.exists)
+                XCTAssertTrue(button.isHittable)
+            }
         }
 
         let stableOutputFrame = output.frame
@@ -897,9 +937,14 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertEqual(phrasePicker.frame.width, stablePhraseFrame.width, accuracy: 0.5)
 
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        screenshot.name = "Hardware keyboard editor iPad landscape columns"
+        screenshot.name = "Hardware keyboard editor landscape columns"
         screenshot.lifetime = .keepAlways
         add(screenshot)
+        XCUIDevice.shared.orientation = .portrait
+        for control in ["left", "up", "down", "right", "space"] {
+            XCTAssertTrue(app.buttons["hardware-editor.\(control)"].waitForExistence(timeout: 3))
+            XCTAssertTrue(app.buttons["hardware-editor.\(control)"].isHittable)
+        }
     }
 
     func testInputFieldMatrixIsReachable() {
@@ -939,7 +984,7 @@ final class KeyKeyUITests: XCTestCase {
     /// Run locally on the development Mac's iOS 17 Simulator. It drives the
     /// actual keyboard extension, not the container app's editor or engine API.
     /// The embedded fixture is generated from the shared annotated Heart Sutra.
-    func testHeartSutraKeyboardExtension() {
+    func testHeartSutraKeyboardExtension() throws {
         XCTAssertEqual(HeartSutraFixture.entries.count, 268)
 
         // Third-party keyboards require user opt-in. Settings UI is the only
@@ -964,9 +1009,10 @@ final class KeyKeyUITests: XCTestCase {
         let output = field("message")
         output.tap()
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
-        XCTAssertEqual(app.staticTexts["keyboard.status"].label, "標準注音")
-
+        try selectCompositionMode("傳統注音")
+        selectLayoutProfile(.full)
         app.buttons["SETTINGS"].tap()
+        app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         let disableAll = app.buttons["全部關閉"]
         XCTAssertTrue(disableAll.waitForExistence(timeout: 3))
         disableAll.tap()
@@ -1004,27 +1050,51 @@ final class KeyKeyUITests: XCTestCase {
             let page = (entry.expectedRank - 1) / 9
             let slot = (entry.expectedRank - 1) % 9 + 1
             let candidate = app.buttons["第 \(slot) 個候選，\(entry.target)"]
-            if (output.value as? String) != nextExpected {
-                for _ in 0..<page {
-                    let nextPage = app.buttons["下一頁"]
-                    XCTAssertTrue(nextPage.waitForExistence(timeout: 3))
-                    XCTAssertTrue(nextPage.isEnabled, "第 \(index + 1) 字無法翻到基準順位")
-                    nextPage.tap()
-                }
-                if candidate.waitForExistence(timeout: 3) {
-                    candidate.tap()
-                } else {
-                    // A unique candidate can be submitted as soon as the
-                    // reading is complete, with no candidate strip to tap.
-                    XCTAssertEqual(entry.expectedRank, 1,
-                                   "第 \(index + 1) 字 \(entry.reading) → \(entry.target) 候選順位不同")
-                    XCTAssertEqual(output.value as? String, nextExpected,
-                                   "第 \(index + 1) 字沒有候選也沒有提交")
-                }
+            // Complete each reading and explicitly choose its target before
+            // typing the next character. Visible marked text is not a commit.
+            for _ in 0..<page {
+                let nextPage = app.buttons["下一頁"]
+                XCTAssertTrue(nextPage.waitForExistence(timeout: 3))
+                XCTAssertTrue(nextPage.isEnabled, "第 \(index + 1) 字無法翻到基準順位")
+                nextPage.tap()
             }
-            XCTAssertTrue(waitForLayout(timeout: 3) {
+            if candidate.waitForExistence(timeout: 3) {
+                candidate.tap()
+            } else {
+                // A unique reading may commit immediately without a choice.
+                XCTAssertEqual(entry.expectedRank, 1,
+                               "第 \(index + 1) 字 \(entry.reading) → \(entry.target) 候選順位不同")
+                let remainingCandidates = app.buttons.matching(NSPredicate(
+                    format: "label MATCHES %@", "第 [0-9]+ 個候選，.*"
+                ))
+                XCTAssertEqual(remainingCandidates.count, 0,
+                               "第 \(index + 1) 字仍有候選，不能把顯示文字當成已選字")
+                XCTAssertEqual(output.value as? String, nextExpected,
+                               "第 \(index + 1) 字沒有候選也沒有提交")
+            }
+            let prefixMatches = waitForLayout(timeout: 3) {
                 (output.value as? String) == nextExpected
-            }, "第 \(index + 1) 字提交後全文前綴不符")
+            }
+            let actualPrefix = output.value as? String ?? "<nil>"
+            if !prefixMatches {
+                // XCTest's stop-on-failure can bypass Swift defer. Save the
+                // evidence before asserting without changing the expected text.
+                let detail = "index=\(index + 1)\nreading=\(entry.reading)\nrank=\(entry.expectedRank)\nexpected=\(nextExpected)\nactual=\(actualPrefix)\n"
+                let failureText = XCTAttachment(string: detail)
+                failureText.name = "ios-failure-prefix.txt"
+                failureText.lifetime = .keepAlways
+                add(failureText)
+                let failureHierarchy = XCTAttachment(string: app.debugDescription)
+                failureHierarchy.name = "ios-failure-hierarchy.txt"
+                failureHierarchy.lifetime = .keepAlways
+                add(failureHierarchy)
+                let failureScreen = XCTAttachment(screenshot: app.screenshot())
+                failureScreen.name = "ios-failure-screen"
+                failureScreen.lifetime = .keepAlways
+                add(failureScreen)
+            }
+            XCTAssertTrue(prefixMatches,
+                "第 \(index + 1) 字提交後全文前綴不符；預期：\(nextExpected)，實際：\(actualPrefix)")
             observed.append("\(index + 1)\t\(entry.reading)\t\(entry.target)\t\(entry.expectedRank)")
             expected = nextExpected
 
@@ -1214,7 +1284,7 @@ final class KeyKeyUITests: XCTestCase {
 
     /// Run at each pose using Device Hub; failure to activate the extension is
     /// a failure, never a skipped geometry/composition check.
-    func testKeyboardLayoutAtCurrentPose() throws {
+    func testFullProfileLayoutAtCurrentPose() throws {
         app = XCUIApplication()
         app.launchArguments = ["-KeyKeyInputFieldTest", "-KeyKeyGeometryProbe"]
         app.launch()
@@ -1225,11 +1295,13 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["SETTINGS"].tap()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
-        assertCoreKeys()
+        selectLayoutProfile(.full)
+        let orientation = try currentPoseOrientation()
+        assertProfileKeysReachable(.full, orientation: orientation)
         let modeFrame = app.buttons["MODE"].frame
         let rightEdge = app.buttons["ENTER"].frame.maxX
         let keyArea = app.buttons["1"].frame.union(app.buttons["-"].frame)
-        XCTAssertLessThanOrEqual(rightEdge - modeFrame.minX, 821)
+        XCTAssertLessThanOrEqual(rightEdge - modeFrame.minX, KeyboardLayoutProfile.full.wideMetrics.maximumContentWidth + 1)
         for identifier in ["1", "-", "q", "@", "a", "SHIFT", "MODE", "SPACE", "BACKSPACE", "ENTER"] {
             let key = app.buttons[identifier]
             XCTAssertTrue(key.isHittable, identifier)
@@ -1257,7 +1329,6 @@ final class KeyKeyUITests: XCTestCase {
     }
 
     func testManualSplitKeyboardPreservesCompositionAndPersists() throws {
-        XCUIDevice.shared.orientation = .landscapeLeft
         XCUIDevice.shared.orientation = .portrait
         launchHostApp()
         XCTAssertTrue(revealField("default"))
@@ -1274,14 +1345,17 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["SETTINGS"].tap()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
-        selectPresentation("完整")
-        let expanded = app.buttons["ENTER"].frame.maxX - app.buttons["1"].frame.minX >= 600
+        selectLayoutProfile(.full)
+        let expanded = app.buttons["ENTER"].frame.maxX - app.buttons["1"].frame.minX
+            >= KeyboardLayoutProfile.split.splitGeometry!.minimumExpandedWidth
         let fullHeight = app.buttons["ENTER"].frame.maxY - app.buttons["1"].frame.minY
         XCTAssertFalse(app.buttons["keyboard.space.right"].exists)
 
         // An unfinished reading must still accept the remaining keys after switching.
         app.buttons["s"].tap()
-        selectPresentation("左右分離")
+        app.buttons["SETTINGS"].press(forDuration: 1)
+        app.buttons[KeyboardLayoutProfile.split.displayName].tap()
+        XCTAssertTrue(app.buttons["SETTINGS"].isHittable)
         assertSplitKeyboardGeometry()
         for key in "u3" { app.buttons[String(key)].tap() }
         XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你" })
@@ -1300,11 +1374,11 @@ final class KeyKeyUITests: XCTestCase {
         let leftEdgeKey = expanded ? "keyboard.split.punctuation.0" : "5"
         XCTAssertEqual(lastLeft.frame.maxX, app.buttons[leftEdgeKey].frame.maxX, accuracy: 1)
         XCTAssertEqual(firstRight.frame.minX, app.buttons["6"].frame.minX, accuracy: 1)
-        selectPresentation("完整")
+        selectLayoutProfile(.full)
         XCTAssertTrue(candidate.waitForExistence(timeout: 3))
         candidate.tap()
         XCTAssertEqual(field("default").value as? String, "你")
-        selectPresentation("左右分離")
+        selectLayoutProfile(.split)
         app.buttons["keyboard.space.right"].tap()
         XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你 " })
         app.buttons["BACKSPACE"].tap()
@@ -1326,7 +1400,7 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["MODE"].tap()
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.buttons["keyboard.space.right"].waitForExistence(timeout: 3))
-        assertSplitKeyboardGeometry()
+        assertSplitKeyboardGeometry(orientation: .landscape)
         XCUIDevice.shared.orientation = .portrait
         assertSplitKeyboardGeometry()
         XCTAssertEqual(field("default").value as? String, "你 ab1")
@@ -1339,9 +1413,9 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         assertSplitKeyboardGeometry()
         app.buttons["SETTINGS"].tap()
-        XCTAssertTrue(app.segmentedControls["keyboard-presentation"].buttons["左右分離"].isSelected)
+        XCTAssertTrue(app.buttons["keyboard.layout-profile.\(KeyboardLayoutProfile.split.id)"].isSelected)
         app.buttons["完成"].tap()
-        selectPresentation("完整")
+        selectLayoutProfile(.full)
         XCTAssertFalse(app.buttons["keyboard.space.right"].exists)
     }
 
@@ -1356,7 +1430,7 @@ final class KeyKeyUITests: XCTestCase {
 
     private func checkSplitSmartPagingKeepsUnfinishedReading(rotating: Bool) throws {
         if rotating { XCUIDevice.shared.orientation = .portrait }
-        launchHostApp(geometryProbe: true)
+        launchHostApp(geometryProbe: !rotating)
         XCTAssertTrue(revealField("default"))
         let output = field("default")
         tapInputField(output)
@@ -1365,8 +1439,8 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["SETTINGS"].tap()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
-        selectPresentation("左右分離")
-        for key in "g4su" { app.buttons[String(key)].tap() }
+        selectLayoutProfile(.split)
+        for key in "g4" { app.buttons[String(key)].tap() }
         XCTAssertTrue(waitForLayout { output.value as? String == "是" })
         let target = app.buttons["keyboard.smart-cell.1"]
         target.tap()
@@ -1378,12 +1452,12 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertNotEqual(first.label, firstPage)
         let secondPage = first.label
 
-        let directions: [UIDeviceOrientation] = [.landscapeLeft, .portraitUpsideDown, .landscapeRight,
-                                                .portrait, .landscapeRight, .portraitUpsideDown, .portrait]
+        let portraitFrame = app.frame
+        let directions: [UIDeviceOrientation] = [.landscapeLeft, .portrait, .landscapeRight, .portrait]
         for index in 0..<(rotating ? directions.count : 1) {
             if rotating {
                 XCUIDevice.shared.orientation = directions[index]
-                assertSimulatorInterfaceOrientation(directions[index])
+                assertAppRotation(directions[index], relativeToPortrait: portraitFrame)
             } else {
                 attachSimulatorGeometry(name: "candidate-second-page-current-pose")
             }
@@ -1423,7 +1497,22 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["1"].isHittable)
         assertFrame(app.buttons["ENTER"].frame, equals: enter, message: "翻頁後關閉候選")
         XCTAssertEqual(output.value as? String, "是")
-        app.buttons["3"].tap() // Completes the reading begun before opening candidates.
+        // Pending phonetics cannot open a candidate list in the single core.
+        // Exercise their preservation separately after the page/target checks.
+        for key in "su" { app.buttons[String(key)].tap() }
+        target.tap()
+        XCTAssertFalse(first.exists, "未完成注音時不應另開候選")
+        XCTAssertEqual(output.value as? String, "是")
+        selectLayoutProfile(.full)
+        selectLayoutProfile(.split)
+        if rotating {
+            for direction in directions {
+                XCUIDevice.shared.orientation = direction
+                assertAppRotation(direction, relativeToPortrait: portraitFrame)
+                XCTAssertEqual(output.value as? String, "是")
+            }
+        }
+        app.buttons["3"].tap() // Completes the pending reading preserved above.
         XCTAssertTrue(waitForLayout { output.value as? String == "是你" })
         for key in "cl3" { app.buttons[String(key)].tap() }
         XCTAssertTrue(waitForLayout { output.value as? String == "是你好" }, "候選目標不能改變句尾輸入位置")
@@ -1432,7 +1521,7 @@ final class KeyKeyUITests: XCTestCase {
         target.tap()
         XCTAssertEqual(first.label, firstPage, "重開候選應回到第一頁")
         if close.isHittable { close.tap() } else { target.tap() }
-        selectPresentation("完整")
+        selectLayoutProfile(.full)
     }
 
     func testSplitSmartNineTenSyllableBoundaryAtCurrentPose() throws {
@@ -1445,7 +1534,7 @@ final class KeyKeyUITests: XCTestCase {
 
     private func checkSplitSmartNineTenSyllableBoundary(rotating: Bool) throws {
         if rotating { XCUIDevice.shared.orientation = .portrait }
-        launchHostApp(geometryProbe: true)
+        launchHostApp(geometryProbe: !rotating)
         XCTAssertTrue(revealField("default"))
         let output = field("default")
         tapInputField(output)
@@ -1454,25 +1543,28 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["SETTINGS"].tap()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
-        selectPresentation("左右分離")
+        selectLayoutProfile(.split)
+        let initialOrientation: KeyboardLayoutProfile.Orientation = rotating ? .portrait : try currentPoseOrientation()
         for _ in 0..<9 { for key in "su3" { app.buttons[String(key)].tap() } }
         XCTAssertTrue(waitForLayout { output.value as? String == String(repeating: "你", count: 9) })
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "個組字，")).count, 9)
         XCTAssertEqual(app.buttons["keyboard.smart-cell.9"].label, "第 9 個組字，你")
         app.buttons["s"].tap()
         // Switch both appearance and orientation while the tenth reading is unfinished.
-        selectPresentation("完整")
-        selectPresentation("左右分離")
-        let directions: [UIDeviceOrientation] = [.landscapeLeft, .portraitUpsideDown, .landscapeRight,
-                                                .portrait, .landscapeRight, .portraitUpsideDown, .landscapeLeft]
+        selectLayoutProfile(.full)
+        selectLayoutProfile(.split)
+        let portraitFrame = app.frame
+        let directions: [UIDeviceOrientation] = [.landscapeLeft, .portrait, .landscapeRight, .portrait]
         for index in 0..<(rotating ? directions.count : 1) {
             if rotating {
                 XCUIDevice.shared.orientation = directions[index]
-                assertSimulatorInterfaceOrientation(directions[index])
+                assertAppRotation(directions[index], relativeToPortrait: portraitFrame)
             } else {
                 attachSimulatorGeometry(name: "ninth-syllable-unfinished-current-pose")
             }
-            assertSplitKeyboardGeometry()
+            let orientation: KeyboardLayoutProfile.Orientation = rotating
+                ? (directions[index].isLandscape ? .landscape : .portrait) : initialOrientation
+            assertSplitKeyboardGeometry(orientation: orientation)
             XCTAssertEqual(output.value as? String, String(repeating: "你", count: 9))
         }
         for key in "u3" { app.buttons[String(key)].tap() }
@@ -1494,7 +1586,7 @@ final class KeyKeyUITests: XCTestCase {
         assertSplitKeyboardGeometry()
         for key in "cl3" { app.buttons[String(key)].tap() }
         XCTAssertTrue(waitForLayout { output.value as? String == "你好" })
-        selectPresentation("完整")
+        selectLayoutProfile(.full)
         app.buttons["ENTER"].tap()
         XCTAssertEqual(output.value as? String, "你好")
     }
@@ -1509,7 +1601,7 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["SETTINGS"].tap()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
-        selectPresentation("左右分離")
+        selectLayoutProfile(.split)
         XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
                       "此測試必須在展開的 Duo 內螢幕或寬版 iPad 執行")
         assertSplitKeyboardGeometry()
@@ -1562,12 +1654,15 @@ final class KeyKeyUITests: XCTestCase {
         }
         XCTAssertTrue(app.buttons["ㄋ"].exists)
         for key in "su3" { app.buttons[String(key)].tap() }
-        XCTAssertTrue(app.buttons["第 1 個候選，你"].waitForExistence(timeout: 3))
+        let completed = app.buttons["第 1 個候選，你"]
+        XCTAssertTrue(completed.waitForExistence(timeout: 3))
+        completed.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == expected + "你" })
         XCTAssertTrue(hide.isHittable)
         hide.tap()
         XCTAssertTrue(waitForLayout { !self.app.buttons["SETTINGS"].exists })
         XCTAssertTrue(waitForLayout { output.value as? String == expected + "你" },
-                      "收鍵盤後應提交候選字，實際為 \(output.value ?? "nil")")
+                      "收鍵盤後應保留已確認文字，實際為 \(output.value ?? "nil")")
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         for key in "cl3" { app.buttons[String(key)].tap() }
@@ -1576,7 +1671,7 @@ final class KeyKeyUITests: XCTestCase {
         nextCandidate.tap()
         XCTAssertTrue(waitForLayout { output.value as? String == expected + "你好" })
         try selectCompositionMode("好打注音")
-        selectPresentation("完整")
+        selectLayoutProfile(.full)
     }
 
     func testWideSplitSmartCandidateRowHasTwelveControls() throws {
@@ -1589,7 +1684,7 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["SETTINGS"].tap()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
-        selectPresentation("左右分離")
+        selectLayoutProfile(.split)
         XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
                       "此測試要求寬版分離鍵盤")
         let numberLeft = app.buttons["1"].frame
@@ -1602,8 +1697,10 @@ final class KeyKeyUITests: XCTestCase {
         for key in "su3cl3" { app.buttons[String(key)].tap() }
         XCTAssertTrue(waitForLayout { output.value as? String == "你好" })
         app.buttons["keyboard.smart-cell.1"].tap()
-        let first = app.buttons["第 1 個候選，你"]
+        let first = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 1 個候選，")).firstMatch
         XCTAssertTrue(first.waitForExistence(timeout: 3))
+        XCTAssertTrue(["第 1 個候選，你", "第 1 個候選，你好"].contains(first.label),
+                      "首候選可為「你」或「你好」，實際為 \(first.label)")
         let candidates = (1...9).map { index in
             self.app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 \(index) 個候選，")).firstMatch
         }
@@ -1632,14 +1729,17 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(waitForLayout { output.value as? String == "你好你" })
         app.buttons["keyboard.smart-cell.1"].tap()
         XCTAssertTrue(close.isHittable)
-        selectPresentation("完整")
+        let candidateBeforeProfileSwitch = first.label
+        selectLayoutProfile(.full)
         XCTAssertFalse(close.isHittable)
         XCTAssertTrue(first.isHittable)
-        selectPresentation("左右分離")
+        XCTAssertEqual(first.label, candidateBeforeProfileSwitch)
+        selectLayoutProfile(.split)
         XCTAssertTrue(close.isHittable)
+        XCTAssertEqual(first.label, candidateBeforeProfileSwitch)
         close.tap()
         XCTAssertEqual(output.value as? String, "你好你")
-        selectPresentation("完整")
+        selectLayoutProfile(.full)
     }
 
     /// A control experiment for native UIKit input-mode crashes. The Debug
@@ -1704,7 +1804,7 @@ final class KeyKeyUITests: XCTestCase {
         tapInputField(output)
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         try selectCompositionMode("好打注音")
-        selectPresentation("左右分離")
+        selectLayoutProfile(.split)
         XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
                       "此測試必須在展開的 Duo 內螢幕或寬版 iPad 執行")
         if typeComposition {
@@ -1735,12 +1835,12 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         if typeComposition { XCTAssertEqual(output.value as? String, expected) }
         XCTAssertEqual(app.state, .runningForeground, "切回輸入法後宿主應維持前景")
-        selectPresentation("完整")
+        selectLayoutProfile(.full)
     }
 
-    private func selectPresentation(_ title: String) {
+    private func selectLayoutProfile(_ profile: KeyboardLayoutProfile) {
         app.buttons["SETTINGS"].tap()
-        let option = app.segmentedControls["keyboard-presentation"].buttons[title]
+        let option = app.buttons["keyboard.layout-profile.\(profile.id)"]
         XCTAssertTrue(option.waitForExistence(timeout: 3))
         if !option.isSelected { option.tap() }
         app.windows.containing(.scrollView, identifier: "keyboard-settings.scroll")
@@ -1748,25 +1848,34 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 3))
     }
 
-    private func assertSplitKeyboardGeometry() {
-        assertCoreKeys()
+    private func assertSplitKeyboardGeometry(orientation: KeyboardLayoutProfile.Orientation = .portrait) {
+        let profile = KeyboardLayoutProfile.split
+        let geometry = profile.splitGeometry!
+        assertProfileKeysReachable(profile, orientation: orientation)
         let expanded = app.buttons["keyboard.split.punctuation.0"].exists
-        let left = app.buttons[expanded ? "keyboard.split.punctuation.0" : "5"].frame
-        let right = app.buttons["6"].frame
-        XCTAssertGreaterThan(right.minX - left.maxX, 25)
+        let keys = profile.rows(orientation: orientation, plane: .bopomofo, shifted: false)[0]
+        let left = app.buttons[expanded ? "keyboard.split.punctuation.0" : keys[geometry.keySplit - 1]].frame
+        let right = app.buttons[keys[geometry.keySplit]].frame
+        XCTAssertGreaterThan(right.minX, left.maxX, "分離樣式必須保留中央空隙")
         let lastLeft = app.buttons["SPACE"]
         let firstRight = app.buttons["keyboard.space.right"]
         XCTAssertTrue(firstRight.isHittable)
         if expanded {
             XCTAssertTrue(app.buttons["keyboard.dismiss"].isHittable)
-            XCTAssertEqual(app.buttons["1"].frame.width, right.width, accuracy: 1)
+            XCTAssertEqual(app.buttons[keys[0]].frame.width, right.width, accuracy: 1)
             let mode = app.buttons["MODE"].frame
-            XCTAssertEqual(app.buttons["SYMBOL"].frame.width / mode.width, 1.25 / 1.5, accuracy: 0.03)
-            XCTAssertEqual(lastLeft.frame.width / mode.width, 2 / 1.5, accuracy: 0.03)
+            XCTAssertEqual(app.buttons["SYMBOL"].frame.width / mode.width,
+                profile.functionWeight(for: "SYMBOL", expanded: true) / profile.functionWeight(for: "MODE", expanded: true),
+                accuracy: 0.03)
+            XCTAssertEqual(lastLeft.frame.width / mode.width,
+                profile.functionWeight(for: "SPACE", expanded: true) / profile.functionWeight(for: "MODE", expanded: true),
+                accuracy: 0.03)
         }
         XCTAssertEqual(lastLeft.frame.maxX, left.maxX, accuracy: 1)
         XCTAssertEqual(firstRight.frame.minX, right.minX, accuracy: 1)
-        for identifier in ["1", "-", "q", "@", "a", "SHIFT", "MODE", "SPACE", "BACKSPACE", "ENTER"] {
+        let identifiers = Set(profile.rows(orientation: orientation, plane: .bopomofo, shifted: false).flatMap { $0 }
+            + profile.functionKeys)
+        for identifier in identifiers.sorted() {
             let key = app.buttons[identifier]
             XCTAssertTrue(key.isHittable, identifier)
             XCTAssertTrue(key.frame.maxX <= left.maxX + 1 || key.frame.minX >= right.minX - 1,
@@ -1774,7 +1883,8 @@ final class KeyKeyUITests: XCTestCase {
         }
     }
 
-    func testPortraitAndLandscapeKeepCoreKeysReachable() throws {
+    func testFullProfilePortraitAndLandscapeKeepDeclaredKeysReachable() throws {
+        XCUIDevice.shared.orientation = .portrait
         launchHostApp()
         XCTAssertTrue(revealField("default"))
         field("default").tap()
@@ -1783,11 +1893,16 @@ final class KeyKeyUITests: XCTestCase {
             return
         }
 
-        assertCoreKeys()
+        try selectCompositionMode("好打注音")
+        selectLayoutProfile(.full)
+        let portraitFrame = app.frame
+        assertProfileKeysReachable(.full)
         XCUIDevice.shared.orientation = .landscapeLeft
-        XCTAssertTrue(app.buttons["MODE"].waitForExistence(timeout: 3))
-        assertCoreKeys()
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
+        assertProfileKeysReachable(.full, orientation: .landscape)
         XCUIDevice.shared.orientation = .portrait
+        assertAppRotation(.portrait, relativeToPortrait: portraitFrame)
+        assertProfileKeysReachable(.full)
     }
 
     private func keepKeyboardEvidence(_ name: String, output: XCUIElement) {
@@ -1801,8 +1916,12 @@ final class KeyKeyUITests: XCTestCase {
         add(screenshot)
     }
 
-    private func assertCoreKeys() {
-        for identifier in ["1", "q", "a", "z", "MODE", "SPACE", "BACKSPACE", "ENTER"] {
+    private func assertProfileKeysReachable(_ profile: KeyboardLayoutProfile,
+                                            orientation: KeyboardLayoutProfile.Orientation = .portrait) {
+        let representatives = profile.rows(orientation: orientation, plane: .bopomofo, shifted: false)
+            .compactMap { $0.first }
+        // These four actions are input affordances, not a fixed visual grid.
+        for identifier in Set(representatives + ["MODE", "SPACE", "BACKSPACE", "ENTER"]).sorted() {
             XCTAssertTrue(app.buttons[identifier].exists, "方向切換後找不到按鍵：\(identifier)")
             XCTAssertTrue(app.buttons[identifier].isHittable, "方向切換後按鍵不可點：\(identifier)")
         }
@@ -1845,28 +1964,31 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 2))
     }
 
-    private func assertSimulatorInterfaceOrientation(_ deviceOrientation: UIDeviceOrientation) {
-        #if compiler(>=6.4)
-        if #available(iOS 27.1, *) {
-            let expected: UIInterfaceOrientation
-            switch deviceOrientation {
-            case .portrait: expected = .portrait
-            case .portraitUpsideDown: expected = .portraitUpsideDown
-            case .landscapeLeft: expected = .landscapeRight
-            case .landscapeRight: expected = .landscapeLeft
-            default: return
-            }
-            let probe = app.staticTexts["app.geometry"]
-            XCTAssertTrue(waitForLayout(timeout: 5) {
-                guard probe.exists, let value = probe.value as? String,
-                      let data = value.data(using: .utf8),
-                      let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-                else { return false }
-                return snapshot["interfaceOrientation"] as? Int == expected.rawValue
-            }, "宿主畫面沒有實際旋轉到 \(expected)，診斷：\(probe.value ?? "nil")")
-            attachSimulatorGeometry(name: "orientation-\(deviceOrientation.rawValue)")
-        }
-        #endif
+    private func assertAppRotation(_ orientation: UIDeviceOrientation, relativeToPortrait portrait: CGRect) {
+        // The full-screen test App must actually adopt the requested axis. Compare
+        // to its own portrait frame; do not assume every display is taller than wide.
+        let expected = orientation.isLandscape
+            ? CGSize(width: portrait.height, height: portrait.width) : portrait.size
+        XCTAssertTrue(waitForLayout(timeout: 5) {
+            let frame = self.app.frame
+            return abs(frame.width - expected.width) <= 1 && abs(frame.height - expected.height) <= 1
+        }, "輸入測試頁面未完成方向切換：\(app.frame)，預期 \(expected)")
+    }
+
+    private func currentPoseOrientation() throws -> KeyboardLayoutProfile.Orientation {
+        let probe = app.staticTexts["app.geometry"]
+        var result: KeyboardLayoutProfile.Orientation?
+        XCTAssertTrue(waitForLayout(timeout: 5) {
+            guard probe.exists, let value = probe.value as? String,
+                  let data = value.data(using: .utf8),
+                  let snapshot = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let raw = snapshot["interfaceOrientation"] as? Int,
+                  let orientation = UIInterfaceOrientation(rawValue: raw), orientation != .unknown
+            else { return false }
+            result = orientation.isLandscape ? .landscape : .portrait
+            return true
+        }, "目前姿態診斷需要 Debug Simulator 的有效 app.geometry 探針")
+        return try XCTUnwrap(result)
     }
 
     private func attachSimulatorGeometry(name: String) {

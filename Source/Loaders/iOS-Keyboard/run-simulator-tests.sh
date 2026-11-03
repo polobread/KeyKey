@@ -10,6 +10,30 @@ MODE="functional"
 CONFIGURATION="Debug"
 TEST_PLAN="KeyKeyFunctional"
 
+usage() {
+  cat <<EOF
+Usage: $0 [--functional|--smoke|--functional-host|--functional-extension|--duo|--duo-diagnostics|--help]
+
+  --functional            Run the ordinary functional test plan (default).
+  --smoke                 Run Release container smoke tests.
+  --functional-host       Run Debug container and hardware-editor checks.
+  --functional-extension  Run keyboard input, profile switching and rotation regressions.
+  --duo                   Run the optional Duo wide-layout plan.
+  --duo-diagnostics       Run diagnostics at the device's current pose.
+  --help                  Show this help without creating output or running tests.
+
+KEYKEY_IOS_TEST_DEVICE selects one Simulator by its exact name or UDID instead
+of the ordinary device matrix. It is required for both Duo modes; prepare the
+chosen device's pose before running. Duplicate names require a UDID.
+KEYKEY_IOS_TEST_OUTPUT optionally selects the output directory.
+EOF
+}
+
+if [[ $# -gt 1 ]]; then
+  usage >&2
+  exit 64
+fi
+
 case "${1:-}" in
   ""|--functional)
     ;;
@@ -24,22 +48,27 @@ case "${1:-}" in
   --functional-extension)
     MODE="functional-extension"
     ;;
+  --duo)
+    MODE="duo"
+    TEST_PLAN="KeyKeyDuo"
+    ;;
+  --duo-diagnostics)
+    MODE="duo-diagnostics"
+    TEST_PLAN="KeyKeyDuoDiagnostics"
+    ;;
+  --help)
+    usage
+    exit 0
+    ;;
   *)
-    echo "Usage: $0 [--smoke|--functional|--functional-host|--functional-extension]" >&2
+    usage >&2
     exit 64
     ;;
 esac
 
-if [[ $# -gt 1 ]]; then
-  echo "Usage: $0 [--smoke|--functional|--functional-host|--functional-extension]" >&2
+if [[ "$MODE" == duo* && -z "${KEYKEY_IOS_TEST_DEVICE:-}" ]]; then
+  echo "KEYKEY_IOS_TEST_DEVICE must select an exact Simulator name or UDID for --$MODE." >&2
   exit 64
-fi
-
-if [[ -n "${KEYKEY_IOS_TEST_OUTPUT:-}" ]]; then
-  OUTPUT_DIR="$KEYKEY_IOS_TEST_OUTPUT"
-  mkdir -p "$OUTPUT_DIR"
-else
-  OUTPUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/keykey-ios-simulator-tests.XXXXXX")"
 fi
 
 DEVICE_NAMES=(
@@ -52,10 +81,43 @@ DEVICE_NAMES=(
 
 find_udid() {
   local target="$1"
-  xcrun simctl list devices available | awk -F '[()]' -v target="$target" '
-    index($1, target) { print $2; exit }
-  '
+  xcrun simctl list devices available --json | python3 -c '
+import json
+import sys
+
+target = sys.argv[1]
+devices = [device for group in json.load(sys.stdin)["devices"].values() for device in group]
+matches = [device for device in devices
+           if device["name"] == target or device["udid"].casefold() == target.casefold()]
+if len(matches) > 1:
+    print("Ambiguous Simulator name; select a UDID: " + target, file=sys.stderr)
+    for device in matches:
+        print("  " + device["name"] + " (" + device["udid"] + ")", file=sys.stderr)
+    sys.exit(1)
+if matches:
+    print(matches[0]["udid"])
+' "$target"
 }
+
+EXPLICIT_DEVICE_UDID=""
+if [[ -n "${KEYKEY_IOS_TEST_DEVICE:-}" ]]; then
+  if ! EXPLICIT_DEVICE_UDID="$(find_udid "$KEYKEY_IOS_TEST_DEVICE")"; then
+    echo "Could not resolve KEYKEY_IOS_TEST_DEVICE." >&2
+    exit 64
+  fi
+  if [[ -z "$EXPLICIT_DEVICE_UDID" ]]; then
+    echo "Simulator not found: $KEYKEY_IOS_TEST_DEVICE" >&2
+    exit 64
+  fi
+  DEVICE_NAMES=("$KEYKEY_IOS_TEST_DEVICE")
+fi
+
+if [[ -n "${KEYKEY_IOS_TEST_OUTPUT:-}" ]]; then
+  OUTPUT_DIR="$KEYKEY_IOS_TEST_OUTPUT"
+  mkdir -p "$OUTPUT_DIR"
+else
+  OUTPUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/keykey-ios-simulator-tests.XXXXXX")"
+fi
 
 echo "Output: $OUTPUT_DIR"
 if [[ "$MODE" != "smoke" ]]; then
@@ -70,7 +132,14 @@ failures=0
 results=()
 
 for name in "${DEVICE_NAMES[@]}"; do
-  udid="$(find_udid "$name")"
+  if [[ -n "$EXPLICIT_DEVICE_UDID" ]]; then
+    udid="$EXPLICIT_DEVICE_UDID"
+  elif ! udid="$(find_udid "$name")"; then
+    echo "FAIL  $name (Simulator lookup failed)" >&2
+    results+=("FAIL|$name|Simulator lookup failed")
+    failures=$((failures + 1))
+    continue
+  fi
   if [[ -z "$udid" ]]; then
     echo "FAIL  $name (Simulator not found)" >&2
     results+=("FAIL|$name|Simulator not found")
@@ -87,6 +156,7 @@ for name in "${DEVICE_NAMES[@]}"; do
   fi
 
   slug="${name// /-}"
+  if [[ -n "$EXPLICIT_DEVICE_UDID" ]]; then slug="$udid"; fi
   result_bundle="$OUTPUT_DIR/$slug-$MODE.xcresult"
   test_args=()
   if [[ "$MODE" == "functional-host" ]]; then
@@ -104,10 +174,14 @@ for name in "${DEVICE_NAMES[@]}"; do
     )
   elif [[ "$MODE" == "functional-extension" ]]; then
     test_args+=(
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/test00KeyboardOptInIsConfigured"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testKeyboardExtensionModesAndComposition"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testMultiCharacterAssociationsDoNotResizeKeyboard"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testEnterDismissesAssociatedPhrasesBeforeSendingReturn"
-      "-only-testing:KeyKeyUITests/KeyKeyUITests/testPortraitAndLandscapeKeepCoreKeysReachable"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testFullProfilePortraitAndLandscapeKeepDeclaredKeysReachable"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testManualSplitKeyboardPreservesCompositionAndPersists"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testSplitSmartPagingRotationKeepsUnfinishedReading"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testSplitSmartNineTenSyllableBoundaryAndDeletion"
     )
   fi
 
@@ -161,10 +235,17 @@ if [[ "$MODE" == "functional-host" ]]; then
   echo
   echo "Functional host mode validates production smoke, Settings opt-in, acknowledgements,"
   echo "all 14 input-field hosts, and the hardware-keyboard editor."
-  echo "Run --functional-extension after selecting 琦琦輸入法 to exercise the extension."
+  echo "Run --functional-extension to exercise keyboard input and profile switching."
 elif [[ "$MODE" == "functional-extension" ]]; then
   echo
-  echo "Extension mode requires 琦琦輸入法 to be selected on every Simulator."
+  echo "Extension mode opts in to 琦琦輸入法, then checks input, profile switching and rotation."
+elif [[ "$MODE" == "duo" ]]; then
+  echo
+  echo "Duo mode validates the selected device's wide split layout; its inner display must be open."
+elif [[ "$MODE" == "duo-diagnostics" ]]; then
+  echo
+  echo "Duo diagnostics preserve the selected device's current pose."
+  echo "The native keyboard comparison also requires the system Zhuyin keyboard to be enabled."
 elif [[ "$MODE" == "smoke" ]]; then
   echo
   echo "Smoke mode validates the Release container UI without Debug-only launch arguments."

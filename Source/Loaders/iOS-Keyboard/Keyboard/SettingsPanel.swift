@@ -12,7 +12,7 @@ protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
     func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout)
-    func settingsPanel(_ panel: SettingsPanel, didChangePresentation presentation: KeyboardPresentation)
+    func settingsPanel(_ panel: SettingsPanel, didChangeLayoutProfile profile: KeyboardLayoutProfile)
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
@@ -33,7 +33,8 @@ final class SettingsPanel: UIView {
     private var compositionMode: BopomofoCompositionMode
     private var chineseInputMethod: ChineseInputMethod
     private let methodSettings: ChineseInputMethodSettings
-    private var presentation: KeyboardPresentation
+    private var layoutProfile: KeyboardLayoutProfile
+    private var profileButtons: [UIButton] = []
     private var keyboardLayout: BopomofoKeyboardLayout
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
@@ -53,7 +54,7 @@ final class SettingsPanel: UIView {
         chineseInputMethod: ChineseInputMethod = .smart,
         methodSettings: ChineseInputMethodSettings = ChineseInputMethodSettings(),
         keyboardLayout: BopomofoKeyboardLayout = .standard,
-        presentation: KeyboardPresentation = .full
+        layoutProfile: KeyboardLayoutProfile = .full
     ) {
         self.collections = collections
         self.enabled = enabled
@@ -63,7 +64,7 @@ final class SettingsPanel: UIView {
         self.chineseInputMethod = chineseInputMethod
         self.methodSettings = methodSettings
         self.keyboardLayout = keyboardLayout
-        self.presentation = presentation
+        self.layoutProfile = layoutProfile
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
@@ -108,7 +109,7 @@ final class SettingsPanel: UIView {
         scroll.accessibilityIdentifier = "keyboard-settings.scroll"
         scroll.alwaysBounceVertical = true
         let root = UIStackView(arrangedSubviews: [
-            presentationRow(), compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
+            layoutProfileRow(), compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
             candidateColorRow(), feedbackRow(),
             statusLabel, bulk, rows
@@ -183,25 +184,41 @@ final class SettingsPanel: UIView {
         return row
     }
 
-    private func presentationRow() -> UIView {
+    private func layoutProfileRow() -> UIView {
         let label = UILabel()
-        label.text = "鍵盤外觀"
+        label.text = "鍵盤樣式"
         label.font = .systemFont(ofSize: 15)
         label.textColor = Palette.primaryText
-        let control = UISegmentedControl(items: KeyboardPresentation.allCases.map(\.displayName))
-        control.selectedSegmentIndex = KeyboardPresentation.allCases.firstIndex(of: presentation) ?? 0
-        control.accessibilityIdentifier = "keyboard-presentation"
-        control.accessibilityLabel = "鍵盤外觀"
-        control.addTarget(self, action: #selector(presentationChanged(_:)), for: .valueChanged)
-        let row = UIStackView(arrangedSubviews: [label, control])
-        row.alignment = .center
-        row.spacing = 12
-        return row
+        let hint = UILabel()
+        hint.text = "長按鍵盤「設」可快速切換"
+        hint.font = .systemFont(ofSize: 12)
+        hint.textColor = Palette.hintText
+        profileButtons = KeyboardLayoutProfile.available.map { profile in
+            let button = UIButton(type: .system)
+            button.setTitle(profile.displayName, for: .normal)
+            button.contentHorizontalAlignment = .leading
+            button.accessibilityIdentifier = "keyboard.layout-profile.\(profile.id)"
+            button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+            button.addAction(UIAction { [weak self] _ in
+                guard let self else { return }
+                self.layoutProfile = profile
+                self.refreshProfileSelection()
+                self.delegate?.settingsPanel(self, didChangeLayoutProfile: profile)
+            }, for: .touchUpInside)
+            return button
+        }
+        refreshProfileSelection()
+        let stack = UIStackView(arrangedSubviews: [label, hint] + profileButtons)
+        stack.axis = .vertical
+        stack.spacing = 4
+        return stack
     }
 
-    @objc private func presentationChanged(_ sender: UISegmentedControl) {
-        presentation = KeyboardPresentation.allCases[sender.selectedSegmentIndex]
-        delegate?.settingsPanel(self, didChangePresentation: presentation)
+    private func refreshProfileSelection() {
+        for button in profileButtons {
+            button.isSelected = button.accessibilityIdentifier == "keyboard.layout-profile.\(layoutProfile.id)"
+            button.setImage(button.isSelected ? UIImage(systemName: "checkmark") : nil, for: .normal)
+        }
     }
 
     private func feedbackRow() -> UIView {

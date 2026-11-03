@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -97,6 +98,82 @@ public final class SettingsGroupsInstrumentedTest {
             SupporterState.setSupporter(context, oldSupporter);
             BopomofoCompositionModeSettings.setBigramEnabled(context, oldBigram);
         }
+    }
+
+    @Test
+    public void keyboardProfileSelectorUsesRegisteredProfilesAndRestoresTheSavedChoice() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        String previous = preferences.getString(KeyboardLayoutProfileSettings.KEY_PROFILE, null);
+        var mapping = BopomofoKeyboardLayoutSettings.layout(context);
+        Activity activity = null;
+        try {
+            var profiles = KeyboardLayoutProfile.available();
+            for (int index = 0; index < profiles.size(); index++) {
+                activity = instrumentation.startActivitySync(new Intent(context,
+                        SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                Activity current = activity;
+                int selected = index;
+                instrumentation.runOnMainSync(() -> {
+                    Spinner selector = revealProfileSelector(current, context);
+                    assertNotNull("Settings must expose the profile selector", selector);
+                    assertEquals(profiles.size(), selector.getAdapter().getCount());
+                    for (int item = 0; item < profiles.size(); item++) {
+                        assertEquals(profiles.get(item).displayName, selector.getAdapter().getItem(item));
+                    }
+                    selector.setSelection(selected);
+                });
+                instrumentation.waitForIdleSync();
+                assertEquals(profiles.get(index).id,
+                        preferences.getString(KeyboardLayoutProfileSettings.KEY_PROFILE, null));
+                assertEquals("Visual profiles must not change Standard/Hsu input mapping",
+                        mapping, BopomofoKeyboardLayoutSettings.layout(context));
+                instrumentation.runOnMainSync(current::finish);
+                activity = instrumentation.startActivitySync(new Intent(context,
+                        SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                Activity reopened = activity;
+                instrumentation.runOnMainSync(() -> {
+                    Spinner selector = revealProfileSelector(reopened, context);
+                    assertNotNull(selector);
+                    assertEquals(selected, selector.getSelectedItemPosition());
+                    reopened.finish();
+                });
+                activity = null;
+            }
+        } finally {
+            if (activity != null) {
+                Activity current = activity;
+                instrumentation.runOnMainSync(current::finish);
+            }
+            var restore = preferences.edit();
+            if (previous == null) restore.remove(KeyboardLayoutProfileSettings.KEY_PROFILE);
+            else restore.putString(KeyboardLayoutProfileSettings.KEY_PROFILE, previous);
+            restore.commit();
+        }
+    }
+
+    private static Spinner revealProfileSelector(Activity activity, Context context) {
+        ViewGroup root = activity.findViewById(android.R.id.content);
+        LinearLayout page = (LinearLayout) ((ScrollView) root.getChildAt(0)).getChildAt(0);
+        LinearLayout appearance = findGroup(page, context.getString(R.string.settings_group_appearance));
+        if (appearance.getChildAt(1).getVisibility() != View.VISIBLE) {
+            appearance.getChildAt(0).performClick();
+        }
+        return findProfileSelector(appearance.getChildAt(1), context.getString(R.string.keyboard_layout_profile));
+    }
+
+    private static Spinner findProfileSelector(View root, String description) {
+        if (root instanceof Spinner spinner && description.equals(String.valueOf(spinner.getContentDescription()))) {
+            return spinner;
+        }
+        if (root instanceof ViewGroup group) {
+            for (int index = 0; index < group.getChildCount(); index++) {
+                Spinner result = findProfileSelector(group.getChildAt(index), description);
+                if (result != null) return result;
+            }
+        }
+        return null;
     }
 
     private static LinearLayout findGroup(LinearLayout page, String title) {

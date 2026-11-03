@@ -399,6 +399,12 @@ public final class BopomofoImeService extends InputMethodService
             refreshKeyboard();
             return;
         }
+        if (KeyboardLayoutProfileSettings.KEY_PROFILE.equals(key)) {
+            if (keyboardView != null) keyboardView.setLayoutProfile(
+                    KeyboardLayoutProfileSettings.profile(this));
+            refreshKeyboard();
+            return;
+        }
         if (KeyPreviewSettings.KEY_ENABLED.equals(key)) {
             refreshKeyboard();
             return;
@@ -427,6 +433,12 @@ public final class BopomofoImeService extends InputMethodService
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
+    }
+
+    @Override
+    public void onLayoutProfile(KeyboardLayoutProfile profile) {
+        KeyboardLayoutProfileSettings.setProfile(this, profile);
+        if (keyboardView != null) keyboardView.setLayoutProfile(profile);
     }
 
     @Override
@@ -864,6 +876,7 @@ public final class BopomofoImeService extends InputMethodService
             android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show();
         }
         lastReportedCoreError = coreError;
+        keyboardView.setLayoutProfile(KeyboardLayoutProfileSettings.profile(this));
         keyboardView.setChineseInputMethod(engine.chineseInputMethod());
         keyboardView.setKeyboardLayout(engine.keyboardLayout());
         keyboardView.setKeyPreviewEnabled(KeyPreviewSettings.enabled(this));
@@ -880,7 +893,8 @@ public final class BopomofoImeService extends InputMethodService
         keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
                 engine.compositionMode() == BopomofoCompositionMode.SMART
                         && engine.inputMode() == InputEngine.InputMode.BOPOMOFO,
-                engine.touchSmartCells(hardwareSmartTwoRows ? 9 : 11), engine.touchSmartEditableCount(),
+                engine.touchSmartCells(hardwareSmartTwoRows ? 9
+                        : keyboardView.compositionCellCount()), engine.touchSmartEditableCount(),
                 engine.inputMode(), engine.isShifted(), engine.isTemporaryEnglish(),
                 engine.isHardwareFullWidth(), supportPromptVisible,
                 engine.page(), engine.pageCount(),

@@ -11,6 +11,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
+import android.widget.PopupMenu;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,7 @@ final class BopomofoKeyboardView extends View {
         void onCandidate(int displayedIndex);
         void onSmartCell(int index);
         void onPage(int delta);
+        default void onLayoutProfile(KeyboardLayoutProfile profile) {}
     }
 
     private enum HitKind { KEY, CANDIDATE, PAGE, SMART_CELL, CANDIDATE_BLOCK }
@@ -47,30 +50,6 @@ final class BopomofoKeyboardView extends View {
         int candidateIndex() { return candidateIndex; }
     }
 
-    private static final String[][] BOPOMOFO_AND_ENGLISH_ROWS = {
-            {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-"},
-            {"q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "@"},
-            {"a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "EMOJI"},
-            {"z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "SHIFT"}
-    };
-    private static final String[][] SHIFTED_ENGLISH_ROWS = {
-            {"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_"},
-            {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "@"},
-            {"A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "EMOJI"},
-            {"Z", "X", "C", "V", "B", "N", "M", "<", ">", "?", "SHIFT"}
-    };
-    private static final String[][] NUMBER_ROWS = {
-            {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-"},
-            {"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_"},
-            {"+", "=", "[", "]", "{", "}", "<", ">", "/", "\\", "|"},
-            {"~", "`", "\"", "'", ":", ";", "?", ",", ".", "…", "SHIFT"}
-    };
-    private static final String[][] SHIFTED_NUMBER_ROWS = {
-            {"$", "€", "£", "¥", "₩", "₹", "₽", "¢", "₫", "₱", "฿"},
-            {"＋", "－", "×", "÷", "=", "≠", "≈", "±", "<", ">", "∞"},
-            {"←", "→", "↑", "↓", "↔", "↕", "↖", "↗", "↘", "↙", "⇒"},
-            {"★", "☆", "●", "○", "■", "□", "▲", "△", "▼", "▽", "SHIFT"}
-    };
     private static final String[] HARDWARE_NUMBER_DIGITS = {
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
     };
@@ -84,12 +63,7 @@ final class BopomofoKeyboardView extends View {
             "_", "+", "{", "}", ":", "\"", "<", ">", "?", "|", "~"
     };
     static final String HARDWARE_LITERAL_PREFIX = "HARDWARE_LITERAL:";
-    private static final String[] FUNCTION_ROW = {
-            "MODE", "SYMBOL", "SETTINGS", "，", "SPACE", "。", "BACKSPACE", "ENTER"
-    };
-    private static final int PORTRAIT_CONTENT_HEIGHT_DP = 330;
     private static final int PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
-    private static final int LANDSCAPE_CONTENT_HEIGHT_DP = 230;
     private static final int LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final int HARDWARE_CONTENT_HEIGHT_DP = 58;
     private static final int HARDWARE_NUMBER_ROW_HEIGHT_DP = 48;
@@ -113,6 +87,16 @@ final class BopomofoKeyboardView extends View {
 
     private Listener listener;
     private Mode mode = Mode.PORTRAIT;
+    private KeyboardLayoutProfile layoutProfile = KeyboardLayoutProfile.FULL;
+    private PopupMenu layoutProfileMenu;
+    private Hit settingsTouchHit;
+    private boolean settingsLongPressHandled;
+    private final Handler gestureHandler = new Handler(Looper.getMainLooper());
+    private final Runnable settingsLongPress = () -> {
+        if (settingsTouchHit == null || !isAttachedToWindow() || !isShown()) return;
+        settingsLongPressHandled = true;
+        showLayoutProfileMenu();
+    };
     private List<String> candidates = List.of();
     private String reading = "";
     private boolean smartMode;
@@ -176,6 +160,52 @@ final class BopomofoKeyboardView extends View {
         this.listener = listener;
     }
 
+    void setLayoutProfile(KeyboardLayoutProfile profile) {
+        if (layoutProfile == profile) return;
+        layoutProfile = profile;
+        dismissLayoutProfileMenu();
+        backspaceRepeater.stop();
+        backspaceTouchStarted = false;
+        clearKeyPreview();
+        hits.clear();
+        requestLayout();
+        invalidate();
+    }
+
+    private void showLayoutProfileMenu() {
+        clearKeyPreview();
+        if (layoutProfileMenu != null) layoutProfileMenu.dismiss();
+        PopupMenu menu = new PopupMenu(getContext(), this);
+        List<KeyboardLayoutProfile> profiles = KeyboardLayoutProfile.available();
+        for (int index = 0; index < profiles.size(); index++) {
+            KeyboardLayoutProfile profile = profiles.get(index);
+            menu.getMenu().add(0, index, index, profile.displayName)
+                    .setCheckable(true).setChecked(profile.id.equals(layoutProfile.id));
+        }
+        menu.setOnMenuItemClickListener(item -> {
+            KeyboardLayoutProfile selected = profiles.get(item.getItemId());
+            if (listener != null) listener.onLayoutProfile(selected);
+            return true;
+        });
+        menu.setOnDismissListener(dismissed -> layoutProfileMenu = null);
+        layoutProfileMenu = menu;
+        menu.show();
+    }
+
+    private void cancelSettingsLongPress() {
+        gestureHandler.removeCallbacks(settingsLongPress);
+        settingsTouchHit = null;
+    }
+
+    private void dismissLayoutProfileMenu() {
+        boolean hadSettingsGesture = settingsTouchHit != null || settingsLongPressHandled;
+        cancelSettingsLongPress();
+        // Consume the old finger-up after a resize or mode change rather than
+        // treating its former coordinates as a fresh Settings tap.
+        settingsLongPressHandled = hadSettingsGesture;
+        if (layoutProfileMenu != null) layoutProfileMenu.dismiss();
+    }
+
     void setKeyboardLayout(BopomofoKeyboardLayout layout) {
         if (keyboardLayout == layout) return;
         keyboardLayout = layout;
@@ -185,6 +215,7 @@ final class BopomofoKeyboardView extends View {
 
     void setMode(Mode mode) {
         if (this.mode == mode) return;
+        dismissLayoutProfileMenu();
         backspaceRepeater.stop();
         backspaceTouchStarted = false;
         this.mode = mode;
@@ -293,8 +324,16 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
-    static String[][] shiftedEnglishRows() { return SHIFTED_ENGLISH_ROWS; }
-    static String[][] shiftedNumberRows() { return SHIFTED_NUMBER_ROWS; }
+    static String[][] shiftedEnglishRows() {
+        return KeyboardLayoutProfile.FULL.layout(KeyboardLayoutProfile.Orientation.PORTRAIT)
+                .rows(KeyboardLayoutProfile.Plane.ENGLISH, true)
+                .stream().map(row -> row.toArray(new String[0])).toArray(String[][]::new);
+    }
+    static String[][] shiftedNumberRows() {
+        return KeyboardLayoutProfile.FULL.layout(KeyboardLayoutProfile.Orientation.PORTRAIT)
+                .rows(KeyboardLayoutProfile.Plane.NUMBER_SYMBOLS, true)
+                .stream().map(row -> row.toArray(new String[0])).toArray(String[][]::new);
+    }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -302,9 +341,9 @@ final class BopomofoKeyboardView extends View {
             case HARDWARE_FLOATING -> dp(1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
                     + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
-            case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
+            case LANDSCAPE -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.LANDSCAPE).contentHeightDp,
                     landscapeHeightPercent);
-            case PORTRAIT -> scaledContentHeight(PORTRAIT_CONTENT_HEIGHT_DP,
+            case PORTRAIT -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.PORTRAIT).contentHeightDp,
                     portraitHeightPercent);
         };
         // Budget the reserved area before clamping the keyboard content, even
@@ -369,13 +408,13 @@ final class BopomofoKeyboardView extends View {
             drawCandidateStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
         }
 
-        String[][] rows = inputRows();
-        float rowHeight = (contentHeight - top) / 5f;
-        for (int row = 0; row < rows.length; row++) {
-            drawEqualKeyRow(canvas, rows[row], 0, getWidth(), top + row * rowHeight,
+        List<List<String>> rows = inputRows();
+        float rowHeight = (contentHeight - top) / (rows.size() + 1);
+        for (int row = 0; row < rows.size(); row++) {
+            drawEqualKeyRow(canvas, rows.get(row), 0, getWidth(), top + row * rowHeight,
                     top + (row + 1) * rowHeight);
         }
-        drawWeightedKeyRow(canvas, FUNCTION_ROW, 0, getWidth(), top + 4 * rowHeight,
+        drawWeightedKeyRow(canvas, layoutProfile.layout(touchOrientation()).functionKeys(), 0, getWidth(), top + rows.size() * rowHeight,
                 contentHeight);
         if (smartMode && !candidates.isEmpty()) {
             RectF overlay = new RectF(0, top, getWidth(), top + rowHeight);
@@ -386,7 +425,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawSmartCellStrip(Canvas canvas, RectF area) {
-        drawSmartCellStrip(canvas, area, 11);
+        drawSmartCellStrip(canvas, area, compositionCellCount());
     }
 
     private void drawSmartCellStrip(Canvas canvas, RectF area, int cellCount) {
@@ -675,25 +714,25 @@ final class BopomofoKeyboardView extends View {
         return mode == Mode.LANDSCAPE ? dp(11) : dp(14);
     }
 
-    private void drawEqualKeyRow(Canvas canvas, String[] keys, float left, float right,
+    private void drawEqualKeyRow(Canvas canvas, List<String> keys, float left, float right,
                                  float top, float bottom) {
-        if (keys.length == 0) return;
-        float width = (right - left) / keys.length;
-        for (int index = 0; index < keys.length; index++) {
+        if (keys.isEmpty()) return;
+        float width = (right - left) / keys.size();
+        for (int index = 0; index < keys.size(); index++) {
             RectF bounds = new RectF(left + index * width + dp(2), top + dp(2),
                     left + (index + 1) * width - dp(2), bottom - dp(2));
-            drawKey(canvas, bounds, keys[index]);
+            drawKey(canvas, bounds, keys.get(index));
         }
     }
 
-    private void drawWeightedKeyRow(Canvas canvas, String[] keys, float left, float right,
+    private void drawWeightedKeyRow(Canvas canvas, List<String> keys, float left, float right,
                                     float top, float bottom) {
         float totalWeight = 0;
-        for (String key : keys) totalWeight += keyWeight(key);
+        for (String key : keys) totalWeight += layoutProfile.layout(touchOrientation()).functionWeight(key);
         float unit = (right - left) / totalWeight;
         float cursor = left;
         for (String key : keys) {
-            float width = unit * keyWeight(key);
+            float width = unit * layoutProfile.layout(touchOrientation()).functionWeight(key);
             RectF bounds = new RectF(cursor + dp(2), top + dp(2),
                     cursor + width - dp(2), bottom - dp(2));
             drawKey(canvas, bounds, key);
@@ -889,11 +928,18 @@ final class BopomofoKeyboardView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN -> {
+                cancelSettingsLongPress();
+                settingsLongPressHandled = false;
                 backspaceRepeater.stop();
                 downX = event.getX();
                 downY = event.getY();
                 Hit hit = findHit(downX, downY);
                 if (hit != null && listener != null) listener.onPress();
+                if (isTouchMode() && hit != null && hit.kind() == HitKind.KEY
+                        && "SETTINGS".equals(hit.key())) {
+                    settingsTouchHit = hit;
+                    gestureHandler.postDelayed(settingsLongPress, ViewConfiguration.getLongPressTimeout());
+                }
                 backspaceTouchStarted = hit != null && hit.kind() == HitKind.KEY
                         && "BACKSPACE".equals(hit.key());
                 if (backspaceTouchStarted && listener != null) {
@@ -908,6 +954,10 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_MOVE -> {
+                if (settingsTouchHit != null
+                        && !settingsTouchHit.bounds().contains(event.getX(), event.getY())) {
+                    cancelSettingsLongPress();
+                }
                 if (backspaceTouchStarted) {
                     Hit hit = findHit(event.getX(), event.getY());
                     if (hit == null || hit.kind() != HitKind.KEY
@@ -921,7 +971,13 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_UP -> {
+                cancelSettingsLongPress();
                 backspaceRepeater.stop();
+                if (settingsLongPressHandled) {
+                    settingsLongPressHandled = false;
+                    performClick();
+                    return true;
+                }
                 clearKeyPreview();
                 if (backspaceTouchStarted) {
                     backspaceTouchStarted = false;
@@ -950,6 +1006,8 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_CANCEL -> {
+                cancelSettingsLongPress();
+                settingsLongPressHandled = false;
                 backspaceRepeater.stop();
                 backspaceTouchStarted = false;
                 downOnCandidate = false;
@@ -961,7 +1019,20 @@ final class BopomofoKeyboardView extends View {
     }
 
     @Override
+    protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+        super.onSizeChanged(width, height, oldWidth, oldHeight);
+        dismissLayoutProfileMenu();
+    }
+
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        if (visibility != VISIBLE) dismissLayoutProfileMenu();
+    }
+
+    @Override
     protected void onDetachedFromWindow() {
+        dismissLayoutProfileMenu();
         backspaceRepeater.stop();
         backspaceTouchStarted = false;
         super.onDetachedFromWindow();
@@ -1026,23 +1097,30 @@ final class BopomofoKeyboardView extends View {
         return symbol;
     }
 
-    private String[][] inputRows() {
-        if (inputMode == InputEngine.InputMode.NUMBER) {
-            return shifted ? SHIFTED_NUMBER_ROWS : NUMBER_ROWS;
-        }
-        if (inputMode == InputEngine.InputMode.ENGLISH && shifted) {
-            return SHIFTED_ENGLISH_ROWS;
-        }
-        return BOPOMOFO_AND_ENGLISH_ROWS;
+    private KeyboardLayoutProfile.Orientation touchOrientation() {
+        return mode == Mode.LANDSCAPE ? KeyboardLayoutProfile.Orientation.LANDSCAPE
+                : KeyboardLayoutProfile.Orientation.PORTRAIT;
     }
 
-    private float keyWeight(String key) {
-        return switch (key) {
-            case "SPACE" -> 3.8f;
-            case "BACKSPACE", "ENTER" -> 1.4f;
-            case "MODE" -> 1.65f;
-            default -> 1f;
-        };
+    int compositionCellCount() {
+        KeyboardLayoutProfile profile = isTouchMode() ? layoutProfile : KeyboardLayoutProfile.FULL;
+        return profile.layout(touchOrientation()).compositionCellCount;
+    }
+
+    private List<List<String>> inputRows() {
+        KeyboardLayoutProfile.Plane plane;
+        if (inputMode == InputEngine.InputMode.NUMBER) {
+            plane = KeyboardLayoutProfile.Plane.NUMBER_SYMBOLS;
+        } else if (inputMode == InputEngine.InputMode.ENGLISH) {
+            plane = KeyboardLayoutProfile.Plane.ENGLISH;
+        } else if (chineseInputMethod == ChineseInputMethod.CANGJIE) {
+            plane = KeyboardLayoutProfile.Plane.CANGJIE;
+        } else if (chineseInputMethod == ChineseInputMethod.SIMPLEX) {
+            plane = KeyboardLayoutProfile.Plane.SIMPLEX;
+        } else {
+            plane = KeyboardLayoutProfile.Plane.BOPOMOFO;
+        }
+        return layoutProfile.layout(touchOrientation()).rows(plane, shifted);
     }
 
     private float textBaseline(RectF bounds, Paint paint) {

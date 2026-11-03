@@ -12,6 +12,12 @@ Google Play 最新正式版為 **1.3.7**，一般使用者可直接安裝，不�
 架構、三種互動 profile、JNI、資料路徑與驗證責任見
 [Guanyinma Android 接合](../../../docs/GUANYINMA_ANDROID_ADAPTER.md)。
 
+原始觸控鍵盤保存為「滿版」layout profile（固定 ID `full`），與標準／許氏按鍵配置及 Rust 核心分開。
+每個 profile 包含直式、橫式兩個方向，每個方向都有注音、倉頡、簡易、英文、數字符號五種獨立擺法；
+英文大小寫與第二組數字符號屬於擺法內的 Shift 版本。滿版先沿用原本的鍵位與尺寸。
+短按「設」維持原有設定入口，長按「設」可在鍵盤內開啟樣式選單；設定頁也可選取已註冊的樣式。
+選擇以穩定 ID 保存，套用時只更新前端版面，不結束組字或重建引擎。目前只提供滿版；後續樣式完成後再加入清單。
+
 四法共用 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`，建置只驗證及複製。
 關聯詞索引另依原有 FE 資料來源產生，不需要手動複製。
 

@@ -34,7 +34,7 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
-    private let presentationSettings = KeyboardPresentationSettings()
+    private let profileSettings = KeyboardLayoutProfileSettings()
     private let supporterState = SupporterState()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
@@ -58,8 +58,7 @@ final class KeyboardViewController: UIInputViewController {
 
         // Query the host after connection; keep the same globe control alive
         // through visibility changes so its system picker targets stay attached.
-        let keyboard = KeyboardView(needsInputModeSwitch: false)
-        keyboard.setPresentation(presentationSettings.presentation)
+        let keyboard = KeyboardView(needsInputModeSwitch: false, layoutProfile: profileSettings.profile)
         keyboard.delegate = self
         keyboard.inputModeSwitchButton?.addTarget(
             self, action: #selector(commitBeforeInputModeSwitch), for: .touchDown
@@ -116,6 +115,9 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        if let orientation = view.window?.windowScene?.interfaceOrientation, orientation != .unknown {
+            keyboardView?.setLayoutOrientation(orientation.isLandscape ? .landscape : .portrait)
+        }
         refreshSystemKeyboardControls()
     }
 
@@ -133,8 +135,14 @@ final class KeyboardViewController: UIInputViewController {
         keyboardView?.setNeedsInputModeSwitch(needsInputModeSwitchKey || affectedWidePhone)
     }
 
+    private func selectLayoutProfile(_ profile: KeyboardLayoutProfile) {
+        profileSettings.setProfile(profile)
+        keyboardView?.setLayoutProfile(profile)
+        applyMetrics()
+    }
+
     private func refreshAppSettings() {
-        keyboardView?.setPresentation(presentationSettings.presentation)
+        keyboardView?.setLayoutProfile(profileSettings.profile)
         candidateColor = candidateColorSettings.color
         inputClicksEnabled = clickSettings.enabled
         if let engine {
@@ -194,8 +202,8 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private var currentMetrics: KeyboardMetrics {
-        KeyboardMetrics.forCompactHeight(
-            traitCollection.verticalSizeClass == .compact,
+        profileSettings.profile.metrics(
+            compactHeight: traitCollection.verticalSizeClass == .compact,
             isPad: traitCollection.userInterfaceIdiom == .pad,
             regularWidth: traitCollection.horizontalSizeClass == .regular
         )
@@ -340,7 +348,7 @@ final class KeyboardViewController: UIInputViewController {
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
             keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
-            presentation: presentationSettings.presentation
+            layoutProfile: profileSettings.profile
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -573,6 +581,10 @@ final class KeyboardViewController: UIInputViewController {
 }
 
 extension KeyboardViewController: KeyboardViewDelegate {
+    func keyboardView(_ view: KeyboardView, didSelectLayoutProfile profile: KeyboardLayoutProfile) {
+        selectLayoutProfile(profile)
+    }
+
     func keyboardView(_ view: KeyboardView, didPress key: String) {
         statusOverride = nil
         if key == "HIDE_KEYBOARD" {
@@ -629,9 +641,8 @@ extension KeyboardViewController: KeyboardViewDelegate {
 }
 
 extension KeyboardViewController: SettingsPanelDelegate {
-    func settingsPanel(_ panel: SettingsPanel, didChangePresentation presentation: KeyboardPresentation) {
-        presentationSettings.setPresentation(presentation)
-        keyboardView?.setPresentation(presentation)
+    func settingsPanel(_ panel: SettingsPanel, didChangeLayoutProfile profile: KeyboardLayoutProfile) {
+        selectLayoutProfile(profile)
     }
 
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod) {

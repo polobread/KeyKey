@@ -112,7 +112,7 @@ Cloud post-clone hook 優先沿用既有 `rustup`；缺少時下載官方固定�
 少量 Swift 串接／設定測試不需要模擬器；從本目錄以 host wrapper 準備 Rust 靜態庫：
 
 ```sh
-bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter InputMethodSettingsTests
+bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter KeyboardLayoutProfileTests
 bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter GuanyinmaIntegrationTests
 ```
 
@@ -130,6 +130,39 @@ KEYKEY_SWIFT_PACKAGE_PATH="$PWD" \
 重試、購買／恢復／載入互斥、取消與錯誤後解除忙碌，以及授權快取更新。
 這些測試只驗證購買流程的 FE 契約，不啟動 keyboard extension，也不取代核心測試；仍須另用
 Sandbox Apple ID 驗證真實交易與 App Store Connect 商品設定。
+
+### UI 測試分流
+
+shared scheme 的預設計畫是 `KeyKeyFunctional`，明確列出一般 iPhone／iPad 的回歸案例，
+不自動包含整個 UI test target。新增 UI 測試時也要選擇所屬計畫。
+
+| 計畫 | 用途與前置條件 |
+|---|---|
+| `KeyKeySmoke` | 少量 App 啟動、設定與授權頁冒煙 |
+| `KeyKeyFunctional` | 一般輸入、滿版／分離 profile、候選、九／十音節與直橫切換 |
+| `KeyKeyDuo` | 明確選用的寬版分離案例；需要已展開的 Duo 內螢幕或足夠寬的 iPad |
+| `KeyKeyDuoDiagnostics` | Device Hub 保留目前姿態的量測與原生鍵盤對照；使用 Debug Simulator，探針需要支援的系統版本 |
+| `KeyKeyHeartSutra` | 獨立、手動選用的傳統注音長文與 CIN 順位檢查 |
+
+模擬器執行 UI 測試時保留 App／extension 的 App Group entitlements；可使用 ad-hoc 簽章。
+`CODE_SIGNING_ALLOWED=NO` 僅供編譯檢查，不能驗證共享設定或自訂詞 publication。
+
+Duo 計畫包含加入琦琦鍵盤的共同前置。原生鍵盤對照另需先加入系統注音；
+它驗證的是輸入測試頁面，並非 Safari。姿態診斷不替使用者開闔或旋轉 Device Hub。
+一般旋轉回歸只使用支援的直／橫方向，依測試 App 本身旋轉前後的 frame 驗證，
+不依賴 Debug 模擬器探針，也不把螢幕寬高比當成所有裝置的方向定義。
+九／十音節及每頁九個有效候選是輸入契約；十一／十二格與六＋六是既有 profile 的專屬版型，
+不作為所有後續 profile 的通用前提。
+
+```sh
+xcodebuild test -project KeyKeyiOS.xcodeproj -scheme 'chichi77 KeyKey' \
+  -testPlan KeyKeyFunctional -configuration Debug \
+  -destination 'platform=iOS Simulator,name=YOUR_TEST_IPHONE' \
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-
+```
+
+地球鍵當機及取消清單／未完成輸入交接仍依既有研究列為已知問題；
+完成文字的顯示、版面測試或編譯成功，不代表這些組字政策已實作或跨 App 已驗收。
 
 ### USB 真機安裝
 
@@ -161,7 +194,7 @@ USB 開發簽章安裝與 App Store／TestFlight 發行是不同流程。
 
 在開發機的 iOS 17 Simulator 執行 shared scheme `chichi77 KeyKey` 的
 `KeyKeyHeartSutra.xctestplan`。測試會在乾淨 Simulator 透過「設定」加入並切換到
-琦琦輸入法 keyboard extension，關閉全部關聯詞庫，逐字點完 268 個心經注音字與標點；
+琦琦輸入法 keyboard extension，明確選擇滿版、標準／傳統注音並關閉全部關聯詞庫，逐字點完 268 個心經注音字與標點；
 每字檢查提交後全文前綴和候選絕對順位，最後在 `.xcresult` 留下 `ios.txt` 與
 `ios.positions.tsv` attachments。若鍵盤沒真正啟動會失敗，不能以 skip 當通過。
 
@@ -189,7 +222,13 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
 - **資料層使用預先產生的共用 `KeyKey.db`**；建置只驗證並複製，不 cooker。
   keyboard extension 的記憶體限制與真實宿主驗證需獨立檢查，host 測試不能代替。
 - 讀音與資料庫 query 編碼由 Guanyinma 共用 codec 處理；Swift 只正規化詞庫欄位輸入。
-- **完整／左右分離鍵盤**：在鍵盤「設 → 鍵盤外觀」手動切換，預設完整。分離模式的
+- **鍵盤樣式 profile**：原始樣式保存為「滿版」（`full`），既有「左右分離」（`split`）保留。
+  短按「設」進入設定頁，選擇「鍵盤樣式」；長按「設」可直接開啟樣式選單。
+  兩個入口套用同一份 profile 並保留組字、候選及原有標準／許氏設定。
+  每個 profile 都包含直式與橫式，每個方向分別定義注音、倉頡、簡易、英文與數字符號五種擺法；
+  英文大寫及第二組數字符號是各擺法的 Shift 版本。方向取自目前視窗，不以 compact height 代替方向。
+  選單由已註冊的 profile 產生，未實作的間隔、交叉與老花眼樣式不先列為可用選項。
+  分離模式的
   組字、候選與按鍵列一起留出中央空隙，左右各有空白鍵；切換保留組字與候選，選擇
   保存在 extension 沙箱。寬版分離採左右各六格，新增「，」「。」「、」「？」標點；組字區仍為
   十一格（左六、右五），最後一格提供「▼」收鍵盤，英文與傳統注音亦可使用。

@@ -1,30 +1,62 @@
 {
-  "configurations" : [
+  "configurations": [
     {
-      "id" : "C7700000-0000-0000-0000-000000000102",
-      "name" : "Functional",
-      "options" : {
-
-      }
+      "id": "C7700000-0000-0000-0000-000000000102",
+      "name": "Functional",
+      "options": {}
     }
   ],
-  "defaultOptions" : {
-    "codeCoverage" : false,
-    "targetForVariableExpansion" : {
-      "containerPath" : "container:KeyKeyiOS.xcodeproj",
-      "identifier" : "C7700000000000000000001A",
-      "name" : "chichi77 KeyKey"
+  "defaultOptions": {
+    "codeCoverage": false,
+    "targetForVariableExpansion": {
+      "containerPath": "container:KeyKeyiOS.xcodeproj",
+      "identifier": "C7700000000000000000001A",
+      "name": "chichi77 KeyKey"
     }
   },
-  "testTargets" : [
+  "testTargets": [
     {
-      "parallelizable" : false,
-      "target" : {
-        "containerPath" : "container:KeyKeyiOS.xcodeproj",
-        "identifier" : "C77000000000000000000048",
-        "name" : "KeyKeyUITests"
-      }
+      "parallelizable": false,
+      "target": {
+        "containerPath": "container:KeyKeyiOS.xcodeproj",
+        "identifier": "C77000000000000000000048",
+        "name": "KeyKeyUITests"
+      },
+      "selectedTests": [
+        "KeyKeyUITests/test00KeyboardOptInIsConfigured()",
+        "KeyKeyUITests/testAcknowledgementsAreBundledAndReachable()",
+        "KeyKeyUITests/testAppSettingsEntryOpensAndPersistsCompositionMode()",
+        "KeyKeyUITests/testEnterDismissesAssociatedPhrasesBeforeSendingReturn()",
+        "KeyKeyUITests/testFullProfilePortraitAndLandscapeKeepDeclaredKeysReachable()",
+        "KeyKeyUITests/testHardwareEditorModeWidthAndFunctionButtonsKeepSmartText()",
+        "KeyKeyUITests/testHardwareEditorSupportPromptGatingAndLongConnection()",
+        "KeyKeyUITests/testHardwareKeyboardEditorHasCopyAndShareActions()",
+        "KeyKeyUITests/testHardwareKeyboardEditorLandscapeColumns()",
+        "KeyKeyUITests/testHsuLayoutSettingsPersistAndKeyboardKeepsEnglishKeycaps()",
+        "KeyKeyUITests/testInputFieldMatrixIsReachable()",
+        "KeyKeyUITests/testKeyboardExtensionModesAndComposition()",
+        "KeyKeyUITests/testManualSplitKeyboardPreservesCompositionAndPersists()",
+        "KeyKeyUITests/testMultiCharacterAssociationsDoNotResizeKeyboard()",
+        "KeyKeyUITests/testNativeGlyphSupportAndResetOnIOS()",
+        "KeyKeyUITests/testPhysicalCangjiePrefixSettingAndNumberSelection()",
+        "KeyKeyUITests/testSharedSpaceSelectionAndIndependentDownArrow()",
+        "KeyKeyUITests/testSmokeContainerAppLaunchesWithProductionControls()",
+        "KeyKeyUITests/testSmokeContainerAppSurvivesRotationAndRelaunch()",
+        "KeyKeyUITests/testSmokeHardwareKeyboardEditorOpens()",
+        "KeyKeyUITests/testSmokeSettingsEntryOpensSystemSettings()",
+        "KeyKeyUITests/testSplitSmartNineTenSyllableBoundaryAndDeletion()",
+        "KeyKeyUITests/testSplitSmartPagingRotationKeepsUnfinishedReading()",
+        "KeyKeyUITests/testSupporterPurchaseControlsAreReachable()",
+        "KeyKeyUITests/testSupporterRestoreReordersSectionAndHidesPrompt()",
+        "KeyKeyUITests/testSupporterSectionOrderFollowsEntitlement()",
+        "KeyKeyUITests/testTableMethodsInHardwareEditorAndSingleRowControls()",
+        "KeyKeyUITests/testTouchCangjieAndSimplexUseExistingCandidateFlow()",
+        "KeyKeyUITests/testTouchCangjiePrefixesKeepQiaoSelectable()",
+        "KeyKeyUITests/testTouchKeyboardUsesSharedSpaceSetting()",
+        "KeyKeyUITests/testTouchSmartHandoffCommitsTextWhenChangingKeyboard()",
+        "KeyKeyUITests/testUserPhraseManagerOpensAndCreatesPhrase()"
+      ]
     }
   ],
-  "version" : 1
+  "version": 1
 }

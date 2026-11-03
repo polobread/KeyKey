@@ -1,28 +1,5 @@
 import Foundation
 
-/// A manual choice: extension geometry does not reveal the device's fold state.
-public enum KeyboardPresentation: String, CaseIterable, Sendable {
-    case full, split
-
-    public var displayName: String { self == .full ? "完整" : "左右分離" }
-}
-
-public final class KeyboardPresentationSettings {
-    private let defaults: UserDefaults
-    private static let key = "keyboardPresentation"
-
-    // This preference belongs to the extension and requires no Full Access.
-    public init(defaults: UserDefaults = .standard) { self.defaults = defaults }
-
-    public var presentation: KeyboardPresentation {
-        defaults.string(forKey: Self.key).flatMap(KeyboardPresentation.init(rawValue:)) ?? .full
-    }
-
-    public func setPresentation(_ presentation: KeyboardPresentation) {
-        defaults.set(presentation.rawValue, forKey: Self.key)
-    }
-}
-
 /// Shared geometry for key, composition, candidate and weighted function rows.
 /// Split halves have equal width; no button spans the centre gap.
 public enum KeyboardRowGeometry {
@@ -52,15 +29,10 @@ public enum KeyboardRowGeometry {
 /// A twelve-column layout for split keyboards with enough usable width.
 /// The underlying eleven-key input planes and engine indices stay unchanged.
 public enum ExpandedSplitKeyboardLayout {
-    public static let minimumWidth: Double = 600
-    public static let punctuation = ["，", "。", "、", "？"]
+    public static var minimumWidth: Double { KeyboardLayoutProfile.split.splitGeometry!.minimumExpandedWidth }
+    public static var punctuation: [String] { KeyboardLayoutProfile.split.splitGeometry!.punctuation }
 
     public static func functionWeight(for key: String) -> Double {
-        switch key {
-        case "MODE": return 1.5
-        case "SYMBOL", "SETTINGS": return 1.25
-        case "SPACE", "BACKSPACE", "ENTER": return 2
-        default: return 1
-        }
+        KeyboardLayoutProfile.split.functionWeight(for: key, expanded: true)
     }
 }

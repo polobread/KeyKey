@@ -197,13 +197,14 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                     FrameLayout window = new FrameLayout(context);
                     window.addView(keyboard, new FrameLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                    int width = View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY);
+                    int availableWidth = context.getResources().getDisplayMetrics().widthPixels;
+                    int width = View.MeasureSpec.makeMeasureSpec(availableWidth, View.MeasureSpec.EXACTLY);
                     window.measure(width, View.MeasureSpec.makeMeasureSpec(2000, View.MeasureSpec.AT_MOST));
                     int height = window.getMeasuredHeight();
                     int content = keyboard.getMeasuredHeight();
                     // The framework measures again with the newly allocated IME window size.
                     window.measure(width, View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
-                    window.layout(0, 0, 1080, height);
+                    window.layout(0, 0, availableWidth, height);
                     assertEquals("Remeasuring the window must not shorten the keyboard content",
                             content, keyboard.getMeasuredHeight());
                     assertEquals("No blank bottom strip after reopening", window.getHeight(), keyboard.getBottom());
@@ -321,7 +322,8 @@ public final class KeyboardBottomSpaceInstrumentedTest {
     }
 
     private static Bitmap render(BopomofoKeyboardView view, int heightMeasureSpec) {
-        view.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY), heightMeasureSpec);
+        int availableWidth = view.getResources().getDisplayMetrics().widthPixels;
+        view.measure(View.MeasureSpec.makeMeasureSpec(availableWidth, View.MeasureSpec.EXACTLY), heightMeasureSpec);
         view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
         Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
         view.draw(new Canvas(bitmap));
