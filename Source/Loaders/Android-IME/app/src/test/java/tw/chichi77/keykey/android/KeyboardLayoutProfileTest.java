@@ -105,7 +105,24 @@ public final class KeyboardLayoutProfileTest {
         }
         assertOptions(KeyboardLayoutProfile.ALIGNED, KeyboardLayoutProfile.KeycapArea.SMALL,
                 KeyboardLayoutProfile.FontSize.NORMAL, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
-                KeyboardLayoutProfile.resolveOptions(null, null, null, null, null, null));
+                KeyboardLayoutProfile.resolveOptions(null, null, null, null, null, null, null));
+    }
+
+    @Test public void fontIdentifiersKeepTheirMeaningsStripScaleAndHintPolicy() {
+        var identifiers = Map.of(KeyboardLayoutProfile.FontSize.NORMAL, "normal",
+                KeyboardLayoutProfile.FontSize.MEDIUM, "medium",
+                KeyboardLayoutProfile.FontSize.LARGE, "large",
+                KeyboardLayoutProfile.FontSize.EXTRA_LARGE, "extra-large");
+        var stripScales = Map.of(KeyboardLayoutProfile.FontSize.NORMAL, 1f,
+                KeyboardLayoutProfile.FontSize.MEDIUM, 1.15f,
+                KeyboardLayoutProfile.FontSize.LARGE, 1.3f,
+                KeyboardLayoutProfile.FontSize.EXTRA_LARGE, 1.45f);
+        for (var font : KeyboardLayoutProfile.FontSize.values()) {
+            assertEquals(identifiers.get(font), font.id);
+            assertEquals(stripScales.get(font), font.stripScale, .000001f);
+            assertEquals(font == KeyboardLayoutProfile.FontSize.NORMAL, font.showsHints());
+        }
+        assertSame(KeyboardLayoutProfile.FontSize.LARGE, KeyboardLayoutProfile.FontSize.forId("large"));
     }
 
     @Test public void oldVisualStylesMigrateToIndependentOptions() {
@@ -116,9 +133,9 @@ public final class KeyboardLayoutProfileTest {
                 assertLegacyOptions("staggered", legacyArea, position, KeyboardLayoutProfile.STANDARD,
                         KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.NORMAL);
                 assertLegacyOptions("large-full", legacyArea, position, KeyboardLayoutProfile.ALIGNED,
-                        KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.LARGE);
+                        KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.EXTRA_LARGE);
                 assertLegacyOptions("large-staggered", legacyArea, position, KeyboardLayoutProfile.STANDARD,
-                        KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.LARGE);
+                        KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.EXTRA_LARGE);
                 assertLegacyOptions("unknown", legacyArea, position, KeyboardLayoutProfile.ALIGNED,
                         KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.NORMAL);
             }
@@ -141,39 +158,61 @@ public final class KeyboardLayoutProfileTest {
                     for (var position : KeyboardLayoutProfile.DeletePosition.values()) {
                         for (String legacy : List.of("full-spaced", "large-staggered")) {
                             assertOptions(profile, spacing, font, position, KeyboardLayoutProfile.resolveOptions(
-                                    profile.id, spacing.id, font.id, position.id, legacy, "85"));
+                                    profile.id, spacing.id, font.id, position.id, legacy, "85", null));
                         }
                     }
                 }
             }
         }
         assertOptions(KeyboardLayoutProfile.ALIGNED_SPLIT, KeyboardLayoutProfile.KeycapArea.SMALL,
-                KeyboardLayoutProfile.FontSize.LARGE, KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER,
+                KeyboardLayoutProfile.FontSize.EXTRA_LARGE, KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER,
                 KeyboardLayoutProfile.resolveOptions("aligned-split", null, null, "above-enter",
-                        "large-staggered", "85"));
+                        "large-staggered", "85", null));
         assertOptions(KeyboardLayoutProfile.STANDARD, KeyboardLayoutProfile.KeycapArea.LARGE,
-                KeyboardLayoutProfile.FontSize.LARGE, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
-                KeyboardLayoutProfile.resolveOptions(null, "80", null, null, "large-staggered", "90"));
+                KeyboardLayoutProfile.FontSize.EXTRA_LARGE, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                KeyboardLayoutProfile.resolveOptions(null, "80", null, null, "large-staggered", "90", null));
         assertOptions(KeyboardLayoutProfile.ALIGNED, KeyboardLayoutProfile.KeycapArea.LARGE,
                 KeyboardLayoutProfile.FontSize.LARGE, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
-                KeyboardLayoutProfile.resolveOptions(null, null, "large", null, "full-spaced", "85"));
+                KeyboardLayoutProfile.resolveOptions(null, null, "large", null, "full-spaced", "85", null));
+    }
+
+    @Test public void savedOldLargeMigratesToExtraLargeWhileNewFontLevelTakesPrecedence() {
+        assertOptions(KeyboardLayoutProfile.ALIGNED, KeyboardLayoutProfile.KeycapArea.SMALL,
+                KeyboardLayoutProfile.FontSize.EXTRA_LARGE, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                KeyboardLayoutProfile.resolveOptions(null, null, null, null, null, null, "large"));
+        assertOptions(KeyboardLayoutProfile.ALIGNED, KeyboardLayoutProfile.KeycapArea.SMALL,
+                KeyboardLayoutProfile.FontSize.NORMAL, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                KeyboardLayoutProfile.resolveOptions(null, null, null, null, null, null, "normal"));
+        assertOptions(KeyboardLayoutProfile.STANDARD, KeyboardLayoutProfile.KeycapArea.SMALL,
+                KeyboardLayoutProfile.FontSize.NORMAL, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                KeyboardLayoutProfile.resolveOptions(null, null, null, null, "large-staggered", null, "normal"));
+        for (var font : KeyboardLayoutProfile.FontSize.values()) {
+            assertOptions(KeyboardLayoutProfile.STANDARD, KeyboardLayoutProfile.KeycapArea.SMALL,
+                    font, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                    KeyboardLayoutProfile.resolveOptions(null, null, font.id, null, "large-staggered", null, "large"));
+        }
+        for (String unknown : List.of("", "unknown")) {
+            assertOptions(KeyboardLayoutProfile.STANDARD, KeyboardLayoutProfile.KeycapArea.SMALL,
+                    KeyboardLayoutProfile.FontSize.NORMAL, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                    KeyboardLayoutProfile.resolveOptions(null, null, unknown, null, "large-staggered", null, "large"));
+        }
     }
 
     @Test public void invalidNewValuesResetOnlyTheirOwnOption() {
         for (String invalid : List.of("unknown", "")) {
             assertOptions(KeyboardLayoutProfile.ALIGNED, KeyboardLayoutProfile.KeycapArea.SMALL,
-                    KeyboardLayoutProfile.FontSize.LARGE, KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER,
+                    KeyboardLayoutProfile.FontSize.EXTRA_LARGE, KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER,
                     KeyboardLayoutProfile.resolveOptions(invalid, null, null, "above-enter",
-                            "large-staggered", "85"));
+                            "large-staggered", "85", null));
             assertOptions(KeyboardLayoutProfile.ALIGNED, KeyboardLayoutProfile.KeycapArea.SMALL,
                     KeyboardLayoutProfile.FontSize.NORMAL, KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER,
-                    KeyboardLayoutProfile.resolveOptions(null, invalid, null, "above-enter", "full-spaced", "85"));
+                    KeyboardLayoutProfile.resolveOptions(null, invalid, null, "above-enter", "full-spaced", "85", null));
             assertOptions(KeyboardLayoutProfile.STANDARD, KeyboardLayoutProfile.KeycapArea.SMALL,
                     KeyboardLayoutProfile.FontSize.NORMAL, KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER,
-                    KeyboardLayoutProfile.resolveOptions(null, null, invalid, "above-enter", "large-staggered", "85"));
+                    KeyboardLayoutProfile.resolveOptions(null, null, invalid, "above-enter", "large-staggered", "85", null));
             assertOptions(KeyboardLayoutProfile.STANDARD, KeyboardLayoutProfile.KeycapArea.SMALL,
-                    KeyboardLayoutProfile.FontSize.LARGE, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
-                    KeyboardLayoutProfile.resolveOptions(null, null, null, invalid, "large-staggered", "85"));
+                    KeyboardLayoutProfile.FontSize.EXTRA_LARGE, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                    KeyboardLayoutProfile.resolveOptions(null, null, null, invalid, "large-staggered", "85", null));
         }
     }
 
@@ -181,7 +220,7 @@ public final class KeyboardLayoutProfileTest {
             KeyboardLayoutProfile.DeletePosition position, KeyboardLayoutProfile expectedLayout,
             KeyboardLayoutProfile.KeycapArea expectedSpacing, KeyboardLayoutProfile.FontSize expectedFont) {
         assertOptions(expectedLayout, expectedSpacing, expectedFont, position,
-                KeyboardLayoutProfile.resolveOptions(null, null, null, position.id, legacyProfile, legacyArea));
+                KeyboardLayoutProfile.resolveOptions(null, null, null, position.id, legacyProfile, legacyArea, null));
     }
 
     private static void assertOptions(KeyboardLayoutProfile layout, KeyboardLayoutProfile.KeycapArea spacing,

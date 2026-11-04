@@ -43,6 +43,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
     private Button supporterButton;
     private SupporterBillingManager supporterBillingManager;
     private boolean updatingCollections;
+    private CheckBox touchBottomSpace;
+    private TextView touchBottomSpaceDescription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -314,13 +316,15 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_landscape,
                 KeyboardSizeSettings.landscapePercent(this), false);
 
-        CheckBox touchBottomSpace = bottomSpaceCheckBox(
+        touchBottomSpace = bottomSpaceCheckBox(
                 KeyboardBottomSpaceSettings.touchEnabled(this));
         touchBottomSpace.setOnCheckedChangeListener((button, checked) ->
                 KeyboardBottomSpaceSettings.setTouchEnabled(SettingsActivity.this, checked));
         appearanceContent.addView(touchBottomSpace, matchWrap(dp(8), dp(8)));
-        appearanceContent.addView(bottomSpaceDescription(R.string.touch_bottom_space_description),
+        touchBottomSpaceDescription = bottomSpaceDescription(R.string.touch_bottom_space_description);
+        appearanceContent.addView(touchBottomSpaceDescription,
                 matchWrap(dp(0), dp(16)));
+        updateTouchBottomSpaceAvailability();
 
         LinearLayout hardwareContent = addSettingsGroup(content, savedInstanceState,
                 "hardware", R.string.settings_group_hardware,
@@ -552,7 +556,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         area.setSelection(java.util.Arrays.asList(areas).indexOf(KeyboardLayoutProfileSettings.keycapArea(this)));
         addLayoutOptionLabel(parent, R.string.keyboard_font_size);
         Spinner font = layoutOptionSpinner(parent, R.string.keyboard_font_size,
-                new String[] {getString(R.string.keyboard_font_normal), getString(R.string.keyboard_font_large)});
+                new String[] {getString(R.string.keyboard_font_normal), getString(R.string.keyboard_font_medium),
+                        getString(R.string.keyboard_font_large), getString(R.string.keyboard_font_extra_large)});
         font.setSelection(java.util.Arrays.asList(fonts).indexOf(KeyboardLayoutProfileSettings.fontSize(this)));
         addLayoutOptionLabel(parent, R.string.keyboard_delete_position);
         Spinner position = layoutOptionSpinner(parent, R.string.keyboard_delete_position,
@@ -583,11 +588,30 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> adapter) {}
         });
+        CheckBox integrated = new CheckBox(this);
+        integrated.setText(R.string.integrated_bottom_controls_enabled);
+        integrated.setTextSize(16);
+        integrated.setMinHeight(dp(48));
+        integrated.setChecked(KeyboardBottomControlsSettings.enabled(this));
+        integrated.setOnCheckedChangeListener((button, checked) -> {
+            KeyboardBottomControlsSettings.setEnabled(this, checked);
+            updateTouchBottomSpaceAvailability();
+        });
+        parent.addView(integrated, matchWrap(dp(0), dp(8)));
+        parent.addView(bottomSpaceDescription(R.string.integrated_bottom_controls_description),
+                matchWrap(dp(0), dp(12)));
         TextView description = new TextView(this);
         description.setText(R.string.keyboard_layout_profile_description);
         description.setTextSize(14);
         description.setTextColor(Color.GRAY);
         parent.addView(description, matchWrap(dp(0), dp(24)));
+    }
+
+    private void updateTouchBottomSpaceAvailability() {
+        if (touchBottomSpace == null) return;
+        boolean enabled = !KeyboardBottomControlsSettings.enabled(this);
+        setDependentControlEnabled(touchBottomSpace, enabled);
+        setDependentControlEnabled(touchBottomSpaceDescription, enabled);
     }
 
     private void addLayoutOptionLabel(LinearLayout parent, int text) {

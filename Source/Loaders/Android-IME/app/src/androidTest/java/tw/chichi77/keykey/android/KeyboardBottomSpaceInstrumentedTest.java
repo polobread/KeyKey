@@ -10,6 +10,8 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.MotionEvent;
@@ -26,6 +28,8 @@ import android.widget.ScrollView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
@@ -41,12 +45,15 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         String[] keys = {KeyboardBottomSpaceSettings.KEY_TOUCH_ENABLED,
                 KeyboardBottomSpaceSettings.KEY_HARDWARE_ENABLED,
                 CandidateWindowSettings.KEY_FLOATING_ENABLED,
-                CandidateWindowSettings.KEY_NUMBER_ROW, CandidateWindowSettings.KEY_FAILURE};
+                CandidateWindowSettings.KEY_NUMBER_ROW, CandidateWindowSettings.KEY_FAILURE,
+                KeyboardBottomControlsSettings.KEY_ENABLED};
         Map<String, ?> previous = preferences.getAll();
         Activity activity = null;
         try {
             preferences.edit().remove(keys[0]).remove(keys[1])
+                    .remove(KeyboardBottomControlsSettings.KEY_ENABLED)
                     .putBoolean(keys[2], false).putBoolean(keys[3], true).commit();
+            assertFalse(KeyboardBottomControlsSettings.enabled(context));
             assertTrue(KeyboardBottomSpaceSettings.touchEnabled(context));
             assertTrue(KeyboardBottomSpaceSettings.hardwareEnabled(context));
             activity = openSettings(context);
@@ -58,11 +65,31 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                 appearance.getChildAt(0).performClick();
                 hardware.getChildAt(0).performClick();
                 CheckBox touchSpace = findCheck(appearance.getChildAt(1), "預留底部切換語言空間");
+                CheckBox integrated = findCheck(appearance.getChildAt(1),
+                        context.getString(R.string.integrated_bottom_controls_enabled));
                 CheckBox hardwareSpace = findCheck(hardware.getChildAt(1), "預留底部切換語言空間");
                 CheckBox floating = findCheck(hardware.getChildAt(1), "使用浮動候選字窗");
                 CheckBox numbers = findCheck(hardware.getChildAt(1), "顯示虛擬數字與符號鍵");
+                assertNotNull(integrated);
+                assertFalse(integrated.isChecked());
                 assertTrue(touchSpace.isChecked());
                 assertTrue(hardwareSpace.isChecked());
+                integrated.performClick();
+                assertTrue(KeyboardBottomControlsSettings.enabled(context));
+                assertTrue(preferences.getBoolean(KeyboardBottomControlsSettings.KEY_ENABLED, false));
+                assertFalse(touchSpace.isEnabled());
+                assertTrue(touchSpace.isChecked());
+                assertTrue(touchSpace.getAlpha() < 1f);
+                assertTrue(hardwareSpace.isEnabled());
+                assertTrue(KeyboardBottomSpaceSettings.hardwareEnabled(context));
+                touch(touchSpace);
+                assertTrue("Disabling the reserve control must retain its saved value",
+                        KeyboardBottomSpaceSettings.touchEnabled(context));
+                integrated.performClick();
+                assertFalse(KeyboardBottomControlsSettings.enabled(context));
+                assertTrue(touchSpace.isEnabled());
+                assertEquals(1f, touchSpace.getAlpha(), 0f);
+                assertTrue(touchSpace.isChecked());
                 touchSpace.performClick();
                 assertFalse(KeyboardBottomSpaceSettings.touchEnabled(context));
                 assertTrue(KeyboardBottomSpaceSettings.hardwareEnabled(context));
@@ -85,6 +112,13 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                 assertEquals(1f, hardwareSpace.getAlpha(), 0f);
                 assertFalse(hardwareSpace.isChecked());
                 assertTrue(numbers.isChecked());
+                integrated.performClick();
+                assertTrue(KeyboardBottomControlsSettings.enabled(context));
+                assertFalse(touchSpace.isEnabled());
+                assertFalse(touchSpace.isChecked());
+                assertFalse(KeyboardBottomSpaceSettings.touchEnabled(context));
+                assertTrue(hardwareSpace.isEnabled());
+                assertFalse(KeyboardBottomSpaceSettings.hardwareEnabled(context));
                 current.finish();
             });
             activity = openSettings(context);
@@ -97,12 +131,31 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                         "預留底部切換語言空間").isChecked());
                 assertTrue(findCheck(findGroup(page, "實體鍵盤").getChildAt(1),
                         "顯示虛擬數字與符號鍵").isChecked());
+                var appearance = findGroup(page, "外觀與操作");
+                CheckBox integrated = findCheck(appearance.getChildAt(1),
+                        context.getString(R.string.integrated_bottom_controls_enabled));
+                CheckBox touchSpace = findCheck(appearance.getChildAt(1), "預留底部切換語言空間");
+                assertTrue(integrated.isChecked());
+                assertTrue(KeyboardBottomControlsSettings.enabled(context));
+                assertFalse(touchSpace.isEnabled());
+                assertFalse(touchSpace.isChecked());
+                assertTrue(findCheck(findGroup(page, "實體鍵盤").getChildAt(1),
+                        "預留底部切換語言空間").isEnabled());
+                integrated.performClick();
+                assertFalse(KeyboardBottomControlsSettings.enabled(context));
+                assertFalse(preferences.getBoolean(KeyboardBottomControlsSettings.KEY_ENABLED, true));
+                assertTrue(touchSpace.isEnabled());
+                assertFalse(touchSpace.isChecked());
+                touchSpace.performClick();
+                assertTrue(KeyboardBottomSpaceSettings.touchEnabled(context));
+                assertFalse(KeyboardBottomSpaceSettings.hardwareEnabled(context));
             });
         } finally {
             if (activity != null) {
                 Activity current = activity;
                 instrumentation.runOnMainSync(current::finish);
             }
+            instrumentation.waitForIdleSync();
             SharedPreferences.Editor restore = preferences.edit();
             for (String key : keys) {
                 restore.remove(key);
@@ -212,6 +265,112 @@ public final class KeyboardBottomSpaceInstrumentedTest {
             }
         });
     }
+
+    @Test
+    public void integratedControlsToggleRestoresReservationAfterParentFeedbackAndKeepsRealCap() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+            float density = context.getResources().getDisplayMetrics().density;
+            verifyIntegratedWindowFeedback(context, 100, Math.round(800 * density), false);
+            verifyIntegratedWindowFeedback(context, 200, Math.round(300 * density), true);
+        });
+    }
+
+    private static void verifyIntegratedWindowFeedback(Context context, int percent,
+            int availableHeight, boolean capped) {
+        int padding = Math.round(40 * context.getResources().getDisplayMetrics().density);
+        BopomofoKeyboardView keyboard = new BopomofoKeyboardView(context);
+        keyboard.setMode(BopomofoKeyboardView.Mode.PORTRAIT);
+        keyboard.setLayoutProfile(KeyboardLayoutProfile.ALIGNED);
+        keyboard.setTouchKeyboardHeightPercents(percent, percent);
+        keyboard.setBottomSpaceEnabled(true, true);
+        // Apply the persisted ON state before the first measure, as service startup does.
+        keyboard.setIntegratedBottomControls(true, false);
+        FrameLayout window = new FrameLayout(context);
+        window.addView(keyboard, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        int width = context.getResources().getDisplayMetrics().widthPixels;
+        String sample = "height=" + percent + "%/cap=" + availableHeight;
+        measureWindow(window, width, availableHeight, View.MeasureSpec.AT_MOST);
+        KeyboardContent original = drawnMainKeys(keyboard, true);
+        assertFalse(sample, original.mainKeys().isEmpty());
+        if (capped) {
+            assertEquals(sample + ": the real screen cap must reserve its original budget",
+                    availableHeight - padding, original.totalHeight());
+        } else {
+            assertTrue(sample + ": this sample must leave room to restore the reservation",
+                    original.totalHeight() + padding < availableHeight);
+        }
+        // An exact parent window gives its WRAP_CONTENT child an AT_MOST spec.
+        // This height came from the child itself, rather than a new upstream cap.
+        measureWindow(window, width, window.getMeasuredHeight(), View.MeasureSpec.EXACTLY);
+        assertIntegratedContent(sample + "/initial feedback", keyboard, true, original, padding);
+        assertEquals(sample, window.getHeight(), keyboard.getBottom());
+
+        for (boolean integrated : new boolean[]{false, true, false}) {
+            String stage = sample + "/integrated=" + integrated;
+            int oldWindowHeight = window.getMeasuredHeight();
+            keyboard.setIntegratedBottomControls(integrated, false);
+            // First the existing IME window measures using its old allocated height.
+            measureWindow(window, width, oldWindowHeight, View.MeasureSpec.EXACTLY);
+            KeyboardContent feedback = drawnMainKeys(keyboard, integrated);
+            assertTrue(stage + ": the child must respect the old window's AT_MOST cap",
+                    feedback.totalHeight() <= oldWindowHeight);
+            assertEquals(stage + ": old-window feedback must not shrink main keys",
+                    original.mainKeys(), feedback.mainKeys());
+            // A normal WRAP_CONTENT pass reuses the genuine upstream budget.
+            // The child never asks its old AT_MOST parent for an oversized height.
+            measureWindow(window, width, availableHeight, View.MeasureSpec.AT_MOST);
+            assertIntegratedContent(stage + "/upstream cap", keyboard, integrated, original, padding);
+            assertTrue(stage, keyboard.getMeasuredHeight() <= availableHeight);
+            assertTrue(stage, window.getMeasuredHeight() <= availableHeight);
+            assertEquals(stage, keyboard.getMeasuredHeight(), window.getMeasuredHeight());
+            // The framework feeds back the parent's newly measured window height.
+            measureWindow(window, width, window.getMeasuredHeight(), View.MeasureSpec.EXACTLY);
+            assertIntegratedContent(stage + "/new window", keyboard, integrated, original, padding);
+            assertEquals(stage + ": the new window must contain the whole keyboard",
+                    window.getHeight(), keyboard.getBottom());
+        }
+    }
+
+    private static void measureWindow(FrameLayout window, int width, int height, int heightMode) {
+        window.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, heightMode));
+        window.layout(0, 0, window.getMeasuredWidth(), window.getMeasuredHeight());
+    }
+
+    private static void assertIntegratedContent(String stage, BopomofoKeyboardView keyboard,
+            boolean integrated, KeyboardContent original, int padding) {
+        KeyboardContent current = drawnMainKeys(keyboard, integrated);
+        assertEquals(stage + ": toggling integration must only add or remove the reservation",
+                original.totalHeight() + (integrated ? 0 : padding), current.totalHeight());
+        assertEquals(stage + ": main keys must retain their positions and sizes",
+                original.mainKeys(), current.mainKeys());
+    }
+
+    private static KeyboardContent drawnMainKeys(BopomofoKeyboardView keyboard, boolean integrated) {
+        var bounds = new ArrayList<RectF>();
+        keyboard.draw(new Canvas() {
+            @Override public void drawRoundRect(RectF rect, float rx, float ry, Paint paint) {
+                bounds.add(new RectF(rect));
+            }
+        });
+        float widthDp = keyboard.getWidth() / keyboard.getResources().getDisplayMetrics().density;
+        int mainCount = KeyboardLayoutGeometry.resolvedRows(KeyboardLayoutProfile.ALIGNED,
+                KeyboardLayoutProfile.Orientation.PORTRAIT, KeyboardLayoutProfile.Plane.BOPOMOFO,
+                false, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER, widthDp)
+                .stream().mapToInt(List::size).sum();
+        int functionCount = KeyboardLayoutGeometry.resolvedFunctionKeys(KeyboardLayoutProfile.ALIGNED,
+                KeyboardLayoutProfile.Orientation.PORTRAIT, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                widthDp, integrated, false).size();
+        // Candidate cells precede the key rows; the function row is drawn last.
+        int end = bounds.size() - functionCount;
+        assertTrue("The main keys must actually be drawn", end >= mainCount);
+        return new KeyboardContent(keyboard.getMeasuredHeight(),
+                List.copyOf(bounds.subList(end - mainCount, end)));
+    }
+
+    private record KeyboardContent(int totalHeight, List<RectF> mainKeys) {}
 
     @Test
     public void liveInputMethodReleasesHostSpaceWhenBottomSpaceIsDisabled() throws Exception {

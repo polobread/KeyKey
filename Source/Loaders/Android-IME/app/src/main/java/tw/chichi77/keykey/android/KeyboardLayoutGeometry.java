@@ -32,12 +32,21 @@ final class KeyboardLayoutGeometry {
     static List<String> resolvedFunctionKeys(KeyboardLayoutProfile profile,
             KeyboardLayoutProfile.Orientation orientation,
             KeyboardLayoutProfile.DeletePosition deletePosition, float widthDp) {
+        return resolvedFunctionKeys(profile, orientation, deletePosition, widthDp, false, false);
+    }
+
+    static List<String> resolvedFunctionKeys(KeyboardLayoutProfile profile,
+            KeyboardLayoutProfile.Orientation orientation,
+            KeyboardLayoutProfile.DeletePosition deletePosition, float widthDp,
+            boolean integrated, boolean showGlobe) {
         var result = new ArrayList<>(profile.layout(orientation).functionKeys(deletePosition));
         if (profile.split) {
             int space = result.indexOf("SPACE");
             if (space >= 0) result.add(space + 1, "SPACE");
             if (isExpanded(profile, widthDp)) result.removeIf(key -> key.equals("，") || key.equals("。"));
         }
+        if (showGlobe) result.add(0, "GLOBE");
+        if (integrated) result.add(result.indexOf("SETTINGS") + 1, "DISMISS");
         return List.copyOf(result);
     }
 
@@ -49,6 +58,13 @@ final class KeyboardLayoutGeometry {
     static List<Key> keys(KeyboardLayoutProfile profile, KeyboardLayoutProfile.Orientation orientation,
             KeyboardLayoutProfile.Plane plane, boolean shifted,
             KeyboardLayoutProfile.DeletePosition deletePosition, float widthDp) {
+        return keys(profile, orientation, plane, shifted, deletePosition, widthDp, false, false);
+    }
+
+    static List<Key> keys(KeyboardLayoutProfile profile, KeyboardLayoutProfile.Orientation orientation,
+            KeyboardLayoutProfile.Plane plane, boolean shifted,
+            KeyboardLayoutProfile.DeletePosition deletePosition, float widthDp,
+            boolean integrated, boolean showGlobe) {
         var layout = profile.layout(orientation);
         var rows = resolvedRows(profile, orientation, plane, shifted, deletePosition, widthDp);
         float effectiveColumns = 0;
@@ -74,7 +90,7 @@ final class KeyboardLayoutGeometry {
                 }
             }
         }
-        var functions = resolvedFunctionKeys(profile, orientation, deletePosition, widthDp);
+        var functions = resolvedFunctionKeys(profile, orientation, deletePosition, widthDp, integrated, showGlobe);
         var weights = new ArrayList<Float>();
         for (String action : functions) {
             String weighted = deletePosition == KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER
@@ -85,16 +101,35 @@ final class KeyboardLayoutGeometry {
                 case "SPACE", "BACKSPACE", "ENTER" -> 2f;
                 default -> 1f;
             } : layout.functionWeight(action, deletePosition);
-            weights.add(weight);
+            weights.add(showGlobe && action.equals("MODE") ? 1f : weight);
         }
+        // The one-slot mode key first contributes its released width. Borrow
+        // the remainder from space in the same half, keeping the row budget.
+        int boundary = profile.split ? functions.indexOf("SPACE") + 1 : functions.size();
+        float releasedModeWeight = showGlobe ? (isExpanded(profile, widthDp) ? 1.5f
+                : layout.functionWeight("MODE", deletePosition)) - 1f : 0;
+        donateSpaceWeight(functions, weights, 0, boundary, releasedModeWeight);
+        if (profile.split) donateSpaceWeight(functions, weights, boundary, functions.size(), releasedModeWeight);
         if (profile.split) {
-            addSplitGroup(result, functions, functions.indexOf("SPACE") + 1, gap,
+            addSplitGroup(result, functions, boundary, gap,
                     rows.size() * rowHeight, 1, weights);
         } else {
             addGroup(result, functions, 0, functions.size(), 0, 1,
                     rows.size() * rowHeight, 1, weights);
         }
         return List.copyOf(result);
+    }
+
+    private static void donateSpaceWeight(List<String> actions, List<Float> weights, int start, int end,
+            float releasedModeWeight) {
+        float donation = 0;
+        int space = -1;
+        for (int index = start; index < end; index++) {
+            if (actions.get(index).equals("SPACE")) space = index;
+            if (actions.get(index).equals("GLOBE") || actions.get(index).equals("DISMISS")) donation += weights.get(index);
+            if (actions.get(index).equals("MODE")) donation -= releasedModeWeight;
+        }
+        if (space >= 0 && donation > 0) weights.set(space, Math.max(.5f, weights.get(space) - donation));
     }
 
     private static void addSplitGroup(List<Key> result, List<String> actions, int boundary,

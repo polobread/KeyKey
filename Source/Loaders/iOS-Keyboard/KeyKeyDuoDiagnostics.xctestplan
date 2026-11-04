@@ -25,6 +25,7 @@
       "selectedTests": [
         "KeyKeyUITests/test00KeyboardOptInIsConfigured()",
         "KeyKeyUITests/testFullProfileLayoutAtCurrentPose()",
+        "KeyKeyUITests/testFourFontLevelsClearCompositionAndCandidatesAtCurrentPose()",
         "KeyKeyUITests/testNativeKeyboardSwitchAtCurrentPoseWithoutExtension()",
         "KeyKeyUITests/testSplitSmartNineTenSyllableBoundaryAtCurrentPose()",
         "KeyKeyUITests/testSplitSmartPagingAtCurrentPoseKeepsUnfinishedReading()"

@@ -74,7 +74,7 @@ public final class KeyboardRenderingInstrumentedTest {
         });
     }
 
-    @Test public void largeTextUsesTheSameKeysWithoutHintsAndFitsInsideEachCap() {
+    @Test public void enlargedTextUsesTheSameKeysWithoutHintsAndFitsInsideEachCap() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         instrumentation.runOnMainSync(() -> {
             for (var profile : KeyboardLayoutProfile.available()) {
@@ -88,7 +88,9 @@ public final class KeyboardRenderingInstrumentedTest {
                     view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.NORMAL,
                             KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
                     KeyCanvas normal = draw(view);
-                    view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.LARGE,
+                  for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                    if (font.showsHints()) continue;
+                    view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
                             KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
                     KeyCanvas large = draw(view);
                     assertEquals(normal.keys, large.keys);
@@ -112,6 +114,7 @@ public final class KeyboardRenderingInstrumentedTest {
                     float regular = normal.texts.stream().filter(text -> text.value.equals("ㄅ")).findFirst().orElseThrow().size;
                     float enlarged = large.texts.stream().filter(text -> text.value.equals("ㄅ")).findFirst().orElseThrow().size;
                     assertTrue(enlarged > regular);
+                  }
                 }
             }
         });
@@ -126,14 +129,295 @@ public final class KeyboardRenderingInstrumentedTest {
             for (var profile : KeyboardLayoutProfile.available()) {
                 view.setLayoutProfile(profile);
                 for (var position : KeyboardLayoutProfile.DeletePosition.values()) {
-                    view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.LARGE, KeyboardLayoutProfile.FontSize.LARGE, position);
+                  for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                    view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.LARGE, font, position);
                     KeyCanvas canvas = draw(view);
                     assertTrue(canvas.texts.stream().anyMatch(text -> text.value.contains("你好")));
                     assertTrue(canvas.texts.stream().anyMatch(text -> text.value.equals("ㄋ")));
                     assertTrue(canvas.texts.stream().anyMatch(text -> text.value.equals("ㄧ")));
+                  }
                 }
             }
         });
+    }
+
+    @Test public void extraLargeLatinSymbolsAndEnterUseTheDisplayedLabelAndKeepTouchActions() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            view.setKeyPreviewEnabled(false);
+            var events = new ArrayList<String>();
+            view.setListener(keyListener(events));
+            float density = view.getResources().getDisplayMetrics().density;
+            for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                        ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                for (var placement : PLACEMENTS) {
+                    view.setChineseInputMethod(placement.method());
+                    for (boolean temporary : new boolean[] {false, true}) {
+                        view.setState(List.of(), "", false, List.of(), 0, placement.inputMode(),
+                                false, temporary, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                        view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.EXTRA_LARGE,
+                                KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                        KeyCanvas rendered = draw(view);
+                        String expected = placement.inputMode() == InputEngine.InputMode.BOPOMOFO && !temporary
+                                ? (placement.method().isTable() ? "重" : "ㄈ") : "z";
+                        if (placement.inputMode() == InputEngine.InputMode.NUMBER) expected = "~";
+                        String expectedLabel = expected;
+                        PaintedText main = rendered.texts.stream().filter(text -> text.value.equals(expectedLabel))
+                                .findFirst().orElseThrow();
+                        RectF key = rendered.keys.get(main.keyIndex);
+                        float widthRatio = Math.max(main.ink.width(), main.advance) / (key.width() - 4 * density);
+                        float heightRatio = main.ink.height() / (key.height() - 4 * density);
+                        assertEquals("Extra large must retain the original full fit for every displayed glyph",
+                                1f,
+                                Math.max(widthRatio, heightRatio), .08f);
+                        events.clear();
+                        tap(view, key.centerX(), key.centerY());
+                        assertEquals(List.of(placement.inputMode() == InputEngine.InputMode.NUMBER ? "~" : "z"), events);
+                        assertEquals(1, rendered.paths.size());
+                        // The Enter path occupies half its square; the button and touch target do not shrink.
+                        var enterAction = KeyboardLayoutGeometry.keys(KeyboardLayoutProfile.ALIGNED, orientation,
+                                placement.plane(), false, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
+                                view.getWidth() / density).stream().filter(item -> item.action().equals("ENTER"))
+                                .findFirst().orElseThrow();
+                        float enterWidth = (enterAction.right() - enterAction.left()) * view.getWidth() - 4 * density;
+                        float enterHeight = key.height();
+                        float expectedSide = Math.min(enterWidth, enterHeight) - 4 * density;
+                        assertEquals(expectedSide / 2f, rendered.paths.get(0).width(), .5f);
+                    }
+                }
+            }
+        });
+    }
+
+    @Test public void fontLevelsScaleCandidateCompositionAndReadingWithinUnchangedStrips() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            view.setKeyPreviewEnabled(false);
+            var events = new ArrayList<String>();
+            view.setListener(new BopomofoKeyboardView.Listener() {
+                @Override public void onPress() {}
+                @Override public void onKey(String key) { events.add(key); }
+                @Override public void onCandidate(int index) { events.add("candidate:" + index); }
+                @Override public void onSmartCell(int index) { events.add("cell:" + index); }
+                @Override public void onPage(int delta) { events.add("page:" + delta); }
+            });
+            for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                        ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                List<RectF> original = null;
+                float normalCandidate = 0, normalOrdinal = 0;
+                for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                    view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
+                            KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                    view.setState(List.of("你", "a", "很長的候選詞測試"), "你好ㄋㄧ", true,
+                            List.of("你", "好", "ㄋ", "ㄧ", "很長的組字測試"), 4, InputEngine.InputMode.BOPOMOFO,
+                            false, false, false, false, 0, 2, 0, InputFieldPolicy.DEFAULT);
+                    KeyCanvas canvas = draw(view);
+                    if (original == null) original = canvas.keys;
+                    else assertEquals("Font must not change any strip or key frame", original, canvas.keys);
+                    // Candidate overlay is drawn after keys, whose normal hints can also be a/1.
+                    PaintedText candidate = canvas.texts.stream().filter(text -> text.value.equals("a"))
+                            .reduce((first, last) -> last).orElseThrow();
+                    PaintedText ordinal = canvas.texts.stream().filter(text -> text.value.equals("1"))
+                            .reduce((first, last) -> last).orElseThrow();
+                    if (font.showsHints()) { normalCandidate = candidate.size; normalOrdinal = ordinal.size; }
+                    assertEquals(normalOrdinal, ordinal.size, .01f);
+                    assertEquals("Candidate text must use the selected strip font level",
+                            normalCandidate * font.stripScale, candidate.size, .1f);
+                    if (!font.showsHints()) {
+                        for (var text : canvas.texts) {
+                            if (!List.of("很長的候選詞測試", "很長的組字測試", "ㄋ", "ㄧ").contains(text.value)) continue;
+                            assertInside(text, canvas.keys.get(text.keyIndex));
+                        }
+                    }
+                    events.clear();
+                    RectF candidateBounds = canvas.keys.get(candidate.keyIndex);
+                    tap(view, candidateBounds.centerX(), candidateBounds.centerY());
+                    assertEquals(List.of("candidate:1"), events);
+                    PaintedText cell = canvas.texts.stream().filter(text -> text.value.equals("ㄋ")).findFirst().orElseThrow();
+                    events.clear();
+                    RectF cellBounds = canvas.keys.get(cell.keyIndex);
+                    tap(view, cellBounds.centerX(), cellBounds.centerY());
+                    assertEquals(List.of("cell:2"), events);
+
+                    view.setState(List.of(), "ㄋㄧˇ", false, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                            false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                    KeyCanvas readingCanvas = draw(view);
+                    if (!font.showsHints()) {
+                        PaintedText reading = readingCanvas.texts.stream().filter(text -> text.value.equals("ㄋㄧˇ"))
+                                .findFirst().orElseThrow();
+                        float stripBottom = readingCanvas.keys.get(0).top;
+                        assertInside(reading, new RectF(0, 0, view.getWidth(), stripBottom));
+                        assertTrue(readingCanvas.texts.stream().anyMatch(text -> text.value.equals("按空白選字")));
+                    }
+                }
+            }
+        });
+    }
+
+    private static void assertInside(PaintedText text, RectF bounds) {
+        assertTrue("Text must fit its unchanged frame: " + text.value,
+                text.ink.left >= bounds.left - 1 && text.ink.right <= bounds.right + 1
+                && text.ink.top >= bounds.top - 1 && text.ink.bottom <= bounds.bottom + 1);
+    }
+
+    @Test public void integratedControlsShareTheExistingRowAndMandatoryGlobeWorksInEveryMode() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            view.setKeyPreviewEnabled(false);
+            var events = new ArrayList<String>();
+            view.setListener(keyListener(events));
+            view.setState(List.of(), "你ㄋ", true, List.of("你", "ㄋ"), 1,
+                    InputEngine.InputMode.BOPOMOFO, false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+            for (var profile : KeyboardLayoutProfile.available()) {
+                view.setLayoutProfile(profile);
+                for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                    view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                            ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                    view.setBottomSpaceEnabled(true, true);
+                    view.setIntegratedBottomControls(false, false);
+                    KeyCanvas original = draw(view);
+                    int originalHeight = view.getHeight();
+                    view.setIntegratedBottomControls(true, true);
+                    KeyCanvas integrated = draw(view);
+                    float density = view.getResources().getDisplayMetrics().density;
+                    assertEquals(Math.round((orientation == KeyboardLayoutProfile.Orientation.PORTRAIT ? 40 : 35) * density),
+                            originalHeight - view.getHeight());
+                    assertEquals(original.keys.size() + 2, integrated.keys.size());
+                    for (String label : List.of("🌐", "▼")) {
+                        PaintedText text = integrated.texts.stream().filter(item -> item.value.equals(label))
+                                .reduce((first, last) -> last).orElseThrow();
+                        events.clear(); RectF key = integrated.keys.get(text.keyIndex);
+                        tap(view, key.centerX(), key.centerY());
+                        assertEquals(List.of(label.equals("🌐") ? "GLOBE" : "DISMISS"), events);
+                    }
+                    assertTrue(integrated.texts.stream().anyMatch(item -> item.value.equals("ㄋ")));
+                    RectF globeKey = integrated.keys.get(integrated.texts.stream()
+                            .filter(item -> item.value.equals("🌐")).findFirst().orElseThrow().keyIndex);
+                    RectF settingsKey = integrated.keys.get(integrated.texts.stream()
+                            .filter(item -> item.value.equals("設")).findFirst().orElseThrow().keyIndex);
+                    RectF dismissKey = integrated.keys.get(integrated.texts.stream()
+                            .filter(item -> item.value.equals("▼")).findFirst().orElseThrow().keyIndex);
+                    assertEquals(integrated.keys.stream().filter(key -> key.top == globeKey.top)
+                            .mapToDouble(key -> key.left).min().orElseThrow(), globeKey.left, .01);
+                    assertTrue(settingsKey.right < dismissKey.left);
+                    for (var inputMode : InputEngine.InputMode.values()) {
+                        for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                            view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
+                                    KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                            view.setState(List.of(), "你ㄋ", true, List.of("你", "ㄋ"), 1,
+                                    inputMode, false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                            KeyCanvas compact = draw(view);
+                            String[] labels = InputFieldPolicy.DEFAULT.modeCaption(inputMode).split("/");
+                            // The same single hit contains both truthful mode labels, without a slash.
+                            var upper = compact.texts.stream().filter(item -> item.value.equals(labels[0])
+                                    && item.keyIndex > view.compositionCellCount()).reduce((first, last) -> last).orElseThrow();
+                            var lower = compact.texts.stream().filter(item -> item.value.equals(labels[1])
+                                    && item.keyIndex == upper.keyIndex).findFirst().orElseThrow();
+                            RectF modeKey = compact.keys.get(upper.keyIndex);
+                            assertTrue(upper.x < modeKey.centerX() && upper.y < modeKey.centerY());
+                            assertTrue(lower.x > modeKey.centerX() && lower.y > modeKey.centerY());
+                            assertTrue(modeKey.contains(upper.ink) && modeKey.contains(lower.ink));
+                            assertEquals(globeKey.width(), modeKey.width(), .01f);
+                            events.clear(); tap(view, modeKey.centerX(), modeKey.centerY());
+                            assertEquals(List.of("MODE"), events);
+                        }
+                    }
+                    view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.NORMAL,
+                            KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                    view.setIntegratedBottomControls(false, true);
+                    KeyCanvas mandatory = draw(view);
+                    assertEquals(originalHeight, view.getHeight());
+                    assertEquals(original.keys.size() + 1, mandatory.keys.size());
+                    assertTrue(mandatory.texts.stream().anyMatch(item -> item.value.equals("🌐")));
+                    assertFalse(mandatory.texts.stream().anyMatch(item -> item.value.equals("▼")));
+                }
+            }
+            view.setMode(BopomofoKeyboardView.Mode.HARDWARE);
+            view.setIntegratedBottomControls(false, false);
+            draw(view); int hardwareHeight = view.getHeight();
+            view.setIntegratedBottomControls(false, true);
+            KeyCanvas hardware = draw(view);
+            assertEquals(hardwareHeight, view.getHeight());
+            assertTrue(hardware.texts.stream().anyMatch(item -> item.value.equals("🌐")));
+            view.setMode(BopomofoKeyboardView.Mode.HARDWARE_FLOATING);
+            KeyCanvas floating = draw(view);
+            assertEquals(1, floating.keys.size());
+            assertEquals(List.of("🌐"), floating.texts.stream().map(item -> item.value)
+                    .collect(java.util.stream.Collectors.toList()));
+            events.clear(); tap(view, floating.keys.get(0).centerX(), floating.keys.get(0).centerY());
+            assertEquals(List.of("GLOBE"), events);
+            view.setIntegratedBottomControls(false, false);
+            assertTrue(draw(view).keys.isEmpty());
+            assertEquals(Math.round(view.getResources().getDisplayMetrics().density), view.getHeight());
+        });
+    }
+
+    @Test public void pickerKeysLongPressConsumesSettingsAndGlobeGestures() throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        var context = instrumentation.getTargetContext();
+        android.app.Activity activity = instrumentation.startActivitySync(new android.content.Intent()
+                .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK));
+        var events = new ArrayList<String>();
+        var view = new BopomofoKeyboardView(context);
+        final RectF[] key = {null};
+        try {
+            instrumentation.runOnMainSync(() -> {
+                view.setListener(new BopomofoKeyboardView.Listener() {
+                    @Override public void onPress() {}
+                    @Override public void onKey(String key) { events.add(key); }
+                    @Override public void onCandidate(int index) { fail(); }
+                    @Override public void onSmartCell(int index) { fail(); }
+                    @Override public void onPage(int delta) { fail(); }
+                    @Override public void onInputMethodPicker() { events.add("picker"); }
+                });
+                activity.setContentView(view, new android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+            });
+            instrumentation.waitForIdleSync();
+            for (boolean integrated : new boolean[] {false, true}) {
+                for (boolean globe : new boolean[] {false, true}) {
+                    for (String action : globe ? List.of("SETTINGS", "GLOBE") : List.of("SETTINGS")) {
+                        instrumentation.runOnMainSync(() -> {
+                            view.setIntegratedBottomControls(integrated, globe);
+                            KeyCanvas canvas = draw(view);
+                            String label = action.equals("SETTINGS") ? "設" : "🌐";
+                            var text = canvas.texts.stream().filter(item -> item.value.equals(label)).findFirst().orElseThrow();
+                            key[0] = canvas.keys.get(text.keyIndex);
+                            events.clear(); tap(view, key[0].centerX(), key[0].centerY());
+                            assertEquals(List.of(action), events);
+                            events.clear(); sendTouch(view, MotionEvent.ACTION_DOWN, key[0].centerX(), key[0].centerY());
+                        });
+                        Thread.sleep(android.view.ViewConfiguration.getLongPressTimeout() + 100L);
+                        instrumentation.runOnMainSync(() -> {
+                            sendTouch(view, MotionEvent.ACTION_MOVE, -1, -1);
+                            sendTouch(view, MotionEvent.ACTION_MOVE, key[0].centerX(), key[0].centerY());
+                            sendTouch(view, MotionEvent.ACTION_UP, key[0].centerX(), key[0].centerY());
+                            assertEquals(List.of("picker"), events);
+                            events.clear(); sendTouch(view, MotionEvent.ACTION_DOWN, key[0].centerX(), key[0].centerY());
+                            sendTouch(view, MotionEvent.ACTION_MOVE, -1, -1);
+                            sendTouch(view, MotionEvent.ACTION_MOVE, key[0].centerX(), key[0].centerY());
+                        });
+                        Thread.sleep(android.view.ViewConfiguration.getLongPressTimeout() + 100L);
+                        instrumentation.runOnMainSync(() -> {
+                            sendTouch(view, MotionEvent.ACTION_UP, key[0].centerX(), key[0].centerY());
+                            assertTrue("Leaving the key cancels both actions", events.isEmpty());
+                            sendTouch(view, MotionEvent.ACTION_DOWN, key[0].centerX(), key[0].centerY());
+                            sendTouch(view, MotionEvent.ACTION_CANCEL, key[0].centerX(), key[0].centerY());
+                        });
+                        Thread.sleep(android.view.ViewConfiguration.getLongPressTimeout() + 100L);
+                        instrumentation.runOnMainSync(() -> assertTrue(events.isEmpty()));
+                    }
+                }
+            }
+        } finally {
+            instrumentation.runOnMainSync(activity::finish);
+        }
     }
 
     @Test public void standardTableBottomRowMovesOnePitchWithoutMovingTheLastControl() {
@@ -305,9 +589,16 @@ public final class KeyboardRenderingInstrumentedTest {
         }
     }
 
+    private static void sendTouch(View view, int action, float x, float y) {
+        long time = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(time, time, action, x, y, 0);
+        try { view.onTouchEvent(event); } finally { event.recycle(); }
+    }
+
     private static final class KeyCanvas extends Canvas {
         final List<RectF> keys = new ArrayList<>();
         final List<PaintedText> texts = new ArrayList<>();
+        final List<RectF> paths = new ArrayList<>();
         @Override public void drawRoundRect(RectF bounds, float rx, float ry, Paint paint) {
             keys.add(new RectF(bounds));
         }
@@ -315,9 +606,14 @@ public final class KeyboardRenderingInstrumentedTest {
             android.graphics.Rect ink = new android.graphics.Rect();
             paint.getTextBounds(value, 0, value.length(), ink);
             float left = x - paint.measureText(value) / 2;
-            texts.add(new PaintedText(value, x, y, paint.getTextSize(), keys.size() - 1,
+            texts.add(new PaintedText(value, x, y, paint.getTextSize(), paint.measureText(value), keys.size() - 1,
                     new RectF(left + ink.left, y + ink.top, left + ink.right, y + ink.bottom)));
         }
+        @Override public void drawPath(android.graphics.Path path, Paint paint) {
+            RectF bounds = new RectF();
+            path.computeBounds(bounds, true);
+            paths.add(bounds);
+        }
     }
-    private record PaintedText(String value, float x, float y, float size, int keyIndex, RectF ink) {}
+    private record PaintedText(String value, float x, float y, float size, float advance, int keyIndex, RectF ink) {}
 }

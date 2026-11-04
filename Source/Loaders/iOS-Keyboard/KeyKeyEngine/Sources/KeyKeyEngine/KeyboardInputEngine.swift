@@ -117,4 +117,10 @@ public final class KeyboardInputEngine: InputEngine {
     @discardableResult public func moveSmartCompositionCursor(by delta: Int) -> Bool { performSelection { $0.moveSmartCompositionCursor(by: delta) } }
     public func reset() { performUpdate { $0.reset() } }
     @discardableResult public func finishCompositionForInputHandoff() -> KeyboardInput.Result { perform { $0.finishCompositionForInputHandoff() } }
+    /// Success belongs to this handoff, independently of an unrelated phrase
+    /// publication error or a later host acknowledgement/refresh.
+    public func finishCompositionForKeyboardDismissal() -> (result: KeyboardInput.Result, succeeded: Bool) {
+        let result = perform { $0.finishCompositionForKeyboardDismissal() }
+        return (result, backend.lastError == nil)
+    }
 }

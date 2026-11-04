@@ -136,6 +136,7 @@ interface InputEngine extends AutoCloseable {
     boolean isShowingSmartCandidates();
     InputEngine.Result finishCompositionForModeSwitch();
     InputEngine.Result finishCompositionForInputHandoff();
+    InputEngine.Result finishCompositionForKeyboardHide();
     InputEngine.Result refreshUserData();
     boolean restoreInputModeState(InputEngineModeState state);
     default InputEngineModeState inputModeState() {

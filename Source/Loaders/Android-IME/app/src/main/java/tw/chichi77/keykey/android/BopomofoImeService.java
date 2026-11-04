@@ -12,11 +12,14 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.ExtractedText;
 import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,6 +77,12 @@ public final class BopomofoImeService extends InputMethodService
     private final TouchSmartHostTextState touchHostText = new TouchSmartHostTextState();
     private int composingRegionStart = -1;
     private int expectedSmartSelection = -1;
+    private final KeyboardBottomControlsPolicy bottomControlsPolicy = new KeyboardBottomControlsPolicy();
+    private WindowInsetsController captionController;
+    private boolean captionHideRequested;
+    private boolean updatingBottomControls;
+    private boolean destroying;
+    private WindowInsetsController.OnControllableInsetsChangedListener captionControlListener;
 
     @Override
     public void onCreate() {
@@ -124,6 +133,20 @@ public final class BopomofoImeService extends InputMethodService
     public View onCreateInputView() {
         keyboardView = new BopomofoKeyboardView(this);
         keyboardView.setListener(this);
+        keyboardView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override public void onViewAttachedToWindow(View view) {
+                if (view == keyboardView) updateKeyboardBottomControls();
+            }
+            @Override public void onViewDetachedFromWindow(View view) {
+                if (view == keyboardView) releaseCaptionController();
+            }
+        });
+        if (Build.VERSION.SDK_INT >= 36) {
+            keyboardView.setOnApplyWindowInsetsListener((view, insets) -> {
+                view.post(BopomofoImeService.this::updateKeyboardBottomControls);
+                return insets;
+            });
+        }
         floatingCandidateWindow = new FloatingCandidateWindow(this, keyboardView, this);
         updateKeyboardMode();
         requestCursorAnchorUpdates();
@@ -240,6 +263,16 @@ public final class BopomofoImeService extends InputMethodService
         super.onWindowHidden();
     }
 
+    @Override public void onWindowShown() {
+        super.onWindowShown();
+        updateKeyboardBottomControls();
+    }
+
+    @Override public void onCustomImeSwitcherButtonRequestedVisible(boolean visible) {
+        bottomControlsPolicy.onCustomSwitcherRequested(visible);
+        updateKeyboardBottomControls();
+    }
+
     private void synchronizeInputPreferences() {
         // Preferences changed while a former host rejected effects are applied
         // only after that host's state was explicitly discarded.
@@ -269,8 +302,22 @@ public final class BopomofoImeService extends InputMethodService
         apply(engine.finishCompositionForInputHandoff());
     }
 
+    private boolean finishCompositionForKeyboardHide() {
+        InputConnection original = getCurrentInputConnection();
+        if (engine == null || hostTransactionFailed || !engine.hasComposition()
+                || original == null) return true;
+        InputEngine.Result result = engine.finishCompositionForKeyboardHide();
+        boolean completed = engine.coreError() == null && !engine.hasComposition();
+        // Apply successful earlier effects once even if a later adapter step
+        // failed. Do not hide into the generic handoff path after that failure.
+        apply(result);
+        return completed && !hostTransactionFailed && getCurrentInputConnection() == original;
+    }
+
     @Override
     public void onDestroy() {
+        destroying = true;
+        releaseCaptionController();
         stopHardwareBackspace();
         CandidateWindowSettings.preferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
@@ -419,6 +466,10 @@ public final class BopomofoImeService extends InputMethodService
             updateKeyboardBottomSpace();
             return;
         }
+        if (KeyboardBottomControlsSettings.KEY_ENABLED.equals(key)) {
+            updateKeyboardBottomControls();
+            return;
+        }
         if (KeyboardSizeSettings.isSizeKey(key)) {
             updateKeyboardSize();
             return;
@@ -435,6 +486,14 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onKey(String key) {
+        if (key.equals("DISMISS")) {
+            if (finishCompositionForKeyboardHide()) requestHideSelf(0);
+            return;
+        }
+        if (key.equals("GLOBE")) {
+            switchToNextKeyboard();
+            return;
+        }
         if (engine == null || hostTransactionFailed) return;
         if (key.equals("HARDWARE_COLLAPSE")) {
             collapseHardwareCandidates();
@@ -961,6 +1020,77 @@ public final class BopomofoImeService extends InputMethodService
                 KeyboardBottomSpaceSettings.hardwareEnabled(this));
     }
 
+    private void updateKeyboardBottomControls() {
+        if (keyboardView == null || updatingBottomControls || destroying) return;
+        updatingBottomControls = true;
+        try {
+            boolean integrated = !hardwareKeyboard && KeyboardBottomControlsSettings.enabled(this);
+            if (Build.VERSION.SDK_INT >= 36) {
+                if (captionControlListener == null) captionControlListener = (controller, types) -> {
+                    if (controller != captionController) return;
+                    updateKeyboardBottomControls();
+                };
+                WindowInsetsController controller = keyboardView.getWindowInsetsController();
+                if (controller != captionController) {
+                    releaseCaptionController();
+                    captionController = controller;
+                    if (controller != null) controller.addOnControllableInsetsChangedListener(captionControlListener);
+                }
+                if (!integrated) restoreCaptionBar();
+                else if (captionController != null && !captionHideRequested) {
+                    WindowInsets insets = keyboardView.getRootWindowInsets();
+                    // Do not take ownership of an already hidden, system-managed bar.
+                    if (insets != null && insets.isVisible(WindowInsets.Type.captionBar())) {
+                        captionHideRequested = true;
+                        captionController.hide(WindowInsets.Type.captionBar());
+                    }
+                }
+            }
+            boolean globe = bottomControlsPolicy.showGlobe(Build.VERSION.SDK_INT >= 36);
+            keyboardView.setIntegratedBottomControls(integrated, globe);
+        } finally {
+            updatingBottomControls = false;
+        }
+    }
+
+    private void restoreCaptionBar() {
+        if (Build.VERSION.SDK_INT >= 36 && captionController != null && captionHideRequested) {
+            captionHideRequested = false;
+            captionController.show(WindowInsets.Type.captionBar());
+        }
+    }
+
+    private void releaseCaptionController() {
+        if (Build.VERSION.SDK_INT < 36) return;
+        boolean wasUpdating = updatingBottomControls;
+        updatingBottomControls = true;
+        try {
+            restoreCaptionBar();
+            if (captionController != null) captionController.removeOnControllableInsetsChangedListener(captionControlListener);
+            captionController = null;
+        } finally {
+            updatingBottomControls = wasUpdating;
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void switchToNextKeyboard() {
+        boolean switched = false;
+        if (Build.VERSION.SDK_INT >= 28) switched = switchToNextInputMethod(false);
+        else {
+            InputMethodManager manager = getSystemService(InputMethodManager.class);
+            if (manager != null && getWindow() != null && getWindow().getWindow() != null
+                    && getWindow().getWindow().getAttributes().token != null)
+                switched = manager.switchToNextInputMethod(getWindow().getWindow().getAttributes().token, false);
+        }
+        if (!switched) onInputMethodPicker();
+    }
+
+    @Override public void onInputMethodPicker() {
+        InputMethodManager manager = getSystemService(InputMethodManager.class);
+        if (manager != null) manager.showInputMethodPicker();
+    }
+
     private void useTableKeyboard(boolean virtualKeyboard) {
         if (engine == null || tableVirtualKeyboard == virtualKeyboard) return;
         if (engine.chineseInputMethod().isTable()) apply(engine.finishCompositionForInputHandoff());
@@ -1002,6 +1132,7 @@ public final class BopomofoImeService extends InputMethodService
             keyboardView.setMode(BopomofoKeyboardView.Mode.PORTRAIT);
         }
         if (!isFloatingCandidateMode()) hideFloatingCandidates();
+        updateKeyboardBottomControls();
     }
 
     private boolean isFloatingCandidateMode() {
@@ -1010,9 +1141,9 @@ public final class BopomofoImeService extends InputMethodService
 
     private void collapseHardwareCandidates() {
         if (!hardwareKeyboard || isFloatingCandidateMode()) return;
-        hardwareCandidatesCollapsed = true;
         stopHardwareBackspace();
-        commitPendingComposition();
+        if (!finishCompositionForKeyboardHide()) return;
+        hardwareCandidatesCollapsed = true;
         hideFloatingCandidates();
         // Hide the IME window as well as its contents so Android returns the
         // candidate, number/symbol and bottom-reserve area to the host app.

@@ -156,63 +156,97 @@ public final class SettingsGroupsInstrumentedTest {
         Context context = instrumentation.getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
         var previous = savedLayoutPreferences(context);
+        var fonts = java.util.Arrays.asList(KeyboardLayoutProfile.FontSize.values());
+        var fontLabels = java.util.Map.of(KeyboardLayoutProfile.FontSize.NORMAL, "標準",
+                KeyboardLayoutProfile.FontSize.MEDIUM, "中", KeyboardLayoutProfile.FontSize.LARGE, "大",
+                KeyboardLayoutProfile.FontSize.EXTRA_LARGE, "特大");
         Activity activity = null;
         try {
+            // The previous largest font is now named extra large without reducing its size.
+            restoreLayoutPreferences(context, java.util.Map.of(KeyboardLayoutProfileSettings.KEY_FONT_SIZE, "large"));
             activity = instrumentation.startActivitySync(new Intent(context,
                     SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            Activity current = activity;
+            Activity initial = activity;
             instrumentation.runOnMainSync(() -> {
-                Spinner profile = revealProfileSelector(current, context);
+                Spinner profile = revealProfileSelector(initial, context);
                 LinearLayout body = (LinearLayout) profile.getParent();
                 int colorIndex = labelIndex(body, context.getString(R.string.candidate_color_title));
                 int profileIndex = labelIndex(body, context.getString(R.string.keyboard_layout_profile));
                 int areaIndex = labelIndex(body, context.getString(R.string.keyboard_keycap_area));
                 int fontIndex = labelIndex(body, context.getString(R.string.keyboard_font_size));
                 int deleteIndex = labelIndex(body, context.getString(R.string.keyboard_delete_position));
+                int integratedIndex = labelIndex(body, context.getString(R.string.integrated_bottom_controls_enabled));
                 assertTrue(colorIndex >= 0 && profileIndex > colorIndex && areaIndex > profileIndex
-                        && fontIndex > areaIndex && deleteIndex > fontIndex);
+                        && fontIndex > areaIndex && deleteIndex > fontIndex && integratedIndex > deleteIndex);
+                assertTrue(body.getChildAt(integratedIndex) instanceof CheckBox);
+                Spinner font = findProfileSelector(body, context.getString(R.string.keyboard_font_size));
+                assertEquals(fonts.size(), font.getAdapter().getCount());
+                for (int index = 0; index < fonts.size(); index++) {
+                    assertEquals(fontLabels.get(fonts.get(index)), font.getAdapter().getItem(index));
+                }
+                assertEquals(fonts.indexOf(KeyboardLayoutProfile.FontSize.EXTRA_LARGE), font.getSelectedItemPosition());
+                assertEquals("特大", font.getSelectedItem());
                 profile.setSelection(KeyboardLayoutProfile.available().indexOf(KeyboardLayoutProfile.ALIGNED_SPLIT));
             });
             instrumentation.waitForIdleSync();
             instrumentation.runOnMainSync(() -> {
-                var body = (View) revealProfileSelector(current, context).getParent();
+                var body = (View) revealProfileSelector(initial, context).getParent();
                 Spinner area = findProfileSelector(body, context.getString(R.string.keyboard_keycap_area));
-                Spinner font = findProfileSelector(body, context.getString(R.string.keyboard_font_size));
                 Spinner position = findProfileSelector(body, context.getString(R.string.keyboard_delete_position));
                 assertTrue(area.isEnabled());
                 area.setSelection(java.util.Arrays.asList(KeyboardLayoutProfile.KeycapArea.values())
                         .indexOf(KeyboardLayoutProfile.KeycapArea.LARGE));
-                font.setSelection(java.util.Arrays.asList(KeyboardLayoutProfile.FontSize.values())
-                        .indexOf(KeyboardLayoutProfile.FontSize.LARGE));
                 position.setSelection(java.util.Arrays.asList(KeyboardLayoutProfile.DeletePosition.values())
                         .indexOf(KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER));
             });
             instrumentation.waitForIdleSync();
-            assertEquals("80", preferences.getString(KeyboardLayoutProfileSettings.KEY_SPACING, null));
-            assertEquals("large", preferences.getString(KeyboardLayoutProfileSettings.KEY_FONT_SIZE, null));
-            assertEquals("above-enter", preferences.getString(KeyboardLayoutProfileSettings.KEY_DELETE_POSITION, null));
-            instrumentation.runOnMainSync(current::finish);
-            activity = instrumentation.startActivitySync(new Intent(context,
-                    SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            Activity reopened = activity;
-            instrumentation.runOnMainSync(() -> {
-                var body = (View) revealProfileSelector(reopened, context).getParent();
-                assertEquals(java.util.Arrays.asList(KeyboardLayoutProfile.KeycapArea.values()).indexOf(KeyboardLayoutProfile.KeycapArea.LARGE),
-                        findProfileSelector(body, context.getString(R.string.keyboard_keycap_area)).getSelectedItemPosition());
-                assertEquals(java.util.Arrays.asList(KeyboardLayoutProfile.FontSize.values()).indexOf(KeyboardLayoutProfile.FontSize.LARGE),
-                        findProfileSelector(body, context.getString(R.string.keyboard_font_size)).getSelectedItemPosition());
-                assertEquals(java.util.Arrays.asList(KeyboardLayoutProfile.DeletePosition.values()).indexOf(KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER),
-                        findProfileSelector(body, context.getString(R.string.keyboard_delete_position)).getSelectedItemPosition());
-                reopened.finish();
-            });
+            assertSame(KeyboardLayoutProfile.FontSize.EXTRA_LARGE, KeyboardLayoutProfileSettings.fontSize(context));
+            for (var font : fonts) {
+                Activity current = activity;
+                instrumentation.runOnMainSync(() -> {
+                    var body = (View) revealProfileSelector(current, context).getParent();
+                    findProfileSelector(body, context.getString(R.string.keyboard_font_size))
+                            .setSelection(fonts.indexOf(font));
+                });
+                instrumentation.waitForIdleSync();
+                assertSavedFontAndIndependentOptions(context, font);
+                for (var profile : KeyboardLayoutProfile.available()) {
+                    instrumentation.runOnMainSync(() -> revealProfileSelector(current, context)
+                            .setSelection(KeyboardLayoutProfile.available().indexOf(profile)));
+                    instrumentation.waitForIdleSync();
+                    assertSame(profile, KeyboardLayoutProfileSettings.profile(context));
+                    assertSavedFontAndIndependentOptions(context, font);
+                }
+                instrumentation.runOnMainSync(current::finish);
+                instrumentation.waitForIdleSync();
+                activity = instrumentation.startActivitySync(new Intent(context,
+                        SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                Activity reopened = activity;
+                instrumentation.runOnMainSync(() -> {
+                    var body = (View) revealProfileSelector(reopened, context).getParent();
+                    assertEquals(fonts.indexOf(font),
+                            findProfileSelector(body, context.getString(R.string.keyboard_font_size)).getSelectedItemPosition());
+                    assertEquals(fontLabels.get(font),
+                            findProfileSelector(body, context.getString(R.string.keyboard_font_size)).getSelectedItem());
+                    assertEquals(java.util.Arrays.asList(KeyboardLayoutProfile.KeycapArea.values())
+                                    .indexOf(KeyboardLayoutProfile.KeycapArea.LARGE),
+                            findProfileSelector(body, context.getString(R.string.keyboard_keycap_area)).getSelectedItemPosition());
+                    assertEquals(java.util.Arrays.asList(KeyboardLayoutProfile.DeletePosition.values())
+                                    .indexOf(KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER),
+                            findProfileSelector(body, context.getString(R.string.keyboard_delete_position)).getSelectedItemPosition());
+                });
+                instrumentation.waitForIdleSync();
+                assertSavedFontAndIndependentOptions(context, font);
+            }
+            Activity last = activity;
+            instrumentation.runOnMainSync(last::finish);
             activity = null;
-            // Spinner selection callbacks are posted during layout; finish
-            // draining the closed Activity before changing stored values.
+            // Finish draining the closed Activity before changing stored values.
             instrumentation.waitForIdleSync();
             var unavailable = preferences.edit();
             unavailable.remove(KeyboardLayoutProfileSettings.KEY_PROFILE).remove(KeyboardLayoutProfileSettings.KEY_KEYCAP_AREA);
             for (String key : new String[] {KeyboardLayoutProfileSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_SPACING,
-                    KeyboardLayoutProfileSettings.KEY_FONT_SIZE, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION}) {
+                    KeyboardLayoutProfileSettings.KEY_FONT_LEVEL, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION}) {
                 unavailable.putString(key, "unavailable");
             }
             unavailable.commit();
@@ -229,20 +263,36 @@ public final class SettingsGroupsInstrumentedTest {
         }
     }
 
+    private static void assertSavedFontAndIndependentOptions(Context context, KeyboardLayoutProfile.FontSize font) {
+        var preferences = CandidateWindowSettings.preferences(context);
+        assertEquals(font.id, preferences.getString(KeyboardLayoutProfileSettings.KEY_FONT_LEVEL, null));
+        assertEquals("Old font preferences are read only", "large",
+                preferences.getString(KeyboardLayoutProfileSettings.KEY_FONT_SIZE, null));
+        assertSame(font, KeyboardLayoutProfileSettings.fontSize(context));
+        assertEquals("80", preferences.getString(KeyboardLayoutProfileSettings.KEY_SPACING, null));
+        assertSame(KeyboardLayoutProfile.KeycapArea.LARGE, KeyboardLayoutProfileSettings.keycapArea(context));
+        assertEquals("above-enter", preferences.getString(KeyboardLayoutProfileSettings.KEY_DELETE_POSITION, null));
+        assertSame(KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER, KeyboardLayoutProfileSettings.deletePosition(context));
+    }
+
     @Test public void editingOneOptionMaterializesTheWholeLegacyChoice() {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         var preferences = CandidateWindowSettings.preferences(context);
         var previous = savedLayoutPreferences(context);
         try {
-            for (String legacy : new String[] {"large-full", "full-spaced"}) {
+            for (String legacy : new String[] {"large-full", "large-staggered", "full-spaced"}) {
                 restoreLayoutPreferences(context, java.util.Map.of());
                 preferences.edit().putString(KeyboardLayoutProfileSettings.KEY_PROFILE, legacy)
                         .putString(KeyboardLayoutProfileSettings.KEY_KEYCAP_AREA, "85")
                         .putString(KeyboardLayoutProfileSettings.KEY_DELETE_POSITION, "above-enter").commit();
                 KeyboardLayoutProfileSettings.setProfile(context, KeyboardLayoutProfile.STANDARD);
                 assertSame(KeyboardLayoutProfile.STANDARD, KeyboardLayoutProfileSettings.profile(context));
-                assertEquals(legacy.equals("large-full") ? "large" : "normal",
-                        preferences.getString(KeyboardLayoutProfileSettings.KEY_FONT_SIZE, null));
+                assertEquals(legacy.equals("full-spaced") ? "normal" : "extra-large",
+                        preferences.getString(KeyboardLayoutProfileSettings.KEY_FONT_LEVEL, null));
+                assertSame(legacy.equals("full-spaced") ? KeyboardLayoutProfile.FontSize.NORMAL
+                        : KeyboardLayoutProfile.FontSize.EXTRA_LARGE, KeyboardLayoutProfileSettings.fontSize(context));
+                assertFalse("Setters must not create the old font preference",
+                        preferences.contains(KeyboardLayoutProfileSettings.KEY_FONT_SIZE));
                 assertEquals(legacy.equals("full-spaced") ? "80" : "100",
                         preferences.getString(KeyboardLayoutProfileSettings.KEY_SPACING, null));
                 assertEquals("above-enter", preferences.getString(KeyboardLayoutProfileSettings.KEY_DELETE_POSITION, null));
@@ -252,8 +302,8 @@ public final class SettingsGroupsInstrumentedTest {
 
     private static final java.util.List<String> LAYOUT_KEYS = java.util.List.of(
             KeyboardLayoutProfileSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_SPACING,
-            KeyboardLayoutProfileSettings.KEY_FONT_SIZE, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION,
-            KeyboardLayoutProfileSettings.KEY_PROFILE, KeyboardLayoutProfileSettings.KEY_KEYCAP_AREA);
+            KeyboardLayoutProfileSettings.KEY_FONT_LEVEL, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION,
+            KeyboardLayoutProfileSettings.KEY_FONT_SIZE, KeyboardLayoutProfileSettings.KEY_PROFILE, KeyboardLayoutProfileSettings.KEY_KEYCAP_AREA);
 
     private static java.util.Map<String, String> savedLayoutPreferences(Context context) {
         var preferences = CandidateWindowSettings.preferences(context);

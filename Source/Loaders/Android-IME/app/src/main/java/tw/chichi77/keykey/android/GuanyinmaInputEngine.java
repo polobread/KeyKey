@@ -427,6 +427,45 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public boolean isShowingAssociatedPhrases() { return overlay == Overlay.ASSOCIATED; }
     @Override public boolean isShowingSmartCandidates() { return chineseInputMethod() == ChineseInputMethod.SMART && overlay == Overlay.NONE && array("candidates").length() > 0; }
     @Override public InputEngine.Result finishCompositionForModeSwitch() { return finishCompositionForInputHandoff(); }
+    @Override public InputEngine.Result finishCompositionForKeyboardHide() {
+        boolean hadComposition = hasComposition();
+        if (!hadComposition) { clearOverlay(); return InputEngine.Result.update(); }
+        InputEngine.Result result = InputEngine.Result.update();
+        if (chineseInputMethod() == ChineseInputMethod.SMART && !text("reading").isEmpty()) {
+            result = mergeHideEffects(result, operate(object("type", "close_candidates")));
+            if (lastError != null) return keyboardHideResult(hadComposition, result);
+            if (!text("reading").isEmpty()) {
+                // The public touch Escape clears the entire composition. The
+                // core key only cancels this pending reading after closing its list.
+                result = mergeHideEffects(result, key("escape"));
+                if (lastError != null) return keyboardHideResult(hadComposition, result);
+            }
+        } else if (chineseInputMethod() == ChineseInputMethod.TRADITIONAL
+                && !text("reading").isEmpty() && array("candidates").length() == 0) {
+            result = mergeHideEffects(result, key("escape"));
+            if (lastError != null) return keyboardHideResult(hadComposition, result);
+        }
+        result = mergeHideEffects(result, operate(object("type", "finish_composition",
+                "complete_reading", false, "select_highlighted_candidate", true, "discard_table_code", true)));
+        if (lastError != null) return keyboardHideResult(hadComposition, result);
+        clearOverlay();
+        return keyboardHideResult(hadComposition, result);
+    }
+
+    private InputEngine.Result keyboardHideResult(boolean hadComposition, InputEngine.Result result) {
+        // Android finishComposingText keeps raw marked text. Replace a cancelled
+        // reading/code with empty text instead, including a successful cancel
+        // before a later operation failed. Preserve the error and any real commit.
+        return new InputEngine.Result(result.committedText(), result.deleteBeforeCursor(), result.sendEnter(),
+                result.discardComposingText() || (hadComposition && !hasComposition() && result.committedText().isEmpty()));
+    }
+
+    private static InputEngine.Result mergeHideEffects(InputEngine.Result first, InputEngine.Result next) {
+        return new InputEngine.Result(first.committedText() + next.committedText(),
+                first.deleteBeforeCursor() || next.deleteBeforeCursor(), first.sendEnter() || next.sendEnter(),
+                first.discardComposingText() || next.discardComposingText());
+    }
+
     @Override public InputEngine.Result finishCompositionForInputHandoff() {
         if (!hasComposition()) { clearOverlay(); return InputEngine.Result.update(); }
         if (chineseInputMethod() != ChineseInputMethod.SMART && array("candidates").length() > 0) {

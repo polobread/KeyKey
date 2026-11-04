@@ -29,10 +29,16 @@ final class KeyboardLayoutProfile {
         }
     }
     enum FontSize {
-        NORMAL("normal"), LARGE("large");
+        NORMAL("normal", 1f), MEDIUM("medium", 1.15f), LARGE("large", 1.30f),
+        EXTRA_LARGE("extra-large", 1.45f);
         final String id;
-        FontSize(String id) { this.id = id; }
-        static FontSize forId(String id) { return LARGE.id.equals(id) ? LARGE : NORMAL; }
+        final float stripScale;
+        FontSize(String id, float stripScale) { this.id = id; this.stripScale = stripScale; }
+        boolean showsHints() { return this == NORMAL; }
+        static FontSize forId(String id) {
+            for (var size : values()) if (size.id.equals(id)) return size;
+            return NORMAL;
+        }
     }
     record VisualOptions(KeyboardLayoutProfile layout, KeycapArea spacing,
             FontSize fontSize, DeletePosition deletePosition) {}
@@ -160,21 +166,22 @@ final class KeyboardLayoutProfile {
 
     /** Read old style IDs only as migration input; all new options are independent. */
     static VisualOptions resolveOptions(String layoutId, String spacingId, String fontId,
-            String deleteId, String legacyProfileId, String legacyAreaId) {
+            String deleteId, String legacyProfileId, String legacyAreaId, String legacyFontSizeId) {
         KeyboardLayoutProfile layout = ALIGNED;
         KeycapArea area = KeycapArea.SMALL;
         FontSize font = FontSize.NORMAL;
         if (legacyProfileId != null) {
             switch (legacyProfileId) {
                 case "staggered" -> layout = STANDARD;
-                case "large-full" -> font = FontSize.LARGE;
-                case "large-staggered" -> { layout = STANDARD; font = FontSize.LARGE; }
+                case "large-full" -> font = FontSize.EXTRA_LARGE;
+                case "large-staggered" -> { layout = STANDARD; font = FontSize.EXTRA_LARGE; }
                 case "full-spaced" -> area = "85".equals(legacyAreaId) ? KeycapArea.LARGE : KeycapArea.MEDIUM;
                 default -> { }
             }
         }
         if (layoutId != null) layout = forId(layoutId);
         if (spacingId != null) area = KeycapArea.forId(spacingId);
+        if (legacyFontSizeId != null) font = "large".equals(legacyFontSizeId) ? FontSize.EXTRA_LARGE : FontSize.NORMAL;
         if (fontId != null) font = FontSize.forId(fontId);
         return new VisualOptions(layout, area, font, DeletePosition.forId(deleteId));
     }

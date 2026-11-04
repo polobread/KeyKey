@@ -98,6 +98,84 @@ public final class GuanyinmaIntegrationTest {
             assertEquals("ㄋ", engine.readingText()); assertNull(engine.coreError());
         }
     }
+
+    @Test public void keyboardHideCommitsCompletedSmartTextAndCancelsPendingReadingOnlyOnce() throws Exception {
+        try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+            type(engine, "su3cl3su", false);
+            assertEquals("你好", engine.completedSmartText());
+            assertEquals("ㄋㄧ", engine.readingText());
+            assertEquals("你好", engine.finishCompositionForKeyboardHide().committedText());
+            assertFalse(engine.hasComposition()); assertNull(engine.lastError());
+            assertEquals("", engine.finishCompositionForKeyboardHide().committedText());
+        }
+    }
+
+    @Test public void keyboardHideDistinguishesCompletedTraditionalCandidatesFromPendingReading() throws Exception {
+        try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.TRADITIONAL, text -> true)) {
+            type(engine, "su3", false); assertTrue(engine.displayedCandidates().size() > 1);
+            engine.moveHighlight(1); String selected = engine.displayedCandidates().get(engine.highlightedIndex());
+            assertEquals(selected, engine.finishCompositionForKeyboardHide().committedText());
+            assertFalse(engine.hasComposition()); assertNull(engine.lastError());
+            type(engine, "su", false); assertEquals("ㄋㄧ", engine.readingText());
+            assertTrue(engine.displayedCandidates().isEmpty());
+            InputEngine.Result cancelled = engine.finishCompositionForKeyboardHide();
+            assertEquals("", cancelled.committedText()); assertTrue(cancelled.discardComposingText());
+            assertFalse(engine.hasComposition()); assertNull(engine.lastError());
+        }
+    }
+
+    @Test public void keyboardHideDiscardsUnselectedTableRootsWithoutChoosingAPreview() throws Exception {
+        for (var method : List.of(ChineseInputMethod.CANGJIE, ChineseInputMethod.SIMPLEX)) {
+            try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(method, text -> true)) {
+                type(engine, "a", false); assertTrue(engine.hasComposition());
+                InputEngine.Result cancelled = engine.finishCompositionForKeyboardHide();
+                assertEquals("", cancelled.committedText()); assertTrue(cancelled.discardComposingText());
+                assertFalse(engine.hasComposition()); assertNull(engine.lastError());
+                assertEquals("", engine.finishCompositionForKeyboardHide().committedText());
+            }
+        }
+    }
+
+    @Test public void keyboardHideRetainsOneHostEffectUntilAcknowledgedAndNeverReplaysIt() throws Exception {
+        try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
+            type(engine, "su3", false);
+            String selected = engine.displayedCandidates().get(engine.highlightedIndex());
+            assertEquals(selected, engine.finishCompositionForKeyboardHide().committedText());
+            assertEquals("", engine.finishCompositionForKeyboardHide().committedText());
+            assertNotNull(engine.coreError());
+            assertEquals("", engine.handleSoftKey("s").committedText());
+            engine.acknowledgeHostEffects();
+            assertEquals("", engine.finishCompositionForKeyboardHide().committedText());
+            assertEquals("", engine.handleSoftKey("s").committedText());
+            assertEquals("ㄋ", engine.readingText()); assertNull(engine.coreError());
+        }
+    }
+
+    @Test public void keyboardHideKeepsTheRetainedSnapshotAfterNativeFailureWithoutReplayingText() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            boolean[] fail = {false};
+            try (GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> {
+                if (fail[0]) throw new IllegalStateException("font service failed");
+                return true;
+            })) {
+                // A different pending reading avoids reusing the already checked
+                // glyphs for 你/好 and must reach the failing font callback.
+                type(engine, "su3cl35j/", false);
+                String completed = engine.completedSmartText(), reading = engine.readingText();
+                fail[0] = true;
+                assertEquals("", engine.handleSoftKey("3").committedText());
+                assertNotNull(engine.lastError());
+                for (int attempt = 0; attempt < 2; attempt++) {
+                    InputEngine.Result result = engine.finishCompositionForKeyboardHide();
+                    assertEquals("", result.committedText());
+                    assertFalse("Retained composition must not be discarded on error", result.discardComposingText());
+                    assertEquals(completed, engine.completedSmartText());
+                    assertEquals(reading, engine.readingText());
+                    assertTrue(engine.hasComposition()); assertNotNull(engine.lastError());
+                }
+            }
+        }
+    }
     @Test public void newHostAbandonsUnacknowledgedEffectsWithoutReplay() throws Exception {
         try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
             engine.handleSoftKey("SHIFT"); assertEquals("a", engine.handleSoftKey("a").committedText());

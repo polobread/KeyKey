@@ -1915,13 +1915,18 @@ final class KeyKeyUITests: XCTestCase {
         let emptyValue = output.value as? String
         let initialHeight = profileKeyBounds(.standard, orientation: .portrait, plane: .bopomofo).height
         app.buttons["s"].tap()
-        selectLayoutOptions(layout: .alignedSplit, spacing: .large, fontSize: .large,
+        selectLayoutOptions(layout: .alignedSplit, spacing: .large, fontSize: .medium,
                             deletePosition: .leftOfEnter)
         assertProfileKeysReachable(.alignedSplit)
         XCTAssertEqual(profileKeyBounds(.alignedSplit, orientation: .portrait, plane: .bopomofo).height,
                        initialHeight, accuracy: 1)
         XCTAssertEqual(output.value as? String, emptyValue,
                        "變更版面、間隔、字體與刪除位置不可把未完成注音送進輸入框")
+        selectLayoutOptions(fontSize: .extraLarge)
+        XCTAssertEqual(profileKeyBounds(.alignedSplit, orientation: .portrait, plane: .bopomofo).height,
+                       initialHeight, accuracy: 1)
+        XCTAssertEqual(output.value as? String, emptyValue,
+                       "改為特大字體不可確認或取消未完成注音")
         for key in "u3" { app.buttons[String(key)].tap() }
         XCTAssertTrue(waitForLayout { output.value as? String == "你" },
                       "變更外觀後，未完成音節仍應接得上")
@@ -1932,15 +1937,113 @@ final class KeyKeyUITests: XCTestCase {
         )).firstMatch
         XCTAssertTrue(first.waitForExistence(timeout: 3))
         let candidateLabel = first.label
-        selectLayoutOptions(layout: .aligned, spacing: .medium, fontSize: .normal,
+        selectLayoutOptions(layout: .aligned, spacing: .medium,
                             deletePosition: .aboveEnter)
-        XCTAssertTrue(first.waitForExistence(timeout: 3))
-        XCTAssertEqual(first.label, candidateLabel, "變更外觀不可改變候選目標")
-        XCTAssertEqual(output.value as? String, "你")
+        let candidateBounds = profileKeyBounds(.aligned, orientation: .portrait, plane: .bopomofo)
+        for font in KeyboardKeyFontSize.allCases {
+            selectLayoutOptions(fontSize: font)
+            XCTAssertTrue(first.waitForExistence(timeout: 3))
+            XCTAssertEqual(first.label, candidateLabel, "字體不可改變候選目標：\(font.displayName)")
+            XCTAssertEqual(output.value as? String, "你", "字體切換不可額外送字：\(font.displayName)")
+            let bounds = profileKeyBounds(.aligned, orientation: .portrait, plane: .bopomofo)
+            XCTAssertEqual(bounds.minY, candidateBounds.minY, accuracy: 1, font.displayName)
+            XCTAssertEqual(bounds.height, candidateBounds.height, accuracy: 1, font.displayName)
+            // Visual QA evidence only: no golden image or duplicate text-fitting algorithm.
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "candidate-and-composition-font-\(font.rawValue)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+        }
         first.tap()
         XCTAssertEqual(output.value as? String, "你")
         selectLayoutOptions(layout: .standard, spacing: .small, fontSize: .normal,
                             deletePosition: .aboveEnter)
+    }
+
+    func testFourFontLevelsClearCompositionAndCandidatesAtCurrentPose() throws {
+        // Run again after an external pose change. This intentionally does not
+        // claim preservation of a composition across rotation in the same session.
+        launchHostApp(geometryProbe: true)
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        tapInputField(output)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        try selectCompositionMode(ChineseInputMethod.smart.displayName)
+        app.buttons["SETTINGS"].tap()
+        app.segmentedControls["bopomofo-keyboard-layout"]
+            .buttons[BopomofoKeyboardLayout.standard.displayName].tap()
+        closeKeyboardSettings()
+        let profile = KeyboardLayoutProfile.aligned
+        selectLayoutOptions(layout: profile, spacing: .small, fontSize: .normal,
+                            deletePosition: .aboveEnter)
+        let orientation = try currentPoseOrientation()
+        let emptyValue = output.value as? String
+        let composition = app.buttons["keyboard.smart-cell.1"]
+        let editableCells = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "個組字，"))
+        let candidatePrefix = "第 1 個候選，"
+        let first = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", candidatePrefix)).firstMatch
+        attachSimulatorGeometry(name: "strip-clearing-current-pose-before")
+
+        for font in KeyboardKeyFontSize.allCases {
+            selectLayoutOptions(fontSize: font)
+            assertProfileKeysReachable(profile, orientation: orientation)
+            for key in "su3" { app.buttons[String(key)].tap() }
+            XCTAssertTrue(composition.waitForExistence(timeout: 3))
+            let completed = output.value as? String
+            XCTAssertNotEqual(completed, emptyValue, "必須先有完成組字，才能驗證刪除")
+            composition.tap()
+            XCTAssertTrue(first.waitForExistence(timeout: 3))
+            let candidateLabel = first.label
+            attachStripClearingQA(font: font, stage: "candidates-visible")
+
+            let close = app.buttons["keyboard.candidates.close"]
+            if close.isHittable { close.tap() } else { composition.tap() }
+            XCTAssertTrue(waitForLayout { !first.exists })
+            XCTAssertEqual(output.value as? String, completed, "關閉候選不可確認或清空組字")
+            composition.tap()
+            XCTAssertTrue(first.waitForExistence(timeout: 3))
+            XCTAssertEqual(first.label, candidateLabel, "重開候選不可改變目標或排序")
+            let selectedText = String(candidateLabel.dropFirst(candidatePrefix.count))
+            XCTAssertFalse(selectedText.isEmpty)
+            first.tap()
+            XCTAssertTrue(waitForLayout { output.value as? String == selectedText },
+                          "選字須使用實際候選內容，不固定第一候選的文字")
+            XCTAssertTrue(waitForLayout { !first.exists })
+            let editableCount = editableCells.count
+            XCTAssertGreaterThan(editableCount, 0)
+            for _ in 0..<editableCount { app.buttons["BACKSPACE"].tap() }
+            XCTAssertTrue(waitForLayout {
+                output.value as? String == emptyValue && editableCells.count == 0 && !first.exists
+            }, "刪除完成組字後，輸入框、可編輯組字與候選皆須清空")
+            attachStripClearingQA(font: font, stage: "completed-cleared")
+
+            app.buttons["s"].tap()
+            XCTAssertEqual(output.value as? String, emptyValue, "未完成注音不可直接送進輸入框")
+            attachStripClearingQA(font: font, stage: "pending-reading")
+            app.buttons["BACKSPACE"].tap()
+            XCTAssertTrue(waitForLayout {
+                output.value as? String == emptyValue && editableCells.count == 0 && !first.exists
+            }, "刪除未完成注音後，不可留下可提交內容")
+            attachStripClearingQA(font: font, stage: "pending-cleared")
+            app.buttons["SPACE"].tap()
+            XCTAssertTrue(waitForLayout { output.value as? String == " " }, "無組字時空白鍵應直接送空白，不能仍處理殘留讀音")
+            app.buttons["BACKSPACE"].tap()
+            XCTAssertTrue(waitForLayout { output.value as? String == emptyValue })
+        }
+        selectLayoutOptions(fontSize: .normal)
+        attachSimulatorGeometry(name: "strip-clearing-current-pose-after")
+    }
+
+    private func attachStripClearingQA(font: KeyboardKeyFontSize, stage: String) {
+        // AX emptiness verifies the input contract, not stale native UILabel
+        // pixels. The native UIKit renderer regression owns that visual gate.
+        // Preserve every display for manual QA; a black capture is not visual proof.
+        for (index, screen) in XCUIScreen.screens.enumerated() {
+            let attachment = XCTAttachment(screenshot: screen.screenshot())
+            attachment.name = "strip-clearing-\(font.rawValue)-\(stage)-screen-\(index)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
     }
 
     func testRepresentativeLayoutOptionsKeepKeysReachableWhenRotating() throws {
@@ -1961,12 +2064,12 @@ final class KeyKeyUITests: XCTestCase {
         let samples: [(KeyboardLayoutProfile, UIDeviceOrientation,
                        KeyboardLayoutProfile.Orientation, KeyboardLayoutProfile.Plane,
                        KeyboardKeycapArea, KeyboardKeyFontSize, KeyboardDeleteShiftPosition)] = [
-            (.standard, .portrait, .portrait, .cangjie, .small, .normal, .aboveEnter),
-            (.aligned, .portrait, .portrait, .bopomofo, .medium, .large, .leftOfEnter),
-            (.alignedSplit, .portrait, .portrait, .english, .large, .normal, .aboveEnter),
-            (.standard, .landscapeLeft, .landscape, .simplex, .large, .large, .leftOfEnter),
-            (.aligned, .landscapeLeft, .landscape, .numberSymbols, .small, .normal, .aboveEnter),
-            (.alignedSplit, .landscapeLeft, .landscape, .bopomofo, .medium, .large, .leftOfEnter)
+            (.standard, .portrait, .portrait, .cangjie, .small, .medium, .aboveEnter),
+            (.aligned, .portrait, .portrait, .bopomofo, .medium, .normal, .leftOfEnter),
+            (.alignedSplit, .portrait, .portrait, .english, .large, .large, .aboveEnter),
+            (.standard, .landscapeLeft, .landscape, .simplex, .large, .extraLarge, .leftOfEnter),
+            (.aligned, .landscapeLeft, .landscape, .numberSymbols, .small, .medium, .aboveEnter),
+            (.aligned, .landscapeLeft, .landscape, .bopomofo, .medium, .medium, .leftOfEnter)
         ]
         var baselines: [(KeyboardLayoutProfile.Orientation, CGRect)] = []
         for (layout, direction, orientation, plane, spacing, font, delete) in samples {
@@ -1976,6 +2079,12 @@ final class KeyKeyUITests: XCTestCase {
             selectLayoutOptions(layout: layout, spacing: spacing, fontSize: font,
                                 deletePosition: delete)
             assertProfileKeysReachable(layout, orientation: orientation, plane: plane)
+            if orientation == .landscape && plane == .bopomofo {
+                let screenshot = XCTAttachment(screenshot: app.screenshot())
+                screenshot.name = "compact-bopomofo-font-\(font.rawValue)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+            }
             if layout == .standard && (plane == .cangjie || plane == .simplex) {
                 let heavy = app.buttons["z"]
                 let secondColumn = app.buttons["2"]
@@ -2010,14 +2119,21 @@ final class KeyKeyUITests: XCTestCase {
                                                   identifier: "app-settings.candidate-color").firstMatch
         assertLayoutOptionsFollowCandidateColor(prefix: "app-settings.",
             color: app.segmentedControls["app-settings.candidate-color"], scroll: appScroll)
+        assertFontSizeChoices(prefix: "app-settings.", scroll: appScroll)
         selectAppearanceOptions(prefix: "app-settings.", scroll: appScroll,
-                                layout: .aligned, spacing: .large, fontSize: .large,
+                                layout: .aligned, spacing: .large, fontSize: .normal,
                                 deletePosition: .leftOfEnter)
+        for font in KeyboardKeyFontSize.allCases {
+            selectAppearanceOptions(prefix: "app-settings.", scroll: appScroll, fontSize: font)
+            assertAppearanceOptions(prefix: "app-settings.", layout: .aligned,
+                                    spacing: .large, fontSize: font, deletePosition: .leftOfEnter)
+        }
+        selectAppearanceOptions(prefix: "app-settings.", scroll: appScroll, fontSize: .extraLarge)
         // Selecting a different layout must not replace the other three preferences.
         for layout in KeyboardLayoutProfile.available {
             selectAppearanceOptions(prefix: "app-settings.", scroll: appScroll, layout: layout)
             assertAppearanceOptions(prefix: "app-settings.", layout: layout,
-                                    spacing: .large, fontSize: .large, deletePosition: .leftOfEnter)
+                                    spacing: .large, fontSize: .extraLarge, deletePosition: .leftOfEnter)
         }
         selectAppearanceOptions(prefix: "app-settings.", scroll: appScroll, layout: .standard)
 
@@ -2025,7 +2141,7 @@ final class KeyKeyUITests: XCTestCase {
         app.launch()
         app.buttons["open-input-method-settings"].tap()
         assertAppearanceOptions(prefix: "app-settings.", layout: .standard,
-                                spacing: .large, fontSize: .large, deletePosition: .leftOfEnter)
+                                spacing: .large, fontSize: .extraLarge, deletePosition: .leftOfEnter)
 
         // Verify the App's publication reaches the extension, and that both
         // settings entrances put the same four independent controls in order.
@@ -2037,17 +2153,18 @@ final class KeyKeyUITests: XCTestCase {
         let keyboardScroll = app.scrollViews["keyboard-settings.scroll"]
         assertLayoutOptionsFollowCandidateColor(prefix: "keyboard.",
             color: app.segmentedControls["candidate-color"], scroll: keyboardScroll)
+        assertFontSizeChoices(prefix: "keyboard.", scroll: keyboardScroll)
         assertAppearanceOptions(prefix: "keyboard.", layout: .standard,
-                                spacing: .large, fontSize: .large, deletePosition: .leftOfEnter)
+                                spacing: .large, fontSize: .extraLarge, deletePosition: .leftOfEnter)
         selectAppearanceOptions(prefix: "keyboard.", scroll: keyboardScroll, spacing: .medium)
         assertAppearanceOptions(prefix: "keyboard.", layout: .standard,
-                                spacing: .medium, fontSize: .large, deletePosition: .leftOfEnter)
-        selectAppearanceOptions(prefix: "keyboard.", scroll: keyboardScroll, fontSize: .normal)
+                                spacing: .medium, fontSize: .extraLarge, deletePosition: .leftOfEnter)
+        selectAppearanceOptions(prefix: "keyboard.", scroll: keyboardScroll, fontSize: .medium)
         assertAppearanceOptions(prefix: "keyboard.", layout: .standard,
-                                spacing: .medium, fontSize: .normal, deletePosition: .leftOfEnter)
+                                spacing: .medium, fontSize: .medium, deletePosition: .leftOfEnter)
         selectAppearanceOptions(prefix: "keyboard.", scroll: keyboardScroll, layout: .alignedSplit)
         assertAppearanceOptions(prefix: "keyboard.", layout: .alignedSplit,
-                                spacing: .medium, fontSize: .normal, deletePosition: .leftOfEnter)
+                                spacing: .medium, fontSize: .medium, deletePosition: .leftOfEnter)
         for placement in KeyboardDeleteShiftPosition.allCases {
             selectAppearanceOptions(prefix: "keyboard.", scroll: keyboardScroll, deletePosition: placement)
             closeKeyboardSettings()
@@ -2076,6 +2193,57 @@ final class KeyKeyUITests: XCTestCase {
         selectAppearanceOptions(prefix: "app-settings.", scroll: restoreScroll,
                                 layout: .standard, spacing: .small, fontSize: .normal,
                                 deletePosition: .aboveEnter)
+    }
+
+    func testWideSplitDismissAndReopenWithoutReplayingReading() throws {
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        tapInputField(output)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        try selectCompositionMode(ChineseInputMethod.smart.displayName)
+        app.buttons["SETTINGS"].tap()
+        app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
+        closeKeyboardSettings()
+        selectLayoutOptions(layout: .alignedSplit, spacing: .small, fontSize: .normal,
+                            deletePosition: .aboveEnter)
+        XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
+                      "此測試必須在展開的 Duo 內螢幕或寬版 iPad 執行")
+        func assertTopDismiss() {
+            let hide = app.buttons["keyboard.dismiss"]
+            XCTAssertTrue(hide.waitForExistence(timeout: 3))
+            XCTAssertTrue(hide.isHittable)
+            XCTAssertTrue(hide.isEnabled)
+            XCTAssertLessThanOrEqual(hide.frame.maxY, app.buttons["q"].frame.minY + 1)
+        }
+        assertTopDismiss()
+        for key in "su3" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout { output.value as? String == "你" })
+        app.buttons["c"].tap() // Keep an unfinished ㄏ after the completed character.
+        app.buttons["keyboard.dismiss"].tap()
+        XCTAssertTrue(waitForLayout(timeout: 5) { !self.app.buttons["SETTINGS"].exists })
+        XCTAssertEqual(output.value as? String, "你", "收鍵盤只確認完成文字，未完成注音須取消")
+        tapInputField(output)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        assertTopDismiss()
+        XCTAssertEqual(output.value as? String, "你")
+        for key in "cl3" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout { output.value as? String == "你好" },
+                      "重新開啟不可重播已確認文字或先前未完成注音")
+        // The existing top control also remains available in restricted fields.
+        XCTAssertTrue(revealField("email"))
+        let email = field("email")
+        tapInputField(email)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        XCTAssertTrue(waitForStableKeyboardFrames(identifiers: ["keyboard.dismiss", "ENTER"]))
+        assertTopDismiss()
+        app.buttons["keyboard.dismiss"].tap()
+        XCTAssertTrue(waitForLayout(timeout: 5) { !self.app.buttons["SETTINGS"].exists })
+        tapInputField(email)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        assertTopDismiss()
+        selectLayoutOptions(layout: .standard)
+        XCTAssertFalse(app.buttons["keyboard.dismiss"].exists)
     }
 
     func testSettingsLongPressDoesNotOpenLayoutMenu() throws {
@@ -2110,6 +2278,15 @@ final class KeyKeyUITests: XCTestCase {
         }
         XCTAssertEqual(Array(identifiers.dropFirst(colorIndex).prefix(expected.count)), expected,
                        "四個獨立外觀設定須緊接候選字底色，且順序一致")
+    }
+
+    private func assertFontSizeChoices(prefix: String, scroll: XCUIElement) {
+        let control = app.segmentedControls[prefix + "key-font-size"]
+        revealSetting(control, in: scroll)
+        XCTAssertEqual(control.buttons.count, KeyboardKeyFontSize.allCases.count)
+        for font in KeyboardKeyFontSize.allCases {
+            XCTAssertTrue(control.buttons[font.displayName].exists, "找不到字體選項：\(font.displayName)")
+        }
     }
 
     private func selectAppearanceOptions(prefix: String, scroll: XCUIElement,

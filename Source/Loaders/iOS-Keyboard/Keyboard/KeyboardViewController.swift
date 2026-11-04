@@ -596,8 +596,9 @@ extension KeyboardViewController: KeyboardViewDelegate {
         statusOverride = nil
         if key == "HIDE_KEYBOARD" {
             if let engine {
-                let result = engine.finishCompositionForInputHandoff()
-                apply(result)
+                let handoff = engine.finishCompositionForKeyboardDismissal()
+                apply(handoff.result)
+                guard handoff.succeeded else { return }
             }
             keyboardView?.cancelBackspaceRepeat()
             // Give a pending marked-text replacement a main-loop turn before

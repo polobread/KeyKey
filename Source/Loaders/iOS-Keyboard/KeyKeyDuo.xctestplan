@@ -28,6 +28,7 @@
         "KeyKeyUITests/testWideSplitInputModeSingleTapWithComposition()",
         "KeyKeyUITests/testWideSplitInputModeSwitchControls()",
         "KeyKeyUITests/testWideSplitPunctuationCompositionCellsAndDismissal()",
+        "KeyKeyUITests/testWideSplitDismissAndReopenWithoutReplayingReading()",
         "KeyKeyUITests/testWideSplitSmartCandidateRowHasTwelveControls()"
       ]
     }

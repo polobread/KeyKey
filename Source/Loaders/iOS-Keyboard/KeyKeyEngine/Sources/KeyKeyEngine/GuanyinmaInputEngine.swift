@@ -474,6 +474,41 @@ public final class GuanyinmaInputEngine: InputEngine {
         }
         return operate(["type": "finish"])
     }
+    /// Explicit keyboard dismissal confirms converted text and cancels only
+    /// unfinished phonetics/roots. Other handoff callers keep their own policy.
+    @discardableResult public func finishCompositionForKeyboardDismissal() -> KeyboardInput.Result {
+        clearOverlay()
+        guard hasComposition else { lastError = nil; return .update }
+        if chineseInputMethod == .smart {
+            if !snapshot.reading.isEmpty {
+                // A core Escape closes an open candidate list first. Close it
+                // explicitly so the single Escape below cancels the reading.
+                for operation in [["type": "close_candidates"], ["type": "key", "key": "escape"]] {
+                    let result = operate(operation)
+                    guard lastError == nil else { return result }
+                    guard result == .update else {
+                        // Never swallow unexpected host effects or replay them.
+                        lastError = GuanyinmaInputError(message: "收鍵盤前取消讀音時產生非預期輸出。")
+                        return result
+                    }
+                }
+                guard snapshot.reading.isEmpty else {
+                    lastError = GuanyinmaInputError(message: "收鍵盤前無法取消未完成讀音。")
+                    return .update
+                }
+            }
+            return operate(["type": "finish"])
+        }
+        if chineseInputMethod == .traditional && snapshot.candidates.isEmpty {
+            return operate(["type": "reset"])
+        }
+        // The existing semantic operation preserves a completed Traditional
+        // highlight without selection learning and discards unselected roots,
+        // including table prefix previews. It never completes a new reading.
+        return operate(["type": "finish_composition", "complete_reading": false,
+                        "select_highlighted_candidate": true, "discard_table_code": true])
+    }
+
     private func floorMod(_ value: Int, _ size: Int) -> Int { ((value % size) + size) % size }
 
     /// Replace the FE-published phrase snapshot atomically without importing

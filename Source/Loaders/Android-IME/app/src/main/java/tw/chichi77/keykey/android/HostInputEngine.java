@@ -113,6 +113,7 @@ final class HostInputEngine implements InputEngine {
     @Override public boolean isShowingSmartCandidates() { return backend().isShowingSmartCandidates(); }
     @Override public InputEngine.Result finishCompositionForModeSwitch() { return perform(InputEngine::finishCompositionForModeSwitch); }
     @Override public InputEngine.Result finishCompositionForInputHandoff() { return perform(InputEngine::finishCompositionForInputHandoff); }
+    @Override public InputEngine.Result finishCompositionForKeyboardHide() { return perform(InputEngine::finishCompositionForKeyboardHide); }
     @Override public InputEngine.Result refreshUserData() { return perform(InputEngine::refreshUserData); }
     @Override public boolean restoreInputModeState(InputEngineModeState state) { return select(engine -> engine.restoreInputModeState(state)); }
     @Override public void close() { if (!closed) { closed = true; pendingHostEffects = false; rust.close(); } }

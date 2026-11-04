@@ -52,7 +52,7 @@ final class KeyboardView: UIView {
 
     weak var delegate: KeyboardViewDelegate?
 
-    private let statusLabel = UILabel()
+    private let statusLabel = KeyboardStatusLabel()
     private var candidateButtons: [UIButton] = []
     private let previousPageButton = UIButton(type: .system)
     private let nextPageButton = UIButton(type: .system)
@@ -200,7 +200,7 @@ final class KeyboardView: UIView {
         candidateSpacer.addSubview(closeCandidatesButton)
 
         candidateButtons = (0..<KeyboardInput.candidatesPerPage).map { index in
-            let button = UIButton(type: .system)
+            let button = KeyboardStripButton(type: .system)
             button.backgroundColor = Palette.candidateCell
             button.layer.cornerRadius = 6
             button.titleLabel?.numberOfLines = 2
@@ -269,7 +269,7 @@ final class KeyboardView: UIView {
 
     private func makeSmartCellButtons() -> [UIButton] {
         return (0..<layoutProfile.compositionCellCount).map { index in
-            let button = UIButton(type: .system)
+            let button = KeyboardStripButton(type: .system)
             button.tag = index
             button.accessibilityIdentifier = "keyboard.smart-cell.\(index + 1)"
             button.backgroundColor = Palette.candidateCell
@@ -530,7 +530,7 @@ final class KeyboardView: UIView {
             + (functionButtons + punctuationButtons).compactMap({ $0.button as? KeyboardKeyButton }) {
             button.capArea = keycapArea
             button.capInset = layoutProfile.usesStaggeredRows ? 1 : 0
-            button.largeGlyphs = (keyFontSize == .large)
+            button.fontSize = keyFontSize
         }
         updateCandidateVisibility()
         setNeedsLayout()
@@ -564,6 +564,8 @@ final class KeyboardView: UIView {
             || state.statusOverride != previousState.statusOverride
             || state.supportPromptVisible != previousState.supportPromptVisible {
             statusLabel.isHidden = hasCandidates
+            statusLabel.basePointSize = metrics.statusFont
+            statusLabel.fontSize = keyFontSize
             statusLabel.font = .systemFont(ofSize: metrics.statusFont)
             let normalStatus = state.chineseInputMethod.isTable && state.mode == .bopomofo && state.reading.isEmpty
                 ? state.chineseInputMethod.displayName : KeyboardLayout.statusText(
@@ -601,6 +603,12 @@ final class KeyboardView: UIView {
                 button.accessibilityLabel = isSupportCell ? value : button.isEnabled
                     ? "第 \(index + 1) 個組字，\(value)" : nil
                 button.isAccessibilityElement = button.isEnabled || isSupportCell
+                (button as? KeyboardStripButton)?.configureText(
+                    primary: value, index: nil, fontSize: keyFontSize,
+                    baseSize: isSupportCell ? metrics.statusFont : metrics.candidateFont,
+                    indexSize: metrics.candidateIndexFont,
+                    primaryColor: isSupportCell ? Palette.hintText : Palette.primaryText,
+                    indexColor: Palette.hintText)
             }
         }
 
@@ -622,6 +630,12 @@ final class KeyboardView: UIView {
                 // must leave the accessibility tree: an unlabelled button is a stop
                 // VoiceOver announces with nothing to say.
                 button.isAccessibilityElement = candidate != nil
+                (button as? KeyboardStripButton)?.configureText(
+                    primary: candidate ?? "", index: candidate == nil ? nil : String(index + 1),
+                    fontSize: keyFontSize, baseSize: metrics.candidateFont,
+                    indexSize: metrics.candidateIndexFont,
+                    primaryColor: highlighted ? Palette.candidateHighlightText(for: state.candidateColor) : Palette.primaryText,
+                    indexColor: highlighted ? Palette.candidateHighlightText(for: state.candidateColor) : Palette.hintText)
             }
         }
         if force || state.pageCount != previousState.pageCount {
@@ -686,9 +700,9 @@ final class KeyboardView: UIView {
                     ? state.fieldPolicy.modeCaption(for: state.mode).replacingOccurrences(of: "ㄅ", with: state.chineseInputMethod.symbol)
                     : KeyboardLayout.caption(for: key, mode: state.mode)
                 button.setTitle(caption, for: .normal)
-                button.titleLabel?.font = .systemFont(
-                    ofSize: caption.count > 3 ? metrics.functionFontSmall : metrics.functionFont
-                )
+                let pointSize = caption.count > 3 ? metrics.functionFontSmall : metrics.functionFont
+                button.titleLabel?.font = .systemFont(ofSize: pointSize)
+                (button as? KeyboardKeyButton)?.normalPointSize = pointSize
             }
         }
     }
@@ -703,6 +717,7 @@ final class KeyboardView: UIView {
             button.titleLabel?.font = .systemFont(
                 ofSize: metrics.functionFontSmall, weight: .semibold
             )
+            (button as? KeyboardKeyButton)?.normalPointSize = metrics.functionFontSmall
             enterIconSide = 0
             return
         }
@@ -755,10 +770,10 @@ final class KeyboardView: UIView {
         let caption = KeyboardLayout.caption(for: key, mode: state.mode)
         let button = keyView.button
         let glyph = state.mode == .bopomofo ? inputGlyph(for: key) : nil
-        button.largeGlyphs = (keyFontSize == .large)
-        button.inlineHints = !metrics.stacksKeyLabels && layoutProfile.splitGeometry == nil
-            && !(keyFontSize == .large)
-        button.hint.isHidden = (keyFontSize == .large) || glyph == nil
+        button.fontSize = keyFontSize
+        let normalInlineHints = !metrics.stacksKeyLabels && layoutProfile.splitGeometry == nil
+        button.inlineHints = normalInlineHints && keyFontSize.showsKeyHints
+        button.hint.isHidden = !keyFontSize.showsKeyHints || glyph == nil
         button.glyph.textColor = Palette.primaryText
         button.hint.textColor = Palette.hintText
         button.hint.font = .systemFont(ofSize: button.inlineHints ? metrics.keyGlyphFont : metrics.keyHintFont)
@@ -766,15 +781,17 @@ final class KeyboardView: UIView {
         if let glyph {
             button.glyph.text = state.temporaryEnglish ? key : glyph
             button.hint.text = state.temporaryEnglish ? glyph : key
-            let scale = button.inlineHints || state.temporaryEnglish || state.chineseInputMethod.isTable
-                ? 1 : KeyboardLayout.glyphPointScale(for: key)
-            button.glyph.font = .systemFont(ofSize: metrics.keyGlyphFont * scale)
-            button.glyphOffset = (metrics.keyGlyphFont * scale - metrics.keyGlyphFont) * 0.25
+            let normalSize = KeyboardKeyFontSize.normalKeyPointSize(base: metrics.keyGlyphFont,
+                readingScale: KeyboardLayout.glyphPointScale(for: key), inlineHints: normalInlineHints,
+                temporaryEnglish: state.temporaryEnglish, tableInput: state.chineseInputMethod.isTable)
+            button.glyph.font = .systemFont(ofSize: normalSize)
+            button.glyphOffset = (normalSize - metrics.keyGlyphFont) * 0.25
         } else {
             button.glyph.text = caption
             button.glyph.font = .systemFont(
                 ofSize: caption.count > 2 ? metrics.functionFontSmall : metrics.keyGlyphFont)
         }
+        button.normalPointSize = button.glyph.font.pointSize
         button.setNeedsLayout()
     }
 
@@ -1015,7 +1032,8 @@ private final class KeyboardKeyButton: UIButton {
     var glyphOffset: Double = 0
     var capArea: KeyboardKeycapArea = .small { didSet { setNeedsLayout() } }
     var capInset: CGFloat = 0 { didSet { setNeedsLayout() } }
-    var largeGlyphs = false { didSet { setNeedsLayout() } }
+    var fontSize: KeyboardKeyFontSize = .normal { didSet { setNeedsLayout() } }
+    var normalPointSize: Double = 18
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -1060,14 +1078,21 @@ private final class KeyboardKeyButton: UIButton {
                     width: box.width, height: hintHeight)
                 let glyphBox = CGRect(x: box.minX, y: box.minY,
                     width: box.width, height: max(0, box.height - hintHeight))
-                glyph.frame = glyphBox.offsetBy(dx: 0, dy: largeGlyphs ? 0 : glyphOffset)
-                if largeGlyphs { glyph.font = fittingFont(for: glyph.text, in: glyphBox.size) }
+                if fontSize == .normal {
+                    glyph.frame = glyphBox.offsetBy(dx: 0, dy: glyphOffset)
+                } else {
+                    let largeFont = fittingFont(for: glyph.text, in: glyphBox.size)
+                    glyph.font = .systemFont(ofSize: fontSize.keyPointSize(normal: normalPointSize,
+                        largeFit: largeFont.pointSize))
+                    glyph.frame = glyphBox
+                }
             }
         } else {
             hint.isHidden = true
-            if largeGlyphs, let titleLabel, currentImage == nil {
-                let font = fittingFont(for: currentTitle, in: bounds.insetBy(dx: 2, dy: 2).size)
-                if abs(titleLabel.font.pointSize - font.pointSize) > 0.01 { titleLabel.font = font }
+            if fontSize != .normal, let titleLabel, currentImage == nil {
+                let largeFont = fittingFont(for: currentTitle, in: bounds.insetBy(dx: 2, dy: 2).size)
+                let pointSize = fontSize.keyPointSize(normal: normalPointSize, largeFit: largeFont.pointSize)
+                if abs(titleLabel.font.pointSize - pointSize) > 0.01 { titleLabel.font = .systemFont(ofSize: pointSize) }
                 titleLabel.frame = bounds.insetBy(dx: 1, dy: 1)
             }
         }
@@ -1077,5 +1102,97 @@ private final class KeyboardKeyButton: UIButton {
         let initial = UIFont.systemFont(ofSize: max(1, size.height / 1.2))
         let width = (text ?? "").size(withAttributes: [.font: initial]).width
         return .systemFont(ofSize: initial.pointSize * min(1, max(0.01, size.width) / max(1, width)))
+    }
+}
+
+/// Shared measurement fits text inside its existing control without changing
+/// the control's frame or depending on the previously fitted font size.
+@MainActor
+private enum KeyboardTextFitting {
+    static func font(for text: String?, target: Double, in size: CGSize) -> UIFont {
+        let requested = UIFont.systemFont(ofSize: max(0.01, target))
+        let measured = (text ?? "").size(withAttributes: [.font: requested])
+        let ratio = min(1, min(max(0, size.width) / max(0.01, measured.width),
+            max(0, size.height) / max(requested.lineHeight, measured.height)))
+        return .systemFont(ofSize: max(0.01, target * ratio))
+    }
+}
+
+/// Only the primary candidate/composition text scales. Its sequence number
+/// keeps the original point size and its own reserved line.
+@MainActor
+private final class KeyboardStripButton: UIButton {
+    private let primaryLabel = UILabel()
+    private let indexLabel = UILabel()
+    private var fontSize: KeyboardKeyFontSize = .normal
+    private var primaryText = ""
+    private var indexText: String?
+    private var baseSize: Double = 18
+    private var indexSize: Double = 10
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        for label in [primaryLabel, indexLabel] {
+            label.textAlignment = .center
+            label.isUserInteractionEnabled = false
+            label.isAccessibilityElement = false
+            addSubview(label)
+        }
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    func configureText(primary: String, index: String?, fontSize: KeyboardKeyFontSize,
+                       baseSize: Double, indexSize: Double,
+                       primaryColor: UIColor, indexColor: UIColor) {
+        primaryText = primary
+        indexText = index
+        self.fontSize = fontSize
+        self.baseSize = baseSize
+        self.indexSize = indexSize
+        primaryLabel.text = primary
+        indexLabel.text = index
+        primaryLabel.textColor = primaryColor
+        indexLabel.textColor = indexColor
+        setNeedsLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let scaled = fontSize != .normal
+        let hasText = !primaryText.isEmpty
+        // UIKit may retain the previous native label text when its title is
+        // cleared. Keep an empty title hidden when choosing the font renderer.
+        titleLabel?.isHidden = scaled || !hasText
+        primaryLabel.isHidden = !scaled || !hasText
+        indexLabel.isHidden = !scaled || !hasText || indexText == nil
+        guard scaled else { return }
+        let box = bounds.insetBy(dx: 1, dy: 0)
+        indexLabel.font = .systemFont(ofSize: indexSize)
+        let indexHeight = indexText == nil ? 0 : indexLabel.font.lineHeight
+        indexLabel.frame = CGRect(x: box.minX, y: box.maxY - indexHeight,
+            width: box.width, height: indexHeight)
+        let primaryBox = CGRect(x: box.minX, y: box.minY,
+            width: box.width, height: max(0, box.height - indexHeight))
+        primaryLabel.font = KeyboardTextFitting.font(for: primaryText,
+            target: fontSize.stripPointSize(base: baseSize),
+            in: primaryBox.size)
+        primaryLabel.frame = primaryBox
+    }
+}
+
+@MainActor
+private final class KeyboardStatusLabel: UILabel {
+    var basePointSize: Double = 14 { didSet { setNeedsLayout() } }
+    var fontSize: KeyboardKeyFontSize = .normal { didSet { setNeedsLayout() } }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        adjustsFontSizeToFitWidth = fontSize == .normal
+        guard fontSize != .normal else { return }
+        let fitted = KeyboardTextFitting.font(for: text,
+            target: fontSize.stripPointSize(base: basePointSize),
+            in: bounds.size)
+        if abs(font.pointSize - fitted.pointSize) > 0.01 { font = fitted }
     }
 }

@@ -42,7 +42,7 @@ public final class KeyboardLayoutGeometryTest {
                 for (var font : KeyboardLayoutProfile.FontSize.values()) {
                     for (var position : KeyboardLayoutProfile.DeletePosition.values()) {
                         var options = KeyboardLayoutProfile.resolveOptions(profile.id, spacing.id,
-                                font.id, position.id, null, null);
+                                font.id, position.id, null, null, null);
                         assertSame(profile, options.layout());
                         assertSame(spacing, options.spacing());
                         assertSame(font, options.fontSize());

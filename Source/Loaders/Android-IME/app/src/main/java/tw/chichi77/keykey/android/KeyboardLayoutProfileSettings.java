@@ -8,6 +8,7 @@ final class KeyboardLayoutProfileSettings {
     static final String KEY_LAYOUT = "keyboard_layout";
     static final String KEY_SPACING = "keyboard_keycap_spacing";
     static final String KEY_FONT_SIZE = "keyboard_font_size";
+    static final String KEY_FONT_LEVEL = "keyboard_font_level";
     static final String KEY_DELETE_POSITION = "keyboard_delete_position";
 
     private KeyboardLayoutProfileSettings() {}
@@ -15,9 +16,9 @@ final class KeyboardLayoutProfileSettings {
     static KeyboardLayoutProfile.VisualOptions options(Context context) {
         var preferences = CandidateWindowSettings.preferences(context);
         return KeyboardLayoutProfile.resolveOptions(preferences.getString(KEY_LAYOUT, null),
-                preferences.getString(KEY_SPACING, null), preferences.getString(KEY_FONT_SIZE, null),
+                preferences.getString(KEY_SPACING, null), preferences.getString(KEY_FONT_LEVEL, null),
                 preferences.getString(KEY_DELETE_POSITION, null), preferences.getString(KEY_PROFILE, null),
-                preferences.getString(KEY_KEYCAP_AREA, null));
+                preferences.getString(KEY_KEYCAP_AREA, null), preferences.getString(KEY_FONT_SIZE, null));
     }
 
     static KeyboardLayoutProfile profile(Context context) {
@@ -63,12 +64,12 @@ final class KeyboardLayoutProfileSettings {
         // Materialize the whole migrated choice before changing any one part.
         CandidateWindowSettings.preferences(context).edit()
                 .putString(KEY_LAYOUT, options.layout().id).putString(KEY_SPACING, options.spacing().id)
-                .putString(KEY_FONT_SIZE, options.fontSize().id)
+                .putString(KEY_FONT_LEVEL, options.fontSize().id)
                 .putString(KEY_DELETE_POSITION, options.deletePosition().id).apply();
     }
 
     static boolean isSettingKey(String key) {
-        return KEY_LAYOUT.equals(key) || KEY_SPACING.equals(key) || KEY_FONT_SIZE.equals(key)
+        return KEY_LAYOUT.equals(key) || KEY_SPACING.equals(key) || KEY_FONT_LEVEL.equals(key) || KEY_FONT_SIZE.equals(key)
                 || KEY_DELETE_POSITION.equals(key) || KEY_PROFILE.equals(key) || KEY_KEYCAP_AREA.equals(key);
     }
 }

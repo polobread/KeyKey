@@ -9,8 +9,11 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.WindowManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +27,7 @@ final class BopomofoKeyboardView extends View {
         void onCandidate(int displayedIndex);
         void onSmartCell(int index);
         void onPage(int delta);
+        default void onInputMethodPicker() {}
     }
 
     private enum HitKind { KEY, CANDIDATE, PAGE, SMART_CELL, CANDIDATE_BLOCK }
@@ -103,9 +107,20 @@ final class BopomofoKeyboardView extends View {
     private Mode lastMeasuredMode;
     private int lastDesiredContentHeight = -1;
     private int lastReservedHeight = -1;
-    private int lastSystemAreaHeight = -1;
+    private int measuredHeightBudget;
+    private Rect lastWindowBounds;
     private boolean touchBottomSpaceEnabled = true;
     private boolean hardwareBottomSpaceEnabled = true;
+    private boolean integratedBottomControls;
+    private boolean showGlobe;
+    private String pickerPressKey;
+    private boolean pickerPressConsumed;
+    private final Runnable pickerLongPress = () -> {
+        if (pickerPressKey != null && listener != null) {
+            pickerPressConsumed = true;
+            listener.onInputMethodPicker();
+        }
+    };
     private boolean hardwareNumberRowEnabled;
     private boolean hardwareSmartTwoRowsEnabled;
     private boolean hardwareNumberShifted;
@@ -229,6 +244,16 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
+    void setIntegratedBottomControls(boolean integrated, boolean showGlobe) {
+        if (integratedBottomControls == integrated && this.showGlobe == showGlobe) return;
+        integratedBottomControls = integrated;
+        this.showGlobe = showGlobe;
+        cancelPickerPress();
+        hits.clear();
+        requestLayout();
+        invalidate();
+    }
+
     void toggleHardwareNumberShift() {
         hardwareNumberShifted = !hardwareNumberShifted;
         invalidate();
@@ -307,7 +332,7 @@ final class BopomofoKeyboardView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int desiredContentHeight = switch (mode) {
-            case HARDWARE_FLOATING -> dp(1);
+            case HARDWARE_FLOATING -> dp(showGlobe ? HARDWARE_CONTENT_HEIGHT_DP : 1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
                     + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
             case LANDSCAPE -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.LANDSCAPE).contentHeightDp,
@@ -321,27 +346,33 @@ final class BopomofoKeyboardView extends View {
         int reservedHeight = reservedSystemAreaHeight();
         int systemAreaHeight = systemAreaHeight();
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int availableHeight = resolveSize(desiredContentHeight + reservedHeight, heightMeasureSpec);
+        Rect windowBounds = Build.VERSION.SDK_INT >= 30
+                ? getContext().getSystemService(WindowManager.class).getCurrentWindowMetrics().getBounds() : null;
         // Once the IME window has been sized, the framework measures its child
-        // again within that exact window. This is our requested height, not a
-        // new screen limit: subtracting the reservation again leaves a blank strip.
+        // again within that window (including AT_MOST for a WRAP_CONTENT child).
+        // Its old height is not a new screen cap when the reservation changes.
         boolean withinRequestedWindow = MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.UNSPECIFIED
                 && MeasureSpec.getSize(heightMeasureSpec) == getMeasuredHeight()
                 && width == getMeasuredWidth()
                 && mode == lastMeasuredMode
                 && desiredContentHeight == lastDesiredContentHeight
                 && reservedHeight == lastReservedHeight
-                && systemAreaHeight == lastSystemAreaHeight;
+                && (windowBounds == null ? lastWindowBounds == null : windowBounds.equals(lastWindowBounds));
         if (!withinRequestedWindow) {
+            measuredHeightBudget = resolveSize(desiredContentHeight + reservedHeight, heightMeasureSpec);
             measuredContentHeight = Math.min(desiredContentHeight,
-                    Math.max(0, availableHeight - reservedHeight));
+                    Math.max(0, measuredHeightBudget - reservedHeight));
         }
-        int desiredHeight = Math.min(availableHeight, measuredContentHeight + systemAreaHeight);
+        // Keep the content through old-window feedback, while obeying the
+        // current parent spec. A WRAP_CONTENT root layout restores the total
+        // height when it measures again against its upstream window budget.
+        int desiredHeight = resolveSize(Math.min(measuredHeightBudget,
+                measuredContentHeight + systemAreaHeight), heightMeasureSpec);
         setMeasuredDimension(resolveSize(width, widthMeasureSpec), desiredHeight);
         lastMeasuredMode = mode;
         lastDesiredContentHeight = desiredContentHeight;
         lastReservedHeight = reservedHeight;
-        lastSystemAreaHeight = systemAreaHeight;
+        lastWindowBounds = windowBounds == null ? null : new Rect(windowBounds);
     }
 
     @Override
@@ -350,7 +381,11 @@ final class BopomofoKeyboardView extends View {
         hits.clear();
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
         switch (mode) {
-            case HARDWARE_FLOATING -> { }
+            case HARDWARE_FLOATING -> {
+                if (showGlobe) drawHardwareStatusButton(canvas,
+                        new RectF(Math.max(0, getWidth() - dp(HARDWARE_CONTENT_HEIGHT_DP)), 0,
+                                getWidth(), dp(HARDWARE_CONTENT_HEIGHT_DP)), "🌐", "GLOBE");
+            }
             case HARDWARE -> drawHardware(canvas);
             case LANDSCAPE -> drawLandscape(canvas);
             case PORTRAIT -> drawPortrait(canvas);
@@ -382,7 +417,7 @@ final class BopomofoKeyboardView extends View {
         var layout = layoutProfile.layout(orientation);
         float rowHeight = (contentHeight - top) / (layout.rows(plane, shifted).size() + 1);
         for (var key : KeyboardLayoutGeometry.keys(layoutProfile, orientation, plane, shifted, deletePosition,
-                getWidth() / getResources().getDisplayMetrics().density)) {
+                getWidth() / getResources().getDisplayMetrics().density, integratedBottomControls, showGlobe)) {
             RectF bounds = new RectF(key.left() * getWidth() + dp(2),
                     top + key.top() * (contentHeight - top) + dp(2),
                     key.right() * getWidth() - dp(2),
@@ -418,6 +453,9 @@ final class BopomofoKeyboardView extends View {
             String value = smartCells.get(index);
             textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
             textPaint.setFakeBoldText(index < smartEditableCount);
+            if (isTouchMode() && !fontSize.showsHints()) {
+                fitStripText(textPaint, value, cell, textPaint.getTextSize());
+            }
             float availableWidth = Math.max(1, cell.width() - dp(4));
             float measuredWidth = textPaint.measureText(value);
             if (measuredWidth > availableWidth) {
@@ -547,6 +585,10 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawHardwareEmojiButton(Canvas canvas, RectF bounds) {
+        if (showGlobe) {
+            drawHardwareStatusButton(canvas, bounds, "🌐", "GLOBE");
+            return;
+        }
         RectF inset = inset(bounds, dp(2));
         boolean enabled = fieldPolicy.isKeyEnabled("EMOJI", inputMode, shifted);
         int savedAlpha = canvas.saveLayerAlpha(inset, enabled ? 255 : 92);
@@ -598,6 +640,9 @@ final class BopomofoKeyboardView extends View {
             String value = candidates.get(index);
             textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
             textPaint.setFakeBoldText(true);
+            if (isTouchMode() && !fontSize.showsHints()) {
+                fitStripText(textPaint, value, bounds, textPaint.getTextSize());
+            }
             canvas.drawText(value, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
             hits.add(new Hit(new RectF(bounds), HitKind.CANDIDATE, "", index));
         }
@@ -615,6 +660,10 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawEmptyCandidateMessage(Canvas canvas, RectF area) {
+        if (!reading.isEmpty() && isTouchMode() && !fontSize.showsHints()) {
+            drawReadingMessage(canvas, area);
+            return;
+        }
         String message;
         if (!reading.isEmpty()) message = reading + "　按空白選字";
         else if (inputMode == InputEngine.InputMode.ENGLISH) {
@@ -634,6 +683,33 @@ final class BopomofoKeyboardView extends View {
         }
         hintPaint.setTextSize(standardHintTextSize());
         canvas.drawText(message, area.centerX(), textBaseline(area, hintPaint), hintPaint);
+    }
+
+    private void fitStripText(Paint paint, String label, RectF bounds, float normalSize) {
+        paint.setTextSize(normalSize * fontSize.stripScale);
+        paint.getTextBounds(label, 0, label.length(), glyphBounds);
+        Paint.FontMetrics metrics = paint.getFontMetrics();
+        float width = Math.max(glyphBounds.width(), paint.measureText(label));
+        float height = Math.max(glyphBounds.height(), metrics.descent - metrics.ascent);
+        float scale = Math.min(1f, Math.min(Math.max(1, bounds.width() - dp(4)) / Math.max(1, width),
+                Math.max(1, bounds.height() - dp(4)) / Math.max(1, height)));
+        paint.setTextSize(paint.getTextSize() * scale);
+    }
+
+    private void drawReadingMessage(Canvas canvas, RectF area) {
+        String instruction = "按空白選字";
+        hintPaint.setTextSize(standardHintTextSize());
+        float instructionWidth = hintPaint.measureText(instruction);
+        float gap = standardHintTextSize();
+        RectF readingBounds = new RectF(area);
+        readingBounds.right -= instructionWidth + gap;
+        textPaint.setFakeBoldText(false);
+        fitStripText(textPaint, reading, readingBounds, standardHintTextSize());
+        float readingWidth = textPaint.measureText(reading);
+        float left = area.centerX() - (readingWidth + gap + instructionWidth) / 2f;
+        canvas.drawText(reading, left + readingWidth / 2f, textBaseline(area, textPaint), textPaint);
+        canvas.drawText(instruction, left + readingWidth + gap + instructionWidth / 2f,
+                textBaseline(area, hintPaint), hintPaint);
     }
 
     private String bopomofoLayoutName() {
@@ -700,10 +776,17 @@ final class BopomofoKeyboardView extends View {
         }
         canvas.drawRoundRect(cap, dp(6), dp(6), special ? specialKeyPaint : keyPaint);
 
+        if (isTouchMode() && showGlobe && key.equals("MODE")) {
+            drawCompactModeLabel(canvas, labelBounds);
+            canvas.restoreToCount(savedAlpha);
+            if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+            return;
+        }
+
         String symbol = bopomofoSymbol(key);
-        if (isTouchMode() && fontSize == KeyboardLayoutProfile.FontSize.LARGE && !key.equals("ENTER")) {
+        if (isTouchMode() && !fontSize.showsHints() && !key.equals("ENTER")) {
             String label = !symbol.isEmpty() ? (temporaryEnglish ? key : symbol) : keyLabel(key);
-            drawFittedKeyLabel(canvas, labelBounds, label);
+            drawSizedKeyLabel(canvas, labelBounds, label, normalKeyTextSize(bounds, key, label, !symbol.isEmpty()));
             canvas.restoreToCount(savedAlpha);
             if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
             return;
@@ -717,8 +800,9 @@ final class BopomofoKeyboardView extends View {
 
         if (key.equals("ENTER")) {
             if (fieldPolicy.enterLabel().isEmpty()) drawEnterKey(canvas,
-                    isTouchMode() && fontSize == KeyboardLayoutProfile.FontSize.LARGE ? labelBounds : bounds);
-            else if (isTouchMode() && fontSize == KeyboardLayoutProfile.FontSize.LARGE) drawFittedKeyLabel(canvas, labelBounds, fieldPolicy.enterLabel());
+                    isTouchMode() && !fontSize.showsHints() ? labelBounds : bounds);
+            else if (isTouchMode() && !fontSize.showsHints()) drawSizedKeyLabel(canvas, labelBounds,
+                    fieldPolicy.enterLabel(), normalEnterTextSize(bounds, fieldPolicy.enterLabel()));
             else drawEnterLabel(canvas, bounds, fieldPolicy.enterLabel());
             canvas.restoreToCount(savedAlpha);
             if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
@@ -742,20 +826,60 @@ final class BopomofoKeyboardView extends View {
         if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
     }
 
-    private void drawFittedKeyLabel(Canvas canvas, RectF bounds, String label) {
+    private void drawSizedKeyLabel(Canvas canvas, RectF bounds, String label, float normalSize) {
         textPaint.setFakeBoldText(true);
         // Measure actual ink, including the small high-set tone marks, rather
         // than reserving the removed physical-key hint's font box.
-        textPaint.setTextSize(100);
-        textPaint.getTextBounds(label, 0, label.length(), glyphBounds);
-        float availableWidth = Math.max(1, bounds.width() - dp(4));
-        float availableHeight = Math.max(1, bounds.height() - dp(4));
-        float scale = Math.min(availableWidth / Math.max(1, Math.max(glyphBounds.width(), textPaint.measureText(label))),
-                availableHeight / Math.max(1, glyphBounds.height()));
-        textPaint.setTextSize(100 * scale);
+        float largeFit = fittedKeyTextSize(bounds, label, dp(4));
+        textPaint.setTextSize(KeyboardTypography.keyTextSize(fontSize, normalSize, largeFit));
         textPaint.getTextBounds(label, 0, label.length(), glyphBounds);
         float baseline = bounds.centerY() - (glyphBounds.top + glyphBounds.bottom) / 2f;
         canvas.drawText(label, bounds.centerX(), baseline, textPaint);
+    }
+
+    private void drawCompactModeLabel(Canvas canvas, RectF bounds) {
+        String[] labels = keyLabel("MODE").split("/", 2);
+        if (labels.length != 2) {
+            drawSizedKeyLabel(canvas, bounds, keyLabel("MODE"), dp(mode == Mode.LANDSCAPE ? 12 : 18));
+            return;
+        }
+        RectF upper = new RectF(bounds.left, bounds.top, bounds.centerX(), bounds.centerY());
+        RectF lower = new RectF(bounds.centerX(), bounds.centerY(), bounds.right, bounds.bottom);
+        float normalSize = dp(mode == Mode.LANDSCAPE ? 12 : 18);
+        drawSizedKeyLabel(canvas, upper, labels[0], Math.min(normalSize, fittedKeyTextSize(upper, labels[0], dp(4))));
+        drawSizedKeyLabel(canvas, lower, labels[1], Math.min(normalSize, fittedKeyTextSize(lower, labels[1], dp(4))));
+    }
+
+    private float fittedKeyTextSize(RectF bounds, String label, float padding) {
+        textPaint.setTextSize(100);
+        textPaint.getTextBounds(label, 0, label.length(), glyphBounds);
+        float availableWidth = Math.max(1, bounds.width() - padding);
+        float availableHeight = Math.max(1, bounds.height() - padding);
+        float scale = Math.min(availableWidth / Math.max(1, Math.max(glyphBounds.width(), textPaint.measureText(label))),
+                availableHeight / Math.max(1, glyphBounds.height()));
+        return 100 * scale;
+    }
+
+    private float normalKeyTextSize(RectF bounds, String key, String label, boolean hasSymbol) {
+        if (hasSymbol) return dp(mode == Mode.LANDSCAPE ? 11 : 18)
+                * (isToneSymbol(label) ? TONE_SYMBOL_SCALE : 1f);
+        float size = dp(mode == Mode.LANDSCAPE ? (label.length() > 3 ? 9 : 12)
+                : (label.length() > 3 ? 12 : 18));
+        if (layoutProfile.split && isSpecialKey(key) && label.length() > 1) {
+            textPaint.setFakeBoldText(key.equals("SPACE"));
+            textPaint.setTextSize(size);
+            float width = textPaint.measureText(label);
+            if (width > bounds.width() - dp(4)) size *= Math.max(1, bounds.width() - dp(4)) / width;
+        }
+        return size;
+    }
+
+    private float normalEnterTextSize(RectF bounds, String label) {
+        float size = dp(mode == Mode.LANDSCAPE || label.length() > 2 ? 10 : 14);
+        textPaint.setTextSize(size);
+        float width = textPaint.measureText(label);
+        return width > bounds.width() - dp(6)
+                ? Math.max(dp(7), size * Math.max(1, bounds.width() - dp(6)) / width) : size;
     }
 
     private void drawEnterLabel(Canvas canvas, RectF bounds, String label) {
@@ -806,9 +930,11 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawEnterKey(Canvas canvas, RectF bounds) {
-        float side = isTouchMode() && fontSize == KeyboardLayoutProfile.FontSize.LARGE
-                ? Math.max(1, Math.min(bounds.width(), bounds.height()) - dp(4))
-                : dp(mode == Mode.LANDSCAPE ? 14 : 20);
+        float side = dp(mode == Mode.LANDSCAPE ? 14 : 20);
+        if (isTouchMode() && !fontSize.showsHints()) {
+            side = KeyboardTypography.keyTextSize(fontSize, side,
+                    Math.max(1, Math.min(bounds.width(), bounds.height()) - dp(4)));
+        }
         float unit = side / 24f;
         float left = bounds.centerX() - side / 2f;
         float top = bounds.centerY() - side / 2f;
@@ -904,7 +1030,7 @@ final class BopomofoKeyboardView extends View {
     private boolean isSpecialKey(String key) {
         return switch (key) {
             case "SHIFT", "BACKSPACE", "ENTER", "SPACE", "SYMBOL", "SETTINGS", "EMOJI",
-                    "MODE", "，", "。", "、", "？" -> true;
+                    "MODE", "GLOBE", "DISMISS", "，", "。", "、", "？" -> true;
             default -> false;
         };
     }
@@ -917,6 +1043,12 @@ final class BopomofoKeyboardView extends View {
                 downX = event.getX();
                 downY = event.getY();
                 Hit hit = findHit(downX, downY);
+                resetPickerPress();
+                if (hit != null && hit.kind() == HitKind.KEY
+                        && (hit.key().equals("GLOBE") || hit.key().equals("SETTINGS"))) {
+                    pickerPressKey = hit.key();
+                    postDelayed(pickerLongPress, ViewConfiguration.getLongPressTimeout());
+                }
                 if (hit != null && listener != null) listener.onPress();
                 backspaceTouchStarted = hit != null && hit.kind() == HitKind.KEY
                         && "BACKSPACE".equals(hit.key());
@@ -932,6 +1064,14 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_MOVE -> {
+                if (pickerPressKey != null) {
+                    Hit hit = findHit(event.getX(), event.getY());
+                    if (hit == null || hit.kind() != HitKind.KEY || !hit.key().equals(pickerPressKey)) {
+                        // Moving out cancels this press even if the finger returns;
+                        // an opened picker must never become a settings tap or switch.
+                        cancelPickerPress();
+                    }
+                }
                 if (backspaceTouchStarted) {
                     Hit hit = findHit(event.getX(), event.getY());
                     if (hit == null || hit.kind() != HitKind.KEY
@@ -945,8 +1085,14 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_UP -> {
+                boolean pickerHandled = pickerPressConsumed;
+                resetPickerPress();
                 backspaceRepeater.stop();
                 clearKeyPreview();
+                if (pickerHandled) {
+                    performClick();
+                    return true;
+                }
                 if (backspaceTouchStarted) {
                     backspaceTouchStarted = false;
                     performClick();
@@ -974,6 +1120,7 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_CANCEL -> {
+                resetPickerPress();
                 backspaceRepeater.stop();
                 backspaceTouchStarted = false;
                 downOnCandidate = false;
@@ -986,9 +1133,21 @@ final class BopomofoKeyboardView extends View {
 
     @Override
     protected void onDetachedFromWindow() {
+        resetPickerPress();
         backspaceRepeater.stop();
         backspaceTouchStarted = false;
         super.onDetachedFromWindow();
+    }
+
+    private void cancelPickerPress() {
+        removeCallbacks(pickerLongPress);
+        pickerPressConsumed |= pickerPressKey != null;
+        pickerPressKey = null;
+    }
+
+    private void resetPickerPress() {
+        cancelPickerPress();
+        pickerPressConsumed = false;
     }
 
     @Override
@@ -1035,6 +1194,8 @@ final class BopomofoKeyboardView extends View {
             case "SYMBOL" -> "符";
             case "SETTINGS" -> "設";
             case "EMOJI" -> "☺";
+            case "GLOBE" -> "🌐";
+            case "DISMISS" -> "▼";
             default -> key;
         };
     }
@@ -1093,6 +1254,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private int systemAreaHeight() {
+        if (isTouchMode() && integratedBottomControls) return 0;
         boolean enabled = mode == Mode.HARDWARE ? hardwareBottomSpaceEnabled : touchBottomSpaceEnabled;
         return enabled ? reservedSystemAreaHeight() : 0;
     }

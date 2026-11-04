@@ -240,7 +240,8 @@ public final class KeyboardLayoutProfileSettings {
     private let store: KeyboardPreferenceStore
     private static let layoutKey = "keyboardLayoutVariant"
     private static let spacingKey = "keyboardKeycapSpacing"
-    private static let fontKey = "keyboardKeyFontSize"
+    private static let fontKey = "keyboardKeyFontLevel"
+    private static let legacyFontKey = "keyboardKeyFontSize"
     private static let deleteShiftKey = "keyboardDeleteShiftPosition"
     private static let legacyProfileKeys = ["keyboardLayoutProfile", "keyboardPresentation"]
     private static let legacyAreaKey = "keyboardKeycapArea"
@@ -290,7 +291,10 @@ public final class KeyboardLayoutProfileSettings {
         if let value = store.object(forKey: Self.fontKey) as? String {
             return KeyboardKeyFontSize(rawValue: value) ?? .normal
         }
-        return legacyProfile == "large-full" || legacyProfile == "large-staggered" ? .large : .normal
+        if let oldValue = store.object(forKey: Self.legacyFontKey) as? String {
+            return oldValue == "large" ? .extraLarge : .normal
+        }
+        return legacyProfile == "large-full" || legacyProfile == "large-staggered" ? .extraLarge : .normal
     }
 
     public func setFontSize(_ size: KeyboardKeyFontSize) {
@@ -368,8 +372,39 @@ public enum KeyboardKeycapArea: String, CaseIterable, Sendable {
 }
 
 public enum KeyboardKeyFontSize: String, CaseIterable, Sendable {
-    case normal, large
-    public var displayName: String { self == .normal ? "標準" : "大" }
+    case normal, medium, large, extraLarge = "extra-large"
+
+    public var displayName: String {
+        switch self { case .normal: "標準"; case .medium: "中"; case .large: "大"; case .extraLarge: "特大" }
+    }
+    public var showsKeyHints: Bool { self == .normal }
+    public var stripScale: Double {
+        switch self { case .normal: 1; case .medium: 1.15; case .large: 1.30; case .extraLarge: 1.45 }
+    }
+
+    /// Evaluate the normal typography independently of the selected font level.
+    /// Hiding its secondary hint must not turn an inline tone into a stacked one.
+    public static func normalKeyPointSize(base: Double, readingScale: Double,
+                                          inlineHints: Bool, temporaryEnglish: Bool,
+                                          tableInput: Bool) -> Double {
+        base * (inlineHints || temporaryEnglish || tableInput ? 1 : readingScale)
+    }
+
+    /// Extra large preserves the legacy large fit. Intermediate levels use a
+    /// stable normal baseline, never the font fitted during an earlier layout.
+    public func keyPointSize(normal: Double, largeFit: Double) -> Double {
+        let start = min(normal, largeFit)
+        switch self {
+        case .normal: return normal
+        case .medium: return start + (largeFit - start) / 3
+        case .large: return start + (largeFit - start) * 2 / 3
+        case .extraLarge: return largeFit
+        }
+    }
+
+    public func stripPointSize(base: Double) -> Double {
+        base * stripScale
+    }
 }
 
 public enum KeyboardDeleteShiftPosition: String, CaseIterable, Sendable {
