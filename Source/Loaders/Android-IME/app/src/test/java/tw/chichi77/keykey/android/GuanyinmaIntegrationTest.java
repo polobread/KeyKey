@@ -71,6 +71,20 @@ public final class GuanyinmaIntegrationTest {
             }
         }
     }
+    @Test public void splitPunctuationUsesTheExistingTouchCommitFlow() throws Exception {
+        for (String mark : KeyboardLayoutGeometry.SPLIT_PUNCTUATION) {
+            for (var method : ChineseInputMethod.values()) {
+                try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(method, text -> true)) {
+                    if (method == ChineseInputMethod.SMART) type(engine, "su3", false);
+                    assertEquals((method == ChineseInputMethod.SMART ? "你" : "") + mark,
+                            engine.handleSoftKey(mark).committedText());
+                    assertFalse(engine.hasComposition());
+                    assertNull(engine.lastError());
+                    assertEquals("", engine.finishCompositionForInputHandoff().committedText());
+                }
+            }
+        }
+    }
     @Test public void hostEffectsBlockNewEventsUntilOriginalConnectionAcknowledges() throws Exception {
         try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
             type(engine, "su3", false);

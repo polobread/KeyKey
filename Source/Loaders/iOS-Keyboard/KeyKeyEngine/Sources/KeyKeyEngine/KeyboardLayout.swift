@@ -7,11 +7,11 @@
 /// keeps the columns aligned.
 public enum KeyboardLayout {
     // Compatibility helpers describe the original full profile, not every visual style.
-    public static var bopomofoRows: [[String]] { KeyboardLayoutProfile.full.portrait.bopomofo.rows }
-    public static var shiftedEnglishRows: [[String]] { KeyboardLayoutProfile.full.portrait.english.shiftedRows }
-    public static var numberRows: [[String]] { KeyboardLayoutProfile.full.portrait.numberSymbols.rows }
-    public static var shiftedNumberRows: [[String]] { KeyboardLayoutProfile.full.portrait.numberSymbols.shiftedRows }
-    public static var functionRow: [String] { KeyboardLayoutProfile.full.functionKeys }
+    public static var bopomofoRows: [[String]] { KeyboardLayoutProfile.aligned.portrait.bopomofo.rows }
+    public static var shiftedEnglishRows: [[String]] { KeyboardLayoutProfile.aligned.portrait.english.shiftedRows }
+    public static var numberRows: [[String]] { KeyboardLayoutProfile.aligned.portrait.numberSymbols.rows }
+    public static var shiftedNumberRows: [[String]] { KeyboardLayoutProfile.aligned.portrait.numberSymbols.shiftedRows }
+    public static var functionRow: [String] { KeyboardLayoutProfile.aligned.functionKeys }
 
     /// The globe key. iPhone gets one from the system in its own row below the
     /// input view, so the keyboard must not draw a second; iPad gets no such
@@ -26,11 +26,11 @@ public enum KeyboardLayout {
     public static func rows(
         mode: KeyboardInput.InputMode, shifted: Bool
     ) -> [[String]] {
-        KeyboardLayoutProfile.full.rows(orientation: .portrait, inputMethod: .smart, mode: mode, shifted: shifted)
+        KeyboardLayoutProfile.aligned.rows(orientation: .portrait, inputMethod: .smart, mode: mode, shifted: shifted)
     }
 
     public static func weight(for key: String) -> Double {
-        KeyboardLayoutProfile.full.functionWeight(for: key)
+        KeyboardLayoutProfile.aligned.functionWeight(for: key)
     }
 
     /// Keys drawn in the darker fill.

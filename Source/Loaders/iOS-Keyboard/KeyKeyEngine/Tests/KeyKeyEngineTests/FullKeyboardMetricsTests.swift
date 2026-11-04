@@ -4,7 +4,7 @@ import Testing
 
 @Suite("Original full profile metrics")
 struct FullKeyboardMetricsTests {
-    private let profile = KeyboardLayoutProfile.full
+    private let profile = KeyboardLayoutProfile.aligned
 
     @Test("the full preset chooses compact sizing independently of orientation")
     func selection() {

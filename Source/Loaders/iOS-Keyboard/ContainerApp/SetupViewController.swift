@@ -353,6 +353,9 @@ private final class InputMethodSettingsViewController: UIViewController {
     private lazy var colorSettings = CandidateColorSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
+    private lazy var profileSettings = KeyboardLayoutProfileSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
     private lazy var clickSettings = KeyboardClickSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
@@ -438,6 +441,7 @@ private final class InputMethodSettingsViewController: UIViewController {
         colorControl.accessibilityIdentifier = "app-settings.candidate-color"
         colorControl.addTarget(self, action: #selector(colorChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(colorControl)
+        addLayoutSettings(to: stack)
 
         let clickRow = UIStackView()
         clickRow.axis = .horizontal
@@ -563,6 +567,59 @@ private final class InputMethodSettingsViewController: UIViewController {
             }))
         }
         button.menu = UIMenu(title: method.displayName + "設定", children: children)
+    }
+
+    private func addLayoutSettings(to stack: UIStackView) {
+        stack.addArrangedSubview(label("版面", size: 18))
+        let profiles = KeyboardLayoutProfile.available
+        let profile = UISegmentedControl(items: profiles.map(\.displayName))
+        profile.selectedSegmentIndex = profiles.firstIndex(of: profileSettings.profile) ?? 0
+        profile.accessibilityIdentifier = "app-settings.layout-profile"
+        profile.accessibilityLabel = "版面"
+        profile.addTarget(self, action: #selector(layoutProfileChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(profile)
+        stack.addArrangedSubview(label("鍵帽間隔", size: 18))
+        let area = UISegmentedControl(items: KeyboardKeycapArea.allCases.map(\.displayName))
+        area.selectedSegmentIndex = KeyboardKeycapArea.allCases.firstIndex(of: profileSettings.keycapArea) ?? 0
+        area.accessibilityIdentifier = "app-settings.keycap-area"
+        area.accessibilityLabel = "鍵帽間隔"
+        area.addTarget(self, action: #selector(keycapAreaChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(area)
+        stack.addArrangedSubview(label("字體", size: 18))
+        let font = UISegmentedControl(items: KeyboardKeyFontSize.allCases.map(\.displayName))
+        font.selectedSegmentIndex = KeyboardKeyFontSize.allCases.firstIndex(of: profileSettings.fontSize) ?? 0
+        font.accessibilityIdentifier = "app-settings.key-font-size"
+        font.accessibilityLabel = "字體"
+        font.addTarget(self, action: #selector(keyFontSizeChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(font)
+        stack.addArrangedSubview(label("刪除鍵位置", size: 18))
+        let position = UISegmentedControl(items: KeyboardDeleteShiftPosition.allCases.map(\.displayName))
+        position.selectedSegmentIndex = KeyboardDeleteShiftPosition.allCases.firstIndex(
+            of: profileSettings.deleteShiftPosition) ?? 0
+        position.accessibilityIdentifier = "app-settings.delete-position"
+        position.accessibilityLabel = "刪除鍵位置"
+        position.addTarget(self, action: #selector(deleteShiftChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(position)
+    }
+
+    @objc private func layoutProfileChanged(_ sender: UISegmentedControl) {
+        guard KeyboardLayoutProfile.available.indices.contains(sender.selectedSegmentIndex) else { return }
+        profileSettings.setProfile(KeyboardLayoutProfile.available[sender.selectedSegmentIndex])
+    }
+
+    @objc private func keyFontSizeChanged(_ sender: UISegmentedControl) {
+        guard KeyboardKeyFontSize.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        profileSettings.setFontSize(KeyboardKeyFontSize.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func keycapAreaChanged(_ sender: UISegmentedControl) {
+        guard KeyboardKeycapArea.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        profileSettings.setKeycapArea(KeyboardKeycapArea.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func deleteShiftChanged(_ sender: UISegmentedControl) {
+        guard KeyboardDeleteShiftPosition.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        profileSettings.setDeleteShiftPosition(KeyboardDeleteShiftPosition.allCases[sender.selectedSegmentIndex])
     }
 
     @objc private func modeChanged(_ sender: UISegmentedControl) {

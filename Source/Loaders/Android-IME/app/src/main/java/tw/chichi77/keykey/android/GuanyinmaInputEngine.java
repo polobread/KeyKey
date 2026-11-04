@@ -267,7 +267,8 @@ final class GuanyinmaInputEngine implements InputEngine {
     }
     private InputEngine.Result character(String value, boolean touch) {
         if (mode != InputEngine.InputMode.BOPOMOFO) return direct(touch && shifted ? value.toUpperCase(Locale.ROOT) : value);
-        if (touch && (value.equals("，") || value.equals("。"))) return direct(value);
+        if (touch && (value.equals("，") || value.equals("。")
+                || value.equals("、") || value.equals("？"))) return direct(value);
         if (!touch && (chineseInputMethod() == ChineseInputMethod.SMART || chineseInputMethod().isTable())
                 && value.length() == 1 && value.charAt(0) >= 'A' && value.charAt(0) <= 'Z') {
             if (chineseInputMethod() == ChineseInputMethod.SMART && !text("reading").isEmpty()) return InputEngine.Result.update();

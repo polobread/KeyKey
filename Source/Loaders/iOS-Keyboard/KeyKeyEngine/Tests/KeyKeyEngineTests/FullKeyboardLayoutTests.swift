@@ -7,10 +7,10 @@ struct FullKeyboardLayoutTests {
     @Test(
         "the full profile preserves its four rows of eleven",
         arguments: [
-            KeyboardLayoutProfile.full.portrait.bopomofo.rows,
-            KeyboardLayoutProfile.full.portrait.english.shiftedRows,
-            KeyboardLayoutProfile.full.portrait.numberSymbols.rows,
-            KeyboardLayoutProfile.full.portrait.numberSymbols.shiftedRows
+            KeyboardLayoutProfile.aligned.portrait.bopomofo.rows,
+            KeyboardLayoutProfile.aligned.portrait.english.shiftedRows,
+            KeyboardLayoutProfile.aligned.portrait.numberSymbols.rows,
+            KeyboardLayoutProfile.aligned.portrait.numberSymbols.shiftedRows
         ]
     )
     func planeShape(rows: [[String]]) {
@@ -20,7 +20,7 @@ struct FullKeyboardLayoutTests {
 
     @Test("rows two to four end in a function key")
     func rowEndings() {
-        let rows = KeyboardLayoutProfile.full.portrait.bopomofo.rows
+        let rows = KeyboardLayoutProfile.aligned.portrait.bopomofo.rows
         #expect(KeyboardLayout.bopomofoGlyph(for: rows[0][10]) == "ㄦ")
         #expect(rows[1][10] == "@")
         #expect(rows[2][10] == "EMOJI")
@@ -29,7 +29,7 @@ struct FullKeyboardLayoutTests {
 
     @Test("the Bopomofo plane covers all 41 reading keys")
     func readingCoverage() {
-        let keys = KeyboardLayoutProfile.full.portrait.bopomofo.rows.flatMap { $0 }
+        let keys = KeyboardLayoutProfile.aligned.portrait.bopomofo.rows.flatMap { $0 }
             .filter { KeyboardLayout.bopomofoGlyph(for: $0) != nil }
         #expect(keys.count == 41)
         #expect(Set(keys).count == 41, "no key appears twice")
@@ -37,10 +37,10 @@ struct FullKeyboardLayoutTests {
 
     @Test("the function row weights leave the space bar widest")
     func functionRowWeights() {
-        let weights = KeyboardLayoutProfile.full.functionKeys.map { KeyboardLayoutProfile.full.functionWeight(for: $0) }
+        let weights = KeyboardLayoutProfile.aligned.functionKeys.map { KeyboardLayoutProfile.aligned.functionWeight(for: $0) }
         #expect(weights == [1.65, 1, 1, 1, 3.8, 1, 1.4, 1.4])
         #expect(weights.reduce(0, +) == 12.25)
-        #expect(KeyboardLayoutProfile.full.functionWeight(for: "SPACE") == weights.max())
+        #expect(KeyboardLayoutProfile.aligned.functionWeight(for: "SPACE") == weights.max())
     }
 
     @Test("the mode key advertises the next two modes")
@@ -55,23 +55,23 @@ struct FullKeyboardLayoutTests {
         // The Bopomofo plane ignores shift: shift there is a one-shot hop to
         // English, handled by the engine rather than the layout.
         #expect(KeyboardLayout.rows(mode: .bopomofo, shifted: true)
-            == KeyboardLayoutProfile.full.portrait.bopomofo.rows)
+            == KeyboardLayoutProfile.aligned.portrait.bopomofo.rows)
         #expect(KeyboardLayout.rows(mode: .english, shifted: false)
-            == KeyboardLayoutProfile.full.portrait.bopomofo.rows)
+            == KeyboardLayoutProfile.aligned.portrait.bopomofo.rows)
         #expect(KeyboardLayout.rows(mode: .english, shifted: true)
-            == KeyboardLayoutProfile.full.portrait.english.shiftedRows)
+            == KeyboardLayoutProfile.aligned.portrait.english.shiftedRows)
         #expect(KeyboardLayout.rows(mode: .number, shifted: false)
-            == KeyboardLayoutProfile.full.portrait.numberSymbols.rows)
+            == KeyboardLayoutProfile.aligned.portrait.numberSymbols.rows)
         #expect(KeyboardLayout.rows(mode: .number, shifted: true)
-            == KeyboardLayoutProfile.full.portrait.numberSymbols.shiftedRows)
+            == KeyboardLayoutProfile.aligned.portrait.numberSymbols.shiftedRows)
     }
 
     @Test("English shift also shifts the four punctuation keys")
     func englishShiftPunctuation() {
-        #expect(KeyboardLayoutProfile.full.portrait.bopomofo.rows[2][9] == ";")
-        #expect(Array(KeyboardLayoutProfile.full.portrait.bopomofo.rows[3][7...9]) == [",", ".", "/"])
-        #expect(KeyboardLayoutProfile.full.portrait.english.shiftedRows[2][9] == ":")
-        #expect(Array(KeyboardLayoutProfile.full.portrait.english.shiftedRows[3][7...9]) == ["<", ">", "?"])
+        #expect(KeyboardLayoutProfile.aligned.portrait.bopomofo.rows[2][9] == ";")
+        #expect(Array(KeyboardLayoutProfile.aligned.portrait.bopomofo.rows[3][7...9]) == [",", ".", "/"])
+        #expect(KeyboardLayoutProfile.aligned.portrait.english.shiftedRows[2][9] == ":")
+        #expect(Array(KeyboardLayoutProfile.aligned.portrait.english.shiftedRows[3][7...9]) == ["<", ">", "?"])
     }
 
     @Test("the status line doubles as the reading display")

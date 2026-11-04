@@ -399,9 +399,7 @@ public final class BopomofoImeService extends InputMethodService
             refreshKeyboard();
             return;
         }
-        if (KeyboardLayoutProfileSettings.KEY_PROFILE.equals(key)) {
-            if (keyboardView != null) keyboardView.setLayoutProfile(
-                    KeyboardLayoutProfileSettings.profile(this));
+        if (KeyboardLayoutProfileSettings.isSettingKey(key)) {
             refreshKeyboard();
             return;
         }
@@ -433,12 +431,6 @@ public final class BopomofoImeService extends InputMethodService
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
-    }
-
-    @Override
-    public void onLayoutProfile(KeyboardLayoutProfile profile) {
-        KeyboardLayoutProfileSettings.setProfile(this, profile);
-        if (keyboardView != null) keyboardView.setLayoutProfile(profile);
     }
 
     @Override
@@ -877,6 +869,9 @@ public final class BopomofoImeService extends InputMethodService
         }
         lastReportedCoreError = coreError;
         keyboardView.setLayoutProfile(KeyboardLayoutProfileSettings.profile(this));
+        keyboardView.setLayoutOptions(KeyboardLayoutProfileSettings.keycapArea(this),
+                KeyboardLayoutProfileSettings.fontSize(this),
+                KeyboardLayoutProfileSettings.deletePosition(this));
         keyboardView.setChineseInputMethod(engine.chineseInputMethod());
         keyboardView.setKeyboardLayout(engine.keyboardLayout());
         keyboardView.setKeyPreviewEnabled(KeyPreviewSettings.enabled(this));

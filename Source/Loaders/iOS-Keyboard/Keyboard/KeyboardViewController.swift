@@ -34,7 +34,7 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
-    private let profileSettings = KeyboardLayoutProfileSettings()
+    private lazy var profileSettings = KeyboardLayoutProfileSettings(sharedDefaults: sharedDefaults)
     private let supporterState = SupporterState()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
@@ -58,7 +58,9 @@ final class KeyboardViewController: UIInputViewController {
 
         // Query the host after connection; keep the same globe control alive
         // through visibility changes so its system picker targets stay attached.
-        let keyboard = KeyboardView(needsInputModeSwitch: false, layoutProfile: profileSettings.profile)
+        let keyboard = KeyboardView(needsInputModeSwitch: false, layoutProfile: profileSettings.profile,
+            keycapArea: profileSettings.keycapArea, fontSize: profileSettings.fontSize,
+            deleteShiftPosition: profileSettings.deleteShiftPosition)
         keyboard.delegate = self
         keyboard.inputModeSwitchButton?.addTarget(
             self, action: #selector(commitBeforeInputModeSwitch), for: .touchDown
@@ -141,8 +143,14 @@ final class KeyboardViewController: UIInputViewController {
         applyMetrics()
     }
 
+    private func refreshLayoutOptions() {
+        keyboardView?.setLayoutOptions(keycapArea: profileSettings.keycapArea,
+            fontSize: profileSettings.fontSize, deleteShiftPosition: profileSettings.deleteShiftPosition)
+    }
+
     private func refreshAppSettings() {
         keyboardView?.setLayoutProfile(profileSettings.profile)
+        refreshLayoutOptions()
         candidateColor = candidateColorSettings.color
         inputClicksEnabled = clickSettings.enabled
         if let engine {
@@ -348,7 +356,10 @@ final class KeyboardViewController: UIInputViewController {
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
             keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
-            layoutProfile: profileSettings.profile
+            layoutProfile: profileSettings.profile,
+            keycapArea: profileSettings.keycapArea,
+            fontSize: profileSettings.fontSize,
+            deleteShiftPosition: profileSettings.deleteShiftPosition
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -581,10 +592,6 @@ final class KeyboardViewController: UIInputViewController {
 }
 
 extension KeyboardViewController: KeyboardViewDelegate {
-    func keyboardView(_ view: KeyboardView, didSelectLayoutProfile profile: KeyboardLayoutProfile) {
-        selectLayoutProfile(profile)
-    }
-
     func keyboardView(_ view: KeyboardView, didPress key: String) {
         statusOverride = nil
         if key == "HIDE_KEYBOARD" {
@@ -641,6 +648,21 @@ extension KeyboardViewController: KeyboardViewDelegate {
 }
 
 extension KeyboardViewController: SettingsPanelDelegate {
+    func settingsPanel(_ panel: SettingsPanel, didChangeKeycapArea area: KeyboardKeycapArea) {
+        profileSettings.setKeycapArea(area)
+        refreshLayoutOptions()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeFontSize size: KeyboardKeyFontSize) {
+        profileSettings.setFontSize(size)
+        refreshLayoutOptions()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeDeleteShiftPosition position: KeyboardDeleteShiftPosition) {
+        profileSettings.setDeleteShiftPosition(position)
+        refreshLayoutOptions()
+    }
+
     func settingsPanel(_ panel: SettingsPanel, didChangeLayoutProfile profile: KeyboardLayoutProfile) {
         selectLayoutProfile(profile)
     }

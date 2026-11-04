@@ -29,10 +29,10 @@ public enum KeyboardRowGeometry {
 /// A twelve-column layout for split keyboards with enough usable width.
 /// The underlying eleven-key input planes and engine indices stay unchanged.
 public enum ExpandedSplitKeyboardLayout {
-    public static var minimumWidth: Double { KeyboardLayoutProfile.split.splitGeometry!.minimumExpandedWidth }
-    public static var punctuation: [String] { KeyboardLayoutProfile.split.splitGeometry!.punctuation }
+    public static var minimumWidth: Double { KeyboardLayoutProfile.alignedSplit.splitGeometry!.minimumExpandedWidth }
+    public static var punctuation: [String] { KeyboardLayoutProfile.alignedSplit.splitGeometry!.punctuation }
 
     public static func functionWeight(for key: String) -> Double {
-        KeyboardLayoutProfile.split.functionWeight(for: key, expanded: true)
+        KeyboardLayoutProfile.alignedSplit.functionWeight(for: key, expanded: true)
     }
 }
