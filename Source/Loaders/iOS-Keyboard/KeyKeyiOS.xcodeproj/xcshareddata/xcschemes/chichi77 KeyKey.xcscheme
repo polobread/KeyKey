@@ -17,6 +17,7 @@
          <TestPlanReference reference="container:KeyKeyHeartSutra.xctestplan"></TestPlanReference>
          <TestPlanReference reference="container:KeyKeyDuo.xctestplan"></TestPlanReference>
          <TestPlanReference reference="container:KeyKeyDuoDiagnostics.xctestplan"></TestPlanReference>
+         <TestPlanReference reference="container:KeyKeyTypography.xctestplan"></TestPlanReference>
       </TestPlans>
       <MacroExpansion>
          <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="C7700000000000000000001A" BuildableName="chichi77 KeyKey.app" BlueprintName="chichi77 KeyKey" ReferencedContainer="container:KeyKeyiOS.xcodeproj"></BuildableReference>

@@ -210,7 +210,7 @@ private final class FunctionCenteringChecks {
         var results = [[String: Any]]()
         for font in KeyboardKeyFontSize.allCases {
             for width: CGFloat in [44, 176] {
-                for caption in ["符", "設", "空白", "，", "。"] {
+                for caption in ["符", "設", "空白", "，", "。", "ㄅ/英", "英/數", "數/ㄅ"] {
                     let button = KeyboardKeyButton(type: .system)
                     button.frame = CGRect(x: 0, y: 0, width: width, height: 44)
                     button.backgroundColor = .white
@@ -220,7 +220,7 @@ private final class FunctionCenteringChecks {
                     title.font = .systemFont(ofSize: 18)
                     title.adjustsFontSizeToFitWidth = true
                     title.minimumScaleFactor = 0.6
-                    button.normalPointSize = 18
+                    button.sharedPointSize = font.keyPointSize(normal: 18, largeFit: 28)
                     button.fontSize = font
                     button.setTitle(caption, for: .normal)
                     container.addSubview(button)
@@ -248,6 +248,12 @@ private final class FunctionCenteringChecks {
                     let actual = inkBounds(button)
                     let expected = inkBounds(reference)
                     var failures = [String]()
+                    if caption.contains("/") {
+                        let measured = caption.size(withAttributes: [.font: title.font!])
+                        if measured.width > title.bounds.width + 0.01 || title.lineBreakMode != .byClipping {
+                            failures.append("Mode caption must fit completely without an ellipsis")
+                        }
+                    }
                     if let actual, let expected {
                         if abs(actual.midX - expected.midX) > 1 || abs(actual.midY - expected.midY) > 1 {
                             failures.append("Caption center differs from native centered UILabel: actual=\(actual), reference=\(expected)")
@@ -272,6 +278,98 @@ private final class FunctionCenteringChecks {
     }
 }
 
+@MainActor
+private final class KeyTypographyChecks {
+    func run() -> [[String: Any]] {
+        var results = [[String: Any]]()
+        // Available slots cover narrow phones, wide tablets and short landscape
+        // rows; no assumed device-specific pixel cap enters production sizing.
+        for width: CGFloat in [23, 31, 44, 76, 110] {
+            for height: CGFloat in [22, 36, 52, 76] {
+                for inset: CGFloat in [0, 1] {
+                    let size = CGSize(width: width, height: height)
+                    let endpoints = KeyboardKeyTypography.endpoints(in: size, capInset: inset)
+                    let box = KeyboardKeyTypography.box(in: size, capInset: inset)
+                    let full = KeyboardKeyTypography.referenceSize(at: endpoints.full)
+                    let standard = KeyboardKeyTypography.referenceSize(at: endpoints.normal)
+                    let hint = KeyboardKeyTypography.hintSize(at: endpoints.normal)
+                    var failures = [String]()
+                    if full.width > box.width + 0.01 || full.height > box.height + 0.01 {
+                        failures.append("XL radical exceeds its slot")
+                    }
+                    if min(abs(full.width - box.width), abs(full.height - box.height)) > 0.05 {
+                        failures.append("XL must fill one limiting axis of the radical slot")
+                    }
+                    if standard.width + hint.width + KeyboardKeyTypography.gap > box.width + 0.05
+                        || standard.height + hint.height + KeyboardKeyTypography.gap > box.height + 0.05 {
+                        failures.append("Normal must reserve the secondary label's space")
+                    }
+                    let levels = KeyboardKeyFontSize.allCases.map {
+                        $0.keyPointSize(normal: endpoints.normal, largeFit: endpoints.full)
+                    }
+                    for (level, target) in zip(KeyboardKeyFontSize.allCases, levels) {
+                        for inline in [false, true] {
+                            for caption in ["ㄖ", "ㄅ", "日", "重", "A", "w", "0", "@", "（", "）", "，", "。"] {
+                                let button = KeyboardKeyButton(frame: CGRect(origin: .zero, size: size))
+                                button.usesGlyphLabels = true
+                                button.capInset = inset
+                                button.sharedPointSize = target
+                                button.fontSize = level
+                                button.inlineHints = inline
+                                button.glyph.text = caption
+                                button.hint.text = "b"
+                                button.hint.isHidden = !level.showsKeyHints
+                                for area in KeyboardKeycapArea.allCases {
+                                    button.capArea = area
+                                    button.layoutIfNeeded()
+                                    let width = caption.size(withAttributes: [.font: button.glyph.font!]).width
+                                    if width > button.glyph.bounds.width + 0.01 {
+                                        failures.append("Primary text width exceeds its UILabel: \(caption) \(level) \(width) > \(button.glyph.bounds.width)")
+                                    }
+                                    if abs(button.glyph.font.pointSize - target) > 0.001 {
+                                        failures.append("Primary size changed for \(caption), \(level), \(area)")
+                                    }
+                                }
+                                if level.showsKeyHints && caption == "ㄖ" {
+                                    let g = button.glyph.frame, h = button.hint.frame
+                                    if inline ? g.midX >= h.midX : g.maxY > h.minY + 0.05 {
+                                        failures.append("Secondary label overlaps the radical")
+                                    }
+                                }
+                            }
+                        }
+                        var spaces = [Double]()
+                        for spaceWidth in [width * 2, width * 3] {
+                            let button = KeyboardKeyButton(frame: CGRect(x: 0, y: 0, width: spaceWidth, height: height))
+                            button.sharedPointSize = target
+                            button.setTitle("空白", for: .normal)
+                            button.layoutIfNeeded()
+                            spaces.append(button.titleLabel!.font.pointSize)
+                        }
+                        if spaces.contains(where: { abs($0 - target) > 0.001 }) {
+                            failures.append("Split space labels must use the same primary size")
+                        }
+                        let tone = KeyboardKeyButton(frame: CGRect(origin: .zero, size: size))
+                        tone.usesGlyphLabels = true
+                        tone.glyph.text = "ˇ"
+                        tone.glyphScale = 1.8
+                        tone.sharedPointSize = target
+                        tone.hint.isHidden = true
+                        tone.layoutIfNeeded()
+                        if abs(tone.glyph.font.pointSize - target * 1.8) > 0.001 {
+                            failures.append("Tone's established relative scale changed")
+                        }
+                    }
+                    results.append(["role": "key-typography", "width": width, "height": height,
+                        "capInset": inset, "pointSizes": levels,
+                        "passed": failures.isEmpty, "failures": failures])
+                }
+            }
+        }
+        return results
+    }
+}
+
 @main
 private final class RenderingTestApplication: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
@@ -287,10 +385,12 @@ private final class RenderingTestApplication: UIResponder, UIApplicationDelegate
             let checks = StripRenderingChecks(container: controller.view)
             let stripCases = await checks.run()
             let centeringCases = await FunctionCenteringChecks(container: controller.view).run()
-            let cases = stripCases + centeringCases
+            let typographyCases = KeyTypographyChecks().run()
+            let cases = stripCases + centeringCases + typographyCases
             let failed = cases.filter { $0["passed"] as? Bool != true }.count
             let report: [String: Any] = ["runToken": RUN_TOKEN, "cases": cases,
                 "caseCount": cases.count, "failedCount": failed, "settleMilliseconds": RENDER_SETTLE_MS,
+                "typographyCaseCount": typographyCases.count,
                 "stripCaseCount": stripCases.count,
                 "stripFailedCount": stripCases.filter { $0["passed"] as? Bool != true }.count,
                 "centeringCaseCount": centeringCases.count,
@@ -324,6 +424,7 @@ def execute(source: Path, output: Path, device: str) -> dict:
     font_text = font_bytes.decode()
     extracted = [declaration(font_text, "public enum KeyboardKeyFontSize:"),
                  declaration(font_text, "public enum KeyboardKeycapArea:"),
+                 "@MainActor\n" + declaration(button_text, "private enum KeyboardKeyTypography {"),
                  "@MainActor\n" + declaration(button_text, "private enum KeyboardTextFitting {"),
                  "@MainActor\n" + declaration(button_text, "private final class KeyboardStripButton:"),
                  "@MainActor\n" + declaration(button_text, "private final class KeyboardKeyButton:")]

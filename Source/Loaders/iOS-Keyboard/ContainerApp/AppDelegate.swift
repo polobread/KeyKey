@@ -32,6 +32,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = SetupViewController()
         window.makeKeyAndVisible()
         self.window = window
+        #if KEYKEY_TYPOGRAPHY_MEASUREMENT
+        let arguments = ProcessInfo.processInfo.arguments
+        let request = arguments.firstIndex(of: "-KeyKeyTypographyMeasurement")
+            .flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
+        UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier)?
+            .set(request, forKey: "keykeyTypographyMeasurementRequest")
+        #endif
         #if DEBUG && targetEnvironment(simulator) && compiler(>=6.4)
         if #available(iOS 27.1, *) {
             let defaults = UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier)

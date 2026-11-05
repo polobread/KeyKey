@@ -375,24 +375,19 @@ public enum KeyboardKeyFontSize: String, CaseIterable, Sendable {
         switch self { case .normal: 1; case .medium: 1.15; case .large: 1.30; case .extraLarge: 1.45 }
     }
 
-    /// Evaluate the normal typography independently of the selected font level.
-    /// Hiding its secondary hint must not turn an inline tone into a stacked one.
-    public static func normalKeyPointSize(base: Double, readingScale: Double,
-                                          inlineHints: Bool, temporaryEnglish: Bool,
-                                          tableInput: Bool) -> Double {
-        base * (inlineHints || temporaryEnglish || tableInput ? 1 : readingScale)
-    }
-
-    /// Extra large preserves the legacy large fit. Intermediate levels use a
-    /// stable normal baseline, never the font fitted during an earlier layout.
+    /// Both endpoints come from the current radical key's available space.
+    /// Equal multiplicative steps keep the four choices proportional at any size.
     public func keyPointSize(normal: Double, largeFit: Double) -> Double {
-        let start = min(normal, largeFit)
+        let end = max(0.01, largeFit)
+        let start = max(0.01, min(normal, end))
+        let step: Double
         switch self {
-        case .normal: return normal
-        case .medium: return start + (largeFit - start) / 3
-        case .large: return start + (largeFit - start) * 2 / 3
-        case .extraLarge: return largeFit
+        case .normal: return start
+        case .medium: step = 1
+        case .large: step = 2
+        case .extraLarge: return end
         }
+        return start * pow(end / start, step / 3)
     }
 
     public func stripPointSize(base: Double) -> Double {

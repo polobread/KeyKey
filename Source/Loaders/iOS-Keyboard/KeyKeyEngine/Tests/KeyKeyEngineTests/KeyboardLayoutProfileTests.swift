@@ -525,34 +525,19 @@ struct KeyboardLayoutProfileTests {
         #expect(KeyboardKeyFontSize.allCases.filter(\.showsKeyHints) == [.normal])
     }
 
-    @Test func keyFontLevelsKeepTheOldLargeAtExtraLargeAndUseThirds() {
-        let compactTone = KeyboardKeyFontSize.normalKeyPointSize(base: 11, readingScale: 1.8,
-            inlineHints: true, temporaryEnglish: false, tableInput: false)
-        #expect(compactTone == 11)
-        for (level, expected) in [(KeyboardKeyFontSize.normal, 11.0), (.medium, 14), (.large, 17), (.extraLarge, 20)] {
-            #expect(level.keyPointSize(normal: compactTone, largeFit: 20) == expected)
-        }
-        // Portrait and compact split retain the stacked tone baseline. Temporary
-        // English and table roots always use the ordinary primary-key size.
-        for base in [11.0, 18] {
-            #expect(KeyboardKeyFontSize.normalKeyPointSize(base: base, readingScale: 1.8,
-                inlineHints: false, temporaryEnglish: false, tableInput: false) == base * 1.8)
-            #expect(KeyboardKeyFontSize.normalKeyPointSize(base: base, readingScale: 1.8,
-                inlineHints: false, temporaryEnglish: true, tableInput: false) == base)
-            #expect(KeyboardKeyFontSize.normalKeyPointSize(base: base, readingScale: 1.8,
-                inlineHints: false, temporaryEnglish: false, tableInput: true) == base)
-        }
-        for (normal, oldLarge) in [(18.0, 30.0), (11, 20), (32.4, 28)] {
+    @Test func keyFontLevelsUseAvailableEndpointsAndEqualRatios() {
+        for (normal, full) in [(18.0, 30.0), (11, 20), (32.4, 28)] {
             let levels = KeyboardKeyFontSize.allCases.map {
-                $0.keyPointSize(normal: normal, largeFit: oldLarge)
+                $0.keyPointSize(normal: normal, largeFit: full)
             }
-            let start = min(normal, oldLarge)
-            #expect(levels[0] == normal)
-            #expect(abs(levels[1] - (start + (oldLarge - start) / 3)) < 0.000001)
-            #expect(abs(levels[2] - (start + (oldLarge - start) * 2 / 3)) < 0.000001)
-            #expect(levels[1] <= levels[2])
-            #expect(levels[2] <= levels[3])
-            #expect(levels[3] == oldLarge)
+            #expect(levels[0] == min(normal, full))
+            #expect(levels[3] == full)
+            let ratios = zip(levels.dropFirst(), levels).map { $0 / $1 }
+            #expect(ratios.allSatisfy { abs($0 - ratios[0]) < 0.000001 })
+            for (level, expected) in zip(KeyboardKeyFontSize.allCases, levels) {
+                #expect(abs(level.keyPointSize(normal: normal * 2, largeFit: full * 2)
+                    - expected * 2) < 0.000001)
+            }
         }
     }
 

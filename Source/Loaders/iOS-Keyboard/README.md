@@ -93,6 +93,24 @@ KeyKeyiOS.xcodeproj
 例如 `nef` 輸入 `ㄋㄧˇ`，切回標準會恢復注音雙標籤。
 iOS 系統鍵盤 extension 仍只接收觸控；外接鍵盤使用 App 內實體鍵盤編輯器。
 
+完整字體／外觀組合量測另有手動 `KeyKeyTypography` test plan，不加入預設功能測試。
+明確指定實機或模擬器後，使用 `KEYKEY_TYPOGRAPHY_MEASUREMENT` 專用編譯旗標，
+在真正鍵盤 extension 的宿主視窗內，透過原設定 delegate 回呼切換四種輸入法、三種版面、
+三種鍵帽間隔、四級字體、兩種刪除鍵位置及直橫式，共 576 組；再加入英文及數字／符號共 288 組。
+每組讓宿主完成排版後量測原生 UIView／UIFont，保存鍵區、視窗、底部位置、主字級、左右空白與模式標籤完整性。
+另外透過實際設定 UI 切換並保留三種版面、四級字體的直橫式截圖。這是無組字時的外觀矩陣，
+不代表 864 次完整宿主文字輸入交易，也不取代既有組字／候選冒煙測試。
+iOS 沒有 Android 的「整合底部控制鍵」開關。測試會操作裝置及偏好；實機執行前先備份，結束後恢復。
+一般 Debug／Release 建置不包含批次入口或診斷標籤。
+
+```sh
+xcodebuild test -project KeyKeyiOS.xcodeproj -scheme 'chichi77 KeyKey' \
+  -testPlan KeyKeyTypography -destination 'platform=iOS,id=DEVICE_UDID' \
+  'OTHER_SWIFT_FLAGS=$(inherited) -D KEYKEY_TYPOGRAPHY_MEASUREMENT' \
+  -maximum-test-execution-time-allowance 1800 \
+  -default-test-execution-time-allowance 1800 -resultBundlePath /tmp/KeyKeyTypography.xcresult
+```
+
 ## 建置
 
 ```sh
@@ -237,7 +255,8 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   小間隔使用各版面原有鍵帽，中、大間隔把可見鍵帽面積縮至 90%、80%，不改文字中心、字級或點擊範圍。
   中、大、特大保留同一按鈕與鍵序，只顯示主字；只有標準字體保留英數小字，其位置不受聲調大小影響。
   「符」「設」「空白」及標點等功能鍵在放大字體時，文字仍於原按鍵內置中。
-  原本的大字改稱「特大」，「中」與「大」分別位於標準主字與特大之間的三分之一、三分之二。
+  主字依目前「ㄖ」鍵的可用寬高與實際 UIFont 量測換算，手機、平板與直橫式均重新計算；特大使用完整鍵內空間，標準先保留英數小字所需空間，中、大在兩端間等比例放大。
+  注音、倉頡／簡易字根、英文、數字與全形標點共用主字級，聲調保留既有相對比例；分離版面左右「空白」也使用相同字級，不各自撐滿。
   舊大字偏好會對應到特大；新的四級設定以獨立偏好保存，保留舊值不覆寫。
   候選字、組字列及未完成讀音也隨四級字體調整，文字會依原格框縮放，候選序號與格數不變。
   標準版面前三列偏移 0、1/3、2/3 欄；注音的ㄈ列從最左開始。

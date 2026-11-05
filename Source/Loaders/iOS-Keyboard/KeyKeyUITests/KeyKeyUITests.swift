@@ -2139,6 +2139,81 @@ final class KeyKeyUITests: XCTestCase {
         }
     }
 
+    // Explicit manual device matrix; excluded from the default functional plan.
+    func testTypographyMatrixPortrait() throws {
+        try measureTypographyMatrix(direction: .portrait, orientation: .portrait)
+    }
+
+    func testTypographyMatrixLandscape() throws {
+        try measureTypographyMatrix(direction: .landscapeLeft, orientation: .landscape)
+    }
+
+    private func measureTypographyMatrix(direction: UIDeviceOrientation,
+                                         orientation: KeyboardLayoutProfile.Orientation) throws {
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        let request = UUID().uuidString + ":\(orientation)"
+        app.launchArguments = ["-KeyKeyInputFieldTest", "-KeyKeyTypographyMeasurement", request]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["輸入欄位測試"].waitForExistence(timeout: 8))
+        let portraitFrame = app.frame
+        XCUIDevice.shared.orientation = direction
+        assertAppRotation(direction, relativeToPortrait: portraitFrame)
+        XCTAssertTrue(revealField("default"))
+        tapInputField(field("default"))
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        let measurement = app.staticTexts["keyboard.typography-measurement"]
+        XCTAssertTrue(measurement.waitForExistence(timeout: 8),
+            "此手動矩陣須以 -D KEYKEY_TYPOGRAPHY_MEASUREMENT 建置 App 與 extension")
+        XCTAssertTrue(waitForLayout(timeout: 180) {
+            (measurement.value as? String)?.hasPrefix("{") == true
+        })
+        let json = try XCTUnwrap(measurement.value as? String)
+        let data = Data(json.utf8)
+        let report = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+        attachment.name = "typography-matrix-\(orientation)-432-cases"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        XCTAssertEqual(report["request"] as? String, request)
+        XCTAssertEqual(report["caseCount"] as? Int, 432)
+        XCTAssertEqual(report["failures"] as? [String], [])
+        print("TYPOGRAPHY_MATRIX_COMPLETED \(orientation) \(report["caseCount"] ?? 0) cases")
+        try selectKeyboardPlane(.bopomofo)
+        captureTypographyLevels(orientation: orientation)
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    func testTypographyLandscapeScreenCaptures() throws {
+        XCUIDevice.shared.orientation = .portrait
+        launchHostApp()
+        let portrait = app.frame
+        XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portrait)
+        XCTAssertTrue(revealField("default"))
+        tapInputField(field("default"))
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        try selectKeyboardPlane(.bopomofo)
+        captureTypographyLevels(orientation: .landscape)
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    private func captureTypographyLevels(orientation: KeyboardLayoutProfile.Orientation) {
+        for profile in KeyboardLayoutProfile.available {
+            for font in KeyboardKeyFontSize.allCases {
+                selectLayoutOptions(layout: font == .normal ? profile : nil,
+                    spacing: font == .normal ? .small : nil, fontSize: font,
+                    deletePosition: font == .normal ? .aboveEnter : nil)
+                // App.screenshot can apply the landscape transform twice on a
+                // physical iPhone. Preserve the screen's native capture instead.
+                let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                screenshot.name = "typography-\(orientation)-\(profile.id)-\(font.rawValue)"
+                screenshot.lifetime = .keepAlways
+                add(screenshot)
+            }
+        }
+    }
+
     func testRepresentativeLayoutOptionsKeepKeysReachableWhenRotating() throws {
         XCUIDevice.shared.orientation = .portrait
         launchHostApp()

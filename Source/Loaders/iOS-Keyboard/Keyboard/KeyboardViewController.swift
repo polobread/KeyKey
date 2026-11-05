@@ -121,7 +121,111 @@ final class KeyboardViewController: UIInputViewController {
             keyboardView?.setLayoutOrientation(orientation.isLandscape ? .landscape : .portrait)
         }
         refreshSystemKeyboardControls()
+        #if KEYKEY_TYPOGRAPHY_MEASUREMENT
+        beginTypographyMeasurementIfRequested()
+        #endif
     }
+
+    #if KEYKEY_TYPOGRAPHY_MEASUREMENT
+    private var typographyMeasurementRequest: String?
+    private var typographyMeasurementLabel: UILabel?
+
+    private func beginTypographyMeasurementIfRequested() {
+        guard let request = sharedDefaults?.string(forKey: "keykeyTypographyMeasurementRequest"),
+              request != typographyMeasurementRequest,
+              let orientation = view.window?.windowScene?.interfaceOrientation,
+              orientation != .unknown, request.hasSuffix(orientation.isLandscape ? ":landscape" : ":portrait"),
+              let keyboardView, let engine, !engine.hasComposition else { return }
+        typographyMeasurementRequest = request
+        let label = UILabel(frame: CGRect(x: 1, y: 1, width: 1, height: 1))
+        label.text = " "
+        label.isAccessibilityElement = true
+        label.accessibilityIdentifier = "keyboard.typography-measurement"
+        label.accessibilityLabel = "實機字級量測"
+        label.accessibilityValue = "running"
+        view.addSubview(label)
+        typographyMeasurementLabel = label
+        Task { @MainActor in
+            // Let the actual host finish connecting and rotating before sampling.
+            try? await Task.sleep(for: .milliseconds(500))
+            let saved = (profileSettings.profile, profileSettings.keycapArea,
+                profileSettings.fontSize, profileSettings.deleteShiftPosition, methodSettings.method,
+                engine.inputMode, engine.keyboardLayout)
+            let panel = SettingsPanel(collections: collections, enabled: phraseSettings.enabledCollections,
+                inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
+                compositionMode: engine.bopomofoCompositionMode, chineseInputMethod: engine.chineseInputMethod,
+                methodSettings: methodSettings, keyboardLayout: engine.keyboardLayout,
+                layoutProfile: saved.0, keycapArea: saved.1, fontSize: saved.2, deleteShiftPosition: saved.3)
+            var records = [[String: Any]]()
+            var baseline: [Double]?
+            var windowBaseline: [Double]?
+            var failures = [String]()
+            settingsPanel(panel, didChangeKeyboardLayout: .standard)
+            for method in ChineseInputMethod.allCases {
+                settingsPanel(panel, didChangeInputMethod: method)
+                // English and number/symbol planes are independent of the chosen
+                // Chinese method; exercise them once alongside all four methods.
+                let modes: [KeyboardInput.InputMode] = method == .smart ? [.bopomofo, .english, .number] : [.bopomofo]
+                for mode in modes {
+                    engine.setAllowedInputModes(Set(KeyboardInput.InputMode.allCases), preferred: mode, selectPreferred: true)
+                    refresh()
+                    for profile in KeyboardLayoutProfile.available {
+                        settingsPanel(panel, didChangeLayoutProfile: profile)
+                        for spacing in KeyboardKeycapArea.allCases {
+                            settingsPanel(panel, didChangeKeycapArea: spacing)
+                            for font in KeyboardKeyFontSize.allCases {
+                                settingsPanel(panel, didChangeFontSize: font)
+                                for delete in KeyboardDeleteShiftPosition.allCases {
+                                    settingsPanel(panel, didChangeDeleteShiftPosition: delete)
+                                    // Yield to the real host/layout transaction, then
+                                    // read the live production views and native fonts.
+                                    try? await Task.sleep(for: .milliseconds(60))
+                                    view.layoutIfNeeded()
+                                    var record = keyboardView.typographyMeasurementSnapshot()
+                                    record["method"] = method.rawValue
+                                    record["mode"] = String(describing: mode)
+                                    record["profile"] = profile.id
+                                    record["spacing"] = spacing.rawValue
+                                    record["font"] = font.rawValue
+                                    record["delete"] = delete.rawValue
+                                    let region = record["keyRegion"] as! [Double]
+                                    let window = record["windowFrame"] as! [Double]
+                                    if let baseline, zip(region, baseline).contains(where: { abs($0 - $1) > 0.5 }) {
+                                        failures.append("Key region changed at case \(records.count): \(region)")
+                                    } else if baseline == nil { baseline = region }
+                                    if let windowBaseline, zip(window, windowBaseline).contains(where: { abs($0 - $1) > 0.5 }) {
+                                        failures.append("Window changed at case \(records.count): \(window)")
+                                    } else if windowBaseline == nil { windowBaseline = window }
+                                    if record["primaryMismatchCount"] as? Int != 0 || record["spaceMismatchCount"] as? Int != 0
+                                        || record["modeCaptionFits"] as? Bool != true {
+                                        failures.append("Font/caption mismatch at case \(records.count)")
+                                    }
+                                    records.append(record)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            settingsPanel(panel, didChangeInputMethod: saved.4)
+            engine.setAllowedInputModes(Set(KeyboardInput.InputMode.allCases), preferred: saved.5, selectPreferred: true)
+            settingsPanel(panel, didChangeKeyboardLayout: saved.6)
+            settingsPanel(panel, didChangeLayoutProfile: saved.0)
+            settingsPanel(panel, didChangeKeycapArea: saved.1)
+            settingsPanel(panel, didChangeFontSize: saved.2)
+            settingsPanel(panel, didChangeDeleteShiftPosition: saved.3)
+            refresh()
+            let report: [String: Any] = ["request": request, "caseCount": records.count,
+                "failures": failures, "records": records,
+                "systemVersion": UIDevice.current.systemVersion,
+                "scope": "Live production keyboard extension in its real input-host window; settings delegate callbacks"]
+            let data = try! JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+            let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            try? data.write(to: directory.appendingPathComponent("typography-measurement.json"), options: .atomic)
+            label.accessibilityValue = String(decoding: data, as: UTF8.self)
+        }
+    }
+    #endif
 
     private func refreshSystemKeyboardControls() {
         guard view.window != nil else { return }

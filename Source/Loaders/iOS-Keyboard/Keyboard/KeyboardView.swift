@@ -464,7 +464,70 @@ final class KeyboardView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         updateRowLayout()
+        rootStack?.layoutIfNeeded()
+        updateKeyTypography()
     }
+
+    private var cachedKeyTypography: (size: CGSize, inset: CGFloat, normal: Double, full: Double)?
+
+    private func updateKeyTypography() {
+        // Use the physical ㄖ slot even on a plane without that character.
+        // Measuring the same geometry prevents a mode switch changing font size.
+        let rows = layoutProfile.resolvedRows(orientation: layoutOrientation,
+            plane: .bopomofo, shifted: false, deleteShiftPosition: deleteShiftPosition)
+        guard let row = rows.firstIndex(where: { $0.contains("b") }),
+              let column = rows[row].firstIndex(of: "b"), keyRows.indices.contains(row) else { return }
+        let host = keyRows[row]
+        host.layoutIfNeeded()
+        let frames = layoutProfile.keyRowGeometry(for: rows, plane: .bopomofo, rowIndex: row)
+            .frames(width: host.bounds.width, height: host.bounds.height, spacing: layoutProfile.keySpacing)
+        let slot = column + (layoutProfile.splitGeometry.map { column >= $0.keySplit - 1 ? 1 : 0 } ?? 0)
+        guard frames.indices.contains(slot), frames[slot].width > 0, frames[slot].height > 0 else { return }
+        let inset: CGFloat = layoutProfile.usesStaggeredRows ? 1 : 0
+        let size = frames[slot].size
+        if cachedKeyTypography?.size != size || cachedKeyTypography?.inset != inset {
+            let fitted = KeyboardKeyTypography.endpoints(in: size, capInset: inset)
+            cachedKeyTypography = (size, inset, fitted.normal, fitted.full)
+        }
+        guard let endpoints = cachedKeyTypography else { return }
+        let pointSize = keyFontSize.keyPointSize(normal: endpoints.normal, largeFit: endpoints.full)
+        let buttons = keyViews.flatMap { $0.map(\.button) }
+            + (functionButtons + punctuationButtons).compactMap { $0.button as? KeyboardKeyButton }
+        for button in buttons {
+            button.sharedPointSize = pointSize
+            button.setNeedsLayout()
+            button.layoutIfNeeded()
+        }
+    }
+
+    #if KEYKEY_TYPOGRAPHY_MEASUREMENT
+    // Explicit instrumentation build only; no diagnostic API in normal builds.
+    func typographyMeasurementSnapshot() -> [String: Any] {
+        layoutIfNeeded()
+        func rect(_ r: CGRect) -> [Double] { [r.minX, r.minY, r.width, r.height] }
+        let primary = keyViews.flatMap { $0 }.filter {
+            !KeyboardLayout.isSpecial($0.button.accessibilityIdentifier ?? "")
+        }
+        let pointSize = primary.first.map { $0.glyph.font.pointSize / $0.button.glyphScale } ?? 0
+        let mismatches = primary.filter {
+            abs($0.glyph.font.pointSize / $0.button.glyphScale - pointSize) > 0.001
+        }.count
+        let spaces = functionButtons.filter { $0.key == "SPACE" && $0.button.superview != nil }
+        let spaceFonts = spaces.map { $0.button.titleLabel!.font.pointSize }
+        let mode = functionButtons.first { $0.key == "MODE" }!.button
+        let modeText = mode.currentTitle ?? ""
+        let modeLabel = mode.titleLabel!
+        let modeWidth = modeText.size(withAttributes: [.font: modeLabel.font!]).width
+        return ["keyRegion": keyBands.map { rect($0.convert($0.bounds, to: self)) } ?? [],
+            "viewFrame": rect(frame), "viewBounds": rect(bounds),
+            "windowFrame": window.map { rect($0.frame) } ?? [],
+            "primaryPointSize": pointSize, "primaryMismatchCount": mismatches,
+            "spacePointSizes": spaceFonts,
+            "spaceMismatchCount": spaceFonts.filter { abs($0 - pointSize) > 0.001 }.count,
+            "modeCaption": modeText, "modeCaptionFits": modeWidth <= modeLabel.bounds.width + 0.01,
+            "modePointSize": modeLabel.font.pointSize]
+    }
+    #endif
 
     private func updateCandidateVisibility() {
         let hasCandidates = !state.candidates.isEmpty
@@ -697,9 +760,9 @@ final class KeyboardView: UIView {
                 button.setTitle(caption, for: .normal)
                 let pointSize = caption.count > 3 ? metrics.functionFontSmall : metrics.functionFont
                 button.titleLabel?.font = .systemFont(ofSize: pointSize)
-                (button as? KeyboardKeyButton)?.normalPointSize = pointSize
             }
         }
+        setNeedsLayout()
     }
 
     /// The host supplies the intended action through `returnKeyType`. The
@@ -712,7 +775,6 @@ final class KeyboardView: UIView {
             button.titleLabel?.font = .systemFont(
                 ofSize: metrics.functionFontSmall, weight: .semibold
             )
-            (button as? KeyboardKeyButton)?.normalPointSize = metrics.functionFontSmall
             enterIconSide = 0
             return
         }
@@ -771,22 +833,15 @@ final class KeyboardView: UIView {
         button.hint.isHidden = !keyFontSize.showsKeyHints || glyph == nil
         button.glyph.textColor = Palette.primaryText
         button.hint.textColor = Palette.hintText
-        button.hint.font = .systemFont(ofSize: button.inlineHints ? metrics.keyGlyphFont : metrics.keyHintFont)
-        button.glyphOffset = 0
+        let readingScale = state.chineseInputMethod.isTable ? 1 : KeyboardLayout.glyphPointScale(for: key)
+        button.glyphScale = glyph != nil && !state.temporaryEnglish ? readingScale : 1
+        button.hintScale = glyph != nil && state.temporaryEnglish ? readingScale : 1
         if let glyph {
             button.glyph.text = state.temporaryEnglish ? key : glyph
             button.hint.text = state.temporaryEnglish ? glyph : key
-            let normalSize = KeyboardKeyFontSize.normalKeyPointSize(base: metrics.keyGlyphFont,
-                readingScale: KeyboardLayout.glyphPointScale(for: key), inlineHints: normalInlineHints,
-                temporaryEnglish: state.temporaryEnglish, tableInput: state.chineseInputMethod.isTable)
-            button.glyph.font = .systemFont(ofSize: normalSize)
-            button.glyphOffset = (normalSize - metrics.keyGlyphFont) * 0.25
         } else {
             button.glyph.text = caption
-            button.glyph.font = .systemFont(
-                ofSize: caption.count > 2 ? metrics.functionFontSmall : metrics.keyGlyphFont)
         }
-        button.normalPointSize = button.glyph.font.pointSize
         button.setNeedsLayout()
     }
 
@@ -1016,6 +1071,56 @@ private final class KeyboardRow: UIView {
     }
 }
 
+/// One radical-based font budget for every main label, independent of its ink.
+@MainActor
+private enum KeyboardKeyTypography {
+    static let hintRatio = 10.0 / 18
+    static let gap = 2.0
+
+    static func box(in size: CGSize, capInset: CGFloat) -> CGRect {
+        CGRect(origin: .zero, size: size).insetBy(dx: capInset + 2, dy: capInset + 2)
+    }
+
+    static func referenceSize(at pointSize: Double) -> CGSize {
+        let font = UIFont.systemFont(ofSize: pointSize)
+        let measured = "ㄖ".size(withAttributes: [.font: font])
+        return CGSize(width: measured.width, height: max(font.lineHeight, measured.height))
+    }
+
+    static func hintSize(at pointSize: Double) -> CGSize {
+        let font = UIFont.systemFont(ofSize: pointSize * hintRatio)
+        let width = "ㄖ1234567890qwertyuiopasdfghjklzxcvbnm@".map {
+            String($0).size(withAttributes: [.font: font]).width
+        }.max() ?? 0
+        return CGSize(width: width, height: max(font.lineHeight,
+            "ㄖ".size(withAttributes: [.font: font]).height))
+    }
+
+    static func endpoints(in size: CGSize, capInset: CGFloat) -> (normal: Double, full: Double) {
+        let box = box(in: size, capInset: capInset)
+        // Native font metrics can vary with optical size, so fit the requested
+        // point size itself instead of assuming a fixed pixel-to-point ratio.
+        func fit(reservingHint: Bool) -> Double {
+            var low = 0.01
+            var high = max(size.width, size.height) * 4
+            for _ in 0..<24 {
+                let candidate = (low + high) / 2
+                let reference = referenceSize(at: candidate)
+                let hint = reservingHint ? hintSize(at: candidate) : .zero
+                let padding = reservingHint ? gap : 0
+                if reference.width + hint.width + padding <= max(0.01, box.width)
+                    && reference.height + hint.height + padding <= max(0.01, box.height) {
+                    low = candidate
+                } else { high = candidate }
+            }
+            return low
+        }
+        let full = fit(reservingHint: false)
+        let normal = fit(reservingHint: true)
+        return (min(normal, full), full)
+    }
+}
+
 /// Paint and labels are separate from the UIButton's full-size hit target.
 @MainActor
 private final class KeyboardKeyButton: UIButton {
@@ -1024,11 +1129,12 @@ private final class KeyboardKeyButton: UIButton {
     let hint = UILabel()
     var usesGlyphLabels = false
     var inlineHints = false
-    var glyphOffset: Double = 0
+    var glyphScale: Double = 1
+    var hintScale: Double = 1
     var capArea: KeyboardKeycapArea = .small { didSet { setNeedsLayout() } }
     var capInset: CGFloat = 0 { didSet { setNeedsLayout() } }
     var fontSize: KeyboardKeyFontSize = .normal { didSet { setNeedsLayout() } }
-    var normalPointSize: Double = 18
+    var sharedPointSize: Double = 18
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -1038,8 +1144,7 @@ private final class KeyboardKeyButton: UIButton {
         for label in [glyph, hint] {
             label.isUserInteractionEnabled = false
             label.textAlignment = .center
-            label.adjustsFontSizeToFitWidth = true
-            label.minimumScaleFactor = 0.3
+            label.adjustsFontSizeToFitWidth = false
             label.isAccessibilityElement = false
             addSubview(label)
         }
@@ -1053,51 +1158,54 @@ private final class KeyboardKeyButton: UIButton {
         keycap.frame = capArea.frame(in: capBounds)
         sendSubviewToBack(keycap)
         glyph.isHidden = !usesGlyphLabels
+        let box = KeyboardKeyTypography.box(in: bounds.size, capInset: capInset)
         if usesGlyphLabels {
-            // Cap-area choices change only paint, never the text's fitting box.
-            let box = bounds.insetBy(dx: 1, dy: 1)
-            if inlineHints && !hint.isHidden {
-                // Compact full layouts retain one line, with independent label
-                // centres so a tone cannot move the physical-key hint.
-                let gap: CGFloat = 3
-                let referenceFont: UIFont = glyph.font
-                let step = "ㄅ".size(withAttributes: [.font: referenceFont]).width + gap
-                let labelWidth = max(0, (box.width - gap) / 2)
-                glyph.frame = CGRect(x: box.midX - step / 2 - labelWidth / 2,
-                    y: box.minY, width: labelWidth, height: box.height)
-                hint.frame = CGRect(x: box.midX + step / 2 - labelWidth / 2,
-                    y: box.minY, width: labelWidth, height: box.height)
-            } else {
-                let hintHeight = hint.isHidden ? 0 : hint.font.lineHeight
-                hint.frame = CGRect(x: box.minX, y: box.maxY - hintHeight,
-                    width: box.width, height: hintHeight)
-                let glyphBox = CGRect(x: box.minX, y: box.minY,
-                    width: box.width, height: max(0, box.height - hintHeight))
-                if fontSize == .normal {
-                    glyph.frame = glyphBox.offsetBy(dx: 0, dy: glyphOffset)
-                } else {
-                    let largeFont = fittingFont(for: glyph.text, in: glyphBox.size)
-                    glyph.font = .systemFont(ofSize: fontSize.keyPointSize(normal: normalPointSize,
-                        largeFit: largeFont.pointSize))
-                    glyph.frame = glyphBox
-                }
+            var pointSize = sharedPointSize * glyphScale
+            // Icons and long action captions fit their control, while all input
+            // characters retain the common size, including full-width punctuation.
+            if let text = glyph.text, text.count > 1 || ["☺", "⌫", "⇧", "▼", "🌐"].contains(text) {
+                pointSize = KeyboardTextFitting.font(for: text, target: pointSize, in: box.size).pointSize
             }
+            glyph.font = .systemFont(ofSize: pointSize)
+            hint.font = .systemFont(ofSize: sharedPointSize * KeyboardKeyTypography.hintRatio * hintScale)
+            let reference = KeyboardKeyTypography.referenceSize(at: sharedPointSize)
+            let small = KeyboardKeyTypography.hintSize(at: sharedPointSize)
+            var mainCenter = CGPoint(x: box.midX, y: box.midY)
+            if !hint.isHidden {
+                if inlineHints {
+                    let total = reference.width + KeyboardKeyTypography.gap + small.width
+                    mainCenter.x = box.midX - total / 2 + reference.width / 2
+                    hint.center = CGPoint(x: box.midX + total / 2 - small.width / 2, y: box.midY)
+                } else {
+                    let total = reference.height + KeyboardKeyTypography.gap + small.height
+                    mainCenter.y = box.midY - total / 2 + reference.height / 2
+                    hint.center = CGPoint(x: box.midX, y: box.midY + total / 2 - small.height / 2)
+                }
+                hint.bounds = CGRect(origin: .zero, size: CGSize(width: box.width,
+                    height: max(small.height, hint.font.lineHeight)))
+            }
+            // A tone uses its established relative font scale. Its larger font
+            // box must not shrink the neighbouring ordinary primary labels.
+            glyph.bounds = CGRect(origin: .zero, size: CGSize(width: max(box.width,
+                glyphScale > 1 ? (glyph.text ?? "").size(withAttributes: [.font: glyph.font!]).width : 0),
+                height: max(reference.height, glyph.font.lineHeight)))
+            glyph.center = CGPoint(x: mainCenter.x,
+                y: mainCenter.y + (glyph.font.pointSize - sharedPointSize) * 0.25)
         } else {
             hint.isHidden = true
-            if fontSize != .normal, let titleLabel, currentImage == nil {
-                let largeFont = fittingFont(for: currentTitle, in: bounds.insetBy(dx: 2, dy: 2).size)
-                let pointSize = fontSize.keyPointSize(normal: normalPointSize, largeFit: largeFont.pointSize)
-                if abs(titleLabel.font.pointSize - pointSize) > 0.01 { titleLabel.font = .systemFont(ofSize: pointSize) }
+            if let titleLabel, currentImage == nil {
+                let text = currentTitle ?? ""
+                // Both split SPACE buttons use precisely the common point size.
+                // Other multi-character action captions may fit their own control.
+                let target = text == "空白" || text.count <= 1 ? sharedPointSize
+                    : KeyboardTextFitting.font(for: text, target: sharedPointSize, in: box.size).pointSize
+                titleLabel.font = .systemFont(ofSize: target)
+                titleLabel.adjustsFontSizeToFitWidth = false
+                titleLabel.lineBreakMode = .byClipping
                 titleLabel.textAlignment = .center
-                titleLabel.frame = bounds.insetBy(dx: 1, dy: 1)
+                titleLabel.frame = box
             }
         }
-    }
-
-    private func fittingFont(for text: String?, in size: CGSize) -> UIFont {
-        let initial = UIFont.systemFont(ofSize: max(1, size.height / 1.2))
-        let width = (text ?? "").size(withAttributes: [.font: initial]).width
-        return .systemFont(ofSize: initial.pointSize * min(1, max(0.01, size.width) / max(1, width)))
     }
 }
 
@@ -1106,11 +1214,20 @@ private final class KeyboardKeyButton: UIButton {
 @MainActor
 private enum KeyboardTextFitting {
     static func font(for text: String?, target: Double, in size: CGSize) -> UIFont {
-        let requested = UIFont.systemFont(ofSize: max(0.01, target))
-        let measured = (text ?? "").size(withAttributes: [.font: requested])
-        let ratio = min(1, min(max(0, size.width) / max(0.01, measured.width),
-            max(0, size.height) / max(requested.lineHeight, measured.height)))
-        return .systemFont(ofSize: max(0.01, target * ratio))
+        func fits(_ pointSize: Double) -> Bool {
+            let font = UIFont.systemFont(ofSize: pointSize)
+            let measured = (text ?? "").size(withAttributes: [.font: font])
+            return measured.width <= max(0, size.width)
+                && max(font.lineHeight, measured.height) <= max(0, size.height)
+        }
+        let requested = max(0.01, target)
+        if fits(requested) { return .systemFont(ofSize: requested) }
+        var low = 0.01, high = requested
+        for _ in 0..<24 {
+            let candidate = (low + high) / 2
+            if fits(candidate) { low = candidate } else { high = candidate }
+        }
+        return .systemFont(ofSize: low)
     }
 }
 
