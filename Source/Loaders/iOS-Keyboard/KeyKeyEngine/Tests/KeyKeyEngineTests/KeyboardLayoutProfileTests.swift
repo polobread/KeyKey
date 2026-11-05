@@ -223,9 +223,10 @@ struct KeyboardLayoutProfileTests {
         let profile = KeyboardLayoutProfile.standard
         var previous = profile
         previous.planeGeometryOverrides = [:]
+        let expectedOffsets: [Double] = [0, 1.0 / 3.0, 2.0 / 3.0, 1]
         for orientation in KeyboardLayoutProfile.Orientation.allCases {
             for plane in [KeyboardLayoutProfile.Plane.cangjie, .simplex] {
-                #expect(profile.rowOffsets(for: plane) == [0, 1.0 / 3, 2.0 / 3, 1])
+                #expect(profile.rowOffsets(for: plane) == expectedOffsets)
                 for shifted in [false, true] {
                     for position in KeyboardDeleteShiftPosition.allCases {
                         let oldRows = KeyboardLayoutProfile.aligned.resolvedRows(orientation: orientation,
@@ -268,6 +269,7 @@ struct KeyboardLayoutProfileTests {
     }
 
     @Test func tableRowOverrideLeavesOtherLayoutsAndPlanesUnchanged() {
+        let expectedOffsets: [Double] = [0, 1.0 / 3.0, 2.0 / 3.0, 0]
         for profile in KeyboardLayoutProfile.available {
             for orientation in KeyboardLayoutProfile.Orientation.allCases {
                 for plane in KeyboardLayoutProfile.Plane.allCases {
@@ -277,7 +279,7 @@ struct KeyboardLayoutProfileTests {
                         #expect(profile.rows(orientation: orientation, plane: plane, shifted: shifted)
                             == KeyboardLayoutProfile.aligned.rows(orientation: orientation, plane: plane, shifted: shifted))
                         if profile.usesStaggeredRows {
-                            #expect(profile.rowOffsets(for: plane) == [0, 1.0 / 3, 2.0 / 3, 0])
+                            #expect(profile.rowOffsets(for: plane) == expectedOffsets)
                         }
                     }
                 }
