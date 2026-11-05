@@ -138,6 +138,166 @@ public final class KeyboardRenderingInstrumentedTest {
         });
     }
 
+    @Test public void primaryGlyphsAndBothSpaceKeysShareOneSizeAcrossLayoutsAndPlanes() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                        ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                    float sharedSize = -1;
+                    for (var profile : KeyboardLayoutProfile.available()) {
+                        view.setLayoutProfile(profile);
+                        for (var position : KeyboardLayoutProfile.DeletePosition.values()) {
+                            view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font, position);
+                            for (boolean integrated : new boolean[]{false, true}) {
+                                view.setIntegratedBottomControls(integrated, integrated);
+                                for (var method : ChineseInputMethod.values()) {
+                                    view.setChineseInputMethod(method);
+                                    for (var plane : InputEngine.InputMode.values()) {
+                                        for (boolean shifted : new boolean[]{false, true}) {
+                                            view.setState(List.of(), "", false, List.of(), 0, plane,
+                                                    shifted, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                                            KeyCanvas rendered = draw(view);
+                                            String label = plane == InputEngine.InputMode.NUMBER ? (shifted ? "$" : "1")
+                                                    : plane == InputEngine.InputMode.ENGLISH ? (shifted ? "A" : "a")
+                                                    : method.isTable() ? "日" : "ㄅ";
+                                            float size = rendered.texts.stream().filter(t -> t.value.equals(label))
+                                                    .findFirst().orElseThrow().size;
+                                            if (sharedSize < 0) sharedSize = size;
+                                            assertEquals(profile.id + "/" + orientation + "/" + font + "/" + method + "/" + plane,
+                                                    sharedSize, size, .01f);
+                                            var spaces = rendered.texts.stream().filter(t -> t.value.equals("空白")).toList();
+                                            assertEquals(profile.split ? 2 : 1, spaces.size());
+                                            for (var space : spaces) assertEquals("Space captions use the main font", sharedSize, space.size, .01f);
+                                            for (var text : rendered.texts) {
+                                                if (List.of("，", "。", "、", "？").contains(text.value))
+                                                    assertEquals("Full-width punctuation follows phonetic text", sharedSize, text.size, .01f);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    @Test public void shortRowsKeepParenthesesAndEmojiAtTheSharedLetterSize() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            view.setIntegratedBottomControls(true, true);
+            for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                        ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                for (var profile : KeyboardLayoutProfile.available()) {
+                    view.setLayoutProfile(profile);
+                    for (int percent : new int[]{50, 75}) {
+                        view.setTouchKeyboardHeightPercents(percent, percent);
+                        for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                            view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
+                                    KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                            view.setState(List.of(), "", false, List.of(), 0, InputEngine.InputMode.ENGLISH,
+                                    true, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                            KeyCanvas rendered = draw(view);
+                            float letter = rendered.texts.stream().filter(t -> t.value.equals("A"))
+                                    .findFirst().orElseThrow().size;
+                            for (String symbol : List.of("(", ")", "☺", "🌐")) {
+                                var painted = rendered.texts.stream().filter(t -> t.value.equals(symbol))
+                                        .findFirst().orElseThrow();
+                                assertEquals(profile.id + "/" + orientation + "/" + percent + "/" + font + "/" + symbol,
+                                        letter, painted.size, .05f);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    @Test public void standardCaptionsFitSmallKeyboardsAcrossMethodsAndLayouts() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            for (var profile : KeyboardLayoutProfile.available()) {
+                view.setLayoutProfile(profile);
+                for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                    view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                            ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                    for (int percent : new int[]{50, 75, 100}) {
+                        view.setTouchKeyboardHeightPercents(percent, percent);
+                        for (var method : ChineseInputMethod.values()) {
+                            view.setChineseInputMethod(method);
+                            view.setState(List.of(), "", false, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                                    false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                            view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL,
+                                    KeyboardLayoutProfile.FontSize.NORMAL,
+                                    KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                            KeyCanvas rendered = draw(view);
+                            for (var text : rendered.texts) {
+                                if (text.keyIndex < 0) continue;
+                                RectF cap = rendered.keys.get(text.keyIndex);
+                                assertTrue(profile.id + "/" + orientation + "/" + percent + "/" + method
+                                        + ": caption clipped: " + text.value + ", ink=" + text.ink + ", cap=" + cap,
+                                        text.ink.left >= cap.left - 1 && text.ink.right <= cap.right + 1
+                                        && text.ink.top >= cap.top - 1 && text.ink.bottom <= cap.bottom + 1);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    @Test public void toneMarksRetainTheirProportionWhenPhoneticLettersGrow() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            for (var profile : KeyboardLayoutProfile.available()) {
+                view.setLayoutProfile(profile);
+                for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                    view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                            ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                    for (int percent : new int[]{50, 100, 200}) {
+                        view.setTouchKeyboardHeightPercents(percent, percent);
+                        for (var method : new ChineseInputMethod[]{ChineseInputMethod.SMART,
+                                ChineseInputMethod.TRADITIONAL}) {
+                            view.setChineseInputMethod(method);
+                            view.setState(List.of(), "", false, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                                    false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                            view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL,
+                                    KeyboardLayoutProfile.FontSize.NORMAL,
+                                    KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                            KeyCanvas normal = draw(view);
+                            float normalLetter = normal.texts.stream().filter(t -> t.value.equals("ㄅ"))
+                                    .findFirst().orElseThrow().size;
+                            for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                                view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
+                                        KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                                KeyCanvas rendered = draw(view);
+                                float letter = rendered.texts.stream().filter(t -> t.value.equals("ㄅ"))
+                                        .findFirst().orElseThrow().size;
+                                for (String symbol : List.of("ˇ", "ˋ", "ˊ", "˙")) {
+                                    float original = normal.texts.stream().filter(t -> t.value.equals(symbol))
+                                            .findFirst().orElseThrow().size;
+                                    float enlarged = rendered.texts.stream().filter(t -> t.value.equals(symbol))
+                                            .findFirst().orElseThrow().size;
+                                    assertEquals(profile.id + "/" + orientation + "/" + percent + "/" + font
+                                            + ": tone growth must follow the phonetic letter: " + symbol,
+                                            letter / normalLetter, enlarged / original, .02f);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     @Test public void switchingEveryVisualOptionRetainsCompositionAndCandidateLabels() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         instrumentation.runOnMainSync(() -> {
@@ -159,7 +319,7 @@ public final class KeyboardRenderingInstrumentedTest {
         });
     }
 
-    @Test public void extraLargeLatinSymbolsAndEnterUseTheDisplayedLabelAndKeepTouchActions() {
+    @Test public void sharedLatinSymbolsAndEnterUseTheDisplayedLabelAndKeepTouchActions() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         instrumentation.runOnMainSync(() -> {
             var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
@@ -187,9 +347,8 @@ public final class KeyboardRenderingInstrumentedTest {
                         RectF key = rendered.keys.get(main.keyIndex);
                         float widthRatio = Math.max(main.ink.width(), main.advance) / (key.width() - 4 * density);
                         float heightRatio = main.ink.height() / (key.height() - 4 * density);
-                        assertEquals("Extra large must retain the original full fit for every displayed glyph",
-                                1f,
-                                Math.max(widthRatio, heightRatio), .08f);
+                        assertTrue("Shared text must fit without stretching to fill the key",
+                                Math.max(widthRatio, heightRatio) <= 1.08f);
                         events.clear();
                         tap(view, key.centerX(), key.centerY());
                         assertEquals(List.of(placement.inputMode() == InputEngine.InputMode.NUMBER ? "~" : "z"), events);
@@ -199,9 +358,8 @@ public final class KeyboardRenderingInstrumentedTest {
                                 placement.plane(), false, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
                                 view.getWidth() / density).stream().filter(item -> item.action().equals("ENTER"))
                                 .findFirst().orElseThrow();
-                        float enterWidth = (enterAction.right() - enterAction.left()) * view.getWidth() - 4 * density;
-                        float enterHeight = key.height();
-                        float expectedSide = Math.min(enterWidth, enterHeight) - 4 * density;
+                        float expectedSide = main.size * (orientation == KeyboardLayoutProfile.Orientation.LANDSCAPE
+                                ? 14f / 11 : 20f / 18);
                         assertEquals(expectedSide / 2f, rendered.paths.get(0).width(), .5f);
                     }
                 }

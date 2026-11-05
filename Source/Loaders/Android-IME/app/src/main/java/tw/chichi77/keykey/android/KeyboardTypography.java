@@ -6,11 +6,10 @@ final class KeyboardTypography {
 
     static float keyTextSize(KeyboardLayoutProfile.FontSize size, float normalSize,
             float largeFit) {
-        return switch (size) {
-            case NORMAL -> normalSize;
-            case MEDIUM -> Math.min(largeFit, normalSize + (largeFit - normalSize) / 3f);
-            case LARGE -> Math.min(largeFit, normalSize + (largeFit - normalSize) * 2f / 3f);
-            case EXTRA_LARGE -> largeFit;
-        };
+        // Constrain the entire family together; clipping a selected level
+        // independently can collapse all four choices into the same size.
+        float base = Math.min(normalSize,
+                largeFit / KeyboardLayoutProfile.FontSize.EXTRA_LARGE.stripScale);
+        return base * size.stripScale;
     }
 }

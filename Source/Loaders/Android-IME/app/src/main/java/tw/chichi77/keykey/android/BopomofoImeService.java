@@ -152,7 +152,7 @@ public final class BopomofoImeService extends InputMethodService
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
-        return keyboardView;
+        return new KeyboardInputView(this, keyboardView);
     }
 
     @Override

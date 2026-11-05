@@ -488,6 +488,36 @@ public final class KeyboardBottomSpaceInstrumentedTest {
     private record KeyboardContent(int totalHeight, List<RectF> mainKeys) {}
 
     @Test
+    public void cappedIntegratedContainerKeepsContentAtTheWindowBottom() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            Context context = instrumentation.getTargetContext();
+            float density = context.getResources().getDisplayMetrics().density;
+            int width = context.getResources().getDisplayMetrics().widthPixels;
+            int cap = Math.round(190 * density);
+            for (var mode : new BopomofoKeyboardView.Mode[]{BopomofoKeyboardView.Mode.PORTRAIT,
+                    BopomofoKeyboardView.Mode.LANDSCAPE}) {
+                for (int percent : new int[]{100, 200}) {
+                    var keyboard = new BopomofoKeyboardView(context);
+                    keyboard.setMode(mode);
+                    keyboard.setTouchKeyboardHeightPercents(percent, percent);
+                    keyboard.setIntegratedBottomControls(true, false);
+                    var container = new KeyboardInputView(context, keyboard);
+                    measureWindow(container, width, cap, View.MeasureSpec.AT_MOST);
+                    KeyboardContent original = drawnMainKeys(keyboard, true);
+                    assertEquals(cap, container.getHeight());
+                    assertEquals(container.getHeight(), keyboard.getBottom());
+                    measureWindow(container, width, cap, View.MeasureSpec.EXACTLY);
+                    assertEquals("Parent feedback must keep the capped content dimensions",
+                            original.mainKeys(), drawnMainKeys(keyboard, true).mainKeys());
+                    assertEquals("No transparent strip below a capped keyboard",
+                            container.getHeight(), keyboard.getBottom());
+                }
+            }
+        });
+    }
+
+    @Test
     public void liveInputMethodReleasesHostSpaceWhenBottomSpaceIsDisabled() throws Exception {
         org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
         var instrumentation = InstrumentationRegistry.getInstrumentation();
@@ -496,17 +526,22 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         Map<String, ?> previous = preferences.getAll();
         String[] keys = {KeyboardBottomSpaceSettings.KEY_TOUCH_ENABLED,
                 KeyboardBottomSpaceSettings.KEY_HARDWARE_ENABLED,
-                CandidateWindowSettings.KEY_FLOATING_ENABLED};
+                CandidateWindowSettings.KEY_FLOATING_ENABLED, KeyboardBottomControlsSettings.KEY_ENABLED};
         Activity activity = null;
         try {
             preferences.edit().putBoolean(keys[0], true).putBoolean(keys[1], true)
-                    .putBoolean(keys[2], false).commit();
+                    .putBoolean(keys[2], false).putBoolean(keys[3], false).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity initial = activity;
+            instrumentation.runOnMainSync(() ->
+                    initial.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
+            // Rotation can recreate the host. Measure the resumed window, rather
+            // than retaining the old landscape Activity and its stale insets.
+            activity = awaitPortraitHost();
             Activity host = activity;
             instrumentation.runOnMainSync(() -> {
-                host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                 EditText editor = findEditor(host.findViewById(android.R.id.content));
                 assertNotNull(editor);
                 editor.requestFocus();
@@ -546,6 +581,25 @@ public final class KeyboardBottomSpaceInstrumentedTest {
             }
             restore.commit();
         }
+    }
+
+    private static Activity awaitPortraitHost() throws InterruptedException {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        long deadline = SystemClock.uptimeMillis() + 10000;
+        do {
+            Activity[] result = {null};
+            instrumentation.runOnMainSync(() -> {
+                for (Activity activity : androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+                        .getInstance().getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED)) {
+                    if (activity.getClass().getSimpleName().equals("ImeTestActivity")
+                            && activity.getResources().getConfiguration().orientation
+                                    == Configuration.ORIENTATION_PORTRAIT) result[0] = activity;
+                }
+            });
+            if (result[0] != null) return result[0];
+            Thread.sleep(100);
+        } while (SystemClock.uptimeMillis() < deadline);
+        throw new AssertionError("Portrait test host did not resume");
     }
 
     private static int awaitImeHeight(Activity host, int expected) throws InterruptedException {
