@@ -312,8 +312,14 @@ public final class GuanyinmaInputEngine: InputEngine {
     /// Escape resets touch composition and is not the candidate-close action.
     @discardableResult public func closeTouchSmartCandidates() -> KeyboardInput.Result {
         guard isTouchSmartComposition, !displayedCandidates.isEmpty else { return .update }
+        let returnToEnd = overlay == .none && !snapshot.candidates.isEmpty
+            && snapshot.reading.isEmpty
         clearOverlay()
-        return operate(["type": "close_candidates"])
+        let result = operate(["type": "close_candidates"])
+        guard returnToEnd, lastError == nil, result == .update else { return result }
+        // Candidate targeting leaves the core cursor at that reading. Touch
+        // editing resumes at the still-editable tail after cancelling the list.
+        return operate(["type": "set_cursor", "index": snapshot.readings.count])
     }
     private func setMode(_ value: KeyboardInput.InputMode) -> KeyboardInput.Result {
         clearOverlay(); mode = value

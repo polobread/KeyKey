@@ -201,6 +201,69 @@ struct GuanyinmaIntegrationTests {
         #expect(facade.coreError == nil)
     }
 
+    @Test(arguments: [false, true])
+    func closeTouchCandidatesAllowsBackspaceAtSentenceEnd(toggleSameCell: Bool) throws {
+        let f = try Fixture(), engine = try f.facade()
+        type("su3cl3", in: engine)
+        try #require(engine.selectTouchSmartCell(0))
+        let correction = try #require(engine.displayedCandidates.firstIndex(of: "妳"))
+        #expect(engine.selectDisplayedCandidate(correction) == .update)
+        let completed = engine.completedSmartText
+        #expect(completed == "妳好")
+        var host = TouchSmartHostTextState()
+        _ = host.update(to: completed)
+        engine.acknowledgeHostEffects()
+        try #require(engine.selectTouchSmartCell(0))
+        try #require(!engine.displayedCandidates.isEmpty)
+        if toggleSameCell { #expect(engine.selectTouchSmartCell(0)) }
+        else { #expect(engine.closeTouchSmartCandidates() == .update) }
+        #expect(engine.completedSmartText == completed && engine.displayedCandidates.isEmpty)
+        #expect(host.update(to: engine.completedSmartText).isEmpty)
+        let beforeCount = engine.smartCompositionReadingCount
+        #expect(engine.backspace() == .update)
+        #expect(engine.smartCompositionReadingCount == beforeCount - 1)
+        #expect(engine.completedSmartText == "妳", "Delete the sentence tail, not the candidate target or its override")
+        #expect(host.update(to: engine.completedSmartText) == .init(deleteCount: 1, insertion: ""))
+        engine.acknowledgeHostEffects()
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func closeTouchCandidatesAllowsBackspaceWithoutEditingEvictedPrefix() throws {
+        let f = try Fixture(), engine = try f.facade()
+        var host = TouchSmartHostTextState()
+        var document = "", evictedPrefix = ""
+        func applyToHost(_ result: KeyboardInput.Result) {
+            let edit = host.update(to: engine.completedSmartText, evictedPrefix: result.text)
+            document.removeLast(edit.deleteCount)
+            document += edit.insertion
+            evictedPrefix += result.text
+            engine.acknowledgeHostEffects()
+        }
+        // The touch frontend uses the existing nine/ten-syllable handoff.
+        for syllable in 0..<10 {
+            for key in "su3" { applyToHost(engine.handleSoftKey(String(key))) }
+            if syllable == 8 { #expect(evictedPrefix.isEmpty) }
+        }
+        try #require(!evictedPrefix.isEmpty)
+        let retainedCount = engine.smartCompositionReadingCount
+        try #require(retainedCount > 0 && retainedCount < 10)
+        #expect(document == evictedPrefix + engine.completedSmartText)
+        try #require(engine.selectTouchSmartCell(0))
+        try #require(!engine.displayedCandidates.isEmpty)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(host.update(to: engine.completedSmartText).isEmpty)
+        for remaining in stride(from: retainedCount, through: 1, by: -1) {
+            let result = engine.backspace()
+            #expect(result == .update)
+            applyToHost(result)
+            #expect(engine.smartCompositionReadingCount == remaining - 1)
+            #expect(document.hasPrefix(evictedPrefix))
+        }
+        #expect(document == evictedPrefix, "Backspace within the graph cannot revisit its already-evicted prefix")
+        #expect(host.editableText.isEmpty && !engine.hasComposition)
+        #expect(engine.coreError == nil)
+    }
+
     @Test func closeTouchCandidatesPreservesUnfinishedReadingAndConvertedPrefix() throws {
         let f = try Fixture(), facade = try f.facade()
         let engine: any InputEngine = facade

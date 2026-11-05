@@ -1418,6 +1418,93 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertFalse(app.buttons["keyboard.space.right"].exists)
     }
 
+    func testSmartCandidateCancellationReturnsEditingToTailAtCurrentPose() throws {
+        // The current pose stays unchanged: this is candidate-cursor handoff,
+        // not a rotation or layout matrix.
+        launchHostApp(geometryProbe: true)
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        tapInputField(output)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        try selectCompositionMode(ChineseInputMethod.smart.displayName)
+        app.buttons["SETTINGS"].tap()
+        app.segmentedControls["bopomofo-keyboard-layout"]
+            .buttons[BopomofoKeyboardLayout.standard.displayName].tap()
+        closeKeyboardSettings()
+        selectLayoutOptions(layout: .alignedSplit, spacing: .small, fontSize: .normal,
+                            deletePosition: .aboveEnter)
+        let emptyValue = try XCTUnwrap(output.value as? String)
+        let firstCell = app.buttons["keyboard.smart-cell.1"]
+        let editableCells = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "個組字，"))
+        let candidates = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "個候選，"))
+        let backspace = app.buttons["BACKSPACE"]
+        attachSimulatorGeometry(name: "candidate-cancel-current-pose-before")
+
+        func typeReading(_ keys: String) {
+            for key in keys { app.buttons[String(key)].tap() }
+        }
+        func openFirstCellCandidates() {
+            XCTAssertTrue(firstCell.waitForExistence(timeout: 3))
+            firstCell.tap()
+            XCTAssertTrue(candidates.firstMatch.waitForExistence(timeout: 3))
+        }
+        func assertClosed(with text: String) {
+            XCTAssertTrue(waitForLayout {
+                output.value as? String == text && candidates.count == 0
+            }, "取消候選不得選字、送字或清除原組字")
+        }
+
+        typeReading("su3")
+        XCTAssertTrue(waitForLayout { output.value as? String == "你" })
+        openFirstCellCandidates()
+        firstCell.tap() // Cancel by tapping the same composition cell; do not select a candidate.
+        assertClosed(with: "你")
+        backspace.tap()
+        XCTAssertTrue(waitForLayout {
+            output.value as? String == emptyValue && editableCells.count == 0 && candidates.count == 0
+        }, "同格取消候選後，立即刪除必須刪掉末音節，不能停在候選目標前")
+        attachStripClearingQA(font: .normal, stage: "candidate-toggle-backspace-cleared")
+
+        typeReading("g4su3")
+        XCTAssertTrue(waitForLayout { output.value as? String == "是你" })
+        openFirstCellCandidates() // The target is the first syllable, not the sentence tail.
+        firstCell.tap()
+        assertClosed(with: "是你")
+        typeReading("cl3")
+        XCTAssertTrue(waitForLayout { output.value as? String == "是你好" },
+                      "取消句中候選後，下一音節必須接在句尾")
+        backspace.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "是你" })
+        attachStripClearingQA(font: .normal, stage: "candidate-toggle-tail-editing")
+
+        openFirstCellCandidates()
+        let close = app.buttons["keyboard.candidates.close"]
+        let explicitCloseAvailable = close.waitForExistence(timeout: 1)
+        if explicitCloseAvailable {
+            XCTAssertTrue(close.isHittable)
+            close.tap()
+        } else {
+            firstCell.tap()
+        }
+        assertClosed(with: "是你")
+        backspace.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "是" },
+                      "取消候選後的刪除應修改句尾，不可刪錯句中目標或完全無效")
+        let coverage = XCTAttachment(string: explicitCloseAvailable
+            ? "Covered same-cell cancellation and the explicit candidate-close button."
+            : "Explicit candidate-close button unavailable at this pose; covered same-cell cancellation only.")
+        coverage.name = "candidate-cancellation-paths-current-pose"
+        coverage.lifetime = .keepAlways
+        add(coverage)
+        backspace.tap()
+        XCTAssertTrue(waitForLayout {
+            output.value as? String == emptyValue && editableCells.count == 0 && candidates.count == 0
+        })
+        attachStripClearingQA(font: .normal, stage: "candidate-cancellation-final-cleared")
+        attachSimulatorGeometry(name: "candidate-cancel-current-pose-after")
+        selectLayoutProfile(.aligned)
+    }
+
     /// Device Hub controls the pose; this test never changes its orientation.
     func testSplitSmartPagingAtCurrentPoseKeepsUnfinishedReading() throws {
         try checkSplitSmartPagingKeepsUnfinishedReading(rotating: false)

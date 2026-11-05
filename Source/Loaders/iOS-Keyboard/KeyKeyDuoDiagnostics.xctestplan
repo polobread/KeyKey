@@ -27,6 +27,7 @@
         "KeyKeyUITests/testFullProfileLayoutAtCurrentPose()",
         "KeyKeyUITests/testFourFontLevelsClearCompositionAndCandidatesAtCurrentPose()",
         "KeyKeyUITests/testNativeKeyboardSwitchAtCurrentPoseWithoutExtension()",
+        "KeyKeyUITests/testSmartCandidateCancellationReturnsEditingToTailAtCurrentPose()",
         "KeyKeyUITests/testSplitSmartNineTenSyllableBoundaryAtCurrentPose()",
         "KeyKeyUITests/testSplitSmartPagingAtCurrentPoseKeepsUnfinishedReading()"
       ]
