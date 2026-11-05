@@ -138,7 +138,7 @@ public final class KeyboardRenderingInstrumentedTest {
         });
     }
 
-    @Test public void primaryGlyphsAndBothSpaceKeysShareOneSizeAcrossLayoutsAndPlanes() {
+    @Test public void primaryGlyphsAndBothSpaceKeysShareOneSizeWithinEachLayout() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         instrumentation.runOnMainSync(() -> {
             var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
@@ -146,8 +146,8 @@ public final class KeyboardRenderingInstrumentedTest {
                 view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
                         ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
                 for (var font : KeyboardLayoutProfile.FontSize.values()) {
-                    float sharedSize = -1;
                     for (var profile : KeyboardLayoutProfile.available()) {
+                        float sharedSize = -1;
                         view.setLayoutProfile(profile);
                         for (var position : KeyboardLayoutProfile.DeletePosition.values()) {
                             view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font, position);
@@ -186,7 +186,7 @@ public final class KeyboardRenderingInstrumentedTest {
         });
     }
 
-    @Test public void shortRowsKeepParenthesesAndEmojiAtTheSharedLetterSize() {
+    @Test public void shortRowsKeepSymbolSizeAndFitControlIcons() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         instrumentation.runOnMainSync(() -> {
             var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
@@ -209,9 +209,55 @@ public final class KeyboardRenderingInstrumentedTest {
                             for (String symbol : List.of("(", ")", "☺", "🌐")) {
                                 var painted = rendered.texts.stream().filter(t -> t.value.equals(symbol))
                                         .findFirst().orElseThrow();
-                                assertEquals(profile.id + "/" + orientation + "/" + percent + "/" + font + "/" + symbol,
-                                        letter, painted.size, .05f);
+                                if (symbol.equals("(") || symbol.equals(")")) {
+                                    assertEquals(profile.id + "/" + orientation + "/" + percent + "/" + font + "/" + symbol,
+                                            letter, painted.size, .05f);
+                                } else {
+                                    assertTrue("Control icons must fit without shrinking the main font", painted.size <= letter + .05f);
+                                    assertInside(painted, rendered.keys.get(painted.keyIndex));
+                                }
                             }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    @Test public void extraLargeUsesTheRadicalSlotOnPhoneAndTabletWidths() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            float density = view.getResources().getDisplayMetrics().density;
+            var measure = new Paint(Paint.ANTI_ALIAS_FLAG);
+            measure.setFakeBoldText(true);
+            for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                        ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                for (var profile : KeyboardLayoutProfile.available()) {
+                    view.setLayoutProfile(profile);
+                    for (int widthDp : new int[]{320, 411, 768, 1024}) {
+                        for (int percent : new int[]{50, 100, 200}) {
+                            view.setTouchKeyboardHeightPercents(percent, percent);
+                            view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL,
+                                    KeyboardLayoutProfile.FontSize.EXTRA_LARGE,
+                                    KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                            view.setState(List.of(), "", false, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                                    false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                            KeyCanvas rendered = drawAtWidth(view, Math.round(widthDp * density));
+                            var radical = rendered.texts.stream().filter(t -> t.value.equals("ㄖ"))
+                                    .findFirst().orElseThrow();
+                            RectF cap = rendered.keys.get(radical.keyIndex);
+                            measure.setTextSize(radical.size);
+                            var ink = new android.graphics.Rect();
+                            measure.getTextBounds("ㄖ", 0, 1, ink);
+                            var metrics = measure.getFontMetrics();
+                            float width = Math.max(ink.width(), measure.measureText("ㄖ"));
+                            float height = Math.max(ink.height(), metrics.descent - metrics.ascent);
+                            float occupancy = Math.max(width / (cap.width() - Math.round(4 * density)),
+                                    height / (cap.height() - Math.round(4 * density)));
+                            assertEquals(profile.id + "/" + orientation + "/" + widthDp + "/" + percent
+                                    + ": extra large must use the available radical fit", 1, occupancy, .04f);
                         }
                     }
                 }

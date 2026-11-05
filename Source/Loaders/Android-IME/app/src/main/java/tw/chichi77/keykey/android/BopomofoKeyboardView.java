@@ -73,9 +73,8 @@ final class BopomofoKeyboardView extends View {
     private static final int HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final float TONE_SYMBOL_SCALE = 1.8f;
     private static final String BOPOMOFO_HEIGHT_REFERENCE = "ㄅ";
-    private static final String PRIMARY_CAPTION_HEIGHT_REFERENCE =
-            "ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ"
-            + "日月金木水火土竹戈十大中一弓人心手口尸廿山女田卜重難";
+    private static final String KEY_FONT_REFERENCE = "ㄖ";
+    private static final float KEY_HINT_SCALE = 10f / 18;
 
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -90,9 +89,6 @@ final class BopomofoKeyboardView extends View {
     private final Rect glyphBounds = new Rect();
     private final ArrayList<Hit> hits = new ArrayList<>();
     private float touchKeyTextSize;
-    private float touchCaptionCenter;
-    private float maximumKeyGlyphWidth;
-    private float maximumKeyGlyphHeight;
 
     private Listener listener;
     private Mode mode = Mode.PORTRAIT;
@@ -924,7 +920,8 @@ final class BopomofoKeyboardView extends View {
                 || (inputMode == InputEngine.InputMode.BOPOMOFO && !special));
         if (isTouchMode()) {
             float fittedSize = fittedKeyTextSize(labelBounds, label, dp(4));
-            textPaint.setTextSize(Math.min(touchKeyTextSize, fittedSize));
+            boolean control = isSpecialKey(key) && !List.of("SPACE", "，", "。", "、", "？", "SYMBOL", "SETTINGS").contains(key);
+            textPaint.setTextSize(control ? Math.min(touchKeyTextSize, fittedSize) : touchKeyTextSize);
         }
         if (isTouchMode() && layoutProfile.split && special) {
             float availableWidth = Math.max(1, bounds.width() - dp(4));
@@ -938,7 +935,10 @@ final class BopomofoKeyboardView extends View {
 
     private void drawSizedKeyLabel(Canvas canvas, RectF bounds, String label, float size) {
         textPaint.setFakeBoldText(true);
-        textPaint.setTextSize(Math.min(size, fittedKeyTextSize(bounds, label, dp(4))));
+        boolean control = List.of("☺", "🌐", "⌫", "⇧", "▼").contains(label);
+        boolean longCaption = label.codePointCount(0, label.length()) > 1 && !label.equals("空白");
+        textPaint.setTextSize(control || longCaption
+                ? Math.min(size, fittedKeyTextSize(bounds, label, dp(4))) : size);
         textPaint.getTextBounds(label, 0, label.length(), glyphBounds);
         float baseline = bounds.centerY() - (glyphBounds.top + glyphBounds.bottom) / 2f;
         float x = bounds.centerX() + textPaint.measureText(label) / 2f
@@ -947,53 +947,39 @@ final class BopomofoKeyboardView extends View {
     }
 
     private float sharedTouchKeyTextSize(float rowHeight) {
-        if (maximumKeyGlyphWidth == 0) {
-            var labels = new java.util.LinkedHashSet<String>();
-            PRIMARY_CAPTION_HEIGHT_REFERENCE.codePoints()
-                    .forEach(code -> labels.add(new String(Character.toChars(code))));
-            var reference = KeyboardLayoutProfile.ALIGNED.layout(touchOrientation());
-            for (var plane : KeyboardLayoutProfile.Plane.values()) {
-                for (boolean shift : new boolean[]{false, true}) {
-                    for (var row : reference.rows(plane, shift)) {
-                        for (String key : row) {
-                            if (key.codePointCount(0, key.length()) == 1) labels.add(key);
-                        }
-                    }
-                }
-            }
-            labels.addAll(List.of("，", "。", "、", "？", "☺", "⌫", "⇧", "🌐"));
-            textPaint.setFakeBoldText(true);
-            textPaint.setTextSize(100);
-            for (String label : labels) {
-                textPaint.getTextBounds(label, 0, label.length(), glyphBounds);
-                maximumKeyGlyphWidth = Math.max(maximumKeyGlyphWidth,
-                        Math.max(glyphBounds.width(), textPaint.measureText(label)));
-                maximumKeyGlyphHeight = Math.max(maximumKeyGlyphHeight, glyphBounds.height());
-            }
+        // The ㄖ key is the reference for every input plane. Its real slot
+        // follows the current view width, layout, direction and available height.
+        var reference = KeyboardLayoutGeometry.keys(layoutProfile, touchOrientation(),
+                KeyboardLayoutProfile.Plane.BOPOMOFO, false, deletePosition,
+                getWidth() / getResources().getDisplayMetrics().density,
+                integratedBottomControls, showGlobe).stream()
+                .filter(key -> key.action().equals("b")).findFirst().orElseThrow();
+        float stagger = layoutProfile.staggered ? 2 * dp(1) : 0;
+        float width = Math.max(1, (reference.right() - reference.left()) * getWidth()
+                - 2 * dp(2) - stagger - dp(4));
+        float height = Math.max(1, rowHeight - 2 * dp(2) - stagger - dp(4));
+        textPaint.setFakeBoldText(true);
+        textPaint.setTextSize(100);
+        textPaint.getTextBounds(KEY_FONT_REFERENCE, 0, KEY_FONT_REFERENCE.length(), referenceGlyphBounds);
+        float referenceWidth = Math.max(referenceGlyphBounds.width(), textPaint.measureText(KEY_FONT_REFERENCE));
+        Paint.FontMetrics primary = textPaint.getFontMetrics();
+        float referenceHeight = Math.max(referenceGlyphBounds.height(), primary.descent - primary.ascent);
+        float fullFit = 100 * Math.min(width / referenceWidth, height / referenceHeight);
+
+        // Reserve the hint's own font box and spacing before maximizing the
+        // standard caption. Both boxes scale with the computed main text size.
+        hintPaint.setTextSize(100 * KEY_HINT_SCALE);
+        Paint.FontMetrics secondary = hintPaint.getFontMetrics();
+        float hintWidth = hintPaint.measureText(KEY_FONT_REFERENCE);
+        String hints = "1234567890qwertyuiopasdfghjklzxcvbnm@";
+        for (int index = 0; index < hints.length(); index++) {
+            hintWidth = Math.max(hintWidth, hintPaint.measureText(hints, index, index + 1));
         }
-        // Use the narrowest shared main-key column, even on the wider profiles.
-        // Glyphs, input planes and unequal function-key widths never set the font.
-        float gap = dp(KeyboardLayoutGeometry.centreGapDp(getWidth() / getResources().getDisplayMetrics().density));
-        float width = (getWidth() - gap) / 12f - dp(8);
-        float height = rowHeight - (2 * dp(2) + 2 * dp(1) + dp(4));
-        float fit = Math.max(1, Math.min(width / maximumKeyGlyphWidth,
-                height / maximumKeyGlyphHeight) * 100);
-        float normal = dp(mode == Mode.LANDSCAPE ? 11 : 18);
-        float normalFit = Math.min(normal, fit);
-        if (mode != Mode.LANDSCAPE) {
-            textPaint.setTextSize(normal);
-            textPaint.getTextBounds(PRIMARY_CAPTION_HEIGHT_REFERENCE, 0,
-                    PRIMARY_CAPTION_HEIGHT_REFERENCE.length(), referenceGlyphBounds);
-            float top = -dp(4) + referenceGlyphBounds.top;
-            hintPaint.setTextSize(dp(10));
-            String hints = "1234567890qwertyuiopasdfghjklzxcvbnm@";
-            hintPaint.getTextBounds(hints, 0, hints.length(), glyphBounds);
-            float bottom = dp(17) + glyphBounds.bottom;
-            touchCaptionCenter = (top + bottom) / 2f;
-            normalFit = Math.min(fit, normal * Math.min(1, Math.max(1, height) / (bottom - top)));
-        }
-        return KeyboardTypography.keyTextSize(fontSize, normalFit,
-                Math.min(normal * KeyboardLayoutProfile.FontSize.EXTRA_LARGE.stripScale, fit));
+        float hintHeight = secondary.descent - secondary.ascent;
+        float gap = dp(2);
+        float standardFit = 100 * Math.min(Math.max(1, width - gap) / (referenceWidth + hintWidth),
+                Math.max(1, height - gap) / (referenceHeight + hintHeight));
+        return KeyboardTypography.keyTextSize(fontSize, standardFit, fullFit);
     }
 
     private void drawCompactModeLabel(Canvas canvas, RectF bounds) {
@@ -1097,16 +1083,18 @@ final class BopomofoKeyboardView extends View {
             return;
         }
 
-        float captionScale = touchKeyTextSize / dp(18);
         float normalPrimarySize = touchKeyTextSize;
-        float normalSecondarySize = dp(10) * captionScale;
-        float primaryOffset = -dp(4);
-        float secondaryOffset = dp(17);
-        float origin = bounds.centerY();
-        if (captionScale < 1) origin -= touchCaptionCenter * captionScale;
+        float normalSecondarySize = touchKeyTextSize * KEY_HINT_SCALE;
+        textPaint.setTextSize(normalPrimarySize);
+        Paint.FontMetrics primaryMetrics = textPaint.getFontMetrics();
+        hintPaint.setTextSize(normalSecondarySize);
+        Paint.FontMetrics secondaryMetrics = hintPaint.getFontMetrics();
+        float primaryHeight = primaryMetrics.descent - primaryMetrics.ascent;
+        float secondaryHeight = secondaryMetrics.descent - secondaryMetrics.ascent;
+        float top = bounds.centerY() - (primaryHeight + dp(2) + secondaryHeight) / 2f;
         float primarySize = isToneSymbol(primary)
                 ? normalPrimarySize * TONE_SYMBOL_SCALE : normalPrimarySize;
-        float primaryBaseline = origin + primaryOffset * captionScale;
+        float primaryBaseline = top - primaryMetrics.ascent;
         if (isToneSymbol(primary)) {
             primaryBaseline = topAlignedBaseline(textPaint, primary, primarySize,
                     BOPOMOFO_HEIGHT_REFERENCE, normalPrimarySize, primaryBaseline);
@@ -1116,7 +1104,7 @@ final class BopomofoKeyboardView extends View {
 
         float secondarySize = isToneSymbol(secondary)
                 ? normalSecondarySize * TONE_SYMBOL_SCALE : normalSecondarySize;
-        float secondaryBaseline = origin + secondaryOffset * captionScale;
+        float secondaryBaseline = top + primaryHeight + dp(2) - secondaryMetrics.ascent;
         if (isToneSymbol(secondary)) {
             secondaryBaseline = topAlignedBaseline(hintPaint, secondary, secondarySize,
                     "1", normalSecondarySize, secondaryBaseline);
@@ -1128,31 +1116,28 @@ final class BopomofoKeyboardView extends View {
     private void drawLandscapeBopomofoKey(Canvas canvas, RectF bounds, String primary,
                                            String secondary) {
         float normalSize = touchKeyTextSize;
-        float primarySize = isToneSymbol(primary) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
-        float secondarySize = isToneSymbol(secondary) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
-        float gap = dp(3);
-
-        textPaint.setTextSize(primarySize);
-        // Separate caption positions keep a scaled tone from moving the hint.
+        float hintSize = touchKeyTextSize * KEY_HINT_SCALE;
         textPaint.setTextSize(normalSize);
-        float referenceWidth = textPaint.measureText(BOPOMOFO_HEIGHT_REFERENCE);
-        float primaryX = bounds.centerX() - (referenceWidth + gap) / 2;
-        float secondaryX = bounds.centerX() + (referenceWidth + gap) / 2;
-        textPaint.setTextSize(normalSize);
+        float primaryWidth = textPaint.measureText(KEY_FONT_REFERENCE);
+        hintPaint.setTextSize(hintSize);
+        float secondaryWidth = Math.max(hintPaint.measureText(KEY_FONT_REFERENCE), hintPaint.measureText(secondary));
+        float left = bounds.centerX() - (primaryWidth + dp(2) + secondaryWidth) / 2f;
         float normalBaseline = textBaseline(bounds, textPaint);
-
-        textPaint.setTextSize(primarySize);
+        float primarySize = isToneSymbol(primary) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
         float primaryBaseline = isToneSymbol(primary)
                 ? topAlignedBaseline(textPaint, primary, primarySize,
-                        BOPOMOFO_HEIGHT_REFERENCE, normalSize, normalBaseline)
-                : normalBaseline;
-        canvas.drawText(primary, primaryX, primaryBaseline, textPaint);
-        textPaint.setTextSize(secondarySize);
-        float secondaryBaseline = isToneSymbol(secondary)
-                ? topAlignedBaseline(textPaint, secondary, secondarySize,
-                        BOPOMOFO_HEIGHT_REFERENCE, normalSize, normalBaseline)
-                : normalBaseline;
-        canvas.drawText(secondary, secondaryX, secondaryBaseline, textPaint);
+                        BOPOMOFO_HEIGHT_REFERENCE, normalSize, normalBaseline) : normalBaseline;
+        textPaint.setTextSize(primarySize);
+        canvas.drawText(primary, left + primaryWidth / 2f, primaryBaseline, textPaint);
+        float secondarySize = isToneSymbol(secondary) ? hintSize * TONE_SYMBOL_SCALE : hintSize;
+        float secondaryBaseline = textBaseline(bounds, hintPaint);
+        if (isToneSymbol(secondary)) {
+            secondaryBaseline = topAlignedBaseline(hintPaint, secondary, secondarySize,
+                    KEY_FONT_REFERENCE, hintSize, secondaryBaseline);
+        }
+        hintPaint.setTextSize(secondarySize);
+        canvas.drawText(secondary, left + primaryWidth + dp(2) + secondaryWidth / 2f,
+                secondaryBaseline, hintPaint);
     }
 
     private boolean isToneSymbol(String value) {

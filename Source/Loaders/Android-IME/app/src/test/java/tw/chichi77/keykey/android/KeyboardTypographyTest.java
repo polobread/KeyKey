@@ -6,34 +6,35 @@ import org.junit.Test;
 public final class KeyboardTypographyTest {
     private static final float EPSILON = .0001f;
 
-    @Test public void ampleSpaceDoesNotStretchGlyphsToFillKeys() {
-        assertEquals(20, KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.NORMAL, 20, 200), EPSILON);
-        assertEquals(23, KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.MEDIUM, 20, 200), EPSILON);
-        assertEquals(26, KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.LARGE, 20, 200), EPSILON);
-        assertEquals(29, KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.EXTRA_LARGE, 20, 200), EPSILON);
+    @Test public void endpointsUseTheAvailableStandardAndRadicalFit() {
+        assertEquals(40, KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.NORMAL, 40, 80), EPSILON);
+        assertEquals(80, KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.EXTRA_LARGE, 40, 80), EPSILON);
+        assertEquals(120, KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.EXTRA_LARGE, 60, 120), EPSILON);
     }
 
-    @Test public void constrainedRowsRetainAllFourProportionalLevels() {
-        for (float fit : new float[]{12, 18, 20, 25, 40, 200}) {
-            float standard = KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.NORMAL, 20, fit);
-            float previous = 0;
+    @Test public void intermediateLevelsHaveEqualProportionalGrowth() {
+        for (float full : new float[]{18, 36, 80, 120, 200}) {
+            float standard = full * .6f;
+            float previous = standard;
+            float ratio = (float) Math.cbrt(full / standard);
             for (var level : KeyboardLayoutProfile.FontSize.values()) {
-                float size = KeyboardTypography.keyTextSize(level, 20, fit);
-                assertEquals(level.id, level.stripScale, size / standard, EPSILON);
-                assertTrue("Every level must visibly grow", size > previous);
-                assertTrue("The whole family stays within the shared fit", size <= fit + EPSILON);
+                float size = KeyboardTypography.keyTextSize(level, standard, full);
+                if (level != KeyboardLayoutProfile.FontSize.NORMAL) {
+                    assertTrue(level.id, size > previous);
+                    assertEquals(level.id, ratio, size / previous, EPSILON);
+                }
+                assertTrue(size <= full + EPSILON);
                 previous = size;
             }
         }
     }
 
-    @Test public void sharedFitScalesTheFamilyWithoutChangingItsRatios() {
-        float spacious = KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.NORMAL, 20, 29);
-        float narrow = KeyboardTypography.keyTextSize(KeyboardLayoutProfile.FontSize.NORMAL, 20, 14.5f);
-        assertEquals(spacious / 2, narrow, EPSILON);
+    @Test public void everyLevelTracksTheActualAvailableSpace() {
         for (var level : KeyboardLayoutProfile.FontSize.values()) {
-            assertEquals(KeyboardTypography.keyTextSize(level, 20, 29) / 2,
-                    KeyboardTypography.keyTextSize(level, 20, 14.5f), EPSILON);
+            assertEquals(KeyboardTypography.keyTextSize(level, 40, 80) * 1.5f,
+                    KeyboardTypography.keyTextSize(level, 60, 120), EPSILON);
+            assertEquals(KeyboardTypography.keyTextSize(level, 40, 80) / 2,
+                    KeyboardTypography.keyTextSize(level, 20, 40), EPSILON);
         }
     }
 }
