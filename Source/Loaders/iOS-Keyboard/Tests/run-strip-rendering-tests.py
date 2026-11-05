@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the production candidate/composition button in a small UIKit Simulator app.
+"""Run production composition, candidate, and function-button rendering in UIKit.
 
 Requires an explicitly selected, booted iOS Simulator. No product app, engine,
 keyboard preference, or Xcode project is changed. Source declarations are read
@@ -165,6 +165,113 @@ private final class StripRenderingChecks {
     }
 }
 
+// Use an independent native UILabel as the centering reference. Its font and
+// fitting behavior match the actual button label; typographic side bearings
+// (particularly ， and 。) need not put the ink at the button's midpoint.
+@MainActor
+private final class FunctionCenteringChecks {
+    let container: UIView
+    init(container: UIView) { self.container = container }
+
+    private func inkBounds(_ view: UIView) -> CGRect? {
+        let width = max(1, Int(view.bounds.width))
+        let height = max(1, Int(view.bounds.height))
+        var pixels = [UInt8](repeating: 255, count: width * height * 4)
+        return pixels.withUnsafeMutableBytes { bytes in
+            let context = CGContext(data: bytes.baseAddress, width: width, height: height,
+                bitsPerComponent: 8, bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+            context.setFillColor(UIColor.white.cgColor)
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+            view.layer.render(in: context)
+            let data = bytes.bindMemory(to: UInt8.self)
+            var left = width, right = -1, top = height, bottom = -1
+            for y in 0..<height {
+                for x in 0..<width {
+                    let offset = (y * width + x) * 4
+                    if min(data[offset], data[offset + 1], data[offset + 2]) < 220 {
+                        left = min(left, x); right = max(right, x)
+                        top = min(top, y); bottom = max(bottom, y)
+                    }
+                }
+            }
+            return right < left ? nil : CGRect(x: left, y: top,
+                width: right - left + 1, height: bottom - top + 1)
+        }
+    }
+
+    private func values(_ rect: CGRect?) -> Any {
+        guard let rect else { return NSNull() }
+        return [rect.minX, rect.minY, rect.width, rect.height]
+    }
+
+    func run() async -> [[String: Any]] {
+        var results = [[String: Any]]()
+        for font in KeyboardKeyFontSize.allCases {
+            for width: CGFloat in [44, 176] {
+                for caption in ["符", "設", "空白", "，", "。"] {
+                    let button = KeyboardKeyButton(type: .system)
+                    button.frame = CGRect(x: 0, y: 0, width: width, height: 44)
+                    button.backgroundColor = .white
+                    button.keycap.backgroundColor = .white
+                    button.setTitleColor(.black, for: .normal)
+                    let title = button.titleLabel!
+                    title.font = .systemFont(ofSize: 18)
+                    title.adjustsFontSizeToFitWidth = true
+                    title.minimumScaleFactor = 0.6
+                    button.normalPointSize = 18
+                    button.fontSize = font
+                    button.setTitle(caption, for: .normal)
+                    container.addSubview(button)
+                    button.setNeedsLayout()
+                    button.layoutIfNeeded()
+                    try? await Task.sleep(nanoseconds: UInt64(RENDER_SETTLE_MS) * 1_000_000)
+
+                    let reference = UIView(frame: button.bounds)
+                    reference.backgroundColor = .white
+                    let label = UILabel(frame: CGRect(origin: .zero, size: title.bounds.size))
+                    label.center = CGPoint(x: reference.bounds.midX, y: reference.bounds.midY)
+                    label.font = title.font
+                    label.text = caption
+                    label.textColor = .black
+                    label.textAlignment = .center
+                    label.adjustsFontSizeToFitWidth = title.adjustsFontSizeToFitWidth
+                    label.minimumScaleFactor = title.minimumScaleFactor
+                    label.numberOfLines = title.numberOfLines
+                    label.lineBreakMode = title.lineBreakMode
+                    label.baselineAdjustment = title.baselineAdjustment
+                    reference.addSubview(label)
+                    container.addSubview(reference)
+                    reference.layoutIfNeeded()
+                    label.layer.displayIfNeeded()
+                    let actual = inkBounds(button)
+                    let expected = inkBounds(reference)
+                    var failures = [String]()
+                    if let actual, let expected {
+                        if abs(actual.midX - expected.midX) > 1 || abs(actual.midY - expected.midY) > 1 {
+                            failures.append("Caption center differs from native centered UILabel: actual=\(actual), reference=\(expected)")
+                        }
+                    } else {
+                        failures.append("Both production caption and reference must render ink: actual=\(String(describing: actual)), reference=\(String(describing: expected))")
+                    }
+                    if title.text != caption || title.isHidden || title.alpha <= 0 {
+                        failures.append("The production caption must remain visible: text=\(title.text ?? "nil"), hidden=\(title.isHidden), alpha=\(title.alpha)")
+                    }
+                    results.append(["role": "function-centering", "caption": caption,
+                        "font": font.rawValue, "width": width, "titlePointSize": title.font.pointSize,
+                        "titleAlignment": title.textAlignment.rawValue,
+                        "titleFrame": values(title.frame), "actualInk": values(actual),
+                        "referenceInk": values(expected), "passed": failures.isEmpty, "failures": failures])
+                    reference.removeFromSuperview()
+                    button.removeFromSuperview()
+                }
+            }
+        }
+        return results
+    }
+}
+
 @main
 private final class RenderingTestApplication: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
@@ -178,10 +285,16 @@ private final class RenderingTestApplication: UIResponder, UIApplicationDelegate
         self.window = window
         Task { @MainActor in
             let checks = StripRenderingChecks(container: controller.view)
-            let cases = await checks.run()
+            let stripCases = await checks.run()
+            let centeringCases = await FunctionCenteringChecks(container: controller.view).run()
+            let cases = stripCases + centeringCases
             let failed = cases.filter { $0["passed"] as? Bool != true }.count
             let report: [String: Any] = ["runToken": RUN_TOKEN, "cases": cases,
                 "caseCount": cases.count, "failedCount": failed, "settleMilliseconds": RENDER_SETTLE_MS,
+                "stripCaseCount": stripCases.count,
+                "stripFailedCount": stripCases.filter { $0["passed"] as? Bool != true }.count,
+                "centeringCaseCount": centeringCases.count,
+                "centeringFailedCount": centeringCases.filter { $0["passed"] as? Bool != true }.count,
                 "systemVersion": UIDevice.current.systemVersion,
                 "scope": "Actual production UIKit button rendering; no engine or input-host integration"]
             let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -210,8 +323,10 @@ def execute(source: Path, output: Path, device: str) -> dict:
     button_text = source_bytes.decode()
     font_text = font_bytes.decode()
     extracted = [declaration(font_text, "public enum KeyboardKeyFontSize:"),
+                 declaration(font_text, "public enum KeyboardKeycapArea:"),
                  "@MainActor\n" + declaration(button_text, "private enum KeyboardTextFitting {"),
-                 "@MainActor\n" + declaration(button_text, "private final class KeyboardStripButton:")]
+                 "@MainActor\n" + declaration(button_text, "private final class KeyboardStripButton:"),
+                 "@MainActor\n" + declaration(button_text, "private final class KeyboardKeyButton:")]
     token = str(uuid.uuid4())
     generated = "import UIKit\n" + "\n\n".join(extracted) + "\nlet RUN_TOKEN = " + json.dumps(token) + "\nlet RENDER_SETTLE_MS = 350\n" + SWIFT_TESTS
     swift = output / "StripRendering.swift"

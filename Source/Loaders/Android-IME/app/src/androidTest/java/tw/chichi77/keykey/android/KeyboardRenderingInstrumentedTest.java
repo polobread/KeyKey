@@ -53,16 +53,24 @@ public final class KeyboardRenderingInstrumentedTest {
                     view.setLayoutOptions(area, font, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
                     KeyCanvas spaced = draw(view);
                     assertEquals(original.keys.size(), spaced.keys.size());
+                    int mainCount = KeyboardLayoutGeometry.keys(profile, orientation,
+                            KeyboardLayoutProfile.Plane.BOPOMOFO, false,
+                            KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER).size();
+                    int firstMainKey = original.keys.size() - mainCount;
                     for (int index = 0; index < original.keys.size(); index++) {
                         RectF before = original.keys.get(index); RectF after = spaced.keys.get(index);
+                        if (index < firstMainKey) {
+                            assertEquals("Strip controls retain their own frame", before, after);
+                            continue;
+                        }
                         assertEquals(before.centerX(), after.centerX(), .01f);
                         assertEquals(before.centerY(), after.centerY(), .01f);
                         assertEquals(area.fraction, after.width() * after.height() / (before.width() * before.height()), .001f);
                     }
                     assertEquals("Caption size and position must not follow the smaller cap", original.texts, spaced.texts);
-                    RectF first = original.keys.get(0);
+                    RectF first = original.keys.get(firstMainKey);
                     if (area != KeyboardLayoutProfile.KeycapArea.SMALL) {
-                        assertTrue(first.right - 1 > spaced.keys.get(0).right);
+                        assertTrue(first.right - 1 > spaced.keys.get(firstMainKey).right);
                     }
                     events.clear();
                     tap(view, first.right - 1, first.centerY());
@@ -77,44 +85,54 @@ public final class KeyboardRenderingInstrumentedTest {
     @Test public void enlargedTextUsesTheSameKeysWithoutHintsAndFitsInsideEachCap() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         instrumentation.runOnMainSync(() -> {
+            var metrics = instrumentation.getTargetContext().getResources().getDisplayMetrics();
+            // Keep the original device-width growth check and add a constrained split-profile fit sample.
+            int[] widths = {metrics.widthPixels, Math.round(320 * metrics.density)};
             for (var profile : KeyboardLayoutProfile.available()) {
                 for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
-                    var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
-                    view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
-                            ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
-                    view.setState(List.of(), "", false, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
-                            false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
-                    view.setLayoutProfile(profile);
-                    view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.NORMAL,
-                            KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
-                    KeyCanvas normal = draw(view);
-                  for (var font : KeyboardLayoutProfile.FontSize.values()) {
-                    if (font.showsHints()) continue;
-                    view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
-                            KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
-                    KeyCanvas large = draw(view);
-                    assertEquals(normal.keys, large.keys);
-                    if (profile.split) {
-                        for (var text : normal.texts) {
-                            if (!text.value.contains("/") && !text.value.equals("空白")) continue;
-                            RectF key = normal.keys.get(text.keyIndex);
-                            assertTrue("Split control caption must fit: " + text.value,
-                                    text.ink.left >= key.left - 1 && text.ink.right <= key.right + 1);
+                    for (int sample = 0; sample < widths.length; sample++) {
+                        if (sample > 0 && !profile.split) continue;
+                        var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+                        view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                                ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                        view.setState(List.of(), "", false, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                                false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                        view.setLayoutProfile(profile);
+                        view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.NORMAL,
+                                KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                        KeyCanvas normal = drawAtWidth(view, widths[sample]);
+                        for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                            if (font.showsHints()) continue;
+                            String context = profile.id + "/" + orientation + "/" + widths[sample] + "/" + font;
+                            view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
+                                    KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                            KeyCanvas large = drawAtWidth(view, widths[sample]);
+                            assertEquals(context, normal.keys, large.keys);
+                            if (profile.split) {
+                                for (var text : normal.texts) {
+                                    if (!text.value.contains("/") && !text.value.equals("空白")) continue;
+                                    RectF key = normal.keys.get(text.keyIndex);
+                                    assertTrue(context + ": split control caption must fit: " + text.value,
+                                            text.ink.left >= key.left - 1 && text.ink.right <= key.right + 1);
+                                }
+                            }
+                            assertTrue(context, normal.texts.stream().anyMatch(text -> text.value.equals("1")));
+                            assertFalse(context, large.texts.stream().anyMatch(text -> List.of("1", "q", "a").contains(text.value)));
+                            for (var text : large.texts) {
+                                if (text.keyIndex < 0) continue;
+                                RectF key = large.keys.get(text.keyIndex);
+                                assertTrue(context + ": large glyph outside cap: " + text.value
+                                        + ", ink=" + text.ink + ", cap=" + key,
+                                        text.ink.left >= key.left - 1 && text.ink.right <= key.right + 1
+                                        && text.ink.top >= key.top - 1 && text.ink.bottom <= key.bottom + 1);
+                            }
+                            if (sample == 0) {
+                                float regular = normal.texts.stream().filter(text -> text.value.equals("ㄅ")).findFirst().orElseThrow().size;
+                                float enlarged = large.texts.stream().filter(text -> text.value.equals("ㄅ")).findFirst().orElseThrow().size;
+                                assertTrue(context + ": enlarged=" + enlarged + ", regular=" + regular, enlarged > regular);
+                            }
                         }
                     }
-                    assertTrue(normal.texts.stream().anyMatch(text -> text.value.equals("1")));
-                    assertFalse(large.texts.stream().anyMatch(text -> List.of("1", "q", "a").contains(text.value)));
-                    for (var text : large.texts) {
-                        if (text.keyIndex < 0) continue;
-                        RectF key = large.keys.get(text.keyIndex);
-                        assertTrue("Large glyph outside cap: " + text.value,
-                                text.ink.left >= key.left - 1 && text.ink.right <= key.right + 1
-                                && text.ink.top >= key.top - 1 && text.ink.bottom <= key.bottom + 1);
-                    }
-                    float regular = normal.texts.stream().filter(text -> text.value.equals("ㄅ")).findFirst().orElseThrow().size;
-                    float enlarged = large.texts.stream().filter(text -> text.value.equals("ㄅ")).findFirst().orElseThrow().size;
-                    assertTrue(enlarged > regular);
-                  }
                 }
             }
         });
@@ -287,7 +305,7 @@ public final class KeyboardRenderingInstrumentedTest {
                     float density = view.getResources().getDisplayMetrics().density;
                     assertEquals(Math.round((orientation == KeyboardLayoutProfile.Orientation.PORTRAIT ? 40 : 35) * density),
                             originalHeight - view.getHeight());
-                    assertEquals(original.keys.size() + 2, integrated.keys.size());
+                    assertEquals(original.keys.size() + (profile.split ? 1 : 2), integrated.keys.size());
                     for (String label : List.of("🌐", "▼")) {
                         PaintedText text = integrated.texts.stream().filter(item -> item.value.equals(label))
                                 .reduce((first, last) -> last).orElseThrow();
@@ -304,7 +322,12 @@ public final class KeyboardRenderingInstrumentedTest {
                             .filter(item -> item.value.equals("▼")).findFirst().orElseThrow().keyIndex);
                     assertEquals(integrated.keys.stream().filter(key -> key.top == globeKey.top)
                             .mapToDouble(key -> key.left).min().orElseThrow(), globeKey.left, .01);
-                    assertTrue(settingsKey.right < dismissKey.left);
+                    if (profile.split) {
+                        assertTrue("Split dismissal stays in the top strip", dismissKey.bottom < settingsKey.top);
+                        assertEquals(1, integrated.texts.stream().filter(item -> item.value.equals("▼")).count());
+                    } else {
+                        assertTrue(settingsKey.right < dismissKey.left);
+                    }
                     for (var inputMode : InputEngine.InputMode.values()) {
                         for (var font : KeyboardLayoutProfile.FontSize.values()) {
                             view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
@@ -327,6 +350,32 @@ public final class KeyboardRenderingInstrumentedTest {
                             assertEquals(List.of("MODE"), events);
                         }
                     }
+                    if (profile.split) {
+                        view.setState(List.of(), "你ㄋ", true, List.of("你", "ㄋ"), 1,
+                                InputEngine.InputMode.BOPOMOFO, false, false, false, false,
+                                0, 1, -1, InputFieldPolicy.DEFAULT);
+                        for (var position : KeyboardLayoutProfile.DeletePosition.values()) {
+                            for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                                view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font, position);
+                                KeyCanvas narrow = drawAtWidth(view, Math.round(240 * density));
+                                int mainCount = KeyboardLayoutGeometry.keys(profile, orientation,
+                                        KeyboardLayoutProfile.Plane.BOPOMOFO, false, position, 240, true, true).size();
+                                RectF mainSlot = narrow.keys.get(narrow.keys.size() - mainCount);
+                                for (String label : List.of("符", "設", "⇧")) {
+                                    PaintedText text = narrow.texts.stream().filter(item -> item.value.equals(label))
+                                            .findFirst().orElseThrow();
+                                    RectF control = narrow.keys.get(text.keyIndex);
+                                    assertEquals("Split control uses one main-key slot: " + label,
+                                            mainSlot.width(), control.width(), .01f);
+                                    assertTrue("Single-slot caption fits: " + label,
+                                            text.ink.left >= control.left - 1 && text.ink.right <= control.right + 1
+                                            && text.ink.top >= control.top - 1 && text.ink.bottom <= control.bottom + 1);
+                                    events.clear(); tap(view, control.centerX(), control.centerY());
+                                    assertEquals(List.of(label.equals("符") ? "SYMBOL" : label.equals("設") ? "SETTINGS" : "SHIFT"), events);
+                                }
+                            }
+                        }
+                    }
                     view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, KeyboardLayoutProfile.FontSize.NORMAL,
                             KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
                     view.setIntegratedBottomControls(false, true);
@@ -334,7 +383,8 @@ public final class KeyboardRenderingInstrumentedTest {
                     assertEquals(originalHeight, view.getHeight());
                     assertEquals(original.keys.size() + 1, mandatory.keys.size());
                     assertTrue(mandatory.texts.stream().anyMatch(item -> item.value.equals("🌐")));
-                    assertFalse(mandatory.texts.stream().anyMatch(item -> item.value.equals("▼")));
+                    assertFalse(mandatory.texts.stream().anyMatch(item -> item.value.equals("▼")
+                            && mandatory.keys.get(item.keyIndex).top >= globeKey.top - .01f));
                 }
             }
             view.setMode(BopomofoKeyboardView.Mode.HARDWARE);
@@ -496,7 +546,10 @@ public final class KeyboardRenderingInstrumentedTest {
     }
 
     private static KeyCanvas draw(BopomofoKeyboardView view) {
-        int width = view.getResources().getDisplayMetrics().widthPixels;
+        return drawAtWidth(view, view.getResources().getDisplayMetrics().widthPixels);
+    }
+
+    private static KeyCanvas drawAtWidth(BopomofoKeyboardView view, int width) {
         view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
@@ -543,11 +596,11 @@ public final class KeyboardRenderingInstrumentedTest {
                                 var canvas = new KeyCanvas();
                                 view.draw(canvas);
                                 var expected = new ArrayList<String>();
-                                float widthDp = width / context.getResources().getDisplayMetrics().density;
                                 KeyboardLayoutGeometry.resolvedRows(profile, orientation, placement.plane(), shifted,
-                                        deletePosition, widthDp).forEach(expected::addAll);
+                                        deletePosition).forEach(expected::addAll);
                                 expected.addAll(KeyboardLayoutGeometry.resolvedFunctionKeys(profile, orientation,
-                                        deletePosition, widthDp));
+                                        deletePosition));
+                                if (profile.split) expected.add(0, "DISMISS");
                                 assertEquals("Each declared action must have one painted key", expected.size(), canvas.keys.size());
                                 dispatched.clear();
                                 for (int index = 0; index < canvas.keys.size(); index++) {
@@ -574,6 +627,152 @@ public final class KeyboardRenderingInstrumentedTest {
                 }
             }
         });
+    }
+
+    @Test public void splitStripsAlignCompositionPagingControlsAndClearingAtEverySize() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var context = instrumentation.getTargetContext();
+            float density = context.getResources().getDisplayMetrics().density;
+            List<String> choices = List.of("你好", "妳", "泥", "擬", "很長的候選詞測試", "尼", "妮", "倪", "逆");
+            List<String> cells = List.of("你", "好", "你", "好", "你", "好", "你", "好", "你", "ㄋ", "ㄧ");
+            for (var profile : KeyboardLayoutProfile.available()) {
+                if (!profile.split) continue;
+                for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                    for (int widthDp : new int[] {320, 768}) {
+                        var view = new BopomofoKeyboardView(context);
+                        view.setLayoutProfile(profile);
+                        view.setMode(orientation == KeyboardLayoutProfile.Orientation.PORTRAIT
+                                ? BopomofoKeyboardView.Mode.PORTRAIT : BopomofoKeyboardView.Mode.LANDSCAPE);
+                        view.setKeyPreviewEnabled(false);
+                        var events = new ArrayList<String>();
+                        view.setListener(new BopomofoKeyboardView.Listener() {
+                            @Override public void onPress() {}
+                            @Override public void onKey(String key) { events.add(key); }
+                            @Override public void onCandidate(int index) { events.add("candidate:" + index); }
+                            @Override public void onSmartCell(int index) { events.add("cell:" + index); }
+                            @Override public void onPage(int delta) { events.add("page:" + delta); }
+                        });
+                        int width = Math.round(widthDp * density);
+                        int stripCount = profile.layout(orientation).compositionCellCount + 1;
+                        int mainCount = KeyboardLayoutGeometry.keys(profile, orientation,
+                                KeyboardLayoutProfile.Plane.BOPOMOFO, false,
+                                KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER, widthDp).size();
+                        for (var font : KeyboardLayoutProfile.FontSize.values()) {
+                            String contextLabel = profile.id + "/" + orientation + "/" + widthDp + "/" + font;
+                            view.setLayoutOptions(KeyboardLayoutProfile.KeycapArea.SMALL, font,
+                                    KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                            view.setState(List.of(), "你好ㄋㄧ", true, cells, choices.size(),
+                                    InputEngine.InputMode.BOPOMOFO, false, false, false, false,
+                                    0, 2, -1, InputFieldPolicy.DEFAULT);
+                            KeyCanvas composition = drawAtWidth(view, width);
+                            assertEquals(contextLabel, stripCount + mainCount, composition.keys.size());
+                            for (int index = 0; index < stripCount; index++) {
+                                var top = composition.keys.get(index);
+                                var main = composition.keys.get(stripCount + index);
+                                assertEquals(contextLabel, main.left, top.left, .01f);
+                                assertEquals(contextLabel, main.right, top.right, .01f);
+                            }
+                            assertStripInkFits(composition, 0, stripCount);
+                            events.clear();
+                            for (int index = 0; index < choices.size(); index++) {
+                                RectF cell = composition.keys.get(index);
+                                tap(view, cell.centerX(), cell.centerY());
+                            }
+                            var expectedCells = new ArrayList<String>();
+                            for (int index = 0; index < choices.size(); index++) expectedCells.add("cell:" + index);
+                            assertEquals(contextLabel, expectedCells, events);
+                            events.clear();
+                            RectF dismiss = composition.keys.get(stripCount - 1);
+                            tap(view, dismiss.centerX(), dismiss.centerY());
+                            assertEquals(List.of("DISMISS"), events);
+                            events.clear();
+                            tap(view, width / 2f, dismiss.centerY());
+                            assertTrue(contextLabel + ": composition gap must not dispatch", events.isEmpty());
+
+                            view.setState(choices, "你好你好你好你好你", true,
+                                    cells.subList(0, choices.size()), choices.size(), InputEngine.InputMode.BOPOMOFO, false, false, false, false,
+                                    0, 2, 0, InputFieldPolicy.DEFAULT);
+                            KeyCanvas candidates = drawAtWidth(view, width);
+                            int candidateStart = candidates.keys.size() - stripCount;
+                            assertEquals(contextLabel, composition.keys.size() + stripCount, candidates.keys.size());
+                            var expected = new ArrayList<String>();
+                            expected.add("page:-1");
+                            for (int index = 0; index < choices.size(); index++) expected.add("candidate:" + index);
+                            expected.add("page:1");
+                            expected.add("CLOSE_CANDIDATES");
+                            events.clear();
+                            for (int index = 0; index < stripCount; index++) {
+                                RectF cell = candidates.keys.get(candidateStart + index);
+                                var top = composition.keys.get(index);
+                                assertEquals(contextLabel, top.left, cell.left, .01f);
+                                assertEquals(contextLabel, top.right, cell.right, .01f);
+                                tap(view, cell.centerX(), cell.centerY());
+                            }
+                            assertEquals(contextLabel, expected, events);
+                            assertStripInkFits(candidates, candidateStart, stripCount);
+                            events.clear();
+                            tap(view, width / 2f, candidates.keys.get(candidateStart).centerY());
+                            assertTrue(contextLabel + ": candidate gap must not dispatch", events.isEmpty());
+
+                            view.setState(List.of(), "", true, List.of(), 0,
+                                    InputEngine.InputMode.BOPOMOFO, false, false, false, false,
+                                    0, 1, -1, InputFieldPolicy.DEFAULT);
+                            KeyCanvas cleared = drawAtWidth(view, width);
+                            assertEquals(contextLabel, composition.keys, cleared.keys);
+                            assertFalse(cleared.texts.stream().anyMatch(text -> text.keyIndex < stripCount
+                                    && (text.value.equals("×") || cells.contains(text.value) || choices.contains(text.value))));
+                            events.clear();
+                            RectF oldCell = composition.keys.get(0);
+                            tap(view, oldCell.centerX(), oldCell.centerY());
+                            assertTrue(contextLabel + ": cleared composition cannot retain a hit", events.isEmpty());
+
+                            for (var placement : PLACEMENTS) {
+                                view.setChineseInputMethod(placement.method());
+                                for (boolean hasCandidates : new boolean[] {false, true}) {
+                                    view.setState(hasCandidates ? choices : List.of(), hasCandidates ? "" : "ㄋㄧˇ",
+                                            false, List.of(), 0, placement.inputMode(), false, false, false,
+                                            false, 0, 2, -1, InputFieldPolicy.DEFAULT);
+                                    KeyCanvas nonSmart = drawAtWidth(view, width);
+                                    int topCount = hasCandidates ? stripCount : 1;
+                                    assertEquals(contextLabel, mainCount + topCount, nonSmart.keys.size());
+                                    assertFalse(nonSmart.texts.stream().anyMatch(text -> text.value.equals("×")));
+                                    events.clear();
+                                    RectF control = nonSmart.keys.get(topCount - 1);
+                                    tap(view, control.centerX(), control.centerY());
+                                    assertEquals(contextLabel, List.of("DISMISS"), events);
+                                    events.clear();
+                                    tap(view, width / 2f, control.centerY());
+                                    assertTrue(contextLabel + ": non-smart gap must not dispatch", events.isEmpty());
+                                    assertStripInkFits(nonSmart, 0, topCount);
+                                    if (!hasCandidates) {
+                                        var slots = KeyboardLayoutGeometry.splitStripSlots(stripCount, widthDp);
+                                        float leftEdge = slots.get(stripCount / 2 - 1).right() * width;
+                                        float rightEdge = slots.get(stripCount / 2).left() * width;
+                                        for (var text : nonSmart.texts) {
+                                            if (text.keyIndex >= 0) continue;
+                                            assertTrue(contextLabel + ": reading/status ink must avoid the gap",
+                                                    text.ink.right <= leftEdge + 1 || text.ink.left >= rightEdge - 1);
+                                            assertTrue(contextLabel + ": reading/status ink must avoid dismiss",
+                                                    text.ink.right <= control.left + 1);
+                                        }
+                                    }
+                                }
+                            }
+                            view.setChineseInputMethod(ChineseInputMethod.SMART);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private static void assertStripInkFits(KeyCanvas canvas, int start, int count) {
+        for (var text : canvas.texts) {
+            if (text.keyIndex >= start && text.keyIndex < start + count) {
+                assertInside(text, canvas.keys.get(text.keyIndex));
+            }
+        }
     }
 
     private static void tap(View view, float x, float y) {

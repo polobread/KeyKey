@@ -38,9 +38,9 @@ public final class KeyboardIntegratedControlsTest {
         for (var placement : placements()) {
             assertEquals(placement.legacyKeys(), placement.keys(false, false));
             assertEquals(KeyboardLayoutGeometry.resolvedFunctionKeys(placement.profile, placement.orientation,
-                            placement.deletePosition, placement.width),
+                            placement.deletePosition),
                     KeyboardLayoutGeometry.resolvedFunctionKeys(placement.profile, placement.orientation,
-                            placement.deletePosition, placement.width, false, false));
+                            placement.deletePosition, false, false));
         }
     }
 
@@ -48,7 +48,7 @@ public final class KeyboardIntegratedControlsTest {
         for (var placement : placements()) {
             var original = placement.legacyKeys();
             int mainKeyCount = KeyboardLayoutGeometry.resolvedRows(placement.profile, placement.orientation,
-                    placement.plane, placement.shifted, placement.deletePosition, placement.width)
+                    placement.plane, placement.shifted, placement.deletePosition)
                     .stream().mapToInt(List::size).sum();
             var originalFunctions = original.subList(mainKeyCount, original.size());
             for (boolean integrated : new boolean[] {false, true}) {
@@ -58,19 +58,19 @@ public final class KeyboardIntegratedControlsTest {
                     assertEquals(context, original.subList(0, mainKeyCount), keys.subList(0, mainKeyCount));
                     var functions = keys.subList(mainKeyCount, keys.size());
                     assertEquals(context, KeyboardLayoutGeometry.resolvedFunctionKeys(placement.profile,
-                                    placement.orientation, placement.deletePosition, placement.width, integrated, showGlobe),
+                                    placement.orientation, placement.deletePosition, integrated, showGlobe),
                             actions(functions));
                     var expectedActions = new HashMap<>(counts(original));
-                    if (integrated) expectedActions.merge("DISMISS", 1L, Long::sum);
+                    if (integrated && !placement.profile.split) expectedActions.merge("DISMISS", 1L, Long::sum);
                     if (showGlobe) expectedActions.merge("GLOBE", 1L, Long::sum);
                     assertEquals(context, expectedActions, counts(keys));
                     assertEquals(context, actions(originalFunctions), functions.stream()
                             .filter(key -> !NEW_CONTROLS.contains(key.action()))
                             .map(KeyboardLayoutGeometry.Key::action).collect(Collectors.toList()));
-                    assertRequestedOrder(context, functions, integrated, showGlobe);
+                    assertRequestedOrder(context, functions, integrated && !placement.profile.split, showGlobe);
                     assertExistingControlWidths(context, originalFunctions, functions);
                     assertModeWidth(context, originalFunctions, functions, showGlobe,
-                            KeyboardLayoutGeometry.isExpanded(placement.profile, placement.width));
+                            placement.profile.split);
                     for (var function : functions) {
                         assertEquals(context, originalFunctions.get(0).top(), function.top(), EPSILON);
                         assertEquals(context, originalFunctions.get(0).bottom(), function.bottom(), EPSILON);
@@ -89,6 +89,45 @@ public final class KeyboardIntegratedControlsTest {
                         }
                     }
                     assertUsableSlots(context, keys);
+                }
+            }
+        }
+    }
+
+    @Test public void splitBottomControlsUseMainColumnWidthsAndGiveTheRestToSpace() {
+        for (var placement : placements()) {
+            if (!placement.profile.split) continue;
+            for (boolean showGlobe : new boolean[] {false, true}) {
+                String context = placement + "/globe=" + showGlobe;
+                var keys = placement.keys(false, showGlobe);
+                assertEquals(context + ": top dismiss makes bottom integration geometry redundant",
+                        keys, placement.keys(true, showGlobe));
+                var rows = KeyboardLayoutGeometry.resolvedRows(placement.profile, placement.orientation,
+                        placement.plane, placement.shifted, placement.deletePosition);
+                int mainCount = rows.stream().mapToInt(List::size).sum();
+                float column = width(keys.get(0));
+                var functions = keys.subList(mainCount, keys.size());
+                assertFalse(context, actions(functions).contains("DISMISS"));
+                for (String action : List.of("SYMBOL", "SETTINGS")) {
+                    assertEquals(context + "/" + action, column, width(key(functions, action)), EPSILON);
+                }
+                assertEquals(context + "/MODE", column * (showGlobe ? 1 : 1.5f),
+                        width(key(functions, "MODE")), EPSILON);
+                if (showGlobe) assertEquals(context + "/GLOBE", column, width(key(functions, "GLOBE")), EPSILON);
+                assertEquals(context + "/ENTER", 2 * column, width(key(functions, "ENTER")), EPSILON);
+                String control = placement.deletePosition == KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER
+                        ? "SHIFT" : "BACKSPACE";
+                assertEquals(context + "/" + control, column * (control.equals("SHIFT") ? 1 : 2),
+                        width(key(functions, control)), EPSILON);
+                var spaces = functions.stream().filter(item -> item.action().equals("SPACE"))
+                        .collect(Collectors.toList());
+                assertEquals(context, 2, spaces.size());
+                assertEquals(context + "/leftSpace", column * (showGlobe ? 2 : 2.5f), width(spaces.get(0)), EPSILON);
+                assertEquals(context + "/rightSpace", column * (control.equals("SHIFT") ? 3 : 2),
+                        width(spaces.get(1)), EPSILON);
+                for (boolean left : new boolean[] {true, false}) {
+                    assertEquals(context + ": each half keeps the main-column budget",
+                            column * rows.get(0).size() / 2, totalWidth(half(functions, left)), EPSILON);
                 }
             }
         }
@@ -120,12 +159,12 @@ public final class KeyboardIntegratedControlsTest {
     }
 
     private static void assertModeWidth(String context, List<KeyboardLayoutGeometry.Key> original,
-            List<KeyboardLayoutGeometry.Key> modified, boolean showGlobe, boolean expanded) {
+            List<KeyboardLayoutGeometry.Key> modified, boolean showGlobe, boolean split) {
         float before = width(key(original, "MODE"));
         float after = width(key(modified, "MODE"));
         if (showGlobe) {
-            // The existing 1.65-slot mode key (1.5 in wide split) becomes one slot.
-            assertEquals(context, before / (expanded ? 1.5f : 1.65f), after, EPSILON);
+            // The existing 1.65-slot mode key (1.5 in split) becomes one slot.
+            assertEquals(context, before / (split ? 1.5f : 1.65f), after, EPSILON);
             assertEquals(context, after, width(key(modified, "GLOBE")), EPSILON);
         } else assertEquals(context, before, after, EPSILON);
     }
@@ -207,7 +246,7 @@ public final class KeyboardIntegratedControlsTest {
                 for (var plane : KeyboardLayoutProfile.Plane.values()) {
                     for (boolean shifted : new boolean[] {false, true}) {
                         for (var deletePosition : KeyboardLayoutProfile.DeletePosition.values()) {
-                            for (float width : new float[] {390, 599, 600, 1200}) {
+                            for (float width : new float[] {240, 320, 390, 599, 600, 1200}) {
                                 result.add(new Placement(profile, orientation, plane, shifted, deletePosition, width));
                             }
                         }

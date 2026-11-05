@@ -133,7 +133,7 @@ final class KeyboardViewController: UIInputViewController {
             && traitCollection.userInterfaceIdiom == .phone
             && traitCollection.horizontalSizeClass == .regular
             && traitCollection.verticalSizeClass == .regular
-            && view.safeAreaLayoutGuide.layoutFrame.width >= ExpandedSplitKeyboardLayout.minimumWidth
+            && view.safeAreaLayoutGuide.layoutFrame.width >= 600
         keyboardView?.setNeedsInputModeSwitch(needsInputModeSwitchKey || affectedWidePhone)
     }
 

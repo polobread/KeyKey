@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import android.accessibilityservice.AccessibilityService;
 import android.app.Activity;
+import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
@@ -15,6 +16,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.View;
+import android.view.Surface;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
@@ -83,15 +85,18 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 HeightSnapshot phase = phases.get(index);
                 assertEquals("Toggling must preserve the painted keyboard content", phases.get(0).contentBottom,
                         phase.contentBottom, 1f);
-                assertEquals("The IME view must restore only its saved bottom reservation",
-                        phases.get(0).viewHeight + (index % 2 == 1 ? reserve : 0), phase.viewHeight);
+                assertEquals("Each setting must settle to the same window height",
+                        phases.get(index % 2).viewHeight, phase.viewHeight);
                 assertEquals("The application must observe the real IME window's height",
                         phase.imeWindowHeight, phase.appImeBottom);
             }
             assertEquals(phases.get(0).appImeBottom, phases.get(2).appImeBottom);
             assertEquals(phases.get(1).appImeBottom, phases.get(3).appImeBottom);
-            assertTrue("Disabling integration must return the reserved height to the IME, not shrink its keys",
-                    phases.get(1).appImeBottom >= phases.get(0).appImeBottom + reserve);
+            int released = phases.get(1).viewHeight - phases.get(0).viewHeight;
+            int maximumNavigation = phases.get(0).json.optInt("navigationBottom");
+            assertTrue("Only unconsumed navigation can replace the saved reservation",
+                    released >= reserve - maximumNavigation);
+            assertTrue("Integration must not reclaim more than its own saved padding", released <= reserve);
         } finally {
             var editor = preferences.edit();
             for (String key : keys) {
@@ -181,7 +186,12 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 KeyboardBottomControlsSettings.setEnabled(context, true);
             });
             int reservation = Math.round(40 * context.getResources().getDisplayMetrics().density);
-            await(() -> findKeyboard() != null && findKeyboard().getHeight() == originalHeight[0] - reservation);
+            instrumentation.waitForIdleSync();
+            Thread.sleep(300);
+            int released = originalHeight[0] - findKeyboard().getHeight();
+            int maximumNavigation = findKeyboard().getRootWindowInsets().getInsets(WindowInsets.Type.navigationBars()).bottom;
+            assertTrue("Only unconsumed navigation can replace the saved reservation",
+                    released >= reservation - maximumNavigation && released <= reservation);
             boolean canHide = Build.VERSION.SDK_INT >= 36 && captionBefore[0]
                     && brieflyAwait(() -> !findKeyboard().getRootWindowInsets().isVisible(WindowInsets.Type.captionBar()));
             instrumentation.runOnMainSync(() -> {
@@ -265,6 +275,232 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 if (previous.get(key) instanceof Boolean value) editor.putBoolean(key, value);
             }
             editor.commit();
+            if (activity != null) {
+                Activity host = activity;
+                instrumentation.runOnMainSync(host::finish);
+            }
+        }
+    }
+
+    @Test public void integratedImeKeepsTheSameEditorAndSafeBottomAcrossNativeRotations() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        assertTrue(Settings.Secure.getString(context.getContentResolver(),
+                Settings.Secure.DEFAULT_INPUT_METHOD).contains(context.getPackageName()));
+        var preferences = CandidateWindowSettings.preferences(context);
+        Map<String, ?> previous = preferences.getAll();
+        String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED, KeyboardBottomSpaceSettings.KEY_TOUCH_ENABLED,
+                KeyboardLayoutProfileSettings.KEY_LAYOUT, KeyboardSizeSettings.KEY_PORTRAIT_PERCENT,
+                KeyboardSizeSettings.KEY_LANDSCAPE_PERCENT, KeyboardLayoutProfileSettings.KEY_SPACING};
+        Activity activity = null;
+        int originalRotation = Surface.ROTATION_0;
+        boolean originalAutoRotate = Settings.System.getInt(context.getContentResolver(),
+                Settings.System.ACCELEROMETER_ROTATION, 1) != 0;
+        try {
+            preferences.edit().putBoolean(keys[0], true).putBoolean(keys[1], true)
+                    .putString(keys[2], KeyboardLayoutProfile.ALIGNED.id)
+                    .putInt(keys[3], KeyboardSizeSettings.DEFAULT_PERCENT)
+                    .putInt(keys[4], KeyboardSizeSettings.DEFAULT_PERCENT)
+                    .putString(keys[5], KeyboardLayoutProfile.KeycapArea.SMALL.id).commit();
+            activity = instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity host = activity;
+            originalRotation = host.getDisplay().getRotation();
+            EditText editor = findEditor(host.findViewById(android.R.id.content));
+            instrumentation.runOnMainSync(() -> editor.setText(""));
+            showEditorKeyboard(host, context);
+            BopomofoImeService service = (BopomofoImeService) findKeyboard().getContext();
+            Object windowToken = findKeyboard().getWindowToken();
+            instrumentation.runOnMainSync(() -> {
+                for (char key : "su3cl3".toCharArray()) service.onKey(String.valueOf(key));
+            });
+            await(() -> "你好".equals(editor.getText().toString()));
+            var widths = new ArrayList<Integer>();
+            for (int rotation : new int[]{Surface.ROTATION_0, Surface.ROTATION_90,
+                    Surface.ROTATION_270, Surface.ROTATION_0}) {
+                assertTrue(instrumentation.getUiAutomation().setRotation(rotation));
+                int orientation = rotation == Surface.ROTATION_0
+                        ? android.content.res.Configuration.ORIENTATION_PORTRAIT
+                        : android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+                await(() -> host.getDisplay().getRotation() == rotation
+                        && host.getResources().getConfiguration().orientation == orientation
+                        && service.getResources().getConfiguration().orientation == orientation);
+                await(() -> findKeyboard() != null && findKeyboard().isShown()
+                        && findKeyboard().getRootWindowInsets() != null
+                        && host.getWindow().getDecorView().getRootWindowInsets().isVisible(WindowInsets.Type.ime()));
+                instrumentation.waitForIdleSync();
+                Thread.sleep(300);
+                instrumentation.runOnMainSync(() -> {
+                    assertFalse(host.isDestroyed());
+                    assertSame("Rotation must keep the same text field", editor,
+                            findEditor(host.findViewById(android.R.id.content)));
+                    assertEquals("Rotation must preserve the host text without replay", "你好", editor.getText().toString());
+                    assertSame("Rotation must keep the same IME service", service, findKeyboard().getContext());
+                    assertEquals("Rotation must keep the same IME window", windowToken, findKeyboard().getWindowToken());
+                    HeightSnapshot phase = captureHeight(host, true);
+                    widths.add(findKeyboard().getWidth());
+                    Rect viewport = host.getSystemService(android.view.WindowManager.class).getCurrentWindowMetrics().getBounds();
+                    assertEquals("The real display axis must change", orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
+                            viewport.width() > viewport.height());
+                    int navBottom = host.getWindow().getDecorView().getRootWindowInsets()
+                            .getInsets(WindowInsets.Type.navigationBars()).bottom;
+                    int navigationTop = viewport.bottom - navBottom;
+                    int[] location = new int[2]; findKeyboard().getLocationOnScreen(location);
+                    float lastPaintedBottom = location[1] + phase.contentBottom;
+                    float density = findKeyboard().getResources().getDisplayMetrics().density;
+                    int expectedContent = Math.round(KeyboardLayoutProfile.ALIGNED.layout(
+                            orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+                                    ? KeyboardLayoutProfile.Orientation.LANDSCAPE
+                                    : KeyboardLayoutProfile.Orientation.PORTRAIT).contentHeightDp * density);
+                    int statusTop = host.getWindow().getDecorView().getRootWindowInsets()
+                            .getInsets(WindowInsets.Type.statusBars()).top;
+                    if (expectedContent + navBottom <= viewport.height() - statusTop) {
+                        assertEquals("An ample real viewport must restore the configured keyboard height",
+                                expectedContent, phase.contentBottom + Math.round(2 * density), 1f);
+                    }
+                    JSONObject geometry = new JSONObject(Map.of("geometry", phase.json,
+                            "displayRotation", rotation, "hostNavigationTop", navigationTop,
+                            "lastPaintedScreenBottom", lastPaintedBottom, "sameEditorAndImeWindow", true));
+                    Bundle evidence = new Bundle();
+                    evidence.putString("keykey_native_rotation_geometry", geometry.toString());
+                    instrumentation.sendStatus(0, evidence);
+                    assertEquals("Decor and allocated IME frame must agree after rotation", phase.appImeBottom, phase.imeWindowHeight);
+                    assertTrue("The final key row must stay above the system navigation area",
+                            lastPaintedBottom <= navigationTop + 1);
+                });
+            }
+            assertNotEquals("The keyboard must really change width across rotation", widths.get(0), widths.get(1));
+        } finally {
+            instrumentation.getUiAutomation().setRotation(originalRotation);
+            if (originalAutoRotate) instrumentation.getUiAutomation().setRotation(UiAutomation.ROTATION_UNFREEZE);
+            var restore = preferences.edit();
+            for (String key : keys) {
+                restore.remove(key);
+                if (previous.get(key) instanceof Boolean value) restore.putBoolean(key, value);
+                else if (previous.get(key) instanceof String value) restore.putString(key, value);
+                else if (previous.get(key) instanceof Integer value) restore.putInt(key, value);
+            }
+            restore.commit();
+            if (activity != null) {
+                Activity host = activity;
+                instrumentation.runOnMainSync(host::finish);
+            }
+        }
+    }
+
+    @Test public void splitTopControlsCloseCandidatesAndDismissAcrossIntegrationModes() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        assertTrue("Select KeyKey on the isolated device before this test", Settings.Secure.getString(
+                context.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD).contains(context.getPackageName()));
+        var preferences = CandidateWindowSettings.preferences(context);
+        Map<String, ?> previous = preferences.getAll();
+        String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED, KeyboardLayoutProfileSettings.KEY_LAYOUT,
+                ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
+                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION};
+        Activity activity = null;
+        try {
+            preferences.edit().putBoolean(keys[0], false)
+                    .putString(keys[1], KeyboardLayoutProfile.ALIGNED_SPLIT.id)
+                    .putString(keys[2], ChineseInputMethod.SMART.name())
+                    .putString(keys[3], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putString(keys[4], BopomofoKeyboardLayout.STANDARD.value)
+                    .putString(keys[5], KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER.id).commit();
+            activity = instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity host = activity;
+            instrumentation.runOnMainSync(() -> findEditor(host.findViewById(android.R.id.content)).setText(""));
+            showEditorKeyboard(host, context);
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                assertFalse(KeyboardBottomControlsSettings.enabled(context));
+                List<RectF> dismiss = drawnKeyBounds(view, "▼");
+                assertEquals("Integration OFF must still provide exactly one top dismiss key", 1, dismiss.size());
+                List<RectF> firstReadingKey = drawnKeyBounds(view, "ㄅ");
+                assertFalse("The test must use the standard Chinese touch keyboard", firstReadingKey.isEmpty());
+                assertTrue("The independent dismiss key belongs above the main keys",
+                        dismiss.get(0).bottom <= firstReadingKey.get(0).top);
+            });
+            instrumentation.runOnMainSync(() -> KeyboardBottomControlsSettings.setEnabled(context, true));
+            instrumentation.waitForIdleSync();
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                assertTrue(KeyboardBottomControlsSettings.enabled(context));
+                List<RectF> dismiss = drawnKeyBounds(view, "▼");
+                assertEquals("Integration ON must not duplicate the split top dismiss key in the footer", 1, dismiss.size());
+                RectF mainColumn = drawnKeyBounds(view, "ㄅ").get(0);
+                assertTrue("The only dismiss key must remain above the main rows", dismiss.get(0).bottom <= mainColumn.top);
+                for (String label : List.of("符", "設", "⇧")) {
+                    List<RectF> controls = drawnKeyBounds(view, label);
+                    assertEquals("The split keyboard must draw one " + label + " control", 1, controls.size());
+                    assertEquals(label + " must use one main-key column", mainColumn.width(), controls.get(0).width(), 1f);
+                }
+                List<RectF> spaces = drawnKeyBounds(view, "空白");
+                assertEquals("Split mode keeps one space key in each half", 2, spaces.size());
+                for (RectF space : spaces) {
+                    assertTrue("The remaining columns must give space more room than a single control",
+                            space.width() > mainColumn.width());
+                }
+                BopomofoImeService service = (BopomofoImeService) view.getContext();
+                for (char key : "su3cl3".toCharArray()) service.onKey(String.valueOf(key));
+            });
+            await(() -> "你好".equals(findEditor(host.findViewById(android.R.id.content)).getText().toString()));
+            List<String> completed = new ArrayList<>();
+            instrumentation.runOnMainSync(() -> {
+                completed.addAll(stripLabels(findKeyboard()));
+                tapDrawnKey(findKeyboard(), "你");
+            });
+            await(() -> labels(findKeyboard()).contains("×"));
+            instrumentation.runOnMainSync(() -> tapDrawnKey(findKeyboard(), "×"));
+            await(() -> !labels(findKeyboard()).contains("×"));
+            instrumentation.runOnMainSync(() -> {
+                assertEquals("Closing candidates must preserve the completed composition", completed, stripLabels(findKeyboard()));
+                assertEquals("你好", findEditor(host.findViewById(android.R.id.content)).getText().toString());
+                tapDrawnKey(findKeyboard(), "⌫");
+            });
+            await(() -> "你".equals(findEditor(host.findViewById(android.R.id.content)).getText().toString()));
+            // A pending reading cannot open core candidates. Its close no-op
+            // contract is tested by the adapter; do not fabricate a visible ×.
+            instrumentation.runOnMainSync(() -> {
+                BopomofoImeService service = (BopomofoImeService) findKeyboard().getContext();
+                for (char key : "su".toCharArray()) service.onKey(String.valueOf(key));
+                String pendingText = String.join("", stripLabels(findKeyboard()));
+                assertEquals("Top-strip text must preserve the unfinished reading across separate symbol cells",
+                        "你ㄋㄧ", pendingText);
+                assertEquals("你", findEditor(host.findViewById(android.R.id.content)).getText().toString());
+                tapDrawnKey(findKeyboard(), "▼");
+            });
+            await(() -> !host.getWindow().getDecorView().getRootWindowInsets().isVisible(WindowInsets.Type.ime()));
+            instrumentation.runOnMainSync(() -> assertEquals("Top dismiss keeps only completed text", "你",
+                    findEditor(host.findViewById(android.R.id.content)).getText().toString()));
+            showEditorKeyboard(host, context);
+            instrumentation.runOnMainSync(() -> {
+                assertTrue(KeyboardBottomControlsSettings.enabled(context));
+                String reopenedText = String.join("", stripLabels(findKeyboard()));
+                assertFalse("Reopening must not replay cancelled symbols: " + reopenedText,
+                        reopenedText.contains("ㄋ") || reopenedText.contains("ㄧ"));
+                BopomofoImeService service = (BopomofoImeService) findKeyboard().getContext();
+                for (char key : "cl3".toCharArray()) service.onKey(String.valueOf(key));
+            });
+            await(() -> "你好".equals(findEditor(host.findViewById(android.R.id.content)).getText().toString()));
+            Bundle evidence = new Bundle();
+            evidence.putString("keykey_split_top_controls",
+                    "integrationOffAndOn=true, uniqueTopDismiss=true, oneColumnControls=true, spaceRoom=true, "
+                    + "smartCellTouch=true, candidateCloseTouch=true, backspaceTouch=true, "
+                    + "topDismissTouch=true, completedPreserved=true, pendingCancelled=true, reopenNoReplay=true");
+            instrumentation.sendStatus(0, evidence);
+        } finally {
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key);
+                if (previous.get(key) instanceof Boolean value) edit.putBoolean(key, value);
+                else if (previous.get(key) instanceof String value) edit.putString(key, value);
+            }
+            edit.commit();
             if (activity != null) {
                 Activity host = activity;
                 instrumentation.runOnMainSync(host::finish);
@@ -412,6 +648,35 @@ public final class IntegratedBottomControlsInstrumentedTest {
     }
 
     private static List<String> labels(BopomofoKeyboardView view) { return capturedLabels(view, false); }
+    private static List<RectF> drawnKeyBounds(BopomofoKeyboardView view, String label) {
+        var matches = new ArrayList<RectF>();
+        view.draw(new Canvas() {
+            RectF lastKey;
+            @Override public void drawRoundRect(RectF bounds, float rx, float ry, Paint paint) {
+                lastKey = new RectF(bounds);
+            }
+            @Override public void drawText(String value, float x, float y, Paint paint) {
+                if (label.equals(value) && lastKey != null) matches.add(new RectF(lastKey));
+            }
+        });
+        return matches;
+    }
+
+    private static void tapDrawnKey(BopomofoKeyboardView view, String label) {
+        List<RectF> matches = drawnKeyBounds(view, label);
+        assertFalse("The live keyboard must draw " + label, matches.isEmpty());
+        // A candidate next-page arrow can also say ▼. The topmost matching
+        // control is the independent dismiss key, never the bottom integration.
+        RectF key = matches.get(0);
+        for (RectF candidate : matches) if (candidate.top < key.top) key = candidate;
+        long down = SystemClock.uptimeMillis();
+        for (int action : new int[] {MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP}) {
+            MotionEvent event = MotionEvent.obtain(down, SystemClock.uptimeMillis(), action,
+                    key.centerX(), key.centerY(), 0);
+            try { assertTrue(view.onTouchEvent(event)); } finally { event.recycle(); }
+        }
+    }
+
     private static void longPressSettings() throws Exception {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         RectF[] settings = {null};

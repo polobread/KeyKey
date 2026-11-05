@@ -1346,8 +1346,8 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.aligned)
-        let expanded = app.buttons["ENTER"].frame.maxX - app.buttons["1"].frame.minX
-            >= KeyboardLayoutProfile.alignedSplit.splitGeometry!.minimumExpandedWidth
+        let split = try XCTUnwrap(KeyboardLayoutProfile.alignedSplit.splitGeometry)
+        let portraitFrame = app.frame
         let fullHeight = app.buttons["ENTER"].frame.maxY - app.buttons["1"].frame.minY
         XCTAssertFalse(app.buttons["keyboard.space.right"].exists)
 
@@ -1365,12 +1365,12 @@ final class KeyKeyUITests: XCTestCase {
         app.buttons["keyboard.smart-cell.1"].tap()
         let candidate = app.buttons["第 1 個候選，你"]
         XCTAssertTrue(candidate.waitForExistence(timeout: 3))
-        let lastLeftNumber = expanded ? 5 : 4
+        let lastLeftNumber = split.candidateSplit - 1
         let lastLeft = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 \(lastLeftNumber) 個候選，")).firstMatch
         let firstRight = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 \(lastLeftNumber + 1) 個候選，")).firstMatch
         XCTAssertTrue(lastLeft.exists)
         XCTAssertTrue(firstRight.exists)
-        let leftEdgeKey = expanded ? "keyboard.split.punctuation.0" : "5"
+        let leftEdgeKey = "keyboard.split.punctuation.0"
         XCTAssertEqual(lastLeft.frame.maxX, app.buttons[leftEdgeKey].frame.maxX, accuracy: 1)
         XCTAssertEqual(firstRight.frame.minX, app.buttons["6"].frame.minX, accuracy: 1)
         selectLayoutProfile(.aligned)
@@ -1398,9 +1398,17 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(waitForLayout { self.field("default").value as? String == "你 ab1" })
         app.buttons["MODE"].tap()
         XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
         XCTAssertTrue(app.buttons["keyboard.space.right"].waitForExistence(timeout: 3))
         assertSplitKeyboardGeometry(orientation: .landscape)
+        for (index, screen) in XCUIScreen.screens.enumerated() {
+            let evidence = XCTAttachment(screenshot: screen.screenshot())
+            evidence.name = "split-landscape-twelve-columns-screen-\(index)"
+            evidence.lifetime = .keepAlways
+            add(evidence)
+        }
         XCUIDevice.shared.orientation = .portrait
+        assertAppRotation(.portrait, relativeToPortrait: portraitFrame)
         assertSplitKeyboardGeometry()
         XCTAssertEqual(field("default").value as? String, "你 ab1")
 
@@ -1479,20 +1487,15 @@ final class KeyKeyUITests: XCTestCase {
 
         openFirstCellCandidates()
         let close = app.buttons["keyboard.candidates.close"]
-        let explicitCloseAvailable = close.waitForExistence(timeout: 1)
-        if explicitCloseAvailable {
-            XCTAssertTrue(close.isHittable)
-            close.tap()
-        } else {
-            firstCell.tap()
-        }
+        XCTAssertTrue(close.waitForExistence(timeout: 3), "對齊分離的候選列必須提供關閉鍵")
+        XCTAssertTrue(close.isHittable)
+        close.tap()
         assertClosed(with: "是你")
         backspace.tap()
         XCTAssertTrue(waitForLayout { output.value as? String == "是" },
                       "取消候選後的刪除應修改句尾，不可刪錯句中目標或完全無效")
-        let coverage = XCTAttachment(string: explicitCloseAvailable
-            ? "Covered same-cell cancellation and the explicit candidate-close button."
-            : "Explicit candidate-close button unavailable at this pose; covered same-cell cancellation only.")
+        let coverage = XCTAttachment(string:
+            "Covered same-cell cancellation and the explicit candidate-close button.")
         coverage.name = "candidate-cancellation-paths-current-pose"
         coverage.lifetime = .keepAlways
         add(coverage)
@@ -1526,6 +1529,8 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.alignedSplit)
+        let profile = KeyboardLayoutProfile.alignedSplit
+        let split = try XCTUnwrap(profile.splitGeometry)
         for key in "g4" { app.buttons[String(key)].tap() }
         XCTAssertTrue(waitForLayout { output.value as? String == "是" })
         let target = app.buttons["keyboard.smart-cell.1"]
@@ -1551,26 +1556,27 @@ final class KeyKeyUITests: XCTestCase {
             XCTAssertEqual(first.label, secondPage, "旋轉應保留候選頁與目標")
             XCTAssertEqual(output.value as? String, "是")
             XCTAssertTrue(app.buttons["keyboard.space.right"].isHittable)
-            let expanded = app.buttons["keyboard.split.punctuation.1"].exists
             let close = app.buttons["keyboard.candidates.close"]
-            XCTAssertEqual(close.isHittable, expanded)
-            let controls = [app.buttons["上一頁"]] + (1...9).map { index in
+            XCTAssertTrue(close.isHittable)
+            let controls = [app.buttons["上一頁"]] + (1...KeyboardInput.candidatesPerPage).map { index in
                 self.app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 \(index) 個候選，")).firstMatch
-            } + [app.buttons["下一頁"]] + (expanded ? [close] : [])
-            let splitIndex = expanded ? 6 : 5
-            let leftWidth = app.buttons["q"].frame.width
-            let rightWidth = app.buttons["y"].frame.width
+            } + [app.buttons["下一頁"], close]
+            let splitIndex = split.candidateSplit
+            let orientation: KeyboardLayoutProfile.Orientation = rotating
+                ? (directions[index].isLandscape ? .landscape : .portrait) : try currentPoseOrientation()
+            let rowKeys = profile.rows(orientation: orientation, plane: .bopomofo, shifted: false)[1]
+            let leftWidth = app.buttons[rowKeys[0]].frame.width
+            let rightStart = app.buttons[rowKeys[split.keySplit - 1]]
+            XCTAssertEqual(leftWidth, rightStart.frame.width, accuracy: 1)
             let rowY = controls[0].frame.minY
-            for (index, control) in controls.enumerated() {
+            for control in controls {
                 XCTAssertTrue(control.exists)
-                // Narrow split has five left slots and six right slots. Only
-                // the expanded six/six layout promises equal widths throughout.
-                XCTAssertEqual(control.frame.width, index < splitIndex ? leftWidth : rightWidth, accuracy: 1)
+                XCTAssertEqual(control.frame.width, leftWidth, accuracy: 1)
                 XCTAssertEqual(control.frame.minY, rowY, accuracy: 1)
             }
             XCTAssertEqual(controls[splitIndex - 1].frame.maxX,
-                           app.buttons[expanded ? "keyboard.split.punctuation.1" : "t"].frame.maxX, accuracy: 1)
-            XCTAssertEqual(controls[splitIndex].frame.minX, app.buttons["y"].frame.minX, accuracy: 1)
+                           app.buttons["keyboard.split.punctuation.1"].frame.maxX, accuracy: 1)
+            XCTAssertEqual(controls[splitIndex].frame.minX, rightStart.frame.minX, accuracy: 1)
             XCTAssertTrue(app.buttons["BACKSPACE"].isHittable)
             XCTAssertTrue(app.buttons["ENTER"].isHittable)
         }
@@ -1688,29 +1694,32 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.alignedSplit)
+        let profile = KeyboardLayoutProfile.alignedSplit
+        let split = try XCTUnwrap(profile.splitGeometry)
         XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
-                      "此測試必須在展開的 Duo 內螢幕或寬版 iPad 執行")
+                      "對齊分離必須提供每側六格及標點欄")
         assertSplitKeyboardGeometry()
-        for index in 0..<4 {
+        for index in split.punctuation.indices {
             let punctuation = app.buttons["keyboard.split.punctuation.\(index)"]
             XCTAssertTrue(punctuation.isHittable)
-            XCTAssertEqual(punctuation.label, ["，", "。", "、", "？"][index])
+            XCTAssertEqual(punctuation.label, split.punctuation[index])
             punctuation.tap()
         }
-        XCTAssertEqual(output.value as? String, "，。、？")
-        let prefix = "，。、？"
-        for _ in 0..<7 { for key in "su3" { app.buttons[String(key)].tap() } }
-        XCTAssertTrue(waitForLayout { output.value as? String == prefix + String(repeating: "你", count: 7) })
-        let sixth = app.buttons["keyboard.smart-cell.6"]
-        let seventh = app.buttons["keyboard.smart-cell.7"]
+        let prefix = split.punctuation.joined()
+        XCTAssertEqual(output.value as? String, prefix)
+        let visibleReadingCount = split.compositionSplit + 1
+        for _ in 0..<visibleReadingCount { for key in "su3" { app.buttons[String(key)].tap() } }
+        XCTAssertTrue(waitForLayout { output.value as? String == prefix + String(repeating: "你", count: visibleReadingCount) })
+        let sixth = app.buttons["keyboard.smart-cell.\(split.compositionSplit)"]
+        let seventh = app.buttons["keyboard.smart-cell.\(split.compositionSplit + 1)"]
         XCTAssertTrue(sixth.isHittable)
         XCTAssertTrue(seventh.isHittable)
         XCTAssertEqual(sixth.frame.maxX, app.buttons["keyboard.split.punctuation.0"].frame.maxX, accuracy: 1)
         XCTAssertEqual(seventh.frame.minX, app.buttons["6"].frame.minX, accuracy: 1)
-        XCTAssertFalse(app.buttons["keyboard.smart-cell.12"].exists)
+        XCTAssertFalse(app.buttons["keyboard.smart-cell.\(profile.compositionCellCount + 1)"].exists)
         let hide = app.buttons["keyboard.dismiss"]
         XCTAssertEqual(hide.frame.width, app.buttons["1"].frame.width, accuracy: 1)
-        var expected = prefix + String(repeating: "你", count: 7)
+        var expected = prefix + String(repeating: "你", count: visibleReadingCount)
         hide.tap()
         XCTAssertTrue(waitForLayout { !self.app.buttons["SETTINGS"].exists })
         XCTAssertEqual(output.value as? String, expected)
@@ -1771,8 +1780,9 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
         app.buttons["完成"].tap()
         selectLayoutProfile(.alignedSplit)
+        let split = try XCTUnwrap(KeyboardLayoutProfile.alignedSplit.splitGeometry)
         XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
-                      "此測試要求寬版分離鍵盤")
+                      "對齊分離必須提供每側六格及標點欄")
         let numberLeft = app.buttons["1"].frame
         let numberRight = app.buttons["-"].frame
         let leftBoundary = app.buttons["keyboard.split.punctuation.0"].frame.maxX
@@ -1787,11 +1797,11 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(first.waitForExistence(timeout: 3))
         XCTAssertTrue(["第 1 個候選，你", "第 1 個候選，你好"].contains(first.label),
                       "首候選可為「你」或「你好」，實際為 \(first.label)")
-        let candidates = (1...9).map { index in
+        let candidates = (1...KeyboardInput.candidatesPerPage).map { index in
             self.app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "第 \(index) 個候選，")).firstMatch
         }
         let controls = [app.buttons["上一頁"]] + candidates + [app.buttons["下一頁"], close]
-        XCTAssertEqual(controls.count, 12)
+        XCTAssertEqual(controls.count, KeyboardInput.candidatesPerPage + 3)
         for control in controls {
             XCTAssertTrue(control.exists)
             XCTAssertEqual(control.frame.width, controls[0].frame.width, accuracy: 1)
@@ -1799,8 +1809,8 @@ final class KeyKeyUITests: XCTestCase {
         }
         XCTAssertTrue(close.isHittable)
         XCTAssertEqual(controls[0].frame.minX, numberLeft.minX, accuracy: 1)
-        XCTAssertEqual(controls[5].frame.maxX, leftBoundary, accuracy: 1)
-        XCTAssertEqual(controls[6].frame.minX, rightBoundary, accuracy: 1)
+        XCTAssertEqual(controls[split.candidateSplit - 1].frame.maxX, leftBoundary, accuracy: 1)
+        XCTAssertEqual(controls[split.candidateSplit].frame.minX, rightBoundary, accuracy: 1)
         XCTAssertEqual(close.frame.maxX, numberRight.maxX, accuracy: 1)
         assertFrame(app.buttons["ENTER"].frame, equals: enter, message: "顯示十二格候選列")
         let screenshot = XCTAttachment(screenshot: app.screenshot())
@@ -1892,7 +1902,7 @@ final class KeyKeyUITests: XCTestCase {
         try selectCompositionMode("好打注音")
         selectLayoutProfile(.alignedSplit)
         XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
-                      "此測試必須在展開的 Duo 內螢幕或寬版 iPad 執行")
+                      "對齊分離必須提供每側六格及標點欄")
         if typeComposition {
             for key in "su3cl3" { app.buttons[String(key)].tap() }
         }
@@ -1932,29 +1942,25 @@ final class KeyKeyUITests: XCTestCase {
         let profile = KeyboardLayoutProfile.alignedSplit
         let geometry = profile.splitGeometry!
         assertProfileKeysReachable(profile, orientation: orientation)
-        let expanded = app.buttons["keyboard.split.punctuation.0"].exists
         let keys = profile.rows(orientation: orientation, plane: .bopomofo, shifted: false)[0]
-        let left = app.buttons[expanded ? "keyboard.split.punctuation.0" : keys[geometry.keySplit - 1]].frame
-        let right = app.buttons[keys[geometry.keySplit]].frame
+        let left = app.buttons["keyboard.split.punctuation.0"].frame
+        let right = app.buttons[keys[geometry.keySplit - 1]].frame
         XCTAssertGreaterThan(right.minX, left.maxX, "分離樣式必須保留中央空隙")
         let lastLeft = app.buttons["SPACE"]
         let firstRight = app.buttons["keyboard.space.right"]
         XCTAssertTrue(firstRight.isHittable)
-        if expanded {
-            XCTAssertTrue(app.buttons["keyboard.dismiss"].isHittable)
-            XCTAssertEqual(app.buttons[keys[0]].frame.width, right.width, accuracy: 1)
-            let mode = app.buttons["MODE"].frame
-            XCTAssertEqual(app.buttons["SYMBOL"].frame.width / mode.width,
-                profile.functionWeight(for: "SYMBOL", expanded: true) / profile.functionWeight(for: "MODE", expanded: true),
-                accuracy: 0.03)
-            XCTAssertEqual(lastLeft.frame.width / mode.width,
-                profile.functionWeight(for: "SPACE", expanded: true) / profile.functionWeight(for: "MODE", expanded: true),
-                accuracy: 0.03)
-        }
+        XCTAssertTrue(app.buttons["keyboard.dismiss"].isHittable)
+        XCTAssertEqual(app.buttons[keys[0]].frame.width, right.width, accuracy: 1)
+        let mode = app.buttons["MODE"].frame
+        XCTAssertEqual(app.buttons["SYMBOL"].frame.width / mode.width,
+            profile.functionWeight(for: "SYMBOL") / profile.functionWeight(for: "MODE"), accuracy: 0.03)
+        XCTAssertEqual(lastLeft.frame.width / mode.width,
+            profile.functionWeight(for: "SPACE") / profile.functionWeight(for: "MODE"), accuracy: 0.03)
         XCTAssertEqual(lastLeft.frame.maxX, left.maxX, accuracy: 1)
         XCTAssertEqual(firstRight.frame.minX, right.minX, accuracy: 1)
+        let punctuation = geometry.punctuation.indices.map { "keyboard.split.punctuation.\($0)" }
         let identifiers = Set(profile.rows(orientation: orientation, plane: .bopomofo, shifted: false).flatMap { $0 }
-            + profile.functionKeys)
+            + profile.functionKeys + punctuation)
         for identifier in identifiers.sorted() {
             let key = app.buttons[identifier]
             XCTAssertTrue(key.isHittable, identifier)
@@ -2295,7 +2301,7 @@ final class KeyKeyUITests: XCTestCase {
         selectLayoutOptions(layout: .alignedSplit, spacing: .small, fontSize: .normal,
                             deletePosition: .aboveEnter)
         XCTAssertTrue(app.buttons["keyboard.split.punctuation.0"].waitForExistence(timeout: 3),
-                      "此測試必須在展開的 Duo 內螢幕或寬版 iPad 執行")
+                      "對齊分離必須提供每側六格及標點欄")
         func assertTopDismiss() {
             let hide = app.buttons["keyboard.dismiss"]
             XCTAssertTrue(hide.waitForExistence(timeout: 3))

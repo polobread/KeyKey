@@ -18,8 +18,7 @@ struct KeyboardLayoutProfileTests {
                             for (index, row) in rows.enumerated() {
                                 #expect(!row.isEmpty)
                                 for width in [314.0, 446, 649, 820] {
-                                    let expanded = profile.splitGeometry.map { width >= $0.minimumExpandedWidth } ?? false
-                                    let geometry = profile.keyRowGeometry(for: rows, plane: plane, rowIndex: index, expanded: expanded)
+                                    let geometry = profile.keyRowGeometry(for: rows, plane: plane, rowIndex: index)
                                     #expect(geometry.weights.allSatisfy { $0 > 0 && $0.isFinite })
                                     let frames = geometry.frames(width: width, height: 44, spacing: profile.keySpacing)
                                     expectUsableFrames(frames, width: width, expectedCount: geometry.weights.count,
@@ -38,9 +37,8 @@ struct KeyboardLayoutProfileTests {
             #expect(profile.compositionCellCount > 0)
             for width in [314.0, 446, 649, 820] {
                 let split = profile.splitGeometry
-                let expanded = split.map { width >= $0.minimumExpandedWidth } ?? false
                 let compositionWeights = Array(repeating: 1.0,
-                    count: profile.compositionCellCount + (expanded ? 1 : 0))
+                    count: profile.compositionCellCount + (split != nil ? 1 : 0))
                 let composition = KeyboardRowGeometry.frames(width: width, height: 44,
                     weights: compositionWeights, splitIndex: split?.compositionSplit,
                     spacing: profile.stripSpacing)
@@ -53,9 +51,8 @@ struct KeyboardLayoutProfileTests {
                             keys.insert("SPACE", at: space + 1)
                         }
                         if globe { keys.insert(KeyboardLayout.inputModeSwitchKey, at: 0) }
-                        if expanded { keys.removeAll { split?.punctuation.contains($0) == true } }
                         #expect(!keys.isEmpty)
-                        let weights = keys.map { profile.functionWeight(for: $0, expanded: expanded) }
+                        let weights = keys.map { profile.functionWeight(for: $0) }
                         #expect(weights.allSatisfy { $0 > 0 && $0.isFinite })
                         let splitIndex = split == nil ? nil : keys.firstIndex(of: "SPACE").map { $0 + 1 }
                         let controls = KeyboardRowGeometry.frames(width: width, height: 44,
@@ -110,8 +107,6 @@ struct KeyboardLayoutProfileTests {
                             let expectedRowAction = position == .aboveEnter ? "BACKSPACE" : "SHIFT"
                             #expect(rowKeys.filter { $0 == expectedRowAction }.count == 1)
                             #expect(profile.functionWeight(for: "SHIFT") == profile.functionWeight(for: "BACKSPACE"))
-                            #expect(profile.functionWeight(for: "SHIFT", expanded: true)
-                                == profile.functionWeight(for: "BACKSPACE", expanded: true))
                         }
                     }
                 }
@@ -363,12 +358,11 @@ struct KeyboardLayoutProfileTests {
                                         shifted: shifted, deleteShiftPosition: restored.deleteShiftPosition)
                                     #expect(rows == expectedRows)
                                     for width in [314.0, 649, 820] {
-                                        let expanded = profile.splitGeometry.map { width >= $0.minimumExpandedWidth } ?? false
                                         for index in rows.indices {
-                                            let expected = profile.keyRowGeometry(for: expectedRows, plane: plane, rowIndex: index,
-                                                expanded: expanded).frames(width: width, height: 44, spacing: profile.keySpacing)
-                                            let frames = restored.profile.keyRowGeometry(for: rows, plane: plane, rowIndex: index,
-                                                expanded: expanded).frames(width: width, height: 44, spacing: restored.profile.keySpacing)
+                                            let expected = profile.keyRowGeometry(for: expectedRows, plane: plane, rowIndex: index)
+                                                .frames(width: width, height: 44, spacing: profile.keySpacing)
+                                            let frames = restored.profile.keyRowGeometry(for: rows, plane: plane, rowIndex: index)
+                                                .frames(width: width, height: 44, spacing: restored.profile.keySpacing)
                                             // Spacing and font size never change action order or hit targets.
                                             #expect(frames == expected)
                                             for hit in frames {
@@ -624,41 +618,90 @@ struct KeyboardLayoutProfileTests {
 /// Exact dimensions belong to this existing preset, not every registered profile.
 @Suite("Existing split profile")
 struct SplitKeyboardLayoutProfileTests {
-    @Test func expandedPresetKeepsBalancedKeyAndCompositionSlots() throws {
+    private let widths = [240.0, 314, 446, 599, 600, 820]
+
+    @Test func splitPresetKeepsSixKeysPerSideAcrossEveryPlacementAndWidth() throws {
         let profile = KeyboardLayoutProfile.alignedSplit
         let split = try #require(profile.splitGeometry)
-        for width in [600.0, 649, 795, 820] {
-            let row = profile.rows(orientation: .portrait, plane: .bopomofo, shifted: false)[0]
-            let keyFrames = KeyboardRowGeometry.frames(width: width, height: 49,
-                weights: Array(repeating: 1, count: row.count + 1), splitIndex: split.expandedKeySplit,
-                spacing: profile.keySpacing)
-            #expect(keyFrames.count == 12)
-            #expect(keyFrames.allSatisfy { abs($0.width - keyFrames[0].width) < 0.001 })
-            #expect(keyFrames.prefix(6).allSatisfy { $0.maxX < width / 2 })
-            #expect(keyFrames.suffix(6).allSatisfy { $0.minX > width / 2 })
-            let composition = KeyboardRowGeometry.frames(width: width, height: 49,
-                weights: Array(repeating: 1, count: profile.compositionCellCount + 1),
-                splitIndex: split.compositionSplit, spacing: profile.stripSpacing)
-            #expect(profile.compositionCellCount == 11)
-            #expect(composition[10].maxX < composition[11].minX)
+        #expect(split.punctuation == ["，", "。", "、", "？"])
+        for orientation in KeyboardLayoutProfile.Orientation.allCases {
+            for plane in KeyboardLayoutProfile.Plane.allCases {
+                for shifted in [false, true] {
+                    for position in KeyboardDeleteShiftPosition.allCases {
+                        let rows = profile.resolvedRows(orientation: orientation, plane: plane,
+                            shifted: shifted, deleteShiftPosition: position)
+                        #expect(rows.count == split.punctuation.count)
+                        for index in rows.indices {
+                            let geometry = profile.keyRowGeometry(for: rows, plane: plane, rowIndex: index)
+                            #expect(geometry.weights.count == rows[index].count + 1)
+                            #expect(geometry.splitIndex == split.keySplit)
+                            for width in widths {
+                                let frames = geometry.frames(width: width, height: 44, spacing: profile.keySpacing)
+                                expectBalancedSlots(frames, splitIndex: split.keySplit, width: width, height: 44)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
-    @Test func expandedPresetPreservesItsApprovedFunctionKeyProportions() throws {
+    @Test func splitPresetKeepsCompositionAndCandidateControlsBalancedAtEveryWidth() throws {
         let profile = KeyboardLayoutProfile.alignedSplit
         let split = try #require(profile.splitGeometry)
-        let baseKeys = ["MODE", "SYMBOL", "SETTINGS", "SPACE", "SPACE", "BACKSPACE", "ENTER"]
-        for globe in [false, true] {
-            let keys = (globe ? [KeyboardLayout.inputModeSwitchKey] : []) + baseKeys
-            let boundary = try #require(keys.firstIndex(of: "SPACE")) + 1
-            let controls = KeyboardRowGeometry.frames(width: split.minimumExpandedWidth, height: 49,
-                weights: keys.map { profile.functionWeight(for: $0, expanded: true) },
-                splitIndex: boundary, spacing: profile.keySpacing)
-            let mode = try #require(keys.firstIndex(of: "MODE"))
-            #expect(abs(controls[mode + 1].width / controls[mode].width - 1.25 / 1.5) < 0.001)
-            #expect(abs(controls[mode + 3].width / controls[mode].width - 2 / 1.5) < 0.001)
-            #expect(abs(controls[boundary].width - controls[boundary + 1].width) < 0.001)
-            #expect(controls[boundary - 1].maxX < controls[boundary].minX)
+        // The dismiss slot is a control, not a twelfth editable syllable.
+        #expect(profile.compositionCellCount == 11)
+        for width in widths {
+            let composition = KeyboardRowGeometry.frames(width: width, height: 44,
+                weights: Array(repeating: 1, count: profile.compositionCellCount + 1),
+                splitIndex: split.compositionSplit, spacing: profile.stripSpacing)
+            expectBalancedSlots(composition, splitIndex: split.compositionSplit, width: width, height: 44)
+            let candidates = KeyboardRowGeometry.frames(width: width, height: 44,
+                weights: Array(repeating: 1, count: KeyboardInput.candidatesPerPage + 3),
+                splitIndex: split.candidateSplit, spacing: profile.stripSpacing)
+            expectBalancedSlots(candidates, splitIndex: split.candidateSplit, width: width, height: 44)
         }
+    }
+
+    @Test func splitPresetPreservesItsFunctionKeyProportionsAtEveryWidth() throws {
+        let profile = KeyboardLayoutProfile.alignedSplit
+        let split = try #require(profile.splitGeometry)
+        for width in widths {
+            for position in KeyboardDeleteShiftPosition.allCases {
+                for globe in [false, true] {
+                    var keys = profile.functionKeys(deleteShiftPosition: position)
+                    let space = try #require(keys.firstIndex(of: "SPACE"))
+                    keys.insert("SPACE", at: space + 1)
+                    if globe { keys.insert(KeyboardLayout.inputModeSwitchKey, at: 0) }
+                    #expect(keys.allSatisfy { !split.punctuation.contains($0) })
+                    let boundary = try #require(keys.firstIndex(of: "SPACE")) + 1
+                    let controls = KeyboardRowGeometry.frames(width: width, height: 44,
+                        weights: keys.map { profile.functionWeight(for: $0) },
+                        splitIndex: boundary, spacing: profile.keySpacing)
+                    let mode = try #require(keys.firstIndex(of: "MODE"))
+                    let symbols = try #require(keys.firstIndex(of: "SYMBOL"))
+                    let settings = try #require(keys.firstIndex(of: "SETTINGS"))
+                    let enter = try #require(keys.firstIndex(of: "ENTER"))
+                    let rightControl = try #require(keys.firstIndex(of: position == .aboveEnter ? "SHIFT" : "BACKSPACE"))
+                    #expect(abs(controls[symbols].width / controls[mode].width - 1.25 / 1.5) < 0.001)
+                    #expect(abs(controls[settings].width / controls[mode].width - 1.25 / 1.5) < 0.001)
+                    #expect(abs(controls[boundary - 1].width / controls[mode].width - 2 / 1.5) < 0.001)
+                    #expect(abs(controls[boundary].width - controls[rightControl].width) < 0.001)
+                    #expect(abs(controls[boundary].width - controls[enter].width) < 0.001)
+                    #expect(controls[boundary - 1].maxX < controls[boundary].minX)
+                    #expect(controls.allSatisfy { $0.height == 44 })
+                }
+            }
+        }
+    }
+
+    private func expectBalancedSlots(_ frames: [CGRect], splitIndex: Int,
+                                      width: Double, height: Double) {
+        #expect(splitIndex == 6 && frames.count == splitIndex * 2)
+        guard frames.count == splitIndex * 2, let first = frames.first else { return }
+        #expect(frames.allSatisfy { abs($0.width - first.width) < 0.001 && $0.height == height })
+        #expect(frames.prefix(splitIndex).allSatisfy { $0.minX >= 0 && $0.maxX < width / 2 })
+        #expect(frames.suffix(splitIndex).allSatisfy { $0.minX > width / 2 && $0.maxX <= width + 0.001 })
+        #expect(abs(frames[splitIndex - 1].maxX + frames[splitIndex].minX - width) < 0.001)
     }
 }

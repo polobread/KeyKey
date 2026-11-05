@@ -14,6 +14,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
+import android.view.WindowInsets;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -112,6 +113,7 @@ final class BopomofoKeyboardView extends View {
     private boolean touchBottomSpaceEnabled = true;
     private boolean hardwareBottomSpaceEnabled = true;
     private boolean integratedBottomControls;
+    private int navigationBarBottomInset;
     private boolean showGlobe;
     private String pickerPressKey;
     private boolean pickerPressConsumed;
@@ -330,6 +332,21 @@ final class BopomofoKeyboardView extends View {
     }
 
     @Override
+    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            // Parents may already have consumed this area. Only reserve what
+            // reaches this view, rather than reading the root's original insets.
+            int bottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+            if (navigationBarBottomInset != bottom) {
+                navigationBarBottomInset = bottom;
+                requestLayout();
+                invalidate();
+            }
+        }
+        return super.onApplyWindowInsets(insets);
+    }
+
+    @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int desiredContentHeight = switch (mode) {
             case HARDWARE_FLOATING -> dp(showGlobe ? HARDWARE_CONTENT_HEIGHT_DP : 1);
@@ -343,17 +360,17 @@ final class BopomofoKeyboardView extends View {
         // Budget the reserved area before clamping the keyboard content, even
         // when that area is disabled. Otherwise a capped IME keeps its height
         // and gives the removed padding to the keys instead of the host app.
-        int reservedHeight = reservedSystemAreaHeight();
         int systemAreaHeight = systemAreaHeight();
+        int reservedHeight = Math.max(reservedSystemAreaHeight(), systemAreaHeight);
         int width = MeasureSpec.getSize(widthMeasureSpec);
         Rect windowBounds = Build.VERSION.SDK_INT >= 30
                 ? getContext().getSystemService(WindowManager.class).getCurrentWindowMetrics().getBounds() : null;
         // Once the IME window has been sized, the framework measures its child
         // again within that window (including AT_MOST for a WRAP_CONTENT child).
         // Its old height is not a new screen cap when the reservation changes.
+        // A cutout can change only the client width after WM allocates that height.
         boolean withinRequestedWindow = MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.UNSPECIFIED
                 && MeasureSpec.getSize(heightMeasureSpec) == getMeasuredHeight()
-                && width == getMeasuredWidth()
                 && mode == lastMeasuredMode
                 && desiredContentHeight == lastDesiredContentHeight
                 && reservedHeight == lastReservedHeight
@@ -433,43 +450,74 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawSmartCellStrip(Canvas canvas, RectF area) {
-        drawSmartCellStrip(canvas, area, compositionCellCount());
+        int cellCount = compositionCellCount();
+        if (isTouchMode() && layoutProfile.split) {
+            var slots = KeyboardLayoutGeometry.splitStripSlots(cellCount + 1, widthDp(area));
+            for (int index = 0; index < cellCount; index++) {
+                drawSmartCell(canvas, inset(stripSlotBounds(area, slots.get(index)), dp(2)), index, cellCount);
+            }
+            drawStripControl(canvas, stripSlotBounds(area, slots.get(cellCount)), "▼", "DISMISS");
+        } else {
+            drawSmartCellStrip(canvas, area, cellCount);
+        }
     }
 
     private void drawSmartCellStrip(Canvas canvas, RectF area, int cellCount) {
         float cellWidth = area.width() / cellCount;
-        boolean showSupport = supportPromptEligible() && reading.isEmpty()
-                && smartCells.isEmpty() && candidates.isEmpty() && !associatedPhrasesVisible;
         for (int index = 0; index < cellCount; index++) {
             RectF cell = new RectF(area.left + index * cellWidth + dp(2),
                     area.top + dp(2), area.left + (index + 1) * cellWidth - dp(2),
                     area.bottom - dp(2));
-            canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
-            if (showSupport && index >= cellCount - 3) {
-                drawSupportPromptWord(canvas, cell, index - (cellCount - 3));
-                continue;
-            }
-            if (index >= smartCells.size()) continue;
-            String value = smartCells.get(index);
-            textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
-            textPaint.setFakeBoldText(index < smartEditableCount);
-            if (isTouchMode() && !fontSize.showsHints()) {
-                fitStripText(textPaint, value, cell, textPaint.getTextSize());
-            }
-            float availableWidth = Math.max(1, cell.width() - dp(4));
-            float measuredWidth = textPaint.measureText(value);
-            if (measuredWidth > availableWidth) {
-                float fittedSize = textPaint.getTextSize() * availableWidth / measuredWidth;
-                // The ninth hardware cell may also contain an unfinished reading.
-                textPaint.setTextSize(usesHardwareSmartTwoRows()
-                        ? fittedSize : Math.max(dp(8), fittedSize));
-            }
-            canvas.drawText(value, cell.centerX(),
-                    textBaseline(cell, textPaint), textPaint);
-            if (index < smartEditableCount && !value.isEmpty()) {
-                hits.add(new Hit(new RectF(cell), HitKind.SMART_CELL, "", index));
-            }
+            drawSmartCell(canvas, cell, index, cellCount);
         }
+    }
+
+    private void drawSmartCell(Canvas canvas, RectF cell, int index, int cellCount) {
+        boolean showSupport = supportPromptEligible() && reading.isEmpty()
+                && smartCells.isEmpty() && candidates.isEmpty() && !associatedPhrasesVisible;
+        canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
+        if (showSupport && index >= cellCount - 3) {
+            drawSupportPromptWord(canvas, cell, index - (cellCount - 3));
+            return;
+        }
+        if (index >= smartCells.size()) return;
+        String value = smartCells.get(index);
+        textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
+        textPaint.setFakeBoldText(index < smartEditableCount);
+        boolean splitTouch = isTouchMode() && layoutProfile.split;
+        if (isTouchMode() && (!fontSize.showsHints() || splitTouch)) {
+            fitStripText(textPaint, value, cell, textPaint.getTextSize());
+        }
+        float availableWidth = Math.max(1, cell.width() - dp(4));
+        float measuredWidth = textPaint.measureText(value);
+        if (measuredWidth > availableWidth) {
+            float fittedSize = textPaint.getTextSize() * availableWidth / measuredWidth;
+            // Split touch cells and hardware reading tails must fit their own slot.
+            textPaint.setTextSize(usesHardwareSmartTwoRows() || splitTouch
+                    ? fittedSize : Math.max(dp(8), fittedSize));
+        }
+        canvas.drawText(value, cell.centerX(), textBaseline(cell, textPaint), textPaint);
+        if (index < smartEditableCount && !value.isEmpty()) {
+            hits.add(new Hit(new RectF(cell), HitKind.SMART_CELL, "", index));
+        }
+    }
+
+    private float widthDp(RectF area) {
+        return area.width() / getResources().getDisplayMetrics().density;
+    }
+
+    private RectF stripSlotBounds(RectF area, KeyboardLayoutGeometry.StripSlot slot) {
+        return new RectF(area.left + slot.left() * area.width(), area.top,
+                area.left + slot.right() * area.width(), area.bottom);
+    }
+
+    private void drawStripControl(Canvas canvas, RectF bounds, String label, String action) {
+        RectF cell = inset(bounds, dp(2));
+        canvas.drawRoundRect(cell, dp(6), dp(6), specialKeyPaint);
+        textPaint.setFakeBoldText(true);
+        fitStripText(textPaint, label, cell, mode == Mode.LANDSCAPE ? dp(14) : dp(16));
+        canvas.drawText(label, cell.centerX(), textBaseline(cell, textPaint), textPaint);
+        hits.add(new Hit(new RectF(cell), HitKind.KEY, action, -1));
     }
 
     private void drawHardware(Canvas canvas) {
@@ -601,6 +649,10 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawCandidateStrip(Canvas canvas, RectF area) {
+        if (isTouchMode() && layoutProfile.split) {
+            drawSplitCandidateStrip(canvas, area);
+            return;
+        }
         if (candidates.isEmpty()) {
             drawEmptyCandidateMessage(canvas, area);
             return;
@@ -618,6 +670,48 @@ final class BopomofoKeyboardView extends View {
         }
         drawPageButton(canvas, new RectF(area.right - cellWidth, area.top,
                 area.right, area.bottom), 1, "▼");
+    }
+
+    private void drawSplitCandidateStrip(Canvas canvas, RectF area) {
+        int candidateCount = InputEngine.CANDIDATES_PER_PAGE;
+        var slots = KeyboardLayoutGeometry.splitStripSlots(candidateCount + 3, widthDp(area));
+        var last = stripSlotBounds(area, slots.get(slots.size() - 1));
+        if (candidates.isEmpty()) {
+            int half = slots.size() / 2;
+            RectF left = new RectF(area.left, area.top,
+                    stripSlotBounds(area, slots.get(half - 1)).right, area.bottom);
+            RectF right = new RectF(stripSlotBounds(area, slots.get(half)).left,
+                    area.top, last.left, area.bottom);
+            if (!reading.isEmpty()) {
+                drawSplitMessage(canvas, left, reading, true);
+                drawSplitMessage(canvas, right, "按空白選字", false);
+            } else if (supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO) {
+                drawSplitMessage(canvas, left, bopomofoLayoutName(), false);
+                drawSplitMessage(canvas, right, getResources().getString(R.string.supporter_prompt), false);
+            } else {
+                drawSplitMessage(canvas, left, emptyCandidateMessage(), false);
+            }
+        } else {
+            drawPageButton(canvas, stripSlotBounds(area, slots.get(0)), -1, "▲");
+            for (int index = 0; index < candidateCount; index++) {
+                drawCandidate(canvas, inset(stripSlotBounds(area, slots.get(index + 1)), dp(2)), index);
+            }
+            drawPageButton(canvas, stripSlotBounds(area, slots.get(candidateCount + 1)), 1, "▼");
+        }
+        boolean canCloseCandidates = smartMode && !candidates.isEmpty();
+        drawStripControl(canvas, last, canCloseCandidates ? "×" : "▼",
+                canCloseCandidates ? "CLOSE_CANDIDATES" : "DISMISS");
+    }
+
+    private void drawSplitMessage(Canvas canvas, RectF bounds, String message, boolean primary) {
+        RectF content = inset(bounds, dp(2));
+        Paint paint = primary ? textPaint : hintPaint;
+        paint.setFakeBoldText(false);
+        fitStripText(paint, message, content, standardHintTextSize());
+        int save = canvas.save();
+        canvas.clipRect(content);
+        canvas.drawText(message, content.centerX(), textBaseline(content, paint), paint);
+        canvas.restoreToCount(save);
     }
 
     private void drawCandidate(Canvas canvas, RectF bounds, int index) {
@@ -640,7 +734,7 @@ final class BopomofoKeyboardView extends View {
             String value = candidates.get(index);
             textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
             textPaint.setFakeBoldText(true);
-            if (isTouchMode() && !fontSize.showsHints()) {
+            if (isTouchMode() && (!fontSize.showsHints() || layoutProfile.split)) {
                 fitStripText(textPaint, value, bounds, textPaint.getTextSize());
             }
             canvas.drawText(value, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
@@ -664,25 +758,23 @@ final class BopomofoKeyboardView extends View {
             drawReadingMessage(canvas, area);
             return;
         }
-        String message;
-        if (!reading.isEmpty()) message = reading + "　按空白選字";
-        else if (inputMode == InputEngine.InputMode.ENGLISH) {
-            message = temporaryEnglish ? "暫時英文小寫" : shifted ? "英文大寫" : "英文小寫";
-        }
-        else if (inputMode == InputEngine.InputMode.NUMBER) {
-            message = shifted ? "數字與符號（二）" : "數字與符號（一）";
-        }
-        else {
-            if (supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO
-                    && (mode == Mode.PORTRAIT || mode == Mode.LANDSCAPE)) {
-                drawSupportPrompt(canvas, area);
-                return;
-            }
-            message = bopomofoLayoutName()
-                    + (mode == Mode.HARDWARE ? "・候選 1–9・關聯詞 Shift+1–9" : "");
+        if (reading.isEmpty() && supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO
+                && (mode == Mode.PORTRAIT || mode == Mode.LANDSCAPE)) {
+            drawSupportPrompt(canvas, area);
+            return;
         }
         hintPaint.setTextSize(standardHintTextSize());
-        canvas.drawText(message, area.centerX(), textBaseline(area, hintPaint), hintPaint);
+        canvas.drawText(emptyCandidateMessage(), area.centerX(), textBaseline(area, hintPaint), hintPaint);
+    }
+
+    private String emptyCandidateMessage() {
+        if (!reading.isEmpty()) return reading + "　按空白選字";
+        if (inputMode == InputEngine.InputMode.ENGLISH) {
+            return temporaryEnglish ? "暫時英文小寫" : shifted ? "英文大寫" : "英文小寫";
+        }
+        if (inputMode == InputEngine.InputMode.NUMBER) return shifted ? "數字與符號（二）" : "數字與符號（一）";
+        return bopomofoLayoutName()
+                + (mode == Mode.HARDWARE ? "・候選 1–9・關聯詞 Shift+1–9" : "");
     }
 
     private void fitStripText(Paint paint, String label, RectF bounds, float normalSize) {
@@ -816,7 +908,7 @@ final class BopomofoKeyboardView extends View {
         textPaint.setTextSize(dp(textSize));
         textPaint.setFakeBoldText(key.equals("SPACE")
                 || (inputMode == InputEngine.InputMode.BOPOMOFO && !special));
-        if (isTouchMode() && layoutProfile.split && special && label.length() > 1) {
+        if (isTouchMode() && layoutProfile.split && special) {
             float availableWidth = Math.max(1, bounds.width() - dp(4));
             float labelWidth = textPaint.measureText(label);
             if (labelWidth > availableWidth) textPaint.setTextSize(textPaint.getTextSize() * availableWidth / labelWidth);
@@ -865,7 +957,7 @@ final class BopomofoKeyboardView extends View {
                 * (isToneSymbol(label) ? TONE_SYMBOL_SCALE : 1f);
         float size = dp(mode == Mode.LANDSCAPE ? (label.length() > 3 ? 9 : 12)
                 : (label.length() > 3 ? 12 : 18));
-        if (layoutProfile.split && isSpecialKey(key) && label.length() > 1) {
+        if (layoutProfile.split && isSpecialKey(key)) {
             textPaint.setFakeBoldText(key.equals("SPACE"));
             textPaint.setTextSize(size);
             float width = textPaint.measureText(label);
@@ -1030,7 +1122,7 @@ final class BopomofoKeyboardView extends View {
     private boolean isSpecialKey(String key) {
         return switch (key) {
             case "SHIFT", "BACKSPACE", "ENTER", "SPACE", "SYMBOL", "SETTINGS", "EMOJI",
-                    "MODE", "GLOBE", "DISMISS", "，", "。", "、", "？" -> true;
+                    "MODE", "GLOBE", "DISMISS", "CLOSE_CANDIDATES", "，", "。", "、", "？" -> true;
             default -> false;
         };
     }
@@ -1250,11 +1342,16 @@ final class BopomofoKeyboardView extends View {
     }
 
     private float contentHeight() {
+        if (isTouchMode() && integratedBottomControls) {
+            // The old allocated window can cap a transient pass before the new
+            // WRAP_CONTENT budget arrives. Drawing and hits must still stay safe.
+            return Math.min(measuredContentHeight, Math.max(0, getHeight() - systemAreaHeight()));
+        }
         return measuredContentHeight;
     }
 
     private int systemAreaHeight() {
-        if (isTouchMode() && integratedBottomControls) return 0;
+        if (isTouchMode() && integratedBottomControls) return navigationBarBottomInset;
         boolean enabled = mode == Mode.HARDWARE ? hardwareBottomSpaceEnabled : touchBottomSpaceEnabled;
         return enabled ? reservedSystemAreaHeight() : 0;
     }

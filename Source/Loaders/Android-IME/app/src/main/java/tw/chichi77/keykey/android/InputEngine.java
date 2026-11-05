@@ -102,6 +102,7 @@ interface InputEngine extends AutoCloseable {
     void setHardwareSmartEditing(boolean enabled);
     InputEngine.Result space();
     InputEngine.Result openSmartCandidates();
+    InputEngine.Result closeTouchSmartCandidates();
     InputEngine.Result enter();
     InputEngine.Result backspace();
     InputEngine.Result escape();

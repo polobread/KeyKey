@@ -143,8 +143,9 @@ public final class BopomofoImeService extends InputMethodService
         });
         if (Build.VERSION.SDK_INT >= 36) {
             keyboardView.setOnApplyWindowInsetsListener((view, insets) -> {
+                WindowInsets remaining = view.onApplyWindowInsets(insets);
                 view.post(BopomofoImeService.this::updateKeyboardBottomControls);
-                return insets;
+                return remaining;
             });
         }
         floatingCandidateWindow = new FloatingCandidateWindow(this, keyboardView, this);
@@ -495,6 +496,10 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
         if (engine == null || hostTransactionFailed) return;
+        if (key.equals("CLOSE_CANDIDATES")) {
+            apply(engine.closeTouchSmartCandidates());
+            return;
+        }
         if (key.equals("HARDWARE_COLLAPSE")) {
             collapseHardwareCandidates();
             return;

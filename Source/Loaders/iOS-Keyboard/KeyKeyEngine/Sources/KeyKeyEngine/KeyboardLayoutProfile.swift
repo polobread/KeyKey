@@ -47,14 +47,10 @@ public struct KeyboardLayoutProfile: Equatable, Identifiable, Sendable {
     }
 
     public struct SplitGeometry: Equatable, Sendable {
-        public let minimumExpandedWidth: Double
         public let punctuation: [String]
         public let keySplit: Int
-        public let expandedKeySplit: Int
         public let compositionSplit: Int
         public let candidateSplit: Int
-        public let expandedCandidateSplit: Int
-        public let expandedFunctionWeights: [String: Double]
     }
 
     /// Horizontal key geometry is independent of the engine's input plane.
@@ -136,16 +132,15 @@ public struct KeyboardLayoutProfile: Equatable, Identifiable, Sendable {
         functionKeys.map { deleteShiftPosition.functionKey(for: $0) }
     }
 
-    public func keyRowGeometry(for rows: [[String]], plane: Plane, rowIndex: Int,
-                               expanded: Bool = false) -> KeyRowGeometry {
+    public func keyRowGeometry(for rows: [[String]], plane: Plane, rowIndex: Int) -> KeyRowGeometry {
         guard rows.indices.contains(rowIndex) else {
             return .init(weights: [], leadingUnits: 0, totalUnits: 0, splitIndex: nil)
         }
         var weights = Array(repeating: 1.0, count: rows[rowIndex].count)
         if let split = splitGeometry {
-            if expanded && split.punctuation.indices.contains(rowIndex) { weights.append(1) }
+            if split.punctuation.indices.contains(rowIndex) { weights.append(1) }
             return .init(weights: weights, leadingUnits: 0, totalUnits: Double(weights.count),
-                splitIndex: expanded ? split.expandedKeySplit : split.keySplit)
+                splitIndex: split.keySplit)
         }
         let offsets = rowOffsets(for: plane)
         func offset(_ index: Int) -> Double {
@@ -162,9 +157,8 @@ public struct KeyboardLayoutProfile: Equatable, Identifiable, Sendable {
         return .init(weights: weights, leadingUnits: leading, totalUnits: units, splitIndex: nil)
     }
 
-    public func functionWeight(for key: String, expanded: Bool = false) -> Double {
+    public func functionWeight(for key: String) -> Double {
         let weightedKey = key == "SHIFT" ? "BACKSPACE" : key
-        if expanded, let weight = splitGeometry?.expandedFunctionWeights[weightedKey] { return weight }
         return functionWeights[weightedKey] ?? 1
     }
 
@@ -184,18 +178,17 @@ public struct KeyboardLayoutProfile: Equatable, Identifiable, Sendable {
         portraitMetrics: .portrait, compactMetrics: .compact, wideMetrics: .pad
     )
 
-    /// Preserve the existing split choice while future visual profiles are added.
-    /// This preset is usable on supported widths; width alone does not identify a Duo.
+    /// The same twelve-column split design is used at every size and orientation.
+    /// Eleven input keys plus a left-side punctuation key keep each half six slots wide.
     public static let alignedSplit = KeyboardLayoutProfile(
         id: "aligned-split", displayName: "對齊分離", portrait: aligned.portrait, landscape: aligned.landscape,
-        functionKeys: aligned.functionKeys, functionWeights: aligned.functionWeights,
+        functionKeys: ["MODE", "SYMBOL", "SETTINGS", "SPACE", "BACKSPACE", "ENTER"],
+        functionWeights: ["MODE": 1.5, "SYMBOL": 1.25, "SETTINGS": 1.25,
+                          "SPACE": 2, "BACKSPACE": 2, "ENTER": 2],
         keySpacing: aligned.keySpacing, stripSpacing: aligned.stripSpacing,
         compositionCellCount: aligned.compositionCellCount,
-        splitGeometry: SplitGeometry(minimumExpandedWidth: 600,
-            punctuation: ["，", "。", "、", "？"], keySplit: 5, expandedKeySplit: 6,
-            compositionSplit: 6, candidateSplit: 5, expandedCandidateSplit: 6,
-            expandedFunctionWeights: ["MODE": 1.5, "SYMBOL": 1.25, "SETTINGS": 1.25,
-                                      "SPACE": 2, "BACKSPACE": 2, "ENTER": 2]),
+        splitGeometry: SplitGeometry(punctuation: ["，", "。", "、", "？"],
+            keySplit: 6, compositionSplit: 6, candidateSplit: 6),
         portraitMetrics: aligned.portraitMetrics, compactMetrics: aligned.compactMetrics,
         wideMetrics: aligned.wideMetrics
     )

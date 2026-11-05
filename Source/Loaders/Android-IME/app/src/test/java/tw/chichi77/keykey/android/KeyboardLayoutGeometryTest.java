@@ -10,9 +10,9 @@ import org.junit.Test;
 
 public final class KeyboardLayoutGeometryTest {
     private static final float EPSILON = .000001f;
-    private static final int NARROW_SPLIT_INDEX = 5;
+    private static final int PUNCTUATION_INSERT_INDEX = 5;
     private static final List<Float> ORIGINAL_STANDARD_OFFSETS = List.of(0f, 1f / 3, 2f / 3, 0f);
-    private static final List<String> EXPANDED_PUNCTUATION = List.of("，", "。", "、", "？");
+    private static final List<String> SPLIT_PUNCTUATION = List.of("，", "。", "、", "？");
     private static final List<String> ORIGINAL_FUNCTIONS = List.of(
             "MODE", "SYMBOL", "SETTINGS", "，", "SPACE", "。", "BACKSPACE", "ENTER");
     private static final List<List<String>> ORIGINAL_ROWS = List.of(
@@ -57,20 +57,20 @@ public final class KeyboardLayoutGeometryTest {
                                                 + position + "/" + orientation + "/" + plane + "/" + shifted + "/" + width;
                                         var keys = KeyboardLayoutGeometry.keys(options.layout(), orientation,
                                                 plane, shifted, options.deletePosition(), width);
-                                        var rows = expectedRows(profile, plane, shifted, position, width);
-                                        var functions = expectedFunctions(profile, position, width);
+                                        var rows = expectedRows(profile, plane, shifted, position);
+                                        var functions = expectedFunctions(profile, position);
                                         var expectedActions = flatten(rows);
                                         expectedActions.addAll(functions);
                                         assertEquals(context, expectedActions, actions(keys));
                                         assertEquals(context, rows, KeyboardLayoutGeometry.resolvedRows(
-                                                profile, orientation, plane, shifted, position, width));
+                                                profile, orientation, plane, shifted, position));
                                         assertEquals(context, functions, KeyboardLayoutGeometry.resolvedFunctionKeys(
-                                                profile, orientation, position, width));
+                                                profile, orientation, position));
                                         var originalActions = flatten(originalRows(plane, shifted));
                                         originalActions.addAll(ORIGINAL_FUNCTIONS);
                                         if (standardTablePlane(profile, plane)) assertTrue(originalActions.remove("/"));
                                         if (profile.split) originalActions.add("SPACE");
-                                        if (expanded(profile, width)) originalActions.addAll(List.of("、", "？"));
+                                        if (profile.split) originalActions.addAll(List.of("、", "？"));
                                         assertEquals(context, counts(originalActions), counts(actions(keys)));
                                         assertRowBands(context, keys, rows);
                                         assertValidSlots(context, keys);
@@ -177,25 +177,22 @@ public final class KeyboardLayoutGeometryTest {
         }
     }
 
-    @Test public void splitRowsKeepEqualHalvesAndInsertPunctuationAtTheWidthBoundary() {
+    @Test public void splitRowsKeepSixEqualKeysPerHalfAtEveryWidth() {
         var profile = KeyboardLayoutProfile.ALIGNED_SPLIT;
-        for (float width : new float[] {360, 599, 600, 800, 1200}) {
+        for (float width : new float[] {320, 390, 599, 600, 800, 1200}) {
             float gap = Math.min(80, width * .1f) / width;
             float halfWidth = (1 - gap) / 2;
-            assertEquals(width >= 600, KeyboardLayoutGeometry.isExpanded(profile, width));
             assertEquals(gap * width, KeyboardLayoutGeometry.centreGapDp(width), .0001f);
-            for (var other : KeyboardLayoutProfile.available()) {
-                if (!other.split) assertFalse(KeyboardLayoutGeometry.isExpanded(other, width));
-            }
             for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
                 for (var plane : KeyboardLayoutProfile.Plane.values()) {
                     for (boolean shifted : new boolean[] {false, true}) {
                         for (var position : KeyboardLayoutProfile.DeletePosition.values()) {
-                            var rows = expectedRows(profile, plane, shifted, position, width);
+                            var rows = expectedRows(profile, plane, shifted, position);
                             var keys = KeyboardLayoutGeometry.keys(profile, orientation, plane, shifted, position, width);
                             int index = 0;
                             for (var row : rows) {
-                                int leftCount = NARROW_SPLIT_INDEX + (width >= 600 ? 1 : 0);
+                                assertEquals("Split design must keep all twelve actions on small and large screens", 12, row.size());
+                                int leftCount = row.size() / 2;
                                 int rightCount = row.size() - leftCount;
                                 for (int column = 0; column < row.size(); column++) {
                                     var key = keys.get(index++);
@@ -214,17 +211,43 @@ public final class KeyboardLayoutGeometryTest {
         }
     }
 
+    @Test public void splitStripSlotsAlignWithTheSameMainRowColumnsAtEveryWidth() {
+        for (var profile : KeyboardLayoutProfile.available()) {
+            if (!profile.split) continue;
+            for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
+                int cellCount = profile.layout(orientation).compositionCellCount + 1;
+                for (float width : new float[] {320, 390, 600, 768, 1200}) {
+                    var slots = KeyboardLayoutGeometry.splitStripSlots(cellCount, width);
+                    assertEquals(cellCount, slots.size());
+                    for (var plane : KeyboardLayoutProfile.Plane.values()) {
+                        var rows = KeyboardLayoutGeometry.resolvedRows(profile, orientation, plane,
+                                false, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER);
+                        var keys = KeyboardLayoutGeometry.keys(profile, orientation, plane,
+                                false, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER, width);
+                        assertEquals(rows.get(0).size(), slots.size());
+                        for (int index = 0; index < slots.size(); index++) {
+                            assertEquals(keys.get(index).left(), slots.get(index).left(), EPSILON);
+                            assertEquals(keys.get(index).right(), slots.get(index).right(), EPSILON);
+                            assertTrue(slots.get(index).right() <= .5f || slots.get(index).left() >= .5f);
+                        }
+                    }
+                }
+            }
+        }
+        assertThrows(IllegalArgumentException.class, () -> KeyboardLayoutGeometry.splitStripSlots(0, 320));
+        assertThrows(IllegalArgumentException.class, () -> KeyboardLayoutGeometry.splitStripSlots(11, 320));
+    }
+
     @Test public void splitFunctionRowsDuplicateSpaceAndRespectTheSameCentralGap() {
         var profile = KeyboardLayoutProfile.ALIGNED_SPLIT;
-        var expandedWeights = Map.of("MODE", 1.5f, "SYMBOL", 1.25f, "SETTINGS", 1.25f,
-                "SPACE", 2f, "BACKSPACE", 2f, "SHIFT", 2f, "ENTER", 2f);
+        var splitWeights = Map.of("MODE", 1.5f, "SYMBOL", 1f, "SETTINGS", 1f,
+                "BACKSPACE", 2f, "SHIFT", 1f, "ENTER", 2f);
         for (float width : new float[] {390, 600, 1200}) {
             float gap = Math.min(80, width * .1f) / width;
             float halfWidth = (1 - gap) / 2;
             for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
-                var layout = profile.layout(orientation);
                 for (var position : KeyboardLayoutProfile.DeletePosition.values()) {
-                    var functions = expectedFunctions(profile, position, width);
+                    var functions = expectedFunctions(profile, position);
                     int split = functions.indexOf("SPACE") + 1;
                     assertEquals("SPACE", functions.get(split));
                     for (var plane : KeyboardLayoutProfile.Plane.values()) {
@@ -234,18 +257,19 @@ public final class KeyboardLayoutGeometryTest {
                             for (int group = 0; group < 2; group++) {
                                 int start = group == 0 ? 0 : split;
                                 int end = group == 0 ? split : functions.size();
-                                float total = 0;
+                                int columnsPerSide = KeyboardLayoutGeometry.resolvedRows(profile, orientation,
+                                        plane, shifted, position).get(0).size() / 2;
+                                float fixed = 0;
                                 for (String action : functions.subList(start, end)) {
-                                    total += width >= 600 ? expandedWeights.get(action)
-                                            : layout.functionWeight(action, position);
+                                    if (!action.equals("SPACE")) fixed += splitWeights.get(action);
                                 }
                                 float cursor = group == 0 ? 0 : halfWidth + gap;
                                 for (int index = start; index < end; index++) {
                                     var slot = functionSlots.get(index);
-                                    float weight = width >= 600 ? expandedWeights.get(functions.get(index))
-                                            : layout.functionWeight(functions.get(index), position);
+                                    String action = functions.get(index);
+                                    float weight = action.equals("SPACE") ? columnsPerSide - fixed : splitWeights.get(action);
                                     assertEquals(cursor, slot.left(), EPSILON);
-                                    cursor += halfWidth * weight / total;
+                                    cursor += halfWidth * weight / columnsPerSide;
                                     assertEquals(cursor, slot.right(), EPSILON);
                                 }
                             }
@@ -258,7 +282,7 @@ public final class KeyboardLayoutGeometryTest {
         }
     }
 
-    @Test public void deleteAndShiftSwapActionsWithoutMovingTheirSlots() {
+    @Test public void deleteAndShiftSwapActionsWithoutMovingMainKeySlots() {
         for (var profile : KeyboardLayoutProfile.available()) {
             for (var orientation : KeyboardLayoutProfile.Orientation.values()) {
                 for (var plane : KeyboardLayoutProfile.Plane.values()) {
@@ -269,11 +293,16 @@ public final class KeyboardLayoutGeometryTest {
                             var above = KeyboardLayoutGeometry.keys(profile, orientation, plane, shifted,
                                     KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER, width);
                             assertEquals(left.size(), above.size());
+                            int mainCount = KeyboardLayoutGeometry.resolvedRows(profile, orientation, plane,
+                                    shifted, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER)
+                                    .stream().mapToInt(List::size).sum();
                             for (int index = 0; index < left.size(); index++) {
                                 var original = left.get(index);
                                 var swapped = above.get(index);
-                                assertEquals(original.left(), swapped.left(), EPSILON);
-                                assertEquals(original.right(), swapped.right(), EPSILON);
+                                if (!profile.split || index < mainCount) {
+                                    assertEquals(original.left(), swapped.left(), EPSILON);
+                                    assertEquals(original.right(), swapped.right(), EPSILON);
+                                }
                                 assertEquals(original.top(), swapped.top(), EPSILON);
                                 assertEquals(original.bottom(), swapped.bottom(), EPSILON);
                                 String expected = original.action().equals("SHIFT") ? "BACKSPACE"
@@ -304,10 +333,6 @@ public final class KeyboardLayoutGeometryTest {
         assertEquals(context, expected.bottom(), actual.bottom(), EPSILON);
     }
 
-    private static boolean expanded(KeyboardLayoutProfile profile, float width) {
-        return profile.split && width >= 600;
-    }
-
     private static List<List<String>> originalRows(KeyboardLayoutProfile.Plane plane, boolean shifted) {
         if (plane == KeyboardLayoutProfile.Plane.NUMBER_SYMBOLS) return shifted ? SHIFTED_NUMBER_ROWS : NUMBER_ROWS;
         return plane == KeyboardLayoutProfile.Plane.ENGLISH && shifted ? SHIFTED_ENGLISH_ROWS : ORIGINAL_ROWS;
@@ -315,7 +340,7 @@ public final class KeyboardLayoutGeometryTest {
 
     private static List<List<String>> expectedRows(KeyboardLayoutProfile profile,
             KeyboardLayoutProfile.Plane plane, boolean shifted,
-            KeyboardLayoutProfile.DeletePosition position, float width) {
+            KeyboardLayoutProfile.DeletePosition position) {
         var rows = originalRows(plane, shifted);
         List<List<String>> result = new ArrayList<>();
         for (int index = 0; index < rows.size(); index++) {
@@ -323,16 +348,16 @@ public final class KeyboardLayoutGeometryTest {
                     position == KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER && action.equals("SHIFT")
                             ? "BACKSPACE" : action).collect(Collectors.toCollection(ArrayList::new));
             if (standardTablePlane(profile, plane) && index == rows.size() - 1) assertTrue(row.remove("/"));
-            if (expanded(profile, width)) row.add(NARROW_SPLIT_INDEX, EXPANDED_PUNCTUATION.get(index));
+            if (profile.split) row.add(PUNCTUATION_INSERT_INDEX, SPLIT_PUNCTUATION.get(index));
             result.add(row);
         }
         return result;
     }
 
     private static List<String> expectedFunctions(KeyboardLayoutProfile profile,
-            KeyboardLayoutProfile.DeletePosition position, float width) {
+            KeyboardLayoutProfile.DeletePosition position) {
         List<String> result = ORIGINAL_FUNCTIONS.stream()
-                .filter(action -> !expanded(profile, width) || !(action.equals("，") || action.equals("。")))
+                .filter(action -> !profile.split || !(action.equals("，") || action.equals("。")))
                 .map(action -> position == KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER && action.equals("BACKSPACE")
                         ? "SHIFT" : action).collect(Collectors.toCollection(ArrayList::new));
         if (profile.split) result.add(result.indexOf("SPACE") + 1, "SPACE");

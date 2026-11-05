@@ -79,7 +79,6 @@ final class KeyboardView: UIView {
     private struct RowLayout: Equatable {
         let profile: KeyboardLayoutProfile
         let plane: KeyboardLayoutProfile.Plane
-        let expanded: Bool
         let needsInputModeSwitch: Bool
         let deleteShiftPosition: KeyboardDeleteShiftPosition
     }
@@ -222,7 +221,7 @@ final class KeyboardView: UIView {
 
         let container = candidateContainer
         container.backgroundColor = Palette.background
-        // Keep status text below the strip: in expanded split mode its last
+        // Keep status text below the strip: in split mode its last
         // slot remains an interactive hide control even with no candidates.
         for child in [statusLabel, candidateStrip] as [UIView] {
             child.translatesAutoresizingMaskIntoConstraints = false
@@ -469,8 +468,8 @@ final class KeyboardView: UIView {
 
     private func updateCandidateVisibility() {
         let hasCandidates = !state.candidates.isEmpty
-        let expanded = appliedRowLayout?.expanded == true
-        candidateStrip.isHidden = !hasCandidates && !expanded
+        let isSplit = layoutProfile.splitGeometry != nil
+        candidateStrip.isHidden = !hasCandidates && !isSplit
         (candidateButtons + [previousPageButton, nextPageButton]).forEach { $0.isHidden = !hasCandidates }
         let slot = state.smartMode ? smartDismissSpacer : candidateSpacer
         if dismissButton.superview !== slot {
@@ -478,16 +477,13 @@ final class KeyboardView: UIView {
             dismissButton.frame = slot.bounds
             slot.addSubview(dismissButton)
         }
-        dismissButton.isHidden = !expanded
-        closeCandidatesButton.isHidden = !expanded || !state.smartMode || !hasCandidates
+        dismissButton.isHidden = !isSplit
+        closeCandidatesButton.isHidden = !isSplit || !state.smartMode || !hasCandidates
     }
 
     private func updateRowLayout() {
         let split = layoutProfile.splitGeometry
-        let expanded = split.map {
-            !metrics.isCompactHeight && safeAreaLayoutGuide.layoutFrame.width >= $0.minimumExpandedWidth
-        } ?? false
-        let next = RowLayout(profile: layoutProfile, plane: currentPlane, expanded: expanded,
+        let next = RowLayout(profile: layoutProfile, plane: currentPlane,
                              needsInputModeSwitch: needsInputModeSwitch,
                              deleteShiftPosition: deleteShiftPosition)
         guard next != appliedRowLayout else { return }
@@ -495,23 +491,22 @@ final class KeyboardView: UIView {
         cancelBackspaceRepeat()
         for (index, row) in keyRows.enumerated() {
             var buttons: [UIButton] = keyViews[index].map(\.button)
-            if expanded, let split, split.punctuation.indices.contains(index) {
-                buttons.insert(punctuationButtons[index].button, at: min(split.keySplit, buttons.count))
+            if let split, split.punctuation.indices.contains(index) {
+                buttons.insert(punctuationButtons[index].button, at: min(split.keySplit - 1, buttons.count))
             }
             row.configure(buttons, spacing: layoutProfile.keySpacing,
                 keyGeometry: layoutProfile.keyRowGeometry(for: currentKeyRows, plane: currentPlane,
-                    rowIndex: index, expanded: expanded))
+                    rowIndex: index))
         }
-        smartCellStrip.configure(smartCellButtons + (expanded ? [smartDismissSpacer] : []),
+        smartCellStrip.configure(smartCellButtons + (split != nil ? [smartDismissSpacer] : []),
                                  splitIndex: split?.compositionSplit, spacing: layoutProfile.stripSpacing)
         let candidates: [UIView] = [previousPageButton] + candidateButtons + [nextPageButton]
-        candidateStrip.configure(candidates + (expanded ? [candidateSpacer] : []),
-            splitIndex: split.map { expanded ? $0.expandedCandidateSplit : $0.candidateSplit },
+        candidateStrip.configure(candidates + (split != nil ? [candidateSpacer] : []),
+            splitIndex: split?.candidateSplit,
             spacing: layoutProfile.stripSpacing)
         var keys = layoutProfile.functionKeys(deleteShiftPosition: deleteShiftPosition)
         if split != nil, let space = keys.firstIndex(of: "SPACE") { keys.insert("SPACE", at: space + 1) }
         if needsInputModeSwitch { keys.insert(KeyboardLayout.inputModeSwitchKey, at: 0) }
-        if expanded { keys.removeAll { $0 == "，" || $0 == "。" } }
         var seenSpace = false
         let visible = keys.compactMap { key -> (key: String, button: UIButton)? in
             let rightSpace = key == "SPACE" && seenSpace
@@ -520,7 +515,7 @@ final class KeyboardView: UIView {
                 $0.key == key && ($0.button.accessibilityIdentifier == "keyboard.space.right") == rightSpace
             }
         }
-        let weights = visible.map { layoutProfile.functionWeight(for: $0.key, expanded: expanded) }
+        let weights = visible.map { layoutProfile.functionWeight(for: $0.key) }
         let functionSplit = split != nil ? visible.firstIndex { $0.key == "SPACE" }.map { $0 + 1 } : nil
         functionRow.configure(visible.map(\.button), weights: weights, splitIndex: functionSplit,
                               spacing: layoutProfile.keySpacing)
@@ -1093,6 +1088,7 @@ private final class KeyboardKeyButton: UIButton {
                 let largeFont = fittingFont(for: currentTitle, in: bounds.insetBy(dx: 2, dy: 2).size)
                 let pointSize = fontSize.keyPointSize(normal: normalPointSize, largeFit: largeFont.pointSize)
                 if abs(titleLabel.font.pointSize - pointSize) > 0.01 { titleLabel.font = .systemFont(ofSize: pointSize) }
+                titleLabel.textAlignment = .center
                 titleLabel.frame = bounds.insetBy(dx: 1, dy: 1)
             }
         }

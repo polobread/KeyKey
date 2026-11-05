@@ -11,6 +11,7 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Insets;
 import android.graphics.RectF;
 import android.os.Build;
 import android.os.SystemClock;
@@ -267,6 +268,121 @@ public final class KeyboardBottomSpaceInstrumentedTest {
     }
 
     @Test
+    public void clientWidthFeedbackKeepsKeyboardHeightAndStillHonorsRealParentCaps() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            Context base = InstrumentationRegistry.getInstrumentation().getTargetContext();
+            Configuration configuration = new Configuration(base.getResources().getConfiguration());
+            configuration.orientation = Configuration.ORIENTATION_LANDSCAPE;
+            configuration.densityDpi = 420;
+            Context context = base.createConfigurationContext(configuration);
+            float density = context.getResources().getDisplayMetrics().density;
+            int fullWidth = Math.round(900 * density);
+            int clientWidth = fullWidth - Math.round(66 * density);
+            int reserve = Math.round(35 * density);
+            var profile = KeyboardLayoutProfile.ALIGNED;
+            for (int percent : new int[]{100, 50, 200}) {
+                for (boolean integrated : new boolean[]{true, false}) {
+                    var keyboard = new BopomofoKeyboardView(context);
+                    keyboard.setMode(BopomofoKeyboardView.Mode.LANDSCAPE);
+                    keyboard.setLayoutProfile(profile);
+                    keyboard.setTouchKeyboardHeightPercents(percent, percent);
+                    keyboard.setBottomSpaceEnabled(true, true);
+                    keyboard.setIntegratedBottomControls(integrated, false);
+                    var window = new FrameLayout(context);
+                    window.addView(keyboard, new FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                    measureWindow(window, fullWidth, Math.round(800 * density), View.MeasureSpec.AT_MOST);
+                    KeyboardContent before = drawnMainKeys(keyboard, integrated);
+                    int allocatedHeight = window.getMeasuredHeight();
+                    // WM first allocates our requested height, then the cutout changes only
+                    // the client width. This AT_MOST child pass is not a new vertical cap.
+                    measureWindow(window, clientWidth, allocatedHeight, View.MeasureSpec.EXACTLY);
+                    KeyboardContent after = drawnMainKeys(keyboard, integrated);
+                    String sample = "landscape/" + percent + "%/integrated=" + integrated
+                            + "/width=" + fullWidth + "->" + clientWidth;
+                    assertEquals(sample + ": allocated=" + allocatedHeight
+                            + ", after=" + after.totalHeight(), before.totalHeight(), after.totalHeight());
+                    assertEquals(sample, window.getHeight(), keyboard.getBottom());
+                    assertEquals(sample, before.mainKeys().size(), after.mainKeys().size());
+                    for (int index = 0; index < before.mainKeys().size(); index++) {
+                        assertEquals(sample, before.mainKeys().get(index).top, after.mainKeys().get(index).top, .01f);
+                        assertEquals(sample, before.mainKeys().get(index).bottom, after.mainKeys().get(index).bottom, .01f);
+                    }
+                    // A genuinely smaller upstream budget must still constrain the child.
+                    int realCap = Math.round((percent == 50 ? 100 : 190) * density);
+                    measureWindow(window, clientWidth, realCap, View.MeasureSpec.AT_MOST);
+                    int wanted = Math.round(Math.round(profile.layout(
+                            KeyboardLayoutProfile.Orientation.LANDSCAPE).contentHeightDp * density) * percent / 100f);
+                    int expectedContent = Math.min(wanted, Math.max(0, realCap - reserve));
+                    assertEquals(sample + ": real cap", expectedContent + (integrated ? 0 : reserve),
+                            keyboard.getMeasuredHeight());
+                    assertTrue(sample, keyboard.getMeasuredHeight() <= realCap);
+                    for (RectF key : drawnMainKeys(keyboard, integrated).mainKeys()) {
+                        assertTrue(sample + ": content must stay inside the capped child", key.bottom <= keyboard.getHeight());
+                    }
+                }
+            }
+        });
+    }
+
+    @Test
+    public void integratedInsetsUseOnlyRemainingNavigationAndKeepCappedContentSafe() {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            Context context = instrumentation.getTargetContext();
+            float density = context.getResources().getDisplayMetrics().density;
+            int width = context.getResources().getDisplayMetrics().widthPixels;
+            int cap = Math.round(800 * density);
+            int originalReserve = Math.round(35 * density);
+            var keyboard = new BopomofoKeyboardView(context);
+            keyboard.setMode(BopomofoKeyboardView.Mode.LANDSCAPE);
+            keyboard.setLayoutProfile(KeyboardLayoutProfile.ALIGNED);
+            keyboard.setBottomSpaceEnabled(true, true);
+            keyboard.setIntegratedBottomControls(true, false);
+            var window = new FrameLayout(context);
+            window.addView(keyboard, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            measureWindow(window, width, cap, View.MeasureSpec.AT_MOST);
+            KeyboardContent original = drawnMainKeys(keyboard, true);
+            for (int insetDp : new int[]{24, 64, 0}) {
+                int inset = Math.round(insetDp * density);
+                keyboard.onApplyWindowInsets(new WindowInsets.Builder()
+                        .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, inset))
+                        .setVisible(WindowInsets.Type.navigationBars(), inset > 0).build());
+                int oldWindowHeight = window.getMeasuredHeight();
+                measureWindow(window, width, oldWindowHeight, View.MeasureSpec.EXACTLY);
+                for (RectF key : drawnMainKeys(keyboard, true).mainKeys()) {
+                    assertTrue("Even an old-window cap must leave the delivered navigation area safe",
+                            key.bottom <= keyboard.getHeight() - inset);
+                }
+                measureWindow(window, width, cap, View.MeasureSpec.AT_MOST);
+                KeyboardContent current = drawnMainKeys(keyboard, true);
+                assertEquals("Only the remaining inset contributes to the window", original.totalHeight() + inset,
+                        current.totalHeight());
+                assertEquals("A genuine upstream pass restores the intended content", original.mainKeys(), current.mainKeys());
+                int realCap = Math.round(180 * density);
+                measureWindow(window, width, realCap, View.MeasureSpec.AT_MOST);
+                assertTrue(keyboard.getHeight() <= realCap);
+                for (RectF key : drawnMainKeys(keyboard, true).mainKeys()) {
+                    assertTrue("A genuine small cap must protect the delivered navigation area",
+                            key.bottom <= keyboard.getHeight() - inset);
+                }
+                // Restore the upstream budget before the next independent inset sample.
+                measureWindow(window, width, cap, View.MeasureSpec.AT_MOST);
+            }
+            // A parent's already-consumed navigation area arrives as zero.
+            assertEquals(original.totalHeight(), keyboard.getHeight());
+            keyboard.onApplyWindowInsets(new WindowInsets.Builder()
+                    .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, Math.round(64 * density))).build());
+            keyboard.setIntegratedBottomControls(false, false);
+            measureWindow(window, width, cap, View.MeasureSpec.AT_MOST);
+            assertEquals("Non-integrated layout keeps its saved reservation", original.totalHeight() + originalReserve,
+                    keyboard.getHeight());
+        });
+    }
+
+    @Test
     public void integratedControlsToggleRestoresReservationAfterParentFeedbackAndKeepsRealCap() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
             Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -355,14 +471,13 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                 bounds.add(new RectF(rect));
             }
         });
-        float widthDp = keyboard.getWidth() / keyboard.getResources().getDisplayMetrics().density;
         int mainCount = KeyboardLayoutGeometry.resolvedRows(KeyboardLayoutProfile.ALIGNED,
                 KeyboardLayoutProfile.Orientation.PORTRAIT, KeyboardLayoutProfile.Plane.BOPOMOFO,
-                false, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER, widthDp)
+                false, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER)
                 .stream().mapToInt(List::size).sum();
         int functionCount = KeyboardLayoutGeometry.resolvedFunctionKeys(KeyboardLayoutProfile.ALIGNED,
                 KeyboardLayoutProfile.Orientation.PORTRAIT, KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER,
-                widthDp, integrated, false).size();
+                integrated, false).size();
         // Candidate cells precede the key rows; the function row is drawn last.
         int end = bounds.size() - functionCount;
         assertTrue("The main keys must actually be drawn", end >= mainCount);

@@ -4,6 +4,7 @@
     <application>
         <activity
             android:name=".ImeTestActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true"
             android:label="KeyKey IME Test Host" />
     </application>

@@ -330,6 +330,19 @@ final class GuanyinmaInputEngine implements InputEngine {
         int index = hardwareSmartEditing ? Math.max(0, number("reading_cursor") - 1) : array("readings").length() - 1;
         return operate(object("type", "open_candidates", "index", index));
     }
+    /** Close touch candidates without selecting or cancelling composition. */
+    @Override public InputEngine.Result closeTouchSmartCandidates() {
+        if (!isTouchSmartComposition() || displayedCandidates().isEmpty()) return InputEngine.Result.update();
+        boolean returnToEnd = overlay == Overlay.NONE && array("candidates").length() > 0
+                && text("reading").isEmpty();
+        clearOverlay();
+        InputEngine.Result result = operate(object("type", "close_candidates"));
+        if (returnToEnd && lastError == null && result.committedText().isEmpty()
+                && !result.deleteBeforeCursor() && !result.sendEnter() && !result.discardComposingText()) {
+            return operate(object("type", "set_cursor", "index", array("readings").length()));
+        }
+        return result;
+    }
     @Override public InputEngine.Result enter() {
         if (overlay == Overlay.ASSOCIATED) { clearOverlay(); return InputEngine.Result.enter(); }
         if (overlay != Overlay.NONE) return selectHighlightedCandidate();

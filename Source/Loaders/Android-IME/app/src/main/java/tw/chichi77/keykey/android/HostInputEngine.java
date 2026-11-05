@@ -79,6 +79,7 @@ final class HostInputEngine implements InputEngine {
     @Override public void setHardwareSmartEditing(boolean enabled) { update(engine -> engine.setHardwareSmartEditing(enabled)); }
     @Override public InputEngine.Result space() { return perform(InputEngine::space); }
     @Override public InputEngine.Result openSmartCandidates() { return perform(InputEngine::openSmartCandidates); }
+    @Override public InputEngine.Result closeTouchSmartCandidates() { return perform(InputEngine::closeTouchSmartCandidates); }
     @Override public InputEngine.Result enter() { return perform(InputEngine::enter); }
     @Override public InputEngine.Result backspace() { return perform(InputEngine::backspace); }
     @Override public InputEngine.Result escape() { return perform(InputEngine::escape); }
