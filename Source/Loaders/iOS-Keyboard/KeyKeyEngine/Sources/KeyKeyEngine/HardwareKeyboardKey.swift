@@ -6,6 +6,7 @@ public enum HardwareKeyboardKey: Equatable, Sendable {
     case returnKey
     case escape
     case backspace
+    case forwardDelete
     case tab
     case space
     case pageUp
@@ -102,6 +103,7 @@ public enum StandardHardwareKeyMapper {
         case 0x2B: return .tab
         case 0x2C: return .space
         case 0x4B: return .pageUp
+        case 0x4C: return .forwardDelete
         case 0x4E: return .pageDown
         case 0x4F: return .rightArrow
         case 0x50: return .leftArrow

@@ -9,8 +9,12 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.WindowManager;
+import android.view.WindowInsets;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +28,7 @@ final class BopomofoKeyboardView extends View {
         void onCandidate(int displayedIndex);
         void onSmartCell(int index);
         void onPage(int delta);
+        default void onInputMethodPicker() {}
     }
 
     private enum HitKind { KEY, CANDIDATE, PAGE, SMART_CELL, CANDIDATE_BLOCK }
@@ -47,30 +52,6 @@ final class BopomofoKeyboardView extends View {
         int candidateIndex() { return candidateIndex; }
     }
 
-    private static final String[][] BOPOMOFO_AND_ENGLISH_ROWS = {
-            {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-"},
-            {"q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "@"},
-            {"a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "EMOJI"},
-            {"z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "SHIFT"}
-    };
-    private static final String[][] SHIFTED_ENGLISH_ROWS = {
-            {"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_"},
-            {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "@"},
-            {"A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "EMOJI"},
-            {"Z", "X", "C", "V", "B", "N", "M", "<", ">", "?", "SHIFT"}
-    };
-    private static final String[][] NUMBER_ROWS = {
-            {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-"},
-            {"!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_"},
-            {"+", "=", "[", "]", "{", "}", "<", ">", "/", "\\", "|"},
-            {"~", "`", "\"", "'", ":", ";", "?", ",", ".", "…", "SHIFT"}
-    };
-    private static final String[][] SHIFTED_NUMBER_ROWS = {
-            {"$", "€", "£", "¥", "₩", "₹", "₽", "¢", "₫", "₱", "฿"},
-            {"＋", "－", "×", "÷", "=", "≠", "≈", "±", "<", ">", "∞"},
-            {"←", "→", "↑", "↓", "↔", "↕", "↖", "↗", "↘", "↙", "⇒"},
-            {"★", "☆", "●", "○", "■", "□", "▲", "△", "▼", "▽", "SHIFT"}
-    };
     private static final String[] HARDWARE_NUMBER_DIGITS = {
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
     };
@@ -84,12 +65,7 @@ final class BopomofoKeyboardView extends View {
             "_", "+", "{", "}", ":", "\"", "<", ">", "?", "|", "~"
     };
     static final String HARDWARE_LITERAL_PREFIX = "HARDWARE_LITERAL:";
-    private static final String[] FUNCTION_ROW = {
-            "MODE", "SYMBOL", "SETTINGS", "，", "SPACE", "。", "BACKSPACE", "ENTER"
-    };
-    private static final int PORTRAIT_CONTENT_HEIGHT_DP = 330;
     private static final int PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
-    private static final int LANDSCAPE_CONTENT_HEIGHT_DP = 230;
     private static final int LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final int HARDWARE_CONTENT_HEIGHT_DP = 58;
     private static final int HARDWARE_NUMBER_ROW_HEIGHT_DP = 48;
@@ -97,6 +73,8 @@ final class BopomofoKeyboardView extends View {
     private static final int HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
     private static final float TONE_SYMBOL_SCALE = 1.8f;
     private static final String BOPOMOFO_HEIGHT_REFERENCE = "ㄅ";
+    private static final String KEY_FONT_REFERENCE = "ㄖ";
+    private static final float KEY_HINT_SCALE = 10f / 18;
 
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint keyPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -110,9 +88,14 @@ final class BopomofoKeyboardView extends View {
     private final Rect referenceGlyphBounds = new Rect();
     private final Rect glyphBounds = new Rect();
     private final ArrayList<Hit> hits = new ArrayList<>();
+    private float touchKeyTextSize;
 
     private Listener listener;
     private Mode mode = Mode.PORTRAIT;
+    private KeyboardLayoutProfile layoutProfile = KeyboardLayoutProfile.ALIGNED;
+    private KeyboardLayoutProfile.KeycapArea keycapArea = KeyboardLayoutProfile.KeycapArea.SMALL;
+    private KeyboardLayoutProfile.FontSize fontSize = KeyboardLayoutProfile.FontSize.NORMAL;
+    private KeyboardLayoutProfile.DeletePosition deletePosition = KeyboardLayoutProfile.DeletePosition.LEFT_OF_ENTER;
     private List<String> candidates = List.of();
     private String reading = "";
     private boolean smartMode;
@@ -128,9 +111,21 @@ final class BopomofoKeyboardView extends View {
     private Mode lastMeasuredMode;
     private int lastDesiredContentHeight = -1;
     private int lastReservedHeight = -1;
-    private int lastSystemAreaHeight = -1;
+    private int measuredHeightBudget;
+    private Rect lastWindowBounds;
     private boolean touchBottomSpaceEnabled = true;
     private boolean hardwareBottomSpaceEnabled = true;
+    private boolean integratedBottomControls;
+    private int navigationBarBottomInset;
+    private boolean showGlobe;
+    private String pickerPressKey;
+    private boolean pickerPressConsumed;
+    private final Runnable pickerLongPress = () -> {
+        if (pickerPressKey != null && listener != null) {
+            pickerPressConsumed = true;
+            listener.onInputMethodPicker();
+        }
+    };
     private boolean hardwareNumberRowEnabled;
     private boolean hardwareSmartTwoRowsEnabled;
     private boolean hardwareNumberShifted;
@@ -174,6 +169,31 @@ final class BopomofoKeyboardView extends View {
 
     void setListener(Listener listener) {
         this.listener = listener;
+    }
+
+    void setLayoutProfile(KeyboardLayoutProfile profile) {
+        if (layoutProfile == profile) return;
+        layoutProfile = profile;
+        backspaceRepeater.stop();
+        backspaceTouchStarted = false;
+        clearKeyPreview();
+        hits.clear();
+        requestLayout();
+        invalidate();
+    }
+
+    void setLayoutOptions(KeyboardLayoutProfile.KeycapArea area,
+            KeyboardLayoutProfile.FontSize size,
+            KeyboardLayoutProfile.DeletePosition position) {
+        if (keycapArea == area && fontSize == size && deletePosition == position) return;
+        keycapArea = area;
+        fontSize = size;
+        deletePosition = position;
+        backspaceRepeater.stop();
+        backspaceTouchStarted = false;
+        clearKeyPreview();
+        hits.clear();
+        invalidate();
     }
 
     void setKeyboardLayout(BopomofoKeyboardLayout layout) {
@@ -225,6 +245,16 @@ final class BopomofoKeyboardView extends View {
                 && hardwareBottomSpaceEnabled == hardwareEnabled) return;
         touchBottomSpaceEnabled = touchEnabled;
         hardwareBottomSpaceEnabled = hardwareEnabled;
+        requestLayout();
+        invalidate();
+    }
+
+    void setIntegratedBottomControls(boolean integrated, boolean showGlobe) {
+        if (integratedBottomControls == integrated && this.showGlobe == showGlobe) return;
+        integratedBottomControls = integrated;
+        this.showGlobe = showGlobe;
+        cancelPickerPress();
+        hits.clear();
         requestLayout();
         invalidate();
     }
@@ -293,47 +323,81 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
-    static String[][] shiftedEnglishRows() { return SHIFTED_ENGLISH_ROWS; }
-    static String[][] shiftedNumberRows() { return SHIFTED_NUMBER_ROWS; }
+    static String[][] shiftedEnglishRows() {
+        return KeyboardLayoutProfile.ALIGNED.layout(KeyboardLayoutProfile.Orientation.PORTRAIT)
+                .rows(KeyboardLayoutProfile.Plane.ENGLISH, true)
+                .stream().map(row -> row.toArray(new String[0])).toArray(String[][]::new);
+    }
+    static String[][] shiftedNumberRows() {
+        return KeyboardLayoutProfile.ALIGNED.layout(KeyboardLayoutProfile.Orientation.PORTRAIT)
+                .rows(KeyboardLayoutProfile.Plane.NUMBER_SYMBOLS, true)
+                .stream().map(row -> row.toArray(new String[0])).toArray(String[][]::new);
+    }
+
+    @Override
+    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            // Parents may already have consumed this area. Only reserve what
+            // reaches this view, rather than reading the root's original insets.
+            int bottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+            if (navigationBarBottomInset != bottom) {
+                navigationBarBottomInset = bottom;
+                requestLayout();
+                invalidate();
+            }
+        }
+        return super.onApplyWindowInsets(insets);
+    }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int desiredContentHeight = switch (mode) {
-            case HARDWARE_FLOATING -> dp(1);
+            case HARDWARE_FLOATING -> dp(showGlobe ? HARDWARE_CONTENT_HEIGHT_DP : 1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
                     + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
-            case LANDSCAPE -> scaledContentHeight(LANDSCAPE_CONTENT_HEIGHT_DP,
+            case LANDSCAPE -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.LANDSCAPE).contentHeightDp,
                     landscapeHeightPercent);
-            case PORTRAIT -> scaledContentHeight(PORTRAIT_CONTENT_HEIGHT_DP,
+            case PORTRAIT -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.PORTRAIT).contentHeightDp,
                     portraitHeightPercent);
         };
         // Budget the reserved area before clamping the keyboard content, even
         // when that area is disabled. Otherwise a capped IME keeps its height
         // and gives the removed padding to the keys instead of the host app.
-        int reservedHeight = reservedSystemAreaHeight();
         int systemAreaHeight = systemAreaHeight();
+        int reservedHeight = Math.max(reservedSystemAreaHeight(), systemAreaHeight);
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int availableHeight = resolveSize(desiredContentHeight + reservedHeight, heightMeasureSpec);
+        Rect windowBounds = Build.VERSION.SDK_INT >= 30
+                ? getContext().getSystemService(WindowManager.class).getCurrentWindowMetrics().getBounds() : null;
         // Once the IME window has been sized, the framework measures its child
-        // again within that exact window. This is our requested height, not a
-        // new screen limit: subtracting the reservation again leaves a blank strip.
+        // again within that window (including AT_MOST for a WRAP_CONTENT child).
+        // Its old height is not a new screen cap when the reservation changes.
+        // A cutout can change only the client width after WM allocates that height.
         boolean withinRequestedWindow = MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.UNSPECIFIED
                 && MeasureSpec.getSize(heightMeasureSpec) == getMeasuredHeight()
-                && width == getMeasuredWidth()
                 && mode == lastMeasuredMode
                 && desiredContentHeight == lastDesiredContentHeight
                 && reservedHeight == lastReservedHeight
-                && systemAreaHeight == lastSystemAreaHeight;
+                && (windowBounds == null ? lastWindowBounds == null : windowBounds.equals(lastWindowBounds));
         if (!withinRequestedWindow) {
+            measuredHeightBudget = resolveSize(desiredContentHeight + reservedHeight, heightMeasureSpec);
             measuredContentHeight = Math.min(desiredContentHeight,
-                    Math.max(0, availableHeight - reservedHeight));
+                    Math.max(0, measuredHeightBudget - reservedHeight));
         }
-        int desiredHeight = Math.min(availableHeight, measuredContentHeight + systemAreaHeight);
+        // Keep the content through old-window feedback, while obeying the
+        // current parent spec. A WRAP_CONTENT root layout restores the total
+        // height when it measures again against its upstream window budget.
+        int desiredHeight = resolveSize(Math.min(measuredHeightBudget,
+                measuredContentHeight + systemAreaHeight), heightMeasureSpec);
         setMeasuredDimension(resolveSize(width, widthMeasureSpec), desiredHeight);
         lastMeasuredMode = mode;
         lastDesiredContentHeight = desiredContentHeight;
         lastReservedHeight = reservedHeight;
-        lastSystemAreaHeight = systemAreaHeight;
+        lastWindowBounds = windowBounds == null ? null : new Rect(windowBounds);
+    }
+
+    int cappedIntegratedWindowHeight() {
+        return isTouchMode() && integratedBottomControls
+                && measuredContentHeight < lastDesiredContentHeight ? measuredHeightBudget : 0;
     }
 
     @Override
@@ -342,7 +406,11 @@ final class BopomofoKeyboardView extends View {
         hits.clear();
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
         switch (mode) {
-            case HARDWARE_FLOATING -> { }
+            case HARDWARE_FLOATING -> {
+                if (showGlobe) drawHardwareStatusButton(canvas,
+                        new RectF(Math.max(0, getWidth() - dp(HARDWARE_CONTENT_HEIGHT_DP)), 0,
+                                getWidth(), dp(HARDWARE_CONTENT_HEIGHT_DP)), "🌐", "GLOBE");
+            }
             case HARDWARE -> drawHardware(canvas);
             case LANDSCAPE -> drawLandscape(canvas);
             case PORTRAIT -> drawPortrait(canvas);
@@ -369,14 +437,19 @@ final class BopomofoKeyboardView extends View {
             drawCandidateStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
         }
 
-        String[][] rows = inputRows();
-        float rowHeight = (contentHeight - top) / 5f;
-        for (int row = 0; row < rows.length; row++) {
-            drawEqualKeyRow(canvas, rows[row], 0, getWidth(), top + row * rowHeight,
-                    top + (row + 1) * rowHeight);
+        var orientation = touchOrientation();
+        var plane = inputPlane();
+        var layout = layoutProfile.layout(orientation);
+        float rowHeight = (contentHeight - top) / (layout.rows(plane, shifted).size() + 1);
+        touchKeyTextSize = sharedTouchKeyTextSize(rowHeight);
+        for (var key : KeyboardLayoutGeometry.keys(layoutProfile, orientation, plane, shifted, deletePosition,
+                getWidth() / getResources().getDisplayMetrics().density, integratedBottomControls, showGlobe)) {
+            RectF bounds = new RectF(key.left() * getWidth() + dp(2),
+                    top + key.top() * (contentHeight - top) + dp(2),
+                    key.right() * getWidth() - dp(2),
+                    top + key.bottom() * (contentHeight - top) - dp(2));
+            drawKey(canvas, bounds, key.action());
         }
-        drawWeightedKeyRow(canvas, FUNCTION_ROW, 0, getWidth(), top + 4 * rowHeight,
-                contentHeight);
         if (smartMode && !candidates.isEmpty()) {
             RectF overlay = new RectF(0, top, getWidth(), top + rowHeight);
             canvas.drawRect(overlay, backgroundPaint);
@@ -386,40 +459,74 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawSmartCellStrip(Canvas canvas, RectF area) {
-        drawSmartCellStrip(canvas, area, 11);
+        int cellCount = compositionCellCount();
+        if (isTouchMode() && layoutProfile.split) {
+            var slots = KeyboardLayoutGeometry.splitStripSlots(cellCount + 1, widthDp(area));
+            for (int index = 0; index < cellCount; index++) {
+                drawSmartCell(canvas, inset(stripSlotBounds(area, slots.get(index)), dp(2)), index, cellCount);
+            }
+            drawStripControl(canvas, stripSlotBounds(area, slots.get(cellCount)), "▼", "DISMISS");
+        } else {
+            drawSmartCellStrip(canvas, area, cellCount);
+        }
     }
 
     private void drawSmartCellStrip(Canvas canvas, RectF area, int cellCount) {
         float cellWidth = area.width() / cellCount;
-        boolean showSupport = supportPromptEligible() && reading.isEmpty()
-                && smartCells.isEmpty() && candidates.isEmpty() && !associatedPhrasesVisible;
         for (int index = 0; index < cellCount; index++) {
             RectF cell = new RectF(area.left + index * cellWidth + dp(2),
                     area.top + dp(2), area.left + (index + 1) * cellWidth - dp(2),
                     area.bottom - dp(2));
-            canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
-            if (showSupport && index >= cellCount - 3) {
-                drawSupportPromptWord(canvas, cell, index - (cellCount - 3));
-                continue;
-            }
-            if (index >= smartCells.size()) continue;
-            String value = smartCells.get(index);
-            textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
-            textPaint.setFakeBoldText(index < smartEditableCount);
-            float availableWidth = Math.max(1, cell.width() - dp(4));
-            float measuredWidth = textPaint.measureText(value);
-            if (measuredWidth > availableWidth) {
-                float fittedSize = textPaint.getTextSize() * availableWidth / measuredWidth;
-                // The ninth hardware cell may also contain an unfinished reading.
-                textPaint.setTextSize(usesHardwareSmartTwoRows()
-                        ? fittedSize : Math.max(dp(8), fittedSize));
-            }
-            canvas.drawText(value, cell.centerX(),
-                    textBaseline(cell, textPaint), textPaint);
-            if (index < smartEditableCount && !value.isEmpty()) {
-                hits.add(new Hit(new RectF(cell), HitKind.SMART_CELL, "", index));
-            }
+            drawSmartCell(canvas, cell, index, cellCount);
         }
+    }
+
+    private void drawSmartCell(Canvas canvas, RectF cell, int index, int cellCount) {
+        boolean showSupport = supportPromptEligible() && reading.isEmpty()
+                && smartCells.isEmpty() && candidates.isEmpty() && !associatedPhrasesVisible;
+        canvas.drawRoundRect(cell, dp(6), dp(6), candidatePaint);
+        if (showSupport && index >= cellCount - 3) {
+            drawSupportPromptWord(canvas, cell, index - (cellCount - 3));
+            return;
+        }
+        if (index >= smartCells.size()) return;
+        String value = smartCells.get(index);
+        textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
+        textPaint.setFakeBoldText(index < smartEditableCount);
+        boolean splitTouch = isTouchMode() && layoutProfile.split;
+        if (isTouchMode() && (!fontSize.showsHints() || splitTouch)) {
+            fitStripText(textPaint, value, cell, textPaint.getTextSize());
+        }
+        float availableWidth = Math.max(1, cell.width() - dp(4));
+        float measuredWidth = textPaint.measureText(value);
+        if (measuredWidth > availableWidth) {
+            float fittedSize = textPaint.getTextSize() * availableWidth / measuredWidth;
+            // Split touch cells and hardware reading tails must fit their own slot.
+            textPaint.setTextSize(usesHardwareSmartTwoRows() || splitTouch
+                    ? fittedSize : Math.max(dp(8), fittedSize));
+        }
+        canvas.drawText(value, cell.centerX(), textBaseline(cell, textPaint), textPaint);
+        if (index < smartEditableCount && !value.isEmpty()) {
+            hits.add(new Hit(new RectF(cell), HitKind.SMART_CELL, "", index));
+        }
+    }
+
+    private float widthDp(RectF area) {
+        return area.width() / getResources().getDisplayMetrics().density;
+    }
+
+    private RectF stripSlotBounds(RectF area, KeyboardLayoutGeometry.StripSlot slot) {
+        return new RectF(area.left + slot.left() * area.width(), area.top,
+                area.left + slot.right() * area.width(), area.bottom);
+    }
+
+    private void drawStripControl(Canvas canvas, RectF bounds, String label, String action) {
+        RectF cell = inset(bounds, dp(2));
+        canvas.drawRoundRect(cell, dp(6), dp(6), specialKeyPaint);
+        textPaint.setFakeBoldText(true);
+        fitStripText(textPaint, label, cell, mode == Mode.LANDSCAPE ? dp(14) : dp(16));
+        canvas.drawText(label, cell.centerX(), textBaseline(cell, textPaint), textPaint);
+        hits.add(new Hit(new RectF(cell), HitKind.KEY, action, -1));
     }
 
     private void drawHardware(Canvas canvas) {
@@ -535,6 +642,10 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawHardwareEmojiButton(Canvas canvas, RectF bounds) {
+        if (showGlobe) {
+            drawHardwareStatusButton(canvas, bounds, "🌐", "GLOBE");
+            return;
+        }
         RectF inset = inset(bounds, dp(2));
         boolean enabled = fieldPolicy.isKeyEnabled("EMOJI", inputMode, shifted);
         int savedAlpha = canvas.saveLayerAlpha(inset, enabled ? 255 : 92);
@@ -547,6 +658,10 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawCandidateStrip(Canvas canvas, RectF area) {
+        if (isTouchMode() && layoutProfile.split) {
+            drawSplitCandidateStrip(canvas, area);
+            return;
+        }
         if (candidates.isEmpty()) {
             drawEmptyCandidateMessage(canvas, area);
             return;
@@ -564,6 +679,48 @@ final class BopomofoKeyboardView extends View {
         }
         drawPageButton(canvas, new RectF(area.right - cellWidth, area.top,
                 area.right, area.bottom), 1, "▼");
+    }
+
+    private void drawSplitCandidateStrip(Canvas canvas, RectF area) {
+        int candidateCount = InputEngine.CANDIDATES_PER_PAGE;
+        var slots = KeyboardLayoutGeometry.splitStripSlots(candidateCount + 3, widthDp(area));
+        var last = stripSlotBounds(area, slots.get(slots.size() - 1));
+        if (candidates.isEmpty()) {
+            int half = slots.size() / 2;
+            RectF left = new RectF(area.left, area.top,
+                    stripSlotBounds(area, slots.get(half - 1)).right, area.bottom);
+            RectF right = new RectF(stripSlotBounds(area, slots.get(half)).left,
+                    area.top, last.left, area.bottom);
+            if (!reading.isEmpty()) {
+                drawSplitMessage(canvas, left, reading, true);
+                drawSplitMessage(canvas, right, "按空白選字", false);
+            } else if (supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO) {
+                drawSplitMessage(canvas, left, bopomofoLayoutName(), false);
+                drawSplitMessage(canvas, right, getResources().getString(R.string.supporter_prompt), false);
+            } else {
+                drawSplitMessage(canvas, left, emptyCandidateMessage(), false);
+            }
+        } else {
+            drawPageButton(canvas, stripSlotBounds(area, slots.get(0)), -1, "▲");
+            for (int index = 0; index < candidateCount; index++) {
+                drawCandidate(canvas, inset(stripSlotBounds(area, slots.get(index + 1)), dp(2)), index);
+            }
+            drawPageButton(canvas, stripSlotBounds(area, slots.get(candidateCount + 1)), 1, "▼");
+        }
+        boolean canCloseCandidates = smartMode && !candidates.isEmpty();
+        drawStripControl(canvas, last, canCloseCandidates ? "×" : "▼",
+                canCloseCandidates ? "CLOSE_CANDIDATES" : "DISMISS");
+    }
+
+    private void drawSplitMessage(Canvas canvas, RectF bounds, String message, boolean primary) {
+        RectF content = inset(bounds, dp(2));
+        Paint paint = primary ? textPaint : hintPaint;
+        paint.setFakeBoldText(false);
+        fitStripText(paint, message, content, standardHintTextSize());
+        int save = canvas.save();
+        canvas.clipRect(content);
+        canvas.drawText(message, content.centerX(), textBaseline(content, paint), paint);
+        canvas.restoreToCount(save);
     }
 
     private void drawCandidate(Canvas canvas, RectF bounds, int index) {
@@ -586,6 +743,9 @@ final class BopomofoKeyboardView extends View {
             String value = candidates.get(index);
             textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
             textPaint.setFakeBoldText(true);
+            if (isTouchMode() && (!fontSize.showsHints() || layoutProfile.split)) {
+                fitStripText(textPaint, value, bounds, textPaint.getTextSize());
+            }
             canvas.drawText(value, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
             hits.add(new Hit(new RectF(bounds), HitKind.CANDIDATE, "", index));
         }
@@ -603,25 +763,54 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawEmptyCandidateMessage(Canvas canvas, RectF area) {
-        String message;
-        if (!reading.isEmpty()) message = reading + "　按空白選字";
-        else if (inputMode == InputEngine.InputMode.ENGLISH) {
-            message = temporaryEnglish ? "暫時英文小寫" : shifted ? "英文大寫" : "英文小寫";
+        if (!reading.isEmpty() && isTouchMode() && !fontSize.showsHints()) {
+            drawReadingMessage(canvas, area);
+            return;
         }
-        else if (inputMode == InputEngine.InputMode.NUMBER) {
-            message = shifted ? "數字與符號（二）" : "數字與符號（一）";
-        }
-        else {
-            if (supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO
-                    && (mode == Mode.PORTRAIT || mode == Mode.LANDSCAPE)) {
-                drawSupportPrompt(canvas, area);
-                return;
-            }
-            message = bopomofoLayoutName()
-                    + (mode == Mode.HARDWARE ? "・候選 1–9・關聯詞 Shift+1–9" : "");
+        if (reading.isEmpty() && supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO
+                && (mode == Mode.PORTRAIT || mode == Mode.LANDSCAPE)) {
+            drawSupportPrompt(canvas, area);
+            return;
         }
         hintPaint.setTextSize(standardHintTextSize());
-        canvas.drawText(message, area.centerX(), textBaseline(area, hintPaint), hintPaint);
+        canvas.drawText(emptyCandidateMessage(), area.centerX(), textBaseline(area, hintPaint), hintPaint);
+    }
+
+    private String emptyCandidateMessage() {
+        if (!reading.isEmpty()) return reading + "　按空白選字";
+        if (inputMode == InputEngine.InputMode.ENGLISH) {
+            return temporaryEnglish ? "暫時英文小寫" : shifted ? "英文大寫" : "英文小寫";
+        }
+        if (inputMode == InputEngine.InputMode.NUMBER) return shifted ? "數字與符號（二）" : "數字與符號（一）";
+        return bopomofoLayoutName()
+                + (mode == Mode.HARDWARE ? "・候選 1–9・關聯詞 Shift+1–9" : "");
+    }
+
+    private void fitStripText(Paint paint, String label, RectF bounds, float normalSize) {
+        paint.setTextSize(normalSize * fontSize.stripScale);
+        paint.getTextBounds(label, 0, label.length(), glyphBounds);
+        Paint.FontMetrics metrics = paint.getFontMetrics();
+        float width = Math.max(glyphBounds.width(), paint.measureText(label));
+        float height = Math.max(glyphBounds.height(), metrics.descent - metrics.ascent);
+        float scale = Math.min(1f, Math.min(Math.max(1, bounds.width() - dp(4)) / Math.max(1, width),
+                Math.max(1, bounds.height() - dp(4)) / Math.max(1, height)));
+        paint.setTextSize(paint.getTextSize() * scale);
+    }
+
+    private void drawReadingMessage(Canvas canvas, RectF area) {
+        String instruction = "按空白選字";
+        hintPaint.setTextSize(standardHintTextSize());
+        float instructionWidth = hintPaint.measureText(instruction);
+        float gap = standardHintTextSize();
+        RectF readingBounds = new RectF(area);
+        readingBounds.right -= instructionWidth + gap;
+        textPaint.setFakeBoldText(false);
+        fitStripText(textPaint, reading, readingBounds, standardHintTextSize());
+        float readingWidth = textPaint.measureText(reading);
+        float left = area.centerX() - (readingWidth + gap + instructionWidth) / 2f;
+        canvas.drawText(reading, left + readingWidth / 2f, textBaseline(area, textPaint), textPaint);
+        canvas.drawText(instruction, left + readingWidth + gap + instructionWidth / 2f,
+                textBaseline(area, hintPaint), hintPaint);
     }
 
     private String bopomofoLayoutName() {
@@ -675,39 +864,35 @@ final class BopomofoKeyboardView extends View {
         return mode == Mode.LANDSCAPE ? dp(11) : dp(14);
     }
 
-    private void drawEqualKeyRow(Canvas canvas, String[] keys, float left, float right,
-                                 float top, float bottom) {
-        if (keys.length == 0) return;
-        float width = (right - left) / keys.length;
-        for (int index = 0; index < keys.length; index++) {
-            RectF bounds = new RectF(left + index * width + dp(2), top + dp(2),
-                    left + (index + 1) * width - dp(2), bottom - dp(2));
-            drawKey(canvas, bounds, keys[index]);
-        }
-    }
-
-    private void drawWeightedKeyRow(Canvas canvas, String[] keys, float left, float right,
-                                    float top, float bottom) {
-        float totalWeight = 0;
-        for (String key : keys) totalWeight += keyWeight(key);
-        float unit = (right - left) / totalWeight;
-        float cursor = left;
-        for (String key : keys) {
-            float width = unit * keyWeight(key);
-            RectF bounds = new RectF(cursor + dp(2), top + dp(2),
-                    cursor + width - dp(2), bottom - dp(2));
-            drawKey(canvas, bounds, key);
-            cursor += width;
-        }
-    }
-
     private void drawKey(Canvas canvas, RectF bounds, String key) {
         boolean special = isSpecialKey(key);
         boolean enabled = fieldPolicy.isKeyEnabled(key, inputMode, shifted);
         int savedAlpha = canvas.saveLayerAlpha(bounds, enabled ? 255 : 92);
-        canvas.drawRoundRect(bounds, dp(6), dp(6), special ? specialKeyPaint : keyPaint);
+        RectF cap = new RectF(bounds);
+        if (isTouchMode() && layoutProfile.staggered) cap.inset(dp(1), dp(1));
+        RectF labelBounds = new RectF(cap);
+        if (isTouchMode()) {
+            float scale = (float) Math.sqrt(keycapArea.fraction);
+            cap.inset(cap.width() * (1 - scale) / 2, cap.height() * (1 - scale) / 2);
+        }
+        canvas.drawRoundRect(cap, dp(6), dp(6), special ? specialKeyPaint : keyPaint);
+
+        if (isTouchMode() && showGlobe && key.equals("MODE")) {
+            drawCompactModeLabel(canvas, labelBounds);
+            canvas.restoreToCount(savedAlpha);
+            if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+            return;
+        }
 
         String symbol = bopomofoSymbol(key);
+        if (isTouchMode() && !fontSize.showsHints() && !key.equals("ENTER")) {
+            String label = !symbol.isEmpty() ? (temporaryEnglish ? key : symbol) : keyLabel(key);
+            drawSizedKeyLabel(canvas, labelBounds, label,
+                    touchKeyTextSize * (isToneSymbol(label) ? TONE_SYMBOL_SCALE : 1f));
+            canvas.restoreToCount(savedAlpha);
+            if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+            return;
+        }
         if (!symbol.isEmpty()) {
             drawBopomofoKey(canvas, bounds, symbol, key, temporaryEnglish);
             canvas.restoreToCount(savedAlpha);
@@ -716,7 +901,10 @@ final class BopomofoKeyboardView extends View {
         }
 
         if (key.equals("ENTER")) {
-            if (fieldPolicy.enterLabel().isEmpty()) drawEnterKey(canvas, bounds);
+            if (fieldPolicy.enterLabel().isEmpty()) drawEnterKey(canvas,
+                    isTouchMode() && !fontSize.showsHints() ? labelBounds : bounds);
+            else if (isTouchMode() && !fontSize.showsHints()) drawSizedKeyLabel(canvas, labelBounds,
+                    fieldPolicy.enterLabel(), touchKeyTextSize);
             else drawEnterLabel(canvas, bounds, fieldPolicy.enterLabel());
             canvas.restoreToCount(savedAlpha);
             if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
@@ -728,11 +916,93 @@ final class BopomofoKeyboardView extends View {
         int textSize = mode == Mode.LANDSCAPE ? (label.length() > 3 ? 9 : 12)
                 : (label.length() > 3 ? 12 : 18);
         textPaint.setTextSize(dp(textSize));
-        textPaint.setFakeBoldText(key.equals("SPACE")
+        textPaint.setFakeBoldText(isTouchMode() || key.equals("SPACE")
                 || (inputMode == InputEngine.InputMode.BOPOMOFO && !special));
+        if (isTouchMode()) {
+            float fittedSize = fittedKeyTextSize(labelBounds, label, dp(4));
+            boolean control = isSpecialKey(key) && !List.of("SPACE", "，", "。", "、", "？", "SYMBOL", "SETTINGS").contains(key);
+            textPaint.setTextSize(control ? Math.min(touchKeyTextSize, fittedSize) : touchKeyTextSize);
+        }
+        if (isTouchMode() && layoutProfile.split && special) {
+            float availableWidth = Math.max(1, bounds.width() - dp(4));
+            float labelWidth = textPaint.measureText(label);
+            if (labelWidth > availableWidth) textPaint.setTextSize(textPaint.getTextSize() * availableWidth / labelWidth);
+        }
         canvas.drawText(label, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
         canvas.restoreToCount(savedAlpha);
         if (enabled) hits.add(new Hit(new RectF(bounds), HitKind.KEY, key, -1));
+    }
+
+    private void drawSizedKeyLabel(Canvas canvas, RectF bounds, String label, float size) {
+        textPaint.setFakeBoldText(true);
+        boolean control = List.of("☺", "🌐", "⌫", "⇧", "▼").contains(label);
+        boolean longCaption = label.codePointCount(0, label.length()) > 1 && !label.equals("空白");
+        textPaint.setTextSize(control || longCaption
+                ? Math.min(size, fittedKeyTextSize(bounds, label, dp(4))) : size);
+        textPaint.getTextBounds(label, 0, label.length(), glyphBounds);
+        float baseline = bounds.centerY() - (glyphBounds.top + glyphBounds.bottom) / 2f;
+        float x = bounds.centerX() + textPaint.measureText(label) / 2f
+                - (glyphBounds.left + glyphBounds.right) / 2f;
+        canvas.drawText(label, x, baseline, textPaint);
+    }
+
+    private float sharedTouchKeyTextSize(float rowHeight) {
+        // The ㄖ key is the reference for every input plane. Its real slot
+        // follows the current view width, layout, direction and available height.
+        var reference = KeyboardLayoutGeometry.keys(layoutProfile, touchOrientation(),
+                KeyboardLayoutProfile.Plane.BOPOMOFO, false, deletePosition,
+                getWidth() / getResources().getDisplayMetrics().density,
+                integratedBottomControls, showGlobe).stream()
+                .filter(key -> key.action().equals("b")).findFirst().orElseThrow();
+        float stagger = layoutProfile.staggered ? 2 * dp(1) : 0;
+        float width = Math.max(1, (reference.right() - reference.left()) * getWidth()
+                - 2 * dp(2) - stagger - dp(4));
+        float height = Math.max(1, rowHeight - 2 * dp(2) - stagger - dp(4));
+        textPaint.setFakeBoldText(true);
+        textPaint.setTextSize(100);
+        textPaint.getTextBounds(KEY_FONT_REFERENCE, 0, KEY_FONT_REFERENCE.length(), referenceGlyphBounds);
+        float referenceWidth = Math.max(referenceGlyphBounds.width(), textPaint.measureText(KEY_FONT_REFERENCE));
+        Paint.FontMetrics primary = textPaint.getFontMetrics();
+        float referenceHeight = Math.max(referenceGlyphBounds.height(), primary.descent - primary.ascent);
+        float fullFit = 100 * Math.min(width / referenceWidth, height / referenceHeight);
+
+        // Reserve the hint's own font box and spacing before maximizing the
+        // standard caption. Both boxes scale with the computed main text size.
+        hintPaint.setTextSize(100 * KEY_HINT_SCALE);
+        Paint.FontMetrics secondary = hintPaint.getFontMetrics();
+        float hintWidth = hintPaint.measureText(KEY_FONT_REFERENCE);
+        String hints = "1234567890qwertyuiopasdfghjklzxcvbnm@";
+        for (int index = 0; index < hints.length(); index++) {
+            hintWidth = Math.max(hintWidth, hintPaint.measureText(hints, index, index + 1));
+        }
+        float hintHeight = secondary.descent - secondary.ascent;
+        float gap = dp(2);
+        float standardFit = 100 * Math.min(Math.max(1, width - gap) / (referenceWidth + hintWidth),
+                Math.max(1, height - gap) / (referenceHeight + hintHeight));
+        return KeyboardTypography.keyTextSize(fontSize, standardFit, fullFit);
+    }
+
+    private void drawCompactModeLabel(Canvas canvas, RectF bounds) {
+        String[] labels = keyLabel("MODE").split("/", 2);
+        if (labels.length != 2) {
+            drawSizedKeyLabel(canvas, bounds, keyLabel("MODE"), touchKeyTextSize);
+            return;
+        }
+        RectF upper = new RectF(bounds.left, bounds.top, bounds.centerX(), bounds.centerY());
+        RectF lower = new RectF(bounds.centerX(), bounds.centerY(), bounds.right, bounds.bottom);
+        float normalSize = touchKeyTextSize;
+        drawSizedKeyLabel(canvas, upper, labels[0], Math.min(normalSize, fittedKeyTextSize(upper, labels[0], dp(4))));
+        drawSizedKeyLabel(canvas, lower, labels[1], Math.min(normalSize, fittedKeyTextSize(lower, labels[1], dp(4))));
+    }
+
+    private float fittedKeyTextSize(RectF bounds, String label, float padding) {
+        textPaint.setTextSize(100);
+        textPaint.getTextBounds(label, 0, label.length(), glyphBounds);
+        float availableWidth = Math.max(1, bounds.width() - padding);
+        float availableHeight = Math.max(1, bounds.height() - padding);
+        float scale = Math.min(availableWidth / Math.max(1, Math.max(glyphBounds.width(), textPaint.measureText(label))),
+                availableHeight / Math.max(1, glyphBounds.height()));
+        return 100 * scale;
     }
 
     private void drawEnterLabel(Canvas canvas, RectF bounds, String label) {
@@ -744,6 +1014,8 @@ final class BopomofoKeyboardView extends View {
         if (measuredWidth > availableWidth) {
             textPaint.setTextSize(Math.max(dp(7), textSize * availableWidth / measuredWidth));
         }
+        float size = textPaint.getTextSize();
+        textPaint.setTextSize(Math.min(size, fittedKeyTextSize(bounds, label, dp(4))));
         canvas.drawText(label, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
     }
 
@@ -784,6 +1056,9 @@ final class BopomofoKeyboardView extends View {
 
     private void drawEnterKey(Canvas canvas, RectF bounds) {
         float side = dp(mode == Mode.LANDSCAPE ? 14 : 20);
+        if (isTouchMode()) {
+            side = touchKeyTextSize * (mode == Mode.LANDSCAPE ? 14f / 11 : 20f / 18);
+        }
         float unit = side / 24f;
         float left = bounds.centerX() - side / 2f;
         float top = bounds.centerY() - side / 2f;
@@ -808,10 +1083,18 @@ final class BopomofoKeyboardView extends View {
             return;
         }
 
-        float normalPrimarySize = dp(18);
+        float normalPrimarySize = touchKeyTextSize;
+        float normalSecondarySize = touchKeyTextSize * KEY_HINT_SCALE;
+        textPaint.setTextSize(normalPrimarySize);
+        Paint.FontMetrics primaryMetrics = textPaint.getFontMetrics();
+        hintPaint.setTextSize(normalSecondarySize);
+        Paint.FontMetrics secondaryMetrics = hintPaint.getFontMetrics();
+        float primaryHeight = primaryMetrics.descent - primaryMetrics.ascent;
+        float secondaryHeight = secondaryMetrics.descent - secondaryMetrics.ascent;
+        float top = bounds.centerY() - (primaryHeight + dp(2) + secondaryHeight) / 2f;
         float primarySize = isToneSymbol(primary)
                 ? normalPrimarySize * TONE_SYMBOL_SCALE : normalPrimarySize;
-        float primaryBaseline = bounds.centerY() - dp(4);
+        float primaryBaseline = top - primaryMetrics.ascent;
         if (isToneSymbol(primary)) {
             primaryBaseline = topAlignedBaseline(textPaint, primary, primarySize,
                     BOPOMOFO_HEIGHT_REFERENCE, normalPrimarySize, primaryBaseline);
@@ -819,10 +1102,9 @@ final class BopomofoKeyboardView extends View {
         textPaint.setTextSize(primarySize);
         canvas.drawText(primary, bounds.centerX(), primaryBaseline, textPaint);
 
-        float normalSecondarySize = dp(10);
         float secondarySize = isToneSymbol(secondary)
                 ? normalSecondarySize * TONE_SYMBOL_SCALE : normalSecondarySize;
-        float secondaryBaseline = bounds.centerY() + dp(17);
+        float secondaryBaseline = top + primaryHeight + dp(2) - secondaryMetrics.ascent;
         if (isToneSymbol(secondary)) {
             secondaryBaseline = topAlignedBaseline(hintPaint, secondary, secondarySize,
                     "1", normalSecondarySize, secondaryBaseline);
@@ -833,33 +1115,29 @@ final class BopomofoKeyboardView extends View {
 
     private void drawLandscapeBopomofoKey(Canvas canvas, RectF bounds, String primary,
                                            String secondary) {
-        float normalSize = dp(11);
-        float primarySize = isToneSymbol(primary) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
-        float secondarySize = isToneSymbol(secondary) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
-        float gap = dp(3);
-
-        textPaint.setTextSize(primarySize);
-        float primaryWidth = textPaint.measureText(primary);
-        textPaint.setTextSize(secondarySize);
-        float secondaryWidth = textPaint.measureText(secondary);
-        float left = bounds.centerX() - (primaryWidth + gap + secondaryWidth) / 2f;
+        float normalSize = touchKeyTextSize;
+        float hintSize = touchKeyTextSize * KEY_HINT_SCALE;
         textPaint.setTextSize(normalSize);
+        float primaryWidth = textPaint.measureText(KEY_FONT_REFERENCE);
+        hintPaint.setTextSize(hintSize);
+        float secondaryWidth = Math.max(hintPaint.measureText(KEY_FONT_REFERENCE), hintPaint.measureText(secondary));
+        float left = bounds.centerX() - (primaryWidth + dp(2) + secondaryWidth) / 2f;
         float normalBaseline = textBaseline(bounds, textPaint);
-
-        textPaint.setTextSize(primarySize);
+        float primarySize = isToneSymbol(primary) ? normalSize * TONE_SYMBOL_SCALE : normalSize;
         float primaryBaseline = isToneSymbol(primary)
                 ? topAlignedBaseline(textPaint, primary, primarySize,
-                        BOPOMOFO_HEIGHT_REFERENCE, normalSize, normalBaseline)
-                : normalBaseline;
-        canvas.drawText(primary, left + primaryWidth / 2f,
-                primaryBaseline, textPaint);
-        textPaint.setTextSize(secondarySize);
-        float secondaryBaseline = isToneSymbol(secondary)
-                ? topAlignedBaseline(textPaint, secondary, secondarySize,
-                        BOPOMOFO_HEIGHT_REFERENCE, normalSize, normalBaseline)
-                : normalBaseline;
-        canvas.drawText(secondary, left + primaryWidth + gap + secondaryWidth / 2f,
-                secondaryBaseline, textPaint);
+                        BOPOMOFO_HEIGHT_REFERENCE, normalSize, normalBaseline) : normalBaseline;
+        textPaint.setTextSize(primarySize);
+        canvas.drawText(primary, left + primaryWidth / 2f, primaryBaseline, textPaint);
+        float secondarySize = isToneSymbol(secondary) ? hintSize * TONE_SYMBOL_SCALE : hintSize;
+        float secondaryBaseline = textBaseline(bounds, hintPaint);
+        if (isToneSymbol(secondary)) {
+            secondaryBaseline = topAlignedBaseline(hintPaint, secondary, secondarySize,
+                    KEY_FONT_REFERENCE, hintSize, secondaryBaseline);
+        }
+        hintPaint.setTextSize(secondarySize);
+        canvas.drawText(secondary, left + primaryWidth + dp(2) + secondaryWidth / 2f,
+                secondaryBaseline, hintPaint);
     }
 
     private boolean isToneSymbol(String value) {
@@ -880,7 +1158,7 @@ final class BopomofoKeyboardView extends View {
     private boolean isSpecialKey(String key) {
         return switch (key) {
             case "SHIFT", "BACKSPACE", "ENTER", "SPACE", "SYMBOL", "SETTINGS", "EMOJI",
-                    "MODE", "，", "。" -> true;
+                    "MODE", "GLOBE", "DISMISS", "CLOSE_CANDIDATES", "，", "。", "、", "？" -> true;
             default -> false;
         };
     }
@@ -893,6 +1171,12 @@ final class BopomofoKeyboardView extends View {
                 downX = event.getX();
                 downY = event.getY();
                 Hit hit = findHit(downX, downY);
+                resetPickerPress();
+                if (hit != null && hit.kind() == HitKind.KEY
+                        && (hit.key().equals("GLOBE") || hit.key().equals("SETTINGS"))) {
+                    pickerPressKey = hit.key();
+                    postDelayed(pickerLongPress, ViewConfiguration.getLongPressTimeout());
+                }
                 if (hit != null && listener != null) listener.onPress();
                 backspaceTouchStarted = hit != null && hit.kind() == HitKind.KEY
                         && "BACKSPACE".equals(hit.key());
@@ -908,6 +1192,14 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_MOVE -> {
+                if (pickerPressKey != null) {
+                    Hit hit = findHit(event.getX(), event.getY());
+                    if (hit == null || hit.kind() != HitKind.KEY || !hit.key().equals(pickerPressKey)) {
+                        // Moving out cancels this press even if the finger returns;
+                        // an opened picker must never become a settings tap or switch.
+                        cancelPickerPress();
+                    }
+                }
                 if (backspaceTouchStarted) {
                     Hit hit = findHit(event.getX(), event.getY());
                     if (hit == null || hit.kind() != HitKind.KEY
@@ -921,8 +1213,14 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_UP -> {
+                boolean pickerHandled = pickerPressConsumed;
+                resetPickerPress();
                 backspaceRepeater.stop();
                 clearKeyPreview();
+                if (pickerHandled) {
+                    performClick();
+                    return true;
+                }
                 if (backspaceTouchStarted) {
                     backspaceTouchStarted = false;
                     performClick();
@@ -950,6 +1248,7 @@ final class BopomofoKeyboardView extends View {
                 return true;
             }
             case MotionEvent.ACTION_CANCEL -> {
+                resetPickerPress();
                 backspaceRepeater.stop();
                 backspaceTouchStarted = false;
                 downOnCandidate = false;
@@ -962,9 +1261,21 @@ final class BopomofoKeyboardView extends View {
 
     @Override
     protected void onDetachedFromWindow() {
+        resetPickerPress();
         backspaceRepeater.stop();
         backspaceTouchStarted = false;
         super.onDetachedFromWindow();
+    }
+
+    private void cancelPickerPress() {
+        removeCallbacks(pickerLongPress);
+        pickerPressConsumed |= pickerPressKey != null;
+        pickerPressKey = null;
+    }
+
+    private void resetPickerPress() {
+        cancelPickerPress();
+        pickerPressConsumed = false;
     }
 
     @Override
@@ -1011,6 +1322,8 @@ final class BopomofoKeyboardView extends View {
             case "SYMBOL" -> "符";
             case "SETTINGS" -> "設";
             case "EMOJI" -> "☺";
+            case "GLOBE" -> "🌐";
+            case "DISMISS" -> "▼";
             default -> key;
         };
     }
@@ -1026,23 +1339,28 @@ final class BopomofoKeyboardView extends View {
         return symbol;
     }
 
-    private String[][] inputRows() {
-        if (inputMode == InputEngine.InputMode.NUMBER) {
-            return shifted ? SHIFTED_NUMBER_ROWS : NUMBER_ROWS;
-        }
-        if (inputMode == InputEngine.InputMode.ENGLISH && shifted) {
-            return SHIFTED_ENGLISH_ROWS;
-        }
-        return BOPOMOFO_AND_ENGLISH_ROWS;
+    private KeyboardLayoutProfile.Orientation touchOrientation() {
+        return mode == Mode.LANDSCAPE ? KeyboardLayoutProfile.Orientation.LANDSCAPE
+                : KeyboardLayoutProfile.Orientation.PORTRAIT;
     }
 
-    private float keyWeight(String key) {
-        return switch (key) {
-            case "SPACE" -> 3.8f;
-            case "BACKSPACE", "ENTER" -> 1.4f;
-            case "MODE" -> 1.65f;
-            default -> 1f;
-        };
+    int compositionCellCount() {
+        KeyboardLayoutProfile profile = isTouchMode() ? layoutProfile : KeyboardLayoutProfile.ALIGNED;
+        return profile.layout(touchOrientation()).compositionCellCount;
+    }
+
+    private KeyboardLayoutProfile.Plane inputPlane() {
+        if (inputMode == InputEngine.InputMode.NUMBER) {
+            return KeyboardLayoutProfile.Plane.NUMBER_SYMBOLS;
+        } else if (inputMode == InputEngine.InputMode.ENGLISH) {
+            return KeyboardLayoutProfile.Plane.ENGLISH;
+        } else if (chineseInputMethod == ChineseInputMethod.CANGJIE) {
+            return KeyboardLayoutProfile.Plane.CANGJIE;
+        } else if (chineseInputMethod == ChineseInputMethod.SIMPLEX) {
+            return KeyboardLayoutProfile.Plane.SIMPLEX;
+        } else {
+            return KeyboardLayoutProfile.Plane.BOPOMOFO;
+        }
     }
 
     private float textBaseline(RectF bounds, Paint paint) {
@@ -1060,10 +1378,16 @@ final class BopomofoKeyboardView extends View {
     }
 
     private float contentHeight() {
+        if (isTouchMode() && integratedBottomControls) {
+            // The old allocated window can cap a transient pass before the new
+            // WRAP_CONTENT budget arrives. Drawing and hits must still stay safe.
+            return Math.min(measuredContentHeight, Math.max(0, getHeight() - systemAreaHeight()));
+        }
         return measuredContentHeight;
     }
 
     private int systemAreaHeight() {
+        if (isTouchMode() && integratedBottomControls) return navigationBarBottomInset;
         boolean enabled = mode == Mode.HARDWARE ? hardwareBottomSpaceEnabled : touchBottomSpaceEnabled;
         return enabled ? reservedSystemAreaHeight() : 0;
     }

@@ -2,42 +2,16 @@
 /// `Source/Loaders/Android-IME/.../BopomofoKeyboardView.java` so muscle memory
 /// carries across platforms.
 ///
-/// Every plane is four rows of exactly eleven keys. Rows two to four end in a
+/// The original full profile has four rows of eleven keys. Rows two to four end in a
 /// function key (`@`, Emoji, Shift) rather than a twelfth letter, which is what
 /// keeps the columns aligned.
 public enum KeyboardLayout {
-    public static let bopomofoRows: [[String]] = [
-        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-"],
-        ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "@"],
-        ["a", "s", "d", "f", "g", "h", "j", "k", "l", ";", "EMOJI"],
-        ["z", "x", "c", "v", "b", "n", "m", ",", ".", "/", "SHIFT"]
-    ]
-
-    public static let shiftedEnglishRows: [[String]] = [
-        ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_"],
-        ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "@"],
-        ["A", "S", "D", "F", "G", "H", "J", "K", "L", ":", "EMOJI"],
-        ["Z", "X", "C", "V", "B", "N", "M", "<", ">", "?", "SHIFT"]
-    ]
-
-    public static let numberRows: [[String]] = [
-        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-"],
-        ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_"],
-        ["+", "=", "[", "]", "{", "}", "<", ">", "/", "\\", "|"],
-        ["~", "`", "\"", "'", ":", ";", "?", ",", ".", "…", "SHIFT"]
-    ]
-
-    public static let shiftedNumberRows: [[String]] = [
-        ["$", "€", "£", "¥", "₩", "₹", "₽", "¢", "₫", "₱", "฿"],
-        ["＋", "－", "×", "÷", "=", "≠", "≈", "±", "<", ">", "∞"],
-        ["←", "→", "↑", "↓", "↔", "↕", "↖", "↗", "↘", "↙", "⇒"],
-        ["★", "☆", "●", "○", "■", "□", "▲", "△", "▼", "▽", "SHIFT"]
-    ]
-
-    /// The long space bar is the only deliberately wide key.
-    public static let functionRow: [String] = [
-        "MODE", "SYMBOL", "SETTINGS", "，", "SPACE", "。", "BACKSPACE", "ENTER"
-    ]
+    // Compatibility helpers describe the original full profile, not every visual style.
+    public static var bopomofoRows: [[String]] { KeyboardLayoutProfile.aligned.portrait.bopomofo.rows }
+    public static var shiftedEnglishRows: [[String]] { KeyboardLayoutProfile.aligned.portrait.english.shiftedRows }
+    public static var numberRows: [[String]] { KeyboardLayoutProfile.aligned.portrait.numberSymbols.rows }
+    public static var shiftedNumberRows: [[String]] { KeyboardLayoutProfile.aligned.portrait.numberSymbols.shiftedRows }
+    public static var functionRow: [String] { KeyboardLayoutProfile.aligned.functionKeys }
 
     /// The globe key. iPhone gets one from the system in its own row below the
     /// input view, so the keyboard must not draw a second; iPad gets no such
@@ -52,20 +26,11 @@ public enum KeyboardLayout {
     public static func rows(
         mode: KeyboardInput.InputMode, shifted: Bool
     ) -> [[String]] {
-        switch mode {
-        case .bopomofo: return bopomofoRows
-        case .english: return shifted ? shiftedEnglishRows : bopomofoRows
-        case .number: return shifted ? shiftedNumberRows : numberRows
-        }
+        KeyboardLayoutProfile.aligned.rows(orientation: .portrait, inputMethod: .smart, mode: mode, shifted: shifted)
     }
 
     public static func weight(for key: String) -> Double {
-        switch key {
-        case "MODE": return 1.65
-        case "SPACE": return 3.8
-        case "BACKSPACE", "ENTER": return 1.4
-        default: return 1
-        }
+        KeyboardLayoutProfile.aligned.functionWeight(for: key)
     }
 
     /// Keys drawn in the darker fill.

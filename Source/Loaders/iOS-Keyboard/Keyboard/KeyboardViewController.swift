@@ -8,6 +8,9 @@ import UIKit
 /// the document keeps them if iOS dismisses the keyboard without a callback.
 /// Other Bopomofo modes use marked text in the host field.
 final class KeyboardViewController: UIInputViewController {
+    #if DEBUG && targetEnvironment(simulator) && compiler(>=6.4)
+    private var geometryProbe: AnyObject?
+    #endif
     private var engine: KeyboardInputEngine?
     private var loadFailure: String?
     private var keyboardView: KeyboardView?
@@ -31,6 +34,7 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
+    private lazy var profileSettings = KeyboardLayoutProfileSettings(sharedDefaults: sharedDefaults)
     private let supporterState = SupporterState()
     private var settingsPanel: SettingsPanel?
     private var documentMutationGuard = DocumentMutationGuard()
@@ -52,9 +56,11 @@ final class KeyboardViewController: UIInputViewController {
         inputClicksEnabled = clickSettings.enabled
         applyLearningResetRequests()
 
-        // iPad draws no globe row of its own, so the keyboard has to carry the
-        // key or there is no way to leave it.
-        let keyboard = KeyboardView(needsInputModeSwitch: needsInputModeSwitchKey)
+        // Query the host after connection; keep the same globe control alive
+        // through visibility changes so its system picker targets stay attached.
+        let keyboard = KeyboardView(needsInputModeSwitch: false, layoutProfile: profileSettings.profile,
+            keycapArea: profileSettings.keycapArea, fontSize: profileSettings.fontSize,
+            deleteShiftPosition: profileSettings.deleteShiftPosition)
         keyboard.delegate = self
         keyboard.inputModeSwitchButton?.addTarget(
             self, action: #selector(commitBeforeInputModeSwitch), for: .touchDown
@@ -81,12 +87,17 @@ final class KeyboardViewController: UIInputViewController {
         height.isActive = true
         heightConstraint = height
 
-        // iPhone landscape reports compact height and uses the short scale.
-        // iPad remains full-height but receives a centred maximum content width.
-        registerForTraitChanges([UITraitVerticalSizeClass.self]) {
+        // The inner display of a folding iPhone is regular in both dimensions.
+        registerForTraitChanges([UITraitVerticalSizeClass.self, UITraitHorizontalSizeClass.self]) {
             (self: Self, _) in self.applyMetrics()
         }
         applyMetrics()
+        #if DEBUG && targetEnvironment(simulator) && compiler(>=6.4)
+        if #available(iOS 27.1, *),
+           sharedDefaults?.bool(forKey: SimulatorGeometryProbe.preferenceKey) == true {
+            geometryProbe = SimulatorGeometryProbe(view: view, scope: "extension")
+        }
+        #endif
         activeDocumentIdentifier = currentDocumentIdentifier()
         updateFieldPolicy()
         refresh()
@@ -101,9 +112,149 @@ final class KeyboardViewController: UIInputViewController {
         }
         refreshAppSettings()
         updateFieldPolicy()
+        refreshSystemKeyboardControls()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let orientation = view.window?.windowScene?.interfaceOrientation, orientation != .unknown {
+            keyboardView?.setLayoutOrientation(orientation.isLandscape ? .landscape : .portrait)
+        }
+        refreshSystemKeyboardControls()
+        #if KEYKEY_TYPOGRAPHY_MEASUREMENT
+        beginTypographyMeasurementIfRequested()
+        #endif
+    }
+
+    #if KEYKEY_TYPOGRAPHY_MEASUREMENT
+    private var typographyMeasurementRequest: String?
+    private var typographyMeasurementLabel: UILabel?
+
+    private func beginTypographyMeasurementIfRequested() {
+        guard let request = sharedDefaults?.string(forKey: "keykeyTypographyMeasurementRequest"),
+              request != typographyMeasurementRequest,
+              let orientation = view.window?.windowScene?.interfaceOrientation,
+              orientation != .unknown, request.hasSuffix(orientation.isLandscape ? ":landscape" : ":portrait"),
+              let keyboardView, let engine, !engine.hasComposition else { return }
+        typographyMeasurementRequest = request
+        let label = UILabel(frame: CGRect(x: 1, y: 1, width: 1, height: 1))
+        label.text = " "
+        label.isAccessibilityElement = true
+        label.accessibilityIdentifier = "keyboard.typography-measurement"
+        label.accessibilityLabel = "實機字級量測"
+        label.accessibilityValue = "running"
+        view.addSubview(label)
+        typographyMeasurementLabel = label
+        Task { @MainActor in
+            // Let the actual host finish connecting and rotating before sampling.
+            try? await Task.sleep(for: .milliseconds(500))
+            let saved = (profileSettings.profile, profileSettings.keycapArea,
+                profileSettings.fontSize, profileSettings.deleteShiftPosition, methodSettings.method,
+                engine.inputMode, engine.keyboardLayout)
+            let panel = SettingsPanel(collections: collections, enabled: phraseSettings.enabledCollections,
+                inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
+                compositionMode: engine.bopomofoCompositionMode, chineseInputMethod: engine.chineseInputMethod,
+                methodSettings: methodSettings, keyboardLayout: engine.keyboardLayout,
+                layoutProfile: saved.0, keycapArea: saved.1, fontSize: saved.2, deleteShiftPosition: saved.3)
+            var records = [[String: Any]]()
+            var baseline: [Double]?
+            var windowBaseline: [Double]?
+            var failures = [String]()
+            settingsPanel(panel, didChangeKeyboardLayout: .standard)
+            for method in ChineseInputMethod.allCases {
+                settingsPanel(panel, didChangeInputMethod: method)
+                // English and number/symbol planes are independent of the chosen
+                // Chinese method; exercise them once alongside all four methods.
+                let modes: [KeyboardInput.InputMode] = method == .smart ? [.bopomofo, .english, .number] : [.bopomofo]
+                for mode in modes {
+                    engine.setAllowedInputModes(Set(KeyboardInput.InputMode.allCases), preferred: mode, selectPreferred: true)
+                    refresh()
+                    for profile in KeyboardLayoutProfile.available {
+                        settingsPanel(panel, didChangeLayoutProfile: profile)
+                        for spacing in KeyboardKeycapArea.allCases {
+                            settingsPanel(panel, didChangeKeycapArea: spacing)
+                            for font in KeyboardKeyFontSize.allCases {
+                                settingsPanel(panel, didChangeFontSize: font)
+                                for delete in KeyboardDeleteShiftPosition.allCases {
+                                    settingsPanel(panel, didChangeDeleteShiftPosition: delete)
+                                    // Yield to the real host/layout transaction, then
+                                    // read the live production views and native fonts.
+                                    try? await Task.sleep(for: .milliseconds(60))
+                                    view.layoutIfNeeded()
+                                    var record = keyboardView.typographyMeasurementSnapshot()
+                                    record["method"] = method.rawValue
+                                    record["mode"] = String(describing: mode)
+                                    record["profile"] = profile.id
+                                    record["spacing"] = spacing.rawValue
+                                    record["font"] = font.rawValue
+                                    record["delete"] = delete.rawValue
+                                    let region = record["keyRegion"] as! [Double]
+                                    let window = record["windowFrame"] as! [Double]
+                                    if let baseline, zip(region, baseline).contains(where: { abs($0 - $1) > 0.5 }) {
+                                        failures.append("Key region changed at case \(records.count): \(region)")
+                                    } else if baseline == nil { baseline = region }
+                                    if let windowBaseline, zip(window, windowBaseline).contains(where: { abs($0 - $1) > 0.5 }) {
+                                        failures.append("Window changed at case \(records.count): \(window)")
+                                    } else if windowBaseline == nil { windowBaseline = window }
+                                    if record["primaryMismatchCount"] as? Int != 0 || record["spaceMismatchCount"] as? Int != 0
+                                        || record["modeCaptionFits"] as? Bool != true {
+                                        failures.append("Font/caption mismatch at case \(records.count)")
+                                    }
+                                    records.append(record)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            settingsPanel(panel, didChangeInputMethod: saved.4)
+            engine.setAllowedInputModes(Set(KeyboardInput.InputMode.allCases), preferred: saved.5, selectPreferred: true)
+            settingsPanel(panel, didChangeKeyboardLayout: saved.6)
+            settingsPanel(panel, didChangeLayoutProfile: saved.0)
+            settingsPanel(panel, didChangeKeycapArea: saved.1)
+            settingsPanel(panel, didChangeFontSize: saved.2)
+            settingsPanel(panel, didChangeDeleteShiftPosition: saved.3)
+            refresh()
+            let report: [String: Any] = ["request": request, "caseCount": records.count,
+                "failures": failures, "records": records,
+                "systemVersion": UIDevice.current.systemVersion,
+                "scope": "Live production keyboard extension in its real input-host window; settings delegate callbacks"]
+            let data = try! JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
+            let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            try? data.write(to: directory.appendingPathComponent("typography-measurement.json"), options: .atomic)
+            label.accessibilityValue = String(decoding: data, as: UTF8.self)
+        }
+    }
+    #endif
+
+    private func refreshSystemKeyboardControls() {
+        guard view.window != nil else { return }
+        // Apple DTS confirmed false on iPhone Duo in iOS 27.1 is a runtime bug
+        // (FB25073949). Limit the fallback to that version and wide phone hosts;
+        // other runtimes and form factors continue to use the system property.
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        let affectedWidePhone = version.majorVersion == 27 && version.minorVersion == 1
+            && traitCollection.userInterfaceIdiom == .phone
+            && traitCollection.horizontalSizeClass == .regular
+            && traitCollection.verticalSizeClass == .regular
+            && view.safeAreaLayoutGuide.layoutFrame.width >= 600
+        keyboardView?.setNeedsInputModeSwitch(needsInputModeSwitchKey || affectedWidePhone)
+    }
+
+    private func selectLayoutProfile(_ profile: KeyboardLayoutProfile) {
+        profileSettings.setProfile(profile)
+        keyboardView?.setLayoutProfile(profile)
+        applyMetrics()
+    }
+
+    private func refreshLayoutOptions() {
+        keyboardView?.setLayoutOptions(keycapArea: profileSettings.keycapArea,
+            fontSize: profileSettings.fontSize, deleteShiftPosition: profileSettings.deleteShiftPosition)
     }
 
     private func refreshAppSettings() {
+        keyboardView?.setLayoutProfile(profileSettings.profile)
+        refreshLayoutOptions()
         candidateColor = candidateColorSettings.color
         inputClicksEnabled = clickSettings.enabled
         if let engine {
@@ -149,10 +300,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func applyMetrics() {
-        let metrics = KeyboardMetrics.forCompactHeight(
-            traitCollection.verticalSizeClass == .compact,
-            isPad: traitCollection.userInterfaceIdiom == .pad
-        )
+        let metrics = currentMetrics
         keyboardView?.setMetrics(metrics)
         applyHeight(metrics)
     }
@@ -166,9 +314,10 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private var currentMetrics: KeyboardMetrics {
-        KeyboardMetrics.forCompactHeight(
-            traitCollection.verticalSizeClass == .compact,
-            isPad: traitCollection.userInterfaceIdiom == .pad
+        profileSettings.profile.metrics(
+            compactHeight: traitCollection.verticalSizeClass == .compact,
+            isPad: traitCollection.userInterfaceIdiom == .pad,
+            regularWidth: traitCollection.horizontalSizeClass == .regular
         )
     }
 
@@ -303,14 +452,18 @@ final class KeyboardViewController: UIInputViewController {
 
     private func showSettingsPanel() {
         guard settingsPanel == nil, !collections.isEmpty else { return }
-        if let engine { apply(engine.finishCompositionForInputHandoff()) }
+        keyboardView?.cancelBackspaceRepeat()
         let panel = SettingsPanel(
             collections: collections, enabled: phraseSettings.enabledCollections,
             inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
             compositionMode: engine?.bopomofoCompositionMode ?? .smart,
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
-            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout
+            keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
+            layoutProfile: profileSettings.profile,
+            keycapArea: profileSettings.keycapArea,
+            fontSize: profileSettings.fontSize,
+            deleteShiftPosition: profileSettings.deleteShiftPosition
         )
         panel.delegate = self
         panel.translatesAutoresizingMaskIntoConstraints = false
@@ -545,7 +698,23 @@ final class KeyboardViewController: UIInputViewController {
 extension KeyboardViewController: KeyboardViewDelegate {
     func keyboardView(_ view: KeyboardView, didPress key: String) {
         statusOverride = nil
+        if key == "HIDE_KEYBOARD" {
+            if let engine {
+                let handoff = engine.finishCompositionForKeyboardDismissal()
+                apply(handoff.result)
+                guard handoff.succeeded else { return }
+            }
+            keyboardView?.cancelBackspaceRepeat()
+            // Give a pending marked-text replacement a main-loop turn before
+            // requesting dismissal of the remote input view.
+            DispatchQueue.main.async { [weak self] in self?.dismissKeyboard() }
+            return
+        }
         guard let engine else { return }
+        if key == "CLOSE_CANDIDATES" {
+            apply(engine.closeTouchSmartCandidates())
+            return
+        }
         if key == "SETTINGS" {
             showSettingsPanel()
             return
@@ -584,6 +753,25 @@ extension KeyboardViewController: KeyboardViewDelegate {
 }
 
 extension KeyboardViewController: SettingsPanelDelegate {
+    func settingsPanel(_ panel: SettingsPanel, didChangeKeycapArea area: KeyboardKeycapArea) {
+        profileSettings.setKeycapArea(area)
+        refreshLayoutOptions()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeFontSize size: KeyboardKeyFontSize) {
+        profileSettings.setFontSize(size)
+        refreshLayoutOptions()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeDeleteShiftPosition position: KeyboardDeleteShiftPosition) {
+        profileSettings.setDeleteShiftPosition(position)
+        refreshLayoutOptions()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeLayoutProfile profile: KeyboardLayoutProfile) {
+        selectLayoutProfile(profile)
+    }
+
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod) {
         if let engine {
             apply(engine.setChineseInputMethod(method))

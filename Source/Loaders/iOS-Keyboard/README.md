@@ -47,6 +47,11 @@ App「輸入法設定」分列「倉頡設定（虛擬鍵盤）」與「倉頡�
 四法演算法、排序、學習與組字邊界由 Guanyinma 共用無 UI 測試驗證；iOS 只補 FE 設定、
 座標、一次性宿主效果及字型／儲存串接測試。
 
+候選列與組字格的字體／清空渲染另用真實 UIKit Simulator 驗證，直接讀取目前產品的按鈕類別，
+檢查四種字體、空白格與字體切換後的可見標籤及渲染像素。先啟動專用模擬器，再執行
+`python3 Tests/run-strip-rendering-tests.py --device SIMULATOR_UDID`；產物存於暫存目錄。
+此測試不連輸入核心，不能代替鍵盤 extension 的輸入、刪除與旋轉接合測試。
+
 App「輸入法設定」的「使用空白鍵選字」預設關閉，好打注音虛擬鍵盤與 App 實體鍵盤編輯器讀取同一個 App Group 值。關閉時，讀音完成後按空白會在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後可用空白完成讀音、開候選及翻頁。關閉時仍可點選組字或按實體鍵盤 `↓` 開候選。此選項只在 App 調整，鍵盤「設」頁顯示目前值，避免兩個入口各自儲存。
 
 容器 App 首頁的「輸入法設定」進入與鍵盤「設」頁相同的輸入法、候選字底色、
@@ -75,12 +80,36 @@ Keyboard/         UIInputViewController extension
 KeyKeyiOS.xcodeproj
 ```
 
+## iPhone Duo
+
+鍵盤依水平／垂直 size class 調整，regular-width iPhone 採用寬版內容上限；鍵盤與設定頁
+分別遵守自己的安全區。尺寸、半折回呼的實測結果、診斷開關與驗證限制見
+[iPhone Duo 適配與驗證](../../../docs/IOS_IPHONE_DUO_ADAPTATION.md)。
+
 ## 注音鍵盤配置
 
 「輸入法設定」、鍵盤「設」及 App 內實體鍵盤編輯器提供「標準／許氏鍵盤」配置，
 預設標準，好打與傳統注音共用。許氏虛擬鍵盤保留英文 QWERTY 鍵帽，
 例如 `nef` 輸入 `ㄋㄧˇ`，切回標準會恢復注音雙標籤。
 iOS 系統鍵盤 extension 仍只接收觸控；外接鍵盤使用 App 內實體鍵盤編輯器。
+
+完整字體／外觀組合量測另有手動 `KeyKeyTypography` test plan，不加入預設功能測試。
+明確指定實機或模擬器後，使用 `KEYKEY_TYPOGRAPHY_MEASUREMENT` 專用編譯旗標，
+在真正鍵盤 extension 的宿主視窗內，透過原設定 delegate 回呼切換四種輸入法、三種版面、
+三種鍵帽間隔、四級字體、兩種刪除鍵位置及直橫式，共 576 組；再加入英文及數字／符號共 288 組。
+每組讓宿主完成排版後量測原生 UIView／UIFont，保存鍵區、視窗、底部位置、主字級、左右空白與模式標籤完整性。
+另外透過實際設定 UI 切換並保留三種版面、四級字體的直橫式截圖。這是無組字時的外觀矩陣，
+不代表 864 次完整宿主文字輸入交易，也不取代既有組字／候選冒煙測試。
+iOS 沒有 Android 的「整合底部控制鍵」開關。測試會操作裝置及偏好；實機執行前先備份，結束後恢復。
+一般 Debug／Release 建置不包含批次入口或診斷標籤。
+
+```sh
+xcodebuild test -project KeyKeyiOS.xcodeproj -scheme 'chichi77 KeyKey' \
+  -testPlan KeyKeyTypography -destination 'platform=iOS,id=DEVICE_UDID' \
+  'OTHER_SWIFT_FLAGS=$(inherited) -D KEYKEY_TYPOGRAPHY_MEASUREMENT' \
+  -maximum-test-execution-time-allowance 1800 \
+  -default-test-execution-time-allowance 1800 -resultBundlePath /tmp/KeyKeyTypography.xcresult
+```
 
 ## 建置
 
@@ -106,7 +135,7 @@ Cloud post-clone hook 優先沿用既有 `rustup`；缺少時下載官方固定�
 少量 Swift 串接／設定測試不需要模擬器；從本目錄以 host wrapper 準備 Rust 靜態庫：
 
 ```sh
-bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter InputMethodSettingsTests
+bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter KeyboardLayoutProfileTests
 bash ../../Guanyinma/tools/test-ios-swift-package.sh --filter GuanyinmaIntegrationTests
 ```
 
@@ -124,6 +153,55 @@ KEYKEY_SWIFT_PACKAGE_PATH="$PWD" \
 重試、購買／恢復／載入互斥、取消與錯誤後解除忙碌，以及授權快取更新。
 這些測試只驗證購買流程的 FE 契約，不啟動 keyboard extension，也不取代核心測試；仍須另用
 Sandbox Apple ID 驗證真實交易與 App Store Connect 商品設定。
+
+### UI 測試分流
+
+shared scheme 的預設計畫是 `KeyKeyFunctional`，明確列出一般 iPhone／iPad 的回歸案例，
+不自動包含整個 UI test target。新增 UI 測試時也要選擇所屬計畫。
+
+| 計畫 | 用途與前置條件 |
+|---|---|
+| `KeyKeySmoke` | 少量 App 啟動、設定與授權頁冒煙 |
+| `KeyKeyFunctional` | 一般輸入、四組外觀設定、候選、九／十音節與直橫切換 |
+| `KeyKeyDuo` | 明確選用的寬版分離案例；需要已展開的 Duo 內螢幕或足夠寬的 iPad |
+| `KeyKeyDuoDiagnostics` | Device Hub 保留目前姿態的量測與原生鍵盤對照；使用 Debug Simulator，探針需要支援的系統版本 |
+| `KeyKeyHeartSutra` | 獨立、手動選用的傳統注音長文與 CIN 順位檢查 |
+
+模擬器執行 UI 測試時保留 App／extension 的 App Group entitlements；可使用 ad-hoc 簽章。
+`CODE_SIGNING_ALLOWED=NO` 僅供編譯檢查，不能驗證共享設定或自訂詞 publication。
+
+Duo 計畫包含加入琦琦鍵盤的共同前置。原生鍵盤對照另需先加入系統注音；
+它驗證的是輸入測試頁面，並非 Safari。姿態診斷不替使用者開闔或旋轉 Device Hub。
+一般旋轉回歸只使用支援的直／橫方向，依測試 App 本身旋轉前後的 frame 驗證，
+不依賴 Debug 模擬器探針，也不把螢幕寬高比當成所有裝置的方向定義。
+九／十音節及每頁九個有效候選是輸入契約；十一／十二格與六＋六是既有 profile 的專屬版型，
+不作為所有後續 profile 的通用前提。
+
+```sh
+KEYKEY_IOS_TEST_DEVICE='YOUR_SIMULATOR_UDID' bash run-simulator-tests.sh --functional-host
+KEYKEY_IOS_TEST_DEVICE='YOUR_SIMULATOR_UDID' bash run-simulator-tests.sh --functional
+```
+
+這兩個模式會為所選 Simulator 準備 `Tests/with-simulator-hid.py`。目前 iOS 26 的 XCTest
+字串 Forward Delete／Return 不會送到 App 的非文字 responder；host helper 使用目前 Xcode 的
+SimulatorKit 對精確 UUID 發送完整 HID Down／Up。helper 只在測試期間開啟 loopback 臨時埠，
+不發 macOS 全域鍵盤事件，也不連入實機；原生工具與私有 API 皆不連入 App／extension。
+
+直接使用 `xcodebuild` 時，需以相同 wrapper 包住命令，指定已開機的 Simulator：
+
+```sh
+python3 Tests/with-simulator-hid.py --device 'YOUR_SIMULATOR_UDID' --output /tmp/keykey-ios-hid -- \
+  xcodebuild test -project KeyKeyiOS.xcodeproj -scheme 'chichi77 KeyKey' \
+  -testPlan KeyKeyFunctional -configuration Debug \
+  -destination 'platform=iOS Simulator,id=YOUR_SIMULATOR_UDID' \
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-
+```
+
+未準備 bridge 時，三項需要 Delete／Return 的新編輯器案例會明確略過；執行腳本將任何略過視為失敗。
+SimulatorKit 不相容時直接回報失敗，不以螢幕按鈕代替送鍵。此驗證仍不代表真正 USB／藍牙傳輸已通過。
+
+地球鍵當機及系統生命週期交接仍依既有研究列為已知問題。明確按「▼」收鍵盤已採
+只確認完成文字、取消未完成注音與未選字根的規則；這不代表其他系統交接已跨 App 驗收。
 
 ### USB 真機安裝
 
@@ -155,7 +233,7 @@ USB 開發簽章安裝與 App Store／TestFlight 發行是不同流程。
 
 在開發機的 iOS 17 Simulator 執行 shared scheme `chichi77 KeyKey` 的
 `KeyKeyHeartSutra.xctestplan`。測試會在乾淨 Simulator 透過「設定」加入並切換到
-琦琦輸入法 keyboard extension，關閉全部關聯詞庫，逐字點完 268 個心經注音字與標點；
+琦琦輸入法 keyboard extension，明確選擇滿版、標準／傳統注音並關閉全部關聯詞庫，逐字點完 268 個心經注音字與標點；
 每字檢查提交後全文前綴和候選絕對順位，最後在 `.xcresult` 留下 `ios.txt` 與
 `ios.positions.tsv` attachments。若鍵盤沒真正啟動會失敗，不能以 skip 當通過。
 
@@ -183,6 +261,32 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
 - **資料層使用預先產生的共用 `KeyKey.db`**；建置只驗證並複製，不 cooker。
   keyboard extension 的記憶體限制與真實宿主驗證需獨立檢查，host 測試不能代替。
 - 讀音與資料庫 query 編碼由 Guanyinma 共用 codec 處理；Swift 只正規化詞庫欄位輸入。
+- **鍵盤外觀**：App 與鍵盤「設」面板都在「候選字底色」後提供四組獨立分段選項：
+  版面「標準／對齊／對齊分離」、鍵帽間隔「小／中／大」、字體「標準／中／大／特大」、刪除鍵位置「右側／下方」。
+  「設」只保留設定入口，不提供長按選版面的選單。沒有既有偏好時，iOS 預設為標準、小、標準、右側。
+  「標準」（`standard`）沿用交叉排列；「對齊」（`aligned`）沿用原滿版及 Duo 寬螢幕滿版；
+  「對齊分離」（`aligned-split`）在一般 iPhone、iPad 與 Duo 共用十二欄設計，保留中央空隙與左右空白鍵。
+  每個版面都有直橫式及注音、倉頡、簡易、英文、數字符號五種擺法，Shift 是各擺法內的版本。
+  方向取自目前視窗，不以 compact height 代替方向；相同方向與尺寸下，各組設定維持同一鍵盤高度。
+  小間隔使用各版面原有鍵帽，中、大間隔把可見鍵帽面積縮至 90%、80%，不改文字中心、字級或點擊範圍。
+  中、大、特大保留同一按鈕與鍵序，只顯示主字；只有標準字體保留英數小字，其位置不受聲調大小影響。
+  「符」「設」「空白」及標點等功能鍵在放大字體時，文字仍於原按鍵內置中。
+  主字依目前「ㄖ」鍵的可用寬高與實際 UIFont 量測換算，手機、平板與直橫式均重新計算；特大使用完整鍵內空間，標準先保留英數小字所需空間，中、大在兩端間等比例放大。
+  注音、倉頡／簡易字根、英文、數字與全形標點共用主字級，聲調保留既有相對比例；分離版面左右「空白」也使用相同字級，不各自撐滿。
+  舊大字偏好會對應到特大；新的四級設定以獨立偏好保存，保留舊值不覆寫。
+  候選字、組字列及未完成讀音也隨四級字體調整，文字會依原格框縮放，候選序號與格數不變。
+  標準版面前三列偏移 0、1/3、2/3 欄；注音的ㄈ列從最左開始。
+  倉頡／簡易的最下方字根列右移一個完整鍵寬，「重」位於原「難」的位置，並移除該列的「/」；
+  右端刪除／Shift 與其餘列保持原位置，直橫式一致。末端功能鍵補齊剩餘寬度。
+  刪除在右側表示 Enter 上方；刪除在下方表示 Enter 左側，與 Shift 互換，不改引擎按鍵語意。
+  既有樣式會轉成對應組合；舊「滿版間隔」的 90%、85% 分別對應中間隔 90%、大間隔 80%。
+  App Group 仍依每項設定的修訂規則同步；extension 的私有偏好不要求完整取用。
+  設定變更保留組字與候選，不改原有標準／許氏注音鍵位。
+  對齊分離的組字、候選及按鍵列一起保留中央空隙。所有寬度與直橫式的主按鍵都為左右各六格，含「，」「。」「、」「？」；
+  組字區仍為十一格（左六、右五），最後位置提供「▼」收鍵盤，英文與傳統注音亦可使用。
+  分離版面的隱藏候選列維持十二個控制項：上一頁、九個候選、下一頁與「×」，不增加引擎候選數。
+  Duo 的 extension 尚無可用折疊回呼，因此不依折疊狀態自動更換版面。
+- **收鍵盤**：明確按「▼」時確認已完成文字，取消未完成注音與未選字根；傳統注音有完整候選時確認目前反白字，倉頡／簡易的未選即時候選不自動確認。對齊分離維持上方收鍵盤按鈕，其他配置保留系統原有控制。
 - **`RequestsOpenAccess = false`**：不連網，鍵盤可唯讀 App Group 的設定，
   鍵盤內修改的設定與學習資料則存在 extension 自己的沙箱。代價是
   iOS 把 `UIFeedbackGenerator` 綁在這個權限後面，因此沒有按鍵震動。
@@ -191,7 +295,7 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   App 前景接收 USB／藍牙鍵盤，不能讓琦琦在備忘錄、LINE 或 Safari 內接管實體鍵盤。
 - **inline 組字**：好打注音把已組好的中文字即時寫入 App，並只保留最近九個音節
   作為可修改範圍；超出範圍的詞留在 App，不再受退格或選字影響。切換 App 或輸入法時，
-  尚未完成的讀音也會先送到 App。傳統注音使用 `UITextDocumentProxy.setMarkedText`
+  尚未完成的讀音仍沿用原交接流程送到 App；明確按「▼」收鍵盤則取消未完成讀音。傳統注音使用 `UITextDocumentProxy.setMarkedText`
   標記目前讀音，選字時以候選字取代讀音。
 - **欄位動作**：觸控好打注音有組字時，第一次按 Enter／搜尋／前往就先確認剩餘讀音，
   再對宿主送出換行或欄位動作；已寫入欄位的中文字不會再插入一次。
@@ -231,9 +335,11 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   多頁候選則空白翻頁。簡易滿兩碼開啟候選，`1–9` 或 Enter 選字。
 - 候選固定直排 `1–9`，一般候選用 `1–9`，關聯詞用 `Shift+1–9`
   （`!@#$%^&*(`）。好打注音下可連續輸入下一個音節，數字列不會搶先選字；
-  `↓`（或開啟「使用空白鍵選字」後的 `Space`）開啟目前音節的候選後才用 `1–9` 選字，候選開啟後可用 `Page Up`、
+  `↓`（或開啟「使用空白鍵選字」後的 `Space`）開啟游標右側字詞的候選，句尾則以最後一字為目標，之後才用 `1–9` 選字，候選開啟後可用 `Page Up`、
   `Page Down` 循環翻頁；開啟上述選項後 `Space` 也可翻頁。`Enter` 確定整句。組字最多保留十個音節；第十一個音節完成時，
   會和 macOS 一樣把最前面的完整詞段送到編輯器文字區，例如一起擠出「請假」。
+- 好打注音選字後游標停在所選詞後方，可接續插入文字；觸控鍵盤仍回到可編輯句尾。
+- 實體 `Delete`（Forward Delete）刪除游標右側：有組字時由核心處理，沒有組字時刪除 App 已確認文字的一個完整字素，包含多碼位 Emoji。刪空最後一個組字不會連帶刪除後方已確認文字。候選開啟或有未完成讀音時，沿用核心既有規則，不跳過組字刪除 App 文字。
 - 一般候選用 `↑`／`↓` 移動反白、`←`／`→` 翻頁；沒有組字與候選時，四方向鍵移動
   編輯器自己的可見插入游標。
 - `Ctrl+Space` 切換ㄅ／英、`Shift+Space` 切換半／全形；`Ctrl+0`／`Ctrl+1` 開啟符號，
@@ -244,7 +350,7 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   觸控備援鍵。關聯候選顯示時，Enter 會先關閉推薦再換行，不會誤選反白詞尾。
 - 虛擬鍵盤與 App 內實體鍵盤編輯器的 Backspace 按下時先刪一次；持續按住約
   450 毫秒後開始連續刪除，逐步加快但最多約每 70 毫秒一次。放開時立即停止，
-  虛擬鍵盤的按鍵預覽也會收起。
+  虛擬鍵盤的按鍵預覽也會收起。App 實體 Forward Delete 使用相同的連續刪除節奏；按鍵取消、失去焦點或 App 進入背景時也會停止。
 - 橫式固定由左到右排列輸入、候選、按鍵、清除／複製／分享四欄；iPad 保留方向鍵與
   空白鍵，iPhone 高度不足時收起這組輔助鍵。4.7 吋 iPhone SE 直式會縮短輸入區，保留
   完整候選與操作鍵。候選內容與裝置旋轉不應改變各區塊的固定尺寸。

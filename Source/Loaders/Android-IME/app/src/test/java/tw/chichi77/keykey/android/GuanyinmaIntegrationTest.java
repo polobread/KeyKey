@@ -71,17 +71,232 @@ public final class GuanyinmaIntegrationTest {
             }
         }
     }
+    @Test public void splitPunctuationUsesTheExistingTouchCommitFlow() throws Exception {
+        for (String mark : KeyboardLayoutGeometry.SPLIT_PUNCTUATION) {
+            for (var method : ChineseInputMethod.values()) {
+                try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(method, text -> true)) {
+                    if (method == ChineseInputMethod.SMART) type(engine, "su3", false);
+                    assertEquals((method == ChineseInputMethod.SMART ? "你" : "") + mark,
+                            engine.handleSoftKey(mark).committedText());
+                    assertFalse(engine.hasComposition());
+                    assertNull(engine.lastError());
+                    assertEquals("", engine.finishCompositionForInputHandoff().committedText());
+                }
+            }
+        }
+    }
     @Test public void hostEffectsBlockNewEventsUntilOriginalConnectionAcknowledges() throws Exception {
         try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
             type(engine, "su3", false);
             assertFalse(engine.displayedCandidates().isEmpty());
             String expected = engine.displayedCandidates().get(0);
             assertEquals(expected, engine.selectDisplayedCandidate(0).committedText());
+            assertUpdate(engine.closeTouchSmartCandidates());
+            assertNotNull(engine.coreError());
             assertEquals("", engine.handleSoftKey("s").committedText());
             assertNotNull(engine.coreError()); assertFalse(engine.hasComposition());
             engine.acknowledgeHostEffects();
             assertEquals("", engine.handleSoftKey("s").committedText());
             assertEquals("ㄋ", engine.readingText()); assertNull(engine.coreError());
+        }
+    }
+
+    private static void assertUpdate(InputEngine.Result result) {
+        assertEquals("", result.committedText());
+        assertFalse(result.deleteBeforeCursor());
+        assertFalse(result.sendEnter());
+        assertFalse(result.discardComposingText());
+    }
+
+    @Test public void closeTouchCandidatesPreservesSelectedTextAndReturnsToEditableTail() throws Exception {
+        try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
+            assertUpdate(engine.setChineseInputMethod(ChineseInputMethod.SMART));
+            type(engine, "su3cl3", false);
+            assertTrue(engine.selectTouchSmartCell(0));
+            int correction = engine.displayedCandidates().indexOf("妳");
+            assertTrue("The correction fixture must be available", correction >= 0);
+            assertUpdate(engine.selectDisplayedCandidate(correction));
+            assertEquals("妳好", engine.completedSmartText());
+            TouchSmartHostTextState host = new TouchSmartHostTextState();
+            host.update(engine.completedSmartText(), "");
+            assertTrue(engine.selectTouchSmartCell(0));
+            List<String> firstPage = List.copyOf(engine.displayedCandidates());
+            assertTrue(engine.pageCount() > 1);
+            engine.changePage(1);
+            assertEquals(1, engine.page());
+            assertUpdate(engine.closeTouchSmartCandidates());
+            assertEquals("妳好", engine.completedSmartText());
+            assertTrue(engine.displayedCandidates().isEmpty());
+            assertFalse(engine.isShowingSmartCandidates());
+            assertEquals(0, engine.page());
+            assertEquals(0, engine.pageCount());
+            assertTrue(host.update(engine.completedSmartText(), "").isEmpty());
+            assertUpdate(engine.closeTouchSmartCandidates());
+            assertTrue(engine.selectTouchSmartCell(0));
+            assertEquals(firstPage, engine.displayedCandidates());
+            assertUpdate(engine.closeTouchSmartCandidates());
+            int beforeCount = engine.touchSmartEditableCount();
+            assertUpdate(engine.backspace());
+            assertEquals(beforeCount - 1, engine.touchSmartEditableCount());
+            assertEquals("妳", engine.completedSmartText());
+            assertEquals(new TouchSmartHostTextState.Edit(1, ""), host.update(engine.completedSmartText(), ""));
+            assertNull(engine.coreError());
+        }
+    }
+
+    @Test public void closeTouchCandidatesKeepsPendingReadingAndLeavesOtherModesUnchanged() throws Exception {
+        try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+            type(engine, "su3cl", false);
+            assertEquals("你ㄏㄠ", engine.composingText());
+            assertEquals("ㄏㄠ", engine.readingText());
+            assertUpdate(engine.closeTouchSmartCandidates());
+            assertEquals("你ㄏㄠ", engine.composingText());
+            assertEquals("ㄏㄠ", engine.readingText());
+            assertUpdate(engine.backspace());
+            assertEquals("你ㄏ", engine.composingText());
+            type(engine, "l3", false);
+            assertEquals("你好", engine.completedSmartText());
+            assertEquals("你好", engine.handleSoftKey("EMOJI").committedText());
+            assertFalse(engine.displayedCandidates().isEmpty());
+            assertUpdate(engine.closeTouchSmartCandidates());
+            assertTrue(engine.displayedCandidates().isEmpty());
+            assertFalse(engine.hasComposition());
+            assertNull(engine.lastError());
+        }
+        for (ChineseInputMethod method : ChineseInputMethod.values()) {
+            try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(method, text -> true)) {
+                boolean hardware = method == ChineseInputMethod.SMART;
+                if (hardware) engine.setHardwareSmartEditing(true);
+                type(engine, method.isTable() ? "a" : "su3", hardware);
+                if (hardware) engine.openSmartCandidates();
+                assertFalse(engine.isTouchSmartComposition());
+                String reading = engine.readingText(), composing = engine.composingText();
+                List<String> candidates = List.copyOf(engine.displayedCandidates());
+                int page = engine.page();
+                assertUpdate(engine.closeTouchSmartCandidates());
+                assertEquals(reading, engine.readingText());
+                assertEquals(composing, engine.composingText());
+                assertEquals(candidates, engine.displayedCandidates());
+                assertEquals(page, engine.page());
+                assertNull(engine.lastError());
+            }
+        }
+    }
+
+    @Test public void closeTouchCandidatesCannotBackspaceAnEvictedPrefix() throws Exception {
+        try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
+            assertUpdate(engine.setChineseInputMethod(ChineseInputMethod.SMART));
+            TouchSmartHostTextState host = new TouchSmartHostTextState();
+            String document = "", evictedPrefix = "";
+            for (int syllable = 0; syllable <= InputEngine.TOUCH_SMART_EDITABLE_LIMIT; syllable++) {
+                for (char key : "su3".toCharArray()) {
+                    InputEngine.Result result = engine.handleSoftKey(String.valueOf(key));
+                    TouchSmartHostTextState.Edit edit = host.update(engine.completedSmartText(), result.committedText());
+                    document = document.substring(0, document.length() - edit.deleteCount()) + edit.insertion();
+                    evictedPrefix += result.committedText();
+                    engine.acknowledgeHostEffects();
+                }
+                if (syllable == InputEngine.TOUCH_SMART_EDITABLE_LIMIT - 1) assertTrue(evictedPrefix.isEmpty());
+            }
+            assertFalse(evictedPrefix.isEmpty());
+            int retained = engine.touchSmartEditableCount();
+            assertTrue(retained > 0 && retained <= InputEngine.TOUCH_SMART_EDITABLE_LIMIT);
+            assertEquals(evictedPrefix + engine.completedSmartText(), document);
+            assertTrue(engine.selectTouchSmartCell(0));
+            assertFalse(engine.displayedCandidates().isEmpty());
+            assertUpdate(engine.closeTouchSmartCandidates());
+            assertTrue(host.update(engine.completedSmartText(), "").isEmpty());
+            for (int remaining = retained; remaining > 0; remaining--) {
+                InputEngine.Result result = engine.backspace();
+                assertUpdate(result);
+                TouchSmartHostTextState.Edit edit = host.update(engine.completedSmartText(), result.committedText());
+                document = document.substring(0, document.length() - edit.deleteCount()) + edit.insertion();
+                engine.acknowledgeHostEffects();
+                assertEquals(remaining - 1, engine.touchSmartEditableCount());
+                assertTrue(document.startsWith(evictedPrefix));
+            }
+            assertEquals(evictedPrefix, document);
+            assertTrue(host.editableText().isEmpty());
+            assertFalse(engine.hasComposition());
+            assertNull(engine.coreError());
+        }
+    }
+
+    @Test public void keyboardHideCommitsCompletedSmartTextAndCancelsPendingReadingOnlyOnce() throws Exception {
+        try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+            type(engine, "su3cl3su", false);
+            assertEquals("你好", engine.completedSmartText());
+            assertEquals("ㄋㄧ", engine.readingText());
+            assertEquals("你好", engine.finishCompositionForKeyboardHide().committedText());
+            assertFalse(engine.hasComposition()); assertNull(engine.lastError());
+            assertEquals("", engine.finishCompositionForKeyboardHide().committedText());
+        }
+    }
+
+    @Test public void keyboardHideDistinguishesCompletedTraditionalCandidatesFromPendingReading() throws Exception {
+        try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.TRADITIONAL, text -> true)) {
+            type(engine, "su3", false); assertTrue(engine.displayedCandidates().size() > 1);
+            engine.moveHighlight(1); String selected = engine.displayedCandidates().get(engine.highlightedIndex());
+            assertEquals(selected, engine.finishCompositionForKeyboardHide().committedText());
+            assertFalse(engine.hasComposition()); assertNull(engine.lastError());
+            type(engine, "su", false); assertEquals("ㄋㄧ", engine.readingText());
+            assertTrue(engine.displayedCandidates().isEmpty());
+            InputEngine.Result cancelled = engine.finishCompositionForKeyboardHide();
+            assertEquals("", cancelled.committedText()); assertTrue(cancelled.discardComposingText());
+            assertFalse(engine.hasComposition()); assertNull(engine.lastError());
+        }
+    }
+
+    @Test public void keyboardHideDiscardsUnselectedTableRootsWithoutChoosingAPreview() throws Exception {
+        for (var method : List.of(ChineseInputMethod.CANGJIE, ChineseInputMethod.SIMPLEX)) {
+            try (Fixture fixture = new Fixture(); GuanyinmaInputEngine engine = fixture.engine(method, text -> true)) {
+                type(engine, "a", false); assertTrue(engine.hasComposition());
+                InputEngine.Result cancelled = engine.finishCompositionForKeyboardHide();
+                assertEquals("", cancelled.committedText()); assertTrue(cancelled.discardComposingText());
+                assertFalse(engine.hasComposition()); assertNull(engine.lastError());
+                assertEquals("", engine.finishCompositionForKeyboardHide().committedText());
+            }
+        }
+    }
+
+    @Test public void keyboardHideRetainsOneHostEffectUntilAcknowledgedAndNeverReplaysIt() throws Exception {
+        try (Fixture fixture = new Fixture(); HostInputEngine engine = fixture.facade()) {
+            type(engine, "su3", false);
+            String selected = engine.displayedCandidates().get(engine.highlightedIndex());
+            assertEquals(selected, engine.finishCompositionForKeyboardHide().committedText());
+            assertEquals("", engine.finishCompositionForKeyboardHide().committedText());
+            assertNotNull(engine.coreError());
+            assertEquals("", engine.handleSoftKey("s").committedText());
+            engine.acknowledgeHostEffects();
+            assertEquals("", engine.finishCompositionForKeyboardHide().committedText());
+            assertEquals("", engine.handleSoftKey("s").committedText());
+            assertEquals("ㄋ", engine.readingText()); assertNull(engine.coreError());
+        }
+    }
+
+    @Test public void keyboardHideKeepsTheRetainedSnapshotAfterNativeFailureWithoutReplayingText() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            boolean[] fail = {false};
+            try (GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> {
+                if (fail[0]) throw new IllegalStateException("font service failed");
+                return true;
+            })) {
+                // A different pending reading avoids reusing the already checked
+                // glyphs for 你/好 and must reach the failing font callback.
+                type(engine, "su3cl35j/", false);
+                String completed = engine.completedSmartText(), reading = engine.readingText();
+                fail[0] = true;
+                assertEquals("", engine.handleSoftKey("3").committedText());
+                assertNotNull(engine.lastError());
+                for (int attempt = 0; attempt < 2; attempt++) {
+                    InputEngine.Result result = engine.finishCompositionForKeyboardHide();
+                    assertEquals("", result.committedText());
+                    assertFalse("Retained composition must not be discarded on error", result.discardComposingText());
+                    assertEquals(completed, engine.completedSmartText());
+                    assertEquals(reading, engine.readingText());
+                    assertTrue(engine.hasComposition()); assertNotNull(engine.lastError());
+                }
+            }
         }
     }
     @Test public void newHostAbandonsUnacknowledgedEffectsWithoutReplay() throws Exception {

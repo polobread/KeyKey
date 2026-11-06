@@ -26,21 +26,25 @@ public final class SupportPromptInstrumentedTest {
     @Test
     public void idleTouchPromptUsesLastThreeCellsAndHasNoSelectionAction() {
         onMain(() -> {
-            for (BopomofoKeyboardView.Mode mode : List.of(
-                    BopomofoKeyboardView.Mode.PORTRAIT, BopomofoKeyboardView.Mode.LANDSCAPE)) {
-                Fixture fixture = new Fixture(mode);
-                fixture.state(List.of(), "", List.of(), true, true,
-                        InputEngine.InputMode.BOPOMOFO, false);
-                RecordingCanvas canvas = fixture.draw();
-                for (int index = 0; index < SUPPORT_WORDS.size(); index++) {
-                    DrawnText word = canvas.single(SUPPORT_WORDS.get(index));
-                    assertEquals(fixture.view.getWidth() * (8.5f + index) / 11f, word.x, 1f);
-                    fixture.tap(word.x, word.y);
+            for (KeyboardLayoutProfile profile : KeyboardLayoutProfile.available()) {
+                for (BopomofoKeyboardView.Mode mode : List.of(
+                        BopomofoKeyboardView.Mode.PORTRAIT, BopomofoKeyboardView.Mode.LANDSCAPE)) {
+                    Fixture fixture = new Fixture(mode);
+                    fixture.view.setLayoutProfile(profile);
+                    fixture.state(List.of(), "", List.of(), true, true,
+                            InputEngine.InputMode.BOPOMOFO, false);
+                    RecordingCanvas canvas = fixture.draw();
+                    for (int index = 0; index < SUPPORT_WORDS.size(); index++) {
+                        DrawnText word = canvas.single(SUPPORT_WORDS.get(index));
+                        int cells = fixture.view.compositionCellCount();
+                        float position = cells - SUPPORT_WORDS.size() + index + 0.5f;
+                        assertEquals(fixture.view.getWidth() * position / cells, word.x, 1f);
+                        fixture.tap(word.x, word.y);
+                    }
+                    assertTrue(fixture.events.isEmpty());
+                    // The key-plane rendering/hit-test smoke independently checks all
+                    // declared actions; this test only owns the non-selectable prompt cells.
                 }
-                assertTrue(fixture.events.isEmpty());
-                assertTrue(canvas.has("@"));
-                assertTrue(canvas.has("0"));
-                assertTrue(canvas.has("-"));
             }
         });
     }
@@ -84,7 +88,7 @@ public final class SupportPromptInstrumentedTest {
     }
 
     @Test
-    public void hardwarePromptUsesCandidateCellsSevenToNineAndEligibilityChangeHidesItImmediately() {
+    public void hardwarePromptUsesLastCandidateCellsAndEligibilityChangeHidesItImmediately() {
         onMain(() -> {
             Fixture fixture = new Fixture(BopomofoKeyboardView.Mode.HARDWARE);
             fixture.state(List.of(), "ㄏ", List.of(), true, true,
@@ -92,7 +96,9 @@ public final class SupportPromptInstrumentedTest {
             RecordingCanvas canvas = fixture.draw();
             for (int index = 0; index < SUPPORT_WORDS.size(); index++) {
                 DrawnText word = canvas.single(SUPPORT_WORDS.get(index));
-                assertEquals(fixture.view.getWidth() * (6.5f + index) / 12f, word.x, 1f);
+                int cells = InputEngine.CANDIDATES_PER_PAGE + 3; // Emoji, mode and dismiss remain hardware controls.
+                float position = InputEngine.CANDIDATES_PER_PAGE - SUPPORT_WORDS.size() + index + 0.5f;
+                assertEquals(fixture.view.getWidth() * position / cells, word.x, 1f);
                 fixture.tap(word.x, word.y);
             }
             assertTrue(fixture.events.isEmpty());
@@ -140,7 +146,8 @@ public final class SupportPromptInstrumentedTest {
         }
 
         RecordingCanvas draw() {
-            view.measure(View.MeasureSpec.makeMeasureSpec(1320, View.MeasureSpec.EXACTLY),
+            int width = view.getResources().getDisplayMetrics().widthPixels;
+            view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                     View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
             view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
             RecordingCanvas canvas = new RecordingCanvas();

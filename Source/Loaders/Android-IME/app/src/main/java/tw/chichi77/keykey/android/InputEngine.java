@@ -102,8 +102,10 @@ interface InputEngine extends AutoCloseable {
     void setHardwareSmartEditing(boolean enabled);
     InputEngine.Result space();
     InputEngine.Result openSmartCandidates();
+    InputEngine.Result closeTouchSmartCandidates();
     InputEngine.Result enter();
     InputEngine.Result backspace();
+    InputEngine.Result deleteForward();
     InputEngine.Result escape();
     InputEngine.Result selectDisplayedCandidate(int index);
     InputEngine.Result selectHighlightedCandidate();
@@ -136,6 +138,7 @@ interface InputEngine extends AutoCloseable {
     boolean isShowingSmartCandidates();
     InputEngine.Result finishCompositionForModeSwitch();
     InputEngine.Result finishCompositionForInputHandoff();
+    InputEngine.Result finishCompositionForKeyboardHide();
     InputEngine.Result refreshUserData();
     boolean restoreInputModeState(InputEngineModeState state);
     default InputEngineModeState inputModeState() {

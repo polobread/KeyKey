@@ -79,6 +79,227 @@ struct GuanyinmaIntegrationTests {
         #expect(engine.backspace().deletesBackward)
     }
 
+    @Test func keyboardDismissalKeepsConvertedSmartTextAndDropsPendingReadingOnce() throws {
+        let f = try Fixture(), engine = try f.facade()
+        type("su3c", in: engine)
+        #expect(engine.completedSmartText == "你" && engine.readingText == "ㄏ")
+        var host = TouchSmartHostTextState()
+        _ = host.update(to: engine.completedSmartText)
+        let handoff = engine.finishCompositionForKeyboardDismissal()
+        #expect(handoff.succeeded)
+        #expect(handoff.result == .commit("你"))
+        #expect(host.finish(with: handoff.result.text).isEmpty, "The host already contains the completed prefix")
+        #expect(!engine.hasComposition && engine.readingText.isEmpty && engine.displayedCandidates.isEmpty)
+        let repeated = engine.finishCompositionForKeyboardDismissal()
+        #expect(repeated.succeeded && repeated.result == .update)
+        engine.acknowledgeHostEffects()
+        #expect(engine.finishCompositionForKeyboardDismissal().result == .update)
+        #expect(engine.finishCompositionForInputHandoff() == .update)
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func keyboardDismissalKeepsCompletedSmartTextWithCandidatesOpen() throws {
+        let f = try Fixture(), engine = try f.facade()
+        type("su3cl3", in: engine)
+        let completed = engine.completedSmartText
+        try #require(engine.selectTouchSmartCell(0))
+        try #require(!engine.displayedCandidates.isEmpty)
+        engine.moveHighlight(by: 1)
+        let handoff = engine.finishCompositionForKeyboardDismissal()
+        #expect(handoff.succeeded && handoff.result == .commit(completed))
+        #expect(!engine.hasComposition && engine.displayedCandidates.isEmpty)
+        engine.acknowledgeHostEffects()
+        #expect(engine.finishCompositionForKeyboardDismissal().result == .update)
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func keyboardDismissalCancelsAPureSmartReading() throws {
+        let f = try Fixture(), engine = try f.facade()
+        type("c", in: engine)
+        #expect(engine.completedSmartText.isEmpty && engine.readingText == "ㄏ")
+        let handoff = engine.finishCompositionForKeyboardDismissal()
+        #expect(handoff.succeeded && handoff.result == .update)
+        #expect(!engine.hasComposition && engine.readingText.isEmpty)
+        #expect(engine.finishCompositionForKeyboardDismissal().result == .update)
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func keyboardDismissalConfirmsTraditionalCandidateButCancelsUnfinishedReading() throws {
+        let f = try Fixture()
+        let engine = try KeyboardInputEngine(modelURL: f.model, userDatabaseURL: f.user, method: .traditional)
+        type("su3", in: engine)
+        try #require(!engine.displayedCandidates.isEmpty)
+        if engine.pageCount > 1 { engine.changePage(by: 1) }
+        engine.moveHighlight(by: 1)
+        let expected = engine.displayedCandidates[engine.highlightedIndex]
+        let completed = engine.finishCompositionForKeyboardDismissal()
+        #expect(completed.succeeded && completed.result == .commit(expected))
+        engine.acknowledgeHostEffects()
+        type("c", in: engine)
+        try #require(engine.hasComposition && engine.displayedCandidates.isEmpty)
+        let pending = engine.finishCompositionForKeyboardDismissal()
+        #expect(pending.succeeded && pending.result == .update)
+        #expect(!engine.hasComposition && engine.readingText.isEmpty)
+        #expect(engine.finishCompositionForKeyboardDismissal().result == .update)
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func keyboardDismissalCancelsUnselectedRootsWithAndWithoutPreviewCandidates() throws {
+        for method in [ChineseInputMethod.cangjie, .simplex] {
+            for preview in [false, true] {
+                let f = try Fixture()
+                var options = TableInputOptions(method: method)
+                options.queryAtMaximum = false
+                options.composeWhileTyping = preview
+                options.prefixCandidates = preview && method == .cangjie
+                options.clearOnError = false
+                let engine = try KeyboardInputEngine(modelURL: f.model, userDatabaseURL: f.user,
+                    method: method, tableOptions: options)
+                type("h", in: engine)
+                try #require(engine.hasComposition)
+                if preview { try #require(!engine.displayedCandidates.isEmpty) }
+                let handoff = engine.finishCompositionForKeyboardDismissal()
+                #expect(handoff.succeeded && handoff.result == .update)
+                #expect(!engine.hasComposition && engine.readingText.isEmpty && engine.displayedCandidates.isEmpty)
+                engine.acknowledgeHostEffects()
+                #expect(engine.finishCompositionForKeyboardDismissal().result == .update)
+                #expect(engine.coreError == nil)
+            }
+        }
+    }
+
+    @Test func closeTouchCandidatesPreservesCompositionAndSentenceEnd() throws {
+        let f = try Fixture(), facade = try f.facade()
+        let engine: any InputEngine = facade
+        type("su3cl3", in: engine)
+        #expect(engine.selectTouchSmartCell(0))
+        let correction = try #require(engine.displayedCandidates.firstIndex(of: "妳"))
+        #expect(engine.selectDisplayedCandidate(correction) == .update)
+        #expect(engine.composingText == "妳好")
+        #expect(engine.composingCaretUTF16Offset == 2)
+        #expect(engine.selectTouchSmartCell(0))
+        let firstPage = engine.displayedCandidates
+        try #require(engine.pageCount > 1)
+        engine.changePage(by: 1)
+        #expect(engine.page == 1)
+        var host = TouchSmartHostTextState()
+        _ = host.update(to: engine.completedSmartText)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.composingText == "妳好" && engine.smartCompositionReadingCount == 2)
+        #expect(engine.displayedCandidates.isEmpty && !engine.isShowingSmartCandidates)
+        #expect(engine.page == 0 && engine.pageCount == 0)
+        #expect(host.update(to: engine.completedSmartText).isEmpty)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.selectTouchSmartCell(0))
+        #expect(engine.displayedCandidates == firstPage)
+        _ = engine.closeTouchSmartCandidates()
+        type("su3", in: engine)
+        // Selection learning can change the new syllable's candidate. The FE
+        // contract is insertion at the sentence end and an unchanged prefix.
+        let completed = engine.composingText
+        #expect(completed.hasPrefix("妳好") && engine.smartCompositionReadingCount == 3)
+        #expect(engine.finishCompositionForInputHandoff() == .commit(completed))
+        #expect(facade.coreError == nil)
+    }
+
+    @Test(arguments: [false, true])
+    func closeTouchCandidatesAllowsBackspaceAtSentenceEnd(toggleSameCell: Bool) throws {
+        let f = try Fixture(), engine = try f.facade()
+        type("su3cl3", in: engine)
+        try #require(engine.selectTouchSmartCell(0))
+        let correction = try #require(engine.displayedCandidates.firstIndex(of: "妳"))
+        #expect(engine.selectDisplayedCandidate(correction) == .update)
+        let completed = engine.completedSmartText
+        #expect(completed == "妳好")
+        var host = TouchSmartHostTextState()
+        _ = host.update(to: completed)
+        engine.acknowledgeHostEffects()
+        try #require(engine.selectTouchSmartCell(0))
+        try #require(!engine.displayedCandidates.isEmpty)
+        if toggleSameCell { #expect(engine.selectTouchSmartCell(0)) }
+        else { #expect(engine.closeTouchSmartCandidates() == .update) }
+        #expect(engine.completedSmartText == completed && engine.displayedCandidates.isEmpty)
+        #expect(host.update(to: engine.completedSmartText).isEmpty)
+        let beforeCount = engine.smartCompositionReadingCount
+        #expect(engine.backspace() == .update)
+        #expect(engine.smartCompositionReadingCount == beforeCount - 1)
+        #expect(engine.completedSmartText == "妳", "Delete the sentence tail, not the candidate target or its override")
+        #expect(host.update(to: engine.completedSmartText) == .init(deleteCount: 1, insertion: ""))
+        engine.acknowledgeHostEffects()
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func closeTouchCandidatesAllowsBackspaceWithoutEditingEvictedPrefix() throws {
+        let f = try Fixture(), engine = try f.facade()
+        var host = TouchSmartHostTextState()
+        var document = "", evictedPrefix = ""
+        func applyToHost(_ result: KeyboardInput.Result) {
+            let edit = host.update(to: engine.completedSmartText, evictedPrefix: result.text)
+            document.removeLast(edit.deleteCount)
+            document += edit.insertion
+            evictedPrefix += result.text
+            engine.acknowledgeHostEffects()
+        }
+        // The touch frontend uses the existing nine/ten-syllable handoff.
+        for syllable in 0..<10 {
+            for key in "su3" { applyToHost(engine.handleSoftKey(String(key))) }
+            if syllable == 8 { #expect(evictedPrefix.isEmpty) }
+        }
+        try #require(!evictedPrefix.isEmpty)
+        let retainedCount = engine.smartCompositionReadingCount
+        try #require(retainedCount > 0 && retainedCount < 10)
+        #expect(document == evictedPrefix + engine.completedSmartText)
+        try #require(engine.selectTouchSmartCell(0))
+        try #require(!engine.displayedCandidates.isEmpty)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(host.update(to: engine.completedSmartText).isEmpty)
+        for remaining in stride(from: retainedCount, through: 1, by: -1) {
+            let result = engine.backspace()
+            #expect(result == .update)
+            applyToHost(result)
+            #expect(engine.smartCompositionReadingCount == remaining - 1)
+            #expect(document.hasPrefix(evictedPrefix))
+        }
+        #expect(document == evictedPrefix, "Backspace within the graph cannot revisit its already-evicted prefix")
+        #expect(host.editableText.isEmpty && !engine.hasComposition)
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func closeTouchCandidatesPreservesUnfinishedReadingAndConvertedPrefix() throws {
+        let f = try Fixture(), facade = try f.facade()
+        let engine: any InputEngine = facade
+        // Guanyinma has one model source; retain the old fallback regression's
+        // unfinished-reading intent without recreating the removed Swift engine.
+        type("su3cl", in: engine)
+        #expect(engine.composingText == "你ㄏㄠ" && engine.readingText == "ㄏㄠ")
+        #expect(engine.displayedCandidates.isEmpty)
+        #expect(engine.closeTouchSmartCandidates() == .update)
+        #expect(engine.composingText == "你ㄏㄠ" && engine.readingText == "ㄏㄠ")
+        #expect(engine.backspace() == .update)
+        #expect(engine.composingText == "你ㄏ")
+        type("l3", in: engine)
+        #expect(engine.composingText == "你好")
+        #expect(engine.finishCompositionForInputHandoff() == .commit("你好"))
+        #expect(facade.coreError == nil)
+    }
+
+    @Test func closeTouchCandidatesDoesNotAlterTraditionalOrHardwareModes() throws {
+        for (method, hardware) in [(ChineseInputMethod.traditional, false), (.smart, true)] {
+            let f = try Fixture()
+            let facade = try KeyboardInputEngine(modelURL: f.model, userDatabaseURL: f.user,
+                method: method, hardwareSmartEditing: hardware)
+            let engine: any InputEngine = facade
+            type("su3", in: engine, hardware: hardware)
+            if hardware { _ = engine.openSmartCandidates() }
+            let text = engine.composingText, candidates = engine.displayedCandidates
+            try #require(!candidates.isEmpty)
+            #expect(!engine.isTouchSmartComposition)
+            #expect(engine.closeTouchSmartCandidates() == .update)
+            #expect(engine.composingText == text && engine.displayedCandidates == candidates)
+            #expect(facade.coreError == nil)
+        }
+    }
+
     @Test func associatedQueryUsesModelWhileOverlayAndKeysStayInFrontend() throws {
         let f = try Fixture()
         let decoy = f.directory.appendingPathComponent("legacy-associated.db")
@@ -139,6 +360,87 @@ struct GuanyinmaIntegrationTests {
             #expect(engine.lastError == nil)
             #expect(engine.chineseInputMethod == method)
             engine.reset()
+        }
+    }
+
+    @Test(arguments: [0, 1, 2])
+    func physicalCandidatesTargetTheRightHandWordAndResumeAfterSelection(position: Int) throws {
+        let f = try Fixture(), engine = try f.engine(hardware: true)
+        type("su3cl3", in: engine, hardware: true)
+        #expect(engine.moveSmartCompositionCursor(by: position - 2))
+        #expect(engine.openSmartCandidates() == .update)
+        let target = position == 0 ? "妳" : "郝"
+        let selected = try #require(engine.displayedCandidates.firstIndex(of: target))
+        #expect(engine.selectDisplayedCandidate(selected) == .update)
+        #expect(engine.completedSmartText == (position == 0 ? "妳好" : "你郝"))
+        #expect(engine.composingCaretUTF16Offset == (position == 0 ? 1 : 2))
+        type("a8 ", in: engine, hardware: true)
+        #expect(engine.smartCompositionReadingCount == 3)
+        let completed = engine.completedSmartText
+        #expect(completed.count == 3)
+        #expect(position == 0
+            ? completed.hasPrefix("妳") && completed.hasSuffix("好")
+            : completed.hasPrefix("你郝"))
+        #expect(engine.lastError == nil)
+    }
+
+    @Test(arguments: [0, 1, 2])
+    func physicalForwardDeleteRemovesOnlyTheRightReadingAndStaysDeleted(position: Int) throws {
+        let f = try Fixture(), engine = try f.engine(hardware: true)
+        type("su3cl3", in: engine, hardware: true)
+        #expect(engine.moveSmartCompositionCursor(by: position - 2))
+        #expect(engine.deleteForward() == .update)
+        #expect(engine.completedSmartText == (position == 0 ? "好" : position == 1 ? "你" : "你好"))
+        #expect(engine.smartCompositionReadingCount == (position == 2 ? 2 : 1))
+        type("a8 ", in: engine, hardware: true)
+        #expect(engine.smartCompositionReadingCount == (position == 2 ? 3 : 2))
+        let completed = engine.completedSmartText
+        #expect(completed.count == (position == 2 ? 3 : 2))
+        #expect(position == 0 ? completed.hasSuffix("好") : completed.hasPrefix("你"))
+        #expect(engine.lastError == nil)
+    }
+
+    @Test func physicalForwardDeleteClearsLastReadingAndLeavesHostDeletionToFrontend() throws {
+        let f = try Fixture()
+        let engine = try KeyboardInputEngine(modelURL: f.model, userDatabaseURL: f.user,
+                                            hardwareSmartEditing: true)
+        #expect(engine.deleteForward() == .update)
+        #expect(!engine.hasComposition)
+        type("su3", in: engine, hardware: true)
+        #expect(engine.moveSmartCompositionCursor(by: -1))
+        #expect(engine.deleteForward() == .update)
+        #expect(!engine.hasComposition && engine.composingText.isEmpty)
+        #expect(engine.smartCompositionReadingCount == 0)
+        type("cl3", in: engine, hardware: true)
+        #expect(engine.completedSmartText == "好")
+        #expect(engine.enter() == .commit("好"))
+        engine.acknowledgeHostEffects()
+        #expect(engine.deleteForward() == .update)
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func physicalForwardDeletePreservesPendingReadingsAndOpenCandidates() throws {
+        do {
+            let f = try Fixture(), engine = try f.engine(hardware: true)
+            type("su3cl3s", in: engine, hardware: true)
+            let before = engine.composingText, reading = engine.readingText
+            try #require(!reading.isEmpty)
+            #expect(engine.deleteForward() == .update)
+            #expect(engine.composingText == before && engine.readingText == reading)
+            #expect(engine.smartCompositionReadingCount == 2)
+            #expect(engine.lastError == nil)
+        }
+        do {
+            let f = try Fixture(), engine = try f.engine(hardware: true)
+            type("su3cl3", in: engine, hardware: true)
+            #expect(engine.moveSmartCompositionCursor(by: -1))
+            _ = engine.openSmartCandidates()
+            let candidates = engine.displayedCandidates, before = engine.composingText
+            try #require(!candidates.isEmpty)
+            #expect(engine.deleteForward() == .update)
+            #expect(engine.displayedCandidates == candidates && engine.composingText == before)
+            #expect(engine.smartCompositionReadingCount == 2)
+            #expect(engine.lastError == nil)
         }
     }
 

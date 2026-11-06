@@ -353,6 +353,9 @@ private final class InputMethodSettingsViewController: UIViewController {
     private lazy var colorSettings = CandidateColorSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
+    private lazy var profileSettings = KeyboardLayoutProfileSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
     private lazy var clickSettings = KeyboardClickSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
@@ -438,6 +441,7 @@ private final class InputMethodSettingsViewController: UIViewController {
         colorControl.accessibilityIdentifier = "app-settings.candidate-color"
         colorControl.addTarget(self, action: #selector(colorChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(colorControl)
+        addLayoutSettings(to: stack)
 
         let clickRow = UIStackView()
         clickRow.axis = .horizontal
@@ -563,6 +567,59 @@ private final class InputMethodSettingsViewController: UIViewController {
             }))
         }
         button.menu = UIMenu(title: method.displayName + "設定", children: children)
+    }
+
+    private func addLayoutSettings(to stack: UIStackView) {
+        stack.addArrangedSubview(label("版面", size: 18))
+        let profiles = KeyboardLayoutProfile.available
+        let profile = UISegmentedControl(items: profiles.map(\.displayName))
+        profile.selectedSegmentIndex = profiles.firstIndex(of: profileSettings.profile) ?? 0
+        profile.accessibilityIdentifier = "app-settings.layout-profile"
+        profile.accessibilityLabel = "版面"
+        profile.addTarget(self, action: #selector(layoutProfileChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(profile)
+        stack.addArrangedSubview(label("鍵帽間隔", size: 18))
+        let area = UISegmentedControl(items: KeyboardKeycapArea.allCases.map(\.displayName))
+        area.selectedSegmentIndex = KeyboardKeycapArea.allCases.firstIndex(of: profileSettings.keycapArea) ?? 0
+        area.accessibilityIdentifier = "app-settings.keycap-area"
+        area.accessibilityLabel = "鍵帽間隔"
+        area.addTarget(self, action: #selector(keycapAreaChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(area)
+        stack.addArrangedSubview(label("字體", size: 18))
+        let font = UISegmentedControl(items: KeyboardKeyFontSize.allCases.map(\.displayName))
+        font.selectedSegmentIndex = KeyboardKeyFontSize.allCases.firstIndex(of: profileSettings.fontSize) ?? 0
+        font.accessibilityIdentifier = "app-settings.key-font-size"
+        font.accessibilityLabel = "字體"
+        font.addTarget(self, action: #selector(keyFontSizeChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(font)
+        stack.addArrangedSubview(label("刪除鍵位置", size: 18))
+        let position = UISegmentedControl(items: KeyboardDeleteShiftPosition.allCases.map(\.displayName))
+        position.selectedSegmentIndex = KeyboardDeleteShiftPosition.allCases.firstIndex(
+            of: profileSettings.deleteShiftPosition) ?? 0
+        position.accessibilityIdentifier = "app-settings.delete-position"
+        position.accessibilityLabel = "刪除鍵位置"
+        position.addTarget(self, action: #selector(deleteShiftChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(position)
+    }
+
+    @objc private func layoutProfileChanged(_ sender: UISegmentedControl) {
+        guard KeyboardLayoutProfile.available.indices.contains(sender.selectedSegmentIndex) else { return }
+        profileSettings.setProfile(KeyboardLayoutProfile.available[sender.selectedSegmentIndex])
+    }
+
+    @objc private func keyFontSizeChanged(_ sender: UISegmentedControl) {
+        guard KeyboardKeyFontSize.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        profileSettings.setFontSize(KeyboardKeyFontSize.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func keycapAreaChanged(_ sender: UISegmentedControl) {
+        guard KeyboardKeycapArea.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        profileSettings.setKeycapArea(KeyboardKeycapArea.allCases[sender.selectedSegmentIndex])
+    }
+
+    @objc private func deleteShiftChanged(_ sender: UISegmentedControl) {
+        guard KeyboardDeleteShiftPosition.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        profileSettings.setDeleteShiftPosition(KeyboardDeleteShiftPosition.allCases[sender.selectedSegmentIndex])
     }
 
     @objc private func modeChanged(_ sender: UISegmentedControl) {
@@ -954,6 +1011,8 @@ private final class AcknowledgementDetailViewController: UIViewController {
 /// Each control exposes a stable accessibility identifier for a future XCUITest
 /// target, while manual Simulator testing can select any field directly.
 private final class InputFieldTestViewController: UIViewController, UITextFieldDelegate {
+    private weak var defaultInput: UIView?
+
     private struct Field {
         let id: String
         let title: String
@@ -1004,7 +1063,15 @@ private final class InputFieldTestViewController: UIViewController, UITextFieldD
         )
 
         let note = UILabel()
-        note.text = "選欄位後長按地球鍵選「琦琦輸入法」。每個欄位會把 keyboardType 與 returnKeyType 傳給鍵盤。"
+        #if targetEnvironment(simulator)
+        let nativeOnly = ProcessInfo.processInfo.arguments.contains("-KeyKeyNativeKeyboardOnly")
+        #else
+        let nativeOnly = false
+        #endif
+        note.text = nativeOnly
+            ? "系統鍵盤對照：此工作階段已停用第三方鍵盤。"
+            : "選欄位後長按地球鍵選「琦琦輸入法」。每個欄位會把 keyboardType 與 returnKeyType 傳給鍵盤。"
+        note.accessibilityIdentifier = nativeOnly ? "test-host.native-keyboard-only" : "test-host.instructions"
         note.font = .preferredFont(forTextStyle: .footnote)
         note.textColor = .secondaryLabel
         note.numberOfLines = 0
@@ -1030,6 +1097,15 @@ private final class InputFieldTestViewController: UIViewController, UITextFieldD
             rows.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -20),
             rows.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor)
         ])
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Keep a manual simulator session alive without relying on XCTest
+        // tapping the active display or keeping its test runner connected.
+        if ProcessInfo.processInfo.arguments.contains("-KeyKeyFocusDefaultField") {
+            defaultInput?.becomeFirstResponder()
+        }
     }
 
     private func makeRow(_ field: Field) -> UIView {
@@ -1065,6 +1141,7 @@ private final class InputFieldTestViewController: UIViewController, UITextFieldD
             input = textField
         }
 
+        if field.id == "default" { defaultInput = input }
         let row = UIStackView(arrangedSubviews: [title, input])
         row.axis = .vertical
         row.spacing = 5

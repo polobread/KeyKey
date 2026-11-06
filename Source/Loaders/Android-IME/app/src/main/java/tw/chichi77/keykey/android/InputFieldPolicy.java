@@ -165,7 +165,7 @@ final class InputFieldPolicy {
 
     boolean isKeyEnabled(String key, InputEngine.InputMode mode, boolean shifted) {
         if (key.equals("SETTINGS") || key.equals("BACKSPACE") || key.equals("ENTER")
-                || key.equals("MODE")) {
+                || key.equals("MODE") || key.equals("GLOBE") || key.equals("DISMISS")) {
             return true;
         }
         if (!isRestricted()) return allowedModes.contains(mode);

@@ -21,8 +21,8 @@ public struct KeyboardMetrics: Equatable, Sendable {
     public var functionFontSmall: Double
     public var pageFont: Double
     public var statusFont: Double
-    /// Keeps the eleven-column keyboard usable on wide iPads. Phone values are
-    /// intentionally larger than any supported screen so they remain full-width.
+    /// Keeps the eleven-column keyboard usable in regular-width environments,
+    /// including the inner display of a folding iPhone.
     public var maximumContentWidth: Double
 
     public static let portrait = KeyboardMetrics(
@@ -78,10 +78,12 @@ public struct KeyboardMetrics: Equatable, Sendable {
     )
 
     public static func forCompactHeight(
-        _ compact: Bool, isPad: Bool = false
+        _ compact: Bool, isPad: Bool = false, regularWidth: Bool = false
     ) -> KeyboardMetrics {
         if isPad { return .pad }
-        return compact ? .compact : .portrait
+        if compact { return .compact }
+        // A folding iPhone remains .phone even on its regular-width display.
+        return regularWidth ? .pad : .portrait
     }
 
     /// The five bands below the strip -- four key rows and the function row --

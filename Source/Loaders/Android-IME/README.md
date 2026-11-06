@@ -12,6 +12,31 @@ Google Play 最新正式版為 **1.3.7**，一般使用者可直接安裝，不�
 架構、三種互動 profile、JNI、資料路徑與驗證責任見
 [Guanyinma Android 接合](../../../docs/GUANYINMA_ANDROID_ADAPTER.md)。
 
+「外觀與操作」的「候選字底色」之後有四個獨立選項，可任意搭配：
+
+- **版面**：標準、對齊、對齊分離。標準採交錯排列，前三列偏移 0、1/3、2/3 欄，ㄈ列靠左；對齊保留原滿版鍵位與尺寸。
+- **鍵帽間隔**：小、中、大，可見鍵帽面積分別為原來的 100%、90%、80%，按鍵中心、字體及點擊範圍不變。
+- **字體**：標準、中、大、特大；以當前「ㄖ」鍵的可用寬高及原生字型尺寸換算，沒有固定手機像素或字級上限。特大使用「ㄖ」填滿可用鍵內範圍的字級；標準先保留英數小字提示所需空間，再求主字最大字級；中、大在兩端之間等比例放大。注音、倉頡／簡易字根、英文、數字與符號沿用同一主字級，全形標點跟隨注音，聲調保留相對比例；分離鍵盤左右空白文字保持相同大小。只有標準保留小字提示，控制圖示及多字功能標籤另依各自按鍵容納。螢幕、直橫式、版面或可用高度改變時重新換算，鍵帽間隔不改字級。候選、組字與讀音沿用原四級設定及格框限制；鍵位、點擊範圍與各列高度不變。舊的大字設定遷移為「特大」。
+- **刪除鍵位置**：右側、下方，分別在 Enter 上方、Enter 左側，並與 Shift 互換。
+
+標準版面的倉頡／簡易底部字根列向右移一格，移除該列的 `/`，讓「重」落在原本「難」的位置；
+末端 Shift／刪除鍵維持最右位置，左側留白不接受按鍵點擊。其他版面、注音、英文與數字符號不變。
+
+Android 預設為對齊、小間隔、標準字體、刪除鍵下方。各版面共用原本的直式／橫式高度，
+每個方向都有注音、倉頡、簡易、英文、數字符號五種擺法；英文大小寫與第二組數字符號屬於 Shift 版本。
+對齊分離將主鍵與底列控制鍵分至兩側，中央保留不可點擊的空隙；一般手機、平板與摺疊裝置
+在所有寬度與直橫式都採十二欄、左右各六格，四列分別加入「，」「。」「、」「？」。兩側空白鍵送出相同動作；
+對齊分離底列的「符」「設」「Shift」各佔一個主按鍵欄寬，其餘寬度分配給同側空白鍵；
+上方已有收鍵盤控制，因此整合開關開啟時也不再加入底列收鍵盤鍵。
+對齊分離的上方列也保留同一中央空隙：組字十一格加「▼」收鍵盤，左右各六個位置；
+好打注音候選覆蓋列為上一頁、九個候選、下一頁及「×」關閉，共十二格。關閉候選保留已完成文字與未完成讀音，
+沒有未完成讀音時恢復句尾編輯；「▼」沿用只確認已完成文字、取消未完成注音／字根的收鍵盤流程。
+其他輸入模式的候選列最後一格提供「▼」；非分離版面與實體鍵盤保留原配置。九字可編輯組字範圍及引擎候選數不變。
+短按「設」開啟原有設定頁；長按會開啟 Android 輸入法清單，取消清單保留組字。四個選項以穩定 ID 保存，
+鍵盤使用中刷新偏好只更新前端版面，不重建輸入核心；開啟設定 App 仍沿用原有組字交接流程。
+舊樣式會讀取為對應的版面、間隔與字體，
+第一次修改任一選項時一起保存全部四項，保留原本的其他選擇。
+
 四法共用 `Source/Distributions/Takao/CookedDatabase/KeyKey.db`，建置只驗證及複製。
 關聯詞索引另依原有 FE 資料來源產生，不需要手動複製。
 
@@ -21,6 +46,10 @@ Google Play 最新正式版為 **1.3.7**，一般使用者可直接安裝，不�
 音節完成時會送出前方完整詞段，剩餘最多十個音節仍可移動游標改選。傳統注音保留
 逐字選字與關聯詞流程。19 音節完整句「請假要去哪裡玩呢去海邊因為那裡有比基尼」
 的實體鍵盤檢查點與測試界線見[交接紀錄](../../../docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)。
+
+一般實體好打注音按 `↓` 會改選游標右側的字詞；游標在句尾時改選最後一字，選字後停在所選詞後方，方便接續輸入。`Backspace` 刪除游標左側，`Delete` 刪除右側；Delete 在組字中移除的字不會在繼續輸入時重新出現，刪完最後一字也會清空 App 的組字範圍。仍有未完成讀音或正在顯示候選時，Delete 依目前狀態保留文字，不跳過組字直接刪 App 內的字。觸控與實體雙排選字仍在選字後回到可編輯句尾。
+
+旋轉畫面後會核對並接續原組字與游標，確認文字時不會再追加一份舊組字。如果 App 的文字已改變，或無法確認原組字範圍，便保留 App 現有文字並重新開始輸入，避免把舊字送到錯誤位置。
 
 設定頁「注音與選字」的「使用空白鍵選字」預設關閉，虛擬與實體鍵盤共用。關閉時，讀音完成後按空白會在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後空白可完成讀音、開候選及翻頁。關閉時仍可點選組字或按實體鍵盤 `↓` 開候選；傳統注音、倉頡及簡易不受影響。
 
@@ -57,6 +86,7 @@ A–Z 顯示倉頡字根，候選、翻頁、關聯詞與送字共用傳統注�
 「倉頡與簡易」區塊。簡易即時候選預設關閉，與錯碼清除互斥；倉頡另可調整標點寬度。
 排序紀錄保存在 Guanyinma 使用者資料庫，不修改內建字表。
 切換中英文、輸入法或結束輸入時，先保留選定文字或未完成字根。
+明確按琦琦的收鍵盤 ▼ 時例外：只保留已完成文字，取消尚未選字的字根。
 
 倉頡虛擬鍵盤的「即時候選」與「未打完也能選字」缺值時預設開啟，保留既有明確設定。
 一至四碼先列完整碼（原排序），再列符合全部字根的較長碼候選；前綴依既有 1,500 字排名，
@@ -79,11 +109,11 @@ A–Z 顯示倉頡字根，候選、翻頁、關聯詞與送字共用傳統注�
 例如 `nef` 輸入 `ㄋㄧˇ`；標準配置維持既有注音與英數雙標籤。
 解析及退格對齊 macOS／Windows 的 Formosa 核心，候選仍使用行動版的 `1–9`。
 
-- 直式：最上方是上一頁 ▲、9 個候選字與下一頁 ▼。下方四排注音鍵都固定為
+- 原始滿版直式：最上方是上一頁 ▲、9 個候選字與下一頁 ▼。下方四排注音鍵為
   11 個等寬按鍵，依序為 `ㄅ…ㄦ`、`ㄆ…ㄣ／@`、`ㄇ…ㄤ／Emoji`、
   `ㄈ…ㄥ／Shift`。第五排為「模式、符、設、逗號、長空白、句號、Backspace、
   Enter」。每個注音鍵同時保留實體鍵位提示，例如 `ㄅ／1`、`ㄉ／2`。
-- 橫式：沿用相同的候選列、四排 11 等寬鍵與功能列，100% 時內容高度為一般比例的
+- 原始滿版橫式：沿用相同的候選列、四排 11 等寬鍵與功能列，100% 時內容高度為一般比例的
   230dp，並使用較小字級避免裁切。設定頁可把直式與橫式虛擬鍵盤分別調成
   50%、75%、90%、100%、110%、125%、150%、175% 或 200%。
 - USB／藍牙鍵盤：候選列依序為 9 個候選字、Emoji、`ㄅ／英` 與收起按鈕 `▼`，共 12 個
@@ -156,6 +186,21 @@ A–Z 顯示倉頡字根，候選、翻頁、關聯詞與送字共用傳統注�
 開啟時保留直式 40dp／橫式 35dp，避開 Android 系統的地球切換語言按鈕；關閉時
 虛擬鍵盤或底部候選列貼齊輸入法視窗底部，整體高度減少直式 40dp／橫式 35dp。
 按鍵及候選列尺寸不變；即使系統限制最大高度或使用 200% 鍵盤，也不把節省的空間用來放大按鍵。
+「整合底部控制鍵」預設關閉；開啟後，標準／對齊版面在底列「設」的右側加入收鍵盤 ▼，從空白鍵分配寬度；
+對齊分離使用上方原有的收鍵盤鍵，底列寬度保留給空白鍵。整合開關仍
+取消琦琦自己的底部預留空間，不新增鍵盤列。舊的留白選擇會保留，關閉整合後恢復。
+整合模式仍保留鍵盤實際收到、尚未由上層處理的系統導覽區高度，避免按鍵與觸控區進入手勢列。
+旋轉或瀏海改變可用寬度時，沿直／橫式設定處理高度，不因視窗再次量測而重複扣掉底部空間。
+支援的 Android 系統會嘗試隱藏輸入法控制列，無法控制時保留系統列，不改變系統導覽設定。
+長按「設」不受整合開關影響，不會同時開啟設定頁；移出按鍵或取消手勢不會誤觸短按。
+明確按收鍵盤 ▼ 只確認已完成文字，
+取消未完成注音與尚未選字的倉頡／簡易字根，不把原始讀音或字根送進欄位。
+地球鍵切換、鍵盤內的中英模式切換，以及系統結束輸入的交接流程維持原有行為。
+Android 16 起若系統要求琦琦提供切換鍵，底列最左側仍會顯示獨立地球鍵，單點切換輸入法、長按開啟系統清單；
+模式鍵此時縮為一格，將目前兩個模式標籤分別放在左上與右下。系統未要求時隱藏自家地球鍵，舊系統原有切換列不變。
+實體候選列沿用既有按鈕位置，
+浮動候選模式僅在系統仍要求此鍵時顯示最小控制列，系統不再要求後恢復原來的浮動模式。
+旋轉或重建鍵盤時會先關閉舊浮窗，垂直與水平排列都只保留目前的一個候選窗，避免殘窗留在畫面上。
 「實體鍵盤」中的「使用浮動候選字窗」開啟時，「顯示虛擬數字與符號鍵」及底部空間
 開關變灰且無法操作；關閉浮動候選窗後恢復可調整，並保留各自先前選擇。
 
@@ -189,7 +234,7 @@ App 若為軟鍵盤指定 `IME_ACTION_DONE`、`NEXT`、`SEARCH`、`SEND`、`GO` 
 並呼叫對應 editor action。好打注音仍有組字時，第一次按鍵就會確認文字並執行動作。
 App 也可用 `EditorInfo.actionLabel`／`actionId` 提供自訂
 Enter 文字與 action；過長的標籤會自動縮小。App 拒絕 action 時會安全退回一般 Enter。
-USB／藍牙實體鍵盤的 Enter 永遠維持 Enter key event，不會被改成軟鍵盤 action。
+USB／藍牙實體鍵盤需要向 App 送出 Enter 時，使用一次完整按放事件，不改成軟鍵盤 action。一般實體好打注音先以 Enter 選取反白候選或確認組句，同次放開不再觸發 App 的下一欄；沒有組字與候選時維持普通 Enter。候選中的 Enter 按住不重複選字，顯示關聯詞時仍是關閉關聯候選並送出普通 Enter。實體雙排沿用前述觸控確認及送字規則。
 
 欄位的起始精簡模式只套用觸控鍵盤。外接實體鍵盤的字元與快捷鍵維持
 Windows／macOS 版的完整輸入與修飾鍵習慣，不依 `inputType` 擋字。
@@ -281,6 +326,55 @@ Gradle 直接建置 Rust 靜態庫與 JNI SO，不執行完整核心測試。少
 
 JVM tests 自動準備主機架構的真 JNI library；Windows 另需 MSVC C++ 開發環境。完整 Rust／C ABI
 矩陣只在 `guanyinma-core.yml`。host JNI tests 與 APK 編譯不代表 Android runtime 或 IME 宿主已驗收。
+
+真正切換至另一個系統輸入法的 UI 冒煙預設略過，獨立於不改預設輸入法的一般組字／控制鍵測試，
+僅在可丟棄的專用模擬器執行。
+先啟用另一個輸入法並選取琦琦，再單獨執行；此項刻意改變預設輸入法，結束後由測試控制端還原或刪除裝置。
+
+```sh
+adb -s "$KEYKEY_TEST_SERIAL" shell am instrument -w -r \
+  -e class tw.chichi77.keykey.android.PlatformInputMethodSwitchInstrumentedTest \
+  -e keykey.ownedPlatformSwitchSmoke true \
+  tw.chichi77.keykey.android.test/androidx.test.runner.AndroidJUnitRunner
+adb -s "$KEYKEY_TEST_SERIAL" shell ime set tw.chichi77.keykey.android/.BopomofoImeService
+```
+
+實體鍵盤宿主回歸使用 `PhysicalKeyboardRegressionInstrumentedTest`，須明確給予
+`keykey.isolatedDevice=true`；未給參數會略過。下列流程會清除並重建 App 設定與學習資料，
+只在啟用硬體鍵盤（`hw.keyboard=yes`）的可丟棄模擬器執行，勿使用日常手機。
+先安裝 debug APK 與 androidTest APK，再逐項以全新 App 資料執行：
+
+```sh
+./gradlew assembleDebug assembleDebugAndroidTest
+case "$KEYKEY_TEST_SERIAL" in emulator-*) ;; *) exit 1 ;; esac
+adb -s "$KEYKEY_TEST_SERIAL" install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s "$KEYKEY_TEST_SERIAL" install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+for scenario in adapterSelectsTheRightHandTargetAtEveryCursorPosition \
+  adapterForwardDeleteRemovesTheReadingBeforeFurtherInput \
+  adapterForwardDeleteClearsTheLastMarkedCharacter touchSelectionStillReturnsToTheEditableTail \
+  repeatedRestartsPreserveTheOwnedRangeAndCaret \
+  unverifiableRestartKeepsHostTextWithoutReplayingComposition \
+  enterOwnershipDoesNotConsumeANewModifiedKeyPress \
+  verticalPortrait verticalLandscape horizontalPortrait horizontalLandscape bottomPortrait bottomLandscape
+do
+  adb -s "$KEYKEY_TEST_SERIAL" shell am force-stop tw.chichi77.keykey.android
+  adb -s "$KEYKEY_TEST_SERIAL" shell pm clear tw.chichi77.keykey.android
+  adb -s "$KEYKEY_TEST_SERIAL" shell settings put secure show_ime_with_hard_keyboard 1
+  adb -s "$KEYKEY_TEST_SERIAL" shell ime enable tw.chichi77.keykey.android/.BopomofoImeService
+  adb -s "$KEYKEY_TEST_SERIAL" shell ime set tw.chichi77.keykey.android/.BopomofoImeService
+  adb -s "$KEYKEY_TEST_SERIAL" shell am instrument -w -r \
+    -e class "tw.chichi77.keykey.android.PhysicalKeyboardRegressionInstrumentedTest#$scenario" \
+    -e keykey.isolatedDevice true \
+    tw.chichi77.keykey.android.test/androidx.test.runner.AndroidJUnitRunner
+done
+```
+
+六個宿主情境涵蓋垂直浮窗、水平浮窗、關閉浮窗的手機直橫式，包含四法基本送字、
+短句第 10／11／19 音節、候選與翻頁、刪除後接續輸入、Enter、快捷鍵及旋轉／重開。
+另有兩個 restart 案例，涵蓋已提交前後文、句中游標、未完成讀音，以及重複重啟後的組字同步；debug 宿主會提供 null／文字不符快照，檢查保留現有文字且不重播舊組字的退路。
+確認每個 instrumentation 結果均實際執行、沒有略過或失敗；鍵盤事件經 InputDispatcher
+注入，能驗證 Android 宿主交易，不能代替真正 USB／藍牙鍵盤的傳輸與修飾鍵按放實測。
+此回歸不涵蓋全部外觀組合，也不表示其他裝置或平台已完成驗收。
 
 基本小麥注音詞庫取自 `DataSource/McBopomofo/phrase.occ`，另會固定加入
 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會把這些關聯詞文字詞庫

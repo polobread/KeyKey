@@ -12,6 +12,10 @@ protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
     func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout)
+    func settingsPanel(_ panel: SettingsPanel, didChangeLayoutProfile profile: KeyboardLayoutProfile)
+    func settingsPanel(_ panel: SettingsPanel, didChangeKeycapArea area: KeyboardKeycapArea)
+    func settingsPanel(_ panel: SettingsPanel, didChangeFontSize size: KeyboardKeyFontSize)
+    func settingsPanel(_ panel: SettingsPanel, didChangeDeleteShiftPosition position: KeyboardDeleteShiftPosition)
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
@@ -32,6 +36,10 @@ final class SettingsPanel: UIView {
     private var compositionMode: BopomofoCompositionMode
     private var chineseInputMethod: ChineseInputMethod
     private let methodSettings: ChineseInputMethodSettings
+    private var layoutProfile: KeyboardLayoutProfile
+    private var keycapArea: KeyboardKeycapArea
+    private var deleteShiftPosition: KeyboardDeleteShiftPosition
+    private var fontSize: KeyboardKeyFontSize
     private var keyboardLayout: BopomofoKeyboardLayout
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
@@ -50,7 +58,11 @@ final class SettingsPanel: UIView {
         compositionMode: BopomofoCompositionMode,
         chineseInputMethod: ChineseInputMethod = .smart,
         methodSettings: ChineseInputMethodSettings = ChineseInputMethodSettings(),
-        keyboardLayout: BopomofoKeyboardLayout = .standard
+        keyboardLayout: BopomofoKeyboardLayout = .standard,
+        layoutProfile: KeyboardLayoutProfile = .standard,
+        keycapArea: KeyboardKeycapArea = .small,
+        fontSize: KeyboardKeyFontSize = .normal,
+        deleteShiftPosition: KeyboardDeleteShiftPosition = .aboveEnter
     ) {
         self.collections = collections
         self.enabled = enabled
@@ -60,6 +72,10 @@ final class SettingsPanel: UIView {
         self.chineseInputMethod = chineseInputMethod
         self.methodSettings = methodSettings
         self.keyboardLayout = keyboardLayout
+        self.layoutProfile = layoutProfile
+        self.keycapArea = keycapArea
+        self.fontSize = fontSize
+        self.deleteShiftPosition = deleteShiftPosition
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
@@ -101,11 +117,12 @@ final class SettingsPanel: UIView {
         rows.spacing = 0
 
         let scroll = UIScrollView()
+        scroll.accessibilityIdentifier = "keyboard-settings.scroll"
         scroll.alwaysBounceVertical = true
         let root = UIStackView(arrangedSubviews: [
             compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
-            candidateColorRow(), feedbackRow(),
+            candidateColorRow(), layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(), feedbackRow(),
             statusLabel, bulk, rows
         ])
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
@@ -119,9 +136,9 @@ final class SettingsPanel: UIView {
         addSubview(scroll)
         scroll.addSubview(root)
         NSLayoutConstraint.activate([
-            header.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            header.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            header.topAnchor.constraint(equalTo: topAnchor, constant: 10),
+            header.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            header.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            header.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
             scroll.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
             scroll.leadingAnchor.constraint(equalTo: header.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: header.trailingAnchor),
@@ -176,6 +193,78 @@ final class SettingsPanel: UIView {
         row.directionalLayoutMargins = .init(top: 6, leading: 0, bottom: 6, trailing: 0)
         row.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
         return row
+    }
+
+    private func layoutProfileRow() -> UIView {
+        let profiles = KeyboardLayoutProfile.available
+        let control = UISegmentedControl(items: profiles.map(\.displayName))
+        control.selectedSegmentIndex = profiles.firstIndex(of: layoutProfile) ?? 0
+        control.accessibilityIdentifier = "keyboard.layout-profile"
+        control.accessibilityLabel = "版面"
+        control.addTarget(self, action: #selector(layoutProfileChanged(_:)), for: .valueChanged)
+        return layoutOptionRow(title: "版面", control: control)
+    }
+
+    @objc private func layoutProfileChanged(_ sender: UISegmentedControl) {
+        guard KeyboardLayoutProfile.available.indices.contains(sender.selectedSegmentIndex) else { return }
+        layoutProfile = KeyboardLayoutProfile.available[sender.selectedSegmentIndex]
+        delegate?.settingsPanel(self, didChangeLayoutProfile: layoutProfile)
+    }
+
+    private func keycapAreaRow() -> UIView {
+        let control = UISegmentedControl(items: KeyboardKeycapArea.allCases.map(\.displayName))
+        control.selectedSegmentIndex = KeyboardKeycapArea.allCases.firstIndex(of: keycapArea) ?? 0
+        control.accessibilityIdentifier = "keyboard.keycap-area"
+        control.accessibilityLabel = "鍵帽間隔"
+        control.addTarget(self, action: #selector(keycapAreaChanged(_:)), for: .valueChanged)
+        return layoutOptionRow(title: "鍵帽間隔", control: control)
+    }
+
+    private func fontSizeRow() -> UIView {
+        let control = UISegmentedControl(items: KeyboardKeyFontSize.allCases.map(\.displayName))
+        control.selectedSegmentIndex = KeyboardKeyFontSize.allCases.firstIndex(of: fontSize) ?? 0
+        control.accessibilityIdentifier = "keyboard.key-font-size"
+        control.accessibilityLabel = "字體"
+        control.addTarget(self, action: #selector(fontSizeChanged(_:)), for: .valueChanged)
+        return layoutOptionRow(title: "字體", control: control)
+    }
+
+    @objc private func fontSizeChanged(_ sender: UISegmentedControl) {
+        guard KeyboardKeyFontSize.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        fontSize = KeyboardKeyFontSize.allCases[sender.selectedSegmentIndex]
+        delegate?.settingsPanel(self, didChangeFontSize: fontSize)
+    }
+
+    private func deleteShiftRow() -> UIView {
+        let control = UISegmentedControl(items: KeyboardDeleteShiftPosition.allCases.map(\.displayName))
+        control.selectedSegmentIndex = KeyboardDeleteShiftPosition.allCases.firstIndex(of: deleteShiftPosition) ?? 0
+        control.accessibilityIdentifier = "keyboard.delete-position"
+        control.accessibilityLabel = "刪除鍵位置"
+        control.addTarget(self, action: #selector(deleteShiftChanged(_:)), for: .valueChanged)
+        return layoutOptionRow(title: "刪除鍵位置", control: control)
+    }
+
+    private func layoutOptionRow(title: String, control: UIView) -> UIView {
+        let label = UILabel()
+        label.text = title
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = Palette.primaryText
+        let stack = UIStackView(arrangedSubviews: [label, control])
+        stack.axis = .vertical
+        stack.spacing = 6
+        return stack
+    }
+
+    @objc private func keycapAreaChanged(_ sender: UISegmentedControl) {
+        guard KeyboardKeycapArea.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        keycapArea = KeyboardKeycapArea.allCases[sender.selectedSegmentIndex]
+        delegate?.settingsPanel(self, didChangeKeycapArea: keycapArea)
+    }
+
+    @objc private func deleteShiftChanged(_ sender: UISegmentedControl) {
+        guard KeyboardDeleteShiftPosition.allCases.indices.contains(sender.selectedSegmentIndex) else { return }
+        deleteShiftPosition = KeyboardDeleteShiftPosition.allCases[sender.selectedSegmentIndex]
+        delegate?.settingsPanel(self, didChangeDeleteShiftPosition: deleteShiftPosition)
     }
 
     private func feedbackRow() -> UIView {

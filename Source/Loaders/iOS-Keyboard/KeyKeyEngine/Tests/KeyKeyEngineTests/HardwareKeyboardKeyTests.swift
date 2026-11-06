@@ -33,6 +33,7 @@ struct HardwareKeyboardKeyTests {
         #expect(StandardHardwareKeyMapper.key(forHIDUsage: 0x28) == .returnKey)
         #expect(StandardHardwareKeyMapper.key(forHIDUsage: 0x58) == .returnKey)
         #expect(StandardHardwareKeyMapper.key(forHIDUsage: 0x2A) == .backspace)
+        #expect(StandardHardwareKeyMapper.key(forHIDUsage: 0x4C) == .forwardDelete)
         #expect(StandardHardwareKeyMapper.key(forHIDUsage: 0x4B) == .pageUp)
         #expect(StandardHardwareKeyMapper.key(forHIDUsage: 0x52) == .upArrow)
         #expect(StandardHardwareKeyMapper.key(forHIDUsage: 0xE0) == nil)

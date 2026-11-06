@@ -152,7 +152,7 @@ public final class GuanyinmaInputEngine: InputEngine {
     private static func layoutName(_ layout: BopomofoKeyboardLayout) -> String { layout == .hsu ? "hsu" : "standard" }
     private static func smartConfiguration(hardware: Bool, space: Bool) -> [String: Any] {
         ["max_completed_syllables": 10, "shift_at_limit": !hardware,
-         "selection_returns_to_end": !hardware, "candidate_cursor_at_end": hardware,
+         "selection_returns_to_end": !hardware, "candidate_cursor_at_end": false,
          "space_opens_candidates": space, "candidate_selection_keys": "123456789"]
     }
     private var smartConfiguration: [String: Any] {
@@ -304,9 +304,22 @@ public final class GuanyinmaInputEngine: InputEngine {
     }
     @discardableResult public func selectTouchSmartCell(_ index: Int) -> Bool {
         guard isTouchSmartComposition, snapshot.readings.indices.contains(index) else { return false }
-        if snapshot.candidateSpans.first?.start == index, !snapshot.candidates.isEmpty { _ = operate(["type": "close_candidates"]) }
+        if snapshot.candidateSpans.first?.start == index, !snapshot.candidates.isEmpty { _ = closeTouchSmartCandidates() }
         else { _ = operate(["type": "open_candidates", "index": index]) }
         return lastError == nil
+    }
+    /// Dismiss touch candidates without confirming or clearing composition.
+    /// Escape resets touch composition and is not the candidate-close action.
+    @discardableResult public func closeTouchSmartCandidates() -> KeyboardInput.Result {
+        guard isTouchSmartComposition, !displayedCandidates.isEmpty else { return .update }
+        let returnToEnd = overlay == .none && !snapshot.candidates.isEmpty
+            && snapshot.reading.isEmpty
+        clearOverlay()
+        let result = operate(["type": "close_candidates"])
+        guard returnToEnd, lastError == nil, result == .update else { return result }
+        // Candidate targeting leaves the core cursor at that reading. Touch
+        // editing resumes at the still-editable tail after cancelling the list.
+        return operate(["type": "set_cursor", "index": snapshot.readings.count])
     }
     private func setMode(_ value: KeyboardInput.InputMode) -> KeyboardInput.Result {
         clearOverlay(); mode = value
@@ -397,7 +410,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         if !snapshot.reading.isEmpty { return key("space") }
         if !snapshot.candidates.isEmpty { changePage(by: 1); return .update }
         guard !snapshot.readings.isEmpty else { return .update }
-        let index = hardwareSmartEditing ? max(0, snapshot.readingCursor - 1) : snapshot.readings.count - 1
+        let index = hardwareSmartEditing ? min(snapshot.readingCursor, snapshot.readings.count - 1) : snapshot.readings.count - 1
         return operate(["type": "open_candidates", "index": index])
     }
     @discardableResult public func enter() -> KeyboardInput.Result {
@@ -414,6 +427,12 @@ public final class GuanyinmaInputEngine: InputEngine {
         if overlay != .none { clearOverlay() }
         if !hasComposition { return .delete }
         return key("backspace")
+    }
+    @discardableResult public func deleteForward() -> KeyboardInput.Result {
+        clearOverlay()
+        // The App owns committed text; Rust only edits an active composition.
+        // Its existing candidate/pending-reading rules may reject this key.
+        return hasComposition ? key("delete") : .update
     }
     @discardableResult public func escape() -> KeyboardInput.Result {
         if overlay != .none { clearOverlay(); return .update }
@@ -467,6 +486,41 @@ public final class GuanyinmaInputEngine: InputEngine {
         }
         return operate(["type": "finish"])
     }
+    /// Explicit keyboard dismissal confirms converted text and cancels only
+    /// unfinished phonetics/roots. Other handoff callers keep their own policy.
+    @discardableResult public func finishCompositionForKeyboardDismissal() -> KeyboardInput.Result {
+        clearOverlay()
+        guard hasComposition else { lastError = nil; return .update }
+        if chineseInputMethod == .smart {
+            if !snapshot.reading.isEmpty {
+                // A core Escape closes an open candidate list first. Close it
+                // explicitly so the single Escape below cancels the reading.
+                for operation in [["type": "close_candidates"], ["type": "key", "key": "escape"]] {
+                    let result = operate(operation)
+                    guard lastError == nil else { return result }
+                    guard result == .update else {
+                        // Never swallow unexpected host effects or replay them.
+                        lastError = GuanyinmaInputError(message: "收鍵盤前取消讀音時產生非預期輸出。")
+                        return result
+                    }
+                }
+                guard snapshot.reading.isEmpty else {
+                    lastError = GuanyinmaInputError(message: "收鍵盤前無法取消未完成讀音。")
+                    return .update
+                }
+            }
+            return operate(["type": "finish"])
+        }
+        if chineseInputMethod == .traditional && snapshot.candidates.isEmpty {
+            return operate(["type": "reset"])
+        }
+        // The existing semantic operation preserves a completed Traditional
+        // highlight without selection learning and discards unselected roots,
+        // including table prefix previews. It never completes a new reading.
+        return operate(["type": "finish_composition", "complete_reading": false,
+                        "select_highlighted_candidate": true, "discard_table_code": true])
+    }
+
     private func floorMod(_ value: Int, _ size: Int) -> Int { ((value % size) + size) % size }
 
     /// Replace the FE-published phrase snapshot atomically without importing

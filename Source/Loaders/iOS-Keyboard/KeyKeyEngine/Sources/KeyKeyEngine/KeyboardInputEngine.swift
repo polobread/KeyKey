@@ -106,8 +106,10 @@ public final class KeyboardInputEngine: InputEngine {
     @discardableResult public func commitHardwarePunctuation(_ punctuation: String) -> KeyboardInput.Result { perform { $0.commitHardwarePunctuation(punctuation) } }
     @discardableResult public func space(fullWidth: Bool = false) -> KeyboardInput.Result { perform { $0.space(fullWidth: fullWidth) } }
     @discardableResult public func openSmartCandidates() -> KeyboardInput.Result { perform { $0.openSmartCandidates() } }
+    @discardableResult public func closeTouchSmartCandidates() -> KeyboardInput.Result { perform { $0.closeTouchSmartCandidates() } }
     @discardableResult public func enter() -> KeyboardInput.Result { perform { $0.enter() } }
     @discardableResult public func backspace() -> KeyboardInput.Result { perform { $0.backspace() } }
+    @discardableResult public func deleteForward() -> KeyboardInput.Result { perform { $0.deleteForward() } }
     @discardableResult public func escape() -> KeyboardInput.Result { perform { $0.escape() } }
     @discardableResult public func selectDisplayedCandidate(_ index: Int) -> KeyboardInput.Result { perform { $0.selectDisplayedCandidate(index) } }
     @discardableResult public func selectHighlightedCandidate() -> KeyboardInput.Result { perform { $0.selectHighlightedCandidate() } }
@@ -116,4 +118,10 @@ public final class KeyboardInputEngine: InputEngine {
     @discardableResult public func moveSmartCompositionCursor(by delta: Int) -> Bool { performSelection { $0.moveSmartCompositionCursor(by: delta) } }
     public func reset() { performUpdate { $0.reset() } }
     @discardableResult public func finishCompositionForInputHandoff() -> KeyboardInput.Result { perform { $0.finishCompositionForInputHandoff() } }
+    /// Success belongs to this handoff, independently of an unrelated phrase
+    /// publication error or a later host acknowledgement/refresh.
+    public func finishCompositionForKeyboardDismissal() -> (result: KeyboardInput.Result, succeeded: Bool) {
+        let result = perform { $0.finishCompositionForKeyboardDismissal() }
+        return (result, backend.lastError == nil)
+    }
 }

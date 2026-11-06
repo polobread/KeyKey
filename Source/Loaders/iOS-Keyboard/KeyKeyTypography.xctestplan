@@ -1,0 +1,33 @@
+{
+  "configurations": [
+    {
+      "id": "C7700000-0000-0000-0000-000000000106",
+      "name": "Typography manual device matrix",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "codeCoverage": false,
+    "targetForVariableExpansion": {
+      "containerPath": "container:KeyKeyiOS.xcodeproj",
+      "identifier": "C7700000000000000000001A",
+      "name": "chichi77 KeyKey"
+    }
+  },
+  "testTargets": [
+    {
+      "parallelizable": false,
+      "target": {
+        "containerPath": "container:KeyKeyiOS.xcodeproj",
+        "identifier": "C77000000000000000000048",
+        "name": "KeyKeyUITests"
+      },
+      "selectedTests": [
+        "KeyKeyUITests/testTypographyMatrixPortrait()",
+        "KeyKeyUITests/testTypographyMatrixLandscape()",
+        "KeyKeyUITests/testTypographyLandscapeScreenCaptures()"
+      ]
+    }
+  ],
+  "version": 1
+}

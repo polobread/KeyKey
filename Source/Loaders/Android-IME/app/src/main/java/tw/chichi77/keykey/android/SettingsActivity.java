@@ -43,6 +43,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
     private Button supporterButton;
     private SupporterBillingManager supporterBillingManager;
     private boolean updatingCollections;
+    private CheckBox touchBottomSpace;
+    private TextView touchBottomSpaceDescription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -294,6 +296,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                             android.widget.AdapterView<?> parent) {}
                 });
         appearanceContent.addView(candidateColor, matchWrap(dp(0), dp(20)));
+        addKeyboardLayoutSettings(appearanceContent);
 
         TextView keyboardSizeTitle = new TextView(this);
         keyboardSizeTitle.setText(R.string.keyboard_size_title);
@@ -313,13 +316,15 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_landscape,
                 KeyboardSizeSettings.landscapePercent(this), false);
 
-        CheckBox touchBottomSpace = bottomSpaceCheckBox(
+        touchBottomSpace = bottomSpaceCheckBox(
                 KeyboardBottomSpaceSettings.touchEnabled(this));
         touchBottomSpace.setOnCheckedChangeListener((button, checked) ->
                 KeyboardBottomSpaceSettings.setTouchEnabled(SettingsActivity.this, checked));
         appearanceContent.addView(touchBottomSpace, matchWrap(dp(8), dp(8)));
-        appearanceContent.addView(bottomSpaceDescription(R.string.touch_bottom_space_description),
+        touchBottomSpaceDescription = bottomSpaceDescription(R.string.touch_bottom_space_description);
+        appearanceContent.addView(touchBottomSpaceDescription,
                 matchWrap(dp(0), dp(16)));
+        updateTouchBottomSpaceAvailability();
 
         LinearLayout hardwareContent = addSettingsGroup(content, savedInstanceState,
                 "hardware", R.string.settings_group_hardware,
@@ -533,6 +538,98 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             this.body = body;
             this.summary = summary;
         }
+    }
+
+    private void addKeyboardLayoutSettings(LinearLayout parent) {
+        var profiles = KeyboardLayoutProfile.available();
+        var areas = KeyboardLayoutProfile.KeycapArea.values();
+        var fonts = KeyboardLayoutProfile.FontSize.values();
+        var positions = KeyboardLayoutProfile.DeletePosition.values();
+        addLayoutOptionLabel(parent, R.string.keyboard_layout_profile);
+        Spinner profile = layoutOptionSpinner(parent, R.string.keyboard_layout_profile,
+                profiles.stream().map(item -> item.displayName).toArray(String[]::new));
+        profile.setSelection(profiles.indexOf(KeyboardLayoutProfileSettings.profile(this)));
+        addLayoutOptionLabel(parent, R.string.keyboard_keycap_area);
+        Spinner area = layoutOptionSpinner(parent, R.string.keyboard_keycap_area,
+                new String[] {getString(R.string.keyboard_spacing_small), getString(R.string.keyboard_spacing_medium),
+                        getString(R.string.keyboard_spacing_large)});
+        area.setSelection(java.util.Arrays.asList(areas).indexOf(KeyboardLayoutProfileSettings.keycapArea(this)));
+        addLayoutOptionLabel(parent, R.string.keyboard_font_size);
+        Spinner font = layoutOptionSpinner(parent, R.string.keyboard_font_size,
+                new String[] {getString(R.string.keyboard_font_normal), getString(R.string.keyboard_font_medium),
+                        getString(R.string.keyboard_font_large), getString(R.string.keyboard_font_extra_large)});
+        font.setSelection(java.util.Arrays.asList(fonts).indexOf(KeyboardLayoutProfileSettings.fontSize(this)));
+        addLayoutOptionLabel(parent, R.string.keyboard_delete_position);
+        Spinner position = layoutOptionSpinner(parent, R.string.keyboard_delete_position,
+                new String[] {getString(R.string.keyboard_delete_above), getString(R.string.keyboard_delete_left)});
+        position.setSelection(java.util.Arrays.asList(positions).indexOf(KeyboardLayoutProfileSettings.deletePosition(this)));
+        profile.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> adapter, View view, int index, long id) {
+                KeyboardLayoutProfile selected = profiles.get(index);
+                KeyboardLayoutProfileSettings.setProfile(SettingsActivity.this, selected);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> adapter) {}
+        });
+        area.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> adapter, View view, int index, long id) {
+                KeyboardLayoutProfileSettings.setKeycapArea(SettingsActivity.this, areas[index]);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> adapter) {}
+        });
+        font.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> adapter, View view, int index, long id) {
+                KeyboardLayoutProfileSettings.setFontSize(SettingsActivity.this, fonts[index]);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> adapter) {}
+        });
+        position.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> adapter, View view, int index, long id) {
+                KeyboardLayoutProfileSettings.setDeletePosition(SettingsActivity.this, positions[index]);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> adapter) {}
+        });
+        CheckBox integrated = new CheckBox(this);
+        integrated.setText(R.string.integrated_bottom_controls_enabled);
+        integrated.setTextSize(16);
+        integrated.setMinHeight(dp(48));
+        integrated.setChecked(KeyboardBottomControlsSettings.enabled(this));
+        integrated.setOnCheckedChangeListener((button, checked) -> {
+            KeyboardBottomControlsSettings.setEnabled(this, checked);
+            updateTouchBottomSpaceAvailability();
+        });
+        parent.addView(integrated, matchWrap(dp(0), dp(8)));
+        parent.addView(bottomSpaceDescription(R.string.integrated_bottom_controls_description),
+                matchWrap(dp(0), dp(12)));
+        TextView description = new TextView(this);
+        description.setText(R.string.keyboard_layout_profile_description);
+        description.setTextSize(14);
+        description.setTextColor(Color.GRAY);
+        parent.addView(description, matchWrap(dp(0), dp(24)));
+    }
+
+    private void updateTouchBottomSpaceAvailability() {
+        if (touchBottomSpace == null) return;
+        boolean enabled = !KeyboardBottomControlsSettings.enabled(this);
+        setDependentControlEnabled(touchBottomSpace, enabled);
+        setDependentControlEnabled(touchBottomSpaceDescription, enabled);
+    }
+
+    private void addLayoutOptionLabel(LinearLayout parent, int text) {
+        TextView label = new TextView(this);
+        label.setText(text);
+        label.setTextSize(16);
+        label.setTextColor(Color.DKGRAY);
+        parent.addView(label, matchWrap(dp(0), dp(4)));
+    }
+
+    private Spinner layoutOptionSpinner(LinearLayout parent, int label, String[] entries) {
+        Spinner spinner = new Spinner(this);
+        spinner.setContentDescription(getString(label));
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, entries);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        parent.addView(spinner, matchWrap(dp(0), dp(12)));
+        return spinner;
     }
 
     private SettingsGroup addSettingsGroup(LinearLayout root, Bundle savedState,

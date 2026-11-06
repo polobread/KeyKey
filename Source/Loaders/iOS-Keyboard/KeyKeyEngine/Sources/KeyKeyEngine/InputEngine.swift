@@ -51,8 +51,10 @@ public protocol InputEngine: AnyObject {
     @discardableResult func commitHardwarePunctuation(_ punctuation: String) -> KeyboardInput.Result
     @discardableResult func space(fullWidth: Bool) -> KeyboardInput.Result
     @discardableResult func openSmartCandidates() -> KeyboardInput.Result
+    @discardableResult func closeTouchSmartCandidates() -> KeyboardInput.Result
     @discardableResult func enter() -> KeyboardInput.Result
     @discardableResult func backspace() -> KeyboardInput.Result
+    @discardableResult func deleteForward() -> KeyboardInput.Result
     @discardableResult func escape() -> KeyboardInput.Result
     @discardableResult func selectDisplayedCandidate(_ index: Int) -> KeyboardInput.Result
     @discardableResult func selectHighlightedCandidate() -> KeyboardInput.Result

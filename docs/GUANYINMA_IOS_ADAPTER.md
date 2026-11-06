@@ -8,9 +8,22 @@ KeyKey 的 iOS 鍵盤 extension 與容器 App 實體鍵盤編輯器固定使用 
 
 UIKit 的欄位政策、鍵盤面、按鍵辨識、候選窗、符號表、UTF-16 座標和 document proxy 仍留在 FE。Guanyinma 負責四種輸入法的解析、組句、排序、選字、學習與資料交易。`BopomofoKeyboardLayout` 與 `StandardBopomofoLayout` 僅保留鍵帽、按鍵分類與 FE 標點對應，沒有注音狀態機或許氏消歧。
 
-`KeyboardInputEngine` 保留前次 host effects 是否已被原宿主接受的狀態。FE 只有在文字／刪除／Return 成功套用後才呼叫 `acknowledgeHostEffects()`；詞庫 publication 同步等待組字、候選與待送效果都完成，不重播按鍵或宿主 effects。觸控組字使用既有 `TouchSmartHostTextState` 與 `DocumentMutationGuard`；硬體編輯器使用宿主 composing range 與 UTF-16 caret。生命週期的重複回呼不得重複送字。
+`KeyboardInputEngine` 保留前次 host effects 是否已被原宿主接受的狀態。FE 只有在文字／刪除／Return 成功套用後才呼叫 `acknowledgeHostEffects()`；詞庫 publication 同步等待組字、候選與待送效果都完成，不重播按鍵或宿主 effects。觸控組字使用既有 `TouchSmartHostTextState` 與 `DocumentMutationGuard`；App 實體編輯器使用自有 `committedText`、插入游標與核心組字重畫輸出，再以 UTF-16 caret 定位游標；輸出 UITextView 不可編輯／選取，不使用原生 marked-text range。生命週期的重複回呼不得重複送字。
 
 觸控採 `touch` 行為：十音節達上限時擠出完整前詞段，保留九個可修改音節。App 實體鍵盤編輯器採 `desktop`：第十一個完整音節才擠字。核心不判斷 iOS 或裝置種類；FE 提供行為設定、候選選字鍵、空白鍵選字、字表選項及標準／許氏配置。
+
+## App 實體選字與右側刪除
+
+實體好打注音固定 `candidate_cursor_at_end = false`、`selection_returns_to_end = false`，
+`openSmartCandidates()` 明確取 `min(readingCursor, readings.count - 1)`，與舊 iOS／macOS 的右側目標一致。
+選字後停在所選詞末端；觸控仍在選字後回到可編輯句尾。
+
+`StandardHardwareKeyMapper` 將 HID `0x4C` 映射為 `forwardDelete`，經共用 `InputEngine.deleteForward()`／wrapper 送 Rust 既有 Delete。
+有組字時，只有核心修改讀音／候選狀態；沒有組字時，controller 在自己的 `committedText` 插入位置右刪一個 Swift Character。
+刪除前先記錄是否有組字，避免核心刪空後又誤刪後方已確認文字。空組字的 engine Delete 回傳 update，不借用向左刪除的 host effect。
+
+Forward Delete 與 Backspace 都追蹤按住的 HID usage，避免系統重複 Down 和前端計時器同時刪除；放開、取消、resign、離開 App 或鍵盤斷線會停止對應計時器。
+這是 App 前景編輯器接合，不代表 extension 能接管其他 App 的外接鍵盤。
 
 ## 候選字型與關聯詞
 
@@ -77,6 +90,8 @@ xcodebuild -project Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj \
 ```
 
 `MemoryProbe` 明確選用：設定 `KEYKEY_IOS_MEMORY_PROBE=1` 並指定該 suite 才執行真 Rust adapter 的長迴圈記憶體量測；一般測試不執行。容器購買流程另由既有 package 使用同一 host wrapper 測試。
+
+App 的右側候選與 Forward Delete UI 回歸使用 `run-simulator-tests.sh --functional-host`；其中 Delete／Return 由 host-only Simulator HID helper 送完整按放事件，UI 再核對實際文字結果。工具範圍與直接 Xcode 用法見 [iOS README](../Source/Loaders/iOS-Keyboard/README.md#ui-測試分流)，行為與驗證證據見 [iOS 實體編輯器調查](IOS_PHYSICAL_KEYBOARD_BEHAVIOR_REVIEW.md)。
 
 完整核心演算法與六平台 Rust／C consumer 矩陣只由 `guanyinma-core.yml` 負責。iOS workflow 直接建置核心並只跑少量 FE smoke，不重複核心完整矩陣。Swift host 測試、iOS Simulator／device 交叉編譯、無視窗 iOS 核心 runtime 及真正 keyboard extension 宿主是不同證據層級。
 

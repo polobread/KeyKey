@@ -6,8 +6,13 @@ import Testing
 struct HsuLayoutTests {
     @Test("Hsu keycaps stay English while Standard retains its Bopomofo glyphs")
     func englishKeycaps() {
-        for key in KeyboardLayout.bopomofoRows.flatMap({ $0 }) {
-            #expect(KeyboardLayout.bopomofoGlyph(for: key, layout: .hsu) == nil)
+        for profile in KeyboardLayoutProfile.available {
+            for orientation in KeyboardLayoutProfile.Orientation.allCases {
+                let rows = profile.rows(orientation: orientation, plane: .bopomofo, shifted: false)
+                for key in rows.flatMap({ $0 }) {
+                    #expect(KeyboardLayout.bopomofoGlyph(for: key, layout: .hsu) == nil)
+                }
+            }
         }
         #expect(KeyboardLayout.bopomofoGlyph(for: "j") == "ㄨ")
         #expect(KeyboardLayout.caption(for: "j", mode: .bopomofo) == "j")

@@ -5,7 +5,7 @@ import UIKit
 @MainActor
 fileprivate protocol HardwareKeyboardCaptureViewDelegate: AnyObject {
     func captureView(_ view: HardwareKeyboardCaptureView, didPress key: UIKey) -> Bool
-    func captureViewDidReleaseBackspace(_ view: HardwareKeyboardCaptureView)
+    func captureView(_ view: HardwareKeyboardCaptureView, didReleaseDeletionKey usage: Int)
 }
 
 /// A non-text responder receives raw hardware events without involving the
@@ -13,19 +13,21 @@ fileprivate protocol HardwareKeyboardCaptureViewDelegate: AnyObject {
 /// to `super`, which prevents the same key from also reaching UIKit text input.
 fileprivate final class HardwareKeyboardCaptureView: UIView {
     weak var keyDelegate: HardwareKeyboardCaptureViewDelegate?
-    private var backspaceHeld = false
+    private var heldDeletionKeys: Set<Int> = []
 
     override var canBecomeFirstResponder: Bool { true }
 
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         var unhandled = Set<UIPress>()
         for press in presses {
-            if press.key?.keyCode.rawValue == 0x2A, backspaceHeld { continue }
+            if let usage = press.key.map({ Int($0.keyCode.rawValue) }),
+               heldDeletionKeys.contains(usage) { continue }
             guard let key = press.key, keyDelegate?.captureView(self, didPress: key) == true else {
                 unhandled.insert(press)
                 continue
             }
-            if key.keyCode.rawValue == 0x2A { backspaceHeld = true }
+            let usage = Int(key.keyCode.rawValue)
+            if usage == 0x2A || usage == 0x4C { heldDeletionKeys.insert(usage) }
         }
         if !unhandled.isEmpty {
             super.pressesBegan(unhandled, with: event)
@@ -33,33 +35,38 @@ fileprivate final class HardwareKeyboardCaptureView: UIView {
     }
 
     override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let handled = releaseBackspace(in: presses)
+        let handled = releaseDeletionKeys(in: presses)
         let unhandled = presses.subtracting(handled)
         if !unhandled.isEmpty { super.pressesEnded(unhandled, with: event) }
     }
 
     override func pressesCancelled(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let handled = releaseBackspace(in: presses)
+        let handled = releaseDeletionKeys(in: presses)
         let unhandled = presses.subtracting(handled)
         if !unhandled.isEmpty { super.pressesCancelled(unhandled, with: event) }
     }
 
-    private func releaseBackspace(in presses: Set<UIPress>) -> Set<UIPress> {
-        guard backspaceHeld,
-              presses.contains(where: { $0.key?.keyCode.rawValue == 0x2A }) else { return [] }
-        backspaceHeld = false
-        keyDelegate?.captureViewDidReleaseBackspace(self)
-        return Set(presses.filter { $0.key?.keyCode.rawValue == 0x2A })
+    private func releaseDeletionKeys(in presses: Set<UIPress>) -> Set<UIPress> {
+        var handled = Set<UIPress>()
+        for press in presses {
+            guard let key = press.key else { continue }
+            let usage = Int(key.keyCode.rawValue)
+            guard heldDeletionKeys.remove(usage) != nil else { continue }
+            keyDelegate?.captureView(self, didReleaseDeletionKey: usage)
+            handled.insert(press)
+        }
+        return handled
     }
 
-    func cancelBackspaceHold() {
-        guard backspaceHeld else { return }
-        backspaceHeld = false
-        keyDelegate?.captureViewDidReleaseBackspace(self)
+    func cancelDeletionHolds() {
+        for usage in heldDeletionKeys {
+            keyDelegate?.captureView(self, didReleaseDeletionKey: usage)
+        }
+        heldDeletionKeys.removeAll()
     }
 
     override func resignFirstResponder() -> Bool {
-        cancelBackspaceHold()
+        cancelDeletionHolds()
         return super.resignFirstResponder()
     }
 
@@ -184,6 +191,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     private let escapeButton = UIButton(configuration: .tinted())
     private let backspaceButton = UIButton(configuration: .tinted())
     private let hardwareBackspaceRepeater = BackspaceRepeater()
+    private let hardwareForwardDeleteRepeater = BackspaceRepeater()
     private let touchBackspaceRepeater = BackspaceRepeater()
     private var backspaceTouchActive = false
     private let enterButton = UIButton(configuration: .tinted())
@@ -286,7 +294,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        stopBackspaceRepeats()
+        stopDeletionRepeats()
         _ = captureView.resignFirstResponder()
     }
 
@@ -1016,14 +1024,15 @@ final class HardwareKeyboardEditorViewController: UIViewController {
     }
 
     @objc private func applicationWillResignActive(_ notification: Notification) {
-        stopBackspaceRepeats()
+        stopDeletionRepeats()
     }
 
-    private func stopBackspaceRepeats() {
+    private func stopDeletionRepeats() {
         hardwareBackspaceRepeater.stop()
+        hardwareForwardDeleteRepeater.stop()
         touchBackspaceRepeater.stop()
         backspaceTouchActive = false
-        captureView.cancelBackspaceHold()
+        captureView.cancelDeletionHolds()
     }
 
     @objc private func keyboardConnectionChanged() {
@@ -1031,7 +1040,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         if GCKeyboard.coalesced != nil {
             captureView.becomeFirstResponder()
         } else {
-            captureView.cancelBackspaceHold()
+            captureView.cancelDeletionHolds()
         }
     }
 
@@ -1219,6 +1228,25 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         committedText.removeSubrange(start..<end)
         insertionCharacterIndex -= 1
         preferredCursorX = nil
+    }
+
+    private func deleteCommittedCharacterForward() {
+        guard insertionCharacterIndex < committedText.count else { return }
+        let start = committedText.index(
+            committedText.startIndex, offsetBy: insertionCharacterIndex
+        )
+        committedText.removeSubrange(start..<committedText.index(after: start))
+        preferredCursorX = nil
+    }
+
+    private func pressForwardDelete() {
+        guard let engine else { return }
+        let hadComposition = engine.hasComposition
+        let result = engine.deleteForward()
+        // A Delete which empties the engine must not also remove the next
+        // committed character. The engine owns all edits while composing.
+        if !hadComposition { deleteCommittedCharacterForward() }
+        apply(result)
     }
 
     private func apply(_ result: KeyboardInput.Result, widenASCII: Bool = false) {
@@ -1526,7 +1554,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 
     @objc private func showHelp() {
         let smartHelp = engine?.bopomofoCompositionMode == .smart
-            ? "好打注音：連續輸入注音；滿十個音節後，下一個音節會擠出最前面的完整詞組。←／→ 移動組字游標，↓ 開啟游標處的字詞候選；開啟「使用空白鍵選字」後也可按 Space，開啟後 ↑／↓ 與 1–9 選字詞；Enter 確定整句。\n"
+            ? "好打注音：連續輸入注音；滿十個音節後，下一個音節會擠出最前面的完整詞組。←／→ 移動組字游標，↓ 開啟游標右側的字詞候選（句尾為最後一字）；開啟「使用空白鍵選字」後也可按 Space，開啟後 ↑／↓ 與 1–9 選字詞；Enter 確定整句。\n"
             : ""
         let message = """
         \(smartHelp)
@@ -1543,6 +1571,7 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         清除全文：Ctrl+K／⌘K（Enter 確認、Esc 取消）
         一般候選：↑／↓移動，←／→換頁
         無組字及候選時：方向鍵移動插入游標
+        Backspace 刪除游標左側；Delete 刪除右側，按住可連續刪除
         """
         let alert = UIAlertController(
             title: "實體鍵盤操作", message: message, preferredStyle: .alert
@@ -1709,8 +1738,9 @@ final class HardwareKeyboardEditorViewController: UIViewController {
 }
 
 extension HardwareKeyboardEditorViewController: HardwareKeyboardCaptureViewDelegate {
-    fileprivate func captureViewDidReleaseBackspace(_ view: HardwareKeyboardCaptureView) {
-        hardwareBackspaceRepeater.stop()
+    fileprivate func captureView(_ view: HardwareKeyboardCaptureView, didReleaseDeletionKey usage: Int) {
+        if usage == 0x2A { hardwareBackspaceRepeater.stop() }
+        if usage == 0x4C { hardwareForwardDeleteRepeater.stop() }
     }
 
     fileprivate func captureView(
@@ -1800,6 +1830,9 @@ extension HardwareKeyboardEditorViewController: HardwareKeyboardCaptureViewDeleg
                 guard let self, let engine = self.engine else { return }
                 self.apply(engine.backspace())
             }
+        case .forwardDelete:
+            pressForwardDelete()
+            hardwareForwardDeleteRepeater.start { [weak self] in self?.pressForwardDelete() }
         case .tab:
             apply(engine.handleSoftKey("\t"), widenASCII: true)
         case .space:

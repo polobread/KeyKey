@@ -1,0 +1,37 @@
+{
+  "configurations": [
+    {
+      "id": "C7700000-0000-0000-0000-000000000105",
+      "name": "Duo Current Pose Diagnostics",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "codeCoverage": false,
+    "targetForVariableExpansion": {
+      "containerPath": "container:KeyKeyiOS.xcodeproj",
+      "identifier": "C7700000000000000000001A",
+      "name": "chichi77 KeyKey"
+    }
+  },
+  "testTargets": [
+    {
+      "parallelizable": false,
+      "target": {
+        "containerPath": "container:KeyKeyiOS.xcodeproj",
+        "identifier": "C77000000000000000000048",
+        "name": "KeyKeyUITests"
+      },
+      "selectedTests": [
+        "KeyKeyUITests/test00KeyboardOptInIsConfigured()",
+        "KeyKeyUITests/testFullProfileLayoutAtCurrentPose()",
+        "KeyKeyUITests/testFourFontLevelsClearCompositionAndCandidatesAtCurrentPose()",
+        "KeyKeyUITests/testNativeKeyboardSwitchAtCurrentPoseWithoutExtension()",
+        "KeyKeyUITests/testSmartCandidateCancellationReturnsEditingToTailAtCurrentPose()",
+        "KeyKeyUITests/testSplitSmartNineTenSyllableBoundaryAtCurrentPose()",
+        "KeyKeyUITests/testSplitSmartPagingAtCurrentPoseKeepsUnfinishedReading()"
+      ]
+    }
+  ],
+  "version": 1
+}

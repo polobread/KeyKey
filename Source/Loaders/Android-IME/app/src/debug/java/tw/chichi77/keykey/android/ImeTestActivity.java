@@ -214,14 +214,31 @@ public final class ImeTestActivity extends Activity {
                 android.view.inputmethod.InputConnection connection =
                         super.onCreateInputConnection(outAttrs);
                 String behavior = getIntent().getStringExtra("cursorUpdates");
-                if (connection == null || !("silent".equals(behavior)
-                        || "reject".equals(behavior))) return connection;
+                if (connection == null || (!("silent".equals(behavior)
+                        || "reject".equals(behavior))
+                        && !getIntent().hasExtra("restartExtraction"))) return connection;
                 // Debug fault injection: an editor that never reports cursor geometry.
                 return new android.view.inputmethod.InputConnectionWrapper(connection, false) {
                     @Override
                     public boolean requestCursorUpdates(int mode) {
+                        if (!("silent".equals(behavior) || "reject".equals(behavior))) {
+                            return super.requestCursorUpdates(mode);
+                        }
                         return mode == 0 ? super.requestCursorUpdates(0)
                                 : "silent".equals(behavior);
+                    }
+
+                    @Override
+                    public android.view.inputmethod.ExtractedText getExtractedText(
+                            android.view.inputmethod.ExtractedTextRequest request, int flags) {
+                        String extraction = getIntent().getStringExtra("restartExtraction");
+                        if ("unavailable".equals(extraction)) return null;
+                        android.view.inputmethod.ExtractedText extracted = super.getExtractedText(request, flags);
+                        if ("mismatch".equals(extraction) && extracted != null && extracted.text != null) {
+                            // Change only this response, never the editor's actual text.
+                            extracted.text = "?".repeat(extracted.text.length());
+                        }
+                        return extracted;
                     }
 
                     @Override

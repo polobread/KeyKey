@@ -79,8 +79,10 @@ final class HostInputEngine implements InputEngine {
     @Override public void setHardwareSmartEditing(boolean enabled) { update(engine -> engine.setHardwareSmartEditing(enabled)); }
     @Override public InputEngine.Result space() { return perform(InputEngine::space); }
     @Override public InputEngine.Result openSmartCandidates() { return perform(InputEngine::openSmartCandidates); }
+    @Override public InputEngine.Result closeTouchSmartCandidates() { return perform(InputEngine::closeTouchSmartCandidates); }
     @Override public InputEngine.Result enter() { return perform(InputEngine::enter); }
     @Override public InputEngine.Result backspace() { return perform(InputEngine::backspace); }
+    @Override public InputEngine.Result deleteForward() { return perform(InputEngine::deleteForward); }
     @Override public InputEngine.Result escape() { return perform(InputEngine::escape); }
     @Override public InputEngine.Result selectDisplayedCandidate(int index) { return perform(engine -> engine.selectDisplayedCandidate(index)); }
     @Override public InputEngine.Result selectHighlightedCandidate() { return perform(InputEngine::selectHighlightedCandidate); }
@@ -113,6 +115,7 @@ final class HostInputEngine implements InputEngine {
     @Override public boolean isShowingSmartCandidates() { return backend().isShowingSmartCandidates(); }
     @Override public InputEngine.Result finishCompositionForModeSwitch() { return perform(InputEngine::finishCompositionForModeSwitch); }
     @Override public InputEngine.Result finishCompositionForInputHandoff() { return perform(InputEngine::finishCompositionForInputHandoff); }
+    @Override public InputEngine.Result finishCompositionForKeyboardHide() { return perform(InputEngine::finishCompositionForKeyboardHide); }
     @Override public InputEngine.Result refreshUserData() { return perform(InputEngine::refreshUserData); }
     @Override public boolean restoreInputModeState(InputEngineModeState state) { return select(engine -> engine.restoreInputModeState(state)); }
     @Override public void close() { if (!closed) { closed = true; pendingHostEffects = false; rust.close(); } }
