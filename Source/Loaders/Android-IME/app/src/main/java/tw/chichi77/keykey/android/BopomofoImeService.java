@@ -58,6 +58,9 @@ public final class BopomofoImeService extends InputMethodService
     private final Set<Integer> pressedHardwareShortcutKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedCandidateKeys = new LinkedHashSet<>();
     private final Set<Integer> pressedNavigationKeys = new LinkedHashSet<>();
+    // Sending a plain Enter may change editors before the physical KeyUp.
+    // Keep its ownership across input-session callbacks until that KeyUp arrives.
+    private final Set<Integer> pressedEnterKeys = new LinkedHashSet<>();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final BackspaceRepeater hardwareBackspaceRepeater =
             new BackspaceRepeater(mainHandler);
@@ -82,6 +85,7 @@ public final class BopomofoImeService extends InputMethodService
     private boolean captionHideRequested;
     private boolean updatingBottomControls;
     private boolean destroying;
+    private boolean rebuildingForConfiguration;
     private WindowInsetsController.OnControllableInsetsChangedListener captionControlListener;
 
     @Override
@@ -131,6 +135,9 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public View onCreateInputView() {
+        // InputMethodService recreates this view during configuration changes.
+        // Dispose the previous window before replacing its only owner reference.
+        hideFloatingCandidates();
         keyboardView = new BopomofoKeyboardView(this);
         keyboardView.setListener(this);
         keyboardView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -193,9 +200,18 @@ public final class BopomofoImeService extends InputMethodService
         boolean layoutChanged = !fieldPolicy.hasSameLayout(nextPolicy);
         fieldPolicy = nextPolicy;
         if (engine != null) {
-            if (!restarting || hostTransactionFailed) {
+            boolean lostMarkedRange = restarting && !hostTransactionFailed
+                    && !restoreMarkedComposition();
+            boolean releasedRange = true;
+            if (lostMarkedRange) {
+                // The new connection cannot prove ownership of the old range.
+                // Keep the host text, and never replay the old engine's commit.
+                InputConnection connection = getCurrentInputConnection();
+                releasedRange = connection != null && connection.finishComposingText();
+            }
+            if (!restarting || hostTransactionFailed || lostMarkedRange) {
                 abandonHostEffects();
-                hostTransactionFailed = false;
+                hostTransactionFailed = !releasedRange;
                 appliedComposingText = "";
                 touchHostText.reset();
                 composingRegionStart = -1;
@@ -208,6 +224,38 @@ public final class BopomofoImeService extends InputMethodService
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
+    }
+
+    /** A restarted InputConnection may have finished its old composing span. */
+    private boolean restoreMarkedComposition() {
+        if (appliedComposingText.isEmpty() || engine.isTouchSmartComposition()
+                || !touchHostText.editableText().isEmpty()) return true;
+        InputConnection connection = getCurrentInputConnection();
+        if (connection == null || composingRegionStart < 0) return false;
+        ExtractedText current = connection.getExtractedText(new ExtractedTextRequest(), 0);
+        if (current == null || current.text == null || current.startOffset < 0
+                || current.partialStartOffset >= 0 || current.selectionStart < 0
+                || current.selectionStart != current.selectionEnd
+                || current.selectionEnd > current.text.length()
+                || composingRegionStart > Integer.MAX_VALUE - appliedComposingText.length()) return false;
+        long relativeStart = (long) composingRegionStart - current.startOffset;
+        long relativeEnd = relativeStart + appliedComposingText.length();
+        if (relativeStart < 0 || relativeEnd > current.text.length()
+                || (!rebuildingForConfiguration && (current.selectionStart < relativeStart
+                        || current.selectionStart > relativeEnd))
+                || !appliedComposingText.equals(current.text.subSequence(
+                        (int) relativeStart, (int) relativeEnd).toString())) return false;
+        int end = composingRegionStart + appliedComposingText.length();
+        expectOwnSelectionUpdate();
+        if (!connection.setComposingRegion(composingRegionStart, end)) return false;
+        // EditorInfo can contain the field's original selection after rotation.
+        // Restore the retained engine caret, rather than that stale position.
+        int caret = composingRegionStart + engine.composingCaretUtf16Offset();
+        if (caret < composingRegionStart || caret > end
+                || !connection.setSelection(caret, caret)) return false;
+        lastSelectionStart = lastSelectionEnd = caret;
+        expectedSmartSelection = caret;
+        return true;
     }
 
     @Override
@@ -334,9 +382,15 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        stopHardwareBackspace();
+        hideFloatingCandidates();
         resetCursorAnchor();
+        rebuildingForConfiguration = true;
+        try {
+            super.onConfigurationChanged(newConfig);
+        } finally {
+            rebuildingForConfiguration = false;
+        }
+        stopHardwareBackspace();
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
@@ -573,8 +627,20 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (event.getRepeatCount() == 0 && (keyCode == KeyEvent.KEYCODE_ENTER
+                || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER)) {
+            // The previous Up can be lost when switching input methods. A new
+            // press must not inherit its ownership, including modified Enter.
+            pressedEnterKeys.remove(keyCode);
+            pressedCandidateKeys.remove(keyCode);
+        }
         if (engine == null) return super.onKeyDown(keyCode, event);
-        if (hostTransactionFailed) return true;
+        if (hostTransactionFailed) {
+            if (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
+                pressedEnterKeys.add(keyCode);
+            }
+            return true;
+        }
         // A key can arrive before the hardware configuration callback. Finish
         // the already-inserted touch tail before adopting marked host text.
         if (!hardwareSmartTwoRows && !touchHostText.editableText().isEmpty()
@@ -673,11 +739,18 @@ public final class BopomofoImeService extends InputMethodService
                     apply(engine.backspace());
                 });
             }
+            case KeyEvent.KEYCODE_FORWARD_DEL -> {
+                boolean hadComposition = engine.hasComposition();
+                apply(engine.deleteForward());
+                if (!hadComposition) return super.onKeyDown(keyCode, event);
+                pressedNavigationKeys.add(keyCode);
+            }
             case KeyEvent.KEYCODE_SPACE -> {
                 if (candidatesVisible) pressedCandidateKeys.add(keyCode);
                 apply(engine.handleHardwareSpace());
             }
             case KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                pressedEnterKeys.add(keyCode);
                 if (candidatesVisible) pressedCandidateKeys.add(keyCode);
                 apply(engine.enter());
             }
@@ -708,6 +781,10 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (pressedEnterKeys.remove(keyCode)) {
+            pressedCandidateKeys.remove(keyCode);
+            return true;
+        }
         if (keyCode == KeyEvent.KEYCODE_DEL && hardwareBackspaceHeld) {
             stopHardwareBackspace();
             return true;

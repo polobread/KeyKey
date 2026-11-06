@@ -47,6 +47,10 @@ Android 預設為對齊、小間隔、標準字體、刪除鍵下方。各版面
 逐字選字與關聯詞流程。19 音節完整句「請假要去哪裡玩呢去海邊因為那裡有比基尼」
 的實體鍵盤檢查點與測試界線見[交接紀錄](../../../docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)。
 
+一般實體好打注音按 `↓` 會改選游標右側的字詞；游標在句尾時改選最後一字，選字後停在所選詞後方，方便接續輸入。`Backspace` 刪除游標左側，`Delete` 刪除右側；Delete 在組字中移除的字不會在繼續輸入時重新出現，刪完最後一字也會清空 App 的組字範圍。仍有未完成讀音或正在顯示候選時，Delete 依目前狀態保留文字，不跳過組字直接刪 App 內的字。觸控與實體雙排選字仍在選字後回到可編輯句尾。
+
+旋轉畫面後會核對並接續原組字與游標，確認文字時不會再追加一份舊組字。如果 App 的文字已改變，或無法確認原組字範圍，便保留 App 現有文字並重新開始輸入，避免把舊字送到錯誤位置。
+
 設定頁「注音與選字」的「使用空白鍵選字」預設關閉，虛擬與實體鍵盤共用。關閉時，讀音完成後按空白會在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後空白可完成讀音、開候選及翻頁。關閉時仍可點選組字或按實體鍵盤 `↓` 開候選；傳統注音、倉頡及簡易不受影響。
 
 設定頁的「好打注音使用上下文選字（Bigram）」預設開啟。關閉後，組句與候選排序
@@ -196,6 +200,7 @@ Android 16 起若系統要求琦琦提供切換鍵，底列最左側仍會顯示
 模式鍵此時縮為一格，將目前兩個模式標籤分別放在左上與右下。系統未要求時隱藏自家地球鍵，舊系統原有切換列不變。
 實體候選列沿用既有按鈕位置，
 浮動候選模式僅在系統仍要求此鍵時顯示最小控制列，系統不再要求後恢復原來的浮動模式。
+旋轉或重建鍵盤時會先關閉舊浮窗，垂直與水平排列都只保留目前的一個候選窗，避免殘窗留在畫面上。
 「實體鍵盤」中的「使用浮動候選字窗」開啟時，「顯示虛擬數字與符號鍵」及底部空間
 開關變灰且無法操作；關閉浮動候選窗後恢復可調整，並保留各自先前選擇。
 
@@ -229,7 +234,7 @@ App 若為軟鍵盤指定 `IME_ACTION_DONE`、`NEXT`、`SEARCH`、`SEND`、`GO` 
 並呼叫對應 editor action。好打注音仍有組字時，第一次按鍵就會確認文字並執行動作。
 App 也可用 `EditorInfo.actionLabel`／`actionId` 提供自訂
 Enter 文字與 action；過長的標籤會自動縮小。App 拒絕 action 時會安全退回一般 Enter。
-USB／藍牙實體鍵盤的 Enter 永遠維持 Enter key event，不會被改成軟鍵盤 action。
+USB／藍牙實體鍵盤需要向 App 送出 Enter 時，使用一次完整按放事件，不改成軟鍵盤 action。一般實體好打注音先以 Enter 選取反白候選或確認組句，同次放開不再觸發 App 的下一欄；沒有組字與候選時維持普通 Enter。候選中的 Enter 按住不重複選字，顯示關聯詞時仍是關閉關聯候選並送出普通 Enter。實體雙排沿用前述觸控確認及送字規則。
 
 欄位的起始精簡模式只套用觸控鍵盤。外接實體鍵盤的字元與快捷鍵維持
 Windows／macOS 版的完整輸入與修飾鍵習慣，不依 `inputType` 擋字。
@@ -333,6 +338,43 @@ adb -s "$KEYKEY_TEST_SERIAL" shell am instrument -w -r \
   tw.chichi77.keykey.android.test/androidx.test.runner.AndroidJUnitRunner
 adb -s "$KEYKEY_TEST_SERIAL" shell ime set tw.chichi77.keykey.android/.BopomofoImeService
 ```
+
+實體鍵盤宿主回歸使用 `PhysicalKeyboardRegressionInstrumentedTest`，須明確給予
+`keykey.isolatedDevice=true`；未給參數會略過。下列流程會清除並重建 App 設定與學習資料，
+只在啟用硬體鍵盤（`hw.keyboard=yes`）的可丟棄模擬器執行，勿使用日常手機。
+先安裝 debug APK 與 androidTest APK，再逐項以全新 App 資料執行：
+
+```sh
+./gradlew assembleDebug assembleDebugAndroidTest
+case "$KEYKEY_TEST_SERIAL" in emulator-*) ;; *) exit 1 ;; esac
+adb -s "$KEYKEY_TEST_SERIAL" install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s "$KEYKEY_TEST_SERIAL" install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+for scenario in adapterSelectsTheRightHandTargetAtEveryCursorPosition \
+  adapterForwardDeleteRemovesTheReadingBeforeFurtherInput \
+  adapterForwardDeleteClearsTheLastMarkedCharacter touchSelectionStillReturnsToTheEditableTail \
+  repeatedRestartsPreserveTheOwnedRangeAndCaret \
+  unverifiableRestartKeepsHostTextWithoutReplayingComposition \
+  enterOwnershipDoesNotConsumeANewModifiedKeyPress \
+  verticalPortrait verticalLandscape horizontalPortrait horizontalLandscape bottomPortrait bottomLandscape
+do
+  adb -s "$KEYKEY_TEST_SERIAL" shell am force-stop tw.chichi77.keykey.android
+  adb -s "$KEYKEY_TEST_SERIAL" shell pm clear tw.chichi77.keykey.android
+  adb -s "$KEYKEY_TEST_SERIAL" shell settings put secure show_ime_with_hard_keyboard 1
+  adb -s "$KEYKEY_TEST_SERIAL" shell ime enable tw.chichi77.keykey.android/.BopomofoImeService
+  adb -s "$KEYKEY_TEST_SERIAL" shell ime set tw.chichi77.keykey.android/.BopomofoImeService
+  adb -s "$KEYKEY_TEST_SERIAL" shell am instrument -w -r \
+    -e class "tw.chichi77.keykey.android.PhysicalKeyboardRegressionInstrumentedTest#$scenario" \
+    -e keykey.isolatedDevice true \
+    tw.chichi77.keykey.android.test/androidx.test.runner.AndroidJUnitRunner
+done
+```
+
+六個宿主情境涵蓋垂直浮窗、水平浮窗、關閉浮窗的手機直橫式，包含四法基本送字、
+短句第 10／11／19 音節、候選與翻頁、刪除後接續輸入、Enter、快捷鍵及旋轉／重開。
+另有兩個 restart 案例，涵蓋已提交前後文、句中游標、未完成讀音，以及重複重啟後的組字同步；debug 宿主會提供 null／文字不符快照，檢查保留現有文字且不重播舊組字的退路。
+確認每個 instrumentation 結果均實際執行、沒有略過或失敗；鍵盤事件經 InputDispatcher
+注入，能驗證 Android 宿主交易，不能代替真正 USB／藍牙鍵盤的傳輸與修飾鍵按放實測。
+此回歸不涵蓋全部外觀組合，也不表示其他裝置或平台已完成驗收。
 
 基本小麥注音詞庫取自 `DataSource/McBopomofo/phrase.occ`，另會固定加入
 `DataSource/chichi77Collection` 的 29 個公開分類詞庫。建置會把這些關聯詞文字詞庫

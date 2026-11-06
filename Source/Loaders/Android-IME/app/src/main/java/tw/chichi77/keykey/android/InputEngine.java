@@ -105,6 +105,7 @@ interface InputEngine extends AutoCloseable {
     InputEngine.Result closeTouchSmartCandidates();
     InputEngine.Result enter();
     InputEngine.Result backspace();
+    InputEngine.Result deleteForward();
     InputEngine.Result escape();
     InputEngine.Result selectDisplayedCandidate(int index);
     InputEngine.Result selectHighlightedCandidate();

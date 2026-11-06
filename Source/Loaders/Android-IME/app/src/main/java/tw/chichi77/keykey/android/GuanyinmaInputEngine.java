@@ -59,7 +59,8 @@ final class GuanyinmaInputEngine implements InputEngine {
     private static String layoutName(BopomofoKeyboardLayout value) { return value == BopomofoKeyboardLayout.HSU ? "hsu" : "standard"; }
     private JSONObject smartOptions() {
         return object("use_bigrams", useBigrams, "space_opens_candidates", spaceSelects,
-            "candidate_cursor_at_end", hardwareSmartEditing, "max_completed_syllables", 10,
+            "candidate_cursor_at_end", false, "clear_composing_with_escape", false,
+            "shift_always_uppercase", false, "max_completed_syllables", 10,
             "shift_at_limit", !hardwareSmartEditing, "selection_returns_to_end", !hardwareSmartEditing,
             "candidate_selection_keys", "123456789");
     }
@@ -327,7 +328,9 @@ final class GuanyinmaInputEngine implements InputEngine {
         if (!text("reading").isEmpty()) return key("space");
         if (array("candidates").length() > 0) { changePage(1); return InputEngine.Result.update(); }
         if (array("readings").length() == 0) return InputEngine.Result.update();
-        int index = hardwareSmartEditing ? Math.max(0, number("reading_cursor") - 1) : array("readings").length() - 1;
+        int index = hardwareSmartEditing
+                ? Math.min(number("reading_cursor"), array("readings").length() - 1)
+                : array("readings").length() - 1;
         return operate(object("type", "open_candidates", "index", index));
     }
     /** Close touch candidates without selecting or cancelling composition. */
@@ -354,6 +357,16 @@ final class GuanyinmaInputEngine implements InputEngine {
         return offerAssociated(key("return"));
     }
     @Override public InputEngine.Result backspace() { clearOverlay(); return !hasComposition() ? InputEngine.Result.delete() : key("backspace"); }
+    @Override public InputEngine.Result deleteForward() {
+        clearOverlay();
+        if (!hasComposition()) return InputEngine.Result.update();
+        InputEngine.Result result = key("delete");
+        // Android finishComposingText preserves marked text. When Delete removes
+        // the final reading, replace that range with empty text instead.
+        return new InputEngine.Result(result.committedText(), result.deleteBeforeCursor(), result.sendEnter(),
+                result.discardComposingText() || (lastError == null && !hasComposition()
+                        && result.committedText().isEmpty()));
+    }
     @Override public InputEngine.Result escape() {
         if (overlay != Overlay.NONE) { clearOverlay(); return InputEngine.Result.update(); }
         if (!hardwareSmartEditing) { boolean had = hasComposition(); reset(); return had && lastError == null ? InputEngine.Result.discardComposition() : InputEngine.Result.update(); }

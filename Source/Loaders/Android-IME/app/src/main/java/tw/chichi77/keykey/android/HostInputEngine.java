@@ -82,6 +82,7 @@ final class HostInputEngine implements InputEngine {
     @Override public InputEngine.Result closeTouchSmartCandidates() { return perform(InputEngine::closeTouchSmartCandidates); }
     @Override public InputEngine.Result enter() { return perform(InputEngine::enter); }
     @Override public InputEngine.Result backspace() { return perform(InputEngine::backspace); }
+    @Override public InputEngine.Result deleteForward() { return perform(InputEngine::deleteForward); }
     @Override public InputEngine.Result escape() { return perform(InputEngine::escape); }
     @Override public InputEngine.Result selectDisplayedCandidate(int index) { return perform(engine -> engine.selectDisplayedCandidate(index)); }
     @Override public InputEngine.Result selectHighlightedCandidate() { return perform(InputEngine::selectHighlightedCandidate); }
