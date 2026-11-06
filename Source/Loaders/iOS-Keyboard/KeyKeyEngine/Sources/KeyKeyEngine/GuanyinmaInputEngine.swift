@@ -152,7 +152,7 @@ public final class GuanyinmaInputEngine: InputEngine {
     private static func layoutName(_ layout: BopomofoKeyboardLayout) -> String { layout == .hsu ? "hsu" : "standard" }
     private static func smartConfiguration(hardware: Bool, space: Bool) -> [String: Any] {
         ["max_completed_syllables": 10, "shift_at_limit": !hardware,
-         "selection_returns_to_end": !hardware, "candidate_cursor_at_end": hardware,
+         "selection_returns_to_end": !hardware, "candidate_cursor_at_end": false,
          "space_opens_candidates": space, "candidate_selection_keys": "123456789"]
     }
     private var smartConfiguration: [String: Any] {
@@ -410,7 +410,7 @@ public final class GuanyinmaInputEngine: InputEngine {
         if !snapshot.reading.isEmpty { return key("space") }
         if !snapshot.candidates.isEmpty { changePage(by: 1); return .update }
         guard !snapshot.readings.isEmpty else { return .update }
-        let index = hardwareSmartEditing ? max(0, snapshot.readingCursor - 1) : snapshot.readings.count - 1
+        let index = hardwareSmartEditing ? min(snapshot.readingCursor, snapshot.readings.count - 1) : snapshot.readings.count - 1
         return operate(["type": "open_candidates", "index": index])
     }
     @discardableResult public func enter() -> KeyboardInput.Result {
@@ -427,6 +427,12 @@ public final class GuanyinmaInputEngine: InputEngine {
         if overlay != .none { clearOverlay() }
         if !hasComposition { return .delete }
         return key("backspace")
+    }
+    @discardableResult public func deleteForward() -> KeyboardInput.Result {
+        clearOverlay()
+        // The App owns committed text; Rust only edits an active composition.
+        // Its existing candidate/pending-reading rules may reject this key.
+        return hasComposition ? key("delete") : .update
     }
     @discardableResult public func escape() -> KeyboardInput.Result {
         if overlay != .none { clearOverlay(); return .update }

@@ -1,4 +1,5 @@
 import XCTest
+import Darwin
 import KeyKeyEngine
 
 @MainActor
@@ -869,6 +870,247 @@ final class KeyKeyUITests: XCTestCase {
         typeReading("su3")
         app.buttons["hardware-editor.emoji"].tap()
         XCTAssertEqual(output.value as? String, "你好你好你")
+    }
+
+    func testHardwareEditorRightHandSelectionSurvivesRotationAndRefocus() throws {
+        try requireSimulatorHIDBridge()
+        let output = launchHardwareEditorWithFreshSmartLearning()
+        typeHardwareEditorASCII("su3cl3")
+        typeHardwareEditorKey(.leftArrow)
+        typeHardwareEditorKey(.downArrow)
+        // Longer phrases covering the target may precede its single character.
+        // Select the actual core position, without changing or assuming its order.
+        let target = app.buttons.matching(NSPredicate(
+            format: "identifier BEGINSWITH %@ AND label ENDSWITH %@",
+            "hardware-editor.candidate.", "候選，郝"
+        )).firstMatch
+        XCTAssertTrue(target.waitForExistence(timeout: 3))
+        guard let suffix = target.identifier.split(separator: ".").last,
+              let number = Int(suffix), (1...9).contains(number) else {
+            XCTFail("The target candidate must expose a visible number: \(target.debugDescription)")
+            return
+        }
+        typeHardwareEditorKey(.forwardDelete)
+        XCTAssertTrue(target.label.hasSuffix("候選，郝"), "An open candidate list must keep its target")
+        app.typeKey(String(number), modifierFlags: [])
+        XCTAssertEqual(output.value as? String, "")
+
+        let portrait = app.frame
+        XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portrait)
+        XCUIDevice.shared.orientation = .portrait
+        assertAppRotation(.portrait, relativeToPortrait: portrait)
+        XCTAssertEqual(output.value as? String, "", "Rotation must not commit the composition")
+
+        app.buttons["hardware-editor.help"].tap()
+        let help = app.alerts["實體鍵盤操作"]
+        XCTAssertTrue(help.waitForExistence(timeout: 3))
+        help.buttons["知道了"].tap()
+        XCTAssertTrue(waitForLayout { !help.exists })
+        // The production modal-dismissal focus restoration waits 0.4 seconds.
+        Thread.sleep(forTimeInterval: 0.5)
+        typeHardwareEditorASCII("a8 ")
+        // XCTest's Return does not reach this iOS Simulator's raw responder.
+        // The host bridge emits a complete Return HID press/release pair.
+        typeHardwareEditorKey(.return)
+        XCTAssertTrue(waitForLayout { output.value as? String == "你郝媽" })
+        typeHardwareEditorKey(.return)
+        XCTAssertEqual(output.value as? String, "你郝媽\n", "A plain Enter inserts one newline")
+        keepKeyboardEvidence("Hardware editor right-hand selection, rotation and refocus", output: output)
+    }
+
+    func testHardwareEditorForwardDeleteKeepsCompositionAndRemovesLastReading() throws {
+        try requireSimulatorHIDBridge()
+        let output = launchHardwareEditorWithFreshSmartLearning()
+        typeHardwareEditorASCII("su3cl3")
+        typeHardwareEditorKey(.leftArrow)
+        typeHardwareEditorKey(.forwardDelete)
+        typeHardwareEditorASCII("a8 ")
+        typeHardwareEditorKey(.return)
+        XCTAssertTrue(waitForLayout { output.value as? String == "你媽" },
+                      "Deleting 好 must also remove its reading before further input")
+
+        clearHardwareEditor()
+        typeHardwareEditorASCII("su3")
+        typeHardwareEditorKey(.leftArrow)
+        typeHardwareEditorKey(.forwardDelete)
+        typeHardwareEditorASCII("cl3")
+        typeHardwareEditorKey(.return)
+        XCTAssertTrue(waitForLayout { output.value as? String == "好" },
+                      "Deleting the last reading must not restore 你 on the next input")
+
+        clearHardwareEditor()
+        app.buttons["hardware-editor.mode"].tap()
+        typeHardwareEditorASCII("z")
+        typeHardwareEditorKey(.leftArrow)
+        app.buttons["hardware-editor.mode"].tap()
+        typeHardwareEditorASCII("su3")
+        typeHardwareEditorKey(.leftArrow)
+        typeHardwareEditorKey(.forwardDelete)
+        XCTAssertEqual(output.value as? String, "z",
+                       "Deleting the final reading must not also delete the committed suffix")
+        typeHardwareEditorASCII("cl3")
+        typeHardwareEditorKey(.return)
+        XCTAssertTrue(waitForLayout { output.value as? String == "好z" })
+
+        clearHardwareEditor()
+        typeHardwareEditorASCII("su3c")
+        typeHardwareEditorKey(.forwardDelete)
+        typeHardwareEditorASCII("l3")
+        typeHardwareEditorKey(.return)
+        XCTAssertTrue(waitForLayout { output.value as? String == "你好" },
+                      "Delete preserves an unfinished reading, as required by the core")
+        keepKeyboardEvidence("Hardware editor forward Delete in composition", output: output)
+    }
+
+    func testHardwareEditorForwardDeleteRemovesCommittedGraphemes() throws {
+        try requireSimulatorHIDBridge()
+        let output = launchHardwareEditorWithFreshSmartLearning()
+        // Set up the English plane through the existing control; this test
+        // isolates Forward Delete from system-reserved language shortcuts.
+        app.buttons["hardware-editor.mode"].tap()
+        typeHardwareEditorASCII("ab")
+        XCTAssertEqual(output.value as? String, "ab")
+        typeHardwareEditorKey(.leftArrow)
+        typeHardwareEditorKey(.forwardDelete)
+        XCTAssertTrue(waitForLayout { output.value as? String == "a" },
+                      "The paired Forward Delete HID event must reach the editor's right-delete path")
+        typeHardwareEditorKey(.forwardDelete)
+        XCTAssertEqual(output.value as? String, "a", "Delete at the end leaves committed text intact")
+
+        clearHardwareEditor()
+        typeHardwareEditorASCII("a")
+        selectHardwareEditorEmoji("✌️")
+        typeHardwareEditorASCII("b")
+        XCTAssertEqual(output.value as? String, "a✌️b")
+        typeHardwareEditorKey(.leftArrow)
+        typeHardwareEditorKey(.leftArrow)
+        typeHardwareEditorKey(.forwardDelete)
+        XCTAssertTrue(waitForLayout { output.value as? String == "ab" },
+                      "Delete removes the whole variation-selector grapheme")
+        typeHardwareEditorASCII("x")
+        XCTAssertEqual(output.value as? String, "axb", "Forward Delete keeps the insertion cursor")
+        keepKeyboardEvidence("Hardware editor forward Delete of committed Unicode", output: output)
+    }
+
+    private func launchHardwareEditorWithFreshSmartLearning() -> XCUIElement {
+        XCUIDevice.shared.orientation = .portrait
+        addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
+        app = XCUIApplication()
+        app.launch()
+        let settings = app.buttons["open-input-method-settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 8))
+        settings.tap()
+        let scroll = app.scrollViews.firstMatch
+        let mode = app.segmentedControls["app-settings.composition-mode"]
+        revealSetting(mode, in: scroll)
+        mode.buttons["好打注音"].tap()
+        let layout = app.segmentedControls["app-settings.keyboard-layout"]
+        revealSetting(layout, in: scroll)
+        layout.buttons["標準"].tap()
+        let space = app.switches["app-settings.space-selects-candidates"]
+        revealSetting(space, in: scroll)
+        if space.value as? String != "0" { space.tap() }
+        let reset = app.buttons["app-settings.reset-learning"]
+        revealSetting(reset, in: scroll)
+        reset.tap()
+        app.alerts.buttons["重設"].tap()
+        let result = app.alerts["好打注音學習紀錄"]
+        XCTAssertTrue(result.waitForExistence(timeout: 5))
+        XCTAssertTrue(result.staticTexts.allElementsBoundByIndex.contains {
+            $0.label.contains("App 內編輯器已重設")
+        }, "The test requires an independently reset App learning store")
+        result.buttons["知道了"].tap()
+        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
+        app.buttons["open-hardware-editor"].tap()
+        let output = app.textViews["hardware-editor.output"]
+        XCTAssertTrue(output.waitForExistence(timeout: 3))
+        XCTAssertEqual(output.value as? String, "")
+        return output
+    }
+
+    private func typeHardwareEditorASCII(_ text: String) {
+        for character in text { app.typeKey(String(character), modifierFlags: []) }
+    }
+
+    private func typeHardwareEditorKey(_ key: XCUIKeyboardKey) {
+        if key == .forwardDelete || key == .return {
+            sendSimulatorKey(key == .forwardDelete ? "delete" : "return")
+        } else {
+            app.typeKey(key.rawValue, modifierFlags: [])
+        }
+    }
+
+    private func requireSimulatorHIDBridge() throws {
+        guard let value = ProcessInfo.processInfo.environment["KEYKEY_SIMULATOR_HID_PORT"],
+              UInt16(value) != nil else {
+            throw XCTSkip("Use run-simulator-tests.sh --functional-host, which prepares the isolated Simulator HID bridge")
+        }
+    }
+
+    // XCTest's string ForwardDelete/Return events do not reach this non-text
+    // responder on iOS 26. The host bridge sends paired HID messages to this
+    // one selected Simulator, without posting keys to the macOS desktop.
+    private func sendSimulatorKey(_ command: String) {
+        guard let value = ProcessInfo.processInfo.environment["KEYKEY_SIMULATOR_HID_PORT"],
+              let port = UInt16(value) else {
+            XCTFail("The isolated Simulator HID bridge is required for Forward Delete")
+            return
+        }
+        let descriptor = socket(AF_INET, SOCK_STREAM, 0)
+        guard descriptor >= 0 else { XCTFail("Cannot create the Simulator HID socket"); return }
+        defer { Darwin.close(descriptor) }
+        var timeout = timeval(tv_sec: 15, tv_usec: 0)
+        withUnsafePointer(to: &timeout) {
+            _ = setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, $0, socklen_t(MemoryLayout<timeval>.size))
+        }
+        var address = sockaddr_in()
+        address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_port = port.bigEndian
+        address.sin_addr.s_addr = inet_addr("127.0.0.1")
+        let connected = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.connect(descriptor, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        guard connected == 0 else { XCTFail("Cannot connect to the Simulator HID bridge"); return }
+        let request = command + "\n"
+        let sent = request.withCString { Darwin.send(descriptor, $0, request.utf8.count, 0) }
+        XCTAssertEqual(sent, request.utf8.count)
+        var bytes = [UInt8](repeating: 0, count: 128)
+        let count = bytes.withUnsafeMutableBytes { Darwin.recv(descriptor, $0.baseAddress, $0.count, 0) }
+        XCTAssertGreaterThan(count, 0)
+        if count > 0 {
+            XCTAssertEqual(String(decoding: bytes.prefix(count), as: UTF8.self), "OK\n")
+        }
+    }
+
+    private func clearHardwareEditor() {
+        app.buttons["hardware-editor.clear"].tap()
+        let confirm = app.buttons["hardware-editor.clear-confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        confirm.tap()
+        XCTAssertTrue(waitForLayout {
+            self.app.textViews["hardware-editor.output"].value as? String == ""
+        })
+    }
+
+    private func selectHardwareEditorEmoji(_ emoji: String) {
+        app.buttons["hardware-editor.emoji"].tap()
+        let predicate = NSPredicate(
+            format: "identifier BEGINSWITH %@ AND label ENDSWITH %@",
+            "hardware-editor.candidate.", "候選，\(emoji)"
+        )
+        for _ in 0..<((KeyboardInput.emojis.count + 8) / 9) {
+            let candidate = app.buttons.matching(predicate).firstMatch
+            if candidate.exists, candidate.isEnabled {
+                candidate.tap()
+                return
+            }
+            typeHardwareEditorKey(.rightArrow)
+        }
+        XCTFail("The production Emoji palette must contain \(emoji)")
     }
 
     func testHardwareKeyboardEditorLandscapeColumns() {

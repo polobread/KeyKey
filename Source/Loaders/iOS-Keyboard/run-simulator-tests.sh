@@ -167,6 +167,9 @@ for name in "${DEVICE_NAMES[@]}"; do
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testSmokeSettingsEntryOpensSystemSettings"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testAcknowledgementsAreBundledAndReachable"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testSupporterPurchaseControlsAreReachable"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testHardwareEditorRightHandSelectionSurvivesRotationAndRefocus"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testHardwareEditorForwardDeleteKeepsCompositionAndRemovesLastReading"
+      "-only-testing:KeyKeyUITests/KeyKeyUITests/testHardwareEditorForwardDeleteRemovesCommittedGraphemes"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testHardwareKeyboardEditorHasCopyAndShareActions"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/testHardwareKeyboardEditorLandscapeColumns"
       "-only-testing:KeyKeyUITests/KeyKeyUITests/test00KeyboardOptInIsConfigured"
@@ -186,7 +189,7 @@ for name in "${DEVICE_NAMES[@]}"; do
   fi
 
   echo "Testing $name ($udid) [$MODE, $CONFIGURATION, $TEST_PLAN]"
-  if xcodebuild test -quiet \
+  test_command=(xcodebuild test -quiet \
       -project "$PROJECT" \
       -scheme "$SCHEME" \
       -testPlan "$TEST_PLAN" \
@@ -195,7 +198,12 @@ for name in "${DEVICE_NAMES[@]}"; do
       -derivedDataPath "$OUTPUT_DIR/DerivedData" \
       -resultBundlePath "$result_bundle" \
       "${test_args[@]}" \
-      CODE_SIGNING_ALLOWED=YES; then
+      CODE_SIGNING_ALLOWED=YES)
+  if [[ "$MODE" == "functional" || "$MODE" == "functional-host" ]]; then
+    test_command=(python3 "$SCRIPT_DIR/Tests/with-simulator-hid.py"
+      --device "$udid" --output "$OUTPUT_DIR/hid-$udid" -- "${test_command[@]}")
+  fi
+  if "${test_command[@]}"; then
     skipped_tests=0
     if result_summary="$(xcrun xcresulttool get test-results summary --path "$result_bundle")"; then
       skipped_tests="$(awk '

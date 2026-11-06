@@ -178,11 +178,27 @@ Duo 計畫包含加入琦琦鍵盤的共同前置。原生鍵盤對照另需先�
 不作為所有後續 profile 的通用前提。
 
 ```sh
-xcodebuild test -project KeyKeyiOS.xcodeproj -scheme 'chichi77 KeyKey' \
+KEYKEY_IOS_TEST_DEVICE='YOUR_SIMULATOR_UDID' bash run-simulator-tests.sh --functional-host
+KEYKEY_IOS_TEST_DEVICE='YOUR_SIMULATOR_UDID' bash run-simulator-tests.sh --functional
+```
+
+這兩個模式會為所選 Simulator 準備 `Tests/with-simulator-hid.py`。目前 iOS 26 的 XCTest
+字串 Forward Delete／Return 不會送到 App 的非文字 responder；host helper 使用目前 Xcode 的
+SimulatorKit 對精確 UUID 發送完整 HID Down／Up。helper 只在測試期間開啟 loopback 臨時埠，
+不發 macOS 全域鍵盤事件，也不連入實機；原生工具與私有 API 皆不連入 App／extension。
+
+直接使用 `xcodebuild` 時，需以相同 wrapper 包住命令，指定已開機的 Simulator：
+
+```sh
+python3 Tests/with-simulator-hid.py --device 'YOUR_SIMULATOR_UDID' --output /tmp/keykey-ios-hid -- \
+  xcodebuild test -project KeyKeyiOS.xcodeproj -scheme 'chichi77 KeyKey' \
   -testPlan KeyKeyFunctional -configuration Debug \
-  -destination 'platform=iOS Simulator,name=YOUR_TEST_IPHONE' \
+  -destination 'platform=iOS Simulator,id=YOUR_SIMULATOR_UDID' \
   CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-
 ```
+
+未準備 bridge 時，三項需要 Delete／Return 的新編輯器案例會明確略過；執行腳本將任何略過視為失敗。
+SimulatorKit 不相容時直接回報失敗，不以螢幕按鈕代替送鍵。此驗證仍不代表真正 USB／藍牙傳輸已通過。
 
 地球鍵當機及系統生命週期交接仍依既有研究列為已知問題。明確按「▼」收鍵盤已採
 只確認完成文字、取消未完成注音與未選字根的規則；這不代表其他系統交接已跨 App 驗收。
@@ -319,9 +335,11 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   多頁候選則空白翻頁。簡易滿兩碼開啟候選，`1–9` 或 Enter 選字。
 - 候選固定直排 `1–9`，一般候選用 `1–9`，關聯詞用 `Shift+1–9`
   （`!@#$%^&*(`）。好打注音下可連續輸入下一個音節，數字列不會搶先選字；
-  `↓`（或開啟「使用空白鍵選字」後的 `Space`）開啟目前音節的候選後才用 `1–9` 選字，候選開啟後可用 `Page Up`、
+  `↓`（或開啟「使用空白鍵選字」後的 `Space`）開啟游標右側字詞的候選，句尾則以最後一字為目標，之後才用 `1–9` 選字，候選開啟後可用 `Page Up`、
   `Page Down` 循環翻頁；開啟上述選項後 `Space` 也可翻頁。`Enter` 確定整句。組字最多保留十個音節；第十一個音節完成時，
   會和 macOS 一樣把最前面的完整詞段送到編輯器文字區，例如一起擠出「請假」。
+- 好打注音選字後游標停在所選詞後方，可接續插入文字；觸控鍵盤仍回到可編輯句尾。
+- 實體 `Delete`（Forward Delete）刪除游標右側：有組字時由核心處理，沒有組字時刪除 App 已確認文字的一個完整字素，包含多碼位 Emoji。刪空最後一個組字不會連帶刪除後方已確認文字。候選開啟或有未完成讀音時，沿用核心既有規則，不跳過組字刪除 App 文字。
 - 一般候選用 `↑`／`↓` 移動反白、`←`／`→` 翻頁；沒有組字與候選時，四方向鍵移動
   編輯器自己的可見插入游標。
 - `Ctrl+Space` 切換ㄅ／英、`Shift+Space` 切換半／全形；`Ctrl+0`／`Ctrl+1` 開啟符號，
@@ -332,7 +350,7 @@ Simulator 的自動加入及切換已有 2/2 測試通過；iOS 26.5 Simulator �
   觸控備援鍵。關聯候選顯示時，Enter 會先關閉推薦再換行，不會誤選反白詞尾。
 - 虛擬鍵盤與 App 內實體鍵盤編輯器的 Backspace 按下時先刪一次；持續按住約
   450 毫秒後開始連續刪除，逐步加快但最多約每 70 毫秒一次。放開時立即停止，
-  虛擬鍵盤的按鍵預覽也會收起。
+  虛擬鍵盤的按鍵預覽也會收起。App 實體 Forward Delete 使用相同的連續刪除節奏；按鍵取消、失去焦點或 App 進入背景時也會停止。
 - 橫式固定由左到右排列輸入、候選、按鍵、清除／複製／分享四欄；iPad 保留方向鍵與
   空白鍵，iPhone 高度不足時收起這組輔助鍵。4.7 吋 iPhone SE 直式會縮短輸入區，保留
   完整候選與操作鍵。候選內容與裝置旋轉不應改變各區塊的固定尺寸。

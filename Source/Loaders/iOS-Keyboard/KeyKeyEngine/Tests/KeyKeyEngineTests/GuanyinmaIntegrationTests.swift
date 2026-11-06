@@ -176,6 +176,7 @@ struct GuanyinmaIntegrationTests {
         let correction = try #require(engine.displayedCandidates.firstIndex(of: "妳"))
         #expect(engine.selectDisplayedCandidate(correction) == .update)
         #expect(engine.composingText == "妳好")
+        #expect(engine.composingCaretUTF16Offset == 2)
         #expect(engine.selectTouchSmartCell(0))
         let firstPage = engine.displayedCandidates
         try #require(engine.pageCount > 1)
@@ -359,6 +360,87 @@ struct GuanyinmaIntegrationTests {
             #expect(engine.lastError == nil)
             #expect(engine.chineseInputMethod == method)
             engine.reset()
+        }
+    }
+
+    @Test(arguments: [0, 1, 2])
+    func physicalCandidatesTargetTheRightHandWordAndResumeAfterSelection(position: Int) throws {
+        let f = try Fixture(), engine = try f.engine(hardware: true)
+        type("su3cl3", in: engine, hardware: true)
+        #expect(engine.moveSmartCompositionCursor(by: position - 2))
+        #expect(engine.openSmartCandidates() == .update)
+        let target = position == 0 ? "妳" : "郝"
+        let selected = try #require(engine.displayedCandidates.firstIndex(of: target))
+        #expect(engine.selectDisplayedCandidate(selected) == .update)
+        #expect(engine.completedSmartText == (position == 0 ? "妳好" : "你郝"))
+        #expect(engine.composingCaretUTF16Offset == (position == 0 ? 1 : 2))
+        type("a8 ", in: engine, hardware: true)
+        #expect(engine.smartCompositionReadingCount == 3)
+        let completed = engine.completedSmartText
+        #expect(completed.count == 3)
+        #expect(position == 0
+            ? completed.hasPrefix("妳") && completed.hasSuffix("好")
+            : completed.hasPrefix("你郝"))
+        #expect(engine.lastError == nil)
+    }
+
+    @Test(arguments: [0, 1, 2])
+    func physicalForwardDeleteRemovesOnlyTheRightReadingAndStaysDeleted(position: Int) throws {
+        let f = try Fixture(), engine = try f.engine(hardware: true)
+        type("su3cl3", in: engine, hardware: true)
+        #expect(engine.moveSmartCompositionCursor(by: position - 2))
+        #expect(engine.deleteForward() == .update)
+        #expect(engine.completedSmartText == (position == 0 ? "好" : position == 1 ? "你" : "你好"))
+        #expect(engine.smartCompositionReadingCount == (position == 2 ? 2 : 1))
+        type("a8 ", in: engine, hardware: true)
+        #expect(engine.smartCompositionReadingCount == (position == 2 ? 3 : 2))
+        let completed = engine.completedSmartText
+        #expect(completed.count == (position == 2 ? 3 : 2))
+        #expect(position == 0 ? completed.hasSuffix("好") : completed.hasPrefix("你"))
+        #expect(engine.lastError == nil)
+    }
+
+    @Test func physicalForwardDeleteClearsLastReadingAndLeavesHostDeletionToFrontend() throws {
+        let f = try Fixture()
+        let engine = try KeyboardInputEngine(modelURL: f.model, userDatabaseURL: f.user,
+                                            hardwareSmartEditing: true)
+        #expect(engine.deleteForward() == .update)
+        #expect(!engine.hasComposition)
+        type("su3", in: engine, hardware: true)
+        #expect(engine.moveSmartCompositionCursor(by: -1))
+        #expect(engine.deleteForward() == .update)
+        #expect(!engine.hasComposition && engine.composingText.isEmpty)
+        #expect(engine.smartCompositionReadingCount == 0)
+        type("cl3", in: engine, hardware: true)
+        #expect(engine.completedSmartText == "好")
+        #expect(engine.enter() == .commit("好"))
+        engine.acknowledgeHostEffects()
+        #expect(engine.deleteForward() == .update)
+        #expect(engine.coreError == nil)
+    }
+
+    @Test func physicalForwardDeletePreservesPendingReadingsAndOpenCandidates() throws {
+        do {
+            let f = try Fixture(), engine = try f.engine(hardware: true)
+            type("su3cl3s", in: engine, hardware: true)
+            let before = engine.composingText, reading = engine.readingText
+            try #require(!reading.isEmpty)
+            #expect(engine.deleteForward() == .update)
+            #expect(engine.composingText == before && engine.readingText == reading)
+            #expect(engine.smartCompositionReadingCount == 2)
+            #expect(engine.lastError == nil)
+        }
+        do {
+            let f = try Fixture(), engine = try f.engine(hardware: true)
+            type("su3cl3", in: engine, hardware: true)
+            #expect(engine.moveSmartCompositionCursor(by: -1))
+            _ = engine.openSmartCandidates()
+            let candidates = engine.displayedCandidates, before = engine.composingText
+            try #require(!candidates.isEmpty)
+            #expect(engine.deleteForward() == .update)
+            #expect(engine.displayedCandidates == candidates && engine.composingText == before)
+            #expect(engine.smartCompositionReadingCount == 2)
+            #expect(engine.lastError == nil)
         }
     }
 

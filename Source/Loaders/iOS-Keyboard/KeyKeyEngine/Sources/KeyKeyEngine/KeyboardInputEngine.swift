@@ -109,6 +109,7 @@ public final class KeyboardInputEngine: InputEngine {
     @discardableResult public func closeTouchSmartCandidates() -> KeyboardInput.Result { perform { $0.closeTouchSmartCandidates() } }
     @discardableResult public func enter() -> KeyboardInput.Result { perform { $0.enter() } }
     @discardableResult public func backspace() -> KeyboardInput.Result { perform { $0.backspace() } }
+    @discardableResult public func deleteForward() -> KeyboardInput.Result { perform { $0.deleteForward() } }
     @discardableResult public func escape() -> KeyboardInput.Result { perform { $0.escape() } }
     @discardableResult public func selectDisplayedCandidate(_ index: Int) -> KeyboardInput.Result { perform { $0.selectDisplayedCandidate(index) } }
     @discardableResult public func selectHighlightedCandidate() -> KeyboardInput.Result { perform { $0.selectHighlightedCandidate() } }
