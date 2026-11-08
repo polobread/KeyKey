@@ -1,12 +1,12 @@
 # 桌面倉頡前綴候選試用
 
-macOS、Windows TSF 與 Linux／FreeBSD Fcitx 5 已接入程式碼，產品版號維持各平台 1.3.7（未發布）。完整規則見 [跨平台計畫](CANGJIE_PREFIX_CANDIDATES_PLAN.md)。
+本次桌面發布版本為 **1.5.0**，macOS、Windows TSF 與 Linux／FreeBSD Fcitx 5 共用 Guanyinma 核心。新版接合與發布驗收見[六平台發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)。完整規則見 [跨平台計畫](CANGJIE_PREFIX_CANDIDATES_PLAN.md)。
 
 ## 開啟方式
 
 - macOS：偏好設定的「倉頡」，勾選「即時候選」（英文介面為 Realtime candidates）及「未打完也能選字」。
 - Windows：設定的「倉頡」，勾選「即時候選」及「未打完也能選字」。
-- Linux／FreeBSD：Fcitx 琦琦設定的「倉頡設定」→「開啟倉頡設定…」，勾選兩項後按「套用」。也可執行 `keykey-cangjie-settings`。此視窗另存至 Fcitx 設定並立即要求重新載入；外層 Fcitx 設定視窗的取消不會撤銷已套用的倉頡值，套用後應重新開啟外層設定，避免舊草稿覆寫。
+- Linux／FreeBSD：Fcitx 琦琦設定的「倉頡」分組，勾選兩項後按「套用」或「確定」。新版設定導覽見 [Linux 指南](../LINUX_INSTALL.md#倉頡與簡易進階設定)。
 
 兩項缺值預設關閉，保留使用者已儲存的即時候選選擇。開啟即時候選會關閉錯碼清除；開啟錯碼清除會關閉即時候選。即時候選關閉時，前綴選項變灰、不查前綴，但保留勾選值。
 
@@ -28,7 +28,9 @@ macOS、Windows TSF 與 Linux／FreeBSD Fcitx 5 已接入程式碼，產品版�
 
 這是專案實際字表與固定排名的結果，不等同系統倉頡截圖。macOS／Windows 的字型、字集限制及完整碼個人排序可能改變可見筆數及位置。
 
-## 驗證入口與界線
+## 歷史驗證入口與界線
+
+以下保留舊核心接入時的命令與結果，不作為 1.5.0 驗收入口；目前入口以各平台 README 與 Guanyinma 接合文件為準。
 
 ```sh
 python3 tests/generate_cangjie_ranking.py --check

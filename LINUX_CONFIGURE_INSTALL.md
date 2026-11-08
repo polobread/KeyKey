@@ -1,6 +1,6 @@
 # Linux `./configure` 編譯安裝指南
 
-這份指南說明目前 1.5.0 Guanyinma（觀音嬤）來源的編譯安裝；它是六平台共用的 Rust 核心，因此 Rust、JSON 與字型開發套件都是必要依賴。正式下載仍以 [Ubuntu `.deb` 安裝與使用指南](LINUX_INSTALL.md) 為準；若要編譯正式 1.3.7，請使用該 tag 內的[同版指南](https://github.com/polobread/KeyKey/blob/v1.3.7/LINUX_CONFIGURE_INSTALL.md)，不要混用兩版依賴。1.5.0 的最終來源與交付條件見[發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。編譯完成後，琦琦注音會出現在 Fcitx 5 的輸入法清單，不會開啟獨立的打字視窗。
+這份指南說明 1.5.0 Guanyinma（觀音嬤）來源的編譯安裝；它是六平台共用的 Rust 核心，因此 Rust、JSON 與字型開發套件都是必要依賴。正式下載仍以 [Ubuntu `.deb` 安裝與使用指南](LINUX_INSTALL.md) 為準。1.5.0 的最終來源與交付條件見[發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。編譯完成後，琦琦注音會出現在 Fcitx 5 的輸入法清單，不會開啟獨立的打字視窗。
 
 以下步驟以 **Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64** 為準。其他 Ubuntu 版本、ARM64、IBus 與其他桌面環境尚未列入這份指南的驗證範圍。
 
@@ -57,7 +57,7 @@ sudo make install
 
 執行 `im-config`，在圖形精靈選 **fcitx5**，儲存工作後**重新啟動 Ubuntu**。重新登入後，新開啟的 App 才會取得 Fcitx 登入環境。
 
-`./configure` 安裝的是輸入法與詞庫，**不包含 GNOME 候選面板**。下列是已發布的 1.3.7 面板安裝範例，可從 [v1.3.7 發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)取得；不代表這個舊面板已完成 1.5.0 的宿主驗收。新版套件發布後，須依同版 `SHA256SUMS` 與已驗證的面板版本安裝：
+`./configure` 安裝的是輸入法與詞庫，**不包含 GNOME 候選面板**。面板套件於 [v1.5.0 發布頁](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) 上傳後提供；須依同版 `SHA256SUMS` 與已驗證的面板版本安裝。面板有獨立版號，下列檔名中的 `83+keykey1` 不隨產品版號改動：
 
 ```sh
 sudo apt install ./gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb
@@ -73,7 +73,7 @@ keykey-gnome-panel status
 
 開啟 **文字編輯器（琦琦注音）** 並點選空白文件。從 Fcitx 選單選 **chichi77 KeyKey Bopomofo**；按 **Ctrl + Space** 可在 Fcitx 英文鍵盤與琦琦注音間切換。若已選琦琦注音卻只輸出英文，按 `Ctrl + \` 或短按 **Shift** 切回中文。
 
-好打注音可連續輸入音節，按 **Enter** 送出整段組字；按 **Space** 或 **↓** 可為目前游標位置開啟候選，選字後繼續組字。傳統注音則逐字選字。完整按鍵、1.3.0 實拍畫面與疑難排解見 [日常使用說明](LINUX_INSTALL.md#5-試打與基本操作)。
+好打注音可連續輸入音節，按 **Enter** 送出整段組字；按 **Space** 或 **↓** 可為目前游標位置開啟候選，選字後繼續組字。傳統注音則逐字選字。完整按鍵、操作圖與疑難排解見 [日常使用說明](LINUX_INSTALL.md#5-試打與基本操作)。
 
 ## 遇到問題時
 

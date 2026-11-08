@@ -2,7 +2,7 @@
 
 此目錄開發 macOS／Windows 更新通知與手動確認後的更新流程，以及發布工具；**端到端驗收尚未完成**。
 
-1.5.0 改採 Guanyinma（觀音嬤）共用核心；本目錄仍沿用各桌面原生更新流程。新版的來源、安裝／升級、簽章與公告條件見 [六平台發布準備](../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。先完成正式資產驗證，再透過工作分支 PR 更新 stable feed；不因原始碼升版預先推進公告或下載連結。
+1.5.0 改採 Guanyinma（觀音嬤）共用核心；本目錄仍沿用各桌面原生更新流程。新版的來源、安裝／升級、簽章與公告條件見 [六平台發布準備](../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。先完成正式資產驗證，再透過工作分支 PR 更新 stable feed；文件中的 1.5.0 下載入口供發布使用；不因文件或原始碼升版預先推進實際 feed 公告。
 `config.json` 已設定維護者提供的正式公開金鑰與 stable／beta CDN feed。自動檢查預設開啟，保留使用者既有關閉設定；所有桌面版採下述啟動延後／每週排程；beta 選項預設關閉；舊版第一次導入仍須手動安裝含新設定的版本。未使用 Yahoo 舊服務、
 RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 
@@ -101,9 +101,9 @@ Windows WinSparkle 的 COPYING 都會隨安裝包保留。
 
 ### macOS 正式更新與啟用
 
-macOS **1.3.8** 已正式發布，stable appcast 與 signed metadata 已合併並同步 CDN，提供 Apple Silicon 的 1.3.8 簽章更新項目，最低系統為 macOS 15。Windows x64／x86 與 Linux／FreeBSD 公告維持 **1.3.7**；iOS、Android 正式版也維持 1.3.7。已包含相同正式 feed 與公鑰的舊版可找到這次 macOS 更新；每週檢查保留使用者既有開關，也可按「立即檢查」。尚未包含更新設定的舊版仍需先手動安裝。
+macOS **1.5.0** 的 stable appcast 與 signed metadata，須在正式安裝包通過來源、版本、簽章及公證驗證後，由 feed PR 發布並同步 CDN。目標為 Apple Silicon、macOS 15 以上。已包含相同正式 feed 與公鑰的舊版可接收公告；每週檢查保留使用者既有開關，也可按「立即檢查」。尚未包含更新設定的舊版仍需先手動安裝。
 
-正式安裝包、SHA-256 校驗檔與建置資訊見 [1.3.8 Release 的台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/tag/v1.3.8#台灣-aws-下載點)。該頁僅提供 macOS；Windows 與 Ubuntu 下載維持 [1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點)。
+1.5.0 正式安裝包、SHA-256 校驗檔與建置資訊於 [1.5.0 Release 的台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/tag/v1.5.0#台灣-aws-下載點) 上傳後提供。各平台資產與公告分別驗證；本文件更新不代表 feed 已推進至 1.5.0。
 
 正式 feed 為 `https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml`，GitHub 原始檔為 `https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/macos-arm64.xml`。客戶端目前不會在兩個來源間自動切換。
 
@@ -111,7 +111,7 @@ macOS **1.3.8** 已正式發布，stable appcast 與 signed metadata 已合併�
 
 必須在 `release` environment 設定 `UPDATE_ED25519_PRIVATE_KEY_PEM`，並在 repository 的 Actions 權限允許 workflow 建立 PR。穩定版不再需要 `MACOS_UPDATE_METADATA_ENABLED`；既有 beta 候選流程仍使用該開關。私鑰只寫入 runner 的暫存檔供 OpenSSL 使用，步驟結束即刪除，不輸出、不放入 artifact。workflow 另保存公開簽章候選 artifact，供檢視或開 PR 失敗時手動取回。
 
-**已發布版本的手動補救：** 在 Actions 選 `Prepare macOS Stable Update`，使用 `master`，填入 `release_tag=v1.3.8`。此入口沿用已發布原包及來源驗證；同版已在正式 feed 且雜湊相同時不重複建立更新，不允許降版或替換同版內容。若該版已有 PR 分支，會停止並要求先檢查既有 PR，不覆寫他人修改。
+**已發布版本的手動補救：** 在 Actions 選 `Prepare macOS Stable Update`，使用 `master`，填入 `release_tag=v1.5.0`。此入口沿用已發布原包及來源驗證；同版已在正式 feed 且雜湊相同時不重複建立更新，不允許降版或替換同版內容。若該版已有 PR 分支，會停止並要求先檢查既有 PR，不覆寫他人修改。
 
 feed PR 仍須由維護者 review／merge；合併後才由 `Sync Update Feeds to CDN` 部署公告。workflow 只準備穩定 macOS 更新，不發布 beta feed、不直接部署 CDN。若準備期間 `master` 已更新，會停止並要求重跑，以免覆蓋其他平台剛更新的 metadata。
 
@@ -231,7 +231,7 @@ macOS stable 在原包發布成功後自動準備公告 PR；beta 候選仍須�
 本機選擇發布設定與版本標記（以下以正式產品版號為例，只供建置，不安裝；測試頻道套用上表的 tag 規則）：
 
 ```sh
-python3 update/prepare.py select-release --tag v1.3.2 --version 1.3.2 \
+python3 update/prepare.py select-release --tag v1.5.0 --version 1.5.0 \
   --out update/out/release-build-config.json
 export KEYKEY_UPDATE_CONFIG="$PWD/update/out/release-build-config.json"
 # 接既有 macOS／Windows 建置；macOS 在 build 後、簽章前另執行：
@@ -301,11 +301,12 @@ updater 測試，不建置 TSF、不安裝、不發布、不取得 release secre
 | CDN x86 | `https://download.aws.polobread.com/keykey/update/stable/windows-x86.xml` |
 | GitHub Raw x86 | `https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/windows-x86.xml` |
 
-`update/stable/windows-x64.xml` 提供 Windows 1.3.7 的自動更新項目，指向已通過
+發布 Windows **1.5.0** 時，`update/stable/windows-x64.xml` 須指向通過
 Certum Authenticode 與 Ed25519 驗證的內容位址 EXE。`metadata.json` 與
-`metadata.json.sig` 保留本機簽包時的原始 bytes；版本、tag 與建置來源一致。
-`windows-x86.xml` 提供 1.3.7 已簽署 ZIP 的 CDN／GitHub 手動下載連結，
+`metadata.json.sig` 保留本機簽包時的原始 bytes；版本、tag 與建置來源必須一致。
+`windows-x86.xml` 須提供同版已簽署 ZIP 的 CDN／GitHub 手動下載連結，
 仍無 `item`／`enclosure`，不會自動下載或安裝 x86 ZIP。
+這些變更由正式資產驗證後的 feed PR 提交，不以文件修改取代公告發布。
 客戶端目前使用單一 feed URL，尚未實作來源自動切換。
 使用者 review 並將 feed PR 合併至 `master` 後，Raw 網址才會更新；CDN 由
 `Sync Update Feeds to CDN` 驗證遠端安裝包後同步。若以 `[skip ci]` 避免重跑
@@ -317,7 +318,7 @@ build-info 的 `source_sha` 與 `tag_sha` 不同，屬既有同版 recovery 下�
 這批檔案可供手動下載，但不直接通過現有 stable 自動更新的來源驗證。
 後續自動更新需另有符合 review／tag／版本規則、已完成 Ed25519 簽章的安裝器。
 
-Windows 1.3.7 的 GitHub Raw 與 CDN 提供同一份 feed，安裝包網址固定指向 CDN。
+Windows 1.5.0 公告發布後，須核對 GitHub Raw 與 CDN 提供同一份 feed；安裝包網址依簽署的 metadata 指向 CDN。
 現有 metadata 簽章包含下載網址，沿用簽包時須保留原始 bytes；Raw 目前只提供 feed
 備份，安裝包下載仍依賴 CDN。日後若提供獨立的 GitHub 安裝包來源 feed，須為該網址
 另行產生並簽署 metadata，先驗證遠端安裝包，再發布該來源的 feed。
@@ -345,8 +346,8 @@ Manifest 是 JSON，`schema_version: 1`、`channel: "stable"`、`releases` 陣�
 ```json
 {
   "target": "macos-arm64",
-  "version": "1.3.2",
-  "release_tag": "v1.3.2",
+  "version": "1.5.0",
+  "release_tag": "v1.5.0",
   "source_sha": "0000000000000000000000000000000000000000",
   "tag_sha": "0000000000000000000000000000000000000000",
   "file": "/absolute/path/signed-and-notarized.pkg.zip",
@@ -433,10 +434,10 @@ ports／pkg 更新、套件可能較晚上架，不查套件庫，也不增加�
 發行頁及 RSS description 可以同時列出 CDN／GitHub 下載連結。
 舊版客戶端仍查 GitHub API，必須安裝含新 reader 的版本才會切換。
 
-stable feed 已加入 1.3.7 公告，對應已驗證的 Ubuntu 24.04 amd64 套件與共用詞庫；
-GitHub／CDN 副本的大小、SHA-256、套件版本及架構均已核對。尚未驗證 arm64 套件，
-因此 Linux 只向 amd64 使用者公告；FreeBSD 使用相同 item，同步通知並提示 ports／pkg
-套件可能較晚上架。beta feed 目前沒有 item。
+發布 **1.5.0** 時，先核對 Ubuntu 24.04 amd64 套件與共用詞庫，以及
+GitHub／CDN 副本的大小、SHA-256、套件版本與架構，再準備 stable feed PR。
+未驗證的架構不公告；FreeBSD 使用相同 item，同步通知並提示 ports／pkg
+套件可能較晚上架。文件升版不修改現有 stable／beta feed 內容。
 公告須經 PR 合併並完成 CDN 同步後才生效。此 feed 只通知並開啟下載頁，
 不提供 installer `enclosure` 或自動安裝。
 同步工具使用與客戶端相同的 XML 驗證，不改變既有 macOS／Windows signed metadata 規則。
@@ -484,10 +485,10 @@ Actions 的建立 PR 權限需開啟；review／merge 仍由維護者完成。
     <link>https://github.com/polobread/KeyKey/releases</link>
     <keykey:schemaVersion>1</keykey:schemaVersion>
     <item>
-      <title>琦琦輸入法 1.3.2</title>
-      <sparkle:version>1.3.2</sparkle:version>
-      <sparkle:shortVersionString>1.3.2</sparkle:shortVersionString>
-      <link>https://github.com/polobread/KeyKey/releases/tag/v1.3.2</link>
+      <title>琦琦輸入法 1.5.0</title>
+      <sparkle:version>1.5.0</sparkle:version>
+      <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
+      <link>https://github.com/polobread/KeyKey/releases/tag/v1.5.0</link>
       <keykey:linuxArchitecture>amd64</keykey:linuxArchitecture>
       <description>Linux 請透過套件管理器安裝；FreeBSD 請透過 ports/pkg 更新，套件可能較晚上架。</description>
     </item>
