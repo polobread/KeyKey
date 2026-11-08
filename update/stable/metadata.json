@@ -1,6 +1,6 @@
 {
   "channel": "stable",
-  "generated_at": "2026-11-08T16:32:40.348333+00:00",
+  "generated_at": "2026-11-08T18:24:31.384236+00:00",
   "package_managers": {
     "freebsd": "ports/pkg",
     "linux": "distribution repository"
