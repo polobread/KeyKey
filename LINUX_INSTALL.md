@@ -2,7 +2,7 @@
 
 想在 Ubuntu 輸入中文，可以安裝琦琦輸入法 **1.3.7**，透過 Fcitx 5 使用好打注音、傳統注音、倉頡與簡易。完成套件安裝後，還要啟用 Fcitx、加入琦琦，再回文字 App 試打。
 
-本頁帶你依序完成 **下載五檔 → 校驗安裝 → 啟用並重啟 → 加入琦琦 → 第一次選字**。自行編譯另見 [Linux `./configure` 編譯安裝指南](LINUX_CONFIGURE_INSTALL.md)。
+本頁帶你依序完成 **下載五檔 → 校驗安裝 → 啟用並重啟 → 加入琦琦 → 第一次選字**。下載與安裝步驟仍對應正式 1.3.7；另附 [1.5.0 原始碼版設定導覽](#新版原始碼設定導覽150)，說明 Guanyinma（Rust）核心的新選項。自行編譯另見 [Linux `./configure` 編譯安裝指南](LINUX_CONFIGURE_INSTALL.md)。
 
 ## 安裝前確認
 
@@ -105,9 +105,11 @@ keykey-gnome-panel status
 
 選取清單中的 Bopomofo，開啟設定。**「注音模式」預設為「好打注音」**，可在此改成「傳統注音」。第一次使用可先保留 **標準（Standard）** 鍵盤配置和 **直式（Vertical）** 候選；習慣倚天、倚天 26 鍵、許氏或漢語拼音時，再切換鍵盤布局。此頁也可調整繁轉簡、Big-5 範圍外候選、打字錯誤提示音、中英文快捷鍵和關聯詞庫。
 
-![琦琦 1.3.7 中文設定頁，使用標準鍵盤、好打注音及直式候選](docs/images/keykey-linux-v137-lnx08-bopomofo-settings-ubuntu2404-wayland.png)
+自行編譯 **1.5.0** 時，設定依「一般、注音、倉頡、簡易、自訂詞、詞庫」分組，可向下捲動。下圖是新版原始碼的設定示範；正式 1.3.7 的選項較少，沒有全部新版功能。
 
-本機使用 **標準、好打注音、直式**；下方另有好打注音進階設定。這是升級後保留的設定畫面。
+![1.5.0 共用 Fcitx 設定的一般分組，包含啟動語言、Caps Lock、數字鍵盤與中英切換](docs/images/keykey-unix-v150-fcitx-general.png)
+
+「中文模式忽略 Caps Lock」預設關閉；英文模式保留大小寫功能。候選字窗方向在此設定，字型與外觀由 Fcitx／GNOME 主題調整。
 
 ## 5. 試打與基本操作
 
@@ -159,9 +161,9 @@ keykey-gnome-panel status
 
 從琦琦設定開啟 **倉頡設定…**，勾選 **即時候選**及 **未打完也能選字**，依視窗提示儲存。桌面版這兩項預設關閉，即時候選與錯碼清除互斥。
 
-![Linux 倉頡設定的即時候選及未打完也能選字均已勾選](docs/images/keykey-linux-v137-lnx09a-cangjie-settings-ubuntu2404-wayland.png)
+![正式 1.3.7 Linux 倉頡工具的即時候選及未打完也能選字均已勾選](docs/images/keykey-linux-v137-lnx09a-cangjie-settings-ubuntu2404-wayland.png)
 
-上圖兩項均已開啟，錯碼清除關閉；這是本機原有設定，不代表全新安裝預設值。
+上圖保留正式 **1.3.7** 的獨立倉頡工具：兩項均已開啟，錯碼清除關閉，是本機原有設定。新版完整設定見下方[設定導覽](#倉頡與簡易進階設定)。
 
 回文字編輯器，從 Fcitx 清單選 **Cangjie**，只輸入 H、K，也就是 **竹、大**，從候選找 **喬**。不必先輸入完整「竹大口月口」，按實際候選編號即可選字。
 
@@ -190,10 +192,6 @@ keykey-gnome-panel status
 
 「好打注音進階設定」可調整 **空白鍵開啟候選**、選字目標在游標前／後，以及 **Esc 清除整句**。空白開候選與 Esc 清除整句預設關閉；未啟用空白選字時仍可按 ↓ 開候選。
 
-![好打注音進階設定：空白鍵開候選、選字目標及 Esc 清除整句](docs/images/keykey-linux-v137-lnx10-smart-options-ubuntu2404-wayland.png)
-
-本機三項均未勾選，選字目標為游標後方；此圖為前述注音設定頁的局部。
-
 在不同 App 或桌面 session 的鍵盤操作相同，但輸入橋接與候選窗位置可能不同。請先用上述文字編輯器主線試打，再比較其他 App。
 
 ![GNOME Terminal 中實際注音組字並開啟法的候選](docs/images/keykey-linux-v137-lnx11-terminal-candidate-ubuntu2404-wayland.png)
@@ -205,6 +203,38 @@ keykey-gnome-panel status
 - GNOME 文字編輯器 46 的一般啟動方式，在某些 Wayland 輸入路徑可能無法啟用 Fcitx；可改用套件附的 **文字編輯器（琦琦注音）** 啟動器。其他 GTK App 遇到相同情況時，可用 `keykey-fcitx-app 程式名稱` 啟動。
 - 切換輸入法或中英文模式時，好打注音會先完成可辨識的讀音並送出目前的組字文字。尚未完成的讀音會以原始按鍵保留。
 - 實體雙螢幕、熱插拔、所有 GNOME 主題與所有 App 尚未逐一驗證；若遇到問題，請記下環境與重現步驟。
+
+## 新版原始碼設定導覽（1.5.0）
+
+以下為 **master 的 1.5.0 原始碼版**，共用 Guanyinma（Rust）核心；正式 1.3.7 套件不包含所有選項。從 Fcitx 清單選琦琦輸入法並按設定齒輪，可在同一個長頁中調整各分組；改好後按 **OK／確定**或 **Apply／套用**儲存。
+
+### 注音與好打組字
+
+注音分組可切換好打／傳統模式、鍵盤配置、字集與傳統選字鍵。好打另可選 **選字鍵**、**10～20 音節組字長度**、選字後回句尾及 Shift 字母強制大寫，並分別控制上下文組句、記憶選字偏好與學習相鄰詞。
+
+![1.5.0 注音與好打進階設定，包含選字鍵、組字長度、游標與學習選項](docs/images/keykey-unix-v150-fcitx-bopomofo.png)
+
+好打預設使用 `123456789` 九個選字鍵、十音節組字；也可改用八鍵或字母鍵。空白開候選、Esc 清整句、選字後回句尾與 Shift 強制大寫預設關閉，三個組句／學習選項預設開啟。
+
+### 倉頡與簡易進階設定
+
+倉頡可在此調整滿碼查詢、動態詞頻、即時與前綴候選、錯碼清除、標點、選字鍵、最長字根數及空白鍵行為；通配字可設定為 `?`／`*`，留空停用。要打「竹大」提前選「喬」，仍須開啟 **即時候選**與 **未打完也能選字**。
+
+![1.5.0 原生倉頡設定，含最長字根數、空白鍵選字與通配字](docs/images/keykey-unix-v150-fcitx-cangjie.png)
+
+簡易也有獨立的選字鍵、動態詞頻、標點與空白鍵設定，最長字根數可設為一或二；不提供倉頡的前綴候選。兩種輸入法的預設不同，請分別確認。
+
+![1.5.0 簡易設定，包含滿碼處理、動態詞頻、選字鍵與最長字根數](docs/images/keykey-unix-v150-fcitx-simplex.png)
+
+### 自訂詞與詞庫
+
+「使用自訂詞庫」可控制自訂詞；按 **管理自訂詞與學習資料…**可新增、修改、刪除自訂詞，重設學習，或匯入／備份完整 Guanyinma JSON。「詞庫」分組則可逐項開關小麥與其他分類的關聯詞。
+
+![1.5.0 自訂詞管理入口與分類詞庫開關](docs/images/keykey-unix-v150-fcitx-phrases.png)
+
+圖中顯示部分分類，繼續向下捲動可看更多詞庫。
+
+新版自訂詞與學習使用獨立的 `guanyinma-user.db`；舊 Linux 使用者資料不會自動匯入或刪除。完整設定及資料說明見 [Linux／FreeBSD Guanyinma 接合](docs/GUANYINMA_LINUX_ADAPTER.md)。
 
 ## 遇到問題時
 
@@ -233,10 +263,12 @@ sudo apt remove fcitx5-chichi77-keykey chichi77-keykey-data \
 
 ## 圖片與適用範圍
 
-本輪於 **2026-10-24** 在 VirtualBox 的 **Ubuntu 24.04.5 LTS／GNOME Shell 46.0／Wayland／amd64** 實拍，使用 AWS CDN 的正式 1.3.7 套件；四個檔案均通過 `SHA256SUMS`。既有 1.3.3 已升級至 1.3.7，重新啟動並登入後核對套件版號、關於頁及 GNOME 面板 `ACTIVE`。
+正式 **1.3.7** 的安裝與輸入圖片於 **2026-10-24** 在 VirtualBox 的 **Ubuntu 24.04.5 LTS／GNOME Shell 46.0／Wayland／amd64** 實拍，使用 AWS CDN 的正式 1.3.7 套件；四個檔案均通過 `SHA256SUMS`。既有 1.3.3 已升級至 1.3.7，重新啟動並登入後核對套件版號、關於頁及 GNOME 面板 `ACTIVE`。
 
 ![Ubuntu 本機關於頁顯示琦琦輸入法版本 1.3.7](docs/images/keykey-linux-v137-about-ubuntu2404-wayland.png)
 
-主線宿主為 **GNOME Text Editor 46.3／GTK 4.14.5**，經 `keykey-fcitx-app` 使用直接 Fcitx 輸入路徑；另拍 GNOME Terminal 的 GTK 3 路徑。兩行文字與倉頡「喬」均以實際按鍵輸入，並從儲存檔核對內容，沒有貼上文字模擬組字。18 個補圖位置已補齊，共引用 20 張圖片，含設定局部與版本核對圖。
+主線宿主為 **GNOME Text Editor 46.3／GTK 4.14.5**，經 `keykey-fcitx-app` 使用直接 Fcitx 輸入路徑；另拍 GNOME Terminal 的 GTK 3 路徑。兩行文字與倉頡「喬」均以實際按鍵輸入，並從儲存檔核對內容，沒有貼上文字模擬組字。
 
-本輪沒有拍攝全新安裝或 X11，也沒有重跑完整發布矩陣；圖片只記錄上述 VM 與宿主的操作。原本 1.3.0 圖片未作為新版證據，完整來源見[跨平台截圖計畫](docs/CROSS_PLATFORM_SCREENSHOT_PLAN.md)。
+該次 1.3.7 拍攝沒有涵蓋全新安裝或 X11，也沒有重跑完整發布矩陣；原本 1.3.0 圖片未作為新版證據，來源見[跨平台截圖計畫](docs/CROSS_PLATFORM_SCREENSHOT_PLAN.md)。
+
+**1.5.0 設定圖**於 **2026-11-08** 使用 master `95ea265` 建置的 staged addon，在 Ubuntu 24.04、Fcitx 5／Qt 5、私有 Xvfb 實拍。五張圖依序擷取同一個原生設定長頁，只裁切畫面；拍攝使用隔離的設定與資料目錄，未更動個人桌面設定。這些圖片展示新版設定，不代表正式套件已發布或完成 GNOME Wayland、FreeBSD 與完整安裝驗收。
