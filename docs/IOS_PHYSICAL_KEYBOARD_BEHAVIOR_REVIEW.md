@@ -8,7 +8,7 @@
 舊 iOS 對照為 Rust 遷移前的 `185f5dcde4722100879055fdd8285ad9eee2088d`。
 
 此處只指容器 App 前景的實體鍵盤編輯器；iOS 鍵盤 extension 不接收一般 USB／藍牙鍵盤事件。
-本輪使用隔離的 iPhone 16 Plus／iOS 26.5（23F77）Simulator，未操作或重新安裝實體 iPhone。
+遷移修正階段使用隔離的 iPhone 16 Plus／iOS 26.5（23F77）Simulator；後續真機驗證見下節。
 
 ## 右側候選：恢復遷移前規則
 
@@ -83,7 +83,53 @@ helper 不發 macOS 全域鍵盤事件、不選其他 Simulator 或手機；原�
 - 候選是固定九個 UIButton，沒有獨立 UIWindow／浮窗 owner；未找到 Android 殘留多浮窗的同型路徑。
 - Enter 沒有第二條 UIKeyCommand／GCKeyboard 送字路徑，輸出 view 不可編輯／選取，不會由原生文字欄位導航下一欄。
   本輪以真 HID 按放確認組字與普通換行，未把 Android 的 Up 修正直接套用。
-- 未驗收真正 USB／藍牙傳輸、實體長按 Enter／選字數字，亦不把 Simulator 結果當成 extension 或實體 iPhone 驗收。
+- 上述 Simulator 案例不代表 USB／藍牙傳輸或 extension 已驗收；實體長按 Enter／選字數字未列為本輪通過項目。
+
+## iPhone 16 Plus 真機驗證
+
+實體 iPhone 16 Plus（iPhone17,4）、iOS 27.2（24B119），使用來源 `4c674f7f07117119df1d46a6a087c9e382ff1d73`
+的 Release App／extension，版本 1.5.0（1）。安裝前已核對簽章、兩個 bundle 版號與正式 DB 雜湊；
+測試操作同一份已安裝 App，未重編或替換產品碼。
+
+使用獨立簽章的 XCTest runner，以 `XCDeviceEvent.deviceEventWithPage:usage:duration:` 與
+`XCUIDevice.performDeviceEvent:error:` 在真機送 Keyboard page `0x07` 的完整按放事件。
+先以 `ab → Left → Delete → a`、句尾 Delete 不變、Backspace 刪空、Enter 單次換行確認事件實際到達。
+這些私有測試 API 只存在本機的外部 runner，不連入 App／extension。
+
+下列 **8 組功能路徑全數通過**，由一個完整矩陣案例逐個核對文字、游標、候選與畫面：
+
+| 路徑 | 真機觀察結果 |
+|---|---|
+| 字首候選及插入 | `｜你好` 選「妳」，在所選字後續打，確認 `妳媽好` |
+| 字中右側候選 | `你｜好` 選「郝」，續打後確認 `你郝媽` |
+| 句尾候選 | 句尾以下鍵開最後一字候選，選「郝」並續打，確認 `你郝媽` |
+| Backspace 組字 | `你｜好` 向左刪除，續打後為 `媽好`，刪除讀音未復活 |
+| Forward Delete 組字 | `你｜好` 向右刪除，續打後為 `你媽`；刪空最後讀音後新輸入只有 `好` |
+| 已確認文字與後文保護 | 英文右刪、句尾不誤刪、Backspace 刪空；刪空組字保留已確認 `z`，再輸入得到 `好z` |
+| 未完成讀音與旋轉／Enter | `你ㄏ` 直轉橫再轉直仍保留，補讀音後確認 `你好`；下一次 Enter 只加入一個換行 |
+| 開候選跨旋轉及後續編輯 | 候選文字與游標在橫式保持，選字、續打、Enter、Backspace、Delete 均正確；轉回直式後 Enter 正常 |
+
+另有真機長按案例通過：Backspace／Forward Delete 各按住 0.8 秒，刪除多個游標左／右側字元，
+保留另一側文字；放開後再等待 0.65 秒，內容保持不變，沒有持續刪除。
+
+自動化功能部分共三個測試；另有一個人工對照前置及一個人工結果回讀／畫面核對，全部為 **0 失敗、0 略過**。人工前置本身不算功能驗收。
+沒有重設或清空既有學習庫；正常選字仍可能更新 App 學習。候選依單字與當時可見數字定位，不假設固定順位。
+矩陣結束清除本輪測試文字，恢復進入該矩陣時的輸入法／鍵盤設定；後續人工前置另保留好打注音／標準與「｜你好」。
+
+使用者另以真正外接鍵盤完成字首選「妳」、續打ㄇㄚ、右側選「郝」、橫式 Backspace／Left／Delete、
+Enter 確認與換行、轉回直式後再選「你」的對照，回報「完成，結果符合」。人工操作期間 agent 未注入按鍵。
+接回 Mac 後，runner 獨立讀回已確認文字為 `妳\n你`，游標為「第 2 行・第 2 格」，沒有額外換行。
+外接連線種類未另記錄；這是該次外接鍵盤對照通過，不代表 USB 與藍牙兩種傳輸各自都已驗收。
+
+部分 `app.screenshot` 橫式附件有黑區／裁切，因此另取 `XCUIScreen` 與 `devicectl` 全螢幕證據。
+直接從手機擷取的 `landscape-native-full-screen.png` 為 2796×1290，已目視確認四欄完整、結果仍為兩行「妳／你」；
+不以 App 範圍的裁切附件判定產品畫面異常。再次轉回直式後，已確認文字仍相同。
+測試結束保留這兩行結果與直式畫面，移除臨時 XCTest runner；未清空學習庫或替換產品 App。
+
+真機證據位於主要 checkout 的 `Installer/local-builds/ios-physical-acceptance-20261108/`：
+`hid-delivery-ready.xcresult`、`matrix-native.xcresult`、`hold-and-manual-ready.xcresult`、
+`manual-and-screen.xcresult` 與各自的 log／summary JSON；`device-verification.json` 彙整來源、按鍵方式、人工結果與雜湊。
+矩陣保存逐步 screenshot／AX 附件；外部 runner 原始碼與 Xcode project 同樣留在此產物目錄，不提交。
 
 ## 本機證據
 
