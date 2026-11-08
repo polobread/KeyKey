@@ -6,6 +6,8 @@
 
 琦琦輸入法改採 **Guanyinma（觀音嬤）** 作為 Windows、macOS、iOS、Android、Linux 與 FreeBSD 的單一共用核心。名稱來自臺語對觀世音菩薩的稱呼「觀音嬤」。Rust 核心統一處理好打注音、傳統注音、倉頡與簡易的輸入邏輯、候選排序及學習；各平台保留自己的介面、鍵盤與文字宿主接合。
 
+原 macOS／Windows 好打注音核心 **Manjusri（文殊菩薩）** 已由 Guanyinma 接替。1.5.0 產品不再內建 Manjusri 或各平台原有的舊輸入引擎，不提供舊核心選擇或失敗回退；已發布舊版本的歷史與授權紀錄仍保留。
+
 集中維護與測試可減少重複實作，讓修正與新能力更容易帶到各平台。這不是六平台介面或全部設定相同的承諾；支援範圍見[跨平台設定支援表](CROSS_PLATFORM_SETTINGS_ROADMAP.md)，完整變更見 [CHANGELOG 1.5.0](../CHANGELOG.md#150)。
 
 可用於 Release／商店說明的摘要：

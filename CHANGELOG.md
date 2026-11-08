@@ -6,6 +6,8 @@
 
 正式發布狀態見 [README](README.md) 與各平台安裝指南；六平台的發布準備與驗收項目見 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。
 
+原 macOS／Windows 好打注音核心 Manjusri（文殊菩薩）由 Guanyinma 接替；產品不再內建 Manjusri 或各平台原有的舊輸入引擎，不提供舊核心切換或失敗回退。
+
 ### 共用詞庫
 
 - 依傳統注音 CIN 順位計算字與讀音的詞頻，套用於好打注音 Unigram 與 Bigram；ㄏㄨˇ 的「虎」優先於「許」，「許」的 ㄒㄩˇ 保留原始詞頻。
