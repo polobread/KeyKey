@@ -56,7 +56,7 @@ Windows、Android 與 iOS 建立現代化 frontend。
 
 目前原始碼改採 **Guanyinma（觀音嬤）** 作為唯一的輸入核心。名稱取自臺語對觀世音菩薩的親切稱呼「觀音嬤」，Guanyinma 是這個稱呼的專案拼寫。
 
-命名也借用觀音菩薩「普門示現、隨類應化」的慈悲意象，因應不同需要，以相應的方式給予照顧。對琦琦輸入法而言，這份期許是以同一共用核心，配合各平台不同的原生環境，照顧各種裝置與使用者，讓六大平台都能穩定、順暢地輸入中文。意象參考[法鼓山〈觀世音菩薩普門品〉介紹](https://bm.ddm.org.tw/faqdetail_tw.php?id=7047)。
+取名「觀音嬤」，也借用觀音菩薩慈悲照顧眾生的形象。我們希望這套共用核心也能照顧不同平台與裝置，讓大家無論使用哪個平台，都能穩定、順暢地輸入中文。命名靈感參考[法鼓山的觀音介紹](https://bm.ddm.org.tw/faqdetail_tw.php?id=7047)。
 
 過去 macOS／Windows 的好打注音採用 **Manjusri（文殊菩薩）** 核心，目前已由 Guanyinma 接替。以目前原始碼建置的產品不再內建 Manjusri 或各平台原有的舊輸入引擎，也不提供舊核心切換或失敗回退。
 
@@ -254,12 +254,11 @@ Current sources use **Guanyinma (觀音嬤)** as the sole input core. Its name i
 project's spelling of the Taiwanese name “觀音嬤”, an affectionate name for
 Guanyin, the Bodhisattva of Compassion.
 
-The name also draws on Guanyin's compassionate response to different needs
-through different manifestations, as described in the
-[Universal Gate chapter introduction from Dharma Drum Mountain](https://bm.ddm.org.tw/faqdetail_tw.php?id=7047).
-For KeyKey, this expresses an aspiration: one shared core, adapted to each
-platform's native environment, caring for users across devices so they can
-type Chinese reliably and comfortably on all six platforms.
+The name also takes inspiration from Guanyin's compassion and care for all
+beings. We hope this shared core can serve users across platforms and devices,
+helping everyone type Chinese reliably and comfortably wherever they use KeyKey.
+See [Dharma Drum Mountain's introduction to Guanyin](https://bm.ddm.org.tw/faqdetail_tw.php?id=7047)
+for the inspiration behind the name.
 
 The former macOS/Windows Smart Phonetic core was **Manjusri (文殊菩薩)**,
 named after Manjushri, the Bodhisattva of Wisdom. Current source builds replace
