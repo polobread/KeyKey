@@ -6,7 +6,7 @@
 
 ## 1.5.0 上架準備
 
-新版主軸為 Guanyinma（觀音嬤）六平台共用核心、集中維護，以及行動鍵盤的版面、鍵帽間隔、四級字體與刪除鍵位置。對外說明可參考 [1.5.0 發布準備](../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)與[更新紀錄](../CHANGELOG.md#150)。本輪只整理文字，未重新產圖或上傳商店。
+新版主軸為 Guanyinma（觀音嬤）六平台共用核心、集中維護，以及行動鍵盤的版面、鍵帽間隔、四級字體與刪除鍵位置。對外說明可參考 [1.5.0 發布準備](../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)與[更新紀錄](../CHANGELOG.md#150)。既有 iPhone／iPad 與 Google Play 素材保留；Duo 專用圖組使用 1.5.0 重新拍攝，詳見下方說明。
 
 送審前以最終 archive／AAB 補核實際畫面、版本與商店文案；現有「五平台」圖是歷史素材，不能當成新版六平台架構圖。iOS 實體鍵盤仍只限容器 App 前景編輯器，不宣稱在其他 App 接管 USB／藍牙鍵盤。舊截圖保留來源版號；若新版外觀不同，另拍真正 App 畫面再更新素材。
 
@@ -17,6 +17,7 @@
 | App Store iPhone 中型顯示器上架 | `AppStore/iPhone-1206x2622/01.png`～`04.png` | 1206 × 2622 | 好打、傳統、實體鍵盤、四種輸入法切換 |
 | App Store iPhone 上架 | `AppStore/iPhone-1242x2688/01.png`～`04.png` | 1242 × 2688 | 同上 |
 | App Store iPad 上架 | `AppStore/iPad-2048x2732/01.png`～`04.png` | 2048 × 2732 | 同上 |
+| App Store iPhone Duo 上架 | `AppStore/iPhone-Duo-2007x2853/01.png`～`05.png` | 2007 × 2853 | 分離鍵盤、好打、傳統、實體鍵盤、設定 |
 | Google Play 手機 | `GooglePlay/Phone/01.png`～`05.png` | 1080 × 1920 | 好打整句、句中改字、傳統、實體鍵盤、五平台 |
 | Google Play 主視覺 | `GooglePlay/feature-graphic-1024x500.png` | 1024 × 500 | 好打、傳統、實體鍵盤 |
 | 五平台獨立圖 | `FivePlatforms/five-platforms.png` | 1080 × 1920 | 與 Google Play `05.png` 相同 |
@@ -70,3 +71,31 @@ archive 的圖示及安裝後主畫面，不能以原始碼圖示替代已上架
 Android 與 iOS 的 App／系統鍵盤名稱統一為「琦琦輸入法」。商店圖產生器及
 Google Play 主視覺的品牌文字同步更新；iPhone／iPad 第三、第四張已更新為 1.3.2 的實體鍵盤編輯器與設定頁；第四張介紹好打注音、傳統注音、倉頡與簡易四種輸入方式；第一、第二張保留原始畫面。
 上架時須同步更新 Google Play 與 App Store 的名稱及使用新版介面截圖。
+
+## iPhone Duo 專用商店圖
+
+Duo 圖組獨立放在 `AppStore/iPhone-Duo-2007x2853/01.png`～`05.png`，尺寸為 **2007 × 2853**，不覆寫既有 iPhone／iPad 圖組。延續 A 版深紫色風格，第一張主打分離鍵盤，其餘依序介紹好打注音、傳統注音、App 實體鍵盤編輯器與設定。
+
+拍攝日期為 **2026-11-09**，來源為 **iOS 1.5.0／`v1.5.0`（`b2f73e4`）**，使用 Release／arm64 的 iPhone Duo 模擬器產物與 iOS 27.2 runtime。產物 plist 為 1.5.0（build 1），來源與拍攝資訊另存 manifest，不由檔名推定。原始截圖保存在 `Sources/`：
+
+| 上架順序 | 原始截圖 | 畫面 |
+| --- | --- | --- |
+| 01 | `ios-duo-v150-split.png` | 內螢幕橫式，Safari 本機輸入頁中的分離鍵盤 |
+| 02 | `ios-duo-v150-smart.png` | 內螢幕直式，Safari 本機輸入頁中的好打注音連續組句 |
+| 03 | `ios-duo-v150-traditional.png` | 內螢幕直式，Safari 本機輸入頁中的傳統注音候選與鍵位 |
+| 04 | `ios-duo-v150-hardware-editor.png` | 內螢幕直式，琦琦 App 實體鍵盤編輯器，連接模擬器 Generic Keyboard |
+| 05 | `ios-duo-v150-settings.png` | 內螢幕直式，琦琦 App 設定中的四種輸入法與版面選項 |
+
+上述候選文字與組字均為實際輸入畫面，未後製候選內容。
+
+第二至第五張來源使用 Duo 內螢幕直式 **2007 × 2853**；第一張另接受橫式 **2853 × 2007**。產生器完整等比例放入原始畫面，不重畫、拼接或更換鍵盤與候選字；輸出為無 alpha 的 RGB PNG。[Apple 官方截圖規格](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications) 列有 Duo 內外螢幕尺寸，正式上傳仍須核對 App Store Connect 的對應裝置組與實際預覽。
+
+從儲存庫根目錄獨立產生 Duo 五張圖：
+
+```sh
+swift -module-cache-path /private/tmp/keykey-store-duo-module-cache StoreAssets/generate-duo-assets.swift
+```
+
+同一次命令也會產生 `AppStore/iPhone-Duo-preview.jpg` 五圖總覽，放在上架圖目錄之外供檢視，不列入上傳的五張 PNG。
+
+可使用 `--sources DIRECTORY` 與 `--output DIRECTORY` 指定其他來源及輸出目錄；未提供時使用上表來源與 Duo 專用目錄。此入口不會執行既有 `generate-assets.swift`，也不重產其他商店素材。
