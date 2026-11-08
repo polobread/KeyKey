@@ -17,18 +17,18 @@
 
 「Android 實體」包含 USB／藍牙鍵盤搭配原生 IME；「iOS 實體」**只限琦琦容器 App 前景的實體鍵盤編輯器**，不能在其他 App 接管外接鍵盤。下表的 iOS 實體欄全部受此限制。
 
-Linux 與 FreeBSD 共用 Fcitx 5 frontend，依使用者要求合併一欄；相同原始碼不代表相同驗收程度。Linux 的 X11、GNOME Wayland 與 FreeBSD 原生桌面須分別驗證；FreeBSD 不套用 Linux 已發布版號或測試結果。
+Linux 與 FreeBSD 共用 Fcitx 5 frontend，依使用者要求合併一欄；相同原始碼不代表相同驗收程度。Linux 的 X11、GNOME Wayland 與 FreeBSD 原生桌面須分別驗證；FreeBSD 共用 Linux 產品版號，實際套件上架與原生測試結果仍須分別確認。
 
-macOS 正式版另已核對公開 Release／CDN；其餘依儲存庫紀錄整理，本次未查詢商店後台或套件庫：
+六平台本次發布版號統一為 **1.5.0**，各平台交付入口如下；實際資產、商店上架與套件庫可取得狀態須在發布後核對。
 
-| 平台 | 開發版 | 已知正式發布狀態 |
+| 平台 | 發布版號 | 發布入口 |
 |---|---|---|
-| macOS | 1.5.0 | GitHub Release／CDN 1.3.9 |
-| Windows TSF | 1.5.0 | 正式版 1.3.7 |
-| Linux | 1.5.0 | 正式版 1.3.7 |
-| FreeBSD | 共用 1.5.0 frontend | 1.3.7 已有原生桌面紀錄；新核心另驗，套件庫版本可能較晚 |
-| Android（虛擬／實體） | 1.5.0 | 儲存庫記錄為 Google Play 1.3.7 |
-| iOS（虛擬／App 內實體） | 1.5.0 | 儲存庫記錄為 App Store 1.3.7 |
+| macOS | 1.5.0 | GitHub Release／CDN |
+| Windows TSF | 1.5.0 | GitHub Release／CDN |
+| Linux | 1.5.0 | GitHub Release／CDN |
+| FreeBSD | 1.5.0 | ports／pkg，套件庫版本可能較晚上架；原生桌面另驗 |
+| Android（虛擬／實體） | 1.5.0 | Google Play |
+| iOS（虛擬／App 內實體） | 1.5.0 | App Store |
 
 ## 一般、輸入法與鍵盤配置
 

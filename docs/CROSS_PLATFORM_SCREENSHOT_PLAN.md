@@ -29,7 +29,7 @@
 
 ## 2. 編輯方式與既有素材盤點
 
-參考[免費資源網的琦琦介紹](https://free.com.tw/chichi-keykey/)所採用的下載、安裝、系統加入輸入來源與首次選字順序，每張圖對應一項操作及可辨認的完成狀態。媒體文章屬外部介紹，正式版本及支援範圍以本專案 Release 與安裝指南為準；新版素材統一說明六平台支援及 1.3.7 商店上架。
+參考[免費資源網的琦琦介紹](https://free.com.tw/chichi-keykey/)所採用的下載、安裝、系統加入輸入來源與首次選字順序，每張圖對應一項操作及可辨認的完成狀態。媒體文章屬外部介紹，正式版本及支援範圍以本專案 Release 與安裝指南為準；1.5.0 新版素材統一說明六平台支援與新版功能；商店版號於實際上架後核對。
 
 | 平台 | 現有素材與指南 | 本輪補拍重點 |
 | --- | --- | --- |
@@ -84,7 +84,7 @@
 
 ### 桌面下載入口與 AWS CDN
 
-下載入口依各平台目前正式版本分開：macOS 使用 [1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)，Windows 與 Linux 使用 [1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)。macOS 的最新發布頁只提供 macOS 資產，Windows／Linux 指南須連到仍提供對應檔案的 1.3.7 發布頁。macOS 下載檔名與 CDN 已核對為 1.3.9；既有圖片及來源登記保留實拍的 1.3.7，不改寫圖片中的版號。
+下載入口與檔名統一對應 [1.5.0](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)，各平台資產發布上傳後核對實際連結及校驗檔。既有圖片及來源登記保留實拍的 1.3.7，不改寫圖片中的版號；新版補拍以最終 1.5.0 安裝包與商店版本為準。
 
 Windows、macOS、Linux 的指南同時列出 GitHub Release 與**台灣 AWS CDN**下載路徑；選相同正式版本、架構及檔名，核對 SHA-256 後安裝。Linux 保留三個 .deb、面板原始碼與 SHA256SUMS 完整五檔的流程。下載頁截圖採未登入 GitHub 的視角。
 

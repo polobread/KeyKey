@@ -16,19 +16,19 @@
 
 > 本版導入 Guanyinma（觀音嬤）Rust 共用核心，讓六大平台的四種輸入法共用組字、候選排序與學習機制，降低維護成本，讓各平台更容易獲得功能改進。Linux／FreeBSD 補齊桌面設定與圖形詞庫管理；iOS 支援 iPhone Duo 內螢幕配置與分離鍵盤操作，iOS／Android 同時改善鍵盤版面、字體與實體鍵盤操作。各平台仍保留原生輸入體驗，詳細功能依平台說明為準。
 
-## 版本與目前發布狀態
+## 1.5.0 版號與發布入口
 
-六平台來源版號已為 `1.5.0`，本輪只核對既有來源，不更改產品版號或 build number。FreeBSD 共用 Linux 版號。正式下載在實際發布前仍指向既有版本，不預先建立 1.5.0 下載連結。
+六平台來源版號已為 `1.5.0`，本輪只核對既有來源，不更改產品版號或 build number。FreeBSD 共用 Linux 版號。發布文件、下載檔名及連結已統一為 1.5.0，供建立 tag 使用；資產於各平台發布上傳後可用，商店與 ports／pkg 的可取得狀態另行核對。
 
-| 平台 | 1.5.0 唯一版號來源 | 目前正式版與發布入口 |
+| 平台 | 1.5.0 唯一版號來源 | 1.5.0 發布入口 |
 |---|---|---|
-| macOS | [IMK plist](../Source/Loaders/OSX-IMK/Takao-Info.plist)，並核對偏好設定、詞彙編輯器、安裝說明三份產品 plist | [1.3.9 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)；Developer ID／notarization |
-| Windows | [TSF CMakeLists.txt](../Source/Loaders/Windows-TSF/CMakeLists.txt) | [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)；Certum 本機簽章及人工發布 |
-| Linux／FreeBSD | [Linux CMakeLists.txt](../Source/Loaders/Linux-IME/CMakeLists.txt) | Linux [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)；FreeBSD 透過 ports／pkg，套件版本可能較晚上架 |
-| iOS | [Xcode project](../Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj/project.pbxproj) 的 `MARKETING_VERSION` | 儲存庫記錄為 App Store 1.3.7；透過 Xcode archive／App Store Connect 送審 |
-| Android | [app/build.gradle.kts](../Source/Loaders/Android-IME/app/build.gradle.kts) 的 `keyKeyVersionName`／`keyKeyVersionCode` | 儲存庫記錄為 Google Play 1.3.7；手動發布 workflow 上傳 internal testing，再由 Play Console 推廣 |
+| macOS | [IMK plist](../Source/Loaders/OSX-IMK/Takao-Info.plist)，並核對偏好設定、詞彙編輯器、安裝說明三份產品 plist | [1.5.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)；Developer ID／notarization |
+| Windows | [TSF CMakeLists.txt](../Source/Loaders/Windows-TSF/CMakeLists.txt) | [1.5.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)；Certum 本機簽章及人工發布 |
+| Linux／FreeBSD | [Linux CMakeLists.txt](../Source/Loaders/Linux-IME/CMakeLists.txt) | Linux [1.5.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)；FreeBSD 透過 ports／pkg，套件版本可能較晚上架 |
+| iOS | [Xcode project](../Source/Loaders/iOS-Keyboard/KeyKeyiOS.xcodeproj/project.pbxproj) 的 `MARKETING_VERSION` | App Store 1.5.0；透過 Xcode archive／App Store Connect 送審 |
+| Android | [app/build.gradle.kts](../Source/Loaders/Android-IME/app/build.gradle.kts) 的 `keyKeyVersionName`／`keyKeyVersionCode` | Google Play 1.5.0；手動發布 workflow 上傳 internal testing，再由 Play Console 推廣 |
 
-2026-11-08 已唯讀核對公開 GitHub Release：macOS 1.3.9 已發布，其 CDN 安裝包、校驗檔與 build-info URL 均可取得。這次未登入商店後台或查核 FreeBSD 套件庫；商店、ports／pkg 的實際可下載版本仍須在發布時分別確認。
+發布後逐平台核對 GitHub／CDN 的實際資產、商店版本與 ports／pkg 版號；文件中的目標版號不代表已完成上架或安裝驗收。
 
 ## 升級與資料
 
@@ -65,9 +65,9 @@
 1. 將本文件及相關修正經工作分支 PR 交由維護者 review／merge；確定最終來源，逐平台完成上表實際驗收並保存 commit、版本、模型、套件雜湊與簽章證據。
 2. 桌面使用符合來源版號的 tag 與正式流程；Windows CI 產生待簽輸入，由本機 Certum 流程簽署及人工核准發布。不要把尚未簽署的 artifact 當正式下載。
 3. iOS／Android 分別完成商店上傳、測試、審查／推廣；build number 與 versionCode 是否可接受，須由各商店既有上傳紀錄核對，不從原始碼推定。
-4. 各平台正式資產可取得後，再更新 README、平台指南的正式版本、檔名、校驗連結及商店文案。截圖保留實際拍攝版號；新版圖片未補齊時明示來源，不修改圖片標註假裝重拍。
+4. 文件已按 1.5.0 整理；各平台正式資產可取得後，核對 README、平台指南的下載檔名、校驗連結及商店實際版本。截圖保留實際拍攝版號；新版圖片未補齊時明示來源，不修改圖片標註假裝重拍。
 5. macOS／Linux 發布流程核對產物後建立 stable feed PR；Windows feed 依本機發布指南準備。所有 feed PR 由維護者 review／merge，之後才同步 CDN。Linux／FreeBSD 共用 Unix feed，FreeBSD 公告不等待 ports／pkg 上架，明示套件可能較晚。
 
 ## 文件分工
 
-README 中英文說明產品、Guanyinma 命名與目前可下載正式版；CHANGELOG 依版號記產品變更。六平台安裝指南保留可用下載與真實圖片，新核心升級差異由本文件與 adapter 連結提供。BUILDING、各 frontend README、Installer 與 update 文件記建置／簽章／公告責任；商店素材的真實來源版本見 [StoreAssets](../StoreAssets/README.md)。歷史交接、舊模型報告、遷移 baseline 與舊版宣傳不改寫成 1.5.0 驗收。
+README 中英文說明 1.5.0 產品、Guanyinma 命名與發布下載入口；CHANGELOG 依版號記產品變更。六平台安裝指南的下載與指令對應 1.5.0，舊圖片保留真實拍攝版號，新核心升級差異由本文件與 adapter 連結提供。BUILDING、各 frontend README、Installer 與 update 文件記建置／簽章／公告責任；商店素材的真實來源版本見 [StoreAssets](../StoreAssets/README.md)。歷史交接、舊模型報告、遷移 baseline 與舊版宣傳不改寫成 1.5.0 驗收。

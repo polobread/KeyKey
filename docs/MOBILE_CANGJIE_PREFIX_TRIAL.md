@@ -1,6 +1,6 @@
 # 手機倉頡前綴候選試用
 
-提供 iOS／Android 虛擬及實體鍵盤試用。桌面接入仍在[跨平台計畫](CANGJIE_PREFIX_CANDIDATES_PLAN.md)中，尚未開發。
+本次 iOS／Android 發布版本為 **1.5.0**，虛擬及實體鍵盤共用 Guanyinma 核心。新版接合與發布驗收見[六平台發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)；桌面操作見[桌面說明](DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
 
 ## 試打方式
 
@@ -24,7 +24,9 @@
 
 iOS 外接 USB／藍牙鍵盤僅由琦琦 App 前景實體編輯器接收；keyboard extension 無法在備忘錄等其他 App 接管一般外接鍵盤。Android 既有實體候選列與浮動候選窗皆可使用。
 
-## 開發驗證
+## 歷史開發驗證
+
+以下保留舊 Swift／Java 核心的當次驗證，不作為 1.5.0 驗收；新版使用 Guanyinma 的核心測試與各平台接合入口。
 
 - 排名資源：`python3 tests/generate_cangjie_ranking.py --check`，確認 Swift／Java 同源、1,500 個不同字及固定內容。
 - Swift：`swift test --filter 'CangjiePrefixTests|TableInputTests'`，11 個相關測試通過（含兩組互斥與四種候選儲存組合），涵蓋實際 DB、逐碼、退格、萬用字元、學習隔離與 App Group 設定。
@@ -36,4 +38,4 @@ iOS 外接 USB／藍牙鍵盤僅由琦琦 App 前景實體編輯器接收；keyb
 - 完整 `swift test`：23 個 suite 的 174 個 Swift Testing 測試及 4 個 XCTest 全部通過。
 - 好打注音的 3 個長句邊界測試，以同一模型直接組句的結果核對逐鍵輸入、擠字與交接後的文字，不再把「玩／完」等同音字順位當成邊界驗收條件；仍檢查「請假」整詞擠出、觸控九／十與實體十／十一音節界線、19 音節全文完整，以及交接後不可重複送出。本輪未修改注音引擎或正式 DB。
 
-本機建置產物與截圖放在 `Installer/local-builds/` 及 Android `app/build/`，不納入提交。當次驗證使用 iOS 開發版 1.3.5、Android 開發版 1.3.6；目前兩平台開發版號皆為 1.3.7。這些驗證不代表商店正式版或其他平台已更新。
+本機建置產物與截圖放在 `Installer/local-builds/` 及 Android `app/build/`，不納入提交。當次驗證使用 iOS 開發版 1.3.5、Android 開發版 1.3.6；本次兩平台發布版號統一為 1.5.0。這些驗證不代表商店正式版或其他平台已更新。

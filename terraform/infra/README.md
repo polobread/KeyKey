@@ -6,8 +6,8 @@ existing package and checksum validation. Mirrored downloads live below the
 dedicated `/keykey` prefix:
 
 ```text
-https://github.com/polobread/KeyKey/releases/download/v1.3.2/FILE
-https://download.aws.polobread.com/keykey/releases/download/v1.3.2/FILE
+https://github.com/polobread/KeyKey/releases/download/v1.5.0/FILE
+https://download.aws.polobread.com/keykey/releases/download/v1.5.0/FILE
 ```
 
 S3 Block Public Access remains enabled. CloudFront reads the bucket through an

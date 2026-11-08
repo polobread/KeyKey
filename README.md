@@ -1,13 +1,11 @@
-# 琦琦輸入法 / chichi77 KeyKey
+# 琦琦輸入法 / chichi77 KeyKey 1.5.0
 
 正式支援 **Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台**。
-macOS 正式版為 **[1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)**；Windows、Linux／FreeBSD、iOS 與 Android
-正式版維持 **1.3.7**。Windows 與 Ubuntu 安裝包見 [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，
-iOS App Store 與 Android Google Play 皆已上架 1.3.7。
+本次六平台發布版本統一為 **1.5.0**。桌面版下載入口見 [1.5.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)，各平台安裝包於發布上傳後提供；iOS 與 Android 的可下載版本以商店頁面為準。
 macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
 套件庫版本可能較晚上架。Android 與 iOS 可分別從 [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) 與 [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939) 下載安裝。
 
-[下載 macOS 1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9) · [下載 Windows／Ubuntu 1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
+[下載 macOS 1.5.0](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) · [下載 Windows／Ubuntu 1.5.0](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)
 
 ## 感謝媒體報導及推薦
 
@@ -54,33 +52,33 @@ Windows、Android 與 iOS 建立現代化 frontend。
 
 ## Guanyinma：六平台共用核心
 
-目前原始碼改採 **Guanyinma（觀音嬤）** 作為唯一的輸入核心。名稱取自臺語對觀世音菩薩的親切稱呼「觀音嬤」，Guanyinma 是這個稱呼的專案拼寫。
+1.5.0 改採 **Guanyinma（觀音嬤）** 作為唯一的輸入核心。名稱取自臺語對觀世音菩薩的親切稱呼「觀音嬤」，Guanyinma 是這個稱呼的專案拼寫。
 
 取名「觀音嬤」，也借用觀音菩薩慈悲照顧眾生的形象。我們希望這套共用核心也能照顧不同平台與裝置，讓大家無論使用哪個平台，都能穩定、順暢地輸入中文。命名靈感參考[艋舺龍山寺官網〈認識奉祀神祇〉](https://www.lungshan.org.tw/tw/02_1_1_gods.php)。
 
-過去 macOS／Windows 的好打注音採用 **Manjusri（文殊菩薩）** 核心，目前已由 Guanyinma 接替。以目前原始碼建置的產品不再內建 Manjusri 或各平台原有的舊輸入引擎。
+過去 macOS／Windows 的好打注音採用 **Manjusri（文殊菩薩）** 核心，目前已由 Guanyinma 接替。1.5.0 不再內建 Manjusri 或各平台原有的舊輸入引擎。
 
 Guanyinma 以 Rust 實作，讓 Windows、macOS、iOS、Android、Linux 與 FreeBSD 共用好打注音、傳統注音、倉頡與簡易的輸入邏輯、候選排序及學習機制。各平台保留適合自己的原生介面、鍵盤與文字輸入接合。
 
 共用單一核心後，演算法修正與新能力可以集中維護、測試，再由各平台接入，減少重複實作與維護成本，也讓各平台更容易補齊功能、持續擴充。介面、設定與可用功能仍依各平台系統能力而異，詳見[跨平台功能與設定支援表](docs/CROSS_PLATFORM_SETTINGS_ROADMAP.md)。
 
-這段說明目前原始碼的架構；已發布安裝包與商店版本依本頁下載資訊為準。技術細節見 [Guanyinma 核心文件](Source/Guanyinma/README.md)。
+技術細節見 [Guanyinma 核心文件](Source/Guanyinma/README.md)。
 
 ## 平台
 
 | 平台 | 實作與支援範圍 |
 |---|---|
 | macOS | InputMethodKit；macOS 15 以上、Apple Silicon |
-| Windows | 原生 TSF；1.3.7 提供 Windows 10 起的 x64／x86 建置；Windows 10 尚待實機驗證 |
+| Windows | 原生 TSF；1.5.0 提供 Windows 10 起的 x64／x86 建置；Windows 10 尚待實機驗證 |
 | Android | 原生 IME；Android 8 以上，支援觸控與外接鍵盤，不需網路權限 |
 | iOS | Swift custom keyboard extension、安裝引導 App 與 App 內實體鍵盤編輯器；不要求完整取用權限、不連網 |
 | Linux | Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64；注音、倉頡、簡易 |
-| FreeBSD | 已驗證 FreeBSD 15.1-RELEASE-p3、amd64、Xfce／X11、LightDM、Fcitx 5、Mousepad／GTK 3；透過 ports／pkg 安裝 |
+| FreeBSD | 目標環境為 FreeBSD 15.1-RELEASE-p3、amd64、Xfce／X11、LightDM、Fcitx 5、Mousepad／GTK 3；透過 ports／pkg 安裝 |
 
 六個平台都提供傳統注音組字、候選字與關聯詞；各平台受作業系統 API 限制，介面與
 部分功能會有差異。
 
-1.3.7 的 Windows 版包含好打注音與傳統注音的工作列快速切換、跟隨系統明暗模式的
+1.5.0 的 Windows 版包含好打注音與傳統注音的工作列快速切換、跟隨系統明暗模式的
 四頁設定介面，以及 x64／x86 TSF。x64 套件同時包含 x64 與 x86 DLL，供兩種位元數的
 應用程式使用；x86 套件供 32 位元 Windows 使用。升級後須登出再登入，讓工作列載入新版輸入法。
 
@@ -94,20 +92,20 @@ Safari 中提供系統級實體鍵盤注音。琦琦容器 App 另附「實體�
 Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub Release／CDN 設定與 ports／pkg
 流程見[桌面更新說明](update/README.md)。
 
-各平台依下表下載目前正式版；台灣 AWS CDN 與對應 GitHub Assets 內容相同，無須登入。
+下表為 1.5.0 的發布下載入口，安裝包上傳後即可使用；台灣 AWS CDN 與對應 GitHub Assets 內容相同，無須登入。
 
 | 平台 | 正式版 | GitHub Release | 台灣 AWS 下載點 |
 | --- | --- | --- | --- |
-| macOS Apple Silicon | 1.3.9 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.9) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip.sha256) |
-| Windows x64／x86 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [安裝包與校驗檔](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
-| Ubuntu 24.04 amd64 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [DEB、面板與校驗檔](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
+| macOS Apple Silicon | 1.5.0 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-macos-arm64.pkg.zip.sha256) |
+| Windows x64／x86 | 1.5.0 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) | [安裝包與校驗檔](https://github.com/polobread/KeyKey/releases/tag/v1.5.0#台灣-aws-下載點) |
+| Ubuntu 24.04 amd64 | 1.5.0 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) | [DEB、面板與校驗檔](https://github.com/polobread/KeyKey/releases/tag/v1.5.0#台灣-aws-下載點) |
 
-macOS [建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-build-info.json)可核對版本、來源提交與安裝包 SHA-256。
+macOS [建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-macos-build-info.json)可核對版本、來源提交與安裝包 SHA-256。
 
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
-- [Windows 1.3.7 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
-- Ubuntu 24.04 使用者請看[Linux 1.3.7 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
-- FreeBSD 使用者請看[安裝與使用指南](FREEBSD_INSTALL.md)：套件庫安裝、ports 原始碼編譯 1.3.7、Fcitx 5 設定與操作截圖。套件資訊見 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)。
+- [Windows 1.5.0 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
+- Ubuntu 24.04 使用者請看[Linux 1.5.0 安裝與使用指南](LINUX_INSTALL.md)：`.deb` 套件安裝、Fcitx 5 設定與實際桌面截圖。
+- FreeBSD 使用者請看[安裝與使用指南](FREEBSD_INSTALL.md)：套件庫安裝、ports 原始碼編譯 1.5.0、Fcitx 5 設定與操作截圖。套件資訊見 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)。
 - 想自行編譯 Linux 版，請看[`./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：下載完整原始碼、編譯測試、啟用輸入法與移除。
 - iPhone／iPad 使用者請看[iOS 安裝與使用指南](IOS_INSTALL.md)；可從[《琦琦輸入法》App Store 頁面](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939)安裝。
 - Android 手機／平板使用者請看[Android 安裝與使用指南](ANDROID_INSTALL.md)；可直接從[Google Play 商店](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android)安裝正式版。
@@ -119,15 +117,15 @@ macOS [建置資訊](https://download.aws.polobread.com/keykey/releases/download
   OIDC 設定見 [`terraform/infra`](terraform/infra/README.md)。mirror 使用固定的
   `keykey/releases/download/VERSION/FILE` 路徑，不取代 GitHub Release 作為發行來源。
 - Android 正式 AAB 只在 Actions 頁面手動執行 `Android Play Release` 時建置、簽署並上傳到 Google Play 內部測試；PR 合併與直接 push 都不觸發。
-  從 Play Console 推廣至正式版。正式版已可從 Google Play 下載安裝。
+  從 Play Console 推廣至正式版後，一般使用者即可從 Google Play 下載安裝。
   `Android Play Release` 的 PR 驗證與手動 `operation=verify` 提供開發測試 APK／未簽章 AAB，不上傳商店。
 - iOS 實機版由 App Store 發行；`Package iOS Simulator` 只產生 Apple Silicon
   Simulator 測試包，不能安裝到 iPhone 或 iPad。
 
 ### Code signing policy
 
-Windows 1.3.7 安裝程式及兩種架構 ZIP 內的程式已完成 Certum 簽章；
-後續發布沿用 Certum／SimplySign 本機半自動流程，既有未簽章發行檔維持原狀。詳見 [Code signing policy](CODE_SIGNING_POLICY.md) 與
+Windows 1.5.0 安裝程式及兩種架構 ZIP 內的程式須完成 Certum 簽章；
+發布沿用 Certum／SimplySign 本機半自動流程，既有未簽章發行檔維持原狀。詳見 [Code signing policy](CODE_SIGNING_POLICY.md) 與
 [Windows Certum 發布指南](docs/WINDOWS_CERTUM_RELEASE.md)。
 目前未達 SignPath Foundation 的申請門檻；整合待辦與致謝文字收至 [Windows SignPath TODO](docs/WINDOWS_SIGNPATH_TODO.md)。
 
@@ -161,7 +159,7 @@ Windows 由 Actions 呼叫與本機共用的 PowerShell 完成建置、測試及
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
 - [macOS App Store Connect 上架可行性與發行計畫](docs/MACOS_APP_STORE_PLAN.md)：Apple
   現行政策阻礙、第三方輸入法經驗、商店外發行改善與未來上架 gate
-- [Windows 1.3.7 安裝與使用指南](WINDOWS_INSTALL.md)：新版安裝精靈、啟用、選字、設定與解除安裝
+- [Windows 1.5.0 安裝與使用指南](WINDOWS_INSTALL.md)：新版安裝精靈、啟用、選字、設定與解除安裝
 - [Linux 安裝與使用指南](LINUX_INSTALL.md)：Ubuntu 24.04 的套件安裝、Fcitx 5 設定、注音選字與實拍圖
 - [Linux `./configure` 編譯安裝與使用指南](LINUX_CONFIGURE_INSTALL.md)：Ubuntu 24.04 的原始碼安裝、啟用、試打與移除
 - [iOS 安裝與使用指南](IOS_INSTALL.md)：App Store 安裝、加入鍵盤、日常操作與實體鍵盤編輯器
@@ -196,7 +194,7 @@ bigram 資料、計數及權重，包括匯出檔及併入資料庫的相應部�
 可能含有錯誤；不保證正確性或完整性，詳見
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
-六大平台的 1.3.7 正式版均提供「好打注音」整句組字模式，
+六大平台的 1.5.0 正式版均提供「好打注音」整句組字模式，
 並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。目前原始碼共用預先產生的
 模型，平台建置只驗證與複製，不各自重建。模型以 McBopomofo 的 MIT 授權資料為基礎，
 Bigram 使用 2,300 篇合成文章建模，固定 131 篇文章驗證，並依專案流程整合詞條與讀音補充；
@@ -207,14 +205,11 @@ Bigram 使用 2,300 篇合成文章建模，固定 131 篇文章驗證，並依�
 
 ## English
 
-The official macOS release is **[1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)**.
-**Windows, Linux, FreeBSD, iOS, and Android remain at 1.3.7**.
-Windows and Ubuntu installers are available from the [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7);
-iOS and Android 1.3.7 are available on the App Store and Google Play.
+This release targets **1.5.0 on all six platforms**. Desktop downloads are listed in the [1.5.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) as platform assets are published. Check the App Store and Google Play listings for the available mobile version.
 FreeBSD uses ports/pkg; binary package repositories may receive the update later.
 Download and install the Android and iOS apps from [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) and the [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939), respectively.
 
-The 1.3.7 releases on all six platforms implement Smart Phonetic
+The 1.5.0 releases on all six platforms implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
 option. For published builds, consult the installation guide for that version.
 Current sources share a pre-generated model based on MIT-licensed McBopomofo
@@ -226,7 +221,7 @@ See the [model manifest](DataSource/AISyntheticBigram/smart-mandarin-model-manif
 for sources and hashes. Synthetic data does not represent every writing domain
 or guarantee error-free conversion.
 
-[Download macOS 1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9) · [Download Windows/Ubuntu 1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7).
+[Download macOS 1.5.0](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) · [Download Windows/Ubuntu 1.5.0](https://github.com/polobread/KeyKey/releases/tag/v1.5.0).
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports Windows, macOS, iOS, Android, Linux (Ubuntu Desktop 24.04 LTS), and FreeBSD.
@@ -250,7 +245,7 @@ by, or sponsored by Yahoo.**
 
 ### Guanyinma: one shared core
 
-Current sources use **Guanyinma (觀音嬤)** as the sole input core. Its name is the
+Version 1.5.0 uses **Guanyinma (觀音嬤)** as the sole input core. Its name is the
 project's spelling of the Taiwanese name “觀音嬤”, an affectionate name for
 Guanyin, the Bodhisattva of Compassion.
 
@@ -261,8 +256,8 @@ See [Bangka Lungshan Temple's official introduction to Guanyin](https://www.lung
 for the inspiration behind the name.
 
 The former macOS/Windows Smart Phonetic core was **Manjusri (文殊菩薩)**,
-named after Manjushri, the Bodhisattva of Wisdom. Current source builds replace
-it with Guanyinma and no longer include Manjusri or the platforms' other legacy
+named after Manjushri, the Bodhisattva of Wisdom. Version 1.5.0 replaces
+it with Guanyinma and no longer includes Manjusri or the platforms' other legacy
 input engines.
 
 Written in Rust, Guanyinma shares Smart Phonetic, Traditional Phonetic, Cangjie,
@@ -275,24 +270,23 @@ capabilities can be developed and tested centrally, then adopted by each
 frontend, making it easier to bring more features to every platform. Interfaces
 and available settings still depend on platform APIs; see the
 [feature and settings matrix](docs/CROSS_PLATFORM_SETTINGS_ROADMAP.md).
-This describes the source architecture; published downloads and store versions
-are listed separately above. See the [core documentation](Source/Guanyinma/README.md).
+See the [core documentation](Source/Guanyinma/README.md).
 
 ### Platforms
 
 | Platform | Implementation and support |
 |---|---|
 | macOS | InputMethodKit; macOS 15 or later on Apple Silicon |
-| Windows | Native TSF; 1.3.7 provides x64/x86 builds for Windows 10 or later; Windows 10 device verification is pending |
+| Windows | Native TSF; 1.5.0 provides x64/x86 builds for Windows 10 or later; Windows 10 device verification is pending |
 | Android | Native IME; Android 8 or later, touch and hardware keyboards, no network permission |
 | iOS | Swift custom keyboard extension and in-app hardware keyboard editor; no Full Access or network access |
 | Linux | Ubuntu Desktop 24.04 LTS, GNOME Shell 46, Fcitx 5, amd64; Bopomofo, Cangjie, Simplex |
-| FreeBSD | Tested on FreeBSD 15.1-RELEASE-p3, amd64, Xfce/X11, LightDM, Fcitx 5, Mousepad/GTK 3; installed through ports/pkg |
+| FreeBSD | Targets FreeBSD 15.1-RELEASE-p3, amd64, Xfce/X11, LightDM, Fcitx 5, Mousepad/GTK 3; installed through ports/pkg |
 
 All six platforms provide Traditional Bopomofo composition, candidates, and
 associated phrases. UI and some features differ with each platform's APIs.
 
-The 1.3.7 Windows version includes direct Smart/Traditional Phonetic selection from
+The 1.5.0 Windows version includes direct Smart/Traditional Phonetic selection from
 the taskbar, a four-page settings app that follows the system light/dark mode,
 and x64/x86 TSF builds. The x64 package includes both DLL architectures for
 64-bit and 32-bit applications; the x86 package is for 32-bit Windows. After
@@ -307,16 +301,16 @@ iOS.
 
 ### Downloads and releases
 
-Download the current release for your platform. Taiwan AWS downloads contain the same bytes as GitHub Assets.
+The following links provide 1.5.0 downloads once the platform assets are published. Taiwan AWS downloads contain the same bytes as GitHub Assets.
 
 | Platform | Release | GitHub Release | Taiwan AWS downloads |
 | --- | --- | --- | --- |
-| macOS Apple Silicon | 1.3.9 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.9) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip.sha256) |
-| Windows x64/x86 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [Installers and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
-| Ubuntu 24.04 amd64 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [DEBs, panel, and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
+| macOS Apple Silicon | 1.5.0 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-macos-arm64.pkg.zip.sha256) |
+| Windows x64/x86 | 1.5.0 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) | [Installers and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.5.0#台灣-aws-下載點) |
+| Ubuntu 24.04 amd64 | 1.5.0 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) | [DEBs, panel, and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.5.0#台灣-aws-下載點) |
 
 - First-time macOS setup, illustrated steps, and troubleshooting: [macOS installation guide (Traditional Chinese)](MACOS_INSTALL.md).
-- The [Windows 1.3.7 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the installer, typing modes, and settings; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
+- The [Windows 1.5.0 installation guide (Traditional Chinese)](WINDOWS_INSTALL.md) covers the installer, typing modes, and settings; see the [Windows TSF README](Source/Loaders/Windows-TSF/README.md) for building and testing.
 - Ubuntu 24.04 installation, Fcitx 5 setup, and typing with desktop screenshots: [Linux installation guide (Traditional Chinese)](LINUX_INSTALL.md).
 - FreeBSD packages, ports builds, desktop setup, and screenshots: [FreeBSD installation guide (Traditional Chinese)](FREEBSD_INSTALL.md). Port information: [FreshPorts: chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/).
 - Build and install the Ubuntu 24.04 version from source with `./configure`: [Linux source installation and usage guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md).
@@ -339,8 +333,8 @@ Download the current release for your platform. Taiwan AWS downloads contain the
 
 #### Code signing policy
 
-The Windows 1.3.7 installer and programs inside both architecture ZIPs are Certum signed.
-Subsequent releases use the semi-automated local Certum/SimplySign flow;
+The Windows 1.5.0 installer and programs inside both architecture ZIPs must be Certum signed.
+Releases use the semi-automated local Certum/SimplySign flow;
 existing unsigned releases remain unchanged. See the [Code signing policy](CODE_SIGNING_POLICY.md)
 and [Windows Certum release guide](docs/WINDOWS_CERTUM_RELEASE.md).
 KeyKey does not currently meet the SignPath Foundation application requirements. Deferred integration and attribution are kept in the
@@ -383,7 +377,7 @@ approval. See [AGENTS.md](AGENTS.md) and the
 
 - [Shared-core release preparation](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md): release summary, migration boundaries, and platform acceptance requirements
 - [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](docs/MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
-- [Windows 1.3.7 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
+- [Windows 1.5.0 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots
 - [Linux `./configure` installation and use guide (Traditional Chinese)](LINUX_CONFIGURE_INSTALL.md): source build, Fcitx 5 setup, typing, and removal on Ubuntu 24.04
 - [Android installation and use guide (Traditional Chinese)](ANDROID_INSTALL.md): Google Play production installation, keyboard setup, touch and hardware keyboard use
