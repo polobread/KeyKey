@@ -1,4 +1,4 @@
-# 琦琦輸入法 / chichi77 KeyKey
+# 琦琦輸入法 / chichi77 KeyKey 1.5.0
 
 正式支援 **Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台**。
 本次六平台發布版本統一為 **1.5.0**。桌面版下載入口見 [1.5.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)，各平台安裝包於發布上傳後提供；iOS 與 Android 的可下載版本以商店頁面為準。
