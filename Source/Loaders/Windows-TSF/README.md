@@ -107,7 +107,7 @@ Windows frontend 內的更新客戶端仍屬程式變更。可透過 `workflow_d
 上述局部開發驗證當成已發布或已安裝的證據。
 
 Windows **1.3.7** 已正式發布，提供進階設定、讀音輔助、符號表與簡體輸出。
-Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台的正式版皆為 1.3.7；共用模型維持 1.3.1。實作與驗證記錄見
+macOS 正式版為 1.3.9，其餘平台正式版維持 1.3.7；共用模型維持 1.3.1。1.5.0 的資料升級、完整矩陣及簽章交付條件見 [六平台發布準備](../../../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。歷史實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
 
 2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、

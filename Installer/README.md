@@ -6,11 +6,16 @@ sign its output.
 
 ## Prerequisites
 
-Xcode, and Homebrew's `openssl@3`:
+Xcode, the Rust toolchain pinned in `Source/Guanyinma/rust-toolchain.toml`,
+and Homebrew's `openssl@3`:
 
     brew install openssl@3
 
 ## Building from scratch
+
+The 1.5.0 sources use Guanyinma (觀音嬤) as the sole core. Local packaging is
+separate from signed publication and the three required VM installation paths;
+see the [release preparation guide](../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md).
 
 From the repository root. `make` verifies the checked-in shared dictionary;
 platform builds do not rebuild the production model. Prepare the pinned updater SDK

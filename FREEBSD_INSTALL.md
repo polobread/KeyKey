@@ -13,10 +13,12 @@
 
 本指南的桌面步驟已在 **FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3** 驗證。需先有可登入的圖形桌面、網路及管理員權限；安裝後使用一般帳號設定與輸入中文。
 
-目前開發分支已改為 Guanyinma（Rust）單核心，與本指南記錄的正式 1.3.7 不同。
+目前 1.5.0 原始碼已改為 Guanyinma（觀音嬤，Rust）單核心，與本指南記錄的正式 1.3.7 不同。
 新版原始碼建置須準備鎖定 Rust 工具鏈、json-c、PangoFT2／Fontconfig、SQLite 與 Fcitx
 開發套件；現有 ports 配方需要同步 Cargo 來源、相依及安裝清單。這些開發版變更
 尚未在 FreeBSD 原生 runner 驗證。下方另附[新版共用設定導覽](#新版共用設定導覽150)，以 Ubuntu 實拍說明介面；FreeBSD 的安裝與輸入證據仍為正式 1.3.7。
+
+升級前先備份既有使用者資料。新核心使用 `guanyinma-user.db`，不提供舊 C++ 詞庫的讀寫或匯入，也不會自動刪除舊檔。1.5.0 的原生建置、ports 相依、宿主輸入與公告條件見[六平台發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。新版公告與 ports／pkg 上架分開，套件可能較晚上架。
 
 ## 1. 從套件庫直接安裝
 

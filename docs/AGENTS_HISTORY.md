@@ -268,7 +268,7 @@ macOS GitHub Actions 或 iOS Xcode Cloud。macOS 本機腳本
 
 macOS、Windows、Android 與 iOS 由不同環境輪流開發，這份檔案是各平台的交接點。
 
-**接手時：** 先讀完本檔，再讀 [BUILDING.md](BUILDING.md)。動任何 `Source/Frameworks`
+**接手時：** 先讀完本檔，再讀 [BUILDING.md](../BUILDING.md)。動任何 `Source/Frameworks`
 或 `Source/ModulePackages` 底下的檔案前，先看「跨平台影響」。
 
 **交接前：** 更新本檔的 TODO 與「已知陷阱」。調查出來的結論寫進來，下一個代理才

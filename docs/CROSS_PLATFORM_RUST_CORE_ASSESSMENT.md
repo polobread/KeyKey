@@ -1,7 +1,7 @@
 # Guanyinma：KeyKey 六平台 Rust 共用核心評估
 
 評估日期：2026-10-25。原始碼基準：`master`／`origin/master` 的 `892c4746`。
-本文件保留重寫前架構與跨平台共用核心的工程評估；現行單核心與雙核心接合以 [實作計畫](GUANYINMA_IMPLEMENTATION_PLAN.md) 及各平台 adapter 文件為準，下方舊核心盤點不代表目前產品依賴。效能與成本數字仍屬待原型校準的估算。`Source/Guanyinma` 已提供 Rust C ABI、唯讀資料層、注音解析與四種輸入法 session（含好打注音組句、候選、邊界與學習）；各平台封裝及宿主驗收分別記錄。
+本文件保留重寫前架構與跨平台共用核心的工程評估；現行六平台單核心接合以 [實作計畫](GUANYINMA_IMPLEMENTATION_PLAN.md) 及各平台 adapter 文件為準，下方舊核心盤點不代表目前產品依賴。效能與成本數字仍屬待原型校準的估算。`Source/Guanyinma` 已提供 Rust C ABI、唯讀資料層、注音解析與四種輸入法 session（含好打注音組句、候選、邊界與學習）；各平台封裝及宿主驗收分別記錄。
 
 產品名稱維持 **chichi77 KeyKey／琦琦輸入法**（英文簡稱 **KeyKey**）。新核心代號為 **Guanyinma**，使用 Rust 實作，作為 KeyKey 內的共用核心模組；目標取代 macOS／Windows 的 Manjusri、iOS Swift 核心、Android Java 核心及 Linux／FreeBSD C++ 核心。各平台原生 frontend 改接 Guanyinma。核心工作目錄使用 Guanyinma 名稱。
 

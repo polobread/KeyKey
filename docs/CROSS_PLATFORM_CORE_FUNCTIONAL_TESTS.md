@@ -140,4 +140,4 @@ REOPEN／RESET_LEARNING 要求組字已結束，保留累計送字與各輸入�
 
 本基準不涵蓋 IMK／TSF edit session、document proxy／InputConnection、Fcitx X11／Wayland 宿主回呼、UI 字型、關聯詞建議、使用者資料升級遷移或 131 篇打字成本。這些原有驗證不可被本基準取代，也不因這份 Rust 參考資料而自動擴大日常測試範圍。
 
-實作：[desktop recorder](../tests/desktop_smart_functional.cpp)、[Swift recorder](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Tests/KeyKeyEngineTests/CoreFunctionalTests.swift)、[Android recorder](../Source/Loaders/Android-IME/app/src/androidTest/java/tw/chichi77/keykey/android/CoreFunctionalInstrumentedTest.java)。架構方向見 [Rust 共用核心評估](CROSS_PLATFORM_RUST_CORE_ASSESSMENT.md)。
+實作：[desktop recorder](../tests/desktop_smart_functional.cpp)、[Swift recorder](../Source/Loaders/iOS-Keyboard/MigrationReference/CoreFunctionalTests.swift)、歷史 Android recorder `CoreFunctionalInstrumentedTest.java`（僅在原 revision 擷取，不是現行測試入口）。架構方向見 [Rust 共用核心評估](CROSS_PLATFORM_RUST_CORE_ASSESSMENT.md)。

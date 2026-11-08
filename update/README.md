@@ -1,6 +1,8 @@
-# 桌面更新（開發中）
+# 桌面更新與發布
 
 此目錄開發 macOS／Windows 更新通知與手動確認後的更新流程，以及發布工具；**端到端驗收尚未完成**。
+
+1.5.0 改採 Guanyinma（觀音嬤）共用核心；本目錄仍沿用各桌面原生更新流程。新版的來源、安裝／升級、簽章與公告條件見 [六平台發布準備](../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。先完成正式資產驗證，再透過工作分支 PR 更新 stable feed；不因原始碼升版預先推進公告或下載連結。
 `config.json` 已設定維護者提供的正式公開金鑰與 stable／beta CDN feed。自動檢查預設開啟，保留使用者既有關閉設定；所有桌面版採下述啟動延後／每週排程；beta 選項預設關閉；舊版第一次導入仍須手動安裝含新設定的版本。未使用 Yahoo 舊服務、
 RSA/SHA-1 metadata 或 deprecated DownloadUpdate helper。
 

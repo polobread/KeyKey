@@ -1,13 +1,13 @@
 # 琦琦輸入法 / chichi77 KeyKey
 
 正式支援 **Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台**。
-macOS 正式版為 **[1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)**；Windows、Linux／FreeBSD、iOS 與 Android
+macOS 正式版為 **[1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)**；Windows、Linux／FreeBSD、iOS 與 Android
 正式版維持 **1.3.7**。Windows 與 Ubuntu 安裝包見 [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，
 iOS App Store 與 Android Google Play 皆已上架 1.3.7。
 macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
 套件庫版本可能較晚上架。Android 與 iOS 可分別從 [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) 與 [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939) 下載安裝。
 
-[下載 macOS 1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8) · [下載 Windows／Ubuntu 1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
+[下載 macOS 1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9) · [下載 Windows／Ubuntu 1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 
 ## 感謝媒體報導及推薦
 
@@ -45,12 +45,22 @@ Linux 原生版針對 Ubuntu Desktop 24.04、GNOME Shell 46、Fcitx 5、amd64，
 其他 Ubuntu 版本、IBus、ARM64 與其他發行版留待後續相容性驗收。
 
 本專案以 Yahoo! Inc. 於 2012 年以 BSD 3-Clause License 釋出的原始碼為基礎，
-保留 OpenVanilla／PlainVanilla 核心與傳統注音資料，移除失效的網路服務，並為
+沿用 OpenVanilla／PlainVanilla 的原生前端基礎與傳統注音資料，移除失效的網路服務，並為
 Windows、Android 與 iOS 建立現代化 frontend。
 
 **本軟體不是 Yahoo 官方產品，與 Yahoo 無隸屬關係，也未獲 Yahoo 背書或贊助。**
 
 [English](#english) · [建置、安裝與打包](BUILDING.md)
+
+## Guanyinma：六平台共用核心
+
+目前原始碼改採 **Guanyinma（觀音嬤）** 作為唯一的輸入核心。名稱取自臺語對觀世音菩薩的親切稱呼「觀音嬤」，Guanyinma 是這個稱呼的專案拼寫。
+
+Guanyinma 以 Rust 實作，讓 Windows、macOS、iOS、Android、Linux 與 FreeBSD 共用好打注音、傳統注音、倉頡與簡易的輸入邏輯、候選排序及學習機制。各平台保留適合自己的原生介面、鍵盤與文字輸入接合。
+
+共用單一核心後，演算法修正與新能力可以集中維護、測試，再由各平台接入，減少重複實作與維護成本，也讓各平台更容易補齊功能、持續擴充。介面、設定與可用功能仍依各平台系統能力而異，詳見[跨平台功能與設定支援表](docs/CROSS_PLATFORM_SETTINGS_ROADMAP.md)。
+
+這段說明目前原始碼的架構；已發布安裝包與商店版本依本頁下載資訊為準。技術細節見 [Guanyinma 核心文件](Source/Guanyinma/README.md)。
 
 ## 平台
 
@@ -84,11 +94,11 @@ Linux／FreeBSD 透過官方下載頁及套件管理器更新。簽章、GitHub 
 
 | 平台 | 正式版 | GitHub Release | 台灣 AWS 下載點 |
 | --- | --- | --- | --- |
-| macOS Apple Silicon | 1.3.8 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.8) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip.sha256) |
+| macOS Apple Silicon | 1.3.9 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.9) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip.sha256) |
 | Windows x64／x86 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [安裝包與校驗檔](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
 | Ubuntu 24.04 amd64 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [DEB、面板與校驗檔](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
 
-macOS [建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-build-info.json)可核對版本、來源提交與安裝包 SHA-256。
+macOS [建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-build-info.json)可核對版本、來源提交與安裝包 SHA-256。
 
 - macOS 一般使用者請從[圖文安裝與使用指南](MACOS_INSTALL.md)開始：含下載、啟用、注音選字、詞庫設定及常見問題。
 - [Windows 1.3.7 安裝與使用指南](WINDOWS_INSTALL.md)說明安裝精靈、好打／傳統注音切換與設定畫面；自行建置與測試見 [Windows TSF README](Source/Loaders/Windows-TSF/README.md)。
@@ -142,6 +152,7 @@ Windows 由 Actions 呼叫與本機共用的 PowerShell 完成建置、測試及
 
 ## 文件
 
+- [共用核心發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)：Guanyinma 發布主軸、升級資料界線與六平台交付條件
 - [跨平台輸入法設定支援表與 Roadmap](docs/CROSS_PLATFORM_SETTINGS_ROADMAP.md)：七種平台／鍵盤情境、功能缺口與開發日期
 - [macOS 圖文安裝與使用指南](MACOS_INSTALL.md)：首次安裝、日常選字、符號與偏好設定
 - [macOS App Store Connect 上架可行性與發行計畫](docs/MACOS_APP_STORE_PLAN.md)：Apple
@@ -182,16 +193,17 @@ bigram 資料、計數及權重，包括匯出檔及併入資料庫的相應部�
 [`DataSource/chichi77Collection`](DataSource/chichi77Collection/README.md)。
 
 六大平台的 1.3.7 正式版均提供「好打注音」整句組字模式，
-並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。語言模型由
-McBopomofo 的 MIT 授權字音與詞頻資料在建置時產生，不使用 Yahoo 未釋出的中研院語料；
-另加入可替換的 11,180 句 AI 合成 bootstrap corpora 產生初版 bigram 上下文資料。這份
-小型合成語料用於工程與 A/B 測試，不代表完整的台灣繁中語料分布。
+並可切回傳統逐字注音；已發布套件的功能仍以各版本安裝指南為準。目前原始碼共用預先產生的
+模型，平台建置只驗證與複製，不各自重建。模型以 McBopomofo 的 MIT 授權資料為基礎，
+Bigram 使用 2,300 篇合成文章建模，固定 131 篇文章驗證，並依專案流程整合詞條與讀音補充；
+不使用 Yahoo 未釋出的中研院語料。來源及內容雜湊以[模型 manifest](DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json)為準。
+合成資料不代表完整的臺灣繁中語料分布，也不保證各種文章都能免選字。
 
 <a id="english"></a>
 
 ## English
 
-The official macOS release is **[1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)**.
+The official macOS release is **[1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)**.
 **Windows, Linux, FreeBSD, iOS, and Android remain at 1.3.7**.
 Windows and Ubuntu installers are available from the [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7);
 iOS and Android 1.3.7 are available on the App Store and Google Play.
@@ -201,12 +213,16 @@ Download and install the Android and iOS apps from [Google Play](https://play.go
 The 1.3.7 releases on all six platforms implement Smart Phonetic
 sentence composition, with Traditional Phonetic available as an
 option. For published builds, consult the installation guide for that version.
-Its redistributable unigram model is generated from the MIT-licensed
-McBopomofo readings and occurrence counts. Replaceable AI-generated bootstrap
-corpora with 11,180 sentences supply an initial bigram layer for engineering and A/B testing; the
+Current sources share a pre-generated model based on MIT-licensed McBopomofo
+data. Platform builds verify and copy it rather than rebuild it independently.
+Bigram training uses 2,300 synthetic articles, with 131 fixed validation
+articles and separately maintained phrase and reading supplements; the
 proprietary corpus from the historical Yahoo build is not included.
+See the [model manifest](DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json)
+for sources and hashes. Synthetic data does not represent every writing domain
+or guarantee error-free conversion.
 
-[Download macOS 1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8) · [Download Windows/Ubuntu 1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7).
+[Download macOS 1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9) · [Download Windows/Ubuntu 1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7).
 
 chichi77 KeyKey is a modernized fork of the open-source Yahoo! KeyKey input
 method. It supports Windows, macOS, iOS, Android, Linux (Ubuntu Desktop 24.04 LTS), and FreeBSD.
@@ -221,12 +237,31 @@ handles popup placement. See the [Ubuntu installation guide](LINUX_INSTALL.md).
 Other Ubuntu versions,
 IBus, ARM64, and other distributions await compatibility testing.
 
-The project retains the OpenVanilla/PlainVanilla core and Traditional Bopomofo
+The project retains the OpenVanilla/PlainVanilla native frontend foundations and Traditional Bopomofo
 data, removes obsolete online services, and adds modern Windows, Android, and
 iOS frontends.
 
 **This is not an official Yahoo product. It is not affiliated with, endorsed
 by, or sponsored by Yahoo.**
+
+### Guanyinma: one shared core
+
+Current sources use **Guanyinma (觀音嬤)** as the sole input core. Its name is the
+project's spelling of the Taiwanese name “觀音嬤”, an affectionate name for
+Guanyin, the Bodhisattva of Compassion.
+
+Written in Rust, Guanyinma shares Smart Phonetic, Traditional Phonetic, Cangjie,
+and Simplex input logic, candidate ranking, and learning across Windows, macOS,
+iOS, Android, Linux, and FreeBSD. Each platform keeps its native interface,
+keyboard handling, and text integration.
+
+A shared core reduces duplicate implementation and maintenance. Fixes and new
+capabilities can be developed and tested centrally, then adopted by each
+frontend, making it easier to bring more features to every platform. Interfaces
+and available settings still depend on platform APIs; see the
+[feature and settings matrix](docs/CROSS_PLATFORM_SETTINGS_ROADMAP.md).
+This describes the source architecture; published downloads and store versions
+are listed separately above. See the [core documentation](Source/Guanyinma/README.md).
 
 ### Platforms
 
@@ -261,7 +296,7 @@ Download the current release for your platform. Taiwan AWS downloads contain the
 
 | Platform | Release | GitHub Release | Taiwan AWS downloads |
 | --- | --- | --- | --- |
-| macOS Apple Silicon | 1.3.8 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.8) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip.sha256) |
+| macOS Apple Silicon | 1.3.9 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.9) | [PKG ZIP](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip) · [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip.sha256) |
 | Windows x64/x86 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [Installers and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
 | Ubuntu 24.04 amd64 | 1.3.7 | [Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7) | [DEBs, panel, and checksums](https://github.com/polobread/KeyKey/releases/tag/v1.3.7#台灣-aws-下載點) |
 
@@ -331,6 +366,7 @@ approval. See [AGENTS.md](AGENTS.md) and the
 
 ### Documentation
 
+- [Shared-core release preparation](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md): release summary, migration boundaries, and platform acceptance requirements
 - [macOS App Store Connect feasibility and distribution plan (Traditional Chinese)](docs/MACOS_APP_STORE_PLAN.md): current Apple policy blocker, external distribution improvements, and future go/no-go gates
 - [Windows 1.3.7 installation and use guide (Traditional Chinese)](WINDOWS_INSTALL.md): new installer, setup, typing, preferences, and removal
 - [Linux installation and use guide (Traditional Chinese)](LINUX_INSTALL.md): Ubuntu 24.04 packages, Fcitx 5 setup, typing, and desktop screenshots

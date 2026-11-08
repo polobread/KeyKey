@@ -1,5 +1,7 @@
 # 好打注音功能恢復稽核
 
+這是 v1.3.1 時期的恢復稽核，以下來源與結論保留當時範圍。現行六平台共用 Guanyinma 單核心，架構以[核心文件](../Source/Guanyinma/README.md)為準；本頁不是 [1.5.0 發布驗收](CROSS_PLATFORM_V1_5_0_RELEASE.md)證據。
+
 本文件比對下列來源：
 
 - Yahoo KeyKey 1.1.2528 原始碼：`../yahoo/KeyKey-master/YahooKeyKey-Source-1.1.2528`

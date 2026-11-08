@@ -1,5 +1,7 @@
 # iOS 螢幕與輸入模式切換處理矩陣
 
+本頁保留原審查的行為規格與測試情境，不表示下方每項在現行 Guanyinma 已完成或仍未實作。1.5.0 應對照 [iOS adapter](GUANYINMA_IOS_ADAPTER.md)與[發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)，以最終來源的真實宿主結果逐項記錄。
+
 日期：2026-10-23。程式基準與疑點編號見[架構審查](IOS_APP_EXTENSION_HOST_REVIEW.md)。本文件是待確認的行為規格與後續驗證方案；本輪沒有執行下列測試，也沒有變更既有通過紀錄。地球鍵、取消清單、收鍵盤、換欄位與開闔的產品行為已依[組字保留與確認規則](IOS_COMPOSITION_HANDOFF_POLICY.md)確認，實作方式仍待驗證；其他輸入方法與鍵面切換仍需各自確認。
 
 ## 使用矩陣前的共同定義

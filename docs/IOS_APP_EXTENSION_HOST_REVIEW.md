@@ -1,5 +1,7 @@
 # iOS 本體 App 與鍵盤 Extension 及輸入測試頁面架構審查
 
+本頁保留 2026-10-23 原 revision 的審查與疑點，不代表目前 Guanyinma 的實作現況。1.5.0 的資料權責、原生接合與發布驗收分別見 [iOS adapter](GUANYINMA_IOS_ADAPTER.md)及[發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+
 審查日期：2026-10-23。程式基準：`codex/ios-iphone-duo-adaptation`，commit `c5e04e5c3b2586e9fdf099b9e2bd7c20b43b17f8`。本輪只進行官方文件閱讀、原始碼與既有紀錄對照，沒有修改程式、建置或新增執行測試。
 
 目前應先釐清文字交接與測試證據的定義，再決定後續開發。既有實作已有正確的程序分離、文字代理、各自安全區與手動外觀保存；不能將整個架構判為錯誤。但有一條確定與所選權限不一致的 App Group 寫入路徑，以及數個沒有 Apple 時序保證的組字交接假設。地球鍵 SIGABRT 的根因仍未確定。
@@ -103,7 +105,7 @@ Apple 自 iOS 17 的鍵盤架構說明即提醒：文字與選取操作包含非
 
 ### R02 觸下地球鍵即結束組字
 
-**優先度高；現況已確認，產品規則已確認但尚未實作。** 地球鍵的 `.touchDown` 無條件呼叫 `finishCompositionForInputHandoff`。引擎會清除 composition，因此後續即使只打開清單再取消，原先可修改的組字也已結束。[接線](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L64)、[引擎](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift#L835)
+**優先度高；現況已確認，產品規則已確認但尚未實作。** 地球鍵的 `.touchDown` 無條件呼叫 `finishCompositionForInputHandoff`。引擎會清除 composition，因此後續即使只打開清單再取消，原先可修改的組字也已結束。[接線](../Source/Loaders/iOS-Keyboard/Keyboard/KeyboardViewController.swift#L64)、原審查 revision 的 `BopomofoEngine.swift`（歷史來源，現行接合見 [iOS adapter](GUANYINMA_IOS_ADAPTER.md)）
 
 Apple 的清單 API 區分短按切換與長按清單，沒有要求在 touch-down 就先確認文字。目前測試主要核對使用鍵盤的 App 還有「你好」，不足以證明取消清單後還能繼續修改原組字。[系統行為](https://developer.apple.com/documentation/uikit/uiinputviewcontroller/handleinputmodelist(from:with:))
 
