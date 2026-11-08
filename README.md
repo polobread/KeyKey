@@ -58,7 +58,7 @@ Windows、Android 與 iOS 建立現代化 frontend。
 
 取名「觀音嬤」，也借用觀音菩薩慈悲照顧眾生的形象。我們希望這套共用核心也能照顧不同平台與裝置，讓大家無論使用哪個平台，都能穩定、順暢地輸入中文。命名靈感參考[艋舺龍山寺官網〈認識奉祀神祇〉](https://www.lungshan.org.tw/tw/02_1_1_gods.php)。
 
-過去 macOS／Windows 的好打注音採用 **Manjusri（文殊菩薩）** 核心，目前已由 Guanyinma 接替。以目前原始碼建置的產品不再內建 Manjusri 或各平台原有的舊輸入引擎，也不提供舊核心切換或失敗回退。
+過去 macOS／Windows 的好打注音採用 **Manjusri（文殊菩薩）** 核心，目前已由 Guanyinma 接替。以目前原始碼建置的產品不再內建 Manjusri 或各平台原有的舊輸入引擎。
 
 Guanyinma 以 Rust 實作，讓 Windows、macOS、iOS、Android、Linux 與 FreeBSD 共用好打注音、傳統注音、倉頡與簡易的輸入邏輯、候選排序及學習機制。各平台保留適合自己的原生介面、鍵盤與文字輸入接合。
 
@@ -263,7 +263,7 @@ for the inspiration behind the name.
 The former macOS/Windows Smart Phonetic core was **Manjusri (文殊菩薩)**,
 named after Manjushri, the Bodhisattva of Wisdom. Current source builds replace
 it with Guanyinma and no longer include Manjusri or the platforms' other legacy
-input engines. There is no legacy-core selector or fallback.
+input engines.
 
 Written in Rust, Guanyinma shares Smart Phonetic, Traditional Phonetic, Cangjie,
 and Simplex input logic, candidate ranking, and learning across Windows, macOS,
