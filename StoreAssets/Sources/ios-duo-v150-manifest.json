@@ -1,0 +1,96 @@
+{
+  "product": "chichi77 KeyKey／琦琦輸入法",
+  "source_tag": "v1.5.0",
+  "source_commit": "b2f73e432b3e25b29d0db0fb07b29a426b318f93",
+  "configuration": "Release",
+  "architecture": "arm64",
+  "app_version": "1.5.0",
+  "app_build": "1",
+  "sdk": "iphonesimulator27.2",
+  "xcode_build": "27B52",
+  "device": "iPhone Duo Simulator",
+  "runtime": "iOS 27.2",
+  "display": "inner, display 3",
+  "sources": [
+    {
+      "path": "StoreAssets/Sources/ios-duo-v150-split.png",
+      "width": 2853,
+      "height": 2007,
+      "sha256": "7214fb5982f0f9cebc1f6b97f792299df41e0f41cc94bddd61a30c2869fd5e5a",
+      "captured_at": "2026-11-09T00:11:53+08:00"
+    },
+    {
+      "path": "StoreAssets/Sources/ios-duo-v150-smart.png",
+      "width": 2007,
+      "height": 2853,
+      "sha256": "c17773639875baa0875c002ed1d3cf1eb883bdb3274ae0d5f1069758faeb53bd",
+      "captured_at": "2026-11-09T00:11:03+08:00"
+    },
+    {
+      "path": "StoreAssets/Sources/ios-duo-v150-traditional.png",
+      "width": 2007,
+      "height": 2853,
+      "sha256": "bbdaca8d9bc1c3a08dae592e68499f21477c006534ad0515368463909b3b1cbc",
+      "captured_at": "2026-11-09T00:13:22+08:00"
+    },
+    {
+      "path": "StoreAssets/Sources/ios-duo-v150-hardware-editor.png",
+      "width": 2007,
+      "height": 2853,
+      "sha256": "bfe62514c77f7fc91ce037e7bcf509e354888f021fcf0c7e912b7221881d1f86",
+      "captured_at": "2026-11-09T00:14:52+08:00"
+    },
+    {
+      "path": "StoreAssets/Sources/ios-duo-v150-settings.png",
+      "width": 2007,
+      "height": 2853,
+      "sha256": "77c82740398c3f1db72caff24c2a311a99a3cab11040a4d0c4cde60e9b188c49",
+      "captured_at": "2026-11-09T00:15:44+08:00"
+    }
+  ],
+  "artwork": [
+    {
+      "path": "StoreAssets/AppStore/iPhone-Duo-2007x2853/01.png",
+      "width": 2007,
+      "height": 2853,
+      "format": "RGB PNG, no alpha",
+      "sha256": "4bac470f43b1de43f2c57ec627e6e466f45d105b1dd29b9335355f0ef0740f7b"
+    },
+    {
+      "path": "StoreAssets/AppStore/iPhone-Duo-2007x2853/02.png",
+      "width": 2007,
+      "height": 2853,
+      "format": "RGB PNG, no alpha",
+      "sha256": "65aa129e4580b48c12388beb7d1248c23794b57cfbecb5f392b1ebc469ae33f4"
+    },
+    {
+      "path": "StoreAssets/AppStore/iPhone-Duo-2007x2853/03.png",
+      "width": 2007,
+      "height": 2853,
+      "format": "RGB PNG, no alpha",
+      "sha256": "7bd12aefe5a4506e8ec16093dc444e51c7febff7fd26f2f927f96f09fb9c96bf"
+    },
+    {
+      "path": "StoreAssets/AppStore/iPhone-Duo-2007x2853/04.png",
+      "width": 2007,
+      "height": 2853,
+      "format": "RGB PNG, no alpha",
+      "sha256": "53bb6b4f0b11bb37a39097f0750674c97a968c479061fad1bbb5ca003ddc624a"
+    },
+    {
+      "path": "StoreAssets/AppStore/iPhone-Duo-2007x2853/05.png",
+      "width": 2007,
+      "height": 2853,
+      "format": "RGB PNG, no alpha",
+      "sha256": "73d14927c40cf71101db75e5845476f4a1f5898503093168b87969359fe019c5"
+    }
+  ],
+  "notes": [
+    "01–03: 真實 Safari 鍵盤 extension；本機 HTML 試寫頁，不是備忘錄 App。",
+    "04: 真實 App 實體鍵盤編輯器，模擬器 Generic Keyboard 輸入；不代表實體 USB／藍牙驗收。",
+    "05: 真實 App 輸入法設定。",
+    "候選與組字內容均由實際輸入和選字產生，沒有後製候選、拼接或重畫鍵盤。",
+    "商店圖只對完整來源截圖等比例縮放，加入外框、背景及說明文字。",
+    "既有 iPhone／iPad 圖組與原產生器保留。"
+  ]
+}
