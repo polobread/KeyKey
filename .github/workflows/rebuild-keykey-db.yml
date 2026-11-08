@@ -8,6 +8,8 @@ on:
       - 'Source/Distributions/Takao/DatabaseCooker/**'
       - 'Source/DataTables/**'
       - '.github/workflows/rebuild-keykey-db.yml'
+      - '.github/scripts/prepare-keykey-rebuild-pr.py'
+      - '.github/scripts/test_prepare_keykey_rebuild_pr.py'
       - 'Source/Guanyinma/**'
       - '!Source/Guanyinma/**/*.md'
       - '!Source/Guanyinma/**/README*'
@@ -47,6 +49,8 @@ on:
       - 'DataSource/AISyntheticBigram/build-search-trend-unigram.py'
       - 'DataSource/AISyntheticBigram/build-versioned-article-corpus.py'
       - '.github/workflows/rebuild-keykey-db.yml'
+      - '.github/scripts/prepare-keykey-rebuild-pr.py'
+      - '.github/scripts/test_prepare_keykey_rebuild_pr.py'
 
 permissions:
   contents: read
@@ -85,6 +89,7 @@ jobs:
 
       - name: Test source tooling and verify the committed shared database
         run: |
+          python3 -B -m unittest discover -s .github/scripts -p 'test_prepare_keykey_rebuild_pr.py' -v
           python3 -B -m unittest discover -s Source/Distributions/Takao/DatabaseCooker -p 'test_*.py' -v
           python3 -B -m unittest discover -s DataSource/AISyntheticBigram -p 'test_typing_cost.py' -v
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-smart-mandarin-db.py Source/Distributions/Takao/CookedDatabase/KeyKey.db
@@ -131,6 +136,7 @@ jobs:
 
       - name: Filter custom words and cook Unigram and Bigram
         run: |
+          python3 -B -m unittest discover -s .github/scripts -p 'test_prepare_keykey_rebuild_pr.py' -v
           python3 -B -m unittest discover -s Source/Distributions/Takao/DatabaseCooker -p 'test_*.py' -v
           python3 -B -m unittest discover -s DataSource/AISyntheticBigram -p 'test_typing_cost.py' -v
           python3 -B Source/Distributions/Takao/DatabaseCooker/rebuild-keykey-db.py \
@@ -140,53 +146,12 @@ jobs:
           python3 -B Source/Distributions/Takao/DatabaseCooker/verify-shared-database-wiring.py
           git diff --check
 
-      - name: Commit generated files and open a review PR
+      - name: Publish substantive generated changes once for review
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
-          built_revision=$(git rev-parse HEAD)
-          gh auth setup-git
-          git fetch origin master
-          if [[ "$(git rev-parse origin/master)" != "$built_revision" ]]; then
-            echo "master changed during the rebuild; rerun on current master." >&2
-            exit 1
-          fi
-          python3 - <<'PY'
-          import json, os, pathlib, subprocess
-          work = pathlib.Path(os.environ['RUNNER_TEMP']) / 'keykey-rebuild'
-          files = json.loads((work / 'generated-files.json').read_text())
-          subprocess.run(['git', 'add', '--', *files], check=True)
-          PY
-          if git diff --cached --quiet; then
-            echo "No generated changes."
-            exit 0
-          fi
-          branch="codex/keykey-db-rebuild-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          git switch -c "$branch"
-          decision=$(python3 -c 'import json,os,pathlib; print(json.loads((pathlib.Path(os.environ["RUNNER_TEMP"])/"keykey-rebuild/build-report.json").read_text())["decision"])')
-          git -c user.name='github-actions[bot]' \
-              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -m "KeyKey dictionary rebuild: $decision (30-action threshold)"
-          git push origin "HEAD:refs/heads/$branch"
-          export KEYKEY_REBUILD_REVISION="$built_revision"
-          python3 - <<'PY'
-          import json, os, pathlib
-          work = pathlib.Path(os.environ['RUNNER_TEMP']) / 'keykey-rebuild'
-          report = json.loads((work / 'build-report.json').read_text())
-          delta = report['regression']
-          body = (
-              f"Source: {os.environ['KEYKEY_REBUILD_REVISION']}\n\n"
-              f"{report['validation_articles']} fixed regression articles: "
-              f"{delta['before']} → {delta['after']} actions ({delta['delta']:+d}).\n\n"
-              f"{report['reason']}\n\n"
-              "Generated files only. Manual review and merge are required; no auto-merge or CDN deployment.\n"
-          )
-          (work / 'pull-request.md').write_text(body, encoding='utf-8')
-          PY
-          gh pr create --base master --head "$branch" \
-            --title "KeyKey dictionary rebuild: $decision" \
-            --body-file "$RUNNER_TEMP/keykey-rebuild/pull-request.md"
+          python3 -B .github/scripts/prepare-keykey-rebuild-pr.py \
+            --directory "$RUNNER_TEMP/keykey-rebuild"
 
       - name: Write build result to workflow summary
         if: always()
@@ -201,5 +166,6 @@ jobs:
                   summary.write(f"DB SHA-256: `{report['database_sha256']}`\n\n")
                   summary.write(f"{report['validation_articles']} articles: {delta['before']} → {delta['after']} actions ({delta['delta']:+d}).\n\n")
                   summary.write(report['reason'] + '\n\n')
-                  summary.write('See the generated review PR for publication status. No database artifact is uploaded.\n')
+                  summary.write(report['publication_reason'] + '\n\n')
+                  summary.write('A new review PR is created only for substantive content without an existing review. No database artifact is uploaded.\n')
           PY

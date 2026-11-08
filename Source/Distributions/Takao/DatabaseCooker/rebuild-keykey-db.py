@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import importlib.util
 import json
 import math
@@ -47,7 +48,7 @@ def git_bytes(path):
 
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def apply_search(db, entries, total):
@@ -69,10 +70,92 @@ def publication_decision(delta, maximum=30):
                        f"總動作增加 {delta['delta']} 次，超過 {maximum} 次門檻；保留原 DB，僅回存候選與原因")}
 
 
-def publish_files(stage, root, model_files, audit_files, decision, apply=False):
+def canonical_json(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True,
+                      separators=(",", ":"), allow_nan=False).encode("utf-8")
+
+
+def publication_file_hash(tree, relative, cache):
+    """Hash generated content, excluding only known report provenance noise.
+
+    This signature is for deciding whether review is needed, not for validating
+    the published model. Real manifests retain their original byte hashes.
+    """
+    if relative in cache:
+        return cache[relative]
+    path = tree / relative
+    if not path.is_file():
+        return None
+    if path.suffix != ".json":
+        digest = file_sha256(path)
+    else:
+        raw = path.read_bytes()
+        try:
+            value = json.loads(raw)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            # Invalid/non-JSON evidence is still a byte change, never a no-op.
+            digest = hashlib.sha256(raw).hexdigest()
+        else:
+            if relative in (str(DATA / "collection-unigram-validation.json"),
+                            str(DATA / "rebuild-review/comparison.json")):
+                identity = value.get("identity", {})
+                identity.pop("engine_sha256", None)
+                identity.pop("evaluator_sha256", None)
+            if relative == str(DATA / "smart-mandarin-model-manifest.json"):
+                # These are the only generated JSON byte hashes in this
+                # manifest. Normalize their content only after checking the
+                # exact file/hash binding, so a broken manifest is not hidden.
+                collection = value.get("sources", {}).get("collection_unigram_supplement", {})
+                references = ((collection, "report", "collection-unigram-import.json"),
+                              (collection, "validation", "collection-unigram-validation.json"),
+                              (value.get("rebuild", {}), "cooker_report", "custom-unigram-cooker-report.json"))
+                for owner, key, filename in references:
+                    if key + "_sha256" not in owner:
+                        continue
+                    target = str(DATA / filename)
+                    if owner.get(key + "_file") != filename or not (tree / target).is_file():
+                        raise ValueError(f"invalid generated JSON reference: {relative}: {key}")
+                    if owner[key + "_sha256"] != file_sha256(tree / target):
+                        raise ValueError(f"generated JSON hash mismatch: {relative}: {key}")
+                    owner[key + "_sha256"] = publication_file_hash(tree, target, cache)
+            digest = hashlib.sha256(canonical_json(value)).hexdigest()
+    cache[relative] = digest
+    return digest
+
+
+def publication_plan(stage, root, model_files, audit_files, decision):
+    """Preserve a complete candidate, but publish only substantive changes.
+
+    Never infer a no-op from the total action delta: equal totals can contain
+    a new model, changed inputs, or offsetting article/character regressions.
+    """
     if decision["decision"] not in ("adopted", "rejected"):
         raise ValueError("unknown publication decision")
-    files = sorted(model_files + audit_files) if decision["decision"] == "adopted" else sorted(audit_files)
+    selected = sorted(set(model_files + audit_files if decision["decision"] == "adopted" else audit_files))
+    if any(Path(name).is_absolute() or ".." in Path(name).parts for name in selected):
+        raise ValueError("generated paths must be relative to the checkout")
+    previous_cache, candidate_cache = {}, {}
+    candidate = {name: publication_file_hash(stage, name, candidate_cache) for name in selected}
+    if any(digest is None for digest in candidate.values()):
+        raise ValueError("generated publication file is missing")
+    changed = [name for name in selected
+               if candidate[name] != publication_file_hash(root, name, previous_cache)]
+    needed = bool(changed)
+    fingerprint = hashlib.sha256(canonical_json({
+        "format": 1, "decision": decision["decision"], "files": candidate,
+    })).hexdigest()
+    return {
+        "publication_needed": needed,
+        "publication_fingerprint": fingerprint,
+        "publication_reason": ("Substantive generated changes require review." if needed else
+                               "No substantive generated changes; JSON order and execution provenance do not require a PR."),
+        "substantive_files": changed,
+        "files": selected if needed else [],
+    }
+
+
+def publish_files(stage, root, model_files, audit_files, decision, apply=False):
+    files = publication_plan(stage, root, model_files, audit_files, decision)["files"]
     if apply:
         for relative in files:
             target = root / relative
@@ -451,15 +534,18 @@ def main():
     # Rejection never overwrites the canonical DB, model manifest, adopted lists,
     # Android cache name, or platform constants. Only review evidence is published.
     model_files = relative_files
-    relative_files = publish_files(stage, ROOT, model_files, audit_files, decision)
+    publication = publication_plan(stage, ROOT, model_files, audit_files, decision)
+    relative_files = publication["files"]
     write_json(output / "generated-files.json", relative_files)
     write_json(output / "build-report.json", {**review, "database_sha256": db_hash,
-               "semantic_sha256": digest, "files": relative_files})
+               "semantic_sha256": digest, **publication})
     if args.apply:
         if file_sha256(ROOT / DB) != original_hash:
             raise ValueError("checked-in model changed during rebuild")
         publish_files(stage, ROOT, model_files, audit_files, decision, apply=True)
-    print(json.dumps({"database_sha256": db_hash, "rows": rows, **decision, "applied": args.apply}))
+    print(json.dumps({"database_sha256": db_hash, "rows": rows, **decision,
+                      "publication_needed": publication["publication_needed"],
+                      "publication_reason": publication["publication_reason"], "applied": args.apply}))
 
 
 

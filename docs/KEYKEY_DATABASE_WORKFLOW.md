@@ -91,6 +91,20 @@ PR 驗證與合併後重建均先依鎖定 Rust 工具鏈及 `Cargo.lock` 編譯
 Android 快取檔名及各平台模型列數一起提交到工作分支，再開 PR 合併回 master。不存 DB artifact。
 只 stage `generated-files.json` 列出的檔案；一般平台 build 仍只驗證與複製共用 DB。
 
+所有新產生的 JSON 固定依 key 排序。發布判斷會比較 JSON 內容，欄位順序不同不算新結果；
+完整比較報告中，單獨的回歸引擎執行檔與量測程式雜湊變動也不觸發發布。
+manifest 中對這些報告的雜湊仍須正確綁定實際 bytes，僅在比較發布內容時改以正規化後的
+報告內容判斷。資料庫、來源雜湊、政策、逐篇與逐字結果仍納入比較，不能只因總動作差為 0
+就略過。舊報告若因已採用模型造成比較基線移動，仍保守保存新的回歸證據。
+
+沒有實質變更時，`generated-files.json` 為空清單，`--apply` 不改寫目前 checkout 的產物，
+workflow 不建立 commit、推送分支或開 PR。本次執行的完整報告仍保存在指定輸出目錄，
+`build-report.json` 記錄是否需要發布、判斷原因與內容指紋。
+
+同一份發布內容使用固定的 `codex/keykey-db-rebuild-<內容指紋>` 分支。已存在的相同 PR
+直接沿用；已關閉或已合併的相同內容也不重新開 PR，避免重跑造成重複審查。
+新內容才建立新 PR；不覆寫既有遠端分支、不強制推送，也不自動關閉舊 run-id 分支的 PR。
+
 超過 30 次時仍成功產生 `rebuild-review/latest.json`、完整比較、候選採用／排除清單
 及 cooker 報告，僅將這些 review 檔提交到工作分支，再以 PR 合併。原 DB、manifest、正式清單、
 Android cache 及平台列數不動。驗證器以拒用報告中的原 DB 雜湊與當前來源雜湊綁定
