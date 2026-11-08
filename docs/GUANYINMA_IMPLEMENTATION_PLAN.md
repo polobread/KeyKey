@@ -6,6 +6,8 @@ CI 完整核心驗證只由 `guanyinma-core.yml` 負責；其他平台 workflow 
 
 Guanyinma 是 chichi77 KeyKey／琦琦輸入法（英文簡稱 KeyKey）內的 Rust 共用核心，目錄固定為 `Source/Guanyinma`。現有產品名稱、平台版本與原生 frontend 維持既有來源。
 
+名稱 **Guanyinma（觀音嬤）** 取自臺語對觀世音菩薩的稱呼。六平台來源已接上單一核心；以下一至四階段保留移植時的分階段範圍，「本階段尚未」不代表目前核心缺少該能力。最終產物、原生宿主及發布驗收仍分平台完成，集中見 [1.5.0 發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+
 ## 階段一：資料層與 C ABI
 
 本階段提供 Rust crate、固定工具鏈／依賴、C／C++ header、owned query result 與 thread-local 錯誤契約。唯讀存取正式共用 DB 中的傳統注音、倉頡、簡易、Unigram、Bigram 五種資料來源。
@@ -56,13 +58,13 @@ Windows 檔案身分檢查後端仍需 Windows 原生驗證；本機檔案測試
 
 `CandidateFilter`／`guanyinma_session_open_with_candidate_filter` 讓六平台 FE 提供可接受文字的判斷，四種輸入法沿用同一契約。字表完整碼、wildcard 與前綴先過濾再計算候選、36 字補充上限、分頁及學習；好打注音在 Unigram、自訂詞及 Bigram current 進入 graph 前過濾。原始 DB 查詢保留來源列，未提供 callback 時維持全部接受。固定政策由 session 擁有，變更時由 FE 在保留組字後建立新 session，不在可見候選中途改寫索引。
 
-macOS 已接回既有 `OVEncodingService` 的系統字型／編碼服務。iOS 已接 CoreText、Android 已接 Paint、Windows 已接 DirectWrite fallback／字集服務；Linux／FreeBSD 接 Guanyinma 時仍須接上原生能力判斷，並各自驗證平台實際字型及宿主；共用接口與本機測試不代表其餘 frontend 已接好。普通 unit、C consumer 與原生隔離對照測試驗證此契約，不讀取遷移 baseline。
+macOS 已接回既有 `OVEncodingService` 的系統字型／編碼服務。iOS 已接 CoreText、Android 已接 Paint、Windows 已接 DirectWrite fallback／字集服務；Linux／FreeBSD 共用 Fcitx frontend 已接 PangoFT2／Fontconfig。各平台實際字型及宿主仍各自驗證，不能由共用接口或單一平台測試推定其他平台通過。普通 unit、C consumer 與原生隔離對照測試驗證此契約，不讀取遷移 baseline。
 
-## 階段五：原生 frontend 接合（進行中）
+## 階段五：原生 frontend 接合與分平台驗收
 
 macOS 四種輸入法直接透過 Guanyinma package 建立 Rust session，保留既有 PV 候選／文字／輸出管線及獨立使用者資料管理。產品不編譯 Manjusri／Generic 輸入引擎，不提供核心選單、建置開關或失敗回退。設定更新等待組字、候選及待送 commit 完成；失敗保留目前可見狀態並回報，不重播事件。原生設定快照自行擁有資料，避免 plist reload 的借用生命週期問題。正式打包使用鎖定 Rust 工具鏈、少量 FE integration smoke 與隨包 runtime notices。
 
-已接上完整 Guanyinma JSON 備份與舊 MJSR 封存匯入；FE 解碼舊容器，核心只接收版本化資料，以原子交易合併自訂詞並替換來源提供的學習範圍。備份排除本機世代資料，匯出失敗保留原檔。建置、隔離測試與錯誤處理見 [macOS 接合文件](GUANYINMA_MACOS_ADAPTER.md)。真正 IMK 文字宿主與安裝驗收、其餘 frontend 的接合仍待完成；不將此里程碑視為六平台遷移完成。
+已接上完整 Guanyinma JSON 備份與舊 MJSR 封存匯入；FE 解碼舊容器，核心只接收版本化資料，以原子交易合併自訂詞並替換來源提供的學習範圍。備份排除本機世代資料，匯出失敗保留原檔。建置、隔離測試與錯誤處理見 [macOS 接合文件](GUANYINMA_MACOS_ADAPTER.md)。六平台原始碼接合均採單核心；真正 IMK 文字宿主、各平台最終安裝包及發布驗收仍依各自流程核對，不以接線完成宣稱全部平台已驗收。
 
 iOS 同一 FE 的觸控 extension 與 App 實體鍵盤編輯器固定使用 Guanyinma 單核心，移除舊 Swift 解析、walker、排序與學習引擎，以及核心設定／切換／失敗回退。Swift 保留 FE 型別、原生字型 callback、宿主交易與 App Group 自訂詞發布；extension 唯讀同步發布詞條，學習保存在私有 Rust DB。Xcode 必須編譯／連結 Rust 靜態庫；完整核心 CI 集中驗證，iOS 僅做少量串接冒煙。建置、資料權責及驗證層級見 [iOS 接合文件](GUANYINMA_IOS_ADAPTER.md)。
 

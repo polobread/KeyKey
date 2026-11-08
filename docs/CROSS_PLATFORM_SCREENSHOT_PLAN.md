@@ -2,6 +2,8 @@
 
 本清單供 Windows、macOS、iOS／iPadOS、Android、Linux 與 FreeBSD 逐平台補齊安裝指南及媒體素材。拍攝主線為「取得正式版 → 安裝／啟用 → 選用輸入法 → 第一次打字 → 選字與改字」。
 
+1.5.0 發布準備時，以下張數與實拍版本保留為歷史素材登記；它們不代表新版畫面已補齊。新版以最終已安裝 App 補拍，另記版本／來源及操作結果，不更名舊圖假裝重拍。新核心、行動外觀與資料升級說明見[發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)，目前下載版本見 [README](../README.md)。
+
 規劃基準：2026-10-25 的 `master` 文件與目前正式版 **1.3.7**。Windows 已補齊 23 張，Linux／Ubuntu 已補齊 18 個位置、20 張圖片，FreeBSD 已補齊 15 個位置、新增 20 張圖片；macOS 已入文 18 張，本輪指南補圖已齊，iOS 已加入 App Store 實機商品頁、台灣價格實機首頁、14 張 iPhone 模擬器操作圖及 9 張 iPad 模擬器原圖；Android 已補 10 張手機模擬器原圖及 5 張局部圖。其餘畫面仍待逐一補齊。未完成的子畫面保留待拍，不因同一項已有一張圖而視為全項完成。六平台指南已依相同操作順序整理，缺圖位置以「待補圖｜ID」標示；第 12 節列出每處的缺圖依據與放置段落。
 
 ## 1. 使用方式與優先順序
@@ -82,7 +84,7 @@
 
 ### 桌面下載入口與 AWS CDN
 
-下載入口依各平台目前正式版本分開：macOS 使用 [1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)，Windows 與 Linux 使用 [1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)。GitHub 的 Latest 目前只含 macOS 1.3.8，Windows／Linux 指南須連到仍提供對應檔案的 1.3.7 發布頁。macOS 下載檔名與 CDN 已更新為 1.3.8；既有圖片及來源登記保留實拍的 1.3.7，不改寫圖片中的版號。
+下載入口依各平台目前正式版本分開：macOS 使用 [1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)，Windows 與 Linux 使用 [1.3.7](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)。macOS 的最新發布頁只提供 macOS 資產，Windows／Linux 指南須連到仍提供對應檔案的 1.3.7 發布頁。macOS 下載檔名與 CDN 已核對為 1.3.9；既有圖片及來源登記保留實拍的 1.3.7，不改寫圖片中的版號。
 
 Windows、macOS、Linux 的指南同時列出 GitHub Release 與**台灣 AWS CDN**下載路徑；選相同正式版本、架構及檔名，核對 SHA-256 後安裝。Linux 保留三個 .deb、面板原始碼與 SHA256SUMS 完整五檔的流程。下載頁截圖採未登入 GitHub 的視角。
 

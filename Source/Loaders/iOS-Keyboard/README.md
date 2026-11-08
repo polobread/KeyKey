@@ -11,6 +11,8 @@
 偏好沿用既有 App Group revision 規則。架構、資料路徑與建置責任見
 [Guanyinma iOS 接合](../../../docs/GUANYINMA_IOS_ADAPTER.md)。
 
+目前來源為 1.5.0；Guanyinma（觀音嬤）為六平台共用核心。App／extension 的資料升級、archive、宿主及手機／平板版面驗收與送審條件見 [1.5.0 發布準備](../../../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。Simulator 或核心測試通過不代表商店版已完成驗收。
+
 App 與鍵盤 extension 的原始碼版本由 Xcode project 的
 `MARKETING_VERSION` 統一設定，Simulator 封裝流程也從此讀取版號。
 首頁會從 container app bundle 的 `CFBundleShortVersionString` 顯示目前版本，避免畫面

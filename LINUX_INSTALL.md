@@ -4,13 +4,17 @@
 
 本頁帶你依序完成 **下載五檔 → 校驗安裝 → 啟用並重啟 → 加入琦琦 → 第一次選字**。下載與安裝步驟仍對應正式 1.3.7；另附 [1.5.0 原始碼版設定導覽](#新版原始碼設定導覽150)，說明 Guanyinma（Rust）核心的新選項。自行編譯另見 [Linux `./configure` 編譯安裝指南](LINUX_CONFIGURE_INSTALL.md)。
 
+## 新核心升級準備
+
+1.5.0 原始碼使用 Guanyinma（觀音嬤）共用核心，補齊桌面偏好及圖形自訂詞／學習管理，提供完整 Guanyinma JSON 備份與匯入。使用者資料改用 `guanyinma-user.db`；舊 C++ 詞庫保留原檔，但不提供其讀寫或匯入。升級前先備份舊資料；不要把來源版設定截圖當成新版套件已發布或已通過 Wayland 驗收。交付條件見 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+
 ## 安裝前確認
 
 本版的 Linux 安裝步驟適用於 **Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64**。在「設定 → 關於」確認 Ubuntu 版本，並執行 `dpkg --print-architecture`，結果應為 `amd64`。安裝需要管理員密碼，設定完成後需要重新啟動 Ubuntu。其他 Ubuntu 版本、ARM64、IBus 與其他桌面環境尚未列入這份指南的驗證範圍。
 
 ## 1. 下載最新正式版套件
 
-Linux 目前正式版維持 **1.3.7**。開啟 [Linux 1.3.7 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.7`。本頁檔名、CDN 連結及安裝指令均對應 1.3.7；macOS 1.3.8 的發布頁只提供 macOS 檔案。五檔必須來自同一發布版本，才能一起校驗。
+Linux 目前正式版維持 **1.3.7**。開啟 [Linux 1.3.7 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)，展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.3.7`。本頁檔名、CDN 連結及安裝指令均對應 1.3.7；macOS 1.3.9 的發布頁只提供 macOS 檔案。五檔必須來自同一發布版本，才能一起校驗。
 
 ![GitHub v1.3.7 Assets 中的 Linux 三個 deb、面板原始碼與 SHA256SUMS](docs/images/keykey-linux-v137-lnx01a-release-assets.png)
 

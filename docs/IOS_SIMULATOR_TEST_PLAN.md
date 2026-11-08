@@ -1,6 +1,6 @@
 # iOS Simulator 測試計畫
 
-每次 iOS 鍵盤有功能、版面、資料庫或 Xcode 基礎調整時，完成本計畫才可標記為「iOS 測試完成」。引擎單元測試與 App 建置是必要前置，但不能取代實際 keyboard extension 測試。
+本計畫定義完整 iOS frontend／keyboard extension 驗收。1.5.0 的共用核心演算法矩陣集中於 `guanyinma-core.yml`；日常 iOS 變更依受影響的接合、版面或宿主情境執行，不因核心局部或純文件修改重跑全部裝置。明確進入完整發布驗收時，依下列矩陣保存最終來源的證據；核心測試與 App 建置不能取代真正 extension 驗收，Simulator 也不代替實機或商店結果。交付條件見 [1.5.0 發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)。
 
 ## 受控 Simulator
 

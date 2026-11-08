@@ -2,7 +2,11 @@
 
 想在 Mac 上沿用熟悉的注音選字方式，可以試試琦琦輸入法。它提供**好打注音、傳統注音、倉頡與簡易**：好打注音適合連續輸入後再選字；習慣逐字選字的人，也能切換成傳統注音。
 
-目前 macOS 正式版為 **[1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)**。這份指南依序說明下載、加入輸入法到第一次選字；操作截圖保留實拍的 1.3.7，步驟同樣適用於 1.3.8。安裝完成後，請從畫面右上角的輸入法選單使用琦琦；它不會像一般 App 一樣開啟主視窗。
+目前 macOS 正式版為 **[1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)**。這份指南依序說明下載、加入輸入法到第一次選字；操作截圖保留實拍的 1.3.7，步驟同樣適用於 1.3.9。安裝完成後，請從畫面右上角的輸入法選單使用琦琦；它不會像一般 App 一樣開啟主視窗。
+
+## 新核心升級準備
+
+1.5.0 原始碼改用 Guanyinma（觀音嬤）共用核心。升級前請先用原版本備份自訂詞及學習資料；新核心使用獨立詞庫，可明確匯入舊 MJSR，不會自動改寫舊檔。安裝完成後登出再登入，升級保留原有輸入來源。正式安裝包與本頁圖片尚以已發布版本為準；新版交付條件見 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。
 
 ## 安裝前，確認你的 Mac
 
@@ -12,7 +16,7 @@
 
 ## 1. 下載 macOS 安裝包
 
-打開[macOS 1.3.8 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)，往下捲到 **Assets**，下載 **`chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip`** 與同名 `.sha256` 校驗檔。下圖為 1.3.7 發布頁，下載 1.3.8 時請核對檔名中的版本。
+打開[macOS 1.3.9 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)，往下捲到 **Assets**，下載 **`chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip`** 與同名 `.sha256` 校驗檔。下圖為 1.3.7 發布頁，下載 1.3.9 時請核對檔名中的版本。
 
 ![GitHub Release的Assets，列出1.3.7 macOS安裝包及同名SHA-256校驗檔](docs/images/keykey-macos-v137-mac01-release-assets-apple-silicon.png)
 
@@ -26,7 +30,7 @@
 
 *macOS 使用第一列的 PKG ZIP；右側的 .sha256 用來核對下載內容。*
 
-也可以直接點選 [1.3.8 macOS 安裝包（AWS CDN）](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip)，以及[同名 SHA-256 校驗檔](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-arm64.pkg.zip.sha256)。[建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.3.8/chichi77-KeyKey-1.3.8-macos-build-info.json)記錄版本、來源提交與安裝包雜湊。校驗時，請確認 ZIP 的 SHA-256 與校驗檔內的值一致。
+也可以直接點選 [1.3.9 macOS 安裝包（AWS CDN）](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip)，以及[同名 SHA-256 校驗檔](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-arm64.pkg.zip.sha256)。[建置資訊](https://download.aws.polobread.com/keykey/releases/download/v1.3.9/chichi77-KeyKey-1.3.9-macos-build-info.json)記錄版本、來源提交與安裝包雜湊。校驗時，請確認 ZIP 的 SHA-256 與校驗檔內的值一致。
 
 ## 2. 執行安裝程式
 
@@ -226,7 +230,7 @@
 
 ![琦琦偏好設定的關於頁顯示版本1.3.7](docs/images/keykey-macos-v137-about-apple-silicon.png)
 
-*此截圖顯示實拍時的 1.3.7；安裝目前正式版後，請在「關於」頁核對為 1.3.8。*
+*此截圖顯示實拍時的 1.3.7；安裝目前正式版後，請在「關於」頁核對為 1.3.9。*
 
 需要進一步核對安裝位置、版本與簽章時，可使用下列指令；一般安裝不需要執行：
 

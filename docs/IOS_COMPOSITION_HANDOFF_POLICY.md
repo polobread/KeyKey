@@ -1,5 +1,7 @@
 # iOS 組字保留與確認規則
 
+以下保留產品行為規則及原 revision 的分析。現行實作已改接 Guanyinma，舊引擎函式的描述不是目前執行路徑；接合與 1.5.0 驗收以 [iOS adapter](GUANYINMA_IOS_ADAPTER.md)及[發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)為準。
+
 日期：2026-10-23。對應[架構審查](IOS_APP_EXTENSION_HOST_REVIEW.md)的 R01、R02、R04。實作依據仍為程式 commit `c5e04e5c3b2586e9fdf099b9e2bd7c20b43b17f8`；本輪依使用者確認更新產品規則，沒有修改程式、建置或執行功能測試。產品規則已確認，實作方式仍待驗證；以下不是現況已支援的保證，也不是 Apple 強制規定所有輸入法採取的政策。公開 API 的可靠性結論與方案範圍見[鍵盤切換與開闔訊號可行性審查](IOS_KEYBOARD_TRANSITION_API_REVIEW.md)。
 
 依使用者是否真正結束輸入來區分：切到別的鍵盤、明確按「▼」或換輸入框時，只確認已完成文字，取消未完成注音與字根；取消清單或只是開闔、旋轉螢幕時，保留完整組字及未完成輸入。保留後恢復或確認，都以原輸入位置仍可安全操作為前提；位置暫時不明時先停止寫入，確認已失效時才放棄舊編輯責任。
@@ -40,7 +42,7 @@ Apple 的 `unmarkText()` 會留下文字；`setMarkedText` 在沒有既有標記
 
 例如組字區為「你好」加上尚未完成的「ㄕ」，真正切換鍵盤、按「▼」或換欄位時，原欄位只留下「你好」，「ㄕ」取消；如果只有「ㄕ」而沒有已完成文字，就不新增文字。取消清單或單純開闔時，則仍保留「你好」的組字與「ㄕ」，可以接著輸入。
 
-現有 `finishCompositionForInputHandoff` 在好打路徑會嘗試完成讀音，傳統路徑可能選入高亮候選；倉頡／簡易則可能直接清除字根。因此本節不是對現況函式的重新命名，不能直接套用同一函式宣告符合已確認的產品規則。[現有交接函式](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/BopomofoEngine.swift#L835)
+現有 `finishCompositionForInputHandoff` 在好打路徑會嘗試完成讀音，傳統路徑可能選入高亮候選；倉頡／簡易則可能直接清除字根。因此本節不是對現況函式的重新命名，不能直接套用同一函式宣告符合已確認的產品規則。原審查 revision 的 `BopomofoEngine.swift`（歷史來源，現行接合見 [iOS adapter](GUANYINMA_IOS_ADAPTER.md)）
 
 ## 原輸入位置仍有效的判斷界線
 

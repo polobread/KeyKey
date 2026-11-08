@@ -2,6 +2,8 @@
 
 適用產品：琦琦輸入法 iOS（容器 App、keyboard extension、App 內實體鍵盤編輯器）
 
+1.5.0 文件整理：共用核心改採 Guanyinma（觀音嬤），Rust 完整測試由核心 CI 負責；Swift package 串接請用 [現行工具](../Source/Guanyinma/tools/test-ios-swift-package.sh)。下方「現況（2026-09-09）」保留當時 Xcode Cloud 計畫，不表示目前 Cloud 已啟用全部 gate；當次 archive、TestFlight 與正式送審仍須依[發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)核對。
+
 目的：以 automated smoke test 與 functional test 擋住不合格的 TestFlight build。
 
 現況（2026-09-09）：下列為目標計畫，尚未全部啟用。線上的 `Default` workflow
@@ -92,25 +94,21 @@ Archive 完成後執行 shell verification，任何一項失敗即停止分發�
 
 ## 4. Functional suite
 
-目標：**30 分鐘內完成主要矩陣**。PR、main 更新與 TestFlight candidate 必跑；壓力測試可 nightly。
+下列為完整 TestFlight candidate 的主要矩陣規劃，執行時間與實際啟用項目須另記。日常 PR 只跑受影響的接合或 UI 冒煙；不重跑完整 Rust 核心矩陣，也不將手動遷移 baseline 納入 gate。壓力測試僅在明確安排的隔離環境執行。
 
 ### A. Engine tests
 
-沿用 `KeyKeyEngine` 現有測試，並以零失敗、零 unexpected skip 為門檻：
+四法解析、排序、選字學習與組字邊界由 Guanyinma Rust／C ABI 測試負責。`KeyKeyEngine` 現有 Swift 測試只驗證 FE 接合與顯示契約，失敗及預期跳過原因分開列明：
 
-- 注音讀音、聲調、選字、退格與組字狀態。
-- 候選查詢、翻頁、關聯詞與多字關聯。
-- 英文、數字、符號、全半形與鍵盤 layout／metrics。
-- 11 種 keyboard type 與 Return policy。
-- document mutation guard。
-- 候選色、詞庫設定與 supporter state 持久化。
-- 記憶體 probe 與資料庫查詢。
+- Rust session 載入、設定／事件映射、一次送字及釋放。
+- 候選與關聯詞資料接合、鍵盤 layout／metrics。
+- keyboard type、Return policy 與 document mutation guard。
+- 候選色、詞庫 publication 與 supporter state 的原生資料邊界。
 
 命令：
 
 ```sh
-cd Source/Loaders/iOS-Keyboard/KeyKeyEngine
-swift test
+bash Source/Guanyinma/tools/test-ios-swift-package.sh
 ```
 
 ### B. Container App／editor XCUITest

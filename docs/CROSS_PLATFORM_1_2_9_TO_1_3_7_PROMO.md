@@ -4,7 +4,7 @@
 
 整理日期：2026-10-25。依據 `master` 修訂 `892c47468328d83986c0bae8538975ab04209eaa`、正式 Release、六平台安裝指南、設定支援表與相關程式碼。文案功能以當時正式版 **1.3.7** 為基準。
 
-目前 macOS 正式版為 **1.3.8**，其他平台維持 **1.3.7**；本文下載入口已依平台分開，功能與圖片仍保留原本的 1.3.7 基準。
+下文保留整理時的 macOS **1.3.8** 與其他平台 **1.3.7** 下載入口，功能與圖片為歷史 1.3.7 基準。現在可用版本以 [README](../README.md) 為準；新版宣傳主軸與交付條件見 [1.5.0 發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)，不直接把這份舊文案替換版號當成新版說明。
 
 ## 總宣傳文案
 
@@ -167,7 +167,7 @@
 | 宣傳主張 | 文件／發布依據 | 程式碼核對入口 |
 |---|---|---|
 | 整句組字、詞庫與學習改善 | [CHANGELOG 1.3.0／1.3.1](../CHANGELOG.md)、[1.3.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.0)、[1.3.1 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.1) | [共用好打注音模型說明](../DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md)、[iOS 核心](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine)、[Android 核心](../Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android) |
-| 六平台倉頡未打完選字 | [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)、[六平台指南及截圖登記](CROSS_PLATFORM_SCREENSHOT_PLAN.md) | [桌面共用前綴候選](../Source/Shared/CangjiePrefix.h)、[iOS](../Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/CangjiePrefixSelection.swift)、[Android](../Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/CangjiePrefixSelection.java)、[Linux／FreeBSD](../Source/Loaders/Linux-IME/adapters/fcitx5/fcitx5_engine.cpp) |
+| 六平台倉頡未打完選字 | [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)、[六平台指南及截圖登記](CROSS_PLATFORM_SCREENSHOT_PLAN.md) | [桌面共用前綴候選](../Source/Shared/CangjiePrefix.h)、[iOS](https://github.com/polobread/KeyKey/blob/v1.3.7/Source/Loaders/iOS-Keyboard/KeyKeyEngine/Sources/KeyKeyEngine/CangjiePrefixSelection.swift)、[Android](https://github.com/polobread/KeyKey/blob/v1.3.7/Source/Loaders/Android-IME/app/src/main/java/tw/chichi77/keykey/android/CangjiePrefixSelection.java)、[Linux／FreeBSD](../Source/Loaders/Linux-IME/adapters/fcitx5/fcitx5_engine.cpp) |
 | Mac Shift、英文模式與 Emoji | [macOS 指南](../MACOS_INSTALL.md)、[CHANGELOG 1.3.7](../CHANGELOG.md) | [一般設定](../Source/PreferenceApplications/OSX/TakaoGlobal.m)、[符號表](../Source/Loaders/OSX-IMK) |
 | Windows Caps Lock、選字鍵、組字長度及自訂詞 | [Windows 指南](../WINDOWS_INSTALL.md)、[CHANGELOG 1.3.0／1.3.1／1.3.7](../CHANGELOG.md) | [設定介面](../Source/Loaders/Windows-TSF/SettingsModern/MainWindow.xaml)、[設定邏輯](../Source/Loaders/Windows-TSF/SettingsModern/MainWindow.xaml.cs) |
 | iOS 權限、候選及 App 實體編輯器 | [iOS 指南](../IOS_INSTALL.md)、[iOS 技術文件](../Source/Loaders/iOS-Keyboard/README.md) | [extension 權限](../Source/Loaders/iOS-Keyboard/Keyboard/Info.plist)、[App 實體編輯器](../Source/Loaders/iOS-Keyboard/ContainerApp/HardwareKeyboardEditorViewController.swift) |

@@ -8,11 +8,11 @@ Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、
 
 Linux 1.3.7 的 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 安裝流程見
 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。macOS 正式版為
-[1.3.8](https://github.com/polobread/KeyKey/releases/tag/v1.3.8)；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7。
+[1.3.9](https://github.com/polobread/KeyKey/releases/tag/v1.3.9)；Windows、Linux／FreeBSD、iOS 與 Android 正式版維持 1.3.7。
 Windows 與 Ubuntu 安裝包由 [1.3.7 Release](https://github.com/polobread/KeyKey/releases/tag/v1.3.7)
 提供，iOS 與 Android 1.3.7 已分別在 App Store、Google Play 上架，不需加入測試。
 FreeBSD 已完成桌面驗證，透過 ports／pkg 安裝，詳見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。
-Guanyinma 工作分支的六平台原始碼開發版號統一為 `1.5.0`，正式發布狀態依上列平台資訊；共用好打注音模型維持 `1.3.1`。
+目前六平台原始碼版號為 `1.5.0`，正式發布狀態依上列平台資訊；共用好打注音模型維持 `1.3.1`。發布主軸、資料升級與各平台驗收／簽章交付條件集中於 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)，不能以本文件的建置指令代替實際驗收。
 Linux／FreeBSD 開發來源只使用 Guanyinma Rust 核心；接合、設定與聚焦驗證見
 [Linux Guanyinma 說明](docs/GUANYINMA_LINUX_ADAPTER.md)。X11、GNOME Wayland／XWayland、
 FreeBSD 原生與套件安裝各自驗證，不以舊版本的桌面結果代替新核心驗收。
@@ -406,7 +406,7 @@ macOS 從四份產品 plist 讀取並核對版號，不從 README 讀取版號�
 
 正式版單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
 **Run workflow**，macOS／Linux 將 **Use workflow from** 選為 `master`，
-並依平台填入已發布的 tag，例如 macOS 的 `release_tag=v1.3.8`、Linux 的 `release_tag=v1.3.7`。Windows 依本機發布指南從原 tag
+並依平台填入已發布的 tag，例如 macOS 的 `release_tag=v1.3.9`、Linux 的 `release_tag=v1.3.7`。Windows 依本機發布指南從原 tag
 重試；來源修改需新版本／tag，不接受不同來源的同版本補發。macOS／Linux 建置使用所選分支，
 平台版號仍須與 Release 相同；成功後自動補上或
 覆寫該平台的資產，其他平台不變。macOS／Linux workflow 接受此欄位，留空則只保留 artifact。
@@ -415,7 +415,7 @@ macOS 從四份產品 plist 讀取並核對版號，不從 README 讀取版號�
 也可以個別使用 CLI（只執行需要補發的平台）：
 
 ```sh
-gh workflow run package-macos.yml --ref master -f release_tag=v1.3.8
+gh workflow run package-macos.yml --ref master -f release_tag=v1.3.9
 gh workflow run package-windows.yml --ref master # Build/test unsigned inputs; sign locally
 gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.7
 ```
@@ -825,11 +825,15 @@ Commit all changes on a working branch; the maintainer reviews and merges the PR
 Agents must not merge PRs. Source, build scripts, and CI are covered by the
 [Code signing policy](CODE_SIGNING_POLICY.md). The macOS and Linux workflows
 start when a GitHub Release is published and upload verified packages independently.
-Windows runs its full release build, signing, EXE/ZIP packaging and approved publication
-locally; its CI workflow only checks. The tag must match the
+Windows CI runs the shared build/test and unsigned packaging flow, retaining
+verified signing inputs. The local release tool verifies those CI inputs, signs
+and repackages them, then publishes only after manual acceptance and approval;
+it does not rebuild the product. The tag must match the
 platform's source version at that tag and can be created on the Release page.
-The official macOS release is `1.3.8`; Windows, Linux/FreeBSD, iOS, and Android
-remain at `1.3.7`. Current development sources on the Guanyinma branch use `1.5.0` across all six platforms.
+The official macOS release is `1.3.9`; Windows, Linux/FreeBSD, iOS, and Android
+remain at `1.3.7`. Current sources use `1.5.0` across all six platforms. See the
+[release preparation guide](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md) for migration,
+platform acceptance, signing, and publication requirements.
 The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product
 version and N is a positive integer without leading zeros.
 Betas require Pre-release and the exact tag commit; Latest is unchanged. Fixes
@@ -843,7 +847,7 @@ requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
 
 To recover one failed stable platform, merge the fix into `master`, select its workflow
 in Actions, choose **Run workflow**, set **Use workflow from** to `master`, and
-enter the published platform tag in `release_tag`, such as `v1.3.8` for macOS
+enter the published platform tag in `release_tag`, such as `v1.3.9` for macOS
 or `v1.3.7` for Linux; the corresponding Release must already be published.
 Windows retries use the local release guide and the exact reviewed tag; source
 fixes require a new version/tag. Only the macOS/Linux workflows accept this input. They build
@@ -855,7 +859,7 @@ Merge these workflow changes into the default branch before using them.
 For example, run just the command for the platform needing recovery:
 
 ```sh
-gh workflow run package-macos.yml --ref master -f release_tag=v1.3.8
+gh workflow run package-macos.yml --ref master -f release_tag=v1.3.9
 gh workflow run package-windows.yml --ref master # Build/test unsigned inputs; sign locally
 gh workflow run linux-ci.yml --ref master -f release_tag=v1.3.7
 ```
