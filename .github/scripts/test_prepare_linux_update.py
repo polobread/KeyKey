@@ -1,5 +1,7 @@
 import base64
 import copy
+import ctypes
+import ctypes.util
 import importlib.util
 import io
 import json
@@ -24,16 +26,43 @@ TAG = 'v' + VERSION
 RUN = 123
 
 
-def deb_bytes(package, version, architecture, control_extra=''):
+def zstd_bytes(raw):
+    library = ctypes.util.find_library('zstd')
+    if not library:
+        raise RuntimeError('Real Zstandard test fixtures require system libzstd')
+    codec = ctypes.CDLL(library)
+    codec.ZSTD_compressBound.argtypes = [ctypes.c_size_t]
+    codec.ZSTD_compressBound.restype = ctypes.c_size_t
+    codec.ZSTD_compress.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
+                                   ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
+    codec.ZSTD_compress.restype = ctypes.c_size_t
+    codec.ZSTD_isError.argtypes = [ctypes.c_size_t]
+    codec.ZSTD_isError.restype = ctypes.c_uint
+    buffer = ctypes.create_string_buffer(codec.ZSTD_compressBound(len(raw)))
+    data = ctypes.create_string_buffer(raw)
+    size = codec.ZSTD_compress(buffer, len(buffer), data, len(raw), 3)
+    if codec.ZSTD_isError(size):
+        raise RuntimeError('Could not create a real Zstandard test fixture')
+    return buffer.raw[:size]
+
+
+def control_ar(data, compression='xz'):
+    name = f'control.tar.{compression}/'
+    header = f'{name:<16}{0:<12}{0:<6}{0:<6}{100644:<8}{len(data):<10}`\n'.encode()
+    return b'!<arch>\n' + header + data + (b'\n' if len(data) % 2 else b'')
+
+
+def deb_bytes(package, version, architecture, control_extra='', compression='xz'):
     control = f'Package: {package}\nVersion: {version}\nArchitecture: {architecture}\n' + control_extra
     buffer = io.BytesIO()
-    with tarfile.open(fileobj=buffer, mode='w:xz') as bundle:
+    with tarfile.open(fileobj=buffer, mode='w' if compression == 'zst' else 'w:xz') as bundle:
         member = tarfile.TarInfo('./control')
         member.size = len(control.encode())
         bundle.addfile(member, io.BytesIO(control.encode()))
     data = buffer.getvalue()
-    header = f'{"control.tar.xz/":<16}{0:<12}{0:<6}{0:<6}{100644:<8}{len(data):<10}`\n'.encode()
-    return b'!<arch>\n' + header + data + (b'\n' if len(data) % 2 else b'')
+    if compression == 'zst':
+        data = zstd_bytes(data)
+    return control_ar(data, compression)
 
 
 def empty_feed():
@@ -170,6 +199,45 @@ class LinuxUpdateTests(unittest.TestCase):
         for raw in [b'not ar',b'!<arch>\ntruncated',deb_bytes('fixture',VERSION,'amd64',f'Version: {NEXT_VERSION}\n')]:
             path.write_bytes(raw)
             with self.subTest(raw=raw[:20]),self.assertRaises(ValueError): update.deb_control(path)
+
+    def test_zstd_packages_verify_control_identity_and_published_hashes(self):
+        for path in self.originals.glob('*.deb'):
+            fields = update.deb_control(path)
+            path.write_bytes(deb_bytes(fields['Package'], fields['Version'],
+                                       fields['Architecture'], compression='zst'))
+        self.refresh_records()
+        with patch.object(update.assets, 'verify_cdn_bytes') as cdn:
+            self.assertEqual(update.verify_packages(self.originals, self.published, self.info, TAG, SOURCE),
+                             self.info['assets'])
+            self.assertEqual(cdn.call_count, 5)
+
+    def test_zstd_control_rejects_corrupt_truncated_and_duplicate_fields(self):
+        path = self.originals / 'zstd-control-fixture.deb'
+        compressed = zstd_bytes(bytes(10240))
+        for data in (b'not Zstandard', compressed[:-1]):
+            path.write_bytes(control_ar(data, 'zst'))
+            with self.subTest(data=data[:20]), self.assertRaisesRegex(ValueError, 'Invalid or oversized Zstandard'):
+                update.deb_control(path)
+        path.write_bytes(deb_bytes('fixture', VERSION, 'amd64', f'Version: {NEXT_VERSION}\n',
+                                   compression='zst'))
+        with self.assertRaisesRegex(ValueError, 'duplicate Debian control field'):
+            update.deb_control(path)
+
+    def test_zstd_decompressed_control_archive_is_bounded(self):
+        path = self.originals / 'oversized-zstd-control.deb'
+        path.write_bytes(control_ar(zstd_bytes(bytes(update.MAX_CONTROL_ARCHIVE_SIZE + 1)), 'zst'))
+        self.assertLess(path.stat().st_size, update.MAX_CONTROL_ARCHIVE_SIZE)
+        with self.assertRaisesRegex(ValueError, 'oversized Zstandard'):
+            update.deb_control(path)
+
+    def test_zstd_control_reports_missing_or_unloadable_system_library(self):
+        with patch.object(update.ctypes.util, 'find_library', return_value=None), \
+                self.assertRaisesRegex(ValueError, 'requires system libzstd'):
+            update.zstd_control_archive(b'fixture')
+        with patch.object(update.ctypes.util, 'find_library', return_value='missing-zstd'), \
+                patch.object(update.ctypes, 'CDLL', side_effect=OSError('not installed')), \
+                self.assertRaisesRegex(ValueError, 'Could not load system libzstd'):
+            update.zstd_control_archive(b'fixture')
 
     def test_packages_verify_github_cdn_checksums_control_and_build_info(self):
         with patch.object(update.assets,'verify_cdn_bytes') as cdn:

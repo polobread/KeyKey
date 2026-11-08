@@ -2,6 +2,8 @@
 """Verify published Linux packages and open a notification-only stable feed PR."""
 import argparse
 import base64
+import ctypes
+import ctypes.util
 import importlib.util
 import io
 import json
@@ -17,6 +19,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[2]
 REPOSITORY = 'polobread/KeyKey'
 CDN = 'https://download.aws.polobread.com/keykey/releases/download'
+MAX_CONTROL_ARCHIVE_SIZE = 1024 * 1024
 sys.path.insert(0, str(ROOT / 'update'))
 sys.path.insert(0, str(ROOT / 'Source/Loaders/Linux-IME/tools'))
 import channels
@@ -100,6 +103,30 @@ def verify_run(info, source, trigger_run=None):
     require(len(lifecycle) == 1 and lifecycle[0]['conclusion'] == 'success', 'Linux package lifecycle/X11 gate did not pass')
 
 
+def zstd_control_archive(data):
+    """Decode control metadata with bounded output on Python without Zstandard."""
+    library = ctypes.util.find_library('zstd')
+    require(library, 'Reading Zstandard Debian control archives requires system libzstd')
+    try:
+        codec = ctypes.CDLL(library)
+        codec.ZSTD_decompress.argtypes = [ctypes.c_void_p, ctypes.c_size_t,
+                                         ctypes.c_void_p, ctypes.c_size_t]
+        codec.ZSTD_decompress.restype = ctypes.c_size_t
+        codec.ZSTD_isError.argtypes = [ctypes.c_size_t]
+        codec.ZSTD_isError.restype = ctypes.c_uint
+        codec.ZSTD_getErrorName.argtypes = [ctypes.c_size_t]
+        codec.ZSTD_getErrorName.restype = ctypes.c_char_p
+    except (OSError, AttributeError) as error:
+        raise ValueError('Could not load system libzstd for Debian control metadata') from error
+    compressed = ctypes.create_string_buffer(data)
+    unpacked = ctypes.create_string_buffer(MAX_CONTROL_ARCHIVE_SIZE)
+    size = codec.ZSTD_decompress(unpacked, len(unpacked), compressed, len(data))
+    if codec.ZSTD_isError(size):
+        reason = codec.ZSTD_getErrorName(size).decode('utf-8', errors='replace')
+        raise ValueError('Invalid or oversized Zstandard Debian control archive: ' + reason)
+    return unpacked.raw[:size]
+
+
 def deb_control(path):
     """Read bounded Debian control metadata without extracting or executing payloads."""
     raw = path.read_bytes()
@@ -112,8 +139,11 @@ def deb_control(path):
         require(0 <= size <= len(raw) - offset - 60, 'Invalid Debian ar member size')
         name = header[:16].decode('ascii').strip().rstrip('/')
         if name.startswith('control.tar'):
-            require(size <= 1024 * 1024, 'Debian control archive is too large')
-            with tarfile.open(fileobj=io.BytesIO(raw[offset + 60:offset + 60 + size]), mode='r:*') as bundle:
+            require(size <= MAX_CONTROL_ARCHIVE_SIZE, 'Debian control archive is too large')
+            archive = raw[offset + 60:offset + 60 + size]
+            if name == 'control.tar.zst':
+                archive = zstd_control_archive(archive)
+            with tarfile.open(fileobj=io.BytesIO(archive), mode='r:*') as bundle:
                 members = [member for member in bundle if member.name.removeprefix('./') == 'control']
                 require(len(members) == 1 and members[0].isfile() and 0 < members[0].size <= 65536,
                         'Expected one bounded Debian control file')
