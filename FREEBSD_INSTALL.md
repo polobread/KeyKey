@@ -16,7 +16,7 @@
 目前開發分支已改為 Guanyinma（Rust）單核心，與本指南記錄的正式 1.3.7 不同。
 新版原始碼建置須準備鎖定 Rust 工具鏈、json-c、PangoFT2／Fontconfig、SQLite 與 Fcitx
 開發套件；現有 ports 配方需要同步 Cargo 來源、相依及安裝清單。這些開發版變更
-尚未在 FreeBSD 原生 runner 驗證，不以 Ubuntu 測試推定 FreeBSD 新版可用。
+尚未在 FreeBSD 原生 runner 驗證。下方另附[新版共用設定導覽](#新版共用設定導覽150)，以 Ubuntu 實拍說明介面；FreeBSD 的安裝與輸入證據仍為正式 1.3.7。
 
 ## 1. 從套件庫直接安裝
 
@@ -263,9 +263,9 @@ fcitx5-config-qt
 
 單擊左側 **Bopomofo**，再按齒輪開啟設定。先保留「標準」注音鍵盤配置與「好打注音」模式；需要逐字選字時，再改成傳統注音。
 
-![琦琦 1.3.7 中文注音設定](docs/images/keykey-freebsd-v137-bsd08-settings.png)
+新版 **1.5.0** 已依「一般、注音、倉頡、簡易、自訂詞、詞庫」分組。下圖為共用前端在 **Ubuntu** 的新版設定示範；正式 1.3.7 的設定較少，FreeBSD 套件是否已提供新版，仍須以 `pkg info` 或 port 版號確認。
 
-*注音模式為好打注音；下方提供空白開候選、選字目標與 Esc 清除整句等選項。*
+![1.5.0 共用 Fcitx 設定的一般分組，Ubuntu 實拍供 FreeBSD 參考](docs/images/keykey-unix-v150-fcitx-general.png)
 
 ## 7. 在 Mousepad 試打與選字
 
@@ -325,7 +325,9 @@ keykey-about
 
 從注音設定內點 **開啟倉頡設定…**，開啟 **即時候選**與 **未打完也能選字**。桌面版預設關閉，即時候選與錯碼清除互斥；改好依提示儲存。
 
-![即時候選及未打完也能選字已勾選，錯碼清除關閉](docs/images/keykey-freebsd-v137-bsd09a-cangjie-settings.png)
+![正式 1.3.7 FreeBSD 倉頡工具，即時候選及未打完也能選字已勾選，錯碼清除關閉](docs/images/keykey-freebsd-v137-bsd09a-cangjie-settings.png)
+
+上圖保留正式 **1.3.7** 的 FreeBSD 原生工具；新版完整倉頡設定另見下節。
 
 回 Mousepad，從 Fcitx 選 **Cangjie**，只輸入 H、K，也就是 **竹、大**，查看包含 **喬**的候選。想選喬時按實際編號或點選，不必先打完「竹大口月口」。
 
@@ -334,6 +336,22 @@ keykey-about
 本次第 5 項是「喬」，第 2～4 項的罕字顯示缺字框，截圖保留真實狀態。選取喬後已確認並儲存；實際檔案的兩行注音示範與第三行「喬」均核對一致。拍攝後已還原原有倉頡設定。
 
 更新通知只提醒有新版，FreeBSD 仍透過 ports／pkg 更新，套件可能較晚上架。
+
+## 新版共用設定導覽（1.5.0）
+
+以下說明 **master 的 1.5.0 原始碼版**。Linux／FreeBSD 共用 Fcitx 5 前端與 Guanyinma（Rust）核心，圖片來自 Ubuntu 的隔離設定視窗，供認識新選項使用；尚未作為 FreeBSD 新版的原生建置、安裝或輸入驗收。
+
+「注音」分組新增好打選字鍵、**10～20 音節組字長度**、選字後回句尾、Shift 字母強制大寫，以及上下文組句、記憶選字偏好與學習相鄰詞的獨立開關。預設為九個數字選字鍵、十音節；Shift 強制大寫預設關閉。
+
+![1.5.0 共用注音與好打進階設定，Ubuntu 實拍供 FreeBSD 參考](docs/images/keykey-unix-v150-fcitx-bopomofo.png)
+
+「倉頡」可調整滿碼查詢、動態詞頻、即時／前綴候選、標點、選字鍵、最長字根數、空白鍵行為及通配字；開啟即時候選與未打完也能選字，即可使用前述「竹大 → 喬」功能。
+
+![1.5.0 共用原生倉頡進階設定，Ubuntu 實拍供 FreeBSD 參考](docs/images/keykey-unix-v150-fcitx-cangjie.png)
+
+「簡易」有獨立的滿碼、動態詞頻、標點、選字鍵與空白鍵設定，最長字根數為一至二。「自訂詞」可開啟圖形管理工具，新增／修改／刪除自訂詞、重設學習及匯入／備份完整 Guanyinma JSON；「詞庫」可逐項開關關聯詞分類。完整圖片見 [Linux 新版設定導覽](LINUX_INSTALL.md#新版原始碼設定導覽150)。
+
+新版自訂詞與學習使用獨立的 `guanyinma-user.db`，既有舊資料不會自動匯入或刪除。依賴、設定與資料路徑詳見 [Linux／FreeBSD Guanyinma 接合](docs/GUANYINMA_LINUX_ADAPTER.md)。
 
 ## 常見環境問題
 
@@ -375,9 +393,11 @@ exit
 
 ## 圖片來源與驗證範圍
 
-2026-10-24 新增 20 張實拍，環境為 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11（xfce4-session 4.20.4）、LightDM、Fcitx 5 與 Mousepad 0.7.0／GTK 3，已安裝琦琦 1.3.7。涵蓋套件庫刷新與查詢、ports 來源、既有安裝版號、橋接、字型、重新登入、自動啟動、Fcitx 清單、設定、面板選用、指定兩行與玩候選、倉頡竹大／喬及關於視窗。只裁切真實畫面，未修改產品畫面內容。
+正式 **1.3.7** 的圖片於 **2026-10-24** 在 FreeBSD 實拍，環境為 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11（xfce4-session 4.20.4）、LightDM、Fcitx 5 與 Mousepad 0.7.0／GTK 3，已安裝琦琦 1.3.7。涵蓋套件庫刷新與查詢、ports 來源、既有安裝版號、橋接、字型、重新登入、自動啟動、Fcitx 清單、設定、面板選用、指定兩行與玩候選、倉頡竹大／喬及關於視窗。只裁切真實畫面，未修改產品畫面內容。
 
-19 字長句結果圖保留先前的 1.3.7 驗證；本輪未重跑該長句、ports 建置或套件安裝。套件庫刷新及版本查詢由管理員手動驗證後執行，完成便退出 root；本輪沒有變更套件庫分支、升級或降級套件。
+**1.5.0 設定圖**於 **2026-11-08** 使用 master `95ea265` 建置的 staged addon，在 **Ubuntu 24.04、Fcitx 5／Qt 5、私有 Xvfb** 實拍，與 Linux 指南共用。拍攝使用隔離的設定與資料目錄；圖片未取自 FreeBSD，不代表 FreeBSD 新版已完成原生驗收。
+
+19 字長句結果圖保留先前的 1.3.7 驗證；2026-10-24 拍攝未重跑該長句、ports 建置或套件安裝。套件庫刷新及版本查詢由管理員手動驗證後執行，完成便退出 root；該次沒有變更套件庫分支、升級或降級套件。
 
 ## 參考
 
@@ -387,4 +407,4 @@ exit
 - [Linux／FreeBSD frontend](Source/Loaders/Linux-IME/README.md)
 - [更新通知與 ports 整合](Source/Loaders/Linux-IME/docs/update-notifications.md)
 - [實體鍵盤固定回歸句](docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md)
-- 圖文編排參考：[琦琦注音介紹與使用教學](https://free.com.tw/chichi-keykey/)；本頁步驟與圖片皆依 FreeBSD 實際操作製作。
+- 圖文編排參考：[琦琦注音介紹與使用教學](https://free.com.tw/chichi-keykey/)；本頁正式 1.3.7 步驟與圖片依 FreeBSD 實際操作製作；新版共用設定圖另標示 Ubuntu 來源。
