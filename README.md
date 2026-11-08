@@ -56,7 +56,7 @@ Windows、Android 與 iOS 建立現代化 frontend。
 
 目前原始碼改採 **Guanyinma（觀音嬤）** 作為唯一的輸入核心。名稱取自臺語對觀世音菩薩的親切稱呼「觀音嬤」，Guanyinma 是這個稱呼的專案拼寫。
 
-取名「觀音嬤」，也借用觀音菩薩慈悲照顧眾生的形象。我們希望這套共用核心也能照顧不同平台與裝置，讓大家無論使用哪個平台，都能穩定、順暢地輸入中文。命名靈感參考[法鼓山的觀音介紹](https://bm.ddm.org.tw/faqdetail_tw.php?id=7047)。
+取名「觀音嬤」，也借用觀音菩薩慈悲照顧眾生的形象。我們希望這套共用核心也能照顧不同平台與裝置，讓大家無論使用哪個平台，都能穩定、順暢地輸入中文。命名靈感參考[艋舺龍山寺官網〈認識奉祀神祇〉](https://www.lungshan.org.tw/tw/02_1_1_gods.php)。
 
 過去 macOS／Windows 的好打注音採用 **Manjusri（文殊菩薩）** 核心，目前已由 Guanyinma 接替。以目前原始碼建置的產品不再內建 Manjusri 或各平台原有的舊輸入引擎，也不提供舊核心切換或失敗回退。
 
@@ -257,7 +257,7 @@ Guanyin, the Bodhisattva of Compassion.
 The name also takes inspiration from Guanyin's compassion and care for all
 beings. We hope this shared core can serve users across platforms and devices,
 helping everyone type Chinese reliably and comfortably wherever they use KeyKey.
-See [Dharma Drum Mountain's introduction to Guanyin](https://bm.ddm.org.tw/faqdetail_tw.php?id=7047)
+See [Bangka Lungshan Temple's official introduction to Guanyin](https://www.lungshan.org.tw/tw/02_1_1_gods.php)
 for the inspiration behind the name.
 
 The former macOS/Windows Smart Phonetic core was **Manjusri (文殊菩薩)**,
