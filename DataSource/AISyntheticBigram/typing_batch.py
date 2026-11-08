@@ -252,7 +252,7 @@ def common_correction_totals(reports, characters):
 
 
 def common_corrections_by_character(reports, characters):
-    counts = Counter({character: 0 for character in characters})
+    counts = Counter({character: 0 for character in sorted(characters)})
     for report in reports:
         if "character_correction_summary" in report:
             for row in report["character_correction_summary"]:

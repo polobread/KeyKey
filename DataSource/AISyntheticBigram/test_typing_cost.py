@@ -1,6 +1,7 @@
 """Regression tests run against the real C++ composer, with controlled models."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -12,6 +13,56 @@ import typing_cost as t
 spec = importlib.util.spec_from_file_location("repair_typing_bigram", t.ROOT / "repair-typing-bigram.py")
 repair = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(repair)
+
+
+class ReportSerializationTests(unittest.TestCase):
+    def test_fixed_regression_report_is_stable_across_python_hash_seeds(self):
+        # Each process receives the same unordered character set, as the real
+        # fixed-regression benchmark does. Preserve correction counts and zero
+        # entries while keeping both the mapping and nested JSON bytes stable.
+        program = """
+import json
+from pathlib import Path
+import sys
+import typing_cost
+from typing_batch import common_corrections_by_character, load_common_characters
+
+characters = load_common_characters()
+reports = [
+    {"character_correction_summary": [
+        {"character": "的", "changes": 2},
+        {"character": "不", "changes": 3},
+        {"character": "龘", "changes": 99},
+    ]},
+    {"correction_summary": [{"changes": [
+        {"to": "的"}, {"to": "是"}, {"to": "龘"},
+    ], "events": 4}]},
+]
+counts = common_corrections_by_character(reports, characters)
+metadata = {key: "retained" for key in {"policy", "reference", "articles"}}
+typing_cost.write_json(Path(sys.argv[1]), {
+    "summaries": {"before": {"by_character": counts}}, "identity": metadata,
+})
+print(json.dumps(list(counts), ensure_ascii=False))
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            outputs, orders = [], []
+            for seed in ("1", "2"):
+                path = Path(directory) / f"report-{seed}.json"
+                order = subprocess.check_output(
+                    [sys.executable, "-B", "-c", program, str(path)], cwd=t.ROOT,
+                    env={**os.environ, "PYTHONHASHSEED": seed}, text=True)
+                outputs.append(path.read_bytes())
+                orders.append(json.loads(order))
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertEqual(orders[0], orders[1])
+            result = json.loads(outputs[0])["summaries"]["before"]["by_character"]
+            self.assertEqual(result["的"], 6)
+            self.assertEqual(result["不"], 3)
+            self.assertEqual(result["是"], 4)
+            self.assertNotIn("龘", result)
+            self.assertTrue(any(value == 0 for value in result.values()))
+            self.assertEqual(sum(result.values()), 13)
 
 
 class TypingCostTests(unittest.TestCase):
