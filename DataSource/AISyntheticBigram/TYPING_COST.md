@@ -62,7 +62,7 @@ python3 DataSource/AISyntheticBigram/measure-typing-cost.py 文章.txt /tmp/候�
 - 隨機抽 50 篇只用於探索問題分布，不能取代固定 131 篇驗收。
 - 800／750／750 是已結束的 unigram 實驗切分，不再用來判斷 bigram。
 
-完整正式模型來源、保護規則與 130 篇結果見 [SMART_MANDARIN_MODEL_V1_3_1.md](SMART_MANDARIN_MODEL_V1_3_1.md)。
+現行 1.5.0 模型的資料來源與雜湊見 [model manifest](smart-mandarin-model-manifest.json)，131 篇回歸結果見[重建報告](rebuild-review/latest.json)。保護規則的建模背景與舊版 130 篇結果見 [v1.3.1 模型報告](SMART_MANDARIN_MODEL_V1_3_1.md)。
 
 Bigram 只能在有限組字窗內改善上下文，因此驗收先看基本字是否減少修正，再看一般字整體穩定性：
 
