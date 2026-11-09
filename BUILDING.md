@@ -8,7 +8,7 @@ Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、
 
 六平台發布版本統一為 **1.5.0**，桌面資產於 [1.5.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) 發布上傳後提供；iOS、Android 透過 App Store、Google Play 發行，實際可下載版本以商店頁面為準。
 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 的安裝流程見 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。FreeBSD 透過 ports／pkg 安裝，套件可能較晚上架，詳見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。
-共用好打注音模型維持 `1.3.1`。發布主軸、資料升級與各平台驗收／簽章交付條件集中於 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)，不能以本文件的建置指令代替實際驗收。
+共用好打注音模型為 **1.5.0**。發布主軸、資料升級與各平台驗收／簽章交付條件集中於 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)，不能以本文件的建置指令代替實際驗收。
 Linux／FreeBSD 開發來源只使用 Guanyinma Rust 核心；接合、設定與聚焦驗證見
 [Linux Guanyinma 說明](docs/GUANYINMA_LINUX_ADAPTER.md)。X11、GNOME Wayland／XWayland、
 FreeBSD 原生與套件安裝各自驗證，不以舊版本的桌面結果代替新核心驗收。

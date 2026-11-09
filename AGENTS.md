@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。六平台原始碼與本次發布文件的產品版號統一為 `1.5.0`，發布準備集中於 `docs/CROSS_PLATFORM_V1_5_0_RELEASE.md`；GitHub Release／CDN 資產、商店上架及更新公告仍須依各平台流程核對，不能由文件版號推定已發布。FreeBSD 沿用 Linux-IME 的版本來源，透過 ports／pkg 安裝，套件庫版本可能較晚上架；舊版 1.3.7 曾在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，不能當成 1.5.0 的原生驗收。共用好打注音模型維持 v1.3.1。README 與平台指南按本次發布版號 1.5.0 整理下載入口與支援範圍；舊版截圖、歷史更新紀錄與驗收來源保留實際版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。六平台原始碼與本次發布文件的產品版號統一為 `1.5.0`，發布準備集中於 `docs/CROSS_PLATFORM_V1_5_0_RELEASE.md`；GitHub Release／CDN 資產、商店上架及更新公告仍須依各平台流程核對，不能由文件版號推定已發布。FreeBSD 沿用 Linux-IME 的版本來源，透過 ports／pkg 安裝，套件庫版本可能較晚上架；舊版 1.3.7 曾在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，不能當成 1.5.0 的原生驗收。共用好打注音模型為 **1.5.0**。README 與平台指南按本次發布版號 1.5.0 整理下載入口與支援範圍；舊版截圖、歷史更新紀錄與驗收來源保留實際版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -12,7 +12,7 @@
 - Bigram 約只能影響仍在組字區內的 9～10 個字，不能期待後文完全救回前面的同音字。優先降低核心 83 字、前 100 名基本字與第 101～1,000 名一般字的修正；第 1,001～1,500 名、未排名罕字、專業詞及專有名詞只列診斷，不決定基礎模型是否採用，這些內容可由使用者學習改善。
 - 調整前先分析整批錯誤分布，再訂一條適用全體的規則並重跑完整驗證。不得看一篇修一篇、對單一 Bigram 邊加補丁，或只用總分掩蓋基本字、題材或個別文章的退步。隨機 50 篇可作快速探索，不能取代目前固定 131 篇驗收。
 - v1.3.1 以 McBopomofo unigram 為基準，只依 2,300 篇的跨文章證據調整既有 Bigram；122 個基本／常用字的 191 個讀音保留基準 Bigram，共保護 208,222 筆。另收錄經整體驗證的 7 個常用詞補充，以及搜尋熱門詞 550 詞去除 393 個既有詞後的 157 詞保守補充。
-- 固定 130 篇結果為總動作 **331,619 → 331,062（-557）**、額外修正動作 **11,000 → 10,443（-557）**；97 篇改善、19 篇相同、14 篇退步，節省 623、增加 66。搜尋熱門詞層另少 6 次動作，3 篇改善、127 篇相同、0 篇退步。正式細節在 `DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md` 與 `DataSource/AISyntheticArticles/typing-articles-v5-manifest.json`。
+- 固定 130 篇結果為總動作 **331,619 → 331,062（-557）**、額外修正動作 **11,000 → 10,443（-557）**；97 篇改善、19 篇相同、14 篇退步，節省 623、增加 66。搜尋熱門詞層另少 6 次動作，3 篇改善、127 篇相同、0 篇退步。v1.3.1 的建模細節在 `DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md` 與 `DataSource/AISyntheticArticles/typing-articles-v5-manifest.json`。
 - 自建 unigram、全域混合、剪枝、字級先驗及順位校準雖曾降低總動作，但在基本字分布、跨題材穩定性或外部驗證門檻失敗，因此都未取代正式基準。直接 unigram 順位問題主要集中於「做／作、新／心、裡／理、向／像」；「在／再、是／事、時／十」多數是上下文、多字候選或斷詞問題，應由整體語料與 Bigram 處理。既有 3,000 份外部提示已全部用過，下一次採用新規則需要新的完整自然文章 holdout，不能再宣稱舊資料是盲測。
 - 慣用讀音先依本地詞庫與臺灣輸入習慣判斷，可先請 ChatGPT 分析；只有仍有疑義或本地資料互相衝突時才個別查教育部辭典，不批次查詢。破音字須依文章語境固定實際慣用讀音。
 
@@ -172,7 +172,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 ## 專題文件
 
 - [CHANGELOG.md](CHANGELOG.md)：各平台版本變更。
-- `DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md`：正式模型來源與固定 130 篇結果。
+- `DataSource/AISyntheticBigram/SMART_MANDARIN_MODEL_V1_3_1.md`：v1.3.1 建模與固定 130 篇歷史結果。現行 1.5.0 模型來源與雜湊見[模型 manifest](DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json)。
 - `DataSource/AISyntheticBigram/TYPING_COST.md`：動作數工具與可重現評估方式。
 - [Linux／FreeBSD Guanyinma 接合](docs/GUANYINMA_LINUX_ADAPTER.md)：現行桌面偏好、使用者資料及聚焦驗證。
 - [歷史交接紀錄](docs/AGENTS_HISTORY.md)：舊版逐日紀錄與已完成除錯細節。
