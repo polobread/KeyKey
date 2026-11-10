@@ -1,6 +1,6 @@
 # Guanyinma
 
-**Guanyinma（觀音嬤）** 的名稱取自臺語對觀世音菩薩的稱呼「觀音嬤」。它是 KeyKey 六平台共用的唯一輸入核心；共用演算法、排序與學習可減少重複維護，並讓各平台更容易接入新能力。原生介面、設定入口與宿主操作仍由各 frontend 負責。產品發布準備見 [1.5.0 發布文件](../../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+**Guanyinma（觀音嬤）** 的名稱取自臺語對觀世音菩薩的稱呼「觀音嬤」。它是 KeyKey 六平台共用的唯一輸入核心；共用演算法、排序與學習可減少重複維護，並讓各平台更容易接入新能力。原生介面、設定入口與宿主操作仍由各 frontend 負責。產品發布準備見 [1.5.1 發布文件](../../docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。
 
 Guanyinma 是 **chichi77 KeyKey／琦琦輸入法**（英文簡稱 **KeyKey**） 的新共用 Rust 核心，工作目錄為 `Source/Guanyinma`。目前完成唯讀資料層、C ABI、注音解析與四種輸入法的共用 session；好打注音組句、候選排序、手動選詞與組字邊界以 macOS Manjusri 為準。使用者詞庫、候選偏好、Bigram 與字表學習已接入獨立資料層；原生接合依[實作計畫](../../docs/GUANYINMA_IMPLEMENTATION_PLAN.md)進行。
 

@@ -1,9 +1,9 @@
 # chichi77 KeyKey for Linux and FreeBSD
 
-Current sources target 1.5.0. Guanyinma (觀音嬤), named after the Taiwanese name
+Current sources target 1.5.1. Guanyinma (觀音嬤), named after the Taiwanese name
 for Guanyin, is shared across all six KeyKey platforms. Data migration limits,
 native host acceptance, packaging, and publication requirements are collected
-in the [release preparation guide](../../../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md).
+in the [release preparation guide](../../../docs/CROSS_PLATFORM_V1_5_1_RELEASE.md).
 
 The Fcitx 5 frontend uses **Guanyinma (Rust) as its only input core** for
 好打注音, 傳統注音, Cangjie, and Simplex. C++ handles Fcitx events, input contexts,

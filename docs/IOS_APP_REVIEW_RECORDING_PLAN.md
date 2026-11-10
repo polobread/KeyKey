@@ -1,9 +1,9 @@
 # App Review 實機錄影流程
 
-適用產品：琦琦輸入法。1.5.0 送審準備時，以實際待送審 archive 安裝到 iPhone 真機錄製，
+準備琦琦輸入法送審時，以實際待送審 archive 安裝到 iPhone 真機錄製，
 從 App 讀回版本與 build number，不沿用舊版影片的數字。建議成片控制在 90–120 秒，
 使用 iOS 內建螢幕錄影，檔名格式為 `KeyKey-VERSION-buildBUILD-DEVICE-AppReview.mp4`。
-實際裝置、iOS 版本、來源 commit 與 archive 校驗資料另錄；完整交付見[發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+實際裝置、iOS 版本、來源 commit 與 archive 校驗資料另錄；完整交付見[1.5.1 發布準備](CROSS_PLATFORM_V1_5_1_RELEASE.md)。
 
 ## 錄影前準備
 

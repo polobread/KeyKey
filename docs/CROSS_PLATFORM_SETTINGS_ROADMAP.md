@@ -1,6 +1,6 @@
 # 跨平台輸入法設定支援表與 Roadmap
 
-2026-11-09 核對 1.5.0 的支援與交付狀態。六平台使用 Guanyinma（觀音嬤）Rust 共用核心，五個 frontend 共用 **1.5.0 好打注音模型**的 `KeyKey.db`。資料來源與雜湊見[模型 manifest](../DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json)。各平台驗收條件見 [1.5.0 發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+下表的商店、安裝包及公告狀態為 2026-11-09 核對的 1.5.0 紀錄。現行來源的產品版號為 1.5.1。六平台使用 Guanyinma（觀音嬤）Rust 共用核心，五個 frontend 共用 **1.5.0 好打注音模型**的 `KeyKey.db`。資料來源與雜湊見[模型 manifest](../DataSource/AISyntheticBigram/smart-mandarin-model-manifest.json)。新版各平台驗收條件見 [1.5.1 發布準備](CROSS_PLATFORM_V1_5_1_RELEASE.md)。
 
 本表以目前可進入的輸入法設定、設定讀寫與 frontend 實作為依據，供後續功能規劃使用。功能已存在於原始碼，不等於已建置、已安裝、通過實機驗收或正式推出。本文後段依功能引入或關鍵調整的提交日期整理開發時間表。
 

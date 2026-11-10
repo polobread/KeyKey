@@ -1,6 +1,6 @@
 # iOS Simulator 測試計畫
 
-本計畫定義完整 iOS frontend／keyboard extension 驗收。1.5.0 的共用核心演算法矩陣集中於 `guanyinma-core.yml`；日常 iOS 變更依受影響的接合、版面或宿主情境執行，不因核心局部或純文件修改重跑全部裝置。明確進入完整發布驗收時，依下列矩陣保存最終來源的證據；核心測試與 App 建置不能取代真正 extension 驗收，Simulator 也不代替實機或商店結果。交付條件見 [1.5.0 發布準備](CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+本計畫定義完整 iOS frontend／keyboard extension 驗收。共用核心的演算法測試矩陣集中於 `guanyinma-core.yml`；日常 iOS 變更依受影響的接合、版面或宿主情境執行，不因核心局部或純文件修改重跑全部裝置。明確進入完整發布驗收時，依下列矩陣保存最終來源的證據；核心測試與 App 建置不能取代真正 extension 驗收，Simulator 也不代替實機或商店結果。交付條件見 [1.5.1 發布準備](CROSS_PLATFORM_V1_5_1_RELEASE.md)。
 
 ## 受控 Simulator
 

@@ -1,16 +1,16 @@
 # Windows 安裝與使用指南
 
-本指南對應琦琦輸入法 **1.5.0**，提供好打注音、傳統注音、倉頡與簡易。安裝後，先在 Windows 加入琦琦鍵盤，再用 **Win + Space** 切換，就能在記事本或其他文字 App 開始打字。
+本指南對應琦琦輸入法 **1.5.1**，提供好打注音、傳統注音、倉頡與簡易。安裝後，先在 Windows 加入琦琦鍵盤，再用 **Win + Space** 切換，就能在記事本或其他文字 App 開始打字。
 
 第一次使用可照著 **下載 → 安裝 → 新增鍵盤 → 選用琦琦 → 試打選字**完成設定。一般使用者不需要安裝開發工具或 .NET；安裝程式登記輸入法後，仍須由你在 Windows 設定新增鍵盤。
 
 ## 新核心升級準備
 
-1.5.0 的四種輸入法統一使用 Guanyinma（觀音嬤），保留 Windows 原生 TSF、候選窗與設定介面。升級前先用原版本備份資料；新版使用獨立 `GuanyinmaUserData.db`，可明確唯讀匯入舊 Windows 詞庫，不會自動搬移學習。下載入口對應 1.5.0，操作圖保留實拍的 1.3.7，新版安裝包、跨架構及升級驗收見 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+四種輸入法自 1.5.0 起統一使用 Guanyinma（觀音嬤），保留 Windows 原生 TSF、候選窗與設定介面。升級前先用原版本備份資料；新版使用獨立 `GuanyinmaUserData.db`，可明確唯讀匯入舊 Windows 詞庫，不會自動搬移學習。下載入口對應 1.5.1，操作圖保留實拍的 1.3.7，新版安裝包、跨架構及升級驗收見 [1.5.1 發布準備](docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。
 
 ## 1. 確認系統，下載安裝包
 
-開啟 **開始 → 設定 → 系統 → 關於**，查看「系統類型」，再依下表選檔案。本版以 Windows 10 起為目標；目前已驗證 Windows 11 x64，Windows 10 x64／x86 的實機驗證範圍另列於頁末。
+開啟 **開始 → 設定 → 系統 → 關於**，查看「系統類型」，再依下表選檔案。本版以 Windows 10 起為目標；舊版 1.3.7 的 Windows 11 x64 操作證據與各架構的驗證範圍另列於頁末。
 
 | 你的系統 | 選擇的安裝方式 |
 | --- | --- |
@@ -18,13 +18,13 @@
 | **32 位元 x86 Windows** | 下載 x86 ZIP，完整解壓縮後執行 `Install.cmd`。 |
 | **ARM64 Windows** | 目前沒有本指南涵蓋的安裝包。 |
 
-打開 [Windows 1.5.0 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)，往下找到 **Assets**，選擇名稱包含自己架構的檔案。檔名多了 `.sha256` 的是校驗檔，請與安裝包一起下載。
+1.5.1 資產上傳後，打開 [Windows 1.5.1 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.5.1)，往下找到 **Assets**，選擇名稱包含自己架構的檔案。檔名多了 `.sha256` 的是校驗檔，請與安裝包一起下載。
 
 ![正式 1.3.7 的 Assets，列出 Windows x64 安裝程式、x64／x86 ZIP 與各自的 SHA-256 檔](docs/images/keykey-windows-v137-win01-release-assets-win11.png)
 
 *選擇 x64 Setup EXE，或符合架構的 ZIP；同名 `.sha256` 是校驗檔。此圖為未登入 GitHub 的發布頁。*
 
-本頁下載入口與檔名統一為 **1.5.0**，資產發布上傳後即可下載。請選 Windows 對應架構的安裝包及同版校驗檔。
+本頁下載入口與檔名統一為 **1.5.1**，資產發布上傳後即可下載。請選 Windows 對應架構的安裝包及同版校驗檔。
 
 ### 也能使用台灣 AWS CDN
 
@@ -36,9 +36,9 @@
 
 | 安裝方式 | AWS CDN 下載 | 校驗檔 |
 | --- | --- | --- |
-| x64 安裝精靈 | [chichi77-KeyKey-1.5.0-windows-x64-setup.exe](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-windows-x64-setup.exe) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-windows-x64-setup.exe.sha256) |
-| x64 ZIP | [chichi77-KeyKey-1.5.0-windows-x64.zip](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-windows-x64.zip) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-windows-x64.zip.sha256) |
-| x86 ZIP（32 位元 Windows） | [chichi77-KeyKey-1.5.0-windows-x86.zip](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-windows-x86.zip) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-KeyKey-1.5.0-windows-x86.zip.sha256) |
+| x64 安裝精靈 | [chichi77-KeyKey-1.5.1-windows-x64-setup.exe](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x64-setup.exe) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x64-setup.exe.sha256) |
+| x64 ZIP | [chichi77-KeyKey-1.5.1-windows-x64.zip](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x64.zip) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x64.zip.sha256) |
+| x86 ZIP（32 位元 Windows） | [chichi77-KeyKey-1.5.1-windows-x86.zip](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x86.zip) | [SHA-256](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-KeyKey-1.5.1-windows-x86.zip.sha256) |
 
 核對安裝包的 SHA-256 與同名 `.sha256` 內的值一致，再依前述方式確認發行者簽章及安裝。CDN 下載不改變簽章與安裝流程。
 

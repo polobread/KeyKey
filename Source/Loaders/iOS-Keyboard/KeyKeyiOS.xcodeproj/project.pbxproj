@@ -488,7 +488,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LIBRARY_SEARCH_PATHS = ("$(inherited)", "$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)", );
 				OTHER_LDFLAGS = ("$(inherited)", "-lguanyinma", );
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.5.1;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -541,7 +541,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LIBRARY_SEARCH_PATHS = ("$(inherited)", "$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)", );
 				OTHER_LDFLAGS = ("$(inherited)", "-lguanyinma", );
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.5.1;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;

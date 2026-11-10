@@ -3,7 +3,7 @@
 候選清單會在分頁前檢查系統與後備字型，隱藏確定無法顯示的字詞；觸控、數字選字、翻頁及浮動候選使用同一份結果。檢查依字素進行，保留系統可顯示的補充平面漢字、Emoji 與變體基字，不會把整個多字詞當成單一連字檢查。結果只快取在程序記憶體，不寫入偏好或詞庫；OS 升級／程序重啟會重新判斷，按「重設好打注音學習紀錄」也會清除。iOS App 的重設會在鍵盤下次開啟時套用。此功能只過濾候選，不修改模型、詞頻或使用者自訂詞。
 
 
-一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。本次發布版本為 **1.5.0**，透過 App Store 發行，實際可下載版本以商店頁面為準；一般使用者不需加入 TestFlight。以下是開發與測試資訊。
+一般使用者的 App Store 下載、啟用、試打與實體鍵盤操作，請先看[《iPhone、iPad 安裝與使用指南》](../../../IOS_INSTALL.md)。實際可下載版本以 App Store 頁面為準。一般使用者可直接從 App Store 下載。以下是開發與測試資訊。
 
 琦琦輸入法的 iOS 版：一個 custom keyboard extension，加上帶安裝引導與實體鍵盤編輯器的
 容器 App。兩個入口固定使用 **Guanyinma（Rust）單核心**，不再建置舊 Swift 引擎，
@@ -11,7 +11,7 @@
 偏好沿用既有 App Group revision 規則。架構、資料路徑與建置責任見
 [Guanyinma iOS 接合](../../../docs/GUANYINMA_IOS_ADAPTER.md)。
 
-目前來源為 1.5.0；Guanyinma（觀音嬤）為六平台共用核心。App／extension 的資料升級、archive、宿主及手機／平板版面驗收與送審條件見 [1.5.0 發布準備](../../../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。Simulator 或核心測試通過不代表商店版已完成驗收。
+目前來源版號為 1.5.1。Guanyinma（觀音嬤）為六平台共用核心。App／extension 的資料升級、archive、宿主及手機／平板版面驗收與送審條件見 [1.5.1 發布準備](../../../docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。Simulator 或核心測試通過不代表商店版已完成驗收。
 
 App 與鍵盤 extension 的原始碼版本由 Xcode project 的
 `MARKETING_VERSION` 統一設定，Simulator 封裝流程也從此讀取版號。
