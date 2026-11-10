@@ -757,7 +757,8 @@ final class BopomofoKeyboardView extends View {
             drawStripControl(canvas, new RectF(readingArea.right, area.top, area.right, area.bottom),
                     "▼", "DISMISS");
         }
-        drawStripMessage(canvas, readingArea, phoneticReading, true);
+        readingArea.inset(dp(4), 0);
+        drawStripMessage(canvas, readingArea, phoneticReading, true, true);
     }
 
     private void drawLiveCandidates(Canvas canvas, RectF area) {
@@ -840,13 +841,19 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawStripMessage(Canvas canvas, RectF bounds, String message, boolean primary) {
+        drawStripMessage(canvas, bounds, message, primary, false);
+    }
+
+    private void drawStripMessage(Canvas canvas, RectF bounds, String message, boolean primary,
+                                  boolean alignLeft) {
         RectF content = inset(bounds, dp(2));
         Paint paint = primary ? textPaint : hintPaint;
         paint.setFakeBoldText(false);
         fitStripText(paint, message, content, standardHintTextSize());
         int save = canvas.save();
         canvas.clipRect(content);
-        canvas.drawText(message, content.centerX(), textBaseline(content, paint), paint);
+        float centerX = alignLeft ? content.left + paint.measureText(message) / 2f : content.centerX();
+        canvas.drawText(message, centerX, textBaseline(content, paint), paint);
         canvas.restoreToCount(save);
     }
 

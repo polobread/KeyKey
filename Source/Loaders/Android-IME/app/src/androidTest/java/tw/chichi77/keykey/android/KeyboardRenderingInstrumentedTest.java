@@ -993,10 +993,13 @@ public final class KeyboardRenderingInstrumentedTest {
                 view.setLayoutProfile(split ? KeyboardLayoutProfile.ALIGNED_SPLIT : KeyboardLayoutProfile.ALIGNED);
                 view.setMode(split ? BopomofoKeyboardView.Mode.LANDSCAPE : BopomofoKeyboardView.Mode.PORTRAIT);
                 int width = Math.round((split ? 540 : 320) * density);
-                view.setPhoneticState(false, true, false, reading);
-                view.setState(List.of(), reading, true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                String firstSymbol = "ㄋ";
+                view.setPhoneticState(false, true, false, firstSymbol);
+                view.setState(List.of(), firstSymbol, true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
                         false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
                 KeyCanvas pending = drawAtWidth(view, width);
+                var firstReading = pending.texts.stream().filter(t -> t.value.equals(firstSymbol))
+                        .findFirst().orElseThrow();
                 var edges = view.visibleTouchEdges();
 
                 view.setPhoneticState(true, true, false, reading);
@@ -1005,6 +1008,10 @@ public final class KeyboardRenderingInstrumentedTest {
                 KeyCanvas live = drawAtWidth(view, width);
                 assertEquals(edges, view.visibleTouchEdges());
                 var raw = live.texts.stream().filter(t -> t.value.equals(reading)).findFirst().orElseThrow();
+                float readingStart = raw.x - raw.advance / 2;
+                assertTrue("The reading starts near the left edge", readingStart >= 0 && readingStart <= 12 * density);
+                assertEquals("Long readings start at the same left edge as one symbol",
+                        firstReading.x - firstReading.advance / 2, readingStart, 1f);
                 var pendingTone = pending.texts.stream().filter(t -> t.value.equals("ˇ")).findFirst().orElseThrow();
                 var liveTone = live.texts.stream().filter(t -> t.value.equals("ˇ")).findFirst().orElseThrow();
                 assertEquals(pending.keys.get(pendingTone.keyIndex), live.keys.get(liveTone.keyIndex));
