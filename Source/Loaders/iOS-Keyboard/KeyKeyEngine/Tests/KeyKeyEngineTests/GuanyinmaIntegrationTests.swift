@@ -100,6 +100,48 @@ struct GuanyinmaIntegrationTests {
         #expect(traditional.selectDisplayedCandidate(middle).text == "中")
     }
 
+    @Test func toneOmissionIsOptInAndKeepsBothTouchLayoutsAndExplicitTones() throws {
+        let fixture = try Fixture()
+        let engine = try fixture.engine()
+        #expect(!engine.omitsTones)
+
+        for (layout, untoned, toned) in [
+            (BopomofoKeyboardLayout.standard, "sucl", "su3cl3"),
+            (.hanyuPinyin, "nihao", "ni3hao3"),
+        ] {
+            _ = engine.setKeyboardLayout(layout)
+            engine.omitsTones = false
+            type(untoned, in: engine)
+            #expect(!engine.isShowingPhoneticSuggestions && engine.displayedCandidates.isEmpty)
+            engine.reset()
+
+            engine.omitsTones = true
+            type(untoned, in: engine)
+            #expect(engine.hasPendingPhoneticInput)
+            #expect(engine.isShowingPhoneticSuggestions && !engine.isShowingSmartCandidates)
+            #expect(engine.completedSmartText.isEmpty)
+            let choice = try #require(engine.displayedCandidates.firstIndex(of: "你好"))
+            #expect(engine.selectDisplayedCandidate(choice) == .update)
+            #expect(engine.completedSmartText == "你好" && !engine.hasPendingPhoneticInput)
+            #expect(engine.enter().text == "你好")
+            #expect(engine.finishCompositionForInputHandoff() == .update)
+
+            type(untoned, in: engine)
+            let entered = engine.enter()
+            #expect(entered.text == "你好" && entered.sendsReturn)
+
+            type(toned, in: engine)
+            #expect(engine.completedSmartText == "你好")
+            #expect(engine.enter().text == "你好")
+            #expect(engine.lastError == nil)
+        }
+
+        let hardware = try fixture.engine(hardware: true, layout: .hanyuPinyin)
+        hardware.omitsTones = true
+        type("nihao", in: hardware, hardware: true)
+        #expect(!hardware.hasPendingPhoneticInput && hardware.displayedCandidates.isEmpty)
+    }
+
     @Test func keyboardDismissalKeepsConvertedSmartTextAndDropsPendingReadingOnce() throws {
         let f = try Fixture(), engine = try f.facade()
         type("su3c", in: engine)

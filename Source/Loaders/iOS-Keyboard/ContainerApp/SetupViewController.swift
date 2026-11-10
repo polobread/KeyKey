@@ -347,6 +347,9 @@ private final class InputMethodSettingsViewController: UIViewController {
         sharedDefaults: sharedDefaults, writesShared: true
     )
     private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
+    private lazy var toneOmissionSettings = SmartMandarinToneOmissionSettings(
+        sharedDefaults: sharedDefaults, writesShared: true
+    )
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
@@ -429,6 +432,19 @@ private final class InputMethodSettingsViewController: UIViewController {
         layoutControl.addTarget(self, action: #selector(layoutChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(layoutControl)
         stack.addArrangedSubview(label("好打與傳統注音共用配置。許氏與漢語拼音使用英文字母鍵帽。拼音一聲按空白，二至四聲按 2～4，輕聲按 5，ü 可用 v。", size: 14))
+
+        let toneOmissionRow = UIStackView()
+        toneOmissionRow.alignment = .center
+        toneOmissionRow.addArrangedSubview(label("省略聲調", size: 18))
+        toneOmissionRow.addArrangedSubview(UIView())
+        let toneOmission = UISwitch()
+        toneOmission.isOn = toneOmissionSettings.enabled
+        toneOmission.accessibilityIdentifier = "app-settings.omit-tones"
+        toneOmission.accessibilityLabel = "省略聲調"
+        toneOmission.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
+        toneOmissionRow.addArrangedSubview(toneOmission)
+        stack.addArrangedSubview(toneOmissionRow)
+        stack.addArrangedSubview(label("預設關閉。開啟後，觸控好打注音的標準注音與漢語拼音可連續輸入讀音並顯示候選，仍可按聲調鍵。", size: 14))
 
         stack.addArrangedSubview(tableOptionsButton(for: .cangjie))
         stack.addArrangedSubview(tableOptionsButton(for: .cangjie, virtualKeyboard: false))
@@ -628,6 +644,10 @@ private final class InputMethodSettingsViewController: UIViewController {
 
     @objc private func spaceSelectionChanged(_ sender: UISwitch) {
         spaceSettings.setEnabled(sender.isOn)
+    }
+
+    @objc private func toneOmissionChanged(_ sender: UISwitch) {
+        toneOmissionSettings.setEnabled(sender.isOn)
     }
 
     @objc private func layoutChanged(_ sender: UISegmentedControl) {

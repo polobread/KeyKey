@@ -244,6 +244,77 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
     }
 
+    func testToneOmissionShowsCandidatesInStandardAndPinyinWithoutCoveringToneKeys() throws {
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        launchHostApp()
+        let portraitFrame = app.frame
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        tapInputField(output)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+
+        let settings = app.buttons["SETTINGS"]
+        let scroll = app.scrollViews["keyboard-settings.scroll"]
+        let layout = app.segmentedControls["bopomofo-keyboard-layout"]
+        let method = app.segmentedControls["bopomofo-composition-mode"]
+        let omission = app.switches["keyboard-settings.omit-tones"]
+        let close = app.windows.containing(.scrollView, identifier: "keyboard-settings.scroll")
+            .firstMatch.buttons["完成"]
+        let hello = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "候選，你好")).firstMatch
+
+        func revealOmission() {
+            if !omission.isHittable { scroll.swipeUp() }
+            XCTAssertTrue(omission.isHittable)
+        }
+
+        addTeardownBlock { [weak self] in
+            guard let self else { return }
+            XCUIDevice.shared.orientation = .portrait
+            if !settings.isHittable { self.tapInputField(output) }
+            guard settings.waitForExistence(timeout: 2), settings.isHittable else { return }
+            settings.tap()
+            if layout.buttons["標準"].isHittable { layout.buttons["標準"].tap() }
+            if method.buttons["好打注音"].isHittable { method.buttons["好打注音"].tap() }
+            revealOmission()
+            if omission.value as? String == "1" { omission.tap() }
+            if close.isHittable { close.tap() }
+        }
+
+        settings.tap()
+        XCTAssertTrue(layout.buttons["標準"].waitForExistence(timeout: 3))
+        method.buttons["好打注音"].tap()
+        layout.buttons["標準"].tap()
+        revealOmission()
+        XCTAssertEqual(omission.value as? String, "0")
+        omission.tap()
+        close.tap()
+        let initialValue = output.value as? String
+
+        for key in "sucl" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(hello.waitForExistence(timeout: 3))
+        XCTAssertEqual(output.value as? String, initialValue)
+        XCTAssertTrue(app.buttons["3"].isHittable)
+        hello.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "你好" })
+
+        settings.tap()
+        XCTAssertTrue(layout.buttons["漢語拼音"].waitForExistence(timeout: 3))
+        layout.buttons["漢語拼音"].tap()
+        close.tap()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
+        XCTAssertTrue(waitForLayout { self.app.buttons["n"].isHittable })
+        for key in "nihao" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(hello.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["3"].isHittable)
+        XCTAssertEqual(output.value as? String, "你好")
+        hello.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "你好你好" })
+        app.buttons["ENTER"].tap()
+        XCTAssertEqual(output.value as? String, "你好你好")
+    }
+
     func testHanyuPinyinTouchKeyboardUsesExistingComposition() throws {
         XCUIDevice.shared.orientation = .portrait
         defer { XCUIDevice.shared.orientation = .portrait }

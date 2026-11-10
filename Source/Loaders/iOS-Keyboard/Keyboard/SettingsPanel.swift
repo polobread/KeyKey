@@ -9,6 +9,7 @@ protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
     )
+    func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
     func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout)
@@ -42,6 +43,7 @@ final class SettingsPanel: UIView {
     private var deleteShiftPosition: KeyboardDeleteShiftPosition
     private var fontSize: KeyboardKeyFontSize
     private var keyboardLayout: BopomofoKeyboardLayout
+    private let omitsTones: Bool
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
         items: ["紫", "綠", "黃", "紅"]
@@ -59,7 +61,7 @@ final class SettingsPanel: UIView {
         compositionMode: BopomofoCompositionMode,
         chineseInputMethod: ChineseInputMethod = .smart,
         methodSettings: ChineseInputMethodSettings = ChineseInputMethodSettings(),
-        keyboardLayout: BopomofoKeyboardLayout = .standard,
+        keyboardLayout: BopomofoKeyboardLayout = .standard, omitsTones: Bool = false,
         layoutProfile: KeyboardLayoutProfile = .standard,
         keycapArea: KeyboardKeycapArea = .small,
         fontSize: KeyboardKeyFontSize = .normal,
@@ -73,6 +75,7 @@ final class SettingsPanel: UIView {
         self.chineseInputMethod = chineseInputMethod
         self.methodSettings = methodSettings
         self.keyboardLayout = keyboardLayout
+        self.omitsTones = omitsTones
         self.layoutProfile = layoutProfile
         self.keycapArea = keycapArea
         self.fontSize = fontSize
@@ -124,6 +127,7 @@ final class SettingsPanel: UIView {
         resize.accessibilityIdentifier = "keyboard-settings.keyboard-height"
         let root = UIStackView(arrangedSubviews: [
             resize, compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
+            toneOmissionRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
             candidateColorRow(), layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(), feedbackRow(),
             statusLabel, bulk, rows
@@ -372,6 +376,36 @@ final class SettingsPanel: UIView {
         label.numberOfLines = 0
         label.accessibilityIdentifier = "space-selects-candidates"
         return label
+    }
+
+    private func toneOmissionRow() -> UIView {
+        let label = UILabel()
+        label.text = "省略聲調"
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = Palette.primaryText
+
+        let control = UISwitch()
+        control.isOn = omitsTones
+        control.accessibilityLabel = "省略聲調"
+        control.accessibilityIdentifier = "keyboard-settings.omit-tones"
+        control.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
+        let row = UIStackView(arrangedSubviews: [label, UIView(), control])
+        row.alignment = .center
+        row.spacing = 8
+
+        let hint = UILabel()
+        hint.text = "適用觸控好打注音的標準注音與漢語拼音。"
+        hint.font = .systemFont(ofSize: 13)
+        hint.textColor = Palette.hintText
+        hint.numberOfLines = 0
+        let section = UIStackView(arrangedSubviews: [row, hint])
+        section.axis = .vertical
+        section.spacing = 4
+        return section
+    }
+
+    @objc private func toneOmissionChanged(_ sender: UISwitch) {
+        delegate?.settingsPanel(self, didChangeToneOmission: sender.isOn)
     }
 
     private func keyboardLayoutRow() -> UIView {

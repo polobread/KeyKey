@@ -12,6 +12,9 @@ use crate::bopomofo::{BopomofoLayout, BopomofoReading, BopomofoSyllable};
 use crate::candidate_filter::CandidateFilter;
 use crate::database::{DatabaseError, ModelDatabase, Table, Unigram};
 use crate::learning::LearningOptions;
+use crate::phonetic_suggestions::{
+    exact_toned_syllable, phonetic_display, suggestions, PhoneticSuggestion,
+};
 use crate::smart::{MarkedPhrase, SmartOptions, SmartState};
 use crate::table::{self, PunctuationStyle, TableQueryOptions, TableWildcards};
 use crate::user_archive::UserArchive;
@@ -288,6 +291,10 @@ pub enum InputOperation {
         #[serde(default)]
         modifiers: Modifiers,
     },
+    /// An opted-in phonetic key from a touch keyboard.
+    TouchPhonetic {
+        text: String,
+    },
     DirectText {
         text: String,
     },
@@ -402,7 +409,7 @@ impl InputOperation {
         }
     }
     fn validate(&self) -> Result<(), EngineError> {
-        if let Self::Character { text, .. } = self {
+        if let Self::Character { text, .. } | Self::TouchPhonetic { text } = self {
             if text.chars().count() != 1 || text.chars().any(char::is_control) {
                 return Err(EngineError::InvalidInput(
                     "character text must be one non-control Unicode scalar".into(),
@@ -498,6 +505,9 @@ pub struct SessionSnapshot {
     pub cursor: usize,
     pub cursor_unit: &'static str,
     pub candidates: Vec<String>,
+    pub phonetic_suggestions: bool,
+    pub phonetic_pending: bool,
+    pub phonetic_space_first_tone: bool,
     pub displayed_candidates: Vec<String>,
     pub page: usize,
     pub page_size: usize,
@@ -526,6 +536,14 @@ impl From<DatabaseError> for EngineError {
     }
 }
 
+const MAX_TOUCH_PHONETIC_KEYS: usize = 64;
+
+#[derive(Clone, Debug, Default)]
+struct TouchPhonetic {
+    raw: String,
+    suggestions: Vec<PhoneticSuggestion>,
+}
+
 #[derive(Clone, Debug)]
 struct State {
     user_data: UserSnapshot,
@@ -533,6 +551,7 @@ struct State {
     pending_user_changes: Vec<UserChange>,
     table_exact: HashSet<String>,
     smart: SmartState,
+    touch_phonetic: TouchPhonetic,
     reading: BopomofoReading,
     code: String,
     candidates: Vec<String>,
@@ -550,6 +569,7 @@ struct State {
 struct CandidateView {
     candidates: Vec<String>,
     smart_candidates: Vec<SmartCandidate>,
+    phonetic_suggestions: Vec<PhoneticSuggestion>,
     page: usize,
     highlight: usize,
     page_size: usize,
@@ -560,6 +580,7 @@ impl CandidateView {
         Self {
             candidates: state.candidates.clone(),
             smart_candidates: state.smart.candidates().to_vec(),
+            phonetic_suggestions: state.touch_phonetic.suggestions.clone(),
             page: state.page,
             highlight: state.highlight,
             page_size: state.page_size,
@@ -601,6 +622,7 @@ impl InputSession {
             pending_user_changes: Vec::new(),
             table_exact: HashSet::new(),
             smart: SmartState::with_candidate_filter(config.layout, candidate_filter.clone()),
+            touch_phonetic: TouchPhonetic::default(),
             reading: BopomofoReading::new(config.layout),
             code: String::new(),
             candidates: Vec::new(),
@@ -647,6 +669,7 @@ impl InputSession {
                 && matches!(
                     &operation,
                     InputOperation::Character { .. }
+                        | InputOperation::TouchPhonetic { .. }
                         | InputOperation::Key { .. }
                         | InputOperation::Select { .. }
                         | InputOperation::Page { .. }
@@ -705,7 +728,11 @@ impl InputSession {
                     self.state.highlight = old_view.highlight;
                 }
             }
+            if !old_view.phonetic_suggestions.is_empty() {
+                self.update_touch_suggestions()?;
+            }
             if self.config.method == InputMethod::Smart
+                && !self.touch_phonetic_pending()
                 && !old_view.candidates.is_empty()
                 && self.state.smart.candidates().is_empty()
             {
@@ -718,6 +745,7 @@ impl InputSession {
             self.refresh_display()?;
             if self.state.candidates == old_view.candidates
                 && self.state.smart.candidates() == old_view.smart_candidates
+                && self.state.touch_phonetic.suggestions == old_view.phonetic_suggestions
             {
                 self.state.page = old_view.page;
                 self.state.highlight = old_view.highlight;
@@ -903,12 +931,16 @@ impl InputSession {
             } else {
                 Vec::new()
             },
-            reading: if self.config.method == InputMethod::Smart {
+            reading: if self.touch_phonetic_pending() {
+                self.touch_phonetic_display()
+            } else if self.config.method == InputMethod::Smart {
                 self.state.smart.reading()
             } else {
                 self.state.display.clone()
             },
-            phonetic: if self.config.method == InputMethod::Smart {
+            phonetic: if self.touch_phonetic_pending() {
+                self.touch_phonetic_display()
+            } else if self.config.method == InputMethod::Smart {
                 self.state.smart.reading()
             } else {
                 self.state.reading.display_text()
@@ -922,13 +954,20 @@ impl InputSession {
             } else {
                 self.state.code.clone()
             },
-            cursor: if self.config.method == InputMethod::Smart {
+            cursor: if self.touch_phonetic_pending() {
+                self.state
+                    .smart
+                    .cursor_with_reading(&self.touch_phonetic_display())
+            } else if self.config.method == InputMethod::Smart {
                 self.state.smart.cursor()
             } else {
                 self.state.display.chars().count()
             },
             cursor_unit: "unicode_scalar",
             candidates: self.state.candidates.clone(),
+            phonetic_suggestions: !self.state.touch_phonetic.suggestions.is_empty(),
+            phonetic_pending: self.touch_phonetic_pending(),
+            phonetic_space_first_tone: self.touch_first_tone_query().is_some(),
             displayed_candidates: displayed,
             page: self.state.page,
             page_size: self.state.page_size,
@@ -950,7 +989,7 @@ impl InputSession {
     }
     fn empty(&self) -> bool {
         if self.config.method == InputMethod::Smart {
-            return self.state.smart.is_empty();
+            return !self.touch_phonetic_pending() && self.state.smart.is_empty();
         }
         self.state.reading.is_empty()
             && self.state.code.is_empty()
@@ -960,6 +999,7 @@ impl InputSession {
     fn clear_candidates(&mut self) {
         self.state.table_exact.clear();
         self.state.smart.cancel_candidates();
+        self.state.touch_phonetic.suggestions.clear();
         self.state.candidates.clear();
         self.state.preview = None;
         self.state.page = 0;
@@ -968,6 +1008,7 @@ impl InputSession {
     }
     fn clear_composition(&mut self) {
         self.state.smart.clear();
+        self.state.touch_phonetic.raw.clear();
         self.clear_candidates();
         self.state.reading.clear();
         self.state.code.clear();
@@ -991,7 +1032,11 @@ impl InputSession {
     }
     fn finish(&mut self, effects: &mut Effects) {
         if self.config.method == InputMethod::Smart {
-            self.state.smart.finish(effects);
+            if self.touch_phonetic_pending() {
+                effects.commit.push_str(&self.touch_phonetic_visible_text());
+            } else {
+                self.state.smart.finish(effects);
+            }
             self.clear_composition();
             return;
         }
@@ -1039,14 +1084,26 @@ impl InputSession {
     }
     fn refresh_display(&mut self) -> Result<(), EngineError> {
         if self.config.method == InputMethod::Smart {
-            self.state.display = self.state.smart.visible_text();
-            let values: Vec<String> = self
-                .state
-                .smart
-                .candidates()
-                .iter()
-                .map(|c| c.text.clone())
-                .collect();
+            self.state.display = if self.touch_phonetic_pending() {
+                self.touch_phonetic_visible_text()
+            } else {
+                self.state.smart.visible_text()
+            };
+            let values: Vec<String> = if self.touch_phonetic_pending() {
+                self.state
+                    .touch_phonetic
+                    .suggestions
+                    .iter()
+                    .map(|c| c.text.clone())
+                    .collect()
+            } else {
+                self.state
+                    .smart
+                    .candidates()
+                    .iter()
+                    .map(|c| c.text.clone())
+                    .collect()
+            };
             if values != self.state.candidates {
                 self.state.page = 0;
                 self.state.highlight = 0;
@@ -1076,6 +1133,9 @@ impl InputSession {
         Ok(())
     }
     fn select_absolute(&mut self, index: usize, effects: &mut Effects) -> Result<(), EngineError> {
+        if !self.state.touch_phonetic.suggestions.is_empty() {
+            return self.select_touch_suggestion(index, true, effects);
+        }
         if self.config.method == InputMethod::Smart {
             self.state.smart.select(index, &self.config.smart)?;
             self.clear_candidates();
@@ -1150,6 +1210,9 @@ impl InputSession {
             InputOperation::Character { text, modifiers } => {
                 self.character(text.chars().next().unwrap(), modifiers, effects)?
             }
+            InputOperation::TouchPhonetic { text } => {
+                self.touch_phonetic(text.chars().next().unwrap(), effects)?;
+            }
             InputOperation::DirectText { text } => self.direct_text(&text, effects)?,
             InputOperation::Key { key, modifiers } => self.key(key, modifiers, effects)?,
             InputOperation::Select { index } => {
@@ -1169,7 +1232,12 @@ impl InputSession {
                     self.state.page_size = self.selection_keys()?.len();
                 }
             }
-            InputOperation::SetProfile { profile } => self.config.profile = profile,
+            InputOperation::SetProfile { profile } => {
+                if profile != self.config.profile && self.touch_phonetic_pending() {
+                    self.clear_touch_phonetic();
+                }
+                self.config.profile = profile;
+            }
             InputOperation::SetLayout { layout } => {
                 if layout != self.config.layout {
                     self.finish(effects);
@@ -1209,10 +1277,14 @@ impl InputSession {
                         "candidate target is outside completed readings".into(),
                     ));
                 }
-                self.clear_candidates();
-                self.state
-                    .smart
-                    .open_candidates(Some(index), &self.config.smart, effects)?;
+                if self.touch_phonetic_pending() {
+                    effects.beep = true;
+                } else {
+                    self.clear_candidates();
+                    self.state
+                        .smart
+                        .open_candidates(Some(index), &self.config.smart, effects)?;
+                }
             }
             InputOperation::CloseCandidates => {
                 if self.config.method != InputMethod::Smart {
@@ -1357,7 +1429,10 @@ impl InputSession {
                 self.clear_candidates();
             }
             InputOperation::SetCursor { index } => {
-                if self.config.method != InputMethod::Smart || !self.state.smart.set_cursor(index) {
+                if self.config.method != InputMethod::Smart
+                    || self.touch_phonetic_pending()
+                    || !self.state.smart.set_cursor(index)
+                {
                     return Err(EngineError::InvalidInput(
                         "cursor is outside the completed reading range".into(),
                     ));
@@ -1382,6 +1457,19 @@ impl InputSession {
                 discard_table_code,
             } => {
                 if self.config.method == InputMethod::Smart {
+                    if self.touch_phonetic_pending() {
+                        if !complete_reading {
+                            self.clear_touch_phonetic();
+                        } else if self
+                            .state
+                            .touch_phonetic
+                            .suggestions
+                            .get(self.selected_index())
+                            .is_some_and(|c| c.consumed == self.state.touch_phonetic.raw.len())
+                        {
+                            self.select_touch_suggestion(self.selected_index(), false, effects)?;
+                        }
+                    }
                     if complete_reading {
                         self.state.smart.complete_reading_for_handoff(
                             &self.database,
@@ -1407,6 +1495,171 @@ impl InputSession {
         }
         Ok(())
     }
+    fn touch_phonetic_pending(&self) -> bool {
+        !self.state.touch_phonetic.raw.is_empty()
+    }
+
+    fn touch_phonetic_display(&self) -> String {
+        phonetic_display(self.config.layout, &self.state.touch_phonetic.raw)
+    }
+
+    fn touch_phonetic_visible_text(&self) -> String {
+        self.state
+            .smart
+            .visible_text_with_reading(&self.touch_phonetic_display())
+    }
+
+    fn clear_touch_phonetic(&mut self) {
+        self.state.touch_phonetic.raw.clear();
+        self.clear_candidates();
+    }
+
+    fn touch_first_tone_query(&self) -> Option<String> {
+        if !self.touch_phonetic_pending() {
+            return None;
+        }
+        exact_toned_syllable(
+            self.config.layout,
+            &format!("{} ", self.state.touch_phonetic.raw),
+        )
+    }
+
+    fn update_touch_suggestions(&mut self) -> Result<(), EngineError> {
+        self.state.touch_phonetic.suggestions = suggestions(
+            self.config.layout,
+            &self.state.touch_phonetic.raw,
+            &self.database,
+            &self.state.user_data,
+            self.config.learning.user_phrases,
+            &self.candidate_filter,
+        )?;
+        Ok(())
+    }
+
+    fn touch_phonetic(
+        &mut self,
+        character: char,
+        effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        let layout = self.config.layout;
+        if self.config.profile != BehaviorProfile::Touch
+            || self.config.method != InputMethod::Smart
+            || self.state.english
+            || !matches!(
+                layout,
+                BopomofoLayout::Standard | BopomofoLayout::HanyuPinyin
+            )
+            || !layout.is_reading_key(character)
+            || !self.state.smart.touch_reading_keys().is_empty()
+            || (!self.touch_phonetic_pending() && !self.state.candidates.is_empty())
+        {
+            return self.character(character, Modifiers::default(), effects);
+        }
+        if layout.is_tone_key(character) && !self.touch_phonetic_pending() {
+            return self.character(character, Modifiers::default(), effects);
+        }
+        if self.state.touch_phonetic.raw.len() == MAX_TOUCH_PHONETIC_KEYS {
+            effects.beep = true;
+            return Ok(());
+        }
+        self.clear_candidates();
+        self.state
+            .touch_phonetic
+            .raw
+            .push(character.to_ascii_lowercase());
+        if layout.is_tone_key(character) {
+            if let Some(query) = exact_toned_syllable(layout, &self.state.touch_phonetic.raw) {
+                if self.state.smart.complete_touch_reading(
+                    &self.database,
+                    &query,
+                    &self.config.smart,
+                    effects,
+                )? {
+                    self.clear_touch_phonetic();
+                    return Ok(());
+                }
+            }
+        }
+        self.update_touch_suggestions()
+    }
+
+    fn select_touch_suggestion(
+        &mut self,
+        index: usize,
+        learn: bool,
+        effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        let choice = self
+            .state
+            .touch_phonetic
+            .suggestions
+            .get(index)
+            .cloned()
+            .ok_or_else(|| {
+                EngineError::InvalidInput("suggestion index is outside the live list".into())
+            })?;
+        self.state.smart.choose_touch_words(
+            &self.database,
+            &choice.chunks,
+            &self.config.smart,
+            learn,
+            effects,
+        )?;
+        self.state.touch_phonetic.raw.drain(..choice.consumed);
+        self.clear_candidates();
+        self.update_touch_suggestions()
+    }
+
+    fn touch_phonetic_key(&mut self, key: Key, effects: &mut Effects) -> Result<(), EngineError> {
+        match key {
+            Key::Backspace => {
+                self.state.touch_phonetic.raw.pop();
+                self.clear_candidates();
+                if self.touch_phonetic_pending() {
+                    self.update_touch_suggestions()?;
+                } else {
+                    effects.discard_composition = self.state.smart.is_empty();
+                }
+            }
+            Key::Escape => {
+                self.clear_touch_phonetic();
+                effects.discard_composition = self.state.smart.is_empty();
+            }
+            Key::Space => {
+                if let Some(query) = self.touch_first_tone_query() {
+                    if self.state.smart.complete_touch_reading(
+                        &self.database,
+                        &query,
+                        &self.config.smart,
+                        effects,
+                    )? {
+                        self.clear_touch_phonetic();
+                    }
+                } else if !self.state.touch_phonetic.suggestions.is_empty() {
+                    self.select_touch_suggestion(self.selected_index(), false, effects)?;
+                } else {
+                    effects.beep = true;
+                }
+            }
+            Key::Return => {
+                if self.state.touch_phonetic.suggestions.is_empty() {
+                    effects.beep = true;
+                } else {
+                    self.select_touch_suggestion(self.selected_index(), false, effects)?;
+                    if !self.touch_phonetic_pending() {
+                        self.finish(effects);
+                    }
+                }
+            }
+            Key::PageUp => self.page(-1, effects),
+            Key::PageDown => self.page(1, effects),
+            Key::Up => self.move_highlight(-1, effects),
+            Key::Down => self.move_highlight(1, effects),
+            _ => effects.beep = true,
+        }
+        Ok(())
+    }
+
     fn traditional_query(
         &mut self,
         key: &str,
@@ -1525,6 +1778,9 @@ impl InputSession {
             return self.key(Key::Space, modifiers, effects);
         }
         if self.config.method == InputMethod::Smart {
+            if self.touch_phonetic_pending() {
+                self.clear_touch_phonetic();
+            }
             return self.smart_character(character, modifiers, effects);
         }
         if modifiers.control || modifiers.alt || modifiers.command {
@@ -1715,6 +1971,9 @@ impl InputSession {
     }
     fn direct_text(&mut self, text: &str, effects: &mut Effects) -> Result<(), EngineError> {
         if self.config.method == InputMethod::Smart {
+            if self.touch_phonetic_pending() {
+                self.clear_touch_phonetic();
+            }
             self.state
                 .smart
                 .direct_text(&self.database, text, &self.config.smart, effects)?;
@@ -1800,6 +2059,9 @@ impl InputSession {
                 effects.handled = false;
             }
             return Ok(());
+        }
+        if self.touch_phonetic_pending() {
+            return self.touch_phonetic_key(key, effects);
         }
         if self.config.method == InputMethod::Smart && self.state.candidates.is_empty() {
             let was_empty = self.state.smart.is_empty();

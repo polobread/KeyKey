@@ -50,7 +50,7 @@
 
 use crate::bopomofo::{BopomofoLayout, BopomofoReading};
 use crate::candidate_filter::CandidateFilter;
-use crate::database::ModelDatabase;
+use crate::database::{DatabaseError, ModelDatabase};
 use crate::engine::{Effects, EngineError, Key, Modifiers};
 use crate::learning::LearningOptions;
 use crate::user_store::{UserChange, UserSnapshot};
@@ -346,11 +346,19 @@ impl SmartState {
     }
 
     pub fn visible_text(&self) -> String {
+        self.visible_text_with_reading(&self.reading.display_text())
+    }
+
+    pub(crate) fn visible_text_with_reading(&self, reading: &str) -> String {
         let composition = self.composition();
         let cursor = self.text_cursor();
         let mut characters = composition.chars();
         let before: String = characters.by_ref().take(cursor).collect();
-        before + &self.reading.display_text() + characters.as_str()
+        before + reading + characters.as_str()
+    }
+
+    pub(crate) fn cursor_with_reading(&self, reading: &str) -> usize {
+        self.text_cursor() + reading.chars().count()
     }
 
     pub fn set_cursor(&mut self, index: usize) -> bool {
@@ -376,6 +384,62 @@ impl SmartState {
     ) -> Result<(), EngineError> {
         if !self.reading.is_empty() {
             self.complete_reading(database, options, effects)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn touch_reading_keys(&self) -> String {
+        self.reading.input_key_sequence()
+    }
+
+    pub(crate) fn complete_touch_reading(
+        &mut self,
+        database: &ModelDatabase,
+        query: &str,
+        options: &SmartOptions,
+        effects: &mut Effects,
+    ) -> Result<bool, EngineError> {
+        self.sync_model_options(options);
+        self.cancel_mark_for_other_key(effects);
+        self.insert(database, query, options, effects)
+    }
+
+    /// Materialize a provisional suggestion using its original dictionary
+    /// readings, pinning each chosen word before enforcing the touch limit.
+    pub(crate) fn choose_touch_words(
+        &mut self,
+        database: &ModelDatabase,
+        chunks: &[crate::phonetic_suggestions::PhoneticChunk],
+        options: &SmartOptions,
+        learn: bool,
+        effects: &mut Effects,
+    ) -> Result<(), DatabaseError> {
+        self.sync_model_options(options);
+        self.cancel_mark_for_other_key(effects);
+        self.candidates.clear();
+        for chunk in chunks {
+            let start = self.graph.len();
+            for key in chunk.query.as_bytes().chunks_exact(2) {
+                let key = std::str::from_utf8(key).expect("phonetic dictionary keys are ASCII");
+                if !self.graph.insert(database, self.graph.len(), key)? {
+                    return Err(DatabaseError::InvalidData(
+                        "suggested word contains an unavailable reading".into(),
+                    ));
+                }
+            }
+            let candidate = SmartCandidate {
+                start,
+                span: chunk.query.len() / 2,
+                text: chunk.text.clone(),
+                query: chunk.query.clone(),
+            };
+            if !self.graph.select_with_learning(&candidate, learn) {
+                return Err(DatabaseError::InvalidData(
+                    "suggested word no longer belongs to the graph".into(),
+                ));
+            }
+            self.cursor = self.graph.len();
+            self.enforce_limit(options, effects);
         }
         Ok(())
     }

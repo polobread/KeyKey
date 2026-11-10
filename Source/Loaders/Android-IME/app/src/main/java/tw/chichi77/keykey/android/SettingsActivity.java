@@ -178,6 +178,21 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         keyboardLayoutDescription.setTextSize(14);
         compositionContent.addView(keyboardLayoutDescription, matchWrap(dp(0), dp(24)));
 
+        CheckBox omitTone = new CheckBox(this);
+        omitTone.setText(R.string.smart_omit_tone);
+        omitTone.setTextSize(16);
+        omitTone.setTextColor(Color.DKGRAY);
+        omitTone.setMinHeight(dp(48));
+        omitTone.setChecked(BopomofoCompositionModeSettings.omitTone(this));
+        omitTone.setOnCheckedChangeListener((button, checked) ->
+                BopomofoCompositionModeSettings.setOmitTone(SettingsActivity.this, checked));
+        compositionContent.addView(omitTone, matchWrap(dp(0), dp(8)));
+        TextView omitToneDescription = new TextView(this);
+        omitToneDescription.setText(R.string.smart_omit_tone_description);
+        omitToneDescription.setTextSize(14);
+        omitToneDescription.setTextColor(Color.GRAY);
+        compositionContent.addView(omitToneDescription, matchWrap(dp(0), dp(24)));
+
         Button userPhrases = new Button(this);
         userPhrases.setText("管理好打注音自訂詞");
         userPhrases.setContentDescription("管理好打注音自訂詞");

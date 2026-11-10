@@ -36,6 +36,9 @@ public final class GuanyinmaInputEngine: InputEngine {
         let cursor: Int
         let segments: [Segment]
         let candidateSpans: [CandidateSpan]
+        let phoneticPending: Bool?
+        let phoneticSuggestions: Bool?
+        let phoneticSpaceFirstTone: Bool?
         let candidates: [String]
         let displayedCandidates: [String]
         let page: Int
@@ -61,6 +64,7 @@ public final class GuanyinmaInputEngine: InputEngine {
     private var options: TableInputOptions
     public private(set) var lastError: Error?
     public private(set) var keyboardLayout: BopomofoKeyboardLayout
+    public var omitsTones: Bool
     public var chineseInputMethod: ChineseInputMethod { ChineseInputMethod(rawValue: snapshot.method) ?? .traditional }
     public var tableOptions: TableInputOptions {
         get { options }
@@ -89,13 +93,14 @@ public final class GuanyinmaInputEngine: InputEngine {
     public init(modelURL: URL, userDatabaseURL: URL, method: ChineseInputMethod = .smart,
                 hardwareSmartEditing: Bool = false, keyboardLayout: BopomofoKeyboardLayout = .standard,
                 tableOptions: TableInputOptions = TableInputOptions(method: .cangjie),
-                spaceSelectsCandidates: Bool = false, associatedPhrases: AssociatedPhraseSource? = nil,
+                spaceSelectsCandidates: Bool = false, omitsTones: Bool = false, associatedPhrases: AssociatedPhraseSource? = nil,
                 candidateFilter: @escaping (String) -> Bool = { _ in true }) throws {
         self.modelURL = modelURL
         self.hardwareSmartEditing = hardwareSmartEditing
         self.keyboardLayout = keyboardLayout
         self.options = tableOptions
         self.spaceSelectsCandidates = spaceSelectsCandidates
+        self.omitsTones = omitsTones
         self.associatedSource = try Self.associatedPhraseSource(associatedPhrases, modelURL: modelURL)
         glyphContext = GuanyinmaGlyphContext(candidateFilter)
         try FileManager.default.createDirectory(at: userDatabaseURL.deletingLastPathComponent(),
@@ -257,7 +262,13 @@ public final class GuanyinmaInputEngine: InputEngine {
         return String(scalars.prefix(snapshot.cursor)).utf16.count
     }
     public var bopomofoCompositionMode: BopomofoCompositionMode { chineseInputMethod == .smart ? .smart : .traditional }
-    public var isShowingSmartCandidates: Bool { chineseInputMethod == .smart && overlay == .none && !snapshot.candidates.isEmpty }
+    public var hasPendingPhoneticInput: Bool { snapshot.phoneticPending == true }
+    public var isShowingPhoneticSuggestions: Bool { overlay == .none && snapshot.phoneticSuggestions == true }
+    public var phoneticSpaceIsFirstTone: Bool { snapshot.phoneticSpaceFirstTone == true }
+    public var isShowingSmartCandidates: Bool {
+        chineseInputMethod == .smart && overlay == .none
+            && !isShowingPhoneticSuggestions && !snapshot.candidates.isEmpty
+    }
     public var inputMode: KeyboardInput.InputMode { mode }
     public var isShifted: Bool { shifted }
     public var isTemporaryEnglish: Bool { temporaryEnglish }
@@ -309,7 +320,8 @@ public final class GuanyinmaInputEngine: InputEngine {
         return true
     }
     @discardableResult public func selectTouchSmartCell(_ index: Int) -> Bool {
-        guard isTouchSmartComposition, snapshot.readings.indices.contains(index) else { return false }
+        guard isTouchSmartComposition, !hasPendingPhoneticInput,
+              snapshot.readings.indices.contains(index) else { return false }
         if snapshot.candidateSpans.first?.start == index, !snapshot.candidates.isEmpty { _ = closeTouchSmartCandidates() }
         else { _ = operate(["type": "open_candidates", "index": index]) }
         return lastError == nil
@@ -371,7 +383,11 @@ public final class GuanyinmaInputEngine: InputEngine {
         if touch, raw == "，" || raw == "。" { return direct(raw) }
         if !touch, let character = raw.first, character.isASCII && character.isUppercase { return direct(raw) }
         guard raw.unicodeScalars.count == 1 else { return direct(raw) }
-        return offeringAssociated(operate(["type": "character", "text": raw.lowercased()]))
+        let useContinuousPhonetics = touch && omitsTones && isTouchSmartComposition
+            && (keyboardLayout == .standard || keyboardLayout == .hanyuPinyin)
+            && raw.first.map(keyboardLayout.isReadingKey) == true
+        let type = useContinuousPhonetics ? "touch_phonetic" : "character"
+        return offeringAssociated(operate(["type": type, "text": raw.lowercased()]))
     }
     @discardableResult public func handleHardwareCharacter(_ key: Character) -> KeyboardInput.Result {
         if temporaryEnglish { endTemporaryEnglish() }
@@ -422,6 +438,11 @@ public final class GuanyinmaInputEngine: InputEngine {
     @discardableResult public func enter() -> KeyboardInput.Result {
         if overlay == .associated { clearOverlay(); return .returnKey }
         if overlay != .none { return selectHighlightedCandidate() }
+        if hasPendingPhoneticInput {
+            let result = key("return")
+            return KeyboardInput.Result(text: result.text, deletesBackward: result.deletesBackward,
+                                        sendsReturn: lastError == nil && !hasPendingPhoneticInput)
+        }
         if isTouchSmartComposition, hasComposition {
             let result = finishCompositionForInputHandoff()
             return KeyboardInput.Result(text: result.text, deletesBackward: result.deletesBackward, sendsReturn: lastError == nil)

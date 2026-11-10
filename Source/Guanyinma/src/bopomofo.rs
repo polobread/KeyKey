@@ -627,7 +627,12 @@ fn consume(sequence: &mut &str, prefix: &str) -> bool {
 }
 
 fn parse_pinyin(raw: &str) -> BopomofoSyllable {
+    parse_pinyin_prefix(raw).0
+}
+
+fn parse_pinyin_prefix(raw: &str) -> (BopomofoSyllable, &str, bool) {
     let mut sequence = raw;
+    let mut well_formed = true;
     let mut initial = 0;
     let mut medial = 0;
     let mut final_component = 0;
@@ -645,6 +650,7 @@ fn parse_pinyin(raw: &str) -> BopomofoSyllable {
         if consume(&mut sequence, prefix) {
             medial = middle;
             final_component = final_part;
+            well_formed = sequence.is_empty();
             break;
         }
     }
@@ -684,6 +690,7 @@ fn parse_pinyin(raw: &str) -> BopomofoSyllable {
         ("s", S),
     ] {
         if consume(&mut sequence, prefix) {
+            well_formed &= initial == 0 && medial == 0 && final_component == 0;
             initial = component;
             independent = true;
             break;
@@ -709,17 +716,24 @@ fn parse_pinyin(raw: &str) -> BopomofoSyllable {
         ("ü", UE, 0),
     ] {
         if consume(&mut sequence, prefix) {
+            well_formed &= final_component == 0 && (medial == 0 || medial == middle);
             medial = middle;
             final_component = final_part;
             break;
         }
     }
-    if consume(&mut sequence, "i") {
-        medial = if independent { 0 } else { I };
+    let typed_medial = if consume(&mut sequence, "i") {
+        Some(if independent { 0 } else { I })
     } else if consume(&mut sequence, "u") {
-        medial = if jqx(initial) { UE } else { U };
+        Some(if jqx(initial) { UE } else { U })
     } else if consume(&mut sequence, "v") {
-        medial = UE;
+        Some(UE)
+    } else {
+        None
+    };
+    if let Some(typed_medial) = typed_medial {
+        well_formed &= final_component == 0 && (medial == 0 || medial == typed_medial);
+        medial = typed_medial;
     }
     for (prefix, component) in [
         ("ang", ANG),
@@ -737,6 +751,7 @@ fn parse_pinyin(raw: &str) -> BopomofoSyllable {
         ("e", if medial != 0 { E } else { ER }),
     ] {
         if consume(&mut sequence, prefix) {
+            well_formed &= final_component == 0;
             final_component = component;
             break;
         }
@@ -748,9 +763,97 @@ fn parse_pinyin(raw: &str) -> BopomofoSyllable {
         Some(b'5') => TONE5,
         _ => 0,
     };
-    BopomofoSyllable {
-        value: initial | medial | final_component | tone,
+    (
+        BopomofoSyllable {
+            value: initial | medial | final_component | tone,
+        },
+        sequence,
+        well_formed,
+    )
+}
+
+/// Resolve a single raw syllable without ignoring trailing keys. For live
+/// Standard segmentation, components follow their written order. Explicit
+/// tone entry also accepts distinct components typed in the legacy order.
+pub(crate) fn phonetic_syllable(
+    layout: BopomofoLayout,
+    raw: &str,
+    explicit: bool,
+) -> Option<BopomofoSyllable> {
+    if raw.is_empty() {
+        return None;
     }
+    match layout {
+        BopomofoLayout::Standard => {
+            let mut previous = 0;
+            let mut syllable = BopomofoSyllable::default();
+            for key in raw.bytes() {
+                let &[component] = mapping(layout, key) else {
+                    return None;
+                };
+                let mask = component_mask(component);
+                if mask == TONE || syllable.component(mask) != 0 || (!explicit && mask <= previous)
+                {
+                    return None;
+                }
+                syllable.add(component);
+                previous = mask;
+            }
+            let consonant = syllable.component(CONSONANT);
+            if !explicit && syllable.value == consonant && !zcsr(consonant) {
+                return None;
+            }
+            Some(syllable)
+        }
+        BopomofoLayout::HanyuPinyin => {
+            if !raw.bytes().all(|key| key.is_ascii_lowercase())
+                || (!explicit && !raw.bytes().any(|key| b"aeiouv".contains(&key)))
+            {
+                return None;
+            }
+            let (syllable, remainder, well_formed) = parse_pinyin_prefix(raw);
+            (well_formed && remainder.is_empty() && !syllable.is_empty()).then_some(syllable)
+        }
+        _ => None,
+    }
+}
+
+/// A first tone is explicit only if the key was actually entered.
+pub(crate) fn phonetic_tone(layout: BopomofoLayout, key: u8) -> Option<usize> {
+    match (layout, key) {
+        (BopomofoLayout::Standard | BopomofoLayout::HanyuPinyin, b' ') => Some(0),
+        (BopomofoLayout::Standard, key) => {
+            let &[component] = mapping(layout, key) else {
+                return None;
+            };
+            let tone = usize::from((component & TONE) >> 11);
+            (tone != 0).then_some(tone)
+        }
+        (BopomofoLayout::HanyuPinyin, b'2'..=b'5') => Some(usize::from(key - b'1')),
+        _ => None,
+    }
+}
+
+pub(crate) fn phonetic_query(syllable: BopomofoSyllable, tone: usize) -> String {
+    let order = syllable.absolute_order() + tone * (BopomofoSyllable::COUNT / 5);
+    BopomofoSyllable::from_absolute_order(order)
+        .expect("untoned syllable and known tone")
+        .query_key()
+}
+
+pub(crate) fn phonetic_display(layout: BopomofoLayout, raw: &str) -> String {
+    if layout != BopomofoLayout::Standard {
+        return raw.to_owned();
+    }
+    raw.bytes()
+        .map(|key| {
+            if key == b' ' {
+                " ".to_owned()
+            } else {
+                parse_keys(&[key], layout).display_text()
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]

@@ -200,7 +200,8 @@ final class GuanyinmaInputEngine implements InputEngine {
     }
     @Override public InputEngine.Result setChineseInputMethod(ChineseInputMethod method) {
         if (method == chineseInputMethod()) return InputEngine.Result.update();
-        InputEngine.Result result = operate(object("type", "set_method", "method", methodName(method)));
+        InputEngine.Result result = operateAfterPhoneticHandoff(
+                object("type", "set_method", "method", methodName(method)));
         if (lastError == null) { clearOverlay(); options = new TableInputOptions(method); }
         return result;
     }
@@ -210,7 +211,8 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public BopomofoKeyboardLayout keyboardLayout() { return layout; }
     @Override public InputEngine.Result setKeyboardLayout(BopomofoKeyboardLayout value) {
         if (layout == value) return InputEngine.Result.update();
-        InputEngine.Result result = operate(object("type", "set_layout", "layout", layoutName(value)));
+        InputEngine.Result result = operateAfterPhoneticHandoff(
+                object("type", "set_layout", "layout", layoutName(value)));
         if (lastError == null) { layout = value; clearOverlay(); }
         return result;
     }
@@ -228,7 +230,8 @@ final class GuanyinmaInputEngine implements InputEngine {
         }
     }
     private InputEngine.Result setMode(InputEngine.InputMode value) {
-        InputEngine.Result result = operate(object("type", "set_english", "enabled", value != InputEngine.InputMode.BOPOMOFO));
+        InputEngine.Result result = operateAfterPhoneticHandoff(
+                object("type", "set_english", "enabled", value != InputEngine.InputMode.BOPOMOFO));
         if (lastError == null) { clearOverlay(); mode = value; }
         return result;
     }
@@ -244,6 +247,10 @@ final class GuanyinmaInputEngine implements InputEngine {
         if (lastError == null) temporaryEnglish = shifted = false;
     }
     @Override public InputEngine.Result handleSoftKey(String value) {
+        return handleSoftKey(value, false);
+    }
+
+    InputEngine.Result handleSoftKey(String value, boolean omitTone) {
         boolean restore = temporaryEnglish && !value.equals("SHIFT") && !value.equals("MODE");
         InputEngine.Result result;
         switch (value) {
@@ -267,12 +274,13 @@ final class GuanyinmaInputEngine implements InputEngine {
             case "ESCAPE" -> result = escape();
             case "SYMBOL" -> result = showOverlay(InputEngine.symbolCandidates());
             case "EMOJI" -> result = showOverlay(InputEngine.emojiCandidates());
-            default -> result = value.codePointCount(0, value.length()) == 1 ? character(value, true) : InputEngine.Result.update();
+            default -> result = value.codePointCount(0, value.length()) == 1
+                    ? character(value, true, omitTone) : InputEngine.Result.update();
         }
         if (restore && lastError == null) endTemporaryEnglish();
         return result;
     }
-    private InputEngine.Result character(String value, boolean touch) {
+    private InputEngine.Result character(String value, boolean touch, boolean omitTone) {
         if (mode != InputEngine.InputMode.BOPOMOFO) return direct(touch && shifted ? value.toUpperCase(Locale.ROOT) : value);
         if (touch && (value.equals("，") || value.equals("。")
                 || value.equals("、") || value.equals("？"))) return direct(value);
@@ -282,13 +290,27 @@ final class GuanyinmaInputEngine implements InputEngine {
             return direct(value);
         }
         clearOverlay();
-        return offerAssociated(operate(object("type", "character", "text", value.toLowerCase(Locale.ROOT))));
+        String key = value.toLowerCase(Locale.ROOT);
+        String operation = touch && omitTone && isTouchSmartComposition() && isPhoneticKey(key)
+                ? "touch_phonetic" : "character";
+        return offerAssociated(operate(object("type", operation, "text", key)));
     }
+    private boolean isPhoneticKey(String key) {
+        if (key.length() != 1) return false;
+        char character = key.charAt(0);
+        return switch (keyboardLayout()) {
+            case STANDARD -> !BopomofoKeyboardLayout.symbolForKey(character).isEmpty();
+            case HANYU_PINYIN -> (character >= 'a' && character <= 'z')
+                    || (character >= '2' && character <= '5');
+            case HSU -> false;
+        };
+    }
+
     @Override public InputEngine.Result handleHardwareCharacter(char value) {
         if (!prepareHardware()) return InputEngine.Result.update();
         if (overlay == Overlay.SYMBOLS && value >= '1' && value <= '9') return width(selectDisplayedCandidate(value - '1'));
         if (chineseInputMethod().isTable() && !displayedCandidates().isEmpty() && (value == '<' || value == '>')) { changePage(value == '<' ? -1 : 1); return InputEngine.Result.update(); }
-        return width(character(String.valueOf(value), false));
+        return width(character(String.valueOf(value), false, false));
     }
     @Override public InputEngine.Result commitHardwareLiteral(char value) { return prepareHardware() ? width(direct(String.valueOf(value))) : InputEngine.Result.update(); }
     @Override public InputEngine.Result handleHardwareSpace() { return prepareHardware() ? space(hardwareFullWidth) : InputEngine.Result.update(); }
@@ -341,7 +363,9 @@ final class GuanyinmaInputEngine implements InputEngine {
     }
     /** Close touch candidates without selecting or cancelling composition. */
     @Override public InputEngine.Result closeTouchSmartCandidates() {
-        if (!isTouchSmartComposition() || displayedCandidates().isEmpty()) return InputEngine.Result.update();
+        if (!isTouchSmartComposition() || showsPhoneticSuggestions() || displayedCandidates().isEmpty()) {
+            return InputEngine.Result.update();
+        }
         boolean returnToEnd = overlay == Overlay.NONE && array("candidates").length() > 0
                 && text("reading").isEmpty();
         clearOverlay();
@@ -355,6 +379,11 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public InputEngine.Result enter() {
         if (overlay == Overlay.ASSOCIATED) { clearOverlay(); return InputEngine.Result.enter(); }
         if (overlay != Overlay.NONE) return selectHighlightedCandidate();
+        if (hasPendingPhoneticReading()) {
+            InputEngine.Result result = offerAssociated(key("return"));
+            return new InputEngine.Result(result.committedText(), result.deleteBeforeCursor(),
+                    lastError == null && !hasPendingPhoneticReading(), result.discardComposingText());
+        }
         if (isTouchSmartComposition() && hasComposition()) {
             InputEngine.Result result = finishCompositionForInputHandoff();
             return new InputEngine.Result(result.committedText(), result.deleteBeforeCursor(), lastError == null, result.discardComposingText());
@@ -457,27 +486,35 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public boolean isTemporaryEnglish() { return temporaryEnglish; }
     @Override public boolean isHardwareFullWidth() { return hardwareFullWidth; }
     @Override public boolean isShowingAssociatedPhrases() { return overlay == Overlay.ASSOCIATED; }
-    @Override public boolean isShowingSmartCandidates() { return chineseInputMethod() == ChineseInputMethod.SMART && overlay == Overlay.NONE && array("candidates").length() > 0; }
+    boolean hasPendingPhoneticReading() { return snapshot.optBoolean("phonetic_pending"); }
+    boolean showsPhoneticSuggestions() {
+        return overlay == Overlay.NONE && snapshot.optBoolean("phonetic_suggestions");
+    }
+    boolean phoneticSpaceFirstTone() { return snapshot.optBoolean("phonetic_space_first_tone"); }
+    @Override public boolean isShowingSmartCandidates() {
+        return chineseInputMethod() == ChineseInputMethod.SMART && overlay == Overlay.NONE
+                && !showsPhoneticSuggestions() && array("candidates").length() > 0;
+    }
     @Override public InputEngine.Result finishCompositionForModeSwitch() { return finishCompositionForInputHandoff(); }
     @Override public InputEngine.Result finishCompositionForKeyboardHide() {
         boolean hadComposition = hasComposition();
         if (!hadComposition) { clearOverlay(); return InputEngine.Result.update(); }
         InputEngine.Result result = InputEngine.Result.update();
         if (chineseInputMethod() == ChineseInputMethod.SMART && !text("reading").isEmpty()) {
-            result = mergeHideEffects(result, operate(object("type", "close_candidates")));
+            result = mergeEffects(result, operate(object("type", "close_candidates")));
             if (lastError != null) return keyboardHideResult(hadComposition, result);
             if (!text("reading").isEmpty()) {
                 // The public touch Escape clears the entire composition. The
                 // core key only cancels this pending reading after closing its list.
-                result = mergeHideEffects(result, key("escape"));
+                result = mergeEffects(result, key("escape"));
                 if (lastError != null) return keyboardHideResult(hadComposition, result);
             }
         } else if (chineseInputMethod() == ChineseInputMethod.TRADITIONAL
                 && !text("reading").isEmpty() && array("candidates").length() == 0) {
-            result = mergeHideEffects(result, key("escape"));
+            result = mergeEffects(result, key("escape"));
             if (lastError != null) return keyboardHideResult(hadComposition, result);
         }
-        result = mergeHideEffects(result, operate(object("type", "finish_composition",
+        result = mergeEffects(result, operate(object("type", "finish_composition",
                 "complete_reading", false, "select_highlighted_candidate", true, "discard_table_code", true)));
         if (lastError != null) return keyboardHideResult(hadComposition, result);
         clearOverlay();
@@ -492,13 +529,28 @@ final class GuanyinmaInputEngine implements InputEngine {
                 result.discardComposingText() || (hadComposition && !hasComposition() && result.committedText().isEmpty()));
     }
 
-    private static InputEngine.Result mergeHideEffects(InputEngine.Result first, InputEngine.Result next) {
+    private InputEngine.Result operateAfterPhoneticHandoff(JSONObject operation) {
+        if (!hasPendingPhoneticReading()) return operate(operation);
+        InputEngine.Result finished = finishCompositionForInputHandoff();
+        return lastError == null ? mergeEffects(finished, operate(operation)) : finished;
+    }
+
+    private static InputEngine.Result mergeEffects(InputEngine.Result first, InputEngine.Result next) {
         return new InputEngine.Result(first.committedText() + next.committedText(),
                 first.deleteBeforeCursor() || next.deleteBeforeCursor(), first.sendEnter() || next.sendEnter(),
                 first.discardComposingText() || next.discardComposingText());
     }
 
     @Override public InputEngine.Result finishCompositionForInputHandoff() {
+        if (hasPendingPhoneticReading()) {
+            // Smart touch hosts show raw phonetics only in the keyboard. On
+            // handoff preserve the completed graph, without inserting raw keys.
+            InputEngine.Result result = operate(object("type", "finish_composition",
+                    "complete_reading", false, "select_highlighted_candidate", false,
+                    "discard_table_code", false));
+            if (lastError == null) clearOverlay();
+            return result;
+        }
         if (!hasComposition()) { clearOverlay(); return InputEngine.Result.update(); }
         if (chineseInputMethod() != ChineseInputMethod.SMART && array("candidates").length() > 0) {
             InputEngine.Result result = operate(object("type", "select", "index", highlightedIndex()));

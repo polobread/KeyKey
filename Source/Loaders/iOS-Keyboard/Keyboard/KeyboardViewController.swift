@@ -41,6 +41,8 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var clickSettings = KeyboardClickSettings(sharedDefaults: sharedDefaults)
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
     private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
+    private lazy var toneOmissionSettings = SmartMandarinToneOmissionSettings(sharedDefaults: sharedDefaults)
+    private var pendingToneOmission: Bool?
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
@@ -285,6 +287,7 @@ final class KeyboardViewController: UIInputViewController {
         if let engine {
             apply(engine.setKeyboardLayout(layoutSettings.layout))
             engine.spaceSelectsCandidates = spaceSettings.enabled
+            pendingToneOmission = toneOmissionSettings.enabled
         }
         applyLearningResetRequests()
         if let engine {
@@ -471,6 +474,7 @@ final class KeyboardViewController: UIInputViewController {
                 keyboardLayout: layoutSettings.layout,
                 tableOptions: methodSettings.options(for: methodSettings.method, virtualKeyboard: true),
                 spaceSelectsCandidates: spaceSettings.enabled,
+                omitsTones: toneOmissionSettings.enabled,
                 associatedPhrases: phrases,
                 candidateFilter: CandidateGlyphSupport.shared.canDisplay
             )
@@ -500,6 +504,7 @@ final class KeyboardViewController: UIInputViewController {
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
             keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
+            omitsTones: toneOmissionSettings.enabled,
             layoutProfile: profileSettings.profile,
             keycapArea: profileSettings.keycapArea,
             fontSize: profileSettings.fontSize,
@@ -593,12 +598,19 @@ final class KeyboardViewController: UIInputViewController {
             keyboardView.apply(state)
             return
         }
+        if let pendingToneOmission, !engine.hasComposition, !engine.hasPendingPhoneticInput {
+            engine.omitsTones = pendingToneOmission
+            self.pendingToneOmission = nil
+        }
         var state = KeyboardView.State()
         state.reading = engine.composingText
         state.smartMode = engine.bopomofoCompositionMode == .smart
             && engine.inputMode == .bopomofo
         state.smartCells = engine.touchSmartCells
-        state.smartEditableCount = engine.smartCompositionReadingCount
+        state.phoneticPending = engine.hasPendingPhoneticInput
+        state.phoneticSuggestions = engine.isShowingPhoneticSuggestions
+        state.phoneticSpaceFirstTone = engine.phoneticSpaceIsFirstTone
+        state.smartEditableCount = state.phoneticPending ? 0 : engine.smartCompositionReadingCount
         state.candidates = engine.displayedCandidates
         state.highlightedIndex = engine.isShowingAssociatedPhrases
             ? -1 : engine.highlightedIndex
@@ -944,6 +956,12 @@ extension KeyboardViewController: SettingsPanelDelegate {
     func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout) {
         if let engine { apply(engine.setKeyboardLayout(layout)) }
         layoutSettings.setLayout(layout)
+        refresh()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool) {
+        toneOmissionSettings.setEnabled(enabled)
+        pendingToneOmission = enabled
         refresh()
     }
 

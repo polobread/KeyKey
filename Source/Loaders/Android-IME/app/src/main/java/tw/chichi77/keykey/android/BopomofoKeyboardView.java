@@ -99,6 +99,7 @@ final class BopomofoKeyboardView extends View {
     private List<String> candidates = List.of();
     private String reading = "";
     private boolean smartMode;
+    private boolean phoneticSuggestions, phoneticPending, phoneticSpaceFirstTone;
     private List<String> smartCells = List.of();
     private int smartEditableCount;
     private ChineseInputMethod chineseInputMethod = ChineseInputMethod.SMART;
@@ -358,6 +359,15 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
+    void setPhoneticState(boolean suggestions, boolean pending, boolean spaceFirstTone) {
+        if (phoneticSuggestions == suggestions && phoneticPending == pending
+                && phoneticSpaceFirstTone == spaceFirstTone) return;
+        phoneticSuggestions = suggestions;
+        phoneticPending = pending;
+        phoneticSpaceFirstTone = spaceFirstTone;
+        invalidate();
+    }
+
     void setAssociatedPhrasesVisible(boolean visible) {
         if (associatedPhrasesVisible == visible) return;
         associatedPhrasesVisible = visible;
@@ -486,7 +496,7 @@ final class BopomofoKeyboardView extends View {
         float candidateHeight = landscape ? contentHeight / 6f
                 : Math.max(dp(46), contentHeight * 0.15f);
         float top = candidateHeight;
-        if (smartMode) {
+        if (smartMode && !phoneticSuggestions) {
             drawSmartCellStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
         } else {
             drawCandidateStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
@@ -505,7 +515,7 @@ final class BopomofoKeyboardView extends View {
                     top + key.bottom() * (contentHeight - top) - dp(2));
             drawKey(canvas, bounds, key.action());
         }
-        if (smartMode && !candidates.isEmpty()) {
+        if (smartMode && !phoneticSuggestions && !candidates.isEmpty()) {
             RectF overlay = new RectF(0, top, getWidth(), top + rowHeight);
             canvas.drawRect(overlay, backgroundPaint);
             hits.add(new Hit(new RectF(overlay), HitKind.CANDIDATE_BLOCK, "", -1));
@@ -762,7 +772,7 @@ final class BopomofoKeyboardView extends View {
             }
             drawPageButton(canvas, stripSlotBounds(area, slots.get(candidateCount + 1)), 1, "▼");
         }
-        boolean canCloseCandidates = smartMode && !candidates.isEmpty();
+        boolean canCloseCandidates = smartMode && !phoneticSuggestions && !candidates.isEmpty();
         drawStripControl(canvas, last, canCloseCandidates ? "×" : "▼",
                 canCloseCandidates ? "CLOSE_CANDIDATES" : "DISMISS");
     }
@@ -788,17 +798,19 @@ final class BopomofoKeyboardView extends View {
             hintPaint.setColor(candidateHighlightTextColor);
             textPaint.setColor(candidateHighlightTextColor);
         }
-        String number = Integer.toString(index + 1);
-        hintPaint.setTextAlign(Paint.Align.LEFT);
-        hintPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(7) : dp(10));
-        canvas.drawText(number, bounds.left + dp(5),
-                bounds.top + (mode == Mode.LANDSCAPE ? dp(8) : dp(12)), hintPaint);
-        hintPaint.setTextAlign(Paint.Align.CENTER);
+        if (!phoneticSuggestions) {
+            String number = Integer.toString(index + 1);
+            hintPaint.setTextAlign(Paint.Align.LEFT);
+            hintPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(7) : dp(10));
+            canvas.drawText(number, bounds.left + dp(5),
+                    bounds.top + (mode == Mode.LANDSCAPE ? dp(8) : dp(12)), hintPaint);
+            hintPaint.setTextAlign(Paint.Align.CENTER);
+        }
         if (index < candidates.size()) {
             String value = candidates.get(index);
             textPaint.setTextSize(mode == Mode.LANDSCAPE ? dp(12) : dp(18));
             textPaint.setFakeBoldText(true);
-            if (isTouchMode() && (!fontSize.showsHints() || layoutProfile.split)) {
+            if (isTouchMode() && (phoneticSuggestions || !fontSize.showsHints() || layoutProfile.split)) {
                 fitStripText(textPaint, value, bounds, textPaint.getTextSize());
             }
             canvas.drawText(value, bounds.centerX(), textBaseline(bounds, textPaint), textPaint);
@@ -1386,7 +1398,8 @@ final class BopomofoKeyboardView extends View {
             case "SHIFT" -> shifted ? "⇧" : "⇧";
             case "BACKSPACE" -> "⌫";
             case "SPACE" -> usesPinyin() && inputMode == InputEngine.InputMode.BOPOMOFO
-                    && !reading.isEmpty() && candidates.isEmpty() ? "一聲" : "空白";
+                    && (phoneticPending ? phoneticSpaceFirstTone
+                            : !reading.isEmpty() && candidates.isEmpty()) ? "一聲" : "空白";
             case "SYMBOL" -> "符";
             case "SETTINGS" -> "設";
             case "EMOJI" -> "☺";

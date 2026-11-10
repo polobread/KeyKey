@@ -673,6 +673,10 @@ impl SmartGraph {
         result
     }
     pub fn select(&mut self, candidate: &SmartCandidate) -> bool {
+        self.select_with_learning(candidate, true)
+    }
+
+    pub(crate) fn select_with_learning(&mut self, candidate: &SmartCandidate, learn: bool) -> bool {
         let Some(start) = candidate.start.checked_add(1) else {
             return false;
         };
@@ -698,7 +702,7 @@ impl SmartGraph {
         }
         self.nodes[index].overridden = Some(candidate.text.clone());
         self.update();
-        let eligible = !is_special_query(&candidate.query);
+        let eligible = learn && !is_special_query(&candidate.query);
         if eligible && self.learning.candidate_overrides && !contains_bopomofo(&candidate.text) {
             if first.as_deref() == Some(candidate.text.as_str()) {
                 self.remember_override(&candidate.query, None);

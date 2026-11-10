@@ -498,6 +498,12 @@ public final class BopomofoImeService extends InputMethodService
             refreshKeyboard();
             return;
         }
+        if (BopomofoCompositionModeSettings.KEY_OMIT_TONE.equals(key)) {
+            if (engine != null && engine.hasPendingPhoneticReading()) {
+                apply(engine.finishCompositionForInputHandoff());
+            }
+            return;
+        }
         if (BopomofoCompositionModeSettings.KEY_BIGRAM_ENABLED.equals(key)) {
             if (engine != null && engine.compositionMode() == BopomofoCompositionMode.SMART
                     && engine.inputMode() == InputEngine.InputMode.BOPOMOFO) {
@@ -606,7 +612,9 @@ public final class BopomofoImeService extends InputMethodService
         }
         if (!fieldPolicy.isKeyEnabled(key, engine.inputMode(), engine.isShifted())) return;
         useTableKeyboard(!hardwareKeyboard);
-        apply(engine.handleSoftKey(key), key.equals("ENTER"));
+        boolean omitTone = keyboardView != null && keyboardView.isTouchMode()
+                && BopomofoCompositionModeSettings.omitTone(this);
+        apply(engine.handleSoftKey(key, omitTone), key.equals("ENTER"));
     }
 
     private void openKeyboardSettings() {
@@ -675,10 +683,12 @@ public final class BopomofoImeService extends InputMethodService
         }
         // A key can arrive before the hardware configuration callback. Finish
         // the already-inserted touch tail before adopting marked host text.
-        if (!hardwareSmartTwoRows && !touchHostText.editableText().isEmpty()
+        if ((engine.hasPendingPhoneticReading()
+                || (!hardwareSmartTwoRows && !touchHostText.editableText().isEmpty()))
                 && !KeyEvent.isModifierKey(keyCode) && keyCode != KeyEvent.KEYCODE_CAPS_LOCK
                 && keyCode != KeyEvent.KEYCODE_NUM_LOCK && keyCode != KeyEvent.KEYCODE_SCROLL_LOCK) {
             commitPendingComposition();
+            if (hostTransactionFailed || engine.hasPendingPhoneticReading()) return true;
         }
         useTableKeyboard(false);
         if (keyCode == KeyEvent.KEYCODE_DEL && hardwareBackspaceHeld) return true;
@@ -1063,6 +1073,8 @@ public final class BopomofoImeService extends InputMethodService
                 && engine.compositionMode() == BopomofoCompositionMode.SMART
                 && engine.inputMode() == InputEngine.InputMode.BOPOMOFO;
         keyboardView.setAssociatedPhrasesVisible(engine.isShowingAssociatedPhrases());
+        keyboardView.setPhoneticState(engine.showsPhoneticSuggestions(),
+                engine.hasPendingPhoneticReading(), engine.phoneticSpaceFirstTone());
         keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
                 engine.compositionMode() == BopomofoCompositionMode.SMART
                         && engine.inputMode() == InputEngine.InputMode.BOPOMOFO,

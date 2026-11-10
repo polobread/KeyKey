@@ -593,7 +593,8 @@ public final class IntegratedBottomControlsInstrumentedTest {
         Map<String, ?> previous = preferences.getAll();
         String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED, KeyboardLayoutProfileSettings.KEY_LAYOUT,
                 ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
-                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION};
+                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION,
+                BopomofoCompositionModeSettings.KEY_OMIT_TONE};
         Activity activity = null;
         try {
             preferences.edit().putBoolean(keys[0], false)
@@ -601,7 +602,8 @@ public final class IntegratedBottomControlsInstrumentedTest {
                     .putString(keys[2], ChineseInputMethod.SMART.name())
                     .putString(keys[3], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
                     .putString(keys[4], BopomofoKeyboardLayout.HANYU_PINYIN.value)
-                    .putString(keys[5], KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER.id).commit();
+                    .putString(keys[5], KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER.id)
+                    .remove(keys[6]).commit();
             activity = instrumentation.startActivitySync(new Intent()
                     .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -646,6 +648,79 @@ public final class IntegratedBottomControlsInstrumentedTest {
             await(() -> labels(findKeyboard()).contains("中"));
             instrumentation.runOnMainSync(() -> tapDrawnKey(findKeyboard(), "中"));
             assertPinyinHostText(editor, "你好中");
+        } finally {
+            if (activity != null) {
+                Activity host = activity;
+                instrumentation.runOnMainSync(host::finish);
+            }
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key);
+                if (previous.get(key) instanceof Boolean value) edit.putBoolean(key, value);
+                else if (previous.get(key) instanceof String value) edit.putString(key, value);
+            }
+            edit.commit();
+        }
+    }
+
+    @Test public void touchOmitToneKeepsToneKeysAndCommitsOnlySelectedText() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        Map<String, ?> previous = preferences.getAll();
+        String[] keys = {ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
+                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, BopomofoCompositionModeSettings.KEY_OMIT_TONE};
+        Activity activity = null;
+        try {
+            preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())
+                    .putString(keys[1], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putString(keys[2], BopomofoKeyboardLayout.HANYU_PINYIN.value)
+                    .remove(keys[3]).commit();
+            activity = instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity host = activity;
+            EditText editor = findEditor(host.findViewById(android.R.id.content));
+            assertNotNull(editor);
+            instrumentation.runOnMainSync(() -> editor.setText(""));
+            showEditorKeyboard(host, context);
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "nihao".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+                assertFalse(labels(view).contains("你好"));
+                assertEquals("", editor.getText().toString());
+                for (int index = 0; index < 5; index++) tapDrawnKey(view, "⌫");
+                BopomofoCompositionModeSettings.setOmitTone(context, true);
+            });
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "nihao".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+                assertTrue(labels(view).contains("你好"));
+                assertEquals("", editor.getText().toString());
+                tapDrawnKey(view, "你好");
+            });
+            assertPinyinHostText(editor, "你好");
+
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "ni3hao3".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+            });
+            assertPinyinHostText(editor, "你好你好");
+
+            instrumentation.runOnMainSync(() -> BopomofoKeyboardLayoutSettings.setLayout(
+                    context, BopomofoKeyboardLayout.STANDARD));
+            await(() -> labels(findKeyboard()).contains("ㄋ"));
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (String key : List.of("ㄋ", "ㄧ", "ㄏ", "ㄠ")) tapDrawnKey(view, key);
+                assertTrue(labels(view).contains("你好"));
+                assertEquals("你好你好", editor.getText().toString());
+                tapDrawnKey(view, "你好");
+            });
+            assertPinyinHostText(editor, "你好你好你好");
         } finally {
             if (activity != null) {
                 Activity host = activity;

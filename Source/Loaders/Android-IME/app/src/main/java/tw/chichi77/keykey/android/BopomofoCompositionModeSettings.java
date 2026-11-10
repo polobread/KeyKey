@@ -7,6 +7,7 @@ final class BopomofoCompositionModeSettings {
     static final String KEY_MODE = "bopomofo_composition_mode";
     static final String KEY_BIGRAM_ENABLED = "smart_bigram_enabled";
     static final String KEY_SPACE_SELECTS_CANDIDATES = "smart_space_selects_candidates";
+    static final String KEY_OMIT_TONE = "smart_omit_tone";
     private static final String SMART = "smart";
     private static final String TRADITIONAL = "traditional";
 
@@ -26,6 +27,14 @@ final class BopomofoCompositionModeSettings {
 
     static void setSpaceSelectsCandidates(Context context, boolean enabled) {
         preferences(context).edit().putBoolean(KEY_SPACE_SELECTS_CANDIDATES, enabled).apply();
+    }
+
+    static boolean omitTone(Context context) {
+        return preferences(context).getBoolean(KEY_OMIT_TONE, false);
+    }
+
+    static void setOmitTone(Context context, boolean enabled) {
+        preferences(context).edit().putBoolean(KEY_OMIT_TONE, enabled).apply();
     }
 
     static boolean bigramEnabled(Context context) {
