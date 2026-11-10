@@ -1073,8 +1073,9 @@ public final class BopomofoImeService extends InputMethodService
                 && engine.compositionMode() == BopomofoCompositionMode.SMART
                 && engine.inputMode() == InputEngine.InputMode.BOPOMOFO;
         keyboardView.setAssociatedPhrasesVisible(engine.isShowingAssociatedPhrases());
-        keyboardView.setPhoneticState(engine.showsPhoneticSuggestions(),
-                engine.hasPendingPhoneticReading(), engine.phoneticSpaceFirstTone());
+        boolean phoneticPending = engine.hasPendingPhoneticReading();
+        keyboardView.setPhoneticState(engine.showsPhoneticSuggestions(), phoneticPending,
+                engine.phoneticSpaceFirstTone(), phoneticPending ? engine.readingText() : "");
         keyboardView.setState(engine.displayedCandidates(), engine.composingText(),
                 engine.compositionMode() == BopomofoCompositionMode.SMART
                         && engine.inputMode() == InputEngine.InputMode.BOPOMOFO,

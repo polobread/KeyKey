@@ -100,6 +100,7 @@ final class BopomofoKeyboardView extends View {
     private String reading = "";
     private boolean smartMode;
     private boolean phoneticSuggestions, phoneticPending, phoneticSpaceFirstTone;
+    private String phoneticReading = "";
     private List<String> smartCells = List.of();
     private int smartEditableCount;
     private ChineseInputMethod chineseInputMethod = ChineseInputMethod.SMART;
@@ -138,6 +139,8 @@ final class BopomofoKeyboardView extends View {
     private int page;
     private int pageCount;
     private int highlightedIndex = -1;
+    private int liveCandidatePage;
+    private int liveCandidatePageCount;
     private int candidateHighlightTextColor = Color.WHITE;
     private float downX;
     private float downY;
@@ -342,6 +345,7 @@ final class BopomofoKeyboardView extends View {
                   boolean shifted, boolean temporaryEnglish, boolean hardwareFullWidth,
                   boolean supportPromptVisible, int page, int pageCount,
                   int highlightedIndex, InputFieldPolicy fieldPolicy) {
+        if (!this.candidates.equals(candidates)) liveCandidatePage = 0;
         this.candidates = List.copyOf(candidates);
         this.reading = reading;
         this.smartMode = smartMode;
@@ -359,12 +363,16 @@ final class BopomofoKeyboardView extends View {
         invalidate();
     }
 
-    void setPhoneticState(boolean suggestions, boolean pending, boolean spaceFirstTone) {
+    void setPhoneticState(boolean suggestions, boolean pending, boolean spaceFirstTone,
+                          String reading) {
         if (phoneticSuggestions == suggestions && phoneticPending == pending
-                && phoneticSpaceFirstTone == spaceFirstTone) return;
+                && phoneticSpaceFirstTone == spaceFirstTone && phoneticReading.equals(reading)) return;
+        if (phoneticSuggestions != suggestions || phoneticPending != pending
+                || !phoneticReading.equals(reading)) liveCandidatePage = 0;
         phoneticSuggestions = suggestions;
         phoneticPending = pending;
         phoneticSpaceFirstTone = spaceFirstTone;
+        phoneticReading = reading;
         invalidate();
     }
 
@@ -495,8 +503,17 @@ final class BopomofoKeyboardView extends View {
         float contentHeight = contentHeight();
         float candidateHeight = landscape ? contentHeight / 6f
                 : Math.max(dp(46), contentHeight * 0.15f);
+        boolean showPhoneticRows = smartMode && phoneticPending;
         float top = candidateHeight;
-        if (smartMode && !phoneticSuggestions) {
+        if (showPhoneticRows) {
+            var rows = KeyboardLayoutGeometry.liveCandidateRows(contentHeight, candidateHeight,
+                    dp(landscape ? 20 : 24));
+            top = rows.keyTop();
+            drawPhoneticReading(canvas, new RectF(0, 0, getWidth(), rows.readingHeight()));
+            if (phoneticSuggestions) {
+                drawLiveCandidates(canvas, new RectF(0, rows.readingHeight(), getWidth(), top));
+            }
+        } else if (smartMode) {
             drawSmartCellStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
         } else {
             drawCandidateStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
@@ -515,7 +532,7 @@ final class BopomofoKeyboardView extends View {
                     top + key.bottom() * (contentHeight - top) - dp(2));
             drawKey(canvas, bounds, key.action());
         }
-        if (smartMode && !phoneticSuggestions && !candidates.isEmpty()) {
+        if (smartMode && !showPhoneticRows && !candidates.isEmpty()) {
             RectF overlay = new RectF(0, top, getWidth(), top + rowHeight);
             canvas.drawRect(overlay, backgroundPaint);
             hits.add(new Hit(new RectF(overlay), HitKind.CANDIDATE_BLOCK, "", -1));
@@ -722,6 +739,51 @@ final class BopomofoKeyboardView extends View {
         if (enabled) hits.add(new Hit(new RectF(inset), HitKind.KEY, "EMOJI", -1));
     }
 
+    private void pageCandidates(int delta) {
+        if (isTouchMode() && smartMode && phoneticPending && phoneticSuggestions) {
+            if (liveCandidatePageCount > 1) {
+                liveCandidatePage = Math.floorMod(liveCandidatePage + delta, liveCandidatePageCount);
+                invalidate();
+            }
+        } else {
+            listener.onPage(delta);
+        }
+    }
+
+    private void drawPhoneticReading(Canvas canvas, RectF area) {
+        RectF readingArea = new RectF(area);
+        if (layoutProfile.split) {
+            readingArea.right = Math.max(area.left, area.right - dp(32));
+            drawStripControl(canvas, new RectF(readingArea.right, area.top, area.right, area.bottom),
+                    "▼", "DISMISS");
+        }
+        drawStripMessage(canvas, readingArea, phoneticReading, true);
+    }
+
+    private void drawLiveCandidates(Canvas canvas, RectF area) {
+        if (candidates.isEmpty()) return;
+        float density = getResources().getDisplayMetrics().density;
+        textPaint.setTextSize(dp(mode == Mode.LANDSCAPE ? 12 : 18) * fontSize.stripScale);
+        textPaint.setFakeBoldText(true);
+        var widths = new ArrayList<Float>(candidates.size());
+        for (String value : candidates) {
+            widths.add(textPaint.measureText(value) / density + 10);
+        }
+        var strip = KeyboardLayoutGeometry.liveCandidateStripSlots(widths, widthDp(area), layoutProfile.split);
+        liveCandidatePageCount = strip.pages().size();
+        if (liveCandidatePageCount == 0) return;
+        liveCandidatePage = Math.min(liveCandidatePage, liveCandidatePageCount - 1);
+        if (strip.previousPage() != null) {
+            drawPageButton(canvas, stripSlotBounds(area, strip.previousPage()), -1, "▲");
+            drawPageButton(canvas, stripSlotBounds(area, strip.nextPage()), 1, "▼");
+        }
+        var candidatePage = strip.pages().get(liveCandidatePage);
+        for (int index = 0; index < candidatePage.candidates().size(); index++) {
+            RectF bounds = inset(stripSlotBounds(area, candidatePage.candidates().get(index)), dp(2));
+            drawCandidate(canvas, bounds, candidatePage.firstCandidate() + index);
+        }
+    }
+
     private void drawCandidateStrip(Canvas canvas, RectF area) {
         if (isTouchMode() && layoutProfile.split) {
             drawSplitCandidateStrip(canvas, area);
@@ -757,13 +819,13 @@ final class BopomofoKeyboardView extends View {
             RectF right = new RectF(stripSlotBounds(area, slots.get(half)).left,
                     area.top, last.left, area.bottom);
             if (!reading.isEmpty()) {
-                drawSplitMessage(canvas, left, reading, true);
-                drawSplitMessage(canvas, right, readingInstruction(), false);
+                drawStripMessage(canvas, left, reading, true);
+                drawStripMessage(canvas, right, readingInstruction(), false);
             } else if (supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO) {
-                drawSplitMessage(canvas, left, bopomofoLayoutName(), false);
-                drawSplitMessage(canvas, right, getResources().getString(R.string.supporter_prompt), false);
+                drawStripMessage(canvas, left, bopomofoLayoutName(), false);
+                drawStripMessage(canvas, right, getResources().getString(R.string.supporter_prompt), false);
             } else {
-                drawSplitMessage(canvas, left, emptyCandidateMessage(), false);
+                drawStripMessage(canvas, left, emptyCandidateMessage(), false);
             }
         } else {
             drawPageButton(canvas, stripSlotBounds(area, slots.get(0)), -1, "▲");
@@ -777,7 +839,7 @@ final class BopomofoKeyboardView extends View {
                 canCloseCandidates ? "CLOSE_CANDIDATES" : "DISMISS");
     }
 
-    private void drawSplitMessage(Canvas canvas, RectF bounds, String message, boolean primary) {
+    private void drawStripMessage(Canvas canvas, RectF bounds, String message, boolean primary) {
         RectF content = inset(bounds, dp(2));
         Paint paint = primary ? textPaint : hintPaint;
         paint.setFakeBoldText(false);
@@ -1307,7 +1369,7 @@ final class BopomofoKeyboardView extends View {
                 }
                 float distance = event.getX() - downX;
                 if (downOnCandidate && Math.abs(distance) > dp(38)) {
-                    if (listener != null) listener.onPage(distance < 0 ? 1 : -1);
+                    if (listener != null) pageCandidates(distance < 0 ? 1 : -1);
                     performClick();
                     return true;
                 }
@@ -1318,7 +1380,7 @@ final class BopomofoKeyboardView extends View {
                     } else if (hit.kind() == HitKind.SMART_CELL) {
                         listener.onSmartCell(hit.candidateIndex());
                     } else if (hit.kind() == HitKind.PAGE) {
-                        listener.onPage(hit.candidateIndex());
+                        pageCandidates(hit.candidateIndex());
                     } else if (hit.kind() == HitKind.KEY) {
                         listener.onKey(hit.key());
                     }

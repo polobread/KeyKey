@@ -697,8 +697,9 @@ public final class IntegratedBottomControlsInstrumentedTest {
             });
             instrumentation.runOnMainSync(() -> {
                 BopomofoKeyboardView view = findKeyboard();
+                int keyboardHeight = view.getHeight();
                 for (char key : "nihao".toCharArray()) tapDrawnKey(view, String.valueOf(key));
-                assertTrue(labels(view).contains("你好"));
+                assertLivePhoneticRows(view, "nihao", "3", keyboardHeight);
                 assertEquals("", editor.getText().toString());
                 tapDrawnKey(view, "你好");
             });
@@ -706,6 +707,7 @@ public final class IntegratedBottomControlsInstrumentedTest {
 
             instrumentation.runOnMainSync(() -> {
                 BopomofoKeyboardView view = findKeyboard();
+                assertNineSyllablesStayVisible(view, "nihaowomenqunaliwanne");
                 for (char key : "ni3hao3".toCharArray()) tapDrawnKey(view, String.valueOf(key));
             });
             assertPinyinHostText(editor, "你好你好");
@@ -715,12 +717,15 @@ public final class IntegratedBottomControlsInstrumentedTest {
             await(() -> labels(findKeyboard()).contains("ㄋ"));
             instrumentation.runOnMainSync(() -> {
                 BopomofoKeyboardView view = findKeyboard();
+                int keyboardHeight = view.getHeight();
                 for (String key : List.of("ㄋ", "ㄧ", "ㄏ", "ㄠ")) tapDrawnKey(view, key);
-                assertTrue(labels(view).contains("你好"));
+                assertLivePhoneticRows(view, "ㄋㄧㄏㄠ", "ˇ", keyboardHeight);
                 assertEquals("你好你好", editor.getText().toString());
                 tapDrawnKey(view, "你好");
             });
             assertPinyinHostText(editor, "你好你好你好");
+            instrumentation.runOnMainSync(() -> assertNineSyllablesStayVisible(
+                    findKeyboard(), "ㄋㄧㄏㄠㄨㄛㄇㄣㄑㄩㄋㄚㄌㄧㄨㄢㄋㄜ"));
         } finally {
             if (activity != null) {
                 Activity host = activity;
@@ -734,6 +739,31 @@ public final class IntegratedBottomControlsInstrumentedTest {
             }
             edit.commit();
         }
+    }
+
+    private static void assertNineSyllablesStayVisible(BopomofoKeyboardView view, String reading) {
+        for (char key : reading.toCharArray()) tapDrawnKey(view, String.valueOf(key));
+        assertTrue("The keyboard must show all nine pending syllables", labels(view).contains(reading));
+        for (int index = 0; index < reading.length(); index++) tapDrawnKey(view, "⌫");
+    }
+
+    private static void assertLivePhoneticRows(BopomofoKeyboardView view, String reading,
+            String toneKey, int keyboardHeight) {
+        float[] readingBaseline = {Float.NaN};
+        view.draw(new Canvas() {
+            @Override public void drawText(String value, float x, float y, Paint paint) {
+                if (value.equals(reading)) readingBaseline[0] = y;
+            }
+        });
+        List<RectF> candidates = drawnKeyBounds(view, "你好");
+        assertEquals("The live candidate must have a visible touch target", 1, candidates.size());
+        RectF candidate = candidates.get(0);
+        assertTrue("The raw reading must be drawn above the candidate row",
+                readingBaseline[0] < candidate.top);
+        assertTrue("The candidate row must stay above the tone keys",
+                drawnKeyBounds(view, toneKey).stream().anyMatch(key -> candidate.bottom <= key.top));
+        assertEquals("Showing live candidates must respect the user's keyboard height", keyboardHeight,
+                view.getHeight());
     }
 
     private static void assertPinyinHostText(EditText editor, String expected) throws Exception {

@@ -7,7 +7,14 @@ import java.util.List;
 final class KeyboardLayoutGeometry {
     record Key(String action, float left, float top, float right, float bottom) {}
     record StripSlot(float left, float right) {}
+    record LiveCandidateRows(float readingHeight, float candidateHeight) {
+        float keyTop() { return readingHeight + candidateHeight; }
+    }
+    record LiveCandidatePage(int firstCandidate, List<StripSlot> candidates) {}
+    record LiveCandidateStrip(List<LiveCandidatePage> pages, StripSlot previousPage, StripSlot nextPage) {}
     static final List<String> SPLIT_PUNCTUATION = List.of("，", "。", "、", "？");
+    // The 2dp inset on each side leaves a 44dp tap target when space permits.
+    private static final float LIVE_CANDIDATE_MINIMUM_WIDTH_DP = 48;
 
     static float centreGapDp(float widthDp) { return Math.min(80, widthDp * .1f); }
 
@@ -26,6 +33,58 @@ final class KeyboardLayoutGeometry {
                     column == perSide - 1 ? origin + half : origin + half * (column + 1) / perSide));
         }
         return List.copyOf(slots);
+    }
+
+    static LiveCandidateRows liveCandidateRows(float contentHeight, float regularStripHeight,
+            float preferredReadingHeight) {
+        // Keep at least two thirds of the configured height for the keys.
+        float scale = Math.min(1f, (contentHeight / 3) / (regularStripHeight + preferredReadingHeight));
+        return new LiveCandidateRows(preferredReadingHeight * scale, regularStripHeight * scale);
+    }
+
+    static LiveCandidateStrip liveCandidateStripSlots(List<Float> candidateWidths, float widthDp,
+            boolean split) {
+        if (candidateWidths.isEmpty() || widthDp <= 0) {
+            return new LiveCandidateStrip(List.of(), null, null);
+        }
+        var pages = liveCandidatePages(candidateWidths, widthDp, split, 0);
+        if (pages.size() == 1) return new LiveCandidateStrip(pages, null, null);
+        float pageWidth = Math.min(widthDp * .1f, 28);
+        return new LiveCandidateStrip(liveCandidatePages(candidateWidths, widthDp, split, pageWidth),
+                new StripSlot(0, pageWidth / widthDp), new StripSlot(1 - pageWidth / widthDp, 1));
+    }
+
+    private static List<LiveCandidatePage> liveCandidatePages(List<Float> widths, float widthDp,
+            boolean split, float pageWidth) {
+        float halfGap = centreGapDp(widthDp) / 2;
+        var pages = new ArrayList<LiveCandidatePage>();
+        int index = 0;
+        while (index < widths.size()) {
+            int firstCandidate = index;
+            var slots = new ArrayList<StripSlot>();
+            if (split) {
+                index = packLiveCandidateSlots(slots, widths, index, pageWidth, widthDp / 2 - halfGap, widthDp);
+                index = packLiveCandidateSlots(slots, widths, index, widthDp / 2 + halfGap, widthDp - pageWidth, widthDp);
+            } else {
+                index = packLiveCandidateSlots(slots, widths, index, pageWidth, widthDp - pageWidth, widthDp);
+            }
+            pages.add(new LiveCandidatePage(firstCandidate, List.copyOf(slots)));
+        }
+        return List.copyOf(pages);
+    }
+
+    private static int packLiveCandidateSlots(List<StripSlot> slots, List<Float> widths,
+            int index, float left, float right, float widthDp) {
+        float cursor = left;
+        while (index < widths.size()) {
+            float width = Math.min(right - left, Math.max(LIVE_CANDIDATE_MINIMUM_WIDTH_DP, widths.get(index)));
+            if (cursor > left && cursor + width > right) break;
+            float next = Math.min(right, cursor + width);
+            slots.add(new StripSlot(cursor / widthDp, next / widthDp));
+            cursor = next;
+            index++;
+        }
+        return index;
     }
 
     static List<List<String>> resolvedRows(KeyboardLayoutProfile profile,

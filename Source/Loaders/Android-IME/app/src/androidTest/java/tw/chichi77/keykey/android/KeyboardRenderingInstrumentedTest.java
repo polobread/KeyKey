@@ -971,6 +971,97 @@ public final class KeyboardRenderingInstrumentedTest {
         });
     }
 
+    @Test public void livePhoneticsFitAndKeepCandidateTouchesInOrderAtMinimumHeight() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            view.setChineseInputMethod(ChineseInputMethod.SMART);
+            view.setTouchKeyboardHeightPercents(50, 50);
+            view.setKeyPreviewEnabled(false);
+            var selected = new ArrayList<Integer>();
+            view.setListener(new BopomofoKeyboardView.Listener() {
+                @Override public void onPress() {}
+                @Override public void onKey(String key) { fail("Unexpected key: " + key); }
+                @Override public void onCandidate(int index) { selected.add(index); }
+                @Override public void onSmartCell(int index) { fail("Unexpected composition selection"); }
+                @Override public void onPage(int delta) { fail("Unexpected page"); }
+            });
+            String reading = "ㄋㄧㄏㄠㄨㄛㄇㄣㄑㄩㄋㄚㄌㄧㄨㄢㄋㄜ";
+            List<String> choices = List.of("你好", "我們一起去海邊", "再見", "晚安");
+            float density = view.getResources().getDisplayMetrics().density;
+            for (boolean split : new boolean[] {false, true}) {
+                view.setLayoutProfile(split ? KeyboardLayoutProfile.ALIGNED_SPLIT : KeyboardLayoutProfile.ALIGNED);
+                view.setMode(split ? BopomofoKeyboardView.Mode.LANDSCAPE : BopomofoKeyboardView.Mode.PORTRAIT);
+                int width = Math.round((split ? 540 : 320) * density);
+                view.setPhoneticState(false, true, false, reading);
+                view.setState(List.of(), reading, true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                        false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                KeyCanvas pending = drawAtWidth(view, width);
+                var edges = view.visibleTouchEdges();
+
+                view.setPhoneticState(true, true, false, reading);
+                view.setState(choices, reading, true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                        false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                KeyCanvas live = drawAtWidth(view, width);
+                assertEquals(edges, view.visibleTouchEdges());
+                var raw = live.texts.stream().filter(t -> t.value.equals(reading)).findFirst().orElseThrow();
+                var pendingTone = pending.texts.stream().filter(t -> t.value.equals("ˇ")).findFirst().orElseThrow();
+                var liveTone = live.texts.stream().filter(t -> t.value.equals("ˇ")).findFirst().orElseThrow();
+                assertEquals(pending.keys.get(pendingTone.keyIndex), live.keys.get(liveTone.keyIndex));
+
+                selected.clear();
+                var caps = new ArrayList<RectF>();
+                for (String choice : choices) {
+                    var text = live.texts.stream().filter(t -> t.value.equals(choice)).findFirst().orElseThrow();
+                    RectF cap = live.keys.get(text.keyIndex);
+                    assertInside(text, cap);
+                    assertTrue(raw.ink.bottom <= cap.top);
+                    assertTrue(cap.bottom <= live.keys.get(liveTone.keyIndex).top);
+                    caps.add(cap);
+                    tap(view, cap.centerX(), cap.centerY());
+                }
+                assertTrue("A long candidate should have more room than a short one",
+                        caps.get(1).width() > caps.get(0).width());
+                assertEquals(List.of(0, 1, 2, 3), selected);
+                if (split) {
+                    assertTrue(caps.stream().noneMatch(cap -> cap.left < width / 2f && cap.right > width / 2f));
+                    tap(view, width / 2f, caps.get(0).centerY());
+                    assertEquals(List.of(0, 1, 2, 3), selected);
+                }
+
+                List<String> longChoices = List.of("你好我們去哪裡玩呢", "你好我們要去哪玩呢",
+                        "你好我們要去哪裡玩", "你好我們去公園玩吧", "你好我們去動物園吧",
+                        "你好我們去海邊玩吧", "你好我們去圖書館吧", "你好我們一起去玩吧");
+                view.setState(longChoices, reading, true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                        false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                selected.clear();
+                for (int page = 0; selected.size() < longChoices.size() && page < longChoices.size(); page++) {
+                    KeyCanvas paged = drawAtWidth(view, width);
+                    int selectedBeforePage = selected.size();
+                    for (var text : paged.texts) {
+                        if (!longChoices.contains(text.value)) continue;
+                        RectF cap = paged.keys.get(text.keyIndex);
+                        assertInside(text, cap);
+                        assertTrue("Long candidates must remain legible", text.size >= 9 * density);
+                        tap(view, cap.centerX(), cap.centerY());
+                    }
+                    assertTrue("Each candidate page must offer a selectable word", selected.size() > selectedBeforePage);
+                    if (selected.size() < longChoices.size()) {
+                        var arrow = paged.texts.stream()
+                                .filter(t -> t.value.equals("▼") && t.y > raw.y && t.y < liveTone.y)
+                                .findFirst().orElseThrow();
+                        RectF cap = paged.keys.get(arrow.keyIndex);
+                        tap(view, cap.centerX(), cap.centerY());
+                    }
+                }
+                assertEquals(List.of(0, 1, 2, 3, 4, 5, 6, 7), selected);
+                view.setPhoneticState(true, true, false, reading + "ㄚ");
+                assertTrue("Typing another symbol must return to the first candidate page",
+                        drawAtWidth(view, width).texts.stream().anyMatch(t -> t.value.equals(longChoices.get(0))));
+            }
+        });
+    }
+
     private static void assertStripInkFits(KeyCanvas canvas, int start, int count) {
         for (var text : canvas.texts) {
             if (text.keyIndex >= start && text.keyIndex < start + count) {
