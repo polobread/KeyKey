@@ -77,6 +77,205 @@ fn both_touch_layouts_show_nihao_live_and_select_into_the_smart_graph() {
     }
 }
 
+fn grid_session(layout: BopomofoLayout) -> InputSession {
+    let mut input = session(layout);
+    let options = SmartOptions {
+        max_completed_syllables: 12,
+        ..input.snapshot().smart_options
+    };
+    input
+        .apply(InputOperation::SetSmartOptions { options })
+        .unwrap();
+    input
+        .apply(InputOperation::SetTouchPhoneticGrid { enabled: true })
+        .unwrap();
+    input
+}
+
+#[test]
+fn grid_shows_converted_cells_and_reselects_one_without_discarding_the_raw_reading() {
+    for (layout, keys, raw, trailing_key) in [
+        (BopomofoLayout::HanyuPinyin, "nihao", "nihao", "n"),
+        (BopomofoLayout::Standard, "sucl", "ㄋㄧㄏㄠ", "s"),
+    ] {
+        let mut input = grid_session(layout);
+        let live = type_touch(&mut input, keys);
+        assert_eq!(live.reading, raw);
+        assert_eq!(live.phonetic_grid, ["你", "好"]);
+        assert!(live.displayed_candidates.is_empty());
+        assert!(live.composition.is_empty());
+
+        let opened = input
+            .apply(InputOperation::OpenCandidates { index: 0 })
+            .unwrap();
+        assert_eq!(opened.phonetic_grid_candidate_target, Some(0));
+        assert!(opened
+            .candidates
+            .iter()
+            .all(|word| word.chars().count() == 1));
+        let alternate = opened
+            .candidates
+            .iter()
+            .position(|word| word == "妳")
+            .unwrap();
+        let selected = input
+            .apply(InputOperation::Select { index: alternate })
+            .unwrap();
+        assert_eq!(selected.phonetic_grid, ["妳", "好"]);
+        assert_eq!(selected.reading, raw);
+        assert_eq!(selected.phonetic_grid_candidate_target, None);
+        assert!(selected.effects.commit.is_empty());
+
+        let continued = type_touch(&mut input, trailing_key);
+        assert!(continued.reading.starts_with(raw));
+        assert_eq!(continued.phonetic_grid, ["妳", "好"]);
+        let undone = key(&mut input, Key::Backspace);
+        assert_eq!(undone.reading, raw);
+        assert_eq!(undone.phonetic_grid, ["妳", "好"]);
+        let finished = key(&mut input, Key::Return);
+        assert_eq!(finished.effects.commit, "妳好");
+    }
+}
+
+#[test]
+fn grid_evicts_at_the_twelfth_syllable_without_losing_the_unselected_suffix() {
+    let mut input = grid_session(BopomofoLayout::HanyuPinyin);
+    let first_eleven = type_touch(&mut input, &("nihao".to_owned() + &"ni".repeat(9)));
+    assert_eq!(first_eleven.phonetic_grid.len(), 11);
+    assert!(first_eleven.effects.commit.is_empty());
+
+    let mut committed = String::new();
+    for letter in "ni".chars() {
+        let next = input
+            .apply(InputOperation::TouchPhonetic {
+                text: letter.to_string(),
+            })
+            .unwrap();
+        assert!(next.readings.len() + next.phonetic_grid.len() <= 11);
+        committed.push_str(&next.effects.commit);
+    }
+    assert_eq!(committed, "你好");
+    assert_eq!(input.snapshot().reading, "ni".repeat(10));
+    assert_eq!(input.snapshot().phonetic_grid.len(), 10);
+
+    let opened = input
+        .apply(InputOperation::OpenCandidates { index: 0 })
+        .unwrap();
+    let alternate = opened
+        .candidates
+        .iter()
+        .position(|word| word == "妳")
+        .unwrap();
+    let edited = input
+        .apply(InputOperation::Select { index: alternate })
+        .unwrap();
+    assert!(edited.effects.commit.is_empty());
+    assert_eq!(edited.phonetic_grid[0], "妳");
+    let suffix = edited.phonetic_grid.concat();
+    assert_eq!(key(&mut input, Key::Return).effects.commit, suffix);
+}
+
+#[test]
+fn grid_selection_preserves_neighboring_preview_and_return_text() {
+    for (layout, keys) in [
+        (BopomofoLayout::HanyuPinyin, "xinwen"),
+        (BopomofoLayout::Standard, "vupjp"),
+    ] {
+        let mut input = grid_session(layout);
+        let preview = type_touch(&mut input, keys);
+        assert_eq!(preview.phonetic_grid, ["新", "聞"]);
+        let opened = input
+            .apply(InputOperation::OpenCandidates { index: 0 })
+            .unwrap();
+        let replacement = opened
+            .displayed_candidates
+            .iter()
+            .position(|text| text == "心")
+            .unwrap();
+        let selected = input
+            .apply(InputOperation::Select { index: replacement })
+            .unwrap();
+        assert_eq!(selected.phonetic_grid, ["心", "聞"]);
+        assert_eq!(selected.reading, preview.reading);
+        assert!(selected.effects.commit.is_empty());
+        assert_eq!(key(&mut input, Key::Return).effects.commit, "心聞");
+    }
+}
+
+#[test]
+fn grid_keeps_eleven_six_letter_pinyin_syllables_before_shifting() {
+    let mut input = grid_session(BopomofoLayout::HanyuPinyin);
+    let initial = "zhuang".repeat(11);
+    let full = type_touch(&mut input, &initial);
+    assert_eq!(full.reading, initial);
+    assert_eq!(full.phonetic_grid.len(), 11);
+
+    let mut shifted = String::new();
+    for ch in "zhuang".chars() {
+        let next = input
+            .apply(InputOperation::TouchPhonetic {
+                text: ch.to_string(),
+            })
+            .unwrap();
+        assert!(next.readings.len() + next.phonetic_grid.len() <= 11);
+        shifted.push_str(&next.effects.commit);
+    }
+    assert!(!shifted.is_empty());
+    let remaining = input.snapshot();
+    assert_eq!(
+        remaining.reading,
+        "zhuang".repeat(12 - shifted.chars().count())
+    );
+    shifted.push_str(&key(&mut input, Key::Return).effects.commit);
+    assert_eq!(shifted.chars().count(), 12);
+}
+
+#[test]
+fn grid_waits_to_evict_an_ambiguous_pinyin_tail() {
+    let mut input = grid_session(BopomofoLayout::HanyuPinyin);
+    let prefix = "ni".repeat(10);
+    let intermediate = type_touch(&mut input, &(prefix.clone() + "yua"));
+    assert_eq!(intermediate.phonetic_grid.len(), 11);
+    assert_eq!(intermediate.reading, prefix.clone() + "yua");
+    let hidden = input
+        .apply(InputOperation::OpenCandidates { index: 11 })
+        .unwrap();
+    assert!(hidden.effects.beep);
+    assert!(hidden.phonetic_grid_candidate_target.is_none());
+    let completed = type_touch(&mut input, "n");
+    assert_eq!(completed.phonetic_grid.len(), 11);
+    assert_eq!(completed.reading, prefix + "yuan");
+    assert!(completed.effects.commit.is_empty());
+}
+
+#[test]
+fn grid_can_reselect_an_explicitly_toned_cell_while_the_tail_is_unfinished() {
+    let mut input = grid_session(BopomofoLayout::HanyuPinyin);
+    let live = type_touch(&mut input, "ni3haon");
+    assert_eq!(live.composition, "你");
+    assert_eq!(live.phonetic_grid, ["好"]);
+    assert_eq!(live.reading, "haon");
+    let opened = input
+        .apply(InputOperation::OpenCandidates { index: 0 })
+        .unwrap();
+    assert_eq!(opened.phonetic_grid_candidate_target, Some(0));
+    assert!(opened
+        .candidates
+        .iter()
+        .all(|word| word.chars().count() == 1));
+    let alternate = opened
+        .candidates
+        .iter()
+        .position(|word| word == "妳")
+        .unwrap();
+    let selected = input
+        .apply(InputOperation::Select { index: alternate })
+        .unwrap();
+    assert_eq!(selected.composition, "妳");
+    assert_eq!(selected.phonetic_grid, ["好"]);
+    assert_eq!(selected.reading, "haon");
+}
+
 #[test]
 fn explicit_tones_and_first_tone_space_still_complete_a_reading() {
     for (layout, keys, first) in [

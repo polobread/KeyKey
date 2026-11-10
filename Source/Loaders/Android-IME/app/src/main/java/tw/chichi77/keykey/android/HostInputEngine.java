@@ -116,7 +116,11 @@ final class HostInputEngine implements InputEngine {
     @Override public boolean isHardwareFullWidth() { return backend().isHardwareFullWidth(); }
     @Override public boolean isShowingAssociatedPhrases() { return backend().isShowingAssociatedPhrases(); }
     boolean hasPendingPhoneticReading() { return rust.hasPendingPhoneticReading(); }
-    boolean showsPhoneticSuggestions() { return rust.showsPhoneticSuggestions(); }
+    void setTouchPhoneticGrid(boolean enabled) {
+        update(engine -> rust.setTouchPhoneticGrid(enabled));
+    }
+    boolean touchPhoneticGridEnabled() { return rust.touchPhoneticGridEnabled(); }
+    boolean usesTouchPhoneticGrid() { return rust.usesTouchPhoneticGrid(); }
     boolean phoneticSpaceFirstTone() { return rust.phoneticSpaceFirstTone(); }
     @Override public boolean isShowingSmartCandidates() { return backend().isShowingSmartCandidates(); }
     @Override public InputEngine.Result finishCompositionForModeSwitch() { return perform(InputEngine::finishCompositionForModeSwitch); }

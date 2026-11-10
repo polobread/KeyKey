@@ -638,6 +638,23 @@ impl SmartGraph {
     /// Cover the reading at index, or collect nodes ending at index when
     /// cursor_at_end is enabled. Deduplicate text after longest-span ordering.
     pub fn candidates_at(&self, index: usize, cursor_at_end: bool) -> Vec<SmartCandidate> {
+        self.candidates_at_with_scope(index, cursor_at_end, false)
+    }
+
+    pub(crate) fn single_character_candidates_at(
+        &self,
+        index: usize,
+        cursor_at_end: bool,
+    ) -> Vec<SmartCandidate> {
+        self.candidates_at_with_scope(index, cursor_at_end, true)
+    }
+
+    fn candidates_at_with_scope(
+        &self,
+        index: usize,
+        cursor_at_end: bool,
+        single_character: bool,
+    ) -> Vec<SmartCandidate> {
         if index > self.len() || (!cursor_at_end && index == self.len()) {
             return Vec::new();
         }
@@ -648,6 +665,7 @@ impl SmartGraph {
             .filter(|node| {
                 node.start > 0
                     && node.end() <= self.len() + 1
+                    && (!single_character || node.span == 1)
                     && if cursor_at_end {
                         node.end() == at
                     } else {
@@ -660,7 +678,9 @@ impl SmartGraph {
         let mut result = Vec::new();
         for node in nodes {
             for row in &node.unigrams {
-                if seen.insert(row.current.clone()) {
+                if (!single_character || row.current.chars().count() == 1)
+                    && seen.insert(row.current.clone())
+                {
                     result.push(SmartCandidate {
                         start: node.start - 1,
                         span: node.span,

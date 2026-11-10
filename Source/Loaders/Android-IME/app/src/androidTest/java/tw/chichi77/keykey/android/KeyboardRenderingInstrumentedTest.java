@@ -971,100 +971,62 @@ public final class KeyboardRenderingInstrumentedTest {
         });
     }
 
-    @Test public void livePhoneticsFitAndKeepCandidateTouchesInOrderAtMinimumHeight() {
+    @Test public void phoneticGridKeepsOneFixedStripAndOnlyOpensCandidatesOnTap() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         instrumentation.runOnMainSync(() -> {
             var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
             view.setChineseInputMethod(ChineseInputMethod.SMART);
             view.setTouchKeyboardHeightPercents(50, 50);
             view.setKeyPreviewEnabled(false);
-            var selected = new ArrayList<Integer>();
+            var cells = new ArrayList<Integer>();
+            var candidates = new ArrayList<Integer>();
             view.setListener(new BopomofoKeyboardView.Listener() {
                 @Override public void onPress() {}
                 @Override public void onKey(String key) { fail("Unexpected key: " + key); }
-                @Override public void onCandidate(int index) { selected.add(index); }
-                @Override public void onSmartCell(int index) { fail("Unexpected composition selection"); }
+                @Override public void onCandidate(int index) { candidates.add(index); }
+                @Override public void onSmartCell(int index) { cells.add(index); }
                 @Override public void onPage(int delta) { fail("Unexpected page"); }
             });
-            String reading = "ㄋㄧㄏㄠㄨㄛㄇㄣㄑㄩㄋㄚㄌㄧㄨㄢㄋㄜ";
-            List<String> choices = List.of("你好", "我們一起去海邊", "再見", "晚安");
             float density = view.getResources().getDisplayMetrics().density;
             for (boolean split : new boolean[] {false, true}) {
                 view.setLayoutProfile(split ? KeyboardLayoutProfile.ALIGNED_SPLIT : KeyboardLayoutProfile.ALIGNED);
                 view.setMode(split ? BopomofoKeyboardView.Mode.LANDSCAPE : BopomofoKeyboardView.Mode.PORTRAIT);
                 int width = Math.round((split ? 540 : 320) * density);
-                String firstSymbol = "ㄋ";
-                view.setPhoneticState(false, true, false, firstSymbol);
-                view.setState(List.of(), firstSymbol, true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                view.setPhoneticState(true, false, false);
+                view.setState(List.of(), "", true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
                         false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
-                KeyCanvas pending = drawAtWidth(view, width);
-                var firstReading = pending.texts.stream().filter(t -> t.value.equals(firstSymbol))
-                        .findFirst().orElseThrow();
+                KeyCanvas idle = drawAtWidth(view, width);
                 var edges = view.visibleTouchEdges();
+                assertEquals(11, view.compositionCellCount());
+                var idleTone = idle.texts.stream().filter(t -> t.value.equals("ˇ")).findFirst().orElseThrow();
 
-                view.setPhoneticState(true, true, false, reading);
-                view.setState(choices, reading, true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                String reading = "ㄋㄧㄏㄠ";
+                List<String> converted = List.of("你", "好");
+                view.setPhoneticState(true, true, false);
+                view.setState(List.of(), reading, true, converted, converted.size(), InputEngine.InputMode.BOPOMOFO,
                         false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
                 KeyCanvas live = drawAtWidth(view, width);
                 assertEquals(edges, view.visibleTouchEdges());
-                var raw = live.texts.stream().filter(t -> t.value.equals(reading)).findFirst().orElseThrow();
-                float readingStart = raw.x - raw.advance / 2;
-                assertTrue("The reading starts near the left edge", readingStart >= 0 && readingStart <= 12 * density);
-                assertEquals("Long readings start at the same left edge as one symbol",
-                        firstReading.x - firstReading.advance / 2, readingStart, 1f);
-                var pendingTone = pending.texts.stream().filter(t -> t.value.equals("ˇ")).findFirst().orElseThrow();
-                var liveTone = live.texts.stream().filter(t -> t.value.equals("ˇ")).findFirst().orElseThrow();
-                assertEquals(pending.keys.get(pendingTone.keyIndex), live.keys.get(liveTone.keyIndex));
+                assertEquals(idle.keys, live.keys);
+                assertFalse(live.texts.stream().anyMatch(t -> t.value.equals(reading) || t.value.equals("你好")));
+                var cell = live.texts.stream().filter(t -> t.value.equals("好")).findFirst().orElseThrow();
+                RectF cap = live.keys.get(cell.keyIndex);
+                assertTrue(cap.bottom <= idle.keys.get(idleTone.keyIndex).top);
+                assertInside(cell, cap);
+                cells.clear();
+                tap(view, cap.centerX(), cap.centerY());
+                assertEquals(List.of(1), cells);
 
-                selected.clear();
-                var caps = new ArrayList<RectF>();
-                for (String choice : choices) {
-                    var text = live.texts.stream().filter(t -> t.value.equals(choice)).findFirst().orElseThrow();
-                    RectF cap = live.keys.get(text.keyIndex);
-                    assertInside(text, cap);
-                    assertTrue(raw.ink.bottom <= cap.top);
-                    assertTrue(cap.bottom <= live.keys.get(liveTone.keyIndex).top);
-                    caps.add(cap);
-                    tap(view, cap.centerX(), cap.centerY());
-                }
-                assertTrue("A long candidate should have more room than a short one",
-                        caps.get(1).width() > caps.get(0).width());
-                assertEquals(List.of(0, 1, 2, 3), selected);
-                if (split) {
-                    assertTrue(caps.stream().noneMatch(cap -> cap.left < width / 2f && cap.right > width / 2f));
-                    tap(view, width / 2f, caps.get(0).centerY());
-                    assertEquals(List.of(0, 1, 2, 3), selected);
-                }
-
-                List<String> longChoices = List.of("你好我們去哪裡玩呢", "你好我們要去哪玩呢",
-                        "你好我們要去哪裡玩", "你好我們去公園玩吧", "你好我們去動物園吧",
-                        "你好我們去海邊玩吧", "你好我們去圖書館吧", "你好我們一起去玩吧");
-                view.setState(longChoices, reading, true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
-                        false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
-                selected.clear();
-                for (int page = 0; selected.size() < longChoices.size() && page < longChoices.size(); page++) {
-                    KeyCanvas paged = drawAtWidth(view, width);
-                    int selectedBeforePage = selected.size();
-                    for (var text : paged.texts) {
-                        if (!longChoices.contains(text.value)) continue;
-                        RectF cap = paged.keys.get(text.keyIndex);
-                        assertInside(text, cap);
-                        assertTrue("Long candidates must remain legible", text.size >= 9 * density);
-                        tap(view, cap.centerX(), cap.centerY());
-                    }
-                    assertTrue("Each candidate page must offer a selectable word", selected.size() > selectedBeforePage);
-                    if (selected.size() < longChoices.size()) {
-                        var arrow = paged.texts.stream()
-                                .filter(t -> t.value.equals("▼") && t.y > raw.y && t.y < liveTone.y)
-                                .findFirst().orElseThrow();
-                        RectF cap = paged.keys.get(arrow.keyIndex);
-                        tap(view, cap.centerX(), cap.centerY());
-                    }
-                }
-                assertEquals(List.of(0, 1, 2, 3, 4, 5, 6, 7), selected);
-                view.setPhoneticState(true, true, false, reading + "ㄚ");
-                assertTrue("Typing another symbol must return to the first candidate page",
-                        drawAtWidth(view, width).texts.stream().anyMatch(t -> t.value.equals(longChoices.get(0))));
+                view.setState(List.of("好", "號"), reading, true, converted, converted.size(),
+                        InputEngine.InputMode.BOPOMOFO, false, false, false, false, 0, 1, 0, InputFieldPolicy.DEFAULT);
+                KeyCanvas overlay = drawAtWidth(view, width);
+                var choice = overlay.texts.stream().filter(t -> t.value.equals("號")).findFirst().orElseThrow();
+                RectF choiceCap = overlay.keys.get(choice.keyIndex);
+                assertTrue(choiceCap.top > cap.bottom);
+                assertInside(choice, choiceCap);
+                candidates.clear();
+                tap(view, choiceCap.centerX(), choiceCap.centerY());
+                assertEquals(List.of(1), candidates);
             }
         });
     }

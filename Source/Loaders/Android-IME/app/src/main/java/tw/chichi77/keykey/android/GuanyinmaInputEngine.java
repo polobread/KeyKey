@@ -24,7 +24,7 @@ final class GuanyinmaInputEngine implements InputEngine {
     private InputEngine.InputMode mode = InputEngine.InputMode.BOPOMOFO;
     private EnumSet<InputEngine.InputMode> allowedModes = EnumSet.allOf(InputEngine.InputMode.class);
     private boolean shifted, temporaryEnglish, hardwareFullWidth, hardwareSmartEditing, hardwareTouchSmartEditing;
-    private boolean useBigrams = true, spaceSelects;
+    private boolean useBigrams = true, spaceSelects, touchPhoneticGrid;
     private enum Overlay { NONE, SYMBOLS, ASSOCIATED }
     private Overlay overlay = Overlay.NONE;
     private List<String> overlayCandidates = List.of();
@@ -66,7 +66,8 @@ final class GuanyinmaInputEngine implements InputEngine {
     private JSONObject smartOptions() {
         return object("use_bigrams", useBigrams, "space_opens_candidates", spaceSelects,
             "candidate_cursor_at_end", false, "clear_composing_with_escape", false,
-            "shift_always_uppercase", false, "max_completed_syllables", 10,
+            "shift_always_uppercase", false,
+            "max_completed_syllables", touchPhoneticGrid && !hardwareSmartEditing ? 12 : 10,
             "shift_at_limit", !hardwareSmartEditing, "selection_returns_to_end", !hardwareSmartEditing,
             "candidate_selection_keys", "123456789");
     }
@@ -168,6 +169,9 @@ final class GuanyinmaInputEngine implements InputEngine {
             JSONObject state;
             try {
                 state = parseSnapshot(replacement.snapshot());
+                if (touchPhoneticGrid) {
+                    state = parseSnapshot(replacement.apply(touchPhoneticGridOperation(true).toString()));
+                }
                 if (mode != InputEngine.InputMode.BOPOMOFO) state = parseSnapshot(replacement.apply(object("type", "set_english", "enabled", true).toString()));
             } catch (RuntimeException | LinkageError error) { replacement.close(); throw error; }
             nativeSession.close(); nativeSession = replacement; snapshot = state; candidateFilter = filter; lastError = null;
@@ -180,6 +184,29 @@ final class GuanyinmaInputEngine implements InputEngine {
         if (lastError != null) spaceSelects = old;
     }
     @Override public boolean spaceSelectsCandidates() { return spaceSelects; }
+    void setTouchPhoneticGrid(boolean enabled) {
+        if (touchPhoneticGrid == enabled) return;
+        touchPhoneticGrid = enabled;
+        operate(object("type", "set_smart_options", "options", smartOptions()));
+        if (lastError != null) {
+            touchPhoneticGrid = !enabled;
+            return;
+        }
+        operate(touchPhoneticGridOperation(enabled));
+        if (lastError != null) {
+            String error = lastError;
+            touchPhoneticGrid = !enabled;
+            operate(object("type", "set_smart_options", "options", smartOptions()));
+            lastError = error;
+        }
+    }
+    private static JSONObject touchPhoneticGridOperation(boolean enabled) {
+        return object("type", "set_touch_phonetic_grid", "enabled", enabled);
+    }
+    boolean touchPhoneticGridEnabled() { return touchPhoneticGrid; }
+    boolean usesTouchPhoneticGrid() {
+        return touchPhoneticGrid && isTouchSmartComposition() && layout != BopomofoKeyboardLayout.HSU;
+    }
     @Override public void setUseBigrams(boolean enabled) {
         if (enabled == useBigrams) return;
         boolean old = useBigrams; useBigrams = enabled;
@@ -446,19 +473,39 @@ final class GuanyinmaInputEngine implements InputEngine {
                 for (int j = 0; j < span; ++j) { int start = j * points.length / span, end = (j + 1) * points.length / span; result.add(new String(points, start, end - start)); }
             }
         } catch (JSONException error) { throw new IllegalStateException("Invalid Guanyinma segments", error); }
+        if (usesTouchPhoneticGrid() && hasPendingPhoneticReading()) {
+            List<String> provisional = provisionalPhoneticCells();
+            int remaining = Math.max(0, cellCount - result.size());
+            result.addAll(provisional.subList(0, Math.min(remaining, provisional.size())));
+            return List.copyOf(result);
+        }
         text("reading").codePoints().forEach(point -> {
             String value = new String(Character.toChars(point));
             if (result.size() < cellCount) result.add(value); else result.set(cellCount - 1, result.get(cellCount - 1) + value);
         });
         return List.copyOf(result);
     }
-    @Override public int touchSmartEditableCount() { return array("readings").length(); }
+    private List<String> provisionalPhoneticCells() {
+        JSONArray cells = snapshot.optJSONArray("phonetic_grid");
+        return cells == null ? List.of() : strings(cells);
+    }
+    @Override public int touchSmartEditableCount() {
+        JSONArray provisional = snapshot.optJSONArray("phonetic_grid");
+        return array("readings").length() + (provisional == null ? 0 : provisional.length());
+    }
     @Override public boolean selectTouchSmartCell(int index) {
-        if (!isTouchSmartComposition() || index < 0 || index >= array("readings").length()) return false;
+        if (!isTouchSmartComposition() || index < 0 || index >= touchSmartEditableCount()) return false;
         try {
-            JSONArray spans = array("candidate_spans");
-            if (spans.length() > 0 && spans.getJSONObject(0).getInt("start") == index) operate(object("type", "close_candidates"));
-            else operate(object("type", "open_candidates", "index", index));
+            int openedIndex = snapshot.optInt("phonetic_grid_candidate_target", -1);
+            if (!usesTouchPhoneticGrid()) {
+                JSONArray spans = array("candidate_spans");
+                openedIndex = spans.length() == 0 ? -1 : spans.getJSONObject(0).getInt("start");
+            }
+            if (openedIndex == index) {
+                operate(object("type", "close_candidates"));
+            } else {
+                operate(object("type", "open_candidates", "index", index));
+            }
             return lastError == null;
         } catch (JSONException error) { lastError = diagnostic(error); return false; }
     }
@@ -499,6 +546,9 @@ final class GuanyinmaInputEngine implements InputEngine {
     @Override public InputEngine.Result finishCompositionForKeyboardHide() {
         boolean hadComposition = hasComposition();
         if (!hadComposition) { clearOverlay(); return InputEngine.Result.update(); }
+        if (usesTouchPhoneticGrid() && hasPendingPhoneticReading()) {
+            return keyboardHideResult(true, finishCompositionForInputHandoff());
+        }
         InputEngine.Result result = InputEngine.Result.update();
         if (chineseInputMethod() == ChineseInputMethod.SMART && !text("reading").isEmpty()) {
             result = mergeEffects(result, operate(object("type", "close_candidates")));
@@ -543,8 +593,7 @@ final class GuanyinmaInputEngine implements InputEngine {
 
     @Override public InputEngine.Result finishCompositionForInputHandoff() {
         if (hasPendingPhoneticReading()) {
-            // Smart touch hosts show raw phonetics only in the keyboard. On
-            // handoff preserve the completed graph, without inserting raw keys.
+            // Finish the usable Smart text and discard unresolved raw phonetics.
             InputEngine.Result result = operate(object("type", "finish_composition",
                     "complete_reading", false, "select_highlighted_candidate", false,
                     "discard_table_code", false));

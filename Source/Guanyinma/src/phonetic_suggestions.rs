@@ -19,6 +19,7 @@ const MAX_QUERIES_PER_START: usize = 256;
 pub(crate) struct PhoneticChunk {
     pub query: String,
     pub text: String,
+    pub syllable_ends: Vec<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -26,6 +27,86 @@ pub(crate) struct PhoneticSuggestion {
     pub text: String,
     pub chunks: Vec<PhoneticChunk>,
     pub consumed: usize,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct PhoneticSyllable {
+    pub start: usize,
+    pub end: usize,
+    pub query: String,
+    pub text: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct PhoneticChoice {
+    pub query: String,
+    pub text: String,
+}
+
+impl PhoneticSuggestion {
+    pub(crate) fn syllables(&self) -> Vec<PhoneticSyllable> {
+        let mut syllables = Vec::new();
+        let mut start = 0;
+        for chunk in &self.chunks {
+            let characters: Vec<_> = chunk.text.chars().collect();
+            let count = chunk.syllable_ends.len();
+            for (index, &end) in chunk.syllable_ends.iter().enumerate() {
+                let first = index * characters.len() / count;
+                let last = (index + 1) * characters.len() / count;
+                syllables.push(PhoneticSyllable {
+                    start,
+                    end,
+                    query: chunk.query[index * 2..index * 2 + 2].to_owned(),
+                    text: characters[first..last].iter().collect(),
+                });
+                start = end;
+            }
+        }
+        syllables
+    }
+
+    /// An unfinished Pinyin spelling can temporarily look like two syllables
+    /// (for example, `yua` as `yu` + `a`). Wait for enough keys to resolve
+    /// that tail before permanently shifting a word from a full grid.
+    pub(crate) fn may_merge_pinyin_tail(
+        &self,
+        raw: &str,
+        overflow: usize,
+        locks: &[PhoneticSyllable],
+    ) -> bool {
+        let last_lock_end = locks.iter().map(|lock| lock.end).max().unwrap_or(0);
+        let earliest_start = last_lock_end.max(raw.len().saturating_sub(MAX_SYLLABLE_KEYS - 1));
+        std::iter::once(0)
+            .chain(
+                self.chunks
+                    .iter()
+                    .flat_map(|chunk| chunk.syllable_ends.iter().copied()),
+            )
+            .rev()
+            .skip(overflow + 1)
+            .take_while(|&start| start >= earliest_start)
+            .any(|start| pinyin_syllable_can_extend(&raw[start..]))
+    }
+}
+
+fn pinyin_syllable_can_extend(tail: &str) -> bool {
+    if !tail.bytes().all(|key| key.is_ascii_lowercase()) {
+        return false;
+    }
+    let mut spelling = String::with_capacity(MAX_SYLLABLE_KEYS);
+    spelling.push_str(tail);
+    for key in b'a'..=b'z' {
+        spelling.push(char::from(key));
+        if phonetic_syllable(BopomofoLayout::HanyuPinyin, &spelling, false).is_some() {
+            return true;
+        }
+        spelling.pop();
+    }
+    if spelling.len() + 2 <= MAX_SYLLABLE_KEYS {
+        spelling.push_str("ng");
+        return phonetic_syllable(BopomofoLayout::HanyuPinyin, &spelling, false).is_some();
+    }
+    false
 }
 
 pub(crate) fn exact_toned_syllable(layout: BopomofoLayout, raw: &str) -> Option<String> {
@@ -93,6 +174,7 @@ struct WordLookup<'a> {
     custom_prefixes: HashSet<&'a str>,
     words: HashMap<String, Vec<(String, f64)>>,
     longer: HashMap<String, bool>,
+    word_limit: usize,
 }
 
 impl<'a> WordLookup<'a> {
@@ -101,6 +183,7 @@ impl<'a> WordLookup<'a> {
         user: &'a UserSnapshot,
         user_phrases: bool,
         filter: &'a CandidateFilter,
+        word_limit: usize,
     ) -> Result<Self, DatabaseError> {
         let mut lookup = Self {
             db,
@@ -110,6 +193,7 @@ impl<'a> WordLookup<'a> {
             custom_prefixes: HashSet::new(),
             words: HashMap::new(),
             longer: HashMap::new(),
+            word_limit,
         };
         if user_phrases {
             for row in user.phrases.iter().filter(|row| row.qstring.is_ascii()) {
@@ -160,7 +244,7 @@ impl<'a> WordLookup<'a> {
                 rows.sort_by(|left, right| right.1.total_cmp(&left.1));
                 let mut seen = HashSet::new();
                 rows.retain(|(text, _)| seen.insert(text.clone()));
-                rows.truncate(SUGGESTION_LIMIT);
+                rows.truncate(self.word_limit);
                 entry.insert(rows)
             }
         };
@@ -180,6 +264,45 @@ impl<'a> WordLookup<'a> {
     }
 }
 
+pub(crate) fn character_choices(
+    layout: BopomofoLayout,
+    raw: &str,
+    db: &ModelDatabase,
+    user: &UserSnapshot,
+    user_phrases: bool,
+    filter: &CandidateFilter,
+) -> Result<Vec<PhoneticChoice>, DatabaseError> {
+    if raw.is_empty() || !raw.is_ascii() {
+        return Ok(Vec::new());
+    }
+    let mut lookup = WordLookup::new(db, user, user_phrases, filter, usize::MAX)?;
+    let mut rows = Vec::new();
+    for edge in syllable_matches(layout, raw, 0) {
+        if edge.end != raw.len() {
+            continue;
+        }
+        for query in edge.queries {
+            for (text, score) in lookup.words(&query)? {
+                if text.chars().count() == 1 {
+                    rows.push((
+                        PhoneticChoice {
+                            query: query.clone(),
+                            text: text.clone(),
+                        },
+                        *score,
+                    ));
+                }
+            }
+        }
+    }
+    rows.sort_by(|left, right| right.1.total_cmp(&left.1));
+    let mut seen = HashSet::new();
+    Ok(rows
+        .into_iter()
+        .filter_map(|(choice, _)| seen.insert(choice.text.clone()).then_some(choice))
+        .collect())
+}
+
 /// Consider complete spellings and explicit tone constraints. The exact model
 /// keys travel with each suggestion so choosing it can reuse the Smart graph.
 /// Search only actual dictionary prefixes, with a bounded queue per position.
@@ -191,8 +314,28 @@ pub(crate) fn suggestions(
     user_phrases: bool,
     filter: &CandidateFilter,
 ) -> Result<Vec<PhoneticSuggestion>, DatabaseError> {
+    suggestions_with_choices(layout, raw, db, user, user_phrases, filter, &[])
+}
+
+pub(crate) fn suggestions_with_choices(
+    layout: BopomofoLayout,
+    raw: &str,
+    db: &ModelDatabase,
+    user: &UserSnapshot,
+    user_phrases: bool,
+    filter: &CandidateFilter,
+    choices: &[PhoneticSyllable],
+) -> Result<Vec<PhoneticSuggestion>, DatabaseError> {
     if raw.is_empty() || !raw.is_ascii() {
         return Ok(Vec::new());
+    }
+    if choices
+        .iter()
+        .any(|choice| choice.start >= choice.end || choice.end > raw.len())
+    {
+        return Err(DatabaseError::InvalidData(
+            "selected phonetic syllable is outside the pending reading".into(),
+        ));
     }
     let matches: Vec<_> = (0..raw.len())
         .map(|start| syllable_matches(layout, raw, start))
@@ -206,17 +349,40 @@ pub(crate) fn suggestions(
         },
         score: 0.0,
     });
-    let mut lookup = WordLookup::new(db, user, user_phrases, filter)?;
+    let mut lookup = WordLookup::new(db, user, user_phrases, filter, SUGGESTION_LIMIT)?;
 
     for start in 0..raw.len() {
         if paths[start].is_empty() {
             continue;
         }
         let heads = paths[start].clone();
-        let mut queue = VecDeque::from([(start, String::new())]);
+        let next_choice = choices
+            .iter()
+            .filter(|choice| choice.start >= start)
+            .min_by_key(|choice| choice.start);
+        if let Some(choice) = next_choice.filter(|choice| choice.start == start) {
+            let chunk = PhoneticChunk {
+                query: choice.query.clone(),
+                text: choice.text.clone(),
+                syllable_ends: vec![choice.end],
+            };
+            add_word(&heads, &mut paths[choice.end], &chunk, 0.0);
+            continue;
+        }
+
+        // Explicitly selected characters keep both their raw range and tone.
+        // Words on either side still use the usual dictionary search.
+        let stop = next_choice.map_or(raw.len(), |choice| choice.start);
+        let mut queue = VecDeque::from([(start, String::new(), [0; MAX_WORD_SYLLABLES])]);
         let mut seen = HashSet::new();
-        'words: while let Some((position, prefix)) = queue.pop_front() {
+        'words: while let Some((position, prefix, prefix_ends)) = queue.pop_front() {
             for edge in &matches[position] {
+                if edge.end > stop {
+                    continue;
+                }
+                let syllable_count = prefix.len() / 2 + 1;
+                let mut ends = prefix_ends;
+                ends[syllable_count - 1] = edge.end;
                 for syllable in &edge.queries {
                     let query = prefix.clone() + syllable;
                     if !seen.insert((edge.end, query.clone())) {
@@ -226,24 +392,19 @@ pub(crate) fn suggestions(
                         break 'words;
                     }
                     for (word, probability) in lookup.words(&query)? {
-                        for head in &heads {
-                            let mut path = head.clone();
-                            path.score += probability;
-                            path.suggestion.text.push_str(word);
-                            path.suggestion.chunks.push(PhoneticChunk {
-                                query: query.clone(),
-                                text: word.clone(),
-                            });
-                            path.suggestion.consumed = edge.end;
-                            keep_best(&mut paths[edge.end], path);
-                        }
+                        let chunk = PhoneticChunk {
+                            query: query.clone(),
+                            text: word.clone(),
+                            syllable_ends: ends[..syllable_count].to_vec(),
+                        };
+                        add_word(&heads, &mut paths[edge.end], &chunk, *probability);
                     }
-                    if edge.end < raw.len()
-                        && query.len() < MAX_WORD_SYLLABLES * 2
+                    if edge.end < stop
+                        && syllable_count < MAX_WORD_SYLLABLES
                         && !matches[edge.end].is_empty()
                         && lookup.has_longer(&query)?
                     {
-                        queue.push_back((edge.end, query));
+                        queue.push_back((edge.end, query, ends));
                     }
                 }
             }
@@ -260,6 +421,21 @@ pub(crate) fn suggestions(
         .into_iter()
         .map(|path| path.suggestion)
         .collect())
+}
+
+fn add_word(heads: &[Ranked], paths: &mut Vec<Ranked>, chunk: &PhoneticChunk, score: f64) {
+    let end = *chunk
+        .syllable_ends
+        .last()
+        .expect("a word has at least one syllable");
+    for head in heads {
+        let mut path = head.clone();
+        path.score += score;
+        path.suggestion.text.push_str(&chunk.text);
+        path.suggestion.chunks.push(chunk.clone());
+        path.suggestion.consumed = end;
+        keep_best(paths, path);
+    }
 }
 
 #[cfg(test)]
@@ -290,8 +466,75 @@ mod tests {
                 assert_eq!(best.text, "你好");
                 assert_eq!(best.consumed, raw.len());
                 assert_eq!(best.chunks.len(), 1);
+                let syllables = best.syllables();
+                assert_eq!(syllables.len(), 2);
+                assert_eq!((syllables[0].start, syllables[0].end), (0, 2));
+                assert_eq!((syllables[1].start, syllables[1].end), (2, raw.len()));
+                assert_eq!(
+                    (syllables[0].text.as_str(), syllables[1].text.as_str()),
+                    ("你", "好")
+                );
             }
         }
+    }
+
+    #[test]
+    fn a_selected_character_constrains_its_syllable_and_preserves_the_suffix() {
+        let db = ModelDatabase::open(crate::test_support::model_path()).unwrap();
+        let user = UserSnapshot::default();
+        let filter = CandidateFilter::default();
+        let layout = BopomofoLayout::HanyuPinyin;
+        let alternatives = character_choices(layout, "ni3", &db, &user, false, &filter).unwrap();
+        let query = exact_toned_syllable(layout, "ni3").unwrap();
+        assert!(alternatives.iter().all(|choice| choice.query == query));
+        let chosen = alternatives
+            .into_iter()
+            .find(|choice| choice.text == "妳")
+            .unwrap();
+        let locked = PhoneticSyllable {
+            start: 0,
+            end: 3,
+            query: chosen.query,
+            text: chosen.text,
+        };
+        let candidates = suggestions_with_choices(
+            layout,
+            "ni3haoh",
+            &db,
+            &user,
+            false,
+            &filter,
+            &[locked.clone()],
+        )
+        .unwrap();
+        assert_eq!(candidates[0].text, "妳好");
+        assert_eq!(candidates[0].consumed, "ni3hao".len());
+        assert!(candidates
+            .iter()
+            .all(|choice| choice.syllables().first() == Some(&locked)));
+    }
+
+    #[test]
+    fn a_pinyin_prefix_can_merge_a_temporary_overflow_without_crossing_a_choice() {
+        let layout = BopomofoLayout::HanyuPinyin;
+        for (prefix, complete) in [("yua", "yuan"), ("shuan", "shuang")] {
+            let raw = "ni".repeat(10) + prefix;
+            let candidates = model_suggestions(layout, &raw);
+            let best = &candidates[0];
+            let syllables = best.syllables();
+            assert_eq!(syllables.len(), 12);
+            assert!(best.may_merge_pinyin_tail(&raw, 1, &[]));
+            let last = syllables.last().unwrap();
+            assert!(!best.may_merge_pinyin_tail(&raw, 1, std::slice::from_ref(last)));
+            assert_eq!(
+                model_suggestions(layout, &("ni".repeat(10) + complete))[0]
+                    .syllables()
+                    .len(),
+                11
+            );
+        }
+        let raw = "ni".repeat(12);
+        assert!(!model_suggestions(layout, &raw)[0].may_merge_pinyin_tail(&raw, 1, &[]));
     }
 
     #[test]
