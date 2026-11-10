@@ -16,6 +16,16 @@ final class KeyboardViewController: UIInputViewController {
     private var keyboardView: KeyboardView?
     private var statusOverride: String?
     private var heightConstraint: NSLayoutConstraint?
+    private var keyboardOrientation = KeyboardLayoutProfile.Orientation.portrait
+    private let heightSettings = KeyboardHeightSettings()
+    private var heightEditor: KeyboardHeightEditor?
+    private var heightDraft: [KeyboardLayoutProfile.Orientation: KeyboardEdgeGeometry] = [:]
+    private struct HeightDrag {
+        let edge: KeyboardEdgeGeometry.Edge
+        let startY: CGFloat
+        let start: KeyboardEdgeGeometry
+    }
+    private var heightDrag: HeightDrag?
     private var phraseStore: AssociatedPhraseStore?
     private var guanyinmaPhraseData: SharedPhrasePublication?
     private var collections: [AssociatedPhraseStore.Collection] = []
@@ -111,6 +121,7 @@ final class KeyboardViewController: UIInputViewController {
             abandonDocumentComposition()
         }
         refreshAppSettings()
+        applyHeight(currentMetrics)
         updateFieldPolicy()
         refreshSystemKeyboardControls()
     }
@@ -118,8 +129,15 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if let orientation = view.window?.windowScene?.interfaceOrientation, orientation != .unknown {
-            keyboardView?.setLayoutOrientation(orientation.isLandscape ? .landscape : .portrait)
+            let next: KeyboardLayoutProfile.Orientation = orientation.isLandscape ? .landscape : .portrait
+            if keyboardOrientation != next {
+                keyboardOrientation = next
+                heightDrag = nil
+                keyboardView?.setLayoutOrientation(next)
+                applyHeight(currentMetrics)
+            }
         }
+        applyBottomGap(currentMetrics, geometry: keyboardGeometry)
         refreshSystemKeyboardControls()
         #if KEYKEY_TYPOGRAPHY_MEASUREMENT
         beginTypographyMeasurementIfRequested()
@@ -308,9 +326,30 @@ final class KeyboardViewController: UIInputViewController {
     /// The settings list needs more room than the keyboard, but landscape has
     /// none to give, so it only grows where there is height to spare.
     private func applyHeight(_ metrics: KeyboardMetrics) {
+        let geometry = keyboardGeometry
+        let requestedHeight = metrics.contentHeight * geometry.top
         let wantsTallPanel = settingsPanel != nil && !metrics.isCompactHeight
-        heightConstraint?.constant = wantsTallPanel
-            ? max(metrics.contentHeight, 360) : metrics.contentHeight
+        let targetHeight = CGFloat(wantsTallPanel ? max(requestedHeight, 360) : requestedHeight)
+        if heightConstraint?.constant != targetHeight {
+            heightConstraint?.constant = targetHeight
+        }
+        applyBottomGap(metrics, geometry: geometry)
+    }
+
+    private var keyboardGeometry: KeyboardEdgeGeometry {
+        heightDraft[keyboardOrientation] ?? heightSettings.geometry(for: keyboardOrientation)
+    }
+
+    private func applyBottomGap(_ metrics: KeyboardMetrics, geometry: KeyboardEdgeGeometry) {
+        guard let keyboardView else { return }
+        let safeArea = keyboardView.safeAreaLayoutGuide.layoutFrame
+        let insetHeight = keyboardView.safeAreaInsets.top + keyboardView.safeAreaInsets.bottom
+        // The host may enforce a smaller height than requested. Give usable
+        // keyboard rows precedence over the requested clearance in that host.
+        let minimumUsable = max(0, CGFloat(metrics.contentHeight * 0.75) - insetHeight)
+        let gap = min(CGFloat(geometry.bottom * metrics.contentHeight), max(0, safeArea.height - minimumUsable))
+        keyboardView.setBottomGap(gap)
+        heightEditor?.update(geometry: geometry, bottomGap: gap)
     }
 
     private var currentMetrics: KeyboardMetrics {
@@ -328,6 +367,7 @@ final class KeyboardViewController: UIInputViewController {
         resetInputState()
         settingsPanel?.removeFromSuperview()
         settingsPanel = nil
+        finishEditingKeyboardHeight(save: false)
     }
 
     override func textWillChange(_ textInput: UITextInput?) {
@@ -451,7 +491,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func showSettingsPanel() {
-        guard settingsPanel == nil, !collections.isEmpty else { return }
+        guard settingsPanel == nil, heightEditor == nil, !collections.isEmpty else { return }
         keyboardView?.cancelBackspaceRepeat()
         let panel = SettingsPanel(
             collections: collections, enabled: phraseSettings.enabledCollections,
@@ -475,6 +515,73 @@ final class KeyboardViewController: UIInputViewController {
             panel.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         settingsPanel = panel
+        applyHeight(currentMetrics)
+    }
+
+    private func beginEditingKeyboardHeight() {
+        guard heightEditor == nil else { return }
+        keyboardView?.cancelBackspaceRepeat()
+        let editor = KeyboardHeightEditor()
+        editor.onDrag = { [weak self] edge, state, y in
+            self?.dragKeyboardHeight(edge, state: state, y: y)
+        }
+        editor.onStep = { [weak self] edge, delta in
+            guard let self, heightDrag == nil else { return }
+            editKeyboardHeight(keyboardGeometry.moving(edge, by: delta))
+        }
+        editor.onReset = { [weak self] in
+            self?.heightDrag = nil
+            self?.editKeyboardHeight(KeyboardEdgeGeometry())
+        }
+        editor.onCancel = { [weak self] in self?.finishEditingKeyboardHeight(save: false) }
+        editor.onDone = { [weak self] in self?.finishEditingKeyboardHeight(save: true) }
+        editor.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(editor)
+        let safeArea = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            editor.topAnchor.constraint(equalTo: safeArea.topAnchor),
+            editor.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor),
+            editor.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
+            editor.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor)
+        ])
+        heightEditor = editor
+        applyHeight(currentMetrics)
+    }
+
+    private func dragKeyboardHeight(_ edge: KeyboardEdgeGeometry.Edge, state: UIGestureRecognizer.State, y: CGFloat) {
+        switch state {
+        case .began:
+            guard heightDrag == nil else { return }
+            heightDrag = HeightDrag(edge: edge, startY: y, start: keyboardGeometry)
+        case .changed, .ended:
+            guard let drag = heightDrag, drag.edge == edge else { return }
+            let delta = Double(drag.startY - y) / currentMetrics.contentHeight
+            editKeyboardHeight(drag.start.moving(edge, by: delta))
+            if state == .ended { heightDrag = nil }
+        case .cancelled, .failed:
+            if heightDrag?.edge == edge { heightDrag = nil }
+        default:
+            break
+        }
+    }
+
+    private func editKeyboardHeight(_ geometry: KeyboardEdgeGeometry) {
+        guard heightEditor != nil, geometry != keyboardGeometry else { return }
+        heightDraft[keyboardOrientation] = geometry
+        applyHeight(currentMetrics)
+    }
+
+    private func finishEditingKeyboardHeight(save: Bool) {
+        guard let heightEditor else { return }
+        if save {
+            for (orientation, geometry) in heightDraft {
+                heightSettings.setGeometry(geometry, for: orientation)
+            }
+        }
+        heightDraft.removeAll()
+        heightDrag = nil
+        heightEditor.removeFromSuperview()
+        self.heightEditor = nil
         applyHeight(currentMetrics)
     }
 
@@ -818,6 +925,13 @@ extension KeyboardViewController: SettingsPanelDelegate {
         if let engine { apply(engine.setChineseInputMethod(method)) }
         methodSettings.setMethod(method)
         refresh()
+    }
+
+    func settingsPanelDidRequestKeyboardHeight(_ panel: SettingsPanel) {
+        guard settingsPanel === panel else { return }
+        panel.removeFromSuperview()
+        settingsPanel = nil
+        beginEditingKeyboardHeight()
     }
 
     func settingsPanelDidClose(_ panel: SettingsPanel) {

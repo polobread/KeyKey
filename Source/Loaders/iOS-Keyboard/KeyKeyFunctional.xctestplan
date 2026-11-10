@@ -42,6 +42,7 @@
         "KeyKeyUITests/testHsuLayoutSettingsPersistAndKeyboardKeepsEnglishKeycaps()",
         "KeyKeyUITests/testInputFieldMatrixIsReachable()",
         "KeyKeyUITests/testKeyboardExtensionModesAndComposition()",
+        "KeyKeyUITests/testKeyboardHeightDragKeepsTheOtherEdgeAndSavesByOrientation()",
         "KeyKeyUITests/testManualSplitKeyboardPreservesCompositionAndPersists()",
         "KeyKeyUITests/testMultiCharacterAssociationsDoNotResizeKeyboard()",
         "KeyKeyUITests/testNativeGlyphSupportAndResetOnIOS()",

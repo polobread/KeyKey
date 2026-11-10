@@ -582,8 +582,6 @@ final class KeyboardView: UIView {
         let functionSplit = split != nil ? visible.firstIndex { $0.key == "SPACE" }.map { $0 + 1 } : nil
         functionRow.configure(visible.map(\.button), weights: weights, splitIndex: functionSplit,
                               spacing: layoutProfile.keySpacing)
-        // Align to the usable bottom edge, retaining the system's safe area.
-        bottomContentConstraint?.constant = -3
         for button in keyViews.flatMap({ $0.map(\.button) })
             + (functionButtons + punctuationButtons).compactMap({ $0.button as? KeyboardKeyButton }) {
             button.capArea = keycapArea
@@ -592,6 +590,12 @@ final class KeyboardView: UIView {
         }
         updateCandidateVisibility()
         setNeedsLayout()
+    }
+
+    func setBottomGap(_ gap: CGFloat) {
+        if bottomContentConstraint?.constant != -3 - gap {
+            bottomContentConstraint?.constant = -3 - gap
+        }
     }
 
     func setMetrics(_ metrics: KeyboardMetrics) {

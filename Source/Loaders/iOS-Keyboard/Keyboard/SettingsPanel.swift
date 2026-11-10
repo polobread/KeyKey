@@ -17,6 +17,7 @@ protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChangeFontSize size: KeyboardKeyFontSize)
     func settingsPanel(_ panel: SettingsPanel, didChangeDeleteShiftPosition position: KeyboardDeleteShiftPosition)
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool
+    func settingsPanelDidRequestKeyboardHeight(_ panel: SettingsPanel)
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
 
@@ -119,8 +120,10 @@ final class SettingsPanel: UIView {
         let scroll = UIScrollView()
         scroll.accessibilityIdentifier = "keyboard-settings.scroll"
         scroll.alwaysBounceVertical = true
+        let resize = bulkButton("鍵盤高度", #selector(keyboardHeightTapped))
+        resize.accessibilityIdentifier = "keyboard-settings.keyboard-height"
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
+            resize, compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
             candidateColorRow(), layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(), feedbackRow(),
             statusLabel, bulk, rows
@@ -158,6 +161,10 @@ final class SettingsPanel: UIView {
         let button = UIButton(configuration: configuration)
         button.addTarget(self, action: action, for: .touchUpInside)
         return button
+    }
+
+    @objc private func keyboardHeightTapped() {
+        delegate?.settingsPanelDidRequestKeyboardHeight(self)
     }
 
     @objc private func resetLearningTapped() {

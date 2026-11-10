@@ -56,6 +56,19 @@
     <string name="haptic_value_seconds">震動時間：%1$s 秒（%2$d ms）</string>
     <string name="keyboard_size_title">虛擬鍵盤高度</string>
     <string name="keyboard_size_description" formatted="false">直式與橫式可分別選擇 50%、75%、90%、100%、110%、125%、150%、175%、200%；只影響螢幕虛擬鍵盤，實體鍵盤候選字窗維持原尺寸。</string>
+    <string name="keyboard_resize_hint">在觸控鍵盤按「設」→「鍵盤高度」，可即時拖曳鍵盤上下緣。</string>
+    <string name="keyboard_resize_title">鍵盤高度</string>
+    <string name="keyboard_resize_open_settings">開啟設定</string>
+    <string name="keyboard_resize_top">拖曳鍵盤上緣</string>
+    <string name="keyboard_resize_top_label">拖曳上緣</string>
+    <string name="keyboard_resize_bottom">拖曳鍵盤下緣</string>
+    <string name="keyboard_resize_bottom_label">拖曳下緣</string>
+    <string name="keyboard_resize_bottom_up">往上拉下緣</string>
+    <string name="keyboard_resize_reset">恢復預設</string>
+    <string name="keyboard_resize_cancel">取消</string>
+    <string name="keyboard_resize_done">完成</string>
+    <string name="keyboard_resize_step_up">向上微調</string>
+    <string name="keyboard_resize_step_down">向下微調</string>
     <string name="keyboard_size_portrait">直式虛擬鍵盤</string>
     <string name="keyboard_size_landscape">橫式虛擬鍵盤</string>
     <string name="keyboard_size_value">目前高度：%1$d%%</string>

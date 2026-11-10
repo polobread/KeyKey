@@ -1364,6 +1364,81 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertEqual(output.value as? String, HeartSutraFixture.expectedText)
     }
 
+    func testKeyboardHeightDragKeepsTheOtherEdgeAndSavesByOrientation() throws {
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        launchHostApp()
+        XCTAssertTrue(revealField("default"))
+        tapInputField(field("default"))
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+        let portraitFrame = app.frame
+
+        let upper = app.descendants(matching: .any)["keyboard-height.top"]
+        let lower = app.descendants(matching: .any)["keyboard-height.bottom"]
+        let reset = app.buttons["keyboard-height.reset"]
+        let done = app.buttons["keyboard-height.done"]
+        let cancel = app.buttons["keyboard-height.cancel"]
+        func openHeightEditor() {
+            XCTAssertTrue(waitForStableKeyboardFrames(identifiers: ["SETTINGS", "ENTER"]))
+            app.buttons["SETTINGS"].tap()
+            let entry = app.buttons["keyboard-settings.keyboard-height"]
+            XCTAssertTrue(entry.waitForExistence(timeout: 3))
+            entry.tap()
+            XCTAssertTrue(waitForLayout { upper.isHittable && lower.isHittable })
+        }
+        func drag(_ handle: XCUIElement, by offset: CGFloat) {
+            let start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: offset)))
+        }
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
+        openHeightEditor()
+        let landscapeHeight = try XCTUnwrap(upper.value as? String)
+        let landscapeGap = try XCTUnwrap(lower.value as? String)
+        cancel.tap()
+
+        XCUIDevice.shared.orientation = .portrait
+        assertAppRotation(.portrait, relativeToPortrait: portraitFrame)
+        openHeightEditor()
+        reset.tap()
+        XCTAssertTrue(waitForLayout { upper.value as? String == "100%" && lower.value as? String == "貼齊" })
+        let flushTop = upper.frame.midY
+        let flushBottom = lower.frame.midY
+
+        drag(lower, by: 14)
+        XCTAssertEqual(lower.value as? String, "貼齊")
+        XCTAssertEqual(lower.frame.midY, flushBottom, accuracy: 2)
+
+        drag(upper, by: -36)
+        XCTAssertTrue(waitForLayout { upper.frame.midY < flushTop - 8 })
+        XCTAssertEqual(lower.frame.midY, flushBottom, accuracy: 2)
+        let raisedTop = upper.frame.midY
+
+        drag(lower, by: -28)
+        XCTAssertTrue(waitForLayout { lower.frame.midY < flushBottom - 8 })
+        XCTAssertEqual(upper.frame.midY, raisedTop, accuracy: 2)
+        let portraitHeight = try XCTUnwrap(upper.value as? String)
+        let portraitGap = try XCTUnwrap(lower.value as? String)
+        XCTAssertNotEqual(portraitGap, "貼齊")
+        done.tap()
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
+        openHeightEditor()
+        XCTAssertEqual(upper.value as? String, landscapeHeight)
+        XCTAssertEqual(lower.value as? String, landscapeGap)
+        cancel.tap()
+
+        XCUIDevice.shared.orientation = .portrait
+        assertAppRotation(.portrait, relativeToPortrait: portraitFrame)
+        openHeightEditor()
+        XCTAssertEqual(upper.value as? String, portraitHeight)
+        XCTAssertEqual(lower.value as? String, portraitGap)
+        reset.tap()
+        done.tap()
+    }
+
     func testKeyboardExtensionModesAndComposition() throws {
         launchHostApp()
         XCTAssertTrue(revealField("default"))

@@ -111,6 +111,8 @@ final class BopomofoKeyboardView extends View {
     private Mode lastMeasuredMode;
     private int lastDesiredContentHeight = -1;
     private int lastReservedHeight = -1;
+    private int lastDesiredBottomGap = -1;
+    private int measuredBottomGap;
     private int measuredHeightBudget;
     private Rect lastWindowBounds;
     private boolean touchBottomSpaceEnabled = true;
@@ -144,8 +146,9 @@ final class BopomofoKeyboardView extends View {
             new BackspaceRepeater(new Handler(Looper.getMainLooper()));
     private boolean keyPreviewEnabled = true;
     private Hit previewHit;
-    private int portraitHeightPercent = KeyboardSizeSettings.DEFAULT_PERCENT;
-    private int landscapeHeightPercent = KeyboardSizeSettings.DEFAULT_PERCENT;
+    private KeyboardSizeSettings.Size portraitSize = KeyboardSizeSettings.DEFAULT_SIZE;
+    private KeyboardSizeSettings.Size landscapeSize = KeyboardSizeSettings.DEFAULT_SIZE;
+    private KeyboardEdgeGeometry resizePreview;
 
     BopomofoKeyboardView(Context context) {
         super(context);
@@ -285,13 +288,51 @@ final class BopomofoKeyboardView extends View {
     }
 
     void setTouchKeyboardHeightPercents(int portraitPercent, int landscapePercent) {
-        int nextPortrait = KeyboardSizeSettings.clampPercent(portraitPercent);
-        int nextLandscape = KeyboardSizeSettings.clampPercent(landscapePercent);
-        if (portraitHeightPercent == nextPortrait
-                && landscapeHeightPercent == nextLandscape) return;
-        portraitHeightPercent = nextPortrait;
-        landscapeHeightPercent = nextLandscape;
+        setTouchKeyboardSizes(new KeyboardSizeSettings.Size(portraitPercent / 100f, portraitSize.bottomGapDp()),
+                new KeyboardSizeSettings.Size(landscapePercent / 100f, landscapeSize.bottomGapDp()));
+    }
+
+    void setTouchKeyboardSizes(KeyboardSizeSettings.Size portrait, KeyboardSizeSettings.Size landscape) {
+        if (portraitSize.equals(portrait) && landscapeSize.equals(landscape)) return;
+        portraitSize = portrait;
+        landscapeSize = landscape;
         if (isTouchMode()) requestLayout();
+    }
+
+    void setResizePreview(KeyboardEdgeGeometry edges) {
+        if (java.util.Objects.equals(resizePreview, edges)) return;
+        resizePreview = edges;
+        requestLayout();
+        invalidate();
+    }
+
+    Mode mode() {
+        return mode;
+    }
+
+    int defaultTouchHeight() {
+        return dp(layoutProfile.layout(touchOrientation()).contentHeightDp);
+    }
+
+    int minimumTouchHeight() {
+        return Math.round(defaultTouchHeight() * (KeyboardSizeSettings.MIN_PERCENT / 100f));
+    }
+
+    int maximumTouchHeight() {
+        return Math.round(defaultTouchHeight() * (KeyboardSizeSettings.MAX_PERCENT / 100f));
+    }
+
+    int maximumResizeExtent() {
+        int reserved = Math.max(reservedSystemAreaHeight(), systemAreaHeight());
+        // Keep space for the host field on compact screens.
+        return Math.max(visibleTouchEdges().top(), dp(getResources().getConfiguration().screenHeightDp)
+                - reserved - dp(56));
+    }
+
+    KeyboardEdgeGeometry visibleTouchEdges() {
+        int visibleContent = Math.round(contentHeight());
+        int gap = Math.min(measuredBottomGap, Math.max(0, getHeight() - systemAreaHeight() - visibleContent));
+        return new KeyboardEdgeGeometry(visibleContent + gap, gap);
     }
 
     void setState(List<String> candidates, String reading, boolean smartMode,
@@ -355,11 +396,18 @@ final class BopomofoKeyboardView extends View {
             case HARDWARE_FLOATING -> dp(showGlobe ? HARDWARE_CONTENT_HEIGHT_DP : 1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
                     + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
-            case LANDSCAPE -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.LANDSCAPE).contentHeightDp,
-                    landscapeHeightPercent);
-            case PORTRAIT -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.PORTRAIT).contentHeightDp,
-                    portraitHeightPercent);
+            case LANDSCAPE -> Math.round(defaultTouchHeight() * landscapeSize.heightScale());
+            case PORTRAIT -> Math.round(defaultTouchHeight() * portraitSize.heightScale());
         };
+        int desiredBottomGap = 0;
+        if (isTouchMode()) {
+            KeyboardSizeSettings.Size size = mode == Mode.LANDSCAPE ? landscapeSize : portraitSize;
+            desiredBottomGap = dp(size.bottomGapDp());
+            if (resizePreview != null) {
+                desiredContentHeight = resizePreview.contentHeight();
+                desiredBottomGap = resizePreview.bottom();
+            }
+        }
         // Budget the reserved area before clamping the keyboard content, even
         // when that area is disabled. Otherwise a capped IME keeps its height
         // and gives the removed padding to the keys instead of the host app.
@@ -377,27 +425,34 @@ final class BopomofoKeyboardView extends View {
                 && mode == lastMeasuredMode
                 && desiredContentHeight == lastDesiredContentHeight
                 && reservedHeight == lastReservedHeight
+                && desiredBottomGap == lastDesiredBottomGap
                 && (windowBounds == null ? lastWindowBounds == null : windowBounds.equals(lastWindowBounds));
         if (!withinRequestedWindow) {
-            measuredHeightBudget = resolveSize(desiredContentHeight + reservedHeight, heightMeasureSpec);
-            measuredContentHeight = Math.min(desiredContentHeight,
-                    Math.max(0, measuredHeightBudget - reservedHeight));
+            measuredHeightBudget = resolveSize(desiredContentHeight + desiredBottomGap + reservedHeight,
+                    heightMeasureSpec);
+            int availableHeight = Math.max(0, measuredHeightBudget - reservedHeight);
+            // A small host window may require reducing the optional gap before shrinking the keys.
+            int minimumContent = isTouchMode() ? Math.min(desiredContentHeight, minimumTouchHeight()) : 0;
+            measuredBottomGap = Math.min(desiredBottomGap, Math.max(0, availableHeight - minimumContent));
+            measuredContentHeight = Math.min(desiredContentHeight, availableHeight - measuredBottomGap);
         }
         // Keep the content through old-window feedback, while obeying the
         // current parent spec. A WRAP_CONTENT root layout restores the total
         // height when it measures again against its upstream window budget.
         int desiredHeight = resolveSize(Math.min(measuredHeightBudget,
-                measuredContentHeight + systemAreaHeight), heightMeasureSpec);
+                measuredContentHeight + measuredBottomGap + systemAreaHeight), heightMeasureSpec);
         setMeasuredDimension(resolveSize(width, widthMeasureSpec), desiredHeight);
         lastMeasuredMode = mode;
         lastDesiredContentHeight = desiredContentHeight;
         lastReservedHeight = reservedHeight;
+        lastDesiredBottomGap = desiredBottomGap;
         lastWindowBounds = windowBounds == null ? null : new Rect(windowBounds);
     }
 
     int cappedIntegratedWindowHeight() {
         return isTouchMode() && integratedBottomControls
-                && measuredContentHeight < lastDesiredContentHeight ? measuredHeightBudget : 0;
+                && (measuredContentHeight < lastDesiredContentHeight || measuredBottomGap < lastDesiredBottomGap)
+                ? measuredHeightBudget : 0;
     }
 
     @Override
@@ -1297,7 +1352,7 @@ final class BopomofoKeyboardView extends View {
                 && hit.kind() == HitKind.KEY && !previewLabel(hit.key()).isEmpty();
     }
 
-    private boolean isTouchMode() {
+    boolean isTouchMode() {
         return mode == Mode.PORTRAIT || mode == Mode.LANDSCAPE;
     }
 
@@ -1378,10 +1433,11 @@ final class BopomofoKeyboardView extends View {
     }
 
     private float contentHeight() {
-        if (isTouchMode() && integratedBottomControls) {
+        if (isTouchMode() && (integratedBottomControls || measuredBottomGap > 0 || resizePreview != null)) {
             // The old allocated window can cap a transient pass before the new
             // WRAP_CONTENT budget arrives. Drawing and hits must still stay safe.
-            return Math.min(measuredContentHeight, Math.max(0, getHeight() - systemAreaHeight()));
+            return Math.min(measuredContentHeight,
+                    Math.max(0, getHeight() - systemAreaHeight() - measuredBottomGap));
         }
         return measuredContentHeight;
     }
@@ -1408,7 +1464,4 @@ final class BopomofoKeyboardView extends View {
                 : HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
     }
 
-    private int scaledContentHeight(int baseDp, int percent) {
-        return Math.round(dp(baseDp) * (percent / 100f));
-    }
 }

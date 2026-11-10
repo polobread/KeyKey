@@ -311,6 +311,12 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         keyboardSizeDescription.setLineSpacing(0, 1.2f);
         appearanceContent.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
 
+        TextView resizeHint = new TextView(this);
+        resizeHint.setText(R.string.keyboard_resize_hint);
+        resizeHint.setTextSize(14);
+        resizeHint.setTextColor(Color.DKGRAY);
+        appearanceContent.addView(resizeHint, matchWrap(dp(0), dp(8)));
+
         addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_portrait,
                 KeyboardSizeSettings.portraitPercent(this), true);
         addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_landscape,

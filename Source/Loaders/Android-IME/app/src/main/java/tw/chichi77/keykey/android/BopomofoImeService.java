@@ -35,6 +35,8 @@ public final class BopomofoImeService extends InputMethodService
     private String lastReportedCoreError;
     private boolean hostTransactionFailed;
     private BopomofoKeyboardView keyboardView;
+    private KeyboardInputView keyboardInputView;
+    private boolean pressedSizeControlsBack;
     private FloatingCandidateWindow floatingCandidateWindow;
     private Vibrator vibrator;
     private Set<String> loadedPhraseCollections;
@@ -138,8 +140,10 @@ public final class BopomofoImeService extends InputMethodService
         // InputMethodService recreates this view during configuration changes.
         // Dispose the previous window before replacing its only owner reference.
         hideFloatingCandidates();
+        dismissKeyboardSizeControls();
         keyboardView = new BopomofoKeyboardView(this);
         keyboardView.setListener(this);
+        keyboardInputView = new KeyboardInputView(this, keyboardView);
         keyboardView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
             @Override public void onViewAttachedToWindow(View view) {
                 if (view == keyboardView) updateKeyboardBottomControls();
@@ -159,7 +163,7 @@ public final class BopomofoImeService extends InputMethodService
         updateKeyboardMode();
         requestCursorAnchorUpdates();
         refreshKeyboard();
-        return new KeyboardInputView(this, keyboardView);
+        return keyboardInputView;
     }
 
     @Override
@@ -189,7 +193,10 @@ public final class BopomofoImeService extends InputMethodService
         super.onStartInput(attribute, restarting);
         if (engine == null) openEngine();
         stopHardwareBackspace();
-        if (!restarting) fieldPolicyUnlocked = false;
+        if (!restarting) {
+            fieldPolicyUnlocked = false;
+            dismissKeyboardSizeControls();
+        }
         resetCursorAnchor();
         lastSelectionStart = attribute == null ? -1 : attribute.initialSelStart;
         lastSelectionEnd = attribute == null ? -1 : attribute.initialSelEnd;
@@ -278,6 +285,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onFinishInput() {
+        dismissKeyboardSizeControls();
         stopHardwareBackspace();
         commitPendingComposition();
         if (engine != null) abandonHostEffects();
@@ -300,12 +308,14 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onFinishInputView(boolean finishingInput) {
+        dismissKeyboardSizeControls();
         commitPendingComposition();
         super.onFinishInputView(finishingInput);
     }
 
     @Override
     public void onWindowHidden() {
+        dismissKeyboardSizeControls();
         stopHardwareBackspace();
         commitPendingComposition();
         hideFloatingCandidates();
@@ -382,6 +392,7 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        dismissKeyboardSizeControls();
         hideFloatingCandidates();
         resetCursorAnchor();
         rebuildingForConfiguration = true;
@@ -572,10 +583,11 @@ public final class BopomofoImeService extends InputMethodService
             return;
         }
         if (key.equals("SETTINGS")) {
-            apply(engine.finishCompositionForModeSwitch());
-            Intent intent = new Intent(this, SettingsActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+            if (keyboardInputView != null && keyboardView.isTouchMode()) {
+                keyboardInputView.showSettingsMenu(this::openKeyboardSettings);
+            } else {
+                openKeyboardSettings();
+            }
             return;
         }
         if (key.equals("HARDWARE_LANGUAGE")) {
@@ -595,6 +607,18 @@ public final class BopomofoImeService extends InputMethodService
         if (!fieldPolicy.isKeyEnabled(key, engine.inputMode(), engine.isShifted())) return;
         useTableKeyboard(!hardwareKeyboard);
         apply(engine.handleSoftKey(key), key.equals("ENTER"));
+    }
+
+    private void openKeyboardSettings() {
+        if (engine == null || hostTransactionFailed) return;
+        apply(engine.finishCompositionForModeSwitch());
+        Intent intent = new Intent(this, SettingsActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+    private void dismissKeyboardSizeControls() {
+        if (keyboardInputView != null) keyboardInputView.cancelResize();
     }
 
     @Override
@@ -627,6 +651,14 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (event.getRepeatCount() == 0) {
+                pressedSizeControlsBack = keyboardInputView != null && keyboardInputView.hasSizeControls();
+            }
+            if (pressedSizeControlsBack) return true;
+        } else {
+            dismissKeyboardSizeControls();
+        }
         if (event.getRepeatCount() == 0 && (keyCode == KeyEvent.KEYCODE_ENTER
                 || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER)) {
             // The previous Up can be lost when switching input methods. A new
@@ -781,6 +813,11 @@ public final class BopomofoImeService extends InputMethodService
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && pressedSizeControlsBack) {
+            pressedSizeControlsBack = false;
+            if (!event.isCanceled()) dismissKeyboardSizeControls();
+            return true;
+        }
         if (pressedEnterKeys.remove(keyCode)) {
             pressedCandidateKeys.remove(keyCode);
             return true;
@@ -1091,9 +1128,9 @@ public final class BopomofoImeService extends InputMethodService
 
     private void updateKeyboardSize() {
         if (keyboardView == null) return;
-        keyboardView.setTouchKeyboardHeightPercents(
-                KeyboardSizeSettings.portraitPercent(this),
-                KeyboardSizeSettings.landscapePercent(this));
+        keyboardView.setTouchKeyboardSizes(
+                KeyboardSizeSettings.size(this, false),
+                KeyboardSizeSettings.size(this, true));
     }
 
     private void updateKeyboardBottomSpace() {
@@ -1204,15 +1241,17 @@ public final class BopomofoImeService extends InputMethodService
         updateKeyboardBottomSpace();
         keyboardView.setHardwareSmartTwoRowsEnabled(hardwareSmartTwoRows);
         keyboardView.setHardwareNumberRowEnabled(CandidateWindowSettings.numberRowEnabled(this));
+        BopomofoKeyboardView.Mode nextMode;
         if (hardwareKeyboard) {
-            keyboardView.setMode(isFloatingCandidateMode()
+            nextMode = isFloatingCandidateMode()
                     ? BopomofoKeyboardView.Mode.HARDWARE_FLOATING
-                    : BopomofoKeyboardView.Mode.HARDWARE);
-        } else if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            keyboardView.setMode(BopomofoKeyboardView.Mode.LANDSCAPE);
+                    : BopomofoKeyboardView.Mode.HARDWARE;
         } else {
-            keyboardView.setMode(BopomofoKeyboardView.Mode.PORTRAIT);
+            nextMode = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                    ? BopomofoKeyboardView.Mode.LANDSCAPE : BopomofoKeyboardView.Mode.PORTRAIT;
         }
+        if (keyboardView.mode() != nextMode) dismissKeyboardSizeControls();
+        keyboardView.setMode(nextMode);
         if (!isFloatingCandidateMode()) hideFloatingCandidates();
         updateKeyboardBottomControls();
     }
