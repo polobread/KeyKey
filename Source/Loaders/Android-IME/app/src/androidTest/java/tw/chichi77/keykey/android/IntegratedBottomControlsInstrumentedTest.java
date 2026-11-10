@@ -7,6 +7,8 @@ import android.app.Activity;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -578,6 +580,97 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 if (previous.get(key) instanceof String value) edit.putString(key, value);
             }
             edit.commit();
+        }
+    }
+
+    @Test public void touchPinyinTypesSmartAndTraditionalInTheHost() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        Map<String, ?> previous = preferences.getAll();
+        String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED, KeyboardLayoutProfileSettings.KEY_LAYOUT,
+                ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
+                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION};
+        Activity activity = null;
+        try {
+            preferences.edit().putBoolean(keys[0], false)
+                    .putString(keys[1], KeyboardLayoutProfile.ALIGNED.id)
+                    .putString(keys[2], ChineseInputMethod.SMART.name())
+                    .putString(keys[3], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putString(keys[4], BopomofoKeyboardLayout.HANYU_PINYIN.value)
+                    .putString(keys[5], KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER.id).commit();
+            activity = instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity host = activity;
+            instrumentation.runOnMainSync(() ->
+                    host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
+            await(() -> host.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT);
+            EditText editor = findEditor(host.findViewById(android.R.id.content));
+            assertNotNull(editor);
+            instrumentation.runOnMainSync(() -> editor.setText(""));
+            showEditorKeyboard(host, context);
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                assertFalse("The Pinyin keyboard must show letters rather than Zhuyin caps", labels(view).contains("ㄅ"));
+                tapDrawnKey(view, "n");
+                tapDrawnKey(view, "i");
+                assertEquals("ni", String.join("", stripLabels(view)));
+                tapDrawnKey(view, "⌫");
+                assertEquals("n", String.join("", stripLabels(view)));
+                assertEquals("", editor.getText().toString());
+                for (char key : "i3hao3".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+            });
+            assertPinyinHostText(editor, "你好");
+
+            // Let the original Smart composition finish before rotating the
+            // host. Wait for the landscape editor's connection before typing.
+            instrumentation.runOnMainSync(() ->
+                    ChineseInputMethodSettings.setMethod(context, ChineseInputMethod.TRADITIONAL));
+            await(() -> labels(findKeyboard()).contains("漢語拼音"));
+            instrumentation.runOnMainSync(() ->
+                    host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));
+            await(() -> host.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
+            showEditorKeyboard(host, context);
+            await(() -> findKeyboard().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE
+                    && labels(findKeyboard()).contains("漢語拼音"));
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "zhong".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+            });
+            assertPinyinHostText(editor, "你好zhong");
+            instrumentation.runOnMainSync(() -> tapDrawnKey(findKeyboard(), "一聲"));
+            await(() -> labels(findKeyboard()).contains("中"));
+            instrumentation.runOnMainSync(() -> tapDrawnKey(findKeyboard(), "中"));
+            assertPinyinHostText(editor, "你好中");
+        } finally {
+            if (activity != null) {
+                Activity host = activity;
+                instrumentation.runOnMainSync(host::finish);
+            }
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key);
+                if (previous.get(key) instanceof Boolean value) edit.putBoolean(key, value);
+                else if (previous.get(key) instanceof String value) edit.putString(key, value);
+            }
+            edit.commit();
+        }
+    }
+
+    private static void assertPinyinHostText(EditText editor, String expected) throws Exception {
+        String[] actual = {""};
+        try {
+            await(() -> {
+                actual[0] = editor.getText().toString();
+                return expected.equals(actual[0]);
+            });
+        } catch (AssertionError timeout) {
+            throw new AssertionError("Expected Pinyin host text [" + expected
+                    + "], got [" + actual[0] + "]", timeout);
         }
     }
 

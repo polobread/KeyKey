@@ -25,9 +25,10 @@ struct GuanyinmaIntegrationTests {
         }
         deinit { try? FileManager.default.removeItem(at: directory) }
         func engine(method: ChineseInputMethod = .smart, hardware: Bool = false,
+                    layout: BopomofoKeyboardLayout = .standard,
                     filter: @escaping (String) -> Bool = { _ in true }) throws -> GuanyinmaInputEngine {
             try GuanyinmaInputEngine(modelURL: model, userDatabaseURL: user, method: method,
-                                    hardwareSmartEditing: hardware, candidateFilter: filter)
+                                    hardwareSmartEditing: hardware, keyboardLayout: layout, candidateFilter: filter)
         }
         func facade(modelURL: URL? = nil) throws -> KeyboardInputEngine {
             try KeyboardInputEngine(modelURL: modelURL ?? model, userDatabaseURL: user)
@@ -77,6 +78,26 @@ struct GuanyinmaIntegrationTests {
         #expect(!engine.hasComposition)
         #expect(engine.finishCompositionForInputHandoff().text.isEmpty)
         #expect(engine.backspace().deletesBackward)
+    }
+
+    @Test func hanyuPinyinReusesTheNativeTouchAndHardwareInputPaths() throws {
+        let fixture = try Fixture()
+        let smart = try fixture.engine()
+        _ = smart.setKeyboardLayout(.hanyuPinyin)
+        type("ni", in: smart)
+        #expect(smart.readingText == "ni")
+        _ = smart.handleSoftKey("BACKSPACE")
+        #expect(smart.readingText == "n")
+        type("i3hao3", in: smart)
+        #expect(smart.completedSmartText == "你好")
+        #expect(smart.enter().text == "你好")
+
+        let traditional = try fixture.engine(method: .traditional, hardware: true, layout: .hanyuPinyin)
+        type("zhong", in: traditional, hardware: true)
+        #expect(traditional.readingText == "zhong")
+        _ = traditional.space()
+        let middle = try #require(traditional.displayedCandidates.firstIndex(of: "中"))
+        #expect(traditional.selectDisplayedCandidate(middle).text == "中")
     }
 
     @Test func keyboardDismissalKeepsConvertedSmartTextAndDropsPendingReadingOnce() throws {

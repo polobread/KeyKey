@@ -96,12 +96,15 @@ public enum KeyboardLayout {
         temporaryEnglish: Bool,
         layout: BopomofoKeyboardLayout = .standard
     ) -> String {
-        if !reading.isEmpty { return "\(reading)\u{3000}按空白選字" }
+        if !reading.isEmpty {
+            if mode == .bopomofo, layout == .hanyuPinyin { return "\(reading)\u{3000}空白一聲" }
+            return "\(reading)\u{3000}按空白選字"
+        }
         if temporaryEnglish { return "暫時英文小寫" }
         switch mode {
         case .english: return shifted ? "英文大寫" : "英文小寫"
         case .number: return shifted ? "數字與符號（二）" : "數字與符號（一）"
-        case .bopomofo: return layout == .hsu ? "許氏鍵盤" : "標準注音"
+        case .bopomofo: return layout == .standard ? "標準注音" : layout.displayName
         }
     }
 }

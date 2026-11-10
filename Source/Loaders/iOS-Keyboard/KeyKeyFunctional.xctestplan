@@ -32,6 +32,7 @@
         "KeyKeyUITests/testRepresentativeLayoutOptionsKeepKeysReachableWhenRotating()",
         "KeyKeyUITests/testLayoutOptionsKeepReadingAndCandidates()",
         "KeyKeyUITests/testSettingsLongPressDoesNotOpenLayoutMenu()",
+        "KeyKeyUITests/testHanyuPinyinTouchKeyboardUsesExistingComposition()",
         "KeyKeyUITests/testHardwareEditorForwardDeleteKeepsCompositionAndRemovesLastReading()",
         "KeyKeyUITests/testHardwareEditorForwardDeleteRemovesCommittedGraphemes()",
         "KeyKeyUITests/testHardwareEditorRightHandSelectionSurvivesRotationAndRefocus()",

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="bopomofo_keyboard_layout">注音鍵盤</string>
-    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準；選許氏鍵盤時，虛擬鍵盤維持英文鍵帽。</string>
+    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準。許氏與漢語拼音使用英文鍵帽；拼音每個音節以空白（一聲）或 2–5（二聲、三聲、四聲、輕聲）結束，ü 用 v。</string>
     <string-array name="bopomofo_keyboard_layouts">
         <item>標準</item>
         <item>許氏鍵盤</item>
+        <item>漢語拼音</item>
     </string-array>
     <string name="app_name">琦琦輸入法</string>
     <string name="ime_name">@string/app_name</string>

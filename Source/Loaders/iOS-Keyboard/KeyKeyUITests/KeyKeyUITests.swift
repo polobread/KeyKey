@@ -244,6 +244,59 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
     }
 
+    func testHanyuPinyinTouchKeyboardUsesExistingComposition() throws {
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        launchHostApp()
+        let portraitFrame = app.frame
+        XCTAssertTrue(revealField("default"))
+        let output = field("default")
+        tapInputField(output)
+        XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
+
+        let settings = app.buttons["SETTINGS"]
+        let layout = app.segmentedControls["bopomofo-keyboard-layout"]
+        let method = app.segmentedControls["bopomofo-composition-mode"]
+        let closeSettings = app.windows.containing(.scrollView, identifier: "keyboard-settings.scroll")
+            .firstMatch.buttons["完成"]
+        addTeardownBlock { [weak self] in
+            guard let self else { return }
+            if !settings.isHittable { self.tapInputField(output) }
+            guard settings.waitForExistence(timeout: 2) else { return }
+            settings.tap()
+            if layout.buttons["標準"].isHittable { layout.buttons["標準"].tap() }
+            if method.buttons["好打注音"].isHittable { method.buttons["好打注音"].tap() }
+            if closeSettings.isHittable { closeSettings.tap() }
+        }
+
+        settings.tap()
+        XCTAssertTrue(layout.buttons["漢語拼音"].waitForExistence(timeout: 3))
+        layout.buttons["漢語拼音"].tap()
+        method.buttons["傳統注音"].tap()
+        closeSettings.tap()
+        XCTAssertEqual(app.buttons["z"].label, "z")
+        for key in "zhong" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout { output.value as? String == "zhong" })
+        app.buttons["BACKSPACE"].tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "zhon" })
+        app.buttons["g"].tap()
+        app.buttons["SPACE"].tap()
+        let middle = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "候選，中")).firstMatch
+        XCTAssertTrue(middle.waitForExistence(timeout: 3))
+        middle.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "中" })
+
+        try selectCompositionMode("好打注音")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
+        XCTAssertTrue(waitForLayout { self.app.buttons["n"].isHittable })
+        XCTAssertEqual(app.buttons["n"].label, "n")
+        for key in "ni3hao3" { app.buttons[String(key)].tap() }
+        XCTAssertTrue(waitForLayout { output.value as? String == "中你好" })
+        app.buttons["ENTER"].tap()
+        XCTAssertEqual(output.value as? String, "中你好")
+    }
+
     func testUserPhraseManagerOpensAndCreatesPhrase() {
         app = XCUIApplication()
         app.launch()

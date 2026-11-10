@@ -162,13 +162,12 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 R.array.bopomofo_keyboard_layouts, android.R.layout.simple_spinner_item);
         keyboardLayoutAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         keyboardLayout.setAdapter(keyboardLayoutAdapter);
-        keyboardLayout.setSelection(BopomofoKeyboardLayoutSettings.layout(this)
-                == BopomofoKeyboardLayout.HSU ? 1 : 0);
+        keyboardLayout.setSelection(BopomofoKeyboardLayoutSettings.layout(this).ordinal());
         keyboardLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent,
                     android.view.View view, int position, long id) {
                 BopomofoKeyboardLayoutSettings.setLayout(SettingsActivity.this,
-                        position == 1 ? BopomofoKeyboardLayout.HSU : BopomofoKeyboardLayout.STANDARD);
+                        BopomofoKeyboardLayout.values()[position]);
                 updateCompositionSummary(compositionGroup.summary);
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
@@ -795,7 +794,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
 
     private void updateCompositionSummary(TextView view) {
         String layout = getResources().getStringArray(R.array.bopomofo_keyboard_layouts)[
-                BopomofoKeyboardLayoutSettings.layout(this) == BopomofoKeyboardLayout.HSU ? 1 : 0];
+                BopomofoKeyboardLayoutSettings.layout(this).ordinal()];
         view.setText(getString(R.string.settings_group_composition_summary, layout,
                 getString(BopomofoCompositionModeSettings.bigramEnabled(this)
                         ? R.string.settings_value_on : R.string.settings_value_off)));

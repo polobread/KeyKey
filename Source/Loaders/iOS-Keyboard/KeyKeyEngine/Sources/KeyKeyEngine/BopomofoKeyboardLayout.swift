@@ -5,13 +5,24 @@
 public enum BopomofoKeyboardLayout: String, CaseIterable, Sendable {
     case standard = "Standard"
     case hsu = "Hsu"
+    case hanyuPinyin = "HanyuPinyin"
 
-    public var displayName: String { self == .hsu ? "許氏鍵盤" : "標準" }
+    public var displayName: String {
+        switch self {
+        case .standard: return "標準"
+        case .hsu: return "許氏鍵盤"
+        case .hanyuPinyin: return "漢語拼音"
+        }
+    }
 
     public func isReadingKey(_ key: Character) -> Bool {
-        let key = Character(key.lowercased())
-        return self == .hsu ? Self.hsuKeys.contains(key)
-            : StandardBopomofoLayout.isReadingKey(key)
+        guard key.isASCII else { return false }
+        let lowercased = Character(key.lowercased())
+        switch self {
+        case .standard: return StandardBopomofoLayout.isReadingKey(lowercased)
+        case .hsu: return Self.hsuKeys.contains(lowercased)
+        case .hanyuPinyin: return lowercased.isLetter || ("2"..."5").contains(lowercased)
+        }
     }
 
     public func punctuation(for key: Character) -> String? {

@@ -373,6 +373,7 @@ final class SettingsPanel: UIView {
         label.font = .systemFont(ofSize: 15)
         label.textColor = Palette.primaryText
         let control = UISegmentedControl(items: BopomofoKeyboardLayout.allCases.map(\.displayName))
+        control.apportionsSegmentWidthsByContent = true
         control.selectedSegmentIndex = BopomofoKeyboardLayout.allCases.firstIndex(of: keyboardLayout) ?? 0
         control.accessibilityIdentifier = "bopomofo-keyboard-layout"
         control.accessibilityLabel = "注音鍵盤"

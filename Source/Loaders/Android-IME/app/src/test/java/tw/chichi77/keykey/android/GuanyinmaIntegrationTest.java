@@ -71,6 +71,34 @@ public final class GuanyinmaIntegrationTest {
             }
         }
     }
+    @Test public void pinyinUsesNativeTouchAndHardwareReadingAndSelection() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            try (Fixture fixture = new Fixture();
+                    GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+                engine.setKeyboardLayout(BopomofoKeyboardLayout.HANYU_PINYIN);
+                type(engine, "nu", hardware);
+                assertEquals("nu", engine.readingText());
+                engine.backspace();
+                assertEquals("n", engine.readingText());
+                type(engine, "i3hao3", hardware);
+                assertEquals("你好", engine.completedSmartText());
+                assertEquals("你好", engine.enter().committedText());
+                assertNull(engine.lastError());
+            }
+        }
+        try (Fixture fixture = new Fixture();
+                GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.TRADITIONAL, text -> true)) {
+            engine.setKeyboardLayout(BopomofoKeyboardLayout.HANYU_PINYIN);
+            type(engine, "zhong", false);
+            assertEquals("zhong", engine.readingText());
+            engine.handleSoftKey("SPACE");
+            int candidate = engine.displayedCandidates().indexOf("中");
+            assertTrue("First-tone Pinyin candidate 中 must be available", candidate >= 0);
+            assertEquals("中", engine.selectDisplayedCandidate(candidate).committedText());
+            assertNull(engine.lastError());
+        }
+    }
+
     @Test public void splitPunctuationUsesTheExistingTouchCommitFlow() throws Exception {
         for (String mark : KeyboardLayoutGeometry.SPLIT_PUNCTUATION) {
             for (var method : ChineseInputMethod.values()) {

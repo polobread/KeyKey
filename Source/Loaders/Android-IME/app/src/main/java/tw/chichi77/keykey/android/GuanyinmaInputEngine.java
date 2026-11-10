@@ -56,7 +56,13 @@ final class GuanyinmaInputEngine implements InputEngine {
         } catch (JSONException error) { throw new IllegalArgumentException("Invalid Guanyinma operation", error); }
     }
     private static String methodName(ChineseInputMethod method) { return method.name().toLowerCase(Locale.ROOT); }
-    private static String layoutName(BopomofoKeyboardLayout value) { return value == BopomofoKeyboardLayout.HSU ? "hsu" : "standard"; }
+    private static String layoutName(BopomofoKeyboardLayout value) {
+        return switch (value) {
+            case STANDARD -> "standard";
+            case HSU -> "hsu";
+            case HANYU_PINYIN -> "hanyu_pinyin";
+        };
+    }
     private JSONObject smartOptions() {
         return object("use_bigrams", useBigrams, "space_opens_candidates", spaceSelects,
             "candidate_cursor_at_end", false, "clear_composing_with_escape", false,

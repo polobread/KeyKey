@@ -1,7 +1,9 @@
 package tw.chichi77.keykey.android;
 
 enum BopomofoKeyboardLayout {
-    STANDARD("Standard", "標準"), HSU("Hsu", "許氏鍵盤");
+    STANDARD("Standard", "標準"),
+    HSU("Hsu", "許氏鍵盤"),
+    HANYU_PINYIN("HanyuPinyin", "漢語拼音");
 
     final String value;
     final String displayName;
@@ -12,7 +14,10 @@ enum BopomofoKeyboardLayout {
     }
 
     static BopomofoKeyboardLayout fromValue(String value) {
-        return HSU.value.equals(value) ? HSU : STANDARD;
+        for (var layout : values()) {
+            if (layout.value.equals(value)) return layout;
+        }
+        return STANDARD;
     }
 
     /**
