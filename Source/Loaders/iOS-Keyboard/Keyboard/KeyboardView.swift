@@ -505,7 +505,7 @@ final class KeyboardView: UIView {
         let pointSize = keyFontSize.keyPointSize(normal: endpoints.normal, largeFit: endpoints.full)
         let buttons = keyViews.flatMap { $0.map(\.button) }
             + (functionButtons + punctuationButtons).compactMap { $0.button as? KeyboardKeyButton }
-        for button in buttons {
+        for button in buttons where button.sharedPointSize != pointSize {
             button.sharedPointSize = pointSize
             button.setNeedsLayout()
             button.layoutIfNeeded()
@@ -1114,6 +1114,7 @@ private final class KeyboardRow: UIView {
 private enum KeyboardKeyTypography {
     static let hintRatio = 10.0 / 18
     static let gap = 2.0
+    private static var cachedHintSize: (pointSize: Double, size: CGSize)?
 
     static func box(in size: CGSize, capInset: CGFloat) -> CGRect {
         CGRect(origin: .zero, size: size).insetBy(dx: capInset + 2, dy: capInset + 2)
@@ -1126,12 +1127,17 @@ private enum KeyboardKeyTypography {
     }
 
     static func hintSize(at pointSize: Double) -> CGSize {
+        if let cachedHintSize, cachedHintSize.pointSize == pointSize {
+            return cachedHintSize.size
+        }
         let font = UIFont.systemFont(ofSize: pointSize * hintRatio)
         let width = "ㄖ1234567890qwertyuiopasdfghjklzxcvbnm@".map {
             String($0).size(withAttributes: [.font: font]).width
         }.max() ?? 0
-        return CGSize(width: width, height: max(font.lineHeight,
+        let size = CGSize(width: width, height: max(font.lineHeight,
             "ㄖ".size(withAttributes: [.font: font]).height))
+        cachedHintSize = (pointSize, size)
+        return size
     }
 
     static func endpoints(in size: CGSize, capInset: CGFloat) -> (normal: Double, full: Double) {

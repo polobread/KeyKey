@@ -1534,8 +1534,13 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertEqual(lower.value as? String, "貼齊")
         XCTAssertEqual(lower.frame.midY, flushBottom, accuracy: 2)
 
+        drag(upper, by: -6)
+        XCTAssertTrue(waitForLayout { abs(upper.frame.midY - (flushTop - 6)) <= 2 })
+        XCTAssertEqual(lower.frame.midY, flushBottom, accuracy: 2)
+        let shortDragTop = upper.frame.midY
+
         drag(upper, by: -36)
-        XCTAssertTrue(waitForLayout { upper.frame.midY < flushTop - 8 })
+        XCTAssertTrue(waitForLayout { abs(upper.frame.midY - (shortDragTop - 36)) <= 3 })
         XCTAssertEqual(lower.frame.midY, flushBottom, accuracy: 2)
         let raisedTop = upper.frame.midY
 

@@ -4,7 +4,9 @@ import UIKit
 /// Temporary controls over the live keyboard. Only the controls intercept
 /// touches, so ordinary keys outside their bounds remain available to try.
 final class KeyboardHeightEditor: UIView {
-    var onDrag: ((KeyboardEdgeGeometry.Edge, UIGestureRecognizer.State, CGFloat) -> Void)?
+    enum DragPhase { case began, changed, ended, cancelled }
+
+    var onDrag: ((KeyboardEdgeGeometry.Edge, DragPhase, CGFloat) -> Void)?
     var onStep: ((KeyboardEdgeGeometry.Edge, Double) -> Void)?
     var onReset: (() -> Void)?
     var onCancel: (() -> Void)?
@@ -72,9 +74,7 @@ final class KeyboardHeightEditor: UIView {
         handle.accessibilityTraits = .adjustable
         handle.tintColor = Palette.highlight
         handle.onStep = { [weak self] direction in self?.onStep?(edge, direction * 0.05) }
-        let pan = UIPanGestureRecognizer(target: self, action: #selector(dragged(_:)))
-        pan.maximumNumberOfTouches = 1
-        handle.addGestureRecognizer(pan)
+        handle.onDrag = { [weak self] phase, y in self?.onDrag?(edge, phase, y) }
     }
 
     private func actionButton(_ title: String, identifier: String, action: Selector) -> UIButton {
@@ -91,20 +91,43 @@ final class KeyboardHeightEditor: UIView {
     @objc private func cancelTapped() { onCancel?() }
     @objc private func resetTapped() { onReset?() }
     @objc private func doneTapped() { onDone?() }
-
-    @objc private func dragged(_ gesture: UIPanGestureRecognizer) {
-        guard let window else { return }
-        // The extension's own bounds move when iOS changes the keyboard
-        // height. Use a stable screen coordinate for both handles.
-        let local = gesture.location(in: window)
-        let y = window.windowScene.map { window.convert(local, to: $0.screen.coordinateSpace).y } ?? local.y
-        let edge: KeyboardEdgeGeometry.Edge = gesture.view === topHandle ? .top : .bottom
-        onDrag?(edge, gesture.state, y)
-    }
 }
 
 private final class EdgeHandle: UIButton {
     var onStep: ((Double) -> Void)?
+    var onDrag: ((KeyboardHeightEditor.DragPhase, CGFloat) -> Void)?
+
+    override func beginTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
+        guard let y = screenY(of: touch), super.beginTracking(touch, with: event) else { return false }
+        onDrag?(.began, y)
+        return true
+    }
+
+    override func continueTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
+        _ = super.continueTracking(touch, with: event)
+        if let y = screenY(of: touch) { onDrag?(.changed, y) }
+        // Resizing moves the control's frame under the touch.
+        return true
+    }
+
+    override func endTracking(_ touch: UITouch?, with event: UIEvent?) {
+        super.endTracking(touch, with: event)
+        if let touch, let y = screenY(of: touch) { onDrag?(.ended, y) }
+        else { onDrag?(.cancelled, 0) }
+    }
+
+    override func cancelTracking(with event: UIEvent?) {
+        super.cancelTracking(with: event)
+        onDrag?(.cancelled, 0)
+    }
+
+    private func screenY(of touch: UITouch) -> CGFloat? {
+        guard let window else { return nil }
+        // The extension window moves during resize. Measure both the initial
+        // touch and each update in the same fixed screen coordinate space.
+        let local = touch.location(in: window)
+        return window.windowScene.map { window.convert(local, to: $0.screen.coordinateSpace).y } ?? local.y
+    }
 
     override func accessibilityIncrement() { onStep?(1) }
     override func accessibilityDecrement() { onStep?(-1) }

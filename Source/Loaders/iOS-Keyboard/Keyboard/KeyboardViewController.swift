@@ -553,7 +553,9 @@ final class KeyboardViewController: UIInputViewController {
         applyHeight(currentMetrics)
     }
 
-    private func dragKeyboardHeight(_ edge: KeyboardEdgeGeometry.Edge, state: UIGestureRecognizer.State, y: CGFloat) {
+    private func dragKeyboardHeight(
+        _ edge: KeyboardEdgeGeometry.Edge, state: KeyboardHeightEditor.DragPhase, y: CGFloat
+    ) {
         switch state {
         case .began:
             guard heightDrag == nil else { return }
@@ -561,12 +563,12 @@ final class KeyboardViewController: UIInputViewController {
         case .changed, .ended:
             guard let drag = heightDrag, drag.edge == edge else { return }
             let delta = Double(drag.startY - y) / currentMetrics.contentHeight
-            editKeyboardHeight(drag.start.moving(edge, by: delta))
+            UIView.performWithoutAnimation {
+                editKeyboardHeight(drag.start.moving(edge, by: delta))
+            }
             if state == .ended { heightDrag = nil }
-        case .cancelled, .failed:
+        case .cancelled:
             if heightDrag?.edge == edge { heightDrag = nil }
-        default:
-            break
         }
     }
 
