@@ -64,6 +64,8 @@ final class KeyboardView: UIView {
 
     weak var delegate: KeyboardViewDelegate?
 
+    private let keyboardContent = UIView()
+    private var heightDragPreviewActive = false
     private let statusLabel = KeyboardStatusLabel()
     private var candidateButtons: [UIButton] = []
     private let previousPageButton = UIButton(type: .system)
@@ -142,6 +144,10 @@ final class KeyboardView: UIView {
     // MARK: - Construction
 
     private func buildInterface() {
+        keyboardContent.frame = bounds
+        keyboardContent.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        addSubview(keyboardContent)
+
         // Five equal bands below the strip, matching the Android division of
         // the remaining height.
         let bands = UIStackView(arrangedSubviews: buildKeyRows() + [buildFunctionRow()])
@@ -157,11 +163,11 @@ final class KeyboardView: UIView {
         root.axis = .vertical
         root.spacing = layoutProfile.keySpacing
         root.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(root)
+        keyboardContent.addSubview(root)
 
         // The keyboard has its own safe area, which can differ from the host
         // app's. Respect each edge independently as the host resizes or moves it.
-        let guide = safeAreaLayoutGuide
+        let guide = keyboardContent.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             root.leadingAnchor.constraint(greaterThanOrEqualTo: guide.leadingAnchor, constant: 3),
             root.trailingAnchor.constraint(lessThanOrEqualTo: guide.trailingAnchor, constant: -3),
@@ -194,7 +200,7 @@ final class KeyboardView: UIView {
         keyPreview.layer.masksToBounds = true
         keyPreview.isHidden = true
         keyPreview.isUserInteractionEnabled = false
-        addSubview(keyPreview)
+        keyboardContent.addSubview(keyPreview)
     }
 
     private func buildCandidateStrip() -> UIView {
@@ -385,7 +391,7 @@ final class KeyboardView: UIView {
             rootStack.removeArrangedSubview(candidateContainer)
             candidateContainer.removeFromSuperview()
             candidateContainer.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(candidateContainer)
+            keyboardContent.addSubview(candidateContainer)
             candidateOverlayConstraints = [
                 candidateContainer.leadingAnchor.constraint(equalTo: firstKeyRow.leadingAnchor),
                 candidateContainer.trailingAnchor.constraint(equalTo: firstKeyRow.trailingAnchor),
@@ -473,8 +479,26 @@ final class KeyboardView: UIView {
         updateRowLayout()
     }
 
+    func setHeightDragPreview(_ active: Bool) {
+        guard active != heightDragPreviewActive else { return }
+        heightDragPreviewActive = active
+        if active {
+            cancelBackspaceRepeat()
+            // Keep the host view and editor live, but freeze the hidden key
+            // subtree at its old size until the tracked touch ends.
+            keyboardContent.autoresizingMask = []
+            keyboardContent.isHidden = true
+        } else {
+            keyboardContent.frame = bounds
+            keyboardContent.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            keyboardContent.isHidden = false
+            setNeedsLayout()
+        }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
+        guard !heightDragPreviewActive else { return }
         updateRowLayout()
         rootStack?.layoutIfNeeded()
         updateKeyTypography()
@@ -1034,18 +1058,18 @@ final class KeyboardView: UIView {
     private func showKeyPreview(_ text: String, from button: UIButton) {
         guard !text.isEmpty else { return }
         layoutIfNeeded()
-        let keyFrame = button.convert(button.bounds, to: self)
+        let keyFrame = button.convert(button.bounds, to: keyboardContent)
         let width = max(
             56, min(116, text.size(withAttributes: [.font: keyPreview.font!]).width + 28)
         )
         let height: CGFloat = 62
         keyPreview.text = text
         keyPreview.frame = CGRect(
-            x: min(max(3, keyFrame.midX - width / 2), bounds.width - width - 3),
+            x: min(max(3, keyFrame.midX - width / 2), keyboardContent.bounds.width - width - 3),
             y: max(3, keyFrame.minY - height - 6), width: width, height: height
         )
         keyPreview.isHidden = false
-        bringSubviewToFront(keyPreview)
+        keyboardContent.bringSubviewToFront(keyPreview)
     }
 
     private func hideKeyPreview() {

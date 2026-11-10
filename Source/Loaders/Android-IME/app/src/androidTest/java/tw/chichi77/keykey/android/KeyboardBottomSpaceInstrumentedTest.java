@@ -717,9 +717,9 @@ public final class KeyboardBottomSpaceInstrumentedTest {
     }
 
     private static View findResizeControl(String label) {
-        for (View root : WindowInspector.getGlobalWindowViews()) {
-            View match = findResizeControl(root, label);
-            if (match != null) return match;
+        var keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+        if (keyboard != null && keyboard.getParent() instanceof KeyboardInputView input) {
+            return findResizeControl(input, label);
         }
         return null;
     }
@@ -746,14 +746,34 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         long down = SystemClock.uptimeMillis();
         float x = handle.centerX();
         float y = handle.centerY();
+        assertResizeKeycapsVisible(true);
         sendResizeTouch(down, MotionEvent.ACTION_DOWN, x, y);
         try {
             sendResizeTouch(down, MotionEvent.ACTION_MOVE, x, y + distance);
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            assertResizeKeycapsVisible(false);
             verify.verify();
         } finally {
             sendResizeTouch(down, MotionEvent.ACTION_UP, x, y + distance);
         }
+        assertResizeKeycapsVisible(true);
+    }
+
+    private static void assertResizeKeycapsVisible(boolean expected) {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            var keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+            boolean[] drew = new boolean[2];
+            keyboard.draw(new Canvas() {
+                @Override public void drawRoundRect(RectF bounds, float rx, float ry, Paint paint) {
+                    drew[0] = true;
+                }
+                @Override public void drawText(String text, float x, float y, Paint paint) {
+                    drew[1] = true;
+                }
+            });
+            assertEquals("Keycaps must only be hidden during a drag", expected, drew[0]);
+            assertEquals("Key labels must only be hidden during a drag", expected, drew[1]);
+        });
     }
 
     private static void sendResizeTouch(long down, int action, float x, float y) {

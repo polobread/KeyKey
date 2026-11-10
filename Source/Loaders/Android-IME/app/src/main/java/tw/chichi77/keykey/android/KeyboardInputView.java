@@ -99,7 +99,7 @@ final class KeyboardInputView extends FrameLayout {
     void cancelResize() {
         settingsMenu.setVisibility(GONE);
         if (!isResizing()) return;
-        drag = null;
+        endResizeDrag();
         previewEdges = null;
         keyboard.setResizePreview(null);
         resizeToolbar.setVisibility(GONE);
@@ -211,6 +211,7 @@ final class KeyboardInputView extends FrameLayout {
         if (action == MotionEvent.ACTION_DOWN) {
             if (drag == null) {
                 drag = dragFrom(top, event.getPointerId(0), screenY(event, 0));
+                keyboard.setResizeDragActive(true);
                 requestDisallowInterceptTouchEvent(true);
             }
             return true;
@@ -218,18 +219,23 @@ final class KeyboardInputView extends FrameLayout {
         if (drag == null || drag.top() != top) return true;
         if (action == MotionEvent.ACTION_CANCEL) {
             preview(drag.before());
-            drag = null;
+            endResizeDrag();
         } else if (action == MotionEvent.ACTION_MOVE || action == MotionEvent.ACTION_UP
                 || action == MotionEvent.ACTION_POINTER_UP) {
             int index = event.findPointerIndex(drag.pointer());
-            if (index < 0 || (action == MotionEvent.ACTION_POINTER_UP && index != event.getActionIndex())) {
-                return true;
+            if (action == MotionEvent.ACTION_POINTER_UP && index != event.getActionIndex()) return true;
+            if (index >= 0) {
+                KeyboardEdgeGeometry next = drag.at(screenY(event, index));
+                if (!next.equals(drag.visible()) || !previewEdges.equals(drag.before())) preview(next);
             }
-            KeyboardEdgeGeometry next = drag.at(screenY(event, index));
-            if (!next.equals(drag.visible()) || !previewEdges.equals(drag.before())) preview(next);
-            if (action != MotionEvent.ACTION_MOVE) drag = null;
+            if (action != MotionEvent.ACTION_MOVE) endResizeDrag();
         }
         return true;
+    }
+
+    private void endResizeDrag() {
+        drag = null;
+        keyboard.setResizeDragActive(false);
     }
 
     private static float screenY(MotionEvent event, int pointer) {

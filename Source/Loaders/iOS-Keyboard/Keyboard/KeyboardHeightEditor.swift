@@ -74,7 +74,17 @@ final class KeyboardHeightEditor: UIView {
         handle.accessibilityTraits = .adjustable
         handle.tintColor = Palette.highlight
         handle.onStep = { [weak self] direction in self?.onStep?(edge, direction * 0.05) }
-        handle.onDrag = { [weak self] phase, y in self?.onDrag?(edge, phase, y) }
+        handle.onDrag = { [weak self] phase, touch in
+            guard let self else { return }
+            if let touch, let shell = superview {
+                // The host moves the extension's top as its height changes.
+                // The bottom of the shell stays fixed for either edge.
+                let y = touch.location(in: shell).y - shell.bounds.maxY
+                onDrag?(edge, phase, y)
+            } else {
+                onDrag?(edge, .cancelled, 0)
+            }
+        }
     }
 
     private func actionButton(_ title: String, identifier: String, action: Selector) -> UIButton {
@@ -95,38 +105,29 @@ final class KeyboardHeightEditor: UIView {
 
 private final class EdgeHandle: UIButton {
     var onStep: ((Double) -> Void)?
-    var onDrag: ((KeyboardHeightEditor.DragPhase, CGFloat) -> Void)?
+    var onDrag: ((KeyboardHeightEditor.DragPhase, UITouch?) -> Void)?
 
     override func beginTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
-        guard let y = screenY(of: touch), super.beginTracking(touch, with: event) else { return false }
-        onDrag?(.began, y)
+        guard super.beginTracking(touch, with: event) else { return false }
+        onDrag?(.began, touch)
         return true
     }
 
     override func continueTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
         _ = super.continueTracking(touch, with: event)
-        if let y = screenY(of: touch) { onDrag?(.changed, y) }
+        onDrag?(.changed, touch)
         // Resizing moves the control's frame under the touch.
         return true
     }
 
     override func endTracking(_ touch: UITouch?, with event: UIEvent?) {
         super.endTracking(touch, with: event)
-        if let touch, let y = screenY(of: touch) { onDrag?(.ended, y) }
-        else { onDrag?(.cancelled, 0) }
+        onDrag?(.ended, touch)
     }
 
     override func cancelTracking(with event: UIEvent?) {
         super.cancelTracking(with: event)
-        onDrag?(.cancelled, 0)
-    }
-
-    private func screenY(of touch: UITouch) -> CGFloat? {
-        guard let window else { return nil }
-        // The extension window moves during resize. Measure both the initial
-        // touch and each update in the same fixed screen coordinate space.
-        let local = touch.location(in: window)
-        return window.windowScene.map { window.convert(local, to: $0.screen.coordinateSpace).y } ?? local.y
+        onDrag?(.cancelled, nil)
     }
 
     override func accessibilityIncrement() { onStep?(1) }

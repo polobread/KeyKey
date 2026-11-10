@@ -134,7 +134,7 @@ final class KeyboardViewController: UIInputViewController {
             let next: KeyboardLayoutProfile.Orientation = orientation.isLandscape ? .landscape : .portrait
             if keyboardOrientation != next {
                 keyboardOrientation = next
-                heightDrag = nil
+                endKeyboardHeightDrag()
                 keyboardView?.setLayoutOrientation(next)
                 applyHeight(currentMetrics)
             }
@@ -535,7 +535,7 @@ final class KeyboardViewController: UIInputViewController {
             editKeyboardHeight(keyboardGeometry.moving(edge, by: delta))
         }
         editor.onReset = { [weak self] in
-            self?.heightDrag = nil
+            self?.endKeyboardHeightDrag()
             self?.editKeyboardHeight(KeyboardEdgeGeometry())
         }
         editor.onCancel = { [weak self] in self?.finishEditingKeyboardHeight(save: false) }
@@ -558,18 +558,24 @@ final class KeyboardViewController: UIInputViewController {
     ) {
         switch state {
         case .began:
-            guard heightDrag == nil else { return }
+            guard heightEditor != nil, heightDrag == nil else { return }
             heightDrag = HeightDrag(edge: edge, startY: y, start: keyboardGeometry)
+            keyboardView?.setHeightDragPreview(true)
         case .changed, .ended:
             guard let drag = heightDrag, drag.edge == edge else { return }
             let delta = Double(drag.startY - y) / currentMetrics.contentHeight
             UIView.performWithoutAnimation {
                 editKeyboardHeight(drag.start.moving(edge, by: delta))
+                if state == .ended { endKeyboardHeightDrag() }
             }
-            if state == .ended { heightDrag = nil }
         case .cancelled:
-            if heightDrag?.edge == edge { heightDrag = nil }
+            if heightDrag?.edge == edge { endKeyboardHeightDrag() }
         }
+    }
+
+    private func endKeyboardHeightDrag() {
+        heightDrag = nil
+        keyboardView?.setHeightDragPreview(false)
     }
 
     private func editKeyboardHeight(_ geometry: KeyboardEdgeGeometry) {
@@ -586,7 +592,7 @@ final class KeyboardViewController: UIInputViewController {
             }
         }
         heightDraft.removeAll()
-        heightDrag = nil
+        endKeyboardHeightDrag()
         heightEditor.removeFromSuperview()
         self.heightEditor = nil
         applyHeight(currentMetrics)

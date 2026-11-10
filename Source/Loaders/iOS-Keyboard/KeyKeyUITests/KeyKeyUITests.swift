@@ -1511,8 +1511,15 @@ final class KeyKeyUITests: XCTestCase {
             XCTAssertTrue(waitForLayout { upper.isHittable && lower.isHittable })
         }
         func drag(_ handle: XCUIElement, by offset: CGFloat) {
-            let start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: offset)))
+            let frame = handle.frame
+            let appFrame = app.frame
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            // The keyboard's accessibility frame moves during the gesture.
+            let start = origin.withOffset(CGVector(dx: frame.midX - appFrame.minX,
+                dy: frame.midY - appFrame.minY))
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: offset)),
+                withVelocity: .slow, thenHoldForDuration: 0.15)
+            XCTAssertTrue(waitForLayout { app.buttons["ENTER"].isHittable })
         }
 
         XCUIDevice.shared.orientation = .landscapeLeft
@@ -1540,7 +1547,9 @@ final class KeyKeyUITests: XCTestCase {
         let shortDragTop = upper.frame.midY
 
         drag(upper, by: -36)
-        XCTAssertTrue(waitForLayout { abs(upper.frame.midY - (shortDragTop - 36)) <= 3 })
+        let movedByFullDistance = waitForLayout { abs(upper.frame.midY - (shortDragTop - 36)) <= 3 }
+        XCTAssertTrue(movedByFullDistance,
+            "Requested 36 points, moved \(shortDragTop - upper.frame.midY), height \(upper.value ?? "nil")")
         XCTAssertEqual(lower.frame.midY, flushBottom, accuracy: 2)
         let raisedTop = upper.frame.midY
 

@@ -151,6 +151,7 @@ final class BopomofoKeyboardView extends View {
     private KeyboardSizeSettings.Size portraitSize = KeyboardSizeSettings.DEFAULT_SIZE;
     private KeyboardSizeSettings.Size landscapeSize = KeyboardSizeSettings.DEFAULT_SIZE;
     private KeyboardEdgeGeometry resizePreview;
+    private boolean resizeDragActive;
 
     BopomofoKeyboardView(Context context) {
         super(context);
@@ -305,6 +306,22 @@ final class BopomofoKeyboardView extends View {
         if (java.util.Objects.equals(resizePreview, edges)) return;
         resizePreview = edges;
         requestLayout();
+        invalidate();
+    }
+
+    void setResizeDragActive(boolean active) {
+        if (resizeDragActive == active) return;
+        resizeDragActive = active;
+        if (active) {
+            resetPickerPress();
+            backspaceRepeater.stop();
+            backspaceTouchStarted = false;
+            downOnCandidate = false;
+            // A key touch interrupted by resizing must not fire when it lifts.
+            downX = Float.NaN;
+            previewHit = null;
+            hits.clear();
+        }
         invalidate();
     }
 
@@ -469,8 +486,9 @@ final class BopomofoKeyboardView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        hits.clear();
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
+        if (resizeDragActive) return;
+        hits.clear();
         switch (mode) {
             case HARDWARE_FLOATING -> {
                 if (showGlobe) drawHardwareStatusButton(canvas,
@@ -1241,6 +1259,7 @@ final class BopomofoKeyboardView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (resizeDragActive) return true;
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN -> {
                 backspaceRepeater.stop();
