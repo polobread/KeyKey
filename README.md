@@ -1,7 +1,7 @@
 # 琦琦輸入法 / chichi77 KeyKey 1.5.1
 
 正式支援 **Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台**。
-目前六平台的產品原始碼均為 **1.5.1**。Android 與 iOS 新增鍵盤高度拖曳、漢語拼音鍵盤，以及好打注音的「省略聲調」選項。各平台仍須完成發布程序。下載桌面正式版請查 [已發布版本](https://github.com/polobread/KeyKey/releases)，手機版以各商店列出的版本為準。
+目前六平台的產品原始碼均為 **1.5.1**。Android 與 iOS 新增鍵盤高度拖曳、漢語拼音鍵盤，以及「好打注音省略聲調」選項。各平台仍須完成發布程序。下載桌面正式版請查 [已發布版本](https://github.com/polobread/KeyKey/releases)，手機版以各商店列出的版本為準。
 macOS、Windows 與 Ubuntu 24.04 安裝包由 GitHub Release 提供；FreeBSD 透過 ports／pkg 安裝，
 套件庫版本可能較晚上架。Android 與 iOS 可分別從 [Google Play](https://play.google.com/store/apps/details?id=tw.chichi77.keykey.android) 與 [App Store](https://apps.apple.com/tw/app/%E7%90%A6%E7%90%A6%E8%BC%B8%E5%85%A5%E6%B3%95/id6807832939) 下載安裝。
 

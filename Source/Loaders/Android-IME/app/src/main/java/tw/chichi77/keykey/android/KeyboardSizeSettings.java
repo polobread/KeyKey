@@ -31,14 +31,6 @@ final class KeyboardSizeSettings {
 
     private KeyboardSizeSettings() {}
 
-    static int portraitPercent(Context context) {
-        return Math.round(size(context, false).heightScale() * 100);
-    }
-
-    static int landscapePercent(Context context) {
-        return Math.round(size(context, true).heightScale() * 100);
-    }
-
     static void setPortraitPercent(Context context, int percent) {
         setPercent(context, KEY_PORTRAIT_PERCENT, KEY_PORTRAIT_SCALE, percent);
     }

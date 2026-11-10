@@ -8,7 +8,7 @@ PR 依實際建置輸入與工具依賴觸發，保留 Linux CI、Package macOS�
 
 | Workflow | 驗證與共用方式 | 正式作業 |
 | --- | --- | --- |
-| Guanyinma Core | 六平台原生／無視窗 Rust 與 C ABI；macOS 原生 system SQLite 的 92% 涵蓋率門檻 | 不發布產品 |
+| Guanyinma Core | 六平台原生／無視窗 Rust 與 C ABI；macOS 原生 system SQLite 的 96% 涵蓋率門檻 | 不發布產品 |
 | Linux CI | 24.04 staged smoke 共用 full job 的 build／stage；完整 24.04 與 22.04 各一個 runner | 原套件發布與鏡像入口 |
 | Package macOS | 同 runner 執行符號、Shift／設定、Rust 接合、原生更新工具與 App／PKG 建置 | 原受保護的簽章、公證與發布 job |
 | Windows Build and Unsigned Inputs | 共用 x64／x86 產物；保留嚴格短路徑、native／managed 配對、更新組態、PowerShell 5／7 與未簽封裝驗證 | 保留待本機簽章的來源與產物證明 |
@@ -22,7 +22,7 @@ PR 依實際建置輸入與工具依賴觸發，保留 Linux CI、Package macOS�
 | Terraform Release Mirror | Terraform／自身 workflow 變更時 fmt、無 backend 的 init、validate | master 上手動 plan／apply |
 | Rebuild KeyKey database | 來源工具、已提交模型、manifest 與共用 DB 接線驗證；使用鎖定 Guanyinma Rust typing-cost | 合併後可信來源重建、固定 131 篇／30 動作門檻，再開產物或拒用報告 PR |
 
-Apple jobs 統一使用固定的 `macos-26` arm64 runner；iOS Simulator 封裝選用映像內的 Xcode 26.6。核心 iOS job 依可用的 iOS runtime 建立獨立模擬器，macOS 核心仍使用原生 system SQLite 並執行 92% 涵蓋率門檻。runner 映像版本不決定產品最低系統版本；更換映像後須以該次 CI 實際執行結果確認相容性。
+Apple jobs 統一使用固定的 `macos-26` arm64 runner；iOS Simulator 封裝選用映像內的 Xcode 26.6。核心 iOS job 依可用的 iOS runtime 建立獨立模擬器，macOS 核心仍使用原生 system SQLite 並執行 96% 涵蓋率門檻。runner 映像版本不決定產品最低系統版本；更換映像後須以該次 CI 實際執行結果確認相容性。
 
 ## 觸發與驗證範圍
 

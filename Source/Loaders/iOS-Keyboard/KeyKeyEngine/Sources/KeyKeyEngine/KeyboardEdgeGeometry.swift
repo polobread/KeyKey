@@ -8,7 +8,7 @@ public struct KeyboardEdgeGeometry: Equatable, Sendable {
 
     private static let minimumHeight = 0.75
     private static let maximumHeight = 1.35
-    private static let maximumTop = 1.40
+    public static let maximumTop = 1.40
     private static let maximumBottom = 0.25
 
     public let top: Double

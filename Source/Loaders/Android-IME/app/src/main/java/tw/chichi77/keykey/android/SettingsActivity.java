@@ -21,18 +21,11 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 public final class SettingsActivity extends Activity implements SupporterBillingManager.Listener {
-    private final ArrayList<CheckBox> collectionChecks = new ArrayList<>();
-    private TextView collectionStatus;
     private final Map<String, SettingsGroup> settingsGroups = new LinkedHashMap<>();
     private LinearLayout settingsContent;
     private LinearLayout supporterSection;
@@ -42,7 +35,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
     private TextView supporterPrice;
     private Button supporterButton;
     private SupporterBillingManager supporterBillingManager;
-    private boolean updatingCollections;
     private CheckBox touchBottomSpace;
     private TextView touchBottomSpaceDescription;
 
@@ -312,29 +304,11 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         appearanceContent.addView(candidateColor, matchWrap(dp(0), dp(20)));
         addKeyboardLayoutSettings(appearanceContent);
 
-        TextView keyboardSizeTitle = new TextView(this);
-        keyboardSizeTitle.setText(R.string.keyboard_size_title);
-        keyboardSizeTitle.setTextSize(18);
-        keyboardSizeTitle.setTextColor(Color.DKGRAY);
-        appearanceContent.addView(keyboardSizeTitle, matchWrap(dp(0), dp(8)));
-
-        TextView keyboardSizeDescription = new TextView(this);
-        keyboardSizeDescription.setText(R.string.keyboard_size_description);
-        keyboardSizeDescription.setTextSize(14);
-        keyboardSizeDescription.setTextColor(Color.GRAY);
-        keyboardSizeDescription.setLineSpacing(0, 1.2f);
-        appearanceContent.addView(keyboardSizeDescription, matchWrap(dp(0), dp(12)));
-
-        TextView resizeHint = new TextView(this);
-        resizeHint.setText(R.string.keyboard_resize_hint);
-        resizeHint.setTextSize(14);
-        resizeHint.setTextColor(Color.DKGRAY);
-        appearanceContent.addView(resizeHint, matchWrap(dp(0), dp(8)));
-
-        addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_portrait,
-                KeyboardSizeSettings.portraitPercent(this), true);
-        addKeyboardSizeControl(appearanceContent, R.string.keyboard_size_landscape,
-                KeyboardSizeSettings.landscapePercent(this), false);
+        Button resizeKeyboard = new Button(this);
+        resizeKeyboard.setText(R.string.keyboard_resize_title);
+        resizeKeyboard.setOnClickListener(view ->
+                startActivity(new Intent(this, KeyboardResizeActivity.class)));
+        appearanceContent.addView(resizeKeyboard, matchWrap(dp(0), dp(16)));
 
         touchBottomSpace = bottomSpaceCheckBox(
                 KeyboardBottomSpaceSettings.touchEnabled(this));
@@ -475,39 +449,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 supporterBillingManager.launchPurchase(SettingsActivity.this));
         supporterSection.addView(supporterButton, matchWrap(dp(0), dp(36)));
         updateSupporterDisplay(false, SupporterState.isSupporter(this), null);
-
-        SettingsGroup phraseGroup = addSettingsGroup(content, savedInstanceState,
-                "phrases", R.string.settings_group_phrases,
-                R.string.settings_group_phrases_summary, false);
-        LinearLayout phraseContent = phraseGroup.body;
-        collectionStatus = phraseGroup.summary;
-
-        TextView phraseDescription = new TextView(this);
-        phraseDescription.setText(R.string.phrase_collections_description);
-        phraseDescription.setTextSize(14);
-        phraseDescription.setTextColor(Color.GRAY);
-        phraseDescription.setLineSpacing(0, 1.2f);
-        phraseContent.addView(phraseDescription, matchWrap(dp(0), dp(12)));
-
-        LinearLayout actions = new LinearLayout(this);
-        actions.setOrientation(LinearLayout.HORIZONTAL);
-        Button selectAll = actionButton(R.string.phrase_select_all);
-        Button baseOnly = actionButton(R.string.phrase_base_only);
-        Button selectNone = actionButton(R.string.phrase_select_none);
-        actions.addView(selectAll, weightedWrap());
-        actions.addView(baseOnly, weightedWrap());
-        actions.addView(selectNone, weightedWrap());
-        phraseContent.addView(actions, matchWrap(dp(0), dp(8)));
-
-        LinearLayout collectionList = new LinearLayout(this);
-        collectionList.setOrientation(LinearLayout.VERTICAL);
-        phraseContent.addView(collectionList, matchWrap(dp(0), dp(12)));
-        loadPhraseCollections(collectionList);
-
-        selectAll.setOnClickListener(view -> setAllCollections(true));
-        baseOnly.setOnClickListener(view -> setOnlyCollections(
-                PhraseSettings.baseCollectionOnly()));
-        selectNone.setOnClickListener(view -> setAllCollections(false));
 
         updateHapticValue(value, HapticSettings.durationMsForSelection(duration.getProgress()));
         duration.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -878,127 +819,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             supporterButton.setText(R.string.supporter_button);
             supporterButton.setEnabled(true);
         }
-    }
-
-    private void loadPhraseCollections(LinearLayout list) {
-        List<AssociatedPhraseDictionary.CollectionInfo> collections;
-        try {
-            collections = AssociatedPhraseDictionary.availableCollections(getAssets());
-        } catch (IOException error) {
-            collectionStatus.setText(R.string.phrase_collections_unavailable);
-            return;
-        }
-
-        Set<String> enabled = PhraseSettings.enabledCollections(this);
-        updatingCollections = true;
-        for (AssociatedPhraseDictionary.CollectionInfo collection : collections) {
-            CheckBox check = new CheckBox(this);
-            check.setText(getString(R.string.phrase_collection_item,
-                    collection.displayName(), collection.source()));
-            check.setTextSize(16);
-            check.setTextColor(Color.DKGRAY);
-            check.setMinHeight(dp(48));
-            check.setTag(collection.source());
-            check.setChecked(enabled.contains(collection.source()));
-            check.setOnCheckedChangeListener((button, checked) -> {
-                if (!updatingCollections) savePhraseSelections();
-            });
-            collectionChecks.add(check);
-            list.addView(check, new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        }
-        updatingCollections = false;
-        updateCollectionStatus();
-    }
-
-    private void setAllCollections(boolean enabled) {
-        updatingCollections = true;
-        for (CheckBox check : collectionChecks) check.setChecked(enabled);
-        updatingCollections = false;
-        savePhraseSelections();
-    }
-
-    private void setOnlyCollections(Set<String> enabled) {
-        updatingCollections = true;
-        for (CheckBox check : collectionChecks) {
-            check.setChecked(enabled.contains((String) check.getTag()));
-        }
-        updatingCollections = false;
-        savePhraseSelections();
-    }
-
-    private void savePhraseSelections() {
-        LinkedHashSet<String> enabled = new LinkedHashSet<>();
-        for (CheckBox check : collectionChecks) {
-            if (check.isChecked()) enabled.add((String) check.getTag());
-        }
-        PhraseSettings.setEnabledCollections(this, enabled);
-        updateCollectionStatus();
-    }
-
-    private void updateCollectionStatus() {
-        int enabled = 0;
-        for (CheckBox check : collectionChecks) if (check.isChecked()) enabled++;
-        collectionStatus.setText(getString(
-                enabled == 0 ? R.string.phrase_status_none : R.string.phrase_status_count,
-                enabled, collectionChecks.size()));
-    }
-
-    private Button actionButton(int text) {
-        Button button = new Button(this);
-        button.setText(text);
-        button.setTextSize(13);
-        button.setAllCaps(false);
-        return button;
-    }
-
-    private void addKeyboardSizeControl(LinearLayout content, int labelResource,
-                                        int currentPercent, boolean portrait) {
-        TextView label = new TextView(this);
-        label.setText(labelResource);
-        label.setTextSize(16);
-        label.setTextColor(Color.DKGRAY);
-        content.addView(label, matchWrap(dp(0), dp(4)));
-
-        TextView value = new TextView(this);
-        value.setTextSize(16);
-        value.setTextColor(getColor(R.color.keykey_blue_dark));
-        value.setGravity(Gravity.CENTER);
-        updateKeyboardSizeValue(value, currentPercent);
-        content.addView(value, matchWrap(dp(0), dp(4)));
-
-        SeekBar size = new SeekBar(this);
-        size.setMax(KeyboardSizeSettings.maxSelectionIndex());
-        size.setProgress(KeyboardSizeSettings.selectionForPercent(currentPercent));
-        content.addView(size, matchWrap(dp(0), dp(2)));
-
-        LinearLayout endpoints = new LinearLayout(this);
-        endpoints.setOrientation(LinearLayout.HORIZONTAL);
-        TextView minimum = endpointLabel(R.string.keyboard_size_minimum, Gravity.START);
-        TextView maximum = endpointLabel(R.string.keyboard_size_maximum, Gravity.END);
-        endpoints.addView(minimum, weightedWrap());
-        endpoints.addView(maximum, weightedWrap());
-        content.addView(endpoints, matchWrap(dp(0), dp(12)));
-
-        size.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int percent = KeyboardSizeSettings.percentForSelection(progress);
-                if (portrait) {
-                    KeyboardSizeSettings.setPortraitPercent(SettingsActivity.this, percent);
-                } else {
-                    KeyboardSizeSettings.setLandscapePercent(SettingsActivity.this, percent);
-                }
-                updateKeyboardSizeValue(value, percent);
-            }
-
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-    }
-
-    private void updateKeyboardSizeValue(TextView view, int percent) {
-        view.setText(getString(R.string.keyboard_size_value, percent));
     }
 
     private void updateHapticValue(TextView view, int durationMs) {

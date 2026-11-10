@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -22,7 +23,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public final class SettingsGroupsInstrumentedTest {
     @Test
-    public void supporterMovesFromTopToAfterPhraseGroupAndGroupsExpand() {
+    public void supporterMovesFromTopToBottomAndGroupsExpand() {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         boolean oldSupporter = SupporterState.isSupporter(context);
@@ -37,11 +38,11 @@ public final class SettingsGroupsInstrumentedTest {
                 ViewGroup root = settings.findViewById(android.R.id.content);
                 ScrollView scroll = (ScrollView) root.getChildAt(0);
                 LinearLayout page = (LinearLayout) scroll.getChildAt(0);
-                assertEquals(8, page.getChildCount()); // title + method picker + five groups + supporter
+                assertEquals(7, page.getChildCount()); // title + method picker + four groups + supporter
 
                 View supporter = page.getChildAt(1);
                 assertTrue(containsText(supporter, "支持開發"));
-                for (String title : new String[]{"注音與選字", "倉頡與簡易", "外觀與操作", "實體鍵盤", "關聯詞詞庫"}) {
+                for (String title : new String[]{"注音與選字", "倉頡與簡易", "外觀與操作", "實體鍵盤"}) {
                     LinearLayout group = findGroup(page, title);
                     assertEquals(View.GONE, group.getChildAt(1).getVisibility());
                 }
@@ -57,8 +58,7 @@ public final class SettingsGroupsInstrumentedTest {
                 assertSame(supporter, page.getChildAt(page.getChildCount() - 1));
                 assertTrue(containsText(supporter, "感謝你支持琦琦輸入法"));
                 assertFalse(containsText(supporter, "歡迎一次付費支持"));
-                assertTrue(containsText(page.getChildAt(page.getChildCount() - 2),
-                        "關聯詞詞庫"));
+                assertTrue(containsText(page.getChildAt(page.getChildCount() - 2), "實體鍵盤"));
                 settings.onStateChanged(true, false, null);
                 assertSame(supporter, page.getChildAt(1));
                 LinearLayout appearance = findGroup(page, "外觀與操作");
@@ -66,15 +66,13 @@ public final class SettingsGroupsInstrumentedTest {
                 appearance.getChildAt(0).performClick();
                 View appearanceBody = appearance.getChildAt(1);
                 assertEquals(View.VISIBLE, appearanceBody.getVisibility());
-                assertTrue(containsText(appearanceBody, "虛擬鍵盤高度"));
-                assertTrue(containsText(appearanceBody, "直式虛擬鍵盤"));
-                assertTrue(containsText(appearanceBody, "橫式虛擬鍵盤"));
+                assertTrue(containsText(appearanceBody, "調整鍵盤高度"));
+                assertFalse(containsText(appearanceBody, "直式虛擬鍵盤"));
+                assertFalse(containsText(appearanceBody, "橫式虛擬鍵盤"));
                 appearance.getChildAt(0).performClick();
 
-                LinearLayout phrases = findGroup(page, "關聯詞詞庫");
-                phrases.getChildAt(0).performClick();
-                assertEquals(View.VISIBLE, phrases.getChildAt(1).getVisibility());
-                assertEquals(30, countCollectionChecks(phrases.getChildAt(1)));
+                assertFalse(containsText(page, "關聯詞詞庫"));
+                assertEquals(0, countCollectionChecks(page));
 
                 LinearLayout composition = findGroup(page, "注音與選字");
                 View header = composition.getChildAt(0);
@@ -97,6 +95,124 @@ public final class SettingsGroupsInstrumentedTest {
             }
             SupporterState.setSupporter(context, oldSupporter);
             BopomofoCompositionModeSettings.setBigramEnabled(context, oldBigram);
+        }
+    }
+
+    @Test
+    public void homeOpensPhraseCollectionsAndKeepsTheirPreferences() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        boolean previouslyStored = preferences.contains(PhraseSettings.KEY_ENABLED_COLLECTIONS);
+        var previous = PhraseSettings.enabledCollections(context);
+        var monitor = instrumentation.addMonitor(PhraseCollectionsActivity.class.getName(), null, false);
+        Activity home = null;
+        Activity collections = null;
+        try {
+            PhraseSettings.setEnabledCollections(context, PhraseSettings.baseCollectionOnly());
+            home = instrumentation.startActivitySync(new Intent(context, MainActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity main = home;
+            instrumentation.runOnMainSync(() ->
+                    clickButton(main.findViewById(android.R.id.content), R.string.phrase_collections_title));
+            collections = instrumentation.waitForMonitorWithTimeout(monitor, 5000);
+            assertNotNull("Home must open the dedicated phrase collection page", collections);
+            Activity page = collections;
+            instrumentation.runOnMainSync(() -> {
+                View root = page.findViewById(android.R.id.content);
+                assertEquals(30, countCollectionChecks(root));
+                CheckBox base = root.findViewWithTag("McBopomofo");
+                assertNotNull(base);
+                assertTrue(base.isChecked());
+                assertTrue(containsText(root, "已啟用 1／30 個詞庫"));
+
+                clickButton(root, R.string.phrase_select_all);
+                assertEquals(30, PhraseSettings.enabledCollections(context).size());
+                clickButton(root, R.string.phrase_select_none);
+                assertTrue(PhraseSettings.enabledCollections(context).isEmpty());
+                clickButton(root, R.string.phrase_base_only);
+                assertEquals(PhraseSettings.baseCollectionOnly(), PhraseSettings.enabledCollections(context));
+                base.performClick();
+                assertTrue(PhraseSettings.enabledCollections(context).isEmpty());
+            });
+        } finally {
+            instrumentation.removeMonitor(monitor);
+            if (collections != null) instrumentation.runOnMainSync(collections::finish);
+            if (home != null) instrumentation.runOnMainSync(home::finish);
+            if (previouslyStored) PhraseSettings.setEnabledCollections(context, previous);
+            else preferences.edit().remove(PhraseSettings.KEY_ENABLED_COLLECTIONS).apply();
+        }
+    }
+
+    @Test
+    public void allThreeBopomofoLayoutsKeepTheSharedToneOmissionSetting() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        String layoutKey = BopomofoKeyboardLayoutSettings.KEY_LAYOUT;
+        String omitKey = BopomofoCompositionModeSettings.KEY_OMIT_TONE;
+        var previous = preferences.getAll();
+        Activity activity = null;
+        CheckBox[] option = {null};
+        Spinner[] selector = {null};
+        try {
+            BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.STANDARD);
+            BopomofoCompositionModeSettings.setOmitTone(context, true);
+            activity = instrumentation.startActivitySync(new Intent(context, SettingsActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity initial = activity;
+            instrumentation.runOnMainSync(() -> {
+                View body = revealComposition(initial, context);
+                option[0] = findOmitTone(body, context);
+                assertTrue(option[0].isEnabled());
+                assertTrue(option[0].isChecked());
+                selector[0] = findProfileSelector(body, context.getString(R.string.bopomofo_keyboard_layout));
+                assertNotNull(selector[0]);
+                selector[0].setSelection(BopomofoKeyboardLayout.HSU.ordinal());
+            });
+            instrumentation.waitForIdleSync();
+            instrumentation.runOnMainSync(() -> {
+                assertTrue(option[0].isEnabled());
+                assertTrue(option[0].isChecked());
+                initial.finish();
+            });
+            assertSame(BopomofoKeyboardLayout.HSU, BopomofoKeyboardLayoutSettings.layout(context));
+            assertTrue(preferences.getBoolean(omitKey, false));
+
+            activity = instrumentation.startActivitySync(new Intent(context, SettingsActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity reopened = activity;
+            instrumentation.runOnMainSync(() -> {
+                View body = revealComposition(reopened, context);
+                option[0] = findOmitTone(body, context);
+                assertTrue(option[0].isEnabled());
+                assertTrue(option[0].isChecked());
+                selector[0] = findProfileSelector(body, context.getString(R.string.bopomofo_keyboard_layout));
+                assertNotNull(selector[0]);
+                selector[0].setSelection(BopomofoKeyboardLayout.HANYU_PINYIN.ordinal());
+            });
+            instrumentation.waitForIdleSync();
+            instrumentation.runOnMainSync(() -> {
+                assertTrue(option[0].isEnabled());
+                assertTrue(option[0].isChecked());
+                assertTrue(preferences.getBoolean(omitKey, false));
+                option[0].performClick();
+                assertFalse(option[0].isChecked());
+                selector[0].setSelection(BopomofoKeyboardLayout.STANDARD.ordinal());
+            });
+            instrumentation.waitForIdleSync();
+            instrumentation.runOnMainSync(() -> {
+                assertTrue(option[0].isEnabled());
+                assertFalse(option[0].isChecked());
+            });
+            assertSame(BopomofoKeyboardLayout.STANDARD, BopomofoKeyboardLayoutSettings.layout(context));
+            assertFalse(preferences.getBoolean(omitKey, true));
+        } finally {
+            if (activity != null) instrumentation.runOnMainSync(activity::finish);
+            var edit = preferences.edit().remove(layoutKey).remove(omitKey);
+            if (previous.get(layoutKey) instanceof String layout) edit.putString(layoutKey, layout);
+            if (previous.get(omitKey) instanceof Boolean omit) edit.putBoolean(omitKey, omit);
+            edit.commit();
         }
     }
 
@@ -327,6 +443,22 @@ public final class SettingsGroupsInstrumentedTest {
         return -1;
     }
 
+    private static View revealComposition(Activity activity, Context context) {
+        ViewGroup root = activity.findViewById(android.R.id.content);
+        LinearLayout page = (LinearLayout) ((ScrollView) root.getChildAt(0)).getChildAt(0);
+        LinearLayout composition = findGroup(page, context.getString(R.string.settings_group_composition));
+        View body = composition.getChildAt(1);
+        if (body.getVisibility() != View.VISIBLE) composition.getChildAt(0).performClick();
+        return body;
+    }
+
+    private static CheckBox findOmitTone(View root, Context context) {
+        var matches = new java.util.ArrayList<View>();
+        root.findViewsWithText(matches, context.getString(R.string.smart_omit_tone), View.FIND_VIEWS_WITH_TEXT);
+        for (View view : matches) if (view instanceof CheckBox check) return check;
+        throw new AssertionError("Missing Smart tone omission check box");
+    }
+
     private static Spinner revealProfileSelector(Activity activity, Context context) {
         ViewGroup root = activity.findViewById(android.R.id.content);
         LinearLayout page = (LinearLayout) ((ScrollView) root.getChildAt(0)).getChildAt(0);
@@ -358,6 +490,23 @@ public final class SettingsGroupsInstrumentedTest {
             }
         }
         throw new AssertionError("Missing settings group: " + title);
+    }
+
+    private static void clickButton(View root, int label) {
+        Button button = findButton(root, root.getResources().getString(label));
+        assertNotNull(button);
+        assertTrue(button.performClick());
+    }
+
+    private static Button findButton(View root, String label) {
+        if (root instanceof Button button && label.contentEquals(button.getText())) return button;
+        if (root instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                Button button = findButton(group.getChildAt(i), label);
+                if (button != null) return button;
+            }
+        }
+        return null;
     }
 
     private static int countCollectionChecks(View root) {

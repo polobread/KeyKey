@@ -20,7 +20,6 @@ final class KeyboardView: UIView {
         var smartCells: [String] = []
         var smartEditableCount = 0
         var phoneticPending = false
-        var phoneticSuggestions = false
         var phoneticSpaceFirstTone = false
         var candidates: [String] = []
         var highlightedIndex = -1
@@ -578,7 +577,6 @@ final class KeyboardView: UIView {
         }
         dismissButton.isHidden = !isSplit
         closeCandidatesButton.isHidden = !isSplit || !state.smartMode || !hasCandidates
-            || state.phoneticSuggestions
     }
 
     private func updateRowLayout() {
@@ -647,18 +645,14 @@ final class KeyboardView: UIView {
     func apply(_ nextState: State, force: Bool = false) {
         let previousState = state
         state = nextState
-        // Live suggestions share the candidate buttons but take their own
-        // strip, leaving every reading key (including tone keys) reachable.
-        setCandidateOverlay(state.smartMode && !state.phoneticPending)
-        if state.smartMode != previousState.smartMode
-            || state.phoneticPending != previousState.phoneticPending { setNeedsLayout() }
+        setCandidateOverlay(state.smartMode)
+        if state.smartMode != previousState.smartMode { setNeedsLayout() }
         updateCandidateVisibility()
 
         let hasCandidates = !state.candidates.isEmpty
         let hadCandidates = !previousState.candidates.isEmpty
         if force || hasCandidates != hadCandidates
             || state.reading != previousState.reading
-            || state.phoneticPending != previousState.phoneticPending
             || state.mode != previousState.mode
             || state.keyboardLayout != previousState.keyboardLayout
             || state.chineseInputMethod != previousState.chineseInputMethod
@@ -680,13 +674,12 @@ final class KeyboardView: UIView {
                state.reading.isEmpty, state.mode == .bopomofo {
                 statusLabel.text = "\(normalStatus)　歡迎付費支持"
             } else {
-                statusLabel.text = state.statusOverride
-                    ?? (state.phoneticPending ? "可繼續輸入或指定聲調" : normalStatus)
+                statusLabel.text = state.statusOverride ?? normalStatus
             }
         }
 
         smartCellStrip.isHidden = !state.smartMode
-        candidateContainer.isHidden = state.smartMode && !hasCandidates && !state.phoneticPending
+        candidateContainer.isHidden = state.smartMode && !hasCandidates
         if force || state.smartCells != previousState.smartCells
             || state.smartEditableCount != previousState.smartEditableCount
             || state.smartMode != previousState.smartMode

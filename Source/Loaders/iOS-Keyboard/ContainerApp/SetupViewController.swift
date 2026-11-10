@@ -2,9 +2,16 @@ import KeyKeyEngine
 import UIKit
 import UniformTypeIdentifiers
 
-/// Setup guidance, mirroring the Android launcher screen. The keyboard itself
-/// carries the settings, so this screen only has to get the user to the point
-/// where the keyboard is enabled and selected.
+private func embeddedKeyboardModelURL() -> URL? {
+    guard let plugIns = Bundle.main.builtInPlugInsURL,
+          let entries = try? FileManager.default.contentsOfDirectory(
+            at: plugIns, includingPropertiesForKeys: nil
+          ) else { return nil }
+    return entries.lazy.filter { $0.pathExtension == "appex" }
+        .compactMap { Bundle(url: $0)?.url(forResource: "KeyKey", withExtension: "db") }.first
+}
+
+/// Setup guidance and entry points for App-managed keyboard settings.
 final class SetupViewController: UIViewController {
     private let supporterState: SupporterState = {
         #if DEBUG
@@ -70,13 +77,18 @@ final class SetupViewController: UIViewController {
         inputSettings.accessibilityIdentifier = "open-input-method-settings"
         inputSettings.addTarget(self, action: #selector(openInputMethodSettings), for: .touchUpInside)
 
+        let phraseCollections = UIButton(configuration: .tinted())
+        phraseCollections.setTitle("關聯詞詞庫", for: .normal)
+        phraseCollections.accessibilityIdentifier = "open-phrase-collections"
+        phraseCollections.addTarget(self, action: #selector(openPhraseCollections), for: .touchUpInside)
+
         let steps = label(
             """
             1. 開啟「設定 → 一般 → 鍵盤 → 鍵盤 → 加入新的鍵盤」
             2. 在「第三方鍵盤」中選擇「琦琦輸入法」
             3. 打字時長按地球鍵切換到琦琦輸入法
 
-            鍵盤上的「設」鍵可以調整關聯詞詞庫。
+            關聯詞詞庫可在琦琦 App 首頁調整。
             """,
             size: 15, weight: .regular
         )
@@ -135,8 +147,8 @@ final class SetupViewController: UIViewController {
         supporterSection.accessibilityIdentifier = "supporter.section"
 
         var items: [UIView] = [
-            titleBlock, subtitle, hardwareEditor, hardwareEditorNote, inputSettings, userPhrases,
-            steps, openSettings, note, acknowledgements
+            titleBlock, subtitle, hardwareEditor, hardwareEditorNote, inputSettings,
+            phraseCollections, userPhrases, steps, openSettings, note, acknowledgements
         ]
         #if DEBUG
         if !ProcessInfo.processInfo.arguments.contains("-KeyKeySupporterReview") {
@@ -249,6 +261,31 @@ final class SetupViewController: UIViewController {
         present(navigation, animated: true)
     }
 
+    @objc private func openPhraseCollections() {
+        guard let sharedDefaults = UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier),
+              let url = embeddedKeyboardModelURL(),
+              let database = try? Database(url: url),
+              let collections = try? AssociatedPhraseStore(database: database).collections(),
+              !collections.isEmpty else {
+            let alert = UIAlertController(
+                title: "關聯詞詞庫", message: "無法載入關聯詞詞庫。", preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "知道了", style: .default))
+            present(alert, animated: true)
+            return
+        }
+
+        let settings = PhraseSettings(sharedDefaults: sharedDefaults, writesShared: true)
+        let available = Set(collections.map(\.source))
+        let picker = PhraseCollectionPickerViewController(
+            collections: collections,
+            enabled: settings.enabledCollections.intersection(available),
+            accessibilityPrefix: "app-settings.phrases"
+        )
+        picker.didChange = { settings.setEnabledCollections($0.intersection(available)) }
+        present(UINavigationController(rootViewController: picker), animated: true)
+    }
+
     @objc private func openUserPhrases() {
         present(UINavigationController(rootViewController: UserPhrasesViewController()), animated: true)
     }
@@ -338,11 +375,6 @@ final class SetupViewController: UIViewController {
 /// The keyboard still keeps its own changes in its private sandbox.
 private final class InputMethodSettingsViewController: UIViewController {
     private let sharedDefaults = UserDefaults(suiteName: KeyboardPreferenceStore.appGroupIdentifier)
-    private var collections: [AssociatedPhraseStore.Collection] = []
-    private var collectionSwitches: [String: UISwitch] = [:]
-    private lazy var phraseSettings = PhraseSettings(
-        sharedDefaults: sharedDefaults, writesShared: true
-    )
     private lazy var modeSettings = ChineseInputMethodSettings(
         sharedDefaults: sharedDefaults, writesShared: true
     )
@@ -435,16 +467,16 @@ private final class InputMethodSettingsViewController: UIViewController {
 
         let toneOmissionRow = UIStackView()
         toneOmissionRow.alignment = .center
-        toneOmissionRow.addArrangedSubview(label("省略聲調", size: 18))
+        toneOmissionRow.addArrangedSubview(label(SmartMandarinToneOmissionSettings.displayName, size: 18))
         toneOmissionRow.addArrangedSubview(UIView())
         let toneOmission = UISwitch()
         toneOmission.isOn = toneOmissionSettings.enabled
         toneOmission.accessibilityIdentifier = "app-settings.omit-tones"
-        toneOmission.accessibilityLabel = "省略聲調"
+        toneOmission.accessibilityLabel = SmartMandarinToneOmissionSettings.displayName
         toneOmission.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
         toneOmissionRow.addArrangedSubview(toneOmission)
         stack.addArrangedSubview(toneOmissionRow)
-        stack.addArrangedSubview(label("預設關閉。開啟後，觸控好打注音的標準注音與漢語拼音可連續輸入讀音並顯示候選，仍可按聲調鍵。", size: 14))
+        stack.addArrangedSubview(label("預設關閉。開啟後，觸控好打注音的標準注音、許氏與漢語拼音可連續輸入讀音，並在 11 格組字區顯示轉出的中文字。仍可照常輸入聲調。", size: 14))
 
         stack.addArrangedSubview(tableOptionsButton(for: .cangjie))
         stack.addArrangedSubview(tableOptionsButton(for: .cangjie, virtualKeyboard: false))
@@ -471,39 +503,6 @@ private final class InputMethodSettingsViewController: UIViewController {
         clickRow.addArrangedSubview(clicks)
         stack.addArrangedSubview(clickRow)
 
-        stack.addArrangedSubview(label("關聯詞詞庫", size: 18))
-        let bulk = UIStackView(arrangedSubviews: [
-            button("全部啟用", #selector(enableAll)),
-            button("僅小麥注音", #selector(enableBaseOnly)),
-            button("全部關閉", #selector(disableAll))
-        ])
-        bulk.axis = .horizontal
-        bulk.distribution = .fillEqually
-        bulk.spacing = 4
-        stack.addArrangedSubview(bulk)
-
-        collections = loadCollections()
-        if collections.isEmpty {
-            stack.addArrangedSubview(label("無法載入關聯詞詞庫。", size: 14))
-        } else {
-            for collection in collections {
-                let row = UIStackView()
-                row.axis = .horizontal
-                row.alignment = .center
-                row.addArrangedSubview(label(collection.display, size: 15))
-                row.addArrangedSubview(UIView())
-                let toggle = UISwitch()
-                toggle.isOn = phraseSettings.enabledCollections.contains(collection.source)
-                toggle.accessibilityIdentifier = "app-settings.collection.\(collection.source)"
-                toggle.accessibilityLabel = collection.display
-                toggle.addTarget(self, action: #selector(collectionChanged(_:)), for: .valueChanged)
-                collectionSwitches[collection.source] = toggle
-                row.addArrangedSubview(toggle)
-                row.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
-                stack.addArrangedSubview(row)
-            }
-        }
-
         let note = label(
             "在這裡變更後，鍵盤下次開啟會套用。鍵盤內「設」頁的修改保存在鍵盤自己的資料區，無法顯示回 App。重設學習紀錄會在下次開啟鍵盤時生效。",
             size: 13
@@ -525,26 +524,6 @@ private final class InputMethodSettingsViewController: UIViewController {
         button.setTitle(title, for: .normal)
         button.addTarget(self, action: action, for: .touchUpInside)
         return button
-    }
-
-    private func embeddedDatabaseURL() -> URL? {
-        guard let plugIns = Bundle.main.builtInPlugInsURL,
-              let entries = try? FileManager.default.contentsOfDirectory(
-                at: plugIns, includingPropertiesForKeys: nil
-              ) else { return nil }
-        return entries.lazy.filter { $0.pathExtension == "appex" }
-            .compactMap { Bundle(url: $0)?.url(forResource: "KeyKey", withExtension: "db") }.first
-    }
-
-    private func loadCollections() -> [AssociatedPhraseStore.Collection] {
-        guard let url = embeddedDatabaseURL(), let database = try? Database(url: url) else { return [] }
-        let store = AssociatedPhraseStore(database: database)
-        return (try? store.collections()) ?? []
-    }
-
-    private func syncCollectionSwitches() {
-        let enabled = phraseSettings.enabledCollections
-        for (source, toggle) in collectionSwitches { toggle.isOn = enabled.contains(source) }
     }
 
     @objc private func close() { dismiss(animated: true) }
@@ -662,26 +641,6 @@ private final class InputMethodSettingsViewController: UIViewController {
         clickSettings.setEnabled(sender.isOn)
     }
 
-    @objc private func collectionChanged(_ sender: UISwitch) {
-        guard let source = collectionSwitches.first(where: { $0.value === sender })?.key else { return }
-        phraseSettings.setCollection(source, enabled: sender.isOn)
-    }
-
-    @objc private func enableAll() {
-        phraseSettings.setEnabledCollections(Set(collections.map(\.source)))
-        syncCollectionSwitches()
-    }
-
-    @objc private func enableBaseOnly() {
-        phraseSettings.setEnabledCollections([PhraseSettings.baseCollection])
-        syncCollectionSwitches()
-    }
-
-    @objc private func disableAll() {
-        phraseSettings.setEnabledCollections([])
-        syncCollectionSwitches()
-    }
-
     @objc private func openPhrases() {
         navigationController?.pushViewController(UserPhrasesViewController(), animated: true)
     }
@@ -705,7 +664,7 @@ private final class InputMethodSettingsViewController: UIViewController {
                                             in: .userDomainMask)[0]
         var editorReset = false
         do {
-            guard let modelURL = embeddedDatabaseURL() else { throw CocoaError(.fileNoSuchFile) }
+            guard let modelURL = embeddedKeyboardModelURL() else { throw CocoaError(.fileNoSuchFile) }
             try GuanyinmaInputEngine.resetLearning(
                 modelURL: modelURL, userDatabaseURL: local.appendingPathComponent("GuanyinmaUser.db")
             )

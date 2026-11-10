@@ -33,7 +33,7 @@
         "KeyKeyUITests/testLayoutOptionsKeepReadingAndCandidates()",
         "KeyKeyUITests/testSettingsLongPressDoesNotOpenLayoutMenu()",
         "KeyKeyUITests/testHanyuPinyinTouchKeyboardUsesExistingComposition()",
-        "KeyKeyUITests/testToneOmissionShowsCandidatesInStandardAndPinyinWithoutCoveringToneKeys()",
+        "KeyKeyUITests/testToneOmissionUsesAnEditableGridInAllThreeLayouts()",
         "KeyKeyUITests/testHardwareEditorForwardDeleteKeepsCompositionAndRemovesLastReading()",
         "KeyKeyUITests/testHardwareEditorForwardDeleteRemovesCommittedGraphemes()",
         "KeyKeyUITests/testHardwareEditorRightHandSelectionSurvivesRotationAndRefocus()",

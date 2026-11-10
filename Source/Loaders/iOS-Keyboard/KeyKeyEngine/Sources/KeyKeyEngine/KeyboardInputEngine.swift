@@ -71,8 +71,11 @@ public final class KeyboardInputEngine: InputEngine {
     public var spaceSelectsCandidates: Bool { get { backend.spaceSelectsCandidates } set { performUpdate { $0.spaceSelectsCandidates = newValue } } }
     public var omitsTones: Bool {
         get { backend.omitsTones }
-        set { backend.omitsTones = newValue }
+        set { performUpdate { $0.omitsTones = newValue } }
     }
+    public var usesTouchPhoneticGrid: Bool { backend.usesTouchPhoneticGrid }
+    public var touchSmartHostReading: String { backend.touchSmartHostReading }
+    public var touchSmartEditableCount: Int { backend.touchSmartEditableCount }
     public var hasPendingPhoneticInput: Bool { backend.hasPendingPhoneticInput }
     public var isShowingPhoneticSuggestions: Bool { backend.isShowingPhoneticSuggestions }
     public var phoneticSpaceIsFirstTone: Bool { backend.phoneticSpaceIsFirstTone }

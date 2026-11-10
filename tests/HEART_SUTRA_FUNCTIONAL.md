@@ -5,7 +5,7 @@
 ## 開始前
 
 1. 安裝並啟用本次要驗的版本，記下平台、產品版號、作業系統版號和測試日期。
-2. **將所有關聯詞庫關閉**，包含基本小麥注音詞庫和所有分類詞庫。在 iOS 要改的是 keyboard extension 自己的詞庫設定；容器 App 的實體鍵盤編輯器設定不會同步到 extension。選完一個字後應沒有關聯詞候選。這項前置設定須記在平台報告內。
+2. **將所有關聯詞庫關閉**，包含基本小麥注音詞庫和所有分類詞庫。在 iOS 從琦琦輸入法 App 首頁的「關聯詞詞庫」調整；實體鍵盤編輯器內的詞庫設定不會同步到 extension。選完一個字後應沒有關聯詞候選。這項前置設定須記在平台報告內。
 3. 執行 `python3 tests/heart_sutra.py check-dictionary`，確認這 268 組讀音在共用字表中。用 `python3 tests/heart_sutra.py plan` 查看每個目標字在原始字表的**絕對候選順位**（從 1 起算）。建立 `captures/` 目錄後，用 `python3 tests/heart_sutra.py template > captures/macos.positions.tsv` 建立空白觀測表（其他平台換檔名），逐字將問號填為實際看到的順位。預期順位不能直接當成實際觀測值。
 4. 開啟純文字、可輸入多行的欄位。先清空內容並確認切到琦琦注音、繁體、標準注音配置。候選頁預設九字；若平台設定曾改過選字鍵或每頁數量，先還原預設。測試中不要貼上預期全文，也不要由程式直接填入欄位；每個漢字都必須由注音組字與候選選字產生。
 
@@ -36,7 +36,7 @@ iOS 外接鍵盤無法由第三方 keyboard extension 接管；若要另驗 iOS 
 ## 開發機自動化入口
 
 - **macOS：開發機 MacBook** 先安裝並選用琦琦注音，在設定中關閉全部關聯詞庫，然後執行 `python3 tests/run_macos_heart_sutra.py --output /tmp/keykey-macos-heart-sutra`。腳本先確認目前輸入來源和詞庫設定，不會改動這兩項偏好；接著在 TextEdit 逐鍵打完 268 字，每字提交後讀取實際文字並核對前綴。只有全文成功才留下 `macos.txt`、`macos.positions.tsv`。本機需允許執行腳本的終端機透過 System Events 控制 TextEdit，並保持該文件在前景。
-- **iOS：開發機 MacBook** 使用 shared scheme `chichi77 KeyKey` 的 `KeyKeyHeartSutra.xctestplan`，在本機 iOS 17 Simulator 跑 `testHeartSutraKeyboardExtension`。測試自己透過系統設定加入第三方鍵盤，切到真實 extension，從 extension「設」關閉全部關聯詞庫，再逐字點注音與候選；全文及 268 筆順位會附在 `.xcresult`。測資由 [產生器](generate_ios_heart_sutra_fixture.py) 從共用心經稿與 CIN 產生，執行前可用 `--check` 確認一致。完整命令見 [iOS 開發說明](../Source/Loaders/iOS-Keyboard/README.md)。此專用測試不加入 Xcode Cloud。
+- **iOS：開發機 MacBook** 使用 shared scheme `chichi77 KeyKey` 的 `KeyKeyHeartSutra.xctestplan`，在本機 iOS 17 Simulator 跑 `testHeartSutraKeyboardExtension`。測試自己透過系統設定加入第三方鍵盤，切到真實 extension，先從琦琦輸入法 App 的「關聯詞詞庫」關閉全部詞庫，再逐字點注音與候選；全文及 268 筆順位會附在 `.xcresult`。測資由 [產生器](generate_ios_heart_sutra_fixture.py) 從共用心經稿與 CIN 產生，執行前可用 `--check` 確認一致。完整命令見 [iOS 開發說明](../Source/Loaders/iOS-Keyboard/README.md)。此專用測試不加入 Xcode Cloud。
 
 本機已驗證乾淨的 **iOS 17.0 Simulator** 可由 XCUITest 自動加入並切換到琦琦 extension；**iOS 26.5 Simulator** 可以加入，但既有切換測試被系統略過，不能視為通過。專用心經測試若無法切換到 extension 會直接失敗，不會略過。以上 iOS XCUITest 在容器 App 的真實多行測試欄位中使用系統安裝的 keyboard extension；它不以容器 App 實體鍵盤編輯器替代 extension。
 

@@ -192,7 +192,7 @@ def main(argv=None):
     parser.add_argument("--cargo", default=os.environ.get("CARGO", "cargo"))
     parser.add_argument("--sqlite-provider", choices=("system", "bundled"), default="system")
     parser.add_argument("--report-dir", type=Path, default=CORE / "target/coverage")
-    parser.add_argument("--minimum-line-coverage", type=float, default=92.0)
+    parser.add_argument("--minimum-line-coverage", type=float, default=96.0)
     parser.add_argument("--offline", action="store_true")
     args = parser.parse_args(argv)
     report_dir = args.report_dir.resolve()

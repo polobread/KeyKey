@@ -281,7 +281,7 @@ int32_t GUANYINMA_CALL guanyinma_database_associated_collections(
  * Unknown fields/values and invalid text are errors, not ignored commands.
  *
  * touch_phonetic opts into live toneless suggestions per key for Smart
- * touch sessions with the Standard or Hanyu Pinyin layout. A live list
+ * touch sessions with a Standard, Hsu, or Hanyu Pinyin layout. A live list
  * occupies candidates/displayed_candidates without ordinary candidate_spans.
  * phonetic_pending marks the editable raw input, phonetic_suggestions marks
  * a live list, and phonetic_space_first_tone identifies an explicit first-tone

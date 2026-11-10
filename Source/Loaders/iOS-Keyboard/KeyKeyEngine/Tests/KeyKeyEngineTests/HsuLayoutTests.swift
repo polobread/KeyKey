@@ -39,4 +39,34 @@ struct HsuLayoutTests {
         keyboard.setLayout(.standard)
         #expect(keyboard.layout == .standard)
     }
+
+    @Test("Changing the keyboard layout preserves the shared tone omission preference")
+    func toneOmissionPreference() throws {
+        let localName = "omit-local-\(UUID())", sharedName = "omit-shared-\(UUID())"
+        let local = try #require(UserDefaults(suiteName: localName))
+        let shared = try #require(UserDefaults(suiteName: sharedName))
+        defer {
+            local.removePersistentDomain(forName: localName)
+            shared.removePersistentDomain(forName: sharedName)
+        }
+        let keyboard = SmartMandarinToneOmissionSettings(defaults: local, sharedDefaults: shared)
+        let app = SmartMandarinToneOmissionSettings(defaults: local, sharedDefaults: shared, writesShared: true)
+        let keyboardLayout = BopomofoKeyboardLayoutSettings(defaults: local, sharedDefaults: shared)
+        let appLayout = BopomofoKeyboardLayoutSettings(defaults: local, sharedDefaults: shared, writesShared: true)
+        #expect(!keyboard.enabled)
+
+        app.setEnabled(false)
+        keyboard.setEnabled(true)
+        keyboardLayout.setLayout(.hsu)
+        #expect(keyboard.enabled)
+        appLayout.setLayout(.hanyuPinyin)
+        #expect(keyboardLayout.layout == .hanyuPinyin)
+        #expect(keyboard.enabled)
+
+        app.setEnabled(false)
+        #expect(!keyboard.enabled)
+        app.setEnabled(true)
+        appLayout.setLayout(.hsu)
+        #expect(keyboard.enabled)
+    }
 }

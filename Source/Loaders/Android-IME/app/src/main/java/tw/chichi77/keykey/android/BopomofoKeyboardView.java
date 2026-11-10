@@ -341,11 +341,9 @@ final class BopomofoKeyboardView extends View {
         return Math.round(defaultTouchHeight() * (KeyboardSizeSettings.MAX_PERCENT / 100f));
     }
 
-    int maximumResizeExtent() {
+    int maximumResizeExtent(int availableHeight) {
         int reserved = Math.max(reservedSystemAreaHeight(), systemAreaHeight());
-        // Keep space for the host field on compact screens.
-        return Math.max(visibleTouchEdges().top(), dp(getResources().getConfiguration().screenHeightDp)
-                - reserved - dp(56));
+        return Math.max(visibleTouchEdges().top(), availableHeight - reserved);
     }
 
     KeyboardEdgeGeometry visibleTouchEdges() {

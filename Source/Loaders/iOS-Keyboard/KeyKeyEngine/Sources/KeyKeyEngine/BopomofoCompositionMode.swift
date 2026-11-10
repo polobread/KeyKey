@@ -116,6 +116,7 @@ public struct SmartMandarinSpaceSettings {
 
 /// The keyboard can change this preference in its private sandbox.
 public struct SmartMandarinToneOmissionSettings {
+    public static let displayName = "好打注音省略聲調"
     private static let key = "smartOmitsTones"
     private let store: KeyboardPreferenceStore
 

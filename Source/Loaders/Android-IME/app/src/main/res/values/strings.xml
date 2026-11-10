@@ -34,8 +34,6 @@
     <string name="settings_group_appearance_summary">鍵盤高度、底部空間、震動、按鍵預覽、候選顏色</string>
     <string name="settings_group_hardware">實體鍵盤</string>
     <string name="settings_group_hardware_summary">浮動候選窗、數字符號鍵、底部空間</string>
-    <string name="settings_group_phrases">關聯詞詞庫</string>
-    <string name="settings_group_phrases_summary">選擇要啟用的詞庫</string>
     <string name="settings_group_expand">展開%1$s</string>
     <string name="settings_group_collapse">收合%1$s</string>
 
@@ -55,11 +53,10 @@
     <string name="haptic_maximum">0.1 秒</string>
     <string name="haptic_value_off">震動時間：關閉</string>
     <string name="haptic_value_seconds">震動時間：%1$s 秒（%2$d ms）</string>
-    <string name="keyboard_size_title">虛擬鍵盤高度</string>
-    <string name="keyboard_size_description" formatted="false">直式與橫式可分別選擇 50%、75%、90%、100%、110%、125%、150%、175%、200%；只影響螢幕虛擬鍵盤，實體鍵盤候選字窗維持原尺寸。</string>
-    <string name="keyboard_resize_hint">在觸控鍵盤按「設」→「鍵盤高度」，可即時拖曳鍵盤上下緣。</string>
-    <string name="keyboard_resize_title">鍵盤高度</string>
-    <string name="keyboard_resize_open_settings">開啟設定</string>
+    <string name="keyboard_resize_title">調整鍵盤高度</string>
+    <string name="keyboard_resize_hint">目前預覽：%1$s。拖曳鍵盤上下緣，旋轉裝置可調整另一個方向。</string>
+    <string name="keyboard_resize_portrait">直式</string>
+    <string name="keyboard_resize_landscape">橫式</string>
     <string name="keyboard_resize_top">拖曳鍵盤上緣</string>
     <string name="keyboard_resize_top_label">拖曳上緣</string>
     <string name="keyboard_resize_bottom">拖曳鍵盤下緣</string>
@@ -70,11 +67,6 @@
     <string name="keyboard_resize_done">完成</string>
     <string name="keyboard_resize_step_up">向上微調</string>
     <string name="keyboard_resize_step_down">向下微調</string>
-    <string name="keyboard_size_portrait">直式虛擬鍵盤</string>
-    <string name="keyboard_size_landscape">橫式虛擬鍵盤</string>
-    <string name="keyboard_size_value">目前高度：%1$d%%</string>
-    <string name="keyboard_size_minimum">50%</string>
-    <string name="keyboard_size_maximum">200%</string>
     <string name="key_preview_enabled">顯示觸控按鍵預覽</string>
     <string name="key_preview_description">按住文字、注音或符號鍵時，在按鍵上方或附近顯示放大的按鍵圖，方便確認是否按對。</string>
     <string name="candidate_color_title">候選字底色</string>
@@ -117,8 +109,7 @@
     <string name="supporter_prompt_paid">付費</string>
     <string name="supporter_prompt_support">支持</string>
     <string name="supporter_purchase_error">目前無法連線 Google Play 結帳服務，請稍後再試。</string>
-    <string name="phrase_collections_title">關聯詞詞庫（%1$d）</string>
-    <string name="phrase_collections_title_unavailable">關聯詞詞庫</string>
+    <string name="phrase_collections_title">關聯詞詞庫</string>
     <string name="phrase_collections_description">選擇要啟用的關聯詞詞庫，變更會在下次顯示輸入鍵盤時生效。完全不選代表不使用任何關聯詞詞庫。</string>
     <string name="phrase_select_all">全部啟用</string>
     <string name="phrase_base_only">僅小麥注音</string>
@@ -128,8 +119,8 @@
     <string name="phrase_collections_unavailable">找不到詞庫資料</string>
     <string name="phrase_collection_item">%1$s　%2$s</string>
     <string name="privacy_note">字典、組字與選字均在裝置上執行；付費支持由 Google Play 結帳服務處理。輸入內容不會傳送給開發者。</string>
-    <string name="smart_omit_tone">省略聲調</string>
-    <string name="smart_omit_tone_description">預設關閉。開啟後，好打注音的標準注音和漢語拼音觸控鍵盤會在輸入讀音時顯示候選。例如連打 nihao 可點選「你好」，也可照常輸入聲調。</string>
+    <string name="smart_omit_tone">好打注音省略聲調</string>
+    <string name="smart_omit_tone_description">預設關閉，適用於好打注音的標準、許氏與漢語拼音觸控鍵盤。中文字放在 11 格組字區，讀音留在 App 輸入框，點一格即可換字。切換配置時會保留此設定，也可照常輸入聲調。</string>
     <string name="smart_space_selects_candidates">使用空白鍵選字</string>
     <string name="smart_space_selects_candidates_description">僅適用好打注音，虛擬與實體鍵盤共用。預設關閉：讀音完成後，在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。關閉時仍可點選組字或按實體鍵盤 ↓ 開啟候選。</string>
     <string name="keyboard_layout_profile">版面</string>

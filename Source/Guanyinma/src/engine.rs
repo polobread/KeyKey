@@ -1618,10 +1618,7 @@ impl InputSession {
         self.state.touch_phonetic.grid.enabled
             && self.config.profile == BehaviorProfile::Touch
             && self.config.method == InputMethod::Smart
-            && matches!(
-                self.config.layout,
-                BopomofoLayout::Standard | BopomofoLayout::HanyuPinyin
-            )
+            && self.config.layout.supports_touch_phonetics()
             && !self.state.english
     }
 
@@ -1893,10 +1890,7 @@ impl InputSession {
         if self.config.profile != BehaviorProfile::Touch
             || self.config.method != InputMethod::Smart
             || self.state.english
-            || !matches!(
-                layout,
-                BopomofoLayout::Standard | BopomofoLayout::HanyuPinyin
-            )
+            || !layout.supports_touch_phonetics()
             || !layout.is_reading_key(character)
             || !self.state.smart.touch_reading_keys().is_empty()
             || (!self.touch_phonetic_pending()
@@ -1905,7 +1899,9 @@ impl InputSession {
         {
             return self.character(character, Modifiers::default(), effects);
         }
-        if layout.is_tone_key(character) && !self.touch_phonetic_pending() {
+        // Hsu's letter tones can also start the next syllable.
+        let is_unambiguous_tone = layout != BopomofoLayout::Hsu && layout.is_tone_key(character);
+        if is_unambiguous_tone && !self.touch_phonetic_pending() {
             return self.character(character, Modifiers::default(), effects);
         }
         let raw_limit =
@@ -1921,7 +1917,7 @@ impl InputSession {
         self.clear_candidates();
         let pending = &mut self.state.touch_phonetic;
         let end = pending.raw.len();
-        if layout.is_tone_key(character) {
+        if is_unambiguous_tone {
             if let Some(lock) = pending.grid.locks.iter().find(|lock| lock.end == end) {
                 if exact_toned_syllable(layout, &pending.raw[lock.start..]).is_some() {
                     effects.beep = true;
@@ -1931,7 +1927,7 @@ impl InputSession {
         }
         pending.grid.retained_preview = None;
         pending.raw.push(character.to_ascii_lowercase());
-        if layout.is_tone_key(character) {
+        if is_unambiguous_tone {
             pending.grid.locks.retain_mut(|lock| {
                 if lock.end != end {
                     return true;

@@ -32,6 +32,8 @@ import android.widget.TextView;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
+import androidx.test.runner.lifecycle.Stage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -588,10 +590,7 @@ public final class KeyboardBottomSpaceInstrumentedTest {
     }
 
     @Test
-    public void liveKeyboardDragKeepsTheOppositeEdgeFixedAndSavesByOrientation() throws Exception {
-        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
-        org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
-                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+    public void settingsPreviewKeepsTheOppositeEdgeFixedAndSavesByOrientation() throws Exception {
         var instrumentation = InstrumentationRegistry.getInstrumentation();
         Context context = instrumentation.getTargetContext();
         SharedPreferences preferences = CandidateWindowSettings.preferences(context);
@@ -601,82 +600,90 @@ public final class KeyboardBottomSpaceInstrumentedTest {
                 KeyboardSizeSettings.KEY_PORTRAIT_GAP, KeyboardSizeSettings.KEY_LANDSCAPE_GAP,
         };
         Map<String, ?> previous = preferences.getAll();
-        Activity activity = null;
+        Activity settings = null;
         try {
             var reset = preferences.edit();
             for (String key : keys) reset.remove(key);
-            reset.commit();
-            activity = instrumentation.startActivitySync(new Intent()
-                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            Activity initial = activity;
+            reset.putInt(KeyboardSizeSettings.KEY_PORTRAIT_PERCENT, 110)
+                    .putInt(KeyboardSizeSettings.KEY_LANDSCAPE_PERCENT, 90).commit();
+            settings = openSettings(context);
+            Activity initial = settings;
             instrumentation.runOnMainSync(() ->
                     initial.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
-            activity = awaitPortraitHost();
-            Activity host = activity;
-            IntegratedBottomControlsInstrumentedTest.showEditorKeyboard(host, context);
-            assertTrue(awaitImeHeight(host, -1) > 0);
+            settings = awaitActivity(SettingsActivity.class, Configuration.ORIENTATION_PORTRAIT);
+            Activity portraitEditor = openResizeControls(settings);
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView keyboard = resizeKeyboard(portraitEditor);
+                assertEquals(Math.round(keyboard.defaultTouchHeight() * 1.1f),
+                        keyboard.visibleTouchEdges().contentHeight());
+            });
             int distance = Math.round(20 * context.getResources().getDisplayMetrics().density);
-            openResizeControls();
 
-            Rect top = resizeBounds("拖曳鍵盤上緣");
-            Rect bottom = resizeBounds("拖曳鍵盤下緣");
-            dragResizeHandle(bottom, distance, () -> {
-                assertEquals(top, resizeBounds("拖曳鍵盤上緣"));
-                assertEquals(bottom, resizeBounds("拖曳鍵盤下緣"));
+            Rect top = resizeBounds(portraitEditor, "拖曳鍵盤上緣");
+            Rect bottom = resizeBounds(portraitEditor, "拖曳鍵盤下緣");
+            dragResizeHandle(portraitEditor, bottom, distance, () -> {
+                assertEquals(top, resizeBounds(portraitEditor, "拖曳鍵盤上緣"));
+                assertEquals(bottom, resizeBounds(portraitEditor, "拖曳鍵盤下緣"));
             });
-            dragResizeHandle(top, -distance, () -> {
-                IntegratedBottomControlsInstrumentedTest.await(() ->
-                        boundsOf(findResizeControl("拖曳鍵盤上緣")).centerY() <= top.centerY() - distance / 2);
-                assertEquals(bottom.centerY(), resizeBounds("拖曳鍵盤下緣").centerY(), 2);
+            dragResizeHandle(portraitEditor, top, -distance, () -> {
+                awaitResizeEdge(portraitEditor, "拖曳鍵盤上緣", top.centerY() - distance / 2);
+                assertEquals(bottom.centerY(), resizeBounds(portraitEditor, "拖曳鍵盤下緣").centerY(), 2);
             });
-            Rect raisedTop = resizeBounds("拖曳鍵盤上緣");
-            dragResizeHandle(bottom, -distance, () -> {
-                IntegratedBottomControlsInstrumentedTest.await(() ->
-                        boundsOf(findResizeControl("拖曳鍵盤下緣")).centerY() <= bottom.centerY() - distance / 2);
-                assertEquals(raisedTop.centerY(), resizeBounds("拖曳鍵盤上緣").centerY(), 2);
+            Rect raisedTop = resizeBounds(portraitEditor, "拖曳鍵盤上緣");
+            dragResizeHandle(portraitEditor, bottom, -distance, () -> {
+                awaitResizeEdge(portraitEditor, "拖曳鍵盤下緣", bottom.centerY() - distance / 2);
+                assertEquals(raisedTop.centerY(), resizeBounds(portraitEditor, "拖曳鍵盤上緣").centerY(), 2);
             });
-            Rect raisedBottom = resizeBounds("拖曳鍵盤下緣");
-            clickResizeControl("完成");
-            assertTrue(preferences.contains(KeyboardSizeSettings.KEY_PORTRAIT_GAP));
-            assertFalse(preferences.contains(KeyboardSizeSettings.KEY_LANDSCAPE_GAP));
+            Rect raisedBottom = resizeBounds(portraitEditor, "拖曳鍵盤下緣");
+            assertFalse(preferences.contains(KeyboardSizeSettings.KEY_PORTRAIT_GAP));
+            clickResizeControl(portraitEditor, "完成");
+            settings = awaitActivity(SettingsActivity.class, Configuration.ORIENTATION_PORTRAIT);
+            KeyboardSizeSettings.Size portrait = KeyboardSizeSettings.size(context, false);
+            assertTrue(portrait.bottomGapDp() > 0);
             assertFalse(preferences.contains(KeyboardSizeSettings.KEY_LANDSCAPE_SCALE));
 
-            var manager = context.getSystemService(InputMethodManager.class);
-            instrumentation.runOnMainSync(() -> manager.hideSoftInputFromWindow(
-                    host.getWindow().getDecorView().getWindowToken(), 0));
-            assertEquals(0, awaitImeHeight(host, 0));
-            IntegratedBottomControlsInstrumentedTest.showEditorKeyboard(host, context);
-            assertTrue(awaitImeHeight(host, -1) > 0);
-            openResizeControls();
-            assertEquals(raisedTop.centerY(), resizeBounds("拖曳鍵盤上緣").centerY(), 2);
-            assertEquals(raisedBottom.centerY(), resizeBounds("拖曳鍵盤下緣").centerY(), 2);
-            clickResizeControl("取消");
+            Activity reopened = openResizeControls(settings);
+            assertEquals(raisedTop.centerY(), resizeBounds(reopened, "拖曳鍵盤上緣").centerY(), 2);
+            assertEquals(raisedBottom.centerY(), resizeBounds(reopened, "拖曳鍵盤下緣").centerY(), 2);
+            clickResizeControl(reopened, "恢復預設");
+            clickResizeControl(reopened, "取消");
+            assertEquals(portrait, KeyboardSizeSettings.size(context, false));
+            settings = awaitActivity(SettingsActivity.class, Configuration.ORIENTATION_PORTRAIT);
 
-            KeyboardSizeSettings.Size portrait = KeyboardSizeSettings.size(context, false);
+            Activity rotating = openResizeControls(settings);
+            clickResizeControl(rotating, "恢復預設");
             instrumentation.runOnMainSync(() ->
-                    host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));
-            IntegratedBottomControlsInstrumentedTest.await(() -> {
-                var keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
-                return keyboard != null && keyboard.isShown()
-                        && keyboard.mode() == BopomofoKeyboardView.Mode.LANDSCAPE;
+                    rotating.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));
+            Activity landscapeEditor = awaitActivity(KeyboardResizeActivity.class,
+                    Configuration.ORIENTATION_LANDSCAPE);
+            awaitResizeControls(landscapeEditor);
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView keyboard = resizeKeyboard(landscapeEditor);
+                assertEquals(BopomofoKeyboardView.Mode.LANDSCAPE, keyboard.mode());
+                assertEquals(Math.round(keyboard.defaultTouchHeight() * .9f),
+                        keyboard.visibleTouchEdges().contentHeight());
             });
-            assertTrue(awaitImeHeight(host, -1) > 0);
-            openResizeControls();
-            Rect landscapeTop = resizeBounds("拖曳鍵盤上緣");
-            Rect landscapeBottom = resizeBounds("拖曳鍵盤下緣");
-            dragResizeHandle(landscapeBottom, -distance, () -> {
-                IntegratedBottomControlsInstrumentedTest.await(() ->
-                        boundsOf(findResizeControl("拖曳鍵盤下緣")).centerY() <= landscapeBottom.centerY() - distance / 2);
-                assertEquals(landscapeTop.centerY(), resizeBounds("拖曳鍵盤上緣").centerY(), 2);
+            Rect landscapeTop = resizeBounds(landscapeEditor, "拖曳鍵盤上緣");
+            Rect landscapeBottom = resizeBounds(landscapeEditor, "拖曳鍵盤下緣");
+            dragResizeHandle(landscapeEditor, landscapeBottom, -distance, () -> {
+                awaitResizeEdge(landscapeEditor, "拖曳鍵盤下緣", landscapeBottom.centerY() - distance / 2);
+                assertEquals(landscapeTop.centerY(), resizeBounds(landscapeEditor, "拖曳鍵盤上緣").centerY(), 2);
             });
-            clickResizeControl("完成");
+            clickResizeControl(landscapeEditor, "完成");
             assertTrue(KeyboardSizeSettings.size(context, true).bottomGapDp() > 0);
             assertEquals(portrait, KeyboardSizeSettings.size(context, false));
         } finally {
-            if (activity != null) {
-                Activity host = activity;
-                instrumentation.runOnMainSync(host::finish);
+            if (settings != null) {
+                Activity current = settings;
+                instrumentation.runOnMainSync(() -> {
+                    for (Activity activity : List.copyOf(ActivityLifecycleMonitorRegistry.getInstance()
+                            .getActivitiesInStage(Stage.RESUMED))) {
+                        if (activity instanceof KeyboardResizeActivity || activity instanceof SettingsActivity) {
+                            activity.finish();
+                        }
+                    }
+                    current.finish();
+                });
             }
             SharedPreferences.Editor restore = preferences.edit();
             for (String key : keys) {
@@ -688,25 +695,87 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         }
     }
 
-    private static void openResizeControls() throws Exception {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
-            BopomofoKeyboardView keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
-            ((BopomofoImeService) keyboard.getContext()).onKey("SETTINGS");
+    @Test
+    public void keyboardSettingsKeyOpensSettingsDirectly() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        Activity host = instrumentation.startActivitySync(new Intent()
+                .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        Activity settings = null;
+        try {
+            IntegratedBottomControlsInstrumentedTest.showEditorKeyboard(host, context);
+            assertTrue(awaitImeHeight(host, -1) > 0);
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+                assertTrue(keyboard.isTouchMode());
+                ((BopomofoImeService) keyboard.getContext()).onKey("SETTINGS");
+            });
+            settings = awaitActivity(SettingsActivity.class, host.getResources().getConfiguration().orientation);
+        } finally {
+            Activity current = settings;
+            instrumentation.runOnMainSync(() -> {
+                if (current != null) current.finish();
+                host.finish();
+            });
+        }
+    }
+
+    private static Activity awaitActivity(Class<? extends Activity> type, int orientation) throws Exception {
+        Activity[] result = {null};
+        IntegratedBottomControlsInstrumentedTest.await(() -> {
+            for (Activity activity : ActivityLifecycleMonitorRegistry.getInstance()
+                    .getActivitiesInStage(Stage.RESUMED)) {
+                if (type.isInstance(activity)
+                        && activity.getResources().getConfiguration().orientation == orientation) {
+                    result[0] = activity;
+                    return true;
+                }
+            }
+            return false;
         });
-        clickResizeControl("鍵盤高度");
-        IntegratedBottomControlsInstrumentedTest.await(() -> findResizeControl("拖曳鍵盤下緣") != null);
+        return result[0];
     }
 
-    private static void clickResizeControl(String title) throws Exception {
-        IntegratedBottomControlsInstrumentedTest.await(() -> findResizeControl(title) != null);
+    private static Activity openResizeControls(Activity settings) throws Exception {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            LinearLayout appearance = findGroup(settingsPage(settings), "外觀與操作");
+            View body = appearance.getChildAt(1);
+            if (body.getVisibility() != View.VISIBLE) appearance.getChildAt(0).performClick();
+            View entry = findResizeControl(body, "調整鍵盤高度");
+            assertNotNull(entry);
+            assertTrue(entry.performClick());
+        });
+        Activity editor = awaitActivity(KeyboardResizeActivity.class,
+                settings.getResources().getConfiguration().orientation);
+        awaitResizeControls(editor);
+        return editor;
+    }
+
+    private static void awaitResizeControls(Activity editor) throws Exception {
+        IntegratedBottomControlsInstrumentedTest.await(() -> {
+            View handle = findResizeControl(editor, "拖曳鍵盤下緣");
+            return handle != null && handle.getWidth() > 0;
+        });
+    }
+
+    private static void awaitResizeEdge(Activity editor, String label, int maximumY) throws Exception {
+        IntegratedBottomControlsInstrumentedTest.await(() ->
+                boundsOf(findResizeControl(editor, label)).centerY() <= maximumY);
+    }
+
+    private static void clickResizeControl(Activity editor, String title) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
-                assertTrue("Could not activate " + title, findResizeControl(title).performClick()));
+                assertTrue("Could not activate " + title, findResizeControl(editor, title).performClick()));
     }
 
-    private static Rect resizeBounds(String label) {
+    private static Rect resizeBounds(Activity editor, String label) {
         Rect[] result = {null};
         InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
-                result[0] = boundsOf(findResizeControl(label)));
+                result[0] = boundsOf(findResizeControl(editor, label)));
         return result[0];
     }
 
@@ -716,12 +785,14 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         return new Rect(origin[0], origin[1], origin[0] + view.getWidth(), origin[1] + view.getHeight());
     }
 
-    private static View findResizeControl(String label) {
-        var keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
-        if (keyboard != null && keyboard.getParent() instanceof KeyboardInputView input) {
-            return findResizeControl(input, label);
-        }
-        return null;
+    private static View findResizeControl(Activity editor, String label) {
+        return findResizeControl(editor.findViewById(android.R.id.content), label);
+    }
+
+    private static BopomofoKeyboardView resizeKeyboard(Activity editor) {
+        ViewGroup content = editor.findViewById(android.R.id.content);
+        LinearLayout page = (LinearLayout) content.getChildAt(0);
+        return ((KeyboardResizeView) page.getChildAt(1)).keyboard;
     }
 
     private static View findResizeControl(View view, String label) {
@@ -742,26 +813,26 @@ public final class KeyboardBottomSpaceInstrumentedTest {
         void verify() throws Exception;
     }
 
-    private static void dragResizeHandle(Rect handle, int distance, WhileDragging verify) throws Exception {
+    private static void dragResizeHandle(Activity editor, Rect handle, int distance, WhileDragging verify) throws Exception {
         long down = SystemClock.uptimeMillis();
         float x = handle.centerX();
         float y = handle.centerY();
-        assertResizeKeycapsVisible(true);
+        assertResizeKeycapsVisible(editor, true);
         sendResizeTouch(down, MotionEvent.ACTION_DOWN, x, y);
         try {
             sendResizeTouch(down, MotionEvent.ACTION_MOVE, x, y + distance);
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-            assertResizeKeycapsVisible(false);
+            assertResizeKeycapsVisible(editor, false);
             verify.verify();
         } finally {
             sendResizeTouch(down, MotionEvent.ACTION_UP, x, y + distance);
         }
-        assertResizeKeycapsVisible(true);
+        assertResizeKeycapsVisible(editor, true);
     }
 
-    private static void assertResizeKeycapsVisible(boolean expected) {
+    private static void assertResizeKeycapsVisible(Activity editor, boolean expected) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
-            var keyboard = IntegratedBottomControlsInstrumentedTest.findKeyboard();
+            var keyboard = resizeKeyboard(editor);
             boolean[] drew = new boolean[2];
             keyboard.draw(new Canvas() {
                 @Override public void drawRoundRect(RectF bounds, float rx, float ry, Paint paint) {

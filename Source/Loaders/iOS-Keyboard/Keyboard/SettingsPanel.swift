@@ -5,7 +5,6 @@ import UIKit
 protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod)
     func settingsPanelDidChangeTableOptions(_ panel: SettingsPanel)
-    func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>)
     func settingsPanel(
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
     )
@@ -22,17 +21,10 @@ protocol SettingsPanelDelegate: AnyObject {
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
 
-/// The associated-phrase collection picker, shown over the keyboard when the
-/// 「設」 key is pressed.
-///
-/// It lives inside the input view rather than in the container app: keeping the
-/// settings in the extension's own sandbox is what lets the keyboard ship
-/// without Full Access. The list scrolls, so thirty collections fit.
+/// Settings shown over the input view when the 「設」 key is pressed.
 final class SettingsPanel: UIView {
     weak var delegate: SettingsPanelDelegate?
 
-    private let collections: [AssociatedPhraseStore.Collection]
-    private var enabled: Set<String>
     private var inputClicksEnabled: Bool
     private var candidateColor: CandidateColor
     private var compositionMode: BopomofoCompositionMode
@@ -51,12 +43,10 @@ final class SettingsPanel: UIView {
     private let compositionModeControl = UISegmentedControl(
         items: ChineseInputMethod.allCases.map(\.displayName)
     )
-    private var switches: [String: UISwitch] = [:]
     private let resetLearningButton = UIButton(configuration: .tinted())
     private var resetConfirmation = false
 
     init(
-        collections: [AssociatedPhraseStore.Collection], enabled: Set<String>,
         inputClicksEnabled: Bool, candidateColor: CandidateColor,
         compositionMode: BopomofoCompositionMode,
         chineseInputMethod: ChineseInputMethod = .smart,
@@ -67,8 +57,6 @@ final class SettingsPanel: UIView {
         fontSize: KeyboardKeyFontSize = .normal,
         deleteShiftPosition: KeyboardDeleteShiftPosition = .aboveEnter
     ) {
-        self.collections = collections
-        self.enabled = enabled
         self.inputClicksEnabled = inputClicksEnabled
         self.candidateColor = candidateColor
         self.compositionMode = compositionMode
@@ -83,7 +71,6 @@ final class SettingsPanel: UIView {
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
-        refreshStatus()
     }
 
     required init?(coder: NSCoder) {
@@ -107,30 +94,21 @@ final class SettingsPanel: UIView {
 
         statusLabel.font = .systemFont(ofSize: 12)
         statusLabel.textColor = Palette.hintText
-
-        let bulk = UIStackView(arrangedSubviews: [
-            bulkButton("全部啟用", #selector(enableAll)),
-            bulkButton("僅小麥注音", #selector(enableBaseOnly)),
-            bulkButton("全部關閉", #selector(disableAll))
-        ])
-        bulk.distribution = .fillEqually
-        bulk.spacing = 6
-
-        let rows = UIStackView(arrangedSubviews: collections.map(collectionRow))
-        rows.axis = .vertical
-        rows.spacing = 0
+        statusLabel.isHidden = true
 
         let scroll = UIScrollView()
         scroll.accessibilityIdentifier = "keyboard-settings.scroll"
         scroll.alwaysBounceVertical = true
-        let resize = bulkButton("鍵盤高度", #selector(keyboardHeightTapped))
+        let resize = UIButton(configuration: .tinted())
+        resize.setTitle("調整鍵盤高度", for: .normal)
+        resize.addTarget(self, action: #selector(keyboardHeightTapped), for: .touchUpInside)
         resize.accessibilityIdentifier = "keyboard-settings.keyboard-height"
         let root = UIStackView(arrangedSubviews: [
-            resize, compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
+            compositionModeRow(), spaceSelectionRow(), resetLearningButton, statusLabel, keyboardLayoutRow(),
             toneOmissionRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
-            candidateColorRow(), layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(), feedbackRow(),
-            statusLabel, bulk, rows
+            candidateColorRow(), resize, layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(),
+            feedbackRow()
         ])
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
         resetLearningButton.addTarget(self, action: #selector(resetLearningTapped), for: .touchUpInside)
@@ -158,15 +136,6 @@ final class SettingsPanel: UIView {
         ])
     }
 
-    private func bulkButton(_ title: String, _ action: Selector) -> UIButton {
-        var configuration = UIButton.Configuration.tinted()
-        configuration.title = title
-        configuration.buttonSize = .small
-        let button = UIButton(configuration: configuration)
-        button.addTarget(self, action: action, for: .touchUpInside)
-        return button
-    }
-
     @objc private func keyboardHeightTapped() {
         delegate?.settingsPanelDidRequestKeyboardHeight(self)
     }
@@ -179,31 +148,9 @@ final class SettingsPanel: UIView {
         }
         resetConfirmation = false
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
+        statusLabel.isHidden = false
         statusLabel.text = delegate?.settingsPanelResetLearning(self) == true
             ? "學習紀錄已重設，自訂詞保留。" : "無法重設學習紀錄。"
-    }
-
-    private func collectionRow(_ collection: AssociatedPhraseStore.Collection) -> UIView {
-        let label = UILabel()
-        label.text = collection.display
-        label.font = .systemFont(ofSize: 15)
-        label.textColor = Palette.primaryText
-
-        let toggle = UISwitch()
-        toggle.isOn = enabled.contains(collection.source)
-        toggle.onTintColor = Palette.highlight
-        toggle.accessibilityIdentifier = collection.source
-        toggle.accessibilityLabel = collection.display
-        toggle.addTarget(self, action: #selector(toggled(_:)), for: .valueChanged)
-        switches[collection.source] = toggle
-
-        let row = UIStackView(arrangedSubviews: [label, UIView(), toggle])
-        row.alignment = .center
-        row.isLayoutMarginsRelativeArrangement = true
-        // 44pt keeps every row a comfortable target inside a short panel.
-        row.directionalLayoutMargins = .init(top: 6, leading: 0, bottom: 6, trailing: 0)
-        row.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
-        return row
     }
 
     private func layoutProfileRow() -> UIView {
@@ -380,13 +327,13 @@ final class SettingsPanel: UIView {
 
     private func toneOmissionRow() -> UIView {
         let label = UILabel()
-        label.text = "省略聲調"
+        label.text = SmartMandarinToneOmissionSettings.displayName
         label.font = .systemFont(ofSize: 15)
         label.textColor = Palette.primaryText
 
         let control = UISwitch()
         control.isOn = omitsTones
-        control.accessibilityLabel = "省略聲調"
+        control.accessibilityLabel = SmartMandarinToneOmissionSettings.displayName
         control.accessibilityIdentifier = "keyboard-settings.omit-tones"
         control.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
         let row = UIStackView(arrangedSubviews: [label, UIView(), control])
@@ -394,7 +341,7 @@ final class SettingsPanel: UIView {
         row.spacing = 8
 
         let hint = UILabel()
-        hint.text = "適用觸控好打注音的標準注音與漢語拼音。"
+        hint.text = "標準注音、許氏與漢語拼音都可連續輸入讀音，也可照常輸入聲調。"
         hint.font = .systemFont(ofSize: 13)
         hint.textColor = Palette.hintText
         hint.numberOfLines = 0
@@ -469,16 +416,6 @@ final class SettingsPanel: UIView {
 
     // MARK: - Actions
 
-    @objc private func toggled(_ sender: UISwitch) {
-        guard let source = sender.accessibilityIdentifier else { return }
-        if sender.isOn {
-            enabled.insert(source)
-        } else {
-            enabled.remove(source)
-        }
-        publish()
-    }
-
     @objc private func inputClicksToggled(_ sender: UISwitch) {
         inputClicksEnabled = sender.isOn
         delegate?.settingsPanel(self, didChangeInputClicksEnabled: inputClicksEnabled)
@@ -498,41 +435,7 @@ final class SettingsPanel: UIView {
         delegate?.settingsPanel(self, didChangeCandidateColor: candidateColor)
     }
 
-    @objc private func enableAll() {
-        enabled = Set(collections.map(\.source))
-        syncSwitches()
-    }
-
-    @objc private func enableBaseOnly() {
-        enabled = [PhraseSettings.baseCollection]
-        syncSwitches()
-    }
-
-    @objc private func disableAll() {
-        enabled = []
-        syncSwitches()
-    }
-
     @objc private func closeTapped() {
         delegate?.settingsPanelDidClose(self)
-    }
-
-    /// Set every switch without letting each one publish a separate change.
-    private func syncSwitches() {
-        for (source, toggle) in switches {
-            toggle.setOn(enabled.contains(source), animated: true)
-        }
-        publish()
-    }
-
-    private func publish() {
-        refreshStatus()
-        delegate?.settingsPanel(self, didChange: enabled)
-    }
-
-    private func refreshStatus() {
-        statusLabel.text = enabled.isEmpty
-            ? "關聯詞已全部關閉"
-            : "已啟用 \(enabled.count)／\(collections.count) 個詞庫"
     }
 }

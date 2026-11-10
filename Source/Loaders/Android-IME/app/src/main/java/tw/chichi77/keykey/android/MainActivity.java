@@ -68,7 +68,14 @@ public final class MainActivity extends Activity {
         settings.setAllCaps(false);
         settings.setOnClickListener(view ->
                 startActivity(new Intent(this, SettingsActivity.class)));
-        content.addView(settings, matchWrap(dp(0), dp(24)));
+        content.addView(settings, matchWrap(dp(0), dp(12)));
+
+        Button phraseCollections = new Button(this);
+        phraseCollections.setText(R.string.phrase_collections_title);
+        phraseCollections.setAllCaps(false);
+        phraseCollections.setOnClickListener(view ->
+                startActivity(new Intent(this, PhraseCollectionsActivity.class)));
+        content.addView(phraseCollections, matchWrap(dp(0), dp(24)));
 
         TextView privacy = new TextView(this);
         privacy.setText(R.string.privacy_note);

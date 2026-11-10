@@ -205,7 +205,7 @@ final class GuanyinmaInputEngine implements InputEngine {
     }
     boolean touchPhoneticGridEnabled() { return touchPhoneticGrid; }
     boolean usesTouchPhoneticGrid() {
-        return touchPhoneticGrid && isTouchSmartComposition() && layout != BopomofoKeyboardLayout.HSU;
+        return touchPhoneticGrid && isTouchSmartComposition();
     }
     @Override public void setUseBigrams(boolean enabled) {
         if (enabled == useBigrams) return;
@@ -329,7 +329,7 @@ final class GuanyinmaInputEngine implements InputEngine {
             case STANDARD -> !BopomofoKeyboardLayout.symbolForKey(character).isEmpty();
             case HANYU_PINYIN -> (character >= 'a' && character <= 'z')
                     || (character >= '2' && character <= '5');
-            case HSU -> false;
+            case HSU -> character >= 'a' && character <= 'z';
         };
     }
 

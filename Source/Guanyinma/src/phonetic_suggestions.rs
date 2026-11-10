@@ -2,7 +2,9 @@
 //!
 //! Copyright (c) 2026 Chui-Ping Cheng. MIT License.
 
-use crate::bopomofo::{phonetic_query, phonetic_syllable, phonetic_tone, BopomofoLayout};
+use crate::bopomofo::{
+    phonetic_query, phonetic_syllable, phonetic_tone, phonetic_toned_syllable, BopomofoLayout,
+};
 use crate::candidate_filter::CandidateFilter;
 use crate::database::{DatabaseError, ModelDatabase, PhoneticQueries, Table};
 use crate::user_store::UserSnapshot;
@@ -111,8 +113,8 @@ fn pinyin_syllable_can_extend(tail: &str) -> bool {
 
 pub(crate) fn exact_toned_syllable(layout: BopomofoLayout, raw: &str) -> Option<String> {
     let (last, spelling) = raw.as_bytes().split_last()?;
-    let tone = phonetic_tone(layout, *last)?;
-    let syllable = phonetic_syllable(layout, std::str::from_utf8(spelling).ok()?, true)?;
+    let (syllable, tone) =
+        phonetic_toned_syllable(layout, std::str::from_utf8(spelling).ok()?, *last)?;
     Some(phonetic_query(syllable, tone))
 }
 
@@ -124,21 +126,28 @@ struct SyllableMatch {
 fn syllable_matches(layout: BopomofoLayout, raw: &str, start: usize) -> Vec<SyllableMatch> {
     let mut matches = Vec::new();
     for end in start + 1..=raw.len().min(start + MAX_SYLLABLE_KEYS) {
-        let tone = raw
-            .as_bytes()
-            .get(end)
-            .and_then(|key| phonetic_tone(layout, *key));
-        let Some(syllable) = phonetic_syllable(layout, &raw[start..end], tone.is_some()) else {
-            continue;
-        };
-        let queries = match tone {
-            Some(tone) => vec![phonetic_query(syllable, tone)],
-            None => (0..5).map(|tone| phonetic_query(syllable, tone)).collect(),
-        };
-        matches.push(SyllableMatch {
-            end: end + usize::from(tone.is_some()),
-            queries,
-        });
+        let spelling = &raw[start..end];
+        let tone_key = raw.as_bytes().get(end).copied();
+        let explicit = tone_key.is_some_and(|key| phonetic_tone(layout, key).is_some());
+        // Hsu's letter tones are also initial consonants, so keep the
+        // untoned boundary alongside a possible tone-consuming edge.
+        let ambiguous = layout == BopomofoLayout::Hsu && tone_key != Some(b' ');
+        if let Some((syllable, tone)) =
+            tone_key.and_then(|key| phonetic_toned_syllable(layout, spelling, key))
+        {
+            matches.push(SyllableMatch {
+                end: end + 1,
+                queries: vec![phonetic_query(syllable, tone)],
+            });
+        }
+        if !explicit || ambiguous {
+            if let Some(syllable) = phonetic_syllable(layout, spelling, false) {
+                matches.push(SyllableMatch {
+                    end,
+                    queries: (0..5).map(|tone| phonetic_query(syllable, tone)).collect(),
+                });
+            }
+        }
     }
     matches
 }
@@ -504,7 +513,7 @@ mod tests {
             &user,
             false,
             &filter,
-            &[locked.clone()],
+            std::slice::from_ref(&locked),
         )
         .unwrap();
         assert_eq!(candidates[0].text, "妳好");

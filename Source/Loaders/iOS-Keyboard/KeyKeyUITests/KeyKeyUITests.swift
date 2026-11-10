@@ -43,7 +43,8 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(version.label.hasPrefix("版本 "))
         XCTAssertNotEqual(version.label, "版本 —")
         for identifier in [
-            "open-hardware-editor", "open-input-method-settings", "open-user-phrases",
+            "open-hardware-editor", "open-input-method-settings", "open-phrase-collections",
+            "open-user-phrases",
             "open-system-settings", "supporter.purchase",
             "supporter.restore", "open-acknowledgements"
         ] {
@@ -67,7 +68,22 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["輸入法設定"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.segmentedControls["app-settings.candidate-color"].exists)
         XCTAssertTrue(app.switches["app-settings.input-clicks"].exists)
-        XCTAssertTrue(app.switches["app-settings.collection.McBopomofo"].exists)
+        let omission = app.switches["app-settings.omit-tones"]
+        XCTAssertEqual(omission.label, "好打注音省略聲調")
+        let layout = app.segmentedControls["app-settings.keyboard-layout"]
+        layout.buttons["標準"].tap()
+        if omission.value as? String == "0" { omission.tap() }
+        XCTAssertEqual(omission.value as? String, "1")
+        layout.buttons["許氏鍵盤"].tap()
+        XCTAssertTrue(omission.isEnabled)
+        XCTAssertEqual(omission.value as? String, "1")
+        layout.buttons["漢語拼音"].tap()
+        XCTAssertTrue(omission.isEnabled)
+        XCTAssertEqual(omission.value as? String, "1")
+        omission.tap()
+        layout.buttons["標準"].tap()
+        XCTAssertEqual(omission.value as? String, "0")
+        XCTAssertFalse(app.switches["app-settings.collection.McBopomofo"].exists)
         XCTAssertTrue(app.buttons["app-settings.user-phrases"].exists)
         XCTAssertTrue(app.buttons["app-settings.reset-learning"].exists)
 
@@ -77,6 +93,18 @@ final class KeyKeyUITests: XCTestCase {
         entry.tap()
         XCTAssertTrue(mode.buttons["傳統注音"].isSelected)
         mode.buttons["好打注音"].tap()
+        app.navigationBars["輸入法設定"].buttons.element(boundBy: 0).tap()
+
+        openAppPhraseCollections()
+        XCTAssertTrue(app.cells["app-settings.phrases.McBopomofo"].exists)
+        app.cells["app-settings.phrases.none"].tap()
+        app.buttons["app-settings.phrases.done"].tap()
+        openAppPhraseCollections()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(
+            format: "label BEGINSWITH %@", "詞庫（已啟用 0／"
+        )).firstMatch.waitForExistence(timeout: 3))
+        app.cells["app-settings.phrases.base-only"].tap()
+        app.buttons["app-settings.phrases.done"].tap()
     }
 
     func testTouchKeyboardUsesSharedSpaceSetting() {
@@ -244,7 +272,7 @@ final class KeyKeyUITests: XCTestCase {
         app.segmentedControls["app-settings.keyboard-layout"].buttons["標準"].tap()
     }
 
-    func testToneOmissionShowsCandidatesInStandardAndPinyinWithoutCoveringToneKeys() throws {
+    func testToneOmissionUsesAnEditableGridInAllThreeLayouts() throws {
         XCUIDevice.shared.orientation = .portrait
         defer { XCUIDevice.shared.orientation = .portrait }
         launchHostApp()
@@ -261,12 +289,12 @@ final class KeyKeyUITests: XCTestCase {
         let omission = app.switches["keyboard-settings.omit-tones"]
         let close = app.windows.containing(.scrollView, identifier: "keyboard-settings.scroll")
             .firstMatch.buttons["完成"]
-        let hello = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "候選，你好")).firstMatch
-
-        func revealOmission() {
-            if !omission.isHittable { scroll.swipeUp() }
-            XCTAssertTrue(omission.isHittable)
-        }
+        let first = app.buttons["keyboard.smart-cell.1"]
+        let second = app.buttons["keyboard.smart-cell.2"]
+        let eleventh = app.buttons["keyboard.smart-cell.11"]
+        let candidates = app.buttons.matching(NSPredicate(format: "label MATCHES %@", "^第 [1-9] 個候選，.+$"))
+        let alternate = candidates.matching(NSPredicate(format: "label MATCHES %@", "^第 [1-9] 個候選，[^你]$"))
+            .firstMatch
 
         addTeardownBlock { [weak self] in
             guard let self else { return }
@@ -276,7 +304,7 @@ final class KeyKeyUITests: XCTestCase {
             settings.tap()
             if layout.buttons["標準"].isHittable { layout.buttons["標準"].tap() }
             if method.buttons["好打注音"].isHittable { method.buttons["好打注音"].tap() }
-            revealOmission()
+            self.revealSetting(omission, in: scroll)
             if omission.value as? String == "1" { omission.tap() }
             if close.isHittable { close.tap() }
         }
@@ -285,34 +313,87 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(layout.buttons["標準"].waitForExistence(timeout: 3))
         method.buttons["好打注音"].tap()
         layout.buttons["標準"].tap()
-        revealOmission()
-        XCTAssertEqual(omission.value as? String, "0")
-        omission.tap()
+        revealSetting(omission, in: scroll)
+        XCTAssertEqual(omission.label, "好打注音省略聲調")
+        if omission.value as? String == "0" { omission.tap() }
         close.tap()
-        let initialValue = output.value as? String
 
         for key in "sucl" { app.buttons[String(key)].tap() }
-        XCTAssertTrue(hello.waitForExistence(timeout: 3))
-        XCTAssertEqual(output.value as? String, initialValue)
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        XCTAssertEqual(first.label, "第 1 個組字，你")
+        XCTAssertEqual(second.label, "第 2 個組字，好")
+        XCTAssertTrue(waitForLayout { output.value as? String == "ㄋㄧㄏㄠ" })
+        XCTAssertFalse(candidates.firstMatch.exists)
         XCTAssertTrue(app.buttons["3"].isHittable)
-        hello.tap()
-        XCTAssertTrue(waitForLayout { output.value as? String == "你好" })
 
+        settings.tap()
+        XCTAssertTrue(layout.buttons["許氏鍵盤"].waitForExistence(timeout: 3))
+        layout.buttons["許氏鍵盤"].tap()
+        revealSetting(omission, in: scroll)
+        XCTAssertTrue(omission.isEnabled)
+        XCTAssertEqual(omission.value as? String, "1")
+        close.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == "你好" })
+        for key in "nehw" { app.buttons[String(key)].tap() }
+        XCTAssertEqual(first.label, "第 1 個組字，你")
+        XCTAssertEqual(second.label, "第 2 個組字，好")
+        XCTAssertTrue(waitForLayout { output.value as? String == "你好nehw" })
+        XCTAssertFalse(candidates.firstMatch.exists)
+        XCTAssertTrue(app.buttons["f"].isHittable)
+        first.tap()
+        XCTAssertTrue(alternate.waitForExistence(timeout: 3))
+        let hsuReplacement = String(alternate.label.suffix(1))
+        alternate.tap()
+        XCTAssertTrue(waitForLayout { first.label == "第 1 個組字，" + hsuReplacement })
+        XCTAssertEqual(second.label, "第 2 個組字，好")
+        XCTAssertEqual(output.value as? String, "你好nehw")
+
+        let pinyinHostPrefix = "你好" + hsuReplacement + "好"
         settings.tap()
         XCTAssertTrue(layout.buttons["漢語拼音"].waitForExistence(timeout: 3))
         layout.buttons["漢語拼音"].tap()
+        revealSetting(omission, in: scroll)
+        XCTAssertTrue(omission.isEnabled)
+        XCTAssertEqual(omission.value as? String, "1")
         close.tap()
+        XCTAssertTrue(waitForLayout { output.value as? String == pinyinHostPrefix })
         XCUIDevice.shared.orientation = .landscapeLeft
         assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
         XCTAssertTrue(waitForLayout { self.app.buttons["n"].isHittable })
         for key in "nihao" { app.buttons[String(key)].tap() }
-        XCTAssertTrue(hello.waitForExistence(timeout: 3))
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        XCTAssertEqual(first.label, "第 1 個組字，你")
+        XCTAssertEqual(second.label, "第 2 個組字，好")
+        XCTAssertTrue(waitForLayout { output.value as? String == pinyinHostPrefix + "nihao" })
+        XCTAssertFalse(candidates.firstMatch.exists)
         XCTAssertTrue(app.buttons["3"].isHittable)
-        XCTAssertEqual(output.value as? String, "你好")
-        hello.tap()
-        XCTAssertTrue(waitForLayout { output.value as? String == "你好你好" })
+
+        first.tap()
+        XCTAssertTrue(alternate.waitForExistence(timeout: 3))
+        let replacement = String(alternate.label.suffix(1))
+        alternate.tap()
+        XCTAssertTrue(waitForLayout { first.label == "第 1 個組字，" + replacement })
+        XCTAssertEqual(second.label, "第 2 個組字，好")
+        XCTAssertFalse(candidates.firstMatch.exists)
+        XCTAssertEqual(output.value as? String, pinyinHostPrefix + "nihao")
+
+        let trailingReadings = String(repeating: "ma", count: 10)
+        for key in trailingReadings { app.buttons[String(key)].tap() }
+        XCTAssertTrue(eleventh.waitForExistence(timeout: 3))
+        let prefix = pinyinHostPrefix + replacement
+        let shiftedReading = prefix + "hao" + trailingReadings
+        XCTAssertTrue(waitForLayout { output.value as? String == shiftedReading }, output.debugDescription)
+        let tail = (1...11).map { index in
+            let label = app.buttons["keyboard.smart-cell.\(index)"].label
+            return String(label.split(separator: "，", maxSplits: 1).last ?? "")
+        }.joined()
+        XCTAssertEqual(tail.count, 11)
         app.buttons["ENTER"].tap()
-        XCTAssertEqual(output.value as? String, "你好你好")
+        let expected = prefix + tail
+        // The single-line UIKit field can normalize the Return to a space.
+        let accepted = [expected, expected + " ", expected + "\n"]
+        XCTAssertTrue(waitForLayout { accepted.contains(output.value as? String ?? "") },
+                      "Expected \(expected), got \(String(reflecting: output.value))")
     }
 
     func testHanyuPinyinTouchKeyboardUsesExistingComposition() throws {
@@ -1355,7 +1436,10 @@ final class KeyKeyUITests: XCTestCase {
 
         // Third-party keyboards require user opt-in. Settings UI is the only
         // supported path, so do it in this test rather than relying on order.
-        launchHostApp()
+        selectOnlyAppPhraseCollection(nil)
+        addTeardownBlock { [weak self] in
+            self?.selectOnlyAppPhraseCollection("McBopomofo")
+        }
         app.terminate()
         let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
         settings.launch()
@@ -1379,9 +1463,7 @@ final class KeyKeyUITests: XCTestCase {
         selectLayoutProfile(.aligned)
         app.buttons["SETTINGS"].tap()
         app.segmentedControls["bopomofo-keyboard-layout"].buttons["標準"].tap()
-        let disableAll = app.buttons["全部關閉"]
-        XCTAssertTrue(disableAll.waitForExistence(timeout: 3))
-        disableAll.tap()
+        XCTAssertFalse(app.buttons["全部關閉"].exists)
         app.buttons["完成"].tap()
         XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 3))
 
@@ -1506,7 +1588,9 @@ final class KeyKeyUITests: XCTestCase {
             XCTAssertTrue(waitForStableKeyboardFrames(identifiers: ["SETTINGS", "ENTER"]))
             app.buttons["SETTINGS"].tap()
             let entry = app.buttons["keyboard-settings.keyboard-height"]
-            XCTAssertTrue(entry.waitForExistence(timeout: 3))
+            let scroll = app.scrollViews["keyboard-settings.scroll"]
+            revealSetting(entry, in: scroll)
+            XCTAssertEqual(entry.label, "調整鍵盤高度")
             entry.tap()
             XCTAssertTrue(waitForLayout { upper.isHittable && lower.isHittable })
         }
@@ -1672,6 +1756,10 @@ final class KeyKeyUITests: XCTestCase {
     }
 
     func testMultiCharacterAssociationsDoNotResizeKeyboard() throws {
+        selectOnlyAppPhraseCollection("anime")
+        addTeardownBlock { [weak self] in
+            self?.selectOnlyAppPhraseCollection("McBopomofo")
+        }
         launchHostApp()
         XCTAssertTrue(revealField("default"))
         field("default").tap()
@@ -1683,11 +1771,6 @@ final class KeyKeyUITests: XCTestCase {
         try selectCompositionMode("傳統注音")
         addTeardownBlock { [weak self] in
             try? self?.selectCompositionMode("好打注音")
-        }
-
-        try selectOnlyPhraseCollection("anime")
-        addTeardownBlock { [weak self] in
-            try? self?.selectOnlyPhraseCollection("McBopomofo")
         }
 
         let mode = app.buttons["MODE"]
@@ -3102,29 +3185,37 @@ final class KeyKeyUITests: XCTestCase {
         }
     }
 
-    private func selectOnlyPhraseCollection(_ identifier: String) throws {
-        app.buttons["SETTINGS"].tap()
-        XCTAssertTrue(app.buttons["全部關閉"].waitForExistence(timeout: 2))
-        app.buttons["全部關閉"].tap()
-
-        let toggle = app.switches[identifier]
-        XCTAssertTrue(toggle.exists, "找不到關聯詞庫：\(identifier)")
-        let scroll = app.scrollViews["keyboard-settings.scroll"]
-        for _ in 0..<12 {
-            if toggle.isHittable { break }
-            // Avoid inertial swipes skipping a row in the short keyboard view.
-            let velocity = XCUIGestureVelocity(rawValue: 100)
-            if toggle.frame.midY < scroll.frame.midY {
-                scroll.swipeDown(velocity: velocity)
-            } else {
-                scroll.swipeUp(velocity: velocity)
-            }
-            Thread.sleep(forTimeInterval: 0.3)
+    private func openAppPhraseCollections() {
+        let entry = app.buttons["open-phrase-collections"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 8))
+        for _ in 0..<4 {
+            if entry.isHittable { break }
+            app.scrollViews.firstMatch.swipeUp(velocity: .slow)
         }
-        XCTAssertTrue(toggle.isHittable, "關聯詞庫不可操作：\(identifier)")
-        toggle.tap()
-        app.buttons["完成"].tap()
-        XCTAssertTrue(app.buttons["SETTINGS"].waitForExistence(timeout: 2))
+        XCTAssertTrue(entry.isHittable)
+        entry.tap()
+        XCTAssertTrue(app.navigationBars["關聯詞詞庫"].waitForExistence(timeout: 3))
+    }
+
+    private func selectOnlyAppPhraseCollection(_ identifier: String?) {
+        app = XCUIApplication()
+        app.launch()
+        openAppPhraseCollections()
+
+        let table = app.tables.firstMatch
+        let disableAll = table.cells["app-settings.phrases.none"]
+        XCTAssertTrue(disableAll.waitForExistence(timeout: 3))
+        disableAll.tap()
+        if let identifier {
+            let collection = table.cells["app-settings.phrases." + identifier]
+            for _ in 0..<12 {
+                if collection.isHittable { break }
+                table.swipeUp(velocity: .slow)
+            }
+            XCTAssertTrue(collection.isHittable, "關聯詞庫不可操作：\(identifier)")
+            collection.tap()
+        }
+        app.buttons["app-settings.phrases.done"].tap()
     }
 
     private func selectCompositionMode(_ label: String) throws {
