@@ -316,4 +316,93 @@ mod tests {
         );
         assert!(exact_toned_syllable(standard, "sucl3").is_none());
     }
+
+    #[test]
+    fn custom_phrases_respect_learning_and_font_filter_and_keep_the_best_reading() {
+        let model = ModelDatabase::open(crate::test_support::model_path()).unwrap();
+        let layout = BopomofoLayout::HanyuPinyin;
+        let hao = exact_toned_syllable(layout, "hao3").unwrap();
+        let low_key = exact_toned_syllable(layout, "ni ").unwrap() + &hao;
+        let high_key = exact_toned_syllable(layout, "ni3").unwrap() + &hao;
+        let user = UserSnapshot {
+            phrases: [(low_key, -0.5), (high_key.clone(), 0.0)]
+                .into_iter()
+                .map(|(qstring, probability)| crate::database::Unigram {
+                    qstring,
+                    current: "自訂".into(),
+                    probability,
+                    backoff: 0.0,
+                })
+                .collect(),
+            ..UserSnapshot::default()
+        };
+
+        let enabled = suggestions(
+            layout,
+            "nihao",
+            &model,
+            &user,
+            true,
+            &CandidateFilter::default(),
+        )
+        .unwrap();
+        assert_eq!(enabled[0].text, "自訂");
+        assert_eq!(enabled[0].chunks[0].query, high_key);
+        assert_eq!(enabled.iter().filter(|row| row.text == "自訂").count(), 1);
+
+        let disabled = suggestions(
+            layout,
+            "nihao",
+            &model,
+            &user,
+            false,
+            &CandidateFilter::default(),
+        )
+        .unwrap();
+        let filtered = suggestions(
+            layout,
+            "nihao",
+            &model,
+            &user,
+            true,
+            &CandidateFilter::new(|text| !text.contains('訂')),
+        )
+        .unwrap();
+        for candidates in [disabled, filtered] {
+            assert_eq!(candidates[0].text, "你好");
+            assert!(candidates.iter().all(|row| !row.text.contains('訂')));
+        }
+    }
+
+    #[test]
+    fn ambiguous_spelling_keeps_single_and_multi_syllable_candidates() {
+        let model = ModelDatabase::open(crate::test_support::model_path()).unwrap();
+        let filter = CandidateFilter::new(|text| matches!(text, "先" | "西" | "安" | "西安"));
+        for (layout, raw) in [
+            (BopomofoLayout::Standard, "vu0"),
+            (BopomofoLayout::HanyuPinyin, "xian"),
+        ] {
+            let candidates = suggestions(
+                layout,
+                raw,
+                &model,
+                &UserSnapshot::default(),
+                false,
+                &filter,
+            )
+            .unwrap();
+            for (word, syllables) in [("先", 1), ("西安", 2)] {
+                let candidate = candidates.iter().find(|row| row.text == word).unwrap();
+                assert_eq!(candidate.consumed, raw.len());
+                assert_eq!(
+                    candidate
+                        .chunks
+                        .iter()
+                        .map(|chunk| chunk.query.len() / 2)
+                        .sum::<usize>(),
+                    syllables,
+                );
+            }
+        }
+    }
 }

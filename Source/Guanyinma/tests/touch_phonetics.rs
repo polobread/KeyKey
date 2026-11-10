@@ -180,3 +180,137 @@ fn selecting_live_words_preserves_the_nine_ten_handoff() {
         "你你你你你你你你你你好"
     );
 }
+
+#[test]
+fn live_candidate_navigation_keeps_raw_text_until_space_confirms_the_highlight() {
+    let mut input = session(BopomofoLayout::HanyuPinyin);
+    let mut options = input.snapshot().smart_options;
+    options.candidate_selection_keys = Some("1".into());
+    input
+        .apply(InputOperation::SetSmartOptions { options })
+        .unwrap();
+
+    let live = type_touch(&mut input, "nihao");
+    assert_eq!(live.displayed_candidates, ["你好"]);
+    assert_eq!(
+        key(&mut input, Key::PageDown).displayed_candidates,
+        ["妳好"]
+    );
+    assert_eq!(key(&mut input, Key::PageUp).displayed_candidates, ["你好"]);
+    assert_eq!(key(&mut input, Key::Down).displayed_candidates, ["妳好"]);
+    assert_eq!(key(&mut input, Key::Up).displayed_candidates, ["你好"]);
+    assert_eq!(key(&mut input, Key::Down).displayed_candidates, ["妳好"]);
+
+    let blocked = key(&mut input, Key::Right);
+    assert!(blocked.effects.beep);
+    assert_eq!(blocked.reading, "nihao");
+    assert!(blocked.effects.commit.is_empty());
+    assert!(blocked.phonetic_suggestions);
+    let selected = key(&mut input, Key::Space);
+    assert_eq!(selected.composition, "妳好");
+    assert!(selected.effects.commit.is_empty());
+    assert!(!selected.phonetic_pending);
+    assert_eq!(key(&mut input, Key::Return).effects.commit, "妳好");
+}
+
+#[test]
+fn an_incomplete_reading_does_not_become_an_ordinary_candidate_target() {
+    let mut input = session(BopomofoLayout::HanyuPinyin);
+    let live = type_touch(&mut input, "ni3hao");
+    assert_eq!(live.composition, "你");
+    assert_eq!(live.reading, "hao");
+    assert!(live.phonetic_suggestions);
+    let ordinary = input
+        .apply(InputOperation::OpenCandidates { index: 0 })
+        .unwrap();
+    assert!(ordinary.effects.beep);
+    assert_eq!(ordinary.candidates, live.candidates);
+    assert!(ordinary.candidate_spans.is_empty());
+    assert!(input.apply(InputOperation::SetCursor { index: 0 }).is_err());
+
+    let edited = key(&mut input, Key::Backspace);
+    assert_eq!(edited.reading, "ha");
+    assert_eq!(edited.composition, "你");
+    assert!(edited.phonetic_suggestions);
+    assert!(!edited.effects.delete_backward);
+    let closed = input.apply(InputOperation::CloseCandidates).unwrap();
+    assert!(closed.phonetic_pending && !closed.phonetic_suggestions);
+    let cancelled = key(&mut input, Key::Escape);
+    assert_eq!(cancelled.composition, "你");
+    assert!(!cancelled.phonetic_pending);
+    assert!(!cancelled.effects.discard_composition);
+
+    type_touch(&mut input, "qq");
+    let incomplete = key(&mut input, Key::Space);
+    assert_eq!(incomplete.reading, "qq");
+    assert!(incomplete.effects.beep);
+    assert!(incomplete.effects.commit.is_empty());
+}
+
+#[test]
+fn handoff_can_resolve_a_full_suggestion_and_keeps_unmatched_spelling() {
+    let mut input = session(BopomofoLayout::HanyuPinyin);
+    let finish = InputOperation::FinishComposition {
+        complete_reading: true,
+        select_highlighted_candidate: false,
+        discard_table_code: false,
+    };
+    type_touch(&mut input, "nihao");
+    let converted = input.apply(finish.clone()).unwrap();
+    assert_eq!(converted.effects.commit, "你好");
+    assert!(!converted.phonetic_pending);
+
+    type_touch(&mut input, "nihaon");
+    let unconverted = input.apply(finish).unwrap();
+    assert_eq!(unconverted.effects.commit, "nihaon");
+    assert!(!unconverted.phonetic_pending);
+}
+
+#[test]
+fn explicit_literals_and_profile_changes_leave_confirmed_smart_text_intact() {
+    let mut input = session(BopomofoLayout::HanyuPinyin);
+    type_touch(&mut input, "ni3ha");
+    let literal = input
+        .apply(InputOperation::DirectText { text: "，".into() })
+        .unwrap();
+    assert_eq!(literal.composition, "你，");
+    assert!(literal.effects.commit.is_empty());
+    assert!(!literal.phonetic_pending);
+
+    type_touch(&mut input, "hao");
+    let physical = input.apply(InputOperation::character('h')).unwrap();
+    assert_eq!(physical.composition, "你，");
+    assert_eq!(physical.reading, "h");
+    assert!(!physical.phonetic_pending);
+    key(&mut input, Key::Backspace);
+
+    type_touch(&mut input, "hao");
+    let desktop = input
+        .apply(InputOperation::SetProfile {
+            profile: BehaviorProfile::Desktop,
+        })
+        .unwrap();
+    assert_eq!(desktop.composition, "你，");
+    assert!(!desktop.phonetic_pending && desktop.candidates.is_empty());
+    assert!(desktop.effects.commit.is_empty());
+}
+
+#[test]
+fn live_input_limit_preserves_pending_text_until_it_can_be_edited() {
+    let mut input = session(BopomofoLayout::HanyuPinyin);
+    let pending = type_touch(&mut input, &"q".repeat(64));
+    assert_eq!(pending.reading, "q".repeat(64));
+    assert!(!pending.effects.beep);
+
+    let limited = type_touch(&mut input, "n");
+    assert!(limited.effects.beep);
+    assert_eq!(limited.reading, pending.reading);
+
+    let edited = key(&mut input, Key::Backspace);
+    assert_eq!(edited.reading, "q".repeat(63));
+    assert!(!edited.effects.delete_backward);
+    assert_eq!(
+        type_touch(&mut input, "n").reading,
+        format!("{}n", "q".repeat(63))
+    );
+}
