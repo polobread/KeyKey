@@ -149,7 +149,13 @@ public final class GuanyinmaInputEngine: InputEngine {
         return try GuanyinmaAssociatedPhraseStore(modelURL: modelURL, enabledSources: { source.enabledSources })
     }
 
-    private static func layoutName(_ layout: BopomofoKeyboardLayout) -> String { layout == .hsu ? "hsu" : "standard" }
+    private static func layoutName(_ layout: BopomofoKeyboardLayout) -> String {
+        switch layout {
+        case .standard: return "standard"
+        case .hsu: return "hsu"
+        case .hanyuPinyin: return "hanyu_pinyin"
+        }
+    }
     private static func smartConfiguration(hardware: Bool, space: Bool) -> [String: Any] {
         ["max_completed_syllables": 10, "shift_at_limit": !hardware,
          "selection_returns_to_end": !hardware, "candidate_cursor_at_end": false,

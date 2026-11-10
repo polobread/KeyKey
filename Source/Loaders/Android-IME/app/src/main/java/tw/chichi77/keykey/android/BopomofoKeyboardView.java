@@ -614,7 +614,7 @@ final class BopomofoKeyboardView extends View {
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (InputEngine.CANDIDATES_PER_PAGE + 1) * cellWidth,
                 area.top, area.left + (InputEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
-                area.bottom), inputMode == InputEngine.InputMode.BOPOMOFO ? chineseInputMethod.symbol : "英",
+                area.bottom), inputMode == InputEngine.InputMode.BOPOMOFO ? chineseModeSymbol() : "英",
                 "HARDWARE_LANGUAGE");
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (InputEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
@@ -748,7 +748,7 @@ final class BopomofoKeyboardView extends View {
                     area.top, last.left, area.bottom);
             if (!reading.isEmpty()) {
                 drawSplitMessage(canvas, left, reading, true);
-                drawSplitMessage(canvas, right, "按空白選字", false);
+                drawSplitMessage(canvas, right, readingInstruction(), false);
             } else if (supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO) {
                 drawSplitMessage(canvas, left, bopomofoLayoutName(), false);
                 drawSplitMessage(canvas, right, getResources().getString(R.string.supporter_prompt), false);
@@ -832,7 +832,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private String emptyCandidateMessage() {
-        if (!reading.isEmpty()) return reading + "　按空白選字";
+        if (!reading.isEmpty()) return reading + "　" + readingInstruction();
         if (inputMode == InputEngine.InputMode.ENGLISH) {
             return temporaryEnglish ? "暫時英文小寫" : shifted ? "英文大寫" : "英文小寫";
         }
@@ -853,7 +853,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawReadingMessage(Canvas canvas, RectF area) {
-        String instruction = "按空白選字";
+        String instruction = readingInstruction();
         hintPaint.setTextSize(standardHintTextSize());
         float instructionWidth = hintPaint.measureText(instruction);
         float gap = standardHintTextSize();
@@ -868,10 +868,22 @@ final class BopomofoKeyboardView extends View {
                 textBaseline(area, hintPaint), hintPaint);
     }
 
+    private boolean usesPinyin() {
+        return !chineseInputMethod.isTable() && keyboardLayout == BopomofoKeyboardLayout.HANYU_PINYIN;
+    }
+
+    private String readingInstruction() {
+        return usesPinyin() ? "按空白輸入一聲" : "按空白選字";
+    }
+
+    private String chineseModeSymbol() {
+        return usesPinyin() ? "拼" : chineseInputMethod.symbol;
+    }
+
     private String bopomofoLayoutName() {
         if (chineseInputMethod.isTable()) return chineseInputMethod.displayName;
-        return keyboardLayout == BopomofoKeyboardLayout.HSU
-                ? keyboardLayout.displayName : keyboardLayout.displayName + "注音";
+        return keyboardLayout == BopomofoKeyboardLayout.STANDARD
+                ? keyboardLayout.displayName + "注音" : keyboardLayout.displayName;
     }
 
     private void drawSupportPrompt(Canvas canvas, RectF area) {
@@ -1370,10 +1382,11 @@ final class BopomofoKeyboardView extends View {
 
     private String keyLabel(String key) {
         return switch (key) {
-            case "MODE" -> fieldPolicy.modeCaption(inputMode).replace("ㄅ", chineseInputMethod.symbol);
+            case "MODE" -> fieldPolicy.modeCaption(inputMode).replace("ㄅ", chineseModeSymbol());
             case "SHIFT" -> shifted ? "⇧" : "⇧";
             case "BACKSPACE" -> "⌫";
-            case "SPACE" -> "空白";
+            case "SPACE" -> usesPinyin() && inputMode == InputEngine.InputMode.BOPOMOFO
+                    && !reading.isEmpty() && candidates.isEmpty() ? "一聲" : "空白";
             case "SYMBOL" -> "符";
             case "SETTINGS" -> "設";
             case "EMOJI" -> "☺";
@@ -1387,7 +1400,7 @@ final class BopomofoKeyboardView extends View {
         if (chineseInputMethod.isTable())
             return inputMode == InputEngine.InputMode.BOPOMOFO && !temporaryEnglish
                     ? ChineseInputMethod.root(key) : "";
-        if (keyboardLayout == BopomofoKeyboardLayout.HSU) return "";
+        if (keyboardLayout != BopomofoKeyboardLayout.STANDARD) return "";
         if (inputMode != InputEngine.InputMode.BOPOMOFO && !temporaryEnglish
                 || key.length() != 1) return "";
         String symbol = BopomofoKeyboardLayout.symbolForKey(Character.toLowerCase(key.charAt(0)));

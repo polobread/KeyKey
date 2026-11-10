@@ -34,6 +34,14 @@ final class KeyboardView: UIView {
         var candidateColor = CandidateColor.purple
         var supportPromptVisible = false
 
+        var usesPinyin: Bool {
+            mode == .bopomofo && !chineseInputMethod.isTable && keyboardLayout == .hanyuPinyin
+        }
+
+        var showsPinyinFirstTone: Bool {
+            usesPinyin && !reading.isEmpty && candidates.isEmpty
+        }
+
         var showsSmartSupportPrompt: Bool {
             supportPromptVisible && smartMode && chineseInputMethod == .smart
                 && reading.isEmpty && smartCells.isEmpty && smartEditableCount == 0
@@ -632,7 +640,8 @@ final class KeyboardView: UIView {
             let normalStatus = state.chineseInputMethod.isTable && state.mode == .bopomofo && state.reading.isEmpty
                 ? state.chineseInputMethod.displayName : KeyboardLayout.statusText(
                 reading: state.reading, mode: state.mode, shifted: state.shifted,
-                temporaryEnglish: state.temporaryEnglish, layout: state.keyboardLayout
+                temporaryEnglish: state.temporaryEnglish,
+                layout: state.chineseInputMethod.isTable ? .standard : state.keyboardLayout
             )
             if state.statusOverride == nil, state.supportPromptVisible,
                state.reading.isEmpty, state.mode == .bopomofo {
@@ -738,7 +747,8 @@ final class KeyboardView: UIView {
             }
         }
 
-        if keyPlaneChanged || state.returnKeyPolicy != previousState.returnKeyPolicy {
+        if keyPlaneChanged || state.returnKeyPolicy != previousState.returnKeyPolicy
+            || state.showsPinyinFirstTone != previousState.showsPinyinFirstTone {
             for button in [dismissButton, closeCandidatesButton] {
                 button.titleLabel?.font = .systemFont(ofSize: metrics.pageFont)
             }
@@ -760,7 +770,7 @@ final class KeyboardView: UIView {
                 }
                 let caption = key == "MODE"
                     ? state.fieldPolicy.modeCaption(for: state.mode).replacingOccurrences(of: "ㄅ", with: state.chineseInputMethod.symbol)
-                    : KeyboardLayout.caption(for: key, mode: state.mode)
+                    : caption(for: key)
                 button.setTitle(caption, for: .normal)
                 let pointSize = caption.count > 3 ? metrics.functionFontSmall : metrics.functionFont
                 button.titleLabel?.font = .systemFont(ofSize: pointSize)
@@ -849,12 +859,26 @@ final class KeyboardView: UIView {
         button.setNeedsLayout()
     }
 
+    private func caption(for key: String) -> String {
+        if key == "SPACE", state.showsPinyinFirstTone { return "一聲" }
+        return KeyboardLayout.caption(for: key, mode: state.mode)
+    }
+
     private func accessibilityLabel(for key: String) -> String {
+        if state.usesPinyin {
+            switch key {
+            case "2": return "二聲（2）"
+            case "3": return "三聲（3）"
+            case "4": return "四聲（4）"
+            case "5": return "輕聲（5）"
+            default: break
+            }
+        }
         switch key {
         case "MODE": return "切換輸入模式"
         case "SYMBOL": return "符號"
         case "SETTINGS": return "設定"
-        case "SPACE": return "空白鍵"
+        case "SPACE": return state.showsPinyinFirstTone ? "一聲（空白鍵）" : "空白鍵"
         case "BACKSPACE": return "刪除"
         case "ENTER": return state.returnKeyPolicy.accessibilityLabel
         case "SHIFT": return "Shift"
@@ -994,7 +1018,7 @@ final class KeyboardView: UIView {
            let glyph = inputGlyph(for: key) {
             return state.temporaryEnglish ? key.uppercased() : glyph
         }
-        return KeyboardLayout.caption(for: key, mode: state.mode)
+        return caption(for: key)
     }
 
     private func showKeyPreview(_ text: String, from button: UIButton) {
