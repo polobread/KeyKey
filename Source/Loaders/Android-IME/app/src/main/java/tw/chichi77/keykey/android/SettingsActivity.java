@@ -8,11 +8,13 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -26,7 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class SettingsActivity extends Activity implements SupporterBillingManager.Listener {
-    private final Map<String, SettingsGroup> settingsGroups = new LinkedHashMap<>();
+    private final Map<String, LinearLayout> settingsGroups = new LinkedHashMap<>();
     private LinearLayout settingsContent;
     private LinearLayout supporterSection;
     private ScrollView settingsScroll;
@@ -36,7 +38,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
     private Button supporterButton;
     private SupporterBillingManager supporterBillingManager;
     private CheckBox touchBottomSpace;
-    private TextView touchBottomSpaceDescription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,56 +99,32 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 });
         methodContent.addView(compositionMode, matchWrap(dp(0), dp(8)));
 
-        SettingsGroup compositionGroup = addSettingsGroup(content, savedInstanceState,
-                "composition", R.string.settings_group_composition,
-                R.string.settings_group_composition_summary, false);
-        LinearLayout compositionContent = compositionGroup.body;
-        updateCompositionSummary(compositionGroup.summary);
-        TextView compositionModeDescription = new TextView(this);
-        compositionModeDescription.setText(R.string.composition_mode_description);
-        compositionModeDescription.setTextSize(14);
-        compositionModeDescription.setTextColor(Color.GRAY);
-        compositionModeDescription.setLineSpacing(0, 1.2f);
-        compositionContent.addView(compositionModeDescription, matchWrap(dp(0), dp(24)));
+        LinearLayout compositionContent = addSettingsGroup(content, savedInstanceState,
+                "composition", R.string.settings_group_composition, 0, false);
+        addHelpLabel(compositionContent, R.string.composition_mode_help,
+                R.string.composition_mode_description);
 
-        CheckBox spaceSelectsCandidates = new CheckBox(this);
-        spaceSelectsCandidates.setText(R.string.smart_space_selects_candidates);
-        spaceSelectsCandidates.setTextSize(16);
-        spaceSelectsCandidates.setTextColor(Color.DKGRAY);
-        spaceSelectsCandidates.setMinHeight(dp(48));
-        spaceSelectsCandidates.setChecked(BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
+        CheckBox omitTone = settingsCheckBox(R.string.smart_omit_tone,
+                BopomofoCompositionModeSettings.omitTone(this));
+        omitTone.setOnCheckedChangeListener((button, checked) ->
+                BopomofoCompositionModeSettings.setOmitTone(SettingsActivity.this, checked));
+        addHelpRow(compositionContent, omitTone, R.string.smart_omit_tone_description);
+
+        CheckBox spaceSelectsCandidates = settingsCheckBox(R.string.smart_space_selects_candidates,
+                BopomofoCompositionModeSettings.spaceSelectsCandidates(this));
         spaceSelectsCandidates.setOnCheckedChangeListener((button, checked) ->
                 BopomofoCompositionModeSettings.setSpaceSelectsCandidates(SettingsActivity.this, checked));
-        compositionContent.addView(spaceSelectsCandidates, matchWrap(dp(0), dp(8)));
-        TextView spaceDescription = new TextView(this);
-        spaceDescription.setText(R.string.smart_space_selects_candidates_description);
-        spaceDescription.setTextSize(14);
-        spaceDescription.setTextColor(Color.GRAY);
-        compositionContent.addView(spaceDescription, matchWrap(dp(0), dp(24)));
+        addHelpRow(compositionContent, spaceSelectsCandidates,
+                R.string.smart_space_selects_candidates_description);
 
-        CheckBox bigramContext = new CheckBox(this);
-        bigramContext.setText(R.string.smart_bigram_enabled);
-        bigramContext.setTextSize(16);
-        bigramContext.setTextColor(Color.DKGRAY);
-        bigramContext.setMinHeight(dp(48));
-        bigramContext.setChecked(BopomofoCompositionModeSettings.bigramEnabled(this));
-        bigramContext.setOnCheckedChangeListener((button, checked) -> {
-            BopomofoCompositionModeSettings.setBigramEnabled(SettingsActivity.this, checked);
-            updateCompositionSummary(compositionGroup.summary);
-        });
-        compositionContent.addView(bigramContext, matchWrap(dp(0), dp(8)));
-        TextView bigramDescription = new TextView(this);
-        bigramDescription.setText(R.string.smart_bigram_description);
-        bigramDescription.setTextSize(14);
-        bigramDescription.setTextColor(Color.GRAY);
-        bigramDescription.setLineSpacing(0, 1.2f);
-        compositionContent.addView(bigramDescription, matchWrap(dp(0), dp(24)));
+        CheckBox bigramContext = settingsCheckBox(R.string.smart_bigram_enabled,
+                BopomofoCompositionModeSettings.bigramEnabled(this));
+        bigramContext.setOnCheckedChangeListener((button, checked) ->
+                BopomofoCompositionModeSettings.setBigramEnabled(SettingsActivity.this, checked));
+        addHelpRow(compositionContent, bigramContext, R.string.smart_bigram_description);
 
-        TextView keyboardLayoutLabel = new TextView(this);
-        keyboardLayoutLabel.setText(R.string.bopomofo_keyboard_layout);
-        keyboardLayoutLabel.setTextSize(18);
-        keyboardLayoutLabel.setTextColor(Color.DKGRAY);
-        compositionContent.addView(keyboardLayoutLabel, matchWrap(dp(0), dp(4)));
+        addHelpLabel(compositionContent, R.string.bopomofo_keyboard_layout,
+                R.string.bopomofo_keyboard_layout_description);
         Spinner keyboardLayout = new Spinner(this);
         keyboardLayout.setContentDescription(getString(R.string.bopomofo_keyboard_layout));
         ArrayAdapter<CharSequence> keyboardLayoutAdapter = ArrayAdapter.createFromResource(this,
@@ -160,30 +137,10 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                     android.view.View view, int position, long id) {
                 BopomofoKeyboardLayoutSettings.setLayout(SettingsActivity.this,
                         BopomofoKeyboardLayout.values()[position]);
-                updateCompositionSummary(compositionGroup.summary);
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
         compositionContent.addView(keyboardLayout, matchWrap(dp(0), dp(8)));
-        TextView keyboardLayoutDescription = new TextView(this);
-        keyboardLayoutDescription.setText(R.string.bopomofo_keyboard_layout_description);
-        keyboardLayoutDescription.setTextSize(14);
-        compositionContent.addView(keyboardLayoutDescription, matchWrap(dp(0), dp(24)));
-
-        CheckBox omitTone = new CheckBox(this);
-        omitTone.setText(R.string.smart_omit_tone);
-        omitTone.setTextSize(16);
-        omitTone.setTextColor(Color.DKGRAY);
-        omitTone.setMinHeight(dp(48));
-        omitTone.setChecked(BopomofoCompositionModeSettings.omitTone(this));
-        omitTone.setOnCheckedChangeListener((button, checked) ->
-                BopomofoCompositionModeSettings.setOmitTone(SettingsActivity.this, checked));
-        compositionContent.addView(omitTone, matchWrap(dp(0), dp(8)));
-        TextView omitToneDescription = new TextView(this);
-        omitToneDescription.setText(R.string.smart_omit_tone_description);
-        omitToneDescription.setTextSize(14);
-        omitToneDescription.setTextColor(Color.GRAY);
-        compositionContent.addView(omitToneDescription, matchWrap(dp(0), dp(24)));
 
         Button userPhrases = new Button(this);
         userPhrases.setText("管理好打注音自訂詞");
@@ -212,24 +169,17 @@ public final class SettingsActivity extends Activity implements SupporterBilling
 
         LinearLayout tableContent = addSettingsGroup(content, savedInstanceState,
                 "table", R.string.settings_group_table,
-                R.string.settings_group_table_summary, false).body;
-        TextView tableDescription = new TextView(this);
-        tableDescription.setText(R.string.settings_group_table_description);
-        tableDescription.setTextSize(14);
-        tableDescription.setTextColor(Color.GRAY);
-        tableDescription.setLineSpacing(0, 1.2f);
-        tableContent.addView(tableDescription, matchWrap(dp(0), dp(16)));
+                R.string.settings_group_table_summary, false);
+        addHelpLabel(tableContent, R.string.table_settings_help,
+                R.string.settings_group_table_description);
         addTableSettings(tableContent, ChineseInputMethod.CANGJIE);
         addTableSettings(tableContent, ChineseInputMethod.SIMPLEX);
 
         LinearLayout appearanceContent = addSettingsGroup(content, savedInstanceState,
                 "appearance", R.string.settings_group_appearance,
-                R.string.settings_group_appearance_summary, false).body;
-        TextView label = new TextView(this);
-        label.setText(R.string.haptic_feedback_title);
-        label.setTextSize(18);
-        label.setTextColor(Color.DKGRAY);
-        appearanceContent.addView(label, matchWrap(dp(0), dp(8)));
+                R.string.settings_group_appearance_summary, false);
+        addHelpLabel(appearanceContent, R.string.haptic_feedback_title,
+                R.string.haptic_feedback_description);
 
         TextView value = new TextView(this);
         value.setTextSize(16);
@@ -249,31 +199,12 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         TextView maximum = endpointLabel(R.string.haptic_maximum, Gravity.END);
         endpoints.addView(zero, weightedWrap());
         endpoints.addView(maximum, weightedWrap());
-        appearanceContent.addView(endpoints, matchWrap(dp(0), dp(24)));
+        appearanceContent.addView(endpoints, matchWrap(dp(0), dp(8)));
 
-        TextView description = new TextView(this);
-        description.setText(R.string.haptic_feedback_description);
-        description.setTextSize(14);
-        description.setTextColor(Color.GRAY);
-        description.setLineSpacing(0, 1.2f);
-        appearanceContent.addView(description, matchWrap(dp(0), dp(16)));
-
-        CheckBox keyPreview = new CheckBox(this);
-        keyPreview.setText(R.string.key_preview_enabled);
-        keyPreview.setTextSize(16);
-        keyPreview.setTextColor(Color.DKGRAY);
-        keyPreview.setMinHeight(dp(48));
-        keyPreview.setChecked(KeyPreviewSettings.enabled(this));
+        CheckBox keyPreview = settingsCheckBox(R.string.key_preview_enabled, KeyPreviewSettings.enabled(this));
         keyPreview.setOnCheckedChangeListener((button, checked) ->
                 KeyPreviewSettings.setEnabled(SettingsActivity.this, checked));
-        appearanceContent.addView(keyPreview, matchWrap(dp(0), dp(8)));
-
-        TextView keyPreviewDescription = new TextView(this);
-        keyPreviewDescription.setText(R.string.key_preview_description);
-        keyPreviewDescription.setTextSize(14);
-        keyPreviewDescription.setTextColor(Color.GRAY);
-        keyPreviewDescription.setLineSpacing(0, 1.2f);
-        appearanceContent.addView(keyPreviewDescription, matchWrap(dp(0), dp(16)));
+        addHelpRow(appearanceContent, keyPreview, R.string.key_preview_description);
 
         TextView candidateColorLabel = new TextView(this);
         candidateColorLabel.setText(R.string.candidate_color_title);
@@ -310,19 +241,16 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 startActivity(new Intent(this, KeyboardResizeActivity.class)));
         appearanceContent.addView(resizeKeyboard, matchWrap(dp(0), dp(16)));
 
-        touchBottomSpace = bottomSpaceCheckBox(
+        touchBottomSpace = settingsCheckBox(R.string.bottom_language_space_enabled,
                 KeyboardBottomSpaceSettings.touchEnabled(this));
         touchBottomSpace.setOnCheckedChangeListener((button, checked) ->
                 KeyboardBottomSpaceSettings.setTouchEnabled(SettingsActivity.this, checked));
-        appearanceContent.addView(touchBottomSpace, matchWrap(dp(8), dp(8)));
-        touchBottomSpaceDescription = bottomSpaceDescription(R.string.touch_bottom_space_description);
-        appearanceContent.addView(touchBottomSpaceDescription,
-                matchWrap(dp(0), dp(16)));
+        addHelpRow(appearanceContent, touchBottomSpace, R.string.touch_bottom_space_description);
         updateTouchBottomSpaceAvailability();
 
         LinearLayout hardwareContent = addSettingsGroup(content, savedInstanceState,
                 "hardware", R.string.settings_group_hardware,
-                R.string.settings_group_hardware_summary, false).body;
+                R.string.settings_group_hardware_summary, false);
         CheckBox floatingCandidates = new CheckBox(this);
         floatingCandidates.setText(R.string.floating_candidates_enabled);
         floatingCandidates.setTextSize(16);
@@ -356,54 +284,34 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         floatingLayoutLabel.setEnabled(floatingCandidates.isChecked());
         hardwareContent.addView(floatingLayout, matchWrap(dp(0), dp(36)));
 
-        CheckBox hardwareSmartTwoRows = new CheckBox(this);
-        hardwareSmartTwoRows.setText(R.string.hardware_smart_two_rows_enabled);
-        hardwareSmartTwoRows.setTextSize(16);
-        hardwareSmartTwoRows.setTextColor(Color.DKGRAY);
-        hardwareSmartTwoRows.setMinHeight(dp(48));
-        hardwareSmartTwoRows.setChecked(CandidateWindowSettings.smartTwoRowsEnabled(this));
+        CheckBox hardwareSmartTwoRows = settingsCheckBox(R.string.hardware_smart_two_rows_enabled,
+                CandidateWindowSettings.smartTwoRowsEnabled(this));
         setDependentControlEnabled(hardwareSmartTwoRows, !floatingCandidates.isChecked());
-        hardwareContent.addView(hardwareSmartTwoRows, matchWrap(dp(0), dp(8)));
-        TextView hardwareSmartTwoRowsDescription = bottomSpaceDescription(
-                R.string.hardware_smart_two_rows_description);
-        setDependentControlEnabled(hardwareSmartTwoRowsDescription, !floatingCandidates.isChecked());
-        hardwareContent.addView(hardwareSmartTwoRowsDescription, matchWrap(dp(0), dp(12)));
+        addHelpRow(hardwareContent, hardwareSmartTwoRows, R.string.hardware_smart_two_rows_description);
         hardwareSmartTwoRows.setOnCheckedChangeListener((button, checked) ->
                 CandidateWindowSettings.setSmartTwoRowsEnabled(SettingsActivity.this, checked));
 
-        CheckBox hardwareNumberRow = new CheckBox(this);
-        hardwareNumberRow.setText(R.string.hardware_number_row_enabled);
-        hardwareNumberRow.setTextSize(16);
-        hardwareNumberRow.setTextColor(Color.DKGRAY);
-        hardwareNumberRow.setMinHeight(dp(48));
-        hardwareNumberRow.setChecked(CandidateWindowSettings.numberRowEnabled(this));
+        CheckBox hardwareNumberRow = settingsCheckBox(R.string.hardware_number_row_enabled,
+                CandidateWindowSettings.numberRowEnabled(this));
         setDependentControlEnabled(hardwareNumberRow, !floatingCandidates.isChecked());
-        hardwareContent.addView(hardwareNumberRow, matchWrap(dp(0), dp(8)));
-        hardwareContent.addView(bottomSpaceDescription(R.string.hardware_collapse_description),
-                matchWrap(dp(0), dp(12)));
+        addHelpRow(hardwareContent, hardwareNumberRow, R.string.hardware_collapse_description);
         hardwareNumberRow.setOnCheckedChangeListener((button, checked) ->
                 CandidateWindowSettings.setNumberRowEnabled(SettingsActivity.this, checked));
 
-        CheckBox hardwareBottomSpace = bottomSpaceCheckBox(
+        CheckBox hardwareBottomSpace = settingsCheckBox(R.string.bottom_language_space_enabled,
                 KeyboardBottomSpaceSettings.hardwareEnabled(this));
-        TextView hardwareBottomSpaceDescription = bottomSpaceDescription(
-                R.string.hardware_bottom_space_description);
         setDependentControlEnabled(hardwareBottomSpace, !floatingCandidates.isChecked());
-        setDependentControlEnabled(hardwareBottomSpaceDescription, !floatingCandidates.isChecked());
         hardwareBottomSpace.setOnCheckedChangeListener((button, checked) ->
                 KeyboardBottomSpaceSettings.setHardwareEnabled(SettingsActivity.this, checked));
-        hardwareContent.addView(hardwareBottomSpace, matchWrap(dp(0), dp(8)));
-        hardwareContent.addView(hardwareBottomSpaceDescription, matchWrap(dp(0), dp(16)));
+        addHelpRow(hardwareContent, hardwareBottomSpace, R.string.hardware_bottom_space_description);
 
         floatingCandidates.setOnCheckedChangeListener((button, checked) -> {
             CandidateWindowSettings.setFloatingEnabled(SettingsActivity.this, checked);
             floatingLayout.setEnabled(checked);
             floatingLayoutLabel.setEnabled(checked);
             setDependentControlEnabled(hardwareSmartTwoRows, !checked);
-            setDependentControlEnabled(hardwareSmartTwoRowsDescription, !checked);
             setDependentControlEnabled(hardwareNumberRow, !checked);
             setDependentControlEnabled(hardwareBottomSpace, !checked);
-            setDependentControlEnabled(hardwareBottomSpaceDescription, !checked);
             updateFloatingFailure(floatingFailure);
         });
         floatingLayout.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
@@ -484,21 +392,11 @@ public final class SettingsActivity extends Activity implements SupporterBilling
     @Override
     protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
-        for (Map.Entry<String, SettingsGroup> entry : settingsGroups.entrySet()) {
+        for (Map.Entry<String, LinearLayout> entry : settingsGroups.entrySet()) {
             state.putBoolean("settings_group_" + entry.getKey(),
-                    entry.getValue().body.getVisibility() == View.VISIBLE);
+                    entry.getValue().getVisibility() == View.VISIBLE);
         }
         state.putInt("settings_scroll_y", settingsScroll.getScrollY());
-    }
-
-    private static final class SettingsGroup {
-        final LinearLayout body;
-        final TextView summary;
-
-        SettingsGroup(LinearLayout body, TextView summary) {
-            this.body = body;
-            this.summary = summary;
-        }
     }
 
     private void addKeyboardLayoutSettings(LinearLayout parent) {
@@ -506,7 +404,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         var areas = KeyboardLayoutProfile.KeycapArea.values();
         var fonts = KeyboardLayoutProfile.FontSize.values();
         var positions = KeyboardLayoutProfile.DeletePosition.values();
-        addLayoutOptionLabel(parent, R.string.keyboard_layout_profile);
+        addHelpLabel(parent, R.string.keyboard_layout_profile,
+                R.string.keyboard_layout_profile_description);
         Spinner profile = layoutOptionSpinner(parent, R.string.keyboard_layout_profile,
                 profiles.stream().map(item -> item.displayName).toArray(String[]::new));
         profile.setSelection(profiles.indexOf(KeyboardLayoutProfileSettings.profile(this)));
@@ -549,30 +448,19 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> adapter) {}
         });
-        CheckBox integrated = new CheckBox(this);
-        integrated.setText(R.string.integrated_bottom_controls_enabled);
-        integrated.setTextSize(16);
-        integrated.setMinHeight(dp(48));
-        integrated.setChecked(KeyboardBottomControlsSettings.enabled(this));
+        CheckBox integrated = settingsCheckBox(R.string.integrated_bottom_controls_enabled,
+                KeyboardBottomControlsSettings.enabled(this));
         integrated.setOnCheckedChangeListener((button, checked) -> {
             KeyboardBottomControlsSettings.setEnabled(this, checked);
             updateTouchBottomSpaceAvailability();
         });
-        parent.addView(integrated, matchWrap(dp(0), dp(8)));
-        parent.addView(bottomSpaceDescription(R.string.integrated_bottom_controls_description),
-                matchWrap(dp(0), dp(12)));
-        TextView description = new TextView(this);
-        description.setText(R.string.keyboard_layout_profile_description);
-        description.setTextSize(14);
-        description.setTextColor(Color.GRAY);
-        parent.addView(description, matchWrap(dp(0), dp(24)));
+        addHelpRow(parent, integrated, R.string.integrated_bottom_controls_description);
     }
 
     private void updateTouchBottomSpaceAvailability() {
         if (touchBottomSpace == null) return;
         boolean enabled = !KeyboardBottomControlsSettings.enabled(this);
         setDependentControlEnabled(touchBottomSpace, enabled);
-        setDependentControlEnabled(touchBottomSpaceDescription, enabled);
     }
 
     private void addLayoutOptionLabel(LinearLayout parent, int text) {
@@ -593,7 +481,7 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         return spinner;
     }
 
-    private SettingsGroup addSettingsGroup(LinearLayout root, Bundle savedState,
+    private LinearLayout addSettingsGroup(LinearLayout root, Bundle savedState,
             String key, int titleRes, int summaryRes, boolean defaultExpanded) {
         LinearLayout section = new LinearLayout(this);
         section.setOrientation(LinearLayout.VERTICAL);
@@ -614,12 +502,14 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         heading.setTextColor(getColor(R.color.keykey_blue_dark));
         header.addView(heading);
 
-        TextView summary = new TextView(this);
-        summary.setText(summaryRes);
-        summary.setTextSize(14);
-        summary.setTextColor(Color.DKGRAY);
-        summary.setPadding(0, dp(4), 0, 0);
-        header.addView(summary);
+        if (summaryRes != 0) {
+            TextView summary = new TextView(this);
+            summary.setText(summaryRes);
+            summary.setTextSize(14);
+            summary.setTextColor(Color.DKGRAY);
+            summary.setPadding(0, dp(4), 0, 0);
+            header.addView(summary);
+        }
 
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
@@ -632,9 +522,8 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         setGroupExpanded(header, heading, body, titleRes, expanded);
         header.setOnClickListener(view -> setGroupExpanded(header, heading, body, titleRes,
                 body.getVisibility() != View.VISIBLE));
-        SettingsGroup group = new SettingsGroup(body, summary);
-        settingsGroups.put(key, group);
-        return group;
+        settingsGroups.put(key, body);
+        return body;
     }
 
     private void setGroupExpanded(LinearLayout header, TextView heading, LinearLayout body,
@@ -724,15 +613,18 @@ public final class SettingsActivity extends Activity implements SupporterBilling
                 ChineseInputMethodSettings.setOptions(this, method, next, virtualKeyboard);
                 refresh.run();
             });
-            parent.addView(control, matchWrap(dp(0), dp(0)));
+            int help = cangjie ? switch (key) {
+                case "realtime", "clear" -> R.string.cangjie_candidate_mode_description;
+                case "prefix" -> R.string.cangjie_prefix_candidates_description;
+                default -> 0;
+            } : 0;
+            if (help != 0) {
+                addHelpRow(parent, control, help);
+            } else {
+                parent.addView(control, matchWrap(dp(0), dp(0)));
+            }
         }
         refresh.run();
-        if (cangjie) {
-            TextView explanation = new TextView(this);
-            explanation.setText("即時候選與錯碼清除互斥。開啟即時候選後，才能啟用「未打完也能選字」，提前顯示相同開頭的候選字，常用字優先。");
-            explanation.setTextSize(14);
-            parent.addView(explanation, matchWrap(dp(0), dp(4)));
-        }
         if (cangjie && virtualKeyboard) {
             Spinner punctuation = new Spinner(this);
             punctuation.setContentDescription("倉頡標點");
@@ -752,14 +644,6 @@ public final class SettingsActivity extends Activity implements SupporterBilling
             });
             parent.addView(punctuation, matchWrap(dp(0), dp(8)));
         }
-    }
-
-    private void updateCompositionSummary(TextView view) {
-        String layout = getResources().getStringArray(R.array.bopomofo_keyboard_layouts)[
-                BopomofoKeyboardLayoutSettings.layout(this).ordinal()];
-        view.setText(getString(R.string.settings_group_composition_summary, layout,
-                getString(BopomofoCompositionModeSettings.bigramEnabled(this)
-                        ? R.string.settings_value_on : R.string.settings_value_off)));
     }
 
     private void updateFloatingFailure(TextView view) {
@@ -830,9 +714,9 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         }
     }
 
-    private CheckBox bottomSpaceCheckBox(boolean checked) {
+    private CheckBox settingsCheckBox(int title, boolean checked) {
         CheckBox check = new CheckBox(this);
-        check.setText(R.string.bottom_language_space_enabled);
+        check.setText(title);
         check.setTextSize(16);
         check.setTextColor(Color.DKGRAY);
         check.setMinHeight(dp(48));
@@ -840,13 +724,36 @@ public final class SettingsActivity extends Activity implements SupporterBilling
         return check;
     }
 
-    private TextView bottomSpaceDescription(int text) {
-        TextView description = new TextView(this);
-        description.setText(text);
-        description.setTextSize(14);
-        description.setTextColor(Color.GRAY);
-        description.setLineSpacing(0, 1.2f);
-        return description;
+    private void addHelpLabel(LinearLayout parent, int title, int message) {
+        TextView label = new TextView(this);
+        label.setText(title);
+        label.setTextSize(16);
+        label.setTextColor(Color.DKGRAY);
+        addHelpRow(parent, label, message);
+    }
+
+    private void addHelpRow(LinearLayout parent, TextView option, int message) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.addView(option, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        CharSequence title = option.getText();
+        ImageButton info = new ImageButton(this);
+        info.setImageResource(R.drawable.ic_settings_info);
+        info.setContentDescription(getString(R.string.settings_show_help, title));
+        int iconPadding = dp(12);
+        info.setPadding(iconPadding, iconPadding, iconPadding, iconPadding);
+        TypedValue background = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, background, true);
+        info.setBackgroundResource(background.resourceId);
+        info.setOnClickListener(view -> new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(R.string.settings_close_help, null)
+                .show());
+        row.addView(info, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        parent.addView(row, matchWrap(dp(0), dp(4)));
     }
 
     private static void setDependentControlEnabled(View control, boolean enabled) {

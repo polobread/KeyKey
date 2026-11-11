@@ -5,10 +5,13 @@ import static org.junit.Assert.*;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -76,15 +79,21 @@ public final class SettingsGroupsInstrumentedTest {
 
                 LinearLayout composition = findGroup(page, "注音與選字");
                 View header = composition.getChildAt(0);
-                View body = composition.getChildAt(1);
+                LinearLayout body = (LinearLayout) composition.getChildAt(1);
+                assertFalse(containsText(header, "注音鍵盤："));
+                assertFalse(containsText(header, "上下文："));
                 header.performClick();
                 assertEquals(View.VISIBLE, body.getVisibility());
                 assertFalse(containsText(body, "倉頡"));
                 assertFalse(containsText(body, "簡易"));
+                assertEquals(0, labelIndex(body, context.getString(R.string.composition_mode_help)));
+                assertEquals(1, labelIndex(body, context.getString(R.string.smart_omit_tone)));
+                assertEquals(2, labelIndex(body, context.getString(R.string.smart_space_selects_candidates)));
+                assertFalse(containsText(body, context.getString(R.string.composition_mode_description)));
                 CheckBox bigram = findBigram(body);
                 assertNotNull(bigram);
                 bigram.setChecked(false);
-                assertTrue(containsText(header, "上下文：關閉"));
+                assertFalse(BopomofoCompositionModeSettings.bigramEnabled(context));
                 header.performClick();
                 assertEquals(View.GONE, body.getVisibility());
             });
@@ -95,6 +104,50 @@ public final class SettingsGroupsInstrumentedTest {
             }
             SupporterState.setSupporter(context, oldSupporter);
             BopomofoCompositionModeSettings.setBigramEnabled(context, oldBigram);
+        }
+    }
+
+    @Test
+    public void optionHelpShowsTheExplanationWithoutChangingTheOption() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        String title = context.getString(R.string.smart_omit_tone);
+        String message = context.getString(R.string.smart_omit_tone_description);
+        String close = context.getString(R.string.settings_close_help);
+        boolean initiallyChecked = BopomofoCompositionModeSettings.omitTone(context);
+        Activity activity = instrumentation.startActivitySync(new Intent(context, SettingsActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        try {
+            instrumentation.runOnMainSync(() -> {
+                View body = revealComposition(activity, context);
+                var matches = new java.util.ArrayList<View>();
+                String helpLabel = context.getString(R.string.settings_show_help, title);
+                body.findViewsWithText(matches, helpLabel, View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION);
+                assertEquals(1, matches.size());
+                assertTrue(matches.get(0) instanceof ImageButton);
+                assertTrue(matches.get(0).performClick());
+                assertEquals(initiallyChecked, findOmitTone(body, context).isChecked());
+            });
+            instrumentation.waitForIdleSync();
+            boolean closed = false;
+            long deadline = SystemClock.uptimeMillis() + 5000;
+            while (!closed && SystemClock.uptimeMillis() < deadline) {
+                AccessibilityNodeInfo dialog = instrumentation.getUiAutomation().getRootInActiveWindow();
+                if (dialog != null && !dialog.findAccessibilityNodeInfosByText(message).isEmpty()) {
+                    assertFalse(dialog.findAccessibilityNodeInfosByText(title).isEmpty());
+                    for (AccessibilityNodeInfo button : dialog.findAccessibilityNodeInfosByText(close)) {
+                        if (close.contentEquals(button.getText()) && button.isClickable()) {
+                            closed = button.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            break;
+                        }
+                    }
+                }
+                if (!closed) SystemClock.sleep(50);
+            }
+            assertTrue("The explanation dialog must display the text and a close button", closed);
+            assertEquals(initiallyChecked, BopomofoCompositionModeSettings.omitTone(context));
+        } finally {
+            instrumentation.runOnMainSync(activity::finish);
         }
     }
 
@@ -294,7 +347,8 @@ public final class SettingsGroupsInstrumentedTest {
                 int integratedIndex = labelIndex(body, context.getString(R.string.integrated_bottom_controls_enabled));
                 assertTrue(colorIndex >= 0 && profileIndex > colorIndex && areaIndex > profileIndex
                         && fontIndex > areaIndex && deleteIndex > fontIndex && integratedIndex > deleteIndex);
-                assertTrue(body.getChildAt(integratedIndex) instanceof CheckBox);
+                assertTrue(findLabel(body.getChildAt(integratedIndex),
+                        context.getString(R.string.integrated_bottom_controls_enabled)) instanceof CheckBox);
                 Spinner font = findProfileSelector(body, context.getString(R.string.keyboard_font_size));
                 assertEquals(fonts.size(), font.getAdapter().getCount());
                 for (int index = 0; index < fonts.size(); index++) {
@@ -438,9 +492,18 @@ public final class SettingsGroupsInstrumentedTest {
 
     private static int labelIndex(LinearLayout body, String label) {
         for (int index = 0; index < body.getChildCount(); index++) {
-            if (body.getChildAt(index) instanceof TextView text && label.contentEquals(text.getText())) return index;
+            if (findLabel(body.getChildAt(index), label) != null) return index;
         }
         return -1;
+    }
+
+    private static TextView findLabel(View root, String label) {
+        var matches = new java.util.ArrayList<View>();
+        root.findViewsWithText(matches, label, View.FIND_VIEWS_WITH_TEXT);
+        for (View match : matches) {
+            if (match instanceof TextView text && label.contentEquals(text.getText())) return text;
+        }
+        return null;
     }
 
     private static View revealComposition(Activity activity, Context context) {

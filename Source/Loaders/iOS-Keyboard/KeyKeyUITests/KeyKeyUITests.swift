@@ -70,6 +70,20 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(app.switches["app-settings.input-clicks"].exists)
         let omission = app.switches["app-settings.omit-tones"]
         XCTAssertEqual(omission.label, "好打注音省略聲調")
+        let space = app.switches["app-settings.space-selects-candidates"]
+        XCTAssertEqual(space.label, "好打注音使用空白鍵選字")
+        XCTAssertLessThan(omission.frame.midY, space.frame.midY)
+
+        let spaceValue = space.value as? String
+        app.buttons["app-settings.space-selects-candidates.info"].tap()
+        let help = app.alerts["好打注音使用空白鍵選字"]
+        XCTAssertTrue(help.waitForExistence(timeout: 3))
+        XCTAssertTrue(help.staticTexts.matching(NSPredicate(
+            format: "label CONTAINS %@", "空白鍵可完成讀音"
+        )).firstMatch.exists)
+        help.buttons["關閉"].tap()
+        XCTAssertEqual(space.value as? String, spaceValue)
+
         let layout = app.segmentedControls["app-settings.keyboard-layout"]
         layout.buttons["標準"].tap()
         if omission.value as? String == "0" { omission.tap() }
@@ -315,6 +329,18 @@ final class KeyKeyUITests: XCTestCase {
         layout.buttons["標準"].tap()
         revealSetting(omission, in: scroll)
         XCTAssertEqual(omission.label, "好打注音省略聲調")
+        let omissionInfo = app.buttons["keyboard-settings.help.omit-tones"]
+        XCTAssertTrue(omissionInfo.isHittable)
+        let omissionValue = omission.value as? String
+        omissionInfo.tap()
+        let helpTitle = app.staticTexts["keyboard-settings.help.title"]
+        let helpMessage = app.staticTexts["keyboard-settings.help.message"]
+        let closeHelp = app.buttons["keyboard-settings.help.close"]
+        XCTAssertTrue(helpTitle.waitForExistence(timeout: 3))
+        XCTAssertEqual(helpTitle.label, "好打注音省略聲調")
+        XCTAssertTrue(helpMessage.label.contains("漢語拼音"))
+        closeHelp.tap()
+        XCTAssertEqual(omission.value as? String, omissionValue)
         if omission.value as? String == "0" { omission.tap() }
         close.tap()
 
@@ -360,6 +386,20 @@ final class KeyKeyUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         assertAppRotation(.landscapeLeft, relativeToPortrait: portraitFrame)
         XCTAssertTrue(waitForLayout { self.app.buttons["n"].isHittable })
+        settings.tap()
+        let spaceInfo = app.buttons["keyboard-settings.help.space-selects-candidates"]
+        revealSetting(spaceInfo, in: scroll)
+        let spaceInfoFrame = spaceInfo.frame
+        spaceInfo.tap()
+        XCTAssertTrue(helpTitle.waitForExistence(timeout: 3))
+        XCTAssertEqual(helpTitle.label, "好打注音使用空白鍵選字")
+        XCTAssertTrue(helpMessage.label.contains("輸入法設定"))
+        XCTAssertTrue(closeHelp.isHittable)
+        closeHelp.tap()
+        XCTAssertTrue(spaceInfo.isHittable)
+        XCTAssertEqual(spaceInfo.frame.midY, spaceInfoFrame.midY, accuracy: 2)
+        close.tap()
+
         for key in "nihao" { app.buttons[String(key)].tap() }
         XCTAssertTrue(first.waitForExistence(timeout: 3))
         XCTAssertEqual(first.label, "第 1 個組字，你")

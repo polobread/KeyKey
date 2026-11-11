@@ -59,7 +59,9 @@ public final class SpaceSelectionInstrumentedTest {
     }
 
     private static CheckBox findToggle(View root) {
-        if (root instanceof CheckBox check && check.getText().toString().equals("使用空白鍵選字")) return check;
+        if (root instanceof CheckBox check
+                && root.getResources().getString(R.string.smart_space_selects_candidates)
+                        .contentEquals(check.getText())) return check;
         if (root instanceof ViewGroup group) {
             for (int i = 0; i < group.getChildCount(); i++) {
                 CheckBox result = findToggle(group.getChildAt(i));

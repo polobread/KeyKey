@@ -436,18 +436,27 @@ private final class InputMethodSettingsViewController: UIViewController {
         modeControl.addTarget(self, action: #selector(modeChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(modeControl)
 
-        let spaceRow = UIStackView()
-        spaceRow.alignment = .center
-        spaceRow.addArrangedSubview(label("使用空白鍵選字", size: 18))
-        spaceRow.addArrangedSubview(UIView())
+        let toneOmission = UISwitch()
+        toneOmission.isOn = toneOmissionSettings.enabled
+        toneOmission.accessibilityIdentifier = "app-settings.omit-tones"
+        toneOmission.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
+        stack.addArrangedSubview(settingWithHelp(
+            SmartMandarinToneOmissionSettings.displayName,
+            message: "預設關閉。開啟後，觸控好打注音的標準注音、許氏與漢語拼音可連續輸入讀音，並在 11 格組字區顯示轉出的中文字。仍可照常輸入聲調。",
+            identifier: "app-settings.omit-tones.info",
+            control: toneOmission
+        ))
+
         let spaceSelection = UISwitch()
         spaceSelection.isOn = spaceSettings.enabled
         spaceSelection.accessibilityIdentifier = "app-settings.space-selects-candidates"
-        spaceSelection.accessibilityLabel = "使用空白鍵選字"
         spaceSelection.addTarget(self, action: #selector(spaceSelectionChanged(_:)), for: .valueChanged)
-        spaceRow.addArrangedSubview(spaceSelection)
-        stack.addArrangedSubview(spaceRow)
-        stack.addArrangedSubview(label("僅適用好打注音，虛擬與實體鍵盤共用。預設關閉：讀音完成後，在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。關閉時仍可點選組字或按實體鍵盤 ↓ 開啟候選。", size: 14))
+        stack.addArrangedSubview(settingWithHelp(
+            "好打注音使用空白鍵選字",
+            message: "虛擬與實體鍵盤共用，預設關閉。關閉時，讀音完成後按空白會在組字區插入空白，仍可繼續輸入及回頭選字。未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。關閉時仍可點選組字或按實體鍵盤 ↓ 開啟候選。",
+            identifier: "app-settings.space-selects-candidates.info",
+            control: spaceSelection
+        ))
 
         let phrases = button("管理好打注音自訂詞", #selector(openPhrases))
         phrases.accessibilityIdentifier = "app-settings.user-phrases"
@@ -456,27 +465,17 @@ private final class InputMethodSettingsViewController: UIViewController {
         reset.accessibilityIdentifier = "app-settings.reset-learning"
         stack.addArrangedSubview(reset)
 
-        stack.addArrangedSubview(label("注音鍵盤", size: 18))
+        stack.addArrangedSubview(settingWithHelp(
+            "注音鍵盤",
+            message: "好打與傳統注音共用配置。許氏與漢語拼音使用英文字母鍵帽。拼音一聲按空白，二至四聲按 2～4，輕聲按 5，ü 可用 v。",
+            identifier: "app-settings.keyboard-layout.info"
+        ))
         let layouts = BopomofoKeyboardLayout.allCases
         let layoutControl = UISegmentedControl(items: layouts.map(\.displayName))
         layoutControl.selectedSegmentIndex = layouts.firstIndex(of: layoutSettings.layout) ?? 0
         layoutControl.accessibilityIdentifier = "app-settings.keyboard-layout"
         layoutControl.addTarget(self, action: #selector(layoutChanged(_:)), for: .valueChanged)
         stack.addArrangedSubview(layoutControl)
-        stack.addArrangedSubview(label("好打與傳統注音共用配置。許氏與漢語拼音使用英文字母鍵帽。拼音一聲按空白，二至四聲按 2～4，輕聲按 5，ü 可用 v。", size: 14))
-
-        let toneOmissionRow = UIStackView()
-        toneOmissionRow.alignment = .center
-        toneOmissionRow.addArrangedSubview(label(SmartMandarinToneOmissionSettings.displayName, size: 18))
-        toneOmissionRow.addArrangedSubview(UIView())
-        let toneOmission = UISwitch()
-        toneOmission.isOn = toneOmissionSettings.enabled
-        toneOmission.accessibilityIdentifier = "app-settings.omit-tones"
-        toneOmission.accessibilityLabel = SmartMandarinToneOmissionSettings.displayName
-        toneOmission.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
-        toneOmissionRow.addArrangedSubview(toneOmission)
-        stack.addArrangedSubview(toneOmissionRow)
-        stack.addArrangedSubview(label("預設關閉。開啟後，觸控好打注音的標準注音、許氏與漢語拼音可連續輸入讀音，並在 11 格組字區顯示轉出的中文字。仍可照常輸入聲調。", size: 14))
 
         stack.addArrangedSubview(tableOptionsButton(for: .cangjie))
         stack.addArrangedSubview(tableOptionsButton(for: .cangjie, virtualKeyboard: false))
@@ -503,12 +502,48 @@ private final class InputMethodSettingsViewController: UIViewController {
         clickRow.addArrangedSubview(clicks)
         stack.addArrangedSubview(clickRow)
 
-        let note = label(
-            "在這裡變更後，鍵盤下次開啟會套用。鍵盤內「設」頁的修改保存在鍵盤自己的資料區，無法顯示回 App。重設學習紀錄會在下次開啟鍵盤時生效。",
-            size: 13
-        )
-        note.textColor = .secondaryLabel
-        stack.addArrangedSubview(note)
+        stack.addArrangedSubview(settingWithHelp(
+            "設定套用說明",
+            message: "在這裡變更後，鍵盤下次開啟會套用。鍵盤內「設」頁的修改保存在鍵盤自己的資料區，無法顯示回 App。重設學習紀錄會在下次開啟鍵盤時生效。",
+            identifier: "app-settings.application.info"
+        ))
+    }
+
+    private func settingWithHelp(
+        _ title: String, message: String, identifier: String, control: UISwitch? = nil
+    ) -> UIStackView {
+        let heading = label(title, size: 18)
+        heading.font = UIFontMetrics(forTextStyle: .headline).scaledFont(for: heading.font)
+        heading.adjustsFontForContentSizeCategory = true
+        heading.isAccessibilityElement = control == nil
+        heading.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let info = UIButton(type: .system)
+        let iconSize = UIImage.SymbolConfiguration(pointSize: 20)
+        info.setImage(UIImage(systemName: "info.circle", withConfiguration: iconSize), for: .normal)
+        info.accessibilityLabel = "查看「\(title)」說明"
+        info.accessibilityIdentifier = identifier
+        info.addAction(UIAction { [weak self] _ in
+            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "關閉", style: .default))
+            self?.present(alert, animated: true)
+        }, for: .touchUpInside)
+        NSLayoutConstraint.activate([
+            info.widthAnchor.constraint(equalToConstant: 44),
+            info.heightAnchor.constraint(equalToConstant: 44)
+        ])
+
+        let row = UIStackView(arrangedSubviews: [heading])
+        row.alignment = .center
+        row.spacing = 8
+        if let control {
+            control.accessibilityLabel = title
+            control.setContentHuggingPriority(.required, for: .horizontal)
+            control.setContentCompressionResistancePriority(.required, for: .horizontal)
+            row.addArrangedSubview(control)
+        }
+        row.addArrangedSubview(info)
+        return row
     }
 
     private func label(_ title: String, size: CGFloat) -> UILabel {

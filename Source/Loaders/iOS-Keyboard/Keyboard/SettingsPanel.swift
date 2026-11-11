@@ -45,6 +45,8 @@ final class SettingsPanel: UIView {
     )
     private let resetLearningButton = UIButton(configuration: .tinted())
     private var resetConfirmation = false
+    private var helpOverlay: UIView?
+    private weak var helpSource: UIButton?
 
     init(
         inputClicksEnabled: Bool, candidateColor: CandidateColor,
@@ -104,8 +106,8 @@ final class SettingsPanel: UIView {
         resize.addTarget(self, action: #selector(keyboardHeightTapped), for: .touchUpInside)
         resize.accessibilityIdentifier = "keyboard-settings.keyboard-height"
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), spaceSelectionRow(), resetLearningButton, statusLabel, keyboardLayoutRow(),
-            toneOmissionRow(),
+            compositionModeRow(), toneOmissionRow(), spaceSelectionRow(), resetLearningButton, statusLabel,
+            keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
             candidateColorRow(), resize, layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(),
             feedbackRow()
@@ -231,15 +233,6 @@ final class SettingsPanel: UIView {
         label.font = .systemFont(ofSize: 15)
         label.textColor = Palette.primaryText
 
-        let detail = UILabel()
-        detail.text = "不需完整取用；震動由 iOS 限制"
-        detail.font = .systemFont(ofSize: 11)
-        detail.textColor = Palette.hintText
-
-        let labels = UIStackView(arrangedSubviews: [label, detail])
-        labels.axis = .vertical
-        labels.spacing = 1
-
         let toggle = UISwitch()
         toggle.isOn = inputClicksEnabled
         toggle.onTintColor = Palette.highlight
@@ -247,11 +240,12 @@ final class SettingsPanel: UIView {
         toggle.accessibilityLabel = "按鍵音"
         toggle.addTarget(self, action: #selector(inputClicksToggled(_:)), for: .valueChanged)
 
-        let row = UIStackView(arrangedSubviews: [labels, UIView(), toggle])
-        row.alignment = .center
-        row.isLayoutMarginsRelativeArrangement = true
-        row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
-        return row
+        let help = helpButton(
+            title: "按鍵音",
+            message: "按鍵音不需完整取用。震動由 iOS 限制。",
+            identifier: "input-clicks"
+        )
+        return helpRow(label, control: toggle, help: help)
     }
 
     private func compositionModeRow() -> UIView {
@@ -315,20 +309,28 @@ final class SettingsPanel: UIView {
     }
 
     private func spaceSelectionRow() -> UIView {
-        let label = UILabel()
+        let title = "好打注音使用空白鍵選字"
         let enabled = SmartMandarinSpaceSettings().enabled
-        label.text = "使用空白鍵選字：\(enabled ? "開啟" : "關閉")\n與實體鍵盤共用；請至琦琦 App 的「輸入法設定」調整。"
-        label.font = .systemFont(ofSize: 14)
+        let label = UILabel()
+        label.text = "\(title)：\(enabled ? "開啟" : "關閉")"
+        label.font = .preferredFont(forTextStyle: .subheadline)
+        label.adjustsFontForContentSizeCategory = true
         label.textColor = Palette.primaryText
-        label.numberOfLines = 0
         label.accessibilityIdentifier = "space-selects-candidates"
-        return label
+        let help = helpButton(
+            title: title,
+            message: "開啟後，空白鍵可完成讀音、開啟候選及翻頁。此設定與實體鍵盤共用，請至琦琦 App 的「輸入法設定」調整。",
+            identifier: "space-selects-candidates"
+        )
+        return helpRow(label, help: help)
     }
 
     private func toneOmissionRow() -> UIView {
         let label = UILabel()
-        label.text = SmartMandarinToneOmissionSettings.displayName
-        label.font = .systemFont(ofSize: 15)
+        let title = SmartMandarinToneOmissionSettings.displayName
+        label.text = title
+        label.font = .preferredFont(forTextStyle: .subheadline)
+        label.adjustsFontForContentSizeCategory = true
         label.textColor = Palette.primaryText
 
         let control = UISwitch()
@@ -336,19 +338,12 @@ final class SettingsPanel: UIView {
         control.accessibilityLabel = SmartMandarinToneOmissionSettings.displayName
         control.accessibilityIdentifier = "keyboard-settings.omit-tones"
         control.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
-        let row = UIStackView(arrangedSubviews: [label, UIView(), control])
-        row.alignment = .center
-        row.spacing = 8
-
-        let hint = UILabel()
-        hint.text = "標準注音、許氏與漢語拼音都可連續輸入讀音，也可照常輸入聲調。"
-        hint.font = .systemFont(ofSize: 13)
-        hint.textColor = Palette.hintText
-        hint.numberOfLines = 0
-        let section = UIStackView(arrangedSubviews: [row, hint])
-        section.axis = .vertical
-        section.spacing = 4
-        return section
+        let help = helpButton(
+            title: title,
+            message: "標準注音、許氏與漢語拼音都可連續輸入讀音，也可照常輸入聲調。",
+            identifier: "omit-tones"
+        )
+        return helpRow(label, control: control, help: help)
     }
 
     @objc private func toneOmissionChanged(_ sender: UISwitch) {
@@ -412,6 +407,131 @@ final class SettingsPanel: UIView {
             [.foregroundColor: Palette.candidateHighlightText(for: candidateColor)],
             for: .selected
         )
+    }
+
+    private func helpRow(_ label: UILabel, control: UISwitch? = nil, help: UIButton) -> UIView {
+        label.numberOfLines = 0
+        let row = UIStackView(arrangedSubviews: [label])
+        if let control {
+            control.setContentHuggingPriority(.required, for: .horizontal)
+            control.setContentCompressionResistancePriority(.required, for: .horizontal)
+            row.addArrangedSubview(control)
+        }
+        row.addArrangedSubview(help)
+        row.alignment = .center
+        row.spacing = 8
+        return row
+    }
+
+    private func helpButton(title: String, message: String, identifier: String) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        button.tintColor = Palette.primaryText
+        button.accessibilityLabel = "\(title)說明"
+        button.accessibilityIdentifier = "keyboard-settings.help." + identifier
+        button.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        button.addAction(UIAction { [weak self, weak button] _ in
+            guard let button else { return }
+            self?.showHelp(title: title, message: message, source: button)
+        }, for: .touchUpInside)
+        return button
+    }
+
+    private func showHelp(title: String, message: String, source: UIButton) {
+        guard helpOverlay == nil else { return }
+        let overlay = UIView()
+        overlay.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+        overlay.accessibilityViewIsModal = true
+
+        let card = UIView()
+        card.backgroundColor = Palette.surface
+        card.layer.cornerRadius = 12
+
+        let heading = UILabel()
+        heading.text = title
+        heading.textColor = Palette.primaryText
+        heading.font = .preferredFont(forTextStyle: .headline)
+        heading.adjustsFontForContentSizeCategory = true
+        heading.numberOfLines = 0
+        heading.accessibilityTraits.insert(.header)
+        heading.accessibilityIdentifier = "keyboard-settings.help.title"
+
+        let detail = UILabel()
+        detail.text = message
+        detail.textColor = Palette.primaryText
+        detail.font = .preferredFont(forTextStyle: .body)
+        detail.adjustsFontForContentSizeCategory = true
+        detail.numberOfLines = 0
+        detail.accessibilityIdentifier = "keyboard-settings.help.message"
+
+        let text = UIStackView(arrangedSubviews: [heading, detail])
+        text.axis = .vertical
+        text.spacing = 8
+        let scroll = UIScrollView()
+
+        let close = UIButton(configuration: .tinted())
+        close.setTitle("關閉", for: .normal)
+        close.accessibilityIdentifier = "keyboard-settings.help.close"
+        close.addTarget(self, action: #selector(closeHelp), for: .touchUpInside)
+
+        for view in [overlay, card, scroll, text, close] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+        }
+        addSubview(overlay)
+        overlay.addSubview(card)
+        card.addSubview(scroll)
+        card.addSubview(close)
+        scroll.addSubview(text)
+
+        let safe = overlay.safeAreaLayoutGuide
+        let cardWidth = card.widthAnchor.constraint(equalTo: safe.widthAnchor, constant: -24)
+        cardWidth.priority = .defaultHigh
+        let contentHeight = scroll.frameLayoutGuide.heightAnchor.constraint(equalTo: text.heightAnchor)
+        contentHeight.priority = .defaultLow
+        NSLayoutConstraint.activate([
+            overlay.leadingAnchor.constraint(equalTo: leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: trailingAnchor),
+            overlay.topAnchor.constraint(equalTo: topAnchor),
+            overlay.bottomAnchor.constraint(equalTo: bottomAnchor),
+            card.centerXAnchor.constraint(equalTo: safe.centerXAnchor),
+            card.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
+            card.topAnchor.constraint(greaterThanOrEqualTo: safe.topAnchor, constant: 8),
+            card.bottomAnchor.constraint(lessThanOrEqualTo: safe.bottomAnchor, constant: -8),
+            card.widthAnchor.constraint(lessThanOrEqualToConstant: 440),
+            cardWidth,
+            scroll.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            scroll.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            scroll.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
+            scroll.bottomAnchor.constraint(equalTo: close.topAnchor, constant: -4),
+            contentHeight,
+            text.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            text.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            text.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            text.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            text.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            close.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            close.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -6),
+            close.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+            close.widthAnchor.constraint(greaterThanOrEqualToConstant: 44)
+        ])
+        helpOverlay = overlay
+        helpSource = source
+        layoutIfNeeded()
+        UIAccessibility.post(notification: .screenChanged, argument: heading)
+    }
+
+    @objc private func closeHelp() {
+        helpOverlay?.removeFromSuperview()
+        helpOverlay = nil
+        UIAccessibility.post(notification: .screenChanged, argument: helpSource)
+        helpSource = nil
+    }
+
+    override func accessibilityPerformEscape() -> Bool {
+        guard helpOverlay != nil else { return super.accessibilityPerformEscape() }
+        closeHelp()
+        return true
     }
 
     // MARK: - Actions
