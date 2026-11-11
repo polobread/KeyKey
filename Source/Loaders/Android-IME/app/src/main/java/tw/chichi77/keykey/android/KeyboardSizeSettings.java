@@ -7,32 +7,42 @@ final class KeyboardSizeSettings {
     static final int MIN_PERCENT = 50;
     static final int MAX_PERCENT = 200;
     static final int DEFAULT_PERCENT = 100;
+    static final float MAX_BOTTOM_GAP_DP = 72f;
     private static final int[] HEIGHT_PERCENTS = {50, 75, 90, 100, 110, 125, 150, 175, 200};
     static final String KEY_PORTRAIT_PERCENT = "touch_keyboard_portrait_height_percent";
     static final String KEY_LANDSCAPE_PERCENT = "touch_keyboard_landscape_height_percent";
+
+    static final String KEY_PORTRAIT_SCALE = "touch_keyboard_portrait_height_scale";
+    static final String KEY_LANDSCAPE_SCALE = "touch_keyboard_landscape_height_scale";
+    static final String KEY_PORTRAIT_GAP = "touch_keyboard_portrait_bottom_gap_dp";
+    static final String KEY_LANDSCAPE_GAP = "touch_keyboard_landscape_bottom_gap_dp";
+
+    record Size(float heightScale, float bottomGapDp) {
+        Size {
+            heightScale = Float.isFinite(heightScale)
+                    ? Math.max(MIN_PERCENT / 100f, Math.min(MAX_PERCENT / 100f, heightScale)) : 1f;
+            bottomGapDp = Float.isFinite(bottomGapDp)
+                    ? Math.max(0f, Math.min(MAX_BOTTOM_GAP_DP, bottomGapDp)) : 0f;
+        }
+    }
+    static final Size DEFAULT_SIZE = new Size(1f, 0f);
 
     private static final String PREFERENCES_NAME = "ime_settings";
 
     private KeyboardSizeSettings() {}
 
-    static int portraitPercent(Context context) {
-        return readPercent(context, KEY_PORTRAIT_PERCENT);
-    }
-
-    static int landscapePercent(Context context) {
-        return readPercent(context, KEY_LANDSCAPE_PERCENT);
-    }
-
     static void setPortraitPercent(Context context, int percent) {
-        setPercent(context, KEY_PORTRAIT_PERCENT, percent);
+        setPercent(context, KEY_PORTRAIT_PERCENT, KEY_PORTRAIT_SCALE, percent);
     }
 
     static void setLandscapePercent(Context context, int percent) {
-        setPercent(context, KEY_LANDSCAPE_PERCENT, percent);
+        setPercent(context, KEY_LANDSCAPE_PERCENT, KEY_LANDSCAPE_SCALE, percent);
     }
 
     static boolean isSizeKey(String key) {
-        return KEY_PORTRAIT_PERCENT.equals(key) || KEY_LANDSCAPE_PERCENT.equals(key);
+        return KEY_PORTRAIT_PERCENT.equals(key) || KEY_LANDSCAPE_PERCENT.equals(key)
+                || KEY_PORTRAIT_SCALE.equals(key) || KEY_LANDSCAPE_SCALE.equals(key)
+                || KEY_PORTRAIT_GAP.equals(key) || KEY_LANDSCAPE_GAP.equals(key);
     }
 
     static int clampPercent(int percent) {
@@ -63,12 +73,23 @@ final class KeyboardSizeSettings {
         return percentForSelection(selectionForPercent(percent));
     }
 
-    private static int readPercent(Context context, String key) {
-        return nearestPercent(preferences(context).getInt(key, DEFAULT_PERCENT));
+    static Size size(Context context, boolean landscape) {
+        SharedPreferences prefs = preferences(context);
+        String percentKey = landscape ? KEY_LANDSCAPE_PERCENT : KEY_PORTRAIT_PERCENT;
+        float legacyScale = nearestPercent(prefs.getInt(percentKey, DEFAULT_PERCENT)) / 100f;
+        return new Size(prefs.getFloat(landscape ? KEY_LANDSCAPE_SCALE : KEY_PORTRAIT_SCALE, legacyScale),
+                prefs.getFloat(landscape ? KEY_LANDSCAPE_GAP : KEY_PORTRAIT_GAP, 0f));
     }
 
-    private static void setPercent(Context context, String key, int percent) {
-        preferences(context).edit().putInt(key, nearestPercent(percent)).apply();
+    static void setSize(Context context, boolean landscape, Size size) {
+        preferences(context).edit()
+                .putFloat(landscape ? KEY_LANDSCAPE_SCALE : KEY_PORTRAIT_SCALE, size.heightScale())
+                .putFloat(landscape ? KEY_LANDSCAPE_GAP : KEY_PORTRAIT_GAP, size.bottomGapDp())
+                .apply();
+    }
+
+    private static void setPercent(Context context, String percentKey, String scaleKey, int percent) {
+        preferences(context).edit().putInt(percentKey, nearestPercent(percent)).remove(scaleKey).apply();
     }
 
     private static SharedPreferences preferences(Context context) {

@@ -24,6 +24,7 @@
 		C77000000000000000000061 /* KeyKeyEngine in Frameworks */ = {isa = PBXBuildFile; productRef = C77000000000000000000062 /* KeyKeyEngine */; };
 		C77000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000002 /* AppDelegate.swift */; };
 		C77000000000000000000003 /* SetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000004 /* SetupViewController.swift */; };
+		C77000000000000000000702 /* KeyboardHeightEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000701 /* KeyboardHeightEditor.swift */; };
 		C77000000000000000000005 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000006 /* KeyboardViewController.swift */; };
 		C77000000000000000000007 /* KeyKey.db in Resources */ = {isa = PBXBuildFile; fileRef = C77000000000000000000008 /* KeyKey.db */; };
 		C77000000000000000000009 /* Keyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C7700000000000000000000A /* Keyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -93,6 +94,7 @@
 /* Begin PBXFileReference section */
 		C77000000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C77000000000000000000004 /* SetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupViewController.swift; sourceTree = "<group>"; };
+		C77000000000000000000701 /* KeyboardHeightEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHeightEditor.swift; sourceTree = "<group>"; };
 		C77000000000000000000006 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		C77000000000000000000008 /* KeyKey.db */ = {isa = PBXFileReference; lastKnownFileType = file; name = KeyKey.db; path = ../../Distributions/Takao/CookedDatabase/KeyKey.db; sourceTree = "<group>"; };
 		C7700000000000000000000A /* Keyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Keyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -180,6 +182,7 @@
 				C77000000000000000000036 /* Palette.swift */,
 				C77000000000000000000038 /* EnterGlyph.swift */,
 				C77000000000000000000034 /* SettingsPanel.swift */,
+				C77000000000000000000701 /* KeyboardHeightEditor.swift */,
 				C77000000000000000000006 /* KeyboardViewController.swift */,
 				C77000000000000000000011 /* Info.plist */,
 				C77000000000000000000055 /* Keyboard.entitlements */,
@@ -430,6 +433,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C77000000000000000000091 /* SimulatorGeometryProbe.swift in Keyboard Sources */,
+				C77000000000000000000702 /* KeyboardHeightEditor.swift in Sources */,
 				C77000000000000000000005 /* KeyboardViewController.swift in Sources */,
 				C77000000000000000000031 /* KeyboardView.swift in Sources */,
 				C77000000000000000000037 /* Palette.swift in Sources */,
@@ -484,7 +488,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LIBRARY_SEARCH_PATHS = ("$(inherited)", "$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)", );
 				OTHER_LDFLAGS = ("$(inherited)", "-lguanyinma", );
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.5.1;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -537,7 +541,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LIBRARY_SEARCH_PATHS = ("$(inherited)", "$(BUILT_PRODUCTS_DIR)/Guanyinma/$(PLATFORM_NAME)", );
 				OTHER_LDFLAGS = ("$(inherited)", "-lguanyinma", );
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.5.1;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;

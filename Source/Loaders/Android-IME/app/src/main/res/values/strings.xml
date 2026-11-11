@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="bopomofo_keyboard_layout">注音鍵盤</string>
-    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準；選許氏鍵盤時，虛擬鍵盤維持英文鍵帽。</string>
+    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準。許氏與漢語拼音使用英文鍵帽。拼音一聲按空白，二至四聲按 2–4，輕聲按 5。拼音寫作 ü（注音「ㄩ」）時按 v，例如綠（lǜ）輸入 lv4。</string>
     <string-array name="bopomofo_keyboard_layouts">
         <item>標準</item>
         <item>許氏鍵盤</item>
+        <item>漢語拼音</item>
     </string-array>
     <string name="app_name">琦琦輸入法</string>
     <string name="ime_name">@string/app_name</string>
@@ -23,9 +24,6 @@
     <string name="acknowledgements_back">返回</string>
     <string name="settings_title">琦琦輸入法設定</string>
     <string name="settings_group_composition">注音與選字</string>
-    <string name="settings_group_composition_summary">注音鍵盤：%1$s · 上下文：%2$s</string>
-    <string name="settings_value_on">開啟</string>
-    <string name="settings_value_off">關閉</string>
     <string name="settings_group_table">倉頡與簡易</string>
     <string name="settings_group_table_summary">即時候選、錯碼清除、倉頡標點與選字排序</string>
     <string name="settings_group_table_description">倉頡最多五碼，簡易滿兩碼查詢；兩者使用逐字選字與關聯詞。下方可分別調整兩種輸入法的選項。點鍵盤的「設」即可選擇輸入法。</string>
@@ -33,10 +31,14 @@
     <string name="settings_group_appearance_summary">鍵盤高度、底部空間、震動、按鍵預覽、候選顏色</string>
     <string name="settings_group_hardware">實體鍵盤</string>
     <string name="settings_group_hardware_summary">浮動候選窗、數字符號鍵、底部空間</string>
-    <string name="settings_group_phrases">關聯詞詞庫</string>
-    <string name="settings_group_phrases_summary">選擇要啟用的詞庫</string>
     <string name="settings_group_expand">展開%1$s</string>
     <string name="settings_group_collapse">收合%1$s</string>
+    <string name="settings_show_help">顯示「%1$s」的說明</string>
+    <string name="settings_close_help">關閉</string>
+    <string name="composition_mode_help">好打注音說明</string>
+    <string name="table_settings_help">倉頡與簡易說明</string>
+    <string name="cangjie_candidate_mode_description">即時候選與錯碼清除互斥，開啟其中一項會關閉另一項。</string>
+    <string name="cangjie_prefix_candidates_description">開啟即時候選後才可啟用。輸入時提前顯示相同開頭的候選字，常用字優先。</string>
 
     <string name="composition_mode_title">輸入法</string>
     <string-array name="composition_modes">
@@ -54,13 +56,20 @@
     <string name="haptic_maximum">0.1 秒</string>
     <string name="haptic_value_off">震動時間：關閉</string>
     <string name="haptic_value_seconds">震動時間：%1$s 秒（%2$d ms）</string>
-    <string name="keyboard_size_title">虛擬鍵盤高度</string>
-    <string name="keyboard_size_description" formatted="false">直式與橫式可分別選擇 50%、75%、90%、100%、110%、125%、150%、175%、200%；只影響螢幕虛擬鍵盤，實體鍵盤候選字窗維持原尺寸。</string>
-    <string name="keyboard_size_portrait">直式虛擬鍵盤</string>
-    <string name="keyboard_size_landscape">橫式虛擬鍵盤</string>
-    <string name="keyboard_size_value">目前高度：%1$d%%</string>
-    <string name="keyboard_size_minimum">50%</string>
-    <string name="keyboard_size_maximum">200%</string>
+    <string name="keyboard_resize_title">調整鍵盤高度</string>
+    <string name="keyboard_resize_hint">目前預覽：%1$s。拖曳鍵盤上下緣，旋轉裝置可調整另一個方向。</string>
+    <string name="keyboard_resize_portrait">直式</string>
+    <string name="keyboard_resize_landscape">橫式</string>
+    <string name="keyboard_resize_top">拖曳鍵盤上緣</string>
+    <string name="keyboard_resize_top_label">拖曳上緣</string>
+    <string name="keyboard_resize_bottom">拖曳鍵盤下緣</string>
+    <string name="keyboard_resize_bottom_label">拖曳下緣</string>
+    <string name="keyboard_resize_bottom_up">往上拉下緣</string>
+    <string name="keyboard_resize_reset">恢復預設</string>
+    <string name="keyboard_resize_cancel">取消</string>
+    <string name="keyboard_resize_done">完成</string>
+    <string name="keyboard_resize_step_up">向上微調</string>
+    <string name="keyboard_resize_step_down">向下微調</string>
     <string name="key_preview_enabled">顯示觸控按鍵預覽</string>
     <string name="key_preview_description">按住文字、注音或符號鍵時，在按鍵上方或附近顯示放大的按鍵圖，方便確認是否按對。</string>
     <string name="candidate_color_title">候選字底色</string>
@@ -78,11 +87,11 @@
     <string name="hardware_number_row_enabled">顯示虛擬數字與符號鍵</string>
     <string name="hardware_smart_two_rows_enabled">啟用好打注音雙排選字</string>
     <string name="hardware_smart_two_rows_description">上排顯示 9 格組字區，右側保留 Emoji、ㄅ／英與 ▼。下排固定顯示既有數字鍵（1–0、符、設），點字選候選時覆蓋數字鍵列，選完恢復數字鍵，面板高度不變。「顯示虛擬數字與符號鍵」控制是否再顯示符號列。預設關閉；使用浮動候選字窗時無法啟用。</string>
-    <string name="hardware_collapse_description">未使用浮動候選字窗時，可按候選列右側的「▼」收起候選列與數字符號列，直到下次點選輸入框才重新顯示。全／半形仍可用 Shift+Space 切換。</string>
+    <string name="hardware_collapse_description">未使用浮動候選字窗時，可按候選列右側的「▼」收起候選列與數字符號列，直到下次點選輸入框才重新顯示。全／半形仍可用 Shift+Space 切換。使用浮動候選字窗時無法調整。</string>
     <string name="bottom_language_space_enabled">預留底部切換語言空間</string>
     <string name="integrated_bottom_controls_enabled">整合底部控制鍵</string>
     <string name="integrated_bottom_controls_description">在「設」右側加入收鍵盤，取消琦琦預留的底部空間。長按「設」可開啟輸入法清單；系統要求的地球鍵保留在最左側。支援的系統會嘗試收起輸入法控制列；不改變系統導覽設定。</string>
-    <string name="touch_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時虛擬鍵盤貼齊底部。</string>
+    <string name="touch_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時虛擬鍵盤貼齊底部。開啟「整合底部控制鍵」時，由該功能管理底部空間。</string>
     <string name="hardware_bottom_space_description">開啟時為系統的切換語言按鈕預留空間；關閉時候選列貼齊底部。使用浮動候選字窗時無法調整。</string>
     <string-array name="floating_candidate_layouts">
         <item>垂直選字窗</item>
@@ -103,8 +112,7 @@
     <string name="supporter_prompt_paid">付費</string>
     <string name="supporter_prompt_support">支持</string>
     <string name="supporter_purchase_error">目前無法連線 Google Play 結帳服務，請稍後再試。</string>
-    <string name="phrase_collections_title">關聯詞詞庫（%1$d）</string>
-    <string name="phrase_collections_title_unavailable">關聯詞詞庫</string>
+    <string name="phrase_collections_title">關聯詞詞庫</string>
     <string name="phrase_collections_description">選擇要啟用的關聯詞詞庫，變更會在下次顯示輸入鍵盤時生效。完全不選代表不使用任何關聯詞詞庫。</string>
     <string name="phrase_select_all">全部啟用</string>
     <string name="phrase_base_only">僅小麥注音</string>
@@ -114,7 +122,9 @@
     <string name="phrase_collections_unavailable">找不到詞庫資料</string>
     <string name="phrase_collection_item">%1$s　%2$s</string>
     <string name="privacy_note">字典、組字與選字均在裝置上執行；付費支持由 Google Play 結帳服務處理。輸入內容不會傳送給開發者。</string>
-    <string name="smart_space_selects_candidates">使用空白鍵選字</string>
+    <string name="smart_omit_tone">好打注音省略聲調</string>
+    <string name="smart_omit_tone_description">預設關閉，適用於好打注音的標準、許氏與漢語拼音觸控鍵盤。中文字放在 11 格組字區，讀音留在 App 輸入框，點一格即可換字。切換配置時會保留此設定，也可照常輸入聲調。</string>
+    <string name="smart_space_selects_candidates">好打注音使用空白鍵選字</string>
     <string name="smart_space_selects_candidates_description">僅適用好打注音，虛擬與實體鍵盤共用。預設關閉：讀音完成後，在組字區插入空白，仍可繼續輸入及回頭選字；未完成讀音時仍以空白結束一聲。開啟後，空白鍵可完成讀音、開啟候選及翻頁。關閉時仍可點選組字或按實體鍵盤 ↓ 開啟候選。</string>
     <string name="keyboard_layout_profile">版面</string>
     <string name="keyboard_layout_profile_description">版面、鍵帽間隔、字體與刪除鍵位置可獨立搭配；標準與許氏注音鍵位另行設定。</string>

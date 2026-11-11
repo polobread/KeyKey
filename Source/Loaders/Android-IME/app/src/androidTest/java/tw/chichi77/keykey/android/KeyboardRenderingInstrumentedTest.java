@@ -971,6 +971,66 @@ public final class KeyboardRenderingInstrumentedTest {
         });
     }
 
+    @Test public void phoneticGridKeepsOneFixedStripAndOnlyOpensCandidatesOnTap() {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            var view = new BopomofoKeyboardView(instrumentation.getTargetContext());
+            view.setChineseInputMethod(ChineseInputMethod.SMART);
+            view.setTouchKeyboardHeightPercents(50, 50);
+            view.setKeyPreviewEnabled(false);
+            var cells = new ArrayList<Integer>();
+            var candidates = new ArrayList<Integer>();
+            view.setListener(new BopomofoKeyboardView.Listener() {
+                @Override public void onPress() {}
+                @Override public void onKey(String key) { fail("Unexpected key: " + key); }
+                @Override public void onCandidate(int index) { candidates.add(index); }
+                @Override public void onSmartCell(int index) { cells.add(index); }
+                @Override public void onPage(int delta) { fail("Unexpected page"); }
+            });
+            float density = view.getResources().getDisplayMetrics().density;
+            for (boolean split : new boolean[] {false, true}) {
+                view.setLayoutProfile(split ? KeyboardLayoutProfile.ALIGNED_SPLIT : KeyboardLayoutProfile.ALIGNED);
+                view.setMode(split ? BopomofoKeyboardView.Mode.LANDSCAPE : BopomofoKeyboardView.Mode.PORTRAIT);
+                int width = Math.round((split ? 540 : 320) * density);
+                view.setPhoneticState(true, false, false);
+                view.setState(List.of(), "", true, List.of(), 0, InputEngine.InputMode.BOPOMOFO,
+                        false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                KeyCanvas idle = drawAtWidth(view, width);
+                var edges = view.visibleTouchEdges();
+                assertEquals(11, view.compositionCellCount());
+                var idleTone = idle.texts.stream().filter(t -> t.value.equals("ˇ")).findFirst().orElseThrow();
+
+                String reading = "ㄋㄧㄏㄠ";
+                List<String> converted = List.of("你", "好");
+                view.setPhoneticState(true, true, false);
+                view.setState(List.of(), reading, true, converted, converted.size(), InputEngine.InputMode.BOPOMOFO,
+                        false, false, false, false, 0, 1, -1, InputFieldPolicy.DEFAULT);
+                KeyCanvas live = drawAtWidth(view, width);
+                assertEquals(edges, view.visibleTouchEdges());
+                assertEquals(idle.keys, live.keys);
+                assertFalse(live.texts.stream().anyMatch(t -> t.value.equals(reading) || t.value.equals("你好")));
+                var cell = live.texts.stream().filter(t -> t.value.equals("好")).findFirst().orElseThrow();
+                RectF cap = live.keys.get(cell.keyIndex);
+                assertTrue(cap.bottom <= idle.keys.get(idleTone.keyIndex).top);
+                assertInside(cell, cap);
+                cells.clear();
+                tap(view, cap.centerX(), cap.centerY());
+                assertEquals(List.of(1), cells);
+
+                view.setState(List.of("好", "號"), reading, true, converted, converted.size(),
+                        InputEngine.InputMode.BOPOMOFO, false, false, false, false, 0, 1, 0, InputFieldPolicy.DEFAULT);
+                KeyCanvas overlay = drawAtWidth(view, width);
+                var choice = overlay.texts.stream().filter(t -> t.value.equals("號")).findFirst().orElseThrow();
+                RectF choiceCap = overlay.keys.get(choice.keyIndex);
+                assertTrue(choiceCap.top > cap.bottom);
+                assertInside(choice, choiceCap);
+                candidates.clear();
+                tap(view, choiceCap.centerX(), choiceCap.centerY());
+                assertEquals(List.of(1), candidates);
+            }
+        });
+    }
+
     private static void assertStripInkFits(KeyCanvas canvas, int start, int count) {
         for (var text : canvas.texts) {
             if (text.keyIndex >= start && text.keyIndex < start + count) {

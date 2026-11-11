@@ -74,15 +74,20 @@ fileprivate final class HardwareKeyboardCaptureView: UIView {
 
 fileprivate final class ClearConfirmationOverlayView: UIView {}
 
-private final class PhraseCollectionPickerViewController: UITableViewController {
+final class PhraseCollectionPickerViewController: UITableViewController {
     private let collections: [AssociatedPhraseStore.Collection]
     private var enabled: Set<String>
+    private let accessibilityPrefix: String
     var didChange: ((Set<String>) -> Void)?
     var didClose: (() -> Void)?
 
-    init(collections: [AssociatedPhraseStore.Collection], enabled: Set<String>) {
+    init(
+        collections: [AssociatedPhraseStore.Collection], enabled: Set<String>,
+        accessibilityPrefix: String
+    ) {
         self.collections = collections
         self.enabled = enabled
+        self.accessibilityPrefix = accessibilityPrefix
         super.init(style: .insetGrouped)
     }
 
@@ -97,7 +102,7 @@ private final class PhraseCollectionPickerViewController: UITableViewController 
             barButtonSystemItem: .done, target: self, action: #selector(close)
         )
         navigationItem.rightBarButtonItem?.accessibilityIdentifier =
-            "hardware-editor.phrases.done"
+            "\(accessibilityPrefix).done"
         tableView.allowsMultipleSelection = true
     }
 
@@ -127,12 +132,12 @@ private final class PhraseCollectionPickerViewController: UITableViewController 
             let identifiers = ["all", "base-only", "none"]
             content.text = choices[indexPath.row]
             content.textProperties.color = .systemPurple
-            cell.accessibilityIdentifier = "hardware-editor.phrases.\(identifiers[indexPath.row])"
+            cell.accessibilityIdentifier = "\(accessibilityPrefix).\(identifiers[indexPath.row])"
             cell.accessoryType = .disclosureIndicator
         } else {
             let collection = collections[indexPath.row]
             content.text = collection.display
-            cell.accessibilityIdentifier = "hardware-editor.phrases.\(collection.source)"
+            cell.accessibilityIdentifier = "\(accessibilityPrefix).\(collection.source)"
             cell.accessoryType = enabled.contains(collection.source) ? .checkmark : .none
         }
         cell.contentConfiguration = content
@@ -1329,7 +1334,8 @@ final class HardwareKeyboardEditorViewController: UIViewController {
         _ = captureView.resignFirstResponder()
         let picker = PhraseCollectionPickerViewController(
             collections: collections,
-            enabled: phraseSettings.enabledCollections.intersection(Set(collections.map(\.source)))
+            enabled: phraseSettings.enabledCollections.intersection(Set(collections.map(\.source))),
+            accessibilityPrefix: "hardware-editor.phrases"
         )
         picker.didChange = { [weak self] selection in
             self?.applyPhraseSelection(selection)

@@ -1,8 +1,8 @@
 # FreeBSD 琦琦輸入法安裝與使用指南
 
-琦琦輸入法已正式支援 FreeBSD，這份指南以 **1.5.0** 帶你完成 **安裝套件 → 設定桌面環境 → 加入 Fcitx → 在 Mousepad 試打**。軟體透過 FreeBSD 官方 ports／pkg 安裝及更新。
+琦琦輸入法已正式支援 FreeBSD，這份指南以 **1.5.1** 帶你完成 **安裝套件 → 設定桌面環境 → 加入 Fcitx → 在 Mousepad 試打**。軟體透過 FreeBSD 官方 ports／pkg 安裝及更新。
 
-先查套件庫提供的版本；若已符合需求，直接用 pkg 安裝。套件可能較晚上架，需要 1.5.0 時，先確認 port 已更新至 1.5.0，再走 ports 編譯，完成後仍由 pkg 管理。
+先查套件庫提供的版本；若已符合需求，直接用 pkg 安裝。套件可能較晚上架，需要 1.5.1 時，先確認 port 已更新至 1.5.1，再走 ports 編譯，完成後仍由 pkg 管理。
 
 套件資訊可先看 [FreshPorts：chinese/fcitx5-keykey](https://www.freshports.org/chinese/fcitx5-keykey/)，查看 port 版本、相依套件及更新紀錄；本機已安裝版本要以 `pkg info` 核對。
 
@@ -13,12 +13,12 @@
 
 本指南舊版 1.3.7 的桌面步驟曾在 **FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3** 驗證。需先有可登入的圖形桌面、網路及管理員權限；安裝後使用一般帳號設定與輸入中文。
 
-1.5.0 改為 Guanyinma（觀音嬤，Rust）單核心。指南的安裝目標為 1.5.0；下方舊圖與歷史驗收仍標示當時版本，不代表新核心已通過 FreeBSD 原生驗收。
+自 1.5.0 起採用 Guanyinma（觀音嬤，Rust）單核心。指南的安裝目標為 1.5.1；下方舊圖與歷史驗收仍標示當時版本，不代表新核心已通過 FreeBSD 原生驗收。
 新版原始碼建置須準備鎖定 Rust 工具鏈、json-c、PangoFT2／Fontconfig、SQLite 與 Fcitx
 開發套件；現有 ports 配方需要同步 Cargo 來源、相依及安裝清單。這些變更
-尚未在 FreeBSD 原生 runner 驗證。下方另附[新版共用設定導覽](#新版共用設定導覽150)，以 Ubuntu 實拍說明介面；FreeBSD 的安裝與輸入證據仍為正式 1.3.7。
+尚未在 FreeBSD 原生 runner 驗證。下方另附[新版共用設定導覽](#新版共用設定導覽151)，以 Ubuntu 實拍說明介面；FreeBSD 的安裝與輸入證據仍為正式 1.3.7。
 
-升級前先備份既有使用者資料。新核心使用 `guanyinma-user.db`，不提供舊 C++ 詞庫的讀寫或匯入，也不會自動刪除舊檔。1.5.0 的原生建置、ports 相依、宿主輸入與公告條件見[六平台發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。新版公告與 ports／pkg 上架分開，套件可能較晚上架。
+升級前先備份既有使用者資料。新核心使用 `guanyinma-user.db`，不提供舊 C++ 詞庫的讀寫或匯入，也不會自動刪除舊檔。1.5.1 的原生建置、ports 相依、宿主輸入與公告條件見[六平台發布準備](docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。新版公告與 ports／pkg 上架分開，套件可能較晚上架。
 
 ## 1. 從套件庫直接安裝
 
@@ -32,7 +32,7 @@ pkg search -x '^zh-fcitx5-keykey'
 
 ![pkg 目錄刷新完成後，FreeBSD 15 amd64 quarterly 查詢顯示 1.3.0](docs/images/keykey-freebsd-v137-bsd01a-pkg-search.png)
 
-2026-10-24 已刷新全部套件庫目錄；這台機器的 FreeBSD 15／amd64 **quarterly** 套件庫提供 `zh-fcitx5-keykey-1.3.0`。需要 1.5.0 時，依下一節確認 ports 版號後再編譯；其他套件庫分支或架構以各自查詢為準。
+2026-10-24 已刷新全部套件庫目錄；這台機器的 FreeBSD 15／amd64 **quarterly** 套件庫提供 `zh-fcitx5-keykey-1.3.0`。需要 1.5.1 時，依下一節確認 ports 版號後再編譯；其他套件庫分支或架構以各自查詢為準。
 
 若清單已提供你要的版本，繼續安裝，完成後查看本機版本：
 
@@ -45,11 +45,11 @@ pkg info -x keykey
 
 本次補拍時已安裝 1.3.7，來源為先前的 ports 建置；上圖是重新查詢本機狀態，並非本次執行 `pkg install` 的結果。
 
-**確認版本符合需求後，可直接前往第 3 節設定桌面。** 若套件庫仍較舊，而你需要 1.5.0，略過舊版安裝，改走下一節 ports 流程。套件庫版本依 FreeBSD 版本、架構與分支不同，以當次結果為準。
+**確認版本符合需求後，可直接前往第 3 節設定桌面。** 若套件庫仍較舊，而你需要 1.5.1，略過舊版安裝，改走下一節 ports 流程。套件庫版本依 FreeBSD 版本、架構與分支不同，以當次結果為準。
 
 安裝寫入 `/usr/local` 與系統套件資料庫，需要 root；字型、個人設定與打字則用一般帳號。`pkg install` 依套件名稱安裝；`pkg add` 用於本機 `.pkg` 或完整 URL，範例見下一節。
 
-## 2. 加入 ports，從原始碼安裝 1.5.0
+## 2. 加入 ports，從原始碼安裝 1.5.1
 
 ports tree 是 FreeBSD 軟體的建置配方集合。`chinese/fcitx5-keykey` 會下載對應版本的琦琦原始碼、校驗、編譯並產生可由 pkg 管理的套件。
 
@@ -86,11 +86,11 @@ make -V PKGNAME
 安裝本指南版本時，兩個版本查詢應顯示：
 
 ```text
-1.5.0
-zh-fcitx5-keykey-1.5.0
+1.5.1
+zh-fcitx5-keykey-1.5.1
 ```
 
-若仍顯示舊版，表示該 ports tree 尚未提供 1.5.0，請等待 port 更新，不要把舊版建置當成 1.5.0。
+若仍顯示舊版，表示該 ports tree 尚未提供 1.5.1，請等待 port 更新，不要把舊版建置當成 1.5.1。
 
 ![ports 查詢顯示來源版本 1.3.7、套件名稱及本機 main 修訂](docs/images/keykey-freebsd-v137-bsd02a-ports.png)
 
@@ -114,7 +114,7 @@ make -V PKGNAME
 
 歷史修訂用於重現既有版本；相依套件仍須與目前系統相容。
 
-安裝 1.5.0 時，請回到已確認 `DISTVERSION=1.5.0` 的 ports tree；不要沿用上方歷史 checkout。接續命令都在該 tree 的 `chinese/fcitx5-keykey` 目錄執行。
+安裝 1.5.1 時，請回到已確認 `DISTVERSION=1.5.1` 的 ports tree；不要沿用上方歷史 checkout。接續命令都在該 tree 的 `chinese/fcitx5-keykey` 目錄執行。
 
 ### 2.3 設定編譯選項與相依套件
 
@@ -139,18 +139,18 @@ make BATCH=yes check-plist
 ls -l work/pkg/
 ```
 
-第一行會下載原始碼並校驗、安裝缺少的相依套件、編譯及封裝。等候完成，確認兩個 `make` 均無錯誤，並在 `work/pkg/` 看到 `zh-fcitx5-keykey-1.5.0.pkg` 後再安裝。`check-plist` 檢查安裝檔案與 port 清單是否一致。
+第一行會下載原始碼並校驗、安裝缺少的相依套件、編譯及封裝。等候完成，確認兩個 `make` 均無錯誤，並在 `work/pkg/` 看到 `zh-fcitx5-keykey-1.5.1.pkg` 後再安裝。`check-plist` 檢查安裝檔案與 port 清單是否一致。
 
-### 2.5 用 pkg add 安裝編好的 1.5.0
+### 2.5 用 pkg add 安裝編好的 1.5.1
 
 先儲存正在編輯的文件並關閉琦琦設定視窗，再執行：
 
 ```sh
-pkg add -f ./work/pkg/zh-fcitx5-keykey-1.5.0.pkg
+pkg add -f ./work/pkg/zh-fcitx5-keykey-1.5.1.pkg
 pkg info -x keykey
 ```
 
-`-f` 用於替換已安裝的舊套件；確認結果是 `zh-fcitx5-keykey-1.5.0`。若有套件修訂尾碼，請使用 `ls` 顯示的實際檔名。安裝後由 pkg 記錄與管理，不需要手動複製程式至 `/usr/local`。
+`-f` 用於替換已安裝的舊套件；確認結果是 `zh-fcitx5-keykey-1.5.1`。若有套件修訂尾碼，請使用 `ls` 顯示的實際檔名。安裝後由 pkg 記錄與管理，不需要手動複製程式至 `/usr/local`。
 
 ![ports 工作目錄保留 1.3.7 套件，pkg info 顯示本機已安裝 1.3.7](docs/images/keykey-freebsd-v137-bsd02b-package-installed.png)
 
@@ -267,7 +267,7 @@ fcitx5-config-qt
 
 單擊左側 **Bopomofo**，再按齒輪開啟設定。先保留「標準」注音鍵盤配置與「好打注音」模式；需要逐字選字時，再改成傳統注音。
 
-新版 **1.5.0** 已依「一般、注音、倉頡、簡易、自訂詞、詞庫」分組。下圖為共用前端在 **Ubuntu** 的新版設定示範；正式 1.3.7 的設定較少，FreeBSD 套件是否已提供新版，仍須以 `pkg info` 或 port 版號確認。
+新版 **1.5.1** 已依「一般、注音、倉頡、簡易、自訂詞、詞庫」分組。下圖為共用前端在 **Ubuntu** 的新版設定示範；正式 1.3.7 的設定較少，FreeBSD 套件是否已提供新版，仍須以 `pkg info` 或 port 版號確認。
 
 ![1.5.0 共用 Fcitx 設定的一般分組，Ubuntu 實拍供 FreeBSD 參考](docs/images/keykey-unix-v150-fcitx-general.png)
 
@@ -341,9 +341,9 @@ keykey-about
 
 更新通知只提醒有新版，FreeBSD 仍透過 ports／pkg 更新，套件可能較晚上架。
 
-## 新版共用設定導覽（1.5.0）
+## 新版共用設定導覽（1.5.1）
 
-以下說明 **master 的 1.5.0 原始碼版**。Linux／FreeBSD 共用 Fcitx 5 前端與 Guanyinma（Rust）核心，圖片來自 Ubuntu 的隔離設定視窗，供認識新選項使用；尚未作為 FreeBSD 新版的原生建置、安裝或輸入驗收。
+以下說明 **1.5.1 原始碼版**。Linux／FreeBSD 共用 Fcitx 5 前端與 Guanyinma（Rust）核心，圖片來自 Ubuntu 上的 1.5.0 隔離設定視窗，供認識新選項使用；尚未作為 FreeBSD 新版的原生建置、安裝或輸入驗收。
 
 「注音」分組新增好打選字鍵、**10～20 音節組字長度**、選字後回句尾、Shift 字母強制大寫，以及上下文組句、記憶選字偏好與學習相鄰詞的獨立開關。預設為九個數字選字鍵、十音節；Shift 強制大寫預設關閉。
 
@@ -353,7 +353,7 @@ keykey-about
 
 ![1.5.0 共用原生倉頡進階設定，Ubuntu 實拍供 FreeBSD 參考](docs/images/keykey-unix-v150-fcitx-cangjie.png)
 
-「簡易」有獨立的滿碼、動態詞頻、標點、選字鍵與空白鍵設定，最長字根數為一至二。「自訂詞」可開啟圖形管理工具，新增／修改／刪除自訂詞、重設學習及匯入／備份完整 Guanyinma JSON；「詞庫」可逐項開關關聯詞分類。完整圖片見 [Linux 新版設定導覽](LINUX_INSTALL.md#新版原始碼設定導覽150)。
+「簡易」有獨立的滿碼、動態詞頻、標點、選字鍵與空白鍵設定，最長字根數為一至二。「自訂詞」可開啟圖形管理工具，新增／修改／刪除自訂詞、重設學習及匯入／備份完整 Guanyinma JSON；「詞庫」可逐項開關關聯詞分類。完整圖片見 [Linux 新版設定導覽](LINUX_INSTALL.md#新版原始碼設定導覽151)。
 
 新版自訂詞與學習使用獨立的 `guanyinma-user.db`，既有舊資料不會自動匯入或刪除。依賴、設定與資料路徑詳見 [Linux／FreeBSD Guanyinma 接合](docs/GUANYINMA_LINUX_ADAPTER.md)。
 
@@ -399,7 +399,7 @@ exit
 
 正式 **1.3.7** 的圖片於 **2026-10-24** 在 FreeBSD 實拍，環境為 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11（xfce4-session 4.20.4）、LightDM、Fcitx 5 與 Mousepad 0.7.0／GTK 3，已安裝琦琦 1.3.7。涵蓋套件庫刷新與查詢、ports 來源、既有安裝版號、橋接、字型、重新登入、自動啟動、Fcitx 清單、設定、面板選用、指定兩行與玩候選、倉頡竹大／喬及關於視窗。只裁切真實畫面，未修改產品畫面內容。
 
-**1.5.0 設定圖**於 **2026-11-08** 使用 master `95ea265` 建置的 staged addon，在 **Ubuntu 24.04、Fcitx 5／Qt 5、私有 Xvfb** 實拍，與 Linux 指南共用。拍攝使用隔離的設定與資料目錄；圖片未取自 FreeBSD，不代表 FreeBSD 新版已完成原生驗收。
+**1.5.1 設定圖**於 **2026-11-08** 使用 master `95ea265` 建置的 staged addon，在 **Ubuntu 24.04、Fcitx 5／Qt 5、私有 Xvfb** 實拍，與 Linux 指南共用。拍攝使用隔離的設定與資料目錄；圖片未取自 FreeBSD，不代表 FreeBSD 新版已完成原生驗收。
 
 19 字長句結果圖保留先前的 1.3.7 驗證；2026-10-24 拍攝未重跑該長句、ports 建置或套件安裝。套件庫刷新及版本查詢由管理員手動驗證後執行，完成便退出 root；該次沒有變更套件庫分支、升級或降級套件。
 

@@ -96,6 +96,38 @@ pub struct ModelDatabase {
     connection: Connection,
 }
 
+/// Prepared once per update so the bounded suggestion search can reuse the
+/// model's qstring index for its exact and prefix lookups.
+pub(crate) struct PhoneticQueries<'a> {
+    exact: rusqlite::Statement<'a>,
+    longer: rusqlite::Statement<'a>,
+}
+
+impl PhoneticQueries<'_> {
+    pub(crate) fn words(&mut self, key: &str) -> Result<Vec<(String, f64)>, DatabaseError> {
+        let mut rows = self.exact.query([key]).map_err(query_error)?;
+        let mut words = Vec::new();
+        while let Some(row) = rows.next().map_err(query_error)? {
+            words.push((
+                read_text(row, 0, "current")?,
+                read_number(row, 1, "probability")?,
+            ));
+        }
+        Ok(words)
+    }
+
+    pub(crate) fn has_longer(&mut self, prefix: &str) -> Result<bool, DatabaseError> {
+        // Encoded syllables consist only of ASCII bytes '0' through '~'.
+        let end = format!("{prefix}\x7f");
+        Ok(self
+            .longer
+            .query_row([prefix, &end], |_| Ok(()))
+            .optional()
+            .map_err(query_error)?
+            .is_some())
+    }
+}
+
 impl ModelDatabase {
     /// Open an existing regular SQLite file without creating or changing it.
     ///
@@ -355,6 +387,21 @@ impl ModelDatabase {
                 })
             },
         )
+    }
+
+    pub(crate) fn phonetic_queries(&self) -> Result<PhoneticQueries<'_>, DatabaseError> {
+        Ok(PhoneticQueries {
+            exact: self
+                .connection
+                .prepare(
+                    "SELECT current, probability FROM unigrams WHERE qstring = ?1 ORDER BY rowid",
+                )
+                .map_err(query_error)?,
+            longer: self
+                .connection
+                .prepare("SELECT 1 FROM unigrams WHERE qstring > ?1 AND qstring < ?2 LIMIT 1")
+                .map_err(query_error)?,
+        })
     }
 
     /// Return all matching raw Bigram rows in original rowid order.

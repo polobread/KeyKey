@@ -29,7 +29,16 @@
             android:exported="false" />
 
         <activity
+            android:name=".KeyboardResizeActivity"
+            android:exported="false"
+            android:label="@string/keyboard_resize_title" />
+
+        <activity
             android:name=".AcknowledgementsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".PhraseCollectionsActivity"
             android:exported="false" />
 
         <activity

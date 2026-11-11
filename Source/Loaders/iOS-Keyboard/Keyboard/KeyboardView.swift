@@ -19,6 +19,8 @@ final class KeyboardView: UIView {
         var smartMode = false
         var smartCells: [String] = []
         var smartEditableCount = 0
+        var phoneticPending = false
+        var phoneticSpaceFirstTone = false
         var candidates: [String] = []
         var highlightedIndex = -1
         var pageCount = 0
@@ -33,6 +35,15 @@ final class KeyboardView: UIView {
         var inputClicksEnabled = true
         var candidateColor = CandidateColor.purple
         var supportPromptVisible = false
+
+        var usesPinyin: Bool {
+            mode == .bopomofo && !chineseInputMethod.isTable && keyboardLayout == .hanyuPinyin
+        }
+
+        var showsPinyinFirstTone: Bool {
+            usesPinyin && (phoneticPending
+                ? phoneticSpaceFirstTone : !reading.isEmpty && candidates.isEmpty)
+        }
 
         var showsSmartSupportPrompt: Bool {
             supportPromptVisible && smartMode && chineseInputMethod == .smart
@@ -52,6 +63,8 @@ final class KeyboardView: UIView {
 
     weak var delegate: KeyboardViewDelegate?
 
+    private let keyboardContent = UIView()
+    private var heightDragPreviewActive = false
     private let statusLabel = KeyboardStatusLabel()
     private var candidateButtons: [UIButton] = []
     private let previousPageButton = UIButton(type: .system)
@@ -130,6 +143,10 @@ final class KeyboardView: UIView {
     // MARK: - Construction
 
     private func buildInterface() {
+        keyboardContent.frame = bounds
+        keyboardContent.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        addSubview(keyboardContent)
+
         // Five equal bands below the strip, matching the Android division of
         // the remaining height.
         let bands = UIStackView(arrangedSubviews: buildKeyRows() + [buildFunctionRow()])
@@ -145,11 +162,11 @@ final class KeyboardView: UIView {
         root.axis = .vertical
         root.spacing = layoutProfile.keySpacing
         root.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(root)
+        keyboardContent.addSubview(root)
 
         // The keyboard has its own safe area, which can differ from the host
         // app's. Respect each edge independently as the host resizes or moves it.
-        let guide = safeAreaLayoutGuide
+        let guide = keyboardContent.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             root.leadingAnchor.constraint(greaterThanOrEqualTo: guide.leadingAnchor, constant: 3),
             root.trailingAnchor.constraint(lessThanOrEqualTo: guide.trailingAnchor, constant: -3),
@@ -182,7 +199,7 @@ final class KeyboardView: UIView {
         keyPreview.layer.masksToBounds = true
         keyPreview.isHidden = true
         keyPreview.isUserInteractionEnabled = false
-        addSubview(keyPreview)
+        keyboardContent.addSubview(keyPreview)
     }
 
     private func buildCandidateStrip() -> UIView {
@@ -373,7 +390,7 @@ final class KeyboardView: UIView {
             rootStack.removeArrangedSubview(candidateContainer)
             candidateContainer.removeFromSuperview()
             candidateContainer.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(candidateContainer)
+            keyboardContent.addSubview(candidateContainer)
             candidateOverlayConstraints = [
                 candidateContainer.leadingAnchor.constraint(equalTo: firstKeyRow.leadingAnchor),
                 candidateContainer.trailingAnchor.constraint(equalTo: firstKeyRow.trailingAnchor),
@@ -461,8 +478,26 @@ final class KeyboardView: UIView {
         updateRowLayout()
     }
 
+    func setHeightDragPreview(_ active: Bool) {
+        guard active != heightDragPreviewActive else { return }
+        heightDragPreviewActive = active
+        if active {
+            cancelBackspaceRepeat()
+            // Keep the host view and editor live, but freeze the hidden key
+            // subtree at its old size until the tracked touch ends.
+            keyboardContent.autoresizingMask = []
+            keyboardContent.isHidden = true
+        } else {
+            keyboardContent.frame = bounds
+            keyboardContent.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            keyboardContent.isHidden = false
+            setNeedsLayout()
+        }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
+        guard !heightDragPreviewActive else { return }
         updateRowLayout()
         rootStack?.layoutIfNeeded()
         updateKeyTypography()
@@ -493,7 +528,7 @@ final class KeyboardView: UIView {
         let pointSize = keyFontSize.keyPointSize(normal: endpoints.normal, largeFit: endpoints.full)
         let buttons = keyViews.flatMap { $0.map(\.button) }
             + (functionButtons + punctuationButtons).compactMap { $0.button as? KeyboardKeyButton }
-        for button in buttons {
+        for button in buttons where button.sharedPointSize != pointSize {
             button.sharedPointSize = pointSize
             button.setNeedsLayout()
             button.layoutIfNeeded()
@@ -582,8 +617,6 @@ final class KeyboardView: UIView {
         let functionSplit = split != nil ? visible.firstIndex { $0.key == "SPACE" }.map { $0 + 1 } : nil
         functionRow.configure(visible.map(\.button), weights: weights, splitIndex: functionSplit,
                               spacing: layoutProfile.keySpacing)
-        // Align to the usable bottom edge, retaining the system's safe area.
-        bottomContentConstraint?.constant = -3
         for button in keyViews.flatMap({ $0.map(\.button) })
             + (functionButtons + punctuationButtons).compactMap({ $0.button as? KeyboardKeyButton }) {
             button.capArea = keycapArea
@@ -592,6 +625,12 @@ final class KeyboardView: UIView {
         }
         updateCandidateVisibility()
         setNeedsLayout()
+    }
+
+    func setBottomGap(_ gap: CGFloat) {
+        if bottomContentConstraint?.constant != -3 - gap {
+            bottomContentConstraint?.constant = -3 - gap
+        }
     }
 
     func setMetrics(_ metrics: KeyboardMetrics) {
@@ -628,7 +667,8 @@ final class KeyboardView: UIView {
             let normalStatus = state.chineseInputMethod.isTable && state.mode == .bopomofo && state.reading.isEmpty
                 ? state.chineseInputMethod.displayName : KeyboardLayout.statusText(
                 reading: state.reading, mode: state.mode, shifted: state.shifted,
-                temporaryEnglish: state.temporaryEnglish, layout: state.keyboardLayout
+                temporaryEnglish: state.temporaryEnglish,
+                layout: state.chineseInputMethod.isTable ? .standard : state.keyboardLayout
             )
             if state.statusOverride == nil, state.supportPromptVisible,
                state.reading.isEmpty, state.mode == .bopomofo {
@@ -734,7 +774,8 @@ final class KeyboardView: UIView {
             }
         }
 
-        if keyPlaneChanged || state.returnKeyPolicy != previousState.returnKeyPolicy {
+        if keyPlaneChanged || state.returnKeyPolicy != previousState.returnKeyPolicy
+            || state.showsPinyinFirstTone != previousState.showsPinyinFirstTone {
             for button in [dismissButton, closeCandidatesButton] {
                 button.titleLabel?.font = .systemFont(ofSize: metrics.pageFont)
             }
@@ -756,7 +797,7 @@ final class KeyboardView: UIView {
                 }
                 let caption = key == "MODE"
                     ? state.fieldPolicy.modeCaption(for: state.mode).replacingOccurrences(of: "ㄅ", with: state.chineseInputMethod.symbol)
-                    : KeyboardLayout.caption(for: key, mode: state.mode)
+                    : caption(for: key)
                 button.setTitle(caption, for: .normal)
                 let pointSize = caption.count > 3 ? metrics.functionFontSmall : metrics.functionFont
                 button.titleLabel?.font = .systemFont(ofSize: pointSize)
@@ -845,12 +886,26 @@ final class KeyboardView: UIView {
         button.setNeedsLayout()
     }
 
+    private func caption(for key: String) -> String {
+        if key == "SPACE", state.showsPinyinFirstTone { return "一聲" }
+        return KeyboardLayout.caption(for: key, mode: state.mode)
+    }
+
     private func accessibilityLabel(for key: String) -> String {
+        if state.usesPinyin {
+            switch key {
+            case "2": return "二聲（2）"
+            case "3": return "三聲（3）"
+            case "4": return "四聲（4）"
+            case "5": return "輕聲（5）"
+            default: break
+            }
+        }
         switch key {
         case "MODE": return "切換輸入模式"
         case "SYMBOL": return "符號"
         case "SETTINGS": return "設定"
-        case "SPACE": return "空白鍵"
+        case "SPACE": return state.showsPinyinFirstTone ? "一聲（空白鍵）" : "空白鍵"
         case "BACKSPACE": return "刪除"
         case "ENTER": return state.returnKeyPolicy.accessibilityLabel
         case "SHIFT": return "Shift"
@@ -990,24 +1045,24 @@ final class KeyboardView: UIView {
            let glyph = inputGlyph(for: key) {
             return state.temporaryEnglish ? key.uppercased() : glyph
         }
-        return KeyboardLayout.caption(for: key, mode: state.mode)
+        return caption(for: key)
     }
 
     private func showKeyPreview(_ text: String, from button: UIButton) {
         guard !text.isEmpty else { return }
         layoutIfNeeded()
-        let keyFrame = button.convert(button.bounds, to: self)
+        let keyFrame = button.convert(button.bounds, to: keyboardContent)
         let width = max(
             56, min(116, text.size(withAttributes: [.font: keyPreview.font!]).width + 28)
         )
         let height: CGFloat = 62
         keyPreview.text = text
         keyPreview.frame = CGRect(
-            x: min(max(3, keyFrame.midX - width / 2), bounds.width - width - 3),
+            x: min(max(3, keyFrame.midX - width / 2), keyboardContent.bounds.width - width - 3),
             y: max(3, keyFrame.minY - height - 6), width: width, height: height
         )
         keyPreview.isHidden = false
-        bringSubviewToFront(keyPreview)
+        keyboardContent.bringSubviewToFront(keyPreview)
     }
 
     private func hideKeyPreview() {
@@ -1076,6 +1131,7 @@ private final class KeyboardRow: UIView {
 private enum KeyboardKeyTypography {
     static let hintRatio = 10.0 / 18
     static let gap = 2.0
+    private static var cachedHintSize: (pointSize: Double, size: CGSize)?
 
     static func box(in size: CGSize, capInset: CGFloat) -> CGRect {
         CGRect(origin: .zero, size: size).insetBy(dx: capInset + 2, dy: capInset + 2)
@@ -1088,12 +1144,17 @@ private enum KeyboardKeyTypography {
     }
 
     static func hintSize(at pointSize: Double) -> CGSize {
+        if let cachedHintSize, cachedHintSize.pointSize == pointSize {
+            return cachedHintSize.size
+        }
         let font = UIFont.systemFont(ofSize: pointSize * hintRatio)
         let width = "ㄖ1234567890qwertyuiopasdfghjklzxcvbnm@".map {
             String($0).size(withAttributes: [.font: font]).width
         }.max() ?? 0
-        return CGSize(width: width, height: max(font.lineHeight,
+        let size = CGSize(width: width, height: max(font.lineHeight,
             "ㄖ".size(withAttributes: [.font: font]).height))
+        cachedHintSize = (pointSize, size)
+        return size
     }
 
     static func endpoints(in size: CGSize, capInset: CGFloat) -> (normal: Double, full: Double) {

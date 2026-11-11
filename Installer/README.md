@@ -13,9 +13,9 @@ and Homebrew's `openssl@3`:
 
 ## Building from scratch
 
-The 1.5.0 sources use Guanyinma (觀音嬤) as the sole core. Local packaging is
+The macOS input method uses Guanyinma (觀音嬤) as its core. Local packaging is
 separate from signed publication and the three required VM installation paths;
-see the [release preparation guide](../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md).
+see the [1.5.1 release preparation guide](../docs/CROSS_PLATFORM_V1_5_1_RELEASE.md).
 
 From the repository root. `make` verifies the checked-in shared dictionary;
 platform builds do not rebuild the production model. Prepare the pinned updater SDK

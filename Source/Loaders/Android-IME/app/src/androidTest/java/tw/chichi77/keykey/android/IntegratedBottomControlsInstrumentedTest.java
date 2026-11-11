@@ -7,6 +7,8 @@ import android.app.Activity;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -578,6 +580,326 @@ public final class IntegratedBottomControlsInstrumentedTest {
                 if (previous.get(key) instanceof String value) edit.putString(key, value);
             }
             edit.commit();
+        }
+    }
+
+    @Test public void touchPinyinTypesSmartAndTraditionalInTheHost() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        Map<String, ?> previous = preferences.getAll();
+        String[] keys = {KeyboardBottomControlsSettings.KEY_ENABLED, KeyboardLayoutProfileSettings.KEY_LAYOUT,
+                ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
+                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, KeyboardLayoutProfileSettings.KEY_DELETE_POSITION,
+                BopomofoCompositionModeSettings.KEY_OMIT_TONE};
+        Activity activity = null;
+        try {
+            preferences.edit().putBoolean(keys[0], false)
+                    .putString(keys[1], KeyboardLayoutProfile.ALIGNED.id)
+                    .putString(keys[2], ChineseInputMethod.SMART.name())
+                    .putString(keys[3], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putString(keys[4], BopomofoKeyboardLayout.HANYU_PINYIN.value)
+                    .putString(keys[5], KeyboardLayoutProfile.DeletePosition.ABOVE_ENTER.id)
+                    .remove(keys[6]).commit();
+            activity = instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity host = activity;
+            instrumentation.runOnMainSync(() ->
+                    host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
+            await(() -> host.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT);
+            EditText editor = findEditor(host.findViewById(android.R.id.content));
+            assertNotNull(editor);
+            instrumentation.runOnMainSync(() -> editor.setText(""));
+            showEditorKeyboard(host, context);
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                assertFalse("The Pinyin keyboard must show letters rather than Zhuyin caps", labels(view).contains("ㄅ"));
+                tapDrawnKey(view, "n");
+                tapDrawnKey(view, "i");
+                assertEquals("ni", String.join("", stripLabels(view)));
+                tapDrawnKey(view, "⌫");
+                assertEquals("n", String.join("", stripLabels(view)));
+                assertEquals("", editor.getText().toString());
+                for (char key : "i3hao3".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+            });
+            assertPinyinHostText(editor, "你好");
+
+            // Let the original Smart composition finish before rotating the
+            // host. Wait for the landscape editor's connection before typing.
+            instrumentation.runOnMainSync(() ->
+                    ChineseInputMethodSettings.setMethod(context, ChineseInputMethod.TRADITIONAL));
+            await(() -> labels(findKeyboard()).contains("漢語拼音"));
+            instrumentation.runOnMainSync(() ->
+                    host.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));
+            await(() -> host.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
+            showEditorKeyboard(host, context);
+            await(() -> findKeyboard().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE
+                    && labels(findKeyboard()).contains("漢語拼音"));
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "zhong".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+            });
+            assertPinyinHostText(editor, "你好zhong");
+            instrumentation.runOnMainSync(() -> tapDrawnKey(findKeyboard(), "一聲"));
+            await(() -> labels(findKeyboard()).contains("中"));
+            instrumentation.runOnMainSync(() -> tapDrawnKey(findKeyboard(), "中"));
+            assertPinyinHostText(editor, "你好中");
+        } finally {
+            if (activity != null) {
+                Activity host = activity;
+                instrumentation.runOnMainSync(host::finish);
+            }
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key);
+                if (previous.get(key) instanceof Boolean value) edit.putBoolean(key, value);
+                else if (previous.get(key) instanceof String value) edit.putString(key, value);
+            }
+            edit.commit();
+        }
+    }
+
+    @Test public void touchOmitToneShowsSingleCellChoicesAndRollsOverMarkedReading() throws Exception {
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 30);
+        org.junit.Assume.assumeTrue("Use a disposable emulator with KeyKey selected",
+                "true".equals(InstrumentationRegistry.getArguments().getString("keykey.isolatedDevice")));
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        Context context = instrumentation.getTargetContext();
+        var preferences = CandidateWindowSettings.preferences(context);
+        Map<String, ?> previous = preferences.getAll();
+        String[] keys = {ChineseInputMethodSettings.KEY_METHOD, BopomofoCompositionModeSettings.KEY_MODE,
+                BopomofoKeyboardLayoutSettings.KEY_LAYOUT, BopomofoCompositionModeSettings.KEY_OMIT_TONE};
+        Activity activity = null;
+        try {
+            preferences.edit().putString(keys[0], ChineseInputMethod.SMART.name())
+                    .putString(keys[1], BopomofoCompositionModeSettings.valueForMode(BopomofoCompositionMode.SMART))
+                    .putString(keys[2], BopomofoKeyboardLayout.HANYU_PINYIN.value)
+                    .remove(keys[3]).commit();
+            activity = instrumentation.startActivitySync(new Intent()
+                    .setClassName(context, "tw.chichi77.keykey.android.ImeTestActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity host = activity;
+            EditText editor = findEditor(host.findViewById(android.R.id.content));
+            assertNotNull(editor);
+            instrumentation.runOnMainSync(() -> editor.setText(""));
+            showEditorKeyboard(host, context);
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "nihao".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+                assertFalse(labels(view).contains("你"));
+                for (int index = 0; index < 5; index++) tapDrawnKey(view, "⌫");
+                BopomofoCompositionModeSettings.setOmitTone(context, true);
+            });
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                RectF tone = drawnKeyBounds(view, "3").get(0);
+                for (char key : "nihao".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+                assertGridPhrase(view, "nihao", "你", "好", "3", tone);
+            });
+            assertMarkedReading(editor, "", "nihao");
+
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                tapDrawnKey(view, "你");
+                tapDrawnKey(view, "妳");
+                assertTrue(labels(view).contains("妳"));
+                assertTrue(labels(view).contains("好"));
+            });
+            assertMarkedReading(editor, "", "nihao");
+
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "ni".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+                assertTrue(labels(view).containsAll(List.of("妳", "好", "你")));
+                ((BopomofoImeService) view.getContext()).onKey("ENTER");
+            });
+            assertPinyinHostText(editor, "妳好你");
+
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "ni3hao3".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+                ((BopomofoImeService) view.getContext()).onKey("ENTER");
+            });
+            String pinyinPrefix = "妳好你你好";
+            assertPinyinHostText(editor, pinyinPrefix);
+            String prefix = assertOmitToneRollover(context, editor, pinyinPrefix,
+                    List.of("z", "h", "u", "a", "n", "g"), "zhuang", "3");
+            instrumentation.runOnMainSync(() -> BopomofoKeyboardLayoutSettings.setLayout(
+                    context, BopomofoKeyboardLayout.STANDARD));
+            await(() -> labels(findKeyboard()).contains("ㄋ"));
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                RectF tone = drawnKeyBounds(view, "ˇ").get(0);
+                for (String key : List.of("ㄋ", "ㄧ", "ㄏ", "ㄠ")) tapDrawnKey(view, key);
+                assertGridPhrase(view, "ㄋㄧㄏㄠ", "你", "好", "ˇ", tone);
+            });
+            assertMarkedReading(editor, prefix, "ㄋㄧㄏㄠ");
+            instrumentation.runOnMainSync(() -> {
+                for (int index = 0; index < 4; index++) tapDrawnKey(findKeyboard(), "⌫");
+            });
+            assertPinyinHostText(editor, prefix);
+
+            String committed = assertOmitToneRollover(context, editor, prefix,
+                    List.of("ㄋ", "ㄧ"), "ㄋㄧ", "ˇ");
+
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                tapDrawnKey(view, "ㄋ");
+                tapDrawnKey(view, "ㄧ");
+            });
+            assertMarkedReading(editor, committed, "ㄋㄧ");
+            instrumentation.runOnMainSync(() -> editor.setSelection(0));
+            assertPinyinHostText(editor, committed);
+            instrumentation.runOnMainSync(() -> {
+                assertEquals(0, editor.getSelectionStart());
+                editor.setSelection(committed.length());
+                BopomofoKeyboardLayoutSettings.setLayout(context, BopomofoKeyboardLayout.HSU);
+            });
+            assertTrue(BopomofoCompositionModeSettings.omitTone(context));
+            await(() -> labels(findKeyboard()).contains("e"));
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                RectF tone = drawnKeyBounds(view, "f").get(0);
+                for (char key : "nehw".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+                assertGridPhrase(view, "nehw", "你", "好", "f", tone);
+            });
+            assertMarkedReading(editor, committed, "nehw");
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                tapDrawnKey(view, "你");
+                tapDrawnKey(view, "妳");
+                assertEquals(List.of("妳", "好"), drawnGridCharacters(view, "e"));
+            });
+            assertMarkedReading(editor, committed, "nehw");
+            instrumentation.runOnMainSync(() ->
+                    ((BopomofoImeService) findKeyboard().getContext()).onKey("ENTER"));
+            String hsuPrefix = committed + "妳好";
+            assertPinyinHostText(editor, hsuPrefix);
+
+            List<String> tonedHsu = new ArrayList<>();
+            instrumentation.runOnMainSync(() -> {
+                BopomofoKeyboardView view = findKeyboard();
+                for (char key : "nefhwf".toCharArray()) tapDrawnKey(view, String.valueOf(key));
+                tonedHsu.addAll(drawnGridCharacters(view, "e"));
+                assertEquals(List.of("你", "好"), tonedHsu);
+            });
+            assertMarkedReading(editor, hsuPrefix, "nefhwf");
+            instrumentation.runOnMainSync(() ->
+                    ((BopomofoImeService) findKeyboard().getContext()).onKey("ENTER"));
+            String hsuTonedPrefix = hsuPrefix + String.join("", tonedHsu);
+            assertPinyinHostText(editor, hsuTonedPrefix);
+            assertOmitToneRollover(context, editor, hsuTonedPrefix, List.of("b", "y"), "by", "e");
+        } finally {
+            if (activity != null) {
+                Activity host = activity;
+                instrumentation.runOnMainSync(host::finish);
+            }
+            var edit = preferences.edit();
+            for (String key : keys) {
+                edit.remove(key);
+                if (previous.get(key) instanceof Boolean value) edit.putBoolean(key, value);
+                else if (previous.get(key) instanceof String value) edit.putString(key, value);
+            }
+            edit.commit();
+        }
+    }
+
+    private static String assertOmitToneRollover(Context context, EditText editor,
+            String prefix, List<String> keys, String syllable, String toneKey) throws Exception {
+        var instrumentation = InstrumentationRegistry.getInstrumentation();
+        String elevenReadings = syllable.repeat(11);
+        instrumentation.runOnMainSync(() -> {
+            BopomofoKeyboardView view = findKeyboard();
+            for (int index = 0; index < 11; index++) {
+                for (String key : keys) tapDrawnKey(view, key);
+            }
+            assertEquals(11, drawnGridCharacters(view, toneKey).size());
+        });
+        assertMarkedReading(editor, prefix, elevenReadings);
+
+        List<String> tailCells = new ArrayList<>();
+        instrumentation.runOnMainSync(() -> {
+            BopomofoKeyboardView view = findKeyboard();
+            for (String key : keys) tapDrawnKey(view, key);
+            tailCells.addAll(drawnGridCharacters(view, toneKey));
+            assertFalse(tailCells.isEmpty());
+            assertTrue(tailCells.size() <= 11);
+        });
+        String tailReading = syllable.repeat(tailCells.size());
+        String[] hostText = {""};
+        await(() -> {
+            hostText[0] = editor.getText().toString();
+            return hostText[0].length() >= prefix.length() + tailReading.length()
+                    && hostText[0].startsWith(prefix) && hostText[0].endsWith(tailReading)
+                    && hostText[0].codePointCount(prefix.length(),
+                            hostText[0].length() - tailReading.length()) == 12 - tailCells.size();
+        });
+        String shifted = hostText[0].substring(prefix.length(), hostText[0].length() - tailReading.length());
+        assertTrue(shifted.codePoints().allMatch(IntegratedBottomControlsInstrumentedTest::isHan));
+        assertMarkedReading(editor, prefix + shifted, tailReading);
+        instrumentation.runOnMainSync(() ->
+                context.getSystemService(InputMethodManager.class).restartInput(editor));
+        instrumentation.waitForIdleSync();
+        assertMarkedReading(editor, prefix + shifted, tailReading);
+        instrumentation.runOnMainSync(() ->
+                ((BopomofoImeService) findKeyboard().getContext()).onKey("ENTER"));
+        String committed = prefix + shifted + String.join("", tailCells);
+        assertPinyinHostText(editor, committed);
+        return committed;
+    }
+
+    private static List<String> drawnGridCharacters(BopomofoKeyboardView view, String toneKey) {
+        float keyTop = drawnKeyBounds(view, toneKey).get(0).top;
+        List<String> values = new ArrayList<>();
+        view.draw(new Canvas() {
+            @Override public void drawText(String value, float x, float y, Paint paint) {
+                if (y < keyTop && value.codePointCount(0, value.length()) == 1
+                        && isHan(value.codePointAt(0))) values.add(value);
+            }
+        });
+        return values;
+    }
+
+    private static boolean isHan(int codePoint) {
+        return Character.UnicodeScript.of(codePoint) == Character.UnicodeScript.HAN;
+    }
+
+    private static void assertGridPhrase(BopomofoKeyboardView view, String reading,
+            String first, String second, String toneKey, RectF tone) {
+        assertEquals(11, view.compositionCellCount());
+        assertFalse(labels(view).contains(reading));
+        assertFalse(labels(view).contains(first + second));
+        RectF firstCell = drawnKeyBounds(view, first).get(0);
+        RectF secondCell = drawnKeyBounds(view, second).get(0);
+        assertTrue(firstCell.right <= secondCell.left);
+        assertTrue(secondCell.bottom <= tone.top);
+        assertTrue(drawnKeyBounds(view, toneKey).contains(tone));
+    }
+
+    private static void assertMarkedReading(EditText editor, String prefix, String reading) throws Exception {
+        assertPinyinHostText(editor, prefix + reading);
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            assertEquals(prefix.length(), android.view.inputmethod.BaseInputConnection.getComposingSpanStart(
+                    editor.getText()));
+            assertEquals(prefix.length() + reading.length(),
+                    android.view.inputmethod.BaseInputConnection.getComposingSpanEnd(editor.getText()));
+        });
+    }
+
+    private static void assertPinyinHostText(EditText editor, String expected) throws Exception {
+        String[] actual = {""};
+        try {
+            await(() -> {
+                actual[0] = editor.getText().toString();
+                return expected.equals(actual[0]);
+            });
+        } catch (AssertionError timeout) {
+            throw new AssertionError("Expected Pinyin host text [" + expected
+                    + "], got [" + actual[0] + "]", timeout);
         }
     }
 

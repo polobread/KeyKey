@@ -1,6 +1,6 @@
 # 琦琦輸入法 Windows TSF frontend
 
-Windows 1.5.0 固定使用 Guanyinma Rust 單核心，四種輸入法直接啟用，不提供核心選擇、舊引擎或失敗回退。Rust 接合、使用者資料、建置依賴及少量冒煙入口見 [Windows Guanyinma 接合](../../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。正式版本及發布狀態另依下文與安裝指南。
+Windows 1.5.1 固定使用 Guanyinma Rust 單核心，四種輸入法直接啟用，不提供核心選擇、舊引擎或失敗回退。Rust 接合、使用者資料、建置依賴及少量冒煙入口見 [Windows Guanyinma 接合](../../../docs/GUANYINMA_WINDOWS_ADAPTER.md)。正式版本及發布狀態另依下文與安裝指南。
 
 倉頡新增可選的「即時候選」與「未打完也能選字」，兩項預設關閉；設定與分層驗證見 [桌面倉頡試用說明](../../../docs/DESKTOP_CANGJIE_PREFIX_TRIAL.md)。
 
@@ -106,8 +106,8 @@ Windows frontend 內的更新客戶端仍屬程式變更。可透過 `workflow_d
 完整 TSF／NSIS、UAC、舊版升級、資料保留與 signed 憑證驗收屬發布工作，不能把
 上述局部開發驗證當成已發布或已安裝的證據。
 
-Windows **1.5.0** 提供進階設定、讀音輔助、符號表與簡體輸出。
-六平台發布版號與共用好打注音模型均為 1.5.0。1.5.0 的資料升級、完整矩陣及簽章交付條件見 [六平台發布準備](../../../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。歷史實作與驗證記錄見
+Windows **1.5.1** 提供進階設定、讀音輔助、符號表與簡體輸出。
+六平台發布版號為 1.5.1，共用好打注音模型為 1.5.0。1.5.1 的資料升級、完整矩陣及簽章交付條件見 [六平台發布準備](../../../docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。歷史實作與驗證記錄見
 [Windows v1.3.2 功能驗證](../../../docs/WINDOWS_V1_3_2_FEATURE_VALIDATION.md)。
 
 2026-10-10：依官方 TSF 契約修正模式通知、候選／符號 owner、UI 執行緒失焦、
@@ -223,7 +223,7 @@ Windows 1.3.1 的兩種安裝流程稽核、舊版遷移設計與待驗收矩陣
 [Windows 安裝與舊版遷移規劃](../../../docs/WINDOWS_INSTALLATION_1_3_1_PLAN.md)。
 共用安裝核心、兩種入口與文件已依規劃修改；歷代實際安裝包的 VM 升級／移除驗收仍待完成。
 
-Windows 1.5.0 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
+Windows 1.5.1 的安裝與日常操作見 [Windows 安裝與使用指南](../../../WINDOWS_INSTALL.md)；本頁記錄實作、建置與部署細節。
 
 The standard `GUID_LBI_INPUTMODE` item exposes a menu style (without a split-button arrow):
 Windows can invoke `InitMenu`/`OnMenuSelect` to switch all four methods even when
@@ -293,7 +293,7 @@ reference and is not linked into this DLL.
 
 ### Cangjie and Simplex
 
-Windows 1.5.0 includes Cangjie and Simplex. Older installed DLLs must be upgraded
+Windows 1.5.1 includes Cangjie and Simplex. Older installed DLLs must be upgraded
 to use the features in the current release.
 Cangjie retains up to five radicals and queries with Space/Enter; Simplex queries
 at two radicals. Number keys select candidates, Page Up/Down page, Backspace

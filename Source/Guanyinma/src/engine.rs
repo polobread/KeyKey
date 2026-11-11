@@ -12,6 +12,10 @@ use crate::bopomofo::{BopomofoLayout, BopomofoReading, BopomofoSyllable};
 use crate::candidate_filter::CandidateFilter;
 use crate::database::{DatabaseError, ModelDatabase, Table, Unigram};
 use crate::learning::LearningOptions;
+use crate::phonetic_suggestions::{
+    character_choices, exact_toned_syllable, phonetic_display, suggestions,
+    suggestions_with_choices, PhoneticChoice, PhoneticChunk, PhoneticSuggestion, PhoneticSyllable,
+};
 use crate::smart::{MarkedPhrase, SmartOptions, SmartState};
 use crate::table::{self, PunctuationStyle, TableQueryOptions, TableWildcards};
 use crate::user_archive::UserArchive;
@@ -288,6 +292,14 @@ pub enum InputOperation {
         #[serde(default)]
         modifiers: Modifiers,
     },
+    /// An opted-in phonetic key from a touch keyboard.
+    TouchPhonetic {
+        text: String,
+    },
+    /// Use provisional cells and targeted one-character candidates for touch phonetics.
+    SetTouchPhoneticGrid {
+        enabled: bool,
+    },
     DirectText {
         text: String,
     },
@@ -402,7 +414,7 @@ impl InputOperation {
         }
     }
     fn validate(&self) -> Result<(), EngineError> {
-        if let Self::Character { text, .. } = self {
+        if let Self::Character { text, .. } | Self::TouchPhonetic { text } = self {
             if text.chars().count() != 1 || text.chars().any(char::is_control) {
                 return Err(EngineError::InvalidInput(
                     "character text must be one non-control Unicode scalar".into(),
@@ -498,6 +510,13 @@ pub struct SessionSnapshot {
     pub cursor: usize,
     pub cursor_unit: &'static str,
     pub candidates: Vec<String>,
+    pub phonetic_suggestions: bool,
+    pub phonetic_pending: bool,
+    pub phonetic_space_first_tone: bool,
+    /// Provisional cells following the completed segments. Never host text.
+    pub phonetic_grid: Vec<String>,
+    /// Selected cell index across completed and provisional cells.
+    pub phonetic_grid_candidate_target: Option<usize>,
     pub displayed_candidates: Vec<String>,
     pub page: usize,
     pub page_size: usize,
@@ -526,6 +545,27 @@ impl From<DatabaseError> for EngineError {
     }
 }
 
+const MAX_TOUCH_PHONETIC_KEYS: usize = 64;
+// Six Pinyin letters plus an optional explicit tone key.
+const MAX_PINYIN_GRID_KEYS_PER_SYLLABLE: usize = 7;
+
+#[derive(Clone, Debug, Default)]
+struct TouchPhonetic {
+    raw: String,
+    suggestions: Vec<PhoneticSuggestion>,
+    grid: TouchPhoneticGrid,
+}
+
+#[derive(Clone, Debug, Default)]
+struct TouchPhoneticGrid {
+    enabled: bool,
+    locks: Vec<PhoneticSyllable>,
+    // Keep the other displayed cells stable until the next phonetic edit.
+    retained_preview: Option<PhoneticSuggestion>,
+    target: Option<usize>,
+    candidates: Vec<PhoneticChoice>,
+}
+
 #[derive(Clone, Debug)]
 struct State {
     user_data: UserSnapshot,
@@ -533,6 +573,7 @@ struct State {
     pending_user_changes: Vec<UserChange>,
     table_exact: HashSet<String>,
     smart: SmartState,
+    touch_phonetic: TouchPhonetic,
     reading: BopomofoReading,
     code: String,
     candidates: Vec<String>,
@@ -550,6 +591,9 @@ struct State {
 struct CandidateView {
     candidates: Vec<String>,
     smart_candidates: Vec<SmartCandidate>,
+    phonetic_suggestions: Vec<PhoneticSuggestion>,
+    phonetic_grid_target: Option<usize>,
+    phonetic_grid_candidates: Vec<PhoneticChoice>,
     page: usize,
     highlight: usize,
     page_size: usize,
@@ -560,6 +604,9 @@ impl CandidateView {
         Self {
             candidates: state.candidates.clone(),
             smart_candidates: state.smart.candidates().to_vec(),
+            phonetic_suggestions: state.touch_phonetic.suggestions.clone(),
+            phonetic_grid_target: state.touch_phonetic.grid.target,
+            phonetic_grid_candidates: state.touch_phonetic.grid.candidates.clone(),
             page: state.page,
             highlight: state.highlight,
             page_size: state.page_size,
@@ -601,6 +648,7 @@ impl InputSession {
             pending_user_changes: Vec::new(),
             table_exact: HashSet::new(),
             smart: SmartState::with_candidate_filter(config.layout, candidate_filter.clone()),
+            touch_phonetic: TouchPhonetic::default(),
             reading: BopomofoReading::new(config.layout),
             code: String::new(),
             candidates: Vec::new(),
@@ -647,6 +695,7 @@ impl InputSession {
                 && matches!(
                     &operation,
                     InputOperation::Character { .. }
+                        | InputOperation::TouchPhonetic { .. }
                         | InputOperation::Key { .. }
                         | InputOperation::Select { .. }
                         | InputOperation::Page { .. }
@@ -705,7 +754,13 @@ impl InputSession {
                     self.state.highlight = old_view.highlight;
                 }
             }
-            if self.config.method == InputMethod::Smart
+            if !old_view.phonetic_suggestions.is_empty() {
+                self.update_touch_suggestions()?;
+            }
+            if let Some(target) = old_view.phonetic_grid_target {
+                self.open_touch_grid_candidates(target, &mut Effects::default())?;
+            } else if self.config.method == InputMethod::Smart
+                && !self.touch_phonetic_pending()
                 && !old_view.candidates.is_empty()
                 && self.state.smart.candidates().is_empty()
             {
@@ -718,6 +773,9 @@ impl InputSession {
             self.refresh_display()?;
             if self.state.candidates == old_view.candidates
                 && self.state.smart.candidates() == old_view.smart_candidates
+                && self.state.touch_phonetic.suggestions == old_view.phonetic_suggestions
+                && self.state.touch_phonetic.grid.target == old_view.phonetic_grid_target
+                && self.state.touch_phonetic.grid.candidates == old_view.phonetic_grid_candidates
             {
                 self.state.page = old_view.page;
                 self.state.highlight = old_view.highlight;
@@ -903,12 +961,16 @@ impl InputSession {
             } else {
                 Vec::new()
             },
-            reading: if self.config.method == InputMethod::Smart {
+            reading: if self.touch_phonetic_pending() {
+                self.touch_phonetic_display()
+            } else if self.config.method == InputMethod::Smart {
                 self.state.smart.reading()
             } else {
                 self.state.display.clone()
             },
-            phonetic: if self.config.method == InputMethod::Smart {
+            phonetic: if self.touch_phonetic_pending() {
+                self.touch_phonetic_display()
+            } else if self.config.method == InputMethod::Smart {
                 self.state.smart.reading()
             } else {
                 self.state.reading.display_text()
@@ -922,13 +984,31 @@ impl InputSession {
             } else {
                 self.state.code.clone()
             },
-            cursor: if self.config.method == InputMethod::Smart {
+            cursor: if self.touch_phonetic_pending() {
+                if self.touch_phonetic_grid_enabled() {
+                    self.state.display.chars().count()
+                } else {
+                    self.state
+                        .smart
+                        .cursor_with_reading(&self.touch_phonetic_display())
+                }
+            } else if self.config.method == InputMethod::Smart {
                 self.state.smart.cursor()
             } else {
                 self.state.display.chars().count()
             },
             cursor_unit: "unicode_scalar",
             candidates: self.state.candidates.clone(),
+            phonetic_suggestions: !self.touch_phonetic_grid_enabled()
+                && !self.state.touch_phonetic.suggestions.is_empty(),
+            phonetic_pending: self.touch_phonetic_pending(),
+            phonetic_space_first_tone: self.touch_first_tone_query().is_some(),
+            phonetic_grid: self
+                .touch_grid_syllables()
+                .into_iter()
+                .map(|syllable| syllable.text)
+                .collect(),
+            phonetic_grid_candidate_target: self.state.touch_phonetic.grid.target,
             displayed_candidates: displayed,
             page: self.state.page,
             page_size: self.state.page_size,
@@ -950,7 +1030,7 @@ impl InputSession {
     }
     fn empty(&self) -> bool {
         if self.config.method == InputMethod::Smart {
-            return self.state.smart.is_empty();
+            return !self.touch_phonetic_pending() && self.state.smart.is_empty();
         }
         self.state.reading.is_empty()
             && self.state.code.is_empty()
@@ -960,6 +1040,11 @@ impl InputSession {
     fn clear_candidates(&mut self) {
         self.state.table_exact.clear();
         self.state.smart.cancel_candidates();
+        if !self.touch_phonetic_grid_enabled() {
+            self.state.touch_phonetic.suggestions.clear();
+        }
+        self.state.touch_phonetic.grid.target = None;
+        self.state.touch_phonetic.grid.candidates.clear();
         self.state.candidates.clear();
         self.state.preview = None;
         self.state.page = 0;
@@ -968,7 +1053,7 @@ impl InputSession {
     }
     fn clear_composition(&mut self) {
         self.state.smart.clear();
-        self.clear_candidates();
+        self.clear_touch_phonetic();
         self.state.reading.clear();
         self.state.code.clear();
         self.state.display.clear();
@@ -991,7 +1076,15 @@ impl InputSession {
     }
     fn finish(&mut self, effects: &mut Effects) {
         if self.config.method == InputMethod::Smart {
-            self.state.smart.finish(effects);
+            if self.touch_phonetic_pending() {
+                if self.touch_phonetic_grid_enabled() {
+                    self.finish_touch_grid(true, effects);
+                    return;
+                }
+                effects.commit.push_str(&self.touch_phonetic_visible_text());
+            } else {
+                self.state.smart.finish(effects);
+            }
             self.clear_composition();
             return;
         }
@@ -1039,14 +1132,34 @@ impl InputSession {
     }
     fn refresh_display(&mut self) -> Result<(), EngineError> {
         if self.config.method == InputMethod::Smart {
-            self.state.display = self.state.smart.visible_text();
-            let values: Vec<String> = self
-                .state
-                .smart
-                .candidates()
-                .iter()
-                .map(|c| c.text.clone())
-                .collect();
+            self.state.display = if self.touch_phonetic_pending() {
+                self.touch_phonetic_visible_text()
+            } else {
+                self.state.smart.visible_text()
+            };
+            let values: Vec<String> = if !self.state.touch_phonetic.grid.candidates.is_empty() {
+                self.state
+                    .touch_phonetic
+                    .grid
+                    .candidates
+                    .iter()
+                    .map(|choice| choice.text.clone())
+                    .collect()
+            } else if self.touch_phonetic_pending() && !self.touch_phonetic_grid_enabled() {
+                self.state
+                    .touch_phonetic
+                    .suggestions
+                    .iter()
+                    .map(|c| c.text.clone())
+                    .collect()
+            } else {
+                self.state
+                    .smart
+                    .candidates()
+                    .iter()
+                    .map(|c| c.text.clone())
+                    .collect()
+            };
             if values != self.state.candidates {
                 self.state.page = 0;
                 self.state.highlight = 0;
@@ -1076,6 +1189,13 @@ impl InputSession {
         Ok(())
     }
     fn select_absolute(&mut self, index: usize, effects: &mut Effects) -> Result<(), EngineError> {
+        if self.state.touch_phonetic.grid.target.is_some() {
+            return self.select_touch_grid_candidate(index);
+        }
+        if !self.touch_phonetic_grid_enabled() && !self.state.touch_phonetic.suggestions.is_empty()
+        {
+            return self.select_touch_suggestion(index, true, effects);
+        }
         if self.config.method == InputMethod::Smart {
             self.state.smart.select(index, &self.config.smart)?;
             self.clear_candidates();
@@ -1150,6 +1270,18 @@ impl InputSession {
             InputOperation::Character { text, modifiers } => {
                 self.character(text.chars().next().unwrap(), modifiers, effects)?
             }
+            InputOperation::TouchPhonetic { text } => {
+                self.touch_phonetic(text.chars().next().unwrap(), effects)?;
+            }
+            InputOperation::SetTouchPhoneticGrid { enabled } => {
+                if enabled != self.state.touch_phonetic.grid.enabled {
+                    self.clear_candidates();
+                    self.state.touch_phonetic.grid.enabled = enabled;
+                    self.state.touch_phonetic.grid.locks.clear();
+                    self.state.touch_phonetic.grid.retained_preview = None;
+                    self.update_touch_phonetic(effects)?;
+                }
+            }
             InputOperation::DirectText { text } => self.direct_text(&text, effects)?,
             InputOperation::Key { key, modifiers } => self.key(key, modifiers, effects)?,
             InputOperation::Select { index } => {
@@ -1169,7 +1301,17 @@ impl InputSession {
                     self.state.page_size = self.selection_keys()?.len();
                 }
             }
-            InputOperation::SetProfile { profile } => self.config.profile = profile,
+            InputOperation::SetProfile { profile } => {
+                if profile != self.config.profile {
+                    if self.touch_phonetic_pending() {
+                        self.accept_touch_grid_prefix(effects)?;
+                        self.clear_touch_phonetic();
+                    } else if self.state.touch_phonetic.grid.target.is_some() {
+                        self.clear_candidates();
+                    }
+                }
+                self.config.profile = profile;
+            }
             InputOperation::SetLayout { layout } => {
                 if layout != self.config.layout {
                     self.finish(effects);
@@ -1196,6 +1338,9 @@ impl InputSession {
                 self.config.smart = options;
                 if self.config.method == InputMethod::Smart {
                     self.clear_candidates();
+                    if self.touch_phonetic_grid_enabled() && self.touch_phonetic_pending() {
+                        self.update_touch_phonetic(effects)?;
+                    }
                 }
             }
             InputOperation::OpenCandidates { index } => {
@@ -1204,15 +1349,22 @@ impl InputSession {
                         "open_candidates requires Smart Mandarin".into(),
                     ));
                 }
+                if self.touch_phonetic_grid_enabled() {
+                    return self.open_touch_grid_candidates(index, effects);
+                }
                 if index >= self.state.smart.completed_readings().len() {
                     return Err(EngineError::InvalidInput(
                         "candidate target is outside completed readings".into(),
                     ));
                 }
-                self.clear_candidates();
-                self.state
-                    .smart
-                    .open_candidates(Some(index), &self.config.smart, effects)?;
+                if self.touch_phonetic_pending() {
+                    effects.beep = true;
+                } else {
+                    self.clear_candidates();
+                    self.state
+                        .smart
+                        .open_candidates(Some(index), &self.config.smart, effects)?;
+                }
             }
             InputOperation::CloseCandidates => {
                 if self.config.method != InputMethod::Smart {
@@ -1357,7 +1509,10 @@ impl InputSession {
                 self.clear_candidates();
             }
             InputOperation::SetCursor { index } => {
-                if self.config.method != InputMethod::Smart || !self.state.smart.set_cursor(index) {
+                if self.config.method != InputMethod::Smart
+                    || self.touch_phonetic_pending()
+                    || !self.state.smart.set_cursor(index)
+                {
                     return Err(EngineError::InvalidInput(
                         "cursor is outside the completed reading range".into(),
                     ));
@@ -1382,6 +1537,23 @@ impl InputSession {
                 discard_table_code,
             } => {
                 if self.config.method == InputMethod::Smart {
+                    if self.touch_phonetic_pending() {
+                        if self.touch_phonetic_grid_enabled() {
+                            self.finish_touch_grid(complete_reading, effects);
+                            return Ok(());
+                        }
+                        if !complete_reading {
+                            self.clear_touch_phonetic();
+                        } else if self
+                            .state
+                            .touch_phonetic
+                            .suggestions
+                            .get(self.selected_index())
+                            .is_some_and(|c| c.consumed == self.state.touch_phonetic.raw.len())
+                        {
+                            self.select_touch_suggestion(self.selected_index(), false, effects)?;
+                        }
+                    }
                     if complete_reading {
                         self.state.smart.complete_reading_for_handoff(
                             &self.database,
@@ -1407,6 +1579,483 @@ impl InputSession {
         }
         Ok(())
     }
+    fn touch_phonetic_pending(&self) -> bool {
+        !self.state.touch_phonetic.raw.is_empty()
+    }
+
+    fn touch_phonetic_display(&self) -> String {
+        phonetic_display(self.config.layout, &self.state.touch_phonetic.raw)
+    }
+
+    fn touch_phonetic_visible_text(&self) -> String {
+        let reading = self.touch_phonetic_display();
+        if self.touch_phonetic_grid_enabled() {
+            self.state.smart.composition() + &reading
+        } else {
+            self.state.smart.visible_text_with_reading(&reading)
+        }
+    }
+
+    fn clear_touch_phonetic(&mut self) {
+        self.state.touch_phonetic.raw.clear();
+        self.state.touch_phonetic.suggestions.clear();
+        self.state.touch_phonetic.grid.locks.clear();
+        self.state.touch_phonetic.grid.retained_preview = None;
+        self.clear_candidates();
+    }
+
+    fn touch_first_tone_query(&self) -> Option<String> {
+        if !self.touch_phonetic_pending() || !self.state.touch_phonetic.grid.locks.is_empty() {
+            return None;
+        }
+        exact_toned_syllable(
+            self.config.layout,
+            &format!("{} ", self.state.touch_phonetic.raw),
+        )
+    }
+
+    fn touch_phonetic_grid_enabled(&self) -> bool {
+        self.state.touch_phonetic.grid.enabled
+            && self.config.profile == BehaviorProfile::Touch
+            && self.config.method == InputMethod::Smart
+            && self.config.layout.supports_touch_phonetics()
+            && !self.state.english
+    }
+
+    fn touch_grid_limit(&self) -> usize {
+        self.config
+            .smart
+            .max_completed_syllables
+            .saturating_sub(usize::from(self.config.smart.shift_at_limit))
+    }
+
+    fn touch_grid_preview(&self) -> Option<&PhoneticSuggestion> {
+        if !self.touch_phonetic_grid_enabled() {
+            return None;
+        }
+        let pending = &self.state.touch_phonetic;
+        pending
+            .grid
+            .retained_preview
+            .as_ref()
+            .or_else(|| pending.suggestions.first())
+    }
+
+    fn touch_grid_syllables(&self) -> Vec<PhoneticSyllable> {
+        let mut cells = self
+            .touch_grid_preview()
+            .map_or_else(Vec::new, PhoneticSuggestion::syllables);
+        cells.truncate(
+            self.touch_grid_limit()
+                .saturating_sub(self.state.smart.completed_readings().len()),
+        );
+        cells
+    }
+
+    fn finish_touch_grid(&mut self, include_unmatched: bool, effects: &mut Effects) {
+        self.state.smart.finish(effects);
+        let matched = if let Some(preview) = self.touch_grid_preview() {
+            effects.commit.push_str(&preview.text);
+            preview.consumed
+        } else {
+            0
+        };
+        if include_unmatched {
+            effects.commit.push_str(&phonetic_display(
+                self.config.layout,
+                &self.state.touch_phonetic.raw[matched..],
+            ));
+        }
+        self.clear_composition();
+    }
+
+    fn update_touch_suggestions(&mut self) -> Result<(), EngineError> {
+        let pending = &self.state.touch_phonetic;
+        self.state.touch_phonetic.suggestions = if self.touch_phonetic_grid_enabled() {
+            suggestions_with_choices(
+                self.config.layout,
+                &pending.raw,
+                &self.database,
+                &self.state.user_data,
+                self.config.learning.user_phrases,
+                &self.candidate_filter,
+                &pending.grid.locks,
+            )?
+        } else {
+            suggestions(
+                self.config.layout,
+                &pending.raw,
+                &self.database,
+                &self.state.user_data,
+                self.config.learning.user_phrases,
+                &self.candidate_filter,
+            )?
+        };
+        Ok(())
+    }
+
+    fn update_touch_phonetic(&mut self, effects: &mut Effects) -> Result<(), EngineError> {
+        self.update_touch_suggestions()?;
+        if !self.touch_phonetic_grid_enabled() {
+            return Ok(());
+        }
+        let limit = self.touch_grid_limit();
+        while let Some(best) = self.state.touch_phonetic.suggestions.first() {
+            let completed = self.state.smart.completed_readings().len();
+            let provisional = best
+                .chunks
+                .iter()
+                .map(|chunk| chunk.syllable_ends.len())
+                .sum::<usize>();
+            let overflow = (completed + provisional).saturating_sub(limit);
+            if overflow == 0 {
+                break;
+            }
+            let pending = &self.state.touch_phonetic;
+            if self.config.layout == BopomofoLayout::HanyuPinyin
+                && best.may_merge_pinyin_tail(&pending.raw, overflow, &pending.grid.locks)
+            {
+                // A legal longer spelling can still make these two cells one.
+                break;
+            }
+            let consumed = self.state.smart.shift_touch_prefix(
+                &self.database,
+                best.chunks.first(),
+                &self.config.smart,
+                effects,
+            )?;
+            if consumed > 0 {
+                self.consume_touch_raw_prefix(consumed);
+                self.update_touch_suggestions()?;
+            } else if self.state.smart.completed_readings().len() >= completed {
+                return Err(EngineError::InvalidInput(
+                    "touch phonetic prefix could not be shifted".into(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn consume_touch_raw_prefix(&mut self, consumed: usize) {
+        let pending = &mut self.state.touch_phonetic;
+        pending.raw.drain(..consumed);
+        pending.grid.retained_preview = None;
+        pending.grid.locks.retain_mut(|choice| {
+            if choice.start < consumed {
+                return false;
+            }
+            choice.start -= consumed;
+            choice.end -= consumed;
+            true
+        });
+    }
+
+    fn open_touch_grid_candidates(
+        &mut self,
+        index: usize,
+        effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        let completed = self.state.smart.completed_readings().len();
+        self.clear_candidates();
+        if index < completed {
+            self.state.smart.open_single_character_candidates(
+                index,
+                &self.config.smart,
+                effects,
+            )?;
+            if !self.state.smart.candidates().is_empty() {
+                self.state.touch_phonetic.grid.target = Some(index);
+            }
+        } else if let Some(syllable) = self.touch_grid_syllables().get(index - completed) {
+            let pending = &mut self.state.touch_phonetic;
+            pending.grid.candidates = character_choices(
+                self.config.layout,
+                &pending.raw[syllable.start..syllable.end],
+                &self.database,
+                &self.state.user_data,
+                self.config.learning.user_phrases,
+                &self.candidate_filter,
+            )?;
+            if pending.grid.candidates.is_empty() {
+                effects.beep = true;
+            } else {
+                pending.grid.target = Some(index);
+            }
+        } else {
+            effects.beep = true;
+        }
+        Ok(())
+    }
+
+    fn select_touch_grid_candidate(&mut self, index: usize) -> Result<(), EngineError> {
+        let completed = self.state.smart.completed_readings().len();
+        let target = self
+            .state
+            .touch_phonetic
+            .grid
+            .target
+            .expect("open grid target");
+        if target < completed {
+            self.state.smart.select(index, &self.config.smart)?;
+            self.clear_candidates();
+        } else {
+            let mut preview = self
+                .touch_grid_preview()
+                .cloned()
+                .ok_or_else(|| EngineError::InvalidInput("touch grid has no preview".into()))?;
+            let cell = target - completed;
+            let mut syllables = preview.syllables();
+            let selected = syllables.get_mut(cell).ok_or_else(|| {
+                EngineError::InvalidInput("touch grid target is outside the preview".into())
+            })?;
+            let pending = &mut self.state.touch_phonetic;
+            let choice = pending.grid.candidates.get(index).ok_or_else(|| {
+                EngineError::InvalidInput("candidate index is outside the touch grid list".into())
+            })?;
+            selected.query.clone_from(&choice.query);
+            selected.text.clone_from(&choice.text);
+            pending
+                .grid
+                .locks
+                .retain(|lock| lock.end <= selected.start || lock.start >= selected.end);
+            pending.grid.locks.push(selected.clone());
+
+            // Only the word containing the corrected character needs to
+            // be split. Other dictionary words retain their original spans.
+            let mut start = 0;
+            for (word, chunk) in preview.chunks.iter().enumerate() {
+                let end = start + chunk.syllable_ends.len();
+                if cell < end {
+                    let replacements = syllables[start..end].iter().map(|syllable| PhoneticChunk {
+                        query: syllable.query.clone(),
+                        text: syllable.text.clone(),
+                        syllable_ends: vec![syllable.end],
+                    });
+                    preview.chunks.splice(word..=word, replacements);
+                    break;
+                }
+                start = end;
+            }
+            preview.text = syllables
+                .iter()
+                .map(|syllable| syllable.text.as_str())
+                .collect();
+            pending.grid.retained_preview = Some(preview);
+            self.clear_candidates();
+        }
+        Ok(())
+    }
+
+    fn accept_touch_grid_prefix(&mut self, effects: &mut Effects) -> Result<(), EngineError> {
+        if !self.touch_phonetic_grid_enabled() {
+            return Ok(());
+        }
+        if let Some(preview) = self.state.touch_phonetic.grid.retained_preview.take() {
+            let mut smart = self.state.smart.clone();
+            let mut materialized = Effects::default();
+            match smart.choose_touch_words(
+                &self.database,
+                &preview.chunks,
+                &self.config.smart,
+                false,
+                &mut materialized,
+            ) {
+                Ok(()) => {
+                    self.state.smart = smart;
+                    effects.commit.push_str(&materialized.commit);
+                }
+                Err(DatabaseError::InvalidData(_)) => {
+                    // A neighboring character can belong only to its
+                    // original dictionary word. Confirm the displayed prefix.
+                    self.state.smart.finish(effects);
+                    effects.commit.push_str(&preview.text);
+                }
+                Err(error) => return Err(error.into()),
+            }
+            self.consume_touch_raw_prefix(preview.consumed);
+            self.clear_candidates();
+            self.update_touch_phonetic(effects)?;
+        } else if !self.state.touch_phonetic.suggestions.is_empty() {
+            self.select_touch_suggestion(0, false, effects)?;
+        }
+        Ok(())
+    }
+
+    fn touch_phonetic(
+        &mut self,
+        character: char,
+        effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        let layout = self.config.layout;
+        if self.config.profile != BehaviorProfile::Touch
+            || self.config.method != InputMethod::Smart
+            || self.state.english
+            || !layout.supports_touch_phonetics()
+            || !layout.is_reading_key(character)
+            || !self.state.smart.touch_reading_keys().is_empty()
+            || (!self.touch_phonetic_pending()
+                && !self.touch_phonetic_grid_enabled()
+                && !self.state.candidates.is_empty())
+        {
+            return self.character(character, Modifiers::default(), effects);
+        }
+        // Hsu's letter tones can also start the next syllable.
+        let is_unambiguous_tone = layout != BopomofoLayout::Hsu && layout.is_tone_key(character);
+        if is_unambiguous_tone && !self.touch_phonetic_pending() {
+            return self.character(character, Modifiers::default(), effects);
+        }
+        let raw_limit =
+            if layout == BopomofoLayout::HanyuPinyin && self.touch_phonetic_grid_enabled() {
+                self.config.smart.max_completed_syllables * MAX_PINYIN_GRID_KEYS_PER_SYLLABLE
+            } else {
+                MAX_TOUCH_PHONETIC_KEYS
+            };
+        if self.state.touch_phonetic.raw.len() >= raw_limit {
+            effects.beep = true;
+            return Ok(());
+        }
+        self.clear_candidates();
+        let pending = &mut self.state.touch_phonetic;
+        let end = pending.raw.len();
+        if is_unambiguous_tone {
+            if let Some(lock) = pending.grid.locks.iter().find(|lock| lock.end == end) {
+                if exact_toned_syllable(layout, &pending.raw[lock.start..]).is_some() {
+                    effects.beep = true;
+                    return Ok(());
+                }
+            }
+        }
+        pending.grid.retained_preview = None;
+        pending.raw.push(character.to_ascii_lowercase());
+        if is_unambiguous_tone {
+            pending.grid.locks.retain_mut(|lock| {
+                if lock.end != end {
+                    return true;
+                }
+                if exact_toned_syllable(layout, &pending.raw[lock.start..]).as_deref()
+                    != Some(lock.query.as_str())
+                {
+                    return false;
+                }
+                lock.end += 1;
+                true
+            });
+            if let Some(query) = exact_toned_syllable(layout, &pending.raw) {
+                if !pending.grid.locks.is_empty() {
+                    self.update_touch_suggestions()?;
+                    return self.select_touch_suggestion(0, false, effects);
+                }
+                if self.state.smart.complete_touch_reading(
+                    &self.database,
+                    &query,
+                    &self.config.smart,
+                    effects,
+                )? {
+                    self.clear_touch_phonetic();
+                    return Ok(());
+                }
+            }
+        }
+        self.update_touch_phonetic(effects)
+    }
+
+    fn select_touch_suggestion(
+        &mut self,
+        index: usize,
+        learn: bool,
+        effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        let choice = self
+            .state
+            .touch_phonetic
+            .suggestions
+            .get(index)
+            .cloned()
+            .ok_or_else(|| {
+                EngineError::InvalidInput("suggestion index is outside the live list".into())
+            })?;
+        self.state.smart.choose_touch_words(
+            &self.database,
+            &choice.chunks,
+            &self.config.smart,
+            learn,
+            effects,
+        )?;
+        self.consume_touch_raw_prefix(choice.consumed);
+        self.clear_candidates();
+        self.update_touch_phonetic(effects)
+    }
+
+    fn touch_phonetic_key(&mut self, key: Key, effects: &mut Effects) -> Result<(), EngineError> {
+        match key {
+            Key::Backspace => {
+                let pending = &mut self.state.touch_phonetic;
+                pending.grid.retained_preview = None;
+                pending.raw.pop();
+                pending
+                    .grid
+                    .locks
+                    .retain(|choice| choice.end <= pending.raw.len());
+                self.clear_candidates();
+                self.update_touch_phonetic(effects)?;
+                if !self.touch_phonetic_pending() {
+                    effects.discard_composition = self.state.smart.is_empty();
+                }
+            }
+            Key::Escape => {
+                if self.state.touch_phonetic.grid.target.is_some() {
+                    self.clear_candidates();
+                } else {
+                    self.clear_touch_phonetic();
+                    effects.discard_composition = self.state.smart.is_empty();
+                }
+            }
+            Key::Space | Key::Return if self.state.touch_phonetic.grid.target.is_some() => {
+                self.select_absolute(self.selected_index(), effects)?;
+            }
+            Key::Space => {
+                if let Some(query) = self.touch_first_tone_query() {
+                    if self.state.smart.complete_touch_reading(
+                        &self.database,
+                        &query,
+                        &self.config.smart,
+                        effects,
+                    )? {
+                        self.clear_touch_phonetic();
+                    }
+                } else if self.state.touch_phonetic.grid.retained_preview.is_some() {
+                    self.accept_touch_grid_prefix(effects)?;
+                } else if !self.state.touch_phonetic.suggestions.is_empty() {
+                    self.select_touch_suggestion(self.selected_index(), false, effects)?;
+                } else {
+                    effects.beep = true;
+                }
+            }
+            Key::Return => {
+                if let Some(preview) = &self.state.touch_phonetic.grid.retained_preview {
+                    if preview.consumed == self.state.touch_phonetic.raw.len() {
+                        self.finish_touch_grid(false, effects);
+                    } else {
+                        self.accept_touch_grid_prefix(effects)?;
+                    }
+                } else if self.state.touch_phonetic.suggestions.is_empty() {
+                    effects.beep = true;
+                } else {
+                    self.select_touch_suggestion(self.selected_index(), false, effects)?;
+                    if !self.touch_phonetic_pending() {
+                        self.finish(effects);
+                    }
+                }
+            }
+            Key::PageUp => self.page(-1, effects),
+            Key::PageDown => self.page(1, effects),
+            Key::Up => self.move_highlight(-1, effects),
+            Key::Down => self.move_highlight(1, effects),
+            _ => effects.beep = true,
+        }
+        Ok(())
+    }
+
     fn traditional_query(
         &mut self,
         key: &str,
@@ -1525,6 +2174,13 @@ impl InputSession {
             return self.key(Key::Space, modifiers, effects);
         }
         if self.config.method == InputMethod::Smart {
+            if self.touch_phonetic_pending() {
+                self.accept_touch_grid_prefix(effects)?;
+                self.clear_touch_phonetic();
+            }
+            if self.state.touch_phonetic.grid.target.is_some() {
+                self.clear_candidates();
+            }
             return self.smart_character(character, modifiers, effects);
         }
         if modifiers.control || modifiers.alt || modifiers.command {
@@ -1715,6 +2371,10 @@ impl InputSession {
     }
     fn direct_text(&mut self, text: &str, effects: &mut Effects) -> Result<(), EngineError> {
         if self.config.method == InputMethod::Smart {
+            if self.touch_phonetic_pending() {
+                self.accept_touch_grid_prefix(effects)?;
+                self.clear_touch_phonetic();
+            }
             self.state
                 .smart
                 .direct_text(&self.database, text, &self.config.smart, effects)?;
@@ -1800,6 +2460,9 @@ impl InputSession {
                 effects.handled = false;
             }
             return Ok(());
+        }
+        if self.touch_phonetic_pending() {
+            return self.touch_phonetic_key(key, effects);
         }
         if self.config.method == InputMethod::Smart && self.state.candidates.is_empty() {
             let was_empty = self.state.smart.is_empty();

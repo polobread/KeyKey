@@ -114,6 +114,25 @@ public struct SmartMandarinSpaceSettings {
     public func setEnabled(_ enabled: Bool) { sharedDefaults?.set(enabled, forKey: Self.key) }
 }
 
+/// The keyboard can change this preference in its private sandbox.
+public struct SmartMandarinToneOmissionSettings {
+    public static let displayName = "好打注音省略聲調"
+    private static let key = "smartOmitsTones"
+    private let store: KeyboardPreferenceStore
+
+    public init(
+        defaults: UserDefaults = .standard, sharedDefaults: UserDefaults? = nil,
+        writesShared: Bool = false
+    ) {
+        store = KeyboardPreferenceStore(
+            defaults: defaults, sharedDefaults: sharedDefaults, writesShared: writesShared
+        )
+    }
+
+    public var enabled: Bool { store.object(forKey: Self.key) as? Bool ?? false }
+    public func setEnabled(_ enabled: Bool) { store.set(enabled, forKey: Self.key) }
+}
+
 public struct KeyboardClickSettings {
     private static let key = "inputClicksEnabled"
     private let store: KeyboardPreferenceStore

@@ -6,9 +6,9 @@ Guanyinma 共用 Rust 核心位於 `Source/Guanyinma`，目前提供唯讀 DB、
 其獨立建置／單元及 C consumer 驗證見 [Guanyinma README](Source/Guanyinma/README.md)，
 移植範圍見 [實作計畫](docs/GUANYINMA_IMPLEMENTATION_PLAN.md)。完整 Guanyinma 核心 CI 統一由 `guanyinma-core.yml` 負責；平台 workflow 編譯／連結核心後只跑少量 FE 串接冒煙，沿用該平台原有建置與發布流程。六平台固定使用 Guanyinma 單核心；macOS 保留原生 FE，見 [Guanyinma 接合](docs/GUANYINMA_MACOS_ADAPTER.md)。六平台 workflow 接線與分工表見 [核心 README](Source/Guanyinma/README.md#測試範圍與分工)。
 
-六平台發布版本統一為 **1.5.0**，桌面資產於 [1.5.0 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.0) 發布上傳後提供；iOS、Android 透過 App Store、Google Play 發行，實際可下載版本以商店頁面為準。
+六平台產品原始碼的版號為 **1.5.1**。桌面資產在 [1.5.1 Release](https://github.com/polobread/KeyKey/releases/tag/v1.5.1) 發布並上傳後提供。iOS、Android 的可下載版本以 App Store、Google Play 頁面為準。
 Ubuntu Desktop 24.04 LTS、GNOME Shell 46、Fcitx 5、amd64 的安裝流程見 [Ubuntu 安裝與使用指南](LINUX_INSTALL.md)。FreeBSD 透過 ports／pkg 安裝，套件可能較晚上架，詳見 [FreeBSD 安裝指南](FREEBSD_INSTALL.md)。
-共用好打注音模型為 **1.5.0**。發布主軸、資料升級與各平台驗收／簽章交付條件集中於 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)，不能以本文件的建置指令代替實際驗收。
+共用好打注音模型為 **1.5.0**。發布主軸、資料升級與各平台驗收／簽章交付條件集中於 [1.5.1 發布準備](docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)，不能以本文件的建置指令代替實際驗收。
 Linux／FreeBSD 開發來源只使用 Guanyinma Rust 核心；接合、設定與聚焦驗證見
 [Linux Guanyinma 說明](docs/GUANYINMA_LINUX_ADAPTER.md)。X11、GNOME Wayland／XWayland、
 FreeBSD 原生與套件安裝各自驗證，不以舊版本的桌面結果代替新核心驗收。
@@ -125,7 +125,7 @@ native Wayland 的實際桌面打字測試。詳細狀態與輸出路徑見
 `fcitx5-chichi77-keykey` 套件。24.04 會在安裝、受控升級及移除後重裝三個狀態，
 各跑一次八十二個不開設定視窗的 X11 真實輸入案例，並只在重裝後多跑一次 Fcitx 原生設定視窗
 點選、保存、重啟及真實打字案例（合計八十三案）；22.04 則跑較省時的套件安裝／移除 smoke。
-Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.5.0 安裝與使用指南](LINUX_INSTALL.md)；
+Ubuntu 24.04 amd64 的安裝套件與支援範圍見 [Linux 1.5.1 安裝與使用指南](LINUX_INSTALL.md)；
 本節指令產生的本機套件仍需通過發布流程的驗證，才可作為 GitHub Release 安裝檔。
 
 Ubuntu 24.04 的套件建置另產生獨立 GPL-2.0
@@ -384,7 +384,7 @@ PR／push 的平台建置依前端、共用核心、正式 DB 與實際工具依
 不觸發原生建置。手動及正式 Release 的入口維持原有流程。
 
 Android 與 iOS Simulator workflow 提供相關 PR 的驗證，也可從 Actions 頁面按 **Run workflow** 手動執行。Android PR 與手動 `operation=verify` 共用一次工具準備，產生 APK／未簽章 AAB。只有預設手動 `operation=publish` 使用所選分支或 tag 的 commit 建置、簽署並上傳 AAB 到 Google Play 內部測試；合併 PR 與直接 push 不會上傳，也不設定 `changesNotSentForReview`。正式版推廣由 Play Console 操作。
-Android 1.5.0 沿用 Google Play 正式發布流程，不需再以封閉測試作為前置步驟；上架後核對商店實際版本。
+Android 1.5.1 沿用 Google Play 正式發布流程，不需再以封閉測試作為前置步驟；上架後核對商店實際版本。
 CI 上傳至內部測試與一般使用者從 Google Play 安裝正式版是不同流程。
 
 所有修改先在工作分支提交，再由維護者親自 review 和 merge PR 回 `master`；agent 不自行合併。
@@ -402,7 +402,7 @@ macOS 從四份產品 plist 讀取並核對版號，不從 README 讀取版號�
 
 正式版單一平台失敗時，把修正合併到 `master`，到 Actions 選該平台的 workflow，按
 **Run workflow**，macOS／Linux 將 **Use workflow from** 選為 `master`，
-並依平台填入已發布的 tag，例如 macOS 的 `release_tag=v1.5.0`、Linux 的 `release_tag=v1.5.0`。Windows 依本機發布指南從原 tag
+並依平台填入已發布的 tag，例如 macOS 的 `release_tag=v1.5.1`、Linux 的 `release_tag=v1.5.1`。Windows 依本機發布指南從原 tag
 重試；來源修改需新版本／tag，不接受不同來源的同版本補發。macOS／Linux 建置使用所選分支，
 平台版號仍須與 Release 相同；成功後自動補上或
 覆寫該平台的資產，其他平台不變。macOS／Linux workflow 接受此欄位，留空則只保留 artifact。
@@ -411,9 +411,9 @@ macOS 從四份產品 plist 讀取並核對版號，不從 README 讀取版號�
 也可以個別使用 CLI（只執行需要補發的平台）：
 
 ```sh
-gh workflow run package-macos.yml --ref master -f release_tag=v1.5.0
+gh workflow run package-macos.yml --ref master -f release_tag=v1.5.1
 gh workflow run package-windows.yml --ref master # Build/test unsigned inputs; sign locally
-gh workflow run linux-ci.yml --ref master -f release_tag=v1.5.0
+gh workflow run linux-ci.yml --ref master -f release_tag=v1.5.1
 ```
 
 **Re-run jobs** 使用原本的 commit，適合暫時性失敗；有程式修正時應使用上述
@@ -813,7 +813,7 @@ Only the default manual `operation=publish` builds and signs the selected branch
 or tag for upload to Google Play internal testing. Merging a PR or pushing a commit
 does not upload to Play, and the workflow does not set `changesNotSentForReview`.
 Production promotion is performed in Play Console.
-Android 1.5.0 uses the Google Play production release process; closed testing is no longer a prerequisite. CI uploads to internal testing, followed by promotion in Play Console. iOS 1.5.0 is distributed through the App Store. Verify availability and version on each store after publication.
+Android 1.5.1 uses the Google Play production release process; closed testing is no longer a prerequisite. CI uploads to internal testing, followed by promotion in Play Console. iOS 1.5.1 is distributed through the App Store. Verify availability and version on each store after publication.
 
 Commit all changes on a working branch; the maintainer reviews and merges the PR.
 Agents must not merge PRs. Source, build scripts, and CI are covered by the
@@ -824,8 +824,8 @@ verified signing inputs. The local release tool verifies those CI inputs, signs
 and repackages them, then publishes only after manual acceptance and approval;
 it does not rebuild the product. The tag must match the
 platform's source version at that tag and can be created on the Release page.
-The release version is `1.5.0` across all six platforms. Desktop assets become available after upload; mobile store and FreeBSD package availability must be checked separately. See the
-[release preparation guide](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md) for migration,
+The product source version is `1.5.1` across all six platforms. Desktop assets become available after upload; mobile store and FreeBSD package availability must be checked separately. See the
+[release preparation guide](docs/CROSS_PLATFORM_V1_5_1_RELEASE.md) for migration,
 platform acceptance, signing, and publication requirements.
 The test channel uses the generic `vX.Y.Z-betaN` format: X.Y.Z matches the product
 version and N is a positive integer without leading zeros.
@@ -840,8 +840,8 @@ requires both the full Ubuntu 24.04 gate and Ubuntu 22.04 compatibility checks.
 
 To recover one failed stable platform, merge the fix into `master`, select its workflow
 in Actions, choose **Run workflow**, set **Use workflow from** to `master`, and
-enter the published platform tag in `release_tag`, such as `v1.5.0` for macOS
-or `v1.5.0` for Linux; the corresponding Release must already be published.
+enter the published platform tag in `release_tag`, such as `v1.5.1` for macOS
+or `v1.5.1` for Linux; the corresponding Release must already be published.
 Windows retries use the local release guide and the exact reviewed tag; source
 fixes require a new version/tag. Only the macOS/Linux workflows accept this input. They build
 the selected revision and replace only that platform's assets; its source
@@ -852,9 +852,9 @@ Merge these workflow changes into the default branch before using them.
 For example, run just the command for the platform needing recovery:
 
 ```sh
-gh workflow run package-macos.yml --ref master -f release_tag=v1.5.0
+gh workflow run package-macos.yml --ref master -f release_tag=v1.5.1
 gh workflow run package-windows.yml --ref master # Build/test unsigned inputs; sign locally
-gh workflow run linux-ci.yml --ref master -f release_tag=v1.5.0
+gh workflow run linux-ci.yml --ref master -f release_tag=v1.5.1
 ```
 
 **Re-run jobs** uses the original commit and suits transient failures; use

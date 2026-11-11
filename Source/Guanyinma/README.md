@@ -1,6 +1,6 @@
 # Guanyinma
 
-**Guanyinma（觀音嬤）** 的名稱取自臺語對觀世音菩薩的稱呼「觀音嬤」。它是 KeyKey 六平台共用的唯一輸入核心；共用演算法、排序與學習可減少重複維護，並讓各平台更容易接入新能力。原生介面、設定入口與宿主操作仍由各 frontend 負責。產品發布準備見 [1.5.0 發布文件](../../docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+**Guanyinma（觀音嬤）** 的名稱取自臺語對觀世音菩薩的稱呼「觀音嬤」。它是 KeyKey 六平台共用的唯一輸入核心；共用演算法、排序與學習可減少重複維護，並讓各平台更容易接入新能力。原生介面、設定入口與宿主操作仍由各 frontend 負責。產品發布準備見 [1.5.1 發布文件](../../docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。
 
 Guanyinma 是 **chichi77 KeyKey／琦琦輸入法**（英文簡稱 **KeyKey**） 的新共用 Rust 核心，工作目錄為 `Source/Guanyinma`。目前完成唯讀資料層、C ABI、注音解析與四種輸入法的共用 session；好打注音組句、候選排序、手動選詞與組字邊界以 macOS Manjusri 為準。使用者詞庫、候選偏好、Bigram 與字表學習已接入獨立資料層；原生接合依[實作計畫](../../docs/GUANYINMA_IMPLEMENTATION_PLAN.md)進行。
 
@@ -108,7 +108,7 @@ Android 的 `adb shell` domain 受 [AOSP SELinux 規則](https://android.googles
 
 ## 無 UI code coverage
 
-核心正式 Rust 程式碼的行涵蓋率維持 **92% 以上**。參考門檻使用原生 macOS／system SQLite 的 debug instrumentation（本機基準為 arm64），執行既有 Rust unit／整合與真實 C consumer。
+核心正式 Rust 程式碼的行涵蓋率維持 **96% 以上**。參考門檻使用原生 macOS／system SQLite 的 debug instrumentation（本機基準為 arm64），執行既有 Rust unit／整合與真實 C consumer。
 只計算 `src/` 的可執行行，動態排除 inline `#[cfg(test)]` item、測試與第三方依賴；
 不以物理總行數為分母，也不將 region coverage 當作 branch coverage。
 
@@ -120,7 +120,7 @@ python3 Source/Guanyinma/tools/test-coverage.py --offline \
 ```
 
 工具支援 `--cargo /path/to/cargo`、`--sqlite-provider system|bundled` 與
-`--minimum-line-coverage 92`；不自行下載工具。每次使用獨立 target 和新 profiles，
+`--minimum-line-coverage 96`；不自行下載工具。每次使用獨立 target 和新 profiles，
 輸出 `coverage-summary.json`、各檔未覆蓋行、原始 LCOV、排除測試後 LCOV、來源雜湊及 Git 差異。
 未達門檻或無法確認測試排除範圍時回傳失敗。CI 只在 `guanyinma-core.yml` 的 macOS
 項目量測這個門檻；其他平台仍執行各自的原生核心測試，不能由這個百分比推定六平台覆蓋率。

@@ -66,7 +66,10 @@ final class HostInputEngine implements InputEngine {
     @Override public void setAllowedInputModes(Set<InputEngine.InputMode> modes, InputEngine.InputMode preferred, boolean selectPreferred) {
         update(engine -> engine.setAllowedInputModes(modes, preferred, selectPreferred));
     }
-    @Override public InputEngine.Result handleSoftKey(String key) { return perform(engine -> engine.handleSoftKey(key)); }
+    @Override public InputEngine.Result handleSoftKey(String key) { return handleSoftKey(key, false); }
+    InputEngine.Result handleSoftKey(String key, boolean omitTone) {
+        return perform(engine -> rust.handleSoftKey(key, omitTone));
+    }
     @Override public InputEngine.Result handleHardwareCharacter(char key) { return perform(engine -> engine.handleHardwareCharacter(key)); }
     @Override public InputEngine.Result commitHardwareLiteral(char key) { return perform(engine -> engine.commitHardwareLiteral(key)); }
     @Override public InputEngine.Result handleHardwareSpace() { return perform(InputEngine::handleHardwareSpace); }
@@ -112,6 +115,13 @@ final class HostInputEngine implements InputEngine {
     @Override public boolean isTemporaryEnglish() { return backend().isTemporaryEnglish(); }
     @Override public boolean isHardwareFullWidth() { return backend().isHardwareFullWidth(); }
     @Override public boolean isShowingAssociatedPhrases() { return backend().isShowingAssociatedPhrases(); }
+    boolean hasPendingPhoneticReading() { return rust.hasPendingPhoneticReading(); }
+    void setTouchPhoneticGrid(boolean enabled) {
+        update(engine -> rust.setTouchPhoneticGrid(enabled));
+    }
+    boolean touchPhoneticGridEnabled() { return rust.touchPhoneticGridEnabled(); }
+    boolean usesTouchPhoneticGrid() { return rust.usesTouchPhoneticGrid(); }
+    boolean phoneticSpaceFirstTone() { return rust.phoneticSpaceFirstTone(); }
     @Override public boolean isShowingSmartCandidates() { return backend().isShowingSmartCandidates(); }
     @Override public InputEngine.Result finishCompositionForModeSwitch() { return perform(InputEngine::finishCompositionForModeSwitch); }
     @Override public InputEngine.Result finishCompositionForInputHandoff() { return perform(InputEngine::finishCompositionForInputHandoff); }

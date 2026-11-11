@@ -1,12 +1,12 @@
 # Linux／Ubuntu 安裝與使用指南
 
-想在 Ubuntu 輸入中文，可以安裝琦琦輸入法 **1.5.0**，透過 Fcitx 5 使用好打注音、傳統注音、倉頡與簡易。完成套件安裝後，還要啟用 Fcitx、加入琦琦，再回文字 App 試打。
+想在 Ubuntu 輸入中文，可以安裝琦琦輸入法 **1.5.1**，透過 Fcitx 5 使用好打注音、傳統注音、倉頡與簡易。完成套件安裝後，還要啟用 Fcitx、加入琦琦，再回文字 App 試打。
 
-本頁帶你依序完成 **下載五檔 → 校驗安裝 → 啟用並重啟 → 加入琦琦 → 第一次選字**。下載、安裝與設定均對應 1.5.0；另附 [1.5.0 設定導覽](#新版原始碼設定導覽150)，說明 Guanyinma（Rust）核心的新選項。自行編譯另見 [Linux `./configure` 編譯安裝指南](LINUX_CONFIGURE_INSTALL.md)。
+本頁帶你依序完成 **下載五檔 → 校驗安裝 → 啟用並重啟 → 加入琦琦 → 第一次選字**。下載、安裝與設定均對應 1.5.1；另附 [1.5.1 設定導覽](#新版原始碼設定導覽151)，說明 Guanyinma（Rust）核心的新選項。自行編譯另見 [Linux `./configure` 編譯安裝指南](LINUX_CONFIGURE_INSTALL.md)。
 
 ## 新核心升級準備
 
-1.5.0 使用 Guanyinma（觀音嬤）共用核心，補齊桌面偏好及圖形自訂詞／學習管理，提供完整 Guanyinma JSON 備份與匯入。使用者資料改用 `guanyinma-user.db`；舊 C++ 詞庫保留原檔，但不提供其讀寫或匯入。升級前先備份舊資料；不要把來源版設定截圖當成新版套件已發布或已通過 Wayland 驗收。交付條件見 [1.5.0 發布準備](docs/CROSS_PLATFORM_V1_5_0_RELEASE.md)。
+自 1.5.0 起使用 Guanyinma（觀音嬤）共用核心，補齊桌面偏好及圖形自訂詞／學習管理，提供完整 Guanyinma JSON 備份與匯入。使用者資料改用 `guanyinma-user.db`；舊 C++ 詞庫保留原檔，但不提供其讀寫或匯入。升級前先備份舊資料；不要把來源版設定截圖當成新版套件已發布或已通過 Wayland 驗收。交付條件見 [1.5.1 發布準備](docs/CROSS_PLATFORM_V1_5_1_RELEASE.md)。
 
 ## 安裝前確認
 
@@ -14,7 +14,7 @@
 
 ## 1. 下載最新正式版套件
 
-開啟 [Linux 1.5.0 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.5.0)，資產上傳後展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.5.0`。本頁檔名、CDN 連結及安裝指令均對應 1.5.0；五檔必須來自同一發布版本，才能一起校驗。
+開啟 [Linux 1.5.1 正式版下載頁](https://github.com/polobread/KeyKey/releases/tag/v1.5.1)，資產上傳後展開 **Assets**，將下列五個檔案下載到同一個資料夾，例如 `~/Downloads/keykey-v1.5.1`。本頁檔名、CDN 連結及安裝指令均對應 1.5.1；五檔必須來自同一發布版本，才能一起校驗。
 
 ![GitHub v1.3.7 Assets 中的 Linux 三個 deb、面板原始碼與 SHA256SUMS](docs/images/keykey-linux-v137-lnx01a-release-assets.png)
 
@@ -23,11 +23,11 @@
 
 | 檔案（台灣 AWS CDN 下載） | 用途 |
 | --- | --- |
-| [chichi77-keykey-data_1.5.0-1+ubuntu24.04_all.deb](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/chichi77-keykey-data_1.5.0-1%2Bubuntu24.04_all.deb) | 注音、詞庫與語言模型資料 |
-| [fcitx5-chichi77-keykey_1.5.0-1+ubuntu24.04_amd64.deb](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/fcitx5-chichi77-keykey_1.5.0-1%2Bubuntu24.04_amd64.deb) | Fcitx 5 輸入法與好打注音 |
-| [gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/gnome-shell-extension-keykey-kimpanel_83%2Bkeykey1-1%2Bubuntu24.04_all.deb) | GNOME 候選字面板 |
-| [gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_source.tar.gz](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/gnome-shell-extension-keykey-kimpanel_83%2Bkeykey1-1%2Bubuntu24.04_source.tar.gz) | 面板對應原始碼；只需校驗，不須安裝 |
-| [SHA256SUMS](https://download.aws.polobread.com/keykey/releases/download/v1.5.0/SHA256SUMS) | 上述四個檔案的校驗值 |
+| [chichi77-keykey-data_1.5.1-1+ubuntu24.04_all.deb](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/chichi77-keykey-data_1.5.1-1%2Bubuntu24.04_all.deb) | 注音、詞庫與語言模型資料 |
+| [fcitx5-chichi77-keykey_1.5.1-1+ubuntu24.04_amd64.deb](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/fcitx5-chichi77-keykey_1.5.1-1%2Bubuntu24.04_amd64.deb) | Fcitx 5 輸入法與好打注音 |
+| [gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/gnome-shell-extension-keykey-kimpanel_83%2Bkeykey1-1%2Bubuntu24.04_all.deb) | GNOME 候選字面板 |
+| [gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_source.tar.gz](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/gnome-shell-extension-keykey-kimpanel_83%2Bkeykey1-1%2Bubuntu24.04_source.tar.gz) | 面板對應原始碼；只需校驗，不須安裝 |
+| [SHA256SUMS](https://download.aws.polobread.com/keykey/releases/download/v1.5.1/SHA256SUMS) | 上述四個檔案的校驗值 |
 
 也可從發布頁的 **台灣 AWS 下載點**或上表連結下載，不需要登入 GitHub。AWS CDN 與 GitHub Assets 的同名檔案內容相同，任選一個來源下載完整五檔；接著仍須依下一節核對 `SHA256SUMS`。
 
@@ -42,7 +42,7 @@ Ubuntu 的四個下載項目共用同一份 `SHA256SUMS`，合計仍是五個檔
 在下載資料夾開啟終端機。若使用上面的範例路徑，執行：
 
 ```sh
-cd ~/Downloads/keykey-v1.5.0
+cd ~/Downloads/keykey-v1.5.1
 sha256sum -c SHA256SUMS
 ```
 
@@ -56,8 +56,8 @@ sha256sum -c SHA256SUMS
 
 ```sh
 sudo apt install \
-  ./chichi77-keykey-data_1.5.0-1+ubuntu24.04_all.deb \
-  ./fcitx5-chichi77-keykey_1.5.0-1+ubuntu24.04_amd64.deb \
+  ./chichi77-keykey-data_1.5.1-1+ubuntu24.04_all.deb \
+  ./fcitx5-chichi77-keykey_1.5.1-1+ubuntu24.04_amd64.deb \
   ./gnome-shell-extension-keykey-kimpanel_83+keykey1-1+ubuntu24.04_all.deb \
   fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt6 \
   fcitx5-config-qt im-config
@@ -109,7 +109,7 @@ keykey-gnome-panel status
 
 選取清單中的 Bopomofo，開啟設定。**「注音模式」預設為「好打注音」**，可在此改成「傳統注音」。第一次使用可先保留 **標準（Standard）** 鍵盤配置和 **直式（Vertical）** 候選；習慣倚天、倚天 26 鍵、許氏或漢語拼音時，再切換鍵盤布局。此頁也可調整繁轉簡、Big-5 範圍外候選、打字錯誤提示音、中英文快捷鍵和關聯詞庫。
 
-在 **1.5.0** 中，設定依「一般、注音、倉頡、簡易、自訂詞、詞庫」分組，可向下捲動。下圖為 1.5.0 設定示範；其他操作圖若為舊版本，依圖說標示實拍版本。
+在 **1.5.1** 中，設定依「一般、注音、倉頡、簡易、自訂詞、詞庫」分組，可向下捲動。下圖為 1.5.0 設定示範；其他操作圖若為舊版本，依圖說標示實拍版本。
 
 ![1.5.0 共用 Fcitx 設定的一般分組，包含啟動語言、Caps Lock、數字鍵盤與中英切換](docs/images/keykey-unix-v150-fcitx-general.png)
 
@@ -208,9 +208,9 @@ keykey-gnome-panel status
 - 切換輸入法或中英文模式時，好打注音會先完成可辨識的讀音並送出目前的組字文字。尚未完成的讀音會以原始按鍵保留。
 - 實體雙螢幕、熱插拔、所有 GNOME 主題與所有 App 尚未逐一驗證；若遇到問題，請記下環境與重現步驟。
 
-## 新版原始碼設定導覽（1.5.0）
+## 新版原始碼設定導覽（1.5.1）
 
-以下為 **1.5.0** 的設定，共用 Guanyinma（Rust）核心。從 Fcitx 清單選琦琦輸入法並按設定齒輪，可在同一個長頁中調整各分組；改好後按 **OK／確定**或 **Apply／套用**儲存。
+以下為 **1.5.1** 的設定，共用 Guanyinma（Rust）核心。從 Fcitx 清單選琦琦輸入法並按設定齒輪，可在同一個長頁中調整各分組；改好後按 **OK／確定**或 **Apply／套用**儲存。
 
 ### 注音與好打組字
 

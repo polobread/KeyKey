@@ -50,7 +50,7 @@
 
 use crate::bopomofo::{BopomofoLayout, BopomofoReading};
 use crate::candidate_filter::CandidateFilter;
-use crate::database::ModelDatabase;
+use crate::database::{DatabaseError, ModelDatabase};
 use crate::engine::{Effects, EngineError, Key, Modifiers};
 use crate::learning::LearningOptions;
 use crate::user_store::{UserChange, UserSnapshot};
@@ -346,11 +346,19 @@ impl SmartState {
     }
 
     pub fn visible_text(&self) -> String {
+        self.visible_text_with_reading(&self.reading.display_text())
+    }
+
+    pub(crate) fn visible_text_with_reading(&self, reading: &str) -> String {
         let composition = self.composition();
         let cursor = self.text_cursor();
         let mut characters = composition.chars();
         let before: String = characters.by_ref().take(cursor).collect();
-        before + &self.reading.display_text() + characters.as_str()
+        before + reading + characters.as_str()
+    }
+
+    pub(crate) fn cursor_with_reading(&self, reading: &str) -> usize {
+        self.text_cursor() + reading.chars().count()
     }
 
     pub fn set_cursor(&mut self, index: usize) -> bool {
@@ -380,11 +388,116 @@ impl SmartState {
         Ok(())
     }
 
+    pub(crate) fn touch_reading_keys(&self) -> String {
+        self.reading.input_key_sequence()
+    }
+
+    pub(crate) fn complete_touch_reading(
+        &mut self,
+        database: &ModelDatabase,
+        query: &str,
+        options: &SmartOptions,
+        effects: &mut Effects,
+    ) -> Result<bool, EngineError> {
+        self.sync_model_options(options);
+        self.cancel_mark_for_other_key(effects);
+        self.insert(database, query, options, effects)
+    }
+
+    /// Materialize a provisional suggestion using its original dictionary
+    /// readings, pinning each chosen word before enforcing the touch limit.
+    pub(crate) fn choose_touch_words(
+        &mut self,
+        database: &ModelDatabase,
+        chunks: &[crate::phonetic_suggestions::PhoneticChunk],
+        options: &SmartOptions,
+        learn: bool,
+        effects: &mut Effects,
+    ) -> Result<(), DatabaseError> {
+        self.sync_model_options(options);
+        self.cancel_mark_for_other_key(effects);
+        self.candidates.clear();
+        for chunk in chunks {
+            let start = self.graph.len();
+            for key in chunk.query.as_bytes().chunks_exact(2) {
+                let key = std::str::from_utf8(key).expect("phonetic dictionary keys are ASCII");
+                if !self.graph.insert(database, self.graph.len(), key)? {
+                    return Err(DatabaseError::InvalidData(
+                        "suggested word contains an unavailable reading".into(),
+                    ));
+                }
+            }
+            let candidate = SmartCandidate {
+                start,
+                span: chunk.query.len() / 2,
+                text: chunk.text.clone(),
+                query: chunk.query.clone(),
+            };
+            if !self.graph.select_with_learning(&candidate, learn) {
+                return Err(DatabaseError::InvalidData(
+                    "suggested word no longer belongs to the graph".into(),
+                ));
+            }
+            self.cursor = self.graph.len();
+            self.enforce_limit(options, effects);
+        }
+        Ok(())
+    }
+
+    /// Eject one leading word at the touch limit without pinning or learning
+    /// the rest of the inferred suffix. Return the number of raw keys ejected.
+    pub(crate) fn shift_touch_prefix(
+        &mut self,
+        database: &ModelDatabase,
+        inferred: Option<&crate::phonetic_suggestions::PhoneticChunk>,
+        options: &SmartOptions,
+        effects: &mut Effects,
+    ) -> Result<usize, DatabaseError> {
+        let consumed = if self.graph.is_empty() {
+            let Some(chunk) = inferred else { return Ok(0) };
+            self.choose_touch_words(
+                database,
+                std::slice::from_ref(chunk),
+                options,
+                false,
+                effects,
+            )?;
+            *chunk
+                .syllable_ends
+                .last()
+                .expect("an inferred word has a syllable")
+        } else {
+            0
+        };
+        self.shift_segment(effects);
+        self.shift_leading_spaces(effects);
+        Ok(consumed)
+    }
+
     pub fn open_candidates(
         &mut self,
         index: Option<usize>,
         options: &SmartOptions,
         effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        self.open_candidates_with_scope(index, options, effects, false)
+    }
+
+    pub(crate) fn open_single_character_candidates(
+        &mut self,
+        index: usize,
+        options: &SmartOptions,
+        effects: &mut Effects,
+    ) -> Result<(), EngineError> {
+        self.open_candidates_with_scope(Some(index), options, effects, true)
+    }
+
+    fn open_candidates_with_scope(
+        &mut self,
+        index: Option<usize>,
+        options: &SmartOptions,
+        effects: &mut Effects,
+        single_character: bool,
     ) -> Result<(), EngineError> {
         self.sync_model_options(options);
         self.mark_anchor = None;
@@ -410,9 +523,13 @@ impl SmartState {
         } else {
             self.cursor.min(self.graph.len() - 1)
         };
-        let candidates = self
-            .graph
-            .candidates_at(target, options.candidate_cursor_at_end);
+        let candidates = if single_character {
+            self.graph
+                .single_character_candidates_at(target, options.candidate_cursor_at_end)
+        } else {
+            self.graph
+                .candidates_at(target, options.candidate_cursor_at_end)
+        };
         if candidates.len() < 2 {
             effects.beep = true;
         } else {
@@ -452,15 +569,18 @@ impl SmartState {
             if !self.shift_segment(effects) {
                 break;
             }
-            // Preserve the canonical handoff's treatment of leading ASCII
-            // spaces: a host must never receive a stranded leading space.
-            while self.graph.text().starts_with(' ') {
-                if !self.shift_segment(effects) {
-                    break;
-                }
-            }
+            self.shift_leading_spaces(effects);
         }
         self.cursor = self.cursor.min(self.graph.len());
+    }
+
+    fn shift_leading_spaces(&mut self, effects: &mut Effects) {
+        // A host must never receive a stranded leading space.
+        while self.graph.text().starts_with(' ') {
+            if !self.shift_segment(effects) {
+                break;
+            }
+        }
     }
 
     fn shift_segment(&mut self, effects: &mut Effects) -> bool {

@@ -11,6 +11,7 @@ pub mod database;
 pub mod engine;
 pub mod ffi;
 pub mod learning;
+mod phonetic_suggestions;
 pub mod reading_codec;
 pub mod smart;
 mod storage_path;

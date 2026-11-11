@@ -69,7 +69,7 @@ jobs:
       - name: Execute native or iOS target Rust tests and C consumer
         if: matrix.platform != 'freebsd' && matrix.platform != 'android'
         run: '"$PYTHON" Source/Guanyinma/tools/ci/run-ci.py --platform "${{ matrix.platform }}" --sqlite-provider "${{ matrix.sqlite }}"'
-      - name: Maintain production Rust line coverage at 92 percent
+      - name: Enforce production Rust line coverage
         if: matrix.platform == 'macos'
         run: |
           rustup component add llvm-tools-preview --toolchain "${{ steps.toolchain.outputs.version }}"

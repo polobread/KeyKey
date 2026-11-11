@@ -6,7 +6,7 @@ import UIKit
 ///
 /// Touch Smart Mandarin mirrors completed characters as ordinary host text so
 /// the document keeps them if iOS dismisses the keyboard without a callback.
-/// Other Bopomofo modes use marked text in the host field.
+/// Tone-omission readings and other Bopomofo modes use marked host text.
 final class KeyboardViewController: UIInputViewController {
     #if DEBUG && targetEnvironment(simulator) && compiler(>=6.4)
     private var geometryProbe: AnyObject?
@@ -16,6 +16,18 @@ final class KeyboardViewController: UIInputViewController {
     private var keyboardView: KeyboardView?
     private var statusOverride: String?
     private var heightConstraint: NSLayoutConstraint?
+    private var keyboardTopConstraint: NSLayoutConstraint?
+    private var settlingHeightPreview = false
+    private var keyboardOrientation = KeyboardLayoutProfile.Orientation.portrait
+    private let heightSettings = KeyboardHeightSettings()
+    private var heightEditor: KeyboardHeightEditor?
+    private var heightDraft: [KeyboardLayoutProfile.Orientation: KeyboardEdgeGeometry] = [:]
+    private struct HeightDrag {
+        let edge: KeyboardEdgeGeometry.Edge
+        let startY: CGFloat
+        let start: KeyboardEdgeGeometry
+    }
+    private var heightDrag: HeightDrag?
     private var phraseStore: AssociatedPhraseStore?
     private var guanyinmaPhraseData: SharedPhrasePublication?
     private var collections: [AssociatedPhraseStore.Collection] = []
@@ -31,6 +43,8 @@ final class KeyboardViewController: UIInputViewController {
     private lazy var clickSettings = KeyboardClickSettings(sharedDefaults: sharedDefaults)
     private lazy var layoutSettings = BopomofoKeyboardLayoutSettings(sharedDefaults: sharedDefaults)
     private lazy var spaceSettings = SmartMandarinSpaceSettings(sharedDefaults: sharedDefaults)
+    private lazy var toneOmissionSettings = SmartMandarinToneOmissionSettings(sharedDefaults: sharedDefaults)
+    private var pendingToneOmission: Bool?
     private lazy var learningResetRequest = KeyboardLearningResetRequest(
         sharedDefaults: sharedDefaults
     )
@@ -41,6 +55,7 @@ final class KeyboardViewController: UIInputViewController {
     private var markedReadingUpdateGeneration: UInt = 0
     private var activeDocumentIdentifier: UUID?
     private var hasMarkedText = false
+    private var markedTouchReading = ""
     private var touchHostText = TouchSmartHostTextState()
     private var fieldPolicy = InputFieldPolicy.default
     private var fieldPolicyUnlocked = false
@@ -70,10 +85,12 @@ final class KeyboardViewController: UIInputViewController {
         )
         keyboard.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(keyboard)
+        let keyboardTop = keyboard.topAnchor.constraint(equalTo: view.topAnchor)
+        keyboardTopConstraint = keyboardTop
         NSLayoutConstraint.activate([
             keyboard.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             keyboard.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            keyboard.topAnchor.constraint(equalTo: view.topAnchor),
+            keyboardTop,
             keyboard.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         self.keyboardView = keyboard
@@ -111,6 +128,7 @@ final class KeyboardViewController: UIInputViewController {
             abandonDocumentComposition()
         }
         refreshAppSettings()
+        applyHeight(currentMetrics)
         updateFieldPolicy()
         refreshSystemKeyboardControls()
     }
@@ -118,8 +136,15 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         if let orientation = view.window?.windowScene?.interfaceOrientation, orientation != .unknown {
-            keyboardView?.setLayoutOrientation(orientation.isLandscape ? .landscape : .portrait)
+            let next: KeyboardLayoutProfile.Orientation = orientation.isLandscape ? .landscape : .portrait
+            if keyboardOrientation != next {
+                keyboardOrientation = next
+                endKeyboardHeightDrag()
+                keyboardView?.setLayoutOrientation(next)
+                applyHeight(currentMetrics)
+            }
         }
+        layoutHeightPreview(currentMetrics, geometry: keyboardGeometry)
         refreshSystemKeyboardControls()
         #if KEYKEY_TYPOGRAPHY_MEASUREMENT
         beginTypographyMeasurementIfRequested()
@@ -151,7 +176,7 @@ final class KeyboardViewController: UIInputViewController {
             let saved = (profileSettings.profile, profileSettings.keycapArea,
                 profileSettings.fontSize, profileSettings.deleteShiftPosition, methodSettings.method,
                 engine.inputMode, engine.keyboardLayout)
-            let panel = SettingsPanel(collections: collections, enabled: phraseSettings.enabledCollections,
+            let panel = SettingsPanel(
                 inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
                 compositionMode: engine.bopomofoCompositionMode, chineseInputMethod: engine.chineseInputMethod,
                 methodSettings: methodSettings, keyboardLayout: engine.keyboardLayout,
@@ -267,6 +292,7 @@ final class KeyboardViewController: UIInputViewController {
         if let engine {
             apply(engine.setKeyboardLayout(layoutSettings.layout))
             engine.spaceSelectsCandidates = spaceSettings.enabled
+            pendingToneOmission = toneOmissionSettings.enabled
         }
         applyLearningResetRequests()
         if let engine {
@@ -308,9 +334,51 @@ final class KeyboardViewController: UIInputViewController {
     /// The settings list needs more room than the keyboard, but landscape has
     /// none to give, so it only grows where there is height to spare.
     private func applyHeight(_ metrics: KeyboardMetrics) {
+        let geometry = keyboardGeometry
+        let requestedHeight = metrics.contentHeight * geometry.top
         let wantsTallPanel = settingsPanel != nil && !metrics.isCompactHeight
-        heightConstraint?.constant = wantsTallPanel
-            ? max(metrics.contentHeight, 360) : metrics.contentHeight
+        let targetHeight: CGFloat
+        if heightEditor != nil {
+            // Give the preview room to grow without resizing the remote host
+            // window for every touch update.
+            targetHeight = CGFloat(metrics.contentHeight * KeyboardEdgeGeometry.maximumTop)
+        } else {
+            targetHeight = CGFloat(wantsTallPanel ? max(requestedHeight, 360) : requestedHeight)
+        }
+        if heightConstraint?.constant != targetHeight {
+            heightConstraint?.constant = targetHeight
+        }
+        layoutHeightPreview(metrics, geometry: geometry)
+    }
+
+    private func layoutHeightPreview(_ metrics: KeyboardMetrics, geometry: KeyboardEdgeGeometry) {
+        let requestedHeight = CGFloat(metrics.contentHeight * geometry.top)
+        let inset = heightEditor != nil || settlingHeightPreview ? max(0, view.bounds.height - requestedHeight) : 0
+        if keyboardTopConstraint?.constant != inset {
+            keyboardTopConstraint?.constant = inset
+        }
+        if heightEditor == nil && inset <= 0.5 {
+            settlingHeightPreview = false
+        }
+        applyBottomGap(metrics, geometry: geometry)
+    }
+
+    private var keyboardGeometry: KeyboardEdgeGeometry {
+        heightDraft[keyboardOrientation] ?? heightSettings.geometry(for: keyboardOrientation)
+    }
+
+    private func applyBottomGap(_ metrics: KeyboardMetrics, geometry: KeyboardEdgeGeometry) {
+        guard let keyboardView else { return }
+        let safeArea = keyboardView.safeAreaLayoutGuide.layoutFrame
+        let insetHeight = keyboardView.safeAreaInsets.top + keyboardView.safeAreaInsets.bottom
+        // The host may enforce a smaller height than requested. Give usable
+        // keyboard rows precedence over the requested clearance in that host.
+        let minimumUsable = max(0, CGFloat(metrics.contentHeight * 0.75) - insetHeight)
+        let gap = min(CGFloat(geometry.bottom * metrics.contentHeight), max(0, safeArea.height - minimumUsable))
+        if heightDrag == nil {
+            keyboardView.setBottomGap(gap)
+        }
+        heightEditor?.update(geometry: geometry, bottomGap: gap)
     }
 
     private var currentMetrics: KeyboardMetrics {
@@ -328,6 +396,7 @@ final class KeyboardViewController: UIInputViewController {
         resetInputState()
         settingsPanel?.removeFromSuperview()
         settingsPanel = nil
+        finishEditingKeyboardHeight(save: false)
     }
 
     override func textWillChange(_ textInput: UITextInput?) {
@@ -396,6 +465,7 @@ final class KeyboardViewController: UIInputViewController {
         cancelScheduledMarkedReadingUpdate()
         documentMutationGuard.invalidate()
         hasMarkedText = false
+        markedTouchReading = ""
         resetInputState(discardDocumentComposition: false)
     }
 
@@ -431,6 +501,7 @@ final class KeyboardViewController: UIInputViewController {
                 keyboardLayout: layoutSettings.layout,
                 tableOptions: methodSettings.options(for: methodSettings.method, virtualKeyboard: true),
                 spaceSelectsCandidates: spaceSettings.enabled,
+                omitsTones: toneOmissionSettings.enabled,
                 associatedPhrases: phrases,
                 candidateFilter: CandidateGlyphSupport.shared.canDisplay
             )
@@ -444,22 +515,27 @@ final class KeyboardViewController: UIInputViewController {
     /// Only sources the database actually has are passed down, so a stale
     /// stored selection cannot silently widen the query.
     private func applyPhraseSelection(_ selection: Set<String>) {
+        guard let phraseStore else { return }
         let enabledInPriorityOrder = collections
             .filter { selection.contains($0.source) }
             .map(\.source)
-        phraseStore?.setEnabledSources(enabledInPriorityOrder)
+        guard phraseStore.enabledSources != enabledInPriorityOrder else { return }
+        phraseStore.setEnabledSources(enabledInPriorityOrder)
+        if engine?.isShowingAssociatedPhrases == true {
+            engine?.setAssociatedPhraseSource(phraseStore)
+        }
     }
 
     private func showSettingsPanel() {
-        guard settingsPanel == nil, !collections.isEmpty else { return }
+        guard settingsPanel == nil, heightEditor == nil else { return }
         keyboardView?.cancelBackspaceRepeat()
         let panel = SettingsPanel(
-            collections: collections, enabled: phraseSettings.enabledCollections,
             inputClicksEnabled: inputClicksEnabled, candidateColor: candidateColor,
             compositionMode: engine?.bopomofoCompositionMode ?? .smart,
             chineseInputMethod: engine?.chineseInputMethod ?? methodSettings.method,
             methodSettings: methodSettings,
             keyboardLayout: engine?.keyboardLayout ?? layoutSettings.layout,
+            omitsTones: toneOmissionSettings.enabled,
             layoutProfile: profileSettings.profile,
             keycapArea: profileSettings.keycapArea,
             fontSize: profileSettings.fontSize,
@@ -478,6 +554,86 @@ final class KeyboardViewController: UIInputViewController {
         applyHeight(currentMetrics)
     }
 
+    private func beginEditingKeyboardHeight() {
+        guard heightEditor == nil, let keyboardView else { return }
+        settlingHeightPreview = false
+        keyboardView.cancelBackspaceRepeat()
+        let editor = KeyboardHeightEditor()
+        editor.onDrag = { [weak self] edge, state, y in
+            self?.dragKeyboardHeight(edge, state: state, y: y)
+        }
+        editor.onStep = { [weak self] edge, delta in
+            guard let self, heightDrag == nil else { return }
+            editKeyboardHeight(keyboardGeometry.moving(edge, by: delta))
+        }
+        editor.onReset = { [weak self] in
+            self?.endKeyboardHeightDrag()
+            self?.editKeyboardHeight(KeyboardEdgeGeometry())
+        }
+        editor.onCancel = { [weak self] in self?.finishEditingKeyboardHeight(save: false) }
+        editor.onDone = { [weak self] in self?.finishEditingKeyboardHeight(save: true) }
+        editor.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(editor)
+        let safeArea = keyboardView.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            editor.topAnchor.constraint(equalTo: safeArea.topAnchor),
+            editor.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor),
+            editor.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
+            editor.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor)
+        ])
+        heightEditor = editor
+        applyHeight(currentMetrics)
+    }
+
+    private func dragKeyboardHeight(
+        _ edge: KeyboardEdgeGeometry.Edge, state: KeyboardHeightEditor.DragPhase, y: CGFloat
+    ) {
+        switch state {
+        case .began:
+            guard heightEditor != nil, heightDrag == nil else { return }
+            heightDrag = HeightDrag(edge: edge, startY: y, start: keyboardGeometry)
+            keyboardView?.setHeightDragPreview(true)
+        case .changed, .ended:
+            guard let drag = heightDrag, drag.edge == edge else { return }
+            let delta = Double(drag.startY - y) / currentMetrics.contentHeight
+            UIView.performWithoutAnimation {
+                editKeyboardHeight(drag.start.moving(edge, by: delta))
+                if state == .ended { endKeyboardHeightDrag() }
+            }
+        case .cancelled:
+            if heightDrag?.edge == edge { endKeyboardHeightDrag() }
+        }
+    }
+
+    private func endKeyboardHeightDrag() {
+        guard heightDrag != nil else { return }
+        heightDrag = nil
+        applyBottomGap(currentMetrics, geometry: keyboardGeometry)
+        keyboardView?.setHeightDragPreview(false)
+    }
+
+    private func editKeyboardHeight(_ geometry: KeyboardEdgeGeometry) {
+        guard heightEditor != nil, geometry != keyboardGeometry else { return }
+        heightDraft[keyboardOrientation] = geometry
+        layoutHeightPreview(currentMetrics, geometry: geometry)
+        view.layoutIfNeeded()
+    }
+
+    private func finishEditingKeyboardHeight(save: Bool) {
+        guard let heightEditor else { return }
+        if save {
+            for (orientation, geometry) in heightDraft {
+                heightSettings.setGeometry(geometry, for: orientation)
+            }
+        }
+        heightDraft.removeAll()
+        endKeyboardHeightDrag()
+        heightEditor.removeFromSuperview()
+        self.heightEditor = nil
+        settlingHeightPreview = true
+        applyHeight(currentMetrics)
+    }
+
     private func refresh() {
         guard let keyboardView else { return }
         guard let engine else {
@@ -486,12 +642,18 @@ final class KeyboardViewController: UIInputViewController {
             keyboardView.apply(state)
             return
         }
+        if let pendingToneOmission, !engine.hasComposition, !engine.hasPendingPhoneticInput {
+            engine.omitsTones = pendingToneOmission
+            self.pendingToneOmission = nil
+        }
         var state = KeyboardView.State()
-        state.reading = engine.composingText
+        state.reading = engine.usesTouchPhoneticGrid ? engine.touchSmartHostReading : engine.composingText
         state.smartMode = engine.bopomofoCompositionMode == .smart
             && engine.inputMode == .bopomofo
         state.smartCells = engine.touchSmartCells
-        state.smartEditableCount = engine.smartCompositionReadingCount
+        state.phoneticPending = engine.hasPendingPhoneticInput
+        state.phoneticSpaceFirstTone = engine.phoneticSpaceIsFirstTone
+        state.smartEditableCount = engine.touchSmartEditableCount
         state.candidates = engine.displayedCandidates
         state.highlightedIndex = engine.isShowingAssociatedPhrases
             ? -1 : engine.highlightedIndex
@@ -568,7 +730,8 @@ final class KeyboardViewController: UIInputViewController {
 
     private func apply(_ result: KeyboardInput.Result) {
         defer { engine?.acknowledgeHostEffects() }
-        if engine?.isTouchSmartComposition == true || !touchHostText.editableText.isEmpty {
+        if engine?.isTouchSmartComposition == true || !touchHostText.editableText.isEmpty
+            || !markedTouchReading.isEmpty {
             applyTouchSmart(result)
             return
         }
@@ -598,7 +761,6 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func applyTouchSmart(_ result: KeyboardInput.Result) {
-        if hasMarkedText { discardMarkedText() }
         let edit: TouchSmartHostTextState.Edit
         if engine?.isTouchSmartComposition == true, engine?.hasComposition == true {
             edit = touchHostText.update(
@@ -610,13 +772,24 @@ final class KeyboardViewController: UIInputViewController {
         } else {
             edit = touchHostText.finish(with: result.text)
         }
-        if !edit.isEmpty {
+        let reading = engine?.touchSmartHostReading ?? ""
+        if hasMarkedText && (markedTouchReading.isEmpty || reading.isEmpty
+                             || !edit.isEmpty || result.deletesBackward) {
+            // The marked reading follows ordinary Chinese text. Clear it
+            // before inserting an evicted prefix or changing those characters.
+            discardMarkedText()
+        }
+        if !edit.isEmpty || result.deletesBackward {
             mutateDocument {
                 for _ in 0..<edit.deleteCount { textDocumentProxy.deleteBackward() }
                 if !edit.insertion.isEmpty { textDocumentProxy.insertText(edit.insertion) }
+                if result.deletesBackward { textDocumentProxy.deleteBackward() }
             }
         }
-        if result.deletesBackward { mutateDocument { textDocumentProxy.deleteBackward() } }
+        if !reading.isEmpty && reading != markedTouchReading {
+            setMarkedReading(reading)
+            markedTouchReading = reading
+        }
         if result.sendsReturn { mutateDocument { textDocumentProxy.insertText("\n") } }
         refresh()
     }
@@ -641,6 +814,10 @@ final class KeyboardViewController: UIInputViewController {
 
     private func updateMarkedReading() {
         guard let reading = engine?.composingText, !reading.isEmpty else { return }
+        setMarkedReading(reading)
+    }
+
+    private func setMarkedReading(_ reading: String) {
         mutateDocument {
             textDocumentProxy.setMarkedText(
                 reading, selectedRange: NSRange(location: reading.utf16.count, length: 0)
@@ -673,6 +850,7 @@ final class KeyboardViewController: UIInputViewController {
     /// would do the opposite: it would accept the raw Bopomofo reading.
     private func discardMarkedText() {
         cancelScheduledMarkedReadingUpdate()
+        markedTouchReading = ""
         guard hasMarkedText else { return }
         mutateDocument {
             textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
@@ -803,14 +981,6 @@ extension KeyboardViewController: SettingsPanelDelegate {
         }
     }
 
-    func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>) {
-        phraseSettings.setEnabledCollections(enabled)
-        applyPhraseSelection(enabled)
-        // A phrase list already on screen belongs to the old selection.
-        engine?.setAssociatedPhraseSource(phraseStore)
-        refresh()
-    }
-
     func settingsPanel(
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
     ) {
@@ -818,6 +988,13 @@ extension KeyboardViewController: SettingsPanelDelegate {
         if let engine { apply(engine.setChineseInputMethod(method)) }
         methodSettings.setMethod(method)
         refresh()
+    }
+
+    func settingsPanelDidRequestKeyboardHeight(_ panel: SettingsPanel) {
+        guard settingsPanel === panel else { return }
+        panel.removeFromSuperview()
+        settingsPanel = nil
+        beginEditingKeyboardHeight()
     }
 
     func settingsPanelDidClose(_ panel: SettingsPanel) {
@@ -830,6 +1007,12 @@ extension KeyboardViewController: SettingsPanelDelegate {
     func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout) {
         if let engine { apply(engine.setKeyboardLayout(layout)) }
         layoutSettings.setLayout(layout)
+        refresh()
+    }
+
+    func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool) {
+        toneOmissionSettings.setEnabled(enabled)
+        pendingToneOmission = enabled
         refresh()
     }
 

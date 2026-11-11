@@ -25,9 +25,10 @@ struct GuanyinmaIntegrationTests {
         }
         deinit { try? FileManager.default.removeItem(at: directory) }
         func engine(method: ChineseInputMethod = .smart, hardware: Bool = false,
+                    layout: BopomofoKeyboardLayout = .standard,
                     filter: @escaping (String) -> Bool = { _ in true }) throws -> GuanyinmaInputEngine {
             try GuanyinmaInputEngine(modelURL: model, userDatabaseURL: user, method: method,
-                                    hardwareSmartEditing: hardware, candidateFilter: filter)
+                                    hardwareSmartEditing: hardware, keyboardLayout: layout, candidateFilter: filter)
         }
         func facade(modelURL: URL? = nil) throws -> KeyboardInputEngine {
             try KeyboardInputEngine(modelURL: modelURL ?? model, userDatabaseURL: user)
@@ -77,6 +78,115 @@ struct GuanyinmaIntegrationTests {
         #expect(!engine.hasComposition)
         #expect(engine.finishCompositionForInputHandoff().text.isEmpty)
         #expect(engine.backspace().deletesBackward)
+    }
+
+    @Test func hanyuPinyinReusesTheNativeTouchAndHardwareInputPaths() throws {
+        let fixture = try Fixture()
+        let smart = try fixture.engine()
+        _ = smart.setKeyboardLayout(.hanyuPinyin)
+        type("ni", in: smart)
+        #expect(smart.readingText == "ni")
+        _ = smart.handleSoftKey("BACKSPACE")
+        #expect(smart.readingText == "n")
+        type("i3hao3", in: smart)
+        #expect(smart.completedSmartText == "你好")
+        #expect(smart.enter().text == "你好")
+
+        let traditional = try fixture.engine(method: .traditional, hardware: true, layout: .hanyuPinyin)
+        type("zhong", in: traditional, hardware: true)
+        #expect(traditional.readingText == "zhong")
+        _ = traditional.space()
+        let middle = try #require(traditional.displayedCandidates.firstIndex(of: "中"))
+        #expect(traditional.selectDisplayedCandidate(middle).text == "中")
+    }
+
+    @Test func toneOmissionIsOptInAndKeepsAllTouchLayoutsAndExplicitTones() throws {
+        let fixture = try Fixture()
+        let engine = try fixture.engine()
+        #expect(!engine.omitsTones)
+
+        for (layout, untoned, toned, reading) in [
+            (BopomofoKeyboardLayout.standard, "sucl", "su3cl3", "ㄋㄧㄏㄠ"),
+            (.hsu, "nehw", "nefhwf", "nehw"),
+            (.hanyuPinyin, "nihao", "ni3hao3", "nihao"),
+        ] {
+            _ = engine.setKeyboardLayout(layout)
+            engine.omitsTones = false
+            type(untoned, in: engine)
+            #expect(!engine.isShowingPhoneticSuggestions && engine.displayedCandidates.isEmpty)
+            engine.reset()
+            if layout == .hsu {
+                type(toned, in: engine)
+                #expect(engine.completedSmartText == "你好")
+                #expect(engine.enter().text == "你好")
+            }
+
+            engine.omitsTones = true
+            type(untoned, in: engine)
+            #expect(engine.hasPendingPhoneticInput)
+            #expect(engine.usesTouchPhoneticGrid)
+            #expect(engine.displayedCandidates.isEmpty)
+            #expect(engine.touchSmartCells == ["你", "好"])
+            #expect(engine.touchSmartEditableCount == 2)
+            #expect(engine.touchSmartHostReading == reading)
+            #expect(engine.completedSmartText.isEmpty)
+            #expect(engine.selectTouchSmartCell(0))
+            #expect(engine.displayedCandidates.allSatisfy { $0.count == 1 })
+            #expect(engine.selectTouchSmartCell(0))
+            #expect(engine.displayedCandidates.isEmpty)
+            #expect(engine.selectTouchSmartCell(0))
+            let choice = try #require(engine.displayedCandidates.firstIndex { $0 != "你" })
+            let replacement = engine.displayedCandidates[choice]
+            #expect(engine.selectDisplayedCandidate(choice) == .update)
+            #expect(engine.touchSmartCells == [replacement, "好"])
+            #expect(engine.touchSmartHostReading == reading)
+            #expect(engine.enter().text == replacement + "好")
+            #expect(engine.finishCompositionForInputHandoff() == .update)
+
+            type(untoned, in: engine)
+            let entered = engine.enter()
+            #expect(entered.text == "你好" && entered.sendsReturn)
+
+            type(toned, in: engine)
+            if layout == .hsu {
+                #expect(engine.touchSmartCells == ["你", "好"])
+                #expect(engine.touchSmartHostReading == toned)
+            } else {
+                #expect(engine.completedSmartText == "你好")
+            }
+            #expect(engine.enter().text == "你好")
+            #expect(engine.lastError == nil)
+        }
+
+        _ = engine.setKeyboardLayout(.hsu)
+        #expect(engine.usesTouchPhoneticGrid)
+        _ = engine.setKeyboardLayout(.standard)
+        #expect(engine.usesTouchPhoneticGrid)
+
+        let hardware = try fixture.engine(hardware: true, layout: .hanyuPinyin)
+        hardware.omitsTones = true
+        type("nihao", in: hardware, hardware: true)
+        #expect(!hardware.hasPendingPhoneticInput && hardware.displayedCandidates.isEmpty)
+    }
+
+    @Test func toneOmissionPinyinKeepsAnElevenCellWindowWhenTheHostPrefixShifts() throws {
+        let fixture = try Fixture()
+        let engine = try fixture.engine(layout: .hanyuPinyin)
+        engine.omitsTones = true
+        let elevenReadings = String(repeating: "zhuang", count: 11)
+        type(elevenReadings, in: engine)
+        #expect(engine.touchSmartCells.count == 11)
+        #expect(engine.touchSmartHostReading == elevenReadings)
+
+        var committed = ""
+        for key in "zhuang" { committed += engine.handleSoftKey(String(key)).text }
+        #expect(!committed.isEmpty)
+        #expect(engine.touchSmartCells.count <= 11)
+        #expect(engine.touchSmartHostReading == String(repeating: "zhuang", count: 12 - committed.count))
+        let tail = engine.touchSmartCells.joined()
+        #expect(engine.enter().text == tail)
+        #expect(committed.count + tail.count == 12)
+        #expect(engine.touchSmartHostReading.isEmpty)
     }
 
     @Test func keyboardDismissalKeepsConvertedSmartTextAndDropsPendingReadingOnce() throws {

@@ -2,7 +2,7 @@
 
 此檔只記錄目前仍適用的規則、模型決策與驗證入口。逐日進度、舊版測試數字及已完成的除錯紀錄在 [歷史交接紀錄](docs/AGENTS_HISTORY.md)，不能當成現況或發布驗收。開始工作時先看目前分支、程式碼、`CHANGELOG.md` 與相關平台文件。
 
-工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。六平台原始碼與本次發布文件的產品版號統一為 `1.5.0`，發布準備集中於 `docs/CROSS_PLATFORM_V1_5_0_RELEASE.md`；GitHub Release／CDN 資產、商店上架及更新公告仍須依各平台流程核對，不能由文件版號推定已發布。FreeBSD 沿用 Linux-IME 的版本來源，透過 ports／pkg 安裝，套件庫版本可能較晚上架；舊版 1.3.7 曾在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，不能當成 1.5.0 的原生驗收。共用好打注音模型為 **1.5.0**。README 與平台指南按本次發布版號 1.5.0 整理下載入口與支援範圍；舊版截圖、歷史更新紀錄與驗收來源保留實際版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
+工作分支以 `git status --short --branch` 的實際結果為準。正式支援 Windows、macOS、iOS、Android、Linux 與 FreeBSD 六大平台。六平台原始碼與本次發布文件的產品版號統一為 `1.5.1`，發布準備集中於 `docs/CROSS_PLATFORM_V1_5_1_RELEASE.md`；GitHub Release／CDN 資產、商店上架及更新公告仍須依各平台流程核對，不能由文件版號推定已發布。FreeBSD 沿用 Linux-IME 的版本來源，透過 ports／pkg 安裝，套件庫版本可能較晚上架；舊版 1.3.7 曾在 FreeBSD 15.1-RELEASE-p3 amd64、Xfce／X11、LightDM、Fcitx 5 與 Mousepad／GTK 3 驗證，不能當成 1.5.1 的原生驗收。共用好打注音模型為 **1.5.0**。README 與平台指南按本次發布版號 1.5.1 整理下載入口與支援範圍；舊版截圖、歷史更新紀錄與驗收來源保留實際版號。各平台仍須依各自流程建置與驗證；原始碼、建置產物、已安裝版本及實機行為是不同層級，不可互相代替。
 
 ## 好打注音模型決策
 
@@ -62,7 +62,7 @@
 
 - 「中文模式忽略 Caps Lock（微軟新舊注音）」在 Windows 一般設定預設開啟，涵蓋四種中文輸入法；英文模式保留 Caps Lock 大小寫功能。其他平台若日後實作同選項，預設須關閉。
 - 桌面與實體鍵盤保留最多十個已完成音節，第十一音節完成時擠出最前方完整詞段並固定下一詞段。固定回歸句為「請假要去哪裡玩呢去海邊因為那裡有比基尼」；檢查第 10、11、19 音節及全文無漏字或重複字。詳見 `docs/SMART_MANDARIN_PHYSICAL_KEYBOARD_HANDOFF.md`。
-- iOS／Android 觸控鍵盤維持九／十音節邊界；已擠出的前段不可被後續選字或 Backspace 修改。句中選字只改候選目標，後續輸入仍接在句尾。候選窗開關、切換 App／輸入法、未完成讀音及生命週期重複回呼都須另測。
+- iOS 與 Android 一般觸控好打注音維持九／十音節邊界。iOS 與 Android 的標準注音、漢語拼音及許氏觸控鍵盤開啟「好打注音省略聲調」時，組字列改為十一格，第十二音節擠出最前面的完整詞段。已擠出的前段不可被後續選字或 Backspace 修改。句中選字只改候選目標，後續輸入仍接在句尾。候選窗開關、切換 App／輸入法、未完成讀音及生命週期重複回呼都須另測。
 - Android 實體鍵盤的「啟用好打注音雙排選字」預設關閉，僅在未使用浮動候選窗時生效；啟用後沿用觸控好打注音的九／十音節與 host-text 流程，上排 9 格組字區及 Emoji、ㄅ／英、▼。下方固定保留既有數字鍵列，候選覆蓋同一列、不動態增高；數字符號鍵選項控制是否另保留符號列。一般實體模式仍依前述十／十一音節規則；切換模式須先保留舊組字。
 - iOS extension 不接收一般 USB／藍牙鍵盤事件；實體鍵盤編輯器只存在容器 App 前景。引擎測試不能代替 App、extension、模擬器或實機驗證。
 - Linux 的 unit、staged install、X11 與 GNOME Wayland 是不同證據層級；Windows TSF 必須在 Windows 文字宿主驗證。詳細平台差異見 `Source/Loaders/Linux-IME/docs/` 與各 frontend README。
@@ -134,7 +134,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 
 ## Guanyinma 核心與 Rust 遷移行為基準
 
-- Guanyinma 正式 Rust 程式碼的無 UI 行涵蓋率維持 **92% 以上**，以 `tools/test-coverage.py` 在原生 macOS／system SQLite 的參考量測為準（本機基準為 arm64），排除測試與依賴，僅補有價值的行為測試、不強追 100%，門檻只接在 `guanyinma-core.yml`。六平台 Rust workflow 接線與不編譯核心的發布／同步流程界線見 `Source/Guanyinma/README.md` 的測試分工表；macOS 正式打包固定連入 Rust、只跑少量 integration FE 接合測試。
+- Guanyinma 正式 Rust 程式碼的無 UI 行涵蓋率維持 **96% 以上**，以 `tools/test-coverage.py` 在原生 macOS／system SQLite 的參考量測為準（本機基準為 arm64），排除測試與依賴，僅補有價值的行為測試、不強追 100%，門檻只接在 `guanyinma-core.yml`。六平台 Rust workflow 接線與不編譯核心的發布／同步流程界線見 `Source/Guanyinma/README.md` 的測試分工表；macOS 正式打包固定連入 Rust、只跑少量 integration FE 接合測試。
 
 - **核心測試範圍**：Guanyinma 核心專注無 UI 的公開介面與行為契約測試，以 Rust unit／整合、真實 C consumer 與無 UI 的原生對照，涵蓋四法、候選排序、選字學習、組字邊界、設定／語意操作、快照／effects、字型接受回呼及資料生命週期。核心在各支援平台編譯時都要有足夠的無 UI 測試可執行；交叉編譯成功只算編譯，必須在相應原生 runner／無視窗模擬器執行才算測試通過。
 - **六平台 FE 分工**：各平台另測設定與事件映射、座標／宿主交易、原生字型／儲存接合；不要在每個 FE 重跑整套核心演算法矩陣。UI 僅保留少量（數十個）的自動化冒煙案例，於該 FE 接合或修改時執行。核心工作不以大量 FE／實機端到端驗收作完成門檻，不操作使用者桌面或反覆切換其系統輸入法，也不要求使用者逐項代打測試；完整 FE／安裝驗收另行處理。
@@ -157,7 +157,7 @@ Ed25519 安裝包簽章、HTTPS、review／tag／版本驗證與不可變資產�
 
 程式、封裝與測試不得另行寫死產品版號，一律讀取各平台既有版號來源；測試需要版號時也沿用該來源，不新增專門驗證版號解析、字串或同步傳遞的案例，不因升版重跑這類測試。
 
-`README.md` 按本次發布版號 `1.5.0` 維護，實際 Release／商店可取得狀態另行核對；封裝與測試讀取各平台版號來源，不解析 README。macOS 封裝從 IMK plist 讀取版本並核對四份產品 plist；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
+`README.md` 按本次發布版號 `1.5.1` 維護，實際 Release／商店可取得狀態另行核對；封裝與測試讀取各平台版號來源，不解析 README。macOS 封裝從 IMK plist 讀取版本並核對四份產品 plist；Windows 封裝從 TSF `CMakeLists.txt` 讀取版本，Android 封裝從 `Android-IME/app/build.gradle.kts` 讀取版本，iOS 封裝從 Xcode project 的 `MARKETING_VERSION` 讀取版本。個別平台升版時不可連帶修改其他平台或模型版號。升版時同步檢查：
 
 | 平台 | 版號來源 |
 |---|---|

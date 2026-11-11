@@ -5,14 +5,14 @@ import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-/** Keeps capped content at the bottom of the IME's allocated window. */
-final class KeyboardInputView extends FrameLayout {
-    private final BopomofoKeyboardView keyboard;
+/** Keeps a touch keyboard aligned to the bottom of its window. */
+class KeyboardInputView extends FrameLayout {
+    final BopomofoKeyboardView keyboard;
 
     KeyboardInputView(Context context, BopomofoKeyboardView keyboard) {
         super(context);
         this.keyboard = keyboard;
-        addView(keyboard, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+        addView(keyboard, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
     }
 

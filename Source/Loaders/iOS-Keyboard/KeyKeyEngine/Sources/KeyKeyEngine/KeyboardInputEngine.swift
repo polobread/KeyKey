@@ -14,11 +14,12 @@ public final class KeyboardInputEngine: InputEngine {
     public init(modelURL: URL, userDatabaseURL: URL, method: ChineseInputMethod = .smart,
                 hardwareSmartEditing: Bool = false, keyboardLayout: BopomofoKeyboardLayout = .standard,
                 tableOptions: TableInputOptions = TableInputOptions(method: .cangjie),
-                spaceSelectsCandidates: Bool = false, associatedPhrases: AssociatedPhraseSource? = nil,
+                spaceSelectsCandidates: Bool = false, omitsTones: Bool = false, associatedPhrases: AssociatedPhraseSource? = nil,
                 candidateFilter: @escaping (String) -> Bool = { _ in true }) throws {
         backend = try GuanyinmaInputEngine(modelURL: modelURL, userDatabaseURL: userDatabaseURL,
             method: method, hardwareSmartEditing: hardwareSmartEditing, keyboardLayout: keyboardLayout,
             tableOptions: tableOptions, spaceSelectsCandidates: spaceSelectsCandidates,
+            omitsTones: omitsTones,
             associatedPhrases: associatedPhrases, candidateFilter: candidateFilter)
     }
 
@@ -68,6 +69,16 @@ public final class KeyboardInputEngine: InputEngine {
     public var chineseInputMethod: ChineseInputMethod { backend.chineseInputMethod }
     public var tableOptions: TableInputOptions { get { backend.tableOptions } set { performUpdate { $0.tableOptions = newValue } } }
     public var spaceSelectsCandidates: Bool { get { backend.spaceSelectsCandidates } set { performUpdate { $0.spaceSelectsCandidates = newValue } } }
+    public var omitsTones: Bool {
+        get { backend.omitsTones }
+        set { performUpdate { $0.omitsTones = newValue } }
+    }
+    public var usesTouchPhoneticGrid: Bool { backend.usesTouchPhoneticGrid }
+    public var touchSmartHostReading: String { backend.touchSmartHostReading }
+    public var touchSmartEditableCount: Int { backend.touchSmartEditableCount }
+    public var hasPendingPhoneticInput: Bool { backend.hasPendingPhoneticInput }
+    public var isShowingPhoneticSuggestions: Bool { backend.isShowingPhoneticSuggestions }
+    public var phoneticSpaceIsFirstTone: Bool { backend.phoneticSpaceIsFirstTone }
     public var keyboardLayout: BopomofoKeyboardLayout { backend.keyboardLayout }
     public var readingText: String { backend.readingText }
     public var composingText: String { backend.composingText }

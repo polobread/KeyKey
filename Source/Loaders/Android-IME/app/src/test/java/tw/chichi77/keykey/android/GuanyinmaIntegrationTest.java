@@ -71,6 +71,82 @@ public final class GuanyinmaIntegrationTest {
             }
         }
     }
+    @Test public void pinyinUsesNativeTouchAndHardwareReadingAndSelection() throws Exception {
+        for (boolean hardware : new boolean[]{false, true}) {
+            try (Fixture fixture = new Fixture();
+                    GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+                engine.setKeyboardLayout(BopomofoKeyboardLayout.HANYU_PINYIN);
+                type(engine, "nu", hardware);
+                assertEquals("nu", engine.readingText());
+                engine.backspace();
+                assertEquals("n", engine.readingText());
+                type(engine, "i3hao3", hardware);
+                assertEquals("你好", engine.completedSmartText());
+                assertEquals("你好", engine.enter().committedText());
+                assertNull(engine.lastError());
+            }
+        }
+        try (Fixture fixture = new Fixture();
+                GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.TRADITIONAL, text -> true)) {
+            engine.setKeyboardLayout(BopomofoKeyboardLayout.HANYU_PINYIN);
+            type(engine, "zhong", false);
+            assertEquals("zhong", engine.readingText());
+            engine.handleSoftKey("SPACE");
+            int candidate = engine.displayedCandidates().indexOf("中");
+            assertTrue("First-tone Pinyin candidate 中 must be available", candidate >= 0);
+            assertEquals("中", engine.selectDisplayedCandidate(candidate).committedText());
+            assertNull(engine.lastError());
+        }
+    }
+
+    @Test public void touchOmitToneRoutesBothLayoutsWithoutCommittingGuesses() throws Exception {
+        for (BopomofoKeyboardLayout layout : List.of(
+                BopomofoKeyboardLayout.STANDARD, BopomofoKeyboardLayout.HANYU_PINYIN)) {
+            boolean pinyin = layout == BopomofoKeyboardLayout.HANYU_PINYIN;
+            String untoned = pinyin ? "nihao" : "sucl";
+            try (Fixture fixture = new Fixture();
+                    GuanyinmaInputEngine engine = fixture.engine(ChineseInputMethod.SMART, text -> true)) {
+                engine.setKeyboardLayout(layout);
+                type(engine, untoned, false);
+                assertFalse(engine.showsPhoneticSuggestions());
+                assertFalse(engine.hasPendingPhoneticReading());
+                engine.reset();
+
+                for (char key : untoned.toCharArray()) {
+                    assertEquals("", engine.handleSoftKey(String.valueOf(key), true).committedText());
+                }
+                assertTrue(engine.hasPendingPhoneticReading());
+                assertTrue(engine.showsPhoneticSuggestions());
+                assertEquals("", engine.completedSmartText());
+                engine.backspace();
+                assertFalse(engine.displayedCandidates().contains("你好"));
+                engine.handleSoftKey(untoned.substring(untoned.length() - 1), true);
+                int candidate = engine.displayedCandidates().indexOf("你好");
+                assertTrue(engine.displayedCandidates().toString(), candidate >= 0);
+                assertEquals("", engine.selectDisplayedCandidate(candidate).committedText());
+                assertFalse(engine.hasPendingPhoneticReading());
+                assertEquals("你好", engine.completedSmartText());
+                assertEquals("你好", engine.enter().committedText());
+
+                for (char key : (pinyin ? "ni3hao3" : "su3cl3").toCharArray()) {
+                    engine.handleSoftKey(String.valueOf(key), true);
+                }
+                assertEquals("你好", engine.completedSmartText());
+                assertEquals("你好", engine.enter().committedText());
+
+                engine.handleSoftKey(untoned.substring(0, 1), true);
+                assertTrue(engine.hasPendingPhoneticReading());
+                InputEngine.Result unfinished = engine.enter();
+                assertEquals("", unfinished.committedText());
+                assertFalse(unfinished.sendEnter());
+                assertTrue(engine.hasPendingPhoneticReading());
+                assertEquals("", engine.handleSoftKey("MODE").committedText());
+                assertFalse(engine.hasPendingPhoneticReading());
+                assertNull(engine.lastError());
+            }
+        }
+    }
+
     @Test public void splitPunctuationUsesTheExistingTouchCommitFlow() throws Exception {
         for (String mark : KeyboardLayoutGeometry.SPLIT_PUNCTUATION) {
             for (var method : ChineseInputMethod.values()) {

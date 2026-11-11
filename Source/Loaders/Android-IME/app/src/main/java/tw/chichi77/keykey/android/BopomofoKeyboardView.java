@@ -71,6 +71,7 @@ final class BopomofoKeyboardView extends View {
     private static final int HARDWARE_NUMBER_ROW_HEIGHT_DP = 48;
     private static final int HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP = 40;
     private static final int HARDWARE_LANDSCAPE_SYSTEM_AREA_HEIGHT_DP = 35;
+    private static final int PHONETIC_GRID_CELL_COUNT = 11;
     private static final float TONE_SYMBOL_SCALE = 1.8f;
     private static final String BOPOMOFO_HEIGHT_REFERENCE = "ㄅ";
     private static final String KEY_FONT_REFERENCE = "ㄖ";
@@ -99,6 +100,7 @@ final class BopomofoKeyboardView extends View {
     private List<String> candidates = List.of();
     private String reading = "";
     private boolean smartMode;
+    private boolean touchPhoneticGrid, phoneticPending, phoneticSpaceFirstTone;
     private List<String> smartCells = List.of();
     private int smartEditableCount;
     private ChineseInputMethod chineseInputMethod = ChineseInputMethod.SMART;
@@ -111,6 +113,8 @@ final class BopomofoKeyboardView extends View {
     private Mode lastMeasuredMode;
     private int lastDesiredContentHeight = -1;
     private int lastReservedHeight = -1;
+    private int lastDesiredBottomGap = -1;
+    private int measuredBottomGap;
     private int measuredHeightBudget;
     private Rect lastWindowBounds;
     private boolean touchBottomSpaceEnabled = true;
@@ -144,8 +148,10 @@ final class BopomofoKeyboardView extends View {
             new BackspaceRepeater(new Handler(Looper.getMainLooper()));
     private boolean keyPreviewEnabled = true;
     private Hit previewHit;
-    private int portraitHeightPercent = KeyboardSizeSettings.DEFAULT_PERCENT;
-    private int landscapeHeightPercent = KeyboardSizeSettings.DEFAULT_PERCENT;
+    private KeyboardSizeSettings.Size portraitSize = KeyboardSizeSettings.DEFAULT_SIZE;
+    private KeyboardSizeSettings.Size landscapeSize = KeyboardSizeSettings.DEFAULT_SIZE;
+    private KeyboardEdgeGeometry resizePreview;
+    private boolean resizeDragActive;
 
     BopomofoKeyboardView(Context context) {
         super(context);
@@ -285,13 +291,65 @@ final class BopomofoKeyboardView extends View {
     }
 
     void setTouchKeyboardHeightPercents(int portraitPercent, int landscapePercent) {
-        int nextPortrait = KeyboardSizeSettings.clampPercent(portraitPercent);
-        int nextLandscape = KeyboardSizeSettings.clampPercent(landscapePercent);
-        if (portraitHeightPercent == nextPortrait
-                && landscapeHeightPercent == nextLandscape) return;
-        portraitHeightPercent = nextPortrait;
-        landscapeHeightPercent = nextLandscape;
+        setTouchKeyboardSizes(new KeyboardSizeSettings.Size(portraitPercent / 100f, portraitSize.bottomGapDp()),
+                new KeyboardSizeSettings.Size(landscapePercent / 100f, landscapeSize.bottomGapDp()));
+    }
+
+    void setTouchKeyboardSizes(KeyboardSizeSettings.Size portrait, KeyboardSizeSettings.Size landscape) {
+        if (portraitSize.equals(portrait) && landscapeSize.equals(landscape)) return;
+        portraitSize = portrait;
+        landscapeSize = landscape;
         if (isTouchMode()) requestLayout();
+    }
+
+    void setResizePreview(KeyboardEdgeGeometry edges) {
+        if (java.util.Objects.equals(resizePreview, edges)) return;
+        resizePreview = edges;
+        requestLayout();
+        invalidate();
+    }
+
+    void setResizeDragActive(boolean active) {
+        if (resizeDragActive == active) return;
+        resizeDragActive = active;
+        if (active) {
+            resetPickerPress();
+            backspaceRepeater.stop();
+            backspaceTouchStarted = false;
+            downOnCandidate = false;
+            // A key touch interrupted by resizing must not fire when it lifts.
+            downX = Float.NaN;
+            previewHit = null;
+            hits.clear();
+        }
+        invalidate();
+    }
+
+    Mode mode() {
+        return mode;
+    }
+
+    int defaultTouchHeight() {
+        return dp(layoutProfile.layout(touchOrientation()).contentHeightDp);
+    }
+
+    int minimumTouchHeight() {
+        return Math.round(defaultTouchHeight() * (KeyboardSizeSettings.MIN_PERCENT / 100f));
+    }
+
+    int maximumTouchHeight() {
+        return Math.round(defaultTouchHeight() * (KeyboardSizeSettings.MAX_PERCENT / 100f));
+    }
+
+    int maximumResizeExtent(int availableHeight) {
+        int reserved = Math.max(reservedSystemAreaHeight(), systemAreaHeight());
+        return Math.max(visibleTouchEdges().top(), availableHeight - reserved);
+    }
+
+    KeyboardEdgeGeometry visibleTouchEdges() {
+        int visibleContent = Math.round(contentHeight());
+        int gap = Math.min(measuredBottomGap, Math.max(0, getHeight() - systemAreaHeight() - visibleContent));
+        return new KeyboardEdgeGeometry(visibleContent + gap, gap);
     }
 
     void setState(List<String> candidates, String reading, boolean smartMode,
@@ -314,6 +372,15 @@ final class BopomofoKeyboardView extends View {
         this.pageCount = pageCount;
         this.highlightedIndex = highlightedIndex;
         this.fieldPolicy = fieldPolicy == null ? InputFieldPolicy.DEFAULT : fieldPolicy;
+        invalidate();
+    }
+
+    void setPhoneticState(boolean grid, boolean pending, boolean spaceFirstTone) {
+        if (touchPhoneticGrid == grid && phoneticPending == pending
+                && phoneticSpaceFirstTone == spaceFirstTone) return;
+        touchPhoneticGrid = grid;
+        phoneticPending = pending;
+        phoneticSpaceFirstTone = spaceFirstTone;
         invalidate();
     }
 
@@ -355,11 +422,18 @@ final class BopomofoKeyboardView extends View {
             case HARDWARE_FLOATING -> dp(showGlobe ? HARDWARE_CONTENT_HEIGHT_DP : 1);
             case HARDWARE -> dp(HARDWARE_CONTENT_HEIGHT_DP
                     + hardwareNumberRowCount() * HARDWARE_NUMBER_ROW_HEIGHT_DP);
-            case LANDSCAPE -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.LANDSCAPE).contentHeightDp,
-                    landscapeHeightPercent);
-            case PORTRAIT -> scaledContentHeight(layoutProfile.layout(KeyboardLayoutProfile.Orientation.PORTRAIT).contentHeightDp,
-                    portraitHeightPercent);
+            case LANDSCAPE -> Math.round(defaultTouchHeight() * landscapeSize.heightScale());
+            case PORTRAIT -> Math.round(defaultTouchHeight() * portraitSize.heightScale());
         };
+        int desiredBottomGap = 0;
+        if (isTouchMode()) {
+            KeyboardSizeSettings.Size size = mode == Mode.LANDSCAPE ? landscapeSize : portraitSize;
+            desiredBottomGap = dp(size.bottomGapDp());
+            if (resizePreview != null) {
+                desiredContentHeight = resizePreview.contentHeight();
+                desiredBottomGap = resizePreview.bottom();
+            }
+        }
         // Budget the reserved area before clamping the keyboard content, even
         // when that area is disabled. Otherwise a capped IME keeps its height
         // and gives the removed padding to the keys instead of the host app.
@@ -377,34 +451,42 @@ final class BopomofoKeyboardView extends View {
                 && mode == lastMeasuredMode
                 && desiredContentHeight == lastDesiredContentHeight
                 && reservedHeight == lastReservedHeight
+                && desiredBottomGap == lastDesiredBottomGap
                 && (windowBounds == null ? lastWindowBounds == null : windowBounds.equals(lastWindowBounds));
         if (!withinRequestedWindow) {
-            measuredHeightBudget = resolveSize(desiredContentHeight + reservedHeight, heightMeasureSpec);
-            measuredContentHeight = Math.min(desiredContentHeight,
-                    Math.max(0, measuredHeightBudget - reservedHeight));
+            measuredHeightBudget = resolveSize(desiredContentHeight + desiredBottomGap + reservedHeight,
+                    heightMeasureSpec);
+            int availableHeight = Math.max(0, measuredHeightBudget - reservedHeight);
+            // A small host window may require reducing the optional gap before shrinking the keys.
+            int minimumContent = isTouchMode() ? Math.min(desiredContentHeight, minimumTouchHeight()) : 0;
+            measuredBottomGap = Math.min(desiredBottomGap, Math.max(0, availableHeight - minimumContent));
+            measuredContentHeight = Math.min(desiredContentHeight, availableHeight - measuredBottomGap);
         }
         // Keep the content through old-window feedback, while obeying the
         // current parent spec. A WRAP_CONTENT root layout restores the total
         // height when it measures again against its upstream window budget.
         int desiredHeight = resolveSize(Math.min(measuredHeightBudget,
-                measuredContentHeight + systemAreaHeight), heightMeasureSpec);
+                measuredContentHeight + measuredBottomGap + systemAreaHeight), heightMeasureSpec);
         setMeasuredDimension(resolveSize(width, widthMeasureSpec), desiredHeight);
         lastMeasuredMode = mode;
         lastDesiredContentHeight = desiredContentHeight;
         lastReservedHeight = reservedHeight;
+        lastDesiredBottomGap = desiredBottomGap;
         lastWindowBounds = windowBounds == null ? null : new Rect(windowBounds);
     }
 
     int cappedIntegratedWindowHeight() {
         return isTouchMode() && integratedBottomControls
-                && measuredContentHeight < lastDesiredContentHeight ? measuredHeightBudget : 0;
+                && (measuredContentHeight < lastDesiredContentHeight || measuredBottomGap < lastDesiredBottomGap)
+                ? measuredHeightBudget : 0;
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        hits.clear();
         canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
+        if (resizeDragActive) return;
+        hits.clear();
         switch (mode) {
             case HARDWARE_FLOATING -> {
                 if (showGlobe) drawHardwareStatusButton(canvas,
@@ -428,13 +510,11 @@ final class BopomofoKeyboardView extends View {
 
     private void drawTouchKeyboard(Canvas canvas, boolean landscape) {
         float contentHeight = contentHeight();
-        float candidateHeight = landscape ? contentHeight / 6f
-                : Math.max(dp(46), contentHeight * 0.15f);
-        float top = candidateHeight;
+        float top = landscape ? contentHeight / 6f : Math.max(dp(46), contentHeight * 0.15f);
         if (smartMode) {
-            drawSmartCellStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
+            drawSmartCellStrip(canvas, new RectF(0, 0, getWidth(), top));
         } else {
-            drawCandidateStrip(canvas, new RectF(0, 0, getWidth(), candidateHeight));
+            drawCandidateStrip(canvas, new RectF(0, 0, getWidth(), top));
         }
 
         var orientation = touchOrientation();
@@ -559,7 +639,7 @@ final class BopomofoKeyboardView extends View {
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (InputEngine.CANDIDATES_PER_PAGE + 1) * cellWidth,
                 area.top, area.left + (InputEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
-                area.bottom), inputMode == InputEngine.InputMode.BOPOMOFO ? chineseInputMethod.symbol : "英",
+                area.bottom), inputMode == InputEngine.InputMode.BOPOMOFO ? chineseModeSymbol() : "英",
                 "HARDWARE_LANGUAGE");
         drawHardwareStatusButton(canvas, new RectF(
                 area.left + (InputEngine.CANDIDATES_PER_PAGE + 2) * cellWidth,
@@ -692,13 +772,13 @@ final class BopomofoKeyboardView extends View {
             RectF right = new RectF(stripSlotBounds(area, slots.get(half)).left,
                     area.top, last.left, area.bottom);
             if (!reading.isEmpty()) {
-                drawSplitMessage(canvas, left, reading, true);
-                drawSplitMessage(canvas, right, "按空白選字", false);
+                drawStripMessage(canvas, left, reading, true);
+                drawStripMessage(canvas, right, readingInstruction(), false);
             } else if (supportPromptVisible && inputMode == InputEngine.InputMode.BOPOMOFO) {
-                drawSplitMessage(canvas, left, bopomofoLayoutName(), false);
-                drawSplitMessage(canvas, right, getResources().getString(R.string.supporter_prompt), false);
+                drawStripMessage(canvas, left, bopomofoLayoutName(), false);
+                drawStripMessage(canvas, right, getResources().getString(R.string.supporter_prompt), false);
             } else {
-                drawSplitMessage(canvas, left, emptyCandidateMessage(), false);
+                drawStripMessage(canvas, left, emptyCandidateMessage(), false);
             }
         } else {
             drawPageButton(canvas, stripSlotBounds(area, slots.get(0)), -1, "▲");
@@ -712,7 +792,7 @@ final class BopomofoKeyboardView extends View {
                 canCloseCandidates ? "CLOSE_CANDIDATES" : "DISMISS");
     }
 
-    private void drawSplitMessage(Canvas canvas, RectF bounds, String message, boolean primary) {
+    private void drawStripMessage(Canvas canvas, RectF bounds, String message, boolean primary) {
         RectF content = inset(bounds, dp(2));
         Paint paint = primary ? textPaint : hintPaint;
         paint.setFakeBoldText(false);
@@ -777,7 +857,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private String emptyCandidateMessage() {
-        if (!reading.isEmpty()) return reading + "　按空白選字";
+        if (!reading.isEmpty()) return reading + "　" + readingInstruction();
         if (inputMode == InputEngine.InputMode.ENGLISH) {
             return temporaryEnglish ? "暫時英文小寫" : shifted ? "英文大寫" : "英文小寫";
         }
@@ -798,7 +878,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     private void drawReadingMessage(Canvas canvas, RectF area) {
-        String instruction = "按空白選字";
+        String instruction = readingInstruction();
         hintPaint.setTextSize(standardHintTextSize());
         float instructionWidth = hintPaint.measureText(instruction);
         float gap = standardHintTextSize();
@@ -813,10 +893,22 @@ final class BopomofoKeyboardView extends View {
                 textBaseline(area, hintPaint), hintPaint);
     }
 
+    private boolean usesPinyin() {
+        return !chineseInputMethod.isTable() && keyboardLayout == BopomofoKeyboardLayout.HANYU_PINYIN;
+    }
+
+    private String readingInstruction() {
+        return usesPinyin() ? "按空白輸入一聲" : "按空白選字";
+    }
+
+    private String chineseModeSymbol() {
+        return usesPinyin() ? "拼" : chineseInputMethod.symbol;
+    }
+
     private String bopomofoLayoutName() {
         if (chineseInputMethod.isTable()) return chineseInputMethod.displayName;
-        return keyboardLayout == BopomofoKeyboardLayout.HSU
-                ? keyboardLayout.displayName : keyboardLayout.displayName + "注音";
+        return keyboardLayout == BopomofoKeyboardLayout.STANDARD
+                ? keyboardLayout.displayName + "注音" : keyboardLayout.displayName;
     }
 
     private void drawSupportPrompt(Canvas canvas, RectF area) {
@@ -1165,6 +1257,7 @@ final class BopomofoKeyboardView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (resizeDragActive) return true;
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN -> {
                 backspaceRepeater.stop();
@@ -1297,7 +1390,7 @@ final class BopomofoKeyboardView extends View {
                 && hit.kind() == HitKind.KEY && !previewLabel(hit.key()).isEmpty();
     }
 
-    private boolean isTouchMode() {
+    boolean isTouchMode() {
         return mode == Mode.PORTRAIT || mode == Mode.LANDSCAPE;
     }
 
@@ -1315,10 +1408,12 @@ final class BopomofoKeyboardView extends View {
 
     private String keyLabel(String key) {
         return switch (key) {
-            case "MODE" -> fieldPolicy.modeCaption(inputMode).replace("ㄅ", chineseInputMethod.symbol);
+            case "MODE" -> fieldPolicy.modeCaption(inputMode).replace("ㄅ", chineseModeSymbol());
             case "SHIFT" -> shifted ? "⇧" : "⇧";
             case "BACKSPACE" -> "⌫";
-            case "SPACE" -> "空白";
+            case "SPACE" -> usesPinyin() && inputMode == InputEngine.InputMode.BOPOMOFO
+                    && (phoneticPending ? phoneticSpaceFirstTone
+                            : !reading.isEmpty() && candidates.isEmpty()) ? "一聲" : "空白";
             case "SYMBOL" -> "符";
             case "SETTINGS" -> "設";
             case "EMOJI" -> "☺";
@@ -1332,7 +1427,7 @@ final class BopomofoKeyboardView extends View {
         if (chineseInputMethod.isTable())
             return inputMode == InputEngine.InputMode.BOPOMOFO && !temporaryEnglish
                     ? ChineseInputMethod.root(key) : "";
-        if (keyboardLayout == BopomofoKeyboardLayout.HSU) return "";
+        if (keyboardLayout != BopomofoKeyboardLayout.STANDARD) return "";
         if (inputMode != InputEngine.InputMode.BOPOMOFO && !temporaryEnglish
                 || key.length() != 1) return "";
         String symbol = BopomofoKeyboardLayout.symbolForKey(Character.toLowerCase(key.charAt(0)));
@@ -1345,6 +1440,7 @@ final class BopomofoKeyboardView extends View {
     }
 
     int compositionCellCount() {
+        if (isTouchMode() && touchPhoneticGrid) return PHONETIC_GRID_CELL_COUNT;
         KeyboardLayoutProfile profile = isTouchMode() ? layoutProfile : KeyboardLayoutProfile.ALIGNED;
         return profile.layout(touchOrientation()).compositionCellCount;
     }
@@ -1378,10 +1474,11 @@ final class BopomofoKeyboardView extends View {
     }
 
     private float contentHeight() {
-        if (isTouchMode() && integratedBottomControls) {
+        if (isTouchMode() && (integratedBottomControls || measuredBottomGap > 0 || resizePreview != null)) {
             // The old allocated window can cap a transient pass before the new
             // WRAP_CONTENT budget arrives. Drawing and hits must still stay safe.
-            return Math.min(measuredContentHeight, Math.max(0, getHeight() - systemAreaHeight()));
+            return Math.min(measuredContentHeight,
+                    Math.max(0, getHeight() - systemAreaHeight() - measuredBottomGap));
         }
         return measuredContentHeight;
     }
@@ -1408,7 +1505,4 @@ final class BopomofoKeyboardView extends View {
                 : HARDWARE_PORTRAIT_SYSTEM_AREA_HEIGHT_DP);
     }
 
-    private int scaledContentHeight(int baseDp, int percent) {
-        return Math.round(dp(baseDp) * (percent / 100f));
-    }
 }

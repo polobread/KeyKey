@@ -183,6 +183,7 @@ int32_t GUANYINMA_CALL guanyinma_database_associated_collections(
  *
  * Operations are strict tagged JSON, e.g.
  * {"type":"character","text":"s"}
+ * {"type":"touch_phonetic","text":"s"}
  * {"type":"character","text":"1","modifiers":{"keypad":true,"num_lock":true}}
  * {"type":"key","key":"space"}
  * {"type":"select","index":0}
@@ -278,6 +279,13 @@ int32_t GUANYINMA_CALL guanyinma_database_associated_collections(
  * Key names use snake_case: return, backspace, escape, space, down, left,
  * right, home, end, page_up, page_down, delete, tab.
  * Unknown fields/values and invalid text are errors, not ignored commands.
+ *
+ * touch_phonetic opts into live toneless suggestions per key for Smart
+ * touch sessions with a Standard, Hsu, or Hanyu Pinyin layout. A live list
+ * occupies candidates/displayed_candidates without ordinary candidate_spans.
+ * phonetic_pending marks the editable raw input, phonetic_suggestions marks
+ * a live list, and phonetic_space_first_tone identifies an explicit first-tone
+ * Space action. Selecting a suggestion keeps any unmatched suffix editable.
  *
  * Smart cursor operations count completed readings, not bytes or UTF-16.
  * open_candidates targets an existing reading; set_cursor targets a boundary

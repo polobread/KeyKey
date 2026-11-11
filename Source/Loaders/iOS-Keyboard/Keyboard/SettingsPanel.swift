@@ -5,10 +5,10 @@ import UIKit
 protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChangeInputMethod method: ChineseInputMethod)
     func settingsPanelDidChangeTableOptions(_ panel: SettingsPanel)
-    func settingsPanel(_ panel: SettingsPanel, didChange enabled: Set<String>)
     func settingsPanel(
         _ panel: SettingsPanel, didChangeCompositionMode mode: BopomofoCompositionMode
     )
+    func settingsPanel(_ panel: SettingsPanel, didChangeToneOmission enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeInputClicksEnabled enabled: Bool)
     func settingsPanel(_ panel: SettingsPanel, didChangeCandidateColor color: CandidateColor)
     func settingsPanel(_ panel: SettingsPanel, didChangeKeyboardLayout layout: BopomofoKeyboardLayout)
@@ -17,20 +17,14 @@ protocol SettingsPanelDelegate: AnyObject {
     func settingsPanel(_ panel: SettingsPanel, didChangeFontSize size: KeyboardKeyFontSize)
     func settingsPanel(_ panel: SettingsPanel, didChangeDeleteShiftPosition position: KeyboardDeleteShiftPosition)
     func settingsPanelResetLearning(_ panel: SettingsPanel) -> Bool
+    func settingsPanelDidRequestKeyboardHeight(_ panel: SettingsPanel)
     func settingsPanelDidClose(_ panel: SettingsPanel)
 }
 
-/// The associated-phrase collection picker, shown over the keyboard when the
-/// 「設」 key is pressed.
-///
-/// It lives inside the input view rather than in the container app: keeping the
-/// settings in the extension's own sandbox is what lets the keyboard ship
-/// without Full Access. The list scrolls, so thirty collections fit.
+/// Settings shown over the input view when the 「設」 key is pressed.
 final class SettingsPanel: UIView {
     weak var delegate: SettingsPanelDelegate?
 
-    private let collections: [AssociatedPhraseStore.Collection]
-    private var enabled: Set<String>
     private var inputClicksEnabled: Bool
     private var candidateColor: CandidateColor
     private var compositionMode: BopomofoCompositionMode
@@ -41,6 +35,7 @@ final class SettingsPanel: UIView {
     private var deleteShiftPosition: KeyboardDeleteShiftPosition
     private var fontSize: KeyboardKeyFontSize
     private var keyboardLayout: BopomofoKeyboardLayout
+    private let omitsTones: Bool
     private let statusLabel = UILabel()
     private let candidateColorControl = UISegmentedControl(
         items: ["紫", "綠", "黃", "紅"]
@@ -48,30 +43,29 @@ final class SettingsPanel: UIView {
     private let compositionModeControl = UISegmentedControl(
         items: ChineseInputMethod.allCases.map(\.displayName)
     )
-    private var switches: [String: UISwitch] = [:]
     private let resetLearningButton = UIButton(configuration: .tinted())
     private var resetConfirmation = false
+    private var helpOverlay: UIView?
+    private weak var helpSource: UIButton?
 
     init(
-        collections: [AssociatedPhraseStore.Collection], enabled: Set<String>,
         inputClicksEnabled: Bool, candidateColor: CandidateColor,
         compositionMode: BopomofoCompositionMode,
         chineseInputMethod: ChineseInputMethod = .smart,
         methodSettings: ChineseInputMethodSettings = ChineseInputMethodSettings(),
-        keyboardLayout: BopomofoKeyboardLayout = .standard,
+        keyboardLayout: BopomofoKeyboardLayout = .standard, omitsTones: Bool = false,
         layoutProfile: KeyboardLayoutProfile = .standard,
         keycapArea: KeyboardKeycapArea = .small,
         fontSize: KeyboardKeyFontSize = .normal,
         deleteShiftPosition: KeyboardDeleteShiftPosition = .aboveEnter
     ) {
-        self.collections = collections
-        self.enabled = enabled
         self.inputClicksEnabled = inputClicksEnabled
         self.candidateColor = candidateColor
         self.compositionMode = compositionMode
         self.chineseInputMethod = chineseInputMethod
         self.methodSettings = methodSettings
         self.keyboardLayout = keyboardLayout
+        self.omitsTones = omitsTones
         self.layoutProfile = layoutProfile
         self.keycapArea = keycapArea
         self.fontSize = fontSize
@@ -79,7 +73,6 @@ final class SettingsPanel: UIView {
         super.init(frame: .zero)
         backgroundColor = Palette.surface
         buildInterface()
-        refreshStatus()
     }
 
     required init?(coder: NSCoder) {
@@ -103,27 +96,21 @@ final class SettingsPanel: UIView {
 
         statusLabel.font = .systemFont(ofSize: 12)
         statusLabel.textColor = Palette.hintText
-
-        let bulk = UIStackView(arrangedSubviews: [
-            bulkButton("全部啟用", #selector(enableAll)),
-            bulkButton("僅小麥注音", #selector(enableBaseOnly)),
-            bulkButton("全部關閉", #selector(disableAll))
-        ])
-        bulk.distribution = .fillEqually
-        bulk.spacing = 6
-
-        let rows = UIStackView(arrangedSubviews: collections.map(collectionRow))
-        rows.axis = .vertical
-        rows.spacing = 0
+        statusLabel.isHidden = true
 
         let scroll = UIScrollView()
         scroll.accessibilityIdentifier = "keyboard-settings.scroll"
         scroll.alwaysBounceVertical = true
+        let resize = UIButton(configuration: .tinted())
+        resize.setTitle("調整鍵盤高度", for: .normal)
+        resize.addTarget(self, action: #selector(keyboardHeightTapped), for: .touchUpInside)
+        resize.accessibilityIdentifier = "keyboard-settings.keyboard-height"
         let root = UIStackView(arrangedSubviews: [
-            compositionModeRow(), spaceSelectionRow(), resetLearningButton, keyboardLayoutRow(),
+            compositionModeRow(), toneOmissionRow(), spaceSelectionRow(), resetLearningButton, statusLabel,
+            keyboardLayoutRow(),
             tableOptionsButton(for: .cangjie), tableOptionsButton(for: .simplex),
-            candidateColorRow(), layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(), feedbackRow(),
-            statusLabel, bulk, rows
+            candidateColorRow(), resize, layoutProfileRow(), keycapAreaRow(), fontSizeRow(), deleteShiftRow(),
+            feedbackRow()
         ])
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
         resetLearningButton.addTarget(self, action: #selector(resetLearningTapped), for: .touchUpInside)
@@ -151,13 +138,8 @@ final class SettingsPanel: UIView {
         ])
     }
 
-    private func bulkButton(_ title: String, _ action: Selector) -> UIButton {
-        var configuration = UIButton.Configuration.tinted()
-        configuration.title = title
-        configuration.buttonSize = .small
-        let button = UIButton(configuration: configuration)
-        button.addTarget(self, action: action, for: .touchUpInside)
-        return button
+    @objc private func keyboardHeightTapped() {
+        delegate?.settingsPanelDidRequestKeyboardHeight(self)
     }
 
     @objc private func resetLearningTapped() {
@@ -168,31 +150,9 @@ final class SettingsPanel: UIView {
         }
         resetConfirmation = false
         resetLearningButton.setTitle("重設好打注音學習紀錄", for: .normal)
+        statusLabel.isHidden = false
         statusLabel.text = delegate?.settingsPanelResetLearning(self) == true
             ? "學習紀錄已重設，自訂詞保留。" : "無法重設學習紀錄。"
-    }
-
-    private func collectionRow(_ collection: AssociatedPhraseStore.Collection) -> UIView {
-        let label = UILabel()
-        label.text = collection.display
-        label.font = .systemFont(ofSize: 15)
-        label.textColor = Palette.primaryText
-
-        let toggle = UISwitch()
-        toggle.isOn = enabled.contains(collection.source)
-        toggle.onTintColor = Palette.highlight
-        toggle.accessibilityIdentifier = collection.source
-        toggle.accessibilityLabel = collection.display
-        toggle.addTarget(self, action: #selector(toggled(_:)), for: .valueChanged)
-        switches[collection.source] = toggle
-
-        let row = UIStackView(arrangedSubviews: [label, UIView(), toggle])
-        row.alignment = .center
-        row.isLayoutMarginsRelativeArrangement = true
-        // 44pt keeps every row a comfortable target inside a short panel.
-        row.directionalLayoutMargins = .init(top: 6, leading: 0, bottom: 6, trailing: 0)
-        row.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
-        return row
     }
 
     private func layoutProfileRow() -> UIView {
@@ -273,15 +233,6 @@ final class SettingsPanel: UIView {
         label.font = .systemFont(ofSize: 15)
         label.textColor = Palette.primaryText
 
-        let detail = UILabel()
-        detail.text = "不需完整取用；震動由 iOS 限制"
-        detail.font = .systemFont(ofSize: 11)
-        detail.textColor = Palette.hintText
-
-        let labels = UIStackView(arrangedSubviews: [label, detail])
-        labels.axis = .vertical
-        labels.spacing = 1
-
         let toggle = UISwitch()
         toggle.isOn = inputClicksEnabled
         toggle.onTintColor = Palette.highlight
@@ -289,11 +240,12 @@ final class SettingsPanel: UIView {
         toggle.accessibilityLabel = "按鍵音"
         toggle.addTarget(self, action: #selector(inputClicksToggled(_:)), for: .valueChanged)
 
-        let row = UIStackView(arrangedSubviews: [labels, UIView(), toggle])
-        row.alignment = .center
-        row.isLayoutMarginsRelativeArrangement = true
-        row.directionalLayoutMargins = .init(top: 4, leading: 0, bottom: 4, trailing: 0)
-        return row
+        let help = helpButton(
+            title: "按鍵音",
+            message: "按鍵音不需完整取用。震動由 iOS 限制。",
+            identifier: "input-clicks"
+        )
+        return helpRow(label, control: toggle, help: help)
     }
 
     private func compositionModeRow() -> UIView {
@@ -357,14 +309,45 @@ final class SettingsPanel: UIView {
     }
 
     private func spaceSelectionRow() -> UIView {
-        let label = UILabel()
+        let title = "好打注音使用空白鍵選字"
         let enabled = SmartMandarinSpaceSettings().enabled
-        label.text = "使用空白鍵選字：\(enabled ? "開啟" : "關閉")\n與實體鍵盤共用；請至琦琦 App 的「輸入法設定」調整。"
-        label.font = .systemFont(ofSize: 14)
+        let label = UILabel()
+        label.text = "\(title)：\(enabled ? "開啟" : "關閉")"
+        label.font = .preferredFont(forTextStyle: .subheadline)
+        label.adjustsFontForContentSizeCategory = true
         label.textColor = Palette.primaryText
-        label.numberOfLines = 0
         label.accessibilityIdentifier = "space-selects-candidates"
-        return label
+        let help = helpButton(
+            title: title,
+            message: "開啟後，空白鍵可完成讀音、開啟候選及翻頁。此設定與實體鍵盤共用，請至琦琦 App 的「輸入法設定」調整。",
+            identifier: "space-selects-candidates"
+        )
+        return helpRow(label, help: help)
+    }
+
+    private func toneOmissionRow() -> UIView {
+        let label = UILabel()
+        let title = SmartMandarinToneOmissionSettings.displayName
+        label.text = title
+        label.font = .preferredFont(forTextStyle: .subheadline)
+        label.adjustsFontForContentSizeCategory = true
+        label.textColor = Palette.primaryText
+
+        let control = UISwitch()
+        control.isOn = omitsTones
+        control.accessibilityLabel = SmartMandarinToneOmissionSettings.displayName
+        control.accessibilityIdentifier = "keyboard-settings.omit-tones"
+        control.addTarget(self, action: #selector(toneOmissionChanged(_:)), for: .valueChanged)
+        let help = helpButton(
+            title: title,
+            message: "標準注音、許氏與漢語拼音都可連續輸入讀音，也可照常輸入聲調。",
+            identifier: "omit-tones"
+        )
+        return helpRow(label, control: control, help: help)
+    }
+
+    @objc private func toneOmissionChanged(_ sender: UISwitch) {
+        delegate?.settingsPanel(self, didChangeToneOmission: sender.isOn)
     }
 
     private func keyboardLayoutRow() -> UIView {
@@ -373,14 +356,17 @@ final class SettingsPanel: UIView {
         label.font = .systemFont(ofSize: 15)
         label.textColor = Palette.primaryText
         let control = UISegmentedControl(items: BopomofoKeyboardLayout.allCases.map(\.displayName))
+        control.apportionsSegmentWidthsByContent = true
         control.selectedSegmentIndex = BopomofoKeyboardLayout.allCases.firstIndex(of: keyboardLayout) ?? 0
         control.accessibilityIdentifier = "bopomofo-keyboard-layout"
         control.accessibilityLabel = "注音鍵盤"
         control.addTarget(self, action: #selector(keyboardLayoutChanged(_:)), for: .valueChanged)
-        let row = UIStackView(arrangedSubviews: [label, UIView(), control])
-        row.alignment = .center
-        row.spacing = 8
-        return row
+        let help = helpButton(
+            title: "注音鍵盤",
+            message: BopomofoKeyboardLayout.settingsHelp,
+            identifier: "keyboard-layout"
+        )
+        return helpRow(label, control: control, help: help)
     }
 
     @objc private func keyboardLayoutChanged(_ sender: UISegmentedControl) {
@@ -425,17 +411,132 @@ final class SettingsPanel: UIView {
         )
     }
 
-    // MARK: - Actions
-
-    @objc private func toggled(_ sender: UISwitch) {
-        guard let source = sender.accessibilityIdentifier else { return }
-        if sender.isOn {
-            enabled.insert(source)
-        } else {
-            enabled.remove(source)
+    private func helpRow(_ label: UILabel, control: UIView? = nil, help: UIButton) -> UIView {
+        label.numberOfLines = 0
+        let row = UIStackView(arrangedSubviews: [label])
+        if let control {
+            control.setContentHuggingPriority(.required, for: .horizontal)
+            control.setContentCompressionResistancePriority(.required, for: .horizontal)
+            row.addArrangedSubview(control)
         }
-        publish()
+        row.addArrangedSubview(help)
+        row.alignment = .center
+        row.spacing = 8
+        return row
     }
+
+    private func helpButton(title: String, message: String, identifier: String) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        button.tintColor = Palette.primaryText
+        button.accessibilityLabel = "\(title)說明"
+        button.accessibilityIdentifier = "keyboard-settings.help." + identifier
+        button.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        button.addAction(UIAction { [weak self, weak button] _ in
+            guard let button else { return }
+            self?.showHelp(title: title, message: message, source: button)
+        }, for: .touchUpInside)
+        return button
+    }
+
+    private func showHelp(title: String, message: String, source: UIButton) {
+        guard helpOverlay == nil else { return }
+        let overlay = UIView()
+        overlay.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+        overlay.accessibilityViewIsModal = true
+
+        let card = UIView()
+        card.backgroundColor = Palette.surface
+        card.layer.cornerRadius = 12
+
+        let heading = UILabel()
+        heading.text = title
+        heading.textColor = Palette.primaryText
+        heading.font = .preferredFont(forTextStyle: .headline)
+        heading.adjustsFontForContentSizeCategory = true
+        heading.numberOfLines = 0
+        heading.accessibilityTraits.insert(.header)
+        heading.accessibilityIdentifier = "keyboard-settings.help.title"
+
+        let detail = UILabel()
+        detail.text = message
+        detail.textColor = Palette.primaryText
+        detail.font = .preferredFont(forTextStyle: .body)
+        detail.adjustsFontForContentSizeCategory = true
+        detail.numberOfLines = 0
+        detail.accessibilityIdentifier = "keyboard-settings.help.message"
+
+        let text = UIStackView(arrangedSubviews: [heading, detail])
+        text.axis = .vertical
+        text.spacing = 8
+        let scroll = UIScrollView()
+
+        let close = UIButton(configuration: .tinted())
+        close.setTitle("關閉", for: .normal)
+        close.accessibilityIdentifier = "keyboard-settings.help.close"
+        close.addTarget(self, action: #selector(closeHelp), for: .touchUpInside)
+
+        for view in [overlay, card, scroll, text, close] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+        }
+        addSubview(overlay)
+        overlay.addSubview(card)
+        card.addSubview(scroll)
+        card.addSubview(close)
+        scroll.addSubview(text)
+
+        let safe = overlay.safeAreaLayoutGuide
+        let cardWidth = card.widthAnchor.constraint(equalTo: safe.widthAnchor, constant: -24)
+        cardWidth.priority = .defaultHigh
+        let contentHeight = scroll.frameLayoutGuide.heightAnchor.constraint(equalTo: text.heightAnchor)
+        contentHeight.priority = .defaultLow
+        NSLayoutConstraint.activate([
+            overlay.leadingAnchor.constraint(equalTo: leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: trailingAnchor),
+            overlay.topAnchor.constraint(equalTo: topAnchor),
+            overlay.bottomAnchor.constraint(equalTo: bottomAnchor),
+            card.centerXAnchor.constraint(equalTo: safe.centerXAnchor),
+            card.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
+            card.topAnchor.constraint(greaterThanOrEqualTo: safe.topAnchor, constant: 8),
+            card.bottomAnchor.constraint(lessThanOrEqualTo: safe.bottomAnchor, constant: -8),
+            card.widthAnchor.constraint(lessThanOrEqualToConstant: 440),
+            cardWidth,
+            scroll.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            scroll.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            scroll.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
+            scroll.bottomAnchor.constraint(equalTo: close.topAnchor, constant: -4),
+            contentHeight,
+            text.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            text.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            text.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            text.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            text.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            close.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            close.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -6),
+            close.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+            close.widthAnchor.constraint(greaterThanOrEqualToConstant: 44)
+        ])
+        helpOverlay = overlay
+        helpSource = source
+        layoutIfNeeded()
+        UIAccessibility.post(notification: .screenChanged, argument: heading)
+    }
+
+    @objc private func closeHelp() {
+        helpOverlay?.removeFromSuperview()
+        helpOverlay = nil
+        UIAccessibility.post(notification: .screenChanged, argument: helpSource)
+        helpSource = nil
+    }
+
+    override func accessibilityPerformEscape() -> Bool {
+        guard helpOverlay != nil else { return super.accessibilityPerformEscape() }
+        closeHelp()
+        return true
+    }
+
+    // MARK: - Actions
 
     @objc private func inputClicksToggled(_ sender: UISwitch) {
         inputClicksEnabled = sender.isOn
@@ -456,41 +557,7 @@ final class SettingsPanel: UIView {
         delegate?.settingsPanel(self, didChangeCandidateColor: candidateColor)
     }
 
-    @objc private func enableAll() {
-        enabled = Set(collections.map(\.source))
-        syncSwitches()
-    }
-
-    @objc private func enableBaseOnly() {
-        enabled = [PhraseSettings.baseCollection]
-        syncSwitches()
-    }
-
-    @objc private func disableAll() {
-        enabled = []
-        syncSwitches()
-    }
-
     @objc private func closeTapped() {
         delegate?.settingsPanelDidClose(self)
-    }
-
-    /// Set every switch without letting each one publish a separate change.
-    private func syncSwitches() {
-        for (source, toggle) in switches {
-            toggle.setOn(enabled.contains(source), animated: true)
-        }
-        publish()
-    }
-
-    private func publish() {
-        refreshStatus()
-        delegate?.settingsPanel(self, didChange: enabled)
-    }
-
-    private func refreshStatus() {
-        statusLabel.text = enabled.isEmpty
-            ? "關聯詞已全部關閉"
-            : "已啟用 \(enabled.count)／\(collections.count) 個詞庫"
     }
 }
