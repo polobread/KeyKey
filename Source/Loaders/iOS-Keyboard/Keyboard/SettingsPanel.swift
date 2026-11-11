@@ -361,10 +361,12 @@ final class SettingsPanel: UIView {
         control.accessibilityIdentifier = "bopomofo-keyboard-layout"
         control.accessibilityLabel = "注音鍵盤"
         control.addTarget(self, action: #selector(keyboardLayoutChanged(_:)), for: .valueChanged)
-        let row = UIStackView(arrangedSubviews: [label, UIView(), control])
-        row.alignment = .center
-        row.spacing = 8
-        return row
+        let help = helpButton(
+            title: "注音鍵盤",
+            message: BopomofoKeyboardLayout.settingsHelp,
+            identifier: "keyboard-layout"
+        )
+        return helpRow(label, control: control, help: help)
     }
 
     @objc private func keyboardLayoutChanged(_ sender: UISegmentedControl) {
@@ -409,7 +411,7 @@ final class SettingsPanel: UIView {
         )
     }
 
-    private func helpRow(_ label: UILabel, control: UISwitch? = nil, help: UIButton) -> UIView {
+    private func helpRow(_ label: UILabel, control: UIView? = nil, help: UIButton) -> UIView {
         label.numberOfLines = 0
         let row = UIStackView(arrangedSubviews: [label])
         if let control {

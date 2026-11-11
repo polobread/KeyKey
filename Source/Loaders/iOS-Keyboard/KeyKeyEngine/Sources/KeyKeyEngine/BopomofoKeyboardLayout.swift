@@ -7,6 +7,10 @@ public enum BopomofoKeyboardLayout: String, CaseIterable, Sendable {
     case hsu = "Hsu"
     case hanyuPinyin = "HanyuPinyin"
 
+    public static let settingsHelp = """
+        好打與傳統注音共用配置。許氏與漢語拼音使用英文字母鍵帽。拼音一聲按空白，二至四聲按 2～4，輕聲按 5。拼音寫作 ü（注音「ㄩ」）時按 v。例如綠（lǜ）輸入 lv4。
+        """
+
     public var displayName: String {
         switch self {
         case .standard: return "標準"

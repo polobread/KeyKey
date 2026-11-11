@@ -251,6 +251,13 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(entry.waitForExistence(timeout: 8))
         entry.tap()
         let layout = app.segmentedControls["app-settings.keyboard-layout"]
+        app.buttons["app-settings.keyboard-layout.info"].tap()
+        let layoutHelp = app.alerts["注音鍵盤"]
+        XCTAssertTrue(layoutHelp.waitForExistence(timeout: 3))
+        XCTAssertTrue(layoutHelp.staticTexts.matching(NSPredicate(
+            format: "label CONTAINS %@", "綠（lǜ）輸入 lv4"
+        )).firstMatch.exists)
+        layoutHelp.buttons["關閉"].tap()
         layout.buttons["許氏鍵盤"].tap()
         app.terminate()
         app.launch()
@@ -263,6 +270,13 @@ final class KeyKeyUITests: XCTestCase {
         XCTAssertTrue(selectKeyKeyKeyboard(), keyboardActivationFailureMessage)
         app.buttons["SETTINGS"].tap()
         let keyboardLayout = app.segmentedControls["bopomofo-keyboard-layout"]
+        let layoutInfo = app.buttons["keyboard-settings.help.keyboard-layout"]
+        revealSetting(layoutInfo, in: app.scrollViews["keyboard-settings.scroll"])
+        layoutInfo.tap()
+        let helpMessage = app.staticTexts["keyboard-settings.help.message"]
+        XCTAssertTrue(helpMessage.waitForExistence(timeout: 3))
+        XCTAssertTrue(helpMessage.label.contains("綠（lǜ）輸入 lv4"))
+        app.buttons["keyboard-settings.help.close"].tap()
         // Extension preferences also work without Full Access to the App Group.
         keyboardLayout.buttons["許氏鍵盤"].tap()
         app.segmentedControls["bopomofo-composition-mode"].buttons["傳統注音"].tap()

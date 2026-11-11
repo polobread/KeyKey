@@ -467,7 +467,7 @@ private final class InputMethodSettingsViewController: UIViewController {
 
         stack.addArrangedSubview(settingWithHelp(
             "注音鍵盤",
-            message: "好打與傳統注音共用配置。許氏與漢語拼音使用英文字母鍵帽。拼音一聲按空白，二至四聲按 2～4，輕聲按 5，ü 可用 v。",
+            message: BopomofoKeyboardLayout.settingsHelp,
             identifier: "app-settings.keyboard-layout.info"
         ))
         let layouts = BopomofoKeyboardLayout.allCases

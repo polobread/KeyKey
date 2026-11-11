@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="bopomofo_keyboard_layout">注音鍵盤</string>
-    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準。許氏與漢語拼音使用英文鍵帽；拼音每個音節以空白（一聲）或 2–5（二聲、三聲、四聲、輕聲）結束，ü 用 v。</string>
+    <string name="bopomofo_keyboard_layout_description">好打與傳統注音、實體與虛擬鍵盤共用配置。預設標準。許氏與漢語拼音使用英文鍵帽。拼音一聲按空白，二至四聲按 2–4，輕聲按 5。拼音寫作 ü（注音「ㄩ」）時按 v，例如綠（lǜ）輸入 lv4。</string>
     <string-array name="bopomofo_keyboard_layouts">
         <item>標準</item>
         <item>許氏鍵盤</item>
