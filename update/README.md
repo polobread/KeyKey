@@ -105,13 +105,13 @@ macOS **1.5.1** 的 stable appcast 與 signed metadata，須在正式安裝包�
 
 1.5.1 正式安裝包、SHA-256 校驗檔與建置資訊於 [1.5.1 Release 的台灣 AWS 下載點](https://github.com/polobread/KeyKey/releases/tag/v1.5.1#台灣-aws-下載點) 上傳後提供。各平台資產與公告分別驗證；本文件更新不代表 feed 已推進至 1.5.1。
 
-正式 feed 為 `https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml`，GitHub 原始檔為 `https://raw.githubusercontent.com/polobread/KeyKey/master/update/stable/macos-arm64.xml`。客戶端目前不會在兩個來源間自動切換。
+正式公告先讀取 AWS CDN 的 `https://download.aws.polobread.com/keykey/update/stable/macos-arm64.xml`。連線失敗或逾時時，改從 GitHub Raw 讀取同一頻道的公告。使用者確認下載後，Sparkle 先從 AWS CDN 下載 SHA-256 內容位址安裝包。若連線中斷或 CDN 回傳找不到檔案等可重試的狀態，更新器只對相同的已確認套件改用 GitHub Release 一次，並由 Sparkle 驗證原本的 Ed25519 簽章。beta 沿用自己的兩個公告位置。
 
-**後續版本自動準備公告：** `Package macOS` 成功發布穩定版後，`Prepare macOS Stable Update` 會在受保護的 `release` environment 執行。它只使用已 review 的 `master` 工具，重新下載原 Release 安裝包，核對成功的官方建置、tag commit、Release digest、checksum 與 build-info，再驗證 Apple 簽章、公證、四份產品版號及更新公鑰。全部通過後，用 `UPDATE_ED25519_PRIVATE_KEY_PEM` 產生 Ed25519 更新簽章，新增逐 byte 相同的 SHA-256 內容位址副本，回讀驗證後自動開 feed PR。既有 Windows 公告與 metadata 項目會保留；不重新建置、移動 tag、覆蓋已發布檔案或自動合併 PR。
+**後續版本自動準備公告：** `Package macOS` 成功發布穩定版後，`Prepare macOS Stable Update` 會在受保護的 `release` environment 執行。它只使用已 review 的 `master` 工具，重新下載原 Release 安裝包，核對成功的官方建置、tag commit、Release digest、checksum 與 build-info，再驗證 Apple 簽章、公證、四份產品版號及更新公鑰。全部通過後，用 `UPDATE_ED25519_PRIVATE_KEY_PEM` 產生 Ed25519 更新簽章，在 GitHub Release 與 AWS CDN 建立逐 byte 相同的 SHA-256 內容位址副本，從兩處回讀驗證後自動開 feed PR，公告內的安裝包網址指向 AWS CDN。既有 Windows 公告與 metadata 項目會保留；不重新建置、移動 tag、覆蓋已發布檔案或自動合併 PR。
 
 必須在 `release` environment 設定 `UPDATE_ED25519_PRIVATE_KEY_PEM`，並在 repository 的 Actions 權限允許 workflow 建立 PR。穩定版不再需要 `MACOS_UPDATE_METADATA_ENABLED`；既有 beta 候選流程仍使用該開關。私鑰只寫入 runner 的暫存檔供 OpenSSL 使用，步驟結束即刪除，不輸出、不放入 artifact。workflow 另保存公開簽章候選 artifact，供檢視或開 PR 失敗時手動取回。
 
-**已發布版本的手動補救：** 在 Actions 選 `Prepare macOS Stable Update`，使用 `master`，填入 `release_tag=v1.5.1`。此入口沿用已發布原包及來源驗證；同版已在正式 feed 且雜湊相同時不重複建立更新，不允許降版或替換同版內容。若該版已有 PR 分支，會停止並要求先檢查既有 PR，不覆寫他人修改。
+**已發布版本的手動補救：** 在 Actions 選 `Prepare macOS Stable Update`，使用 `master`，填入 `release_tag=v1.5.1`。此入口沿用已發布原包及來源驗證；同版、同雜湊且已使用 CDN 時不重複建立更新。若既有正式公告仍指向 GitHub，可用其目前的 release tag 重跑，驗證原始 bytes 並提出只遷移下載網址的 feed PR。降版或替換同版內容會被拒絕。若該版已有 PR 分支，會停止並要求先檢查既有 PR，不覆寫他人修改。
 
 feed PR 仍須由維護者 review／merge；合併後才由 `Sync Update Feeds to CDN` 部署公告。workflow 只準備穩定 macOS 更新，不發布 beta feed、不直接部署 CDN。若準備期間 `master` 已更新，會停止並要求重跑，以免覆蓋其他平台剛更新的 metadata。
 

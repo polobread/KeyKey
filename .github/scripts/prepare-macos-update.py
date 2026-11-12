@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Prepare signed stable macOS updates from published bytes and open a review PR."""
 import argparse
+import base64
 from datetime import datetime, timezone
 import importlib.util
 import json
@@ -12,11 +13,14 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from urllib.parse import urlsplit
 from urllib.request import urlopen
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 REPOSITORY = 'polobread/KeyKey'
+ASSET_PATH = 'keykey/releases/download'
+GITHUB_ASSET_BASE = f'https://github.com/{REPOSITORY}/releases/download'
 sys.path.insert(0, str(ROOT / 'update'))
 import channels
 import metadata
@@ -127,6 +131,27 @@ def pinned_key():
     return json.loads((ROOT / 'update/config.json').read_text())['public_ed25519_key']
 
 
+def cdn_asset_base():
+    feed = json.loads((ROOT / 'update/config.json').read_text())['macos_feed_url']
+    parsed = urlsplit(feed)
+    require(parsed.scheme == 'https' and parsed.hostname and not parsed.username and not parsed.password and
+            parsed.path == '/keykey/update/stable/macos-arm64.xml' and not parsed.query and not parsed.fragment,
+            'The reviewed macOS update feed must be on the HTTPS release mirror')
+    origin = f'{parsed.scheme}://{parsed.netloc}'
+    base = os.environ.get('RELEASE_MIRROR_BASE_URL', origin).strip().rstrip('/')
+    require(base == origin, 'RELEASE_MIRROR_BASE_URL must match the reviewed macOS CDN origin')
+    return f'{base}/{ASSET_PATH}'
+
+
+def asset_url(base, entry):
+    return f"{base}/{entry['release_tag']}/{entry['name']}"
+
+
+def proposal_entry(directory):
+    document = json.loads((directory / 'proposal/metadata.json').read_text())
+    return next(entry for entry in document['releases'] if entry['target'] == 'macos-arm64')
+
+
 def prepare(tag, directory, trigger_run=None):
     version, record = release_record(tag)
     source = tag_commit(tag)
@@ -146,18 +171,26 @@ def prepare(tag, directory, trigger_run=None):
     feeds.channel_snapshot(ROOT / 'update/stable', 'stable')
     document = json.loads((ROOT / 'update/stable/metadata.json').read_text())
     existing = [r for r in document['releases'] if r['target'] == 'macos-arm64']
+    move_to_cdn = False
     if existing:
         current = existing[0]
         new_version = tuple(map(int, version.split('.')))
         old_version = tuple(map(int, current['version'].split('.')))
         require(new_version >= old_version, 'Refusing to downgrade the macOS feed')
         if new_version == old_version:
-            require(current['sha256'] == checksum, 'Refusing different bytes for a published update version')
-            print('This macOS version is already in the reviewed feed.')
-            return False
+            require(current['sha256'] == checksum and current['size'] == package.stat().st_size,
+                    'Refusing different bytes for a published update version')
+            require(current['release_tag'] == tag and current['source_sha'] == source,
+                    'Refusing a different release source for a published update version')
+            if current['url'] == asset_url(cdn_asset_base(), current):
+                print('This macOS version is already in the reviewed CDN feed.')
+                return False
+            require(current['url'] == asset_url(GITHUB_ASSET_BASE, current),
+                    'Only the reviewed GitHub copy can be moved to the CDN')
+            move_to_cdn = True
     plan = dict(version=version, release_tag=tag, source_sha=source, sha256=checksum,
                 size=package.stat().st_size, file=str(package.resolve()),
-                base_sha=base_sha)
+                base_sha=base_sha, move_to_cdn=move_to_cdn)
     (directory / 'plan.json').write_text(json.dumps(plan, indent=2) + '\n')
     print(f'Published source and bytes verified: {tag}, SHA-256 {checksum}')
     return True
@@ -222,15 +255,22 @@ def sign_candidate(directory, key, openssl):
     manifest = dict(schema_version=1, channel='stable', releases=[entry])
     generated = directory / 'signed'
     # This performs Gatekeeper installer assessment, stapled notarization and package-version verification.
-    result = metadata.build(manifest, key, f'https://github.com/{REPOSITORY}/releases/download',
-                            generated, pinned_key(), openssl)
+    result = metadata.build(manifest, key, cdn_asset_base(), generated, pinned_key(), openssl)
     proposal = directory / 'proposal'
     proposal.mkdir()
     for name, data in feeds.channel_snapshot(ROOT / 'update/stable', 'stable'):
         (proposal / name).write_bytes(data)
-    (proposal / 'macos-arm64.xml').write_bytes((generated / 'macos-arm64.xml').read_bytes())
     original = json.loads((proposal / 'metadata.json').read_text())
-    merged = merged_document(original, result['releases'][0])
+    entry = result['releases'][0]
+    if plan['move_to_cdn']:
+        previous = proposal_entry(directory)
+        require(previous['url'] == asset_url(GITHUB_ASSET_BASE, entry) and
+                all(previous[field] == entry[field] for field in
+                    ('source_sha', 'tag_sha', 'sha256', 'size', 'ed25519_signature')),
+                'The existing macOS announcement no longer matches the reviewed copy')
+        entry = dict(previous, url=entry['url'])
+    (proposal / 'macos-arm64.xml').write_bytes(metadata.appcast(entry))
+    merged = merged_document(original, entry)
     path = proposal / 'metadata.json'
     path.write_text(json.dumps(merged, ensure_ascii=False, sort_keys=True, indent=2) + '\n', encoding='utf-8')
     signature = metadata.sign(path, key, openssl)
@@ -244,7 +284,7 @@ def verify_remote(entry, openssl):
     with tempfile.TemporaryDirectory(prefix='keykey-update-readback-') as scratch:
         path = Path(scratch) / entry['name']
         with urlopen(entry['url'], timeout=60) as response, path.open('wb') as stream:
-            require(response.geturl().startswith('https://'), 'Asset redirected away from HTTPS')
+            require(urlsplit(response.geturl()).scheme == 'https', 'Asset redirected away from HTTPS')
             size = 0
             for chunk in iter(lambda: response.read(1024 * 1024), b''):
                 size += len(chunk)
@@ -252,6 +292,29 @@ def verify_remote(entry, openssl):
                 stream.write(chunk)
         require(size == entry['size'] and metadata.digest(path) == entry['sha256'], 'Remote asset bytes differ')
         metadata.verify(path, entry['ed25519_signature'], pinned_key(), openssl)
+
+
+def stage_cdn_copy(path, entry, bucket, distribution):
+    key = f"{ASSET_PATH}/{entry['release_tag']}/{entry['name']}"
+    checksum = base64.b64encode(bytes.fromhex(entry['sha256'])).decode('ascii')
+    upload = subprocess.run(['aws', 's3api', 'put-object', '--bucket', bucket, '--key', key,
+                             '--body', str(path), '--if-none-match', '*', '--checksum-algorithm', 'SHA256',
+                             '--checksum-sha256', checksum, '--content-type', 'application/octet-stream',
+                             '--cache-control', 'public,max-age=0,s-maxage=31536000,must-revalidate',
+                             '--no-cli-pager', '--output', 'json'], capture_output=True, text=True)
+    if upload.returncode and '(PreconditionFailed)' not in upload.stderr:
+        raise subprocess.CalledProcessError(upload.returncode, upload.args, stderr=upload.stderr)
+    if not upload.returncode:
+        require(json.loads(upload.stdout).get('ChecksumSHA256') == checksum, 'S3 upload checksum mismatch')
+    with tempfile.TemporaryDirectory(prefix='keykey-update-s3-readback-') as scratch:
+        fetched = Path(scratch) / entry['name']
+        feeds.aws('s3api', 'get-object', '--bucket', bucket, '--key', key, '--checksum-mode', 'ENABLED', str(fetched))
+        require(fetched.stat().st_size == entry['size'] and metadata.digest(fetched) == entry['sha256'],
+                'Existing S3 copy differs; never overwrite it')
+    invalidation = feeds.aws('cloudfront', 'create-invalidation', '--distribution-id', distribution,
+                             '--paths', '/' + key)['Invalidation']['Id']
+    subprocess.run(['aws', 'cloudfront', 'wait', 'invalidation-completed', '--distribution-id', distribution,
+                    '--id', invalidation, '--no-cli-pager'], check=True)
 
 
 def stage_asset(directory, openssl):
@@ -262,11 +325,16 @@ def stage_asset(directory, openssl):
     original = asset_record(release, f"chichi77-KeyKey-{plan['version']}-macos-arm64.pkg.zip")
     require(original['digest'] == 'sha256:' + plan['sha256'] and original['size'] == plan['size'],
             'Published original changed after preparation')
-    document = json.loads((directory / 'proposal/metadata.json').read_text())
-    entry = next(r for r in document['releases'] if r['target'] == 'macos-arm64')
+    entry = proposal_entry(directory)
+    require(entry['url'] == asset_url(cdn_asset_base(), entry) and entry['release_tag'] == plan['release_tag'] and
+            entry['source_sha'] == plan['source_sha'], 'Expected a verified macOS CDN announcement')
+    bucket = os.environ.get('RELEASE_MIRROR_BUCKET', '').strip()
+    distribution = os.environ.get('RELEASE_MIRROR_DISTRIBUTION_ID', '').strip()
+    require(re.fullmatch(r'[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]', bucket) and
+            re.fullmatch(r'[A-Z0-9]+', distribution), 'A valid release mirror bucket and distribution are required')
     path = directory / 'signed/packages' / entry['name']
-    require(metadata.digest(path) == entry['sha256'] == plan['sha256'] and path.stat().st_size == entry['size'],
-            'Signed copy differs from verified original')
+    require(path.is_file() and not path.is_symlink() and metadata.digest(path) == entry['sha256'] == plan['sha256'] and
+            path.stat().st_size == entry['size'] == plan['size'], 'Signed copy differs from verified original')
     metadata.verify(path, entry['ed25519_signature'], pinned_key(), openssl)
     existing = [a for a in release['assets'] if a['name'] == entry['name']]
     if existing:
@@ -275,8 +343,10 @@ def stage_asset(directory, openssl):
                 'Existing immutable asset differs; never overwrite it')
     else:
         subprocess.run(['gh', 'release', 'upload', plan['release_tag'], '--repo', REPOSITORY, str(path)], check=True)
+    verify_remote(dict(entry, url=asset_url(GITHUB_ASSET_BASE, entry)), openssl)
+    stage_cdn_copy(path, entry, bucket, distribution)
     verify_remote(entry, openssl)
-    print('Immutable GitHub copy verified by download, SHA-256 and Ed25519; no feed deployed.')
+    print('Immutable GitHub and CDN copies verified by download, SHA-256 and Ed25519.')
 
 
 def open_pr(directory, openssl):
@@ -289,7 +359,12 @@ def open_pr(directory, openssl):
             output('git', 'ls-remote', 'origin', 'refs/heads/master').split()[0] == plan['base_sha'],
             'Master advanced; rerun to preserve the latest platform metadata')
     feeds.verify_assets(directory / 'proposal', 'stable')
+    entry = proposal_entry(directory)
+    require(entry['url'] == asset_url(cdn_asset_base(), entry), 'Expected a macOS CDN announcement')
+    verify_remote(dict(entry, url=asset_url(GITHUB_ASSET_BASE, entry)), openssl)
     branch = f"codex/macos-update-{plan['release_tag']}"
+    if plan['move_to_cdn']:
+        branch += '-cdn'
     require(not output('git', 'ls-remote', 'origin', 'refs/heads/' + branch),
             'Update branch already exists; review the existing PR instead of overwriting it')
     subprocess.run(['git', 'switch', '-c', branch], check=True)
@@ -309,7 +384,7 @@ def open_pr(directory, openssl):
     body.write_text(f"讓已安裝舊版的 macOS 使用者看見 {plan['version']} 正式更新。\n\n"
                     f"沿用已發布的 {plan['release_tag']} 安裝包，未重新建置。核對原 Release digest、checksum、"
                     "build-info、成功的官方建置來源、Apple 簽章、公證與套件版號後，產生 Ed25519 更新簽章。\n\n"
-                    f"SHA-256：`{plan['sha256']}`。保留其他平台公告與 metadata；內容位址副本已上傳並回讀驗證。\n\n"
+                    f"SHA-256：`{plan['sha256']}`。保留其他平台公告與 metadata。AWS CDN 與 GitHub 的內容位址副本已上傳並回讀驗證。\n\n"
                     "維護者 review／merge 後才由 Sync Update Feeds to CDN 部署；本工作不安裝更新、不合併 PR。\n",
                     encoding='utf-8')
     subprocess.run(['gh', 'pr', 'create', '--repo', REPOSITORY, '--base', 'master', '--head', branch,

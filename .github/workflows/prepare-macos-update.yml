@@ -35,9 +35,11 @@ jobs:
       contents: write
       actions: read
       pull-requests: write
+      id-token: write
     env:
       GH_TOKEN: ${{ github.token }}
       PYTHONDONTWRITEBYTECODE: '1'
+      RELEASE_MIRROR_BASE_URL: ${{ vars.AWS_RELEASE_MIRROR_BASE_URL }}
     steps:
       # Only reviewed master tooling runs with secrets; never check out release/PR code.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -71,8 +73,19 @@ jobs:
           unset UPDATE_KEY_PEM
           python3 .github/scripts/prepare-macos-update.py sign \
             --directory "$CANDIDATE" --key "$update_key"
-      - name: Publish and verify the immutable copy without changing feeds
+      - name: Configure AWS credentials for the release mirror
         if: steps.candidate.outputs.needed == 'true'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_RELEASE_MIRROR_ROLE_ARN }}
+          role-session-name: github-actions-macos-update-copy
+          aws-region: ${{ vars.AWS_RELEASE_MIRROR_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Publish and verify both immutable copies
+        if: steps.candidate.outputs.needed == 'true'
+        env:
+          RELEASE_MIRROR_BUCKET: ${{ vars.AWS_RELEASE_MIRROR_BUCKET }}
+          RELEASE_MIRROR_DISTRIBUTION_ID: ${{ vars.AWS_RELEASE_MIRROR_DISTRIBUTION_ID }}
         run: python3 .github/scripts/prepare-macos-update.py stage-asset --directory "$CANDIDATE"
       - name: Keep public signed candidate for review or manual recovery
         if: steps.candidate.outputs.needed == 'true'
