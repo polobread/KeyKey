@@ -1,0 +1,4 @@
+# The native bridge looks up the standard UTF-8 decoder by its JVM name.
+-keepclassmembers class tw.chichi77.keykey.android.GuanyinmaNative {
+    private static java.lang.String decodeUtf8(byte[]);
+}
