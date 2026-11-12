@@ -6,6 +6,7 @@
 // dialogs owned by the background input method.
 @interface KeyKeyMacUpdater (UpdateFocus)
 - (BOOL)shouldFocusUpdateUI;
+- (BOOL)shouldResumeDownloadForItem:(SUAppcastItem *)item;
 @end
 
 @interface KeyKeyMacUserDriver : NSObject <SPUUserDriver>
@@ -40,7 +41,14 @@
 - (void)showUserInitiatedUpdateCheckWithCancellation:(void (^)(void))cancellation
 { [_owner beginCheckWithCancellation:cancellation]; }
 - (void)showUpdateFoundWithAppcastItem:(SUAppcastItem *)item state:(SPUUserUpdateState *)state reply:(void (^)(SPUUserUpdateChoice))reply
-{ [_standard showUpdateFoundWithAppcastItem:item state:state reply:reply]; [self focusManualUpdate]; }
+{
+    if (state.stage == SPUUserUpdateStageNotDownloaded && [_owner shouldResumeDownloadForItem:item]) {
+        reply(SPUUserUpdateChoiceInstall);
+        return;
+    }
+    [_standard showUpdateFoundWithAppcastItem:item state:state reply:reply];
+    [self focusManualUpdate];
+}
 - (void)showUpdateReleaseNotesWithDownloadData:(SPUDownloadData *)data
 { [_standard showUpdateReleaseNotesWithDownloadData:data]; }
 - (void)showUpdateReleaseNotesFailedToDownloadWithError:(NSError *)error
@@ -73,6 +81,72 @@
 @end
 
 @implementation KeyKeyMacUpdater
+
+static NSString *const CDNBase = @"https://download.aws.polobread.com/keykey";
+static NSString *const GitHubFeedBase = @"https://raw.githubusercontent.com/polobread/KeyKey/master";
+static NSString *const GitHubReleaseBase = @"https://github.com/polobread/KeyKey/releases/download";
+static NSString *const SparkleErrorDomain = @"SUSparkleErrorDomain";
+
+static NSURL *GitHubFeedURL(NSURL *primary)
+{
+    for (NSString *channel in @[@"stable", @"beta"]) {
+        NSString *path = [NSString stringWithFormat:@"/update/%@/macos-arm64.xml", channel];
+        if ([primary.absoluteString isEqualToString:[CDNBase stringByAppendingString:path]])
+            return [NSURL URLWithString:[GitHubFeedBase stringByAppendingString:path]];
+    }
+    return nil;
+}
+
+static NSString *ImmutableReleasePath(NSURL *url)
+{
+    NSString *absolute = url.absoluteString;
+    for (NSString *base in @[[CDNBase stringByAppendingString:@"/releases/download"], GitHubReleaseBase]) {
+        if (![absolute hasPrefix:base]) continue;
+        NSString *path = [absolute substringFromIndex:base.length];
+        NSString *pattern = @"\\A/v([0-9]+\\.[0-9]+\\.[0-9]+(?:-beta[1-9][0-9]*)?)/KeyKey-\\1-macos-arm64-[a-f0-9]{64}\\.pkg\\.zip\\z";
+        if ([path rangeOfString:pattern options:NSRegularExpressionSearch].location != NSNotFound)
+            return path;
+    }
+    return nil;
+}
+
+static NSURL *PackageCDNURL(NSString *path)
+{
+    return path ? [NSURL URLWithString:[[CDNBase stringByAppendingString:@"/releases/download"]
+        stringByAppendingString:path]] : nil;
+}
+
+static BOOL DownloadUnavailable(NSError *error, NSURL *attemptedURL)
+{
+    for (NSUInteger depth = 0; error && depth < 8; depth++) {
+        if ([error.domain isEqualToString:NSURLErrorDomain]) {
+            switch (error.code) {
+                case NSURLErrorTimedOut:
+                case NSURLErrorCannotFindHost:
+                case NSURLErrorCannotConnectToHost:
+                case NSURLErrorDNSLookupFailed:
+                case NSURLErrorNetworkConnectionLost:
+                case NSURLErrorNotConnectedToInternet:
+                case NSURLErrorResourceUnavailable:
+                    return YES;
+                default:
+                    return NO;
+            }
+        }
+        if (![error.domain isEqualToString:SparkleErrorDomain] || error.code != SUDownloadError) return NO;
+        NSError *underlying = error.userInfo[NSUnderlyingErrorKey];
+        if (![underlying isKindOfClass:[NSError class]]) {
+            // Sparkle 2.10 exposes the HTTP status only in this downloader error text.
+            NSString *message = error.localizedDescription;
+            NSString *prefix = [NSString stringWithFormat:@"A network error occurred while downloading %@. ",
+                attemptedURL.absoluteString];
+            return [message hasPrefix:prefix] && [message rangeOfString:@" \\((403|404|408|429|5[0-9]{2})\\)\\z"
+                options:NSRegularExpressionSearch].location != NSNotFound;
+        }
+        error = underlying;
+    }
+    return NO;
+}
 
 static NSURL *ReviewedFeed(id value)
 {
@@ -189,6 +263,8 @@ static NSURL *ReviewedFeed(id value)
     if (cancel) { cancel(); [cancel release]; }
     [_automaticTimer invalidate]; [_automaticTimer release]; _automaticTimer = nil;
     [self clearPendingInstallation];
+    [_approvedDownloadItem release]; _approvedDownloadItem = nil;
+    [_retryItem release]; _retryItem = nil;
     if ([_controller isKindOfClass:[KeyKeyMacUserDriver class]]) [(KeyKeyMacUserDriver *)_controller setOwner:nil];
     [_controller release]; _controller = nil;
     [_engine release]; _engine = nil;
@@ -286,9 +362,13 @@ static NSURL *ReviewedFeed(id value)
     if (_stopped || timer != _checkTimer) return;
     void (^cancel)(void) = [_cancelCheck copy];
     [self clearCheckDeadline];
-    _checkTimedOut = YES;
-    _busy = NO;
-    [self setPhase:@"failed" message:@"檢查更新逾時（10 秒）；請稍後按「立即檢查」再試。"];
+    if (!_usingGitHubFeed && GitHubFeedURL(_feed)) {
+        _retryFeed = YES;
+    } else {
+        _checkTimedOut = YES;
+        _busy = NO;
+        [self setPhase:@"failed" message:@"檢查更新逾時（10 秒）；請稍後按「立即檢查」再試。"];
+    }
     if (cancel) { cancel(); [cancel release]; }
 }
 
@@ -313,7 +393,7 @@ static NSURL *ReviewedFeed(id value)
 - (NSString *)feedURLStringForUpdater:(SPUUpdater *)updater
 {
     // A mutable SUFeedURL user default must not select a different feed.
-    return [_feed absoluteString];
+    return [(_usingGitHubFeed ? GitHubFeedURL(_feed) : _feed) absoluteString];
 }
 
 - (NSArray *)feedParametersForUpdater:(SPUUpdater *)updater sendingSystemProfile:(BOOL)sendingProfile
@@ -355,6 +435,7 @@ static NSURL *ReviewedFeed(id value)
 {
     if (_stopped || _checkTimedOut) return;
     [self clearCheckDeadline];
+    _retryFeed = NO;
     [_latestVersion release]; _latestVersion = [[item displayVersionString] copy];
     [self setPhase:@"available" message:@"找到可安裝的新版本；請在更新視窗確認是否下載。"];
 }
@@ -363,6 +444,7 @@ static NSURL *ReviewedFeed(id value)
 {
     if (_stopped || _checkTimedOut) return;
     [self clearCheckDeadline];
+    _retryFeed = NO;
     [self setPhase:@"no-update" message:@"目前沒有適用的更新。"];
 }
 
@@ -378,13 +460,50 @@ static NSURL *ReviewedFeed(id value)
     if ([self shouldFocusUpdateUI]) [NSApp activateIgnoringOtherApps:YES];
 }
 
+- (BOOL)shouldResumeDownloadForItem:(SUAppcastItem *)item
+{
+    if (_stopped || !_retryItem || _retryDownload ||
+        item.signingValidationStatus == SPUAppcastSigningValidationStatusFailed) return NO;
+    NSDictionary *properties = item.propertiesDictionary;
+    return [item.fileURL isEqual:_retryItem.fileURL] &&
+        [item.versionString isEqualToString:_retryItem.versionString] &&
+        item.contentLength > 0 && item.contentLength == _retryItem.contentLength &&
+        [properties isEqualToDictionary:_retryItem.propertiesDictionary];
+}
+
 - (void)updater:(SPUUpdater *)updater willDownloadUpdate:(SUAppcastItem *)item withRequest:(NSMutableURLRequest *)request
 {
-    if (!_stopped) [self setPhase:@"downloading" message:@"正在下載；Sparkle 更新視窗顯示下載進度。"];
+    if (_stopped) return;
+    NSString *path = ImmutableReleasePath(item.fileURL);
+    BOOL retry = path && [self shouldResumeDownloadForItem:item];
+    _downloadingFromCDN = path && !retry && _approvedDownloadItem == item;
+    if (path) request.URL = retry ? [NSURL URLWithString:[GitHubReleaseBase stringByAppendingString:path]]
+                                  : PackageCDNURL(path);
+    [_approvedDownloadItem release]; _approvedDownloadItem = nil;
+    [_retryItem release]; _retryItem = nil;
+    [self setPhase:@"downloading" message:retry ? @"正在從 GitHub 下載更新。" :
+        @"正在下載；Sparkle 更新視窗顯示下載進度。"];
+}
+
+- (void)updater:(SPUUpdater *)updater failedToDownloadUpdate:(SUAppcastItem *)item error:(NSError *)error
+{
+    if (_stopped || !_downloadingFromCDN) return;
+    _downloadingFromCDN = NO;
+    NSURL *cdnURL = PackageCDNURL(ImmutableReleasePath(item.fileURL));
+    NSDictionary *enclosure = item.propertiesDictionary[@"enclosure"];
+    id signature = [enclosure isKindOfClass:[NSDictionary class]] ? enclosure[@"sparkle:edSignature"] : nil;
+    if (!cdnURL || ![signature isKindOfClass:[NSString class]] || ![signature length] ||
+        !item.versionString.length || !item.contentLength || !DownloadUnavailable(error, cdnURL)) return;
+    _retryItem = [item retain];
+    _retryDownload = YES;
+    // Sparkle completes the failed cycle before we start the retry. The driver
+    // acknowledges the intermediate error through its existing checking path.
+    [self setPhase:@"checking" message:@"CDN 下載失敗，正在改用 GitHub…"];
 }
 
 - (void)updater:(SPUUpdater *)updater didDownloadUpdate:(SUAppcastItem *)item
 {
+    _downloadingFromCDN = NO;
     if (!_stopped) [self setPhase:@"downloaded" message:@"下載完成，更新元件仍須驗證簽章與套件。"];
 }
 
@@ -395,14 +514,21 @@ static NSURL *ReviewedFeed(id value)
 
 - (void)userDidCancelDownload:(SPUUpdater *)updater
 {
+    _downloadingFromCDN = NO;
+    _retryDownload = NO;
+    [_retryItem release]; _retryItem = nil;
     if (!_stopped) [self setPhase:@"cancelled" message:@"已取消下載；沒有安裝更新。"];
 }
 
 - (void)updater:(SPUUpdater *)updater userDidMakeChoice:(SPUUserUpdateChoice)choice
     forUpdate:(SUAppcastItem *)item state:(SPUUserUpdateState *)state
 {
-    if (!_stopped && choice != SPUUserUpdateChoiceInstall)
+    if (_stopped) return;
+    if (choice == SPUUserUpdateChoiceInstall && state.stage == SPUUserUpdateStageNotDownloaded) {
+        [_approvedDownloadItem release]; _approvedDownloadItem = [item retain];
+    } else if (choice != SPUUserUpdateChoiceInstall) {
         [self setPhase:@"dismissed" message:choice == SPUUserUpdateChoiceSkip ? @"已略過此版本。" : @"已保留目前版本；稍後可再檢查。"];
+    }
 }
 
 - (void)updater:(SPUUpdater *)updater willInstallUpdate:(SUAppcastItem *)item
@@ -459,6 +585,22 @@ static NSURL *ReviewedFeed(id value)
 {
     if (_stopped) return;
     [self clearCheckDeadline];
+    BOOL retryFeed = !_checkTimedOut && !_usingGitHubFeed && GitHubFeedURL(_feed) &&
+        [_phase isEqualToString:@"checking"] && !_retryDownload &&
+        ((_retryFeed && !error) || DownloadUnavailable(error, _feed));
+    if ((retryFeed || _retryDownload) && [_engine canCheckForUpdates] && ![_engine sessionInProgress]) {
+        _usingGitHubFeed |= retryFeed;
+        _retryFeed = _retryDownload = NO;
+        _busy = YES;
+        if (retryFeed) [self setPhase:@"checking" message:@"CDN 更新公告無法連線，正在改用 GitHub…"];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!self->_stopped) [self->_engine checkForUpdates];
+        });
+        return;
+    }
+    _usingGitHubFeed = _retryFeed = _retryDownload = _downloadingFromCDN = NO;
+    [_approvedDownloadItem release]; _approvedDownloadItem = nil;
+    [_retryItem release]; _retryItem = nil;
     _busy = NO;
     _manualCheck = NO;
     if (_checkTimedOut) return;

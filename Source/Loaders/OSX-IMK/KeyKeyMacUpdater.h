@@ -30,6 +30,8 @@
     BOOL _configured, _started, _stopped, _busy, _installationRequested;
     BOOL _betaEnabled, _keyValid;
     BOOL _manualCheck, _automaticChecks, _checkTimedOut;
+    BOOL _usingGitHubFeed, _retryFeed, _retryDownload, _downloadingFromCDN;
+    SUAppcastItem *_approvedDownloadItem, *_retryItem;
     BOOL (^_compositionCheck)(void);
     void (^_pendingInstallation)(void);
     NSTimer *_installationTimer;

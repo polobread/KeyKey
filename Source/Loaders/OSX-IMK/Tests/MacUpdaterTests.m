@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Chui Ping Cheng. MIT License.
 #import "../KeyKeyMacUpdater.h"
+#include <dispatch/dispatch.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -37,11 +38,30 @@ static void Check(BOOL condition, NSString *message)
 
 @interface FakeItem : NSObject
 @property(nonatomic, retain) NSURL *fileURL;
-@property(nonatomic, copy) NSString *installationType, *displayVersionString;
+@property(nonatomic, copy) NSString *installationType, *displayVersionString, *versionString;
+@property(nonatomic) uint64_t contentLength;
+@property(nonatomic) SPUAppcastSigningValidationStatus signingValidationStatus;
+@property(nonatomic, copy) NSDictionary *propertiesDictionary;
 @end
 @implementation FakeItem
-- (void)dealloc { [_fileURL release]; [_installationType release]; [_displayVersionString release]; [super dealloc]; }
+- (void)dealloc
+{
+    [_fileURL release]; [_installationType release]; [_displayVersionString release];
+    [_versionString release]; [_propertiesDictionary release];
+    [super dealloc];
+}
 @end
+
+@interface FakeUpdateState : NSObject
+@property(nonatomic) SPUUserUpdateStage stage;
+@end
+@implementation FakeUpdateState
+@end
+
+static NSString *const CDNFeed = @"https://download.aws.polobread.com/keykey/update";
+static NSString *const RawFeed = @"https://raw.githubusercontent.com/polobread/KeyKey/master/update";
+static NSString *const CDNPackage = @"https://download.aws.polobread.com/keykey/releases/download";
+static NSString *const GitHubPackage = @"https://github.com/polobread/KeyKey/releases/download";
 
 // Exercise the production user-driver wrapper without opening host windows.
 @interface FocusRecordingDriver : NSObject
@@ -87,9 +107,170 @@ static NSBundle *Bundle(NSString *root, id feed, id key)
     if (feed) [info setObject:feed forKey:@"SUFeedURL"];
     if ([feed isEqual:@"https://example.invalid/channels/stable.xml"])
         [info setObject:@"https://example.invalid/channels/beta.xml" forKey:@"KeyKeyBetaFeedURL"];
+    if ([feed isEqual:[CDNFeed stringByAppendingString:@"/stable/macos-arm64.xml"]])
+        [info setObject:[CDNFeed stringByAppendingString:@"/beta/macos-arm64.xml"] forKey:@"KeyKeyBetaFeedURL"];
     if (key) [info setObject:key forKey:@"SUPublicEDKey"];
     [info writeToFile:[contents stringByAppendingPathComponent:@"Info.plist"] atomically:YES];
     return [NSBundle bundleWithPath:app];
+}
+
+static NSError *SparkleError(SUError code, NSError *underlying)
+{
+    return [NSError errorWithDomain:@"SUSparkleErrorDomain" code:code
+        userInfo:underlying ? @{NSUnderlyingErrorKey:underlying} : nil];
+}
+
+static void DrainMainQueue(void)
+{
+    __block BOOL drained = NO;
+    dispatch_async(dispatch_get_main_queue(), ^{ drained = YES; });
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:1];
+    while (!drained && [deadline timeIntervalSinceNow] > 0)
+        [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+    Check(drained, @"main queue executes scheduled retry");
+}
+
+static FakeItem *PackageItem(NSURL *url, unsigned char signatureByte)
+{
+    FakeItem *item = [[[FakeItem alloc] init] autorelease];
+    item.fileURL = url;
+    item.versionString = item.displayVersionString = @"2.4.6";
+    item.installationType = @"package";
+    item.contentLength = 43160000;
+    NSData *signature = [NSData dataWithBytes:(unsigned char[64]){signatureByte} length:64];
+    item.propertiesDictionary = @{@"enclosure":@{@"url":url.absoluteString, @"length":@"43160000",
+        @"sparkle:edSignature":[signature base64EncodedStringWithOptions:0], @"sparkle:installationType":@"package"}};
+    return item;
+}
+
+static void CheckFeedFallback(NSString *root, NSString *key, BOOL beta)
+{
+    NSString *stable = [CDNFeed stringByAppendingString:@"/stable/macos-arm64.xml"];
+    NSString *suffix = beta ? @"/beta/macos-arm64.xml" : @"/stable/macos-arm64.xml";
+    NSString *primary = [CDNFeed stringByAppendingString:suffix];
+    NSString *fallback = [RawFeed stringByAppendingString:suffix];
+    NSBundle *host = Bundle(root, stable, key);
+    FakeEngine *engine = [[[FakeEngine alloc] init] autorelease];
+    SPUUpdater *updater = (SPUUpdater *)engine;
+    KeyKeyMacUpdater *client = [[[KeyKeyMacUpdater alloc] initWithHostBundle:host engine:engine compositionCheck:nil] autorelease];
+    [client start];
+    if (beta) Check([client setBetaUpdates:YES], @"test selects the reviewed beta channel");
+    [client checkForUpdates];
+    Check(engine.checks == 1 && [[client feedURLStringForUpdater:updater] isEqualToString:primary], @"check starts at the selected AWS feed");
+    NSURL *primaryURL = [NSURL URLWithString:primary];
+    NSError *transport = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorTimedOut
+        userInfo:@{NSURLErrorFailingURLErrorKey:primaryURL}];
+    NSError *downloader = SparkleError(SUDownloadError, transport);
+    if (beta) {
+        NSString *status = [NSHTTPURLResponse localizedStringForStatusCode:403];
+        downloader = [NSError errorWithDomain:@"SUSparkleErrorDomain" code:SUDownloadError userInfo:@{
+            NSLocalizedDescriptionKey:[NSString stringWithFormat:@"A network error occurred while downloading %@. %@ (403)", primary, status]
+        }];
+    }
+    NSError *feedFailure = SparkleError(SUDownloadError, SparkleError(SUDownloadError, downloader));
+    [client updater:updater didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:feedFailure];
+    DrainMainQueue();
+    Check(engine.checks == 2 && [[client feedURLStringForUpdater:updater] isEqualToString:fallback],
+        @"CDN feed transport failure retries the same GitHub Raw channel once");
+    [client updater:updater didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:feedFailure];
+    DrainMainQueue();
+    Check(engine.checks == 2 && [[client snapshot][@"phase"] isEqualToString:@"failed"], @"failed GitHub feed does not loop");
+    [client checkForUpdates];
+    Check(engine.checks == 3 && [[client feedURLStringForUpdater:updater] isEqualToString:primary], @"new check prefers AWS again");
+    [client updater:updater didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:SparkleError(SUNoUpdateError, nil)];
+    DrainMainQueue();
+    Check(engine.checks == 3 && [[client snapshot][@"phase"] isEqualToString:@"no-update"], @"successful feed with no update does not fall back");
+    [client checkForUpdates];
+    NSError *badCertificate = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorServerCertificateUntrusted userInfo:nil];
+    [client updater:updater didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates
+        error:SparkleError(SUDownloadError, SparkleError(SUDownloadError, badCertificate))];
+    DrainMainQueue();
+    Check(engine.checks == 4 && [[client snapshot][@"phase"] isEqualToString:@"failed"], @"feed certificate failure does not fall back");
+    [client stop];
+    [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:host.bundleIdentifier];
+}
+
+static void CheckPackageFallback(NSString *root, NSString *key, BOOL changed)
+{
+    NSString *stable = [CDNFeed stringByAppendingString:@"/stable/macos-arm64.xml"];
+    NSString *name = @"/v2.4.6/KeyKey-2.4.6-macos-arm64-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.pkg.zip";
+    NSURL *cdnURL = [NSURL URLWithString:[CDNPackage stringByAppendingString:name]];
+    NSURL *githubURL = [NSURL URLWithString:[GitHubPackage stringByAppendingString:name]];
+    NSBundle *host = Bundle(root, stable, key);
+    FakeEngine *engine = [[[FakeEngine alloc] init] autorelease];
+    SPUUpdater *updater = (SPUUpdater *)engine;
+    KeyKeyMacUpdater *client = [[[KeyKeyMacUpdater alloc] initWithHostBundle:host engine:engine compositionCheck:nil] autorelease];
+    [client start]; [client checkForUpdates];
+    FakeItem *item = PackageItem(changed ? cdnURL : githubURL, 1);
+    FakeUpdateState *state = [[[FakeUpdateState alloc] init] autorelease];
+    state.stage = SPUUserUpdateStageNotDownloaded;
+    [client updater:updater didFindValidUpdate:(id)item];
+    [client updater:updater userDidMakeChoice:SPUUserUpdateChoiceInstall forUpdate:(id)item state:(id)state];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:item.fileURL];
+    [client updater:updater willDownloadUpdate:(id)item withRequest:request];
+    Check([request.URL isEqual:cdnURL], @"reviewed macOS enclosure downloads from AWS first");
+    NSError *offline = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCannotConnectToHost
+        userInfo:@{NSURLErrorFailingURLErrorKey:cdnURL}];
+    [client updater:updater failedToDownloadUpdate:(id)item error:offline];
+    [client updater:updater didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:SparkleError(SUDownloadError, offline)];
+    DrainMainQueue();
+    Check(engine.checks == 2, @"failed AWS package queues one retry");
+    FakeItem *refetched = PackageItem(item.fileURL, changed ? 2 : 1);
+    [client updater:updater didFindValidUpdate:(id)refetched];
+    if (!changed) {
+        refetched.signingValidationStatus = SPUAppcastSigningValidationStatusFailed;
+        Check(![client shouldResumeDownloadForItem:(id)refetched],
+            @"an appcast signature failure cannot inherit download consent");
+        refetched.signingValidationStatus = SPUAppcastSigningValidationStatusSkipped;
+    }
+    id<SPUUserDriver> driver = [[[NSClassFromString(@"KeyKeyMacUserDriver") alloc] init] autorelease];
+    FocusRecordingDriver *standard = [[[FocusRecordingDriver alloc] init] autorelease];
+    [(id)driver setValue:client forKey:@"owner"];
+    [(id)driver setValue:standard forKey:@"standard"];
+    __block int replies = 0;
+    [driver showUpdateFoundWithAppcastItem:(id)refetched state:(id)state reply:^(SPUUserUpdateChoice choice) {
+        Check(choice == SPUUserUpdateChoiceInstall, @"the fallback resumes the download choice");
+        replies++;
+        [client updater:updater userDidMakeChoice:choice forUpdate:(id)refetched state:(id)state];
+    }];
+    Check(changed ? replies == 0 && [standard.events containsObject:@"found"] : replies == 1 && standard.events.count == 0,
+        @"only the same package and signature inherit the user's download choice");
+    if (!changed) {
+        request = [NSMutableURLRequest requestWithURL:refetched.fileURL];
+        [client updater:updater willDownloadUpdate:(id)refetched withRequest:request];
+        Check([request.URL isEqual:githubURL], @"same signed package retries from GitHub Release");
+        [client updater:updater failedToDownloadUpdate:(id)refetched error:offline];
+        [client updater:updater didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:SparkleError(SUDownloadError, offline)];
+        DrainMainQueue();
+        Check(engine.checks == 2 && [[client snapshot][@"phase"] isEqualToString:@"failed"], @"GitHub package failure does not loop");
+
+        [client checkForUpdates];
+        [client updater:updater didFindValidUpdate:(id)item];
+        [client updater:updater userDidMakeChoice:SPUUserUpdateChoiceInstall forUpdate:(id)item state:(id)state];
+        request = [NSMutableURLRequest requestWithURL:item.fileURL];
+        [client updater:updater willDownloadUpdate:(id)item withRequest:request];
+        Check([request.URL isEqual:cdnURL], @"a later download prefers AWS again");
+        [client updater:updater didDownloadUpdate:(id)item];
+        [client updater:updater willExtractUpdate:(id)item];
+        [client updater:updater didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates error:SparkleError(SUSignatureError, nil)];
+        DrainMainQueue();
+        Check(engine.checks == 3 && [[client snapshot][@"phase"] isEqualToString:@"failed"],
+            @"a downloaded package with an invalid signature fails without changing sources");
+
+        [client checkForUpdates];
+        [client updater:updater didFindValidUpdate:(id)item];
+        [client updater:updater userDidMakeChoice:SPUUserUpdateChoiceInstall forUpdate:(id)item state:(id)state];
+        request = [NSMutableURLRequest requestWithURL:item.fileURL];
+        [client updater:updater willDownloadUpdate:(id)item withRequest:request];
+        [client userDidCancelDownload:updater];
+        [client updater:updater didFinishUpdateCycleForUpdateCheck:SPUUpdateCheckUpdates
+            error:[NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCancelled userInfo:nil]];
+        DrainMainQueue();
+        Check(engine.checks == 4 && [[client snapshot][@"phase"] isEqualToString:@"cancelled"],
+            @"cancelling the CDN package download does not restart it");
+    }
+    [client stop];
+    [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:host.bundleIdentifier];
 }
 
 int main(int argc, const char *argv[])
@@ -331,6 +512,11 @@ int main(int argc, const char *argv[])
         Check(![failed setBetaUpdates:YES], @"missing beta endpoint cannot silently fall back");
         [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[channelHost bundleIdentifier]];
         [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[[client valueForKey:@"_host"] bundleIdentifier]];
+
+        CheckFeedFallback(root, key, NO);
+        CheckFeedFallback(root, key, YES);
+        CheckPackageFallback(root, key, NO);
+        CheckPackageFallback(root, key, YES);
 
         // Real pinned Sparkle + a loopback TCP listener that never completes
         // TLS. This models a dead CDN without any external traffic or alerts.
