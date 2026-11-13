@@ -1,67 +1,36 @@
 {
-  "format": 1,
+  "base_database_sha256": "3273ed4f8618a702141b5327515e08758d49ca46b501fe9cfcdf0ed357433ae8",
+  "bigram_rows": 870697,
+  "canonical_database_sha256": "69975755bc8c9ce2d7bb27f6daa478b22c836f7b3bacf910515724b7d85e51b0",
   "description": "McBopomofo with deduplicated custom Unigrams; source-cooked document-frequency Bigram; personal names, anime and homophone additions inserted after training",
-  "training_articles": 2300,
-  "validation_articles": 131,
-  "base_database_sha256": "7353279b96032852c6995ed01e022e1e6886807a7d845a86a80120837b55477e",
-  "unigram_rows": 119159,
-  "bigram_rows": 883372,
-  "semantic_sha256": "44e467c511582b31d68afe096700a30e9fde5de7e443182438a79210b2e9307b",
-  "canonical_database_sha256": "cbe2e1018842797610b71a4f4b479332aa4508b32df629dd0ad7fa8075ee6c7c",
-  "unigram_total_count": 22609580.0,
+  "format": 1,
+  "rebuild": {
+    "cooker_report_file": "custom-unigram-cooker-report.json",
+    "cooker_report_sha256": "120d2c4468e830ac3e8f979c478e60322336e053319f280c66618f64a81e6f8c",
+    "downranked_file": "custom-unigram-downranked.tsv",
+    "downranked_sha256": "4d0546d4cae1f3c9199a836df3c401174005f3577ae7fc5e0053c15dd6df8e77",
+    "excluded_file": "custom-unigram-excluded.tsv",
+    "excluded_sha256": "b5f3d08a29f84b5aa87efb8f0dd4a5e351711fe86df02ac82fd48524761a6a16",
+    "partial_overlaps_file": "custom-unigram-partial-overlaps.tsv",
+    "partial_overlaps_sha256": "3b615f2bec55e8e22fba32ae121562acecca28a4b4ff78215bf413c90c087bc2",
+    "policy": "mcp-homophones-retained-low-ranked-long-partial-diagnostic-v3",
+    "seed_commit": "63a5a33beb5a24a23c91cd74d5ff021c65affde2",
+    "seed_database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
+    "validation": "collection-unigram-validation.json"
+  },
+  "semantic_sha256": "dab0db5035a5772ad49c2b8d1fa8b3c252f4b2e5cbbcb07f65e25f0153a9c5ee",
   "sources": {
-    "training_articles": [
-      {
-        "file": "typing-articles-v2.jsonl",
-        "articles": 1650,
-        "sha256": "ae70cc5274c5d131510a010aa07adf9eaca4be3f37345711e4c5516049cafe5d"
-      },
-      {
-        "file": "typing-articles-v3.jsonl",
-        "articles": 350,
-        "sha256": "8e783676d4a22cd92ae832e1a3be913d2e07252c8e2c4add76b55f6c725877de"
-      },
-      {
-        "file": "typing-articles-v4.jsonl",
-        "articles": 300,
-        "sha256": "ff625fc0b7be600347d7e61c9ddc3b4c4b8ada17f2b76950425f203505af6dc8"
-      }
-    ],
-    "protected_characters": {
-      "file": "basic-bigram-protected-characters.txt",
-      "characters": 122,
-      "sha256": "54c2a5eaa78b69d77b64ccffefe14c6da7cf6c20a2875c3fef9f60093f8d0cda"
-    },
-    "unigram_supplement": {
-      "file": "common-unigram-supplement.tsv",
-      "entries": 7,
-      "sha256": "b1bcff76f1551de638847680465113809579638d5794b256697a31ff6bba82ad"
-    },
-    "search_trend_unigram": {
-      "source_file": "search-trend-unigram-source.txt",
-      "source_terms": 550,
-      "source_sha256": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1",
-      "existing_terms_removed": 393,
-      "file": "search-trend-unigram.tsv",
-      "entries": 157,
-      "sha256": "e276a35a760f849e449c2309ca3b41d6b27a71c5f74d1ab697bb8cbe7b8cd445",
-      "review_file": "search-trend-unigram-review.tsv",
-      "review_sha256": "0b7b0dc636c2000f072c013d1cafa366b1fdc62f8a6524c2c5e1f2cac9864433",
-      "reading_overrides": 5,
-      "reading_overrides_sha256": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
-      "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))"
-    },
-    "phrase_unigram_supplement": {
-      "file": "common-phrase-unigram.tsv",
-      "sha256": "c5d85926eca9ef33644dccec27543ffe5762dcaa2ad124f6c14102ea9ef99584",
-      "entries": 2,
-      "inserted": 1,
-      "retained": 1,
-      "validation_file": "whole-phrase-unigram-validation.json",
-      "validation_sha256": "8ce428d08f9fc9fa626eff1d0c40ff10df812672bb2b4bfdbf6a16ede431151e",
-      "policy": "Insert missing reviewed whole phrases at the minimum integer count above same-reading unigram tokenizations; retain existing phrase probabilities. Do not change bigrams or existing unigrams."
+    "cin_reading_frequencies": {
+      "entries": 3863,
+      "file": "../CINReadingFrequency/cin-character-reading-frequencies.tsv",
+      "sha256": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb"
     },
     "collection_unigram_supplement": {
+      "collision_rows_downranked": 143,
+      "collision_rows_excluded": 0,
+      "cooked": true,
+      "duplicate_rows_skipped": 50,
+      "existing_rows_skipped": 1745,
       "files": [
         {
           "file": "phrase.agriculture-food.tsv",
@@ -180,46 +149,239 @@
           "sha256": "3b35634cc638940ebef1db5a09b6e5bbc838fd70336a612c59ec3cee2092cae6"
         }
       ],
-      "source_rows": 6560,
-      "inserted": 4765,
-      "existing_rows_skipped": 1745,
-      "duplicate_rows_skipped": 50,
-      "rejected": 0,
       "frequency_policy": "minimum",
-      "overrides_file": "collection-unigram-overrides.tsv",
+      "inserted": 4765,
       "list_file": "collection-unigram.tsv",
-      "skipped_file": "collection-unigram-skipped.tsv",
-      "search_presence_file": "search-trend-unigram-presence.tsv",
-      "report_file": "collection-unigram-import.json",
-      "validation_file": "collection-unigram-validation.json",
-      "overrides_sha256": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
       "list_sha256": "8dea501dd0249cbb59927ca0e20b3052848202baf9343a38c2820a463be8faa9",
-      "skipped_sha256": "b1fe2a60e093281f954adaef314a92113bf25dd91640772568188c36fc6ed600",
+      "overrides_file": "collection-unigram-overrides.tsv",
+      "overrides_sha256": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
+      "rejected": 0,
+      "report_file": "collection-unigram-import.json",
+      "report_sha256": "342bdf3c774811cab37623610d52827891e5d47e707f91931d9f4d8b8bf1187b",
+      "search_presence_file": "search-trend-unigram-presence.tsv",
       "search_presence_sha256": "0e398aa45a4bb4f1b5d5ce09d99c80e84f8337ed5a60e9ed4e21b4819ec5a88a",
-      "report_sha256": "ade9dbfbde576b31009d5b25018397e4751fd7676b2c16176e83299381f115d9",
-      "validation_sha256": "6c71cdf748da9cd5f8e5812872652c27f34f31653250ee9c2fba009583112472",
-      "collision_rows_excluded": 0,
-      "collision_rows_downranked": 143,
-      "cooked": true
+      "skipped_file": "collection-unigram-skipped.tsv",
+      "skipped_sha256": "b1fe2a60e093281f954adaef314a92113bf25dd91640772568188c36fc6ed600",
+      "source_rows": 6560,
+      "validation_file": "collection-unigram-validation.json",
+      "validation_sha256": "6cf98d336018f69173f1879df269e0d06ae1614e8d9087a9f75625bcaf7893e6"
     },
-    "cin_reading_frequencies": {
-      "file": "../CINReadingFrequency/cin-character-reading-frequencies.tsv",
-      "sha256": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb",
-      "entries": 3863
+    "phrase_unigram_supplement": {
+      "entries": 2,
+      "file": "common-phrase-unigram.tsv",
+      "inserted": 1,
+      "policy": "Insert missing reviewed whole phrases at the minimum integer count above same-reading unigram tokenizations; retain existing phrase probabilities. Do not change bigrams or existing unigrams.",
+      "retained": 1,
+      "sha256": "c5d85926eca9ef33644dccec27543ffe5762dcaa2ad124f6c14102ea9ef99584",
+      "validation_file": "whole-phrase-unigram-validation.json",
+      "validation_sha256": "8ce428d08f9fc9fa626eff1d0c40ff10df812672bb2b4bfdbf6a16ede431151e"
+    },
+    "protected_characters": {
+      "characters": 122,
+      "file": "basic-bigram-protected-characters.txt",
+      "sha256": "54c2a5eaa78b69d77b64ccffefe14c6da7cf6c20a2875c3fef9f60093f8d0cda"
+    },
+    "search_trend_unigram": {
+      "entries": 157,
+      "existing_terms_removed": 393,
+      "file": "search-trend-unigram.tsv",
+      "frequency_policy": "min(100, max(1, exact substring occurrences in all 2300 training articles))",
+      "reading_overrides": 5,
+      "reading_overrides_sha256": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
+      "review_file": "search-trend-unigram-review.tsv",
+      "review_sha256": "0b7b0dc636c2000f072c013d1cafa366b1fdc62f8a6524c2c5e1f2cac9864433",
+      "sha256": "e276a35a760f849e449c2309ca3b41d6b27a71c5f74d1ab697bb8cbe7b8cd445",
+      "source_file": "search-trend-unigram-source.txt",
+      "source_sha256": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1",
+      "source_terms": 550
+    },
+    "standalone_composition_weights": {
+      "bigram_upserts": 180,
+      "cin_overrides": [
+        [
+          "0i",
+          "佔"
+        ],
+        [
+          "11",
+          "需"
+        ],
+        [
+          "1]",
+          "醒"
+        ],
+        [
+          "29",
+          "勾"
+        ],
+        [
+          "6J",
+          "賢"
+        ],
+        [
+          "6N",
+          "兒"
+        ],
+        [
+          "7`",
+          "炸"
+        ],
+        [
+          "8M",
+          "橫"
+        ],
+        [
+          "8i",
+          "便"
+        ],
+        [
+          ":C",
+          "折"
+        ],
+        [
+          "=A",
+          "暇"
+        ],
+        [
+          "=k",
+          "亢"
+        ],
+        [
+          "?1",
+          "他"
+        ],
+        [
+          "Ci",
+          "見"
+        ],
+        [
+          "IY",
+          "懶"
+        ],
+        [
+          "K;",
+          "嗔"
+        ],
+        [
+          "MX",
+          "叟"
+        ],
+        [
+          "Nb",
+          "冊"
+        ],
+        [
+          "O1",
+          "呀"
+        ],
+        [
+          "O@",
+          "足"
+        ],
+        [
+          "O_",
+          "父"
+        ],
+        [
+          "PA",
+          "滑"
+        ],
+        [
+          "QG",
+          "刨"
+        ],
+        [
+          "X[",
+          "檔"
+        ],
+        [
+          "Y[",
+          "倘"
+        ],
+        [
+          "[Z",
+          "沈"
+        ],
+        [
+          "^Y",
+          "捻"
+        ],
+        [
+          "_k",
+          "忘"
+        ],
+        [
+          "`G",
+          "杓"
+        ],
+        [
+          "`d",
+          "蔡"
+        ],
+        [
+          "aO",
+          "幾"
+        ],
+        [
+          "bB",
+          "瘥"
+        ],
+        [
+          "e[",
+          "嚷"
+        ],
+        [
+          "h5",
+          "嗨"
+        ],
+        [
+          "nk",
+          "撞"
+        ],
+        [
+          "rA",
+          "伯"
+        ],
+        [
+          "{?",
+          "提"
+        ],
+        [
+          "|?",
+          "泥"
+        ]
+      ],
+      "file": "DataSource/CINReadingFrequency/standalone-composition-weights.json",
+      "selection_file": "DataSource/CINReadingFrequency/standalone-composition-review.tsv",
+      "selection_sha256": "cf9b8ef7ef244144d0f791d2572421e5be7905b4ce162e296dd1984adc975ce5",
+      "sha256": "eea55dfd30078f6d47b26b278975f3061845e124dd2cdae5a26c1a242713346c",
+      "unigram_upserts": 168
+    },
+    "training_articles": [
+      {
+        "articles": 1650,
+        "file": "typing-articles-v2.jsonl",
+        "sha256": "460a136690046afee2f98824717613a84b7aa2e4df2534bcd1f5491619fdd132"
+      },
+      {
+        "articles": 350,
+        "file": "typing-articles-v3.jsonl",
+        "sha256": "e1f39e99f721b12d05c97b538abf5ce91736f4031a9ef7929dd66d539bfdf790"
+      },
+      {
+        "articles": 300,
+        "file": "typing-articles-v4.jsonl",
+        "sha256": "01efe3ddf88f44dff88df242a366581fbe2d54b1f4b83aadedb5393c003c62e9"
+      }
+    ],
+    "unigram_supplement": {
+      "entries": 7,
+      "file": "common-unigram-supplement.tsv",
+      "sha256": "b1bcff76f1551de638847680465113809579638d5794b256697a31ff6bba82ad"
     }
   },
-  "rebuild": {
-    "seed_commit": "63a5a33beb5a24a23c91cd74d5ff021c65affde2",
-    "seed_database_sha256": "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252",
-    "policy": "mcp-homophones-retained-low-ranked-long-partial-diagnostic-v3",
-    "validation": "collection-unigram-validation.json",
-    "excluded_file": "custom-unigram-excluded.tsv",
-    "excluded_sha256": "b5f3d08a29f84b5aa87efb8f0dd4a5e351711fe86df02ac82fd48524761a6a16",
-    "downranked_file": "custom-unigram-downranked.tsv",
-    "downranked_sha256": "4d0546d4cae1f3c9199a836df3c401174005f3577ae7fc5e0053c15dd6df8e77",
-    "partial_overlaps_file": "custom-unigram-partial-overlaps.tsv",
-    "partial_overlaps_sha256": "3b615f2bec55e8e22fba32ae121562acecca28a4b4ff78215bf413c90c087bc2",
-    "cooker_report_file": "custom-unigram-cooker-report.json",
-    "cooker_report_sha256": "f0c11838bda89691c0e2c614e7235ced029ae58d165d03f0d70a1fd1e0722622"
-  }
+  "training_articles": 2300,
+  "unigram_rows": 119193,
+  "unigram_total_count": 22609580.0,
+  "validation_articles": 131
 }

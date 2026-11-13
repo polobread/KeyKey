@@ -7,6 +7,10 @@ import argparse
 import json
 import re
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Source/Distributions/Takao/DatabaseCooker"))
+from training_name_markers import name_marker_parts
 
 
 ROOT = Path(__file__).resolve().parent
@@ -96,14 +100,19 @@ def main() -> None:
         article = candidates.get(prompt["id"])
         if not article:
             continue
-        article["han_chars"] = han_chars(article["text"])
+        try:
+            plain_text = "".join(name_marker_parts(article["text"], prompt["id"]))
+        except ValueError as error:
+            rejected.append({**article, "reasons": [str(error)]})
+            continue
+        article["han_chars"] = han_chars(plain_text)
         minimum, maximum = prompt["accepted_char_range"]
         reasons = []
-        if not article["text"]:
+        if not plain_text:
             reasons.append("empty output")
         if not minimum <= article["han_chars"] <= maximum:
             reasons.append(f"Han character count {article['han_chars']} outside {minimum}-{maximum}")
-        first_line = article["text"].splitlines()[0].strip() if article["text"] else ""
+        first_line = plain_text.splitlines()[0].strip() if plain_text else ""
         if first_line in {prompt["title"], f"# {prompt['title']}"}:
             reasons.append("output repeats title")
         if reasons:

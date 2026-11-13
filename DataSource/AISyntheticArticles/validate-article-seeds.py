@@ -8,6 +8,10 @@ import hashlib
 import json
 import re
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Source/Distributions/Takao/DatabaseCooker"))
+from training_name_markers import name_marker_parts
 
 
 ROOT = Path(__file__).resolve().parent
@@ -106,7 +110,11 @@ def main() -> None:
         checked += 1
         raw = path.read_text(encoding="utf-8").strip()
         first, separator, body = raw.partition("\n")
-        body = body.strip()
+        try:
+            body = "".join(name_marker_parts(body.strip(), str(path)))
+        except ValueError as error:
+            failures.append(str(error))
+            continue
         if not separator or first != f"# {prompt['title']}":
             failures.append(f"{prompt['id']}: title mismatch")
         count = han_chars(body)

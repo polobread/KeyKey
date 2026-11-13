@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "Source/Distributions/Takao/DatabaseCooker"))
 from unigram_collisions import CollisionIndex, write_exclusions, POLICY
+from training_name_markers import name_marker_parts
 DEFAULT_SOURCE = HERE / "search-trend-unigram-source.txt"
 DEFAULT_OUTPUT = HERE / "search-trend-unigram.tsv"
 DEFAULT_REVIEW = HERE / "search-trend-unigram-review.tsv"
@@ -156,7 +157,10 @@ def training_texts() -> tuple[list[str], list[dict[str, object]]]:
         rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
         if len(rows) != count:
             raise ValueError(f"{path}: expected {count} articles")
-        texts.extend(row["text"] for row in rows)
+        # Preserve the search Unigram frequency policy on the original prose.
+        # The two Bigram training stages handle the marked spans separately.
+        texts.extend("".join(name_marker_parts(row["text"], f"{path}:{row['prompt_id']}"))
+                     for row in rows)
         sources.append({"file": path.name, "articles": count, "sha256": sha256(path)})
     return texts, sources
 

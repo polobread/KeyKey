@@ -1,4 +1,4 @@
-"""Exclude zero-count target costs without changing engine input or selections."""
+"""Exclude annotated target costs while preserving engine input and selections."""
 from collections import Counter
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
@@ -6,13 +6,29 @@ from pathlib import Path
 
 from typing_cost import han, key_count, summarize_corrections
 
-DEFAULT_COUNTS = Path(__file__).resolve().parents[1] / "McBopomofo/phrase.occ"
+DATA_SOURCE = Path(__file__).resolve().parents[1]
+DEFAULT_COUNTS = DATA_SOURCE / "McBopomofo/phrase.occ"
 POLICY = {
     "definition": "explicit single-character source count equals zero; last occurrence wins",
     "context": "preserve original text, readings, engine states and selections",
     "excluded": "phonetic keys; correction events whose corrected targets are all zero-count",
     "mixed_event": "keep full cost when any corrected target has positive or missing count",
     "retained": "literal keys and commits; missing counts; all positive fractional counts",
+}
+
+
+PERSON_NAME_POLICY = {
+    "definition": "person-name spans at exact positions in each article",
+    "context": POLICY["context"],
+    "excluded": "phonetic keys; correction events whose corrected targets are all marked",
+    "mixed_event": "keep full cost when any corrected target remains in scope",
+    "retained": "literal keys and commits",
+}
+
+
+CHARACTER_POLICY = {
+    **PERSON_NAME_POLICY,
+    "definition": "explicitly listed Han characters at every target occurrence",
 }
 
 
@@ -34,9 +50,23 @@ def load_zero_count_characters(path):
     return {word for word, count in counts.items() if len(word) == 1 and han(word) and count == 0}
 
 
+def character_positions(document, characters):
+    return {(block_index, index)
+            for block_index, block in enumerate(document) if block["han"]
+            for index, character in enumerate(block["text"]) if character in characters}
+
+
+zero_count_positions = character_positions
+
+
 def exclude_zero_count_actions(report, document, zero_characters):
-    if "zero_frequency_exclusion" in report:
-        raise ValueError("Report already excludes zero-frequency costs")
+    return exclude_position_actions(report, document, zero_count_positions(document, zero_characters),
+                                    "zero_frequency")
+
+
+def exclude_position_actions(report, document, mask, kind):
+    if "counted_syllables" in report:
+        raise ValueError("Report already excludes target costs")
     result = deepcopy(report)
     positions = []
     for block_index, block in enumerate(document):
@@ -45,12 +75,13 @@ def exclude_zero_count_actions(report, document, zero_characters):
         if len(block["text"]) != len(block["queries"]):
             raise ValueError("Target text/readings length mismatch")
         for index, (character, query) in enumerate(zip(block["text"], block["queries"])):
-            if character in zero_characters:
+            if (block_index, index) in mask:
                 positions.append({"block": block_index, "index": index, "character": character,
                                   "query": query, "phonetic_keys": key_count(query)})
     if report["syllables"] != sum(len(b["queries"]) for b in document if b["han"]):
         raise ValueError("Report syllables differ from frozen document")
-    mask = {(p["block"], p["index"]) for p in positions}
+    if len(positions) != len(mask):
+        raise ValueError("Excluded positions differ from frozen document")
     removed = Counter(phonetic_keys=sum(p["phonetic_keys"] for p in positions))
     kept_errors, excluded_events = [], []
     for event in result["errors"]:
@@ -67,7 +98,7 @@ def exclude_zero_count_actions(report, document, zero_characters):
             excluded_events.append(event)
         else:
             if ignored:
-                event["excluded_zero_frequency_changes"] = ignored
+                event[f"excluded_{kind}_changes"] = ignored
                 event["changes"] = kept
             kept_errors.append(event)
     if sum(e["action_count"] for e in report["errors"]) != report["correction_actions"]:
@@ -84,12 +115,35 @@ def exclude_zero_count_actions(report, document, zero_characters):
         total_actions=sum(counts.values()), actions=counts, corrections=len(kept_errors),
         correction_actions=correction_actions, errors=kept_errors,
         correction_summary=summary, character_correction_summary=characters,
-        counted_syllables=report["syllables"] - len(positions),
-        zero_frequency_exclusion={
-            "positions": positions, "excluded_syllables": len(positions),
-            "removed_actions": dict(removed), "removed_total_actions": sum(removed.values()),
-            "excluded_correction_events": excluded_events,
-            "unfiltered_total_actions": report["total_actions"],
-            "unfiltered_correction_actions": report["correction_actions"],
-        })
+        counted_syllables=report["syllables"] - len(positions))
+    result[f"{kind}_exclusion"] = {
+        "positions": positions, "excluded_syllables": len(positions),
+        "removed_actions": dict(removed), "removed_total_actions": sum(removed.values()),
+        "excluded_correction_events": excluded_events,
+        "unfiltered_total_actions": report["total_actions"],
+        "unfiltered_correction_actions": report["correction_actions"],
+    }
     return result
+
+
+def unfiltered_metrics(report, kind):
+    """Recover original diagnostics from a cost-filtered trace."""
+    exclusion = report[f"{kind}_exclusion"]
+    errors = list(exclusion["excluded_correction_events"])
+    for event in report["errors"]:
+        changes = event.get(f"excluded_{kind}_changes", [])
+        errors.append({
+            **event,
+            "changes": sorted(event["changes"] + changes, key=lambda change: change["index"]),
+        })
+    correction_actions, summary, characters = summarize_corrections(errors)
+    if correction_actions != exclusion["unfiltered_correction_actions"]:
+        raise ValueError("Raw correction totals differ from excluded trace accounting")
+    return {
+        "total_actions": exclusion["unfiltered_total_actions"],
+        "syllables": report["syllables"],
+        "corrections": len(errors),
+        "correction_actions": correction_actions,
+        "correction_summary": summary,
+        "character_correction_summary": characters,
+    }

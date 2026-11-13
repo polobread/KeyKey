@@ -25,10 +25,14 @@ from smart_mandarin_model import file_sha256, semantic_sha256, verify_manifest
 from unigram_collisions import CollisionIndex, write_exclusions, POLICY
 from rebuild_model import make_cin, cook, write_lexicon, add_convenience_words
 from cin_reading_frequencies import DEFAULT_SOURCE as DEFAULT_CIN_FREQUENCIES, load as load_cin_frequencies
+import standalone_composition_weights
 
 ROOT = Path(__file__).resolve().parents[4]
 COOKER = Path(__file__).resolve().parent
 DATA = Path("DataSource/AISyntheticBigram")
+EXCLUDED_REGRESSION_CHARACTERS = "她他時十"
+STANDALONE_WEIGHTS = Path("DataSource/CINReadingFrequency/standalone-composition-weights.json")
+STANDALONE_SELECTION = Path("DataSource/CINReadingFrequency/standalone-composition-review.tsv")
 DB = Path("Source/Distributions/Takao/CookedDatabase/KeyKey.db")
 BASE_COMMIT = "63a5a33beb5a24a23c91cd74d5ff021c65affde2"
 BASE_SHA = "28b18de318ac13eece6a0631c92d5e468c8bb4c5eeba11283287493b81bcc252"
@@ -64,10 +68,27 @@ def publication_decision(delta, maximum=30):
     if maximum < 0:
         raise ValueError("maximum regression actions must be nonnegative")
     accepted = delta["delta"] <= maximum
+    scoring = f"排除人名及「{'、'.join(EXCLUDED_REGRESSION_CHARACTERS)}」後，總動作差 {delta['delta']} 次"
     return {"decision": "adopted" if accepted else "rejected", "maximum_regression_actions": maximum,
             "delta_actions": delta["delta"],
-            "reason": (f"總動作增加 {delta['delta']} 次，未超過 {maximum} 次門檻" if accepted else
-                       f"總動作增加 {delta['delta']} 次，超過 {maximum} 次門檻；保留原 DB，僅回存候選與原因")}
+            "reason": (f"{scoring}，未超過 {maximum} 次門檻" if accepted else
+                       f"{scoring}，超過 {maximum} 次門檻，保留原 DB 並回存候選與原因")}
+
+
+def evaluate_rebuild(baseline, database, reference, output, jobs, maximum):
+    # Freeze one set of readings and replay each article once per model.
+    subprocess.run([sys.executable, "-B", str(ROOT / DATA / "benchmark-bigram-structure.py"),
+                    f"before={baseline}", f"rebuilt={database}", "--reference-db", str(reference),
+                    "--exclude-person-names",
+                    "--exclude-characters", EXCLUDED_REGRESSION_CHARACTERS,
+                    "--output", str(output), "--jobs", str(jobs)], check=True)
+    comparison = json.loads((output / "comparison.json").read_text())
+    delta = comparison["comparisons"]["rebuilt"]
+    decision = publication_decision(delta, maximum)
+    delta["passes_strict_diagnostic"] = delta.pop("passes", None)
+    delta["passes"] = decision["decision"] == "adopted"
+    delta["maximum_regression_actions"] = maximum
+    return comparison, delta, decision
 
 
 def canonical_json(value):
@@ -224,6 +245,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True, help="new staging directory")
     parser.add_argument("--apply", action="store_true", help="copy verified generated files into this checkout")
     parser.add_argument("--jobs", type=int, default=8)
+    parser.add_argument("--training-articles", nargs=3, type=Path, metavar=("V2", "V3", "V4"),
+                        help="alternate v2, v3 and v4 training files for a staged experiment")
     cin_options = parser.add_mutually_exclusive_group()
     cin_options.add_argument("--cin-reading-frequencies", type=Path, default=DEFAULT_CIN_FREQUENCIES,
                              help="optional character/reading counts (enabled by default)")
@@ -231,13 +254,22 @@ def main():
                              const=None, dest="cin_reading_frequencies", help="use the original reading-weight estimator")
     parser.add_argument("--max-regression-actions", type=int, default=30, help="adopt when total action increase is at most this value; otherwise publish audit files only")
     args = parser.parse_args()
+    if args.apply and args.training_articles:
+        parser.error("--training-articles requires a staged rebuild without --apply")
+    finalizer = module("rebuild_finalizer", COOKER / "finalize-smart-mandarin-model.py")
+    training_paths = finalizer.DEFAULT_TRAINING
+    if args.training_articles:
+        training_paths = tuple(path.resolve() for path in args.training_articles)
+        if [path.name for path in training_paths] != [path.name for path in finalizer.DEFAULT_TRAINING]:
+            parser.error("--training-articles must use the original v2, v3 and v4 filenames in order")
     if args.max_regression_actions < 0:
         parser.error("--max-regression-actions must be nonnegative")
+    cin_entries = []
     if args.cin_reading_frequencies is not None:
         args.cin_reading_frequencies = args.cin_reading_frequencies.resolve()
         if not args.cin_reading_frequencies.is_relative_to(ROOT):
             parser.error("CIN frequency source must be inside the checkout for reproducible manifests")
-        load_cin_frequencies(args.cin_reading_frequencies)
+        cin_entries = load_cin_frequencies(args.cin_reading_frequencies)
     inspector = module("rebuild_validation_corpus", ROOT / "DataSource/AISyntheticArticles/verify-typing-articles-v5.py")
     validation_corpus = inspector.inspect(inspector.DEFAULT_ARTICLES)
     output = args.output.resolve()
@@ -263,7 +295,6 @@ def main():
     make_cin(cin)
     bootstrap = cook(database, cin, output / "bootstrap", cin_reading_frequencies=args.cin_reading_frequencies)
     total = int(bootstrap["unigram_total_count"])
-    finalizer = module("rebuild_finalizer", COOKER / "finalize-smart-mandarin-model.py")
     collision_index = CollisionIndex()
     subprocess.run([sys.executable, "-B", str(ROOT / DATA / "build-search-trend-unigram.py"),
                     "--database", str(database), "--output", str(data / "search-trend-unigram.tsv"),
@@ -304,7 +335,7 @@ def main():
     builder = module("rebuild_article_corpus", ROOT / DATA / "build-versioned-article-corpus.py")
     builder.OUTPUT = output / "training-2300.txt"
     builder.REPORT = output / "training-2300.json"
-    builder.main()
+    builder.main(training_paths)
     cooked = cook(database, cin, output / "cooked", custom, builder.OUTPUT,
                   cin_reading_frequencies=args.cin_reading_frequencies)
     total = cooked["unigram_total_count"]
@@ -312,7 +343,7 @@ def main():
     write_lexicon(staged_search, [row for row in search_entries if row["word"] not in convenience_words])
     stage_manifest = output / "finalizer-input.json"
     write_json(stage_manifest, {"format": 1, "unigram_total_count": total, "sources": {}})
-    refinement = finalizer.finalize(database, finalizer.DEFAULT_TRAINING,
+    refinement = finalizer.finalize(database, training_paths,
         finalizer.DEFAULT_PROTECTED, finalizer.DEFAULT_SUPPLEMENT, staged_search,
         finalizer.DEFAULT_COUNTS, stage_manifest, cin_reading_frequencies=args.cin_reading_frequencies)
     refinement.pop("database", None)
@@ -322,7 +353,23 @@ def main():
     add_convenience_words(database, [row for row in convenience if row["word"] in low_ranked_words], total)
     collection["policy"] = "Chinese aliases; text deduplication; homophones retained below existing candidates; long partial overlaps diagnostic only; anime and colliding words added after training at count <=0.01; other personal names added after training at count <=1"
     write_lexicon(data / "search-trend-unigram.tsv", search_entries)
+    weights_metadata = None
     with sqlite3.connect(database) as db:
+        if not args.training_articles and args.cin_reading_frequencies == DEFAULT_CIN_FREQUENCIES.resolve():
+            weights_path = ROOT / STANDALONE_WEIGHTS
+            weights_hash = file_sha256(weights_path)
+            weights = standalone_composition_weights.load(weights_path, total)
+            selection_hash = file_sha256(ROOT / STANDALONE_SELECTION)
+            if weights["selection_sha256"] != selection_hash:
+                raise ValueError("reviewed composition selections differ from the weight source")
+            standalone_composition_weights.apply(db, weights)
+            cin_keys = {(row["qstring"], row["character"]) for row in cin_entries}
+            weights_metadata = {
+                "file": STANDALONE_WEIGHTS.as_posix(), "sha256": weights_hash,
+                "selection_file": STANDALONE_SELECTION.as_posix(), "selection_sha256": selection_hash,
+                "unigram_upserts": len(weights["unigrams"]), "bigram_upserts": len(weights["bigrams"]),
+                "cin_overrides": sorted(cin_keys.intersection(tuple(row["key"]) for row in weights["unigrams"])),
+            }
         rebuild_associations(db, paths, output)
         if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             raise ValueError("rebuilt database failed integrity check")
@@ -344,6 +391,8 @@ def main():
         expected = cooked["cin_reading_frequencies"]["sha256"]
         if bootstrap["cin_reading_frequencies"]["sha256"] != expected or file_sha256(args.cin_reading_frequencies) != expected:
             raise ValueError("CIN frequency source changed during rebuild")
+    if weights_metadata is not None:
+        source_paths.extend((ROOT / STANDALONE_WEIGHTS, ROOT / STANDALONE_SELECTION))
     write_json(data / "custom-unigram-cooker-report.json", {
         "policy": POLICY, "partial_span_characters": 2, "cooker": cooked,
         "sources": [{"file": str(path.relative_to(ROOT)), "sha256": file_sha256(path)} for path in source_paths],
@@ -388,20 +437,15 @@ def main():
                              "see custom-unigram-excluded.tsv" if excluded else "adopted"))
     write_json(data / "collection-unigram-import.json", {"database_sha256": db_hash, "semantic_sha256": digest,
                "base_commit": BASE_COMMIT, "sources": source_records(paths), "unigram_total_count": total, **collection})
-    # Full fixed regression uses one reading reference and fresh processes.
-    subprocess.run([sys.executable, "-B", str(ROOT / DATA / "benchmark-bigram-structure.py"),
-                    f"before={baseline}", f"rebuilt={database}", "--reference-db", str(reference),
-                    "--output", str(output / "benchmark"), "--jobs", str(args.jobs)], check=True)
-    comparison = json.loads((output / "benchmark/comparison.json").read_text())
-    delta = comparison["comparisons"]["rebuilt"]
-    decision = publication_decision(delta, args.max_regression_actions)
-    delta["passes_strict_diagnostic"] = delta.pop("passes", None)
-    delta["passes"] = decision["decision"] == "adopted"
-    delta["maximum_regression_actions"] = args.max_regression_actions
+    comparison, delta, decision = evaluate_rebuild(
+        baseline, database, reference, output / "benchmark", args.jobs, args.max_regression_actions)
     comparison.update(database_sha256=db_hash, source_database_sha256=original_hash,
-                      role="rebuild regression against checked-in DB; not a new blind holdout")
+                      role="fixed rebuild regression against the checked-in DB")
     write_json(data / "collection-unigram-validation.json", comparison)
     sources = manifest["sources"]
+    sources.pop("standalone_composition_weights", None)
+    if weights_metadata is not None:
+        sources["standalone_composition_weights"] = weights_metadata
     sources.pop("cin_reading_frequencies", None)
     if args.cin_reading_frequencies is not None:
         sources["cin_reading_frequencies"] = {
@@ -447,8 +491,15 @@ def main():
     write_json(data / "smart-mandarin-model-manifest.json", manifest)
     # Copy read-only source evidence only to the staging tree for validation.
     evidence = stage / "DataSource"
-    for source_dir in ("AISyntheticArticles", "chichi77Collection", "McBopomofo"):
+    for source_dir in ("chichi77Collection", "McBopomofo"):
         (evidence / source_dir).symlink_to(ROOT / "DataSource" / source_dir, target_is_directory=True)
+    article_evidence = evidence / "AISyntheticArticles"
+    article_evidence.mkdir()
+    training_evidence = {path.name: path for path in training_paths}
+    for source in (ROOT / "DataSource/AISyntheticArticles").iterdir():
+        (article_evidence / source.name).symlink_to(
+            training_evidence.get(source.name, source), target_is_directory=source.is_dir()
+        )
     for source in (ROOT / DATA).iterdir():
         if source.is_file() and not (data / source.name).exists():
             (data / source.name).symlink_to(source)
@@ -464,7 +515,7 @@ def main():
     v5["evaluation"]["latest_automated_rebuild"] = {
         "database_sha256": db_hash, "semantic_sha256": digest,
         "summary": {key: value for key, value in comparison["summaries"]["rebuilt"].items()
-                    if key not in ("character_corrections", "tiers")},
+                    if key not in ("character_corrections", "tiers", "unfiltered")},
         "comparison": comparison["comparisons"]["rebuilt"],
         "report": "../AISyntheticBigram/collection-unigram-validation.json",
     }
@@ -497,13 +548,8 @@ def main():
         path.write_text(text)
         generated.append(path)
     relative_files = sorted(str(p.relative_to(stage)) for p in generated)
-    (stage / "DataSource/AISyntheticArticles").unlink()
-    (stage / "DataSource/AISyntheticArticles").mkdir()
+    (stage / v5_path).unlink()
     shutil.copyfile(v5_output, stage / v5_path)
-    for source in (ROOT / "DataSource/AISyntheticArticles").iterdir():
-        destination = stage / "DataSource/AISyntheticArticles" / source.name
-        if not destination.exists():
-            destination.symlink_to(source, target_is_directory=source.is_dir())
     relative_files.append(str(v5_path))
     agents_path = Path("AGENTS.md")
     agents = (ROOT / agents_path).read_text()
@@ -512,20 +558,25 @@ def main():
     (stage / agents_path).write_text(agents)
     relative_files.append(str(agents_path))
     relative_files.sort()
-    delta = comparison["comparisons"]["rebuilt"]
-    decision = publication_decision(delta, args.max_regression_actions)
     review_relative = DATA / "rebuild-review"
     review_dir = stage / review_relative
     review_dir.mkdir(parents=True)
-    input_paths = [*source_paths, *paths, *finalizer.DEFAULT_TRAINING,
-        *sorted(inspector.DEFAULT_ARTICLES.glob("tw-corpus-*.md")),
+    validation_paths = sorted(inspector.DEFAULT_ARTICLES.glob("tw-corpus-*.md"))
+    input_paths = [*source_paths, *paths, *validation_paths,
         ROOT / "DataSource/AssociatedPhraseCollectionNames.tsv",
         *(ROOT / DATA / name for name in ("common-unigram-supplement.tsv", "common-phrase-unigram.tsv",
           "search-trend-unigram-source.txt", "search-trend-reading-overrides.tsv",
           "collection-unigram-overrides.tsv", "basic-bigram-protected-characters.txt"))]
+    inputs = {str(path.relative_to(ROOT)): file_sha256(path) for path in input_paths}
+    validation_sources = [{"id": path.stem, "sha256": inputs[str(path.relative_to(ROOT))]}
+                          for path in validation_paths]
+    if validation_sources != comparison["identity"]["articles"]:
+        raise ValueError("validation articles changed during rebuild")
+    inputs.update({str(path.relative_to(ROOT)): file_sha256(source)
+                   for path, source in zip(finalizer.DEFAULT_TRAINING, training_paths)})
     review = {**decision, "validation_articles": validation_corpus["article_count"], "before_sha256": original_hash, "candidate_sha256": db_hash,
               "candidate_semantic_sha256": digest, "rows": rows, "source_totals": collection["totals"],
-              "regression": delta, "inputs": {str(p.relative_to(ROOT)): file_sha256(p) for p in input_paths}}
+              "regression": delta, "inputs": inputs}
     write_json(review_dir / "latest.json", review)
     write_json(review_dir / "comparison.json", comparison)
     for name in ("collection-unigram.tsv", "search-trend-unigram.tsv", "custom-unigram-excluded.tsv", "custom-unigram-downranked.tsv", "custom-unigram-partial-overlaps.tsv", "custom-unigram-cooker-report.json"):

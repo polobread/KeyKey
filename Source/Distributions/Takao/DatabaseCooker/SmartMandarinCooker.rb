@@ -98,24 +98,50 @@ def segment_run(run, readings, probabilities)
   paths[characters.length] || []
 end
 
-def sentence_sequences(line, readings, probabilities)
-  text = line.strip
-  return [] if text.empty? || text.start_with?("#")
-
-  if text.match?(/\s/)
+def sentence_segments(text, readings, probabilities, whitespace_delimited, start_boundary, end_boundary)
+  if whitespace_delimited
     tokens = text.split.flat_map do |field|
       field.scan(/\p{Han}+/).flat_map do |run|
         readings.key?(run) ? [run] : segment_run(run, readings, probabilities)
       end
     end
-    return tokens.slice_when { |left, right| left.nil? || right.nil? }
-                 .map { |sequence| sequence.compact }
-                 .reject(&:empty?)
+    sequences = tokens.slice_when { |left, right| left.nil? || right.nil? }
+                      .map { |sequence| sequence.compact }.reject(&:empty?)
+    return sequences.each_with_index.map do |sequence, index|
+      [sequence, start_boundary || index.positive? || tokens.first.nil?,
+       end_boundary || index < sequences.length - 1 || tokens.last.nil?]
+    end
   end
 
-  text.scan(/\p{Han}+/).map do |run|
-    segment_run(run, readings, probabilities).compact
-  end.reject(&:empty?)
+  sequences = []
+  text.scan(/\p{Han}+/) do |run|
+    match = Regexp.last_match
+    tokens = segment_run(run, readings, probabilities).compact
+    unless tokens.empty?
+      sequences << [tokens, start_boundary || match.begin(0).positive?,
+                    end_boundary || match.end(0) < text.length]
+    end
+  end
+  sequences
+end
+
+def sentence_sequences(line, readings, probabilities, location)
+  text = line.strip
+  parts = text.split(/(〖[^〖〗⟦⟧\r\n]+〗|⟦[^〖〗⟦⟧\r\n]+⟧)/, -1)
+  fragments = parts.each_slice(2).map do |fragment, span|
+    if fragment.match?(/[〖〗⟦⟧]/) || (span && span[1...-1].match?(/\A[[:space:]]*\z/))
+      abort "#{location}: malformed personal-name marker (expected 〖姓名〗 or ⟦姓名⟧)"
+    end
+    fragment
+  end
+  return [] if text.empty? || text.start_with?("#")
+
+  whitespace_delimited = fragments.any? { |fragment| fragment.match?(/\s/) }
+  fragments.each_with_index.flat_map do |fragment, index|
+    # A skipped span interrupts adjacency without starting or ending a sentence.
+    sentence_segments(fragment, readings, probabilities, whitespace_delimited,
+                      index.zero?, index == fragments.length - 1)
+  end
 end
 
 if ARGV.length < 3
@@ -339,13 +365,13 @@ clipped_bigram_occurrence_count = 0
 
 unless bigram_corpus_paths.empty?
   bigram_corpus_paths.each do |bigram_corpus_path|
-    File.foreach(bigram_corpus_path, encoding: "UTF-8") do |line|
-      sentence_sequences(line, readings, word_probabilities).each do |tokens|
-        next if tokens.empty?
-
-        sentence_count += 1
+    File.foreach(bigram_corpus_path, encoding: "UTF-8").with_index(1) do |line, line_number|
+      location = "#{bigram_corpus_path}:#{line_number}"
+      sentence_sequences(line, readings, word_probabilities, location).each do |tokens, start_boundary, end_boundary|
+        sentence_count += 1 if end_boundary
         token_count += tokens.length
-        (["<s>"] + tokens + ["</s>"]).each_cons(2) do |previous, current|
+        words = (start_boundary ? ["<s>"] : []) + tokens + (end_boundary ? ["</s>"] : [])
+        words.each_cons(2) do |previous, current|
           pair = [previous, current]
           if bigram_counts[pair] >= MAX_SYNTHETIC_BIGRAM_COUNT
             clipped_bigram_occurrence_count += 1
@@ -359,7 +385,7 @@ unless bigram_corpus_paths.empty?
     end
   end
 
-  abort "Smart Mandarin bigram corpora contain no usable sentences" if sentence_count.zero?
+  abort "Smart Mandarin bigram corpora contain no usable sentences" if token_count.zero?
 end
 
 backoff_for = lambda do |word|

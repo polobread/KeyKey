@@ -7,9 +7,13 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT.parents[1] / "Source/Distributions/Takao/DatabaseCooker"))
+from training_name_markers import name_marker_parts
+
 DEFAULT_ARTICLES = ROOT / "typing-articles-v5-seed"
 DEFAULT_MANIFEST = ROOT / "typing-articles-v5-manifest.json"
 TRAINING = tuple(ROOT / f"typing-articles-v{version}.jsonl" for version in (2, 3, 4))
@@ -29,6 +33,10 @@ def inspect(article_dir: Path) -> dict[str, object]:
     texts = [path.read_text(encoding="utf-8") for path in paths]
     if any(not text.strip() for text in texts):
         raise ValueError(f"{article_dir}: validation articles must not be empty")
+    for path, text in zip(paths, texts):
+        for name in name_marker_parts(text, str(path))[1::2]:
+            if not all(map(HAN.fullmatch, name)):
+                raise ValueError(f"{path}: expected a marked Chinese name, got {name!r}")
 
     digest = hashlib.sha256()
     for path, text in zip(paths, texts):

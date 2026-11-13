@@ -14,6 +14,7 @@ import re
 import shutil
 import sqlite3
 
+from training_name_markers import name_marker_parts
 from smart_mandarin_model import file_sha256, load_manifest, semantic_sha256, validate_schema
 from cin_reading_frequencies import load as load_cin_frequencies, verify_unigrams as verify_cin_unigrams
 from phrase_unigram_supplement import apply as apply_phrase_supplement
@@ -189,46 +190,66 @@ def segment(run: str, probabilities: dict[str, float]) -> list[str | None]:
     return paths[-1] or []
 
 
-def line_sequences(line: str, probabilities: dict[str, float]) -> list[list[str]]:
+def token_sequences(
+    tokens: list[str | None], start_boundary: bool, end_boundary: bool
+) -> list[tuple[list[str], bool, bool]]:
+    sequences = []
+    current = []
+    for token in tokens:
+        if token is None:
+            if current:
+                sequences.append((current, start_boundary, True))
+                current = []
+            start_boundary = True
+        else:
+            current.append(token)
+    if current:
+        sequences.append((current, start_boundary, end_boundary))
+    return sequences
+
+
+def line_sequences(
+    line: str, probabilities: dict[str, float], location: str
+) -> list[tuple[list[str], bool, bool]]:
     text = line.strip()
+    fragments = name_marker_parts(text, location)[::2]
     if not text or text.startswith("#"):
         return []
 
-    def split_boundaries(tokens: list[str | None]) -> list[list[str]]:
-        result = []
-        current = []
-        for token in tokens + [None]:
-            if token is None:
-                if current:
-                    result.append(current)
-                    current = []
-            else:
-                current.append(token)
-        return result
-
-    if re.search(r"\s", text):
-        tokens: list[str | None] = []
-        for field in text.split():
-            for run in HAN_RUN.findall(field):
-                tokens.extend([run] if run in probabilities else segment(run, probabilities))
-        return split_boundaries(tokens)
-    return [
-        sequence
-        for run in HAN_RUN.findall(text)
-        for sequence in split_boundaries(segment(run, probabilities))
-        if sequence
-    ]
+    whitespace_delimited = re.search(r"\s", "⟦⟧".join(fragments))
+    sequences = []
+    for index, fragment in enumerate(fragments):
+        start_boundary = index == 0
+        end_boundary = index == len(fragments) - 1
+        if whitespace_delimited:
+            tokens = []
+            for field in fragment.split():
+                for run in HAN_RUN.findall(field):
+                    tokens.extend([run] if run in probabilities else segment(run, probabilities))
+            sequences.extend(token_sequences(tokens, start_boundary, end_boundary))
+        else:
+            for match in HAN_RUN.finditer(fragment):
+                sequences.extend(token_sequences(
+                    segment(match.group(), probabilities),
+                    start_boundary or match.start() > 0,
+                    end_boundary or match.end() < len(fragment),
+                ))
+    return sequences
 
 
 def article_document_frequency(
     articles: list[dict[str, object]], probabilities: dict[str, float]
 ) -> Counter[tuple[str, str]]:
     frequencies: Counter[tuple[str, str]] = Counter()
-    for article in articles:
+    for article_index, article in enumerate(articles, 1):
+        article_id = article.get("prompt_id", f"training article {article_index}")
         pairs = set()
-        for line in article["text"].splitlines():
-            for sequence in line_sequences(line, probabilities):
-                pairs.update(zip([""] + sequence, sequence + [""]))
+        for line_number, line in enumerate(article["text"].splitlines(), 1):
+            for sequence, start_boundary, end_boundary in line_sequences(
+                line, probabilities, f"{article_id}:{line_number}"
+            ):
+                words = ([""] if start_boundary else []) + sequence + ([""] if end_boundary else [])
+                pairs.update(zip(words, words[1:]))
         frequencies.update(pairs)
     return frequencies
 

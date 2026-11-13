@@ -8,6 +8,10 @@ import hashlib
 import json
 import re
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Source/Distributions/Takao/DatabaseCooker"))
+from training_name_markers import name_marker_parts
 
 
 ROOT = Path(__file__).resolve().parent
@@ -96,16 +100,21 @@ def main() -> None:
     articles = []
 
     # Read every existing file so duplicate detection also crosses batch ranges.
-    bodies: dict[str, str] = {}
+    bodies: dict[str, tuple[str, str]] = {}
     for prompt in prompt_list:
         path = seed_dir / f"{prompt['id']}.md"
         if not path.exists():
             continue
         raw = path.read_text(encoding="utf-8").strip()
         first, separator, body = raw.partition("\n")
-        body = body.strip()
-        bodies[prompt["id"]] = body
-        digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
+        marked_body = body.strip()
+        try:
+            plain_body = "".join(name_marker_parts(marked_body, str(path)))
+        except ValueError as error:
+            failures.append(str(error))
+            continue
+        bodies[prompt["id"]] = marked_body, plain_body
+        digest = hashlib.sha256(plain_body.encode("utf-8")).hexdigest()
         previous = all_hashes.get(digest)
         if previous:
             failures.append(f"{prompt['id']}: duplicate body of {previous}")
@@ -116,13 +125,14 @@ def main() -> None:
 
     for number in range(args.start, end + 1):
         prompt = prompts[number]
-        body = bodies.get(prompt["id"])
-        if body is None:
+        texts = bodies.get(prompt["id"])
+        if texts is None:
             missing += 1
             if not args.allow_missing:
                 failures.append(f"{prompt['id']}: missing file")
             continue
         checked += 1
+        marked_body, body = texts
         count = han_chars(body)
         minimum, maximum = prompt["accepted_char_range"]
         if not minimum <= count <= maximum:
@@ -151,7 +161,7 @@ def main() -> None:
             "category": prompt["category"],
             "channel": prompt["channel"],
             "output_form": prompt["output_form"],
-            "text": body,
+            "text": marked_body,
             "han_chars": count,
             "source": "codex-seed",
             "model": None,

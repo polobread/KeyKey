@@ -1,597 +1,158 @@
 {
+  "before_sha256": "77fb0d9e69871dd68ccc99f0dba4fa7046cf5494131b800443a37af2f56ae082",
+  "candidate_semantic_sha256": "dab0db5035a5772ad49c2b8d1fa8b3c252f4b2e5cbbcb07f65e25f0153a9c5ee",
+  "candidate_sha256": "69975755bc8c9ce2d7bb27f6daa478b22c836f7b3bacf910515724b7d85e51b0",
   "decision": "adopted",
-  "maximum_regression_actions": 30,
-  "delta_actions": 0,
-  "reason": "總動作增加 0 次，未超過 30 次門檻",
-  "validation_articles": 131,
-  "before_sha256": "cbe2e1018842797610b71a4f4b479332aa4508b32df629dd0ad7fa8075ee6c7c",
-  "candidate_sha256": "cbe2e1018842797610b71a4f4b479332aa4508b32df629dd0ad7fa8075ee6c7c",
-  "candidate_semantic_sha256": "44e467c511582b31d68afe096700a30e9fde5de7e443182438a79210b2e9307b",
-  "rows": [
-    119159,
-    883372
-  ],
-  "source_totals": {
-    "rows": 6560,
-    "inserted": 4765,
-    "existing": 1745,
-    "duplicate": 50,
-    "rejected": 0,
-    "collision": 143
-  },
-  "regression": {
-    "before": 333899,
-    "after": 333899,
-    "delta": 0,
-    "reduction_percent": 0.0,
-    "improved_articles": 0,
-    "unchanged_articles": 131,
-    "regressed_articles": 0,
-    "worst_regression": 0,
-    "saved_actions": 0,
-    "added_actions": 0,
-    "syllables": 93630,
-    "corrections_before": 5145,
-    "corrections_after": 5145,
-    "character_corrections_before": 5674,
-    "character_corrections_after": 5674,
-    "tiers": {
-      "core83": {
-        "before": 1058,
-        "after": 1058,
-        "delta": 0,
-        "character_changes": []
-      },
-      "basic100": {
-        "before": 1202,
-        "after": 1202,
-        "delta": 0,
-        "character_changes": []
-      },
-      "general101_1000": {
-        "before": 2436,
-        "after": 2436,
-        "delta": 0,
-        "character_changes": []
-      }
-    },
-    "articles": [
-      {
-        "id": "tw-corpus-0001",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0002",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0003",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0004",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0005",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0006",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0007",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0008",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0009",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0010",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0011",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0012",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0013",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0014",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0015",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0016",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0017",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0018",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0019",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0020",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0021",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0022",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0023",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0024",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0025",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0026",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0027",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0028",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0029",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0030",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0031",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0032",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0033",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0034",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0035",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0036",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0037",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0038",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0039",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0040",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0041",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0042",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0043",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0044",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0045",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0046",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0047",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0048",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0049",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0050",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0051",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0052",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0053",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0054",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0055",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0056",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0057",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0058",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0059",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0060",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0061",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0062",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0063",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0064",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0065",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0066",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0067",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0068",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0069",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0070",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0071",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0072",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0073",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0074",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0075",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0076",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0077",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0078",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0079",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0080",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0081",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0082",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0083",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0084",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0085",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0086",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0087",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0088",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0089",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0090",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0091",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0092",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0093",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0094",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0095",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0096",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0097",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0098",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0099",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0100",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0101",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0102",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0103",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0104",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0105",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0106",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0107",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0108",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0109",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0110",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0111",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0112",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0113",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0114",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0115",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0116",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0117",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0118",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0119",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0120",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0121",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0122",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0123",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0124",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0125",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0126",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0127",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0128",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0129",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0130",
-        "delta": 0
-      },
-      {
-        "id": "tw-corpus-0131",
-        "delta": 0
-      }
-    ],
-    "passes_strict_diagnostic": false,
-    "passes": true,
-    "maximum_regression_actions": 30
-  },
+  "delta_actions": -6,
   "inputs": {
-    "DataSource/McBopomofo/phrase.occ": "0fc51c5245a8820e1003e3fa3fb2759b0d1b502a71da81bbfa265e9ac6c9fb5a",
-    "DataSource/McBopomofo/BPMFMappings.txt": "51715ee5c731f9994be3b168d7681ed9692b8c335ae6fc2e7cfd4af6fd0e0781",
-    "Source/DataTables/bpmf-ext.cin": "f7c05229355ad39a0ef7806db85723709380099c24d3cb787f3eb01d49e29589",
-    "DataSource/AISyntheticBigram/supplemental-lexicon.tsv": "06e5e68b19a69a4e2ebf84e92f2e3288a5970c3d27290e8c4dd4c1c846ee1fdd",
+    "DataSource/AISyntheticArticles/typing-articles-v2.jsonl": "460a136690046afee2f98824717613a84b7aa2e4df2534bcd1f5491619fdd132",
+    "DataSource/AISyntheticArticles/typing-articles-v3.jsonl": "e1f39e99f721b12d05c97b538abf5ce91736f4031a9ef7929dd66d539bfdf790",
+    "DataSource/AISyntheticArticles/typing-articles-v4.jsonl": "01efe3ddf88f44dff88df242a366581fbe2d54b1f4b83aadedb5393c003c62e9",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0001.md": "6794985381e32befcf6a216c4b35c6f5c3a496574bf2449e7db5120ec821c765",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0002.md": "d91cd97d12c8463dea726f6d8069caf28a7a8efe5cfd646ffa74d746347158a4",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0003.md": "a2c73fc4bb8433278b311f80292d7d35e618e65383c514b7c9ca515ae0c5281f",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0004.md": "8b8692e05b1be2558e57c3ba37c016ec540cbd53a9a3edef72c7089549ffbb59",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0005.md": "18ff639e9abbcf04d1264549ea9952916cfb2acbaef76abab68eba9ab1c79aa5",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0006.md": "5a5acb3d9468b092b6e031479a4cb5b8f1916e32dcbf15cb093b60cdc97c047f",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0007.md": "37d321fbf503cc86c9296056480bf87b29e88242386364aa489ab7b77840dd6d",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0008.md": "d3695371373303b1386af092c3a4987d8acdaab67d37a93f62433da94bc4ceb6",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0009.md": "d8a3048d2ec60ce14c3eeaa3a1aba361949bfac38731fad12013725aecfac2f5",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0010.md": "9564b1733a8bb28d79fc380d315be0f157b74a3e207ebb7b88e7b35587ee5164",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0011.md": "ab276c679ca1c34dcfce59de07e9d1106aa6f7862ff30912ae7e754f25db0d9d",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0012.md": "3678210388d51dc10348b58a7dd745e81a3fc7d0d48900b4acf8ea8d6751832e",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0013.md": "beebc406820d8e45b33b11e4f43949f6b09b710e40a5d6d77d50a14a62e95cde",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0014.md": "8b6f10129d566fd4ad6cdab628e3fedde28308a36f82847165b0e6bf9830b0a3",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0015.md": "107cc26342b9ac299d072ffb9368840d7234bda7acd7526471e1f5a0e349422b",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0016.md": "6fcc826108bb4ee2921466928801dcac7d3e9c42c26a7cc6a5b4f83a45547c8f",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0017.md": "b63bbb715e3427bf38b1e21121ff68a09a63fe9931d3611644a2c4c1312f65b6",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0018.md": "982e2eefe0d634d77b54a039bba8174f6371142f265e806ac72c7bd8efb87397",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0019.md": "cb35671afe44c84e5e5024a9ea1535200287ec6976718cb01700ec19770eb78b",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0020.md": "db5c954aa7550508118ee20cb6c23ad098fed7b97de0130b1ab93b37e9e734ca",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0021.md": "5c702d20dafc354b7258a24383ca3fe80b121c9cd31955c3f3bc6a89365020d4",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0022.md": "0c0f5a765bef864751177149b6e815ea8d7764cd8f8fae9f44100efabea162fd",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0023.md": "3cf632ebd5613ce1a2abf65f3a8a029a887529806ee63d2a098972c7d3bc5ce1",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0024.md": "4f4cba5289f5e7b83a5a4df712137bdae6787e23372a89386aaeb519687be2af",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0025.md": "62ca320576389e66fa8cd4c6ce5ec16d2907f1535af63ee596553c43e61d9bd3",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0026.md": "fa6ca0cd6a53e9527fc172b5800fcce526381882fd41fcf4044ec9022b58ac82",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0027.md": "a99a152d3368f564ad484d8a348fbff0dce727d5e1900a5652829bf1102a7015",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0028.md": "bd4a6633d63ead64dc1a428a92071182205b8595826fdf96694d1ee51b052ffc",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0029.md": "094f2bc9f320733f59b68727c65da86a8e0f229cd42bde078dda8cada30d2c15",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0030.md": "319aa5a52395ac0f9e4b2f5127a7646bfb6971562f0b1effaaf6bb5ea57c90db",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0031.md": "5585d52366ffb8e9fee0e4b407349f276b960d81a937ef1975b28bb482b17c95",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0032.md": "d9c731d5cfebfc8a5b995eacd256aaaf44e03a22f9fcda9d1e37cbef0b2432e8",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0033.md": "146bb4e6d3f67123a473863f7376e4a7ad64fa2c49fc68c3931a77f600f3f9fa",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0034.md": "8594f68dff1c2489f46170e030ff65dcb4e22a7e943a3c04ab33f059954bed7c",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0035.md": "6a08dba1166c51f625597fd10de3e339dfc2c10d0b6c48ef23349306b57be6b6",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0036.md": "d75baa56b6a02d330e7993afacba70107f64aab5c06aeee2e615777163cf36ef",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0037.md": "17745e0c0106ee3e05f9714d49ed57bab3ae1f17b173b5ad61d7247fb3c9af38",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0038.md": "4d9681dd710055616f5003a469656e21052cdf6443b1c2a125abfb02481aa47e",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0039.md": "9771110a21ede31626900be19e05e76d56e11e2469d71bb1acf5703de9d6b301",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0040.md": "a0a53e4aa2efda169e74798b43a591a11868a494f8898a9bb41c5ae64867dc94",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0041.md": "ae0b886c2202a9276a92d6791ede2ba1a3577ad5cb3ac697e116b375fc2e1891",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0042.md": "c3c986bdc72ec2bc5b55979cd2420c9a8b800d31f0a938ef4796f857b3b64078",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0043.md": "8c5af363428762dff2d611d9b03dbbdd178792ccc27c246e9b247511a8950986",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0044.md": "dc554e40d06d253bcfb4101c51347655b6ba2a9d0155417f9bdee1d3101d6728",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0045.md": "5264955e17df2bfa75b6ad46b4d55601688894bd66d4d6b90c9ee58448c0e938",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0046.md": "2df6ab729e23f9d33c49fb9ab126469fbac1666fdd8f13d95d2aec2b97ce3ca1",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0047.md": "0e6f698a5335a477e1c95d9383c593efffc507c60d6b3b34c59b9c7106e17199",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0048.md": "ca9ad8fe1d3b98be7e753730efb5359d3a8b168d930df5a8bb665434c6e1bd5a",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0049.md": "03fdfa63047667f7bb9e6275d2718e73a4b80bd9ee955fbac7b0488c8d1862bb",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0050.md": "148502cd4d7398542b1d103c909ce7de756a8e56b4a41f85843937b8448e50ab",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0051.md": "46ba78fe7ed3c15bc46da6e86d55146f7ea9caf41519ea158ec00b99b0653bdb",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0052.md": "2a2a99a1297b9d300bfd3c22ebeec20ff58c87dd05d9156170a0b64b9b821d04",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0053.md": "f487bf196e47f9d41cc64bc393a55040cf47e300d52bbaf665ad168e4eac4449",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0054.md": "e25c892062c2ff5ed24cedb6cd4479b02f02fe01c468f89a93495087553aaa53",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0055.md": "05ded33e2f9ee739ce53ddc5e8b70ccb514ff4ad425c6dd7b13b4851c265fe79",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0056.md": "81cc22ef9930af3c59467f8ad386865bc865b22518dee4f88a994936b90c9c0e",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0057.md": "f1f97e36d937de4772f111fbb709c70ae24a66931ed9e526361c12079e9f2665",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0058.md": "42e27e7a653ef1333c095e090ac237f354e36aa36332672b5bef09ad6ebf2e4f",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0059.md": "6cbd264b052bac039d886ffb104b4a050343a2341ad02bf24706a9728a1fcd39",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0060.md": "c3707b1baad40999191ed8396c5c6d45922624cdbbe703f34356aff8092087cb",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0061.md": "6b2548148ed9fbe0e8944ff3aaf1c75da1c6b01eace09ff254210ae9798d42fc",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0062.md": "5b36c3827439e99267cdbead3494403c0560729f7429a1ad47b7bfa1a378fd5e",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0063.md": "685322e776525a2c32d14760a44977d9033a9a3d6e1eaf08d1126228c42f0816",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0064.md": "001021a3c89dc7388754d938d982dc2abcdfb055c7bbb51ae3561bbbccf51a36",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0065.md": "e65ef2123ca55f4ee99ee1a8ff4a85c4151cf79959bccbbf62201bb671ad0fc8",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0066.md": "6999ebde3f887afd9b448ec004a60fbeb8a5f99421b655161c2ce7662f632cb2",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0067.md": "29214b8ccdbfe8c54e4d3035b59a875986692de589be62cda67cf02418754b5a",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0068.md": "a62c429771f01f2852d66e17bab6ffd108066644fb73b6f4d298d885ad26ef5b",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0069.md": "49b3689759ae93b9471f29a03704fe322d3fbcb53d30401bcc7234b3761a98a0",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0070.md": "b7c065fd943ce3b6ed169cdaf8696fd71bdf2cbd934d4277690eb1dca9c48cb2",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0071.md": "087709fff792703e40100e442449b4889fd30277db0e59c1651078010bf5b9cf",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0072.md": "0a7fb06eaaab9ffeab7ccc0d9adf00fa8ec25efb9ea2b9c6c94564f70b66149f",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0073.md": "03b11cadf140f22a9b494503285d8db02a012b30dd6f1918e17ef8e0cdb30f07",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0074.md": "1d5227df295bd1efb46036c2542718716d95a2afd0b1fc8aadf5a6cc8bbb5a1a",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0075.md": "ad319cff0ee7836220ab6edf70f4471ba1acc2b9a1a2deff01b531d7e0ff94c3",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0076.md": "8ee6b2b67eafe6d4ead9a3fa7794c8083def7971d5ce26c5fb0db11cdb305ea9",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0077.md": "280836be47af0b3bf70517abf65f40c08a9e09efb36703da2a3357eb6f20b653",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0078.md": "1c42293abd853aa5ae22fdfbebf183be4b9c203abe2e9b8214f79b5032273702",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0079.md": "59b162ac184afdea8aedbcf4639f3c7469426bf4589e435ff19cbb1f75fc5ab3",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0080.md": "2983fd6a9fd84d07874e160fc28a22ec39f6a618a96745afbe99f97238741816",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0081.md": "95af1ce302f500efaf7bb0fad8e4c2ce13f737334a4bda0e646fb1a6e4240f56",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0082.md": "d3d086258e70f5e31e851b1479dd8e4daf81242333913f50f3b4fbb340098218",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0083.md": "e7032caf8a656bbaa1028a8a320e6fb275dcaa6381f85d8bc5205902ad482260",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0084.md": "6c8a8ef9374ef1e0c1c3649d172a1e65f56cc6ac2eaefee0446b10cfe5513a63",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0085.md": "2cae945286d9fd7af5a58490e4e936a8b8fc6758bde6e1d0f5cbea3e19556d6f",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0086.md": "cf97e7ba546c66c0c7002744371e44a85d4687bb71b64521627310a0187f9e87",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0087.md": "acc9b13229d39ea3dcde5c8a5d7823ee3405ac9733b0d7321e78cc2a48681a7d",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0088.md": "166b96b20272a706abe0eb318cc45cc4017f651fccf5f9ad64d7192c214ebfcc",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0089.md": "86dc20aa4c40227a8faa6068512e700de7868178c02e10ee6c7a09dacfc5e035",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0090.md": "41066fd3afab94a695b480aa4092e4fbd5b8b7a496c78eb2ac90611e65a4b59d",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0091.md": "b1bfccb3661edec67fd650e08630cf4a005e7140465eef09f8b0b675da32ccd3",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0092.md": "a8fbd0f57a713572cd5e9a664d4e93c188a2c63e0f3a55f2f4e9c250951a7ccb",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0093.md": "9f1b05548715839500d8ca32174dde13bb81fac974d1c798bff617a9d71ea385",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0094.md": "422ae4b6916b80dd88ee60d2b2665002b6d400550fe72eda83687c2952cfbf87",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0095.md": "09903d8d91987f9c9b33aa716691120e99f53f13930427df6219fa2ea592a650",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0096.md": "2c7d5212dea30cff162067dcecbdd76a22dfd5e277e841b8b1784a75a4e9c0ca",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0097.md": "1f12408ef1a9b25cf63f3a977321a56ffe95ea12139435030456d4ce262cb41f",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0098.md": "6a53154c1c8084509d799513ae88600a43e29f8f267436d23fd4581cdcc2dc03",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0099.md": "851fadc212a5bd4d07d0f12506377e26300c304a2c076c6da806a5b4f47be4ef",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0100.md": "41c34db965993e3fc1f07ea116b8d61eb6d9ae66f200d8cef0732070d5261baa",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0101.md": "1c9f7928e935fcd350502231aa7e3a1e82425b5d02d769e4ef4575166623b80a",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0102.md": "64e7cf6fa94418d39394ddd261a8f0f3a12ba64a5023d4bda7e57aff4fd59db9",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0103.md": "3ab1760d72840bdd3c80a5dc94e30bd29526350092a5187ab7d7a153641b5d89",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0104.md": "091a989b661b91702e4f10706497302c8cfae0b13bb9423a6f54dcb77f2de7a8",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0105.md": "121d5163cb922417ad22cefb3dfa0f73968b319eec7289c173e33eb4af9cb55d",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0106.md": "dcd0fc4c667570fb0fe01150f0016e99263849f4031190854d423bed6852a201",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0107.md": "476177083626fc65dc2ebe811ba31a478cb626375eacefcf8fe1d0786495489c",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0108.md": "e180b056ab482738a46c275c0d7cea91a65ffa3ca7f990f74d9953012014fbd0",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0109.md": "b7795853a5d62e772cb154e74bd027a3e839b2f36cc4eb11f72dc6d619329f07",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0110.md": "16192cbd818d2f69c3681143ab275139253ed6826ea3824512685f2d6ea6eb5f",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0111.md": "ee2a664447d73b28793e14fcf477082f0fa1af5a6327ec94463c8877f388ea63",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0112.md": "aad4f6af8fbab058171cf93b9e6a12f8c169f75806bece352d4ed4824b945d3c",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0113.md": "01a7f209345655e3456130b33bc14e2efff190d49e5e29cdc04fdf653237cbc3",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0114.md": "c84fb30b9dfe9f055b5c8b0815be61cad1b6319c07308fe8d4adcfa2e645976b",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0115.md": "418a2aae9e8b0d7540b27a544307e2892c5dcd715e4cf3977d9f311de6645d27",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0116.md": "219c6d7f26d8cbbd620eea45a28e81128e70654e879631ee6d27796586cc15d4",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0117.md": "3eeb532fa3b90b92a409fcb2dc9af5332da27f30238d28b715d2578e9bd02ed0",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0118.md": "209984083acaaadae05eef6cd80a6402e551799b54cb37cd8bb51bcf3477ca66",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0119.md": "9a919c541ca40c5d3da87a88750a24737343eb6fed3161a86bebdacc1910df9a",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0120.md": "42c64c8eeb90d11ceba8245351276b397e68dfd5039bf377c135c3f7b46fc7a9",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0121.md": "fd8cb4108cc58f55a05ebe40ab0f3f50183826a84f656a87700c0130777213cf",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0122.md": "36b3b235ed10af3bcbbd56f076fafcd6d4eb0e45e550f4a8eca537adde2f0f33",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0123.md": "9228804f129f749a1692ddff8bd03d28f7ad011bb85281efc3944bb36d243d0a",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0124.md": "31f337ac0eb60e5d31d5623dc3b65167316c9ef7afb94000ad138b2efda1afce",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0125.md": "4ecdd208fd3d95c77126da43b359b1daef530f237cd0d715922b464e15305b12",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0126.md": "c2e71e5098413c047d2f9f930309be905f8f85b5f077da036feac18e2db96bf9",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0127.md": "a86444a1d58807616a8c93a34fbe9d5431ca8a3bf7be523a33d79f524ba7fc82",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0128.md": "0c207ed16b9f1d9af5c9a0246aa91c79d9efa055f8b8c858a6ff6ea42d582a41",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0129.md": "10df9883978b0c32bd9043a209a62c71fee22db39f2bbbd5659a3aa0b6123bf5",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0130.md": "8215e2f6a2e905381b0b5e547e2e48228737d155cca19dd5f6557b5378e10c35",
+    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0131.md": "0bbbf1b6471dba74ccd2650e2f40a99080b2d6d2253fe15f868469da7f49421e",
+    "DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt": "54c2a5eaa78b69d77b64ccffefe14c6da7cf6c20a2875c3fef9f60093f8d0cda",
+    "DataSource/AISyntheticBigram/collection-unigram-overrides.tsv": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
+    "DataSource/AISyntheticBigram/common-phrase-unigram.tsv": "c5d85926eca9ef33644dccec27543ffe5762dcaa2ad124f6c14102ea9ef99584",
+    "DataSource/AISyntheticBigram/common-unigram-supplement.tsv": "b1bcff76f1551de638847680465113809579638d5794b256697a31ff6bba82ad",
     "DataSource/AISyntheticBigram/numeric-unit-lexicon.tsv": "6da32f4960d909763c987986cef1f2a6d9aaf38c0c88386dc732bf37944a97f9",
+    "DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
+    "DataSource/AISyntheticBigram/search-trend-unigram-source.txt": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1",
+    "DataSource/AISyntheticBigram/supplemental-lexicon.tsv": "06e5e68b19a69a4e2ebf84e92f2e3288a5970c3d27290e8c4dd4c1c846ee1fdd",
+    "DataSource/AssociatedPhraseCollectionNames.tsv": "fcb578989469f832d3163a29d03e90c0d1ee2309c5d53300702f077bab92f73e",
     "DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv": "2c9b9bb3d99516b401188311a87dc5b41e14b4f25b13978afccef7e2a25426fb",
+    "DataSource/CINReadingFrequency/standalone-composition-review.tsv": "cf9b8ef7ef244144d0f791d2572421e5be7905b4ce162e296dd1984adc975ce5",
+    "DataSource/CINReadingFrequency/standalone-composition-weights.json": "eea55dfd30078f6d47b26b278975f3061845e124dd2cdae5a26c1a242713346c",
+    "DataSource/McBopomofo/BPMFMappings.txt": "51715ee5c731f9994be3b168d7681ed9692b8c335ae6fc2e7cfd4af6fd0e0781",
+    "DataSource/McBopomofo/phrase.occ": "0fc51c5245a8820e1003e3fa3fb2759b0d1b502a71da81bbfa265e9ac6c9fb5a",
     "DataSource/chichi77Collection/phrase.agriculture-food.tsv": "784ced9492d917f4c30d444d35c7df99597cc5cdc39c5b30cac04b92822e8b8f",
     "DataSource/chichi77Collection/phrase.ai-data-science.tsv": "a45b36aadb604c531f010023c15214878c9ebc155d0b9c2c8d6799ebca0da9d8",
     "DataSource/chichi77Collection/phrase.anime.tsv": "4b2f78ebd6a0ce23377f9ddf29f91ca7cf80c97be24f3d3f97447288aeec6e60",
@@ -621,146 +182,1152 @@
     "DataSource/chichi77Collection/phrase.semiconductor.tsv": "3504725ccee662529eb0f8182e0ac1f444e349e52751b5c826e9469417a204ba",
     "DataSource/chichi77Collection/phrase.software.tsv": "29d5b5263db056ffb12ecc97f07d5f56f816c13cf4e07620ade59cee23362acf",
     "DataSource/chichi77Collection/phrase.transport-logistics.tsv": "3b35634cc638940ebef1db5a09b6e5bbc838fd70336a612c59ec3cee2092cae6",
-    "DataSource/AISyntheticArticles/typing-articles-v2.jsonl": "ae70cc5274c5d131510a010aa07adf9eaca4be3f37345711e4c5516049cafe5d",
-    "DataSource/AISyntheticArticles/typing-articles-v3.jsonl": "8e783676d4a22cd92ae832e1a3be913d2e07252c8e2c4add76b55f6c725877de",
-    "DataSource/AISyntheticArticles/typing-articles-v4.jsonl": "ff625fc0b7be600347d7e61c9ddc3b4c4b8ada17f2b76950425f203505af6dc8",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0001.md": "336104e928fdca634bdba5d07e6a61625cb86f634e8b78a1c92cfcee6e750452",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0002.md": "b84ad538e211aef87071990d76b46aed1753df48e2e5731b310ee1dd43251812",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0003.md": "eae5beffb722233bf2b86c550f12ffd7fbe187520b7e6c20c398f771ebb08c77",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0004.md": "9244bb8d382f711b658b466b2c2eb64445235b0ef53ba9fe0ca52dd10e3a7575",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0005.md": "92604505e89c00c1618bc1086de2b31556da07fd76595dfe4d2c7a604cc8afe0",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0006.md": "5a5acb3d9468b092b6e031479a4cb5b8f1916e32dcbf15cb093b60cdc97c047f",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0007.md": "053607159a51468bd47b86486e9c19c51491a3f697974149d3ba4890b3db0515",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0008.md": "da4b9c678629f3840f027ebd6478105a5c156934c70b033b9cad6e1fe14befb7",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0009.md": "393985df81483fa77627720a24e6a73b70eedced0ac40e28f8646f0cba87244b",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0010.md": "5f850bcba2aecd57e5c6127feb9ea941a82d58a0fd4ffb118ee1eb757218da30",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0011.md": "45935b931aa2e735933ab701d4e3e3eeb72aa4426b1415e1b63d46a305dabbdd",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0012.md": "50335391ac9d44d0cafe6716d0143867cd9b6a9cc42a112a0417cf1a1a9f7dcd",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0013.md": "9d92f763db6afe312ff3fcec94c35c44533df4a023ff6039f7c50230d400f27b",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0014.md": "0cf99cf7827b2a43abbe5b893ecd457672af24487b4be35fe056658f8eac13c0",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0015.md": "1a9aa04632e4ebd0558fc98088db133905cf4e970429cc4d3718d494da227009",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0016.md": "6fcc826108bb4ee2921466928801dcac7d3e9c42c26a7cc6a5b4f83a45547c8f",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0017.md": "f3e4e7ac7ecca889c17b3f24f7b21339de85eeefa9f4aaf97aee6b0e80b37e51",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0018.md": "dd04a316039a51ce12f1e06bea8222c5c75b01fb6db2c92bda29158eddb8d390",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0019.md": "cb35671afe44c84e5e5024a9ea1535200287ec6976718cb01700ec19770eb78b",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0020.md": "ad68ab299625feeb4d691804263b56c0da7d81bd2465445a6d74ca6fac56a042",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0021.md": "d6f4fa0c41cdc3cfc3e0ff5b3617d6b9b0d9d578ed4497f9f00a496a0836893a",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0022.md": "3907bfed3164689e6b6c47eccd84bc844f5096784da878aac8c846aaee57397d",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0023.md": "35ffee9c7fbed1579135c8efdc3cac1588a70d4aa355597cca3a0cca95745483",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0024.md": "37e2b28cf58fe8dd61d844d124e0b3151abdfa7635875868ff8ec970f2a76858",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0025.md": "484d5efc98447f22616c96df594b890942dcc4c6b7c7bae08e5b87767a87e672",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0026.md": "fa6ca0cd6a53e9527fc172b5800fcce526381882fd41fcf4044ec9022b58ac82",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0027.md": "a99a152d3368f564ad484d8a348fbff0dce727d5e1900a5652829bf1102a7015",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0028.md": "fa898edbf5428d669fb5437d8c7ded151d6eb20e0919bd5abd089db98f1eaec0",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0029.md": "55f7ed9791fd05220839fbcdea069662b1fdc8da093ef48941bd2a2af4808e78",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0030.md": "319aa5a52395ac0f9e4b2f5127a7646bfb6971562f0b1effaaf6bb5ea57c90db",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0031.md": "c0f49451bdb2c2c9b7f9ebcc435794ba855f9c1b2c7dc478d7afc8570ff5a120",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0032.md": "8e98cb2d8ac59203a81fa01a6ed86353ce52f80c3510591311147e34f26fcbf4",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0033.md": "3f903e1f335fa41a033c43ccf981fd84905513f4053d90cfdf6b02369fce40b9",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0034.md": "37eb5ee5ae09a62a97771fa6a76416424d387659416f4c992ac4528a1cff27d0",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0035.md": "82005fd5398a6d3bd6690933e385325158805f3fb8e259dcca3b4b80cf77f7be",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0036.md": "b8176f6bb43759b386b5f2196152bb65ab93b0485ac1c197320f428e15c2fbf3",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0037.md": "a974a7797478cda1e33fbe660ba9b2c8c3807df0c1af0babb94b37e456bc3a02",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0038.md": "4d9681dd710055616f5003a469656e21052cdf6443b1c2a125abfb02481aa47e",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0039.md": "5e0f750a4b9da9991ea033257fd41db8234a3fec907d67648ce85d1c1a98a728",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0040.md": "2aef66c35aa3f8d65309bcb2895453602989b5c1d13fbc69a3085fe9a418d459",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0041.md": "743f6d68cbec738f7b5138483feb22131a4bd0206593b8cbeecb1dee1d71bd0f",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0042.md": "060cb27ec13e57cae31e20efa845752177d33ab7564e546f8e5b683debf857cb",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0043.md": "5d83dd2974dab45aeadf3ec10c797ff6104ccbeef2ab64b1d390185006ba70ef",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0044.md": "ebc33346d08939ee26abcd846f187630b396eb5600849d322fedce9ace5bec1a",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0045.md": "8f2b19324aa88e5a4c7854de00be8ca9e4d199d1082ac7c3f4ca2bac3ad7737e",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0046.md": "f7fadded8dc793e7d72d155dbcf78936a286669bf5c9710245368bfe5a81c922",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0047.md": "7d5498686b9702506cf2db18d233894acfa9adc0995e93de8edad15c9d4f8a22",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0048.md": "e3dc38abc5bd2f7f02fbe3e55668a496ca6b5aba908132a9c377e1b14e3d7c9c",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0049.md": "606f319b26a8027f8b0d1761efe6262212d92fa51c9561fd26a6886ed6c13342",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0050.md": "06ed6442d7776ce889345a18ffedf386789afe255fc8d7caa3da0b2338b3f751",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0051.md": "c5485b4c664c9118f711dad66caa7bbf066081091ed5bc1d0dcfa803ee0cb860",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0052.md": "63483423e48f70f7947694db4b50fa621e60ec274562752d87b356ffa09e929a",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0053.md": "4047525499d1e0b0d8d0c62cc85ea884e8b888fdb1425ef101190caeb34fbe2d",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0054.md": "8af95b33e6c5878c939ec16ae2ced2c59b87a8fd3b6f6d8b46fedc27165a9df9",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0055.md": "8f529999beaae8c08b99a1da6a4ef42beffae4c200ed235fcb6ad9382d698c09",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0056.md": "81cc22ef9930af3c59467f8ad386865bc865b22518dee4f88a994936b90c9c0e",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0057.md": "14c42c217dcff724a666df058596b36fff2d851afb38a6ef9258f7833d093d2c",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0058.md": "f9f8ec57bb7fccbdddc78983baa2e68af782f5e4a20936c7c32838c02772450b",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0059.md": "75572bffa0b041b2e1ff6c5d79a08b63253ed15905bec899103644c192bd9c65",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0060.md": "2983ef2cfbe117de27dd8e6113337279515c4d7fa610b9ff4c5ac3800477183b",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0061.md": "98985f7f395472d81b905a41ef17342a15de662c256f68eeda4eb1c23fe68b78",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0062.md": "336e8ab469d3ceda7fc566dafa2ced192184ff4fb87ff13003dc52cf2ab44b2f",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0063.md": "685322e776525a2c32d14760a44977d9033a9a3d6e1eaf08d1126228c42f0816",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0064.md": "001021a3c89dc7388754d938d982dc2abcdfb055c7bbb51ae3561bbbccf51a36",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0065.md": "b54edf2e6ae1ba09b20a631dbf6c9e1c2ee941783eedaaf1db1eec20192ab91d",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0066.md": "6999ebde3f887afd9b448ec004a60fbeb8a5f99421b655161c2ce7662f632cb2",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0067.md": "0b3318e12c111ebc0af3ceda55d6fd5e7e81c747ec23bfd5854d800ea5ae8240",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0068.md": "8838022de727e10078935caab9a5b2d88b5afe10521bf0f7015b5bd7d2335e62",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0069.md": "2ca2e41ac0d84c5384b44ce19ac0c30760433207cb4bce6614d62da51dcb1279",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0070.md": "b99db858937d45c2b2bdb117187213f8ee87bf0403ef01dee6d2dd9d35db43d7",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0071.md": "bf89842a3ad212baf2faa71e8b4be61b3b9dfe1d166105a42526ba19d096b622",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0072.md": "0a7fb06eaaab9ffeab7ccc0d9adf00fa8ec25efb9ea2b9c6c94564f70b66149f",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0073.md": "d45ae684530824fb89569a50b55c823c78bf1a5fdea445a0b81e02ae5ef4a241",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0074.md": "2c1885d7ca380e769450272ef76e0cdd96d2847b799e01312e4f28a97f0104ca",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0075.md": "e8058bfea89c96ba59bc9543eb26554ad67b54593451285e6218329563c0b341",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0076.md": "4afa821038a63cff37a61ed94ca5c2ce1d349ac0b096c8b76b8115ee20fc0a98",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0077.md": "647c04543b7f1d42cc26fef09fcf51038d50f5b8ad42ce9a675000538ba70da7",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0078.md": "232862e73417dbeb901ff1af536f984cb0131587e8a0f80ab83ab6c435876a61",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0079.md": "2a37bfdfdf974922f023ae1513273aede1ffa9905574773e7e7db1026e6c7b8d",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0080.md": "dd25f564981bd1dd50fe17bf15f972148c3cbc00fd7f11a7f876127f2ec29fcf",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0081.md": "ce2b1a1e81f73261ed86a114d3d1796533b13bda4ac4f0740f5f342f695bb651",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0082.md": "5912989ed18cce3d7223c453791ce8fec23f0e7c99dfbe2c9a080ba0abeda62a",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0083.md": "aa726742a9d5b3880be045836a79982023c8439beced539f5d57f04c2512949d",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0084.md": "937bde1df6e14c7eb46bfb25262a4c24b37e85ecb8801e9ff7f05b427d039862",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0085.md": "c438aa1f75f5650e75cd1f0d027dbe03f3097c5286877dc61f385d7691b0f83f",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0086.md": "6bc5f20b4f87144ab30b1cd94d2fe460da1732a3290e36d0b016bd48a357f961",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0087.md": "acc9b13229d39ea3dcde5c8a5d7823ee3405ac9733b0d7321e78cc2a48681a7d",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0088.md": "c842fc45510add068e6ec6026af01d913e2c65074b5e149131710fc89cb4fb74",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0089.md": "86dc20aa4c40227a8faa6068512e700de7868178c02e10ee6c7a09dacfc5e035",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0090.md": "13b956dd81377d7f5cfc9950b7d85b7116e08b31ff4b1a237b5b27ca4607b393",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0091.md": "284f5162c6626fc202c87fe2ccdea39b70901be8a311e9312469b5cd51ffebe3",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0092.md": "7cc36e4583af6ab8cea38b6920c7a66aabbe6a5dfa1ba4af039803105e88e4af",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0093.md": "4353e4b34e9dacb559ac19b76d0fde9dfacb832c2e6dff2f86efa13ecfecdf15",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0094.md": "0c7f958c8ea552b57488683efc75dfa96bef2ebdcf04c127f07eef66f4496210",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0095.md": "c1393b5c74b4163d6acd84942e6cdf12811d9b9c5cc4b70f68777def1b48db5c",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0096.md": "2c7d5212dea30cff162067dcecbdd76a22dfd5e277e841b8b1784a75a4e9c0ca",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0097.md": "b0bab3640bc32b74785234d558d1bacce60511bd41e20b65de36f24013cd6a99",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0098.md": "63087fa4b4bc7a65d08fcab20f134eb635c027ee4491201909bd8900c7fac7fe",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0099.md": "abbc7fdb59f543b45975483f72175f792afd6e3d52beb492a9241c38d3f2107e",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0100.md": "41c34db965993e3fc1f07ea116b8d61eb6d9ae66f200d8cef0732070d5261baa",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0101.md": "0be0ae533abe8f75f247a23ac2e48b5aedadc060e145176cf705d5eafc0158c8",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0102.md": "6a44a492d9354b71a798f295bc52e3c78ac635183800335b38f61b8527a04f0b",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0103.md": "7810f3f1aa1d15519ee100fcc2e667324e404aa2cda3dff6d15f5d891cf87ead",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0104.md": "325a6851bb39e145b6d8c99d41925c834dc34ef9a86ae5ed8108d0f4571bcf24",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0105.md": "7d42ee886a54b9bf1a975e410293ebad6745001c8374367364e99d171ae7fa82",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0106.md": "6db1ffc829114a0838e779b8529df1f450b5a0de607c997eba6a8e24cf5cbe30",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0107.md": "2b22e0ccc5419984fbcf38b475e0a4df07399011641e4c854a3725c53d636da3",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0108.md": "dfde42e71515de3a717ed40eab16a0e5b71398592f519207d5bb53e938e2b229",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0109.md": "b1111f0ace81014bb1b837dc9716ad661b8d728ed3ff3109ec66c4aafc263760",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0110.md": "16192cbd818d2f69c3681143ab275139253ed6826ea3824512685f2d6ea6eb5f",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0111.md": "0a9bea27ec91f48e2a619ef6153e80f9b1c14b2e85112c5c12a08603b8a41441",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0112.md": "5a734afdf4a7567045431d4d1a38e754d1ad87f4e747558d63748662dbb0d5c3",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0113.md": "2dfdde1ff8f72d5ff7e4a3c66ab0fd58051251df77d13629d24aed93baf15a89",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0114.md": "8590081562a4ce36c9f27ab4b28292e18d3484db420e4bc3a945da0f48bfd9c7",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0115.md": "b16b043a96ec392eeee2698d080172e9f65c7f6c91562579edc1fab4a454c00c",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0116.md": "29060c37bc03df10dec3c4865d818c063f369489bb50c57026ff5e1ea60717c0",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0117.md": "f402487b87c7befd27fccd8a67b629aba1272f42663126647ef16df41cef5152",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0118.md": "772a9487967819981fbe07821e5a92efea20a29668a950fdab378501deb92050",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0119.md": "d7df12be50fc47e21201bf3dcf296690ea1d6b001ab86e6436714820ee0b11e1",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0120.md": "96256845f3674191bbe1f824b177cc719d93c697fb751beba4e8f50ba41f87e3",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0121.md": "9e8e25c440ec4f1fe4ea006f8d0a8a93d84fa7e2c1f0ffe19f4fa4e5cb8b14b4",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0122.md": "0d5a45e98ba1a976e095de075d4b8222b3380eb22ca1074107f2293ab8fe7163",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0123.md": "149a7feb450978abb27e252e93fb8fc94e664f918355bb2d7fb718d4c43f1c77",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0124.md": "0ec80de9f3282e98d0f1359858fc64afd0fc71a8568fcb98bf098a6907556c78",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0125.md": "e11a1659a70177553651ad76ab58f463aa038ec70120a89d3a68a147e5c450b7",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0126.md": "19e1bdd8e10b135aec00d3d13c50bbde53ed852afe66ee5154d4d92f0ed147bd",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0127.md": "bfcd2fe778cca65bc1e3bfb440a119af52925f78ae3f8462a934b91481165190",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0128.md": "83c9c2b1b85646459b50a962d771eead95bd67c1718c37917410d7a7bbb4d2c3",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0129.md": "f25c927106443516d581f1b365be79cb77bc0e07d317da8d675279ac864889df",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0130.md": "0851eb0a42cf8edbeb3d58cf2636512ee372abe7809f4807baaf56d165d7504f",
-    "DataSource/AISyntheticArticles/typing-articles-v5-seed/tw-corpus-0131.md": "cb44bf947c5d3b913a75d688e4daab353e0b9859e497c8a9a13ffd534badec31",
-    "DataSource/AssociatedPhraseCollectionNames.tsv": "fcb578989469f832d3163a29d03e90c0d1ee2309c5d53300702f077bab92f73e",
-    "DataSource/AISyntheticBigram/common-unigram-supplement.tsv": "b1bcff76f1551de638847680465113809579638d5794b256697a31ff6bba82ad",
-    "DataSource/AISyntheticBigram/common-phrase-unigram.tsv": "c5d85926eca9ef33644dccec27543ffe5762dcaa2ad124f6c14102ea9ef99584",
-    "DataSource/AISyntheticBigram/search-trend-unigram-source.txt": "01e48faf3da36e5b1ccac713153b4656113e777b8d8043d1026ee1f93037e9c1",
-    "DataSource/AISyntheticBigram/search-trend-reading-overrides.tsv": "1a2f9b2ab4b73aadb3ac12dbdce3da56495ac64fb576682359071a76f89afc8f",
-    "DataSource/AISyntheticBigram/collection-unigram-overrides.tsv": "e904d8db9d8f6f71e336fca9ee5daa3a7f990bd97e01d897d246e336c3b37550",
-    "DataSource/AISyntheticBigram/basic-bigram-protected-characters.txt": "54c2a5eaa78b69d77b64ccffefe14c6da7cf6c20a2875c3fef9f60093f8d0cda"
-  }
+    "Source/DataTables/bpmf-ext.cin": "f7c05229355ad39a0ef7806db85723709380099c24d3cb787f3eb01d49e29589"
+  },
+  "maximum_regression_actions": 30,
+  "reason": "排除人名及「她、他、時、十」後，總動作差 -6 次，未超過 30 次門檻",
+  "regression": {
+    "added_actions": 2,
+    "after": 318423,
+    "articles": [
+      {
+        "delta": 0,
+        "id": "tw-corpus-0001"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0002"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0003"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0004"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0005"
+      },
+      {
+        "delta": -2,
+        "id": "tw-corpus-0006"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0007"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0008"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0009"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0010"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0011"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0012"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0013"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0014"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0015"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0016"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0017"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0018"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0019"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0020"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0021"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0022"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0023"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0024"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0025"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0026"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0027"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0028"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0029"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0030"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0031"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0032"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0033"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0034"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0035"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0036"
+      },
+      {
+        "delta": -2,
+        "id": "tw-corpus-0037"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0038"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0039"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0040"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0041"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0042"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0043"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0044"
+      },
+      {
+        "delta": -2,
+        "id": "tw-corpus-0045"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0046"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0047"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0048"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0049"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0050"
+      },
+      {
+        "delta": 2,
+        "id": "tw-corpus-0051"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0052"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0053"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0054"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0055"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0056"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0057"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0058"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0059"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0060"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0061"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0062"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0063"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0064"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0065"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0066"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0067"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0068"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0069"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0070"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0071"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0072"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0073"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0074"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0075"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0076"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0077"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0078"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0079"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0080"
+      },
+      {
+        "delta": -2,
+        "id": "tw-corpus-0081"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0082"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0083"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0084"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0085"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0086"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0087"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0088"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0089"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0090"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0091"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0092"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0093"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0094"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0095"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0096"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0097"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0098"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0099"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0100"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0101"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0102"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0103"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0104"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0105"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0106"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0107"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0108"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0109"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0110"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0111"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0112"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0113"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0114"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0115"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0116"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0117"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0118"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0119"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0120"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0121"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0122"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0123"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0124"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0125"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0126"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0127"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0128"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0129"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0130"
+      },
+      {
+        "delta": 0,
+        "id": "tw-corpus-0131"
+      }
+    ],
+    "before": 318429,
+    "character_corrections_after": 4047,
+    "character_corrections_before": 4052,
+    "corrections_after": 3624,
+    "corrections_before": 3627,
+    "delta": -6,
+    "improved_articles": 4,
+    "maximum_regression_actions": 30,
+    "passes": true,
+    "passes_strict_diagnostic": false,
+    "reduction_percent": 0.001884250492260441,
+    "regressed_articles": 1,
+    "saved_actions": 8,
+    "syllables": 93630,
+    "tiers": {
+      "basic100": {
+        "after": 656,
+        "before": 658,
+        "character_changes": [
+          {
+            "after": 87,
+            "before": 89,
+            "character": "裡",
+            "delta": -2
+          }
+        ],
+        "delta": -2
+      },
+      "core83": {
+        "after": 535,
+        "before": 535,
+        "character_changes": [],
+        "delta": 0
+      },
+      "general101_1000": {
+        "after": 2281,
+        "before": 2281,
+        "character_changes": [
+          {
+            "after": 5,
+            "before": 6,
+            "character": "油",
+            "delta": -1
+          },
+          {
+            "after": 3,
+            "before": 2,
+            "character": "張",
+            "delta": 1
+          }
+        ],
+        "delta": 0
+      }
+    },
+    "unchanged_articles": 126,
+    "unfiltered": {
+      "added_actions": 353,
+      "after": 334772,
+      "articles": [
+        {
+          "delta": 4,
+          "id": "tw-corpus-0001"
+        },
+        {
+          "delta": 2,
+          "id": "tw-corpus-0002"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0003"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0004"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0005"
+        },
+        {
+          "delta": -2,
+          "id": "tw-corpus-0006"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0007"
+        },
+        {
+          "delta": 16,
+          "id": "tw-corpus-0008"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0009"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0010"
+        },
+        {
+          "delta": 8,
+          "id": "tw-corpus-0011"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0012"
+        },
+        {
+          "delta": 6,
+          "id": "tw-corpus-0013"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0014"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0015"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0016"
+        },
+        {
+          "delta": 12,
+          "id": "tw-corpus-0017"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0018"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0019"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0020"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0021"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0022"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0023"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0024"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0025"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0026"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0027"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0028"
+        },
+        {
+          "delta": 2,
+          "id": "tw-corpus-0029"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0030"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0031"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0032"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0033"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0034"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0035"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0036"
+        },
+        {
+          "delta": 25,
+          "id": "tw-corpus-0037"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0038"
+        },
+        {
+          "delta": 20,
+          "id": "tw-corpus-0039"
+        },
+        {
+          "delta": 16,
+          "id": "tw-corpus-0040"
+        },
+        {
+          "delta": 4,
+          "id": "tw-corpus-0041"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0042"
+        },
+        {
+          "delta": 8,
+          "id": "tw-corpus-0043"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0044"
+        },
+        {
+          "delta": -2,
+          "id": "tw-corpus-0045"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0046"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0047"
+        },
+        {
+          "delta": 16,
+          "id": "tw-corpus-0048"
+        },
+        {
+          "delta": 10,
+          "id": "tw-corpus-0049"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0050"
+        },
+        {
+          "delta": 2,
+          "id": "tw-corpus-0051"
+        },
+        {
+          "delta": 2,
+          "id": "tw-corpus-0052"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0053"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0054"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0055"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0056"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0057"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0058"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0059"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0060"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0061"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0062"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0063"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0064"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0065"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0066"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0067"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0068"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0069"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0070"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0071"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0072"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0073"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0074"
+        },
+        {
+          "delta": 12,
+          "id": "tw-corpus-0075"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0076"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0077"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0078"
+        },
+        {
+          "delta": 6,
+          "id": "tw-corpus-0079"
+        },
+        {
+          "delta": 8,
+          "id": "tw-corpus-0080"
+        },
+        {
+          "delta": -2,
+          "id": "tw-corpus-0081"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0082"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0083"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0084"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0085"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0086"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0087"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0088"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0089"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0090"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0091"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0092"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0093"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0094"
+        },
+        {
+          "delta": 2,
+          "id": "tw-corpus-0095"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0096"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0097"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0098"
+        },
+        {
+          "delta": 14,
+          "id": "tw-corpus-0099"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0100"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0101"
+        },
+        {
+          "delta": 24,
+          "id": "tw-corpus-0102"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0103"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0104"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0105"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0106"
+        },
+        {
+          "delta": 14,
+          "id": "tw-corpus-0107"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0108"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0109"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0110"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0111"
+        },
+        {
+          "delta": 20,
+          "id": "tw-corpus-0112"
+        },
+        {
+          "delta": 2,
+          "id": "tw-corpus-0113"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0114"
+        },
+        {
+          "delta": 16,
+          "id": "tw-corpus-0115"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0116"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0117"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0118"
+        },
+        {
+          "delta": 16,
+          "id": "tw-corpus-0119"
+        },
+        {
+          "delta": 6,
+          "id": "tw-corpus-0120"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0121"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0122"
+        },
+        {
+          "delta": 12,
+          "id": "tw-corpus-0123"
+        },
+        {
+          "delta": 32,
+          "id": "tw-corpus-0124"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0125"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0126"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0127"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0128"
+        },
+        {
+          "delta": 16,
+          "id": "tw-corpus-0129"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0130"
+        },
+        {
+          "delta": 0,
+          "id": "tw-corpus-0131"
+        }
+      ],
+      "before": 334425,
+      "character_corrections_after": 6046,
+      "character_corrections_before": 5930,
+      "correction_action_delta": 347,
+      "corrections_after": 5581,
+      "corrections_before": 5412,
+      "delta": 347,
+      "improved_articles": 3,
+      "passes": false,
+      "reduction_percent": -0.10376018539283846,
+      "regressed_articles": 31,
+      "saved_actions": 6,
+      "syllables": 93630,
+      "unchanged_articles": 97,
+      "worst_regression": 32
+    },
+    "worst_regression": 2
+  },
+  "rows": [
+    119193,
+    870697
+  ],
+  "source_totals": {
+    "collision": 143,
+    "duplicate": 50,
+    "existing": 1745,
+    "inserted": 4765,
+    "rejected": 0,
+    "rows": 6560
+  },
+  "validation_articles": 131
 }

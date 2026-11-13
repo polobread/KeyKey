@@ -8,7 +8,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import sqlite3
 import subprocess
 import sys
@@ -23,6 +22,7 @@ READING_OVERRIDES = ROOT / "reading-overrides.tsv"
 CIN_READING_FREQUENCIES = REPO / "DataSource/CINReadingFrequency/cin-character-reading-frequencies.tsv"
 sys.path.insert(0, str(SOURCE / "Distributions/Takao/DatabaseCooker"))
 from cin_reading_frequencies import load as load_cin_frequencies
+from training_name_markers import name_marker_parts
 CONSONANTS = " ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙ"
 MEDIALS = " ㄧㄨㄩ"
 VOWELS = " ㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦ"
@@ -375,7 +375,11 @@ class Lexicon:
 
 
 def load_document(path: Path, lexicon: Lexicon) -> list[dict]:
-    """Plain UTF-8 text, or JSONL {text, readings: [one per Han character]}."""
+    return load_document_with_name_positions(path, lexicon)[0]
+
+
+def load_document_with_name_positions(path: Path, lexicon: Lexicon) -> tuple[list[dict], set[tuple[int, int]]]:
+    """Load text or JSONL readings and map inline names to the original typing blocks."""
     source = path.read_text(encoding="utf-8-sig")
     if not source.strip():
         raise ValueError(f"Empty article: {path}")
@@ -384,22 +388,31 @@ def load_document(path: Path, lexicon: Lexicon) -> list[dict]:
     else:
         records = [{"text": source}]
     result = []
+    name_positions = set()
     for record_index, record in enumerate(records):
         text = record["text"]
         explicit = record.get("readings")
+        location = f"{path}: record {record_index + 1}"
         if not isinstance(text, str) or (explicit is not None and (not isinstance(explicit, list) or len(explicit) != sum(han(c) for c in text))):
-            raise ValueError(f"{path}: record {record_index + 1}: readings must match all Han characters")
+            raise ValueError(f"{location}: readings must match all Han characters")
+        parts = name_marker_parts(text, location)
         reading_index = 0
-        for match in re.finditer(r"[\s\S]", text):
-            # Group by script without treating spaces as invisible word boundaries.
-            character = match.group()
-            if result and result[-1]["record"] == record_index and result[-1]["han"] == han(character):
-                result[-1]["text"] += character
-            else:
-                result.append({"text": character, "han": han(character), "record": record_index, "queries": []})
-            if han(character) and explicit is not None:
-                result[-1]["queries"].append(query_for_reading(explicit[reading_index]))
-                reading_index += 1
+        for part_index, part in enumerate(parts):
+            is_name = part_index % 2 == 1
+            if is_name and not all(map(han, part)):
+                raise ValueError(f"{location}: expected a marked Chinese name, got {part!r}")
+            for character in part:
+                is_han = han(character)
+                # A marker does not split a typing block or add literal keys.
+                if result and result[-1]["record"] == record_index and result[-1]["han"] == is_han:
+                    result[-1]["text"] += character
+                else:
+                    result.append({"text": character, "han": is_han, "record": record_index, "queries": []})
+                if is_name:
+                    name_positions.add((len(result) - 1, len(result[-1]["text"]) - 1))
+                if is_han and explicit is not None:
+                    result[-1]["queries"].append(query_for_reading(explicit[reading_index]))
+                    reading_index += 1
     for block in result:
         if block["han"]:
             if not block["queries"]:
@@ -409,7 +422,7 @@ def load_document(path: Path, lexicon: Lexicon) -> list[dict]:
             block["tokens"] = lexicon.segment(block["text"], block["queries"])
     if not result or not any(block["text"].strip() for block in result):
         raise ValueError(f"Empty article: {path}")
-    return result
+    return result, name_positions
 
 
 @dataclass(frozen=True)
